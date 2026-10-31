@@ -102,7 +102,9 @@ const portrait = n => html.includes(`[data-n="${n}"]{--img:`) || zen.includes(`[
 for (const [k, d] of Object.entries(E)) {
   if (!d.name || NO_INTENTS.has(k)) continue;
   const an = d.art || d.name;// the art key, as the game draws it (e.art||e.name); figures match like pw-cast.js entryForFoe: game key, then name or art
-  const fig = castGames.has(k) || castKeys.has(ALIAS[k]) || castNames.has(an) || castNames.has(d.name), por = portrait(an);
+  const fig = castGames.has(k) || castKeys.has(d.figure) || castKeys.has(ALIAS[k]) || castNames.has(an) || castNames.has(d.name), por = portrait(an);
+  const rolled = ACTS.some(A => A && [...(A.elites || []), ...(A.bosses || [])].includes(k));
+  if (d.figure && !castKeys.has(d.figure) && !por) { if (rolled) warn('art E.' + k, `figure '${d.figure}' not landed: stays out of the rolls until its frames do`); else fail('art E.' + k, `figure '${d.figure}' not landed and it is not a rolled elite or boss, so nothing keeps it hidden`); continue }
   if (!fig && !por) fail('art E.' + k, `'${an}' has no figure and no card-art portrait (it would show blank)`);
   else if (!fig) warn('art E.' + k, `'${an}' shows its portrait until its figure is painted`);
 }

@@ -12,7 +12,7 @@ const BASE='planeswalk-cast/';
 const RM=matchMedia('(prefers-reduced-motion: reduce)').matches;
 const DPR=Math.min(2,window.devicePixelRatio||1);
 const GC={warm:[1,.55,.25],green:[.55,1,.4],cool:[.45,.78,1],violet:[.78,.5,1],holy:[1,.86,.52],none:[1,.84,.6]};
-const ALIAS={ironalpha:'ironfang',oliviaB:'olivia',acolyte:'skirsdag-cultist'};
+const ALIAS={ironalpha:'ironfang',alphasmith:'village-ironsmith',oliviaB:'olivia',acolyte:'skirsdag-cultist'};
 const KSCALE={hero:1,boss:1.35,elite:1.12,regular:.8,token:.66};// of the hero's height: the repaint guide's 32% / 40% / 55% of the picture, held back so a boss fight keeps the hero readable
 const MORPH={'village-ironsmith':'ironfang'};
 const sm=x=>{x=Math.max(0,Math.min(1,x));return x*x*(3-2*x)};
@@ -25,7 +25,7 @@ const tramples=e=>{try{return typeof TRAMPLES==='function'&&TRAMPLES(e)}catch(er
 /* ---------- cast data ---------- */
 let D=null,BY={},BYG={},BYN={},BYA={},dataP=null;
 function loadData(){if(dataP)return dataP;dataP=fetch(BASE+'cast.json').then(r=>r.ok?r.json():Promise.reject(r.status)).then(d=>{D=d;for(const e of d){BY[e.key]=e;if(e.act==='allies'){BYA[e.name]=e;continue}BYN[e.name]=e;if(e.game&&e.game!=='planned'&&e.game!=='hero')BYG[e.game]=e}return d}).catch(err=>{console.warn('cast data',err);D=[]});return dataP}
-function entryForFoe(e,g){if(!e||e.thrallOf)return null;const k=e.key;return BYG[k]||BY[ALIAS[k]]||(g.E[k]&&(BYN[g.E[k].name]||BYN[g.E[k].art]))||null}// a boss's second form (heraldB) names its art
+function entryForFoe(e,g){if(!e||e.thrallOf)return null;const k=e.key;return BYG[k]||(g.E[k]&&g.E[k].figure&&BY[g.E[k].figure])||BY[ALIAS[k]]||(g.E[k]&&(BYN[g.E[k].name]||BYN[g.E[k].art]))||null}/* a registry row can name its figure key (figure:'kozilek-drone') */// a boss's second form (heraldB) names its art
 // a summoned creature or token: its entry by card name (stand-in sheets until its own art lands)
 function entryForAlly(a){return a&&BYA[a.name]||null}
 // the hero's own figure, by its figure key or its exact name; a hero with none keeps its portrait (never another hero's painting)

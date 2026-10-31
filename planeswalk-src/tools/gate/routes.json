@@ -46,7 +46,7 @@
  },
  {
   "id": "pw-battle-crowded",
-  "setup": "__pw.fight(['diregraf','geist','diregraf']);for(let i=0;i<5;i++)summon({p:2,t:2},'Goblin token');while(c.hand.length<7)c.hand.push({key:c.hand[0].key,id:8800+c.hand.length});render()"
+  "setup": "__pw.fight(['diregraf','geist','diregraf','geist']);for(let i=0;i<5;i++)summon({p:2,t:2},'Goblin token');summon({p:1,t:1},'Soldier token');summon({p:1,t:1,flying:true},'Spirit token');while(c.hand.length<7)c.hand.push({key:c.hand[0].key,id:8800+c.hand.length});render()"
  },
  {
   "id": "pw-battle-zoom",
@@ -100,7 +100,7 @@
  },
  {
   "id": "pw-battle-5",
-  "setup": "__pw.fight(['diregraf','geist','diregraf','geist','diregraf']);[1,2,3,4].forEach(i=>summon({p:i,t:i+1},'Goblin token'));render()"
+  "setup": "__pw.fight(['diregraf','geist','diregraf','geist']);[1,2,3,4].forEach(i=>summon({p:i,t:i+1},'Goblin token'));render()"
  },
  {
   "id": "pw-battle-clock",
@@ -175,5 +175,10 @@
   "id": "pw-battle-emb",
   "setup": "__pw.fight();run.emblems=Object.keys(EMB).slice(0,4);render()",
   "name": null
+ },
+ {
+  "id": "pw-battle-mode",
+  "setup": "__pw.fight(['diregraf','geist']);c.hand[0]={key:'stance',id:8899,foil:false};render();document.querySelector('#app .battle .hand>[data-i=\"0\"]').click()",
+  "wait": 600
  }
 ]

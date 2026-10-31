@@ -6,7 +6,7 @@ const s0=html.indexOf('<script id="pw-game">')>=0?html.indexOf('<script id="pw-g
 const N=+process.argv[3]||300;const POL=process.argv[4]||'any';
 const BIG=new Set(['giant','brute','marauder','dasher','hauler','glory','shivan','fireball','guide','king']);
 const ctx={console,Math,JSON,Object,Array,String,Number,structuredClone,Map,Set,setTimeout:f=>f(),document:{getElementById:()=>({innerHTML:'',addEventListener(){}})}};
-ctx.PW_FORM=process.env.FORM==='0'?0:1;ctx.PW_FEAT={sig:process.env.SIG==='0'?0:1,ante:process.env.ANTE==='0'?0:1,dun:process.env.DUN==='0'?0:1};ctx.PW_DMG={};ctx.PW_SOAK={};if(process.env.AT)ctx.PW_AT=+process.env.AT;if(process.env.TRB)ctx.PW_TR=1;if(process.env.DL)ctx.PW_DL=+process.env.DL;if(process.env.DR)ctx.PW_DR=+process.env.DR;if(process.env.DH)ctx.PW_DH=+process.env.DH;if(process.env.DS)ctx.PW_DS=+process.env.DS;if(process.env.FOEHP)ctx.PW_FOEHP=+process.env.FOEHP;
+ctx.PW_FORM=process.env.FORM==='0'?0:1;ctx.PW_FEAT={sig:process.env.SIG==='0'?0:1,ante:process.env.ANTE==='0'?0:1,dun:process.env.DUN==='0'?0:1};ctx.PW_DMG={};ctx.PW_HEADLESS=1;if(process.env.FIGHT)ctx.PW_FIGHT=JSON.parse(process.env.FIGHT);ctx.PW_SOAK={};if(process.env.AT)ctx.PW_AT=+process.env.AT;if(process.env.TRB)ctx.PW_TR=1;if(process.env.DL)ctx.PW_DL=+process.env.DL;if(process.env.DR)ctx.PW_DR=+process.env.DR;if(process.env.DH)ctx.PW_DH=+process.env.DH;if(process.env.DS)ctx.PW_DS=+process.env.DS;if(process.env.FOEHP)ctx.PW_FOEHP=+process.env.FOEHP;
 vm.createContext(ctx);
 vm.runInContext(src+`;globalThis.G={get run(){return run},get c(){return c},get view(){return view},get reward(){return reward},set view(v){view=v},set reward(v){reward=v},
  newRun,enter,anteFight,startFight,DUN,nextAct,open,play,attack,ability,endTurn,canPlay,ready,alive,pow,tough,costOf,C,E,EMB,toMap:()=>toMap(),heal,mk,evChoice,get POOL(){return POOL},bombard,forecast,PRICE,intentOf};`,ctx);
@@ -30,7 +30,7 @@ function attackPhase(c){
   for(const a of [...c.allies]){if(G.view!=='battle')return;if(!c.allies.includes(a)||!G.ready(a))continue;
    const p=G.pow(a)+(a.raid||0);const t=G.alive().find(e=>e.hp<=p)||G.alive().sort((x,y)=>x.hp-y.hp)[0];if(!t)break;
    const tt=CAREFUL?(G.alive().filter(e=>e.hp<=p).sort((x,y)=>threat(y)-threat(x))[0]||t):t;
-   let safe=(a.flying&&!tt.fly)||tt.pow<G.tough(a)-a.dmg||tt.hp<=p||a.name==='Goblin token'||a.name==='Elemental'||c.allies.length>=5||c.turn>12;
+   let safe=(a.flying&&!tt.fly)||tt.pow<G.tough(a)-a.dmg||tt.hp<=p||a.name==='Goblin token'||a.name==='Elemental'||c.allies.length>=4||c.turn>12;
    if(CAREFUL&&safe&&tt.hp>p&&c.turn<=12){const f0=G.forecast().you;a.tapped=true;const f1=G.forecast().you;a.tapped=false;if(f1>f0)safe=false}
    if(safe)G.attack(a,tt)}
 }
@@ -77,7 +77,7 @@ function battle(){
  return guard;
 }
 function check(where){const r=G.run;if(!Number.isFinite(r.hp))stats.errors.push('NaN hp '+where);
- if(G.c){if(G.c.allies.length>8)stats.errors.push('allies>8');for(const a of G.c.allies)if((a.attacks||0)>2)stats.errors.push('attacks>2 '+a.name);for(const a of G.c.allies)if(!Number.isFinite(G.pow(a))||!Number.isFinite(G.tough(a)))stats.errors.push('NaN ally '+a.name);for(const e of G.c.enemies)if(!Number.isFinite(e.hp))stats.errors.push('NaN enemy '+e.name);}}
+ if(G.c){if(G.c.allies.length>12)stats.errors.push('allies>12');for(const a of G.c.allies)if((a.attacks||0)>2)stats.errors.push('attacks>2 '+a.name);for(const a of G.c.allies)if(!Number.isFinite(G.pow(a))||!Number.isFinite(G.tough(a)))stats.errors.push('NaN ally '+a.name);for(const e of G.c.enemies)if(!Number.isFinite(e.hp))stats.errors.push('NaN enemy '+e.name);}}
 for(let s=+(process.env.S0||1);s<=N;s++){if(process.env.TRACE)console.error("seed",s);
  try{
  G.newRun(s,process.env.HERO||'R');let steps=0,lastKind='',runBroken=false,sawRare=false,runDun=0,runAnte=0,runSig=[];

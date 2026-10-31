@@ -8,7 +8,7 @@
  const WORDS=[
   ['#app>.top .life',e=>`Life ${e.dataset.v||''}. At 0 the walk ends. Rest sites heal it, and beating a boss heals you to full.`],
   ['#app>.top .gold',e=>`Gold ${e.dataset.v||''}. Won from fights and treasure. Spend it in shops.`],
-  ['.emblems .emb-art,.emblems svg',e=>`Emblem · ${(e.getAttribute('data-tip0')||e.querySelector('title')?.textContent||e.getAttribute('aria-label')||'').trim().replace(/\.$/,'')}. Emblems work for the rest of the walk.`],
+  ['.emblems .emb-art,.emblems svg',e=>`Emblem · ${(e.getAttribute('data-tip0')||e.querySelector('title')?.textContent||e.getAttribute('aria-label')||'').trim().replace(/\.$/,'')}. Emblems last this run.`],
   ['.battle .piles>span:first-child',()=>'Draw pile. When it runs out, your discard pile shuffles back in.'],
   ['.battle .piles>span:nth-child(2)',()=>'Discard pile. Cards you played or kept this fight wait here.'],
   ['.battle .controls [data-act=all]',()=>'Every ready ally attacks. Each goes for its usual target.']

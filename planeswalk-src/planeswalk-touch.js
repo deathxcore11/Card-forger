@@ -391,7 +391,7 @@
  new MutationObserver(fix).observe(app,{childList:true,subtree:true});fix()})();
 /* The game's long-press inspect lists keywords as plain words; show each with its icon and what it does. */
 (()=>{const app=document.getElementById('app');if(!app)return;
- const DEF={flying:'Only flying or reach creatures can block it.',haste:'Can attack the turn it arrives.',reach:'Can block flying creatures.','first strike':'Deals its damage before the other side.',vigilance:'Attacking does not tap it.',lifelink:'Damage it deals heals you.',defender:'Can block but cannot attack.',trample:'Extra damage carries through blockers.',deathtouch:'Any damage it deals is lethal.'};
+ const DEF={flying:'Only flying or reach creatures can block it.',haste:'Can attack the turn it enters.',reach:'Can block flying creatures.','first strike':'Deals its damage before the other side.',vigilance:'Attacking does not tap it.',lifelink:'Damage it deals heals you.',defender:'Can block but cannot attack.',trample:'Extra damage carries through blockers.',deathtouch:'Any damage it deals is lethal.'};
  const run=()=>{for(const p of document.querySelectorAll(':is(.inspect,.pw-zoom) p:not(.pw-kwdef)')){const ks=p.textContent.trim().split(' · ');if(!ks.every(k=>k in DEF))continue;
   p.className='pw-kwdef';p.innerHTML=ks.map(k=>`<span><i data-k="${k}"></i><b>${k[0].toUpperCase()+k.slice(1)}</b> ${DEF[k]}</span>`).join('')}};
  const mo=new MutationObserver(run);mo.observe(app,{childList:true,subtree:true});mo.observe(document.body,{childList:true});run()})();
@@ -412,7 +412,7 @@
  new MutationObserver(show).observe(app,{childList:true});show()})();
 /* Shandalar features: dungeon room banner, burned-ante shards (look only; the game owns the rules). */
 (()=>{const app=document.getElementById('app');if(!app)return;
- const RULE={crypt:'Your discard pile is exiled each time you reshuffle.',ruins:'1 less energy each fight, but draw 1 more card.',vaults:'Enemies have +1 power. Each kill pays 5 gold.'};
+ const RULE={crypt:'Each time you reshuffle, one card is Lost.',ruins:'1 less energy each turn, but draw 1 more card.',vaults:'Enemies have +1 power. Each kill pays 5 gold.'};
  let key='',el=null,tm=0;
  const room=()=>{const b=app.querySelector('section.battle[data-room]');if(!b){if(el){el.remove();el=null;key=''}return}
   const k=b.dataset.dungeon+'|'+b.dataset.room;if(k===key&&el?.isConnected)return;const fresh=k!==key;key=k;el?.remove();

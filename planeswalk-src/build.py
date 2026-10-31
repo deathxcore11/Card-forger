@@ -38,6 +38,11 @@ def unzoom_insets(css):
   return '\n'.join(out)
 css=unzoom_insets(css);s=unzoom_insets(s)
 s=s.replace('<!--PW-SKIN-->','<style id="pw-skin">\n'+css+'\n</style>')
+# figure keys that have frames: a registry row with figure:'key' (e.g. Kozilek's Drone) stays out of the rolls until its frames land (ruling 10)
+_castj=next(p for p in (W+'/planeswalk-cast/cast.json',OUT+'/planeswalk-cast/cast.json',os.path.dirname(W)+'/planeswalk-cast/cast.json') if os.path.exists(p))  # w/ keeps its own copy; in the repo it sits at the root
+_figs=sorted({e['key'] for e in json.load(open(_castj))})
+assert s.count('<script id="pw-game">')==1
+s=s.replace('<script id="pw-game">','<script id="pw-figs">window.PW_FIGS='+json.dumps(_figs)+';</script>\n<script id="pw-game">')
 # the ink map reads the classic mana symbols from the emblem art file
 mana=re.search(r'const MANA=(\{.*?\}),COLOR',open(W+'/emblem-art.js').read(),re.S).group(1)
 open(W+'/pw-mana.js','w').write('window.PW_MANA='+mana+';')
