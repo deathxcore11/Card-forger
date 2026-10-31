@@ -7,11 +7,11 @@ const row=(name,price,qty=2,owned=0)=>({key:name,name,price,qty,owned,kind:'crea
 const make=(rows,side=[])=>({g:'mtg',key:Math.random().toString(),title:'Fixture',sub:'',evidence:'',rows,sideRowsFn:()=>side,lists:[],load:async()=>{}});
 const show=(spec,mode='original')=>{Object.assign(proven,{spec,mode,busy:false,msg:'',budget:0,last:null});return provenSheetHtml();};
 let html=show(make([row('Unknown',null)]));
-assert.match(html,/Price unavailable/);assert.match(html,/\$0<\/b> known subtotal · 2 unpriced · Incomplete total/);assert.doesNotMatch(html,/\$0<\/b> to finish/);assert.match(html,/provenRetry/);
+assert.match(html,/Price unavailable/);assert.match(html,/\$0<\/b><span>known subtotal · 2 unpriced · Incomplete total/);assert.doesNotMatch(html,/\$0<\/b><span>to finish/);assert.match(html,/provenRetry/);
 html=show(make([row('Known',5),row('Unknown',null,3,1)]));
-assert.match(html,/\$10<\/b> known subtotal · 2 unpriced/);
+assert.match(html,/\$10<\/b><span>known subtotal · 2 unpriced/);
 html=show(make([row('Owned unknown',null,3,3)]));assert.match(html,/complete ✓/);assert.doesNotMatch(html,/Price unavailable|Incomplete total/);
-html=show(make([row('Free',0)]));assert.match(html,/\$0<\/b> to finish/);assert.doesNotMatch(html,/unpriced|Incomplete total/);
+html=show(make([row('Free',0)]));assert.match(html,/\$0<\/b><span>to finish/);assert.doesNotMatch(html,/unpriced|Incomplete total/);
 html=show(make([row('Free',0)],[row('Side unknown',null,3,1)]));assert.match(html,/Sideboard/);assert.match(html,/\$0 known subtotal · 2 unpriced · Incomplete total/);
 html=show(make([row('Known',10)],[row('Side unknown',null)]),'budget');
 assert.match(html,/Price check incomplete/);assert.doesNotMatch(html,/already costs little|fits \$|data-act="provenBudget"/);assert.match(html,/data-act="provenSave" disabled/);assert.equal(proven.last,null);

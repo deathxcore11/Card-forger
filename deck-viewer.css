@@ -185,3 +185,47 @@
 .deck-toolbar>.deck-view-toolbar{margin:0 0 0 auto;display:flex;align-items:center;gap:8px}
 .deck-toolbar>.deck-view-toolbar>span{display:none}
 .deck-chip,.deck-group,.deck-add-toggle{white-space:nowrap;flex:none}
+
+/* 31 Oct master deck view: the same header on every deck source and game. */
+.ds-hero{--ds-banner:236px;min-height:0;overflow:visible;background:none}
+.ds-hero>.hero-art,.ds-hero>.hero-shade{bottom:auto;height:var(--ds-banner);border-radius:inherit}
+.ds-hero>.hero-art{clip-path:inset(0 round 18px)}
+.ds-hero .hero-body{min-height:var(--ds-banner);align-content:space-between}
+.ds-hero .deck-hero-id{max-width:min(720px,100%)}
+.ds-hero .ds-nav{min-height:44px}
+.ds-badge{color:var(--gold);border-color:color-mix(in srgb,var(--gold) 40%,transparent)}
+.ds-hero .review-badge{margin:0;min-height:34px}
+.ds-line{margin:2px 0 0!important;color:#cfd4de!important;font-size:13px!important;line-height:1.35}
+.ds-head{position:relative;display:grid;gap:12px;margin:12px 0 14px}
+@media(max-width:899px){.ds-hero>.hero-art{clip-path:none}.ds-head{padding:0 var(--gutter)}}
+.ds-stats{display:grid;grid-template-columns:repeat(var(--ds-n,4),minmax(0,1fr));gap:8px}
+.ds-stat{display:grid;gap:1px;min-width:0;min-height:44px;padding:9px 12px;border-radius:14px;background:color-mix(in srgb,var(--surface,#171a22) 70%,transparent);border:1px solid rgba(255,255,255,.08);box-shadow:inset 0 1px 0 rgba(255,255,255,.04);text-align:left;color:var(--muted);font:inherit}
+.ds-stat b{font:800 18px/1.2 Manrope,sans-serif;color:var(--text);overflow-wrap:anywhere}
+.ds-stat span{font-size:12px;line-height:1.3}
+button.ds-stat{cursor:pointer}button.ds-stat b{color:var(--gold)}
+.ds-stat.warn b{color:var(--warn)}
+.ds-actions{display:flex;flex-wrap:wrap;gap:10px;align-items:stretch}
+.ds-actions .btn{min-height:46px;flex:0 1 auto}
+.ds-actions .ds-primary{min-width:180px}
+.ds-actions .deck-play-cpu[hidden]{display:none}
+.ds-actions .deck-coach-action{display:contents}
+.ds-actions .deck-coach-action small{display:none}
+.ds-rebuild{display:contents}
+.ds-rebuild>summary{list-style:none}
+.ds-rebuild>summary::-webkit-details-marker{display:none}
+.ds-rebuild[open]>.deck-budget-rebuild{flex:1 0 100%;order:9}
+.ds-versions .seg{width:100%}
+.ds-versions .seg>button{flex:1 1 0}
+@media(max-width:699px){
+ .ds-stats{grid-template-columns:repeat(2,minmax(0,1fr))}
+ .ds-stats[style*="--ds-n:3"]{grid-template-columns:repeat(3,minmax(0,1fr))}
+ .ds-stats[style*="--ds-n:1"]{grid-template-columns:1fr}
+ .ds-actions .btn{flex:1 1 0;min-width:0;padding-inline:10px}
+ .ds-actions .ds-primary{flex-basis:100%}
+}
+@media(min-width:700px){.ds-stats{grid-template-columns:repeat(var(--ds-n,4),minmax(0,1fr))}}
+/* Previews (Meta, AI, Random) open as a full page, not a pop-up sheet. */
+dialog.sheet:has(.ds-page){width:100%;max-width:none;height:100%;max-height:none;margin:0;border:0;border-radius:0;animation:none}
+dialog.sheet:has(.ds-page) #sheetBody{max-height:none;height:100%;padding:calc(env(safe-area-inset-top) + 8px) max(var(--gutter),calc((100% - 1196px)/2)) calc(env(safe-area-inset-bottom) + 28px)}
+.ds-page>.ds-hero{margin:0;border-radius:18px}
+@media(max-width:899px){.ds-page>.ds-hero{margin:0 calc(var(--gutter)*-1);border-radius:0}}

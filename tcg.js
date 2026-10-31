@@ -46,7 +46,7 @@ import { rankByName } from "./catalog-tools.js";
 import {setRowContent,knownSetCount,setYearSections,setCardFields,setCardFacets,setFinishLabel,setVariantKey,filterSortSetCards,setProgressMarkup} from './set-list-ui.js';
 import {artworkHTML,artworkSources,pokemonArtCrop,pokemonDeckCover} from "./artwork.js";
 import { tierOf, tierAttrs, tierStyle, tierGem, ygoRarityFlair } from "./tier.js";
-import {deckViewer,deckCardAttrs} from './deck-viewer.js';
+import {deckViewer,deckCardAttrs,deckShell} from './deck-viewer.js';
 import {viewControl,selectionControl,selectionMark,selectionTray,historyPanel,quoteModel,priceOverview,quoteWarning,ygoPreviewSelectors} from "./workbench-ui.js";
 import { locationPicker, rememberLocation } from "./collection-locations.js";
 import { zoneCountLabel } from "./deck-safety.js";
@@ -1363,20 +1363,27 @@ export function provenSheetHtml() {
       sc = costToFinish(side);
     body += `<details class="group side-group" ${mode === "original" ? "open" : ""}><summary><span>Sideboard <em>${sn}</em></span><span class="muted small">${usd(sc, 0)} ${sideUnpriced ? `known subtotal · ${sideUnpriced} unpriced · Incomplete total` : "to finish"}</span></summary><p class="small muted">Saved with ${mode === "original" ? "the deck" : "every version"} as the tournament player ran it. Swap these in between games.</p><div class="list compact deck-compact-list" data-deck-list>${side.map((r) => row(r,"","side")).join("")}</div></details>`;
   }
-  const hero = spec.heroFor?.(spec.rows);
-  return `<div class="sheet-head overlay"><span></span><button class="icon" data-act="closeSheet" aria-label="Close">✕</button></div>
-  <div class="cs-hero compact ${spec.g}">${hero ? `<img class="cs-art" src="${esc(hero)}" alt="" referrerpolicy="no-referrer" onerror="this.remove()">` : ""}<div class="cs-shade"></div></div>
-  <div class="cs-title"><div><h2>${esc(spec.title)}</h2><p class="type-line">🏆 ${spec.sub}</p></div></div>
-  <p class="evidence small">${spec.evidence}</p>
-  <div class="proven-sum"><span>${side.length ? "Main deck · " : ""}<b>${spec.rows.some(r=>r.assumedOwned)?"Covered":"You own"} ${have} of ${total}</b> · ${have >= total ? "complete ✓" : `<b>${usd(M.full, 0)}</b> ${unpriced ? `known subtotal · ${unpriced} unpriced · Incomplete total` : "to finish"}`}</span>${have < total && mode !== "budget" ? `<button class="btn small" data-act="provenMode" data-id="budget">Cheapest way in ›</button>` : ""}</div>
-  ${bar(total ? have / total : 0)}
-  ${segmented("provenMode", mode, [["original", "Original"], ["budget", "Budget adaptation"], ["draft", "My cards draft"]])}
-  ${proven.busy ? buildOverlay(proven.msg, { title: "Fitting the tournament deck", note: "Matching the winning list to your cards and budget, card by card. This can take up to a minute." }) : proven.msg ? `<p class="small warn-text" role="status">${esc(proven.msg)}</p>` : ""}
+  const hero = spec.heroFor?.(spec.rows), saveLabel = saving ? "Saving…" : mode === "original" ? "Save deck" : mode === "budget" ? "Save adaptation" : "Save draft";
+  return `<div class="ds-page">${deckShell({game:spec.g,source:"meta",art:hero || "",title:spec.title,
+    back:`<button class="icon light" data-act="closeSheet" aria-label="Back">←</button>`,
+    badge:"Meta",format:spec.formatLabel ? `<span class="chip dark">${esc(spec.formatLabel)}</span>` : "",
+    line:spec.sub || "",
+    stats:[
+      {value:`${total}`,label:side.length ? `main · ${side.reduce((a, r) => a + r.qty, 0)} sideboard` : "cards"},
+      {value:`${have}/${total}`,label:spec.rows.some(r=>r.assumedOwned) ? "covered" : "owned"},
+      {cls:"proven-sum",value:have >= total ? "complete ✓" : usd(M.full, 0),label:have >= total ? "to finish" : unpriced ? `known subtotal · ${unpriced} unpriced · Incomplete total` : "to finish"}],
+    actions:[
+      {label:saveLabel,primary:true,attrs:'data-act="provenSave"',disabled:saving || mode === "budget" && incomplete},
+      ...(have < total && mode !== "budget" ? [{label:"Cheapest way in",attrs:'data-act="provenMode" data-id="budget"'}] : []),
+      ...(spec.sourceUrl ? [{html:`<a class="btn ghost" href="${esc(safeHref(spec.sourceUrl))}" target="_blank" rel="noopener noreferrer">${esc(spec.sourceLabel || "Source")}</a>`}] : [])],
+    status:`${proven.busy ? buildOverlay(proven.msg, { title: "Fitting the tournament deck", note: "Matching the winning list to your cards and budget, card by card. This can take up to a minute." }) : proven.msg ? `<p class="small warn-text" role="status">${esc(proven.msg)}</p>` : ""}
   ${saveError?`<p class="note warn" role="alert">${esc(saveError)}</p>`:""}
-  ${!proven.busy && spec.load && (proven.msg || incomplete || saveError) ? `<div class="actions"><button class="btn small" data-act="provenRetry">${spec.rows.some(r=>r.matchPending)?"Retry card matching":"Retry prices"}</button></div>` : ""}
+  ${!proven.busy && spec.load && (proven.msg || incomplete || saveError) ? `<div class="actions"><button class="btn small" data-act="provenRetry">${spec.rows.some(r=>r.matchPending)?"Retry card matching":"Retry prices"}</button></div>` : ""}`,
+    versions:segmented("provenMode", mode, [["original", "Original"], ["budget", "Budget"], ["draft", "My cards"]])})}
   ${deckViewer(spec.g,body)}
-  <div class="actions wrap sheet-actions"><button class="btn" data-act="provenSave" ${saving || mode === "budget" && incomplete ? "disabled" : ""}>${saving?"Saving…":mode === "original" ? "Save original list" : mode === "budget" ? "Save adaptation" : "Save draft"}</button>${spec.sourceUrl ? `<a class="btn ghost" href="${esc(safeHref(spec.sourceUrl))}" target="_blank" rel="noopener noreferrer">${esc(spec.sourceLabel || "Source")}</a>` : ""}${spec.extraActions || ""}</div>
-  ${spec.attribution ? `<p class="foot">${spec.attribution}</p>` : ""}`;
+  ${spec.extraActions ? `<div class="actions wrap sheet-actions">${spec.extraActions}</div>` : ""}
+  ${spec.evidence ? `<p class="foot">${spec.evidence}</p>` : ""}
+  ${spec.attribution ? `<p class="foot">${spec.attribution}</p>` : ""}</div>`;
 }
 
 export function tcgPickSheet() {
@@ -1411,13 +1418,21 @@ export function tcgDeck(id) {
     shown = shownPower(tcgPower(g, d, f, x => cardOf(g, x))),
     buildCheck = d.buildDiagnostics ? tcgBuildDiagnostics(g, { ...d, budget: d.buildDiagnostics.purchaseBudget }, f) : null;
   const tab = S.ui.tdeckTab?.[g+":"+d.id] || "cards";
-  return `<section class="deck-hero">${g === "ptcg" && cover ? pokemonArtCrop(cover, "hero-art") : imgTag(cover, "hero-art", true)}<div class="hero-shade"></div><div class="hero-body">
-    <div class="row between"><button class="icon light" data-act="go" data-to="#decks" aria-label="Back">←</button>${deckBoxMarkup(d,{game:g,images:(d.zones.main||[]).slice(0,3).map(r=>artworkSources(cardOf(g,r.cardId)).find(u=>u.startsWith("https://"))),open:true,button:true})}</div>
-    <h1>${esc(d.name)}</h1><p><button class="chip dark fmt-chip" data-act="tDeckMenu" data-id="${esc(d.id)}">${esc(GAMES[g].short)} · ${esc(f.name)}</button></p>
-    <button class="review-badge ${deckCheckTone(issues)}" data-act="tIssues" data-deck="${esc(d.id)}">${issues.length ? esc(deckCheckLabel(issues)) : s.total ? "✓ Legal in " + esc(f.name) : "Add cards to check legality"}</button>
-    <div class="hero-stats"><span><b>${zoneCount("main")}</b>${g === "ygo" ? "main" : "/60 cards"}</span><span><b>${s.total ? Math.round((s.owned / s.total) * 100) : 0}%</b>owned</span><span><b>${usd(s.buy, 0)}${s.unknown ? "+" : ""}</b>to finish${s.unknown ? " · some unpriced" : ""}</span>${s.total ? `<button data-act="tDeckTab" data-deck="${esc(d.id)}" data-id="insights"><b>${shown ?? "—"}</b>${shown == null ? "power unavailable" : "power"}</button>` : ""}</div>
-    ${buildCheck && (!buildCheck.ready || !buildCheck.purchaseEstimateVerified || buildCheck.summoningReview.length) ? `<p class="small warn-text">${buildCheck.open ? `Incomplete draft: ${buildCheck.open} slots remain. ` : !buildCheck.legalChecked ? "Draft: deck checks still need review. " : buildCheck.missingRequiredSeeds.length ? `Draft: required build-around card missing: ${esc(buildCheck.missingRequiredSeeds.map(s => s.name).join(", "))}. ` : buildCheck.missingEnergy ? `Draft: ${buildCheck.missingEnergy} intended Energy copies are still missing. ` : !buildCheck.ready ? "Draft: the requested purchase budget is not verified. " : ""}${buildCheck.summoningReview.length ? `${buildCheck.coreRouteUnverified ? `${buildCheck.ready ? "Complete list" : "Draft"}, core route unverified` : `${buildCheck.ready ? "Complete list" : "Draft"} · Extra Deck summoning needs review`}. ${esc(buildCheck.summoningReview.map(x => x.explanation).join(" "))} ` : ""}${buildCheck.unpricedPurchaseCopies ? `Known purchase subtotal only; ${buildCheck.unpricedPurchaseCopies} missing copies are unpriced. Total purchase cost is unverified, not free.` : ""}</p>` : ""}
-  </div></section>
+  return `${deckShell({game:g,source:"mine",artHtml:g === "ptcg" && cover ? pokemonArtCrop(cover, "hero-art") : imgTag(cover, "hero-art", true),title:d.name,
+    back:`<button class="icon light" data-act="go" data-to="#decks" aria-label="Back">←</button>`,
+    menu:deckBoxMarkup(d,{game:g,images:(d.zones.main||[]).slice(0,3).map(r=>artworkSources(cardOf(g,r.cardId)).find(u=>u.startsWith("https://"))),open:true,button:true}),
+    badge:"My deck",
+    format:`<button class="chip dark fmt-chip" data-act="tDeckMenu" data-id="${esc(d.id)}">${esc(GAMES[g].short)} · ${esc(f.name)}</button>`,
+    legality:`<button class="review-badge ${deckCheckTone(issues)}" data-act="tIssues" data-deck="${esc(d.id)}">${issues.length ? esc(deckCheckLabel(issues)) : s.total ? "✓ Legal in " + esc(f.name) : "Add cards to check legality"}</button>`,
+    stats:[
+      {value:g === "ygo" ? `${zoneCount("main")}` : `${zoneCount("main")}/60`,label:g === "ygo" ? `main${zoneCount("extra") ? ` · ${zoneCount("extra")} extra` : ""}` : "cards"},
+      {value:`${s.total ? Math.round((s.owned / s.total) * 100) : 0}%`,label:"owned"},
+      {value:`${usd(s.buy, 0)}${s.unknown ? "+" : ""}`,label:`to finish${s.unknown ? " · some unpriced" : ""}`},
+      ...(s.total ? [{value:shown ?? "—",label:shown == null ? "power unavailable" : "power",attrs:`data-act="tDeckTab" data-deck="${esc(d.id)}" data-id="insights"`}] : [])],
+    actions:[
+      {label:"Playtest",primary:true,attrs:`data-act="tDeckTab" data-deck="${esc(d.id)}" data-id="playtest"`},
+      {label:`Export ${SOURCES[g].exportExt === "ydk" ? ".ydk" : "list"}`,attrs:`data-act="tDeckExport" data-id="${esc(d.id)}"`}],
+    status:`${buildCheck && (!buildCheck.ready || !buildCheck.purchaseEstimateVerified || buildCheck.summoningReview.length) ? `<p class="small warn-text ds-status">${buildCheck.open ? `Incomplete draft: ${buildCheck.open} slots remain. ` : !buildCheck.legalChecked ? "Draft: deck checks still need review. " : buildCheck.missingRequiredSeeds.length ? `Draft: required build-around card missing: ${esc(buildCheck.missingRequiredSeeds.map(s => s.name).join(", "))}. ` : buildCheck.missingEnergy ? `Draft: ${buildCheck.missingEnergy} intended Energy copies are still missing. ` : !buildCheck.ready ? "Draft: the requested purchase budget is not verified. " : ""}${buildCheck.summoningReview.length ? `${buildCheck.coreRouteUnverified ? `${buildCheck.ready ? "Complete list" : "Draft"}, core route unverified` : `${buildCheck.ready ? "Complete list" : "Draft"} · Extra Deck summoning needs review`}. ${esc(buildCheck.summoningReview.map(x => x.explanation).join(" "))} ` : ""}${buildCheck.unpricedPurchaseCopies ? `Known purchase subtotal only; ${buildCheck.unpricedPurchaseCopies} missing copies are unpriced. Total purchase cost is unverified, not free.` : ""}</p>` : ""}`})}
   <nav class="tabs" role="tablist">${[["cards", "Cards", "cardStack"], ["rules", "Rules", "book"], ["insights", "Power", "trophy"], ["matchups", "Matchups", "sword"], ["upgrade", "Upgrade lab", "build"], ["playtest", "Playtest", "random"], ["versions", "Versions", "viewStacks"]].map(([id, l, icon]) => `<button role="tab" aria-selected="${tab === id}" class="${tab === id ? "on" : ""}" data-act="tDeckTab" data-deck="${esc(d.id)}" data-id="${id}">${labelIcon(icon)}${l}</button>`).join("")}</nav>
   <div class="deck-body">${tab === "rules" ? interactiveRules(g, {format:d.format}) : tab === "insights" ? deckInsights(g, d, f, s) : tab === "matchups" ? deckMatchupsT(g, d, f) : tab === "upgrade" ? deckUpgradeTab(g, d, f, s) : tab === "playtest" ? deckPlaytest(g, d, f) : tab === "versions" ? deckVersions(g, d) : deckCardsTab(g, d, f, s, issues)}</div>`;
 }
@@ -4025,6 +4040,7 @@ export function registerTcg(c) {
       attribution,
       sourceUrl: d.url,
       sourceLabel: G === "ygo" ? "YGOPRODeck" : "Limitless",
+      formatLabel: GAMES[G].short,
       rowsFn: () => rowsOf(d),
       listsFn: () => meta.decks.map(rowsOf),
       generic: (k) => genericKeys.has(k) || [...genericKeys].some(name => String(name).toLowerCase() === k),
