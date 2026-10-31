@@ -3840,7 +3840,7 @@ function homeAppSources(g){
  const N=communityState(g).data;
  return {
   decks:decks.map(d=>({title:d.name||'Untitled deck',sub:[d.commander,d.format].filter(Boolean).join(' · '),route:(mtg?'#deck/':'#tdeck/')+encodeURIComponent(d.id)})),
-  sets:sets.filter(x=>!x.digital).map(x=>({title:x.name,code:x.code||x.id||'',sub:[String(x.code||'').toUpperCase(),year(x.released_at||x.releaseDate||x.date)].filter(Boolean).join(' · '),icon:mtg?x.icon:'',route:'#set/'+encodeURIComponent(mtg?String(x.code).toLowerCase():x.id)})),
+  sets:sets.filter(x=>!x.digital).map(x=>({title:x.name,code:x.code||x.id||'',sub:[String(x.code||'').toUpperCase(),year(x.released_at||x.releaseDate||x.date)].filter(Boolean).join(' · '),icon:mtg?x.icon:'',act:mtg?'set':'tSet',data:mtg?{code:x.code}:{id:x.id}})),
   meta,
   wiki:[],
   news:(N?.items||[]).filter(x=>x.title).map(x=>({title:x.title,sub:typeof x.source==='string'?x.source:(x.source?.name||x.sourceName||''),url:communitySlideUrl(g,x)})).filter(x=>x.url),
