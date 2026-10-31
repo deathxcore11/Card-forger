@@ -311,6 +311,7 @@ Object.assign(C,{
  banish:{name:'Banishing Light',e:3,r:'U',aim:'enemy',kind:'Enchantment',g:'☼',text:f=>`Banish target minion. Against a legendary or planeswalker, deal ${f?9:6} damage instead.`,play:(f,t)=>{if(t.rank)hit(t,f?9:6);else{t.banishT=c.turn;t.pop=(t.pop||0)+t.hp;t.hp=0}}},
  anthem:{name:'Glorious Anthem',e:2,r:'U',kind:'Enchantment',g:'♫',power:1,text:f=>f?'Allies get +1/+1 this fight. Heal 3.':'Allies get +1/+1 this fight.',play:f=>{c.anthem=(c.anthem||0)+1;if(f)heal(3)}},
  serra:{name:'Serra Angel',e:4,r:'U',kind:'Creature · Angel',g:'S',ally:f=>({p:f?5:4,t:4,flying:1,vigilance:1,skylord:1}),text:f=>`${f?5:4}/4. Flying, vigilance. Other allies with flying get +1/+1.`},
+ law:{col:'W',name:"Gideon's Lawkeeper",e:1,r:'U',kind:'Creature · Soldier',g:'⚖',ally:f=>({p:1,t:f?2:1,law:1}),text:f=>`1/${f?2:1}. Tap it and pay 1 energy: tap an enemy. It skips its next attack.`},
  eagle:{name:'Empyrean Eagle',e:3,r:'U',kind:'Creature · Bird Spirit',g:'E',ally:f=>({p:f?3:2,t:2,flying:1,skylord:1}),text:f=>`${f?3:2}/2. Flying. Other allies with flying get +1/+1.`},
  marshal:{name:'Benalish Marshal',e:3,r:'R',kind:'Creature · Knight',g:'B',ally:f=>({p:f?3:2,t:f?3:2,marshal:1}),text:f=>`${f?'3/3':'2/2'}. Other allies get +1/+1.`},
  baneslayer:{name:'Baneslayer Angel',e:5,r:'R',kind:'Creature · Angel',g:'B',ally:f=>({p:f?4:3,t:4,flying:1,first:1,lifelink:1}),text:f=>`${f?4:3}/4. Flying, first strike, lifelink.`},
@@ -465,7 +466,7 @@ let POOL=POOL_ALL.filter(k=>C[k].col==='R'||C[k].col==='C');
 const RSTEP=['M','R','U','C'],poolOf=r=>{const i=Math.max(0,RSTEP.indexOf(r)),by=x=>POOL.filter(k=>C[k].r===x);for(const x of [...RSTEP.slice(i),...RSTEP.slice(0,i).reverse()]){const pl=by(x);if(pl.length)return pl}return POOL_ALL.filter(k=>C[k].r==='C')};
 const setHero=k=>{HERO=HEROES[k]||HEROES.R;POOL=POOL_ALL.filter(x=>C[x].col===HERO.key||C[x].col==='C');if(typeof document!=='undefined'&&document.body)document.body.dataset.hero=HERO.key};
 // Emblems tagged with a hero colour only appear for that hero.
-const forHero=k=>!EMB[k].dungeon&&(!EMB[k].col||EMB[k].col===HERO.key);
+const forHero=k=>!EMB[k].dungeon&&(!EMB[k].col||EMB[k].col===HERO.key)&&(!EMB[k].belt||beltOn());
 const mk=key=>({id:++uid,key,foil:false});
 // Formation is the combat model. The hero-screen toggle (or ?form=0, localStorage pw-form=0) turns on the old rules.
 const FORM=typeof PW_FORM!=='undefined'?!!PW_FORM:(()=>{try{if(/[?&]form=0/.test(location.search))return false;if(/[?&]form=1/.test(location.search))return true;return localStorage.getItem('pw-form')!=='0'}catch(e){return true}})();
@@ -497,6 +498,12 @@ const EMB={
  dawn:{col:'W',name:'Emblem of the Dawn',g:'☀',text:"Elspeth's +1 summons two 2/1 Soldiers instead of one 1/1. With formation on, a Soldier at the front gets +0/+1."},
  beacon:{col:'W',name:'Emblem of the Beacon',g:'✧',r:'R',text:'Whenever you heal, deal 1 damage to each enemy. The first time each turn, deal 2 instead.'},
  legion:{col:'R',name:'Emblem of the Legion',g:'⚑',r:'R',text:'The first Goblin that enters each turn brings a 2/1 Goblin token with haste.'},
+ // 4.3.44 (beta lane art Checked): step-3 Exile and Token Belt emblems; belt ones only roll while the belt is on (EMB_NEEDS)
+ cinders:{col:'R',name:'Emblem of Cinders',g:'✶',text:'Whenever a card is exiled, deal 2 damage to the front enemy.'},
+ bandolier:{name:'Bandolier of the Gatewatch',g:'▤',belt:1,text:'Your Token Belt gets a fourth slot.'},
+ scrap:{name:'Scrap Reliquary',g:'⚙',belt:1,text:'Whenever you sacrifice a token, deal 2 damage to the front enemy.'},
+ satchel:{name:"Alchemist's Satchel",g:'♜',r:'R',belt:1,text:'The first token you sacrifice each fight comes back at the end of the fight.'},
+ archive:{name:'Emblem of the Archive',g:'⌘',r:'R',text:'Once each fight, the first card you exile comes back to your hand at the end of your turn. Not Ultimatums.'},
 };
 // An item's effect, with any drawback on its own red cost line.
 const starterList=h=>{const n={};h.starter.forEach(k=>n[k]=(n[k]||0)+1);return Object.entries(n).map(([k,v])=>`<span>${v>1?v+' ':''}${C[k].name}</span>`).join('')};
@@ -824,7 +831,7 @@ function play(i,t,m){
   for(const a of [...c.allies]){if(a.snipe){spellFx('embers','foes');c.enemies.forEach(e=>hit(e,a.snipe))}if(a.pyro)summon({p:1,t:1,haste:1},'Elemental')}
  }
  if(card.shield2)shield(2);
- c.hand.splice(i,1);if(card.fbCast){card.fbCast=0;(c.fbUsed=c.fbUsed||[]).push(card.id);c.exile.push(card)}else if(d.ultimatum){run.deck=run.deck.filter(x=>x.id!==card.id);c.exile.push(card);exiled(card);spellFx('ultimatum-shatter',c)}else if(d.exile&&!card.stamp)exiled(card,1);else if(!d.power)c.discard.push(card);
+ c.hand.splice(i,1);if(card.fbCast){card.fbCast=0;(c.fbUsed=c.fbUsed||[]).push(card.id);c.exile.push(card);spellFx('flashback-ghost',c)}else if(d.ultimatum){run.deck=run.deck.filter(x=>x.id!==card.id);c.exile.push(card);exiled(card);spellFx('ultimatum-shatter',c)}else if(d.exile&&!card.stamp)exiled(card,1);else if(!d.power)c.discard.push(card);
  if(!d.ally&&run.emblems.includes('embers')){c.enemies.forEach(e=>hit(e,1));if(!c.embered){c.embered=1;heal(1)}}
  if(!d.ally&&c.ult)c.enemies.forEach(e=>hit(e,3));
  c.pickId=null;
@@ -840,6 +847,7 @@ function attack(a,t){
  if(!ready(a))return;
  if(!t){t=solo();if(!t){c.pending={kind:'atk',id:a.id,aim:'enemy'};c.log=`${a.name}: choose an enemy to attack.`;return render()}}
  c.pending=null;
+ if(a.law&&!ALLATK&&c.energy>=1&&!t.tapN&&!(t.rank&&t.ccUsed)){c.energy--;a.tapped=true;a.swung=true;hold(t);c.log=`${a.name} taps ${t.name}: it skips its next attack.`;return after()}/* Gideon's Lawkeeper: pay 1 and tap it to tap an enemy (Attack all still swings) */
  if(a.yhero){a.p++;a.t++}
  if(c.sigil&&c.sigilT!==c.turn){c.sigilT=c.turn;const k=c.sigil*(c.allies.length-1);if(k){a.temp1=(a.temp1||0)+k;a.tough4=(a.tough4||0)+k;juice(`+${k} Sigil`)}}
  const dmg=pow(a)+(a.raid||0), eFirst=E[t.key].first&&!fst(a);
@@ -862,7 +870,7 @@ function deal(a,t,n){
  return before-t.hp;
 }
 function bombard(a,t){if(!c.bombard||!a||!t)return;c.pending=null;a.dmg=999;hit(t,c.bombard);c.log=`${a.name} is flung at ${t.name} for ${c.bombard}.`;after()}
-function attackAll(){c.pending=null;for(const a of [...c.allies]){if(!alive().length)break;if(c.allies.includes(a)&&ready(a)){attack(a,alive()[0]);if(view!=='battle')return}}}
+let ALLATK=0;function attackAll(){c.pending=null;ALLATK=1;try{for(const a of [...c.allies]){if(!alive().length)break;if(c.allies.includes(a)&&ready(a)){attack(a,alive()[0]);if(view!=='battle')return}}}finally{ALLATK=0}}
 function ability(minus,t){
  if(c.used||c.busy)return;
  if(!minus&&!t&&HERO.plusAim){t=solo();if(!t){c.pending={kind:'plus',aim:'enemy'};c.log=`${HERO.short} +1: choose an enemy.`;return render()}}
@@ -907,6 +915,7 @@ function endTurn(){if(c)c.arrange=false;
  c.bank=0;
  {const t=c.stats.dealt-c.turnStart;c.stats.bestTurn=Math.max(c.stats.bestTurn||0,t);run.bestTurn=Math.max(run.bestTurn||0,t)}
  c.discard.push(...c.hand);c.hand=[];
+ if(c.archived&&c.archived!==-1){const k=c.exile.find(x=>x.id===c.archived);if(k){c.exile.splice(c.exile.indexOf(k),1);c.hand.push(k);juice('Archive')}c.archived=-1}/* Emblem of the Archive: the first card you exiled waits in your hand for next turn */
  c.busy=true;c.log='Enemy turn…';render();
  later(enemyTurn,Math.round(stepMs()*.7));// a beat on 'Enemy turn…' before the first one moves
 }
@@ -1116,13 +1125,17 @@ function enemyInfo(e){const d=E[e.key];const tr=[e.clock&&`${(run.act||1)>1?'The
 const popOf=o=>{let s='';if(o.pop)s+=`<span class="pop${o.pop>=8?' big':''}" style="font-size:${(1.1+Math.min(o.pop,20)/14).toFixed(2)}rem">−${o.pop}</span>`;if(o.heal)s+=`<span class="pop heal">+${o.heal}</span>`;o.pop=0;o.heal=0;return s};
 // {R} {W} {C} {2} in rules text become mana symbols, so the text reads like a real card.
 const manaSyms=t=>String(t).replace(/\{([WUBRGC0-9])\}/g,(m,k)=>/[WUBRG]/.test(k)?`<i class="ms pwk-mana" data-c="${k}" role="img" aria-label="${k}"></i>`:`<i class="ms ms-g" role="img" aria-label="${k==='C'?'colorless':k}">${k==='C'?'◇':k}</i>`);
-const cardHtml=(card,attrs='')=>{const d=C[card.key];const r={S:'Starter',C:'Common',U:'Uncommon',R:'Rare',M:'Mythic',K:'Curse'}[d.r];return `<button class="card${card.foil?' foil':''}" data-n="${d.name}" data-rar="${d.r}" data-col="${d.col||''}" ${attrs}>${d.ultimatum?'<i class="pw-ult" aria-hidden="true"></i>':''}<span class="head"><b>${d.name}${card.foil?' ✦':''}</b><span class="cost">${c&&view==='battle'?costOf(card):d.e}</span></span><span class="pic">${d.g}</span><span class="kind" data-audit-repeat>${d.r==='K'||d.r==='S'?d.kind+(d.r==='S'?' · '+r:''):d.kind+'<i class="gem" role="img" aria-label="'+r+'" title="'+r+'"></i>'}</span><span>${manaSyms(d.text(card.foil))}</span></button>`};
+const cardHtml=(card,attrs='')=>{const d=C[card.key];const r={S:'Starter',C:'Common',U:'Uncommon',R:'Rare',M:'Mythic',K:'Curse'}[d.r];return `<button class="card${card.foil?' foil':''}" data-n="${d.name}" data-rar="${d.r}" data-col="${d.col||''}" ${attrs}>${d.ultimatum?'<i class="pw-ult" aria-hidden="true"></i>':''}<span class="head"><b>${d.name}${card.foil?' ✦':''}</b><span class="cost">${c&&view==='battle'?costOf(card):d.e}</span></span><span class="pic">${d.g}</span><span class="kind" data-audit-repeat>${d.r==='K'||d.r==='S'?d.kind+(d.r==='S'?' · '+r:''):d.kind+'<i class="gem" role="img" aria-label="'+r+'" title="'+r+'"></i>'}</span><span>${kwGlyph(manaSyms(d.text(card.foil)))}</span></button>`};
+/* 4.3.44: painted keyword glyphs (beta lane C) sit before Exile and Flashback in card text */
+const kwGlyph=t=>t.replace(/\b(Exile|Flashback)\b/g,(m,k)=>`<i class="pw-kwg" data-g="${k.toLowerCase()}" aria-hidden="true"></i>${k}`);
 const kws=a=>['haste','flying','reach','first','vigilance','deathtouch','lifelink','trample','defender'].filter(k=>a[k]||(k==='first'||k==='lifelink')&&akr(a)).map(k=>k==='first'?'first strike':k).join(' · ');
 
 // The escalation dial: fills toward Doom; the number is the turns left before Doom.
 function escDial(){const a=run.act||1,face=a>1?'maw':'moon',name=a>1?'The Hunger':'Nightfall',t=c.turn,DT=fightDoomT(),doom=t>=DT,left=DT-t;
+ /* Act 1 painted Nightfall faces (beta lane C): 1 before escalation, 2-4 as Doom nears, then the blood moon */
+ const n=a>1?'':doom?'doom':t<ESC_T?'1':String(Math.min(4,2+Math.floor(2*(t-ESC_T)/Math.max(1,DT-1-ESC_T))));
  const lab=doom?`${name}: Doom. Enemies grow fast and trample`:t>=ESC_T?`${name}: enemies grow every turn. Doom in ${left}`:`${name} comes on turn ${ESC_T}. Doom on turn ${DT}`;
- return `<span class="pw-esc${doom?' doom':t>=ESC_T?' on':''}" data-face="${face}" style="--f:${Math.min(1,t/DT).toFixed(3)}" role="img" aria-label="${lab}" title="${lab}">${ico(doom?'skull':face)}${doom?'':`<b>${left}</b>`}</span>`}
+ return `<span class="pw-esc${doom?' doom':t>=ESC_T?' on':''}" data-face="${face}"${n?` data-n="${n}"`:''} style="--f:${Math.min(1,t/DT).toFixed(3)}" role="img" aria-label="${lab}" title="${lab}">${ico(doom?'skull':face)}${doom?'':`<b>${left}</b>`}</span>`}
 function topBar(){
  // the deck list is a strip per card, with its art, cheapest first; tap or point at one for its text
  const counts={};run.deck.forEach(x=>{const k=x.key+(x.foil?'*':'');(counts[k]=counts[k]||{key:x.key,foil:!!x.foil,q:0}).q++});
