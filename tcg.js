@@ -1371,7 +1371,8 @@ export function provenSheetHtml() {
     stats:[
       {value:`${total}`,label:side.length ? `main · ${side.reduce((a, r) => a + r.qty, 0)} sideboard` : "cards"},
       {value:`${have}/${total}`,label:spec.rows.some(r=>r.assumedOwned) ? "covered" : "owned"},
-      {cls:"proven-sum",value:have >= total ? "complete ✓" : usd(M.full, 0),label:have >= total ? "to finish" : unpriced ? `known subtotal · ${unpriced} unpriced · Incomplete total` : "to finish"}],
+      {cls:"ds-cost",value:have >= total ? "complete ✓" : usd(M.full, 0),label:have >= total ? "to finish" : unpriced ? `known subtotal · ${unpriced} unpriced · Incomplete total` : "to finish"}],
+    owned:total ? have / total : 0,
     actions:[
       {label:saveLabel,primary:true,attrs:'data-act="provenSave"',disabled:saving || mode === "budget" && incomplete},
       ...(have < total && mode !== "budget" ? [{label:"Cheapest way in",attrs:'data-act="provenMode" data-id="budget"'}] : []),
@@ -1429,6 +1430,7 @@ export function tcgDeck(id) {
       {value:`${s.total ? Math.round((s.owned / s.total) * 100) : 0}%`,label:"owned"},
       {value:`${usd(s.buy, 0)}${s.unknown ? "+" : ""}`,label:`to finish${s.unknown ? " · some unpriced" : ""}`},
       ...(s.total ? [{value:shown ?? "—",label:shown == null ? "power unavailable" : "power",attrs:`data-act="tDeckTab" data-deck="${esc(d.id)}" data-id="insights"`}] : [])],
+    owned:s.total ? s.owned / s.total : 0,
     actions:[
       {label:"Playtest",primary:true,attrs:`data-act="tDeckTab" data-deck="${esc(d.id)}" data-id="playtest"`},
       {label:`Export ${SOURCES[g].exportExt === "ydk" ? ".ydk" : "list"}`,attrs:`data-act="tDeckExport" data-id="${esc(d.id)}"`}],

@@ -279,7 +279,7 @@ async function readableBuildSeed(page,x,label){
 async function flowResult(page){
  return page.evaluate(()=>{const r=document.querySelector('#sheetBody .deck-flow-result');if(!r)return {ok:false,alert:document.querySelector('#sheetBody [role="alert"]')?.textContent.trim()||''};
   const rows=[...r.querySelectorAll('[data-act="flowCard"]')].map(n=>({qty:Number(n.dataset.flowQty),name:n.dataset.flowName,price:n.lastElementChild.textContent.trim()}));
-  return {ok:true,text:r.innerText,rows,total:rows.reduce((n,x)=>n+x.qty,0),price:r.querySelector('.deck-result-price')?.innerText||''};});
+  return {ok:true,text:r.innerText,rows,total:rows.reduce((n,x)=>n+x.qty,0),price:r.querySelector('.ds-cost')?.innerText||''};});
 }
 async function generate(page,budget){
  await page.locator('.deck-flow .settings-disclosure summary').click();await page.locator('[data-flow-field="budgetMode"]').selectOption('target');await page.locator('.deck-flow .settings-disclosure summary').click();

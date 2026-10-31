@@ -116,8 +116,9 @@ export function deckResultMarkup(result,id,{coach='',saved=false,saving=false}={
    stats:[
     {value:String(pricing.copies),label:'cards'},
     {value:`${pricing.ownedCopies}/${pricing.copies}`,label:'owned'},
-    {value:pricing.estimate===null&&!pricing.subtotal?'—':usd(pricing.estimate??pricing.subtotal,0)+(pricing.estimate===null?'+':''),label:`${pricing.estimate===null?(pricing.subtotal?'Known subtotal':'No checked prices yet'):'Reference estimate'} · ${pricing.basis==='purchase'?'to finish':'whole deck'}`,cls:'deck-result-price'},
+    {value:pricing.estimate===null&&!pricing.subtotal?'—':usd(pricing.estimate??pricing.subtotal,0)+(pricing.estimate===null?'+':''),label:`${pricing.estimate===null?(pricing.subtotal?'Known subtotal':'No checked prices yet'):'Reference estimate'} · ${pricing.basis==='purchase'?'to finish':'whole deck'}`,cls:'ds-cost'},
     ...(result.power?[{value:String(shownPower(result.power)??'—'),label:shownPower(result.power)==null?'power unavailable':'power'}]:[])],
+   owned:pricing.copies?pricing.ownedCopies/pricing.copies:0,
    actions:[
     {label:saved?'Saved to My decks':saving?'Saving…':'Save deck',primary:true,attrs:`data-act="flowSave" data-result="${esc(id)}"`,disabled:saved||saving},
     {html:coach},

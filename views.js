@@ -1139,6 +1139,7 @@ export function deckPage() {
       // An incomplete draft has empty slots, so a purchase total would mislead.
       mainCopies < target ? {value:`${target - mainCopies}`,label:"open slots",tone:"warn"} : {value:usd(t.pricedGap, 0)+(t.unpriced ? "+" : ""),label:t.unpriced ? "to finish · some unpriced" : "to finish"},
       {value:power ?? "—",label:power == null ? "power unavailable" : "power",attrs:'data-act="deckTab" data-id="engine"'}],
+    owned:t.copies ? t.covered / t.copies : 0,
     actions:[
       {html:`<button class="btn ds-primary deck-play-cpu cs-plate" data-act="deckPlayCpu" data-id="${esc(d.id)}" data-desktop-play-entry="practice" hidden disabled><span class="cs-plate-label">Play vs CPU</span></button>`},
       {label:"Playtest",attrs:'data-act="deckTab" data-id="playtest"'},

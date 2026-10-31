@@ -135,13 +135,15 @@ export function wireDeckViewKeyboard(root=globalThis.document){
 // Original / Budget / My cards switch. Each source only fills in the slots.
 // art: image URL, or artHtml for a game-specific crop. stats: [{value,label,tone,attrs}].
 // actions: [{label,attrs,primary,disabled,html}] (html passes a prepared control through).
-export function deckShell({game,source='mine',art='',artHtml='',title='',back='',menu='',badge='',format='',legality='',line='',stats=[],actions=[],versions='',status=''}){
+export function deckShell({game,source='mine',art='',artHtml='',title='',back='',menu='',badge='',format='',legality='',line='',stats=[],owned=null,actions=[],versions='',status=''}){
  const hero=artHtml||(art?`<img class="hero-art" src="${esc(art)}" alt="" loading="lazy" referrerpolicy="no-referrer" onerror="this.remove()">`:'');
  const stat=s=>{const tag=s.attrs?'button':'span';return `<${tag} class="ds-stat${s.tone?' '+esc(s.tone):''}${s.cls?' '+esc(s.cls):''}" ${s.attrs?'type="button" '+s.attrs:''}><b>${s.value}</b><span>${esc(s.label)}</span></${tag}>`;};
  const act=a=>a.html||`<button type="button" class="btn${a.primary?' ds-primary':' ghost'}" ${a.attrs||''} ${a.disabled?'disabled':''}>${a.label}</button>`;
- return `<section class="deck-hero deck-hero--feature ds-hero" data-deck-source="${esc(source)}" data-game="${esc(game)}">${hero}<div class="hero-shade"></div>
+ const pct=Number.isFinite(owned)?Math.round(Math.min(1,Math.max(0,owned))*100):null;
+ return `<section class="deck-hero ds-hero" data-deck-source="${esc(source)}" data-game="${esc(game)}">${hero}<div class="hero-shade"></div>
   <div class="hero-body"><div class="row between ds-nav">${back||'<span></span>'}${menu||'<span></span>'}</div>
    <div class="deck-hero-id"><p class="deck-hero-eyebrow">${badge?`<span class="chip dark ds-badge">${badge}</span>`:''}${format}${legality}</p><h1>${esc(title)}</h1>${line?`<p class="ds-line">${line}</p>`:''}</div>
-  </div>
-  <div class="ds-head">${stats.length?`<div class="ds-stats" style="--ds-n:${stats.length}">${stats.map(stat).join('')}</div>`:''}${actions.length?`<div class="ds-actions">${actions.map(act).join('')}</div>`:''}${status}${versions?`<div class="ds-versions">${versions}</div>`:''}</div></section>`;
+   <div class="ds-foot">${stats.length?`<div class="ds-stats">${stats.map(stat).join('')}</div>`:''}${pct!==null?`<span class="ds-bar" role="img" aria-label="${pct}% owned"><i style="width:${pct}%"></i></span>`:''}</div>
+  </div></section>
+ <div class="ds-head">${actions.length?`<div class="ds-actions">${actions.map(act).join('')}</div>`:''}${status}${versions?`<div class="ds-versions">${versions}</div>`:''}</div>`;
 }
