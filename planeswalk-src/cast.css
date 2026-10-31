@@ -1,0 +1,225 @@
+/* Planeswalk cast: painted figures stand on the field (pw-cast.js). A unit with a figure drops its portrait seal;
+   its .art box is the figure's own box (height --pw-fh from the field, width from the figure's shape), feet on the
+   bottom edge, with a ground shadow drawn by the rig. The canvas reaches past the box so a lunge never clips. */
+#app .battle .field>.side{align-items:flex-end!important}
+#app#app#app .battle .unit.pw-fig{width:auto!important;flex:none!important;min-width:0!important;max-width:none!important}/* three ids: the skin's crowd rules (tall screens, five foes) pin unit widths with !important */
+#app .battle .unit.pw-fig>.art{width:calc(var(--pw-fh,120px) * var(--k,1) * var(--ar,1))!important;height:calc(var(--pw-fh,120px) * var(--k,1))!important;aspect-ratio:auto!important;max-width:none!important;
+ background:none!important;box-shadow:none!important;border:0!important;border-radius:0!important;overflow:visible!important;padding:0!important;display:block!important;position:relative;
+ transition:none!important;animation:none!important;transform:none!important;outline:none!important;filter:none!important}
+#app .battle .unit.pw-fig>.art::after,#app .battle .unit.pw-fig>.art::before{display:none!important}
+#app .battle .unit.pw-fig>.art>canvas.pw-cast{position:absolute;left:-22%;width:144%;top:-8%;height:108%;pointer-events:none;z-index:0;display:block}
+#app .battle .unit.pw-fig>.art>.tag,#app .battle .unit.pw-fig>.art>.glyph{display:none!important}
+/* the Test Fight bar: wide under the feet, the life written inside it, red for everyone */
+#app .battle .unit.pw-fig>.bar{position:relative;overflow:hidden!important;width:84%!important;margin-inline:auto!important;height:15px!important;border-radius:4px!important;background:#1a0608!important;box-shadow:0 0 0 1px #000,inset 0 0 0 1px #ffffff1f!important}
+#app .battle .unit.pw-fig>.bar>i{display:block;height:100%!important;border-radius:0!important;background:linear-gradient(180deg,#d94a33,#8f1f14)!important}
+#app .battle .unit.pw-fig>.bar::after{content:attr(data-hp);position:absolute;inset:0;z-index:2;display:grid;place-items:center;font:700 11px/1 var(--display,serif);color:#ffe9dc;text-shadow:0 1px 1px #000,0 0 2px #000;letter-spacing:.02em;pointer-events:none}
+#app .battle .unit.pw-fig>.bar>.stats{display:none!important}
+/* aim: a ring on the ground instead of a dashed frame */
+#app .battle .foe .unit.pw-fig.aim>.art::before{display:block!important;content:"";position:absolute;left:4%;right:4%;bottom:-5%;height:14%;border:2px dashed var(--gold,#e8b95b);border-radius:50%;opacity:.9;pointer-events:none}
+#app .battle .foe .unit.pw-fig.aim:hover>.art::before,#app .battle .foe .unit.pw-fig.aim.pw-over>.art::before{border-style:solid;box-shadow:0 0 14px -2px var(--gold,#e8b95b)}
+#app .battle .foe .unit.pw-fig.acting>.art,#app .battle .unit.pw-fig.struck>.art,#app .battle.your-turn .side.you .unit.pw-fig>.art,#app .battle.foes-turn .side.foe .unit.pw-fig>.art,.battle.dawnlit .side:not(.foe) .unit.pw-fig .art{box-shadow:none!important;animation:none!important;transform:none!important}
+/* damage numbers wait for the impact beat */
+#app .battle .unit.pw-hold .pop{animation-play-state:paused!important;visibility:hidden}
+/* allies still wear their seals: a lunge when they attack, a recoil when they are hit */
+#app .battle .unit.ally.pw-lunge>.art{animation:pwLunge .56s ease-out!important}
+@keyframes pwLunge{0%{transform:none}27%{transform:translateX(-5%)}45%{transform:translateX(16%) scale(1.04)}55%{transform:translateX(16%) scale(1.04)}100%{transform:none}}
+#app .battle .unit.ally.pw-recoil>.art{animation:pwRecoil .48s ease-out!important}
+@keyframes pwRecoil{12%{transform:translateX(-7%);filter:brightness(1.5) sepia(.5) hue-rotate(-30deg) saturate(2.5)}60%{transform:translateX(-2%);filter:none}100%{transform:none}}
+@media (prefers-reduced-motion:reduce){#app .battle .unit.ally.pw-lunge>.art,#app .battle .unit.ally.pw-recoil>.art{animation:none!important}}
+/* effects fly on a fixed layer above the field, under dialogs */
+.pw-cast-fx{position:fixed;inset:0;z-index:40;pointer-events:none;overflow:hidden}
+.pw-cast-fx .fxe{position:absolute;pointer-events:none;will-change:transform,opacity}
+.pw-cast-fx .spark{width:34px;height:34px;margin:-17px 0 0 -17px;border-radius:50%}
+.pw-cast-fx .bolt{height:5px;margin-top:-2.5px;border-radius:3px}
+.pw-cast-fx .ring{border:2px solid;border-radius:50%;box-sizing:border-box}
+.pw-cast-fx .dot{width:4px;height:4px;margin:-2px 0 0 -2px;border-radius:50%}
+.pw-cast-fx .puff{width:14px;height:8px;margin:-4px 0 0 -7px;border-radius:50%;background:radial-gradient(ellipse,#c9b79a 0,#8a7a5e88 55%,#8a7a5e00 75%)}
+.pw-cast-fx .drop{transform-origin:50% 0;height:auto}
+.pw-cast-fx canvas.pw-cast{pointer-events:none}
+/* the held copy of a figure (long press) shows its idle pose at card size */
+.pw-zoom .unit.pw-fig{width:auto!important}
+.pw-zoom .unit.pw-fig>.art{--pw-fh:min(220px,38vh);width:calc(var(--pw-fh) * var(--ar,1))!important;height:var(--pw-fh)!important;aspect-ratio:auto!important;background:none!important;box-shadow:none!important;border:0!important;border-radius:0!important;overflow:visible!important;padding:0!important;display:block!important;position:relative;margin:0 auto}
+.pw-zoom .unit.pw-fig>.art::after,.pw-zoom .unit.pw-fig>.art>.tag,.pw-zoom .unit.pw-fig>.art>.glyph{display:none!important}
+.pw-zoom .unit.pw-fig>.art>canvas.pw-cast{position:absolute;left:-22%;width:144%;top:-8%;height:108%;pointer-events:none}
+.pw-zoom .unit.pw-fig>.art>.stats{position:absolute;right:0;bottom:0}
+/* perf readout */
+.pw-cast-perf{position:fixed;left:50%;top:max(4px,env(safe-area-inset-top,0px));translate:-50% 0;z-index:200;font:600 11px/1.3 var(--mono,monospace);color:#ffe7a8;background:#0b0d12d9;border:1px solid #ffffff2a;border-radius:8px;padding:3px 8px;pointer-events:none;white-space:nowrap}
+/* the battle camera (touch.js) zooms seals to fill the field; figures are sized to the field already */
+#app .battle .field.pw-stage>.side{zoom:1!important}
+/* beside figures: allies are small seals at the hero's feet, empty slots vanish, a thrall keeps a half-size seal */
+#app .battle .field.pw-stage .side.you .slot{display:none!important}
+#app#app#app .battle .field.pw-stage .side.you .unit.ally:not(.pw-fig){width:max(var(--pw-tap,44px),calc(var(--pw-fh,120px) * .42))!important;flex:none!important}
+#app#app#app .battle .field.pw-stage .side.foe .unit:not(.pw-fig){width:max(var(--pw-tap,44px),calc(var(--pw-fh,120px) * .5))!important;flex:none!important}
+/* a crowd: the foes take the row above the hero, each row sized on its own */
+/* tiny ally seals keep their art and stats; the name shows on hold or hover */
+#app .battle .field.pw-small .side.you .unit.ally>.name,#app .battle .field.pw-small .side.foe .unit:not(.pw-fig)>.name{display:none!important}
+/* no name plate under a figure (Test Fight look): the name shows on hover and hold and on the zoom card; in a crowd the hero's incoming chip clears the foe row above */
+#app .battle .unit.pw-fig>.name{display:none!important}
+/* a blocker's kill-preview chip keeps the name's row under the seal, clear of the stats pill */
+#app .battle .field.pw-small .side.you .unit.ally:has(>.pv)>.name{display:block!important;visibility:hidden}
+/* ally figures: the p/t pill sits at the feet, the status tag over the head, the kill chip below, and a ready one stands on a blue ring */
+#app .battle .unit.ally.pw-fig>.art>.stats{position:absolute;left:50%;right:auto;bottom:2px;transform:translateX(-50%);z-index:3;margin:0!important;line-height:1.1;padding:0 5px;border-radius:99px;background:#0b0d12e6;box-shadow:0 0 0 1px #ffffff22}
+#app .battle .unit.ally.pw-fig>.art>.tag{display:inline-flex!important;position:absolute;left:50%;top:-6px;translate:-50% 0;margin:0!important;z-index:3;max-width:none}
+#app .battle .unit.ally.pw-fig>.pv{bottom:-18px!important}
+#app .battle .unit.ally.pw-fig.ready>.art::before{display:block!important;content:"";position:absolute;left:4%;right:4%;bottom:-5%;height:14%;border:2px solid #8fdcff;border-radius:50%;box-shadow:0 0 14px -2px #5cc8ff;opacity:.9;pointer-events:none}
+#app .battle .unit.ally.pw-fig.chosen>.art::before{border-color:var(--gold,#e8b95b);box-shadow:0 0 14px -2px var(--gold,#e8b95b)}
+#app .battle .unit.ally.pw-fig.tapped>.art>canvas.pw-cast,#app .battle .unit.ally.pw-fig.sick>.art>canvas.pw-cast{filter:saturate(.6) brightness(.8)}
+/* a figure fight takes the whole width of the stage and stands on the ground just above the hand; the sides keep 20px of air */
+#app .battle .field.pw-stage{grid-column:1/-1!important;column-gap:20px!important;padding-bottom:4px!important;padding-inline:max(16px,calc(var(--pw-fh,120px) * .24))!important;justify-content:space-evenly!important;align-items:end!important}
+#app#app#app .battle .field.pw-stage{align-content:end!important}/* feet low, even when the width limits the figures */
+/* the stage is one ground line: no formation hairlines, no foe-side divider, a faint lit floor band under the feet; the painting's floor line is placed by pw-cast.js */
+#app .battle .field.pw-stage>.side.formation{background:none!important}
+#app#app:not([data-pw-tall]) .battle .field.pw-stage>.side.foe{padding-left:0!important;border-left:0!important;border-image:none!important;background:none!important}
+#app .battle .field.pw-stage::before{content:"";position:absolute;left:6%;right:6%;bottom:0;height:52px;pointer-events:none;z-index:0;background:radial-gradient(50% 15px at 50% calc(100% - 19px),#f3dbb33a,#f3dbb300 72%)}
+#app .battle .field.pw-stage>.side{justify-content:center!important}
+
+/* the loyalty diamond sits at the figure's shoulder, not at the far corner of a wide canvas box (auditor round 4) */
+#app#app .battle .unit.hero.pw-fig .loyal{left:calc(50% + var(--pw-fh,120px) * var(--k,1) * .2)!important;right:auto!important;top:3%!important;transform:none!important}
+
+/* the ground layer: the painted floor between the backdrop (.battle::after, z -2) and the fighters; same treatment as the backdrop, a touch lighter so the floor reads */
+#app .battle.pw-ground::after{background-image:var(--pw-mat,var(--pw-bg))!important;background-size:var(--pw-bg-size)!important;background-position:var(--pw-bg-pos)!important}
+
+/* The painted fight mats (ground built in). The battle picks its mat: one of three areas rolled per fight, the dungeon room, the elite's or the boss's own arena. */
+:root{--pw-x-inn-area-graveyard:url(./planeswalk-art/inn-area-graveyard.webp);--pw-x-inn-area-village:url(./planeswalk-art/inn-area-village.webp);--pw-x-inn-area-manor:url(./planeswalk-art/inn-area-manor.webp);--pw-x-inn-elite-thalia:url(./planeswalk-art/inn-elite-thalia.webp);--pw-x-inn-elite-gisa:url(./planeswalk-art/inn-elite-gisa.webp);--pw-x-inn-elite-olivia:url(./planeswalk-art/inn-elite-olivia.webp);--pw-x-inn-boss-sorin:url(./planeswalk-art/inn-boss-sorin.webp);--pw-x-inn-boss-liliana:url(./planeswalk-art/inn-boss-liliana.webp);--pw-x-inn-boss-avacyn:url(./planeswalk-art/inn-boss-avacyn.webp);--pw-x-inn-dungeon-1:url(./planeswalk-art/inn-dungeon-1.webp);--pw-x-inn-dungeon-2:url(./planeswalk-art/inn-dungeon-2.webp);--pw-x-inn-dungeon-3:url(./planeswalk-art/inn-dungeon-3.webp);--pw-x-zen-area-jungle:url(./planeswalk-art/zen-area-jungle.webp);--pw-x-zen-area-coast:url(./planeswalk-art/zen-area-coast.webp);--pw-x-zen-area-wastes:url(./planeswalk-art/zen-area-wastes.webp);--pw-x-zen-elite-kozilek:url(./planeswalk-art/zen-elite-kozilek.webp);--pw-x-zen-elite-omnath:url(./planeswalk-art/zen-elite-omnath.webp);--pw-x-zen-elite-drana:url(./planeswalk-art/zen-elite-drana.webp);--pw-x-zen-boss-obnixilis:url(./planeswalk-art/zen-boss-obnixilis.webp);--pw-x-zen-boss-ulamog:url(./planeswalk-art/zen-boss-ulamog.webp);--pw-x-zen-boss-nissa:url(./planeswalk-art/zen-boss-nissa.webp);--pw-x-zen-dungeon-1:url(./planeswalk-art/zen-dungeon-1.webp);--pw-x-zen-dungeon-2:url(./planeswalk-art/zen-dungeon-2.webp);--pw-x-zen-dungeon-3:url(./planeswalk-art/zen-dungeon-3.webp);}
+#app#app .battle{--pw-bg:var(--pw-x-inn-area-graveyard)}
+#app#app .battle[data-roll="1"]{--pw-bg:var(--pw-x-inn-area-village)}
+#app#app .battle[data-roll="2"]{--pw-bg:var(--pw-x-inn-area-manor)}
+#app#app .battle[data-dungeon]{--pw-bg:var(--pw-x-inn-dungeon-1)}
+#app#app .battle[data-dungeon][data-room="2"]{--pw-bg:var(--pw-x-inn-dungeon-2)}
+#app#app .battle[data-dungeon][data-room="3"]{--pw-bg:var(--pw-x-inn-dungeon-3)}
+#app#app .battle:has(.unit.elite){--pw-bg:var(--pw-x-inn-elite-thalia)}
+#app#app .battle:has(.unit.elite[data-n^="Gisa"]){--pw-bg:var(--pw-x-inn-elite-gisa)}
+#app#app .battle:has(.unit.elite[data-n^="Olivia"]){--pw-bg:var(--pw-x-inn-elite-olivia)}
+#app#app .battle:has(.unit.boss){--pw-bg:var(--pw-x-inn-boss-sorin)}
+#app#app .battle:has(.unit.boss[data-n^="Olivia"]){--pw-bg:var(--pw-x-inn-elite-olivia)}
+body[data-actnum="2"] #app#app .battle{--pw-bg:var(--pw-x-zen-area-jungle)}
+body[data-actnum="2"] #app#app .battle[data-roll="1"]{--pw-bg:var(--pw-x-zen-area-coast)}
+body[data-actnum="2"] #app#app .battle[data-roll="2"]{--pw-bg:var(--pw-x-zen-area-wastes)}
+body[data-actnum="2"] #app#app .battle[data-dungeon]{--pw-bg:var(--pw-x-zen-dungeon-1)}
+body[data-actnum="2"] #app#app .battle[data-dungeon][data-room="2"]{--pw-bg:var(--pw-x-zen-dungeon-2)}
+body[data-actnum="2"] #app#app .battle[data-dungeon][data-room="3"]{--pw-bg:var(--pw-x-zen-dungeon-3)}
+body[data-actnum="2"] #app#app .battle:has(.unit.elite){--pw-bg:var(--pw-x-zen-elite-kozilek)}
+body[data-actnum="2"] #app#app .battle:has(.unit.elite[data-n^="Omnath"]){--pw-bg:var(--pw-x-zen-elite-omnath)}
+body[data-actnum="2"] #app#app .battle:has(.unit.elite[data-n^="Drana"]){--pw-bg:var(--pw-x-zen-elite-drana)}
+body[data-actnum="2"] #app#app .battle:has(.unit.boss){--pw-bg:var(--pw-x-zen-boss-obnixilis)}
+body[data-actnum="2"] #app#app .battle:has(.unit.boss[data-n^="Kozilek"]){--pw-bg:var(--pw-x-zen-elite-kozilek)}
+
+/* Battle top bar (Randall yes 31 Oct 12:18Z, backgrounds thread mock gothic-topbar.css): no grey band, a gold filigree rail with a centre crest and corner flourishes, plum plates with gold rims; only a soft shade behind the controls so the mat shows above and around the bar. Battle only. */
+#app#app:is(:has(>.battle),:has(>.screen.ante)) .top{background:none!important;isolation:isolate;filter:none!important}
+#app#app:is(:has(>.battle),:has(>.screen.ante)) .top::before{content:"";position:absolute;inset:0 0 6px 0;z-index:-1;pointer-events:none;
+ background:url("data:image/svg+xml,%3Csvg%20xmlns%3D%22http%3A//www.w3.org/2000/svg%22%20width%3D%22300%22%20height%3D%2280%22%20viewBox%3D%220%200%20300%2080%22%3E%3Cdefs%3E%3ClinearGradient%20id%3D%22g%22%20x1%3D%220%22%20y1%3D%220%22%20x2%3D%220%22%20y2%3D%221%22%3E%3Cstop%20offset%3D%220%22%20stop-color%3D%22%23f6dc96%22/%3E%3Cstop%20offset%3D%22.5%22%20stop-color%3D%22%23c79a45%22/%3E%3Cstop%20offset%3D%221%22%20stop-color%3D%22%237a561c%22/%3E%3C/linearGradient%3E%20%3CradialGradient%20id%3D%22e%22%20cx%3D%22.45%22%20cy%3D%22.35%22%20r%3D%22.7%22%3E%3Cstop%20offset%3D%220%22%20stop-color%3D%22%23ffd27a%22/%3E%3Cstop%20offset%3D%22.35%22%20stop-color%3D%22%23e5551f%22/%3E%3Cstop%20offset%3D%221%22%20stop-color%3D%22%234a0a06%22/%3E%3C/radialGradient%3E%20%3ClinearGradient%20id%3D%22d%22%20x1%3D%220%22%20y1%3D%220%22%20x2%3D%220%22%20y2%3D%221%22%3E%3Cstop%20offset%3D%220%22%20stop-color%3D%22%232a1824%22/%3E%3Cstop%20offset%3D%221%22%20stop-color%3D%22%230c070b%22/%3E%3C/linearGradient%3E%3C/defs%3E%20%3Cpath%20d%3D%22M150%208%20C120%208%2096%204%2070%2010%20C52%2014%2040%206%2030%204%20C36%2014%2050%2022%2072%2022%20C96%2022%20116%2020%20128%2028%22%20fill%3D%22none%22%20stroke%3D%22url%28%23g%29%22%20stroke-width%3D%222%22/%3E%20%3Cpath%20d%3D%22M150%208%20C180%208%20204%204%20230%2010%20C248%2014%20260%206%20270%204%20C264%2014%20250%2022%20228%2022%20C204%2022%20184%2020%20172%2028%22%20fill%3D%22none%22%20stroke%3D%22url%28%23g%29%22%20stroke-width%3D%222%22/%3E%20%3Cpath%20d%3D%22M60%2016%20c-8%204%20-10%2012%20-4%2014%20c5%201%206%20-6%202%20-6%20M240%2016%20c8%204%2010%2012%204%2014%20c-5%201%20-6%20-6%20-2%20-6%22%20fill%3D%22none%22%20stroke%3D%22url%28%23g%29%22%20stroke-width%3D%221.5%22/%3E%20%3Ccircle%20cx%3D%22150%22%20cy%3D%2238%22%20r%3D%2231%22%20fill%3D%22url%28%23d%29%22%20stroke%3D%22url%28%23g%29%22%20stroke-width%3D%222.5%22/%3E%20%3Cpath%20d%3D%22M150%2012%20a10%2010%200%200%201%200%2020%20a10%2010%200%200%201%200%20-20%20M150%2044%20a10%2010%200%200%201%200%2020%20a10%2010%200%200%201%200%20-20%20M124%2038%20a10%2010%200%200%201%2020%200%20a10%2010%200%200%201%20-20%200%20M156%2038%20a10%2010%200%200%201%2020%200%20a10%2010%200%200%201%20-20%200%22%20fill%3D%22none%22%20stroke%3D%22url%28%23g%29%22%20stroke-width%3D%221.3%22%20opacity%3D%22.85%22/%3E%20%3Cpath%20d%3D%22M150%2016%20L163%2038%20L150%2061%20L137%2038%20Z%22%20fill%3D%22url%28%23e%29%22%20stroke%3D%22%23f0c878%22%20stroke-width%3D%221.3%22/%3E%20%3Cpath%20d%3D%22M150%2022%20L153%2038%20L150%2054%20L147%2038%20Z%22%20fill%3D%22%23ffe7b0%22%20opacity%3D%22.6%22/%3E%20%3Ccircle%20cx%3D%22150%22%20cy%3D%2238%22%20r%3D%2235%22%20fill%3D%22none%22%20stroke%3D%22url%28%23g%29%22%20stroke-width%3D%221%22%20stroke-dasharray%3D%222%204%22%20opacity%3D%22.7%22/%3E%20%3C/svg%3E") center bottom 3px/auto min(44px,calc(100% - 10px)) no-repeat,linear-gradient(180deg,rgba(14,7,12,0) 0,rgba(14,7,12,.55) 70%,rgba(14,7,12,.7) 100%) left bottom/100% 52px no-repeat;
+ box-shadow:none}
+#app#app:is(:has(>.battle),:has(>.screen.ante)) .top::after{content:"";position:absolute;left:0;right:0;bottom:-14px;height:54px;z-index:-1;pointer-events:none;
+ background:url("data:image/svg+xml,%3Csvg%20xmlns%3D%22http%3A//www.w3.org/2000/svg%22%20width%3D%2270%22%20height%3D%2240%22%20viewBox%3D%220%200%2070%2040%22%3E%3Cdefs%3E%3ClinearGradient%20id%3D%22g%22%20x1%3D%220%22%20y1%3D%220%22%20x2%3D%220%22%20y2%3D%221%22%3E%3Cstop%20offset%3D%220%22%20stop-color%3D%22%23f6dc96%22/%3E%3Cstop%20offset%3D%22.5%22%20stop-color%3D%22%23c79a45%22/%3E%3Cstop%20offset%3D%221%22%20stop-color%3D%22%237a561c%22/%3E%3C/linearGradient%3E%3C/defs%3E%20%3Cpath%20d%3D%22M2%204%20C20%204%2026%2014%2022%2022%20C19%2028%2011%2026%2012%2020%20C13%2015%2019%2016%2018%2020%22%20fill%3D%22none%22%20stroke%3D%22url%28%23g%29%22%20stroke-width%3D%221.8%22%20stroke-linecap%3D%22round%22/%3E%20%3Cpath%20d%3D%22M2%204%20C30%206%2046%2010%2068%2010%22%20fill%3D%22none%22%20stroke%3D%22url%28%23g%29%22%20stroke-width%3D%221.2%22/%3E%20%3Cpath%20d%3D%22M28%2016%20l6%2014%20l6%20-14%22%20fill%3D%22none%22%20stroke%3D%22url%28%23g%29%22%20stroke-width%3D%221.2%22/%3E%3C/svg%3E") left 0 top 8px/auto 30px no-repeat,url("data:image/svg+xml,%3Csvg%20xmlns%3D%22http%3A//www.w3.org/2000/svg%22%20width%3D%2270%22%20height%3D%2240%22%20viewBox%3D%220%200%2070%2040%22%3E%3Cdefs%3E%3ClinearGradient%20id%3D%22g%22%20x1%3D%220%22%20y1%3D%220%22%20x2%3D%220%22%20y2%3D%221%22%3E%3Cstop%20offset%3D%220%22%20stop-color%3D%22%23f6dc96%22/%3E%3Cstop%20offset%3D%22.5%22%20stop-color%3D%22%23c79a45%22/%3E%3Cstop%20offset%3D%221%22%20stop-color%3D%22%237a561c%22/%3E%3C/linearGradient%3E%3C/defs%3E%20%3Cpath%20d%3D%22M2%204%20C20%204%2026%2014%2022%2022%20C19%2028%2011%2026%2012%2020%20C13%2015%2019%2016%2018%2020%22%20fill%3D%22none%22%20stroke%3D%22url%28%23g%29%22%20stroke-width%3D%221.8%22%20stroke-linecap%3D%22round%22/%3E%20%3Cpath%20d%3D%22M2%204%20C30%206%2046%2010%2068%2010%22%20fill%3D%22none%22%20stroke%3D%22url%28%23g%29%22%20stroke-width%3D%221.2%22/%3E%20%3Cpath%20d%3D%22M28%2016%20l6%2014%20l6%20-14%22%20fill%3D%22none%22%20stroke%3D%22url%28%23g%29%22%20stroke-width%3D%221.2%22/%3E%3C/svg%3E") right 0 top 8px/auto 30px no-repeat,url("data:image/svg+xml,%3Csvg%20xmlns%3D%22http%3A//www.w3.org/2000/svg%22%20width%3D%22160%22%20height%3D%2234%22%20viewBox%3D%220%200%20160%2034%22%3E%3Cdefs%3E%3ClinearGradient%20id%3D%22g%22%20x1%3D%220%22%20y1%3D%220%22%20x2%3D%220%22%20y2%3D%221%22%3E%3Cstop%20offset%3D%220%22%20stop-color%3D%22%23f6dc96%22/%3E%3Cstop%20offset%3D%22.5%22%20stop-color%3D%22%23c79a45%22/%3E%3Cstop%20offset%3D%221%22%20stop-color%3D%22%237a561c%22/%3E%3C/linearGradient%3E%3C/defs%3E%20%3Crect%20x%3D%220%22%20y%3D%222%22%20width%3D%22160%22%20height%3D%222%22%20fill%3D%22url%28%23g%29%22/%3E%3Crect%20x%3D%220%22%20y%3D%228%22%20width%3D%22160%22%20height%3D%221%22%20fill%3D%22url%28%23g%29%22%20opacity%3D%22.75%22/%3E%20%3Cpath%20d%3D%22M0%209%20C14%209%2018%2020%2030%2020%20C40%2020%2042%2012%2036%2011%20C31%2010%2030%2016%2034%2017%22%20fill%3D%22none%22%20stroke%3D%22url%28%23g%29%22%20stroke-width%3D%221.6%22%20stroke-linecap%3D%22round%22/%3E%20%3Cpath%20d%3D%22M160%209%20C146%209%20142%2020%20130%2020%20C120%2020%20118%2012%20124%2011%20C129%2010%20130%2016%20126%2017%22%20fill%3D%22none%22%20stroke%3D%22url%28%23g%29%22%20stroke-width%3D%221.6%22%20stroke-linecap%3D%22round%22/%3E%20%3Cpath%20d%3D%22M50%209%20C62%209%2066%2014%2080%2014%20C94%2014%2098%209%20110%209%22%20fill%3D%22none%22%20stroke%3D%22url%28%23g%29%22%20stroke-width%3D%221.2%22/%3E%20%3Cpath%20d%3D%22M74%2014%20L80%2030%20L86%2014%20Z%22%20fill%3D%22%231a1016%22%20stroke%3D%22url%28%23g%29%22%20stroke-width%3D%221.3%22%20stroke-linejoin%3D%22round%22/%3E%20%3Cpath%20d%3D%22M80%2017%20L82%2022%20L80%2026%20L78%2022%20Z%22%20fill%3D%22%23c33a1c%22/%3E%20%3Ccircle%20cx%3D%2280%22%20cy%3D%225.5%22%20r%3D%221.8%22%20fill%3D%22url%28%23g%29%22/%3E%3Ccircle%20cx%3D%220%22%20cy%3D%225.5%22%20r%3D%221.8%22%20fill%3D%22url%28%23g%29%22/%3E%3Ccircle%20cx%3D%22160%22%20cy%3D%225.5%22%20r%3D%221.8%22%20fill%3D%22url%28%23g%29%22/%3E%20%3Cpath%20d%3D%22M44%209%20q2%206%206%206%20M116%209%20q-2%206%20-6%206%22%20fill%3D%22none%22%20stroke%3D%22url%28%23g%29%22%20stroke-width%3D%221%22/%3E%20%3C/svg%3E") left top 0/auto 24px repeat-x;
+ filter:drop-shadow(0 3px 3px rgba(0,0,0,.7))}
+#app#app#app:is(:has(>.battle),:has(>.screen.ante)) .top .btn{background:linear-gradient(180deg,#2c1828,#110a10)!important;border-color:transparent!important;
+ box-shadow:inset 0 0 0 1.5px #c79a45,inset 0 0 0 4px rgba(20,10,18,.9),inset 0 0 0 5px rgba(199,154,69,.35),0 3px 8px rgba(0,0,0,.6)!important}
+#app#app#app:is(:has(>.battle),:has(>.screen.ante)) .top :is(.life,.gold){position:relative;background:linear-gradient(180deg,#2c1828,#110a10)!important;border-radius:6px;padding-inline:12px 16px!important;
+ box-shadow:inset 0 0 0 1.5px #c79a45,inset 0 0 0 4px rgba(20,10,18,.9),inset 0 0 0 5px rgba(199,154,69,.35),0 3px 8px rgba(0,0,0,.6)!important;
+ clip-path:polygon(8px 0,calc(100% - 8px) 0,100% 50%,calc(100% - 8px) 100%,8px 100%,0 50%)}
+/* the portrait ring sits a few px off the top edge on phones (Randall's note on the mock) */
+#app#app:is(:has(>.battle),:has(>.screen.ante)) .top .ink-hero{translate:0 3px}
+/* one line on every screen shape (the tall Fold layout used to stack the foes above the hero): heroes left, foes right, feet on the mat's floor line */
+#app#app#app .battle .field.pw-stage{grid-template-columns:auto auto!important;grid-template-rows:auto!important;justify-content:space-evenly!important;row-gap:0!important}
+#app#app#app .battle .field.pw-stage>.side{order:0!important;width:auto!important;max-width:none!important;margin:0!important;flex-wrap:nowrap!important}
+#app#app#app .battle .field.pw-stage>.side.you{grid-area:1/1!important}
+#app#app#app .battle .field.pw-stage>.side.foe{grid-area:1/2!important}
+/* the roomy zoom made the figures' line narrower in its own px (fixed gaps and seals took more of it): figures size from the screen instead */
+#app#app[data-pw-roomy] .battle .field.pw-stage{zoom:1!important}
+/* portrait plates (a fight too crowded for figures) keep the same sides on one line: heroes left, foes right, never a foe row above the hero */
+#app#app#app .battle .field.pw-plates{grid-column:1/-1!important;grid-template-columns:auto auto!important;grid-template-rows:auto!important;justify-content:space-evenly!important;align-items:end!important;align-content:end!important}
+#app#app#app .battle .field.pw-plates>.side{order:0!important;width:auto!important;margin:0!important;flex-wrap:nowrap!important;justify-content:center!important}
+#app#app#app .battle .field.pw-plates>.side>.unit{flex:none!important}
+#app#app[data-pw-roomy] .battle .field.pw-plates{zoom:1!important}
+/* plates read like the figures: no name plate (it shows on hover, hold and the zoom card), so a crowd never truncates names */
+#app#app#app .battle .field.pw-plates .unit>.name{display:none!important}
+#app#app#app .battle .field.pw-plates>.side.you{grid-area:1/1!important}
+#app#app#app .battle .field.pw-plates>.side.foe{grid-area:1/2!important}
+/* plates drop the old divider line and side glow, like the figures: the mat's floor is the only line */
+#app#app#app .battle .field.pw-plates>.side{border-left:0!important;border-image:none!important;background:none!important;padding-left:0!important}
+/* an ally's "dies" preview sits above its plate so it never covers the plate's stats */
+#app#app#app .battle .field:is(.pw-stage,.pw-plates) .side.you .unit.ally:not(.pw-fig)>.pv{bottom:auto!important;top:-21px!important}
+/* no name labels on the field in any layout (they read on hover, hold and the zoom card): a token portrait among the figures used to show one, and a reserved name line lifted the doomed ones off the floor */
+#app#app#app .battle .field:is(.pw-stage,.pw-plates) .unit>.name{display:none!important}
+/* a stack's count chip stays on its own portrait, and a doomed stack's chip sits clear above it */
+/* a stack's count sits centred on its own portrait's top edge, under its kill chip, so it never straddles two portraits */
+#app#app#app .battle .field:is(.pw-stage,.pw-plates) .unit.group:not(.pw-fig)::after{left:50%!important;right:auto!important;translate:-50% 0}
+#app#app#app .battle .field:is(.pw-stage,.pw-plates) .side.you .unit.ally.group:not(.pw-fig)>.pv{top:-32px!important}
+/* the painted dungeon mats read like every other fight (the old dark, blurred crypt filter was for the stand-in backdrop) */
+#app#app>.battle[data-dungeon]:not([data-dungeon=vaults])::after{filter:brightness(.82) saturate(1.02)!important}
+/* a boss's loyalty sits at its own shoulder, mirroring the hero's (auditor round 6 minor 1: it floated between the two) */
+#app#app .battle .side.foe .unit.pw-fig .loyal{right:calc(50% + var(--pw-fh,120px) * var(--k,1) * .2)!important;left:auto!important;top:3%!important;transform:none!important;translate:none!important}
+
+/* Slay the Spire's block reads at the left end of the life bar: the shield chip sits there on every figure instead of a line of its own (it lifted a guarded figure's feet off the floor) */
+#app#app .battle .unit.pw-fig>.shield{position:absolute!important;left:calc(50% + var(--pw-fx,0) * 100% - var(--pw-bw) / 2)!important;bottom:7.5px!important;translate:-50% 50%!important;z-index:4;margin:0!important;display:inline-flex!important;align-items:center;gap:2px;padding:2px 6px!important;border-radius:999px!important;background:#0b1626f2!important;border:1.5px solid #6fb3ff!important;box-shadow:0 0 0 1px #000,0 0 8px #6fb3ff55!important;color:#d8ecff!important;line-height:1!important;white-space:nowrap}
+#app#app .battle .unit.pw-fig>.shield>b{font-weight:800}
+/* a boss's loyalty sits on its own life bar (right end), never loose in the sky (review: it floated by the top bar and touched the intent chip) */
+#app#app#app .battle .side.foe .unit.pw-fig .loyal{left:calc(50% + var(--pw-fx,0) * 100% + var(--pw-bw) / 2)!important;right:auto!important;top:auto!important;bottom:7.5px!important;translate:-50% 50%!important;transform:none!important;z-index:4;filter:drop-shadow(0 0 0 #000) drop-shadow(0 0 1.5px #e8b95b) drop-shadow(0 0 6px #e8b95b88)}
+/* the life bar is about the figure's own width and sits under its feet (review: a leaning zombie's bar ran far past its foot and its chip floated over empty air) */
+/* life bar: about the body's width, never under the number's room; the unit is never narrower than its bar, so neighbours' bars never touch */
+#app#app .battle .unit.pw-fig{--pw-bw:max(52px,min(100%,calc(var(--pw-cw,.6) * 125%)))}
+#app#app .battle .unit.hero.pw-fig{--pw-bw:max(88px,min(100%,calc(var(--pw-cw,.6) * 125%)))}
+#app#app#app#app .battle .field .unit.pw-fig{min-width:56px!important}
+#app#app#app#app .battle .field .unit.hero.pw-fig{min-width:92px!important}
+/* the hero's loyalty diamond sits on her bar's right end, so her life number centres in the rest of the bar */
+#app#app .battle .unit.hero.pw-fig:has(.loyal)>.bar::after{right:13px}
+#app#app .battle .unit.pw-fig>.bar{width:var(--pw-bw)!important;margin-left:calc(50% + var(--pw-fx,0) * 100% - var(--pw-bw) / 2)!important;margin-right:0!important;align-self:flex-start!important;justify-self:start!important}
+#app#app .battle .unit.pw-fig>.intent{position:relative;left:calc(var(--pw-hx,var(--pw-fx,0)) * 100%);top:calc(var(--pw-top,0) * var(--pw-fh,120px) * var(--k,1))}
+/* (the intent drops by the figure's own headroom so it sits on the head, not on the empty top of the frame: review saw boss chips hugging the top bar) */
+/* the aim ring and the lethal skull follow the feet too */
+#app#app .battle .unit.pw-fig>.art::before{left:50%!important;right:auto!important;width:max(64px,calc(var(--pw-cw,.6) * 125%));translate:-50% 0;bottom:-2px!important;height:10%!important}
+/* a figure takes its body's width (--pw-pk of its frame, pw-cast.js packOf); its .art box is that body, and the painting's frame (pw-cast.js frameRect) is drawn centred on it by --pw-cx,
+   so the tap target, the aim ring and the chips all sit on the painted body. */
+#app#app#app#app .battle .field .unit.pw-fig{width:calc(var(--pw-fh,120px) * var(--k,1) * var(--ar,1) * var(--pw-pk,1))!important}
+#app#app#app#app .battle .field .unit.pw-fig>.art{width:100%!important;margin-left:0!important;margin-right:0!important}
+#app#app .battle .side.foe .unit.pw-fig>.pw-lethal{left:calc(50% + var(--pw-fx,0) * 100%)!important}
+/* the menu glyph keeps its 22px: in a squeezed bar the button's side padding used to crush it to a dot */
+#app#app>.top .pw-menubtn::before{flex:none!important}
+#app#app>.top .pw-menubtn{padding-inline:0!important;justify-content:center!important}
+/* a full bar first slims its emblems and gaps; the hero portrait (the battle's main cue) is the last thing to go */
+#app>.top.ink-tight2 .emblems .emb-art{width:27px!important;height:27px!important}
+#app>.top.ink-tight2 .emblems .emb-art+.emb-art{margin-left:-7px}
+/* in a plates fight the hero's loyalty sits on the plate's top corner, not over her face */
+#app#app#app .battle .field.pw-plates .unit.hero .loyal{left:auto!important;right:-10px!important;top:-10px!important;transform:none!important;translate:none!important}
+/* game-feel pass (31 Oct): while a figure has block its life bar reads blue, the way Slay the Spire shows it */
+#app#app .battle .unit.pw-fig:has(>.shield)>.bar>i{background:linear-gradient(180deg,#4f9be8,#1f4f8f)!important}
+#app#app .battle .unit.pw-fig:has(>.shield)>.bar{box-shadow:0 0 0 1px #000,0 0 0 2px #6fb3ff99,inset 0 0 0 1px #ffffff1f!important}
+/* the hero's loyalty diamond sits on the right end of her own life bar, like the boss's (it floated off her shoulder) */
+#app#app#app .battle .unit.hero.pw-fig .loyal{left:calc(50% + var(--pw-fx,0) * 100% + var(--pw-bw) / 2)!important;right:auto!important;top:auto!important;bottom:7.5px!important;translate:-50% 50%!important;transform:none!important;z-index:4}
+/* a portrait is never narrower than its own stat pill (44 on-screen px for the tap, but "4/5" needs ~3.2em of the plate text; em follows the text size) */
+#app#app#app .battle .field:is(.pw-stage,.pw-plates) .side .unit:not(.pw-fig){min-width:3.3em!important}
+/* the hero's incoming-damage chip sits on her head like every foe intent (drops by the figure's headroom, centred on the feet), never on a bar */
+#app#app#app .battle .unit.hero.pw-fig>.incoming{margin-left:var(--pw-chipdx,0px)!important;top:calc(var(--pw-top,0) * var(--pw-fh,120px) * var(--k,1) - 6px)!important;left:calc(50% + var(--pw-hx,var(--pw-fx,0)) * 100%)!important;bottom:auto!important;transform:translateX(-50%)!important;translate:0 -100%!important}
+/* portraits standing among figures plant their base on the figures' feet line, not on the bars' line below it */
+#app#app#app .battle .field.pw-stage .side .unit:not(.pw-fig):not(:has(>.bar)){margin-bottom:17px!important}
+/* extra intent glyphs (bypass, trample, flame, moon) stay readable on phones */
+#app#app .battle .intent .mod .pi{width:max(12px,.9em)!important;height:max(12px,.9em)!important;opacity:1!important}
+/* the block chip's number uses the same serif as every other number on the field */
+#app#app .battle .unit.pw-fig>.shield,#app#app .battle .unit.pw-fig>.shield *{font-family:var(--display,serif)!important;font-variant-numeric:lining-nums}
+/* the hero's life bar is red in every layout, as in figure mode */
+#app#app .battle .unit.hero:not(.pw-fig)>.bar>i,#app#app .battle .unit.hero:not(.pw-fig) .bar>i{background:linear-gradient(180deg,#d94a33,#8f1f14)!important}
+/* Wager (ante) screen: one centred column (the stake card, once picked, stands to the left); each option is its title plus icon chips, risk in red, reward in gold, the rule in each chip's tip */
+#app#app .screen.ante{display:flex!important;flex-direction:column!important;align-items:center!important;justify-content:center!important;gap:10px!important;text-align:center}
+#app#app .screen.ante>*{grid-column:auto!important;grid-row:auto!important;margin:0!important}
+#app#app .screen.ante>.choices{display:flex!important;flex-wrap:wrap!important;justify-content:center!important;align-items:stretch!important;gap:12px!important;width:auto!important;max-width:100%!important;grid-template-columns:none!important}
+#app#app .screen.ante .ante-opt{display:flex!important;flex-direction:column!important;align-items:center!important;justify-content:center!important;gap:8px!important;min-width:min(240px,42vw);padding:12px 16px!important;text-align:center!important}
+#app#app .screen.ante .ante-opt[data-act=ante-wager]{min-width:min(300px,46vw)}
+#app#app .screen.ante .ante-opt>b{font:700 1rem/1.1 var(--display,serif)!important;letter-spacing:.04em}
+#app#app .screen.ante .ante-row{display:flex;flex-wrap:wrap;justify-content:center;gap:6px}
+#app#app .screen.ante .ai{display:inline-flex;align-items:center;justify-content:center;gap:3px;height:28px;min-width:28px;padding:0 8px;box-sizing:border-box;border-radius:999px;font:700 max(13px,.85rem)/1 var(--display,serif);background:#0b0d12e0;box-shadow:inset 0 0 0 1px currentColor;color:#f2d496}
+#app#app .screen.ante .ai .pi{width:17px;height:17px;flex:none;fill:currentColor}
+#app#app .screen.ante .ai>b{font:inherit}
+#app#app .screen.ante .risk .ai{color:#ff9a80;background:#2a0b08e0}
+#app#app .screen.ante .ante-foe .ai{color:#ffd2c4;height:30px}
+#app#app .screen.ante:has(>.ante-stake){display:grid!important;grid-template-columns:auto auto!important;column-gap:22px!important;row-gap:10px!important;justify-content:center!important;align-content:center!important;justify-items:center!important}
+#app#app .screen.ante:has(>.ante-stake)>.ante-stake{grid-column:1!important;grid-row:1/span 3!important;align-self:center!important;zoom:.82}
+#app#app .screen.ante:has(>.ante-stake)>:is(h2,.ante-foe,.choices){grid-column:2!important}
+#app#app .screen.ante:has(>.ante-stake)>[data-act=ante-change]{grid-column:1!important;grid-row:4!important}
+
+/* A crowded line on big text (pw-cast squeeze(): every unit at its minimum and neighbours still touch): the side gaps close
+   and the minimum widths step down with --pw-sq (never under 78%), so no two units overlap. */
+#app#app#app#app .battle .field.pw-squeeze>.side{gap:2px!important;column-gap:2px!important}
+#app#app#app#app .battle .field.pw-stage.pw-squeeze{column-gap:6px!important}
+#app#app#app#app#app .battle .field.pw-squeeze .unit.pw-fig{min-width:calc(56px * var(--pw-sq,1))!important;--pw-bw:max(calc(52px * var(--pw-sq,1)),min(100%,calc(var(--pw-cw,.6) * 125%)))}
+#app#app#app#app#app .battle .field.pw-squeeze .unit.hero.pw-fig{min-width:calc(92px * var(--pw-sq,1))!important;--pw-bw:max(calc(88px * var(--pw-sq,1)),min(100%,calc(var(--pw-cw,.6) * 125%)))}
+#app#app#app#app#app .battle .field.pw-squeeze .side .unit:not(.pw-fig){min-width:calc(3.3em * var(--pw-sq,1))!important}

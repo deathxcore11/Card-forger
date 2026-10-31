@@ -1,0 +1,179 @@
+[
+ {
+  "id": "pw-heroes"
+ },
+ {
+  "id": "pw-actstart",
+  "setup": "document.querySelector('[data-k=R]').click()"
+ },
+ {
+  "id": "pw-map",
+  "setup": "__pw.run()"
+ },
+ {
+  "id": "pw-map-W",
+  "setup": "__pw.run('W')"
+ },
+ {
+  "id": "pw-menu",
+  "setup": "__pw.run()",
+  "after": "document.querySelector('.pw-menubtn').click()"
+ },
+ {
+  "id": "pw-help",
+  "setup": "__pw.run()",
+  "after": "document.querySelector('.pw-infobtn').click()"
+ },
+ {
+  "id": "pw-deck",
+  "setup": "__pw.run();document.querySelector('details.deck').open=true"
+ },
+ {
+  "id": "pw-node-zoom",
+  "setup": "__pw.run();__pw.ctx('.map .node.open')"
+ },
+ {
+  "id": "pw-gift",
+  "setup": "__pw.run();gift={k:'shock',why:'Found in the cart'};render()"
+ },
+ {
+  "id": "pw-battle",
+  "setup": "__pw.fight()"
+ },
+ {
+  "id": "pw-battle-W",
+  "setup": "__pw.fight(null,'W')"
+ },
+ {
+  "id": "pw-battle-crowded",
+  "setup": "__pw.fight(['diregraf','geist','diregraf']);for(let i=0;i<5;i++)summon({p:2,t:2},'Goblin token');while(c.hand.length<7)c.hand.push({key:c.hand[0].key,id:8800+c.hand.length});render()"
+ },
+ {
+  "id": "pw-battle-zoom",
+  "setup": "__pw.fight();__pw.ctx('.side.foe .unit')"
+ },
+ {
+  "id": "pw-battle-menu",
+  "setup": "__pw.fight()",
+  "after": "document.querySelector('.pw-menubtn').click()"
+ },
+ {
+  "id": "pw-reward",
+  "setup": "__pw.fight();c.enemies.forEach(e=>e.hp=0);after()"
+ },
+ {
+  "id": "pw-treasure",
+  "setup": "return __pw.node('treasure')"
+ },
+ {
+  "id": "pw-shop",
+  "setup": "return __pw.node('shop')"
+ },
+ {
+  "id": "pw-rest",
+  "setup": "return __pw.node('rest')"
+ },
+ {
+  "id": "pw-event",
+  "setup": "return __pw.node('event')"
+ },
+ {
+  "id": "pw-elite",
+  "setup": "return __pw.node('elite')"
+ },
+ {
+  "id": "pw-over",
+  "setup": "__pw.run();run.hp=0;view='over';render()"
+ },
+ {
+  "id": "pw-victory",
+  "setup": "__pw.run();view='victory';render()"
+ },
+ {
+  "id": "pw-dungeon",
+  "setup": "__pw.run();run.dun={act:1,room:2,depth:1};startRoom()"
+ },
+ {
+  "id": "pw-dungeon-later",
+  "setup": "__pw.run();run.dun={act:1,room:2,depth:1};startRoom()",
+  "wait": 3000
+ },
+ {
+  "id": "pw-battle-5",
+  "setup": "__pw.fight(['diregraf','geist','diregraf','geist','diregraf']);[1,2,3,4].forEach(i=>summon({p:i,t:i+1},'Goblin token'));render()"
+ },
+ {
+  "id": "pw-battle-clock",
+  "setup": "__pw.fight(['diregraf','geist','diregraf']);c.turn=12;c.enemies.forEach(e=>{e.clock=4;e.buff+=4});render()"
+ },
+ {
+  "id": "pw-sorin-p2",
+  "setup": "__pw.fight(['sorin']);const s=c.enemies[0];s.phase2=true;s.i=0;s.clock=6;s.buff+=6;c.turn=13;render()"
+ },
+ {
+  "id": "pw-battle-aim",
+  "setup": "__pw.fight(['diregraf','geist','diregraf']);c.enemies[0].hp=2;c.enemies[2].hp=3;c.hand[0]={key:'shock',id:9901};c.energy=3;c.pending={kind:'card',cid:9901,aim:'enemy'};render()",
+  "wait": 1600
+ },
+ {
+  "id": "pw-battle-nudge",
+  "setup": "__pw.fight()",
+  "after": "document.querySelector('#app .battle [data-act=end]').click()"
+ },
+ {
+  "id": "pw-battle-menu-ts",
+  "setup": "localStorage.setItem('pw-text','130');document.documentElement.style.setProperty('--pw-ts','1.3');__pw.fight()",
+  "after": "document.querySelector('.pw-menubtn').click()",
+  "ingameText": true
+ },
+ {
+  "id": "pw-journal-runs",
+  "setup": "const H=[];for(let i=0;i<8;i++)H.push({at:Date.now()-i*36e5,hero:i%2?'W':'R',seed:4242+i*17,act:i%3?1:2,floor:3+i,won:i===2,killedBy:['Sorin','Ob Nixilis Reignited','','Gisa'][i%4],fights:5+i,bestTurn:12+i*3});store.set(HIST,H);profile.runs=8;profile.seen=Object.keys(C).filter((k,i)=>i%3);profile.seenE=Object.keys(EMB).filter((k,i)=>i%2);profile.seenF=Object.keys(E).filter((k,i)=>i%3);store.set(PROF,profile);run=null;c=null;view='journal';JT='runs';render()",
+  "wait": 900
+ },
+ {
+  "id": "pw-journal-cards",
+  "setup": "const H=[];for(let i=0;i<8;i++)H.push({at:Date.now()-i*36e5,hero:i%2?'W':'R',seed:4242+i*17,act:i%3?1:2,floor:3+i,won:i===2,killedBy:['Sorin','Ob Nixilis Reignited','','Gisa'][i%4],fights:5+i,bestTurn:12+i*3});store.set(HIST,H);profile.runs=8;profile.seen=Object.keys(C).filter((k,i)=>i%3);profile.seenE=Object.keys(EMB).filter((k,i)=>i%2);profile.seenF=Object.keys(E).filter((k,i)=>i%3);store.set(PROF,profile);run=null;c=null;view='journal';JT='cards';render()",
+  "wait": 900
+ },
+ {
+  "id": "pw-journal-foes",
+  "setup": "const H=[];for(let i=0;i<8;i++)H.push({at:Date.now()-i*36e5,hero:i%2?'W':'R',seed:4242+i*17,act:i%3?1:2,floor:3+i,won:i===2,killedBy:['Sorin','Ob Nixilis Reignited','','Gisa'][i%4],fights:5+i,bestTurn:12+i*3});store.set(HIST,H);profile.runs=8;profile.seen=Object.keys(C).filter((k,i)=>i%3);profile.seenE=Object.keys(EMB).filter((k,i)=>i%2);profile.seenF=Object.keys(E).filter((k,i)=>i%3);store.set(PROF,profile);run=null;c=null;view='journal';JT='foes';loadActArt();render()",
+  "wait": 900
+ },
+ {
+  "id": "pw-journal-embs",
+  "setup": "const H=[];for(let i=0;i<8;i++)H.push({at:Date.now()-i*36e5,hero:i%2?'W':'R',seed:4242+i*17,act:i%3?1:2,floor:3+i,won:i===2,killedBy:['Sorin','Ob Nixilis Reignited','','Gisa'][i%4],fights:5+i,bestTurn:12+i*3});store.set(HIST,H);profile.runs=8;profile.seen=Object.keys(C).filter((k,i)=>i%3);profile.seenE=Object.keys(EMB).filter((k,i)=>i%2);profile.seenF=Object.keys(E).filter((k,i)=>i%3);store.set(PROF,profile);run=null;c=null;view='journal';JT='embs';render()",
+  "wait": 900
+ },
+ {
+  "id": "pw-heroes-journal",
+  "setup": "profile.runs=3;store.set(PROF,profile);newRun()"
+ },
+ {
+  "id": "pw-over-rank",
+  "setup": "profile.xp=50;__pw.run();run.fights=7;run.act=1;run.hp=0;startFight(['diregraf','geist'],'fight',0);c.enemies[0].hp=3;view='over';render()"
+ },
+ {
+  "id": "pw-olivia",
+  "setup": "__pw.fight(['oliviaB']);for(let i=0;i<3;i++)summon({p:2,t:2},'Goblin token');c.turn=2;const o=c.enemies[0];act(o);o.i=0;run.pop=0;c.enemies.forEach(e=>{e.pop=0;e.heal=0});c.allies.forEach(a=>a.pop=0);render()"
+ },
+ {
+  "id": "pw-herald-p2",
+  "setup": "__pw.fight(['heraldB']);run.act=2;loadActArt();c.heraldEx=2;const h=c.enemies[0];hit(h,Math.ceil(h.hp*0.55));c.turn=5;c.enemies.forEach(e=>{e.clock=3;e.buff+=3;e.pop=0;e.heal=0});render()",
+  "wait": 1200
+ },
+ {
+  "id": "pw-battle-esc",
+  "setup": "__pw.fight(['diregraf','geist']);c.turn=5;c.enemies.forEach(e=>{e.clock=2;e.buff+=2});render()"
+ },
+ {
+  "id": "pw-map-boss2",
+  "setup": "__pw.run();run.bosses={1:'oliviaB'};render()"
+ },
+ {
+  "id": "pw-battle-emb",
+  "setup": "__pw.fight();run.emblems=Object.keys(EMB).slice(0,4);render()",
+  "name": null
+ }
+]
