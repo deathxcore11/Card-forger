@@ -42,6 +42,7 @@ import { hapticsOn } from "./feel.js";
 import { audioSettings } from "./audio.js";
 import { tradePanel } from "./trade.js";
 import { skeletonGrid } from "./ui.js";
+import { pickBanner, bannerHead } from "./collection-banner.js";
 import { searchFanMarkup } from "./search-fan.js";
 import { trackedQuote, priceHistoryHtml, alertsPanel, alertStatus } from "./pricehist.js";
 import { installNudge, installCardMarkup } from "./install.js";
@@ -692,21 +693,18 @@ export function compareSheet() {
 /* ---------- Collection ---------- */
 
 // The header band shows an illustration from your own collection (the art crop, never the card
-// frame): the rarest card first, the same one each visit.
-function collectionHeroArt() {
-  const rank = { mythic: 4, special: 3, rare: 2, uncommon: 1 };
-  let best = null, score = -1;
-  for (const entry of S.state.collection) {
+// frame): the card you pinned, otherwise one of your cards that changes every hour.
+function collectionBannerItems() {
+  return S.state.collection.map((entry) => {
     const c = magicOwnedCard(entry, S.state.printings?.[entry.printingId]), art = c?.image_uris?.art_crop || c?.card_faces?.[0]?.image_uris?.art_crop;
-    if (art && (rank[c.rarity] || 0) > score) { best = art; score = rank[c.rarity] || 0; }
-  }
-  return best;
+    return art ? { id: c.id || c.name, name: c.name, sources: [art] } : null;
+  }).filter(Boolean);
 }
 
 export function collection() {
   const tab = S.ui.collTab;
-  const art = collectionHeroArt();
-  return `<div class="page-head${art ? " page-hero" : ""}">${art ? `<span class="page-hero-art" aria-hidden="true"><img src="${esc(art)}" alt="" decoding="async" referrerpolicy="no-referrer"></span>` : ""}<h1>Collection</h1><div class="head-actions">${S.ui.collTab === "cards" ? viewControl("mtg","collection")+selectionControl("mtg") : ""}<button class="icon" data-act="collMenu" aria-label="More collection actions">⋯</button></div></div>
+  const banner = pickBanner(collectionBannerItems(), S.state.settings.collectionBanner?.mtg);
+  return `${bannerHead(banner, `<h1>Collection</h1><div class="head-actions">${S.ui.collTab === "cards" ? viewControl("mtg","collection")+selectionControl("mtg") : ""}<button class="icon" data-act="collMenu" aria-label="More collection actions">⋯</button></div>`)}
   ${segmented("collTab", tab === "wishlist" ? "cards" : tab, [["cards", "Cards", "cardStack"], ["binders", "Binders", "binder"], ["value", "Value", "history"]])}
   ${tab === "binders" ? binderShelf(S.state.collection.map(entry => { const c=magicOwnedCard(entry,S.state.printings?.[entry.printingId]); return {entry,card:c,image:cardImage(c),game:"mtg",owned:true}; }),"mtg",S.state.settings.binders || []) : tab === "value" ? collectionValueView() : collectionCards(tab === "wishlist")}`;
 }

@@ -707,3 +707,8 @@ body.glass :is(.guide-along-row, .guide-link) { background: linear-gradient(160d
 #sheetBody #card-history .history-start b { color: var(--text); }
 #sheetBody .history-start-dot { width: 10px; height: 10px; flex: none; border-radius: 50%; background: var(--accent, var(--gold)); box-shadow: 0 0 0 4px color-mix(in srgb, var(--accent, var(--gold)) 22%, transparent); }
 .meta-row .meta-main small.ellip { white-space:normal; display:-webkit-box; -webkit-line-clamp:2; -webkit-box-orient:vertical; overflow:hidden; }
+/* Collection banner on all three games: Pokémon art crops cover the band; a missing image leaves the dark band. */
+.page-hero-art .pk-crop{position:absolute;inset:0;width:100%;height:100%}
+.page-hero-art .img-missing{display:none}
+.artwork-banner-reset{margin:10px 0 0}
+.artwork-banner-reset .link{min-height:44px}

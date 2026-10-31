@@ -41,6 +41,7 @@ import {POKEMON_SET_ART} from "./pokemon-set-art.js";
 import {pokemonCatalogueSetEntry} from './pokemon-catalogue-supplement.js';
 import { recordCardPrice, trackedQuote, priceHistoryHtml, alertsPanel, alertStatus } from "./pricehist.js";
 import { skeletonGrid } from "./ui.js";
+import { pickBanner, bannerHead } from "./collection-banner.js";
 import { installNudge } from "./install.js";
 import { rankByName } from "./catalog-tools.js";
 import {setRowContent,knownSetCount,setYearSections,setCardFields,setCardFacets,setFinishLabel,setVariantKey,filterSortSetCards,setProgressMarkup} from './set-list-ui.js';
@@ -978,12 +979,21 @@ export function trackTcgValue(g, v = collectionValue(g), s = S.state) {
   side.valueHistory = recordValueObservation(side.valueHistory, v.total, v.copies, homeValueCoverage(v));
   return side.valueHistory;
 }
+// Collection banner: the pinned card, otherwise one of your own cards, changing every hour.
+// Pokémon crops the card picture to its art window; Yu-Gi-Oh! uses its true artwork crop.
+const ygoCropSources = (id) => [`img/ygo/a/${encodeURIComponent(id)}.jpg`, `https://images.ygoprodeck.com/images/cards_cropped/${encodeURIComponent(id)}.jpg`];
+const bannerItem = (g, c) => c?.id ? (g === "ptcg" ? { id: c.id, name: c.name, ptcg: true, card: c } : { id: c.id, name: c.name, sources: ygoCropSources(c.id) }) : null;
+function collectionHead(g, inner) {
+  const items = gs(g).collection.map((e) => bannerItem(g, cardOf(g, e.cardId))).filter(Boolean);
+  const fallback = (pin) => bannerItem(g, cardOf(g, pin.cardId)) || (g === "ptcg" ? { id: pin.cardId, name: pin.name, ptcg: true, card: { id: pin.cardId, game: "ptcg", name: pin.name }, src: pin.image } : null);
+  return bannerHead(pickBanner(items, S.state.settings.collectionBanner?.[g], Date.now(), { fallback }), inner);
+}
 function tcgValueView(g) {
   const st = gs(g), v = collectionValue(g),
     rows = st.collection.map(entry => { const card=cardOf(g,entry.cardId); return {entry,card,unit:entryPrice(card,entry),valuation:entryValuation(card,entry)}; }),
     tabs = segmented("tCollTab", "value", [["cards", "Cards", "cardStack"], ["binders", "Binders", "binder"], ["value", "Value", "history"]]);
-  if (!st.collection.length && !st.valueHistory?.length) return `<div class="page-head"><h1>Collection</h1></div>${tabs}<section class="empty"><h3>No value to track yet</h3><p>Add cards to start recording your collection’s value over time.</p></section>${alertsPanel(g)}`;
-  return `<div class="page-head"><h1>Collection</h1></div>${tabs}<div ${valuePageAttrs(g)}>
+  if (!st.collection.length && !st.valueHistory?.length) return `${collectionHead(g, "<h1>Collection</h1>")}${tabs}<section class="empty"><h3>No value to track yet</h3><p>Add cards to start recording your collection’s value over time.</p></section>${alertsPanel(g)}`;
+  return `${collectionHead(g, "<h1>Collection</h1>")}${tabs}<div ${valuePageAttrs(g)}>
   ${valuePageOverview({game:g,value:v,history:st.valueHistory || [],rows})}
   ${tcgTradeAdvice(g)}
   ${alertsPanel(g)}
@@ -1016,8 +1026,8 @@ export function tcgCollection() {
    value:unit==null?null:unit*(x.w?1:x.e.qty),impact:x.c?impactScore(g,x.c):null,rarity:rarityOf(x),recent:Number.isFinite(Date.parse(x.e.addedAt))?Date.parse(x.e.addedAt):null};};
   rows.sort((a,b)=>compareCollectionRows(descriptor(a),descriptor(b),U.sort,U.direction));
   if (U.tab === "value") return tcgValueView(g);
-  if (U.tab === "binders") return `<div class="page-head"><h1>Collection</h1></div>${segmented("tCollTab","binders",[["cards","Cards","cardStack"],["binders","Binders","binder"],["value","Value","history"]])}${binderShelf(st.collection.map(entry=>({entry,card:cardOf(g,entry.cardId),image:cardOf(g,entry.cardId)?.variants?.find(v=>v.key===entry.variant)?.image || cardOf(g,entry.cardId)?.image || "",game:g})),g,S.state.settings.binders || [])}`;
-  return `<div class="page-head"><h1>Collection</h1><div class="head-actions">${viewControl(g,"collection")}${selectionControl(g)}</div></div>
+  if (U.tab === "binders") return `${collectionHead(g, "<h1>Collection</h1>")}${segmented("tCollTab","binders",[["cards","Cards","cardStack"],["binders","Binders","binder"],["value","Value","history"]])}${binderShelf(st.collection.map(entry=>({entry,card:cardOf(g,entry.cardId),image:cardOf(g,entry.cardId)?.variants?.find(v=>v.key===entry.variant)?.image || cardOf(g,entry.cardId)?.image || "",game:g})),g,S.state.settings.binders || [])}`;
+  return `${collectionHead(g, `<h1>Collection</h1><div class="head-actions">${viewControl(g,"collection")}${selectionControl(g)}</div>`)}
   ${segmented("tCollTab", "cards", [["cards", "Cards", "cardStack"], ["binders", "Binders", "binder"], ["value", "Value", "history"]])}
   ${st.collection.length || wantRows.length ? `<div class="coll-summary"><button class="cs-value" data-act="tCollTab" data-id="value" aria-label="See collection value"><b data-count="${Math.round(v.total)}" data-money="1">${usd(v.total, 0)}</b><span>${v.copies} card${v.copies === 1 ? "" : "s"}${wantRows.length ? ` · ${wantRows.length} on wishlist` : ""}${Math.min(rows.length, U.limit || 120) < rows.length ? ` · showing ${Math.min(rows.length, U.limit || 120)} of ${rows.length}` : rows.length !== st.collection.length + wantRows.length ? ` · showing ${rows.length}` : ""}${v.unpriced ? ` · ${v.unpriced} unpriced` : ""}</span></button><button class="icon" data-act="tRefreshPrices" aria-label="Refresh prices">${actionIcon("refresh")}</button></div>` : ""}
   ${st.collection.length || wantRows.length ? `<div class="coll-tools"><div class="collection-primary-tools">${collectionSortControls(g,U.sort,U.direction)}<input type="search" value="${esc(U.q)}" placeholder="Search your cards" data-input="tCollQ" aria-label="Search collection"></div><div class="filter-pills"><select data-change="tCollSet" aria-label="Set">${options([["", "All sets"], ...setNames.map((x) => [x, x])], U.set)}</select><select data-change="tCollKind" data-field="kind" aria-label="Kind">${options([["", "All kinds"], ...kinds], U.kind)}</select>${rarities.length > 1 ? `<select data-change="tCollKind" data-field="rarity" aria-label="Rarity">${options([["", "All rarities"], ...rarities.map((x) => [x, x])], U.rarity)}</select>` : ""}${wantRows.length ? `<select data-change="tCollKind" data-field="show" aria-label="Show">${options([["all", "Owned + wishlist"], ["owned", "Owned"], ["wanted", `Wishlist · ${wantRows.length}`]], show)}</select>` : ""}</div></div>

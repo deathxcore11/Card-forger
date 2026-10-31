@@ -89,7 +89,8 @@ import { playRate } from './importance.js';
 import { budgetNotes, variantsFrom, difficultyOf } from './deck-optimizer.js';
 import {attachCardGestures, CompareSelection, cardActionButtons, contextAction, contextHeader, deckContextShortcuts, HOLD_MS, moved as movedFrom} from './card-actions.js';
 import {tcgCompareSheet} from './tcgcompare.js';
-import {artworkHTML} from './artwork.js';
+import {artworkHTML,artworkSources} from './artwork.js';
+import {bannerPin} from './collection-banner.js';
 import {attachAutomaticBrowse} from './auto-browse.js';
 import { createPrintingPicker } from "./printing-picker.js";
 import {magicOwnedDetail,magicOwnedCard,magicOwnedCurrent,magicOwnedContext,magicOwnedNotice} from './magic-owned-detail.js';
@@ -3773,7 +3774,12 @@ const checkCommunityNotices=()=>{if(document.hidden||accountLocked||!cloudInfo()
 window.addEventListener('focus',checkCommunityNotices);document.addEventListener('visibilitychange',checkCommunityNotices);
 A.profileSource=()=>{const a=profileArt(cloudInfo().art?.avatar||community.data?.art?.avatar||S.state.settings.cardAvatar);if(a)openZoom({src:a.image,alt:a.name});else profilePicker.open();};
 A.profileHeader=()=>headerPicker.open();
-A.quickArtwork=()=>{if(!quickCard)return;const ref=quickCard;openSheet(`<div class="sheet-head"><h2>Use artwork as…</h2><button class="icon" data-act="closeSheet">✕</button></div><div class="actions"><button class="btn" data-act="quickArtworkAvatar">Avatar</button><button class="btn ghost" data-act="quickArtworkHeader">Profile header</button></div>`,{type:"artwork-actions"});A.quickArtworkAvatar=()=>profilePicker.open({card:ref.card,game:ref.game});A.quickArtworkHeader=()=>headerPicker.open({card:ref.card,game:ref.game});};
+// Collection banner art: a pin stays until the player changes it; without one the banner
+// changes every hour (collection-banner.js).
+const bannerImage=(game,card)=>game==='mtg'?card?.image_uris?.art_crop||card?.card_faces?.[0]?.image_uris?.art_crop:game==='ygo'?(/^\d{1,12}$/.test(String(card?.id||''))?`https://images.ygoprodeck.com/images/cards_cropped/${card.id}.jpg`:''):artworkSources(card,true)[0];
+A.quickArtwork=()=>{if(!quickCard)return;const ref=quickCard,pinned=S.state.settings.collectionBanner?.[ref.game],canPin=!!bannerPin(ref.game,ref.card,bannerImage(ref.game,ref.card));openSheet(`<div class="sheet-head"><h2>Use artwork as…</h2><button class="icon" data-act="closeSheet">✕</button></div><div class="actions"><button class="btn" data-act="quickArtworkAvatar">Avatar</button><button class="btn ghost" data-act="quickArtworkHeader">Profile header</button>${canPin?'<button class="btn ghost" data-act="quickArtworkBanner">Collection banner</button>':''}</div>${pinned?'<p class="artwork-banner-reset"><button class="link" data-act="quickArtworkBannerRotate">Change the banner every hour again</button></p>':''}`,{type:"artwork-actions"});A.quickArtworkAvatar=()=>profilePicker.open({card:ref.card,game:ref.game});A.quickArtworkHeader=()=>headerPicker.open({card:ref.card,game:ref.game});
+ A.quickArtworkBanner=async()=>{const pin=bannerPin(ref.game,ref.card,bannerImage(ref.game,ref.card));if(!pin)return toast('This card has no artwork to use.');await commit(st=>{st.settings.collectionBanner={...(st.settings.collectionBanner||{}),[ref.game]:pin};},{enrich:false,recordDeckWork:false,observeValue:false});closeSheet();toast(`${ref.card.name} is your Collection banner.`);};
+ A.quickArtworkBannerRotate=async()=>{await commit(st=>{const next={...(st.settings.collectionBanner||{})};delete next[ref.game];st.settings.collectionBanner=next;},{enrich:false,recordDeckWork:false,observeValue:false});closeSheet();toast('The Collection banner changes every hour again.');};};
 A.cardProfileHeader=async t=>{
 const ref=await resolveActionCard(t);if(ref)headerPicker.open({card:ref.card,game:ref.game});};
 A.profilePhoto=()=>profilePicker.open();
