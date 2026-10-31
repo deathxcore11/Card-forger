@@ -701,3 +701,8 @@ body.glass :is(.guide-along-row, .guide-link) { background: linear-gradient(160d
 .cs-banner > .cs-hero.ptcg:not(.compact) .cs-art.pk-crop { inset: 0 auto 0 50%; width: auto; aspect-ratio: var(--art-ratio); }
 .cs-banner > .cs-hero.ptcg .pk-crop .pk-win { transform: none; }
 .cs-banner > .cs-hero:not(.compact) .cs-shade { background: linear-gradient(180deg, #0004 0, transparent 32%); }
+
+/* Price history with one point: a compact start line instead of an empty chart. */
+#sheetBody #card-history .history-start { display: flex; height: auto; min-height: 0; align-items: center; gap: 10px; margin: 10px 0 4px; padding: 12px 14px; border-radius: 14px; background: color-mix(in srgb, var(--text) 5%, transparent); color: var(--muted); font-size: 14px; }
+#sheetBody #card-history .history-start b { color: var(--text); }
+#sheetBody .history-start-dot { width: 10px; height: 10px; flex: none; border-radius: 50%; background: var(--accent, var(--gold)); box-shadow: 0 0 0 4px color-mix(in srgb, var(--accent, var(--gold)) 22%, transparent); }
