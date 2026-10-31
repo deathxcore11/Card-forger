@@ -2282,3 +2282,12 @@ body.practice-table-open img{-webkit-user-drag:none}
 :where(body.practice-table-open) .play-match-table[data-forge-native] .forge-emote-button{position:absolute}
 :where(body.practice-table-open) .play-match-table[data-forge-native] :is(.forge-control-emblem,.forge-emote-button)::before{content:"";position:absolute;inset:-7px;border-radius:50%}
 :where(body.practice-table-open) .play-match-table[data-forge-native] :is(.forge-attack-all,[data-native-key=cancel],[data-native-key^=zone-])::before{content:"";position:absolute;inset:-8px 0}
+/* CPU playback placement (PR #74 audit). The spotlight stays inside the side inset, and the CPU's chat bubble
+   steps aside while a spotlight is up. On short landscape phones the activity chip sits under the menu button,
+   clear of your seat cluster. The turn banner's glint moves its gradient, not the masked layer, so nothing
+   ghosts beside the banner. */
+:where(body.practice-table-open) .forge-cast:not(.forge-own-cast){right:max(16px,calc(env(safe-area-inset-right,0px) + 12px))}
+:where(body.practice-table-open[data-forge-spotlight]) .forge-emote-bubble[data-who=cpu]{visibility:hidden}
+@media (max-height:500px) and (orientation:landscape){:where(body.practice-table-open) .forge-activity{top:calc(max(10px,env(safe-area-inset-top,0px)) + 58px);transform:none}}
+:where(body.practice-table-open) .play-match-table[data-forge-native] .play-match-turn-banner::after{transform:none;background-size:300% 100%;background-position:100% 0;animation:forge-banner-glint-pos .8s .25s ease-out both}
+@keyframes forge-banner-glint-pos{from{background-position:100% 0}to{background-position:0 0}}

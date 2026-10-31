@@ -513,6 +513,8 @@ const name=String(card.name);if(Math.max(...name.split(/\s+/).map(word=>word.len
   // A land has no spotlight: it drops into its row (the staged board moves it) and the line says so.
   // A turn change is shown by the staged board's own turn banner; a second one would repeat it.
   if(beat.kind==='land'||beat.tone==='turn'){queueArrows();updateActivity();return;}
+  // An attack is told by the swing and its arrow, as on Arena; a banner there would cover the attackers.
+  if(beat.tone==='attack'){queueArrows();updateActivity();return;}
   if(beat.kind==='phase'){
    const banner=doc.createElement('div');banner.className='forge-playback-status';banner.setAttribute('role','status');banner.textContent=beat.label;if(beat.tone)banner.dataset.tone=beat.tone;mat?.append(banner);
   }else if(beat.card){
@@ -520,14 +522,14 @@ const name=String(card.name);if(Math.max(...name.split(/\s+/).map(word=>word.len
    castShow.innerHTML=`<figure>${art?.imageUrl?`<img src="${esc(art.imageUrl)}" alt="" referrerpolicy="no-referrer" decoding="async">`:''}</figure><p><span>${esc(beat.label)}</span><strong>${esc(c.name)}</strong></p>${beat.text?`<div class="forge-cast-text">${symbolText(beat.text)}</div>`:''}`;
    // Drawn art sits under the photo, so a slow image never leaves the spotlight blank for its beat.
    castShow.querySelector('figure').prepend(drawnArtwork(doc,c,surfaceColors(c)));
-   castShow.dataset.open='true';castShow.dataset.kind=beat.kind;
+   castShow.dataset.open='true';castShow.dataset.kind=beat.kind;doc.body.dataset.forgeSpotlight='true';
   }
   queueArrows();updateActivity();
  }
  // The spotlight's photo starts loading when the story is queued, not when its beat opens.
  const preloaded=new Set();
  function preloadBeatArt(beats){for(const b of beats){if(!b.card||b.kind==='land')continue;const url=resolvePracticeArtwork(b.card)?.imageUrl;if(!url||preloaded.has(url))continue;if(preloaded.size>200)preloaded.clear();preloaded.add(url);const img=new win.Image();img.referrerPolicy='no-referrer';img.decoding='async';img.src=url;}}
- function clearPlaybackBeat(){activeBeat=null;castShow.dataset.open='false';root.querySelector('.forge-playback-status')?.remove();queueArrows();updateActivity();}
+ function clearPlaybackBeat(){activeBeat=null;castShow.dataset.open='false';delete doc.body.dataset.forgeSpotlight;root.querySelector('.forge-playback-status')?.remove();queueArrows();updateActivity();}
  let activityKey='';
  // Like Snap and Master Duel, CPU turns can play at Normal or Fast; the choice stays on this device.
  const SPEED_KEY='cardstashy-cpu-speed';let cpuSpeed='normal';try{if(win.localStorage?.getItem(SPEED_KEY)==='fast')cpuSpeed='fast';}catch{/* blocked storage keeps Normal */}

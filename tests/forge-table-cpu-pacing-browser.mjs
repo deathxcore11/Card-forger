@@ -31,7 +31,7 @@ const turn=skip=>{
   mark('land',!!root.querySelector('.play-match-card[data-instance="900"]'));
   mark('spotlight',document.querySelector('.forge-cast-show[data-open=true],[data-open=true].forge-cast')?.textContent?.includes('Grizzly')||[...document.querySelectorAll('[data-open=true]')].some(n=>/CASTS/.test(n.textContent)));
   mark('creature',!!root.querySelector('.play-match-card[data-instance="901"]'));
-  mark('banner',/ATTACKS/.test(root.querySelector('.forge-playback-status')?.textContent||''));
+  mark('attack',!!root.querySelector('.play-match-card[data-instance="'+giant.id+'"]')?.closest('[data-attacking=true],.is-attacking'));
   mark('life',/37/.test(root.querySelector(`.play-match-seat[data-player-seat]`)?.textContent||'')||[...root.querySelectorAll('.play-match-life strong')].some(n=>n.textContent==='37'));
   mark('decision',root.dataset.forgePlayback==='false'&&f.session.snapshot().status?.revision===21);
   if(seen.decision!==undefined||performance.now()-t0>15000)return done(seen);

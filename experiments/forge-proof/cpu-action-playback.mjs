@@ -319,8 +319,9 @@ export class CpuActionPlaybackQueue {
    // A beat lasts its duration from when it starts, however long its board takes to draw.
    const start=Date.now();shown.push(beat);if(!overlay&&stages(beat))this.present(stagedSnapshot(from,this.target,shown),true,true);
    this.beat(beat,this.target);// speed() is read per beat, so switching to Fast also hurries the beats already queued.
+   const spent=Date.now()-start;
    // A backlog of two or more updates hurries a little; the table never races through a turn.
-   this.timer=this.schedule(step,this.reducedMotion()?250:Math.max(180,Math.round((this.pending.length>1?beat.duration*.6:beat.duration)*this.speed())-(Date.now()-start)));
+   this.timer=this.schedule(step,this.reducedMotion()?250:Math.max(180,Math.round((this.pending.length>1?beat.duration*.6:beat.duration)*this.speed())-(spent>=10?spent:0)));
   };step();
  }
  stop(){this.cancel(this.timer);this.timer=null;this.running=false;this.overlay=false;this.clear();}
