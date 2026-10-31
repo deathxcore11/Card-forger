@@ -671,3 +671,6 @@ dialog.play-match-exit>.play-exit-note{margin:8px 0 0;font-size:13px;color:#f0c2
 }
 /* Held sideways, a phone's notch and nav bar sit on the left and right: the setup screens keep clear of both. */
 body[data-view="play"] #content{padding-left:max(var(--page-edge,16px),calc(env(safe-area-inset-left,0px) + 8px));padding-right:max(var(--page-edge,16px),calc(env(safe-area-inset-right,0px) + 8px))}
+/* The page gutter token follows the same inset, so headings line up with the padded edge. */
+@property --gutter{syntax:'<length>';inherits:true;initial-value:16px}
+:root:has(body[data-view="play"]){--gutter:max(16px,calc(env(safe-area-inset-left,0px) + 8px))}

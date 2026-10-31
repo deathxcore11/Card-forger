@@ -2382,7 +2382,7 @@ body.practice-table-open:has(.forge-order-cards,.forge-zone-search-dialog) .forg
  /* Your name under the portrait keeps clear of the bottom edge at 130% text. */
  :where(body.practice-table-open) .play-match-table[data-stage=match][data-forge-native] .play-match-seat[data-seat=you][data-floating=true]{bottom:calc(var(--edge,16px) + 28px)!important}
  /* Their 44px tap area reaches past the button, so the button lets it show; the label grows the button instead of eliding. */
- :where(body.practice-table-open) .play-match-table[data-stage=match][data-forge-native] .play-match-decisions :is(.forge-native-actions>button,.forge-attack-all){overflow:visible;text-overflow:clip}
+ :where(body.practice-table-open) .play-match-table[data-stage=match][data-forge-native] .play-match-decisions .forge-native-panel :is(.forge-native-actions>button,.forge-attack-all){overflow:visible;text-overflow:clip}
 }
 /* The pile count is part of the pile: it takes a tap (passing it to the top card) and sits clear of the name strip,
    below the middle of an upright stack and under a tapped one. */
