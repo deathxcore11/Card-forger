@@ -824,7 +824,7 @@ function play(i,t,m){
   for(const a of [...c.allies]){if(a.snipe){spellFx('embers','foes');c.enemies.forEach(e=>hit(e,a.snipe))}if(a.pyro)summon({p:1,t:1,haste:1},'Elemental')}
  }
  if(card.shield2)shield(2);
- c.hand.splice(i,1);if(card.fbCast){card.fbCast=0;(c.fbUsed=c.fbUsed||[]).push(card.id);c.exile.push(card)}else if(d.ultimatum){run.deck=run.deck.filter(x=>x.id!==card.id);c.exile.push(card);exiled(card)}else if(d.exile&&!card.stamp)exiled(card,1);else if(!d.power)c.discard.push(card);
+ c.hand.splice(i,1);if(card.fbCast){card.fbCast=0;(c.fbUsed=c.fbUsed||[]).push(card.id);c.exile.push(card)}else if(d.ultimatum){run.deck=run.deck.filter(x=>x.id!==card.id);c.exile.push(card);exiled(card);spellFx('ultimatum-shatter',c)}else if(d.exile&&!card.stamp)exiled(card,1);else if(!d.power)c.discard.push(card);
  if(!d.ally&&run.emblems.includes('embers')){c.enemies.forEach(e=>hit(e,1));if(!c.embered){c.embered=1;heal(1)}}
  if(!d.ally&&c.ult)c.enemies.forEach(e=>hit(e,3));
  c.pickId=null;
@@ -1116,7 +1116,7 @@ function enemyInfo(e){const d=E[e.key];const tr=[e.clock&&`${(run.act||1)>1?'The
 const popOf=o=>{let s='';if(o.pop)s+=`<span class="pop${o.pop>=8?' big':''}" style="font-size:${(1.1+Math.min(o.pop,20)/14).toFixed(2)}rem">−${o.pop}</span>`;if(o.heal)s+=`<span class="pop heal">+${o.heal}</span>`;o.pop=0;o.heal=0;return s};
 // {R} {W} {C} {2} in rules text become mana symbols, so the text reads like a real card.
 const manaSyms=t=>String(t).replace(/\{([WUBRGC0-9])\}/g,(m,k)=>/[WUBRG]/.test(k)?`<i class="ms pwk-mana" data-c="${k}" role="img" aria-label="${k}"></i>`:`<i class="ms ms-g" role="img" aria-label="${k==='C'?'colorless':k}">${k==='C'?'◇':k}</i>`);
-const cardHtml=(card,attrs='')=>{const d=C[card.key];const r={S:'Starter',C:'Common',U:'Uncommon',R:'Rare',M:'Mythic',K:'Curse'}[d.r];return `<button class="card${card.foil?' foil':''}" data-n="${d.name}" data-rar="${d.r}" data-col="${d.col||''}" ${attrs}><span class="head"><b>${d.name}${card.foil?' ✦':''}</b><span class="cost">${c&&view==='battle'?costOf(card):d.e}</span></span><span class="pic">${d.g}</span><span class="kind" data-audit-repeat>${d.r==='K'||d.r==='S'?d.kind+(d.r==='S'?' · '+r:''):d.kind+'<i class="gem" role="img" aria-label="'+r+'" title="'+r+'"></i>'}</span><span>${manaSyms(d.text(card.foil))}</span></button>`};
+const cardHtml=(card,attrs='')=>{const d=C[card.key];const r={S:'Starter',C:'Common',U:'Uncommon',R:'Rare',M:'Mythic',K:'Curse'}[d.r];return `<button class="card${card.foil?' foil':''}" data-n="${d.name}" data-rar="${d.r}" data-col="${d.col||''}" ${attrs}>${d.ultimatum?'<i class="pw-ult" aria-hidden="true"></i>':''}<span class="head"><b>${d.name}${card.foil?' ✦':''}</b><span class="cost">${c&&view==='battle'?costOf(card):d.e}</span></span><span class="pic">${d.g}</span><span class="kind" data-audit-repeat>${d.r==='K'||d.r==='S'?d.kind+(d.r==='S'?' · '+r:''):d.kind+'<i class="gem" role="img" aria-label="'+r+'" title="'+r+'"></i>'}</span><span>${manaSyms(d.text(card.foil))}</span></button>`};
 const kws=a=>['haste','flying','reach','first','vigilance','deathtouch','lifelink','trample','defender'].filter(k=>a[k]||(k==='first'||k==='lifelink')&&akr(a)).map(k=>k==='first'?'first strike':k).join(' · ');
 
 // The escalation dial: fills toward Doom; the number is the turns left before Doom.
