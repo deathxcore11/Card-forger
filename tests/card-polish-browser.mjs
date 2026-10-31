@@ -86,9 +86,9 @@ async function singleYgoObservation(page,edition,value){
  assert.equal(stored.points.length,1,'Repeated checks on the same date cannot invent earlier observations');
  assert.equal(stored.points[0].date,date);assert.equal(stored.points[0].value,value);assert.equal(stored.points[0].observedAt.slice(0,10),date);assert.equal(stored.points[0].sourceAsOf,ISO);
  assert.equal(await history.locator('.market-chart').count(),1);assert.equal(await history.locator('.history-single-chart').count(),1);assert.equal(await history.locator('.market-chart:not(.history-single-chart),.market-chart path,.market-chart polyline').count(),0,'One real observation cannot become a historical trend');
- assert.equal(await history.locator('.market-chart circle').count(),1);assert.equal(await history.locator('.market-chart').getAttribute('aria-label'),summary+' No earlier history available');
- assert.equal(await history.locator('.history-empty').count(),0);assert.equal(await history.locator('.history-coverage').innerText(),'1 verified observation. '+summary);
- assert.equal(await history.locator('.history-identity').innerText(),quote.source+' · selected printing / device · USD\n'+quote.label);
+ assert.equal(await history.locator('.history-start-dot').count(),1);assert.equal(await history.locator('.market-chart').getAttribute('aria-label'),summary+' No earlier history available');
+ assert.equal(await history.locator('.history-empty').count(),0);assert.equal(await history.locator('.history-coverage').innerText(),'1 verified observation.');
+ assert.equal(await history.locator('.history-identity').innerText(),quote.label+' · '+quote.source+' · USD');
  assert.equal(await history.locator('.history-values [data-change="marketPoint"] option').count(),1);assert.equal(await history.locator('.history-values [data-change="marketPoint"] option').textContent(),date+' · '+price);
  assert.equal(await history.locator('[data-act="historyChoosePrinting"]').count(),0);
  return history;

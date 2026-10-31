@@ -1,8 +1,8 @@
 {
   "schema": 1,
-  "version": "4.3.39",
-  "commit": "cfe1fe1eb162c689aaa2b0aec9bb9612f668e634",
-  "tree": "9615da3ed3e0c2d2fb5d7874c6143eff1e9867f2",
+  "version": "4.3.42",
+  "commit": "584d94e8e5eb523be1f03c058920a3e2c6da9a9c",
+  "tree": "83b2a09931be82e63f2d7538919c6deb9dbe3bdf",
   "repository": "https://github.com/deathxcore11/Card-forger",
   "scope": "Explicit frontend build dependencies plus optional artwork input files. Not full backend repository.",
   "files": [
@@ -108,8 +108,8 @@
     },
     {
       "path": "app.js",
-      "bytes": 448807,
-      "sha256": "23c680127e0724f3c7cac7fba2c46fe204d9bfd70a9919cc85a0ca09f6b92968"
+      "bytes": 454780,
+      "sha256": "7659042ded741f0df38f7fab2291666edc6b3a218cafbc473dd45a84dc053576"
     },
     {
       "path": "artwork.js",
@@ -1837,6 +1837,11 @@
       "sha256": "ca9e8c563a8e06c274079b11ea2691bbd10af1f268e7886f953e71f418cf7a99"
     },
     {
+      "path": "collection-banner.js",
+      "bytes": 2654,
+      "sha256": "65be0fbf25f0112b8446180dc8892f3f69bc45cce68ff6772db1c8a4953fde34"
+    },
+    {
       "path": "collection-display.css",
       "bytes": 6601,
       "sha256": "000552528d864ef9f99dee5718724a76302dafd9bb5191a1d537c76c818b356e"
@@ -1939,7 +1944,7 @@
     {
       "path": "config.js",
       "bytes": 601,
-      "sha256": "6dfec8426ba8e0893de891a42ea6f673a1812dbc1bc094ddfeccdf548aee880b"
+      "sha256": "135418df5219d9ed4f4a32adc6918d1fe73a4af294fb4779cedcdf7464d7fa75"
     },
     {
       "path": "core.js",
@@ -2843,8 +2848,8 @@
     },
     {
       "path": "deck-experience.js",
-      "bytes": 42166,
-      "sha256": "d5d8bfc2308c93c4e5e89a2f04cc3ad69dd27e9cb29ae8a1effc303824e11a9b"
+      "bytes": 42698,
+      "sha256": "d1bff0e378aa57b0f74b83dd5311bc76febaa91b1ba6a0fa73fc68edb8c4f931"
     },
     {
       "path": "deck-flow.js",
@@ -2888,13 +2893,13 @@
     },
     {
       "path": "deck-viewer.css",
-      "bytes": 19793,
-      "sha256": "5ffa047f7f10939d72bb71727a0116f740bcb4c0becd41c5d97bc0bdbfc14b8a"
+      "bytes": 27782,
+      "sha256": "0e3ca03e4c392243086e2cfea657066a7a51c8b70291b0796f51483cb8ee3b75"
     },
     {
       "path": "deck-viewer.js",
-      "bytes": 10027,
-      "sha256": "aee2ae1fd78926330b8bf57b94e3c6ef9086d0cf3b87b5f4f56e047331fdd526"
+      "bytes": 12474,
+      "sha256": "0f7d384d566eb724ab7ba94690103e999efd6dc44d27139473ace96022ef8570"
     },
     {
       "path": "deckaudit.js",
@@ -3233,8 +3238,8 @@
     },
     {
       "path": "finish-preview.js",
-      "bytes": 21697,
-      "sha256": "251241c51c99fa1ff1b783b1d5bd7a4f079102015e111a3b815f37b60aeff34b"
+      "bytes": 21591,
+      "sha256": "80ecacfcc03e38fbc63a8e143d9028be4dc0be893c39090afe00867b5bd1b86c"
     },
     {
       "path": "foil-fx.css",
@@ -3333,8 +3338,8 @@
     },
     {
       "path": "guide.js",
-      "bytes": 44314,
-      "sha256": "209b1f5e9493a6fab286ff09a83b131f3f645651128976a7666b5c9d8a6793b0"
+      "bytes": 45416,
+      "sha256": "33ea509a8eab44553f5f187fb7d24b113e4bf946be29b4fa1118cec1a4bb63fc"
     },
     {
       "path": "historical-archive.js",
@@ -3348,13 +3353,13 @@
     },
     {
       "path": "home-overview.css",
-      "bytes": 13098,
-      "sha256": "e39c83118a582ac0cc49f7566e36a42c7dc763d7b0d7888cd438310f231fad0d"
+      "bytes": 14145,
+      "sha256": "ac6fe10a8763e0b8c7bcd46f3f559e8907353dd192ae2345816f1d9d1f9823d5"
     },
     {
       "path": "home-search.js",
-      "bytes": 9541,
-      "sha256": "c052b11cfb2cf660051f342d58d7683ce60ce0ebc9d5381e405635b8f6e9993b"
+      "bytes": 11306,
+      "sha256": "be5bb55c1cdfbf02dddc5590b49988ea6a9d124d1137a592f5fb9aeae67bc269"
     },
     {
       "path": "home-swipe.js",
@@ -3413,8 +3418,8 @@
     },
     {
       "path": "importance.js",
-      "bytes": 20547,
-      "sha256": "b8185eb8c103e0457fd22efc1e7a7bd5b3c75b462f7666cbbbc5b6c5f9853c3d"
+      "bytes": 20878,
+      "sha256": "750c25066caa1030753280c5218b15b3e227fbd8d9847677b70948c554625505"
     },
     {
       "path": "index.html",
@@ -3608,8 +3613,8 @@
     },
     {
       "path": "mtg-wiki-ui.js",
-      "bytes": 30311,
-      "sha256": "fcf3846a6a2a2f35e06586197e688a9a1db39b8e78dfb9dec43313db271320af"
+      "bytes": 30257,
+      "sha256": "254714e09918c79add2c0e9fde36c32b1673dd5b53bc1f4ece1454c9d9bd7a2d"
     },
     {
       "path": "native-service-policy.js",
@@ -3623,8 +3628,8 @@
     },
     {
       "path": "package.json",
-      "bytes": 11982,
-      "sha256": "6caf262f3fb1ff996a56b7d71666fc283ce01894f6196efc7a6c7b32a1de3536"
+      "bytes": 12049,
+      "sha256": "8bf50f23194e40ffc4241eb189f5dffeb940e6ddd5575758fd113dcbda61458b"
     },
     {
       "path": "pairing.js",
@@ -3773,13 +3778,13 @@
     },
     {
       "path": "play-menu.css",
-      "bytes": 86259,
-      "sha256": "8648fb911ae427dfd76404ce50779863d6d82fbc0939bbf4061cc8d2dac757b4"
+      "bytes": 86580,
+      "sha256": "031e8e31d96c7ebf66fdc08e17f864a481b975b28fc1ac0a0b96880512935a11"
     },
     {
       "path": "play-menu.js",
-      "bytes": 26323,
-      "sha256": "c2ccd2f2f55ffdaca00d989c2dedddb457b3e0abdc90557c3c1a650579b5ac87"
+      "bytes": 26143,
+      "sha256": "f2725ddc561ae8486e578e107256112bf8c0b2429bc256c15266a9f608f9bc81"
     },
     {
       "path": "play-opponent-build.js",
@@ -3908,8 +3913,8 @@
     },
     {
       "path": "polish.css",
-      "bytes": 37847,
-      "sha256": "252ab9e2a4276f47a0ebf0bacd058d2b5361b959f809898c577b1a72300c157c"
+      "bytes": 63108,
+      "sha256": "b1573f0405fdfbb8bf30e929e1538fec9aaa5e6ad4b4b727f879667433279fad"
     },
     {
       "path": "power.js",
@@ -4003,8 +4008,8 @@
     },
     {
       "path": "release-record.js",
-      "bytes": 1017,
-      "sha256": "91ad61e5a355e4326d8387026922ee6076ef320a558ba5b8aa8039d6cfdb2461"
+      "bytes": 724,
+      "sha256": "6a5892e64c93aac1bfe68078bc38b09fb1f8d8abfd14fd8c86fb3fac48e0ffde"
     },
     {
       "path": "release-status.js",
@@ -4033,8 +4038,8 @@
     },
     {
       "path": "rule-learning.js",
-      "bytes": 22647,
-      "sha256": "fe89c6738f0afd122548ffc584403250dbefcd446096b306caa364ed4d3879e6"
+      "bytes": 22513,
+      "sha256": "86d4c8feb8810990602dcca5efd073f2912503f42b6749004bf305ce7f4917ae"
     },
     {
       "path": "rule-lessons.js",
@@ -4288,8 +4293,8 @@
     },
     {
       "path": "shared-deck-view.js",
-      "bytes": 3062,
-      "sha256": "21661302c1dd27441e637438c5b432d5ac28050face89a196206882041b77ae5"
+      "bytes": 2935,
+      "sha256": "2f14eaa124bb6e573d6668705752c783ebe97191a62b0913b08bd9200e3f61e9"
     },
     {
       "path": "shared-history.js",
@@ -4313,8 +4318,8 @@
     },
     {
       "path": "store.js",
-      "bytes": 5666,
-      "sha256": "47598d7e7d6080f41ade8ba8142742aa2d4eb7e02b1b0b3bf72e7e443d4dc66b"
+      "bytes": 6041,
+      "sha256": "984c0cb07a20a6e8c6f76b92c7faca3299fb2b0bd67297b3a3c930fde323fb34"
     },
     {
       "path": "strategy-risk.js",
@@ -4328,8 +4333,8 @@
     },
     {
       "path": "style.css",
-      "bytes": 562735,
-      "sha256": "eb3bcd085bdfd90710ec8c0392157c25365f54a18251be30c06b8782a6d3a0af"
+      "bytes": 567333,
+      "sha256": "ab0444903014b93258f000a53742f4cc779cdf4f9ff013e61f4316bf98c8e542"
     },
     {
       "path": "suggest.js",
@@ -4338,8 +4343,8 @@
     },
     {
       "path": "sw.js",
-      "bytes": 15676,
-      "sha256": "81f63e6b9a224b1ec13fcb79c921bdbedbab8b10524042af970133ed5c8c95dc"
+      "bytes": 15870,
+      "sha256": "c1a86f77cee976c38ee7376d16dea3e9dc8a9199e2886e908736dbb4fc437654"
     },
     {
       "path": "sync-merge.js",
@@ -4363,8 +4368,8 @@
     },
     {
       "path": "tcg.js",
-      "bytes": 367757,
-      "sha256": "cbb58a1f7e4651d801a8c0d3c713fd2cefa233b035f38371cf5a9f2b3a90eacb"
+      "bytes": 366862,
+      "sha256": "cfb0fc7cbe80dc5a98d629b61f70748581ec75de1c002c4f521bb5cfa757f248"
     },
     {
       "path": "tcgbuild.js",
@@ -4375,6 +4380,56 @@
       "path": "tcgcompare.js",
       "bytes": 5949,
       "sha256": "41be760b1d962e9488cf8edaa123b01e40244189e97b9b9e8c1bd6397d610f25"
+    },
+    {
+      "path": "test-card-detail-pricing.mjs",
+      "bytes": 29304,
+      "sha256": "9198badad676c56f1455a94a95c67a6ec9ed40fc3241ef4891d2da0348742eb8"
+    },
+    {
+      "path": "test-community-carousel.mjs",
+      "bytes": 6792,
+      "sha256": "d6a2ef358f36be7f3c975b995e744fd3b91c3ea4aee69d1292f8c7f0448954d0"
+    },
+    {
+      "path": "test-condition-carry.mjs",
+      "bytes": 1182,
+      "sha256": "f69fc509aca68dc71a7522d58dd6fe55d36590a77ba38e977b75b3812b775090"
+    },
+    {
+      "path": "test-deck-viewer.mjs",
+      "bytes": 5489,
+      "sha256": "df0b62465279b72791451172077a446a9d27986f8bea21433afdc59cc0584b21"
+    },
+    {
+      "path": "test-detail-catalogue-regression.mjs",
+      "bytes": 11783,
+      "sha256": "bcad38728b0e150972f849d48c51305c2ae57c68a98f9cc21a78174a521dab51"
+    },
+    {
+      "path": "test-guide.mjs",
+      "bytes": 8073,
+      "sha256": "ead1c7e6fb4d2da4a6df65dd809f73af76825b73f370edd3470b5e45ae82b320"
+    },
+    {
+      "path": "test-home-meta-value.mjs",
+      "bytes": 36133,
+      "sha256": "e6c49e8fcf23722caca999e233f5a65976c50a4443bb8132b1f76284a46ae8f7"
+    },
+    {
+      "path": "test-import-pricing-proven-printings.mjs",
+      "bytes": 8547,
+      "sha256": "0b3c7c586dd2dd3dcf184cc54333697f26f9a153508bff92d4c7651687cfe942"
+    },
+    {
+      "path": "test-import-pricing-totals.mjs",
+      "bytes": 7707,
+      "sha256": "655d372fe606e41e8b1146fecfb731a851132ded2403474df42cc25a11fc374e"
+    },
+    {
+      "path": "test-magic-printing-flow.mjs",
+      "bytes": 15667,
+      "sha256": "4bff597b3decbf89ca3603adcb91446f7e10b1503d05288a76930f5d07b44801"
     },
     {
       "path": "test-play-forge-launch.mjs",
@@ -4395,6 +4450,71 @@
       "path": "test-play-screen-gate.mjs",
       "bytes": 9501,
       "sha256": "072d04c9de54947acaa1dc7ec15ebf73c7e51b499766d72cf0c2f0967a05bf51"
+    },
+    {
+      "path": "test-ptcg-adaptation-accounting.mjs",
+      "bytes": 10103,
+      "sha256": "836220dfacfe28d11f2c2a258ddb78bb75be094fbcc9ac7efc978602d6b95b75"
+    },
+    {
+      "path": "test-search-polish.mjs",
+      "bytes": 5197,
+      "sha256": "edde8b7ad7f4c49ee831c7fb5fa0ef5dcd5f688487a253195e50ddc7a32df3ed"
+    },
+    {
+      "path": "test-shared-deck-flow.mjs",
+      "bytes": 20513,
+      "sha256": "eb38beb76108560663a877bfb20af755c05fd009e98bd0695ab9e8a5d2f84f91"
+    },
+    {
+      "path": "test-tcg-builder-accounting.mjs",
+      "bytes": 31703,
+      "sha256": "af0d87b9e1901a06791d6cdd050ec0db5b6a5e04ae09881620cb370a54132c60"
+    },
+    {
+      "path": "test-tcg-format-readiness.mjs",
+      "bytes": 16788,
+      "sha256": "17ac068e6c8f1319adb92f66d60659d1dd5cefd7786579ea3fe8650599f7b93d"
+    },
+    {
+      "path": "test-tcgpower.mjs",
+      "bytes": 5713,
+      "sha256": "91dc497202f28b70bac43093d55ecc0cfecf14bc7cef968360dedd99ad8e26f4"
+    },
+    {
+      "path": "test-universal-search.mjs",
+      "bytes": 1502,
+      "sha256": "11604dafcf2ade0db9a946ea5706c3b0baf28ec249a7a70f5c976d887b3feea8"
+    },
+    {
+      "path": "test-wiki-deck-handoff.mjs",
+      "bytes": 10943,
+      "sha256": "a0e9a873848c8cc0b4c8431a2e2c52c8c6416e6f8c5fdb1ca1484e7a4158e13f"
+    },
+    {
+      "path": "test-ygo-history-ui.mjs",
+      "bytes": 9613,
+      "sha256": "ba9990b8d47169701b67673ae478b0423c48fad4e6e07a376b83142d06258fa1"
+    },
+    {
+      "path": "tests/card-polish-browser.mjs",
+      "bytes": 42279,
+      "sha256": "f3db903c9ef08d96d8f0fe794e42010ed6566da40d6b070dc8e5d6863c9dc24f"
+    },
+    {
+      "path": "tests/deck-box-browser.mjs",
+      "bytes": 4890,
+      "sha256": "582b42fb7d1ad694e56d6ab3208341fa5727db93124fbcb3fc303739b0017758"
+    },
+    {
+      "path": "tests/deck-build-presentation-browser.mjs",
+      "bytes": 15000,
+      "sha256": "68f8158067dc532cdf502d5519120c9c8dfe20fb040582f5977e924a66b49fa9"
+    },
+    {
+      "path": "tests/deck-viewer-browser.mjs",
+      "bytes": 9151,
+      "sha256": "41097c30f1424d54881d4d98b7c31f0267c09b8904529d9ee5144b87ffb7aeb1"
     },
     {
       "path": "tests/fixtures/anniversary-frames/30th-001-high.webp",
@@ -5847,6 +5967,16 @@
       "sha256": "1200acdcf634281be4ff72dd0ffb7771b3c43c395cf3a1f1a5fe01e1fceb7df0"
     },
     {
+      "path": "tests/power-release-browser.mjs",
+      "bytes": 86377,
+      "sha256": "ebc31cc48206872b1165521093710446de5cf5ce3365dcd3cf3284be429b8436"
+    },
+    {
+      "path": "tests/pricing-browser.mjs",
+      "bytes": 7932,
+      "sha256": "7540b80bf2b1f796ed0818b0f23a55caae6e2fc89c0b21d23ed90ca4c00d1c38"
+    },
+    {
       "path": "theme-init.js",
       "bytes": 929,
       "sha256": "c7d6f1201f1bc107a27e0b53906c1f418d14e07efe7c8596b3364c0a57d13272"
@@ -5868,8 +5998,8 @@
     },
     {
       "path": "tour-scenes.js",
-      "bytes": 7349,
-      "sha256": "4deca64ae56b8939a1d98eb07300a6166ffb9e460d535ecf424fc05f2e77df96"
+      "bytes": 7304,
+      "sha256": "1bb97790ce12b94e4d85e07abbd1951b9d4564b1e1b45b4653b44fb466973d62"
     },
     {
       "path": "tour.js",
@@ -5962,6 +6092,11 @@
       "sha256": "5c08643d3f3ead3877d0e5a602d6111a1ff655d5070a55a333b987c0dcc511e4"
     },
     {
+      "path": "universal-search.js",
+      "bytes": 5616,
+      "sha256": "500129f7016443a14a6db2516bd9adfa8d9f1a4fc203d7690e618041b166557d"
+    },
+    {
       "path": "value-history.js",
       "bytes": 2418,
       "sha256": "482ac6ef703375918982aca5e8e608628ae10036297f7a90de2b1589e89bf96f"
@@ -6003,8 +6138,8 @@
     },
     {
       "path": "views.js",
-      "bytes": 198769,
-      "sha256": "53dd9779ba2eeb6b731faccbfbc81478a720a75a420b3650263e5cc955963940"
+      "bytes": 196562,
+      "sha256": "ebfca6125e101d9075de9e5b118f77f8e3d87c0e2262fb9cce630d6c9b3ed4bf"
     },
     {
       "path": "wiki-article-content.js",
@@ -6028,8 +6163,8 @@
     },
     {
       "path": "workbench-ui.js",
-      "bytes": 35281,
-      "sha256": "d3681046869aae7a8db535d7aec660eb29661462f51862b8df375e468900fcc0"
+      "bytes": 39528,
+      "sha256": "34912f8c7943475e4b0d58f577e20175bfe7f44e08ab513133afa7fb0bbe3bb9"
     },
     {
       "path": "ygo-foil-analysis.js",

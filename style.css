@@ -3803,7 +3803,7 @@ body[data-view="scan"] #app:has(.scan-workspace.is-camera) > #toast .toast-undo 
 #sheetBody .market-section-head h3 {margin:0;font-size:16px;line-height:1.4;}
 #sheetBody .history-latest {display:grid;gap:3px;min-width:0;text-align:right;}
 #sheetBody .history-latest b {font-size:20px;font-variant-numeric:tabular-nums;}
-#sheetBody .history-latest small {font-size:10px;color:var(--muted);}
+#sheetBody .history-latest small {font-size:11px;color:var(--muted);}
 #sheetBody .history-identity {margin:10px 0 14px;font-size:11px;line-height:1.6;}
 #sheetBody .history-ranges {display:flex;gap:4px;margin:14px 0;max-width:100%;}
 #sheetBody .history-ranges button {flex:1 1 0;min-width:0;min-height:44px;padding:8px 5px;font-size:12px;}
@@ -3821,8 +3821,8 @@ body[data-view="scan"] #app:has(.scan-workspace.is-camera) > #toast .toast-undo 
 #sheetBody .vendor-row:hover {background:color-mix(in srgb,var(--gold) 7%,var(--surface));}
 #sheetBody .vendor-copy,#sheetBody .vendor-quote {display:grid;gap:5px;min-width:0;overflow-wrap:anywhere;}
 #sheetBody .vendor-copy b {font-size:14px;line-height:1.4;}
-#sheetBody .vendor-copy small,#sheetBody .vendor-quote small {font-size:10px;line-height:1.5;color:var(--muted);}
-#sheetBody .vendor-copy .vendor-provenance {font-size:10px;}
+#sheetBody .vendor-copy small,#sheetBody .vendor-quote small {font-size:11px;line-height:1.5;color:var(--muted);}
+#sheetBody .vendor-copy .vendor-provenance {font-size:11px;}
 #sheetBody .vendor-quote {text-align:right;}
 #sheetBody .vendor-quote strong {font-size:17px;line-height:1.3;font-variant-numeric:tabular-nums;}
 #sheetBody .vendor-action {font-size:11px;color:var(--gold);line-height:1.5;}
@@ -4713,7 +4713,7 @@ body[data-game="ygo"] .ask-launch{--ask-a:#b697ef;--ask-b:#697db5;--ask-c:#dbb26
 #sheetBody .card-price-summary{display:block;width:100%;padding:0;border:0}
 #sheetBody .card-quick-actions{display:grid;grid-template-columns:max-content minmax(0,1fr) max-content max-content;grid-template-areas:"buy market manual add";align-items:center;gap:10px;width:100%;min-width:0}
 #sheetBody .card-quick-actions>.card-buy-link{grid-area:buy;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:2px;min-width:100px;min-height:48px;line-height:1.25}
-#sheetBody .card-buy-brand{font-size:10px;font-weight:700;letter-spacing:.02em}
+#sheetBody .card-buy-brand{font-size:11px;font-weight:700;letter-spacing:.02em}
 #sheetBody .card-quick-actions>.card-price-reference{grid-area:market;display:grid;gap:2px;align-content:center;min-width:0;min-height:48px;padding:4px 0;border:0;border-radius:8px;background:transparent;text-align:left;color:var(--text);cursor:pointer}
 #sheetBody .card-quick-actions>.card-price-reference strong{font-size:clamp(18px,2.6vw,22px)}
 #sheetBody .card-quick-actions>.personal-price-edit{grid-area:manual;justify-self:stretch;margin:0;padding:8px 12px;font-size:12px;color:var(--text)}
@@ -5026,6 +5026,18 @@ body[data-view="home"] #content > #homeHero.home-art-header{background:none}
 #content.view-gallery .display-list .lot[data-tier="t4"]:not(.wanted) .lot-art { animation: tier-shine 3.4s cubic-bezier(.45,.05,.3,1) infinite, aura-orbit 10s linear infinite; }
 #content.view-gallery .display-list .lot[data-tier="t5"]:not(.wanted) .lot-art { animation: tier-shine 2.6s ease-in-out infinite, aura-orbit 6s linear infinite; }
 @media (prefers-reduced-motion: reduce) { #content.view-gallery .display-list .lot .lot-art { animation: none !important; } }
+/* Aura room. Lots and grid cards use content-visibility:auto (paint containment), which cuts any glow at their own
+   box: that is the hard, boxy edge under a card's light. Each tile gets a transparent margin of light (padding,
+   cancelled by an equal negative margin so the layout is unchanged) and a tighter, feathered blur that fades out
+   well inside that margin, so the light always ends soft. Deck cards (.deck-row) already wear their tier ring
+   and keep their own box, so they get no room. */
+#content.view-gallery .display-list > .lot[data-tier]:not(.wanted, .deck-row),
+.view-gallery .card-grid > .grid-card[data-tier] { --aura-blur: 18px; --aura-room: 28px; padding: var(--aura-room); margin: calc(-1 * var(--aura-room)); }
+/* The room is light only, never hit area: taps in it fall through to the neighbouring card. */
+#content.view-gallery .display-list > .lot[data-tier]:not(.wanted, .deck-row),
+.view-gallery .card-grid > .grid-card[data-tier] { pointer-events: none; }
+#content.view-gallery .display-list > .lot[data-tier]:not(.wanted, .deck-row) > *,
+.view-gallery .card-grid > .grid-card[data-tier] > * { pointer-events: auto; }
 
 /* ===== One frame for every card. Set and search grids and deck grids wear the collection's price band on
    the card image (5px, 12px corners). The card page draws the same band on the card's holder instead, so
@@ -5051,6 +5063,24 @@ body[data-view="home"] #content > #homeHero.home-art-header{background:none}
 .cd-img .cd-zoom:has(> img.card-img[data-tier="t4"]) { --aura-1: #ffd34d; --aura-2: #ffb020; --aura-mix: 70%; background: linear-gradient(115deg, #b8860b 0%, #ffd34d 30%, #fff6c9 45%, #ffd34d 60%, #b8860b 100%) 0 0 / 300% 100%; animation: tier-shine 3.4s cubic-bezier(.45,.05,.3,1) infinite; }
 .cd-img .cd-zoom:has(> img.card-img[data-tier="t5"]) { --aura-1: #ff7a1a; --aura-2: #ffd08a; --aura-mix: 75%; background: linear-gradient(115deg, #c2410c 0%, #ff7a1a 30%, #ffd08a 45%, #ff7a1a 60%, #c2410c 100%) 0 0 / 300% 100%; animation: tier-shine 2.6s ease-in-out infinite; }
 .cd-img .cd-zoom:has(> img.card-img[data-tier]) { box-shadow: -12px -9px var(--aura-blur, 30px) -8px color-mix(in srgb, var(--aura-1) var(--aura-mix), transparent), 12px 9px var(--aura-blur, 30px) -8px color-mix(in srgb, var(--aura-2) var(--aura-mix), transparent), 0 0 calc(var(--aura-blur, 30px) * 1.5) -6px color-mix(in srgb, var(--aura-1) 40%, transparent), 0 10px 24px -14px #000c; }
+/* ===== Six distinct border motions (Randall 31 Oct: "each animation cool and unique"). One signature per tier,
+   shared by collection tiles and search/set grids; only the frame band and the light move, never the card art.
+   Silver: one slow gleam circling the frame. Emerald: twin glints circling the other way.
+   Sapphire: an electric current, two sheens crossing. Holo: colours rising through the frame with an orbiting light.
+   Gold: a fast glint racing along, light slowly orbiting. Fire: flames and embers with a quick restless light. ===== */
+#content.view-gallery .display-list .lot[data-tier="t0"]:not(.wanted) .lot-art,
+.view-gallery .card-grid .grid-card img.card-img[data-tier="t0"] { background-image: conic-gradient(from var(--ring), #6f7780 0 30%, #c9d0d6 40%, #fff 45%, #c9d0d6 50%, #6f7780 60% 100%); background-size: auto; background-repeat: no-repeat; animation: ring-spin 10s linear infinite; }
+#content.view-gallery .display-list .lot[data-tier="t1"]:not(.wanted) .lot-art,
+.view-gallery .card-grid .grid-card img.card-img[data-tier="t1"] { background-image: conic-gradient(from var(--ring), #1f8a50, #2fae68 18%, #c4ffde 24%, #2fae68 30%, #1f8a50 50%, #2fae68 68%, #c4ffde 74%, #2fae68 80%, #1f8a50); background-size: auto; background-repeat: no-repeat; animation: ring-spin 7s linear infinite reverse; }
+#content.view-gallery .display-list .lot[data-tier="t2"]:not(.wanted) .lot-art,
+.view-gallery .card-grid .grid-card img.card-img[data-tier="t2"] { background-image: linear-gradient(90deg, #e2f4ff00 0 40%, #e2f4ff 50%, #e2f4ff00 60% 100%), linear-gradient(90deg, #1d5fb0, #2f7fe0 30%, #7fc3ff 50%, #2f7fe0 70%, #1d5fb0); background-size: 180px 100%, 260px 100%; background-repeat: repeat-x; background-position: 0 0, 0 0; animation: tier-current 2.2s linear infinite; }
+@keyframes tier-current { to { background-position: -180px 0, 260px 0; } }
+#content.view-gallery .display-list .lot[data-tier="t3"]:not(.wanted) .lot-art,
+.view-gallery .card-grid .grid-card img.card-img[data-tier="t3"] { background-image: linear-gradient(180deg, #b46cff, #6fd0ff, #ff7ad9, #ffe27a, #7dffb2, #b46cff); background-size: 100% 360px; background-repeat: repeat-y; animation: fx-y360 4.5s linear infinite, aura-orbit 8s linear infinite; }
+#content.view-gallery .display-list .lot[data-tier="t4"]:not(.wanted) .lot-art,
+.view-gallery .card-grid .grid-card img.card-img[data-tier="t4"] { background-image: linear-gradient(90deg, #9a6f08 0%, #e2b53a 30%, #ffd34d 42%, #fffbe6 50%, #ffd34d 58%, #e2b53a 70%, #9a6f08 100%); background-size: 240px 100%; background-repeat: repeat-x; animation: fx-x240 2.4s linear infinite, aura-orbit 10s linear infinite; }
+#content.view-gallery .display-list .lot[data-tier="t5"]:not(.wanted) .lot-art,
+.view-gallery .card-grid .grid-card img.card-img[data-tier="t5"] { background-image: linear-gradient(90deg, rgba(255,240,190,0) 0%, rgba(255,240,190,.85) 50%, rgba(255,240,190,0) 100%), linear-gradient(180deg, #a3330a 0%, #ff7a1a 25%, #ffb050 50%, #ff5a10 75%, #a3330a 100%); background-size: 160px 100%, 100% 140px; background-repeat: repeat-x, repeat-y; animation: fx-fire 1.6s linear infinite, aura-orbit 4.5s linear infinite; }
 @media (prefers-reduced-motion: reduce) { .view-gallery .card-grid .grid-card img.card-img[data-tier], .cd-img .cd-zoom { animation: none !important; } }
 /* Search color chips: one tap per mana color, the selected one lifted and ringed. */
 .filter-pips { display: flex; flex-wrap: wrap; gap: 8px; margin: 2px 0 12px; }
@@ -5257,8 +5287,9 @@ body[data-view="scan"] #app:has(.scan-workspace.is-camera:not(.is-live)) { heigh
 body[data-view="scan"] #app:has(.scan-workspace.is-camera:not(.is-live)) > #content { flex:none;min-height:0;overflow:visible; }
 #app .scan-workspace.is-camera:not(.is-live),#app .scan-workspace.is-camera:not(.is-live) > .scan-panel { flex:none;min-height:0; }
 #app .scan-workspace.is-camera:not(.is-live):has(.scan-panel) > .scan-toolbar { position:static;width:auto;margin:8px 0 4px;padding:6px var(--page-edge,16px);border:0;border-radius:0;background:none;backdrop-filter:none;box-shadow:none; }
-#app .scan-workspace.is-camera:not(.is-live) .cam-wrap { flex:none;height:auto;min-height:clamp(170px,calc(100dvh - 610px),480px); }
-#app .scan-workspace.is-camera:not(.is-live) .cam-wrap .scan-drop { inset:16px; }
+#app .scan-workspace.is-camera:not(.is-live) .cam-wrap { display:flex;flex-direction:column;justify-content:center;flex:none;height:auto;min-height:clamp(170px,calc(100dvh - 610px),480px); }
+/* The idle frame is in the flow: it grows with its text (empty batch shows the subtitle; 130% text is taller), so nothing is ever cropped. */
+#app .scan-workspace.is-camera:not(.is-live) .cam-wrap .scan-drop { position:relative;inset:auto;flex:none;width:auto;margin:16px auto;min-height:0; }
 #app .scan-workspace.is-camera:not(.is-live) .scan-tray { flex:none;margin:10px var(--page-edge,16px) 10px; }
 @media (max-height:520px) and (orientation:landscape) { #app .scan-workspace.is-camera:not(.is-live) .cam-wrap { min-height:0; } }
 #app .scan-workspace.is-live .cam-status,#app .scan-workspace.is-live .scan-status-line { bottom:206px; }

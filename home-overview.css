@@ -58,14 +58,26 @@ body[data-view="home"] .home-intro .home-value {
 .home-personal-grid { display:grid; grid-template-columns:repeat(3,minmax(0,1fr)); gap:12px; }
 .home-personal-deck {
   position:relative; isolation:isolate; display:flex; align-items:flex-end; min-width:0; min-height:154px;
-  padding:0; border:1px solid #ffffff26; border-radius:18px; overflow:hidden;
+  padding:0; border:0; border-radius:18px; overflow:hidden;
   color:#f5f6fa; background:linear-gradient(135deg,#252936,#141720); text-align:left;
+  box-shadow:0 18px 34px -20px #000e,0 3px 10px -4px #0009;
 }
+/* Frame: a gold-to-glass hairline painted ABOVE the art (below the words), so the art's anti-aliased corner
+   pixels never show as a coloured, cut-looking rim. A soft inner vignette seats the art like a mounted print. */
+.home-personal-deck::before,.home-personal-deck::after { content:''; position:absolute; inset:0; z-index:-1; border-radius:inherit; pointer-events:none; }
+.home-personal-deck::before { box-shadow:inset 0 1px 0 #ffffff1f,inset 0 0 26px -6px #000c; }
+.home-personal-deck::after {
+  padding:1px; background:linear-gradient(155deg,#f1d08ab3,#ffffff38 26%,#ffffff12 52%,#ffffff0a 70%,#f1d08a66);
+  -webkit-mask:linear-gradient(#000 0 0) content-box,linear-gradient(#000 0 0); -webkit-mask-composite:xor;
+  mask:linear-gradient(#000 0 0) content-box exclude,linear-gradient(#000 0 0);
+  transition:opacity .35s;
+}
+.home-personal-resume::after { background:linear-gradient(155deg,#f6d891e6,#f1d08a59 30%,#ffffff14 55%,#ffffff0a 72%,#f1d08a8c); }
 .home-personal-art { position:absolute; z-index:-2; inset:0; pointer-events:none; }
 .home-personal-art:after { content:''; position:absolute; inset:0; background:linear-gradient(0deg,#0b0e15f7,#0b0e1590 55%,#0b0e1522); }
 .home-personal-art>img,.home-personal-art>.pk-crop,.home-personal-art>.home-personal-pokemon { width:100%; height:100%; max-width:none; object-fit:cover; }
 .home-personal-art>.pk-crop { position:absolute; inset:0; }
-.home-personal-art>.pk-crop img { width:100%; max-width:none; }
+.home-personal-copy,.home-personal-resume .home-resume>div { text-shadow:0 1px 2px #000b,0 0 12px #0008; }
 .home-personal-copy { display:grid; gap:6px; width:100%; min-width:0; padding:18px; }
 .home-personal-copy>b { font-size:17px; line-height:1.2; overflow-wrap:anywhere; }
 .home-personal-copy>small { font-size:11px; color:#e0e3eb; }

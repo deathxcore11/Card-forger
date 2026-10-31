@@ -28,7 +28,7 @@ try{
     await page.setViewportSize({width:390,height:1000});await page.evaluate(async()=>{(await import('/settings-theme.js')).applyTheme('light',{persist:false});});
     await checkDeckViews(page,{root:'#content .deck-viewer',controls:'#content',label:'saved-mtg-light-390',screenshots:true});
     await page.evaluate(async()=>{(await import('/settings-theme.js')).applyTheme('dark',{persist:false});});checks.push({source:'saved',game,theme:'light',fourViews:true});
-    assert.match(await page.locator('.hero-stats').innerText(),/10\/60/);
+    assert.match(await page.locator('.ds-stats').innerText(),/10\/60/);
     await page.locator('[data-input="deckSearch"]').fill(cs[0].name);await page.locator('.deck-view-switch [data-mode="stacks"]').click();
     const filtered=await page.locator('#deckList [data-deck-card]').count();assert.equal(filtered,1);
     await page.locator('.deck-view-switch [data-mode="symbols"]').click();

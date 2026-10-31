@@ -158,7 +158,7 @@ async function savedCheck(game,fixture,eligible) {
   assert.equal(shownPower(tcgPower(game,reopened,format(game,reopened.format),cardId=>cache[game][cardId])),shownPower(p),'presentation changes never alter the Power estimate');
   if(game==='ygo'){const f=format(game,reopened.format);assert.ok(html.includes(`1st (${f.firstTurnCards||5})`));assert.ok(html.includes(`2nd (${f.secondTurnCards||6})`));assert.doesNotMatch(html,/Infinity/);}
 
-  if(!eligible){assert.equal(shownPower(p),null);assert.match(html,/power unavailable<\/button>/);}
+  if(!eligible){assert.equal(shownPower(p),null);assert.match(html,/power unavailable<\/span><\/button>/);}
   else assert(Number.isFinite(shownPower(p)));
 }
 for(const [game,good,bad] of [['ptcg',glcGood,pokemonFixture([bannedRaikou])],['ygo',speedGood,skill],['ygo',goatGood,ygoFixture('goat',{side:1})]]) {

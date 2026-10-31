@@ -89,7 +89,8 @@ import { playRate } from './importance.js';
 import { budgetNotes, variantsFrom, difficultyOf } from './deck-optimizer.js';
 import {attachCardGestures, CompareSelection, cardActionButtons, contextAction, contextHeader, deckContextShortcuts, HOLD_MS, moved as movedFrom} from './card-actions.js';
 import {tcgCompareSheet} from './tcgcompare.js';
-import {artworkHTML} from './artwork.js';
+import {artworkHTML,artworkSources} from './artwork.js';
+import {bannerPin} from './collection-banner.js';
 import {attachAutomaticBrowse} from './auto-browse.js';
 import { createPrintingPicker } from "./printing-picker.js";
 import {magicOwnedDetail,magicOwnedCard,magicOwnedCurrent,magicOwnedContext,magicOwnedNotice} from './magic-owned-detail.js';
@@ -109,6 +110,9 @@ import { binderPage, binderMatches, BINDER_COLORS, attachBinderDrag, animateTurn
 // Screens live in views.js; deck/collection math in core.js, planner.js,
 // strategy.js, deck-flow.js and insights.js.
 import { metaState, loadMeta as loadMetaData, MTG_META_FORMATS, DEFAULT_MTG_META_FORMAT, allCachedMeta } from "./meta.js";
+import {searchApp,parseQuery} from './universal-search.js';
+import {searchGameConcepts} from './game-wiki-knowledge.js';
+import {communityState,communitySlideUrl} from './community-feed.js';
 import { mtgPower, mtgMetaKey, asShown, shownPower } from "./power.js";
 import { playedAlongside } from "./guide.js";
 import { mtgPairQueries, rankPairs, edhPop } from "./pairing.js";
@@ -2798,6 +2802,7 @@ A.viewPrint = (t) => {
   refreshSheet();
   $("#sheetBody").scrollTo({ top: 0, behavior: globalThis.matchMedia?.("(prefers-reduced-motion: reduce)").matches ? "auto" : "smooth" });
 };
+// Continue or retry loading this card's details and printings (the Retry button on a paused load).
 A.magicVersionsMore = () => {
   const ctx = S.ui.sheetCtx;
   if (ctx?.type !== "card" || ctx.detailsBusy) return;
@@ -3675,12 +3680,12 @@ async function homeLookup(g,q){
  const cached=g==='mtg'?Object.values(S.catalog):Object.values(T.cache[g]||{}),pack=catalogState(g).pack;
  const local=[...cached];
  if(pack){const query=q.toLowerCase();for(const [name,indexes]of pack.names)if(name.includes(query)||name.startsWith(query.slice(0,3)))for(const i of indexes.slice(0,3))local.push(catalogCandidate(pack,i).card);}
- let cards=rankHomeCards(local,q),error=false,corrected=false;
+ let cards=rankHomeCards(local,q,7,{byName:g==='mtg'}),error=false,corrected=false;
  if(cards.length<5){try{
    if(g==='mtg'){
     let data;try{data=await api('/cards/search?'+new URLSearchParams({q:q+' game:paper',unique:'prints',order:'released'}));}catch(e){if(e.status!==404&&!/404|no cards|not found|zero results|didn.t match/i.test(e.message||''))throw e;data={data:[]};}
     if(!data.data?.length){try{const c=await api('/cards/named?'+new URLSearchParams({fuzzy:q}));data={data:[c]};corrected=true;}catch(e){if(e.status!==404&&!/404|no cards|not found|zero results|ambiguous|didn.t match/i.test(e.message||''))throw e;}}
-    cards=rankHomeCards([...cards,...(data.data||[])],q);
+    cards=rankHomeCards([...cards,...(data.data||[])],q,7,{byName:true});
    }else{
     let result=await T.SOURCES[g].search({q,size:7,page:0});
     if(!result.cards.length&&q.length>=5){result=await T.SOURCES[g].search({q:q.slice(0,3),size:40,page:0});corrected=true;}
@@ -3691,6 +3696,7 @@ async function homeLookup(g,q){
 }
 async function submitHome(q,mode){
  q=String(q||'').trim();if(!q)return;const g=T.game();homeQueries[g]=q;
+ if(mode==='build'){const core=parseQuery(q).core;return A.askOpen({query:isDeckBuildRequest(q)?q:`Build me a ${core} deck`});}
  if((mode||homeIntent(q))==='ask'){
   if(!isDeckBuildRequest(q)&&/\b(?:rules?|ruling|resolve|stack|trigger|can i (?:cast|summon|attack|activate)|when can)\b/i.test(q)){
    A.askRules({dataset:{game:g}});const input=document.querySelector('.rules-ask-dialog .ask-input');if(input){input.value=q;input.focus();}return;
@@ -3768,7 +3774,12 @@ const checkCommunityNotices=()=>{if(document.hidden||accountLocked||!cloudInfo()
 window.addEventListener('focus',checkCommunityNotices);document.addEventListener('visibilitychange',checkCommunityNotices);
 A.profileSource=()=>{const a=profileArt(cloudInfo().art?.avatar||community.data?.art?.avatar||S.state.settings.cardAvatar);if(a)openZoom({src:a.image,alt:a.name});else profilePicker.open();};
 A.profileHeader=()=>headerPicker.open();
-A.quickArtwork=()=>{if(!quickCard)return;const ref=quickCard;openSheet(`<div class="sheet-head"><h2>Use artwork as…</h2><button class="icon" data-act="closeSheet">✕</button></div><div class="actions"><button class="btn" data-act="quickArtworkAvatar">Avatar</button><button class="btn ghost" data-act="quickArtworkHeader">Profile header</button></div>`,{type:"artwork-actions"});A.quickArtworkAvatar=()=>profilePicker.open({card:ref.card,game:ref.game});A.quickArtworkHeader=()=>headerPicker.open({card:ref.card,game:ref.game});};
+// Collection banner art: a pin stays until the player changes it; without one the banner
+// changes every hour (collection-banner.js).
+const bannerImage=(game,card)=>game==='mtg'?card?.image_uris?.art_crop||card?.card_faces?.[0]?.image_uris?.art_crop:game==='ygo'?(/^\d{1,12}$/.test(String(card?.id||''))?`https://images.ygoprodeck.com/images/cards_cropped/${card.id}.jpg`:''):artworkSources(card,true)[0];
+A.quickArtwork=()=>{if(!quickCard)return;const ref=quickCard,pinned=S.state.settings.collectionBanner?.[ref.game],canPin=!!bannerPin(ref.game,ref.card,bannerImage(ref.game,ref.card));openSheet(`<div class="sheet-head"><h2>Use artwork as…</h2><button class="icon" data-act="closeSheet">✕</button></div><div class="actions"><button class="btn" data-act="quickArtworkAvatar">Avatar</button><button class="btn ghost" data-act="quickArtworkHeader">Profile header</button>${canPin?'<button class="btn ghost" data-act="quickArtworkBanner">Collection banner</button>':''}</div>${pinned?'<p class="artwork-banner-reset"><button class="link" data-act="quickArtworkBannerRotate">Change the banner every hour again</button></p>':''}`,{type:"artwork-actions"});A.quickArtworkAvatar=()=>profilePicker.open({card:ref.card,game:ref.game});A.quickArtworkHeader=()=>headerPicker.open({card:ref.card,game:ref.game});
+ A.quickArtworkBanner=async()=>{const pin=bannerPin(ref.game,ref.card,bannerImage(ref.game,ref.card));if(!pin)return toast('This card has no artwork to use.');await commit(st=>{st.settings.collectionBanner={...(st.settings.collectionBanner||{}),[ref.game]:pin};},{enrich:false,recordDeckWork:false,observeValue:false});closeSheet();toast(`${ref.card.name} is your Collection banner.`);};
+ A.quickArtworkBannerRotate=async()=>{await commit(st=>{const next={...(st.settings.collectionBanner||{})};delete next[ref.game];st.settings.collectionBanner=next;},{enrich:false,recordDeckWork:false,observeValue:false});closeSheet();toast('The Collection banner changes every hour again.');};};
 A.cardProfileHeader=async t=>{
 const ref=await resolveActionCard(t);if(ref)headerPicker.open({card:ref.card,game:ref.game});};
 A.profilePhoto=()=>profilePicker.open();
@@ -3820,7 +3831,47 @@ A.cardDeckAdd=async()=>{
  await A[ctx.game==='mtg'?'addToDeck':'tAddToDeck']({dataset:{id:ctx.id,name:ctx.name}});
  if(S.ui.sheetCtx===ctx)A.sheetHistoryBack();
 };
-const homeSearchController=attachHomeSearch({game:T.game,lookup:homeLookup,submit:submitHome,open:async(g,c)=>{
+// Everything in the app the search bar can reach, gathered from what is already on the device.
+let searchSetWarm={};
+function homeAppSources(g){
+ const mtg=g==='mtg',decks=(mtg?S.state:T.gs(g)).decks||[],sets=mtg?S.ui.sets.list:(T.ui(g).sets?.list||[]);
+ if(!sets.length&&!searchSetWarm[g]){searchSetWarm[g]=1;setTimeout(()=>{try{mtg?loadSetIndex():tcgCtx.loadSets?.(g);}catch{}},0);}
+ const year=d=>String(d||'').slice(0,4);
+ const meta=[];
+ for(const [k,v] of Object.entries(allCachedMeta())){
+  const data=v?.data;if(!data||!(mtg?k.startsWith('mtg:'):k===g||k.startsWith(g+':')))continue;
+  const fmt=mtg?k.slice(4):(k.includes(':')?k.split(':')[1]:'');
+  for(const a of (data.archetypes||[]).slice(0,40)){const key=a.best||a.representative?.key;if(!key)continue;
+   meta.push({title:a.name,sub:[fmt,Number.isFinite(a.share)?(a.share*100).toFixed(a.share<.1?1:0)+'% of the field':''].filter(Boolean).join(' · '),kind:'meta',act:mtg?'mtgProven':'tMetaDeck',data:mtg?{key,format:fmt}:{key,metaKey:k}});}
+ }
+ const N=communityState(g).data;
+ return {
+  decks:decks.map(d=>({title:d.name||'Untitled deck',sub:[d.commander,d.format].filter(Boolean).join(' · '),route:(mtg?'#deck/':'#tdeck/')+encodeURIComponent(d.id)})),
+  sets:sets.filter(x=>!x.digital).map(x=>({title:x.name,code:x.code||x.id||'',sub:[String(x.code||'').toUpperCase(),year(x.released_at||x.releaseDate||x.date)].filter(Boolean).join(' · '),icon:mtg?x.icon:'',act:mtg?'set':'tSet',data:mtg?{code:x.code}:{id:x.id}})),
+  meta,
+  wiki:[],
+  news:(N?.items||[]).filter(x=>x.title).map(x=>({title:x.title,sub:typeof x.source==='string'?x.source:(x.source?.name||x.sourceName||''),url:communitySlideUrl(g,x)})).filter(x=>x.url),
+ };
+}
+function homeLocal(g,q){
+ const src=homeAppSources(g),P=parseQuery(q);
+ src.wiki=searchGameConcepts(g,P.core,{limit:3}).map(c=>({title:c.label,sub:c.summary?String(c.summary).slice(0,90):'',route:'#wiki/'+encodeURIComponent(c.label)}));
+ const found=searchApp(q,src);
+ // A deck nobody has made yet: offer to build it, the one place AI earns its spot.
+ const hasDeck=found.sections.some(s=>(s.id==='deck'||s.id==='meta')&&s.items.some(i=>i.score<=2));
+ const theme=P.core.replace(/\b\w/g,c=>c.toUpperCase());
+ found.build=P.hint==='deck'&&!hasDeck&&P.core.length>=3?`${/^[aeiou]/i.test(theme)?'an':'a'} ${theme} deck`:null;
+ found.skipCards=!!found.build;
+ return found;
+}
+function runHomeItem(item,g){
+ if(T.game()!==g)return;
+ if(item.url){window.open(item.url,'_blank','noopener');return;}
+ if(item.act){const fn=A[item.act];if(fn)return fn({dataset:{...item.data}});return;}
+ if(item.route==='planeswalk.html'){location.href='planeswalk.html';return;}
+ if(item.route)return go(item.route);
+}
+const homeSearchController=attachHomeSearch({game:T.game,lookup:homeLookup,submit:submitHome,local:homeLocal,run:runHomeItem,open:async(g,c)=>{
  if(T.game()!==g)return;
  if(g==='mtg'){
   if(c.oracle_text!==undefined||c.card_faces?.some(f=>f.oracle_text!==undefined))return A.card({dataset:{name:c.name},printing:c});
@@ -4029,14 +4080,16 @@ A.mtgWikiAsk=()=>{const text=$('#wikiQ')?.value.trim()||currentWikiPage().state.
 A.cardTab = async (t) => {
   const commit=scopedCommit();
   const ctx = S.ui.sheetCtx;
-  if (!["card","tcard"].includes(ctx?.type) || !["overview","meta","guide","versions","prices","rulings","legal","trade"].includes(t.dataset.tab)) return;
-  ctx.tab = t.dataset.tab === "legal" ? "rulings" : t.dataset.tab;
+  if (!["card","tcard"].includes(ctx?.type) || !["overview","meta","guide","prices","rulings","legal","trade"].includes(t.dataset.tab)) return;
+  ctx.tab = ["legal","rulings"].includes(t.dataset.tab) ? "guide" : t.dataset.tab; // Rules & legality live in the Play guide
   for (const b of $$("#sheetBody .cs-tabs [data-tab]")) {
     const on = b.dataset.tab === ctx.tab;
     b.classList.toggle("on", on);
     b.setAttribute("aria-selected", on);
     b.tabIndex = on ? 0 : -1;
   }
+  // Set progress, quick price and badges belong to Overview; the other tabs open on their own content.
+  for (const el of $$("#sheetBody [data-overview-only]")) el.hidden = ctx.tab !== "overview";
   for (const p of $$("#sheetBody .cs-panel")) {
     p.hidden = p.dataset.tab !== ctx.tab;
     if (!p.hidden) { p.classList.remove("tab-enter"); void p.offsetWidth; p.classList.add("tab-enter"); }
@@ -4056,8 +4109,8 @@ A.cardTab = async (t) => {
     if(S.ui.sheetCtx === ctx)refreshSheet();
   }
   sheetScrolled();
-  // Official rulings load the first time the tab opens.
-  if (ctx.tab === "rulings" && ctx.type === "card" && !ctx.rulings) {
+  // Official rulings (inside the Play guide) load the first time it opens.
+  if (ctx.tab === "guide" && ctx.type === "card" && !ctx.rulings) {
     const c = ctx.print || meta(ctx.name);
     try {
       const r = await api("/cards/" + encodeURIComponent(c.id) + "/rulings");
@@ -4241,8 +4294,8 @@ function backToCard(scrollTo) {
 A.buyBack = () => backToCard();
 A.buyCompare = () => {
   const ctx = S.ui.sheetCtx;
-  if (ctx?.back) ctx.back.tab = "versions";
-  backToCard(".cs-tabs");
+  if (ctx?.back) ctx.back.tab = "overview";
+  backToCard(".card-printing-preview");
 };
 
 /* ---------- deck review ---------- */
@@ -5173,7 +5226,7 @@ async function mtgGuideLoad(c) {
   const ranked = rankPairs("mtg", c, cands);
   S.ui.guide[k] = {
     cards: ranked.map((p) => ({ name: p.card.name, image: p.card.image_uris?.small || p.card.card_faces?.[0]?.image_uris?.small || "", attrs: `data-act="card" data-name="${esc(p.card.name)}"`, reasons: p.reasons, score: p.score, fallback: p.fallback })),
-    note: ranked.length ? "Ranked by how well they fit (what each card needs and gives), tournament pairings, popularity and what you own." : results.some((r) => !r) ? "Couldn’t reach Scryfall right now." : "No strong pairings found in its text — try Build decks around it.",
+    note: ranked.length ? "Ranked by how well they fit (what each card needs and gives), tournament pairings, popularity and what you own." : results.some((r) => !r) ? "Couldn’t reach Scryfall right now." : "No strong pairings found in its text or tournament lists.",
   };
   refreshSheet();
 }
@@ -5877,6 +5930,7 @@ A.mtgProven = (t) => {
     evidence: `Tournament-backed · ${esc(label)} · last ${data.days} days · compared with ${data.decks.length} lists from ${data.coverage?.events || 0} events · ${esc(data.source)}`,
     attribution: `${{ "Magic Online (official decklists)": `Decklist from <a href="https://www.mtgo.com/decklists" target="_blank" rel="noopener">Magic Online</a> (Wizards of the Coast).`, "MTGTop8 (competitive Commander)": `Decklist from <a href="https://www.mtgtop8.com/format?f=cEDH" target="_blank" rel="noopener">MTGTop8</a>; most events are reported through TopDeck.gg.` }[data.source] || `Data provided by <a href="https://topdeck.gg" target="_blank" rel="noopener">TopDeck.gg</a>.`} Prices are Scryfall’s TCGplayer estimates.`,
     sourceUrl: d.url || d.eventUrl,
+    formatLabel: `Magic · ${label}`,
     sourceLabel: data.source.startsWith("Magic Online") ? "Magic Online event" : data.source.startsWith("MTGTop8") ? "MTGTop8 event" : "TopDeck.gg event",
     rowsFn: () => rowsOf(d),
     // The 15-card sideboard travels with the list (not in Commander, which has none).
@@ -6891,10 +6945,19 @@ async function boot() {
   if ("serviceWorker" in navigator) {
     // The app opens from its saved copy. A release that arrives in the first moments, before anything
     // has been touched, is switched to straight away; otherwise it is used from the next open.
-    const updating = !!navigator.serviceWorker.controller, opened = Date.now();let touched = false;
-    for (const type of ["pointerdown", "keydown"]) addEventListener(type, () => { touched = true; }, { once: true, capture: true });
-    navigator.serviceWorker.addEventListener("controllerchange", () => { if (updating && !touched && Date.now() - opened < 12000 && !document.querySelector("dialog[open]")) location.reload(); });
-    navigator.serviceWorker.register("./sw.js", { updateViaCache: "none" }).catch(() => {});
+    // A tab left open (phones keep them for days) checks for a release each time it comes back,
+    // and switches to it in the same untouched moment, or the next time it comes back.
+    const updating = !!navigator.serviceWorker.controller;let opened = Date.now(), touched = false, waiting = false, checked = 0, registration = null;
+    const quiet = () => !document.querySelector("dialog[open]") && !/^#\/?(play|scan)/.test(location.hash) && !document.activeElement?.matches?.("input,textarea,select,[contenteditable]") && ![...document.querySelectorAll("input:not([type=hidden]):not([type=checkbox]):not([type=radio]),textarea")].some((f) => f.value && f.value !== f.defaultValue);
+    for (const type of ["pointerdown", "keydown"]) addEventListener(type, () => { touched = true; }, { capture: true });
+    navigator.serviceWorker.addEventListener("controllerchange", () => { if (updating && !touched && Date.now() - opened < 12000 && quiet()) location.reload(); else waiting = true; });
+    document.addEventListener("visibilitychange", () => {
+      if (document.visibilityState !== "visible") return;
+      if (waiting && quiet()) return location.reload();
+      opened = Date.now(); touched = false;
+      if (registration && opened - checked > 600000) { checked = opened; registration.update().catch(() => {}); }
+    });
+    navigator.serviceWorker.register("./sw.js", { updateViaCache: "none" }).then((r) => { registration = r; checked = Date.now(); }).catch(() => {});
   }
   // Scryfall role tags arrive after first paint; redraw Magic pages so Deck Power counts them.
   // TCGplayer prices for printings Scryfall leaves unpriced arrive in the background.
