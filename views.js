@@ -426,11 +426,11 @@ export function cardSheet(c, ctx = {}) {
   <div class="cs-banner"><div class="cs-hero mtg">${img(heroArt, name, "cs-art")}<div class="cs-shade"></div></div>
   <div class="cs-title"><div><h2>${esc(name)}</h2><p class="type-line">${esc(faces[face]?.type_line || typeText(shown))} ${detailOwnedSummary(i.owned)}</p></div>${manaCost(faces[face] || shown)}</div></div>
   ${cardTabs(tab, tabList)}
-  ${emblemChips("mtg", c)}
+  <div class="cs-overview-head" data-overview-only ${tab === "overview" ? "" : "hidden"}>${emblemChips("mtg", c)}
   <div class="cs-meta">
     ${(()=>{const st=S.ui.set,info=S.ui.sets.list.find(s=>s.code===shown.set)||(st.code===shown.set?st.info:null);return detailSetSummary({action:shown.set?`data-act="set" data-code="${esc(shown.set)}"`:'',identity:`${setIcon(shown.set, shown.rarity, 24)}<span><b>${esc(shown.set_name || (shown.set || "").toUpperCase())}${shown.set?' <span class="set-go">›</span>':''}</b><small>${esc((shown.set || "").toUpperCase())} #${esc(shown.collector_number || "?")} · ${esc(RARITY[shown.rarity] || shown.rarity || "")}${shown.released_at ? " · " + esc(shown.released_at.slice(0, 4)) : ""}</small></span>`,progress:magicSetProgress(shown.set,info)});})()}
     ${compactPriceSummary("mtg",shown,buyContext("mtg",shown,{...ctx,priceFinish},S.state))}
-  </div>
+  </div></div>
   ${cardPanel("overview", tab, overview)}
   ${tabList.some(([id]) => id === "meta") ? cardPanel("meta", tab, mtgCardMeta(c)) : ""}
   ${cardPanel("guide", tab, mtgCardGuide(c, rulings, ruleLinks))}

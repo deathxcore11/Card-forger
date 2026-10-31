@@ -527,3 +527,6 @@ body[data-view="settings"] .profile-menu>.sr-only{display:none}
 .price-copy .foot { grid-column: 1 / -1; margin: 2px 0 0; }
 @media (max-width: 420px) { .price-hero { grid-template-columns: minmax(0, 1fr); } .price-fresh { justify-self: start; } }
 #sheetBody .price-hero select{width:100%;min-width:0;min-height:44px}
+#sheetBody .card-discovery > summary{min-height:44px;display:flex;align-items:center;cursor:pointer}
+.card-guide .pair-list{grid-template-columns:repeat(auto-fill,minmax(min(100%,300px),1fr))}
+.card-guide .pair-shared{margin:0 0 10px}

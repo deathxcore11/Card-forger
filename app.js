@@ -4030,6 +4030,8 @@ A.cardTab = async (t) => {
     b.setAttribute("aria-selected", on);
     b.tabIndex = on ? 0 : -1;
   }
+  // Set progress, quick price and badges belong to Overview; the other tabs open on their own content.
+  for (const el of $$("#sheetBody [data-overview-only]")) el.hidden = ctx.tab !== "overview";
   for (const p of $$("#sheetBody .cs-panel")) {
     p.hidden = p.dataset.tab !== ctx.tab;
     if (!p.hidden) { p.classList.remove("tab-enter"); void p.offsetWidth; p.classList.add("tab-enter"); }
@@ -5166,7 +5168,7 @@ async function mtgGuideLoad(c) {
   const ranked = rankPairs("mtg", c, cands);
   S.ui.guide[k] = {
     cards: ranked.map((p) => ({ name: p.card.name, image: p.card.image_uris?.small || p.card.card_faces?.[0]?.image_uris?.small || "", attrs: `data-act="card" data-name="${esc(p.card.name)}"`, reasons: p.reasons, score: p.score, fallback: p.fallback })),
-    note: ranked.length ? "Ranked by how well they fit (what each card needs and gives), tournament pairings, popularity and what you own." : results.some((r) => !r) ? "Couldn’t reach Scryfall right now." : "No strong pairings found in its text — try Build decks around it.",
+    note: ranked.length ? "Ranked by how well they fit (what each card needs and gives), tournament pairings, popularity and what you own." : results.some((r) => !r) ? "Couldn’t reach Scryfall right now." : "No strong pairings found in its text or tournament lists.",
   };
   refreshSheet();
 }

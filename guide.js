@@ -14,7 +14,7 @@ const BASIC = /^(?:snow-covered )?(?:plains|island|swamp|mountain|forest|wastes)
 // Pokémon damage as printed: "20+" and "30×" are not caps, so never call them "up to".
 const damageText = (d) => { const s = String(d ?? "").trim(); return /\+$/.test(s) ? `${parseInt(s, 10)} or more` : /[×x]$/.test(s) ? `${parseInt(s, 10)} × a count` : s; };
 // Multi-Prize Pokémon by name (ex, EX, GX, V, VMAX, VSTAR); Prism Star is Rule Box but gives one Prize.
-const multiPrize = (c) => /\b(ex|EX|GX|V|VMAX|VSTAR)\b/.test(c.name || "");
+const multiPrize = (c) => (Number.isFinite(c.prize) ? c.prize > 1 : /\b(ex|EX|GX|V|VMAX|VSTAR)\b/.test(c.name || ""));
 
 /* ---------- Magic ---------- */
 
@@ -357,19 +357,24 @@ export function guideHtml(game, card, g, opts = {}) {
 // Real pairings first; fallbacks (format staples, popular in its colors) under their own heading.
 const pairRow = (x) => `<button class="pair-row ${x.fallback ? "fallback" : ""}" ${x.attrs}>${x.image ? `<img src="${esc(x.image)}" alt="" loading="lazy" referrerpolicy="no-referrer">` : `<span class="pair-noimg"></span>`}<span class="pair-txt"><b>${esc(x.name)}</b>${x.reasons?.length ? `<small>${esc(x.reasons.slice(0, 3).join(" · "))}</small>` : ""}</span>${x.score && !x.fallback ? `<span class="pair-score" title="Pairing score">${x.score}</span>` : ""}</button>`;
 function pairGroups(list) {
-  const best = list.filter((x) => !x.fallback),
-    also = list.filter((x) => x.fallback);
-  return `${best.length ? `<div class="pair-list">${best.map(pairRow).join("")}</div>` : `<p class="muted small">No direct synergies in its text or tournament lists.</p>`}
+  const best0 = list.filter((x) => !x.fallback),
+    also = list.filter((x) => x.fallback),
+    // A reason every pairing shares is said once, above the list, not on every row.
+    shared = best0.length > 1 ? (best0[0].reasons || []).filter((r) => best0.every((x) => (x.reasons || []).includes(r))) : [],
+    best = shared.length ? best0.map((x) => ({ ...x, reasons: x.reasons.filter((r) => !shared.includes(r)) })) : best0;
+  return `${shared.length ? `<p class="small muted pair-shared">All ${best.length}: ${esc(shared.join(" · "))}</p>` : ""}${best.length ? `<div class="pair-list">${best.map(pairRow).join("")}</div>` : `<p class="muted small">No direct synergies in its text or tournament lists.</p>`}
     ${also.length ? `<p class="list-head">${best.length ? "Also works with" : "Good in most decks"}</p><div class="pair-list">${also.map(pairRow).join("")}</div>` : ""}`;
 }
 
 // Rules & legality in one panel: how the card is played, copies allowed per format (the
 // format's legality, colour-coded), then official rulings or where they're published.
+// Formats that allow the same number share one tile ("Standard · Modern — Up to 4").
+const limitGroups = (limits) => [...limits.reduce((m, [f, n]) => m.set(n, [...(m.get(n) || []), f]), new Map())];
 function rulesHtml(r, rulings = "", links = "") {
   if (!r) return "";
   const tone = (n) => (/Banned|Forbidden|Not/.test(n) ? "bad" : /Limited|restricted|singleton|^1\b/.test(n) ? "warn" : "ok");
   return `<section class="guide-sec guide-panel guide-rules" aria-label="Rules and legality"><h3>Rules &amp; legality</h3><ul class="guide-list">${r.turn.map((t) => `<li>${esc(t)}</li>`).join("")}</ul>
-    ${r.limits.length ? `<p class="list-head">Formats · copies per deck</p><div class="guide-limits">${r.limits.map(([f, n]) => `<span class="${tone(n)}"><small>${esc(f)}</small><b>${esc(n)}</b></span>`).join("")}</div>` : ""}
+    ${r.limits.length ? `<p class="list-head">Formats · copies per deck</p><div class="guide-limits">${limitGroups(r.limits).map(([n, fs]) => `<span class="${tone(n)}"><small>${esc(fs.join(" · "))}</small><b>${esc(n)}</b></span>`).join("")}</div>` : ""}
     <p class="small muted">${esc(r.deck)}</p>
     ${rulings ? `<div class="guide-rulings"><p class="list-head">Official rulings</p>${rulings}</div>` : ""}
     ${links ? `<div class="guide-rule-links">${links}</div>` : ""}</section>`;

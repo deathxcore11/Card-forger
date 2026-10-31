@@ -848,12 +848,12 @@ export function tcgCardSheet(c, sctx = {}) {
   <div class="cs-banner ${!artworkSources(c, true).length && !heroSrc ? "no-art" : ""}"><div class="cs-hero ${g}">${g === "ptcg" ? pokemonArtCrop(c, "cs-art") : heroSrc ? `<img class="cs-art" src="${esc(heroSrc)}" alt="${esc(c.name)}" referrerpolicy="no-referrer" onerror="${heroFallback ? `if(!this.dataset.f){this.dataset.f=1;this.src='${esc(heroFallback)}'}else ` : ""}this.remove()">` : ""}<div class="cs-shade"></div></div>
   <div class="cs-title"><div><h2>${esc(c.name)}</h2><p class="type-line">${esc(c.typeLine || "")} ${detailOwnedSummary(detailOwnedLots(g,ownedLots,c).reduce((n,e)=>n+Number(e.qty),0))}</p></div>${gameEmblems(c)}</div></div>
   ${tabs(tab, tabList)}
-  ${emblemChips(g, c)}
+  <div class="cs-overview-head" data-overview-only ${tab === "overview" ? "" : "hidden"}>${emblemChips(g, c)}
   <div class="cs-meta">
     ${tcgDetailSetSummary(c,sctx)}
     ${!c.set && c.archetype ? `<button class="link small card-archetype" data-act="tArchetype" data-name="${esc(c.archetype)}">${esc(c.archetype)} · Archetype · ${c.sets?.length || 0} printings ›</button>` : ""}
     ${compactPriceSummary(g,c,buyContext(g,c,sctx,S.state),p.usd==null?lastQuote(g,c):null)}
-  </div>
+  </div></div>
   ${panel("overview", tab, (g==='ygo'?ygoPreviewSelectors(c,sctx):'')+overview)}
   ${tabList.some(([id]) => id === "meta") ? panel("meta", tab, tcgCardMeta(g, c)) : ""}
   ${panel("guide", tab, tcgCardGuide(g, c))}
@@ -3063,7 +3063,7 @@ export function registerTcg(c) {
     const ranked = rankPairs(G, card, cands, { max: 10 });
     S.ui.guide[k] = {
       cards: ranked.map((p) => ({ name: p.card.name, image: p.card.image || "", attrs: `data-act="tCard" data-id="${esc(p.card.id)}"`, reasons: p.reasons, score: p.score, fallback: p.fallback })),
-      note: ranked.length ? "Ranked by how well they fit (what each card needs and gives), tournament pairings and what you own." : "No strong pairings found yet — check the cards played alongside it, or Build decks around it.",
+      note: ranked.length ? "Ranked by how well they fit (what each card needs and gives), tournament pairings and what you own." : "No strong pairings found in its text or tournament lists.",
     };
     c.refreshSheet?.();
   };
