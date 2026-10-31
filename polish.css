@@ -477,7 +477,7 @@ body .topbar .home-search-pill>input { padding-left:18px; }
 .home-search-pill:has(input:not(:placeholder-shown))::before { animation-duration:1.6s; }
 @media (prefers-reduced-motion: reduce) { .home-search-pill:focus-within::before { animation:none; background-position:50% 0; } }
 .home-suggestions { border-radius:20px; border:1px solid color-mix(in srgb,var(--gold) 26%,#ffffff14);
-  background:linear-gradient(160deg,#1d1f29f2,#12141bf5); backdrop-filter:blur(18px) saturate(1.2); -webkit-backdrop-filter:blur(18px) saturate(1.2);
+  background:linear-gradient(160deg,#1d1f29,#12141b); backdrop-filter:blur(18px) saturate(1.2); -webkit-backdrop-filter:blur(18px) saturate(1.2);
   box-shadow:0 24px 50px -18px #000e,inset 0 1px 0 #ffffff12; padding:8px; }
 .home-suggestions .home-result-status { margin:4px 8px 8px; font-size:11px; letter-spacing:.04em; color:var(--gold); }
 .home-result-actions { padding:6px 0 0; gap:8px; }
@@ -706,3 +706,4 @@ body.glass :is(.guide-along-row, .guide-link) { background: linear-gradient(160d
 #sheetBody #card-history .history-start { display: flex; height: auto; min-height: 0; align-items: center; gap: 10px; margin: 10px 0 4px; padding: 12px 14px; border-radius: 14px; background: color-mix(in srgb, var(--text) 5%, transparent); color: var(--muted); font-size: 14px; }
 #sheetBody #card-history .history-start b { color: var(--text); }
 #sheetBody .history-start-dot { width: 10px; height: 10px; flex: none; border-radius: 50%; background: var(--accent, var(--gold)); box-shadow: 0 0 0 4px color-mix(in srgb, var(--accent, var(--gold)) 22%, transparent); }
+.meta-row .meta-main small.ellip { white-space:normal; display:-webkit-box; -webkit-line-clamp:2; -webkit-box-orient:vertical; overflow:hidden; }
