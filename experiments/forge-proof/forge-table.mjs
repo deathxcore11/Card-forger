@@ -647,8 +647,8 @@ const name=String(card.name);if(Math.max(...name.split(/\s+/).map(word=>word.len
    // On a portrait screen the stack strip and the hand slider float over your side, so it stops above them too;
    // a sideways phone's hand button and control emblems sit just over the hand, and a tall screen's turn buttons
    // ride above it, so it stops above those as well.
-   const box=area.getBoundingClientRect(),own=area.dataset.seat!=='cpu',edges=(own?[...rest,...[...root.querySelectorAll('.forge-native-stack,:scope>.forge-hand-slider')].filter(n=>getComputedStyle(n).position==='fixed').map(n=>n.getBoundingClientRect()),...[...root.querySelectorAll('.forge-hand-expand,.forge-control-emblem')].map(n=>n.getBoundingClientRect()),...[...(raisedDock()?root.querySelectorAll('.play-match-decisions:not(:has(.forge-order-cards,.forge-zone-search))'):[])].map(n=>n.getBoundingClientRect()).filter(r=>r.height&&r.top>area.getBoundingClientRect().top+area.clientHeight/2)]:[...root.querySelectorAll('.play-match-opponent-fan,.play-pod-rail')].map(n=>n.getBoundingClientRect())).filter(r=>r.width&&r.right>box.left&&r.left<box.right);
-   const top=own?box.top:Math.max(box.top,...edges.map(r=>r.bottom+4)),bottom=own?Math.min(box.bottom,...edges.map(r=>r.top-4)):box.bottom;
+   const box=area.getBoundingClientRect(),own=area.dataset.seat!=='cpu',edges=(own?[...rest,...[...root.querySelectorAll('.forge-native-stack,:scope>.forge-hand-slider')].filter(n=>getComputedStyle(n).position==='fixed').map(n=>n.getBoundingClientRect()),...[...root.querySelectorAll('.forge-hand-expand,.forge-control-emblem')].map(n=>n.getBoundingClientRect()),...[...(raisedDock()?root.querySelectorAll('.play-match-decisions:not(:has(.forge-order-cards,.forge-zone-search))'):[])].map(n=>n.getBoundingClientRect()).filter(r=>r.height&&r.top>box.top+40)]:[...root.querySelectorAll('.play-match-opponent-fan,.play-pod-rail')].map(n=>n.getBoundingClientRect())).filter(r=>r.width&&r.right>box.left&&r.left<box.right);
+   const top=own?box.top:Math.max(box.top,...edges.map(r=>r.bottom+8)),bottom=own?Math.min(box.bottom,...edges.map(r=>r.top-4)):box.bottom;
    const W=columns?Math.floor(zone.getBoundingClientRect().width):area.clientWidth,H=Math.min(area.clientHeight,Math.round(bottom-top))-(columns?22:0);if(!W||H<=0)continue;
    // Side-by-side lanes (a grid) have fixed boxes: a row that spills out of its lane shrinks inside it.
    const fitRows=()=>{for(const row of zone.querySelectorAll('.play-match-card-row')){row.style.removeProperty('transform');const lane=row.closest('.play-match-lane'),h=lane?.clientHeight||0;
@@ -672,16 +672,17 @@ const name=String(card.name);if(Math.max(...name.split(/\s+/).map(word=>word.len
    const rows=[...zone.querySelectorAll('.play-match-card-row')];
    const fitsAt=k=>{zone.dataset.scaled='true';zone.style.width=`${W/k}px`;for(const r of rows){r.style.removeProperty('transform');for(const w of r.querySelectorAll(':scope>.play-match-card-wrap[hidden]'))w.hidden=false;const more=r.querySelector(':scope>.forge-lane-more');if(more)more.hidden=true;}return zone.scrollHeight*k<=H+1&&zone.scrollWidth*k<=W+1;};let k=growLimit();
    if(!fitsAt(k)){let lo=.4,hi=k;for(let t=k-.05;t>.4;t-=.05)if(fitsAt(t)){lo=t;hi=t+.05;break;}for(let i=0;i<3;i++){const mid=(lo+hi)/2;if(fitsAt(mid))lo=mid;else hi=mid;}k=lo;}
-   fits.push({area,zone,own,W,H,k,fitRows});
+   fits.push({area,zone,own,W,H,k,fitRows,drop:own?0:Math.max(0,top-box.top)});
   }
   // A row that fits its lane at one width can fold or shrink differently at another, so the shared scale is checked
   // once laid out and stepped down until every side really fits.
   let k=Math.min(growLimit(),...fits.map(f=>f.k));
   for(let pass=0;pass<8;pass++){let over=false;
-   for(const f of fits){const {area,zone,own,W,H,fitRows}=f;
-    if(Math.abs(k-1)<.005){zone.style.removeProperty('width');zone.style.removeProperty('transform');delete zone.dataset.scaled;fitRows();if(zone.scrollHeight>H+1)over=true;continue;}
+   for(const f of fits){const {area,zone,own,W,H,fitRows,drop}=f;
+    if(Math.abs(k-1)<.005){zone.style.removeProperty('width');zone.style.removeProperty('transform');delete zone.dataset.scaled;fitRows();if(drop)zone.style.transform=`translateY(${drop.toFixed(1)}px)`;if(zone.scrollHeight>H+1)over=true;continue;}
     zone.dataset.scaled='true';zone.style.width=`${W/k}px`;fitRows();
-    const h=zone.scrollHeight*k,lift=own||area.querySelectorAll(':scope>.play-match-zone').length>1?0:Math.max(0,area.clientHeight-h);if(h>H+1)over=true;
+    // The CPU side settles toward the divider, leaving room for keyword badges hanging under its cards.
+    const h=zone.scrollHeight*k,lift=own?0:area.querySelectorAll(':scope>.play-match-zone').length>1?drop:Math.max(0,area.clientHeight-h-10);if(h>H+1)over=true;
     zone.style.transform=`translateY(${lift.toFixed(1)}px) scale(${k.toFixed(3)})`;
    }
    if(!over||k<=.4)break;k=Math.max(.4,k-.04);}
@@ -1307,7 +1308,11 @@ const name=String(card.name);if(Math.max(...name.split(/\s+/).map(word=>word.len
  function placeHandSlider(hand){const slider=root.querySelector(':scope>.forge-hand-slider');if(!slider||!hand.length||root.dataset.handLift==='true')return;
   const rects=hand.map(w=>(w.querySelector('.play-match-card')||w).getBoundingClientRect()),pill=root.querySelector('.forge-hand-expand')?.getBoundingClientRect(),cardTop=Math.min(...rects.map(r=>r.top));
   const l=Math.max(16,Math.min(...rects.map(r=>r.left))),r=Math.min(win.innerWidth-16,Math.max(...rects.map(r=>r.right)),pill?.width?pill.left-8:Infinity),top=Math.min(pill?.height?pill.top+pill.height/2-22:Infinity,cardTop-8-44);
-  slider.style.left=`${Math.round(l)}px`;slider.style.width=`${Math.round(Math.max(120,r-l))}px`;slider.style.right='auto';slider.style.top=`${Math.round(top)}px`;}
+  // A turn dock that reaches down beside the hand (a tall touch screen) ends the slider at its left edge.
+  const dock=root.querySelector('.play-match-decisions:not(:has(.forge-order-cards,.forge-zone-search))')?.getBoundingClientRect(),end=dock?.height&&dock.top<top+44&&dock.bottom>top&&dock.left>l?Math.min(r,dock.left-8):r;
+  // A hand squeezed too narrow for a slider beside its expand pill drops the slider; the pill opens the whole hand.
+  slider.style.display=end-l<120?'none':'';
+  slider.style.left=`${Math.round(l)}px`;slider.style.width=`${Math.round(Math.max(120,end-l))}px`;slider.style.right='auto';slider.style.top=`${Math.round(top)}px`;}
  function layoutHand(){const g=handGeometry();if(!g)return;const fi=g.wraps.indexOf(handFocus);
   for(const w of g.wraps){if(w!==handFocus)w.removeAttribute('data-hand-focus');}
   if(fi<0){delete root.dataset.handFocused;handFocusRect=null;}else root.dataset.handFocused='true';

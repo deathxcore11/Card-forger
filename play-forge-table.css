@@ -2367,7 +2367,19 @@ body.practice-table-open img{-webkit-user-drag:none}
  :where(body.practice-table-open) .forge-native-panel .forge-order-cap small{font-size:11px}
  :where(body.practice-table-open) .forge-native-panel .forge-order-actions>button{min-height:44px}
  /* A turn button that grows with large text reaches left past the dock instead of being cut. */
- :where(body.practice-table-open) .play-match-table[data-stage=match][data-forge-native] .play-match-decisions:not([data-complex=true]):not(:has(.forge-order-cards,.forge-zone-search)){overflow:visible}
+ :where(body.practice-table-open) .play-match-table[data-stage=match][data-forge-native] .play-match-decisions:not([data-complex=true]):not(:has(.forge-order-cards,.forge-zone-search,.forge-native-stack)){overflow:visible}
+ /* Beside a stack the dock scrolls, so a long turn button takes a second line at large text instead. */
+ :where(body.practice-table-open) .play-match-table[data-stage=match][data-forge-native] .play-match-decisions:has(.forge-native-stack) .forge-native-actions [data-native-key=ok]{white-space:normal!important;height:auto!important;min-height:44px!important;line-height:1.15;padding-block:6px!important;max-width:100%}
+ /* The narrow stack column: the card's name gets the row's width, its count rides beside it, the ⋯ menu takes
+    its own column beside the head; the list scrolls inside the dock. */
+ :where(body.practice-table-open) .play-match-table[data-stage=match][data-forge-native] .forge-native-panel .forge-native-stack .forge-stack-item .forge-stack-head{grid-template-columns:minmax(0,1fr) auto;padding-right:0!important;margin-right:0}
+ :where(body.practice-table-open) .play-match-table[data-stage=match][data-forge-native] .forge-native-panel .forge-stack-kind{grid-column:1/-1;grid-row:1;overflow:hidden;text-overflow:ellipsis}
+ :where(body.practice-table-open) .play-match-table[data-stage=match][data-forge-native] .forge-native-panel .forge-native-stack .forge-stack-item:has(>.forge-stack-menu){grid-template-columns:minmax(0,1fr) auto;column-gap:4px}
+ :where(body.practice-table-open) .play-match-table[data-stage=match][data-forge-native] .forge-native-panel .forge-native-stack .forge-stack-item>.forge-stack-menu{position:static;grid-column:2;grid-row:1;align-self:start}
+ :where(body.practice-table-open) .play-match-table[data-stage=match][data-forge-native] .forge-native-panel .forge-native-stack .forge-stack-item>:not(.forge-stack-head,.forge-stack-menu){grid-column:1/-1}
+ :where(body.practice-table-open) .play-match-table[data-stage=match][data-forge-native] .forge-native-panel .forge-stack-name{grid-column:1;grid-row:2;overflow:hidden;text-overflow:ellipsis}
+ :where(body.practice-table-open) .play-match-table[data-stage=match][data-forge-native] .forge-native-panel .forge-stack-count{grid-column:2;grid-row:2;white-space:nowrap;align-self:center}
+ :where(body.practice-table-open) .play-match-table[data-stage=match][data-forge-native] .forge-native-panel .forge-stack-list{max-height:calc(100dvh - 252px)}
 }
 /* Chat bubbles step back while a sheet asks you something. */
 body.practice-table-open:has(.forge-order-cards,.forge-zone-search-dialog) .forge-emote-bubble{opacity:0;pointer-events:none}
@@ -2381,9 +2393,20 @@ body.practice-table-open:has(.forge-order-cards,.forge-zone-search-dialog) .forg
  :where(body.practice-table-open) .play-match-table[data-stage=match][data-forge-native][data-your-commander=true] .play-match-main[data-details=true] .play-match-hand-area{left:max(calc(var(--hud) + 24px),252px);right:24px}
  :where(body.practice-table-open) .play-match-table[data-stage=match][data-forge-native] .play-match-decisions:not(:has(.forge-order-cards,.forge-zone-search)){bottom:calc(var(--play-hand)*1.394 - 4px)}
  :where(body.practice-table-open) .play-match-table[data-stage=match][data-forge-native] .play-match-hand .play-match-card-row{justify-content:safe center}
+ /* While the stack shows, the dock (stack and turn buttons) settles into the bottom-right corner and the hand
+    ends beside it, so the dock never stands over your side of the board. */
+ :where(body.practice-table-open) .play-match-table[data-stage=match][data-forge-native]:has(.play-match-decisions .forge-native-stack) .play-match-decisions:not(:has(.forge-order-cards,.forge-zone-search)){bottom:var(--edge,12px)}
+ :where(body.practice-table-open) .play-match-table[data-stage=match][data-forge-native]:has(.play-match-decisions .forge-native-stack) .play-match-hand-area,
+ :where(body.practice-table-open) .play-match-table[data-stage=match][data-forge-native]:has(.play-match-decisions .forge-native-stack) .play-match-main[data-details=true] .play-match-hand-area,
+ :where(body.practice-table-open) .play-match-table[data-stage=match][data-forge-native][data-your-commander=true]:has(.play-match-decisions .forge-native-stack) .play-match-hand-area,
+ :where(body.practice-table-open) .play-match-table[data-stage=match][data-forge-native][data-your-commander=true]:has(.play-match-decisions .forge-native-stack) .play-match-main[data-details=true] .play-match-hand-area{right:calc(var(--dock-w,var(--hud)) + var(--edge,12px) + 12px)}
+ /* Stats sit low on the card so a long name strip at large text clears them. */
+ :where(body.practice-table-open) .play-match-table[data-stage=match][data-forge-native] .play-match-battlefields .play-current-stats{bottom:2px}
+ /* The board runs the full width here, so the phase track moves off the divider to the top bar, beside the menu. */
+ :where(body.practice-table-open) .play-match-table[data-forge-native] .forge-phase-track{top:calc(env(safe-area-inset-top,0px) + 18px);left:calc(max(14px,env(safe-area-inset-left,0px)) + 66px);translate:none}
  :where(body.practice-table-open) .play-match-table[data-stage=match][data-forge-native] .play-match-decisions:not([data-complex=true]):not(:has(.forge-order-cards,.forge-zone-search)){overflow:visible}
  /* Your name under the portrait keeps clear of the bottom edge at 130% text. */
- :where(body.practice-table-open) .play-match-table[data-stage=match][data-forge-native] .play-match-seat[data-seat=you][data-floating=true]{bottom:calc(var(--edge,16px) + 28px)!important}
+ :where(body.practice-table-open) .play-match-table[data-stage=match][data-forge-native] .play-match-seat[data-seat=you]{bottom:calc(var(--edge,16px) + 28px)!important}
  /* Their 44px tap area reaches past the button, so the button lets it show; the label grows the button instead of eliding. */
  :where(body.practice-table-open) .play-match-table[data-stage=match][data-forge-native] .play-match-decisions .forge-native-panel :is(.forge-native-actions>button,.forge-attack-all){overflow:visible;text-overflow:clip}
 }
@@ -2404,3 +2427,5 @@ body.practice-table-open:has(.forge-order-cards,.forge-zone-search-dialog) .forg
 @media (pointer:coarse){
  :where(body.practice-table-open) .play-match-table[data-stage][data-forge-native] .play-match-battlefields .play-match-card[data-instance]:is([data-forge-role=chosen],[data-auto-tap=true])::before{content:"";position:absolute;inset:50% auto auto 50%;width:max(100%,44px);height:max(100%,44px);translate:-50% -50%;padding:0;border:0;border-radius:0;background:none;box-shadow:none;z-index:auto}
 }
+/* Board names sit on a tight line, so a long name at large text stays above the stats pill. */
+:where(body.practice-table-open) .play-match-table[data-stage=match][data-forge-native] .play-match-battlefields .play-match-card-name{line-height:1.15;padding-bottom:0}
