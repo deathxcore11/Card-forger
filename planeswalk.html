@@ -2831,6 +2831,13 @@ body:has(#app .battle>.pw-esc) #app>.top .emblems{left:calc(max(10px,calc(env(sa
 /* no name plate under a figure (Test Fight look): the name shows on hover and hold and on the zoom card; in a crowd the hero's incoming chip clears the foe row above */
 #app .battle .unit.pw-fig>.name{display:none!important}
 #app#app#app .battle .field.pw-rows>.side.you{margin-top:28px!important}
+/* the far row (Slay the Spire back line): foes at 85%, standing on the picture's far ground line behind the heroes (pw-cast backRow slides them down) */
+#app#app#app .battle .field.pw-rows>.side.foe .unit.pw-fig>.art{width:calc(var(--pw-fh,120px) * var(--k,1) * var(--ar,1) * var(--pw-far,1))!important;height:calc(var(--pw-fh,120px) * var(--k,1) * var(--pw-far,1))!important}
+#app#app#app .battle .field.pw-rows>.side.foe{position:relative;z-index:0;will-change:transform}
+#app#app#app .battle .field.pw-rows>.side.you{position:relative;z-index:1}
+/* a far-row foe reads from above: bar, then intent, then the figure, so the near row's feet and bars stay clear */
+#app#app#app .battle .field.pw-rows>.side.foe .unit.pw-fig>.bar{order:-2;margin-bottom:2px}
+#app#app#app .battle .field.pw-rows>.side.foe .unit.pw-fig>.intent{order:-1}
 /* a blocker's kill-preview chip keeps the name's row under the seal, clear of the stats pill */
 #app .battle .field.pw-small .side.you .unit.ally:has(>.pv)>.name{display:block!important;visibility:hidden}
 /* ally figures: the p/t pill sits at the feet, the status tag over the head, the kill chip below, and a ready one stands on a blue ring */
@@ -2853,8 +2860,48 @@ body:has(#app .battle>.pw-esc) #app>.top .emblems{left:calc(max(10px,calc(env(sa
 #app#app .battle .unit.hero.pw-fig .loyal{left:calc(50% + var(--pw-fh,120px) * var(--k,1) * .2)!important;right:auto!important;top:3%!important;transform:none!important}
 
 /* the ground layer: the painted floor between the backdrop (.battle::after, z -2) and the fighters; same treatment as the backdrop, a touch lighter so the floor reads */
-#app .battle>.pw-ground-layer{position:absolute;inset:0;z-index:-1;pointer-events:none;background-repeat:no-repeat;filter:blur(.6px) brightness(.74) saturate(.95)}/* same treatment as the backdrop: one box, one light */
-#app .battle.pw-ground::after{background-size:var(--pw-bg-size)!important;background-position:var(--pw-bg-pos)!important}
+#app .battle.pw-ground::after{background-image:var(--pw-mat,var(--pw-bg))!important;background-size:var(--pw-bg-size)!important;background-position:var(--pw-bg-pos)!important}
+
+/* The painted fight mats (ground built in). The battle picks its mat: one of three areas rolled per fight, the dungeon room, the elite's or the boss's own arena. */
+:root{--pw-x-inn-area-graveyard:url(./planeswalk-art/inn-area-graveyard.webp);--pw-x-inn-area-village:url(./planeswalk-art/inn-area-village.webp);--pw-x-inn-area-manor:url(./planeswalk-art/inn-area-manor.webp);--pw-x-inn-elite-thalia:url(./planeswalk-art/inn-elite-thalia.webp);--pw-x-inn-elite-gisa:url(./planeswalk-art/inn-elite-gisa.webp);--pw-x-inn-elite-olivia:url(./planeswalk-art/inn-elite-olivia.webp);--pw-x-inn-boss-sorin:url(./planeswalk-art/inn-boss-sorin.webp);--pw-x-inn-boss-liliana:url(./planeswalk-art/inn-boss-liliana.webp);--pw-x-inn-boss-avacyn:url(./planeswalk-art/inn-boss-avacyn.webp);--pw-x-inn-dungeon-1:url(./planeswalk-art/inn-dungeon-1.webp);--pw-x-inn-dungeon-2:url(./planeswalk-art/inn-dungeon-2.webp);--pw-x-inn-dungeon-3:url(./planeswalk-art/inn-dungeon-3.webp);--pw-x-zen-area-jungle:url(./planeswalk-art/zen-area-jungle.webp);--pw-x-zen-area-coast:url(./planeswalk-art/zen-area-coast.webp);--pw-x-zen-area-wastes:url(./planeswalk-art/zen-area-wastes.webp);--pw-x-zen-elite-kozilek:url(./planeswalk-art/zen-elite-kozilek.webp);--pw-x-zen-elite-omnath:url(./planeswalk-art/zen-elite-omnath.webp);--pw-x-zen-elite-drana:url(./planeswalk-art/zen-elite-drana.webp);--pw-x-zen-boss-obnixilis:url(./planeswalk-art/zen-boss-obnixilis.webp);--pw-x-zen-boss-ulamog:url(./planeswalk-art/zen-boss-ulamog.webp);--pw-x-zen-boss-nissa:url(./planeswalk-art/zen-boss-nissa.webp);--pw-x-zen-dungeon-1:url(./planeswalk-art/zen-dungeon-1.webp);--pw-x-zen-dungeon-2:url(./planeswalk-art/zen-dungeon-2.webp);--pw-x-zen-dungeon-3:url(./planeswalk-art/zen-dungeon-3.webp);}
+#app#app .battle{--pw-bg:var(--pw-x-inn-area-graveyard)}
+#app#app .battle[data-roll="1"]{--pw-bg:var(--pw-x-inn-area-village)}
+#app#app .battle[data-roll="2"]{--pw-bg:var(--pw-x-inn-area-manor)}
+#app#app .battle[data-dungeon]{--pw-bg:var(--pw-x-inn-dungeon-1)}
+#app#app .battle[data-dungeon][data-room="2"]{--pw-bg:var(--pw-x-inn-dungeon-2)}
+#app#app .battle[data-dungeon][data-room="3"]{--pw-bg:var(--pw-x-inn-dungeon-3)}
+#app#app .battle:has(.unit.elite){--pw-bg:var(--pw-x-inn-elite-thalia)}
+#app#app .battle:has(.unit.elite[data-n^="Gisa"]){--pw-bg:var(--pw-x-inn-elite-gisa)}
+#app#app .battle:has(.unit.elite[data-n^="Olivia"]){--pw-bg:var(--pw-x-inn-elite-olivia)}
+#app#app .battle:has(.unit.boss){--pw-bg:var(--pw-x-inn-boss-sorin)}
+#app#app .battle:has(.unit.boss[data-n^="Olivia"]){--pw-bg:var(--pw-x-inn-elite-olivia)}
+body[data-actnum="2"] #app#app .battle{--pw-bg:var(--pw-x-zen-area-jungle)}
+body[data-actnum="2"] #app#app .battle[data-roll="1"]{--pw-bg:var(--pw-x-zen-area-coast)}
+body[data-actnum="2"] #app#app .battle[data-roll="2"]{--pw-bg:var(--pw-x-zen-area-wastes)}
+body[data-actnum="2"] #app#app .battle[data-dungeon]{--pw-bg:var(--pw-x-zen-dungeon-1)}
+body[data-actnum="2"] #app#app .battle[data-dungeon][data-room="2"]{--pw-bg:var(--pw-x-zen-dungeon-2)}
+body[data-actnum="2"] #app#app .battle[data-dungeon][data-room="3"]{--pw-bg:var(--pw-x-zen-dungeon-3)}
+body[data-actnum="2"] #app#app .battle:has(.unit.elite){--pw-bg:var(--pw-x-zen-elite-kozilek)}
+body[data-actnum="2"] #app#app .battle:has(.unit.elite[data-n^="Omnath"]){--pw-bg:var(--pw-x-zen-elite-omnath)}
+body[data-actnum="2"] #app#app .battle:has(.unit.elite[data-n^="Drana"]){--pw-bg:var(--pw-x-zen-elite-drana)}
+body[data-actnum="2"] #app#app .battle:has(.unit.boss){--pw-bg:var(--pw-x-zen-boss-obnixilis)}
+body[data-actnum="2"] #app#app .battle:has(.unit.boss[data-n^="Kozilek"]){--pw-bg:var(--pw-x-zen-elite-kozilek)}
+
+/* Battle top bar (Randall yes 31 Oct 12:18Z, backgrounds thread mock gothic-topbar.css): no grey band, a gold filigree rail with a centre crest and corner flourishes, plum plates with gold rims; only a soft shade behind the controls so the mat shows above and around the bar. Battle only. */
+#app#app:has(>.battle) .top{background:none!important;isolation:isolate;filter:none!important}
+#app#app:has(>.battle) .top::before{content:"";position:absolute;inset:0 0 6px 0;z-index:-1;pointer-events:none;
+ background:url("data:image/svg+xml,%3Csvg%20xmlns%3D%22http%3A//www.w3.org/2000/svg%22%20width%3D%22300%22%20height%3D%2280%22%20viewBox%3D%220%200%20300%2080%22%3E%3Cdefs%3E%3ClinearGradient%20id%3D%22g%22%20x1%3D%220%22%20y1%3D%220%22%20x2%3D%220%22%20y2%3D%221%22%3E%3Cstop%20offset%3D%220%22%20stop-color%3D%22%23f6dc96%22/%3E%3Cstop%20offset%3D%22.5%22%20stop-color%3D%22%23c79a45%22/%3E%3Cstop%20offset%3D%221%22%20stop-color%3D%22%237a561c%22/%3E%3C/linearGradient%3E%20%3CradialGradient%20id%3D%22e%22%20cx%3D%22.45%22%20cy%3D%22.35%22%20r%3D%22.7%22%3E%3Cstop%20offset%3D%220%22%20stop-color%3D%22%23ffd27a%22/%3E%3Cstop%20offset%3D%22.35%22%20stop-color%3D%22%23e5551f%22/%3E%3Cstop%20offset%3D%221%22%20stop-color%3D%22%234a0a06%22/%3E%3C/radialGradient%3E%20%3ClinearGradient%20id%3D%22d%22%20x1%3D%220%22%20y1%3D%220%22%20x2%3D%220%22%20y2%3D%221%22%3E%3Cstop%20offset%3D%220%22%20stop-color%3D%22%232a1824%22/%3E%3Cstop%20offset%3D%221%22%20stop-color%3D%22%230c070b%22/%3E%3C/linearGradient%3E%3C/defs%3E%20%3Cpath%20d%3D%22M150%208%20C120%208%2096%204%2070%2010%20C52%2014%2040%206%2030%204%20C36%2014%2050%2022%2072%2022%20C96%2022%20116%2020%20128%2028%22%20fill%3D%22none%22%20stroke%3D%22url%28%23g%29%22%20stroke-width%3D%222%22/%3E%20%3Cpath%20d%3D%22M150%208%20C180%208%20204%204%20230%2010%20C248%2014%20260%206%20270%204%20C264%2014%20250%2022%20228%2022%20C204%2022%20184%2020%20172%2028%22%20fill%3D%22none%22%20stroke%3D%22url%28%23g%29%22%20stroke-width%3D%222%22/%3E%20%3Cpath%20d%3D%22M60%2016%20c-8%204%20-10%2012%20-4%2014%20c5%201%206%20-6%202%20-6%20M240%2016%20c8%204%2010%2012%204%2014%20c-5%201%20-6%20-6%20-2%20-6%22%20fill%3D%22none%22%20stroke%3D%22url%28%23g%29%22%20stroke-width%3D%221.5%22/%3E%20%3Ccircle%20cx%3D%22150%22%20cy%3D%2238%22%20r%3D%2231%22%20fill%3D%22url%28%23d%29%22%20stroke%3D%22url%28%23g%29%22%20stroke-width%3D%222.5%22/%3E%20%3Cpath%20d%3D%22M150%2012%20a10%2010%200%200%201%200%2020%20a10%2010%200%200%201%200%20-20%20M150%2044%20a10%2010%200%200%201%200%2020%20a10%2010%200%200%201%200%20-20%20M124%2038%20a10%2010%200%200%201%2020%200%20a10%2010%200%200%201%20-20%200%20M156%2038%20a10%2010%200%200%201%2020%200%20a10%2010%200%200%201%20-20%200%22%20fill%3D%22none%22%20stroke%3D%22url%28%23g%29%22%20stroke-width%3D%221.3%22%20opacity%3D%22.85%22/%3E%20%3Cpath%20d%3D%22M150%2016%20L163%2038%20L150%2061%20L137%2038%20Z%22%20fill%3D%22url%28%23e%29%22%20stroke%3D%22%23f0c878%22%20stroke-width%3D%221.3%22/%3E%20%3Cpath%20d%3D%22M150%2022%20L153%2038%20L150%2054%20L147%2038%20Z%22%20fill%3D%22%23ffe7b0%22%20opacity%3D%22.6%22/%3E%20%3Ccircle%20cx%3D%22150%22%20cy%3D%2238%22%20r%3D%2235%22%20fill%3D%22none%22%20stroke%3D%22url%28%23g%29%22%20stroke-width%3D%221%22%20stroke-dasharray%3D%222%204%22%20opacity%3D%22.7%22/%3E%20%3C/svg%3E") center bottom 3px/auto min(44px,calc(100% - 10px)) no-repeat,linear-gradient(180deg,rgba(14,7,12,0) 0,rgba(14,7,12,.55) 70%,rgba(14,7,12,.7) 100%) left bottom/100% 52px no-repeat;
+ box-shadow:none}
+#app#app:has(>.battle) .top::after{content:"";position:absolute;left:0;right:0;bottom:-14px;height:54px;z-index:-1;pointer-events:none;
+ background:url("data:image/svg+xml,%3Csvg%20xmlns%3D%22http%3A//www.w3.org/2000/svg%22%20width%3D%2270%22%20height%3D%2240%22%20viewBox%3D%220%200%2070%2040%22%3E%3Cdefs%3E%3ClinearGradient%20id%3D%22g%22%20x1%3D%220%22%20y1%3D%220%22%20x2%3D%220%22%20y2%3D%221%22%3E%3Cstop%20offset%3D%220%22%20stop-color%3D%22%23f6dc96%22/%3E%3Cstop%20offset%3D%22.5%22%20stop-color%3D%22%23c79a45%22/%3E%3Cstop%20offset%3D%221%22%20stop-color%3D%22%237a561c%22/%3E%3C/linearGradient%3E%3C/defs%3E%20%3Cpath%20d%3D%22M2%204%20C20%204%2026%2014%2022%2022%20C19%2028%2011%2026%2012%2020%20C13%2015%2019%2016%2018%2020%22%20fill%3D%22none%22%20stroke%3D%22url%28%23g%29%22%20stroke-width%3D%221.8%22%20stroke-linecap%3D%22round%22/%3E%20%3Cpath%20d%3D%22M2%204%20C30%206%2046%2010%2068%2010%22%20fill%3D%22none%22%20stroke%3D%22url%28%23g%29%22%20stroke-width%3D%221.2%22/%3E%20%3Cpath%20d%3D%22M28%2016%20l6%2014%20l6%20-14%22%20fill%3D%22none%22%20stroke%3D%22url%28%23g%29%22%20stroke-width%3D%221.2%22/%3E%3C/svg%3E") left 0 top 8px/auto 30px no-repeat,url("data:image/svg+xml,%3Csvg%20xmlns%3D%22http%3A//www.w3.org/2000/svg%22%20width%3D%2270%22%20height%3D%2240%22%20viewBox%3D%220%200%2070%2040%22%3E%3Cdefs%3E%3ClinearGradient%20id%3D%22g%22%20x1%3D%220%22%20y1%3D%220%22%20x2%3D%220%22%20y2%3D%221%22%3E%3Cstop%20offset%3D%220%22%20stop-color%3D%22%23f6dc96%22/%3E%3Cstop%20offset%3D%22.5%22%20stop-color%3D%22%23c79a45%22/%3E%3Cstop%20offset%3D%221%22%20stop-color%3D%22%237a561c%22/%3E%3C/linearGradient%3E%3C/defs%3E%20%3Cpath%20d%3D%22M2%204%20C20%204%2026%2014%2022%2022%20C19%2028%2011%2026%2012%2020%20C13%2015%2019%2016%2018%2020%22%20fill%3D%22none%22%20stroke%3D%22url%28%23g%29%22%20stroke-width%3D%221.8%22%20stroke-linecap%3D%22round%22/%3E%20%3Cpath%20d%3D%22M2%204%20C30%206%2046%2010%2068%2010%22%20fill%3D%22none%22%20stroke%3D%22url%28%23g%29%22%20stroke-width%3D%221.2%22/%3E%20%3Cpath%20d%3D%22M28%2016%20l6%2014%20l6%20-14%22%20fill%3D%22none%22%20stroke%3D%22url%28%23g%29%22%20stroke-width%3D%221.2%22/%3E%3C/svg%3E") right 0 top 8px/auto 30px no-repeat,url("data:image/svg+xml,%3Csvg%20xmlns%3D%22http%3A//www.w3.org/2000/svg%22%20width%3D%22160%22%20height%3D%2234%22%20viewBox%3D%220%200%20160%2034%22%3E%3Cdefs%3E%3ClinearGradient%20id%3D%22g%22%20x1%3D%220%22%20y1%3D%220%22%20x2%3D%220%22%20y2%3D%221%22%3E%3Cstop%20offset%3D%220%22%20stop-color%3D%22%23f6dc96%22/%3E%3Cstop%20offset%3D%22.5%22%20stop-color%3D%22%23c79a45%22/%3E%3Cstop%20offset%3D%221%22%20stop-color%3D%22%237a561c%22/%3E%3C/linearGradient%3E%3C/defs%3E%20%3Crect%20x%3D%220%22%20y%3D%222%22%20width%3D%22160%22%20height%3D%222%22%20fill%3D%22url%28%23g%29%22/%3E%3Crect%20x%3D%220%22%20y%3D%228%22%20width%3D%22160%22%20height%3D%221%22%20fill%3D%22url%28%23g%29%22%20opacity%3D%22.75%22/%3E%20%3Cpath%20d%3D%22M0%209%20C14%209%2018%2020%2030%2020%20C40%2020%2042%2012%2036%2011%20C31%2010%2030%2016%2034%2017%22%20fill%3D%22none%22%20stroke%3D%22url%28%23g%29%22%20stroke-width%3D%221.6%22%20stroke-linecap%3D%22round%22/%3E%20%3Cpath%20d%3D%22M160%209%20C146%209%20142%2020%20130%2020%20C120%2020%20118%2012%20124%2011%20C129%2010%20130%2016%20126%2017%22%20fill%3D%22none%22%20stroke%3D%22url%28%23g%29%22%20stroke-width%3D%221.6%22%20stroke-linecap%3D%22round%22/%3E%20%3Cpath%20d%3D%22M50%209%20C62%209%2066%2014%2080%2014%20C94%2014%2098%209%20110%209%22%20fill%3D%22none%22%20stroke%3D%22url%28%23g%29%22%20stroke-width%3D%221.2%22/%3E%20%3Cpath%20d%3D%22M74%2014%20L80%2030%20L86%2014%20Z%22%20fill%3D%22%231a1016%22%20stroke%3D%22url%28%23g%29%22%20stroke-width%3D%221.3%22%20stroke-linejoin%3D%22round%22/%3E%20%3Cpath%20d%3D%22M80%2017%20L82%2022%20L80%2026%20L78%2022%20Z%22%20fill%3D%22%23c33a1c%22/%3E%20%3Ccircle%20cx%3D%2280%22%20cy%3D%225.5%22%20r%3D%221.8%22%20fill%3D%22url%28%23g%29%22/%3E%3Ccircle%20cx%3D%220%22%20cy%3D%225.5%22%20r%3D%221.8%22%20fill%3D%22url%28%23g%29%22/%3E%3Ccircle%20cx%3D%22160%22%20cy%3D%225.5%22%20r%3D%221.8%22%20fill%3D%22url%28%23g%29%22/%3E%20%3Cpath%20d%3D%22M44%209%20q2%206%206%206%20M116%209%20q-2%206%20-6%206%22%20fill%3D%22none%22%20stroke%3D%22url%28%23g%29%22%20stroke-width%3D%221%22/%3E%20%3C/svg%3E") left top 0/auto 24px repeat-x;
+ filter:drop-shadow(0 3px 3px rgba(0,0,0,.7))}
+#app#app#app:has(>.battle) .top .btn{background:linear-gradient(180deg,#2c1828,#110a10)!important;border-color:transparent!important;
+ box-shadow:inset 0 0 0 1.5px #c79a45,inset 0 0 0 4px rgba(20,10,18,.9),inset 0 0 0 5px rgba(199,154,69,.35),0 3px 8px rgba(0,0,0,.6)!important}
+#app#app#app:has(>.battle) .top :is(.life,.gold){position:relative;background:linear-gradient(180deg,#2c1828,#110a10)!important;border-radius:6px;padding-inline:12px 16px!important;
+ box-shadow:inset 0 0 0 1.5px #c79a45,inset 0 0 0 4px rgba(20,10,18,.9),inset 0 0 0 5px rgba(199,154,69,.35),0 3px 8px rgba(0,0,0,.6)!important;
+ clip-path:polygon(8px 0,calc(100% - 8px) 0,100% 50%,calc(100% - 8px) 100%,8px 100%,0 50%)}
+/* the portrait ring sits a few px off the top edge on phones (Randall's note on the mock) */
+#app#app:has(>.battle) .top .ink-hero{translate:0 3px}
 
 </style>
 
@@ -3206,7 +3253,7 @@ const ANTE_TURNS_OF=()=>typeof PW_AT!=='undefined'?PW_AT:HERO.fury?ANTE_TURNS_R:
 const ANTE_COST=()=>`Win by turn ${ANTE_TURNS_OF()} or the card is lost · it sits out this fight · Legendary +1 power`,ANTE_PAY=()=>`Win in time: the usual emblem · card back (foiled if common or uncommon) · 3 rare-or-better picks · +25g · ${HERO.fury?'you start the fight with +1 Fury':'it returns with Shield 2'}`;
 // ---------- combat ----------
 function startFight(keys,kind,depth=0,ante=null,dun=null){
- c={kind,depth,roll:Math.random()<.5?1:0,enemies:keys.map(k=>foe(k,depth)),allies:[],hand:[],draw:shuffle(run.deck.filter(x=>!ante||x.id!==ante.id).map(x=>({...x}))),discard:[],energy:0,bank:0,loyalty:run.loyalty,used:false,turn:0,chain:0,ult:false,stats:{dealt:0,best:0,kills:0},tremors:0,target:null,haunt:0,
+ c={kind,depth,roll:Math.floor(Math.random()*3),enemies:keys.map(k=>foe(k,depth)),allies:[],hand:[],draw:shuffle(run.deck.filter(x=>!ante||x.id!==ante.id).map(x=>({...x}))),discard:[],energy:0,bank:0,loyalty:run.loyalty,used:false,turn:0,chain:0,ult:false,stats:{dealt:0,best:0,kills:0},tremors:0,target:null,haunt:0,
   tax:keys.some(k=>E[k].tax),pending:null,log:'Your turn.',busy:false};
  c.roster=keys.slice();if(dun)Object.assign(c,dun);
  if(ante){c.ante={...ante};c.anteBy=ANTE_TURNS_OF();c.enemies[0].buff+=1}
@@ -5109,7 +5156,7 @@ const RM=matchMedia('(prefers-reduced-motion: reduce)').matches;
 const DPR=Math.min(2,window.devicePixelRatio||1);
 const GC={warm:[1,.55,.25],green:[.55,1,.4],cool:[.45,.78,1],violet:[.78,.5,1],holy:[1,.86,.52],none:[1,.84,.6]};
 const ALIAS={ironalpha:'ironfang',oliviaB:'olivia',acolyte:'skirsdag-cultist'};
-const KSCALE={hero:1,boss:1,elite:.9,regular:.8,token:.66};
+const KSCALE={hero:1,boss:1.25,elite:1.1,regular:.8,token:.66};// of the hero's height: the repaint guide's 32% / 40% / 55% of the picture, held back so a boss fight keeps the hero readable
 const MORPH={'village-ironsmith':'ironfang'};
 const sm=x=>{x=Math.max(0,Math.min(1,x));return x*x*(3-2*x)};
 function br(u){const s=u*3.8;if(s<2.2){const q=s/2.2;return q*q*(3-2*q)}if(s<2.95){const q=(s-2.2)/.75;return 1-q*q}const q=(s-2.95)/.85;return -.28*Math.sin(q*Math.PI)*(1-q*.5)}
@@ -5355,8 +5402,16 @@ function sync(){const g=G();if(!g||!g.c||g.view!=='battle'||!app.querySelector('
  for(const el of foeEls){const id=el.dataset.id,fe=now.c.enemies.find(x=>String(x.id)===id),en=entryForFoe(fe,g);if(!en)continue;if(!ready(en.key)){load(en.key).then(()=>{if(fightC===now.c)sync()});continue}mount(id,el,en,-1,Math.max(0,fe.hp)+'/'+fe.max);seen.add(id)}
  for(const el of allyEls){const id='a:'+el.dataset.id,en=allyOf(el);if(!en)continue;if(!ready(en.key)){load(en.key).then(()=>{if(fightC===now.c)sync()});continue}mount(id,el,en,1);seen.add(id)}
  for(const [id,R] of rigs){if(seen.has(id))continue;rigs.delete(id);if(R.dying){R.ghost=true;ghosts.add(R);ghost(R)}else{R.cv.remove();ro.unobserve(R.cv)}}
- fitWidth(field);ground();if(rigs.size||ghosts.size)startLoop()}
+ fitWidth(field);clearTop(field);watchFoes(field);ground();if(rigs.size||ghosts.size)startLoop()}
 // The estimate above cannot see every skin rule (chip widths, crowd rules); if the mounted line still overflows the field, the figures shrink to fit.
+// A tall boss must not reach the HUD: with big phone text its chips grow, so it gives up height until its top clears the bar.
+function clearTop(field){const hud=app.querySelector(':scope>.top');if(!hud||!field)return;const lim=hud.getBoundingClientRect().bottom+2;let moved=false;
+ for(const u of field.querySelectorAll(':scope>.side.foe>.unit.pw-fig')){let k=parseFloat(u.style.getPropertyValue('--k'))||1,n=0;
+  while(k>.6&&u.getBoundingClientRect().top<lim&&n++<12){k=Math.max(.6,k-.05);u.style.setProperty('--k',k.toFixed(3));moved=true}}
+ if(moved)for(const R of rigs.values())fit(R)}
+// Text size and summons change the foes' row height without a re-render: re-check the HUD clearance and the ground then.
+let foeRO=null,foeSeen=null;function watchFoes(field){const foe=field&&field.querySelector(':scope>.side.foe');if(!foe||foe===foeSeen)return;foeSeen=foe;
+ if(!foeRO)foeRO=new ResizeObserver(()=>requestAnimationFrame(()=>{const f=app.querySelector('.battle .field.pw-stage');if(f){clearTop(f);ground()}}));foeRO.disconnect();foeRO.observe(foe)}
 function fitWidth(field){const you=field.querySelector('.side.you'),foe=field.querySelector('.side.foe');if(!you||!foe||field.classList.contains('pw-rows'))return;
  const cs=getComputedStyle(field),sc=field.getBoundingClientRect().width/(field.clientWidth||1)||1,room=field.clientWidth-px(cs.paddingLeft)-px(cs.paddingRight);
  for(let i=0;i<3;i++){const y=you.getBoundingClientRect(),f=foe.getBoundingClientRect(),used=(Math.max(y.right,f.right)-Math.min(y.left,f.left))/sc;if(used<=room+.5)return;// the gaps do not shrink with the figures, so it takes a pass or two
@@ -5365,25 +5420,26 @@ function fitWidth(field){const you=field.querySelector('.side.you'),foe=field.qu
 // When one row would leave the figures tiny, the foes take a row above the hero (class pw-rows on the field).
 // Under the floor (96px, or 11% of the screen height) the figures read as specks, so a fight that cannot seat them at the floor keeps the portrait plates
 // (decided once per fight and viewport; a fight already on figures only drops to plates when a summon crowds it hard).
-const ALLY=.42,SEAL=.5,CHROME=36;const floor=()=>Math.max(96,innerHeight*.11);let plates=null;
+const ALLY=.42,SEAL=.5,CHROME=36;/* under 84px (or 11% of the screen) the figures read as specks; a 5-on-5 at phone height just makes it, Slay the Spire style, instead of falling back to plates */const floor=()=>Math.max(84,innerHeight*.11);let plates=null;
 function size(field,hero,foeEls,now,g,hE,allyOf){if(!field)return;const you=field.querySelector('.side.you'),foe=field.querySelector('.side.foe');if(!you||!foe)return;
  const cs=getComputedStyle(field),W=field.clientWidth-px(cs.paddingLeft)-px(cs.paddingRight),Hf=field.clientHeight;// the room between the paddings
  const gapF=Math.min(20,px(cs.columnGap)||px(cs.gap)||12),// figure fields get a 20px column gap (cast.css); the first measure happens before any figure mounts
   gapY=px(getComputedStyle(you).columnGap)||px(getComputedStyle(you).gap)||8,gapE=px(getComputedStyle(foe).columnGap)||px(getComputedStyle(foe).gap)||8;
- let arY=0,arF=0,nY=0,nF=0,nA=0;
+ let arY=0,arF=0,nY=0,nF=0,nA=0,kmax=1;
  for(const el of you.children){if(el.matches('.slot'))continue;if(el===hero&&hE)arY+=hE.fw/hE.fh;else if(el.matches('.unit')){const ae=el.matches('.ally[data-id]')&&allyOf?allyOf(el):null;if(ae){const k=ae.scale||.8;arY+=k*ae.fw/ae.fh;el.style.setProperty('--k',k)}else{arY+=ALLY;nA++}}else continue;nY++}
- for(const el of foeEls){const fe=now.c.enemies.find(x=>String(x.id)===el.dataset.id),en=entryForFoe(fe,g);if(en){const k=KSCALE[fe.rank||(en.rank==='token'?'token':'regular')]||.8;arF+=k*en.fw/en.fh;el.style.setProperty('--k',k)}else arF+=SEAL;nF++}
+ for(const el of foeEls){const fe=now.c.enemies.find(x=>String(x.id)===el.dataset.id),en=entryForFoe(fe,g);if(en){const k=KSCALE[fe.rank||(en.rank==='token'?'token':'regular')]||.8;arF+=k*en.fw/en.fh;el.style.setProperty('--k',k);if(k>kmax)kmax=k}else arF+=SEAL;nF++}
  if(!arY&&!arF)return;
  const arH=arY-nA*ALLY;
- let H1=Math.min(Hf-CHROME,(W-gapF-(nY-1)*gapY-(nF-1)*gapE-8)/(arY+arF));if(H1*ALLY<44)H1=Math.min(Hf-CHROME,(W-gapF-(nY-1)*gapY-(nF-1)*gapE-8-nA*44)/(arH+arF));
- let H2=Math.min((Hf-2*CHROME-36)/2,(W-(nY-1)*gapY-8)/arY,(W-(nF-1)*gapE-8)/arF);if(H2*ALLY<44)H2=Math.min((Hf-2*CHROME-36)/2,(W-(nY-1)*gapY-8-nA*44)/arH,(W-(nF-1)*gapE-8)/arF);
+ const Hmax=(Hf-CHROME)/Math.min(kmax,1.1);// a boss fight: the hero gives up a little height, the boss takes what the field allows (below)
+ let H1=Math.min(Hmax,(W-gapF-(nY-1)*gapY-(nF-1)*gapE-8)/(arY+arF));if(H1*ALLY<44)H1=Math.min(Hmax,(W-gapF-(nY-1)*gapY-(nF-1)*gapE-8-nA*44)/(arH+arF));
+ const H2max=(Hf-2*CHROME-36)/2;let H2=Math.min(H2max,(W-(nY-1)*gapY-8)/arY,(W-(nF-1)*gapE-8)/arF);if(H2*ALLY<44)H2=Math.min(H2max,(W-(nY-1)*gapY-8-nA*44)/arH,(W-(nF-1)*gapE-8)/arF);
  // rows, once chosen, hold for the fight: a death must not reshuffle the field
  const vk=innerWidth+'x'+innerHeight;if(plates&&plates.vk!==vk)plates=null;const sc=field.getBoundingClientRect().width/(field.clientWidth||1)||1;const rows=(plates&&plates.rows)||(H1*sc<floor()&&H2>H1*1.2);// one line on the floor first; the foes take a row above only when one line cannot seat the figures
  const H=Math.min(innerHeight*.42/sc,Math.max(44,rows?H2:H1)),Hs=H*sc;// a figure never takes more than 42% of the screen height// on-screen pixels: tablets scale the phone layout up
  if(!plates)plates={vk,on:Hs<floor(),rows};else{plates.rows=rows;if(!plates.on&&Hs<floor()*.75)plates.on=true}
  window.__pwSize={W,Hf,gapF,gapY,gapE,arY,arF,nY,nF,H1,H2,rows,H,sc,Hs,plates:plates.on};
  if(plates.on){field.classList.add('pw-plates');field.classList.remove('pw-rows','pw-small','pw-stage');field.style.removeProperty('--pw-fh');return false}
- field.classList.remove('pw-plates');field.classList.toggle('pw-rows',rows);field.classList.toggle('pw-small',H*ALLY<64);field.style.setProperty('--pw-fh',Math.floor(H)+'px');return true}
+ field.classList.remove('pw-plates');field.classList.toggle('pw-rows',rows);field.style.setProperty('--pw-far',rows?'.85':'1');for(const el of foeEls){const k=parseFloat(el.style.getPropertyValue('--k'))||1;if(k>1)el.style.setProperty('--k',Math.min(k,(Hf-CHROME-8)/H).toFixed(3))}/* the chip above and the bar below must stay inside the field, clear of the HUD */field.classList.toggle('pw-small',H*ALLY<64);field.style.setProperty('--pw-fh',Math.floor(H)+'px');return true}
 function mount(id,el,entry,face,hp){const art=el.querySelector(':scope>.art');if(!art)return;let R=rigs.get(id);
  if(!R){R=rig(entry,id,face);rigs.set(id,R);R.fadeIn=T}
  else if(R.cur.key!==entry.key&&!R.act){morph(R,entry)}
@@ -5442,43 +5498,54 @@ function stats(){const a=perf.ms.filter(x=>x!=null);const avg=a.length?a.reduce(
 function perfTick(ms){if(!perfEl.isConnected)document.body.append(perfEl);if((perf.i&15)===0){const s=stats();perfEl.textContent=`cast ${s.rigs} rigs · ${s.frameMsAvg} ms avg · ${s.frameMsMax} ms max · ${s.textures} tex ${s.textureMB} MB${s.jsHeapMB!=null?' · heap '+s.jsHeapMB+' MB':''} · ${s.webgl2?'webgl2':s.webgl?'webgl':'2d'}`}}
 try{if(/[?&]castperf=1/.test(location.search)||localStorage.getItem('pw-castperf')==='1'){perfEl=document.createElement('div');perfEl.className='pw-cast-perf';perfEl.setAttribute('aria-hidden','true')}}catch(err){}
 
-/* ---------- ground: a painted floor in front of the backdrop, the figures standing on it ---------- */
-// Randall 31 Oct 04:24Z: "make sure it's a foreground to the backdrop". A fight scene is one positioned box (3:2, the floor
-// layers' 1536x1024 frame) holding two layers: the backdrop painting (the scene's --pw-x-* art, cover-fit in the box) behind,
-// and the floor layer (planeswalk-art/<scene>-floor.webp, RGBA: clear above a soft uneven edge, the painted floor below) in
-// front; the figures stand with their feet on the box's feet line (f, a fraction of the box height). The box is placed so the
-// feet line lands under the figures at every size (the box grows past the screen; its sky and lower floor are what get cropped).
-// Scene key = the backdrop's CSS variable (--pw-x-<key>, or its -t twin on tall screens). Feet lines from the backgrounds thread.
+/* ---------- ground: the painted mat under the figures (Randall 31 Oct 11:41Z: the new mats, Slay the Spire placement) ---------- */
+// A fight scene is one positioned box holding the mat (ground built in, feet line at 62% of the picture, floor from 48%).
+// The box is placed so the feet line lands under the hero's feet at every size and never falls short of the screen; a wide
+// phone cuts the sky, so the feet slide up a little first, and a wide twin of the mat (2.2:1) takes over where one exists.
+// In a crowded fight the foes' row comes down behind the heroes onto the far edge of the floor instead of floating in the sky.
+// The painted mats (planeswalk-art/<key>.webp, 3:2, ground built in): the feet line sits at 62% of the picture, the floor opens at 48%.
 const ART='./planeswalk-art/';
-const SCENES={'inn-battle':.60,'inn-elite':.62,'inn-boss':.64,'zen-battle':.62,'zen-elite':.65,'zen-boss':.70};
-const BOX=1536/1024,ACTS={1:'inn',2:'zen',3:'rav'};
-const GIMG={};const gimg=key=>{let im=GIMG[key];if(!im){im=GIMG[key]=new Image();im.decoding='async';im.src=ART+key+'-floor.webp'}return im};
+const MATS=['inn-area-graveyard','inn-area-village','inn-area-manor','inn-elite-thalia','inn-elite-gisa','inn-elite-olivia','inn-boss-sorin','inn-boss-liliana','inn-boss-avacyn','inn-dungeon-1','inn-dungeon-2','inn-dungeon-3',
+ 'zen-area-jungle','zen-area-coast','zen-area-wastes','zen-elite-kozilek','zen-elite-omnath','zen-elite-drana','zen-boss-obnixilis','zen-boss-ulamog','zen-boss-nissa','zen-dungeon-1','zen-dungeon-2','zen-dungeon-3'];
+const FEET=.62,FAR=.50,SLIDE=.07,CROP=.15,NEAR=.85;// feet line; the far row's line (just past the floor's edge); how far the feet may slide up on a wide phone; the sky a phone may crop before they slide; the lowest the near row may stand
+const WIDE=new Set(MATS);// mats that also come as <key>-wide.webp (2272x1024): a battle wider than 1.8:1 takes that one, so a phone keeps the whole sky
+const WIDE_AT=1.8,ACTS={1:'inn',2:'zen',3:'rav'};
 const gready=im=>im.complete&&im.naturalHeight>0;
 const gwait=im=>new Promise(res=>{if(gready(im))return res();im.addEventListener('load',res,{once:true});im.addEventListener('error',res,{once:true})});
-let bgSig=null,bgKey=null,bgImg=null;
+let bgSig=null,bgKey=null;const BIMG={};const bimg=(k,wide)=>{const n=k+(wide&&WIDE.has(k)?'-wide':'');let im=BIMG[n];if(!im){im=BIMG[n]=new Image();im.decoding='async';im.src=ART+n+'.webp'}return im};
+const isWide=b=>(b.offsetWidth+20)/(b.offsetHeight+20)>WIDE_AT;const matImg=(b,k)=>bimg(k,isWide(b));
 function sceneOf(b){const v=getComputedStyle(b).getPropertyValue('--pw-bg').trim(),sig=v.slice(0,200);
- if(sig!==bgSig){bgSig=sig;bgKey=null;bgImg=null;const rs=getComputedStyle(document.documentElement);
-  for(const k in SCENES){const u=rs.getPropertyValue('--pw-x-'+k).trim(),t=rs.getPropertyValue('--pw-x-'+k+'-t').trim();if((u&&u.slice(0,200)===sig)||(t&&t.slice(0,200)===sig)){bgKey=k;break}}
-  if(bgKey){const m=/^url\((['"]?)([\s\S]*?)\1\)$/.exec(v);if(m){const im=new Image();im.src=m[2];bgImg=im}}}
+ if(sig!==bgSig){bgSig=sig;bgKey=null;const rs=getComputedStyle(document.documentElement);
+  for(const k of MATS){const u=rs.getPropertyValue('--pw-x-'+k).trim();if(u&&u.slice(0,200)===sig){bgKey=k;break}}
+  }
  return bgKey}
-// the fight waits for its floor like it waits for its figures (no placeholders)
-function groundLoad(b){const k=b&&sceneOf(b);if(!k)return null;const im=gimg(k);return gready(im)?null:gwait(im)}
-// on the map, the act's floors load ahead of the first fight
-function preloadGround(){const a=ACTS[document.body.dataset.actnum]||'inn';for(const k in SCENES)if(k.startsWith(a))gimg(k)}
-function groundOff(b){if(!b)return;b.classList.remove('pw-ground');const L=b.querySelector(':scope>.pw-ground-layer');if(L)L.remove()}
-function ground(){const b=app.querySelector('.battle'),hero=b&&b.querySelector('.field.pw-stage .unit.hero.pw-fig>.art');
+function groundLoad(b){const k=b&&sceneOf(b);if(!k)return null;const im=matImg(b,k);return gready(im)?null:gwait(im)}
+// The act's mats load one after another while the map shows, so a fight opens on its painting without a wait.
+function preloadGround(){const a=ACTS[document.body.dataset.actnum]||'inn',wide=innerWidth/innerHeight>WIDE_AT;let q=Promise.resolve();for(const k of MATS)if(k.startsWith(a))q=q.then(()=>gwait(bimg(k,wide)))}
+function groundOff(b){if(!b)return;b.classList.remove('pw-ground');b.style.removeProperty('--pw-mat');const foe=b.querySelector('.field>.side.foe');if(foe)foe.style.transform=''}
+function ground(){const b=app.querySelector('.battle'),field=b&&b.querySelector('.field.pw-stage'),hero=field&&field.querySelector('.unit.hero.pw-fig>.art');
  if(!b||!hero||!rigs.size)return groundOff(b);
- const k=sceneOf(b);if(!k)return groundOff(b);
- const f=SCENES[k],im=gimg(k);if(!gready(im))return groundOff(b);
+ const k=sceneOf(b),im=k&&matImg(b,k);if(!im||!gready(im))return groundOff(b);const BOX=im.naturalWidth/im.naturalHeight;
  const r=b.getBoundingClientRect(),zb=r.width/(b.offsetWidth||1)||1;// the battle is zoomed on tablets and desktops: work in its own px
- const Wb=b.offsetWidth+20,Hb=b.offsetHeight+20;// the layers sit 10px outside the battle, like its ::after
- const Ys=(hero.getBoundingClientRect().bottom-r.top)/zb+10;// the feet
- const Hg=Math.max(Hb,Wb/BOX,Ys/f,(Hb-Ys)/(1-f)),Wg=Hg*BOX,topG=Ys-f*Hg,leftG=(Wb-Wg)/2;// the box: feet line under the feet, never short of the screen
- const bar=bgImg&&bgImg.naturalHeight?bgImg.naturalWidth/bgImg.naturalHeight:16/9,Hk=Math.max(Hg,Wg/bar),Wk=Hk*bar;// backdrop cover-fit in the box, centred
- b.style.setProperty('--pw-bg-size',Wk.toFixed(1)+'px '+Hk.toFixed(1)+'px');b.style.setProperty('--pw-bg-pos',(leftG+(Wg-Wk)/2).toFixed(1)+'px '+(topG+(Hg-Hk)/2).toFixed(1)+'px');
- let L=b.querySelector(':scope>.pw-ground-layer');if(!L){L=document.createElement('div');L.className='pw-ground-layer';L.setAttribute('aria-hidden','true');b.prepend(L)}
- L.style.backgroundImage='url("'+ART+k+'-floor.webp")';L.style.backgroundSize=Wg.toFixed(1)+'px '+Hg.toFixed(1)+'px';L.style.backgroundPosition=(leftG-10).toFixed(1)+'px '+(topG-10).toFixed(1)+'px';// the layer box is the battle itself (the ::after sits 10px outside it)
+ const Wb=b.offsetWidth+20,Hb=b.offsetHeight+20;// the backdrop sits 10px outside the battle (its ::after)
+ const Ys=(hero.getBoundingClientRect().bottom-r.top)/zb+10;// the hero's feet
+ const Yf=backRow(field,r,zb);// a crowded fight: the foes' feet on the far row
+ let f=FEET,Hg,topG;
+ if(Yf!=null){Hg=Math.max(Hb,Wb/BOX,Yf/FAR,(Hb-Yf)/(1-FAR),(Ys-Yf)/(NEAR-FAR));topG=Yf-FAR*Hg;f=(Ys-topG)/Hg}// the far row stands on the floor's far edge, the near row lower on the same floor
+ else{const boxH=f=>Math.max(Hb,Wb/BOX,Ys/f,(Hb-Ys)/(1-f));Hg=boxH(f);// the picture's feet line under the feet, never short of the screen
+  while(f>FEET-SLIDE+1e-6&&f*Hg-Ys>CROP*Hg){f=Math.max(FEET-SLIDE,f-.01);Hg=boxH(f)}// a wide phone cuts the sky: the feet slide up before the landmarks go
+  topG=Ys-f*Hg}
+ const Wg=Hg*BOX,leftG=(Wb-Wg)/2;
+ b.style.setProperty('--pw-bg-size',Wg.toFixed(1)+'px '+Hg.toFixed(1)+'px');b.style.setProperty('--pw-bg-pos',leftG.toFixed(1)+'px '+topG.toFixed(1)+'px');b.style.setProperty('--pw-mat','url("'+im.src+'")');
  b.classList.add('pw-ground')}
+// Two rows (a crowded fight): the foes come down as far as the heroes' row allows, standing behind it on the far edge of the floor, instead of floating in the sky. Returns their feet in battle px.
+function backRow(field,r,zb){const foe=field.querySelector(':scope>.side.foe'),you=field.querySelector(':scope>.side.you');if(!foe||!you)return null;
+ if(!field.classList.contains('pw-rows')){foe.style.transform='';return null}
+ foe.style.transform='';let feet=0;for(const a of foe.querySelectorAll('.unit>.art'))feet=Math.max(feet,a.getBoundingClientRect().bottom);if(!feet)return null;
+ let top=Infinity;for(const u of you.querySelectorAll('.unit, .unit .incoming, .unit .intent, .unit .loyal'))top=Math.min(top,u.getBoundingClientRect().top);if(top===Infinity)return null;// the hero's incoming chip floats above the unit
+ const zf=foe.getBoundingClientRect().height/(foe.offsetHeight||1)||1,d=Math.max(0,(top-4-feet)/zf);
+ if(d>0)foe.style.transform='translateY('+d.toFixed(1)+'px)';
+ return (feet+d*zf-r.top)/zb+10}
 
 /* ---------- wiring ---------- */
 window.PW_CAST={stats,owns:id=>rigs.has(String(id))||rigs.has('a:'+id)||[...ghosts].some(R=>R.id===String(id)),impactDelay:id=>{const t=holds.get(String(id));return t?Math.max(0,Math.round(t-performance.now())):undefined},rigs,load,ready,resetPerf:()=>{perf.ms=[];perf.i=0;perf.max=0}};
