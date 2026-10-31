@@ -221,5 +221,17 @@
  {
   "id": "t-fx-rite",
   "setup": "__pw.fight(['diregraf','geist']);c.hand[0]={key:'rite',id:9902};render();setTimeout(()=>play(0),2750)"
+ },
+ {
+  "id": "t-belt",
+  "setup": "__pw.fight(['diregraf','geist','patrol','cultist']);run.belt=['food','treasure'];['giant','rgoblin','king','glory'].forEach(k=>summon(C[k].ally(),C[k].name));render()"
+ },
+ {
+  "id": "t-belt1",
+  "setup": "__pw.fight(['diregraf','geist']);run.belt=['treasure'];render()"
+ },
+ {
+  "id": "t-belt3",
+  "setup": "__pw.fight(['diregraf','geist']);run.belt=['treasure','food','food'];render()"
  }
 ]

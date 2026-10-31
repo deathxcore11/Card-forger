@@ -795,12 +795,12 @@ function canPlay(card){
 }
 // Painted spell sheets (pw-cast.js plays them where the card lands, before it resolves so a killed target still shows it).
 const SPELLFX={fireball:'fireball',grape:'grapeshot',brute:'growth-red',rite:'mana-red',song:'mana-red',simian:'mana-red',impulse:'draw',clarity:'draw',
- shock:'embers',bolt:'embers',ambush:'embers',bombard:'embers',cannon:['fire-wave','foes'],banish:'exile',heroism:'holy-burst',charge:'holy-burst',pacifism:'holy-burst'};
+ shock:'embers',bolt:'embers',ambush:'embers',bombard:'sacrifice',anthem:['anthem','you'],cannon:['fire-wave','foes'],banish:'exile',heroism:'holy-burst',charge:'holy-burst',pacifism:'holy-burst'};
 // two-mode cards take the sheet of the mode picked (the mode's icon); the white heal and pacify sheets are still owed, so they borrow holy-burst
 const MODEFX={shield:'shield',heart:'holy-burst',sword:'sun-spear',card:'draw',flame:'embers'};
 function cardFx(card,d0,m,t){let f=d0.modes&&m!=null&&d0.modes[m]?MODEFX[d0.modes[m].ico]:SPELLFX[card.key];if(!f)return;if(Array.isArray(f))spellFx(f[0],f[1]);else spellFx(f,f==='shield'?null:t)}
 function spellFx(sheet,t,late){if(SIM||typeof PW_HEADLESS!=='undefined'||!sheet)return;const B='#app .battle ';
- const sel=t==='foes'?B+'.side.foe':!t||t===c?B+'.side.you .unit.hero':c.enemies.includes(t)?B+`.side.foe .unit[data-id="${t.id}"]`:B+`.side.you .unit[data-id="${t.id}"]`;
+ const sel=t==='foes'?B+'.side.foe':t==='you'?B+'.side.you':!t||t===c?B+'.side.you .unit.hero':c.enemies.includes(t)?B+`.side.foe .unit[data-id="${t.id}"]`:B+`.side.you .unit[data-id="${t.id}"]`;
  try{dispatchEvent(new CustomEvent('pw-spellfx',{detail:{sheet,sel,late}}))}catch(e){}}
 function play(i,t,m){
  const card=c.hand[i];if(!card||!canPlay(card))return;const d0=C[card.key];
