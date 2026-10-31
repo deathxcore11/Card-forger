@@ -51,10 +51,14 @@ const decks = {
 };
 const names = [...new Set([decks.you, decks.cpu, ...decks.more].map(d => d.commander))];
 const scry = new Map();
+// Saved card data first (fixture-cards.json, shared with the table fixture), so the design gate sees real art offline.
+try { for (const [name, c] of Object.entries(await (await fetch('./fixture-cards.json')).json())) scry.set(name, c); } catch {}
 try {
-  const r = await fetch('https://api.scryfall.com/cards/collection', {method: 'POST', headers: {'Content-Type': 'application/json'}, body: JSON.stringify({identifiers: names.map(name => ({name}))})});
+  const missing = names.filter(n => !scry.has(n));
+  if (!missing.length) throw 0;
+  const r = await fetch('https://api.scryfall.com/cards/collection', {method: 'POST', headers: {'Content-Type': 'application/json'}, body: JSON.stringify({identifiers: missing.map(name => ({name}))})});
   for (const c of (await r.json()).data || []) scry.set(c.name, c);
-} catch (e) { console.warn('Scryfall unavailable', e); }
+} catch (e) { if (e !== 0) console.warn('Scryfall unavailable', e); }
 const lookup = name => scry.get(name) || null;
 const artOf = d => lookup(d?.commander)?.image_uris?.art_crop || '';
 const avatarUrl = artOf(decks.you);

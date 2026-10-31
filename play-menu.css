@@ -669,3 +669,5 @@ dialog.play-match-exit>.play-exit-note{margin:8px 0 0;font-size:13px;color:#f0c2
  .pl-arena:not(.pl-arena--pod) .pl-seat--cpu{border-radius:0 0 18px 18px}
  .pl-arena:not(.pl-arena--pod) .pl-seat.pl-seat--set[data-seat=player]{border-right-color:#d6ad6455}
 }
+/* Held sideways, a phone's notch and nav bar sit on the left and right: the setup screens keep clear of both. */
+body[data-view="play"] #content{padding-left:max(var(--page-edge,16px),calc(env(safe-area-inset-left,0px) + 8px));padding-right:max(var(--page-edge,16px),calc(env(safe-area-inset-right,0px) + 8px))}

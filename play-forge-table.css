@@ -324,7 +324,7 @@
 :where(body.practice-table-open) .play-match-table:is([data-stage=match],[data-stage=opening])[data-forge-native] .play-match-seat .forge-mana-chip img{width:14px;height:14px}
 :where(body.practice-table-open) .play-match-table:is([data-stage=match],[data-stage=opening])[data-forge-native] .play-match-seat{isolation:isolate;overflow:hidden}
 :where(body.practice-table-open) .play-match-table:is([data-stage=match],[data-stage=opening])[data-forge-native] .forge-seat-glass{position:absolute;inset:0;z-index:-1;border-radius:inherit;overflow:hidden;pointer-events:none}
-:where(body.practice-table-open) .play-match-table:is([data-stage=match],[data-stage=opening])[data-forge-native] .forge-seat-glass img{position:absolute;inset:0;width:100%;height:100%;object-fit:cover;object-position:50% 28%;opacity:.62;filter:saturate(1.08);transform:scale(1.04);-webkit-mask-image:linear-gradient(90deg,transparent 4%,#000 48%);mask-image:linear-gradient(90deg,transparent 4%,#000 48%)}
+:where(body.practice-table-open) .play-match-table:is([data-stage=match],[data-stage=opening])[data-forge-native] .forge-seat-glass img{position:absolute;inset:0;width:100%;height:100%;object-fit:cover;object-position:50% 28%;opacity:.62;filter:saturate(1.08);-webkit-mask-image:linear-gradient(90deg,transparent 4%,#000 48%);mask-image:linear-gradient(90deg,transparent 4%,#000 48%)}
 :where(body.practice-table-open) .play-match-table:is([data-stage=match],[data-stage=opening])[data-forge-native] .forge-seat-glass:after{content:'';position:absolute;inset:0;background:linear-gradient(180deg,#ffffff12,transparent 38%),linear-gradient(90deg,#101013f5 0%,#101013d9 38%,#10101373 72%,#10101359 100%)}
 :where(body.practice-table-open) .play-match-table:is([data-stage=match],[data-stage=opening])[data-forge-native] .play-match-seat:has(.forge-seat-glass) :is(.play-match-player>strong,.play-match-life strong){text-shadow:0 1px 2px #000,0 0 14px #000c}
 :where(body.practice-table-open) .play-match-table:is([data-stage=match],[data-stage=opening])[data-forge-native] .play-match-seat:has(.forge-seat-glass) :is(.play-match-seat-phase strong,.play-match-seat-phase span,.play-match-life>span){text-shadow:0 1px 2px #000}
@@ -2370,3 +2370,13 @@ body.practice-table-open img{-webkit-user-drag:none}
 body.practice-table-open:has(.forge-order-cards,.forge-zone-search-dialog) .forge-emote-bubble{opacity:0;pointer-events:none}
 :where(body.practice-table-open) .forge-zone-search{padding-inline:max(clamp(12px,3vw,28px),calc(env(safe-area-inset-left,0px) + 8px)) max(clamp(12px,3vw,28px),calc(env(safe-area-inset-right,0px) + 8px))}
 :where(body.practice-table-open) .play-match-table[data-forge-native] .play-match-decisions:has(.forge-zone-search){overflow:visible!important}
+/* Tall touch screens (a fold or tablet held sideways): the hand starts past your zone counts and a long hand runs right. */
+@media (hover:none) and (pointer:coarse) and (min-width:600px) and (min-height:480px){
+ :where(body.practice-table-open) .play-match-table[data-stage=match][data-forge-native] .play-match-hand-area,
+ :where(body.practice-table-open) .play-match-table[data-stage=match][data-forge-native] .play-match-main[data-details=true] .play-match-hand-area,
+ :where(body.practice-table-open) .play-match-table[data-stage=match][data-forge-native][data-your-commander=true] .play-match-hand-area,
+ :where(body.practice-table-open) .play-match-table[data-stage=match][data-forge-native][data-your-commander=true] .play-match-main[data-details=true] .play-match-hand-area{left:max(calc(var(--hud) + 24px),252px);right:24px}
+ :where(body.practice-table-open) .play-match-table[data-stage=match][data-forge-native] .play-match-decisions:not(:has(.forge-order-cards,.forge-zone-search)){bottom:calc(var(--play-hand)*1.394 - 4px)}
+ :where(body.practice-table-open) .play-match-table[data-stage=match][data-forge-native] .play-match-hand .play-match-card-row{justify-content:safe center}
+ :where(body.practice-table-open) .play-match-table[data-stage=match][data-forge-native] .play-match-decisions:not([data-complex=true]):not(:has(.forge-order-cards,.forge-zone-search)){overflow:visible}
+}
