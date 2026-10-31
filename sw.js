@@ -307,7 +307,8 @@ const SHELL = new Set(ASSETS.filter((a) => !a.endsWith(".css")).map((a) => new U
 // A new release takes over at once; the page picks it up on its next open.
 self.addEventListener("install", (e) => {
   self.skipWaiting?.();
-  e.waitUntil(caches.open(CACHE).then((c) => c.addAll(ASSETS)));
+  // Fetch past the browser's HTTP cache so a release never saves an older copy of a file.
+  e.waitUntil(caches.open(CACHE).then((c) => c.addAll(ASSETS.map((a) => new Request(a, { cache: "reload" })))));
 });
 let trimming = null;
 const trimArt = () => trimming ||= caches.open(ART).then(async (c) => {
