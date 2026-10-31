@@ -352,7 +352,11 @@ const name=String(card.name);if(Math.max(...name.split(/\s+/).map(word=>word.len
  function paintFan(){const fan=root.querySelector('.forge-hand-expand');if(!fan)return;const open=root.dataset.handExpanded==='true',count=root.querySelectorAll('.play-match-hand .play-match-card-wrap').length,label=open?'Close hand':`View full hand (${count})`;if(fan.textContent!==label)fan.textContent=label;fan.setAttribute('aria-pressed',String(open));}
  const saveInput=e=>{if(e.target.dataset?.nativeKey==='native-value'){const n=session.snapshot().native;nativeValueDraft={revision:n.revision,promptId:n.prompt?.id,value:e.target.value};}};
  root.addEventListener('input',saveInput);root.addEventListener('change',saveInput);
- const observer=new MutationObserver(()=>enhance());observer.observe(root,{childList:true,subtree:true});
+ // The board fitter adds, relabels and removes a crowded lane's "+N" chip itself. Those changes must not
+ // start another pass: the fitter measures the lane twice (natural width, then fitted) and the two can
+ // disagree on the count, which re-ran the fitter forever and froze the table (seen at 740x360).
+ const fitterOnly=list=>list.every(m=>m.target.classList?.contains('forge-lane-more')||[...m.addedNodes,...m.removedNodes].every(n=>n.classList?.contains('forge-lane-more')));
+ const observer=new MutationObserver(list=>{if(!fitterOnly(list))enhance();});observer.observe(root,{childList:true,subtree:true});
  // Cards keep their engine identity between renders, so a card that moves (hand to
  // battlefield, a lane change) glides from where it was to where Forge put it, and a
  // permanent that appears from nowhere fades in. Purely visual; placement is Forge's.
