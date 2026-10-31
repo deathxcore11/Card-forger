@@ -42,7 +42,10 @@ s=s.replace('<!--PW-SKIN-->','<style id="pw-skin">\n'+css+'\n</style>')
 _castj=next(p for p in (W+'/planeswalk-cast/cast.json',OUT+'/planeswalk-cast/cast.json',os.path.dirname(W)+'/planeswalk-cast/cast.json') if os.path.exists(p))  # w/ keeps its own copy; in the repo it sits at the root
 _figs=sorted({e['key'] for e in json.load(open(_castj))})
 assert s.count('<script id="pw-game">')==1
-s=s.replace('<script id="pw-game">','<script id="pw-figs">window.PW_FIGS='+json.dumps(_figs)+';</script>\n<script id="pw-game">')
+# art registries (no placeholders): a card whose name has no [data-n] art rule, and a UI piece (token, exile pile...) with no [data-ui] rule, stay out until their art lands
+_cardart=sorted(set(re.findall(r'\[data-n="([^"]+)"\]\{--img',css)))
+_uiart=sorted(set(re.findall(r'\[data-ui="([^"]+)"\]\{--img',css)))
+s=s.replace('<script id="pw-game">','<script id="pw-figs">window.PW_FIGS='+json.dumps(_figs)+';window.PW_CARDART='+json.dumps(_cardart)+';window.PW_UIART='+json.dumps(_uiart)+';</script>\n<script id="pw-game">')
 # the ink map reads the classic mana symbols from the emblem art file
 mana=re.search(r'const MANA=(\{.*?\}),COLOR',open(W+'/emblem-art.js').read(),re.S).group(1)
 open(W+'/pw-mana.js','w').write('window.PW_MANA='+mana+';')

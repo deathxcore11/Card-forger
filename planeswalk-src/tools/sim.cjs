@@ -6,10 +6,10 @@ const s0=html.indexOf('<script id="pw-game">')>=0?html.indexOf('<script id="pw-g
 const N=+process.argv[3]||300;const POL=process.argv[4]||'any';
 const BIG=new Set(['giant','brute','marauder','dasher','hauler','glory','shivan','fireball','guide','king']);
 const ctx={console,Math,JSON,Object,Array,String,Number,structuredClone,Map,Set,setTimeout:f=>f(),document:{getElementById:()=>({innerHTML:'',addEventListener(){}})}};
-ctx.PW_FORM=process.env.FORM==='0'?0:1;ctx.PW_FEAT={sig:process.env.SIG==='0'?0:1,ante:process.env.ANTE==='0'?0:1,dun:process.env.DUN==='0'?0:1};ctx.PW_DMG={};ctx.PW_HEADLESS=1;if(process.env.FIGHT)ctx.PW_FIGHT=JSON.parse(process.env.FIGHT);ctx.PW_SOAK={};if(process.env.AT)ctx.PW_AT=+process.env.AT;if(process.env.TRB)ctx.PW_TR=1;if(process.env.DL)ctx.PW_DL=+process.env.DL;if(process.env.DR)ctx.PW_DR=+process.env.DR;if(process.env.DH)ctx.PW_DH=+process.env.DH;if(process.env.DS)ctx.PW_DS=+process.env.DS;if(process.env.FOEHP)ctx.PW_FOEHP=+process.env.FOEHP;
+ctx.PW_FORM=process.env.FORM==='0'?0:1;ctx.PW_FEAT={sig:process.env.SIG==='0'?0:1,ante:process.env.ANTE==='0'?0:1,dun:process.env.DUN==='0'?0:1};ctx.PW_DMG={};ctx.PW_HEADLESS=1;for(const k of ['PW_FIGS','PW_CARDART','PW_UIART']){const m=html.match(new RegExp('window\\.'+k+'=(\\[.*?\\]);'));if(m)ctx[k]=JSON.parse(m[1])}/* mirror what ships: art-gated rows stay out */if(process.env.BELT)ctx.PW_UIART=[...(ctx.PW_UIART||[]),...['treasure','food','clue','blood','map','powerstone','monster','younghero','gold','incubator','shard'].map(k=>'tok-'+k)];if(process.env.TRAIL)ctx.PW_TRAIL=+process.env.TRAIL;if(process.env.FIGHT)ctx.PW_FIGHT=JSON.parse(process.env.FIGHT);ctx.PW_SOAK={};if(process.env.AT)ctx.PW_AT=+process.env.AT;if(process.env.TRB)ctx.PW_TR=1;if(process.env.DL)ctx.PW_DL=+process.env.DL;if(process.env.DR)ctx.PW_DR=+process.env.DR;if(process.env.DH)ctx.PW_DH=+process.env.DH;if(process.env.DS)ctx.PW_DS=+process.env.DS;if(process.env.FOEHP)ctx.PW_FOEHP=+process.env.FOEHP;
 vm.createContext(ctx);
 vm.runInContext(src+`;globalThis.G={get run(){return run},get c(){return c},get view(){return view},get reward(){return reward},set view(v){view=v},set reward(v){reward=v},
- newRun,enter,anteFight,startFight,DUN,nextAct,open,play,attack,ability,endTurn,canPlay,ready,alive,pow,tough,costOf,C,E,EMB,toMap:()=>toMap(),heal,mk,evChoice,get POOL(){return POOL},bombard,forecast,PRICE,intentOf};`,ctx);
+ newRun,enter,anteFight,startFight,DUN,nextAct,open,play,attack,ability,endTurn,canPlay,ready,alive,pow,tough,costOf,C,E,EMB,toMap:()=>toMap(),heal,mk,evChoice,get POOL(){return POOL},bombard,forecast,PRICE,intentOf,useToken,TOKENS,exN};`,ctx);
 const G=ctx.G;
 const stats={wins:0,deaths:{},fights:[],turns:[],errors:[],killers:{},hpAtBoss:[],bossWins:0,bossTries:0,picks:{}};
 // Draft like a player chasing an engine: rarity plus synergy with what the deck already has.
@@ -38,6 +38,11 @@ function battle(){
  const c=G.c;let guard=0;stats._t=0;stats._min=G.run.hp;
  while(G.view==='battle'&&guard++<60){
   const c=G.c;stats._t=Math.max(stats._t,c.turn);stats._min=Math.min(stats._min,G.run.hp);
+  // tokens: a simple use-it policy (heal when low, mana when a card is one short, draw any time, roles on the best ally)
+  for(let ti=0;ti<4&&G.run.belt&&G.run.belt.length&&G.view==='battle';ti++){const B=G.run.belt;let used=false;for(let i=0;i<B.length;i++){const k=B[i],hp=G.run.hp/G.run.max,short=c.hand.some(h=>!G.canPlay(h)&&G.costOf(h)!=='X'&&G.costOf(h)===c.energy+1);
+    const go=k==='food'?hp<.55:k==='treasure'||k==='gold'?short:k==='clue'||k==='blood'?c.hand.length<6:k==='powerstone'?c.hand.some(h=>G.C[h.key].ally):k==='monster'||k==='younghero'?c.allies.length>0:k==='map'?G.alive().length>1:k==='incubator'?c.energy>=3&&!c.hand.some(h=>G.canPlay(h)):k==='shard'?(c.exile||[]).length>0:false;
+    if(go){const t=G.TOKENS[k].aim==='ally'?[...c.allies].sort((a,b)=>G.pow(b)-G.pow(a))[0]:G.TOKENS[k].aim==='enemy'?[...G.alive()].sort((a,b)=>threat(b)-threat(a))[0]:undefined;G.useToken(i,t);stats.tokUsed=(stats.tokUsed||0)+1;used=true;break}}if(!used)break}
+  for(const h of c.hand)if(G.C[h.key].exile)(c._exSeen=c._exSeen||new Set()).add(h.id);
   // play cards: creatures first, then spells (Paradox: swing first, untap on each spell)
   if(G.run.emblems.includes('paradox'))attackPhase(c);
   let played=true;
@@ -54,7 +59,7 @@ function battle(){
     if(x.d.aim==='enemy')t=bestTarget(x.h.key==='bolt'?4:3);
     if(x.h.key==='ambush'){const sw=G.alive().filter(e=>{const [k]=G.intentOf(e);return k==='atk'||k==='annihilate'});if(!sw.length)continue;const bd=x.h.foil?5:4;t=CAREFUL?(sw.filter(e=>e.hp+(e.shield||0)<=bd).sort((a,b)=>threat(b)-threat(a))[0]||sw.sort((a,b)=>threat(b)-threat(a))[0]):sw[0]}
     if(x.d.aim==='ally')t=c.allies.find(a=>G.ready(a))||c.allies[0];
-    G.play(x.i,t);played=true;if(G.run.emblems.includes('paradox')&&!x.d.ally&&G.view==='battle')attackPhase(c);break;
+    if(x.d.exile)(c._exPlayed=c._exPlayed||new Set()).add(x.h.id);G.play(x.i,t);played=true;if(G.run.emblems.includes('paradox')&&!x.d.ally&&G.view==='battle')attackPhase(c);break;
    }
   }
   if(G.view!=='battle')break;
@@ -74,6 +79,7 @@ function battle(){
   const h0=G.run.hp;G.endTurn();stats._min=Math.min(stats._min,G.run.hp);stats.eT=(stats.eT||0)+1;if(G.run.hp>=h0)stats.clean=(stats.clean||0)+1;else stats.lost=(stats.lost||0)+(h0-Math.max(0,G.run.hp));if((G.run.act||1)===1){stats.eT1=(stats.eT1||0)+1;if(G.run.hp<h0)stats.lost1=(stats.lost1||0)+(h0-Math.max(0,G.run.hp));}
  }
  if(guard>=60)stats.errors.push('stuck battle seed '+G.run.seed);
+ stats.exSeen=(stats.exSeen||0)+((c._exSeen&&c._exSeen.size)||0);stats.exPlayed=(stats.exPlayed||0)+((c._exPlayed&&c._exPlayed.size)||0);if(G.reward&&G.reward.tok)stats.tokGot=(stats.tokGot||0)+1;
  return guard;
 }
 function check(where){const r=G.run;if(!Number.isFinite(r.hp))stats.errors.push('NaN hp '+where);
@@ -131,6 +137,7 @@ const dTot=Object.values(stats.deaths).reduce((a,b)=>a+b,0);
 console.log('REVIEW policy',POL,'win',(stats.wins/(N-(+(process.env.S0||1))+1)*100).toFixed(1)+'%','bossDeathShare',dTot?((stats.deaths.boss||0)/dTot*100).toFixed(0)+'%':'-','brokenRuns',((stats.broken||0)/N*100).toFixed(1)+'%','rareSeenBeforeBoss',stats.bossTries?((stats.rareBeforeBoss||0)/stats.bossTries*100).toFixed(0)+'%':'-','goldAtBossP50',pct(stats.goldAtBoss||[0],.5),'errors',stats.errors.length);
 console.log('REVIEW acts',POL,'act1 clear',((stats.act1||0)/N*100).toFixed(1)+'%','act2 clear given act1',stats.act1?(stats.wins/stats.act1*100).toFixed(1)+'%':'-','gold at Sorin p50',pct(stats.goldBoss1||[0],.5),'gold at Ob p50',pct(stats.goldBoss2||[0],.5));
 console.log('REVIEW broken sources',JSON.stringify(Object.entries(stats.brokenSrc||{}).sort((a,b)=>b[1]-a[1]).slice(0,8)));
+console.log('REVIEW step3','exile played per drawn',stats.exSeen?(stats.exPlayed/stats.exSeen).toFixed(2):'-','('+(stats.exPlayed||0)+'/'+(stats.exSeen||0)+')','tokens got',stats.tokGot||0,'used',stats.tokUsed||0,stats.tokGot?((stats.tokUsed||0)/stats.tokGot*100).toFixed(0)+'%':'-');
 console.log('REVIEW mythics',JSON.stringify(Object.fromEntries(Object.entries(stats.card||{}).filter(([k])=>G.C[k].r==='M').map(([k,v])=>[k,[v[0],(v[1]/v[0]*100).toFixed(0)+'%']]))),'restBurn',stats.restBurn||0,'shopFoil',stats.shopFoil||0);
 console.log('REVIEW defense',CAREFUL?'careful':'naive','avgTurnsPerFight',avg(stats.turns),'cleanEnemyTurns',((stats.clean||0)/(stats.eT||1)*100).toFixed(1)+'%','avgLifeLostPerEnemyTurn',((stats.lost||0)/(stats.eT||1)).toFixed(2),'avgLifeLostPerEnemyTurnAct1',((stats.lost1||0)/(stats.eT1||1)).toFixed(2));
 {const D=ctx.PW_DMG,T=Object.values(D).reduce((a,b)=>a+b,0)||1;console.log('REVIEW damage sources',JSON.stringify(Object.fromEntries(Object.entries(D).sort((a,b)=>b[1]-a[1]).map(([k,v])=>[k,(v/T*100).toFixed(0)+'%']))),'soak',JSON.stringify(ctx.PW_SOAK))}

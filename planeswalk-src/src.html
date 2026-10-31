@@ -232,6 +232,12 @@ a.btn{text-decoration:none;display:inline-flex;align-items:center}details.howto{
 .battle .pw-mode .pi{width:26px;height:26px;fill:currentColor}
 .battle .pw-mode.chosen{background:var(--gold);color:#1b1406}
 .battle .pw-mode:disabled{opacity:.4;cursor:default}
+/* Token Belt (top bar) and the exile pile: painted icons come from [data-ui] art rules; without them build.py leaves these off */
+.pw-belt{display:flex;gap:6px;align-items:center}
+.pw-tok{width:44px;height:44px;border-radius:50%;border:1px solid var(--gold);background:var(--img) center/cover no-repeat,var(--panel);padding:0;cursor:pointer}
+.pw-tok.empty{border-style:dashed;opacity:.5;cursor:default}
+.pw-tok:disabled{cursor:default}
+.piles [data-pile=exile]{background:var(--img) center/contain no-repeat}
 </style>
 <!--PW-SKIN-->
 
@@ -265,7 +271,7 @@ const C={
  tremors:{name:'Impact Tremors',e:1,r:'U',kind:'Enchantment',g:'∞',power:1,text:f=>`Whenever an ally enters, deal ${f?2:1} to each enemy.`,play:f=>{c.tremors+=f?2:1}},
  king:{name:'Goblin King',e:1,r:'U',kind:'Creature · Goblin',g:'K',ally:f=>({p:f?3:2,t:f?3:2,goblin:1,lord:1}),text:f=>`${f?'3/3':'2/2'}. Other Goblins get +2/+1 and have haste.`},
  cannon:{name:'Fiery Cannonade',e:2,r:'U',kind:'Instant',g:'✶',text:f=>`Deal ${f?5:4} damage to each enemy.`,play:f=>c.enemies.forEach(e=>hit(e,f?5:4))},
- fireball:{name:'Fireball',e:'X',r:'U',aim:'enemy',kind:'Sorcery',g:'✹',text:f=>`Spend all energy. Deal ${f?4:3} per energy.`},
+ fireball:{name:'Fireball',e:'X',r:'U',aim:'enemy',kind:'Sorcery',g:'✹',exile:1,xper:f=>f?5:4,text:f=>`Spend all energy. Deal ${f?5:4} per energy. Exile.`},
  impulse:{name:'Reckless Impulse',e:1,r:'C',kind:'Sorcery',g:'↻',text:f=>`Draw ${f?4:3} cards.`,play:f=>draw(f?4:3)},
  pyro:{name:'Young Pyromancer',e:1,r:'U',kind:'Creature · Shaman',g:'Y',ally:f=>({p:f?2:1,t:f?2:1,pyro:1}),text:f=>`${f?'2/2':'1/1'}. Whenever you cast a noncreature spell, summon a 1/1 Elemental with haste.`},
  snipe:{name:'Guttersnipe',e:2,r:'U',kind:'Creature · Goblin',g:'S',ally:f=>({p:2,t:f?2:1,goblin:1,snipe:f?3:2}),text:f=>`2/${f?2:1}. Whenever you cast a noncreature spell, deal ${f?3:2} to each enemy.`},
@@ -275,11 +281,11 @@ const C={
  doubt:{name:'Doubt',e:1,r:'K',kind:'Curse',g:'✝',text:()=>'Does nothing. Remove it at a market, or carry it to an Act 2 chapel.',play:()=>{}},
  clarity:{name:'Moment of Clarity',e:0,r:'R',hidden:1,kind:'Sorcery',g:'☀',text:f=>`Draw ${f?3:2} cards. Heal 2. (Your Doubt, answered.)`,play:f=>{draw(f?3:2);heal(2)}},
  rite:{name:'Rite of Flame',e:1,r:'C',kind:'Sorcery',g:'△',text:f=>`Add {R}{R}, plus {R} for each Rite of Flame in your discard pile.${f?' Draw a card.':''}`,ritual:1,play:f=>{ritual(2+c.discard.filter(x=>x.key==='rite').length);draw(f?1:0)}},
- song:{name:'Seething Song',e:3,r:'U',kind:'Instant',g:'♫',text:f=>`Add {R}{R}{R}{R}{R}${f?'{R}':''}.`,ritual:1,play:f=>{ritual(f?6:5)}},
+ song:{name:'Seething Song',e:2,r:'U',kind:'Instant',g:'♫',exile:1,text:f=>`Add {R}{R}{R}{R}{R}${f?'{R}':''}. Exile.`,ritual:1,play:f=>{ritual(f?6:5)}},
  simian:{name:'Simian Spirit Guide',e:0,r:'C',kind:'Creature · Ape Spirit',g:'☄',text:f=>`Discard it from your hand: add {R}.${f?' Draw a card.':''}`,ritual:1,play:f=>{ritual(1);draw(f?1:0)}},
  electro:{name:'Goblin Electromancer',e:2,r:'U',kind:'Creature · Goblin Wizard',g:'E',ally:f=>({p:f?3:2,t:2,goblin:1,electro:1}),text:f=>`${f?3:2}/2. Your instants and sorceries cost {1} less.`},
  mana:{name:'Manamorphose',e:1,r:'C',kind:'Instant',g:'◇',text:f=>f?'Gain 1 energy. Draw 2 cards.':'Gain 1 energy. Draw a card.',ritual:1,play:f=>{ritual(1);draw(f?2:1)}},
- grape:{name:'Grapeshot',e:1,r:'R',aim:'enemy',kind:'Sorcery',g:'⁂',text:f=>`Deal ${f?3:2} damage to target enemy for each card you've played this turn, counting this one.`,play:(f,t)=>hit(t,(c.chain+1)*(f?3:2))},
+ grape:{name:'Grapeshot',e:1,r:'R',aim:'enemy',kind:'Sorcery',g:'⁂',exile:1,text:f=>`Deal ${f?4:3} damage to target enemy for each card you've played this turn, counting this one. Exile.`,play:(f,t)=>hit(t,(c.chain+1)*(f?4:3))},
  glory:{name:'Glorybringer',e:3,r:'R',kind:'Creature · Dragon',g:'D',ally:f=>({p:f?4:3,t:f?5:4,flying:1,haste:1}),text:f=>`${f?'4/5':'3/4'}. Flying, haste. Costs 1 less if you control a creature with power 3 or more.`},
  shivan:{name:'Shivan Dragon',e:3,r:'R',kind:'Creature · Dragon',g:'D',ally:f=>({p:f?5:4,t:f?6:5,flying:1}),text:f=>`${f?'5/6':'4/5'}. Flying. Costs 1 less if you control a creature with power 3 or more.`},
 };
@@ -299,10 +305,10 @@ Object.assign(C,{
  heroism:{name:'Moment of Heroism',e:1,r:'C',aim:'ally',needAlly:1,kind:'Instant',g:'☀',text:f=>`Target ally gets +${f?3:2}/+${f?2:1} and lifelink until your next turn.`,play:(f,t)=>{t.temp1=(t.temp1||0)+(f?3:2);t.tough4=(t.tough4||0)+(f?2:1);if(!t.lifelink){t.lifelink=1;t.lifelinkTemp=1}}},
  knight:{name:'Attended Knight',e:3,r:'C',kind:'Creature · Knight',g:'K',ally:f=>({p:2,t:f?3:2,first:1,squire:1}),text:f=>`2/${f?3:2}. First strike. Also summon a 1/1 Soldier.`},
  overseer:{name:'Inspiring Overseer',e:3,r:'C',kind:'Creature · Angel',g:'O',ally:f=>({p:f?3:2,t:2,flying:1,drawOn:1}),text:f=>`${f?3:2}/2. Flying. When it enters, draw a card.`},
- charge:{name:'Inspired Charge',e:3,r:'C',kind:'Instant',g:'»',text:f=>`Allies get +${f?4:3}/+${f?2:1} until your next turn.`,play:f=>c.allies.forEach(a=>{a.temp1=(a.temp1||0)+(f?4:3);a.tough4=(a.tough4||0)+(f?2:1)})},
+ charge:{name:'Inspired Charge',e:3,r:'C',kind:'Instant',g:'»',exile:1,text:f=>`Allies get +${f?5:4}/+${f?3:2} until your next turn. Untap them. Exile.`,play:f=>c.allies.forEach(a=>{a.temp1=(a.temp1||0)+(f?5:4);a.tough4=(a.tough4||0)+(f?3:2);untap(a)})},
  hawk:{name:"Healer's Hawk",e:1,r:'U',kind:'Creature · Bird',g:'H',ally:f=>({p:f?2:1,t:2,flying:1,lifelink:1}),text:f=>`${f?2:1}/2. Flying, lifelink.`},
  warden:{name:'Soul Warden',e:1,r:'U',kind:'Creature · Cleric',g:'W',ally:f=>({p:1,t:1,warden:f?2:1}),text:f=>`1/1. Whenever another ally enters, heal ${f?2:1}.`},
- banish:{name:'Banishing Light',e:3,r:'U',aim:'enemy',kind:'Enchantment',g:'☼',text:f=>`Banish target minion. Against a legendary or planeswalker, deal ${f?9:6} damage instead.`,play:(f,t)=>{if(t.rank)hit(t,f?9:6);else{t.pop=(t.pop||0)+t.hp;t.hp=0}}},
+ banish:{name:'Banishing Light',e:3,r:'U',aim:'enemy',kind:'Enchantment',g:'☼',text:f=>`Banish target minion. Against a legendary or planeswalker, deal ${f?9:6} damage instead.`,play:(f,t)=>{if(t.rank)hit(t,f?9:6);else{t.banishT=c.turn;t.pop=(t.pop||0)+t.hp;t.hp=0}}},
  anthem:{name:'Glorious Anthem',e:2,r:'U',kind:'Enchantment',g:'♫',power:1,text:f=>f?'Allies get +1/+1 this fight. Heal 3.':'Allies get +1/+1 this fight.',play:f=>{c.anthem=(c.anthem||0)+1;if(f)heal(3)}},
  serra:{name:'Serra Angel',e:4,r:'U',kind:'Creature · Angel',g:'S',ally:f=>({p:f?5:4,t:4,flying:1,vigilance:1,skylord:1}),text:f=>`${f?5:4}/4. Flying, vigilance. Other allies with flying get +1/+1.`},
  eagle:{name:'Empyrean Eagle',e:3,r:'U',kind:'Creature · Bird Spirit',g:'E',ally:f=>({p:f?3:2,t:2,flying:1,skylord:1}),text:f=>`${f?3:2}/2. Flying. Other allies with flying get +1/+1.`},
@@ -319,7 +325,7 @@ Object.assign(C,{
  mirror:{col:'C',name:'Mirror Shield',e:1,r:'U',kind:'Artifact',g:'◈',text:f=>`Shield ${f?5:4}.`,play:f=>shield(f?5:4)},
  // Mythics: rare drops from any fight, likelier from elites, treasure and markets.
  titan:{col:'R',name:'Inferno Titan',e:4,r:'M',kind:'Creature · Giant',g:'T',ally:f=>({p:f?5:4,t:f?5:4,titan:2}),text:f=>`${f?'5/5':'4/4'}. When it enters, deal 2 damage to each enemy. Whenever another ally enters, deal 2 damage to each enemy.`},
- ignition:{col:'R',name:"Chandra's Ignition",e:3,r:'M',kind:'Sorcery',g:'✺',text:f=>`Your strongest ally deals damage equal to its power${f?' +2':''} to each enemy. With no allies, deal ${f?6:4} to each enemy.`,play:f=>{const a=[...c.allies].sort((x,y)=>pow(y)-pow(x))[0];const n=a?pow(a)+(f?2:0):(f?6:4);alive().forEach(e=>hit(e,n))}},
+ ignition:{col:'R',name:"Chandra's Ignition",e:3,r:'M',kind:'Sorcery',g:'✺',exile:1,text:f=>`Your strongest ally deals damage equal to its power +${f?4:2} to each enemy. With no allies, deal ${f?8:6} to each enemy. Exile.`,play:f=>{const a=[...c.allies].sort((x,y)=>pow(y)-pow(x))[0];const n=a?pow(a)+(f?4:2):(f?8:6);alive().forEach(e=>hit(e,n))}},
  thune:{col:'W',name:'Archangel of Thune',e:5,r:'M',kind:'Creature · Angel',g:'A',ally:f=>({p:f?4:3,t:4,flying:1,lifelink:1,thune:1}),text:f=>`${f?4:3}/4. Flying, lifelink. The first time you heal each turn, each ally gets +1/+1 this fight.`},
  akroma:{col:'W',name:'Akroma, Angel of Wrath',e:6,r:'M',kind:'Legendary Creature · Angel',g:'A',ally:f=>({p:f?4:3,t:f?4:3,flying:1,first:1,lifelink:1,akroma:1}),text:f=>`${f?'4/4':'3/3'}. Flying, first strike, lifelink. Your other flyers have first strike and lifelink.`},
 });
@@ -345,6 +351,61 @@ Object.assign(C,{
  blessing:{col:'W',name:"Apostle's Blessing",e:2,phy:1,r:'C',aim:'ally',needAlly:1,kind:'Instant',g:'✝',text:f=>`Pay {1} and {W} or 2 life. Target ally takes no damage from the next attack.${f?' Draw a card.':''}`,play:(f,t)=>{t.prot=1;if(f)draw(1)}},
  mutagen:{col:'C',name:'Mutagenic Growth',e:1,phy:1,r:'C',aim:'ally',needAlly:1,kind:'Instant',g:'✚',text:f=>`Pay {1} or 2 life. Target ally gets +${f?3:2}/+${f?3:2} until your next turn.`,play:(f,t)=>{t.temp1=(t.temp1||0)+(f?3:2);t.tough4=(t.tough4||0)+(f?3:2)}},
 });
+
+// ---------- step 3: Exile, Lost, Flashback, Ultimatum, the Token Belt ----------
+// Engine A: only cards you exile go to the exile pile, and the count is the pile right now. Cards an enemy takes are Lost.
+// Unlock flags (card-engine G): Flashback and Ultimatum at trail step 2, uncommon tokens at 3, the holo stamp at 9. The trail is step 6; until then PW_TRAIL (sims, tests) sets it.
+const TRAIL=n=>{let v=0;try{v=typeof PW_TRAIL!=='undefined'?PW_TRAIL:(profile&&profile.trail)||0}catch(e){}return v>=n};
+// Art registries from build.py: no placeholders, so a card or UI piece without its art stays out (and switches on when the art lands).
+const CARDART=typeof PW_CARDART!=='undefined'&&Array.isArray(PW_CARDART)?new Set(PW_CARDART):null,UIART=typeof PW_UIART!=='undefined'&&Array.isArray(PW_UIART)?new Set(PW_UIART):null;
+const hasUI=k=>!UIART||UIART.has(k);
+const exN=()=>c&&c.exile?c.exile.length:0;
+function exiled(card,put){if(put)c.exile.push(card);c.exN=(c.exN||0)+1;
+ if(run.emblems.includes('cinders')&&alive()[0])hit(alive()[0],2);
+ c.allies.forEach(a=>{if(a.scholar){a.temp1=(a.temp1||0)+2;a.haste=1;a.sick=false}});
+ if(run.emblems.includes('archive')&&!c.archived&&!C[card.key].ultimatum){c.archived=card.id}}
+Object.assign(C,{
+ pyreherald:{col:'R',name:'Pyre Herald',e:2,r:'U',kind:'Creature · Human Shaman',g:'P',ally:f=>({p:f?3:2,t:1,haste:1,pyreH:1}),text:f=>`${f?3:2}/1. Haste. Gets +1/+0 for each card in your exile pile (at least +1).`},
+ ashes:{col:'W',name:'Ashes to Glory',e:3,r:'R',kind:'Sorcery',g:'✶',text:f=>`Allies get +X/+X until your next turn, where X is the number of cards in your exile pile (at least ${f?2:1}).`,play:f=>{const x=Math.max(f?2:1,exN());c.allies.forEach(a=>{a.temp1=(a.temp1||0)+x;a.tough4=(a.tough4||0)+x})}},
+ lattice:{col:'C',name:"Ugin's Lattice",e:4,r:'M',kind:'Artifact',g:'◇',exile:1,text:f=>`Deal ${f?4:3} damage to each enemy, and to each enemy that arrives this fight. Exile.`,play:f=>{c.lattice=Math.max(c.lattice||0,f?4:3);alive().forEach(e=>hit(e,c.lattice))}},
+ embertithe:{col:'R',name:'Ember Tithe',e:1,r:'C',kind:'Instant',g:'△',exile:1,ritual:1,text:f=>`Add {R}{R}{R}. Lose ${f?1:2} life. Exile.`,play:f=>{ritual(3);hurt(f?1:2,'tithe')}},
+ sunvigil:{col:'W',name:'Sunrise Vigil',e:2,r:'C',kind:'Instant',g:'☀',exile:1,text:f=>`Shield ${f?12:10}. Draw a card. Exile.`,play:f=>{shield(f?12:10);draw(1)}},
+ kfury:{col:'R',name:'Kindled Fury',e:2,r:'U',aim:'enemy',kind:'Sorcery',g:'✹',exile:1,fb:4,text:f=>`Deal ${f?8:6} damage to target enemy and 2 to each other enemy. Exile.${TRAIL(2)?' Flashback {4}.':''}`,play:(f,t)=>{hit(t,f?8:6);alive().forEach(e=>{if(e!==t)hit(e,2)})}},
+ kindling:{col:'R',name:'Kindling Rite',e:0,r:'C',kind:'Instant',g:'△',ritual:1,pickHand:1,text:f=>`Exile another card from your hand. Add {R}{R}.${f?' Draw a card.':''}`,play:f=>{const k=c.hand.find(h=>h.id===c.pickId);if(k){c.hand.splice(c.hand.indexOf(k),1);exiled(k,1)}ritual(2);if(f)draw(1)}},
+ echo:{col:'R',name:'Echo Adept',e:2,r:'U',trail:2,kind:'Creature · Human Wizard',g:'E',ally:f=>({p:1,t:f?3:2,echo:1}),text:f=>`1/${f?3:2}. When it enters, the last card you exiled this fight gains Flashback {2} this turn.`},
+ scholar:{col:'R',name:'Ashen Scholar',e:3,r:'U',kind:'Creature · Human Wizard',g:'S',ally:f=>({p:2,t:f?4:3,scholar:1}),text:f=>`2/${f?4:3}. Whenever you exile a card, it gets +2/+0 and haste this turn.`},
+ pyre:{col:'R',name:'Pyre of Thraben',e:4,r:'M',bossOnly:1,ultimatum:1,trail:2,kind:'Sorcery',g:'✺',text:f=>`Deal ${f?14:12} damage to each enemy. You can't heal this fight. Ultimatum.`,play:f=>{alive().forEach(e=>hit(e,f?14:12));c.vortex=c.vortex||0;c.noHeal=1}},
+ lastlight:{col:'W',name:'Last Light of the Cathars',e:5,r:'M',bossOnly:1,ultimatum:1,trail:2,kind:'Sorcery',g:'☀',text:f=>`Summon five 2/2 Soldiers that block first. Heal ${f?12:10}. Ultimatum.`,play:f=>{for(let i=0;i<5;i++)summon({p:2,t:2,soldier:1,defender:0,guardFirst:1},'Soldier token');c.capOff=1;heal(f?12:10);c.capOff=0}},
+});
+// The Token Belt (the potion replacement): 3 slots, tap one on your turn to sacrifice it; no mana, no card play.
+const TOKENS={
+ treasure:{name:'Treasure',r:'C',price:20,tip:'Add one mana of any color',use:()=>{c.energy+=1}},
+ food:{name:'Food',r:'C',price:20,tip:'Heal 8',use:()=>{c.capOff=1;heal(8);c.capOff=0}},
+ clue:{name:'Clue',r:'C',price:20,tip:'Draw 2',use:()=>draw(2)},
+ blood:{name:'Blood',r:'C',price:20,tip:"Discard up to 2 cards you can't play, then draw that many",use:()=>{const bad=c.hand.filter(h=>!canPlay(h)).slice(0,2);bad.forEach(h=>{c.hand.splice(c.hand.indexOf(h),1);c.discard.push(h)});draw(bad.length)}},
+ map:{name:'Map',r:'U',trail:3,price:35,aim:'enemy',tip:"Move an enemy to the back: it can't act next turn",use:t=>{c.enemies=c.enemies.filter(e=>e!==t).concat(t);t.tapN=1;t.detSp=1}},
+ powerstone:{name:'Powerstone',r:'U',trail:3,price:35,tip:'Add {C}{C} for creatures and abilities only',use:()=>{c.pstone=(c.pstone||0)+2}},
+ monster:{name:'Monster Role',r:'U',trail:3,price:35,aim:'ally',tip:'An ally gets +1/+1 and trample this fight',use:t=>{t.p++;t.t++;t.trample=1}},
+ younghero:{name:'Young Hero Role',r:'U',trail:3,price:35,aim:'ally',tip:'Whenever this ally attacks, it gets +1/+1 this fight',use:t=>{t.yhero=1}},
+ gold:{name:'Gold',r:'R',price:55,tip:'Add two mana and untap an ally',use:()=>{c.energy+=2;const a=c.allies.find(x=>x.tapped);if(a)untap(a)}},
+ incubator:{name:'Incubator',r:'R',price:55,tip:'Summon a Phyrexian X/X, where X is your mana left',use:()=>{const x=c.energy;if(x>0&&roomFor('Phyrexian token',{p:x,t:x})){c.energy=0;summon({p:x,t:x},'Phyrexian token')}}},
+ shard:{name:'Shard',r:'R',price:55,tip:'Return a card from your exile pile to your hand',use:()=>{const k=[...c.exile].reverse().find(x=>!C[x.key].ultimatum);if(k){c.exile.splice(c.exile.indexOf(k),1);c.hand.push(k)}}},
+};
+const BELT_SLOTS=()=>3+(run.emblems.includes('bandolier')?1:0);
+const tokOk=k=>hasUI('tok-'+k)&&(!TOKENS[k].trail||TRAIL(TOKENS[k].trail));
+const beltOn=()=>Object.keys(TOKENS).some(tokOk);
+// Drops (ruling 17): before trail step 3 commons and rares 90/10; from step 3, 60/30/10.
+function rollToken(){const R=rng(),r=TRAIL(3)?(R<.6?'C':R<.9?'U':'R'):(R<.9?'C':'R');let L=Object.keys(TOKENS).filter(k=>TOKENS[k].r===r&&tokOk(k));if(!L.length)L=Object.keys(TOKENS).filter(tokOk);return L.length?pick(L):null}
+// After a hallway fight: 40%, +10% a miss, -10% a hit. Elites always drop one. A full belt keeps what it has.
+function tokenDrop(kind){if(!beltOn())return null;run.belt=run.belt||[];let k=null;if(kind==='elite'||rng()<(run.tokP??.4)){k=rollToken();if(kind!=='elite')run.tokP=Math.max(.1,(run.tokP??.4)-.1)}else run.tokP=Math.min(.9,(run.tokP??.4)+.1);
+ if(k&&run.belt.length<BELT_SLOTS()){run.belt.push(k);return k}return null}
+function useToken(i,t){const k=run.belt&&run.belt[i],T=k&&TOKENS[k];if(!T||!c||c.busy||view!=='battle')return;
+ if(T.aim&&!t){const only=T.aim==='enemy'?solo():c.allies.length===1?c.allies[0]:null;if(only)t=only;else{if(T.aim==='ally'&&!c.allies.length)return;c.pending={kind:'belt',slot:i,aim:T.aim};c.log=`${T.name}: choose ${T.aim==='enemy'?'an enemy':'one of your allies'}.`;return render()}}
+ c.pending=null;run.belt.splice(i,1);T.use(t);c.tokUsed=(c.tokUsed||0)+1;
+ if(run.emblems.includes('scrap')&&alive()[0])hit(alive()[0],2);
+ if(run.emblems.includes('satchel')&&!c.satchel){c.satchel=k}
+ c.log=`You sacrifice a ${T.name}.`;after()}
+const beltHtml=()=>!beltOn()||!run.belt?'':`<div class="pw-belt" role="group" aria-label="Token belt">${Array.from({length:BELT_SLOTS()},(_,i)=>{const k=run.belt[i];return k?`<button type="button" class="pw-tok" data-ui="tok-${k}" data-act="belt" data-s="${i}" aria-label="${TOKENS[k].name}: ${TOKENS[k].tip}" title="${TOKENS[k].name}: ${TOKENS[k].tip}" ${view==='battle'&&c&&!c.busy?'':'disabled'}></button>`:`<span class="pw-tok empty" aria-hidden="true"></span>`}).join('')}</div>`;
 // Goad: this turn the enemy attacks the enemy beside it instead of you (with no one beside it, it attacks you).
 // Tap: it skips its next attack. Detain: its next attack and its next other move. Elites and bosses take one per fight, then are immune.
 function goad(t){if(!t||t.hp<=0)return;t.goad=c.turn;t.flash=1}
@@ -360,7 +421,7 @@ const HEROES={
   plus:t=>{const n=2+(run.emblems.includes('pyre')?2:0);hit(t,n);return `Chandra +1: ${n} damage to ${t.name}.`},
   minus:()=>{c.enemies.forEach(e=>hit(e,3));return 'Chandra −3: 3 damage to each enemy.'},
   ult:()=>{c.ult=true;c.callout='Emblem of the Inferno';return 'Chandra −6: every spell deals 3 to each enemy this fight.'}},
- W:{key:'W',name:"Elspeth, Sun's Champion",short:'Elspeth',color:'White',get life(){return FORM?69:54},energy:3,ramp:[2,7],loyalty:2,theme:'Mana grows each turn. Go wide, then go huge.',
+ W:{key:'W',name:"Elspeth, Sun's Champion",short:'Elspeth',color:'White',get life(){return FORM?69:54},energy:3,ramp:[3,7],loyalty:2,theme:'Mana grows each turn. Go wide, then go huge.',
   starter:['vanguard','vanguard','vanguard','salve','salve','grace','pacifism','pacifism','pguard','pguard'],sig:'dawn',
   plusAim:null,plusLabel:()=>`+1 · Summon ${run&&run.emblems.includes('dawn')?'two 2/1 Soldiers':'a Soldier'}`,minusLabel:'−3 · Allies +2/+2',ultLabel:'−6 · Allies +2/+2 and fly',
   plus:()=>{if(run.emblems.includes('dawn')){summon({p:2,t:1,soldier:1},'Soldier token');summon({p:2,t:1,soldier:1},'Soldier token')}else soldier();return 'Elspeth +1: Soldiers join you.'},
@@ -398,7 +459,7 @@ const pairOf=k=>{const a=ARCH[k];if(!a||!run)return '';const e=a[1].find(x=>run.
 const pairEmb=k=>{if(!run)return '';const p=(EPAIR[k]||[]).find(x=>run.emblems.includes(x))||Object.keys(EPAIR).find(x=>run.emblems.includes(x)&&EPAIR[x].includes(k));return p?` data-pairs="${EMB[p].name.replace(/^Emblem of (the )?/,'')}" data-pairs-k="${p}"`:''};
 const sigOf=k=>{const m=SIG[k];const v=typeof m==='string'?m:m&&m[HERO.key];if(v&&C[v]&&(C[v].sig||POOL.includes(v)))return {k:v,fb:0};
  const pl=poolOf('U');return {k:pick(pl),fb:1}};
-const POOL_ALL=Object.keys(C).filter(k=>C[k].r!=='S'&&C[k].r!=='K'&&!C[k].hidden);
+const POOL_ALL=Object.keys(C).filter(k=>C[k].r!=='S'&&C[k].r!=='K'&&!C[k].hidden&&!C[k].bossOnly&&(!C[k].trail||TRAIL(C[k].trail))&&(!CARDART||CARDART.has(C[k].name)));
 let POOL=POOL_ALL.filter(k=>C[k].col==='R'||C[k].col==='C');
 // The hero's cards of one rarity. A thin pool steps down M, R, U, C, then up, so a pick is never undefined (same array, same rolls, when the rarity exists).
 const RSTEP=['M','R','U','C'],poolOf=r=>{const i=Math.max(0,RSTEP.indexOf(r)),by=x=>POOL.filter(k=>C[k].r===x);for(const x of [...RSTEP.slice(i),...RSTEP.slice(0,i).reverse()]){const pl=by(x);if(pl.length)return pl}return POOL_ALL.filter(k=>C[k].r==='C')};
@@ -466,9 +527,9 @@ const E={
  oliviaB:{name:'Olivia, Bride of Night',cols:'BR',art:'Olivia Voldaren',hp:56,pow:4,g:'Ol',rank:'boss',steal:2,p2fly:1,p2Name:'Bride of Night',intents:[['atk',6],['sweep',2],['drain',5],['atk',8]],phase2:[['atk',7],['sweep',3],['drain',6],['atk',9]]},
  thrall:{name:'Thrall',retired:1,hp:1,pow:0,g:'T',intents:[['atk',0]]},
  // Elite that replaces Olivia: Ironfang already turned; it gains trample when Nightfall comes (turn 4).
- ironalpha:{name:'Ironfang Alpha',art:'Ironfang',hp:40,pow:5,g:'W',rank:'elite',double:1,trample:1,intents:[['atk',4],['atk',4],['buff',2]]},
+ ironalpha:{name:'Ironfang Alpha',art:'Ironfang',hp:36,pow:5,g:'W',rank:'elite',double:1,trample:1,intents:[['atk',4],['atk',4],['buff',2]]},
  // Balance PDF #2: the Alpha sleeps 2 turns in the Ironsmith's shape (a setup window), then wakes and hits twice (a wall).
- alphasmith:{name:'Ironfang Alpha',art:'Village Ironsmith',hp:40,pow:3,g:'W',rank:'elite',intents:[['sleep',2],['transform','ironalpha',1]]},
+ alphasmith:{name:'Ironfang Alpha',art:'Village Ironsmith',hp:36,pow:3,g:'W',rank:'elite',intents:[['sleep',2],['transform','ironalpha',1]]},
 };
 Object.assign(E,{
  // Act two · Zendikar: the hungry wild. Enemies grow over the fight, so slow decks lose.
@@ -635,7 +696,7 @@ const ANTE_COST=()=>`Win by turn ${ANTE_TURNS_OF()} or the card burns · it sits
 // ---------- combat ----------
 function startFight(keys,kind,depth=0,ante=null,dun=null){
  keys=keys.slice(0,FIGHT.foes);
- c={kind,depth,doomT:kind==='boss'?DOOM_BT:DOOM_T,roll:Math.floor(Math.random()*3),enemies:keys.map(k=>foe(k,depth)),allies:[],hand:[],draw:shuffle(run.deck.filter(x=>!ante||x.id!==ante.id).map(x=>({...x}))),discard:[],energy:0,bank:0,loyalty:run.loyalty,used:false,turn:0,chain:0,ult:false,stats:{dealt:0,best:0,kills:0},tremors:0,target:null,haunt:0,
+ c={kind,depth,doomT:kind==='boss'?DOOM_BT:DOOM_T,roll:Math.floor(Math.random()*3),enemies:keys.map(k=>foe(k,depth)),allies:[],hand:[],draw:shuffle(run.deck.filter(x=>!ante||x.id!==ante.id).map(x=>({...x}))),discard:[],energy:0,bank:0,loyalty:run.loyalty,used:false,turn:0,chain:0,ult:false,stats:{dealt:0,best:0,kills:0},tremors:0,target:null,haunt:0,exile:[],lost:[],
   tax:keys.some(k=>E[k].tax),pending:null,log:'Your turn.',busy:false};
  c.roster=keys.slice();if(dun)Object.assign(c,dun);
  if(ante){c.ante={...ante};c.anteBy=ANTE_TURNS_OF();c.enemies[0].buff+=1}
@@ -660,13 +721,13 @@ function startTurn(){
  
  if(c.vortex&&c.turn>1){alive().forEach(e=>hit(e,c.vortex));hurt(2,'vortex')}
  if(c.enemies.some(e=>e.hp<=0))cleanup();
- c.energy=(HERO.ramp?Math.min(HERO.ramp[1],HERO.ramp[0]+c.turn-1):HERO.energy)+(c.stone||0)+(c.orchid||0)+(run.emblems.includes('signet')&&c.turn>1?1:0)+(c.turn===1&&run.emblems.includes('contract')?2:0)+(run.emblems.includes('surge')&&c.turn%2===1?1:0)+(run.emblems.includes('spark')?c.turn===1?2:c.turn===2?1:0:0)-(c.dungeon==='ruins'?1:0);c.eMax=c.energy; c.banked=c.bank; c.bank=0; c.chain=0; c.tSpell=0; c.used=false; draw(5+(c.siegeK||0)-c.haunt+(c.dungeon==='ruins'?1:0)+(run.emblems.includes('contract')?2:0)); c.haunt=0;
+ c.energy=(HERO.ramp?Math.min(HERO.ramp[1],HERO.ramp[0]+c.turn-1):HERO.energy)+(c.stone||0)+(c.orchid||0)+(run.emblems.includes('signet')&&c.turn>1?1:0)+(c.turn===1&&run.emblems.includes('contract')?2:0)+(run.emblems.includes('surge')&&c.turn%2===1?1:0)+(run.emblems.includes('spark')?c.turn===1?2:c.turn===2?1:0:0)-(c.dungeon==='ruins'?1:0);c.eMax=c.energy; c.banked=c.bank; c.bank=0; c.chain=0; c.tSpell=0; c.used=false; if(c.archived>0){const k=c.exile.find(x=>x.id===c.archived);if(k){c.exile.splice(c.exile.indexOf(k),1);c.hand.push(k)}c.archived=-1} draw(5+(c.siegeK||0)-c.haunt+(c.dungeon==='ruins'?1:0)+(run.emblems.includes('contract')?2:0)); c.haunt=0;
  c.tax=c.enemies.some(e=>E[e.key].tax);
 }
-function draw(n){for(let i=0;i<n;i++){if(!c.draw.length){c.draw=shuffle(c.discard);c.discard=[];if(c.dungeon==='crypt'&&c.draw.length>1){(c.exiled=c.exiled||[]).push(c.draw.pop());c.callout='The crypt takes a card'}}if(!c.draw.length)break;c.hand.push(c.draw.pop())}}
+function draw(n){for(let i=0;i<n;i++){if(!c.draw.length){c.draw=shuffle(c.discard);c.discard=[];if(c.dungeon==='crypt'&&c.draw.length>1){(c.lost=c.lost||[]).push(c.draw.pop());c.callout='The crypt takes a card'}}if(!c.draw.length)break;c.hand.push(c.draw.pop())}}
 const lords=a=>a.goblin?c.allies.filter(x=>x.lord&&x!==a).length:0;
 const marshals=a=>c.allies.filter(x=>x.marshal&&x!==a).length+(c.anthem||0)+(a.flying?c.allies.filter(x=>x.skylord&&x!==a).length:0);
-const pow=a=>a.p+a.temp+(a.temp1||0)+2*lords(a)+marshals(a), tough=a=>a.t+a.temp+(a.tough4||0)+lords(a)+marshals(a)+(FORM&&a.soldier&&c&&c.allies[c.allies.length-1]===a&&run.emblems.includes('dawn')?1:0);
+const pow=a=>a.p+a.temp+(a.temp1||0)+2*lords(a)+marshals(a)+(a.pyreH?Math.max(1,exN()):0), tough=a=>a.t+a.temp+(a.tough4||0)+lords(a)+marshals(a)+(FORM&&a.soldier&&c&&c.allies[c.allies.length-1]===a&&run.emblems.includes('dawn')?1:0);
 // Granted haste is read from the board now, so summon order and a lord leaving both count.
 const granted=a=>a.goblin&&c.allies.some(x=>x.dmg<tough(x)&&(x.chief||(x.lord&&x!==a)));
 const hasty=a=>a.haste||granted(a);
@@ -682,7 +743,7 @@ function hit(e,n){if(!e||e.hp<=0||n<=0)return 0;if(c&&c.font&&!c.busy){n+=c.font
  if(E[e.key].steal&&c&&e.hp<=e.max*.25)for(const t of c.enemies.filter(x=>x.thrallOf&&x.hp>0)){t.hp=0;t.noKill=1;const a=t.thrallOf;a.dmg=0;a.tapped=false;a.sick=false;c.allies.push(a);c.log=`${a.name} breaks free and returns to you.`}if(c&&!c.busy){c.burst=(c.burst||0)+n;c.stats.dealt+=n}return n}
 // In a fight, healing is capped per turn so life gain sustains a plan instead of replacing one.
 const HEAL_CAP=5;
-function heal(n){if(n<=0)return;if(c&&view==='battle'&&c.vortex){juice('No healing');return}if(run.emblems.includes('signet')&&!(c&&view==='battle'))return;if(c&&view==='battle'&&!c.allies.some(a=>a.thirst)){n=Math.min(n,HEAL_CAP-(c.healedTurn||0));if(n<=0)return;c.healedTurn=(c.healedTurn||0)+n}run.hp=Math.min(run.max,run.hp+n);run.heal=(run.heal||0)+n;
+function heal(n){if(n<=0)return;if(c&&view==='battle'&&(c.vortex||c.noHeal)){juice('No healing');return}if(run.emblems.includes('signet')&&!(c&&view==='battle'))return;if(c&&view==='battle'&&!c.capOff&&!c.allies.some(a=>a.thirst)){n=Math.min(n,HEAL_CAP-(c.healedTurn||0));if(n<=0)return;c.healedTurn=(c.healedTurn||0)+n}run.hp=Math.min(run.max,run.hp+n);run.heal=(run.heal||0)+n;
  if(c&&view==='battle'){c.allies.forEach(a=>{if(a.pride){a.p++;a.t++}});const th=c.allies.filter(a=>a.thune&&a.dmg<tough(a)).length;if(th&&c.thuneT!==c.turn){c.thuneT=c.turn;c.allies.forEach(a=>{a.p+=th;a.t+=th})}if(run.emblems.includes('beacon')&&!c.beaconing){c.beaconing=1;const bn=c.beaconT!==c.turn?2:1;c.beaconT=c.turn;c.enemies.forEach(e=>hit(e,bn));c.beaconing=0}}}
 // Shield (Block in StS): soaks enemy damage before life until your next turn. Life you pay yourself ignores it.
 function shield(n){if(!c||n<=0)return;c.ward=(c.ward||0)+n;juice(`◈ +${n} Shield`);
@@ -718,20 +779,23 @@ function summon(base,name){
  if(a.squire)summon({p:1,t:1,soldier:1},'Soldier token');
  if(a.orchid&&alive().length>c.allies.length-1)c.orchid=(c.orchid||0)+1;
  if(c.welcome)heal(c.welcome);
+ if(a.echo&&c.exile.length){const k=[...c.exile].reverse().find(x=>!C[x.key].ultimatum);if(k){k.fbT=c.turn}}
  if(a.arrest)hold(strongest(1)[0],1);
 }
 function canPlay(card){
  const d=C[card.key],cost=costOf(card);
  if(c.busy)return false;
  if(cost==='X')return c.energy>=1+(c.tax?1:0);
- if(cost>c.energy&&!(d.phy&&cost-c.energy<=d.phy&&run.hp>2*(cost-c.energy)))return false;
+ if(cost>c.energy+(d.ally?c.pstone||0:0)&&!(d.phy&&cost-c.energy<=d.phy&&run.hp>2*(cost-c.energy)))return false;
  if(d.ally&&!roomFor(d.name)||d.tokens&&!roomFor(...d.tokens(card.foil)))return false;
  if(d.needAlly&&!c.allies.length)return false;
+ if(d.pickHand&&!c.hand.some(h=>h.id!==card.id))return false;
  return true;
 }
 function play(i,t,m){
  const card=c.hand[i];if(!card||!canPlay(card))return;const d0=C[card.key];
  if(d0.modes&&m==null){if(SIM||typeof PW_HEADLESS!=='undefined'){m=d0.simMode?d0.simMode():0;const M=d0.modes[m];if(M.aim&&!t){t=(M.aim==='enemy'?alive().filter(M.ok||(()=>1)).sort((x,y)=>(y.pow+y.buff)-(x.pow+x.buff))[0]:c.allies[0]);if(!t){m=0}}}else{c.pending={kind:'mode',cid:card.id};c.log=`${d0.name}: choose a mode.`;return render()}}
+ if(d0.pickHand&&c.pickId==null){const others=c.hand.filter(h=>h.id!==card.id);if(!others.length)return;if(SIM||typeof PW_HEADLESS!=='undefined'){c.pickId=[...others].sort((x,y)=>(canPlay(x)-canPlay(y))||(C[y.key].e==='X'?9:C[y.key].e)-(C[x.key].e==='X'?9:C[x.key].e))[0].id}else{c.pending={kind:'hand',cid:card.id};c.log=`${d0.name}: choose a card to exile.`;return render()}}
  const d=d0.modes?{...d0,...d0.modes[m],play:d0.modes[m].play}:d0;
  if(d.ok&&t&&!d.ok(t)){c.log=`${d0.name}: that enemy has less than 4 attack.`;return render()}if(!SIM&&!(d.aim&&!t&&!solo()))buzz(8);
  if(d.aim&&!t){const only=d.aim==='enemy'?solo():c.allies.length===1?c.allies[0]:null;if(only&&(!d.ok||d.ok(only)))t=only;else{c.pending={kind:'card',cid:card.id,aim:d.aim,mode:m};c.log=`${d.name}: choose ${d.aim==='enemy'?'an enemy':'one of your allies'}.`;return render()}}
@@ -739,19 +803,20 @@ function play(i,t,m){
  c.casting=!d.ally;
  if(c.pact&&((c.pact==='creature')===!!d.ally)){hurt(3);c.log=`The pact takes 3 life for that ${c.pact}.`}
  if(d.ally)c.nCre=(c.nCre||0)+1;else{c.nSpell=(c.nSpell||0)+1;c.tSpell=(c.tSpell||0)+1;const ob=c.tSpell>2&&c.enemies.find(e=>e.hp>0&&E[e.key].spellTax);if(ob){hurt(E[ob.key].spellTax,'spelltax');c.callout=`−${E[ob.key].spellTax} life`}}
- if(d.e==='X'){const x=c.energy-(c.tax?1:0);c.lastX=x;c.energy=0;hit(t,x*(card.foil?4:3))}
- else{const cst=costOf(card),pay=Math.min(c.energy,cst);c.energy-=pay;if(cst>pay){hurt(2*(cst-pay),'phyrexian');juice(`−${2*(cst-pay)} life`)}if(c.standard&&!d.ally)c.stdT=c.turn;if(d.ally)summon(d.ally(card.foil),d.name);else d.play(card.foil,t)}
+ if(d.e==='X'){const x=c.energy-(c.tax?1:0);c.lastX=x;c.energy=0;hit(t,x*(d.xper?d.xper(card.foil):card.foil?4:3))}
+ else{let cst=costOf(card);if(d.ally&&c.pstone){const ps=Math.min(c.pstone,cst);c.pstone-=ps;cst-=ps}const pay=Math.min(c.energy,cst);c.energy-=pay;if(cst>pay){hurt(2*(cst-pay),'phyrexian');juice(`−${2*(cst-pay)} life`)}if(c.standard&&!d.ally)c.stdT=c.turn;if(d.ally)summon(d.ally(card.foil),d.name);else d.play(card.foil,t)}
  if(!d.ally){
   if(run.emblems.includes('twin')&&!c.twinned&&!d.power){c.twinned=1;c.callout='Echo!';juice('×2 Echo',1);
    const t2=d.aim==='enemy'?(t&&t.hp>0?t:alive()[0]):d.aim==='ally'?(c.allies.includes(t)?t:c.allies[0]):t;
-   if(d.e==='X')hit(t2,c.lastX*(card.foil?4:3));else if(t2||!d.aim)d.play(card.foil,t2)}
+   if(d.e==='X')hit(t2,c.lastX*(d.xper?d.xper(card.foil):card.foil?4:3));else if(t2||!d.aim)d.play(card.foil,t2)}
   if(run.emblems.includes('paradox'))c.allies.forEach(a=>{untap(a);a.p++;a.t++});
   for(const a of [...c.allies]){if(a.snipe)c.enemies.forEach(e=>hit(e,a.snipe));if(a.pyro)summon({p:1,t:1,haste:1},'Elemental')}
  }
  if(card.shield2)shield(2);
- c.hand.splice(i,1);if(!d.power)c.discard.push(card);
+ c.hand.splice(i,1);if(card.fbCast){card.fbCast=0;(c.fbUsed=c.fbUsed||[]).push(card.id);c.exile.push(card)}else if(d.ultimatum){run.deck=run.deck.filter(x=>x.id!==card.id);c.exile.push(card);exiled(card)}else if(d.exile&&!card.stamp)exiled(card,1);else if(!d.power)c.discard.push(card);
  if(!d.ally&&run.emblems.includes('embers')){c.enemies.forEach(e=>hit(e,1));if(!c.embered){c.embered=1;heal(1)}}
  if(!d.ally&&c.ult)c.enemies.forEach(e=>hit(e,3));
+ c.pickId=null;
  c.chain++;c.log=`You play ${d.name}.`;
  if(HERO.fury&&c.chain%4===0){c.energy+=1;juice('+{R} Fury')}if(run.emblems.includes('crown')&&c.chain===4){const g=1;c.energy+=g;juice(`+${g} Crown`)}
  if(HERO.fury&&c.chain%4===0){const fz=3*c.chain/4;c.enemies.forEach(e=>hit(e,fz));c.callout=c.chain>=8?`Fury ×${c.chain/4}!`:'Fury!';juice(`+${fz} Fury`);c.log=`Card ${c.chain} this turn: ${HERO.short}'s fury deals ${fz} to each enemy.`}
@@ -764,6 +829,7 @@ function attack(a,t){
  if(!ready(a))return;
  if(!t){t=solo();if(!t){c.pending={kind:'atk',id:a.id,aim:'enemy'};c.log=`${a.name}: choose an enemy to attack.`;return render()}}
  c.pending=null;
+ if(a.yhero){a.p++;a.t++}
  if(c.sigil&&c.sigilT!==c.turn){c.sigilT=c.turn;const k=c.sigil*(c.allies.length-1);if(k){a.temp1=(a.temp1||0)+k;a.tough4=(a.tough4||0)+k;juice(`+${k} Sigil`)}}
  const dmg=pow(a)+(a.raid||0), eFirst=E[t.key].first&&!fst(a);
  let hitBack=0;const back=()=>{if(a.flying&&!t.fly)return;if(c.drums&&a.goblin)return;if(a.prot){a.prot=0;return}hitBack=t.pow;a.dmg+=t.pow;if(E[t.key].feed&&a.dmg>=tough(a))t.pow++};
@@ -837,7 +903,7 @@ function endTurn(){if(c)c.arrange=false;
 // M3.5 formation (behind a flag): the front ally (last in line, nearest the enemy) blocks first,
 // a creature that blocks soaks the whole hit, a token soaks only up to its toughness, a blocker that
 // dies to a trampler soaks nothing, and bypass attackers skip the line.
-const pickBlocker=(e,can)=>FORM?c.allies.find(a=>a.guard===e.id&&can(a))||(E[e.key].bypass?null:c.allies.find(a=>a.defender&&can(a))||[...c.allies].reverse().find(can)):c.allies.find(a=>a.defender&&can(a))||c.allies.find(can);
+const pickBlocker=(e,can)=>FORM?c.allies.find(a=>a.guard===e.id&&can(a))||(E[e.key].bypass?null:c.allies.find(a=>(a.defender||a.guardFirst)&&can(a))||[...c.allies].reverse().find(can)):c.allies.find(a=>a.defender&&can(a))||c.allies.find(can);
 const spill=(e,n,room,b)=>!FORM?n-room:TRAMPLES(e)&&!(b&&b.steadfast)?n:b&&/token$/.test(b.name)?n-room:0;
 function blocker(e){
  const can=a=>!a.tapped&&a.dmg<tough(a)&&!a.noblock&&(!e.fly||a.flying||a.reach);
@@ -846,7 +912,7 @@ function blocker(e){
 function bloodfeed(n){const s=c&&n>0&&c.enemies.find(x=>x.hp>0&&x.phase2&&E[x.key].bloodfeed);if(s&&s.hp<s.max){const h=Math.min(n,s.max-s.hp);s.hp+=h;s.heal=(s.heal||0)+h}}
 function strike(e,n){
  const b=blocker(e);
- if(!b){hurt(n,E[e.key].bypass&&FORM?'bypass':e.fly?'unblocked-flyer':'unblocked');if(E[e.key].ingest&&c.draw.length){(c.exiled=c.exiled||[]).push(c.draw.pop());return `${e.name} hits ${HERO.short} for ${n} and ingests the top card of your deck (this fight only).`}return `${e.name} hits ${HERO.short} for ${n}.`}
+ if(!b){hurt(n,E[e.key].bypass&&FORM?'bypass':e.fly?'unblocked-flyer':'unblocked');if(E[e.key].ingest&&c.draw.length){(c.lost=c.lost||[]).push(c.draw.pop());return `${e.name} hits ${HERO.short} for ${n} and ingests the top card of your deck (this fight only).`}return `${e.name} hits ${HERO.short} for ${n}.`}
  if(b.prot){b.prot=0;b.flash=1;if(pow(b)>0)hit(e,b.deathtouch&&!e.rank?99:pow(b));return `${b.name} blocks ${e.name} and takes no damage.`}
  const room=tough(b)-b.dmg;let msg;bloodfeed(Math.min(n,room));
  if(SIM){const t0=SIM.took.get(b.id)||{n:0,o:0,fail:0};t0.n+=n;if(n>=room){t0.o+=spill(e,n,room,b);if(FORM&&TRAMPLES(e)&&!b.steadfast)t0.fail=1}SIM.took.set(b.id,t0)}
@@ -863,7 +929,7 @@ const intentOf=e=>{const d=E[e.key],pi=ghoulPair(e),list=e.phase2?d.phase2:pi>=0
  return it};
 // Enemies act one at a time so each action can be seen.
 // A new enemy arriving mid-fight triggers landfall (Baloth) and rage (Omnath).
-function addFoe(k){const n=foe(k,c.depth);c.enemies.push(n);c.enemies.forEach(x=>{if(x===n||x.hp<=0)return;const d=E[x.key];if(d.landfall)x.buff+=d.landfall;if(d.rage)hurt(d.rage)});return n}
+function addFoe(k){const n=foe(k,c.depth);c.enemies.push(n);if(c.lattice)hit(n,c.lattice);c.enemies.forEach(x=>{if(x===n||x.hp<=0)return;const d=E[x.key];if(d.landfall)x.buff+=d.landfall;if(d.rage)hurt(d.rage)});return n}
 function enemyQueue(){const ob=c.enemies.find(e=>E[e.key].pact&&e.hp>0),ns=c.nSpell||0,nc=c.nCre||0;c.pact=!ob?null:ob.phase2?(ns*1.25>=nc?'spell':'creature'):(ns>=nc&&ns>1?'spell':null);c.notes=[];c.queue=c.enemies.map(e=>e.id)}
 function enemyTurn(){enemyQueue();step()}
 // Enemies that die in their own turn (blocks, brands, death triggers) count as your kills too.
@@ -880,7 +946,7 @@ function act(e){if(FORM&&E[e.key].enrage)e.buff+=E[e.key].enrage;
  let pre='';const D=E[e.key];
  if(D.steal&&c.turn%D.steal===0&&e.hp>e.max*.25&&c.enemies.length<FIGHT.foes&&c.enemies.filter(x=>x.thrallOf&&x.hp>0).length<2){const a=[...c.allies].filter(x=>x.dmg<tough(x)).sort((x,y)=>pow(y)-pow(x))[0];
   if(a){c.allies=c.allies.filter(x=>x!==a);const t=addFoe('thrall');Object.assign(t,{name:a.name,hp:Math.max(1,tough(a)-a.dmg)+2,max:tough(a)+2,buff:pow(a)+2,fly:!!a.flying,thrallOf:a});pre=`${e.name} takes ${a.name}: it fights for her now. `}}
- if(D.mill&&c.draw.length){(c.exiled=c.exiled||[]).push(c.draw.pop());c.heraldEx=(c.heraldEx||0)+1;pre+=`${e.name} takes the top card of your deck (Lost this fight). `;if(e.phase2&&c.enemies.length<FIGHT.foes){addFoe('spawn');pre+='It rises as a Spawn. '}}
+ if(D.mill&&c.draw.length){(c.lost=c.lost||[]).push(c.draw.pop());c.heraldEx=(c.heraldEx||0)+1;pre+=`${e.name} takes the top card of your deck (Lost this fight). `;if(e.phase2&&c.enemies.length<FIGHT.foes){addFoe('spawn');pre+='It rises as a Spawn. '}}
  if(pre){const m=act2(e);return pre+m}return act2(e)}
 function act2(e){const m=act2_(e),D=E[e.key];if(D.wide&&e.hp>0&&c.allies.length>=(D.wideAt||3)&&c.turn%(D.wideEvery||1)===0){c.allies.forEach(a=>{a.dmg+=D.wide;a.flash=1});bloodfeed(D.wide*c.allies.length);return m+` ${e.name.replace(/,.*$/,'')} feeds on your crowd: ${D.wide} to each ally.`}return m}
 function act2_(e){
@@ -899,7 +965,7 @@ function act2_(e){
  else if(t==='ult'&&E[e.key].ultFx==='kill'){const b=[...c.allies].sort((x,y)=>pow(y)-pow(x))[0];if(b){b.dmg=999;msg=`${e.name} ultimates: ${b.name} is destroyed.`}else{hurt(8);msg=`${e.name} ultimates and hits ${HERO.short} for 8.`}}
  else if(t==='ult'){c.enemies.forEach(x=>{if(x!==e)x.buff+=2});e.buff+=2;msg=`${e.name.replace(/,.*$/,'')} ultimates: every enemy gets +2 attack.`}
  else if(t==='scion'){const m=c.enemies.filter(x=>x!==e&&x.hp>0).sort((x,y)=>y.max-x.max)[0];e.hp=0;e.noKill=1;msg=m?`The Scion feeds ${m.name}: it acts again. ${act(m)}`:'The Scion crumbles.'}
- else if(t==='process'){if(c.exiled&&c.exiled.length){c.exiled.pop();for(let k=0;k<v&&c.enemies.length<FIGHT.foes;k++)addFoe('spawn');msg=`${e.name} processes a Lost card into Eldrazi Spawn.`}else msg=strike(e,4+e.buff)}
+ else if(t==='process'){if(c.lost&&c.lost.length){c.lost.pop();for(let k=0;k<v&&c.enemies.length<FIGHT.foes;k++)addFoe('spawn');msg=`${e.name} processes a Lost card into Eldrazi Spawn.`}else msg=strike(e,4+e.buff)}
  else if(t==='sweep'){c.allies.forEach(a=>{a.dmg+=v;a.flash=1});msg=`${e.name}'s pack tears through your lines: ${v} damage to each ally.`}
  else if(t==='bolster'){const o=c.enemies.filter(x=>x!==e&&x.hp>0)[0];if(o){o.buff+=v;msg=`${e.name} lifts ${o.name}: +${v} attack.`}else msg=strike(e,3+e.buff)}
  else if(t==='rally'){c.enemies.forEach(x=>x.buff+=v);msg=`${e.name} rallies the vampires: every enemy gets +${v} attack.`}
@@ -959,7 +1025,9 @@ function win(){if(SIM)return;
  let embs=c.kind==='elite'?offerEmblems():[];
  if(c.dungeon&&run.dun){const D=DUN[run.dun.act];const rest=offerEmblems().filter(k=>EMB[k].r&&k!==D.emb).slice(0,1);embs=[...(run.emblems.includes(D.emb)?[]:[D.emb]),...rest];run.dun=null;{const h=Math.min(Math.round(run.max*DUN_HEAL),run.max-run.hp);run.hp+=h;run.heal=(run.heal||0)+h}}
  run.gold+=Math.round((c.kind==='elite'?35:10+Math.floor(rng()*7))*((run.act||1)>1?.65:1));
- reward={cards,embs,sig,anteRes:c.ante?{card:{...(run.deck.find(x=>x.id===c.ante.id)||c.ante)},r:anteOk?'won':'lost'}:null,dungeon:c.dungeon||null,stats:{...c.stats,turns:c.turn}}; view='reward'; render();
+ if(c.satchel&&run.belt&&run.belt.length<BELT_SLOTS())run.belt.push(c.satchel);
+ const tok=c.dungeon&&run.dun&&run.dun.room<DUN[run.dun.act].rooms?null:tokenDrop(c.kind);
+ reward={tok,cards,embs,sig,anteRes:c.ante?{card:{...(run.deck.find(x=>x.id===c.ante.id)||c.ante)},r:anteOk?'won':'lost'}:null,dungeon:c.dungeon||null,stats:{...c.stats,turns:c.turn}}; view='reward'; render();
 }
 
 // Previews play the real rules on a copy of the fight, then restore everything, so a preview
@@ -1051,7 +1119,7 @@ function topBar(){
   return `<span class="dk${foil?' foil':''}" data-full data-n="${d.name}" data-rar="${d.r}" data-col="${d.col||''}" data-tip="${(d.name+(foil?' (foil)':'')+'. '+d.text(foil)).replace(/&/g,'&amp;').replace(/"/g,'&quot;').replace(/</g,'&lt;')}"><span class="dk-e">${d.e}</span><b>${d.name}${foil?' ✦':''}</b><span class="dk-q">×${q}</span></span>`}).join('');
  return `<header class="top"><h1>Planeswalk</h1>
   <span class="life" data-v="${Math.max(0,run.hp)}/${run.max}" role="img" aria-label="Life ${Math.max(0,run.hp)}/${run.max}"><span class="lifebar"><i style="width:${Math.max(0,run.hp)/run.max*100}%"></i></span></span>
-  <span class="gold" data-v="${run.gold}" role="img" aria-label="Gold ${run.gold}"></span><span class="emblems">${run.emblems.map(embSvg).join('')||'<span class="muted" style="font-size:.8rem">No emblems yet</span>'}</span>
+  <span class="gold" data-v="${run.gold}" role="img" aria-label="Gold ${run.gold}"></span>${beltHtml()}<span class="emblems">${run.emblems.map(embSvg).join('')||'<span class="muted" style="font-size:.8rem">No emblems yet</span>'}</span>
   <span class="spacer"></span>
   <details class="deck"><summary class="btn">Deck · ${run.deck.length}</summary><div class="decklist" data-audit-scroll>${deckRows}</div></details>
   <span class="mono muted" style="font-size:.75rem">Seed ${seed}</span>
@@ -1097,8 +1165,8 @@ const P=c.pending;const F=c.busy?{you:0,dead:new Set(),took:new Map(),over:0}:fo
    <button class="btn main" data-act="end" ${c.busy?'disabled':''}>End turn</button>
   </div>
   <div class="foot"><div class="tally" title="Damage you've dealt this turn"><small>This turn</small>${c.stats.dealt-c.turnStart}${(c.juice||[]).length?`<span class="juice">${c.juice.map(j=>`<i class="${j.mul?'mul':'add'}">${j.t}${j.n>1?` <b>x${j.n}</b>`:''}</i>`).join('')}</span>`:''}</div><div class="energy" title="Mana: ${c.energy} of ${eMax} left this turn. Each lit symbol is one mana to spend. Unspent mana empties at the end of your turn.${HERO.ramp?` ${HERO.short} gets 1 more mana each turn, up to ${HERO.ramp[1]}.`:''}"><span class="e-n">${c.energy}</span><span class="pips" aria-hidden="true">${Array.from({length:Math.min(eMax,10)},(_,i)=>`<i class="${i<c.energy?'on':''}" style="--a:${((i-(Math.min(eMax,10)-1)/2)*(eMax>6?20:26)).toFixed(1)}deg"></i>`).join('')}</span></div>${HERO.fury?`<div class="chain" role="img" aria-label="Fury ${c.chain%4||(c.chain?4:0)} of 4" title="Fury: every 4th card you play in a turn, ${HERO.short} deals 3 to each enemy (6 on the 8th, 9 on the 12th) and adds {R}. Cards played this turn: ${c.chain}.">${[1,2,3,4].map(n=>`<i class="${(c.chain%4||(c.chain?4:0))>=n?'on':''}">${ico('flame')}</i>`).join('')}</div>`:''}
-   <div class="hand" data-audit-stack>${c.hand.map((card,i)=>cardHtml(card,`data-act="play" data-i="${i}" ${canPlay(card)?'':'disabled'} ${P&&(P.kind==='card'||P.kind==='mode')&&P.cid===card.id?'data-chosen="1"':''}`)).join('')}</div>${modePick(P)}
-   <div class="piles"><span data-pile="draw" role="img" aria-label="Draw pile: ${c.draw.length} cards"><b>${c.draw.length}</b></span><span data-pile="discard" role="img" aria-label="Discard pile: ${c.discard.length} cards"><b>${c.discard.length}</b></span>${!c.busy&&c.energy?`<span class="bankhint">${Math.min(2,c.energy)} <span class="bh-e">energy </span>saved</span>`:''}${c.tax?'<span style="color:var(--red)">Thalia: spells +1</span>':''}</div></div>
+   <div class="hand" data-audit-stack>${c.hand.map((card,i)=>cardHtml(card,`data-act="play" data-i="${i}" ${canPlay(card)||P&&P.kind==='hand'?'':'disabled'} ${P&&(P.kind==='card'||P.kind==='mode'||P.kind==='hand')&&P.cid===card.id?'data-chosen="1"':''}`)).join('')}</div>${modePick(P)}
+   <div class="piles"><span data-pile="draw" role="img" aria-label="Draw pile: ${c.draw.length} cards"><b>${c.draw.length}</b></span><span data-pile="discard" role="img" aria-label="Discard pile: ${c.discard.length} cards"><b>${c.discard.length}</b></span>${hasUI('exile-pile')&&c.exile.length?`<span data-pile="exile" data-ui="exile-pile" role="img" aria-label="Exile pile: ${c.exile.length} cards"><b>${c.exile.length}</b></span>`:''}${!c.busy&&c.energy?`<span class="bankhint">${Math.min(2,c.energy)} <span class="bh-e">energy </span>saved</span>`:''}${c.tax?'<span style="color:var(--red)">Thalia: spells +1</span>':''}</div></div>
  </section>`;
 }
 // The shared mode picker (rulings addendum 19:45Z): two icon buttons over the chosen card, no text; the card face has both modes.
@@ -1259,16 +1327,17 @@ document.getElementById('app').addEventListener('click',ev=>{
  if(a==='closeinspect'){c.inspect=null;c.showHist=0;return render()}
  if(a==='giftok'){gift=null;return render()}
  if(a==='hist'){c.showHist=!c.showHist;c.inspect=null;return render()}
- if(a==='target'){const t=c.enemies.find(e=>e.id===+b.dataset.id),P=c.pending;if(!t)return;if(FORM&&c.arrange&&c.guardSel){const g=c.allies.find(y=>y.id===c.guardSel);c.guardSel=null;if(g){c.allies.forEach(y=>{if(y.guard===t.id&&y!==g)y.guard=null});g.guard=t.id;c.log=`${g.name} guards against ${t.name}.`}return render()}if(!P){c.inspect=c.inspect===t.id?null:t.id;return render()}c.inspect=null;if(P.kind==='card')return play(c.hand.findIndex(h=>h.id===P.cid),t,P.mode);if(P.kind==='atk'){const x=c.allies.find(y=>y.id===P.id);return x&&attack(x,t)}if(P.kind==='plus')return ability(false,t);if(P.kind==='sacT')return bombard(c.allies.find(y=>y.id===P.sac),t);return}
- if(a==='target-ally'){const t=c.allies.find(y=>y.id===+b.dataset.id);if(!t)return;if(c.pending.kind==='sac'){const only=solo();if(only)return bombard(t,only);c.pending={kind:'sacT',aim:'enemy',sac:t.id};c.log=`Fling ${t.name} at which enemy?`;return render()}if(c.pending.kind!=='card')return;return play(c.hand.findIndex(h=>h.id===c.pending.cid),t,c.pending.mode)}
+ if(a==='target'){const t=c.enemies.find(e=>e.id===+b.dataset.id),P=c.pending;if(!t)return;if(FORM&&c.arrange&&c.guardSel){const g=c.allies.find(y=>y.id===c.guardSel);c.guardSel=null;if(g){c.allies.forEach(y=>{if(y.guard===t.id&&y!==g)y.guard=null});g.guard=t.id;c.log=`${g.name} guards against ${t.name}.`}return render()}if(!P){c.inspect=c.inspect===t.id?null:t.id;return render()}c.inspect=null;if(P.kind==='card')return play(c.hand.findIndex(h=>h.id===P.cid),t,P.mode);if(P.kind==='atk'){const x=c.allies.find(y=>y.id===P.id);return x&&attack(x,t)}if(P.kind==='plus')return ability(false,t);if(P.kind==='belt')return useToken(P.slot,t);if(P.kind==='sacT')return bombard(c.allies.find(y=>y.id===P.sac),t);return}
+ if(a==='target-ally'){const t=c.allies.find(y=>y.id===+b.dataset.id);if(!t)return;if(c.pending.kind==='sac'){const only=solo();if(only)return bombard(t,only);c.pending={kind:'sacT',aim:'enemy',sac:t.id};c.log=`Fling ${t.name} at which enemy?`;return render()}if(c.pending.kind==='belt')return useToken(c.pending.slot,t);if(c.pending.kind!=='card')return;return play(c.hand.findIndex(h=>h.id===c.pending.cid),t,c.pending.mode)}
  if(a==='mode'){const P=c.pending;if(!P||!P.cid)return;const i=c.hand.findIndex(h=>h.id===P.cid),m=+b.dataset.m,M=i>=0&&C[c.hand[i].key].modes;if(!M||!M[m])return;return play(i,null,m)}
+ if(a==='belt'){return useToken(+b.dataset.s)}
  if(a==='cancel'){c.pending=null;c.log='Cancelled.';return render()}
  if(a==='atk'){const x=c.allies.find(y=>y.id===+b.dataset.id);return x&&attack(x)}
  if(a==='formtoggle'){try{localStorage.setItem('pw-form',FORM?'0':'1')}catch(e){}location.reload();return}
  if(a==='arrange'){c.arrange=!c.arrange;c.guardSel=null;c.log=c.arrange?'Tap an ally to move it to the front, then an enemy to have it guard against that one.':'Formation set.';return render()}
  if(a==='front'){const x=c.allies.find(y=>y.id===+b.dataset.id);if(x&&!x.tapped){c.guardSel=x.id}const g=x&&(stacks().find(g=>g.includes(x))||[x]);if(x){c.allies=c.allies.filter(y=>!g.includes(y)).concat(g);c.log=`${x.name} moves to the front.${x.tapped?'':' Tap an enemy to have it guard against that one.'}`}return render()}
  if(a==='all')return attackAll();
- if(a==='play'){const i=+b.dataset.i;if(c.pending&&(c.pending.kind==='card'||c.pending.kind==='mode')&&c.hand[i]?.id===c.pending.cid){c.pending=null;c.log='Cancelled.';return render()}return play(i)}
+ if(a==='play'){const i=+b.dataset.i;if(c.pending&&c.pending.kind==='hand'){const P=c.pending,j=c.hand.findIndex(h=>h.id===P.cid);if(c.hand[i]?.id===P.cid||j<0){c.pending=null;c.log='Cancelled.';return render()}c.pending=null;c.pickId=c.hand[i].id;return play(j)}if(c.pending&&(c.pending.kind==='card'||c.pending.kind==='mode')&&c.hand[i]?.id===c.pending.cid){c.pending=null;c.log='Cancelled.';return render()}return play(i)}
  if(a==='plus')return ability(false);
  if(a==='minus')return ability(true);
  if(a==='ult')return ability('ult');
