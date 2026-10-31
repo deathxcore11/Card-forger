@@ -1,7 +1,7 @@
 {
   "source": "https://github.com/deathxcore11/Card-forger",
-  "commit": "2505dfeb985da753021b50f468cda35f826b06e3",
-  "sourceVersion": "4.3.40",
+  "commit": "88895dd0739b1788bf10e59b8ef625b6418a9cb7",
+  "sourceVersion": "4.3.41",
   "appId": "com.cardstashy.app",
   "releaseReady": false,
   "network": "enabled-exact-hosts",
@@ -378,6 +378,7 @@
     "catalog.json",
     "cloud.js",
     "coach-evidence.js",
+    "collection-banner.js",
     "collection-display.css",
     "collection-locations.js",
     "collection-order.js",
@@ -1028,8 +1029,8 @@
     },
     {
       "path": "app.js",
-      "bytes": 457924,
-      "sha256": "848fba217432ad17c1343eec0531f560a06947936f9c6dcbb731237f35c444c5"
+      "bytes": 459449,
+      "sha256": "8eb864aa37a4c4ea3548cbc41b20325c9bd8ab9775dedc0a747147e2907bc9fc"
     },
     {
       "path": "artwork.js",
@@ -2752,6 +2753,11 @@
       "sha256": "ca9e8c563a8e06c274079b11ea2691bbd10af1f268e7886f953e71f418cf7a99"
     },
     {
+      "path": "collection-banner.js",
+      "bytes": 2654,
+      "sha256": "65be0fbf25f0112b8446180dc8892f3f69bc45cce68ff6772db1c8a4953fde34"
+    },
+    {
       "path": "collection-display.css",
       "bytes": 6601,
       "sha256": "000552528d864ef9f99dee5718724a76302dafd9bb5191a1d537c76c818b356e"
@@ -2854,7 +2860,7 @@
     {
       "path": "config.js",
       "bytes": 629,
-      "sha256": "2cfa74507beece53765014d39f1ebcd494eabee62bf3930952d6f886914916eb"
+      "sha256": "c7a78c2bc52c59e2f08416e9e2ad3891e8d755ad18af916da538ad1f7bc4c268"
     },
     {
       "path": "core.js",
@@ -4843,8 +4849,8 @@
     },
     {
       "path": "polish.css",
-      "bytes": 62832,
-      "sha256": "3ff69d8aff35e92f9ee19ba7ed38a74379a11fccbb51f98e9b2b296e3a05e0aa"
+      "bytes": 63149,
+      "sha256": "75f6a5959861423a9aec3f37b03a4c37a4337f604535889e1a9dabf3a23cd4dc"
     },
     {
       "path": "power.js",
@@ -4938,8 +4944,8 @@
     },
     {
       "path": "release-record.js",
-      "bytes": 1173,
-      "sha256": "6f577de442dfbfa83e70b9cd8f1b9093ac4eb2a31d2f289f5a5e4a68c9576d8f"
+      "bytes": 716,
+      "sha256": "389b93ae2cb0cde2bef6d638d34012541c81784b15b79184cdbe45954a90edbf"
     },
     {
       "path": "release-status.js",
@@ -5283,8 +5289,8 @@
     },
     {
       "path": "tcg.js",
-      "bytes": 365856,
-      "sha256": "7c1e655bc5e1fe7f0af34d281ce69629079d45feba083f47c5fb29ba4bf4f312"
+      "bytes": 366876,
+      "sha256": "8d09ae436b47820e2b166b9a88ab76e49712d74d05bb7cca9b34ff5451cfdee6"
     },
     {
       "path": "tcgbuild.js",
@@ -5438,8 +5444,8 @@
     },
     {
       "path": "views.js",
-      "bytes": 197433,
-      "sha256": "de1f3ef780762fba5905d7a414cbf3884651bdbcc82fed911c30692f251f8da6"
+      "bytes": 197307,
+      "sha256": "3702d890dddca6521a1680d8cdabe34119af19a15ba89c9e6d77f259adb4b2ac"
     },
     {
       "path": "wiki-card-handoff.js",
