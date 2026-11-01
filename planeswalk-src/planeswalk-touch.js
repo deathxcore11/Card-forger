@@ -494,7 +494,7 @@
   close();
   if(m==='restart'){end();return G('newRun')(undefined,r&&r.hero)}
   if(m==='hero'){end();return G('newRun')()}
-  if(m==='exit'){end();const a=app.querySelector('.top a.btn[href]');if(a&&a.getAttribute('href')){location.href=a.href;return}return G('newRun')()}};
+  if(m==='exit'){end();const a=app.querySelector('.top a.btn[href]');/* no back link in the bar (none ever ships): go to the app's Play menu. It used to fall back to a new run, which on hero select just redrew the same screen (Randall 1 Nov: stuck until a reload) */location.href=a&&a.getAttribute('href')?a.href:'/#play';return}};
  document.addEventListener('click',e=>{const b=e.target.closest('.pw-menu [data-m]');if(b){e.stopPropagation();act(b.dataset.m,b);return}
   if(box&&e.target===box)close()},true);
  addEventListener('keydown',e=>{if(e.key!=='Escape')return;if(document.querySelector('.pw-zoom,.pw-coach'))return;e.preventDefault();open()});
