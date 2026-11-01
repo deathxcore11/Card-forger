@@ -111,3 +111,7 @@
 /* One of the pack's three best lands with a glint along its edge. */
 .pack-card.pack-best-land{box-shadow:0 0 0 2px #fff6d099,0 0 22px #ffe39a88}
 @media (prefers-reduced-motion:reduce){.pack-ring,.pack-ember,.pack-room-flash{display:none}.pack-focus-card.pack-charge>*{animation:none!important}.pack-dialog.pack-spotlight *{filter:none!important}}
+/* Flip (4.3.50): the front is loaded before it turns; the price frame, its glow and the hand's tier border fade in only once
+   the face has landed, so the turn shows the real back then the real front, never a flat grey or empty slab. */
+.pack-focus-card.pack-flipping>:is(.pack-frame,.pack-backlight){opacity:0!important;transition:none}
+.pack-card.pack-flipping::before,.pack-card.pack-flipping::after{opacity:0!important;transition:none}
