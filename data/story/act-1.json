@@ -1,0 +1,2197 @@
+{
+ "act": 1,
+ "title": "The Dawn of Dominaria",
+ "years": "1993 to 1994",
+ "sets": [
+  "lea",
+  "leb",
+  "2ed",
+  "arn",
+  "atq"
+ ],
+ "landSet": "lea",
+ "intro": [
+  {
+   "who": "narrator",
+   "line": "Dominaria, before the long winter. Two brothers are building a war."
+  }
+ ],
+ "finale": [
+  {
+   "who": "urza",
+   "line": "The Sylex. It ends the war."
+  },
+  {
+   "who": "tawnos",
+   "line": "Master, the whole continent..."
+  },
+  {
+   "who": "urza",
+   "line": "It ends the war."
+  },
+  {
+   "who": "stage",
+   "line": "A white flash. Then snow."
+  },
+  {
+   "who": "mishra",
+   "line": "It was never just me, brother. Someone else was listening.",
+   "whisper": true
+  }
+ ],
+ "cast": {
+  "you": {
+   "name": "You",
+   "title": "Planeswalker",
+   "portrait": {
+    "card": "Prodigal Sorcerer",
+    "set": "lea",
+    "number": "73",
+    "id": "e4dc1103-7bf1-47f6-9006-d3ed9ccd7a6a",
+    "crop": "https://cards.scryfall.io/art_crop/front/e/4/e4dc1103-7bf1-47f6-9006-d3ed9ccd7a6a.jpg?1783948702",
+    "artist": "Douglas Shuler",
+    "focus": "50% 30%"
+   }
+  },
+  "archers": {
+   "name": "Elvish Archer",
+   "title": "Llanowar",
+   "portrait": {
+    "card": "Elvish Archers",
+    "set": "lea",
+    "number": "191",
+    "id": "1cb9d405-f2b5-4e10-a405-feafd2a87d90",
+    "crop": "https://cards.scryfall.io/art_crop/front/1/c/1cb9d405-f2b5-4e10-a405-feafd2a87d90.jpg?1783948678",
+    "artist": "Anson Maddocks",
+    "focus": "50% 25%"
+   }
+  },
+  "goblinKing": {
+   "name": "Goblin King",
+   "title": "Lord of the Pass",
+   "portrait": {
+    "card": "Goblin King",
+    "set": "lea",
+    "number": "154",
+    "id": "5873672d-37ea-4c0f-97f3-12b74fde112d",
+    "crop": "https://cards.scryfall.io/art_crop/front/5/8/5873672d-37ea-4c0f-97f3-12b74fde112d.jpg?1783948685",
+    "artist": "Jesper Myrfors",
+    "focus": "50% 30%"
+   }
+  },
+  "whiteKnight": {
+   "name": "White Knight",
+   "title": "Holder of the Ford",
+   "portrait": {
+    "card": "White Knight",
+    "set": "lea",
+    "number": "43",
+    "id": "50abfba8-c9f9-4ebf-965a-4b425fe83129",
+    "crop": "https://cards.scryfall.io/art_crop/front/5/0/50abfba8-c9f9-4ebf-965a-4b425fe83129.jpg?1783948709",
+    "artist": "Daniel Gelon",
+    "focus": "50% 25%"
+   }
+  },
+  "blackKnight": {
+   "name": "Black Knight",
+   "title": "Challenger",
+   "portrait": {
+    "card": "Black Knight",
+    "set": "lea",
+    "number": "94",
+    "id": "c1662949-0d69-49a3-8c69-daf10717ed4e",
+    "crop": "https://cards.scryfall.io/art_crop/front/c/1/c1662949-0d69-49a3-8c69-daf10717ed4e.jpg?1783948698",
+    "artist": "Jeff A. Menges",
+    "focus": "50% 25%"
+   }
+  },
+  "erhnam": {
+   "name": "Erhnam Djinn",
+   "title": "Collector of People",
+   "portrait": {
+    "card": "Erhnam Djinn",
+    "set": "arn",
+    "number": "48",
+    "id": "42bc0c3f-0a52-4bdc-83da-6484bf3102f3",
+    "crop": "https://cards.scryfall.io/art_crop/front/4/2/42bc0c3f-0a52-4bdc-83da-6484bf3102f3.jpg?1783948381",
+    "artist": "Ken Meyer, Jr.",
+    "focus": "50% 30%"
+   }
+  },
+  "titania": {
+   "name": "Titania",
+   "title": "Voice of Argoth",
+   "portrait": {
+    "card": "Titania's Song",
+    "set": "atq",
+    "number": "35",
+    "id": "583a53af-2e2a-4f3f-8eab-bd874c6ed80a",
+    "crop": "https://cards.scryfall.io/art_crop/front/5/8/583a53af-2e2a-4f3f-8eab-bd874c6ed80a.jpg?1783948366",
+    "artist": "Kerstin Kaman",
+    "focus": "50% 35%"
+   }
+  },
+  "urza": {
+   "name": "Urza",
+   "title": "The Artificer",
+   "portrait": {
+    "card": "Urza's Avenger",
+    "set": "atq",
+    "number": "74",
+    "id": "448e1811-fb16-4390-ac22-b7066a4a019c",
+    "crop": "https://cards.scryfall.io/art_crop/front/4/4/448e1811-fb16-4390-ac22-b7066a4a019c.jpg?1783948358",
+    "artist": "Amy Weber",
+    "focus": "50% 30%"
+   }
+  },
+  "sindbad": {
+   "name": "Sindbad",
+   "title": "Captain of Rabiah",
+   "portrait": {
+    "card": "Sindbad",
+    "set": "arn",
+    "number": "21",
+    "id": "7b112a10-ac40-4353-bbdd-e5efd4546330",
+    "crop": "https://cards.scryfall.io/art_crop/front/7/b/7b112a10-ac40-4353-bbdd-e5efd4546330.jpg?1783948388",
+    "artist": "Julie Baroh",
+    "focus": "50% 30%"
+   }
+  },
+  "efreet": {
+   "name": "Serendib Efreet",
+   "title": "Guardian of Serendib",
+   "portrait": {
+    "card": "Serendib Efreet",
+    "set": "arn",
+    "number": "20",
+    "id": "cf56e862-3169-4f63-acd0-731080fa32f2",
+    "crop": "https://cards.scryfall.io/art_crop/front/c/f/cf56e862-3169-4f63-acd0-731080fa32f2.jpg?1783948388",
+    "artist": "Anson Maddocks",
+    "focus": "50% 30%"
+   }
+  },
+  "tawnos": {
+   "name": "Tawnos",
+   "title": "Urza's Apprentice",
+   "portrait": {
+    "card": "Tawnos's Coffin",
+    "set": "atq",
+    "number": "68",
+    "id": "c27bc1de-8246-4dc8-af51-ec21def9e226",
+    "crop": "https://cards.scryfall.io/art_crop/front/c/2/c27bc1de-8246-4dc8-af51-ec21def9e226.jpg?1783948358",
+    "artist": "Christopher Rush",
+    "focus": "50% 40%"
+   }
+  },
+  "ashnod": {
+   "name": "Ashnod",
+   "title": "Mishra's Lieutenant",
+   "portrait": {
+    "card": "Ashnod's Altar",
+    "set": "atq",
+    "number": "38",
+    "id": "cdcccb0f-ce96-453b-9e82-41d87f52e58b",
+    "crop": "https://cards.scryfall.io/art_crop/front/c/d/cdcccb0f-ce96-453b-9e82-41d87f52e58b.jpg?1783948365",
+    "artist": "Anson Maddocks",
+    "focus": "50% 40%"
+   }
+  },
+  "mishra": {
+   "name": "Mishra",
+   "title": "The Brother",
+   "portrait": {
+    "card": "Mishra's War Machine",
+    "set": "atq",
+    "number": "57",
+    "id": "8f6b4652-a1d4-418f-a89b-6a977a920a9e",
+    "crop": "https://cards.scryfall.io/art_crop/front/8/f/8f6b4652-a1d4-418f-a89b-6a977a920a9e.jpg?1783948361",
+    "artist": "Amy Weber",
+    "focus": "50% 40%"
+   }
+  }
+ },
+ "battles": [
+  {
+   "id": "a1b1",
+   "slot": 1,
+   "kind": "Arrival",
+   "title": "The First Summons",
+   "difficulty": "Easy",
+   "teaches": [
+    "Land drops and mana",
+    "Casting creatures",
+    "Attacking and blocking"
+   ],
+   "blurb": "You wake in a forest that has never seen a planeswalker. Its archers have their bows up already.",
+   "rewardSet": "lea",
+   "host": false,
+   "hero": {
+    "who": "you",
+    "deck": {
+     "name": "Knights of the Dawn",
+     "colors": "W",
+     "archetype": null,
+     "cards": [
+      {
+       "qty": 4,
+       "name": "Savannah Lions",
+       "set": "lea",
+       "number": "38",
+       "id": "d05b92bd-797e-413f-a8b0-32e0937a1ee0"
+      },
+      {
+       "qty": 4,
+       "name": "Benalish Hero",
+       "set": "lea",
+       "number": "4",
+       "id": "11600105-56c6-4073-a4a6-8469030b39c9"
+      },
+      {
+       "qty": 4,
+       "name": "Pearled Unicorn",
+       "set": "lea",
+       "number": "30",
+       "id": "6daf1aab-1e58-4a5a-bc66-cb3f7c86e0e8"
+      },
+      {
+       "qty": 4,
+       "name": "White Knight",
+       "set": "lea",
+       "number": "43",
+       "id": "50abfba8-c9f9-4ebf-965a-4b425fe83129"
+      },
+      {
+       "qty": 4,
+       "name": "War Elephant",
+       "set": "arn",
+       "number": "11",
+       "id": "7416c366-95cc-4799-b6c6-34d8fad8c202"
+      },
+      {
+       "qty": 4,
+       "name": "Moorish Cavalry",
+       "set": "arn",
+       "number": "7",
+       "id": "f86f0781-7614-4779-a58d-f13ce96bdf33"
+      },
+      {
+       "qty": 3,
+       "name": "Northern Paladin",
+       "set": "lea",
+       "number": "29",
+       "id": "6303233b-35eb-49ca-b844-ba6b9fe1cbd2"
+      },
+      {
+       "qty": 3,
+       "name": "Serra Angel",
+       "set": "lea",
+       "number": "39",
+       "id": "f8ac5006-91bd-4803-93da-f87cf196dd2f"
+      },
+      {
+       "qty": 3,
+       "name": "Holy Strength",
+       "set": "lea",
+       "number": "24",
+       "id": "e945a4cd-0eb1-4f54-898d-169ce2748a03"
+      },
+      {
+       "qty": 3,
+       "name": "Healing Salve",
+       "set": "lea",
+       "number": "22",
+       "id": "e28de37e-84d5-4dc7-b36c-e14da5924729"
+      },
+      {
+       "qty": 24,
+       "name": "Plains",
+       "set": "lea",
+       "number": "286",
+       "id": "b1623d57-4729-4796-b3f7-f1837a05c6ed"
+      }
+     ]
+    }
+   },
+   "villain": {
+    "who": "archers",
+    "deck": {
+     "name": "Bows of Llanowar",
+     "colors": "G",
+     "archetype": null,
+     "cards": [
+      {
+       "qty": 4,
+       "name": "Llanowar Elves",
+       "set": "lea",
+       "number": "210",
+       "id": "d4f1cc9e-4f99-4c26-ac1b-8ef069fa8ceb"
+      },
+      {
+       "qty": 4,
+       "name": "Timber Wolves",
+       "set": "lea",
+       "number": "219",
+       "id": "bc2570a4-eef9-430d-b6c2-cd51d29b9d01"
+      },
+      {
+       "qty": 4,
+       "name": "Grizzly Bears",
+       "set": "lea",
+       "number": "199",
+       "id": "ce2d603a-3231-4a8c-bf39-1617586ea870"
+      },
+      {
+       "qty": 4,
+       "name": "Elvish Archers",
+       "set": "lea",
+       "number": "191",
+       "id": "1cb9d405-f2b5-4e10-a405-feafd2a87d90"
+      },
+      {
+       "qty": 4,
+       "name": "Wyluli Wolf",
+       "set": "arn",
+       "number": "55",
+       "id": "15ccebe1-ef08-4805-a65f-a1c57abed9f2"
+      },
+      {
+       "qty": 4,
+       "name": "War Mammoth",
+       "set": "lea",
+       "number": "227",
+       "id": "c8d6081e-f686-4263-a0a2-21c0d9af5fdb"
+      },
+      {
+       "qty": 3,
+       "name": "Ironroot Treefolk",
+       "set": "lea",
+       "number": "203",
+       "id": "b93c5869-7777-44bb-967a-e9439b25ced4"
+      },
+      {
+       "qty": 3,
+       "name": "Craw Wurm",
+       "set": "lea",
+       "number": "190",
+       "id": "bfed1a95-bd67-4e16-a781-81866028af2f"
+      },
+      {
+       "qty": 2,
+       "name": "Giant Growth",
+       "set": "lea",
+       "number": "197",
+       "id": "367dbefe-3366-408e-9fcf-7dc00f8cc201"
+      },
+      {
+       "qty": 4,
+       "name": "Shanodin Dryads",
+       "set": "lea",
+       "number": "216",
+       "id": "814cf35c-f1ad-4bf4-8c10-a5592c3b1be8"
+      },
+      {
+       "qty": 24,
+       "name": "Forest",
+       "set": "lea",
+       "number": "294",
+       "id": "6f1c8cb0-38eb-408b-94e8-16db83999b3b"
+      }
+     ]
+    }
+   },
+   "scene": [
+    {
+     "who": "archers",
+     "line": "Stop. You came out of the air."
+    },
+    {
+     "who": "archers",
+     "line": "Things that come out of the air don't usually leave."
+    },
+    {
+     "who": "archers",
+     "line": "Show us what you are. Call something."
+    }
+   ],
+   "villainScene": null,
+   "cues": {
+    "villain": {
+     "start": "Bows up.",
+     "big": "The forest answers us, not you.",
+     "low": "Fall back to the trees!",
+     "win": "Go back to wherever you fell from.",
+     "loss": "Fine. The forest will remember you."
+    }
+   },
+   "bigPlays": [],
+   "sim": null
+  },
+  {
+   "id": "a1b2",
+   "slot": 2,
+   "kind": "Lesson",
+   "title": "The Goblin King's Toll",
+   "difficulty": "Easy",
+   "teaches": [
+    "Flying"
+   ],
+   "blurb": "A mountain pass with a toll and a king who collects it. His army is big, loud and stuck on the ground.",
+   "rewardSet": "lea",
+   "host": false,
+   "hero": {
+    "who": "you",
+    "deck": {
+     "name": "Wings of the Dawn",
+     "colors": "W",
+     "archetype": null,
+     "cards": [
+      {
+       "qty": 4,
+       "name": "Mesa Pegasus",
+       "set": "lea",
+       "number": "28",
+       "id": "eaac88da-d19e-4771-944c-3709963d04e7"
+      },
+      {
+       "qty": 4,
+       "name": "Pearled Unicorn",
+       "set": "lea",
+       "number": "30",
+       "id": "6daf1aab-1e58-4a5a-bc66-cb3f7c86e0e8"
+      },
+      {
+       "qty": 4,
+       "name": "Serra Angel",
+       "set": "lea",
+       "number": "39",
+       "id": "f8ac5006-91bd-4803-93da-f87cf196dd2f"
+      },
+      {
+       "qty": 4,
+       "name": "Wall of Swords",
+       "set": "lea",
+       "number": "42",
+       "id": "99ec4723-b36c-4015-b361-736a6523e8f5"
+      },
+      {
+       "qty": 4,
+       "name": "Benalish Hero",
+       "set": "lea",
+       "number": "4",
+       "id": "11600105-56c6-4073-a4a6-8469030b39c9"
+      },
+      {
+       "qty": 4,
+       "name": "Savannah Lions",
+       "set": "lea",
+       "number": "38",
+       "id": "d05b92bd-797e-413f-a8b0-32e0937a1ee0"
+      },
+      {
+       "qty": 4,
+       "name": "Holy Armor",
+       "set": "lea",
+       "number": "23",
+       "id": "b01041d2-687e-4972-81c8-16690809275b"
+      },
+      {
+       "qty": 2,
+       "name": "Swords to Plowshares",
+       "set": "lea",
+       "number": "40",
+       "id": "386ea9eb-abc1-4862-aa2d-8fb808d79490"
+      },
+      {
+       "qty": 2,
+       "name": "Healing Salve",
+       "set": "lea",
+       "number": "22",
+       "id": "e28de37e-84d5-4dc7-b36c-e14da5924729"
+      },
+      {
+       "qty": 4,
+       "name": "Moorish Cavalry",
+       "set": "arn",
+       "number": "7",
+       "id": "f86f0781-7614-4779-a58d-f13ce96bdf33"
+      },
+      {
+       "qty": 24,
+       "name": "Plains",
+       "set": "lea",
+       "number": "286",
+       "id": "b1623d57-4729-4796-b3f7-f1837a05c6ed"
+      }
+     ]
+    }
+   },
+   "villain": {
+    "who": "goblinKing",
+    "deck": {
+     "name": "The King's Rabble",
+     "colors": "R",
+     "archetype": null,
+     "cards": [
+      {
+       "qty": 4,
+       "name": "Goblin King",
+       "set": "lea",
+       "number": "154",
+       "id": "5873672d-37ea-4c0f-97f3-12b74fde112d"
+      },
+      {
+       "qty": 4,
+       "name": "Mons's Goblin Raiders",
+       "set": "lea",
+       "number": "164",
+       "id": "b4eb3db3-6a7c-488a-9433-d5d1d3133816"
+      },
+      {
+       "qty": 4,
+       "name": "Goblin Balloon Brigade",
+       "set": "lea",
+       "number": "153",
+       "id": "5129b422-7a35-4bc5-b14b-c814012a0d8f"
+      },
+      {
+       "qty": 4,
+       "name": "Ironclaw Orcs",
+       "set": "lea",
+       "number": "159",
+       "id": "d56421a8-34ae-4033-943f-c59a7bf2b6f9"
+      },
+      {
+       "qty": 4,
+       "name": "Gray Ogre",
+       "set": "lea",
+       "number": "156",
+       "id": "73ae5276-b607-4f23-a9d2-e8cc7b8e3693"
+      },
+      {
+       "qty": 4,
+       "name": "Hurloon Minotaur",
+       "set": "lea",
+       "number": "158",
+       "id": "78a9088f-8755-47cb-aa93-51d992ccab90"
+      },
+      {
+       "qty": 4,
+       "name": "Hill Giant",
+       "set": "lea",
+       "number": "157",
+       "id": "0ddb98e8-13fe-4786-83f7-b72c56db135a"
+      },
+      {
+       "qty": 4,
+       "name": "Two-Headed Giant of Foriys",
+       "set": "lea",
+       "number": "179",
+       "id": "31c687dc-ee0c-4e54-a2b3-5d8e633b3245"
+      },
+      {
+       "qty": 4,
+       "name": "Uthden Troll",
+       "set": "lea",
+       "number": "180",
+       "id": "2ff21a6f-83a7-4bf3-a078-294e303232cc"
+      },
+      {
+       "qty": 24,
+       "name": "Mountain",
+       "set": "lea",
+       "number": "292",
+       "id": "eace2c85-976c-425e-9800-5a6ccbd91b56"
+      }
+     ]
+    }
+   },
+   "scene": [
+    {
+     "who": "goblinKing",
+     "line": "Halt! This pass belongs to the king."
+    },
+    {
+     "who": "goblinKing",
+     "line": "I am the king."
+    },
+    {
+     "who": "goblinKing",
+     "line": "Toll is everything you've got. Pay or get stomped."
+    },
+    {
+     "who": "goblinKing",
+     "line": "...Why is your stuff flying? Nobody said flying was allowed."
+    }
+   ],
+   "villainScene": null,
+   "cues": {
+    "villain": {
+     "start": "Charge! No, the OTHER way!",
+     "big": "Look at THAT one. That one's mine.",
+     "low": "Who let the sky in?!",
+     "win": "Toll's paid! Hah!",
+     "loss": "Next time, nets. Lots of nets."
+    }
+   },
+   "bigPlays": [],
+   "sim": null
+  },
+  {
+   "id": "a1b3",
+   "slot": 3,
+   "kind": "Lesson",
+   "title": "Knights at the Ford",
+   "difficulty": "Normal",
+   "teaches": [
+    "First strike",
+    "Protection from a colour"
+   ],
+   "blurb": "Two knights have held the same river crossing for years. Today one of them finally wants it settled.",
+   "rewardSet": "lea",
+   "host": false,
+   "hero": {
+    "who": "whiteKnight",
+    "deck": {
+     "name": "The Order of the Ford",
+     "colors": "W",
+     "archetype": null,
+     "cards": [
+      {
+       "qty": 4,
+       "name": "White Knight",
+       "set": "lea",
+       "number": "43",
+       "id": "50abfba8-c9f9-4ebf-965a-4b425fe83129"
+      },
+      {
+       "qty": 4,
+       "name": "Savannah Lions",
+       "set": "lea",
+       "number": "38",
+       "id": "d05b92bd-797e-413f-a8b0-32e0937a1ee0"
+      },
+      {
+       "qty": 4,
+       "name": "Benalish Hero",
+       "set": "lea",
+       "number": "4",
+       "id": "11600105-56c6-4073-a4a6-8469030b39c9"
+      },
+      {
+       "qty": 4,
+       "name": "Northern Paladin",
+       "set": "lea",
+       "number": "29",
+       "id": "6303233b-35eb-49ca-b844-ba6b9fe1cbd2"
+      },
+      {
+       "qty": 4,
+       "name": "Moorish Cavalry",
+       "set": "arn",
+       "number": "7",
+       "id": "f86f0781-7614-4779-a58d-f13ce96bdf33"
+      },
+      {
+       "qty": 3,
+       "name": "Serra Angel",
+       "set": "lea",
+       "number": "39",
+       "id": "f8ac5006-91bd-4803-93da-f87cf196dd2f"
+      },
+      {
+       "qty": 4,
+       "name": "Swords to Plowshares",
+       "set": "lea",
+       "number": "40",
+       "id": "386ea9eb-abc1-4862-aa2d-8fb808d79490"
+      },
+      {
+       "qty": 3,
+       "name": "Disenchant",
+       "set": "lea",
+       "number": "18",
+       "id": "2722d7e2-61c6-4934-9c21-875ee78fd06c"
+      },
+      {
+       "qty": 3,
+       "name": "Blessing",
+       "set": "lea",
+       "number": "7",
+       "id": "f131fd27-18da-47ca-b59f-135bcac83abd"
+      },
+      {
+       "qty": 3,
+       "name": "Holy Strength",
+       "set": "lea",
+       "number": "24",
+       "id": "e945a4cd-0eb1-4f54-898d-169ce2748a03"
+      },
+      {
+       "qty": 24,
+       "name": "Plains",
+       "set": "lea",
+       "number": "286",
+       "id": "b1623d57-4729-4796-b3f7-f1837a05c6ed"
+      }
+     ]
+    }
+   },
+   "villain": {
+    "who": "blackKnight",
+    "deck": {
+     "name": "The Dark Lance",
+     "colors": "B",
+     "archetype": null,
+     "cards": [
+      {
+       "qty": 4,
+       "name": "Black Knight",
+       "set": "lea",
+       "number": "94",
+       "id": "c1662949-0d69-49a3-8c69-daf10717ed4e"
+      },
+      {
+       "qty": 4,
+       "name": "Erg Raiders",
+       "set": "arn",
+       "number": "25",
+       "id": "35c73a97-531d-4dd5-8236-39b89c183c38"
+      },
+      {
+       "qty": 2,
+       "name": "Hasran Ogress",
+       "set": "arn",
+       "number": "27",
+       "id": "9f310cf5-0985-4826-9779-19a713089d6d"
+      },
+      {
+       "qty": 4,
+       "name": "Scathe Zombies",
+       "set": "lea",
+       "number": "125",
+       "id": "e9be6dcf-5e25-4b8c-9cd0-badf3771f81e"
+      },
+      {
+       "qty": 4,
+       "name": "Bog Wraith",
+       "set": "lea",
+       "number": "95",
+       "id": "6701874e-986e-4b81-9268-90b6171e6187"
+      },
+      {
+       "qty": 1,
+       "name": "Sengir Vampire",
+       "set": "lea",
+       "number": "127",
+       "id": "510840f4-7c0e-4b47-8ebf-23c20cac4bd9"
+      },
+      {
+       "qty": 2,
+       "name": "Frozen Shade",
+       "set": "lea",
+       "number": "109",
+       "id": "d0bd76c8-4cff-4c15-9686-7a299b589814"
+      },
+      {
+       "qty": 2,
+       "name": "Dark Ritual",
+       "set": "lea",
+       "number": "98",
+       "id": "ebb6664d-23ca-456e-9916-afcd6f26aa7f"
+      },
+      {
+       "qty": 2,
+       "name": "Fear",
+       "set": "lea",
+       "number": "108",
+       "id": "0cd927be-e63f-4371-a1d8-7a0489cb187e"
+      },
+      {
+       "qty": 2,
+       "name": "Weakness",
+       "set": "lea",
+       "number": "134",
+       "id": "36ca06a1-9b9a-49a2-9c47-9b72228621bc"
+      },
+      {
+       "qty": 2,
+       "name": "Drain Life",
+       "set": "lea",
+       "number": "105",
+       "id": "5d077a49-73d4-4958-b42a-31b814e110e8"
+      },
+      {
+       "qty": 3,
+       "name": "Unholy Strength",
+       "set": "lea",
+       "number": "131",
+       "id": "90563f90-0127-4164-b43b-f0321dc63a1d"
+      },
+      {
+       "qty": 4,
+       "name": "Drudge Skeletons",
+       "set": "lea",
+       "number": "106",
+       "id": "23614289-0d73-4747-a849-5cb67cc97d6a"
+      },
+      {
+       "qty": 24,
+       "name": "Swamp",
+       "set": "lea",
+       "number": "290",
+       "id": "6176936d-72e2-4205-8871-4c5a4f1cb2d8"
+      }
+     ]
+    }
+   },
+   "scene": [
+    {
+     "who": "blackKnight",
+     "line": "Every morning, you. Every evening, you."
+    },
+    {
+     "who": "whiteKnight",
+     "line": "Every morning, you lose."
+    },
+    {
+     "who": "blackKnight",
+     "line": "Not today. Today I brought a witness.",
+     "aside": "He looks at you."
+    },
+    {
+     "who": "whiteKnight",
+     "line": "Then let them see how it's done. Watch the first blow. It's the only one that matters."
+    }
+   ],
+   "villainScene": null,
+   "cues": {
+    "hero": {
+     "start": "Steady.",
+     "big": "There. First, and last.",
+     "low": "I've held this ford through worse.",
+     "win": "Same time tomorrow.",
+     "loss": "Go on, cross. Just this once."
+    },
+    "villain": {
+     "start": "No mercy at the ford.",
+     "big": "Feel that, paladin?",
+     "low": "The river's getting deeper...",
+     "win": "At last!",
+     "loss": "Tomorrow, then."
+    }
+   },
+   "bigPlays": [],
+   "sim": null
+  },
+  {
+   "id": "a1b4",
+   "slot": 4,
+   "kind": "Rival",
+   "title": "The Djinn of the Bottle",
+   "difficulty": "Normal",
+   "teaches": [
+    "Instants on the opponent's turn",
+    "Bounce"
+   ],
+   "blurb": "A rift drops you into Rabiah, the world of the Thousand and One Nights, at the feet of a djinn who is bored of granting wishes.",
+   "rewardSet": "arn",
+   "host": false,
+   "hero": {
+    "who": "you",
+    "deck": {
+     "name": "Rift-Walker's Court",
+     "colors": "WU",
+     "archetype": null,
+     "cards": [
+      {
+       "qty": 4,
+       "name": "Serendib Efreet",
+       "set": "arn",
+       "number": "20",
+       "id": "cf56e862-3169-4f63-acd0-731080fa32f2"
+      },
+      {
+       "qty": 4,
+       "name": "Mesa Pegasus",
+       "set": "lea",
+       "number": "28",
+       "id": "eaac88da-d19e-4771-944c-3709963d04e7"
+      },
+      {
+       "qty": 4,
+       "name": "Moorish Cavalry",
+       "set": "arn",
+       "number": "7",
+       "id": "f86f0781-7614-4779-a58d-f13ce96bdf33"
+      },
+      {
+       "qty": 4,
+       "name": "Serra Angel",
+       "set": "lea",
+       "number": "39",
+       "id": "f8ac5006-91bd-4803-93da-f87cf196dd2f"
+      },
+      {
+       "qty": 4,
+       "name": "Phantom Monster",
+       "set": "lea",
+       "number": "69",
+       "id": "e46d2cf5-e8d0-4fb2-b950-252d52084b63"
+      },
+      {
+       "qty": 2,
+       "name": "Mahamoti Djinn",
+       "set": "lea",
+       "number": "64",
+       "id": "36204ddd-ddf7-4b44-ae3c-b4a5a41ac9cb"
+      },
+      {
+       "qty": 4,
+       "name": "Swords to Plowshares",
+       "set": "lea",
+       "number": "40",
+       "id": "386ea9eb-abc1-4862-aa2d-8fb808d79490"
+      },
+      {
+       "qty": 4,
+       "name": "Unsummon",
+       "set": "lea",
+       "number": "86",
+       "id": "8512f2c1-6361-4b79-843f-80b6bceeeb99"
+      },
+      {
+       "qty": 2,
+       "name": "Counterspell",
+       "set": "lea",
+       "number": "54",
+       "id": "0df55e3f-14de-46ef-b6b1-616618724d9e"
+      },
+      {
+       "qty": 2,
+       "name": "Tundra",
+       "set": "lea",
+       "number": "284",
+       "id": "a03e8c5b-f4ed-4fd7-ba05-db813ccc05eb"
+      },
+      {
+       "qty": 12,
+       "name": "Plains",
+       "set": "lea",
+       "number": "286",
+       "id": "b1623d57-4729-4796-b3f7-f1837a05c6ed"
+      },
+      {
+       "qty": 10,
+       "name": "Island",
+       "set": "lea",
+       "number": "288",
+       "id": "90a57c0e-fa61-45ef-955d-d296403967d5"
+      },
+      {
+       "qty": 4,
+       "name": "Flying Men",
+       "set": "arn",
+       "number": "14",
+       "id": "25ab9a2b-e248-4ae2-aac3-b49fdb3e260a"
+      }
+     ]
+    }
+   },
+   "villain": {
+    "who": "erhnam",
+    "deck": {
+     "name": "The Djinn's Menagerie",
+     "colors": "G",
+     "archetype": null,
+     "cards": [
+      {
+       "qty": 4,
+       "name": "Erhnam Djinn",
+       "set": "arn",
+       "number": "48",
+       "id": "42bc0c3f-0a52-4bdc-83da-6484bf3102f3"
+      },
+      {
+       "qty": 4,
+       "name": "Ghazbán Ogre",
+       "set": "arn",
+       "number": "49",
+       "id": "f9d613d5-36a2-4633-b5af-64511bb29cc2"
+      },
+      {
+       "qty": 4,
+       "name": "Llanowar Elves",
+       "set": "lea",
+       "number": "210",
+       "id": "d4f1cc9e-4f99-4c26-ac1b-8ef069fa8ceb"
+      },
+      {
+       "qty": 4,
+       "name": "Kird Ape",
+       "set": "arn",
+       "number": "40",
+       "id": "ebe8845e-df1c-481c-949c-aab84af99a05"
+      },
+      {
+       "qty": 4,
+       "name": "Ifh-Bíff Efreet",
+       "set": "arn",
+       "number": "50",
+       "id": "c0b10fb7-8667-42bf-aeb6-35767a82917b"
+      },
+      {
+       "qty": 4,
+       "name": "Giant Spider",
+       "set": "lea",
+       "number": "198",
+       "id": "77636b4c-faea-4bf5-b88c-dd5bb88dc930"
+      },
+      {
+       "qty": 3,
+       "name": "Craw Wurm",
+       "set": "lea",
+       "number": "190",
+       "id": "bfed1a95-bd67-4e16-a781-81866028af2f"
+      },
+      {
+       "qty": 4,
+       "name": "Giant Growth",
+       "set": "lea",
+       "number": "197",
+       "id": "367dbefe-3366-408e-9fcf-7dc00f8cc201"
+      },
+      {
+       "qty": 3,
+       "name": "Sandstorm",
+       "set": "arn",
+       "number": "53",
+       "id": "73cba9cd-73d9-442e-bd99-9cba9f398b64"
+      },
+      {
+       "qty": 2,
+       "name": "Desert Twister",
+       "set": "arn",
+       "number": "46",
+       "id": "0d77c149-cca2-45c7-bc83-5ba1872ad5e0"
+      },
+      {
+       "qty": 20,
+       "name": "Forest",
+       "set": "lea",
+       "number": "294",
+       "id": "6f1c8cb0-38eb-408b-94e8-16db83999b3b"
+      },
+      {
+       "qty": 4,
+       "name": "Taiga",
+       "set": "lea",
+       "number": "282",
+       "id": "60df6592-0b3b-4b87-aeb2-8fa94b4fb7be"
+      }
+     ]
+    }
+   },
+   "scene": [
+    {
+     "who": "erhnam",
+     "line": "A new face! Do you know how long it's been since I had a new face?"
+    },
+    {
+     "who": "erhnam",
+     "line": "Every visitor wishes. Gold, wives, kingdoms. Tiresome."
+    },
+    {
+     "who": "erhnam",
+     "line": "You will not wish. You will duel. Win, and I'll show you the way home."
+    },
+    {
+     "who": "erhnam",
+     "line": "Lose, and you stay. I collect people."
+    }
+   ],
+   "villainScene": null,
+   "cues": {
+    "villain": {
+     "start": "Entertain me.",
+     "big": "Behold the gift of the djinn.",
+     "low": "Ah. That stung. How novel.",
+     "win": "Another for my collection.",
+     "loss": "Go, then! The rift is that way. Visit."
+    }
+   },
+   "bigPlays": [],
+   "sim": null
+  },
+  {
+   "id": "a1b5",
+   "slot": 5,
+   "kind": "Lesson",
+   "title": "Argoth Burns",
+   "difficulty": "Normal",
+   "teaches": [
+    "Artifacts",
+    "Answering artifacts"
+   ],
+   "blurb": "The rift spits you out on Argoth, a forest island. Two brothers are cutting it down to build their war.",
+   "rewardSet": "atq",
+   "host": false,
+   "hero": {
+    "who": "titania",
+    "deck": {
+     "name": "The Argoth Grove",
+     "colors": "G",
+     "archetype": null,
+     "cards": [
+      {
+       "qty": 2,
+       "name": "Argothian Pixies",
+       "set": "atq",
+       "number": "29",
+       "id": "5712e87a-2381-4f5b-a853-6973841f9bf1"
+      },
+      {
+       "qty": 2,
+       "name": "Citanul Druid",
+       "set": "atq",
+       "number": "31",
+       "id": "f8a130dc-3b1f-4fae-8459-b26bb5647fec"
+      },
+      {
+       "qty": 2,
+       "name": "Ironroot Treefolk",
+       "set": "lea",
+       "number": "203",
+       "id": "b93c5869-7777-44bb-967a-e9439b25ced4"
+      },
+      {
+       "qty": 2,
+       "name": "Giant Spider",
+       "set": "lea",
+       "number": "198",
+       "id": "77636b4c-faea-4bf5-b88c-dd5bb88dc930"
+      },
+      {
+       "qty": 4,
+       "name": "Argothian Treefolk",
+       "set": "atq",
+       "number": "30",
+       "id": "8db8882e-4db6-4e3c-9e9e-8c71d557a071"
+      },
+      {
+       "qty": 4,
+       "name": "Llanowar Elves",
+       "set": "lea",
+       "number": "210",
+       "id": "d4f1cc9e-4f99-4c26-ac1b-8ef069fa8ceb"
+      },
+      {
+       "qty": 4,
+       "name": "Grizzly Bears",
+       "set": "lea",
+       "number": "199",
+       "id": "ce2d603a-3231-4a8c-bf39-1617586ea870"
+      },
+      {
+       "qty": 4,
+       "name": "War Mammoth",
+       "set": "lea",
+       "number": "227",
+       "id": "c8d6081e-f686-4263-a0a2-21c0d9af5fdb"
+      },
+      {
+       "qty": 3,
+       "name": "Craw Wurm",
+       "set": "lea",
+       "number": "190",
+       "id": "bfed1a95-bd67-4e16-a781-81866028af2f"
+      },
+      {
+       "qty": 2,
+       "name": "Crumble",
+       "set": "atq",
+       "number": "32",
+       "id": "d2101f86-8d3c-4ba8-ac42-bd3df0644280"
+      },
+      {
+       "qty": 2,
+       "name": "Titania's Song",
+       "set": "atq",
+       "number": "35",
+       "id": "583a53af-2e2a-4f3f-8eab-bd874c6ed80a"
+      },
+      {
+       "qty": 3,
+       "name": "Giant Growth",
+       "set": "lea",
+       "number": "197",
+       "id": "367dbefe-3366-408e-9fcf-7dc00f8cc201"
+      },
+      {
+       "qty": 2,
+       "name": "Wyluli Wolf",
+       "set": "arn",
+       "number": "55",
+       "id": "15ccebe1-ef08-4805-a65f-a1c57abed9f2"
+      },
+      {
+       "qty": 24,
+       "name": "Forest",
+       "set": "lea",
+       "number": "294",
+       "id": "6f1c8cb0-38eb-408b-94e8-16db83999b3b"
+      }
+     ]
+    }
+   },
+   "villain": {
+    "who": "urza",
+    "deck": {
+     "name": "The Mining Crews",
+     "colors": "W",
+     "archetype": null,
+     "cards": [
+      {
+       "qty": 4,
+       "name": "Su-Chi",
+       "set": "atq",
+       "number": "66",
+       "id": "a64d4f93-0c04-4078-aec0-7e9de92f260f"
+      },
+      {
+       "qty": 4,
+       "name": "Yotian Soldier",
+       "set": "atq",
+       "number": "79",
+       "id": "27cf53e3-76f6-4831-800e-1259394d779d"
+      },
+      {
+       "qty": 4,
+       "name": "Clay Statue",
+       "set": "atq",
+       "number": "44",
+       "id": "64975352-8d35-4d02-94ac-fa0c6ee12409"
+      },
+      {
+       "qty": 4,
+       "name": "Juggernaut",
+       "set": "lea",
+       "number": "255",
+       "id": "dcd6a291-5282-4f49-8203-d9b416083c48"
+      },
+      {
+       "qty": 4,
+       "name": "Onulet",
+       "set": "atq",
+       "number": "59",
+       "id": "d77fe8e2-8438-473e-ace5-01baddd2c4ed"
+      },
+      {
+       "qty": 4,
+       "name": "Ornithopter",
+       "set": "atq",
+       "number": "60",
+       "id": "59cc9bdb-7cf2-4795-bac7-ffff605c9eb0"
+      },
+      {
+       "qty": 3,
+       "name": "Obsianus Golem",
+       "set": "lea",
+       "number": "267",
+       "id": "4c8e9f5c-deba-4443-bf9d-fb2be75c5418"
+      },
+      {
+       "qty": 3,
+       "name": "Battering Ram",
+       "set": "atq",
+       "number": "41",
+       "id": "f7a69e35-d209-41c0-aa3c-c78414617075"
+      },
+      {
+       "qty": 2,
+       "name": "Triskelion",
+       "set": "atq",
+       "number": "73",
+       "id": "a79c99e1-722a-44b6-8fa3-2be3f0c193d8"
+      },
+      {
+       "qty": 4,
+       "name": "Mishra's Factory",
+       "set": "atq",
+       "number": "80a",
+       "id": "a696c5b6-f216-454d-8029-74e84bbd1428"
+      },
+      {
+       "qty": 4,
+       "name": "Urza's Mine",
+       "set": "atq",
+       "number": "83a",
+       "id": "ddf85792-470b-4b42-99ac-9cb43a575523"
+      },
+      {
+       "qty": 4,
+       "name": "Urza's Power Plant",
+       "set": "atq",
+       "number": "84a",
+       "id": "94896e0b-859c-47e4-bf27-35ed37b841e0"
+      },
+      {
+       "qty": 4,
+       "name": "Urza's Tower",
+       "set": "atq",
+       "number": "85a",
+       "id": "8ed85655-fc59-4a57-bcf9-75e1899dff78"
+      },
+      {
+       "qty": 8,
+       "name": "Plains",
+       "set": "lea",
+       "number": "286",
+       "id": "b1623d57-4729-4796-b3f7-f1837a05c6ed"
+      },
+      {
+       "qty": 4,
+       "name": "Swords to Plowshares",
+       "set": "lea",
+       "number": "40",
+       "id": "386ea9eb-abc1-4862-aa2d-8fb808d79490"
+      }
+     ]
+    }
+   },
+   "scene": [
+    {
+     "who": "titania",
+     "line": "You smell of the rift. Good. You're not one of his."
+    },
+    {
+     "who": "titania",
+     "line": "Urza takes our trees for fuel. Mishra takes them for spite. Both take."
+    },
+    {
+     "who": "urza",
+     "line": "The island has the finest timber in the world. That makes it a resource."
+    },
+    {
+     "who": "urza",
+     "line": "I have a war to win. Sentiment is a luxury."
+    },
+    {
+     "who": "titania",
+     "line": "Then we will be very expensive."
+    }
+   ],
+   "villainScene": null,
+   "cues": {
+    "hero": {
+     "start": "The forest stands.",
+     "big": "Roots, rise!",
+     "low": "Argoth bleeds.",
+     "win": "Go home, artificer.",
+     "loss": "He'll burn us all..."
+    },
+    "villain": {
+     "start": "Proceed.",
+     "big": "Note the efficiency.",
+     "low": "Recalculating.",
+     "win": "Clear it.",
+     "loss": "A delay. Nothing more."
+    }
+   },
+   "bigPlays": [],
+   "sim": null
+  },
+  {
+   "id": "a1b6",
+   "slot": 6,
+   "kind": "Meta",
+   "title": "The Efreet of Serendib",
+   "difficulty": "Normal",
+   "teaches": [
+    "Tempo",
+    "Counterspells"
+   ],
+   "blurb": "The rift flickers back to Rabiah. Sindbad needs a crew, and the island of Serendib has its own guardian.",
+   "rewardSet": "arn",
+   "host": false,
+   "hero": {
+    "who": "sindbad",
+    "deck": {
+     "name": "Sindbad's Crew",
+     "colors": "U",
+     "archetype": null,
+     "cards": [
+      {
+       "qty": 4,
+       "name": "Sindbad",
+       "set": "arn",
+       "number": "21",
+       "id": "7b112a10-ac40-4353-bbdd-e5efd4546330"
+      },
+      {
+       "qty": 4,
+       "name": "Merfolk of the Pearl Trident",
+       "set": "lea",
+       "number": "66",
+       "id": "2b871039-6a66-4ac3-95e7-24759c1f2f92"
+      },
+      {
+       "qty": 4,
+       "name": "Lord of Atlantis",
+       "set": "lea",
+       "number": "62",
+       "id": "210c4a90-fc7a-4c76-aeaa-20a005e45386"
+      },
+      {
+       "qty": 4,
+       "name": "Flying Men",
+       "set": "arn",
+       "number": "14",
+       "id": "25ab9a2b-e248-4ae2-aac3-b49fdb3e260a"
+      },
+      {
+       "qty": 4,
+       "name": "Pirate Ship",
+       "set": "lea",
+       "number": "70",
+       "id": "d0a7cb23-d229-43c5-addd-dcf423984b0c"
+      },
+      {
+       "qty": 3,
+       "name": "Island Fish Jasconius",
+       "set": "arn",
+       "number": "16",
+       "id": "8537cb0f-4821-417b-80cc-ea57d51ee9b8"
+      },
+      {
+       "qty": 4,
+       "name": "Sea Serpent",
+       "set": "lea",
+       "number": "76",
+       "id": "d0b333b7-db4d-4439-b0de-60414cbf8d7b"
+      },
+      {
+       "qty": 4,
+       "name": "Unsummon",
+       "set": "lea",
+       "number": "86",
+       "id": "8512f2c1-6361-4b79-843f-80b6bceeeb99"
+      },
+      {
+       "qty": 3,
+       "name": "Counterspell",
+       "set": "lea",
+       "number": "54",
+       "id": "0df55e3f-14de-46ef-b6b1-616618724d9e"
+      },
+      {
+       "qty": 2,
+       "name": "Psionic Blast",
+       "set": "lea",
+       "number": "74",
+       "id": "a6a86e6e-bfff-46af-9d36-c912901fea92"
+      },
+      {
+       "qty": 24,
+       "name": "Island",
+       "set": "lea",
+       "number": "288",
+       "id": "90a57c0e-fa61-45ef-955d-d296403967d5"
+      }
+     ]
+    }
+   },
+   "villain": {
+    "who": "efreet",
+    "deck": {
+     "name": "Fires of Serendib",
+     "colors": "UR",
+     "archetype": "Blue-red tempo",
+     "cards": [
+      {
+       "qty": 4,
+       "name": "Serendib Efreet",
+       "set": "arn",
+       "number": "20",
+       "id": "cf56e862-3169-4f63-acd0-731080fa32f2"
+      },
+      {
+       "qty": 4,
+       "name": "Kird Ape",
+       "set": "arn",
+       "number": "40",
+       "id": "ebe8845e-df1c-481c-949c-aab84af99a05"
+      },
+      {
+       "qty": 4,
+       "name": "Dragon Whelp",
+       "set": "lea",
+       "number": "141",
+       "id": "6bbf1eab-bc32-4835-b566-8634b1fe81b0"
+      },
+      {
+       "qty": 3,
+       "name": "Shivan Dragon",
+       "set": "lea",
+       "number": "174",
+       "id": "fefbf149-f988-4f8b-9f53-56f5878116a6"
+      },
+      {
+       "qty": 4,
+       "name": "Granite Gargoyle",
+       "set": "lea",
+       "number": "155",
+       "id": "f15bf2b2-6848-4fbd-b89a-8d8da8ae1cdc"
+      },
+      {
+       "qty": 4,
+       "name": "Lightning Bolt",
+       "set": "lea",
+       "number": "161",
+       "id": "d573ef03-4730-45aa-93dd-e45ac1dbaf4a"
+      },
+      {
+       "qty": 4,
+       "name": "Counterspell",
+       "set": "lea",
+       "number": "54",
+       "id": "0df55e3f-14de-46ef-b6b1-616618724d9e"
+      },
+      {
+       "qty": 3,
+       "name": "Fireball",
+       "set": "lea",
+       "number": "149",
+       "id": "b7623c00-144b-4a8f-9c6c-f5e9e4f65ece"
+      },
+      {
+       "qty": 2,
+       "name": "Psionic Blast",
+       "set": "lea",
+       "number": "74",
+       "id": "a6a86e6e-bfff-46af-9d36-c912901fea92"
+      },
+      {
+       "qty": 4,
+       "name": "Unsummon",
+       "set": "lea",
+       "number": "86",
+       "id": "8512f2c1-6361-4b79-843f-80b6bceeeb99"
+      },
+      {
+       "qty": 4,
+       "name": "Volcanic Island",
+       "set": "leb",
+       "number": "287",
+       "id": "0324641d-af55-4c53-b4dc-c8262e967da5"
+      },
+      {
+       "qty": 10,
+       "name": "Island",
+       "set": "lea",
+       "number": "288",
+       "id": "90a57c0e-fa61-45ef-955d-d296403967d5"
+      },
+      {
+       "qty": 10,
+       "name": "Mountain",
+       "set": "lea",
+       "number": "292",
+       "id": "eace2c85-976c-425e-9800-5a6ccbd91b56"
+      }
+     ]
+    }
+   },
+   "scene": [
+    {
+     "who": "sindbad",
+     "line": "You again! The rift-walker. I've a ship, a map and no crew. You'll do."
+    },
+    {
+     "who": "efreet",
+     "line": "Serendib is not for sailors."
+    },
+    {
+     "who": "sindbad",
+     "line": "Everything is for sailors, friend. That's what the sea is for."
+    },
+    {
+     "who": "efreet",
+     "line": "Then the sea may have what's left of you."
+    }
+   ],
+   "villainScene": null,
+   "cues": {
+    "hero": {
+     "start": "Hoist!",
+     "big": "Fair winds!",
+     "low": "I've been shipwrecked six times. Seven's fine.",
+     "win": "To Serendib!",
+     "loss": "Back to port..."
+    },
+    "villain": {
+     "start": "Turn back.",
+     "big": "Burn, little boats.",
+     "low": "Even fire tires.",
+     "win": "Serendib keeps its own.",
+     "loss": "Go. Take nothing."
+    }
+   },
+   "bigPlays": [],
+   "sim": null
+  },
+  {
+   "id": "a1b7",
+   "slot": 7,
+   "kind": "Meta",
+   "title": "Factories at Kroog",
+   "difficulty": "Normal",
+   "teaches": [
+    "Artifact creatures",
+    "Sacrifice"
+   ],
+   "blurb": "The war comes to Kroog, Urza's capital. His apprentice holds the walls against Mishra's cruellest engineer.",
+   "rewardSet": "atq",
+   "host": false,
+   "hero": {
+    "who": "tawnos",
+    "deck": {
+     "name": "The Walls of Kroog",
+     "colors": "W",
+     "archetype": null,
+     "cards": [
+      {
+       "qty": 4,
+       "name": "Yotian Soldier",
+       "set": "atq",
+       "number": "79",
+       "id": "27cf53e3-76f6-4831-800e-1259394d779d"
+      },
+      {
+       "qty": 4,
+       "name": "Su-Chi",
+       "set": "atq",
+       "number": "66",
+       "id": "a64d4f93-0c04-4078-aec0-7e9de92f260f"
+      },
+      {
+       "qty": 4,
+       "name": "Juggernaut",
+       "set": "lea",
+       "number": "255",
+       "id": "dcd6a291-5282-4f49-8203-d9b416083c48"
+      },
+      {
+       "qty": 4,
+       "name": "Argivian Blacksmith",
+       "set": "atq",
+       "number": "2",
+       "id": "5f604338-5ee4-4c47-ad5a-5c805c96c8de"
+      },
+      {
+       "qty": 4,
+       "name": "White Knight",
+       "set": "lea",
+       "number": "43",
+       "id": "50abfba8-c9f9-4ebf-965a-4b425fe83129"
+      },
+      {
+       "qty": 3,
+       "name": "Serra Angel",
+       "set": "lea",
+       "number": "39",
+       "id": "f8ac5006-91bd-4803-93da-f87cf196dd2f"
+      },
+      {
+       "qty": 4,
+       "name": "Swords to Plowshares",
+       "set": "lea",
+       "number": "40",
+       "id": "386ea9eb-abc1-4862-aa2d-8fb808d79490"
+      },
+      {
+       "qty": 3,
+       "name": "Disenchant",
+       "set": "lea",
+       "number": "18",
+       "id": "2722d7e2-61c6-4934-9c21-875ee78fd06c"
+      },
+      {
+       "qty": 2,
+       "name": "Tawnos's Weaponry",
+       "set": "atq",
+       "number": "70",
+       "id": "3035cead-a501-4204-9154-5fd648577d32"
+      },
+      {
+       "qty": 4,
+       "name": "Savannah Lions",
+       "set": "lea",
+       "number": "38",
+       "id": "d05b92bd-797e-413f-a8b0-32e0937a1ee0"
+      },
+      {
+       "qty": 20,
+       "name": "Plains",
+       "set": "lea",
+       "number": "286",
+       "id": "b1623d57-4729-4796-b3f7-f1837a05c6ed"
+      },
+      {
+       "qty": 4,
+       "name": "Mishra's Factory",
+       "set": "atq",
+       "number": "80a",
+       "id": "a696c5b6-f216-454d-8029-74e84bbd1428"
+      }
+     ]
+    }
+   },
+   "villain": {
+    "who": "ashnod",
+    "deck": {
+     "name": "Ashnod's Engines",
+     "colors": "B",
+     "archetype": null,
+     "cards": [
+      {
+       "qty": 4,
+       "name": "Hasran Ogress",
+       "set": "arn",
+       "number": "27",
+       "id": "9f310cf5-0985-4826-9779-19a713089d6d"
+      },
+      {
+       "qty": 4,
+       "name": "Black Knight",
+       "set": "lea",
+       "number": "94",
+       "id": "c1662949-0d69-49a3-8c69-daf10717ed4e"
+      },
+      {
+       "qty": 4,
+       "name": "Su-Chi",
+       "set": "atq",
+       "number": "66",
+       "id": "a64d4f93-0c04-4078-aec0-7e9de92f260f"
+      },
+      {
+       "qty": 4,
+       "name": "Clay Statue",
+       "set": "atq",
+       "number": "44",
+       "id": "64975352-8d35-4d02-94ac-fa0c6ee12409"
+      },
+      {
+       "qty": 4,
+       "name": "Juggernaut",
+       "set": "lea",
+       "number": "255",
+       "id": "dcd6a291-5282-4f49-8203-d9b416083c48"
+      },
+      {
+       "qty": 4,
+       "name": "Erg Raiders",
+       "set": "arn",
+       "number": "25",
+       "id": "35c73a97-531d-4dd5-8236-39b89c183c38"
+      },
+      {
+       "qty": 2,
+       "name": "Ashnod's Altar",
+       "set": "atq",
+       "number": "38",
+       "id": "cdcccb0f-ce96-453b-9e82-41d87f52e58b"
+      },
+      {
+       "qty": 4,
+       "name": "Terror",
+       "set": "lea",
+       "number": "130",
+       "id": "21004958-2c7e-4a55-bc80-411c4d780106"
+      },
+      {
+       "qty": 2,
+       "name": "Animate Dead",
+       "set": "lea",
+       "number": "92",
+       "id": "8fd7861d-925f-4b4c-a4ab-60be6f43d50b"
+      },
+      {
+       "qty": 2,
+       "name": "Sengir Vampire",
+       "set": "lea",
+       "number": "127",
+       "id": "510840f4-7c0e-4b47-8ebf-23c20cac4bd9"
+      },
+      {
+       "qty": 2,
+       "name": "Drain Life",
+       "set": "lea",
+       "number": "105",
+       "id": "5d077a49-73d4-4958-b42a-31b814e110e8"
+      },
+      {
+       "qty": 20,
+       "name": "Swamp",
+       "set": "lea",
+       "number": "290",
+       "id": "6176936d-72e2-4205-8871-4c5a4f1cb2d8"
+      },
+      {
+       "qty": 4,
+       "name": "Mishra's Factory",
+       "set": "atq",
+       "number": "80a",
+       "id": "a696c5b6-f216-454d-8029-74e84bbd1428"
+      }
+     ]
+    }
+   },
+   "scene": [
+    {
+     "who": "ashnod",
+     "line": "Tawnos! Still holding the master's tools?"
+    },
+    {
+     "who": "tawnos",
+     "line": "Still taking people apart, Ashnod?"
+    },
+    {
+     "who": "ashnod",
+     "line": "Only to see how they work. You'd do the same if he let you."
+    },
+    {
+     "who": "tawnos",
+     "line": "Help me hold the factories. If Kroog falls, nothing stops her.",
+     "aside": "to you"
+    },
+    {
+     "who": "ashnod",
+     "line": "Oh, bring your friend. I've never taken a planeswalker apart."
+    }
+   ],
+   "villainScene": null,
+   "cues": {
+    "hero": {
+     "start": "Seal the gates.",
+     "big": "Built for exactly this.",
+     "low": "Hold the line!",
+     "win": "Kroog stands.",
+     "loss": "Get the people out..."
+    },
+    "villain": {
+     "start": "Let's see what's inside.",
+     "big": "Isn't she beautiful?",
+     "low": "That's... rude.",
+     "win": "Mishra will be so pleased.",
+     "loss": "Next time I'm bringing the big altar."
+    }
+   },
+   "bigPlays": [],
+   "sim": null
+  },
+  {
+   "id": "a1b8",
+   "slot": 8,
+   "kind": "Boss",
+   "title": "Mishra's War Machine",
+   "difficulty": "Normal",
+   "teaches": [
+    "Everything so far"
+   ],
+   "blurb": "Thirty years of war, two halves of one stone, and two brothers meeting on the same battlefield at last.",
+   "rewardSet": "atq",
+   "host": true,
+   "hero": {
+    "who": "urza",
+    "deck": {
+     "name": "Urza's Engines",
+     "colors": "W",
+     "archetype": null,
+     "cards": [
+      {
+       "qty": 4,
+       "name": "Urza's Mine",
+       "set": "atq",
+       "number": "83a",
+       "id": "ddf85792-470b-4b42-99ac-9cb43a575523"
+      },
+      {
+       "qty": 4,
+       "name": "Urza's Power Plant",
+       "set": "atq",
+       "number": "84a",
+       "id": "94896e0b-859c-47e4-bf27-35ed37b841e0"
+      },
+      {
+       "qty": 4,
+       "name": "Urza's Tower",
+       "set": "atq",
+       "number": "85a",
+       "id": "8ed85655-fc59-4a57-bcf9-75e1899dff78"
+      },
+      {
+       "qty": 12,
+       "name": "Plains",
+       "set": "lea",
+       "number": "286",
+       "id": "b1623d57-4729-4796-b3f7-f1837a05c6ed"
+      },
+      {
+       "qty": 4,
+       "name": "Yotian Soldier",
+       "set": "atq",
+       "number": "79",
+       "id": "27cf53e3-76f6-4831-800e-1259394d779d"
+      },
+      {
+       "qty": 4,
+       "name": "Su-Chi",
+       "set": "atq",
+       "number": "66",
+       "id": "a64d4f93-0c04-4078-aec0-7e9de92f260f"
+      },
+      {
+       "qty": 3,
+       "name": "Juggernaut",
+       "set": "lea",
+       "number": "255",
+       "id": "dcd6a291-5282-4f49-8203-d9b416083c48"
+      },
+      {
+       "qty": 2,
+       "name": "Triskelion",
+       "set": "atq",
+       "number": "73",
+       "id": "a79c99e1-722a-44b6-8fa3-2be3f0c193d8"
+      },
+      {
+       "qty": 2,
+       "name": "Colossus of Sardia",
+       "set": "atq",
+       "number": "46",
+       "id": "067c44e9-1b23-42fd-9acb-daafb62c32a2"
+      },
+      {
+       "qty": 2,
+       "name": "Swords to Plowshares",
+       "set": "lea",
+       "number": "40",
+       "id": "386ea9eb-abc1-4862-aa2d-8fb808d79490"
+      },
+      {
+       "qty": 1,
+       "name": "Disenchant",
+       "set": "lea",
+       "number": "18",
+       "id": "2722d7e2-61c6-4934-9c21-875ee78fd06c"
+      },
+      {
+       "qty": 2,
+       "name": "Wall of Swords",
+       "set": "lea",
+       "number": "42",
+       "id": "99ec4723-b36c-4015-b361-736a6523e8f5"
+      },
+      {
+       "qty": 4,
+       "name": "Ornithopter",
+       "set": "atq",
+       "number": "60",
+       "id": "59cc9bdb-7cf2-4795-bac7-ffff605c9eb0"
+      },
+      {
+       "qty": 3,
+       "name": "Pearled Unicorn",
+       "set": "lea",
+       "number": "30",
+       "id": "6daf1aab-1e58-4a5a-bc66-cb3f7c86e0e8"
+      },
+      {
+       "qty": 3,
+       "name": "Mesa Pegasus",
+       "set": "lea",
+       "number": "28",
+       "id": "eaac88da-d19e-4771-944c-3709963d04e7"
+      },
+      {
+       "qty": 2,
+       "name": "Onulet",
+       "set": "atq",
+       "number": "59",
+       "id": "d77fe8e2-8438-473e-ace5-01baddd2c4ed"
+      },
+      {
+       "qty": 2,
+       "name": "Holy Strength",
+       "set": "lea",
+       "number": "24",
+       "id": "e945a4cd-0eb1-4f54-898d-169ce2748a03"
+      },
+      {
+       "qty": 2,
+       "name": "Benalish Hero",
+       "set": "lea",
+       "number": "4",
+       "id": "11600105-56c6-4073-a4a6-8469030b39c9"
+      }
+     ]
+    }
+   },
+   "villain": {
+    "who": "mishra",
+    "deck": {
+     "name": "Mishra's Army",
+     "colors": "R",
+     "archetype": "Artifact aggression",
+     "cards": [
+      {
+       "qty": 4,
+       "name": "Mishra's Factory",
+       "set": "atq",
+       "number": "80a",
+       "id": "a696c5b6-f216-454d-8029-74e84bbd1428"
+      },
+      {
+       "qty": 18,
+       "name": "Mountain",
+       "set": "lea",
+       "number": "292",
+       "id": "eace2c85-976c-425e-9800-5a6ccbd91b56"
+      },
+      {
+       "qty": 4,
+       "name": "Su-Chi",
+       "set": "atq",
+       "number": "66",
+       "id": "a64d4f93-0c04-4078-aec0-7e9de92f260f"
+      },
+      {
+       "qty": 4,
+       "name": "Juggernaut",
+       "set": "lea",
+       "number": "255",
+       "id": "dcd6a291-5282-4f49-8203-d9b416083c48"
+      },
+      {
+       "qty": 4,
+       "name": "Dragon Engine",
+       "set": "atq",
+       "number": "49",
+       "id": "07793a71-1106-4303-b620-e403bd378020"
+      },
+      {
+       "qty": 3,
+       "name": "Mishra's War Machine",
+       "set": "atq",
+       "number": "57",
+       "id": "8f6b4652-a1d4-418f-a89b-6a977a920a9e"
+      },
+      {
+       "qty": 4,
+       "name": "Clay Statue",
+       "set": "atq",
+       "number": "44",
+       "id": "64975352-8d35-4d02-94ac-fa0c6ee12409"
+      },
+      {
+       "qty": 2,
+       "name": "Triskelion",
+       "set": "atq",
+       "number": "73",
+       "id": "a79c99e1-722a-44b6-8fa3-2be3f0c193d8"
+      },
+      {
+       "qty": 2,
+       "name": "Hurloon Minotaur",
+       "set": "lea",
+       "number": "158",
+       "id": "78a9088f-8755-47cb-aa93-51d992ccab90"
+      },
+      {
+       "qty": 2,
+       "name": "Shatter",
+       "set": "lea",
+       "number": "173",
+       "id": "50dc7fc1-cb6a-4c68-b993-1a25cf16226e"
+      },
+      {
+       "qty": 4,
+       "name": "Lightning Bolt",
+       "set": "lea",
+       "number": "161",
+       "id": "d573ef03-4730-45aa-93dd-e45ac1dbaf4a"
+      },
+      {
+       "qty": 3,
+       "name": "Fireball",
+       "set": "lea",
+       "number": "149",
+       "id": "b7623c00-144b-4a8f-9c6c-f5e9e4f65ece"
+      },
+      {
+       "qty": 2,
+       "name": "Atog",
+       "set": "atq",
+       "number": "23",
+       "id": "2249fc40-4412-48fd-800a-7ea3678aee3f"
+      },
+      {
+       "qty": 4,
+       "name": "Dwarven Weaponsmith",
+       "set": "atq",
+       "number": "25",
+       "id": "0848d94a-2704-460f-986b-b192dd6d26b7"
+      }
+     ]
+    }
+   },
+   "scene": [
+    {
+     "who": "mishra",
+     "line": "Brother. You look old."
+    },
+    {
+     "who": "urza",
+     "line": "You look like you've made friends you shouldn't have."
+    },
+    {
+     "who": "mishra",
+     "line": "Friends? They listen. That's more than you ever did."
+    },
+    {
+     "who": "urza",
+     "line": "Give me the Mightstone, Mishra."
+    },
+    {
+     "who": "mishra",
+     "line": "Come and take it. You always do."
+    }
+   ],
+   "villainScene": [
+    {
+     "who": "mishra",
+     "line": "They told me I'd finally be better than you."
+    }
+   ],
+   "cues": {
+    "hero": {
+     "start": "Begin.",
+     "big": "Exactly as designed.",
+     "low": "...Mishra.",
+     "win": "It's over. Give it to me.",
+     "loss": "I will build something greater."
+    },
+    "villain": {
+     "start": "Just like when we were boys.",
+     "big": "Look what I made without you!",
+     "low": "You always win. Why do you always win?",
+     "win": "Finally. FINALLY.",
+     "loss": "Then let it all burn."
+    }
+   },
+   "bigPlays": [],
+   "sim": null
+  }
+ ]
+}

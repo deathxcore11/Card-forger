@@ -1,0 +1,2248 @@
+{
+ "act": 2,
+ "title": "Legends and the Dark",
+ "years": "1994",
+ "sets": [
+  "3ed",
+  "leg",
+  "drk",
+  "fem"
+ ],
+ "landSet": "3ed",
+ "intro": [
+  {
+   "who": "narrator",
+   "line": "After the Sylex the sun is dim, the Church burns spellcasters, and the old empires starve."
+  }
+ ],
+ "finale": [
+  {
+   "who": "tetsuo",
+   "line": "He's gone. He just... left."
+  },
+  {
+   "who": "bolas",
+   "line": "I didn't come here to win, wizard. I came to see who was left.",
+   "whisper": true
+  },
+  {
+   "who": "stage",
+   "line": "The thrulls of Sarpadia rise against their masters. The empires fall one by one."
+  }
+ ],
+ "cast": {
+  "you": {
+   "name": "You",
+   "title": "Planeswalker",
+   "portrait": {
+    "card": "Serra Angel",
+    "set": "3ed",
+    "number": "40",
+    "id": "97fa5f07-46ba-408d-a861-bdb1791cc188",
+    "crop": "https://cards.scryfall.io/art_crop/front/9/7/97fa5f07-46ba-408d-a861-bdb1791cc188.jpg?1783948340",
+    "artist": "Douglas Shuler",
+    "focus": "50% 30%"
+   }
+  },
+  "inquisitor": {
+   "name": "Inquisitor",
+   "title": "Church of Tal",
+   "portrait": {
+    "card": "Inquisition",
+    "set": "drk",
+    "number": "47",
+    "id": "5f133f06-6398-4db1-8577-66c16fd3e00d",
+    "crop": "https://cards.scryfall.io/art_crop/front/5/f/5f133f06-6398-4db1-8577-66c16fd3e00d.jpg?1783947939",
+    "artist": "Anson Maddocks",
+    "focus": "50% 30%"
+   }
+  },
+  "hazezon": {
+   "name": "Hazezon Tamar",
+   "title": "Merchant Prince",
+   "portrait": {
+    "card": "Hazezon Tamar",
+    "set": "leg",
+    "number": "230",
+    "id": "17fc3a85-c6b9-4fd2-a6a2-d3210708e5ea",
+    "crop": "https://cards.scryfall.io/art_crop/front/1/7/17fc3a85-c6b9-4fd2-a6a2-d3210708e5ea.jpg?1783948039",
+    "artist": "Richard Kane Ferguson",
+    "focus": "50% 25%"
+   }
+  },
+  "johan": {
+   "name": "Johan",
+   "title": "Warlord",
+   "portrait": {
+    "card": "Johan",
+    "set": "leg",
+    "number": "236",
+    "id": "b851d5b4-7991-49d4-8a52-bf233f960cbf",
+    "crop": "https://cards.scryfall.io/art_crop/front/b/8/b851d5b4-7991-49d4-8a52-bf233f960cbf.jpg?1783948038",
+    "artist": "Mark Tedin",
+    "focus": "50% 25%"
+   }
+  },
+  "kolevi": {
+   "name": "Kolevi of Havenwood",
+   "title": "Thelonite Druid",
+   "portrait": {
+    "card": "Thelonite Druid",
+    "set": "fem",
+    "number": "78",
+    "id": "cd8772dd-513d-4dd0-a5db-5214dc8da4e0",
+    "crop": "https://cards.scryfall.io/art_crop/front/c/d/cd8772dd-513d-4dd0-a5db-5214dc8da4e0.jpg?1783947884",
+    "artist": "Margaret Organ-Kean",
+    "focus": "50% 30%"
+   }
+  },
+  "initiate": {
+   "name": "Initiate",
+   "title": "Order of the Ebon Hand",
+   "portrait": {
+    "card": "Initiates of the Ebon Hand",
+    "set": "fem",
+    "number": "39a",
+    "id": "5be87527-3b8f-4529-afdb-a61ad4e787e1",
+    "crop": "https://cards.scryfall.io/art_crop/front/5/b/5be87527-3b8f-4529-afdb-a61ad4e787e1.jpg?1783947902",
+    "artist": "Heather Hudson",
+    "focus": "50% 30%"
+   }
+  },
+  "tetsuo": {
+   "name": "Tetsuo Umezawa",
+   "title": "Last of the Umezawa",
+   "portrait": {
+    "card": "Tetsuo Umezawa",
+    "set": "leg",
+    "number": "262",
+    "id": "8384f87b-26c2-45b7-98ef-352c384f205e",
+    "crop": "https://cards.scryfall.io/art_crop/front/8/3/8384f87b-26c2-45b7-98ef-352c384f205e.jpg?1783948032",
+    "artist": "Julie Baroh",
+    "focus": "50% 25%"
+   }
+  },
+  "icatian": {
+   "name": "Icatian Captain",
+   "title": "Guard of Icatia",
+   "portrait": {
+    "card": "Icatian Infantry",
+    "set": "fem",
+    "number": "7a",
+    "id": "f95d42d8-ba75-43bf-81b8-b02374f03e83",
+    "crop": "https://cards.scryfall.io/art_crop/front/f/9/f95d42d8-ba75-43bf-81b8-b02374f03e83.jpg?1783947919",
+    "artist": "Edward P. Beard, Jr.",
+    "focus": "50% 30%"
+   }
+  },
+  "thrullWizard": {
+   "name": "Thrull Wizard",
+   "title": "Breeding Pits",
+   "portrait": {
+    "card": "Thrull Wizard",
+    "set": "fem",
+    "number": "46",
+    "id": "c4e732fb-cbef-4fd8-b704-e4d513a6cf2d",
+    "crop": "https://cards.scryfall.io/art_crop/front/c/4/c4e732fb-cbef-4fd8-b704-e4d513a6cf2d.jpg?1783947898",
+    "artist": "Anson Maddocks",
+    "focus": "50% 35%"
+   }
+  },
+  "arcades": {
+   "name": "Arcades Sabboth",
+   "title": "Elder Dragon",
+   "portrait": {
+    "card": "Arcades Sabboth",
+    "set": "leg",
+    "number": "218",
+    "id": "2c1dbc62-ceb5-4540-ae38-901e5deafc75",
+    "crop": "https://cards.scryfall.io/art_crop/front/2/c/2c1dbc62-ceb5-4540-ae38-901e5deafc75.jpg?1783948041",
+    "artist": "Edward P. Beard, Jr.",
+    "focus": "50% 30%"
+   }
+  },
+  "choir": {
+   "name": "Choir of Tourach",
+   "title": "Ebon Hand",
+   "portrait": {
+    "card": "Hymn to Tourach",
+    "set": "fem",
+    "number": "38a",
+    "id": "eb9273ea-9a41-42e3-8c9c-0d50b127a818",
+    "crop": "https://cards.scryfall.io/art_crop/front/e/b/eb9273ea-9a41-42e3-8c9c-0d50b127a818.jpg?1783947903",
+    "artist": "Susan Van Camp",
+    "focus": "50% 35%"
+   }
+  },
+  "bolas": {
+   "name": "Nicol Bolas",
+   "title": "Elder Dragon",
+   "portrait": {
+    "card": "Nicol Bolas",
+    "set": "leg",
+    "number": "246",
+    "id": "729feb73-4581-4f9d-ba47-bece72481b86",
+    "crop": "https://cards.scryfall.io/art_crop/front/7/2/729feb73-4581-4f9d-ba47-bece72481b86.jpg?1783948035",
+    "artist": "Edward P. Beard, Jr.",
+    "focus": "50% 30%"
+   }
+  }
+ },
+ "battles": [
+  {
+   "id": "a2b1",
+   "slot": 1,
+   "kind": "Arrival",
+   "title": "The Pretender's Inquisition",
+   "difficulty": "Easy",
+   "teaches": [
+    "Two colours of mana"
+   ],
+   "blurb": "After the Sylex, the sun is dim and the Church burns anyone who casts a spell. You cast spells.",
+   "rewardSet": "drk",
+   "host": false,
+   "hero": {
+    "who": "you",
+    "deck": {
+     "name": "Hedge Witch",
+     "colors": "WG",
+     "archetype": null,
+     "cards": [
+      {
+       "qty": 4,
+       "name": "Savannah Lions",
+       "set": "3ed",
+       "number": "39",
+       "id": "ad41b1aa-1482-4d71-990b-031b30685cb1"
+      },
+      {
+       "qty": 4,
+       "name": "Llanowar Elves",
+       "set": "3ed",
+       "number": "211",
+       "id": "6d6deae3-3ed4-47eb-bf4a-4a766ce18135"
+      },
+      {
+       "qty": 4,
+       "name": "Grizzly Bears",
+       "set": "3ed",
+       "number": "201",
+       "id": "886959ca-83fd-4b50-a99a-08ef0c5415db"
+      },
+      {
+       "qty": 4,
+       "name": "Pearled Unicorn",
+       "set": "3ed",
+       "number": "30",
+       "id": "a450ce98-4854-4378-8809-27019b3800c2"
+      },
+      {
+       "qty": 4,
+       "name": "War Mammoth",
+       "set": "3ed",
+       "number": "228",
+       "id": "5c99e36f-b11d-4270-8b88-66be8907c9bd"
+      },
+      {
+       "qty": 4,
+       "name": "Elven Riders",
+       "set": "leg",
+       "number": "183",
+       "id": "ad1d349b-b5ab-4b2b-9b39-f8d8f6374aa5"
+      },
+      {
+       "qty": 3,
+       "name": "Serra Angel",
+       "set": "3ed",
+       "number": "40",
+       "id": "97fa5f07-46ba-408d-a861-bdb1791cc188"
+      },
+      {
+       "qty": 3,
+       "name": "Giant Growth",
+       "set": "3ed",
+       "number": "199",
+       "id": "d33fe386-d165-4874-aa6b-07b7df9b6209"
+      },
+      {
+       "qty": 3,
+       "name": "White Knight",
+       "set": "3ed",
+       "number": "44",
+       "id": "ce573cee-40e0-4740-8b86-538ad8a16bce"
+      },
+      {
+       "qty": 3,
+       "name": "Craw Wurm",
+       "set": "3ed",
+       "number": "190",
+       "id": "a5e4a23b-3b05-4240-9565-bdd8f3f3ef12"
+      },
+      {
+       "qty": 12,
+       "name": "Forest",
+       "set": "3ed",
+       "number": "304",
+       "id": "b6e1c2e9-5572-4242-985d-f509d628092b"
+      },
+      {
+       "qty": 12,
+       "name": "Plains",
+       "set": "3ed",
+       "number": "292",
+       "id": "275c03f9-f9d2-45c5-a332-b3bee54e7065"
+      }
+     ]
+    }
+   },
+   "villain": {
+    "who": "inquisitor",
+    "deck": {
+     "name": "The Burning Church",
+     "colors": "B",
+     "archetype": null,
+     "cards": [
+      {
+       "qty": 4,
+       "name": "Bog Rats",
+       "set": "drk",
+       "number": "42",
+       "id": "d64c9153-bc6d-4a64-885f-c039a5487a31"
+      },
+      {
+       "qty": 4,
+       "name": "Drudge Skeletons",
+       "set": "3ed",
+       "number": "107",
+       "id": "59145073-2cfd-4153-a6d8-47ad42e739c3"
+      },
+      {
+       "qty": 4,
+       "name": "Scathe Zombies",
+       "set": "3ed",
+       "number": "127",
+       "id": "6cbe576f-03d5-4d22-947a-187d9e20425d"
+      },
+      {
+       "qty": 4,
+       "name": "Frozen Shade",
+       "set": "3ed",
+       "number": "112",
+       "id": "6cba931e-94b5-4fcc-8d5f-eb60664baf31"
+      },
+      {
+       "qty": 4,
+       "name": "Bog Wraith",
+       "set": "3ed",
+       "number": "96",
+       "id": "1173349b-beb9-44c8-aeb2-534ecf54fea0"
+      },
+      {
+       "qty": 4,
+       "name": "Black Knight",
+       "set": "3ed",
+       "number": "95",
+       "id": "eaa55b3c-acf4-4d2a-9f32-c7fce6672f3d"
+      },
+      {
+       "qty": 3,
+       "name": "Inquisition",
+       "set": "drk",
+       "number": "47",
+       "id": "5f133f06-6398-4db1-8577-66c16fd3e00d"
+      },
+      {
+       "qty": 3,
+       "name": "Unholy Strength",
+       "set": "3ed",
+       "number": "133",
+       "id": "3ac35077-91e9-446c-9cb2-e2cfb9fa2962"
+      },
+      {
+       "qty": 3,
+       "name": "Weakness",
+       "set": "3ed",
+       "number": "136",
+       "id": "6774a228-ec9e-47d0-bc43-a92f5caf8398"
+      },
+      {
+       "qty": 3,
+       "name": "Abomination",
+       "set": "leg",
+       "number": "87",
+       "id": "a69e2cf8-5ecb-485a-92a2-b4e0a7959f1f"
+      },
+      {
+       "qty": 24,
+       "name": "Swamp",
+       "set": "3ed",
+       "number": "298",
+       "id": "95e936cf-3bbb-4f3b-8e1a-4be1d4702b99"
+      }
+     ]
+    }
+   },
+   "scene": [
+    {
+     "who": "inquisitor",
+     "line": "Magic brought the darkness. Magic will burn for it."
+    },
+    {
+     "who": "inquisitor",
+     "line": "You carry the smell of it. Kneel."
+    },
+    {
+     "who": "inquisitor",
+     "line": "Confess, or be shown."
+    }
+   ],
+   "villainScene": null,
+   "cues": {
+    "villain": {
+     "start": "Burn the witch.",
+     "big": "The Church sees all.",
+     "low": "Send for more brothers!",
+     "win": "Ashes are honest.",
+     "loss": "Heresy... walks free."
+    }
+   },
+   "bigPlays": [],
+   "sim": null
+  },
+  {
+   "id": "a2b2",
+   "slot": 2,
+   "kind": "Lesson",
+   "title": "Johan's Crossing",
+   "difficulty": "Easy",
+   "teaches": [
+    "Legendary creatures",
+    "Three colours"
+   ],
+   "blurb": "A merchant prince defends his desert city from a warlord who wants it. Only one of them leaves a legend.",
+   "rewardSet": "leg",
+   "host": false,
+   "hero": {
+    "who": "hazezon",
+    "deck": {
+     "name": "The Bazaar Guard",
+     "colors": "RGW",
+     "archetype": null,
+     "cards": [
+      {
+       "qty": 3,
+       "name": "Hazezon Tamar",
+       "set": "leg",
+       "number": "230",
+       "id": "17fc3a85-c6b9-4fd2-a6a2-d3210708e5ea"
+      },
+      {
+       "qty": 2,
+       "name": "Kei Takahashi",
+       "set": "leg",
+       "number": "238",
+       "id": "6a4a524a-fdc7-432d-994b-953808528349"
+      },
+      {
+       "qty": 2,
+       "name": "Craw Wurm",
+       "set": "3ed",
+       "number": "190",
+       "id": "a5e4a23b-3b05-4240-9565-bdd8f3f3ef12"
+      },
+      {
+       "qty": 4,
+       "name": "Savannah Lions",
+       "set": "3ed",
+       "number": "39",
+       "id": "ad41b1aa-1482-4d71-990b-031b30685cb1"
+      },
+      {
+       "qty": 4,
+       "name": "Llanowar Elves",
+       "set": "3ed",
+       "number": "211",
+       "id": "6d6deae3-3ed4-47eb-bf4a-4a766ce18135"
+      },
+      {
+       "qty": 4,
+       "name": "Grizzly Bears",
+       "set": "3ed",
+       "number": "201",
+       "id": "886959ca-83fd-4b50-a99a-08ef0c5415db"
+      },
+      {
+       "qty": 4,
+       "name": "Knights of Thorn",
+       "set": "drk",
+       "number": "11",
+       "id": "ae541c73-9903-49e6-997a-db4701135145"
+      },
+      {
+       "qty": 3,
+       "name": "Serra Angel",
+       "set": "3ed",
+       "number": "40",
+       "id": "97fa5f07-46ba-408d-a861-bdb1791cc188"
+      },
+      {
+       "qty": 4,
+       "name": "Elven Riders",
+       "set": "leg",
+       "number": "183",
+       "id": "ad1d349b-b5ab-4b2b-9b39-f8d8f6374aa5"
+      },
+      {
+       "qty": 4,
+       "name": "Giant Growth",
+       "set": "3ed",
+       "number": "199",
+       "id": "d33fe386-d165-4874-aa6b-07b7df9b6209"
+      },
+      {
+       "qty": 2,
+       "name": "Lightning Bolt",
+       "set": "3ed",
+       "number": "162",
+       "id": "cb9b9a9d-ae4c-4e04-bf9d-cae48f01292c"
+      },
+      {
+       "qty": 4,
+       "name": "Savannah",
+       "set": "3ed",
+       "number": "285",
+       "id": "5ae71290-c133-406c-8b17-9ea22b437806"
+      },
+      {
+       "qty": 2,
+       "name": "Plateau",
+       "set": "3ed",
+       "number": "284",
+       "id": "c6ae9cff-8646-4069-8761-df734e067beb"
+      },
+      {
+       "qty": 2,
+       "name": "Taiga",
+       "set": "3ed",
+       "number": "287",
+       "id": "54c5c65a-a444-4e0f-ae44-a3722cdd32a1"
+      },
+      {
+       "qty": 8,
+       "name": "Plains",
+       "set": "3ed",
+       "number": "292",
+       "id": "275c03f9-f9d2-45c5-a332-b3bee54e7065"
+      },
+      {
+       "qty": 8,
+       "name": "Forest",
+       "set": "3ed",
+       "number": "304",
+       "id": "b6e1c2e9-5572-4242-985d-f509d628092b"
+      }
+     ]
+    }
+   },
+   "villain": {
+    "who": "johan",
+    "deck": {
+     "name": "Johan's Host",
+     "colors": "RGW",
+     "archetype": null,
+     "cards": [
+      {
+       "qty": 3,
+       "name": "Stangg",
+       "set": "leg",
+       "number": "260",
+       "id": "a277775a-6b48-4238-a618-3ae94c4cc85c"
+      },
+      {
+       "qty": 2,
+       "name": "Elven Riders",
+       "set": "leg",
+       "number": "183",
+       "id": "ad1d349b-b5ab-4b2b-9b39-f8d8f6374aa5"
+      },
+      {
+       "qty": 4,
+       "name": "Brassclaw Orcs",
+       "set": "fem",
+       "number": "49a",
+       "id": "fc0cb8f6-6ba7-402c-9829-251f7443e871"
+      },
+      {
+       "qty": 4,
+       "name": "Dwarven Soldier",
+       "set": "fem",
+       "number": "53a",
+       "id": "6fe77608-0b33-43f5-83fb-ae993ca1bf7c"
+      },
+      {
+       "qty": 4,
+       "name": "Mountain Yeti",
+       "set": "leg",
+       "number": "159",
+       "id": "09242f08-3bfc-4082-b32f-703c7fed62a0"
+      },
+      {
+       "qty": 3,
+       "name": "Craw Wurm",
+       "set": "3ed",
+       "number": "190",
+       "id": "a5e4a23b-3b05-4240-9565-bdd8f3f3ef12"
+      },
+      {
+       "qty": 4,
+       "name": "Lightning Bolt",
+       "set": "3ed",
+       "number": "162",
+       "id": "cb9b9a9d-ae4c-4e04-bf9d-cae48f01292c"
+      },
+      {
+       "qty": 4,
+       "name": "Hurloon Minotaur",
+       "set": "3ed",
+       "number": "159",
+       "id": "f6de6b0d-dd8c-4ab9-8de3-b083a36b24b7"
+      },
+      {
+       "qty": 4,
+       "name": "Grizzly Bears",
+       "set": "3ed",
+       "number": "201",
+       "id": "886959ca-83fd-4b50-a99a-08ef0c5415db"
+      },
+      {
+       "qty": 4,
+       "name": "Ironroot Treefolk",
+       "set": "3ed",
+       "number": "204",
+       "id": "6e6cfaae-ea9e-4c54-858e-381f8bf441a9"
+      },
+      {
+       "qty": 4,
+       "name": "Taiga",
+       "set": "3ed",
+       "number": "287",
+       "id": "54c5c65a-a444-4e0f-ae44-a3722cdd32a1"
+      },
+      {
+       "qty": 2,
+       "name": "Plateau",
+       "set": "3ed",
+       "number": "284",
+       "id": "c6ae9cff-8646-4069-8761-df734e067beb"
+      },
+      {
+       "qty": 9,
+       "name": "Mountain",
+       "set": "3ed",
+       "number": "301",
+       "id": "30345500-d430-4280-bfe3-de297309f136"
+      },
+      {
+       "qty": 9,
+       "name": "Forest",
+       "set": "3ed",
+       "number": "304",
+       "id": "b6e1c2e9-5572-4242-985d-f509d628092b"
+      }
+     ]
+    }
+   },
+   "scene": [
+    {
+     "who": "johan",
+     "line": "Hazezon. Open the gates and I keep your city whole."
+    },
+    {
+     "who": "hazezon",
+     "line": "My city is my people, Johan. They don't open."
+    },
+    {
+     "who": "johan",
+     "line": "Then they'll be a story. A short one."
+    },
+    {
+     "who": "hazezon",
+     "line": "Stay close. Stories are how we win here.",
+     "aside": "to you"
+    }
+   ],
+   "villainScene": null,
+   "cues": {
+    "hero": {
+     "start": "Bazaar's closed.",
+     "big": "Every sand-warrior answers.",
+     "low": "Not my people.",
+     "win": "Go home, warlord.",
+     "loss": "Save who you can."
+    },
+    "villain": {
+     "start": "March.",
+     "big": "Kneel or be legend.",
+     "low": "Hold, damn you!",
+     "win": "Mine.",
+     "loss": "This isn't finished."
+    }
+   },
+   "bigPlays": [],
+   "sim": null
+  },
+  {
+   "id": "a2b3",
+   "slot": 3,
+   "kind": "Lesson",
+   "title": "The Thallid Grove",
+   "difficulty": "Normal",
+   "teaches": [
+    "Tokens",
+    "Counters"
+   ],
+   "blurb": "Sarpadia is starving. The elves grow fungus soldiers to survive; the Ebon Hand wants the grove for its thrull pits.",
+   "rewardSet": "fem",
+   "host": false,
+   "hero": {
+    "who": "kolevi",
+    "deck": {
+     "name": "Havenwood Spores",
+     "colors": "G",
+     "archetype": null,
+     "cards": [
+      {
+       "qty": 4,
+       "name": "Thallid",
+       "set": "fem",
+       "number": "74a",
+       "id": "4caaf31b-86a9-485b-8da7-d5b526ed1233"
+      },
+      {
+       "qty": 4,
+       "name": "Thallid Devourer",
+       "set": "fem",
+       "number": "75",
+       "id": "aa533845-4c4b-4072-aa39-8e56ce7ec325"
+      },
+      {
+       "qty": 4,
+       "name": "Spore Flower",
+       "set": "fem",
+       "number": "73",
+       "id": "f9681dc0-d0fc-4d5b-a23c-63ec1cc8343d"
+      },
+      {
+       "qty": 4,
+       "name": "Elvish Farmer",
+       "set": "fem",
+       "number": "66",
+       "id": "40a9710e-b2f8-4746-8640-d450f58a6e49"
+      },
+      {
+       "qty": 3,
+       "name": "Feral Thallid",
+       "set": "fem",
+       "number": "69",
+       "id": "e585241e-c647-456d-b3b1-3d48dd78c372"
+      },
+      {
+       "qty": 4,
+       "name": "Thelonite Druid",
+       "set": "fem",
+       "number": "78",
+       "id": "cd8772dd-513d-4dd0-a5db-5214dc8da4e0"
+      },
+      {
+       "qty": 2,
+       "name": "Fungal Bloom",
+       "set": "fem",
+       "number": "70",
+       "id": "cf1a2cb2-9a6b-41f7-96f7-ec457c69c16c"
+      },
+      {
+       "qty": 4,
+       "name": "Llanowar Elves",
+       "set": "3ed",
+       "number": "211",
+       "id": "6d6deae3-3ed4-47eb-bf4a-4a766ce18135"
+      },
+      {
+       "qty": 4,
+       "name": "Giant Growth",
+       "set": "3ed",
+       "number": "199",
+       "id": "d33fe386-d165-4874-aa6b-07b7df9b6209"
+      },
+      {
+       "qty": 3,
+       "name": "Craw Wurm",
+       "set": "3ed",
+       "number": "190",
+       "id": "a5e4a23b-3b05-4240-9565-bdd8f3f3ef12"
+      },
+      {
+       "qty": 24,
+       "name": "Forest",
+       "set": "3ed",
+       "number": "304",
+       "id": "b6e1c2e9-5572-4242-985d-f509d628092b"
+      }
+     ]
+    }
+   },
+   "villain": {
+    "who": "initiate",
+    "deck": {
+     "name": "The Ebon Hand",
+     "colors": "B",
+     "archetype": null,
+     "cards": [
+      {
+       "qty": 4,
+       "name": "Bog Rats",
+       "set": "drk",
+       "number": "42",
+       "id": "d64c9153-bc6d-4a64-885f-c039a5487a31"
+      },
+      {
+       "qty": 4,
+       "name": "Order of the Ebon Hand",
+       "set": "fem",
+       "number": "42a",
+       "id": "9e51f5d8-a7cc-4720-8af5-e002bcfd78a0"
+      },
+      {
+       "qty": 4,
+       "name": "Necrite",
+       "set": "fem",
+       "number": "41a",
+       "id": "311d752a-ce8a-44cb-8aeb-1ed66705eb09"
+      },
+      {
+       "qty": 4,
+       "name": "Drudge Skeletons",
+       "set": "3ed",
+       "number": "107",
+       "id": "59145073-2cfd-4153-a6d8-47ad42e739c3"
+      },
+      {
+       "qty": 4,
+       "name": "Armor Thrull",
+       "set": "fem",
+       "number": "33a",
+       "id": "a98384d1-8e7d-4c41-9f23-47bc2ae2ad6a"
+      },
+      {
+       "qty": 4,
+       "name": "Derelor",
+       "set": "fem",
+       "number": "36",
+       "id": "9eb2b79f-f09a-49dc-8e0f-7d711ba78981"
+      },
+      {
+       "qty": 3,
+       "name": "Breeding Pit",
+       "set": "fem",
+       "number": "35",
+       "id": "a0d7e85f-eba5-4fc5-9fc0-109109d368aa"
+      },
+      {
+       "qty": 4,
+       "name": "Terror",
+       "set": "3ed",
+       "number": "132",
+       "id": "0eaf0ac8-f5a7-4689-8d3e-dd865763df44"
+      },
+      {
+       "qty": 3,
+       "name": "Sengir Vampire",
+       "set": "3ed",
+       "number": "129",
+       "id": "fa35113b-5242-41f4-a989-42f2cd8002b6"
+      },
+      {
+       "qty": 2,
+       "name": "Drain Life",
+       "set": "3ed",
+       "number": "106",
+       "id": "d89c1d2f-87a1-4463-af21-b837da3e7d74"
+      },
+      {
+       "qty": 24,
+       "name": "Swamp",
+       "set": "3ed",
+       "number": "298",
+       "id": "95e936cf-3bbb-4f3b-8e1a-4be1d4702b99"
+      }
+     ]
+    }
+   },
+   "scene": [
+    {
+     "who": "initiate",
+     "line": "We are no longer Nature's children, but her masters.",
+     "quote": true
+    },
+    {
+     "who": "kolevi",
+     "line": "The magic at the heart of all living things can bear awe-inspiring fruit.",
+     "quote": true
+    },
+    {
+     "who": "initiate",
+     "line": "Then we'll harvest it."
+    },
+    {
+     "who": "kolevi",
+     "line": "The thallids grow faster than you can cut. Watch."
+    }
+   ],
+   "villainScene": null,
+   "cues": {
+    "hero": {
+     "start": "Grow.",
+     "big": "Havenwood answers!",
+     "low": "Spore and root, hold!",
+     "win": "The grove lives.",
+     "loss": "Burn the spores... don't let them have it."
+    },
+    "villain": {
+     "start": "For the Hand.",
+     "big": "Kneel to Tourach.",
+     "low": "Bring the thrulls!",
+     "win": "Harvest.",
+     "loss": "The Hand remembers."
+    }
+   },
+   "bigPlays": [],
+   "sim": null
+  },
+  {
+   "id": "a2b4",
+   "slot": 4,
+   "kind": "Rival",
+   "title": "Tetsuo's Test",
+   "difficulty": "Normal",
+   "teaches": [
+    "Counterspells",
+    "Multicolour gold cards"
+   ],
+   "blurb": "The last great Umezawa wizard has heard about the rift-walker. He wants to know if you're a weapon or a friend.",
+   "rewardSet": "leg",
+   "host": false,
+   "hero": {
+    "who": "you",
+    "deck": {
+     "name": "Rift-Walker",
+     "colors": "WG",
+     "archetype": null,
+     "cards": [
+      {
+       "qty": 4,
+       "name": "Savannah Lions",
+       "set": "3ed",
+       "number": "39",
+       "id": "ad41b1aa-1482-4d71-990b-031b30685cb1"
+      },
+      {
+       "qty": 4,
+       "name": "White Knight",
+       "set": "3ed",
+       "number": "44",
+       "id": "ce573cee-40e0-4740-8b86-538ad8a16bce"
+      },
+      {
+       "qty": 4,
+       "name": "Llanowar Elves",
+       "set": "3ed",
+       "number": "211",
+       "id": "6d6deae3-3ed4-47eb-bf4a-4a766ce18135"
+      },
+      {
+       "qty": 4,
+       "name": "Elven Riders",
+       "set": "leg",
+       "number": "183",
+       "id": "ad1d349b-b5ab-4b2b-9b39-f8d8f6374aa5"
+      },
+      {
+       "qty": 3,
+       "name": "Serra Angel",
+       "set": "3ed",
+       "number": "40",
+       "id": "97fa5f07-46ba-408d-a861-bdb1791cc188"
+      },
+      {
+       "qty": 4,
+       "name": "Swords to Plowshares",
+       "set": "3ed",
+       "number": "41",
+       "id": "057d2410-30d3-4b7a-9dc3-f2512c1cf31c"
+      },
+      {
+       "qty": 3,
+       "name": "Disenchant",
+       "set": "3ed",
+       "number": "17",
+       "id": "41859c6f-1017-42ae-9061-050fe0db9731"
+      },
+      {
+       "qty": 4,
+       "name": "Giant Growth",
+       "set": "3ed",
+       "number": "199",
+       "id": "d33fe386-d165-4874-aa6b-07b7df9b6209"
+      },
+      {
+       "qty": 3,
+       "name": "Craw Wurm",
+       "set": "3ed",
+       "number": "190",
+       "id": "a5e4a23b-3b05-4240-9565-bdd8f3f3ef12"
+      },
+      {
+       "qty": 3,
+       "name": "Pearled Unicorn",
+       "set": "3ed",
+       "number": "30",
+       "id": "a450ce98-4854-4378-8809-27019b3800c2"
+      },
+      {
+       "qty": 4,
+       "name": "Savannah",
+       "set": "3ed",
+       "number": "285",
+       "id": "5ae71290-c133-406c-8b17-9ea22b437806"
+      },
+      {
+       "qty": 10,
+       "name": "Plains",
+       "set": "3ed",
+       "number": "292",
+       "id": "275c03f9-f9d2-45c5-a332-b3bee54e7065"
+      },
+      {
+       "qty": 10,
+       "name": "Forest",
+       "set": "3ed",
+       "number": "304",
+       "id": "b6e1c2e9-5572-4242-985d-f509d628092b"
+      }
+     ]
+    }
+   },
+   "villain": {
+    "who": "tetsuo",
+    "deck": {
+     "name": "The Umezawa Arts",
+     "colors": "UBR",
+     "archetype": null,
+     "cards": [
+      {
+       "qty": 3,
+       "name": "Tetsuo Umezawa",
+       "set": "leg",
+       "number": "262",
+       "id": "8384f87b-26c2-45b7-98ef-352c384f205e"
+      },
+      {
+       "qty": 2,
+       "name": "Sol'kanar the Swamp King",
+       "set": "leg",
+       "number": "259",
+       "id": "7a20dcb0-5350-40e0-82d3-c8d0186fc9d2"
+      },
+      {
+       "qty": 4,
+       "name": "Hypnotic Specter",
+       "set": "3ed",
+       "number": "115",
+       "id": "2c8bd2bc-f48d-43c4-b2aa-5a0905656e90"
+      },
+      {
+       "qty": 4,
+       "name": "Dragon Whelp",
+       "set": "3ed",
+       "number": "143",
+       "id": "643d6f5b-6a17-434d-945a-6b9a05015493"
+      },
+      {
+       "qty": 4,
+       "name": "Lightning Bolt",
+       "set": "3ed",
+       "number": "162",
+       "id": "cb9b9a9d-ae4c-4e04-bf9d-cae48f01292c"
+      },
+      {
+       "qty": 4,
+       "name": "Counterspell",
+       "set": "3ed",
+       "number": "54",
+       "id": "0a1b4e2e-5459-4fae-81d9-1e882647daac"
+      },
+      {
+       "qty": 4,
+       "name": "Terror",
+       "set": "3ed",
+       "number": "132",
+       "id": "0eaf0ac8-f5a7-4689-8d3e-dd865763df44"
+      },
+      {
+       "qty": 3,
+       "name": "Sengir Vampire",
+       "set": "3ed",
+       "number": "129",
+       "id": "fa35113b-5242-41f4-a989-42f2cd8002b6"
+      },
+      {
+       "qty": 3,
+       "name": "Mahamoti Djinn",
+       "set": "3ed",
+       "number": "66",
+       "id": "4765276e-ad80-4734-b485-36eebf1b6ae1"
+      },
+      {
+       "qty": 3,
+       "name": "Fireball",
+       "set": "3ed",
+       "number": "150",
+       "id": "dafb512f-536f-4f96-8440-03f1d20d8a5a"
+      },
+      {
+       "qty": 2,
+       "name": "Disintegrate",
+       "set": "3ed",
+       "number": "142",
+       "id": "ce71d4c8-3835-4065-8089-82a64846dbcb"
+      },
+      {
+       "qty": 3,
+       "name": "Underground Sea",
+       "set": "3ed",
+       "number": "290",
+       "id": "1f35877c-e66c-4ef0-842a-f68cd233ae4b"
+      },
+      {
+       "qty": 3,
+       "name": "Volcanic Island",
+       "set": "3ed",
+       "number": "291",
+       "id": "b12e5430-0e80-47dd-80ac-85728b656a24"
+      },
+      {
+       "qty": 3,
+       "name": "Badlands",
+       "set": "3ed",
+       "number": "282",
+       "id": "56058359-3c0b-49db-a0ce-9ded4c3f4372"
+      },
+      {
+       "qty": 5,
+       "name": "Island",
+       "set": "3ed",
+       "number": "295",
+       "id": "22f6e971-349d-498b-ae01-ab81ce21772c"
+      },
+      {
+       "qty": 5,
+       "name": "Swamp",
+       "set": "3ed",
+       "number": "298",
+       "id": "95e936cf-3bbb-4f3b-8e1a-4be1d4702b99"
+      },
+      {
+       "qty": 5,
+       "name": "Mountain",
+       "set": "3ed",
+       "number": "301",
+       "id": "30345500-d430-4280-bfe3-de297309f136"
+      }
+     ]
+    }
+   },
+   "scene": [
+    {
+     "who": "tetsuo",
+     "line": "You came through a rift. So did the thing I'm hunting."
+    },
+    {
+     "who": "tetsuo",
+     "line": "An old dragon. Older than kings. He collects wizards like you."
+    },
+    {
+     "who": "tetsuo",
+     "line": "Show me you can't be collected."
+    }
+   ],
+   "villainScene": null,
+   "cues": {
+    "villain": {
+     "start": "Show me.",
+     "big": "Can you see it coming?",
+     "low": "Good. Good.",
+     "win": "Not yet ready.",
+     "loss": "Then we hunt together."
+    }
+   },
+   "bigPlays": [],
+   "sim": null
+  },
+  {
+   "id": "a2b5",
+   "slot": 5,
+   "kind": "Lesson",
+   "title": "The Thrull Rebellion",
+   "difficulty": "Normal",
+   "teaches": [
+    "Sacrifice"
+   ],
+   "blurb": "The Ebon Hand made their thrulls smart enough to help with the sacrifices. That turned out to be a mistake.",
+   "rewardSet": "fem",
+   "host": false,
+   "hero": {
+    "who": "icatian",
+    "deck": {
+     "name": "Valiant Icatia",
+     "colors": "W",
+     "archetype": null,
+     "cards": [
+      {
+       "qty": 4,
+       "name": "Icatian Infantry",
+       "set": "fem",
+       "number": "7a",
+       "id": "f95d42d8-ba75-43bf-81b8-b02374f03e83"
+      },
+      {
+       "qty": 4,
+       "name": "Icatian Javelineers",
+       "set": "fem",
+       "number": "8a",
+       "id": "f04b8356-2384-4743-80dd-f15ca7ec65f7"
+      },
+      {
+       "qty": 4,
+       "name": "Order of Leitbur",
+       "set": "fem",
+       "number": "16a",
+       "id": "ebd6e51e-f042-4673-a898-291607105829"
+      },
+      {
+       "qty": 4,
+       "name": "Farrel's Zealot",
+       "set": "fem",
+       "number": "3a",
+       "id": "0401bd23-9f81-40b7-a6c2-e3f9847d175c"
+      },
+      {
+       "qty": 4,
+       "name": "Icatian Phalanx",
+       "set": "fem",
+       "number": "11",
+       "id": "7bc02d30-3eef-4a48-8b11-b4f37219ab3a"
+      },
+      {
+       "qty": 4,
+       "name": "Combat Medic",
+       "set": "fem",
+       "number": "1a",
+       "id": "9cfd96cb-03d6-4845-8595-50bf17b35726"
+      },
+      {
+       "qty": 3,
+       "name": "Serra Angel",
+       "set": "3ed",
+       "number": "40",
+       "id": "97fa5f07-46ba-408d-a861-bdb1791cc188"
+      },
+      {
+       "qty": 4,
+       "name": "Swords to Plowshares",
+       "set": "3ed",
+       "number": "41",
+       "id": "057d2410-30d3-4b7a-9dc3-f2512c1cf31c"
+      },
+      {
+       "qty": 3,
+       "name": "White Knight",
+       "set": "3ed",
+       "number": "44",
+       "id": "ce573cee-40e0-4740-8b86-538ad8a16bce"
+      },
+      {
+       "qty": 2,
+       "name": "Spirit Link",
+       "set": "leg",
+       "number": "37",
+       "id": "5e2d35f8-3cf6-4843-9030-0e9a885d836c"
+      },
+      {
+       "qty": 24,
+       "name": "Plains",
+       "set": "3ed",
+       "number": "292",
+       "id": "275c03f9-f9d2-45c5-a332-b3bee54e7065"
+      }
+     ]
+    }
+   },
+   "villain": {
+    "who": "thrullWizard",
+    "deck": {
+     "name": "The Breeding Pits",
+     "colors": "B",
+     "archetype": null,
+     "cards": [
+      {
+       "qty": 4,
+       "name": "Thrull Champion",
+       "set": "fem",
+       "number": "44",
+       "id": "4d3cafdd-a03b-4b08-b9c1-c776f8450d3a"
+      },
+      {
+       "qty": 4,
+       "name": "Drudge Skeletons",
+       "set": "3ed",
+       "number": "107",
+       "id": "59145073-2cfd-4153-a6d8-47ad42e739c3"
+      },
+      {
+       "qty": 4,
+       "name": "Necrite",
+       "set": "fem",
+       "number": "41a",
+       "id": "311d752a-ce8a-44cb-8aeb-1ed66705eb09"
+      },
+      {
+       "qty": 4,
+       "name": "Armor Thrull",
+       "set": "fem",
+       "number": "33a",
+       "id": "a98384d1-8e7d-4c41-9f23-47bc2ae2ad6a"
+      },
+      {
+       "qty": 4,
+       "name": "Derelor",
+       "set": "fem",
+       "number": "36",
+       "id": "9eb2b79f-f09a-49dc-8e0f-7d711ba78981"
+      },
+      {
+       "qty": 3,
+       "name": "Breeding Pit",
+       "set": "fem",
+       "number": "35",
+       "id": "a0d7e85f-eba5-4fc5-9fc0-109109d368aa"
+      },
+      {
+       "qty": 4,
+       "name": "Bog Rats",
+       "set": "drk",
+       "number": "42",
+       "id": "d64c9153-bc6d-4a64-885f-c039a5487a31"
+      },
+      {
+       "qty": 3,
+       "name": "Order of the Ebon Hand",
+       "set": "fem",
+       "number": "42a",
+       "id": "9e51f5d8-a7cc-4720-8af5-e002bcfd78a0"
+      },
+      {
+       "qty": 4,
+       "name": "Terror",
+       "set": "3ed",
+       "number": "132",
+       "id": "0eaf0ac8-f5a7-4689-8d3e-dd865763df44"
+      },
+      {
+       "qty": 2,
+       "name": "Animate Dead",
+       "set": "3ed",
+       "number": "93",
+       "id": "eed73f84-ad08-44f8-a4fe-cd324ec1da92"
+      },
+      {
+       "qty": 24,
+       "name": "Swamp",
+       "set": "3ed",
+       "number": "298",
+       "id": "95e936cf-3bbb-4f3b-8e1a-4be1d4702b99"
+      }
+     ]
+    }
+   },
+   "scene": [
+    {
+     "who": "icatian",
+     "line": "Valiant Icatia was the last of the Sarpadian empires to fall.",
+     "quote": true
+    },
+    {
+     "who": "icatian",
+     "line": "Not today, though."
+    },
+    {
+     "who": "thrullWizard",
+     "line": "Master says: sacrifice. Thrull asks: whose?"
+    },
+    {
+     "who": "icatian",
+     "line": "...Did that thrull just ask a question?"
+    }
+   ],
+   "villainScene": null,
+   "cues": {
+    "villain": {
+     "start": "Feed the altar.",
+     "big": "More thrulls, more power.",
+     "low": "The thrulls aren't listening!",
+     "win": "Icatia falls.",
+     "loss": "The thrulls... turned..."
+    }
+   },
+   "bigPlays": [],
+   "sim": null
+  },
+  {
+   "id": "a2b6",
+   "slot": 6,
+   "kind": "Meta",
+   "title": "The Deck",
+   "difficulty": "Normal",
+   "teaches": [
+    "Card advantage",
+    "Playing around counterspells"
+   ],
+   "blurb": "An Elder Dragon who believes in order above everything. His deck agrees: counter it, answer it, win slowly. The era's legendary control deck.",
+   "rewardSet": "leg",
+   "host": false,
+   "hero": {
+    "who": "you",
+    "deck": {
+     "name": "Kher Keep Fire",
+     "colors": "R",
+     "archetype": null,
+     "cards": [
+      {
+       "qty": 4,
+       "name": "Dwarven Soldier",
+       "set": "fem",
+       "number": "53a",
+       "id": "6fe77608-0b33-43f5-83fb-ae993ca1bf7c"
+      },
+      {
+       "qty": 4,
+       "name": "Brassclaw Orcs",
+       "set": "fem",
+       "number": "49a",
+       "id": "fc0cb8f6-6ba7-402c-9829-251f7443e871"
+      },
+      {
+       "qty": 4,
+       "name": "Ball Lightning",
+       "set": "drk",
+       "number": "57",
+       "id": "c1ba83ab-83f5-421d-bba1-0f925870b5c8"
+      },
+      {
+       "qty": 4,
+       "name": "Mountain Yeti",
+       "set": "leg",
+       "number": "159",
+       "id": "09242f08-3bfc-4082-b32f-703c7fed62a0"
+      },
+      {
+       "qty": 4,
+       "name": "Lightning Bolt",
+       "set": "3ed",
+       "number": "162",
+       "id": "cb9b9a9d-ae4c-4e04-bf9d-cae48f01292c"
+      },
+      {
+       "qty": 4,
+       "name": "Fireball",
+       "set": "3ed",
+       "number": "150",
+       "id": "dafb512f-536f-4f96-8440-03f1d20d8a5a"
+      },
+      {
+       "qty": 3,
+       "name": "Disintegrate",
+       "set": "3ed",
+       "number": "142",
+       "id": "ce71d4c8-3835-4065-8089-82a64846dbcb"
+      },
+      {
+       "qty": 4,
+       "name": "Dragon Whelp",
+       "set": "3ed",
+       "number": "143",
+       "id": "643d6f5b-6a17-434d-945a-6b9a05015493"
+      },
+      {
+       "qty": 3,
+       "name": "Shivan Dragon",
+       "set": "3ed",
+       "number": "177",
+       "id": "69199dd2-dbac-4039-b4da-eb2b0671645f"
+      },
+      {
+       "qty": 2,
+       "name": "Blood Moon",
+       "set": "drk",
+       "number": "58",
+       "id": "78373616-e2d6-4ccf-998f-09f02bea45b4"
+      },
+      {
+       "qty": 24,
+       "name": "Mountain",
+       "set": "3ed",
+       "number": "301",
+       "id": "30345500-d430-4280-bfe3-de297309f136"
+      }
+     ]
+    }
+   },
+   "villain": {
+    "who": "arcades",
+    "deck": {
+     "name": "The Deck",
+     "colors": "WUG",
+     "archetype": "The Deck (control)",
+     "cards": [
+      {
+       "qty": 2,
+       "name": "Arcades Sabboth",
+       "set": "leg",
+       "number": "218",
+       "id": "2c1dbc62-ceb5-4540-ae38-901e5deafc75"
+      },
+      {
+       "qty": 4,
+       "name": "Counterspell",
+       "set": "3ed",
+       "number": "54",
+       "id": "0a1b4e2e-5459-4fae-81d9-1e882647daac"
+      },
+      {
+       "qty": 4,
+       "name": "Mana Drain",
+       "set": "leg",
+       "number": "65",
+       "id": "e691adef-3027-4e6a-889f-9f4e2df36a7c"
+      },
+      {
+       "qty": 4,
+       "name": "Swords to Plowshares",
+       "set": "3ed",
+       "number": "41",
+       "id": "057d2410-30d3-4b7a-9dc3-f2512c1cf31c"
+      },
+      {
+       "qty": 3,
+       "name": "Disenchant",
+       "set": "3ed",
+       "number": "17",
+       "id": "41859c6f-1017-42ae-9061-050fe0db9731"
+      },
+      {
+       "qty": 2,
+       "name": "Moat",
+       "set": "leg",
+       "number": "28",
+       "id": "952ba126-0915-47f0-9b6a-a0a6dcd22c6f"
+      },
+      {
+       "qty": 3,
+       "name": "Serra Angel",
+       "set": "3ed",
+       "number": "40",
+       "id": "97fa5f07-46ba-408d-a861-bdb1791cc188"
+      },
+      {
+       "qty": 2,
+       "name": "Jayemdae Tome",
+       "set": "3ed",
+       "number": "258",
+       "id": "e8661e0a-faf8-4c16-b988-55622707de6f"
+      },
+      {
+       "qty": 2,
+       "name": "Control Magic",
+       "set": "3ed",
+       "number": "52",
+       "id": "d8ab7fb5-9903-4723-a4a0-d142ef3aae8e"
+      },
+      {
+       "qty": 1,
+       "name": "Balance",
+       "set": "3ed",
+       "number": "3",
+       "id": "a21b08d4-b43d-4c93-99e7-39dfe83ced91"
+      },
+      {
+       "qty": 2,
+       "name": "Wrath of God",
+       "set": "3ed",
+       "number": "46",
+       "id": "1c687a4e-a3f9-4d2d-9931-bf60e97f4095"
+      },
+      {
+       "qty": 2,
+       "name": "Birds of Paradise",
+       "set": "3ed",
+       "number": "187",
+       "id": "01e7b0bc-1c6c-48f4-8b72-1a809f536c6c"
+      },
+      {
+       "qty": 2,
+       "name": "Disrupting Scepter",
+       "set": "3ed",
+       "number": "245",
+       "id": "af4f8926-9a9e-4b2d-8224-118655f12809"
+      },
+      {
+       "qty": 3,
+       "name": "Mahamoti Djinn",
+       "set": "3ed",
+       "number": "66",
+       "id": "4765276e-ad80-4734-b485-36eebf1b6ae1"
+      },
+      {
+       "qty": 4,
+       "name": "Tundra",
+       "set": "3ed",
+       "number": "289",
+       "id": "9c9d5f72-e199-4d5b-ae7e-cc5b9bdfae99"
+      },
+      {
+       "qty": 2,
+       "name": "Tropical Island",
+       "set": "3ed",
+       "number": "288",
+       "id": "a0f5c6bc-65dc-42a1-a62d-a0b101310a1f"
+      },
+      {
+       "qty": 2,
+       "name": "Savannah",
+       "set": "3ed",
+       "number": "285",
+       "id": "5ae71290-c133-406c-8b17-9ea22b437806"
+      },
+      {
+       "qty": 2,
+       "name": "Maze of Ith",
+       "set": "drk",
+       "number": "117",
+       "id": "42dcceee-2a47-4eaa-a6a3-2931b3d50244"
+      },
+      {
+       "qty": 7,
+       "name": "Island",
+       "set": "3ed",
+       "number": "295",
+       "id": "22f6e971-349d-498b-ae01-ab81ce21772c"
+      },
+      {
+       "qty": 7,
+       "name": "Plains",
+       "set": "3ed",
+       "number": "292",
+       "id": "275c03f9-f9d2-45c5-a332-b3bee54e7065"
+      }
+     ]
+    }
+   },
+   "scene": [
+    {
+     "who": "arcades",
+     "line": "Chaos has a smell. You reek of it."
+    },
+    {
+     "who": "arcades",
+     "line": "I do not attack. I simply wait until everything you do has failed."
+    },
+    {
+     "who": "arcades",
+     "line": "Begin. Or don't. The result is the same."
+    }
+   ],
+   "villainScene": null,
+   "cues": {
+    "villain": {
+     "start": "Proceed.",
+     "big": "Denied.",
+     "low": "...Irregular.",
+     "win": "Order holds.",
+     "loss": "Impossible. Recount."
+    }
+   },
+   "bigPlays": [],
+   "sim": null
+  },
+  {
+   "id": "a2b7",
+   "slot": 7,
+   "kind": "Meta",
+   "title": "Hymn to Tourach",
+   "difficulty": "Normal",
+   "teaches": [
+    "Discard"
+   ],
+   "blurb": "The Ebon Hand's choir sings a hymn that drives warriors mad. The era's discard deck.",
+   "rewardSet": "fem",
+   "host": false,
+   "hero": {
+    "who": "hazezon",
+    "deck": {
+     "name": "The Bazaar Guard",
+     "colors": "RGW",
+     "archetype": null,
+     "cards": [
+      {
+       "qty": 3,
+       "name": "Hazezon Tamar",
+       "set": "leg",
+       "number": "230",
+       "id": "17fc3a85-c6b9-4fd2-a6a2-d3210708e5ea"
+      },
+      {
+       "qty": 4,
+       "name": "White Knight",
+       "set": "3ed",
+       "number": "44",
+       "id": "ce573cee-40e0-4740-8b86-538ad8a16bce"
+      },
+      {
+       "qty": 4,
+       "name": "Savannah Lions",
+       "set": "3ed",
+       "number": "39",
+       "id": "ad41b1aa-1482-4d71-990b-031b30685cb1"
+      },
+      {
+       "qty": 4,
+       "name": "Llanowar Elves",
+       "set": "3ed",
+       "number": "211",
+       "id": "6d6deae3-3ed4-47eb-bf4a-4a766ce18135"
+      },
+      {
+       "qty": 4,
+       "name": "Knights of Thorn",
+       "set": "drk",
+       "number": "11",
+       "id": "ae541c73-9903-49e6-997a-db4701135145"
+      },
+      {
+       "qty": 3,
+       "name": "Serra Angel",
+       "set": "3ed",
+       "number": "40",
+       "id": "97fa5f07-46ba-408d-a861-bdb1791cc188"
+      },
+      {
+       "qty": 4,
+       "name": "Elven Riders",
+       "set": "leg",
+       "number": "183",
+       "id": "ad1d349b-b5ab-4b2b-9b39-f8d8f6374aa5"
+      },
+      {
+       "qty": 4,
+       "name": "Giant Growth",
+       "set": "3ed",
+       "number": "199",
+       "id": "d33fe386-d165-4874-aa6b-07b7df9b6209"
+      },
+      {
+       "qty": 3,
+       "name": "Lightning Bolt",
+       "set": "3ed",
+       "number": "162",
+       "id": "cb9b9a9d-ae4c-4e04-bf9d-cae48f01292c"
+      },
+      {
+       "qty": 3,
+       "name": "Swords to Plowshares",
+       "set": "3ed",
+       "number": "41",
+       "id": "057d2410-30d3-4b7a-9dc3-f2512c1cf31c"
+      },
+      {
+       "qty": 4,
+       "name": "Savannah",
+       "set": "3ed",
+       "number": "285",
+       "id": "5ae71290-c133-406c-8b17-9ea22b437806"
+      },
+      {
+       "qty": 2,
+       "name": "Plateau",
+       "set": "3ed",
+       "number": "284",
+       "id": "c6ae9cff-8646-4069-8761-df734e067beb"
+      },
+      {
+       "qty": 2,
+       "name": "Taiga",
+       "set": "3ed",
+       "number": "287",
+       "id": "54c5c65a-a444-4e0f-ae44-a3722cdd32a1"
+      },
+      {
+       "qty": 8,
+       "name": "Plains",
+       "set": "3ed",
+       "number": "292",
+       "id": "275c03f9-f9d2-45c5-a332-b3bee54e7065"
+      },
+      {
+       "qty": 8,
+       "name": "Forest",
+       "set": "3ed",
+       "number": "304",
+       "id": "b6e1c2e9-5572-4242-985d-f509d628092b"
+      }
+     ]
+    }
+   },
+   "villain": {
+    "who": "choir",
+    "deck": {
+     "name": "The Hymn",
+     "colors": "B",
+     "archetype": "Black discard",
+     "cards": [
+      {
+       "qty": 4,
+       "name": "Hymn to Tourach",
+       "set": "fem",
+       "number": "38a",
+       "id": "eb9273ea-9a41-42e3-8c9c-0d50b127a818"
+      },
+      {
+       "qty": 4,
+       "name": "Hypnotic Specter",
+       "set": "3ed",
+       "number": "115",
+       "id": "2c8bd2bc-f48d-43c4-b2aa-5a0905656e90"
+      },
+      {
+       "qty": 4,
+       "name": "Dark Ritual",
+       "set": "3ed",
+       "number": "99",
+       "id": "48cb9467-657e-453f-afc8-1bf7121570ad"
+      },
+      {
+       "qty": 4,
+       "name": "Black Knight",
+       "set": "3ed",
+       "number": "95",
+       "id": "eaa55b3c-acf4-4d2a-9f32-c7fce6672f3d"
+      },
+      {
+       "qty": 4,
+       "name": "Order of the Ebon Hand",
+       "set": "fem",
+       "number": "42a",
+       "id": "9e51f5d8-a7cc-4720-8af5-e002bcfd78a0"
+      },
+      {
+       "qty": 4,
+       "name": "Necrite",
+       "set": "fem",
+       "number": "41a",
+       "id": "311d752a-ce8a-44cb-8aeb-1ed66705eb09"
+      },
+      {
+       "qty": 3,
+       "name": "Sengir Vampire",
+       "set": "3ed",
+       "number": "129",
+       "id": "fa35113b-5242-41f4-a989-42f2cd8002b6"
+      },
+      {
+       "qty": 4,
+       "name": "Terror",
+       "set": "3ed",
+       "number": "132",
+       "id": "0eaf0ac8-f5a7-4689-8d3e-dd865763df44"
+      },
+      {
+       "qty": 3,
+       "name": "Drain Life",
+       "set": "3ed",
+       "number": "106",
+       "id": "d89c1d2f-87a1-4463-af21-b837da3e7d74"
+      },
+      {
+       "qty": 1,
+       "name": "Mind Twist",
+       "set": "3ed",
+       "number": "117",
+       "id": "3230ac66-cb75-43cc-b652-b28e2962d163"
+      },
+      {
+       "qty": 1,
+       "name": "Pestilence",
+       "set": "3ed",
+       "number": "122",
+       "id": "b6647e7d-b0ad-4170-8dce-ea4c89897c6a"
+      },
+      {
+       "qty": 24,
+       "name": "Swamp",
+       "set": "3ed",
+       "number": "298",
+       "id": "95e936cf-3bbb-4f3b-8e1a-4be1d4702b99"
+      }
+     ]
+    }
+   },
+   "scene": [
+    {
+     "who": "choir",
+     "line": "Tourach... Tourach...",
+     "aside": "singing, low"
+    },
+    {
+     "who": "hazezon",
+     "line": "Cover your ears. Don't think about what you're holding."
+    },
+    {
+     "who": "choir",
+     "line": "The eerie, wailing Hymn caused insanity even in hardened warriors.",
+     "quote": true
+    }
+   ],
+   "villainScene": null,
+   "cues": {
+    "villain": {
+     "start": "Sing.",
+     "big": "Forget. Forget.",
+     "low": "The Hymn falters!",
+     "win": "Silence.",
+     "loss": "Tourach... hears..."
+    }
+   },
+   "bigPlays": [],
+   "sim": null
+  },
+  {
+   "id": "a2b8",
+   "slot": 8,
+   "kind": "Boss",
+   "title": "The Last Elder Dragon",
+   "difficulty": "Normal",
+   "teaches": [
+    "Everything so far"
+   ],
+   "blurb": "Under the Wastes, the thing Tetsuo has hunted his whole life opens one eye.",
+   "rewardSet": "leg",
+   "host": true,
+   "hero": {
+    "who": "tetsuo",
+    "deck": {
+     "name": "The Umezawa Arts",
+     "colors": "UBR",
+     "archetype": null,
+     "cards": [
+      {
+       "qty": 4,
+       "name": "Tetsuo Umezawa",
+       "set": "leg",
+       "number": "262",
+       "id": "8384f87b-26c2-45b7-98ef-352c384f205e"
+      },
+      {
+       "qty": 4,
+       "name": "Hypnotic Specter",
+       "set": "3ed",
+       "number": "115",
+       "id": "2c8bd2bc-f48d-43c4-b2aa-5a0905656e90"
+      },
+      {
+       "qty": 4,
+       "name": "Lightning Bolt",
+       "set": "3ed",
+       "number": "162",
+       "id": "cb9b9a9d-ae4c-4e04-bf9d-cae48f01292c"
+      },
+      {
+       "qty": 4,
+       "name": "Counterspell",
+       "set": "3ed",
+       "number": "54",
+       "id": "0a1b4e2e-5459-4fae-81d9-1e882647daac"
+      },
+      {
+       "qty": 4,
+       "name": "Terror",
+       "set": "3ed",
+       "number": "132",
+       "id": "0eaf0ac8-f5a7-4689-8d3e-dd865763df44"
+      },
+      {
+       "qty": 3,
+       "name": "Fireball",
+       "set": "3ed",
+       "number": "150",
+       "id": "dafb512f-536f-4f96-8440-03f1d20d8a5a"
+      },
+      {
+       "qty": 3,
+       "name": "Dragon Whelp",
+       "set": "3ed",
+       "number": "143",
+       "id": "643d6f5b-6a17-434d-945a-6b9a05015493"
+      },
+      {
+       "qty": 2,
+       "name": "Sengir Vampire",
+       "set": "3ed",
+       "number": "129",
+       "id": "fa35113b-5242-41f4-a989-42f2cd8002b6"
+      },
+      {
+       "qty": 2,
+       "name": "Shivan Dragon",
+       "set": "3ed",
+       "number": "177",
+       "id": "69199dd2-dbac-4039-b4da-eb2b0671645f"
+      },
+      {
+       "qty": 3,
+       "name": "Mana Drain",
+       "set": "leg",
+       "number": "65",
+       "id": "e691adef-3027-4e6a-889f-9f4e2df36a7c"
+      },
+      {
+       "qty": 3,
+       "name": "Disintegrate",
+       "set": "3ed",
+       "number": "142",
+       "id": "ce71d4c8-3835-4065-8089-82a64846dbcb"
+      },
+      {
+       "qty": 4,
+       "name": "Volcanic Island",
+       "set": "3ed",
+       "number": "291",
+       "id": "b12e5430-0e80-47dd-80ac-85728b656a24"
+      },
+      {
+       "qty": 4,
+       "name": "Underground Sea",
+       "set": "3ed",
+       "number": "290",
+       "id": "1f35877c-e66c-4ef0-842a-f68cd233ae4b"
+      },
+      {
+       "qty": 4,
+       "name": "Badlands",
+       "set": "3ed",
+       "number": "282",
+       "id": "56058359-3c0b-49db-a0ce-9ded4c3f4372"
+      },
+      {
+       "qty": 4,
+       "name": "Island",
+       "set": "3ed",
+       "number": "295",
+       "id": "22f6e971-349d-498b-ae01-ab81ce21772c"
+      },
+      {
+       "qty": 4,
+       "name": "Swamp",
+       "set": "3ed",
+       "number": "298",
+       "id": "95e936cf-3bbb-4f3b-8e1a-4be1d4702b99"
+      },
+      {
+       "qty": 4,
+       "name": "Mountain",
+       "set": "3ed",
+       "number": "301",
+       "id": "30345500-d430-4280-bfe3-de297309f136"
+      }
+     ]
+    }
+   },
+   "villain": {
+    "who": "bolas",
+    "deck": {
+     "name": "The Elder Dragon",
+     "colors": "BRu",
+     "archetype": null,
+     "cards": [
+      {
+       "qty": 3,
+       "name": "Nicol Bolas",
+       "set": "leg",
+       "number": "246",
+       "id": "729feb73-4581-4f9d-ba47-bece72481b86"
+      },
+      {
+       "qty": 3,
+       "name": "Rohgahh of Kher Keep",
+       "set": "leg",
+       "number": "255",
+       "id": "ea0891f0-83ce-4eb7-b0a9-cbc8168bafff"
+      },
+      {
+       "qty": 2,
+       "name": "Lady Orca",
+       "set": "leg",
+       "number": "241",
+       "id": "b2779553-74eb-42ba-97d0-96269f48c269"
+      },
+      {
+       "qty": 4,
+       "name": "Dark Ritual",
+       "set": "3ed",
+       "number": "99",
+       "id": "48cb9467-657e-453f-afc8-1bf7121570ad"
+      },
+      {
+       "qty": 4,
+       "name": "Lightning Bolt",
+       "set": "3ed",
+       "number": "162",
+       "id": "cb9b9a9d-ae4c-4e04-bf9d-cae48f01292c"
+      },
+      {
+       "qty": 4,
+       "name": "Hypnotic Specter",
+       "set": "3ed",
+       "number": "115",
+       "id": "2c8bd2bc-f48d-43c4-b2aa-5a0905656e90"
+      },
+      {
+       "qty": 4,
+       "name": "Black Knight",
+       "set": "3ed",
+       "number": "95",
+       "id": "eaa55b3c-acf4-4d2a-9f32-c7fce6672f3d"
+      },
+      {
+       "qty": 3,
+       "name": "Sengir Vampire",
+       "set": "3ed",
+       "number": "129",
+       "id": "fa35113b-5242-41f4-a989-42f2cd8002b6"
+      },
+      {
+       "qty": 3,
+       "name": "Shivan Dragon",
+       "set": "3ed",
+       "number": "177",
+       "id": "69199dd2-dbac-4039-b4da-eb2b0671645f"
+      },
+      {
+       "qty": 3,
+       "name": "Fireball",
+       "set": "3ed",
+       "number": "150",
+       "id": "dafb512f-536f-4f96-8440-03f1d20d8a5a"
+      },
+      {
+       "qty": 3,
+       "name": "Terror",
+       "set": "3ed",
+       "number": "132",
+       "id": "0eaf0ac8-f5a7-4689-8d3e-dd865763df44"
+      },
+      {
+       "qty": 4,
+       "name": "Underground Sea",
+       "set": "3ed",
+       "number": "290",
+       "id": "1f35877c-e66c-4ef0-842a-f68cd233ae4b"
+      },
+      {
+       "qty": 3,
+       "name": "Volcanic Island",
+       "set": "3ed",
+       "number": "291",
+       "id": "b12e5430-0e80-47dd-80ac-85728b656a24"
+      },
+      {
+       "qty": 4,
+       "name": "Badlands",
+       "set": "3ed",
+       "number": "282",
+       "id": "56058359-3c0b-49db-a0ce-9ded4c3f4372"
+      },
+      {
+       "qty": 7,
+       "name": "Swamp",
+       "set": "3ed",
+       "number": "298",
+       "id": "95e936cf-3bbb-4f3b-8e1a-4be1d4702b99"
+      },
+      {
+       "qty": 6,
+       "name": "Mountain",
+       "set": "3ed",
+       "number": "301",
+       "id": "30345500-d430-4280-bfe3-de297309f136"
+      }
+     ]
+    }
+   },
+   "scene": [
+    {
+     "who": "bolas",
+     "line": "An Umezawa. Your grandfather made that face too."
+    },
+    {
+     "who": "tetsuo",
+     "line": "You're shorter than the legends said."
+    },
+    {
+     "who": "bolas",
+     "line": "The legends were written by survivors. There aren't many."
+    },
+    {
+     "who": "bolas",
+     "line": "And you. The little rift-walker. I've been waiting a long time to meet one of you.",
+     "aside": "to you"
+    },
+    {
+     "who": "tetsuo",
+     "line": "Don't talk to him. Don't bargain. Just fight."
+    }
+   ],
+   "villainScene": [
+    {
+     "who": "bolas",
+     "line": "Every hero in this age will die. I simply want to watch how."
+    }
+   ],
+   "cues": {
+    "hero": {
+     "start": "Now.",
+     "big": "For every Umezawa.",
+     "low": "Not like this...",
+     "win": "Back into the dark.",
+     "loss": "Run. Remember his face."
+    },
+    "villain": {
+     "start": "Entertain me, wizard.",
+     "big": "Kneel.",
+     "low": "Interesting.",
+     "win": "Another Umezawa. I'll add you to the shelf.",
+     "loss": "Keep this victory. I have time."
+    }
+   },
+   "bigPlays": [],
+   "sim": null
+  }
+ ]
+}
