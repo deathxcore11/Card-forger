@@ -1,0 +1,2688 @@
+{
+ "act": 5,
+ "title": "The Rath Cycle",
+ "years": "1997 to 1998",
+ "sets": [
+  "wth",
+  "tmp",
+  "sth",
+  "exo"
+ ],
+ "landSet": "tmp",
+ "intro": [
+  {
+   "who": "stage",
+   "line": "Clouds. A skyship. Cannon fire."
+  },
+  {
+   "who": "gerrard",
+   "line": "This won't be a fair fight. They should have brought a second ship!",
+   "quote": true
+  },
+  {
+   "who": "hanna",
+   "line": "Gerrard, they've got Sisay! The Predator's pulling away!"
+  },
+  {
+   "who": "greven",
+   "line": "The evincar sends his regards, heir. Come and fetch her."
+  },
+  {
+   "who": "stage",
+   "line": "The Predator tears a hole in the sky and vanishes through it."
+  },
+  {
+   "who": "gerrard",
+   "line": "I left this ship. I left all of it. And she came for me anyway."
+  },
+  {
+   "who": "gerrard",
+   "line": "Hanna. Plot a course through that hole."
+  },
+  {
+   "who": "hanna",
+   "line": "That's not a course. That's a wound."
+  },
+  {
+   "who": "gerrard",
+   "line": "Then we follow the blood."
+  }
+ ],
+ "finale": [
+  {
+   "who": "stage",
+   "line": "Volrath steps back into a portal. Gone."
+  },
+  {
+   "who": "gerrard",
+   "line": "Sisay!"
+  },
+  {
+   "who": "sisay",
+   "line": "My ship..."
+  },
+  {
+   "who": "gerrard",
+   "line": "Intact. Which is more than I can say for you, my friend.",
+   "quote": true
+  },
+  {
+   "who": "stage",
+   "line": "Sisay laughs despite the pain."
+  },
+  {
+   "who": "lyna",
+   "line": "In Barrin's name! Ertai sends word that the portal is open, but not for long!",
+   "quote": true
+  },
+  {
+   "who": "hanna",
+   "line": "It'll get us out, but I can't guarantee what it'll do to the ship.",
+   "quote": true
+  },
+  {
+   "who": "ertai",
+   "line": "Go. Someone has to hold it. Obviously it's me.",
+   "offstage": true
+  },
+  {
+   "who": "stage",
+   "line": "The Weatherlight runs for the portal. Below decks, Mirri follows a shape skulking in the dark."
+  },
+  {
+   "who": "stage",
+   "line": "A scream. Gerrard finds her. Crovax is already gone."
+  },
+  {
+   "who": "mirri",
+   "line": "Didn't... tell you..."
+  },
+  {
+   "who": "gerrard",
+   "line": "Don't. Save it. Orim!"
+  },
+  {
+   "who": "mirri",
+   "line": "Just as you see the grave and remember the friend...",
+   "quote": true
+  },
+  {
+   "who": "stage",
+   "line": "The ship tears out of Rath. Ertai is not on it. Mirri does not wake."
+  },
+  {
+   "who": "karn",
+   "line": "Twice I have let the Legacy slip away. Never again.",
+   "quote": true
+  }
+ ],
+ "villainFinale": [
+  {
+   "who": "stage",
+   "line": "Gerrard in chains in the throne room."
+  },
+  {
+   "who": "volrath",
+   "line": "Look at you. Father's chosen one."
+  },
+  {
+   "who": "volrath",
+   "line": "I wanted you to see the globe. Every city. Every name."
+  },
+  {
+   "who": "gerrard",
+   "line": "They'll stop you."
+  },
+  {
+   "who": "volrath",
+   "line": "Oh, not me. I'm only the evincar. I just keep the seat warm."
+  },
+  {
+   "who": "stage",
+   "line": "A voice from the portal, older than both of them: \"Evincars are replaceable.\""
+  },
+  {
+   "who": "stage",
+   "line": "Volrath doesn't turn around. For the first time, his hands shake."
+  }
+ ],
+ "vibe": "dark-biomech-skyship",
+ "cast": {
+  "you": {
+   "name": "You",
+   "title": "Planeswalker",
+   "portrait": {
+    "card": "Insight",
+    "set": "tmp",
+    "number": "68",
+    "id": "1dfd9cb9-51f6-4d09-b5c0-5b0ed9d16542",
+    "crop": "https://cards.scryfall.io/art_crop/front/1/d/1dfd9cb9-51f6-4d09-b5c0-5b0ed9d16542.jpg?1783946655",
+    "artist": "Ron Chironna",
+    "focus": "50% 30%"
+   }
+  },
+  "gerrard": {
+   "name": "Gerrard",
+   "title": "Heir of the Legacy",
+   "portrait": {
+    "card": "Gerrard Capashen",
+    "set": "apc",
+    "number": "11",
+    "id": "ccca800f-e850-4bec-95d0-70280b51b7a7",
+    "artist": "Brom",
+    "crop": "https://cards.scryfall.io/art_crop/front/c/c/ccca800f-e850-4bec-95d0-70280b51b7a7.jpg",
+    "focus": "50% 25%"
+   }
+  },
+  "volrath": {
+   "name": "Volrath",
+   "title": "Evincar of Rath",
+   "portrait": {
+    "card": "Volrath the Fallen",
+    "set": "nem",
+    "number": "75",
+    "id": "08bdd66e-9ca1-456e-a61c-7c96cf6f7c56",
+    "artist": "Kev Walker",
+    "crop": "https://cards.scryfall.io/art_crop/front/0/8/08bdd66e-9ca1-456e-a61c-7c96cf6f7c56.jpg",
+    "focus": "50% 25%"
+   }
+  },
+  "sisay": {
+   "name": "Sisay",
+   "title": "Captain of the Weatherlight",
+   "portrait": {
+    "card": "Sisay, Weatherlight Captain",
+    "set": "mh1",
+    "number": "29",
+    "id": "5a293c45-1e73-4527-be2f-2dcd5c47b610",
+    "artist": "Anna Steinbauer",
+    "crop": "https://cards.scryfall.io/art_crop/front/5/a/5a293c45-1e73-4527-be2f-2dcd5c47b610.jpg",
+    "focus": "50% 25%"
+   }
+  },
+  "mirri": {
+   "name": "Mirri",
+   "title": "Cat Warrior",
+   "portrait": {
+    "card": "Mirri, Cat Warrior",
+    "set": "exo",
+    "number": "114",
+    "id": "6d1682dd-5a99-4bee-a2c2-c8735047e1a9",
+    "crop": "https://cards.scryfall.io/art_crop/front/6/d/6d1682dd-5a99-4bee-a2c2-c8735047e1a9.jpg?1783946505",
+    "artist": "Daren Bader",
+    "focus": "50% 25%"
+   }
+  },
+  "ertai": {
+   "name": "Ertai",
+   "title": "Wizard Adept",
+   "portrait": {
+    "card": "Ertai, Wizard Adept",
+    "set": "exo",
+    "number": "33",
+    "id": "91971e19-61ce-45ac-b700-9ffca5091a27",
+    "crop": "https://cards.scryfall.io/art_crop/front/9/1/91971e19-61ce-45ac-b700-9ffca5091a27.jpg?1783946525",
+    "artist": "Terese Nielsen",
+    "focus": "50% 25%"
+   }
+  },
+  "squee": {
+   "name": "Squee",
+   "title": "Goblin Cabin Hand",
+   "portrait": {
+    "card": "Squee, Goblin Nabob",
+    "set": "mmq",
+    "number": "214",
+    "id": "4ba8325a-1203-4125-9111-94d9e2b1f14b",
+    "artist": "David Monette",
+    "crop": "https://cards.scryfall.io/art_crop/front/4/b/4ba8325a-1203-4125-9111-94d9e2b1f14b.jpg",
+    "focus": "50% 30%"
+   }
+  },
+  "karn": {
+   "name": "Karn",
+   "title": "Silver Golem",
+   "portrait": {
+    "card": "Karn, Silver Golem",
+    "set": "usg",
+    "number": "298",
+    "id": "811a0988-2900-426c-9413-8f1778d99678",
+    "artist": "Mark Zug",
+    "crop": "https://cards.scryfall.io/art_crop/front/8/1/811a0988-2900-426c-9413-8f1778d99678.jpg",
+    "focus": "50% 25%"
+   }
+  },
+  "tahngarth": {
+   "name": "Tahngarth",
+   "title": "First Mate",
+   "portrait": {
+    "card": "Tahngarth, Talruum Hero",
+    "set": "pls",
+    "number": "74",
+    "id": "c1778f37-af01-4f8c-ab9d-a4c60abf7e78",
+    "artist": "Dave Dorman",
+    "crop": "https://cards.scryfall.io/art_crop/front/c/1/c1778f37-af01-4f8c-ab9d-a4c60abf7e78.jpg",
+    "focus": "50% 25%"
+   }
+  },
+  "orim": {
+   "name": "Orim",
+   "title": "Samite Healer",
+   "portrait": {
+    "card": "Orim, Samite Healer",
+    "set": "tmp",
+    "number": "33",
+    "id": "7086d077-f083-4870-8b0b-2d34aca49df1",
+    "crop": "https://cards.scryfall.io/art_crop/front/7/0/7086d077-f083-4870-8b0b-2d34aca49df1.jpg?1783946664",
+    "artist": "Kaja Foglio",
+    "focus": "50% 25%"
+   }
+  },
+  "hanna": {
+   "name": "Hanna",
+   "title": "Navigator",
+   "portrait": {
+    "card": "Hanna, Ship's Navigator",
+    "set": "inv",
+    "number": "249",
+    "id": "83a4e48d-6452-4245-bdad-63fe3263550e",
+    "artist": "Dave Dorman",
+    "crop": "https://cards.scryfall.io/art_crop/front/8/3/83a4e48d-6452-4245-bdad-63fe3263550e.jpg",
+    "focus": "50% 25%"
+   }
+  },
+  "crovax": {
+   "name": "Crovax",
+   "title": "The Cursed",
+   "portrait": {
+    "card": "Crovax the Cursed",
+    "set": "sth",
+    "number": "55",
+    "id": "88a9b76d-6ce1-40d4-bc04-7ae6237f5eaf",
+    "crop": "https://cards.scryfall.io/art_crop/front/8/8/88a9b76d-6ce1-40d4-bc04-7ae6237f5eaf.jpg?1783946563",
+    "artist": "Pete Venters",
+    "focus": "50% 25%"
+   }
+  },
+  "greven": {
+   "name": "Greven il-Vec",
+   "title": "Commander of the Predator",
+   "portrait": {
+    "card": "Commander Greven il-Vec",
+    "set": "tmp",
+    "number": "115",
+    "id": "ab0ce69f-a259-4801-9ac3-f6754040434c",
+    "crop": "https://cards.scryfall.io/art_crop/front/a/b/ab0ce69f-a259-4801-9ac3-f6754040434c.jpg?1783946644",
+    "artist": "Kev Walker",
+    "focus": "50% 25%"
+   }
+  },
+  "vhati": {
+   "name": "Vhati il-Dal",
+   "title": "Greven's Second",
+   "portrait": {
+    "card": "Vhati il-Dal",
+    "set": "tmp",
+    "number": "274",
+    "id": "be535a4a-c00d-4c58-a663-a3419a54da51",
+    "crop": "https://cards.scryfall.io/art_crop/front/b/e/be535a4a-c00d-4c58-a663-a3419a54da51.jpg?1783946608",
+    "artist": "Ron Spencer",
+    "focus": "50% 25%"
+   }
+  },
+  "lyna": {
+   "name": "Lyna",
+   "title": "Soltari Emissary",
+   "portrait": {
+    "card": "Soltari Emissary",
+    "set": "tmp",
+    "number": "42",
+    "id": "a18751d3-052b-4ae5-ba07-16f00a1af40e",
+    "crop": "https://cards.scryfall.io/art_crop/front/a/1/a18751d3-052b-4ae5-ba07-16f00a1af40e.jpg?1783946661",
+    "artist": "Adam Rex",
+    "focus": "50% 25%"
+   }
+  },
+  "dauthi": {
+   "name": "Dauthi Slayer",
+   "title": "Shadow Killer",
+   "portrait": {
+    "card": "Dauthi Slayer",
+    "set": "tmp",
+    "number": "126",
+    "id": "652ccd79-aefd-4b45-b747-75190da0cfc6",
+    "crop": "https://cards.scryfall.io/art_crop/front/6/5/652ccd79-aefd-4b45-b747-75190da0cfc6.jpg?1783946641",
+    "artist": "Dermot Power",
+    "focus": "50% 25%"
+   }
+  },
+  "rootwater": {
+   "name": "Rootwater Shaman",
+   "title": "Merfolk of the Lake",
+   "portrait": {
+    "card": "Rootwater Shaman",
+    "set": "tmp",
+    "number": "84",
+    "id": "caa1b84b-efda-4324-9106-0d1d00385cdc",
+    "crop": "https://cards.scryfall.io/art_crop/front/c/a/caa1b84b-efda-4324-9106-0d1d00385cdc.jpg?1783946651",
+    "artist": "Paolo Parente",
+    "focus": "50% 30%"
+   }
+  },
+  "eladamri": {
+   "name": "Eladamri",
+   "title": "Lord of Leaves",
+   "portrait": {
+    "card": "Eladamri, Lord of Leaves",
+    "set": "tmp",
+    "number": "224",
+    "id": "0b1689f3-9dfa-4525-90b3-7af15f7eb720",
+    "crop": "https://cards.scryfall.io/art_crop/front/0/b/0b1689f3-9dfa-4525-90b3-7af15f7eb720.jpg?1783946619",
+    "artist": "Ron Chironna",
+    "focus": "50% 25%"
+   }
+  },
+  "starke": {
+   "name": "Starke",
+   "title": "Of Rath",
+   "portrait": {
+    "card": "Starke of Rath",
+    "set": "tmp",
+    "number": "205",
+    "id": "de398b32-10a3-45aa-9886-76806e1602c6",
+    "crop": "https://cards.scryfall.io/art_crop/front/d/e/de398b32-10a3-45aa-9886-76806e1602c6.jpg?1783946623",
+    "artist": "Dan Frazier",
+    "focus": "50% 25%"
+   }
+  },
+  "shifter": {
+   "name": "Volrath's Shapeshifter",
+   "title": "Wears Any Face",
+   "portrait": {
+    "card": "Volrath's Shapeshifter",
+    "set": "sth",
+    "number": "48",
+    "id": "ec89ee13-34ef-41c8-8fe4-0a6b21df2032",
+    "crop": "https://cards.scryfall.io/art_crop/front/e/c/ec89ee13-34ef-41c8-8fe4-0a6b21df2032.jpg?1783946565",
+    "artist": "Ron Spencer",
+    "focus": "50% 30%"
+   }
+  }
+ },
+ "battles": [
+  {
+   "id": "a5b1",
+   "slot": 1,
+   "kind": "Arrival",
+   "mood": "tension",
+   "title": "The Shadow Lands",
+   "difficulty": "Easy",
+   "teaches": [
+    "Shadow"
+   ],
+   "blurb": "The Weatherlight crashes through into Rath. Ertai goes ahead to scout the portal and finds he isn't alone. Half the people here are standing in another world.",
+   "rewardSet": "tmp",
+   "host": false,
+   "hero": {
+    "who": "lyna",
+    "deck": {
+     "name": "The Soltari",
+     "colors": "W",
+     "archetype": null,
+     "cards": [
+      {
+       "qty": 4,
+       "name": "Soltari Foot Soldier",
+       "set": "tmp",
+       "number": "43",
+       "id": "bdf295dc-72df-4097-b767-d89ab807bf2e"
+      },
+      {
+       "qty": 4,
+       "name": "Soltari Lancer",
+       "set": "tmp",
+       "number": "44",
+       "id": "ab4b6c91-dd07-4d39-bd36-6fbf28e7698e"
+      },
+      {
+       "qty": 4,
+       "name": "Soltari Monk",
+       "set": "tmp",
+       "number": "45",
+       "id": "54e0d969-3e4d-4ff9-8bda-3a6ac8df01b2"
+      },
+      {
+       "qty": 4,
+       "name": "Soltari Priest",
+       "set": "tmp",
+       "number": "46",
+       "id": "35a71390-3fa8-43eb-ad86-67de2a7aeab8"
+      },
+      {
+       "qty": 4,
+       "name": "Soltari Trooper",
+       "set": "tmp",
+       "number": "47",
+       "id": "32f74aa3-4003-4f53-b774-22b111935391"
+      },
+      {
+       "qty": 2,
+       "name": "Soltari Champion",
+       "set": "sth",
+       "number": "18",
+       "id": "a112edf3-c976-426c-a407-e86255586e41"
+      },
+      {
+       "qty": 4,
+       "name": "Soltari Crusader",
+       "set": "tmp",
+       "number": "41",
+       "id": "6cd07471-b216-465c-9946-1eac689db32e"
+      },
+      {
+       "qty": 4,
+       "name": "Soltari Emissary",
+       "set": "tmp",
+       "number": "42",
+       "id": "a18751d3-052b-4ae5-ba07-16f00a1af40e"
+      },
+      {
+       "qty": 4,
+       "name": "Pacifism",
+       "set": "tmp",
+       "number": "34",
+       "id": "6492bf53-ad49-4cd5-83df-0005a5b77811"
+      },
+      {
+       "qty": 2,
+       "name": "Gerrard's Battle Cry",
+       "set": "tmp",
+       "number": "21",
+       "id": "504950d5-2df7-4518-b987-fe3a57ad1c58"
+      },
+      {
+       "qty": 24,
+       "name": "Plains",
+       "set": "tmp",
+       "number": "331",
+       "id": "62e339a9-3f9b-401e-a459-dc3affc9a114"
+      }
+     ]
+    }
+   },
+   "villain": {
+    "who": "dauthi",
+    "deck": {
+     "name": "The Dauthi",
+     "colors": "B",
+     "archetype": null,
+     "cards": [
+      {
+       "qty": 4,
+       "name": "Dauthi Slayer",
+       "set": "tmp",
+       "number": "126",
+       "id": "652ccd79-aefd-4b45-b747-75190da0cfc6"
+      },
+      {
+       "qty": 4,
+       "name": "Dauthi Horror",
+       "set": "tmp",
+       "number": "122",
+       "id": "c5a8bb3a-3a84-442f-8e31-8af2f04408ab"
+      },
+      {
+       "qty": 4,
+       "name": "Dauthi Marauder",
+       "set": "tmp",
+       "number": "123",
+       "id": "ee847d84-ec8d-4ec3-8436-68d6f144e22f"
+      },
+      {
+       "qty": 2,
+       "name": "Dauthi Mercenary",
+       "set": "tmp",
+       "number": "124",
+       "id": "c340e779-c648-48fd-a159-174b46f2d1b3"
+      },
+      {
+       "qty": 2,
+       "name": "Dauthi Embrace",
+       "set": "tmp",
+       "number": "120",
+       "id": "7e84bb94-d654-4d69-89d9-0a398a940125"
+      },
+      {
+       "qty": 4,
+       "name": "Rats of Rath",
+       "set": "tmp",
+       "number": "150",
+       "id": "7cb8d3a2-ed96-4490-9432-401da19ad3c5"
+      },
+      {
+       "qty": 4,
+       "name": "Darkling Stalker",
+       "set": "tmp",
+       "number": "119",
+       "id": "4eb883b7-da6a-45c3-9dde-61334a0ddcae"
+      },
+      {
+       "qty": 4,
+       "name": "Bounty Hunter",
+       "set": "tmp",
+       "number": "110",
+       "id": "98319fd3-0aad-4fc3-bb83-3c027d0ed652"
+      },
+      {
+       "qty": 4,
+       "name": "Dark Banishing",
+       "set": "tmp",
+       "number": "117",
+       "id": "922d6c8b-70ae-4db4-bf26-1904e4906211"
+      },
+      {
+       "qty": 2,
+       "name": "Diabolic Edict",
+       "set": "tmp",
+       "number": "128",
+       "id": "a2ecf2ee-1e2d-4ab2-8b2c-717c794b09b2"
+      },
+      {
+       "qty": 2,
+       "name": "Coercion",
+       "set": "tmp",
+       "number": "113",
+       "id": "2df7b947-bdb2-4204-8eb0-92fe66411613"
+      },
+      {
+       "qty": 24,
+       "name": "Swamp",
+       "set": "tmp",
+       "number": "339",
+       "id": "5912d2aa-fe91-4cea-9c7a-6dca745f8560"
+      }
+     ]
+    }
+   },
+   "reward": {
+    "hero": {
+     "packs": 1,
+     "coins": 0
+    },
+    "villain": {
+     "card": {
+      "oracle_id": "c1d0537b-954f-4d3b-b9fe-1dd7ffaa1197",
+      "name": "Dauthi Slayer",
+      "rarity": "common",
+      "set": "tmp",
+      "id": "652ccd79-aefd-4b45-b747-75190da0cfc6",
+      "image": "https://cards.scryfall.io/normal/front/6/5/652ccd79-aefd-4b45-b747-75190da0cfc6.jpg"
+     },
+     "coins": 50
+    }
+   },
+   "scene": [
+    {
+     "who": "ertai",
+     "line": "I'm too modest a wizard to reveal the full extent of my abilities.",
+     "quote": true
+    },
+    {
+     "who": "lyna",
+     "line": "You see our world when you shut your eyes so tightly that tiny shapes float before them.",
+     "quote": true
+    },
+    {
+     "who": "ertai",
+     "line": "A ghost. Wonderful. Are you here to be impressed?"
+    },
+    {
+     "who": "lyna",
+     "line": "I am here because the Dauthi are. They have knives for every soul.",
+     "quote": true
+    },
+    {
+     "who": "lyna",
+     "line": "You can't touch them. They can't touch you. Only we can. Stand behind me."
+    }
+   ],
+   "villainScene": [
+    {
+     "who": "dauthi",
+     "line": "The ghosts brought a living one. How kind."
+    },
+    {
+     "who": "dauthi",
+     "line": "The Dauthi believe they dignify murder by paying for it. We were paid in advance."
+    }
+   ],
+   "after": null,
+   "cues": {
+    "hero": {
+     "start": "Between worlds, we fight.",
+     "big": "They never see us coming.",
+     "low": "The shadow thins...",
+     "win": "Tell your captain the portal holds.",
+     "loss": "Fall back into the half-light!"
+    },
+    "villain": {
+     "start": "Knives out.",
+     "big": "The Dauthi army grows by screams and bounds.",
+     "low": "Ghosts bleed?",
+     "win": "Paid in full.",
+     "loss": "Another night."
+    }
+   },
+   "bigPlays": [],
+   "sim": null
+  },
+  {
+   "id": "a5b2",
+   "slot": 2,
+   "kind": "Lesson",
+   "mood": "comic",
+   "title": "Ertai's Lecture",
+   "difficulty": "Easy",
+   "teaches": [
+    "Buyback"
+   ],
+   "blurb": "The Weatherlight needs fresh water. The only lake belongs to merfolk who don't like visitors. Ertai volunteers, mostly so he can explain spells to everyone.",
+   "rewardSet": "tmp",
+   "host": false,
+   "hero": {
+    "who": "ertai",
+    "deck": {
+     "name": "The Adept",
+     "colors": "UR",
+     "archetype": null,
+     "cards": [
+      {
+       "qty": 2,
+       "name": "Ertai, Wizard Adept",
+       "set": "exo",
+       "number": "33",
+       "id": "91971e19-61ce-45ac-b700-9ffca5091a27"
+      },
+      {
+       "qty": 4,
+       "name": "Capsize",
+       "set": "tmp",
+       "number": "55",
+       "id": "e538b359-d893-422d-9d60-5f3e8ee0fa9e"
+      },
+      {
+       "qty": 4,
+       "name": "Whispers of the Muse",
+       "set": "tmp",
+       "number": "103",
+       "id": "75c5cfd1-3f7c-4250-a84d-8db83c6d7eb7"
+      },
+      {
+       "qty": 4,
+       "name": "Searing Touch",
+       "set": "tmp",
+       "number": "201",
+       "id": "e9091667-d5a8-4978-9023-032ff65f9642"
+      },
+      {
+       "qty": 4,
+       "name": "Wind Drake",
+       "set": "tmp",
+       "number": "105",
+       "id": "91e0c9e2-a45d-44d1-b73e-73c0a22d0752"
+      },
+      {
+       "qty": 4,
+       "name": "Horned Turtle",
+       "set": "tmp",
+       "number": "67",
+       "id": "b2348ce1-6305-42a7-8061-64275f6dc5c6"
+      },
+      {
+       "qty": 2,
+       "name": "Rootwater Hunter",
+       "set": "tmp",
+       "number": "82",
+       "id": "cdf7ea34-2cde-4ec5-9b12-99b0002da986"
+      },
+      {
+       "qty": 4,
+       "name": "Mawcor",
+       "set": "tmp",
+       "number": "75",
+       "id": "9f50971e-2a18-4db7-8b5b-83dd5e85766e"
+      },
+      {
+       "qty": 4,
+       "name": "Counterspell",
+       "set": "tmp",
+       "number": "57",
+       "id": "dacdd380-71cf-4832-bd02-3697501325f3"
+      },
+      {
+       "qty": 2,
+       "name": "Mana Leak",
+       "set": "sth",
+       "number": "36",
+       "id": "abcaf16d-aa02-43e2-aa38-bb1835d47a05"
+      },
+      {
+       "qty": 2,
+       "name": "Shock",
+       "set": "sth",
+       "number": "98",
+       "id": "f9b2ff2a-6dfe-4635-8da2-22d525e82b94"
+      },
+      {
+       "qty": 16,
+       "name": "Island",
+       "set": "tmp",
+       "number": "335",
+       "id": "22578bc8-10c6-4598-82bc-70e970a8f518"
+      },
+      {
+       "qty": 8,
+       "name": "Mountain",
+       "set": "tmp",
+       "number": "343",
+       "id": "9d6dc341-89dc-4e99-baa2-ad0ae59f0e94"
+      }
+     ]
+    }
+   },
+   "villain": {
+    "who": "rootwater",
+    "deck": {
+     "name": "The Rootwater",
+     "colors": "U",
+     "archetype": null,
+     "cards": [
+      {
+       "qty": 4,
+       "name": "Rootwater Shaman",
+       "set": "tmp",
+       "number": "84",
+       "id": "caa1b84b-efda-4324-9106-0d1d00385cdc"
+      },
+      {
+       "qty": 4,
+       "name": "Rootwater Hunter",
+       "set": "tmp",
+       "number": "82",
+       "id": "cdf7ea34-2cde-4ec5-9b12-99b0002da986"
+      },
+      {
+       "qty": 4,
+       "name": "Rootwater Diver",
+       "set": "tmp",
+       "number": "81",
+       "id": "a6315323-cf82-46c0-b164-e6ea1bf809f4"
+      },
+      {
+       "qty": 4,
+       "name": "Rootwater Matriarch",
+       "set": "tmp",
+       "number": "83",
+       "id": "ec46812d-0721-4e93-b1a7-1d38f477fab6"
+      },
+      {
+       "qty": 4,
+       "name": "Thalakos Drifters",
+       "set": "exo",
+       "number": "47",
+       "id": "468e13d2-6bd7-403c-8e2e-e00917b39597"
+      },
+      {
+       "qty": 4,
+       "name": "Horned Turtle",
+       "set": "tmp",
+       "number": "67",
+       "id": "b2348ce1-6305-42a7-8061-64275f6dc5c6"
+      },
+      {
+       "qty": 4,
+       "name": "Wind Drake",
+       "set": "tmp",
+       "number": "105",
+       "id": "91e0c9e2-a45d-44d1-b73e-73c0a22d0752"
+      },
+      {
+       "qty": 4,
+       "name": "Manta Riders",
+       "set": "tmp",
+       "number": "74",
+       "id": "cdff306c-1c7e-49ae-b10f-99e1927bbef1"
+      },
+      {
+       "qty": 4,
+       "name": "Dismiss",
+       "set": "tmp",
+       "number": "58",
+       "id": "1e55d6be-7682-4786-9872-e847afd710b0"
+      },
+      {
+       "qty": 24,
+       "name": "Island",
+       "set": "tmp",
+       "number": "335",
+       "id": "22578bc8-10c6-4598-82bc-70e970a8f518"
+      }
+     ]
+    }
+   },
+   "reward": {
+    "hero": {
+     "packs": 1,
+     "coins": 0
+    },
+    "villain": {
+     "card": {
+      "oracle_id": "8a449915-8bd7-4a9c-abb1-a95852f33695",
+      "name": "Rootwater Shaman",
+      "rarity": "rare",
+      "set": "tmp",
+      "id": "caa1b84b-efda-4324-9106-0d1d00385cdc",
+      "image": "https://cards.scryfall.io/normal/front/c/a/caa1b84b-efda-4324-9106-0d1d00385cdc.jpg"
+     },
+     "coins": 50
+    }
+   },
+   "scene": [
+    {
+     "who": "gerrard",
+     "line": "Ugh! When did orcs and fish start having kids?",
+     "quote": true
+    },
+    {
+     "who": "ertai",
+     "line": "Watch closely. A real wizard doesn't cast a spell once."
+    },
+    {
+     "who": "ertai",
+     "line": "He pays a little more, and keeps it."
+    },
+    {
+     "who": "mirri",
+     "line": "If that arrogant brat doesn't shut up soon, I'm having him for dinner."
+    },
+    {
+     "who": "ertai",
+     "line": "Gone today, here tomorrow.",
+     "quote": true
+    },
+    {
+     "who": "rootwater",
+     "line": "Leave the lake, dry-skins."
+    },
+    {
+     "who": "ertai",
+     "line": "Temper, temper.",
+     "quote": true
+    }
+   ],
+   "villainScene": [
+    {
+     "who": "rootwater",
+     "line": "Every season, the evincar's ships drink our lake lower."
+    },
+    {
+     "who": "rootwater",
+     "line": "Now a new ship. A new mouth. No more."
+    }
+   ],
+   "after": null,
+   "cues": {
+    "hero": {
+     "start": "Pay attention. There will be a quiz.",
+     "big": "Again. Because I can.",
+     "low": "This is a teaching moment. For me.",
+     "win": "Was that it?",
+     "loss": "It was probably a lousy spell in the first place."
+    },
+    "villain": {
+     "start": "Into the deep.",
+     "big": "The lake rises!",
+     "low": "Dry... too dry...",
+     "win": "Stay thirsty.",
+     "loss": "Take your water. Choke on it."
+    }
+   },
+   "bigPlays": [],
+   "sim": null
+  },
+  {
+   "id": "a5b3",
+   "slot": 3,
+   "kind": "Lesson",
+   "mood": "tension",
+   "title": "The Hive",
+   "difficulty": "Easy",
+   "teaches": [
+    "Slivers"
+   ],
+   "blurb": "Hunting for the Stronghold, the crew blunders into a sliver warren. Karn walks in alone and starts talking to the queen. Then Greven's hunters arrive, and the hive has to choose a side.",
+   "rewardSet": "tmp",
+   "host": false,
+   "hero": {
+    "who": "you",
+    "deck": {
+     "name": "The Hive",
+     "colors": "RGW",
+     "archetype": null,
+     "cards": [
+      {
+       "qty": 4,
+       "name": "Muscle Sliver",
+       "set": "tmp",
+       "number": "238",
+       "id": "602a1e1f-4195-48c0-8290-562e7e0db6d8"
+      },
+      {
+       "qty": 4,
+       "name": "Metallic Sliver",
+       "set": "tmp",
+       "number": "297",
+       "id": "30143f4f-9846-448d-8797-8fe0bc0cc5df"
+      },
+      {
+       "qty": 4,
+       "name": "Talon Sliver",
+       "set": "tmp",
+       "number": "50",
+       "id": "f186c4b1-b7ec-46eb-a961-257411b401b0"
+      },
+      {
+       "qty": 4,
+       "name": "Heart Sliver",
+       "set": "tmp",
+       "number": "182",
+       "id": "27a83ab6-0d15-49e4-90e3-b3a2a095c632"
+      },
+      {
+       "qty": 4,
+       "name": "Horned Sliver",
+       "set": "tmp",
+       "number": "234",
+       "id": "d0175cec-e64c-45c6-9208-76127e76a7cf"
+      },
+      {
+       "qty": 4,
+       "name": "Armor Sliver",
+       "set": "tmp",
+       "number": "4",
+       "id": "c275aba7-cac6-48e8-b12c-6bd77a5c38fe"
+      },
+      {
+       "qty": 4,
+       "name": "Spined Sliver",
+       "set": "sth",
+       "number": "130",
+       "id": "9a8a9442-7b08-4cc8-94ec-bddb8feab1a8"
+      },
+      {
+       "qty": 2,
+       "name": "Victual Sliver",
+       "set": "sth",
+       "number": "131",
+       "id": "5e58908e-7095-4fb9-b7cb-a67d12f33b8a"
+      },
+      {
+       "qty": 4,
+       "name": "Shock",
+       "set": "sth",
+       "number": "98",
+       "id": "f9b2ff2a-6dfe-4635-8da2-22d525e82b94"
+      },
+      {
+       "qty": 2,
+       "name": "Gerrard's Battle Cry",
+       "set": "tmp",
+       "number": "21",
+       "id": "504950d5-2df7-4518-b987-fe3a57ad1c58"
+      },
+      {
+       "qty": 8,
+       "name": "Forest",
+       "set": "tmp",
+       "number": "347",
+       "id": "36b3ffbd-3f3e-4fca-80c2-94f9fdc198a5"
+      },
+      {
+       "qty": 8,
+       "name": "Mountain",
+       "set": "tmp",
+       "number": "343",
+       "id": "9d6dc341-89dc-4e99-baa2-ad0ae59f0e94"
+      },
+      {
+       "qty": 8,
+       "name": "Plains",
+       "set": "tmp",
+       "number": "331",
+       "id": "62e339a9-3f9b-401e-a459-dc3affc9a114"
+      }
+     ]
+    }
+   },
+   "villain": {
+    "who": "vhati",
+    "deck": {
+     "name": "The Hunting Party",
+     "colors": "BR",
+     "archetype": null,
+     "cards": [
+      {
+       "qty": 2,
+       "name": "Vhati il-Dal",
+       "set": "tmp",
+       "number": "274",
+       "id": "be535a4a-c00d-4c58-a663-a3419a54da51"
+      },
+      {
+       "qty": 4,
+       "name": "Mogg Fanatic",
+       "set": "tmp",
+       "number": "190",
+       "id": "ca2ecfd4-c874-4468-8601-87aa110d5a00"
+      },
+      {
+       "qty": 4,
+       "name": "Mogg Conscripts",
+       "set": "tmp",
+       "number": "189",
+       "id": "73719325-b091-4464-b0b0-77dfbb19562a"
+      },
+      {
+       "qty": 4,
+       "name": "Rats of Rath",
+       "set": "tmp",
+       "number": "150",
+       "id": "7cb8d3a2-ed96-4490-9432-401da19ad3c5"
+      },
+      {
+       "qty": 4,
+       "name": "Sarcomancy",
+       "set": "tmp",
+       "number": "154",
+       "id": "eb5730f5-a44c-4f75-a26f-90815cfcd31e"
+      },
+      {
+       "qty": 4,
+       "name": "Jackal Pup",
+       "set": "tmp",
+       "number": "183",
+       "id": "3707ab74-9aec-4d30-86e0-ffa5f72d5b4f"
+      },
+      {
+       "qty": 4,
+       "name": "Flowstone Sculpture",
+       "set": "tmp",
+       "number": "288",
+       "id": "7f89f599-b063-4568-b7b9-08b96d04bde1"
+      },
+      {
+       "qty": 4,
+       "name": "Dark Banishing",
+       "set": "tmp",
+       "number": "117",
+       "id": "922d6c8b-70ae-4db4-bf26-1904e4906211"
+      },
+      {
+       "qty": 4,
+       "name": "Kindle",
+       "set": "tmp",
+       "number": "184",
+       "id": "930745eb-b038-4b55-97f3-bf8d99b54d32"
+      },
+      {
+       "qty": 2,
+       "name": "Darkling Stalker",
+       "set": "tmp",
+       "number": "119",
+       "id": "4eb883b7-da6a-45c3-9dde-61334a0ddcae"
+      },
+      {
+       "qty": 12,
+       "name": "Swamp",
+       "set": "tmp",
+       "number": "339",
+       "id": "5912d2aa-fe91-4cea-9c7a-6dca745f8560"
+      },
+      {
+       "qty": 12,
+       "name": "Mountain",
+       "set": "tmp",
+       "number": "343",
+       "id": "9d6dc341-89dc-4e99-baa2-ad0ae59f0e94"
+      }
+     ]
+    }
+   },
+   "reward": {
+    "hero": {
+     "packs": 1,
+     "coins": 0
+    },
+    "villain": {
+     "card": {
+      "oracle_id": "1759547a-52b3-4bae-817a-658a6fd047e3",
+      "name": "Vhati il-Dal",
+      "rarity": "rare",
+      "set": "tmp",
+      "id": "be535a4a-c00d-4c58-a663-a3419a54da51",
+      "image": "https://cards.scryfall.io/normal/front/b/e/be535a4a-c00d-4c58-a663-a3419a54da51.jpg"
+     },
+     "coins": 50
+    }
+   },
+   "scene": [
+    {
+     "who": "hanna",
+     "line": "We must learn how they protect each other.",
+     "quote": true
+    },
+    {
+     "who": "mirri",
+     "line": "After they're done trying to kill us, all right?",
+     "quote": true
+    },
+    {
+     "who": "karn",
+     "line": "We are kinfolk. Just as you need your progeny to complete you, so do I need the pieces of the Legacy.",
+     "quote": true
+    },
+    {
+     "who": "stage",
+     "line": "The hive goes quiet. Then it turns to face the cave mouth."
+    },
+    {
+     "who": "vhati",
+     "line": "Commander Greven will want the golem. And... whatever those are."
+    },
+    {
+     "who": "karn",
+     "line": "I will not fight. They will. Lead them well."
+    }
+   ],
+   "villainScene": [
+    {
+     "who": "vhati",
+     "line": "Sir, I just thought...",
+     "quote": true
+    },
+    {
+     "who": "vhati",
+     "line": "...that if I bring back the golem, Greven might stop throwing me off things."
+    },
+    {
+     "who": "vhati",
+     "line": "It's a good plan. It's a good plan."
+    }
+   ],
+   "after": null,
+   "cues": {
+    "hero": {
+     "start": null,
+     "big": null,
+     "low": null,
+     "win": null,
+     "loss": null
+    },
+    "villain": {
+     "start": "For Greven! Mostly.",
+     "big": "He'll have to promote me now!",
+     "low": "This is going on my record.",
+     "win": "Bag the golem. Carefully!",
+     "loss": "Don't tell Greven. Please don't tell Greven."
+    }
+   },
+   "bigPlays": [],
+   "sim": null
+  },
+  {
+   "id": "a5b4",
+   "slot": 4,
+   "kind": "Rival",
+   "mood": "tension",
+   "title": "Selenia's Shard",
+   "difficulty": "Normal",
+   "teaches": [
+    "Gaining life"
+   ],
+   "blurb": "Crovax came to Rath to save his angel. He found her serving Volrath, and his sword found her before his mind did. Now the curse is waking. Mirri is the only one who sees it.",
+   "rewardSet": "sth",
+   "host": false,
+   "hero": {
+    "who": "mirri",
+    "deck": {
+     "name": "Mirri's Watch",
+     "colors": "GW",
+     "archetype": null,
+     "cards": [
+      {
+       "qty": 2,
+       "name": "Mirri, Cat Warrior",
+       "set": "exo",
+       "number": "114",
+       "id": "6d1682dd-5a99-4bee-a2c2-c8735047e1a9"
+      },
+      {
+       "qty": 4,
+       "name": "Spike Feeder",
+       "set": "sth",
+       "number": "118",
+       "id": "3751b2ae-a234-4691-984b-2f9f6b1cd1df"
+      },
+      {
+       "qty": 4,
+       "name": "Soltari Priest",
+       "set": "tmp",
+       "number": "46",
+       "id": "35a71390-3fa8-43eb-ad86-67de2a7aeab8"
+      },
+      {
+       "qty": 4,
+       "name": "Elven Warhounds",
+       "set": "tmp",
+       "number": "225",
+       "id": "29138c1e-11cb-488f-8e04-f5488e08a81e"
+      },
+      {
+       "qty": 4,
+       "name": "Charging Rhino",
+       "set": "tmp",
+       "number": "218",
+       "id": "651f89e5-9ce2-4713-aca9-6581005f6ca2"
+      },
+      {
+       "qty": 4,
+       "name": "Trained Armodon",
+       "set": "tmp",
+       "number": "260",
+       "id": "2380ab8f-58d2-4e1c-a115-cd2615b5a871"
+      },
+      {
+       "qty": 4,
+       "name": "Skyshroud Elite",
+       "set": "exo",
+       "number": "123",
+       "id": "f6a496a4-1b4c-4c5d-99e5-ec40601c759d"
+      },
+      {
+       "qty": 4,
+       "name": "Pacifism",
+       "set": "tmp",
+       "number": "34",
+       "id": "6492bf53-ad49-4cd5-83df-0005a5b77811"
+      },
+      {
+       "qty": 4,
+       "name": "Natural Spring",
+       "set": "tmp",
+       "number": "239",
+       "id": "1ff5d12a-8634-468b-86ca-4ba0f7c013ca"
+      },
+      {
+       "qty": 2,
+       "name": "Gallantry",
+       "set": "tmp",
+       "number": "20",
+       "id": "1ccdca3b-7d53-4d19-bd15-9a1b148c4aaf"
+      },
+      {
+       "qty": 12,
+       "name": "Forest",
+       "set": "tmp",
+       "number": "347",
+       "id": "36b3ffbd-3f3e-4fca-80c2-94f9fdc198a5"
+      },
+      {
+       "qty": 12,
+       "name": "Plains",
+       "set": "tmp",
+       "number": "331",
+       "id": "62e339a9-3f9b-401e-a459-dc3affc9a114"
+      }
+     ]
+    }
+   },
+   "villain": {
+    "who": "crovax",
+    "deck": {
+     "name": "Crovax's Hunger",
+     "colors": "B",
+     "archetype": null,
+     "cards": [
+      {
+       "qty": 4,
+       "name": "Skyshroud Vampire",
+       "set": "tmp",
+       "number": "157",
+       "id": "eed2c97b-f003-436c-9faa-5518aba42fc1"
+      },
+      {
+       "qty": 4,
+       "name": "Vampire Hounds",
+       "set": "exo",
+       "number": "77",
+       "id": "746bc301-9f08-4d9b-819e-690f6fce6bc8"
+      },
+      {
+       "qty": 4,
+       "name": "Dauthi Horror",
+       "set": "tmp",
+       "number": "122",
+       "id": "c5a8bb3a-3a84-442f-8e31-8af2f04408ab"
+      },
+      {
+       "qty": 4,
+       "name": "Carnophage",
+       "set": "exo",
+       "number": "53",
+       "id": "d17c057f-cb1b-4895-831a-fb35c75d3845"
+      },
+      {
+       "qty": 4,
+       "name": "Coercion",
+       "set": "tmp",
+       "number": "113",
+       "id": "2df7b947-bdb2-4204-8eb0-92fe66411613"
+      },
+      {
+       "qty": 4,
+       "name": "Dark Banishing",
+       "set": "tmp",
+       "number": "117",
+       "id": "922d6c8b-70ae-4db4-bf26-1904e4906211"
+      },
+      {
+       "qty": 4,
+       "name": "Evincar's Justice",
+       "set": "tmp",
+       "number": "134",
+       "id": "5d53f46f-b069-4b34-af4b-98143328c078"
+      },
+      {
+       "qty": 2,
+       "name": "Dark Ritual",
+       "set": "tmp",
+       "number": "118",
+       "id": "bf4708e8-2149-4990-987c-2ea55fc6c508"
+      },
+      {
+       "qty": 2,
+       "name": "Fevered Convulsions",
+       "set": "tmp",
+       "number": "136",
+       "id": "3a790769-e76e-49e9-9d6d-05ce8e858243"
+      },
+      {
+       "qty": 4,
+       "name": "Rats of Rath",
+       "set": "tmp",
+       "number": "150",
+       "id": "7cb8d3a2-ed96-4490-9432-401da19ad3c5"
+      },
+      {
+       "qty": 24,
+       "name": "Swamp",
+       "set": "tmp",
+       "number": "339",
+       "id": "5912d2aa-fe91-4cea-9c7a-6dca745f8560"
+      }
+     ]
+    }
+   },
+   "reward": {
+    "hero": {
+     "packs": 1,
+     "coins": 100
+    },
+    "villain": {
+     "card": {
+      "oracle_id": "83f35293-39e9-4c78-9c9f-25a1fc905676",
+      "name": "Fevered Convulsions",
+      "rarity": "rare",
+      "set": "tmp",
+      "id": "3a790769-e76e-49e9-9d6d-05ce8e858243",
+      "image": "https://cards.scryfall.io/normal/front/3/a/3a790769-e76e-49e9-9d6d-05ce8e858243.jpg"
+     },
+     "coins": 100
+    }
+   },
+   "scene": [
+    {
+     "who": "crovax",
+     "line": "For a sharp second, Selenia froze, and my blade found home."
+    },
+    {
+     "who": "crovax",
+     "line": "She shattered like glass. And something in me shattered with her."
+    },
+    {
+     "who": "mirri",
+     "line": "You've been skulking around the ship at night. You smell like the death pits."
+    },
+    {
+     "who": "crovax",
+     "line": "When I cut down my angel I only started my fall.",
+     "quote": true
+    },
+    {
+     "who": "crovax",
+     "line": "I gazed upon the dead, and for one dark moment I saw a banquet."
+    },
+    {
+     "who": "mirri",
+     "line": "Then you don't sit at Gerrard's table. Not tonight. Not ever."
+    }
+   ],
+   "villainScene": [
+    {
+     "who": "crovax",
+     "line": "My family sheltered in her light, the dark was content to wait.",
+     "quote": true
+    },
+    {
+     "who": "crovax",
+     "line": "It waited long enough. I'm so hungry, cat."
+    },
+    {
+     "who": "crovax",
+     "line": "I am confined by sleep and defined by nightmare.",
+     "quote": true
+    }
+   ],
+   "after": null,
+   "cues": {
+    "hero": {
+     "start": "I can smell the curse on you.",
+     "big": "The forest stands with me.",
+     "low": "Not... yet.",
+     "win": "Go. Before the others see what you are.",
+     "loss": "Gerrard... watch him..."
+    },
+    "villain": {
+     "start": "Forgive me.",
+     "big": "There are terrors lurking in the unseen corners of us all.",
+     "low": "Selenia, help me...",
+     "win": "I'm sorry. I'm so hungry.",
+     "loss": "Memory is a burden that wears at the soul."
+    }
+   },
+   "bigPlays": [],
+   "sim": null
+  },
+  {
+   "id": "a5b5",
+   "slot": 5,
+   "kind": "Lesson",
+   "mood": "tension",
+   "title": "The Traitor's Daughter",
+   "difficulty": "Normal",
+   "teaches": [
+    "The graveyard"
+   ],
+   "blurb": "The Skyshroud elves agree to guide the crew to the Stronghold. Their guide is Starke, who used to teach Volrath. He has a daughter in those cells, and he has already made a deal.",
+   "rewardSet": "sth",
+   "host": false,
+   "hero": {
+    "who": "eladamri",
+    "deck": {
+     "name": "Skyshroud Rising",
+     "colors": "GB",
+     "archetype": null,
+     "cards": [
+      {
+       "qty": 2,
+       "name": "Eladamri, Lord of Leaves",
+       "set": "tmp",
+       "number": "224",
+       "id": "0b1689f3-9dfa-4525-90b3-7af15f7eb720"
+      },
+      {
+       "qty": 4,
+       "name": "Skyshroud Elite",
+       "set": "exo",
+       "number": "123",
+       "id": "f6a496a4-1b4c-4c5d-99e5-ec40601c759d"
+      },
+      {
+       "qty": 4,
+       "name": "Gravedigger",
+       "set": "tmp",
+       "number": "137",
+       "id": "872f3328-c65d-49eb-a1bb-ca40e9c05627"
+      },
+      {
+       "qty": 4,
+       "name": "Trained Armodon",
+       "set": "tmp",
+       "number": "260",
+       "id": "2380ab8f-58d2-4e1c-a115-cd2615b5a871"
+      },
+      {
+       "qty": 4,
+       "name": "Charging Rhino",
+       "set": "tmp",
+       "number": "218",
+       "id": "651f89e5-9ce2-4713-aca9-6581005f6ca2"
+      },
+      {
+       "qty": 4,
+       "name": "Elven Warhounds",
+       "set": "tmp",
+       "number": "225",
+       "id": "29138c1e-11cb-488f-8e04-f5488e08a81e"
+      },
+      {
+       "qty": 2,
+       "name": "Recurring Nightmare",
+       "set": "exo",
+       "number": "72",
+       "id": "c8173030-1c33-417c-b8e9-79231b6a85a7"
+      },
+      {
+       "qty": 4,
+       "name": "Dark Ritual",
+       "set": "tmp",
+       "number": "118",
+       "id": "bf4708e8-2149-4990-987c-2ea55fc6c508"
+      },
+      {
+       "qty": 4,
+       "name": "Dark Banishing",
+       "set": "tmp",
+       "number": "117",
+       "id": "922d6c8b-70ae-4db4-bf26-1904e4906211"
+      },
+      {
+       "qty": 4,
+       "name": "Mulch",
+       "set": "sth",
+       "number": "110",
+       "id": "4cf9e9a9-325a-4010-acb8-1406adcaeca9"
+      },
+      {
+       "qty": 12,
+       "name": "Forest",
+       "set": "tmp",
+       "number": "347",
+       "id": "36b3ffbd-3f3e-4fca-80c2-94f9fdc198a5"
+      },
+      {
+       "qty": 12,
+       "name": "Swamp",
+       "set": "tmp",
+       "number": "339",
+       "id": "5912d2aa-fe91-4cea-9c7a-6dca745f8560"
+      }
+     ]
+    }
+   },
+   "villain": {
+    "who": "starke",
+    "deck": {
+     "name": "Starke's Bargain",
+     "colors": "BR",
+     "archetype": null,
+     "cards": [
+      {
+       "qty": 4,
+       "name": "Mogg Fanatic",
+       "set": "tmp",
+       "number": "190",
+       "id": "ca2ecfd4-c874-4468-8601-87aa110d5a00"
+      },
+      {
+       "qty": 4,
+       "name": "Bounty Hunter",
+       "set": "tmp",
+       "number": "110",
+       "id": "98319fd3-0aad-4fc3-bb83-3c027d0ed652"
+      },
+      {
+       "qty": 4,
+       "name": "Kindle",
+       "set": "tmp",
+       "number": "184",
+       "id": "930745eb-b038-4b55-97f3-bf8d99b54d32"
+      },
+      {
+       "qty": 4,
+       "name": "Rolling Thunder",
+       "set": "tmp",
+       "number": "198",
+       "id": "0bb07402-d526-4938-89a3-9174d5b5a4de"
+      },
+      {
+       "qty": 4,
+       "name": "Kezzerdrix",
+       "set": "tmp",
+       "number": "139",
+       "id": "23b95d3a-bb19-474d-9939-8817038fe9fc"
+      },
+      {
+       "qty": 4,
+       "name": "Flowstone Hellion",
+       "set": "sth",
+       "number": "84",
+       "id": "680ccbc7-aa97-4f01-9d26-0df184af3c3e"
+      },
+      {
+       "qty": 4,
+       "name": "Mogg Flunkies",
+       "set": "sth",
+       "number": "92",
+       "id": "1b1b384e-a7d5-4b5f-87d5-95ac1a6c6320"
+      },
+      {
+       "qty": 4,
+       "name": "Dauthi Mercenary",
+       "set": "tmp",
+       "number": "124",
+       "id": "c340e779-c648-48fd-a159-174b46f2d1b3"
+      },
+      {
+       "qty": 4,
+       "name": "Dark Banishing",
+       "set": "tmp",
+       "number": "117",
+       "id": "922d6c8b-70ae-4db4-bf26-1904e4906211"
+      },
+      {
+       "qty": 12,
+       "name": "Swamp",
+       "set": "tmp",
+       "number": "339",
+       "id": "5912d2aa-fe91-4cea-9c7a-6dca745f8560"
+      },
+      {
+       "qty": 12,
+       "name": "Mountain",
+       "set": "tmp",
+       "number": "343",
+       "id": "9d6dc341-89dc-4e99-baa2-ad0ae59f0e94"
+      }
+     ]
+    }
+   },
+   "reward": {
+    "hero": {
+     "packs": 1,
+     "coins": 100
+    },
+    "villain": {
+     "card": {
+      "oracle_id": "2fd1cfc5-fbcd-4d31-ba8b-759d8c41b435",
+      "name": "Bounty Hunter",
+      "rarity": "rare",
+      "set": "tmp",
+      "id": "98319fd3-0aad-4fc3-bb83-3c027d0ed652",
+      "image": "https://cards.scryfall.io/normal/front/9/8/98319fd3-0aad-4fc3-bb83-3c027d0ed652.jpg"
+     },
+     "coins": 100
+    }
+   },
+   "scene": [
+    {
+     "who": "eladamri",
+     "line": "We have been patient. We have planned our attack. We are ready... now.",
+     "quote": true
+    },
+    {
+     "who": "starke",
+     "line": "Watch yourself. These plants aren't nice when they're hungry.",
+     "quote": true
+    },
+    {
+     "who": "eladamri",
+     "line": "You led us into the gardens on purpose."
+    },
+    {
+     "who": "starke",
+     "line": "I know to whom I owe the most loyalty, and I see him in the mirror every day.",
+     "quote": true
+    },
+    {
+     "who": "starke",
+     "line": "No. That's a lie I used to tell. My daughter's in there."
+    },
+    {
+     "who": "starke",
+     "line": "Volrath said: the elves, or Takara. I'm sorry, elf. I chose."
+    },
+    {
+     "who": "eladamri",
+     "line": "Then my dead will choose too. Rise, Skyshroud."
+    }
+   ],
+   "villainScene": [
+    {
+     "who": "starke",
+     "line": "The sanctity of poverty is an invention of the rich.",
+     "quote": true
+    },
+    {
+     "who": "starke",
+     "line": "Loyalty is too. Takara is all I own."
+    },
+    {
+     "who": "starke",
+     "line": "Forgive me, Lord of Leaves. Or don't. Just stay down."
+    }
+   ],
+   "after": null,
+   "cues": {
+    "hero": {
+     "start": "It is our duty to endure.",
+     "big": "Let Volrath choke on his crop of hatred.",
+     "low": "We were not made for war.",
+     "win": "Go find your daughter, Starke.",
+     "loss": "The shroud... remembers..."
+    },
+    "villain": {
+     "start": "Nothing personal.",
+     "big": "Once they've marked you, the world is made of glass.",
+     "low": "It is the nature of evil to turn you against yourself.",
+     "win": "Hold on, Takara.",
+     "loss": "Then I'll find another way. I always do."
+    }
+   },
+   "bigPlays": [],
+   "sim": null
+  },
+  {
+   "id": "a5b6",
+   "slot": 6,
+   "kind": "Meta",
+   "mood": "comic",
+   "title": "Moggs Aboard",
+   "difficulty": "Normal",
+   "teaches": [
+    "Racing"
+   ],
+   "blurb": "The Predator rams the Weatherlight and a thousand moggs pour over the rail. Tahngarth has wanted this fight for weeks. Squee recognises some of them. The red deck of 1998.",
+   "rewardSet": "exo",
+   "host": false,
+   "hero": {
+    "who": "tahngarth",
+    "deck": {
+     "name": "Tahngarth's Charge",
+     "colors": "RG",
+     "archetype": null,
+     "cards": [
+      {
+       "qty": 4,
+       "name": "Canyon Wildcat",
+       "set": "tmp",
+       "number": "167",
+       "id": "0169e52b-7909-4a8f-8ca2-62f030f9a85a"
+      },
+      {
+       "qty": 4,
+       "name": "Trained Armodon",
+       "set": "tmp",
+       "number": "260",
+       "id": "2380ab8f-58d2-4e1c-a115-cd2615b5a871"
+      },
+      {
+       "qty": 4,
+       "name": "Charging Rhino",
+       "set": "tmp",
+       "number": "218",
+       "id": "651f89e5-9ce2-4713-aca9-6581005f6ca2"
+      },
+      {
+       "qty": 2,
+       "name": "Rootbreaker Wurm",
+       "set": "tmp",
+       "number": "251",
+       "id": "9a686ed6-fc13-4882-b56c-667f556d9804"
+      },
+      {
+       "qty": 4,
+       "name": "Lowland Giant",
+       "set": "tmp",
+       "number": "187",
+       "id": "7398dec7-5e60-43c0-81a0-ab49beb37077"
+      },
+      {
+       "qty": 4,
+       "name": "Elven Warhounds",
+       "set": "tmp",
+       "number": "225",
+       "id": "29138c1e-11cb-488f-8e04-f5488e08a81e"
+      },
+      {
+       "qty": 4,
+       "name": "Shock",
+       "set": "sth",
+       "number": "98",
+       "id": "f9b2ff2a-6dfe-4635-8da2-22d525e82b94"
+      },
+      {
+       "qty": 4,
+       "name": "Wall of Blossoms",
+       "set": "sth",
+       "number": "125",
+       "id": "7eb4a1a3-efcf-4c9a-ad1f-0a3f8f2b456f"
+      },
+      {
+       "qty": 4,
+       "name": "Rolling Thunder",
+       "set": "tmp",
+       "number": "198",
+       "id": "0bb07402-d526-4938-89a3-9174d5b5a4de"
+      },
+      {
+       "qty": 2,
+       "name": "Overrun",
+       "set": "tmp",
+       "number": "243",
+       "id": "0ad7a961-d3a1-471a-8472-8407d1057de0"
+      },
+      {
+       "qty": 12,
+       "name": "Forest",
+       "set": "tmp",
+       "number": "347",
+       "id": "36b3ffbd-3f3e-4fca-80c2-94f9fdc198a5"
+      },
+      {
+       "qty": 12,
+       "name": "Mountain",
+       "set": "tmp",
+       "number": "343",
+       "id": "9d6dc341-89dc-4e99-baa2-ad0ae59f0e94"
+      }
+     ]
+    }
+   },
+   "villain": {
+    "who": "greven",
+    "deck": {
+     "name": "Sligh",
+     "colors": "R",
+     "archetype": "Sligh",
+     "cards": [
+      {
+       "qty": 4,
+       "name": "Jackal Pup",
+       "set": "tmp",
+       "number": "183",
+       "id": "3707ab74-9aec-4d30-86e0-ffa5f72d5b4f"
+      },
+      {
+       "qty": 4,
+       "name": "Mogg Fanatic",
+       "set": "tmp",
+       "number": "190",
+       "id": "ca2ecfd4-c874-4468-8601-87aa110d5a00"
+      },
+      {
+       "qty": 4,
+       "name": "Mogg Flunkies",
+       "set": "sth",
+       "number": "92",
+       "id": "1b1b384e-a7d5-4b5f-87d5-95ac1a6c6320"
+      },
+      {
+       "qty": 4,
+       "name": "Mogg Conscripts",
+       "set": "tmp",
+       "number": "189",
+       "id": "73719325-b091-4464-b0b0-77dfbb19562a"
+      },
+      {
+       "qty": 4,
+       "name": "Fireslinger",
+       "set": "tmp",
+       "number": "173",
+       "id": "de253d94-9968-47da-bb7a-9c8ebf50f4e0"
+      },
+      {
+       "qty": 4,
+       "name": "Cursed Scroll",
+       "set": "tmp",
+       "number": "281",
+       "id": "31415b9b-fb30-4132-a9a3-795b4573a901"
+      },
+      {
+       "qty": 4,
+       "name": "Shock",
+       "set": "sth",
+       "number": "98",
+       "id": "f9b2ff2a-6dfe-4635-8da2-22d525e82b94"
+      },
+      {
+       "qty": 4,
+       "name": "Kindle",
+       "set": "tmp",
+       "number": "184",
+       "id": "930745eb-b038-4b55-97f3-bf8d99b54d32"
+      },
+      {
+       "qty": 4,
+       "name": "Rolling Thunder",
+       "set": "tmp",
+       "number": "198",
+       "id": "0bb07402-d526-4938-89a3-9174d5b5a4de"
+      },
+      {
+       "qty": 24,
+       "name": "Mountain",
+       "set": "tmp",
+       "number": "343",
+       "id": "9d6dc341-89dc-4e99-baa2-ad0ae59f0e94"
+      }
+     ]
+    }
+   },
+   "reward": {
+    "hero": {
+     "packs": 1,
+     "coins": 100
+    },
+    "villain": {
+     "card": {
+      "oracle_id": "514752ea-d453-41d4-97cf-b1dcdb4b4a08",
+      "name": "Cursed Scroll",
+      "rarity": "rare",
+      "set": "tmp",
+      "id": "31415b9b-fb30-4132-a9a3-795b4573a901",
+      "image": "https://cards.scryfall.io/normal/front/3/1/31415b9b-fb30-4132-a9a3-795b4573a901.jpg"
+     },
+     "coins": 100
+    }
+   },
+   "scene": [
+    {
+     "who": "greven",
+     "line": "I will flay the skin from your flesh and the flesh from your bones.",
+     "quote": true
+    },
+    {
+     "who": "tahngarth",
+     "line": "Taste my horns!",
+     "quote": true
+    },
+    {
+     "who": "squee",
+     "line": "Hey! Dat's my cousin Gurk! HI GURK!"
+    },
+    {
+     "who": "tahngarth",
+     "line": "Goblin. Below deck."
+    },
+    {
+     "who": "squee",
+     "line": "But he owes me a bug!"
+    },
+    {
+     "who": "hanna",
+     "line": "The match between Tahngarth and Greven was close only in the mind of the minotaur.",
+     "quote": true,
+     "offstage": true
+    }
+   ],
+   "villainScene": [
+    {
+     "who": "greven",
+     "line": "Rage is the only freedom left me.",
+     "quote": true
+    },
+    {
+     "who": "greven",
+     "line": "Volrath's spine in my back. Volrath's voice in my head. Volrath's ship under my feet."
+    },
+    {
+     "who": "greven",
+     "line": "But this minotaur? This one I get to break myself."
+    }
+   ],
+   "after": null,
+   "cues": {
+    "hero": {
+     "start": "Hold your position! Leave doubt for the dying!",
+     "big": "You want to know your enemy? Look at your feet while you trample him.",
+     "low": "Where I come from, stone stays on the ground.",
+     "win": "Off my ship.",
+     "loss": "Torahn's horns..."
+    },
+    "villain": {
+     "start": "Moggs! Over the rail!",
+     "big": "Fear rules those weak enough to accept it.",
+     "low": "Vhati! VHATI!",
+     "win": "Chain him. The evincar has plans for horns.",
+     "loss": "Retreat. And someone find me Vhati."
+    }
+   },
+   "bigPlays": [],
+   "sim": null
+  },
+  {
+   "id": "a5b7",
+   "slot": 7,
+   "kind": "Meta",
+   "mood": "tension",
+   "title": "The Laboratory",
+   "difficulty": "Hard",
+   "teaches": [
+    "Playing against reanimation"
+   ],
+   "blurb": "Inside the Stronghold, the crew finds Volrath's laboratory, where the dead are works in progress. Something in there is wearing Gerrard's face. Survival and Recurring Nightmare, the engine of 1998.",
+   "rewardSet": "exo",
+   "host": false,
+   "hero": {
+    "who": "orim",
+    "deck": {
+     "name": "The Samite Way",
+     "colors": "W",
+     "archetype": null,
+     "cards": [
+      {
+       "qty": 2,
+       "name": "Orim, Samite Healer",
+       "set": "tmp",
+       "number": "33",
+       "id": "7086d077-f083-4870-8b0b-2d34aca49df1"
+      },
+      {
+       "qty": 4,
+       "name": "Soltari Priest",
+       "set": "tmp",
+       "number": "46",
+       "id": "35a71390-3fa8-43eb-ad86-67de2a7aeab8"
+      },
+      {
+       "qty": 4,
+       "name": "Soltari Monk",
+       "set": "tmp",
+       "number": "45",
+       "id": "54e0d969-3e4d-4ff9-8bda-3a6ac8df01b2"
+      },
+      {
+       "qty": 4,
+       "name": "Soltari Lancer",
+       "set": "tmp",
+       "number": "44",
+       "id": "ab4b6c91-dd07-4d39-bd36-6fbf28e7698e"
+      },
+      {
+       "qty": 4,
+       "name": "Paladin en-Vec",
+       "set": "exo",
+       "number": "12",
+       "id": "bf1ea89d-4b9d-455f-a7f4-a26026e0c272"
+      },
+      {
+       "qty": 4,
+       "name": "Knight of Dawn",
+       "set": "tmp",
+       "number": "26",
+       "id": "bf0e5034-a134-4eb6-af8e-b2419b92b3a6"
+      },
+      {
+       "qty": 4,
+       "name": "Elite Javelineer",
+       "set": "tmp",
+       "number": "17",
+       "id": "ea1c730f-76da-4eae-b3fc-b428b860ea93"
+      },
+      {
+       "qty": 4,
+       "name": "Pacifism",
+       "set": "tmp",
+       "number": "34",
+       "id": "6492bf53-ad49-4cd5-83df-0005a5b77811"
+      },
+      {
+       "qty": 2,
+       "name": "Light of Day",
+       "set": "tmp",
+       "number": "27",
+       "id": "70fa9ebe-bdf5-4359-aa3e-6cfa1a1d96cf"
+      },
+      {
+       "qty": 2,
+       "name": "Disenchant",
+       "set": "tmp",
+       "number": "16",
+       "id": "8a65e678-dcb9-4c6c-9a30-8332030dead6"
+      },
+      {
+       "qty": 2,
+       "name": "Gerrard's Battle Cry",
+       "set": "tmp",
+       "number": "21",
+       "id": "504950d5-2df7-4518-b987-fe3a57ad1c58"
+      },
+      {
+       "qty": 24,
+       "name": "Plains",
+       "set": "tmp",
+       "number": "331",
+       "id": "62e339a9-3f9b-401e-a459-dc3affc9a114"
+      }
+     ]
+    }
+   },
+   "villain": {
+    "who": "shifter",
+    "deck": {
+     "name": "RecSur",
+     "colors": "GBU",
+     "archetype": "RecSur",
+     "cards": [
+      {
+       "qty": 4,
+       "name": "Survival of the Fittest",
+       "set": "exo",
+       "number": "129",
+       "id": "c060c178-3c0e-493f-b6f0-ead5b1d6f191"
+      },
+      {
+       "qty": 3,
+       "name": "Recurring Nightmare",
+       "set": "exo",
+       "number": "72",
+       "id": "c8173030-1c33-417c-b8e9-79231b6a85a7"
+      },
+      {
+       "qty": 4,
+       "name": "Wall of Blossoms",
+       "set": "sth",
+       "number": "125",
+       "id": "7eb4a1a3-efcf-4c9a-ad1f-0a3f8f2b456f"
+      },
+      {
+       "qty": 4,
+       "name": "Spike Feeder",
+       "set": "sth",
+       "number": "118",
+       "id": "3751b2ae-a234-4691-984b-2f9f6b1cd1df"
+      },
+      {
+       "qty": 2,
+       "name": "Spike Weaver",
+       "set": "exo",
+       "number": "128",
+       "id": "9c561a2a-91c6-4d4b-9f96-bffd43a00478"
+      },
+      {
+       "qty": 4,
+       "name": "Bottle Gnomes",
+       "set": "tmp",
+       "number": "278",
+       "id": "645297d1-ee77-4879-83eb-8114fbabb9a4"
+      },
+      {
+       "qty": 4,
+       "name": "Gravedigger",
+       "set": "tmp",
+       "number": "137",
+       "id": "872f3328-c65d-49eb-a1bb-ca40e9c05627"
+      },
+      {
+       "qty": 2,
+       "name": "Volrath's Shapeshifter",
+       "set": "sth",
+       "number": "48",
+       "id": "ec89ee13-34ef-41c8-8fe4-0a6b21df2032"
+      },
+      {
+       "qty": 2,
+       "name": "Rootbreaker Wurm",
+       "set": "tmp",
+       "number": "251",
+       "id": "9a686ed6-fc13-4882-b56c-667f556d9804"
+      },
+      {
+       "qty": 2,
+       "name": "Spike Colony",
+       "set": "sth",
+       "number": "117",
+       "id": "a6ea4703-8521-4576-8405-4b923e0a9522"
+      },
+      {
+       "qty": 1,
+       "name": "Reanimate",
+       "set": "tmp",
+       "number": "151",
+       "id": "ae1ef31c-8ca5-444c-8f39-e1d1827318f5"
+      },
+      {
+       "qty": 4,
+       "name": "Dark Banishing",
+       "set": "tmp",
+       "number": "117",
+       "id": "922d6c8b-70ae-4db4-bf26-1904e4906211"
+      },
+      {
+       "qty": 10,
+       "name": "Forest",
+       "set": "tmp",
+       "number": "347",
+       "id": "36b3ffbd-3f3e-4fca-80c2-94f9fdc198a5"
+      },
+      {
+       "qty": 8,
+       "name": "Swamp",
+       "set": "tmp",
+       "number": "339",
+       "id": "5912d2aa-fe91-4cea-9c7a-6dca745f8560"
+      },
+      {
+       "qty": 6,
+       "name": "Island",
+       "set": "tmp",
+       "number": "335",
+       "id": "22578bc8-10c6-4598-82bc-70e970a8f518"
+      }
+     ]
+    }
+   },
+   "reward": {
+    "hero": {
+     "packs": 1,
+     "coins": 100
+    },
+    "villain": {
+     "card": {
+      "oracle_id": "16e9a4ee-0398-4e76-bc7e-dd2d52056aaf",
+      "name": "Volrath's Shapeshifter",
+      "rarity": "rare",
+      "set": "sth",
+      "id": "ec89ee13-34ef-41c8-8fe4-0a6b21df2032",
+      "image": "https://cards.scryfall.io/normal/front/e/c/ec89ee13-34ef-41c8-8fe4-0a6b21df2032.jpg"
+     },
+     "coins": 100
+    }
+   },
+   "scene": [
+    {
+     "who": "orim",
+     "line": "Gerrard? You went ahead..."
+    },
+    {
+     "who": "shifter",
+     "line": "I did. Come in, Orim. It's quite safe."
+    },
+    {
+     "who": "orim",
+     "line": "Gerrard never says \"quite\"."
+    },
+    {
+     "who": "shifter",
+     "line": "Think of them not as failures but as works in progress."
+    },
+    {
+     "who": "shifter",
+     "line": "My enemies' death yields threefold benefit: removal, reuse, and research."
+    },
+    {
+     "who": "orim",
+     "line": "As usual, there will be time for prayer only after the worst happens.",
+     "quote": true
+    }
+   ],
+   "villainScene": [
+    {
+     "who": "shifter",
+     "line": "I am whoever the master needs."
+    },
+    {
+     "who": "shifter",
+     "line": "Today he needs a healer. In pieces. For research."
+    }
+   ],
+   "after": [
+    {
+     "who": "gerrard",
+     "line": "Enjoy your deception, Vuel. I'll count this one as practice.",
+     "quote": true
+    },
+    {
+     "who": "stage",
+     "line": "Volrath's features melt from the dead shapeshifter."
+    }
+   ],
+   "cues": {
+    "hero": {
+     "start": "The healer weaves the threads of life.",
+     "big": "It is the art of convincing someone to live.",
+     "low": "Prayer rarely explains.",
+     "win": "Stay dead. Please.",
+     "loss": "Gerrard... it isn't you..."
+    },
+    "villain": {
+     "start": "Hello, Orim.",
+     "big": "Rise. Again. Better.",
+     "low": "My face is slipping.",
+     "win": "Research complete.",
+     "loss": "Enjoy your deception."
+    }
+   },
+   "bigPlays": [],
+   "sim": null
+  },
+  {
+   "id": "a5b8",
+   "slot": 8,
+   "kind": "Boss",
+   "mood": "boss",
+   "title": "Volrath's Stronghold",
+   "difficulty": "Hard",
+   "teaches": [
+    "Everything so far"
+   ],
+   "blurb": "The heart of the Stronghold. A globe of Dominaria with every city marked. And the brother Gerrard hasn't seen since they were boys.",
+   "rewardSet": "sth",
+   "host": true,
+   "hero": {
+    "who": "gerrard",
+    "deck": {
+     "name": "The Weatherlight Crew",
+     "colors": "RGW",
+     "archetype": null,
+     "cards": [
+      {
+       "qty": 2,
+       "name": "Mirri, Cat Warrior",
+       "set": "exo",
+       "number": "114",
+       "id": "6d1682dd-5a99-4bee-a2c2-c8735047e1a9"
+      },
+      {
+       "qty": 2,
+       "name": "Orim, Samite Healer",
+       "set": "tmp",
+       "number": "33",
+       "id": "7086d077-f083-4870-8b0b-2d34aca49df1"
+      },
+      {
+       "qty": 4,
+       "name": "Elite Javelineer",
+       "set": "tmp",
+       "number": "17",
+       "id": "ea1c730f-76da-4eae-b3fc-b428b860ea93"
+      },
+      {
+       "qty": 4,
+       "name": "Knight of Dawn",
+       "set": "tmp",
+       "number": "26",
+       "id": "bf0e5034-a134-4eb6-af8e-b2419b92b3a6"
+      },
+      {
+       "qty": 4,
+       "name": "Canyon Wildcat",
+       "set": "tmp",
+       "number": "167",
+       "id": "0169e52b-7909-4a8f-8ca2-62f030f9a85a"
+      },
+      {
+       "qty": 4,
+       "name": "Trained Armodon",
+       "set": "tmp",
+       "number": "260",
+       "id": "2380ab8f-58d2-4e1c-a115-cd2615b5a871"
+      },
+      {
+       "qty": 4,
+       "name": "Charging Rhino",
+       "set": "tmp",
+       "number": "218",
+       "id": "651f89e5-9ce2-4713-aca9-6581005f6ca2"
+      },
+      {
+       "qty": 4,
+       "name": "Shock",
+       "set": "sth",
+       "number": "98",
+       "id": "f9b2ff2a-6dfe-4635-8da2-22d525e82b94"
+      },
+      {
+       "qty": 4,
+       "name": "Kindle",
+       "set": "tmp",
+       "number": "184",
+       "id": "930745eb-b038-4b55-97f3-bf8d99b54d32"
+      },
+      {
+       "qty": 2,
+       "name": "Gerrard's Battle Cry",
+       "set": "tmp",
+       "number": "21",
+       "id": "504950d5-2df7-4518-b987-fe3a57ad1c58"
+      },
+      {
+       "qty": 2,
+       "name": "Pacifism",
+       "set": "tmp",
+       "number": "34",
+       "id": "6492bf53-ad49-4cd5-83df-0005a5b77811"
+      },
+      {
+       "qty": 8,
+       "name": "Plains",
+       "set": "tmp",
+       "number": "331",
+       "id": "62e339a9-3f9b-401e-a459-dc3affc9a114"
+      },
+      {
+       "qty": 8,
+       "name": "Mountain",
+       "set": "tmp",
+       "number": "343",
+       "id": "9d6dc341-89dc-4e99-baa2-ad0ae59f0e94"
+      },
+      {
+       "qty": 8,
+       "name": "Forest",
+       "set": "tmp",
+       "number": "347",
+       "id": "36b3ffbd-3f3e-4fca-80c2-94f9fdc198a5"
+      }
+     ]
+    }
+   },
+   "villain": {
+    "who": "volrath",
+    "deck": {
+     "name": "The Evincar's Court",
+     "colors": "UB",
+     "archetype": null,
+     "cards": [
+      {
+       "qty": 4,
+       "name": "Dauthi Slayer",
+       "set": "tmp",
+       "number": "126",
+       "id": "652ccd79-aefd-4b45-b747-75190da0cfc6"
+      },
+      {
+       "qty": 4,
+       "name": "Dauthi Horror",
+       "set": "tmp",
+       "number": "122",
+       "id": "c5a8bb3a-3a84-442f-8e31-8af2f04408ab"
+      },
+      {
+       "qty": 2,
+       "name": "Volrath's Shapeshifter",
+       "set": "sth",
+       "number": "48",
+       "id": "ec89ee13-34ef-41c8-8fe4-0a6b21df2032"
+      },
+      {
+       "qty": 4,
+       "name": "Gravedigger",
+       "set": "tmp",
+       "number": "137",
+       "id": "872f3328-c65d-49eb-a1bb-ca40e9c05627"
+      },
+      {
+       "qty": 4,
+       "name": "Dark Ritual",
+       "set": "tmp",
+       "number": "118",
+       "id": "bf4708e8-2149-4990-987c-2ea55fc6c508"
+      },
+      {
+       "qty": 4,
+       "name": "Counterspell",
+       "set": "tmp",
+       "number": "57",
+       "id": "dacdd380-71cf-4832-bd02-3697501325f3"
+      },
+      {
+       "qty": 4,
+       "name": "Dismiss",
+       "set": "tmp",
+       "number": "58",
+       "id": "1e55d6be-7682-4786-9872-e847afd710b0"
+      },
+      {
+       "qty": 1,
+       "name": "Reanimate",
+       "set": "tmp",
+       "number": "151",
+       "id": "ae1ef31c-8ca5-444c-8f39-e1d1827318f5"
+      },
+      {
+       "qty": 2,
+       "name": "Recurring Nightmare",
+       "set": "exo",
+       "number": "72",
+       "id": "c8173030-1c33-417c-b8e9-79231b6a85a7"
+      },
+      {
+       "qty": 4,
+       "name": "Dark Banishing",
+       "set": "tmp",
+       "number": "117",
+       "id": "922d6c8b-70ae-4db4-bf26-1904e4906211"
+      },
+      {
+       "qty": 3,
+       "name": "Mana Leak",
+       "set": "sth",
+       "number": "36",
+       "id": "abcaf16d-aa02-43e2-aa38-bb1835d47a05"
+      },
+      {
+       "qty": 12,
+       "name": "Swamp",
+       "set": "tmp",
+       "number": "339",
+       "id": "5912d2aa-fe91-4cea-9c7a-6dca745f8560"
+      },
+      {
+       "qty": 12,
+       "name": "Island",
+       "set": "tmp",
+       "number": "335",
+       "id": "22578bc8-10c6-4598-82bc-70e970a8f518"
+      }
+     ]
+    }
+   },
+   "reward": {
+    "hero": {
+     "packs": 2,
+     "coins": 200
+    },
+    "villain": {
+     "card": {
+      "oracle_id": "16e9a4ee-0398-4e76-bc7e-dd2d52056aaf",
+      "name": "Volrath's Shapeshifter",
+      "rarity": "rare",
+      "set": "sth",
+      "id": "ec89ee13-34ef-41c8-8fe4-0a6b21df2032",
+      "image": "https://cards.scryfall.io/normal/front/e/c/ec89ee13-34ef-41c8-8fe4-0a6b21df2032.jpg"
+     },
+     "coins": 200
+    }
+   },
+   "scene": [
+    {
+     "who": "gerrard",
+     "line": "You'd almost think Volrath doesn't want me here.",
+     "quote": true
+    },
+    {
+     "who": "gerrard",
+     "line": "This is Dominaria!",
+     "quote": true
+    },
+    {
+     "who": "volrath",
+     "line": "Hello, brother."
+    },
+    {
+     "who": "gerrard",
+     "line": "Vuel."
+    },
+    {
+     "who": "volrath",
+     "line": "Father gave you his sword, his name, the Legacy. He gave me a room down the hall."
+    },
+    {
+     "who": "volrath",
+     "line": "Phyrexia gave me a world. Guess which one I'm keeping."
+    },
+    {
+     "who": "gerrard",
+     "line": "Where's Sisay?"
+    },
+    {
+     "who": "volrath",
+     "line": "The fatal flaw in every plan is the assumption that you know more than your enemy.",
+     "quote": true
+    },
+    {
+     "who": "gerrard",
+     "line": "You've got your childhood wish at last. Now you get to die.",
+     "quote": true
+    }
+   ],
+   "villainScene": [
+    {
+     "who": "volrath",
+     "line": "Rath grows, and I am nourished.",
+     "quote": true
+    },
+    {
+     "who": "volrath",
+     "line": "They'll say I did it for Phyrexia. I did it so he'd finally look at me."
+    },
+    {
+     "who": "volrath",
+     "line": "If there is such a thing as too much power, I have not discovered it.",
+     "quote": true
+    }
+   ],
+   "after": null,
+   "cues": {
+    "hero": {
+     "start": "This won't be a fair fight.",
+     "big": "We called them 'armored lightning.'",
+     "low": "Destiny, chance, fate, fortune. They're all just ways of claiming your successes.",
+     "win": "It's over, Vuel. Where is she?",
+     "loss": "Mirri... get them out..."
+    },
+    "villain": {
+     "start": "Begin, brother.",
+     "big": "You will learn to earn death.",
+     "low": "My plan's elegance leads my enemies to believe it is spite that fuels me.",
+     "win": "Predictable little man.",
+     "loss": "This isn't over. It was never about this room."
+    }
+   },
+   "bigPlays": [],
+   "sim": null
+  }
+ ]
+}

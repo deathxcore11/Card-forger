@@ -14,9 +14,13 @@ export const STORY_ACTS = [
   {act: 4, age: 'The Weatherlight Saga', title: 'The Jamuraan War', years: '1996 to 1997',
     sets: ['mir', 'vis', '5ed'], landSet: 'mir', packSets: ['mir', 'vis'],
     art: {set: 'mir', number: '185', name: "Kaervek's Torch", crop: 'https://cards.scryfall.io/art_crop/front/0/a/0a1624ab-e50e-48a3-acf7-457069914616.jpg'}},
+  {act: 5, age: 'The Weatherlight Saga', title: 'The Rath Cycle', years: '1997 to 1998',
+    sets: ['wth', 'tmp', 'sth', 'exo'], landSet: 'tmp', packSets: ['tmp', 'sth', 'exo'],
+    art: {set: 'sth', number: '143', name: "Volrath's Stronghold", crop: 'https://cards.scryfall.io/art_crop/front/4/3/43bf015b-152e-4d67-b773-e75fb2487a32.jpg'}},
 ];
 export const SET_NAMES = {lea: 'Limited Edition Alpha', leb: 'Limited Edition Beta', '2ed': 'Unlimited Edition', arn: 'Arabian Nights', atq: 'Antiquities',
   '3ed': 'Revised Edition', leg: 'Legends', drk: 'The Dark', fem: 'Fallen Empires', ice: 'Ice Age', hml: 'Homelands', all: 'Alliances', '4ed': 'Fourth Edition',
-  mir: 'Mirage', vis: 'Visions', '5ed': 'Fifth Edition'};
+  mir: 'Mirage', vis: 'Visions', '5ed': 'Fifth Edition',
+  wth: 'Weatherlight', tmp: 'Tempest', sth: 'Stronghold', exo: 'Exodus'};
 export const storyAct = n => STORY_ACTS.find(a => a.act === Number(n)) || null;
 export const setSymbolUrl = code => `https://svgs.scryfall.io/sets/${encodeURIComponent(code)}.svg`;
