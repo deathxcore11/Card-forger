@@ -1,4 +1,5 @@
 import { ptcgProduct } from "./ptcg-product.js";
+import { pokemonSupplementProduct } from "./pokemon-catalogue-supplement.js";
 // Last-resort Pokémon card art: the TCGplayer product image for the exact card, for printings
 // TCGdex has no scan of (promos, McDonald's sets, Shiny Vault, gallery subsets…). The card's own
 // TCGplayer product id comes from TCGdex; without one, the product is matched in the set's
@@ -54,13 +55,16 @@ export function pickProduct(products, card) {
 
 export async function pokemonProductId(id, get) {
   const card = await get("https://api.tcgdex.net/v2/en/cards/" + encodeURIComponent(id));
-  if (card?.id !== id) return null;
+  const known = pokemonSupplementProduct(id)?.productId;
+  if (card?.id !== id) return known || null;
   // Use the same conservative reference product as price history: older sets
   // often have this exact ID only under pricing.tcgplayer.<finish>.productId.
   const direct = ptcgProduct(card)?.productId;
   if (Number.isSafeInteger(direct) && direct > 0) return direct;
   // Conflicting variants must not be bypassed by a looser set/name match.
   if ((card.variants_detailed || []).some(v => v.thirdParty?.tcgplayer)) return null;
+  // Upstream-verified product the deployed API has not caught up with yet.
+  if (known) return known;
   // TCGdex also publishes a card-level identity even when pricing is absent.
   const cardProduct = Number(card.thirdParty?.tcgplayer);
   if (Number.isSafeInteger(cardProduct) && cardProduct > 0) return cardProduct;
