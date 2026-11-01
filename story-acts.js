@@ -29,6 +29,9 @@ export const STORY_ACTS = [
   {act: 9, age: 'The Otaria Years', title: 'The Mirari', years: '2001 to 2002',
     sets: ['ody', 'tor', 'jud'], landSet: 'ody', packSets: ['ody', 'tor', 'jud'],
     art: {set: 'ody', number: '303', name: 'Mirari', crop: 'https://cards.scryfall.io/art_crop/front/3/c/3cbaad4f-fb66-4e56-b383-32f55552c8b2.jpg'}},
+  {act: 10, age: 'The Otaria Years', title: 'The False God', years: '2002 to 2003',
+    sets: ['ons', 'lgn', 'scg', '8ed'], landSet: 'ons', packSets: ['ons', 'lgn', 'scg'],
+    art: {set: 'scg', number: '138', name: 'Karona, False God', crop: 'https://cards.scryfall.io/art_crop/front/d/e/de53d083-251e-42a4-9e2e-c2978c80615b.jpg'}},
 ];
 export const SET_NAMES = {lea: 'Limited Edition Alpha', leb: 'Limited Edition Beta', '2ed': 'Unlimited Edition', arn: 'Arabian Nights', atq: 'Antiquities',
   '3ed': 'Revised Edition', leg: 'Legends', drk: 'The Dark', fem: 'Fallen Empires', ice: 'Ice Age', hml: 'Homelands', all: 'Alliances', '4ed': 'Fourth Edition',
@@ -37,6 +40,7 @@ export const SET_NAMES = {lea: 'Limited Edition Alpha', leb: 'Limited Edition Be
   usg: "Urza's Saga", ulg: "Urza's Legacy", uds: "Urza's Destiny", '6ed': 'Classic Sixth Edition',
   mmq: 'Mercadian Masques', nem: 'Nemesis', pcy: 'Prophecy',
   inv: 'Invasion', pls: 'Planeshift', '7ed': 'Seventh Edition', apc: 'Apocalypse',
-  ody: 'Odyssey', tor: 'Torment', jud: 'Judgment'};
+  ody: 'Odyssey', tor: 'Torment', jud: 'Judgment',
+  ons: 'Onslaught', lgn: 'Legions', scg: 'Scourge', '8ed': 'Eighth Edition'};
 export const storyAct = n => STORY_ACTS.find(a => a.act === Number(n)) || null;
 export const setSymbolUrl = code => `https://svgs.scryfall.io/sets/${encodeURIComponent(code)}.svg`;

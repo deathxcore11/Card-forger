@@ -40,13 +40,17 @@ export const STORY_DEEDS = Object.freeze([
   deed('a9-thirteen', 9, 'a9b1', 'Thirteen', 'Win the pit fight by turn 8. The house never saw it coming.', 'Kamahl, Pit Fighter', s => s.turns <= 8),
   deed('a9-squirrels', 9, 'a9b3', 'Keep an Eye Out', 'Have six creatures on the field at once in Krosa. The squirrels are watching.', 'Squirrel Nest', s => s.maxCreatures >= 6),
   deed('a9-penance', 9, 'a9b8', 'Penance', 'Beat the Patriarch with 10 life or more. Pain teaches lessons, but not this time.', 'Mirari', s => s.endLife >= 10),
+  // Act 10: The False God
+  deed('a10-faces', 10, 'a10b1', 'Every Face a Secret', 'Win the Coliseum bout with Ixidor on the field.', 'Ixidor, Reality Sculptor', s => sawMine(s, 'Ixidor, Reality Sculptor')),
+  deed('a10-untouched', 10, 'a10b4', 'Untouched', 'Beat Phage before she ever reaches the table. Kamahl never has to choose.', 'Phage the Untouchable', s => !sawTheirs(s, 'Phage the Untouchable')),
+  deed('a10-no-god', 10, 'a10b8', 'Nobody\'s God', 'Beat Karona with 15 life or more.', 'Karona, False God', s => s.endLife >= 15),
 ]);
 // Two act-wide deeds per act, from Story progress.
-export const STORY_ACT_DEEDS = Object.freeze([1, 2, 3, 4, 5, 6, 7, 8, 9].flatMap(act => [
+export const STORY_ACT_DEEDS = Object.freeze([1, 2, 3, 4, 5, 6, 7, 8, 9, 10].flatMap(act => [
   {id: `a${act}-chronicler`, act, kind: 'loaner', title: `Chronicler of Act ${act}`, lore: `Win all 8 battles of Act ${act} with the Story decks.`},
   {id: `a${act}-two-faced`, act, kind: 'both', title: `Both Sides of Act ${act}`, lore: `Win all 8 battles of Act ${act} from both seats. Understand the villains too.`},
 ]));
-const ACT_ART = {1: "Mishra's War Machine", 2: 'Nicol Bolas', 3: "Lim-Dûl's High Guard", 4: "Kaervek's Torch", 5: "Volrath's Stronghold", 6: 'Phyrexian Negator', 7: 'Ascendant Evincar', 8: "Yawgmoth's Agenda", 9: 'Mirari'};
+const ACT_ART = {1: "Mishra's War Machine", 2: 'Nicol Bolas', 3: "Lim-Dûl's High Guard", 4: "Kaervek's Torch", 5: "Volrath's Stronghold", 6: 'Phyrexian Negator', 7: 'Ascendant Evincar', 8: "Yawgmoth's Agenda", 9: 'Mirari', 10: 'Karona, False God'};
 export const STORY_DEED_IDS = new Set([...STORY_DEEDS, ...STORY_ACT_DEEDS].map(d => d.id));
 export const storyDeedArt = d => d.art || ACT_ART[d.act];
 

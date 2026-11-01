@@ -117,6 +117,9 @@ export const LESSONS = {
   'Threshold': 'Threshold: with seven or more cards in your graveyard, threshold cards get stronger. Long games feed them.',
   'Flashback': 'Flashback lets you cast a spell again from your graveyard for its flashback cost. One card, two uses.',
   'Madness': 'Madness: if you discard a madness card, you may cast it for its madness cost. Discarding turns into a free spell.',
+  'Morph': 'Morph: cast a creature face down as a 2/2 for three mana, then pay its morph cost any time to turn it face up. Watch for face-down cards.',
+  'Tribes': 'Tribal cards care about creature types. Elves pump elves, goblins pump goblins. Play the tribe together.',
+  'Alternate wins': 'Some cards win the game a different way. If Phage deals combat damage to a player, that player loses. Block her or kill her.',
   'Playing under a lock': 'A lock stops cards from untapping or moving. Break it, or win with what\'s already in play.',
 };
 // What a battle pays, in words: era packs for your side, the villain's signature card for theirs.
