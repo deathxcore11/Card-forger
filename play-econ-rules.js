@@ -17,10 +17,17 @@ export function starterGrant(config = {}, setCode, cards = [], rows = []) {
   for (const row of rows) {
     const c = byName.get(row.name);
     if (!c?.oracle_id || isBasicLand(row.name)) continue;
-    for (let i = 0; i < Math.min(4, row.qty || 1); i++) out.push({oracle_id: c.oracle_id, name: c.name, rarity: rarityOf(c.rarity)});
+    for (let i = 0; i < Math.min(4, row.qty || 1); i++) out.push(cardDelta(c));
   }
   return {starter: true, coins: s.coins || 0, seals: s.seals || {},
     packs: Array.from({length: s.packs || 0}, () => ({set: setCode, source: 'starter'})), cards: out};
+}
+
+// One card for play.apply: identity plus the printing it came as (its set feeds set progress).
+export function cardDelta(c = {}) {
+  const img = c.image_uris || c.card_faces?.[0]?.image_uris || {};
+  return {oracle_id: c.oracle_id || c.card_faces?.[0]?.oracle_id || '', name: c.name || '', rarity: rarityOf(c.rarity),
+    set: c.set || '', id: c.id || '', image: c.image || img.normal || ''};
 }
 
 // Seals earned for the Nth pack opened (Arena's wildcard track): every 3rd an uncommon, and so on.
@@ -58,4 +65,36 @@ export function deckShortfall(deck = [], owned = new Map(), rarity = new Map(), 
     seals[seal] += need;
   }
   return {missing, seals, complete: missing.length === 0};
+}
+
+// Copies owned by card name. Two-faced cards answer to their full name and their front face,
+// since deck lists often name only the front ("Graveyard Trespasser").
+export function ownedByName(cards = []) {
+  const out = new Map();
+  for (const c of cards) { out.set(c.n, c.c); const front = String(c.n || '').split(' // ')[0]; if (front !== c.n && !out.has(front)) out.set(front, c.c); }
+  return out;
+}
+
+// Deck building rules for Play decks: size and copies by format. Basic lands are free and unlimited.
+export const PLAY_FORMATS = ['Standard', 'Pioneer', 'Modern', 'Legacy', 'Vintage', 'Pauper', 'Commander'];
+export function deckRules(format = '') {
+  return format === 'Commander' ? {size: 100, copies: 1, exact: true} : {size: 60, copies: 4, exact: false};
+}
+// How many more copies of a card this deck may take, from the Play collection and the format.
+export function copiesLeft(name, deck = [], owned = new Map(), format = '') {
+  if (isBasicLand(name)) return Infinity;
+  const inDeck = deck.filter(c => c.name === name).reduce((t, c) => t + (c.qty | 0), 0);
+  return Math.max(0, Math.min(owned.get(name) || 0, deckRules(format).copies) - inDeck);
+}
+// Adds (+1) or removes (-1) one copy, never past what the collection and format allow.
+export function stepDeckCard(deck = [], name, step, owned = new Map(), format = '') {
+  const rows = deck.map(c => ({...c})), row = rows.find(c => c.name === name);
+  if (step > 0) {
+    if (copiesLeft(name, rows, owned, format) < 1) return rows;
+    if (row) row.qty += 1; else rows.push({name, qty: 1});
+    return rows;
+  }
+  if (!row) return rows;
+  row.qty -= 1;
+  return rows.filter(c => c.qty > 0);
 }

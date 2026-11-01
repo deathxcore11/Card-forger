@@ -843,3 +843,53 @@ button.pe-purse-item:focus-visible{outline:2px solid var(--gold);outline-offset:
 .pl-invite{display:inline-flex;align-items:center;gap:8px;min-height:44px;padding:0 16px;border-radius:999px;border:1px solid color-mix(in srgb,var(--gold) 40%,var(--line));background:color-mix(in srgb,#0d0f14 70%,transparent);color:#f6e4bb;font:700 14px/1 'DM Sans',system-ui,sans-serif;cursor:pointer;white-space:nowrap}
 .pl-invite:hover,.pl-invite:focus-visible{border-color:var(--gold);background:color-mix(in srgb,var(--gold) 14%,transparent)}
 .pl-invite svg{width:18px;height:18px;fill:none;stroke:currentColor;stroke-width:1.8;stroke-linecap:round}
+/* Play Collection filters and the Play deck builder (same glass, gold and card shapes as the app). */
+.pe-filters{align-items:center}
+.pe-color-tabs{display:flex;gap:6px}
+.pe-mana{width:44px;height:44px;display:grid;place-items:center;border-radius:50%;border:1px solid var(--line);background:transparent;cursor:pointer;padding:0}
+.pe-mana i{width:26px;height:26px;display:grid;place-items:center;border-radius:50%;font:800 12px/1 'DM Sans',system-ui,sans-serif;font-style:normal;color:#15171c;box-shadow:inset 0 -2px 0 #0003}
+.pe-mana--W i{background:#f4ecd2}.pe-mana--U i{background:#a9d3ee}.pe-mana--B i{background:#b9b0ab}.pe-mana--R i{background:#f0a487}.pe-mana--G i{background:#9fd0a4}.pe-mana--C i{background:#cbc6c1}
+.pe-mana[aria-pressed="true"]{border-color:var(--gold);box-shadow:0 0 0 2px color-mix(in srgb,var(--gold) 40%,transparent)}
+.pe-type{min-height:44px;padding:0 12px;border-radius:12px;border:1px solid var(--line);background:color-mix(in srgb,#0d0f14 70%,transparent);color:var(--text);font:inherit;font-size:14px}
+.pe-set-chip{min-height:44px;cursor:pointer}
+.pe-collection .seg{margin:0}
+.pe-set-grid{margin-top:4px}
+.pe-deck-open{position:absolute;inset:0;z-index:0;border:0;background:transparent;cursor:pointer;border-radius:inherit}
+.pe-deck-open:focus-visible{outline:2px solid var(--gold);outline-offset:-3px}
+.pe-deck-delete{z-index:1}
+.pe-deck--new{cursor:pointer;font:inherit;text-align:left;border-style:dashed}
+.pe-deck--new:focus-visible{outline:2px solid var(--gold);outline-offset:4px}
+.pe-builder{display:grid;grid-template-columns:minmax(300px,380px) minmax(0,1fr);gap:22px;align-items:start}
+.pe-build-deck{position:sticky;top:12px;display:grid;gap:10px;padding:16px;border:1px solid var(--line);border-radius:18px;background:color-mix(in srgb,var(--surface) 82%,transparent);max-height:calc(100dvh - 24px);overflow:auto}
+.pe-build-meta{display:grid;grid-template-columns:1fr auto;gap:8px}
+.pe-build-meta :is(input,select){min-height:44px;padding:0 12px;border-radius:12px;border:1px solid var(--line);background:color-mix(in srgb,#0d0f14 70%,transparent);color:var(--text);font:inherit;font-size:15px;min-width:0}
+.pe-build-group{margin:8px 0 0;font:700 13px/1.2 Cinzel,Georgia,serif;letter-spacing:.04em;color:#e9d6a7;display:flex;justify-content:space-between}
+.pe-build-group span{color:var(--muted);font-family:'DM Sans',system-ui,sans-serif}
+.pe-build-list{list-style:none;margin:0;padding:0;display:grid;gap:4px}
+.pe-build-row{display:grid;grid-template-columns:44px minmax(0,1fr) auto auto;align-items:center;gap:8px;min-height:44px;padding:2px 4px 2px 2px;border-radius:10px;background:#ffffff08}
+.pe-build-thumb{width:44px;height:32px;border-radius:7px;background-size:cover;background-position:50% 30%}
+.pe-build-name{font-size:14px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.pe-build-cost{font-size:12px;color:var(--muted);letter-spacing:.06em}
+.pe-step{display:inline-flex;align-items:center;gap:2px}
+.pe-step b{min-width:22px;text-align:center;font-size:14px}
+.pe-step button{width:44px;height:44px;border-radius:10px;border:0;background:transparent;color:var(--text);font:700 18px/1 system-ui,sans-serif;cursor:pointer}
+.pe-step button:hover:not(:disabled),.pe-step button:focus-visible{background:#ffffff14}
+.pe-step button:disabled{opacity:.35;cursor:default}
+.pe-build-empty{margin:8px 0;color:var(--muted);font-size:14px}
+.pe-basics{display:grid;grid-template-columns:repeat(5,minmax(0,1fr));gap:6px;margin-top:6px}
+.pe-basic{position:relative;isolation:isolate;overflow:hidden;min-height:56px;display:flex;align-items:flex-end;padding:6px;border-radius:10px;border:1px solid var(--line);background:#121318;color:#f6eedb;cursor:pointer;font:inherit}
+.pe-basic span{position:absolute;inset:0;z-index:-1;background-size:cover;background-position:50% 35%;opacity:.75}
+.pe-basic b{font-size:11px;text-shadow:0 1px 6px #000}
+.pe-basic:focus-visible,.pe-card--pick:focus-visible{outline:2px solid var(--gold);outline-offset:3px}
+.pe-build-pool{display:grid;gap:12px;min-width:0}
+.pe-card--pick{position:relative;padding:0;border:0;background:transparent;cursor:pointer;transition:transform .15s ease}
+.pe-card--pick:hover:not(:disabled){transform:translateY(-3px)}
+.pe-card--pick:disabled{cursor:default}
+.pe-card--pick:disabled img{filter:grayscale(.85) brightness(.55)}
+.pe-left{position:absolute;right:8px;bottom:8px;min-width:26px;height:26px;padding:0 7px;display:grid;place-items:center;border-radius:999px;background:#0c0e13d9;border:1px solid #d6ad6488;color:#f6e4bb;font:700 13px/1 'DM Sans',system-ui,sans-serif}
+@media(max-width:900px){.pe-builder{grid-template-columns:1fr}.pe-build-deck{position:static;max-height:none}}
+@media(max-width:700px){.pe-basics{grid-template-columns:repeat(5,minmax(0,1fr))}.pe-basic b{font-size:10px}.pe-grid--pool{grid-template-columns:repeat(auto-fill,minmax(96px,1fr))}}
+.pe-screen .set-code-mark{font-size:11px}
+.pe-purse-item{min-width:44px;justify-content:center}
+.pe-build-name{white-space:normal;overflow:visible;text-overflow:clip;line-height:1.2}
+.pe-screen .set-tile-progress-label{font-size:11px}

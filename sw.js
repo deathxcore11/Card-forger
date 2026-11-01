@@ -18,6 +18,7 @@ const ASSETS = [
   "./play-match-record.js",
   "./play-econ-client.js",
   "./play-econ-ui.js",
+  "./play-econ-cards.js",
   "./play-econ-rules.js",
   "./play-econ-sets.js",
   "./play-daily-goals.js",

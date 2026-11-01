@@ -145,4 +145,37 @@ for (const f of ['storage.js', 'cloud.js', 'store.js', 'binders.js', 'sync-merge
   await noToken.refresh();
   assert.equal(noToken.snapshot().errorCode, 'sign_in');
 }
+// --- Collection filters, set progress and the deck builder.
+{
+  const {stepDeckCard, copiesLeft, deckRules} = await import('./play-econ-rules.js');
+  const {filterPlayCards, playSetRows, deckBuilderMarkup, collectionMarkup} = await import('./play-econ-ui.js');
+  const {cardGroup, cardFact} = await import('./play-econ-cards.js');
+  const owned = new Map([['Shock', 2], ['Llanowar Elves', 4]]);
+  let deck = stepDeckCard([], 'Shock', 1, owned, 'Standard');
+  deck = stepDeckCard(deck, 'Shock', 1, owned, 'Standard');
+  deck = stepDeckCard(deck, 'Shock', 1, owned, 'Standard');
+  assert.deepEqual(deck, [{name: 'Shock', qty: 2}], 'never more copies than owned');
+  assert.equal(copiesLeft('Llanowar Elves', [], owned, 'Commander'), 1, 'Commander is singleton');
+  assert.equal(copiesLeft('Mountain', [{name: 'Mountain', qty: 30}], owned, 'Standard'), Infinity, 'basics are free');
+  assert.equal(copiesLeft('Black Lotus', [], owned, 'Vintage'), 0, 'unowned cards cannot go in');
+  assert.deepEqual(stepDeckCard([{name: 'Shock', qty: 1}], 'Shock', -1, owned), []);
+  assert.equal(deckRules('Commander').size, 100);
+  const fact = cardFact({oracle_id: 'o1', type_line: 'Legendary Creature — Elf', cmc: 1, color_identity: ['G'], image_uris: {normal: 'n', art_crop: 'a'}});
+  assert.equal(cardGroup(fact), 'Creatures');
+  assert.equal(cardGroup({t: 'Land — Forest'}), 'Lands');
+  const facts = {card: o => ({o1: fact, o2: {o: 'o2', t: 'Instant', m: 1, k: 'R', i: '', a: ''}})[o] || null, set: c => c === 'fra' ? {name: 'Reality Fracture', icon: '', released: '2026-10-01', total: 270} : null};
+  const cards = [{o: 'o1', n: 'Llanowar Elves', r: 'common', c: 4, s: ['fra']}, {o: 'o2', n: 'Shock', r: 'common', c: 2, s: ['fra', 'dom']}];
+  assert.deepEqual(filterPlayCards(cards, facts, {color: 'R'}).map(c => c.n), ['Shock']);
+  assert.deepEqual(filterPlayCards(cards, facts, {type: 'Creatures'}).map(c => c.n), ['Llanowar Elves']);
+  assert.deepEqual(filterPlayCards(cards, facts, {set: 'dom'}).map(c => c.n), ['Shock']);
+  const sets = playSetRows({cards, rewardSet: {code: 'fra', name: 'Reality Fracture'}}, facts);
+  assert.deepEqual(sets.map(x => [x.code, x.owned, x.total]), [['fra', 2, 270], ['dom', 1, null]]);
+  const snap = {state: {config, wallet: {coins: 1, starter_at: 'x'}, packs: [], cards, decks: []}};
+  const builder = deckBuilderMarkup(snap, {facts, edit: {name: 'Elves', format: 'Standard', cards: [{name: 'Llanowar Elves', qty: 4}, {name: 'Forest', qty: 20}]}});
+  assert.ok(builder.includes('24/60') && builder.includes('data-act="playEconSaveEdit"'));
+  assert.ok(/aria-label="Add Llanowar Elves, 0 left"[^>]*disabled|disabled[^>]*aria-label="Add Llanowar Elves, 0 left"/.test(builder), 'a card at its limit cannot be added');
+  const coll = collectionMarkup(snap, {tab: 'sets', facts});
+  assert.ok(coll.includes('set-progress-track') && coll.includes('Reality Fracture'));
+  for (const html of [builder, coll, collectionMarkup(snap, {facts})]) assert.ok(!/\$\s?\d|usd|price/i.test(html), 'no prices in Play');
+}
 console.log('play economy ok');

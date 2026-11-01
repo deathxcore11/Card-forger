@@ -6,7 +6,7 @@
 import {SUPABASE} from './config.js';
 import {loadMtgBooster, mtgBoosterCards, drawMtgBooster} from './mtg-boosters.js';
 import {rewardSet} from './play-econ-sets.js';
-import {starterGrant, sealTrackBonus, packContentsRow, RARITY_SEAL} from './play-econ-rules.js';
+import {starterGrant, sealTrackBonus, packContentsRow, cardDelta, RARITY_SEAL} from './play-econ-rules.js';
 import {PRACTICE_STARTER_ROWS} from './play-starter-deck.js';
 
 const json = (body, status = 200) => new Response(JSON.stringify(body), {status, headers: {'Content-Type': 'application/json', 'Cache-Control': 'no-store'}});
@@ -100,7 +100,7 @@ export async function progressRoute(request, env, {verifyBearer, fetcher = fetch
       const picks = drawMtgBooster(data, known, cryptoRandom);
       const contents = picks.map(packContentsRow);
       const bonus = sealTrackBonus(s.config, (s.wallet?.packs_opened || 0) + 1);
-      const result = await apply('open:' + pack.id, 'open', {open: {id: pack.id, contents}, cards: contents.filter(c => c.oracle_id).map(({oracle_id, name, rarity}) => ({oracle_id, name, rarity})), seals: bonus});
+      const result = await apply('open:' + pack.id, 'open', {open: {id: pack.id, contents}, cards: contents.filter(c => c.oracle_id).map(cardDelta), seals: bonus});
       return json({pack: {...pack, contents}, sealBonus: bonus, duplicateCoins: result.duplicate_coins || 0, converted: result.converted || [], state: await state()});
     }
     if (path === 'craft') {
@@ -112,7 +112,7 @@ export async function progressRoute(request, env, {verifyBearer, fetcher = fetch
       const s = await state(), owned = (s.cards || []).find(c => c.o === card.oracle_id)?.c || 0;
       if (owned >= (s.config?.maxCopies || 4)) return fail('have_max', 409);
       if ((s.wallet?.['seal_' + seal] || 0) < 1) return fail('no_seal', 409);
-      await apply('craft:' + crypto.randomUUID(), 'craft', {seals: {[seal]: -1}, cards: [{oracle_id: card.oracle_id, name: card.name, rarity: card.rarity}]});
+      await apply('craft:' + crypto.randomUUID(), 'craft', {seals: {[seal]: -1}, cards: [cardDelta(card)]});
       return json({card: {id: card.id, oracle_id: card.oracle_id, name: card.name, rarity: card.rarity}, state: await state()});
     }
     if (path === 'buy') {
