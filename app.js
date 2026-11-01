@@ -1654,6 +1654,7 @@ const econFocus=()=>requestAnimationFrame(()=>document.getElementById('playTitle
 A.playEconView=t=>{const v=t.dataset.econView;if(!ECON_VIEWS.has(v))return;playView=v;playInspectOpen=false;refreshPlayMenu();scrollTo({top:0});if(v==='shop'&&t.dataset.econFocus==='press')requestAnimationFrame(()=>document.querySelector('.pe-press-find input')?.focus());else econFocus();};
 A.playEconBuy=async t=>{try{await playEcon.buy(t.dataset.econSet);toast('Pack bought. It is waiting in Packs.');}catch{}};
 A.playEconCraft=async t=>{try{const out=await playEcon.craft(t.dataset.econCard);toast(out.card.name+' added to your Play collection.');}catch{}};
+A.playEconRetry=()=>{playEcon.refresh();};
 A.playEconRarity=t=>{econUi.rarity=t.dataset.econRarity||'';refreshPlayMenu();};
 I.playEconSetSearch=t=>{econUi.query=t.value;refreshPlayMenu();const f=document.querySelector('[data-input="playEconSetSearch"]');f?.focus({preventScroll:true});try{f.setSelectionRange(t.value.length,t.value.length);}catch{}};
 I.playEconCardSearch=t=>{econUi.cardQuery=t.value;refreshPlayMenu();const f=document.querySelector('[data-input="playEconCardSearch"]');f?.focus({preventScroll:true});try{f.setSelectionRange(t.value.length,t.value.length);}catch{}};

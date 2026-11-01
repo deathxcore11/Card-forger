@@ -6,7 +6,7 @@ import {privateKey} from './account-scope.js';
 const CACHE = 'cardstashy-play-econ-state-v1';
 
 export function createPlayEcon({getAccessToken, fetchImpl = globalThis.fetch?.bind(globalThis), storage = globalThis.localStorage, onChange = () => {}} = {}) {
-  let state = null, loading = null, error = '', busy = '';
+  let state = null, loading = null, error = '', errorCode = '', busy = '';
   try { state = JSON.parse(storage?.getItem(privateKey(CACHE)) || 'null'); } catch { state = null; }
   const set = next => { state = next; try { storage?.setItem(privateKey(CACHE), JSON.stringify(next)); } catch {} onChange(); };
   async function call(path, body) {
@@ -15,15 +15,18 @@ export function createPlayEcon({getAccessToken, fetchImpl = globalThis.fetch?.bi
     const r = await fetchImpl('/api/progress/' + path, {method: body === undefined ? 'GET' : 'POST', body: body === undefined ? undefined : JSON.stringify(body),
       headers: {Accept: 'application/json', Authorization: 'Bearer ' + token, ...(body === undefined ? {} : {'Content-Type': 'application/json'})}, credentials: 'omit', cache: 'no-store'});
     const out = await r.json().catch(() => ({}));
-    if (!r.ok) throw Object.assign(Error(MESSAGES[out.error] || 'Play rewards are unavailable right now. Try again in a moment.'), {code: out.error || 'failed'});
+    if (!r.ok) throw Object.assign(Error(MESSAGES[out.error] || 'Play rewards are unavailable right now. Try again in a moment.'), {code: out.error || 'http_' + r.status});
     return out;
   }
-  const run = async (label, job) => { busy = label; error = ''; onChange(); try { return await job(); } catch (e) { error = e.message; throw e; } finally { busy = ''; onChange(); } };
+  const run = async (label, job) => { busy = label; error = ''; errorCode = ''; onChange(); try { return await job(); } catch (e) { error = e.message; errorCode = e.code || 'failed'; throw e; } finally { busy = ''; onChange(); } };
   const api = {
-    snapshot: () => ({state, error, busy, loading: !!loading}),
+    snapshot: () => ({state, error, errorCode, busy, loading: !!loading}),
     refresh() {
-      loading ||= call('state').then(async s => { if (!s.wallet?.starter_at && s.rewardSet) s = await call('starter', {}); set(s); return s; })
-        .catch(e => { error = e.code === 'sign_in' ? '' : e.message; onChange(); return state; }).finally(() => { loading = null; onChange(); });
+      // A first visit always asks for the starter gift, so a missing reward set comes back as a
+      // visible error (no_reward_set) instead of an empty wallet. The home shows every error;
+      // sign_in is only shown there when the app thinks a session exists.
+      loading ||= (error = '', errorCode = '', call('state')).then(async s => { if (!s.wallet?.starter_at) s = {...await call('starter', {}), shop: s.shop}; set(s); return s; })
+        .catch(e => { error = e.message; errorCode = e.code || 'failed'; onChange(); return state; }).finally(() => { loading = null; onChange(); });
       return loading;
     },
     // Opens one banked pack on the server; returns {pack, sealBonus, duplicateCoins}.
@@ -46,6 +49,7 @@ const MESSAGES = {
   pack_not_found: 'That pack was already opened.',
   no_booster: 'Packs for that set are not available.',
   bad_card: 'That card cannot be stamped with a seal.',
+  no_reward_set: 'The reward packs are not ready yet. Try again in a moment.',
 };
 
 // The top bar's numbers, from a state (or null while signed out).

@@ -120,4 +120,29 @@ for (const f of ['storage.js', 'cloud.js', 'store.js', 'binders.js', 'sync-merge
   assert.ok(econScreenMarkup('shop', snap, {}).includes('data-act="playEconBuy"'));
   assert.ok(/Sign in/.test(econScreenMarkup('packs', {state: null, loading: false}, {})));
 }
+// --- A failed wallet load is never invisible: the home shows why, with the server's code and a retry.
+{
+  const {econNoticeMarkup} = await import('./play-econ-ui.js');
+  const {createPlayEcon} = await import('./play-econ-client.js');
+  assert.equal(econNoticeMarkup({state: null, error: 'x', errorCode: 'not_configured'}, {signedIn: false}), '');
+  const failed = econNoticeMarkup({state: null, error: 'Play rewards are not switched on yet.', errorCode: 'not_configured'}, {signedIn: true});
+  assert.ok(failed.includes('not_configured') && failed.includes('data-act="playEconRetry"') && failed.includes('role="alert"'));
+  assert.ok(econNoticeMarkup({state: null, error: 'x', errorCode: 'sign_in'}, {signedIn: true}).includes('Sign out and back in'));
+  assert.ok(econNoticeMarkup({state: null, loading: true}, {signedIn: true}).includes('role="status"'));
+  assert.equal(econNoticeMarkup({state: {wallet: {coins: 1}}, error: 'x'}, {signedIn: true}), '');
+  const store = new Map(), storage = {getItem: k => store.get(k) ?? null, setItem: (k, v) => store.set(k, v), removeItem: k => store.delete(k)};
+  const calls = [];
+  // No reward set from /state: the client still asks for the starter, so no_reward_set surfaces.
+  const econ = createPlayEcon({getAccessToken: async () => 'tok', storage, fetchImpl: async (url) => {
+    calls.push(url);
+    if (url.endsWith('/state')) return new Response(JSON.stringify({wallet: null, packs: [], rewardSet: null, shop: []}), {status: 200});
+    return new Response(JSON.stringify({error: 'no_reward_set'}), {status: 503});
+  }});
+  await econ.refresh();
+  assert.deepEqual(calls, ['/api/progress/state', '/api/progress/starter']);
+  assert.equal(econ.snapshot().errorCode, 'no_reward_set');
+  const noToken = createPlayEcon({getAccessToken: async () => '', storage, fetchImpl: async () => { throw Error('no fetch'); }});
+  await noToken.refresh();
+  assert.equal(noToken.snapshot().errorCode, 'sign_in');
+}
 console.log('play economy ok');

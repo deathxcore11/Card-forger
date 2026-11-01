@@ -754,6 +754,10 @@ button.pe-purse-item:focus-visible{outline:2px solid var(--gold);outline-offset:
 .pe-head{flex-wrap:wrap}
 .pe-status{min-height:1.4em;margin:0;color:#f3b2a2;font-size:13px}
 .pe-status:empty{display:none}
+.pe-notice{margin:0;padding:14px 18px;border:1px solid var(--line);border-radius:18px;background:color-mix(in srgb,var(--surface) 78%,transparent);color:var(--muted);font-size:14px}
+.pe-notice--error{display:flex;flex-wrap:wrap;align-items:center;gap:8px 14px;border-color:color-mix(in srgb,var(--gold) 30%,var(--line));color:var(--text)}
+.pe-notice--error p{margin:0;flex:1 1 24ch}
+.pe-notice--error small{color:var(--muted);font:12px/1.3 ui-monospace,monospace}
 .pe-empty{display:grid;justify-items:center;gap:10px;padding:48px 20px;text-align:center;border:1px solid var(--line);border-radius:20px;background:color-mix(in srgb,var(--surface) 78%,transparent)}
 .pe-empty h2{margin:0;font:700 22px/1.2 Cinzel,Georgia,serif}
 .pe-empty p{margin:0;color:var(--muted);max-width:42ch}

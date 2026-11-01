@@ -5,7 +5,7 @@ import {brandMark} from './brand.js';
 import {PLAY_DECK_SOURCES,playDeckSupport} from './play-deck-sources.js';
 import {playmatPickerMarkup} from './play-playmats.js';
 import {reviewPracticeSetup} from './experiments/phase-engine/practice-preflight.mjs';
-import {purseMarkup,stuffRowMarkup} from './play-econ-ui.js';
+import {purseMarkup,stuffRowMarkup,econNoticeMarkup} from './play-econ-ui.js';
 // Desktop setup only. Format preferences do not certify engine,
 // construction legality, card support or a working opponent connection.
 const esc = value => String(value ?? '').replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
@@ -105,7 +105,7 @@ export function playMenuMarkup(state, {avatarMarkup = '', deckTiles = new Map(),
       <button class="pl-mode" data-act="playOpenMode" data-play-style="practice">${modeArt(matchupArt.opponent,'practice')}<span class="pl-mode-name">Practice</span><span class="pl-mode-copy">Any two decks, head to head.</span><span class="pl-mode-foot"><span class="pl-mode-cta">Set up</span></span></button>
       <a class="pl-mode" href="/planeswalk.html">${'<span class="pl-mode-art pl-mode-art--trim" style="background-image:url(https://cards.scryfall.io/art_crop/front/a/8/a83ca3a1-82a9-4f47-b0b8-21687afd705b.jpg?1783931174);background-position:50% 12%" aria-hidden="true"></span>'}<span class="pl-mode-name">Planeswalk</span><span class="pl-mode-copy">Climb Innistrad. Take down Sorin.</span><span class="pl-mode-foot"><span class="pl-mode-cta">Open</span></span></a>
     </div>
-    ${stuffRowMarkup(econ)}
+    ${stuffRowMarkup(econ)||econNoticeMarkup(econ,{signedIn})}
   </section>`;
   return `<section class="play-menu play-menu--forge pl-lobby${native?'':' pl-lobby--phase'}" data-play-mode="${friends?'friends':quick?'quick':'practice'}" aria-labelledby="playTitle">
     <header class="pl-head"><button class="pl-back" data-act="playHome" aria-label="Back to Play"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="m15 5-7 7 7 7"/></svg></button><div class="pl-head-title"><p class="eyebrow">Play</p><h1 id="playTitle">${friends?'Friends':quick?'Quick Play':'Practice'}</h1></div><div class="pl-head-tools">${formatPicker}${quick?'':playmatPickerMarkup()}${!quick&&!friends?'<button class="pl-invite" data-act="playPracticeFriend"><svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="9" cy="8" r="3.2"/><path d="M3.5 19a5.5 5.5 0 0 1 11 0M17 8v6M14 11h6"/></svg><span>Invite a friend</span></button>':''}</div>${matchReleaseReady?'':'<span class="chip">In development</span>'}</header>

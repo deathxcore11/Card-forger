@@ -36,6 +36,16 @@ export function purseMarkup(snapshot) {
   </nav>`;
 }
 
+// Stands in for the top bar and tiles while there is no wallet to show: loading, or why it failed
+// (with the server's code, so a screenshot says what broke) and a way to try again. Signed out: nothing.
+export function econNoticeMarkup(snapshot, {signedIn = false} = {}) {
+  if (!signedIn || purse(snapshot?.state)) return '';
+  if (snapshot?.loading && !snapshot.error) return `<p class="pe-notice" role="status">Opening your Play purse…</p>`;
+  if (!snapshot?.error) return '';
+  const msg = snapshot.errorCode === 'sign_in' ? 'Your sign-in has expired. Sign out and back in to open your Play collection.' : snapshot.error;
+  return `<div class="pe-notice pe-notice--error" role="alert"><p>${esc(msg)}</p><small>${esc(snapshot.errorCode || '')}</small><button class="btn small" data-act="playEconRetry" ${snapshot.loading ? 'disabled' : ''}>Try again</button></div>`;
+}
+
 // The second row on the Play homepage: Merchant, Packs, Collection, Decks.
 export function stuffRowMarkup(snapshot) {
   const s = snapshot?.state, p = purse(s);
