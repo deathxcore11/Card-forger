@@ -455,7 +455,7 @@ dialog.play-match-exit>.play-exit-note{margin:8px 0 0;font-size:13px;color:#f0c2
 .pl-sheet-close:hover,.pl-sheet-close:focus-visible{border-color:var(--gold);color:var(--gold)}
 @keyframes pl-sheet-in{from{transform:translateX(40px);opacity:0}to{transform:none;opacity:1}}
 /* Smaller screens */
-@media(max-width:1000px){.pl-modes{grid-template-columns:1fr 1fr}.pl-mode--quick{grid-column:1/-1}}
+@media(max-width:1000px){.pl-modes{grid-template-columns:1fr 1fr}.pl-mode--quick,.pl-mode-hold{grid-column:1/-1}}
 @media(max-width:700px){
  .pl-modes{grid-template-columns:1fr;gap:12px}.pl-mode{min-height:200px;padding:14px 16px 16px;border-radius:18px}.pl-mode-name{font-size:22px}.pl-mode-copy{font-size:12.5px}.pl-mode-foot{margin-top:4px}.pl-mode-cta{min-height:44px;padding:0 18px}
  .pl-head{flex-wrap:wrap;gap:10px}.pl-head-tools{margin-left:0;flex-basis:100%;order:3}.pl-head-tools .pl-format{flex:1}.pl-format>summary{justify-content:space-between}
@@ -684,3 +684,9 @@ body[data-view="play"] #content{padding-left:max(var(--page-edge,16px),calc(env(
 /* The page gutter token follows the same inset, so headings line up with the padded edge. */
 @property --gutter{syntax:'<length>';inherits:true;initial-value:16px}
 :root:has(body[data-view="play"]){--gutter:max(16px,calc(env(safe-area-inset-left,0px) + 8px))}
+/* 4.3.52 Quick Play with a deck chosen starts the match in one tap; "Change deck" opens the setup screen. */
+.pl-mode-hold{position:relative;display:grid;min-width:0}
+.pl-mode-hold>.pl-mode{height:100%}
+.pl-mode-change{position:absolute;left:22px;bottom:22px;z-index:2;min-height:44px;padding:0 18px;border-radius:13px;border:1px solid #ffffff2e;background:#0c0e13a6;color:#f1e9d8;font:600 14px/1 'DM Sans',system-ui,sans-serif;backdrop-filter:blur(8px);cursor:pointer}
+.pl-mode-change:hover{border-color:#f6dfa880;color:#fff}
+@media (max-width:700px){.pl-mode-change{left:16px;bottom:16px}}

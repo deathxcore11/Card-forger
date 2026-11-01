@@ -104,3 +104,8 @@ test('Settings › Info shows the Fan Content notice without opening anything',(
  const info=settings().split('id="settings-info"')[1];
  assert.match(info.replace(/<details[\s\S]*?<\/details>/g,''),/unofficial Fan Content permitted under the Fan Content Policy\. Not approved\/endorsed by Wizards\. Portions of the materials used are property of Wizards of the Coast\. &copy;Wizards of the Coast LLC\./);
 });
+test('Quick Play with a chosen deck starts in one tap and keeps the setup one tap away',()=>{
+ const none=playMenuMarkup(base(),{view:'home'});assert.doesNotMatch(none,/data-play-direct|playChangeDeck/);
+ const chosen=playMenuMarkup({...base(),selected:{name:'Chishiro · Tokens',cards:[]}},{view:'home'});
+ assert.match(chosen,/data-play-style="quick" data-play-direct="true"/);assert.match(chosen,/Chishiro · Tokens against a matched CPU\./);assert.match(chosen,/data-act="playChangeDeck"[^>]*>Change deck</);
+});
