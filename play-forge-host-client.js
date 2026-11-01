@@ -101,6 +101,22 @@ export const ROOM_MESSAGES=Object.freeze({
 export const friendInviteLink=invite=>'https://cardstashy.com/#play/join/'+invite;
 export const friendInviteFromHash=hash=>{const m=/^#play\/join\/([A-Za-z0-9_-]{43})$/.exec(hash||'');return m?m[1]:null;};
 const friendDeck=(format,deck)=>{const d=engineDeck(deck);return format===d.format?d:{...d,format};};
+// Your name and profile picture as the other player sees them in a friend match. Nothing else
+// about the account is sent; the server drops anything it does not expect.
+export function friendPlayerCard(profile={}){
+ const name=String(profile.displayName||profile.username||'').replace(/[\u0000-\u001f\u007f]/g,'').trim().slice(0,40);
+ const art=profile.avatarArt,https=v=>typeof v==='string'&&v.length<=512&&/^https:\/\//.test(v)?v:null;
+ const image=https(art?.image)||https(profile.avatarUrl);
+ const num=(v,lo,hi,f)=>Number.isFinite(Number(v))?Math.min(hi,Math.max(lo,Number(v))):f;
+ const crop=image&&image===https(art?.image)?{ratio:num(art.ratio,.2,5,1),zoom:num(art.zoom,1,4,1),x:num(art.x,0,1,.5),y:num(art.y,0,1,.5)}:null;
+ return name||image?{name:name||null,image,crop}:null;
+}
+const friendPlayer=player=>player&&typeof player==='object'?{player:{name:player.name??null,image:player.image??null,crop:player.crop??null}}:{};
+// A server from before player cards refuses the extra field: the room then opens without it.
+async function withPlayer(send,body,player,refusal){
+ const card=friendPlayer(player);if(!card.player)return send(body);
+ try{return await send({...body,...card});}catch(e){if(e?.code===refusal)return send(body);throw e;}
+}
 export function createFriendRooms({getAccessToken,fetchImpl=globalThis.fetch}={}){
  if(typeof getAccessToken!=='function'||typeof fetchImpl!=='function')throw fail('FORGE_HOST_READERS_REQUIRED');
  async function call(path,{method='POST',body}={}){
@@ -115,11 +131,12 @@ export function createFriendRooms({getAccessToken,fetchImpl=globalThis.fetch}={}
  const invite=v=>{if(!INVITE.test(v||''))throw Object.assign(fail('invite_not_found'),{message:ROOM_MESSAGES.invite_not_found});return v;};
  return {
   // {roomId, format, status:'open', expiresAt, seat:'host', invite}
-  async open(format,deck){if(!FRIEND_FORMATS.includes(format))throw fail('FRIEND_FORMAT_UNSUPPORTED');return call('/api/play/rooms',{body:{format,deck:friendDeck(format,deck)}});},
+  // player: what the other person sees of you, {name, image, crop} (see friendPlayerCard).
+  async open(format,deck,player){if(!FRIEND_FORMATS.includes(format))throw fail('FRIEND_FORMAT_UNSUPPORTED');const body={format,deck:friendDeck(format,deck)};return withPlayer(b=>call('/api/play/rooms',{body:b}),body,player,'invalid_room');},
   // The room an invite opens, before choosing a deck: {roomId, format, status, seat:'guest'}.
   async peek(code){return call('/api/play/rooms/join',{body:{invite:invite(code)}});},
   // Take the second seat; the answer names the match both players then open (attach).
-  async join(code,format,deck){if(!FRIEND_FORMATS.includes(format))throw fail('FRIEND_FORMAT_UNSUPPORTED');return call('/api/play/rooms/join',{body:{invite:invite(code),deck:friendDeck(format,deck)}});},
+  async join(code,format,deck,player){if(!FRIEND_FORMATS.includes(format))throw fail('FRIEND_FORMAT_UNSUPPORTED');const body={invite:invite(code),deck:friendDeck(format,deck)};return withPlayer(b=>call('/api/play/rooms/join',{body:b}),body,player,'invalid_invite');},
   // The host waits here: status 'started' brings matchId.
   async read(id){return call(room(id),{method:'GET'});},
   async cancel(id){return call(room(id),{method:'DELETE'});},

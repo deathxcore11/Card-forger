@@ -3,12 +3,12 @@
 // Account, decks and collection storage are untouched; an active match is never reloaded.
 const KEY='cardstashy-play-update-attempt-v1';
 const session=()=>{try{return globalThis.sessionStorage;}catch{return null;}};
-export function createPlayUpdateGate({checkRelease,serviceWorker=globalThis.navigator?.serviceWorker,reload=()=>location.reload(),setHash=hash=>{location.hash=hash;},store=session(),wait=ms=>new Promise(r=>setTimeout(r,ms)),native=()=>!!globalThis.CARDSTASHY_NATIVE,notify=()=>{}}={}){
+export function createPlayUpdateGate({checkRelease,serviceWorker=globalThis.navigator?.serviceWorker,reload=()=>location.reload(),setHash=hash=>{location.hash=hash;},store=session(),wait=ms=>new Promise(r=>setTimeout(r,ms)),native=()=>!!globalThis.CARDSTASHY_NATIVE,notify=()=>{},onReplaced=()=>{}}={}){
  let replaced=false;
  // A new service worker took control after this page loaded: the scripts in memory are older.
  // A first visit gains its first controller without any older scripts, so that does not count.
  const controlled=!!serviceWorker?.controller;
- serviceWorker?.addEventListener?.('controllerchange',()=>{if(controlled)replaced=true;});
+ serviceWorker?.addEventListener?.('controllerchange',()=>{if(controlled){replaced=true;onReplaced();}});
  const attempted=version=>{try{return store?.getItem(KEY)===version;}catch{return false;}};
  const remember=version=>{try{store?.setItem(KEY,version);}catch{}};
  async function installed(){

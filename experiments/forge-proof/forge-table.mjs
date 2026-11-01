@@ -74,6 +74,8 @@ function keywordHint(name,reference){
  const sentence=entry.definition.replace(/\s*\(See rule[^)]*\)\.?/g,'').split(/(?<=\.\u201d?)\s+/).find(x=>!/^[\w\u2019' -]{2,40} (is|are) an? [\w -]*ability\b/i.test(x)&&x.length>12)||'';
  return sentence.length>170?sentence.slice(0,167).replace(/\s+\S*$/,'')+'\u2026':sentence;
 }
+// The other player in a duel: "CPU", or a friend by their name.
+const rivalOf=surface=>surface?.players?.length===2&&surface.players.find(p=>p.seat!==surface.seat)?.label||'CPU';
 export function mountForgeTable(root,{session,onExit=()=>{},profile={displayName:'You'},format='Commander',title='CardStashy · Local Forge proof',presentation={}}){
  const authority=session;let displayed=authority.snapshot(),playbackBusy=false,activeBeat=null;
  session=createPlaybackSession(authority,{displayed:()=>displayed,busy:()=>playbackBusy});
@@ -247,7 +249,7 @@ const name=String(card.name);if(Math.max(...name.split(/\s+/).map(word=>word.len
     const shown=counts.filter(([zone,value])=>zone==='Library'||zone==='Graveyard'||value>0);
     let row=mat?.querySelector(`.forge-zone-row[data-seat="${own?'you':'cpu'}"]`);
     if(mat&&!row){row=doc.createElement('nav');row.className='forge-zone-row';row.dataset.seat=own?'you':'cpu';row.setAttribute('aria-label',own?'Your zones':'CPU zones');mat.append(row);}
-    if(row&&row.dataset.counts!==key){row.dataset.counts=key;row.replaceChildren(...shown.map(([zone,value])=>{const b=doc.createElement('button');b.type='button';b.dataset.zone=zone;b.dataset.count=String(value);b.dataset.nativeKey=`zone-${own?'you':'cpu'}-${zone}`;b.setAttribute('aria-label',`${own?'Your':'CPU'} ${zone.toLowerCase()}: ${value}`);b.innerHTML=`${boardIcon('zone-'+zone.toLowerCase(),'cs-icon cs-zone-icon')||outlineIcon(ZONE_ICONS[zone])}<span>${ZONE_LABELS[zone]}</span><b>${value}</b>`;return b;}));}
+    if(row&&row.dataset.counts!==key){row.dataset.counts=key;row.replaceChildren(...shown.map(([zone,value])=>{const b=doc.createElement('button');b.type='button';b.dataset.zone=zone;b.dataset.count=String(value);b.dataset.nativeKey=`zone-${own?'you':'cpu'}-${zone}`;b.setAttribute('aria-label',`${own?'Your':rivalOf(surface)} ${zone.toLowerCase()}: ${value}`);b.innerHTML=`${boardIcon('zone-'+zone.toLowerCase(),'cs-icon cs-zone-icon')||outlineIcon(ZONE_ICONS[zone])}<span>${ZONE_LABELS[zone]}</span><b>${value}</b>`;return b;}));}
    }
    applyZoneFocus();
    // Deck tracker, the untapped way but quieter: Deck lists what is left in your library with the
@@ -278,10 +280,10 @@ const name=String(card.name);if(Math.max(...name.split(/\s+/).map(word=>word.len
      make('mode-full','Full Control','Full Control: stop at every response window.','<path d="M8 13V5a1.5 1.5 0 0 1 3 0v6M11 11V4a1.5 1.5 0 0 1 3 0v7M14 11V5.5a1.5 1.5 0 0 1 3 0V14a6 6 0 0 1-6 6h-1a5 5 0 0 1-4.3-2.4L4 15a1.5 1.5 0 0 1 2.5-1.7L8 15"/>',n.controlMode==='full',()=>switchMode('full')),
      ...(autoPay?[make('auto-pay',n.autoPay?'Auto-pay mana: on':'Auto-pay mana: off','Auto-pay: pay mana costs automatically. Turn off to tap each source yourself.','<circle cx="12" cy="12" r="8"/><path d="M12 7v10M9.5 9.5h3.75a1.75 1.75 0 0 1 0 3.5h-2.5a1.75 1.75 0 0 0 0 3.5H14.5"/>',n.autoPay,()=>session.setAutoPay(!n.autoPay))]:[]));
    }
-   // The CPU has no profile picture; its commander's art becomes its portrait.
+   // The CPU has no profile picture; its commander's art becomes its portrait. A friend shows their own.
    const cpuBadge=root.querySelector('.play-match-seat[data-seat=cpu] .play-match-profile-badge');
-   const cpuSeat=Number(cpuBadge?.closest('.play-match-seat')?.dataset.playerSeat),cpuCommander=surface.cards.find(c=>c.commander===true&&c.owner!==surface.seat&&(surface.players.length===2||c.owner===cpuSeat)&&c.known),cpuArt=cpuCommander?resolvePracticeArtwork(cpuCommander)?.artImageUrl:null;
-   if(cpuBadge&&cpuArt&&!(presentation.hosted&&format==='Commander')&&cpuBadge.dataset.portrait!==cpuArt){cpuBadge.dataset.portrait=cpuArt;let img=cpuBadge.querySelector('img.forge-seat-portrait');if(!img){img=doc.createElement('img');img.className='forge-seat-portrait';img.alt='';img.referrerPolicy='no-referrer';img.onerror=()=>{img.hidden=true;};cpuBadge.append(img);}img.src=cpuArt;}
+   const cpuSeat=Number(cpuBadge?.closest('.play-match-seat')?.dataset.playerSeat),cpuCommander=surface.cards.find(c=>c.commander===true&&c.owner!==surface.seat&&(surface.players.length===2||c.owner===cpuSeat)&&c.known),friendArt=/^https:/.test(presentation.friend?.image||'')?presentation.friend.image:null,cpuArt=friendArt||(cpuCommander?resolvePracticeArtwork(cpuCommander)?.artImageUrl:null);
+   if(cpuBadge&&cpuArt&&(friendArt||!(presentation.hosted&&format==='Commander'))&&cpuBadge.dataset.portrait!==cpuArt){cpuBadge.dataset.portrait=cpuArt;let img=cpuBadge.querySelector('img.forge-seat-portrait');if(!img){img=doc.createElement('img');img.className='forge-seat-portrait';img.alt='';img.referrerPolicy='no-referrer';img.onerror=()=>{img.hidden=true;};cpuBadge.append(img);}img.src=cpuArt;}
    // Each pod chip wears its CPU's commander art.
    for(const face of root.querySelectorAll('.play-pod-chip .play-pod-face')){const seat=Number(face.closest('.play-pod-chip').dataset.playerSeat),c=surface.cards.find(c=>c.commander===true&&c.owner===seat&&c.known),url=c?resolvePracticeArtwork(c)?.artImageUrl:null;
     if(url&&face.dataset.art!==url){face.dataset.art=url;const img=doc.createElement('img');img.alt='';img.referrerPolicy='no-referrer';img.onerror=()=>{img.remove();delete face.dataset.art;};img.src=url;face.querySelector('img')?.remove();face.append(img);}}
@@ -727,7 +729,7 @@ const name=String(card.name);if(Math.max(...name.split(/\s+/).map(word=>word.len
  // (tap to read or pick it); any other touch, or the next board update, closes the tray.
  function openLaneTray(hidden,chip){
   closeLaneTray();const tray=doc.createElement('div');tray.className='forge-lane-tray';tray.setAttribute('role','dialog');
-  const own=!!chip.closest('.play-match-seat-area[data-seat=you]'),title=`${own?'Your':'CPU'} board · ${hidden.length} more`;tray.setAttribute('aria-label',title);
+  const own=!!chip.closest('.play-match-seat-area[data-seat=you]'),title=`${own?'Your':rivalOf(session.snapshot().status?.surface)} board · ${hidden.length} more`;tray.setAttribute('aria-label',title);
   const head=doc.createElement('header'),h=doc.createElement('h3'),x=doc.createElement('button');h.textContent=title;x.type='button';x.className='forge-lane-tray-close';x.textContent='×';x.setAttribute('aria-label','Close');x.addEventListener('click',e=>{e.stopPropagation();closeLaneTray();});head.append(h,x);tray.append(head);
   for(const w of hidden){const copy=w.cloneNode(true);copy.hidden=false;copy.removeAttribute('style');tray.append(copy);}
   root.append(tray);const r=chip.getBoundingClientRect(),t=tray.getBoundingClientRect();
@@ -875,8 +877,8 @@ const name=String(card.name);if(Math.max(...name.split(/\s+/).map(word=>word.len
   const at=PHASE_STEPS.findIndex(([,list])=>list.includes(surface.phase)),owner=surface.activeSeat===surface.seat?'you':'cpu',key=[surface.turn,at,owner].join('|');
   if(!track){track=doc.createElement('div');track.className='forge-phase-track';track.setAttribute('role','status');mat.append(track);}
   if(track.dataset.key===key)return;track.dataset.key=key;track.dataset.owner=owner;
-  const step=PHASE_STEPS[at]?.[0]||'';track.setAttribute('aria-label',`${owner==='you'?'Your':'CPU'} turn ${surface.turn}${step?', '+step:''}`);
-  track.innerHTML=`<b><span class="forge-phase-who">${owner==='you'?'You':'CPU'} · </span>Turn ${surface.turn}</b><ol>${PHASE_STEPS.map(([label],i)=>`<li${i===at?' data-now="true"':i<at?' data-done="true"':''} title="${label}"><i></i>${i===at?`<span>${label}</span>`:''}</li>`).join('')}</ol>`;
+  const step=PHASE_STEPS[at]?.[0]||'';track.setAttribute('aria-label',`${owner==='you'?'Your':rivalOf(surface)} turn ${surface.turn}${step?', '+step:''}`);
+  track.innerHTML=`<b><span class="forge-phase-who">${owner==='you'?'You':esc(rivalOf(surface))} · </span>Turn ${surface.turn}</b><ol>${PHASE_STEPS.map(([label],i)=>`<li${i===at?' data-now="true"':i<at?' data-done="true"':''} title="${label}"><i></i>${i===at?`<span>${label}</span>`:''}</li>`).join('')}</ol>`;
  }
  const trackerSeen=new Map(),trackerOpen={deck:false,opponent:false},trackerIdentity=new Map();
  // The deck-list name of one physical card. Forge keeps a card's id when it transforms or becomes a
@@ -1066,7 +1068,7 @@ const name=String(card.name);if(Math.max(...name.split(/\s+/).map(word=>word.len
   const surface=session.snapshot().status?.surface,data=surface?.commander,entry=data?.commanders?.find(e=>e.id===c.id),tax=Number.isSafeInteger(entry?.tax)&&entry.tax>0?entry.tax:0;
   const where={Command:'In the command zone',Battlefield:'On the battlefield',Graveyard:'In the graveyard',Exile:'In exile',Hand:'In hand',Library:'In the library',Stack:'Being cast'}[c.zone];
   const facts=[where,c.zone==='Command'?(tax?`Cast for its cost + ${tax} tax`:'Cast for its mana cost'):''];
-  for(const d of data?.damage||[])if(d.commanderId===c.id&&Number.isSafeInteger(d.amount)&&d.amount>0)facts.push(`${d.amount}/21 commander damage to ${d.player===surface.seat?'you':'CPU'}`);
+  for(const d of data?.damage||[])if(d.commanderId===c.id&&Number.isSafeInteger(d.amount)&&d.amount>0)facts.push(`${d.amount}/21 commander damage to ${d.player===surface.seat?'you':rivalOf(surface)}`);
   const shown=facts.filter(Boolean);return shown.length?`<ul class="forge-peek-commander">${shown.map(f=>`<li>${esc(f)}</li>`).join('')}</ul>`:'';
  }
  function peekHtml(c,reference){

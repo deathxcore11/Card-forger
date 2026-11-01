@@ -44,7 +44,7 @@ export function tuckAttachments(cards){
 }
 // What the table calls a seat: "You", "CPU" in a duel, or a pod CPU by its commander.
 export const seatLabel=(view,seat)=>seat===view?.seat?'You':view?.players?.find(p=>p.seat===seat)?.label||'CPU';
-const turnOwner=(view,seat)=>seat===view.seat?'Your':view.players?.length>2?seatLabel(view,seat)+'’s':'CPU';
+const turnOwner=(view,seat)=>seat===view.seat?'Your':view.players?.length>2||seatLabel(view,seat)!=='CPU'?seatLabel(view,seat)+'’s':'CPU';
 export function playerStateEmblem(snapshot,seat){
  const view=snapshot?.status?.surface;
  if(!view)return {active:false,title:'Preparing match',phase:''};

@@ -1659,7 +1659,10 @@ A.playStyle=t=>{quickSequence++;quickStatus={busy:false,error:null};cancelPlayBu
 // The server starts one match; both players then open it on their own seat.
 const FRIEND_INVITE_KEY='cs-friend-invite',FRIEND_FORMATS=['Commander','Standard','Modern'];
 let friendRoom=null,friendPoll=null,friendRooms=null;
-const rooms=async()=>friendRooms||=(await import('./play-forge-host-client.js')).createFriendRooms({getAccessToken:cloudAccessToken});
+const roomsModule=()=>import('./play-forge-host-client.js');
+const rooms=async()=>friendRooms||=(await roomsModule()).createFriendRooms({getAccessToken:cloudAccessToken});
+// What the other player sees of you: your display name and profile picture.
+const myFriendCard=async()=>(await roomsModule()).friendPlayerCard(playSetup.snapshot().profile);
 // An invite waiting from before sign-in opens as soon as Play shows for a signed-in player.
 let inviteOpening=false;
 const friendRoomView=()=>{
@@ -1675,7 +1678,7 @@ function pollFriendRoom(){
  friendPoll=setTimeout(async()=>{
   const room=friendRoom;if(!room?.roomId||room.seat!=='host'||room.status!=='open')return;
   try{const next=await (await rooms()).read(room.roomId);if(friendRoom?.roomId!==room.roomId)return;
-   if(next.status==='started'&&next.matchId){setFriendRoom({status:'started'});return A.playFriendLaunch(next.matchId);}
+   if(next.status==='started'&&next.matchId){setFriendRoom({status:'started',opponent:next.opponent||null});return A.playFriendLaunch(next.matchId);}
    if(next.status!=='open'){setFriendRoom({status:null,roomId:null,error:next.status==='expired'?'Your invite expired. Make a new one.':'This room closed.'});return;}
   }catch{/* a missed look is retried */}
   pollFriendRoom();
@@ -1683,8 +1686,9 @@ function pollFriendRoom(){
 }
 A.playFriendCreate=async()=>{
  const state=playSetup.snapshot();if(!state.selected||friendRoom?.busy)return;
+ if(await playUpdates.beforeMatch())return;
  setFriendRoom({seat:'host',busy:true,error:null});
- try{const room=await (await rooms()).open(state.match.format,state.selected);
+ try{const room=await (await rooms()).open(state.match.format,state.selected,await myFriendCard());
   setFriendRoom({seat:'host',busy:false,roomId:room.roomId,invite:room.invite,status:'open',copied:false});pollFriendRoom();
  }catch(e){setFriendRoom({busy:false,error:friendError(e)});}
 };
@@ -1719,8 +1723,8 @@ async function showFriendInvite(invite){
  try{const room=await (await rooms()).peek(invite);
   if(FRIEND_FORMATS.includes(room.format)&&playSetup.snapshot().match.format!==room.format)playSetup.configure({format:room.format});
   playSetup.configure({mode:'friends'});if(room.status!=='open')forgetFriendInvite();
-  if(room.status==='started'&&room.matchId){friendRoom={seat:'guest',roomId:room.roomId,status:'started',invite};refreshPlayMenu();return A.playFriendLaunch(room.matchId);}
-  friendRoom={seat:'guest',roomId:room.roomId,status:room.status,invite,error:room.status==='open'?null:room.status==='started'?'This match is already full.':'This invite has ended. Ask your friend for a new one.'};
+  if(room.status==='started'&&room.matchId){friendRoom={seat:'guest',roomId:room.roomId,status:'started',invite,opponent:room.opponent||null};refreshPlayMenu();return A.playFriendLaunch(room.matchId);}
+  friendRoom={seat:'guest',roomId:room.roomId,status:room.status,invite,opponent:room.opponent||null,error:room.status==='open'?null:room.status==='started'?'This match is already full.':'This invite has ended. Ask your friend for a new one.'};
  }catch(e){playSetup.configure({mode:'friends'});friendRoom={seat:'host',error:friendError(e)};forgetFriendInvite();}
  refreshPlayMenu();
 }
@@ -1728,8 +1732,9 @@ const pendingFriendInvite=()=>{try{return sessionStorage.getItem(FRIEND_INVITE_K
 function forgetFriendInvite(){try{sessionStorage.removeItem(FRIEND_INVITE_KEY);}catch{/* nothing kept */}}
 A.playFriendJoin=async()=>{
  const state=playSetup.snapshot(),room=friendRoom;if(!state.selected||room?.seat!=='guest'||room.busy)return;
+ if(await playUpdates.beforeMatch())return; // the invite waits in this tab and reopens
  setFriendRoom({busy:true,error:null});
- try{const joined=await (await rooms()).join(room.invite,state.match.format,state.selected);
+ try{const joined=await (await rooms()).join(room.invite,state.match.format,state.selected,await myFriendCard());
   forgetFriendInvite();
   setFriendRoom({busy:false,status:'started'});await A.playFriendLaunch(joined.matchId);
  }catch(e){setFriendRoom({busy:false,error:friendError(e)});}
@@ -1810,7 +1815,12 @@ function playModuleFailed(error){
  playerMatRoot.querySelector('[data-play-load="reload"]').addEventListener('click',()=>{closePlayerMat();location.reload();});
  playerMatRoot.querySelector('[data-play-load="reload"]').focus({preventScroll:true});
 }
-const playUpdates=createPlayUpdateGate({checkRelease,notify:version=>toast(`Updating CardStashy${version==='replaced'?'':' to '+version} before your match. Your account and decks stay saved.`)});
+const playUpdates=createPlayUpdateGate({checkRelease,notify:version=>toast(`Updating CardStashy${version==='replaced'?'':' to '+version}. Your account and decks stay saved.`),onReplaced:()=>updatePlayWhileIdle()});
+// A newer release is installed while Play sits idle (on its home or lobby), never once a match is
+// being set up: a reload between creating a match and opening it would lose that match (Randall, 1 Nov).
+const playIdle=()=>S.ui.view==='play'&&!playStarting&&!playerMatHost&&!practicePregame&&!playerMatRoot&&!friendRoom?.roomId&&!friendRoom?.busy&&!inviteOpening;
+let playUpdateChecked=false;
+function updatePlayWhileIdle(){if(playIdle())void playUpdates.beforeMatch();}
 A.playStartCandidate=async()=>{
  if(!PLAY_MATCH_RELEASE_READY)return toast('Practice integration is still being verified.');
  if(playStarting||playerMatHost||practicePregame||T.game()!=='mtg'||!syncDesktopPlayEntries('mtg').eligible)return;
@@ -1865,16 +1875,17 @@ A.playStartCandidate=async()=>{
 };
 // Both players open the friend match the server started, each on their own seat. The friend's
 // deck stays hidden: their cards are looked up by name as they are played.
+// The other player as they chose to show themselves; a room from an older server has no card.
+const friendShown=card=>({name:card?.name||'Friend',image:card?.image||null,crop:card?.crop||null});
 A.playFriendLaunch=async matchId=>{
  stopFriendPoll();
  if(playStarting||playerMatHost||practicePregame||T.game()!=='mtg')return;
  playStarting=true;
  try{
   const base=playSetup.snapshot();if(!base.selected)return toast('Pick your deck first.');
-  if(await playUpdates.beforeMatch())return;
   for(const [id,href] of [['practiceTableStyles','experiments/phase-engine/match-table.css'],['forgeHostedTableStyles','play-forge-table.css']])if(!document.getElementById(id)){const css=document.createElement('link');css.id=id;css.rel='stylesheet';css.href=href;document.head.append(css);}
   playerMatRoot=document.createElement('main');playerMatRoot.id='practicePlayerMat';playerMatRoot.setAttribute('data-playmat',nextPlaymat());playerMatRoot.setAttribute('aria-label','Friend match player mat');document.body.append(playerMatRoot);mountPlaymatScene(playerMatRoot);document.body.classList.add('practice-table-open');void lockPlayLandscape();const app=document.getElementById('app');if(app)app.inert=true;
-  const setup={...base,playStyle:'quick',opponent:{name:'Friend\'s deck',format:base.match.format,cards:[]},friend:{name:'Friend'},friendMatch:{matchId}};
+  const setup={...base,playStyle:'quick',opponent:{name:'Friend\'s deck',format:base.match.format,cards:[]},friend:friendShown(friendRoom?.opponent),friendMatch:{matchId}};
   const owner=cloudInfo().user?.id,generation=accountGeneration,current=()=>!accountLocked&&generation===accountGeneration&&owner===cloudInfo().user?.id;
   let createForgePlayerMat,lateTimer=0;const late=new Set();
   try{({createForgePlayerMat}=await import('./play-forge-player-mat.js'));}catch(e){if(playerMatRoot)playModuleFailed(e);return;}
@@ -1958,6 +1969,7 @@ function renderPlayPage() {
   for(const summary of state.decks){const deck=deckById(summary.id);if(summary.valid&&deck)tiles.set(summary.id,V.deckTile(deck,false,{playSelection:playSeatSource(state,playBrowseSeat(state))==='saved'&&playSeatDeck(state,playBrowseSeat(state))?.id===deck.id}));}
   const inspected=state.playStyle!=='quick'&&state.match.mode==='cpu'?playSeatDeck(state,state.inspectedSeat):state.selected;
   if(state.match.mode==='cpu')warmForgeEngine(state);
+  if(!playUpdateChecked){playUpdateChecked=true;queueMicrotask(updatePlayWhileIdle);}
   return playMenuMarkup(state,{friendRoom:friendRoomView(),canShare:typeof navigator.share==='function',view:playView,inspectOpen:playInspectOpen,engine:FORGE_PLAY_TEST_ENABLED?'forge':'phase',sourceEntries:sources,sourceArt,cpuDifficulties:readCpuOptions({engine:FORGE_PLAY_TEST_ENABLED?'forge':'phase'}),quickStatus,sourceStatus:currentPlaySources().statuses[state.browse.source+':'+state.match.format]||{},savedCopy:savedPlayCopy(inspected),savePending:playSaver.isSaving(inspected),matchReleaseReady:PLAY_MATCH_RELEASE_READY,avatarMarkup:profileAvatar(p.avatarArt,{display_name:p.displayName,username:p.username,avatar_url:p.avatarUrl}),deckTiles:tiles,deckPreview:playDeckPreview(inspected),importPreview:playDeckPreview(state.reviewDeck),selectedArt:V.deckArtwork(inspected),matchupArt:{player:V.deckArtwork(state.selected),opponent:V.deckArtwork(state.opponent),cpu3:state.podDecks?.cpu3?V.deckArtwork(state.podDecks.cpu3):'',cpu4:state.podDecks?.cpu4?V.deckArtwork(state.podDecks.cpu4):''}});
 }
 const refreshPlayMenu=()=>{if(S.ui.view==='play'&&T.game()==='mtg'){

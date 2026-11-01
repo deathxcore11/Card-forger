@@ -10,4 +10,5 @@ const gate=(over={})=>{const log=[];const g=createPlayUpdateGate({checkRelease:a
 {const sw=worker(false);const {g}=gate({sw,state:{update:false}});sw.fire();assert.equal(g.stale(),false,'first controller is not an older page');assert.equal(await g.beforeMatch(),false);}
 {const {g,log}=gate({native:true,state:{update:true,release:{webVersion:'9'}}});assert.equal(await g.beforeMatch(),false);assert.deepEqual(log,[]);}
 {const {g}=gate({state:undefined});assert.equal(await g.beforeMatch(),false,'an unavailable release check does not block play');}
+{const sw=worker();let told=0;createPlayUpdateGate({checkRelease:async()=>({update:false}),serviceWorker:sw,store:memory(),reload:()=>{},setHash:()=>{},onReplaced:()=>told++});sw.fire();assert.equal(told,1,'a replaced worker is reported so Play can update while idle');}
 console.log('PASS: Play reopens on a newer website release before a match, once per release, never in the Android app or on first install.');
