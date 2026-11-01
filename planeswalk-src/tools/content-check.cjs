@@ -3,7 +3,7 @@
    Usage: node planeswalk-src/tools/content-check.cjs [dir] [--sim N]
      dir   holds the BUILT planeswalk.html, planeswalk-art-zen.css, planeswalk-cast/ and planeswalk-art/ (default: the repo root, .)
      --sim seeded runs per hero for the sim smoke (default 3; 0 skips it)
-     --gates N  win-rate gates per hero at Spark 0 with an empty trail, and Spark 5 and 10 with the full trail (TRAIL=12):
+     --gates N  win-rate gates per hero (CAREFUL=1) at Spark 0 (sim default pool), and Spark 5 and 10 with the full trail (TRAIL=12):
                 a player at Spark 5 has already won 5 runs, so the higher levels are judged with the whole pool open
    Stage 1, data (seconds): monsters, intents, acts, heroes, cards, figures, portraits and mats.
    Stage 2, sim smoke: every hero plays N seeded runs with no error, no NaN and no stuck fight (tools/sim.cjs).
@@ -14,7 +14,7 @@ const fs = require('fs'), vm = require('vm'), path = require('path'), { execFile
 const args = process.argv.slice(2), dir = path.resolve(args.find(a => !a.startsWith('--')) || '.');
 const simN = args.includes('--sim') ? +args[args.indexOf('--sim') + 1] : 3;
 const gateN = args.includes('--gates') ? +args[args.indexOf('--gates') + 1] : 0;
-const GATES = [[0, 0], [5, 12], [10, 12]];
+const GATES = [[0, null], [5, 12], [10, 12]];  // reference policy: CAREFUL=1; Spark 0 leaves TRAIL unset (the sim's default pool), as the game-feel review runs it
 const FAIL = [], WARN = [], fail = (k, m) => FAIL.push(`${k}: ${m}`), warn = (k, m) => WARN.push(`${k}: ${m}`);
 const read = f => fs.readFileSync(path.join(dir, f), 'utf8'), exists = f => fs.existsSync(path.join(dir, f));
 
@@ -157,9 +157,9 @@ if (gateN > 0) {
   const sim = path.join(__dirname, 'sim.cjs');
   for (const hk of Object.keys(HEROES)) for (const [sp, tr] of GATES) {
     try {
-      const out = execFileSync(process.execPath, [sim, path.join(dir, 'planeswalk.html'), String(gateN)], { env: { ...process.env, HERO: hk, SPARK: String(sp), TRAIL: String(tr) }, encoding: 'utf8', timeout: 1800000, stdio: ['ignore', 'pipe', 'pipe'] });
+      const out = execFileSync(process.execPath, [sim, path.join(dir, 'planeswalk.html'), String(gateN)], { env: Object.assign({ ...process.env, HERO: hk, SPARK: String(sp), CAREFUL: '1' }, tr == null ? {} : { TRAIL: String(tr) }), encoding: 'utf8', timeout: 1800000, stdio: ['ignore', 'pipe', 'pipe'] });
       const m = out.match(/winRate:\s*'([\d.]+)%'/);
-      gateRows.push(`gate ${hk} Spark ${sp} trail ${tr}: ${m ? m[1] + '%' : '?'}`);
+      gateRows.push(`gate ${hk} Spark ${sp}${tr == null ? '' : ' trail ' + tr}: ${m ? m[1] + '%' : '?'}`);
     } catch (e) { fail(`gate ${hk} S${sp}`, (e.stderr || e.message || '').toString().split('\n')[0]) }
   }
 }
