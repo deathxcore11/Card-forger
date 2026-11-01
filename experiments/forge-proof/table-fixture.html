@@ -41,7 +41,7 @@ const params = new URLSearchParams(location.search);
 const STATE = params.get('state') || 'main';
 const YOU = 1, CPU = 2;
 // ?state=pod: a four-player Commander pod, you and three CPUs (seats 2, 3 and 4).
-const POD = STATE === 'pod' || STATE === 'podattack' || STATE === 'podout' || STATE === 'podswing';
+const POD = STATE === 'pod' || STATE === 'podattack' || STATE === 'podout' || STATE === 'podswing' || STATE === 'podearly';
 
 // Board contents per player. [name, options] — options: tapped, attacking, blocking, damage, token, imageKey, counters, sick.
 const BASE = {
@@ -70,6 +70,13 @@ if (STATE === 'discard') BASE.you.hand.push('Shock');
 if (POD) {
   BASE.cpu2 = {battlefield: [['Mountain'], ['Mountain', {tapped: true}], ['Mountain'], ['Swamp'], ['Goblin Guide', {attacking: STATE === 'podattack'}], ['Hill Giant', {attacking: STATE === 'podattack'}], ['Arcane Signet']], hand: 4, graveyard: ['Shock'], exile: [], command: ['Krenko, Mob Boss']};
   BASE.cpu3 = {battlefield: [['Plains'], ['Plains'], ['Forest'], ['Serra Angel'], ['Sol Ring']], hand: 6, graveyard: [], exile: [], command: ['Giada, Font of Hope']};
+}
+// ?state=podearly: the owner's turn-3 pod board. You have one Mountain; the CPUs have a land or two each.
+if (STATE === 'podearly') {
+  BASE.you.battlefield = [['Mountain']];
+  BASE.cpu.battlefield = [];
+  BASE.cpu2.battlefield = [['Mountain', {tapped: true}], ['Goblin Guide']];
+  BASE.cpu3.battlefield = [['Plains'], ['Sol Ring'], ['Serra Angel']];
 }
 // Your commander out on the battlefield: its crest stays beside your profile, dimmed.
 if (STATE === 'cmdfield') { BASE.you.command = []; BASE.you.battlefield.push(['Klothys, God of Destiny', {commander: true}]); }

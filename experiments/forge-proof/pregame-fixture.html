@@ -65,12 +65,15 @@ const avatarUrl = artOf(decks.you);
 const profile = {signedIn: true, displayName: 'idw011', username: 'idw011', avatarUrl, ownerId: 'u1'};
 const tile = (d, on) => `<button class="deck-tile" data-act="playSelectDeck" data-play-deck="${d.id}" aria-pressed="${on}" aria-label="Select ${d.name}"><span class="tile-art">${img(artOf(d), d.name)}</span><span class="tile-shade"></span><span class="tile-top"><span class="deck-format-stack"><span class="chip dark">Commander</span></span></span><span class="tile-body"><b>${d.name}</b><small>${d.commander} · 100/100</small></span></button>`;
 const content = document.getElementById('content'), mat = document.getElementById('practicePlayerMat');
-const setup = {profile, selected: decks.you, opponent: decks.cpu, match: {format: 'Commander', mode: 'cpu', difficulty: 'Medium'}, playStyle: params.get('style') || 'quick'};
+// ?pod=4 (or 3): a Commander pod. The intro shows every CPU; the lobby shows CPU 3 (chosen) and CPU 4 (random).
+const POD = Number(params.get('pod')) || 2;
+const setup = {profile, selected: decks.you, opponent: decks.cpu, match: {format: 'Commander', mode: 'cpu', difficulty: 'Medium', podSize: String(POD), cpu3Level: 'Medium', cpu4Level: 'Hard'}, playStyle: POD > 2 ? 'practice' : params.get('style') || 'quick',
+  extraOpponents: decks.more.slice(0, POD - 2).map(deck => ({deck, difficulty: 'Medium'})), podDecks: {cpu3: POD > 2 ? decks.more[0] : null, cpu4: null}, podSources: {cpu3: POD > 2 ? 'saved' : null, cpu4: null}};
 
 if (SCREEN === 'menu') {
   const all = [decks.you, decks.cpu, ...decks.more], tiles = new Map(all.map(d => [d.id, tile(d, d.id === decks.you.id)]));
-  const state = {profile, match: setup.match, playStyle: params.get('style') || 'quick', decks: all.map(d => ({...d, valid: true})), selected: decks.you, opponent: params.get('style') === 'practice' ? decks.cpu : null, selectedSource: 'saved', opponentSource: 'saved', browse: {source: 'yours', query: ''}, inspectedSeat: 'player', draft: {}};
-  content.innerHTML = playMenuMarkup(state, {engine: 'forge', matchReleaseReady: true, avatarMarkup: profileAvatar(null, {display_name: profile.displayName, username: profile.username, avatar_url: avatarUrl}), deckTiles: tiles, selectedArt: img(artOf(decks.you), ''), matchupArt: {player: img(artOf(decks.you), ''), opponent: state.opponent ? img(artOf(decks.cpu), '') : ''}, deckPreview: '<div class="deck-viewer"><p class="muted small">100 cards · Klothys, God of Destiny</p></div>'});
+  const state = {profile, match: setup.match, podDecks: setup.podDecks, podSources: setup.podSources, playStyle: POD > 2 ? 'practice' : params.get('style') || 'quick', decks: all.map(d => ({...d, valid: true})), selected: decks.you, opponent: params.get('style') === 'practice' || POD > 2 ? decks.cpu : null, selectedSource: 'saved', opponentSource: 'saved', browse: {source: 'yours', query: ''}, inspectedSeat: 'player', draft: {}};
+  content.innerHTML = playMenuMarkup(state, {engine: 'forge', matchReleaseReady: true, avatarMarkup: profileAvatar(null, {display_name: profile.displayName, username: profile.username, avatar_url: avatarUrl}), deckTiles: tiles, selectedArt: img(artOf(decks.you), ''), matchupArt: {player: img(artOf(decks.you), ''), opponent: state.opponent ? img(artOf(decks.cpu), '') : '', cpu3: POD > 2 ? img(artOf(decks.more[0]), '') : ''}, deckPreview: '<div class="deck-viewer"><p class="muted small">100 cards · Klothys, God of Destiny</p></div>'});
 } else if (['intro', 'choice', 'flip', 'landed'].includes(SCREEN)) {
   document.body.classList.add('practice-table-open'); content.hidden = true; mat.hidden = false;
   const own = params.get('first') !== 'cpu';

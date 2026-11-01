@@ -69,7 +69,7 @@ export function eventPlaybackBeats(before,after){
  for(let i=0;i<events.length;i++){
   const e=events[i];
   const run=test=>{const out=[e];while(i+1<events.length&&test(events[i+1]))out.push(events[++i]);return out;};
-  if(e.type==='turn'){push(e,{kind:'phase',tone:'turn',label:isCpu(e.player)?(pod?`${CPU(e.player)}’S TURN`:'OPPONENT’S TURN'):'YOUR TURN',line:isCpu(e.player)?`${cpuName(e.player)}'s turn ${e.number??''}`.trim()+'.':'Your turn.',duration:600});continue;}
+  if(e.type==='turn'){const turnSeat=isCpu(e.player)?rival(e.player)?.seat:b.seat;push(e,{kind:'phase',tone:'turn',...(Number.isSafeInteger(turnSeat)?{seat:turnSeat}:{}),label:isCpu(e.player)?(pod?`${CPU(e.player)}’S TURN`:'OPPONENT’S TURN'):'YOUR TURN',line:isCpu(e.player)?`${cpuName(e.player)}'s turn ${e.number??''}`.trim()+'.':'Your turn.',duration:600});continue;}
   if(e.type==='land'&&isCpu(e.player)){
    // A land never gets a spell's spotlight, but it gets its own beat, as on Arena: it drops into
    // its row on its own before anything else happens, so the play can be followed.
@@ -145,6 +145,7 @@ export function eventPlaybackBeats(before,after){
   }
  }
  settleReveals(beats,b,before?.status?.surface);
+ if(pod)return podPaced(beats);
  // Only the latest turn change is worth a banner; earlier ones would only flash past. Your own
  // turn starting is announced by the table already unless the CPU did something first.
  const lastTurn=beats.findLastIndex(x=>x.tone==='turn');
@@ -153,6 +154,21 @@ export function eventPlaybackBeats(before,after){
  const shownBeats=kept.filter(x=>x.kind!=='log');
  // Three CPUs take turns between yours, so a pod's playback runs quicker and shorter.
  return paced(shownBeats.length===1&&shownBeats[0].label==='YOUR TURN'?kept.filter(x=>x.kind==='log'):kept.slice(pod?-8:-12),pod?2600:5200,pod?.7:1);
+}
+// A Commander pod tells each CPU's turn on its own: the turn passes to that CPU (its seat lights up
+// on the table and its board comes into view), a short hold so you can see whose turn it is, then
+// what it did at a readable pace. Turns are never merged or dropped, so three CPUs never blur into
+// one burst; only a very long backlog keeps the latest turns.
+const POD_HANDOFF=1100,POD_TURN_BUDGET=3600;
+function podPaced(beats){
+ const turns=[];let cur=[];
+ for(const x of beats){if(x.tone==='turn'&&cur.length){turns.push(cur);cur=[];}cur.push(x);}
+ if(cur.length)turns.push(cur);
+ // Your own turn closing the story is the board itself (the table announces it).
+ const last=turns.at(-1);if(last?.length===1&&last[0].tone==='turn'&&last[0].label==='YOUR TURN'&&turns.length>1)turns.pop();
+ if(turns.length===1&&turns[0].length===1&&turns[0][0].label==='YOUR TURN')return [];
+ return turns.slice(-4).flatMap(turn=>{const head=turn[0].tone==='turn'?[{...turn[0],duration:turn[0].label==='YOUR TURN'?700:POD_HANDOFF}]:[],body=head.length?turn.slice(1):turn;
+  return [...head,...paced(body.filter(x=>x.kind!=='log').slice(-8),POD_TURN_BUDGET,.85),...body.filter(x=>x.kind==='log')];});
 }
 // A whole CPU turn (land, spell, resolve, attack, damage) fits in one update at its natural pace;
 // only a longer run (about 5 s of beats) speeds up evenly.
@@ -183,8 +199,8 @@ function settleReveals(beats,b,a){
 // real accepted board replaces it when the playback ends, so nothing here is ever acted on.
 export function stagedSnapshot(before,after,shown){
  const a=before?.status?.surface,b=after?.status?.surface;if(!a||!b)return before;
- const full=new Set(),patch=new Map(),played=new Map();let life=false,turn=false;
- for(const x of shown){if(x.hand!=null)played.set(x.hand,(played.get(x.hand)||0)+1);for(const id of x.reveal||[])full.add(id);for(const [id,p] of Object.entries(x.patch||{}))patch.set(Number(id),{...patch.get(Number(id)),...p});if(x.life)life=true;if(x.tone==='turn')turn=true;}
+ const full=new Set(),patch=new Map(),played=new Map();let life=false,turn=false,turnSeat=null;
+ for(const x of shown){if(x.tone==='turn'&&Number.isSafeInteger(x.seat))turnSeat=x.seat;if(x.hand!=null)played.set(x.hand,(played.get(x.hand)||0)+1);for(const id of x.reveal||[])full.add(id);for(const [id,p] of Object.entries(x.patch||{}))patch.set(Number(id),{...patch.get(Number(id)),...p});if(x.life)life=true;if(x.tone==='turn')turn=true;}
  const was=new Map(a.cards.map(c=>[c.id,c])),now=new Set(b.cards.map(c=>c.id)),cards=[];
  for(const c of b.cards){if(full.has(c.id)){cards.push(c);continue;}const o=was.get(c.id);if(o)cards.push(patch.has(c.id)?{...o,...patch.get(c.id)}:o);}
  for(const o of a.cards)if(!now.has(o.id)&&!full.has(o.id))cards.push(patch.has(o.id)?{...o,...patch.get(o.id)}:o);
@@ -196,8 +212,8 @@ export function stagedSnapshot(before,after,shown){
  // A card leaves the CPU's hand on the beat that plays it.
  const players=(life?b.players:a.players).map(p=>{const was=a.players.find(q=>q.seat===p.seat),is=b.players.find(q=>q.seat===p.seat),n=played.get(p.nativeId);
   return n&&Number.isSafeInteger(was?.handCount)&&Number.isSafeInteger(is?.handCount)?{...p,handCount:Math.max(is.handCount,was.handCount-n)}:p;});
- const surface={...a,cards,stack,players,...(turn?{activeSeat:b.activeSeat,turn:b.turn,phase:b.phase}:{})};
- return {...before,status:{...before.status,surface},native:before.native?{...before.native,stack:nativeStack}:before.native};
+ const surface={...a,cards,stack,players,...(turn?{activeSeat:b.activeSeat,turn:b.turn,phase:b.phase}:{}),...(turnSeat!==null&&turnSeat!==b.activeSeat?{activeSeat:turnSeat,prioritySeat:turnSeat}:{})};
+ return answered({...before,status:{...before.status,surface},native:before.native?{...before.native,stack:nativeStack}:before.native});
 }
 const stages=beat=>!!(beat.reveal?.length||beat.patch&&Object.keys(beat.patch).length||beat.life||beat.tone==='turn');
 // The event log when it covers everything since the last board, the snapshot difference otherwise.
@@ -255,6 +271,14 @@ export function tableActivity(s,{beat=null,overlay=false,recent=[]}={}){
  return cpuPriority||surface.activeSeat!==surface.seat?{kind:'thinking',label:`${thinker||'CPU'} thinking`,detail}:{kind:'working',label:'Forge is applying your play',detail};
 }
 
+// A decision the player already answered (the mulligan above all) leaves the screen while the CPUs'
+// play is told: the story runs on the board, never under a stale "Keep / Mulligan" panel.
+export function answered(s){
+ if(!isPlayerDecision(s))return s;
+ // Only the pregame (mulligan, cards to the bottom); a stop during play keeps its steady layout.
+ const surface=s.status.surface;if(s.native.inputType!=='InputConfirmMulligan'&&Number(surface.turn)>0)return s;
+ return {...s,status:{...s.status,surface:{...surface,awaitingHuman:false}},native:{...s.native,prompt:null,inputType:null,selection:null,buttons:null}};
+}
 export class CpuActionPlaybackQueue {
  constructor({present,beat=()=>{},clear=()=>{},preload=()=>{},reducedMotion=()=>false,speed=()=>1,schedule=(fn,ms)=>setTimeout(fn,ms),cancel=id=>clearTimeout(id)}={}){Object.assign(this,{present,beat,clear,preload,reducedMotion,speed,schedule,cancel});this.current=null;this.latest=null;this.pending=[];this.timer=null;this.running=false;this.overlay=false;this.closed=false;this.recent=[];this.seenSeq=-1;this.loggedSeq=-1;this.target=null;}
  // Overlay playback runs over a board that already asks the player something; it never blocks.
@@ -289,7 +313,7 @@ export class CpuActionPlaybackQueue {
  yieldTo(snapshot){
   const all=playbackBeats(this.current,snapshot),beats=onScreen(all),fresh=beats.filter(b=>!this.seen(b));
   this.stop();this.pending=[];this.remember(all);
-  if(fresh.length&&!this.reducedMotion()){this.present(this.current,true);this.play(beats,snapshot,false);return;}
+  if(fresh.length&&!this.reducedMotion()){this.present(answered(this.current),true);this.play(beats,snapshot,false);return;}
   this.current=snapshot;this.present(snapshot,false);
   if(fresh.length)this.play(fresh.map(b=>({...b,duration:Math.max(350,Math.round(b.duration*.7))})),snapshot,true);
  }
@@ -299,7 +323,7 @@ export class CpuActionPlaybackQueue {
   const next=this.pending.shift();if(!next)return;
   const all=playbackBeats(this.current,next),beats=onScreen(all);this.remember(all);
   if(!beats.some(b=>!this.seen(b))){this.current=next;this.present(next,this.pending.length>0);this.advance();return;}
-  this.present(this.current,true);this.play(beats,next,false);
+  this.present(answered(this.current),true);this.play(beats,next,false);
  }
  play(beats,next,overlay){
   this.running=true;this.overlay=overlay;this.target=next;let index=0;
