@@ -70,3 +70,15 @@ test('a friend match names the other player by the name they chose',()=>{
  assert.equal(projectForge(raw(),{rivalName:'ldwd11'}).surface.players.find(p=>p.seat===1).label,'ldwd11');
  assert.equal(projectForge(raw()).surface.players.find(p=>p.seat===1).label,'CPU');
 });
+
+test('a challenge names one friend; the list keeps only well-formed challenges; "not now" ends it',async()=>{
+ const calls=[];const FRIEND='55555555-5555-4555-8555-555555555555';
+ const rooms=createFriendRooms({getAccessToken:async()=>'fixture.account.token',fetchImpl:async(path,init)=>{calls.push({path,method:init.method,body:init.body&&JSON.parse(init.body)});
+  if(init.method==='GET'&&path==='/api/play/rooms')return Response.json({challenges:[{roomId:ROOM,invite:INVITE,format:'Commander',expiresAt:1,fromId:FRIEND,from:{name:'x'}},{roomId:'bad',invite:INVITE,format:'Commander',fromId:FRIEND},{roomId:ROOM,invite:INVITE,format:'Vintage',fromId:FRIEND}]});
+  if(init.method==='DELETE')return new Response(null,{status:204});
+  return Response.json({roomId:ROOM,format:'Commander',status:'open',seat:'host',invite:INVITE,challenge:true},{status:201});}});
+ await rooms.open('Commander',deck,null,FRIEND);assert.equal(calls[0].body.to,FRIEND);
+ await assert.rejects(rooms.open('Commander',deck,null,'not-an-id'),/FRIEND_INVALID/);
+ const list=await rooms.challenges();assert.equal(list.length,1);assert.equal(list[0].fromId,FRIEND);
+ assert.equal(await rooms.decline(ROOM),null);assert.equal(calls.at(-1).method,'DELETE');
+});

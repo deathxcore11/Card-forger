@@ -132,7 +132,8 @@ export function createFriendRooms({getAccessToken,fetchImpl=globalThis.fetch}={}
  return {
   // {roomId, format, status:'open', expiresAt, seat:'host', invite}
   // player: what the other person sees of you, {name, image, crop} (see friendPlayerCard).
-  async open(format,deck,player){if(!FRIEND_FORMATS.includes(format))throw fail('FRIEND_FORMAT_UNSUPPORTED');const body={format,deck:friendDeck(format,deck)};return withPlayer(b=>call('/api/play/rooms',{body:b}),body,player,'invalid_room');},
+  // to: a friend's account id makes it a challenge only that friend sees, for five minutes.
+  async open(format,deck,player,to){if(!FRIEND_FORMATS.includes(format))throw fail('FRIEND_FORMAT_UNSUPPORTED');if(to!=null&&!UUID.test(to))throw fail('FRIEND_INVALID');const body={format,deck:friendDeck(format,deck),...(to?{to}:{})};return withPlayer(b=>call('/api/play/rooms',{body:b}),body,player,'invalid_room');},
   // The room an invite opens, before choosing a deck: {roomId, format, status, seat:'guest'}.
   async peek(code){return call('/api/play/rooms/join',{body:{invite:invite(code)}});},
   // Take the second seat; the answer names the match both players then open (attach).
@@ -140,6 +141,10 @@ export function createFriendRooms({getAccessToken,fetchImpl=globalThis.fetch}={}
   // The host waits here: status 'started' brings matchId.
   async read(id){return call(room(id),{method:'GET'});},
   async cancel(id){return call(room(id),{method:'DELETE'});},
+  // Challenges waiting for you: [{roomId, invite, format, expiresAt, fromId, from:{name,image,crop}}].
+  async challenges(){const data=await call('/api/play/rooms',{method:'GET'});return Array.isArray(data?.challenges)?data.challenges.filter(c=>UUID.test(c?.roomId||'')&&INVITE.test(c?.invite||'')&&UUID.test(c?.fromId||'')&&FRIEND_FORMATS.includes(c?.format)):[];},
+  // "Not now": the challenge ends quietly; the friend sees that you can't play right now.
+  async decline(id){return call(room(id),{method:'DELETE'});},
  };
 }
 export function createForgeHostClient({readAccount,getAccessToken,fetchImpl=globalThis.fetch,timeoutMs=15000,newId=()=>crypto.randomUUID()}={}){

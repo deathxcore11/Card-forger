@@ -1632,7 +1632,7 @@ let quickStatus={busy:false,error:null},quickSequence=0;
 A.playPlaymat=t=>{setPlaymatChoice(t.dataset.playmat);refreshPlayMenu();document.querySelector('.pl-mat>summary')?.focus({preventScroll:true});};
 // Play home picks the mode; Quick Play and Practice then share one lobby. Inspect is a sheet over it.
 let playView='home',playInspectOpen=false;
-A.playOpenMode=t=>{if(t.dataset.playStyle==='quick'&&t.dataset.playDirect==='true')return quickStartNow(t);playView='lobby';playInspectOpen=false;A.playStyle(t);scrollTo({top:0});document.getElementById('playTitle')?.focus?.({preventScroll:true});};
+A.playOpenMode=t=>{if(t.dataset.playStyle==='quick'&&t.dataset.playDirect==='true')return quickStartNow(t);if(t.dataset.playStyle==='social'&&challenges[0]&&!letter)showLetter(challenges[0]);playView='lobby';playInspectOpen=false;A.playStyle(t);scrollTo({top:0});document.getElementById('playTitle')?.focus?.({preventScroll:true});};
 // Quick Play with a deck already chosen goes straight into the match against a matched CPU (Randall,
 // 1 Nov): no second pick on the setup screen. If the match can't open (sign-in, screen, a deck the engine
 // refuses), the setup screen shows why, and it stays one tap away through "Change deck".
@@ -1652,7 +1652,7 @@ document.addEventListener('click',e=>{for(const d of document.querySelectorAll('
 document.addEventListener('keydown',e=>{if(e.key==='Escape')for(const d of document.querySelectorAll('.pl-format[open]'))d.open=false;if(e.key==='Escape'&&playInspectOpen&&S.ui.view==='play'){e.preventDefault();A.playCloseInspect();}});
 A.playStyle=t=>{quickSequence++;quickStatus={busy:false,error:null};cancelPlayBuilds();const social=t.dataset.playStyle==='social';
  if(social&&!FRIEND_FORMATS.includes(playSetup.snapshot().match.format))playSetup.configure({format:'Commander'});
- if(!social&&friendRoom?.seat==='host'&&friendRoom.status==='open')void A.playFriendCancel();if(!social&&friendRoom?.seat==='guest'){friendRoom=null;forgetFriendInvite();}
+ if(!social&&friendRoom?.seat==='host'&&friendRoom.status==='open')void A.playFriendCancel();if(!social&&friendRoom?.seat==='guest'){friendRoom=null;forgetFriendInvite();}if(!social&&friendRoom?.target)friendRoom=null;
  playSetup.configure({mode:social?'friends':'cpu'});if(t.dataset.playStyle!=='social')playSetup.setPlayStyle(t.dataset.playStyle);refreshPlayMenu();};
 // Friend matches. The host opens a room with their deck and sends the invite link; the friend
 // opens it (signing in first if needed: the invite waits in this tab), picks a deck and joins.
@@ -1668,7 +1668,8 @@ let inviteOpening=false;
 const friendRoomView=()=>{
  const waiting=!friendRoom&&!inviteOpening&&pendingFriendInvite();
  if(waiting&&T.game()==='mtg'&&cloudInfo().user)queueMicrotask(()=>openFriendInvite(waiting));
- return friendRoom&&{...friendRoom,invite:undefined,link:friendRoom.seat==='host'&&friendRoom.status==='open'?inviteLink():null};
+ const face=card=>card&&{...card,avatarHtml:card.avatar!==undefined||card.avatar_url!==undefined?profileAvatar(card.avatar,card):profileAvatar(card.image&&card.crop?{game:'mtg',cardId:'friend',name:card.name||'Friend',image:card.image,...card.crop}:null,{display_name:card.name||'Friend',avatar_url:card.image&&!card.crop?card.image:''})};
+ return friendRoom&&{...friendRoom,invite:undefined,target:face(friendRoom.target),opponent:face(friendRoom.opponent),link:friendRoom.seat==='host'&&friendRoom.status==='open'&&!friendRoom.target?inviteLink():null};
 };
 const setFriendRoom=patch=>{friendRoom=patch&&{...(friendRoom||{}),...patch};refreshPlayMenu();};
 const stopFriendPoll=()=>{clearTimeout(friendPoll);friendPoll=null;};
@@ -1679,7 +1680,7 @@ function pollFriendRoom(){
   const room=friendRoom;if(!room?.roomId||room.seat!=='host'||room.status!=='open')return;
   try{const next=await (await rooms()).read(room.roomId);if(friendRoom?.roomId!==room.roomId)return;
    if(next.status==='started'&&next.matchId){setFriendRoom({status:'started',opponent:next.opponent||null});return A.playFriendLaunch(next.matchId);}
-   if(next.status!=='open'){setFriendRoom({status:null,roomId:null,error:next.status==='expired'?'Your invite expired. Make a new one.':'This room closed.'});return;}
+   if(next.status!=='open'){const who=room.target?.name||'Your friend';setFriendRoom({status:null,roomId:null,error:room.target?(next.status==='declined'?`Not this time. ${who} can't play right now.`:next.status==='expired'?`${who} didn't answer this time. Try again later.`:'This challenge ended.'):next.status==='expired'?'Your invite expired. Make a new one.':'This room closed.'});return;}
   }catch{/* a missed look is retried */}
   pollFriendRoom();
  },2000);
@@ -1688,12 +1689,12 @@ A.playFriendCreate=async()=>{
  const state=playSetup.snapshot();if(!state.selected||friendRoom?.busy)return;
  if(await playUpdates.beforeMatch())return;
  setFriendRoom({seat:'host',busy:true,error:null});
- try{const room=await (await rooms()).open(state.match.format,state.selected,await myFriendCard());
+ try{const room=await (await rooms()).open(state.match.format,state.selected,await myFriendCard(),friendRoom?.target?.id||null);
   setFriendRoom({seat:'host',busy:false,roomId:room.roomId,invite:room.invite,status:'open',copied:false});pollFriendRoom();
  }catch(e){setFriendRoom({busy:false,error:friendError(e)});}
 };
 A.playFriendCancel=async()=>{
- const room=friendRoom;stopFriendPoll();if(!room?.roomId)return;friendRoom=null;refreshPlayMenu();
+ const room=friendRoom;stopFriendPoll();if(!room?.roomId)return;friendRoom=room.target?{seat:'host',target:room.target}:null;refreshPlayMenu();
  try{await (await rooms()).cancel(room.roomId);}catch{/* it expires by itself */}
 };
 // The link is built here, at once, so the copy still counts as the player's own click.
@@ -1730,6 +1731,73 @@ async function showFriendInvite(invite){
 }
 const pendingFriendInvite=()=>{try{return sessionStorage.getItem(FRIEND_INVITE_KEY);}catch{return null;}};
 function forgetFriendInvite(){try{sessionStorage.removeItem(FRIEND_INVITE_KEY);}catch{/* nothing kept */}}
+// Challenges (Randall, 1 Nov: option A). Crossed swords on a friend in the Friends list opens the
+// Multiplayer lobby aimed at that friend; "Send challenge" delivers it to them alone for five minutes.
+// The friend gets a sealed letter with Accept / Not now; "not now" is quiet and never says declined.
+A.playChallenge=async person=>{
+ if(!person?.id)return;
+ if(T.game()!=='mtg'||S.ui.view!=='play')await navigate({game:'mtg',hash:'#play',mode:'push'});
+ if(T.game()!=='mtg')return;
+ if(friendRoom?.roomId&&friendRoom.status==='open'&&friendRoom.seat==='host')await A.playFriendCancel();
+ A.playStyle({dataset:{playStyle:'social'}});playView='lobby';playInspectOpen=false;
+ friendRoom={seat:'host',target:{id:person.id,name:person.label||person.username||person.display_name||'Friend',avatar:person.avatar??null,avatar_url:person.avatar_url||'',username:person.username||'',display_name:person.display_name||''}};
+ refreshPlayMenu();scrollTo({top:0});
+};
+let challenges=[],challengeTimer=0,challengeFriends={at:0,owner:null,people:new Map()},letter=null;
+const answeredChallenges=new Set();
+// Only accepted friends can reach you; their names and pictures come from your own friends list.
+async function friendPeople(){
+ const owner=cloudInfo().user?.id;
+ if(challengeFriends.owner===owner&&Date.now()-challengeFriends.at<300000)return challengeFriends.people;
+ const overview=await communityRequest('overview');
+ challengeFriends={at:Date.now(),owner,people:new Map((overview?.people||[]).filter(p=>p.relationship==='accepted').map(p=>[p.id,p]))};
+ return challengeFriends.people;
+}
+const inMatch=()=>!!(playerMatRoot||practicePregame||playStarting);
+async function checkChallenges(){
+ clearTimeout(challengeTimer);
+ const owner=cloudInfo().user?.id;
+ if(owner&&!accountLocked&&FORGE_PLAY_TEST_ENABLED&&document.visibilityState!=='hidden'&&!inMatch()){
+  try{
+   const [list,people]=await Promise.all([(await rooms()).challenges(),friendPeople()]);
+   if(cloudInfo().user?.id===owner){
+    const next=list.filter(c=>people.has(c.fromId)&&!answeredChallenges.has(c.roomId)).map(c=>({...c,friend:people.get(c.fromId)}));
+    const changed=next.map(c=>c.roomId).join()!==challenges.map(c=>c.roomId).join();challenges=next;
+    if(changed&&S.ui.view==='play')refreshPlayMenu();
+    if(!letter&&challenges[0])showLetter(challenges[0]);
+    if(letter&&!challenges.some(c=>c.roomId===letter.roomId))closeLetter();
+   }
+  }catch{/* checked again shortly */}
+ }
+ challengeTimer=setTimeout(checkChallenges,challenges.length?8000:20000);
+}
+function closeLetter(){letter?.node.remove();clearTimeout(letter?.timer);letter=null;}
+function showLetter(c){
+ closeLetter();
+ const name=c.friend.username||c.friend.display_name||'A friend',node=document.createElement('aside');
+ node.className='cs-challenge-letter';node.setAttribute('role','alertdialog');node.setAttribute('aria-labelledby','csLetterTitle');
+ node.innerHTML=`<span class="cs-wax-seal" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M14.5 17.5 3 6V3h3l11.5 11.5"/><path d="m13 19 6-6"/><path d="m16 16 4 4"/><path d="m19 21 2-2"/><path d="M14.5 6.5 18 3h3v3l-3.5 3.5"/><path d="m5 14 4 4"/><path d="m7 17-3 3"/><path d="m3 19 2 2"/></svg></span><div class="cs-letter-who">${profileAvatar(c.friend.avatar,c.friend)}<span><b id="csLetterTitle">${esc(name)} challenges you</b><small>${esc(c.format)} · friend match</small></span></div><div class="cs-letter-actions"><button type="button" class="cs-letter-later">Not now</button><button type="button" class="cs-letter-accept">Accept</button></div>`;
+ node.querySelector('.cs-letter-accept').onclick=()=>acceptChallenge(c);
+ node.querySelector('.cs-letter-later').onclick=()=>declineChallenge(c);
+ document.body.append(node);
+ letter={roomId:c.roomId,node,timer:setTimeout(()=>{answeredChallenges.add(c.roomId);challenges=challenges.filter(x=>x.roomId!==c.roomId);closeLetter();if(S.ui.view==='play')refreshPlayMenu();},Math.max(0,c.expiresAt-Date.now()))};
+ node.querySelector('.cs-letter-accept').focus({preventScroll:true});
+}
+async function acceptChallenge(c){
+ answeredChallenges.add(c.roomId);challenges=challenges.filter(x=>x.roomId!==c.roomId);closeLetter();
+ if(T.game()!=='mtg')await navigate({game:'mtg',hash:'#play',mode:'push'});
+ if(T.game()!=='mtg')return;
+ if(S.ui.view!=='play')await navigate({game:'mtg',hash:'#play',mode:'push'});
+ A.playStyle({dataset:{playStyle:'social'}});await openFriendInvite(c.invite);
+}
+async function declineChallenge(c){
+ answeredChallenges.add(c.roomId);challenges=challenges.filter(x=>x.roomId!==c.roomId);closeLetter();
+ if(S.ui.view==='play')refreshPlayMenu();
+ try{await (await rooms()).decline(c.roomId);}catch{/* it ends by itself in five minutes */}
+ if(challenges[0])showLetter(challenges[0]);
+}
+document.addEventListener('visibilitychange',()=>{if(document.visibilityState==='visible')void checkChallenges();});
+setTimeout(checkChallenges,4000);
 A.playFriendJoin=async()=>{
  const state=playSetup.snapshot(),room=friendRoom;if(!state.selected||room?.seat!=='guest'||room.busy)return;
  if(await playUpdates.beforeMatch())return; // the invite waits in this tab and reopens
@@ -1970,7 +2038,7 @@ function renderPlayPage() {
   const inspected=state.playStyle!=='quick'&&state.match.mode==='cpu'?playSeatDeck(state,state.inspectedSeat):state.selected;
   if(state.match.mode==='cpu')warmForgeEngine(state);
   if(!playUpdateChecked){playUpdateChecked=true;queueMicrotask(updatePlayWhileIdle);}
-  return playMenuMarkup(state,{friendRoom:friendRoomView(),canShare:typeof navigator.share==='function',view:playView,inspectOpen:playInspectOpen,engine:FORGE_PLAY_TEST_ENABLED?'forge':'phase',sourceEntries:sources,sourceArt,cpuDifficulties:readCpuOptions({engine:FORGE_PLAY_TEST_ENABLED?'forge':'phase'}),quickStatus,sourceStatus:currentPlaySources().statuses[state.browse.source+':'+state.match.format]||{},savedCopy:savedPlayCopy(inspected),savePending:playSaver.isSaving(inspected),matchReleaseReady:PLAY_MATCH_RELEASE_READY,avatarMarkup:profileAvatar(p.avatarArt,{display_name:p.displayName,username:p.username,avatar_url:p.avatarUrl}),deckTiles:tiles,deckPreview:playDeckPreview(inspected),importPreview:playDeckPreview(state.reviewDeck),selectedArt:V.deckArtwork(inspected),matchupArt:{player:V.deckArtwork(state.selected),opponent:V.deckArtwork(state.opponent),cpu3:state.podDecks?.cpu3?V.deckArtwork(state.podDecks.cpu3):'',cpu4:state.podDecks?.cpu4?V.deckArtwork(state.podDecks.cpu4):''}});
+  return playMenuMarkup(state,{friendRoom:friendRoomView(),challengeCount:challenges.length,canShare:typeof navigator.share==='function',view:playView,inspectOpen:playInspectOpen,engine:FORGE_PLAY_TEST_ENABLED?'forge':'phase',sourceEntries:sources,sourceArt,cpuDifficulties:readCpuOptions({engine:FORGE_PLAY_TEST_ENABLED?'forge':'phase'}),quickStatus,sourceStatus:currentPlaySources().statuses[state.browse.source+':'+state.match.format]||{},savedCopy:savedPlayCopy(inspected),savePending:playSaver.isSaving(inspected),matchReleaseReady:PLAY_MATCH_RELEASE_READY,avatarMarkup:profileAvatar(p.avatarArt,{display_name:p.displayName,username:p.username,avatar_url:p.avatarUrl}),deckTiles:tiles,deckPreview:playDeckPreview(inspected),importPreview:playDeckPreview(state.reviewDeck),selectedArt:V.deckArtwork(inspected),matchupArt:{player:V.deckArtwork(state.selected),opponent:V.deckArtwork(state.opponent),cpu3:state.podDecks?.cpu3?V.deckArtwork(state.podDecks.cpu3):'',cpu4:state.podDecks?.cpu4?V.deckArtwork(state.podDecks.cpu4):''}});
 }
 const refreshPlayMenu=()=>{if(S.ui.view==='play'&&T.game()==='mtg'){
   const scrolls=[...document.querySelectorAll('[data-play-scroll]')].map(n=>[n.dataset.playScroll,n.scrollTop]);
@@ -3970,7 +4038,7 @@ async function saveProfileArtwork(kind,value){
 const artworkSaved=()=>{refreshProfileAvatar();settingsPopup.refresh();void community.refresh();toast('Profile artwork saved.');};
 const profilePicker=createProfileArtPicker({lookup:homeLookup,currentGame:T.game,read:()=>cloudInfo().art?.avatar||community.data?.art?.avatar||S.state.settings.cardAvatar,save:value=>saveProfileArtwork('avatar',value),onSaved:artworkSaved});
 const headerPicker=createProfileArtPicker({purpose:'header',lookup:homeLookup,currentGame:T.game,read:()=>cloudInfo().art?.header||community.data?.art?.header||S.state.settings.profileHeader,save:value=>saveProfileArtwork('header',value),onSaved:artworkSaved});
-const community=createCommunity({account:cloudInfo,request:communityRequest,rerender:render,active:()=>S.ui.view==='community',localArt:()=>({avatar:S.state.settings.cardAvatar,header:S.state.settings.profileHeader}),toast,
+const community=createCommunity({account:cloudInfo,request:communityRequest,rerender:render,active:()=>S.ui.view==='community',challenge:FORGE_PLAY_TEST_ENABLED?person=>void A.playChallenge(person):null,localArt:()=>({avatar:S.state.settings.cardAvatar,header:S.state.settings.profileHeader}),toast,
  onChange:data=>{S.ui.communityRequests=incomingRequestCount(data);S.ui.communityFriends=data?(data.people||[]).filter(p=>p.relationship==='accepted').length:null;refreshProfileAvatar();if(settingsPopup.isOpen)settingsPopup.refresh();},
  copyDeck:async item=>{const generation=accountGeneration,owner=cloudInfo().user?.id;if(accountLocked||!owner)throw Error('Sign in before saving a deck.');const d=sharedDeckCopy(item,uid());await commit(state=>{(item.game==='mtg'?state:state.tcg[item.game]).decks.push(d);},{enrich:false,guard:()=>{if(accountLocked||generation!==accountGeneration||cloudInfo().user?.id!==owner)throw Error('Your account changed. Please try again.');return true;}});},
  editItem:async item=>{const generation=accountGeneration;if(accountLocked)return;await navigate({game:item.game,hash:item.kind==='binder'?'#collection':item.game==='mtg'?'#deck/'+item.key.slice(('deck:'+item.game+':').length)+'/cards':'#tdeck/'+item.key.slice(('deck:'+item.game+':').length),mode:'push'});if(generation!==accountGeneration||T.game()!==item.game)return;if(item.kind==='binder')A.editBinder({dataset:{binder:item.key.slice(7)}});},
