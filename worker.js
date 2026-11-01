@@ -12,6 +12,7 @@ import {dailyCardRoute} from './daily-card-route.js';
 export {ConditionPriceCache} from './condition-cache.js';
 import {conditionFeedRoute} from './condition-feed-route.js';
 import {weeklyCurationRoute,scheduledWeeklyCuration} from './weekly-curation-route.js';
+import {newsPulseRoute} from './news-pulse-route.js';
 import { aiReviewRoute } from './ai-review-route.js';
 import { aiAskRoute } from './ai-ask-route.js';
 import {mtgWikiReferenceRoute,wikiReferenceRoute} from './mtg-wiki-reference.js';
@@ -24,7 +25,7 @@ import {archivePriceRoute} from "./historical-archive.js";
 import {pokemonPriceRoute} from "./pokemon-prices.js";
 import {mtgTcgPriceRoute} from "./mtg-tcg-route.js";
 import {pokemonArtRoute, tcgplayerSetsRoute} from "./pokemon-art.js";
-import {magicSetArtwork,packArtwork} from "./set-art.js";
+import {magicSetArtwork,packArtwork,packArtFallbacks} from "./set-art.js";
 // Card backs from each game's own image host (Scryfall, the Pokémon TCG site, YGOPRODeck).
 const CARD_BACKS={mtg:'https://backs.scryfall.io/normal/0/a/0aeebaf5-8c7d-4636-9e82-8c27447861f7.jpg',ptcg:'https://tcg.pokemon.com/assets/img/global/tcg-card-back-2x.jpg',ygo:'https://images.ygoprodeck.com/images/cards/back_high.jpg'};
 import { watchRoute, historyRoute, recordDailyPrices } from "./pricefeed.js";
@@ -273,6 +274,7 @@ const handlers = {
     if (url.pathname === '/api/reference/mtg-wiki') return mtgWikiReferenceRoute(request);
     if (url.pathname === '/api/reference/wiki') return wikiReferenceRoute(request);
     if (url.pathname === '/api/daily-card') return dailyCardRoute(request, env);
+    if (url.pathname === '/api/news') return newsPulseRoute(request, url, ctx);
     if (url.pathname === '/api/community' || url.pathname === '/api/meta/curation') return weeklyCurationRoute(request, url, env);
     if (url.pathname === "/api/ai/matchup") return aiMatchupRoute(request, env);
     if (url.pathname === "/api/ai/deck-review") return aiReviewRoute(request, env);
@@ -284,8 +286,13 @@ const handlers = {
       const code=url.searchParams.get('code')||'',name=url.searchParams.get('name')||'';
       if(!/^[a-z0-9]{0,8}$/i.test(code)||name.length>120||!(code||name))return new Response('Invalid set',{status:400});
       const hit=await caches.default.match(request);if(hit)return hit;
-      try{const art=await packArtwork(packImage[1],{code,name});if(!art)return new Response('No pack artwork',{status:404,headers:{'Cache-Control':'public, max-age=86400'}});
-        const upstream=await fetch(art.url,{signal:AbortSignal.timeout(15000)});if(!upstream.ok)return new Response('Pack artwork unavailable',{status:404});
+      try{
+        // TCGplayer's single booster pack first, then the set's own product shot (YGOPRODeck set image,
+        // MTGJSON's booster box), so a pack never comes back empty because one catalogue lacks it.
+        const urls=[];try{const art=await packArtwork(packImage[1],{code,name});if(art)urls.push(art.url);}catch{}
+        urls.push(...await packArtFallbacks(packImage[1],{code,name}));
+        let upstream=null;for(const u of urls){try{const r=await fetch(u,{signal:AbortSignal.timeout(15000),headers:{'User-Agent':'CardStashy (booster pack artwork)'}});if(r.ok&&/^image\//.test(r.headers.get('Content-Type')||'')){upstream=r;break;}}catch{}}
+        if(!upstream)return new Response('No pack artwork',{status:404,headers:{'Cache-Control':'public, max-age=21600'}});
         const res=new Response(upstream.body,{headers:{'Content-Type':upstream.headers.get('Content-Type')||'image/jpeg','Cache-Control':`public, max-age=${MONTH}`,'X-Art-Source':'tcgcsv / TCGplayer','Access-Control-Allow-Origin':'*'}});ctx.waitUntil(caches.default.put(request,res.clone()));return res;
       }catch{return new Response('Pack artwork unavailable',{status:503,headers:{'Cache-Control':'no-store'}});}
     }

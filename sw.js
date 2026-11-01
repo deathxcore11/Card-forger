@@ -167,7 +167,7 @@ const ASSETS = [
   "./daily-clock.js",
   "./home-deck-activity.js",
   "./game-navigation.js",
-  "./community-feed.js",
+  "./community-feed.js", "./news-pulse.js",
   "./community-art.js",
   "./community-sources.js",
   "./power.js",

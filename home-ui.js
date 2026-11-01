@@ -2,6 +2,9 @@
 import { GAMES, GAME_IDS, GAME_ICON } from './games.js';
 import { esc, safeHref, usd } from './ui.js';
 import { communityState, communitySlides, metaDeckSlides, loadCommunity, communitySlideUrl, COMMUNITY_LINKS } from './community-feed.js';
+import { loadPulse, pulseState } from './news-pulse.js';
+// Home's news: the shared publisher edition and the half-hourly live pulse, together.
+const loadHomeNews = g => Promise.allSettled([loadCommunity(g), loadPulse(g)]);
 import { loadMeta, metaState, DEFAULT_MTG_META_FORMAT } from './meta.js';
 import { communityArtwork, handleCommunityArtwork } from './community-art.js';
 import { S } from './store.js';
@@ -296,7 +299,8 @@ function communityPageHtml(g, page) {
 }
 export function homeCommunity(g) {
   const page = communityPage(g), state = communityState(g), directory = COMMUNITY_LINKS[g];
-  const status = state.busy && !state.data ? 'Checking sources…' : (state.error || state.data?.error || state.data?.status === 'unavailable') ? 'Some sources unavailable · verified stories shown where available' : state.data?.cadence === 'weekly' ? `Shared weekly edition${state.data?.curatedAt ? ' · ' + displayDate(state.data.curatedAt) : ''}` : 'Checked daily · recent stories';
+  const live = pulseState(g).items.length > 0;
+  const status = state.busy && !state.data && !live ? 'Checking sources…' : live ? 'Live · news and community, refreshed every half hour' : (state.error || state.data?.error || state.data?.status === 'unavailable') ? 'Some sources unavailable · verified stories shown where available' : state.data?.cadence === 'weekly' ? `Shared weekly edition${state.data?.curatedAt ? ' · ' + displayDate(state.data.curatedAt) : ''}` : 'Checked daily · recent stories';
   return `<section class="home-community" data-home-community="${g}" data-home-gesture="carousel" role="region" aria-roledescription="carousel" aria-label="${esc(GAMES[g].short)} news and events"><div class="section-head"><h2>News</h2><span class="community-heading-note">${esc(GAMES[g].short)}</span></div><div class="community-stage" aria-live="polite" aria-atomic="true">${communityPageHtml(g, page)}</div><nav class="community-source-links" aria-label="News and event sources"><a href="${esc(directory.news)}" target="_blank" rel="noopener noreferrer">News source</a><a href="${esc(directory.events)}" target="_blank" rel="noopener noreferrer">Find events</a></nav><div class="community-footer"><span class="community-status">${esc(status)}</span><div class="community-controls"><button class="community-arrow" type="button" data-community-step="-1" aria-label="Previous news page"${page.pages < 2 ? ' disabled' : ''}>←</button><span class="community-position" aria-live="off">${page.position}</span><button class="community-arrow" type="button" data-community-step="1" aria-label="Next news page"${page.pages < 2 ? ' disabled' : ''}>→</button></div></div></section>`;
 }
 // Compatibility entrypoint, now the single shared discovery composition.
@@ -305,7 +309,7 @@ export function homeEdition(g) { return `<div class="home-editorial">${homeCommu
 
 // Refresh only the community section: async data must not replace a user's search text,
 // reset scroll, steal focus, or apply a previous game's response after a swipe.
-export function refreshHomeCommunity(g, root, { now = Date.now(), loadNews = loadCommunity, loadDecks = loadMeta, documentRef = globalThis.document } = {}) {
+export function refreshHomeCommunity(g, root, { now = Date.now(), loadNews = loadHomeNews, loadDecks = loadMeta, documentRef = globalThis.document } = {}) {
   const deckKey = homeMetaKey(g), requestKey = `${g}:${deckKey}`;
   let originCommunity = root.querySelector?.(`[data-home-community="${g}"]`);
   const originMeta = root.querySelector?.(`[data-home-meta="${g}"]`);
@@ -320,7 +324,7 @@ export function refreshHomeCommunity(g, root, { now = Date.now(), loadNews = loa
     return !!(sameCommunity || sameMeta);
   };
   const last = requests.get(requestKey);
-  if (last && (last.pending || now - last.at < (last.failed ? 5 * 60000 : DAY))) {
+  if (last && (last.pending || now - last.at < (last.failed ? 5 * 60000 : 30 * 60000))) {
     // Re-entering Home subscribes the new mount to the same bounded request.
     // One subscription per application root replaces, not accumulates, old mounts.
     if (last.pending) last.mounts.set(root, paint);

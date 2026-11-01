@@ -5130,8 +5130,13 @@ body[data-view="home"] #content > #homeHero.home-art-header{background:none}
 .ask-items:has(.deck-flow-result){display:block}.ask-msg .deck-flow-result{width:100%}.ask-msg .deck-flow-result .ai-review{padding:12px 0;border:0;box-shadow:none;background:transparent}
 @media(max-width:420px){.deck-setup-fields{grid-template-columns:1fr}}
 
-.today-pack .today-pack-fallback{display:none;width:100px;min-height:140px;align-content:center;gap:12px;padding:12px;border:1px solid var(--line);border-radius:8px;background:linear-gradient(145deg,var(--surface-2),var(--surface));color:var(--text);font-size:12px;text-align:center}
-.today-pack.pack-art-unavailable .today-pack-fallback,.today-pack .today-pack-fallback.shown{display:grid}.today-pack-fallback>span{color:var(--gold)}
+/* Today's pack without its real wrapper: the card's art sealed in a foil pack (crimped ends, sheen). */
+.today-pack .today-pack-wrap{position:absolute;inset:0;background:radial-gradient(120% 70% at 30% 20%,#ffffff2e,transparent 55%),linear-gradient(160deg,var(--today-pack-a,#3b2f63),var(--today-pack-b,#141022))}
+.today-pack[data-game="mtg"]{--today-pack-a:#7a4a1c;--today-pack-b:#1d120a}.today-pack[data-game="ptcg"]{--today-pack-a:#2c5ea8;--today-pack-b:#0e1b33}.today-pack[data-game="ygo"]{--today-pack-a:#5b2f86;--today-pack-b:#170c26}
+.today-pack .pack-crimp-band{display:none;position:absolute;left:0;right:0;height:9%;z-index:2;background:repeating-linear-gradient(90deg,#d9dce4 0 2px,#8d93a3 2px 4px);box-shadow:0 1px 0 #0006,0 -1px 0 #0006;pointer-events:none}
+.today-pack .pack-crimp-band.top{top:0}.today-pack .pack-crimp-band.bottom{bottom:0}
+.today-pack.pack-generic .pack-crimp-band,.today-pack.pack-art-unavailable .pack-crimp-band{display:block}
+.today-pack.pack-generic>img{inset:9% 0;height:82%;object-position:50% 18%;filter:saturate(1.1) contrast(1.05)}
 
 .release-dot{display:inline-block;flex:none;width:8px;height:8px;border-radius:50%;background:#ef5261;box-shadow:0 0 0 2px var(--surface);margin-inline:5px}.profile-menu>.release-dot{position:absolute;top:4px;right:2px;width:10px;height:10px}.settings-release{margin:16px 0;padding:12px 0;border-block:1px solid var(--line)}.settings-release h3{font-size:1rem;margin:0}.settings-release summary{padding-block:12px;min-height:44px;cursor:pointer}.settings-release li{margin-block:8px}
 /* Brand actions stay consistent across game accents. Artwork supplies character. */

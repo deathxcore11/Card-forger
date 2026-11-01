@@ -3,6 +3,7 @@ import { curatedMetaDecks } from './meta-curation.js';
 import { metaState as readMetaState } from './meta.js';
 import { communityDeckArtwork, safeCommunityImage } from './community-art.js';
 import { NEWS_SOURCES, newsSource, safeNewsArticle, safeNewsSourceUrl } from './community-sources.js';
+import { pulseState } from './news-pulse.js';
 
 // Home is a view of the existing tournament cache, not a second deck provider.
 // The shared weekly publisher feed has a daily read-only browser cache. Dates retain their
@@ -141,11 +142,14 @@ export function communitySlides(game, { metaState: M, metaKey, format = 'Standar
   if (!games.includes(game)) return [];
   metaKey ||= game === 'mtg' ? `mtg:${format}` : game;
   M ||= readMetaState(metaKey);
-  const info = COMMUNITY_LINKS[game], N = communityState(game), items = validItems([...(N.data?.items || []), ...editionStories(game, now)], game, now), news = items.filter(x => x.kind === 'news'), events = items.filter(x => x.kind === 'event').sort((a, b) => a.startsAt.localeCompare(b.startsAt)), decks = metaDeckSlides(game, M, metaKey, now), result = resultSlide(game, M, now);
+  const info = COMMUNITY_LINKS[game], N = communityState(game), items = validItems([...(N.data?.items || []), ...editionStories(game, now)], game, now), pulse = validItems(pulseState(game).items, game, now).filter(x => !items.some(y => y.url === x.url));
+  // Publisher news leads; the live pulse (subreddit + article feed) takes every other slot after it.
+  const official = items.filter(x => x.kind === 'news'), news = []; for (let i = 0; i < Math.max(official.length, pulse.length); i++) { if (official[i]) news.push(official[i]); if (pulse[i]) news.push(pulse[i]); }
+  const events = items.filter(x => x.kind === 'event').sort((a, b) => a.startsAt.localeCompare(b.startsAt)), decks = metaDeckSlides(game, M, metaKey, now), result = resultSlide(game, M, now);
   const link = (category, title, summary, url = info[category]) => ({ id: `link:${game}:${category}`, game, kind: 'link', category, title, summary, url, source: category === 'decks' ? game === 'ptcg' ? 'Limitless' : game === 'ygo' ? 'YGOPRODeck' : format === 'EDH' ? 'MTGTop8' : 'Magic Online' : category === 'events' && game === 'ptcg' ? 'Pokémon' : info.source, publishedAt: '', fetchedAt: '', dateLabel: '', stale: false });
   const newsLink = link('news', `${info.name} news`, N.error || N.data?.status === 'unavailable' ? 'Automatic headlines unavailable. Open the news source.' : 'Open the news source. This is a source link, not a fetched story.');
   const eventsLink = link('events', `Find ${info.name} events`, 'Browse the official event listings for dates, locations and registration.');
   const deckLink = link('decks', 'Explore tournament decks', 'Open published tournament decklists at the source.', game === 'mtg' && format === 'EDH' ? 'https://www.mtgtop8.com/format?f=cEDH' : info.decks);
   // Alternate subjects rather than stacking all news ahead of decks and events.
-  return [news[0] || newsLink, decks[0] || deckLink, events[0] || result || eventsLink, ...news.slice(1, 4), ...decks.slice(1, 2), ...events.slice(1, 2), ...(game === 'ptcg' && !news.some(row => row.sourceId === 'serebii') && news.length ? [newsLink] : []), ...(events.length || result ? [eventsLink] : [])].filter(Boolean).slice(0, 9);
+  return [news[0] || newsLink, decks[0] || deckLink, events[0] || result || eventsLink, ...news.slice(1, 4), ...decks.slice(1, 2), ...events.slice(1, 2), ...news.slice(4, 12), ...(game === 'ptcg' && !news.some(row => row.sourceId === 'serebii') && news.length ? [newsLink] : []), ...(events.length || result ? [eventsLink] : [])].filter(Boolean).slice(0, 18);
 }
