@@ -55,22 +55,25 @@ export function createCardFacts({fetchImpl = globalThis.fetch?.bind(globalThis),
     },
     // Name, symbol, release date and how many different cards its packs hold.
     async wantSets(codes) {
-      const need = [...new Set(codes)].filter(c => /^[a-z0-9]{2,8}$/.test(c || '') && !data.sets[c] && !tried.has('set:' + c));
+      // A set saved without art (Scryfall was busy) is asked again once per visit, so the wrapper fills in.
+      const need = [...new Set(codes)].filter(c => /^[a-z0-9]{2,8}$/.test(c || '') && !(data.sets[c]?.art) && !tried.has('set:' + c));
       if (!need.length) return;
       need.forEach(c => tried.add('set:' + c));
-      // Four sets at a time, to stay inside Scryfall's ten requests a second.
-      for (let i = 0; i < need.length; i += 4) {
-        await Promise.all(need.slice(i, i + 4).map(async code => {
+      // Two sets at a time (up to three requests each), to stay inside Scryfall's ten requests a second.
+      for (let i = 0; i < need.length; i += 2) {
+        await Promise.all(need.slice(i, i + 2).map(async code => {
           const find = q => getJson(SCRYFALL + '/cards/search?unique=cards&order=edhrec&q=' + encodeURIComponent(q));
           // Newer sets are not always tagged is:booster on Scryfall yet; fall back to the whole set.
           let [info, search] = await Promise.all([getJson(SCRYFALL + '/sets/' + code), find('e:' + code + ' is:booster')]);
           if (!search?.data?.length) search = await find('e:' + code);
           // The pack wrapper wears the set's most played card's art.
           const lead = (search?.data || []).map(cardFact).find(f => f.a);
-          if (info?.code) data.sets[code] = {name: info.name, icon: info.icon_svg_uri || '', released: info.released_at || '',
-            total: Number(search?.total_cards) || Number(info.card_count) || null, art: lead?.a || ''};
+          // Keep what is already known when this answer came back thinner (a busy Scryfall answers null).
+          const old = data.sets[code] || {};
+          if (info?.code || old.name) data.sets[code] = {name: info?.name || old.name, icon: info?.icon_svg_uri || old.icon || '', released: info?.released_at || old.released || '',
+            total: Number(search?.total_cards) || old.total || Number(info?.card_count) || null, art: lead?.a || old.art || ''};
         }));
-        if (i + 4 < need.length) { save(); await new Promise(r => setTimeout(r, 450)); }
+        if (i + 2 < need.length) { save(); await new Promise(r => setTimeout(r, 600)); }
       }
       save();
     },

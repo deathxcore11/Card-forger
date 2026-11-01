@@ -48,23 +48,22 @@ export function playHomeMarkup({econ = null, facts = null, signedIn = false, mod
   const decks = state.decks || [];
   const deckCard = d => { const count = (d.cards || []).reduce((t, c) => t + (c.qty | 0), 0), lead = (d.cards || []).find(c => !isBasicLand(c.name));
     return `<button type="button" class="home-personal-deck" data-act="playEconEditDeck" data-econ-deck="${esc(d.id)}"><span class="home-personal-art" aria-hidden="true">${lead ? `<img src="${esc(cardImageByName(lead.name, 'art_crop'))}" alt="" loading="lazy" referrerpolicy="no-referrer">` : ''}</span><span class="home-personal-copy"><b>${esc(d.name || 'Untitled deck')}</b><small>${esc(d.format || 'Standard')} · ${count}/${deckRules(d.format).size} cards</small></span></button>`; };
-  const deckRow = `<div class="home-personal-grid pe-home-decks"><button type="button" class="home-personal-deck pe-home-build" data-act="playEconEditDeck" data-econ-deck=""><span class="home-personal-art" aria-hidden="true"><img src="https://cards.scryfall.io/art_crop/front/f/d/fd99bce1-ce39-464b-8e61-2631eb3ed6f6.jpg" alt="" loading="lazy" referrerpolicy="no-referrer"></span><span class="home-personal-copy"><b>Build a deck</b><small>From the cards you own</small></span></button>${decks.slice(0, 2).map(deckCard).join('')}</div>`;
+  const deckRow = `<div class="home-personal-grid pe-home-decks"><button type="button" class="home-personal-deck pe-home-build" data-act="playEconEditDeck" data-econ-deck=""><span class="home-personal-art" aria-hidden="true"><img src="https://cards.scryfall.io/art_crop/front/f/d/fd99bce1-ce39-464b-8e61-2631eb3ed6f6.jpg" alt="" loading="lazy" referrerpolicy="no-referrer"></span><span class="home-personal-copy"><b>Build a deck</b><small>From the cards you own</small></span></button>${decks.slice(0, 3).map(deckCard).join('')}</div>`;
   // Collection: the sets you are filling, with the app's progress bars.
-  const sets = playSetRows(state, facts).slice(0, 3);
+  const sets = playSetRows(state, facts).slice(0, 4);
   const owned = (state.cards || []).length;
   const setRow = sets.length ? `<div class="set-list set-year-grid set-browser-flat pe-set-grid">${sets.map(x => `<button class="set-row set-browser-tile" data-act="playEconSet" data-econ-set="${esc(x.code)}" data-econ-from="home" aria-label="${esc(x.name)}: ${x.owned} of ${x.total ?? 'unknown'} cards">${setRowContent({name: x.name, ambient: true, magicSet: {code: x.code, name: x.name}, code: x.code.toUpperCase(), image: x.icon, symbol: `<span class="set-icon" style="--icon:url('${esc(x.icon)}')" aria-hidden="true"></span>`, detail: x.released ? x.released.slice(0, 4) : '', count: x.total, progress: {key: 'play:' + x.code, owned: x.owned, total: x.total, loaded: x.total || 0, known: x.total || 0, complete: true}})}</button>`).join('')}</div>` : '';
   // Merchant: the newest sets first, so new releases are easy to find.
   const price = state.config?.packPrice || 500, coins = state.wallet?.coins | 0;
-  const shop = (state.shop || []).slice(0, 6);
+  const shop = (state.shop || []).slice(0, 12);
   const shopRow = shop.length ? `<div class="pe-home-shop">${shop.map(s => `<article class="pe-pack pe-pack--shop" aria-label="${esc(s.name)}">${boosterMarkup({code: s.code, name: s.name, facts})}<button class="pe-buy" data-act="playEconBuy" data-econ-set="${esc(s.code)}" ${coins < price || econ.busy ? 'disabled' : ''} aria-label="Buy a ${esc(s.name)} pack for ${n(price)} coins">${coinIcon('pe-coin--sm')}<b>${n(price)}</b></button></article>`).join('')}</div>` : '';
   return `<section class="play-menu play-menu--forge pl-home pe-home" aria-labelledby="playTitle">
     ${head}
     ${storyHeader(act, facts, story)}
-    ${shelf('Your packs', viewLink('packs', 'All packs'), packs, 'peHomePacks')}
+    <div class="pe-home-duo">${shelf('Your packs', viewLink('packs', 'All packs'), packs, 'peHomePacks')}${forgeMarkup(econ, {compact: true})}</div>
     ${shelf('Play', '', modesHtml, 'peHomeModes')}
-    ${forgeMarkup(econ, {compact: true})}
-    ${shelf('Your decks', viewLink('decks', 'All decks'), deckRow, 'peHomeDecks')}
-    ${shelf('Your collection', viewLink('collection', `${n(owned)} cards`), setRow || `<p class="pe-home-empty">Open a pack and your first set starts filling in.</p>`, 'peHomeColl')}
+    <div class="pe-home-duo">${shelf('Your decks', viewLink('decks', 'All decks'), deckRow, 'peHomeDecks')}
+    ${shelf('Your collection', viewLink('collection', `${n(owned)} cards`), setRow || `<p class="pe-home-empty">Open a pack and your first set starts filling in.</p>`, 'peHomeColl')}</div>
     ${shopRow ? shelf('Merchant', viewLink('shop', 'Every set'), shopRow, 'peHomeShop') : ''}
   </section>`;
 }

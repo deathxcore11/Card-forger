@@ -85,7 +85,7 @@ export function forgeMarkup(snapshot, {compact = false} = {}) {
     const name = SEALS.find(x => x.key === to).rarity;
     return `<span class="pe-forge-step${can ? ' ready' : ''}"><span class="pe-forge-meter" role="img" aria-label="${n(have)} of ${ratio} ${SEALS.find(x => x.key === from).rarity} seals for the next ${name} seal">${Array.from({length: ratio}, (_, i) => `<i class="${i < part ? 'on' : ''}"></i>`).join('')}</span>
       <button class="pe-forge-strike" data-act="playEconForge" data-econ-to="${to}" data-econ-times="1" ${can && !busy ? '' : 'disabled'} aria-label="Forge ${ratio} ${SEALS.find(x => x.key === from).rarity} seals into 1 ${name} seal"><span aria-hidden="true">Forge ${name}</span></button>
-      ${can > 1 ? `<button class="link small pe-forge-all" data-act="playEconForge" data-econ-to="${to}" data-econ-times="${can}" ${busy ? 'disabled' : ''}>Forge ${can}</button>` : ''}</span>`;
+      ${can > 1 ? `<button class="link small pe-forge-all" data-act="playEconForge" data-econ-to="${to}" data-econ-times="${can}" ${busy ? 'disabled' : ''}>Forge ${can}</button>` : can ? '' : `<span class="pe-forge-hint">${ratio - have} more ${SEALS.find(x => x.key === from).rarity}</span>`}</span>`;
   };
   return `<section class="pe-forge${compact ? ' pe-forge--compact' : ''}" aria-labelledby="peForgeTitle${compact ? 'Home' : ''}">
     <div class="pe-forge-head"><h2 id="peForgeTitle${compact ? 'Home' : ''}">The Forge</h2><p>Three seals of one rarity strike one of the next. Seals stamp any card of their rarity at the Merchant.</p></div>

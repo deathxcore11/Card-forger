@@ -975,23 +975,22 @@ body[data-mode="play"] #gameTabs,body[data-mode="play"] [data-nav="scan"]{displa
 .pe-forge{display:grid;gap:12px;padding:16px;border-radius:18px;border:1px solid #d6ad6440;background:radial-gradient(120% 140% at 50% 120%,#5a2a0e66,transparent 60%),linear-gradient(180deg,#17120d,#100c09);box-shadow:inset 0 1px 0 #ffffff10}
 .pe-forge-head h2{margin:0;font-family:var(--display,inherit);font-size:20px;color:#f3dfb4}
 .pe-forge-head p{margin:4px 0 0;color:var(--muted);font-size:13px;line-height:1.4;max-width:60ch}
-.pe-forge-line{display:grid;grid-template-columns:auto minmax(0,1fr) auto minmax(0,1fr) auto minmax(0,1fr) auto;align-items:center;gap:6px}
-.pe-forge-seal{display:grid;justify-items:center;gap:2px;min-width:56px;padding:8px 4px;border-radius:14px;background:#ffffff08;border:1px solid #ffffff12}
+.pe-forge-line{display:grid;grid-template-columns:auto minmax(0,1fr);align-items:center;gap:8px 14px}
+.pe-forge-seal{display:grid;justify-items:center;gap:2px;min-width:72px;padding:8px 4px;border-radius:14px;background:#ffffff08;border:1px solid #ffffff12}
 .pe-forge-seal .pe-seal{width:34px;height:34px}
 .pe-forge-seal b{font:800 16px/1 'DM Sans',system-ui,sans-serif}
 .pe-forge-seal small{font-size:11px;color:var(--muted);text-transform:capitalize}
 .pe-forge-seal.struck{animation:pe-forge-struck .7s cubic-bezier(.2,.9,.3,1.3)}
-.pe-forge-step{display:grid;justify-items:center;gap:6px;min-width:0}
+.pe-forge-step{display:flex;flex-wrap:wrap;align-items:center;gap:6px 10px;min-width:0}
 .pe-forge-meter{display:flex;gap:3px}
 .pe-forge-meter i{width:8px;height:8px;border-radius:50%;background:#ffffff1c;box-shadow:inset 0 0 0 1px #ffffff14}
 .pe-forge-meter i.on{background:radial-gradient(circle at 35% 30%,#ffe3a3,#e07a1f);box-shadow:0 0 6px #ff9a3c99}
-.pe-forge-strike{min-height:44px;min-width:44px;padding:6px 14px;text-transform:capitalize;border-radius:999px;border:1px solid #d6ad6455;background:#1d1610;color:#f3dfb4;font:800 13px/1 'DM Sans',system-ui,sans-serif;cursor:pointer}
+.pe-forge-strike{min-height:44px;min-width:44px;padding:6px 14px;white-space:nowrap;text-transform:capitalize;border-radius:999px;border:1px solid #d6ad6455;background:#1d1610;color:#f3dfb4;font:800 13px/1 'DM Sans',system-ui,sans-serif;cursor:pointer}
 .pe-forge-strike:disabled{opacity:.45;cursor:default}
 .pe-forge-step.ready .pe-forge-strike{background:linear-gradient(180deg,#f6cf7a,#c4852a);color:#2a1806;border-color:#ffe0a0;box-shadow:0 0 0 1px #00000040,0 0 18px #ff9a3c66;animation:pe-forge-ember 1.8s ease-in-out infinite}
 .pe-forge-all{font-size:12px;min-height:44px;padding:0 8px}
 @keyframes pe-forge-ember{0%,100%{box-shadow:0 0 0 1px #00000040,0 0 10px #ff9a3c44}50%{box-shadow:0 0 0 1px #00000040,0 0 22px #ff9a3c99}}
 @keyframes pe-forge-struck{0%{transform:scale(1)}35%{transform:scale(1.18);box-shadow:0 0 26px #ffcf7aaa}100%{transform:scale(1)}}
-@media (max-width:560px){.pe-forge-line{grid-template-columns:auto minmax(0,1fr);gap:8px 12px}.pe-forge-step{grid-auto-flow:column;justify-content:start;align-items:center;gap:10px}.pe-forge-seal{min-width:72px}}
 @media (prefers-reduced-motion:reduce){.pe-forge-step.ready .pe-forge-strike,.pe-forge-seal.struck{animation:none}}
 /* A small wrapper (the Story header) wears only the art and the set symbol; the name is in its label. */
 .pe-booster--mini .pe-booster-band{min-height:20%}
@@ -1007,3 +1006,18 @@ body[data-mode="play"] #gameTabs,body[data-mode="play"] [data-nav="scan"]{displa
 .pe-binder-tab .set-icon{width:18px;height:18px}
 .pe-binder-tab[aria-pressed="true"]{background:linear-gradient(180deg,#2a2116,#17120d);color:#f3dfb4;border-color:#d6ad6488}
 .pe-sort{min-height:44px}
+/* Wide screens: the home pairs its shelves (packs beside the Forge, decks beside the collection), so a
+   short shelf never leaves a wide empty row. Phones and tablets stack them. */
+.pe-home-duo{display:grid;gap:26px;min-width:0}
+@media (min-width:960px){
+ .pe-home-duo{grid-template-columns:minmax(0,1fr) minmax(0,1fr);gap:24px;align-items:start}
+ .pe-home-duo .pe-home-packs{grid-template-columns:repeat(3,minmax(0,1fr))}
+ .pe-home-duo .pe-home-packs>:nth-child(n+4){display:none}
+ .pe-home-duo .home-personal-grid{grid-template-columns:repeat(2,minmax(0,1fr))}
+ .pe-home-duo .pe-home-decks>:nth-child(n+5){display:none}
+ .pe-home-duo .pe-set-grid{grid-template-columns:minmax(0,1fr)}
+ .pe-home-duo .pe-set-grid>:nth-child(n+3){display:none}
+ .pe-home-duo .pe-forge{margin-top:0}
+}
+/* The Forge: the "forge all" link sits on the button's line, never under it. */
+.pe-forge-hint{font-size:12px;color:var(--muted);white-space:nowrap}
