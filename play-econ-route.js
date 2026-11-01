@@ -19,6 +19,10 @@ function rpc(env, name, args, fetcher) {
     .then(async r => { const body = await r.json().catch(() => null); if (!r.ok) throw Object.assign(Error(body?.message || 'rpc_failed'), {code: body?.message || 'rpc_failed'}); return body; });
 }
 
+// Adds the headers Scryfall requires to every request made to it.
+export const scryfallFetch = fetcher => (url, init = {}) => /^https:\/\/api\.scryfall\.com\//.test(String(url))
+  ? fetcher(url, {...init, headers: {Accept: 'application/json', 'User-Agent': 'CardStashy/1.0', ...(init.headers || {})}}) : fetcher(url, init);
+
 // Crypto-strength [0,1), so a pack can't be predicted or replayed.
 export function cryptoRandom() { const a = new Uint32Array(2); crypto.getRandomValues(a); return (a[0] * 2 ** 21 + (a[1] >>> 11)) / 2 ** 53; }
 
@@ -96,9 +100,12 @@ export async function progressRoute(request, env, {verifyBearer, fetcher = fetch
       if (!pack) return fail('pack_not_found', 404);
       const data = await loadMtgBooster(pack.set, p => (env.ASSETS ? env.ASSETS.fetch(new Request(new URL(p, request.url))) : fetcher(new URL(p, request.url))));
       if (!data) return fail('no_booster', 503);
-      const known = await mtgBoosterCards(data, [], fetcher);
+      // Scryfall refuses requests without a User-Agent and Accept header, and a Worker sends neither.
+      const known = await mtgBoosterCards(data, [], scryfallFetch(fetcher));
       const picks = drawMtgBooster(data, known, cryptoRandom);
-      const contents = picks.map(packContentsRow);
+      const contents = picks.map(packContentsRow).filter(c => c.oracle_id);
+      // Never spend a pack on an empty draw: the pack stays banked and the player can try again.
+      if (contents.length < Math.min(5, picks.length || 5)) return fail('cards_unavailable', 503);
       const bonus = sealTrackBonus(s.config, (s.wallet?.packs_opened || 0) + 1);
       const result = await apply('open:' + pack.id, 'open', {open: {id: pack.id, contents}, cards: contents.filter(c => c.oracle_id).map(({oracle_id, name, rarity}) => ({oracle_id, name, rarity})), seals: bonus});
       return json({pack: {...pack, contents}, sealBonus: bonus, duplicateCoins: result.duplicate_coins || 0, converted: result.converted || [], state: await state()});
