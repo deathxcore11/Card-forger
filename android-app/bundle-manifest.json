@@ -1,7 +1,7 @@
 {
   "source": "https://github.com/deathxcore11/Card-forger",
-  "commit": "07c2b371969b0aed0487640a9007538188e5e2f6",
-  "sourceVersion": "4.3.63",
+  "commit": "9ba852808e32a2d11157fe68b5c061207e36c652",
+  "sourceVersion": "4.3.64",
   "appId": "com.cardstashy.app",
   "releaseReady": false,
   "network": "enabled-exact-hosts",
@@ -228,6 +228,12 @@
     "assets/audio/sfx/RAV-004.ogg",
     "assets/audio/sfx/RAV-005.ogg",
     "assets/audio/sfx/RAV-006.ogg",
+    "assets/audio/sfx/RWD-001.ogg",
+    "assets/audio/sfx/RWD-002.ogg",
+    "assets/audio/sfx/RWD-003.ogg",
+    "assets/audio/sfx/RWD-004.ogg",
+    "assets/audio/sfx/RWD-005.ogg",
+    "assets/audio/sfx/RWD-006.ogg",
     "assets/audio/sfx/TT-001.ogg",
     "assets/audio/sfx/TT-002.ogg",
     "assets/audio/sfx/TT-003.ogg",
@@ -593,9 +599,13 @@
     "data/story/act-1.json",
     "data/story/act-2.json",
     "data/story/act-3.json",
+    "data/story/act-4.json",
+    "data/story/act-5.json",
     "data/story/pool-1.json",
     "data/story/pool-2.json",
     "data/story/pool-3.json",
+    "data/story/pool-4.json",
+    "data/story/pool-5.json",
     "deck-box.js",
     "deck-construction.js",
     "deck-experience.js",
@@ -1271,6 +1281,7 @@
     "recovery-store.js",
     "release-record.js",
     "release-status.js",
+    "reward-flight.js",
     "rule-corpus.js",
     "rule-dex.js",
     "rule-extra.js",
@@ -1332,6 +1343,7 @@
     "store.js",
     "story-acts.js",
     "story-client.js",
+    "story-deeds.js",
     "story-mode.css",
     "story-ui.js",
     "strategy-risk.js",
@@ -1436,8 +1448,8 @@
     },
     {
       "path": "ai-deck-builder.js",
-      "bytes": 33309,
-      "sha256": "63552ba931f8109e4389c319cf30b9e6d5f26247869e1b00fa08b97654d0f5e8"
+      "bytes": 33379,
+      "sha256": "dd9a812242a10b228eb89fb8b6a1b0d2ae7aac95a2559378c2ba1d94a5b4a250"
     },
     {
       "path": "ai-deck-goal.js",
@@ -1496,8 +1508,8 @@
     },
     {
       "path": "app.js",
-      "bytes": 525965,
-      "sha256": "6d66085e83f8bec1cf0d81c2ebeacba35b363681c2a3517642184419f7b1f97a"
+      "bytes": 540907,
+      "sha256": "a83478f27a1be5bed63e2ae9372591a9ea11dcf06f6e2d839926bbd2ee110c23"
     },
     {
       "path": "artwork.js",
@@ -2470,6 +2482,36 @@
       "sha256": "eccfca5c4173f4338fbc46135e7b8f92a437103a8a21cc28eabef81546c1994c"
     },
     {
+      "path": "assets/audio/sfx/RWD-001.ogg",
+      "bytes": 15507,
+      "sha256": "0f17514ae5a78cdd4f848b83aa1c510b66d5833c9ab58e27c82eb88816b8c4aa"
+    },
+    {
+      "path": "assets/audio/sfx/RWD-002.ogg",
+      "bytes": 5316,
+      "sha256": "821b3e66d7bc301b2b61702a2e69b31562a6909642f5c14959666b6355868f70"
+    },
+    {
+      "path": "assets/audio/sfx/RWD-003.ogg",
+      "bytes": 5768,
+      "sha256": "5b1cdc058ab265ea2949684b61f0a3a940985ebc1040b62799f0de66e3d3f800"
+    },
+    {
+      "path": "assets/audio/sfx/RWD-004.ogg",
+      "bytes": 4439,
+      "sha256": "608321b380607f6f996f44f6fff416b83bca181560cd5e8579320979fc0b0b79"
+    },
+    {
+      "path": "assets/audio/sfx/RWD-005.ogg",
+      "bytes": 8354,
+      "sha256": "526387ad71077cbe2c7d432d13ba3925d7c536598f39a2fe31da2fc10353ad39"
+    },
+    {
+      "path": "assets/audio/sfx/RWD-006.ogg",
+      "bytes": 27327,
+      "sha256": "0f7f687a29ae0bf9f933b4064aa029c01221c82cfffdc886734e1902cfdd7b79"
+    },
+    {
       "path": "assets/audio/sfx/TT-001.ogg",
       "bytes": 20770,
       "sha256": "81575cb8b52dabd5dc9731174bfaa28f42f8d59cba3d394ee0d2561d60c17b27"
@@ -3186,13 +3228,13 @@
     },
     {
       "path": "audio-loops.js",
-      "bytes": 1529,
-      "sha256": "fade6a20de4438b2be2957392f5df71460791e65ce88e6cdfd3a0677dfdcd9ec"
+      "bytes": 2530,
+      "sha256": "c55cf98a9e0e2b9e7b91e9b456dd1638ab2f320407aac237d44efedb5ba91ab1"
     },
     {
       "path": "audio.js",
-      "bytes": 14836,
-      "sha256": "7080e0320081dc87a6f0436e13ecb678cb981de4308d7ca6ec7d731034a4f9e6"
+      "bytes": 14857,
+      "sha256": "7e0d1b0ff4fa8e54f8eb2a6f6aa9833c8485d8c4b8a57031a1243d719d2176a2"
     },
     {
       "path": "aura.css",
@@ -3236,8 +3278,8 @@
     },
     {
       "path": "builder.js",
-      "bytes": 41571,
-      "sha256": "35ca72230fda968e66271128b54faa951fb7d673ef6015004ec3bdd92ec4f1d1"
+      "bytes": 42751,
+      "sha256": "b25098ab4ebc44f5a1496a1c5c62a1067d2ce1dd04255797348c7acd8e6976ea"
     },
     {
       "path": "buy.js",
@@ -3336,8 +3378,8 @@
     },
     {
       "path": "community-art.js",
-      "bytes": 8700,
-      "sha256": "82101ea29d80278de08ce181ebc154638a482b63ab32f48d247682c78c94f54b"
+      "bytes": 9299,
+      "sha256": "79d3ce459c1089bdc57ae06252b34eed43a85e96d8fea53f213a7f917fb97594"
     },
     {
       "path": "community-curation.css",
@@ -3351,8 +3393,8 @@
     },
     {
       "path": "community-feed.js",
-      "bytes": 16442,
-      "sha256": "ad6ad210ffed60c9ec1e7aff0979a5ecb654c130f84cb59a87e32e0f3e62f234"
+      "bytes": 16529,
+      "sha256": "b93b2dfb025492297bbb481c07477f14f79966902e93bf50b08dfb7f6b506a7e"
     },
     {
       "path": "community-profile.js",
@@ -3361,8 +3403,8 @@
     },
     {
       "path": "community-sources.js",
-      "bytes": 7644,
-      "sha256": "7b05e9301a31ea39811f8aca9fc89d544044c71af8a4bbcb8761b591c7fcac70"
+      "bytes": 10020,
+      "sha256": "3b852a85b56ece33f5a84e2136a4bdb6be1994a11bb25e302a16a22e09c6eebe"
     },
     {
       "path": "condition-feed.js",
@@ -3387,7 +3429,7 @@
     {
       "path": "config.js",
       "bytes": 629,
-      "sha256": "2e71e6f3fe880570b268cad62a5d35cf998e94305eb59179ed56df8d2ffd1fb7"
+      "sha256": "886b13a0bb748175045cc73f96f01acdb6fe404b6f082744808aded4db3d8568"
     },
     {
       "path": "core.js",
@@ -4295,6 +4337,16 @@
       "sha256": "7465d26a565f38339ea137834a888763c225e7b91518bcbf64b18944716449ac"
     },
     {
+      "path": "data/story/act-4.json",
+      "bytes": 66097,
+      "sha256": "4066be3e8d0c8a895a123b75f9d4199386f1f69a4646a8191857646fe80f6607"
+    },
+    {
+      "path": "data/story/act-5.json",
+      "bytes": 64265,
+      "sha256": "9c8a77d3afbe5a0419571c6bbc5764c47a64a94f2a07e4a01c36991fd9d0ff27"
+    },
+    {
       "path": "data/story/pool-1.json",
       "bytes": 6890,
       "sha256": "af980c5f4c21e1193e1a4eef798b3f3006be09e35ba850d5945bb49bcededb08"
@@ -4308,6 +4360,16 @@
       "path": "data/story/pool-3.json",
       "bytes": 15488,
       "sha256": "8497c0f8602e6ae099b19e01534407da47f75aa1b150953411afc6927d537b61"
+    },
+    {
+      "path": "data/story/pool-4.json",
+      "bytes": 14747,
+      "sha256": "6186d9ea9cd7f80c9e74a0334f4a74fefe36acb9981975f68152dec97b4b7f02"
+    },
+    {
+      "path": "data/story/pool-5.json",
+      "bytes": 12646,
+      "sha256": "694bb8705b41952ed78ec8d9a2910cbc08a46e38468185eaf8eeb33b28ac78cc"
     },
     {
       "path": "deck-box.js",
@@ -4426,8 +4488,8 @@
     },
     {
       "path": "experiments/forge-proof/forge-table.mjs",
-      "bytes": 217742,
-      "sha256": "f800d986ce77215070307647d5436c5bd2bb59a688377176c9f82b3137a34240"
+      "bytes": 219868,
+      "sha256": "6b1e5946846796006c8d9e561020fc515cd9d8ed40f4ddd3b1588aff4b27bb61"
     },
     {
       "path": "experiments/forge-proof/motion-kit.mjs",
@@ -4436,8 +4498,8 @@
     },
     {
       "path": "experiments/forge-proof/native-panel.mjs",
-      "bytes": 66044,
-      "sha256": "24089a07d79b8468e3ad81edc9de153102f72a1dcd53d1cdc9c4efff4b14942d"
+      "bytes": 67926,
+      "sha256": "f09f4dc7caef0b6642380ba490e072419fcf6e6082e825131453a7c476cdb7d0"
     },
     {
       "path": "experiments/forge-proof/table-emotes.mjs",
@@ -4686,8 +4748,8 @@
     },
     {
       "path": "feel.js",
-      "bytes": 21403,
-      "sha256": "cfeeea4737cb873aa5e5df959aa87e0170a69ff3b588b0026e0fb5994f3139cc"
+      "bytes": 21619,
+      "sha256": "6a346efce917f37f5e8e56cf6fa75b5c5afef93a6a064582fb0b06f3cf1e4f92"
     },
     {
       "path": "finish-effects.css",
@@ -4891,8 +4953,8 @@
     },
     {
       "path": "index.html",
-      "bytes": 21036,
-      "sha256": "03818acb3fac17fdd5337640431e65cc434b7bef30c7d6c212c33e4a8d66e6a0"
+      "bytes": 21136,
+      "sha256": "3596aac89c5222586c348182a6ea29b0329baaa2c6c1df8e869c4f0b623bab52"
     },
     {
       "path": "insights.js",
@@ -5116,8 +5178,8 @@
     },
     {
       "path": "native-service-policy.js",
-      "bytes": 8350,
-      "sha256": "44935c3f92b609b436daf24b52a0dcb112f8b26b9c772a3b0e07dd2a965805ec"
+      "bytes": 8409,
+      "sha256": "0ec3706750370765ca35a22eac0492ad12299ccecca6fcc2eec9ed3fd2803e9e"
     },
     {
       "path": "native-transport.js",
@@ -5126,8 +5188,8 @@
     },
     {
       "path": "news-pulse.js",
-      "bytes": 8922,
-      "sha256": "141e8767b9f07082a47009cc91be08183cd6fb9e837f5ae4200547624adbf963"
+      "bytes": 17451,
+      "sha256": "d23337663e8654c83848534327c78f3978b5d1975476d28451541f0724bc79e4"
     },
     {
       "path": "offline-art-manifest.js",
@@ -7326,8 +7388,8 @@
     },
     {
       "path": "planeswalk.html",
-      "bytes": 6955110,
-      "sha256": "e1f35c0ff4cd9f89688cba697ba4e0234d05e9a979a59056b87d7d77bca2597b"
+      "bytes": 6955291,
+      "sha256": "0b535805ecf79a66d88feb2e79df0ba518235360414b347f768c3d423e5aad66"
     },
     {
       "path": "planner.js",
@@ -7336,8 +7398,8 @@
     },
     {
       "path": "play-achievements.js",
-      "bytes": 13528,
-      "sha256": "f59671561b03076ef6dfb4522850018b29a6a4dc75d42d6ed108bce49375afae"
+      "bytes": 13855,
+      "sha256": "6f17c009ba92a1c7766615be6ac0456cea787d6e65e9e7c97d5ad3c3d4f1277c"
     },
     {
       "path": "play-board-badges.js",
@@ -7386,8 +7448,8 @@
     },
     {
       "path": "play-deck-finder.js",
-      "bytes": 11618,
-      "sha256": "ca762e7e6e88e10ebf69bd30914653bf30453032e74de3addbeb499812091a38"
+      "bytes": 14653,
+      "sha256": "0e96ced7744047f9d477adab27ff234d107f20ae33c397b3ad8f440f6f4a67c7"
     },
     {
       "path": "play-deck-import.js",
@@ -7411,8 +7473,8 @@
     },
     {
       "path": "play-econ-client.js",
-      "bytes": 6424,
-      "sha256": "0286d8639f9678c78f184ae36c0346ab99448bc721b8885a10bd01ecbc8c7e24"
+      "bytes": 6731,
+      "sha256": "9a3a9c2d5de5a78985308f0357316267d0949873227711ef3c6e565415638a39"
     },
     {
       "path": "play-econ-rules.js",
@@ -7426,8 +7488,8 @@
     },
     {
       "path": "play-econ-ui.js",
-      "bytes": 43381,
-      "sha256": "125754573827b2bf2ecea52ce43760abfc6315e4925fbfad0e15f1b8df89bceb"
+      "bytes": 50681,
+      "sha256": "703101c863dd3681fd241df1623d76cb9111f7b388be5a430b1c15675e8a617d"
     },
     {
       "path": "play-engine-names.js",
@@ -7491,8 +7553,8 @@
     },
     {
       "path": "play-menu.css",
-      "bytes": 137891,
-      "sha256": "04a7358c9a523690b113719b82f12443ddb4b166437145ec0333f8b8cba3679a"
+      "bytes": 146230,
+      "sha256": "f16667e700df25dd32a9e9d859bfee8b992b56b2c11991a375efacd6e1b6ea2c"
     },
     {
       "path": "play-menu.js",
@@ -7556,8 +7618,8 @@
     },
     {
       "path": "play-table-audio.js",
-      "bytes": 5475,
-      "sha256": "691c31db83b97e2cb88d58f0b0a917b2ef558857ebab63852a0cc0bc458682df"
+      "bytes": 7467,
+      "sha256": "c02e5a092fc414a1df3518d2318d2408c472f9ee76df27599edb6c1e90925b75"
     },
     {
       "path": "play-token-art.js",
@@ -7726,13 +7788,18 @@
     },
     {
       "path": "release-record.js",
-      "bytes": 4019,
-      "sha256": "c7182045a857d0833567b8c9e68e24f8eeabd2dfb412422a58126eaba87cc0f6"
+      "bytes": 5700,
+      "sha256": "4d4635810c3fe84cdf39dc3b78525d0ffbfe447aaade6fb90b7d0a033ae42164"
     },
     {
       "path": "release-status.js",
       "bytes": 4034,
       "sha256": "11f99960f1aa37c4d6eccb7e1df57220fcc01aec694771d2a54c65cf19fc878b"
+    },
+    {
+      "path": "reward-flight.js",
+      "bytes": 8002,
+      "sha256": "193cd31e63ed99d51d0104eb0990aed15ce01c2341b65b027d4dff52582e0d2e"
     },
     {
       "path": "rule-corpus.js",
@@ -8031,13 +8098,18 @@
     },
     {
       "path": "story-acts.js",
-      "bytes": 1780,
-      "sha256": "08fcd60364b22f3b152d13ebf9281dc26762f22aeabb233a6712b831ac02cabb"
+      "bytes": 2577,
+      "sha256": "057bfc969e92162caabf7aaf576c774537dd27ab869fc462cf6c588fcaee1a17"
     },
     {
       "path": "story-client.js",
       "bytes": 7058,
       "sha256": "fb529fa44392540c50bc8cc977165af9fbff520dca12cdda1d4d96cb0a1c427b"
+    },
+    {
+      "path": "story-deeds.js",
+      "bytes": 4640,
+      "sha256": "ba2237e950377fc892410fb865759f5891efd3236e4a4b64dabe00d0210f59bc"
     },
     {
       "path": "story-mode.css",
@@ -8046,8 +8118,8 @@
     },
     {
       "path": "story-ui.js",
-      "bytes": 25725,
-      "sha256": "27f409d14bddd26b78e983b474a47722653a2f5f674a3edeef75903e52bc0f96"
+      "bytes": 28299,
+      "sha256": "96f3fad83964009a90569ab588a2c5bdc7ae4cf1254213a97c77de553b9218bf"
     },
     {
       "path": "strategy-risk.js",
@@ -8246,8 +8318,8 @@
     },
     {
       "path": "views.js",
-      "bytes": 201392,
-      "sha256": "98e404ca7ec76afbf61fef024525f5e22eeb8965b7a98d35d0b9fb4956fcbfd5"
+      "bytes": 204617,
+      "sha256": "ced2cdf233a69e380fd99fb62775bd766c7bde583616aa4729a82ea94f1a326c"
     },
     {
       "path": "wiki-card-handoff.js",
