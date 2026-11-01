@@ -367,6 +367,13 @@ Object.assign(C,{
 // profile.spark[hero]={open,beat}: open = highest level you may pick, beat = levels beaten (portrait pips). PW_SPARK (sims) sets the level.
 const SPARK=()=>{try{return typeof PW_SPARK!=='undefined'?PW_SPARK:(run&&run.spark)||0}catch(e){return 0}},SP=n=>SPARK()>=n;
 const sparkOf=hk=>{try{return (profile.spark&&profile.spark[hk])||{open:0,beat:0}}catch(e){return {open:0,beat:0}}};
+// Hero skins (art D043/D044, MAPPING 16): a skin swaps the hero's portrait and fight figure. Won by a Spark win (beat > level), picked on hero select; profile.skin[hero] = id.
+const SKINS={R:[{id:'torch',name:'Torch of Defiance',fig:'chandra-torch-of-defiance',spark:3},{id:'acolyte',name:'Acolyte of Flame',fig:'chandra-acolyte-of-flame',spark:7}]};
+const skinsOpen=hk=>(SKINS[hk]||[]).filter(s=>sparkOf(hk).beat>s.spark);
+const skinOf=hk=>{const id=profile.skin&&profile.skin[hk];return skinsOpen(hk).find(s=>s.id===id)||null};
+function applySkins(){for(const k in HEROES){const s=skinOf(k);HEROES[k].figure=s?s.fig:undefined;if(typeof document!=='undefined'&&document.body){if(s)document.body.dataset['skin'+k]=s.id;else delete document.body.dataset['skin'+k]}}}
+function skinPicker(hk){applySkins();const o=skinsOpen(hk);if(!o.length)return '';const cur=(skinOf(hk)||{}).id||'';const H=HEROES[hk];
+ return `<div class="pw-skins" role="group" aria-label="${H.short} look">${[{id:'',name:H.short}].concat(o).map(s=>`<button type="button" class="btn pw-skin" data-act="skin" data-k="${hk}" data-s="${s.id}" data-skin="${s.id||'base'}" aria-label="${s.id?s.name:H.short}" title="${s.id?s.name:H.short}" aria-pressed="${s.id===cur}"></button>`).join('')}</div>`+(()=>{const L=[{id:'',name:H.short}].concat(o),i=L.findIndex(s=>s.id===cur),n=L[(i+1)%L.length];return `<button type="button" class="btn pw-skin pw-skin1" data-act="skin" data-k="${hk}" data-s="${n.id}" data-skin="${cur||'base'}" aria-label="${H.short}: ${cur?L[i].name:H.short}. Next: ${n.id?n.name:H.short}" title="${cur?L[i].name:H.short}"></button>`})()}
 const LAST_ACT=()=>Object.keys(ACTS).length;
 function sparkFoe(e){const d=E[e.key];if(!SPARK()||!d)return e;const up=m=>{e.hp=Math.ceil(e.hp*m);e.max=e.hp};
  if(!d.rank){if(SP(2))up(1.05);if(SP(8))e.buff++}
@@ -542,7 +549,7 @@ const POOL_ALL=poolAll();
 let POOL=POOL_ALL.filter(k=>C[k].col==='R'||C[k].col==='C');
 // The hero's cards of one rarity. A thin pool steps down M, R, U, C, then up, so a pick is never undefined (same array, same rolls, when the rarity exists).
 const RSTEP=['M','R','U','C'],poolOf=r=>{const i=Math.max(0,RSTEP.indexOf(r)),by=x=>POOL.filter(k=>C[k].r===x);for(const x of [...RSTEP.slice(i),...RSTEP.slice(0,i).reverse()]){const pl=by(x);if(pl.length)return pl}return POOL_ALL.filter(k=>C[k].r==='C')};
-const setHero=k=>{HERO=HEROES[k]||HEROES.R;POOL=poolAll().filter(x=>C[x].col===HERO.key||C[x].col==='C');if(typeof document!=='undefined'&&document.body)document.body.dataset.hero=HERO.key};
+const setHero=k=>{HERO=HEROES[k]||HEROES.R;POOL=poolAll().filter(x=>C[x].col===HERO.key||C[x].col==='C');if(typeof document!=='undefined'&&document.body)document.body.dataset.hero=HERO.key;try{applySkins()}catch(e){}};
 // Emblems tagged with a hero colour only appear for that hero.
 const forHero=k=>!EMB[k].dungeon&&(!EMB[k].trail||TRAIL(EMB[k].trail))&&(!EMB[k].col||EMB[k].col===HERO.key)&&(!EMB[k].belt||beltOn());
 const mk=key=>({id:++uid,key,foil:false});
@@ -1399,7 +1406,7 @@ function lockedHero(h){const open=reward&&reward.goals===h.key,G=HERO_GOALS[h.ke
 function dailyBtn(){const D=profile.daily||{},d=UTCDAY(),done=D.started===d,st=D.lastDay>=d-1?D.streak||0:0;
  return `<button class="btn pw-jtop pw-daily${done?' done':''}" data-act="daily" aria-label="Daily run${st?`, day ${st} streak`:''}${done?', played today':''}" title="Daily run">${ico('sun')}${st?`<b>${st}</b>`:''}</button>`}
 function heroesView(){
- return `<header class="top"><h1>Planeswalk</h1><span class="spacer"></span>${dailyOk()?dailyBtn():''}<button class="btn pw-jtop" data-act="journal" aria-label="Codex" title="Codex">${ico('book')}</button></header><section class="screen heroes"><h2>Choose your planeswalker</h2><div class="choices">${Object.values(HEROES).map(h=>!heroOpen(h.key)?lockedHero(h):`<div class="pw-hcol"><button class="option hero-pick" data-act="hero" data-k="${h.key}" data-n="${h.name}"><b>${h.name}</b><span class="muted">${h.color} · ${h.life} life · ${h.theme}</span><span class="muted">${h.plusLabel()} · ${h.minusLabel} · ${h.ultLabel}</span><span class="pw-kit"><span class="pw-hsig">${embSvg(h.sig)}<span><em>Signature</em>${EMB[h.sig].name.replace(/^Emblem of the /,'')}</span></span><span class="pw-starter"><em>Starter deck</em>${starterList(h)}</span></span></button>${sparkPicker(h.key)}</div>`).join('')}${Object.values(LOCKED_HEROES).filter(h=>!HEROES[h.key]&&(!CARDART||CARDART.has(h.name))).map(lockedHero).join('')}</div></section>`;
+ return `<header class="top"><h1>Planeswalk</h1><span class="spacer"></span>${dailyOk()?dailyBtn():''}<button class="btn pw-jtop" data-act="journal" aria-label="Codex" title="Codex">${ico('book')}</button></header><section class="screen heroes"><h2>Choose your planeswalker</h2><div class="choices">${Object.values(HEROES).map(h=>!heroOpen(h.key)?lockedHero(h):`<div class="pw-hcol"><button class="option hero-pick" data-act="hero" data-k="${h.key}" data-n="${h.name}"><b>${h.name}</b><span class="muted">${h.color} · ${h.life} life · ${h.theme}</span><span class="muted">${h.plusLabel()} · ${h.minusLabel} · ${h.ultLabel}</span><span class="pw-kit"><span class="pw-hsig">${embSvg(h.sig)}<span><em>Signature</em>${EMB[h.sig].name.replace(/^Emblem of the /,'')}</span></span><span class="pw-starter"><em>Starter deck</em>${starterList(h)}</span></span></button>${sparkPicker(h.key)}${skinPicker(h.key)}</div>`).join('')}${Object.values(LOCKED_HEROES).filter(h=>!HEROES[h.key]&&(!CARDART||CARDART.has(h.name))).map(lockedHero).join('')}</div></section>`;
 }
 // End of run: the trail bar fills with this run's XP; a new step shows what it opens (its real cards and tokens), a new hero shows its portrait.
 function stepPack(n){const L=[];for(const k in C)if(C[k].trail===n&&(!CARDART||CARDART.has(C[k].name))&&(C[k].col===HERO.key||C[k].col==='C'))L.push(anteCard({key:k}));for(const k in TOKENS)if(TOKENS[k].trail===n&&tokOk(k))L.push(`<span class="pw-tok pw-utok" data-ui="tok-${k}" role="img" aria-label="${TOKENS[k].name}" title="${TOKENS[k].name}: ${TOKENS[k].tip}"></span>`);return L}
@@ -1699,6 +1706,7 @@ document.getElementById('app').addEventListener('click',ev=>{
  if(a==='share')return shareRun(b);
  if(a==='hero')return heroOpen(b.dataset.k)?newRun(reward&&reward.seed,b.dataset.k):undefined;
  if(a==='hlock'){reward=reward||{};reward.goals=reward.goals===b.dataset.k?null:b.dataset.k;return render()}
+ if(a==='skin'){const k=b.dataset.k;profile.skin=profile.skin||{};profile.skin[k]=b.dataset.s||'';store.set(PROF,profile);applySkins();return render()}
  if(a==='spk'){reward=reward||{};const P=reward.sparkPick=reward.sparkPick||{},k=b.dataset.k;P[k]=Math.max(0,Math.min(sparkOf(k).open,sparkPick(k)+(+b.dataset.d)));return render()}
  if(a==='go')return enter(+b.dataset.r,+b.dataset.l);
  if(a==='closeinspect'){c.inspect=null;c.showHist=0;return render()}
