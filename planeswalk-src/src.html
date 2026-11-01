@@ -475,7 +475,7 @@ const beltHtml=()=>!beltOn()||!run.belt?'':`<div class="pw-belt" role="group" ar
 // Goad: this turn the enemy attacks the enemy beside it instead of you (with no one beside it, it attacks you).
 // Tap: it skips its next attack. Detain: its next attack and its next other move. Elites and bosses take one per fight, then are immune.
 function goad(t){if(!t||t.hp<=0)return;t.goad=c.turn;t.flash=1}
-function hold(t,det){if(!t||t.hp<=0)return;if(t.rank&&t.ccUsed){juice('Immune');return}if(t.rank)t.ccUsed=1;t.tapN=1;if(det)t.detSp=1;t.flash=1}
+function hold(t,det){if(!t||t.hp<=0)return;if(t.rank&&t.ccUsed){juice('Immune');return}if(t.rank)t.ccUsed=1;t.tapN=1;if(det)t.detSp=1;t.flash=1;spellFx('tap',t,1)}
 const strongest=n=>alive().sort((x,y)=>(y.pow+y.buff)-(x.pow+x.buff)).slice(0,n);
 const beside=e=>{const l=alive(),i=l.indexOf(e);return l[i+1]||l[i-1]||null};
 const goaded=e=>!!(c&&e.goad===c.turn&&beside(e));
@@ -526,7 +526,7 @@ const pairEmb=k=>{if(!run)return '';const p=(EPAIR[k]||[]).find(x=>run.emblems.i
 const sigOf=k=>{const m=SIG[k];const v=typeof m==='string'?m:m&&m[HERO.key];if(v&&C[v]&&(C[v].sig||POOL.includes(v)))return {k:v,fb:0};
  const pl=poolOf('U');return {k:pick(pl),fb:1}};
 // ===== Meta data rows (game-design thread, 1 Nov, meta-data-1101/meta-data.json): trail packs, Spark-7 elite moves, enemy lore.
-const META_TRAIL_C={"song":1,"electro":1,"mana":1,"warden":1,"pridemate":1,"welcome":1,"grape":4,"kfury":4,"impetus":4,"hawk":4,"eagle":4,"overseer":4,"siege":8,"decorum":8,"ant":8,"marshal":8,"cathars":8,"decree":8,"emanc":10,"visit":10,"lattice":10},META_TRAIL_E={"twin":2,"archive":2,"beacon":2,"legion":6,"font":6,"satchel":6,"furnace":11,"paradox":11};
+const META_TRAIL_C={"song":1,"electro":1,"mana":1,"warden":1,"pridemate":1,"welcome":1,"grape":4,"kfury":4,"impetus":4,"hawk":4,"eagle":4,"overseer":4,"siege":8,"decorum":8,"ant":8,"marshal":8,"cathars":8,"decree":8,"emanc":10,"visit":10,"lattice":10},META_TRAIL_E={}/* game-feel review 1 Nov: the mythic emblems carry the base balance, so none are trail-gated; trail steps get new emblems with wave 3 */;
 const META_SP7={"gisa":["rally",1],"thalia":["guard",12],"ironalpha":["buff",3],"alphasmith":["buff",3],"drana":["drain",6],"omnath":["sweep",3],"drone":["summon","spawn"]};
 const META_LORE={"diregraf":"It was buried twice. Neither took.","acolyte":"The Skirsdag pray to things that never answer kindly.","crawler":"What the ghoulcallers leave behind keeps crawling.","interloper":"It comes through windows the moon leaves open.","geist":"The chapel bell still rings. No one pulls the rope.","patrol":"Stromkirk's hounds of the night. They are always hungry.","cultist":"Every offering asks for a little more blood.","ironsmith":"He forges silver by day. At night he forgets his name.","ironfang":"The moon chose him. He did not choose back.","zombie":"Gisa's work. Sloppy, she would say. Effective.","gisa":"A ghoulcaller who loves her craft far too much.","olivia":"The oldest blood on Innistrad, and the most bored.","thalia":"Thraben's last guardian. She does not yield the gate.","sorin":"He made Avacyn to save this plane. He will not forgive you for walking it.","oliviaB":"She wed the night itself. The guests did not leave.","thrall":"Once a villager. Now a mouthful.","ironalpha":"The pack follows the loudest howl.","alphasmith":"His hammer still rings. His hands are claws now.","sentinel":"It guards a grave no one remembers digging.","ghast":"It hooks the living and drags them down to wait.","spawn":"The smallest piece of a hunger without end.","scion":"Born of the brood. It feeds the larger ones.","intruder":"It drinks memory and leaves only mist.","herder":"It shepherds the brood across what used to be Zendikar.","baloth":"Every time the land shifts, it gets angrier.","ranger":"Turntimber teaches one lesson: never hunt alone.","wolf":"The ranger's pack. Loyal to the end.","skyfisher":"The kor ride the wind to keep the hedrons whole.","drana":"She freed Malakir from the Eldrazi. She did not free it from herself.","kozilek":"The titan's voice. It speaks in broken geometry.","drone":"It hums a single note that makes stone forget its shape.","heraldB":"The voice of Kozilek, now wide awake.","omnath":"The land's rage, given one body and no patience.","ob":"A demon who signed away his spark and wants yours."};
 for(const k in META_TRAIL_C)if(C[k])C[k].trail=META_TRAIL_C[k];
@@ -836,7 +836,7 @@ function hit(e,n){if(!e||e.hp<=0||n<=0)return 0;if(c&&c.font&&!c.busy){n+=c.font
 // In a fight, healing is capped per turn so life gain sustains a plan instead of replacing one.
 const HEAL_CAP=5;
 function heal(n){if(n<=0)return;if(c&&view==='battle'&&(c.vortex||c.noHeal)){juice('No healing');return}if(run.emblems.includes('signet')&&!(c&&view==='battle'))return;if(c&&view==='battle'&&!c.capOff&&!c.allies.some(a=>a.thirst)){n=Math.min(n,HEAL_CAP-(c.healedTurn||0));if(n<=0)return;c.healedTurn=(c.healedTurn||0)+n}run.hp=Math.min(run.max,run.hp+n);run.heal=(run.heal||0)+n;
- if(c&&view==='battle'){c.allies.forEach(a=>{if(a.pride){a.p++;a.t++}});const th=c.allies.filter(a=>a.thune&&a.dmg<tough(a)).length;if(th&&c.thuneT!==c.turn){c.thuneT=c.turn;c.allies.forEach(a=>{a.p+=th;a.t+=th})}if(run.emblems.includes('beacon')&&!c.beaconing){c.beaconing=1;const bn=c.beaconT!==c.turn?2:1;c.beaconT=c.turn;c.enemies.forEach(e=>hit(e,bn));c.beaconing=0}}}
+ if(c&&view==='battle'){spellFx('heal',c,1);c.allies.forEach(a=>{if(a.pride){a.p++;a.t++}});const th=c.allies.filter(a=>a.thune&&a.dmg<tough(a)).length;if(th&&c.thuneT!==c.turn){c.thuneT=c.turn;c.allies.forEach(a=>{a.p+=th;a.t+=th})}if(run.emblems.includes('beacon')&&!c.beaconing){c.beaconing=1;const bn=c.beaconT!==c.turn?2:1;c.beaconT=c.turn;c.enemies.forEach(e=>hit(e,bn));c.beaconing=0}}}
 // Shield (Block in StS): soaks enemy damage before life until your next turn. Life you pay yourself ignores it.
 function shield(n){if(!c||n<=0)return;c.ward=(c.ward||0)+n;juice(`◈ +${n} Shield`);
  for(const e of c.enemies)if(e.hp>0&&E[e.key].onShield){e.buff+=E[e.key].onShield;e.flash=1;c.callout=`${e.name.replace(/,.*$/,'')} +${E[e.key].onShield}`}}// balance PDF #2: Thalia punishes turtling
@@ -887,12 +887,14 @@ function canPlay(card){
 }
 // Painted spell sheets (pw-cast.js plays them where the card lands, before it resolves so a killed target still shows it).
 const SPELLFX={fireball:'fireball',grape:'grapeshot',brute:'growth-red',rite:'mana-red',song:'mana-red',simian:'mana-red',impulse:'draw',clarity:'draw',
- shock:'embers',bolt:'embers',ambush:'embers',bombard:'sacrifice',anthem:['anthem','you'],cannon:['fire-wave','foes'],banish:'exile',heroism:'holy-burst',charge:'holy-burst',pacifism:'holy-burst'};
-// two-mode cards take the sheet of the mode picked (the mode's icon); the white heal and pacify sheets are still owed, so they borrow holy-burst
-const MODEFX={shield:'shield',heart:'holy-burst',sword:'sun-spear',card:'draw',flame:'embers'};
+ shock:'embers',bolt:'embers',ambush:'embers',bombard:'sacrifice',anthem:['anthem','you'],cannon:['fire-wave','foes'],banish:'exile',heroism:'holy-burst',charge:'holy-burst',pacifism:'pacify'};
+// two-mode cards take the sheet of the mode picked (the mode's icon). Healing plays its own sheet from heal() (Salve, Grace, Soul Warden, lifelink)
+const MODEFX={shield:'shield',heart:'heal',sword:'sun-spear',card:'draw',flame:'embers'};
 function cardFx(card,d0,m,t){let f=d0.modes&&m!=null&&d0.modes[m]?MODEFX[d0.modes[m].ico]:SPELLFX[card.key];if(!f)return;if(Array.isArray(f))spellFx(f[0],f[1]);else spellFx(f,f==='shield'?null:t)}
+const FXLAST={};// one sheet per target at a time: a heal from a card and its lifelink in the same beat play once
 function spellFx(sheet,t,late){if(SIM||typeof PW_HEADLESS!=='undefined'||!sheet)return;const B='#app .battle ';
  const sel=t==='foes'?B+'.side.foe':t==='you'?B+'.side.you':!t||t===c?B+'.side.you .unit.hero':c.enemies.includes(t)?B+`.side.foe .unit[data-id="${t.id}"]`:B+`.side.you .unit[data-id="${t.id}"]`;
+ const now=performance.now(),fk=sheet+'|'+sel;if(FXLAST[fk]&&now-FXLAST[fk]<450)return;FXLAST[fk]=now;
  try{dispatchEvent(new CustomEvent('pw-spellfx',{detail:{sheet,sel,late}}))}catch(e){}}
 function play(i,t,m){
  const card=c.hand[i];if(!card||!canPlay(card))return;const d0=C[card.key];
@@ -1020,12 +1022,13 @@ function strike(e,n){
  if(run.phase&&!c.phased){c.phased=1;return `${e.name}'s attack phases out.`}/* Teferi's Phase Out: the first enemy attack each fight misses */
  const b=blocker(e);
  if(!b){hurt(n,E[e.key].bypass&&FORM?'bypass':e.fly?'unblocked-flyer':'unblocked');if(E[e.key].ingest&&c.draw.length){(c.lost=c.lost||[]).push(c.draw.pop());return `${e.name} hits ${HERO.short} for ${n} and ingests the top card of your deck (this fight only).`}return `${e.name} hits ${HERO.short} for ${n}.`}
- if(b.prot){b.prot=0;b.flash=1;if(pow(b)>0)hit(e,b.deathtouch&&!e.rank?99:pow(b));return `${b.name} blocks ${e.name} and takes no damage.`}
+ if(b.prot){b.prot=0;b.flash=1;if(pow(b)>0){spellFx('shield-bash',e,1);hit(e,b.deathtouch&&!e.rank?99:pow(b))}return `${b.name} blocks ${e.name} and takes no damage.`}
  const room=tough(b)-b.dmg;let msg;bloodfeed(Math.min(n,room));
  if(SIM){const t0=SIM.took.get(b.id)||{n:0,o:0,fail:0};t0.n+=n;if(n>=room){t0.o+=spill(e,n,room,b);if(FORM&&TRAMPLES(e)&&!b.steadfast)t0.fail=1}SIM.took.set(b.id,t0)}
  if(n>=room){b.dmg=tough(b);const o=spill(e,n,room,b);if(FORM&&!SIM&&typeof PW_SOAK!=='undefined'){if(/token$/.test(b.name))PW_SOAK.tokenChumps=(PW_SOAK.tokenChumps||0)+1;else if(o===0)PW_SOAK.fullSoaked=(PW_SOAK.fullSoaked||0)+n-room}hurt(o,FORM&&TRAMPLES(e)?'trample':'overflow');msg=`${b.name} blocks ${e.name} and dies`+(o>0?`, ${o} ${FORM&&TRAMPLES(e)?'tramples':'gets'} through.`:'.')}else{b.dmg+=n;msg=`${b.name} blocks ${e.name}.`}
  b.flash=1;
  if(E[e.key].feed&&b.dmg>=tough(b))e.pow++;
+ if(pow(b)>0&&b.soldier&&b.dmg<tough(b))spellFx('shield-bash',e,1);/* a Soldier that holds the line bashes back with its shield */
  if(pow(b)>0)hit(e,b.deathtouch&&!e.rank?99:pow(b));
  return msg;
 }
@@ -1222,9 +1225,11 @@ const kwGlyph=t=>t.replace(/\b(Exile|Flashback)\b/g,(m,k)=>`<i class="pw-kwg" da
 const kws=a=>['haste','flying','reach','first','vigilance','deathtouch','lifelink','trample','defender'].filter(k=>a[k]||(k==='first'||k==='lifelink')&&akr(a)).map(k=>k==='first'?'first strike':k).join(' · ');
 
 // The escalation dial: fills toward Doom; the number is the turns left before Doom.
-function escDial(){const a=run.act||1,face=a>1?'maw':'moon',name=a>1?'The Hunger':'Nightfall',t=c.turn,DT=fightDoomT(),doom=t>=DT,left=DT-t;
- /* painted dial faces (beta lane C): Nightfall in Act 1, the Hunger in Act 2; 1 before escalation, 2-4 as Doom nears, then the Doom face */
- const n=a>2?'':doom?'doom':t<ESCT()?'1':String(Math.min(4,2+Math.floor(2*(t-ESCT())/Math.max(1,DT-1-ESCT()))));
+function escDial(){const a=run.act||1,face=a>1?'maw':'moon',name=a>2?'The Mandate':a>1?'The Hunger':'Nightfall',t=c.turn,DT=fightDoomT(),doom=t>=DT,left=DT-t;
+ /* painted dial faces (beta lane C): Nightfall in Act 1, the Hunger in Act 2, the Mandate in Act 3 (kit.css swaps the faces per act); 1 before escalation, 2-4 as Doom nears, then the Doom face */
+ const n=doom?'doom':t<ESCT()?'1':String(Math.min(4,2+Math.floor(2*(t-ESCT())/Math.max(1,DT-1-ESCT()))));
+ if(n&&c.dialN&&n!==c.dialN&&!SIM&&typeof PW_HEADLESS==='undefined')try{dispatchEvent(new CustomEvent('pw-spellfx',{detail:{sheet:'dial-rise',sel:'#app .battle>.pw-esc',late:1}}))}catch(e){}/* the dial steps up a face */
+ if(n)c.dialN=n;
  const lab=doom?`${name}: Doom. Enemies grow fast and trample`:t>=ESCT()?`${name}: enemies grow every turn. Doom in ${left}`:`${name} comes on turn ${ESCT()}. Doom on turn ${DT}`;
  return `<span class="pw-esc${doom?' doom':t>=ESCT()?' on':''}" data-face="${face}"${n?` data-n="${n}"`:''} style="--f:${Math.min(1,t/DT).toFixed(3)}" role="img" aria-label="${lab}" title="${lab}">${ico(doom?'skull':face)}${doom?'':`<b>${left}</b>`}</span>`}
 function topBar(){
