@@ -71,3 +71,14 @@ export function pokemonCatalogueSetEntry(set) {
  const count = Math.max(16,Number(set.count)||0,Number(set.cardCount?.official)||0,Number(set.cardCount?.total)||0);
  return set.count === count ? set : {...set,count};
 }
+
+// Exact TCGplayer products for the 30th Classic Collection (TCGplayer group 24837), from the
+// upstream database at commit 2414b087. On 2026-11-01 the API had none for 003, 004 and 018-022,
+// and TCGplayer numbers these by their original card number, so a number match cannot find them.
+const CLASSIC_30TH = [714372,716156,716157,716158,716159,716160,716161,714373,716162,716163,716191,716192,716193,716194,716195,716196,716197,716198,716199,716200,716202,716203,716204,716205,716206,716207,716208,716209,714386,716210];
+export function pokemonSupplementProduct(id) {
+ const m=/^30th-c-(\d{3})$/.exec(String(id||''));const productId=m&&CLASSIC_30TH[Number(m[1])-1];
+ if(productId)return {productId,groupId:24837};
+ const mew=rgbMew.find(([letter])=>id==='30th-'+letter);
+ return mew?{productId:mew[2],groupId:24722}:null;
+}

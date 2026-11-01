@@ -29,10 +29,11 @@ export function knownPokemonPlaceholder(url){
  if(/^https:\/\/images\.pokemontcg\.io\/ecard[23]\/H0[1-9](?:_hires)?\.png(?:\?.*)?$/.test(String(url||'')))return true;
  return /^https:\/\/images\.pokemontcg\.io\/me55c\/\d+(?:_hires)?\.png(?:\?.*)?$/.test(String(url||''));
 }
+// 30th cards use ?v=3: the Worker cached a day of 404s for them before their products were known.
 // assets/cards/ holds scans we ship ourselves for printings no provider has an image of (Ancient Mew).
 export function artworkSources(c,large=false){
  if(!c)return [];
- const urls=c.game==='ptcg'?[POKEMON_CARD_ART[c.id],large?c.imageLarge:c.image,large?c.image:c.imageLarge,pokemonFallback(c),c.id?`img/ptcg/${large?'l':'s'}/${encodeURIComponent(c.id)}.jpg?v=2`:'']:c.game==='ygo'?[large?c.imageLarge:c.image,large?c.image:c.imageLarge,...(/^\d{1,12}$/.test(String(c.id||''))?[`https://images.ygoprodeck.com/images/cards${large?'':'_small'}/${c.id}.jpg`,`https://images.ygoprodeck.com/images/cards${large?'_small':''}/${c.id}.jpg`]:[])]:magicArtworkSources(c,large?'large':'normal');
+ const urls=c.game==='ptcg'?[POKEMON_CARD_ART[c.id],large?c.imageLarge:c.image,large?c.image:c.imageLarge,pokemonFallback(c),c.id?`img/ptcg/${large?'l':'s'}/${encodeURIComponent(c.id)}.jpg?v=${/^30th-/.test(c.id)?3:2}`:'']:c.game==='ygo'?[large?c.imageLarge:c.image,large?c.image:c.imageLarge,...(/^\d{1,12}$/.test(String(c.id||''))?[`https://images.ygoprodeck.com/images/cards${large?'':'_small'}/${c.id}.jpg`,`https://images.ygoprodeck.com/images/cards${large?'_small':''}/${c.id}.jpg`]:[])]:magicArtworkSources(c,large?'large':'normal');
  return [...new Set(urls.filter(u=>!knownPokemonPlaceholder(u)&&typeof u==='string'&&(/^(https?:\/\/|img\/|assets\/cards\/)/.test(u))))];
 }
 export function artworkHTML(c,cls='card-img',large=false){
