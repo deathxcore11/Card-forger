@@ -1102,7 +1102,9 @@ function render() {
     return;
   }
   deckBoxTransitions.beforeRender();
+  const loadedArt=collectLoadedArt($("#content"));
   $("#content").innerHTML = (g !== "mtg" && tcgViews[ui.view] ? tcgViews[ui.view] : views[ui.view] || V.home)();
+  reuseLoadedArt($("#content"),loadedArt);
   deckBoxTransitions.afterRender();
   syncDesktopPlayEntries(g);
   restoreDisclosures(content,disclosureStates.get(disclosureKey));
@@ -1254,6 +1256,24 @@ let activeEntry = null, entrySequence = 0, navigationPending = false, navigation
 const entryOrigins = new Map();
 let rollbackHistoryId=null;
 const makeEntry = (game, route, index) => ({ version:1, game, route, entryId:Date.now().toString(36)+"-"+(++entrySequence), index });
+// A page re-renders several times while a set, binder or deck fills in (prices, details, owned counts).
+// Each pass used to throw away every card image and decode it again, which made the grid blink.
+// Loaded images are kept and moved into the new markup when the same picture is asked for again;
+// the new tag's attributes win, so tier rings, classes and fallbacks stay current.
+function collectLoadedArt(root){
+  const map=new Map();if(!root?.querySelectorAll)return map;
+  for(const im of root.querySelectorAll('img[src]')){if(!im.complete||!im.naturalWidth||im.hidden)continue;const src=im.getAttribute('src');const list=map.get(src);if(list)list.push(im);else map.set(src,[im]);}
+  return map;
+}
+function reuseLoadedArt(root,map){
+  if(!map?.size||!root?.querySelectorAll)return;
+  for(const fresh of root.querySelectorAll('img[src]')){
+    const list=map.get(fresh.getAttribute('src'));const old=list?.shift();if(!old)continue;
+    for(const a of [...old.attributes])if(!fresh.hasAttribute(a.name))old.removeAttribute(a.name);
+    for(const a of fresh.attributes)if(old.getAttribute(a.name)!==a.value)old.setAttribute(a.name,a.value);
+    fresh.replaceWith(old);
+  }
+}
 const navigationStamp = () => ({ revision:navigation.revision, workspace:workspaceVisitRevision, game:T.game(), hash:location.hash });
 const navigationCurrent = stamp => stamp.revision === navigation.revision && stamp.workspace === workspaceVisitRevision && stamp.game === T.game() && stamp.hash === location.hash;
 function rememberScroll() { if(activeEntry) { scrollMem.set(activeEntry.entryId,window.scrollY); if(scrollMem.size>100)scrollMem.delete(scrollMem.keys().next().value); } }

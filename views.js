@@ -536,7 +536,7 @@ export function setPage() {
   let list = filterSortSetCards(all,"mtg",{q,rarity:st.rarity,finish:st.finish,sort:st.sort}).filter(c=>st.filter === "all" || (st.filter === "owned" ? ownedOf(c) : !ownedOf(c)));
   if (st.sort === "price") list = list.slice().sort((a, b) => (Number.isFinite(price(b))?price(b):-1) - (Number.isFinite(price(a))?price(a):-1));
   const rarities = facets.rarities;
-  return `<div class="set-hero set-overview">${setAtmosphere("mtg",info||{code:st.code},all[0])}<div class="set-identity">${info ? `<span class="set-icon huge" style="--icon:url('${esc(info.icon_svg_uri || setIconUrl(info.code))}')" aria-hidden="true"></span>` : ""}
+  return `<div class="set-hero set-overview" data-audit-frame>${setAtmosphere("mtg",info||{code:st.code},all[0])}<div class="set-identity">${info ? `<span class="set-icon huge" style="--icon:url('${esc(info.icon_svg_uri || setIconUrl(info.code))}')" aria-hidden="true"></span>` : ""}
     <div class="set-hero-main"><button class="link small" data-act="go" data-to="#sets">← All sets</button>
       <h1>${esc(info?.name || st.code.toUpperCase())}</h1>
       <p class="muted small">${info ? `${esc(info.code.toUpperCase())} · ${esc(SET_TYPES[info.set_type] || info.set_type || "")} · ${esc(info.released_at || "")}` : ""}</p>
