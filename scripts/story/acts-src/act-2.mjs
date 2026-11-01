@@ -93,7 +93,8 @@ export default {
       hero: {who: 'kolevi', deck: {name: 'Havenwood Spores', colors: 'G', list: `
 4 Thallid
 4 Thallid Devourer
-4 Spore Flower
+2 Ironroot Treefolk
+2 Grizzly Bears
 4 Elvish Farmer
 3 Feral Thallid
 4 Thelonite Druid
@@ -106,12 +107,14 @@ export default {
 4 Bog Rats
 4 Order of the Ebon Hand
 4 Necrite
-4 Drudge Skeletons
+4 Scathe Zombies
+
 4 Armor Thrull
 4 Derelor
 3 Breeding Pit
-4 Terror
-3 Sengir Vampire
+2 Terror
+2 Frozen Shade
+3 Raise Dead
 2 Drain Life
 24 Swamp`}},
       scene: [{who: 'initiate', line: 'We are no longer Nature\'s children, but her masters.', quote: true}, {who: 'kolevi', line: 'The magic at the heart of all living things can bear awe-inspiring fruit.', quote: true}, {who: 'initiate', line: "Then we'll harvest it."}, {who: 'kolevi', line: 'The thallids grow faster than you can cut. Watch.'}],
@@ -138,14 +141,14 @@ export default {
 2 Sol'kanar the Swamp King
 2 Hypnotic Specter
 2 Hill Giant
-4 Dragon Whelp
+2 Dragon Whelp
 4 Lightning Bolt
 2 Counterspell
 2 Scathe Zombies
 4 Terror
 3 Sengir Vampire
-1 Mahamoti Djinn
-2 Merfolk of the Pearl Trident
+1 Island
+4 Merfolk of the Pearl Trident
 3 Fireball
 2 Disintegrate
 3 Underground Sea
@@ -243,8 +246,10 @@ export default {
 8 Plains
 8 Forest`}},
       villain: {who: 'choir', deck: {name: 'The Hymn', colors: 'B', archetype: 'Black discard', list: `
-4 Hymn to Tourach
-4 Hypnotic Specter
+2 Hymn to Tourach
+2 Scathe Zombies
+2 Hypnotic Specter
+2 Bog Rats
 4 Dark Ritual
 4 Black Knight
 4 Order of the Ebon Hand
@@ -252,7 +257,7 @@ export default {
 3 Sengir Vampire
 4 Terror
 3 Drain Life
-1 Mind Twist
+1 Unholy Strength
 1 Pestilence
 24 Swamp`}},
       scene: [{who: 'choir', line: 'Tourach... Tourach...', aside: 'singing, low'}, {who: 'hazezon', line: "Cover your ears. Don't think about what you're holding."}, {who: 'choir', line: 'The eerie, wailing Hymn caused insanity even in hardened warriors.', quote: true}],

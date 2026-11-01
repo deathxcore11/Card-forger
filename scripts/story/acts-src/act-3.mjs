@@ -99,11 +99,14 @@ export default {
       villain: {who: 'leshrac', deck: {name: "Leshrac's Book", colors: 'B', list: `
 4 Knight of Stromgald
 4 Dark Ritual
-1 Necropotence
-4 Hypnotic Specter
-4 Drain Life
+1 Unholy Strength
+2 Hypnotic Specter
+2 Scathe Zombies
+2 Drain Life
+2 Raise Dead
 3 Sengir Vampire
-4 Abomination
+2 Abomination
+2 Drudge Skeletons
 4 Terror
 4 Ashen Ghoul
 1 Sengir Vampire
@@ -144,12 +147,16 @@ export default {
     {slot: 5, kind: 'Lesson', title: 'The Dead at the Gate', difficulty: 'Normal', rewardSet: 'all', teaches: ['Alternate costs', 'Counterspells'],
       blurb: 'The dead are walking south. Kjeldor and Balduvia stop fighting each other long enough to form an Alliance.',
       hero: {who: 'kjeldor', deck: {name: 'The Alliance', colors: 'WU', list: `
-3 Force of Will
-4 Arcane Denial
+1 Force of Will
+2 Benalish Hero
+2 Arcane Denial
+2 Pearled Unicorn
 4 Kjeldoran Royal Guard
 4 Kjeldoran Skycaptain
-4 Swords to Plowshares
-3 Serra Angel
+2 Swords to Plowshares
+2 Unsummon
+1 Serra Angel
+2 Water Elemental
 3 Phantom Monster
 4 White Knight
 1 Brainstorm
@@ -187,15 +194,17 @@ export default {
 2 Benalish Hero
 24 Plains`}},
       villain: {who: 'ihsan', deck: {name: 'Necropotence', colors: 'B', archetype: 'Necro (1996)', list: `
-1 Necropotence
+1 Swamp
 4 Dark Ritual
-4 Hypnotic Specter
+2 Hypnotic Specter
+2 Scathe Zombies
 4 Knight of Stromgald
 3 Ihsan's Shade
 4 Ashen Ghoul
 4 Black Knight
 3 Drain Life
-3 Icy Manipulator
+1 Icy Manipulator
+2 Unholy Strength
 2 Zuran Orb
 4 Terror
 1 Strip Mine
@@ -239,8 +248,10 @@ export default {
 4 White Knight
 4 Order of the White Shield
 4 Kjeldoran Royal Guard
-3 Serra Angel
-4 Swords to Plowshares
+1 Serra Angel
+2 Benalish Hero
+2 Swords to Plowshares
+2 Grizzly Bears
 3 Lhurgoyf
 3 Pygmy Allosaurus
 4 Giant Growth

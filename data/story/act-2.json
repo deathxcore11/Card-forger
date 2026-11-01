@@ -726,11 +726,18 @@
        "id": "aa533845-4c4b-4072-aa39-8e56ce7ec325"
       },
       {
-       "qty": 4,
-       "name": "Spore Flower",
-       "set": "fem",
-       "number": "73",
-       "id": "f9681dc0-d0fc-4d5b-a23c-63ec1cc8343d"
+       "qty": 2,
+       "name": "Ironroot Treefolk",
+       "set": "3ed",
+       "number": "204",
+       "id": "6e6cfaae-ea9e-4c54-858e-381f8bf441a9"
+      },
+      {
+       "qty": 2,
+       "name": "Grizzly Bears",
+       "set": "3ed",
+       "number": "201",
+       "id": "886959ca-83fd-4b50-a99a-08ef0c5415db"
       },
       {
        "qty": 4,
@@ -821,10 +828,10 @@
       },
       {
        "qty": 4,
-       "name": "Drudge Skeletons",
+       "name": "Scathe Zombies",
        "set": "3ed",
-       "number": "107",
-       "id": "59145073-2cfd-4153-a6d8-47ad42e739c3"
+       "number": "127",
+       "id": "6cbe576f-03d5-4d22-947a-187d9e20425d"
       },
       {
        "qty": 4,
@@ -848,18 +855,25 @@
        "id": "a0d7e85f-eba5-4fc5-9fc0-109109d368aa"
       },
       {
-       "qty": 4,
+       "qty": 2,
        "name": "Terror",
        "set": "3ed",
        "number": "132",
        "id": "0eaf0ac8-f5a7-4689-8d3e-dd865763df44"
       },
       {
-       "qty": 3,
-       "name": "Sengir Vampire",
+       "qty": 2,
+       "name": "Frozen Shade",
        "set": "3ed",
-       "number": "129",
-       "id": "fa35113b-5242-41f4-a989-42f2cd8002b6"
+       "number": "112",
+       "id": "6cba931e-94b5-4fcc-8d5f-eb60664baf31"
+      },
+      {
+       "qty": 3,
+       "name": "Raise Dead",
+       "set": "3ed",
+       "number": "124",
+       "id": "6f3c2902-e2c5-4618-9d4e-3fca34b610c8"
       },
       {
        "qty": 2,
@@ -1068,7 +1082,7 @@
        "id": "c987a3ec-a775-4140-ad49-18025e59dc3d"
       },
       {
-       "qty": 4,
+       "qty": 2,
        "name": "Dragon Whelp",
        "set": "3ed",
        "number": "143",
@@ -1110,14 +1124,14 @@
        "id": "fa35113b-5242-41f4-a989-42f2cd8002b6"
       },
       {
-       "qty": 1,
-       "name": "Mahamoti Djinn",
+       "qty": 6,
+       "name": "Island",
        "set": "3ed",
-       "number": "66",
-       "id": "4765276e-ad80-4734-b485-36eebf1b6ae1"
+       "number": "295",
+       "id": "22f6e971-349d-498b-ae01-ab81ce21772c"
       },
       {
-       "qty": 2,
+       "qty": 4,
        "name": "Merfolk of the Pearl Trident",
        "set": "3ed",
        "number": "68",
@@ -1157,13 +1171,6 @@
        "set": "3ed",
        "number": "282",
        "id": "56058359-3c0b-49db-a0ce-9ded4c3f4372"
-      },
-      {
-       "qty": 5,
-       "name": "Island",
-       "set": "3ed",
-       "number": "295",
-       "id": "22f6e971-349d-498b-ae01-ab81ce21772c"
       },
       {
        "qty": 5,
@@ -1860,18 +1867,32 @@
      "archetype": "Black discard",
      "cards": [
       {
-       "qty": 4,
+       "qty": 2,
        "name": "Hymn to Tourach",
        "set": "fem",
        "number": "38a",
        "id": "eb9273ea-9a41-42e3-8c9c-0d50b127a818"
       },
       {
-       "qty": 4,
+       "qty": 2,
+       "name": "Scathe Zombies",
+       "set": "3ed",
+       "number": "127",
+       "id": "6cbe576f-03d5-4d22-947a-187d9e20425d"
+      },
+      {
+       "qty": 2,
        "name": "Hypnotic Specter",
        "set": "3ed",
        "number": "115",
        "id": "2c8bd2bc-f48d-43c4-b2aa-5a0905656e90"
+      },
+      {
+       "qty": 2,
+       "name": "Bog Rats",
+       "set": "drk",
+       "number": "42",
+       "id": "d64c9153-bc6d-4a64-885f-c039a5487a31"
       },
       {
        "qty": 4,
@@ -1924,10 +1945,10 @@
       },
       {
        "qty": 1,
-       "name": "Mind Twist",
+       "name": "Unholy Strength",
        "set": "3ed",
-       "number": "117",
-       "id": "3230ac66-cb75-43cc-b652-b28e2962d163"
+       "number": "133",
+       "id": "3ac35077-91e9-446c-9cb2-e2cfb9fa2962"
       },
       {
        "qty": 1,

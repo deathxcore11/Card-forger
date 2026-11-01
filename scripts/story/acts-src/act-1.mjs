@@ -96,11 +96,13 @@ export default {
 3 Holy Strength
 24 Plains`}},
       villain: {who: 'blackKnight', deck: {name: 'The Dark Lance', colors: 'B', list: `
-4 Black Knight
+2 Black Knight
+2 Raise Dead
 4 Erg Raiders
 2 Hasran Ogress
 4 Scathe Zombies
-4 Bog Wraith
+2 Bog Wraith
+2 Deathgrip
 1 Sengir Vampire
 2 Frozen Shade
 2 Dark Ritual
@@ -251,8 +253,11 @@ export default {
 4 Urza's Tower
 12 Plains
 4 Yotian Soldier
-4 Su-Chi
-3 Juggernaut
+2 Su-Chi
+1 Pearled Unicorn
+1 Benalish Hero
+1 Juggernaut
+2 Healing Salve
 2 Triskelion
 2 Colossus of Sardia
 2 Swords to Plowshares

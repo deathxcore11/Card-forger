@@ -778,38 +778,59 @@
       },
       {
        "qty": 1,
-       "name": "Necropotence",
-       "set": "ice",
-       "number": "154",
-       "id": "54d7a0c1-efb4-4a8d-ad92-a96d43835052"
+       "name": "Unholy Strength",
+       "set": "4ed",
+       "number": "166",
+       "id": "f52c3c85-1462-406c-8e3b-c25deda9c4e6"
       },
       {
-       "qty": 4,
+       "qty": 2,
        "name": "Hypnotic Specter",
        "set": "4ed",
        "number": "142",
        "id": "b5900350-be08-4904-8f1b-cc180ed08485"
       },
       {
-       "qty": 4,
+       "qty": 2,
+       "name": "Scathe Zombies",
+       "set": "4ed",
+       "number": "158",
+       "id": "dbd55d32-e969-4d12-b101-a35db8a53921"
+      },
+      {
+       "qty": 2,
        "name": "Drain Life",
        "set": "4ed",
        "number": "132",
        "id": "b9d10677-36f0-4339-a2c3-213e8ee1c51d"
       },
       {
-       "qty": 3,
+       "qty": 2,
+       "name": "Raise Dead",
+       "set": "4ed",
+       "number": "156",
+       "id": "2096e54e-1a55-4fd7-8415-a6f2fdb2a536"
+      },
+      {
+       "qty": 4,
        "name": "Sengir Vampire",
        "set": "4ed",
        "number": "160",
        "id": "2e29882a-c194-48b8-ba18-439b0bda395e"
       },
       {
-       "qty": 4,
+       "qty": 2,
        "name": "Abomination",
        "set": "4ed",
        "number": "117",
        "id": "a363bc91-8278-448e-9d5c-564e4b51eb62"
+      },
+      {
+       "qty": 2,
+       "name": "Drudge Skeletons",
+       "set": "4ed",
+       "number": "133",
+       "id": "d3d223d3-72c1-4240-9323-84484167c5e0"
       },
       {
        "qty": 4,
@@ -824,13 +845,6 @@
        "set": "ice",
        "number": "114",
        "id": "6bb83301-5662-4628-b536-6a3ee0296f2e"
-      },
-      {
-       "qty": 1,
-       "name": "Sengir Vampire",
-       "set": "4ed",
-       "number": "160",
-       "id": "2e29882a-c194-48b8-ba18-439b0bda395e"
       },
       {
        "qty": 3,
@@ -1142,18 +1156,32 @@
      "archetype": null,
      "cards": [
       {
-       "qty": 3,
+       "qty": 1,
        "name": "Force of Will",
        "set": "all",
        "number": "28",
        "id": "9a879b60-4381-447d-8a5a-8e0b6a1d49ca"
       },
       {
-       "qty": 4,
+       "qty": 2,
+       "name": "Benalish Hero",
+       "set": "4ed",
+       "number": "7",
+       "id": "fd204832-5f3b-4213-9c06-b89a296a9d47"
+      },
+      {
+       "qty": 2,
        "name": "Arcane Denial",
        "set": "all",
        "number": "22a",
        "id": "b0c5728e-43e7-417a-ba18-5038345cec67"
+      },
+      {
+       "qty": 2,
+       "name": "Pearled Unicorn",
+       "set": "4ed",
+       "number": "39",
+       "id": "6acc78fc-1eab-47aa-993d-6781b2d2408a"
       },
       {
        "qty": 4,
@@ -1170,18 +1198,32 @@
        "id": "cf0115e0-6192-48a9-9e58-f3ef77ef77c2"
       },
       {
-       "qty": 4,
+       "qty": 2,
        "name": "Swords to Plowshares",
        "set": "ice",
        "number": "54",
        "id": "375fd2cb-443b-4be4-ad60-6d1a8e74f510"
       },
       {
-       "qty": 3,
+       "qty": 2,
+       "name": "Unsummon",
+       "set": "4ed",
+       "number": "111",
+       "id": "338948aa-463d-4af4-a0d6-64132512334c"
+      },
+      {
+       "qty": 1,
        "name": "Serra Angel",
        "set": "4ed",
        "number": "50",
        "id": "8072d00a-82ff-4406-bdf8-1af20cd3a170"
+      },
+      {
+       "qty": 2,
+       "name": "Water Elemental",
+       "set": "4ed",
+       "number": "115",
+       "id": "dadea972-714e-4f6d-8fb7-a59c0ac1e028"
       },
       {
        "qty": 3,
@@ -1470,11 +1512,11 @@
      "archetype": "Necro (1996)",
      "cards": [
       {
-       "qty": 1,
-       "name": "Necropotence",
+       "qty": 24,
+       "name": "Swamp",
        "set": "ice",
-       "number": "154",
-       "id": "54d7a0c1-efb4-4a8d-ad92-a96d43835052"
+       "number": "373",
+       "id": "4695653a-5c4c-4ff3-b80c-f4b6c685f370"
       },
       {
        "qty": 4,
@@ -1484,11 +1526,18 @@
        "id": "4ebcd681-1871-4914-bcd7-6bd95829f6e0"
       },
       {
-       "qty": 4,
+       "qty": 2,
        "name": "Hypnotic Specter",
        "set": "4ed",
        "number": "142",
        "id": "b5900350-be08-4904-8f1b-cc180ed08485"
+      },
+      {
+       "qty": 2,
+       "name": "Scathe Zombies",
+       "set": "4ed",
+       "number": "158",
+       "id": "dbd55d32-e969-4d12-b101-a35db8a53921"
       },
       {
        "qty": 4,
@@ -1526,11 +1575,18 @@
        "id": "b9d10677-36f0-4339-a2c3-213e8ee1c51d"
       },
       {
-       "qty": 3,
+       "qty": 1,
        "name": "Icy Manipulator",
        "set": "ice",
        "number": "322",
        "id": "1eda936f-7691-4440-9b83-eb0c6035b109"
+      },
+      {
+       "qty": 2,
+       "name": "Unholy Strength",
+       "set": "4ed",
+       "number": "166",
+       "id": "f52c3c85-1462-406c-8e3b-c25deda9c4e6"
       },
       {
        "qty": 2,
@@ -1552,13 +1608,6 @@
        "set": "4ed",
        "number": "363",
        "id": "a5899b46-226b-4be6-8e80-d2396f54210d"
-      },
-      {
-       "qty": 23,
-       "name": "Swamp",
-       "set": "ice",
-       "number": "373",
-       "id": "4695653a-5c4c-4ff3-b80c-f4b6c685f370"
       }
      ]
     }
@@ -1861,18 +1910,32 @@
        "id": "66343008-c38a-48a9-b767-fd2243103690"
       },
       {
-       "qty": 3,
+       "qty": 1,
        "name": "Serra Angel",
        "set": "4ed",
        "number": "50",
        "id": "8072d00a-82ff-4406-bdf8-1af20cd3a170"
       },
       {
-       "qty": 4,
+       "qty": 2,
+       "name": "Benalish Hero",
+       "set": "4ed",
+       "number": "7",
+       "id": "fd204832-5f3b-4213-9c06-b89a296a9d47"
+      },
+      {
+       "qty": 2,
        "name": "Swords to Plowshares",
        "set": "ice",
        "number": "54",
        "id": "375fd2cb-443b-4be4-ad60-6d1a8e74f510"
+      },
+      {
+       "qty": 2,
+       "name": "Grizzly Bears",
+       "set": "4ed",
+       "number": "250",
+       "id": "38fc72de-2093-477b-b39e-696339d2fdbc"
       },
       {
        "qty": 3,

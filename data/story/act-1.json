@@ -744,11 +744,18 @@
      "archetype": null,
      "cards": [
       {
-       "qty": 4,
+       "qty": 2,
        "name": "Black Knight",
        "set": "lea",
        "number": "94",
        "id": "c1662949-0d69-49a3-8c69-daf10717ed4e"
+      },
+      {
+       "qty": 2,
+       "name": "Raise Dead",
+       "set": "lea",
+       "number": "122",
+       "id": "ce07bede-2219-427c-a61a-56518751de42"
       },
       {
        "qty": 4,
@@ -772,11 +779,18 @@
        "id": "e9be6dcf-5e25-4b8c-9cd0-badf3771f81e"
       },
       {
-       "qty": 4,
+       "qty": 2,
        "name": "Bog Wraith",
        "set": "lea",
        "number": "95",
        "id": "6701874e-986e-4b81-9268-90b6171e6187"
+      },
+      {
+       "qty": 2,
+       "name": "Deathgrip",
+       "set": "lea",
+       "number": "100",
+       "id": "2371c126-f19a-472a-ba5f-3b1366274ea0"
       },
       {
        "qty": 1,
@@ -1945,18 +1959,39 @@
        "id": "27cf53e3-76f6-4831-800e-1259394d779d"
       },
       {
-       "qty": 4,
+       "qty": 2,
        "name": "Su-Chi",
        "set": "atq",
        "number": "66",
        "id": "a64d4f93-0c04-4078-aec0-7e9de92f260f"
       },
       {
+       "qty": 4,
+       "name": "Pearled Unicorn",
+       "set": "lea",
+       "number": "30",
+       "id": "6daf1aab-1e58-4a5a-bc66-cb3f7c86e0e8"
+      },
+      {
        "qty": 3,
+       "name": "Benalish Hero",
+       "set": "lea",
+       "number": "4",
+       "id": "11600105-56c6-4073-a4a6-8469030b39c9"
+      },
+      {
+       "qty": 1,
        "name": "Juggernaut",
        "set": "lea",
        "number": "255",
        "id": "dcd6a291-5282-4f49-8203-d9b416083c48"
+      },
+      {
+       "qty": 2,
+       "name": "Healing Salve",
+       "set": "lea",
+       "number": "22",
+       "id": "e28de37e-84d5-4dc7-b36c-e14da5924729"
       },
       {
        "qty": 2,
@@ -2002,13 +2037,6 @@
       },
       {
        "qty": 3,
-       "name": "Pearled Unicorn",
-       "set": "lea",
-       "number": "30",
-       "id": "6daf1aab-1e58-4a5a-bc66-cb3f7c86e0e8"
-      },
-      {
-       "qty": 3,
        "name": "Mesa Pegasus",
        "set": "lea",
        "number": "28",
@@ -2027,13 +2055,6 @@
        "set": "lea",
        "number": "24",
        "id": "e945a4cd-0eb1-4f54-898d-169ce2748a03"
-      },
-      {
-       "qty": 2,
-       "name": "Benalish Hero",
-       "set": "lea",
-       "number": "4",
-       "id": "11600105-56c6-4073-a4a6-8469030b39c9"
       }
      ]
     }

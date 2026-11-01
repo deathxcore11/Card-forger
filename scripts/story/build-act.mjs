@@ -26,7 +26,8 @@ const deck = (d) => {
   for (const line of d.list.trim().split('\n')) {
     const m = line.trim().match(/^(\d+)\s+(.+?)(?:\s+\[(\w+)\])?$/); if (!m) continue;
     const c = pick(m[2], m[3] ? [m[3]] : d.prefer); if (!c) continue;
-    cards.push({qty: +m[1], name: c.name, set: c.set, number: c.number, id: c.id});
+    const same = cards.find(x => x.id === c.id);
+    if (same) same.qty += +m[1]; else cards.push({qty: +m[1], name: c.name, set: c.set, number: c.number, id: c.id});
   }
   return {name: d.name, colors: d.colors, archetype: d.archetype || null, cards};
 };
