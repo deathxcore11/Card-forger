@@ -58,7 +58,7 @@ PY
 export FORGE_BROWSER_OUT="$OUT" FORGE_BROWSER_CASE=saved-keen FORGE_TEST_CAST=true FORGE_FULL_JOURNEY="$full"
 export FORGE_TOUCH=false FORGE_WIDTH=1440 FORGE_HEIGHT=1000
 export FORGE_EXPECTED_POLICY_VERSION=forge-heuristic-medium-beta-v1
-export FORGE_EXPECTED_SOURCE_SHA256=016ed24c9a90a17bb0198cca7a6635327367e6d0be8f1c72584a7dcded225570
+export FORGE_EXPECTED_SOURCE_SHA256=e216984fb60d2f450aef918475722bfd4d0afff83fe7010a3cbc2ee46bc18a49
 if [[ "$name" == touch750 ]];then export FORGE_TOUCH=true FORGE_WIDTH=750 FORGE_HEIGHT=832;fi
 set +e
 node "$HERE/browser-journey.mjs" > "$OUT/private-browser.log" 2>&1

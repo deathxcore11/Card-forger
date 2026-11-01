@@ -15,6 +15,8 @@ public final class NativeDeckAdmission {
   public Admission(JsonObject input,NativeDeckInput.Resolution human,NativeDeckInput.Resolution opponent,Map<String,Object> receipt){this(input,human,opponent,receipt,List.of(),List.of());}
   public boolean admitted(){return Boolean.TRUE.equals(receipt.get("legal"))&&Boolean.TRUE.equals(receipt.get("supported"));}
   /** Every CPU deck in seat order: the opponent, then any extra Commander pod seats. */
+  /** A friend match: the opponent seat is a second person, not a CPU. */
+  public boolean humanOpponent(){return input!=null&&input.has("opponentKind");}
   public List<NativeDeckInput.Resolution> cpuSeats(){List<NativeDeckInput.Resolution> all=new ArrayList<>();all.add(opponent);all.addAll(extras);return all;}
  }
  // A Commander pod: you plus up to three CPUs. Each extra CPU brings its own deck and level.
@@ -41,9 +43,11 @@ public final class NativeDeckAdmission {
   List<String> errors=new ArrayList<>();NativeDeckInput.Resolution human=null,opponent=null;List<NativeDeckInput.Resolution> extras=new ArrayList<>();List<BoundedHeuristicPolicy> extraPolicies=new ArrayList<>();List<Map<String,Object>> extraReceipts=new ArrayList<>();boolean extrasResolved=true;
   BoundedHeuristicPolicy selectedPolicy=null;Map<String,Object> cpuPolicy=null;String policyVersion=null;boolean policy=false,legal=false,nativeLegal=false,dataSupported=false;Map<String,Object> rulesData=null;String humanDigest=null,opponentDigest=null,requestDigest=null;
   try{
-   Set<String> keys=input==null?Set.of():new HashSet<>(input.keySet());boolean pod=keys.remove("extraOpponents");
+   Set<String> keys=input==null?Set.of():new HashSet<>(input.keySet());boolean pod=keys.remove("extraOpponents"),friend=keys.remove("opponentKind");
    if(input==null||!(keys.equals(Set.of("format","humanDeck","opponentDeck","difficultyPolicyVersion"))||keys.equals(Set.of("format","humanDeck","opponentDeck","difficultyPolicyVersion","startingPlayer","playStyle"))))throw new IllegalArgumentException("invalid_match_input");
    NativeStartingPlayer.parse(input);
+   // A friend match: two people, two seats, and Forge's own coin toss picks who starts.
+   if(friend&&(pod||!"human".equals(NativeDeckInput.string(input.get("opponentKind"),"opponentKind",16))||!input.has("startingPlayer")||!"random".equals(NativeDeckInput.string(input.get("startingPlayer"),"startingPlayer",16))))throw new IllegalArgumentException("friend_match_invalid");
    NativeDeckInput.bounded(input,0,new int[]{0});
    requestDigest=NativeDeckInput.digest(input);humanDigest=NativeDeckInput.digest(input.get("humanDeck"));opponentDigest=NativeDeckInput.digest(input.get("opponentDeck"));
    policyVersion=NativeDeckInput.string(input.get("difficultyPolicyVersion"),"difficultyPolicyVersion",80);selectedPolicy=NativeCpuPolicyIntegration.parse(policyVersion);cpuPolicy=NativeCpuPolicyIntegration.receipt(selectedPolicy);policy=NativeMatchFormat.supported(NativeDeckInput.string(input.get("format"),"format",80));
@@ -86,6 +90,7 @@ public final class NativeDeckAdmission {
    }
   }catch(RuntimeException e){errors.add(e.getMessage()==null?"malformed_input":e.getMessage());}
   Map<String,Object> receipt=map("schema","cardstashy.forge-exact-initialization.v1","engineRevision",ForgeHttpBridge.REV,"policyVersion",policyVersion,"aiProfile",selectedPolicy==null?null:selectedPolicy.profile,"cpuPolicy",cpuPolicy,"cpuPolicyRuntimeVerified",false,"controlMode","smart","supported",policy&&human!=null&&opponent!=null&&extrasResolved&&dataSupported,"nativeLegal",nativeLegal,"rulesData",rulesData,"legal",legal,"errors",errors,"requestDigest",requestDigest,"humanDigest",humanDigest,"opponentDigest",opponentDigest,"humanRosterDigest",human==null?null:human.report().get("nativeRosterDigest"),"opponentRosterDigest",opponent==null?null:opponent.report().get("nativeRosterDigest"),"registeredRosterVerified",false,"nativeRosterVerified",false,"viewerId",null,"seats",map("human",human==null?null:publicSummary(human),"opponent",opponent==null?null:publicSummary(opponent)),"extraOpponents",extraReceipts,"interactionCoverage","native-definitions-loaded; not a full interaction certification; unsupported native prompts fail closed");
+  receipt.put("opponentKind",input!=null&&input.has("opponentKind")?"human":"cpu");
   return new Admission(input==null?null:input.deepCopy(),human,opponent,receipt,List.copyOf(extras),List.copyOf(extraPolicies));
  }
  public static Map<String,Object> publicSummary(NativeDeckInput.Resolution r){

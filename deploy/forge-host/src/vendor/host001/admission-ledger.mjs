@@ -9,7 +9,7 @@ const fail = code => { throw new TypeError(code); };
 const only = (value, allowed) => object(value) && Object.keys(value).every(key => allowed.includes(key));
 
 export function validateExactDeckInput(input) {
-  if (!only(input, ['format', 'humanDeck', 'opponentDeck', 'difficultyPolicyVersion', 'startingPlayer', 'playStyle', 'extraOpponents'])
+  if (!only(input, ['format', 'humanDeck', 'opponentDeck', 'difficultyPolicyVersion', 'startingPlayer', 'playStyle', 'extraOpponents', 'opponentKind'])
       || !['Commander', 'Standard', 'Modern', 'Pioneer', 'Legacy', 'Vintage', 'Pauper', 'Brawl'].includes(input.format)
       || typeof input.difficultyPolicyVersion !== 'string'
       || !/^[A-Za-z0-9._-]{1,80}$/.test(input.difficultyPolicyVersion)) fail('invalid_match_input');
@@ -17,6 +17,9 @@ export function validateExactDeckInput(input) {
     if (!['random', 'first', 'second'].includes(input.startingPlayer) || !['quick', 'practice'].includes(input.playStyle)
         || input.playStyle === 'quick' && input.startingPlayer !== 'random') fail('invalid_starting_player_selection');
   }
+  // A friend match: the opponent seat is a second person and Forge's coin toss picks who starts.
+  if (input.opponentKind !== undefined && (input.opponentKind !== 'human' || input.extraOpponents !== undefined
+      || input.startingPlayer !== 'random')) fail('invalid_friend_match');
   // A Commander pod: up to two more CPU seats, each with its own deck and level.
   const decks = [input.humanDeck, input.opponentDeck];
   if (input.extraOpponents !== undefined) {

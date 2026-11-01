@@ -87,7 +87,7 @@ class Bridge:
                 raise TimeoutError("native_request_deadline")
             if len(data) > MAX_RESPONSE:
                 raise ValueError("native_response_limit")
-            if path == "/state" and response.status == 200:
+            if path in ("/state", "/seat2/state") and response.status == 200:
                 state = json.loads(data)
                 if state.get("status") in ("finished", "failed") and self.terminal_seen is None:
                     self.terminal_seen = time.monotonic()
@@ -245,10 +245,11 @@ class Handler(BaseHTTPRequestHandler):
         if len(auth) != 1 or not hmac.compare_digest(auth[0].encode(), expected):
             self.error(401, "internal_authorization_required")
             return
-        if self.path not in ("/state", "/action"):
+        # /seat2/... is the second person's seat of a friend match: same engine, own view.
+        if self.path not in ("/state", "/action", "/seat2/state", "/seat2/action"):
             self.error(404, "route_not_found")
             return
-        if (self.path, self.command) not in (("/state", "GET"), ("/action", "POST")):
+        if (self.path[len("/seat2"):] if self.path.startswith("/seat2/") else self.path, self.command) not in (("/state", "GET"), ("/action", "POST")):
             self.error(405, "method_not_allowed")
             return
         body = None

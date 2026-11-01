@@ -59,6 +59,9 @@ export function nativeAdapter(env, { now = Date.now } = {}) {
         || receipt.humanDigest !== allocation.deckDigests.human || receipt.opponentDigest !== allocation.deckDigests.opponent
         || !/^[a-f0-9]{64}$/.test(receipt.humanRosterDigest || '') || !/^[a-f0-9]{64}$/.test(receipt.opponentRosterDigest || '')
         || !Array.isArray(receipt.errors) || receipt.errors.length !== 0) throw Error('native_exact_validation_rejected');
+      // A friend match: the engine seated a second person (not a CPU) and named that seat's viewer.
+      if ((receipt.opponentKind ?? 'cpu') !== (input.opponentKind === 'human' ? 'human' : 'cpu')
+        || (input.opponentKind === 'human' && (!Number.isSafeInteger(receipt.guestViewerId) || receipt.guestViewerId < 0 || receipt.guestViewerId === receipt.viewerId))) throw Error('native_exact_validation_rejected');
       verifyPolicyReceipt(receipt, input, release, configuredImage, now());
       verifyStartingPlayerReceipt(state, input);
       return { ...receipt, schema: NATIVE_SCHEMA }; // existing MatchService strips initialization before browser projection

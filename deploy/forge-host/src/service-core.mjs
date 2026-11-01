@@ -1,5 +1,6 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
 // Provider-independent implementation; production calls actual ctx.container.
+import { seatOf } from './vendor/host001/session-authority.mjs';
 import { MatchAuthority, GatewayDriver, verifyHostUser, boundedJSON,
   FORGE_REVISION, NATIVE_SCHEMA, digest, abortable } from './policy.mjs';
 import { ProvisionalAdmissionLedger } from './provisional-ledger.mjs';
@@ -21,6 +22,20 @@ const WARM_MS = 180_000;
 // within the startup deadline; the message is Cloudflare's, matched loosely.
 const ALLOCATION_ATTEMPTS = 3, NO_INSTANCE_RE = /no container instance/i;
 const WARM_PATH = '/api/play/warm';
+// Friend matches. A room holds the host's deck until the guest joins with an invite.
+const ROOMS_PATH = '/api/play/rooms', JOIN_PATH = '/api/play/rooms/join';
+const ROOM_PATH = new RegExp('^/api/play/rooms/(' + UUID + ')$', 'i');
+const INVITE = /^[A-Za-z0-9_-]{43}$/;
+// An invite lasts 30 minutes. Friend matches start with the first three formats.
+const ROOM_MS = 1_800_000, FRIEND_FORMATS = ['Commander', 'Standard', 'Modern'];
+// Forge needs a CPU policy version in every input; a friend match has no CPU, so the
+// default one is recorded and never used.
+const FRIEND_POLICY = 'forge-heuristic-medium-beta-v1';
+// The engine input of a friend match: the host is the first seat, the guest the second.
+const friendInput = (format, hostDeck, guestDeck) => ({ format, humanDeck: hostDeck, opponentDeck: guestDeck,
+  difficultyPolicyVersion: FRIEND_POLICY, startingPlayer: 'random', playStyle: 'quick', opponentKind: 'human' });
+const randomInvite = () => { const bytes = crypto.getRandomValues(new Uint8Array(32));
+  return btoa(String.fromCharCode(...bytes)).replace(/\+/g, '-').replace(/\//g, '_').replace(/=+$/, ''); };
 // Live states: a destruction proof is never given while a container may hold one.
 const ACTIVE = ['running', 'initializing', 'warming'];
 const IDEMPOTENCY_KEY = /^[A-Za-z0-9_-]{16,128}$/;
@@ -82,6 +97,12 @@ export async function readJSONWithin(request, maximum, timeoutMs = 5000) {
 // Its service binding is private; also keep origin + owner checks in each DO.
 export async function routeHostRequest(request, env, verifyBearer) {
   const path = new URL(request.url).pathname;
+  const room = path === ROOMS_PATH || path === JOIN_PATH ? request.method === 'POST' : ROOM_PATH.test(path) ? ['GET', 'DELETE'].includes(request.method) : null;
+  if (room !== null) {
+    if (!room) return error('method_not_allowed', 405);
+    if (!await verifyHostUser(request, { verifyBearer, origin: ORIGIN })) return error('authentication_required', 401);
+    return env.FORGE_ADMISSION.getByName(GLOBAL_NAME).fetch(request);
+  }
   const route = MATCH_PATH.exec(path);
   if (path !== '/api/play/matches' && path !== WARM_PATH && !route) return error('not_found', 404);
   if (path === '/api/play/matches' || path === WARM_PATH ? request.method !== 'POST'
@@ -111,13 +132,15 @@ export class AdmissionService {
   }
   async fetch(request) {
     const path = new URL(request.url).pathname;
-    if (![WARM_PATH, '/api/play/matches'].includes(path) || request.method !== 'POST') return error('not_found', 404);
+    const roomRoute = path === ROOMS_PATH || path === JOIN_PATH || ROOM_PATH.test(path);
+    if (!roomRoute && (![WARM_PATH, '/api/play/matches'].includes(path) || request.method !== 'POST')) return error('not_found', 404);
     const user = await verifyHostUser(request, { verifyBearer: this.verifyBearer, origin: ORIGIN });
     if (!user) return error('authentication_required', 401);
     const access = admissionPolicy(this.env, this.now());
     const trialMode = (this.env.FORGE_PLAY_ACCESS ?? 'trial') === 'trial';
     if (!access) return error(trialMode ? 'trial_unavailable_or_expired' : 'play_unavailable', 503);
     if (!allowsAccount(access, user.id)) return error(trialMode ? 'trial_not_authorized' : 'play_not_authorized', 403);
+    if (roomRoute) return this.room(request, path, user, access);
     if (path === WARM_PATH) return this.warm(user, access);
     if (await limited(this.storage, 'attempt:' + user.id, [[60_000, 3], [3_600_000, 60]], this.now())) return error('create_attempt_rate_limit', 429);
     // Always alarm after attempts so rejected-user rate records are also pruned.
@@ -169,6 +192,88 @@ export class AdmissionService {
     }
     return json({ ...publicAllocation(allocation), status: 'initializing', admissionState: 'provisional_native_validation_required', replay: result.replay }, 202);
   }
+  // Friend rooms. POST /rooms {format, deck} opens one (one per host; a new one replaces an
+  // open one) and returns a private invite. GET /rooms/<id> is for its two players only.
+  // POST /rooms/join {invite} shows the room's format; {invite, deck} takes the second seat
+  // and starts the match. DELETE /rooms/<id> lets the host cancel before it starts.
+  // Decks never leave the server: the other player sees only that a seat is filled.
+  async room(request, path, user, access) {
+    if (await limited(this.storage, 'attempt:room:' + user.id, [[60_000, 20], [3_600_000, 200]], this.now())) return error('room_rate_limit', 429);
+    await scheduleNoLater(this.storage, this.now() + 60_000);
+    const byId = ROOM_PATH.exec(path);
+    if (byId) {
+      const key = 'room:' + byId[1].toLowerCase(), room = await this.storage.get(key);
+      if (!room || (room.hostId !== user.id && room.guestId !== user.id)) return error('room_not_found', 404);
+      if (request.method === 'DELETE') {
+        if (room.hostId !== user.id) return error('room_not_found', 404);
+        if (room.status === 'open') { room.status = 'cancelled'; await this.storage.put(key, room); }
+        return new Response(null, { status: 204, headers: { 'Cache-Control': 'no-store' } });
+      }
+      return json(this.roomView(room, user.id));
+    }
+    let body;
+    try { body = await readJSONWithin(request, 131072); }
+    catch (e) { return error(['body_too_large', 'body_timeout'].includes(e.message) ? e.message : 'invalid_json', e.message === 'body_too_large' ? 413 : e.message === 'body_timeout' ? 408 : 400); }
+    if (path === ROOMS_PATH) {
+      if (Object.keys(body).some(k => !['format', 'deck'].includes(k)) || !FRIEND_FORMATS.includes(body.format)) return error('invalid_room', 400);
+      try { validateExactDeckInput(friendInput(body.format, body.deck, body.deck)); } catch { return error('invalid_match_input', 400); }
+      const invite = randomInvite(), roomId = crypto.randomUUID();
+      const room = { roomId, hostId: user.id, format: body.format, hostDeck: body.deck, inviteDigest: await digest(invite),
+        status: 'open', createdAt: this.now(), expiresAt: this.now() + ROOM_MS };
+      await this.storage.transaction(async txn => {
+        // One open room per host: a new invite ends the old one.
+        const previous = await txn.get('host-room:' + user.id);
+        const old = previous && await txn.get('room:' + previous);
+        if (old?.status === 'open') { old.status = 'cancelled'; await txn.put('room:' + previous, old); }
+        await txn.put('room:' + roomId, room); await txn.put('invite:' + room.inviteDigest, roomId); await txn.put('host-room:' + user.id, roomId);
+      });
+      return json({ ...this.roomView(room, user.id), invite }, 201);
+    }
+    // Join.
+    if (Object.keys(body).some(k => !['invite', 'deck'].includes(k)) || !INVITE.test(body.invite || '')) return error('invalid_invite', 400);
+    const roomId = await this.storage.get('invite:' + await digest(body.invite));
+    const key = 'room:' + roomId, found = roomId && await this.storage.get(key);
+    if (!found) return error('invite_not_found', 404);
+    if (found.hostId === user.id) return error('own_room', 409);
+    if (found.guestId && found.guestId !== user.id) return error('room_full', 409);
+    if (found.status === 'cancelled') return error('room_closed', 410);
+    if (found.status === 'open' && this.now() >= found.expiresAt) return error('invite_expired', 410);
+    if (body.deck === undefined || found.status === 'started') return json(this.roomView(found, user.id));
+    let input;
+    try { input = validateExactDeckInput(friendInput(found.format, found.hostDeck, body.deck)); } catch { return error('invalid_match_input', 400); }
+    // Take the seat first, atomically: of two people joining at once, only one gets it.
+    const claim = await this.storage.transaction(async txn => {
+      const room = await txn.get(key);
+      if (room.guestId && room.guestId !== user.id) return { error: 'room_full', status: 409 };
+      if (room.status !== 'open') return { error: room.status === 'started' ? 'room_full' : 'room_closed', status: room.status === 'started' ? 409 : 410 };
+      room.guestId = user.id; await txn.put(key, room); return { room };
+    });
+    if (claim.error) return error(claim.error, claim.status);
+    const lifetimeMs = access.mode === 'trial' ? Math.min(access.matchMs, access.expiresAt - this.now()) : access.matchMs;
+    const reserveGuard = (txn, allocation) => reserveAdmissionBudget(txn, allocation, access, this.now());
+    // The same key for the same room: a repeated join replays the one match, never a second.
+    const idempotencyKey = 'friend-room-' + found.roomId.replace(/-/g, '');
+    for (const player of [found.hostId, user.id]) {
+      const refused = await this.replacePreviousMatch({ ownerId: player, idempotencyKey, input, lifetimeMs, reserveGuard });
+      if (refused) return error(refused.error === 'previous_match_ending' ? 'player_busy' : refused.error, refused.status);
+    }
+    let result;
+    try { result = await this.ledger.reserveProvisional({ ownerId: found.hostId, guestId: user.id, idempotencyKey, input, lifetimeMs, reserveGuard }); }
+    catch { return error('invalid_match_input', 400); }
+    if (!result.allocation) return error(result.error === 'user_has_active_allocation' ? 'player_busy' : result.error, result.status);
+    await this.storage.transaction(async txn => {
+      const room = await txn.get(key);
+      room.status = 'started'; room.matchId = result.allocation.matchId; delete room.hostDeck;
+      await txn.put(key, room); await txn.delete('invite:' + room.inviteDigest);
+    });
+    return this.dispatch(result, input);
+  }
+  roomView(room, userId) {
+    const expired = room.status === 'open' && this.now() >= room.expiresAt;
+    return { roomId: room.roomId, format: room.format, status: expired ? 'expired' : room.status, expiresAt: room.expiresAt,
+      seat: room.hostId === userId ? 'host' : 'guest', guestJoined: !!room.guestId,
+      ...(room.matchId && room.status === 'started' ? { matchId: room.matchId } : {}) };
+  }
   // Start the engine for this account's next match before its decks are chosen. Best
   // effort: a refusal changes nothing, and the match then starts the usual way.
   // Never ends or replaces a match the account already has.
@@ -177,7 +282,7 @@ export class AdmissionService {
     // Under 'attempt:' so the alarm prunes it with the create attempts.
     if (await limited(this.storage, 'attempt:warm:' + user.id, [[60_000, 3], [3_600_000, 30]], this.now())) return error('warm_attempt_rate_limit', 429);
     await scheduleNoLater(this.storage, this.now() + 60_000);
-    if ((await this.storage.get('leases') || []).some(lease => lease.ownerId === user.id)) return json({ status: 'busy' }, 200);
+    if ((await this.storage.get('leases') || []).some(lease => lease.ownerId === user.id || lease.guestId === user.id)) return json({ status: 'busy' }, 200);
     const reserveGuard = (txn, allocation) => reserveAdmissionBudget(txn, allocation, access, this.now());
     let result;
     try { result = await this.ledger.reserveWarm({ ownerId: user.id, lifetimeMs: access.matchMs, warmMs: WARM_MS, reserveGuard }); }
@@ -236,7 +341,7 @@ export class AdmissionService {
   async pendingStatus(matchId, ownerId) {
     if (!UUID_RE.test(matchId || '') || !UUID_RE.test(ownerId || '')) return null;
     const lease = (await this.storage.get('leases') || [])
-      .find(value => value.matchId === matchId && value.ownerId === ownerId);
+      .find(value => value.matchId === matchId && (value.ownerId === ownerId || value.guestId === ownerId));
     return lease ? { ...publicAllocation(lease), startupDeadline: lease.createdAt + STARTUP_MS } : null;
   }
   async verifyLease(allocation) {
@@ -273,6 +378,12 @@ export class AdmissionService {
       } catch { /* occupied until confirmed; retain retry alarm */ }
     }
     await this.ledger.pruneReceipts();
+    // Friend rooms are kept a day after they open, then forgotten with their invite.
+    for (const [key, room] of await this.storage.list({ prefix: 'room:' })) {
+      if (room.createdAt > this.now() - 86_400_000) continue;
+      await this.storage.delete([key, 'invite:' + room.inviteDigest]);
+      if (await this.storage.get('host-room:' + room.hostId) === room.roomId) await this.storage.delete('host-room:' + room.hostId);
+    }
     for (const [key, times] of await this.storage.list({ prefix: 'attempt:' })) {
       if (times.every(t => t <= this.now() - 3_600_000)) await this.storage.transaction(async txn => {
         // A create request can commit fresh attempts after the list snapshot.
@@ -283,7 +394,7 @@ export class AdmissionService {
     }
     const live = (await this.storage.get('leases') || []).length;
     const rates = (await this.storage.list({ prefix: 'attempt:' })).size;
-    const receipts = (await this.storage.list({ prefix: 'create:' })).size;
+    const receipts = (await this.storage.list({ prefix: 'create:' })).size + (await this.storage.list({ prefix: 'room:' })).size;
     if (live || rates || receipts) await scheduleNoLater(this.storage, this.now() + (live ? 30_000 : 3_600_000));
   }
 }
@@ -436,7 +547,8 @@ export class MatchService {
           enter('authority');
           record.status = 'running'; await this.storage.put('allocation', record);
           const authority = await this.authority(record);
-          await authority.initialize({ ...allocation, epoch: record.epoch, viewerId: initialized.viewerId });
+          await authority.initialize({ ...allocation, epoch: record.epoch, viewerId: initialized.viewerId,
+            ...(allocation.guestId ? { guestId: allocation.guestId, guestViewerId: initialized.guestViewerId } : {}) });
           await this.storage.setAlarm(Math.min(record.expiresAt, this.now() + IDLE_MS));
           timings.running = this.now() - began;
           console.log('forge_startup ' + JSON.stringify({ ...timings, warm }));
@@ -514,7 +626,7 @@ export class MatchService {
         if (!user) return error('authentication_required', 401);
         let pending;
         if (record?.status === 'initializing') {
-          if (record.ownerId !== user.id || record.matchId !== route[1]) return error('match_not_found', 404);
+          if (!seatOf(record, user.id) || record.matchId !== route[1]) return error('match_not_found', 404);
           pending = { ...publicAllocation(record), startupDeadline: record.startupDeadline };
         } else {
           try {
@@ -535,7 +647,7 @@ export class MatchService {
       const user = await verifyHostUser(request, { verifyBearer: this.verifyBearer, origin: ORIGIN });
       if (!user) return error('authentication_required', 401);
       const record = await this.storage.get('allocation');
-      if (!record || record.ownerId !== user.id || new URL(request.url).pathname !== '/api/play/matches/' + record.matchId + '/actions') return error('match_not_found', 404);
+      if (!record || !seatOf(record, user.id) || new URL(request.url).pathname !== '/api/play/matches/' + record.matchId + '/actions') return error('match_not_found', 404);
       let body;
       try { body = await readJSONWithin(request, 20480); }
       catch (failure) { return error(failure.message === 'body_timeout' ? 'body_timeout' : 'invalid_json', failure.message === 'body_timeout' ? 408 : failure.message === 'body_too_large' ? 413 : 400); }
@@ -566,7 +678,8 @@ export class MatchService {
     const record = await this.storage.get('allocation');
     const base = record && '/api/play/matches/' + record.matchId;
     const path = new URL(request.url).pathname;
-    if (!record || record.ownerId !== user.id || (path !== base && path !== base + '/actions')) return error('match_not_found', 404);
+    const seat = seatOf(record, user.id);
+    if (!record || !seat || (path !== base && path !== base + '/actions')) return error('match_not_found', 404);
     if (request.method === 'DELETE' && path === base) {
       return await this.cleanup(record, 'closed') ? new Response(null, { status: 204, headers: { 'Cache-Control': 'no-store' } }) : error('cleanup_unconfirmed', 503);
     }
@@ -578,7 +691,7 @@ export class MatchService {
       // Also recover a crash after authority persisted the result but before
       // wrapper cleanup. Keep the canonical result even if cleanup needs retry.
       await this.cleanup(record, 'finished');
-      return json({ matchId: record.matchId, generation: record.generation, status: 'finished', viewerId: terminal.viewerId, result: terminal.result });
+      return json({ matchId: record.matchId, generation: record.generation, status: 'finished', viewerId: seat === 2 ? terminal.guestViewerId : terminal.viewerId, result: terminal.result });
     }
     if (this.now() >= record.expiresAt || this.now() >= record.lastAuthorizedAt + IDLE_MS) {
       await this.cleanup(record, 'expired'); return error('match_expired', 410);
@@ -588,7 +701,7 @@ export class MatchService {
       return json({ error: 'match_' + record.status, reason: record.reason || null, ...(record.failure ? { failure: record.failure } : {}), ...(record.validation ? { validation: record.validation } : {}) }, 410);
     }
     const windows = request.method === 'GET' ? [[1000, 4]] : [[1000, 10], [2000, 20]];
-    if (await limited(this.storage, request.method === 'GET' ? 'poll-rate' : 'action-rate', windows, this.now())) return error('match_rate_limit', 429);
+    if (await limited(this.storage, (request.method === 'GET' ? 'poll-rate' : 'action-rate') + (seat === 2 ? '-2' : ''), windows, this.now())) return error('match_rate_limit', 429);
     const authority = await this.authority(record);
     const response = await authority.handle(request); // verifies actual bearer again
     const match = await this.storage.get('match');
@@ -679,7 +792,7 @@ export class MatchService {
       // tombstone so a delayed begin can never recreate this ID.
       if (this.now() >= current.retainUntil) {
         for (const [key] of await this.storage.list({ prefix: 'command:' })) await this.storage.delete(key);
-        for (const key of ['match', 'poll-rate', 'action-rate']) await this.storage.delete(key);
+        for (const key of ['match', 'poll-rate', 'action-rate', 'poll-rate-2', 'action-rate-2']) await this.storage.delete(key);
         await this.storage.put('allocation', { matchId: current.matchId, generation: current.generation,
           status: 'closed', expiresAt: current.expiresAt, lastAuthorizedAt: current.lastAuthorizedAt,
           retainUntil: current.retainUntil });

@@ -27,6 +27,8 @@ public final class NativeCpuPolicyIntegration {
  public static void verifyRuntime(NativeDeckAdmission.Admission admission,BoundedHeuristicPolicy policy,forge.game.Game game){
   // Each CPU seat keeps its own level: the first CPU uses the match level, extra pod seats theirs.
   List<BoundedHeuristicPolicy> seats=new ArrayList<>();seats.add(policy);if(admission!=null)seats.addAll(admission.extraPolicies());
+  // A friend match has no CPU seat at all.
+  if(admission!=null&&admission.humanOpponent())seats.clear();
   int aiPlayers=0;
   for(var p:game.getPlayers())if(p.getController() instanceof forge.ai.PlayerControllerAi){if(aiPlayers>=seats.size())throw new IllegalStateException("expected_one_native_cpu_per_seat");seats.get(aiPlayers).apply(p);aiPlayers++;}
   if(aiPlayers!=seats.size())throw new IllegalStateException("expected_one_native_cpu_per_seat");

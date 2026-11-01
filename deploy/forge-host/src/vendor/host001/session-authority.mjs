@@ -117,6 +117,20 @@ export async function verifyHostUser(request, { verifyBearer, origin }) {
   } catch { return null; }
 }
 
+// Which seat of the match this verified account holds: 1 the owner, 2 a friend match's
+// guest, 0 neither. Seats come only from the server-initialized match record.
+export function seatOf(match, userId) {
+  if (!match || !uuid.test(userId || '')) return 0;
+  if (match.ownerId === userId) return 1;
+  return match.guestId !== undefined && match.guestId === userId ? 2 : 0;
+}
+const seatViewer = (match, seat) => seat === 2 ? match.guestViewerId : match.viewerId;
+// Each seat has its own pending command and receipts, so one player's lost reply never
+// blocks the other player and a command id can never be replayed across seats.
+const pendingKeys = seat => seat === 2
+  ? { command: 'pendingCommand2', revision: 'pendingRevision2', at: 'pendingAt2', prefix: 'command:2:' }
+  : { command: 'pendingCommand', revision: 'pendingRevision', at: 'pendingAt', prefix: 'command:' };
+
 /**
  * Driver contract (not implemented here):
  * readExisting({expectedEpoch}) -> {epoch, snapshot}; NEVER start/restart.
@@ -143,9 +157,12 @@ export class MatchAuthority {
 
   // SERVER-ONLY bootstrap after durable global admission. Never expose this
   // method as a public route or accept ownerId from an unverified browser body.
-  async initialize({ ownerId, matchId, generation, epoch, viewerId, deckDigests, expiresAt }) {
+  // A friend match also binds guestId to the engine's second seat (guestViewerId).
+  async initialize({ ownerId, matchId, generation, epoch, viewerId, deckDigests, expiresAt, guestId, guestViewerId }) {
+    const friend = guestId !== undefined;
     if (![ownerId, matchId, generation, epoch].every(value => uuid.test(value || ''))
         || !Number.isSafeInteger(viewerId) || viewerId < 0
+        || (friend && (!uuid.test(guestId) || guestId === ownerId || !Number.isSafeInteger(guestViewerId) || guestViewerId < 0 || guestViewerId === viewerId))
         || !plainObject(deckDigests) || !['human', 'opponent'].every(key => /^[a-f0-9]{64}$/.test(deckDigests[key] || ''))
         || !Number.isSafeInteger(expiresAt) || expiresAt <= this.now() || expiresAt > this.now() + 7200000) {
       throw new TypeError('Invalid server allocation');
@@ -154,7 +171,7 @@ export class MatchAuthority {
       if (await txn.get('match')) throw new Error('allocation_already_initialized');
       await txn.put('match', { ownerId, matchId, generation, epoch, viewerId,
         deckDigests: structuredClone(deckDigests), expiresAt, status: 'running',
-        pendingCommand: null, commandCount: 0 });
+        pendingCommand: null, commandCount: 0, ...(friend ? { guestId, guestViewerId, pendingCommand2: null } : {}) });
     });
   }
 
@@ -182,7 +199,8 @@ export class MatchAuthority {
     const user = await verifyHostUser(request, this);
     if (!user) return error('authentication_required', 401);
     const match = await this.storage.get('match');
-    if (!match || match.ownerId !== user.id) return error('match_not_found', 404);
+    const seat = seatOf(match, user.id);
+    if (!seat) return error('match_not_found', 404);
     const pathname = new URL(request.url).pathname;
     const base = `/api/play/matches/${match.matchId}`;
     if (pathname !== base && pathname !== base + '/actions') return error('match_not_found', 404);
@@ -192,19 +210,19 @@ export class MatchAuthority {
       return error('match_expired', 410);
     }
     if (match.status === 'finished' && pathname === base && request.method === 'GET') {
-      return json({ matchId: match.matchId, generation: match.generation, status: 'finished', viewerId: match.viewerId, result: match.result });
+      return json({ matchId: match.matchId, generation: match.generation, status: 'finished', viewerId: seatViewer(match, seat), result: match.result });
     }
     if (match.status !== 'running') return error('match_' + match.status, 410);
-    if (pathname === base && request.method === 'GET') return this.state(match, request.signal);
-    if (pathname === base + '/actions' && request.method === 'POST') return this.action(request, match);
+    if (pathname === base && request.method === 'GET') return this.state(match, request.signal, seat);
+    if (pathname === base + '/actions' && request.method === 'POST') return this.action(request, match, seat);
     return error('method_not_allowed', 405);
   }
 
-  async state(match, signal) {
+  async state(match, signal, seat = 1) {
     let record;
     try {
       signal?.throwIfAborted();
-      record = await abortable(this.driver.readExisting({ expectedEpoch: match.epoch, signal }), signal);
+      record = await abortable(this.driver.readExisting({ expectedEpoch: match.epoch, signal, ...(seat === 2 ? { seat } : {}) }), signal);
     }
     catch (failure) {
       const confirmedFailure = ['HOST_PROCESS_STOPPED', 'HOST_PROCESS_EPOCH_MISMATCH', 'HOST_STATE_PROTOCOL_FAILURE'].includes(failure?.code);
@@ -226,7 +244,7 @@ export class MatchAuthority {
     }
     const snapshot = record?.snapshot;
     if (record?.epoch !== match.epoch || snapshot?.schema !== NATIVE_SCHEMA
-        || snapshot?.forgeRevision !== FORGE_REVISION || snapshot?.viewer !== match.viewerId
+        || snapshot?.forgeRevision !== FORGE_REVISION || snapshot?.viewer !== seatViewer(match, seat)
         || !['running', 'finished', 'failed'].includes(snapshot?.status)) {
       await this.interrupt('native_generation_or_projection_mismatch');
       return error('native_generation_or_projection_mismatch', 410);
@@ -252,12 +270,13 @@ export class MatchAuthority {
       if (committed.status !== 'finished') return error('match_' + committed.status, 410);
       // The viewer is the server-initialized native seat, not a request field or
       // a guessed player zero. Retain it even when the first client GET is terminal.
-      return json({ matchId: match.matchId, generation: match.generation, status: 'finished', viewerId: match.viewerId, result: committed.result });
+      return json({ matchId: match.matchId, generation: match.generation, status: 'finished', viewerId: seatViewer(match, seat), result: committed.result });
     }
     let current = await this.storage.get('match');
     if (current.status !== 'running') return error('match_' + current.status, 410);
-    if (current.pendingCommand) current = await this.settleUnknownOutcome(current, snapshot);
-    return json({ matchId: match.matchId, generation: match.generation, status: 'running', snapshot, commandPending: !!current.pendingCommand });
+    const pending = pendingKeys(seat);
+    if (current[pending.command]) current = await this.settleUnknownOutcome(current, snapshot, seat);
+    return json({ matchId: match.matchId, generation: match.generation, status: 'running', snapshot, commandPending: !!current[pending.command] });
   }
 
   // A dispatch whose reply was lost (a timeout, a dropped connection) keeps its
@@ -269,25 +288,27 @@ export class MatchAuthority {
   // UNKNOWN_OUTCOME_SETTLE_MS, the old command can no longer apply alongside a
   // newer one: release it. Its outcome is whatever the board shows. Nothing is
   // resent; the receipt says the outcome was settled by state, not accepted.
-  async settleUnknownOutcome(match, snapshot) {
-    const moved = Number.isSafeInteger(match.pendingRevision) && snapshot?.revision !== match.pendingRevision;
-    const aged = this.now() - (Number.isSafeInteger(match.pendingAt) ? match.pendingAt : 0) >= UNKNOWN_OUTCOME_SETTLE_MS;
+  async settleUnknownOutcome(match, snapshot, seat = 1) {
+    const k = pendingKeys(seat);
+    const moved = Number.isSafeInteger(match[k.revision]) && snapshot?.revision !== match[k.revision];
+    const aged = this.now() - (Number.isSafeInteger(match[k.at]) ? match[k.at] : 0) >= UNKNOWN_OUTCOME_SETTLE_MS;
     if (!moved && !aged) return match;
     return this.storage.transaction(async txn => {
       const current = await txn.get('match');
-      if (!current.pendingCommand || current.pendingCommand !== match.pendingCommand) return current;
-      const key = 'command:' + current.pendingCommand;
+      if (!current[k.command] || current[k.command] !== match[k.command]) return current;
+      const key = k.prefix + current[k.command];
       const stored = await txn.get(key);
       if (stored && stored.status === undefined) {
-        await txn.put(key, { ...stored, status: 409, receipt: { commandId: current.pendingCommand, state: 'outcome_settled_by_state' } });
+        await txn.put(key, { ...stored, status: 409, receipt: { commandId: current[k.command], state: 'outcome_settled_by_state' } });
       }
-      current.pendingCommand = null; delete current.pendingRevision; delete current.pendingAt;
+      current[k.command] = null; delete current[k.revision]; delete current[k.at];
       await txn.put('match', current);
       return current;
     });
   }
 
-  async action(request, match) {
+  async action(request, match, seat = 1) {
+    const k = pendingKeys(seat);
     let body;
     try { body = await boundedJSON(request, 20480); }
     catch (failure) { return error(failure.message === 'body_too_large' ? 'body_too_large' : 'invalid_json', failure.message === 'body_too_large' ? 413 : 400); }
@@ -308,7 +329,7 @@ export class MatchAuthority {
     // Clone the parsed JSON once; canonical hashing never changes the action
     // actually sent to native code. Native scalar/legality validation stays native.
     const hash = await digest(body);
-    const key = 'command:' + body.commandId;
+    const key = k.prefix + body.commandId;
     const reservation = await this.storage.transaction(async txn => {
       const current = await txn.get('match');
       if (current.status !== 'running' || this.now() >= current.expiresAt) return { status: 410, error: 'match_unavailable' };
@@ -317,11 +338,11 @@ export class MatchAuthority {
         if (existing.hash !== hash) return { status: 409, error: 'command_id_reused' };
         return { status: existing.status || 202, receipt: existing.receipt || { commandId: body.commandId, state: 'pending_outcome_unknown' } };
       }
-      if (current.pendingCommand) return { status: 409, error: 'another_command_pending' };
+      if (current[k.command]) return { status: 409, error: 'another_command_pending' };
       if (current.commandCount >= 20000) return { status: 429, error: 'command_receipt_limit' };
-      current.pendingCommand = body.commandId;
-      current.pendingRevision = body.action.revision;
-      current.pendingAt = this.now();
+      current[k.command] = body.commandId;
+      current[k.revision] = body.action.revision;
+      current[k.at] = this.now();
       current.commandCount++;
       await txn.put('match', current);
       await txn.put(key, { hash, createdAt: this.now() });
@@ -331,7 +352,7 @@ export class MatchAuthority {
     let native, confirmedRejection;
     try {
       request.signal.throwIfAborted();
-      native = await abortable(this.driver.submitExisting(structuredClone(body.action), { expectedEpoch: match.epoch, signal: request.signal,
+      native = await abortable(this.driver.submitExisting(structuredClone(body.action), { expectedEpoch: match.epoch, signal: request.signal, ...(seat === 2 ? { seat } : {}),
         onRejected: receipt => {
           if (receipt?.epoch === match.epoch && [400, 409].includes(receipt.status))
             confirmedRejection = { epoch: match.epoch, status: receipt.status, error: 'native_action_rejected' };
@@ -355,8 +376,8 @@ export class MatchAuthority {
       const stored = await txn.get(key);
       const current = await txn.get('match');
       await txn.put(key, { ...stored, status: native.status, receipt });
-      if (current.pendingCommand === body.commandId) {
-        current.pendingCommand = null; delete current.pendingRevision; delete current.pendingAt;
+      if (current[k.command] === body.commandId) {
+        current[k.command] = null; delete current[k.revision]; delete current[k.at];
         await txn.put('match', current);
       }
     });

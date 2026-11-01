@@ -45,7 +45,7 @@ export class ProvisionalAdmissionLedger extends AdmissionLedger {
       expiresAt: this.now() + lifetimeMs, warmUntil: this.now() + warmMs, admissionState: 'warm' };
     return this.storage.transaction(async txn => {
       const leases = await txn.get('leases') || [];
-      if (leases.some(lease => lease.ownerId === ownerId)) return { status: 409, error: 'user_has_active_allocation' };
+      if (leases.some(lease => lease.ownerId === ownerId || lease.guestId === ownerId)) return { status: 409, error: 'user_has_active_allocation' };
       if (leases.length >= 2) return { status: 503, error: 'global_match_capacity' };
       const denied = await reserveGuard(txn, allocation);
       if (denied) return denied;
@@ -84,8 +84,10 @@ export class ProvisionalAdmissionLedger extends AdmissionLedger {
       return { status: 202, allocation, replay: false, warmed: true };
     });
   }
-  async reserveProvisional({ ownerId, idempotencyKey, input, lifetimeMs, reserveGuard }) {
+  // guestId: the second person of a friend match. Both accounts are bound to this one lease.
+  async reserveProvisional({ ownerId, idempotencyKey, input, lifetimeMs, reserveGuard, guestId }) {
     if (!uuid.test(ownerId || '') || !/^[A-Za-z0-9_-]{16,128}$/.test(idempotencyKey || '')
+      || (guestId !== undefined && (!uuid.test(guestId) || guestId === ownerId || input?.opponentKind !== 'human'))
       || !Number.isSafeInteger(lifetimeMs) || lifetimeMs < 1 || lifetimeMs > 7200000
       || typeof reserveGuard !== 'function') throw new TypeError('invalid_provisional_admission');
     const exact = validateExactDeckInput(input);
@@ -96,14 +98,15 @@ export class ProvisionalAdmissionLedger extends AdmissionLedger {
     const key = 'create:' + keyHash;
     const allocation = { matchId: this.newId(), generation: this.newId(), ownerId,
       deckDigests: { human, opponent }, requestDigest, createdAt: this.now(), expiresAt: this.now() + lifetimeMs,
-      admissionState: 'provisional_native_validation_required' };
+      admissionState: 'provisional_native_validation_required', ...(guestId ? { guestId } : {}) };
+    const players = guestId ? [ownerId, guestId] : [ownerId];
     return this.storage.transaction(async txn => {
       const duplicate = await txn.get(key);
       if (duplicate) return duplicate.requestDigest === requestDigest
         ? { status: 202, allocation: duplicate.allocation, replay: true }
         : { status: 409, error: 'idempotency_key_reused' };
       const leases = await txn.get('leases') || [];
-      if (leases.some(lease => lease.ownerId === ownerId)) return { status: 409, error: 'user_has_active_allocation' };
+      if (leases.some(lease => players.includes(lease.ownerId) || players.includes(lease.guestId))) return { status: 409, error: 'user_has_active_allocation' };
       if (leases.length >= 2) return { status: 503, error: 'global_match_capacity' };
       const rateKey = 'create-rate:' + ownerId;
       const recent = (await txn.get(rateKey) || []).filter(t => t > this.now() - 86400000);

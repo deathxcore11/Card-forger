@@ -1,5 +1,5 @@
 {
-  "baseCandidateManifestSha256": "e305460823fb1a7a05d6ada32cc39d546af54d470bdfdcd1c5c1197d5e8ec072",
+  "baseCandidateManifestSha256": "9deed50b5f13981d7762b06ada2aefcd42e2d9c8146cd1153b82b72aabcf9185",
   "changes": {
     "src/service-core.mjs": {
       "before": "78be6a2b46f5062cf823706ba5037107d3d176030c27a002e7a6fb1ff5698114",

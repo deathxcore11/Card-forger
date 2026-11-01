@@ -45,6 +45,10 @@ public final class ForgeHttpBridge implements IRemote {
     // Deck name and size per CPU seat (native player id), so a Commander pod labels each seat.
     final Map<Integer,String> seatDeckAlias=new ConcurrentHashMap<>();
     final Map<Integer,Integer> seatDeckCount=new ConcurrentHashMap<>();
+    // A friend match: the second person's seat is its own bridge over the same game, with
+    // its own controller, prompts and viewer, so each player is sent only what they may see.
+    volatile ForgeHttpBridge peer;
+    boolean humanOpponent;
     static final String REV = "e5a0f8156da70ffc7866f923bed371c0111707cd";
     final AtomicReference<Map<String,Object>> published = new AtomicReference<>(Map.of("status","initializing"));
     final AtomicLong revision = new AtomicLong();
@@ -134,6 +138,7 @@ public final class ForgeHttpBridge implements IRemote {
                 }
                 concessionTerminal.complete(null);
                 if(canceled!=null)canceled.answer.completeExceptionally(new NativeMatchEnded());
+                var other=peer;if(other!=null)other.endFromPeer();
                 System.out.println("NATIVE_CONCESSION_CONFIRMED winner="+winner+" draw="+outcome.isDraw());
             }catch(Throwable t){recordFailure(t);concessionTerminal.completeExceptionally(t);synchronized(lock){if(pending!=null)pending.answer.completeExceptionally(t);publish();}}
         },"forge-native-concede");
@@ -224,13 +229,21 @@ public final class ForgeHttpBridge implements IRemote {
         humanDeckCount=keen.getMain().countAll()+NativeMatchFormat.count(keen,DeckSection.Commander);
         aiDeckCount=reign.getMain().countAll()+NativeMatchFormat.count(reign,DeckSection.Commander);
         startingPlayer=exactAdmission==null?null:NativeStartingPlayer.parse(exactAdmission.input());
-        RegisteredPlayer human=format.register(keen).setPlayer(startingPlayer==null?new LobbyPlayerHuman("Human",0,0):startingPlayer.humanLobby("Human"));
-        var aiLobby=cpuPolicy.createLobby("Forge AI — "+reign.getName());
-        if(startingPlayer!=null)aiLobby=startingPlayer.aiLobby(aiLobby);
-        aiLobby.setAvatarIndex(1);
-        actualAiProfile=aiLobby.getAiProfile();
-        System.out.println("AI_PROFILE "+actualAiProfile);
-        RegisteredPlayer ai=format.register(reign).setPlayer(aiLobby);
+        humanOpponent=exactAdmission!=null&&exactAdmission.humanOpponent();
+        String firstName=humanOpponent?"Player 1":"Human";
+        RegisteredPlayer human=format.register(keen).setPlayer(startingPlayer==null?new LobbyPlayerHuman(firstName,0,0):startingPlayer.humanLobby(firstName));
+        RegisteredPlayer ai;
+        if(humanOpponent){
+            ai=format.register(reign).setPlayer(startingPlayer.humanLobby("Player 2"));
+            System.out.println("FRIEND_MATCH two human seats");
+        }else{
+            var aiLobby=cpuPolicy.createLobby("Forge AI — "+reign.getName());
+            if(startingPlayer!=null)aiLobby=startingPlayer.aiLobby(aiLobby);
+            aiLobby.setAvatarIndex(1);
+            actualAiProfile=aiLobby.getAiProfile();
+            System.out.println("AI_PROFILE "+actualAiProfile);
+            ai=format.register(reign).setPlayer(aiLobby);
+        }
         List<RegisteredPlayer> seats=new ArrayList<>(List.of(human,ai));
         if(exactAdmission!=null)for(int i=0;i<exactAdmission.extras().size();i++){
             Deck extra=exactAdmission.extras().get(i).deck();
@@ -254,14 +267,48 @@ public final class ForgeHttpBridge implements IRemote {
             aiController.getAi().setFlatMonteCarloOverride(false);aiController.getAi().setFlatMonteCarloMaxOverride(false);aiController.getAi().setFlatMonteCarloAttackOverride(false);
         }
         NativeCpuPolicyIntegration.verifyRuntime(exactAdmission,cpuPolicy,game);
-        controller=(PlayerControllerHuman)game.getPlayers().get(0).getController();
         for(int i=1;i<game.getPlayers().size();i++){
             Deck d=i==1?reign:exactAdmission.extras().get(i-2).deck();
             seatDeckAlias.put(game.getPlayers().get(i).getId(),d.getName());
             seatDeckCount.put(game.getPlayers().get(i).getId(),d.getMain().countAll()+NativeMatchFormat.count(d,DeckSection.Commander));
         }
-        viewer=controller.getPlayer().getView();
+        GameEventForwarder forwarder=attach((PlayerControllerHuman)game.getPlayers().get(0).getController());
         if(exactAdmission!=null)exactAdmission.receipt().put("viewerId",viewer.getId());
+        if(humanOpponent){
+            ForgeHttpBridge second=new ForgeHttpBridge();
+            second.exactAdmission=exactAdmission;second.cpuPolicy=cpuPolicy;second.startingPlayer=startingPlayer;second.controlMode=controlMode;
+            second.humanOpponent=true;second.game=game;
+            second.humanDeckAlias=aiDeckAlias;second.aiDeckAlias=humanDeckAlias;second.humanDeckCount=aiDeckCount;second.aiDeckCount=humanDeckCount;
+            second.attach((PlayerControllerHuman)game.getPlayers().get(1).getController());
+            exactAdmission.receipt().put("guestViewerId",second.viewer.getId());
+            second.peer=this;peer=second;
+        }
+        for(Player p:game.getPlayers())p.updateOpponentsForView();
+        new Thread(()-> {
+            try {
+                match.startGame(game);
+                if(concessionRequested)awaitConcession();
+                var second=peer;
+                // The other seat conceded: its own thread confirms the result and ends that seat.
+                if(second!=null&&second.concessionRequested)try{second.concessionTerminal.get(30,TimeUnit.SECONDS);}catch(Exception ignored){}
+                forwarder.flush();
+                finished=true;
+                refreshBoard(); publish();
+                if(second!=null)second.endFromPeer();
+                System.out.println("BRIDGE_GAME_OVER "+game.getOutcome());
+            } catch(Throwable t) {
+                recordFailure(t);
+                publish();
+                var second=peer;
+                if(second!=null&&second.failure==null){second.failure=failure;second.publish();}
+            }
+        },"forge-native-match").start();
+    }
+
+    /** Bind this bridge to one human seat of the game: its controller, its view and its prompts. */
+    GameEventForwarder attach(PlayerControllerHuman seat){
+        controller=seat;
+        viewer=controller.getPlayer().getView();
         // Forge's network GUI never reports a skipped phase, so the yield controller's
         // phase stops would be ignored. Read them from the controller that owns them.
         gui=new ProtocolGuiGame(this){
@@ -280,22 +327,25 @@ public final class ForgeHttpBridge implements IRemote {
         game.subscribeToEvents(forwarder);
         game.subscribeToEvents(controller.getYieldController());
         controller.getInputQueue().addObserver(forwarder);
-        for(Player p:game.getPlayers())p.updateOpponentsForView();
-        new Thread(()-> {
-            try {
-                match.startGame(game);
-                if(concessionRequested)awaitConcession();
-                forwarder.flush();
-                finished=true;
-                refreshBoard(); publish();
-                System.out.println("BRIDGE_GAME_OVER "+game.getOutcome());
-            } catch(Throwable t) {
-                recordFailure(t);
-                publish();
-            }
-        },"forge-native-match").start();
+        return forwarder;
     }
-
+    /** A friend match ended on the other seat (a win, a loss or their concession): end it here too,
+     * and release any choice still open on this seat so Forge's game thread is never left waiting. */
+    void endFromPeer(){
+        Pending canceled;
+        synchronized(lock){
+            if(finished)return;
+            finished=true;busy=false;selection=Selection.NONE;clearSmartIntent();promptGeneration.incrementAndGet();
+            if(game!=null&&game.isGameOver()&&game.getOutcome()!=null){
+                Map<String,Object> terminal=new LinkedHashMap<>(board);
+                terminal.putAll(obj("gameOver",true,"winner",game.getOutcome().getWinningLobbyPlayer()==null?null:game.getOutcome().getWinningLobbyPlayer().getName(),"winnerPlayerId",winnerId(),"draw",game.getOutcome().isDraw(),"terminalBoardFrozen",true));
+                board=terminal;
+            }
+            canceled=pending;pending=null;publish();
+        }
+        if(canceled!=null)canceled.answer.completeExceptionally(new NativeMatchEnded());
+        try{controller.getInputQueue().onGameOver(true);}catch(RuntimeException ignored){}
+    }
     @com.google.common.eventbus.Subscribe
     public void onGameStarted(forge.game.event.GameEventGameStarted event){
         if(startingPlayer==null||event.firstTurn()==null||!pregame.isEmpty())return;
@@ -362,7 +412,7 @@ public final class ForgeHttpBridge implements IRemote {
     static final long CPU_STEP_PAUSE_MS=Long.getLong("cardstashy.cpuStepPauseMs",650L);
     volatile long lastStatePollNanos=System.nanoTime();
     void paceCpu(PlayerView actor){
-        if(CPU_STEP_PAUSE_MS<=0||actor==null||viewer==null||actor.getId()==viewer.getId()||failure!=null||concessionRequested||finished)return;
+        if(CPU_STEP_PAUSE_MS<=0||humanOpponent||actor==null||viewer==null||actor.getId()==viewer.getId()||failure!=null||concessionRequested||finished)return;
         if(System.nanoTime()-lastStatePollNanos>3_000_000_000L)return;
         refreshBoard();publish();
         try{Thread.sleep(CPU_STEP_PAUSE_MS);}catch(InterruptedException e){Thread.currentThread().interrupt();}
@@ -1063,7 +1113,7 @@ public final class ForgeHttpBridge implements IRemote {
         // Smart mode skips a priority stop when nothing can be cast or activated. Conservative:
         // any actionable card counts, including ones whose cost is only "unknown".
         if(publishedInput instanceof forge.gamemodes.match.input.InputPassPriority)snapshot.put("canRespond",!selection.actionable().isEmpty());
-        if(exactAdmission!=null&&exactAdmission.opponent()!=null){
+        if(exactAdmission!=null&&exactAdmission.opponent()!=null&&!humanOpponent){
             Object warnings=exactAdmission.opponent().report().get("cpuWarnings");
             int count=warnings instanceof Collection<?> values?values.size():0;
             if(count>0)snapshot.put("cpuWarnings",obj("count",count,"message","The CPU may play some cards in this deck imperfectly."));
@@ -1158,9 +1208,15 @@ public final class ForgeHttpBridge implements IRemote {
         HttpServer server=HttpServer.create(new InetSocketAddress(InetAddress.getLoopbackAddress(),port),0);
         server.setExecutor(Executors.newCachedThreadPool());
         server.createContext("/health",x->respond(x,200,obj("ok",true,"engine","Forge","forgeRevision",REV)));
-        server.createContext("/state",x->{if(auth(x)){lastStatePollNanos=System.nanoTime();respond(x,200,published.get());}});
-        server.createContext("/action",x->{
-            if(!auth(x))return;
+        server.createContext("/state",x->{if(auth(x))handleState(x);});
+        server.createContext("/action",x->{if(auth(x))handleAction(x);});
+        // A friend match's second seat, behind the same internal token as the first.
+        server.createContext("/seat2/state",x->{if(auth(x)){var p=peer;if(p==null)respond(x,404,obj("error","seat_not_found"));else p.handleState(x);}});
+        server.createContext("/seat2/action",x->{if(auth(x)){var p=peer;if(p==null)respond(x,404,obj("error","seat_not_found"));else p.handleAction(x);}});
+        server.start();
+    }
+    void handleState(HttpExchange x)throws IOException{lastStatePollNanos=System.nanoTime();respond(x,200,published.get());}
+    void handleAction(HttpExchange x)throws IOException{
             if(!x.getRequestMethod().equals("POST")){respond(x,405,obj("error","POST_required"));return;}
             try {
                 byte[] bytes=x.getRequestBody().readNBytes(16385);if(bytes.length>16384)throw new IllegalArgumentException("body_too_large");
@@ -1269,8 +1325,6 @@ public final class ForgeHttpBridge implements IRemote {
                     respond(x,202,obj("accepted",true));
                 }
             }catch(Exception e){respond(x,400,obj("error",e.getMessage()==null?e.getClass().getSimpleName():e.getMessage()));}
-        });
-        server.start();
     }
     boolean auth(HttpExchange x)throws IOException {
         String origin=x.getRequestHeaders().getFirst("Origin");

@@ -30,8 +30,10 @@ export class GatewayDriver {
     return AbortSignal.any([AbortSignal.timeout(this.timeoutMs), ...(signal ? [signal] : [])]);
   }
 
-  async request(path, { expectedEpoch, action, signal } = {}) {
+  // seat 2 is the second person of a friend match: the same engine, that player's own view.
+  async request(path, { expectedEpoch, action, signal, seat = 1 } = {}) {
     if (!['/state', '/action', '/ready'].includes(path)) throw new TypeError('Internal route not allowed');
+    if (seat !== 1 && (seat !== 2 || path === '/ready')) throw new TypeError('Internal seat not allowed');
     if (!uuid.test(expectedEpoch || '')) throw new TypeError('Expected runtime epoch required');
     signal = this.deadline(signal);
     signal.throwIfAborted();
@@ -56,7 +58,7 @@ export class GatewayDriver {
     // The URL is a private routing placeholder consumed by fetchExisting. The
     // supplied function MUST use the recorded container's existing port only;
     // passing a Cloudflare helper that automatically starts is forbidden.
-    const request = new Request('http://host001.internal' + path, {
+    const request = new Request('http://host001.internal' + (seat === 2 ? '/seat2' : '') + path, {
       method, headers, ...(body === undefined ? {} : { body }),
       redirect: 'manual', signal,
     });
@@ -83,10 +85,10 @@ export class GatewayDriver {
     return response;
   }
 
-  async readExisting({ expectedEpoch, signal }) {
+  async readExisting({ expectedEpoch, signal, seat = 1 }) {
     signal = this.deadline(signal);
     let response;
-    try { response = await this.request('/state', { expectedEpoch, signal }); }
+    try { response = await this.request('/state', { expectedEpoch, signal, seat }); }
     catch (cause) {
       if (['HOST_TRANSPORT_UNAVAILABLE', 'HOST_PROCESS_STATUS_UNAVAILABLE'].includes(cause?.code)
           && cause.retryable === true) throw readUnavailable(cause);
@@ -108,11 +110,11 @@ export class GatewayDriver {
     return { epoch: expectedEpoch, snapshot };
   }
 
-  async submitExisting(action, { expectedEpoch, signal, onRejected }) {
+  async submitExisting(action, { expectedEpoch, signal, onRejected, seat = 1 }) {
     // Never retry a possibly accepted POST. The authority reserves its command
     // receipt durably before calling this method and owns ambiguous outcomes.
     signal = this.deadline(signal);
-    const response = await this.request('/action', { expectedEpoch, action, signal });
+    const response = await this.request('/action', { expectedEpoch, action, signal, seat });
     const status = response.status;
     if (status === 202 || ![400, 409].includes(status)) {
       void response.body?.cancel().catch(() => {});
