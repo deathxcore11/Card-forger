@@ -1,0 +1,76 @@
+name: Publish verified Forge host
+
+# Publish the prepared commit with [skip ci]. A deliberate follow-up commit
+# without that marker starts one job after the Cloudflare secret exists.
+on:
+  push:
+    branches: [codex/forge-github-host-prep-20261026]
+  # The daily rules refresh (rules-refresh.yml on the website branch) pushes with its own
+  # token, which starts no push run, so it starts this deployment directly. GitHub only
+  # dispatches a workflow that is also on the default branch, so this file is kept there
+  # too; its job runs only for the host branch.
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: cardstashy-private-forge-host-deployment
+  cancel-in-progress: false
+
+jobs:
+  publish-private-host:
+    if: github.repository == 'deathxcore11/Card-forger' && github.ref == 'refs/heads/codex/forge-github-host-prep-20261026' && github.run_attempt == 1
+    runs-on: ubuntu-24.04
+    timeout-minutes: 32
+    env:
+      CLOUDFLARE_ACCOUNT_ID: '463cf46936691d9c289153374d04c99e'
+      PYTHONDONTWRITEBYTECODE: '1'
+      WRANGLER_SEND_METRICS: 'false'
+      npm_config_update_notifier: 'false'
+    steps:
+      - name: Require the deployment secret before setup or building
+        timeout-minutes: 1
+        shell: bash
+        env:
+          CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+        run: |
+          if [ -z "$CLOUDFLARE_API_TOKEN" ]; then
+            printf '%s\n' '::error::Missing repository Actions secret CLOUDFLARE_API_TOKEN. No image build or deployment started.'
+            exit 1
+          fi
+      - name: Check out the selected release commit
+        timeout-minutes: 1
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
+        with:
+          ref: ${{ github.sha }}
+          persist-credentials: false
+          fetch-depth: 1
+      - name: Set up the proven Node runtime
+        timeout-minutes: 1
+        uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1
+        with:
+          node-version: '24'
+          package-manager-cache: false
+      - name: Check account access and Docker before the native build
+        timeout-minutes: 1
+        working-directory: deploy/forge-host
+        env:
+          CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+        run: |
+          node scripts/check-publish-access.mjs
+          node scripts/check-builder.mjs
+      - name: Install the locked deployment CLI
+        timeout-minutes: 2
+        working-directory: deploy/forge-host
+        run: npm ci --ignore-scripts --no-audit --no-fund
+      - name: Build once, probe, publish the digest and deploy the private host
+        timeout-minutes: 26
+        working-directory: deploy/forge-host
+        env:
+          CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+        run: node scripts/deploy-private-host.mjs
+
+# The driver preserves source, runtime receipt, cleanup and dry-run gates.
+# No raw Docker/probe logs, credentials or private match state are uploaded.
+# The root proof configuration and the cardforge2 website are never deployed.
