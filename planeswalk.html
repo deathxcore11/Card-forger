@@ -3488,6 +3488,29 @@ body[data-actnum="2"] #app#app .battle:has(.unit.boss[data-n^="Kozilek"]){--pw-b
 /* hero select and the Codex have no hero seal at the left, so the bar's corner flourishes go and only the gold rail runs (a lone flourish read as a stray glyph) */
 #app#app#app:has(>.screen:is(.heroes,.journal)) .top::after{background-size:0 0,0 0,auto 24px}
 
+/* Card frames (Randall 1 Nov, Slay the Spire refs): the card body wears its mana colour (red Chandra, white Elspeth, black next for Liliana,
+   steel for colourless) and the rarity rings the art window, not the whole card. Curses keep their own look. */
+#app .card{--pw-rar:#a7adb5}
+#app .card[data-rar=U]{--pw-rar:#6fb3ff}
+#app .card[data-rar=R]{--pw-rar:#f0c75a}
+#app .card[data-rar=M]{--pw-rar:#ff7a3a}
+#app .card[data-rar=K]{--pw-rar:#a06ac8}
+.card[data-col=R]:not([data-rar=K]){--pw-rim:#c9573c;background:linear-gradient(160deg,#82241a,#3a0b0a 44%,#5c1611)}
+.card[data-col=W]:not([data-rar=K]){--pw-rim:#fff4d0;background:linear-gradient(160deg,#ece2c4,#ad9e78 44%,#d3c6a0)}
+.card[data-col=B]:not([data-rar=K]){--pw-rim:#9a7ab0;background:linear-gradient(160deg,#4a3a52,#17111b 42%,#2c2232)}
+.card[data-col=C]:not([data-rar=K]){--pw-rim:#c4c9d0;background:linear-gradient(160deg,#7d8189,#33363b 42%,#575b62)}
+.card[data-col=R]:not([data-rar=K]) .head{background:linear-gradient(180deg,#962c1e,#4c110c)}
+.card[data-col=W]:not([data-rar=K]) .head{background:linear-gradient(180deg,#f6eed6,#cbbd95);color:#2a2014;text-shadow:none}
+.card[data-col=W]:not([data-rar=K]) .head b{color:#2a2014;text-shadow:0 1px 0 #fff8}
+.card[data-col=B]:not([data-rar=K]) .head{background:linear-gradient(180deg,#4e3c58,#1d1522)}
+.card[data-col=C]:not([data-rar=K]) .head{background:linear-gradient(180deg,#8a8f97,#3c3f45)}
+/* the whole-card rarity rings and glows go: every card has the same quiet rim in its own colour */
+.card[data-rar],.screen .card[data-rar=R],.screen .card[data-rar=U],.screen .card[data-rar=M]{box-shadow:0 0 0 1px #000,inset 0 0 0 1px var(--pw-rim,#d6ad6455),0 12px 26px #000d}
+/* rarity: a ring round the art window */
+#app .card[data-rar] .pic{box-shadow:0 0 0 2px var(--pw-rar),0 0 0 3px #000c,0 0 9px 1px color-mix(in srgb,var(--pw-rar) 40%,transparent),inset 0 0 0 1px #000,inset 0 -30px 26px -16px #000c,inset 0 18px 18px -14px #0009}
+/* Codex tiles end on their art: leave room for the rarity ring's bottom edge */
+#app .pw-jbody .card{padding-bottom:5px!important}
+
 /* Finish simulation belongs to the exact printing, never to the price tier. */
 .finish-preview{margin:.65rem 0;width:100%;min-width:0;max-width:100%;box-sizing:border-box}
 .finish-choice-rail{display:flex;flex-wrap:nowrap;gap:.35rem;margin-top:.35rem;padding:.15rem .1rem .35rem;width:100%;min-width:0;max-width:100%;box-sizing:border-box;overflow-x:auto;overflow-y:hidden;overscroll-behavior-x:contain;scroll-behavior:auto;scrollbar-width:thin;scrollbar-color:var(--line,#686868) transparent}
