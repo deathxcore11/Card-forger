@@ -2019,6 +2019,19 @@ body[data-actnum="3"] #app .screen.blessing{--pw-bg:url(./planeswalk-art/blessin
 #app .screen.blessing:has(>.pw-deckpick){grid-template-columns:minmax(0,1fr)!important}
 #app .screen.blessing:has(>.pw-deckpick)>.pw-patron{display:none}
 #app .screen.blessing>.choices.pw-deckpick{grid-column:1/-1;grid-row:1/4;grid-template-columns:repeat(auto-fill,minmax(150px,1fr))}
+/* ===== Spark levels (meta item 2, rulings #1): picker under a hero once level 1 is open, star + number on the HUD ===== */
+#app .screen.heroes .choices:not(:has(.pw-spk)) .pw-hcol{display:contents}
+#app .screen.heroes .pw-hcol{display:flex;flex-direction:column;gap:6px;min-width:0;flex:1 1 0}
+#app .screen.heroes .pw-hcol>.hero-pick{flex:1 1 auto;width:100%!important}
+#app .screen.heroes .pw-hcol:not(:has(>.pw-spk))::after{content:"";height:44px;flex:none}
+#app .pw-spk{display:flex;align-items:center;justify-content:center;gap:10px}
+#app .pw-spk .pw-spk-b{min-width:44px;min-height:44px;padding:0!important;display:grid;place-items:center}
+#app .pw-spk .pw-spk-b svg{width:18px;height:18px;fill:currentColor}
+#app .pw-spk .pw-spk-b.up svg{transform:scaleX(-1)}
+#app .pw-spk .pw-spk-b:disabled{opacity:.35}
+#app .pw-spk-n,#app .pw-spk-hud{display:inline-flex;align-items:center;gap:4px;font:800 calc(max(11px,1rem) * var(--pw-ts,1))/1 var(--display,serif);color:#ffd98a;text-shadow:0 1px 3px #000}
+#app .pw-spk-n svg,#app .pw-spk-hud svg{width:20px;height:20px;fill:#ffcf6a;filter:drop-shadow(0 0 5px #ffb84a88)}
+#app .top .pw-spk-hud{margin-inline:6px;font-size:calc(max(11px,.9rem) * var(--pw-ts,1))}
 
 /* Planeswalk emblem art. Pairs with emblem-art.js. */
 .emb-art{position:relative;flex:none;display:block;border-radius:50%;box-shadow:0 0 0 1px #0008,0 4px 14px #000a}
@@ -3189,6 +3202,7 @@ const C={
  warchief:{name:'Goblin Warchief',e:2,r:'U',kind:'Creature · Goblin',g:'W',ally:f=>({p:f?3:2,t:2,goblin:1,haste:1,chief:1}),text:f=>`${f?3:2}/2. Haste. Your Goblin cards cost 1 less, and your Goblins have haste.`},
  mob:{name:'Krenko, Mob Boss',e:1,r:'R',kind:'Legendary Creature · Goblin',g:'K',ally:f=>({p:3,t:f?4:3,goblin:1,mob:1}),text:f=>`3/${f?4:3}. At the start of your turn, summon a 1/1 Goblin for each Goblin you have.`},
  bombard:{name:'Goblin Bombardment',e:1,r:'R',kind:'Enchantment',g:'✸',power:1,text:f=>`Any number of times: sacrifice an ally to deal ${f?4:3} damage to an enemy.`,play:f=>{c.bombard=Math.max(c.bombard||0,f?4:3)}},
+ wound:{name:'Wound',e:0,r:'K',kind:'Curse',g:'✚',nope:1,text:()=>"Can't be played.",play:()=>{}},
  doubt:{name:'Doubt',e:1,r:'K',kind:'Curse',g:'✝',text:()=>'Does nothing. Remove it at a market, or carry it to an Act 2 chapel.',play:()=>{}},
  clarity:{name:'Moment of Clarity',e:0,r:'R',hidden:1,kind:'Sorcery',g:'☀',text:f=>`Draw ${f?3:2} cards. Heal 2. (Your Doubt, answered.)`,play:f=>{draw(f?3:2);heal(2)}},
  rite:{name:'Rite of Flame',e:1,r:'C',kind:'Sorcery',g:'△',text:f=>`Add {R}{R}, plus {R} for each Rite of Flame in your discard pile.${f?' Draw a card.':''}`,ritual:1,play:f=>{ritual(2+c.discard.filter(x=>x.key==='rite').length);draw(f?1:0)}},
@@ -3267,6 +3281,20 @@ Object.assign(C,{
 // ---------- step 3: Exile, Lost, Flashback, Ultimatum, the Token Belt ----------
 // Engine A: only cards you exile go to the exile pile, and the count is the pile right now. Cards an enemy takes are Lost.
 // Unlock flags (card-engine G): Flashback and Ultimatum at trail step 2, uncommon tokens at 3, the holo stamp at 9. The trail is step 6; until then PW_TRAIL (sims, tests) sets it.
+// ===== Spark levels (meta item 2, rulings #1): one difficulty ladder per hero, 0-10. Each level keeps every rule below it.
+// profile.spark[hero]={open,beat}: open = highest level you may pick, beat = levels beaten (portrait pips). PW_SPARK (sims) sets the level.
+const SPARK=()=>{try{return typeof PW_SPARK!=='undefined'?PW_SPARK:(run&&run.spark)||0}catch(e){return 0}},SP=n=>SPARK()>=n;
+const sparkOf=hk=>{try{return (profile.spark&&profile.spark[hk])||{open:0,beat:0}}catch(e){return {open:0,beat:0}}};
+const LAST_ACT=()=>Object.keys(ACTS).length;
+function sparkFoe(e){const d=E[e.key];if(!SPARK()||!d)return e;const up=m=>{e.hp=Math.ceil(e.hp*m);e.max=e.hp};
+ if(!d.rank){if(SP(2))up(1.08);if(SP(8))e.buff++}
+ else if(d.rank==='elite'){if(SP(3)){up(1.1);e.buff++}if(SP(7))e.x7=d.sp7||['sweep',2]}
+ else if(d.rank==='boss'){if(SP(4))up(1.1);if(SP(9)&&d.phase2){e.p2on=1;if(d.p2fly)e.fly=true}}
+ return e}
+const P2=e=>!!(e.phase2||e.p2on);
+const sparkPrice=sh=>{if(!SP(9)||!sh)return;const f=x=>{if(x&&x.price)x.price=Math.ceil(x.price*1.1)};(sh.cards||[]).forEach(f);f(sh.remove);f(sh.foil);f(sh.emb)};
+const restPct=()=>SP(5)?.25:.3,ESCT=()=>SP(6)?Math.min(3,ESC_T):ESC_T;
+function sparkWin(){if(run.daily||typeof PW_SPARK!=='undefined')return;const s=profile.spark=profile.spark||{},h=s[run.hero]=s[run.hero]||{open:0,beat:0},n=run.spark||0;h.open=Math.max(h.open,Math.min(10,n+1));h.beat=Math.max(h.beat,n+1)}
 const TRAIL=n=>{let v=0;try{v=typeof PW_TRAIL!=='undefined'?PW_TRAIL:(profile&&profile.trail)||0}catch(e){}return v>=n};
 // Art registries from build.py: no placeholders, so a card or UI piece without its art stays out (and switches on when the art lands).
 const CARDART=typeof PW_CARDART!=='undefined'&&Array.isArray(PW_CARDART)?new Set(PW_CARDART):null,UIART=typeof PW_UIART!=='undefined'&&Array.isArray(PW_UIART)?new Set(PW_UIART):null;
@@ -3303,7 +3331,7 @@ const TOKENS={
  incubator:{name:'Incubator',r:'R',price:55,tip:'Summon a Phyrexian X/X, where X is your mana left',use:()=>{const x=c.energy;if(x>0&&roomFor('Phyrexian token',{p:x,t:x})){c.energy=0;summon({p:x,t:x},'Phyrexian token')}}},
  shard:{name:'Shard',r:'R',price:55,tip:'Return a card from your exile pile to your hand',use:()=>{const k=[...c.exile].reverse().find(x=>!C[x.key].ultimatum);if(k){c.exile.splice(c.exile.indexOf(k),1);c.hand.push(k)}}},
 };
-const BELT_SLOTS=()=>3+(run.emblems.includes('bandolier')?1:0);
+const BELT_SLOTS=()=>(SP(8)?2:3)+(run.emblems.includes('bandolier')?1:0);
 const tokOk=k=>hasUI('tok-'+k)&&(!TOKENS[k].trail||TRAIL(TOKENS[k].trail));
 const beltOn=()=>Object.keys(TOKENS).some(tokOk);
 // Drops (ruling 17): before trail step 3 commons and rares 90/10; from step 3, 60/30/10.
@@ -3499,13 +3527,14 @@ const actHp=()=>FORM&&run&&(run.act||1)===1?1.2:1;
 // (polluter, shields, splitting ooze) that leaves Act 1 at a 97-99% clear, so Act 1 tramplers keep trample for now.
 // Set A1_TRAMPLE=false to switch to the design's rule.
 const A1_TRAMPLE=typeof PW_A1TR!=='undefined'?!!PW_A1TR:true;
-const TRAMPLES=e=>!!e.doom||(!!E[e.key].trample||!!(e.phase2&&E[e.key].p2trample))&&(A1_TRAMPLE||(run&&run.act||1)>1);
+const TRAMPLES=e=>!!e.doom||(!!E[e.key].trample||!!(P2(e)&&E[e.key].p2trample))&&(A1_TRAMPLE||(run&&run.act||1)>1);
 // Playtest 30 Oct: floors climb smoothly (depth goes up 0.4 a floor) instead of three steps, and Act 1 elites are
 // short and sharp (less life, +2 attack) while Act 2 elites carry 30% more life.
 const RAMP_HP=typeof PW_RH!=='undefined'?PW_RH:.15,RAMP_ATK=typeof PW_RA!=='undefined'?PW_RA:.5,EL1_HP=typeof PW_E1!=='undefined'?PW_E1:.85,EL1_ATK=4,EL2_HP=typeof PW_E2!=='undefined'?PW_E2:1.65;
 // Act 2's hard pool carries 10% less life (set by enter while it builds that fight).
 let POOL_MUL=1;
-const foe=(key,depth=0)=>{const d=E[key],a1=(run&&run.act||1)===1;const hp=Math.round(POOL_MUL*FOE_HP*actHp()*d.hp*(d.rank==='elite'?(a1?EL1_HP:EL2_HP):d.rank?1:a1?1+RAMP_HP*depth:1.25*(1+.3*depth))*(d.rank?Math.min(d.rank==='elite'?1.35:9,1+.3*depth):1));return {id:++uid,key,name:d.name,g:d.g,hp,max:hp,pow:d.pow,fly:!!d.fly,rank:d.rank||'',i:0,buff:d.rank==='elite'?Math.round(depth)+(a1?EL1_ATK:2):d.rank?Math.floor(depth*.75):Math.floor(depth*RAMP_ATK),shield:0,loyalty:d.loyalty||0,zombie:!!d.zombie,token:!!d.token}};
+const foe=(key,depth=0)=>sparkFoe(foe0(key,depth));
+const foe0=(key,depth=0)=>{const d=E[key],a1=(run&&run.act||1)===1;const hp=Math.round(POOL_MUL*FOE_HP*actHp()*d.hp*(d.rank==='elite'?(a1?EL1_HP:EL2_HP):d.rank?1:a1?1+RAMP_HP*depth:1.25*(1+.3*depth))*(d.rank?Math.min(d.rank==='elite'?1.35:9,1+.3*depth):1));return {id:++uid,key,name:d.name,g:d.g,hp,max:hp,pow:d.pow,fly:!!d.fly,rank:d.rank||'',i:0,buff:d.rank==='elite'?Math.round(depth)+(a1?EL1_ATK:2):d.rank?Math.floor(depth*.75):Math.floor(depth*RAMP_ATK),shield:0,loyalty:d.loyalty||0,zombie:!!d.zombie,token:!!d.token}};
 
 // Content safety net (engine plan F04): every table row gets safe defaults, so a new row missing an optional field still
 // plays, and a broken reference is dropped instead of crashing a fight. tools/content-check.cjs fails the same issues at build.
@@ -3535,6 +3564,8 @@ function newRun(s,hk){
  setHero(hk);
  seed=s??Math.floor(Math.random()*1e6); rng=mulberry(seed); uid=0;
  run={bosses:{},hero:HERO.key,hp:HERO.life,max:HERO.life,loyalty:HERO.loyalty,best:0,gold:0,pity:0,act:1,deck:HERO.starter.map(mk),emblems:[],map:genMap(1),pos:null,done:[],fights:0};run.edges=genEdges(run.map);
+ run.spark=typeof PW_SPARK!=='undefined'?PW_SPARK:Math.min(sparkOf(HERO.key).open,reward&&reward.sparkPick&&reward.sparkPick[HERO.key]!=null?reward.sparkPick[HERO.key]:99);
+ if(SP(6))run.hp=Math.floor(run.max*.9);if(SP(7))run.deck.push(mk(CARDART&&!CARDART.has('Wound')?'doubt':'wound'));
  rollBoss(1); c=null; actStart();
 }
 // Each act rolls its boss from the act's pool when it starts, never the one you met in that act last run.
@@ -3599,7 +3630,7 @@ function enter(r,l){
  else if(t==='boss'){const bk=bossOf();try{profile.lastBoss={...profile.lastBoss,[run.act||1]:bk};store.set(PROF,profile)}catch{}startFight([bk],'boss',(run.act||1)>1?1:0)}
  else if(t==='bargain'){const mp=Object.keys(EMB).filter(k=>EMB[k].r==='M'&&!run.emblems.includes(k)&&forHero(k)),rp=Object.keys(EMB).filter(k=>EMB[k].r==='R'&&!run.emblems.includes(k)&&!BOSSEMB[k]&&forHero(k));view='event';reward={ev:'bargain',myth:mp.length?pick(mp):null,rare:rp.length?pick(rp):null};render()}
  else if(t==='rest'){view='rest';render()}
- else if(t==='shop'){c=null;reward={shop:makeShop()};if(run.shopX2){run.shopX2=0;const sh=reward.shop;sh.cards.forEach(x=>x.price*=2);sh.remove.price*=2;if(sh.foil)sh.foil.price*=2;if(sh.emb)sh.emb.price*=2}/* Kiora's Deep Bargain */view='shop';render()}
+ else if(t==='shop'){c=null;reward={shop:makeShop()};sparkPrice(reward.shop);if(run.shopX2){run.shopX2=0;const sh=reward.shop;sh.cards.forEach(x=>x.price*=2);sh.remove.price*=2;if(sh.foil)sh.foil.price*=2;if(sh.emb)sh.emb.price*=2}/* Kiora's Deep Bargain */view='shop';render()}
  else if(t==='treasure'){c=null;run.gold+=20+Math.floor(rng()*4);reward={cards:treasureCards(),embs:rng()<TREASURE_EMB?treasureEmblems():[],treasure:1};view='reward';render()}
  else {view='event';reward={ev:pick(ACTS[run.act||1].events||['shrine','cart'])};render()}
 }
@@ -3634,11 +3665,11 @@ function startFight(keys,kind,depth=0,ante=null,dun=null){
 const ESC_T=typeof PW_ET!=='undefined'?PW_ET:4,DOOM_T=typeof PW_DT!=='undefined'?PW_DT:8,DOOM_BT=typeof PW_DBT!=='undefined'?PW_DBT:9,ESC_K=typeof PW_EK!=='undefined'?PW_EK:1;
 // bosses get one more turn before Doom (design thread 30 Oct: boss fights run 6-9 turns, Doom should be rare there)
 const doomT=e=>c&&c.doomT||(e&&e.rank==='boss'?DOOM_BT:DOOM_T),fightDoomT=()=>c&&c.doomT||(c&&c.enemies&&c.enemies.some(e=>e.rank==='boss'&&e.hp>0)?DOOM_BT:DOOM_T)/* ruling 9: the Doom turn is set once per fight (9 on a boss node, 8 elsewhere) for every enemy, summons included */;
-const escStep=e=>Math.round(ESC_K*(c.turn>=doomT(e)?(e.rank==='boss'?4:3):c.turn>=ESC_T?(e.rank?2:1):0));
+const escStep=e=>Math.round(ESC_K*(c.turn>=doomT(e)?(e.rank==='boss'?4:3):c.turn>=ESCT()?(e.rank?2:1):0));
 function startTurn(){
  c.turn++; c.enemies.forEach(e=>{e.brand=0;if(e.hp<=0)return;const n=escStep(e);if(n){e.buff+=n;e.clock=(e.clock||0)+n}if(c.turn>=doomT(e))e.doom=1;
-  if(c.turn===ESC_T&&e.key==='ironsmith')Object.assign(e,{key:'ironfang',name:E.ironfang.name,pow:E.ironfang.pow,i:0});
-  if(c.turn>=ESC_T&&E[e.key].eldrazi){e.max++;e.hp++}}); c.allies.forEach(a=>{a.dmg=0;a.temp=0;a.temp1=0;a.tough4=0;if(a.lifelinkTemp){a.lifelink=0;a.lifelinkTemp=0}if(a.firstTemp){a.first=0;a.firstTemp=0}a.sick=false;a.tapped=false;a.swung=false;a.attacks=0;a.extra=0});
+  if(c.turn===ESCT()&&e.key==='ironsmith')Object.assign(e,{key:'ironfang',name:E.ironfang.name,pow:E.ironfang.pow,i:0});
+  if(c.turn>=ESCT()&&E[e.key].eldrazi){e.max++;e.hp++}}); c.allies.forEach(a=>{a.dmg=0;a.temp=0;a.temp1=0;a.tough4=0;if(a.lifelinkTemp){a.lifelink=0;a.lifelinkTemp=0}if(a.firstTemp){a.first=0;a.firstTemp=0}a.sick=false;a.tapped=false;a.swung=false;a.attacks=0;a.extra=0});
  c.twinned=0;c.legioned=0;c.embered=0;c.healedTurn=0;c.ward=0;c.turnStart=c.stats.dealt;c.juice=[];
  for(const m of c.allies.filter(a=>a.mob)){const n=c.allies.filter(a=>a.goblin).length;for(let k=0;k<n&&roomFor('Goblin token',{p:1,t:1,goblin:1});k++)summon({p:1,t:1,goblin:1,sick:0},'Goblin token')}
  if(run.emblems.includes('season'))summon({p:1,t:1},'Spirit token');
@@ -3711,7 +3742,7 @@ function summon(base,name){
 }
 function canPlay(card){
  const d=C[card.key],cost=costOf(card);
- if(c.busy)return false;
+ if(c.busy||d.nope)return false;
  if(cost==='X')return c.energy>=1+(c.tax?1:0);
  if(cost>c.energy+(d.ally?c.pstone||0:0)&&!(d.phy&&cost-c.energy<=d.phy&&run.hp>2*(cost-c.energy)))return false;
  if(d.ally&&!roomFor(d.name)||d.tokens&&!roomFor(...d.tokens(card.foil)))return false;
@@ -3849,7 +3880,7 @@ function blocker(e){
  const can=a=>!a.tapped&&a.dmg<tough(a)&&!a.noblock&&(!e.fly||a.flying||a.reach);
  return pickBlocker(e,can);
 }
-function bloodfeed(n){const s=c&&n>0&&c.enemies.find(x=>x.hp>0&&x.phase2&&E[x.key].bloodfeed);if(s&&s.hp<s.max){const h=Math.min(n,s.max-s.hp);s.hp+=h;s.heal=(s.heal||0)+h}}
+function bloodfeed(n){const s=c&&n>0&&c.enemies.find(x=>x.hp>0&&P2(x)&&E[x.key].bloodfeed);if(s&&s.hp<s.max){const h=Math.min(n,s.max-s.hp);s.hp+=h;s.heal=(s.heal||0)+h}}
 function strike(e,n){
  if(run.phase&&!c.phased){c.phased=1;return `${e.name}'s attack phases out.`}/* Teferi's Phase Out: the first enemy attack each fight misses */
  const b=blocker(e);
@@ -3865,13 +3896,13 @@ function strike(e,n){
 }
 // A Diregraf pair trades roles each turn: one guards 5 while the other hits 5 (a lone Ghoul keeps its 3-then-5 swing).
 const ghoulPair=e=>{const d=E[e.key];if(!d.pair||!c)return -1;const g=c.enemies.filter(x=>x.key===e.key&&x.hp>0);return g.length>=2?g.indexOf(e):-1};
-const intentOf=e=>{const d=E[e.key],pi=ghoulPair(e),list=e.phase2?d.phase2:pi>=0?d.pairIntents:d.intents;let it=list[(e.i+Math.max(0,pi))%list.length];
+const intentOf=e=>{const d=E[e.key],pi=ghoulPair(e),list=e.phase2?d.phase2:pi>=0?d.pairIntents:d.intents;const L2=e.x7&&!e.phase2&&pi<0?[...list,e.x7]:list;let it=L2[(e.i+Math.max(0,pi))%L2.length];
  if(d.loyalty){if(e.loyalty>=8)return ['ult',2,-8];if(it[2]<0&&e.loyalty+it[2]<0)return list[0]}
  return it};
 // Enemies act one at a time so each action can be seen.
 // A new enemy arriving mid-fight triggers landfall (Baloth) and rage (Omnath).
 function addFoe(k){const n=foe(k,c.depth);c.enemies.push(n);if(c.lattice)hit(n,c.lattice);c.enemies.forEach(x=>{if(x===n||x.hp<=0)return;const d=E[x.key];if(d.landfall)x.buff+=d.landfall;if(d.rage)hurt(d.rage)});return n}
-function enemyQueue(){const ob=c.enemies.find(e=>E[e.key].pact&&e.hp>0),ns=c.nSpell||0,nc=c.nCre||0;c.pact=!ob?null:ob.phase2?(ns*1.25>=nc?'spell':'creature'):(ns>=nc&&ns>1?'spell':null);c.notes=[];c.queue=c.enemies.map(e=>e.id)}
+function enemyQueue(){const ob=c.enemies.find(e=>E[e.key].pact&&e.hp>0),ns=c.nSpell||0,nc=c.nCre||0;c.pact=!ob?null:P2(ob)?(ns*1.25>=nc?'spell':'creature'):(ns>=nc&&ns>1?'spell':null);c.notes=[];c.queue=c.enemies.flatMap(e=>SP(10)&&e.rank==='boss'&&e.phase2&&(run.act||1)>=LAST_ACT()?[e.id,e.id]:[e.id])}
 function enemyTurn(){enemyQueue();step()}
 // Enemies that die in their own turn (blocks, brands, death triggers) count as your kills too.
 function enemyAct(){
@@ -3887,11 +3918,11 @@ function act(e){if(FORM&&E[e.key].enrage)e.buff+=E[e.key].enrage;
  let pre='';const D=E[e.key];
  if(D.steal&&c.turn%D.steal===0&&e.hp>e.max*.25&&c.enemies.length<FIGHT.foes&&c.enemies.filter(x=>x.thrallOf&&x.hp>0).length<2){const a=[...c.allies].filter(x=>x.dmg<tough(x)).sort((x,y)=>pow(y)-pow(x))[0];
   if(a){c.allies=c.allies.filter(x=>x!==a);const t=addFoe('thrall');Object.assign(t,{name:a.name,hp:Math.max(1,tough(a)-a.dmg)+2,max:tough(a)+2,buff:pow(a)+2,fly:!!a.flying,thrallOf:a});pre=`${e.name} takes ${a.name}: it fights for her now. `}}
- if(D.mill&&c.draw.length){(c.lost=c.lost||[]).push(c.draw.pop());c.heraldEx=(c.heraldEx||0)+1;pre+=`${e.name} takes the top card of your deck (Lost this fight). `;if(e.phase2&&c.enemies.length<FIGHT.foes){addFoe('spawn');pre+='It rises as a Spawn. '}}
+ if(D.mill&&c.draw.length){(c.lost=c.lost||[]).push(c.draw.pop());c.heraldEx=(c.heraldEx||0)+1;pre+=`${e.name} takes the top card of your deck (Lost this fight). `;if(P2(e)&&c.enemies.length<FIGHT.foes){addFoe('spawn');pre+='It rises as a Spawn. '}}
  if(pre){const m=act2(e);return pre+m}return act2(e)}
 function act2(e){const m=act2_(e),D=E[e.key];if(D.wide&&e.hp>0&&c.allies.length>=(D.wideAt||3)&&c.turn%(D.wideEvery||1)===0){c.allies.forEach(a=>{a.dmg+=D.wide;a.flash=1});bloodfeed(D.wide*c.allies.length);return m+` ${e.name.replace(/,.*$/,'')} feeds on your crowd: ${D.wide} to each ally.`}return m}
 function act2_(e){
- const [t,v,loy]=intentOf(e);let msg='';
+ let [t,v,loy]=intentOf(e);let msg='';if(t==='sleep'&&e.rank==='boss'&&SP(9)){e.i++;[t,v,loy]=intentOf(e)}
  if((t==='atk'||t==='annihilate')&&e.brand){const bd=e.brand;e.brand=0;hit(e,bd);if(e.hp<=0){return `${e.name} is branded and burns for ${bd} before it can swing.`}}
  if((t==='atk'||t==='annihilate')&&goaded(e)){const o=beside(e),n=v+e.buff+(e.surge||0);e.surge=0;c.goading=1;hit(o,n);if(E[e.key].double&&o.hp>0)hit(o,n);c.goading=0;o.flash=1;msg=`${e.name} is goaded and attacks ${o.name} for ${n}${E[e.key].double?' twice':''}.`}
  else if(t==='atk'){const n=v+e.buff+(e.surge||0);msg=strike(e,n);e.surge=0;if(E[e.key].double&&e.hp>0&&run.hp>0)msg+=' '+strike(e,n)}
@@ -3915,7 +3946,7 @@ function act2_(e){
  else if(t==='annihilate'){msg=strike(e,v+e.buff+(e.surge||0));e.surge=0;const w=[...c.allies].filter(a=>a.dmg<tough(a)).sort((x,y)=>pow(x)-pow(y))[0];if(w){w.dmg=999;msg+=` Annihilator: ${w.name} is consumed.`}}
  else if(t==='pay'){e.hp-=v;if(e.hp<=0)e.noKill=1;e.surge=(e.surge||0)+v;msg=`${e.name} pays ${v} life: its next attack gets +${v}.`}
  if(loy)e.loyalty=Math.max(0,e.loyalty+loy);
- if(e.thrallOf&&t==='atk'){const o=c.enemies.find(x=>x.hp>0&&x.phase2&&E[x.key].steal);if(o){const h=Math.min(v+e.buff,o.max-o.hp);if(h>0){o.hp+=h;o.heal=h;msg+=` ${o.name} drinks ${h}.`}}}
+ if(e.thrallOf&&t==='atk'){const o=c.enemies.find(x=>x.hp>0&&P2(x)&&E[x.key].steal);if(o){const h=Math.min(v+e.buff,o.max-o.hp);if(h>0){o.hp+=h;o.heal=h;msg+=` ${o.name} drinks ${h}.`}}}
  // each time an enemy's intents loop, it comes back stronger
  e.i++;{const d=E[e.key],L=(e.phase2&&d.phase2?d.phase2:d.intents).length;if(L>1&&e.i>0&&e.i%L===0)e.buff+=e.rank?2:1}
  return msg;
@@ -4058,9 +4089,9 @@ const kws=a=>['haste','flying','reach','first','vigilance','deathtouch','lifelin
 // The escalation dial: fills toward Doom; the number is the turns left before Doom.
 function escDial(){const a=run.act||1,face=a>1?'maw':'moon',name=a>1?'The Hunger':'Nightfall',t=c.turn,DT=fightDoomT(),doom=t>=DT,left=DT-t;
  /* painted dial faces (beta lane C): Nightfall in Act 1, the Hunger in Act 2; 1 before escalation, 2-4 as Doom nears, then the Doom face */
- const n=a>2?'':doom?'doom':t<ESC_T?'1':String(Math.min(4,2+Math.floor(2*(t-ESC_T)/Math.max(1,DT-1-ESC_T))));
- const lab=doom?`${name}: Doom. Enemies grow fast and trample`:t>=ESC_T?`${name}: enemies grow every turn. Doom in ${left}`:`${name} comes on turn ${ESC_T}. Doom on turn ${DT}`;
- return `<span class="pw-esc${doom?' doom':t>=ESC_T?' on':''}" data-face="${face}"${n?` data-n="${n}"`:''} style="--f:${Math.min(1,t/DT).toFixed(3)}" role="img" aria-label="${lab}" title="${lab}">${ico(doom?'skull':face)}${doom?'':`<b>${left}</b>`}</span>`}
+ const n=a>2?'':doom?'doom':t<ESCT()?'1':String(Math.min(4,2+Math.floor(2*(t-ESCT())/Math.max(1,DT-1-ESCT()))));
+ const lab=doom?`${name}: Doom. Enemies grow fast and trample`:t>=ESCT()?`${name}: enemies grow every turn. Doom in ${left}`:`${name} comes on turn ${ESCT()}. Doom on turn ${DT}`;
+ return `<span class="pw-esc${doom?' doom':t>=ESCT()?' on':''}" data-face="${face}"${n?` data-n="${n}"`:''} style="--f:${Math.min(1,t/DT).toFixed(3)}" role="img" aria-label="${lab}" title="${lab}">${ico(doom?'skull':face)}${doom?'':`<b>${left}</b>`}</span>`}
 function topBar(){
  // the deck list is a strip per card, with its art, cheapest first; tap or point at one for its text
  const counts={};run.deck.forEach(x=>{const k=x.key+(x.foil?'*':'');(counts[k]=counts[k]||{key:x.key,foil:!!x.foil,q:0}).q++});
@@ -4068,7 +4099,7 @@ function topBar(){
   return `<span class="dk${foil?' foil':''}" data-full data-n="${d.name}" data-rar="${d.r}" data-col="${d.col||''}" data-tip="${(d.name+(foil?' (foil)':'')+'. '+d.text(foil)).replace(/&/g,'&amp;').replace(/"/g,'&quot;').replace(/</g,'&lt;')}"><span class="dk-e">${d.e}</span><b>${d.name}${foil?' ✦':''}</b><span class="dk-q">×${q}</span></span>`}).join('');
  return `<header class="top"><h1>Planeswalk</h1>
   <span class="life" data-v="${Math.max(0,run.hp)}/${run.max}" role="img" aria-label="Life ${Math.max(0,run.hp)}/${run.max}"><span class="lifebar"><i style="width:${Math.max(0,run.hp)/run.max*100}%"></i></span></span>
-  <span class="gold" data-v="${run.gold}" role="img" aria-label="Gold ${run.gold}"></span>${beltHtml()}<span class="emblems">${run.emblems.map(embSvg).join('')||'<span class="muted" style="font-size:.8rem">No emblems yet</span>'}</span>
+  <span class="gold" data-v="${run.gold}" role="img" aria-label="Gold ${run.gold}"></span>${run.spark?`<span class="pw-spk-hud" role="img" aria-label="Spark level ${run.spark}" title="Spark level ${run.spark}">${ico('star')}<b>${run.spark}</b></span>`:''}${beltHtml()}<span class="emblems">${run.emblems.map(embSvg).join('')||'<span class="muted" style="font-size:.8rem">No emblems yet</span>'}</span>
   <span class="spacer"></span>
   <details class="deck"><summary class="btn">Deck · ${run.deck.length}</summary><div class="decklist" data-audit-scroll>${deckRows}</div></details>
   <span class="mono muted" style="font-size:.75rem">Seed ${seed}</span>
@@ -4140,7 +4171,7 @@ function restView(){
  return `<section class="screen bonfire"><h2>A bonfire</h2>
  ${reward?.removing?`<p>Pick a card to burn. It leaves your deck for this run.</p><div class="choices">${run.deck.map(card=>cardHtml(card,`data-act="remove" data-id="${card.id}"`)).join('')}</div><button class="btn" data-act="back">Back</button>`
  :reward?.foil?`<p>Pick a card to foil. Foiled cards are stronger this run.</p><div class="choices">${run.deck.filter(x=>!x.foil).map(card=>cardHtml(card,`data-act="foil" data-id="${card.id}"`)).join('')}</div><button class="btn" data-act="back">Back</button>`
- :`<div class="choices"><button class="option" data-act="heal"><b>Rest</b><span class="muted">Heal ${Math.round(run.max*.3)} life.</span></button><button class="option" data-act="foilpick"><b>Foil a card</b><span class="muted">Upgrade one card for this run.</span></button><button class="option" data-act="restburn" ${run.deck.length<=5?'disabled':''}><b>Burn a card</b><span class="muted">Remove one card from your deck.</span></button>${(run.act||1)>=2&&run.deck.some(x=>x.key==='doubt')?`<button class="option" data-act="purify"><b>Answer your Doubt</b><span class="muted">Your Doubt becomes Moment of Clarity: 0 energy, draw 2, heal 2.</span><span class="costline">Cost: no rest this time</span></button>`:''}</div>`}
+ :`<div class="choices"><button class="option" data-act="heal"><b>Rest</b><span class="muted">Heal ${Math.round(run.max*restPct())} life.</span></button><button class="option" data-act="foilpick"><b>Foil a card</b><span class="muted">Upgrade one card for this run.</span></button><button class="option" data-act="restburn" ${run.deck.length<=5?'disabled':''}><b>Burn a card</b><span class="muted">Remove one card from your deck.</span></button>${(run.act||1)>=2&&run.deck.some(x=>x.key==='doubt')?`<button class="option" data-act="purify"><b>Answer your Doubt</b><span class="muted">Your Doubt becomes Moment of Clarity: 0 energy, draw 2, heal 2.</span><span class="costline">Cost: no rest this time</span></button>`:''}</div>`}
  </section>`;
 }
 function eventView(){
@@ -4178,7 +4209,7 @@ function shopView(){const sh=reward.shop;
  <button class="btn main" data-act="leave">Leave the market</button></section>`}
 function bossRewardView(){
  return `<section class="screen bosspick"><h2>${E[bossOf()].name} is defeated</h2><p>You are healed to full. Take one boss emblem. Each is powerful, and each has a cost.</p><div class="choices">${reward.boss.map(k=>`<button class="option" data-act="bossemb" data-k="${k}" data-col="${EMB[k].col||''}">${embSvg(k)}<b>${EMB[k].name}</b><span class="muted">${EMB[k].gain||EMB[k].text}</span>${EMB[k].cost?`<span class="costline">Cost: ${k==='contract'?`max life ${run.max} → ${run.max-4}`:EMB[k].cost}</span>`:''}</button>`).join('')}</div><button class="btn" data-act="bossemb" data-k="">Take none</button></section>`}
-function nextAct(k){if(k)run.emblems.push(k);if(k==='contract'){run.max-=4;run.hp=Math.min(run.hp,run.max)}run.act=(run.act||1)+1;run.hp=run.max;run.map=genMap(run.act);run.edges=genEdges(run.map);run.pos=null;run.done=[];rollBoss(run.act);c=null;actStart()}
+function nextAct(k){if(k)run.emblems.push(k);if(k==='contract'){run.max-=4;run.hp=Math.min(run.hp,run.max)}run.act=(run.act||1)+1;run.hp=SP(1)?Math.max(run.hp,Math.ceil(run.max*.8)):run.max;run.map=genMap(run.act);run.edges=genEdges(run.map);run.pos=null;run.done=[];rollBoss(run.act);c=null;actStart()}
 // Each act opens with a pick of 1 of 3 items: mostly common, sometimes rare, rarely mythic.
 const START_ODDS={M:.05,R:.2};
 function actStart(){preloadPatrons(run.act||1);const out=[];const left=k=>!run.emblems.includes(k)&&!out.includes(k)&&!BOSSEMB[k]&&forHero(k);
@@ -4186,8 +4217,12 @@ function actStart(){preloadPatrons(run.act||1);const out=[];const left=k=>!run.e
  for(let n=out.length;n<3;n++){const x=rng(),want=x<START_ODDS.M?'M':x<START_ODDS.M+START_ODDS.R?'R':undefined;let pool=Object.keys(EMB).filter(k=>left(k)&&EMB[k].r===want);if(!pool.length)pool=Object.keys(EMB).filter(k=>left(k)&&!EMB[k].r);if(!pool.length)pool=Object.keys(EMB).filter(left);if(pool.length)out.push(pick(pool))}
  run.startPick=out;if(!out.length){run.startPick=null;return patronStart()}view='actstart';reward=null;render()}
 function actStartView(){const A=ACTS[run.act||1];return `<section class="screen actstart" data-actnum="${run.act||1}"><h2>Act ${A.num}: ${A.name}</h2>${(run.act||1)>1?`<p>${E[bossOf(run.act-1)].name} is defeated. You are healed to full.</p>`:''}${run.claimed?`<div class="sig-claim"><p>${run.claimed.from.split(',')[0]} drops ${C[run.claimed.k].name}. Tap it to add it to your deck.</p>${cardHtml({key:run.claimed.k,foil:false},`data-act="claim" data-sig="${run.claimed.from}"${pairOf(run.claimed.k)}`)}</div>`:''}<p>Before you set out, take one item. It lasts the whole run.</p><div class="choices">${run.startPick.map(k=>`<button class="option" data-act="startemb" data-k="${k}" data-col="${EMB[k].col||''}" data-rar="${EMB[k].r||'C'}">${embSvg(k)}<b>${EMB[k].name}</b><span class="muted">${EMB[k].gain||EMB[k].text}</span>${EMB[k].cost?`<span class="costline">Cost: ${k==='contract'?`max life ${run.max} → ${run.max-4}`:EMB[k].cost}</span>`:''}<span class="rar">${{M:'Mythic',R:'Rare',B:'Boss'}[EMB[k].r]||'Common'}</span></button>`).join('')}</div></section>`}
+// Spark picker under a hero (rulings #1): shows once that hero has opened level 1; defaults to the highest open level.
+const sparkPick=hk=>{const o=sparkOf(hk).open,p=reward&&reward.sparkPick&&reward.sparkPick[hk];return Math.min(o,p==null?o:p)};
+function sparkPicker(hk){const o=sparkOf(hk).open;if(!o)return '';const n=sparkPick(hk);
+ return `<div class="pw-spk" role="group" aria-label="Spark level"><button type="button" class="btn pw-spk-b" data-act="spk" data-k="${hk}" data-d="-1" aria-label="Lower Spark level"${n<=0?' disabled':''}>${ico('back')}</button><span class="pw-spk-n" role="img" aria-label="Spark level ${n}" title="Spark level ${n}">${ico('star')}<b>${n}</b></span><button type="button" class="btn pw-spk-b up" data-act="spk" data-k="${hk}" data-d="1" aria-label="Raise Spark level"${n>=o?' disabled':''}>${ico('back')}</button></div>`}
 function heroesView(){
- return `<header class="top"><h1>Planeswalk</h1><span class="spacer"></span>${profile.runs?`<button class="btn pw-jtop" data-act="journal" aria-label="Journal" title="Journal">${ico('book')}</button>`:''}</header><section class="screen heroes"><h2>Choose your planeswalker</h2><div class="choices">${Object.values(HEROES).map(h=>`<button class="option hero-pick" data-act="hero" data-k="${h.key}" data-n="${h.name}"><b>${h.name}</b><span class="muted">${h.color} · ${h.life} life · ${h.theme}</span><span class="muted">${h.plusLabel()} · ${h.minusLabel} · ${h.ultLabel}</span><span class="pw-kit"><span class="pw-hsig">${embSvg(h.sig)}<span><em>Signature</em>${EMB[h.sig].name.replace(/^Emblem of the /,'')}</span></span><span class="pw-starter"><em>Starter deck</em>${starterList(h)}</span></span></button>`).join('')}</div></section>`;
+ return `<header class="top"><h1>Planeswalk</h1><span class="spacer"></span>${profile.runs?`<button class="btn pw-jtop" data-act="journal" aria-label="Journal" title="Journal">${ico('book')}</button>`:''}</header><section class="screen heroes"><h2>Choose your planeswalker</h2><div class="choices">${Object.values(HEROES).map(h=>`<div class="pw-hcol"><button class="option hero-pick" data-act="hero" data-k="${h.key}" data-n="${h.name}"><b>${h.name}</b><span class="muted">${h.color} · ${h.life} life · ${h.theme}</span><span class="muted">${h.plusLabel()} · ${h.minusLabel} · ${h.ultLabel}</span><span class="pw-kit"><span class="pw-hsig">${embSvg(h.sig)}<span><em>Signature</em>${EMB[h.sig].name.replace(/^Emblem of the /,'')}</span></span><span class="pw-starter"><em>Starter deck</em>${starterList(h)}</span></span></button>${sparkPicker(h.key)}</div>`).join('')}</div></section>`;
 }
 function rankBar(){if(run.xpGain==null)return '';const a=rankOf(run.xpFrom),b=rankOf(run.xpFrom+run.xpGain),up=b.n>a.n,from=up?0:a.into/a.need,to=b.into/b.need;
  return `<div class="pw-rank${up?' up':''}" role="img" aria-label="Rank ${b.n}: ${b.into} of ${b.need} toward rank ${b.n+1}"><span class="pw-rank-n">${ico('up')}<b>${b.n}</b></span><span class="pw-rank-bar"><i style="width:${(from*100).toFixed(1)}%"></i><i class="gain" style="left:${(from*100).toFixed(1)}%;width:${((to-from)*100).toFixed(1)}%"></i></span><b class="pw-rank-xp">+${run.xpGain}</b></div>`}
@@ -4371,7 +4406,7 @@ const SAVE='planeswalk.save.v1',PROF='planeswalk.profile.v1';
 const store={get(k){try{return JSON.parse(localStorage.getItem(k)||'null')}catch{return null}},set(k,v){try{localStorage.setItem(k,JSON.stringify(v))}catch{}},del(k){try{localStorage.removeItem(k)}catch{}}};
 let profile=store.get(PROF)||{runs:0,wins:0,bestTurn:0,bestFights:0};
 function saveRun(){if(view==='map'&&run&&run.hp>0)store.set(SAVE,{seed,rs,uid,run})}
-function endRun(won){if(run.recorded)return;run.recorded=1;store.del(SAVE);profile.runs++;if(won)profile.wins++;profile.bestTurn=Math.max(profile.bestTurn,run.bestTurn||0);profile.bestFights=Math.max(profile.bestFights,run.fights||0);
+function endRun(won){if(run.recorded)return;run.recorded=1;if(won)try{sparkWin()}catch(e){}store.del(SAVE);profile.runs++;if(won)profile.wins++;profile.bestTurn=Math.max(profile.bestTurn,run.bestTurn||0);profile.bestFights=Math.max(profile.bestFights,run.fights||0);
  const foe=!won&&c&&c.enemies&&c.enemies.find(e=>e.hp>0),act=run.act||1,floor=(run.pos?run.pos.r:0)+1;
  try{profile.mercy=!won&&act===1&&!(c&&c.kind==='boss');profile.diedTo=!won&&c&&c.kind==='boss'?(E[bossOf(act)]?E[bossOf(act)].name:bossOf(act)).toLowerCase().split(/[ ,]/)[0]:null}catch(e){}/* patrons: Ugin's Mercy and diedto lines */
  run.xpFrom=profile.xp||0;run.xpGain=(run.fights||0)*3+(act-1)*15+(won?30:0);profile.xp=run.xpFrom+run.xpGain;
@@ -4434,6 +4469,7 @@ document.getElementById('app').addEventListener('click',ev=>{
  if(a==='replayseed')return newRun(+b.dataset.s,HEROES[b.dataset.h]?b.dataset.h:undefined);
  if(a==='share')return shareRun(b);
  if(a==='hero')return newRun(reward&&reward.seed,b.dataset.k);
+ if(a==='spk'){reward=reward||{};const P=reward.sparkPick=reward.sparkPick||{},k=b.dataset.k;P[k]=Math.max(0,Math.min(sparkOf(k).open,sparkPick(k)+(+b.dataset.d)));return render()}
  if(a==='go')return enter(+b.dataset.r,+b.dataset.l);
  if(a==='closeinspect'){c.inspect=null;c.showHist=0;return render()}
  if(a==='giftok'){gift=null;return render()}
@@ -4475,7 +4511,7 @@ document.getElementById('app').addEventListener('click',ev=>{
  if(a==='startemb'){run.claimed=null;if(run.startPick&&run.startPick.includes(b.dataset.k)){run.emblems.push(b.dataset.k);if(b.dataset.k==='contract'){run.max-=4;run.hp=Math.min(run.hp,run.max)}}run.startPick=null;return patronStart()}
  if(a==='pactmyth'){offerLog('bargain',[reward.myth&&EMB[reward.myth].name,reward.rare&&EMB[reward.rare].name].filter(Boolean),reward.myth&&EMB[reward.myth].name);run.max-=15;run.hp=Math.min(run.hp,run.max);if(reward.myth)run.emblems.push(reward.myth);return toMap()}
  if(a==='pactcurse'){offerLog('bargain',[reward.myth&&EMB[reward.myth].name,reward.rare&&EMB[reward.rare].name].filter(Boolean),reward.rare&&EMB[reward.rare].name);if(reward.rare)run.emblems.push(reward.rare);run.deck.push(mk('doubt'));return toMap()}
- if(a==='heal'){heal(Math.round(run.max*.3));return toMap()}
+ if(a==='heal'){heal(Math.round(run.max*restPct()));return toMap()}
  if(a==='purify'){const x=run.deck.find(d=>d.key==='doubt');if(x){x.key='clarity';x.foil=false}return toMap()}
  if(a==='foilpick'){reward={foil:1};return render()}
  if(a==='restburn'){reward={removing:1};return render()}

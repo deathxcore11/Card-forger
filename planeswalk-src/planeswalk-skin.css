@@ -1773,3 +1773,16 @@ body[data-actnum="3"] #app .screen.blessing{--pw-bg:url(./planeswalk-art/blessin
 #app .screen.blessing:has(>.pw-deckpick){grid-template-columns:minmax(0,1fr)!important}
 #app .screen.blessing:has(>.pw-deckpick)>.pw-patron{display:none}
 #app .screen.blessing>.choices.pw-deckpick{grid-column:1/-1;grid-row:1/4;grid-template-columns:repeat(auto-fill,minmax(150px,1fr))}
+/* ===== Spark levels (meta item 2, rulings #1): picker under a hero once level 1 is open, star + number on the HUD ===== */
+#app .screen.heroes .choices:not(:has(.pw-spk)) .pw-hcol{display:contents}
+#app .screen.heroes .pw-hcol{display:flex;flex-direction:column;gap:6px;min-width:0;flex:1 1 0}
+#app .screen.heroes .pw-hcol>.hero-pick{flex:1 1 auto;width:100%!important}
+#app .screen.heroes .pw-hcol:not(:has(>.pw-spk))::after{content:"";height:44px;flex:none}
+#app .pw-spk{display:flex;align-items:center;justify-content:center;gap:10px}
+#app .pw-spk .pw-spk-b{min-width:44px;min-height:44px;padding:0!important;display:grid;place-items:center}
+#app .pw-spk .pw-spk-b svg{width:18px;height:18px;fill:currentColor}
+#app .pw-spk .pw-spk-b.up svg{transform:scaleX(-1)}
+#app .pw-spk .pw-spk-b:disabled{opacity:.35}
+#app .pw-spk-n,#app .pw-spk-hud{display:inline-flex;align-items:center;gap:4px;font:800 1rem/1 var(--display,serif);color:#ffd98a;text-shadow:0 1px 3px #000}
+#app .pw-spk-n svg,#app .pw-spk-hud svg{width:20px;height:20px;fill:#ffcf6a;filter:drop-shadow(0 0 5px #ffb84a88)}
+#app .top .pw-spk-hud{margin-inline:6px;font-size:.9rem}
