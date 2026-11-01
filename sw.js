@@ -1,4 +1,4 @@
-const CACHE = "cardforge-shell-invite-copy-4354-v422";
+const CACHE = "cardforge-shell-friend-challenges-4355-v424";
 const ASSETS = [
   "./assets/fonts/fonts.css",
   "./play-forge-feature.js",

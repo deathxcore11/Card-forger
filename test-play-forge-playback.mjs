@@ -23,8 +23,8 @@ test('a backlog of CPU updates hurries a little, and flush shows the latest boar
  q.push(snap(1,[]));q.push(snap(2,[card(1)]));q.push(snap(3,[card(1),card(2)]));q.push(snap(4,[card(1),card(2),card(3)]));q.push(snap(5,[card(1),card(2),card(3),card(4)]));
  assert.equal(timers[0],800,'a lone update plays at full pace');
  fns[0]();fns[1]?.();
- assert.ok(timers.slice(1).some(ms=>ms===480),'with two more updates waiting, the next beats run a little quicker');
- assert.ok(timers.every(ms=>ms>=480),'a backlog never races');
+ assert.ok(timers.slice(1).some(ms=>ms===650),'with two more updates waiting, the next beats run a little quicker');
+ assert.ok(timers.every(ms=>ms>=650),'a backlog never races: every CPU action stays on screen at least 650 ms (Randall, 1 Nov)');
  q.flush();assert.deepEqual(shown.at(-1),[5,false],'flush presents the latest board, unlocked');assert.equal(q.busy,false);
 });
 
@@ -73,7 +73,7 @@ test('a token swarm is one arrival, combat damage one summary, and the whole upd
  const beats=eventPlaybackBeats(ev(1,9,[]),ev(2,23,[...goblins,...damage]));
  assert.deepEqual(beats.map(b=>b.label),['CPU · 12 GOBLIN TOKENS','COMBAT DAMAGE · YOU TAKE 4']);
  const many=Array.from({length:10},(_,i)=>e(30+i,'cast',{player:20,stackId:i,source:ref(200+i,'Bolt'),targets:[]}));
- assert.ok(eventPlaybackBeats(ev(1,29,[]),ev(2,39,many)).reduce((t,b)=>t+b.duration,0)<=5200);
+ const long=eventPlaybackBeats(ev(1,29,[]),ev(2,39,many));assert.ok(long.every(b=>b.duration>=650),'a long turn speeds up, but no action shows for less than 650 ms');assert.ok(long.reduce((t,b)=>t+b.duration,0)<=many.length*650+1);
 });
 
 const respondTo=()=>ev(2,5,[e(5,'cast',{player:20,stackId:9,source:ref(2,'Murder'),targets:[ref(3,'Ghalta')]})],[card(3,{controller:0,owner:0,name:'Ghalta'})],{awaitingHuman:true,prioritySeat:0,stack:[{id:9,source:2,controller:1}]},{busy:false,inputType:'InputPassPriority',stack:[{id:9,activatingPlayer:20}]});
@@ -137,4 +137,19 @@ test('the activity line only claims what the state shows',()=>{
  assert.equal(tableActivity(ev(1,0,[],[],{activeSeat:0,prioritySeat:0})).label,'Forge is applying your play');
  assert.equal(tableActivity(ev(1,0,[],[],{activeSeat:0,prioritySeat:0,awaitingHuman:true},{busy:false,inputType:'InputAttack'})).label,'Your decision · Declare attackers');
  assert.equal(tableActivity({status:{terminal:{winner:0},surface:{}}}),null);
+});
+
+test('nothing from turn one shows until the keep is confirmed, then a one-second beat', () => {
+ const shown=[],timers=[],fns=[];
+ const q=new CpuActionPlaybackQueue({present:(s,busy)=>shown.push([s.status.revision,busy,s.native?.inputType??null]),schedule:(fn,ms)=>{timers.push(ms);fns.push(fn);return timers.length;},cancel:()=>{}});
+ const mull=snap(1,[]);mull.native={...mull.native,inputType:'InputConfirmMulligan'};mull.status.surface.turn=0;mull.status.surface.awaitingHuman=true;
+ q.push(mull);
+ const t1=snap(2,[card(1)]);t1.status.surface.turn=1;
+ q.push(t1);
+ assert.equal(timers[0],1000,'a one-second beat after the keep');
+ assert.deepEqual(shown.at(-1),[1,true,null],'the keep panel leaves, the opening board holds');
+ q.push({...t1});assert.equal(timers.length,1,'boards that arrive meanwhile wait');
+ assert.equal(q.busy,true);
+ for(let i=0;i<fns.length&&i<20;i++)fns[i]();assert.ok(shown.some(([r])=>r===2),'then turn one plays');
+ assert.ok(timers.slice(1).every(ms=>ms>=650),'each turn-one action holds at least 650 ms');
 });

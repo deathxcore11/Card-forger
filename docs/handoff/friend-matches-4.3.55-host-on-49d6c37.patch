@@ -1,0 +1,860 @@
+From a7ae9fadb0896ef4df7c578b82c72f71a0e3e475 Mon Sep 17 00:00:00 2001
+From: Claude <noreply@anthropic.com>
+Date: Sun, 1 Nov 2026 15:51:41 +0000
+Subject: [PATCH 1/2] Forge host: friend match table starts whoever wins the
+ toss; players see each other
+
+- Bridge: in a friend match the seat that is not asked to act first never got a
+  prompt to publish, so it kept reporting "initializing". The gateway's /ready
+  reads seat 1, so whenever the guest won the coin toss the table never became
+  ready and both players timed out (startup_deadline last ready 503). Each seat
+  now publishes when the game starts, and publishes board changes as they
+  arrive (nothing paces the other person's plays the way CPU steps are paced).
+  Reproduced and verified on the real host bridge: seeds where seat 2 goes
+  first now report running on both seats, and both players can keep and play.
+- Rooms: create and join take an optional player card {name, image, crop};
+  the room view returns the other player's card as `opponent`. Only a
+  sanitised name (40 chars), an https image and a bounded crop are kept.
+- Tests: friend-match player-card test. Pins re-bound; verify-inputs,
+  run-static-checks, npm check, NativeHumanPriorityProof,
+  NativePaymentTransitionChecks and NativeStartingPlayerChecks pass.
+
+Co-Authored-By: Claude Opus 5.5 <noreply@anthropic.com>
+Claude-Session: https://claude.ai/code/session_01G4m5sRQtg4L7gdECz4hmKi
+---
+ deploy/forge-host/SOURCE-SHA256.json          |  6 ++---
+ .../scripts/deploy-private-host.mjs           |  4 +--
+ deploy/forge-host/src/service-core.mjs        | 27 ++++++++++++++++---
+ deploy/forge-host/tests/friend-match.test.mjs | 15 +++++++++++
+ .../build-context/CONTEXT-SHA256.json         |  6 ++---
+ .../candidate/build-context/Dockerfile        |  6 ++---
+ .../hosting/checkpoint-files.json             |  6 ++---
+ .../src/cardstashy/forge/ForgeHttpBridge.java |  6 +++++
+ .../candidate/native/SHA256SUMS               |  2 +-
+ .../src/cardstashy/forge/ForgeHttpBridge.java |  6 +++++
+ .../harness/MANIFEST.json                     | 22 +++++++--------
+ .../harness/cleanup-image.mjs                 |  2 +-
+ .../harness/collect-combined.py               |  6 ++---
+ .../harness/composition-contract.json         | 12 ++++-----
+ .../harness/fixture-server.mjs                |  2 +-
+ .../harness/image-stages/MANIFEST.json        |  8 +++---
+ .../harness/image-stages/SHA256SUMS           |  2 +-
+ .../harness/image-stages/pins.mjs             |  2 +-
+ .../harness/run-case.sh                       |  2 +-
+ .../harness/test-cleanup-image.mjs            |  2 +-
+ .../harness/test-collector.py                 |  4 +--
+ .../harness/verify-inputs.py                  |  2 +-
+ 22 files changed, 98 insertions(+), 52 deletions(-)
+
+diff --git a/deploy/forge-host/SOURCE-SHA256.json b/deploy/forge-host/SOURCE-SHA256.json
+index 02b9835f..f8c2cddd 100644
+--- a/deploy/forge-host/SOURCE-SHA256.json
++++ b/deploy/forge-host/SOURCE-SHA256.json
+@@ -22,7 +22,7 @@
+   "scripts/compose-exact-context.py": "24fb7bb4f4b1d66c744caf8d6c60de3d9ece2a1fcac2fcedc048134cc31aeac8",
+   "scripts/compose-next-context.py": "ebc13da264b4653f0eb11c30ab355a68f6f5c8576ac96d57a5605518d3a4cd7e",
+   "scripts/create-release-policy.mjs": "ed49937d148d7488287712759f8f3669ff956b545493c6687f8845760fb659d5",
+-  "scripts/deploy-private-host.mjs": "382fa4ef5729758f4bf6c6cae39fc8688ceab4eb597733f710a9e78eb8946e18",
++  "scripts/deploy-private-host.mjs": "67df370820d5350cb01a2fc516c27db23e9a8c074047d1213ba58f0202102b89",
+   "scripts/docker-proof-client.py": "73dc6366ec4b9a6cefe713dc317775cb56bb551ee7fd1ef2c375bdfafbe3dca2",
+   "scripts/refresh-rules-data.py": "eddc888fd3bf559ebae6652886fe6bb81459e8bccd6c93e15af9ee63f7962de4",
+   "scripts/release-configuration.mjs": "0868dce2a869d0d0c9d0c684980b584b5757bf2ea66ee90125ad221709692531",
+@@ -35,7 +35,7 @@
+   "src/policy.mjs": "6004d77a9428bfaacb8a212fc424139a33727d0c119c5f593e06c474944d1cea",
+   "src/provisional-ledger.mjs": "6ad1b11acac597e3df1d72a708788f79bdad3cda36fcd169557fb12b928eba0e",
+   "src/release-policy.mjs": "7317de1854b8afe153fce07674e7802a1bdbc8f7c45dd2ffaafab7d06bcd40d2",
+-  "src/service-core.mjs": "b985c1d5da046ddee3a6bec9a1c90a3c10e8d5e60a8ec21f5903e9c7bc65d0f4",
++  "src/service-core.mjs": "f8ba5a26fb3d4b3710f102653a0f88e686c514963040a7d29ad89b641fca43bb",
+   "src/trial.mjs": "fd41a7e3e3a3cb636c56aefe04cc71ec7fad160c6ceb95850e630f7551e00eb3",
+   "src/vendor/app/config.js": "92a35116c57f73d009f937ae5c0f188ef456f7c641ccacf87e9eadfa2e7602c0",
+   "src/vendor/app/native-backend-contract.js": "284ee719870db9b414fe7bffdf24916ef0ae403c231eccd78a160d34bf1648f3",
+@@ -60,7 +60,7 @@
+   "tests/fixtures/easy-receipt.json": "79ff0752f26f9f4a0a416752468af3a2e5d8520423bb150b2549c174d69fe591",
+   "tests/fixtures/hard-receipt.json": "c9b5be132bfbaee1155576d0c36350c98a31a2e60c8e0e108b3300a7ab648e94",
+   "tests/fixtures/medium-receipt.json": "fe5d24bceb577ad4e46b65507a213cb6da309033eb73830c6e83e7197bb1163d",
+-  "tests/friend-match.test.mjs": "142f4d93c6917fd5a5a04b711f5197e20be1d9b081598392bc507b7cdc8dbcb5",
++  "tests/friend-match.test.mjs": "1db75af0bfc93044469ef8d77fabaaf6515e9c1505b00046e0df06a2d4510947",
+   "tests/native-adapter-next.test.mjs": "ce66d339dcf6261af307a1962a3ccf892e9cd7135eb27d3918f35cd26493f446",
+   "tests/native-adapter.test.mjs": "ac5d4cc3d98758747c4696bd0420f7476152112682dae9ba83a1d5a31f177f20",
+   "tests/next-policy-admission.test.mjs": "51f47b533cc90625f0143d8fa07a081affd5ff30822f557620131c71b956702e",
+diff --git a/deploy/forge-host/scripts/deploy-private-host.mjs b/deploy/forge-host/scripts/deploy-private-host.mjs
+index c5d6d2ca..52c1c90d 100644
+--- a/deploy/forge-host/scripts/deploy-private-host.mjs
++++ b/deploy/forge-host/scripts/deploy-private-host.mjs
+@@ -63,7 +63,7 @@ try {
+     assert.equal(sha(await readFile(path.join(host, file))), expected, 'Host source changed: ' + file);
+   }
+   const manifest = await readFile(path.join(harness, 'MANIFEST.json'));
+-  assert.equal(sha(manifest), 'e4917e9eae6ac61c691e05bbbdc253a1ce1e06a4d6ad3428440b4aec8e387c31');
++  assert.equal(sha(manifest), '3810c7e434066205bd50cb1a0095ba2643c4ebebb609c36bdec75a76a3cc08ac');
+   process.env.FORGE_COMBINED_WORK = work;
+   process.env.FORGE_COMBINED_REVIEWED_MANIFEST_SHA256 = sha(manifest);
+   await run('source-inventory', 'python3', [path.join(harness, 'verify-inputs.py')]);
+@@ -89,7 +89,7 @@ try {
+   const image = registryImageForProbe(JSON.parse(inspected.stdout)[0], built.imageId, `registry.cloudflare.com/${ACCOUNT}/cardstashy-forge`);
+   const releaseFile = path.join(work, 'release.json');
+   await run('bind-release-policy', process.execPath, [path.join(host, 'scripts/create-release-policy.mjs'),
+-    '--image', image, '--native-manifest-sha256', 'f0db7a7af0ade0fdb434424443cefa8bee2deaec927a4d640acd5cf40d5a5e99',
++    '--image', image, '--native-manifest-sha256', '62639e632e51c1d6cb272823f78daa594d3434140c6ce9ef34a6997eb68492f6',
+     '--native-root', path.join(candidate, 'native'), '--build-attestation', path.join(imageRoot, 'actual-build-attestation.json'),
+     '--runtime-index', path.join(imageRoot, 'actual-runtime-index.json'), '--runtime-receipt', path.join(work, 'runtime-receipt.json'), '--out', releaseFile]);
+   const release = await json(releaseFile);
+diff --git a/deploy/forge-host/src/service-core.mjs b/deploy/forge-host/src/service-core.mjs
+index de4d2481..b5d7115a 100644
+--- a/deploy/forge-host/src/service-core.mjs
++++ b/deploy/forge-host/src/service-core.mjs
+@@ -28,6 +28,21 @@ const ROOM_PATH = new RegExp('^/api/play/rooms/(' + UUID + ')$', 'i');
+ const INVITE = /^[A-Za-z0-9_-]{43}$/;
+ // An invite lasts 30 minutes. Friend matches start with the first three formats.
+ const ROOM_MS = 1_800_000, FRIEND_FORMATS = ['Commander', 'Standard', 'Modern'];
++// What each player shows the other in a friend match: their display name and profile picture
++// (an https image, with the crop they chose for card art). Anything else is dropped.
++const unit = (v, lo, hi) => typeof v === 'number' && Number.isFinite(v) && v >= lo && v <= hi;
++function playerCard(value) {
++  if (value === undefined || value === null) return null;
++  if (!value || typeof value !== 'object' || Array.isArray(value)) throw Error('invalid_player');
++  const name = typeof value.name === 'string' ? value.name.replace(/[\u0000-\u001f\u007f]/g, '').trim().slice(0, 40) : '';
++  let image = null;
++  if (typeof value.image === 'string' && value.image.length <= 512) {
++    try { const u = new URL(value.image); if (u.protocol === 'https:' && !u.username && !u.password) image = u.href; } catch { /* no picture */ }
++  }
++  const c = value.crop, crop = image && c && typeof c === 'object' && unit(c.ratio, 0.2, 5) && unit(c.zoom, 1, 4) && unit(c.x, 0, 1) && unit(c.y, 0, 1)
++    ? { ratio: c.ratio, zoom: c.zoom, x: c.x, y: c.y } : null;
++  return name || image ? { name: name || null, image, crop } : null;
++}
+ // Forge needs a CPU policy version in every input; a friend match has no CPU, so the
+ // default one is recorded and never used.
+ const FRIEND_POLICY = 'forge-heuristic-medium-beta-v1';
+@@ -215,10 +230,11 @@ export class AdmissionService {
+     try { body = await readJSONWithin(request, 131072); }
+     catch (e) { return error(['body_too_large', 'body_timeout'].includes(e.message) ? e.message : 'invalid_json', e.message === 'body_too_large' ? 413 : e.message === 'body_timeout' ? 408 : 400); }
+     if (path === ROOMS_PATH) {
+-      if (Object.keys(body).some(k => !['format', 'deck'].includes(k)) || !FRIEND_FORMATS.includes(body.format)) return error('invalid_room', 400);
++      if (Object.keys(body).some(k => !['format', 'deck', 'player'].includes(k)) || !FRIEND_FORMATS.includes(body.format)) return error('invalid_room', 400);
++      let hostPlayer; try { hostPlayer = playerCard(body.player); } catch { return error('invalid_room', 400); }
+       try { validateExactDeckInput(friendInput(body.format, body.deck, body.deck)); } catch { return error('invalid_match_input', 400); }
+       const invite = randomInvite(), roomId = crypto.randomUUID();
+-      const room = { roomId, hostId: user.id, format: body.format, hostDeck: body.deck, inviteDigest: await digest(invite),
++      const room = { roomId, hostId: user.id, hostPlayer, format: body.format, hostDeck: body.deck, inviteDigest: await digest(invite),
+         status: 'open', createdAt: this.now(), expiresAt: this.now() + ROOM_MS };
+       await this.storage.transaction(async txn => {
+         // One open room per host: a new invite ends the old one.
+@@ -230,7 +246,8 @@ export class AdmissionService {
+       return json({ ...this.roomView(room, user.id), invite }, 201);
+     }
+     // Join.
+-    if (Object.keys(body).some(k => !['invite', 'deck'].includes(k)) || !INVITE.test(body.invite || '')) return error('invalid_invite', 400);
++    if (Object.keys(body).some(k => !['invite', 'deck', 'player'].includes(k)) || !INVITE.test(body.invite || '')) return error('invalid_invite', 400);
++    let guestPlayer; try { guestPlayer = playerCard(body.player); } catch { return error('invalid_invite', 400); }
+     const roomId = await this.storage.get('invite:' + await digest(body.invite));
+     const key = 'room:' + roomId, found = roomId && await this.storage.get(key);
+     if (!found) return error('invite_not_found', 404);
+@@ -246,7 +263,7 @@ export class AdmissionService {
+       const room = await txn.get(key);
+       if (room.guestId && room.guestId !== user.id) return { error: 'room_full', status: 409 };
+       if (room.status !== 'open') return { error: room.status === 'started' ? 'room_full' : 'room_closed', status: room.status === 'started' ? 409 : 410 };
+-      room.guestId = user.id; await txn.put(key, room); return { room };
++      room.guestId = user.id; room.guestPlayer = guestPlayer; await txn.put(key, room); return { room };
+     });
+     if (claim.error) return error(claim.error, claim.status);
+     const lifetimeMs = access.mode === 'trial' ? Math.min(access.matchMs, access.expiresAt - this.now()) : access.matchMs;
+@@ -272,6 +289,8 @@ export class AdmissionService {
+     const expired = room.status === 'open' && this.now() >= room.expiresAt;
+     return { roomId: room.roomId, format: room.format, status: expired ? 'expired' : room.status, expiresAt: room.expiresAt,
+       seat: room.hostId === userId ? 'host' : 'guest', guestJoined: !!room.guestId,
++      // The other player, as they chose to show themselves.
++      opponent: (room.hostId === userId ? room.guestPlayer : room.hostPlayer) || null,
+       ...(room.matchId && room.status === 'started' ? { matchId: room.matchId } : {}) };
+   }
+   // Start the engine for this account's next match before its decks are chosen. Best
+diff --git a/deploy/forge-host/tests/friend-match.test.mjs b/deploy/forge-host/tests/friend-match.test.mjs
+index e21dd816..443ea550 100644
+--- a/deploy/forge-host/tests/friend-match.test.mjs
++++ b/deploy/forge-host/tests/friend-match.test.mjs
+@@ -143,3 +143,18 @@ test('either player of a friend match can end it, and both then see the same res
+   const host = await read(f, matchId, 'owner');
+   assert.equal(host.body.status, 'finished'); assert.equal(host.body.viewerId, 0); assert.deepEqual(host.body.result, { draw: false, winnerPlayerId: 1 });
+ });
++
++test('each player sees the other\'s name and picture, never anything more', async () => {
++  const f = fixture();
++  const hostPlayer = { name: 'deathxcore11', image: 'https://cards.scryfall.io/art_crop/front/a/b/ab.jpg', crop: { ratio: 1.3, zoom: 1.5, x: 0.5, y: 0.4 }, email: 'x@y.z' };
++  const room = await json(f, '/api/play/rooms', { body: { format: 'Commander', deck: structuredClone(deck), player: hostPlayer } });
++  assert.equal(room.status, 201); assert.equal(room.body.opponent, null);
++  const peek = await json(f, '/api/play/rooms/join', { token: 'other', body: { invite: room.body.invite } });
++  assert.deepEqual(peek.body.opponent, { name: 'deathxcore11', image: hostPlayer.image, crop: hostPlayer.crop });
++  const joined = await json(f, '/api/play/rooms/join', { token: 'other', body: { invite: room.body.invite, deck: structuredClone(deck), player: { name: ' ldwd11\u0000 ', image: 'javascript:alert(1)' } } });
++  assert.equal(joined.status, 202);
++  const hostRoom = await json(f, '/api/play/rooms/' + room.body.roomId, { method: 'GET' });
++  assert.deepEqual(hostRoom.body.opponent, { name: 'ldwd11', image: null, crop: null });
++  // A player card that is not an object is refused; no card at all is fine.
++  assert.equal((await json(f, '/api/play/rooms', { body: { format: 'Commander', deck: structuredClone(deck), player: 'me' } })).status, 400);
++});
+diff --git a/experiments/forge-proof/combined-browser-proof/candidate/build-context/CONTEXT-SHA256.json b/experiments/forge-proof/combined-browser-proof/candidate/build-context/CONTEXT-SHA256.json
+index 14e11ff5..d520e63f 100644
+--- a/experiments/forge-proof/combined-browser-proof/candidate/build-context/CONTEXT-SHA256.json
++++ b/experiments/forge-proof/combined-browser-proof/candidate/build-context/CONTEXT-SHA256.json
+@@ -1,9 +1,9 @@
+ {
+   ".dockerignore": "22050b43f43a2d9f93d5b863f49b10b3e45c70dfce806512a9a3a9aca1246cd9",
+-  "Dockerfile": "afb43ccc89c1544c9c0c9786f399308a5b4839534e718dbb1563beb52492c561",
++  "Dockerfile": "bbb6e5bfe6cf312e7a4f7372ad9066688fdf7d857f168f2c580fece731ac8254",
+   "hosting/assemble.sh": "4a631468cef0b41772b24ee82b9a34d0b05601de0faa0103608bc69936243d43",
+   "hosting/bootstrap.py": "f527cdd5ba61faab856690aa72fd01a0535be9ff904efdb435eced4258d9859d",
+-  "hosting/checkpoint-files.json": "5ea8bef5c2a55c163963bb91635b60e0eac64070c40d8e80dced5200e5556248",
++  "hosting/checkpoint-files.json": "77735f5bf02c8d9497247fb9386b46a31abbf286bec81481bab5dcce838fc0a5",
+   "hosting/gateway.py": "e796deec7aaf397fac3b118530baa8af06671c4f279aa2e4b450fa6edf69135e",
+   "native/BASE-CANDIDATE.json": "8efcc09d4f3260904034aa1f2e1e9f9b8d66f1ad8aa3668c404a020b55d0dbbf",
+   "native/CONTRACT.md": "3206da2ab12c8a826ff3ca7ce7852a32e82a90cfee232c7e1fe0d21c2e964462",
+@@ -16,7 +16,7 @@
+   "native/adapter/src/cardstashy/forge/BridgeContractChecks.java": "6dda6a3aafb5cd566f9f2fd7adb41f4fbd63f4912f7ca433af7c9f67d5228099",
+   "native/adapter/src/cardstashy/forge/BridgeNativeTerminalChecks.java": "0794ccfc0427bbc8abcf4eb3a22dc859dbf9ba00c086b39639ec960d687c7189",
+   "native/adapter/src/cardstashy/forge/BridgeSmartIntentChecks.java": "bb585915a54e79eec24907c5894e25474bfb3b581b03384d40302f5150c580d7",
+-  "native/adapter/src/cardstashy/forge/ForgeHttpBridge.java": "e216984fb60d2f450aef918475722bfd4d0afff83fe7010a3cbc2ee46bc18a49",
++  "native/adapter/src/cardstashy/forge/ForgeHttpBridge.java": "e83fa32c5695bdcce3367fc531346daecedcb796f3bc33ef58837d797490a0cb",
+   "native/adapter/src/cardstashy/forge/NativeAffordanceChecks.java": "9adf75a18c5453e929316af9a4e62612c64dda63b90de4796a31cbd56269a657",
+   "native/adapter/src/cardstashy/forge/NativeConcessionRaceChecks.java": "1df40584604936cecd83866786b7e2576be318017d98153091be26e2efac9cbb",
+   "native/adapter/src/cardstashy/forge/NativeCpuPolicyIntegration.java": "431c5370d9c96ef88caf8dc9ccfbedc9ee8be1302da137b4cf22c2d3104801d4",
+diff --git a/experiments/forge-proof/combined-browser-proof/candidate/build-context/Dockerfile b/experiments/forge-proof/combined-browser-proof/candidate/build-context/Dockerfile
+index 54cb525b..3ebc2e6c 100644
+--- a/experiments/forge-proof/combined-browser-proof/candidate/build-context/Dockerfile
++++ b/experiments/forge-proof/combined-browser-proof/candidate/build-context/Dockerfile
+@@ -20,7 +20,7 @@ COPY native/human/ human/
+ COPY native/build-human-overlay.sh build-human-overlay.sh
+ COPY native/LICENSE native/PROVENANCE.md native/CONTRACT.md notices/
+ COPY hosting/assemble.sh /tmp/assemble.sh
+-RUN test "$(sha256sum adapter/src/cardstashy/forge/ForgeHttpBridge.java | cut -d' ' -f1)" = "e216984fb60d2f450aef918475722bfd4d0afff83fe7010a3cbc2ee46bc18a49" \
++RUN test "$(sha256sum adapter/src/cardstashy/forge/ForgeHttpBridge.java | cut -d' ' -f1)" = "e83fa32c5695bdcce3367fc531346daecedcb796f3bc33ef58837d797490a0cb" \
+  && bash /tmp/assemble.sh
+ 
+ FROM ${RUNTIME_IMAGE} AS runtime
+@@ -39,7 +39,7 @@ COPY hosting/checkpoint-files.json /opt/host001/checkpoint-files.json
+ COPY hosting/assemble.sh /opt/host001/assemble.sh
+ COPY Dockerfile /opt/host001/Dockerfile
+ LABEL org.opencontainers.image.title="CardStashy Forge HOST-001 candidate" \
+-      org.opencontainers.image.revision="e216984fb60d2f450aef918475722bfd4d0afff83fe7010a3cbc2ee46bc18a49"
++      org.opencontainers.image.revision="e83fa32c5695bdcce3367fc531346daecedcb796f3bc33ef58837d797490a0cb"
+ ENV PYTHONDONTWRITEBYTECODE=1 PYTHONUNBUFFERED=1 USE_SENTRY=false
+ USER 10001:10001
+ WORKDIR /run/cardstashy
+@@ -49,7 +49,7 @@ HEALTHCHECK --interval=15s --timeout=3s --start-period=120s --retries=3 \
+  CMD ["python3", "-c", "import urllib.request; urllib.request.urlopen('http://127.0.0.1:8080/ready', timeout=2).read()"]
+ ENTRYPOINT ["python3", "/opt/host-service/bootstrap.py"]
+ 
+-LABEL org.cardstashy.native-manifest-sha256="f0db7a7af0ade0fdb434424443cefa8bee2deaec927a4d640acd5cf40d5a5e99"
++LABEL org.cardstashy.native-manifest-sha256="62639e632e51c1d6cb272823f78daa594d3434140c6ce9ef34a6997eb68492f6"
+ 
+ LABEL org.cardstashy.native-ai-modified="true" \
+       org.cardstashy.native-ai-class-set-sha256="e39ea6388050f31319b121c0605fde23069d35e7133a203fd19f0a6c72528f80"
+diff --git a/experiments/forge-proof/combined-browser-proof/candidate/build-context/hosting/checkpoint-files.json b/experiments/forge-proof/combined-browser-proof/candidate/build-context/hosting/checkpoint-files.json
+index 623b568e..27cad4ac 100644
+--- a/experiments/forge-proof/combined-browser-proof/candidate/build-context/hosting/checkpoint-files.json
++++ b/experiments/forge-proof/combined-browser-proof/candidate/build-context/hosting/checkpoint-files.json
+@@ -1,7 +1,7 @@
+ {
+-  "checkpoint": "native-starting-player-manifest:f0db7a7af0ade0fdb434424443cefa8bee2deaec927a4d640acd5cf40d5a5e99",
++  "checkpoint": "native-starting-player-manifest:62639e632e51c1d6cb272823f78daa594d3434140c6ce9ef34a6997eb68492f6",
+   "forgeRevision": "e5a0f8156da70ffc7866f923bed371c0111707cd",
+-  "nativeManifestSha256": "f0db7a7af0ade0fdb434424443cefa8bee2deaec927a4d640acd5cf40d5a5e99",
++  "nativeManifestSha256": "62639e632e51c1d6cb272823f78daa594d3434140c6ce9ef34a6997eb68492f6",
+   "adapterCapabilities": [
+     "cardstashy.match-input.v1",
+     "cardstashy.formats-three.v1",
+@@ -23,7 +23,7 @@
+     "experiments/forge-proof/native/adapter/src/cardstashy/forge/BridgeContractChecks.java": "6dda6a3aafb5cd566f9f2fd7adb41f4fbd63f4912f7ca433af7c9f67d5228099",
+     "experiments/forge-proof/native/adapter/src/cardstashy/forge/BridgeNativeTerminalChecks.java": "0794ccfc0427bbc8abcf4eb3a22dc859dbf9ba00c086b39639ec960d687c7189",
+     "experiments/forge-proof/native/adapter/src/cardstashy/forge/BridgeSmartIntentChecks.java": "bb585915a54e79eec24907c5894e25474bfb3b581b03384d40302f5150c580d7",
+-    "experiments/forge-proof/native/adapter/src/cardstashy/forge/ForgeHttpBridge.java": "e216984fb60d2f450aef918475722bfd4d0afff83fe7010a3cbc2ee46bc18a49",
++    "experiments/forge-proof/native/adapter/src/cardstashy/forge/ForgeHttpBridge.java": "e83fa32c5695bdcce3367fc531346daecedcb796f3bc33ef58837d797490a0cb",
+     "experiments/forge-proof/native/adapter/src/cardstashy/forge/NativeAffordanceChecks.java": "9adf75a18c5453e929316af9a4e62612c64dda63b90de4796a31cbd56269a657",
+     "experiments/forge-proof/native/adapter/src/cardstashy/forge/NativeConcessionRaceChecks.java": "1df40584604936cecd83866786b7e2576be318017d98153091be26e2efac9cbb",
+     "experiments/forge-proof/native/adapter/src/cardstashy/forge/NativeCpuPolicyIntegration.java": "431c5370d9c96ef88caf8dc9ccfbedc9ee8be1302da137b4cf22c2d3104801d4",
+diff --git a/experiments/forge-proof/combined-browser-proof/candidate/build-context/native/adapter/src/cardstashy/forge/ForgeHttpBridge.java b/experiments/forge-proof/combined-browser-proof/candidate/build-context/native/adapter/src/cardstashy/forge/ForgeHttpBridge.java
+index 5a17b634..333a4fa7 100644
+--- a/experiments/forge-proof/combined-browser-proof/candidate/build-context/native/adapter/src/cardstashy/forge/ForgeHttpBridge.java
++++ b/experiments/forge-proof/combined-browser-proof/candidate/build-context/native/adapter/src/cardstashy/forge/ForgeHttpBridge.java
+@@ -351,6 +351,9 @@ public final class ForgeHttpBridge implements IRemote {
+         if(startingPlayer==null||event.firstTurn()==null||!pregame.isEmpty())return;
+         pregame=obj("schema","cardstashy.forge-pregame.v1","firstPlayerId",event.firstTurn().getId(),"selection",startingPlayer.selection(),"playStyle",startingPlayer.playStyle());
+         if(exactAdmission!=null)exactAdmission.receipt().put("pregame",pregame);
++        // A friend match: the seat not asked to act first gets no prompt to publish, so it would
++        // keep reporting "initializing" and the host never sees the table ready. Publish it now.
++        if(humanOpponent){refreshBoard();publish();}
+     }
+ 
+     @com.google.common.eventbus.Subscribe
+@@ -551,6 +554,9 @@ public final class ForgeHttpBridge implements IRemote {
+         // Reserve Smart payment before exposing this update to a concurrent HTTP reader.
+         // Publishing an enabled Auto button first creates a second, obsolete human action.
+         maybeNativeAutoPay();
++        // In a friend match nothing paces the other person's plays, so a board change is published
++        // as it arrives; otherwise this seat would show a stale board until its own next prompt.
++        if(humanOpponent&&(e.getMethod()==ProtocolMethod.setGameView||e.getMethod()==ProtocolMethod.applyDelta))publish();
+         if(e.getMethod()==ProtocolMethod.setSelection || e.getMethod()==ProtocolMethod.updateButtons || e.getMethod()==ProtocolMethod.showPromptMessage || e.getMethod()==ProtocolMethod.flashIncorrectAction || e.getMethod()==ProtocolMethod.message || e.getMethod()==ProtocolMethod.showErrorDialog) publish();
+         }
+     }
+diff --git a/experiments/forge-proof/combined-browser-proof/candidate/native/SHA256SUMS b/experiments/forge-proof/combined-browser-proof/candidate/native/SHA256SUMS
+index 395ecbc5..094f39e6 100644
+--- a/experiments/forge-proof/combined-browser-proof/candidate/native/SHA256SUMS
++++ b/experiments/forge-proof/combined-browser-proof/candidate/native/SHA256SUMS
+@@ -9,7 +9,7 @@ abb3a884dff038fb6e51e3414bb91a680d072b886c3ddc3137172145ed703a52  ./PROVENANCE.m
+ 6dda6a3aafb5cd566f9f2fd7adb41f4fbd63f4912f7ca433af7c9f67d5228099  ./adapter/src/cardstashy/forge/BridgeContractChecks.java
+ 0794ccfc0427bbc8abcf4eb3a22dc859dbf9ba00c086b39639ec960d687c7189  ./adapter/src/cardstashy/forge/BridgeNativeTerminalChecks.java
+ bb585915a54e79eec24907c5894e25474bfb3b581b03384d40302f5150c580d7  ./adapter/src/cardstashy/forge/BridgeSmartIntentChecks.java
+-e216984fb60d2f450aef918475722bfd4d0afff83fe7010a3cbc2ee46bc18a49  ./adapter/src/cardstashy/forge/ForgeHttpBridge.java
++e83fa32c5695bdcce3367fc531346daecedcb796f3bc33ef58837d797490a0cb  ./adapter/src/cardstashy/forge/ForgeHttpBridge.java
+ 9adf75a18c5453e929316af9a4e62612c64dda63b90de4796a31cbd56269a657  ./adapter/src/cardstashy/forge/NativeAffordanceChecks.java
+ 1df40584604936cecd83866786b7e2576be318017d98153091be26e2efac9cbb  ./adapter/src/cardstashy/forge/NativeConcessionRaceChecks.java
+ 431c5370d9c96ef88caf8dc9ccfbedc9ee8be1302da137b4cf22c2d3104801d4  ./adapter/src/cardstashy/forge/NativeCpuPolicyIntegration.java
+diff --git a/experiments/forge-proof/combined-browser-proof/candidate/native/adapter/src/cardstashy/forge/ForgeHttpBridge.java b/experiments/forge-proof/combined-browser-proof/candidate/native/adapter/src/cardstashy/forge/ForgeHttpBridge.java
+index 5a17b634..333a4fa7 100644
+--- a/experiments/forge-proof/combined-browser-proof/candidate/native/adapter/src/cardstashy/forge/ForgeHttpBridge.java
++++ b/experiments/forge-proof/combined-browser-proof/candidate/native/adapter/src/cardstashy/forge/ForgeHttpBridge.java
+@@ -351,6 +351,9 @@ public final class ForgeHttpBridge implements IRemote {
+         if(startingPlayer==null||event.firstTurn()==null||!pregame.isEmpty())return;
+         pregame=obj("schema","cardstashy.forge-pregame.v1","firstPlayerId",event.firstTurn().getId(),"selection",startingPlayer.selection(),"playStyle",startingPlayer.playStyle());
+         if(exactAdmission!=null)exactAdmission.receipt().put("pregame",pregame);
++        // A friend match: the seat not asked to act first gets no prompt to publish, so it would
++        // keep reporting "initializing" and the host never sees the table ready. Publish it now.
++        if(humanOpponent){refreshBoard();publish();}
+     }
+ 
+     @com.google.common.eventbus.Subscribe
+@@ -551,6 +554,9 @@ public final class ForgeHttpBridge implements IRemote {
+         // Reserve Smart payment before exposing this update to a concurrent HTTP reader.
+         // Publishing an enabled Auto button first creates a second, obsolete human action.
+         maybeNativeAutoPay();
++        // In a friend match nothing paces the other person's plays, so a board change is published
++        // as it arrives; otherwise this seat would show a stale board until its own next prompt.
++        if(humanOpponent&&(e.getMethod()==ProtocolMethod.setGameView||e.getMethod()==ProtocolMethod.applyDelta))publish();
+         if(e.getMethod()==ProtocolMethod.setSelection || e.getMethod()==ProtocolMethod.updateButtons || e.getMethod()==ProtocolMethod.showPromptMessage || e.getMethod()==ProtocolMethod.flashIncorrectAction || e.getMethod()==ProtocolMethod.message || e.getMethod()==ProtocolMethod.showErrorDialog) publish();
+         }
+     }
+diff --git a/experiments/forge-proof/combined-browser-proof/harness/MANIFEST.json b/experiments/forge-proof/combined-browser-proof/harness/MANIFEST.json
+index fc0d8f2a..f93127ab 100644
+--- a/experiments/forge-proof/combined-browser-proof/harness/MANIFEST.json
++++ b/experiments/forge-proof/combined-browser-proof/harness/MANIFEST.json
+@@ -91,7 +91,7 @@
+     {
+       "path": "cleanup-image.mjs",
+       "bytes": 2967,
+-      "sha256": "cb1b845e85406bd5f7499f470cf9dbec48182d099f3f93b80c020a7942b80f91"
++      "sha256": "614e2d459c1c65eecc5b0a66c5dacc32e1a4432c4838dea5b1d59cd84b8c287d"
+     },
+     {
+       "path": "cleanup-preflight.py",
+@@ -101,7 +101,7 @@
+     {
+       "path": "collect-combined.py",
+       "bytes": 10399,
+-      "sha256": "2dc0057e58f376fff5ae1dd44872ff50508230c348b19a44ef76fed919276334"
++      "sha256": "6522c029b7224117ce0990ad364767c911ff3268d489755ad44f419f43d0ba48"
+     },
+     {
+       "path": "combined-driver.patch",
+@@ -111,7 +111,7 @@
+     {
+       "path": "composition-contract.json",
+       "bytes": 5606,
+-      "sha256": "199e589d1ebec0ed5ac9e0c8730ff986401c87901c7238395f2b653255d59463"
++      "sha256": "48f45995f9b9ca20853a2347df240202635ce43f87b75b758bd25632ef1b9fdb"
+     },
+     {
+       "path": "evidence/ci-40318684639/artifact/image-summary.json",
+@@ -371,7 +371,7 @@
+     {
+       "path": "fixture-server.mjs",
+       "bytes": 12720,
+-      "sha256": "4570ecd04cde53c96ca0659bd1423d16634918da69324d15af4d759a91937729"
++      "sha256": "3a051edfea4c5297ab0c54ccfbd204b0e4a9eee1059c06700457a9fa77b173a8"
+     },
+     {
+       "path": "fixture-storage.mjs",
+@@ -431,7 +431,7 @@
+     {
+       "path": "image-stages/MANIFEST.json",
+       "bytes": 5201,
+-      "sha256": "c8ef91039de7c383c4d1eceb29a4f72f2f578f0fc613d5fb7b608d7de5b1b0f4"
++      "sha256": "5437afb8e60eddc085764266c732de55a5cc324c7c8b997da122cf8af1b926db"
+     },
+     {
+       "path": "image-stages/README.md",
+@@ -441,7 +441,7 @@
+     {
+       "path": "image-stages/SHA256SUMS",
+       "bytes": 1550,
+-      "sha256": "40597d18b84a4a2fc9a580fe257214cd73a39c84f0774107abc4433bbb37350c"
++      "sha256": "970d3b38b7299e832af342b33622606ef48d47b5ccb6542e1bd249f23567bf73"
+     },
+     {
+       "path": "image-stages/build-and-probe.mjs",
+@@ -481,7 +481,7 @@
+     {
+       "path": "image-stages/pins.mjs",
+       "bytes": 1210,
+-      "sha256": "38df74af41e5ce16bcb2d2378b7a3ae086f9ce12c4a86602970913306d63661e"
++      "sha256": "5f912e7fb42529d3b5e1aa95d5cb58167724c6f1af826760603033ff642bc5a4"
+     },
+     {
+       "path": "image-stages/probe-image.mjs",
+@@ -631,7 +631,7 @@
+     {
+       "path": "run-case.sh",
+       "bytes": 3747,
+-      "sha256": "a461e33908f9fe4ab919b4373f53f01102f55e4038dea97dd1b7b7122b67e84a"
++      "sha256": "8f724a29e6fa604ad2c6116c6f46a5a266e2721f0cec0c4c668df8f751fc3262"
+     },
+     {
+       "path": "run-cleanup-preflight.sh",
+@@ -666,12 +666,12 @@
+     {
+       "path": "test-cleanup-image.mjs",
+       "bytes": 3614,
+-      "sha256": "1d8130f610dc5c854972d5ea4fa3c9d6dbce701a5d610e69d2483bab27909ed3"
++      "sha256": "ecd676bb5c24e43fd9565878e805f00653cea1dddbd0892c2da1c6c098b87109"
+     },
+     {
+       "path": "test-collector.py",
+       "bytes": 6328,
+-      "sha256": "d25478278484d0c057770c51d5ef9a80303251222900888d108b180a0c393a7e"
++      "sha256": "962f41414d034c5615b173a228fb692bda98f322e650402c65fd65514bcd5a01"
+     },
+     {
+       "path": "test-delivered-observer.mjs",
+@@ -736,7 +736,7 @@
+     {
+       "path": "verify-inputs.py",
+       "bytes": 4235,
+-      "sha256": "3a65f47414eb16ee7b454fac132a04963e7f77d903e11ccb35c9196494ec0399"
++      "sha256": "b2134a47e325de62b69040ed33dc3c92dc49d2f108c77390d1a05cc37d18b67d"
+     }
+   ],
+   "parentCommit": "ca3c506ffafc46adcb81c08e3bab8cad6b9c3c70",
+diff --git a/experiments/forge-proof/combined-browser-proof/harness/cleanup-image.mjs b/experiments/forge-proof/combined-browser-proof/harness/cleanup-image.mjs
+index 476c38d2..7a0ad84c 100644
+--- a/experiments/forge-proof/combined-browser-proof/harness/cleanup-image.mjs
++++ b/experiments/forge-proof/combined-browser-proof/harness/cleanup-image.mjs
+@@ -2,7 +2,7 @@
+ import assert from 'node:assert/strict';import {lstat,readFile} from 'node:fs/promises';import path from 'node:path';import {pathToFileURL} from 'node:url';
+ import {command} from './image-stages/command.mjs';
+ import {readImageOwnershipLedger,assertImageOwnership} from './image-stages/image-ownership.mjs';
+-const SOURCE='e216984fb60d2f450aef918475722bfd4d0afff83fe7010a3cbc2ee46bc18a49',MANIFEST='f0db7a7af0ade0fdb434424443cefa8bee2deaec927a4d640acd5cf40d5a5e99';
++const SOURCE='e83fa32c5695bdcce3367fc531346daecedcb796f3bc33ef58837d797490a0cb',MANIFEST='62639e632e51c1d6cb272823f78daa594d3434140c6ce9ef34a6997eb68492f6';
+ export async function cleanupImage(root,{run=command}={}){
+  const deadline=Date.now()+12000,signal=AbortSignal.timeout(12000);
+  const boundedRun=(args,maxOutputBytes)=>{const left=deadline-Date.now();assert(left>0,'Image cleanup deadline');return run('docker',args,{timeoutMs:Math.min(3500,left),signal,maxOutputBytes});};
+diff --git a/experiments/forge-proof/combined-browser-proof/harness/collect-combined.py b/experiments/forge-proof/combined-browser-proof/harness/collect-combined.py
+index 92d217a8..9205ed8a 100644
+--- a/experiments/forge-proof/combined-browser-proof/harness/collect-combined.py
++++ b/experiments/forge-proof/combined-browser-proof/harness/collect-combined.py
+@@ -72,13 +72,13 @@ if probe:
+  cp['cleanup']['status']='exited' if life.get('status')=='exited' else 'unconfirmed'
+  cp['cleanup']['oomKilled']=life.get('oomKilled') is not False
+ same_image=ci.get('result')==cp.get('result')=='passed' and image_id(ci.get('imageId')) and ci.get('imageId')==cp.get('sameImageId') and image_id(ci.get('ociManifestDigest')) and ci['ociManifestDigest']==cp.get('ociManifestDigest')
+-expected_source='e216984fb60d2f450aef918475722bfd4d0afff83fe7010a3cbc2ee46bc18a49'
+-expected_manifest='f0db7a7af0ade0fdb434424443cefa8bee2deaec927a4d640acd5cf40d5a5e99'
++expected_source='e83fa32c5695bdcce3367fc531346daecedcb796f3bc33ef58837d797490a0cb'
++expected_manifest='62639e632e51c1d6cb272823f78daa594d3434140c6ce9ef34a6997eb68492f6'
+ asserted_runtime={'humanPrioritySourceSha256':'23b9220fb5fe8646ab3784a2e19c6c43d968dabed719bc8c59c88f00cc26350c','humanPriorityClassesSha256':'61ad2c7b314ce2d091f96f1fb89dfffc1e7c6634058a019e49978904b660570e','runtimeClassSetSha256':'e39ea6388050f31319b121c0605fde23069d35e7133a203fd19f0a6c72528f80','aiPatchsetSha256':'cd14c95185c4bfd44e90a809a6095f2027f23d102c1cf04464533ca545a0a4b1','selectedProfileSHA256':'d77ec318868fcdb8fe1dce8d8c2df336fe26d54e13b51f7aab13d259bdf70330','rulesManifestSHA256':'552a8898cd563f7478b572283e006fda1d44a5da6bc0fb53fc78ffb53b1f01dd'}
+ required_digest_fields=['humanPrioritySourceSha256','humanPriorityClassesSha256','humanPriorityBuildSha256','nativeBuildAttestationSha256','runtimeClassSetSha256','aiPatchsetSha256','selectedProfileSHA256','rulesManifestSHA256','humanDigest','opponentDigest']
+ valid_probe=same_image and ci.get('nativeSourceSHA256')==cp.get('sourceSHA256')==expected_source and ci.get('nativeManifestSHA256')==cp.get('nativeManifestSHA256')==expected_manifest and all(sha(cp.get(k)) for k in required_digest_fields) and cp.get('policyVersion')=='forge-heuristic-medium-beta-v1' and cp.get('buildCompilerVersion') and cp.get('runtimeJavaVersion') and all(cp.get(k) is True for k in ['exactRosterVerified','cpuRulesRuntimeVerified','humanPriorityRuntimeVerified','privacyGatePassed','registeredRosterVerified','nativeRosterVerified'])
+ life=cp.get('cleanup',{})
+-valid_probe=bool(valid_probe and all(cp.get(k)==v for k,v in asserted_runtime.items()) and ci.get('contextManifestSHA256')=='41e9b4c0ecc267fc95a81fdcfe789686d67c78731e3ad5e3336d9dc86ce9c6e8' and ci.get('buildImage') and ci.get('runtimeImage') and life.get('confirmed') and life.get('privateInputRemoved') and life.get('removed') and life.get('forced') is False and life.get('starts')==life.get('destroys')==1 and life.get('status')=='exited' and life.get('exitCode')==0 and life.get('oomKilled') is False)
++valid_probe=bool(valid_probe and all(cp.get(k)==v for k,v in asserted_runtime.items()) and ci.get('contextManifestSHA256')=='a90010c1321cb5cd95cc5099c5e0964d8cd5249fa9cef64b36447fd2aff218b0' and ci.get('buildImage') and ci.get('runtimeImage') and life.get('confirmed') and life.get('privateInputRemoved') and life.get('removed') and life.get('forced') is False and life.get('starts')==life.get('destroys')==1 and life.get('status')=='exited' and life.get('exitCode')==0 and life.get('oomKilled') is False)
+ browser_same_image=True
+ for name in ['desktop','touch750']:
+  p=out/name/'summary.json'
+diff --git a/experiments/forge-proof/combined-browser-proof/harness/composition-contract.json b/experiments/forge-proof/combined-browser-proof/harness/composition-contract.json
+index c973cf5f..035b9e4e 100644
+--- a/experiments/forge-proof/combined-browser-proof/harness/composition-contract.json
++++ b/experiments/forge-proof/combined-browser-proof/harness/composition-contract.json
+@@ -8,18 +8,18 @@
+   "productionReleasePolicy": null,
+   "sourceIdentity": {
+     "forgeRevision": "e5a0f8156da70ffc7866f923bed371c0111707cd",
+-    "nativeSourceSHA256": "e216984fb60d2f450aef918475722bfd4d0afff83fe7010a3cbc2ee46bc18a49",
++    "nativeSourceSHA256": "e83fa32c5695bdcce3367fc531346daecedcb796f3bc33ef58837d797490a0cb",
+     "difficultyPolicyVersion": "forge-heuristic-medium-beta-v1",
+     "imageBuiltOrDeployedByThisPackage": false
+   },
+   "inputs": {
+     "nativeDescendantManifest": {
+       "path": "${CANDIDATE}/native/SHA256SUMS",
+-      "sha256": "f0db7a7af0ade0fdb434424443cefa8bee2deaec927a4d640acd5cf40d5a5e99"
++      "sha256": "62639e632e51c1d6cb272823f78daa594d3434140c6ce9ef34a6997eb68492f6"
+     },
+     "nativeBridge": {
+       "path": "${CANDIDATE}/native/adapter/src/cardstashy/forge/ForgeHttpBridge.java",
+-      "sha256": "e216984fb60d2f450aef918475722bfd4d0afff83fe7010a3cbc2ee46bc18a49"
++      "sha256": "e83fa32c5695bdcce3367fc531346daecedcb796f3bc33ef58837d797490a0cb"
+     },
+     "hostManifest": {
+       "path": "${CANDIDATE}/HOST-SHA256.json",
+@@ -27,7 +27,7 @@
+     },
+     "hostContextManifest": {
+       "path": "${CANDIDATE}/build-context/CONTEXT-SHA256.json",
+-      "sha256": "41e9b4c0ecc267fc95a81fdcfe789686d67c78731e3ad5e3336d9dc86ce9c6e8"
++      "sha256": "a90010c1321cb5cd95cc5099c5e0964d8cd5249fa9cef64b36447fd2aff218b0"
+     },
+     "uiManifest": {
+       "path": "${CANDIDATE}/UI-SHA256.json",
+@@ -59,7 +59,7 @@
+     },
+     "fixtureServer": {
+       "path": "${PACKAGE}/fixture-server.mjs",
+-      "sha256": "4570ecd04cde53c96ca0659bd1423d16634918da69324d15af4d759a91937729"
++      "sha256": "3a051edfea4c5297ab0c54ccfbd204b0e4a9eee1059c06700457a9fa77b173a8"
+     },
+     "browserDriver": {
+       "path": "${PACKAGE}/browser-journey.mjs",
+@@ -91,7 +91,7 @@
+     },
+     "imageStagesManifest": {
+       "path": "${PACKAGE}/image-stages/MANIFEST.json",
+-      "sha256": "c8ef91039de7c383c4d1eceb29a4f72f2f578f0fc613d5fb7b608d7de5b1b0f4"
++      "sha256": "5437afb8e60eddc085764266c732de55a5cc324c7c8b997da122cf8af1b926db"
+     },
+     "runtimeUISubset": {
+       "path": "${CANDIDATE}/UI-RUNTIME-SHA256.json",
+diff --git a/experiments/forge-proof/combined-browser-proof/harness/fixture-server.mjs b/experiments/forge-proof/combined-browser-proof/harness/fixture-server.mjs
+index 333709b3..2bfcc802 100644
+--- a/experiments/forge-proof/combined-browser-proof/harness/fixture-server.mjs
++++ b/experiments/forge-proof/combined-browser-proof/harness/fixture-server.mjs
+@@ -19,7 +19,7 @@ const OWNER = '00000000-0000-4000-8000-000000000001';
+ const BEARER = 'forge-browser-fixture-owner'; // synthetic test credential ONLY
+ const observations = new FixtureObservationCache({ bearer: BEARER });
+ const actionReceipts = new FixtureReceiptCache({ bearer: BEARER, viewerObservations: observations });
+-const SOURCE_SHA='e216984fb60d2f450aef918475722bfd4d0afff83fe7010a3cbc2ee46bc18a49';
++const SOURCE_SHA='e83fa32c5695bdcce3367fc531346daecedcb796f3bc33ef58837d797490a0cb';
+ const HOST_MANIFEST_SHA='7d827853c1aaa1e8f053d312faf57f8580154f30a8e5c56fed586a3e09c40eba';
+ const args = {};
+ for (let i = 2; i < process.argv.length; i += 2) {
+diff --git a/experiments/forge-proof/combined-browser-proof/harness/image-stages/MANIFEST.json b/experiments/forge-proof/combined-browser-proof/harness/image-stages/MANIFEST.json
+index dcc58d8b..30438348 100644
+--- a/experiments/forge-proof/combined-browser-proof/harness/image-stages/MANIFEST.json
++++ b/experiments/forge-proof/combined-browser-proof/harness/image-stages/MANIFEST.json
+@@ -11,7 +11,7 @@
+     },
+     "SHA256SUMS": {
+       "bytes": 1550,
+-      "sha256": "40597d18b84a4a2fc9a580fe257214cd73a39c84f0774107abc4433bbb37350c"
++      "sha256": "970d3b38b7299e832af342b33622606ef48d47b5ccb6542e1bd249f23567bf73"
+     },
+     "build-and-probe.mjs": {
+       "bytes": 10849,
+@@ -43,7 +43,7 @@
+     },
+     "pins.mjs": {
+       "bytes": 1210,
+-      "sha256": "38df74af41e5ce16bcb2d2378b7a3ae086f9ce12c4a86602970913306d63661e"
++      "sha256": "5f912e7fb42529d3b5e1aa95d5cb58167724c6f1af826760603033ff642bc5a4"
+     },
+     "probe-image.mjs": {
+       "bytes": 9828,
+@@ -80,9 +80,9 @@
+   },
+   "dependencies": {
+     "candidate": "experiments/forge-proof/combined-browser-proof/candidate",
+-    "nativeManifestSha256": "f0db7a7af0ade0fdb434424443cefa8bee2deaec927a4d640acd5cf40d5a5e99",
++    "nativeManifestSha256": "62639e632e51c1d6cb272823f78daa594d3434140c6ce9ef34a6997eb68492f6",
+     "hostManifestSha256": "7d827853c1aaa1e8f053d312faf57f8580154f30a8e5c56fed586a3e09c40eba",
+-    "contextManifestSha256": "41e9b4c0ecc267fc95a81fdcfe789686d67c78731e3ad5e3336d9dc86ce9c6e8",
++    "contextManifestSha256": "a90010c1321cb5cd95cc5099c5e0964d8cd5249fa9cef64b36447fd2aff218b0",
+     "localOciManifestSha256": "611c3db2eb175e94ac85a69951422ad7bdc30397a5ce565da780dd717854eb81"
+   },
+   "budgetsSeconds": {
+diff --git a/experiments/forge-proof/combined-browser-proof/harness/image-stages/SHA256SUMS b/experiments/forge-proof/combined-browser-proof/harness/image-stages/SHA256SUMS
+index 194553d9..fc7567e1 100644
+--- a/experiments/forge-proof/combined-browser-proof/harness/image-stages/SHA256SUMS
++++ b/experiments/forge-proof/combined-browser-proof/harness/image-stages/SHA256SUMS
+@@ -7,7 +7,7 @@ e4a0316f15c64e2d1612f1523942826d3c3fd93b2708d1eed4be1815fe85b19b  export-docker-
+ 30422efe1bd581d0cfec1b3e82b1dce623b80f5242e24dd79cdbd062ea69e779  human-priority-contract.mjs
+ 8d9435446df65ca3cdfd6f85576d7de0c117f42d4b6579f985ba5cf6e39ffba3  image-ownership.mjs
+ 820cdee888b79cec9cb3a38e6b97a30fa3e165a561e605569c6617e9a28f35af  load-evidence.mjs
+-38df74af41e5ce16bcb2d2378b7a3ae086f9ce12c4a86602970913306d63661e  pins.mjs
++5f912e7fb42529d3b5e1aa95d5cb58167724c6f1af826760603033ff642bc5a4  pins.mjs
+ 433703db5db449d4d9167433f04b8f0a59e19e35d43866cc6442ea3c4372439e  probe-image.mjs
+ 0094fd7d98f1265d10c1fa2ceba11fff431657c8a62da9c46c217e0817557608  public-input.mjs
+ 518eb177619bfb7ebac3330f69f280a59e0066313befb1e1373db50090983c00  starting-player-contract.mjs
+diff --git a/experiments/forge-proof/combined-browser-proof/harness/image-stages/pins.mjs b/experiments/forge-proof/combined-browser-proof/harness/image-stages/pins.mjs
+index ae4bdcbd..731ac17a 100644
+--- a/experiments/forge-proof/combined-browser-proof/harness/image-stages/pins.mjs
++++ b/experiments/forge-proof/combined-browser-proof/harness/image-stages/pins.mjs
+@@ -1,5 +1,5 @@
+ export const SCOPE='LOCAL_TEST_NOT_DEPLOYABLE';
+-export const PINS=Object.freeze({nativeManifestSha256:'f0db7a7af0ade0fdb434424443cefa8bee2deaec927a4d640acd5cf40d5a5e99',nativeSourceSha256:'e216984fb60d2f450aef918475722bfd4d0afff83fe7010a3cbc2ee46bc18a49',hostManifestSha256:'7d827853c1aaa1e8f053d312faf57f8580154f30a8e5c56fed586a3e09c40eba',contextManifestSha256:'41e9b4c0ecc267fc95a81fdcfe789686d67c78731e3ad5e3336d9dc86ce9c6e8',forgeRevision:'e5a0f8156da70ffc7866f923bed371c0111707cd',policyVersion:'forge-heuristic-medium-beta-v1',humanDeckSha256:'858b8e6127d3749aeb8f57124246ef30a35ea390d2a758c9eefa9b76a53d72b8',opponentDeckSha256:'7f6d2f7dc9b86b794c2a7fa1f3f7842265e095744deb7ad25f9f04a55c7fab4c'});
++export const PINS=Object.freeze({nativeManifestSha256:'62639e632e51c1d6cb272823f78daa594d3434140c6ce9ef34a6997eb68492f6',nativeSourceSha256:'e83fa32c5695bdcce3367fc531346daecedcb796f3bc33ef58837d797490a0cb',hostManifestSha256:'7d827853c1aaa1e8f053d312faf57f8580154f30a8e5c56fed586a3e09c40eba',contextManifestSha256:'a90010c1321cb5cd95cc5099c5e0964d8cd5249fa9cef64b36447fd2aff218b0',forgeRevision:'e5a0f8156da70ffc7866f923bed371c0111707cd',policyVersion:'forge-heuristic-medium-beta-v1',humanDeckSha256:'858b8e6127d3749aeb8f57124246ef30a35ea390d2a758c9eefa9b76a53d72b8',opponentDeckSha256:'7f6d2f7dc9b86b794c2a7fa1f3f7842265e095744deb7ad25f9f04a55c7fab4c'});
+ export const BUILD_IMAGE='maven:3.9.11-eclipse-temurin-21@sha256:463a1849665463254b2dd56e3a5b316f1596bc93d0571065c06ea05bb48ab8f4';
+ export const RUNTIME_IMAGE='eclipse-temurin:21-jre-jammy@sha256:8ecbec1f32912979c15b86aaf98f7082a77d318a7f92af3d9fe2c0fd2723df10';
+ export const IMAGE_INSPECT_FORMAT='{"Id":{{json .Id}},"Os":{{json .Os}},"Architecture":{{json .Architecture}},"RootFS":{{json .RootFS}},"Size":{{json .Size}},"JobNonce":{{json (index .Config.Labels "io.cardstashy.local-test.job-nonce")}}}';
+diff --git a/experiments/forge-proof/combined-browser-proof/harness/run-case.sh b/experiments/forge-proof/combined-browser-proof/harness/run-case.sh
+index 2a03cd7a..b9b19c47 100644
+--- a/experiments/forge-proof/combined-browser-proof/harness/run-case.sh
++++ b/experiments/forge-proof/combined-browser-proof/harness/run-case.sh
+@@ -58,7 +58,7 @@ PY
+ export FORGE_BROWSER_OUT="$OUT" FORGE_BROWSER_CASE=saved-keen FORGE_TEST_CAST=true FORGE_FULL_JOURNEY="$full"
+ export FORGE_TOUCH=false FORGE_WIDTH=1440 FORGE_HEIGHT=1000
+ export FORGE_EXPECTED_POLICY_VERSION=forge-heuristic-medium-beta-v1
+-export FORGE_EXPECTED_SOURCE_SHA256=e216984fb60d2f450aef918475722bfd4d0afff83fe7010a3cbc2ee46bc18a49
++export FORGE_EXPECTED_SOURCE_SHA256=e83fa32c5695bdcce3367fc531346daecedcb796f3bc33ef58837d797490a0cb
+ if [[ "$name" == touch750 ]];then export FORGE_TOUCH=true FORGE_WIDTH=750 FORGE_HEIGHT=832;fi
+ set +e
+ node "$HERE/browser-journey.mjs" > "$OUT/private-browser.log" 2>&1
+diff --git a/experiments/forge-proof/combined-browser-proof/harness/test-cleanup-image.mjs b/experiments/forge-proof/combined-browser-proof/harness/test-cleanup-image.mjs
+index 3fb7d5e7..38375280 100644
+--- a/experiments/forge-proof/combined-browser-proof/harness/test-cleanup-image.mjs
++++ b/experiments/forge-proof/combined-browser-proof/harness/test-cleanup-image.mjs
+@@ -1,5 +1,5 @@
+ import test from 'node:test';import assert from 'node:assert/strict';import {mkdtemp,writeFile,rm}from 'node:fs/promises';import {tmpdir}from 'node:os';import path from 'node:path';import {cleanupImage}from './cleanup-image.mjs';import {createImageOwnershipLedger}from './image-stages/image-ownership.mjs';
+-const id='sha256:'+'b'.repeat(64),SOURCE='e216984fb60d2f450aef918475722bfd4d0afff83fe7010a3cbc2ee46bc18a49',MANIFEST='f0db7a7af0ade0fdb434424443cefa8bee2deaec927a4d640acd5cf40d5a5e99';
++const id='sha256:'+'b'.repeat(64),SOURCE='e83fa32c5695bdcce3367fc531346daecedcb796f3bc33ef58837d797490a0cb',MANIFEST='62639e632e51c1d6cb272823f78daa594d3434140c6ce9ef34a6997eb68492f6';
+ async function fixture(fn){const root=await mkdtemp(path.join(tmpdir(),'image-cleanup-test-'));try{await fn(root);}finally{await rm(root,{recursive:true,force:true});}}
+ test('no build started permits empty cleanup',()=>fixture(async root=>assert.deepEqual(await cleanupImage(root),{confirmed:true,createdImage:false})));
+ test('prebuild ledger but missing ID is unresolved daemon outcome',()=>fixture(async root=>{await createImageOwnershipLedger(root);const r=await cleanupImage(root,{run:()=>{throw Error('must not guess');}});assert.equal(r.confirmed,false);assert.equal(r.buildOutcome,'uncertain');}));
+diff --git a/experiments/forge-proof/combined-browser-proof/harness/test-collector.py b/experiments/forge-proof/combined-browser-proof/harness/test-collector.py
+index 451ec598..ecf50126 100644
+--- a/experiments/forge-proof/combined-browser-proof/harness/test-collector.py
++++ b/experiments/forge-proof/combined-browser-proof/harness/test-collector.py
+@@ -3,7 +3,7 @@
+ import importlib.util,json,pathlib,subprocess,tempfile,unittest
+ HERE=pathlib.Path(__file__).resolve().parent
+ spec=importlib.util.spec_from_file_location('artifact_test',HERE/'test-artifacts.py');m=importlib.util.module_from_spec(spec);spec.loader.exec_module(m)
+-S='e216984fb60d2f450aef918475722bfd4d0afff83fe7010a3cbc2ee46bc18a49';M='f0db7a7af0ade0fdb434424443cefa8bee2deaec927a4d640acd5cf40d5a5e99'
++S='e83fa32c5695bdcce3367fc531346daecedcb796f3bc33ef58837d797490a0cb';M='62639e632e51c1d6cb272823f78daa594d3434140c6ce9ef34a6997eb68492f6'
+ class Collector(unittest.TestCase):
+  def run_fixture(self,alter=lambda image,probe:None,preflight_ok=True,source_stage='complete',cleanup_parts=None):
+   with tempfile.TemporaryDirectory(prefix='combined-collector-test-') as tmp:
+@@ -17,7 +17,7 @@ class Collector(unittest.TestCase):
+     (p/'summary.json').write_text(json.dumps(d));(p/'lifecycle.json').write_text(json.dumps(m.lifecycle(n)))
+     for png in ['setup.png','opening.png','resolved.png','complete.png']+(['terminal.png'] if n==2 else []):(p/png).write_bytes(m.PNG)
+    common={'scope':'LOCAL_TEST_NOT_DEPLOYABLE','deployable':False,'registryPublication':False,'result':'passed','ociManifestDigest':'sha256:'+'2'*64,'rawState':m.CANARY,'token':m.CANARY}
+-   image={**common,'schema':'cardstashy.local-oci-build-summary.v1','contextManifestSHA256':'41e9b4c0ecc267fc95a81fdcfe789686d67c78731e3ad5e3336d9dc86ce9c6e8','buildImage':'maven:3.9.11-eclipse-temurin-21@sha256:463a1849665463254b2dd56e3a5b316f1596bc93d0571065c06ea05bb48ab8f4','runtimeImage':'eclipse-temurin:21-jre-jammy@sha256:8ecbec1f32912979c15b86aaf98f7082a77d318a7f92af3d9fe2c0fd2723df10','imageId':'sha256:'+'1'*64,'nativeSourceSHA256':S,'nativeManifestSHA256':M}
++   image={**common,'schema':'cardstashy.local-oci-build-summary.v1','contextManifestSHA256':'a90010c1321cb5cd95cc5099c5e0964d8cd5249fa9cef64b36447fd2aff218b0','buildImage':'maven:3.9.11-eclipse-temurin-21@sha256:463a1849665463254b2dd56e3a5b316f1596bc93d0571065c06ea05bb48ab8f4','runtimeImage':'eclipse-temurin:21-jre-jammy@sha256:8ecbec1f32912979c15b86aaf98f7082a77d318a7f92af3d9fe2c0fd2723df10','imageId':'sha256:'+'1'*64,'nativeSourceSHA256':S,'nativeManifestSHA256':M}
+    probe={**common,'schema':'cardstashy.local-oci-probe-summary.v1','sameImageId':image['imageId'],'sourceSHA256':S,'nativeManifestSHA256':M,'policyVersion':'forge-heuristic-medium-beta-v1','buildCompilerVersion':'javac 21.0.9','runtimeJavaVersion':'21.0.9+10',**{k:'3'*64 for k in ['nativeBuildAttestationSha256','runtimeClassSetSha256','aiPatchsetSha256','selectedProfileSHA256','rulesManifestSHA256','humanDigest','opponentDigest']},**{k:True for k in ['exactRosterVerified','cpuRulesRuntimeVerified','privacyGatePassed','registeredRosterVerified','nativeRosterVerified']},'cleanup':{'confirmed':True,'privateInputRemoved':True,'removed':True,'forced':False,'starts':1,'destroys':1,'exitCode':0,'status':'exited','oomKilled':False,'rawEnv':m.CANARY}}
+    probe.update(runtimeClassSetSha256='e39ea6388050f31319b121c0605fde23069d35e7133a203fd19f0a6c72528f80',aiPatchsetSha256='cd14c95185c4bfd44e90a809a6095f2027f23d102c1cf04464533ca545a0a4b1',selectedProfileSHA256='d77ec318868fcdb8fe1dce8d8c2df336fe26d54e13b51f7aab13d259bdf70330',rulesManifestSHA256='552a8898cd563f7478b572283e006fda1d44a5da6bc0fb53fc78ffb53b1f01dd')
+    probe.update(humanPriorityRuntimeVerified=True,humanPrioritySourceSha256='23b9220fb5fe8646ab3784a2e19c6c43d968dabed719bc8c59c88f00cc26350c',humanPriorityClassesSha256='61ad2c7b314ce2d091f96f1fb89dfffc1e7c6634058a019e49978904b660570e',humanPriorityBuildSha256='8'*64)
+diff --git a/experiments/forge-proof/combined-browser-proof/harness/verify-inputs.py b/experiments/forge-proof/combined-browser-proof/harness/verify-inputs.py
+index c80da956..09bc8d43 100644
+--- a/experiments/forge-proof/combined-browser-proof/harness/verify-inputs.py
++++ b/experiments/forge-proof/combined-browser-proof/harness/verify-inputs.py
+@@ -49,7 +49,7 @@ for record in m['files']:
+  p=HERE/record['path'];assert p.is_file() and not p.is_symlink() and p.resolve().is_relative_to(HERE)
+  assert len(p.read_bytes())==record['bytes'] and hashlib.sha256(p.read_bytes()).hexdigest()==record['sha256'],record['path']+' package hash mismatch'
+ assert c['sourceIdentity']['forgeRevision']=='e5a0f8156da70ffc7866f923bed371c0111707cd'
+-assert c['sourceIdentity']['nativeSourceSHA256']=='e216984fb60d2f450aef918475722bfd4d0afff83fe7010a3cbc2ee46bc18a49'
++assert c['sourceIdentity']['nativeSourceSHA256']=='e83fa32c5695bdcce3367fc531346daecedcb796f3bc33ef58837d797490a0cb'
+ assert c['sourceIdentity']['difficultyPolicyVersion']=='forge-heuristic-medium-beta-v1'
+ assert c['localImageScope']=='LOCAL_TEST_NOT_DEPLOYABLE' and c['productionReleasePolicy'] is None
+ print(json.dumps({'inputsVerified':len(c['inputs']),'packageFilesVerified':len(m['files']),'candidateRoot':str(candidate),'publicationAuthorized':False,'runAuthorized':False,'productionReleaseReady':False}))
+-- 
+2.43.0
+
+
+From 8a2742b3c7cb812a2c086f3f5492518e383f1268 Mon Sep 17 00:00:00 2001
+From: Claude <noreply@anthropic.com>
+Date: Sun, 1 Nov 2026 16:32:43 +0000
+Subject: [PATCH 2/2] Forge host: friend challenges (one friend, five minutes,
+ quiet "not now")
+
+- POST /api/play/rooms takes an optional `to` (a friend's account id): the room
+  becomes a challenge only that account can see or join, open for five minutes.
+- GET /api/play/rooms lists the challenges waiting for the caller, each with
+  the invite that opens it, the format, the sender's id and their player card.
+- DELETE /api/play/rooms/<id> by the challenged friend ends it as "declined"
+  (the host's room view says so); the host's own DELETE still cancels.
+- A challenge's invite opens only for the named friend; the room view marks
+  `challenge: true`. Expired challenge lists are swept with the room cleanup.
+- Tests: two friend-match tests (who sees it, decline, expiry, self-challenge
+  refused, accept starts the match). Pins re-bound; verify-inputs,
+  run-static-checks and npm check (237) pass.
+
+Co-Authored-By: Claude Opus 5.5 <noreply@anthropic.com>
+Claude-Session: https://claude.ai/code/session_01G4m5sRQtg4L7gdECz4hmKi
+---
+ deploy/forge-host/SOURCE-SHA256.json          |  4 +-
+ deploy/forge-host/src/service-core.mjs        | 43 +++++++++++++++----
+ deploy/forge-host/tests/friend-match.test.mjs | 35 +++++++++++++++
+ 3 files changed, 72 insertions(+), 10 deletions(-)
+
+diff --git a/deploy/forge-host/SOURCE-SHA256.json b/deploy/forge-host/SOURCE-SHA256.json
+index f8c2cddd..937f9cc7 100644
+--- a/deploy/forge-host/SOURCE-SHA256.json
++++ b/deploy/forge-host/SOURCE-SHA256.json
+@@ -35,7 +35,7 @@
+   "src/policy.mjs": "6004d77a9428bfaacb8a212fc424139a33727d0c119c5f593e06c474944d1cea",
+   "src/provisional-ledger.mjs": "6ad1b11acac597e3df1d72a708788f79bdad3cda36fcd169557fb12b928eba0e",
+   "src/release-policy.mjs": "7317de1854b8afe153fce07674e7802a1bdbc8f7c45dd2ffaafab7d06bcd40d2",
+-  "src/service-core.mjs": "f8ba5a26fb3d4b3710f102653a0f88e686c514963040a7d29ad89b641fca43bb",
++  "src/service-core.mjs": "ee6a9463f7ced1609c2e0c0c1f5aadc09b95fbe00f1fddaf6b24005904eaba90",
+   "src/trial.mjs": "fd41a7e3e3a3cb636c56aefe04cc71ec7fad160c6ceb95850e630f7551e00eb3",
+   "src/vendor/app/config.js": "92a35116c57f73d009f937ae5c0f188ef456f7c641ccacf87e9eadfa2e7602c0",
+   "src/vendor/app/native-backend-contract.js": "284ee719870db9b414fe7bffdf24916ef0ae403c231eccd78a160d34bf1648f3",
+@@ -60,7 +60,7 @@
+   "tests/fixtures/easy-receipt.json": "79ff0752f26f9f4a0a416752468af3a2e5d8520423bb150b2549c174d69fe591",
+   "tests/fixtures/hard-receipt.json": "c9b5be132bfbaee1155576d0c36350c98a31a2e60c8e0e108b3300a7ab648e94",
+   "tests/fixtures/medium-receipt.json": "fe5d24bceb577ad4e46b65507a213cb6da309033eb73830c6e83e7197bb1163d",
+-  "tests/friend-match.test.mjs": "1db75af0bfc93044469ef8d77fabaaf6515e9c1505b00046e0df06a2d4510947",
++  "tests/friend-match.test.mjs": "61f0d11b079f453ee5e327fcc305e2c04474cccb6ce54c3782af638fab620493",
+   "tests/native-adapter-next.test.mjs": "ce66d339dcf6261af307a1962a3ccf892e9cd7135eb27d3918f35cd26493f446",
+   "tests/native-adapter.test.mjs": "ac5d4cc3d98758747c4696bd0420f7476152112682dae9ba83a1d5a31f177f20",
+   "tests/next-policy-admission.test.mjs": "51f47b533cc90625f0143d8fa07a081affd5ff30822f557620131c71b956702e",
+diff --git a/deploy/forge-host/src/service-core.mjs b/deploy/forge-host/src/service-core.mjs
+index b5d7115a..c2ff8205 100644
+--- a/deploy/forge-host/src/service-core.mjs
++++ b/deploy/forge-host/src/service-core.mjs
+@@ -27,7 +27,7 @@ const ROOMS_PATH = '/api/play/rooms', JOIN_PATH = '/api/play/rooms/join';
+ const ROOM_PATH = new RegExp('^/api/play/rooms/(' + UUID + ')$', 'i');
+ const INVITE = /^[A-Za-z0-9_-]{43}$/;
+ // An invite lasts 30 minutes. Friend matches start with the first three formats.
+-const ROOM_MS = 1_800_000, FRIEND_FORMATS = ['Commander', 'Standard', 'Modern'];
++const ROOM_MS = 1_800_000, CHALLENGE_MS = 300_000, FRIEND_FORMATS = ['Commander', 'Standard', 'Modern'];
+ // What each player shows the other in a friend match: their display name and profile picture
+ // (an https image, with the crop they chose for card art). Anything else is dropped.
+ const unit = (v, lo, hi) => typeof v === 'number' && Number.isFinite(v) && v >= lo && v <= hi;
+@@ -112,7 +112,7 @@ export async function readJSONWithin(request, maximum, timeoutMs = 5000) {
+ // Its service binding is private; also keep origin + owner checks in each DO.
+ export async function routeHostRequest(request, env, verifyBearer) {
+   const path = new URL(request.url).pathname;
+-  const room = path === ROOMS_PATH || path === JOIN_PATH ? request.method === 'POST' : ROOM_PATH.test(path) ? ['GET', 'DELETE'].includes(request.method) : null;
++  const room = path === ROOMS_PATH ? ['GET', 'POST'].includes(request.method) : path === JOIN_PATH ? request.method === 'POST' : ROOM_PATH.test(path) ? ['GET', 'DELETE'].includes(request.method) : null;
+   if (room !== null) {
+     if (!room) return error('method_not_allowed', 405);
+     if (!await verifyHostUser(request, { verifyBearer, origin: ORIGIN })) return error('authentication_required', 401);
+@@ -215,13 +215,17 @@ export class AdmissionService {
+   async room(request, path, user, access) {
+     if (await limited(this.storage, 'attempt:room:' + user.id, [[60_000, 20], [3_600_000, 200]], this.now())) return error('room_rate_limit', 429);
+     await scheduleNoLater(this.storage, this.now() + 60_000);
++    // GET /rooms: the challenges waiting for this player, each with the invite that opens it.
++    if (path === ROOMS_PATH && request.method === 'GET') return json({ challenges: await this.challengesFor(user.id) });
+     const byId = ROOM_PATH.exec(path);
+     if (byId) {
+       const key = 'room:' + byId[1].toLowerCase(), room = await this.storage.get(key);
+-      if (!room || (room.hostId !== user.id && room.guestId !== user.id)) return error('room_not_found', 404);
++      const challenged = room && room.toId === user.id.toLowerCase() && !room.guestId;
++      if (!room || (room.hostId !== user.id && room.guestId !== user.id && !challenged)) return error('room_not_found', 404);
+       if (request.method === 'DELETE') {
+-        if (room.hostId !== user.id) return error('room_not_found', 404);
+-        if (room.status === 'open') { room.status = 'cancelled'; await this.storage.put(key, room); }
++        // The host cancels; the challenged friend says "not now". Either way it only ends an open room.
++        if (room.hostId !== user.id && !challenged) return error('room_not_found', 404);
++        if (room.status === 'open') { room.status = room.hostId === user.id ? 'cancelled' : 'declined'; await this.storage.put(key, room); }
+         return new Response(null, { status: 204, headers: { 'Cache-Control': 'no-store' } });
+       }
+       return json(this.roomView(room, user.id));
+@@ -230,18 +234,25 @@ export class AdmissionService {
+     try { body = await readJSONWithin(request, 131072); }
+     catch (e) { return error(['body_too_large', 'body_timeout'].includes(e.message) ? e.message : 'invalid_json', e.message === 'body_too_large' ? 413 : e.message === 'body_timeout' ? 408 : 400); }
+     if (path === ROOMS_PATH) {
+-      if (Object.keys(body).some(k => !['format', 'deck', 'player'].includes(k)) || !FRIEND_FORMATS.includes(body.format)) return error('invalid_room', 400);
++      if (Object.keys(body).some(k => !['format', 'deck', 'player', 'to'].includes(k)) || !FRIEND_FORMATS.includes(body.format)) return error('invalid_room', 400);
++      // A challenge names one friend's account; only that account sees it, and it lasts five minutes.
++      const to = body.to === undefined || body.to === null ? null : String(body.to).toLowerCase();
++      if (to !== null && (!UUID_RE.test(to) || to === user.id.toLowerCase())) return error('invalid_room', 400);
+       let hostPlayer; try { hostPlayer = playerCard(body.player); } catch { return error('invalid_room', 400); }
+       try { validateExactDeckInput(friendInput(body.format, body.deck, body.deck)); } catch { return error('invalid_match_input', 400); }
+       const invite = randomInvite(), roomId = crypto.randomUUID();
+       const room = { roomId, hostId: user.id, hostPlayer, format: body.format, hostDeck: body.deck, inviteDigest: await digest(invite),
+-        status: 'open', createdAt: this.now(), expiresAt: this.now() + ROOM_MS };
++        status: 'open', createdAt: this.now(), expiresAt: this.now() + (to ? CHALLENGE_MS : ROOM_MS), ...(to ? { toId: to } : {}) };
+       await this.storage.transaction(async txn => {
+         // One open room per host: a new invite ends the old one.
+         const previous = await txn.get('host-room:' + user.id);
+         const old = previous && await txn.get('room:' + previous);
+         if (old?.status === 'open') { old.status = 'cancelled'; await txn.put('room:' + previous, old); }
+         await txn.put('room:' + roomId, room); await txn.put('invite:' + room.inviteDigest, roomId); await txn.put('host-room:' + user.id, roomId);
++        if (to) {
++          const waiting = (await txn.get('challenges:' + to) || []).filter(c => c.expiresAt > this.now()).slice(-9);
++          await txn.put('challenges:' + to, [...waiting, { roomId, invite, expiresAt: room.expiresAt }]);
++        }
+       });
+       return json({ ...this.roomView(room, user.id), invite }, 201);
+     }
+@@ -252,6 +263,8 @@ export class AdmissionService {
+     const key = 'room:' + roomId, found = roomId && await this.storage.get(key);
+     if (!found) return error('invite_not_found', 404);
+     if (found.hostId === user.id) return error('own_room', 409);
++    if (found.toId && found.toId !== user.id.toLowerCase()) return error('invite_not_found', 404);
++    if (found.status === 'declined') return error('room_closed', 410);
+     if (found.guestId && found.guestId !== user.id) return error('room_full', 409);
+     if (found.status === 'cancelled') return error('room_closed', 410);
+     if (found.status === 'open' && this.now() >= found.expiresAt) return error('invite_expired', 410);
+@@ -285,10 +298,19 @@ export class AdmissionService {
+     });
+     return this.dispatch(result, input);
+   }
++  async challengesFor(userId) {
++    const now = this.now(), list = [];
++    for (const c of await this.storage.get('challenges:' + userId.toLowerCase()) || []) {
++      const room = c.expiresAt > now && await this.storage.get('room:' + c.roomId);
++      if (room?.status === 'open' && room.toId === userId.toLowerCase() && !room.guestId && room.expiresAt > now)
++        list.push({ roomId: room.roomId, invite: c.invite, format: room.format, expiresAt: room.expiresAt, fromId: room.hostId, from: room.hostPlayer || null });
++    }
++    return list;
++  }
+   roomView(room, userId) {
+     const expired = room.status === 'open' && this.now() >= room.expiresAt;
+     return { roomId: room.roomId, format: room.format, status: expired ? 'expired' : room.status, expiresAt: room.expiresAt,
+-      seat: room.hostId === userId ? 'host' : 'guest', guestJoined: !!room.guestId,
++      seat: room.hostId === userId ? 'host' : 'guest', guestJoined: !!room.guestId, challenge: !!room.toId,
+       // The other player, as they chose to show themselves.
+       opponent: (room.hostId === userId ? room.guestPlayer : room.hostPlayer) || null,
+       ...(room.matchId && room.status === 'started' ? { matchId: room.matchId } : {}) };
+@@ -403,6 +425,11 @@ export class AdmissionService {
+       await this.storage.delete([key, 'invite:' + room.inviteDigest]);
+       if (await this.storage.get('host-room:' + room.hostId) === room.roomId) await this.storage.delete('host-room:' + room.hostId);
+     }
++    for (const [key, list] of await this.storage.list({ prefix: 'challenges:' })) {
++      if (list.every(c => c.expiresAt <= this.now())) await this.storage.transaction(async txn => {
++        if ((await txn.get(key) || []).every(c => c.expiresAt <= this.now())) await txn.delete(key);
++      });
++    }
+     for (const [key, times] of await this.storage.list({ prefix: 'attempt:' })) {
+       if (times.every(t => t <= this.now() - 3_600_000)) await this.storage.transaction(async txn => {
+         // A create request can commit fresh attempts after the list snapshot.
+diff --git a/deploy/forge-host/tests/friend-match.test.mjs b/deploy/forge-host/tests/friend-match.test.mjs
+index 443ea550..0cc2a744 100644
+--- a/deploy/forge-host/tests/friend-match.test.mjs
++++ b/deploy/forge-host/tests/friend-match.test.mjs
+@@ -158,3 +158,38 @@ test('each player sees the other\'s name and picture, never anything more', asyn
+   // A player card that is not an object is refused; no card at all is fine.
+   assert.equal((await json(f, '/api/play/rooms', { body: { format: 'Commander', deck: structuredClone(deck), player: 'me' } })).status, 400);
+ });
++
++test('a challenge reaches only the friend it names, for five minutes, and "not now" ends it quietly', async () => {
++  const f = fixture();
++  const sent = await json(f, '/api/play/rooms', { body: { format: 'Commander', deck: structuredClone(deck), player: { name: 'deathxcore11' }, to: other } });
++  assert.equal(sent.status, 201); assert.equal(sent.body.challenge, true);
++  // Only the named friend sees it, with the invite that opens it.
++  const mine = await json(f, '/api/play/rooms', { token: 'other', method: 'GET' });
++  assert.equal(mine.body.challenges.length, 1);
++  const [c] = mine.body.challenges;
++  assert.equal(c.invite, sent.body.invite); assert.equal(c.fromId, owner); assert.equal(c.format, 'Commander'); assert.deepEqual(c.from, { name: 'deathxcore11', image: null, crop: null });
++  assert.deepEqual((await json(f, '/api/play/rooms', { token: 'third', method: 'GET' })).body.challenges, []);
++  // Nobody else can use its invite.
++  assert.equal((await json(f, '/api/play/rooms/join', { token: 'third', body: { invite: c.invite } })).status, 404);
++  // Not now: the host's room says declined, and the challenge is gone.
++  assert.equal((await json(f, '/api/play/rooms/' + c.roomId, { token: 'other', method: 'DELETE' })).status, 204);
++  assert.equal((await json(f, '/api/play/rooms/' + c.roomId, { method: 'GET' })).body.status, 'declined');
++  assert.deepEqual((await json(f, '/api/play/rooms', { token: 'other', method: 'GET' })).body.challenges, []);
++  assert.equal((await json(f, '/api/play/rooms/join', { token: 'other', body: { invite: c.invite, deck: structuredClone(deck) } })).status, 410);
++  // You cannot challenge yourself, and a challenge expires after five minutes.
++  assert.equal((await json(f, '/api/play/rooms', { body: { format: 'Commander', deck: structuredClone(deck), to: owner } })).status, 400);
++  const again = await json(f, '/api/play/rooms', { body: { format: 'Commander', deck: structuredClone(deck), to: other } });
++  assert.equal(again.status, 201);
++  f.setTime(again.body.expiresAt);
++  assert.deepEqual((await json(f, '/api/play/rooms', { token: 'other', method: 'GET' })).body.challenges, []);
++});
++
++test('an accepted challenge starts the match like any invite', async () => {
++  const f = fixture();
++  const sent = await json(f, '/api/play/rooms', { body: { format: 'Commander', deck: structuredClone(deck), to: other } });
++  const [c] = (await json(f, '/api/play/rooms', { token: 'other', method: 'GET' })).body.challenges;
++  const joined = await json(f, '/api/play/rooms/join', { token: 'other', body: { invite: c.invite, deck: structuredClone(deck), player: { name: 'ldwd11' } } });
++  assert.equal(joined.status, 202, JSON.stringify(joined.body));
++  const hostRoom = await json(f, '/api/play/rooms/' + sent.body.roomId, { method: 'GET' });
++  assert.equal(hostRoom.body.status, 'started'); assert.equal(hostRoom.body.opponent.name, 'ldwd11');
++});
+-- 
+2.43.0
+

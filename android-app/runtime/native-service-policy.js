@@ -20,7 +20,10 @@ const PUBLIC_REFERENCE_POST = new Set(['/api/reference/mtg-wiki', '/api/referenc
 const PLAY_MATCH = '[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}';
 const playMethods = path => path === '/api/play/warm' || path === '/api/play/matches' ? ['POST']
   : new RegExp(`^/api/play/matches/${PLAY_MATCH}$`, 'i').test(path) ? ['GET', 'DELETE']
-  : new RegExp(`^/api/play/matches/${PLAY_MATCH}/actions$`, 'i').test(path) ? ['POST'] : null;
+  : new RegExp(`^/api/play/matches/${PLAY_MATCH}/actions$`, 'i').test(path) ? ['POST']
+  // Friend rooms and challenges: list challenges, open a room, join with an invite, read or end one.
+  : path === '/api/play/rooms' ? ['GET', 'POST'] : path === '/api/play/rooms/join' ? ['POST']
+  : new RegExp(`^/api/play/rooms/${PLAY_MATCH}$`, 'i').test(path) ? ['GET', 'DELETE'] : null;
 const imagePath = path => /^\/img\/(?:pack|back)\/(?:mtg|ptcg|ygo)\.jpg$/.test(path)
   || /^\/img\/mtg-set\/[a-z0-9]{2,8}\.jpg$/i.test(path)
   || /^\/img\/ygo\/(?:s\/|a\/)?\d{1,12}\.jpg$/.test(path)

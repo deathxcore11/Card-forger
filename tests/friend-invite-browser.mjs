@@ -11,9 +11,9 @@ const HOST='aaaaaaaa-0000-4000-8000-000000000001',GUEST='bbbbbbbb-0000-4000-8000
 const deck=id=>({id,name:'Islands '+id,format:'Standard',cards:[{name:'Island',qty:60}],side:[]});
 const account=id=>{const s=makeSearchFixtures().state;s.decks=[deck(id)];s.activeDeck=id;
  return {user:{id,email:id+'@example.invalid'},profiles:{[HOST]:{display_name:'Host',username:'host_a'},[GUEST]:{display_name:'Guest',username:'guest_b'}},art:{},people:{},items:{},rows:{[id]:{data:s,revision:1}},writes:[],storage:{'cardforge-v2':s,'cardforge-cloud-v1':{userId:id,revision:1,sig:workspaceSig(s)}}};};
-const server_={joined:false,calls:[]};
+const server_={joined:false,calls:[],players:[]};
 async function rooms(page){
- await page.route('**/api/play/**',async route=>{const req=route.request(),url=new URL(req.url()),body=req.postData()?JSON.parse(req.postData()):null;server_.calls.push(`${req.method()} ${url.pathname}`);
+ await page.route('**/api/play/**',async route=>{const req=route.request(),url=new URL(req.url()),body=req.postData()?JSON.parse(req.postData()):null;server_.calls.push(`${req.method()} ${url.pathname}`);if(body?.player)server_.players.push(body.player.name);
   const json=(data,status=200)=>route.fulfill({status,contentType:'application/json',body:JSON.stringify(data)});
   if(url.pathname==='/api/play/rooms'&&req.method()==='POST'){assert.equal(body.format,'Standard');return json({roomId:ROOM,format:'Standard',status:'open',expiresAt:Date.now()+1800000,seat:'host',invite:INVITE},201);}
   if(url.pathname==='/api/play/rooms/join'){assert.equal(body.invite,INVITE);if(body.deck){server_.joined=true;return json({roomId:ROOM,format:'Standard',status:'started',matchId:MATCH,seat:'guest'});}return json({roomId:ROOM,format:'Standard',status:'open',seat:'guest'});}
@@ -42,6 +42,8 @@ try{
  assert(server_.calls.includes('GET /api/play/matches/'+MATCH),'the guest opens the started match: '+server_.calls.join(', '));
  // The host's 2 s room check sees the match and opens it on the host's seat.
  await hp.waitForFunction(()=>document.querySelector('#practicePlayerMat'),null,{timeout:8000});
+ for(let i=0;i<40&&server_.calls.filter(c=>c==='GET /api/play/matches/'+MATCH).length<2;i++)await hp.waitForTimeout(100);// the mat opens a moment before its first read
  assert(server_.calls.filter(c=>c==='GET /api/play/matches/'+MATCH).length>=2,'both players open the same match');
+ assert.deepEqual(server_.players,['Host','Guest'],'each player sends the name the other will see');
  console.log('friend invite flow OK:',server_.calls.join(' | '));
 }finally{await browser.close();await server.close();}

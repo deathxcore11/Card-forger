@@ -730,6 +730,11 @@ body.glass :is(.guide-along-row, .guide-link) { background: linear-gradient(160d
   #sheetBody > .cs-bleed > span, #sheetBody > .cs-banner > .cs-hero > .cs-art, #sheetBody .cd-img .cd-zoom { transition: opacity .32s cubic-bezier(.2, .8, .2, 1); }
 }
 
+/* The artist credit stays a quiet line; the name opens every card that artist drew. Its tap area is 44px tall. */
+.card-artist .artist-link { position: relative; padding: 0; color: inherit; font: inherit; text-decoration: underline; text-decoration-color: color-mix(in srgb, currentColor 35%, transparent); text-underline-offset: 3px; }
+.card-artist .artist-link::before { content: ""; position: absolute; left: 50%; top: 50%; width: max(100%, 44px); height: 44px; translate: -50% -50%; }
+.card-artist .artist-link:is(:hover, :focus-visible) { color: var(--text); text-decoration-color: currentColor; }
+
 /* The art covers the whole header, edge to edge, and fades out only at the bottom. */
 .cs-banner > .cs-hero:not(.compact) { -webkit-mask-image: none; mask-image: none; }
 .cs-banner > .cs-hero:not(.compact) .cs-art { position: absolute; inset: 0; width: 100%; height: 100%; max-width: none; aspect-ratio: auto; translate: none; transform: none; object-fit: cover; object-position: center 32%;

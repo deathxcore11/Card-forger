@@ -1,7 +1,7 @@
 {
   "source": "https://github.com/deathxcore11/Card-forger",
-  "commit": "b690c52d8e409fc5633a43cf1e3dac69b9b50a0a",
-  "sourceVersion": "4.3.54",
+  "commit": "0edd1eeaddd07d7c9f27e58477950014e000050d",
+  "sourceVersion": "4.3.55",
   "appId": "com.cardstashy.app",
   "releaseReady": false,
   "network": "enabled-exact-hosts",
@@ -1473,8 +1473,8 @@
     },
     {
       "path": "app.js",
-      "bytes": 478405,
-      "sha256": "e028a3b414404b0b80714596bdd96a8421090b59943e9aac44e68ab74e79606e"
+      "bytes": 486033,
+      "sha256": "c53bdca042638a6627955f4ef51b174708e595301f2867a96103b2ed2e641558"
     },
     {
       "path": "artwork.js",
@@ -3233,8 +3233,8 @@
     },
     {
       "path": "card-discovery.js",
-      "bytes": 4284,
-      "sha256": "f080f785107944b1b30a4468388c0571a434ad98fddf1fa5b59767fcf1fc523d"
+      "bytes": 5031,
+      "sha256": "2c902ff7f898535561df40362a6e236a9aa7b82c84f5322eebdab2959ab24db7"
     },
     {
       "path": "catalog-tools.js",
@@ -3333,8 +3333,8 @@
     },
     {
       "path": "community-profile.js",
-      "bytes": 25710,
-      "sha256": "56a23395311e2ea04bf39c7779d55d7c733e35f0dd230223c9407e541ecae4ae"
+      "bytes": 26585,
+      "sha256": "5666b6eb320e3b63e859c038f7ab3e6a77a08aa75e15175ff07b68b3b6e93009"
     },
     {
       "path": "community-sources.js",
@@ -3364,7 +3364,7 @@
     {
       "path": "config.js",
       "bytes": 629,
-      "sha256": "c0910e065599e6718e7f7a3adf5cbc0e52faf38741e9d6ca6d5d937f931fa05b"
+      "sha256": "aafcbd4e2a7aaa30dd8f96966db4b612bacbaa69019aada179a809b668d9a267"
     },
     {
       "path": "core.js",
@@ -4353,18 +4353,18 @@
     },
     {
       "path": "experiments/forge-proof/cpu-action-playback.mjs",
-      "bytes": 33076,
-      "sha256": "5cc44ae745c364fff0994ad7e69c10e3729e3b1afd85f4476526ac07ccabd802"
+      "bytes": 34244,
+      "sha256": "73470b2cdf0acc78ba213fa183a925a2357f45ea133ad4800a90c624d64c15fa"
     },
     {
       "path": "experiments/forge-proof/forge-session.mjs",
-      "bytes": 27758,
-      "sha256": "fcc59309e0e7b75136a8c392a79ee92540433b81bac757e11da2d7c14cdb5033"
+      "bytes": 27834,
+      "sha256": "ab9541ceb5a6e11f12ad7b781adb9e3a23863a653034cd76094484f94efa2f94"
     },
     {
       "path": "experiments/forge-proof/forge-table.mjs",
-      "bytes": 214837,
-      "sha256": "7ca53ca30e17c8b63222047854337bb8c936dfd66858dd5878888f7d84929c3e"
+      "bytes": 217742,
+      "sha256": "f800d986ce77215070307647d5436c5bd2bb59a688377176c9f82b3137a34240"
     },
     {
       "path": "experiments/forge-proof/motion-kit.mjs",
@@ -4498,8 +4498,8 @@
     },
     {
       "path": "experiments/phase-engine/match-table.mjs",
-      "bytes": 74798,
-      "sha256": "c0900b52cb8e41acbf403220a333d4c68e5262a7e8c5558e93af13d91e8a0f88"
+      "bytes": 74828,
+      "sha256": "930415caad87be4f928f7aa0c981b798a5e33a7a928265261cfc3d85d1f9e379"
     },
     {
       "path": "experiments/phase-engine/practice-authority.mjs",
@@ -5053,8 +5053,8 @@
     },
     {
       "path": "native-service-policy.js",
-      "bytes": 7671,
-      "sha256": "a14460507e9995dbb7de05e9dd884ee0beaef8ecdb9791be6c7e2f0ecdbcd2b8"
+      "bytes": 7953,
+      "sha256": "af42c3ad933ee9e14d292bfde453dea7bada340b7460e247135b19b49d23d7b9"
     },
     {
       "path": "native-transport.js",
@@ -7343,8 +7343,8 @@
     },
     {
       "path": "play-forge-host-client.js",
-      "bytes": 24947,
-      "sha256": "f4e56ce1088bd38e4f210fb6b8e40cf7070c4c6a7226ff995fd4d1c29d3df7a1"
+      "bytes": 27111,
+      "sha256": "0e779ba70e89469530e507e19ca9cc9e55ef5f48fb6298fbaa583ef4faec9a48"
     },
     {
       "path": "play-forge-local-client.js",
@@ -7353,13 +7353,13 @@
     },
     {
       "path": "play-forge-player-mat.js",
-      "bytes": 37153,
-      "sha256": "8a04896d85a08b590abdacb5cf6253dacdf190c2d9707d50662e3a968f72963a"
+      "bytes": 37257,
+      "sha256": "de64f2c064afe3de59f31e18cafd89981c5ef37aef38787b3b9ef0e421be20ea"
     },
     {
       "path": "play-forge-pregame.js",
-      "bytes": 11490,
-      "sha256": "d0df05b10f322a7a023da4655204922133a4ac3b23867bbe072a733cb62e406f"
+      "bytes": 11818,
+      "sha256": "44a58f93923f897b2c7f88c4f05fb714c7c678a3cf61a1327d52a2018e631b3f"
     },
     {
       "path": "play-forge-setup-review.js",
@@ -7368,8 +7368,8 @@
     },
     {
       "path": "play-forge-table.css",
-      "bytes": 427924,
-      "sha256": "c1b295cb706871efacd4c4c3ee2708f4665f83a86274a4cb221dc66ad5c4834d"
+      "bytes": 428346,
+      "sha256": "7359e9c31983c176ca2ed1b8f9f1bc870b8f445817e9fd6907a100146979b69c"
     },
     {
       "path": "play-match-record.js",
@@ -7383,8 +7383,8 @@
     },
     {
       "path": "play-menu.js",
-      "bytes": 30489,
-      "sha256": "c9c2287b12602da9f4edeb1bfb7b0059221f8e68eb2532c5da5f83db4dac9a73"
+      "bytes": 31849,
+      "sha256": "439b6dc469ea71820a4bfe92d2cf9059da485a7237f4aae0b8face3bb5026a76"
     },
     {
       "path": "play-opponent-build.js",
@@ -7458,8 +7458,8 @@
     },
     {
       "path": "play-update-gate.js",
-      "bytes": 2125,
-      "sha256": "28af1b46c70a56d146772639c2ba406fb43dd5970fdaf37ed21b650ab5f8c062"
+      "bytes": 2158,
+      "sha256": "3bd3210ba8292f2f2f047471dcbdf4aebe52c8e400e6a584e687f7ee06ad779c"
     },
     {
       "path": "pokemon-anniversary-masks.js",
@@ -7513,8 +7513,8 @@
     },
     {
       "path": "polish.css",
-      "bytes": 67772,
-      "sha256": "775ab6f1436ac5bb292995e675271115ca5823bef1529a943cf2d4abf1a76bb9"
+      "bytes": 68377,
+      "sha256": "2277665c8001e3ca9594c63e049a6d6cf4d03e588fa5b7668ec84f0d602e5d48"
     },
     {
       "path": "power.js",
@@ -7583,8 +7583,8 @@
     },
     {
       "path": "ptcg.js",
-      "bytes": 56452,
-      "sha256": "cb2108adea5577e3db9e2e6a89a496f91398a77ab7de4bcbb13a0bf7175a7cc6"
+      "bytes": 56791,
+      "sha256": "4445f49f9666aa636071033f61b14ccd36ee5d6581eee3dccfdde8c676c5a7f5"
     },
     {
       "path": "quick-quantity.js",
@@ -7608,8 +7608,8 @@
     },
     {
       "path": "release-record.js",
-      "bytes": 681,
-      "sha256": "262c551ec5ebeeae6901d25c69a112d28f9a8ffce50397fd2488d38a096c64b4"
+      "bytes": 1219,
+      "sha256": "db4e5cf5123dc588e1a4536e89ac296558d52043eaa4905607e75781b7ddff1b"
     },
     {
       "path": "release-status.js",
@@ -7923,8 +7923,8 @@
     },
     {
       "path": "style.css",
-      "bytes": 578016,
-      "sha256": "e82184d241712982bc06db4b7e9aee716604a82f029f560e11621f596b16b5b6"
+      "bytes": 581448,
+      "sha256": "9fa5b57dcfc8262b21c4a9b0c322a4b779cef94506b727c7dcae0dca0d54927c"
     },
     {
       "path": "suggest.js",
@@ -7953,8 +7953,8 @@
     },
     {
       "path": "tcg.js",
-      "bytes": 367396,
-      "sha256": "e4477366d67d7d665fa0c9fa3650b37f45c4dc63c68e91cc57b15b21642bb383"
+      "bytes": 368261,
+      "sha256": "465fcb4715382cae80eeaf6523255b10362b30a0032b23e9c0dd108084850bbf"
     },
     {
       "path": "tcgbuild.js",
@@ -8108,8 +8108,8 @@
     },
     {
       "path": "views.js",
-      "bytes": 197584,
-      "sha256": "d7e265db4d78a6fae8ccbf253c128d69ef81e2cb4909a3aba39f73c48042c7bf"
+      "bytes": 197558,
+      "sha256": "52efbc6aef9173be209bb3411f4194e2dfc8dc33b9b007f7d932c2e0869279e1"
     },
     {
       "path": "wiki-card-handoff.js",

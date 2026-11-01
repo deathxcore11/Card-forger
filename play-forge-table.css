@@ -2500,3 +2500,6 @@ body.practice-table-open:has(.forge-order-cards,.forge-zone-search-dialog) .forg
    all at full card size, so your first land lands where the eye expects it. 1v1 keeps its layout. */
 :where(body.practice-table-open) .play-match-table[data-stage=match][data-forge-native][data-pod=true] .play-match-battlefields [data-owner=you] .play-match-zone-groups{justify-content:center;align-content:center;column-gap:calc(var(--play-piece)*.3)}
 :where(body.practice-table-open) .play-match-table[data-stage=match][data-forge-native][data-pod=true] .play-match-battlefields [data-owner=you] .play-match-zone-groups>.play-match-lane:not([data-card-group=creatures]){margin-inline:0;padding-inline:0;flex:0 1 auto}
+/* 4.3.54 A dropped spell rides upright to the stack spotlight while Forge confirms it. */
+:where(body.practice-table-open) .play-match-table[data-forge-native] .forge-drag-ghost[data-stacked=true],:where(body.practice-table-open) .forge-drag-ghost[data-stacked=true]{rotate:0deg;transform:translate(-50%,-50%);opacity:1;transition:none}
+:where(body.practice-table-open) .forge-drag-ghost{will-change:transform,translate}

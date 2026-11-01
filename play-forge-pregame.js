@@ -52,7 +52,9 @@ export function mountForgeMatchIntro({root,setup,lookup=()=>null,onCancel=()=>{}
   const artwork=node('div',undefined,'forge-intro-art'),identity=node('div',undefined,'forge-intro-identity'),avatar=node('span',undefined,'forge-intro-avatar');
   artwork.setAttribute('aria-hidden','true');
   if(own)avatar.innerHTML=profileAvatar(profile.avatarArt,{display_name:profile.displayName,username:profile.username,avatar_url:profile.avatarUrl});
-  else{const crest=node('span',setup.friend?rival.slice(0,1).toUpperCase():'CPU','forge-cpu-crest');crest.setAttribute('aria-hidden','true');avatar.append(crest);}
+  // A friend shows their own profile picture: card art with their crop, or a photo.
+  else if(setup.friend){const f=setup.friend;avatar.innerHTML=profileAvatar(f.image&&f.crop?{game:'mtg',cardId:'friend',name:f.name||'Friend',image:f.image,...f.crop}:null,{display_name:f.name||'Friend',avatar_url:f.image&&!f.crop?f.image:''});}
+  else{const crest=node('span','CPU','forge-cpu-crest');crest.setAttribute('aria-hidden','true');avatar.append(crest);}
   const name=node('div',undefined,'forge-intro-name');if(own||!pod)name.append(node('small',own?'YOU':'YOUR OPPONENT'));name.append(node('h2',own?(profile.displayName||profile.username||'You'):cpuName));
   if(own&&profile.username)name.append(node('span','@'+profile.username.replace(/^@/,'')));
   identity.append(avatar,name);
@@ -99,7 +101,7 @@ export function mountForgeMatchIntro({root,setup,lookup=()=>null,onCancel=()=>{}
   const coin=node('div',undefined,'forge-intro-coin'),body=node('div',undefined,'forge-coin-body'),you=node('span',undefined,'forge-coin-face forge-coin-you'),cpu=node('span',undefined,'forge-coin-face forge-coin-cpu');
   coin.setAttribute('aria-hidden','true');coin.setAttribute('data-result',result.ownFirst?'you':'cpu');
   you.innerHTML=profileAvatar(profile.avatarArt,{display_name:profile.displayName,username:profile.username,avatar_url:profile.avatarUrl});you.append(node('b','YOU'));
-  const cpuArt=forgeDeckBackdrop(setup.opponent,lookup);if(cpuArt){const img=node('img');img.src=cpuArt;img.alt='';img.referrerPolicy='no-referrer';cpu.append(img);}cpu.append(node('b',setup.friend?'FRIEND':'CPU'));
+  const cpuArt=forgeDeckBackdrop(setup.opponent,lookup);if(cpuArt){const img=node('img');img.src=cpuArt;img.alt='';img.referrerPolicy='no-referrer';cpu.append(img);}cpu.append(node('b',setup.friend?String(setup.friend.name||'Friend').toUpperCase():'CPU'));
   body.append(you,cpu);coin.append(body);
   const label=node('p',result.selection==='random'?'Flipping the coin…':'Starting player','forge-intro-eyebrow');
   const outcome=node('h2',result.ownFirst?'You play first':`${setup.friend?.name||'CPU'} plays first`);outcome.hidden=!reduced;

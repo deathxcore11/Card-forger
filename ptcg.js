@@ -482,7 +482,7 @@ const collectorKey = (number) => String(number ?? "").trim().toLowerCase().repla
 const printingName = value => String(value ?? '').normalize('NFC').trim().toLowerCase().replace(/^basic (?=(?:grass|fire|water|lightning|psychic|fighting|darkness|metal|fairy) energy$)/,'');
 const discoveryName = value => printingName(pokemonPrintedName(value));
 function supplementMatches(card, spec = {}) {
-  const {q = '',category = '',type = '',set = '',rarity = '',stage = '',hp = '',format = '',number = '',exactName = false} = normalizePtcgSearch(spec);
+  const {q = '',category = '',type = '',set = '',rarity = '',stage = '',hp = '',format = '',number = '',exactName = false,illustrator = ''} = normalizePtcgSearch(spec);
   const query = discoveryName(q), name = discoveryName(card.name), f = PTCG_FORMATS.find(f => f.id === format);
   if (query && !(exactName ? name === query : name.includes(query) || pokemonPrintedNameKey(card.name).includes(pokemonPrintedNameKey(q)))) return false;
   if (set && String(card.set?.id).toLowerCase() !== String(set).toLowerCase()) return false;
@@ -492,6 +492,7 @@ function supplementMatches(card, spec = {}) {
   if (type && !card.types?.includes(type)) return false;
   if (stage && card.stage !== stage) return false;
   if (Number(hp) > 0 && !(Number(card.hp) >= Number(hp))) return false;
+  if (illustrator.trim() && !String(card.illustrator || '').toLowerCase().includes(illustrator.trim().toLowerCase())) return false;
   if (format && !f) return false;
   if (f && ptcgLegality(normalizePtcg(card),f) !== 'legal') return false;
   return true;
@@ -528,7 +529,7 @@ export const ptcgSource = {
   // TCGdex can't sort by release date, so fetch every match once, order it by each
   // set's real release order, and page through it here.
   async search(spec = {}) {
-    const { q = "", category = "", type = "", set = "", rarity = "", stage = "", hp = "", format = "", number = "", sort = "new", page = 0, size = 48, exactName = false } = normalizePtcgSearch(spec);
+    const { q = "", category = "", type = "", set = "", rarity = "", stage = "", hp = "", format = "", number = "", sort = "new", page = 0, size = 48, exactName = false, illustrator = "" } = normalizePtcgSearch(spec);
     // A printed set code and number ("pal 45", "sv02 045", "045/193") finds that card in that set.
     const collector = !set && !number && !exactName ? parseCollectorQuery("ptcg", q) : null;
     if (collector) {
@@ -550,12 +551,14 @@ export const ptcgSource = {
     if (stage) p.stage = "eq:" + stage;
     if (Number(hp) > 0) p.hp = "gte:" + Number(hp);
     if (legal) p["legal." + legal] = "true";
+    // The card's artist (TCGdex "illustrator"), matched the way names are: contains, any case.
+    if (illustrator.trim()) p.illustrator = illustrator.trim();
     const key = JSON.stringify([p,format,exactName]);
     if (!searchCache.has(key)) {
       if (!searchLoads.has(key)) {
         const pending = Promise.all([get("/cards", p), setRank()]).then(([d, rank]) => {
           if (d !== null && !Array.isArray(d)) throw Error("Pokémon card database returned an invalid list.");
-          const all = pokemonCatalogueOverlay(d || [],card => supplementMatches(card,{q,category,type,set,rarity,stage,hp,format,number,exactName})).map(brief).filter(c => c.id && !c.pocket && (!number || collectorKey(c.set?.number) === collectorKey(number)));
+          const all = pokemonCatalogueOverlay(d || [],card => supplementMatches(card,{q,category,type,set,rarity,stage,hp,format,number,exactName,illustrator})).map(brief).filter(c => c.id && !c.pocket && (!number || collectorKey(c.set?.number) === collectorKey(number)));
           searchCache.set(key, { all, rank });
         }).finally(() => searchLoads.delete(key));
         searchLoads.set(key, pending);
