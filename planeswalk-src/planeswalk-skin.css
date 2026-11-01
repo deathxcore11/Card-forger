@@ -1835,3 +1835,23 @@ body[data-actnum="3"] #app .screen.blessing{--pw-bg:url(./planeswalk-art/blessin
 #app .pw-utitle{display:inline-flex;align-items:center;gap:6px;min-height:40px;padding:4px 14px;border-radius:99px;background:linear-gradient(180deg,#5a420e,#2a1d04);box-shadow:0 0 0 1.5px #e8b45a,0 0 14px #e8b45a55;color:#ffe7b0}
 #app .pw-utitle svg{width:18px;height:18px;fill:currentColor}
 #app .pw-utitle b{font:700 .9rem/1 var(--display,serif)}
+/* ===== Card mastery (rulings #28): the app's foil finish over the card outside runs; showcase and borderless change only the frame */
+#app .card{--pw-mcol:#b9c2cc}#app .card[data-col=R]{--pw-mcol:#e8705a}#app .card[data-col=W]{--pw-mcol:#f3e2a8}
+#app .card>.pw-mfoil{inset:0;border-radius:inherit;background:none!important;box-shadow:none!important;padding:0!important;margin:0!important}
+#app .card.pw-showcase{outline:1px solid color-mix(in srgb,var(--pw-mcol) 70%,transparent);outline-offset:-4px}
+#app .card.pw-showcase .pic{border-radius:46% 46% 4px 4px / 20% 20% 4px 4px;box-shadow:inset 0 0 0 1px #000,inset 0 0 0 2.5px color-mix(in srgb,var(--pw-mcol) 55%,transparent),inset 0 -30px 26px -16px #000c}
+#app .card.pw-borderless{background:linear-gradient(180deg,#0b0b0e66 0%,transparent 22%,transparent 46%,#0b0b0ef0 74%),var(--img,none) center 30%/cover no-repeat!important}
+#app .card.pw-borderless .pic{background:none!important;box-shadow:none!important}
+#app .pw-mtile{display:grid;justify-items:center;gap:4px;width:100%;max-width:138px}
+#app .pw-mtile>.card{width:100%;position:relative}
+#app .pw-mtog{display:inline-flex;align-items:center;justify-content:center;gap:4px;min-height:44px;min-width:44px;padding:2px 10px!important;color:#ffe7b0}
+#app .pw-mtog svg{width:15px;height:15px;fill:#ffcf6a}
+#app .pw-mtog b{font:800 .8rem/1 var(--display,serif)}
+#app .pw-mtog i{display:inline-block;width:14px;height:14px;border-radius:3px;border:1.5px solid #ffffff44}
+#app .pw-mtog i[data-v="1"]{background:linear-gradient(116deg,#86c9ea,#ce9bcc,#e5ce91,#90caaa);border-color:transparent}
+#app .pw-mtog i[data-v="2"]{border-color:#e8b45a;border-radius:7px 7px 2px 2px}
+#app .pw-mtog i[data-v="3"]{border:0;background:#e8b45a}
+#app .pw-unlocks>.card{position:relative}
+#app .pw-mtile>.card{width:100%;max-width:138px;min-width:0;min-height:0;font-size:.6rem;padding:4px;grid-template-rows:auto 64px}
+#app .pw-mtile>.card .head b{font-size:.6rem;white-space:normal;line-height:1.05}
+#app .pw-mtile>.card>.kind,#app .pw-mtile>.card>span:last-child:not(.pic){display:none}

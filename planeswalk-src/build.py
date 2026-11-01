@@ -22,7 +22,7 @@ def floor_styles(html):
 W=os.path.dirname(os.path.abspath(__file__))
 # Output: next to the sources by default; PW_OUT=<repo root> writes the served planeswalk.html and planeswalk-art-zen.css there (planeswalk-src/README.md)
 OUT=os.path.abspath(os.environ.get('PW_OUT',W))
-s=open(W+'/src.html').read();css=open(W+'/planeswalk-skin.css').read()+'\n'+open(W+'/emblem-art.css').read()+'\n'+open(W+'/extra.css').read()+'\n'+open(W+'/kit.css').read()+'\n'+open(W+'/cast.css').read()
+s=open(W+'/src.html').read();css=open(W+'/planeswalk-skin.css').read()+'\n'+open(W+'/emblem-art.css').read()+'\n'+open(W+'/extra.css').read()+'\n'+open(W+'/kit.css').read()+'\n'+open(W+'/cast.css').read()+'\n'+open(W+'/../finish-effects.css').read()  # the app's foil finish, reused as is for card mastery (rulings #28)
 # the kit's mana symbols are written into the CSS itself (pw-kit.js also sets them at runtime; a viewer that drops a script-made <style> once showed empty rings on the orb)
 _mana=json.loads(re.search(r'const MANA=(\{.*?\}),COLOR',open(W+'/emblem-art.js').read(),re.S).group(1))
 assert css.count(':root{--pwk-mana:none;')==1 and css.count('body[data-hero=W]{--pwk-mana:none;')==1

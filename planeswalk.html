@@ -2081,6 +2081,26 @@ body[data-actnum="3"] #app .screen.blessing{--pw-bg:url(./planeswalk-art/blessin
 #app .pw-utitle{display:inline-flex;align-items:center;gap:6px;min-height:40px;padding:4px 14px;border-radius:99px;background:linear-gradient(180deg,#5a420e,#2a1d04);box-shadow:0 0 0 1.5px #e8b45a,0 0 14px #e8b45a55;color:#ffe7b0}
 #app .pw-utitle svg{width:18px;height:18px;fill:currentColor}
 #app .pw-utitle b{font:700 calc(max(11px,.9rem) * var(--pw-ts,1))/1 var(--display,serif)}
+/* ===== Card mastery (rulings #28): the app's foil finish over the card outside runs; showcase and borderless change only the frame */
+#app .card{--pw-mcol:#b9c2cc}#app .card[data-col=R]{--pw-mcol:#e8705a}#app .card[data-col=W]{--pw-mcol:#f3e2a8}
+#app .card>.pw-mfoil{inset:0;border-radius:inherit;background:none!important;box-shadow:none!important;padding:0!important;margin:0!important}
+#app .card.pw-showcase{outline:1px solid color-mix(in srgb,var(--pw-mcol) 70%,transparent);outline-offset:-4px}
+#app .card.pw-showcase .pic{border-radius:46% 46% 4px 4px / 20% 20% 4px 4px;box-shadow:inset 0 0 0 1px #000,inset 0 0 0 2.5px color-mix(in srgb,var(--pw-mcol) 55%,transparent),inset 0 -30px 26px -16px #000c}
+#app .card.pw-borderless{background:linear-gradient(180deg,#0b0b0e66 0%,transparent 22%,transparent 46%,#0b0b0ef0 74%),var(--img,none) center 30%/cover no-repeat!important}
+#app .card.pw-borderless .pic{background:none!important;box-shadow:none!important}
+#app .pw-mtile{display:grid;justify-items:center;gap:4px;width:100%;max-width:138px}
+#app .pw-mtile>.card{width:100%;position:relative}
+#app .pw-mtog{display:inline-flex;align-items:center;justify-content:center;gap:4px;min-height:44px;min-width:44px;padding:2px 10px!important;color:#ffe7b0}
+#app .pw-mtog svg{width:15px;height:15px;fill:#ffcf6a}
+#app .pw-mtog b{font:800 calc(max(11px,.8rem) * var(--pw-ts,1))/1 var(--display,serif)}
+#app .pw-mtog i{display:inline-block;width:14px;height:14px;border-radius:3px;border:1.5px solid #ffffff44}
+#app .pw-mtog i[data-v="1"]{background:linear-gradient(116deg,#86c9ea,#ce9bcc,#e5ce91,#90caaa);border-color:transparent}
+#app .pw-mtog i[data-v="2"]{border-color:#e8b45a;border-radius:7px 7px 2px 2px}
+#app .pw-mtog i[data-v="3"]{border:0;background:#e8b45a}
+#app .pw-unlocks>.card{position:relative}
+#app .pw-mtile>.card{width:100%;max-width:138px;min-width:0;min-height:0;font-size:calc(max(11px,.6rem) * var(--pw-ts,1));padding:4px;grid-template-rows:auto 64px}
+#app .pw-mtile>.card .head b{font-size:calc(max(11px,.6rem) * var(--pw-ts,1));white-space:normal;line-height:1.05}
+#app .pw-mtile>.card>.kind,#app .pw-mtile>.card>span:last-child:not(.pic){display:none}
 
 /* Planeswalk emblem art. Pairs with emblem-art.js. */
 .emb-art{position:relative;flex:none;display:block;border-radius:50%;box-shadow:0 0 0 1px #0008,0 4px 14px #000a}
@@ -3207,6 +3227,173 @@ body[data-actnum="2"] #app#app .battle:has(.unit.boss[data-n^="Kozilek"]){--pw-b
 #app .battle .field:not(.pw-stage):not(.pw-plates){visibility:hidden;animation:pw-field-in 0s 1.2s forwards}
 @keyframes pw-field-in{to{visibility:visible}}
 
+/* Finish simulation belongs to the exact printing, never to the price tier. */
+.finish-preview{margin:.65rem 0;width:100%;min-width:0;max-width:100%;box-sizing:border-box}
+.finish-choice-rail{display:flex;flex-wrap:nowrap;gap:.35rem;margin-top:.35rem;padding:.15rem .1rem .35rem;width:100%;min-width:0;max-width:100%;box-sizing:border-box;overflow-x:auto;overflow-y:hidden;overscroll-behavior-x:contain;scroll-behavior:auto;scrollbar-width:thin;scrollbar-color:var(--line,#686868) transparent}
+.finish-choice-rail .chip{flex:0 0 auto;min-height:44px;white-space:nowrap}
+.finish-choice-rail::-webkit-scrollbar{height:4px}
+.finish-choice-rail::-webkit-scrollbar-thumb{background:var(--line,#686868);border-radius:4px}
+.finish-choice-hint{float:right;font-size:calc(max(11px,.72rem) * var(--pw-ts,1))}
+.finish-preview [aria-pressed="true"]{border-color:var(--accent,var(--gold));background:var(--surface2,var(--surface-2))}
+.finish-preview .foot{margin:.45rem 0}
+.cd-zoom,.zoom-card-surface,[data-finish-surface="large"],[data-finish-surface="card"]{position:relative}
+.zoom-card-surface{display:grid;place-items:center;width:max-content;max-width:100%;line-height:0}
+.zoom-card-surface .zoom-img{display:block}
+@property --finish-x{syntax:"<percentage>";inherits:true;initial-value:50%}
+@property --finish-y{syntax:"<percentage>";inherits:true;initial-value:50%}
+.finish-overlay{--finish-x:var(--mx,50%);--finish-y:var(--my,50%);position:absolute;display:block;overflow:hidden;border-radius:4.75% / 3.5%;pointer-events:none!important;z-index:2;isolation:isolate}
+.finish-layer{position:absolute;inset:0;pointer-events:none!important;opacity:.16;mix-blend-mode:screen;background-size:220% 220%;background-position:var(--finish-x) var(--finish-y)}
+.tilting .finish-layer,.zoom-card-surface:hover .finish-layer{opacity:.26}
+/* The same soft light catches only each material’s masked foil region. */
+.finish-layer::after{content:"";position:absolute;inset:0;pointer-events:none;background:radial-gradient(ellipse at var(--finish-x) var(--finish-y),#fff9 0%,#fff3 18%,transparent 58%);opacity:.45}
+.finish-auto{animation:finish-gallery-light 8s ease-in-out infinite}
+.finish-auto .finish-layer{opacity:.22}
+@keyframes finish-gallery-light{0%,100%{--finish-x:16%;--finish-y:26%}50%{--finish-x:84%;--finish-y:74%}}
+.finish-holo{background-image:radial-gradient(ellipse at var(--finish-x) var(--finish-y),#e2f3ffb3,transparent 62%),linear-gradient(120deg,transparent 15%,#69e3d7 38%,#c6a7fa 53%,#f5d5a0 64%,transparent 85%)}
+.finish-rainbow{background-image:linear-gradient(116deg,transparent 18%,#86c9ea 35%,#ce9bcc 46%,#e5ce91 57%,#90caaa 68%,transparent 84%)}
+.finish-metal{mix-blend-mode:soft-light;opacity:.23;background-image:radial-gradient(ellipse at var(--finish-x) var(--finish-y),#f0dfbb,transparent 65%),repeating-linear-gradient(33deg,#c7c7b777 0 .6px,#232b2944 .6px 1.6px);background-size:100% 100%,3px 3px}
+.finish-silver,.finish-gold,.finish-platinum{opacity:.24;background-image:linear-gradient(115deg,transparent 25%,#c6d2db 43%,#fff 50%,#8393a8 57%,transparent 72%)}
+.finish-gold{background-image:linear-gradient(115deg,transparent 25%,#e3c67a 43%,#fff0b0 50%,#c2964b 57%,transparent 72%)}
+.finish-secret{background-image:repeating-linear-gradient(133deg,transparent 0 5px,#cbdcffaa 5px 6px,transparent 6px 10px);mask-image:radial-gradient(ellipse at var(--finish-x) var(--finish-y),#000 5%,#0004 70%);background-size:110% 110%}
+.finish-prismatic{background-image:repeating-linear-gradient(0deg,transparent 0 5px,#e9c6fa99 5px 6px),repeating-linear-gradient(90deg,transparent 0 5px,#c2ecfa99 5px 6px);mask-image:radial-gradient(ellipse at var(--finish-x) var(--finish-y),#000,#0003 70%);background-size:110% 110%}
+.finish-starlight{background-image:repeating-linear-gradient(0deg,transparent 0 2px,#e5cafa99 2px 2.5px),repeating-linear-gradient(90deg,transparent 0 2px,#bce0fa99 2px 2.5px),linear-gradient(115deg,#80bbd477,#d0b5f077,#e5d3ad66);mask-image:radial-gradient(ellipse at var(--finish-x) var(--finish-y),#000,#0004 75%);background-size:110% 110%}
+/* A restrained geometric approximation, not a claim to reproduce the printed Paldea pattern. */
+.finish-tiles{background-image:repeating-linear-gradient(45deg,transparent 0 10px,#b8ded977 10px 11px,transparent 11px 20px),repeating-linear-gradient(135deg,transparent 0 10px,#d8c3eb66 10px 11px,transparent 11px 20px),linear-gradient(115deg,transparent 12%,#69c8e3 32%,#ba8ad9 46%,#f0d67b 58%,#8bcdab 70%,transparent 88%);mask-image:radial-gradient(ellipse at var(--finish-x) var(--finish-y),#000,#0005 80%);background-size:110% 110%,110% 110%,220% 220%}
+/* Replace legacy physical-card rainbow/price glitter; preserve decorative price frames. */
+.cd-img::before,.cd-img::after,.tile-art::before,:is(.view-gallery,.view-compact) .lot-art::before,.lot-art.tilting::before{display:none!important}
+#content.view-gallery .display-list .lot:not(.wanted) .lot-art::after{display:none!important;animation:none!important}
+:is(.view-compact,.view-symbols) .finish-overlay{display:none!important}
+:is(.view-compact,.view-symbols) .lot-art::after{background:none!important;animation:none!important}
+/* Magic's holographic oval security stamp (rares and mythics, 2015 frame on): a small rainbow that slides
+   across the printed silver oval only, measured from Scryfall scans (centre 50% / 93%, 8.5% x 3% of the card). */
+.finish-holostamp{position:absolute;z-index:5;left:45.75%;top:91.55%;width:8.5%;height:3%;border-radius:50%;pointer-events:none;mix-blend-mode:hard-light;opacity:.5;
+ background:linear-gradient(105deg,#ff7ac0,#ffd36e,#8affc1,#6fd6ff,#b08cff,#ff7ac0,#ffd36e,#8affc1,#6fd6ff,#b08cff,#ff7ac0) 0 0/200% 100%;
+ -webkit-mask:radial-gradient(closest-side,#000 70%,transparent);mask:radial-gradient(closest-side,#000 70%,transparent);animation:finish-holostamp 3.6s linear infinite}
+.finish-holostamp::after{content:"";position:absolute;inset:0;border-radius:inherit;background:linear-gradient(100deg,transparent 30%,#fff 50%,transparent 70%) 0 0/250% 100%;mix-blend-mode:overlay;animation:finish-holostamp-glint 3.6s ease-in-out infinite}
+.finish-holostamp.on-foil{opacity:.32}
+@keyframes finish-holostamp{to{background-position:-200% 0}}
+@keyframes finish-holostamp-glint{0%,100%{background-position:150% 0}50%{background-position:-50% 0}}
+@media(prefers-reduced-motion:reduce){.finish-overlay{display:none!important}.zoom-card-surface{transition:none!important}}
+
+/* A neutral, soft lamp travels with the existing pointer/gyro coordinates.
+   It is available on every enlarged card, independently of finish metadata. */
+.finish-spotlight{position:absolute;inset:0;border-radius:inherit;pointer-events:none;background:radial-gradient(ellipse at var(--mx,50%) var(--my,50%),rgba(255,255,255,.46) 0%,rgba(245,249,255,.18) 18%,transparent 55%);mix-blend-mode:screen;opacity:.65}
+.shine-once .finish-spotlight{animation:finish-catch 1.1s ease-out}
+@keyframes finish-catch{0%{opacity:0;transform:translateX(-35%)}55%{opacity:.9}100%{opacity:.65;transform:translateX(0)}}
+[data-finish-effect^="ptcg-"] .finish-layer{opacity:.32}
+[data-finish-effect^="ptcg-"] .finish-auto .finish-layer{opacity:.3}
+[data-finish-effect^="ptcg-"].tilting .finish-layer{opacity:.44}
+/* Fine starlight travels across the whole face, without a rectangular cutout. */
+.finish-starlight{opacity:.29;background-size:100% 100%;}
+.tilting .finish-starlight{opacity:.38}
+/* Feather the name glint; never paint an opaque rectangle over lettering. */
+.finish-silver,.finish-gold{mask-image:linear-gradient(transparent,#000 30%,#000 65%,transparent);opacity:.18}
+@media(prefers-reduced-motion:reduce){.finish-spotlight{animation:none}}
+
+.finish-micro{background-image:repeating-linear-gradient(32deg,transparent 0 1.4px,#d4e7ff99 1.4px 1.8px,transparent 1.8px 3px);background-size:100% 100%;mask-image:radial-gradient(ellipse at var(--finish-x) var(--finish-y),#000 0%,#0005 28%,transparent 66%);mix-blend-mode:soft-light;opacity:.25}
+
+/* Keep source pixels and masks in one coordinate system. The generic 488/680
+   cover crop cut the taller Yu-Gi-Oh artwork while the overlay used contain. */
+.cd-zoom > .card-img{aspect-ratio:auto;height:auto;object-fit:contain;}
+.cd-zoom:active .card-img{transform:none;}
+/* Feather the name treatment within the lettering band, including Secret Rare. */
+.finish-layer.finish-name-region{mask-image:linear-gradient(transparent 5.5%,#000 6.3%,#000 9.4%,transparent 10.3%);opacity:.2;}
+
+/* Direct inspection owns the lamp. Pausing the animation would freeze its
+   custom properties over the pointer values, so remove it while interacting. */
+[data-finish-surface].tilting .finish-auto,
+[data-finish-surface].gyro .finish-auto{animation:none;--finish-x:var(--mx,50%);--finish-y:var(--my,50%)}
+
+/* Material-specific, restrained approximations. Patterns stay in the existing
+   printing masks; no extra finish availability or edition marks are invented. */
+.finish-secret:not(.finish-name-region){
+ background-image:radial-gradient(ellipse at var(--finish-x) var(--finish-y),#e9f3ff66,transparent 52%),repeating-linear-gradient(133deg,transparent 0 5px,#cbdcff99 5px 5.7px,#d9bde655 5.7px 6.2px,transparent 6.2px 10px);
+ background-size:100% 100%,110% 110%;
+}
+.finish-metal{
+ background-image:radial-gradient(ellipse at var(--finish-x) var(--finish-y),#e5e6da99,transparent 58%),repeating-linear-gradient(33deg,#c7c7b744 0 .6px,#232b2933 .6px 1.6px),repeating-linear-gradient(123deg,transparent 0 1.3px,#fff2 1.3px 1.7px);
+ background-size:100% 100%,3px 3px,4px 4px;
+}
+.finish-micro{
+ background-image:repeating-linear-gradient(32deg,transparent 0 1.4px,#d4e7ff77 1.4px 1.8px,transparent 1.8px 3px),repeating-linear-gradient(122deg,transparent 0 7px,#fff2 7px 7.4px,transparent 7.4px 10px);
+ background-size:100% 100%;
+}
+
+/* Material direction approved in the 14-printing visual review. */
+.finish-overlay[data-material-profile] .finish-spotlight{opacity:.2;background:radial-gradient(ellipse at var(--mx) var(--my),#fff8,transparent 42%)}
+.finish-overlay[data-material-profile] .finish-layer{opacity:.4;background-size:210% 210%;background-position:var(--finish-x) var(--finish-y)}
+.finish-overlay[data-material-profile] .finish-holo{background-image:linear-gradient(120deg,transparent 25%,#20c8c6 39%,#eb7eca 48%,#f5db80 55%,#87ceec 64%,transparent 75%);mix-blend-mode:screen}
+.finish-overlay[data-material-profile] .finish-rainbow{background-image:linear-gradient(115deg,transparent 22%,#2ca7da 37%,#9f6ed5 44%,#dc859b 50%,#f4cf5f 57%,#76cd9f 64%,transparent 77%)}
+.finish-overlay[data-material-profile] .finish-title-glyphs{opacity:.9;mix-blend-mode:screen;background-size:230% 100%;background-position:var(--finish-x) 50%}
+.finish-overlay[data-material-profile] .finish-title-glyphs.finish-gold{background-image:linear-gradient(110deg,#79501a 16%,#d8a53a 35%,#fff2ad 48%,#f9cb56 55%,#9d6a1b 77%)}
+.finish-overlay[data-material-profile] .finish-title-glyphs.finish-silver{background-image:linear-gradient(110deg,#6c7e93 16%,#d6e4f0 37%,#fff 49%,#b4ccd8 59%,#647586 78%)}
+.finish-platinum{background-image:linear-gradient(115deg,transparent 25%,#d9e1ee 43%,#fff 50%,#a9b4c8 57%,transparent 72%)}
+.finish-overlay[data-material-profile] .finish-title-glyphs.finish-platinum{background-image:linear-gradient(110deg,#7d879b 16%,#e4ebf6 37%,#fff 49%,#c5cfe0 59%,#768096 78%)}
+.finish-overlay[data-material-profile] .finish-title-glyphs.finish-rainbow{background-image:linear-gradient(110deg,#8295c8 15%,#9ae1e8 33%,#f8c5e5 48%,#eee1a0 60%,#b5c8ec 80%)}
+/* Lit hot-stamped name letters (detail and zoom only); the glyph-masked layer stays beneath as fallback. */
+.finish-name-foil{position:absolute;display:block;pointer-events:none!important}
+/* WebGL rarity foil for full-size Yu-Gi-Oh! cards: draws the lit card itself, so the CSS art layers and
+   spotlight step aside while it is active; the name lettering stays on top. */
+.finish-rarity-gl{position:absolute;inset:0;display:block;width:100%;height:100%;pointer-events:none!important}
+.finish-rarity-gl[hidden]{display:none}
+.finish-overlay.rarity-gl>.finish-layer:not(.finish-name-region),.finish-overlay.rarity-gl>.finish-spotlight,.finish-overlay.rarity-gl>.finish-pattern{display:none}
+.finish-overlay[data-material-profile] .finish-pattern{position:absolute;inset:0;pointer-events:none;background-position:var(--finish-x) var(--finish-y);mix-blend-mode:screen;opacity:.46}
+[data-material-profile=classic-holo] .finish-pattern,[data-material-profile=cosmos-holo] .finish-pattern{background-image:url('assets/finishes/cosmos.svg'),radial-gradient(ellipse at var(--finish-x) var(--finish-y),#b9e3ff55,transparent 45%);background-size:100% 100%;}
+[data-material-profile=classic-holo] .finish-pattern{opacity:.3}
+[data-material-profile=reverse-water] .finish-pattern{background-image:url('assets/finishes/water-pattern.svg');background-size:100% 100%;mix-blend-mode:soft-light;opacity:.65}
+/* Celebrations line texture stays inside its existing artwork mask. Match the
+   generic material selector's specificity so the quieter opacity actually wins. */
+.finish-overlay[data-material-profile="line-holo"] .finish-pattern{background-image:repeating-linear-gradient(92deg,transparent 0 3px,#b5e7ff20 3.6px,#b5e7ff30 4px,#b5e7ff20 4.4px,transparent 5px 10px);opacity:.18}
+[data-material-profile=textured-holo] .finish-micro{background-image:url('assets/finishes/relief-flow.svg');background-size:100% 100%;mix-blend-mode:soft-light;opacity:.65}
+[data-material-profile=textured-holo] .finish-pattern{background-image:radial-gradient(ellipse at var(--finish-x) var(--finish-y),#d1e7ff33,transparent 45%);opacity:.4}
+[data-material-profile=ygo-secret] .finish-secret{background-image:repeating-linear-gradient(135deg,transparent 0 4px,#92d8e0 4px 4.5px,#e9cbe8 4.5px 5px,transparent 5px 9px),linear-gradient(120deg,transparent 15%,#9abae9 35%,#c093cc 48%,#efce8e 60%,transparent 85%);background-size:120% 120%;opacity:.46}
+[data-material-profile=ygo-secret] .finish-pattern{background-image:repeating-linear-gradient(135deg,transparent 0 13px,#fff8 13px 13.6px,transparent 13.6px 21px);opacity:.2}
+[data-material-profile=starlight] .finish-starlight{background-image:repeating-linear-gradient(0deg,transparent 0 1.5px,#cfb4e980 1.5px 1.7px),repeating-linear-gradient(90deg,transparent 0 1.5px,#a7d5d980 1.5px 1.7px);background-size:100% 100%;opacity:.25}
+[data-material-profile=starlight] .finish-pattern{background-image:url('assets/finishes/starlight.svg');background-size:100% 100%;opacity:.4}
+[data-material-profile=etched] .finish-metal{background-image:url('assets/finishes/metal-grain.svg'),radial-gradient(ellipse at var(--finish-x) var(--finish-y),#fff4cba6,transparent 50%);background-size:100% 100%;mix-blend-mode:soft-light;opacity:.7}
+[data-material-profile=etched] .finish-pattern{background-image:radial-gradient(ellipse at var(--finish-x) var(--finish-y),#cde1d555,transparent 44%);mix-blend-mode:soft-light;opacity:.4}
+.finish-overlay[data-material-profile] :is(.finish-layer,.finish-pattern){mask-size:100% 100%;mask-repeat:no-repeat}
+/* Exact NEC #077 inverted display commander. A restrained approximation of
+   metallic grain, not rainbow foil. Soft-light preserves the printed white text.
+   Coverage is supplied by its exact-printing mask, including the rules field. */
+.finish-overlay[data-material-profile="nec77-etched"] .finish-metal{background-image:url('assets/finishes/metal-grain.svg'),radial-gradient(ellipse at var(--finish-x) var(--finish-y),#f1dfb8b3 0%,#b79c7044 30%,transparent 64%);background-size:100% 100%;mix-blend-mode:soft-light;opacity:.62}
+/* Etched foil throws a soft rainbow as the light crosses its frosted grain: a pale spectrum band that
+   slides with the light, kept faint so the metal still reads as frosted, not mirror foil. */
+.finish-overlay[data-material-profile="nec77-etched"] .finish-metal::after{background:radial-gradient(ellipse at var(--finish-x) var(--finish-y),#f6eee055,transparent 56%),linear-gradient(115deg,transparent 22%,#8fd8ff 36%,#c8a4ff 45%,#ff9fcb 53%,#ffe08f 61%,#9bf0c4 69%,transparent 80%) var(--finish-x) var(--finish-y)/260% 260% no-repeat;mix-blend-mode:screen;opacity:.42}
+.finish-overlay[data-material-profile="nec77-etched"] .finish-pattern{background-image:radial-gradient(ellipse at var(--finish-x) var(--finish-y),#eee5d177,transparent 56%);background-size:100% 100%;mix-blend-mode:soft-light;opacity:.34}
+/* Yu-Gi-Oh! rarity row: each chip carries a small swatch of its foil; the count shows how many printings share it. */
+/* All games use one swipeable row; long rarity lists never turn into a wall of pills. */
+.finish-choice-rail.ygo-rarity-chips{flex-wrap:nowrap;overflow-x:auto;overflow-y:hidden}
+.finish-choice-chip,.ygo-rarity-chip{display:inline-flex;align-items:center;gap:.4rem;min-height:44px;max-width:100%;white-space:nowrap}
+.ygo-rarity-chip small{font-size:calc(max(11px,11px) * var(--pw-ts,1));line-height:1;padding:2px 6px;border-radius:999px;background:color-mix(in srgb,currentColor 14%,transparent);opacity:.85}
+.rarity-swatch{flex:0 0 auto;width:16px;height:16px;border-radius:5px;border:1px solid color-mix(in srgb,currentColor 30%,transparent);background:#8b8f96}
+.rarity-swatch-plain{background:linear-gradient(135deg,#6f737a,#9a9ea6)}
+.rarity-swatch-silver{background:linear-gradient(135deg,#7c8796,#eef3f8 45%,#9aa6b4 60%,#dde4ec)}
+.rarity-swatch-rainbow{background:linear-gradient(135deg,#4fb6e6,#a98be6 30%,#f0a0b8 52%,#f2d27a 72%,#7fd3a6)}
+.rarity-swatch-ultra{background:linear-gradient(135deg,#4fb6e6,#a98be6 30%,#f0a0b8 52%,#7fd3a6);box-shadow:inset 0 0 0 2px #e3b44f}
+.rarity-swatch-diagonal{background:repeating-linear-gradient(135deg,#9fd8ec 0 2px,#d6b2ee 2px 4px,#f4d891 4px 6px)}
+.rarity-swatch-prism{background:conic-gradient(#9fd8ec 0 25%,#f0b0d0 0 50%,#f4d891 0 75%,#a6e4c2 0) 0 0/6px 6px}
+.rarity-swatch-gold{background:linear-gradient(135deg,#8c5f17,#f4d27d 45%,#b8862d 62%,#ffe9a8)}
+.rarity-swatch-platinum{background:linear-gradient(135deg,transparent 38%,#b8e4f4aa 46%,#e6c8f4aa 52%,#f4e2b0aa 58%,transparent 66%),linear-gradient(135deg,#6f7a8e,#dfe6f2 40%,#8f9bb0 64%,#c9d2e2)}
+.rarity-swatch-glitter{background:radial-gradient(circle at 25% 30%,#fff 0 1px,transparent 2px),radial-gradient(circle at 70% 65%,#fff 0 1px,transparent 2px),radial-gradient(circle at 60% 20%,#fff 0 .8px,transparent 1.6px),linear-gradient(135deg,#5ab6e8,#c08ae8 50%,#f1c26e)}
+.rarity-swatch-ghost{background:linear-gradient(135deg,#c9d6e6,#ffffff 40%,#a9b8cc 60%,#e8eef6);filter:saturate(.3)}
+.rarity-swatch-emboss{background:linear-gradient(145deg,#f2d690,#9a6d22 55%,#f7e2a6);box-shadow:inset 1px 1px 0 #fff6,inset -1px -1px 0 #0005}
+.rarity-swatch-parallel{background:repeating-linear-gradient(0deg,#a5dcef 0 1.5px,#e2c2f2 1.5px 3px,#f6dda0 3px 4.5px)}
+.rarity-swatch-foilcard{background:linear-gradient(135deg,#7fd0ea,#c8a6ee 40%,#f3c6a0 70%,#9fe0bf);box-shadow:inset 0 0 0 1px #fff8}
+@media(prefers-reduced-motion:no-preference){.ygo-rarity-chip.on .rarity-swatch{animation:rarity-swatch-glint 2.4s ease-in-out infinite}}
+@keyframes rarity-swatch-glint{0%,100%{filter:brightness(1)}50%{filter:brightness(1.35)}}
+/* Search tiles: premium rarities this card exists in, best first. */
+.rarity-strip{display:flex;align-items:center;gap:3px;margin-top:4px;min-height:12px}
+.rarity-strip .rarity-swatch{width:12px;height:12px;border-radius:3px}
+.rarity-strip small{font-size:calc(max(11px,10px) * var(--pw-ts,1));line-height:1;color:var(--muted,#aab);margin-left:2px}
+/* Foil-stamped promo logos: silver foil in the stamp's own letters, with a rainbow glint that follows the
+   light. Box 56.5%–89% x 11.5%–25.5% of the card; the traced letter mask fills that box exactly. */
+.finish-stamp-silver{opacity:.95;mix-blend-mode:screen;background-image:radial-gradient(ellipse at var(--finish-x) var(--finish-y),#ffffffd0,transparent 55%),linear-gradient(115deg,#9aa4b0 10%,#e9eef5 30%,#9ff0ff 42%,#ffd0f4 50%,#fff3b0 58%,#e9eef5 70%,#8d97a3 90%);background-size:100% 100%,260% 260%;background-position:0 0,var(--finish-x) var(--finish-y);-webkit-mask:url("assets/finishes/stamp-first-movie.png") 83.704% 13.372%/32.5% 14% no-repeat;mask:url("assets/finishes/stamp-first-movie.png") 83.704% 13.372%/32.5% 14% no-repeat}
+.finish-auto .finish-stamp-silver{opacity:.85}
+
+.rarity-swatch-reverse{background:linear-gradient(135deg,#6ac9dd,#b69ceb 42%,#edc886);box-shadow:inset 0 0 0 4px color-mix(in srgb,var(--surface,#171a22) 80%,transparent)}
+.rarity-swatch-unknown{background:repeating-linear-gradient(135deg,#727681 0 3px,#424650 3px 6px)}
+
 </style>
 
 <script type="module" src="./app-errors.js"></script>
@@ -3373,6 +3560,14 @@ const TCHECK={winR:()=>pstat('winR')>0,winW:()=>pstat('winW')>0,winBoth:()=>Obje
  codex40:()=>codexCount()>=40,codex100:()=>Object.values(codexData()).every(([ks,sn])=>ks.every(k=>sn.has(k))),lean:()=>pstat('lean')>0,bloodied:()=>pstat('bloodied')>0,
  gold300:()=>pstat('gold')>=300,emb10:()=>pstat('embs')>=10,daily7:()=>pstat('dailyStreak')>=7};
 function checkTitles(){const T=profile.titles=profile.titles||[],got=[];for(const [k,,f] of TITLES)if(!T.includes(k)&&TCHECK[f]&&(()=>{try{return TCHECK[f]()}catch(e){return false}})()){T.push(k);got.push(k)}if(got.length&&!profile.title)profile.title=got[0];return got}
+// ===== Card mastery (meta item 6, rulings #28): wins with a card in the deck. 3 = the app's foil (outside runs only), 6 = showcase frame,
+// 10 = borderless (frames show everywhere). Each card keeps a Codex toggle for which treatment it shows (profile.mShow).
+const MASTERY=[3,6,10],mWins=k=>{try{return (profile.mastery&&profile.mastery[k])||0}catch(e){return 0}},mEarned=k=>MASTERY.filter(n=>mWins(k)>=n).length;
+const mShow=k=>{const e=mEarned(k);let v=e;try{const s=profile.mShow&&profile.mShow[k];if(s!=null)v=Math.min(e,s)}catch(e2){}return v};
+const mFrame=k=>{const v=mShow(k);return v>=3?' pw-borderless':v>=2?' pw-showcase':''};
+const mFoil=k=>mShow(k)>=1?'<i class="finish-overlay finish-auto pw-mfoil" data-material-profile aria-hidden="true"><i class="finish-layer finish-rainbow"></i></i>':'';
+const withFoil=(h,k)=>h.replace(/^(<(?:button|span)[^>]*>)/,m=>m+mFoil(k)),masteryCard=(k,attrs='')=>withFoil(cardHtml({key:k,foil:false},attrs),k);
+function masteryWin(){const M=profile.mastery=profile.mastery||{},got=[];[...new Set(run.deck.map(x=>x.key))].forEach(k=>{if(!C[k]||C[k].r==='K')return;const a=M[k]||0;M[k]=a+1;if(MASTERY.includes(a+1))got.push(k)});return got}
 const statMax=(k,v)=>{const S=profile.stat=profile.stat||{};if(v>(S[k]||0))S[k]=v};
 function bossBeat(bk,a){if(!run)return;run.xpB=(run.xpB||0)+1;bumpStat('bosses');if(c&&run.hp>=(c.hp0||0))bumpStat('unscarred');const B=profile.bossBeat=profile.bossBeat||{},L=B[run.hero]=B[run.hero]||[];if(!L.includes(bk)){L.push(bk);run.xpF=(run.xpF||0)+1}
  if(a===1)bumpStat('a1');if(a===2)bumpStat('a2');const got=checkGoals();if(got.length)run.newHeroes=[...(run.newHeroes||[]),...got];store.set(PROF,profile)}
@@ -4161,7 +4356,7 @@ function enemyInfo(e){const d=E[e.key];const tr=[e.clock&&`${(run.act||1)>1?'The
 const popOf=o=>{let s='';if(o.pop)s+=`<span class="pop${o.pop>=8?' big':''}" style="font-size:${(1.1+Math.min(o.pop,20)/14).toFixed(2)}rem">−${o.pop}</span>`;if(o.heal)s+=`<span class="pop heal">+${o.heal}</span>`;o.pop=0;o.heal=0;return s};
 // {R} {W} {C} {2} in rules text become mana symbols, so the text reads like a real card.
 const manaSyms=t=>String(t).replace(/\{([WUBRGC0-9])\}/g,(m,k)=>/[WUBRG]/.test(k)?`<i class="ms pwk-mana" data-c="${k}" role="img" aria-label="${k}"></i>`:`<i class="ms ms-g" role="img" aria-label="${k==='C'?'colorless':k}">${k==='C'?'◇':k}</i>`);
-const cardHtml=(card,attrs='')=>{const d=C[card.key];const r={S:'Starter',C:'Common',U:'Uncommon',R:'Rare',M:'Mythic',K:'Curse'}[d.r];return `<button class="card${card.foil?' foil':''}" data-n="${d.name}" data-rar="${d.r}" data-col="${d.col||''}" ${attrs}>${d.ultimatum?'<i class="pw-ult" aria-hidden="true"></i>':''}<span class="head"><b>${d.name}${card.foil?' ✦':''}</b><span class="cost">${c&&view==='battle'?costOf(card):d.e}</span></span><span class="pic">${d.g}</span><span class="kind" data-audit-repeat>${d.r==='K'||d.r==='S'?d.kind+(d.r==='S'?' · '+r:''):d.kind+'<i class="gem" role="img" aria-label="'+r+'" title="'+r+'"></i>'}</span><span>${kwGlyph(manaSyms(d.text(card.foil)))}</span></button>`};
+const cardHtml=(card,attrs='')=>{const d=C[card.key];const r={S:'Starter',C:'Common',U:'Uncommon',R:'Rare',M:'Mythic',K:'Curse'}[d.r];return `<button class="card${card.foil?' foil':''}${mFrame(card.key)}" data-n="${d.name}" data-rar="${d.r}" data-col="${d.col||''}" ${attrs}>${d.ultimatum?'<i class="pw-ult" aria-hidden="true"></i>':''}<span class="head"><b>${d.name}${card.foil?' ✦':''}</b><span class="cost">${c&&view==='battle'?costOf(card):d.e}</span></span><span class="pic">${d.g}</span><span class="kind" data-audit-repeat>${d.r==='K'||d.r==='S'?d.kind+(d.r==='S'?' · '+r:''):d.kind+'<i class="gem" role="img" aria-label="'+r+'" title="'+r+'"></i>'}</span><span>${kwGlyph(manaSyms(d.text(card.foil)))}</span></button>`};
 /* 4.3.44: painted keyword glyphs (beta lane C) sit before Exile and Flashback in card text */
 const kwGlyph=t=>t.replace(/\b(Exile|Flashback)\b/g,(m,k)=>`<i class="pw-kwg" data-g="${k.toLowerCase()}" aria-hidden="true"></i>${k}`);
 const kws=a=>['haste','flying','reach','first','vigilance','deathtouch','lifelink','trample','defender'].filter(k=>a[k]||(k==='first'||k==='lifelink')&&akr(a)).map(k=>k==='first'?'first strike':k).join(' · ');
@@ -4313,7 +4508,7 @@ function rankBar(){if(run.xpGain==null)return '';const top=TRAIL_XP[TRAIL_XP.len
  const from=up||b>=TRAIL_XP.length?0:(x0-lo)/(hi-lo),to=b>=TRAIL_XP.length?1:(x1-lo)/(hi-lo),packs=[];for(let n=a+1;n<=b;n++)packs.push(...stepPack(n));
  const heroes=(run.newHeroes||[]).filter(k=>HEROES[k]).map(k=>`<span class="pw-uhero" data-n="${HEROES[k].name}" data-k="${k}" role="img" aria-label="${HEROES[k].short} unlocked" title="${HEROES[k].short}"><b>${HEROES[k].short}</b></span>`).join('');
  const titles=(run.newTitles||[]).map(k=>{const t=TITLES.find(x=>x[0]===k);return t?`<span class="pw-utitle" role="img" aria-label="Title earned: ${t[1]}" title="${t[3]}">${ico('crown')}<b>${t[1]}</b></span>`:''}).join('');
- return `<div class="pw-rank${up?' up':''}" role="img" aria-label="Trail step ${b}: ${x1} XP${b<TRAIL_XP.length?`, next step at ${hi}`:''}"><span class="pw-rank-n">${ico('up')}<b>${b}</b></span><span class="pw-rank-bar"><i style="width:${(from*100).toFixed(1)}%"></i><i class="gain" style="left:${(from*100).toFixed(1)}%;width:${(Math.max(0,to-from)*100).toFixed(1)}%"></i></span><b class="pw-rank-xp">+${run.xpGain}</b></div>${heroes||packs.length||titles?`<div class="pw-unlocks">${heroes}${packs.join('')}${titles}</div>`:''}`}
+ return `<div class="pw-rank${up?' up':''}" role="img" aria-label="Trail step ${b}: ${x1} XP${b<TRAIL_XP.length?`, next step at ${hi}`:''}"><span class="pw-rank-n">${ico('up')}<b>${b}</b></span><span class="pw-rank-bar"><i style="width:${(from*100).toFixed(1)}%"></i><i class="gain" style="left:${(from*100).toFixed(1)}%;width:${(Math.max(0,to-from)*100).toFixed(1)}%"></i></span><b class="pw-rank-xp">+${run.xpGain}</b></div>${heroes||packs.length||titles||(run.newMastery||[]).length?`<div class="pw-unlocks">${heroes}${packs.join('')}${(run.newMastery||[]).filter(cardArtOk).map(k=>withFoil(anteCard({key:k}),k)).join('')}${titles}</div>`:''}`}
 function endView(won){
  return `<section class="screen pw-end"><h2>${won?bossShort(bossOf())+' falls':HERO.short+' falls'}</h2><p>${won?`You cleared ${(run.act||1)>1?'Innistrad and Zendikar':'Innistrad'} with ${run.deck.length} cards and ${run.emblems.length} emblems, after ${run.fights} fights. Biggest hit: ${run.best}. Best turn: ${run.bestTurn||0} damage.`:`The run ends after ${run.fights} fights. Biggest hit: ${run.best}. Best turn: ${run.bestTurn||0} damage.`}</p>
  ${!won&&c&&c.ante?`<div class="ante-result" data-r="lost">${anteCard(c.ante)}<p>The wager is lost with the run.</p></div>`:''}${rankBar()}<div class="choices"><button class="btn main" data-act="new">New run</button><button class="btn" data-act="replay">Replay seed ${seed}</button><button class="btn pw-share" data-act="share">${ico('share')}<span>Share</span></button></div></section>`;
@@ -4503,6 +4698,7 @@ function endRun(won){if(run.recorded)return;run.recorded=1;if(won)try{sparkWin()
  try{profile.mercy=!won&&act===1&&!(c&&c.kind==='boss');profile.diedTo=!won&&c&&c.kind==='boss'?(E[bossOf(act)]?E[bossOf(act)].name:bossOf(act)).toLowerCase().split(/[ ,]/)[0]:null}catch(e){}/* patrons: Ugin's Mercy and diedto lines */
  {const hk=run.hero,fl=Math.max(0,(run.fl||0)-(won?0:1));run.xpHero=hk;run.xpFrom=heroXP(hk);run.xpGain=fl*10+(run.xpEl||0)*25+(run.xpB||0)*60+(won?100:0)+(run.xpF||0)*50;(profile.trailXP=profile.trailXP||{})[hk]=run.xpFrom+run.xpGain;
   if(!won)bumpStat('deaths');else{bumpStat('wins');bumpStat('win'+hk);if(run.deck.length<=15)bumpStat('lean');if(run.hp<=5)bumpStat('bloodied')}statMax('embs',run.emblems.length);run.won=!!won;const got=checkGoals();if(got.length)run.newHeroes=[...(run.newHeroes||[]),...got]}
+ if(won)try{run.newMastery=masteryWin()}catch(e){}
  try{run.newTitles=checkTitles()}catch(e){}
  const h={at:Date.now(),hero:HERO.key,seed,act,floor,won:!!won,killedBy:foe?foe.name.replace(/,.*$/,''):'',fights:run.fights||0,bestTurn:run.bestTurn||0,turns:c?c.turn:0};
  store.set(HIST,[h,...(store.get(HIST)||[])].slice(0,20));store.set(PROF,profile);
@@ -4557,7 +4753,7 @@ function journalView(){const t=JT,D=codexData();const tab=(k,l)=>`<button class=
  let body='';
  if(t==='runs'){const T=profile.titles||[];body=`<div class="pw-titles" role="group" aria-label="Titles">${TITLES.map(([k,n,,w])=>T.includes(k)?`<button type="button" class="btn pw-title" data-act="title" data-k="${k}" aria-pressed="${profile.title===k}" title="${w}">${ico('crown')}<b>${n}</b></button>`:`<span class="pw-title pw-sil" role="img" aria-label="${w}" title="${w}">${ico('lock')}<b>${n}</b></span>`).join('')}</div>`;const L=store.get(HIST)||[];const seen=new Set(L.map(h=>h.seed+h.hero));const all=[...L,...(CLOUDH||[]).filter(h=>!seen.has(h.seed+h.hero))].sort((a,b)=>b.at-a.at).slice(0,20);
   body+=all.length?`<ol class="pw-runs">${all.map(h=>`<li class="pw-run" data-won="${h.won?1:0}" data-hero="${h.hero}"><span class="pw-run-r" role="img" aria-label="${h.won?'Won':'Lost'}">${ico(h.won?'crown':'skull')}</span><span class="pw-run-t"><b>${(HEROES[h.hero]||HERO).short} · Act ${h.act} · Floor ${h.floor}</b><span class="muted">${h.won?'Victory':h.killedBy?'Fell to '+h.killedBy:'Fell on the road'} · ${h.fights} fights · Best turn ${h.bestTurn}</span></span><button class="btn pw-run-go" data-act="replayseed" data-s="${h.seed}" data-h="${h.hero}" aria-label="Replay seed ${h.seed}">${ico('cycle')}<span>${h.seed}</span></button></li>`).join('')}</ol>`:'<p class="muted">No runs yet.</p>'}
- else if(t==='cards'){const [ks,sn]=D.cards,tile=k=>sn.has(k)?cardHtml({key:k,foil:false},'tabindex="-1" data-comp'):`<span class="pw-csil pw-sil" data-rar="${C[k].r}" role="img" aria-label="Not found yet"><span class="pw-sil-q">?</span></span>`;
+ else if(t==='cards'){const [ks,sn]=D.cards,tile=k=>sn.has(k)?(mEarned(k)?`<span class="pw-mtile">${masteryCard(k,'tabindex="-1" data-comp')}<button type="button" class="btn pw-mtog" data-act="mtog" data-k="${k}" aria-label="${C[k].name}: ${mWins(k)} wins, showing ${['no treatment','foil','showcase','borderless'][mShow(k)]}" title="${mWins(k)} wins">${ico('star')}<b>${mWins(k)}</b><i data-v="${mShow(k)}"></i></button></span>`:cardHtml({key:k,foil:false},'tabindex="-1" data-comp')):`<span class="pw-csil pw-sil" data-rar="${C[k].r}" role="img" aria-label="Not found yet"><span class="pw-sil-q">?</span></span>`;
   const grid=L=>`<div class="pw-comp">${L.map(tile).join('')}</div>`;
   body=head('cards')+Object.values(HEROES).map(h=>{const hk=ks.filter(k=>C[k].col===h.key);if(!hk.length)return '';const used=new Set();
    const groups=ARCHLINE.filter(([g])=>g===h.key).map(([,a,line])=>{const L=hk.filter(k=>archOf(k).includes(a));L.forEach(k=>used.add(k));return L.length?`<h4>${ARCHNAME[a]||a}</h4><p class="pw-jplan">${line()}</p>${grid(L)}`:''}).join('');
@@ -4592,6 +4788,7 @@ document.getElementById('app').addEventListener('click',ev=>{
  if(a==='journal'){JT='runs';view='journal';loadCloudHistory();return render()}
  if(a==='jtab'){JT=b.dataset.k;if(JT==='foes')loadActArt();return render()}
  if(a==='jback')return newRun();
+ if(a==='mtog'){const k=b.dataset.k,e=mEarned(k),v=mShow(k);(profile.mShow=profile.mShow||{})[k]=v<=0?e:v-1;store.set(PROF,profile);return render()}
  if(a==='title'){profile.title=b.dataset.k;store.set(PROF,profile);return render()}
  if(a==='replayseed')return newRun(+b.dataset.s,HEROES[b.dataset.h]&&heroOpen(b.dataset.h)?b.dataset.h:undefined);
  if(a==='share')return shareRun(b);
