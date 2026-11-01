@@ -1884,7 +1884,7 @@ A.playEconCopyList=()=>{const e=econUi.edit;if(!e?.cards?.length)return;copyText
 // Card meta from the cached tournament lists (no prices): share of lists, the archetype that
 // plays it most, and a jump to Build a deck filtered to lists with the card.
 function cardMetaStats(name){const out=[];for(const fmt of FINDER_FORMATS){const data=metaState('mtg:'+(fmt==='Commander'?'EDH':fmt)).data;const decks=(data?.decks||[]).filter(d=>Array.isArray(d.main));if(decks.length<8)continue;
- const key=key(name),hit=decks.filter(d=>[...(d.commanders||[]).map(r=>typeof r==='string'?r:r.name),...d.main.map(r=>r.name)].some(n=>key(n)===key||key(String(n).split(' // ')[0])===key));if(!hit.length)continue;
+ const want=key(name),hit=decks.filter(d=>[...(d.commanders||[]).map(r=>typeof r==='string'?r:r.name),...d.main.map(r=>r.name)].some(n=>key(n)===want||key(String(n).split(' // ')[0])===want));if(!hit.length)continue;
  const arch=new Map();for(const d of hit){const a=d.archetype||d.name||'';arch.set(a,(arch.get(a)||0)+1);}const top=[...arch].sort((a,b)=>b[1]-a[1])[0];
  out.push({format:fmt,share:hit.length/decks.length,lists:hit.length,total:decks.length,top:top?.[0]||'',topLists:top?.[1]||0});}
  return out.sort((a,b)=>b.share-a.share);}
