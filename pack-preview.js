@@ -278,7 +278,7 @@ const setEmblems=(game,set)=>game==='mtg'&&/^[a-z0-9]{2,8}$/i.test(set.code||'')
 // reverse holo can be drawn. booster: a Magic set's real booster sheets ({data, cards} from mtg-boosters.js).
 // variant 'play': a Play pack (play-progression.md). The server has already rolled it (drawn); no price is
 // read, shown or used for any feel, there is no wishlist or shop, and "again" asks onNext for the next banked pack.
-export function openPackPreview({game,set,cards,complete=false,featured=null,hydrate=null,booster=null,onDetails,onWishlist,onCopy,onBuy,isCurrent=()=>true,variant='',drawn=null,onNext=null,note=''}){
+export function openPackPreview({game,set,cards,complete=false,featured=null,hydrate=null,booster=null,onDetails,onWishlist,onCopy,onBuy,isCurrent=()=>true,variant='',drawn=null,onNext=null,note='',onLand=null}){
  const play=variant==='play';if(play){featured=null;hydrate=null;}
  // A set page tags its cards with the release they were listed under; only a Yu-Gi-Oh! printing needs
  // it. Elsewhere that unverified tag would hide the pulled card's foil, so the pack goes without it.
@@ -433,7 +433,9 @@ export function openPackPreview({game,set,cards,complete=false,featured=null,hyd
   if(reduce()){done();return;}w.classList.add('tearing');later(done,440);};
  // Turning a card over: it lifts off the table as it flips and settles back down.
  const flipLift=(el,lift,ms=560)=>{if(reduce()||!el?.animate)return;el.animate([{translate:'0 0',rotate:'0deg'},{translate:`0 ${-lift}%`,rotate:`${-1.5-lift*.12}deg`,offset:.42},{translate:'0 0',rotate:'0deg'}],{duration:ms,easing:'cubic-bezier(.3,.7,.3,1)',composite:'add'});};
- const close=()=>{if(disposed)return;quiet();disposed=true;cancelAnimationFrame(raf);stopTilt();dialog.close();dialog.remove();};
+ // Play: the opened cards fly to the collection when the pack is put away (close or next pack).
+ const landing=()=>{if(!play||!onLand||dialog.querySelector('.pack-content')?.hidden)return null;return [...dialog.querySelectorAll('.pack-card img[data-pack-src]')].map(img=>{const r=img.getBoundingClientRect(),g=img.cloneNode();g.src=img.dataset.packSrc;g.hidden=false;return r.width&&r.bottom>0&&r.top<innerHeight?{img:g,a:{left:r.left,top:r.top,width:r.width,height:r.height}}:null;}).filter(Boolean);};
+ const close=()=>{if(disposed)return;const land=landing();quiet();disposed=true;cancelAnimationFrame(raf);stopTilt();dialog.close();dialog.remove();if(land?.length)onLand(land);};
  // Inspecting a pulled card opens its page above the pack. The pack stays exactly as it is underneath (same pulls,
  // reveals, focused card, nothing re-dealt or replayed), paused while covered, and is back when that page closes.
  let suspended=false;
@@ -503,7 +505,7 @@ export function openPackPreview({game,set,cards,complete=false,featured=null,hyd
   // Reveal All is one moment: a single feel for the best newly revealed pull, not every card's at once.
   if(action==='reveal-all'){if(charging!==null)return;let best=-1,at=-1;picks.forEach((_,j)=>{if(!revealed.has(j)){const L=levelOf(j);if(L>best){best=L;at=j;}reveal(j,{silent:true});}});if(best>=0){haptic(FEELS[best]);appSound(PACK_SOUND[FEELS[best]],{gap:0});show(at);later(()=>revealMoment(at),120);}else show(Math.floor(picks.length/2));return;}
   // A new pack is a new sealed pack: it waits to be torn open, rather than dealing straight away.
-  if(action==='again'){let next=null;if(play){busy=true;b.disabled=true;try{next=await onNext?.();}catch(error){status.textContent=error?.message||'Could not open the next pack.';}finally{busy=false;b.disabled=false;}if(!next?.picks?.length){if(!status.textContent)status.textContent='No more packs to open.';return;}drawn=next.picks;set=next.set||set;}
+  if(action==='again'){let next=null;if(play){busy=true;b.disabled=true;try{next=await onNext?.();}catch(error){status.textContent=error?.message||'Could not open the next pack.';}finally{busy=false;b.disabled=false;}if(!next?.picks?.length){if(!status.textContent)status.textContent='No more packs to open.';return;}const land=landing();if(land?.length)onLand(land);drawn=next.picks;set=next.set||set;}
    quiet();opening=false;picks=draw();ctxs=packFinishes(game,picks);fill();revealed=new Set();dialog.classList.remove('pack-done','pack-dealt');handEl.innerHTML=hand();wireHold();for(const x of dialog.querySelectorAll('[data-pack="copy"],[data-pack="wish"],[data-pack="buy"]'))x.disabled=true;status.textContent='';
    dialog.querySelector('.pack-content').hidden=true;const sealed=dialog.querySelector('.pack-sealed');sealed.hidden=false;sealed.querySelector('.pack-wrapper')?.classList.remove('tearing');sealed.querySelector('.pack-wrapper')?.focus({preventScroll:true});return;}
   if(['copy','wish','buy'].includes(action)&&revealed.size===picks.length){

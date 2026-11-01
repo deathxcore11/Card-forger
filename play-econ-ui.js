@@ -2,9 +2,14 @@
 // Play homepage, the Merchant, Packs, Collection and Decks. Legacy of the Duelist style menus
 // on real card art, in the app's glass and gold. Markup only; app.js wires the actions.
 // The wall: no prices anywhere in Play. Cards show art, name, rarity and copies owned (of 4).
-import {SEALS, masteryLevel, deckShortfall} from './play-econ-rules.js';
+import {SEALS, FORGE_STEPS, forgeRatio, masteryLevel, deckShortfall, deckRules, copiesLeft, isBasicLand, PLAY_FORMATS, ownedByName} from './play-econ-rules.js';
+import {cardGroup} from './play-econ-cards.js';
+import {setRowContent} from './set-list-ui.js';
+import {segmented, setIconUrl, img} from './ui.js';
+import {finishAttrs} from './finish-preview.js';
+import {tileChrome} from './tiles.js';
+import {deckShell} from './deck-viewer.js';
 import {purse} from './play-econ-client.js';
-import {packArtUrl} from './pack-preview.js';
 const esc = v => String(v ?? '').replace(/[&<>"']/g, c => ({'&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;'}[c]));
 const n = v => Number(v || 0).toLocaleString('en-US');
 const ART = 'https://cards.scryfall.io/art_crop/front/';
@@ -16,7 +21,7 @@ const TILE_ART = {
   decks: ART + 'f/d/fd99bce1-ce39-464b-8e61-2631eb3ed6f6.jpg'};      // Tolarian Academy
 export const cardImageByName = (name, version = 'normal') => 'https://api.scryfall.com/cards/named?format=image&version=' + version + '&exact=' + encodeURIComponent(name);
 
-export const coinIcon = (cls = '') => `<svg class="pe-coin ${cls}" viewBox="0 0 32 32" aria-hidden="true"><circle cx="16" cy="16" r="14" fill="url(#peGold)"/><circle cx="16" cy="16" r="10.5" fill="none" stroke="#7a5418" stroke-width="1.4" opacity=".7"/><path d="M16 8.5l2.2 4.6 5 .6-3.7 3.4 1 5-4.5-2.5-4.5 2.5 1-5-3.7-3.4 5-.6z" fill="#7a5418" opacity=".75"/></svg>`;
+export const coinIcon = (cls = '') => `<svg class="pe-coin ${cls}" viewBox="0 0 32 32" aria-hidden="true"><circle cx="16" cy="16" r="14" fill="url(#peGold)" stroke="#6b4612" stroke-width="1.6"/><circle cx="16" cy="16" r="10.5" fill="none" stroke="#6b4612" stroke-width="1.5"/><path d="M16 8.5l2.2 4.6 5 .6-3.7 3.4 1 5-4.5-2.5-4.5 2.5 1-5-3.7-3.4 5-.6z" fill="#5c3c0c"/></svg>`;
 const SEAL_INK = {c: ['#9aa1a9', '#5d636b'], u: ['#d9e3ea', '#7e8d99'], r: ['#f1cf7c', '#a77a23'], m: ['#f28a4b', '#a8381b']};
 export const sealIcon = (key, cls = '') => { const [a, b] = SEAL_INK[key] || SEAL_INK.c; return `<svg class="pe-seal ${cls}" data-seal="${key}" viewBox="0 0 32 32" aria-hidden="true"><path d="M16 2.5c2 0 2.6 1.9 4.4 2.5s3.6-.6 5 .8.1 3.2.8 5 2.5 2.4 2.5 4.4-1.9 2.6-2.5 4.4.6 3.6-.8 5-3.2.1-5 .8-2.4 2.5-4.4 2.5-2.6-1.9-4.4-2.5-3.6.6-5-.8-.1-3.2-.8-5S2.5 18 2.5 16s1.9-2.6 2.5-4.4-.6-3.6.8-5 3.2-.1 5-.8S14 2.5 16 2.5z" fill="${a}"/><circle cx="16" cy="16" r="8.4" fill="none" stroke="${b}" stroke-width="1.6"/><path d="M16 10.5l1.6 3.4 3.7.4-2.8 2.5.8 3.7-3.3-1.9-3.3 1.9.8-3.7-2.8-2.5 3.7-.4z" fill="${b}"/></svg>`; };
 const packIcon = `<svg class="pe-pack-icon" viewBox="0 0 32 32" aria-hidden="true"><path d="M8 4h16l-1 3 1 3v15l-1 3 1 3H8l1-3-1-3V10l1-3z" fill="url(#peGold)" stroke="#7a5418" stroke-width="1"/><path d="M12 14h8M12 18h8" stroke="#7a5418" stroke-width="1.4" opacity=".6"/></svg>`;
@@ -63,12 +68,34 @@ export function stuffRowMarkup(snapshot) {
 const head = (title, snapshot, eyebrow = 'Play') => `<header class="pl-head pe-head"><button class="pl-back" data-act="playHome" aria-label="Back to Play"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="m15 5-7 7 7 7"/></svg></button><div class="pl-head-title"><p class="eyebrow">${eyebrow}</p><h1 id="playTitle" tabindex="-1">${title}</h1></div>${purseMarkup(snapshot)}</header>`;
 const statusLine = snap => `<p class="pe-status" role="status" aria-live="polite">${esc(snap?.error || '')}</p>`;
 // The real booster wrapper in front, the set's own key art behind it.
-const packArt = (code, name = '') => `${esc(packArtUrl('mtg', {code, name}))}),url(/img/mtg-set/${esc(code)}.jpg`;
+// A booster wrapper drawn for every set alike: crimped foil, the set's most played card's art,
+// its symbol and name on the band. No product photos, so no white boxes or doubled titles.
+export function boosterMarkup({code = '', name = '', facts = null, big = false, mini = false} = {}) {
+  const f = facts?.set?.(code) || {}, label = name || f.name || code.toUpperCase(), icon = f.icon || setIconUrl(code);
+  return `<span class="pe-booster${big ? ' pe-booster--big' : ''}${mini ? ' pe-booster--mini' : ''}" aria-hidden="true"${f.art ? ` style="--art:url('${esc(f.art)}')"` : ''}><span class="pe-booster-art"></span><span class="pe-booster-band"><span class="pe-booster-icon" style="--icon:url('${esc(icon)}')"></span><b>${esc(label)}</b><small>Play booster</small></span><span class="pe-booster-sheen"></span></span>`;
+}
 
-export function shopMarkup(snapshot, {query = '', press = null} = {}) {
+// The Forge (play-progression.md): seals climb one rarity at a time, common to mythic. Each step shows
+// how close the next seal is, and glows when it can be struck.
+export function forgeMarkup(snapshot, {compact = false} = {}) {
+  const s = snapshot?.state, w = s?.wallet || {}, busy = !!snapshot?.busy;
+  const seal = k => `<span class="pe-forge-seal" data-seal="${k}">${sealIcon(k)}<b>${n(w['seal_' + k])}</b><small>${SEALS.find(x => x.key === k).rarity}</small></span>`;
+  const step = to => {
+    const from = FORGE_STEPS[to], ratio = forgeRatio(s?.config, to), have = w['seal_' + from] | 0, can = Math.min(10, Math.floor(have / ratio)), part = have % ratio || (can ? ratio : 0);
+    const name = SEALS.find(x => x.key === to).rarity;
+    return `<span class="pe-forge-step${can ? ' ready' : ''}"><span class="pe-forge-meter" role="img" aria-label="${n(have)} of ${ratio} ${SEALS.find(x => x.key === from).rarity} seals for the next ${name} seal">${Array.from({length: ratio}, (_, i) => `<i class="${i < part ? 'on' : ''}"></i>`).join('')}</span>
+      <button class="pe-forge-strike" data-act="playEconForge" data-econ-to="${to}" data-econ-times="1" ${can && !busy ? '' : 'disabled'} aria-label="Forge ${ratio} ${SEALS.find(x => x.key === from).rarity} seals into 1 ${name} seal"><span aria-hidden="true">Forge ${name}</span></button>
+      ${can > 1 ? `<button class="link small pe-forge-all" data-act="playEconForge" data-econ-to="${to}" data-econ-times="${can}" ${busy ? 'disabled' : ''}>Forge ${can}</button>` : can ? '' : `<span class="pe-forge-hint">${ratio - have} more ${SEALS.find(x => x.key === from).rarity}</span>`}</span>`;
+  };
+  return `<section class="pe-forge${compact ? ' pe-forge--compact' : ''}" aria-labelledby="peForgeTitle${compact ? 'Home' : ''}">
+    <div class="pe-forge-head"><h2 id="peForgeTitle${compact ? 'Home' : ''}">The Forge</h2><p>Three seals of one rarity strike one of the next. Seals stamp any card of their rarity at the Merchant.</p></div>
+    <div class="pe-forge-line">${seal('c')}${step('u')}${seal('u')}${step('r')}${seal('r')}${step('m')}${seal('m')}</div></section>`;
+}
+
+export function shopMarkup(snapshot, {query = '', press = null, facts = null} = {}) {
   const s = snapshot.state, price = s.config?.packPrice || 500, coins = s.wallet?.coins | 0, shop = s.shop || [], reward = s.rewardSet;
   const q = query.trim().toLowerCase(), list = (q ? shop.filter(x => x.name.toLowerCase().includes(q) || x.code === q) : shop).slice(0, q ? 60 : 24);
-  const buy = (set, big = false) => `<article class="pe-pack${big ? ' pe-pack--feature' : ''}"><span class="pe-pack-art" style="background-image:url(${packArt(set.code, set.name)})" aria-hidden="true"></span><span class="pe-pack-name">${esc(set.name)}</span><span class="pe-pack-year">${esc(String(set.released || '').slice(0, 4))}</span><button class="pe-buy" data-act="playEconBuy" data-econ-set="${esc(set.code)}" ${coins < price || snapshot.busy ? 'disabled' : ''} aria-label="Buy a ${esc(set.name)} pack for ${n(price)} coins">${coinIcon('pe-coin--sm')}<b>${n(price)}</b></button></article>`;
+  const buy = (set, big = false) => `<article class="pe-pack pe-pack--shop${big ? ' pe-pack--feature' : ''}" aria-label="${esc(set.name)}, ${esc(String(set.released || '').slice(0, 4))}">${boosterMarkup({code: set.code, name: set.name, facts, big})}<span class="pe-pack-year">${esc(String(set.released || '').slice(0, 4))}</span><button class="pe-buy" data-act="playEconBuy" data-econ-set="${esc(set.code)}" ${coins < price || snapshot.busy ? 'disabled' : ''} aria-label="Buy a ${esc(set.name)} pack for ${n(price)} coins">${coinIcon('pe-coin--sm')}<b>${n(price)}</b></button></article>`;
   const pressCard = press?.card ? (() => { const c = press.card, key = {common: 'c', uncommon: 'u', rare: 'r', mythic: 'm'}[c.rarity] || 'r', have = (s.cards || []).find(x => x.o === c.oracle_id)?.c || 0, seals = s.wallet?.['seal_' + key] | 0;
     return `<div class="pe-press-result"><img src="${esc(c.image_uris?.normal || c.card_faces?.[0]?.image_uris?.normal || cardImageByName(c.name))}" alt="${esc(c.name)}" loading="lazy" referrerpolicy="no-referrer"><div class="pe-press-copy"><strong>${esc(c.name)}</strong><span>${have} of 4 owned</span><button class="pe-stamp" data-act="playEconCraft" data-econ-card="${esc(c.id)}" ${have >= 4 || seals < 1 || snapshot.busy ? 'disabled' : ''}>${sealIcon(key)}<b>${have >= 4 ? 'All 4 owned' : 'Stamp it'}</b></button></div></div>`; })() : press?.error ? `<p class="pe-press-empty">${esc(press.error)}</p>` : '';
   return `<section class="play-menu pe-screen pe-shop" aria-labelledby="playTitle">${head('Merchant', snapshot)}
@@ -78,60 +105,169 @@ export function shopMarkup(snapshot, {query = '', press = null} = {}) {
         <label class="pe-search"><span>Any set, any year</span><input type="search" data-input="playEconSetSearch" value="${esc(query)}" maxlength="60" placeholder="Search sets"></label>
         <div class="pe-pack-grid">${list.filter(x => x.code !== reward?.code).map(x => buy(x)).join('') || '<p class="pe-press-empty">No set by that name.</p>'}</div>
       </section>
+      ${forgeMarkup(snapshot)}
       <section class="pe-press" aria-labelledby="pePressTitle"><h2 id="pePressTitle">Seal press</h2>
-        <div class="pe-press-seals">${SEALS.map(x => `<span class="pe-press-seal">${sealIcon(x.key)}<b>${n(s.wallet?.['seal_' + x.key])}</b><small>${x.rarity}</small></span>`).join('')}</div>
         <form class="pe-press-find" data-submit="playEconFind"><input name="card" type="search" maxlength="160" autocomplete="off" placeholder="Card name" aria-label="Card to stamp" value="${esc(press?.query || '')}"><button class="btn" ${press?.busy ? 'disabled' : ''}>${press?.busy ? 'Finding…' : 'Find'}</button></form>
         ${pressCard}
       </section>
     </div>${statusLine(snapshot)}</section>`;
 }
 
-export function packsMarkup(snapshot) {
-  const s = snapshot.state, packs = s.packs || [], names = new Map((s.shop || []).map(x => [x.code, x.name]));
+export function packsMarkup(snapshot, {facts = null} = {}) {
+  const s = snapshot.state, packs = s.packs || [], names = new Map([...(s.shop || []).map(x => [x.code, x.name]), ...(s.rewardSet ? [[s.rewardSet.code, s.rewardSet.name]] : [])]);
   const groups = new Map();
   for (const p of packs) { if (!groups.has(p.set)) groups.set(p.set, []); groups.get(p.set).push(p); }
   return `<section class="play-menu pe-screen pe-packs" aria-labelledby="playTitle">${head('Packs', snapshot)}
-    ${groups.size ? `<div class="pe-pack-grid pe-pack-grid--open">${[...groups].map(([code, list]) => `<button class="pe-pack pe-pack--open" data-act="playEconOpen" data-econ-pack="${esc(list[0].id)}" ${snapshot.busy ? 'disabled' : ''} aria-label="Open a ${esc(names.get(code) || code.toUpperCase())} pack, ${list.length} waiting"><span class="pe-pack-art" style="background-image:url(${packArt(code, names.get(code) || '')})" aria-hidden="true"></span><span class="pe-pack-name">${esc(names.get(code) || code.toUpperCase())}</span><span class="pe-badge">${n(list.length)}</span></button>`).join('')}</div>`
+    ${groups.size ? `<div class="pe-pack-grid pe-pack-grid--open">${[...groups].map(([code, list]) => `<button class="pe-pack pe-pack--open${snapshot.busy === 'open:' + list[0].id ? ' pe-pack--opening' : ''}" data-act="playEconOpen" data-econ-pack="${esc(list[0].id)}" ${snapshot.busy ? 'disabled' : ''} aria-label="Open a ${esc(names.get(code) || code.toUpperCase())} pack, ${list.length} waiting">${boosterMarkup({code, name: names.get(code), facts})}<span class="pe-badge">${n(list.length)}</span></button>`).join('')}</div>`
       : `<div class="pe-empty"><h2>Every pack is open</h2><p>Packs come from Story battles, Planeswalk bosses, weekly quests and the Merchant.</p><button class="btn" data-act="playEconView" data-econ-view="shop">Visit the Merchant</button></div>`}
     ${statusLine(snapshot)}</section>`;
 }
 
-export function collectionMarkup(snapshot, {query = '', rarity = ''} = {}) {
-  const cards = (snapshot.state.cards || []).slice().sort((a, b) => a.n.localeCompare(b.n));
-  const q = query.trim().toLowerCase(), shown = cards.filter(c => (!q || c.n.toLowerCase().includes(q)) && (!rarity || c.r === rarity));
-  const pips = c => `<span class="pe-pips" aria-label="${c.c} of 4">${[1, 2, 3, 4].map(i => `<i class="${i <= c.c ? 'on' : ''}"></i>`).join('')}</span>`;
+const COLORS = [['W', 'White'], ['U', 'Blue'], ['B', 'Black'], ['R', 'Red'], ['G', 'Green'], ['C', 'Colorless']];
+const TYPES = ['Creatures', 'Planeswalkers', 'Instants', 'Sorceries', 'Artifacts', 'Enchantments', 'Lands'];
+const pips = c => `<span class="pe-pips" aria-label="${c.c} of 4">${[1, 2, 3, 4].map(i => `<i class="${i <= c.c ? 'on' : ''}"></i>`).join('')}</span>`;
+// The printing you pulled, else the card's own art, else Scryfall's image by name.
+const cardImage = (c, facts) => c.p?.image || facts?.card?.(c.o)?.i || cardImageByName(c.n);
+
+// The app's own card tile (foil, holo stamp, colour and set emblems, hover and tilt), with copies
+// owned in Play where the app shows a price. Tapping opens the app's card sheet in Play mode.
+export function playCardTile(c, facts) {
+  const card = facts?.card?.(c.o)?.card || {name: c.n, rarity: c.r, set: c.p?.set || c.s?.[0] || ''}, n = Math.min(c.c | 0, 4);
+  return `<button class="grid-card own" ${card.id ? finishAttrs('mtg', card, {}) : ''} data-act="card" data-name="${esc(c.n)}" data-play-card="1">${img(cardImage(c, facts), c.n, 'card-img')}${card.id ? tileChrome('mtg', card) : ''}<span class="grid-meta pe-tile-meta"><span class="pe-tile-name">${esc(c.n)}</span>${pips(c)}</span></button>`;
+}
+
+// Search, rarity, colour, type and set filters, shared by Collection and the deck builder.
+export function filterPlayCards(cards = [], facts = null, {query = '', rarity = '', color = '', type = '', set = ''} = {}) {
+  const q = query.trim().toLowerCase();
+  return cards.filter(c => {
+    if (q && !c.n.toLowerCase().includes(q)) return false;
+    if (rarity && c.r !== rarity) return false;
+    if (set && !(c.s || []).includes(set)) return false;
+    const f = facts?.card?.(c.o);
+    if (color && (!f || (color === 'C' ? f.k !== '' : !f.k.includes(color)))) return false;
+    if (type && (!f || cardGroup(f) !== type)) return false;
+    return true;
+  });
+}
+
+function filterBar(ui = {}, {sets = []} = {}) {
+  const setName = code => sets.find(x => x.code === code)?.name || code.toUpperCase();
+  return `<div class="pe-tools pe-filters"><label class="pe-search"><span>Find a card</span><input type="search" data-input="playEconCardSearch" value="${esc(ui.cardQuery || '')}" maxlength="80" placeholder="Card name"></label>
+    <div class="pe-color-tabs" role="group" aria-label="Colour">${COLORS.map(([k, l]) => `<button class="pe-mana pe-mana--${k}" data-act="playEconColor" data-econ-color="${k}" aria-pressed="${ui.color === k}" aria-label="${l}" title="${l}"><i aria-hidden="true">${k}</i></button>`).join('')}</div>
+    <select class="pe-type" data-change="playEconType" aria-label="Card type"><option value="">All types</option>${TYPES.map(t => `<option${ui.type === t ? ' selected' : ''}>${t}</option>`).join('')}</select>
+    <div class="pe-rarity-tabs" role="group" aria-label="Rarity">${[['', 'All'], ['common', 'Common'], ['uncommon', 'Uncommon'], ['rare', 'Rare'], ['mythic', 'Mythic']].map(([k, l]) => `<button data-act="playEconRarity" data-econ-rarity="${k}" aria-pressed="${(ui.rarity || '') === k}">${l}</button>`).join('')}</div>
+    <select class="pe-sort" data-change="playEconSort" aria-label="Sort cards">${PLAY_SORTS.map(([k, l]) => `<option value="${k}"${(ui.sort || '') === k ? ' selected' : ''}>${l}</option>`).join('')}</select></div>
+    ${sets.length > 1 ? `<div class="pe-binder-tabs" role="group" aria-label="Set">${[{code: '', name: 'Every set'}, ...sets].map(x => `<button class="pe-binder-tab" data-act="playEconSet" data-econ-set="${esc(x.code)}" data-econ-filter="1" aria-pressed="${(ui.set || '') === x.code}" aria-label="${esc(x.name)}" title="${esc(x.name)}">${x.code ? `<span class="set-icon" style="--icon:url('${esc(x.icon)}')" aria-hidden="true"></span><span>${esc(x.code.toUpperCase())}</span>` : '<span>All</span>'}</button>`).join('')}</div>` : ''}`;
+}
+
+// How the Trunk can be ordered. Set order puts the newest set first, like the Merchant.
+export const PLAY_SORTS = [['', 'Name'], ['rarity', 'Rarity'], ['set', 'Newest set'], ['cmc', 'Mana value'], ['count', 'Most copies']];
+const RARITY_RANK = {mythic: 0, rare: 1, uncommon: 2, common: 3};
+export function sortPlayCards(cards = [], facts = null, sort = '', sets = []) {
+  const byName = (a, b) => a.n.localeCompare(b.n), rel = new Map(sets.map(x => [x.code, x.released || '']));
+  const setOf = c => c.p?.set || c.s?.[0] || '';
+  const cmp = {
+    rarity: (a, b) => (RARITY_RANK[a.r] ?? 4) - (RARITY_RANK[b.r] ?? 4) || byName(a, b),
+    set: (a, b) => (rel.get(setOf(b)) || '').localeCompare(rel.get(setOf(a)) || '') || setOf(a).localeCompare(setOf(b)) || byName(a, b),
+    cmc: (a, b) => (facts?.card?.(a.o)?.m ?? 99) - (facts?.card?.(b.o)?.m ?? 99) || byName(a, b),
+    count: (a, b) => (b.c | 0) - (a.c | 0) || byName(a, b),
+  }[sort] || byName;
+  return cards.slice().sort(cmp);
+}
+
+// Every set you have pulled cards from (plus the current reward set), with the app's set tiles
+// and progress bars: different cards owned out of the cards its packs hold.
+export function playSetRows(state, facts) {
+  const owned = new Map();
+  for (const c of state?.cards || []) for (const code of c.s || []) owned.set(code, (owned.get(code) || 0) + 1);
+  if (state?.rewardSet?.code && !owned.has(state.rewardSet.code)) owned.set(state.rewardSet.code, 0);
+  return [...owned].map(([code, have]) => { const f = facts?.set?.(code) || {}; return {code, name: f.name || (state?.rewardSet?.code === code ? state.rewardSet.name : '') || code.toUpperCase(), icon: f.icon || setIconUrl(code), released: f.released || '', total: f.total || null, owned: have}; })
+    .sort((a, b) => (b.released || '').localeCompare(a.released || '') || a.name.localeCompare(b.name));
+}
+
+export function collectionMarkup(snapshot, ui = {}) {
+  const tab = ui.tab === 'sets' ? 'sets' : 'cards', facts = ui.facts, state = snapshot.state;
+  const cards = (state.cards || []).slice().sort((a, b) => a.n.localeCompare(b.n)), sets = playSetRows(state, facts);
+  const body = tab === 'sets'
+    ? (sets.length ? `<div class="set-list set-year-grid set-browser-flat pe-set-grid">${sets.map(x => `<button class="set-row set-browser-tile" data-act="playEconSet" data-econ-set="${esc(x.code)}" aria-label="${esc(x.name)}: ${x.owned} of ${x.total ?? 'unknown'} cards. Show them">${setRowContent({name: x.name, ambient: true, magicSet: {code: x.code, name: x.name}, code: x.code.toUpperCase(), image: x.icon, symbol: `<span class="set-icon" style="--icon:url('${esc(x.icon)}')" aria-hidden="true"></span>`, detail: x.released ? x.released.slice(0, 4) : '', count: x.total, progress: {key: 'play:' + x.code, owned: x.owned, total: x.total, loaded: x.total || 0, known: x.total || 0, complete: true}})}</button>`).join('')}</div>`
+      : `<div class="pe-empty"><h2>No sets yet</h2><p>Open a pack and its set starts filling in here.</p></div>`)
+    : (() => { const shown = sortPlayCards(filterPlayCards(cards, facts, {query: ui.cardQuery, rarity: ui.rarity, color: ui.color, type: ui.type, set: ui.set}), facts, ui.sort, sets);
+      return `${filterBar(ui, {sets})}<p class="pe-count" role="status">${n(shown.length)} of ${n(cards.length)} cards</p>
+      ${shown.length ? `<div class="card-grid set-grid pe-coll-grid">${shown.slice(0, 300).map(c => playCardTile(c, facts)).join('')}</div>`
+        : `<div class="pe-empty"><h2>${cards.length ? 'No cards match' : 'Your binder is empty'}</h2><p>${cards.length ? 'Try another name, colour or type.' : 'Open a pack to start your Play collection.'}</p></div>`}`; })();
   return `<section class="play-menu pe-screen pe-collection" aria-labelledby="playTitle">${head('Collection', snapshot)}
-    <div class="pe-tools"><label class="pe-search"><span>Find a card</span><input type="search" data-input="playEconCardSearch" value="${esc(query)}" maxlength="80" placeholder="Card name"></label>
-      <div class="pe-rarity-tabs" role="group" aria-label="Rarity">${[['', 'All'], ['common', 'Common'], ['uncommon', 'Uncommon'], ['rare', 'Rare'], ['mythic', 'Mythic']].map(([k, l]) => `<button data-act="playEconRarity" data-econ-rarity="${k}" aria-pressed="${rarity === k}">${l}</button>`).join('')}</div></div>
-    <p class="pe-count" role="status">${n(shown.length)} of ${n(cards.length)} cards</p>
-    ${shown.length ? `<div class="pe-grid">${shown.slice(0, 240).map(c => `<figure class="pe-card" data-rarity="${esc(c.r)}"><img src="${esc(cardImageByName(c.n))}" alt="${esc(c.n)}" loading="lazy" decoding="async" referrerpolicy="no-referrer"><figcaption>${pips(c)}</figcaption></figure>`).join('')}</div>`
-      : `<div class="pe-empty"><h2>${cards.length ? 'No cards match' : 'Your binder is empty'}</h2><p>${cards.length ? 'Try another name or rarity.' : 'Open a pack to start your Play collection.'}</p></div>`}
+    ${segmented('playEconCollTab', tab, [['cards', 'Cards', 'cardStack'], ['sets', 'Sets', 'binder']])}
+    ${body}
+    ${statusLine(snapshot)}</section>`;
+}
+
+// The deck builder: the app's deck hero on top, your deck on one side and your Play cards on the
+// other. Tap a card to add it; only cards you own (and free basic lands) can go in.
+export function deckBuilderMarkup(snapshot, ui = {}) {
+  const edit = ui.edit || {cards: []}, facts = ui.facts, state = snapshot.state, rules = deckRules(edit.format);
+  const ownedCards = state.cards || [], owned = ownedByName(ownedCards), byName = new Map(ownedCards.flatMap(c => [[c.n.split(' // ')[0], c], [c.n, c]]));
+  const deck = edit.cards || [], count = deck.reduce((t, c) => t + c.qty, 0);
+  const factOf = name => facts?.card?.(byName.get(name)?.o) || null;
+  const groups = new Map();
+  for (const c of deck) { const g = isBasicLand(c.name) ? 'Lands' : cardGroup(factOf(c.name)); if (!groups.has(g)) groups.set(g, []); groups.get(g).push(c); }
+  const order = ['Creatures', 'Planeswalkers', 'Instants', 'Sorceries', 'Artifacts', 'Enchantments', 'Battles', 'Cards', 'Lands'];
+  const lands = groups.get('Lands')?.reduce((t, c) => t + c.qty, 0) || 0, creatures = groups.get('Creatures')?.reduce((t, c) => t + c.qty, 0) || 0;
+  const spells = deck.filter(c => !isBasicLand(c.name) && factOf(c.name) && cardGroup(factOf(c.name)) !== 'Lands');
+  const mvCount = spells.reduce((t, c) => t + c.qty, 0), avg = mvCount ? (spells.reduce((t, c) => t + c.qty * factOf(c.name).m, 0) / mvCount).toFixed(1) : '—';
+  const lead = deck.find(c => !isBasicLand(c.name)), art = lead ? (factOf(lead.name)?.a || cardImageByName(lead.name, 'art_crop')) : ART + 'f/d/fd99bce1-ce39-464b-8e61-2631eb3ed6f6.jpg';
+  const ok = rules.exact ? count === rules.size : count >= rules.size;
+  const row = c => { const left = copiesLeft(c.name, deck, owned, edit.format);
+    return `<li class="pe-build-row"><span class="pe-build-thumb" style="background-image:url(${esc(factOf(c.name)?.a || cardImageByName(c.name, 'art_crop'))})" aria-hidden="true"></span><span class="pe-build-name">${esc(c.name)}</span>${factOf(c.name)?.mc ? `<span class="pe-build-cost">${esc(factOf(c.name).mc.replace(/[{}]/g, ''))}</span>` : ''}<span class="pe-step"><button data-act="playEconStep" data-econ-card="${esc(c.name)}" data-econ-step="-1" aria-label="Remove one ${esc(c.name)}">−</button><b>${c.qty}</b><button data-act="playEconStep" data-econ-card="${esc(c.name)}" data-econ-step="1" ${left < 1 ? 'disabled' : ''} aria-label="Add one ${esc(c.name)}">+</button></span></li>`; };
+  const pool = filterPlayCards(ownedCards.slice().sort((a, b) => a.n.localeCompare(b.n)), facts, {query: ui.cardQuery, rarity: ui.rarity, color: ui.color, type: ui.type, set: ui.set});
+  const basics = ['Plains', 'Island', 'Swamp', 'Mountain', 'Forest'];
+  return `<section class="play-menu pe-screen pe-builder-screen" aria-labelledby="playDeckTitle">
+    ${deckShell({game: 'mtg', source: 'play', art, title: edit.name || 'New Play deck',
+      back: `<button class="icon light" data-act="playEconView" data-econ-view="decks" aria-label="Back to Play decks">←</button>`,
+      badge: 'Play deck', format: `<span class="chip dark">${esc(edit.format || 'Standard')}</span>`,
+      stats: [{value: `${count}/${rules.size}`, label: 'cards', tone: ok ? '' : 'warn'}, {value: creatures, label: 'creatures'}, {value: lands, label: 'lands'}, {value: avg, label: 'average mana value'}],
+      actions: [{label: edit.busy ? 'Saving…' : 'Save deck', primary: true, attrs: 'data-act="playEconSaveEdit"', disabled: !!edit.busy || !count}]}).replace('<h1>', '<h1 id="playDeckTitle" tabindex="-1">')}
+    <div class="pe-builder">
+      <section class="pe-build-deck" aria-label="Your deck">
+        <div class="pe-build-meta"><input name="name" data-input="playEconDeckName" maxlength="80" value="${esc(edit.name || '')}" placeholder="Deck name" aria-label="Deck name"><select data-change="playEconDeckFormat" aria-label="Format">${PLAY_FORMATS.map(f => `<option${(edit.format || 'Standard') === f ? ' selected' : ''}>${f}</option>`).join('')}</select></div>
+        ${deck.length ? order.filter(g => groups.has(g)).map(g => `<h3 class="pe-build-group">${g} <span>${groups.get(g).reduce((t, c) => t + c.qty, 0)}</span></h3><ul class="pe-build-list">${groups.get(g).sort((a, b) => (factOf(a.name)?.m ?? 99) - (factOf(b.name)?.m ?? 99) || a.name.localeCompare(b.name)).map(row).join('')}</ul>`).join('')
+          : '<p class="pe-build-empty">Tap cards from your collection to add them.</p>'}
+        <div class="pe-basics" role="group" aria-label="Basic lands, free and unlimited">${basics.map(b => `<button class="pe-basic" data-act="playEconStep" data-econ-card="${b}" data-econ-step="1" aria-label="Add a ${b}"><span style="background-image:url(${esc(cardImageByName(b, 'art_crop'))})" aria-hidden="true"></span><b>${b}</b></button>`).join('')}</div>
+      </section>
+      <section class="pe-build-pool" aria-label="Your Play cards">
+        ${filterBar(ui, {sets: playSetRows(state, facts)})}
+        <p class="pe-count" role="status">${n(pool.length)} of ${n(ownedCards.length)} cards</p>
+        ${pool.length ? `<div class="pe-grid pe-grid--pool">${pool.slice(0, 300).map(c => { const left = copiesLeft(c.n, deck, owned, edit.format);
+          return `<button class="pe-card pe-card--pick" data-rarity="${esc(c.r)}" data-act="playEconStep" data-econ-card="${esc(c.n)}" data-econ-step="1" ${left < 1 ? 'disabled' : ''} aria-label="Add ${esc(c.n)}, ${left} left"><img src="${esc(cardImage(c, facts))}" alt="" loading="lazy" decoding="async" referrerpolicy="no-referrer"><span class="pe-left">${left}</span></button>`; }).join('')}</div>`
+          : `<div class="pe-empty"><h2>${ownedCards.length ? 'No cards match' : 'No cards yet'}</h2><p>${ownedCards.length ? 'Try another name, colour or type.' : 'Open packs to fill your collection.'}</p></div>`}
+      </section>
+    </div>
     ${statusLine(snapshot)}</section>`;
 }
 
 // decks: Play decks. check: an imported list being checked {name, format, rows, rarity:Map, error}.
 export function decksMarkup(snapshot, {check = null} = {}) {
-  const s = snapshot.state, decks = s.decks || [], owned = new Map((s.cards || []).map(c => [c.n, c.c]));
+  const s = snapshot.state, decks = s.decks || [], owned = ownedByName(s.cards || []);
   const short = check?.rows ? deckShortfall(check.rows, owned, check.rarity || new Map()) : null;
   const sealsLine = sh => SEALS.filter(x => sh.seals[x.key]).map(x => `<span class="pe-cost">${sealIcon(x.key)}<b>${sh.seals[x.key]}</b></span>`).join('');
   const deckCard = d => { const sh = deckShortfall(d.cards || [], owned, new Map((s.cards || []).map(c => [c.n, c.r]))), lead = (d.cards || []).find(c => !/^(?:plains|island|swamp|mountain|forest)$/i.test(c.name));
-    return `<article class="pe-deck"><span class="pe-deck-art" style="background-image:url(${esc(lead ? cardImageByName(lead.name, 'art_crop') : '')})" aria-hidden="true"></span><span class="pe-deck-name">${esc(d.name || 'Untitled deck')}</span><span class="pe-deck-line">${esc(d.format || 'Any format')} · ${sh.complete ? 'Ready to play' : sh.missing.reduce((t, m) => t + m.need, 0) + ' cards to stamp'}</span>${sh.complete ? '' : `<span class="pe-costs">${sealsLine(sh)}</span>`}<button class="pe-deck-delete" data-act="playEconDeleteDeck" data-econ-deck="${esc(d.id)}" aria-label="Delete ${esc(d.name || 'deck')}"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M6 6l12 12M18 6 6 18"/></svg></button></article>`; };
+    return `<article class="pe-deck"><span class="pe-deck-art" style="background-image:url(${esc(lead ? cardImageByName(lead.name, 'art_crop') : '')})" aria-hidden="true"></span><button class="pe-deck-open" data-act="playEconEditDeck" data-econ-deck="${esc(d.id)}" aria-label="Edit ${esc(d.name || 'Untitled deck')}"></button><span class="pe-deck-name">${esc(d.name || 'Untitled deck')}</span><span class="pe-deck-line">${esc(d.format || 'Any format')} · ${sh.complete ? 'Ready to play' : sh.missing.reduce((t, m) => t + m.need, 0) + ' cards to stamp'}</span>${sh.complete ? '' : `<span class="pe-costs">${sealsLine(sh)}</span>`}<button class="pe-deck-delete" data-act="playEconDeleteDeck" data-econ-deck="${esc(d.id)}" aria-label="Delete ${esc(d.name || 'deck')}"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M6 6l12 12M18 6 6 18"/></svg></button></article>`; };
   return `<section class="play-menu pe-screen pe-decks" aria-labelledby="playTitle">${head('Decks', snapshot)}
+    <div class="pe-deck-grid"><button class="pe-deck pe-deck--new" data-act="playEconEditDeck" data-econ-deck=""><span class="pe-deck-art" style="background-image:url(${TILE_ART.decks})" aria-hidden="true"></span><span class="pe-deck-name">Build a deck</span><span class="pe-deck-line">From the cards you own</span></button>${decks.map(deckCard).join('')}</div>
     <section class="pe-import" aria-labelledby="peImportTitle"><h2 id="peImportTitle">Bring in a deck</h2>
       <form class="pe-import-form" data-submit="playEconCheckDeck"><input name="name" maxlength="80" placeholder="Deck name" aria-label="Deck name" value="${esc(check?.name || '')}"><select name="format" aria-label="Format">${['Standard', 'Pioneer', 'Modern', 'Legacy', 'Vintage', 'Pauper', 'Commander'].map(f => `<option${check?.format === f ? ' selected' : ''}>${f}</option>`).join('')}</select><textarea name="list" rows="5" maxlength="20000" aria-label="Deck list" placeholder="4 Card name">${esc(check?.text || '')}</textarea><button class="btn" ${check?.busy ? 'disabled' : ''}>${check?.busy ? 'Checking…' : 'Check against my collection'}</button></form>
       ${check?.error ? `<p class="note warn">${esc(check.error)}</p>` : ''}
       ${short ? `<div class="pe-shortfall">${short.complete ? '<p class="pe-ready">Every card is in your collection.</p>' : `<p>To finish it, stamp ${short.missing.reduce((t, m) => t + m.need, 0)} cards:</p><span class="pe-costs">${sealsLine(short)}</span><ul class="pe-missing">${short.missing.slice(0, 60).map(m => `<li>${sealIcon(m.seal)}<span>${m.need} × ${esc(m.name)}</span></li>`).join('')}</ul>`}<button class="btn" data-act="playEconSaveDeck" ${snapshot.busy ? 'disabled' : ''}>Save as a Play deck</button></div>` : ''}
     </section>
-    ${decks.length ? `<div class="pe-deck-grid">${decks.map(deckCard).join('')}</div>` : ''}
     ${statusLine(snapshot)}</section>`;
 }
 
 export function econScreenMarkup(view, snapshot, ui = {}) {
   if (!purse(snapshot?.state)) return `<section class="play-menu pe-screen" aria-labelledby="playTitle"><header class="pl-head pe-head"><button class="pl-back" data-act="playHome" aria-label="Back to Play"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="m15 5-7 7 7 7"/></svg></button><div class="pl-head-title"><p class="eyebrow">Play</p><h1 id="playTitle" tabindex="-1">Your Play collection</h1></div></header><div class="pe-empty"><h2>${snapshot?.loading ? 'Opening your binder…' : 'Sign in to start collecting'}</h2>${snapshot?.loading ? '' : '<p>Your Play collection, coins and seals live with your account.</p><button class="btn" data-act="menu">Sign in</button>'}</div>${statusLine(snapshot)}</section>`;
   if (view === 'shop') return shopMarkup(snapshot, ui);
-  if (view === 'packs') return packsMarkup(snapshot);
+  if (view === 'packs') return packsMarkup(snapshot, ui);
   if (view === 'collection') return collectionMarkup(snapshot, ui);
   if (view === 'decks') return decksMarkup(snapshot, ui);
+  if (view === 'deck') return deckBuilderMarkup(snapshot, ui);
   return '';
 }
-export const ECON_VIEWS = new Set(['shop', 'packs', 'collection', 'decks']);
+export const ECON_VIEWS = new Set(['shop', 'packs', 'collection', 'decks', 'deck']);

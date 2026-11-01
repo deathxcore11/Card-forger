@@ -11,8 +11,26 @@ const records = [
  ['015',"Basic Darkness Energy",909315,713254],
  ['016',"Basic Metal Energy",909316,713255],
 ];
-export const pokemonSupplementIds = records.map(([number])=>'mee-'+number);
+// 30th Celebration's three RGB Rare Mew (R, G, B), in the upstream database at
+// commit 2414b087 but not yet served by the TCGdex API on 2026-11-01.
+// Source: https://github.com/tcgdex/cards-database/tree/2414b087bffd93c0ab7481a78dca925eab64cc57/data/Mega%20Evolution/30th%20Celebration
+const rgbMew = [['R',909509,717607],['G',909510,717608],['B',909511,717609]];
+function rgbMewCard(id) {
+ const record=rgbMew.find(([letter])=>id==='30th-'+letter);if(!record)return null;
+ const [letter,cardmarket,tcgplayer]=record;
+ return {id,localId:letter,name:'Mew',category:'Pokemon',rarity:'RGB Rare',illustrator:'YOSHIROTTEN',dexId:[151],hp:60,types:['Psychic'],stage:'Basic',
+  description:'So rare that it is still said to be a mirage by many experts. Only a few people have seen it worldwide.',
+  attacks:[{name:'Psychic',effect:"This attack does 40 more damage for each Energy attached to your opponent's Active Pokémon.",damage:'10+',cost:['Psychic','Psychic']}],
+  weaknesses:[{type:'Darkness',value:'×2'}],resistances:[{type:'Fighting',value:'-30'}],retreat:1,regulationMark:'J',
+  image:`https://tcgplayer-cdn.tcgplayer.com/product/${tcgplayer}_in_1000x1000.jpg`,
+  set:{id:'30th',name:'30th Celebration',cardCount:{official:128},releaseDate:'2026-09-16',abbreviation:{official:'30C'}},
+  variants_detailed:[{type:'holo',thirdParty:{cardmarket,tcgplayer}}],
+  catalogueProvenance:{source:'TCGdex upstream catalogue',commit:'2414b087bffd93c0ab7481a78dca925eab64cc57',observed:'2026-11-01'}
+ };
+}
+export const pokemonSupplementIds = [...records.map(([number])=>'mee-'+number),...rgbMew.map(([letter])=>'30th-'+letter)];
 export function pokemonCatalogueFallback(id) {
+ if(/^30th-[RGB]$/.test(id))return rgbMewCard(id);
  const record=records.find(([number])=>id==='mee-'+number);if(!record)return null;
  const [number,name,cardmarket,tcgplayer]=record;
  return {id,localId:number,name,category:'Energy',energyType:'Normal',rarity:'Common',illustrator:'YOSHIROTTEN',image:`https://tcgplayer-cdn.tcgplayer.com/product/${tcgplayer}_in_1000x1000.jpg`,

@@ -92,6 +92,17 @@ assert.ok(!('prices' in row) && !JSON.stringify(row).includes('9.99'), 'pack rec
   assert.equal((await progressRoute(req('buy', {set: 'tst'}), env, {verifyBearer, fetcher})).status, 200, '600 coins buys a 500-coin pack');
   assert.equal((await progressRoute(req('buy', {set: 'tst'}), env, {verifyBearer, fetcher})).status, 409, '100 coins left is short');
   assert.equal((await progressRoute(req('buy', {set: 'zzz'}), env, {verifyBearer, fetcher})).status, 404, 'only sets with a booster file');
+  // The Forge: 3 lower seals strike 1 of the next rarity, only with enough seals, never past mythic.
+  wallet = {...wallet, seal_c: 7, seal_r: 2};
+  calls.length = 0;
+  const forged = await (await progressRoute(req('forge', {to: 'u', times: 2}), env, {verifyBearer, fetcher})).json();
+  assert.deepEqual(forged.forged, {to: 'u', from: 'c', times: 2, cost: 6});
+  const forgeCall = calls.find(c => c[0] === 'play_apply');
+  assert.deepEqual(forgeCall[1].p_delta, {seals: {c: -6, u: 2}});
+  assert.match(forgeCall[1].p_ref, /^forge:/);
+  assert.equal((await progressRoute(req('forge', {to: 'm'}), env, {verifyBearer, fetcher})).status, 409, '2 rare seals cannot strike a mythic');
+  assert.equal((await progressRoute(req('forge', {to: 'c'}), env, {verifyBearer, fetcher})).status, 400, 'nothing forges into common');
+  assert.equal((await progressRoute(req('forge', {to: 'u', times: 11}), env, {verifyBearer, fetcher})).status, 400, 'ten at most');
 }
 
 // --- The wall: Play economy code never imports collection storage, sync or price code,
@@ -145,4 +156,49 @@ for (const f of ['storage.js', 'cloud.js', 'store.js', 'binders.js', 'sync-merge
   await noToken.refresh();
   assert.equal(noToken.snapshot().errorCode, 'sign_in');
 }
+// --- Collection filters, set progress and the deck builder.
+{
+  const {stepDeckCard, copiesLeft, deckRules} = await import('./play-econ-rules.js');
+  const {filterPlayCards, playSetRows, deckBuilderMarkup, collectionMarkup} = await import('./play-econ-ui.js');
+  const {cardGroup, cardFact} = await import('./play-econ-cards.js');
+  const owned = new Map([['Shock', 2], ['Llanowar Elves', 4]]);
+  let deck = stepDeckCard([], 'Shock', 1, owned, 'Standard');
+  deck = stepDeckCard(deck, 'Shock', 1, owned, 'Standard');
+  deck = stepDeckCard(deck, 'Shock', 1, owned, 'Standard');
+  assert.deepEqual(deck, [{name: 'Shock', qty: 2}], 'never more copies than owned');
+  assert.equal(copiesLeft('Llanowar Elves', [], owned, 'Commander'), 1, 'Commander is singleton');
+  assert.equal(copiesLeft('Mountain', [{name: 'Mountain', qty: 30}], owned, 'Standard'), Infinity, 'basics are free');
+  assert.equal(copiesLeft('Black Lotus', [], owned, 'Vintage'), 0, 'unowned cards cannot go in');
+  assert.deepEqual(stepDeckCard([{name: 'Shock', qty: 1}], 'Shock', -1, owned), []);
+  assert.equal(deckRules('Commander').size, 100);
+  const fact = cardFact({oracle_id: 'o1', type_line: 'Legendary Creature — Elf', cmc: 1, color_identity: ['G'], image_uris: {normal: 'n', art_crop: 'a'}});
+  assert.equal(cardGroup(fact), 'Creatures');
+  assert.equal(cardGroup({t: 'Land — Forest'}), 'Lands');
+  const facts = {card: o => ({o1: fact, o2: {o: 'o2', t: 'Instant', m: 1, k: 'R', i: '', a: ''}})[o] || null, set: c => c === 'fra' ? {name: 'Reality Fracture', icon: '', released: '2026-10-01', total: 270} : null};
+  const cards = [{o: 'o1', n: 'Llanowar Elves', r: 'common', c: 4, s: ['fra']}, {o: 'o2', n: 'Shock', r: 'common', c: 2, s: ['fra', 'dom']}];
+  assert.deepEqual(filterPlayCards(cards, facts, {color: 'R'}).map(c => c.n), ['Shock']);
+  assert.deepEqual(filterPlayCards(cards, facts, {type: 'Creatures'}).map(c => c.n), ['Llanowar Elves']);
+  assert.deepEqual(filterPlayCards(cards, facts, {set: 'dom'}).map(c => c.n), ['Shock']);
+  const sets = playSetRows({cards, rewardSet: {code: 'fra', name: 'Reality Fracture'}}, facts);
+  assert.deepEqual(sets.map(x => [x.code, x.owned, x.total]), [['fra', 2, 270], ['dom', 1, null]]);
+  const snap = {state: {config, wallet: {coins: 1, starter_at: 'x'}, packs: [], cards, decks: []}};
+  const builder = deckBuilderMarkup(snap, {facts, edit: {name: 'Elves', format: 'Standard', cards: [{name: 'Llanowar Elves', qty: 4}, {name: 'Forest', qty: 20}]}});
+  assert.ok(builder.includes('24/60') && builder.includes('data-act="playEconSaveEdit"'));
+  assert.ok(/aria-label="Add Llanowar Elves, 0 left"[^>]*disabled|disabled[^>]*aria-label="Add Llanowar Elves, 0 left"/.test(builder), 'a card at its limit cannot be added');
+  const coll = collectionMarkup(snap, {tab: 'sets', facts});
+  assert.ok(coll.includes('set-progress-track') && coll.includes('Reality Fracture'));
+  for (const html of [builder, coll, collectionMarkup(snap, {facts})]) assert.ok(!/\$\s?\d|usd|price/i.test(html), 'no prices in Play');
+}
 console.log('play economy ok');
+
+// --- Trunk sorting and binder tabs.
+{
+  const ui = await import('./play-econ-ui.js');
+  const cards = [{o: 'a', n: 'Bolt', r: 'common', c: 4, s: ['old']}, {o: 'b', n: 'Angel', r: 'mythic', c: 1, s: ['new']}, {o: 'c', n: 'Cat', r: 'rare', c: 2, s: ['old']}];
+  const sets = [{code: 'new', released: '2026-10-01'}, {code: 'old', released: '1993-08-05'}];
+  assert.deepEqual(ui.sortPlayCards(cards).map(c => c.n), ['Angel', 'Bolt', 'Cat']);
+  assert.deepEqual(ui.sortPlayCards(cards, null, 'rarity').map(c => c.n), ['Angel', 'Cat', 'Bolt']);
+  assert.deepEqual(ui.sortPlayCards(cards, null, 'set', sets).map(c => c.n), ['Angel', 'Bolt', 'Cat']);
+  assert.deepEqual(ui.sortPlayCards(cards, null, 'count').map(c => c.n), ['Bolt', 'Cat', 'Angel']);
+}
+

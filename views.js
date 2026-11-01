@@ -353,15 +353,28 @@ function mtgCardMeta(c) {
   }) + `<p class="foot">From the tournament results you’ve opened on Meta decks (${esc(usage.loaded.join(", ") || "none yet")}). Open other formats there to add them.</p>`;
 }
 
+// Play lens card actions: copies in the Play collection, add to a Play deck, start one, or get it.
+function playCardActions(play, name, shown) {
+  const n = Math.min(play.owned(name, shown), 4), decks = play.decks || [];
+  return `<section class="card-secondary-actions play-card-actions" aria-label="Play collection and deck actions">
+    <p class="play-card-own"><span class="pe-pips" aria-hidden="true">${[1, 2, 3, 4].map(i => `<i class="${i <= n ? "on" : ""}"></i>`).join("")}</span><b>${n ? `${n} of 4 in your Play collection` : "Not in your Play collection yet"}</b></p>
+    <div class="card-actions"><div class="ca-main">
+      ${decks.length ? `<details class="play-card-decks"><summary class="btn">Add to deck</summary><div class="play-card-deck-list">${decks.map(d => `<button class="btn ghost small" data-act="playCardToDeck" data-econ-deck="${esc(d.id)}" data-name="${esc(name)}" ${n ? "" : "disabled"}>${esc(d.name || "Untitled deck")}</button>`).join("")}</div></details>` : ""}
+      <button class="btn${decks.length ? " ghost" : ""}" data-act="playCardNewDeck" data-name="${esc(name)}" ${n ? "" : "disabled"}>New deck</button>
+      ${n < 4 ? `<button class="btn ghost" data-act="playCardGet" data-name="${esc(name)}" data-code="${esc(shown?.set || "")}">Get it at the Merchant</button>` : ""}
+    </div></div></section>`;
+}
+
 export function cardSheet(c, ctx = {}) {
   const name = c.name,
     shown = ctx.print || c, // the printing currently being looked at
     // Meta shows only for cards with meta data; Versions lives in Overview's printings strip.
-    tabList = [["overview", "Overview", "info"], ...(hasCardMeta("mtg", c) ? [["meta", "Meta", "trophy"]] : []), ["guide", "Play guide", "ideas"], ["prices", "Prices", "bag"]],
+    play = ctx.play || null, // Play lens: Play collection and decks, never prices (play-progression.md)
+    tabList = [["overview", "Overview", "info"], ...(hasCardMeta("mtg", c) ? [["meta", "Meta", "trophy"]] : []), ["guide", "Play guide", "ideas"], ...(play ? [] : [["prices", "Prices", "bag"]])],
     asked = ["legal", "rulings"].includes(ctx.tab) ? "guide" : ctx.tab, // Rules & legality now live in the Play guide; Trade tab retired
     tab = tabList.some(([id]) => id === asked) ? asked : "overview",
     i = inv(name),
-    inDecks = S.state.decks.filter((d) => d.cards.some((x) => key(x.name) === key(name))),
+    inDecks = (play ? play.decks : S.state.decks).filter((d) => (d.cards || []).some((x) => key(x.name) === key(name))),
     deck = ctx.deckId ? deckById(ctx.deckId) : null,
     row = deck?.cards.find((x) => key(x.name) === key(name)),
     roles = engineRoles(c),
@@ -376,7 +389,7 @@ export function cardSheet(c, ctx = {}) {
     chosen = S.state.priceChoices?.[key(name)],
     prints = ctx.prints || null,
     src = MTG_SOURCES.find((x) => x[0] === (ctx.source || "tcgplayer")) || MTG_SOURCES[0];
-  ensureTcgPrices([shown]);
+  if (!play) ensureTcgPrices([shown]);
   const priceFinish = selectedFinish("mtg", shown, ctx.priceFinish);
   const readableText = `<div class="cs-readable">${discoverCardMarkup('mtg',shown)}
   ${faces
@@ -395,7 +408,7 @@ export function cardSheet(c, ctx = {}) {
   const overview = `
     <div class="cs-card">
       <div class="cd-art-stack"><div class="cd-img" ${finishAttrs('mtg',shown,ctx,'detail')}><button class="cd-zoom" data-hold-card="true" data-entry="${esc(ctx.entryId||ctx.entry||'')}" data-act="zoomCard" data-src="${esc(image || "")}" data-hi="${esc(imgFaces?.length > 1 ? imgFaces[face]?.image_uris?.png || "" : shown.image_uris?.png || "")}" data-art="${esc(heroArt || "")}" data-name="${esc(name)}" aria-label="Enlarge ${esc(name)}">${img(image, name, "card-img")}</button></div>${imgFaces?.length > 1 ? `<button class="btn ghost small block" data-act="flipFace">↻ Flip to ${esc(imgFaces[face ? 0 : 1].name)}</button>` : ""}${finishPreview('mtg',shown,ctx)}<button class="btn ghost small card-profile-photo" data-act="cardProfilePhoto" data-name="${esc(name)}">Use as profile photo</button>${miniPrintingMarkup({game:'mtg',card:shown,cards:ctx.prints||[],busy:ctx.printsBusy||ctx.detailsBusy,error:ctx.printsError})}</div>
-      <div class="cs-card-side">${readableText}${alertStatus("mtg",trackedQuote("mtg",shown)?.id,name)}
+      <div class="cs-card-side">${readableText}${play ? "" : alertStatus("mtg",trackedQuote("mtg",shown)?.id,name)}
 
         ${inDecks.length ? `<p class="small own-line">In ${inDecks.map((d) => esc(d.name)).join(", ")}</p>` : ""}
         ${deck ? deckLegalLine(c, deck) : ""}
@@ -405,15 +418,15 @@ export function cardSheet(c, ctx = {}) {
     <div class="links research"><span class="muted small">Research</span>
       <a href="${esc(safeHref(c.scryfall_uri || "https://scryfall.com/search?q=" + encodeURIComponent(name)))}" target="_blank" rel="noopener">Scryfall</a>
       <a href="https://edhrec.com/cards/${esc(name.toLowerCase().split(" // ")[0].replace(/[^a-z0-9]+/g, "-").replace(/^-|-$/g, ""))}" target="_blank" rel="noopener">EDHREC</a>
-      <button class="link" data-act="cardPriceJump" data-target="sellers">Where to buy ›</button>
+      ${play ? "" : `<button class="link" data-act="cardPriceJump" data-target="sellers">Where to buy ›</button>`}
     </div></div>
-    <section class="card-secondary-actions" aria-label="Collection and deck actions">
+    ${play ? playCardActions(play, name, shown) : `<section class="card-secondary-actions" aria-label="Collection and deck actions">
         ${detailOwnedGroups('mtg',S.state.collection,c,{compact:true})}
     <div class="card-actions">
       <div class="ca-main"><button class="btn ghost wishlist-toggle" data-act="cardWishlist" data-game="mtg" data-name="${esc(name)}" aria-pressed="${S.state.wishlist.some(w=>key(w.name)===key(name))}">${S.state.wishlist.some(w=>key(w.name)===key(name))?'♥':'♡'} Wishlist</button></div>
       <div class="ca-more"><button class="btn ghost small" data-act="cardDeckPicker" data-game="mtg" data-name="${esc(name)}">Add to deck</button><button class="btn ghost small" data-act="compareFrom" data-name="${esc(name)}">⇄ Compare</button>${isLand(c) ? "" : `<button class="btn ghost small" data-act="buildFrom" data-name="${esc(name)}">⚒ Build decks</button>`}${ctx.random ? `<button class="btn ghost small" data-act="dbRandom">🎲 Another</button>` : ""}</div>
     </div>
-    </section></div></div>`;
+    </section>`}</div></div>`;
   const pricesTab = `${priceOverview("mtg",shown,ctx,Object.entries(shown.purchase_uris||{}))}<details class="market-details"><summary>Market details · sources & finishes</summary>
     <div class="src-row" role="group" aria-label="Price source">${MTG_SOURCES.map(([id, label]) => `<button class="chip pick ${id === src[0] ? "on" : ""}" aria-pressed="${id === src[0]}" data-act="priceSource" data-src="${id}">${esc(label)}</button>`).join("")}</div>
     <div class="price-table" style="--cols:${Object.keys(src[3]).length}"><div class="pt-head"><span></span>${Object.keys(src[3]).map((f) => `<b class="${f}">${FINISH[f]}</b>`).join("")}</div>
@@ -432,18 +445,18 @@ export function cardSheet(c, ctx = {}) {
   return `<div class="sheet-head overlay">${S.ui.sheetBack ? `<button class="icon" data-act="sheetBack" aria-label="Back to deck idea">←</button>` : "<span></span>"}<button class="icon" data-act="closeSheet" aria-label="Close">✕</button></div>
   ${heroArt ? cardBleed("mtg", (cls) => `<img${cls ? ` class="${cls}"` : ""} src="${esc(heroArt)}" alt="" decoding="async" referrerpolicy="no-referrer" onerror="this.closest('.cs-bleed')?.remove()">`) : ""}
   <div class="cs-banner"><div class="cs-hero mtg">${img(heroArt, name, "cs-art")}<div class="cs-shade"></div></div>
-  <div class="cs-title"><div><h2>${esc(name)}</h2><p class="type-line">${esc(faces[face]?.type_line || typeText(shown))} ${detailOwnedSummary(i.owned)}</p></div>${manaCost(faces[face] || shown)}</div></div>
+  <div class="cs-title"><div><h2>${esc(name)}</h2><p class="type-line">${esc(faces[face]?.type_line || typeText(shown))} ${play ? `<span class="card-owned-summary">Play · ${Math.min(play.owned(name, c), 4)} of 4</span>` : detailOwnedSummary(i.owned)}</p></div>${manaCost(faces[face] || shown)}</div></div>
   ${cardTabs(tab, tabList)}
   <div class="cs-overview-head" data-overview-only ${tab === "overview" ? "" : "hidden"}>${emblemChips("mtg", c)}
   <div class="cs-meta">
-    ${(()=>{const st=S.ui.set,info=S.ui.sets.list.find(s=>s.code===shown.set)||(st.code===shown.set?st.info:null);return detailSetSummary({action:shown.set?`data-act="set" data-code="${esc(shown.set)}"`:'',identity:`${setIcon(shown.set, shown.rarity, 24)}<span><b>${esc(shown.set_name || (shown.set || "").toUpperCase())}${shown.set?' <span class="set-go">›</span>':''}</b><small>${esc((shown.set || "").toUpperCase())} #${esc(shown.collector_number || "?")} · ${esc(RARITY[shown.rarity] || shown.rarity || "")}${shown.released_at ? " · " + esc(shown.released_at.slice(0, 4)) : ""}</small></span>`,progress:magicSetProgress(shown.set,info)});})()}
-    ${compactPriceSummary("mtg",shown,buyContext("mtg",shown,{...ctx,priceFinish},S.state))}
+    ${(()=>{const st=S.ui.set,info=S.ui.sets.list.find(s=>s.code===shown.set)||(st.code===shown.set?st.info:null);return detailSetSummary({action:shown.set?(play?`data-act="playLensSet" data-code="${esc(shown.set)}"`:`data-act="set" data-code="${esc(shown.set)}"`):'',identity:`${setIcon(shown.set, shown.rarity, 24)}<span><b>${esc(shown.set_name || (shown.set || "").toUpperCase())}${shown.set?' <span class="set-go">›</span>':''}</b><small>${esc((shown.set || "").toUpperCase())} #${esc(shown.collector_number || "?")} · ${esc(RARITY[shown.rarity] || shown.rarity || "")}${shown.released_at ? " · " + esc(shown.released_at.slice(0, 4)) : ""}</small></span>`,progress:play?(st.code===shown.set&&st.cards?.length?playSetProgress(shown.set,st.cards,play):play.setProgress?.(shown.set)||null):magicSetProgress(shown.set,info)});})()}
+    ${play ? "" : compactPriceSummary("mtg",shown,buyContext("mtg",shown,{...ctx,priceFinish},S.state))}
   </div></div>
   ${cardPanel("overview", tab, overview)}
   ${tabList.some(([id]) => id === "meta") ? cardPanel("meta", tab, mtgCardMeta(c)) : ""}
   ${cardPanel("guide", tab, mtgCardGuide(c, rulings, ruleLinks))}
-  ${cardPanel("prices", tab, pricesTab)}
-  ${tab === "trade" ? cardPanel("trade", tab, mtgTradePanel(name, shown, ctx)) : ""}`;
+  ${play ? "" : cardPanel("prices", tab, pricesTab)}
+  ${tab === "trade" && !play ? cardPanel("trade", tab, mtgTradePanel(name, shown, ctx)) : ""}`;
 }
 
 // Trade tab: fair swaps from your collection and wishlist (trade.js).
@@ -522,39 +535,52 @@ export function setsPage() {
   ${result.rows.length>result.visible.length?`<button class="btn ghost block" data-act="setsMore">Show more · ${result.rows.length-result.visible.length} left</button>`:''}`;
 }
 
+// The Play lens: the same set page, but ownership is the Play collection (by card, any printing),
+// prices give way to copies owned, and cards not owned are greyed like Arena. Data comes from app.js.
+const NO_PLAY = {byOracle: new Map(), byName: new Map(), decks: [], coins: 0, price: 500, owned: () => 0, setProgress: () => null}; // signed out or still loading: still no prices
+// app.js hands in the Play lens source, so this file never imports Play code (the wall).
+let playLensSource = () => null;
+export const setPlayLensSource = fn => { playLensSource = typeof fn === "function" ? fn : () => null; };
+export const playLensNow = () => playLensSource() || NO_PLAY;
+const playLens = () => (S.ui.lens === "play" ? playLensNow() : null);
+function playSetProgress(code, cards, lens) {
+  const oracles = new Set(cards.map(c => c.oracle_id).filter(Boolean)), have = [...oracles].filter(o => lens.byOracle.get(o) > 0).length;
+  return {key: "play:" + code, owned: have, total: oracles.size || null, loaded: oracles.size, known: oracles.size, complete: !S.ui.set.busy};
+}
 export function setPage() {
   const st = S.ui.set,
     info = st.info,
+    lens = playLens(),
     owned = ownedPrintings(),
     q = st.q.trim().toLowerCase(),
-    ownedOf = (c) => owned.get(String(c.id)) || 0,
+    ownedOf = (c) => lens ? lens.byOracle.get(c.oracle_id) || 0 : owned.get(String(c.id)) || 0,
     price = (c) => { const value=st.finish && st.finish!=="all" ? cardPrice(c,st.finish) : ["nonfoil","foil","etched"].map(f=>cardPrice(c,f)).find(v=>v!=null); return value==null?NaN:Number(value); },
     all = [...new Map(st.cards.filter(c=>c.id && c.set===st.code).map(c=>[c.id,c])).values()];
-  const progress = setProgressMarkup({...magicSetProgress(st.code,info),previous:st.progressSnapshot});
+  const progress = setProgressMarkup({...(lens ? playSetProgress(st.code, all, lens) : magicSetProgress(st.code,info)),previous:st.progressSnapshot});
   st.progressSnapshot = progress.snapshot;
   const facets = setCardFacets(all,"mtg");
   let list = filterSortSetCards(all,"mtg",{q,rarity:st.rarity,finish:st.finish,sort:st.sort}).filter(c=>st.filter === "all" || (st.filter === "owned" ? ownedOf(c) : !ownedOf(c)));
-  if (st.sort === "price") list = list.slice().sort((a, b) => (Number.isFinite(price(b))?price(b):-1) - (Number.isFinite(price(a))?price(a):-1));
+  if (st.sort === "price" && !lens) list = list.slice().sort((a, b) => (Number.isFinite(price(b))?price(b):-1) - (Number.isFinite(price(a))?price(a):-1));
   const rarities = facets.rarities;
   return `<div class="set-hero set-overview" data-audit-frame>${setAtmosphere("mtg",info||{code:st.code},all[0])}<div class="set-identity">${info ? `<span class="set-icon huge" style="--icon:url('${esc(info.icon_svg_uri || setIconUrl(info.code))}')" aria-hidden="true"></span>` : ""}
-    <div class="set-hero-main"><button class="link small" data-act="go" data-to="#sets">← All sets</button>
+    <div class="set-hero-main">${lens ? `<button class="link small" data-act="playLensBack">← Trunk</button>` : `<button class="link small" data-act="go" data-to="#sets">← All sets</button>`}
       <h1>${esc(info?.name || st.code.toUpperCase())}</h1>
       <p class="muted small">${info ? `${esc(info.code.toUpperCase())} · ${esc(SET_TYPES[info.set_type] || info.set_type || "")} · ${esc(info.released_at || "")}` : ""}</p>
-    </div></div>${all.length ? progress.html : ""}${packButton("mtg",info,{ready:st.loaded&&!st.busy&&!st.error&&all.length>0})}</div>
+    </div></div>${all.length ? progress.html : ""}${lens ? `<button class="btn set-open-pack play-lens-buy" data-act="playLensBuy" data-code="${esc(st.code)}" ${lens.coins < lens.price ? "disabled" : ""}>Buy a pack <span>${lens.price.toLocaleString()} coins</span></button>` : packButton("mtg",info,{ready:st.loaded&&!st.busy&&!st.error&&all.length>0})}</div>
   ${st.error ? `<div class="note warn">${esc(st.error)} <button class="link" data-act="setReload">Try again</button></div>` : ""}
   <div class="set-card-toolbar"><div class="searchbar"><input type="search" value="${esc(st.q)}" placeholder="Search this set" data-input="setSearch" aria-label="Search this set" autocomplete="off"></div>
   <div class="set-controls">${segmented("setFilter", st.filter, [["all", "All"], ["owned", "Owned"], ["missing", "Missing"]])}
     <select data-change="setRarity" aria-label="Rarity">${options([["all", "All rarities"], ...rarities.map((r) => [r, RARITY[r] || r])], st.rarity)}</select>
     ${facets.finishes.length?`<select data-change="setFinish" aria-label="Finish">${options([["all","All finishes"],...facets.finishes.map(f=>[f,({nonfoil:"Nonfoil",foil:"Foil",etched:"Etched"})[f]||f])],st.finish||"all")}</select>`:""}
-    <select data-change="setSort" aria-label="Sort">${options([["number", "Set order"], ["price", "Price: high to low"], ["name", "Name"], ["set","Set"], ["rarity","Rarity"], ["finish","Finish"]], st.sort)}</select>${viewControl("mtg", "set")}</div></div>
+    <select data-change="setSort" aria-label="Sort">${options([["number", "Set order"], ...(lens ? [] : [["price", "Price: high to low"]]), ["name", "Name"], ["set","Set"], ["rarity","Rarity"], ["finish","Finish"]], st.sort)}</select>${viewControl("mtg", "set")}</div></div>
   <div class="list-bar set-results"><p class="muted small">${st.busy ? `Loading ${all.length ? all.length + " of " + (st.total || "…") : ""} cards…` : all.length ? `${list.length.toLocaleString()} cards` : ""}</p></div>
   <div class="card-grid set-grid">${list
     .slice(0, st.limit)
     .map((c) => {
       const i = st.cards.indexOf(c),
         n = ownedOf(c),
-        other = !n && inv(c.name).owned;
-      return `<button ${finishAttrs('mtg',c,{priceFinish:st.finish&&st.finish!=='all'?st.finish:''})} class="grid-card ${n ? "own" : ""}" data-act="card" data-name="${esc(c.name)}" data-set-i="${i}" data-set-finish="${esc(st.finish&&st.finish!=="all"?st.finish:"")}" ${tierAttrs(tierOf("mtg", c.rarity, Number.isFinite(price(c)) ? price(c) : null))}>${img(cardImage(c, "normal"), c.name, "card-img")}${tileChrome("mtg", c)}<span class="grid-meta"><span class="ellip">#${esc(c.collector_number)} ${esc(c.name)}</span><span>${Number.isFinite(price(c)) ? usd(price(c)) : "—"}</span></span>${n ? `<span class="owned-badge">×${n}</span>` : other ? `<span class="owned-badge other" title="You own a different printing">other ed.</span>` : ""}</button>`;
+        other = !lens && !n && inv(c.name).owned;
+      return `<button ${finishAttrs('mtg',c,{priceFinish:st.finish&&st.finish!=='all'?st.finish:''})} class="grid-card ${n ? "own" : ""}${lens && !n ? " play-missing" : ""}" data-act="card" data-name="${esc(c.name)}" data-set-i="${i}" data-set-finish="${esc(st.finish&&st.finish!=="all"?st.finish:"")}" ${tierAttrs(tierOf("mtg", c.rarity, lens ? null : Number.isFinite(price(c)) ? price(c) : null))}>${img(cardImage(c, "normal"), c.name, "card-img")}${tileChrome("mtg", c)}<span class="grid-meta"><span class="ellip">#${esc(c.collector_number)} ${esc(c.name)}</span><span>${lens ? (n ? `${Math.min(n, 4)} of 4` : "Not owned") : Number.isFinite(price(c)) ? usd(price(c)) : "—"}</span></span>${n ? `<span class="owned-badge">×${n}</span>` : other ? `<span class="owned-badge other" title="You own a different printing">other ed.</span>` : ""}</button>`;
     })
     .join("")}</div>
   ${list.length > st.limit ? `<button class="btn ghost block" data-act="setMore">Show more · ${(list.length - st.limit).toLocaleString()} left</button>` : ""}

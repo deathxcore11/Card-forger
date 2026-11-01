@@ -160,11 +160,12 @@ import { startTabGlide } from "./tab-glide.js";
 import { startSearchHints } from "./search-hints.js";
 import { openZoom, zoomCardOptions } from "./zoom.js";
 import {createPlayEcon} from "./play-econ-client.js";
-import {econScreenMarkup,ECON_VIEWS} from "./play-econ-ui.js";
-import {deckShortfall} from "./play-econ-rules.js";
+import {econScreenMarkup,ECON_VIEWS,purseMarkup} from "./play-econ-ui.js";
+import {createCardFacts} from "./play-econ-cards.js";
+import {stepDeckCard,ownedByName,deckShortfall} from "./play-econ-rules.js";
 import {STORY_ACTS} from "./story-acts.js";
-import {createStoryProgress,loadAct,loadActPool,ownDeckFits,battleCleared} from "./story-client.js";
-import {storyHomeMarkup,storyActMarkup,storyBattleMarkup,storyTileMarkup,playScene,createStoryBubbles,starsRow} from "./story-ui.js";
+import {createStoryProgress,loadAct,loadActPool,ownDeckFits,battleCleared,currentAct,currentBattle,actCleared} from "./story-client.js";
+import {storyHomeMarkup,storyActMarkup,storyBattleMarkup,playScene,createStoryBubbles,starsRow} from "./story-ui.js";
 import { initCloud, pauseLocalConflict, communityRequest, cloudAccessToken, cloudInfo, isEmptyWorkspace, statusLabel, scheduleSync, signInGoogle, signInEmail, signInPassword, createAccount, requestPasswordReset, finishPasswordReset, signOut, detachDeviceSync, saveProfile, resolvePending, syncNow, resendConfirmation, deleteAccount } from "./cloud.js";
 import { withSnapshot, collectionValue, recordValuePoint, cardSig, engineProfile, swapImpact, lotPrice } from "./insights.js";
 
@@ -256,6 +257,35 @@ function decorateShell() {
   if (mark) mark.innerHTML = brandMark("brand-idle");
   glyphObserver?.observe(document.body, { childList: true, subtree: true });
 }
+
+// Play mode chrome (Randall, 1 Nov): inside Play the top pill becomes Play's own. The other games'
+// chips step aside, the purse sits in the pill, Collection, Decks and Sets open the Play versions,
+// and the Play button reads "Collection" and leads back to the real app. The two collections never mix.
+function playModeOn(){return T.game()==='mtg'&&(S.ui.view==='play'||S.ui.lens==='play');}
+function syncPlayChrome(){
+  const on=playModeOn(),bar=$('.topbar');
+  document.body.dataset.mode=on?'play':'';
+  let slot=$('#playPurse');
+  if(on&&bar&&!slot){slot=document.createElement('div');slot.id='playPurse';slot.className='play-purse-slot';bar.querySelector('.top-nav')?.before(slot);}
+  if(slot)slot.innerHTML=on?purseMarkup(playEcon.snapshot()):'';
+  const label=on?'Collection':'Play';
+  const hp=$('#headerPlay');if(hp&&hp.textContent!==label)hp.textContent=label;
+  const bp=$('#bottomPlay');if(bp){const t=[...bp.childNodes].find(n=>n.nodeType===3&&n.textContent.trim());if(t)t.textContent=label;}
+  // The Play collection is the Trunk, so it never reads like the real Collection button beside it.
+  for(const b of $$('.top-nav [data-nav="collection"],.bottom-nav [data-nav="collection"]')){const t=[...b.childNodes].find(n=>n.nodeType===3&&n.textContent.trim());if(t){b.dataset.label||=t.textContent;t.textContent=on?'Trunk':b.dataset.label;}}
+  if(on){const v=S.ui.view==='play'?playView:'collection';for(const b of $$('.top-nav [data-nav],.bottom-nav [data-nav]'))b.classList.toggle('on',b.dataset.nav==='collection'?['collection','set'].includes(v)||S.ui.lens==='play':b.dataset.nav==='decks'?['decks','deck'].includes(v):false);}
+}
+// In Play mode the shared nav buttons open Play screens; the Play button leaves Play.
+document.addEventListener('click',e=>{
+  if(!playModeOn())return;
+  const b=e.target.closest?.('.top-nav [data-nav],.bottom-nav [data-nav],.header-sets');if(!b)return;
+  const nav=b.classList.contains('header-sets')?'sets':b.dataset.nav,to={collection:'collection',decks:'decks',sets:'collection'}[nav];
+  if(nav==='play'){e.preventDefault();e.stopImmediatePropagation();go('#collection');return;}
+  if(!to)return;
+  e.preventDefault();e.stopImmediatePropagation();
+  playView=to;playInspectOpen=false;if(nav==='sets')econUi.tab='sets';else if(nav==='collection')econUi.tab='cards';
+  if(S.ui.view==='play'){refreshPlayMenu();scrollTo({top:0});}else go('#play');
+},true);
 
 const accountUiDefaults = structuredClone(S.ui);
 
@@ -973,6 +1003,7 @@ function parseHash() {
   const ui = S.ui,
     prev = ui.view + ui.deckId;
   ui.view = VIEWS.includes(v) ? v : "home";
+  if (ui.view !== "set") ui.lens = "";
   if (ui.view === "collection" && ["cards", "binders", "value", "wishlist"].includes(a)) {
     ui.collTab = a;
     if(T.isTcg()) { T.ui().coll.tab = a === "wishlist" ? "cards" : a; if(a === "wishlist")T.ui().coll.show="wanted"; }
@@ -986,6 +1017,9 @@ function parseHash() {
     if (!a) ui.view = "sets";
     else ui.tsetId = a;
   } else if (ui.view === "set") {
+    // #set/<code>/play: the same set page through the Play lens (Play ownership, no prices).
+    ui.lens = b === "play" ? "play" : "";
+    if (ui.lens) queueMicrotask(() => econWake());
     if (!a) ui.view = "sets";
     else if (a.toLowerCase() !== ui.set.code) ui.set = { ...ui.set, code: a.toLowerCase(), info: null, cards: [], total: 0, loaded: false, busy: false, error: "", q: "", filter: "all", rarity: "all", finish: "all", complete: false, limit: 120 };
   }
@@ -1077,6 +1111,7 @@ function render() {
   document.querySelector(".header-sets")?.classList.toggle("on",["set","sets"].includes(ui.view));
   const wikiLaunch=document.querySelector(".header-wiki");if(wikiLaunch){wikiLaunch.hidden=false;wikiLaunch.classList.toggle("on",ui.view==="wiki");}
   document.body.dataset.view = ui.view;
+  syncPlayChrome();
   const g = T.game();
   const content=$('#content'),previousDisclosureKey=content?.dataset?.disclosureKey;
   if(previousDisclosureKey)disclosureStates.set(previousDisclosureKey,captureDisclosures(content));
@@ -1650,13 +1685,18 @@ A.playChangeDeck=t=>{playView='lobby';playInspectOpen=false;A.playStyle(t);scrol
 A.playHome=()=>{playView='home';playInspectOpen=false;refreshPlayMenu();scrollTo({top:0});};
 // Play progression (play-progression.md): the Play collection, coins, seals and packs. The server
 // grants everything; this only asks it and shows the answer. Nothing here touches the real collection.
-const playEcon=createPlayEcon({getAccessToken:cloudAccessToken,onChange:()=>{if(S.ui.view==='play')refreshPlayMenu();}});
+const playEcon=createPlayEcon({getAccessToken:cloudAccessToken,onChange:()=>{syncPlayChrome();if(S.ui.view==='play')refreshPlayMenu();else if(S.ui.lens==='play'&&S.ui.view==='set')render();}});
 let econUi={query:'',cardQuery:'',rarity:'',press:null,check:null},econSeen=null;
+const econFacts=createCardFacts({onChange:()=>{if(S.ui.view==='play'&&ECON_VIEWS.has(playView))refreshPlayMenu();}});
 // Read the wallet once per signed-in account per visit to Play; a new account starts clean.
-const econWake=()=>{const id=cloudInfo()?.user?.id||null;if(id===econSeen)return;if(econSeen!==null)playEcon.clear();econSeen=id;econUi={query:'',cardQuery:'',rarity:'',press:null,check:null};if(id)setTimeout(()=>playEcon.refresh(),0);};
+const econWake=()=>{const id=cloudInfo()?.user?.id||null;if(id===econSeen)return;if(econSeen!==null)playEcon.clear();econSeen=id;econUi={query:'',cardQuery:'',rarity:'',press:null,check:null};playView=ECON_VIEWS.has(playView)?'home':playView;if(id)setTimeout(()=>playEcon.refresh(),0);};
 const econFocus=()=>requestAnimationFrame(()=>document.getElementById('playTitle')?.focus?.({preventScroll:true}));
-A.playEconView=t=>{const v=t.dataset.econView;if(!ECON_VIEWS.has(v))return;playView=v;playInspectOpen=false;refreshPlayMenu();scrollTo({top:0});if(v==='shop'&&t.dataset.econFocus==='press')requestAnimationFrame(()=>document.querySelector('.pe-press-find input')?.focus());else econFocus();};
+A.playEconView=t=>{const v=t.dataset.econView;if(!ECON_VIEWS.has(v))return;playView=v;playInspectOpen=false;refreshPlayMenu();scrollTo({top:0});if(v==='shop'&&t.dataset.econFocus==='press')requestAnimationFrame(()=>document.querySelector('.pe-forge')?.scrollIntoView({block:'center',behavior:'smooth'}));else econFocus();};
 A.playEconBuy=async t=>{try{await playEcon.buy(t.dataset.econSet);toast('Pack bought. It is waiting in Packs.');}catch{}};
+// The Forge: strike lower seals into the next rarity; the new seal flares where it lands.
+A.playEconForge=async t=>{const to=t.dataset.econTo,times=Number(t.dataset.econTimes)||1;try{const out=await playEcon.forge(to,times);haptic('success');appSound('PACK-005',{volume:.5,gap:0});
+ const name={u:'uncommon',r:'rare',m:'mythic'}[to];toast(`Forged ${times} ${name} seal${times>1?'s':''}.`);
+ requestAnimationFrame(()=>document.querySelectorAll(`.pe-forge-seal[data-seal="${to}"]`).forEach(el=>{el.classList.remove('struck');void el.offsetWidth;el.classList.add('struck');}));return out;}catch{}};
 A.playEconCraft=async t=>{try{const out=await playEcon.craft(t.dataset.econCard);toast(out.card.name+' added to your Play collection.');}catch{}};
 A.playEconRetry=()=>{playEcon.refresh();};
 A.playEconRarity=t=>{econUi.rarity=t.dataset.econRarity||'';refreshPlayMenu();};
@@ -1665,9 +1705,13 @@ I.playEconCardSearch=t=>{econUi.cardQuery=t.value;refreshPlayMenu();const f=docu
 // Opening: the server rolls the pack, then the pack opener plays it (the Play variant: no prices).
 const econPick=c=>({id:c.id,oracle_id:c.oracle_id,name:c.name,rarity:c.rarity,set:c.set,collector_number:c.number,image_uris:{normal:c.image,art_crop:c.art},...(c.foil?{packFoil:true}:{}),...(c.slot?{packSlot:c.slot}:{})});
 const econOpened=out=>{const bits=[];const sb=out.sealBonus||{};for(const [k,label] of [['u','uncommon'],['r','rare'],['m','mythic']])if(sb[k])bits.push('+1 '+label+' seal');if(out.duplicateCoins)bits.push('+'+out.duplicateCoins+' coins from extra copies');return bits.join(' · ');};
-A.playEconOpen=async t=>{let out;try{out=await playEcon.open(t.dataset.econPack);}catch{return;}
+// Opened cards fly into the Trunk one after another, each with a small tick (the app's add-to-collection flight).
+const econLand=list=>list.slice(0,15).forEach((f,i)=>setTimeout(()=>{flyToCollection(f);haptic('tick');},i*85));
+// The server rolls the pack before anything can show, so the pack shakes and glows right away while it does.
+A.playEconOpen=async t=>{let out;const btn=t.closest?.('.pe-pack')||t;btn.classList.add('pe-pack--opening');btn.setAttribute('aria-busy','true');haptic('tap');
+ try{out=await playEcon.open(t.dataset.econPack);}catch{return;}finally{btn.classList.remove('pe-pack--opening');btn.removeAttribute('aria-busy');}
  const name=c=>(playEcon.snapshot().state?.shop||[]).find(x=>x.code===c)?.name||c.toUpperCase();
- try{openPackPreview({game:'mtg',set:{code:out.pack.set,name:name(out.pack.set)},cards:[],variant:'play',drawn:out.pack.contents.map(econPick),note:['Added to your Play collection.',econOpened(out)].filter(Boolean).join(' '),onCopy:copyPlain,isCurrent:()=>true,
+ try{openPackPreview({game:'mtg',set:{code:out.pack.set,name:name(out.pack.set)},cards:[],variant:'play',drawn:out.pack.contents.map(econPick),note:['Added to your Play collection.',econOpened(out)].filter(Boolean).join(' '),onCopy:copyPlain,isCurrent:()=>true,onLand:econLand,
   onNext:async()=>{const left=playEcon.snapshot().state?.packs||[],next=left.find(p=>p.set===out.pack.set)||left[0];if(!next)return null;out=await playEcon.open(next.id);return {picks:out.pack.contents.map(econPick),set:{code:out.pack.set,name:name(out.pack.set)}};}});}catch(e){toast(e.message||'Could not show this pack.');}};
 // Seal press: find a card by name on Scryfall, then stamp it with a seal of its rarity.
 A.playEconFind=async form=>{const q=String(new FormData(form).get('card')||'').trim();if(!q)return;econUi.press={query:q,busy:true};refreshPlayMenu();
@@ -1680,6 +1724,34 @@ A.playEconCheckDeck=async form=>{const d=new FormData(form),text=String(d.get('l
   econUi.check={...econUi.check,busy:false,rows,rarity};}catch{econUi.check={...econUi.check,busy:false,error:'Could not check the cards right now.'};}refreshPlayMenu();};
 A.playEconSaveDeck=async()=>{const c=econUi.check;if(!c?.rows)return;try{await playEcon.saveDeck({name:c.name||'Play deck',format:c.format,cards:c.rows});econUi.check=null;toast('Saved to your Play decks.');}catch{}};
 A.playEconDeleteDeck=async t=>{if(!confirm('Delete this Play deck?'))return;try{await playEcon.saveDeck({id:t.dataset.econDeck,delete:true});}catch{}};
+// Collection (Cards / Sets) and the deck builder. Filters are shared; facts come from Scryfall.
+A.playEconCollTab=t=>{econUi.tab=t.dataset.id==='sets'?'sets':'cards';refreshPlayMenu();};
+A.playEconColor=t=>{const k=t.dataset.econColor||'';econUi.color=econUi.color===k?'':k;refreshPlayMenu();};
+C.playEconType=t=>{econUi.type=t.value||'';refreshPlayMenu();};
+A.playEconSet=t=>{const code=t.dataset.econSet||'';if(t.dataset.econFilter){econUi.set=code;return refreshPlayMenu();}econUi.set='';if(code)return go('#set/'+encodeURIComponent(code)+'/play');refreshPlayMenu();};
+C.playEconSort=t=>{econUi.sort=t.value||'';refreshPlayMenu();};
+// The Play lens (play-progression.md): the app's own set page and card sheet read the Play collection
+// and Play decks instead of prices. Read-only; every change still goes through the Play server.
+// Signed out or still loading, the lens still holds the wall: no prices, nothing owned yet.
+V.setPlayLensSource(()=>{const st=playEcon.snapshot().state||{};
+ const byOracle=new Map((st.cards||[]).map(c=>[c.o,c.c])),byName=ownedByName(st.cards||[]);
+ return {byOracle,byName,get decks(){return playEcon.snapshot().state?.decks||[];},coins:st.wallet?.coins|0,price:st.config?.packPrice||500,
+  owned:(name,card)=>(card?.oracle_id&&byOracle.get(card.oracle_id))||byName.get(name)||byName.get(String(name).split(' // ')[0])||0,
+  setProgress:code=>{const have=(st.cards||[]).filter(c=>(c.s||[]).includes(code)).length,total=econFacts.set(code)?.total||null;return {key:'play:'+code,owned:have,total,loaded:total||0,known:total||0,complete:true};}};});
+A.playLensBack=()=>{playView='collection';econUi.tab='sets';go('#play');};
+A.playLensSet=t=>{closeSheet();go('#set/'+encodeURIComponent(t.dataset.code)+'/play');};
+A.playLensBuy=async t=>{try{await playEcon.buy(t.dataset.code);toast('Pack bought. It is waiting in Packs.');render();}catch(e){toast(e.message);}};
+A.playCardToDeck=async t=>{const st=playEcon.snapshot().state,d=(st?.decks||[]).find(x=>x.id===t.dataset.econDeck);if(!d)return;
+ const cards=stepDeckCard((d.cards||[]).filter(c=>!c.board).map(c=>({name:c.name,qty:c.qty|0})),t.dataset.name,1,ownedByName(st.cards||[]),d.format);
+ if(cards.reduce((a,c)=>a+c.qty,0)===(d.cards||[]).filter(c=>!c.board).reduce((a,c)=>a+(c.qty|0),0))return toast('No more copies of that card can go in '+(d.name||'that deck')+'.');
+ try{await playEcon.saveDeck({id:d.id,name:d.name,format:d.format,cards:[...cards,...(d.cards||[]).filter(c=>c.board)]});toast('Added to '+(d.name||'your deck')+'.');refreshSheet?.();}catch(e){toast(e.message);}};
+A.playCardNewDeck=t=>{closeSheet();econUi.edit={id:null,name:'',format:'Standard',cards:[{name:t.dataset.name,qty:1}]};playView='deck';go('#play');};
+A.playCardGet=t=>{closeSheet();playView='shop';econUi.press={query:t.dataset.name,busy:false};go('#play');};
+A.playEconEditDeck=t=>{const d=(playEcon.snapshot().state?.decks||[]).find(x=>x.id===t.dataset.econDeck);econUi.edit=d?{id:d.id,name:d.name,format:d.format||'Standard',cards:(d.cards||[]).filter(c=>!c.board).map(c=>({name:c.name,qty:c.qty|0}))}:{id:null,name:'',format:'Standard',cards:[]};playView='deck';refreshPlayMenu();scrollTo({top:0});requestAnimationFrame(()=>document.getElementById('playDeckTitle')?.focus?.({preventScroll:true}));};
+A.playEconStep=t=>{const e=econUi.edit;if(!e)return;const owned=ownedByName(playEcon.snapshot().state?.cards||[]);e.cards=stepDeckCard(e.cards,t.dataset.econCard,Number(t.dataset.econStep)||0,owned,e.format);e.dirty=true;refreshPlayMenu();};
+I.playEconDeckName=t=>{if(econUi.edit){econUi.edit.name=t.value;econUi.edit.dirty=true;}};
+C.playEconDeckFormat=t=>{if(econUi.edit){econUi.edit.format=t.value;econUi.edit.dirty=true;refreshPlayMenu();}};
+A.playEconSaveEdit=async()=>{const e=econUi.edit;if(!e?.cards?.length||e.busy)return;e.busy=true;refreshPlayMenu();try{const d=await playEcon.saveDeck({id:e.id,name:e.name||'Play deck',format:e.format,cards:e.cards});if(d?.id)e.id=d.id;e.dirty=false;toast('Saved to your Play decks.');}catch{}finally{e.busy=false;refreshPlayMenu();}};
 document.addEventListener('submit',e=>{const form=e.target.closest?.('form[data-submit]');if(!form||!A[form.dataset.submit])return;e.preventDefault();safely(A[form.dataset.submit](form));});
 // The empty Quick Play seat takes you straight to your decks.
 A.playFocusDecks=()=>{const list=document.getElementById('playDecksTitle');list?.scrollIntoView({behavior:matchMedia('(prefers-reduced-motion:reduce)').matches?'auto':'smooth',block:'start'});document.getElementById('playDeckSearch')?.focus?.({preventScroll:true});};
@@ -2026,6 +2098,9 @@ A.storySeat=t=>{storyUi.seat=t.dataset.storySeat==='villain'?'villain':'hero';if
 C.storyDeck=t=>{storyUi.deck=t.value||'loaner';refreshPlayMenu();};
 function storyOwnDecks(){const pool=storyUi.pools[storyUi.act]||null,owned=new Map((playEcon.snapshot().state?.cards||[]).map(c=>[c.n,c.c]));
  return (playEcon.snapshot().state?.decks||[]).map(d=>{let fits=ownDeckFits(d,pool);if(fits.ok){const sh=deckShortfall((d.cards||[]).filter(r=>r.board!=='side'),owned,new Map());if(!sh.complete)fits={ok:false,reason:'Some cards aren\'t in your Play collection yet.'};}return {id:d.id,name:d.name||'Untitled deck',cards:(d.cards||[]).filter(r=>r.board!=='side'),fits};});}
+// The Play home's Story header: the act you're on and how many of its battles are won.
+const storyHomeAct=()=>{const p=storyProgress.snapshot().progress;return STORY_ACTS.find(a=>a.act===Math.min(currentAct(p),STORY_ACTS.length))||STORY_ACTS[0];};
+function storyHomeProgress(){const p=storyProgress.snapshot().progress,act=storyHomeAct().act,won=Array.from({length:8},(_,i)=>battleCleared(p,`a${act}b${i+1}`)).filter(Boolean).length;return {act,won,done:currentAct(p)>STORY_ACTS.length};}
 function storyMarkup(){
  const econ=playEcon.snapshot(),progress=storyProgress.snapshot().progress;
  const wait=`<section class="play-menu st-screen" aria-labelledby="playTitle"><header class="pl-head pe-head"><button class="pl-back" data-act="playHome" aria-label="Back to Play"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="m15 5-7 7 7 7"/></svg></button><div class="pl-head-title"><p class="eyebrow">Play</p><h1 id="playTitle" tabindex="-1">Story</h1></div></header><div class="st-loading" role="status">${brandMark('brand-loading')}</div></section>`;
@@ -2143,13 +2218,19 @@ function renderPlayPage() {
   econWake();
   storyProgress.wake();
   if(STORY_VIEWS.has(playView))return storyMarkup();
-  if(ECON_VIEWS.has(playView)){const snap=playEcon.snapshot();return econScreenMarkup(playView,snap,{query:playView==='collection'?econUi.cardQuery:econUi.query,rarity:econUi.rarity,press:econUi.press,check:econUi.check});}
+  if(ECON_VIEWS.has(playView)){const snap=playEcon.snapshot(),cards=snap.state?.cards||[];
+   if(['collection','deck'].includes(playView))econFacts.wantCards(cards.map(c=>({o:c.o,id:c.p?.id})));
+   if(playView==='collection'||econUi.set)econFacts.wantSets([...cards.flatMap(c=>c.s||[]),snap.state?.rewardSet?.code].filter(Boolean));
+   if(playView==='packs')econFacts.wantSets((snap.state?.packs||[]).map(p=>p.set));
+   if(playView==='shop'){const q=(econUi.query||'').trim().toLowerCase(),shop=snap.state?.shop||[];econFacts.wantSets([snap.state?.rewardSet?.code,...(q?shop.filter(x=>x.name.toLowerCase().includes(q)||x.code===q):shop).slice(0,q?60:24).map(x=>x.code)].filter(Boolean));}
+   return econScreenMarkup(playView,snap,{...econUi,query:econUi.query,facts:econFacts});}
   const state=playSetup.snapshot(),p=state.profile,tiles=new Map();state.opponentBuild=practiceOpponentBuilder.snapshot();state.deckBuild=playBuilders[state.playStyle==='quick'?'player':state.inspectedSeat].snapshot();const sources=readPlaySources(),sourceArt=new Map();for(const entries of Object.values(sources))for(const entry of entries)sourceArt.set(entry.key,V.deckArtwork(entry.deck));
   for(const summary of state.decks){const deck=deckById(summary.id);if(summary.valid&&deck)tiles.set(summary.id,V.deckTile(deck,false,{playSelection:playSeatSource(state,playBrowseSeat(state))==='saved'&&playSeatDeck(state,playBrowseSeat(state))?.id===deck.id}));}
   const inspected=state.playStyle!=='quick'&&state.match.mode==='cpu'?playSeatDeck(state,state.inspectedSeat):state.selected;
   if(state.match.mode==='cpu')warmForgeEngine(state);
   if(!playUpdateChecked){playUpdateChecked=true;queueMicrotask(updatePlayWhileIdle);}
-  return playMenuMarkup(state,{econ:playEcon.snapshot(),storyTile:storyTileMarkup(storyProgress.snapshot().progress),friendRoom:friendRoomView(),challengeCount:challenges.length,canShare:typeof navigator.share==='function',view:playView,inspectOpen:playInspectOpen,engine:FORGE_PLAY_TEST_ENABLED?'forge':'phase',sourceEntries:sources,sourceArt,cpuDifficulties:readCpuOptions({engine:FORGE_PLAY_TEST_ENABLED?'forge':'phase'}),quickStatus,sourceStatus:currentPlaySources().statuses[state.browse.source+':'+state.match.format]||{},savedCopy:savedPlayCopy(inspected),savePending:playSaver.isSaving(inspected),matchReleaseReady:PLAY_MATCH_RELEASE_READY,avatarMarkup:profileAvatar(p.avatarArt,{display_name:p.displayName,username:p.username,avatar_url:p.avatarUrl}),deckTiles:tiles,deckPreview:playDeckPreview(inspected),importPreview:playDeckPreview(state.reviewDeck),selectedArt:V.deckArtwork(inspected),matchupArt:{player:V.deckArtwork(state.selected),opponent:V.deckArtwork(state.opponent),cpu3:state.podDecks?.cpu3?V.deckArtwork(state.podDecks.cpu3):'',cpu4:state.podDecks?.cpu4?V.deckArtwork(state.podDecks.cpu4):''}});
+  if(playView==='home'){const st=playEcon.snapshot().state;econFacts.wantSets([...storyHomeAct().packSets,...(st?.packs||[]).map(p=>p.set),...(st?.shop||[]).slice(0,6).map(x=>x.code),...(st?.cards||[]).flatMap(c=>c.s||[])]);}
+  return playMenuMarkup(state,{econ:playEcon.snapshot(),story:storyHomeProgress(),friendRoom:friendRoomView(),challengeCount:challenges.length,canShare:typeof navigator.share==='function',view:playView,inspectOpen:playInspectOpen,econFacts,engine:FORGE_PLAY_TEST_ENABLED?'forge':'phase',sourceEntries:sources,sourceArt,cpuDifficulties:readCpuOptions({engine:FORGE_PLAY_TEST_ENABLED?'forge':'phase'}),quickStatus,sourceStatus:currentPlaySources().statuses[state.browse.source+':'+state.match.format]||{},savedCopy:savedPlayCopy(inspected),savePending:playSaver.isSaving(inspected),matchReleaseReady:PLAY_MATCH_RELEASE_READY,avatarMarkup:profileAvatar(p.avatarArt,{display_name:p.displayName,username:p.username,avatar_url:p.avatarUrl}),deckTiles:tiles,deckPreview:playDeckPreview(inspected),importPreview:playDeckPreview(state.reviewDeck),selectedArt:V.deckArtwork(inspected),matchupArt:{player:V.deckArtwork(state.selected),opponent:V.deckArtwork(state.opponent),cpu3:state.podDecks?.cpu3?V.deckArtwork(state.podDecks.cpu3):'',cpu4:state.podDecks?.cpu4?V.deckArtwork(state.podDecks.cpu4):''}});
 }
 const refreshPlayMenu=()=>{if(S.ui.view==='play'&&T.game()==='mtg'){
   const scrolls=[...document.querySelectorAll('[data-play-scroll]')].map(n=>[n.dataset.playScroll,n.scrollTop]);
@@ -3086,6 +3167,8 @@ A.card = async (t) => {
   S.ui.sheetBack = S.ui.sheetCtx?.type === "idea" && $("#sheet").open ? { type: "idea", i: S.ui.sheetCtx.i } : null;
   const name = t.dataset.name,
     ctx = { type: "card", name, entryId:t.dataset.entry||"", deckId: t.dataset.readOnly ? null : t.dataset.deck || (S.ui.view === "deck" ? currentDeck()?.id : null), random: !!t.dataset.random };
+  // Play lens: from Play screens and Play set pages the sheet shows Play copies and Play decks, no prices.
+  if (S.ui.view === "play" || S.ui.lens === "play") { ctx.play = V.playLensNow(); if (ctx.play) { ctx.entryId = ""; ctx.deckId = null; } }
   if(ctx.entryId){
     let owned=magicOwnedDetail(S.state,ctx.entryId,name);
     if(!owned.identity)return toast(owned.reason);

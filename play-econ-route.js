@@ -6,7 +6,7 @@
 import {SUPABASE} from './config.js';
 import {loadMtgBooster, mtgBoosterCards, drawMtgBooster} from './mtg-boosters.js';
 import {rewardSet} from './play-econ-sets.js';
-import {starterGrant, sealTrackBonus, packContentsRow, RARITY_SEAL} from './play-econ-rules.js';
+import {starterGrant, sealTrackBonus, packContentsRow, cardDelta, RARITY_SEAL, FORGE_STEPS, forgeRatio} from './play-econ-rules.js';
 import {PRACTICE_STARTER_ROWS} from './play-starter-deck.js';
 
 const json = (body, status = 200) => new Response(JSON.stringify(body), {status, headers: {'Content-Type': 'application/json', 'Cache-Control': 'no-store'}});
@@ -111,7 +111,7 @@ export async function progressRoute(request, env, {verifyBearer, fetcher = fetch
       // Never spend a pack on an empty draw: the pack stays banked and the player can try again.
       if (contents.length < Math.min(5, picks.length || 5)) return fail('cards_unavailable', 503);
       const bonus = sealTrackBonus(s.config, (s.wallet?.packs_opened || 0) + 1);
-      const result = await apply('open:' + pack.id, 'open', {open: {id: pack.id, contents}, cards: contents.filter(c => c.oracle_id).map(({oracle_id, name, rarity}) => ({oracle_id, name, rarity})), seals: bonus});
+      const result = await apply('open:' + pack.id, 'open', {open: {id: pack.id, contents}, cards: contents.filter(c => c.oracle_id).map(cardDelta), seals: bonus});
       return json({pack: {...pack, contents}, sealBonus: bonus, duplicateCoins: result.duplicate_coins || 0, converted: result.converted || [], state: await state()});
     }
     if (path === 'craft') {
@@ -123,8 +123,17 @@ export async function progressRoute(request, env, {verifyBearer, fetcher = fetch
       const s = await state(), owned = (s.cards || []).find(c => c.o === card.oracle_id)?.c || 0;
       if (owned >= (s.config?.maxCopies || 4)) return fail('have_max', 409);
       if ((s.wallet?.['seal_' + seal] || 0) < 1) return fail('no_seal', 409);
-      await apply('craft:' + crypto.randomUUID(), 'craft', {seals: {[seal]: -1}, cards: [{oracle_id: card.oracle_id, name: card.name, rarity: card.rarity}]});
+      await apply('craft:' + crypto.randomUUID(), 'craft', {seals: {[seal]: -1}, cards: [cardDelta(card)]});
       return json({card: {id: card.id, oracle_id: card.oracle_id, name: card.name, rarity: card.rarity}, state: await state()});
+    }
+    if (path === 'forge') {
+      // Seals step up one rarity: ratio x the lower seal for 1 of the next, up to 10 at once.
+      const to = String(body.to || ''), from = FORGE_STEPS[to], times = Math.floor(Number(body.times) || 1);
+      if (!from || times < 1 || times > 10) return fail('bad_forge');
+      const s = await state(), cost = forgeRatio(s.config, to) * times;
+      if ((s.wallet?.['seal_' + from] || 0) < cost) return fail('no_seal', 409);
+      await apply('forge:' + crypto.randomUUID(), 'forge', {seals: {[from]: -cost, [to]: times}});
+      return json({forged: {to, from, times, cost}, state: await state()});
     }
     if (path === 'buy') {
       const set = String(body.set || '').toLowerCase();

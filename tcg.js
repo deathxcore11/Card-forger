@@ -71,7 +71,7 @@ import { factBox, overviewFacts } from "./facts.js";
 import { ygoEmblems, energyIcon, attackLine, tcgSetBadge, ygoPrintBadge, pkRarity, pkSetSymbol } from "./emblems.js";
 import { buildYgo, buildPtcg, YGO_STAPLES, PTCG_STAPLES, PTCG_SUPPORT_BASICS, energyName } from "./tcgbuild.js";
 import { ygoSource, ygoZoneRange, ygoImageDirect, YGO_SET_CACHE_KEY, YGO_SET_LEGACY_CACHE_KEY, normalizeYgoSets, migrateYgoSetCache, resolveYgoSet, ygoSetPrintings, normalizeYgoSearch, ygoSearchFormatLabel, ygoSearchFormatSupported, ygoSearchEligibility, YGO_TYPES, YGO_ATTRIBUTES, YGO_RACES, YGO_SPELL_KINDS, YGO_TRAP_KINDS } from "./ygo.js";
-import { ptcgSource, ptcgImage, ptcgPrintingMatches, normalizePtcgSearch, PTCG_TYPES, PTCG_RARITIES, PTCG_STAGES, plainText } from "./ptcg.js";
+import { ptcgSource, ptcgImage, ptcgPrintingMatches, SET_SUBSETS, normalizePtcgSearch, PTCG_TYPES, PTCG_RARITIES, PTCG_STAGES, plainText } from "./ptcg.js";
 import { loadMeta, metaState, ptcgIcon, allCachedMeta, cleanName, PTCG_META_FORMATS } from "./meta.js";
 import { tcgPower, powerPanel, powerChip, shownPower, asShown, powerReadiness } from "./power.js";
 import { playGuide, playedAlongside, guideHtml, cardRules } from "./guide.js";
@@ -1761,8 +1761,10 @@ export function setContextCard(g, card, release, catalogue = ui(g).sets.list, {v
     const referencePrice=!membership?null:previousContext&&Object.hasOwn(previousContext,'referencePrice')?previousContext.referencePrice:wasSelected?null:card.prices?.usd??null;
     const selectedPrice=membership?(chosen?variant?.usd??null:referencePrice):null;
     const referencePricing=previousContext?.referencePricing||{...card.prices};
+    // A Classic Collection card on its parent's page keeps its own set: its art, number and finish
+    // are the subset's, and the parent's art gallery would show another card (or a card back).
     const context={referencePricing,game:g,cardId:card.id,releaseId:resolved.id,name:resolved.name,code:resolved.code,date:resolved.date,status:membership?"resolved":"missing",membership:membership?'set-response':'unverified',sourceSet,referencePrice,printingAmbiguous:!!chosen&&!variant,variantKey:chosen,variant,edition:"unknown",price:selectedPrice};
-    return {...card,setContext:context,...(membership?{set:{...sourceSet,id:resolved.id,name:resolved.name||sourceSet.name,symbol:resolved.symbol||sourceSet.symbol},setCode:resolved.code||String(resolved.id).toUpperCase()}:{}),...(!membership||chosen||wasSelected?{prices:{...(membership?referencePricing:{}),usd:selectedPrice,eur:null,others:[],...(chosen?{updated:variant?.sourceUpdatedAt??referencePricing.updated??null}:{}),source:membership?'Selected version reference':'Release not verified'}}:{})};
+    return {...card,setContext:context,...(membership&&!(SET_SUBSETS[resolved.id]||[]).includes(sourceSet.id)?{set:{...sourceSet,id:resolved.id,name:resolved.name||sourceSet.name,symbol:resolved.symbol||sourceSet.symbol},setCode:resolved.code||String(resolved.id).toUpperCase()}:{}),...(!membership||chosen||wasSelected?{prices:{...(membership?referencePricing:{}),usd:selectedPrice,eur:null,others:[],...(chosen?{updated:variant?.sourceUpdatedAt??referencePricing.updated??null}:{}),source:membership?'Selected version reference':'Release not verified'}}:{})};
   }
   const printingNames=new Map();
   for(const p of card.sets||[]){const key=p.code+'|'+rarityKey(p.rarity);if(!printingNames.has(key))printingNames.set(key,new Set());printingNames.get(key).add(releaseText(p.name));}
@@ -4483,7 +4485,7 @@ export function registerTcg(c) {
       else{
         const cards=await SOURCES[G].setCards(U.info);
         if(!active())return;
-        const loaded=new Set(cards.map(c=>c.id)).size,total=knownSetCount(U.info.count);
+        const loaded=new Set(cards.map(c=>c.id)).size,own=knownSetCount(U.info.count),total=own&&own+(cards.subsetCount||0);
         contents={cards:cards.map(card=>({...card,setContext:{game:G,cardId:card.id,releaseId:U.info.id,membership:'set-response'}})),loadedUniqueCards:loaded,expectedUniqueCards:total,completeness:total&&loaded===total?'complete':total?'partial':'unknown',paginationComplete:true,coverageReason:total&&loaded<total?`${loaded} of ${total} unique cards are available from TCGdex.`:!total?'TCGdex has not verified a unique-card total.':''};
       }
       if(!active())return;
