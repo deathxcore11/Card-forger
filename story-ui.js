@@ -90,6 +90,10 @@ export const LESSONS = {
   'Growing creatures': 'Some creatures grow with counters or pump spells. Answer them early.',
   'Alternate costs': 'Alternate costs let you cast a spell without paying its mana, at a price.',
   'Racing a card-draw engine': 'They pay life to draw cards. Attack hard: every point you deal is one they can\'t spend.',
+  'Flanking': 'Flanking: when a creature without flanking blocks it, the blocker gets -1/-1 first.',
+  'Phasing': 'Phasing: every other turn the card blinks out of time, then returns untouched. Plan around the gaps.',
+  'Locking creatures down': 'Tap their best creature or keep it from untapping, and it can\'t attack or block.',
+  'Racing': 'Racing: when both sides attack, count the turns. Spend life to deal damage faster than they can.',
   'Playing under a lock': 'A lock stops cards from untapping or moving. Break it, or win with what\'s already in play.',
 };
 // What a battle pays, in words: era packs for your side, the villain's signature card for theirs.
@@ -193,11 +197,12 @@ export function createStoryBubbles({root, battle, cast, playerSide, avatarUrl = 
   const sideOf = who => who === 'me' ? playerSide : cpuSide;
   const speaker = side => battle[side].who;
   const lineFor = (side, cue) => battle.cues?.[side]?.[cue] || null;
+  // A cue can be a plain line or {who, line}: someone else speaks from that seat (Jolrael at Kaervek's half life).
   // The seat's portrait (its crest badge) when the table draws one, otherwise the seat itself.
   const seatEl = mine => root.querySelector(mine ? '.play-match-seat[data-seat="you"]' : '.play-match-seat[data-player-seat]:not([data-seat="you"])');
   const anchor = mine => { const s = seatEl(mine); return s?.querySelector('.play-match-profile-badge') || s; };
-  function show({side, text}) {
-    const mine = side === playerSide, who = speaker(side), url = who === 'you' ? avatarUrl : cast[who]?.portrait?.crop || '';
+  function show({side, text, who: by}) {
+    const mine = side === playerSide, who = by || speaker(side), url = who === 'you' ? avatarUrl : cast[who]?.portrait?.crop || '';
     const b = doc.createElement('div');
     b.className = `st-bubble ${mine ? 'st-bubble--me' : 'st-bubble--them'}`; b.setAttribute('role', 'status'); b.setAttribute('aria-live', 'polite');
     b.innerHTML = `${url ? `<span class="st-bubble-face" style="background-image:url(${esc(url)});background-position:${esc(cast[who]?.portrait?.focus || '50% 30%')}"></span>` : ''}<span class="st-bubble-copy"><b>${esc(cast[who]?.name || 'You')}</b><span>${esc(text)}</span></span>`;
@@ -213,7 +218,7 @@ export function createStoryBubbles({root, battle, cast, playerSide, avatarUrl = 
     return new Promise(done => setTimeout(() => { b.classList.remove('in'); b.classList.add('out'); setTimeout(() => { b.remove(); done(); }, 300); }, Math.min(5200, 2200 + text.length * 45)));
   }
   async function pump() { if (busy) return; busy = true; while (queue.length && !disposed) { await show(queue.shift()); await new Promise(r => setTimeout(r, 250)); } busy = false; }
-  const say = (who, cue) => { const side = sideOf(who), key = side + ':' + cue; if (said.has(key)) return; said.add(key); const text = lineFor(side, cue); if (!text) return; queue.push({side, text}); pump(); };
+  const say = (who, cue) => { const side = sideOf(who), key = side + ':' + cue; if (said.has(key)) return; said.add(key); const c = lineFor(side, cue); if (!c) return; queue.push(typeof c === 'string' ? {side, text: c} : {side, text: c.line, who: c.who}); pump(); };
   // The opponent's seat wears their character's portrait.
   function dressSeat() {
     const badge = seatEl(false)?.querySelector('.play-match-profile-badge'), who = speaker(cpuSide), url = who === 'you' ? avatarUrl : cast[who]?.portrait?.crop;
@@ -227,6 +232,7 @@ export function createStoryBubbles({root, battle, cast, playerSide, avatarUrl = 
       mySeat = s.seat ?? mySeat; dressSeat();
       if ((s.turn || 0) >= 1 && !said.has(cpuSide + ':start')) { say('cpu', 'start'); setTimeout(() => say('me', 'start'), 400); }
       for (const p of s.players || []) if (Number.isFinite(p.life) && p.life <= 5 && p.life > 0) say(p.seat === mySeat ? 'me' : 'cpu', 'low');
+      for (const p of s.players || []) if (Number.isFinite(p.life) && p.life <= 10 && p.life > 5) say(p.seat === mySeat ? 'me' : 'cpu', 'half');
       for (const c of s.cards || []) if (c.zone === 'Battlefield' && c.types?.includes('Creature') && Number(c.power) >= 4) say(c.controller === mySeat ? 'me' : 'cpu', 'big');
     },
     finish(outcome) {

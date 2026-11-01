@@ -11,8 +11,12 @@ export const STORY_ACTS = [
   {act: 3, age: 'The Old World', title: 'Ice Age', years: '1995 to 1996',
     sets: ['ice', 'hml', 'all', '4ed'], landSet: 'ice', packSets: ['ice', 'hml', 'all'],
     art: {set: 'all', number: '55a', name: "Lim-Dûl's High Guard", crop: 'https://cards.scryfall.io/art_crop/front/b/5/b5afe9b5-3be8-472a-95c3-2c34231bc042.jpg'}},
+  {act: 4, age: 'The Weatherlight Saga', title: 'The Jamuraan War', years: '1996 to 1997',
+    sets: ['mir', 'vis', '5ed'], landSet: 'mir', packSets: ['mir', 'vis'],
+    art: {set: 'mir', number: '185', name: "Kaervek's Torch", crop: 'https://cards.scryfall.io/art_crop/front/0/a/0a1624ab-e50e-48a3-acf7-457069914616.jpg'}},
 ];
 export const SET_NAMES = {lea: 'Limited Edition Alpha', leb: 'Limited Edition Beta', '2ed': 'Unlimited Edition', arn: 'Arabian Nights', atq: 'Antiquities',
-  '3ed': 'Revised Edition', leg: 'Legends', drk: 'The Dark', fem: 'Fallen Empires', ice: 'Ice Age', hml: 'Homelands', all: 'Alliances', '4ed': 'Fourth Edition'};
+  '3ed': 'Revised Edition', leg: 'Legends', drk: 'The Dark', fem: 'Fallen Empires', ice: 'Ice Age', hml: 'Homelands', all: 'Alliances', '4ed': 'Fourth Edition',
+  mir: 'Mirage', vis: 'Visions', '5ed': 'Fifth Edition'};
 export const storyAct = n => STORY_ACTS.find(a => a.act === Number(n)) || null;
 export const setSymbolUrl = code => `https://svgs.scryfall.io/sets/${encodeURIComponent(code)}.svg`;

@@ -1,0 +1,2756 @@
+{
+ "act": 4,
+ "title": "The Jamuraan War",
+ "years": "1996 to 1997",
+ "sets": [
+  "mir",
+  "vis",
+  "5ed"
+ ],
+ "landSet": "mir",
+ "intro": [
+  {
+   "who": "stage",
+   "line": "A rift. Heat. Sand that hums."
+  },
+  {
+   "who": "hakim",
+   "line": "Another one, out of the air. The omens were right, then."
+  },
+  {
+   "who": "hakim",
+   "line": "Welcome to Jamuraa, stranger. You've come at the worst possible time."
+  },
+  {
+   "who": "hakim",
+   "line": "Mangara, our greatest mage, is gone. Kaervek has taken his power."
+  },
+  {
+   "who": "kaervek",
+   "line": "Mangara is gone. Who among you doubts that I have taken his power?",
+   "quote": true,
+   "offstage": true
+  }
+ ],
+ "finale": [
+  {
+   "who": "asmira",
+   "line": "The amber. Help me."
+  },
+  {
+   "who": "hakim",
+   "line": "Holy Avenger, it needs more than prayer. It needs..."
+  },
+  {
+   "who": "asmira",
+   "line": "I know what it needs."
+  },
+  {
+   "who": "stage",
+   "line": "Gold light. The amber cracks open. Mangara breathes. Asmira doesn't."
+  },
+  {
+   "who": "hakim",
+   "line": "...but the price of Mangara's freedom was Asmira's life.",
+   "quote": true
+  },
+  {
+   "who": "mangara",
+   "line": "Your arrogance amazes me, Kaervek. Did you not know the price you would pay?",
+   "quote": true
+  },
+  {
+   "who": "kaervek",
+   "line": "I knew. I just thought someone else would pay it."
+  },
+  {
+   "who": "rashida",
+   "line": "Someone did."
+  },
+  {
+   "who": "stage",
+   "line": "Later. Teferi's Isle, at dusk."
+  },
+  {
+   "who": "teferi",
+   "line": "He wasn't wrong, you know. Kaervek. Something is coming."
+  },
+  {
+   "who": "teferi",
+   "line": "If it comes for Zhalfir, I'll hide all of it. Somewhere no war can follow."
+  },
+  {
+   "who": "teferi",
+   "line": "Time may heal all wounds, but what heals time?",
+   "quote": true
+  },
+  {
+   "who": "stage",
+   "line": "The isle phases out. You're standing in the sea."
+  }
+ ],
+ "villainFinale": [
+  {
+   "who": "stage",
+   "line": "Zhalfir's capital. Smoke. A throne room with nobody in it."
+  },
+  {
+   "who": "kaervek",
+   "line": "Kneel."
+  },
+  {
+   "who": "stage",
+   "line": "Nobody is left to kneel."
+  },
+  {
+   "who": "kaervek",
+   "line": "The end justifies the means. What do I care if I rule over the dead rather than over the living?",
+   "quote": true
+  },
+  {
+   "who": "kaervek",
+   "line": "The dead ask fewer questions."
+  },
+  {
+   "who": "stage",
+   "line": "In the corner, Mangara still sleeps in his amber. Kaervek sits down beside it."
+  },
+  {
+   "who": "kaervek",
+   "line": "You were the only one who ever argued back."
+  },
+  {
+   "who": "stage",
+   "line": "Far away, something enormous turns to look at Dominaria. It doesn't care who won."
+  }
+ ],
+ "cast": {
+  "you": {
+   "name": "You",
+   "title": "Planeswalker",
+   "portrait": {
+    "card": "Inspiration",
+    "set": "vis",
+    "number": "35",
+    "id": "5247d0b0-660e-4f27-8e76-62effbe12221",
+    "crop": "https://cards.scryfall.io/art_crop/front/5/2/5247d0b0-660e-4f27-8e76-62effbe12221.jpg?1783947000",
+    "artist": "Zina Saunders",
+    "focus": "50% 30%"
+   }
+  },
+  "jabari": {
+   "name": "Sidar Jabari",
+   "title": "General of Zhalfir",
+   "portrait": {
+    "card": "Sidar Jabari",
+    "set": "mir",
+    "number": "39",
+    "id": "743f0d06-cd14-49f3-ad3c-0d419a0c30bc",
+    "crop": "https://cards.scryfall.io/art_crop/front/7/4/743f0d06-cd14-49f3-ad3c-0d419a0c30bc.jpg?1783947116",
+    "artist": "Gerry Grace",
+    "focus": "62% 30%"
+   }
+  },
+  "telimtor": {
+   "name": "Telim'Tor",
+   "title": "Suq'Ata Cavalry General",
+   "portrait": {
+    "card": "Telim'Tor",
+    "set": "mir",
+    "number": "197",
+    "id": "33cc89c8-a3ea-469e-b499-f48acec4f538",
+    "crop": "https://cards.scryfall.io/art_crop/front/3/3/33cc89c8-a3ea-469e-b499-f48acec4f538.jpg?1783947072",
+    "artist": "Kev Walker",
+    "focus": "62% 25%"
+   }
+  },
+  "teferi": {
+   "name": "Teferi",
+   "title": "Court Mage of Zhalfir",
+   "portrait": {
+    "card": "Teferi, Mage of Zhalfir",
+    "set": "tsp",
+    "number": "83",
+    "id": "3c0145f6-4e27-49e7-9ef6-bac6fa3de26d",
+    "artist": "D. Alexander Gregory & Jeremy Jarvis",
+    "crop": "https://cards.scryfall.io/art_crop/front/3/c/3c0145f6-4e27-49e7-9ef6-bac6fa3de26d.jpg",
+    "focus": "50% 25%"
+   }
+  },
+  "rashida": {
+   "name": "Rashida Scalebane",
+   "title": "Dragon Slayer of Femeref",
+   "portrait": {
+    "card": "Rashida Scalebane",
+    "set": "mir",
+    "number": "35",
+    "id": "ebb48053-da60-477a-b1eb-a9ab9ea682af",
+    "crop": "https://cards.scryfall.io/art_crop/front/e/b/ebb48053-da60-477a-b1eb-a9ab9ea682af.jpg?1783947119",
+    "artist": "Randy Gallegos",
+    "focus": "45% 25%"
+   }
+  },
+  "purraj": {
+   "name": "Purraj of Urborg",
+   "title": "Night Stalker",
+   "portrait": {
+    "card": "Purraj of Urborg",
+    "set": "mir",
+    "number": "135",
+    "id": "4704bf02-c6be-4983-9bc7-a1d464d21b31",
+    "crop": "https://cards.scryfall.io/art_crop/front/4/7/4704bf02-c6be-4983-9bc7-a1d464d21b31.jpg?1783947089",
+    "artist": "John Matson",
+    "focus": "50% 20%"
+   }
+  },
+  "asmira": {
+   "name": "Asmira",
+   "title": "Holy Avenger of Femeref",
+   "portrait": {
+    "card": "Asmira, Holy Avenger",
+    "set": "mir",
+    "number": "256",
+    "id": "a7d64600-84fc-42a5-a6a6-b26f98fac0a4",
+    "crop": "https://cards.scryfall.io/art_crop/front/a/7/a7d64600-84fc-42a5-a6a6-b26f98fac0a4.jpg?1783947055",
+    "artist": "Rebecca Guay",
+    "focus": "50% 25%"
+   }
+  },
+  "jolrael": {
+   "name": "Jolrael",
+   "title": "Empress of Beasts",
+   "portrait": {
+    "card": "Jolrael, Empress of Beasts",
+    "set": "tsb",
+    "number": "81",
+    "id": "01084157-60e5-4693-bbec-be60b0b4e04f",
+    "artist": "Matthew D. Wilson",
+    "crop": "https://cards.scryfall.io/art_crop/front/0/1/01084157-60e5-4693-bbec-be60b0b4e04f.jpg",
+    "focus": "50% 25%"
+   }
+  },
+  "hakim": {
+   "name": "Hakim",
+   "title": "Loreweaver of Femeref",
+   "portrait": {
+    "card": "Hakim, Loreweaver",
+    "set": "mir",
+    "number": "68",
+    "id": "8192bca7-03e5-4ea1-ae77-8bc811c19417",
+    "crop": "https://cards.scryfall.io/art_crop/front/8/1/8192bca7-03e5-4ea1-ae77-8bc811c19417.jpg?1783947109",
+    "artist": "Alan Rabinowitz",
+    "focus": "40% 25%"
+   }
+  },
+  "shauku": {
+   "name": "Shauku",
+   "title": "Endbringer of Urborg",
+   "portrait": {
+    "card": "Shauku, Endbringer",
+    "set": "mir",
+    "number": "142",
+    "id": "06d94b21-7568-4e5c-a8ec-ff5bb48a4f36",
+    "crop": "https://cards.scryfall.io/art_crop/front/0/6/06d94b21-7568-4e5c-a8ec-ff5bb48a4f36.jpg?1783947088",
+    "artist": "Pete Venters",
+    "focus": "45% 20%"
+   }
+  },
+  "pashad": {
+   "name": "Pashad ibn Asim",
+   "title": "Suq'Ata Trader",
+   "portrait": {
+    "card": "Prosperity",
+    "set": "vis",
+    "number": "40",
+    "id": "3fa5e806-3cf2-4241-b45d-a05d2b715efd",
+    "crop": "https://cards.scryfall.io/art_crop/front/3/f/3fa5e806-3cf2-4241-b45d-a05d2b715efd.jpg?1783946998",
+    "artist": "Dan Frazier",
+    "focus": "40% 40%"
+   }
+  },
+  "talibah": {
+   "name": "Talibah",
+   "title": "Suq'Ata Embermage",
+   "portrait": {
+    "card": "Fireblast",
+    "set": "vis",
+    "number": "79",
+    "id": "b1eb5b2c-1f02-48a6-a287-88eb189d6780",
+    "crop": "https://cards.scryfall.io/art_crop/front/b/1/b1eb5b2c-1f02-48a6-a287-88eb189d6780.jpg?1783946989",
+    "artist": "Michael Danza",
+    "focus": "50% 25%"
+   }
+  },
+  "kaervek": {
+   "name": "Kaervek",
+   "title": "Warlord of the Burning Isles",
+   "portrait": {
+    "card": "Kaervek the Merciless",
+    "set": "tsp",
+    "number": "242",
+    "id": "444fa5a5-b5b0-4555-bd69-67c1c0cbf317",
+    "artist": "rk post",
+    "crop": "https://cards.scryfall.io/art_crop/front/4/4/444fa5a5-b5b0-4555-bd69-67c1c0cbf317.jpg",
+    "focus": "50% 25%"
+   }
+  },
+  "mangara": {
+   "name": "Mangara",
+   "title": "of Corondor",
+   "portrait": {
+    "card": "Mangara of Corondor",
+    "set": "tsp",
+    "number": "28",
+    "id": "a785b66c-c5a4-4520-a9fa-aa199f7f56e5",
+    "artist": "Zoltan Boros & Gabor Szikszai",
+    "crop": "https://cards.scryfall.io/art_crop/front/a/7/a785b66c-c5a4-4520-a9fa-aa199f7f56e5.jpg",
+    "focus": "50% 25%"
+   }
+  }
+ },
+ "battles": [
+  {
+   "id": "a4b1",
+   "slot": 1,
+   "kind": "Arrival",
+   "title": "The Lancers of Suq'Ata",
+   "difficulty": "Easy",
+   "teaches": [
+    "Flanking"
+   ],
+   "blurb": "You land in the middle of a cavalry charge. Zhalfir's general grabs your reins before you can ask whose side you're on.",
+   "rewardSet": "mir",
+   "host": false,
+   "hero": {
+    "who": "jabari",
+    "deck": {
+     "name": "Jabari's Knights",
+     "colors": "W",
+     "archetype": null,
+     "cards": [
+      {
+       "qty": 4,
+       "name": "Zhalfirin Knight",
+       "set": "mir",
+       "number": "50",
+       "id": "eb65d104-bd50-481e-a70e-62aeb2f2c12b"
+      },
+      {
+       "qty": 4,
+       "name": "Zhalfirin Commander",
+       "set": "mir",
+       "number": "49",
+       "id": "cb0e63cb-6da5-4f65-a976-e79d201e9fc7"
+      },
+      {
+       "qty": 4,
+       "name": "Knight of Valor",
+       "set": "vis",
+       "number": "11",
+       "id": "25aa80ae-bb17-4e52-a269-efe75cf4c041"
+      },
+      {
+       "qty": 4,
+       "name": "Femeref Knight",
+       "set": "mir",
+       "number": "18",
+       "id": "915a2e07-b449-4d94-93e3-e756e891c542"
+      },
+      {
+       "qty": 4,
+       "name": "Infantry Veteran",
+       "set": "vis",
+       "number": "9",
+       "id": "0350470b-feea-4e15-bdf0-850b71dbeea6"
+      },
+      {
+       "qty": 4,
+       "name": "Ekundu Griffin",
+       "set": "mir",
+       "number": "13",
+       "id": "3a32778b-e6ff-45ca-8b22-dc97a406faa4"
+      },
+      {
+       "qty": 2,
+       "name": "Sidar Jabari",
+       "set": "mir",
+       "number": "39",
+       "id": "743f0d06-cd14-49f3-ad3c-0d419a0c30bc"
+      },
+      {
+       "qty": 2,
+       "name": "Pearl Dragon",
+       "set": "mir",
+       "number": "33",
+       "id": "41ac3411-3286-4698-b5d9-d4bb2db30770"
+      },
+      {
+       "qty": 4,
+       "name": "Pacifism",
+       "set": "mir",
+       "number": "32",
+       "id": "c891df1b-bae6-4d6d-85ee-42901c149f98"
+      },
+      {
+       "qty": 2,
+       "name": "Healing Salve",
+       "set": "mir",
+       "number": "20",
+       "id": "0d1c9ca9-3611-46df-8108-45ba383b4ee6"
+      },
+      {
+       "qty": 2,
+       "name": "Warrior's Honor",
+       "set": "vis",
+       "number": "24",
+       "id": "7babd273-3e20-4cf9-bf21-c602eb729fc5"
+      },
+      {
+       "qty": 24,
+       "name": "Plains",
+       "set": "mir",
+       "number": "331",
+       "id": "888f32ad-3bdd-4c46-b3f0-522ac9763591"
+      }
+     ]
+    }
+   },
+   "villain": {
+    "who": "telimtor",
+    "deck": {
+     "name": "Telim'Tor's Lances",
+     "colors": "R",
+     "archetype": null,
+     "cards": [
+      {
+       "qty": 2,
+       "name": "Telim'Tor",
+       "set": "mir",
+       "number": "197",
+       "id": "33cc89c8-a3ea-469e-b499-f48acec4f538"
+      },
+      {
+       "qty": 4,
+       "name": "Suq'Ata Lancer",
+       "set": "vis",
+       "number": "96",
+       "id": "2884d8df-7fd5-4247-9da5-38c31333ff5d"
+      },
+      {
+       "qty": 4,
+       "name": "Talruum Minotaur",
+       "set": "mir",
+       "number": "196",
+       "id": "51657034-2c30-40a2-a215-a00277f01642"
+      },
+      {
+       "qty": 4,
+       "name": "Viashino Warrior",
+       "set": "mir",
+       "number": "200",
+       "id": "4947cbf9-69dc-44e3-a22e-a6129f331f3c"
+      },
+      {
+       "qty": 4,
+       "name": "Goblin Elite Infantry",
+       "set": "mir",
+       "number": "177",
+       "id": "12b9c6b8-9f87-41f1-9e81-b5995e3ed6b7"
+      },
+      {
+       "qty": 4,
+       "name": "Mountain Goat",
+       "set": "5ed",
+       "number": "252",
+       "id": "fbec9fe6-a951-48b2-a0d2-3cdf69b5400f"
+      },
+      {
+       "qty": 4,
+       "name": "Hill Giant",
+       "set": "5ed",
+       "number": "239",
+       "id": "4bb9d069-1163-46bd-9a71-21c05898330e"
+      },
+      {
+       "qty": 4,
+       "name": "Dwarven Warriors",
+       "set": "5ed",
+       "number": "222",
+       "id": "d217942b-1253-4d4b-b0d2-09fc4e15cc62"
+      },
+      {
+       "qty": 2,
+       "name": "Barreling Attack",
+       "set": "mir",
+       "number": "157",
+       "id": "a3a2955e-e714-419e-9e3d-7ae3d7fae041"
+      },
+      {
+       "qty": 2,
+       "name": "Goblin Hero",
+       "set": "5ed",
+       "number": "235",
+       "id": "1d21c8c9-6e16-4eb2-b2f5-3998f0f958ae"
+      },
+      {
+       "qty": 2,
+       "name": "Mons's Goblin Raiders",
+       "set": "5ed",
+       "number": "251",
+       "id": "8324c5a9-d126-4510-90ac-c6b1424137d9"
+      },
+      {
+       "qty": 24,
+       "name": "Mountain",
+       "set": "mir",
+       "number": "343",
+       "id": "97004cdc-0baf-415d-8e87-7f36667c4628"
+      }
+     ]
+    }
+   },
+   "reward": {
+    "hero": {
+     "packs": 1,
+     "coins": 0
+    },
+    "villain": {
+     "card": {
+      "oracle_id": "b13a723d-80a9-4116-9857-baf3b373f87a",
+      "name": "Telim'Tor",
+      "rarity": "rare",
+      "set": "mir",
+      "id": "33cc89c8-a3ea-469e-b499-f48acec4f538",
+      "image": "https://cards.scryfall.io/normal/front/3/3/33cc89c8-a3ea-469e-b499-f48acec4f538.jpg"
+     },
+     "coins": 50
+    }
+   },
+   "scene": [
+    {
+     "who": "jabari",
+     "line": "You. Out of the sky. Can you ride?"
+    },
+    {
+     "who": "jabari",
+     "line": "Doesn't matter. Hold on."
+    },
+    {
+     "who": "telimtor",
+     "line": "Jabari! Forty lances on my left. Sixty on my right. How many have you?"
+    },
+    {
+     "who": "jabari",
+     "line": "Enough to be remembered."
+    },
+    {
+     "who": "telimtor",
+     "line": "Kaervek pays in gold, Jabari. Zhalfir pays in songs."
+    },
+    {
+     "who": "jabari",
+     "line": "Command is the act of balancing on a vine and convincing others that it is firm ground.",
+     "quote": true
+    },
+    {
+     "who": "jabari",
+     "line": "That vine is us. Ride beside me. Never in front."
+    }
+   ],
+   "villainScene": [
+    {
+     "who": "telimtor",
+     "line": "The Suq'Ata trade. Silk, spice, lances. This season, lances."
+    },
+    {
+     "who": "telimtor",
+     "line": "Kaervek is winning. I ride with whoever is winning."
+    },
+    {
+     "who": "telimtor",
+     "line": "Never stop 'til you see your lance come out the other side.",
+     "quote": true
+    }
+   ],
+   "after": null,
+   "cues": {
+    "hero": {
+     "start": "Flank them. Always flank.",
+     "big": "There's the vine. Firm ground.",
+     "low": "Destiny's cutting it close.",
+     "win": "Tell Telim'Tor's paymaster he's short a general.",
+     "loss": "Fall back to Tefemburu..."
+    },
+    "villain": {
+     "start": "One charge. Two. Count them.",
+     "big": "That's a hundred lances, Jabari.",
+     "low": "I've lost count. Bad sign.",
+     "win": "Gold, then. Always gold.",
+     "loss": "Zhalfir pays in songs. Write me a short one."
+    }
+   },
+   "bigPlays": [],
+   "sim": null
+  },
+  {
+   "id": "a4b2",
+   "slot": 2,
+   "kind": "Lesson",
+   "title": "Teferi's Isle",
+   "difficulty": "Easy",
+   "teaches": [
+    "Phasing"
+   ],
+   "blurb": "Jabari sends you to Zhalfir's court mage for help. The court mage is a thousand years old, lives on an island that isn't always there, and wants to play first.",
+   "rewardSet": "mir",
+   "host": false,
+   "hero": {
+    "who": "you",
+    "deck": {
+     "name": "Out of Time",
+     "colors": "U",
+     "archetype": null,
+     "cards": [
+      {
+       "qty": 4,
+       "name": "Teferi's Imp",
+       "set": "mir",
+       "number": "98",
+       "id": "048f2368-0e2f-4197-b977-353d38b38ccc"
+      },
+      {
+       "qty": 4,
+       "name": "Merfolk Raiders",
+       "set": "mir",
+       "number": "75",
+       "id": "d0f34166-8946-4bcc-84af-3540c42ac7f7"
+      },
+      {
+       "qty": 4,
+       "name": "Teferi's Drake",
+       "set": "mir",
+       "number": "97",
+       "id": "c24823df-5651-4578-a0c8-f9f52f66abe4"
+      },
+      {
+       "qty": 4,
+       "name": "Shimmering Efreet",
+       "set": "vis",
+       "number": "42",
+       "id": "23c5704f-5856-4422-9d82-14558dbe1434"
+      },
+      {
+       "qty": 2,
+       "name": "Breezekeeper",
+       "set": "vis",
+       "number": "27",
+       "id": "beaefa77-6e4a-4724-a443-fa6b45803db5"
+      },
+      {
+       "qty": 2,
+       "name": "Sandbar Crocodile",
+       "set": "mir",
+       "number": "88",
+       "id": "450b79d9-5ab8-4699-8052-a278c316a5c3"
+      },
+      {
+       "qty": 2,
+       "name": "Azimaet Drake",
+       "set": "mir",
+       "number": "53",
+       "id": "854ba4e0-f6f3-4b6c-b6cb-ab2b93d64601"
+      },
+      {
+       "qty": 4,
+       "name": "Unsummon",
+       "set": "5ed",
+       "number": "132",
+       "id": "3c830b54-0441-4df2-87de-a579dc734d97"
+      },
+      {
+       "qty": 4,
+       "name": "Memory Lapse",
+       "set": "mir",
+       "number": "74",
+       "id": "63453ed9-5cf1-4cad-b173-a067f22a4405"
+      },
+      {
+       "qty": 4,
+       "name": "Inspiration",
+       "set": "vis",
+       "number": "35",
+       "id": "5247d0b0-660e-4f27-8e76-62effbe12221"
+      },
+      {
+       "qty": 2,
+       "name": "Cloak of Invisibility",
+       "set": "mir",
+       "number": "58",
+       "id": "3f6e21e6-fb3e-49c1-b5a0-499faf66d279"
+      },
+      {
+       "qty": 24,
+       "name": "Island",
+       "set": "mir",
+       "number": "335",
+       "id": "df84bf1b-8698-4c3e-baa9-926f0efc6a12"
+      }
+     ]
+    }
+   },
+   "villain": {
+    "who": "teferi",
+    "deck": {
+     "name": "Teferi's Tricks",
+     "colors": "U",
+     "archetype": null,
+     "cards": [
+      {
+       "qty": 4,
+       "name": "Daring Apprentice",
+       "set": "mir",
+       "number": "60",
+       "id": "f87b3c06-5479-4060-8d3a-d161fd5830c1"
+      },
+      {
+       "qty": 4,
+       "name": "Merfolk Seer",
+       "set": "mir",
+       "number": "76",
+       "id": "63139890-e860-4791-9bb6-b79bb361ef8b"
+      },
+      {
+       "qty": 4,
+       "name": "Azure Drake",
+       "set": "5ed",
+       "number": "73",
+       "id": "9ce9086e-112a-45e6-854e-70cab2b008a3"
+      },
+      {
+       "qty": 4,
+       "name": "Homarid Warrior",
+       "set": "5ed",
+       "number": "92",
+       "id": "80f20d8e-bbdf-4af8-9505-d5604b04ad72"
+      },
+      {
+       "qty": 2,
+       "name": "Harmattan Efreet",
+       "set": "mir",
+       "number": "69",
+       "id": "b6673d49-c3f6-41f6-84c6-1957fff71509"
+      },
+      {
+       "qty": 2,
+       "name": "Labyrinth Minotaur",
+       "set": "5ed",
+       "number": "97",
+       "id": "faa8c435-55c1-46af-bb93-3f8ce81b1544"
+      },
+      {
+       "qty": 2,
+       "name": "Air Elemental",
+       "set": "5ed",
+       "number": "71",
+       "id": "692bd3dd-4aa8-44a8-9f96-fd6e8698b6a2"
+      },
+      {
+       "qty": 4,
+       "name": "Boomerang",
+       "set": "mir",
+       "number": "56",
+       "id": "f5c98413-740d-47fd-bed6-2d3d05a72b31"
+      },
+      {
+       "qty": 2,
+       "name": "Force Spike",
+       "set": "5ed",
+       "number": "88",
+       "id": "ba23d540-8c2d-4a42-b4c0-86f0988bd1ce"
+      },
+      {
+       "qty": 4,
+       "name": "Impulse",
+       "set": "vis",
+       "number": "34",
+       "id": "9d710a97-062f-4773-b6c6-8aeddeb3b6e8"
+      },
+      {
+       "qty": 2,
+       "name": "Teferi's Curse",
+       "set": "mir",
+       "number": "96",
+       "id": "fb813ef5-8441-4024-a585-1ea24145e1bd"
+      },
+      {
+       "qty": 2,
+       "name": "Unsummon",
+       "set": "5ed",
+       "number": "132",
+       "id": "3c830b54-0441-4df2-87de-a579dc734d97"
+      },
+      {
+       "qty": 24,
+       "name": "Island",
+       "set": "mir",
+       "number": "335",
+       "id": "df84bf1b-8698-4c3e-baa9-926f0efc6a12"
+      }
+     ]
+    }
+   },
+   "reward": {
+    "hero": {
+     "packs": 1,
+     "coins": 0
+    },
+    "villain": {
+     "card": {
+      "oracle_id": "863ad4b8-094b-46b3-b6cd-0640e1f01d6d",
+      "name": "Daring Apprentice",
+      "rarity": "rare",
+      "set": "mir",
+      "id": "f87b3c06-5479-4060-8d3a-d161fd5830c1",
+      "image": "https://cards.scryfall.io/normal/front/f/8/f87b3c06-5479-4060-8d3a-d161fd5830c1.jpg"
+     },
+     "coins": 50
+    }
+   },
+   "scene": [
+    {
+     "who": "teferi",
+     "line": "You walked straight onto the isle. Most people need three tries."
+    },
+    {
+     "who": "teferi",
+     "line": "The island phases. Here, then not. Like most of my friends."
+    },
+    {
+     "who": "teferi",
+     "line": "Can you prepare for the unexpected? No, you cannot. You can prepare only to be surprised.",
+     "quote": true
+    },
+    {
+     "who": "teferi",
+     "line": "Jabari wants my help with Kaervek. I want to know if you're worth my time."
+    },
+    {
+     "who": "teferi",
+     "line": "So. A game. Your cards will step out of time and back. Try to keep up."
+    },
+    {
+     "who": "teferi",
+     "line": "I had a teacher who played like this once. He never said sorry either."
+    }
+   ],
+   "villainScene": [
+    {
+     "who": "teferi",
+     "line": "A planeswalker? Here? Oh, this is going to be fun."
+    },
+    {
+     "who": "teferi",
+     "line": "Let's see how you play when your army keeps disappearing."
+    }
+   ],
+   "after": null,
+   "cues": {
+    "hero": {
+     "start": null,
+     "big": null,
+     "low": null,
+     "win": null,
+     "loss": null
+    },
+    "villain": {
+     "start": "Blink and you'll miss it.",
+     "big": "Made you look.",
+     "low": "Careless, like a child with fire, so was I with time.",
+     "win": "Again! Same time yesterday?",
+     "loss": "Good. Now I'm worried about Kaervek, not you."
+    }
+   },
+   "bigPlays": [],
+   "sim": null
+  },
+  {
+   "id": "a4b3",
+   "slot": 3,
+   "kind": "Lesson",
+   "title": "The Song of Blood",
+   "difficulty": "Easy",
+   "teaches": [
+    "Instants on the opponent's turn"
+   ],
+   "blurb": "A Femeref village goes quiet at sunset. Something is singing in the grass. Rashida has been waiting for it for three nights.",
+   "rewardSet": "mir",
+   "host": false,
+   "hero": {
+    "who": "rashida",
+    "deck": {
+     "name": "Scalebane's Watch",
+     "colors": "RW",
+     "archetype": null,
+     "cards": [
+      {
+       "qty": 3,
+       "name": "Rashida Scalebane",
+       "set": "mir",
+       "number": "35",
+       "id": "ebb48053-da60-477a-b1eb-a9ab9ea682af"
+      },
+      {
+       "qty": 4,
+       "name": "Zhalfirin Knight",
+       "set": "mir",
+       "number": "50",
+       "id": "eb65d104-bd50-481e-a70e-62aeb2f2c12b"
+      },
+      {
+       "qty": 4,
+       "name": "Ekundu Griffin",
+       "set": "mir",
+       "number": "13",
+       "id": "3a32778b-e6ff-45ca-8b22-dc97a406faa4"
+      },
+      {
+       "qty": 4,
+       "name": "Burning Shield Askari",
+       "set": "mir",
+       "number": "162",
+       "id": "486547cd-d2e7-4c46-9f7b-81c4267d65cc"
+      },
+      {
+       "qty": 4,
+       "name": "Suq'Ata Lancer",
+       "set": "vis",
+       "number": "96",
+       "id": "2884d8df-7fd5-4247-9da5-38c31333ff5d"
+      },
+      {
+       "qty": 4,
+       "name": "Femeref Knight",
+       "set": "mir",
+       "number": "18",
+       "id": "915a2e07-b449-4d94-93e3-e756e891c542"
+      },
+      {
+       "qty": 4,
+       "name": "Incinerate",
+       "set": "mir",
+       "number": "184",
+       "id": "409b2be8-5bb6-45e0-ab87-ca73b4e3a396"
+      },
+      {
+       "qty": 4,
+       "name": "Hope Charm",
+       "set": "vis",
+       "number": "8",
+       "id": "a1a8980f-07ab-49b7-b83d-f394952ced57"
+      },
+      {
+       "qty": 3,
+       "name": "Volcanic Geyser",
+       "set": "mir",
+       "number": "202",
+       "id": "911787db-9023-46f8-9501-3ad26b6ca51d"
+      },
+      {
+       "qty": 2,
+       "name": "Healing Salve",
+       "set": "mir",
+       "number": "20",
+       "id": "0d1c9ca9-3611-46df-8108-45ba383b4ee6"
+      },
+      {
+       "qty": 2,
+       "name": "Divine Retribution",
+       "set": "mir",
+       "number": "12",
+       "id": "75629aa3-426e-4e25-a7ab-71e03436e061"
+      },
+      {
+       "qty": 2,
+       "name": "Flood Plain",
+       "set": "mir",
+       "number": "326",
+       "id": "7b7610f3-f182-404e-80b9-ccd94e174db0"
+      },
+      {
+       "qty": 10,
+       "name": "Plains",
+       "set": "mir",
+       "number": "331",
+       "id": "888f32ad-3bdd-4c46-b3f0-522ac9763591"
+      },
+      {
+       "qty": 10,
+       "name": "Mountain",
+       "set": "mir",
+       "number": "343",
+       "id": "97004cdc-0baf-415d-8e87-7f36667c4628"
+      }
+     ]
+    }
+   },
+   "villain": {
+    "who": "purraj",
+    "deck": {
+     "name": "The Night Stalkers",
+     "colors": "B",
+     "archetype": null,
+     "cards": [
+      {
+       "qty": 2,
+       "name": "Purraj of Urborg",
+       "set": "mir",
+       "number": "135",
+       "id": "4704bf02-c6be-4983-9bc7-a1d464d21b31"
+      },
+      {
+       "qty": 4,
+       "name": "Pit Scorpion",
+       "set": "5ed",
+       "number": "187",
+       "id": "fe106ff1-cdc6-44cc-adb7-131203a05292"
+      },
+      {
+       "qty": 2,
+       "name": "Breathstealer",
+       "set": "mir",
+       "number": "109",
+       "id": "0cd9da69-5e57-4719-a712-630c9464fada"
+      },
+      {
+       "qty": 2,
+       "name": "Vampire Bats",
+       "set": "5ed",
+       "number": "202",
+       "id": "c8b8aa03-c777-467f-9b05-812183553f7b"
+      },
+      {
+       "qty": 4,
+       "name": "Shadow Guildmage",
+       "set": "mir",
+       "number": "140",
+       "id": "ba3fc11e-db36-430c-920b-31195913c16a"
+      },
+      {
+       "qty": 2,
+       "name": "Harbinger of Night",
+       "set": "mir",
+       "number": "128",
+       "id": "33124133-ed2c-4b86-a135-ac76f4fe4da5"
+      },
+      {
+       "qty": 2,
+       "name": "Drudge Skeletons",
+       "set": "5ed",
+       "number": "157",
+       "id": "127bb737-85ed-4de3-9a1d-ec789d54b7cd"
+      },
+      {
+       "qty": 4,
+       "name": "Gravebane Zombie",
+       "set": "mir",
+       "number": "127",
+       "id": "6e16f8bc-3200-4a0a-b298-c7e7b4e8376c"
+      },
+      {
+       "qty": 4,
+       "name": "Skulking Ghost",
+       "set": "mir",
+       "number": "143",
+       "id": "f8ca7e96-0545-4f36-85c0-944d5c0b760a"
+      },
+      {
+       "qty": 4,
+       "name": "Sewer Rats",
+       "set": "mir",
+       "number": "139",
+       "id": "42fe08c3-5024-486c-ba03-19d371ceccb0"
+      },
+      {
+       "qty": 2,
+       "name": "Scathe Zombies",
+       "set": "5ed",
+       "number": "192",
+       "id": "ed910299-b9e3-45b3-8fd1-2ebd47cd8275"
+      },
+      {
+       "qty": 2,
+       "name": "Cadaverous Knight",
+       "set": "mir",
+       "number": "110",
+       "id": "06e954b2-c8ce-4b6c-a118-4a14ffa72063"
+      },
+      {
+       "qty": 2,
+       "name": "Bog Rats",
+       "set": "5ed",
+       "number": "146",
+       "id": "3e325363-1ab9-4b44-9c00-0758830289e8"
+      },
+      {
+       "qty": 24,
+       "name": "Swamp",
+       "set": "mir",
+       "number": "339",
+       "id": "f2d28477-8be1-4caf-8185-64f47905ccb1"
+      }
+     ]
+    }
+   },
+   "reward": {
+    "hero": {
+     "packs": 1,
+     "coins": 0
+    },
+    "villain": {
+     "card": {
+      "oracle_id": "ae86965c-3330-48bf-abf7-3142c61099ea",
+      "name": "Purraj of Urborg",
+      "rarity": "rare",
+      "set": "mir",
+      "id": "4704bf02-c6be-4983-9bc7-a1d464d21b31",
+      "image": "https://cards.scryfall.io/normal/front/4/7/4704bf02-c6be-4983-9bc7-a1d464d21b31.jpg"
+     },
+     "coins": 50
+    }
+   },
+   "scene": [
+    {
+     "who": "rashida",
+     "line": "Don't light a fire. He's drawn to it."
+    },
+    {
+     "who": "rashida",
+     "line": "He hunts at dusk. He kills while you're busy."
+    },
+    {
+     "who": "rashida",
+     "line": "So we'll be busy on HIS turn."
+    },
+    {
+     "who": "purraj",
+     "line": "Tell me... have you ever sung the Song of Blood?",
+     "quote": true
+    },
+    {
+     "who": "rashida",
+     "line": "Once. I don't like the tune."
+    },
+    {
+     "who": "purraj",
+     "line": "Death is not a debt I am yet willing to pay.",
+     "quote": true
+    },
+    {
+     "who": "rashida",
+     "line": "Hold your fire until he's mid-leap."
+    }
+   ],
+   "villainScene": [
+    {
+     "who": "purraj",
+     "line": "Kaervek calls us night stalkers. \"Willing tools.\""
+    },
+    {
+     "who": "purraj",
+     "line": "He thinks the swamp takes orders. The swamp takes everything."
+    },
+    {
+     "who": "purraj",
+     "line": "Tonight, the village dances."
+    }
+   ],
+   "after": null,
+   "cues": {
+    "hero": {
+     "start": "Wait for it.",
+     "big": "Mid-leap. Told you.",
+     "low": "I've been bitten by worse. Dragons, mostly.",
+     "win": "The children sleep tonight.",
+     "loss": "Get them inside. Now."
+    },
+    "villain": {
+     "start": "Hmmmm.",
+     "big": "The chorus!",
+     "low": "You... interrupted my verse.",
+     "win": "Encore.",
+     "loss": "The song... ends... early."
+    }
+   },
+   "bigPlays": [],
+   "sim": null
+  },
+  {
+   "id": "a4b4",
+   "slot": 4,
+   "kind": "Rival",
+   "title": "The Amber Prison",
+   "difficulty": "Normal",
+   "teaches": [
+    "Locking creatures down"
+   ],
+   "blurb": "Deep in the Mwonvuli jungle, Mangara hangs inside a block of amber like a fly. The jungle's empress has been told to keep him there.",
+   "rewardSet": "mir",
+   "host": false,
+   "hero": {
+    "who": "asmira",
+    "deck": {
+     "name": "Asmira's Faithful",
+     "colors": "GW",
+     "archetype": null,
+     "cards": [
+      {
+       "qty": 2,
+       "name": "Asmira, Holy Avenger",
+       "set": "mir",
+       "number": "256",
+       "id": "a7d64600-84fc-42a5-a6a6-b26f98fac0a4"
+      },
+      {
+       "qty": 4,
+       "name": "Femeref Archers",
+       "set": "mir",
+       "number": "215",
+       "id": "e859180f-084c-4023-848a-96f22b8f9698"
+      },
+      {
+       "qty": 4,
+       "name": "Mtenda Lion",
+       "set": "mir",
+       "number": "230",
+       "id": "cb05cf5b-2a0d-432a-b8e7-10335c2a18e8"
+      },
+      {
+       "qty": 4,
+       "name": "Noble Elephant",
+       "set": "mir",
+       "number": "30",
+       "id": "65f399cb-dddb-422a-8d36-938b82b59e10"
+      },
+      {
+       "qty": 4,
+       "name": "Iron Tusk Elephant",
+       "set": "mir",
+       "number": "22",
+       "id": "d7c8e952-f040-4e5b-88f3-f80ad4b3f2f1"
+      },
+      {
+       "qty": 4,
+       "name": "Ekundu Griffin",
+       "set": "mir",
+       "number": "13",
+       "id": "3a32778b-e6ff-45ca-8b22-dc97a406faa4"
+      },
+      {
+       "qty": 4,
+       "name": "Pacifism",
+       "set": "mir",
+       "number": "32",
+       "id": "c891df1b-bae6-4d6d-85ee-42901c149f98"
+      },
+      {
+       "qty": 4,
+       "name": "Aysen Bureaucrats",
+       "set": "5ed",
+       "number": "9",
+       "id": "b01c564f-d997-4667-93af-c8495d8764e6"
+      },
+      {
+       "qty": 2,
+       "name": "Barl's Cage",
+       "set": "5ed",
+       "number": "352",
+       "id": "ecce3e79-c729-4efd-a2f3-5d2910ba2c3f"
+      },
+      {
+       "qty": 2,
+       "name": "Femeref Healer",
+       "set": "mir",
+       "number": "17",
+       "id": "90dedd5e-e2ee-46ec-8541-27f1548b2a2a"
+      },
+      {
+       "qty": 2,
+       "name": "Divine Offering",
+       "set": "mir",
+       "number": "11",
+       "id": "4b84697e-d72d-4169-bf16-753144da281f"
+      },
+      {
+       "qty": 2,
+       "name": "Elephant Grass",
+       "set": "vis",
+       "number": "104",
+       "id": "f4c1f5a7-0d28-43ab-9b66-937e963f42cd"
+      },
+      {
+       "qty": 2,
+       "name": "Grasslands",
+       "set": "mir",
+       "number": "327",
+       "id": "65f5efac-ef98-4be2-abcc-1aa38bf66b06"
+      },
+      {
+       "qty": 10,
+       "name": "Plains",
+       "set": "mir",
+       "number": "331",
+       "id": "888f32ad-3bdd-4c46-b3f0-522ac9763591"
+      },
+      {
+       "qty": 10,
+       "name": "Forest",
+       "set": "mir",
+       "number": "347",
+       "id": "a0ae7a81-9a61-4112-af22-369c525b2eb1"
+      }
+     ]
+    }
+   },
+   "villain": {
+    "who": "jolrael",
+    "deck": {
+     "name": "Children of the Mwonvuli",
+     "colors": "G",
+     "archetype": null,
+     "cards": [
+      {
+       "qty": 4,
+       "name": "Mtenda Lion",
+       "set": "mir",
+       "number": "230",
+       "id": "cb05cf5b-2a0d-432a-b8e7-10335c2a18e8"
+      },
+      {
+       "qty": 4,
+       "name": "Bull Elephant",
+       "set": "vis",
+       "number": "101",
+       "id": "fa7f5f41-ed30-412b-b51e-37d26e9e6455"
+      },
+      {
+       "qty": 2,
+       "name": "Gibbering Hyenas",
+       "set": "mir",
+       "number": "219",
+       "id": "a252a1f5-bba5-4525-8141-57caea9624e9"
+      },
+      {
+       "qty": 2,
+       "name": "Ley Druid",
+       "set": "5ed",
+       "number": "308",
+       "id": "5acc4f93-1bf1-4b00-b0e0-d44c2b2cd079"
+      },
+      {
+       "qty": 4,
+       "name": "Jolrael's Centaur",
+       "set": "mir",
+       "number": "222",
+       "id": "31588ea3-31d2-4118-9b9f-4ce820c16a15"
+      },
+      {
+       "qty": 4,
+       "name": "Stalking Tiger",
+       "set": "mir",
+       "number": "243",
+       "id": "f12cc4e9-010a-4ff7-a026-dcb6113a36fb"
+      },
+      {
+       "qty": 2,
+       "name": "King Cheetah",
+       "set": "vis",
+       "number": "110",
+       "id": "38149d49-8661-427c-9338-93c11a2a8093"
+      },
+      {
+       "qty": 2,
+       "name": "Grizzly Bears",
+       "set": "5ed",
+       "number": "301",
+       "id": "68d8ad43-adea-47e8-9d9e-e14c2ad41489"
+      },
+      {
+       "qty": 2,
+       "name": "Crash of Rhinos",
+       "set": "mir",
+       "number": "210",
+       "id": "d74e0337-d9ac-4bf2-b2b5-aadc97433030"
+      },
+      {
+       "qty": 2,
+       "name": "Llanowar Elves",
+       "set": "5ed",
+       "number": "313",
+       "id": "632b9428-45c6-4b81-a701-f1c7d7e8d2f0"
+      },
+      {
+       "qty": 4,
+       "name": "Rampant Growth",
+       "set": "mir",
+       "number": "235",
+       "id": "a9dd8043-4099-42bb-9d54-4efc8b38fe18"
+      },
+      {
+       "qty": 2,
+       "name": "Giant Growth",
+       "set": "5ed",
+       "number": "299",
+       "id": "07aee96b-1cf3-4cd9-9998-39ab16170c6b"
+      },
+      {
+       "qty": 2,
+       "name": "Fog",
+       "set": "mir",
+       "number": "216",
+       "id": "6d822598-2f0f-45fa-9643-0368e2c0e18b"
+      },
+      {
+       "qty": 24,
+       "name": "Forest",
+       "set": "mir",
+       "number": "347",
+       "id": "a0ae7a81-9a61-4112-af22-369c525b2eb1"
+      }
+     ]
+    }
+   },
+   "reward": {
+    "hero": {
+     "packs": 1,
+     "coins": 100
+    },
+    "villain": {
+     "card": {
+      "oracle_id": "b2d7251e-2848-4b85-8d99-7c43be163dfb",
+      "name": "Crash of Rhinos",
+      "rarity": "common",
+      "set": "mir",
+      "id": "d74e0337-d9ac-4bf2-b2b5-aadc97433030",
+      "image": "https://cards.scryfall.io/normal/front/d/7/d74e0337-d9ac-4bf2-b2b5-aadc97433030.jpg"
+     },
+     "coins": 100
+    }
+   },
+   "scene": [
+    {
+     "who": "asmira",
+     "line": "There he is. Mangara. He looks... asleep."
+    },
+    {
+     "who": "jolrael",
+     "line": "He is not asleep. He is kept. As you will be, if you touch it."
+    },
+    {
+     "who": "asmira",
+     "line": "Jolrael. You hid from Zhalfir for centuries. Why come out for Kaervek?"
+    },
+    {
+     "who": "jolrael",
+     "line": "I have hidden from the machinations of Zhalfir for centuries. Why should I join your campaign?",
+     "quote": true
+    },
+    {
+     "who": "jolrael",
+     "line": "Kaervek promised the Mwonvuli would be left alone. Zhalfir never did."
+    },
+    {
+     "who": "asmira",
+     "line": "Kaervek imprisoned Mangara out of jealousy, but he taints Jamuraa simply out of spite.",
+     "quote": true
+    },
+    {
+     "who": "asmira",
+     "line": "He'll keep his promise to you exactly as long as it's useful."
+    },
+    {
+     "who": "jolrael",
+     "line": "I need no army. I have Jamuraa.",
+     "quote": true
+    }
+   ],
+   "villainScene": [
+    {
+     "who": "jolrael",
+     "line": "Every hundred years, a Zhalfirin army marches through my trees."
+    },
+    {
+     "who": "jolrael",
+     "line": "Every hundred years, my trees are fewer."
+    },
+    {
+     "who": "jolrael",
+     "line": "Kaervek swore by fire he would never set foot here. I chose the lesser fire."
+    }
+   ],
+   "after": [
+    {
+     "who": "stage",
+     "line": "Asmira's prayers crack the amber. They don't break it."
+    },
+    {
+     "who": "hakim",
+     "line": "Asmira's prayers alone should have freed Mangara from the amber prison...",
+     "quote": true
+    }
+   ],
+   "cues": {
+    "hero": {
+     "start": "Faith is my shield.",
+     "big": "Hold them still. Gently.",
+     "low": "Faith is my shield, and hope is my armor; I am vulnerable only to myself.",
+     "win": "We're coming back for you, Mangara.",
+     "loss": "Not yet. But soon."
+    },
+    "villain": {
+     "start": "The jungle wakes.",
+     "big": "What need have I for cavalry when I can have horse and rider both in one?",
+     "low": "The mists are thinning.",
+     "win": "Leave my jungle.",
+     "loss": "Go, then. I didn't see you."
+    }
+   },
+   "bigPlays": [],
+   "sim": null
+  },
+  {
+   "id": "a4b5",
+   "slot": 5,
+   "kind": "Lesson",
+   "title": "The Last Library",
+   "difficulty": "Normal",
+   "teaches": [
+    "Counterspells"
+   ],
+   "blurb": "Kaervek's ally has come for Femeref's library. She doesn't want to burn it. She wants to rewrite it.",
+   "rewardSet": "mir",
+   "host": false,
+   "hero": {
+    "who": "hakim",
+    "deck": {
+     "name": "The Loreweaver",
+     "colors": "U",
+     "archetype": null,
+     "cards": [
+      {
+       "qty": 2,
+       "name": "Hakim, Loreweaver",
+       "set": "mir",
+       "number": "68",
+       "id": "8192bca7-03e5-4ea1-ae77-8bc811c19417"
+      },
+      {
+       "qty": 4,
+       "name": "Daring Apprentice",
+       "set": "mir",
+       "number": "60",
+       "id": "f87b3c06-5479-4060-8d3a-d161fd5830c1"
+      },
+      {
+       "qty": 4,
+       "name": "Harmattan Efreet",
+       "set": "mir",
+       "number": "69",
+       "id": "b6673d49-c3f6-41f6-84c6-1957fff71509"
+      },
+      {
+       "qty": 2,
+       "name": "Air Elemental",
+       "set": "5ed",
+       "number": "71",
+       "id": "692bd3dd-4aa8-44a8-9f96-fd6e8698b6a2"
+      },
+      {
+       "qty": 4,
+       "name": "Azure Drake",
+       "set": "5ed",
+       "number": "73",
+       "id": "9ce9086e-112a-45e6-854e-70cab2b008a3"
+      },
+      {
+       "qty": 4,
+       "name": "Shimmering Efreet",
+       "set": "vis",
+       "number": "42",
+       "id": "23c5704f-5856-4422-9d82-14558dbe1434"
+      },
+      {
+       "qty": 4,
+       "name": "Counterspell",
+       "set": "5ed",
+       "number": "77",
+       "id": "b975289d-d8b8-46b4-8c60-d6ed4b594519"
+      },
+      {
+       "qty": 4,
+       "name": "Power Sink",
+       "set": "mir",
+       "number": "83",
+       "id": "49717583-e0bb-47d6-92d0-8959af13391f"
+      },
+      {
+       "qty": 4,
+       "name": "Memory Lapse",
+       "set": "mir",
+       "number": "74",
+       "id": "63453ed9-5cf1-4cad-b173-a067f22a4405"
+      },
+      {
+       "qty": 4,
+       "name": "Inspiration",
+       "set": "vis",
+       "number": "35",
+       "id": "5247d0b0-660e-4f27-8e76-62effbe12221"
+      },
+      {
+       "qty": 24,
+       "name": "Island",
+       "set": "mir",
+       "number": "335",
+       "id": "df84bf1b-8698-4c3e-baa9-926f0efc6a12"
+      }
+     ]
+    }
+   },
+   "villain": {
+    "who": "shauku",
+    "deck": {
+     "name": "Shauku's Pen",
+     "colors": "B",
+     "archetype": null,
+     "cards": [
+      {
+       "qty": 2,
+       "name": "Mindstab Thrull",
+       "set": "5ed",
+       "number": "178",
+       "id": "d32b1439-b83d-4e6d-8956-b0964b1e3ed9"
+      },
+      {
+       "qty": 2,
+       "name": "Abyssal Specter",
+       "set": "5ed",
+       "number": "139",
+       "id": "2be32aca-94d0-46df-9ca9-503a51416b14"
+      },
+      {
+       "qty": 2,
+       "name": "Scathe Zombies",
+       "set": "5ed",
+       "number": "192",
+       "id": "ed910299-b9e3-45b3-8fd1-2ebd47cd8275"
+      },
+      {
+       "qty": 2,
+       "name": "Fallen Angel",
+       "set": "5ed",
+       "number": "161",
+       "id": "68022e3e-99d0-4f14-9ef8-17f27a157edd"
+      },
+      {
+       "qty": 2,
+       "name": "Bog Imp",
+       "set": "5ed",
+       "number": "145",
+       "id": "c11924b2-c290-47a1-803d-b00c433cf840"
+      },
+      {
+       "qty": 4,
+       "name": "Gravebane Zombie",
+       "set": "mir",
+       "number": "127",
+       "id": "6e16f8bc-3200-4a0a-b298-c7e7b4e8376c"
+      },
+      {
+       "qty": 4,
+       "name": "Urborg Mindsucker",
+       "set": "vis",
+       "number": "71",
+       "id": "78405864-fc83-47ab-9238-8e0464a700ec"
+      },
+      {
+       "qty": 4,
+       "name": "Dark Ritual",
+       "set": "mir",
+       "number": "116",
+       "id": "1b5fc7ce-0618-4145-b8aa-bc871e4afa99"
+      },
+      {
+       "qty": 4,
+       "name": "Coercion",
+       "set": "vis",
+       "number": "54",
+       "id": "f3b07d33-f5f5-45cc-b2ac-360eaf2d4146"
+      },
+      {
+       "qty": 4,
+       "name": "Painful Memories",
+       "set": "mir",
+       "number": "133",
+       "id": "79223c17-ecb1-47f1-8e24-eea464cc9b1e"
+      },
+      {
+       "qty": 4,
+       "name": "Drain Life",
+       "set": "mir",
+       "number": "118",
+       "id": "e8f030a5-62c6-439d-93b6-43f2cf927a7f"
+      },
+      {
+       "qty": 2,
+       "name": "Dread Specter",
+       "set": "mir",
+       "number": "119",
+       "id": "00c48e08-9a77-4ba2-8041-90998f7e3812"
+      },
+      {
+       "qty": 24,
+       "name": "Swamp",
+       "set": "mir",
+       "number": "339",
+       "id": "f2d28477-8be1-4caf-8185-64f47905ccb1"
+      }
+     ]
+    }
+   },
+   "reward": {
+    "hero": {
+     "packs": 1,
+     "coins": 100
+    },
+    "villain": {
+     "card": {
+      "oracle_id": "1869a326-8b48-4331-b969-5ce83cf4ff8a",
+      "name": "Fallen Angel",
+      "rarity": "uncommon",
+      "set": "5ed",
+      "id": "68022e3e-99d0-4f14-9ef8-17f27a157edd",
+      "image": "https://cards.scryfall.io/normal/front/6/8/68022e3e-99d0-4f14-9ef8-17f27a157edd.jpg"
+     },
+     "coins": 100
+    }
+   },
+   "scene": [
+    {
+     "who": "hakim",
+     "line": "Femeref was guided by the wisdom of the Council of Voices. But in one terrible instant, they were slain.",
+     "quote": true
+    },
+    {
+     "who": "hakim",
+     "line": "Their names are in this library. If it falls, they die twice."
+    },
+    {
+     "who": "shauku",
+     "line": "Loreweaver. I don't burn books. Barbarians burn books."
+    },
+    {
+     "who": "shauku",
+     "line": "I write upon clean white parchment with a sharp quill and the blood of my students.",
+     "quote": true
+    },
+    {
+     "who": "shauku",
+     "line": "Let me write your ending. It will be beautiful."
+    },
+    {
+     "who": "hakim",
+     "line": "Every spell she casts is a sentence. We say no to every sentence."
+    }
+   ],
+   "villainScene": [
+    {
+     "who": "shauku",
+     "line": "History belongs to whoever holds the pen."
+    },
+    {
+     "who": "shauku",
+     "line": "When I am done, Femeref will remember Kaervek as its saviour. And me as its scholar."
+    },
+    {
+     "who": "shauku",
+     "line": "I no longer believe in a final resting place.",
+     "quote": true
+    }
+   ],
+   "after": null,
+   "cues": {
+    "hero": {
+     "start": "Not in my library.",
+     "big": "No. Struck from the record.",
+     "low": "I'm running out of pages.",
+     "win": "Their names stay written.",
+     "loss": "Save the scrolls! The scrolls!"
+    },
+    "villain": {
+     "start": "Shall we begin the chapter?",
+     "big": "The flesh is a casket for the soul.",
+     "low": "How very rude.",
+     "win": "The end. Beautifully done.",
+     "loss": "A draft. Only a draft."
+    }
+   },
+   "bigPlays": [],
+   "sim": null
+  },
+  {
+   "id": "a4b6",
+   "slot": 6,
+   "kind": "Meta",
+   "title": "Prosperity",
+   "difficulty": "Normal",
+   "teaches": [
+    "Racing a card-draw engine"
+   ],
+   "blurb": "On your way to the front you stop in a Suq'Ata bazaar for water. You leave owing a merchant a duel, two goats and an apology. His machines make everyone draw. He's the one holding the fireball.",
+   "rewardSet": "vis",
+   "host": false,
+   "hero": {
+    "who": "you",
+    "deck": {
+     "name": "Thirsty Traveller",
+     "colors": "WU",
+     "archetype": null,
+     "cards": [
+      {
+       "qty": 4,
+       "name": "Infantry Veteran",
+       "set": "vis",
+       "number": "9",
+       "id": "0350470b-feea-4e15-bdf0-850b71dbeea6"
+      },
+      {
+       "qty": 4,
+       "name": "Zhalfirin Knight",
+       "set": "mir",
+       "number": "50",
+       "id": "eb65d104-bd50-481e-a70e-62aeb2f2c12b"
+      },
+      {
+       "qty": 4,
+       "name": "Mtenda Herder",
+       "set": "mir",
+       "number": "29",
+       "id": "51f30a3d-1421-4706-b17f-39a9ec7a0d8b"
+      },
+      {
+       "qty": 4,
+       "name": "Femeref Knight",
+       "set": "mir",
+       "number": "18",
+       "id": "915a2e07-b449-4d94-93e3-e756e891c542"
+      },
+      {
+       "qty": 4,
+       "name": "Harmattan Efreet",
+       "set": "mir",
+       "number": "69",
+       "id": "b6673d49-c3f6-41f6-84c6-1957fff71509"
+      },
+      {
+       "qty": 2,
+       "name": "Counterspell",
+       "set": "5ed",
+       "number": "77",
+       "id": "b975289d-d8b8-46b4-8c60-d6ed4b594519"
+      },
+      {
+       "qty": 2,
+       "name": "Unsummon",
+       "set": "5ed",
+       "number": "132",
+       "id": "3c830b54-0441-4df2-87de-a579dc734d97"
+      },
+      {
+       "qty": 4,
+       "name": "Memory Lapse",
+       "set": "mir",
+       "number": "74",
+       "id": "63453ed9-5cf1-4cad-b173-a067f22a4405"
+      },
+      {
+       "qty": 4,
+       "name": "Healing Salve",
+       "set": "mir",
+       "number": "20",
+       "id": "0d1c9ca9-3611-46df-8108-45ba383b4ee6"
+      },
+      {
+       "qty": 4,
+       "name": "Pacifism",
+       "set": "mir",
+       "number": "32",
+       "id": "c891df1b-bae6-4d6d-85ee-42901c149f98"
+      },
+      {
+       "qty": 4,
+       "name": "Flood Plain",
+       "set": "mir",
+       "number": "326",
+       "id": "7b7610f3-f182-404e-80b9-ccd94e174db0"
+      },
+      {
+       "qty": 10,
+       "name": "Plains",
+       "set": "mir",
+       "number": "331",
+       "id": "888f32ad-3bdd-4c46-b3f0-522ac9763591"
+      },
+      {
+       "qty": 10,
+       "name": "Island",
+       "set": "mir",
+       "number": "335",
+       "id": "df84bf1b-8698-4c3e-baa9-926f0efc6a12"
+      }
+     ]
+    }
+   },
+   "villain": {
+    "who": "pashad",
+    "deck": {
+     "name": "Everybody Draws",
+     "colors": "UR",
+     "archetype": "Prosperity",
+     "cards": [
+      {
+       "qty": 4,
+       "name": "Howling Mine",
+       "set": "5ed",
+       "number": "377",
+       "id": "8a50b3bd-81b0-408d-ab73-9eadd2fb1eae"
+      },
+      {
+       "qty": 4,
+       "name": "Prosperity",
+       "set": "vis",
+       "number": "40",
+       "id": "3fa5e806-3cf2-4241-b45d-a05d2b715efd"
+      },
+      {
+       "qty": 4,
+       "name": "Inspiration",
+       "set": "vis",
+       "number": "35",
+       "id": "5247d0b0-660e-4f27-8e76-62effbe12221"
+      },
+      {
+       "qty": 4,
+       "name": "Kaervek's Torch",
+       "set": "mir",
+       "number": "185",
+       "id": "0a1624ab-e50e-48a3-acf7-457069914616"
+      },
+      {
+       "qty": 4,
+       "name": "Volcanic Geyser",
+       "set": "mir",
+       "number": "202",
+       "id": "911787db-9023-46f8-9501-3ad26b6ca51d"
+      },
+      {
+       "qty": 3,
+       "name": "Fireball",
+       "set": "5ed",
+       "number": "227",
+       "id": "ad457b10-6e00-411f-b827-ff844f9b300d"
+      },
+      {
+       "qty": 4,
+       "name": "Memory Lapse",
+       "set": "mir",
+       "number": "74",
+       "id": "63453ed9-5cf1-4cad-b173-a067f22a4405"
+      },
+      {
+       "qty": 4,
+       "name": "Counterspell",
+       "set": "5ed",
+       "number": "77",
+       "id": "b975289d-d8b8-46b4-8c60-d6ed4b594519"
+      },
+      {
+       "qty": 2,
+       "name": "Impulse",
+       "set": "vis",
+       "number": "34",
+       "id": "9d710a97-062f-4773-b6c6-8aeddeb3b6e8"
+      },
+      {
+       "qty": 3,
+       "name": "Incinerate",
+       "set": "mir",
+       "number": "184",
+       "id": "409b2be8-5bb6-45e0-ab87-ca73b4e3a396"
+      },
+      {
+       "qty": 12,
+       "name": "Island",
+       "set": "mir",
+       "number": "335",
+       "id": "df84bf1b-8698-4c3e-baa9-926f0efc6a12"
+      },
+      {
+       "qty": 12,
+       "name": "Mountain",
+       "set": "mir",
+       "number": "343",
+       "id": "97004cdc-0baf-415d-8e87-7f36667c4628"
+      }
+     ]
+    }
+   },
+   "reward": {
+    "hero": {
+     "packs": 1,
+     "coins": 100
+    },
+    "villain": {
+     "card": {
+      "oracle_id": "c586312d-d04a-4bfb-bbb2-b41186ca178e",
+      "name": "Prosperity",
+      "rarity": "uncommon",
+      "set": "vis",
+      "id": "3fa5e806-3cf2-4241-b45d-a05d2b715efd",
+      "image": "https://cards.scryfall.io/normal/front/3/f/3fa5e806-3cf2-4241-b45d-a05d2b715efd.jpg"
+     },
+     "coins": 100
+    }
+   },
+   "scene": [
+    {
+     "who": "pashad",
+     "line": "Friend! Stranger! Friend-stranger! You look thirsty. And rich."
+    },
+    {
+     "who": "pashad",
+     "line": "Water, one coin. Water that heals, two coins."
+    },
+    {
+     "who": "pashad",
+     "line": "Eternal life or your money back.",
+     "quote": true
+    },
+    {
+     "who": "pashad",
+     "line": "No? You said no? To Pashad?"
+    },
+    {
+     "who": "pashad",
+     "line": "Nobody says no to Pashad. It is very bad for business."
+    },
+    {
+     "who": "pashad",
+     "line": "Very well. A wager. If I win, you buy everything."
+    },
+    {
+     "who": "pashad",
+     "line": "My machines are very fair. Everybody draws. EVERYBODY."
+    },
+    {
+     "who": "pashad",
+     "line": "Everybody draws! Everybody prospers! Mostly me."
+    }
+   ],
+   "villainScene": [
+    {
+     "who": "pashad",
+     "line": "Wealth is a good thing, compared to poverty. Your food is better, your robes are softer.",
+     "quote": true
+    },
+    {
+     "who": "pashad",
+     "line": "The war is terrible for business. Except the business of war, which is wonderful."
+    },
+    {
+     "who": "pashad",
+     "line": "A planeswalker customer! Do they pay in other worlds' coins? Let's find out."
+    }
+   ],
+   "after": [
+    {
+     "who": "pashad",
+     "line": "A map to Kaervek's camp. Mostly accurate. For you, half price."
+    },
+    {
+     "who": "hakim",
+     "line": "It's entirely accurate. That's what worries me. Why does a merchant have it?"
+    }
+   ],
+   "cues": {
+    "hero": {
+     "start": null,
+     "big": null,
+     "low": null,
+     "win": null,
+     "loss": null
+    },
+    "villain": {
+     "start": "Let's make a deal!",
+     "big": "Look at all these cards! Everybody gets some!",
+     "low": "This is not how the deal was described to me.",
+     "win": "Two goats. And the apology, in writing.",
+     "loss": "Fine! Free water. Don't tell anyone."
+    }
+   },
+   "bigPlays": [],
+   "sim": null
+  },
+  {
+   "id": "a4b7",
+   "slot": 7,
+   "kind": "Meta",
+   "title": "Fireblast",
+   "difficulty": "Normal",
+   "teaches": [
+    "Racing"
+   ],
+   "blurb": "The map was accurate. So was the ambush. Kaervek's embermages hold the road to his camp, and they don't negotiate. The original red curve deck.",
+   "rewardSet": "vis",
+   "host": false,
+   "hero": {
+    "who": "jabari",
+    "deck": {
+     "name": "The Vanguard of Zhalfir",
+     "colors": "W",
+     "archetype": null,
+     "cards": [
+      {
+       "qty": 4,
+       "name": "Infantry Veteran",
+       "set": "vis",
+       "number": "9",
+       "id": "0350470b-feea-4e15-bdf0-850b71dbeea6"
+      },
+      {
+       "qty": 4,
+       "name": "Zhalfirin Knight",
+       "set": "mir",
+       "number": "50",
+       "id": "eb65d104-bd50-481e-a70e-62aeb2f2c12b"
+      },
+      {
+       "qty": 4,
+       "name": "Femeref Knight",
+       "set": "mir",
+       "number": "18",
+       "id": "915a2e07-b449-4d94-93e3-e756e891c542"
+      },
+      {
+       "qty": 4,
+       "name": "Knight of Valor",
+       "set": "vis",
+       "number": "11",
+       "id": "25aa80ae-bb17-4e52-a269-efe75cf4c041"
+      },
+      {
+       "qty": 4,
+       "name": "Ekundu Griffin",
+       "set": "mir",
+       "number": "13",
+       "id": "3a32778b-e6ff-45ca-8b22-dc97a406faa4"
+      },
+      {
+       "qty": 4,
+       "name": "Benalish Hero",
+       "set": "5ed",
+       "number": "10",
+       "id": "32dcd608-ef94-4047-841d-5c3471375d5d"
+      },
+      {
+       "qty": 2,
+       "name": "Pearl Dragon",
+       "set": "mir",
+       "number": "33",
+       "id": "41ac3411-3286-4698-b5d9-d4bb2db30770"
+      },
+      {
+       "qty": 4,
+       "name": "Pacifism",
+       "set": "mir",
+       "number": "32",
+       "id": "c891df1b-bae6-4d6d-85ee-42901c149f98"
+      },
+      {
+       "qty": 2,
+       "name": "Warrior's Honor",
+       "set": "vis",
+       "number": "24",
+       "id": "7babd273-3e20-4cf9-bf21-c602eb729fc5"
+      },
+      {
+       "qty": 4,
+       "name": "Healing Salve",
+       "set": "mir",
+       "number": "20",
+       "id": "0d1c9ca9-3611-46df-8108-45ba383b4ee6"
+      },
+      {
+       "qty": 24,
+       "name": "Plains",
+       "set": "mir",
+       "number": "331",
+       "id": "888f32ad-3bdd-4c46-b3f0-522ac9763591"
+      }
+     ]
+    }
+   },
+   "villain": {
+    "who": "talibah",
+    "deck": {
+     "name": "Sligh",
+     "colors": "R",
+     "archetype": "Sligh",
+     "cards": [
+      {
+       "qty": 4,
+       "name": "Mountain Goat",
+       "set": "5ed",
+       "number": "252",
+       "id": "fbec9fe6-a951-48b2-a0d2-3cdf69b5400f"
+      },
+      {
+       "qty": 4,
+       "name": "Goblin Hero",
+       "set": "5ed",
+       "number": "235",
+       "id": "1d21c8c9-6e16-4eb2-b2f5-3998f0f958ae"
+      },
+      {
+       "qty": 4,
+       "name": "Viashino Warrior",
+       "set": "mir",
+       "number": "200",
+       "id": "4947cbf9-69dc-44e3-a22e-a6129f331f3c"
+      },
+      {
+       "qty": 4,
+       "name": "Suq'Ata Lancer",
+       "set": "vis",
+       "number": "96",
+       "id": "2884d8df-7fd5-4247-9da5-38c31333ff5d"
+      },
+      {
+       "qty": 4,
+       "name": "Talruum Minotaur",
+       "set": "mir",
+       "number": "196",
+       "id": "51657034-2c30-40a2-a215-a00277f01642"
+      },
+      {
+       "qty": 2,
+       "name": "Burning Shield Askari",
+       "set": "mir",
+       "number": "162",
+       "id": "486547cd-d2e7-4c46-9f7b-81c4267d65cc"
+      },
+      {
+       "qty": 2,
+       "name": "Incinerate",
+       "set": "mir",
+       "number": "184",
+       "id": "409b2be8-5bb6-45e0-ab87-ca73b4e3a396"
+      },
+      {
+       "qty": 2,
+       "name": "Fireblast",
+       "set": "vis",
+       "number": "79",
+       "id": "b1eb5b2c-1f02-48a6-a287-88eb189d6780"
+      },
+      {
+       "qty": 4,
+       "name": "Dwarven Soldier",
+       "set": "5ed",
+       "number": "221",
+       "id": "7438382c-15a0-40b1-a17b-2ef7bd67866c"
+      },
+      {
+       "qty": 2,
+       "name": "Hurloon Minotaur",
+       "set": "5ed",
+       "number": "240",
+       "id": "eeb3745e-402f-47b6-9aaf-1d177d03cabe"
+      },
+      {
+       "qty": 4,
+       "name": "Hill Giant",
+       "set": "5ed",
+       "number": "239",
+       "id": "4bb9d069-1163-46bd-9a71-21c05898330e"
+      },
+      {
+       "qty": 2,
+       "name": "Brassclaw Orcs",
+       "set": "5ed",
+       "number": "213",
+       "id": "6f068807-3e0d-42b0-aa11-7fd61492f12b"
+      },
+      {
+       "qty": 22,
+       "name": "Mountain",
+       "set": "mir",
+       "number": "343",
+       "id": "97004cdc-0baf-415d-8e87-7f36667c4628"
+      }
+     ]
+    }
+   },
+   "reward": {
+    "hero": {
+     "packs": 1,
+     "coins": 100
+    },
+    "villain": {
+     "card": {
+      "oracle_id": "9dd7f27a-e862-47d7-9158-034cf4d353b8",
+      "name": "Fireblast",
+      "rarity": "common",
+      "set": "vis",
+      "id": "b1eb5b2c-1f02-48a6-a287-88eb189d6780",
+      "image": "https://cards.scryfall.io/normal/front/b/1/b1eb5b2c-1f02-48a6-a287-88eb189d6780.jpg"
+     },
+     "coins": 100
+    }
+   },
+   "scene": [
+    {
+     "who": "jabari",
+     "line": "Common soldiers can't understand what a sidar knows: the enemy can be a resource.",
+     "quote": true
+    },
+    {
+     "who": "jabari",
+     "line": "So, embermage. Surrender, and your fire serves Zhalfir."
+    },
+    {
+     "who": "talibah",
+     "line": "AAAAAAAAAAAAAAH!"
+    },
+    {
+     "who": "jabari",
+     "line": "...I'll take that as no."
+    },
+    {
+     "who": "jabari",
+     "line": "Fast, then. We win before she finishes screaming."
+    }
+   ],
+   "villainScene": [
+    {
+     "who": "talibah",
+     "line": "Comfortable even in a furnace? I've never met one who'd accept my wager.",
+     "quote": true
+    },
+    {
+     "who": "talibah",
+     "line": "Kaervek promised the Burning Isles would never kneel to Zhalfir again."
+    },
+    {
+     "who": "talibah",
+     "line": "I was born on a volcano. I know exactly how long a mountain can wait."
+    },
+    {
+     "who": "talibah",
+     "line": "Not one day more."
+    }
+   ],
+   "after": null,
+   "cues": {
+    "hero": {
+     "start": "Charge before she lights.",
+     "big": "Do not underestimate the power of many against one.",
+     "low": "My soldiers fought without hesitation, died without doubt.",
+     "win": "One resource, captured.",
+     "loss": "Pull back. Pull back!"
+    },
+    "villain": {
+     "start": "BURN!",
+     "big": "Blow, fiery wind of truth.",
+     "low": "I have one more. I always have one more.",
+     "win": "Ash. All of it.",
+     "loss": "Next time... a bigger volcano."
+    }
+   },
+   "bigPlays": [],
+   "sim": null
+  },
+  {
+   "id": "a4b8",
+   "slot": 8,
+   "kind": "Boss",
+   "title": "Kaervek's Torch",
+   "difficulty": "Hard",
+   "teaches": [
+    "Everything so far"
+   ],
+   "blurb": "Three nations that have hated each other for centuries ride together into Kaervek's camp. He's been expecting them. He seems almost pleased.",
+   "rewardSet": "mir",
+   "host": true,
+   "hero": {
+    "who": "asmira",
+    "deck": {
+     "name": "The Reeds of a Basket",
+     "colors": "GWR",
+     "archetype": null,
+     "cards": [
+      {
+       "qty": 2,
+       "name": "Asmira, Holy Avenger",
+       "set": "mir",
+       "number": "256",
+       "id": "a7d64600-84fc-42a5-a6a6-b26f98fac0a4"
+      },
+      {
+       "qty": 2,
+       "name": "Sidar Jabari",
+       "set": "mir",
+       "number": "39",
+       "id": "743f0d06-cd14-49f3-ad3c-0d419a0c30bc"
+      },
+      {
+       "qty": 2,
+       "name": "Rashida Scalebane",
+       "set": "mir",
+       "number": "35",
+       "id": "ebb48053-da60-477a-b1eb-a9ab9ea682af"
+      },
+      {
+       "qty": 4,
+       "name": "Knight of Valor",
+       "set": "vis",
+       "number": "11",
+       "id": "25aa80ae-bb17-4e52-a269-efe75cf4c041"
+      },
+      {
+       "qty": 4,
+       "name": "Femeref Knight",
+       "set": "mir",
+       "number": "18",
+       "id": "915a2e07-b449-4d94-93e3-e756e891c542"
+      },
+      {
+       "qty": 4,
+       "name": "Burning Shield Askari",
+       "set": "mir",
+       "number": "162",
+       "id": "486547cd-d2e7-4c46-9f7b-81c4267d65cc"
+      },
+      {
+       "qty": 4,
+       "name": "Stalking Tiger",
+       "set": "mir",
+       "number": "243",
+       "id": "f12cc4e9-010a-4ff7-a026-dcb6113a36fb"
+      },
+      {
+       "qty": 4,
+       "name": "Uktabi Orangutan",
+       "set": "vis",
+       "number": "123",
+       "id": "101c7d58-43cc-4ebd-87f1-2016fbff56dd"
+      },
+      {
+       "qty": 4,
+       "name": "Incinerate",
+       "set": "mir",
+       "number": "184",
+       "id": "409b2be8-5bb6-45e0-ab87-ca73b4e3a396"
+      },
+      {
+       "qty": 2,
+       "name": "Warrior's Honor",
+       "set": "vis",
+       "number": "24",
+       "id": "7babd273-3e20-4cf9-bf21-c602eb729fc5"
+      },
+      {
+       "qty": 2,
+       "name": "Pacifism",
+       "set": "mir",
+       "number": "32",
+       "id": "c891df1b-bae6-4d6d-85ee-42901c149f98"
+      },
+      {
+       "qty": 2,
+       "name": "Divine Offering",
+       "set": "mir",
+       "number": "11",
+       "id": "4b84697e-d72d-4169-bf16-753144da281f"
+      },
+      {
+       "qty": 2,
+       "name": "Grasslands",
+       "set": "mir",
+       "number": "327",
+       "id": "65f5efac-ef98-4be2-abcc-1aa38bf66b06"
+      },
+      {
+       "qty": 2,
+       "name": "Mountain Valley",
+       "set": "mir",
+       "number": "328",
+       "id": "ded4e5c2-4f03-47c1-9843-b98c239ccfea"
+      },
+      {
+       "qty": 8,
+       "name": "Plains",
+       "set": "mir",
+       "number": "331",
+       "id": "888f32ad-3bdd-4c46-b3f0-522ac9763591"
+      },
+      {
+       "qty": 6,
+       "name": "Forest",
+       "set": "mir",
+       "number": "347",
+       "id": "a0ae7a81-9a61-4112-af22-369c525b2eb1"
+      },
+      {
+       "qty": 6,
+       "name": "Mountain",
+       "set": "mir",
+       "number": "343",
+       "id": "97004cdc-0baf-415d-8e87-7f36667c4628"
+      }
+     ]
+    }
+   },
+   "villain": {
+    "who": "kaervek",
+    "deck": {
+     "name": "Kaervek's War",
+     "colors": "BR",
+     "archetype": null,
+     "cards": [
+      {
+       "qty": 4,
+       "name": "Dark Ritual",
+       "set": "mir",
+       "number": "116",
+       "id": "1b5fc7ce-0618-4145-b8aa-bc871e4afa99"
+      },
+      {
+       "qty": 4,
+       "name": "Kaervek's Torch",
+       "set": "mir",
+       "number": "185",
+       "id": "0a1624ab-e50e-48a3-acf7-457069914616"
+      },
+      {
+       "qty": 2,
+       "name": "Incinerate",
+       "set": "mir",
+       "number": "184",
+       "id": "409b2be8-5bb6-45e0-ab87-ca73b4e3a396"
+      },
+      {
+       "qty": 2,
+       "name": "Scathe Zombies",
+       "set": "5ed",
+       "number": "192",
+       "id": "ed910299-b9e3-45b3-8fd1-2ebd47cd8275"
+      },
+      {
+       "qty": 4,
+       "name": "Abyssal Specter",
+       "set": "5ed",
+       "number": "139",
+       "id": "2be32aca-94d0-46df-9ca9-503a51416b14"
+      },
+      {
+       "qty": 4,
+       "name": "Nekrataal",
+       "set": "vis",
+       "number": "66",
+       "id": "dba3e342-88b7-4692-a3f7-a3f56c0cf6b5"
+      },
+      {
+       "qty": 2,
+       "name": "Emberwilde Djinn",
+       "set": "mir",
+       "number": "172",
+       "id": "c9e8c9f5-61dd-4dcc-bd40-8f366374ea18"
+      },
+      {
+       "qty": 2,
+       "name": "Fallen Angel",
+       "set": "5ed",
+       "number": "161",
+       "id": "68022e3e-99d0-4f14-9ef8-17f27a157edd"
+      },
+      {
+       "qty": 4,
+       "name": "Suq'Ata Assassin",
+       "set": "vis",
+       "number": "69",
+       "id": "1b7178c6-f989-437d-83e3-04b9817f2c54"
+      },
+      {
+       "qty": 2,
+       "name": "Kaervek's Purge",
+       "set": "mir",
+       "number": "270",
+       "id": "7a42ef95-92ec-40fe-ab30-a476f012a525"
+      },
+      {
+       "qty": 2,
+       "name": "Kaervek's Hex",
+       "set": "mir",
+       "number": "130",
+       "id": "097910fb-7c48-4535-8ffc-b521d08294b0"
+      },
+      {
+       "qty": 2,
+       "name": "Fireball",
+       "set": "5ed",
+       "number": "227",
+       "id": "ad457b10-6e00-411f-b827-ff844f9b300d"
+      },
+      {
+       "qty": 2,
+       "name": "Soul Rend",
+       "set": "mir",
+       "number": "144",
+       "id": "7fa084e1-05c2-4691-b9fe-3e3c717e5c9d"
+      },
+      {
+       "qty": 4,
+       "name": "Rocky Tar Pit",
+       "set": "mir",
+       "number": "329",
+       "id": "1e21c347-7aaf-42ae-abf3-f1283c5b54e6"
+      },
+      {
+       "qty": 10,
+       "name": "Swamp",
+       "set": "mir",
+       "number": "339",
+       "id": "f2d28477-8be1-4caf-8185-64f47905ccb1"
+      },
+      {
+       "qty": 10,
+       "name": "Mountain",
+       "set": "mir",
+       "number": "343",
+       "id": "97004cdc-0baf-415d-8e87-7f36667c4628"
+      }
+     ]
+    }
+   },
+   "reward": {
+    "hero": {
+     "packs": 2,
+     "coins": 200
+    },
+    "villain": {
+     "card": {
+      "oracle_id": "c629feae-084c-452f-9c09-4b9716331498",
+      "name": "Kaervek's Torch",
+      "rarity": "common",
+      "set": "mir",
+      "id": "0a1624ab-e50e-48a3-acf7-457069914616",
+      "image": "https://cards.scryfall.io/normal/front/0/a/0a1624ab-e50e-48a3-acf7-457069914616.jpg"
+     },
+     "coins": 200
+    }
+   },
+   "scene": [
+    {
+     "who": "asmira",
+     "line": "We are to be bound together as the reeds of a basket.",
+     "quote": true
+    },
+    {
+     "who": "jabari",
+     "line": "Suq'Ata believe in trade; Femeref, alms; Zhalfirins, steel. Be warned, Kaervek. Now we are joined.",
+     "quote": true
+    },
+    {
+     "who": "kaervek",
+     "line": "Joined. Good. You see? It only took a war."
+    },
+    {
+     "who": "asmira",
+     "line": "You murdered the Council of Voices."
+    },
+    {
+     "who": "kaervek",
+     "line": "The council argued for eleven years about a well."
+    },
+    {
+     "who": "kaervek",
+     "line": "Something is coming, Holy Avenger. Not me. Something older."
+    },
+    {
+     "who": "kaervek",
+     "line": "The secrets of Phyrexia are expensive. You will pay in brass and bone, steel and sinew.",
+     "quote": true
+    },
+    {
+     "who": "kaervek",
+     "line": "When it comes, a continent of councils dies. A fist survives."
+    },
+    {
+     "who": "rashida",
+     "line": "And you're the fist."
+    },
+    {
+     "who": "kaervek",
+     "line": "Someone has to be."
+    },
+    {
+     "who": "asmira",
+     "line": "Then let someone else be the hand that opens."
+    }
+   ],
+   "villainScene": [
+    {
+     "who": "kaervek",
+     "line": "They call me merciless. They have never seen what is coming."
+    },
+    {
+     "who": "kaervek",
+     "line": "Kill a creature, destroy the present. Kill the land, destroy the future.",
+     "quote": true
+    },
+    {
+     "who": "kaervek",
+     "line": "I'll burn Zhalfir down to the stone, and build something that survives the burning."
+    },
+    {
+     "who": "kaervek",
+     "line": "Since I cannot stop death, I choose to stop life.",
+     "quote": true
+    }
+   ],
+   "after": null,
+   "cues": {
+    "hero": {
+     "start": "Tread upon the meek, and they shall wound your feet.",
+     "big": "This is a war without neutrality.",
+     "low": "I've dreamt of a second harvest but fear I will not see it.",
+     "win": "It's over. Now free him.",
+     "loss": "Hold together... the basket holds..."
+    },
+    "villain": {
+     "start": "Begin.",
+     "big": "Only fools believe they will face my armies but once.",
+     "low": "If it is weak, either kill it or ignore it.",
+     "win": "Jamuraa will look to only one leader.",
+     "loss": "You'll wish you'd let me win. When it comes.",
+     "half": {
+      "who": "jolrael",
+      "line": "I have seen the horrors Kaervek has freed. My betrayal is certain, but of Kaervek or of Jamuraa, I cannot say."
+     }
+    }
+   },
+   "bigPlays": [],
+   "sim": null
+  }
+ ]
+}

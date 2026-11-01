@@ -33,7 +33,7 @@ const deck = (d) => {
 };
 // A character's face may come from a later card that paints them (Urza, Prince of Kroog): `fixed` names that exact printing.
 const face = (p) => { if (p.fixed) return {...p.fixed, focus: p.focus || '50% 30%'}; const c = p.number ? pool.find(x => x.name === p.card && x.number === p.number && (!p.set || x.set === p.set)) || pick(p.card, p.prefer || []) : pick(p.card, p.prefer || []); return c ? {card: c.name, set: c.set, number: c.number, id: c.id, crop: c.art, artist: c.artist, focus: p.focus || '50% 30%'} : null; };
-const out = {act: n, title: act.title, years: act.years, sets: act.sets, landSet: act.landSet, intro: src.intro, finale: src.finale, cast: {}, battles: []};
+const out = {act: n, title: act.title, years: act.years, sets: act.sets, landSet: act.landSet, intro: src.intro, finale: src.finale, villainFinale: src.villainFinale || null, vibe: src.vibe || null, cast: {}, battles: []};
 for (const [k, p] of Object.entries(src.cast)) out.cast[k] = {name: p.name, title: p.title || '', portrait: face(p)};
 // Rewards (Randall, 1 Nov 21:11Z): two one-time rewards per battle, both in context. Your side pays
 // the battle's era packs; the villain's side pays that villain's signature card from their own deck.
@@ -52,11 +52,11 @@ const tier = b => b.slot === 8 ? 'boss' : b.difficulty === 'Easy' ? 'easy' : 'no
 const REWARD = {easy: {packs: 1, coins: 0, vCoins: 50}, normal: {packs: 1, coins: 100, vCoins: 100}, boss: {packs: 2, coins: 200, vCoins: 200}};
 for (const b of src.battles) {
   const vDeck = deck(b.villain.deck), t = REWARD[tier(b)];
-  out.battles.push({id: `a${n}b${b.slot}`, slot: b.slot, kind: b.kind, title: b.title, difficulty: b.difficulty, teaches: b.teaches, blurb: b.blurb,
+  out.battles.push({id: `a${n}b${b.slot}`, slot: b.slot, kind: b.kind, mood: b.mood || (b.slot === 8 ? 'boss' : 'tension'), title: b.title, difficulty: b.difficulty, teaches: b.teaches, blurb: b.blurb,
     rewardSet: b.rewardSet, host: b.slot === 8,
     hero: {who: b.hero.who, deck: deck(b.hero.deck)}, villain: {who: b.villain.who, deck: vDeck},
     reward: {hero: {packs: t.packs, coins: t.coins}, villain: {card: signature(b, vDeck), coins: t.vCoins}},
-    scene: b.scene, villainScene: b.villainScene || null, cues: b.cues, bigPlays: b.bigPlays || [], sim: b.sim || null});
+    scene: b.scene, villainScene: b.villainScene || null, after: b.after || null, cues: b.cues, bigPlays: b.bigPlays || [], sim: b.sim || null});
 }
 if (missing.length) { console.error('MISSING:', [...new Set(missing)].join(' | ')); process.exit(1); }
 writeFileSync(new URL(`../../data/story/act-${n}.json`, import.meta.url), JSON.stringify(out, null, 1));
