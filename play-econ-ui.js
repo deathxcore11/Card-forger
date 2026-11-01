@@ -353,7 +353,7 @@ function importPanel(snapshot, check) {
 export function decksMarkup(snapshot, {check = null, precon = {}} = {}) {
   const s = snapshot.state, decks = s.decks || [], owned = ownedByName(s.cards || []);
   return `<section class="play-menu pe-screen pe-decks" aria-labelledby="playTitle">${head('Decks', snapshot)}
-    <div class="deck-grid pe-deck-shelf"><button class="deck-tile pe-deck-new" data-act="playEconEditDeck" data-econ-deck=""><span class="tile-art">${img(TILE_ART.decks, '')}</span><span class="tile-shade"></span><span class="tile-body"><b>Build a deck</b><small>From the cards in your Trunk</small></span></button>${decks.map(d => playDeckTile(d, owned)).join('')}</div>
+    <div class="deck-grid pe-deck-shelf"><button class="deck-tile pe-deck-new" data-act="playEconView" data-econ-view="finder"><span class="tile-art">${img(TILE_ART.decks, '')}</span><span class="tile-shade"></span><span class="tile-body"><b>Build a deck</b><small>From the cards in your Trunk</small></span></button>${decks.map(d => playDeckTile(d, owned)).join('')}</div>
     <section class="pe-import pe-precons" aria-labelledby="pePreconTitle"><h2 id="pePreconTitle">Precons</h2><p class="pe-sub">Published decks with their real printings. You only pay for the cards you don't have yet.</p>${preconShelf(snapshot, precon)}</section>
     <section class="pe-import" aria-labelledby="peImportTitle"><h2 id="peImportTitle">Paste a list</h2>${importPanel(snapshot, check)}</section>
     ${statusLine(snapshot)}</section>`;
@@ -369,4 +369,4 @@ export function econScreenMarkup(view, snapshot, ui = {}) {
   if (view === 'deeds') return deedsScreenMarkup(snapshot, ui);
   return '';
 }
-export const ECON_VIEWS = new Set(['shop', 'packs', 'collection', 'decks', 'deck', 'deeds']);
+export const ECON_VIEWS = new Set(['shop', 'packs', 'collection', 'decks', 'deck', 'deeds', 'finder']);
