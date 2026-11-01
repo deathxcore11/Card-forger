@@ -1147,7 +1147,7 @@ const kws=a=>['haste','flying','reach','first','vigilance','deathtouch','lifelin
 // The escalation dial: fills toward Doom; the number is the turns left before Doom.
 function escDial(){const a=run.act||1,face=a>1?'maw':'moon',name=a>1?'The Hunger':'Nightfall',t=c.turn,DT=fightDoomT(),doom=t>=DT,left=DT-t;
  /* painted dial faces (beta lane C): Nightfall in Act 1, the Hunger in Act 2; 1 before escalation, 2-4 as Doom nears, then the Doom face */
- const n=a>1?'':doom?'doom':t<ESC_T?'1':String(Math.min(4,2+Math.floor(2*(t-ESC_T)/Math.max(1,DT-1-ESC_T))));
+ const n=a>2?'':doom?'doom':t<ESC_T?'1':String(Math.min(4,2+Math.floor(2*(t-ESC_T)/Math.max(1,DT-1-ESC_T))));
  const lab=doom?`${name}: Doom. Enemies grow fast and trample`:t>=ESC_T?`${name}: enemies grow every turn. Doom in ${left}`:`${name} comes on turn ${ESC_T}. Doom on turn ${DT}`;
  return `<span class="pw-esc${doom?' doom':t>=ESC_T?' on':''}" data-face="${face}"${n?` data-n="${n}"`:''} style="--f:${Math.min(1,t/DT).toFixed(3)}" role="img" aria-label="${lab}" title="${lab}">${ico(doom?'skull':face)}${doom?'':`<b>${left}</b>`}</span>`}
 function topBar(){
@@ -1423,7 +1423,7 @@ function patronView(){const P=run.patron,G=PATRONS[P.k],st=P.step;
  const line=P.line?`<p class="pw-pline">${P.line}</p>`:'';
  if(st&&st.pick)return `<section class="screen blessing" data-giver="${P.k}">${panel}<div class="choices">${st.pick.map(k=>cardHtml({key:k,foil:false},`data-act="bpick" data-k="${k}"`)).join('')}</div><button class="btn" data-act="bskip">${ico('back')}</button></section>`;
  if(st&&(st.remove||st.upgrade||st.copy)){const L=st.upgrade?run.deck.filter(d=>!d.foil&&C[d.key].kind!=='Curse'):run.deck;const act=st.remove?'bremove':st.upgrade?'bupg':'bcopy';
-  return `<section class="screen blessing" data-giver="${P.k}">${panel}<div class="choices">${L.map(card=>cardHtml(card,`data-act="${act}" data-id="${card.id}"`)).join('')}</div></section>`}
+  return `<section class="screen blessing" data-giver="${P.k}">${panel}<div class="choices pw-deckpick">${L.map(card=>cardHtml(card,`data-act="${act}" data-id="${card.id}"`)).join('')}</div></section>`}
  if(P.wild){if(P.open!=null){const b=BOONS[P.offers[P.open]];return `<section class="screen blessing wild" data-giver="${P.k}">${panel}${b.anti&&G.anti_line?`<p class="pw-pline">${G.anti_line}</p>`:line}<div class="pw-seals"><div class="pw-seal open${b.anti?' anti':b.jack?' jack':''}"><span class="pw-boon-ico">${ico(b.ico)}</span><b>${b.name}</b><span class="muted">${b.text}</span></div></div><button class="btn primary" data-act="bdone">${ico('up')}</button></section>`}
   return `<section class="screen blessing wild" data-giver="${P.k}">${panel}${line}<div class="pw-seals">${P.offers.map((b,i)=>`<button class="pw-seal" data-act="bseal" data-i="${i}" aria-label="Sealed offer ${i+1}"></button>`).join('')}</div><button class="btn" data-act="bdone" aria-label="Walk away">${ico('back')}</button></section>`}
  return `<section class="screen blessing" data-giver="${P.k}">${panel}${line}<div class="choices pw-boons">${P.offers.map((k,i)=>{const b=BOONS[k],on=P.sel===i;return `<button class="option pw-boon${b.sig?' sig':''}" data-act="boon" data-i="${i}" data-slot="${b.s}" aria-pressed="${on}" title="${b.name}: ${b.text}"><span class="pw-boon-ico">${ico(b.ico)}</span><b>${b.name}</b>${on?`<span class="muted">${b.text}</span>`:''}</button>`}).join('')}</div>${P.sel!=null?`<button class="btn primary" data-act="btake" aria-label="Take ${BOONS[P.offers[P.sel]].name}">${ico('up')}</button>`:''}</section>`}
