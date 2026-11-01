@@ -1,0 +1,2523 @@
+{
+ "act": 6,
+ "title": "Urza's War",
+ "years": "1998 to 1999",
+ "sets": [
+  "usg",
+  "ulg",
+  "uds",
+  "6ed"
+ ],
+ "landSet": "usg",
+ "intro": [
+  {
+   "who": "stage",
+   "line": "Long before the Weatherlight. Long before Rath. The snow from the Sylex has barely melted."
+  },
+  {
+   "who": "stage",
+   "line": "A broken man lies in an angel's garden. He hasn't moved in five years."
+  },
+  {
+   "who": "serra",
+   "line": "Xantcha is recovering. The medicine is slow, but my magic would have killed her.",
+   "quote": true
+  },
+  {
+   "who": "urza",
+   "line": "Fight? I cannot. I do not care if I live or die, so long as I can rest.",
+   "quote": true
+  },
+  {
+   "who": "xantcha",
+   "line": "You can rest when they're gone. They came for you, Urza. They'll come here next."
+  },
+  {
+   "who": "xantcha",
+   "line": "Yawgmoth spent eons wrapping Phyrexians in human skin. They are the sleeper agents, and they are everywhere.",
+   "quote": true
+  }
+ ],
+ "finale": [
+  {
+   "who": "stage",
+   "line": "Tolaria, years later. A nursery of machines."
+  },
+  {
+   "who": "rayne",
+   "line": "Stop thinking like an artificer, Urza, and start thinking like a father!",
+   "quote": true
+  },
+  {
+   "who": "urza",
+   "line": "I am thinking like a father. A father of a weapon."
+  },
+  {
+   "who": "urza",
+   "line": "Bloodlines. Generations of them. Each one a little closer to the hero this world will need."
+  },
+  {
+   "who": "karn",
+   "line": "And when he is born?"
+  },
+  {
+   "who": "urza",
+   "line": "You'll keep the Legacy for him, Karn. He'll need it. He won't want it."
+  },
+  {
+   "who": "stage",
+   "line": "A boy will be born in Jamuraa, a thousand years from now, and handed to a sidar named Kondo. His name will be Gerrard."
+  },
+  {
+   "who": "barrin",
+   "line": "You cannot possibly know the toll your alliances will exact from you.",
+   "quote": true
+  }
+ ],
+ "villainFinale": [
+  {
+   "who": "stage",
+   "line": "Tolaria burns. The time bubble hangs over it like a frozen tear."
+  },
+  {
+   "who": "gix",
+   "line": "Grief is as useless as love.",
+   "quote": true
+  },
+  {
+   "who": "gix",
+   "line": "Your brother listened to me, Urza. He's the only Thran heir who ever did."
+  },
+  {
+   "who": "gix",
+   "line": "I will bring the Father of Machines your head. Perhaps then he will look at me."
+  },
+  {
+   "who": "yawgmoth",
+   "line": "You have done adequately, praetor. Return to your vats."
+  },
+  {
+   "who": "stage",
+   "line": "Gix bows so low his cables scrape the floor. He does not get the look."
+  }
+ ],
+ "vibe": "artificer-academy-phyrexian-machine",
+ "cast": {
+  "you": {
+   "name": "You",
+   "title": "Planeswalker",
+   "portrait": {
+    "card": "Opportunity",
+    "set": "ulg",
+    "number": "37",
+    "id": "63a09767-a15d-42b0-aaa3-794a4e11037a",
+    "crop": "https://cards.scryfall.io/art_crop/front/6/3/63a09767-a15d-42b0-aaa3-794a4e11037a.jpg?1783946246",
+    "artist": "Ron Spears",
+    "focus": "50% 30%"
+   }
+  },
+  "urza": {
+   "name": "Urza",
+   "title": "Lord High Artificer",
+   "portrait": {
+    "card": "Urza, Lord High Artificer",
+    "set": "mh1",
+    "number": "75",
+    "id": "9e7fb3c0-5159-4d1f-8490-ce4c9a60f567",
+    "artist": "Grzegorz Rutkowski",
+    "crop": "https://cards.scryfall.io/art_crop/front/9/e/9e7fb3c0-5159-4d1f-8490-ce4c9a60f567.jpg",
+    "focus": "50% 25%"
+   }
+  },
+  "serra": {
+   "name": "Serra",
+   "title": "Creator of the Realm",
+   "portrait": {
+    "card": "Serra the Benevolent",
+    "set": "mh1",
+    "number": "26",
+    "id": "88bf4af9-4b14-43e7-9d50-0e6a895cece1",
+    "artist": "Magali Villeneuve",
+    "crop": "https://cards.scryfall.io/art_crop/front/8/8/88bf4af9-4b14-43e7-9d50-0e6a895cece1.jpg",
+    "focus": "50% 25%"
+   }
+  },
+  "xantcha": {
+   "name": "Xantcha",
+   "title": "Phyrexian Outcast",
+   "portrait": {
+    "card": "Xantcha, Sleeper Agent",
+    "set": "c18",
+    "number": "50",
+    "id": "89b03b9a-7e20-47cb-bc64-23513acea855",
+    "artist": "Mark Winters",
+    "crop": "https://cards.scryfall.io/art_crop/front/8/9/89b03b9a-7e20-47cb-bc64-23513acea855.jpg",
+    "focus": "50% 25%"
+   }
+  },
+  "priest": {
+   "name": "Priest of Gix",
+   "title": "Phyrexian Invader",
+   "portrait": {
+    "card": "Priest of Gix",
+    "set": "usg",
+    "number": "150",
+    "id": "64166899-fcc6-4000-9994-643f5a4cd214",
+    "crop": "https://cards.scryfall.io/art_crop/front/6/4/64166899-fcc6-4000-9994-643f5a4cd214.jpg?1783946341",
+    "artist": "Brian Despain",
+    "focus": "50% 30%"
+   }
+  },
+  "jhoira": {
+   "name": "Jhoira",
+   "title": "Ghitu Artificer",
+   "portrait": {
+    "card": "Jhoira of the Ghitu",
+    "set": "fut",
+    "number": "157",
+    "id": "1f437128-3a87-4958-97d0-3940d8761cba",
+    "artist": "Kev Walker",
+    "crop": "https://cards.scryfall.io/art_crop/front/1/f/1f437128-3a87-4958-97d0-3940d8761cba.jpg",
+    "focus": "50% 25%"
+   }
+  },
+  "goblin": {
+   "name": "Grunk",
+   "title": "Goblin Chieftain of Shiv",
+   "portrait": {
+    "card": "Goblin Raider",
+    "set": "usg",
+    "number": "194",
+    "id": "e150a460-8a81-4097-8100-ccb8a9bb1bd7",
+    "crop": "https://cards.scryfall.io/art_crop/front/e/1/e150a460-8a81-4097-8100-ccb8a9bb1bd7.jpg?1783946329",
+    "artist": "Greg Staples",
+    "focus": "50% 30%"
+   }
+  },
+  "teferi": {
+   "name": "Teferi",
+   "title": "Third-Level Student",
+   "portrait": {
+    "card": "Disruptive Student",
+    "set": "usg",
+    "number": "69",
+    "id": "ee43681d-e0f7-422b-a363-0d630f68d363",
+    "crop": "https://cards.scryfall.io/art_crop/front/e/e/ee43681d-e0f7-422b-a363-0d630f68d363.jpg?1783946361",
+    "artist": "Randy Gallegos",
+    "focus": "50% 25%"
+   }
+  },
+  "barrin": {
+   "name": "Barrin",
+   "title": "Master Wizard",
+   "portrait": {
+    "card": "Barrin, Master Wizard",
+    "set": "usg",
+    "number": "63",
+    "id": "ec79e35f-9e78-462d-8b71-4f044e2eff90",
+    "crop": "https://cards.scryfall.io/art_crop/front/e/c/ec79e35f-9e78-462d-8b71-4f044e2eff90.jpg?1783946364",
+    "artist": "Michael Sutfin",
+    "focus": "50% 25%"
+   }
+  },
+  "kerrick": {
+   "name": "Kerrick",
+   "title": "Sleeper Agent",
+   "portrait": {
+    "card": "Phyrexian Plaguelord",
+    "set": "ulg",
+    "number": "62",
+    "id": "307bd530-4b11-428e-864e-e24e96051e3e",
+    "crop": "https://cards.scryfall.io/art_crop/front/3/0/307bd530-4b11-428e-864e-e24e96051e3e.jpg?1783946240",
+    "artist": "Kev Walker",
+    "focus": "50% 30%"
+   }
+  },
+  "rofellos": {
+   "name": "Rofellos",
+   "title": "Llanowar Emissary",
+   "portrait": {
+    "card": "Rofellos, Llanowar Emissary",
+    "set": "uds",
+    "number": "118",
+    "id": "6aa5cc65-f8f1-4f6f-8b4e-2fedccbda684",
+    "crop": "https://cards.scryfall.io/art_crop/front/6/a/6aa5cc65-f8f1-4f6f-8b4e-2fedccbda684.jpg?1783946059",
+    "artist": "Michael Sutfin",
+    "focus": "50% 25%"
+   }
+  },
+  "multani": {
+   "name": "Multani",
+   "title": "Maro-Sorcerer of Yavimaya",
+   "portrait": {
+    "card": "Multani, Maro-Sorcerer",
+    "set": "ulg",
+    "number": "107",
+    "id": "0d6cc98b-b376-40af-8308-198bab00b2b1",
+    "crop": "https://cards.scryfall.io/art_crop/front/0/d/0d6cc98b-b376-40af-8308-198bab00b2b1.jpg?1783946229",
+    "artist": "Daren Bader",
+    "focus": "50% 30%"
+   }
+  },
+  "rayne": {
+   "name": "Rayne",
+   "title": "Academy Chancellor",
+   "portrait": {
+    "card": "Rayne, Academy Chancellor",
+    "set": "uds",
+    "number": "43",
+    "id": "8ee6480c-7697-47e2-893b-ca88c0ab3376",
+    "crop": "https://cards.scryfall.io/art_crop/front/8/e/8ee6480c-7697-47e2-893b-ca88c0ab3376.jpg?1783946077",
+    "artist": "Matthew D. Wilson",
+    "focus": "50% 25%"
+   }
+  },
+  "gatha": {
+   "name": "Gatha",
+   "title": "Tolarian Renegade",
+   "portrait": {
+    "card": "Twisted Experiment",
+    "set": "uds",
+    "number": "74",
+    "id": "64e37889-7dc0-476b-8b99-8f06881d352c",
+    "crop": "https://cards.scryfall.io/art_crop/front/6/4/64e37889-7dc0-476b-8b99-8f06881d352c.jpg?1783946070",
+    "artist": "rk post",
+    "focus": "50% 30%"
+   }
+  },
+  "radiant": {
+   "name": "Radiant",
+   "title": "Archangel",
+   "portrait": {
+    "card": "Radiant, Archangel",
+    "set": "ulg",
+    "number": "20",
+    "id": "99509da7-3e11-4c38-804b-286ce572f36e",
+    "crop": "https://cards.scryfall.io/art_crop/front/9/9/99509da7-3e11-4c38-804b-286ce572f36e.jpg?1783946249",
+    "artist": "Michael Sutfin",
+    "focus": "50% 25%"
+   }
+  },
+  "gix": {
+   "name": "Gix",
+   "title": "Yawgmoth Praetor",
+   "portrait": {
+    "card": "Gix, Yawgmoth Praetor",
+    "set": "bro",
+    "number": "95",
+    "id": "2c76f7e0-37e7-4e87-93a3-a25ba0674645",
+    "artist": "Anna Podedworna",
+    "crop": "https://cards.scryfall.io/art_crop/front/2/c/2c76f7e0-37e7-4e87-93a3-a25ba0674645.jpg",
+    "focus": "50% 25%"
+   }
+  },
+  "yawgmoth": {
+   "name": "Yawgmoth",
+   "title": "Father of Machines",
+   "portrait": {
+    "card": "Yawgmoth, Thran Physician",
+    "set": "mh1",
+    "number": "116",
+    "id": "8690cbcc-f8fd-41f7-9e28-e61c12b04014",
+    "artist": "Mark Winters",
+    "crop": "https://cards.scryfall.io/art_crop/front/8/6/8690cbcc-f8fd-41f7-9e28-e61c12b04014.jpg",
+    "focus": "50% 25%"
+   }
+  },
+  "karn": {
+   "name": "Karn",
+   "title": "Silver Golem",
+   "portrait": {
+    "card": "Karn, Silver Golem",
+    "set": "usg",
+    "number": "298",
+    "id": "811a0988-2900-426c-9413-8f1778d99678",
+    "artist": "Mark Zug",
+    "crop": "https://cards.scryfall.io/art_crop/front/8/1/811a0988-2900-426c-9413-8f1778d99678.jpg",
+    "focus": "50% 25%"
+   }
+  }
+ },
+ "battles": [
+  {
+   "id": "a6b1",
+   "slot": 1,
+   "kind": "Arrival",
+   "mood": "tension",
+   "title": "Serra's Realm",
+   "difficulty": "Easy",
+   "teaches": [
+    "Enchantments"
+   ],
+   "blurb": "Serra built a world out of faith and let a broken planeswalker sleep in it. Then the things hunting him found the door.",
+   "rewardSet": "usg",
+   "host": false,
+   "hero": {
+    "who": "serra",
+    "deck": {
+     "name": "Serra's Host",
+     "colors": "W",
+     "archetype": null,
+     "cards": [
+      {
+       "qty": 4,
+       "name": "Serra Zealot",
+       "set": "usg",
+       "number": "46",
+       "id": "0b311542-599f-4d2f-a871-18d5b0b7bbe5"
+      },
+      {
+       "qty": 4,
+       "name": "Serra Advocate",
+       "set": "uds",
+       "number": "19",
+       "id": "cac540c7-8b3a-4e28-96a2-d414ff613640"
+      },
+      {
+       "qty": 4,
+       "name": "Sanctum Custodian",
+       "set": "usg",
+       "number": "42",
+       "id": "27a64b98-9002-48fe-a3e5-4449050c87e1"
+      },
+      {
+       "qty": 4,
+       "name": "Herald of Serra",
+       "set": "usg",
+       "number": "17",
+       "id": "22a2b882-d616-495e-99f6-196031235f93"
+      },
+      {
+       "qty": 4,
+       "name": "Intrepid Hero",
+       "set": "usg",
+       "number": "19",
+       "id": "0f2a5c67-f76a-4021-959e-3e084a06b80f"
+      },
+      {
+       "qty": 2,
+       "name": "Serra Avatar",
+       "set": "usg",
+       "number": "45",
+       "id": "288b0976-78e8-4fbe-8607-2e55d8761d3e"
+      },
+      {
+       "qty": 4,
+       "name": "Pacifism",
+       "set": "usg",
+       "number": "27",
+       "id": "dc81638f-a74c-47fc-825a-ae778c524f66"
+      },
+      {
+       "qty": 4,
+       "name": "Serra's Embrace",
+       "set": "usg",
+       "number": "47",
+       "id": "145c3ebd-7a67-4606-8427-f3b91ab26b84"
+      },
+      {
+       "qty": 4,
+       "name": "Glorious Anthem",
+       "set": "usg",
+       "number": "15",
+       "id": "61f867c5-0727-4408-b479-b81518daa0ec"
+      },
+      {
+       "qty": 2,
+       "name": "Absolute Grace",
+       "set": "usg",
+       "number": "1",
+       "id": "fe7d1839-7180-4b4c-8ddb-7df24573f740"
+      },
+      {
+       "qty": 24,
+       "name": "Plains",
+       "set": "usg",
+       "number": "331",
+       "id": "b9e35567-05df-4a3f-8c29-d8327abc2e8d"
+      }
+     ]
+    }
+   },
+   "villain": {
+    "who": "priest",
+    "deck": {
+     "name": "The First Legion",
+     "colors": "B",
+     "archetype": null,
+     "cards": [
+      {
+       "qty": 4,
+       "name": "Phyrexian Ghoul",
+       "set": "usg",
+       "number": "148",
+       "id": "4843ba92-fde2-4b46-8fdb-e0f8aca96959"
+      },
+      {
+       "qty": 4,
+       "name": "Phyrexian Debaser",
+       "set": "ulg",
+       "number": "59",
+       "id": "672dcca2-096b-4bcc-9b02-7180c4c0d4c7"
+      },
+      {
+       "qty": 4,
+       "name": "Bog Raiders",
+       "set": "usg",
+       "number": "119",
+       "id": "3739188b-f2b3-4ab0-8e5c-b3a1d2a1ad09"
+      },
+      {
+       "qty": 4,
+       "name": "Lurking Evil",
+       "set": "usg",
+       "number": "140",
+       "id": "f5ef7201-4443-4a77-b9e1-6f1f39e8f993"
+      },
+      {
+       "qty": 4,
+       "name": "Priest of Gix",
+       "set": "usg",
+       "number": "150",
+       "id": "64166899-fcc6-4000-9994-643f5a4cd214"
+      },
+      {
+       "qty": 4,
+       "name": "Phyrexian Monitor",
+       "set": "uds",
+       "number": "64",
+       "id": "571058b0-7e10-4259-8db9-5c8b78c1e13d"
+      },
+      {
+       "qty": 4,
+       "name": "Unworthy Dead",
+       "set": "usg",
+       "number": "163",
+       "id": "0f42c561-1762-43c4-a539-0cf9a5ce7f4f"
+      },
+      {
+       "qty": 4,
+       "name": "Crazed Skirge",
+       "set": "usg",
+       "number": "125",
+       "id": "816272de-f134-45fa-ac1f-70d35d30c7e1"
+      },
+      {
+       "qty": 4,
+       "name": "Befoul",
+       "set": "usg",
+       "number": "116",
+       "id": "f92cb48d-315b-4877-b615-ffdf275c4d61"
+      },
+      {
+       "qty": 24,
+       "name": "Swamp",
+       "set": "usg",
+       "number": "339",
+       "id": "c04dac6d-a7c2-44ee-b735-bd4eade06e4e"
+      }
+     ]
+    }
+   },
+   "reward": {
+    "hero": {
+     "packs": 1,
+     "coins": 0
+    },
+    "villain": {
+     "card": {
+      "oracle_id": "d93f82ce-0eed-45cc-a7b1-50fd4cbb6152",
+      "name": "Priest of Gix",
+      "rarity": "uncommon",
+      "set": "usg",
+      "id": "64166899-fcc6-4000-9994-643f5a4cd214",
+      "image": "https://cards.scryfall.io/normal/front/6/4/64166899-fcc6-4000-9994-643f5a4cd214.jpg"
+     },
+     "coins": 50
+    }
+   },
+   "scene": [
+    {
+     "who": "priest",
+     "line": "The artificer is here. We can smell the brass in him."
+    },
+    {
+     "who": "serra",
+     "line": "Let Phyrexia breed evil in the darkness; my holy light will reveal its taint.",
+     "quote": true
+    },
+    {
+     "who": "priest",
+     "line": "Light. Faith. Wings. All of it is just meat that believes things."
+    },
+    {
+     "who": "serra",
+     "line": "Believe in the ideal, not the idol.",
+     "quote": true
+    },
+    {
+     "who": "serra",
+     "line": "Planeswalker. Whoever you are. Stand with my angels."
+    }
+   ],
+   "villainScene": [
+    {
+     "who": "priest",
+     "line": "Gix doesn't want a people to rule but puppets to entertain his madness.",
+     "quote": true
+    },
+    {
+     "who": "priest",
+     "line": "We are the puppets. Watch us dance."
+    },
+    {
+     "who": "priest",
+     "line": "Ash is our air, darkness our flesh.",
+     "quote": true
+    }
+   ],
+   "after": [
+    {
+     "who": "stage",
+     "line": "In pursuit of Urza, the Phyrexians sent countless foul legions into Serra's realm. Though beaten back, they left it tainted.",
+     "quote": true
+    }
+   ],
+   "cues": {
+    "hero": {
+     "start": "Rise, my host.",
+     "big": "Lifted beyond herself, an angel of light and fury.",
+     "low": "The realm is fragile as glass...",
+     "win": "Go back to your machines.",
+     "loss": "They are in the garden..."
+    },
+    "villain": {
+     "start": "Excise them.",
+     "big": "In Yawgmoth's name!",
+     "low": "Meat... fails...",
+     "win": "The realm is tainted now. Forever.",
+     "loss": "More will come."
+    }
+   },
+   "bigPlays": [],
+   "sim": null
+  },
+  {
+   "id": "a6b2",
+   "slot": 2,
+   "kind": "Lesson",
+   "mood": "comic",
+   "title": "It Hums",
+   "difficulty": "Easy",
+   "teaches": [
+    "Echo"
+   ],
+   "blurb": "Urza needs the ancient Thran mana rig under the mountains of Shiv. The goblins worship it, the viashino guard it, and nobody knows what it does.",
+   "rewardSet": "usg",
+   "host": false,
+   "hero": {
+    "who": "jhoira",
+    "deck": {
+     "name": "The Ghitu",
+     "colors": "R",
+     "archetype": null,
+     "cards": [
+      {
+       "qty": 4,
+       "name": "Ghitu Slinger",
+       "set": "ulg",
+       "number": "77",
+       "id": "67e4bc1d-6a4b-408a-8921-433249c960f9"
+      },
+      {
+       "qty": 4,
+       "name": "Avalanche Riders",
+       "set": "ulg",
+       "number": "74",
+       "id": "3bdc5330-c76b-40ca-a694-58fa4b9b7304"
+      },
+      {
+       "qty": 4,
+       "name": "Keldon Champion",
+       "set": "uds",
+       "number": "90",
+       "id": "b1eee4d2-fe28-418e-a81f-73a66e831b05"
+      },
+      {
+       "qty": 4,
+       "name": "Keldon Vandals",
+       "set": "uds",
+       "number": "91",
+       "id": "f18cdf4d-42ce-4f2d-8b8f-8cf52a1b8db4"
+      },
+      {
+       "qty": 4,
+       "name": "Thundering Giant",
+       "set": "usg",
+       "number": "221",
+       "id": "98afd54f-2f86-4694-a688-ce3dcefccdbc"
+      },
+      {
+       "qty": 2,
+       "name": "Crater Hellion",
+       "set": "usg",
+       "number": "179",
+       "id": "2382e525-1750-484a-bf95-dbb42bbb30ae"
+      },
+      {
+       "qty": 2,
+       "name": "Lightning Dragon",
+       "set": "usg",
+       "number": "202",
+       "id": "342fc7bc-657f-43a3-9558-f516fa545a09"
+      },
+      {
+       "qty": 2,
+       "name": "Ghitu Fire-Eater",
+       "set": "ulg",
+       "number": "76",
+       "id": "131dce1c-e9c8-437a-b7aa-36a47049d2d2"
+      },
+      {
+       "qty": 2,
+       "name": "Shower of Sparks",
+       "set": "usg",
+       "number": "217",
+       "id": "54428999-a83d-40a5-9753-dfefdf705a9e"
+      },
+      {
+       "qty": 4,
+       "name": "Arc Lightning",
+       "set": "usg",
+       "number": "174",
+       "id": "0c81ade7-0074-4447-ba2c-b16fa0f09ccb"
+      },
+      {
+       "qty": 4,
+       "name": "Fire Ants",
+       "set": "usg",
+       "number": "187",
+       "id": "ae2e38af-a2e5-4d52-870e-1b6e0cb33cef"
+      },
+      {
+       "qty": 24,
+       "name": "Mountain",
+       "set": "usg",
+       "number": "343",
+       "id": "e9d34a2f-09ed-4fb4-891a-890f450699bd"
+      }
+     ]
+    }
+   },
+   "villain": {
+    "who": "goblin",
+    "deck": {
+     "name": "The Goblins of Shiv",
+     "colors": "R",
+     "archetype": null,
+     "cards": [
+      {
+       "qty": 4,
+       "name": "Goblin Raider",
+       "set": "usg",
+       "number": "194",
+       "id": "e150a460-8a81-4097-8100-ccb8a9bb1bd7"
+      },
+      {
+       "qty": 4,
+       "name": "Goblin Lackey",
+       "set": "usg",
+       "number": "190",
+       "id": "9b848caa-aad8-4060-8f86-304a8556de2d"
+      },
+      {
+       "qty": 4,
+       "name": "Goblin Matron",
+       "set": "usg",
+       "number": "191",
+       "id": "9e9e2e5d-ad06-4378-9afb-ffb174e6a5b4"
+      },
+      {
+       "qty": 4,
+       "name": "Goblin Patrol",
+       "set": "usg",
+       "number": "193",
+       "id": "d0fcd8d3-f159-49a1-8dd9-582ae4a0adc3"
+      },
+      {
+       "qty": 4,
+       "name": "Goblin Medics",
+       "set": "ulg",
+       "number": "79",
+       "id": "72cc08b6-f31a-46b3-b233-f6bb2c6b1106"
+      },
+      {
+       "qty": 4,
+       "name": "Goblin Spelunkers",
+       "set": "usg",
+       "number": "195",
+       "id": "7d02a81f-2dac-41f7-a818-811baa238021"
+      },
+      {
+       "qty": 4,
+       "name": "Raging Goblin",
+       "set": "6ed",
+       "number": "200",
+       "id": "f41205d2-ed1c-4c16-a171-096c06016705"
+      },
+      {
+       "qty": 4,
+       "name": "Shower of Sparks",
+       "set": "usg",
+       "number": "217",
+       "id": "54428999-a83d-40a5-9753-dfefdf705a9e"
+      },
+      {
+       "qty": 4,
+       "name": "Goblin War Buggy",
+       "set": "usg",
+       "number": "196",
+       "id": "d2d0fc9e-fb6b-4a00-b422-32565f7ce454"
+      },
+      {
+       "qty": 24,
+       "name": "Mountain",
+       "set": "usg",
+       "number": "343",
+       "id": "e9d34a2f-09ed-4fb4-891a-890f450699bd"
+      }
+     ]
+    }
+   },
+   "reward": {
+    "hero": {
+     "packs": 1,
+     "coins": 0
+    },
+    "villain": {
+     "card": {
+      "oracle_id": "7f11c830-fced-40db-8c02-b3c54f3e4372",
+      "name": "Goblin Raider",
+      "rarity": "common",
+      "set": "usg",
+      "id": "e150a460-8a81-4097-8100-ccb8a9bb1bd7",
+      "image": "https://cards.scryfall.io/normal/front/e/1/e150a460-8a81-4097-8100-ccb8a9bb1bd7.jpg"
+     },
+     "coins": 50
+    }
+   },
+   "scene": [
+    {
+     "who": "urza",
+     "line": "What does it do?"
+    },
+    {
+     "who": "jhoira",
+     "line": "When Urza asked the viashino what it did, they answered: \"It hums.\"",
+     "quote": true
+    },
+    {
+     "who": "goblin",
+     "line": "THE HUMMER IS OURS! The Hummer gave us fire and noise and Grunk!"
+    },
+    {
+     "who": "jhoira",
+     "line": "Grunk is you?"
+    },
+    {
+     "who": "goblin",
+     "line": "Grunk is CHIEFTAIN."
+    },
+    {
+     "who": "jhoira",
+     "line": "They are called Mi'uto, which means one use.",
+     "quote": true
+    },
+    {
+     "who": "jhoira",
+     "line": "My fighters hit twice as hard. Pay for them twice, or lose them."
+    }
+   ],
+   "villainScene": [
+    {
+     "who": "goblin",
+     "line": "Tall man wants the Hummer."
+    },
+    {
+     "who": "goblin",
+     "line": "Nobody gets the Hummer. Grunk barely gets the Hummer."
+    },
+    {
+     "who": "goblin",
+     "line": "CHARGE! No. Wait. Yes. CHARGE!"
+    }
+   ],
+   "after": null,
+   "cues": {
+    "hero": {
+     "start": "Fire up the forge.",
+     "big": "One use. Make it count.",
+     "low": "I wonder how it feels to be bored.",
+     "win": "It hums. Now it hums for us.",
+     "loss": "Back to the tunnels!"
+    },
+    "villain": {
+     "start": "FOR THE HUMMER!",
+     "big": "Grunk made a BIG one!",
+     "low": "Grunk is having a bad day.",
+     "win": "Hummer stays! Hummer hums!",
+     "loss": "Grunk will be back. Grunk always comes back."
+    }
+   },
+   "bigPlays": [],
+   "sim": null
+  },
+  {
+   "id": "a6b3",
+   "slot": 3,
+   "kind": "Lesson",
+   "mood": "comic",
+   "title": "Always Late for Class",
+   "difficulty": "Easy",
+   "teaches": [
+    "Cycling"
+   ],
+   "blurb": "Tolaria, an island academy where Urza trains the minds that will fight Phyrexia. Its most gifted student is a boy called Teferi. He has never once been on time.",
+   "rewardSet": "usg",
+   "host": false,
+   "hero": {
+    "who": "teferi",
+    "deck": {
+     "name": "Third-Level Mischief",
+     "colors": "U",
+     "archetype": null,
+     "cards": [
+      {
+       "qty": 4,
+       "name": "Miscalculation",
+       "set": "ulg",
+       "number": "36",
+       "id": "4b4956a2-9a39-4152-9c98-70e4b2acfa26"
+      },
+      {
+       "qty": 4,
+       "name": "Disruptive Student",
+       "set": "usg",
+       "number": "69",
+       "id": "ee43681d-e0f7-422b-a363-0d630f68d363"
+      },
+      {
+       "qty": 4,
+       "name": "Pendrell Drake",
+       "set": "usg",
+       "number": "86",
+       "id": "986b6708-5ed4-4085-b9b7-d359b2d5b26f"
+      },
+      {
+       "qty": 4,
+       "name": "Peregrine Drake",
+       "set": "usg",
+       "number": "88",
+       "id": "4951863f-1c16-4d09-ba9a-f57dc3d81a20"
+      },
+      {
+       "qty": 4,
+       "name": "Stern Proctor",
+       "set": "usg",
+       "number": "99",
+       "id": "7042fdc8-e2dd-4f9a-97b9-00d95c9eae74"
+      },
+      {
+       "qty": 4,
+       "name": "Thieving Magpie",
+       "set": "uds",
+       "number": "49",
+       "id": "2b6b23b9-4569-40ff-988f-ad1d5d3fe573"
+      },
+      {
+       "qty": 4,
+       "name": "Counterspell",
+       "set": "6ed",
+       "number": "61",
+       "id": "ee0d3f5f-7790-4772-bead-5d7114a23e94"
+      },
+      {
+       "qty": 2,
+       "name": "Air Elemental",
+       "set": "6ed",
+       "number": "56",
+       "id": "5d31dca7-df16-4a70-8f17-b78d745bac96"
+      },
+      {
+       "qty": 2,
+       "name": "Rewind",
+       "set": "usg",
+       "number": "93",
+       "id": "9e51c4fb-fb29-4b1c-b78e-1fadf94fc9a5"
+      },
+      {
+       "qty": 4,
+       "name": "Opportunity",
+       "set": "ulg",
+       "number": "37",
+       "id": "63a09767-a15d-42b0-aaa3-794a4e11037a"
+      },
+      {
+       "qty": 4,
+       "name": "Remote Isle",
+       "set": "usg",
+       "number": "324",
+       "id": "e48d55ff-10d0-4d9b-9202-02ebb2137953"
+      },
+      {
+       "qty": 20,
+       "name": "Island",
+       "set": "usg",
+       "number": "335",
+       "id": "8e4ce9ff-c295-475b-b9fa-88ed65a84f35"
+      }
+     ]
+    }
+   },
+   "villain": {
+    "who": "barrin",
+    "deck": {
+     "name": "The Master's Exam",
+     "colors": "U",
+     "archetype": null,
+     "cards": [
+      {
+       "qty": 4,
+       "name": "Sandbar Serpent",
+       "set": "usg",
+       "number": "95",
+       "id": "b3b430ec-28e1-4b2c-bea8-3bfd3a0e8cf8"
+      },
+      {
+       "qty": 4,
+       "name": "Horseshoe Crab",
+       "set": "usg",
+       "number": "80",
+       "id": "9b33646b-a0e3-4344-873e-6711743bc85c"
+      },
+      {
+       "qty": 4,
+       "name": "Air Elemental",
+       "set": "6ed",
+       "number": "56",
+       "id": "5d31dca7-df16-4a70-8f17-b78d745bac96"
+      },
+      {
+       "qty": 4,
+       "name": "Annul",
+       "set": "usg",
+       "number": "59",
+       "id": "3f8c73ff-be92-41ca-93a7-76f9823adb38"
+      },
+      {
+       "qty": 4,
+       "name": "Power Sink",
+       "set": "usg",
+       "number": "89",
+       "id": "662cf693-18c4-4169-bcce-09862778f60c"
+      },
+      {
+       "qty": 4,
+       "name": "Fog Bank",
+       "set": "usg",
+       "number": "75",
+       "id": "6ade0d30-5a57-439e-95e8-5f865880031f"
+      },
+      {
+       "qty": 4,
+       "name": "Catalog",
+       "set": "usg",
+       "number": "64",
+       "id": "31bdef28-0e27-4c8d-a04c-5413519dcb4e"
+      },
+      {
+       "qty": 4,
+       "name": "Wind Drake",
+       "set": "6ed",
+       "number": "106",
+       "id": "91ca5eed-53a3-4da5-b7fc-f08e6cc93946"
+      },
+      {
+       "qty": 4,
+       "name": "Unsummon",
+       "set": "6ed",
+       "number": "103",
+       "id": "1ff96224-d6cd-492b-ab2f-3ec15b3230cb"
+      },
+      {
+       "qty": 24,
+       "name": "Island",
+       "set": "usg",
+       "number": "335",
+       "id": "8e4ce9ff-c295-475b-b9fa-88ed65a84f35"
+      }
+     ]
+    }
+   },
+   "reward": {
+    "hero": {
+     "packs": 1,
+     "coins": 0
+    },
+    "villain": {
+     "card": {
+      "oracle_id": "30fce201-03a8-4afc-a1ad-7a9b3fd59836",
+      "name": "Sandbar Serpent",
+      "rarity": "uncommon",
+      "set": "usg",
+      "id": "b3b430ec-28e1-4b2c-bea8-3bfd3a0e8cf8",
+      "image": "https://cards.scryfall.io/normal/front/b/3/b3b430ec-28e1-4b2c-bea8-3bfd3a0e8cf8.jpg"
+     },
+     "coins": 50
+    }
+   },
+   "scene": [
+    {
+     "who": "barrin",
+     "line": "Teferi is a problem student. Always late for class. No appreciation for constructive use of time.",
+     "quote": true
+    },
+    {
+     "who": "teferi",
+     "line": "I was on time. Time just arrived late."
+    },
+    {
+     "who": "barrin",
+     "line": "To fill your mind with knowledge, we must start by emptying it.",
+     "quote": true
+    },
+    {
+     "who": "barrin",
+     "line": "Today's exam: a duel. If a card is useless, throw it away and draw another. It's called cycling."
+    },
+    {
+     "who": "teferi",
+     "line": "I preferred the harsh tutors. They made mischief all the more fun.",
+     "quote": true
+    }
+   ],
+   "villainScene": [
+    {
+     "who": "barrin",
+     "line": "Without order comes errors, and errors kill on Tolaria.",
+     "quote": true
+    },
+    {
+     "who": "barrin",
+     "line": "He's the most gifted child I've ever taught. Someone has to keep him alive."
+    },
+    {
+     "who": "barrin",
+     "line": "Time flows like a river. In Tolaria we practice the art of building dams.",
+     "quote": true
+    }
+   ],
+   "after": null,
+   "cues": {
+    "hero": {
+     "start": "Don't worry, I've done the reading. Some of it.",
+     "big": "Ha! Did you see that?",
+     "low": "Is this graded?",
+     "win": "Can I go now?",
+     "loss": "I'll be late for detention too."
+    },
+    "villain": {
+     "start": "Begin.",
+     "big": "Knowledge is no more expensive than ignorance.",
+     "low": "Focus, Teferi.",
+     "win": "See me after class.",
+     "loss": "Fine. Full marks. Don't tell anyone."
+    }
+   },
+   "bigPlays": [],
+   "sim": null
+  },
+  {
+   "id": "a6b4",
+   "slot": 4,
+   "kind": "Rival",
+   "mood": "tension",
+   "title": "The Sleeper",
+   "difficulty": "Normal",
+   "teaches": [
+    "Sacrifice"
+   ],
+   "blurb": "One of Tolaria's own has been a Phyrexian all along. Kerrick hid inside a fast-time bubble where years pass in a day, and built himself an army.",
+   "rewardSet": "ulg",
+   "host": false,
+   "hero": {
+    "who": "xantcha",
+    "deck": {
+     "name": "The Outcast's Knives",
+     "colors": "B",
+     "archetype": null,
+     "cards": [
+      {
+       "qty": 4,
+       "name": "Phyrexian Ghoul",
+       "set": "usg",
+       "number": "148",
+       "id": "4843ba92-fde2-4b46-8fdb-e0f8aca96959"
+      },
+      {
+       "qty": 4,
+       "name": "Bone Shredder",
+       "set": "ulg",
+       "number": "49",
+       "id": "ece050ad-788e-4451-b773-ca42c37549d2"
+      },
+      {
+       "qty": 4,
+       "name": "Phyrexian Monitor",
+       "set": "uds",
+       "number": "64",
+       "id": "571058b0-7e10-4259-8db9-5c8b78c1e13d"
+      },
+      {
+       "qty": 4,
+       "name": "Bog Raiders",
+       "set": "usg",
+       "number": "119",
+       "id": "3739188b-f2b3-4ab0-8e5c-b3a1d2a1ad09"
+      },
+      {
+       "qty": 4,
+       "name": "Spined Fluke",
+       "set": "usg",
+       "number": "160",
+       "id": "8a14524b-e690-4f77-b43e-416d5ec3cbb9"
+      },
+      {
+       "qty": 4,
+       "name": "Order of Yawgmoth",
+       "set": "usg",
+       "number": "144",
+       "id": "555e858d-d8d2-4626-9343-070cf86949ab"
+      },
+      {
+       "qty": 4,
+       "name": "Duress",
+       "set": "usg",
+       "number": "132",
+       "id": "ca367f49-0f4a-4b7f-8104-851893fbcd8a"
+      },
+      {
+       "qty": 4,
+       "name": "Yawgmoth's Edict",
+       "set": "usg",
+       "number": "170",
+       "id": "3f16be4b-4540-476a-b3ac-7442507ed314"
+      },
+      {
+       "qty": 4,
+       "name": "Corrupt",
+       "set": "usg",
+       "number": "124",
+       "id": "32e1c65c-ced6-484d-b3b4-db913c6bf84b"
+      },
+      {
+       "qty": 24,
+       "name": "Swamp",
+       "set": "usg",
+       "number": "339",
+       "id": "c04dac6d-a7c2-44ee-b735-bd4eade06e4e"
+      }
+     ]
+    }
+   },
+   "villain": {
+    "who": "kerrick",
+    "deck": {
+     "name": "Kerrick's Brood",
+     "colors": "B",
+     "archetype": null,
+     "cards": [
+      {
+       "qty": 4,
+       "name": "Phyrexian Debaser",
+       "set": "ulg",
+       "number": "59",
+       "id": "672dcca2-096b-4bcc-9b02-7180c4c0d4c7"
+      },
+      {
+       "qty": 4,
+       "name": "Phyrexian Defiler",
+       "set": "ulg",
+       "number": "60",
+       "id": "0d555b5e-9f8a-4b1b-a4a6-dee8e177d9e8"
+      },
+      {
+       "qty": 4,
+       "name": "Phyrexian Denouncer",
+       "set": "ulg",
+       "number": "61",
+       "id": "dcf849a0-9b53-4a8a-87a7-dc38d97311ab"
+      },
+      {
+       "qty": 4,
+       "name": "Phyrexian Broodlings",
+       "set": "ulg",
+       "number": "58",
+       "id": "2313481c-baf9-4dc7-80c7-1ebc6502dce7"
+      },
+      {
+       "qty": 4,
+       "name": "Engineered Plague",
+       "set": "ulg",
+       "number": "51",
+       "id": "27e158d5-efb2-4f90-8898-60ede98f7d29"
+      },
+      {
+       "qty": 4,
+       "name": "Eviscerator",
+       "set": "ulg",
+       "number": "52",
+       "id": "167e7f67-8d44-4134-b7b9-54ccdfb8675c"
+      },
+      {
+       "qty": 4,
+       "name": "Ravenous Rats",
+       "set": "uds",
+       "number": "68",
+       "id": "a9185188-9a32-4ccd-8f33-b0c299901d81"
+      },
+      {
+       "qty": 4,
+       "name": "Sicken",
+       "set": "usg",
+       "number": "156",
+       "id": "aa1beb5d-0ef2-4013-932b-5e4a5d0af559"
+      },
+      {
+       "qty": 4,
+       "name": "Unworthy Dead",
+       "set": "usg",
+       "number": "163",
+       "id": "0f42c561-1762-43c4-a539-0cf9a5ce7f4f"
+      },
+      {
+       "qty": 24,
+       "name": "Swamp",
+       "set": "usg",
+       "number": "339",
+       "id": "c04dac6d-a7c2-44ee-b735-bd4eade06e4e"
+      }
+     ]
+    }
+   },
+   "reward": {
+    "hero": {
+     "packs": 1,
+     "coins": 100
+    },
+    "villain": {
+     "card": {
+      "oracle_id": "710e6d6a-caaa-4b76-82c8-e363e9438bec",
+      "name": "Eviscerator",
+      "rarity": "rare",
+      "set": "ulg",
+      "id": "167e7f67-8d44-4134-b7b9-54ccdfb8675c",
+      "image": "https://cards.scryfall.io/normal/front/1/6/167e7f67-8d44-4134-b7b9-54ccdfb8675c.jpg"
+     },
+     "coins": 100
+    }
+   },
+   "scene": [
+    {
+     "who": "kerrick",
+     "line": "The fools thought me dead. But I built an empire inside my tomb.",
+     "quote": true
+    },
+    {
+     "who": "kerrick",
+     "line": "We had years to prepare, while they had mere minutes.",
+     "quote": true
+    },
+    {
+     "who": "xantcha",
+     "line": "I know what you are. I was made in the same vats."
+    },
+    {
+     "who": "kerrick",
+     "line": "You're defective. The priests said so."
+    },
+    {
+     "who": "xantcha",
+     "line": "If fear is the only tool you have left, then you'll never control me.",
+     "quote": true
+    },
+    {
+     "who": "xantcha",
+     "line": "Phyrexians spend themselves like coins. So will I. Better."
+    }
+   ],
+   "villainScene": [
+    {
+     "who": "kerrick",
+     "line": "With limited resources and near unlimited time, I used parts from one beast to build another.",
+     "quote": true
+    },
+    {
+     "who": "kerrick",
+     "line": "Stage one: rash and nausea. Stage four: delirium and death. Tolaria is at stage zero."
+    },
+    {
+     "who": "kerrick",
+     "line": "And the outcast? She'll make good parts."
+    }
+   ],
+   "after": null,
+   "cues": {
+    "hero": {
+     "start": "Phyrexia's purity permits no other.",
+     "big": "Spend it. Spend it all.",
+     "low": "Planeswalking isn't about walking. It's about falling and screaming.",
+     "win": "One less sleeper.",
+     "loss": "Urza... warn them..."
+    },
+    "villain": {
+     "start": "The illness begins.",
+     "big": "The final stage!",
+     "low": "Some borders can never be crossed.",
+     "win": "Tolaria is infected.",
+     "loss": "Sealed... in my own tomb..."
+    }
+   },
+   "bigPlays": [],
+   "sim": null
+  },
+  {
+   "id": "a6b5",
+   "slot": 5,
+   "kind": "Lesson",
+   "mood": "tension",
+   "title": "The Dreaming Grove",
+   "difficulty": "Normal",
+   "teaches": [
+    "Mana creatures"
+   ],
+   "blurb": "Urza wants Yavimaya to grow living weapons for him. Yavimaya's guardian answers by swallowing him in a tree. An elf from Llanowar has to talk the forest down.",
+   "rewardSet": "ulg",
+   "host": false,
+   "hero": {
+    "who": "rofellos",
+    "deck": {
+     "name": "The Emissary",
+     "colors": "G",
+     "archetype": null,
+     "cards": [
+      {
+       "qty": 2,
+       "name": "Rofellos, Llanowar Emissary",
+       "set": "uds",
+       "number": "118",
+       "id": "6aa5cc65-f8f1-4f6f-8b4e-2fedccbda684"
+      },
+      {
+       "qty": 4,
+       "name": "Llanowar Elves",
+       "set": "6ed",
+       "number": "239",
+       "id": "bb95a9a7-b0a3-4199-8c05-2519ccda738b"
+      },
+      {
+       "qty": 4,
+       "name": "Priest of Titania",
+       "set": "usg",
+       "number": "270",
+       "id": "965c33c3-0c68-4516-b8b0-5a0552ed44b6"
+      },
+      {
+       "qty": 4,
+       "name": "Elvish Lyrist",
+       "set": "usg",
+       "number": "248",
+       "id": "1c63ea60-4ce0-4dc7-bda6-7f623b0f9e2a"
+      },
+      {
+       "qty": 4,
+       "name": "Yavimaya Elder",
+       "set": "uds",
+       "number": "124",
+       "id": "325d9372-01c9-4e99-a966-13c8f8566e2e"
+      },
+      {
+       "qty": 4,
+       "name": "Albino Troll",
+       "set": "usg",
+       "number": "231",
+       "id": "58a3c112-f0c1-4d30-8df6-63fc01356a4f"
+      },
+      {
+       "qty": 4,
+       "name": "Cradle Guard",
+       "set": "usg",
+       "number": "245",
+       "id": "8b659c1c-cc0b-40f0-87b4-aeddb44dfac5"
+      },
+      {
+       "qty": 4,
+       "name": "Pouncing Jaguar",
+       "set": "usg",
+       "number": "269",
+       "id": "d35ac6e5-3e46-4290-9683-51d6f54e4edf"
+      },
+      {
+       "qty": 4,
+       "name": "Rancor",
+       "set": "ulg",
+       "number": "110",
+       "id": "59e256c2-38df-4012-9308-ce17dd889e5f"
+      },
+      {
+       "qty": 2,
+       "name": "Rofellos's Gift",
+       "set": "uds",
+       "number": "119",
+       "id": "a41347ba-b2e3-4d7e-8018-e6fd30243559"
+      },
+      {
+       "qty": 2,
+       "name": "Gaea's Cradle",
+       "set": "usg",
+       "number": "321",
+       "id": "25b0b816-0583-44aa-9dc5-f3ff48993a51"
+      },
+      {
+       "qty": 22,
+       "name": "Forest",
+       "set": "usg",
+       "number": "347",
+       "id": "b38c68a5-86eb-4fb2-8a43-4a7d63195462"
+      }
+     ]
+    }
+   },
+   "villain": {
+    "who": "multani",
+    "deck": {
+     "name": "Yavimaya Wakes",
+     "colors": "G",
+     "archetype": null,
+     "cards": [
+      {
+       "qty": 2,
+       "name": "Multani, Maro-Sorcerer",
+       "set": "ulg",
+       "number": "107",
+       "id": "0d6cc98b-b376-40af-8308-198bab00b2b1"
+      },
+      {
+       "qty": 4,
+       "name": "Yavimaya Wurm",
+       "set": "ulg",
+       "number": "120",
+       "id": "dde16069-7176-42dc-88d8-fb37b7894007"
+      },
+      {
+       "qty": 4,
+       "name": "Ancient Silverback",
+       "set": "uds",
+       "number": "101",
+       "id": "49651dd4-a489-42d3-b4eb-51f5353b334e"
+      },
+      {
+       "qty": 4,
+       "name": "Yavimaya Scion",
+       "set": "ulg",
+       "number": "119",
+       "id": "a2f80036-1058-4513-8549-0557df9b5d61"
+      },
+      {
+       "qty": 4,
+       "name": "Multani's Acolyte",
+       "set": "ulg",
+       "number": "108",
+       "id": "4e5fdecb-bca0-48ea-b5bb-d0886c7d3316"
+      },
+      {
+       "qty": 4,
+       "name": "Giant Growth",
+       "set": "6ed",
+       "number": "233",
+       "id": "c9299742-564b-48ca-a7fa-cf5ed0d98ef6"
+      },
+      {
+       "qty": 4,
+       "name": "Llanowar Elves",
+       "set": "6ed",
+       "number": "239",
+       "id": "bb95a9a7-b0a3-4199-8c05-2519ccda738b"
+      },
+      {
+       "qty": 4,
+       "name": "Elvish Herder",
+       "set": "usg",
+       "number": "247",
+       "id": "3cb2b07e-3d50-4b85-be2a-c99e9c8ebf25"
+      },
+      {
+       "qty": 2,
+       "name": "Emperor Crocodile",
+       "set": "uds",
+       "number": "105",
+       "id": "9ccba208-1e24-45bb-a556-a3eb936efb10"
+      },
+      {
+       "qty": 4,
+       "name": "Treefolk Mystic",
+       "set": "ulg",
+       "number": "114",
+       "id": "9697acf5-9bc5-411d-8574-fe6185f18672"
+      },
+      {
+       "qty": 24,
+       "name": "Forest",
+       "set": "usg",
+       "number": "347",
+       "id": "b38c68a5-86eb-4fb2-8a43-4a7d63195462"
+      }
+     ]
+    }
+   },
+   "reward": {
+    "hero": {
+     "packs": 1,
+     "coins": 100
+    },
+    "villain": {
+     "card": {
+      "oracle_id": "bce5b327-7da1-4136-b76f-069e2fef5d2a",
+      "name": "Multani, Maro-Sorcerer",
+      "rarity": "rare",
+      "set": "ulg",
+      "id": "0d6cc98b-b376-40af-8308-198bab00b2b1",
+      "image": "https://cards.scryfall.io/normal/front/0/d/0d6cc98b-b376-40af-8308-198bab00b2b1.jpg"
+     },
+     "coins": 100
+    }
+   },
+   "scene": [
+    {
+     "who": "stage",
+     "line": "Urza's wards fell from him like autumn leaves as he entered the dreaming grove. He awoke imprisoned in living wood.",
+     "quote": true
+    },
+    {
+     "who": "multani",
+     "line": "Argoth's doom rained from a clear sky. Yavimaya will not share that fate.",
+     "quote": true
+    },
+    {
+     "who": "multani",
+     "line": "You burned Argoth, artificer. I remember the smoke."
+    },
+    {
+     "who": "multani",
+     "line": "To make peace with the forest, make peace with me.",
+     "quote": true
+    },
+    {
+     "who": "rofellos",
+     "line": "Then make peace with me, maro. I'm not him. I'm from Llanowar, and I'm rude."
+    },
+    {
+     "who": "stage",
+     "line": "Much to Multani's chagrin, Rofellos gleefully tutored Yavimaya's elves on the rudest words spoken in Llanowar.",
+     "quote": true
+    }
+   ],
+   "villainScene": [
+    {
+     "who": "multani",
+     "line": "When a tree falls in the forest, Multani hears it.",
+     "quote": true
+    },
+    {
+     "who": "multani",
+     "line": "I heard every tree on Argoth fall. Every one."
+    },
+    {
+     "who": "multani",
+     "line": "This is my place of power. Nothing can take root here unless I allow it.",
+     "quote": true
+    }
+   ],
+   "after": [
+    {
+     "who": "multani",
+     "line": "Rise, elf. We are both of Gaea, and thus we are equal.",
+     "quote": true
+    },
+    {
+     "who": "multani",
+     "line": "Tell the artificer: Yavimaya will fight. For Dominaria. Not for him."
+    }
+   ],
+   "cues": {
+    "hero": {
+     "start": "Llanowar's here. Try to keep up.",
+     "big": "The forest answers ME today.",
+     "low": "Easy, big tree. Easy.",
+     "win": "Let him go. He needs us. We need him.",
+     "loss": "Fine. You win. Keep him a while."
+    },
+    "villain": {
+     "start": "The forest wakes.",
+     "big": "Yavimaya rises!",
+     "low": "Bark splits...",
+     "win": "The artificer stays in the wood.",
+     "loss": "Rise, elf. We are both of Gaea, and thus we are equal."
+    }
+   },
+   "bigPlays": [],
+   "sim": null
+  },
+  {
+   "id": "a6b6",
+   "slot": 6,
+   "kind": "Meta",
+   "mood": "tension",
+   "title": "The Time Rift",
+   "difficulty": "Normal",
+   "teaches": [
+    "Artifact mana"
+   ],
+   "blurb": "The academy works with time, until time runs out. In the slow bubble, a renegade named Gatha breeds his own students. It is the most broken deck ever made, and the reason bans exist.",
+   "rewardSet": "uds",
+   "host": false,
+   "hero": {
+    "who": "rayne",
+    "deck": {
+     "name": "The Chancellor's Rule",
+     "colors": "WU",
+     "archetype": null,
+     "cards": [
+      {
+       "qty": 2,
+       "name": "Rayne, Academy Chancellor",
+       "set": "uds",
+       "number": "43",
+       "id": "8ee6480c-7697-47e2-893b-ca88c0ab3376"
+      },
+      {
+       "qty": 4,
+       "name": "Thieving Magpie",
+       "set": "uds",
+       "number": "49",
+       "id": "2b6b23b9-4569-40ff-988f-ad1d5d3fe573"
+      },
+      {
+       "qty": 4,
+       "name": "Metathran Soldier",
+       "set": "uds",
+       "number": "39",
+       "id": "650d40d0-78ec-4b6e-8ea0-28d43ce175d5"
+      },
+      {
+       "qty": 4,
+       "name": "Serra Advocate",
+       "set": "uds",
+       "number": "19",
+       "id": "cac540c7-8b3a-4e28-96a2-d414ff613640"
+      },
+      {
+       "qty": 4,
+       "name": "Capashen Templar",
+       "set": "uds",
+       "number": "5",
+       "id": "0976a193-463a-4bcb-a951-ca73347a5572"
+      },
+      {
+       "qty": 4,
+       "name": "Disruptive Student",
+       "set": "usg",
+       "number": "69",
+       "id": "ee43681d-e0f7-422b-a363-0d630f68d363"
+      },
+      {
+       "qty": 4,
+       "name": "Counterspell",
+       "set": "6ed",
+       "number": "61",
+       "id": "ee0d3f5f-7790-4772-bead-5d7114a23e94"
+      },
+      {
+       "qty": 4,
+       "name": "Miscalculation",
+       "set": "ulg",
+       "number": "36",
+       "id": "4b4956a2-9a39-4152-9c98-70e4b2acfa26"
+      },
+      {
+       "qty": 4,
+       "name": "Disenchant",
+       "set": "usg",
+       "number": "12",
+       "id": "1da67d77-1cbd-4f0e-a109-87fb4c84bcca"
+      },
+      {
+       "qty": 2,
+       "name": "Rescue",
+       "set": "uds",
+       "number": "44",
+       "id": "63fc979e-7758-4310-9259-659e9ced2c7f"
+      },
+      {
+       "qty": 12,
+       "name": "Plains",
+       "set": "usg",
+       "number": "331",
+       "id": "b9e35567-05df-4a3f-8c29-d8327abc2e8d"
+      },
+      {
+       "qty": 12,
+       "name": "Island",
+       "set": "usg",
+       "number": "335",
+       "id": "8e4ce9ff-c295-475b-b9fa-88ed65a84f35"
+      }
+     ]
+    }
+   },
+   "villain": {
+    "who": "gatha",
+    "deck": {
+     "name": "Academy",
+     "colors": "U",
+     "archetype": "Academy",
+     "cards": [
+      {
+       "qty": 1,
+       "name": "Tolarian Academy",
+       "set": "usg",
+       "number": "330",
+       "id": "ad7ac9a5-340f-4509-826c-7b9416d47887"
+      },
+      {
+       "qty": 4,
+       "name": "Grim Monolith",
+       "set": "ulg",
+       "number": "126",
+       "id": "9ddc9fe1-17c8-4e1d-aeb8-c4214e881280"
+      },
+      {
+       "qty": 4,
+       "name": "Voltaic Key",
+       "set": "usg",
+       "number": "314",
+       "id": "1aa4baf7-4693-4c55-af04-2fa5d901d701"
+      },
+      {
+       "qty": 4,
+       "name": "Stroke of Genius",
+       "set": "usg",
+       "number": "100",
+       "id": "5e977755-8ea4-4a8b-90c4-dd175321e05d"
+      },
+      {
+       "qty": 1,
+       "name": "Time Spiral",
+       "set": "usg",
+       "number": "103",
+       "id": "f3d62dbd-63db-4ac9-950f-9852627f23f2"
+      },
+      {
+       "qty": 1,
+       "name": "Tinker",
+       "set": "ulg",
+       "number": "45",
+       "id": "7da23b15-dfb8-4267-9b33-d7a4c035c434"
+      },
+      {
+       "qty": 4,
+       "name": "Thran Dynamo",
+       "set": "uds",
+       "number": "139",
+       "id": "3f0c9dee-fab5-4522-9821-343f84b0c8ab"
+      },
+      {
+       "qty": 4,
+       "name": "Thran Golem",
+       "set": "uds",
+       "number": "141",
+       "id": "5778c52b-248b-4131-b5c0-12ea1986786e"
+      },
+      {
+       "qty": 4,
+       "name": "Counterspell",
+       "set": "6ed",
+       "number": "61",
+       "id": "ee0d3f5f-7790-4772-bead-5d7114a23e94"
+      },
+      {
+       "qty": 4,
+       "name": "Opportunity",
+       "set": "ulg",
+       "number": "37",
+       "id": "63a09767-a15d-42b0-aaa3-794a4e11037a"
+      },
+      {
+       "qty": 2,
+       "name": "Sandbar Serpent",
+       "set": "usg",
+       "number": "95",
+       "id": "b3b430ec-28e1-4b2c-bea8-3bfd3a0e8cf8"
+      },
+      {
+       "qty": 4,
+       "name": "Rewind",
+       "set": "usg",
+       "number": "93",
+       "id": "9e51c4fb-fb29-4b1c-b78e-1fadf94fc9a5"
+      },
+      {
+       "qty": 23,
+       "name": "Island",
+       "set": "usg",
+       "number": "335",
+       "id": "8e4ce9ff-c295-475b-b9fa-88ed65a84f35"
+      }
+     ]
+    }
+   },
+   "reward": {
+    "hero": {
+     "packs": 1,
+     "coins": 100
+    },
+    "villain": {
+     "card": {
+      "oracle_id": "cac55e46-b730-4569-b92c-a4b5922fc20c",
+      "name": "Time Spiral",
+      "rarity": "rare",
+      "set": "usg",
+      "id": "f3d62dbd-63db-4ac9-950f-9852627f23f2",
+      "image": "https://cards.scryfall.io/normal/front/f/3/f3d62dbd-63db-4ac9-950f-9852627f23f2.jpg"
+     },
+     "coins": 100
+    }
+   },
+   "scene": [
+    {
+     "who": "stage",
+     "line": "The flow of time was disrupted; like a flooding river it rose from its banks. Tolaria was drowned in an instant that stretched toward infinity.",
+     "quote": true
+    },
+    {
+     "who": "gatha",
+     "line": "The academy educates; I employ. It's a perfect arrangement.",
+     "quote": true
+    },
+    {
+     "who": "rayne",
+     "line": "Urza, I've discovered more promising students than you and my husband have, combined. And I haven't lost a single one.",
+     "quote": true
+    },
+    {
+     "who": "gatha",
+     "line": "Of course she's at the head of her class. All her classmates have disappeared.",
+     "quote": true
+    },
+    {
+     "who": "rayne",
+     "line": "Not today, Gatha."
+    }
+   ],
+   "villainScene": [
+    {
+     "who": "gatha",
+     "line": "They call it breaking. I call it a breakthrough."
+    },
+    {
+     "who": "gatha",
+     "line": "Mana from nothing. Spells from nothing. Victory from nothing."
+    },
+    {
+     "who": "gatha",
+     "line": "This monstrosity will do, for now.",
+     "quote": true
+    }
+   ],
+   "after": null,
+   "cues": {
+    "hero": {
+     "start": "Class is in session.",
+     "big": "Detention. Permanently.",
+     "low": "I've had worse faculty meetings.",
+     "win": "You're expelled.",
+     "loss": "Get the children out of the bubble!"
+    },
+    "villain": {
+     "start": "Shall we break something?",
+     "big": "Look what the machines give!",
+     "low": "The experiment... destabilises...",
+     "win": "Fascinating.",
+     "loss": "Write it down. Write it all down."
+    }
+   },
+   "bigPlays": [],
+   "sim": null
+  },
+  {
+   "id": "a6b7",
+   "slot": 7,
+   "kind": "Meta",
+   "mood": "tension",
+   "title": "Planar Collapse",
+   "difficulty": "Normal",
+   "teaches": [
+    "Enchantments returning"
+   ],
+   "blurb": "Serra has left her realm, and it is dying. Urza returns to take what's left of it to build his war. Radiant, the archangel now in charge, has been waiting for him.",
+   "rewardSet": "uds",
+   "host": false,
+   "hero": {
+    "who": "urza",
+    "deck": {
+     "name": "The Artificer's War",
+     "colors": "U",
+     "archetype": null,
+     "cards": [
+      {
+       "qty": 4,
+       "name": "Metathran Soldier",
+       "set": "uds",
+       "number": "39",
+       "id": "650d40d0-78ec-4b6e-8ea0-28d43ce175d5"
+      },
+      {
+       "qty": 4,
+       "name": "Pendrell Drake",
+       "set": "usg",
+       "number": "86",
+       "id": "986b6708-5ed4-4085-b9b7-d359b2d5b26f"
+      },
+      {
+       "qty": 4,
+       "name": "Thran Golem",
+       "set": "uds",
+       "number": "141",
+       "id": "5778c52b-248b-4131-b5c0-12ea1986786e"
+      },
+      {
+       "qty": 4,
+       "name": "Mantis Engine",
+       "set": "uds",
+       "number": "133",
+       "id": "97f7ebfb-f955-4849-a0f5-6806ff6ae891"
+      },
+      {
+       "qty": 4,
+       "name": "Peregrine Drake",
+       "set": "usg",
+       "number": "88",
+       "id": "4951863f-1c16-4d09-ba9a-f57dc3d81a20"
+      },
+      {
+       "qty": 4,
+       "name": "Counterspell",
+       "set": "6ed",
+       "number": "61",
+       "id": "ee0d3f5f-7790-4772-bead-5d7114a23e94"
+      },
+      {
+       "qty": 4,
+       "name": "Annul",
+       "set": "usg",
+       "number": "59",
+       "id": "3f8c73ff-be92-41ca-93a7-76f9823adb38"
+      },
+      {
+       "qty": 4,
+       "name": "Stroke of Genius",
+       "set": "usg",
+       "number": "100",
+       "id": "5e977755-8ea4-4a8b-90c4-dd175321e05d"
+      },
+      {
+       "qty": 4,
+       "name": "Grim Monolith",
+       "set": "ulg",
+       "number": "126",
+       "id": "9ddc9fe1-17c8-4e1d-aeb8-c4214e881280"
+      },
+      {
+       "qty": 24,
+       "name": "Island",
+       "set": "usg",
+       "number": "335",
+       "id": "8e4ce9ff-c295-475b-b9fa-88ed65a84f35"
+      }
+     ]
+    }
+   },
+   "villain": {
+    "who": "radiant",
+    "deck": {
+     "name": "Replenish",
+     "colors": "WU",
+     "archetype": "Replenish",
+     "cards": [
+      {
+       "qty": 2,
+       "name": "Radiant, Archangel",
+       "set": "ulg",
+       "number": "20",
+       "id": "99509da7-3e11-4c38-804b-286ce572f36e"
+      },
+      {
+       "qty": 4,
+       "name": "Replenish",
+       "set": "uds",
+       "number": "15",
+       "id": "7fd2fe13-bbc0-42b7-bc42-3b51910ce118"
+      },
+      {
+       "qty": 4,
+       "name": "Attunement",
+       "set": "usg",
+       "number": "61",
+       "id": "f6723528-8b2c-4beb-a465-800300faf158"
+      },
+      {
+       "qty": 3,
+       "name": "Opalescence",
+       "set": "uds",
+       "number": "13",
+       "id": "3c0071fb-afa5-47b5-b266-2b10a4f5a98a"
+      },
+      {
+       "qty": 4,
+       "name": "Pacifism",
+       "set": "usg",
+       "number": "27",
+       "id": "dc81638f-a74c-47fc-825a-ae778c524f66"
+      },
+      {
+       "qty": 4,
+       "name": "Glorious Anthem",
+       "set": "usg",
+       "number": "15",
+       "id": "61f867c5-0727-4408-b479-b81518daa0ec"
+      },
+      {
+       "qty": 4,
+       "name": "Serra Zealot",
+       "set": "usg",
+       "number": "46",
+       "id": "0b311542-599f-4d2f-a871-18d5b0b7bbe5"
+      },
+      {
+       "qty": 4,
+       "name": "Sustainer of the Realm",
+       "set": "ulg",
+       "number": "23",
+       "id": "ca280e1e-4231-48e5-be1b-965480822c46"
+      },
+      {
+       "qty": 3,
+       "name": "Defender of Law",
+       "set": "ulg",
+       "number": "5",
+       "id": "9c8e8719-8c33-429d-8b95-b7f813888850"
+      },
+      {
+       "qty": 4,
+       "name": "Counterspell",
+       "set": "6ed",
+       "number": "61",
+       "id": "ee0d3f5f-7790-4772-bead-5d7114a23e94"
+      },
+      {
+       "qty": 12,
+       "name": "Plains",
+       "set": "usg",
+       "number": "331",
+       "id": "b9e35567-05df-4a3f-8c29-d8327abc2e8d"
+      },
+      {
+       "qty": 12,
+       "name": "Island",
+       "set": "usg",
+       "number": "335",
+       "id": "8e4ce9ff-c295-475b-b9fa-88ed65a84f35"
+      }
+     ]
+    }
+   },
+   "reward": {
+    "hero": {
+     "packs": 1,
+     "coins": 100
+    },
+    "villain": {
+     "card": {
+      "oracle_id": "859cbe11-e1e6-4309-94da-8725db1b3fc2",
+      "name": "Radiant, Archangel",
+      "rarity": "rare",
+      "set": "ulg",
+      "id": "99509da7-3e11-4c38-804b-286ce572f36e",
+      "image": "https://cards.scryfall.io/normal/front/9/9/99509da7-3e11-4c38-804b-286ce572f36e.jpg"
+     },
+     "coins": 100
+    }
+   },
+   "scene": [
+    {
+     "who": "radiant",
+     "line": "He has returned. He who brought the dark ones. He who poisoned our paradise. How shall we greet him? With swift and certain death!",
+     "quote": true
+    },
+    {
+     "who": "urza",
+     "line": "Do not treat your people as you treat your artifacts. Let them go, and they will live; seal them here, and they will die.",
+     "quote": true
+    },
+    {
+     "who": "radiant",
+     "line": "Serra ruled by faith. I cannot afford that luxury.",
+     "quote": true
+    },
+    {
+     "who": "urza",
+     "line": "Your realm is collapsing. I can use what remains."
+    },
+    {
+     "who": "radiant",
+     "line": "The harder you push, the stronger we become.",
+     "quote": true
+    }
+   ],
+   "villainScene": [
+    {
+     "who": "radiant",
+     "line": "Go, then, and leave this world to those who truly care.",
+     "quote": true
+    },
+    {
+     "who": "radiant",
+     "line": "That's what I said to Serra. Now I say it to you."
+    },
+    {
+     "who": "radiant",
+     "line": "I stand ready to die for our world. Who will stand with me?",
+     "quote": true
+    }
+   ],
+   "after": [
+    {
+     "who": "stage",
+     "line": "With heavy heart, Urza doused one world's light to rekindle another's.",
+     "quote": true
+    }
+   ],
+   "cues": {
+    "hero": {
+     "start": "Proceed.",
+     "big": "Exactly as designed.",
+     "low": "Recalculating.",
+     "win": "Dismantle it. Carefully.",
+     "loss": "An inefficient result."
+    },
+    "villain": {
+     "start": "For the realm!",
+     "big": "Everything returns. Everything!",
+     "low": "In time our realm will shine again.",
+     "win": "Leave and never return.",
+     "loss": "Serra... forgive me..."
+    }
+   },
+   "bigPlays": [],
+   "sim": null
+  },
+  {
+   "id": "a6b8",
+   "slot": 8,
+   "kind": "Boss",
+   "mood": "boss",
+   "title": "Gix's Assault",
+   "difficulty": "Hard",
+   "teaches": [
+    "Everything so far"
+   ],
+   "blurb": "Gix has come for Tolaria himself. Yawgmoth's praetor, the voice in Mishra's ear at the Brothers' War. He has waited three thousand years to finish the brother who got away.",
+   "rewardSet": "uds",
+   "host": true,
+   "hero": {
+    "who": "urza",
+    "deck": {
+     "name": "Tolaria's Defenders",
+     "colors": "WU",
+     "archetype": null,
+     "cards": [
+      {
+       "qty": 4,
+       "name": "Metathran Soldier",
+       "set": "uds",
+       "number": "39",
+       "id": "650d40d0-78ec-4b6e-8ea0-28d43ce175d5"
+      },
+      {
+       "qty": 4,
+       "name": "Thran Golem",
+       "set": "uds",
+       "number": "141",
+       "id": "5778c52b-248b-4131-b5c0-12ea1986786e"
+      },
+      {
+       "qty": 4,
+       "name": "Serra Advocate",
+       "set": "uds",
+       "number": "19",
+       "id": "cac540c7-8b3a-4e28-96a2-d414ff613640"
+      },
+      {
+       "qty": 4,
+       "name": "Serra Zealot",
+       "set": "usg",
+       "number": "46",
+       "id": "0b311542-599f-4d2f-a871-18d5b0b7bbe5"
+      },
+      {
+       "qty": 4,
+       "name": "Mantis Engine",
+       "set": "uds",
+       "number": "133",
+       "id": "97f7ebfb-f955-4849-a0f5-6806ff6ae891"
+      },
+      {
+       "qty": 4,
+       "name": "Counterspell",
+       "set": "6ed",
+       "number": "61",
+       "id": "ee0d3f5f-7790-4772-bead-5d7114a23e94"
+      },
+      {
+       "qty": 4,
+       "name": "Disenchant",
+       "set": "usg",
+       "number": "12",
+       "id": "1da67d77-1cbd-4f0e-a109-87fb4c84bcca"
+      },
+      {
+       "qty": 4,
+       "name": "Pacifism",
+       "set": "usg",
+       "number": "27",
+       "id": "dc81638f-a74c-47fc-825a-ae778c524f66"
+      },
+      {
+       "qty": 2,
+       "name": "Serra Avatar",
+       "set": "usg",
+       "number": "45",
+       "id": "288b0976-78e8-4fbe-8607-2e55d8761d3e"
+      },
+      {
+       "qty": 2,
+       "name": "Rescue",
+       "set": "uds",
+       "number": "44",
+       "id": "63fc979e-7758-4310-9259-659e9ced2c7f"
+      },
+      {
+       "qty": 12,
+       "name": "Plains",
+       "set": "usg",
+       "number": "331",
+       "id": "b9e35567-05df-4a3f-8c29-d8327abc2e8d"
+      },
+      {
+       "qty": 12,
+       "name": "Island",
+       "set": "usg",
+       "number": "335",
+       "id": "8e4ce9ff-c295-475b-b9fa-88ed65a84f35"
+      }
+     ]
+    }
+   },
+   "villain": {
+    "who": "gix",
+    "deck": {
+     "name": "The Praetor's Court",
+     "colors": "B",
+     "archetype": null,
+     "cards": [
+      {
+       "qty": 4,
+       "name": "Dark Ritual",
+       "set": "usg",
+       "number": "127",
+       "id": "3f0e9d0d-e1a3-4e0a-bf39-e9aaf4d36d67"
+      },
+      {
+       "qty": 4,
+       "name": "Duress",
+       "set": "usg",
+       "number": "132",
+       "id": "ca367f49-0f4a-4b7f-8104-851893fbcd8a"
+      },
+      {
+       "qty": 4,
+       "name": "Bone Shredder",
+       "set": "ulg",
+       "number": "49",
+       "id": "ece050ad-788e-4451-b773-ca42c37549d2"
+      },
+      {
+       "qty": 4,
+       "name": "Order of Yawgmoth",
+       "set": "usg",
+       "number": "144",
+       "id": "555e858d-d8d2-4626-9343-070cf86949ab"
+      },
+      {
+       "qty": 4,
+       "name": "Phyrexian Ghoul",
+       "set": "usg",
+       "number": "148",
+       "id": "4843ba92-fde2-4b46-8fdb-e0f8aca96959"
+      },
+      {
+       "qty": 4,
+       "name": "Sanguine Guard",
+       "set": "usg",
+       "number": "155",
+       "id": "5c33fbb0-f49d-4b4d-804d-84b03e0daf4d"
+      },
+      {
+       "qty": 4,
+       "name": "Yawgmoth's Edict",
+       "set": "usg",
+       "number": "170",
+       "id": "3f16be4b-4540-476a-b3ac-7442507ed314"
+      },
+      {
+       "qty": 4,
+       "name": "Corrupt",
+       "set": "usg",
+       "number": "124",
+       "id": "32e1c65c-ced6-484d-b3b4-db913c6bf84b"
+      },
+      {
+       "qty": 2,
+       "name": "Phyrexian Monitor",
+       "set": "uds",
+       "number": "64",
+       "id": "571058b0-7e10-4259-8db9-5c8b78c1e13d"
+      },
+      {
+       "qty": 2,
+       "name": "Grim Monolith",
+       "set": "ulg",
+       "number": "126",
+       "id": "9ddc9fe1-17c8-4e1d-aeb8-c4214e881280"
+      },
+      {
+       "qty": 24,
+       "name": "Swamp",
+       "set": "usg",
+       "number": "339",
+       "id": "c04dac6d-a7c2-44ee-b735-bd4eade06e4e"
+      }
+     ]
+    }
+   },
+   "reward": {
+    "hero": {
+     "packs": 2,
+     "coins": 200
+    },
+    "villain": {
+     "card": {
+      "oracle_id": "69aa1ac7-17da-4fc9-a3dc-df8a52841f4a",
+      "name": "Bone Shredder",
+      "rarity": "uncommon",
+      "set": "ulg",
+      "id": "ece050ad-788e-4451-b773-ca42c37549d2",
+      "image": "https://cards.scryfall.io/normal/front/e/c/ece050ad-788e-4451-b773-ca42c37549d2.jpg"
+     },
+     "coins": 200
+    }
+   },
+   "scene": [
+    {
+     "who": "gix",
+     "line": "Urza. You look old."
+    },
+    {
+     "who": "urza",
+     "line": "You sound like him."
+    },
+    {
+     "who": "gix",
+     "line": "Mishra? Of course I do. I taught him half his words."
+    },
+    {
+     "who": "gix",
+     "line": "Someone else was listening, Urza. It was me."
+    },
+    {
+     "who": "stage",
+     "line": "A foul, metallic stench clogged Urza's senses. It was then he knew his brother was no more.",
+     "quote": true
+    },
+    {
+     "who": "urza",
+     "line": "You took my brother. You will not take my school."
+    },
+    {
+     "who": "gix",
+     "line": "We decide who is worthy of our works.",
+     "quote": true
+    }
+   ],
+   "villainScene": [
+    {
+     "who": "gix",
+     "line": "All bonds are parasitic. Only rulership is pure.",
+     "quote": true
+    },
+    {
+     "who": "gix",
+     "line": "Yawgmoth has a hundred praetors. He looks at one at a time."
+    },
+    {
+     "who": "gix",
+     "line": "Bring him Urza's head, and he'll look at me. Just once."
+    },
+    {
+     "who": "gix",
+     "line": "Let go your mind. Mine is fitter.",
+     "quote": true
+    }
+   ],
+   "after": null,
+   "cues": {
+    "hero": {
+     "start": "Begin.",
+     "big": "The solution can hide for only so long.",
+     "low": "Mishra... I should have listened.",
+     "win": "Go back to your master.",
+     "loss": "Tolaria... the children..."
+    },
+    "villain": {
+     "start": "In Yawgmoth's name.",
+     "big": "They are bred to suffer and born to die. Much like humans.",
+     "low": "Grief is as useless as love.",
+     "win": "Father of Machines, witness!",
+     "loss": "Not every cage is made of bars."
+    }
+   },
+   "bigPlays": [],
+   "sim": null
+  }
+ ]
+}
