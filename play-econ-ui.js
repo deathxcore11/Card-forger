@@ -151,7 +151,7 @@ export function playCardTile(c, facts, i = 0) {
   const card = c.holo ? {...base, finishes: [...new Set([...(base.finishes || ['nonfoil']), 'foil'])]} : base;
   const set = card.set || c.p?.set || c.s?.[0] || '', number = card.collector_number || c.p?.number || '';
   return `<div class="lot pe-lot${c.holo ? ' pe-lot--holo' : ''}" data-rarity="${esc(card.rarity || c.r || '')}" style="--i:${Math.min(i, 24)}">
-    <button class="lot-art" ${card.id ? finishAttrs('mtg', card, c.holo ? {priceFinish: 'foil'} : {}) : ''} data-act="card" data-name="${esc(c.n)}" data-play-card="1" aria-label="Open ${esc(c.n)}">${img(cardImage(c, facts), c.n)}</button>
+    <button class="lot-art" ${card.id ? finishAttrs('mtg', card, c.holo ? {priceFinish: 'foil'} : {}) : ''} data-act="card" data-name="${esc(c.n)}" data-play-card="1" data-oracle="${esc(c.o)}"${c.holo ? ' data-play-finish="foil"' : ''} aria-label="Open ${esc(c.n)}">${img(cardImage(c, facts), c.n)}</button>
     <div class="lot-info"><span class="lot-name">${esc(c.n)}${card.id ? rowEmblem('mtg', card) : ''} ${set ? playSetBadge(set, card.rarity || c.r) : ''}</span>
       <span class="lot-sub">${manaCost(card)}<span>${esc(set.toUpperCase())}${number ? ' #' + esc(number) : ''}</span></span></div>
     <div class="lot-side" title="${c.holo ? `${n} holo` : `${n} of 4 copies`}">${c.holo ? `<span class="pe-holo-tag">Holo</span>` : ''}${pips(c)}</div>
