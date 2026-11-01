@@ -1120,7 +1120,7 @@ function render() {
   reuseLoadedArt($("#content"),loadedArt);
   deckBoxTransitions.afterRender();
   syncDesktopPlayEntries(g);
-  // A deck page's Play vs CPU now starts the match in one tap, so the server engine warms while the page is open.
+  // A deck page's Practice button opens the Practice table, so the server engine warms while the page is open.
   if(g==="mtg"&&document.querySelector('[data-act="deckPlayCpu"]:not([hidden]):not(:disabled)'))warmForgeEngine(playSetup.snapshot());
   restoreDisclosures(content,disclosureStates.get(disclosureKey));
   content.dataset.disclosureKey=disclosureKey;
@@ -2091,8 +2091,10 @@ function focusNextPlaySelection(){const state=playSetup.snapshot();const target=
 A.playSelectDeck=t=>{cancelPlayBuilds();const before=playSetup.snapshot(),seat=before.playStyle==='quick'?'player':before.inspectedSeat;playSetup.selectDeck(t.dataset.playDeck,seat);const after=playSetup.snapshot();if(after.playStyle!=='quick'&&after.match.mode==='cpu'&&seat==='player'&&after.selected&&!after.opponent)playSetup.inspectSeat('opponent');refreshPlayMenu();focusNextPlaySelection();};
 A.playInspectSeat=t=>{playSetup.inspectSeat(t.dataset.playSeat);refreshPlayMenu();};
 A.playClearSelection=()=>{cancelPlayBuilds();playSetup.clearSelection(playSetup.snapshot().inspectedSeat);refreshPlayMenu();};
-// Play vs CPU from a deck page: Quick Play with this saved deck in its own format.
-A.deckPlayCpu=t=>{const d=deckById(t.dataset.id);if(!d)return;cancelPlayBuilds();quickSequence++;quickStatus={busy:false,error:null};if(['Standard','Commander','Modern','Pioneer','Legacy','Vintage','Pauper','Standard Brawl'].includes(d.format))playSetup.configure({format:d.format,mode:'cpu'});playSetup.setPlayStyle('quick');playSetup.selectDeck(d.id,'player');playView='home';Promise.resolve(go('#play')).then(()=>quickStartNow({dataset:{playStyle:'quick',playDirect:'true'}}));};
+// Practice from a deck page: the Practice lobby with this saved deck in its own format.
+A.deckPlayCpu=t=>{const d=deckById(t.dataset.id);if(!d)return;cancelPlayBuilds();quickSequence++;quickStatus={busy:false,error:null};if(['Standard','Commander','Modern','Pioneer','Legacy','Vintage','Pauper','Standard Brawl'].includes(d.format))playSetup.configure({format:d.format,mode:'cpu'});playSetup.setPlayStyle('practice');playSetup.selectDeck(d.id,'player');playView='lobby';playInspectOpen=false;Promise.resolve(go('#play')).then(()=>{scrollTo({top:0});document.getElementById('playTitle')?.focus?.({preventScroll:true});});};
+// A deck's Play button opens Practice with that deck in your seat (Randall, 1 Nov): Practice is the one mode that
+// needs no Play collection, so any real deck can go to the table there: pick the format, the CPUs, or a friend.
 A.playTogglePaste=t=>{const d=document.getElementById('playImportDisclosure');if(!d)return;d.open=!d.open;t.setAttribute('aria-expanded',String(d.open));if(d.open){d.scrollIntoView({block:'nearest',behavior:matchMedia('(prefers-reduced-motion: reduce)').matches?'auto':'smooth'});document.getElementById('playImportText')?.focus({preventScroll:true});}};
 A.playConfigure=t=>{cancelPlayBuilds();quickSequence++;quickStatus={busy:false,error:null};playSetup.configure({[t.dataset.playOption]:t.dataset.playValue});refreshPlayMenu();document.querySelector(`[data-act="playConfigure"][aria-pressed="true"]`)?.focus({preventScroll:true});};
 C.playMatchOption=t=>{cancelPlayBuilds();quickSequence++;quickStatus={busy:false,error:null};const key=t.dataset.playOption,value=t.value;playSetup.configure({[key]:value});refreshPlayMenu();document.querySelector(`[data-play-option="${key}"]${key==='mode'?':checked':''}`)?.focus({preventScroll:true});};

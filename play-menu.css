@@ -835,3 +835,7 @@ button.pe-purse-item:focus-visible{outline:2px solid var(--gold);outline-offset:
 @media(prefers-reduced-motion:reduce){.pe-purse-packs.pe-glow .pe-pack-icon{animation:none}}
 .pe-head .eyebrow{font-size:11px}
 @media(max-width:420px){.pe-purse{flex-wrap:wrap;justify-content:center;border-radius:22px;gap:2px}.pe-purse-item{padding:0 6px}.pe-purse-seals{gap:5px}}
+/* Practice: bring a friend to the same anything-goes table (no rewards). */
+.pl-invite{display:inline-flex;align-items:center;gap:8px;min-height:44px;padding:0 16px;border-radius:999px;border:1px solid color-mix(in srgb,var(--gold) 40%,var(--line));background:color-mix(in srgb,#0d0f14 70%,transparent);color:#f6e4bb;font:700 14px/1 'DM Sans',system-ui,sans-serif;cursor:pointer;white-space:nowrap}
+.pl-invite:hover,.pl-invite:focus-visible{border-color:var(--gold);background:color-mix(in srgb,var(--gold) 14%,transparent)}
+.pl-invite svg{width:18px;height:18px;fill:none;stroke:currentColor;stroke-width:1.8;stroke-linecap:round}
