@@ -8,6 +8,7 @@ import {loadMtgBooster, mtgBoosterCards, drawMtgBooster} from './mtg-boosters.js
 import {rewardSet, setFormats} from './play-econ-sets.js';
 import {starterGrant, sealTrackBonus, packContentsRow, cardDelta, RARITY_SEAL, FORGE_STEPS, forgeRatio, holoCost, preconPrice, mtgjsonCardDelta, mtgjsonDeckRows, deckShortfall, ownedByName} from './play-econ-rules.js';
 import {PRACTICE_STARTER_ROWS} from './play-starter-deck.js';
+import {STORY_DEEDS, STORY_ACT_DEEDS, storyDeedsEarned} from './story-deeds.js';
 import {ACHIEVEMENTS, achievementRows, achievementReward, achievementRef, questRows, questReward, loginStamp, rewardDelta, matchCounters, playDay} from './play-achievements.js';
 
 const json = (body, status = 200) => new Response(JSON.stringify(body), {status, headers: {'Content-Type': 'application/json', 'Cache-Control': 'no-store'}});
@@ -200,6 +201,23 @@ export async function progressRoute(request, env, {verifyBearer, fetcher = fetch
       if (!Object.keys(c).length) return json({counted: false, counters: now});
       const out = await counters.bump('match:' + id, 'match', c);
       return json({counted: !out?.duplicate, counters: out?.counters || now});
+    }
+    if (path === 'deeds') {
+      // Story deeds the app saw in a won Story battle (story-deeds.js). A battle deed needs that battle
+      // won with the Story deck from its seat; an act deed is re-checked here from Story progress. Each pays once.
+      const battle = String(body.battle || ''), ids = Array.isArray(body.deeds) ? body.deeds.slice(0, 8).map(String) : [];
+      if (!/^a\d{1,2}b[1-8]$/.test(battle)) return fail('bad_battle');
+      const refs = await storyRefs();
+      if (!Array.isArray(refs)) return fail('not_ready', 503);
+      const has = new Set(refs), actOk = new Set(storyDeedsEarned(battle, {own: true}, refs)), counted = [];
+      for (const id of new Set(ids)) {
+        const d = STORY_DEEDS.find(x => x.id === id), a = STORY_ACT_DEEDS.find(x => x.id === id);
+        const ok = d ? d.battle === battle && has.has(`story:${battle}:${d.seat === 'villain' ? 'villain' : 'loaner'}`) : a ? actOk.has(id) : false;
+        if (!ok) continue;
+        const out = await counters.bump('deed:' + id, 'deed', {['sd:' + id]: 1});
+        if (out && !out.duplicate) counted.push(id);
+      }
+      return json({counted, counters: await counters.read()});
     }
     if (path === 'claim') {
       // Pays one finished achievement step, daily or weekly quest. The server re-checks the progress.

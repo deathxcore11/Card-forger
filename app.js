@@ -169,6 +169,7 @@ import {stepDeckCard,ownedByName,deckShortfall,legalFormats,mtgjsonDeckRows} fro
 import {STORY_ACTS} from "./story-acts.js";
 import {createStoryProgress,loadAct,loadActPool,ownDeckFits,battleCleared,currentAct,currentBattle,actCleared} from "./story-client.js";
 import {storyHomeMarkup,storyActMarkup,storyBattleMarkup,playScene,createStoryBubbles,starsRow,rewardText} from "./story-ui.js";
+import {storyDeedsEarned,STORY_DEEDS,STORY_ACT_DEEDS} from "./story-deeds.js";
 import { initCloud, pauseLocalConflict, communityRequest, cloudAccessToken, cloudInfo, isEmptyWorkspace, statusLabel, scheduleSync, signInGoogle, signInEmail, signInPassword, createAccount, requestPasswordReset, finishPasswordReset, signOut, detachDeviceSync, saveProfile, resolvePending, syncNow, resendConfirmation, deleteAccount } from "./cloud.js";
 import { withSnapshot, collectionValue, recordValuePoint, cardSig, engineProfile, swapImpact, lotPrice } from "./insights.js";
 
@@ -2217,14 +2218,20 @@ A.storyPlay=async({skipScene=false}={})=>{
   const cards=createForgeArtworkPreparation({selectionKey:key,isCurrent:current,
    resolveNames:(names,{isCurrent})=>resolveNames(names,()=>{},false,isCurrent),
    lookup:(name,id)=>id?S.state.printings?.[id]||null:meta(name),fetchPrinting:id=>api('/cards/'+encodeURIComponent(id))});
-  let paid=false;
-  const finished=async outcome=>{bubbles?.finish(outcome);if(outcome!=='win'||paid)return;paid=true;
+  let paid=false,rec=null;
+  // The match record (on the play, turns, life) arrives just before the finished state.
+  const onRec=e=>{if(e.detail?.story)rec=e.detail;};addEventListener('play:match-recorded',onRec);
+  const finished=async outcome=>{bubbles?.finish(outcome);removeEventListener('play:match-recorded',onRec);if(outcome!=='win'||paid)return;paid=true;
+   const seenStats=bubbles?.stats?.()||{};
    const out=await storyProgress.claim({battle:b.id,seat,deck:own?'own':'loaner'});if(out?.state)playEcon.refresh();
+   // Story deeds: what this win earned (story-deeds.js); the server re-checks and pays each once.
+   const deeds=storyDeedsEarned(b.id,{...seenStats,seat,own:!!own,onPlay:typeof rec?.onPlay==='boolean'?rec.onPlay:null,turns:rec?.turns||seenStats.turns,endLife:rec?.life??seenStats.endLife},out?.refs||[]);
+   if(deeds.length)void playEcon.reportDeeds(b.id,deeds).then(r=>{for(const id of r?.counted||[]){const d=[...STORY_DEEDS,...STORY_ACT_DEEDS].find(x=>x.id===id);if(d)toast(`Deed done: ${d.title}. Claim it in Achievements.`);}});
    const panel=root.querySelector('.play-match-result');if(panel){const note=document.createElement('p');note.className='st-result-note';const got=out?.paid||[],won=!own&&got.includes(`story:${b.id}:${seat==='villain'?'villain':'loaner'}`),rw=b.reward?.[seat]||{};
     note.innerHTML=`${starsRow(storyProgress.snapshot().progress.battles?.[b.id])}<span>${won?rewardText(rw,b.rewardSet)+' added':out?.error?esc(out.error):own?'Your own deck earns XP. Win with the Story deck for the reward.':'Reward already claimed'}</span>`;panel.querySelector('.play-result-actions')?.before(note);}
    const ending=b.slot===8?(seat==='hero'?data.finale:data.villainFinale):b.after;
    if(ending?.length)setTimeout(()=>void playScene({lines:ending,cast:data.cast,leftWho:b.hero.who,rightWho:b.villain.who,avatarUrl:storyAvatar(),title:b.slot===8?'Act '+data.act+' finale':b.title}),2600);};
-  const back=()=>{bubbles?.destroy();bubbles=null;closePlayerMat();playView='storyAct';refreshPlayMenu();scrollTo({top:0});};
+  const back=()=>{removeEventListener('play:match-recorded',onRec);bubbles?.destroy();bubbles=null;closePlayerMat();playView='storyAct';refreshPlayMenu();scrollTo({top:0});};
   playerMatHost=createForgePlayerMat({root,readAccount:readPlayAccount,readSetup:()=>setup,getAccessToken:cloudAccessToken,createClient:localClient,
    prepareArtwork:cards.prepare,lookup:cards.lookup,onClose:back,onHome:back,onRematch:()=>{back();void A.storyPlay({skipScene:true});},
    onChange:state=>{bubbles?.update(state);if(state?.phase==='finished'&&state.outcome)void finished(state.outcome);},

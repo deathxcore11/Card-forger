@@ -3,6 +3,8 @@
 // from something the server counts: match reports (play.counters), log-ins, packs opened and the
 // Play collection. Practice never counts, and friend matches count as played, never as won.
 
+import {STORY_DEEDS, STORY_ACT_DEEDS, storyDeedArt} from './story-deeds.js';
+
 // The tier names for a chain of n steps: the last step of a long chain is mythic.
 const TIER_NAMES = {1: ['gold'], 2: ['bronze', 'gold'], 3: ['bronze', 'silver', 'gold'], 4: ['bronze', 'silver', 'gold', 'mythic'], 5: ['bronze', 'bronze', 'silver', 'gold', 'mythic']};
 export const tierNames = n => TIER_NAMES[n] || TIER_NAMES[5];
@@ -31,6 +33,8 @@ export const ACHIEVEMENTS = Object.freeze([
   {id: 'mythic-hoard', tab: 'collector', title: 'Mythic Hoard', lore: 'Different mythics in your Trunk.', art: 'Emrakul, the Aeons Torn', source: 'mythics', steps: [10, 50, 150]},
   {id: 'pack-rat', tab: 'collector', title: 'Pack Rat', lore: 'Packs opened, from every source.', art: 'Pack Rat', source: 'packs', steps: [10, 50, 200, 500, 1000]},
   {id: 'by-a-thread', tab: 'hidden', title: 'By a Thread', lore: 'Win with exactly 1 life left.', riddle: 'One breath stands between you and the grave.', art: 'Near-Death Experience', source: 'wins_thread', steps: [1], feat: true, hidden: true},
+  // Story deeds: one feat each, woven into the acts (story-deeds.js).
+  ...[...STORY_DEEDS, ...STORY_ACT_DEEDS].map(d => ({id: d.id, tab: 'story', title: d.title, lore: d.lore, art: storyDeedArt(d), source: 'sd:' + d.id, steps: [1], feat: true})),
   {id: 'marathon', tab: 'hidden', title: 'Marathon', lore: 'Win a match that reaches turn 30.', riddle: 'The sun rose and set and still you fought.', art: 'Approach of the Second Sun', source: 'wins_marathon', steps: [1], feat: true, hidden: true},
 ]);
 

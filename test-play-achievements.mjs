@@ -26,7 +26,8 @@ assert.equal(q.daily.length, 3); assert.equal(q.weekly.length, 3);
 assert.ok(q.daily.find(x => x.id === 'first').done);
 // Achievements: every source is something the server counts.
 const SOURCES = new Set(['matches', 'logins', 'minutes', 'wins', 'wins_draw', 'wins_fast', 'wins_flawless', 'wins_long', 'wins_thread', 'wins_marathon', 'fmt', 'story_wins', 'friend_matches', 'cards', 'playsets', 'mythics', 'packs']);
-for (const a of ACHIEVEMENTS) assert.ok(SOURCES.has(a.source), a.id + ' counts something the server never sees');
+// Story deeds count 'sd:<deed id>', bumped by the deeds route.
+for (const a of ACHIEVEMENTS) assert.ok(SOURCES.has(a.source) || /^sd:a\d+-/.test(a.source), a.id + ' counts something the server never sees');
 assert.ok(achievementRows({state: {wallet: {packs_opened: 12}}}).find(r => r.id === 'pack-rat').ready);
 
 // Routes: log-in stamps once a day, a match bumps counters once, a claim re-checks and pays once.
