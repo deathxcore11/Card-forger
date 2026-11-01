@@ -65,15 +65,22 @@ test('lobby inspects in a sheet and offers only formats the engine plays',()=>{
  assert.match(playMenuMarkup(base(),{inspectOpen:true}),/<aside class="panel play-inspector pl-sheet" aria-labelledby="playInspectorTitle" >/);
  assert.match(html,/<button class="pl-format-opt" disabled aria-disabled="true"><b>Pioneer<\/b>/);
  assert.match(html,/data-play-value="Standard"/);assert.match(html,/data-play-value="Commander"/);assert.doesNotMatch(html,/data-play-value="(?:Modern|Draft)"/);
- const home=playMenuMarkup(base(),{view:'home'});assert.match(home,/data-act="playOpenMode" data-play-style="quick"/);assert.match(home,/data-act="playOpenMode" data-play-style="practice"/);assert.match(home,/href="\/planeswalk.html"/);assert.doesNotMatch(home+html,/data-play-style="social"|Coming later/);assert.doesNotMatch(html,/data-play-style=/);assert.match(html,/<option value="Easy">Easy<\/option>/);assert.match(html,/<option value="Medium" selected>Medium<\/option>/);assert.match(html,/<option value="Hard">Hard<\/option>/);
+ const home=playMenuMarkup(base(),{view:'home'});assert.match(home,/data-act="playOpenMode" data-play-style="quick"/);assert.match(home,/data-act="playOpenMode" data-play-style="practice"/);assert.match(home,/href="\/planeswalk.html"/);assert.match(home,/data-act="playOpenMode" data-play-style="social"/);assert.doesNotMatch(home+html,/Coming later/);assert.doesNotMatch(html,/data-play-style=/);assert.match(html,/<option value="Easy">Easy<\/option>/);assert.match(html,/<option value="Medium" selected>Medium<\/option>/);assert.match(html,/<option value="Hard">Hard<\/option>/);
 });
 test('shelf filters exact format and search without deleting the selected deck preview',()=>{
  const s=base();s.decks=[{id:'a',name:'Alpha',format:'Standard'},{id:'b',name:'Beta',format:'Commander'},{id:'c',name:'Gamma',format:'Standard'}];s.browse.query='alpha';
  s.selected={name:'Gamma',format:'Standard',cards:[]};const html=playMenuMarkup(s,{deckPreview:'<div>Selected rows</div>'});
  assert.match(html,/data-play-deck="a"/);assert.doesNotMatch(html,/data-play-deck="[bc]"/);assert.match(html,/Selected rows/);assert.match(html,/1 of 2 Standard decks/);
 });
-test('friends preference exposes no invented connection and does not advertise a CPU difficulty',()=>{
- const s=base();s.match.mode='friends';const html=playMenuMarkup(s);assert.match(html,/disabled[^>]*><span class=\"cs-plate-label\">Play with friends<\/span><\/button>/);assert.doesNotMatch(html,/id="playDifficulty"|data-act="(?:createRoom|joinRoom)"/);
+test('friends lobby: invite, waiting seat with copy link, guest join, fixed format, no CPU difficulty',()=>{
+ const s=base();s.match.mode='friends';s.selected={name:'Mine',format:'Standard',cards:[]};
+ const empty=playMenuMarkup(s);assert.match(empty,/data-act="playFriendCreate"[^>]*><span class="cs-plate-label">Create invite<\/span>/);assert.match(empty,/<h2>Invite a friend<\/h2>/);
+ assert.match(empty,/data-play-value="Modern"/);assert.doesNotMatch(empty,/data-play-value="Pioneer"|id="playDifficulty"/);
+ const waiting=playMenuMarkup(s,{friendRoom:{seat:'host',roomId:'r1',status:'open'},canShare:true});
+ assert.match(waiting,/Waiting for your friend/);assert.match(waiting,/data-act="playFriendCopy">Copy link</);assert.match(waiting,/data-act="playFriendShare"/);assert.match(waiting,/data-act="playFriendCancel"/);assert.match(waiting,/pl-format--fixed/);assert.doesNotMatch(waiting,/<details class="pl-format">/);
+ assert.doesNotMatch(playMenuMarkup(s,{friendRoom:{seat:'host',roomId:'r1',status:'open'}}),/playFriendShare/);
+ const guest=playMenuMarkup(s,{friendRoom:{seat:'guest',roomId:'r1',status:'open'}});assert.match(guest,/data-act="playFriendJoin"[^>]*><span class="cs-plate-label">Join match</);
+ const full=playMenuMarkup(s,{friendRoom:{seat:'guest',roomId:'r1',status:'started',error:'This match is already full.'}});assert.match(full,/This match is already full\./);
 });
 
 

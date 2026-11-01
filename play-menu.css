@@ -364,7 +364,7 @@ dialog.play-match-exit>.play-exit-note{margin:8px 0 0;font-size:13px;color:#f0c2
 .pl-head-title{min-width:0}
 .pl-head-tools{margin-left:auto;display:flex;align-items:center;gap:10px}
 /* Mode cards */
-.pl-modes{display:grid;grid-template-columns:1.25fr 1fr 1fr;gap:18px}
+.pl-modes{display:grid;grid-template-columns:1.25fr 1fr 1fr 1fr;gap:18px}
 .pl-mode{position:relative;isolation:isolate;overflow:hidden;display:flex;flex-direction:column;justify-content:flex-end;gap:6px;min-height:clamp(300px,52vh,460px);padding:22px;border:1px solid color-mix(in srgb,var(--gold) 22%,var(--line));border-radius:22px;background:#121318;color:#f6eedb;text-align:left;text-decoration:none;font:inherit;cursor:pointer;box-shadow:0 22px 50px #0006;transition:transform .2s ease,border-color .2s ease,box-shadow .2s ease}
 .pl-mode::before{content:"";position:absolute;inset:0;z-index:-1;background:linear-gradient(180deg,#0c0c0e00 34%,#0c0c0eb8 66%,#0c0c0ef2 100%),radial-gradient(130% 90% at 50% 30%,#0000 55%,#0c0c0e8c 100%)}
 .pl-mode-art{position:absolute;inset:0;z-index:-2;background-size:cover;filter:saturate(1.12) contrast(1.06);transition:transform .6s ease}
@@ -455,7 +455,7 @@ dialog.play-match-exit>.play-exit-note{margin:8px 0 0;font-size:13px;color:#f0c2
 .pl-sheet-close:hover,.pl-sheet-close:focus-visible{border-color:var(--gold);color:var(--gold)}
 @keyframes pl-sheet-in{from{transform:translateX(40px);opacity:0}to{transform:none;opacity:1}}
 /* Smaller screens */
-@media(max-width:1000px){.pl-modes{grid-template-columns:1fr 1fr}.pl-mode--quick{grid-column:1/-1}}
+@media(max-width:1180px){.pl-modes{grid-template-columns:1fr 1fr}}
 @media(max-width:700px){
  .pl-modes{grid-template-columns:1fr;gap:12px}.pl-mode{min-height:200px;padding:14px 16px 16px;border-radius:18px}.pl-mode-name{font-size:22px}.pl-mode-copy{font-size:12.5px}.pl-mode-foot{margin-top:4px}.pl-mode-cta{min-height:44px;padding:0 18px}
  .pl-head{flex-wrap:wrap;gap:10px}.pl-head-tools{margin-left:0;flex-basis:100%;order:3}.pl-head-tools .pl-format{flex:1}.pl-format>summary{justify-content:space-between}
@@ -684,3 +684,14 @@ body[data-view="play"] #content{padding-left:max(var(--page-edge,16px),calc(env(
 /* The page gutter token follows the same inset, so headings line up with the padded edge. */
 @property --gutter{syntax:'<length>';inherits:true;initial-value:16px}
 :root:has(body[data-view="play"]){--gutter:max(16px,calc(env(safe-area-inset-left,0px) + 8px))}
+
+/* Friends: the invite lives on the friend's seat; the room's format is fixed once the invite exists. */
+.pl-invite{display:flex;flex-wrap:wrap;justify-content:flex-end;gap:8px;margin-top:8px}
+.pl-invite-btn{display:inline-grid;place-items:center;min-height:44px;padding:0 18px;white-space:nowrap;border:1px solid color-mix(in srgb,var(--gold) 55%,transparent);border-radius:999px;background:#0c0e13b8;color:#f6eedb;font:750 14px/1 'DM Sans',system-ui,sans-serif;cursor:pointer;backdrop-filter:blur(8px)}
+.pl-invite-btn:hover{border-color:var(--gold);color:var(--gold)}
+.pl-invite-btn:focus-visible{outline:2px solid var(--gold);outline-offset:3px}
+.btn.cs-plate.pl-start--ghost{background:transparent;color:#f1e9d8;box-shadow:inset 0 0 0 1px #ffffff40;text-shadow:none}
+.btn.cs-plate.pl-start--ghost::before{display:none}
+.btn.cs-plate.pl-start--ghost:hover{box-shadow:inset 0 0 0 1px var(--gold);color:var(--gold)}
+.pl-format--fixed{display:flex;align-items:center;min-height:44px;padding:0 16px;border:1px solid color-mix(in srgb,var(--gold) 22%,var(--line));border-radius:999px;font-weight:800;font-size:14px;white-space:nowrap;color:var(--muted)}
+@media(max-width:700px){.pl-invite{justify-content:stretch}.pl-invite-btn{flex:1}}

@@ -970,6 +970,8 @@ function parseHash() {
     if(T.isTcg()) { T.ui().coll.tab = a === "wishlist" ? "cards" : a; if(a === "wishlist")T.ui().coll.show="wanted"; }
   }
   if (ui.view === "wiki") currentWikiPage()?.route(a,{query:b==="search"});
+  // An invite link: #play/join/<invite>.
+  if (ui.view === "play" && a === "join" && /^[A-Za-z0-9_-]{43}$/.test(b || "")) queueMicrotask(() => openFriendInvite(b));
   if (ui.view === "shared" && a !== ui.shared.code) openShared(a);
   if (ui.view === "tdeck") { ui.tdeckId = a; if (b && ["cards","insights","matchups","upgrade","versions","playtest","rules"].includes(b)) (ui.tdeckTab ||= {})[T.game()+":"+a]=b; }
   if (ui.view === "set" && T.isTcg()) {
@@ -1603,7 +1605,83 @@ A.playCloseInspect=()=>{if(!playInspectOpen)return;playInspectOpen=false;refresh
 document.addEventListener('toggle',e=>{if(e.target.matches?.('.pl-mat[open]'))e.target.querySelector('.pl-mat-opt[aria-pressed="true"]')?.scrollIntoView({block:'nearest'});},true);
 document.addEventListener('click',e=>{for(const d of document.querySelectorAll('.pl-format[open]'))if(!d.contains(e.target))d.open=false;});
 document.addEventListener('keydown',e=>{if(e.key==='Escape')for(const d of document.querySelectorAll('.pl-format[open]'))d.open=false;if(e.key==='Escape'&&playInspectOpen&&S.ui.view==='play'){e.preventDefault();A.playCloseInspect();}});
-A.playStyle=t=>{quickSequence++;quickStatus={busy:false,error:null};cancelPlayBuilds();playSetup.configure({mode:t.dataset.playStyle==='social'?'friends':'cpu'});if(t.dataset.playStyle!=='social')playSetup.setPlayStyle(t.dataset.playStyle);refreshPlayMenu();};
+A.playStyle=t=>{quickSequence++;quickStatus={busy:false,error:null};cancelPlayBuilds();const social=t.dataset.playStyle==='social';
+ if(social&&!FRIEND_FORMATS.includes(playSetup.snapshot().match.format))playSetup.configure({format:'Commander'});
+ if(!social&&friendRoom?.seat==='host'&&friendRoom.status==='open')void A.playFriendCancel();if(!social&&friendRoom?.seat==='guest'){friendRoom=null;forgetFriendInvite();}
+ playSetup.configure({mode:social?'friends':'cpu'});if(t.dataset.playStyle!=='social')playSetup.setPlayStyle(t.dataset.playStyle);refreshPlayMenu();};
+// Friend matches. The host opens a room with their deck and sends the invite link; the friend
+// opens it (signing in first if needed: the invite waits in this tab), picks a deck and joins.
+// The server starts one match; both players then open it on their own seat.
+const FRIEND_INVITE_KEY='cs-friend-invite',FRIEND_FORMATS=['Commander','Standard','Modern'];
+let friendRoom=null,friendPoll=null,friendRooms=null;
+const rooms=async()=>friendRooms||=(await import('./play-forge-host-client.js')).createFriendRooms({getAccessToken:cloudAccessToken});
+// An invite waiting from before sign-in opens as soon as Play shows for a signed-in player.
+let inviteOpening=false;
+const friendRoomView=()=>{
+ const waiting=!friendRoom&&!inviteOpening&&pendingFriendInvite();
+ if(waiting&&T.game()==='mtg'&&cloudInfo().user)queueMicrotask(()=>openFriendInvite(waiting));
+ return friendRoom&&{...friendRoom,invite:undefined};
+};
+const setFriendRoom=patch=>{friendRoom=patch&&{...(friendRoom||{}),...patch};refreshPlayMenu();};
+const stopFriendPoll=()=>{clearTimeout(friendPoll);friendPoll=null;};
+const friendError=e=>e?.message&&!/^[A-Z_]+$/.test(e.message)?e.message:'The room could not be reached. Try again.';
+function pollFriendRoom(){
+ stopFriendPoll();
+ friendPoll=setTimeout(async()=>{
+  const room=friendRoom;if(!room?.roomId||room.seat!=='host'||room.status!=='open')return;
+  try{const next=await (await rooms()).read(room.roomId);if(friendRoom?.roomId!==room.roomId)return;
+   if(next.status==='started'&&next.matchId){setFriendRoom({status:'started'});return A.playFriendLaunch(next.matchId);}
+   if(next.status!=='open'){setFriendRoom({status:null,roomId:null,error:next.status==='expired'?'Your invite expired. Make a new one.':'This room closed.'});return;}
+  }catch{/* a missed look is retried */}
+  pollFriendRoom();
+ },2000);
+}
+A.playFriendCreate=async()=>{
+ const state=playSetup.snapshot();if(!state.selected||friendRoom?.busy)return;
+ setFriendRoom({seat:'host',busy:true,error:null});
+ try{const room=await (await rooms()).open(state.match.format,state.selected);
+  setFriendRoom({seat:'host',busy:false,roomId:room.roomId,invite:room.invite,status:'open',copied:false});pollFriendRoom();
+ }catch(e){setFriendRoom({busy:false,error:friendError(e)});}
+};
+A.playFriendCancel=async()=>{
+ const room=friendRoom;stopFriendPoll();if(!room?.roomId)return;friendRoom=null;refreshPlayMenu();
+ try{await (await rooms()).cancel(room.roomId);}catch{/* it expires by itself */}
+};
+const inviteLink=async()=>(await import('./play-forge-host-client.js')).friendInviteLink(friendRoom.invite);
+A.playFriendCopy=async()=>{
+ if(!friendRoom?.invite)return;const link=await inviteLink();
+ try{await navigator.clipboard.writeText(link);setFriendRoom({copied:true});}catch{toast(link);}
+};
+A.playFriendShare=async()=>{
+ if(!friendRoom?.invite)return;const link=await inviteLink();
+ try{await navigator.share({title:'CardStashy match',text:`Play ${playSetup.snapshot().match.format} with me on CardStashy.`,url:link});}catch{/* the player closed the share sheet */}
+};
+// An invite link: kept in this tab through sign-in, then shown as the friend's room.
+async function openFriendInvite(invite){
+ try{sessionStorage.setItem(FRIEND_INVITE_KEY,invite);}catch{/* this visit only */}
+ if(T.game()!=='mtg'||!cloudInfo().user||inviteOpening)return;
+ inviteOpening=true;try{await showFriendInvite(invite);}finally{inviteOpening=false;}
+}
+async function showFriendInvite(invite){
+ playView='lobby';playInspectOpen=false;
+ try{const room=await (await rooms()).peek(invite);
+  if(FRIEND_FORMATS.includes(room.format)&&playSetup.snapshot().match.format!==room.format)playSetup.configure({format:room.format});
+  playSetup.configure({mode:'friends'});if(room.status!=='open')forgetFriendInvite();
+  if(room.status==='started'&&room.matchId){friendRoom={seat:'guest',roomId:room.roomId,status:'started',invite};refreshPlayMenu();return A.playFriendLaunch(room.matchId);}
+  friendRoom={seat:'guest',roomId:room.roomId,status:room.status,invite,error:room.status==='open'?null:room.status==='started'?'This match is already full.':'This invite has ended. Ask your friend for a new one.'};
+ }catch(e){playSetup.configure({mode:'friends'});friendRoom={seat:'host',error:friendError(e)};forgetFriendInvite();}
+ refreshPlayMenu();
+}
+const pendingFriendInvite=()=>{try{return sessionStorage.getItem(FRIEND_INVITE_KEY);}catch{return null;}};
+function forgetFriendInvite(){try{sessionStorage.removeItem(FRIEND_INVITE_KEY);}catch{/* nothing kept */}}
+A.playFriendJoin=async()=>{
+ const state=playSetup.snapshot(),room=friendRoom;if(!state.selected||room?.seat!=='guest'||room.busy)return;
+ setFriendRoom({busy:true,error:null});
+ try{const joined=await (await rooms()).join(room.invite,state.match.format,state.selected);
+  forgetFriendInvite();
+  setFriendRoom({busy:false,status:'started'});await A.playFriendLaunch(joined.matchId);
+ }catch(e){setFriendRoom({busy:false,error:friendError(e)});}
+};
 A.playFindOpponent=async()=>{
  const state=playSetup.snapshot();if(quickStatus.busy||!state.profile.signedIn||!state.selected)return false;
  const ticket=++quickSequence,scope=JSON.stringify([readPlayAccount(),state.selected,state.match]);quickStatus={busy:true,error:null};refreshPlayMenu();await new Promise(resolve=>requestAnimationFrame(resolve));
@@ -1729,6 +1807,31 @@ A.playStartCandidate=async()=>{
  else practicePregame=mountPracticePregame({root:playerMatRoot,renderDeckArtwork:deck=>{const art=document.createElement('div');art.className='play-pregame-art';art.innerHTML=V.deckArtwork(deck);return art;},readAccount:readPlayAccount,readSetup:()=>playSetup.snapshot(),onCancel:closePlayerMat,onConfirm:beginGame});
  }finally{playStarting=false;}
 };
+// Both players open the friend match the server started, each on their own seat. The friend's
+// deck stays hidden: their cards are looked up by name as they are played.
+A.playFriendLaunch=async matchId=>{
+ stopFriendPoll();
+ if(playStarting||playerMatHost||practicePregame||T.game()!=='mtg')return;
+ playStarting=true;
+ try{
+  const base=playSetup.snapshot();if(!base.selected)return toast('Pick your deck first.');
+  if(await playUpdates.beforeMatch())return;
+  for(const [id,href] of [['practiceTableStyles','experiments/phase-engine/match-table.css'],['forgeHostedTableStyles','play-forge-table.css']])if(!document.getElementById(id)){const css=document.createElement('link');css.id=id;css.rel='stylesheet';css.href=href;document.head.append(css);}
+  playerMatRoot=document.createElement('main');playerMatRoot.id='practicePlayerMat';playerMatRoot.setAttribute('data-playmat',nextPlaymat());playerMatRoot.setAttribute('aria-label','Friend match player mat');document.body.append(playerMatRoot);mountPlaymatScene(playerMatRoot);document.body.classList.add('practice-table-open');void lockPlayLandscape();const app=document.getElementById('app');if(app)app.inert=true;
+  const setup={...base,playStyle:'quick',opponent:{name:'Friend\'s deck',format:base.match.format,cards:[]},friend:{name:'Friend'},friendMatch:{matchId}};
+  const owner=cloudInfo().user?.id,generation=accountGeneration,current=()=>!accountLocked&&generation===accountGeneration&&owner===cloudInfo().user?.id;
+  let createForgePlayerMat,lateTimer=0;const late=new Set();
+  try{({createForgePlayerMat}=await import('./play-forge-player-mat.js'));}catch(e){if(playerMatRoot)playModuleFailed(e);return;}
+  if(!current()||!playerMatRoot)return;
+  const cards=createForgeArtworkPreparation({selectionKey:key,isCurrent:current,
+   resolveNames:(names,{isCurrent})=>resolveNames(names,()=>{},false,isCurrent),
+   lookup:(name,id)=>id?S.state.printings?.[id]||null:meta(name),fetchPrinting:id=>api('/cards/'+encodeURIComponent(id))});
+  playerMatHost=createForgePlayerMat({root:playerMatRoot,readAccount:readPlayAccount,readSetup:()=>setup,getAccessToken:cloudAccessToken,
+   prepareArtwork:cards.prepare,lookup:cards.lookup,resolveLate:name=>{late.add(name);clearTimeout(lateTimer);lateTimer=setTimeout(()=>{const names=[...late];late.clear();if(current())void resolveNames(names,()=>{},false,current);},250);},
+   onClose:()=>{friendRoom=null;closePlayerMat();},onHome:()=>{friendRoom=null;closePlayerMat();go('#home');}});
+  try{await playerMatHost.start();}catch{/* The match screen presents the error and recovery action. */}
+ }finally{playStarting=false;}
+};
 function playDeckPreview(deck) {
   if(!deck||!Array.isArray(deck.cards)||!Array.isArray(deck.side||[])||(deck.format!==undefined&&typeof deck.format!=='string')||[...deck.cards,...(deck.side||[])].some(row=>!row||typeof row.name!=='string'||!Number.isSafeInteger(row.qty)||row.qty<1))return '<p class="note warn">This deck needs review in Decks before its cards can be displayed.</p>';
   return deckViewer('mtg',V.deckList(deck,{readOnly:true,unfiltered:true,preserveExactList:true,cardAction:'playInspectCard'}));
@@ -1798,8 +1901,8 @@ function renderPlayPage() {
   const state=playSetup.snapshot(),p=state.profile,tiles=new Map();state.opponentBuild=practiceOpponentBuilder.snapshot();state.deckBuild=playBuilders[state.playStyle==='quick'?'player':state.inspectedSeat].snapshot();const sources=readPlaySources(),sourceArt=new Map();for(const entries of Object.values(sources))for(const entry of entries)sourceArt.set(entry.key,V.deckArtwork(entry.deck));
   for(const summary of state.decks){const deck=deckById(summary.id);if(summary.valid&&deck)tiles.set(summary.id,V.deckTile(deck,false,{playSelection:(state.playStyle!=='quick'&&state.inspectedSeat==='opponent'?state.opponentSource==='saved'&&state.opponent?.id===deck.id:state.selectedSource==='saved'&&state.selected?.id===deck.id)}));}
   const inspected=state.playStyle!=='quick'&&state.match.mode==='cpu'&&state.inspectedSeat==='opponent'?state.opponent:state.selected;
-  warmForgeEngine(state);
-  return playMenuMarkup(state,{view:playView,inspectOpen:playInspectOpen,engine:FORGE_PLAY_TEST_ENABLED?'forge':'phase',sourceEntries:sources,sourceArt,cpuDifficulties:readCpuOptions({engine:FORGE_PLAY_TEST_ENABLED?'forge':'phase'}),quickStatus,sourceStatus:currentPlaySources().statuses[state.browse.source+':'+state.match.format]||{},savedCopy:savedPlayCopy(inspected),savePending:playSaver.isSaving(inspected),matchReleaseReady:PLAY_MATCH_RELEASE_READY,avatarMarkup:profileAvatar(p.avatarArt,{display_name:p.displayName,username:p.username,avatar_url:p.avatarUrl}),deckTiles:tiles,deckPreview:playDeckPreview(inspected),importPreview:playDeckPreview(state.reviewDeck),selectedArt:V.deckArtwork(inspected),matchupArt:{player:V.deckArtwork(state.selected),opponent:V.deckArtwork(state.opponent)}});
+  if(state.match.mode==='cpu')warmForgeEngine(state);
+  return playMenuMarkup(state,{friendRoom:friendRoomView(),canShare:typeof navigator.share==='function',view:playView,inspectOpen:playInspectOpen,engine:FORGE_PLAY_TEST_ENABLED?'forge':'phase',sourceEntries:sources,sourceArt,cpuDifficulties:readCpuOptions({engine:FORGE_PLAY_TEST_ENABLED?'forge':'phase'}),quickStatus,sourceStatus:currentPlaySources().statuses[state.browse.source+':'+state.match.format]||{},savedCopy:savedPlayCopy(inspected),savePending:playSaver.isSaving(inspected),matchReleaseReady:PLAY_MATCH_RELEASE_READY,avatarMarkup:profileAvatar(p.avatarArt,{display_name:p.displayName,username:p.username,avatar_url:p.avatarUrl}),deckTiles:tiles,deckPreview:playDeckPreview(inspected),importPreview:playDeckPreview(state.reviewDeck),selectedArt:V.deckArtwork(inspected),matchupArt:{player:V.deckArtwork(state.selected),opponent:V.deckArtwork(state.opponent)}});
 }
 const refreshPlayMenu=()=>{if(S.ui.view==='play'&&T.game()==='mtg'){
   const scrolls=[...document.querySelectorAll('[data-play-scroll]')].map(n=>[n.dataset.playScroll,n.scrollTop]);
