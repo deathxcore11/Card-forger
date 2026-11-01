@@ -1855,3 +1855,13 @@ body[data-actnum="3"] #app .screen.blessing{--pw-bg:url(./planeswalk-art/blessin
 #app .pw-mtile>.card{width:100%;max-width:138px;min-width:0;min-height:0;font-size:.6rem;padding:4px;grid-template-rows:auto 64px}
 #app .pw-mtile>.card .head b{font-size:.6rem;white-space:normal;line-height:1.05}
 #app .pw-mtile>.card>.kind,#app .pw-mtile>.card>span:last-child:not(.pic){display:none}
+/* ===== The Daily (rulings #27): a sun in the top bar with the Day N streak; the end screen shows the day and the score */
+#app .top>.pw-daily{position:relative;color:#ffd98a!important}
+#app .top>.pw-daily .pi{fill:#ffcf6a}
+#app .top>.pw-daily.done{opacity:.6}
+#app .top>.pw-daily>b{position:absolute;right:-2px;bottom:-2px;min-width:18px;height:18px;padding:0 4px;box-sizing:border-box;border-radius:99px;background:#2a1d04;box-shadow:0 0 0 1.5px #e8b45a;font:800 .7rem/18px var(--display,serif);color:#ffe7b0;text-align:center}
+#app .pw-dscore{display:inline-flex;align-items:center;gap:10px;margin:0 auto;padding:6px 16px;border-radius:99px;background:#0b0d12cc;box-shadow:0 0 0 1.5px #e8b45a88;color:#ffe7b0;justify-self:center}
+#app .pw-dscore.best{box-shadow:0 0 0 1.5px #e8b45a,0 0 16px #e8b45a66}
+#app .pw-dscore svg{width:20px;height:20px;fill:#ffcf6a}
+#app .pw-dscore span{font:700 .85rem/1 var(--display,serif);color:#d8cdb4}
+#app .pw-dscore b{font:800 1.1rem/1 var(--display,serif)}
