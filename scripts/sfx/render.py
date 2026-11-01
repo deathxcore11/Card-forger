@@ -5,7 +5,7 @@ import sys, os, zlib, subprocess, wave, json
 import numpy as np
 D = os.path.dirname(os.path.abspath(__file__)); sys.path.insert(0, D)
 import kit
-from cues import CUES, PUBLIC, QUIET
+from cues import CUES, PUBLIC, QUIET, LENGTH
 OLD = os.path.join(D, '../../assets/audio/sfx')
 
 def loud(x):
@@ -23,6 +23,7 @@ def old_level(cid):
 import csv, re
 BRIEF = {r['ID']: r['Length'] for r in csv.DictReader(open('/mnt/project-files/audio/cardstashy-sound-cues.csv'))}
 def max_len(cid):
+    if cid in LENGTH: return LENGTH[cid]
     m = re.findall(r'([\d.]+)\s*(ms|s)', BRIEF.get(cid, '').replace('\u2013', '-'))
     if not m: return 1.6
     v = max(float(a) / (1000 if u == 'ms' else 1) for a, u in m)

@@ -491,5 +491,56 @@ def _(): return verb(mix((shatter(.5, 1500, 24), 0, .9), (thump(90, 35, .4, .05,
 def _(): return verb(mix((inst(TUBULAR, [(0, 2, 74, 100)]), 0, .6), (chord(CHOIR, [62, 69, 74, 78], .1, 1.4, 85), 0, .6), (sparkle(10, .8), .1, .5), (whoosh(.8, 300, 6000, 1.2, .3), 0, .3)), .35, 2.0)
 
 # Cues the main app plays: kept well under the game's effects.
-QUIET = {'PACK-003': -8, 'PACK-004': -6, 'PACK-005': -8, 'PACK-006': -6, 'PACK-007': -6, 'PACK-008': -5, 'PACK-009': -4, 'PACK-011': -8, 'COL-005': -5}
+# ---------------------------------------------------------------------------- pack tiers (4.3.49)
+# One rising ladder in D major: every price tier answers the flip with its own jingle, each a step grander than the
+# last (green a two-note ding, orange a full little fanfare). Warm and round, never brassy or loud.
+def flip(): return CUES['PACK-006']()
+@cue('PACK-014')
+def _():
+    # Green: a bright two-note ding.
+    return verb(mix((flip(), 0, .9), (inst(CELESTA, [(.05, .35, 81, 64), (.14, .6, 88, 66)]), 0, .75), (glass(mf(100), .3), .14, .08)), .25, 1.0, 6500)
+@cue('PACK-015')
+def _():
+    # Blue: a quick vibraphone arpeggio up a major chord with a glassy shimmer.
+    return verb(mix((flip(), 0, .9), (inst(VIBES, [(.05 + i * .07, .7, p, 66) for i, p in enumerate((74, 78, 81, 86))]), 0, .7),
+                    (inst(CELESTA, [(.26, .7, 90, 52)]), 0, .35), (sparkle(4, .35, 4000, 8000), .2, .18)), .3, 1.3, 6000)
+@cue('PACK-016')
+def _():
+    # Purple: a shimmer climbs into four celesta notes over a soft choir.
+    return verb(mix((flip(), 0, .9), (shimmer(81, 93, .22, GLOCK, 46), .03, .35),
+                    (inst(CELESTA, [(.2 + i * .09, .8, p, 66) for i, p in enumerate((81, 86, 90, 93))]), 0, .7),
+                    (inst(CHOIR, [(.2, 1.1, p, 40) for p in (62, 69, 74)]), 0, .38), (sparkle(6, .6, 3500, 8500), .3, .2)), .35, 1.6, 5500)
+@cue('PACK-017')
+def _():
+    # Gold: a harp sweep blooms into strings and choir, a glockenspiel cascade on top.
+    return verb(mix((flip(), 0, .85), (gliss(HARP, 62, 93, .5, 62, (0, 2, 4, 7, 9)), .04, .6),
+                    (inst(SLOWSTR, [(.45, 1.6, p, 54) for p in (50, 57, 62, 66)]), 0, .5), (inst(CHOIR, [(.45, 1.5, p, 44) for p in (66, 69, 74)]), 0, .42),
+                    (inst(GLOCK, [(.48 + i * .08, .6, p, 54) for i, p in enumerate((93, 90, 86, 81, 86, 90))]), 0, .32),
+                    (sparkle(9, 1.0, 3500, 9000), .5, .22)), .4, 2.0, 5000)
+@cue('PACK-018')
+def _():
+    # Orange (grail): a soft timpani swell lands on a warm horn and string chord, harp and choir rise, bells ring out.
+    return verb(mix((flip(), 0, .8), (inst(TIMP, [(.0, .3, 38, 60), (.12, 1.6, 38, 88)]), 0, .45),
+                    (gliss(HARP, 57, 98, .55, 64, (0, 2, 4, 7, 9)), .1, .55),
+                    (inst(HORN, [(.12, 1.2, p, 58) for p in (62, 66, 69)] + [(1.0, 1.4, p, 62) for p in (64, 69, 73)]), 0, .4),
+                    (inst(SLOWSTR, [(.12, 2.2, p, 56) for p in (50, 57, 62, 66, 74)]), 0, .5),
+                    (inst(CHOIR, [(.2, 2.0, p, 46) for p in (66, 69, 74, 78)]), 0, .45),
+                    (inst(TUBULAR, [(.12, 1.8, 74, 52), (.6, 1.6, 81, 48)]), 0, .22),
+                    (inst(GLOCK, [(.7 + i * .07, .6, p, 54) for i, p in enumerate((98, 93, 90, 86, 81, 86, 90, 93, 98))]), 0, .28),
+                    (sparkle(14, 1.8, 3500, 9500), .5, .25)), .45, 2.4, 4800)
+@cue('PACK-019')
+def _():
+    # A hit leaves the pack: a low soft rumble with a faint lift, felt more than heard.
+    n = N(.55); t = np.arange(n) / SR
+    rum = mono(lp(noise(.55, 'pink'), 160)) * (0.55 + 0.45 * np.sin(2 * np.pi * 26 * t)) * env_ar(n, .12, .8)
+    return verb(mix((st(rum * 2.2), 0, .9), (thump(95, 45, .4, .1, .05), .02, .6), (whoosh(.4, 300, 1800, 1.4, .5), .05, .25),
+                    (inst(CELESTA, [(.32, .4, 86, 34)]), 0, .12)), .25, 1.2, 2500)
+@cue('PACK-020')
+def _():
+    # A big pull gathers itself before it turns: a rising shimmer over a soft swell.
+    return verb(mix((cym_swell(.7), 0, .35), (shimmer(74, 98, .65, CELESTA, 44), 0, .45), (inst(SLOWSTR, [(0, .75, 62, 40), (0, .75, 69, 36)]), 0, .35)), .35, 1.4, 5000)
+
+QUIET = {'PACK-003': -8, 'PACK-004': -6, 'PACK-005': -8, 'PACK-006': -6, 'PACK-007': -6, 'PACK-008': -5, 'PACK-009': -4, 'PACK-011': -8, 'COL-005': -5, 'PACK-014': -6, 'PACK-015': -6, 'PACK-016': -5, 'PACK-017': -4, 'PACK-018': -3, 'PACK-019': -6, 'PACK-020': -9}
+# Lengths for cues the brief does not list (seconds).
+LENGTH = {'PACK-014': .8, 'PACK-015': 1.1, 'PACK-016': 1.6, 'PACK-017': 2.3, 'PACK-018': 3.0, 'PACK-019': .7, 'PACK-020': .8}
 PUBLIC = sorted(k for k in CUES if not k.startswith('_'))

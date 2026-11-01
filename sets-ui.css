@@ -189,7 +189,13 @@ body:not(.glass) .set-atmosphere{display:none}
 /* Pack header: tilt and close sit in the top-right corner, a thumb's reach on phones, tablets and foldables. */
 .pack-header{margin:-6px -10px 0 0;align-items:center}
 .pack-header>.pack-header-tools{gap:6px;margin-left:auto}
-.pack-header-tools>.pack-tilt,.pack-header-tools>[data-pack="close"]{width:44px;height:44px;min-height:0;padding:0;border-radius:50%;display:grid;place-items:center}
+.pack-header-tools>.pack-tilt,.pack-header-tools>.pack-mute,.pack-header-tools>[data-pack="close"]{width:44px;height:44px;min-height:0;padding:0;border-radius:50%;display:grid;place-items:center}
+/* Sound: a round control matching tilt and close; the speaker gets a cross when the pack's sounds are off. */
+.pack-header-tools>.pack-mute{position:relative;flex:none;background:#ffffff0a;border:1px solid #ffffff24;cursor:pointer;color:transparent;font-size:0}
+.pack-header-tools>.pack-mute::before{content:"";width:20px;height:20px;background:#d9dde6;-webkit-mask:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='black' stroke-width='1.8' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M4 9.5h3.2L12 5.5v13l-4.8-4H4z'/%3E%3Cpath d='M15.5 9.2a4 4 0 0 1 0 5.6M18.2 6.6a7.6 7.6 0 0 1 0 10.8'/%3E%3C/svg%3E") center/contain no-repeat;mask:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='black' stroke-width='1.8' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M4 9.5h3.2L12 5.5v13l-4.8-4H4z'/%3E%3Cpath d='M15.5 9.2a4 4 0 0 1 0 5.6M18.2 6.6a7.6 7.6 0 0 1 0 10.8'/%3E%3C/svg%3E") center/contain no-repeat}
+.pack-header-tools>.pack-mute[aria-pressed="true"]::before{background:#9aa3ad;-webkit-mask-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='black' stroke-width='1.8' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M4 9.5h3.2L12 5.5v13l-4.8-4H4z'/%3E%3Cpath d='M15.5 8.8l6 6.4M21.5 8.8l-6 6.4'/%3E%3C/svg%3E");mask-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='black' stroke-width='1.8' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M4 9.5h3.2L12 5.5v13l-4.8-4H4z'/%3E%3Cpath d='M15.5 8.8l6 6.4M21.5 8.8l-6 6.4'/%3E%3C/svg%3E")}
+.pack-header-tools>.pack-mute:hover{background:#ffffff16}
+.pack-header-tools>.pack-mute:focus-visible{outline:2px solid var(--gold);outline-offset:3px}
 .pack-header-tools>[data-pack="close"]{font-size:17px;background:#ffffff0a;border:1px solid #ffffff24}
 .pack-header-tools>:is(.pack-tilt,[data-pack="close"]):hover{background:#ffffff16}
 @media(min-width:700px){.pack-header{margin-right:-12px}}
