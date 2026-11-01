@@ -184,7 +184,7 @@ export function createForgePlayerMat({root,readAccount,readSetup,getAccessToken,
   // The saved row keeps only the deck's record key and name, so the record is read from the deck itself.
   const r=deckRecord(matchup?.selected||row.deck),box=node('div');box.className='play-result-recap';
   const mins=row.durationMs===null?null:Math.max(1,Math.round(row.durationMs/60000));
-  const stats=[[row.turns===null?'–':String(row.turns),'Turns'],[mins===null?'–':mins+' min','Time'],[row.life===null?'–':`${row.life} – ${row.opponentLife??'–'}`,'Life',matchup.friend?'You · Friend':'You · CPU'],[row.onPlay===null?'–':row.onPlay?'Play':'Draw','On the']];
+  const stats=[[row.turns===null?'–':String(row.turns),'Turns'],[mins===null?'–':mins+' min','Time'],[row.life===null?'–':`${row.life} – ${row.opponentLife??'–'}`,'Life',matchup.friend?`You · ${matchup.friend.name||'Friend'}`:'You · CPU'],[row.onPlay===null?'–':row.onPlay?'Play':'Draw','On the']];
   const list=node('dl');for(const [v,k,note]of stats){const cell=node('div');cell.append(node('dt',k),node('dd',v));if(note)cell.append(node('small',note));list.append(cell);}
   const deck=node('p');deck.className='play-result-record';
   const streak=Math.abs(r.streak)>1?` · ${Math.abs(r.streak)} ${r.streak>0?'wins':'losses'} in a row`:'';
@@ -325,7 +325,7 @@ export function createForgePlayerMat({root,readAccount,readSetup,getAccessToken,
    if(!current()){await client.close();throw Error('SELECTION_CHANGED');}
    const artwork=capturedForgeArtwork(setup,lookup,setup.friendMatch?resolveLate:null);
    if(!forgeStartingPlayer(state.snapshot))throw Object.assign(Error('STARTING_PLAYER_UNCONFIRMED'),{code:'STARTING_PLAYER_UNCONFIRMED'});
-   session=createForgePresentationSession({lookupArtwork:artwork,pollMs,allowControlMode:true,transportStatus:()=>client.status(),request:async(path,body)=>{
+   session=createForgePresentationSession({lookupArtwork:artwork,rivalName:setup.friend?.name||null,pollMs,allowControlMode:true,transportStatus:()=>client.status(),request:async(path,body)=>{
     if(body)return client.submit(body);
     try{const next=await client.read();if(next.status==='finished'){await lethalBlow();finish(next.result,next.viewerId);return null;}if(next.status!=='running')throw Error('HOST_SESSION_NOT_RUNNING');return next.snapshot;}
     catch(e){if(e.status===410||e.status===401||e.code==='ACCOUNT_CHANGED')stopped(e);throw e;}
@@ -334,7 +334,7 @@ export function createForgePlayerMat({root,readAccount,readSetup,getAccessToken,
    playedFrom=now();ownFirst=forgeStartingPlayer(state.snapshot)?.ownFirst??null;
    session.acceptState(state.snapshot);session.subscribe(s=>{lastSurface=s.status?.surface||lastSurface;updateExit();if(!disposed&&ticket===generation&&last?.phase!=='finished')publish({phase:'playing',game:s});});
    // The engine and website build stay identifiable on screen and in diagnostics.
-   root.className='';root.dataset.engine='forge-hosted';root.dataset.build=APP_VERSION;table=mountTable(root,{session,profile:setup.profile,format:setup.match.format,title:`CardStashy · Magic · ${APP_VERSION}`,onExit:requestExit,presentation:{hosted:true,allowControlMode:true,tracker:trackerDeck(setup,artwork)}});// Start timings stay out of the player's view (they read like a developer readout); the console keeps them.
+   root.className='';root.dataset.engine='forge-hosted';root.dataset.build=APP_VERSION;table=mountTable(root,{session,profile:setup.profile,format:setup.match.format,title:`CardStashy · Magic · ${APP_VERSION}`,onExit:requestExit,presentation:{hosted:true,allowControlMode:true,tracker:trackerDeck(setup,artwork),...(setup.friend?{friend:setup.friend}:{})}});// Start timings stay out of the player's view (they read like a developer readout); the console keeps them.
    if(progress)view?.console?.info?.('[play] '+stepsLine(progress,startupMs));warn(true);await session.start({readInitial:false});return last;
   }catch(e){stopTicker();if(current()){session?.close();warn(false);message('Your match could not start',[forgeMatchError(e),'Your selected decks are unchanged.',...(e.details||[])],{diagnostic:forgeDiagnostic(e)+(requestedAt===null?'':` · ${Math.round((now()-requestedAt)/1000)}s after the table was requested`)});publish({phase:'session-ended',error:e.code||e.message});}throw e;}
   finally{stopTicker();opening=false;}

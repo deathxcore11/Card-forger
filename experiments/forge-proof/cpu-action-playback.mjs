@@ -52,7 +52,7 @@ export function eventPlaybackBeats(before,after){
  // Every opponent is a CPU; in a Commander pod each one is told by name (its commander).
  const rivals=b.players.filter(p=>p.seat!==b.seat),pod=rivals.length>1,me=b.players.find(p=>p.seat===b.seat)?.nativeId;
  if(!rivals.length)return [];
- const rival=id=>rivals.find(p=>p.nativeId===id),isCpu=id=>!!rival(id),cpuName=id=>pod?rival(id)?.label||'CPU':'CPU',CPU=id=>cpuName(id).toUpperCase();
+ const rival=id=>rivals.find(p=>p.nativeId===id),isCpu=id=>!!rival(id),cpuName=id=>rival(id)?.label||'CPU',CPU=id=>cpuName(id).toUpperCase();
  const now=new Map(b.cards.map(c=>[c.id,c])),was=new Map((before?.status?.surface?.cards||[]).map(c=>[c.id,c]));
  // The board's own copy of a card when it can be seen; otherwise the name the log gave it.
  const cardFor=ref=>{
@@ -223,7 +223,7 @@ export function cpuPlaybackBeats(before, after) {
  const a=before?.status?.surface,b=after?.status?.surface;
  if(!a||!b||after.status.terminal||after.status.failure)return [];
  const rivals=b.players.filter(p=>p.seat!==b.seat),pod=rivals.length>1;if(!rivals.length)return [];
- const isCpu=seat=>seat!==b.seat&&rivals.some(p=>p.seat===seat),cpuName=seat=>pod?rivals.find(p=>p.seat===seat)?.label||'CPU':'CPU';
+ const isCpu=seat=>seat!==b.seat&&rivals.some(p=>p.seat===seat),cpuName=seat=>rivals.find(p=>p.seat===seat)?.label||'CPU';
  const oldCards=new Map(a.cards.map(c=>[c.id,c])),oldStack=new Set(a.stack.map(s=>s.id));
  const beats=[],turn=a.activeSeat!==b.activeSeat||a.turn!==b.turn;
  const phase=!turn&&a.phase!==b.phase&&['BeginningOfCombat','DeclareAttackers'].includes(b.phase)&&!['BeginningOfCombat','DeclareAttackers'].includes(a.phase);
@@ -267,7 +267,7 @@ export function tableActivity(s,{beat=null,overlay=false,recent=[]}={}){
  }
  const cpuPriority=surface.prioritySeat!=null&&surface.prioritySeat!==surface.seat;
  if(n?.stack?.length&&!cpuPriority)return {kind:'resolving',label:'Resolving effects',detail};
- const thinker=surface.players?.length>2?surface.players.find(p=>p.seat===(cpuPriority?surface.prioritySeat:surface.activeSeat))?.label:null;
+ const thinker=surface.players?.find?.(p=>p.seat===(cpuPriority?surface.prioritySeat:surface.activeSeat))?.label||null;
  return cpuPriority||surface.activeSeat!==surface.seat?{kind:'thinking',label:`${thinker||'CPU'} thinking`,detail}:{kind:'working',label:'Forge is applying your play',detail};
 }
 
@@ -364,7 +364,7 @@ export function storyLines(items,surface){
  if(!Array.isArray(items)||!surface?.players)return [];
  const me=surface.players.find(p=>p.seat===surface.seat)?.nativeId,rivals=surface.players.filter(p=>p.seat!==surface.seat),pod=rivals.length>1;
  const cards=new Map((surface.cards||[]).map(c=>[c.id,c]));
- const who=id=>id===me?'You':pod?rivals.find(p=>p.nativeId===id)?.label||'CPU':'CPU';
+ const who=id=>id===me?'You':rivals.find(p=>p.nativeId===id)?.label||'CPU';
  const card=ref=>ref?.kind==='card'?(cards.get(ref.id)?.known?cards.get(ref.id).name:typeof ref.name==='string'&&ref.name?ref.name:null):null;
  const target=ref=>ref?.kind==='player'?(ref.id===me?'you':who(ref.id)):card(ref);
  const out=[],push=(e,text,id=null)=>{if(text)out.push({seq:e.seq,turn:e.turn,text,...(Number.isSafeInteger(id)?{card:id}:{})});};

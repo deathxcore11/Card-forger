@@ -53,7 +53,7 @@ function visibilityGrants(raw,seatById){
  }
  return grants;
 }
-export function projectForge(raw,{lookupArtwork=()=>null}={}){
+export function projectForge(raw,{lookupArtwork=()=>null,rivalName=null}={}){
  if(raw?.schema!==SCHEMA){if(raw?.status==='initializing')return null;throw Error('Unsupported Forge snapshot schema.');}
  if(!id(raw.revision)||!Array.isArray(raw.players)||raw.players.length<2||raw.players.length>4||raw.players.some(p=>!id(p?.id))||new Set(raw.players.map(p=>p.id)).size!==raw.players.length)throw Error('Invalid Forge snapshot.');
  const seatById=new Map(raw.players.map((p,seat)=>[p.id,seat])),seat=seatById.get(raw.viewer);
@@ -100,8 +100,8 @@ export function projectForge(raw,{lookupArtwork=()=>null}={}){
   // Commander pods: who is out, the deck each CPU plays and the commander damage this seat has taken.
   deckAlias:typeof p.deckAlias==='string'?p.deckAlias.slice(0,160):null,lost:p.lost===true,
   commanderDamage:list(p.commanderDamage).filter(d=>seatById.has(d?.from)&&Number.isSafeInteger(d?.damage)&&d.damage>=0&&typeof d?.commander==='string').map(d=>({from:seatById.get(d.from),commander:d.commander.slice(0,200),damage:d.damage}))}));
- // What the table calls each seat: "CPU" in a duel; in a Commander pod each CPU by its commander.
- for(const p of players){if(p.seat===seat){p.label='You';continue;}if(players.length===2){p.label='CPU';continue;}
+ // What the table calls each seat: "CPU" in a duel (a friend by their name); in a Commander pod each CPU by its commander.
+ for(const p of players){if(p.seat===seat){p.label='You';continue;}if(players.length===2){p.label=rivalName||'CPU';continue;}
   const cmd=[...cards.values()].find(c=>c.commander===true&&c.owner===p.seat&&c.known&&c.name);
   p.label=(cmd?String(cmd.name).split(/,| \/\/ /)[0].trim():'')||(p.deckAlias||'').split(/\s+/).slice(0,2).join(' ')||'CPU '+p.seat;}
  const stack=list(raw.stack).map(s=>{if(s.source&&!cards.has(s.source.id)&&s.source.zone==='Stack')addCard(s.source);return {id:s.id,source:cards.has(s.source?.id)?s.source.id:null,text:stackText(s.text),controller:seatById.get(s.activatingPlayer)};});
@@ -143,7 +143,7 @@ export function createForgeSession({baseUrl,token,fetchImpl=globalThis.fetch,pol
 // supplies same-origin account requests, never a remote bridge URL or token.
 const SETTINGS_OPS=new Set(['controlMode','autoPay','phaseStop','yieldSource']),AWAIT_STALE_MS=4000;
 const settingsKey=n=>JSON.stringify([n?.controlMode??null,n?.autoPay??null,n?.phaseStops??null,(n?.stack||[]).map(x=>x?.yielded===true)]);
-export function createForgePresentationSession({request,pollMs=350,lookupArtwork=()=>null,onClose=()=>{},allowControlMode=false,transportStatus=()=>({blocked:false,error:null})}={}){
+export function createForgePresentationSession({request,pollMs=350,lookupArtwork=()=>null,rivalName=null,onClose=()=>{},allowControlMode=false,transportStatus=()=>({blocked:false,error:null})}={}){
  if(typeof request!=='function')throw Error('FORGE_TRANSPORT_REQUIRED');
  let awaitSince=0,native=null,status=null,selected=null,draft=null,error=null,actionError=null,sending=false,awaitRevision=null,closed=false,timer=null,refreshing=null,boundViewer=null,lastAcceptedRevision=-1;
  const listeners=new Set();
@@ -186,7 +186,7 @@ export function createForgePresentationSession({request,pollMs=350,lookupArtwork
   // Settings (Smart / Full Control, auto-pay, stops, yields) can also change without a new revision.
   if(id(next?.revision)&&next.revision===lastAcceptedRevision&&!(native&&((native.busy===true)!==(next.busy===true)||(native.inputType||'')!==(next.inputType||'')||(native.prompt?.id??null)!==(next.prompt?.id??null)||settingsKey(native)!==settingsKey(next))))return false;
   let projection;
-  try{projection=projectForge(next,{lookupArtwork});}catch(e){clearPrivateState();error=e.message;emit();throw e;}
+  try{projection=projectForge(next,{lookupArtwork,rivalName});}catch(e){clearPrivateState();error=e.message;emit();throw e;}
   if(!projection)return false;
   boundViewer=next.viewer;lastAcceptedRevision=next.revision;
   if(native?.revision!==next.revision){draft=null;actionError=null;}
