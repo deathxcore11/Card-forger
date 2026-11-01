@@ -461,6 +461,8 @@ const name=String(card.name);if(Math.max(...name.split(/\s+/).map(word=>word.len
   return Math.min(1,Math.max(d-ea-eb+bite,a.height*.4)/d);};
  // `to` is an element or, for a creature the same blow killed, the rect it stood in. `stand` lunges a
  // stand-in instead of the card (an attacker that dies in the exchange still swings first). Returns when it is home.
+ // How long a strike from this card (or rect) to its target flies, the same way strike() times it.
+ function strikeTravel(w,to){const a=w?.getBoundingClientRect?rectOf(w):w,b=boxOf(aimOf(to));if(!a||!b)return MOTION.flight[0];const reach=contactReach(a,b),span=reach*Math.hypot(b.left+b.width/2-(a.left+a.width/2),b.top+b.height/2-(a.top+a.height/2));return Math.round(Math.max(MOTION.flight[0],Math.min(MOTION.flight[1],150+span*.2)));}
  function strike(el,to,{face=false,delay=0,big=false,power=0,stand=null}={}){
   const w=stand||el?.closest('.play-match-card-wrap'),aim=aimOf(to),a=rectOf(w),b=boxOf(aim);if(!w||!a||!b)return 0;
   // The battlefields clip their overflow; let the striker leave its lane for the flight.
@@ -552,16 +554,25 @@ const name=String(card.name);if(Math.max(...name.split(/\s+/).map(word=>word.len
    // a blocked one crashes into its blocker, even one the blow kills. Both spring back to their place.
    const blockerOf=new Map();for(const c of [...a.cards,...b.cards])for(const id of c.blockingIds||[])if(!blockerOf.has(id))blockerOf.set(id,c.id);
    const live=id=>{const now=b.cards.find(x=>x.id===id),el=now?.zone==='Battlefield'?cardEl(id):null;return el||before?.get(String(id))?.r||null;};
-   let struck=0;
+   // One at a time, as on Arena (Randall, 1 Nov): each attacker winds up, flies, lands its hit and starts home
+   // before the next one goes. Each hit's damage number pops on what it hit at that hit's contact.
+   let next=0;const hitTime=new Map(),faceHits=[];
    for(const c of a.cards.filter(c=>c.attacking&&onField(c))){const dies=gone(c),el=dies?null:cardEl(c.id);if(!dies&&!el)continue;
-    const seat=seatEl(defenderOf(b.players,c)),blocked=blockerOf.has(c.id)?live(blockerOf.get(c.id)):null;
+    const seat=seatEl(defenderOf(b.players,c)),blockerId=blockerOf.get(c.id),blocked=blockerId!==undefined?live(blockerId):null;
     const to=blocked||(c.attackTarget?.kind==='card'?live(c.attackTarget.id):seat);if(!to)continue;
-    const opts={face:!blocked&&to===seat,delay:struck++*MOTION.stagger,big:(c.power||0)>=5,power:c.power||0};
+    const opts={face:!blocked&&to===seat,delay:next,big:(c.power||0)>=5,power:c.power||0};
+    const at=next+MOTION.windup+strikeTravel(el?.closest('.play-match-card-wrap')||before?.get(String(c.id))?.r,to);next=at+MOTION.hold+140;
+    for(const id of [c.id,...(blockerId!==undefined?[blockerId]:[]),...(c.attackTarget?.kind==='card'&&!blocked?[c.attackTarget.id]:[])])if(!hitTime.has(id))hitTime.set(id,at);
+    if(opts.face)faceHits.push({seat,at,power:c.power||0,player:defenderOf(b.players,c)});
     // An attacker that dies in the exchange swings as a stand-in (drawn below with the other deaths).
     if(dies)dying.set(c.id,{to,opts});else strike(el,to,opts);}
-   const contact=Math.max(0,hitAt-Date.now());
-   damaged.forEach((c,i)=>setTimeout(()=>{const el=cardEl(c.id);if(el){const d=c.damage-(was.get(c.id)?.damage||0);popNumber(el,`−${d}`,'damage',d>=5?'big':'');pulse(el,'hit');}},contact+i*60));
-   worn.forEach((c,i)=>setTimeout(()=>{const el=cardEl(c.id);if(el){const d=guard(was.get(c.id))-guard(c);popNumber(el,`−${d}`,'damage',d>=5?'big':'');pulse(el,'hit');}},contact+i*60));
+   const first=Math.max(0,hitAt-Date.now()),when=id=>hitTime.get(id)??first;
+   damaged.forEach((c,i)=>setTimeout(()=>{const el=cardEl(c.id);if(el){const d=c.damage-(was.get(c.id)?.damage||0);popNumber(el,`−${d}`,'damage',d>=5?'big':'');pulse(el,'hit');}},when(c.id)+(hitTime.has(c.id)?0:i*60)));
+   worn.forEach((c,i)=>setTimeout(()=>{const el=cardEl(c.id);if(el){const d=guard(was.get(c.id))-guard(c);popNumber(el,`−${d}`,'damage',d>=5?'big':'');pulse(el,'hit');}},when(c.id)+(hitTime.has(c.id)?0:i*60)));
+   // A blow to the face pops its own number on the portrait when the life lost is exactly what the blows add up to
+   // (prevention, lifelink or a trigger would make per-hit numbers wrong; the life total then tells it alone).
+   for(const seatNo of new Set(faceHits.map(f=>f.player))){const hits=faceHits.filter(f=>f.player===seatNo),lost=(a.players.find(p=>p.seat===seatNo)?.life??0)-(b.players.find(p=>p.seat===seatNo)?.life??0);
+    if(lost>0&&hits.reduce((t,f)=>t+f.power,0)===lost)for(const f of hits)if(f.power>0)setTimeout(()=>{const p=aimOf(f.seat);if(p?.isConnected)popNumber(p,`−${f.power}`,'damage',f.power>=5?'big':'');},f.at);}
   }
   // 3b. Declared: a new attacker surges forward toward what it attacks and settles; a new blocker
   // steps across to meet its attacker with a blue shield flash. Arrows then hold the pairing.
@@ -850,7 +861,10 @@ const name=String(card.name);if(Math.max(...name.split(/\s+/).map(word=>word.len
   doc.body.toggleAttribute('data-forge-search',!!root.querySelector('.forge-zone-search'));
   // While a full-screen sheet asks (a library search, ordering triggers), the board behind it is out of reach.
   {const main=root.querySelector(':scope>.play-match-main'),sheet=!!root.querySelector('.forge-zone-search,.forge-order-cards');if(main&&main.inert!==sheet)main.inert=sheet;}
-  if(before&&(!blocked||staged)){glide(before);boardEffects(previous,s,before,leaving);}
+  // A board held for playback (more boards queued behind it) is still a new board: its moves and blows play
+  // (Randall, 1 Nov: your attackers only tapped, because the damage board came while the CPU's blocks were queued).
+  // Only a held copy of the board already shown (the same revision) redraws without motion.
+  if(before&&(!blocked||staged||previous?.status?.revision!==s.status?.revision)){glide(before);boardEffects(previous,s,before,leaving);}
   if(poses)settlePoses(poses);
   dropHeld();
   if(presentation.hosted)tableAudio.update(previous,s);
@@ -1628,9 +1642,9 @@ const name=String(card.name);if(Math.max(...name.split(/\s+/).map(word=>word.len
   if(closed)return 0;const sf=session.snapshot().status?.surface;let ms=Math.max(0,strikeEnd-Date.now());
   if(!sf||reducedMotion)return ms;
   const blockerOf=new Map();for(const c of sf.cards)for(const id of c.blockingIds||[])if(!blockerOf.has(id))blockerOf.set(id,c.id);
-  let struck=0;for(const c of sf.cards.filter(c=>c.zone==='Battlefield'&&c.attacking).slice(0,8)){const el=cardEl(c.id);if(!el)continue;
+  let struck=0,next=0;for(const c of sf.cards.filter(c=>c.zone==='Battlefield'&&c.attacking).slice(0,8)){const el=cardEl(c.id);if(!el)continue;
    const seat=seatEl(defenderOf(sf.players,c)),blocked=blockerOf.has(c.id)?cardEl(blockerOf.get(c.id)):null,to=blocked||(c.attackTarget?.kind==='card'?cardEl(c.attackTarget.id):seat);if(!to)continue;
-   ms=Math.max(ms,strike(el,to,{face:!blocked&&to===seat,delay:struck++*MOTION.stagger,big:(c.power||0)>=5,power:c.power||0}));}
+   ms=Math.max(ms,strike(el,to,{face:!blocked&&to===seat,delay:next,big:(c.power||0)>=5,power:c.power||0}));struck++;next+=MOTION.windup+strikeTravel(el.closest('.play-match-card-wrap'),to)+MOTION.hold+140;}
   return struck?Math.max(ms,strikeEnd-Date.now())+250:ms;}
  return {finale,destroy(){closed=true;if(heldDrop){clearTimeout(heldDrop.timer);heldDrop.ghost.remove();heldDrop=null;}boardSizes?.disconnect();doc.removeEventListener('visibilitychange',dropOnHide);win.removeEventListener('orientationchange',dropGesture);win.removeEventListener('resize',dropOnFold);win.clearInterval(ropeLoop);rope.remove();doc.removeEventListener('pointerdown',ropeReset,true);doc.removeEventListener('keydown',ropeReset,true);doc.removeEventListener('visibilitychange',ropeReset);tableAudio.destroy();emotes?.destroy();clearTimeout(handLiftTimer);doc.removeEventListener('pointerup',handUp,true);doc.removeEventListener('click',swallowTapClick,true);doc.removeEventListener('pointermove',handSift);doc.removeEventListener('pointercancel',handUp,true);doc.removeEventListener('pointermove',handHover);clearTimeout(idleTimer);clearTimeout(noResponseTimer);delete root.dataset.lowPower;delete root.dataset.csStriking;playback.destroy();motion.destroy();activity.remove();root.removeEventListener('pointerdown',skipPlayback,true);doc.removeEventListener('pointerdown',closeZones,true);root.removeEventListener('click',trackerClick,true);root.removeEventListener('toggle',zonesToggled,true);doc.body.removeAttribute('data-forge-search');dockObserver?.disconnect();unsub();observer.disconnect();cancel();hidePeek();clearTimeout(pressTimer);if(arrowFrame)win.cancelAnimationFrame(arrowFrame);if(loopFrame)win.cancelAnimationFrame(loopFrame);win.removeEventListener('resize',queueArrows);if(railFrame)win.cancelAnimationFrame(railFrame);win.removeEventListener('resize',queueRails);peek.remove();ownCast.remove();doc.body.querySelector(':scope>.forge-ask-line')?.remove();doc.body.style.removeProperty('--forge-hand-top');castShow.remove();arrows.remove();fx.remove();root.removeEventListener('pointerover',over);root.removeEventListener('pointerout',out);root.removeEventListener('contextmenu',contextMenu,true);root.removeEventListener('keydown',peekKeys,true);win.removeEventListener('resize',reflow);root.removeEventListener('scroll',reflow,true);table.destroy();root.removeEventListener('input',saveInput);root.removeEventListener('change',saveInput);root.removeEventListener('click',click,true);root.removeEventListener('pointerdown',down);doc.removeEventListener('pointermove',move);doc.removeEventListener('pointerup',up);doc.removeEventListener('pointercancel',pressCancel);doc.removeEventListener('keydown',key);win.removeEventListener('blur',cancel);}};
 }
