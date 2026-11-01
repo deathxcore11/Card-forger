@@ -101,7 +101,7 @@ export function packsMarkup(snapshot, {facts = null} = {}) {
   const groups = new Map();
   for (const p of packs) { if (!groups.has(p.set)) groups.set(p.set, []); groups.get(p.set).push(p); }
   return `<section class="play-menu pe-screen pe-packs" aria-labelledby="playTitle">${head('Packs', snapshot)}
-    ${groups.size ? `<div class="pe-pack-grid pe-pack-grid--open">${[...groups].map(([code, list]) => `<button class="pe-pack pe-pack--open" data-act="playEconOpen" data-econ-pack="${esc(list[0].id)}" ${snapshot.busy ? 'disabled' : ''} aria-label="Open a ${esc(names.get(code) || code.toUpperCase())} pack, ${list.length} waiting">${boosterMarkup({code, name: names.get(code), facts})}<span class="pe-badge">${n(list.length)}</span></button>`).join('')}</div>`
+    ${groups.size ? `<div class="pe-pack-grid pe-pack-grid--open">${[...groups].map(([code, list]) => `<button class="pe-pack pe-pack--open${snapshot.busy === 'open:' + list[0].id ? ' pe-pack--opening' : ''}" data-act="playEconOpen" data-econ-pack="${esc(list[0].id)}" ${snapshot.busy ? 'disabled' : ''} aria-label="Open a ${esc(names.get(code) || code.toUpperCase())} pack, ${list.length} waiting">${boosterMarkup({code, name: names.get(code), facts})}<span class="pe-badge">${n(list.length)}</span></button>`).join('')}</div>`
       : `<div class="pe-empty"><h2>Every pack is open</h2><p>Packs come from Story battles, Planeswalk bosses, weekly quests and the Merchant.</p><button class="btn" data-act="playEconView" data-econ-view="shop">Visit the Merchant</button></div>`}
     ${statusLine(snapshot)}</section>`;
 }

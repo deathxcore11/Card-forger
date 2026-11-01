@@ -964,3 +964,10 @@ body[data-mode="play"] #gameTabs,body[data-mode="play"] [data-nav="scan"]{displa
 .play-purse-slot .pe-level{display:none}
 @media(min-width:760px){body[data-mode="play"] .play-menu .pl-home-head .pe-purse,body[data-mode="play"] .pe-head .pe-purse{display:none}}
 @media(max-width:759px){.play-purse-slot{display:none}}
+/* Opening a Play pack: the server rolls it first, so the wrapper shakes and glows at once (no silent wait). */
+.pe-pack--opening{pointer-events:none}
+.pe-pack--opening .pe-booster{animation:pe-open-shake .42s ease-in-out infinite;filter:drop-shadow(0 0 18px #f3c66fcc) brightness(1.08)}
+.pe-pack--opening::after{content:"Opening…";position:absolute;left:50%;bottom:8px;transform:translateX(-50%);padding:3px 10px;border-radius:999px;background:#120d08d9;border:1px solid #d6ad6488;color:#f3dfb4;font-size:12px;font-weight:700;letter-spacing:.02em;white-space:nowrap}
+.pe-pack--opening:disabled{opacity:1}
+@keyframes pe-open-shake{0%,100%{transform:rotate(0) translateY(0)}25%{transform:rotate(-2.5deg) translateY(-2px)}75%{transform:rotate(2.5deg) translateY(-2px)}}
+@media (prefers-reduced-motion:reduce){.pe-pack--opening .pe-booster{animation:none}}

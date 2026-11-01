@@ -30,7 +30,7 @@ export function createPlayEcon({getAccessToken, fetchImpl = globalThis.fetch?.bi
       return loading;
     },
     // Opens one banked pack on the server; returns {pack, sealBonus, duplicateCoins}.
-    open: id => run('open', async () => { const out = await call('open', {id}); set({...out.state, rewardSet: state?.rewardSet, shop: state?.shop}); return out; }),
+    open: id => run('open:' + id, async () => { const out = await call('open', {id}); set({...out.state, rewardSet: state?.rewardSet, shop: state?.shop}); return out; }),
     buy: setCode => run('buy', async () => { const out = await call('buy', {set: setCode}); set({...out.state, rewardSet: state?.rewardSet, shop: state?.shop}); return out; }),
     craft: cardId => run('craft', async () => { const out = await call('craft', {id: cardId}); set({...out.state, rewardSet: state?.rewardSet, shop: state?.shop}); return out; }),
     saveDeck: deck => run('deck', async () => { const out = await call('deck', deck); await api.refresh(); return out.deck; }),

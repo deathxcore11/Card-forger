@@ -42,7 +42,7 @@ export function playHomeMarkup({econ = null, facts = null, signedIn = false, mod
   for (const pk of state.packs || []) { if (!groups.has(pk.set)) groups.set(pk.set, []); groups.get(pk.set).push(pk); }
   const names = new Map([...(state.shop || []).map(x => [x.code, x.name]), ...(state.rewardSet ? [[state.rewardSet.code, state.rewardSet.name]] : [])]);
   const packs = groups.size
-    ? `<div class="pe-home-packs">${[...groups].map(([code, list]) => `<button class="pe-pack pe-pack--open" data-act="playEconOpen" data-econ-pack="${esc(list[0].id)}" ${econ.busy ? 'disabled' : ''} aria-label="Open a ${esc(names.get(code) || code.toUpperCase())} pack, ${list.length} waiting">${boosterMarkup({code, name: names.get(code), facts})}<span class="pe-badge">${n(list.length)}</span></button>`).join('')}</div>`
+    ? `<div class="pe-home-packs">${[...groups].map(([code, list]) => `<button class="pe-pack pe-pack--open${econ.busy === 'open:' + list[0].id ? ' pe-pack--opening' : ''}" data-act="playEconOpen" data-econ-pack="${esc(list[0].id)}" ${econ.busy ? 'disabled' : ''} aria-label="Open a ${esc(names.get(code) || code.toUpperCase())} pack, ${list.length} waiting">${boosterMarkup({code, name: names.get(code), facts})}<span class="pe-badge">${n(list.length)}</span></button>`).join('')}</div>`
     : `<p class="pe-home-empty">Every pack is open. Story battles, Planeswalk bosses and the Merchant give more.</p>`;
   // Decks: the app's deck shelf cards, with Build a deck first.
   const decks = state.decks || [];

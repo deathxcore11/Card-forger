@@ -1699,9 +1699,13 @@ I.playEconCardSearch=t=>{econUi.cardQuery=t.value;refreshPlayMenu();const f=docu
 // Opening: the server rolls the pack, then the pack opener plays it (the Play variant: no prices).
 const econPick=c=>({id:c.id,oracle_id:c.oracle_id,name:c.name,rarity:c.rarity,set:c.set,collector_number:c.number,image_uris:{normal:c.image,art_crop:c.art},...(c.foil?{packFoil:true}:{}),...(c.slot?{packSlot:c.slot}:{})});
 const econOpened=out=>{const bits=[];const sb=out.sealBonus||{};for(const [k,label] of [['u','uncommon'],['r','rare'],['m','mythic']])if(sb[k])bits.push('+1 '+label+' seal');if(out.duplicateCoins)bits.push('+'+out.duplicateCoins+' coins from extra copies');return bits.join(' · ');};
-A.playEconOpen=async t=>{let out;try{out=await playEcon.open(t.dataset.econPack);}catch{return;}
+// Opened cards fly into the Trunk one after another, each with a small tick (the app's add-to-collection flight).
+const econLand=list=>list.slice(0,15).forEach((f,i)=>setTimeout(()=>{flyToCollection(f);haptic('tick');},i*85));
+// The server rolls the pack before anything can show, so the pack shakes and glows right away while it does.
+A.playEconOpen=async t=>{let out;const btn=t.closest?.('.pe-pack')||t;btn.classList.add('pe-pack--opening');btn.setAttribute('aria-busy','true');haptic('tap');
+ try{out=await playEcon.open(t.dataset.econPack);}catch{return;}finally{btn.classList.remove('pe-pack--opening');btn.removeAttribute('aria-busy');}
  const name=c=>(playEcon.snapshot().state?.shop||[]).find(x=>x.code===c)?.name||c.toUpperCase();
- try{openPackPreview({game:'mtg',set:{code:out.pack.set,name:name(out.pack.set)},cards:[],variant:'play',drawn:out.pack.contents.map(econPick),note:['Added to your Play collection.',econOpened(out)].filter(Boolean).join(' '),onCopy:copyPlain,isCurrent:()=>true,
+ try{openPackPreview({game:'mtg',set:{code:out.pack.set,name:name(out.pack.set)},cards:[],variant:'play',drawn:out.pack.contents.map(econPick),note:['Added to your Play collection.',econOpened(out)].filter(Boolean).join(' '),onCopy:copyPlain,isCurrent:()=>true,onLand:econLand,
   onNext:async()=>{const left=playEcon.snapshot().state?.packs||[],next=left.find(p=>p.set===out.pack.set)||left[0];if(!next)return null;out=await playEcon.open(next.id);return {picks:out.pack.contents.map(econPick),set:{code:out.pack.set,name:name(out.pack.set)}};}});}catch(e){toast(e.message||'Could not show this pack.');}};
 // Seal press: find a card by name on Scryfall, then stamp it with a seal of its rarity.
 A.playEconFind=async form=>{const q=String(new FormData(form).get('card')||'').trim();if(!q)return;econUi.press={query:q,busy:true};refreshPlayMenu();
