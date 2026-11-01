@@ -1,7 +1,7 @@
 // Website 4.3.52 ships with Android 0.12.24 beta, which bundles this same website.
 export const RELEASE = Object.freeze({
  id:'web-4.3.52-audit-fixes-android-0.12.24',date:'2026-11-01',webVersion:'4.3.52',
- changes:["Yu-Gi-Oh!: card pages keep all their alternate artworks after details load.","Planeswalk: the Formation button always shows in fights with two or more allies, and Kindling Rite discards the right card.","Android app 0.12.24 beta brings this to the app."],
+ changes:["Card pages: on first load the header art, its glass and the big card each fade in once, with no flicker or grey box.","Yu-Gi-Oh!: card pages keep all their alternate artworks after details load.","Planeswalk: the Formation button always shows in fights with two or more allies, and Kindling Rite discards the right card.","Android app 0.12.24 beta brings this to the app."],
 
  android:Object.freeze({version:'0.12.23 beta',versionName:'0.12.23-beta',versionCode:59,interfaceVersion:'4.3.51',package:'com.cardstashy.app',href:'/downloads/cardstashy-android-beta-0.12.23.apk',bytes:122474709,sha256:'551a750dc28e15d1852a23c70c744733039fa76598d8baea00f5e263ccc62ca9'})
 });
