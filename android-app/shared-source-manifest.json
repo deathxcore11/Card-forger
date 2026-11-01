@@ -1,8 +1,8 @@
 {
   "schema": 1,
-  "version": "4.3.50",
-  "commit": "c69d1b9978a6785fe844e209c481ff50a6efac34",
-  "tree": "6f35d5fc7c2c6920ddbcefbbafd3597ee2136bcc",
+  "version": "4.3.51",
+  "commit": "98fbe7a263d834abcccefc8abe28744ea84d0e31",
+  "tree": "d61d79e5494bb782d3666ca8608b578139fe9611",
   "repository": "https://github.com/deathxcore11/Card-forger",
   "scope": "Explicit frontend build dependencies plus optional artwork input files. Not full backend repository.",
   "files": [
@@ -118,8 +118,8 @@
     },
     {
       "path": "app.js",
-      "bytes": 456427,
-      "sha256": "81fcede50f4ab4ab861b0facb7bae70b50877376da0b313c18ec47531c23395e"
+      "bytes": 459820,
+      "sha256": "7d17a6fea55fd02077ed6155ff301d509a52d604c6ef10aae47bb1f3d67c1d26"
     },
     {
       "path": "artwork.js",
@@ -3179,7 +3179,7 @@
     {
       "path": "config.js",
       "bytes": 601,
-      "sha256": "6f1009448a21c840d436711b57deef3f85d20cddb9d416eeb657eebc774d5d65"
+      "sha256": "620524b5d8ac28529771fdf8afe11b754bac1a365675713f622e442a18b6367d"
     },
     {
       "path": "core.js",
@@ -4453,8 +4453,8 @@
     },
     {
       "path": "feel.js",
-      "bytes": 21364,
-      "sha256": "20789d32d7c5a05675155d153f7e7cd9c746df8f816c9b78c69ade2aca10a7ee"
+      "bytes": 21403,
+      "sha256": "cfeeea4737cb873aa5e5df959aa87e0170a69ff3b588b0026e0fb5994f3139cc"
     },
     {
       "path": "finish-effects.css",
@@ -4864,7 +4864,7 @@
     {
       "path": "package.json",
       "bytes": 12049,
-      "sha256": "b4b8b677c0613d161dd76d93703d6d720e42ea6b52ca17a871971095e379cb61"
+      "sha256": "d305aaf8fdd140fe0b04960ed998f16d3a8a17fbdbf7fba58473ab98739ece07"
     },
     {
       "path": "pairing.js",
@@ -7063,8 +7063,8 @@
     },
     {
       "path": "planeswalk-src/cast.css",
-      "bytes": 37521,
-      "sha256": "feea9b8b7280defa83969e6ba90bc3dffc19a416901107daf2dff44d8ab54a0a"
+      "bytes": 39284,
+      "sha256": "20a6a48173f31d479028a5bc839eeed9b3dced736d5bde16cbf3d652ba18b996"
     },
     {
       "path": "planeswalk-src/emblem-art.css",
@@ -7083,8 +7083,8 @@
     },
     {
       "path": "planeswalk-src/kit.css",
-      "bytes": 586418,
-      "sha256": "6609887a9e24577e7fe2f7eb1f66e027eca3acc6f5491237a06029baf2a78687"
+      "bytes": 586627,
+      "sha256": "811559cf662058304980b8c98b110a10d42eab75a82b4ac8ea521b5ca7519dbd"
     },
     {
       "path": "planeswalk-src/motion/build-motion.sh",
@@ -7118,8 +7118,8 @@
     },
     {
       "path": "planeswalk-src/planeswalk-ink-map.js",
-      "bytes": 94040,
-      "sha256": "99c31c41056d3b9b2a283a1f17636a21995a82b68c1f3d8484f4e696bb3149b4"
+      "bytes": 94313,
+      "sha256": "47f6a9a304b54e39be1a89e3470a7343046e3ad88786d8bc20968520575415fc"
     },
     {
       "path": "planeswalk-src/planeswalk-motion.js",
@@ -7138,8 +7138,8 @@
     },
     {
       "path": "planeswalk-src/pw-cast.js",
-      "bytes": 61459,
-      "sha256": "b1056f0cfb6b7ed4789c1be087a1170f8b1e20cec2fd2e3789261529fb7e8b7c"
+      "bytes": 62922,
+      "sha256": "ef63df9f443b06946ef55c9c78d960cfa54c3cc84347622fd1604d0e0a9a7192"
     },
     {
       "path": "planeswalk-src/pw-kit.js",
@@ -7153,8 +7153,8 @@
     },
     {
       "path": "planeswalk-src/src.html",
-      "bytes": 424454,
-      "sha256": "466ae4f1ff16faf403fcb8bd93384ac4a60b81657dbef043d708185b37162108"
+      "bytes": 425590,
+      "sha256": "6a06c86b2e6fb410cfbe181d4415d952ba79960b09914915064d8db3fc4bc024"
     },
     {
       "path": "planeswalk-src/tools/addart.py",
@@ -7198,8 +7198,8 @@
     },
     {
       "path": "planeswalk.html",
-      "bytes": 6797280,
-      "sha256": "3d4b76d9ee9693648ded0c0a4c22ad2a2b8ea52d27ad16ae0be76f4a15475ba4"
+      "bytes": 6802157,
+      "sha256": "c05e9c5b7a4d42b752e033406ecc9a4c15414a63c0318c82cd526dcc26ca49fc"
     },
     {
       "path": "planner.js",
@@ -7548,8 +7548,8 @@
     },
     {
       "path": "release-record.js",
-      "bytes": 902,
-      "sha256": "4fcaa877629a68ea7dec4a5525e0b496fd7bf3162738e1d6bd2364588f188c57"
+      "bytes": 827,
+      "sha256": "f32e7ab5318e78930274a544b53147848568e41c53ed6c9d7e6b0b347039f4a3"
     },
     {
       "path": "release-status.js",
@@ -7923,8 +7923,8 @@
     },
     {
       "path": "sw.js",
-      "bytes": 15872,
-      "sha256": "8c4182d6f784173989cf08d6458c5dd9302cfbcce24a41b83c8649669806ebba"
+      "bytes": 15868,
+      "sha256": "b5c696c59eb2d0a91cfc72cf793d695f05d82f3cfb44ee42b95d8e379b2c5d19"
     },
     {
       "path": "sync-merge.js",
@@ -7960,6 +7960,11 @@
       "path": "tcgcompare.js",
       "bytes": 5949,
       "sha256": "41be760b1d962e9488cf8edaa123b01e40244189e97b9b9e8c1bd6397d610f25"
+    },
+    {
+      "path": "test-audit-safety.mjs",
+      "bytes": 22125,
+      "sha256": "443ec7e30f2121d4cdee9690d0d1ea9f5fc9dc2def60a5fa73a38727fcb2280d"
     },
     {
       "path": "test-card-detail-pricing.mjs",
@@ -8008,8 +8013,8 @@
     },
     {
       "path": "test-magic-printing-flow.mjs",
-      "bytes": 15667,
-      "sha256": "4bff597b3decbf89ca3603adcb91446f7e10b1503d05288a76930f5d07b44801"
+      "bytes": 15736,
+      "sha256": "18e802817dd31431cb8d0d70abc6a15431fc886e4807d5524650cd57bd8f3c1e"
     },
     {
       "path": "test-pack-feel.mjs",
