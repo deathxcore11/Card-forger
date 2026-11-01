@@ -391,6 +391,23 @@
      ]
     }
    },
+   "reward": {
+    "hero": {
+     "packs": 1,
+     "coins": 0
+    },
+    "villain": {
+     "card": {
+      "oracle_id": "23720758-f572-45e3-9bec-f6d3b974d7f5",
+      "name": "Balduvian Barbarians",
+      "rarity": "common",
+      "set": "ice",
+      "id": "efeabe8e-8107-4d19-8a43-362aa79cdd92",
+      "image": "https://cards.scryfall.io/normal/front/e/f/efeabe8e-8107-4d19-8a43-362aa79cdd92.jpg"
+     },
+     "coins": 50
+    }
+   },
    "scene": [
     {
      "who": "kjeldor",
@@ -410,7 +427,16 @@
      "line": "Kjeldor holds nothing once it's frozen solid."
     }
    ],
-   "villainScene": null,
+   "villainScene": [
+    {
+     "who": "balduvian",
+     "line": "Kjeldor sits in the warm valley while Balduvia freezes."
+    },
+    {
+     "who": "balduvian",
+     "line": "Not this winter. Raiders, to the pass!"
+    }
+   ],
    "cues": {
     "hero": {
      "start": "Shields.",
@@ -616,6 +642,23 @@
      ]
     }
    },
+   "reward": {
+    "hero": {
+     "packs": 1,
+     "coins": 0
+    },
+    "villain": {
+     "card": {
+      "oracle_id": "fd2a94d3-901d-4b46-aa9b-a30ed6dea6bd",
+      "name": "Balduvian Horde",
+      "rarity": "rare",
+      "set": "all",
+      "id": "8e167a6c-05f8-4d90-9f6b-eb0f1046d54a",
+      "image": "https://cards.scryfall.io/normal/front/8/e/8e167a6c-05f8-4d90-9f6b-eb0f1046d54a.jpg"
+     },
+     "coins": 50
+    }
+   },
    "scene": [
     {
      "who": "gustha",
@@ -635,7 +678,16 @@
      "line": "Then let's see what your head's worth."
     }
    ],
-   "villainScene": null,
+   "villainScene": [
+    {
+     "who": "varchild",
+     "line": "A mage who lectures. My favourite kind of target."
+    },
+    {
+     "who": "varchild",
+     "line": "Paid by the head. Let's earn a fortune."
+    }
+   ],
    "cues": {
     "hero": {
      "start": "Mind the cost.",
@@ -833,11 +885,18 @@
        "id": "2e29882a-c194-48b8-ba18-439b0bda395e"
       },
       {
-       "qty": 4,
+       "qty": 3,
        "name": "Evil Presence",
        "set": "4ed",
        "number": "136",
        "id": "5cbca45f-7b08-408b-9445-e3f2b9563f1b"
+      },
+      {
+       "qty": 1,
+       "name": "Necropotence",
+       "set": "ice",
+       "number": "154",
+       "id": "54d7a0c1-efb4-4a8d-ad92-a96d43835052"
       },
       {
        "qty": 2,
@@ -854,6 +913,23 @@
        "id": "6bb83301-5662-4628-b536-6a3ee0296f2e"
       }
      ]
+    }
+   },
+   "reward": {
+    "hero": {
+     "packs": 1,
+     "coins": 100
+    },
+    "villain": {
+     "card": {
+      "oracle_id": "94a844d2-0574-45a7-b347-e0e329767c42",
+      "name": "Necropotence",
+      "rarity": "rare",
+      "set": "ice",
+      "id": "54d7a0c1-efb4-4a8d-ad92-a96d43835052",
+      "image": "https://cards.scryfall.io/normal/front/5/4/54d7a0c1-efb4-4a8d-ad92-a96d43835052.jpg"
+     },
+     "coins": 100
     }
    },
    "scene": [
@@ -879,7 +955,16 @@
      "line": "Then let them serve. I'll wait."
     }
    ],
-   "villainScene": null,
+   "villainScene": [
+    {
+     "who": "leshrac",
+     "line": "Every planeswalker wants power. They just pretend they don't."
+    },
+    {
+     "who": "leshrac",
+     "line": "Give it the book. Let it pay, page by page."
+    }
+   ],
    "cues": {
     "hero": {
      "start": "Freyalise, guide us.",
@@ -1086,6 +1171,23 @@
      ]
     }
    },
+   "reward": {
+    "hero": {
+     "packs": 1,
+     "coins": 100
+    },
+    "villain": {
+     "card": {
+      "oracle_id": "fc728cd7-2b5b-45f3-896a-a45648bcb61d",
+      "name": "Baron Sengir",
+      "rarity": "rare",
+      "set": "hml",
+      "id": "51bdddac-02fc-493a-a0ea-689273252d7e",
+      "image": "https://cards.scryfall.io/normal/front/5/1/51bdddac-02fc-493a-a0ea-689273252d7e.jpg"
+     },
+     "coins": 100
+    }
+   },
    "scene": [
     {
      "who": "baron",
@@ -1108,7 +1210,16 @@
      "line": "Every guest grows stronger in my house. Well. I do."
     }
    ],
-   "villainScene": null,
+   "villainScene": [
+    {
+     "who": "baron",
+     "line": "Fresh blood from another world. Set another place at the table."
+    },
+    {
+     "who": "baron",
+     "line": "Reveka will warn it. They always warn them. It never helps."
+    }
+   ],
    "cues": {
     "hero": {
      "start": "Lights up.",
@@ -1149,7 +1260,7 @@
      "archetype": null,
      "cards": [
       {
-       "qty": 1,
+       "qty": 2,
        "name": "Force of Will",
        "set": "all",
        "number": "28",
@@ -1254,7 +1365,7 @@
        "id": "60c0faf1-0c16-441a-97fd-6d4e91c894a5"
       },
       {
-       "qty": 2,
+       "qty": 1,
        "name": "Air Elemental",
        "set": "4ed",
        "number": "59",
@@ -1378,6 +1489,23 @@
      ]
     }
    },
+   "reward": {
+    "hero": {
+     "packs": 1,
+     "coins": 100
+    },
+    "villain": {
+     "card": {
+      "oracle_id": "1e3b97d2-8fda-4510-9697-f36ca9ca2ab0",
+      "name": "Lim-Dûl's Cohort",
+      "rarity": "common",
+      "set": "ice",
+      "id": "3d0006f6-2f96-453d-9145-eaefa588efbc",
+      "image": "https://cards.scryfall.io/normal/front/3/d/3d0006f6-2f96-453d-9145-eaefa588efbc.jpg"
+     },
+     "coins": 100
+    }
+   },
    "scene": [
     {
      "who": "limdul",
@@ -1399,7 +1527,16 @@
      "line": "Then we end it. Together."
     }
    ],
-   "villainScene": null,
+   "villainScene": [
+    {
+     "who": "cohort",
+     "line": "Rise. The master calls us south."
+    },
+    {
+     "who": "cohort",
+     "line": "We remember their names. They will not remember ours."
+    }
+   ],
    "cues": {
     "villain": {
      "start": "Rise.",
@@ -1568,11 +1705,18 @@
        "id": "6bb83301-5662-4628-b536-6a3ee0296f2e"
       },
       {
-       "qty": 4,
+       "qty": 3,
        "name": "Black Knight",
        "set": "4ed",
        "number": "121",
        "id": "47716cf4-f35c-4613-9686-4e00b5063408"
+      },
+      {
+       "qty": 1,
+       "name": "Necropotence",
+       "set": "ice",
+       "number": "154",
+       "id": "54d7a0c1-efb4-4a8d-ad92-a96d43835052"
       },
       {
        "qty": 3,
@@ -1619,6 +1763,23 @@
      ]
     }
    },
+   "reward": {
+    "hero": {
+     "packs": 1,
+     "coins": 100
+    },
+    "villain": {
+     "card": {
+      "oracle_id": "5eb29367-4ec3-4bd2-887e-13eeeecae8fa",
+      "name": "Ihsan's Shade",
+      "rarity": "uncommon",
+      "set": "hml",
+      "id": "82351724-2814-4d9e-b065-bb72c761b2e7",
+      "image": "https://cards.scryfall.io/normal/front/8/2/82351724-2814-4d9e-b065-bb72c761b2e7.jpg"
+     },
+     "coins": 100
+    }
+   },
    "scene": [
     {
      "who": "ihsan",
@@ -1629,7 +1790,16 @@
      "line": "Every card is a year of my life. I have so many left to spend."
     }
    ],
-   "villainScene": null,
+   "villainScene": [
+    {
+     "who": "ihsan",
+     "line": "One more card. One more year. One more win."
+    },
+    {
+     "who": "ihsan",
+     "line": "I gave my name for this book. It owes me this victory."
+    }
+   ],
    "cues": {
     "villain": {
      "start": "Draw.",
@@ -1842,6 +2012,23 @@
      ]
     }
    },
+   "reward": {
+    "hero": {
+     "packs": 1,
+     "coins": 100
+    },
+    "villain": {
+     "card": {
+      "oracle_id": "4f92804f-a231-4406-9a16-f4e102517b06",
+      "name": "Grandmother Sengir",
+      "rarity": "rare",
+      "set": "hml",
+      "id": "efb0ac91-5e8e-47b1-aa34-902eef60349f",
+      "image": "https://cards.scryfall.io/normal/front/e/f/efb0ac91-5e8e-47b1-aa34-902eef60349f.jpg"
+     },
+     "coins": 100
+    }
+   },
    "scene": [
     {
      "who": "grandmother",
@@ -1856,7 +2043,16 @@
      "line": "Sit. Stay. Good."
     }
    ],
-   "villainScene": null,
+   "villainScene": [
+    {
+     "who": "grandmother",
+     "line": "My son plays with his food. Messy boy."
+    },
+    {
+     "who": "grandmother",
+     "line": "Everything stays where I put it. Including you, dear."
+    }
+   ],
    "cues": {
     "villain": {
      "start": "Be still.",
@@ -2095,6 +2291,23 @@
        "id": "4695653a-5c4c-4ff3-b80c-f4b6c685f370"
       }
      ]
+    }
+   },
+   "reward": {
+    "hero": {
+     "packs": 2,
+     "coins": 200
+    },
+    "villain": {
+     "card": {
+      "oracle_id": "dafe63ef-f3d6-45e7-877a-573da92ba85e",
+      "name": "Pestilence",
+      "rarity": "common",
+      "set": "4ed",
+      "id": "90886a02-4c1f-48ea-8563-6d80c97d9f58",
+      "image": "https://cards.scryfall.io/normal/front/9/0/90886a02-4c1f-48ea-8563-6d80c97d9f58.jpg"
+     },
+     "coins": 200
     }
    },
    "scene": [

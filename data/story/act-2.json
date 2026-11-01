@@ -382,6 +382,23 @@
      ]
     }
    },
+   "reward": {
+    "hero": {
+     "packs": 1,
+     "coins": 0
+    },
+    "villain": {
+     "card": {
+      "oracle_id": "9178253e-0d89-450d-a93b-ed4765e945db",
+      "name": "Inquisition",
+      "rarity": "common",
+      "set": "drk",
+      "id": "5f133f06-6398-4db1-8577-66c16fd3e00d",
+      "image": "https://cards.scryfall.io/normal/front/5/f/5f133f06-6398-4db1-8577-66c16fd3e00d.jpg"
+     },
+     "coins": 50
+    }
+   },
    "scene": [
     {
      "who": "inquisitor",
@@ -396,7 +413,16 @@
      "line": "Confess, or be shown."
     }
    ],
-   "villainScene": null,
+   "villainScene": [
+    {
+     "who": "inquisitor",
+     "line": "The sun went dark because of people like this one."
+    },
+    {
+     "who": "inquisitor",
+     "line": "Burn the magic out and the light comes back. It must."
+    }
+   ],
    "cues": {
     "villain": {
      "start": "Burn the witch.",
@@ -652,6 +678,23 @@
      ]
     }
    },
+   "reward": {
+    "hero": {
+     "packs": 1,
+     "coins": 0
+    },
+    "villain": {
+     "card": {
+      "oracle_id": "739eac91-3029-4ce7-9885-0af3ddea472e",
+      "name": "Stangg",
+      "rarity": "rare",
+      "set": "leg",
+      "id": "a277775a-6b48-4238-a618-3ae94c4cc85c",
+      "image": "https://cards.scryfall.io/normal/front/a/2/a277775a-6b48-4238-a618-3ae94c4cc85c.jpg"
+     },
+     "coins": 50
+    }
+   },
    "scene": [
     {
      "who": "johan",
@@ -671,7 +714,16 @@
      "aside": "to you"
     }
    ],
-   "villainScene": null,
+   "villainScene": [
+    {
+     "who": "johan",
+     "line": "Hazezon talks about his people as if they were walls."
+    },
+    {
+     "who": "johan",
+     "line": "Walls fall. Bring the army forward."
+    }
+   ],
    "cues": {
     "hero": {
      "start": "Bazaar's closed.",
@@ -899,6 +951,23 @@
      ]
     }
    },
+   "reward": {
+    "hero": {
+     "packs": 1,
+     "coins": 100
+    },
+    "villain": {
+     "card": {
+      "oracle_id": "43f2969e-46eb-4fd4-8b2d-ff81aafcc24a",
+      "name": "Derelor",
+      "rarity": "rare",
+      "set": "fem",
+      "id": "9eb2b79f-f09a-49dc-8e0f-7d711ba78981",
+      "image": "https://cards.scryfall.io/normal/front/9/e/9eb2b79f-f09a-49dc-8e0f-7d711ba78981.jpg"
+     },
+     "coins": 100
+    }
+   },
    "scene": [
     {
      "who": "initiate",
@@ -919,7 +988,16 @@
      "line": "The thallids grow faster than you can cut. Watch."
     }
    ],
-   "villainScene": null,
+   "villainScene": [
+    {
+     "who": "initiate",
+     "line": "The elves grow soldiers out of rot. Clever."
+    },
+    {
+     "who": "initiate",
+     "line": "The Ebon Hand needs that rot more than they do. Take the grove."
+    }
+   ],
    "cues": {
     "hero": {
      "start": "Grow.",
@@ -1196,6 +1274,23 @@
      ]
     }
    },
+   "reward": {
+    "hero": {
+     "packs": 1,
+     "coins": 100
+    },
+    "villain": {
+     "card": {
+      "oracle_id": "ff132d04-c3a9-4949-83ba-d80bcbcd7b9b",
+      "name": "Tetsuo Umezawa",
+      "rarity": "rare",
+      "set": "leg",
+      "id": "8384f87b-26c2-45b7-98ef-352c384f205e",
+      "image": "https://cards.scryfall.io/normal/front/8/3/8384f87b-26c2-45b7-98ef-352c384f205e.jpg"
+     },
+     "coins": 100
+    }
+   },
    "scene": [
     {
      "who": "tetsuo",
@@ -1210,7 +1305,16 @@
      "line": "Show me you can't be collected."
     }
    ],
-   "villainScene": null,
+   "villainScene": [
+    {
+     "who": "tetsuo",
+     "line": "Every wizard the dragon collected thought they were strong."
+    },
+    {
+     "who": "tetsuo",
+     "line": "Let's see if this one learns faster than they did."
+    }
+   ],
    "cues": {
     "villain": {
      "start": "Show me.",
@@ -1430,6 +1534,23 @@
      ]
     }
    },
+   "reward": {
+    "hero": {
+     "packs": 1,
+     "coins": 100
+    },
+    "villain": {
+     "card": {
+      "oracle_id": "728f0a3f-722d-4936-ade8-31883499f56d",
+      "name": "Thrull Champion",
+      "rarity": "rare",
+      "set": "fem",
+      "id": "4d3cafdd-a03b-4b08-b9c1-c776f8450d3a",
+      "image": "https://cards.scryfall.io/normal/front/4/d/4d3cafdd-a03b-4b08-b9c1-c776f8450d3a.jpg"
+     },
+     "coins": 100
+    }
+   },
    "scene": [
     {
      "who": "icatian",
@@ -1449,7 +1570,16 @@
      "line": "...Did that thrull just ask a question?"
     }
    ],
-   "villainScene": null,
+   "villainScene": [
+    {
+     "who": "thrullWizard",
+     "line": "Master made thrull to sacrifice others."
+    },
+    {
+     "who": "thrullWizard",
+     "line": "Thrull has been thinking. Thrull has a list."
+    }
+   ],
    "cues": {
     "villain": {
      "start": "Feed the altar.",
@@ -1712,6 +1842,23 @@
      ]
     }
    },
+   "reward": {
+    "hero": {
+     "packs": 1,
+     "coins": 100
+    },
+    "villain": {
+     "card": {
+      "oracle_id": "8ead94c5-8447-4f20-87ec-efdccde689fc",
+      "name": "Arcades Sabboth",
+      "rarity": "rare",
+      "set": "leg",
+      "id": "2c1dbc62-ceb5-4540-ae38-901e5deafc75",
+      "image": "https://cards.scryfall.io/normal/front/2/c/2c1dbc62-ceb5-4540-ae38-901e5deafc75.jpg"
+     },
+     "coins": 100
+    }
+   },
    "scene": [
     {
      "who": "arcades",
@@ -1726,7 +1873,16 @@
      "line": "Begin. Or don't. The result is the same."
     }
    ],
-   "villainScene": null,
+   "villainScene": [
+    {
+     "who": "arcades",
+     "line": "Order is not cruelty. It is patience."
+    },
+    {
+     "who": "arcades",
+     "line": "Let them cast. Every spell they waste brings the end closer."
+    }
+   ],
    "cues": {
     "villain": {
      "start": "Proceed.",
@@ -1974,6 +2130,23 @@
      ]
     }
    },
+   "reward": {
+    "hero": {
+     "packs": 1,
+     "coins": 100
+    },
+    "villain": {
+     "card": {
+      "oracle_id": "992d9a72-d34d-47d7-96fb-37f0efb515ef",
+      "name": "Hymn to Tourach",
+      "rarity": "common",
+      "set": "fem",
+      "id": "eb9273ea-9a41-42e3-8c9c-0d50b127a818",
+      "image": "https://cards.scryfall.io/normal/front/e/b/eb9273ea-9a41-42e3-8c9c-0d50b127a818.jpg"
+     },
+     "coins": 100
+    }
+   },
    "scene": [
     {
      "who": "choir",
@@ -1990,7 +2163,16 @@
      "quote": true
     }
    ],
-   "villainScene": null,
+   "villainScene": [
+    {
+     "who": "choir",
+     "line": "Sing louder, sisters. The warriors are listening."
+    },
+    {
+     "who": "choir",
+     "line": "Tourach... Tourach... let them forget what they hold."
+    }
+   ],
    "cues": {
     "villain": {
      "start": "Sing.",
@@ -2278,6 +2460,23 @@
        "id": "30345500-d430-4280-bfe3-de297309f136"
       }
      ]
+    }
+   },
+   "reward": {
+    "hero": {
+     "packs": 2,
+     "coins": 200
+    },
+    "villain": {
+     "card": {
+      "oracle_id": "e26bf6a9-b31c-4bc0-b55b-c01f2f69be6b",
+      "name": "Nicol Bolas",
+      "rarity": "rare",
+      "set": "leg",
+      "id": "729feb73-4581-4f9d-ba47-bece72481b86",
+      "image": "https://cards.scryfall.io/normal/front/7/2/729feb73-4581-4f9d-ba47-bece72481b86.jpg"
+     },
+     "coins": 200
     }
    },
    "scene": [

@@ -50,6 +50,7 @@ export default {
 3 Abomination
 24 Swamp`}},
       scene: [{who: 'inquisitor', line: 'Magic brought the darkness. Magic will burn for it.'}, {who: 'inquisitor', line: 'You carry the smell of it. Kneel.'}, {who: 'inquisitor', line: 'Confess, or be shown.'}],
+      villainScene: [{who: 'inquisitor', line: "The sun went dark because of people like this one."}, {who: 'inquisitor', line: "Burn the magic out and the light comes back. It must."}],
       cues: {villain: cue('Burn the witch.', 'The Church sees all.', 'Send for more brothers!', 'Ashes are honest.', 'Heresy... walks free.')}},
     {slot: 2, kind: 'Lesson', title: "Johan's Crossing", difficulty: 'Easy', rewardSet: 'leg', teaches: ['Legendary creatures', 'Three colours'],
       blurb: 'A merchant prince defends his desert city from a warlord who wants it. Only one of them leaves a legend.',
@@ -86,6 +87,7 @@ export default {
 9 Mountain
 9 Forest`}},
       scene: [{who: 'johan', line: 'Hazezon. Open the gates and I keep your city whole.'}, {who: 'hazezon', line: "My city is my people, Johan. They don't open."}, {who: 'johan', line: "Then they'll be a story. A short one."}, {who: 'hazezon', line: 'Stay close. Stories are how we win here.', aside: 'to you'}],
+      villainScene: [{who: 'johan', line: "Hazezon talks about his people as if they were walls."}, {who: 'johan', line: "Walls fall. Bring the army forward."}],
       cues: {hero: cue("Bazaar's closed.", 'Every sand-warrior answers.', 'Not my people.', 'Go home, warlord.', 'Save who you can.'),
         villain: cue('March.', 'Kneel or be legend.', 'Hold, damn you!', 'Mine.', "This isn't finished.")}},
     {slot: 3, kind: 'Lesson', title: 'The Thallid Grove', difficulty: 'Normal', rewardSet: 'fem', teaches: ['Tokens', 'Counters'],
@@ -120,6 +122,7 @@ export default {
 2 Drain Life
 24 Swamp`}},
       scene: [{who: 'initiate', line: 'We are no longer Nature\'s children, but her masters.', quote: true}, {who: 'kolevi', line: 'The magic at the heart of all living things can bear awe-inspiring fruit.', quote: true}, {who: 'initiate', line: "Then we'll harvest it."}, {who: 'kolevi', line: 'The thallids grow faster than you can cut. Watch.'}],
+      villainScene: [{who: 'initiate', line: "The elves grow soldiers out of rot. Clever."}, {who: 'initiate', line: "The Ebon Hand needs that rot more than they do. Take the grove."}],
       cues: {hero: cue('Grow.', 'Havenwood answers!', 'Spore and root, hold!', 'The grove lives.', "Burn the spores... don't let them have it."),
         villain: cue('For the Hand.', 'Kneel to Tourach.', 'Bring the thrulls!', 'Harvest.', 'The Hand remembers.')}},
     {slot: 4, kind: 'Rival', title: "Tetsuo's Test", difficulty: 'Normal', rewardSet: 'leg', teaches: ['Counterspells', 'Multicolour gold cards'],
@@ -160,6 +163,7 @@ export default {
 5 Swamp
 5 Mountain`}},
       scene: [{who: 'tetsuo', line: 'You came through a rift. So did the thing I\'m hunting.'}, {who: 'tetsuo', line: 'An old dragon. Older than kings. He collects wizards like you.'}, {who: 'tetsuo', line: "Show me you can't be collected."}],
+      villainScene: [{who: 'tetsuo', line: "Every wizard the dragon collected thought they were strong."}, {who: 'tetsuo', line: "Let's see if this one learns faster than they did."}],
       cues: {villain: cue('Show me.', 'Can you see it coming?', 'Good. Good.', 'Not yet ready.', 'Then we hunt together.')}},
     {slot: 5, kind: 'Lesson', title: 'The Thrull Rebellion', difficulty: 'Normal', rewardSet: 'fem', teaches: ['Sacrifice'],
       blurb: 'The Ebon Hand made their thrulls smart enough to help with the sacrifices. That turned out to be a mistake.',
@@ -191,6 +195,7 @@ export default {
 2 Animate Dead
 24 Swamp`}},
       scene: [{who: 'icatian', line: 'Valiant Icatia was the last of the Sarpadian empires to fall.', quote: true}, {who: 'icatian', line: 'Not today, though.'}, {who: 'thrullWizard', line: 'Master says: sacrifice. Thrull asks: whose?'}, {who: 'icatian', line: '...Did that thrull just ask a question?'}],
+      villainScene: [{who: 'thrullWizard', line: "Master made thrull to sacrifice others."}, {who: 'thrullWizard', line: "Thrull has been thinking. Thrull has a list."}],
       cues: {villain: cue('Feed the altar.', 'More thrulls, more power.', "The thrulls aren't listening!", 'Icatia falls.', 'The thrulls... turned...')}},
     {slot: 6, kind: 'Meta', title: 'The Deck', difficulty: 'Normal', rewardSet: 'leg', teaches: ['Card advantage', 'Playing around counterspells'],
       blurb: 'An Elder Dragon who believes in order above everything. His deck agrees: counter it, answer it, win slowly. The era\'s legendary control deck.',
@@ -228,6 +233,7 @@ export default {
 7 Island
 7 Plains`}},
       scene: [{who: 'arcades', line: 'Chaos has a smell. You reek of it.'}, {who: 'arcades', line: 'I do not attack. I simply wait until everything you do has failed.'}, {who: 'arcades', line: "Begin. Or don't. The result is the same."}],
+      villainScene: [{who: 'arcades', line: "Order is not cruelty. It is patience."}, {who: 'arcades', line: "Let them cast. Every spell they waste brings the end closer."}],
       cues: {villain: cue('Proceed.', 'Denied.', '...Irregular.', 'Order holds.', 'Impossible. Recount.')}},
     {slot: 7, kind: 'Meta', title: 'Hymn to Tourach', difficulty: 'Normal', rewardSet: 'fem', teaches: ['Discard'],
       blurb: "The Ebon Hand's choir sings a hymn that drives warriors mad. The era's discard deck.",
@@ -263,6 +269,7 @@ export default {
 1 Pestilence
 24 Swamp`}},
       scene: [{who: 'choir', line: 'Tourach... Tourach...', aside: 'singing, low'}, {who: 'hazezon', line: "Cover your ears. Don't think about what you're holding."}, {who: 'choir', line: 'The eerie, wailing Hymn caused insanity even in hardened warriors.', quote: true}],
+      villainScene: [{who: 'choir', line: "Sing louder, sisters. The warriors are listening."}, {who: 'choir', line: "Tourach... Tourach... let them forget what they hold."}],
       cues: {villain: cue('Sing.', 'Forget. Forget.', 'The Hymn falters!', 'Silence.', 'Tourach... hears...')}},
     {slot: 8, kind: 'Boss', title: 'The Last Elder Dragon', difficulty: 'Normal', rewardSet: 'leg', teaches: ['Everything so far'],
       blurb: 'Under the Wastes, the thing Tetsuo has hunted his whole life opens one eye.',

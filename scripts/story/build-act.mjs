@@ -35,10 +35,27 @@ const deck = (d) => {
 const face = (p) => { if (p.fixed) return {...p.fixed, focus: p.focus || '50% 30%'}; const c = p.number ? pool.find(x => x.name === p.card && x.number === p.number && (!p.set || x.set === p.set)) || pick(p.card, p.prefer || []) : pick(p.card, p.prefer || []); return c ? {card: c.name, set: c.set, number: c.number, id: c.id, crop: c.art, artist: c.artist, focus: p.focus || '50% 30%'} : null; };
 const out = {act: n, title: act.title, years: act.years, sets: act.sets, landSet: act.landSet, intro: src.intro, finale: src.finale, cast: {}, battles: []};
 for (const [k, p] of Object.entries(src.cast)) out.cast[k] = {name: p.name, title: p.title || '', portrait: face(p)};
+// Rewards (Randall, 1 Nov 21:11Z): two one-time rewards per battle, both in context. Your side pays
+// the battle's era packs; the villain's side pays that villain's signature card from their own deck.
+// Harder battles pay more. Nothing pays twice.
+const RANK = {common: 0, uncommon: 1, rare: 2, mythic: 3, special: 2, bonus: 2};
+const signature = (b, villainDeck) => {
+  const portrait = src.cast[b.villain.who]?.card || src.cast[b.villain.who]?.fixed?.card;
+  const rows = villainDeck.cards.map(r => ({r, c: pool.find(x => x.id === r.id)})).filter(x => x.c && !/Land/.test(x.c.type));
+  const own = rows.find(x => x.c.name === b.rewardCard) || rows.find(x => x.c.name === portrait);
+  const best = own || rows.sort((a, z) => (RANK[z.c.rarity] ?? 0) - (RANK[a.c.rarity] ?? 0) || z.c.cmc - a.c.cmc)[0];
+  if (!best) return null;
+  const c = best.c;
+  return {oracle_id: c.oracle_id, name: c.name, rarity: c.rarity, set: c.set, id: c.id, image: `https://cards.scryfall.io/normal/front/${c.id[0]}/${c.id[1]}/${c.id}.jpg`};
+};
+const tier = b => b.slot === 8 ? 'boss' : b.difficulty === 'Easy' ? 'easy' : 'normal';
+const REWARD = {easy: {packs: 1, coins: 0, vCoins: 50}, normal: {packs: 1, coins: 100, vCoins: 100}, boss: {packs: 2, coins: 200, vCoins: 200}};
 for (const b of src.battles) {
+  const vDeck = deck(b.villain.deck), t = REWARD[tier(b)];
   out.battles.push({id: `a${n}b${b.slot}`, slot: b.slot, kind: b.kind, title: b.title, difficulty: b.difficulty, teaches: b.teaches, blurb: b.blurb,
     rewardSet: b.rewardSet, host: b.slot === 8,
-    hero: {who: b.hero.who, deck: deck(b.hero.deck)}, villain: {who: b.villain.who, deck: deck(b.villain.deck)},
+    hero: {who: b.hero.who, deck: deck(b.hero.deck)}, villain: {who: b.villain.who, deck: vDeck},
+    reward: {hero: {packs: t.packs, coins: t.coins}, villain: {card: signature(b, vDeck), coins: t.vCoins}},
     scene: b.scene, villainScene: b.villainScene || null, cues: b.cues, bigPlays: b.bigPlays || [], sim: b.sim || null});
 }
 if (missing.length) { console.error('MISSING:', [...new Set(missing)].join(' | ')); process.exit(1); }

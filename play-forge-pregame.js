@@ -38,8 +38,8 @@ export function mountForgeMatchIntro({root,setup,lookup=()=>null,onCancel=()=>{}
  let closed=false,pendingChoice=null;
  const stage=node('section',undefined,'forge-match-intro'),header=node('header',undefined,'forge-intro-header');
  stage.setAttribute('aria-label','Your matchup');
- const rival=setup.friend?.name||'CPU',format=node('p',`${setup.match.format} · ${setup.friend?'Friend match':setup.playStyle==='quick'?'Quick Play':'Practice'}`,'forge-intro-eyebrow');
- const heading=node('h1','A new match awaits');heading.tabIndex=-1;
+ const rival=setup.friend?.name||setup.story?.rival||'CPU',format=node('p',setup.story?'Story mode':`${setup.match.format} · ${setup.friend?'Friend match':setup.playStyle==='quick'?'Quick Play':'Practice'}`,'forge-intro-eyebrow');
+ const heading=node('h1',setup.story?.title||'A new match awaits');heading.tabIndex=-1;
  header.append(format,heading);
  const versus=node('div',undefined,'forge-intro-versus'),seats=[];
  // A Commander pod shows every CPU: you on one side, CPU 2-4 stacked on the other.

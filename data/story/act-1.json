@@ -399,6 +399,23 @@
      ]
     }
    },
+   "reward": {
+    "hero": {
+     "packs": 1,
+     "coins": 0
+    },
+    "villain": {
+     "card": {
+      "oracle_id": "534ce8e2-53a1-407c-9881-d3b5347d43c3",
+      "name": "Elvish Archers",
+      "rarity": "rare",
+      "set": "lea",
+      "id": "1cb9d405-f2b5-4e10-a405-feafd2a87d90",
+      "image": "https://cards.scryfall.io/normal/front/1/c/1cb9d405-f2b5-4e10-a405-feafd2a87d90.jpg"
+     },
+     "coins": 50
+    }
+   },
    "scene": [
     {
      "who": "archers",
@@ -413,7 +430,16 @@
      "line": "Show us what you are. Call something."
     }
    ],
-   "villainScene": null,
+   "villainScene": [
+    {
+     "who": "archers",
+     "line": "Something fell out of the sky into our forest."
+    },
+    {
+     "who": "archers",
+     "line": "Eyes on it. If it calls one beast, we call ten."
+    }
+   ],
    "cues": {
     "villain": {
      "start": "Bows up.",
@@ -605,6 +631,23 @@
      ]
     }
    },
+   "reward": {
+    "hero": {
+     "packs": 1,
+     "coins": 0
+    },
+    "villain": {
+     "card": {
+      "oracle_id": "d236b3fc-0d3f-4d99-875d-e32a33fe5767",
+      "name": "Goblin King",
+      "rarity": "rare",
+      "set": "lea",
+      "id": "5873672d-37ea-4c0f-97f3-12b74fde112d",
+      "image": "https://cards.scryfall.io/normal/front/5/8/5873672d-37ea-4c0f-97f3-12b74fde112d.jpg"
+     },
+     "coins": 50
+    }
+   },
    "scene": [
     {
      "who": "goblinKing",
@@ -623,7 +666,16 @@
      "line": "...Why is your stuff flying? Nobody said flying was allowed."
     }
    ],
-   "villainScene": null,
+   "villainScene": [
+    {
+     "who": "goblinKing",
+     "line": "Big toll today, boys. Biggest ever."
+    },
+    {
+     "who": "goblinKing",
+     "line": "If it flies, throw rocks at it. Rocks fly too. Sort of."
+    }
+   ],
    "cues": {
     "villain": {
      "start": "Charge! No, the OTHER way!",
@@ -858,6 +910,23 @@
      ]
     }
    },
+   "reward": {
+    "hero": {
+     "packs": 1,
+     "coins": 100
+    },
+    "villain": {
+     "card": {
+      "oracle_id": "9456c5b6-946d-403a-8ed0-dff9f921d98c",
+      "name": "Black Knight",
+      "rarity": "uncommon",
+      "set": "lea",
+      "id": "c1662949-0d69-49a3-8c69-daf10717ed4e",
+      "image": "https://cards.scryfall.io/normal/front/c/1/c1662949-0d69-49a3-8c69-daf10717ed4e.jpg"
+     },
+     "coins": 100
+    }
+   },
    "scene": [
     {
      "who": "blackKnight",
@@ -877,7 +946,16 @@
      "line": "Then let them see how it's done. Watch the first blow. It's the only one that matters."
     }
    ],
-   "villainScene": null,
+   "villainScene": [
+    {
+     "who": "blackKnight",
+     "line": "Years at this ford. Every morning, the same white armour."
+    },
+    {
+     "who": "blackKnight",
+     "line": "Today it ends. No prayers, no tricks. Just steel."
+    }
+   ],
    "cues": {
     "hero": {
      "start": "Steady.",
@@ -1105,6 +1183,23 @@
      ]
     }
    },
+   "reward": {
+    "hero": {
+     "packs": 1,
+     "coins": 100
+    },
+    "villain": {
+     "card": {
+      "oracle_id": "d48a38c9-3dcd-4c18-8840-1b057ede3ff0",
+      "name": "Erhnam Djinn",
+      "rarity": "rare",
+      "set": "arn",
+      "id": "42bc0c3f-0a52-4bdc-83da-6484bf3102f3",
+      "image": "https://cards.scryfall.io/normal/front/4/2/42bc0c3f-0a52-4bdc-83da-6484bf3102f3.jpg"
+     },
+     "coins": 100
+    }
+   },
    "scene": [
     {
      "who": "erhnam",
@@ -1123,7 +1218,16 @@
      "line": "Lose, and you stay. I collect people."
     }
    ],
-   "villainScene": null,
+   "villainScene": [
+    {
+     "who": "erhnam",
+     "line": "A rift-walker. I've collected kings, but never one of those."
+    },
+    {
+     "who": "erhnam",
+     "line": "Make it a long duel. I want to savour this one."
+    }
+   ],
    "cues": {
     "villain": {
      "start": "Entertain me.",
@@ -1372,6 +1476,23 @@
      ]
     }
    },
+   "reward": {
+    "hero": {
+     "packs": 1,
+     "coins": 100
+    },
+    "villain": {
+     "card": {
+      "oracle_id": "74f67dcf-5afb-45aa-8d4b-3cdb23f6f2a1",
+      "name": "Triskelion",
+      "rarity": "rare",
+      "set": "atq",
+      "id": "a79c99e1-722a-44b6-8fa3-2be3f0c193d8",
+      "image": "https://cards.scryfall.io/normal/front/a/7/a79c99e1-722a-44b6-8fa3-2be3f0c193d8.jpg"
+     },
+     "coins": 100
+    }
+   },
    "scene": [
     {
      "who": "titania",
@@ -1394,7 +1515,16 @@
      "line": "Then we will be very expensive."
     }
    ],
-   "villainScene": null,
+   "villainScene": [
+    {
+     "who": "urza",
+     "line": "Titania thinks the trees are sacred. Mishra thinks they're spite."
+    },
+    {
+     "who": "urza",
+     "line": "I think they're fuel. And I am out of fuel."
+    }
+   ],
    "cues": {
     "hero": {
      "start": "The forest stands.",
@@ -1615,6 +1745,23 @@
      ]
     }
    },
+   "reward": {
+    "hero": {
+     "packs": 1,
+     "coins": 100
+    },
+    "villain": {
+     "card": {
+      "oracle_id": "dd520d83-297a-487f-b8f3-4997bbc056e0",
+      "name": "Serendib Efreet",
+      "rarity": "rare",
+      "set": "arn",
+      "id": "cf56e862-3169-4f63-acd0-731080fa32f2",
+      "image": "https://cards.scryfall.io/normal/front/c/f/cf56e862-3169-4f63-acd0-731080fa32f2.jpg"
+     },
+     "coins": 100
+    }
+   },
    "scene": [
     {
      "who": "sindbad",
@@ -1633,7 +1780,16 @@
      "line": "Then the sea may have what's left of you."
     }
    ],
-   "villainScene": null,
+   "villainScene": [
+    {
+     "who": "efreet",
+     "line": "Another sailor, another promise of treasure."
+    },
+    {
+     "who": "efreet",
+     "line": "Serendib has outlasted a thousand ships. It can outlast one more."
+    }
+   ],
    "cues": {
     "hero": {
      "start": "Hoist!",
@@ -1861,6 +2017,23 @@
      ]
     }
    },
+   "reward": {
+    "hero": {
+     "packs": 1,
+     "coins": 100
+    },
+    "villain": {
+     "card": {
+      "oracle_id": "4d18bcba-a346-445e-a182-6cc30b7e066d",
+      "name": "Ashnod's Altar",
+      "rarity": "uncommon",
+      "set": "atq",
+      "id": "cdcccb0f-ce96-453b-9e82-41d87f52e58b",
+      "image": "https://cards.scryfall.io/normal/front/c/d/cdcccb0f-ce96-453b-9e82-41d87f52e58b.jpg"
+     },
+     "coins": 100
+    }
+   },
    "scene": [
     {
      "who": "ashnod",
@@ -1884,7 +2057,16 @@
      "line": "Oh, bring your friend. I've never taken a planeswalker apart."
     }
    ],
-   "villainScene": null,
+   "villainScene": [
+    {
+     "who": "ashnod",
+     "line": "Kroog's walls, Tawnos's toys, and a planeswalker to open up."
+    },
+    {
+     "who": "ashnod",
+     "line": "Mishra wants the factories. I want to see how everything works inside."
+    }
+   ],
    "cues": {
     "hero": {
      "start": "Seal the gates.",
@@ -2165,6 +2347,23 @@
        "id": "0848d94a-2704-460f-986b-b192dd6d26b7"
       }
      ]
+    }
+   },
+   "reward": {
+    "hero": {
+     "packs": 2,
+     "coins": 200
+    },
+    "villain": {
+     "card": {
+      "oracle_id": "18b1f96f-de35-4f0a-8b0e-81576471fd15",
+      "name": "Mishra's War Machine",
+      "rarity": "rare",
+      "set": "atq",
+      "id": "8f6b4652-a1d4-418f-a89b-6a977a920a9e",
+      "image": "https://cards.scryfall.io/normal/front/8/f/8f6b4652-a1d4-418f-a89b-6a977a920a9e.jpg"
+     },
+     "coins": 200
     }
    },
    "scene": [
