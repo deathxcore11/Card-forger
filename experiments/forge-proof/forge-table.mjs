@@ -78,6 +78,22 @@ export function mountForgeTable(root,{session,onExit=()=>{},profile={displayName
  const authority=session;let displayed=authority.snapshot(),playbackBusy=false,activeBeat=null;
  session=createPlaybackSession(authority,{displayed:()=>displayed,busy:()=>playbackBusy});
  const doc=root.ownerDocument,win=doc.defaultView,hooks=practiceArtworkHooks();let handFocusRect=null,handDownAt=null,handTap=null,handLiftTimer=0,handFocus=null,handFocusId=null,handPointer=null,handSifted=false,localError='',panelKey='',drag=null,ghost=null,ghostFrame=0,suppressUntil=0,closed=false,nativeValueDraft=null,openingFocused=false;
+ // The table redraws by building new card elements, which would cut a glide, a landing or a strike off
+ // mid-flight. Card motion is kept per card, and a redraw picks each one up on the new element where it was.
+ const carried=new Map();
+ const keep=(el,a)=>{const card=el?.matches?.('.play-match-card')?el:el?.querySelector?.(':scope>.play-match-card[data-instance]'),id=card?.dataset.instance;if(!id||!a)return a;
+  const key=id+(el===card?'|c':'|w');let set=carried.get(key);if(!set)carried.set(key,set=new Set());set.add(a);a.finished.then(()=>set.delete(a),()=>set.delete(a));return a;};
+ const anim=(el,frames,opts)=>el?keep(el,el.animate(frames,opts)):null;
+ const keepLatest=el=>{for(const a of el?.getAnimations?.()||[])if(!(a instanceof CSSTransition||a instanceof CSSAnimation))keep(el,a);};
+ function carryOver(){for(const [key,set] of carried){for(const a of [...set]){const t=a.effect?.target;if(!t||t.isConnected)continue;set.delete(a);if(a.playState==='finished'||a.playState==='idle')continue;
+   const [id,role]=key.split('|'),card=root.querySelector(`.play-match-card[data-instance="${CSS.escape(id)}"]`),el=role==='c'?card:card?.closest('.play-match-card-wrap');const at=a.currentTime;a.cancel();if(!el)continue;
+   const {delay,duration,easing,fill,iterations,direction,endDelay}=a.effect.getTiming(),frames=a.effect.getKeyframes().map(({computedOffset,...k})=>k);
+   const n=anim(el,frames,{delay,duration,easing,fill,iterations,direction,endDelay,composite:a.effect.composite});if(n&&at!==null)n.currentTime=at;}
+  if(!set.size)carried.delete(key);}}
+ // A target the redraw replaced is found again by its card or its seat.
+ const again=n=>{if(!n||n.isConnected)return n;const id=n.dataset?.instance||n.querySelector?.('.play-match-card[data-instance]')?.dataset.instance;
+  if(id){const c=root.querySelector(`.play-match-card[data-instance="${CSS.escape(id)}"]`);return c?(n.matches?.('.play-match-card')?c:c.closest('.play-match-card-wrap')||c):null;}
+  const seat=n.closest?.('.play-match-seat')?.dataset.playerSeat;if(seat===undefined)return null;const s=root.querySelector(`.play-match-seat[data-player-seat="${CSS.escape(seat)}"]`);return n.matches?.('.play-match-profile-badge')?s?.querySelector('.play-match-profile-badge')||s:s;};
  const reducedMotion=()=>win.matchMedia?.('(prefers-reduced-motion: reduce)').matches;
  let dockObserver=null,dockObserved=null;
  // Cards whose payment came up short, with the mana you had when you tried (see enhance).
@@ -156,7 +172,7 @@ const name=String(card.name);if(Math.max(...name.split(/\s+/).map(word=>word.len
  // clock instead, so a re-inserted element carries on from where it was.
  const syncLoops=()=>{loopFrame=0;if(closed)return;for(const a of root.getAnimations?.({subtree:true})||[])if(a.animationName&&a.startTime!==0&&a.effect?.getTiming?.().iterations===Infinity)try{a.startTime=0;}catch{}};
  function enhance(){
-  if(closed)return;if(!loopFrame&&typeof win.requestAnimationFrame==='function')loopFrame=win.requestAnimationFrame(syncLoops);const snap=session.snapshot(),n=snap.native;if(!snap.status||!n)return;
+  if(closed)return;carryOver();if(flights.size)flyNow();if(!loopFrame&&typeof win.requestAnimationFrame==='function')loopFrame=win.requestAnimationFrame(syncLoops);const snap=session.snapshot(),n=snap.native;if(!snap.status||!n)return;
   if(presentation.hosted){const exit=root.querySelector('[data-focus-key=exit-match]');if(exit&&exit.textContent!=='Return to Play setup')exit.textContent='Return to Play setup';}
   const footer=root.querySelector('.play-match-decisions');if(!footer)return;
   const key=JSON.stringify([n.revision,snap.busy,snap.nativeDraft,snap.transportError,snap.selected,localError]);
@@ -381,21 +397,21 @@ const name=String(card.name);if(Math.max(...name.split(/\s+/).map(word=>word.len
   root.dataset.csStriking='true';strikeEnd=Math.max(strikeEnd,Date.now()+ms);setTimeout(()=>{if(Date.now()>=strikeEnd-20)delete root.dataset.csStriking;},ms+40);
   // Dragged there, it goes straight from your finger into its slot, Arena style: no second lift, just a quick
   // glide that seats with a small press and settle. Tapped to play, it rises off the hand, hangs, then slams.
-  if(drop)w.animate([{transform:`translate(${dx}px,${dy}px) scale(${s}) rotate(${tilt}deg)`,zIndex:50,easing:'cubic-bezier(.25,.8,.3,1)'},{transform:'translateY(2px) scale(.96)',zIndex:50,offset:.72,easing:'ease-out'},{transform:'translateY(-1px) scale(1.01)',zIndex:50,offset:.88},{transform:'none',zIndex:50}],{duration:ms});
-  else w.animate([{transform:`translate(${dx}px,${dy}px) scale(${s}) rotate(${tilt}deg)`,zIndex:50,easing:'cubic-bezier(.2,.7,.3,1)'},{transform:`translate(${dx*.12}px,${dy*.12-26}px) scale(1.2) rotate(${tilt*.3}deg)`,zIndex:50,offset:.5,easing:'cubic-bezier(.6,0,.9,.5)'},{transform:'translateY(3px) scale(.95)',zIndex:50,offset:.8,easing:'ease-out'},{transform:'translateY(-1px) scale(1.01)',zIndex:50,offset:.9},{transform:'none',zIndex:50}],{duration:ms});
+  if(drop)anim(w,[{transform:`translate(${dx}px,${dy}px) scale(${s}) rotate(${tilt}deg)`,zIndex:50,easing:'cubic-bezier(.25,.8,.3,1)'},{transform:'translateY(2px) scale(.96)',zIndex:50,offset:.72,easing:'ease-out'},{transform:'translateY(-1px) scale(1.01)',zIndex:50,offset:.88},{transform:'none',zIndex:50}],{duration:ms});
+  else anim(w,[{transform:`translate(${dx}px,${dy}px) scale(${s}) rotate(${tilt}deg)`,zIndex:50,easing:'cubic-bezier(.2,.7,.3,1)'},{transform:`translate(${dx*.12}px,${dy*.12-26}px) scale(1.2) rotate(${tilt*.3}deg)`,zIndex:50,offset:.5,easing:'cubic-bezier(.6,0,.9,.5)'},{transform:'translateY(3px) scale(.95)',zIndex:50,offset:.8,easing:'ease-out'},{transform:'translateY(-1px) scale(1.01)',zIndex:50,offset:.9},{transform:'none',zIndex:50}],{duration:ms});
   setTimeout(()=>{if(!w.isConnected)return;catchFoil(w);motion.ring(w,'#f0d48a',420);motion.sparks(w,{n:6,spread:40,color:'#f0d48a'});
    for(const n of w.parentElement?.children||[]){if(n===w)continue;const nr=n.getBoundingClientRect(),side=Math.sign(nr.left-r.left);if(!side||Math.abs(nr.left-r.left)>r.width*2.4)continue;n.animate([{transform:'none'},{transform:`translateX(${side*5}px)`,offset:.35},{transform:'none'}],{duration:260,easing:'ease-out'});}},ms*.8);
  }
  const glide=before=>{
   if(!before.size||reducedMotion())return;let moved=0;
   for(const el of root.querySelectorAll('.play-match-card[data-instance]')){
-   const w=el.closest('.play-match-card-wrap')||el,prev=before.get(el.dataset.instance),r=w.getBoundingClientRect();if(!r.width||moved>24)continue;
+   const w=el.closest('.play-match-card-wrap')||el,prev=before.get(el.dataset.instance),r=w.getBoundingClientRect();if(!r.width||moved>24||flights.has(el.dataset.instance))continue;
    if(prev){const inHand=prev.hand&&!!el.closest('.play-match-hand');
     // A card that only shifts inside your hand (a draw or a play beside it) slides by its centre, on top of
     // its fan angle, arc and any pop: it never changes size or flattens on the way.
-    if(inHand){const dx=prev.r.left+prev.r.width/2-(r.left+r.width/2),dy=prev.r.top+prev.r.height/2-(r.top+r.height/2);if(Math.hypot(dx,dy)<6)continue;moved++;w.animate([{transform:`translate(${dx}px,${dy}px)`},{transform:'translate(0px,0px)'}],{duration:320,easing:'cubic-bezier(.2,.8,.2,1)',composite:'add'});continue;}
-    const dx=prev.r.left-r.left,dy=prev.r.top-r.top;if(Math.hypot(dx,dy)<6)continue;const s=Math.max(.4,Math.min(2.2,prev.r.width/r.width));moved++;const played=prev.hand&&el.dataset.presentation==='battlefield';if(played){land(w,el.dataset.instance,dx,dy,s);continue;}w.animate([{transform:`translate(${dx}px,${dy}px) scale(${s})`,zIndex:50},{transform:'none',zIndex:50}],{duration:380,easing:'cubic-bezier(.2,.8,.2,1)'});}
-   else if(el.dataset.presentation==='battlefield'){moved++;w.animate([{opacity:0,transform:'translateY(-14px) scale(.86)'},{opacity:1,transform:'none'}],{duration:420,easing:'cubic-bezier(.2,.8,.2,1)'});}
+    if(inHand){const dx=prev.r.left+prev.r.width/2-(r.left+r.width/2),dy=prev.r.top+prev.r.height/2-(r.top+r.height/2);if(Math.hypot(dx,dy)<6)continue;moved++;anim(w,[{transform:`translate(${dx}px,${dy}px)`},{transform:'translate(0px,0px)'}],{duration:320,easing:'cubic-bezier(.2,.8,.2,1)',composite:'add'});continue;}
+    const dx=prev.r.left-r.left,dy=prev.r.top-r.top;if(Math.hypot(dx,dy)<6)continue;const s=Math.max(.4,Math.min(2.2,prev.r.width/r.width));moved++;const played=prev.hand&&el.dataset.presentation==='battlefield';if(played){land(w,el.dataset.instance,dx,dy,s);continue;}anim(w,[{transform:`translate(${dx}px,${dy}px) scale(${s})`,zIndex:50},{transform:'none',zIndex:50}],{duration:380,easing:'cubic-bezier(.2,.8,.2,1)'});}
+   else if(el.dataset.presentation==='battlefield'){moved++;anim(w,[{opacity:0,transform:'translateY(-14px) scale(.86)'},{opacity:1,transform:'none'}],{duration:420,easing:'cubic-bezier(.2,.8,.2,1)'});}
   }
  };
  // Four short sequences that explain ordinary play, drawn only from what Forge accepted between two
@@ -426,40 +442,80 @@ const name=String(card.name);if(Math.max(...name.split(/\s+/).map(word=>word.len
   ring.animate([{opacity:.9,transform:'scale(.92)'},{opacity:0,transform:'scale(1.18)'}],{duration:kind==='land'?380:520,easing:'ease-out'}).finished.then(()=>ring.remove(),()=>ring.remove());
  }
  // One motion scale for the table, tunable in one place: press, move, land, lunge.
- const MOTION={press:120,move:220,land:360,snap:300,lunge:500,stagger:140};
+ // A strike: a gentle wind-up, a flight timed by its distance (never a blink across a big table, never a crawl
+ // to a blocker next door), a short freeze on contact, then an unhurried return to its place.
+ const MOTION={press:120,move:220,land:360,snap:300,windup:160,flight:[200,320],hold:70,back:280,stagger:150};
  let strikeEnd=0,hitAt=0;
  // Where a blow lands: a player's portrait rather than the middle of their whole seat panel, a card's frame.
  const aimOf=to=>{if(!to?.getBoundingClientRect)return to;const p=to.matches?.('.play-match-seat')&&to.querySelector('.play-match-profile-badge');return p&&rectOf(p)?p:(to.closest?.('.play-match-card-wrap')||to);};
  const boxOf=to=>to?.getBoundingClientRect?rectOf(to):to?.width>0?to:null;
  // Arena's lunge travels until the striker's leading edge meets what it hits, with a little bite, however near
  // or far the two sit (a fixed share of the distance stopped short across a PC table and overshot on a phone).
+ // The edges are found along the line between the two centres (a diagonal flight meets a corner, not a side).
+ const edgeOf=(r,ux,uy)=>Math.min(ux>1e-3?r.width/2/ux:Infinity,uy>1e-3?r.height/2/uy:Infinity);
  const contactReach=(a,b)=>{const dx=b.left+b.width/2-(a.left+a.width/2),dy=b.top+b.height/2-(a.top+a.height/2),d=Math.hypot(dx,dy);if(d<1)return 0;
-  const ux=Math.abs(dx/d),uy=Math.abs(dy/d),ea=(ux*a.width+uy*a.height)/2*1.16,eb=(ux*b.width+uy*b.height)/2,bite=Math.min(a.height,b.height)*.14;
+  const ux=Math.abs(dx/d),uy=Math.abs(dy/d),ea=edgeOf(a,ux,uy)*1.16,eb=edgeOf(b,ux,uy),bite=Math.max(10,Math.min(a.height,b.height)*.12);
   // Even a blocker right across the line gets a real swing, not a twitch: at least 40% of a card height.
-  return Math.min(.96,Math.max(d-ea-eb+bite,a.height*.4)/d);};
+  return Math.min(1,Math.max(d-ea-eb+bite,a.height*.4)/d);};
  // `to` is an element or, for a creature the same blow killed, the rect it stood in. `stand` lunges a
  // stand-in instead of the card (an attacker that dies in the exchange still swings first). Returns when it is home.
  function strike(el,to,{face=false,delay=0,big=false,power=0,stand=null}={}){
   const w=stand||el?.closest('.play-match-card-wrap'),aim=aimOf(to),a=rectOf(w),b=boxOf(aim);if(!w||!a||!b)return 0;
   // The battlefields clip their overflow; let the striker leave its lane for the flight.
-  const ms=MOTION.lunge+20;root.dataset.csStriking='true';strikeEnd=Math.max(strikeEnd,Date.now()+delay+ms);
+  const reach=contactReach(a,b),span=reach*Math.hypot(b.left+b.width/2-(a.left+a.width/2),b.top+b.height/2-(a.top+a.height/2));
+  const travel=Math.round(Math.max(MOTION.flight[0],Math.min(MOTION.flight[1],150+span*.2))),ms=MOTION.windup+travel+MOTION.hold+MOTION.back;root.dataset.csStriking='true';strikeEnd=Math.max(strikeEnd,Date.now()+delay+ms);
   // The arrows would point from where the striker was; hide them for the flight and bring them back after.
   arrows.style.opacity='0';setTimeout(()=>{if(Date.now()>=strikeEnd-20){delete root.dataset.csStriking;arrows.style.opacity='';}},delay+ms+40);
-  if(!delay||hitAt<Date.now())hitAt=Date.now()+delay+ms*.55;
+  if(!delay||hitAt<Date.now())hitAt=Date.now()+delay+MOTION.windup+travel;
   w.dataset.csStriker='true';setTimeout(()=>delete w.dataset.csStriker,delay+ms+20);
   setTimeout(()=>catchFoil(w),delay);
   // Wind-up, lunge, a short freeze on contact (hit-stop), then spring back. The target shakes on contact, harder
   // the more power behind the hit (light under 4, medium 4-7, heavy 8+); a big hit (5 or more) nudges the
   // whole board, and a heavy one shakes it harder, unless low power is on.
-  const node=aim?.getBoundingClientRect?aim:null;
+  const aim0=aim?.getBoundingClientRect?aim:null,node=aim0;
   // The kit moves the card in its own pixels; a board the fitter has scaled down needs the reach scaled up to match.
   const host=stand?null:w.parentElement,k=host?.offsetWidth?host.getBoundingClientRect().width/host.offsetWidth:1,scale=k>.2&&k<5?k:1;
-  motion.strike(w,node||b,{reach:contactReach(a,b)/scale,ms,delay,onHit:()=>{haptic(big||face?'warn':'tick');if(!node?.isConnected)return;pulse(node,face?'face':'hit');
+  const onHit=()=>{haptic(big||face?'warn':'tick');const node=again(aim0);if(!node?.isConnected)return;pulse(node,face?'face':'hit');
    const target=node.closest('.play-match-seat')||node.closest('.play-match-card-wrap')||node,tier=power>=8?1.6:power>=4?1.2:.8;motion.shake(target,(face?9:6)*tier,360);
    if(big)motion.shake(root.querySelector('.play-match-main')||root,power>=8?8:4,power>=8?380:260,{garnish:true});
-   if(face){target.classList.remove('cs-face-hit');void target.offsetWidth;target.classList.add('cs-face-hit');setTimeout(()=>target.classList.remove('cs-face-hit'),700);}}});
+   if(face){target.classList.remove('cs-face-hit');void target.offsetWidth;target.classList.add('cs-face-hit');setTimeout(()=>target.classList.remove('cs-face-hit'),700);}return node;};
+  // A stand-in flies on its own layer; a live card flies frame by frame (fly), so it still lands on its target
+  // when the table redraws or refits under it mid-flight.
+  if(stand)motion.strike(w,node||b,{reach:reach/scale,windup:MOTION.windup,travel,hold:MOTION.hold,back:MOTION.back,delay,onHit});
+  else fly(el.dataset.instance,aim0||b,{delay,travel,onHit});
   return delay+ms;
  }
+ // A permanent that taps, untaps, steps out to attack or back keeps that pose on the card itself (CSS by state).
+ // The redraw rebuilds the card's place, which would snap it; it turns into its new pose instead (its stats with it).
+ const POSE='.play-match-battlefields .play-match-card[data-instance]',POSE_PARTS=':scope :is(.play-current-stats,.cs-counters)';
+ function posesNow(){const m=new Map();for(const el of root.querySelectorAll(POSE)){const t=getComputedStyle(el).transform;m.set(el.dataset.instance,{t,parts:[...el.querySelectorAll(POSE_PARTS)].map(n=>getComputedStyle(n).transform)});}return m;}
+ function settlePoses(was){for(const el of root.querySelectorAll(POSE)){const old=was.get(el.dataset.instance);if(!old)continue;const t=getComputedStyle(el).transform;if(t===old.t)continue;
+   const o={duration:260,easing:'cubic-bezier(.25,.8,.3,1)'};anim(el,[{transform:old.t},{transform:t}],o);[...el.querySelectorAll(POSE_PARTS)].forEach((n,i)=>{const was=old.parts[i],now=getComputedStyle(n).transform;if(was&&was!==now)n.animate([{transform:was},{transform:now}],o);});}}
+ // Live strikes. Each frame finds the card and its target where they are now (a redraw builds new elements,
+ // a refit rescales the lanes), so the card always meets what it hits. Wind-up, a flight that gathers speed
+ // into contact, a short freeze, then an easy glide home.
+ const flights=new Map();let flightFrame=0;
+ function fly(id,to,{delay=0,travel=240,onHit}){if(!id)return;const t0=performance.now()+delay;flights.set(String(id),{t0,travel,to,last:null,hit:false,onHit,tx:0,ty:0});if(!flightFrame)flightFrame=win.requestAnimationFrame(flyFrame);}
+ function flyFrame(){flightFrame=0;flyNow();if(flights.size)flightFrame=win.requestAnimationFrame(flyFrame);}
+ function flyNow(){const now=performance.now();
+  for(const [id,f] of flights){const el=cardEl(id),w=el?.closest('.play-match-card-wrap');const W=MOTION.windup,T=f.travel,Hd=MOTION.hold,B=MOTION.back,t=now-f.t0;
+   if(t>=W+T+Hd+B||!w){if(w){w.style.removeProperty('transform');delete w.dataset.csStriker;}if(w||t>=W+T+Hd+B)flights.delete(id);continue;}
+   if(t<0)continue;
+   // A glide or lean still running on the card would override the flight; the flight takes over from here.
+   for(const an of w.getAnimations())if(!(an instanceof CSSTransition||an instanceof CSSAnimation))an.cancel();
+   const host=w.parentElement,k=host?.offsetWidth?host.getBoundingClientRect().width/host.offsetWidth:1,K=k>.2&&k<5?k:1;
+   // Where the card sits at rest: its box now, less the shift this flight last gave it.
+   const r=w.getBoundingClientRect(),cx=r.left+r.width/2-f.tx*K,cy=r.top+r.height/2-f.ty*K,a={left:cx-w.offsetWidth*K/2,top:cy-w.offsetHeight*K/2,width:w.offsetWidth*K,height:w.offsetHeight*K};
+   const node=f.to?.getBoundingClientRect?again(f.to):null;if(node)f.to=node;const b=(node?.isConnected?rectOf(node):null)||f.last||boxOf(f.to);if(!b)continue;f.last=b;
+   const dx=b.left+b.width/2-cx,dy=b.top+b.height/2-cy,R=contactReach(a,b),X=dx*R,Y=dy*R,tilt=Math.max(-8,Math.min(8,X/30));
+   let p,sc,rot,lift;
+   if(t<W){const u=t/W,e=1-(1-u)**3;p=-.06*e;sc=1+.05*e;rot=-tilt/2*e;lift=6*e;}
+   else if(t<W+T){const u=(t-W)/T,e=u*u*(2.2-1.2*u);p=-.06+1.06*e;sc=1.05+.11*e;rot=-tilt/2+tilt*1.5*e;lift=6*(1-e);}
+   else if(t<W+T+Hd){p=1;sc=1.16;rot=tilt;lift=0;}
+   else{const u=(t-W-T-Hd)/B,e=1-(1-u)**3;p=1-e;sc=1.16-.16*e;rot=tilt*(1-e);lift=0;}
+   if(!f.hit&&t>=W+T){f.hit=true;const n=f.onHit?.();const at=n?.isConnected?n:null;if(at){motion.flash(at);motion.sparks(at,{n:10,spread:56});}}
+   f.tx=X*p/K;f.ty=(Y*p+lift)/K;w.style.transform=`translate(${f.tx.toFixed(1)}px,${f.ty.toFixed(1)}px) scale(${sc.toFixed(3)}) rotate(${rot.toFixed(2)}deg)`;
+   if(w.dataset.csStriker!=='true')w.dataset.csStriker='true';}}
  function popNumber(el,text,kind,size=''){if(rectOf(el))motion.number(el.closest('.play-match-card-wrap')||el,text,{kind,size});}
  function boardEffects(prev,next,before,leaving){
   const a=prev?.status?.surface,b=next?.status?.surface;if(!a||!b||!presentation.hosted||reducedMotion()||root.dataset.stage!=='match')return;
@@ -474,17 +530,22 @@ const name=String(card.name);if(Math.max(...name.split(/\s+/).map(word=>word.len
   // Tokens arriving together get one ring each at most six, so a swarm reads as one arrival.
   let rings=0;for(const c of b.cards){if(!onField(c)||was.get(c.id)?.zone==='Battlefield'||rings>=6)continue;const el=cardEl(c.id);if(!el)continue;rings++;const land=c.known&&c.types?.includes('Land');
    // The card itself drops onto the table from your side (or the CPU's) and settles, then the ring.
-   const w=el.closest('.play-match-card-wrap'),own=c.controller===b.seat;if(w&&rings<=3&&!before?.has(String(c.id)))w.animate([{transform:`translateY(${own?34:-34}px) scale(1.22)`,opacity:.35},{transform:'translateY(0) scale(.96)',opacity:1,offset:.62},{transform:'none',opacity:1}],{duration:land?380:520,easing:'cubic-bezier(.2,.75,.25,1)'});
+   const w=el.closest('.play-match-card-wrap'),own=c.controller===b.seat;if(w&&rings<=3&&!before?.has(String(c.id)))anim(w,[{transform:`translateY(${own?34:-34}px) scale(1.22)`,opacity:.35},{transform:'translateY(0) scale(.96)',opacity:1,offset:.62},{transform:'none',opacity:1}],{duration:land?380:520,easing:'cubic-bezier(.2,.75,.25,1)'});
    setTimeout(()=>{if(el.isConnected)pulse(el,land?'land':c.known&&c.types?.includes('Creature')?'creature':'permanent',land?sourceTint(c):null);},land?300:420);}
   // 3. Combat impact: damage newly marked on a creature pops as a number where it lands; attackers
   // that dealt it lean in toward what they attacked. Life totals already count on the seats.
   const damaged=b.cards.filter(c=>onField(c)&&c.known&&(c.damage||0)>(was.get(c.id)?.damage||0)&&was.get(c.id)?.zone==='Battlefield');
   const lifeLost=b.players.some(p=>p.life<(a.players.find(x=>x.seat===p.seat)?.life??p.life));
-  const combat=/Damage$/.test(String(b.phase||''))||/Damage$/.test(String(a.phase||''));
+  // A board can also jump from blocks straight past the damage step (nobody held priority there): the attackers
+  // have stopped attacking, so the blows that landed in between are still drawn.
+  const combat=/Damage$/.test(String(b.phase||''))||/Damage$/.test(String(a.phase||''))||a.cards.some(c=>c.attacking&&onField(c))&&!b.cards.some(c=>c.attacking&&onField(c));
+  // A planeswalker (or battle) takes combat damage as lost loyalty (or defense) counters, not marked damage.
+  const guard=c=>(c?.counters?.LOYALTY??c?.counters?.DEFENSE??null),worn=b.cards.filter(c=>onField(c)&&guard(c)!==null&&guard(was.get(c.id))!==null&&guard(c)<guard(was.get(c.id))&&was.get(c.id)?.zone==='Battlefield');
+  const targetFell=a.cards.some(c=>c.attacking&&c.attackTarget?.kind==='card'&&b.cards.find(x=>x.id===c.attackTarget.id)?.zone!=='Battlefield');
   // A creature in the fight that left the battlefield (died in it): a trade marks no damage and may cost no life.
   const gone=c=>b.cards.find(x=>x.id===c.id)?.zone!=='Battlefield',fell=a.cards.filter(c=>onField(c)&&(c.attacking||c.blockingIds?.length)&&gone(c));
   const dying=new Map();
-  if(combat&&(damaged.length||lifeLost||fell.length)){
+  if(combat&&(damaged.length||lifeLost||fell.length||worn.length||targetFell)){
    // Arena's strike: an unblocked attacker flies at the defending player's portrait and hits it;
    // a blocked one crashes into its blocker, even one the blow kills. Both spring back to their place.
    const blockerOf=new Map();for(const c of [...a.cards,...b.cards])for(const id of c.blockingIds||[])if(!blockerOf.has(id))blockerOf.set(id,c.id);
@@ -496,7 +557,9 @@ const name=String(card.name);if(Math.max(...name.split(/\s+/).map(word=>word.len
     const opts={face:!blocked&&to===seat,delay:struck++*MOTION.stagger,big:(c.power||0)>=5,power:c.power||0};
     // An attacker that dies in the exchange swings as a stand-in (drawn below with the other deaths).
     if(dies)dying.set(c.id,{to,opts});else strike(el,to,opts);}
-   damaged.forEach((c,i)=>setTimeout(()=>{const el=cardEl(c.id);if(el){const d=c.damage-(was.get(c.id)?.damage||0);popNumber(el,`−${d}`,'damage',d>=5?'big':'');pulse(el,'hit');}},MOTION.lunge*.58+i*60));
+   const contact=Math.max(0,hitAt-Date.now());
+   damaged.forEach((c,i)=>setTimeout(()=>{const el=cardEl(c.id);if(el){const d=c.damage-(was.get(c.id)?.damage||0);popNumber(el,`−${d}`,'damage',d>=5?'big':'');pulse(el,'hit');}},contact+i*60));
+   worn.forEach((c,i)=>setTimeout(()=>{const el=cardEl(c.id);if(el){const d=guard(was.get(c.id))-guard(c);popNumber(el,`−${d}`,'damage',d>=5?'big':'');pulse(el,'hit');}},contact+i*60));
   }
   // 3b. Declared: a new attacker surges forward toward what it attacks and settles; a new blocker
   // steps across to meet its attacker with a blue shield flash. Arrows then hold the pairing.
@@ -504,7 +567,7 @@ const name=String(card.name);if(Math.max(...name.split(/\s+/).map(word=>word.len
   // small fitted card most of a slot sideways, over its neighbour. It leans mostly forward, out of its row.
   const lean=(el,to,amount,ms)=>{const w=el?.closest('.play-match-card-wrap'),r=rectOf(el),t=rectOf(to);if(!w||!r)return;let dx=t?(t.left+t.width/2-(r.left+r.width/2))*amount:0,dy=t?(t.top+t.height/2-(r.top+r.height/2))*amount:0;
    dx*=.15;const len=Math.hypot(dx,dy),cap=r.height*.22;if(len>cap){dx*=cap/len;dy*=cap/len;}
-   w.animate([{transform:'none'},{transform:`translate(${dx}px,${dy}px) scale(1.08)`,offset:.45},{transform:'none'}],{duration:ms,easing:'cubic-bezier(.3,.1,.3,1)'});};
+   anim(w,[{transform:'none'},{transform:`translate(${dx}px,${dy}px) scale(1.08)`,offset:.45},{transform:'none'}],{duration:ms,easing:'cubic-bezier(.3,.1,.3,1)'});};
   b.cards.filter(c=>onField(c)&&c.attacking&&was.get(c.id)?.zone==='Battlefield'&&!was.get(c.id)?.attacking).slice(0,8).forEach((c,i)=>setTimeout(()=>{const el=cardEl(c.id);if(!el?.isConnected)return;
    const to=c.attackTarget?.kind==='card'?cardEl(c.attackTarget.id):seatEl(defenderOf(b.players,c));
    lean(el,to,.1,460);pulse(el,'attack');},i*70));
@@ -755,7 +818,7 @@ const name=String(card.name);if(Math.max(...name.split(/\s+/).map(word=>word.len
  function renderAccepted(s,blocked=false,staged=false){
   const previous=displayed,lifeBefore=new Map((displayed?.status?.surface?.players||[]).map(p=>[p.seat,p.life]));displayed=s;playbackBusy=blocked;root.dataset.forgePlayback=String(blocked);root.setAttribute('aria-busy',String(blocked));
   const focused=root.contains(doc.activeElement)?doc.activeElement.dataset.nativeKey:null;
-  const before=presentation.hosted?positions():null,leaving=presentation.hosted?new Map([...root.querySelectorAll('.play-match-card[data-instance]')].map(el=>[el.dataset.instance,el.closest('.play-match-card-wrap')||el])):null;
+  const before=presentation.hosted?positions():null,poses=presentation.hosted&&!reducedMotion()?posesNow():null,leaving=presentation.hosted?new Map([...root.querySelectorAll('.play-match-card[data-instance]')].map(el=>[el.dataset.instance,el.closest('.play-match-card-wrap')||el])):null;
   if(heldDrop?.ghost.isConnected&&lastDrop?.instance===String(heldDrop.id))lastDrop={...lastDrop,rect:heldDrop.ghost.getBoundingClientRect(),at:Date.now()};
   localError='';table.render(session.snapshot());enhance();observer.takeRecords();if(root.dataset.stage==='match')emotes?.mount();
   if(heldDrop&&!heldDrop.ghost.isConnected)root.append(heldDrop.ghost);
@@ -766,6 +829,7 @@ const name=String(card.name);if(Math.max(...name.split(/\s+/).map(word=>word.len
   // While a full-screen sheet asks (a library search, ordering triggers), the board behind it is out of reach.
   {const main=root.querySelector(':scope>.play-match-main'),sheet=!!root.querySelector('.forge-zone-search,.forge-order-cards');if(main&&main.inert!==sheet)main.inert=sheet;}
   if(before&&(!blocked||staged)){glide(before);boardEffects(previous,s,before,leaving);}
+  if(poses)settlePoses(poses);
   dropHeld();
   if(presentation.hosted)tableAudio.update(previous,s);
   // Arena's low-life state: under 10 life the portrait cracks, under 6 it also bleeds a slow red glow.
