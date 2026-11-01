@@ -694,7 +694,10 @@ const name=String(card.name);if(Math.max(...name.split(/\s+/).map(word=>word.len
   const box=el&&(el.closest('.play-match-card-wrap')||el).getBoundingClientRect();return box&&box.width>0?box:null;
  }
  function drawArrows(){
-  arrowFrame=0;const snapNow=session.snapshot(),list=relations(snapNow),paths=[],blocking=snapNow.native?.inputType==='InputBlock'&&!snapNow.native?.prompt,mineOnBoard=id=>snapNow.status?.surface.cards.some(c=>c.id===id&&c.controller===snapNow.status.surface.seat);
+  // A choice that opens over the table (a damage split, an order, a search, a lane tray, the pause menu) hides
+  // every line and ring: they belong to the table under it, never on top of the panel.
+  arrowFrame=0;const covered=!!root.querySelector('.forge-order-cards,.forge-zone-search,:scope>.forge-lane-tray')||!!doc.querySelector('.play-screen-pause');
+  const snapNow=session.snapshot(),list=covered?[]:relations(snapNow),paths=[],blocking=snapNow.native?.inputType==='InputBlock'&&!snapNow.native?.prompt,mineOnBoard=id=>snapNow.status?.surface.cards.some(c=>c.id===id&&c.controller===snapNow.status.surface.seat);
   for(const r of list){
    const a=anchorRect(r.from),b=anchorRect(r.to);if(!a||!b)continue;
    const ax=a.left+a.width/2,ay=a.top+a.height/2,bx=b.left+b.width/2,by=b.top+b.height/2,len=Math.hypot(bx-ax,by-ay);if(len<20)continue;
@@ -734,10 +737,18 @@ const name=String(card.name);if(Math.max(...name.split(/\s+/).map(word=>word.len
   for(const w of hidden){const copy=w.cloneNode(true);copy.hidden=false;copy.removeAttribute('style');tray.append(copy);}
   root.append(tray);const r=chip.getBoundingClientRect(),t=tray.getBoundingClientRect();
   tray.style.left=`${Math.round(Math.max(8,Math.min(win.innerWidth-8-t.width,r.left+r.width/2-t.width/2)))}px`;tray.style.top=`${Math.round(Math.max(8,r.top-t.height-10))}px`;
-  const away=e=>{if(!tray.contains(e.target))closeLaneTray();};doc.addEventListener('pointerdown',away,true);tray._away=away;
+  const away=e=>{if(!tray.contains(e.target))closeLaneTray();};doc.addEventListener('pointerdown',away,true);tray._away=away;queueArrows();
  }
- function closeLaneTray(){const tray=root.querySelector(':scope>.forge-lane-tray');if(!tray)return;doc.removeEventListener('pointerdown',tray._away,true);tray.remove();}
- const growLimit=()=>Math.min(win.innerWidth,win.innerHeight)<600&&win.matchMedia?.('(pointer:coarse)').matches?1.7:1;
+ function closeLaneTray(){const tray=root.querySelector(':scope>.forge-lane-tray');if(!tray)return;doc.removeEventListener('pointerdown',tray._away,true);tray.remove();queueArrows();}
+ const growLimit=()=>Math.min(win.innerWidth,win.innerHeight)<600&&win.matchMedia?.('(pointer:coarse)').matches?1.4:1;
+ // Board scales move in fixed steps and are held between fits, so the table keeps one view as cards arrive.
+ const SCALE_STEP=.025,step=k=>Math.round(k/SCALE_STEP)*SCALE_STEP;let boardHold=null,holdSize='';
+ // The largest step that fits wins on a first fit, or when the held scale no longer fits. Otherwise the held scale
+ // stays, and grows only once the board would fit two steps up, stopping one step short of the best fit.
+ function zoneScale(fitsAt){const lim=growLimit(),size=`${win.innerWidth}x${win.innerHeight}`;if(size!==holdSize){holdSize=size;boardHold=null;}
+  const best=()=>{for(let t=lim;t>.4;t=step(t-2*SCALE_STEP))if(fitsAt(t))return t<lim&&fitsAt(step(t+SCALE_STEP))?step(t+SCALE_STEP):t;return .4;};
+  if(boardHold===null)return best();const held=Math.min(lim,boardHold);if(!fitsAt(held))return best();
+  const b=best();return b>=step(held+2*SCALE_STEP)?step(b-SCALE_STEP):held;}
  // Tall touch screens lift the turn buttons above a full-width hand (play-forge-table.css), into your side's lower edge.
  const raisedDock=()=>!!win.matchMedia?.('(hover:none) and (pointer:coarse) and (min-width:600px) and (min-height:480px)').matches;
  // A side that changes size after the fit (fonts landing, a chip appearing, 130% text) fits again.
@@ -792,13 +803,12 @@ const name=String(card.name);if(Math.max(...name.split(/\s+/).map(word=>word.len
    // Trials measure every row unscaled and unfolded, the same way on every pass, so the result never depends on
    // what the previous pass folded (a fold adds or removes a chip, which redraws the table and fits again).
    const rows=[...zone.querySelectorAll('.play-match-card-row')];
-   const fitsAt=k=>{zone.dataset.scaled='true';zone.style.width=`${W/k}px`;for(const r of rows){r.style.removeProperty('transform');for(const w of r.querySelectorAll(':scope>.play-match-card-wrap[hidden]'))w.hidden=false;const more=r.querySelector(':scope>.forge-lane-more');if(more)more.hidden=true;}return zone.scrollHeight*k<=H+1&&zone.scrollWidth*k<=W+1;};let k=growLimit();
-   if(!fitsAt(k)){let lo=.4,hi=k;for(let t=k-.05;t>.4;t-=.05)if(fitsAt(t)){lo=t;hi=t+.05;break;}for(let i=0;i<3;i++){const mid=(lo+hi)/2;if(fitsAt(mid))lo=mid;else hi=mid;}k=lo;}
+   const fitsAt=k=>{zone.dataset.scaled='true';zone.style.width=`${W/k}px`;for(const r of rows){r.style.removeProperty('transform');for(const w of r.querySelectorAll(':scope>.play-match-card-wrap[hidden]'))w.hidden=false;const more=r.querySelector(':scope>.forge-lane-more');if(more)more.hidden=true;}return zone.scrollHeight*k<=H+1&&zone.scrollWidth*k<=W+1;};const k=zoneScale(fitsAt);
    fits.push({area,zone,own,W,H,k,fitRows,drop:own?0:Math.max(0,top-box.top)});
   }
   // A row that fits its lane at one width can fold or shrink differently at another, so the shared scale is checked
   // once laid out and stepped down until every side really fits.
-  let k=Math.min(growLimit(),...fits.map(f=>f.k));
+  let k=Math.min(growLimit(),...fits.map(f=>f.k));const before=boardHold;
   for(let pass=0;pass<8;pass++){let over=false;
    for(const f of fits){const {area,zone,own,W,H,fitRows,drop}=f;
     if(Math.abs(k-1)<.005){zone.style.removeProperty('width');zone.style.removeProperty('transform');delete zone.dataset.scaled;fitRows();if(drop)zone.style.transform=`translateY(${drop.toFixed(1)}px)`;if(zone.scrollHeight>H+1)over=true;continue;}
@@ -807,7 +817,11 @@ const name=String(card.name);if(Math.max(...name.split(/\s+/).map(word=>word.len
     const h=zone.scrollHeight*k,lift=own?0:area.querySelectorAll(':scope>.play-match-zone').length>1?drop:Math.max(0,area.clientHeight-h-10);if(h>H+1)over=true;
     zone.style.transform=`translateY(${lift.toFixed(1)}px) scale(${k.toFixed(3)})`;
    }
-   if(!over||k<=.4)break;k=Math.max(.4,k-.04);}
+   if(!over||k<=.4)break;k=Math.max(.4,step(k-SCALE_STEP));}
+  // The scale holds from fit to fit (Randall, 1 Nov): a new card never nudges it; it steps down only when a side
+  // no longer fits, and back up only when there is clearly room. A step glides instead of jumping.
+  // A pass where nothing fit (fonts or art still landing) is not held.
+  if(fits.length&&k>.401){boardHold=k;if(before!==null&&Math.abs(before-k)>.004&&!reducedMotion())for(const f of fits)f.zone.animate?.([{scale:String(before/k)},{scale:'1'}],{duration:280,easing:'cubic-bezier(.2,.8,.2,1)'});if(before!==null&&before!==k)setTimeout(queueArrows,300);}
   // A pile's top card shows its name only when the whole name fits; otherwise the ×N badge and art carry it
   // (the full name stays in its title, label and peek), so a cut-off name never pokes out over the pile.
   for(const n of root.querySelectorAll('.play-match-battlefields .play-match-card-wrap[data-pile-top=true] .play-match-card-name')){const cut=n.scrollWidth>n.clientWidth+1;if(n.hasAttribute('data-cut')!==cut)n.toggleAttribute('data-cut',cut);}
@@ -1462,7 +1476,9 @@ const name=String(card.name);if(Math.max(...name.split(/\s+/).map(word=>word.len
  const mainKey=e=>{if(e.key!==' '&&e.key!=='Enter'||e.repeat||e.altKey||e.ctrlKey||e.metaKey||e.shiftKey||!presentation.hosted||root.dataset.stage!=='match'||drag?.active)return false;
   if(!e.target?.closest?.('.play-match-card')&&e.target?.closest?.('input,textarea,select,button,a[href],summary,dialog,[contenteditable],[role=button],[role=dialog],[tabindex]:not([tabindex="-1"])')||doc.querySelector('dialog[open]'))return false;
   const ok=root.querySelector('.play-match-decisions [data-native-key=ok]');if(!ok||ok.disabled||!ok.getClientRects().length)return false;e.preventDefault();ok.click();return true;};
- const key=e=>{if(mainKey(e))return;if(e.key==='Escape')cancel();const seat=e.target.closest?.('[data-player-seat][role=button]');if(seat&&seat===e.target&&root.contains(seat)&&(e.key==='Enter'||e.key===' ')&&(!seat.classList.contains('play-pod-chip')||playerOffered(seat))){e.preventDefault();const p=session.snapshot().status?.surface.players.find(p=>p.seat===Number(seat.dataset.playerSeat));if(p)act(()=>session.nativeSelect('player',p.nativeId));}};
+ const key=e=>{if(mainKey(e))return;
+  // Escape backs out: a drag goes home, and a target pick or payment in progress is cancelled the way its Cancel button would.
+  if(e.key==='Escape'){if(drag)cancel();else if(!e.target.closest?.('[role=dialog],dialog')&&/^(InputSelectTargets|InputPayMana)/.test(root.dataset.forgeInput||'')){const back=root.querySelector('.play-match-decisions [data-native-key=cancel]:not(:disabled)');if(back){e.preventDefault();back.click();}}}const seat=e.target.closest?.('[data-player-seat][role=button]');if(seat&&seat===e.target&&root.contains(seat)&&(e.key==='Enter'||e.key===' ')&&(!seat.classList.contains('play-pod-chip')||playerOffered(seat))){e.preventDefault();const p=session.snapshot().status?.surface.players.find(p=>p.seat===Number(seat.dataset.playerSeat));if(p)act(()=>session.nativeSelect('player',p.nativeId));}};
  // Arena's hand: it rests low, tucked above your profile strip, and rises into full view while
  // a thumb is on it or the mouse is over it, then settles back once you let go. The rise is just
  // enough to clear the strip and the screen edge, measured each time, so nothing else moves; on a

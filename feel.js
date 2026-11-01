@@ -56,7 +56,9 @@ export const PACK_PATTERNS = { "pack-tear": [6, 26, 6, 26, 12], "pack-land": 4, 
   "pack-charge": [6, 44, 8, 34, 10, 26, 14],
   // Every price tier has its own feel, each a step richer: green one tap, up to orange's little drum roll and hit.
   "pack-tier-1": 14, "pack-tier-2": [14, 50, 22], "pack-tier-3": [12, 40, 16, 40, 28], "pack-tier-4": [12, 34, 16, 34, 20, 60, 36],
-  "pack-tier-5": [8, 22, 10, 22, 12, 22, 16, 22, 24, 44, 40] };
+  "pack-tier-5": [8, 22, 10, 22, 12, 22, 16, 22, 24, 44, 40],
+  // Play rewards: a claim is a short bright double, an achievement a richer one; each piece landing in the purse a tick.
+  "reward-claim": [12, 40, 22], "reward-big": [10, 34, 14, 34, 20, 60, 34], "reward-land": 7 };
 const native = () => globalThis.CARDSTASHY_HAPTICS || null;
 // Stops anything still playing (a pack closed mid-sequence).
 export function cancelHaptics() {

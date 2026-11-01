@@ -50,6 +50,9 @@ public class CardStashyHaptics extends Plugin {
                 case "pack-charge":
                     if (supports(v, SLOW)) return VibrationEffect.startComposition().addPrimitive(SLOW, 0.55f).compose();
                     if (supports(v, TICK)) return VibrationEffect.startComposition().addPrimitive(TICK, 0.3f).addPrimitive(TICK, 0.5f, 40).addPrimitive(TICK, 0.7f, 30).compose(); break;
+                case "reward-claim": if (supports(v, CLICK)) return VibrationEffect.startComposition().addPrimitive(CLICK, 0.7f).addPrimitive(CLICK, 1f, 50).compose(); break;
+                case "reward-big": if (supports(v, RISE, CLICK, TICK)) return VibrationEffect.startComposition().addPrimitive(RISE, 0.6f).addPrimitive(CLICK, 1f, 30).addPrimitive(TICK, 0.7f, 70).addPrimitive(TICK, 0.5f, 60).compose(); break;
+                case "reward-land": if (supports(v, TICK)) return VibrationEffect.startComposition().addPrimitive(TICK, 0.5f).compose(); break;
                 case "pack-tier-1": if (supports(v, CLICK)) return VibrationEffect.startComposition().addPrimitive(CLICK, 0.7f).compose(); break;
                 case "pack-tier-2": if (supports(v, CLICK)) return VibrationEffect.startComposition().addPrimitive(CLICK, 0.6f).addPrimitive(CLICK, 0.9f, 60).compose(); break;
                 case "pack-tier-3": if (supports(v, TICK, CLICK)) return VibrationEffect.startComposition().addPrimitive(TICK, 0.6f).addPrimitive(CLICK, 0.75f, 40).addPrimitive(CLICK, 1f, 50).compose(); break;
@@ -62,8 +65,8 @@ public class CardStashyHaptics extends Plugin {
         }
         if (Build.VERSION.SDK_INT >= 29) {
             switch (kind) {
-                case "pack-land": case "pack-charge": case "tick": return VibrationEffect.createPredefined(VibrationEffect.EFFECT_TICK);
-                case "pack-value-3": case "pack-value-4": case "pack-tier-3": case "pack-tier-4": case "pack-tier-5": case "success": return VibrationEffect.createPredefined(VibrationEffect.EFFECT_DOUBLE_CLICK);
+                case "pack-land": case "pack-charge": case "reward-land": case "tick": return VibrationEffect.createPredefined(VibrationEffect.EFFECT_TICK);
+                case "pack-value-3": case "pack-value-4": case "pack-tier-3": case "pack-tier-4": case "pack-tier-5": case "reward-claim": case "reward-big": case "success": return VibrationEffect.createPredefined(VibrationEffect.EFFECT_DOUBLE_CLICK);
                 case "warn": case "error": case "pack-value-2": case "pack-tier-2": case "pack-rumble": return VibrationEffect.createPredefined(VibrationEffect.EFFECT_HEAVY_CLICK);
                 default: return VibrationEffect.createPredefined(VibrationEffect.EFFECT_CLICK);
             }

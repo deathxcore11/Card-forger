@@ -25,8 +25,8 @@ const playMethods = path => path === '/api/play/warm' || path === '/api/play/mat
   : path === '/api/play/rooms' ? ['GET', 'POST'] : path === '/api/play/rooms/join' ? ['POST']
   : new RegExp(`^/api/play/rooms/${PLAY_MATCH}$`, 'i').test(path) ? ['GET', 'DELETE'] : null;
 // Play progression (play-econ-route.js): the wallet read, and the server-side grants and spends.
-// Story progress reads its refs (GET) and claims a won battle (POST); deeds report Story achievements.
-const progressMethods = path => path === '/api/progress/state' ? ['GET'] : path === '/api/progress/story' ? ['GET', 'POST']
+const progressMethods = path => path === '/api/progress/state' ? ['GET']
+  : path === '/api/progress/story' ? ['GET', 'POST']
   : /^\/api\/progress\/(?:starter|open|craft|forge|precon|buy|deck|login|match|claim|holo|deeds)$/.test(path) ? ['POST'] : null;
 const imagePath = path => /^\/img\/(?:pack|back)\/(?:mtg|ptcg|ygo)\.jpg$/.test(path)
   || /^\/img\/mtg-set\/[a-z0-9]{2,8}\.jpg$/i.test(path)

@@ -132,9 +132,12 @@ export async function progressRoute(request, env, {verifyBearer, fetcher = fetch
       if (!card?.oracle_id || !seal) return fail('bad_card');
       const s = await state(), owned = (s.cards || []).find(c => c.o === card.oracle_id)?.c || 0;
       if (owned >= (s.config?.maxCopies || 4)) return fail('have_max', 409);
-      if ((s.wallet?.['seal_' + seal] || 0) < 1) return fail('no_seal', 409);
-      await apply('craft:' + crypto.randomUUID(), 'craft', {seals: {[seal]: -1}, cards: [cardDelta(card)]});
-      return json({card: {id: card.id, oracle_id: card.oracle_id, name: card.name, rarity: card.rarity}, state: await state()});
+      // A holo stamp costs the stamp plus the holo upgrade (1 + 2 seals of the card's rarity).
+      const holo = body.holo === true, cost = 1 + (holo ? holoCost(s.config) : 0);
+      if (holo && !(card.finishes || []).includes('foil')) return fail('no_foil', 409);
+      if ((s.wallet?.['seal_' + seal] || 0) < cost) return fail('no_seal', 409);
+      await apply('craft:' + crypto.randomUUID(), 'craft', {seals: {[seal]: -cost}, cards: [{...cardDelta(card), ...(holo ? {foil: true} : {})}]});
+      return json({card: {id: card.id, oracle_id: card.oracle_id, name: card.name, rarity: card.rarity, holo}, state: await state()});
     }
     if (path === 'forge') {
       // Seals step up one rarity: ratio x the lower seal for 1 of the next, up to 10 at once.

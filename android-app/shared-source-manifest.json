@@ -1,8 +1,8 @@
 {
   "schema": 1,
-  "version": "4.3.63",
-  "commit": "07c2b371969b0aed0487640a9007538188e5e2f6",
-  "tree": "b65c296f65691490c4b36ad87422198ab9ec130e",
+  "version": "4.3.64",
+  "commit": "9ba852808e32a2d11157fe68b5c061207e36c652",
+  "tree": "3a345d7c5eae444ce70b1dce076d90e012413662",
   "repository": "https://github.com/deathxcore11/Card-forger",
   "scope": "Explicit frontend build dependencies plus optional artwork input files. Not full backend repository.",
   "files": [
@@ -73,8 +73,8 @@
     },
     {
       "path": "ai-deck-builder.js",
-      "bytes": 33309,
-      "sha256": "63552ba931f8109e4389c319cf30b9e6d5f26247869e1b00fa08b97654d0f5e8"
+      "bytes": 33379,
+      "sha256": "dd9a812242a10b228eb89fb8b6a1b0d2ae7aac95a2559378c2ba1d94a5b4a250"
     },
     {
       "path": "ai-deck-goal.js",
@@ -133,8 +133,8 @@
     },
     {
       "path": "app.js",
-      "bytes": 520337,
-      "sha256": "952eb0d2520711f80425f4ed48ce5fbf585c190d2986513d9f01faa8c9b212e8"
+      "bytes": 535279,
+      "sha256": "a41599f05b30dbf3a68525fe563c46df0716f64900b19b18ab4aa967f0578960"
     },
     {
       "path": "artwork.js",
@@ -335,6 +335,306 @@
       "path": "assets/audio/music/MUS-PWG-12.ogg",
       "bytes": 993544,
       "sha256": "563cc7b4d17e2592a8cc9b22d16a54debe7f7543c9077a2c0802801f1522954d"
+    },
+    {
+      "path": "assets/audio/music/MUS-ST-01A.m4a",
+      "bytes": 2571043,
+      "sha256": "83cf1994590e01f0cda25b9df4342dbd0a175106ff9e81e2e8c4536d934cef9b"
+    },
+    {
+      "path": "assets/audio/music/MUS-ST-01A.ogg",
+      "bytes": 1982369,
+      "sha256": "b32c7d4b3a9e7fdb3c012fe5d895f2c06e23360e529e4230b1a93306600a66b4"
+    },
+    {
+      "path": "assets/audio/music/MUS-ST-01B.m4a",
+      "bytes": 1306454,
+      "sha256": "ca29c535805470595336e55370f297bfb84cf7843a3322b792a09e4626dae465"
+    },
+    {
+      "path": "assets/audio/music/MUS-ST-01B.ogg",
+      "bytes": 1065561,
+      "sha256": "bb9e327fb435f994eb2c48c2b94fe746ae829b8490819eb54f4b905ca75b05b3"
+    },
+    {
+      "path": "assets/audio/music/MUS-ST-01C.m4a",
+      "bytes": 3742592,
+      "sha256": "c44df32d9dca5b193dd77739f655ee41f730fedc9ef9034f295b0a12ff235ef8"
+    },
+    {
+      "path": "assets/audio/music/MUS-ST-01C.ogg",
+      "bytes": 2717047,
+      "sha256": "4c7a38681b7b10966c9ab6136f42a8b57e2c9caf703f40c8342b9fefe9a8fcc9"
+    },
+    {
+      "path": "assets/audio/music/MUS-ST-02A.m4a",
+      "bytes": 2573415,
+      "sha256": "0bec3a741529fa454e31902311dbaa89138393a98213a62edbac18755ff0ef8f"
+    },
+    {
+      "path": "assets/audio/music/MUS-ST-02A.ogg",
+      "bytes": 2124890,
+      "sha256": "040654f1c721a447aedf01503a647c767463a1f4b60c3fc35635d6851fa64fe8"
+    },
+    {
+      "path": "assets/audio/music/MUS-ST-02B.m4a",
+      "bytes": 1241034,
+      "sha256": "c38e8b0f3ca6143d005d7f326540e34f53cd01e27c288e926aadffda5117151d"
+    },
+    {
+      "path": "assets/audio/music/MUS-ST-02B.ogg",
+      "bytes": 1032840,
+      "sha256": "a3d0f4ae62c672dd01fdd29444de785c645b987356b9511ddef10a9d29d7ec69"
+    },
+    {
+      "path": "assets/audio/music/MUS-ST-02C.m4a",
+      "bytes": 2384679,
+      "sha256": "4f77d80f6fa51061631e68069547288c43b7f6a00bfea99b89dd397fc9890416"
+    },
+    {
+      "path": "assets/audio/music/MUS-ST-02C.ogg",
+      "bytes": 1750836,
+      "sha256": "2efae1c1990c2773c2cb0fc04cbc0a51c5421412827e5cffed72c75456ce4825"
+    },
+    {
+      "path": "assets/audio/music/MUS-ST-03A.m4a",
+      "bytes": 2750621,
+      "sha256": "efd89ec42349b4b082f46bca9eebebf9e1586ecf5362de0c8077beb2d8b7df81"
+    },
+    {
+      "path": "assets/audio/music/MUS-ST-03A.ogg",
+      "bytes": 1951835,
+      "sha256": "ebf4341bbc02890fd55687bf66d9dbd80620f82c3d778756753721b99aef87fb"
+    },
+    {
+      "path": "assets/audio/music/MUS-ST-03B.m4a",
+      "bytes": 1908614,
+      "sha256": "0b3accb1812d3d6250f499c66e0c562c8cd5c095a3fa16287117c7250f4a584e"
+    },
+    {
+      "path": "assets/audio/music/MUS-ST-03B.ogg",
+      "bytes": 1471283,
+      "sha256": "48cb76bcd5728d0ae2f6a19c845f83039123fd2acf6ea13b8d902f1b33d54a5e"
+    },
+    {
+      "path": "assets/audio/music/MUS-ST-03C.m4a",
+      "bytes": 3103454,
+      "sha256": "a707fcc16f01a49052262877d900be1211f036584f1537faabef0a8da1358480"
+    },
+    {
+      "path": "assets/audio/music/MUS-ST-03C.ogg",
+      "bytes": 2424701,
+      "sha256": "f5eea9ee4569124a4e4219021739ddcd7fb324ba0db2be3fb7a88c18205521e3"
+    },
+    {
+      "path": "assets/audio/music/MUS-ST-04A.m4a",
+      "bytes": 2426066,
+      "sha256": "0f4b3127236d65987eac3076e1acca8211bc673603f861136f5c912f6bf15ce3"
+    },
+    {
+      "path": "assets/audio/music/MUS-ST-04A.ogg",
+      "bytes": 1998151,
+      "sha256": "545531aec8cf740c3870cc7264ff2296527628391bf0ab29ec6953d12a879f38"
+    },
+    {
+      "path": "assets/audio/music/MUS-ST-04B.m4a",
+      "bytes": 1239534,
+      "sha256": "ffbc7051a3e84f6b629ea90d4de61fa7d8187cab9ebbb50cd1cd10cde35cc4c9"
+    },
+    {
+      "path": "assets/audio/music/MUS-ST-04B.ogg",
+      "bytes": 959519,
+      "sha256": "c2a4c3373b51f2840da44d14d5660f7a03d25a3208377c0504527adaae3f1402"
+    },
+    {
+      "path": "assets/audio/music/MUS-ST-04C.m4a",
+      "bytes": 2988901,
+      "sha256": "063986699913da3ac2368c0d92bb64442f106fe05423558a1972c2cdca34a457"
+    },
+    {
+      "path": "assets/audio/music/MUS-ST-04C.ogg",
+      "bytes": 2138603,
+      "sha256": "d705c73ec7628a98e561cbc2de83cccb4d3024f65b3602046ccaf91c2c626c90"
+    },
+    {
+      "path": "assets/audio/music/MUS-ST-05A.m4a",
+      "bytes": 2277611,
+      "sha256": "3816564603b41d0576ca121e3292ba99c5b915bf1e5b0c22bf0fe8a1614a922a"
+    },
+    {
+      "path": "assets/audio/music/MUS-ST-05A.ogg",
+      "bytes": 1570934,
+      "sha256": "53b5a1364781aec4ab0538e857c99a784bd8ea1288b04446207b1b6ab9168956"
+    },
+    {
+      "path": "assets/audio/music/MUS-ST-05B.m4a",
+      "bytes": 1297959,
+      "sha256": "5488cf9dda9b2949a5f832e3c946fd9712ffeab72ffb618f1a92d6bbc8c0d879"
+    },
+    {
+      "path": "assets/audio/music/MUS-ST-05B.ogg",
+      "bytes": 992987,
+      "sha256": "7b0749612a76f7a206ac362c636da3f04f8e577a3f856805eb4c3740987837d3"
+    },
+    {
+      "path": "assets/audio/music/MUS-ST-05C.m4a",
+      "bytes": 2859884,
+      "sha256": "42c2880d4687b3fdd2115387f901ead61ee10f6bddf8ff4c66338ef07d87500d"
+    },
+    {
+      "path": "assets/audio/music/MUS-ST-05C.ogg",
+      "bytes": 2218085,
+      "sha256": "c907ef08949de8a89b933f1dfabbb8cc200fe7f1f3b1b1bf52ef8770f6f57d82"
+    },
+    {
+      "path": "assets/audio/music/MUS-ST-06A.m4a",
+      "bytes": 2162397,
+      "sha256": "6519cd44120318abdf46c26f033a6343b99e78fec0b6b5b153cf83e262e01ece"
+    },
+    {
+      "path": "assets/audio/music/MUS-ST-06A.ogg",
+      "bytes": 1598749,
+      "sha256": "d7f5eb24f334d54494d3895d1fd20fdf89c3b9421c13c5b9970a8d02c375dd59"
+    },
+    {
+      "path": "assets/audio/music/MUS-ST-06B.m4a",
+      "bytes": 1228069,
+      "sha256": "c547a45cc3840abccee1a7757195f48f72198229c59eff136f347a471288db6b"
+    },
+    {
+      "path": "assets/audio/music/MUS-ST-06B.ogg",
+      "bytes": 1045262,
+      "sha256": "2d0e30b84a86145193d62b811b147b40a6f027a657fafe021d73094c4abd89ef"
+    },
+    {
+      "path": "assets/audio/music/MUS-ST-06C.m4a",
+      "bytes": 3246516,
+      "sha256": "63f0dbe76b995aa1ffdd83131758ced972df104c7456dc271e004b198da65f7e"
+    },
+    {
+      "path": "assets/audio/music/MUS-ST-06C.ogg",
+      "bytes": 2433951,
+      "sha256": "08a38c1cbfe3209afb2bf2df800d638d08b66da319e1ae309afccb214aa75e31"
+    },
+    {
+      "path": "assets/audio/music/MUS-ST-07A.m4a",
+      "bytes": 2473530,
+      "sha256": "afc25309401aca87c6567f1d450e84971bd6142197417393d0cfd0ce4b9db21d"
+    },
+    {
+      "path": "assets/audio/music/MUS-ST-07A.ogg",
+      "bytes": 2092546,
+      "sha256": "0f8dc2e092fda1436e9edd5706d9276f0ac24197553c3b53d59f625417479d69"
+    },
+    {
+      "path": "assets/audio/music/MUS-ST-07B.m4a",
+      "bytes": 1082137,
+      "sha256": "e27afde936ad7878becd7970623b9f2d3352281ee4aa680bbb497e65f1dd02c8"
+    },
+    {
+      "path": "assets/audio/music/MUS-ST-07B.ogg",
+      "bytes": 885639,
+      "sha256": "a2bab5d7bc7dab337875bbfc650995b2c893377cd095af14c2d98e8903e7f0ed"
+    },
+    {
+      "path": "assets/audio/music/MUS-ST-07C.m4a",
+      "bytes": 2915829,
+      "sha256": "68e23e5384dc09a6055002a2bbc963a679814ee9dc1ab7fe2171d8bee004c44d"
+    },
+    {
+      "path": "assets/audio/music/MUS-ST-07C.ogg",
+      "bytes": 2200817,
+      "sha256": "f582a514dd0081d8f8d09922f600dc83b06779cf2e9d0538f9b23ea22217c5aa"
+    },
+    {
+      "path": "assets/audio/music/MUS-ST-08A.m4a",
+      "bytes": 1985692,
+      "sha256": "53c0f1edd131d6c2ae0bddf42b6cf334474e736e544654aeddd0d60261c55822"
+    },
+    {
+      "path": "assets/audio/music/MUS-ST-08A.ogg",
+      "bytes": 1416098,
+      "sha256": "e17dcd8a5e069ae71409b04cec59b071cc41a16b7d500cb628b0cec339f81691"
+    },
+    {
+      "path": "assets/audio/music/MUS-ST-08B.m4a",
+      "bytes": 1828184,
+      "sha256": "4763cce14056dd17e43f315f1d8912d981d24b9ce2c4cf67add5def1efc35369"
+    },
+    {
+      "path": "assets/audio/music/MUS-ST-08B.ogg",
+      "bytes": 1364383,
+      "sha256": "89f4b4ab730e1c9b77a6dc3bec91cd0d495a5907a1ff5e177d1a6d05791b006c"
+    },
+    {
+      "path": "assets/audio/music/MUS-ST-08C.m4a",
+      "bytes": 2389358,
+      "sha256": "c1a2d85f8f0a4317fc84fcbee8f4525909a8cb5586dd5f20525b1c6189e306be"
+    },
+    {
+      "path": "assets/audio/music/MUS-ST-08C.ogg",
+      "bytes": 1779769,
+      "sha256": "c2180e2b88a5de7891cc17f376d7c14ba41ee43182dc815a0160fff286d8b94d"
+    },
+    {
+      "path": "assets/audio/music/MUS-ST-09A.m4a",
+      "bytes": 2153160,
+      "sha256": "8e4e47b9fbc2c614d5fab825e59502fe74b7f1de301cd4a78edd5d5411707bf2"
+    },
+    {
+      "path": "assets/audio/music/MUS-ST-09A.ogg",
+      "bytes": 1560311,
+      "sha256": "13c809f4d1eec879f38946c7a76c38294fa8c070685417ebbfe4d1c3880a64a6"
+    },
+    {
+      "path": "assets/audio/music/MUS-ST-09B.m4a",
+      "bytes": 1712096,
+      "sha256": "0405b10919e7f5b52357670e60f24527cfb080347715e349d7cb972b9e0531d3"
+    },
+    {
+      "path": "assets/audio/music/MUS-ST-09B.ogg",
+      "bytes": 1238744,
+      "sha256": "5a6c98e99e9eed12ed9e2e59cad74cce4c850941149a5d23d8d4aecc24f294ec"
+    },
+    {
+      "path": "assets/audio/music/MUS-ST-09C.m4a",
+      "bytes": 2857946,
+      "sha256": "36a203e3dcf73aaf3475623cf746abe3f4de438d7303baabc8bf5f56b69221f8"
+    },
+    {
+      "path": "assets/audio/music/MUS-ST-09C.ogg",
+      "bytes": 2277062,
+      "sha256": "c605800dc55b844e0b09fe670d018028858ebbf517dc818898ab9bf3678f0f9b"
+    },
+    {
+      "path": "assets/audio/music/MUS-ST-10A.m4a",
+      "bytes": 2202826,
+      "sha256": "f227160185930d710531d7e7f24fddf2cf973bdf2f39f68040602e78ecb16d2f"
+    },
+    {
+      "path": "assets/audio/music/MUS-ST-10A.ogg",
+      "bytes": 1608640,
+      "sha256": "6df51ff43f740df2883c2f8cecbf9d53585511fff0cede52e20c83c4b15f5073"
+    },
+    {
+      "path": "assets/audio/music/MUS-ST-10B.m4a",
+      "bytes": 1460353,
+      "sha256": "33315ff0f75f94ec2d1f297f1508831cafaebef1705405169a0b62f01b6dfbc3"
+    },
+    {
+      "path": "assets/audio/music/MUS-ST-10B.ogg",
+      "bytes": 1145723,
+      "sha256": "da74c5d8e8b790ab19099f4952f0e87b0e1be981d1ce5908a73be617965af65a"
+    },
+    {
+      "path": "assets/audio/music/MUS-ST-10C.m4a",
+      "bytes": 3946313,
+      "sha256": "b735e26113e2803f9b450087f19bc39bb5d43dcfbb92fe32381d1e0ba4599f77"
+    },
+    {
+      "path": "assets/audio/music/MUS-ST-10C.ogg",
+      "bytes": 3097051,
+      "sha256": "bd2f020709d9a6913d3452509c858645d62a0d6205266a2375926d3b81b7a50a"
     },
     {
       "path": "assets/audio/sfx/AMB-001.ogg",
@@ -2222,6 +2522,66 @@
       "sha256": "eccfca5c4173f4338fbc46135e7b8f92a437103a8a21cc28eabef81546c1994c"
     },
     {
+      "path": "assets/audio/sfx/RWD-001.m4a",
+      "bytes": 14226,
+      "sha256": "59fc94b9beb28af5cc7f47ad3d75f5be753df09016d4e46e3b87ff9e07b4bae6"
+    },
+    {
+      "path": "assets/audio/sfx/RWD-001.ogg",
+      "bytes": 15507,
+      "sha256": "0f17514ae5a78cdd4f848b83aa1c510b66d5833c9ab58e27c82eb88816b8c4aa"
+    },
+    {
+      "path": "assets/audio/sfx/RWD-002.m4a",
+      "bytes": 5282,
+      "sha256": "48f45eebebce96c69389d90fca1a2887564150626610efcf91bd44e89fe3c108"
+    },
+    {
+      "path": "assets/audio/sfx/RWD-002.ogg",
+      "bytes": 5316,
+      "sha256": "821b3e66d7bc301b2b61702a2e69b31562a6909642f5c14959666b6355868f70"
+    },
+    {
+      "path": "assets/audio/sfx/RWD-003.m4a",
+      "bytes": 7297,
+      "sha256": "29ee01c8fb084f63b5d74bfa93ea4a402f04d03b4834aea99b53364845e2f8db"
+    },
+    {
+      "path": "assets/audio/sfx/RWD-003.ogg",
+      "bytes": 5768,
+      "sha256": "5b1cdc058ab265ea2949684b61f0a3a940985ebc1040b62799f0de66e3d3f800"
+    },
+    {
+      "path": "assets/audio/sfx/RWD-004.m4a",
+      "bytes": 7874,
+      "sha256": "44a2818d3818c95925a7b55debf7b639efa63ebc02dd3b54dc90f78955dc7f2a"
+    },
+    {
+      "path": "assets/audio/sfx/RWD-004.ogg",
+      "bytes": 4439,
+      "sha256": "608321b380607f6f996f44f6fff416b83bca181560cd5e8579320979fc0b0b79"
+    },
+    {
+      "path": "assets/audio/sfx/RWD-005.m4a",
+      "bytes": 8391,
+      "sha256": "c91b2150d15c6811f3004c40eac8971ee18f14a21437cbbb189e02216280f360"
+    },
+    {
+      "path": "assets/audio/sfx/RWD-005.ogg",
+      "bytes": 8354,
+      "sha256": "526387ad71077cbe2c7d432d13ba3925d7c536598f39a2fe31da2fc10353ad39"
+    },
+    {
+      "path": "assets/audio/sfx/RWD-006.m4a",
+      "bytes": 27541,
+      "sha256": "78927272c1a5d962b00afaaff00cea7e773d9b05c8e3cc6a3f1727d8fcdb0359"
+    },
+    {
+      "path": "assets/audio/sfx/RWD-006.ogg",
+      "bytes": 27327,
+      "sha256": "0f7f687a29ae0bf9f933b4064aa029c01221c82cfffdc886734e1902cfdd7b79"
+    },
+    {
       "path": "assets/audio/sfx/TT-001.m4a",
       "bytes": 26068,
       "sha256": "7e1fa3b65ebeecbb1ff0e2e3afd1696b9e2e52b5262d6aaaf0dc45a25d9dcf56"
@@ -2993,13 +3353,13 @@
     },
     {
       "path": "audio-loops.js",
-      "bytes": 1529,
-      "sha256": "fade6a20de4438b2be2957392f5df71460791e65ce88e6cdfd3a0677dfdcd9ec"
+      "bytes": 2530,
+      "sha256": "c55cf98a9e0e2b9e7b91e9b456dd1638ab2f320407aac237d44efedb5ba91ab1"
     },
     {
       "path": "audio.js",
-      "bytes": 14836,
-      "sha256": "7080e0320081dc87a6f0436e13ecb678cb981de4308d7ca6ec7d731034a4f9e6"
+      "bytes": 14857,
+      "sha256": "7e0d1b0ff4fa8e54f8eb2a6f6aa9833c8485d8c4b8a57031a1243d719d2176a2"
     },
     {
       "path": "aura.css",
@@ -3043,8 +3403,8 @@
     },
     {
       "path": "builder.js",
-      "bytes": 41571,
-      "sha256": "35ca72230fda968e66271128b54faa951fb7d673ef6015004ec3bdd92ec4f1d1"
+      "bytes": 42751,
+      "sha256": "b25098ab4ebc44f5a1496a1c5c62a1067d2ce1dd04255797348c7acd8e6976ea"
     },
     {
       "path": "buy.js",
@@ -3143,8 +3503,8 @@
     },
     {
       "path": "community-art.js",
-      "bytes": 8700,
-      "sha256": "82101ea29d80278de08ce181ebc154638a482b63ab32f48d247682c78c94f54b"
+      "bytes": 9299,
+      "sha256": "79d3ce459c1089bdc57ae06252b34eed43a85e96d8fea53f213a7f917fb97594"
     },
     {
       "path": "community-curation.css",
@@ -3158,8 +3518,8 @@
     },
     {
       "path": "community-feed.js",
-      "bytes": 16442,
-      "sha256": "ad6ad210ffed60c9ec1e7aff0979a5ecb654c130f84cb59a87e32e0f3e62f234"
+      "bytes": 16529,
+      "sha256": "b93b2dfb025492297bbb481c07477f14f79966902e93bf50b08dfb7f6b506a7e"
     },
     {
       "path": "community-profile.js",
@@ -3168,8 +3528,8 @@
     },
     {
       "path": "community-sources.js",
-      "bytes": 7644,
-      "sha256": "7b05e9301a31ea39811f8aca9fc89d544044c71af8a4bbcb8761b591c7fcac70"
+      "bytes": 10020,
+      "sha256": "3b852a85b56ece33f5a84e2136a4bdb6be1994a11bb25e302a16a22e09c6eebe"
     },
     {
       "path": "condition-feed.js",
@@ -3194,7 +3554,7 @@
     {
       "path": "config.js",
       "bytes": 601,
-      "sha256": "476d4ba9f0f91dae819c02e19cfa3b559169fecf7a2097e167e2604db0bb3823"
+      "sha256": "71de285fd12b7db1198bbd71f8c5c275b0a79c4d38d522e52a9dedd842afe44e"
     },
     {
       "path": "core.js",
@@ -4107,6 +4467,16 @@
       "sha256": "7465d26a565f38339ea137834a888763c225e7b91518bcbf64b18944716449ac"
     },
     {
+      "path": "data/story/act-4.json",
+      "bytes": 66097,
+      "sha256": "4066be3e8d0c8a895a123b75f9d4199386f1f69a4646a8191857646fe80f6607"
+    },
+    {
+      "path": "data/story/act-5.json",
+      "bytes": 64265,
+      "sha256": "9c8a77d3afbe5a0419571c6bbc5764c47a64a94f2a07e4a01c36991fd9d0ff27"
+    },
+    {
       "path": "data/story/pool-1.json",
       "bytes": 6890,
       "sha256": "af980c5f4c21e1193e1a4eef798b3f3006be09e35ba850d5945bb49bcededb08"
@@ -4120,6 +4490,16 @@
       "path": "data/story/pool-3.json",
       "bytes": 15488,
       "sha256": "8497c0f8602e6ae099b19e01534407da47f75aa1b150953411afc6927d537b61"
+    },
+    {
+      "path": "data/story/pool-4.json",
+      "bytes": 14747,
+      "sha256": "6186d9ea9cd7f80c9e74a0334f4a74fefe36acb9981975f68152dec97b4b7f02"
+    },
+    {
+      "path": "data/story/pool-5.json",
+      "bytes": 12646,
+      "sha256": "694bb8705b41952ed78ec8d9a2910cbc08a46e38468185eaf8eeb33b28ac78cc"
     },
     {
       "path": "deck-box.js",
@@ -4268,8 +4648,8 @@
     },
     {
       "path": "experiments/forge-proof/forge-table.mjs",
-      "bytes": 217742,
-      "sha256": "f800d986ce77215070307647d5436c5bd2bb59a688377176c9f82b3137a34240"
+      "bytes": 219868,
+      "sha256": "6b1e5946846796006c8d9e561020fc515cd9d8ed40f4ddd3b1588aff4b27bb61"
     },
     {
       "path": "experiments/forge-proof/motion-kit.mjs",
@@ -4278,8 +4658,8 @@
     },
     {
       "path": "experiments/forge-proof/native-panel.mjs",
-      "bytes": 66044,
-      "sha256": "24089a07d79b8468e3ad81edc9de153102f72a1dcd53d1cdc9c4efff4b14942d"
+      "bytes": 67926,
+      "sha256": "f09f4dc7caef0b6642380ba490e072419fcf6e6082e825131453a7c476cdb7d0"
     },
     {
       "path": "experiments/forge-proof/pregame-fixture.html",
@@ -4538,8 +4918,8 @@
     },
     {
       "path": "feel.js",
-      "bytes": 21403,
-      "sha256": "cfeeea4737cb873aa5e5df959aa87e0170a69ff3b588b0026e0fb5994f3139cc"
+      "bytes": 21619,
+      "sha256": "6a346efce917f37f5e8e56cf6fa75b5c5afef93a6a064582fb0b06f3cf1e4f92"
     },
     {
       "path": "finish-effects.css",
@@ -4758,8 +5138,8 @@
     },
     {
       "path": "index.html",
-      "bytes": 21144,
-      "sha256": "900cf8f543c26a298df90c4284248fcc1b5d07d05d7d9408b9c4df42ff2b996b"
+      "bytes": 21244,
+      "sha256": "b5e004ebe2c4772af07a359bb071a5706aea009219a68ea023193aaf02f480cf"
     },
     {
       "path": "insights.js",
@@ -4953,18 +5333,18 @@
     },
     {
       "path": "native-service-policy.js",
-      "bytes": 8350,
-      "sha256": "44935c3f92b609b436daf24b52a0dcb112f8b26b9c772a3b0e07dd2a965805ec"
+      "bytes": 8409,
+      "sha256": "0ec3706750370765ca35a22eac0492ad12299ccecca6fcc2eec9ed3fd2803e9e"
     },
     {
       "path": "news-pulse-route.js",
-      "bytes": 3117,
-      "sha256": "a718153c4d1671db858ed99b7b47e54af0b933bcc256d16afc69f73230547f09"
+      "bytes": 4105,
+      "sha256": "6a144e06ccf2f2f67556e0f6c72c28b7ceb803493cf06042e7c4a48584ffa12e"
     },
     {
       "path": "news-pulse.js",
-      "bytes": 8922,
-      "sha256": "141e8767b9f07082a47009cc91be08183cd6fb9e837f5ae4200547624adbf963"
+      "bytes": 17451,
+      "sha256": "d23337663e8654c83848534327c78f3978b5d1975476d28451541f0724bc79e4"
     },
     {
       "path": "pack-preview.js",
@@ -4974,7 +5354,7 @@
     {
       "path": "package.json",
       "bytes": 12280,
-      "sha256": "60611988ceb3a453ef23efd0c7a0c438dc869faa6301ad52ead4dc574a4ffe5e"
+      "sha256": "b2e4893be2767f6b4e37b57672d0b888422055ce7b7d1020f1b33207309faa6c"
     },
     {
       "path": "pairing.js",
@@ -7243,8 +7623,8 @@
     },
     {
       "path": "planeswalk-src/planeswalk-touch.js",
-      "bytes": 83907,
-      "sha256": "b00603ddc8323276cc4c8c05788b62a0084455d6818251a8a266cc7c0f9cbd76"
+      "bytes": 84088,
+      "sha256": "926e16e96804f6b05938c0589096d887ba15422b4db5b33511f9507901d6b5d4"
     },
     {
       "path": "planeswalk-src/pw-cast.js",
@@ -7308,8 +7688,8 @@
     },
     {
       "path": "planeswalk.html",
-      "bytes": 6955065,
-      "sha256": "14c4987f99ca10b59da15e2c5d32b10dfe1c6165d9023921527711b10b55b284"
+      "bytes": 6955246,
+      "sha256": "112aff61b848dcc80b2090499223f4ff17e49e3384eed78bf1a89ee367458665"
     },
     {
       "path": "planner.js",
@@ -7318,8 +7698,8 @@
     },
     {
       "path": "play-achievements.js",
-      "bytes": 13528,
-      "sha256": "f59671561b03076ef6dfb4522850018b29a6a4dc75d42d6ed108bce49375afae"
+      "bytes": 13855,
+      "sha256": "6f17c009ba92a1c7766615be6ac0456cea787d6e65e9e7c97d5ad3c3d4f1277c"
     },
     {
       "path": "play-board-badges.js",
@@ -7368,8 +7748,8 @@
     },
     {
       "path": "play-deck-finder.js",
-      "bytes": 11618,
-      "sha256": "ca762e7e6e88e10ebf69bd30914653bf30453032e74de3addbeb499812091a38"
+      "bytes": 14653,
+      "sha256": "0e96ced7744047f9d477adab27ff234d107f20ae33c397b3ad8f440f6f4a67c7"
     },
     {
       "path": "play-deck-import.js",
@@ -7393,13 +7773,13 @@
     },
     {
       "path": "play-econ-client.js",
-      "bytes": 6424,
-      "sha256": "0286d8639f9678c78f184ae36c0346ab99448bc721b8885a10bd01ecbc8c7e24"
+      "bytes": 6731,
+      "sha256": "9a3a9c2d5de5a78985308f0357316267d0949873227711ef3c6e565415638a39"
     },
     {
       "path": "play-econ-route.js",
-      "bytes": 20205,
-      "sha256": "15fcf788b3268a5e48ddfbca082f67637e5be828556b849a491a1b7cb30c94f6"
+      "bytes": 21779,
+      "sha256": "7bec546dcc40eda7e7d25670b0b1d1d5923c6904d55426c6c0f23c451313f954"
     },
     {
       "path": "play-econ-rules.js",
@@ -7413,8 +7793,8 @@
     },
     {
       "path": "play-econ-ui.js",
-      "bytes": 43381,
-      "sha256": "125754573827b2bf2ecea52ce43760abfc6315e4925fbfad0e15f1b8df89bceb"
+      "bytes": 50681,
+      "sha256": "703101c863dd3681fd241df1623d76cb9111f7b388be5a430b1c15675e8a617d"
     },
     {
       "path": "play-engine-names.js",
@@ -7478,8 +7858,8 @@
     },
     {
       "path": "play-menu.css",
-      "bytes": 137651,
-      "sha256": "32feccf2db5286241048c98948adca1174ad320054a0f4133f236b81d95b3940"
+      "bytes": 145990,
+      "sha256": "35a7283d55f69577d474167062e6d0751ad3fdcae15a18788c02ab0bc39ccf0d"
     },
     {
       "path": "play-menu.js",
@@ -7543,8 +7923,8 @@
     },
     {
       "path": "play-table-audio.js",
-      "bytes": 5475,
-      "sha256": "691c31db83b97e2cb88d58f0b0a917b2ef558857ebab63852a0cc0bc458682df"
+      "bytes": 7467,
+      "sha256": "c02e5a092fc414a1df3518d2318d2408c472f9ee76df27599edb6c1e90925b75"
     },
     {
       "path": "play-token-art.js",
@@ -7713,13 +8093,18 @@
     },
     {
       "path": "release-record.js",
-      "bytes": 4019,
-      "sha256": "c7182045a857d0833567b8c9e68e24f8eeabd2dfb412422a58126eaba87cc0f6"
+      "bytes": 5700,
+      "sha256": "4d4635810c3fe84cdf39dc3b78525d0ffbfe447aaade6fb90b7d0a033ae42164"
     },
     {
       "path": "release-status.js",
       "bytes": 4034,
       "sha256": "11f99960f1aa37c4d6eccb7e1df57220fcc01aec694771d2a54c65cf19fc878b"
+    },
+    {
+      "path": "reward-flight.js",
+      "bytes": 8002,
+      "sha256": "193cd31e63ed99d51d0104eb0990aed15ce01c2341b65b027d4dff52582e0d2e"
     },
     {
       "path": "rule-corpus.js",
@@ -7963,8 +8348,8 @@
     },
     {
       "path": "scripts/sfx/cues.py",
-      "bytes": 38349,
-      "sha256": "9f1816b4ab03aa8c35ad1e638ea80c78c851ae04829c57dfe557355c62cef119"
+      "bytes": 40644,
+      "sha256": "88816f1105c40e9a445f1cef7ee7030852be88e2e01805894fe996171c46e10a"
     },
     {
       "path": "scripts/sfx/kit.py",
@@ -7992,9 +8377,19 @@
       "sha256": "15921e08dcf1c6d02bfee0aa3260cf98df0b524ae8bba734b8dac464d4f2917c"
     },
     {
+      "path": "scripts/story/acts-src/act-4.mjs",
+      "bytes": 23259,
+      "sha256": "6a0df25ff62486dedeff22c7f7cb4e207d27b03bea0e5bd6084ac7eb4aeb0407"
+    },
+    {
+      "path": "scripts/story/acts-src/act-5.mjs",
+      "bytes": 21119,
+      "sha256": "293715d32efdadf430e007b5792ee5ec8c6d443bc49492a0313e370e90e14d88"
+    },
+    {
       "path": "scripts/story/build-act.mjs",
-      "bytes": 5285,
-      "sha256": "cbd3c42c933a052672af03616377ffacaebbe9c7f561b7e45a64f6e0e15f724a"
+      "bytes": 5428,
+      "sha256": "f1d906f199345ac0ea1d12062c9e802a60b6cba7db42b67bf9f3795e3d828031"
     },
     {
       "path": "scripts/story/check-pack-art.mjs",
@@ -8128,13 +8523,18 @@
     },
     {
       "path": "story-acts.js",
-      "bytes": 1780,
-      "sha256": "08fcd60364b22f3b152d13ebf9281dc26762f22aeabb233a6712b831ac02cabb"
+      "bytes": 2577,
+      "sha256": "057bfc969e92162caabf7aaf576c774537dd27ab869fc462cf6c588fcaee1a17"
     },
     {
       "path": "story-client.js",
       "bytes": 7058,
       "sha256": "fb529fa44392540c50bc8cc977165af9fbff520dca12cdda1d4d96cb0a1c427b"
+    },
+    {
+      "path": "story-deeds.js",
+      "bytes": 4640,
+      "sha256": "ba2237e950377fc892410fb865759f5891efd3236e4a4b64dabe00d0210f59bc"
     },
     {
       "path": "story-mode.css",
@@ -8143,8 +8543,8 @@
     },
     {
       "path": "story-ui.js",
-      "bytes": 25725,
-      "sha256": "27f409d14bddd26b78e983b474a47722653a2f5f674a3edeef75903e52bc0f96"
+      "bytes": 28299,
+      "sha256": "96f3fad83964009a90569ab588a2c5bdc7ae4cf1254213a97c77de553b9218bf"
     },
     {
       "path": "strategy-risk.js",
@@ -8192,9 +8592,14 @@
       "sha256": "c37af940e16aeb4d94731fbd1696b62da1c2124b87c7feae813bf09203b38b8e"
     },
     {
+      "path": "supabase/migrations/20261101213000_play_recent.sql",
+      "bytes": 2028,
+      "sha256": "41ca01f3ae835e905124f89d2ed87acd67f8d95fc1061af9303ad907b1291bf0"
+    },
+    {
       "path": "sw.js",
-      "bytes": 16264,
-      "sha256": "90c8a4a9c8eaee7b8aca9574a7a2eec5becaac9e40b6884a9bf118829d708162"
+      "bytes": 16301,
+      "sha256": "796675196a344edcfe6f9404348b9df1904f01e84ccf4a1d342a2ccb97ba3427"
     },
     {
       "path": "sync-merge.js",
@@ -8283,8 +8688,8 @@
     },
     {
       "path": "test-deck-forge.mjs",
-      "bytes": 7569,
-      "sha256": "5ebe51a1ddbe0963009e95d3b7f27069f78c5c18f9648e70f99ad2f49051b6d9"
+      "bytes": 8384,
+      "sha256": "70ff7a7787a3b7c05be2b222131eabd023542d71e19da83a97ab4b6e178a08ca"
     },
     {
       "path": "test-deck-viewer.mjs",
@@ -8353,8 +8758,8 @@
     },
     {
       "path": "test-news-pulse.mjs",
-      "bytes": 5444,
-      "sha256": "166738b0a100470bfb9dcc554266d564fd11ac01d022de8a1a2e78f1f5223158"
+      "bytes": 9932,
+      "sha256": "afbf75eb9a2818705e3820f1943a1ad376a8ed92dee970b295e029993a431b61"
     },
     {
       "path": "test-pack-feel.mjs",
@@ -8363,18 +8768,18 @@
     },
     {
       "path": "test-play-achievements.mjs",
-      "bytes": 5981,
-      "sha256": "1931cc39e9c3520e1d00a7a3f7cb6e1c96cf08854e8bdad40b3c4668b3c81a19"
+      "bytes": 6075,
+      "sha256": "ac3ddb9b695d9352969b1a84f5efe67ed84e4398a38c4a3a147f10d4c2af5130"
     },
     {
       "path": "test-play-deck-finder.mjs",
-      "bytes": 4274,
-      "sha256": "4d5922e72959149eb63f448e4cddba7897dbe6b71f1292f92750d1d17394b81d"
+      "bytes": 6552,
+      "sha256": "c5f842f419643a5ee39d688e5ecacbe390e2b2b2c89faea224bbf693c9e9161e"
     },
     {
       "path": "test-play-economy.mjs",
-      "bytes": 20442,
-      "sha256": "2d986ac67df90bdff4f3a2b5293feac3c721cf53406b79594c90cea6c0e25bef"
+      "bytes": 23054,
+      "sha256": "b09c70ca2ff84e827b4158e7ee0476549123dd20ac73744e23c03e8e087d1618"
     },
     {
       "path": "test-play-forge-audit-1101.mjs",
@@ -10128,8 +10533,8 @@
     },
     {
       "path": "views.js",
-      "bytes": 200647,
-      "sha256": "856bbf72141b0a6f966bcc1ce92fd0ed7b2ff0f0226911855d9fd02028fdefce"
+      "bytes": 203872,
+      "sha256": "c8626753c0732d58895d4569c084ecd160c253a7a776813783aab9fb59c27d28"
     },
     {
       "path": "wiki-article-content.js",

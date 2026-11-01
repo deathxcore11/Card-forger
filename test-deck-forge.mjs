@@ -80,3 +80,13 @@ assert.ok(forgeLandCount(bigDeck, { size: 60 }) <= 27 && forgeLandCount(cheapDec
 for (const id of ['fodder', 'sac-outlets', 'death-payoffs', 'reenter']) assert.ok(bg('hook:' + id).full, id + ' ' + bg('hook:' + id).count + '/' + bg('hook:' + id).target);
 assert.deepEqual(built.forge.hooks.includes('fodder'), true);
 console.log(`deck forge builder: Hei Bai ${built.total} cards, ${bdoc.gauges.map(g => g.label + ' ' + g.count + '/' + g.target).join(', ')}`);
+
+// 60-card colours go by what you can pay: hybrid Skyward Spider fits mono-white; Commander keeps identity.
+{
+  const {castableIn, fitsDeck} = await import('./builder.js');
+  const spider = {name: 'Skyward Spider', mana_cost: '{W/U}{W/U}', color_identity: ['W', 'U'], colors: ['W', 'U'], oracle_text: 'Ward {2}'};
+  if (!castableIn(spider, ['W']) || !fitsDeck(spider, ['W'], false) || fitsDeck(spider, ['W'], 'any')) throw Error('hybrid colour check');
+  if (castableIn({mana_cost: '{1}{W}', oracle_text: '{U}: Draw a card.'}, ['W'])) throw Error('plain off-colour ability symbol must not fit');
+  if (!castableIn({mana_cost: '{G/P}'}, ['W']) || castableIn({mana_cost: '', colors: ['U'], oracle_text: 'Suspend 4—{U}'}, ['W'])) throw Error('phyrexian / colour indicator');
+  console.log('castable colours ok');
+}

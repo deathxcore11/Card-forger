@@ -57,10 +57,33 @@ export function finderRow(list, {owned = new Map(), cardOf = () => null, seals =
   const ordered = GROUPS.map(([g]) => g).concat('Other').filter(g => groups.has(g)).map(g => ({label: g, count: groups.get(g).reduce((t, c) => t + c.qty, 0), cards: groups.get(g).sort((a, b) => (b.have >= b.qty) - (a.have >= a.qty) || a.name.localeCompare(b.name))}));
   const lead = commander ? cardOf(list.commander) : null, cover = lead?.image_uris?.art_crop || ordered.flatMap(g => g.cards).find(c => !c.basic && c.art && /Creature|Planeswalker/.test(typeOf(cardOf(c.name))))?.art || ordered.flatMap(g => g.cards).find(c => c.art)?.art || '';
   const enough = !!seals && SEALS.every(s => (shortfall.seals[s.key] || 0) <= (seals[s.key] || 0));
-  return {key: list.key, name: list.name || 'Deck', source: list.source || '', detail: list.detail || '', format: list.format, commander: list.commander || '', colors: 'WUBRG'.split('').filter(k => colors.has(k)), groups: ordered, want, have, share: want ? have / want : 1, shortfall, complete: shortfall.complete, enough, cover, list};
+  // Counted like the deck builder: copies you have (basics are free) out of the deck's size, so an
+  // unfinished Trunk build reads 80/100 here too, never 39/39.
+  const basics = [...rows].filter(([n]) => isBasicLand(n)).reduce((t, [, q]) => t + q, 0), size = Math.max(want + basics, list.size || (commander ? 100 : 60));
+  const open = Math.max(0, size - want - basics);
+  return {size, cardsHave: have + basics, open, key: list.key, name: list.name || 'Deck', source: list.source || '', detail: list.detail || '', format: list.format, commander: list.commander || '', colors: 'WUBRG'.split('').filter(k => colors.has(k)), groups: ordered, want, have, share: (have + basics) / size, shortfall, complete: shortfall.complete && !open, enough, cover, list};
 }
 
-// Ranked rows: ready decks first, then the most-owned lists; meta order breaks ties.
+// Fast ownership share by names alone, so hundreds of meta lists can be sorted before any card
+// facts load; only the rows on screen are built in full (finderRow) and fetched.
+export function ownedShare(list, owned = new Map()) {
+  const commander = list.format === 'Commander';
+  let have = 0, total = 0;
+  for (const r of list.cards || []) { if (!r?.name || r.board) continue; const q = Math.max(1, r.qty | 0); total += q; have += isBasicLand(r.name) ? q : Math.min(q, owned.get(r.name) || owned.get(frontName(r.name)) || 0); }
+  const size = Math.max(total, list.size || (commander ? 100 : 60));
+  return {have, size, share: size ? have / size : 0, complete: have >= size};
+}
+export const FINDER_SORTS = [['owned', 'Closest to owned'], ['ready', 'Ready to play'], ['popular', 'Most played']];
+// Sorted lists: the Trunk build first, then by the chosen sort; query narrows by deck or card name.
+export function rankFinderLists(lists, {owned = new Map(), sort = 'owned', query = ''} = {}) {
+  const q = String(query).trim().toLowerCase(), seen = new Map();
+  for (const l of lists) { const a = (l.archetype || l.name || '').toLowerCase(); seen.set(a, (seen.get(a) || 0) + 1); }
+  return lists.map((l, i) => ({list: l, order: i, pop: seen.get((l.archetype || l.name || '').toLowerCase()) || 0, ...ownedShare(l, owned)}))
+    .filter(x => !q || x.list.trunk || (x.list.name || '').toLowerCase().includes(q) || (x.list.cards || []).some(r => r.name.toLowerCase().includes(q)))
+    .filter(x => sort !== 'ready' || x.list.trunk || x.complete)
+    .sort((a, b) => (b.list.trunk === true) - (a.list.trunk === true) || (sort === 'popular' ? b.pop - a.pop : 0) || b.share - a.share || a.order - b.order);
+}
+// Ranked rows (full): ready decks first, then the most-owned lists; meta order breaks ties.
 export function rankFinderRows(lists, ctx = {}) {
   return lists.map((l, i) => ({...finderRow(l, ctx), order: i})).sort((a, b) => (b.list.trunk === true) - (a.list.trunk === true) || b.complete - a.complete || b.share - a.share || a.order - b.order);
 }
@@ -86,7 +109,7 @@ export function trunkDeck({format, ownedCards = [], factOf = () => null, build, 
     if (!d.open) break;
   }
   if (!best) return null;
-  return {key: 'trunk:' + format, trunk: true, name: 'Forged from your Trunk', source: 'Deck Forge', detail: best.open ? `${best.open} slots still open` : 'Every card is yours', format, commander: best.commander || '', cards: best.cards.map(r => ({name: r.name, qty: r.qty})), open: best.open};
+  return {key: 'trunk:' + format, trunk: true, name: 'Forged from your Trunk', source: 'Deck Forge', detail: best.open ? `${best.open} slots to fill` : 'Every card is yours', size: format === 'Commander' ? 100 : 60, format, commander: best.commander || '', cards: best.cards.map(r => ({name: r.name, qty: r.qty})), open: best.open};
 }
 
 const pips = colors => colors.length ? colors.map(k => `<img class="pf-pip" src="${symbolUrl(k)}" alt="${k}" width="22" height="22">`).join('') : `<img class="pf-pip" src="${symbolUrl('C')}" alt="Colorless" width="22" height="22">`;
@@ -107,21 +130,22 @@ export function finderRowMarkup(row) {
   const state = row.complete ? '<span class="pf-ready" role="img" aria-label="Ready to play" title="Ready to play"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="m5 12.5 4.5 4.5L19 7.5"/></svg></span>' : `<span class="pf-cost${row.enough ? ' pf-cost--covered' : ''}"${row.enough ? ' title="Your seals cover it"' : ''}>${cost}</span>`;
   return `<article class="pf-row" style="--pf-art:url('${esc(row.cover)}')">
     <header class="pf-head"><div class="pf-title">${pips(row.colors)}<h3>${esc(row.name)}</h3><small>${esc([row.source, row.detail].filter(Boolean).join(' · '))}</small></div>
-      <div class="pf-own"><b>${row.have}/${row.want}</b><span>owned</span></div>
+      <div class="pf-own" title="${row.cardsHave} of ${row.size} cards ready${row.open ? `, ${row.open} slots to fill` : ''}"><b>${row.cardsHave}/${row.size}</b><span>owned</span><i class="pf-meter" aria-hidden="true"><i style="width:${Math.round(row.share * 100)}%"></i></i></div>
       <div class="pf-state">${state}</div>
-      <button class="btn pf-use" data-act="playFinderUse" data-finder-key="${esc(row.key)}">${row.complete ? 'Use deck' : 'Get deck'}</button></header>
+      <button class="btn pf-use" data-act="playFinderUse" data-finder-key="${esc(row.key)}">${row.complete ? 'Use deck' : 'Build it'}</button></header>
     <div class="pf-groups">${row.groups.map(g => `<section class="pf-group"><h4>${esc(g.label)} <span>${g.count}</span></h4><div class="pf-cards">${g.cards.map(cardChip).join('')}</div></section>`).join('')}</div>
   </article>`;
 }
 
 // The whole screen. head = play-econ-ui head(); rows already ranked.
-export function finderMarkup({headHtml = '', format = 'Standard', rows = [], busy = false, error = '', limit = 8} = {}) {
+export function finderMarkup({headHtml = '', format = 'Standard', rows = [], busy = false, error = '', limit = 8, total = null, sort = 'owned', query = ''} = {}) {
   const tabs = FINDER_FORMATS.map(f => `<button class="pf-tab${f === format ? ' on' : ''}" data-act="playFinderFormat" data-finder-format="${f}" aria-pressed="${f === format}">${f}</button>`).join('');
   const list = rows.slice(0, limit).map(finderRowMarkup).join('');
   return `<section class="play-menu pe-screen pf-screen" aria-labelledby="playTitle">${headHtml}
     <div class="pf-bar"><div class="pf-tabs" role="group" aria-label="Format">${tabs}</div><button class="btn ghost pf-empty" data-act="playEconEditDeck" data-econ-deck="">Start empty</button></div>
+    <div class="pf-bar pf-filters"><div class="pf-tabs pf-sorts" role="group" aria-label="Sort decks">${FINDER_SORTS.map(([k, l]) => `<button class="pf-tab${k === sort ? ' on' : ''}" data-act="playFinderSort" data-finder-sort="${k}" aria-pressed="${k === sort}">${l}</button>`).join('')}</div><label class="pe-search pf-search"><span class="pf-total">${total == null ? '' : `${total.toLocaleString('en-US')} deck${total === 1 ? '' : 's'}`}</span><input type="search" data-input="playFinderQuery" value="${esc(query)}" maxlength="60" placeholder="Deck or card name" aria-label="Find a deck or card"></label></div>
     ${error ? `<p class="pf-note" role="status">${esc(error)}</p>` : ''}
     <div class="pf-list" aria-busy="${busy}">${list || (busy ? '<div class="pf-skeleton" aria-hidden="true"></div><div class="pf-skeleton" aria-hidden="true"></div>' : '<p class="pf-note">No decks for this format yet.</p>')}</div>
-    ${rows.length > limit ? `<button class="btn ghost pf-more" data-act="playFinderMore">More decks</button>` : ''}
+    ${(total ?? rows.length) > limit ? `<button class="btn ghost pf-more" data-act="playFinderMore">More decks</button>` : ''}
   </section>`;
 }
