@@ -5,6 +5,11 @@ name: Publish verified Forge host
 on:
   push:
     branches: [codex/forge-github-host-prep-20261026]
+  # The daily rules refresh (rules-refresh.yml on the website branch) pushes with its own
+  # token, which starts no push run, so it starts this deployment directly. GitHub only
+  # dispatches a workflow that is also on the default branch, so this file is kept there
+  # too; its job runs only for the host branch.
+  workflow_dispatch:
 
 permissions:
   contents: read
