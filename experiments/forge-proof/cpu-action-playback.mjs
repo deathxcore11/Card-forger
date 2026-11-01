@@ -172,9 +172,11 @@ function podPaced(beats){
 }
 // A whole CPU turn (land, spell, resolve, attack, damage) fits in one update at its natural pace;
 // only a longer run (about 5 s of beats) speeds up evenly.
+// Randall's pacing rule (1 Nov): every CPU action stays on screen at least about 650 ms, however long the turn.
+const MIN_BEAT=650;
 function paced(beats,budget=5200,pace=1){
  const total=beats.reduce((t,x)=>t+x.duration*pace,0),scale=pace*(total>budget?budget/total:1);
- return scale<1?beats.map(x=>x.kind==='log'?x:{...x,duration:Math.max(350,Math.round(x.duration*scale))}):beats;
+ return scale<1?beats.map(x=>x.kind==='log'?x:{...x,duration:Math.max(MIN_BEAT,Math.round(x.duration*scale))}):beats;
 }
 const onScreen=beats=>beats.filter(b=>b.kind!=='log');
 // Which beat puts each card in its final state on the table. A card named by several beats (a creature
@@ -279,10 +281,11 @@ export function answered(s){
  const surface=s.status.surface;if(s.native.inputType!=='InputConfirmMulligan'&&Number(surface.turn)>0)return s;
  return {...s,status:{...s.status,surface:{...surface,awaitingHuman:false}},native:{...s.native,prompt:null,inputType:null,selection:null,buttons:null}};
 }
+const KEEP_BEAT=1000;
 export class CpuActionPlaybackQueue {
  constructor({present,beat=()=>{},clear=()=>{},preload=()=>{},reducedMotion=()=>false,speed=()=>1,schedule=(fn,ms)=>setTimeout(fn,ms),cancel=id=>clearTimeout(id)}={}){Object.assign(this,{present,beat,clear,preload,reducedMotion,speed,schedule,cancel});this.current=null;this.latest=null;this.pending=[];this.timer=null;this.running=false;this.overlay=false;this.closed=false;this.recent=[];this.seenSeq=-1;this.loggedSeq=-1;this.target=null;}
  // Overlay playback runs over a board that already asks the player something; it never blocks.
- get busy(){return this.running&&!this.overlay||this.pending.length>0;}
+ get busy(){return this.running&&!this.overlay||this.pending.length>0||!!this.gate;}
  // The last dozen things that happened, in plain sentences, for the activity line.
  remember(beats){
   for(const b of beats){
@@ -293,7 +296,15 @@ export class CpuActionPlaybackQueue {
  }
  push(snapshot){
   if(this.closed)return;this.latest=snapshot;
-  if(!this.current||!snapshot?.status||snapshot.status.terminal||snapshot.status.failure||snapshot.transportError){this.flush(snapshot);return;}
+  if(!this.current||!snapshot?.status||snapshot.status.terminal||snapshot.status.failure||snapshot.transportError){this.gate=null;this.flush(snapshot);return;}
+  // Nothing from turn one shows until the keep is confirmed, and then only after a short beat (Randall, 1 Nov):
+  // the opening hand settles first, then the game starts. Boards that arrive meanwhile wait for it.
+  if(this.gate){this.gate=snapshot;return;}
+  if(this.current.native?.inputType==='InputConfirmMulligan'&&Number(snapshot.status.surface?.turn)>0&&snapshot.native?.inputType!=='InputConfirmMulligan'){
+   this.keptAt=Date.now();try{console.info('[pace] keep confirmed',this.keptAt);}catch{}
+   this.current=answered(this.current);this.present(this.current,true);
+   if(!this.reducedMotion()){this.gate=snapshot;this.timer=this.schedule(()=>{const next=this.gate;this.gate=null;this.timer=null;if(next&&!this.closed)this.push(next);},KEEP_BEAT);return;}
+  }
   if(this.overlay&&snapshot.status.revision===this.current.status?.revision){this.current=snapshot;this.present(snapshot,false);return;}
   // The board being told is polled again unchanged: keep telling it.
   if(this.running&&!this.overlay&&snapshot.status.revision===this.target?.status?.revision){this.target=snapshot;return;}
@@ -345,10 +356,11 @@ export class CpuActionPlaybackQueue {
    this.beat(beat,this.target);// speed() is read per beat, so switching to Fast also hurries the beats already queued.
    const spent=Date.now()-start;
    // A backlog of two or more updates hurries a little; the table never races through a turn.
-   this.timer=this.schedule(step,this.reducedMotion()?250:Math.max(180,Math.round((this.pending.length>1?beat.duration*.6:beat.duration)*this.speed())-(spent>=10?spent:0)));
+   if(beat.actor&&!this.firstCpuShown){this.firstCpuShown=true;try{console.info('[pace] first CPU action shown',Date.now(),this.keptAt?`${Date.now()-this.keptAt} ms after the keep`:'');}catch{}}
+   this.timer=this.schedule(step,this.reducedMotion()?250:Math.max(MIN_BEAT,Math.round((this.pending.length>1?beat.duration*.8:beat.duration)*this.speed())-(spent>=10?spent:0)));
   };step();
  }
- stop(){this.cancel(this.timer);this.timer=null;this.running=false;this.overlay=false;this.clear();}
+ stop(){this.cancel(this.timer);this.timer=null;this.running=false;this.overlay=false;this.clear();if(this.gate){const g=this.gate;this.gate=null;this.latest=g;}}
  flush(snapshot=this.latest){
   // Skipped beats still reach the activity log, so a skip never hides what happened.
   if(snapshot&&this.current&&snapshot!==this.current)this.remember(playbackBeats(this.current,snapshot));
