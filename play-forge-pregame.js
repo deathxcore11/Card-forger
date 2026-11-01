@@ -107,11 +107,16 @@ export function mountForgeMatchIntro({root,setup,lookup=()=>null,onCancel=()=>{}
   const outcome=node('h2',result.ownFirst?'You play first':`${setup.friend?.name||'CPU'} plays first`);outcome.hidden=!reduced;
   curtain.append(label,coin,outcome,node('p',rulesChanged?'Card rules determined the starting player. Your opening hand is next.':'Your opening hand is next.'));stage.append(curtain);
   for(const step of steps.children)step.removeAttribute?.('aria-current');steps.children[1]?.setAttribute('aria-current','step');
+  // The whole toss is always seen (Randall, 1 Nov): the coin waits until its screen is painted and in view, then
+  // flips for 1.5 s and rests on the result. The match is already loaded behind it.
+  await new Promise(r=>{const raf=view?.requestAnimationFrame?.bind(view);if(!raf)return r();raf(()=>raf(()=>r()));});
+  for(let i=0;i<40&&root.ownerDocument?.hidden&&!closed;i++)await wait(250);
+  if(closed||!isCurrent())return false;
   if(!reduced&&result.selection==='random')curtain.classList.add('is-flipping');
-  await wait(reduced?200:result.selection==='random'?950:250);
+  await wait(reduced?200:result.selection==='random'?1500:250);
   if(closed||!isCurrent())return false;
   curtain.classList.remove('is-flipping');curtain.classList.add('is-landed');outcome.hidden=false;label.textContent=result.selection==='random'?'Coin toss complete':'Starting player';
-  await wait(reduced?350:850);
+  await wait(reduced?350:1300);
   return !closed&&isCurrent();
  };
  heading.focus();

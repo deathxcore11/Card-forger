@@ -753,13 +753,15 @@ const name=String(card.name);if(Math.max(...name.split(/\s+/).map(word=>word.len
  function closeLaneTray(){const tray=root.querySelector(':scope>.forge-lane-tray');if(!tray)return;doc.removeEventListener('pointerdown',tray._away,true);tray.remove();queueArrows();}
  const growLimit=()=>Math.min(win.innerWidth,win.innerHeight)<600&&win.matchMedia?.('(pointer:coarse)').matches?1.4:1;
  // Board scales move in fixed steps and are held between fits, so the table keeps one view as cards arrive.
- const SCALE_STEP=.025,step=k=>Math.round(k/SCALE_STEP)*SCALE_STEP;let boardHold=null,holdSize='';
+ const SCALE_STEP=.025,step=k=>Math.round(k/SCALE_STEP)*SCALE_STEP;let boardHold=null,holdSize='',shrinkAt=0;
  // The largest step that fits wins on a first fit, or when the held scale no longer fits. Otherwise the held scale
- // stays, and grows only once the board would fit two steps up, stopping one step short of the best fit.
+ // stays, and grows only once the board would fit four steps (10%) up, stopping one step short of the best fit.
  function zoneScale(fitsAt){const lim=growLimit(),size=`${win.innerWidth}x${win.innerHeight}`;if(size!==holdSize){holdSize=size;boardHold=null;}
   const best=()=>{for(let t=lim;t>.4;t=step(t-2*SCALE_STEP))if(fitsAt(t))return t<lim&&fitsAt(step(t+SCALE_STEP))?step(t+SCALE_STEP):t;return .4;};
-  if(boardHold===null)return best();const held=Math.min(lim,boardHold);if(!fitsAt(held))return best();
-  const b=best();return b>=step(held+2*SCALE_STEP)?step(b-SCALE_STEP):held;}
+  if(boardHold===null)return best();const held=Math.min(lim,boardHold);
+  // A held scale that no longer fits steps down from where it is (never jumps up to a wider layout that happens to fit).
+  if(!fitsAt(held)){for(let t=step(held-SCALE_STEP);t>.4;t=step(t-SCALE_STEP))if(fitsAt(t))return t;return best();}
+  const b=best();return b>=step(held+4*SCALE_STEP)?step(b-SCALE_STEP):held;}
  // Tall touch screens lift the turn buttons above a full-width hand (play-forge-table.css), into your side's lower edge.
  const raisedDock=()=>!!win.matchMedia?.('(hover:none) and (pointer:coarse) and (min-width:600px) and (min-height:480px)').matches;
  // A side that changes size after the fit (fonts landing, a chip appearing, 130% text) fits again.
@@ -820,15 +822,19 @@ const name=String(card.name);if(Math.max(...name.split(/\s+/).map(word=>word.len
   // A row that fits its lane at one width can fold or shrink differently at another, so the shared scale is checked
   // once laid out and stepped down until every side really fits.
   let k=Math.min(growLimit(),...fits.map(f=>f.k));const before=boardHold;
-  for(let pass=0;pass<8;pass++){let over=false;
+  const applyAt=k=>{let over=false;
    for(const f of fits){const {area,zone,own,W,H,fitRows,drop}=f;
     if(Math.abs(k-1)<.005){zone.style.removeProperty('width');zone.style.removeProperty('transform');delete zone.dataset.scaled;fitRows();if(drop)zone.style.transform=`translateY(${drop.toFixed(1)}px)`;if(zone.scrollHeight>H+1)over=true;continue;}
     zone.dataset.scaled='true';zone.style.width=`${W/k}px`;fitRows();
     // The CPU side settles toward the divider, leaving room for keyword badges hanging under its cards.
     const h=zone.scrollHeight*k,lift=own?0:area.querySelectorAll(':scope>.play-match-zone').length>1?drop:Math.max(0,area.clientHeight-h-10);if(h>H+1)over=true;
     zone.style.transform=`translateY(${lift.toFixed(1)}px) scale(${k.toFixed(3)})`;
-   }
-   if(!over||k<=.4)break;k=Math.max(.4,step(k-SCALE_STEP));}
+   }return over;};
+  for(let pass=0;pass<8;pass++){if(!applyAt(k)||k<=.4)break;k=Math.max(.4,step(k-SCALE_STEP));}
+  // A shrink must still be needed a moment later before it shows (Randall, 1 Nov: the board pulsed in and out as
+  // cards landed, while art and fonts settled). Until then the held scale stays and the board is checked again.
+  if(before!==null&&fits.length&&k>.401&&k<before-.001){const now=Date.now();if(!shrinkAt){shrinkAt=now;setTimeout(queueBoard,320);}
+   if(now-shrinkAt<300){k=before;applyAt(k);}else shrinkAt=0;}else shrinkAt=0;
   // The scale holds from fit to fit (Randall, 1 Nov): a new card never nudges it; it steps down only when a side
   // no longer fits, and back up only when there is clearly room. A step glides instead of jumping.
   // A pass where nothing fit (fonts or art still landing) is not held.
@@ -1421,6 +1427,9 @@ const name=String(card.name);if(Math.max(...name.split(/\s+/).map(word=>word.len
   const gone=drag?.gone,reopen=()=>{if(gone?.isConnected)delete gone.dataset.handGone;};if(gone){if(back)reopen();else setTimeout(reopen,1500);}
   if(ghost){if(back)returnGhost(ghost,gone?null:drag?.source,gone?drag.g:null);else ghost.remove();}drag=null;ghost=null;root.classList.remove('forge-dragging');delete root.dataset.playLine;markTapPreview(null);for(const el of root.querySelectorAll('[data-forge-lane-drop]'))el.removeAttribute('data-forge-lane-drop');markDrops();thaw();};
  const down=e=>{lastPointerType=e.pointerType||'mouse';
+  // A long press holds taps off until its finger lifts. If that lift never arrives (a phone that ate it), a new touch
+  // ends the hold, so the table never stops answering (Randall, 1 Nov: Keep/Mulligan froze on a foldable).
+  if(suppressUntil-Date.now()>2000&&pressAt?.id!==e.pointerId){suppressUntil=0;pressAt=null;pressShown=false;clearTimeout(pressTimer);}
   // Two fingers, like a physical table: while one thumb holds a card open to read it, another can drag a card.
   const second=e.isPrimary===false;if(e.button!==0||second&&!(pressAt&&pressAt.id!==e.pointerId&&!drag?.active))return;const card=e.target.closest?.('.play-match-card[data-instance]'),s=session.snapshot();
   if(second){if(!card||s.busy||s.native?.prompt||s.native?.inputType==='InputConfirmMulligan'||s.status?.terminal)return;drag={id:Number(card.dataset.instance),revision:s.status.revision,pointerId:e.pointerId,x:e.clientX,y:e.clientY,source:card,active:false,intent:'',ax:e.clientX,ay:e.clientY,second:true};return;}

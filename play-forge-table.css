@@ -84,10 +84,10 @@
 .forge-coin-face .profile-avatar>span{font:700 34px/1 Cinzel,Georgia,serif;color:var(--ob-gold-hi,#f2d496)}
 .forge-coin-face .profile-avatar>img{position:absolute;inset:0;width:100%;height:100%;object-fit:cover}
 .forge-coin-face>b{position:absolute;left:50%;bottom:16%;transform:translateX(-50%);padding:2px 10px;border-radius:999px;background:#0c0c0ed9;border:1px solid #f2d49699;color:#f6eedb;font:700 11px/1.4 'DM Sans',system-ui,sans-serif;letter-spacing:.18em}
-.forge-intro-toss.is-flipping .forge-intro-coin{animation:forge-coin-toss .95s cubic-bezier(.3,.7,.4,1) both}
-.forge-intro-toss.is-flipping .forge-coin-body{animation:forge-coin-spin-you .95s cubic-bezier(.25,.6,.3,1) both}
+.forge-intro-toss.is-flipping .forge-intro-coin{animation:forge-coin-toss 1.5s cubic-bezier(.3,.7,.4,1) both}
+.forge-intro-toss.is-flipping .forge-coin-body{animation:forge-coin-spin-you 1.5s cubic-bezier(.25,.6,.3,1) both}
 .forge-intro-toss.is-flipping .forge-intro-coin[data-result=cpu] .forge-coin-body{animation-name:forge-coin-spin-cpu}
-.forge-intro-toss.is-flipping .forge-intro-coin:after{animation:forge-coin-shadow .95s cubic-bezier(.3,.7,.4,1) both}
+.forge-intro-toss.is-flipping .forge-intro-coin:after{animation:forge-coin-shadow 1.5s cubic-bezier(.3,.7,.4,1) both}
 .forge-intro-toss.is-landed .forge-intro-coin{animation:forge-coin-settle .45s cubic-bezier(.2,1.6,.4,1) both}
 .forge-intro-toss.is-landed .forge-intro-coin:before{content:'';position:absolute;inset:-4px;border:2px solid var(--ob-gold-hi,#f2d496);border-radius:50%;pointer-events:none;animation:forge-coin-ring .8s ease-out both}
 .forge-intro-start-options{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:14px;width:min(700px,100%);margin:30px 0 22px}

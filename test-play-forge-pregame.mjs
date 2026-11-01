@@ -32,7 +32,7 @@ function dom(){
 test('toss shows one committed result and stops its presentation when the account becomes stale',async()=>{
  const {root}=dom(),s=state(),delays=[];let current=true;
  const intro=mountForgeMatchIntro({root,setup:{profile:{username:'player'},selected:{name:'First deck'},opponent:{name:'Second deck'},match:{format:'Modern'},playStyle:'quick'},isCurrent:()=>current,wait:async ms=>{delays.push(ms);current=false;}});
- assert.equal(await intro.reveal(s),false);assert.deepEqual(delays,[950]);
+ assert.equal(await intro.reveal(s),false);assert.deepEqual(delays,[1500]);
  current=true;intro.destroy();assert.equal(await intro.reveal(s),false);assert.equal(delays.length,1);
 });
 test('Quick Play chooses randomly; Practice waits for an explicit preference and cancellation sends none',async()=>{
