@@ -1665,7 +1665,7 @@ let inviteOpening=false;
 const friendRoomView=()=>{
  const waiting=!friendRoom&&!inviteOpening&&pendingFriendInvite();
  if(waiting&&T.game()==='mtg'&&cloudInfo().user)queueMicrotask(()=>openFriendInvite(waiting));
- return friendRoom&&{...friendRoom,invite:undefined};
+ return friendRoom&&{...friendRoom,invite:undefined,link:friendRoom.seat==='host'&&friendRoom.status==='open'?inviteLink():null};
 };
 const setFriendRoom=patch=>{friendRoom=patch&&{...(friendRoom||{}),...patch};refreshPlayMenu();};
 const stopFriendPoll=()=>{clearTimeout(friendPoll);friendPoll=null;};
@@ -1692,13 +1692,20 @@ A.playFriendCancel=async()=>{
  const room=friendRoom;stopFriendPoll();if(!room?.roomId)return;friendRoom=null;refreshPlayMenu();
  try{await (await rooms()).cancel(room.roomId);}catch{/* it expires by itself */}
 };
-const inviteLink=async()=>(await import('./play-forge-host-client.js')).friendInviteLink(friendRoom.invite);
+// The link is built here, at once, so the copy still counts as the player's own click.
+const inviteLink=()=>friendRoom?.invite?'https://cardstashy.com/#play/join/'+friendRoom.invite:null;
+let copiedTimer=0;
 A.playFriendCopy=async()=>{
- if(!friendRoom?.invite)return;const link=await inviteLink();
- try{await navigator.clipboard.writeText(link);setFriendRoom({copied:true});}catch{toast(link);}
+ const link=inviteLink();if(!link)return;
+ let copied=false;
+ try{await navigator.clipboard.writeText(link);copied=true;}
+ catch{const field=document.getElementById('playInviteLink');if(field){field.focus();field.select();try{copied=document.execCommand('copy');}catch{/* the link stays selected */}}}
+ if(!copied){toast('Copying was blocked. The link is selected: press Ctrl+C (or long-press) to copy it.');return;}
+ setFriendRoom({copied:true});toast('Invite link copied. Send it to your friend.');
+ clearTimeout(copiedTimer);copiedTimer=setTimeout(()=>{if(friendRoom?.copied)setFriendRoom({copied:false});},4000);
 };
 A.playFriendShare=async()=>{
- if(!friendRoom?.invite)return;const link=await inviteLink();
+ const link=inviteLink();if(!link)return;
  try{await navigator.share({title:'CardStashy match',text:`Play ${playSetup.snapshot().match.format} with me on CardStashy.`,url:link});}catch{/* the player closed the share sheet */}
 };
 // An invite link: kept in this tab through sign-in, then shown as the friend's room.

@@ -698,7 +698,12 @@ body[data-view="play"] #content{padding-left:max(var(--page-edge,16px),calc(env(
 @media(max-width:700px){.pl-lobby:has(.pl-arena--pod) .pl-startbar{position:static}}
 
 /* Friends: the invite lives on the friend's seat; the room's format is fixed once the invite exists. */
-.pl-invite{display:flex;flex-wrap:wrap;justify-content:flex-end;gap:8px;margin-top:8px}
+.pl-invite{display:flex;flex-wrap:wrap;justify-content:flex-end;gap:8px;margin-top:8px;pointer-events:auto}
+/* The seat copy ignores clicks so its card can be tapped; the invite controls take them back. */
+.pl-invite :is(button,input){pointer-events:auto}
+.pl-invite-link{flex:1 1 100%;min-width:0;min-height:40px;padding:0 14px;border:1px solid #ffffff2e;border-radius:12px;background:#0c0e13b8;color:#f1e9d8;font:500 13px/1 'DM Sans',system-ui,sans-serif;text-overflow:ellipsis;user-select:all;-webkit-user-select:all;cursor:text}
+.pl-invite-link:focus-visible{outline:2px solid var(--gold);outline-offset:2px}
+.pl-invite-btn.is-copied{border-color:var(--gold);color:var(--gold)}
 .pl-invite-btn{display:inline-grid;place-items:center;min-height:44px;padding:0 18px;white-space:nowrap;border:1px solid color-mix(in srgb,var(--gold) 55%,transparent);border-radius:999px;background:#0c0e13b8;color:#f6eedb;font:750 14px/1 'DM Sans',system-ui,sans-serif;cursor:pointer;backdrop-filter:blur(8px)}
 .pl-invite-btn:hover{border-color:var(--gold);color:var(--gold)}
 .pl-invite-btn:focus-visible{outline:2px solid var(--gold);outline-offset:3px}
