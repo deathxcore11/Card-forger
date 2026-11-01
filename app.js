@@ -278,8 +278,29 @@ function syncPlayChrome(){
   const bp=$('#bottomPlay');if(bp){const t=[...bp.childNodes].find(n=>n.nodeType===3&&n.textContent.trim());if(t)t.textContent=label;}
   // The Play collection is the Trunk, so it never reads like the real Collection button beside it.
   for(const b of $$('.top-nav [data-nav="collection"],.bottom-nav [data-nav="collection"]')){const t=[...b.childNodes].find(n=>n.nodeType===3&&n.textContent.trim());if(t){b.dataset.label||=t.textContent;t.textContent=on?'Trunk':b.dataset.label;}}
+  syncPlayNav(on);
   if(on){const v=S.ui.view==='play'?playView:'collection';for(const b of $$('.top-nav [data-nav],.bottom-nav [data-nav]'))b.classList.toggle('on',b.dataset.nav==='collection'?['collection','set'].includes(v)||S.ui.lens==='play':b.dataset.nav==='decks'?['decks','deck'].includes(v):false);}
 }
+// Play's own bottom bar (Randall, 1 Nov): Collection (back to the real app), Trunk, Decks, Shop, Achievements.
+// It stands in for the main bar only while Play is open, so the main app's bar never changes.
+const PLAY_NAV_ICON={switch:'sync',collection:'collection',decks:'decks',shop:'bag',deeds:'trophy'};
+const PLAY_NAV_ON={collection:['collection','set','packs'],decks:['decks','deck','finder'],shop:['shop'],deeds:['deeds']};
+function syncPlayNav(on){
+  const nav=$('.play-nav');if(!nav)return;
+  if(nav.hidden===on)nav.hidden=!on;
+  if(!on)return;
+  if(!nav.dataset.drawn){for(const b of nav.querySelectorAll('[data-play-nav]')){const span=b.querySelector('span');if(span)span.innerHTML=ICON[PLAY_NAV_ICON[b.dataset.playNav]]||'';}nav.dataset.drawn='1';}
+  const v=S.ui.view==='play'?playView:S.ui.lens==='play'?'set':'';
+  for(const b of nav.querySelectorAll('[data-play-nav]')){const hit=(PLAY_NAV_ON[b.dataset.playNav]||[]).includes(v);b.classList.toggle('on',hit);if(hit)b.setAttribute('aria-current','page');else b.removeAttribute('aria-current');}
+}
+document.addEventListener('click',e=>{
+  const b=e.target.closest?.('.play-nav [data-play-nav]');if(!b)return;
+  e.preventDefault();
+  const to=b.dataset.playNav;
+  if(to==='switch'){go('#collection');return;}
+  playView=to;playInspectOpen=false;if(to==='collection')econUi.tab='cards';if(to==='decks')setTimeout(loadPreconIndex,0);
+  if(S.ui.view==='play'){refreshPlayMenu();scrollTo({top:0});}else go('#play');
+});
 // In Play mode the shared nav buttons open Play screens; the Play button leaves Play.
 document.addEventListener('click',e=>{
   if(!playModeOn())return;

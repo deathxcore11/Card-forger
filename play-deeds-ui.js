@@ -46,7 +46,7 @@ export function deedsPanel(econ, user = '') {
   const s = econ?.state; if (!s) return '';
   const rows = achievementRows(ctxOf(s, user)), t = deedTotals(rows), near = almostThere(rows, 2);
   return `<section class="pe-shelf-row pd-deeds-home" aria-labelledby="pdDeedsTitle"><div class="home-shelf-heading"><h2 id="pdDeedsTitle">Achievements</h2><button class="link small" data-act="playEconView" data-econ-view="deeds">${t.ready ? `${t.ready} to claim` : 'All achievements'}</button></div>
-    <div class="pd-total"><span class="pd-total-num"><b>${n(t.earned)}</b> / ${n(t.total)}</span>${bar(t.total ? t.earned / t.total : 0)}</div>
+    <div class="pd-total"><span class="pd-total-num"><b>${n(t.earned)}</b><span>of ${n(t.total)} earned</span></span>${bar(t.total ? t.earned / t.total : 0)}</div>
     <ul class="pd-near">${near.map(r => `<li><button class="pd-near-row" data-act="playEconView" data-econ-view="deeds" data-econ-tab="${esc(r.tab)}"><span class="pd-near-art" aria-hidden="true"><img src="${esc(cardImageByName(r.art, 'art_crop'))}" alt="" loading="lazy" decoding="async" referrerpolicy="no-referrer"></span><span class="pd-near-copy"><b>${esc(r.title)}</b>${bar(r.value / r.next.need, 'thin')}<small>${n(fmtValue(r, r.value))} / ${fmtNeed(r, r.next.need)}</small></span></button></li>`).join('')}</ul></section>`;
 }
 
