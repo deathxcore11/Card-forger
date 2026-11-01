@@ -1825,3 +1825,13 @@ body[data-actnum="3"] #app .screen.blessing{--pw-bg:url(./planeswalk-art/blessin
 #app .pw-jplane>b{font:700 1rem var(--display);color:#e9d9b8}
 #app .pw-jplane>em{font:500 .78rem/1.35 var(--body);color:#d8cdb4;font-style:normal}
 #app .pw-jplane.pw-sil{aspect-ratio:16/7;display:grid;place-items:center;border-radius:12px;background:radial-gradient(#25252b,#0d0d10);border:1px dashed #ffffff2e}
+/* ===== Titles (meta item 8): earned ones are gold and pick the title you wear; the rest stay dim with what they take on inspect */
+#app .pw-titles{display:flex;flex-wrap:wrap;gap:6px;justify-content:center}
+#app .pw-title{display:inline-flex;align-items:center;gap:6px;min-height:44px;padding:4px 12px!important;border-radius:99px!important;font:700 .78rem/1 var(--display,serif)}
+#app .pw-title svg{width:16px;height:16px;fill:currentColor;flex:none}
+#app button.pw-title{color:#ffe7b0;box-shadow:0 0 0 1px #e8b45a88}
+#app button.pw-title[aria-pressed=true]{background:linear-gradient(180deg,#5a420e,#2a1d04)!important;box-shadow:0 0 0 1.5px #e8b45a,0 0 12px #e8b45a55}
+#app .pw-title.pw-sil{color:#8d8170;background:#0d0d10cc;border:1px dashed #ffffff2e;box-sizing:border-box}
+#app .pw-utitle{display:inline-flex;align-items:center;gap:6px;min-height:40px;padding:4px 14px;border-radius:99px;background:linear-gradient(180deg,#5a420e,#2a1d04);box-shadow:0 0 0 1.5px #e8b45a,0 0 14px #e8b45a55;color:#ffe7b0}
+#app .pw-utitle svg{width:18px;height:18px;fill:currentColor}
+#app .pw-utitle b{font:700 .9rem/1 var(--display,serif)}

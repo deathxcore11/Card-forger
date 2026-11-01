@@ -2071,6 +2071,16 @@ body[data-actnum="3"] #app .screen.blessing{--pw-bg:url(./planeswalk-art/blessin
 #app .pw-jplane>b{font:700 calc(max(11px,1rem) * var(--pw-ts,1)) var(--display);color:#e9d9b8}
 #app .pw-jplane>em{font:500 calc(max(11px,.78rem) * var(--pw-ts,1))/1.35 var(--body);color:#d8cdb4;font-style:normal}
 #app .pw-jplane.pw-sil{aspect-ratio:16/7;display:grid;place-items:center;border-radius:12px;background:radial-gradient(#25252b,#0d0d10);border:1px dashed #ffffff2e}
+/* ===== Titles (meta item 8): earned ones are gold and pick the title you wear; the rest stay dim with what they take on inspect */
+#app .pw-titles{display:flex;flex-wrap:wrap;gap:6px;justify-content:center}
+#app .pw-title{display:inline-flex;align-items:center;gap:6px;min-height:44px;padding:4px 12px!important;border-radius:99px!important;font:700 calc(max(11px,.78rem) * var(--pw-ts,1))/1 var(--display,serif)}
+#app .pw-title svg{width:16px;height:16px;fill:currentColor;flex:none}
+#app button.pw-title{color:#ffe7b0;box-shadow:0 0 0 1px #e8b45a88}
+#app button.pw-title[aria-pressed=true]{background:linear-gradient(180deg,#5a420e,#2a1d04)!important;box-shadow:0 0 0 1.5px #e8b45a,0 0 12px #e8b45a55}
+#app .pw-title.pw-sil{color:#8d8170;background:#0d0d10cc;border:1px dashed #ffffff2e;box-sizing:border-box}
+#app .pw-utitle{display:inline-flex;align-items:center;gap:6px;min-height:40px;padding:4px 14px;border-radius:99px;background:linear-gradient(180deg,#5a420e,#2a1d04);box-shadow:0 0 0 1.5px #e8b45a,0 0 14px #e8b45a55;color:#ffe7b0}
+#app .pw-utitle svg{width:18px;height:18px;fill:currentColor}
+#app .pw-utitle b{font:700 calc(max(11px,.9rem) * var(--pw-ts,1))/1 var(--display,serif)}
 
 /* Planeswalk emblem art. Pairs with emblem-art.js. */
 .emb-art{position:relative;flex:none;display:block;border-radius:50%;box-shadow:0 0 0 1px #0008,0 4px 14px #000a}
@@ -3347,7 +3357,24 @@ const heroOpen=k=>k==='R'||!!(profile.heroes&&profile.heroes[k]);
 function checkGoals(){const H=profile.heroes=profile.heroes||{R:1},got=[];for(const k in HERO_GOALS)if(!H[k]&&HERO_GOALS[k].some(([g,n])=>pstat(g)>=n)){H[k]=1;if(HEROES[k])got.push(k)}return got}
 function bumpStat(k,n=1){const S=profile.stat=profile.stat||{};S[k]=(S[k]||0)+n}
 const codexCount=()=>Object.values(codexData()).reduce((t,[ks,sn])=>t+ks.filter(k=>sn.has(k)).length,0);
-function bossBeat(bk,a){if(!run)return;run.xpB=(run.xpB||0)+1;const B=profile.bossBeat=profile.bossBeat||{},L=B[run.hero]=B[run.hero]||[];if(!L.includes(bk)){L.push(bk);run.xpF=(run.xpF||0)+1}
+// ===== Titles (meta item 8): data rows [key, name, check, what it takes]. Checks read the profile and the run that just ended.
+const TITLES=[['flame','Flamecaller','winR','Win as Chandra'],['dawn','Dawnbringer','winW','Win as Elspeth'],['walker','Planeswalker','winBoth','Win with two different heroes'],
+ ['first','Spark Kindled','firstRun','Finish your first run'],['unscarred','Unscarred','unscarred','Beat a boss without losing life in the fight'],['infinite','Infinite','turn100','Deal 100 damage in one turn'],
+ ['touched','Spark-Touched','spark5','Reach Spark level 5'],['undaunted','Undaunted','winSpark5','Win at Spark level 5'],['crowned','Spark-Crowned','winSpark10','Win at Spark level 10'],
+ ['hunter','Elite Hunter','elites25','Beat 25 elites'],['kingslayer','Kingslayer','bosses10','Beat 10 bosses'],['grave','Gravewalker','deaths10','Fall in battle 10 times'],
+ ['wayfarer','Wayfarer','trail6','Reach trail step 6 with any hero'],['trailblazer','Trailblazer','trail15','Reach trail step 15 with any hero'],
+ ['lore','Lorekeeper','codex40','Fill 40 Codex entries'],['archivist','Archivist','codex100','Fill the whole Codex'],['lean','Lean Walker','lean','Win with 15 cards or fewer'],
+ ['bloodied','Bloodied','bloodied','Win with 5 life or less'],['hoard','Dragon Hoard','gold300','Hold 300 gold at once'],['laden','Emblem-Laden','emb10','Hold 10 emblems in one run'],
+ ['devotee','Devotee','daily7','Play the Daily 7 days in a row']];
+const anyH=f=>Object.keys(HEROES).some(f),RW=()=>run&&run.won;
+const TCHECK={winR:()=>pstat('winR')>0,winW:()=>pstat('winW')>0,winBoth:()=>Object.keys(HEROES).filter(k=>pstat('win'+k)>0).length>=2,firstRun:()=>profile.runs>0,
+ unscarred:()=>pstat('unscarred')>0,turn100:()=>(profile.bestTurn||0)>=100,spark5:()=>anyH(k=>sparkOf(k).open>=5),winSpark5:()=>anyH(k=>sparkOf(k).beat>=6),winSpark10:()=>anyH(k=>sparkOf(k).beat>=11),
+ elites25:()=>pstat('elites')>=25,bosses10:()=>pstat('bosses')>=10,deaths10:()=>pstat('deaths')>=10,trail6:()=>anyH(k=>stepOf(heroXP(k))>=6),trail15:()=>anyH(k=>stepOf(heroXP(k))>=15),
+ codex40:()=>codexCount()>=40,codex100:()=>Object.values(codexData()).every(([ks,sn])=>ks.every(k=>sn.has(k))),lean:()=>pstat('lean')>0,bloodied:()=>pstat('bloodied')>0,
+ gold300:()=>pstat('gold')>=300,emb10:()=>pstat('embs')>=10,daily7:()=>pstat('dailyStreak')>=7};
+function checkTitles(){const T=profile.titles=profile.titles||[],got=[];for(const [k,,f] of TITLES)if(!T.includes(k)&&TCHECK[f]&&(()=>{try{return TCHECK[f]()}catch(e){return false}})()){T.push(k);got.push(k)}if(got.length&&!profile.title)profile.title=got[0];return got}
+const statMax=(k,v)=>{const S=profile.stat=profile.stat||{};if(v>(S[k]||0))S[k]=v};
+function bossBeat(bk,a){if(!run)return;run.xpB=(run.xpB||0)+1;bumpStat('bosses');if(c&&run.hp>=(c.hp0||0))bumpStat('unscarred');const B=profile.bossBeat=profile.bossBeat||{},L=B[run.hero]=B[run.hero]||[];if(!L.includes(bk)){L.push(bk);run.xpF=(run.xpF||0)+1}
  if(a===1)bumpStat('a1');if(a===2)bumpStat('a2');const got=checkGoals();if(got.length)run.newHeroes=[...(run.newHeroes||[]),...got];store.set(PROF,profile)}
 // Art registries from build.py: no placeholders, so a card or UI piece without its art stays out (and switches on when the art lands).
 const CARDART=typeof PW_CARDART!=='undefined'&&Array.isArray(PW_CARDART)?new Set(PW_CARDART):null,UIART=typeof PW_UIART!=='undefined'&&Array.isArray(PW_UIART)?new Set(PW_UIART):null;
@@ -3701,7 +3728,7 @@ const ANTE_COST=()=>`Win by turn ${ANTE_TURNS_OF()} or the card burns · it sits
 // ---------- combat ----------
 function startFight(keys,kind,depth=0,ante=null,dun=null){
  keys=keys.slice(0,FIGHT.foes);
- c={kind,depth,doomT:kind==='boss'?DOOM_BT:DOOM_T,roll:Math.floor(Math.random()*3),enemies:keys.map(k=>foe(k,depth)),allies:[],hand:[],draw:shuffle(run.deck.filter(x=>!ante||x.id!==ante.id).map(x=>({...x}))),discard:[],energy:0,bank:0,loyalty:run.loyalty,used:false,turn:0,chain:0,ult:false,stats:{dealt:0,best:0,kills:0},tremors:0,target:null,haunt:0,exile:[],lost:[],
+ c={hp0:run.hp,kind,depth,doomT:kind==='boss'?DOOM_BT:DOOM_T,roll:Math.floor(Math.random()*3),enemies:keys.map(k=>foe(k,depth)),allies:[],hand:[],draw:shuffle(run.deck.filter(x=>!ante||x.id!==ante.id).map(x=>({...x}))),discard:[],energy:0,bank:0,loyalty:run.loyalty,used:false,turn:0,chain:0,ult:false,stats:{dealt:0,best:0,kills:0},tremors:0,target:null,haunt:0,exile:[],lost:[],
   tax:keys.some(k=>E[k].tax),pending:null,log:'Your turn.',busy:false};
  c.roster=keys.slice();if(dun)Object.assign(c,dun);
  if(run.mercy>0&&!dun){run.mercy--;c.enemies.forEach(e=>{e.hp=Math.min(e.hp,10);e.max=Math.min(e.max,10)})}/* Ugin's Mercy */
@@ -4285,7 +4312,8 @@ function stepPack(n){const L=[];for(const k in C)if(C[k].trail===n&&(!CARDART||C
 function rankBar(){if(run.xpGain==null)return '';const top=TRAIL_XP[TRAIL_XP.length-1],x0=run.xpFrom,x1=run.xpFrom+run.xpGain,a=stepOf(x0),b=stepOf(x1),lo=b?TRAIL_XP[b-1]:0,hi=TRAIL_XP[b]||top,up=b>a;
  const from=up||b>=TRAIL_XP.length?0:(x0-lo)/(hi-lo),to=b>=TRAIL_XP.length?1:(x1-lo)/(hi-lo),packs=[];for(let n=a+1;n<=b;n++)packs.push(...stepPack(n));
  const heroes=(run.newHeroes||[]).filter(k=>HEROES[k]).map(k=>`<span class="pw-uhero" data-n="${HEROES[k].name}" data-k="${k}" role="img" aria-label="${HEROES[k].short} unlocked" title="${HEROES[k].short}"><b>${HEROES[k].short}</b></span>`).join('');
- return `<div class="pw-rank${up?' up':''}" role="img" aria-label="Trail step ${b}: ${x1} XP${b<TRAIL_XP.length?`, next step at ${hi}`:''}"><span class="pw-rank-n">${ico('up')}<b>${b}</b></span><span class="pw-rank-bar"><i style="width:${(from*100).toFixed(1)}%"></i><i class="gain" style="left:${(from*100).toFixed(1)}%;width:${(Math.max(0,to-from)*100).toFixed(1)}%"></i></span><b class="pw-rank-xp">+${run.xpGain}</b></div>${heroes||packs.length?`<div class="pw-unlocks">${heroes}${packs.join('')}</div>`:''}`}
+ const titles=(run.newTitles||[]).map(k=>{const t=TITLES.find(x=>x[0]===k);return t?`<span class="pw-utitle" role="img" aria-label="Title earned: ${t[1]}" title="${t[3]}">${ico('crown')}<b>${t[1]}</b></span>`:''}).join('');
+ return `<div class="pw-rank${up?' up':''}" role="img" aria-label="Trail step ${b}: ${x1} XP${b<TRAIL_XP.length?`, next step at ${hi}`:''}"><span class="pw-rank-n">${ico('up')}<b>${b}</b></span><span class="pw-rank-bar"><i style="width:${(from*100).toFixed(1)}%"></i><i class="gain" style="left:${(from*100).toFixed(1)}%;width:${(Math.max(0,to-from)*100).toFixed(1)}%"></i></span><b class="pw-rank-xp">+${run.xpGain}</b></div>${heroes||packs.length||titles?`<div class="pw-unlocks">${heroes}${packs.join('')}${titles}</div>`:''}`}
 function endView(won){
  return `<section class="screen pw-end"><h2>${won?bossShort(bossOf())+' falls':HERO.short+' falls'}</h2><p>${won?`You cleared ${(run.act||1)>1?'Innistrad and Zendikar':'Innistrad'} with ${run.deck.length} cards and ${run.emblems.length} emblems, after ${run.fights} fights. Biggest hit: ${run.best}. Best turn: ${run.bestTurn||0} damage.`:`The run ends after ${run.fights} fights. Biggest hit: ${run.best}. Best turn: ${run.bestTurn||0} damage.`}</p>
  ${!won&&c&&c.ante?`<div class="ante-result" data-r="lost">${anteCard(c.ante)}<p>The wager is lost with the run.</p></div>`:''}${rankBar()}<div class="choices"><button class="btn main" data-act="new">New run</button><button class="btn" data-act="replay">Replay seed ${seed}</button><button class="btn pw-share" data-act="share">${ico('share')}<span>Share</span></button></div></section>`;
@@ -4474,7 +4502,8 @@ function endRun(won){if(run.recorded)return;run.recorded=1;if(won)try{sparkWin()
  const foe=!won&&c&&c.enemies&&c.enemies.find(e=>e.hp>0),act=run.act||1,floor=(run.pos?run.pos.r:0)+1;
  try{profile.mercy=!won&&act===1&&!(c&&c.kind==='boss');profile.diedTo=!won&&c&&c.kind==='boss'?(E[bossOf(act)]?E[bossOf(act)].name:bossOf(act)).toLowerCase().split(/[ ,]/)[0]:null}catch(e){}/* patrons: Ugin's Mercy and diedto lines */
  {const hk=run.hero,fl=Math.max(0,(run.fl||0)-(won?0:1));run.xpHero=hk;run.xpFrom=heroXP(hk);run.xpGain=fl*10+(run.xpEl||0)*25+(run.xpB||0)*60+(won?100:0)+(run.xpF||0)*50;(profile.trailXP=profile.trailXP||{})[hk]=run.xpFrom+run.xpGain;
-  if(!won)bumpStat('deaths');else{bumpStat('wins');if(hk==='W')bumpStat('winW')}const got=checkGoals();if(got.length)run.newHeroes=[...(run.newHeroes||[]),...got]}
+  if(!won)bumpStat('deaths');else{bumpStat('wins');bumpStat('win'+hk);if(run.deck.length<=15)bumpStat('lean');if(run.hp<=5)bumpStat('bloodied')}statMax('embs',run.emblems.length);run.won=!!won;const got=checkGoals();if(got.length)run.newHeroes=[...(run.newHeroes||[]),...got]}
+ try{run.newTitles=checkTitles()}catch(e){}
  const h={at:Date.now(),hero:HERO.key,seed,act,floor,won:!!won,killedBy:foe?foe.name.replace(/,.*$/,''):'',fights:run.fights||0,bestTurn:run.bestTurn||0,turns:c?c.turn:0};
  store.set(HIST,[h,...(store.get(HIST)||[])].slice(0,20));store.set(PROF,profile);
  try{window.pwCloud?.logRun({...h,deck:run.deck.map(x=>C[x.key].name),emblems:run.emblems.map(k=>EMB[k].name)})}catch{}}
@@ -4503,7 +4532,8 @@ function markSeen(){const S=SEENK.map(k=>new Set(profile[k]||[])),[sn,se,sf,st,s
  if(run){run.deck.forEach(x=>sn.add(x.key));run.emblems.forEach(k=>se.add(k));(run.belt||[]).forEach(k=>k&&st.add(k));sp.add(run.act||1)}
  if(reward&&view==='event'&&reward.ev&&run)sv.add((run.act||1)+':'+reward.ev);
  if(reward&&/reward|shop|event|bossreward|actstart/.test(view))JSON.stringify(reward).replace(/"([a-z0-9]+)"/g,(_,k)=>{if(C[k])sn.add(k);else if(EMB[k])se.add(k);return ''});
- if(S.reduce((t,x)=>t+x.size,0)!==n){SEENK.forEach((k,i)=>profile[k]=[...S[i]]);store.set(PROF,profile)}}
+ const g0=pstat('gold');if(run)statMax('gold',run.gold||0);
+ if(S.reduce((t,x)=>t+x.size,0)!==n||pstat('gold')!==g0){SEENK.forEach((k,i)=>profile[k]=[...S[i]]);store.set(PROF,profile)}}
 // Archetype plans, one line per group, shown once at the head of the group (data rows; Randall's paths only change these).
 const ARCHLINE=[['R','Goblins',()=>`Tokens, then Bombardment, then Tremors. Weakness: the ${MAXBODIES}-body cap.`],['R','Spells',()=>`Rituals, then Fury, then Grapeshot or Fireball. Weakness: running out of cards and the ${RITUAL_CAP}-mana cap.`],
  ['R','Exile',()=>'Kindling Rite and Exile cards fill the pile, then Pyre Herald and Ashen Scholar grow with it. Weakness: the pile empties after every fight.'],
@@ -4525,8 +4555,8 @@ const sil=(cls,lbl='Not found yet')=>`<span class="${cls} pw-sil" role="img" ari
 function journalView(){const t=JT,D=codexData();const tab=(k,l)=>`<button class="btn pw-jtab" data-act="jtab" data-k="${k}" aria-pressed="${t===k}">${l}</button>`;
  const head=k=>`<p class="pw-jcount" data-audit-repeat role="img" aria-label="${pct(D[k])}% complete">${pct(D[k])}%</p>`;
  let body='';
- if(t==='runs'){const L=store.get(HIST)||[];const seen=new Set(L.map(h=>h.seed+h.hero));const all=[...L,...(CLOUDH||[]).filter(h=>!seen.has(h.seed+h.hero))].sort((a,b)=>b.at-a.at).slice(0,20);
-  body=all.length?`<ol class="pw-runs">${all.map(h=>`<li class="pw-run" data-won="${h.won?1:0}" data-hero="${h.hero}"><span class="pw-run-r" role="img" aria-label="${h.won?'Won':'Lost'}">${ico(h.won?'crown':'skull')}</span><span class="pw-run-t"><b>${(HEROES[h.hero]||HERO).short} · Act ${h.act} · Floor ${h.floor}</b><span class="muted">${h.won?'Victory':h.killedBy?'Fell to '+h.killedBy:'Fell on the road'} · ${h.fights} fights · Best turn ${h.bestTurn}</span></span><button class="btn pw-run-go" data-act="replayseed" data-s="${h.seed}" data-h="${h.hero}" aria-label="Replay seed ${h.seed}">${ico('cycle')}<span>${h.seed}</span></button></li>`).join('')}</ol>`:'<p class="muted">No runs yet.</p>'}
+ if(t==='runs'){const T=profile.titles||[];body=`<div class="pw-titles" role="group" aria-label="Titles">${TITLES.map(([k,n,,w])=>T.includes(k)?`<button type="button" class="btn pw-title" data-act="title" data-k="${k}" aria-pressed="${profile.title===k}" title="${w}">${ico('crown')}<b>${n}</b></button>`:`<span class="pw-title pw-sil" role="img" aria-label="${w}" title="${w}">${ico('lock')}<b>${n}</b></span>`).join('')}</div>`;const L=store.get(HIST)||[];const seen=new Set(L.map(h=>h.seed+h.hero));const all=[...L,...(CLOUDH||[]).filter(h=>!seen.has(h.seed+h.hero))].sort((a,b)=>b.at-a.at).slice(0,20);
+  body+=all.length?`<ol class="pw-runs">${all.map(h=>`<li class="pw-run" data-won="${h.won?1:0}" data-hero="${h.hero}"><span class="pw-run-r" role="img" aria-label="${h.won?'Won':'Lost'}">${ico(h.won?'crown':'skull')}</span><span class="pw-run-t"><b>${(HEROES[h.hero]||HERO).short} · Act ${h.act} · Floor ${h.floor}</b><span class="muted">${h.won?'Victory':h.killedBy?'Fell to '+h.killedBy:'Fell on the road'} · ${h.fights} fights · Best turn ${h.bestTurn}</span></span><button class="btn pw-run-go" data-act="replayseed" data-s="${h.seed}" data-h="${h.hero}" aria-label="Replay seed ${h.seed}">${ico('cycle')}<span>${h.seed}</span></button></li>`).join('')}</ol>`:'<p class="muted">No runs yet.</p>'}
  else if(t==='cards'){const [ks,sn]=D.cards,tile=k=>sn.has(k)?cardHtml({key:k,foil:false},'tabindex="-1" data-comp'):`<span class="pw-csil pw-sil" data-rar="${C[k].r}" role="img" aria-label="Not found yet"><span class="pw-sil-q">?</span></span>`;
   const grid=L=>`<div class="pw-comp">${L.map(tile).join('')}</div>`;
   body=head('cards')+Object.values(HEROES).map(h=>{const hk=ks.filter(k=>C[k].col===h.key);if(!hk.length)return '';const used=new Set();
@@ -4562,6 +4592,7 @@ document.getElementById('app').addEventListener('click',ev=>{
  if(a==='journal'){JT='runs';view='journal';loadCloudHistory();return render()}
  if(a==='jtab'){JT=b.dataset.k;if(JT==='foes')loadActArt();return render()}
  if(a==='jback')return newRun();
+ if(a==='title'){profile.title=b.dataset.k;store.set(PROF,profile);return render()}
  if(a==='replayseed')return newRun(+b.dataset.s,HEROES[b.dataset.h]&&heroOpen(b.dataset.h)?b.dataset.h:undefined);
  if(a==='share')return shareRun(b);
  if(a==='hero')return heroOpen(b.dataset.k)?newRun(reward&&reward.seed,b.dataset.k):undefined;
