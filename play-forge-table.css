@@ -1163,6 +1163,14 @@
 :where(body.practice-table-open) .forge-native-panel .forge-order-actions>[data-native-key=clear-prompt]{min-height:46px;border-radius:23px;padding-inline:22px}
 :where(body.practice-table-open) .forge-native-panel:has(.forge-order-cards)>label{font-size:13px;color:#cfd4dc}
 @keyframes cs-order-pop{from{transform:scale(.4)}}
+/* 4.3.52 Combat damage split (double blocks, trample, divided damage): the same dimmed card picker,
+   a gold number on each card, − and + under it; a card that has lethal glows red. */
+:where(body.practice-table-open) .forge-native-panel .forge-assign{display:grid;justify-items:center;gap:14px;width:100%}
+:where(body.practice-table-open) .forge-native-panel .forge-assign-card>img,:where(body.practice-table-open) .forge-native-panel .forge-assign-card>.forge-order-noart{cursor:pointer}
+:where(body.practice-table-open) .forge-native-panel .forge-assign-num{width:40px;height:40px;font-size:19px;background:linear-gradient(180deg,#f6dc9a,#d9a64a);border:0;color:#1b1406}
+:where(body.practice-table-open) .forge-native-panel .forge-assign-card[data-lethal=true]>:is(img,.forge-order-noart){box-shadow:0 0 0 2px #e0533f,0 0 26px #e0533f88,0 18px 40px #000c}
+:where(body.practice-table-open) .forge-native-panel .forge-assign-steps{display:flex;justify-content:center;gap:12px}
+:where(body.practice-table-open) .forge-native-panel .forge-assign-steps>button{width:44px;height:44px;min-height:0;padding:0;border-radius:50%;font:800 22px/1 'DM Sans',system-ui,sans-serif}
 @media (prefers-reduced-motion:reduce){:where(body.practice-table-open) .forge-native-panel :is(.forge-order-card,.forge-order-num),:where(body.practice-table-open) .forge-native-panel:has(.forge-order-cards){animation:none;transition:none}}
 /* 4.3.0 Mana pool lives behind your portrait: hover your seat for a small card of mana
    emblems. Nothing sits on the board. Touch shows only the colours you have, only while mana floats. */
@@ -2459,3 +2467,15 @@ body.practice-table-open:has(.forge-order-cards,.forge-zone-search-dialog) .forg
 /* A striker flies out of its seat toward its target: its own seat rides above the other one for the flight,
    so the far side's lanes never cut through it. */
 :where(body.practice-table-open) .play-match-table[data-forge-native][data-cs-striking] .play-match-seat-area:has([data-cs-striker]){z-index:5}
+/* 4.3.52 Damage split fits a phone held sideways: one row of cards, sized to the height left. */
+:where(body.practice-table-open) .forge-native-panel .forge-assign{flex:1 1 auto;min-height:0;display:flex;flex-direction:column;align-items:center}
+:where(body.practice-table-open) .forge-native-panel .forge-assign-cards{flex:1 1 auto;min-height:0;overflow:visible!important}
+@media (max-height:450px) and (min-aspect-ratio:3/2){
+ :where(body.practice-table-open) .forge-native-panel .forge-assign-cards{flex-wrap:nowrap;gap:18px;padding-top:12px}
+ :where(body.practice-table-open) .forge-native-panel .forge-order-card.forge-assign-card{width:clamp(70px,27dvh,120px);grid-template-columns:none;text-align:center;gap:6px}
+ :where(body.practice-table-open) .forge-native-panel .forge-assign-num{width:32px;height:32px;font-size:16px;top:-10px;left:-10px}
+ :where(body.practice-table-open) .forge-native-panel .forge-assign-steps>button{width:40px;height:40px}
+ :where(body.practice-table-open) .forge-native-panel .forge-assign-card>.forge-order-cap{display:none}
+}
+/* 4.3.52 A blocked attacker's line to the player fades: its damage goes to the blockers (trample keeps it). */
+:where(body.practice-table-open) .forge-arrow[data-kind=attack][data-held=true]{opacity:.22;filter:none;animation:none;stroke-dasharray:3 9}

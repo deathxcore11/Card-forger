@@ -162,7 +162,7 @@ test('while the server starts the match the intro shows the stage and the second
    return Response.json({matchId:MATCH,generation:GENERATION,status:'finished',viewerId:1,result:{draw:false,winnerPlayerId:1}});
   }})});
  await mat.start();
- assert.deepEqual(calls.find(c=>c[0]==='status'),['status','Starting the rules engine…']);
+ assert.deepEqual(calls.find(c=>c[0]==='status'),['status','Setting up the table…']);
  const seconds=calls.filter(c=>c[0]==='elapsed'&&c[1]).map(c=>c[1]);
  assert.equal(seconds[0],'0 s');assert.ok(seconds.includes('12 s')&&seconds.includes('29 s'),'the counter follows the clock');
  const notes=calls.filter(c=>c[0]==='note'&&c[1]).map(c=>c[1]);

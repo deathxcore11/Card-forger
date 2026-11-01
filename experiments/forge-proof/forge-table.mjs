@@ -4,7 +4,7 @@ import {practicePlayerPortrait} from '../../play-player-mat.js';
 import {mountNativePanel,nativePayment,owesAttack} from './native-panel.mjs';
 import {createMotion} from './motion-kit.mjs';
 import {optionCardId} from './forge-session.mjs';
-import {CpuActionPlaybackQueue,createPlaybackSession,tableActivity} from './cpu-action-playback.mjs';
+import {CpuActionPlaybackQueue,createPlaybackSession,storyLines,tableActivity} from './cpu-action-playback.mjs';
 import {tileBadges,tileLayerHtml,badgeSummary,currentKeywords,counterList,playerCounterBadges,playerCountersHtml} from '../../play-board-badges.js';
 import {boardIcon} from '../../play-board-icons.js';
 import {drawnArtwork,frameTone,surfaceColors} from '../../play-token-art.js';
@@ -274,8 +274,8 @@ const name=String(card.name);if(Math.max(...name.split(/\s+/).map(word=>word.len
     emblems.dataset.key=emblemKey;
     const make=(key,label,tip,icon,on,fn)=>{const b=doc.createElement('button');b.type='button';b.className='forge-control-emblem';b.dataset.nativeKey=key;b.dataset.label=label;b.setAttribute('aria-label',label);b.setAttribute('aria-pressed',String(on));b.title=tip;b.disabled=lock;b.innerHTML=`<svg viewBox="0 0 24 24" aria-hidden="true">${icon}</svg>`;b.addEventListener('click',()=>act(fn));return b;};
     emblems.replaceChildren(
-     make('mode-smart','Smart','Smart: automatic mana and passing empty response windows. Targets and required choices stay yours.','<path d="M13 2 4 14h7l-1 8 9-12h-7z"/>',n.controlMode==='smart',()=>session.setControlMode('smart')),
-     make('mode-full','Full Control','Full Control: stop at every response window.','<path d="M8 13V5a1.5 1.5 0 0 1 3 0v6M11 11V4a1.5 1.5 0 0 1 3 0v7M14 11V5.5a1.5 1.5 0 0 1 3 0V14a6 6 0 0 1-6 6h-1a5 5 0 0 1-4.3-2.4L4 15a1.5 1.5 0 0 1 2.5-1.7L8 15"/>',n.controlMode==='full',()=>session.setControlMode('full')),
+     make('mode-smart','Smart','Smart: passes empty response windows. Targets and required choices stay yours.','<path d="M13 2 4 14h7l-1 8 9-12h-7z"/>',n.controlMode==='smart',()=>switchMode('smart')),
+     make('mode-full','Full Control','Full Control: stop at every response window.','<path d="M8 13V5a1.5 1.5 0 0 1 3 0v6M11 11V4a1.5 1.5 0 0 1 3 0v7M14 11V5.5a1.5 1.5 0 0 1 3 0V14a6 6 0 0 1-6 6h-1a5 5 0 0 1-4.3-2.4L4 15a1.5 1.5 0 0 1 2.5-1.7L8 15"/>',n.controlMode==='full',()=>switchMode('full')),
      ...(autoPay?[make('auto-pay',n.autoPay?'Auto-pay mana: on':'Auto-pay mana: off','Auto-pay: pay mana costs automatically. Turn off to tap each source yourself.','<circle cx="12" cy="12" r="8"/><path d="M12 7v10M9.5 9.5h3.75a1.75 1.75 0 0 1 0 3.5h-2.5a1.75 1.75 0 0 0 0 3.5H14.5"/>',n.autoPay,()=>session.setAutoPay(!n.autoPay))]:[]));
    }
    // The CPU has no profile picture; its commander's art becomes its portrait.
@@ -662,7 +662,9 @@ const name=String(card.name);if(Math.max(...name.split(/\s+/).map(word=>word.len
    const defending=defenderOf(surface.players,a);
    const t=a.attackTarget,attackable=cards.some(c=>c.zone==='Battlefield'&&c.controller===defending&&/Planeswalker|Battle/.test(c.type||''));
    const to=t?.kind==='card'&&cards.some(c=>c.id===t.id)?byCard(t.id):t?.kind==='player'&&playerSeat(t.id)!==undefined?bySeat(playerSeat(t.id)):!attackable&&defending!==undefined?bySeat(defending):null;
-   if(to)out.push({kind:'attack',from:byCard(a.id),to});
+   // Once blocked, an attacker without trample deals no damage past its blockers: its line to the player fades.
+   const held=cards.some(c=>c.zone==='Battlefield'&&(c.blockingIds||[]).includes(a.id))&&!currentKeywords(a).some(k=>/trample/i.test(k.text||''));
+   if(to)out.push({kind:'attack',from:byCard(a.id),to,...(held?{held:true}:{})});
   }
   for(const b of cards.filter(c=>c.zone==='Battlefield'&&c.blocking)){
    const named=(b.blockingIds||[]).filter(id=>attackers.some(a=>a.id===id)),pair=named.length?named:attackers.length===1?[attackers[0].id]:[];
@@ -699,7 +701,7 @@ const name=String(card.name);if(Math.max(...name.split(/\s+/).map(word=>word.len
    const sx=ax+ux*start,sy=ay+uy*start,ex=r.kind==='aim'?bx:bx-ux*stop,ey=r.kind==='aim'?by:by-uy*stop,bend=Math.min(60,len*.16),cx=(sx+ex)/2-uy*bend,cy=(sy+ey)/2+ux*bend;
    // Arena-style: a thin line from the source to a ring around the target, with a small dot where it leaves the
    // source. Combat keeps a (thinner) arrowhead so attackers and blockers still read at a glance.
-   const rx=Math.min(14,b.width*.18);paths.push(`<path class="forge-arrow" data-kind="${r.kind}" d="M${sx.toFixed(1)} ${sy.toFixed(1)}Q${cx.toFixed(1)} ${cy.toFixed(1)} ${ex.toFixed(1)} ${ey.toFixed(1)}"${r.kind==='target'||r.kind==='aim'?'':` marker-end="url(#forge-head-${r.kind})"`}/><circle class="forge-arrow-dot" data-kind="${r.kind}" cx="${sx.toFixed(1)}" cy="${sy.toFixed(1)}" r="3.5"/>${r.kind==='aim'?`<circle class="forge-aim-reticle" cx="${ex.toFixed(1)}" cy="${ey.toFixed(1)}" r="9"/>`:`<rect class="forge-target-ring" data-kind="${r.kind}" x="${(b.left-4).toFixed(1)}" y="${(b.top-4).toFixed(1)}" width="${(b.width+8).toFixed(1)}" height="${(b.height+8).toFixed(1)}" rx="${rx.toFixed(1)}"/>`}`);
+   const rx=Math.min(14,b.width*.18);paths.push(`<path class="forge-arrow" data-kind="${r.kind}"${r.held?' data-held="true"':''} d="M${sx.toFixed(1)} ${sy.toFixed(1)}Q${cx.toFixed(1)} ${cy.toFixed(1)} ${ex.toFixed(1)} ${ey.toFixed(1)}"${r.kind==='target'||r.kind==='aim'?'':` marker-end="url(#forge-head-${r.kind})"`}/><circle class="forge-arrow-dot" data-kind="${r.kind}" cx="${sx.toFixed(1)}" cy="${sy.toFixed(1)}" r="3.5"/>${r.kind==='aim'?`<circle class="forge-aim-reticle" cx="${ex.toFixed(1)}" cy="${ey.toFixed(1)}" r="9"/>`:`<rect class="forge-target-ring" data-kind="${r.kind}" x="${(b.left-4).toFixed(1)}" y="${(b.top-4).toFixed(1)}" width="${(b.width+8).toFixed(1)}" height="${(b.height+8).toFixed(1)}" rx="${rx.toFixed(1)}"/>`}`);
    // While you block, your block line is a control: a wide invisible stroke and a small x at its middle undo it.
    if(r.kind==='block'&&blocking&&r.from.kind==='card'&&r.to.kind==='card'&&mineOnBoard(r.from.id)){const mx=(sx+2*cx+ex)/4,my=(sy+2*cy+ey)/4,ids=`data-blocker="${r.from.id}" data-attacker="${r.to.id}"`;
     paths.push(`<path class="forge-arrow-hit" ${ids} d="M${sx.toFixed(1)} ${sy.toFixed(1)}Q${cx.toFixed(1)} ${cy.toFixed(1)} ${ex.toFixed(1)} ${ey.toFixed(1)}"/><g class="forge-unblock" ${ids} transform="translate(${mx.toFixed(1)} ${my.toFixed(1)})"><circle r="11"/><path d="M-4 -4L4 4M4 -4L-4 4"/></g>`);}
@@ -924,7 +926,23 @@ const name=String(card.name);if(Math.max(...name.split(/\s+/).map(word=>word.len
  }
  // One menu button: History & stack and the deck tracker live inside the match menu instead of
  // as their own round buttons; the menu button carries the stack count.
+ // History & stack tells the match in plain words (both sides) instead of the table's decision steps.
+ // Lines are kept by event number, so the story outlives the engine's short event window.
+ const story=new Map();
+ function tellStory(){
+  const list=root.querySelector('details[data-keep-open=game-progress]>ol');if(!presentation.hosted||!list)return;
+  const snap=session.snapshot();for(const line of storyLines(snap.native?.events?.items,snap.status?.surface))if(!story.has(line.seq))story.set(line.seq,line);
+  if(story.size>400)for(const k of [...story.keys()].slice(0,story.size-400))story.delete(k);
+  const rows=[...story.values()].slice(-40),key=rows.map(r=>r.seq).join(',');if(!rows.length||list.dataset.story===key)return;list.dataset.story=key;
+  list.replaceChildren(...rows.map(r=>{const li=doc.createElement('li');li.textContent=r.text;if(/^Turn \d/.test(r.text))li.dataset.turn='true';if(r.card!==undefined)li.dataset.card=String(r.card);return li;}));
+ }
+ // Smart or Full Control decides only where the game stops; auto-pay keeps the player's own setting
+ // (the engine resets it to the mode's default on a switch, so it is put back right after).
+ async function switchMode(mode){const keep=session.snapshot().native?.autoPay;await session.setControlMode(mode);
+  if(typeof keep==='boolean'&&typeof session.setAutoPay==='function'){const until=Date.now()+3000;while(Date.now()<until&&session.snapshot().native?.controlMode!==mode)await new Promise(r=>setTimeout(r,100));
+   const now=session.snapshot().native;if(now?.controlMode===mode&&typeof now.autoPay==='boolean'&&now.autoPay!==keep&&!now.prompt&&now.inputType!=='InputLockUI')await session.setAutoPay(keep);}}
  function foldMenu(){
+  tellStory();
   const menu=root.querySelector('.play-match-header>.play-match-menu');if(!presentation.hosted||!menu)return;
   let panel=menu.querySelector(':scope>.forge-menu-panel');
   if(!panel){panel=doc.createElement('div');panel.className='forge-menu-panel';for(const el of [...menu.children])if(el.tagName!=='SUMMARY')panel.append(el);menu.append(panel);}
@@ -1148,6 +1166,8 @@ const name=String(card.name);if(Math.max(...name.split(/\s+/).map(word=>word.len
   for(const el of root.querySelectorAll('.play-match-card[data-auto-tap]'))if(!(seen.get(Number(el.dataset.instance))>1))delete el.dataset.autoTap;
   for(const [id,count]of seen)if(count>1){const el=root.querySelector(`.play-match-card[data-instance="${id}"]`);if(el&&el.dataset.autoTap!=='true')el.dataset.autoTap='true';}
  }
+ // Cast it with auto-pay off for this one payment, so you tap the sources yourself.
+ function payByHand(id){act(async()=>{await session.setAutoPay(false);manualPay={seen:false,at:Date.now()};await session.nativeSelect('card',id);});}
  // The one spell cast with "Pick lands": once its payment has come and gone, auto-pay is restored.
  function restoreAutoPay(s){
   const n=s?.native;if(!manualPay||!n)return;
@@ -1159,7 +1179,7 @@ const name=String(card.name);if(Math.max(...name.split(/\s+/).map(word=>word.len
  peek.addEventListener('click',e=>{if(!e.target.closest?.('[data-peek-play]')){hidePeek();return;}e.preventDefault();e.stopPropagation();const card=peekFor,s=session.snapshot();
   if(!card||card.dataset.forgeHint!=='true'||s.busy){hidePeek();return;}const id=Number(card.dataset.instance),manual=e.target.closest('[data-peek-play]').dataset.peekPlay==='manual';hidePeek();
   if(!manual){act(()=>session.nativeSelect('card',id));return;}
-  act(async()=>{await session.setAutoPay(false);manualPay={seen:false,at:Date.now()};await session.nativeSelect('card',id);});});
+  payByHand(id);});
  const peekCard=e=>{const card=e.target.closest?.('.play-match-card[data-instance]');return card&&root.contains(card)&&!card.closest('.forge-drag-ghost')?card:null;};
  const over=e=>{if(e.pointerType==='touch'||peekPinned)return;const card=peekCard(e);if(!card||e.pointerType==='mouse'&&presentation.hosted&&card.closest?.('.play-match-hand'))return;clearTimeout(peekTimer);peekTimer=setTimeout(()=>showPeek(card),peekFor?40:240);};
  const out=e=>{if(e.pointerType==='touch'||peekPinned)return;const card=peekCard(e);if(!card||card.contains(e.relatedTarget)||e.pointerType==='mouse'&&presentation.hosted&&card.closest?.('.play-match-hand'))return;clearTimeout(peekTimer);peekTimer=setTimeout(()=>{if(!peekPinned)hidePeek();},90);};
@@ -1191,7 +1211,7 @@ const name=String(card.name);if(Math.max(...name.split(/\s+/).map(word=>word.len
   // A card listed in the Zones menu opens its preview here: the shared inspector stays hidden on this table.
   const listed=presentation.hosted&&e.target.closest?.('button[data-focus-key^="zone-card-"],button[data-focus-key^="revealed-card-"]');
   if(listed&&root.contains(listed)){e.preventDefault();e.stopImmediatePropagation();listed.dataset.instance=listed.dataset.focusKey.replace(/^\D+/,'');pinned===listed?hidePeek():showPeek(listed,true);return;}
-  const card=e.target.closest?.('.play-match-card[data-instance]');if(card&&root.contains(card)){e.preventDefault();e.stopImmediatePropagation();const snapshot=session.snapshot(),cardId=Number(card.dataset.instance);if(previewOnly(card,snapshot,(e.pointerType||lastPointerType)==='touch')){pinned===card?hidePeek():showPeek(card,true);}else if(!snapshot.busy){card.classList.remove('forge-pressed');void card.offsetWidth;card.classList.add('forge-pressed');setTimeout(()=>card.classList.remove('forge-pressed'),420);const go=()=>act(()=>session.nativeSelect('card',cardId)),plan=card.closest('.play-match-hand')&&tapPlan(cardId),warn=plan?.warning;if(warn)confirmCostly(warn,e.clientX,e.clientY,go,plan.amount);else go();}return;}
+  const card=e.target.closest?.('.play-match-card[data-instance]');if(card&&root.contains(card)){e.preventDefault();e.stopImmediatePropagation();const snapshot=session.snapshot(),cardId=Number(card.dataset.instance);if(previewOnly(card,snapshot,(e.pointerType||lastPointerType)==='touch')){pinned===card?hidePeek():showPeek(card,true);}else if(!snapshot.busy){card.classList.remove('forge-pressed');void card.offsetWidth;card.classList.add('forge-pressed');setTimeout(()=>card.classList.remove('forge-pressed'),420);const go=()=>act(()=>session.nativeSelect('card',cardId)),plan=card.closest('.play-match-hand')&&tapPlan(cardId),warn=plan?.warning;if(warn)confirmCostly(warn,e.clientX,e.clientY,go,plan.amount,plan.lands,()=>payByHand(cardId));else go();}return;}
   // A button inside the seat (Smart, Full Control, Auto-pay, the zone counts) is its own control, never a pick
   // of that player; and on the hosted table a seat is picked only while Forge offers players.
   const player=e.target.closest?.('[data-player-seat]'),inner=player&&e.target.closest?.('button,a,input,select,summary,[role=button]:not([data-player-seat])');
@@ -1285,18 +1305,31 @@ const name=String(card.name);if(Math.max(...name.split(/\s+/).map(word=>word.len
  // Arena's auto-tap preview: while you carry a card, the lands Forge's auto-pay would tap for it lift and glow
  // (selection.actionable[].tapPreview). A payment that costs life or sacrifices a Treasure (tapWarning) asks
  // once more, in orange, before it goes. Without those fields nothing changes.
+ // The planned sources that pay by being sacrificed (a Treasure, an Eldrazi Spawn or Scion, a Food that makes mana).
+ // What a payment sacrifices, named as the player sees it: a self-sacrificing source by its name (Treasure, Eldrazi
+ // Spawn), a source that eats another permanent as "Food (Gilded Goose)". Only mana abilities count.
+ const sacrificeNames=ids=>{const cards=session.snapshot().status?.surface?.cards||[];return (ids||[]).map(id=>cards.find(c=>c.id===id)).filter(c=>c?.known).flatMap(c=>{
+  const m=/sacrifice ([^:,.]+?)\s*:[^.]*\badd\b/i.exec(c.text||'');if(!m)return /^treasure$/i.test(c.name)?[c.name]:[];
+  const what=m[1].trim(),self=/^(this|it|~)\b/i.test(what)||what.toLowerCase()===c.name.toLowerCase();if(self)return [c.name];
+  const other=/^(?:an?|another)\s+(.+)$/i.exec(what);return [`${other?other[1].replace(/\b\w/,x=>x.toUpperCase()):what} (${c.name})`];});};
+ const listNames=names=>{const counts=new Map();for(const x of names)counts.set(x,(counts.get(x)||0)+1);const parts=[...counts].map(([x,k])=>k>1?`${k} ${x}s`:x);return parts.length>1?`${parts.slice(0,-1).join(', ')} and ${parts.at(-1)}`:parts[0];};
  const tapPlan=id=>{const row=(session.snapshot().native?.selection?.actionable||[]).find(r=>r?.kind==='card'&&Number(r.id)===Number(id));if(!row)return null;
   return {lands:Array.isArray(row.tapPreview)?row.tapPreview.map(Number).filter(Number.isSafeInteger):null,warning:row.tapWarning==='life'||row.tapWarning==='sacrifice'?row.tapWarning:null,amount:Number(row.tapWarningAmount)};};
  function markTapPreview(ids){const want=new Set(ids||[]);for(const el of root.querySelectorAll('[data-forge-tap-preview]'))if(!want.has(Number(el.dataset.instance)))el.removeAttribute('data-forge-tap-preview');
   for(const id of want){const el=root.querySelector(`.play-match-battlefields .play-match-card[data-instance="${id}"]`);if(el&&!el.hasAttribute('data-forge-tap-preview'))el.setAttribute('data-forge-tap-preview','true');}}
- function confirmCostly(kind,x,y,go,amount){
+ function confirmCostly(kind,x,y,go,amount,lands=null,manual=null){
   root.querySelector(':scope>.forge-pay-warn')?.remove();const box=doc.createElement('div');box.className='forge-pay-warn';box.setAttribute('role','alertdialog');
-  const text=doc.createElement('p');const n=Number.isFinite(amount)&&amount>0?amount:0;text.textContent=kind==='life'?(n?`Auto-pay costs ${n} life.`:'Auto-pay will cost you life.'):(n?`Auto-pay uses ${n} Treasure${n===1?'':'s'}.`:'Auto-pay will sacrifice a Treasure.');
-  const yes=doc.createElement('button');yes.type='button';yes.className='forge-pay-warn-go';yes.textContent=kind==='life'?(n?`Pay ${n} life`:'Pay life'):(n?`Use ${n} Treasure${n===1?'':'s'}`:'Sacrifice');
-  const no=doc.createElement('button');no.type='button';no.textContent='Cancel';box.append(text,no,yes);root.append(box);
+  // Name what auto-pay would sacrifice (an Eldrazi Spawn is not a Treasure), and offer to pay with lands instead.
+  const text=doc.createElement('p');const n=Number.isFinite(amount)&&amount>0?amount:0,names=kind==='sacrifice'?sacrificeNames(lands):[],what=names.length?listNames(names):n>1?`${n} permanents`:'a permanent';
+  text.textContent=kind==='life'?(n?`Auto-pay costs ${n} life.`:'Auto-pay will cost you life.'):`Auto-pay sacrifices ${what}.`;
+  const yes=doc.createElement('button');yes.type='button';yes.className='forge-pay-warn-go';yes.textContent=kind==='life'?(n?`Pay ${n} life`:'Pay life'):'Sacrifice';
+  const no=doc.createElement('button');no.type='button';no.textContent='Cancel';box.append(text,no);
+  const pick=manual&&typeof session.setAutoPay==='function'&&session.snapshot().native?.autoPay===true?doc.createElement('button'):null;
+  if(pick){pick.type='button';pick.className='forge-pay-warn-go';pick.textContent='Pick lands';pick.addEventListener('click',()=>{close();haptic('tap');manual();});box.append(pick);yes.className='';}
+  box.append(yes);root.append(box);
   const b=box.getBoundingClientRect();box.style.left=`${Math.round(Math.max(8,Math.min(win.innerWidth-8-b.width,x-b.width/2)))}px`;box.style.top=`${Math.round(Math.max(8,Math.min(win.innerHeight-8-b.height,y-b.height-16)))}px`;
   const close=()=>{box.remove();doc.removeEventListener('pointerdown',away,true);},away=e=>{if(!box.contains(e.target))close();};
-  yes.addEventListener('click',()=>{close();haptic('tap');go();});no.addEventListener('click',close);doc.addEventListener('pointerdown',away,true);yes.focus();
+  yes.addEventListener('click',()=>{close();haptic('tap');go();});no.addEventListener('click',close);doc.addEventListener('pointerdown',away,true);(pick||yes).focus();
  }
  // A card from your hand plays once it is carried past the glowing line a little above the hand, over the
  // table; never over a control, a portrait, the stack strip or the hand itself. Elsewhere it floats back.
@@ -1398,7 +1431,7 @@ const name=String(card.name);if(Math.max(...name.split(/\s+/).map(word=>word.len
  const up=e=>{if(pressAt?.id===e.pointerId){clearTimeout(pressTimer);pressAt=null;if(pressShown){pressShown=false;if(peekPinned)hidePeek();suppressUntil=Date.now()+350;}}
   if(!drag||drag.pointerId!==e.pointerId)return;if(drag.swipe){suppressUntil=Date.now()+350;for(const el of root.querySelectorAll('[data-forge-swiped]'))el.removeAttribute('data-forge-swiped');cancel();return;}const pending=drag,target=doc.elementFromPoint(e.clientX,e.clientY)?.closest('[data-placement-zone=battlefield],.forge-native-panel'),handTop=root.querySelector('.play-match-hand-area')?.getBoundingClientRect().top,fromHand=!!pending.source.closest('.play-match-hand'),overHand=!!doc.elementFromPoint(e.clientX,e.clientY)?.closest('.play-match-hand-area'),aboveHand=presentation.hosted&&fromHand&&handTop!==undefined&&e.clientY<handTop&&!overHand;if(pending.active)suppressUntil=Date.now()+300;const combatTarget=pending.active?dropTargetAt(e.clientX,e.clientY):null;// A quick upward flick plays a playable card even when it is let go short of the play line.
   const flick=presentation.hosted&&fromHand&&pending.active&&!pending.rubber&&(pending.vy||0)>.55&&pending.y-e.clientY>=36;
-  const plays=pending.active&&!combatTarget&&(presentation.hosted&&fromHand?pending.source.dataset.forgeRole==='playable'&&(playDropAt(e.clientX,e.clientY)||flick):target&&root.contains(target)||aboveHand);if(plays&&ghost){lastDrop={instance:String(pending.id),rect:ghost.getBoundingClientRect(),at:Date.now()};holdDrop(pending);}cancel(pending.active&&!plays&&!combatTarget);if(plays||combatTarget)haptic('tap');if(combatTarget){act(()=>dropCombat(pending.combat,pending.id,combatTarget));return;}if(plays){const now=session.snapshot().status?.revision,go=()=>act(()=>session.nativeSelect('card',pending.id,now===pending.revision||session.snapshot().status?.surface.cards.some(c=>c.id===pending.id)?now:pending.revision));const plan=tapPlan(pending.id),warn=plan?.warning;if(warn)confirmCostly(warn,e.clientX,e.clientY,go,plan.amount);else go();}};
+  const plays=pending.active&&!combatTarget&&(presentation.hosted&&fromHand?pending.source.dataset.forgeRole==='playable'&&(playDropAt(e.clientX,e.clientY)||flick):target&&root.contains(target)||aboveHand);if(plays&&ghost){lastDrop={instance:String(pending.id),rect:ghost.getBoundingClientRect(),at:Date.now()};holdDrop(pending);}cancel(pending.active&&!plays&&!combatTarget);if(plays||combatTarget)haptic('tap');if(combatTarget){act(()=>dropCombat(pending.combat,pending.id,combatTarget));return;}if(plays){const now=session.snapshot().status?.revision,go=()=>act(()=>session.nativeSelect('card',pending.id,now===pending.revision||session.snapshot().status?.surface.cards.some(c=>c.id===pending.id)?now:pending.revision));const plan=tapPlan(pending.id),warn=plan?.warning;if(warn)confirmCostly(warn,e.clientX,e.clientY,go,plan.amount,plan.lands,()=>payByHand(pending.id));else go();}};
  // A press that the browser takes over (a scroll, a system gesture) ends the preview and its click guard.
  // A long press's 60 s click guard ends with that press even when a redraw, scroll or
  // resize already closed its preview; otherwise the table would ignore taps for a minute.
@@ -1551,5 +1584,16 @@ const name=String(card.name);if(Math.max(...name.split(/\s+/).map(word=>word.len
   rope.style.setProperty('--burn',(left/ROPE_RUN).toFixed(3));rope.dataset.hot=String(secs<=10);const b=rope.querySelector('b');if(secs<=10&&b.textContent!==String(secs)){b.textContent=String(secs);if(secs<=5)haptic('tick');}else if(secs>10)b.textContent='';
  },200):0;
  doc.addEventListener('pointerdown',ropeReset,true);doc.addEventListener('keydown',ropeReset,true);doc.addEventListener('visibilitychange',ropeReset);
- return {destroy(){closed=true;if(heldDrop){clearTimeout(heldDrop.timer);heldDrop.ghost.remove();heldDrop=null;}boardSizes?.disconnect();doc.removeEventListener('visibilitychange',dropOnHide);win.removeEventListener('orientationchange',dropGesture);win.removeEventListener('resize',dropOnFold);win.clearInterval(ropeLoop);rope.remove();doc.removeEventListener('pointerdown',ropeReset,true);doc.removeEventListener('keydown',ropeReset,true);doc.removeEventListener('visibilitychange',ropeReset);tableAudio.destroy();emotes?.destroy();clearTimeout(handLiftTimer);doc.removeEventListener('pointerup',handUp,true);doc.removeEventListener('click',swallowTapClick,true);doc.removeEventListener('pointermove',handSift);doc.removeEventListener('pointercancel',handUp,true);doc.removeEventListener('pointermove',handHover);clearTimeout(idleTimer);clearTimeout(noResponseTimer);delete root.dataset.lowPower;delete root.dataset.csStriking;playback.destroy();motion.destroy();activity.remove();root.removeEventListener('pointerdown',skipPlayback,true);doc.removeEventListener('pointerdown',closeZones,true);root.removeEventListener('click',trackerClick,true);root.removeEventListener('toggle',zonesToggled,true);doc.body.removeAttribute('data-forge-search');dockObserver?.disconnect();unsub();observer.disconnect();cancel();hidePeek();clearTimeout(pressTimer);if(arrowFrame)win.cancelAnimationFrame(arrowFrame);if(loopFrame)win.cancelAnimationFrame(loopFrame);win.removeEventListener('resize',queueArrows);if(railFrame)win.cancelAnimationFrame(railFrame);win.removeEventListener('resize',queueRails);peek.remove();ownCast.remove();doc.body.querySelector(':scope>.forge-ask-line')?.remove();doc.body.style.removeProperty('--forge-hand-top');castShow.remove();arrows.remove();fx.remove();root.removeEventListener('pointerover',over);root.removeEventListener('pointerout',out);root.removeEventListener('contextmenu',contextMenu,true);root.removeEventListener('keydown',peekKeys,true);win.removeEventListener('resize',reflow);root.removeEventListener('scroll',reflow,true);table.destroy();root.removeEventListener('input',saveInput);root.removeEventListener('change',saveInput);root.removeEventListener('click',click,true);root.removeEventListener('pointerdown',down);doc.removeEventListener('pointermove',move);doc.removeEventListener('pointerup',up);doc.removeEventListener('pointercancel',pressCancel);doc.removeEventListener('keydown',key);win.removeEventListener('blur',cancel);}};
+ // The engine's last word is the result alone, with no final board, so the lethal blow is drawn here from the
+ // last board shown: its attackers swing at what they were attacking (or their blocker) before the result lands.
+ // Returns how long to hold the result back, letting any strike already in the air finish too.
+ function finale(){
+  if(closed)return 0;const sf=session.snapshot().status?.surface;let ms=Math.max(0,strikeEnd-Date.now());
+  if(!sf||reducedMotion)return ms;
+  const blockerOf=new Map();for(const c of sf.cards)for(const id of c.blockingIds||[])if(!blockerOf.has(id))blockerOf.set(id,c.id);
+  let struck=0;for(const c of sf.cards.filter(c=>c.zone==='Battlefield'&&c.attacking).slice(0,8)){const el=cardEl(c.id);if(!el)continue;
+   const seat=seatEl(defenderOf(sf.players,c)),blocked=blockerOf.has(c.id)?cardEl(blockerOf.get(c.id)):null,to=blocked||(c.attackTarget?.kind==='card'?cardEl(c.attackTarget.id):seat);if(!to)continue;
+   ms=Math.max(ms,strike(el,to,{face:!blocked&&to===seat,delay:struck++*MOTION.stagger,big:(c.power||0)>=5,power:c.power||0}));}
+  return struck?Math.max(ms,strikeEnd-Date.now())+250:ms;}
+ return {finale,destroy(){closed=true;if(heldDrop){clearTimeout(heldDrop.timer);heldDrop.ghost.remove();heldDrop=null;}boardSizes?.disconnect();doc.removeEventListener('visibilitychange',dropOnHide);win.removeEventListener('orientationchange',dropGesture);win.removeEventListener('resize',dropOnFold);win.clearInterval(ropeLoop);rope.remove();doc.removeEventListener('pointerdown',ropeReset,true);doc.removeEventListener('keydown',ropeReset,true);doc.removeEventListener('visibilitychange',ropeReset);tableAudio.destroy();emotes?.destroy();clearTimeout(handLiftTimer);doc.removeEventListener('pointerup',handUp,true);doc.removeEventListener('click',swallowTapClick,true);doc.removeEventListener('pointermove',handSift);doc.removeEventListener('pointercancel',handUp,true);doc.removeEventListener('pointermove',handHover);clearTimeout(idleTimer);clearTimeout(noResponseTimer);delete root.dataset.lowPower;delete root.dataset.csStriking;playback.destroy();motion.destroy();activity.remove();root.removeEventListener('pointerdown',skipPlayback,true);doc.removeEventListener('pointerdown',closeZones,true);root.removeEventListener('click',trackerClick,true);root.removeEventListener('toggle',zonesToggled,true);doc.body.removeAttribute('data-forge-search');dockObserver?.disconnect();unsub();observer.disconnect();cancel();hidePeek();clearTimeout(pressTimer);if(arrowFrame)win.cancelAnimationFrame(arrowFrame);if(loopFrame)win.cancelAnimationFrame(loopFrame);win.removeEventListener('resize',queueArrows);if(railFrame)win.cancelAnimationFrame(railFrame);win.removeEventListener('resize',queueRails);peek.remove();ownCast.remove();doc.body.querySelector(':scope>.forge-ask-line')?.remove();doc.body.style.removeProperty('--forge-hand-top');castShow.remove();arrows.remove();fx.remove();root.removeEventListener('pointerover',over);root.removeEventListener('pointerout',out);root.removeEventListener('contextmenu',contextMenu,true);root.removeEventListener('keydown',peekKeys,true);win.removeEventListener('resize',reflow);root.removeEventListener('scroll',reflow,true);table.destroy();root.removeEventListener('input',saveInput);root.removeEventListener('change',saveInput);root.removeEventListener('click',click,true);root.removeEventListener('pointerdown',down);doc.removeEventListener('pointermove',move);doc.removeEventListener('pointerup',up);doc.removeEventListener('pointercancel',pressCancel);doc.removeEventListener('keydown',key);win.removeEventListener('blur',cancel);}};
 }

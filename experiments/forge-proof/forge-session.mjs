@@ -255,6 +255,8 @@ export function createForgePresentationSession({request,pollMs=350,lookupArtwork
   rememberPrompt(value){const p=currentPrompt();if(p.method!=='order'||p.rememberAllowed!==true||typeof value!=='boolean')throw Error('Native remember choice not offered.');draft={...effectiveDraft(),remember:value};emit();},
   reorderPrompt(index,direction){const p=currentPrompt();if(p.method!=='order'||p.ordered!==true||![1,-1].includes(direction))throw Error('Native order movement not offered.');const indexes=[...promptIndexes()],at=indexes.indexOf(index),to=at+direction;if(at<0||to<0||to>=indexes.length)return;[indexes[at],indexes[to]]=[indexes[to],indexes[at]];draft={...effectiveDraft(),indexes};emit();},
   replyValue(value){const p=currentPrompt();return send('reply',{promptId:p.id,value});},
+  // Combat damage or a divided amount: one whole number per option, or null to skip when Forge offers that.
+  replyAmounts(amounts){const p=currentPrompt();return send('reply',amounts===null?{promptId:p.id,skip:true}:{promptId:p.id,amounts:amounts.map(Number)});},
   setControlMode(value){if(!allowControlMode||!['smart','full'].includes(value)||!['smart','full'].includes(native?.controlMode))throw Error('NATIVE_CONTROL_MODE_UNAVAILABLE');if(native.prompt||native.inputType==='InputLockUI')throw Error('MATCH_NOT_READY');return send('controlMode',{value});},
   setAutoPay(value){if(!allowControlMode||typeof value!=='boolean'||typeof native?.autoPay!=='boolean')throw Error('NATIVE_AUTO_PAY_UNAVAILABLE');if(native.prompt||native.inputType==='InputLockUI')throw Error('MATCH_NOT_READY');return send('autoPay',{value});},
   // Older bridges carry no phaseStops; the table then offers no stop controls.
