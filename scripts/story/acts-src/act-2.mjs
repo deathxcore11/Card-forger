@@ -136,13 +136,16 @@ export default {
       villain: {who: 'tetsuo', deck: {name: 'The Umezawa Arts', colors: 'UBR', list: `
 3 Tetsuo Umezawa
 2 Sol'kanar the Swamp King
-4 Hypnotic Specter
+2 Hypnotic Specter
+2 Hill Giant
 4 Dragon Whelp
 4 Lightning Bolt
-4 Counterspell
+2 Counterspell
+2 Scathe Zombies
 4 Terror
 3 Sengir Vampire
-3 Mahamoti Djinn
+1 Mahamoti Djinn
+2 Merfolk of the Pearl Trident
 3 Fireball
 2 Disintegrate
 3 Underground Sea
@@ -158,12 +161,15 @@ export default {
       hero: {who: 'icatian', deck: {name: 'Valiant Icatia', colors: 'W', list: `
 4 Icatian Infantry
 4 Icatian Javelineers
-4 Order of Leitbur
+2 Order of Leitbur
+2 Mesa Pegasus
 4 Farrel's Zealot
 4 Icatian Phalanx
 4 Combat Medic
-3 Serra Angel
-4 Swords to Plowshares
+1 Serra Angel
+2 Benalish Hero
+2 Swords to Plowshares
+2 Healing Salve
 3 White Knight
 2 Spirit Link
 24 Plains`}},
@@ -255,15 +261,17 @@ export default {
       blurb: 'Under the Wastes, the thing Tetsuo has hunted his whole life opens one eye.',
       hero: {who: 'tetsuo', deck: {name: 'The Umezawa Arts', colors: 'UBR', list: `
 4 Tetsuo Umezawa
-4 Hypnotic Specter
+2 Hypnotic Specter
+2 Gray Ogre
 4 Lightning Bolt
-4 Counterspell
+2 Counterspell
+2 Unsummon
 4 Terror
 3 Fireball
 3 Dragon Whelp
 2 Sengir Vampire
 2 Shivan Dragon
-3 Mana Drain
+3 Prodigal Sorcerer
 3 Disintegrate
 4 Volcanic Island
 4 Underground Sea
@@ -273,8 +281,8 @@ export default {
 4 Mountain`}},
       villain: {who: 'bolas', deck: {name: 'The Elder Dragon', colors: 'BRu', list: `
 3 Nicol Bolas
-3 Rohgahh of Kher Keep
-2 Lady Orca
+2 Royal Assassin
+3 Hymn to Tourach
 4 Dark Ritual
 4 Lightning Bolt
 4 Hypnotic Specter

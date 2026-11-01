@@ -1054,11 +1054,18 @@
        "id": "7a20dcb0-5350-40e0-82d3-c8d0186fc9d2"
       },
       {
-       "qty": 4,
+       "qty": 2,
        "name": "Hypnotic Specter",
        "set": "3ed",
        "number": "115",
        "id": "2c8bd2bc-f48d-43c4-b2aa-5a0905656e90"
+      },
+      {
+       "qty": 2,
+       "name": "Hill Giant",
+       "set": "3ed",
+       "number": "158",
+       "id": "c987a3ec-a775-4140-ad49-18025e59dc3d"
       },
       {
        "qty": 4,
@@ -1075,11 +1082,18 @@
        "id": "cb9b9a9d-ae4c-4e04-bf9d-cae48f01292c"
       },
       {
-       "qty": 4,
+       "qty": 2,
        "name": "Counterspell",
        "set": "3ed",
        "number": "54",
        "id": "0a1b4e2e-5459-4fae-81d9-1e882647daac"
+      },
+      {
+       "qty": 2,
+       "name": "Scathe Zombies",
+       "set": "3ed",
+       "number": "127",
+       "id": "6cbe576f-03d5-4d22-947a-187d9e20425d"
       },
       {
        "qty": 4,
@@ -1096,11 +1110,18 @@
        "id": "fa35113b-5242-41f4-a989-42f2cd8002b6"
       },
       {
-       "qty": 3,
+       "qty": 1,
        "name": "Mahamoti Djinn",
        "set": "3ed",
        "number": "66",
        "id": "4765276e-ad80-4734-b485-36eebf1b6ae1"
+      },
+      {
+       "qty": 2,
+       "name": "Merfolk of the Pearl Trident",
+       "set": "3ed",
+       "number": "68",
+       "id": "2fad0078-f3cb-48a4-9ed4-b658e983314f"
       },
       {
        "qty": 3,
@@ -1222,11 +1243,18 @@
        "id": "f04b8356-2384-4743-80dd-f15ca7ec65f7"
       },
       {
-       "qty": 4,
+       "qty": 2,
        "name": "Order of Leitbur",
        "set": "fem",
        "number": "16a",
        "id": "ebd6e51e-f042-4673-a898-291607105829"
+      },
+      {
+       "qty": 2,
+       "name": "Mesa Pegasus",
+       "set": "3ed",
+       "number": "28",
+       "id": "ce7e6bfb-9038-48b5-bfaf-9450c503c69e"
       },
       {
        "qty": 4,
@@ -1250,18 +1278,32 @@
        "id": "9cfd96cb-03d6-4845-8595-50bf17b35726"
       },
       {
-       "qty": 3,
+       "qty": 1,
        "name": "Serra Angel",
        "set": "3ed",
        "number": "40",
        "id": "97fa5f07-46ba-408d-a861-bdb1791cc188"
       },
       {
-       "qty": 4,
+       "qty": 2,
+       "name": "Benalish Hero",
+       "set": "3ed",
+       "number": "4",
+       "id": "63e06cd7-9f00-4343-86c2-9f74945193c2"
+      },
+      {
+       "qty": 2,
        "name": "Swords to Plowshares",
        "set": "3ed",
        "number": "41",
        "id": "057d2410-30d3-4b7a-9dc3-f2512c1cf31c"
+      },
+      {
+       "qty": 2,
+       "name": "Healing Salve",
+       "set": "3ed",
+       "number": "22",
+       "id": "3300b080-a6f5-4a4a-8faf-0206fbfe8988"
       },
       {
        "qty": 3,
@@ -1960,11 +2002,18 @@
        "id": "8384f87b-26c2-45b7-98ef-352c384f205e"
       },
       {
-       "qty": 4,
+       "qty": 2,
        "name": "Hypnotic Specter",
        "set": "3ed",
        "number": "115",
        "id": "2c8bd2bc-f48d-43c4-b2aa-5a0905656e90"
+      },
+      {
+       "qty": 2,
+       "name": "Gray Ogre",
+       "set": "3ed",
+       "number": "157",
+       "id": "e26041ad-b326-40e6-a7fd-eacfcb0ab17e"
       },
       {
        "qty": 4,
@@ -1974,11 +2023,18 @@
        "id": "cb9b9a9d-ae4c-4e04-bf9d-cae48f01292c"
       },
       {
-       "qty": 4,
+       "qty": 2,
        "name": "Counterspell",
        "set": "3ed",
        "number": "54",
        "id": "0a1b4e2e-5459-4fae-81d9-1e882647daac"
+      },
+      {
+       "qty": 2,
+       "name": "Unsummon",
+       "set": "3ed",
+       "number": "87",
+       "id": "e7bf32d8-dad7-4192-8cb6-ae75d8204ba3"
       },
       {
        "qty": 4,
@@ -2017,10 +2073,10 @@
       },
       {
        "qty": 3,
-       "name": "Mana Drain",
-       "set": "leg",
-       "number": "65",
-       "id": "e691adef-3027-4e6a-889f-9f4e2df36a7c"
+       "name": "Prodigal Sorcerer",
+       "set": "3ed",
+       "number": "75",
+       "id": "20f1411b-a5ad-4d49-915b-ad8a21d51342"
       },
       {
        "qty": 3,
@@ -2089,18 +2145,18 @@
        "id": "729feb73-4581-4f9d-ba47-bece72481b86"
       },
       {
-       "qty": 3,
-       "name": "Rohgahh of Kher Keep",
-       "set": "leg",
-       "number": "255",
-       "id": "ea0891f0-83ce-4eb7-b0a9-cbc8168bafff"
+       "qty": 2,
+       "name": "Royal Assassin",
+       "set": "3ed",
+       "number": "125",
+       "id": "4945ec9e-eda7-42ad-88b7-ba14f9d95e54"
       },
       {
-       "qty": 2,
-       "name": "Lady Orca",
-       "set": "leg",
-       "number": "241",
-       "id": "b2779553-74eb-42ba-97d0-96269f48c269"
+       "qty": 3,
+       "name": "Hymn to Tourach",
+       "set": "fem",
+       "number": "38a",
+       "id": "eb9273ea-9a41-42e3-8c9c-0d50b127a818"
       },
       {
        "qty": 4,
