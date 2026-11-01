@@ -58,28 +58,40 @@ export function storyActMarkup({act, data, progress, econ}) {
 }
 
 // The duel setup: both sides, your deck, and Play. ui: {seat, deck:'loaner'|<play deck id>}.
-export function storyBattleMarkup({act, data, battle: b, progress, econ, ui = {}, ownDecks = [], avatarUrl = ''}) {
+export function storyBattleMarkup({act, data, battle: b, progress, econ, ui = {}, ownDecks = [], avatarUrl = '', listHtml = ''}) {
   const rec = progress.battles?.[b.id] || {}, villainOpen = battleCleared(progress, b.id), seat = villainOpen && ui.seat === 'villain' ? 'villain' : 'hero';
   const mine = b[seat], theirs = b[seat === 'hero' ? 'villain' : 'hero'];
   const person = side => data.cast[b[side].who] || {name: 'You'};
   const face = side => b[side].who === 'you' && avatarUrl ? `background-image:url(${esc(avatarUrl)});background-position:50% 50%` : faceStyle(person(side).portrait);
   const deckChoice = ui.deck && ui.deck !== 'loaner' ? ownDecks.find(d => d.id === ui.deck) : null;
-  const deckRows = deck => deck.cards.map(r => `<li><b>${r.qty}</b> ${esc(r.name)}</li>`).join('');
   const sideCard = (side, you) => `<article class="st-side${you ? ' st-side--you' : ''}" data-side="${side}"><span class="st-side-face" style="${face(side)}" aria-hidden="true"></span>
-    <span class="st-side-copy"><span class="st-side-who">${you ? 'You play' : 'Opponent'}</span><h2>${esc(person(side).name)}</h2><p>${esc(you && deckChoice ? deckChoice.name : b[side].deck.name)}</p></span></article>`;
-  const decks = ownDecks.map(d => `<option value="${esc(d.id)}" ${d.fits.ok ? '' : 'disabled'} ${ui.deck === d.id ? 'selected' : ''}>${esc(d.name)}${d.fits.ok ? '' : ' · ' + esc(d.fits.reason)}</option>`).join('');
+    <span class="st-side-copy"><span class="st-side-who">${you ? 'You play' : 'Opponent'}</span><h2>${esc(person(side).name)}</h2>${you ? '' : `<p>${esc(b[side].deck.name)}</p>`}</span></article>`;
+  // Deck choice: the app's deck shelf cards. The loaner deck shows its lead card in the act's own printing.
+  const cropOf = id => `https://cards.scryfall.io/art_crop/front/${id[0]}/${id[1]}/${id}.jpg`;
+  const lead = deck => deck.cards.find(r => !/^(snow-covered )?(plains|island|swamp|mountain|forest)$/i.test(r.name));
+  const count = deck => deck.cards.reduce((t, r) => t + (Number(r.qty) || 0), 0);
+  const deckCard = ({id, name, art, sub, ok = true, reason = ''}) => `<button type="button" class="home-personal-deck st-deck-opt" data-act="storyDeckPick" data-story-deck="${esc(id)}" aria-pressed="${(ui.deck || 'loaner') === id}" ${ok ? '' : 'disabled'}><span class="home-personal-art" aria-hidden="true">${art ? `<img src="${esc(art)}" alt="" loading="lazy" referrerpolicy="no-referrer">` : ''}</span><span class="home-personal-copy"><b>${esc(name)}</b><small>${esc(ok ? sub : reason)}</small></span></button>`;
+  const loanLead = lead(mine.deck);
+  const picks = [deckCard({id: 'loaner', name: mine.deck.name, art: loanLead?.id ? cropOf(loanLead.id) : '', sub: `Story deck · ${count(mine.deck)} cards`}),
+    ...(seat === 'hero' ? ownDecks.map(d => deckCard({id: d.id, name: d.name, art: d.art || '', sub: `Your deck · ${count(d)} cards`, ok: d.fits.ok, reason: d.fits.reason})) : [])].join('');
+  const listSide = ui.listSide === 'theirs' ? 'theirs' : 'mine';
   return `<section class="play-menu st-screen st-duel" aria-labelledby="playTitle">${head(b.title, econ, `Act ${act} · ${b.slot === 8 ? 'Boss' : b.kind}`, 'storyOpenAct', 'Back to the act')}
     <div class="st-duel-stage" style="--st-bg:url(${esc(person('villain').portrait?.crop || '')})">
       <section class="pl-arena st-arena" aria-label="This battle">${sideCard(seat, true)}<span class="pl-vs" aria-hidden="true"><b><span>VS</span></b></span>${sideCard(seat === 'hero' ? 'villain' : 'hero', false)}</section>
       <p class="st-duel-blurb">${esc(b.blurb)}</p>
     </div>
+    <div class="home-personal-grid st-deck-grid" role="group" aria-label="Your deck">${picks}</div>
     <div class="st-duel-bar">
       ${villainOpen ? `<div class="st-seg" role="group" aria-label="Side"><button data-act="storySeat" data-story-seat="hero" aria-pressed="${seat === 'hero'}">${esc(person('hero').name)}</button><button data-act="storySeat" data-story-seat="villain" aria-pressed="${seat === 'villain'}">${esc(person('villain').name)}</button></div>` : ''}
-      <label class="st-deck-pick"><span>Deck</span><select data-change="storyDeck"><option value="loaner">${esc(mine.deck.name)}</option>${seat === 'hero' && decks ? `<optgroup label="Your Play decks">${decks}</optgroup>` : ''}</select></label>
       <span class="st-duel-stars">${starsRow(rec)}</span>
       <button class="pl-mode-cta st-play" data-act="storyPlay">${battleCleared(progress, b.id) ? 'Replay' : 'Duel'}</button>
     </div>
-    <details class="st-lists"><summary>Decklists</summary><div class="st-lists-grid"><section><h3>${esc(mine.deck.name)}</h3><ul>${deckRows(deckChoice || mine.deck)}</ul></section><section><h3>${esc(theirs.deck.name)}</h3><ul>${deckRows(theirs.deck)}</ul></section></div></details>
+    <section class="st-decks" aria-label="Decks">
+      <div class="st-lists">
+        <div class="st-seg" role="group" aria-label="Decklist"><button data-act="storyListSide" data-story-list="mine" aria-pressed="${listSide === 'mine'}">Your deck</button><button data-act="storyListSide" data-story-list="theirs" aria-pressed="${listSide === 'theirs'}">Their deck</button></div>
+        ${listHtml}
+      </div>
+    </section>
   </section>`;
 }
 
