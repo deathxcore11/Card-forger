@@ -51,7 +51,8 @@ for (const file of await readdir(path.join(source, 'assets/audio/sfx')).catch(()
 extras.push('planeswalk-cast/cast.json');
 for (const dir of ['atlas', 'mask', 'drop', 'fx']) for (const file of await readdir(path.join(source, `planeswalk-cast/${dir}`)).catch(() => [])) if (/^[a-z0-9-]+\.webp$/.test(file)) extras.push(`planeswalk-cast/${dir}/${file}`);
 // Planeswalk's painted fight mats (planeswalk-art/<key>.webp and their <key>-wide.webp phone twins), so fights open on their painting offline.
-for (const file of await readdir(path.join(source, 'planeswalk-art')).catch(() => [])) if (/^[a-z0-9-]+\.webp$/.test(file)) extras.push(`planeswalk-art/${file}`);
+// The patrons' portraits live one folder down (planeswalk-art/patrons/).
+for (const dir of ['', 'patrons/']) for (const file of await readdir(path.join(source, `planeswalk-art/${dir}`)).catch(() => [])) if (/^[a-z0-9-]+\.webp$/.test(file)) extras.push(`planeswalk-art/${dir}${file}`);
 // Only files the website itself serves: .assetsignore is gitignore syntax (last matching rule wins,
 // nothing under an ignored directory is served), so .mjs ships only where a ! rule publishes it.
 const rules = (await readFile(path.join(source, '.assetsignore'), 'utf8')).split('\n').map(x => x.trim()).filter(x => x && !x.startsWith('#')).map(line => {
