@@ -94,6 +94,12 @@ export const LESSONS = {
   'Phasing': 'Phasing: every other turn the card blinks out of time, then returns untouched. Plan around the gaps.',
   'Locking creatures down': 'Tap their best creature or keep it from untapping, and it can\'t attack or block.',
   'Racing': 'Racing: when both sides attack, count the turns. Spend life to deal damage faster than they can.',
+  'Shadow': 'Shadow creatures can only block or be blocked by other shadow creatures.',
+  'Buyback': 'Buyback: pay the extra cost and the spell returns to your hand to cast again.',
+  'Slivers': 'Every sliver shares its ability with all slivers, theirs included. Each one makes the hive stronger.',
+  'Gaining life': 'Gaining life buys you turns. Use the time to build a board that wins.',
+  'The graveyard': 'Your graveyard is a resource: some cards bring creatures back from it.',
+  'Playing against reanimation': 'They fill their graveyard and bring back their best creatures. Answer the big one, and pressure them early.',
   'Playing under a lock': 'A lock stops cards from untapping or moving. Break it, or win with what\'s already in play.',
 };
 // What a battle pays, in words: era packs for your side, the villain's signature card for theirs.
