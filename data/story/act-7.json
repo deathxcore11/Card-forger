@@ -1,0 +1,2624 @@
+{
+ "act": 7,
+ "title": "The Mercadian Masques",
+ "years": "1999 to 2000",
+ "sets": [
+  "mmq",
+  "nem",
+  "pcy"
+ ],
+ "landSet": "mmq",
+ "intro": [
+  {
+   "who": "stage",
+   "line": "The portal spits the Weatherlight into a strange sky. Mirri is wrapped in a sail below decks. Ertai stayed behind."
+  },
+  {
+   "who": "stage",
+   "line": "Gerrard shook his head as the ground rushed to meet him. \"This,\" he thought, \"is not the start I was hoping for.\"",
+   "quote": true
+  },
+  {
+   "who": "stage",
+   "line": "An upside-down mountain. A city on top of it, looking down on everything. Mercadia."
+  },
+  {
+   "who": "sisay",
+   "line": "Nobody touches my ship until I can stand up."
+  },
+  {
+   "who": "gerrard",
+   "line": "Then lean on me. We're going up there to ask for help."
+  },
+  {
+   "who": "stage",
+   "line": "In Mercadia City, loyalties extend only as far as your purse can stretch.",
+   "quote": true
+  }
+ ],
+ "finale": [
+  {
+   "who": "stage",
+   "line": "Rath. The rebels hold one burning ridge, and the stronghold still stands."
+  },
+  {
+   "who": "eladamri",
+   "line": "The Oracle told Eladamri he would save his people by abandoning them.",
+   "quote": true
+  },
+  {
+   "who": "eladamri",
+   "line": "I know what it means now. I hate that I know."
+  },
+  {
+   "who": "linsivvi",
+   "line": "You lost your daughter to his assassins. Nobody would blame you for staying to finish it."
+  },
+  {
+   "who": "eladamri",
+   "line": "Staying is what he wants. Look up."
+  },
+  {
+   "who": "stage",
+   "line": "Denizens of Rath had never seen the moon before. It was a symbol of change, not constancy.",
+   "quote": true
+  },
+  {
+   "who": "stage",
+   "line": "Rath is moving. The whole plane is turning toward Dominaria, like a mouth."
+  },
+  {
+   "who": "stage",
+   "line": "Far away, the Weatherlight sails home with its crew, its captain and its Legacy."
+  },
+  {
+   "who": "stage",
+   "line": "Gerrard focused on the debts he'd settled . . . and on those he'd soon collect.",
+   "quote": true
+  },
+  {
+   "who": "stage",
+   "line": "Deep in the stronghold, Ertai is still alive. Belbe has made sure of it."
+  }
+ ],
+ "villainFinale": [
+  {
+   "who": "stage",
+   "line": "The throne room. The rebels are gone. Crovax sits alone."
+  },
+  {
+   "who": "evincar",
+   "line": "Blood is foul, the flesh dross. My ascendance thirsts for life itself.",
+   "quote": true
+  },
+  {
+   "who": "evincar",
+   "line": "Selenia used to stand there. She would tell me I was still a nobleman."
+  },
+  {
+   "who": "evincar",
+   "line": "I killed her. I would do it again. I hate that I would do it again."
+  },
+  {
+   "who": "belbe",
+   "line": "Your feelings are noted. Phyrexia has no use for them."
+  },
+  {
+   "who": "belbe",
+   "line": "Crovax never passes up an opportunity to cause widespread misery.",
+   "quote": true
+  },
+  {
+   "who": "evincar",
+   "line": "Then let Dominaria see how much misery I can make. Begin the overlay."
+  }
+ ],
+ "vibe": "masked-city-rebel-rath",
+ "cast": {
+  "you": {
+   "name": "You",
+   "title": "Planeswalker",
+   "portrait": {
+    "card": "Brainstorm",
+    "set": "mmq",
+    "number": "61",
+    "id": "9ff71d13-c4b7-4125-ab10-db4abbb7a074",
+    "crop": "https://cards.scryfall.io/art_crop/front/9/f/9ff71d13-c4b7-4125-ab10-db4abbb7a074.jpg?1783945970",
+    "artist": "DiTerlizzi",
+    "focus": "50% 30%"
+   }
+  },
+  "gerrard": {
+   "name": "Gerrard",
+   "title": "Heir of the Legacy",
+   "portrait": {
+    "card": "Gerrard Capashen",
+    "set": "apc",
+    "number": "11",
+    "id": "ccca800f-e850-4bec-95d0-70280b51b7a7",
+    "artist": "Brom",
+    "crop": "https://cards.scryfall.io/art_crop/front/c/c/ccca800f-e850-4bec-95d0-70280b51b7a7.jpg",
+    "focus": "50% 25%"
+   }
+  },
+  "sisay": {
+   "name": "Sisay",
+   "title": "Captain of the Weatherlight",
+   "portrait": {
+    "card": "Sisay, Weatherlight Captain",
+    "set": "mh1",
+    "number": "29",
+    "id": "5a293c45-1e73-4527-be2f-2dcd5c47b610",
+    "artist": "Anna Steinbauer",
+    "crop": "https://cards.scryfall.io/art_crop/front/5/a/5a293c45-1e73-4527-be2f-2dcd5c47b610.jpg",
+    "focus": "50% 25%"
+   }
+  },
+  "tahngarth": {
+   "name": "Tahngarth",
+   "title": "First Mate",
+   "portrait": {
+    "card": "Tahngarth, Talruum Hero",
+    "set": "pls",
+    "number": "74",
+    "id": "c1778f37-af01-4f8c-ab9d-a4c60abf7e78",
+    "artist": "Dave Dorman",
+    "crop": "https://cards.scryfall.io/art_crop/front/c/1/c1778f37-af01-4f8c-ab9d-a4c60abf7e78.jpg",
+    "focus": "50% 25%"
+   }
+  },
+  "squee": {
+   "name": "Squee",
+   "title": "General of the Kyren",
+   "portrait": {
+    "card": "Squee, Goblin Nabob",
+    "set": "mmq",
+    "number": "214",
+    "id": "4ba8325a-1203-4125-9111-94d9e2b1f14b",
+    "crop": "https://cards.scryfall.io/art_crop/front/4/b/4ba8325a-1203-4125-9111-94d9e2b1f14b.jpg?1783945933",
+    "artist": "David Monette",
+    "focus": "50% 30%"
+   }
+  },
+  "magistrate": {
+   "name": "The Magistrate",
+   "title": "Ruler of Mercadia City",
+   "portrait": {
+    "card": "Corrupt Official",
+    "set": "mmq",
+    "number": "128",
+    "id": "5cb652fc-5a21-4e02-a776-a38fb41ad18c",
+    "crop": "https://cards.scryfall.io/art_crop/front/5/c/5cb652fc-5a21-4e02-a776-a38fb41ad18c.jpg?1783945954",
+    "artist": "Greg Hildebrandt & Tim Hildebrandt",
+    "focus": "50% 30%"
+   }
+  },
+  "chomanno": {
+   "name": "Cho-Manno",
+   "title": "Cho-Arrim Revolutionary",
+   "portrait": {
+    "card": "Cho-Manno, Revolutionary",
+    "set": "mmq",
+    "number": "11",
+    "id": "3dc51393-de63-4ce3-ab02-c695e4448018",
+    "crop": "https://cards.scryfall.io/art_crop/front/3/d/3dc51393-de63-4ce3-ab02-c695e4448018.jpg?1783945983",
+    "artist": "Greg Hildebrandt & Tim Hildebrandt",
+    "focus": "50% 25%"
+   }
+  },
+  "takara": {
+   "name": "Takara",
+   "title": "Rescued from Rath",
+   "portrait": {
+    "card": "Liability",
+    "set": "mmq",
+    "number": "144",
+    "id": "0b07c66d-5f37-4098-b7e6-03e6c684806b",
+    "crop": "https://cards.scryfall.io/art_crop/front/0/b/0b07c66d-5f37-4098-b7e6-03e6c684806b.jpg?1783945950",
+    "artist": "Christopher Moeller",
+    "focus": "50% 30%"
+   }
+  },
+  "volrath": {
+   "name": "Volrath",
+   "title": "The Fallen",
+   "portrait": {
+    "card": "Volrath the Fallen",
+    "set": "nem",
+    "number": "75",
+    "id": "08bdd66e-9ca1-456e-a61c-7c96cf6f7c56",
+    "crop": "https://cards.scryfall.io/art_crop/front/0/8/08bdd66e-9ca1-456e-a61c-7c96cf6f7c56.jpg?1783945823",
+    "artist": "Kev Walker",
+    "focus": "50% 25%"
+   }
+  },
+  "crovax": {
+   "name": "Crovax",
+   "title": "The Cursed",
+   "portrait": {
+    "card": "Crovax the Cursed",
+    "set": "sth",
+    "number": "55",
+    "id": "88a9b76d-6ce1-40d4-bc04-7ae6237f5eaf",
+    "artist": "Pete Venters",
+    "crop": "https://cards.scryfall.io/art_crop/front/8/8/88a9b76d-6ce1-40d4-bc04-7ae6237f5eaf.jpg",
+    "focus": "50% 25%"
+   }
+  },
+  "evincar": {
+   "name": "Crovax",
+   "title": "Ascendant Evincar",
+   "portrait": {
+    "card": "Ascendant Evincar",
+    "set": "nem",
+    "number": "51",
+    "id": "e5c87c93-8cf4-4d1a-9bb8-349600da55bc",
+    "crop": "https://cards.scryfall.io/art_crop/front/e/5/e5c87c93-8cf4-4d1a-9bb8-349600da55bc.jpg?1783945831",
+    "artist": "Mark Zug",
+    "focus": "50% 25%"
+   }
+  },
+  "belbe": {
+   "name": "Belbe",
+   "title": "Phyrexian Emissary",
+   "portrait": {
+    "card": "Belbe's Armor",
+    "set": "nem",
+    "number": "126",
+    "id": "0052158b-58d1-4416-a7ce-7c6a7595263c",
+    "crop": "https://cards.scryfall.io/art_crop/front/0/0/0052158b-58d1-4416-a7ce-7c6a7595263c.jpg?1783945810",
+    "artist": "D. Alexander Gregory",
+    "focus": "50% 30%"
+   }
+  },
+  "alexi": {
+   "name": "Alexi",
+   "title": "Zephyr Mage",
+   "portrait": {
+    "card": "Alexi, Zephyr Mage",
+    "set": "pcy",
+    "number": "28",
+    "id": "6f8fc0b0-4a23-47ed-b61b-a4505fcfc5d2",
+    "crop": "https://cards.scryfall.io/art_crop/front/6/f/6f8fc0b0-4a23-47ed-b61b-a4505fcfc5d2.jpg?1783945793",
+    "artist": "Mark Zug",
+    "focus": "50% 25%"
+   }
+  },
+  "latulla": {
+   "name": "Latulla",
+   "title": "Keldon Overseer",
+   "portrait": {
+    "card": "Latulla, Keldon Overseer",
+    "set": "pcy",
+    "number": "95",
+    "id": "fd3c7b0c-98bd-4c63-bbb0-80484a5ab26f",
+    "crop": "https://cards.scryfall.io/art_crop/front/f/d/fd3c7b0c-98bd-4c63-bbb0-80484a5ab26f.jpg?1783945777",
+    "artist": "Brom",
+    "focus": "50% 25%"
+   }
+  },
+  "eladamri": {
+   "name": "Eladamri",
+   "title": "Korvecdal",
+   "portrait": {
+    "card": "Eladamri, Lord of Leaves",
+    "set": "tmp",
+    "number": "224",
+    "id": "0b1689f3-9dfa-4525-90b3-7af15f7eb720",
+    "artist": "Ron Chironna",
+    "crop": "https://cards.scryfall.io/art_crop/front/0/b/0b1689f3-9dfa-4525-90b3-7af15f7eb720.jpg",
+    "focus": "50% 25%"
+   }
+  },
+  "linsivvi": {
+   "name": "Lin Sivvi",
+   "title": "Defiant Hero",
+   "portrait": {
+    "card": "Lin Sivvi, Defiant Hero",
+    "set": "nem",
+    "number": "12",
+    "id": "e574e522-2632-4cd4-8545-c582ac3b641f",
+    "crop": "https://cards.scryfall.io/art_crop/front/e/5/e574e522-2632-4cd4-8545-c582ac3b641f.jpg?1783945846",
+    "artist": "rk post",
+    "focus": "50% 25%"
+   }
+  },
+  "ertai": {
+   "name": "Ertai",
+   "title": "Wizard Adept",
+   "portrait": {
+    "card": "Ertai, Wizard Adept",
+    "set": "exo",
+    "number": "33",
+    "id": "91971e19-61ce-45ac-b700-9ffca5091a27",
+    "artist": "Terese Nielsen",
+    "crop": "https://cards.scryfall.io/art_crop/front/9/1/91971e19-61ce-45ac-b700-9ffca5091a27.jpg",
+    "focus": "50% 25%"
+   }
+  }
+ },
+ "battles": [
+  {
+   "id": "a7b1",
+   "slot": 1,
+   "kind": "Arrival",
+   "mood": "tension",
+   "title": "The Inverted Mountain",
+   "difficulty": "Easy",
+   "teaches": [
+    "Alternate costs"
+   ],
+   "blurb": "The Weatherlight came down hard below a city that sits on top of an upside-down mountain. Gerrard climbs up to ask for help. The city sends its guard down instead.",
+   "rewardSet": "mmq",
+   "host": false,
+   "hero": {
+    "who": "gerrard",
+    "deck": {
+     "name": "The Weatherlight Crew",
+     "colors": "RW",
+     "archetype": null,
+     "cards": [
+      {
+       "qty": 4,
+       "name": "Steadfast Guard",
+       "set": "mmq",
+       "number": "50",
+       "id": "6381774b-fb91-46cc-9bf6-6eeb4d67a165"
+      },
+      {
+       "qty": 4,
+       "name": "Crossbow Infantry",
+       "set": "mmq",
+       "number": "16",
+       "id": "744c2177-3140-48a1-95a4-2f0a27ca5b2f"
+      },
+      {
+       "qty": 4,
+       "name": "Kyren Sniper",
+       "set": "mmq",
+       "number": "199",
+       "id": "4df99e19-0b1e-48ec-a146-38cf147eab61"
+      },
+      {
+       "qty": 4,
+       "name": "Ceremonial Guard",
+       "set": "mmq",
+       "number": "182",
+       "id": "4a6c69d1-5295-419f-bb8f-af826bf92cb3"
+      },
+      {
+       "qty": 4,
+       "name": "Shock Troops",
+       "set": "mmq",
+       "number": "212",
+       "id": "e7a918ca-3e60-46de-9f29-56bdc6430a77"
+      },
+      {
+       "qty": 4,
+       "name": "Gerrard's Irregulars",
+       "set": "mmq",
+       "number": "192",
+       "id": "8a88f507-3d78-4f7f-a91f-8489ad9250f2"
+      },
+      {
+       "qty": 4,
+       "name": "Thunderclap",
+       "set": "mmq",
+       "number": "219",
+       "id": "b3f8c5ee-2179-4c05-adc9-0b66d02b59ad"
+      },
+      {
+       "qty": 4,
+       "name": "Lunge",
+       "set": "mmq",
+       "number": "203",
+       "id": "e9e43349-429c-43f7-b808-c4bf37370a9f"
+      },
+      {
+       "qty": 4,
+       "name": "Seal of Fire",
+       "set": "nem",
+       "number": "98",
+       "id": "37eaf1f6-4bdc-4669-9a15-50b65e016ccf"
+      },
+      {
+       "qty": 12,
+       "name": "Mountain",
+       "set": "mmq",
+       "number": "343",
+       "id": "19b5fff1-7a60-4e50-893a-8177cd62bf82"
+      },
+      {
+       "qty": 12,
+       "name": "Plains",
+       "set": "mmq",
+       "number": "331",
+       "id": "2edf5042-d185-424e-922d-c0bd4ce3e8b0"
+      }
+     ]
+    }
+   },
+   "villain": {
+    "who": "magistrate",
+    "deck": {
+     "name": "The Magistrate's Guard",
+     "colors": "WU",
+     "archetype": null,
+     "cards": [
+      {
+       "qty": 4,
+       "name": "Port Inspector",
+       "set": "mmq",
+       "number": "90",
+       "id": "ef25d969-68d9-4580-bb29-f72bd5646a3d"
+      },
+      {
+       "qty": 4,
+       "name": "Darting Merfolk",
+       "set": "mmq",
+       "number": "72",
+       "id": "438e15f7-59bb-4047-af1f-ef92cc1866b8"
+      },
+      {
+       "qty": 4,
+       "name": "Cloud Sprite",
+       "set": "mmq",
+       "number": "67",
+       "id": "3d14352c-ac8c-45b5-b930-63822408ba3d"
+      },
+      {
+       "qty": 4,
+       "name": "Alabaster Wall",
+       "set": "mmq",
+       "number": "2",
+       "id": "9cf393a3-831e-4d3a-8404-ee83f60970aa"
+      },
+      {
+       "qty": 4,
+       "name": "Pious Warrior",
+       "set": "mmq",
+       "number": "34",
+       "id": "bc20c1f0-9883-484c-88d8-1cab08d0b210"
+      },
+      {
+       "qty": 4,
+       "name": "Rishadan Airship",
+       "set": "mmq",
+       "number": "91",
+       "id": "5d8e596b-f5ef-405a-8910-c5d0b5c8c0fc"
+      },
+      {
+       "qty": 4,
+       "name": "Ignoble Soldier",
+       "set": "mmq",
+       "number": "22",
+       "id": "676a2506-17f8-4b8e-be0c-eacc0fe972f6"
+      },
+      {
+       "qty": 2,
+       "name": "Daze",
+       "set": "nem",
+       "number": "30",
+       "id": "d03bff25-0d5e-4dcf-8d75-6df846afea3b"
+      },
+      {
+       "qty": 2,
+       "name": "Misstep",
+       "set": "mmq",
+       "number": "88",
+       "id": "8e23f5a1-bf3e-41e0-875f-fc2f8508e69f"
+      },
+      {
+       "qty": 4,
+       "name": "Arrest",
+       "set": "mmq",
+       "number": "4",
+       "id": "3b083fd8-6422-4cd3-a27d-41b6d88598c2"
+      },
+      {
+       "qty": 12,
+       "name": "Plains",
+       "set": "mmq",
+       "number": "331",
+       "id": "2edf5042-d185-424e-922d-c0bd4ce3e8b0"
+      },
+      {
+       "qty": 12,
+       "name": "Island",
+       "set": "mmq",
+       "number": "335",
+       "id": "5bae77e8-1230-4a6e-8c75-c99d2741a509"
+      }
+     ]
+    }
+   },
+   "reward": {
+    "hero": {
+     "packs": 1,
+     "coins": 0
+    },
+    "villain": {
+     "card": {
+      "oracle_id": "52a61983-53e2-440f-af03-cebe57b102f2",
+      "name": "Ignoble Soldier",
+      "rarity": "uncommon",
+      "set": "mmq",
+      "id": "676a2506-17f8-4b8e-be0c-eacc0fe972f6",
+      "image": "https://cards.scryfall.io/normal/front/6/7/676a2506-17f8-4b8e-be0c-eacc0fe972f6.jpg"
+     },
+     "coins": 50
+    }
+   },
+   "scene": [
+    {
+     "who": "magistrate",
+     "line": "A ship fell out of the sky. Ships are worth a great deal. So are their crews."
+    },
+    {
+     "who": "gerrard",
+     "line": "We're not for sale. We need water, a healer and a shipwright."
+    },
+    {
+     "who": "gerrard",
+     "line": "These guards are the most disciplined military unit in the city. They couldn't fight their way out of a broom closet, but they've got discipline.",
+     "quote": true
+    },
+    {
+     "who": "magistrate",
+     "line": "Everything is for sale, outsider. Guards. Bring me the ship."
+    },
+    {
+     "who": "gerrard",
+     "line": "Some of these spells cost a land instead of mana. Sacrifice the Mountain and the bolt is free. Use it when it counts."
+    }
+   ],
+   "villainScene": [
+    {
+     "who": "magistrate",
+     "line": "We all must profit for peace to last.",
+     "quote": true
+    },
+    {
+     "who": "magistrate",
+     "line": "This city has stood on its mountain for a thousand years by knowing who to sell to."
+    },
+    {
+     "who": "magistrate",
+     "line": "Somebody has already paid me for that ship. I am a man of my word, when the word is gold."
+    }
+   ],
+   "after": [
+    {
+     "who": "stage",
+     "line": "The guards fail. The Magistrate smiles anyway, and invites Gerrard to dinner."
+    },
+    {
+     "who": "stage",
+     "line": "It was Gerrard's nature to lead and the Mercadians' to follow.",
+     "quote": true
+    },
+    {
+     "who": "stage",
+     "line": "By morning he is training the very soldiers who attacked him. He thinks he has found allies."
+    }
+   ],
+   "cues": {
+    "hero": {
+     "start": "Easy. Nobody needs to die over a boat.",
+     "big": "That's more like it.",
+     "low": "Sisay... get the ship ready...",
+     "win": "Tell your magistrate we said no.",
+     "loss": "They have the ship...",
+     "half": "They really are disciplined."
+    },
+    "villain": {
+     "start": "Seize them. Gently. They are merchandise.",
+     "big": "Now that is a soldier worth his wages.",
+     "low": "I am being robbed in my own city!",
+     "win": "Put them in the cells. The ship goes to my buyer.",
+     "loss": "Write it in the ledger as a loss."
+    }
+   },
+   "bigPlays": [],
+   "sim": null
+  },
+  {
+   "id": "a7b2",
+   "slot": 2,
+   "kind": "Lesson",
+   "mood": "march",
+   "title": "Uphill Battle",
+   "difficulty": "Easy",
+   "teaches": [
+    "Rebels"
+   ],
+   "blurb": "The Cho-Arrim live below the mountain and guard the Fountain of Cho. Mercadia wants the water. Its army has a new commander, and he doesn't know what he's marching against.",
+   "rewardSet": "mmq",
+   "host": false,
+   "hero": {
+    "who": "chomanno",
+    "deck": {
+     "name": "The Cho-Arrim",
+     "colors": "W",
+     "archetype": null,
+     "cards": [
+      {
+       "qty": 2,
+       "name": "Cho-Manno, Revolutionary",
+       "set": "mmq",
+       "number": "11",
+       "id": "3dc51393-de63-4ce3-ab02-c695e4448018"
+      },
+      {
+       "qty": 4,
+       "name": "Ramosian Sergeant",
+       "set": "mmq",
+       "number": "39",
+       "id": "ef2b036d-5721-4a6e-bf43-69148b90da10"
+      },
+      {
+       "qty": 4,
+       "name": "Ramosian Lieutenant",
+       "set": "mmq",
+       "number": "37",
+       "id": "debe840a-ebc9-43c4-9bf7-7eb292b65bf9"
+      },
+      {
+       "qty": 4,
+       "name": "Ramosian Captain",
+       "set": "mmq",
+       "number": "35",
+       "id": "0e9d2e2a-c608-4787-bbd9-e1871f681b58"
+      },
+      {
+       "qty": 4,
+       "name": "Cho-Arrim Legate",
+       "set": "mmq",
+       "number": "10",
+       "id": "1427a3a1-24e1-4697-b5eb-1c0a24f89e75"
+      },
+      {
+       "qty": 4,
+       "name": "Fresh Volunteers",
+       "set": "mmq",
+       "number": "20",
+       "id": "e070ea4a-c417-405f-b788-78fb7ca2eaa5"
+      },
+      {
+       "qty": 4,
+       "name": "Devout Witness",
+       "set": "mmq",
+       "number": "17",
+       "id": "48ca7aeb-09db-4409-9ba2-c5c5500ad72f"
+      },
+      {
+       "qty": 2,
+       "name": "Ramosian Commander",
+       "set": "mmq",
+       "number": "36",
+       "id": "867f5d82-71c2-455f-ab16-5a32bba46986"
+      },
+      {
+       "qty": 4,
+       "name": "Cho-Manno's Blessing",
+       "set": "mmq",
+       "number": "12",
+       "id": "5c9f33c6-5294-4584-854d-c8c0f847aba8"
+      },
+      {
+       "qty": 4,
+       "name": "Arrest",
+       "set": "mmq",
+       "number": "4",
+       "id": "3b083fd8-6422-4cd3-a27d-41b6d88598c2"
+      },
+      {
+       "qty": 24,
+       "name": "Plains",
+       "set": "mmq",
+       "number": "331",
+       "id": "2edf5042-d185-424e-922d-c0bd4ce3e8b0"
+      }
+     ]
+    }
+   },
+   "villain": {
+    "who": "gerrard",
+    "deck": {
+     "name": "Gerrard's Irregulars",
+     "colors": "RW",
+     "archetype": null,
+     "cards": [
+      {
+       "qty": 4,
+       "name": "Gerrard's Irregulars",
+       "set": "mmq",
+       "number": "192",
+       "id": "8a88f507-3d78-4f7f-a91f-8489ad9250f2"
+      },
+      {
+       "qty": 4,
+       "name": "Ceremonial Guard",
+       "set": "mmq",
+       "number": "182",
+       "id": "4a6c69d1-5295-419f-bb8f-af826bf92cb3"
+      },
+      {
+       "qty": 4,
+       "name": "Crossbow Infantry",
+       "set": "mmq",
+       "number": "16",
+       "id": "744c2177-3140-48a1-95a4-2f0a27ca5b2f"
+      },
+      {
+       "qty": 4,
+       "name": "Steadfast Guard",
+       "set": "mmq",
+       "number": "50",
+       "id": "6381774b-fb91-46cc-9bf6-6eeb4d67a165"
+      },
+      {
+       "qty": 4,
+       "name": "Shock Troops",
+       "set": "mmq",
+       "number": "212",
+       "id": "e7a918ca-3e60-46de-9f29-56bdc6430a77"
+      },
+      {
+       "qty": 4,
+       "name": "Lightning Hounds",
+       "set": "mmq",
+       "number": "201",
+       "id": "38c82a1d-5db1-4090-b446-cc5bc6dc811d"
+      },
+      {
+       "qty": 4,
+       "name": "Iron Lance",
+       "set": "mmq",
+       "number": "300",
+       "id": "41f7d212-faf2-4a6f-a338-d9e5014b56d5"
+      },
+      {
+       "qty": 4,
+       "name": "Lunge",
+       "set": "mmq",
+       "number": "203",
+       "id": "e9e43349-429c-43f7-b808-c4bf37370a9f"
+      },
+      {
+       "qty": 4,
+       "name": "Thunderclap",
+       "set": "mmq",
+       "number": "219",
+       "id": "b3f8c5ee-2179-4c05-adc9-0b66d02b59ad"
+      },
+      {
+       "qty": 12,
+       "name": "Mountain",
+       "set": "mmq",
+       "number": "343",
+       "id": "19b5fff1-7a60-4e50-893a-8177cd62bf82"
+      },
+      {
+       "qty": 12,
+       "name": "Plains",
+       "set": "mmq",
+       "number": "331",
+       "id": "2edf5042-d185-424e-922d-c0bd4ce3e8b0"
+      }
+     ]
+    }
+   },
+   "reward": {
+    "hero": {
+     "packs": 1,
+     "coins": 0
+    },
+    "villain": {
+     "card": {
+      "oracle_id": "09e588c2-0fb8-4c30-aff3-433db7a07b6e",
+      "name": "Iron Lance",
+      "rarity": "uncommon",
+      "set": "mmq",
+      "id": "41f7d212-faf2-4a6f-a338-d9e5014b56d5",
+      "image": "https://cards.scryfall.io/normal/front/4/1/41f7d212-faf2-4a6f-a338-d9e5014b56d5.jpg"
+     },
+     "coins": 50
+    }
+   },
+   "scene": [
+    {
+     "who": "chomanno",
+     "line": "Mercadia's masks can no longer hide the truth. Our day has come at last.",
+     "quote": true
+    },
+    {
+     "who": "chomanno",
+     "line": "Look at their banner. They have a hero now. A tall man from the sky."
+    },
+    {
+     "who": "stage",
+     "line": "Cho-Manno had never seen Mercadia City's forces fight so well. The magistrate must have hired a new hero.",
+     "quote": true
+    },
+    {
+     "who": "chomanno",
+     "line": "We do not kill if we can help it. We wound, we hold the ford, and we wait for him to look at what he is doing."
+    },
+    {
+     "who": "chomanno",
+     "line": "Every rebel can call another. Pay three, tap the sergeant, and a friend comes from your deck."
+    }
+   ],
+   "villainScene": [
+    {
+     "who": "gerrard",
+     "line": "They told me the Cho-Arrim are bandits who poison the city's water."
+    },
+    {
+     "who": "gerrard",
+     "line": "The only way to get Mercadians to fight on the front lines is to give them really long weapons.",
+     "quote": true
+    },
+    {
+     "who": "gerrard",
+     "line": "Bandits don't usually hold a ford like that. Or carry their wounded. Something's wrong."
+    }
+   ],
+   "after": [
+    {
+     "who": "stage",
+     "line": "Cho-Manno knew he had no choice but to ally with Gerrard. If that's what it took to free his people, he'd pay the price.",
+     "quote": true
+    },
+    {
+     "who": "stage",
+     "line": "\"I did not choose my role, Orim,\" said Cho-Manno patiently, \"and I suspect Gerrard did not choose his.\"",
+     "quote": true
+    }
+   ],
+   "cues": {
+    "hero": {
+     "start": "For the Fountain.",
+     "big": "The river is with us.",
+     "low": "Do not break. Not yet.",
+     "win": "Now he will come to talk. I can see it in his face.",
+     "loss": "The river will remember us.",
+     "half": "There is a great difference between pain and injury."
+    },
+    "villain": {
+     "start": "Form up! Shields high!",
+     "big": "That's how I trained you!",
+     "low": "Hold the line... why are they not running?",
+     "win": "Stand down. Nobody touches the wounded.",
+     "loss": "I'm on the wrong side of this, aren't I?"
+    }
+   },
+   "bigPlays": [],
+   "sim": null
+  },
+  {
+   "id": "a7b3",
+   "slot": 3,
+   "kind": "Lesson",
+   "mood": "comic",
+   "title": "General Nuisance",
+   "difficulty": "Easy",
+   "teaches": [
+    "Spellshapers"
+   ],
+   "blurb": "The Kyren goblins secretly run half of Mercadia, and they've decided Squee is very important. They gave him a hat, an army and a war. Then they pointed it at the ship's first mate.",
+   "rewardSet": "mmq",
+   "host": false,
+   "hero": {
+    "who": "squee",
+    "deck": {
+     "name": "The Kyren Host",
+     "colors": "R",
+     "archetype": null,
+     "cards": [
+      {
+       "qty": 2,
+       "name": "Squee, Goblin Nabob",
+       "set": "mmq",
+       "number": "214",
+       "id": "4ba8325a-1203-4125-9111-94d9e2b1f14b"
+      },
+      {
+       "qty": 4,
+       "name": "Kyren Glider",
+       "set": "mmq",
+       "number": "196",
+       "id": "0bc55e01-342e-4856-937e-14561b8d165b"
+      },
+      {
+       "qty": 4,
+       "name": "Kyren Legate",
+       "set": "mmq",
+       "number": "197",
+       "id": "6f0e9806-be8c-4b88-a4be-0111d1be81d9"
+      },
+      {
+       "qty": 4,
+       "name": "Kyren Sniper",
+       "set": "mmq",
+       "number": "199",
+       "id": "4df99e19-0b1e-48ec-a146-38cf147eab61"
+      },
+      {
+       "qty": 4,
+       "name": "Hammer Mage",
+       "set": "mmq",
+       "number": "193",
+       "id": "b959d7ad-a78e-439f-9225-4dbb89f490d7"
+      },
+      {
+       "qty": 4,
+       "name": "Lightning Hounds",
+       "set": "mmq",
+       "number": "201",
+       "id": "38c82a1d-5db1-4090-b446-cc5bc6dc811d"
+      },
+      {
+       "qty": 4,
+       "name": "Robber Fly",
+       "set": "mmq",
+       "number": "209",
+       "id": "7d5cf073-2ba0-463e-bcd4-979ad18e28fc"
+      },
+      {
+       "qty": 4,
+       "name": "Mogg Toady",
+       "set": "nem",
+       "number": "95",
+       "id": "ee8edaf6-d46e-4efb-8bc0-ec11e06eb499"
+      },
+      {
+       "qty": 2,
+       "name": "Ceremonial Guard",
+       "set": "mmq",
+       "number": "182",
+       "id": "4a6c69d1-5295-419f-bb8f-af826bf92cb3"
+      },
+      {
+       "qty": 4,
+       "name": "Seal of Fire",
+       "set": "nem",
+       "number": "98",
+       "id": "37eaf1f6-4bdc-4669-9a15-50b65e016ccf"
+      },
+      {
+       "qty": 24,
+       "name": "Mountain",
+       "set": "mmq",
+       "number": "343",
+       "id": "19b5fff1-7a60-4e50-893a-8177cd62bf82"
+      }
+     ]
+    }
+   },
+   "villain": {
+    "who": "tahngarth",
+    "deck": {
+     "name": "Talruum Fury",
+     "colors": "RG",
+     "archetype": null,
+     "cards": [
+      {
+       "qty": 4,
+       "name": "Zerapa Minotaur",
+       "set": "pcy",
+       "number": "108",
+       "id": "55a8e1ce-e394-48d6-938a-aa76c0273abe"
+      },
+      {
+       "qty": 4,
+       "name": "Veteran Brawlers",
+       "set": "pcy",
+       "number": "106",
+       "id": "ee4d3acb-68be-409d-beb7-92a7cbc0402f"
+      },
+      {
+       "qty": 4,
+       "name": "Branded Brawlers",
+       "set": "pcy",
+       "number": "84",
+       "id": "90a48065-fbf1-4f2a-993e-7061057a4c45"
+      },
+      {
+       "qty": 4,
+       "name": "Horned Troll",
+       "set": "mmq",
+       "number": "251",
+       "id": "7f2a6d10-054e-4d6f-aeb7-4204f02490c7"
+      },
+      {
+       "qty": 4,
+       "name": "Snorting Gahr",
+       "set": "mmq",
+       "number": "272",
+       "id": "e568503e-a886-4c8b-9d46-8520c2cdda48"
+      },
+      {
+       "qty": 4,
+       "name": "Wild Jhovall",
+       "set": "mmq",
+       "number": "227",
+       "id": "64bcc06a-de86-4387-882d-ead33e9c9e01"
+      },
+      {
+       "qty": 4,
+       "name": "Lumbering Satyr",
+       "set": "mmq",
+       "number": "257",
+       "id": "5d897088-0667-4864-91c3-5f0ac7f9b220"
+      },
+      {
+       "qty": 4,
+       "name": "Invigorate",
+       "set": "mmq",
+       "number": "254",
+       "id": "406b343c-90b5-4a4d-91c3-2fddcc9a0e05"
+      },
+      {
+       "qty": 4,
+       "name": "Flaming Sword",
+       "set": "mmq",
+       "number": "190",
+       "id": "17ecd9ff-8c30-4e17-8cff-dd40d653c4af"
+      },
+      {
+       "qty": 12,
+       "name": "Mountain",
+       "set": "mmq",
+       "number": "343",
+       "id": "19b5fff1-7a60-4e50-893a-8177cd62bf82"
+      },
+      {
+       "qty": 12,
+       "name": "Forest",
+       "set": "mmq",
+       "number": "347",
+       "id": "695de19e-801f-4f08-b44c-b0726e4aced0"
+      }
+     ]
+    }
+   },
+   "reward": {
+    "hero": {
+     "packs": 1,
+     "coins": 0
+    },
+    "villain": {
+     "card": {
+      "oracle_id": "77a963a3-473a-4c34-bc46-8ef016a92c0c",
+      "name": "Veteran Brawlers",
+      "rarity": "rare",
+      "set": "pcy",
+      "id": "ee4d3acb-68be-409d-beb7-92a7cbc0402f",
+      "image": "https://cards.scryfall.io/normal/front/e/e/ee4d3acb-68be-409d-beb7-92a7cbc0402f.jpg"
+     },
+     "coins": 50
+    }
+   },
+   "scene": [
+    {
+     "who": "stage",
+     "line": "Mercadia's Kyren goblins are the opposite of Dominarian goblins: they're smart and cowardly.",
+     "quote": true
+    },
+    {
+     "who": "squee",
+     "line": "They gave Squee a hat! Squee is GENERAL!"
+    },
+    {
+     "who": "squee",
+     "line": "If I says it's a troll, it's a troll. Goblins is always right in Mercadia.",
+     "quote": true
+    },
+    {
+     "who": "squee",
+     "line": "Who is we fighting? Big horns. Big angry. Kind of looks like..."
+    },
+    {
+     "who": "tahngarth",
+     "line": "SQUEE."
+    },
+    {
+     "who": "stage",
+     "line": "\"General?!\" Tahngarth roared. \"General *nuisance*, maybe.\"",
+     "quote": true
+    },
+    {
+     "who": "squee",
+     "line": "Mages! Throw a card away, make it a spell! Squee has lots of cards Squee does not understand!"
+    }
+   ],
+   "villainScene": [
+    {
+     "who": "tahngarth",
+     "line": "I was sent to clear a goblin nest. Nobody said the nest had a general."
+    },
+    {
+     "who": "tahngarth",
+     "line": "It's not Talruum crystal, but I must admit—it gets the job done.",
+     "quote": true
+    },
+    {
+     "who": "tahngarth",
+     "line": "I won't hurt him. Much. Gerrard would never let me hear the end of it."
+    }
+   ],
+   "after": [
+    {
+     "who": "stage",
+     "line": "Squee watched his Kyren cousins fall with a mixture of sympathy and relief.",
+     "quote": true
+    },
+    {
+     "who": "tahngarth",
+     "line": "The Kyren are not the bottom of this city, Squee. They are the hands under the table."
+    },
+    {
+     "who": "squee",
+     "line": "Whose table?"
+    },
+    {
+     "who": "tahngarth",
+     "line": "That's what worries me."
+    }
+   ],
+   "cues": {
+    "hero": {
+     "start": "CHARGE! Squee means... you charge. Squee watches.",
+     "big": "Squee made a BIG one!",
+     "low": "Squee is resigning! Squee is a cabin boy again!",
+     "win": "Squee wins! Squee keeps the hat!",
+     "loss": "Squee did not want to be general anyway.",
+     "half": "Is it too late to say sorry?"
+    },
+    "villain": {
+     "start": "Come here, General.",
+     "big": "Now we fight.",
+     "low": "Beaten by a goblin in a hat. Never tell the crew.",
+     "win": "Hat. Off. Now.",
+     "loss": "You lot go on ahead. I'll keep killing them until it sticks."
+    }
+   },
+   "bigPlays": [],
+   "sim": null
+  },
+  {
+   "id": "a7b4",
+   "slot": 4,
+   "kind": "Rival",
+   "mood": "tension",
+   "title": "The Helpless Woman",
+   "difficulty": "Normal",
+   "teaches": [
+    "Discard"
+   ],
+   "blurb": "On the way out of Rath, the crew rescued a frightened woman named Takara, Starke's daughter. She has been quiet ever since. Too quiet. Someone in Mercadia has known every move Gerrard makes.",
+   "rewardSet": "mmq",
+   "host": false,
+   "hero": {
+    "who": "gerrard",
+    "deck": {
+     "name": "Heir of the Legacy",
+     "colors": "RW",
+     "archetype": null,
+     "cards": [
+      {
+       "qty": 4,
+       "name": "Steadfast Guard",
+       "set": "mmq",
+       "number": "50",
+       "id": "6381774b-fb91-46cc-9bf6-6eeb4d67a165"
+      },
+      {
+       "qty": 4,
+       "name": "Thermal Glider",
+       "set": "mmq",
+       "number": "53",
+       "id": "fd909c26-930d-4af0-b19a-c899847338b4"
+      },
+      {
+       "qty": 4,
+       "name": "Defiant Falcon",
+       "set": "nem",
+       "number": "6",
+       "id": "4c80032b-daeb-4661-9a66-61abe9d12ddd"
+      },
+      {
+       "qty": 4,
+       "name": "Shock Troops",
+       "set": "mmq",
+       "number": "212",
+       "id": "e7a918ca-3e60-46de-9f29-56bdc6430a77"
+      },
+      {
+       "qty": 4,
+       "name": "Gerrard's Irregulars",
+       "set": "mmq",
+       "number": "192",
+       "id": "8a88f507-3d78-4f7f-a91f-8489ad9250f2"
+      },
+      {
+       "qty": 4,
+       "name": "Ramosian Sergeant",
+       "set": "mmq",
+       "number": "39",
+       "id": "ef2b036d-5721-4a6e-bf43-69148b90da10"
+      },
+      {
+       "qty": 4,
+       "name": "Righteous Indignation",
+       "set": "mmq",
+       "number": "46",
+       "id": "c1fb6335-cfd8-438c-b936-09b850d61b28"
+      },
+      {
+       "qty": 4,
+       "name": "Lunge",
+       "set": "mmq",
+       "number": "203",
+       "id": "e9e43349-429c-43f7-b808-c4bf37370a9f"
+      },
+      {
+       "qty": 4,
+       "name": "Seal of Fire",
+       "set": "nem",
+       "number": "98",
+       "id": "37eaf1f6-4bdc-4669-9a15-50b65e016ccf"
+      },
+      {
+       "qty": 12,
+       "name": "Mountain",
+       "set": "mmq",
+       "number": "343",
+       "id": "19b5fff1-7a60-4e50-893a-8177cd62bf82"
+      },
+      {
+       "qty": 12,
+       "name": "Plains",
+       "set": "mmq",
+       "number": "331",
+       "id": "2edf5042-d185-424e-922d-c0bd4ce3e8b0"
+      }
+     ]
+    }
+   },
+   "villain": {
+    "who": "takara",
+    "deck": {
+     "name": "A Borrowed Face",
+     "colors": "UB",
+     "archetype": null,
+     "cards": [
+      {
+       "qty": 2,
+       "name": "Volrath the Fallen",
+       "set": "nem",
+       "number": "75",
+       "id": "08bdd66e-9ca1-456e-a61c-7c96cf6f7c56"
+      },
+      {
+       "qty": 4,
+       "name": "Stronghold Biologist",
+       "set": "nem",
+       "number": "45",
+       "id": "6215a5d9-d6d2-4f9f-8a0c-a65d1afd956a"
+      },
+      {
+       "qty": 4,
+       "name": "Rootwater Commando",
+       "set": "nem",
+       "number": "39",
+       "id": "8e86f36d-584d-49b2-8c66-19c262408950"
+      },
+      {
+       "qty": 4,
+       "name": "Sneaky Homunculus",
+       "set": "nem",
+       "number": "44",
+       "id": "e1b2dadb-4ce3-4f7e-9ca7-79757543f04d"
+      },
+      {
+       "qty": 4,
+       "name": "Cloudskate",
+       "set": "nem",
+       "number": "29",
+       "id": "e7f97e50-3aeb-4c79-81b1-505a2f32d8ac"
+      },
+      {
+       "qty": 4,
+       "name": "Phyrexian Driver",
+       "set": "nem",
+       "number": "64",
+       "id": "efeef7f3-5b87-440d-a851-95ae2bdb840d"
+      },
+      {
+       "qty": 4,
+       "name": "Seal of Removal",
+       "set": "nem",
+       "number": "42",
+       "id": "487becfe-a9b1-4029-a487-2a32561570cb"
+      },
+      {
+       "qty": 4,
+       "name": "Vendetta",
+       "set": "mmq",
+       "number": "170",
+       "id": "67ced38e-0f33-4bda-8e18-09f6ac03a3d7"
+      },
+      {
+       "qty": 4,
+       "name": "Specter's Wail",
+       "set": "mmq",
+       "number": "164",
+       "id": "d1637b62-e364-4250-aad5-841c6a47a11e"
+      },
+      {
+       "qty": 2,
+       "name": "Stronghold Zeppelin",
+       "set": "nem",
+       "number": "47",
+       "id": "d672110d-b7c4-4233-9c46-73323be7204d"
+      },
+      {
+       "qty": 12,
+       "name": "Island",
+       "set": "mmq",
+       "number": "335",
+       "id": "5bae77e8-1230-4a6e-8c75-c99d2741a509"
+      },
+      {
+       "qty": 12,
+       "name": "Swamp",
+       "set": "mmq",
+       "number": "339",
+       "id": "72020810-bfa3-42d5-ad0d-6d02a6fe1b31"
+      }
+     ]
+    }
+   },
+   "reward": {
+    "hero": {
+     "packs": 1,
+     "coins": 100
+    },
+    "villain": {
+     "card": {
+      "oracle_id": "4e11c838-68a7-4c97-b064-a46833cf1d2f",
+      "name": "Volrath the Fallen",
+      "rarity": "rare",
+      "set": "nem",
+      "id": "08bdd66e-9ca1-456e-a61c-7c96cf6f7c56",
+      "image": "https://cards.scryfall.io/normal/front/0/8/08bdd66e-9ca1-456e-a61c-7c96cf6f7c56.jpg"
+     },
+     "coins": 100
+    }
+   },
+   "scene": [
+    {
+     "who": "takara",
+     "line": "Gerrard. I was so afraid when the guards came. Thank you for keeping me safe."
+    },
+    {
+     "who": "gerrard",
+     "line": "The Magistrate knew where Cho-Manno was hiding. Only four people knew. You were one."
+    },
+    {
+     "who": "stage",
+     "line": "Gerrard realized that the helpless woman they'd rescued from Rath was nothing of the sort.",
+     "quote": true
+    },
+    {
+     "who": "takara",
+     "line": "Oh, Gerrard. You always were slow."
+    },
+    {
+     "who": "stage",
+     "line": "Her face folds like wet paper. Volrath's smile comes through."
+    },
+    {
+     "who": "gerrard",
+     "line": "Where's Takara? The real one."
+    },
+    {
+     "who": "takara",
+     "line": "Her father asked me the same question. For a year."
+    }
+   ],
+   "villainScene": [
+    {
+     "who": "stage",
+     "line": "Starke knew the voice was Takara's, but the venom was Volrath's.",
+     "quote": true
+    },
+    {
+     "who": "volrath",
+     "line": "They replaced me on Rath. A cripple with a curse sits on my throne."
+    },
+    {
+     "who": "volrath",
+     "line": "I needed a place to wait, and a brother to watch. Mercadia sells everything, including silence."
+    },
+    {
+     "who": "volrath",
+     "line": "When I take back my stronghold, I want you to hear about it, Gerrard. I want you to know you couldn't stop it twice."
+    }
+   ],
+   "after": [
+    {
+     "who": "stage",
+     "line": "Volrath steps through a mirror of black water and is gone."
+    },
+    {
+     "who": "stage",
+     "line": "Without a word, Gerrard and Sisay ran deeper into the mountain. Neither of them intended to leave Mercadia without the *Weatherlight* and its crew.",
+     "quote": true
+    }
+   ],
+   "cues": {
+    "hero": {
+     "start": "Take off the mask.",
+     "big": "For Mirri.",
+     "low": "Still faster than me...",
+     "win": "Run back to Rath, then. I know the way now.",
+     "loss": "He's gone. Again.",
+     "half": "You were never her."
+    },
+    "villain": {
+     "start": "Still the hero. Still alone.",
+     "big": "Look, brother. A body built from what you threw away.",
+     "low": "This shape is failing...",
+     "win": "Father should have chosen me.",
+     "loss": "Keep the city. I have a throne to collect."
+    }
+   },
+   "bigPlays": [],
+   "sim": null
+  },
+  {
+   "id": "a7b5",
+   "slot": 5,
+   "kind": "Meta",
+   "mood": "tension",
+   "title": "What Is Mine",
+   "difficulty": "Normal",
+   "teaches": [
+    "Racing"
+   ],
+   "blurb": "Rath has a new evincar: Crovax, the cursed nobleman who murdered Mirri. Phyrexia's emissary Belbe chose him. Now Volrath has come home to take his throne back.",
+   "rewardSet": "nem",
+   "host": false,
+   "hero": {
+    "who": "crovax",
+    "deck": {
+     "name": "The Cursed",
+     "colors": "B",
+     "archetype": null,
+     "cards": [
+      {
+       "qty": 4,
+       "name": "Rathi Intimidator",
+       "set": "nem",
+       "number": "69",
+       "id": "6fc59fa5-144f-49e6-b6bd-2ba6d3f2eff2"
+      },
+      {
+       "qty": 4,
+       "name": "Rathi Fiend",
+       "set": "nem",
+       "number": "68",
+       "id": "07ca1184-ade0-4d6d-87f9-ad17f37679b3"
+      },
+      {
+       "qty": 2,
+       "name": "Rathi Assassin",
+       "set": "nem",
+       "number": "67",
+       "id": "3e3597c3-3053-49f8-ab7e-a774e2fb082f"
+      },
+      {
+       "qty": 4,
+       "name": "Spineless Thug",
+       "set": "nem",
+       "number": "71",
+       "id": "e4a9bb47-3855-425d-924c-09dbde74735b"
+      },
+      {
+       "qty": 4,
+       "name": "Phyrexian Prowler",
+       "set": "nem",
+       "number": "65",
+       "id": "e26f79b5-780a-4cbb-b49d-01673a411d1f"
+      },
+      {
+       "qty": 4,
+       "name": "Plague Witch",
+       "set": "nem",
+       "number": "66",
+       "id": "ca3614c2-39b4-4f67-adab-373dcb9e4553"
+      },
+      {
+       "qty": 2,
+       "name": "Belbe's Percher",
+       "set": "nem",
+       "number": "53",
+       "id": "d95dcb2e-8945-47dd-ad40-b5bdcc3ea742"
+      },
+      {
+       "qty": 4,
+       "name": "Vicious Hunger",
+       "set": "nem",
+       "number": "74",
+       "id": "ccaff6a0-7831-45db-a50f-881c6cb7ce49"
+      },
+      {
+       "qty": 4,
+       "name": "Seal of Doom",
+       "set": "nem",
+       "number": "70",
+       "id": "396d9f58-a4ca-4197-94be-0f115427224e"
+      },
+      {
+       "qty": 4,
+       "name": "Dark Ritual",
+       "set": "mmq",
+       "number": "129",
+       "id": "a6aacc3e-fe37-4a08-83e6-7ee8c0c0af74"
+      },
+      {
+       "qty": 24,
+       "name": "Swamp",
+       "set": "mmq",
+       "number": "339",
+       "id": "72020810-bfa3-42d5-ad0d-6d02a6fe1b31"
+      }
+     ]
+    }
+   },
+   "villain": {
+    "who": "volrath",
+    "deck": {
+     "name": "The Fallen",
+     "colors": "UB",
+     "archetype": null,
+     "cards": [
+      {
+       "qty": 2,
+       "name": "Volrath the Fallen",
+       "set": "nem",
+       "number": "75",
+       "id": "08bdd66e-9ca1-456e-a61c-7c96cf6f7c56"
+      },
+      {
+       "qty": 4,
+       "name": "Stronghold Biologist",
+       "set": "nem",
+       "number": "45",
+       "id": "6215a5d9-d6d2-4f9f-8a0c-a65d1afd956a"
+      },
+      {
+       "qty": 4,
+       "name": "Stronghold Machinist",
+       "set": "nem",
+       "number": "46",
+       "id": "d3567b4e-6e31-40b0-83ea-4a2a58bd637c"
+      },
+      {
+       "qty": 4,
+       "name": "Rootwater Commando",
+       "set": "nem",
+       "number": "39",
+       "id": "8e86f36d-584d-49b2-8c66-19c262408950"
+      },
+      {
+       "qty": 4,
+       "name": "Sneaky Homunculus",
+       "set": "nem",
+       "number": "44",
+       "id": "e1b2dadb-4ce3-4f7e-9ca7-79757543f04d"
+      },
+      {
+       "qty": 4,
+       "name": "Cloudskate",
+       "set": "nem",
+       "number": "29",
+       "id": "e7f97e50-3aeb-4c79-81b1-505a2f32d8ac"
+      },
+      {
+       "qty": 4,
+       "name": "Phyrexian Driver",
+       "set": "nem",
+       "number": "64",
+       "id": "efeef7f3-5b87-440d-a851-95ae2bdb840d"
+      },
+      {
+       "qty": 4,
+       "name": "Seal of Removal",
+       "set": "nem",
+       "number": "42",
+       "id": "487becfe-a9b1-4029-a487-2a32561570cb"
+      },
+      {
+       "qty": 4,
+       "name": "Vendetta",
+       "set": "mmq",
+       "number": "170",
+       "id": "67ced38e-0f33-4bda-8e18-09f6ac03a3d7"
+      },
+      {
+       "qty": 2,
+       "name": "Stronghold Zeppelin",
+       "set": "nem",
+       "number": "47",
+       "id": "d672110d-b7c4-4233-9c46-73323be7204d"
+      },
+      {
+       "qty": 12,
+       "name": "Island",
+       "set": "mmq",
+       "number": "335",
+       "id": "5bae77e8-1230-4a6e-8c75-c99d2741a509"
+      },
+      {
+       "qty": 12,
+       "name": "Swamp",
+       "set": "mmq",
+       "number": "339",
+       "id": "72020810-bfa3-42d5-ad0d-6d02a6fe1b31"
+      }
+     ]
+    }
+   },
+   "reward": {
+    "hero": {
+     "packs": 1,
+     "coins": 100
+    },
+    "villain": {
+     "card": {
+      "oracle_id": "4e11c838-68a7-4c97-b064-a46833cf1d2f",
+      "name": "Volrath the Fallen",
+      "rarity": "rare",
+      "set": "nem",
+      "id": "08bdd66e-9ca1-456e-a61c-7c96cf6f7c56",
+      "image": "https://cards.scryfall.io/normal/front/0/8/08bdd66e-9ca1-456e-a61c-7c96cf6f7c56.jpg"
+     },
+     "coins": 100
+    }
+   },
+   "scene": [
+    {
+     "who": "volrath",
+     "line": "I've come to reclaim what is mine. And you, Greven, are mine.",
+     "quote": true
+    },
+    {
+     "who": "crovax",
+     "line": "Greven serves the throne. I am the throne."
+    },
+    {
+     "who": "volrath",
+     "line": "You are a nobleman who was afraid of the dark. Selenia picked you up off the floor."
+    },
+    {
+     "who": "crovax",
+     "line": "Do not say her name."
+    },
+    {
+     "who": "belbe",
+     "line": "Evincars are replaceable. Phyrexia will keep whichever of you is standing."
+    },
+    {
+     "who": "crovax",
+     "line": "Then race me, Volrath. Both of us bleeding. We will see who has more to give."
+    }
+   ],
+   "villainScene": [
+    {
+     "who": "volrath",
+     "line": "I built this place. Every wall, every vat, every lie."
+    },
+    {
+     "who": "volrath",
+     "line": "Father gave Gerrard the Legacy. Phyrexia gave me the stronghold."
+    },
+    {
+     "who": "volrath",
+     "line": "I am not losing the second thing I was given to a boy who kills what he loves."
+    }
+   ],
+   "after": [
+    {
+     "who": "stage",
+     "line": "Volrath is never seen on the throne of Rath again."
+    },
+    {
+     "who": "evincar",
+     "line": "Things are going to change around here.",
+     "quote": true
+    },
+    {
+     "who": "belbe",
+     "line": "Adequate. Begin preparing the plane for transit."
+    }
+   ],
+   "cues": {
+    "hero": {
+     "start": "Kneel.",
+     "big": "I am the hunger now.",
+     "low": "Selenia... I am so tired...",
+     "win": "Things are going to change around here.",
+     "loss": "Not yet. I will not die yet.",
+     "half": "Every wound only makes me hungrier."
+    },
+    "villain": {
+     "start": "Off my throne.",
+     "big": "A father of nothing. Look what I made anyway.",
+     "low": "Not again... not twice...",
+     "win": "Back in your cell, nobleman.",
+     "loss": "Phyrexia always chooses someone else."
+    }
+   },
+   "bigPlays": [],
+   "sim": null
+  },
+  {
+   "id": "a7b6",
+   "slot": 6,
+   "kind": "Lesson",
+   "mood": "march",
+   "title": "Keld Triumphant",
+   "difficulty": "Normal",
+   "teaches": [
+    "Rhystic"
+   ],
+   "blurb": "Back on Dominaria, the Keldon warlords have come south into Jamuraa, the land Gerrard grew up in. They believe a prophecy of five winds will make Keld rule the world. A zephyr mage named Alexi disagrees.",
+   "rewardSet": "pcy",
+   "host": false,
+   "hero": {
+    "who": "alexi",
+    "deck": {
+     "name": "The Kipamu League",
+     "colors": "WU",
+     "archetype": null,
+     "cards": [
+      {
+       "qty": 4,
+       "name": "Glittering Lion",
+       "set": "pcy",
+       "number": "10",
+       "id": "ab4be296-33a6-46b1-9748-5b0d335f40ee"
+      },
+      {
+       "qty": 4,
+       "name": "Diving Griffin",
+       "set": "pcy",
+       "number": "6",
+       "id": "ec9f72b2-e3d0-4b24-9a73-b95d54695fa4"
+      },
+      {
+       "qty": 4,
+       "name": "Sword Dancer",
+       "set": "pcy",
+       "number": "25",
+       "id": "a06f00e8-3e58-4ba7-9542-ce6b17fd4005"
+      },
+      {
+       "qty": 4,
+       "name": "Reveille Squad",
+       "set": "pcy",
+       "number": "18",
+       "id": "8f6385bb-18f9-461b-b541-3c2a5e59189b"
+      },
+      {
+       "qty": 4,
+       "name": "Coastal Hornclaw",
+       "set": "pcy",
+       "number": "31",
+       "id": "a5b91ddc-8630-4214-8dce-215f28ccc685"
+      },
+      {
+       "qty": 4,
+       "name": "Spiketail Hatchling",
+       "set": "pcy",
+       "number": "49",
+       "id": "9988f0fe-a7d4-44f9-b37c-fa30014ea215"
+      },
+      {
+       "qty": 4,
+       "name": "Rhystic Study",
+       "set": "pcy",
+       "number": "45",
+       "id": "3394cefd-a3c6-4917-8f46-234e441ecfb6"
+      },
+      {
+       "qty": 4,
+       "name": "Excise",
+       "set": "pcy",
+       "number": "8",
+       "id": "8d4f97dd-434b-4156-8e9d-253a943784e3"
+      },
+      {
+       "qty": 4,
+       "name": "Withdraw",
+       "set": "pcy",
+       "number": "54",
+       "id": "f1a3a52f-0ccd-4935-b3ca-9c69cba283cc"
+      },
+      {
+       "qty": 12,
+       "name": "Plains",
+       "set": "mmq",
+       "number": "331",
+       "id": "2edf5042-d185-424e-922d-c0bd4ce3e8b0"
+      },
+      {
+       "qty": 12,
+       "name": "Island",
+       "set": "mmq",
+       "number": "335",
+       "id": "5bae77e8-1230-4a6e-8c75-c99d2741a509"
+      }
+     ]
+    }
+   },
+   "villain": {
+    "who": "latulla",
+    "deck": {
+     "name": "The Keldon Host",
+     "colors": "R",
+     "archetype": null,
+     "cards": [
+      {
+       "qty": 2,
+       "name": "Lesser Gargadon",
+       "set": "pcy",
+       "number": "97",
+       "id": "63ed7aec-a513-418e-9cef-e0c51203055b"
+      },
+      {
+       "qty": 4,
+       "name": "Keldon Arsonist",
+       "set": "pcy",
+       "number": "92",
+       "id": "113f58b1-d8d7-4544-8363-e2b96e9d2623"
+      },
+      {
+       "qty": 4,
+       "name": "Keldon Berserker",
+       "set": "pcy",
+       "number": "93",
+       "id": "daa3f9c0-66ff-4b94-b0c3-e1c65d2040b9"
+      },
+      {
+       "qty": 2,
+       "name": "Keldon Firebombers",
+       "set": "pcy",
+       "number": "94",
+       "id": "d3fc78b5-c259-4c67-810c-99655e72c2da"
+      },
+      {
+       "qty": 4,
+       "name": "Ridgeline Rager",
+       "set": "pcy",
+       "number": "100",
+       "id": "5f663a4a-592a-4a3b-bbaf-e9c5c3049021"
+      },
+      {
+       "qty": 4,
+       "name": "Spur Grappler",
+       "set": "pcy",
+       "number": "104",
+       "id": "50bf91a7-4d04-437c-a290-6adb52f25312"
+      },
+      {
+       "qty": 4,
+       "name": "Branded Brawlers",
+       "set": "pcy",
+       "number": "84",
+       "id": "90a48065-fbf1-4f2a-993e-7061057a4c45"
+      },
+      {
+       "qty": 4,
+       "name": "Whip Sergeant",
+       "set": "pcy",
+       "number": "107",
+       "id": "2e6b3f38-87c9-4cea-b9e5-b8fb42e64794"
+      },
+      {
+       "qty": 4,
+       "name": "Latulla's Orders",
+       "set": "pcy",
+       "number": "96",
+       "id": "a56cd728-5c3c-4fd6-bb01-0bf0875508c7"
+      },
+      {
+       "qty": 4,
+       "name": "Panic Attack",
+       "set": "pcy",
+       "number": "98",
+       "id": "89ec751c-08b5-4afb-bc08-8b2735b24f59"
+      },
+      {
+       "qty": 24,
+       "name": "Mountain",
+       "set": "mmq",
+       "number": "343",
+       "id": "19b5fff1-7a60-4e50-893a-8177cd62bf82"
+      }
+     ]
+    }
+   },
+   "reward": {
+    "hero": {
+     "packs": 1,
+     "coins": 100
+    },
+    "villain": {
+     "card": {
+      "oracle_id": "d5e02fa5-827e-414b-acb5-932de4bb3ee3",
+      "name": "Keldon Firebombers",
+      "rarity": "rare",
+      "set": "pcy",
+      "id": "d3fc78b5-c259-4c67-810c-99655e72c2da",
+      "image": "https://cards.scryfall.io/normal/front/d/3/d3fc78b5-c259-4c67-810c-99655e72c2da.jpg"
+     },
+     "coins": 100
+    }
+   },
+   "scene": [
+    {
+     "who": "latulla",
+     "line": "You're willing to die for your homeland. I'm willing to kill for it.",
+     "quote": true
+    },
+    {
+     "who": "alexi",
+     "line": "Creation is no great feat. Anything you make, I can unmake in a heartbeat.",
+     "quote": true
+    },
+    {
+     "who": "latulla",
+     "line": "Keld is cold, mage. Our children starve on ice. Jamuraa has rivers and nobody strong enough to keep them."
+    },
+    {
+     "who": "alexi",
+     "line": "Then you could have asked. People share rivers."
+    },
+    {
+     "who": "latulla",
+     "line": "Keldons do not ask."
+    },
+    {
+     "who": "alexi",
+     "line": "Rhystic spells work unless someone pays. If she wants to stop them, she has to spend her mana on it."
+    }
+   ],
+   "villainScene": [
+    {
+     "who": "latulla",
+     "line": "Battle is our religion. This fortress is our temple.",
+     "quote": true
+    },
+    {
+     "who": "latulla",
+     "line": "Fields can be replanted. Settlements can be rebuilt. Burn it all.",
+     "quote": true
+    },
+    {
+     "who": "latulla",
+     "line": "When the five winds blow, Keld rises. I would rather it rose over ashes than over my own people's graves."
+    }
+   ],
+   "after": [
+    {
+     "who": "stage",
+     "line": "\"Tell me again,\" said Latulla, raising her fist, \"how just one woman held back an entire Keldon platoon.\"",
+     "quote": true
+    },
+    {
+     "who": "stage",
+     "line": "The Keldons pull back. Their prophecy does not. The winds are still coming."
+    }
+   ],
+   "cues": {
+    "hero": {
+     "start": "Hold the line, League.",
+     "big": "Drakes!",
+     "low": "Too many... there are too many...",
+     "win": "Go home, Latulla. Keld will still be there.",
+     "loss": "Fall back to the river.",
+     "half": "The trick is to ask when no one's listening."
+    },
+    "villain": {
+     "start": "The sword or the lash. Choose.",
+     "big": "Wound, maim, kill.",
+     "low": "One woman? ONE woman?",
+     "win": "Jamuraa is Keld now.",
+     "loss": "Keld will remember this river."
+    }
+   },
+   "bigPlays": [],
+   "sim": null
+  },
+  {
+   "id": "a7b7",
+   "slot": 7,
+   "kind": "Rival",
+   "mood": "tension",
+   "title": "Uneasy Allies",
+   "difficulty": "Normal",
+   "teaches": [
+    "Fading"
+   ],
+   "blurb": "On Rath, two rebel leaders meet: Eladamri of the Skyshroud elves and Lin Sivvi of the Vec. They both want Crovax dead. They have never agreed on anything else.",
+   "rewardSet": "nem",
+   "host": false,
+   "hero": {
+    "who": "eladamri",
+    "deck": {
+     "name": "Skyshroud",
+     "colors": "G",
+     "archetype": null,
+     "cards": [
+      {
+       "qty": 4,
+       "name": "Blastoderm",
+       "set": "nem",
+       "number": "102",
+       "id": "9db5d6c2-b11f-442a-b172-c0c99c9bec07"
+      },
+      {
+       "qty": 4,
+       "name": "Skyshroud Sentinel",
+       "set": "nem",
+       "number": "121",
+       "id": "a35ab55f-f677-45c8-bd32-56788a776b33"
+      },
+      {
+       "qty": 4,
+       "name": "Skyshroud Cutter",
+       "set": "nem",
+       "number": "118",
+       "id": "a558c4f5-a716-4e46-9234-5f84f1bd57aa"
+      },
+      {
+       "qty": 4,
+       "name": "Skyshroud Ridgeback",
+       "set": "nem",
+       "number": "120",
+       "id": "410896ab-d3dc-478c-bfd1-c0cad5b1180a"
+      },
+      {
+       "qty": 4,
+       "name": "Coiling Woodworm",
+       "set": "nem",
+       "number": "103",
+       "id": "341a70be-2dbf-4365-9c7a-e52cb62a74fa"
+      },
+      {
+       "qty": 4,
+       "name": "Wild Mammoth",
+       "set": "nem",
+       "number": "124",
+       "id": "4d927fdb-11c0-42b6-95d4-7af051e45213"
+      },
+      {
+       "qty": 2,
+       "name": "Skyshroud Behemoth",
+       "set": "nem",
+       "number": "116",
+       "id": "1c01d17e-45a2-4b6f-aaa5-2af9c8f26181"
+      },
+      {
+       "qty": 2,
+       "name": "Nesting Wurm",
+       "set": "nem",
+       "number": "107",
+       "id": "5da697da-7026-4dea-b494-8314d789160f"
+      },
+      {
+       "qty": 4,
+       "name": "Mossdog",
+       "set": "nem",
+       "number": "106",
+       "id": "2bbe0201-3df3-4d0c-8aa4-8f35f12c322c"
+      },
+      {
+       "qty": 4,
+       "name": "Seal of Strength",
+       "set": "nem",
+       "number": "115",
+       "id": "57650f78-3bf0-485a-bba8-7e7e14e47508"
+      },
+      {
+       "qty": 24,
+       "name": "Forest",
+       "set": "mmq",
+       "number": "347",
+       "id": "695de19e-801f-4f08-b44c-b0726e4aced0"
+      }
+     ]
+    }
+   },
+   "villain": {
+    "who": "linsivvi",
+    "deck": {
+     "name": "The Vec Defiant",
+     "colors": "W",
+     "archetype": null,
+     "cards": [
+      {
+       "qty": 2,
+       "name": "Lin Sivvi, Defiant Hero",
+       "set": "nem",
+       "number": "12",
+       "id": "e574e522-2632-4cd4-8545-c582ac3b641f"
+      },
+      {
+       "qty": 4,
+       "name": "Defiant Falcon",
+       "set": "nem",
+       "number": "6",
+       "id": "4c80032b-daeb-4661-9a66-61abe9d12ddd"
+      },
+      {
+       "qty": 4,
+       "name": "Defiant Vanguard",
+       "set": "nem",
+       "number": "7",
+       "id": "4c0bd267-59ec-41df-b0b7-37f6e6d6b073"
+      },
+      {
+       "qty": 4,
+       "name": "Defender en-Vec",
+       "set": "nem",
+       "number": "5",
+       "id": "e7b224b7-d5f7-4515-beca-523f305ee3b8"
+      },
+      {
+       "qty": 4,
+       "name": "Lawbringer",
+       "set": "nem",
+       "number": "10",
+       "id": "2d76b7e3-6890-4120-8575-732909c8bdff"
+      },
+      {
+       "qty": 4,
+       "name": "Lightbringer",
+       "set": "nem",
+       "number": "11",
+       "id": "19451993-7a53-4a50-bfca-ddc9cdfbe168"
+      },
+      {
+       "qty": 4,
+       "name": "Netter en-Dal",
+       "set": "nem",
+       "number": "13",
+       "id": "2190649d-f898-4693-8ccf-80e6709d8496"
+      },
+      {
+       "qty": 4,
+       "name": "Silkenfist Fighter",
+       "set": "nem",
+       "number": "19",
+       "id": "3480efc4-1078-4c63-a94c-d00a7507f6b1"
+      },
+      {
+       "qty": 2,
+       "name": "Chieftain en-Dal",
+       "set": "nem",
+       "number": "4",
+       "id": "0c1f49bc-d144-466f-8795-c0dae7afdc10"
+      },
+      {
+       "qty": 4,
+       "name": "Topple",
+       "set": "nem",
+       "number": "24",
+       "id": "a7c25c67-4214-4318-a718-7d351e713f80"
+      },
+      {
+       "qty": 24,
+       "name": "Plains",
+       "set": "mmq",
+       "number": "331",
+       "id": "2edf5042-d185-424e-922d-c0bd4ce3e8b0"
+      }
+     ]
+    }
+   },
+   "reward": {
+    "hero": {
+     "packs": 1,
+     "coins": 100
+    },
+    "villain": {
+     "card": {
+      "oracle_id": "6c3847b6-9bfb-49b5-8f1a-bdb40e6900f1",
+      "name": "Lin Sivvi, Defiant Hero",
+      "rarity": "rare",
+      "set": "nem",
+      "id": "e574e522-2632-4cd4-8545-c582ac3b641f",
+      "image": "https://cards.scryfall.io/normal/front/e/5/e574e522-2632-4cd4-8545-c582ac3b641f.jpg"
+     },
+     "coins": 100
+    }
+   },
+   "scene": [
+    {
+     "who": "linsivvi",
+     "line": "Your elves hid in the trees for a hundred years while my people died in the stronghold."
+    },
+    {
+     "who": "eladamri",
+     "line": "My elves are alive because they hid. Yours are dead because they did not."
+    },
+    {
+     "who": "linsivvi",
+     "line": "Say that again with a sword in your hand."
+    },
+    {
+     "who": "stage",
+     "line": "Among the rebels is a quiet woman who has never set foot in Mercadia. Her name is Takara."
+    },
+    {
+     "who": "eladamri",
+     "line": "Fine. To first blood. Then we plan."
+    },
+    {
+     "who": "eladamri",
+     "line": "Fading creatures arrive strong and wear out. Each turn they lose a counter. Hit hard before they are gone."
+    }
+   ],
+   "villainScene": [
+    {
+     "who": "linsivvi",
+     "line": "The Vec don't want saving by elves. We want a seat at the table when this ends."
+    },
+    {
+     "who": "linsivvi",
+     "line": "If he wants to lead us, he can beat us first. That is how the Vec choose."
+    },
+    {
+     "who": "linsivvi",
+     "line": "And if he is as good as they say, I will follow him into the stronghold myself."
+    }
+   ],
+   "after": [
+    {
+     "who": "stage",
+     "line": "In darkness, the assassin sneaked into the village and destroyed what Eladamri loved most: his daughter.",
+     "quote": true
+    },
+    {
+     "who": "linsivvi",
+     "line": "Eladamri... I am sorry. I am so sorry."
+    },
+    {
+     "who": "eladamri",
+     "line": "Get everyone up. We march on the stronghold tonight."
+    }
+   ],
+   "cues": {
+    "hero": {
+     "start": "To first blood.",
+     "big": "Skyshroud wakes.",
+     "low": "She fights like a whole army...",
+     "win": "Now we plan. Together.",
+     "loss": "Enough. You lead the charge, then.",
+     "half": "Not bad for a Vec."
+    },
+    "villain": {
+     "start": "Show me, Korvecdal.",
+     "big": "Defiant!",
+     "low": "Fine, fine, the trees can fight...",
+     "win": "The Vec lead. Get behind us.",
+     "loss": "You'll do."
+    }
+   },
+   "bigPlays": [],
+   "sim": null
+  },
+  {
+   "id": "a7b8",
+   "slot": 8,
+   "kind": "Boss",
+   "mood": "boss",
+   "title": "The Ascendant Evincar",
+   "difficulty": "Hard",
+   "teaches": [
+    "Lords"
+   ],
+   "blurb": "Crovax sits on Volrath's throne with Phyrexia behind him. His curse makes him stronger as everything around him dies. The rebels are going to the stronghold anyway.",
+   "rewardSet": "nem",
+   "host": true,
+   "hero": {
+    "who": "eladamri",
+    "deck": {
+     "name": "The Rebellion",
+     "colors": "GW",
+     "archetype": null,
+     "cards": [
+      {
+       "qty": 2,
+       "name": "Lin Sivvi, Defiant Hero",
+       "set": "nem",
+       "number": "12",
+       "id": "e574e522-2632-4cd4-8545-c582ac3b641f"
+      },
+      {
+       "qty": 4,
+       "name": "Defiant Vanguard",
+       "set": "nem",
+       "number": "7",
+       "id": "4c0bd267-59ec-41df-b0b7-37f6e6d6b073"
+      },
+      {
+       "qty": 4,
+       "name": "Defiant Falcon",
+       "set": "nem",
+       "number": "6",
+       "id": "4c80032b-daeb-4661-9a66-61abe9d12ddd"
+      },
+      {
+       "qty": 4,
+       "name": "Blastoderm",
+       "set": "nem",
+       "number": "102",
+       "id": "9db5d6c2-b11f-442a-b172-c0c99c9bec07"
+      },
+      {
+       "qty": 4,
+       "name": "Wild Mammoth",
+       "set": "nem",
+       "number": "124",
+       "id": "4d927fdb-11c0-42b6-95d4-7af051e45213"
+      },
+      {
+       "qty": 4,
+       "name": "Lawbringer",
+       "set": "nem",
+       "number": "10",
+       "id": "2d76b7e3-6890-4120-8575-732909c8bdff"
+      },
+      {
+       "qty": 4,
+       "name": "Skyshroud Sentinel",
+       "set": "nem",
+       "number": "121",
+       "id": "a35ab55f-f677-45c8-bd32-56788a776b33"
+      },
+      {
+       "qty": 4,
+       "name": "Topple",
+       "set": "nem",
+       "number": "24",
+       "id": "a7c25c67-4214-4318-a718-7d351e713f80"
+      },
+      {
+       "qty": 4,
+       "name": "Seal of Strength",
+       "set": "nem",
+       "number": "115",
+       "id": "57650f78-3bf0-485a-bba8-7e7e14e47508"
+      },
+      {
+       "qty": 2,
+       "name": "Rhox",
+       "set": "nem",
+       "number": "112",
+       "id": "58388a29-b2a6-4d16-b872-f198563721d9"
+      },
+      {
+       "qty": 12,
+       "name": "Forest",
+       "set": "mmq",
+       "number": "347",
+       "id": "695de19e-801f-4f08-b44c-b0726e4aced0"
+      },
+      {
+       "qty": 12,
+       "name": "Plains",
+       "set": "mmq",
+       "number": "331",
+       "id": "2edf5042-d185-424e-922d-c0bd4ce3e8b0"
+      }
+     ]
+    }
+   },
+   "villain": {
+    "who": "evincar",
+    "deck": {
+     "name": "The Evincar's Court",
+     "colors": "B",
+     "archetype": null,
+     "cards": [
+      {
+       "qty": 2,
+       "name": "Ascendant Evincar",
+       "set": "nem",
+       "number": "51",
+       "id": "e5c87c93-8cf4-4d1a-9bb8-349600da55bc"
+      },
+      {
+       "qty": 2,
+       "name": "Rathi Assassin",
+       "set": "nem",
+       "number": "67",
+       "id": "3e3597c3-3053-49f8-ab7e-a774e2fb082f"
+      },
+      {
+       "qty": 4,
+       "name": "Rathi Fiend",
+       "set": "nem",
+       "number": "68",
+       "id": "07ca1184-ade0-4d6d-87f9-ad17f37679b3"
+      },
+      {
+       "qty": 4,
+       "name": "Rathi Intimidator",
+       "set": "nem",
+       "number": "69",
+       "id": "6fc59fa5-144f-49e6-b6bd-2ba6d3f2eff2"
+      },
+      {
+       "qty": 4,
+       "name": "Phyrexian Prowler",
+       "set": "nem",
+       "number": "65",
+       "id": "e26f79b5-780a-4cbb-b49d-01673a411d1f"
+      },
+      {
+       "qty": 4,
+       "name": "Plague Witch",
+       "set": "nem",
+       "number": "66",
+       "id": "ca3614c2-39b4-4f67-adab-373dcb9e4553"
+      },
+      {
+       "qty": 4,
+       "name": "Spineless Thug",
+       "set": "nem",
+       "number": "71",
+       "id": "e4a9bb47-3855-425d-924c-09dbde74735b"
+      },
+      {
+       "qty": 4,
+       "name": "Dark Ritual",
+       "set": "mmq",
+       "number": "129",
+       "id": "a6aacc3e-fe37-4a08-83e6-7ee8c0c0af74"
+      },
+      {
+       "qty": 4,
+       "name": "Seal of Doom",
+       "set": "nem",
+       "number": "70",
+       "id": "396d9f58-a4ca-4197-94be-0f115427224e"
+      },
+      {
+       "qty": 2,
+       "name": "Massacre",
+       "set": "nem",
+       "number": "58",
+       "id": "f05f5d93-50d1-4aa6-af05-383a6808345b"
+      },
+      {
+       "qty": 2,
+       "name": "Vicious Hunger",
+       "set": "nem",
+       "number": "74",
+       "id": "ccaff6a0-7831-45db-a50f-881c6cb7ce49"
+      },
+      {
+       "qty": 24,
+       "name": "Swamp",
+       "set": "mmq",
+       "number": "339",
+       "id": "72020810-bfa3-42d5-ad0d-6d02a6fe1b31"
+      }
+     ]
+    }
+   },
+   "reward": {
+    "hero": {
+     "packs": 2,
+     "coins": 200
+    },
+    "villain": {
+     "card": {
+      "oracle_id": "e32c0de7-132d-4a39-85fb-da0ed1132878",
+      "name": "Ascendant Evincar",
+      "rarity": "rare",
+      "set": "nem",
+      "id": "e5c87c93-8cf4-4d1a-9bb8-349600da55bc",
+      "image": "https://cards.scryfall.io/normal/front/e/5/e5c87c93-8cf4-4d1a-9bb8-349600da55bc.jpg"
+     },
+     "coins": 200
+    }
+   },
+   "scene": [
+    {
+     "who": "evincar",
+     "line": "Let all witness the fate of those who defy me.",
+     "quote": true
+    },
+    {
+     "who": "eladamri",
+     "line": "You killed my daughter."
+    },
+    {
+     "who": "evincar",
+     "line": "I killed many daughters. You will have to be more specific."
+    },
+    {
+     "who": "linsivvi",
+     "line": "He wants you angry. Stay cold."
+    },
+    {
+     "who": "ertai",
+     "line": "I'm constantly amazed by the tenacity of living creatures on this plane. Even in the stronghold's white-hot core, life persists.",
+     "quote": true
+    },
+    {
+     "who": "eladamri",
+     "line": "Ertai is alive in there. Somewhere."
+    },
+    {
+     "who": "linsivvi",
+     "line": "His power makes every black creature bigger and every other one smaller. Kill the lord and the army shrinks."
+    }
+   ],
+   "villainScene": [
+    {
+     "who": "evincar",
+     "line": "Kill them all and feed them to the new recruits.",
+     "quote": true
+    },
+    {
+     "who": "evincar",
+     "line": "Selenia was the last person who looked at me without fear. I made sure she was the last."
+    },
+    {
+     "who": "belbe",
+     "line": "Win quickly, Evincar. The plane must be ready to move."
+    },
+    {
+     "who": "evincar",
+     "line": "Blood is foul, the flesh dross. My ascendance thirsts for life itself.",
+     "quote": true
+    }
+   ],
+   "after": null,
+   "cues": {
+    "hero": {
+     "start": "For Skyshroud. For the Vec. For her.",
+     "big": "The forest walks with us!",
+     "low": "Hold... hold...",
+     "win": "The stronghold still stands. But it bleeds.",
+     "loss": "Fall back! Save who you can!",
+     "half": "Stay cold. Stay cold."
+    },
+    "villain": {
+     "start": "Things are going to change around here.",
+     "big": "Feast.",
+     "low": "Selenia... was this what you saw in me?",
+     "win": "Feed them to the recruits.",
+     "loss": "This is not over. Rath is moving.",
+     "half": {
+      "who": "belbe",
+      "line": "Evincar. Phyrexia is watching. Do better."
+     }
+    }
+   },
+   "bigPlays": [],
+   "sim": null
+  }
+ ]
+}

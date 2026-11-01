@@ -106,6 +106,11 @@ export const LESSONS = {
   'Mana creatures': 'Some creatures tap for mana. Play them early and cast big spells sooner.',
   'Artifact mana': 'Artifacts that make mana let you cast spells far ahead of schedule. Answer them early.',
   'Enchantments returning': 'Some spells return every enchantment from the graveyard at once. Don\'t overcommit into it.',
+  'Rebels': 'Rebels search your deck for more rebels. Pay the cost, tap one, and another joins the fight. Get one early and it keeps calling friends.',
+  'Spellshapers': 'Spellshapers turn a card you discard into a spell. A land you do not need becomes a bolt.',
+  'Rhystic': 'Rhystic spells work unless any player pays. If they keep mana open to pay, they cannot spend it on their own turn.',
+  'Fading': 'Fading creatures arrive with counters and lose one each turn. When they run out, they are gone. Attack while they are big.',
+  'Lords': 'A lord changes the creatures around it. Kill the lord and the whole army shrinks back.',
   'Playing under a lock': 'A lock stops cards from untapping or moving. Break it, or win with what\'s already in play.',
 };
 // What a battle pays, in words: era packs for your side, the villain's signature card for theirs.
