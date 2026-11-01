@@ -143,7 +143,7 @@ import { attachSuggest } from "./suggest.js";
 import { shouldTour, openTour, resetOnboarding, markGuide, guidePrompt } from "./tour.js";
 import { tourScenes } from "./tour-scenes.js";
 import { haptic, hapticFor, flyToCollection, captureCollectionFlight, countUp, ripple, setHaptics, attachGestures, attachTilt } from "./feel.js";
-import { setAudioSettings, viewMusic, setMusic } from "./audio.js";
+import { setAudioSettings, viewMusic, setMusic, appSound } from "./audio.js";
 import { alertSheet, setAlert, onAlert, alertText, priceSeries } from "./pricehist.js";
 import { onSharedPrices, watchCards } from "./sharedprices.js";
 import { mtgCollector, nameCandidates, textPhrases } from "./scan.js";
@@ -385,6 +385,8 @@ async function commit(fn, { msg = "", recovery = false, rerender = true, enrich 
     if (said) {
       const removed = /^(−|-|Removed|Deleted|Cleared|Undid)/.test(said);
       haptic(removed ? "warn" : "success");
+      // Something kept (a card added, a deck or binder saved) gets a soft chime with its haptic.
+      if (!removed && /^(Added|Saved|Moved|Cards added|Deck (saved|imported|updated))\b/.test(said)) appSound("COL-005");
       if (/^Added\b/.test(said)) flyToCollection(flight||lastActTarget);
     }
     if (undo) {
@@ -6697,6 +6699,7 @@ C.setHaptics = (t) => {
   toast(saved?"Saved vibration preference on this device.":"Vibration preference could not be saved. Your previous setting is kept.");
   if (saved&&t.checked) haptic("success");
 };
+C.setAppSounds = (t) => { if (!setAudioSettings({ app: t.checked })) { t.checked = !t.checked; toast("Could not save the sound setting."); } };
 C.setSoundOn = (t) => { if (!setAudioSettings({ on: t.checked })) { t.checked = !t.checked; toast("Could not save the sound setting."); return; } };
 C.setMasterVolume = (t) => setAudioSettings({ master: Number(t.value) / 100 });
 C.setSfxVolume = (t) => setAudioSettings({ sfx: Number(t.value) / 100 });
