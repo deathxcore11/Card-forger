@@ -1,0 +1,19 @@
+name: Story pack-art check
+on:
+  push:
+    branches: ['claude/project-thread-83512f']
+    paths: [scripts/story/check-pack-art.mjs, story-acts.js, .github/workflows/story-pack-art.yml]
+permissions:
+  contents: read
+jobs:
+  check:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - run: node scripts/story/check-pack-art.mjs
