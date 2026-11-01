@@ -1116,6 +1116,8 @@ function render() {
   reuseLoadedArt($("#content"),loadedArt);
   deckBoxTransitions.afterRender();
   syncDesktopPlayEntries(g);
+  // A deck page's Play vs CPU now starts the match in one tap, so the server engine warms while the page is open.
+  if(g==="mtg"&&document.querySelector('[data-act="deckPlayCpu"]:not([hidden]):not(:disabled)'))warmForgeEngine(playSetup.snapshot());
   restoreDisclosures(content,disclosureStates.get(disclosureKey));
   content.dataset.disclosureKey=disclosureKey;
   restoreSearchFocus(content,searchFocus);
