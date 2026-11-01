@@ -1,7 +1,7 @@
-// Website 4.3.55 ships with Android 0.12.27 beta, which bundles this same website.
+// Website 4.3.56 ships web-first; Android stays on 0.12.27 beta until Randall confirms Play on the web.
 export const RELEASE = Object.freeze({
- id:'web-4.3.55-friend-challenges-android-0.12.27',date:'2026-11-01',webVersion:'4.3.55',
- changes:["Friend challenges: tap the crossed swords next to a friend to challenge them; they get a sealed letter with Accept or Not now.","Multiplayer: the table starts for both players whoever goes first, shows your friend's real name and picture, and no longer reloads while the match starts.","Card pages: the artist name links to every card by that artist (Magic and Pokémon), and typing an artist's name into Search finds their cards.","Matches: turn one waits until you keep your hand, every CPU play stays on screen long enough to read, and dragging a card follows your finger with no lag.","App rules data refreshed to 30 Oct (valid until 6 Nov).","Android app 0.12.27 beta brings this to the app."],
+ id:'web-4.3.56-play-progression',date:'2026-11-01',webVersion:'4.3.56',
+ changes:["Play has its own collection: a top bar shows your coins, wax seals, unopened packs and Mastery, with Merchant, Packs, Collection and Decks under the mode cards.","Packs you earn in Play are opened by the server and go into your Play collection, kept separate from your real collection and with no prices shown.","The Play button on a deck page opens Practice, and Practice has Invite a friend."],
 
  android:Object.freeze({version:'0.12.27 beta',versionName:'0.12.27-beta',versionCode:63,interfaceVersion:'4.3.55',package:'com.cardstashy.app',href:'/downloads/cardstashy-android-beta-0.12.27.apk',bytes:122613633,sha256:'5c3f63ab1dbf233e2a361e853c59f04d59e8650331f685a65889a6358e6acafd'})
 });
