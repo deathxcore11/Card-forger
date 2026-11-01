@@ -784,6 +784,7 @@ function openSheet(html, ctx = null, scrollTop = 0) {
   $("#sheetBody").innerHTML = html;
   reuseLoadedArt($("#sheetBody"),keptArt,keepSheetNodes($("#sheetBody"),stable,keptArt));
   restoreSheetMotion($("#sheetBody"),motion);
+  settleSheetArt($("#sheetBody"));
   syncDeckViewers();
   $("#sheetBody").dataset.detailIdentity = detailContextIdentity(ctx);
   if (lastSheetStep && lastSheetStep !== stepKey) {
@@ -902,6 +903,7 @@ function refreshSheet() {
     body.innerHTML = ctx.type === "card" ? V.cardSheet(c,ctx) : ctx.type === "tcard" ? T.tcgCardSheet(c,ctx) : V.buySheet(ctx);
     reuseLoadedArt(body,keptArt,keepSheetNodes(body,stable,keptArt));
     restoreSheetMotion(body,motion);
+    settleSheetArt(body);
     body.dataset.detailIdentity = detailContextIdentity(ctx);
     wireSheetBack();
     (body.querySelectorAll?.('.cd-zoom')||[]).forEach((el,i)=>{const img=el.querySelector('img');if(!artHeights[i]||!img||img.complete)return;el.style.minHeight=artHeights[i]+'px';const free=()=>{el.style.minHeight='';};img.addEventListener('load',free,{once:true});img.addEventListener('error',free,{once:true});});
@@ -1302,7 +1304,7 @@ function keepSheetNodes(root,old,keptArt){
   }));
   return kept;
 }
-const SHEET_MOTION=['.cs-hero','.cs-banner .cs-art','.cd-img'];
+const SHEET_MOTION=['.cs-hero','.cs-banner .cs-art','.cd-img','.cs-bleed'];
 function captureSheetMotion(root){
   if(!root?.querySelectorAll)return null;
   return SHEET_MOTION.map(sel=>[...root.querySelectorAll(sel)].map(el=>({
@@ -1319,6 +1321,26 @@ function restoreSheetMotion(root,saved){
     if(was.shining){el.classList.add('shine-once');const run=was.runs.find(r=>r.name==='card-catch');setTimeout(()=>el.classList.remove('shine-once'),Math.max(0,1300-(run?.t||0)));}
     for(const a of el.getAnimations?.({subtree:true})||[]){const run=was.runs.find(r=>r.name===a.animationName&&r.pseudo===(a.effect?.pseudoElement||null));if(!run)continue;if(run.start!=null)a.startTime=run.start;else a.currentTime=run.t;}
   }));
+}
+// On a card page's first showing, the header art with the glass that carries it down the sheet, and the
+// big card, each wait for their picture and then come in once. Shown before it, the blurred glass
+// arrived first, the sharp art landed on it a moment later and the big card flashed an empty frame.
+// A picture already loaded shows at once; a new printing's picture waits the same way.
+const SHEET_SETTLE=[['art','.cs-bleed img, .cs-banner > .cs-hero img'],['card','.cd-img .cd-zoom img']];
+function settleSheetArt(root){
+  if(!root?.querySelectorAll||!root.dataset)return;
+  const mark=(part,on)=>{const list=new Set((root.dataset.settling||'').split(' ').filter(Boolean));if(on)list.add(part);else list.delete(part);if(list.size)root.dataset.settling=[...list].join(' ');else delete root.dataset.settling;};
+  root.settleState||={};
+  for(const [part,sel] of SHEET_SETTLE){
+    const pics=[...root.querySelectorAll(sel)],key=pics.map(im=>im.getAttribute('src')).join(' ');
+    if(root.settleState[part]?.key===key)continue;
+    const state={key};root.settleState[part]=state;
+    if(pics.every(im=>im.complete)){mark(part,false);continue;}
+    mark(part,true);
+    const done=()=>{if(root.settleState[part]===state)mark(part,false);};
+    Promise.all(pics.map(im=>im.decode?.().catch(()=>{}))).then(()=>(globalThis.requestAnimationFrame||setTimeout)(done));
+    setTimeout(done,2500);
+  }
 }
 const navigationStamp = () => ({ revision:navigation.revision, workspace:workspaceVisitRevision, game:T.game(), hash:location.hash });
 const navigationCurrent = stamp => stamp.revision === navigation.revision && stamp.workspace === workspaceVisitRevision && stamp.game === T.game() && stamp.hash === location.hash;

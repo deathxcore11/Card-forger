@@ -721,6 +721,15 @@ body.glass :is(.guide-along-row, .guide-link) { background: linear-gradient(160d
 #sheetBody > .cs-bleed > .soft { -webkit-mask-image: linear-gradient(180deg, #000 calc(var(--hero-h) - 10px), transparent calc(var(--hero-h) + 130px)); mask-image: linear-gradient(180deg, #000 calc(var(--hero-h) - 10px), transparent calc(var(--hero-h) + 130px)); }
 #sheetBody > .cs-bleed > .soft .cs-bleed-fit { filter: blur(6px) saturate(1.15) brightness(.9); }
 #sheetBody > .cs-bleed::after { content: ""; position: absolute; inset: 0; background: linear-gradient(180deg, transparent 0, transparent calc(var(--hero-h) * .45), #0a0b1047 calc(var(--hero-h) * .85), #0a0b1061 var(--hero-h), #0a0b1099 calc(var(--hero-h) + 70px), #0a0b10a8 calc(var(--hero-h) + 220px), #0a0b10b3 100%); }
+/* A card page's art waits for its picture, then comes in once (app.js settleSheetArt): the header art and its glass
+   together, the big card on its own. The glass shares the header's entrance too, so it never shows ahead of the art. */
+#sheetBody[data-settling~="art"] > .cs-bleed > span, #sheetBody[data-settling~="art"] > .cs-banner > .cs-hero > .cs-art, #sheetBody[data-settling~="card"] .cd-img .cd-zoom { opacity: 0; }
+#sheetBody[data-settling~="card"] .cd-img.shine-once, #sheetBody[data-settling~="card"] .cd-img.shine-once::after { animation-play-state: paused; }
+@media (prefers-reduced-motion: no-preference) {
+  dialog.sheet[open] #sheetBody > .cs-bleed { animation: art-reveal-glass .32s cubic-bezier(.2, .8, .2, 1) both; }
+  @keyframes art-reveal-glass { from { opacity: 0; } to { opacity: 1; } }
+  #sheetBody > .cs-bleed > span, #sheetBody > .cs-banner > .cs-hero > .cs-art, #sheetBody .cd-img .cd-zoom { transition: opacity .32s cubic-bezier(.2, .8, .2, 1); }
+}
 
 /* The art covers the whole header, edge to edge, and fades out only at the bottom. */
 .cs-banner > .cs-hero:not(.compact) { -webkit-mask-image: none; mask-image: none; }
