@@ -4483,7 +4483,7 @@ export function registerTcg(c) {
       else{
         const cards=await SOURCES[G].setCards(U.info);
         if(!active())return;
-        const loaded=new Set(cards.map(c=>c.id)).size,total=knownSetCount(U.info.count);
+        const loaded=new Set(cards.map(c=>c.id)).size,own=knownSetCount(U.info.count),total=own&&own+(cards.subsetCount||0);
         contents={cards:cards.map(card=>({...card,setContext:{game:G,cardId:card.id,releaseId:U.info.id,membership:'set-response'}})),loadedUniqueCards:loaded,expectedUniqueCards:total,completeness:total&&loaded===total?'complete':total?'partial':'unknown',paginationComplete:true,coverageReason:total&&loaded<total?`${loaded} of ${total} unique cards are available from TCGdex.`:!total?'TCGdex has not verified a unique-card total.':''};
       }
       if(!active())return;

@@ -441,6 +441,10 @@ const getCard = (id) => {
   return liteCards.get(id);
 };
 const SET_ALIAS = { rc: { from: "bw11", prefix: /^RC\d/ } };
+// Subsets printed in the same box as their parent (Classic Collection reprints). TCGdex files them
+// as their own set, but every checklist and shop lists them on the parent's page, so the parent's
+// set page shows them after its own cards. The subset keeps its own set page and card IDs.
+export const SET_SUBSETS = { "30th": ["30th-c"], cel25: ["cel25c", "cel25cc"] };
 // Listed by TCGdex with no cards in any source (Jumbo cards, Sample, W Promotional): left out of
 // the set list rather than shown as a set that never fills in.
 const NO_CARDS = new Set(["jumbo", "sp", "wp"]);
@@ -675,6 +679,14 @@ export const ptcgSource = {
     return this.get(list[Math.floor(Math.random() * list.length)].id);
   },
   async setCards(set) {
+    const own = await this.setOwnCards(set),
+      subs = await Promise.all((SET_SUBSETS[set.id] || []).map((id) => this.setOwnCards({ id }).catch(() => [])));
+    const seen = new Set(own.map((c) => c.id));
+    const extra = subs.flat().filter((c) => !seen.has(c.id) && seen.add(c.id));
+    // Subset cards are counted on top of the parent's own total, so the page stays "complete".
+    return Object.assign([...own, ...extra], { subsetCount: extra.length });
+  },
+  async setOwnCards(set) {
     let d = await get("/sets/" + encodeURIComponent(set.id));
     // Subsets TCGdex lists empty but files inside their parent set (Radiant Collection RC1–RC25
     // are Legendary Treasures cards): show the parent's cards with that prefix.
@@ -684,7 +696,7 @@ export const ptcgSource = {
       if (parent) d = { ...parent, cards: (parent.cards || []).filter((c) => alias.prefix.test(c.localId)) };
     }
     const release = pokemonCatalogueSet(d || set);
-    if (release?.id) catalogueSets.set(release.id,release);
+    if (release?.id && (d || set.name)) catalogueSets.set(release.id,release);
     return pokemonCatalogueOverlay((d?.cards || []).map(c => ({...c,set:{...release,...c.set}})),c => c.set?.id === set.id)
       .map(brief).filter(c => !c.pocket)
       .sort((a,b) => String(a.set?.number || '').localeCompare(String(b.set?.number || ''),undefined,{numeric:true}) || a.id.localeCompare(b.id));
