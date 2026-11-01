@@ -1293,3 +1293,10 @@ button.pd-near-row{cursor:pointer}
 .play-card-meta-row small{font-size:12px;color:var(--muted);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 .play-card-meta-row:hover,.play-card-meta-row:focus-visible{border-color:var(--gold);background:#f2d18e14}
 .play-card-meta-row:focus-visible{outline:2px solid var(--gold);outline-offset:2px}
+.pe-pack-goals{display:flex;flex-wrap:wrap;gap:6px}
+.pe-pack-goal{display:inline-flex;align-items:center;gap:8px;min-height:44px;max-width:100%;padding:0 12px;border-radius:999px;border:1px solid color-mix(in srgb,var(--gold) 26%,var(--line));background:#ffffff08;color:inherit;font:600 13px/1.2 'DM Sans',system-ui,sans-serif;cursor:pointer}
+.pe-pack-goal .set-icon{width:18px;height:18px;flex:none;background:#e9d6a7;-webkit-mask:var(--icon) center/contain no-repeat;mask:var(--icon) center/contain no-repeat}
+.pe-pack-goal-name{min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.pe-pack-goal b{color:#f2d18e;font-variant-numeric:tabular-nums}
+.pe-pack-goal:hover,.pe-pack-goal:focus-visible{border-color:var(--gold);background:#f2d18e14}
+.pe-pack-goal:focus-visible{outline:2px solid var(--gold);outline-offset:2px}

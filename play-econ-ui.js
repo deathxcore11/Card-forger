@@ -306,6 +306,7 @@ export function deckBuilderMarkup(snapshot, ui = {}) {
       <section class="pe-build-deck" aria-label="Your deck" data-drop-deck="1">
         <div class="pe-build-meta"><input name="name" data-input="playEconDeckName" maxlength="80" value="${esc(edit.name || '')}" placeholder="Deck name" aria-label="Deck name"><select data-change="playEconDeckFormat" aria-label="Format">${PLAY_FORMATS.map(f => `<option${(edit.format || 'Standard') === f ? ' selected' : ''}>${f}</option>`).join('')}</select></div>
         ${craftAll}
+        ${packGoals(plan, slimOf, facts)}
         ${count ? `<div class="pe-build-tools"><button class="btn ghost" data-act="playEconCopyList">Copy list</button><button class="btn ghost" data-act="playEconToApp">Copy to My decks</button></div>` : ''}
         ${deck.length ? order.filter(g => groups.has(g)).map(g => `<h3 class="pe-build-group">${g} <span>${groups.get(g).reduce((t, c) => t + c.qty, 0)}</span></h3><ul class="pe-build-list">${groups.get(g).sort((a, b) => (factOf(a.name)?.m ?? 99) - (factOf(b.name)?.m ?? 99) || a.name.localeCompare(b.name)).map(row).join('')}</ul>`).join('')
           : '<p class="pe-build-empty">Drag cards here, or tap one to see it.</p>'}
@@ -320,6 +321,15 @@ export function deckBuilderMarkup(snapshot, ui = {}) {
       </section>
     </div>
     ${statusLine(snapshot)}</section>`;
+}
+// Pack goals: the sets your missing cards come from, most missing first. Each opens that set's
+// Play page (its cards, greyed where missing, and Buy a pack); Story acts and quests drop them too.
+function packGoals(plan, slimOf, facts) {
+  const by = new Map();
+  for (const r of plan.rows) { const c = slimOf(r.name); if (!c?.set) continue; const g = by.get(c.set) || {code: c.set, name: facts?.set?.(c.set)?.name || c.set_name || c.set.toUpperCase(), miss: 0}; g.miss += r.miss; by.set(c.set, g); }
+  const sets = [...by.values()].sort((a, b) => b.miss - a.miss).slice(0, 4);
+  if (!sets.length) return '';
+  return `<div class="pe-pack-goals" role="group" aria-label="Packs with your missing cards">${sets.map(g => `<button class="pe-pack-goal" data-act="playLensSet" data-code="${esc(g.code)}" aria-label="${esc(g.name)}: ${g.miss} missing card${g.miss > 1 ? 's' : ''}. Open the set to get packs."><span class="set-icon" style="--icon:url('${esc(setIconUrl(g.code))}')" aria-hidden="true"></span><span class="pe-pack-goal-name">${esc(g.name)}</span><b>${g.miss}</b></button>`).join('')}</div>`;
 }
 const RARITY_KEY = {common: 'c', uncommon: 'u', rare: 'r', mythic: 'm', special: 'r', bonus: 'm'};
 
