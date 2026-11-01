@@ -2065,7 +2065,7 @@ A.playStartCandidate=async()=>{
    if(!current()||!playerMatRoot)return;
    const cards=createForgeArtworkPreparation({selectionKey:key,isCurrent:current,
     resolveNames:(names,{isCurrent})=>resolveNames(names,()=>{},false,isCurrent),
-    lookup:(name,id)=>id?S.state.printings?.[id]||null:meta(name),fetchPrinting:id=>api('/cards/'+encodeURIComponent(id))});
+    lookup:(name,id)=>id?S.state.printings?.[id]||storyPrints.get(id)||null:meta(name),fetchPrinting:id=>api('/cards/'+encodeURIComponent(id))});
    playerMatHost=createForgePlayerMat({root:playerMatRoot,readAccount:readPlayAccount,readSetup:()=>playSetup.snapshot(),getAccessToken:cloudAccessToken,createClient:localClient,
     prepareArtwork:cards.prepare,lookup:cards.lookup,onClose:closePlayerMat,onHome:()=>{closePlayerMat();go('#home');},onRematch:()=>{closePlayerMat();A.playStartCandidate();},
     // A finished match frees its engine after cleanup; warm the next one for a rematch.
@@ -2123,7 +2123,7 @@ function storyNeedAct(n){if(storyUi.data[n])return;loadAct(n).then(d=>{storyUi.d
 const storyGo=view=>{playView=view;playInspectOpen=false;refreshPlayMenu();scrollTo({top:0});requestAnimationFrame(()=>document.getElementById('playTitle')?.focus?.({preventScroll:true}));};
 A.storyHome=()=>{storyProgress.wake();for(const a of STORY_ACTS)storyNeedAct(a.act);storyGo('story');};
 A.storyOpenAct=t=>{const n=Number(t?.dataset?.storyAct||storyUi.act);if(!STORY_ACTS.some(a=>a.act===n))return;storyUi.act=n;storyNeedAct(n);storyGo('storyAct');};
-A.storyOpenBattle=t=>{storyUi.battle=t.dataset.storyBattle;storyUi.seat='hero';storyUi.deck='loaner';storyUi.listSide='mine';storyUi.listOpen=false;storyGo('storyBattle');storyWantArt();
+A.storyOpenBattle=t=>{storyUi.battle=t.dataset.storyBattle;storyUi.seat='hero';storyUi.deck='loaner';storyUi.listSide='mine';storyUi.listOpen=false;storyGo('storyBattle');storyWantArt();storyWarm();
  // The boss runs on the host: start warming it while the player reads the setup (story-mode-acts.md A1).
  if(/b8$/.test(storyUi.battle))void import('./play-forge-host-client.js').then(m=>m.warmForgeHost({getAccessToken:cloudAccessToken})).catch(()=>{});};
 A.storySeat=t=>{storyUi.seat=t.dataset.storySeat==='villain'?'villain':'hero';if(storyUi.seat==='villain')storyUi.deck='loaner';storyUi.listSide='mine';refreshPlayMenu();};
@@ -2138,6 +2138,8 @@ async function storyWantPrints(ids){const want=ids.filter(id=>id&&!storyPrints.h
  if(STORY_VIEWS.has(playView))refreshPlayMenu();}
 function withStoryPrints(rows,fn){const saved=[];for(const r of rows){const c=r.id&&storyPrints.get(r.id);if(!c)continue;const k=key(r.name);saved.push([k,S.catalog[k]]);S.catalog[k]=c;}
  try{return fn();}finally{for(let i=saved.length-1;i>=0;i--){const [k,v]=saved[i];if(v===undefined)delete S.catalog[k];else S.catalog[k]=v;}}}
+// Warm the engine as soon as a battle is open, the way the Practice deck page does.
+function storyWarm(){const st=playSetup.snapshot();warmForgeEngine({...st,match:{...st.match,mode:'cpu'}});void import('./play-forge-player-mat.js').catch(()=>{});}
 function storyWantArt(){const b=storyBattle();if(!b)return;void storyWantPrints([b.hero,b.villain].flatMap(s=>s.deck.cards.map(r=>r.id)));const own=storyOwnDecks();const names=[...new Set([b.hero,b.villain].flatMap(s=>s.deck.cards.map(r=>r.name)).concat(own.flatMap(d=>d.cards.map(r=>r.name))))].filter(n=>!meta(n));if(names.length)void resolveNames(names,()=>{},false,()=>!accountLocked).then(()=>{if(STORY_VIEWS.has(playView))refreshPlayMenu();}).catch(()=>{});}
 function storyOwnDecks(){const pool=storyUi.pools[storyUi.act]||null,owned=new Map((playEcon.snapshot().state?.cards||[]).map(c=>[c.n,c.c]));
  return (playEcon.snapshot().state?.decks||[]).map(d=>{let fits=ownDeckFits(d,pool);if(fits.ok){const sh=deckShortfall((d.cards||[]).filter(r=>r.board!=='side'),owned,new Map());if(!sh.complete)fits={ok:false,reason:'Some cards aren\'t in your Play collection yet.'};}const cards=(d.cards||[]).filter(r=>r.board!=='side'),lead=cards.find(r=>!/^(snow-covered )?(plains|island|swamp|mountain|forest)$/i.test(r.name));return {id:d.id,name:d.name||'Untitled deck',cards,fits,art:lead?cardImageByName(lead.name,'art_crop'):''};});}
@@ -2162,10 +2164,11 @@ A.storyPlay=async({skipScene=false}={})=>{
  if(!cloudInfo()?.user?.id)return toast('Sign in to play Story mode.');
  const seat=storyUi.seat==='villain'&&battleCleared(storyProgress.snapshot().progress,b.id)?'villain':'hero',other=seat==='hero'?'villain':'hero';
  const own=seat==='hero'&&storyUi.deck!=='loaner'?storyOwnDecks().find(d=>d.id===storyUi.deck&&d.fits.ok):null;
- if(!skipScene){const lines=[...b.scene,...(seat==='villain'&&b.villainScene?b.villainScene:[])];await playScene({lines,cast:data.cast,leftWho:b.hero.who,rightWho:b.villain.who,avatarUrl:storyAvatar(),title:b.title});}
+ // Story launches like Quick Play: decks known, coin flip by the engine, and the match is requested
+ // straight away so it loads underneath the talking heads instead of after them.
  const base=playSetup.snapshot();
- const setup={...base,playStyle:'practice',match:{...base.match,mode:'cpu',format:'Vintage',difficulty:STORY_LEVEL[b.difficulty]||'Medium',startingPlayer:'random',podSize:2},
-  selected:own?{id:own.id,name:own.name,format:'Vintage',cards:own.cards.map(r=>({name:r.name,qty:r.qty}))}:storyDeck(b[seat].deck,`story:${b.id}:${seat}`),opponent:storyDeck(b[other].deck,`story:${b.id}:${other}`),extraOpponents:[],story:{battle:b.id,seat}};
+ const setup={...base,playStyle:'quick',match:{...base.match,mode:'cpu',format:'Vintage',difficulty:STORY_LEVEL[b.difficulty]||'Medium',startingPlayer:'random',podSize:2},
+  selected:own?{id:own.id,name:own.name,format:'Vintage',cards:own.cards.map(r=>({name:r.name,qty:r.qty}))}:storyDeck(b[seat].deck,`story:${b.id}:${seat}`),opponent:storyDeck(b[other].deck,`story:${b.id}:${other}`),extraOpponents:[],story:{battle:b.id,seat,title:b.title,rival:(data.cast[b[other].who]||{}).name||'CPU'}};
  playStarting=true;let bubbles=null;
  try{
   for(const [id,href] of [['practiceTableStyles','experiments/phase-engine/match-table.css'],['forgeHostedTableStyles','play-forge-table.css']])if(!document.getElementById(id)){const css=document.createElement('link');css.id=id;css.rel='stylesheet';css.href=href;document.head.append(css);}
@@ -2176,7 +2179,9 @@ A.storyPlay=async({skipScene=false}={})=>{
    if(b.slot!==8){const local=await import('./play-forge-local-client.js');if(local.localForgeAvailable()&&await local.localForgeCurrent())localClient=local.createForgeLocalClient;}}
   catch(e){if(playerMatRoot)playModuleFailed(e);return;}
   if(!current()||!playerMatRoot)return;
-  const root=playerMatRoot;bubbles=createStoryBubbles({root,battle:b,cast:data.cast,playerSide:seat,avatarUrl:storyAvatar()});
+  const root=playerMatRoot;
+  if(!skipScene){const lines=[...b.scene,...(seat==='villain'&&b.villainScene?b.villainScene:[])];void playScene({lines,cast:data.cast,leftWho:b.hero.who,rightWho:b.villain.who,avatarUrl:storyAvatar(),title:b.title});}
+  bubbles=createStoryBubbles({root,battle:b,cast:data.cast,playerSide:seat,avatarUrl:storyAvatar()});
   const cards=createForgeArtworkPreparation({selectionKey:key,isCurrent:current,
    resolveNames:(names,{isCurrent})=>resolveNames(names,()=>{},false,isCurrent),
    lookup:(name,id)=>id?S.state.printings?.[id]||null:meta(name),fetchPrinting:id=>api('/cards/'+encodeURIComponent(id))});
