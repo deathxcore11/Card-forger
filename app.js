@@ -1815,6 +1815,15 @@ async function loadPool(more=false){const P=econUi.pool;if(!P||P.mode!=='all')re
  catch{if(t===P.ticket)P.error='Check your connection and try again.';}finally{if(t===P.ticket){P.busy=false;refreshPlayMenu();}}}
 A.playEconPool=t=>{const mode=t.dataset.id==='all'?'all':'mine';econUi.pool={...(econUi.pool||{cards:[],ticket:0}),mode};econUi.set='';refreshPlayMenu();};
 A.playEconPoolMore=()=>loadPool(true);
+// Empty slots (a Trunk build that ran out of owned cards): fill them with the format's most-played
+// cards in the deck's colours, one copy each; cards you don't own land greyed, ready to craft.
+A.playFillSlots=async()=>{const e=econUi.edit;if(!e||econUi.filling)return;const size=e.format==='Commander'?100:60,have=(e.cards||[]).reduce((t,c)=>t+c.qty,0),need=size-have;if(need<1)return;
+ econUi.filling=true;refreshPlayMenu();const saved={cardQuery:econUi.cardQuery,color:econUi.color,type:econUi.type,rarity:econUi.rarity};Object.assign(econUi,{cardQuery:'',color:'',type:'',rarity:''});const q=poolQuery();Object.assign(econUi,saved);
+ try{const inDeck=new Set((e.cards||[]).map(c=>key(c.name)));let added=0;
+  for(let page=1;page<=3&&added<need;page++){const r=await fetch(`https://api.scryfall.com/cards/search?${new URLSearchParams({q:q+' -t:land',order:'edhrec',unique:'cards',page:String(page)})}`,{headers:{Accept:'application/json'}});const body=r.ok?await r.json().catch(()=>null):null;if(!body?.data)break;
+   for(const c of body.data.map(slimCard)){if(added>=need)break;if(inDeck.has(key(c.name)))continue;finderFacts.put(c);inDeck.add(key(c.name));e.cards.push({name:c.name,qty:1});added++;}if(!body.has_more)break;}
+  e.dirty=true;toast(added?`${added} suggested card${added>1?'s':''} added. Greyed ones are still to craft.`:'No suggestions found right now.');}
+ catch{toast('Suggestions could not load. Check your connection.');}finally{econUi.filling=false;refreshPlayMenu();}};
 const craftIdOf=name=>finderFacts.get(name)?.id||econFacts.card((playEcon.snapshot().state?.cards||[]).find(c=>c.n===name||c.n.split(' // ')[0]===name)?.o)?.card?.id||'';
 async function craftCopies(id,n){let made=0;for(let i=0;i<n;i++){try{await playEcon.craft(id);made++;}catch{break;}}return made;}
 A.playCraftCopies=async t=>{const id=t.dataset.cardId||craftIdOf(t.dataset.name),n=Math.max(1,Math.min(4,Number(t.dataset.n)||1));if(!id)return toast('That card is still loading. Try again in a moment.');
@@ -1871,7 +1880,7 @@ A.playEconCopyList=()=>{const e=econUi.edit;if(!e?.cards?.length)return;copyText
 // Card meta from the cached tournament lists (no prices): share of lists, the archetype that
 // plays it most, and a jump to Build a deck filtered to lists with the card.
 function cardMetaStats(name){const out=[];for(const fmt of FINDER_FORMATS){const data=metaState('mtg:'+(fmt==='Commander'?'EDH':fmt)).data;const decks=(data?.decks||[]).filter(d=>Array.isArray(d.main));if(decks.length<8)continue;
- const key=key(name),hit=decks.filter(d=>[...(d.commanders||[]).map(r=>typeof r==='string'?r:r.name),...d.main.map(r=>r.name)].some(n=>key(n)===key||key(String(n).split(' // ')[0])===key));if(!hit.length)continue;
+ const want=key(name),hit=decks.filter(d=>[...(d.commanders||[]).map(r=>typeof r==='string'?r:r.name),...d.main.map(r=>r.name)].some(n=>key(n)===want||key(String(n).split(' // ')[0])===want));if(!hit.length)continue;
  const arch=new Map();for(const d of hit){const a=d.archetype||d.name||'';arch.set(a,(arch.get(a)||0)+1);}const top=[...arch].sort((a,b)=>b[1]-a[1])[0];
  out.push({format:fmt,share:hit.length/decks.length,lists:hit.length,total:decks.length,top:top?.[0]||'',topLists:top?.[1]||0});}
  return out.sort((a,b)=>b.share-a.share);}
