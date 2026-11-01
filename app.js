@@ -161,8 +161,9 @@ import { ICON, actionIcon, decorateGlyphs } from "./icons.js";
 import { startTabGlide } from "./tab-glide.js";
 import { startSearchHints } from "./search-hints.js";
 import { openZoom, zoomCardOptions } from "./zoom.js";
-import {createPlayEcon} from "./play-econ-client.js";
+import {createPlayEcon,purse} from "./play-econ-client.js";
 import {econScreenMarkup,ECON_VIEWS,purseMarkup,cardImageByName,head as econHead} from "./play-econ-ui.js";
+import {rewardFlight} from "./reward-flight.js";
 import {createNameFacts,rankFinderRows,trunkDeck,finderMarkup,FINDER_FORMATS} from "./play-deck-finder.js";
 import {createCardFacts} from "./play-econ-cards.js";
 import {stepDeckCard,ownedByName,deckShortfall,legalFormats,mtgjsonDeckRows} from "./play-econ-rules.js";
@@ -1710,7 +1711,8 @@ A.playEconCraft=async t=>{try{const out=await playEcon.craft(t.dataset.econCard)
 A.playEconRetry=()=>{playEcon.refresh();};
 A.playCardHolo=async t=>{try{const out=await playEcon.holo(t.dataset.oracle);haptic('success');toast(`${out.holo.name} is now holo. It has its own tile in your Trunk.`);refreshSheet?.();}catch{}};
 A.playEconDeedTab=t=>{econUi.deedTab=t.dataset.value||'journey';refreshPlayMenu();};
-A.playEconClaim=async t=>{const {econKind:kind,econId:id,econStep:step}=t.dataset;try{const out=await playEcon.claim(kind,id,step===undefined?undefined:Number(step));t.closest('.pd-card,.pd-quest')?.classList.add('struck');haptic('success');const d=out.delta||{},bits=[d.coins&&d.coins+' coins',d.packs?.length&&d.packs.length+(d.packs.length===1?' pack':' packs'),...Object.entries(d.seals||{}).map(([k,v])=>v+' '+({c:'common',u:'uncommon',r:'rare',m:'mythic'})[k]+(v===1?' seal':' seals')),d.xp&&d.xp+' XP'].filter(Boolean);toast(bits.length?'Claimed: '+bits.join(', ')+'.':'Claimed.');}catch{}};
+// A claim lands like a reward: a jingle and haptic at the button, then the coins, seals and packs fly into the purse (reward-flight.js).
+A.playEconClaim=async t=>{const {econKind:kind,econId:id,econStep:step}=t.dataset;const from=t.getBoundingClientRect(),before=purse(playEcon.snapshot().state);try{const out=await playEcon.claim(kind,id,step===undefined?undefined:Number(step));t.closest('.pd-card,.pd-quest')?.classList.add('struck');rewardFlight({from,delta:out.delta||{},before,big:kind==='ach'||kind==='weekly-all'});const d=out.delta||{},bits=[d.coins&&d.coins+' coins',d.packs?.length&&d.packs.length+(d.packs.length===1?' pack':' packs'),...Object.entries(d.seals||{}).map(([k,v])=>v+' '+({c:'common',u:'uncommon',r:'rare',m:'mythic'})[k]+(v===1?' seal':' seals')),d.xp&&d.xp+' XP'].filter(Boolean);toast(bits.length?'Claimed: '+bits.join(', ')+'.':'Claimed.');}catch{}};
 // Finished matches move Play quests and achievements (Practice never counts; friend matches count as played).
 addEventListener('play:match-recorded',e=>{const m=e.detail||{};if(!cloudInfo()?.user?.id)return;const mode=m.story?'story':m.friend?'friend':m.playStyle==='practice'?'practice':'quick';if(mode==='practice')return;
  const id=(crypto.randomUUID?.()||String(Date.now())+Math.random().toString(36).slice(2)).replace(/[^A-Za-z0-9_-]/g,'');
