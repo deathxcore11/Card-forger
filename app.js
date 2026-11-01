@@ -160,7 +160,7 @@ import { startTabGlide } from "./tab-glide.js";
 import { startSearchHints } from "./search-hints.js";
 import { openZoom, zoomCardOptions } from "./zoom.js";
 import {createPlayEcon} from "./play-econ-client.js";
-import {econScreenMarkup,ECON_VIEWS} from "./play-econ-ui.js";
+import {econScreenMarkup,ECON_VIEWS,purseMarkup} from "./play-econ-ui.js";
 import {createCardFacts} from "./play-econ-cards.js";
 import {STORY_ACTS} from "./play-home.js";
 import {stepDeckCard,ownedByName} from "./play-econ-rules.js";
@@ -255,6 +255,35 @@ function decorateShell() {
   if (mark) mark.innerHTML = brandMark("brand-idle");
   glyphObserver?.observe(document.body, { childList: true, subtree: true });
 }
+
+// Play mode chrome (Randall, 1 Nov): inside Play the top pill becomes Play's own. The other games'
+// chips step aside, the purse sits in the pill, Collection, Decks and Sets open the Play versions,
+// and the Play button reads "Collection" and leads back to the real app. The two collections never mix.
+function playModeOn(){return T.game()==='mtg'&&(S.ui.view==='play'||S.ui.lens==='play');}
+function syncPlayChrome(){
+  const on=playModeOn(),bar=$('.topbar');
+  document.body.dataset.mode=on?'play':'';
+  let slot=$('#playPurse');
+  if(on&&bar&&!slot){slot=document.createElement('div');slot.id='playPurse';slot.className='play-purse-slot';bar.querySelector('.top-nav')?.before(slot);}
+  if(slot)slot.innerHTML=on?purseMarkup(playEcon.snapshot()):'';
+  const label=on?'Collection':'Play';
+  const hp=$('#headerPlay');if(hp&&hp.textContent!==label)hp.textContent=label;
+  const bp=$('#bottomPlay');if(bp){const t=[...bp.childNodes].find(n=>n.nodeType===3&&n.textContent.trim());if(t)t.textContent=label;}
+  // The Play collection is the Trunk, so it never reads like the real Collection button beside it.
+  for(const b of $$('.top-nav [data-nav="collection"],.bottom-nav [data-nav="collection"]')){const t=[...b.childNodes].find(n=>n.nodeType===3&&n.textContent.trim());if(t){b.dataset.label||=t.textContent;t.textContent=on?'Trunk':b.dataset.label;}}
+  if(on){const v=S.ui.view==='play'?playView:'collection';for(const b of $$('.top-nav [data-nav],.bottom-nav [data-nav]'))b.classList.toggle('on',b.dataset.nav==='collection'?['collection','set'].includes(v)||S.ui.lens==='play':b.dataset.nav==='decks'?['decks','deck'].includes(v):false);}
+}
+// In Play mode the shared nav buttons open Play screens; the Play button leaves Play.
+document.addEventListener('click',e=>{
+  if(!playModeOn())return;
+  const b=e.target.closest?.('.top-nav [data-nav],.bottom-nav [data-nav],.header-sets');if(!b)return;
+  const nav=b.classList.contains('header-sets')?'sets':b.dataset.nav,to={collection:'collection',decks:'decks',sets:'collection'}[nav];
+  if(nav==='play'){e.preventDefault();e.stopImmediatePropagation();go('#collection');return;}
+  if(!to)return;
+  e.preventDefault();e.stopImmediatePropagation();
+  playView=to;playInspectOpen=false;if(nav==='sets')econUi.tab='sets';else if(nav==='collection')econUi.tab='cards';
+  if(S.ui.view==='play'){refreshPlayMenu();scrollTo({top:0});}else go('#play');
+},true);
 
 const accountUiDefaults = structuredClone(S.ui);
 
@@ -972,6 +1001,7 @@ function parseHash() {
   const ui = S.ui,
     prev = ui.view + ui.deckId;
   ui.view = VIEWS.includes(v) ? v : "home";
+  if (ui.view !== "set") ui.lens = "";
   if (ui.view === "collection" && ["cards", "binders", "value", "wishlist"].includes(a)) {
     ui.collTab = a;
     if(T.isTcg()) { T.ui().coll.tab = a === "wishlist" ? "cards" : a; if(a === "wishlist")T.ui().coll.show="wanted"; }
@@ -985,6 +1015,9 @@ function parseHash() {
     if (!a) ui.view = "sets";
     else ui.tsetId = a;
   } else if (ui.view === "set") {
+    // #set/<code>/play: the same set page through the Play lens (Play ownership, no prices).
+    ui.lens = b === "play" ? "play" : "";
+    if (ui.lens) queueMicrotask(() => econWake());
     if (!a) ui.view = "sets";
     else if (a.toLowerCase() !== ui.set.code) ui.set = { ...ui.set, code: a.toLowerCase(), info: null, cards: [], total: 0, loaded: false, busy: false, error: "", q: "", filter: "all", rarity: "all", finish: "all", complete: false, limit: 120 };
   }
@@ -1076,6 +1109,7 @@ function render() {
   document.querySelector(".header-sets")?.classList.toggle("on",["set","sets"].includes(ui.view));
   const wikiLaunch=document.querySelector(".header-wiki");if(wikiLaunch){wikiLaunch.hidden=false;wikiLaunch.classList.toggle("on",ui.view==="wiki");}
   document.body.dataset.view = ui.view;
+  syncPlayChrome();
   const g = T.game();
   const content=$('#content'),previousDisclosureKey=content?.dataset?.disclosureKey;
   if(previousDisclosureKey)disclosureStates.set(previousDisclosureKey,captureDisclosures(content));
@@ -1649,7 +1683,7 @@ A.playChangeDeck=t=>{playView='lobby';playInspectOpen=false;A.playStyle(t);scrol
 A.playHome=()=>{playView='home';playInspectOpen=false;refreshPlayMenu();scrollTo({top:0});};
 // Play progression (play-progression.md): the Play collection, coins, seals and packs. The server
 // grants everything; this only asks it and shows the answer. Nothing here touches the real collection.
-const playEcon=createPlayEcon({getAccessToken:cloudAccessToken,onChange:()=>{if(S.ui.view==='play')refreshPlayMenu();}});
+const playEcon=createPlayEcon({getAccessToken:cloudAccessToken,onChange:()=>{syncPlayChrome();if(S.ui.view==='play')refreshPlayMenu();else if(S.ui.lens==='play'&&S.ui.view==='set')render();}});
 let econUi={query:'',cardQuery:'',rarity:'',press:null,check:null},econSeen=null;
 const econFacts=createCardFacts({onChange:()=>{if(S.ui.view==='play'&&ECON_VIEWS.has(playView))refreshPlayMenu();}});
 // Read the wallet once per signed-in account per visit to Play; a new account starts clean.
@@ -1684,7 +1718,24 @@ A.playEconDeleteDeck=async t=>{if(!confirm('Delete this Play deck?'))return;try{
 A.playEconCollTab=t=>{econUi.tab=t.dataset.id==='sets'?'sets':'cards';refreshPlayMenu();};
 A.playEconColor=t=>{const k=t.dataset.econColor||'';econUi.color=econUi.color===k?'':k;refreshPlayMenu();};
 C.playEconType=t=>{econUi.type=t.value||'';refreshPlayMenu();};
-A.playEconSet=t=>{econUi.set=t.dataset.econSet||'';if(econUi.set)econUi.tab='cards';if(t.dataset.econFrom==='home'){playView='collection';playInspectOpen=false;}refreshPlayMenu();if(econUi.set)scrollTo({top:0});};
+A.playEconSet=t=>{const code=t.dataset.econSet||'';econUi.set='';if(code)return go('#set/'+encodeURIComponent(code)+'/play');refreshPlayMenu();};
+// The Play lens (play-progression.md): the app's own set page and card sheet read the Play collection
+// and Play decks instead of prices. Read-only; every change still goes through the Play server.
+// Signed out or still loading, the lens still holds the wall: no prices, nothing owned yet.
+V.setPlayLensSource(()=>{const st=playEcon.snapshot().state||{};
+ const byOracle=new Map((st.cards||[]).map(c=>[c.o,c.c])),byName=ownedByName(st.cards||[]);
+ return {byOracle,byName,get decks(){return playEcon.snapshot().state?.decks||[];},coins:st.wallet?.coins|0,price:st.config?.packPrice||500,
+  owned:(name,card)=>(card?.oracle_id&&byOracle.get(card.oracle_id))||byName.get(name)||byName.get(String(name).split(' // ')[0])||0,
+  setProgress:code=>{const have=(st.cards||[]).filter(c=>(c.s||[]).includes(code)).length,total=econFacts.set(code)?.total||null;return {key:'play:'+code,owned:have,total,loaded:total||0,known:total||0,complete:true};}};});
+A.playLensBack=()=>{playView='collection';econUi.tab='sets';go('#play');};
+A.playLensSet=t=>{closeSheet();go('#set/'+encodeURIComponent(t.dataset.code)+'/play');};
+A.playLensBuy=async t=>{try{await playEcon.buy(t.dataset.code);toast('Pack bought. It is waiting in Packs.');render();}catch(e){toast(e.message);}};
+A.playCardToDeck=async t=>{const st=playEcon.snapshot().state,d=(st?.decks||[]).find(x=>x.id===t.dataset.econDeck);if(!d)return;
+ const cards=stepDeckCard((d.cards||[]).filter(c=>!c.board).map(c=>({name:c.name,qty:c.qty|0})),t.dataset.name,1,ownedByName(st.cards||[]),d.format);
+ if(cards.reduce((a,c)=>a+c.qty,0)===(d.cards||[]).filter(c=>!c.board).reduce((a,c)=>a+(c.qty|0),0))return toast('No more copies of that card can go in '+(d.name||'that deck')+'.');
+ try{await playEcon.saveDeck({id:d.id,name:d.name,format:d.format,cards:[...cards,...(d.cards||[]).filter(c=>c.board)]});toast('Added to '+(d.name||'your deck')+'.');refreshSheet?.();}catch(e){toast(e.message);}};
+A.playCardNewDeck=t=>{closeSheet();econUi.edit={id:null,name:'',format:'Standard',cards:[{name:t.dataset.name,qty:1}]};playView='deck';go('#play');};
+A.playCardGet=t=>{closeSheet();playView='shop';econUi.press={query:t.dataset.name,busy:false};go('#play');};
 A.playEconEditDeck=t=>{const d=(playEcon.snapshot().state?.decks||[]).find(x=>x.id===t.dataset.econDeck);econUi.edit=d?{id:d.id,name:d.name,format:d.format||'Standard',cards:(d.cards||[]).filter(c=>!c.board).map(c=>({name:c.name,qty:c.qty|0}))}:{id:null,name:'',format:'Standard',cards:[]};playView='deck';refreshPlayMenu();scrollTo({top:0});requestAnimationFrame(()=>document.getElementById('playDeckTitle')?.focus?.({preventScroll:true}));};
 A.playEconStep=t=>{const e=econUi.edit;if(!e)return;const owned=ownedByName(playEcon.snapshot().state?.cards||[]);e.cards=stepDeckCard(e.cards,t.dataset.econCard,Number(t.dataset.econStep)||0,owned,e.format);e.dirty=true;refreshPlayMenu();};
 I.playEconDeckName=t=>{if(econUi.edit){econUi.edit.name=t.value;econUi.edit.dirty=true;}};
@@ -2084,7 +2135,7 @@ function renderPlayPage() {
   if(!device.eligible){const gate=playDeviceGate(device);return '<section class="empty play-device-guard"><span class="play-device-guard-icon" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><rect x="2.5" y="4" width="9" height="16" rx="1.6"/><path d="M13.5 5.4 20.2 3.6a.8.8 0 0 1 1 .8v15.2a.8.8 0 0 1-1 .8l-6.7-1.8z"/><path d="M5.5 12h3m-1.3-1.5L8.7 12l-1.5 1.5"/></svg></span><h1>'+esc(gate.title)+'</h1><p>'+esc(gate.line)+'</p><a class="btn" href="#decks">Open Decks</a><a class="btn ghost" href="#home">Home</a></section>';}
   econWake();
   if(ECON_VIEWS.has(playView)){const snap=playEcon.snapshot(),cards=snap.state?.cards||[];
-   if(['collection','deck'].includes(playView))econFacts.wantCards(cards.map(c=>c.o));
+   if(['collection','deck'].includes(playView))econFacts.wantCards(cards.map(c=>({o:c.o,id:c.p?.id})));
    if(playView==='collection'||econUi.set)econFacts.wantSets([...cards.flatMap(c=>c.s||[]),snap.state?.rewardSet?.code].filter(Boolean));
    if(playView==='packs')econFacts.wantSets((snap.state?.packs||[]).map(p=>p.set));
    if(playView==='shop'){const q=(econUi.query||'').trim().toLowerCase(),shop=snap.state?.shop||[];econFacts.wantSets([snap.state?.rewardSet?.code,...(q?shop.filter(x=>x.name.toLowerCase().includes(q)||x.code===q):shop).slice(0,q?60:24).map(x=>x.code)].filter(Boolean));}
@@ -3032,6 +3083,8 @@ A.card = async (t) => {
   S.ui.sheetBack = S.ui.sheetCtx?.type === "idea" && $("#sheet").open ? { type: "idea", i: S.ui.sheetCtx.i } : null;
   const name = t.dataset.name,
     ctx = { type: "card", name, entryId:t.dataset.entry||"", deckId: t.dataset.readOnly ? null : t.dataset.deck || (S.ui.view === "deck" ? currentDeck()?.id : null), random: !!t.dataset.random };
+  // Play lens: from Play screens and Play set pages the sheet shows Play copies and Play decks, no prices.
+  if (S.ui.view === "play" || S.ui.lens === "play") { ctx.play = V.playLensNow(); if (ctx.play) { ctx.entryId = ""; ctx.deckId = null; } }
   if(ctx.entryId){
     let owned=magicOwnedDetail(S.state,ctx.entryId,name);
     if(!owned.identity)return toast(owned.reason);

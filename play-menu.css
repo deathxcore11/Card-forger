@@ -947,3 +947,20 @@ button.pe-purse-item:focus-visible{outline:2px solid var(--gold);outline-offset:
  .pe-story-pack{width:74px}.pe-story-pack:nth-child(2){width:86px}
  .pe-home .home-personal-grid{grid-template-columns:1fr}
 }
+/* Play lens on the app's own pages: cards you don't own yet are greyed, like Arena. */
+.grid-card.play-missing .card-img,.grid-card.play-missing img{filter:grayscale(1) brightness(.5)}
+.grid-card.play-missing:hover .card-img,.grid-card.play-missing:focus-visible .card-img{filter:grayscale(.6) brightness(.75)}
+.play-lens-buy span{margin-left:6px;opacity:.8;font-weight:600}
+.play-card-actions{display:grid;gap:12px}
+.play-card-own{display:flex;align-items:center;gap:10px;margin:0}
+.play-card-decks summary{list-style:none;cursor:pointer}
+.play-card-decks summary::-webkit-details-marker{display:none}
+.play-card-deck-list{display:flex;flex-wrap:wrap;gap:6px;margin-top:8px}
+.pe-coll-grid .grid-card .pe-pips{justify-content:center;margin-top:4px}
+/* Play mode: the top pill becomes Play's (game chips step aside, purse in the pill, no Scan). */
+body[data-mode="play"] #gameTabs,body[data-mode="play"] [data-nav="scan"]{display:none}
+.play-purse-slot:empty{display:none}
+.play-purse-slot .pe-purse{margin:0;min-height:44px;padding:0 6px;border-radius:999px}
+.play-purse-slot .pe-level{display:none}
+@media(min-width:760px){body[data-mode="play"] .play-menu .pl-home-head .pe-purse,body[data-mode="play"] .pe-head .pe-purse{display:none}}
+@media(max-width:759px){.play-purse-slot{display:none}}

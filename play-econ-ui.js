@@ -5,7 +5,9 @@
 import {SEALS, masteryLevel, deckShortfall, deckRules, copiesLeft, isBasicLand, PLAY_FORMATS, ownedByName} from './play-econ-rules.js';
 import {cardGroup} from './play-econ-cards.js';
 import {setRowContent} from './set-list-ui.js';
-import {segmented, setIconUrl} from './ui.js';
+import {segmented, setIconUrl, img} from './ui.js';
+import {finishAttrs} from './finish-preview.js';
+import {tileChrome} from './tiles.js';
 import {deckShell} from './deck-viewer.js';
 import {purse} from './play-econ-client.js';
 const esc = v => String(v ?? '').replace(/[&<>"']/g, c => ({'&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;'}[c]));
@@ -110,6 +112,13 @@ const pips = c => `<span class="pe-pips" aria-label="${c.c} of 4">${[1, 2, 3, 4]
 // The printing you pulled, else the card's own art, else Scryfall's image by name.
 const cardImage = (c, facts) => c.p?.image || facts?.card?.(c.o)?.i || cardImageByName(c.n);
 
+// The app's own card tile (foil, holo stamp, colour and set emblems, hover and tilt), with copies
+// owned in Play where the app shows a price. Tapping opens the app's card sheet in Play mode.
+export function playCardTile(c, facts) {
+  const card = facts?.card?.(c.o)?.card || {name: c.n, rarity: c.r, set: c.p?.set || c.s?.[0] || ''}, n = Math.min(c.c | 0, 4);
+  return `<button class="grid-card own" ${card.id ? finishAttrs('mtg', card, {}) : ''} data-act="card" data-name="${esc(c.n)}" data-play-card="1">${img(cardImage(c, facts), c.n, 'card-img')}${card.id ? tileChrome('mtg', card) : ''}<span class="grid-meta"><span class="ellip">${esc(c.n)}</span><span>${n} of 4</span></span>${pips(c)}</button>`;
+}
+
 // Search, rarity, colour, type and set filters, shared by Collection and the deck builder.
 export function filterPlayCards(cards = [], facts = null, {query = '', rarity = '', color = '', type = '', set = ''} = {}) {
   const q = query.trim().toLowerCase();
@@ -151,7 +160,7 @@ export function collectionMarkup(snapshot, ui = {}) {
       : `<div class="pe-empty"><h2>No sets yet</h2><p>Open a pack and its set starts filling in here.</p></div>`)
     : (() => { const shown = filterPlayCards(cards, facts, {query: ui.cardQuery, rarity: ui.rarity, color: ui.color, type: ui.type, set: ui.set});
       return `${filterBar(ui, {sets})}<p class="pe-count" role="status">${n(shown.length)} of ${n(cards.length)} cards</p>
-      ${shown.length ? `<div class="pe-grid">${shown.slice(0, 300).map(c => `<figure class="pe-card" data-rarity="${esc(c.r)}"><img src="${esc(cardImage(c, facts))}" alt="${esc(c.n)}" loading="lazy" decoding="async" referrerpolicy="no-referrer"><figcaption>${pips(c)}</figcaption></figure>`).join('')}</div>`
+      ${shown.length ? `<div class="card-grid set-grid pe-coll-grid">${shown.slice(0, 300).map(c => playCardTile(c, facts)).join('')}</div>`
         : `<div class="pe-empty"><h2>${cards.length ? 'No cards match' : 'Your binder is empty'}</h2><p>${cards.length ? 'Try another name, colour or type.' : 'Open a pack to start your Play collection.'}</p></div>`}`; })();
   return `<section class="play-menu pe-screen pe-collection" aria-labelledby="playTitle">${head('Collection', snapshot)}
     ${segmented('playEconCollTab', tab, [['cards', 'Cards', 'cardStack'], ['sets', 'Sets', 'binder']])}
