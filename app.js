@@ -1304,22 +1304,31 @@ function keepSheetNodes(root,old,keptArt){
   }));
   return kept;
 }
-const SHEET_MOTION=['.cs-hero','.cs-banner .cs-art','.cd-img','.cs-bleed'];
+const SHEET_MOTION=['.cs-hero','.cs-banner .cs-art','.cd-img','.cs-bleed','.cs-panel'];
+// A tab panel (the big card with its text on Overview) fades in when the card opens. Its own entrance is
+// matched panel by panel, and a rebuilt panel that was already showing does not fade in again: each
+// replay dimmed the big card and its text for a moment, several times while the page filled in.
+const SHEET_MOTION_OWN=new Set(['.cs-panel']);
 function captureSheetMotion(root){
   if(!root?.querySelectorAll)return null;
   return SHEET_MOTION.map(sel=>[...root.querySelectorAll(sel)].map(el=>({
-    shone:el.dataset?.shone==='done',shining:el.classList?.contains('shine-once'),
-    runs:(el.getAnimations?.({subtree:true})||[]).filter(a=>a.animationName&&(a.startTime!=null||a.currentTime!=null)).map(a=>({name:a.animationName,pseudo:a.effect?.pseudoElement||null,start:a.startTime,t:a.currentTime}))
+    key:el.id||'',shone:el.dataset?.shone==='done',shining:el.classList?.contains('shine-once'),
+    runs:(el.getAnimations?.({subtree:!SHEET_MOTION_OWN.has(sel)})||[]).filter(a=>a.animationName&&(a.startTime!=null||a.currentTime!=null)).map(a=>({name:a.animationName,pseudo:a.effect?.pseudoElement||null,start:a.startTime,t:a.currentTime}))
   })));
 }
 function restoreSheetMotion(root,saved){
   if(!saved||!root?.querySelectorAll)return;
   SHEET_MOTION.forEach((sel,i)=>[...root.querySelectorAll(sel)].forEach((el,j)=>{
-    const was=saved[i]?.[j];if(!was)return;
+    const own=SHEET_MOTION_OWN.has(sel),was=(el.id&&saved[i]?.find(w=>w.key===el.id))||(own&&el.id?null:saved[i]?.[j]);if(!was)return;
     // The big card already swept its light: it stays settled instead of swinging in again.
     if(was.shone)el.dataset.shone='done';
     if(was.shining){el.classList.add('shine-once');const run=was.runs.find(r=>r.name==='card-catch');setTimeout(()=>el.classList.remove('shine-once'),Math.max(0,1300-(run?.t||0)));}
-    for(const a of el.getAnimations?.({subtree:true})||[]){const run=was.runs.find(r=>r.name===a.animationName&&r.pseudo===(a.effect?.pseudoElement||null));if(!run)continue;if(run.start!=null)a.startTime=run.start;else a.currentTime=run.t;}
+    for(const a of el.getAnimations?.({subtree:!own})||[]){
+      const run=was.runs.find(r=>r.name===a.animationName&&r.pseudo===(a.effect?.pseudoElement||null));
+      // A panel whose fade had not begun yet shows at once rather than wait for it to restart.
+      if(run&&(run.start!=null||!own)){if(run.start!=null)a.startTime=run.start;else a.currentTime=run.t;continue;}
+      if(own&&a.animationName&&Number.isFinite(a.effect?.getComputedTiming?.().endTime))a.finish();
+    }
   }));
 }
 // On a card page's first showing, the header art with the glass that carries it down the sheet, and the
