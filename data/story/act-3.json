@@ -391,6 +391,23 @@
      ]
     }
    },
+   "reward": {
+    "hero": {
+     "packs": 1,
+     "coins": 0
+    },
+    "villain": {
+     "card": {
+      "oracle_id": "23720758-f572-45e3-9bec-f6d3b974d7f5",
+      "name": "Balduvian Barbarians",
+      "rarity": "common",
+      "set": "ice",
+      "id": "efeabe8e-8107-4d19-8a43-362aa79cdd92",
+      "image": "https://cards.scryfall.io/normal/front/e/f/efeabe8e-8107-4d19-8a43-362aa79cdd92.jpg"
+     },
+     "coins": 50
+    }
+   },
    "scene": [
     {
      "who": "kjeldor",
@@ -623,6 +640,23 @@
        "id": "4ecf39c3-3b5f-4263-a7b5-9881bded3494"
       }
      ]
+    }
+   },
+   "reward": {
+    "hero": {
+     "packs": 1,
+     "coins": 0
+    },
+    "villain": {
+     "card": {
+      "oracle_id": "fd2a94d3-901d-4b46-aa9b-a30ed6dea6bd",
+      "name": "Balduvian Horde",
+      "rarity": "rare",
+      "set": "all",
+      "id": "8e167a6c-05f8-4d90-9f6b-eb0f1046d54a",
+      "image": "https://cards.scryfall.io/normal/front/8/e/8e167a6c-05f8-4d90-9f6b-eb0f1046d54a.jpg"
+     },
+     "coins": 50
     }
    },
    "scene": [
@@ -881,6 +915,23 @@
      ]
     }
    },
+   "reward": {
+    "hero": {
+     "packs": 1,
+     "coins": 100
+    },
+    "villain": {
+     "card": {
+      "oracle_id": "94a844d2-0574-45a7-b347-e0e329767c42",
+      "name": "Necropotence",
+      "rarity": "rare",
+      "set": "ice",
+      "id": "54d7a0c1-efb4-4a8d-ad92-a96d43835052",
+      "image": "https://cards.scryfall.io/normal/front/5/4/54d7a0c1-efb4-4a8d-ad92-a96d43835052.jpg"
+     },
+     "coins": 100
+    }
+   },
    "scene": [
     {
      "who": "leshrac",
@@ -1118,6 +1169,23 @@
        "id": "4695653a-5c4c-4ff3-b80c-f4b6c685f370"
       }
      ]
+    }
+   },
+   "reward": {
+    "hero": {
+     "packs": 1,
+     "coins": 100
+    },
+    "villain": {
+     "card": {
+      "oracle_id": "fc728cd7-2b5b-45f3-896a-a45648bcb61d",
+      "name": "Baron Sengir",
+      "rarity": "rare",
+      "set": "hml",
+      "id": "51bdddac-02fc-493a-a0ea-689273252d7e",
+      "image": "https://cards.scryfall.io/normal/front/5/1/51bdddac-02fc-493a-a0ea-689273252d7e.jpg"
+     },
+     "coins": 100
     }
    },
    "scene": [
@@ -1421,6 +1489,23 @@
      ]
     }
    },
+   "reward": {
+    "hero": {
+     "packs": 1,
+     "coins": 100
+    },
+    "villain": {
+     "card": {
+      "oracle_id": "1e3b97d2-8fda-4510-9697-f36ca9ca2ab0",
+      "name": "Lim-Dûl's Cohort",
+      "rarity": "common",
+      "set": "ice",
+      "id": "3d0006f6-2f96-453d-9145-eaefa588efbc",
+      "image": "https://cards.scryfall.io/normal/front/3/d/3d0006f6-2f96-453d-9145-eaefa588efbc.jpg"
+     },
+     "coins": 100
+    }
+   },
    "scene": [
     {
      "who": "limdul",
@@ -1678,6 +1763,23 @@
      ]
     }
    },
+   "reward": {
+    "hero": {
+     "packs": 1,
+     "coins": 100
+    },
+    "villain": {
+     "card": {
+      "oracle_id": "5eb29367-4ec3-4bd2-887e-13eeeecae8fa",
+      "name": "Ihsan's Shade",
+      "rarity": "uncommon",
+      "set": "hml",
+      "id": "82351724-2814-4d9e-b065-bb72c761b2e7",
+      "image": "https://cards.scryfall.io/normal/front/8/2/82351724-2814-4d9e-b065-bb72c761b2e7.jpg"
+     },
+     "coins": 100
+    }
+   },
    "scene": [
     {
      "who": "ihsan",
@@ -1908,6 +2010,23 @@
        "id": "4695653a-5c4c-4ff3-b80c-f4b6c685f370"
       }
      ]
+    }
+   },
+   "reward": {
+    "hero": {
+     "packs": 1,
+     "coins": 100
+    },
+    "villain": {
+     "card": {
+      "oracle_id": "4f92804f-a231-4406-9a16-f4e102517b06",
+      "name": "Grandmother Sengir",
+      "rarity": "rare",
+      "set": "hml",
+      "id": "efb0ac91-5e8e-47b1-aa34-902eef60349f",
+      "image": "https://cards.scryfall.io/normal/front/e/f/efb0ac91-5e8e-47b1-aa34-902eef60349f.jpg"
+     },
+     "coins": 100
     }
    },
    "scene": [
@@ -2172,6 +2291,23 @@
        "id": "4695653a-5c4c-4ff3-b80c-f4b6c685f370"
       }
      ]
+    }
+   },
+   "reward": {
+    "hero": {
+     "packs": 2,
+     "coins": 200
+    },
+    "villain": {
+     "card": {
+      "oracle_id": "dafe63ef-f3d6-45e7-877a-573da92ba85e",
+      "name": "Pestilence",
+      "rarity": "common",
+      "set": "4ed",
+      "id": "90886a02-4c1f-48ea-8563-6d80c97d9f58",
+      "image": "https://cards.scryfall.io/normal/front/9/0/90886a02-4c1f-48ea-8563-6d80c97d9f58.jpg"
+     },
+     "coins": 200
     }
    },
    "scene": [

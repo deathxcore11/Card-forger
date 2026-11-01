@@ -219,7 +219,7 @@ export default {
       villainScene: [{who: 'efreet', line: "Another sailor, another promise of treasure."}, {who: 'efreet', line: "Serendib has outlasted a thousand ships. It can outlast one more."}],
       cues: {hero: cue('Hoist!', 'Fair winds!', "I've been shipwrecked six times. Seven's fine.", 'To Serendib!', 'Back to port...'),
         villain: cue('Turn back.', 'Burn, little boats.', 'Even fire tires.', 'Serendib keeps its own.', 'Go. Take nothing.')}},
-    {slot: 7, kind: 'Meta', title: 'Factories at Kroog', difficulty: 'Normal', rewardSet: 'atq', teaches: ['Artifact creatures', 'Sacrifice'],
+    {slot: 7, kind: 'Meta', title: 'Factories at Kroog', difficulty: 'Normal', rewardCard: "Ashnod's Altar", rewardSet: 'atq', teaches: ['Artifact creatures', 'Sacrifice'],
       blurb: "The war comes to Kroog, Urza's capital. His apprentice holds the walls against Mishra's cruellest engineer.",
       hero: {who: 'tawnos', deck: {name: 'The Walls of Kroog', colors: 'W', list: `
 4 Yotian Soldier

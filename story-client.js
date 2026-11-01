@@ -32,7 +32,7 @@ export function emptyProgress() { return {battles: {}, acts: {}}; }
 export function progressFromRefs(refs = []) {
   const p = emptyProgress();
   for (const ref of refs) {
-    let m = String(ref).match(/^story:(a\d+b\d+):(loaner|own|villain|clear)$/);
+    let m = String(ref).match(/^story:(a\d+b\d+):(loaner|own|villain|vown|clear)$/);
     if (m) { const b = p.battles[m[1]] ||= {}; b[m[2]] = true; continue; }
     m = String(ref).match(/^story:act(\d+):era$/);
     if (m) p.acts[m[1]] = true;
@@ -98,9 +98,9 @@ export function createStoryProgress({getAccessToken, accountId = () => null, fet
         .catch(e => { error = e.code === 'sign_in' ? '' : e.message; }).finally(() => { loading = null; onChange(); });
       return loading;
     },
-    // A won Story battle. The server pays once per clear and star; replays pay inside the daily cap.
+    // A won Story battle. The server pays the precon rewards once per side; your own deck earns XP.
     async claim({battle, seat, deck}) {
-      const local = {...(progress.battles[battle] || {}), clear: true, [seat === 'villain' ? 'villain' : deck === 'own' ? 'own' : 'loaner']: true};
+      const local = {...(progress.battles[battle] || {}), clear: true, [seat === 'villain' ? (deck === 'own' ? 'vown' : 'villain') : deck === 'own' ? 'own' : 'loaner']: true};
       if (seat === 'villain') local.clear = true;
       progress = merge(progress, {battles: {[battle]: local}, acts: /b8$/.test(battle) ? {[battle.match(/^a(\d+)/)[1]]: true} : {}}); save(); onChange();
       try { const out = await call({battle, seat, deck}); if (Array.isArray(out.refs)) { progress = merge(progress, progressFromRefs(out.refs)); save(); onChange(); } return out; }

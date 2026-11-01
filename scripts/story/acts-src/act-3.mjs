@@ -258,7 +258,7 @@ export default {
       scene: [{who: 'grandmother', line: 'My son plays with his food. I simply keep it still.'}, {who: 'reveka', line: "She'll freeze the whole table. Make every turn count."}, {who: 'grandmother', line: 'Sit. Stay. Good.'}],
       villainScene: [{who: 'grandmother', line: "My son plays with his food. Messy boy."}, {who: 'grandmother', line: "Everything stays where I put it. Including you, dear."}],
       cues: {villain: cue('Be still.', 'Nothing moves in my house.', 'Who untapped that?', 'There. Quiet.', 'Insolent.')}},
-    {slot: 8, kind: 'Boss', title: "Lim-Dûl's Legion", difficulty: 'Hard', rewardSet: 'all', teaches: ['Everything so far'],
+    {slot: 8, kind: 'Boss', title: "Lim-Dûl's Legion", difficulty: 'Hard', rewardCard: "Pestilence", rewardSet: 'all', teaches: ['Everything so far'],
       blurb: 'The necromancer stands at the gates of Kjeldor with every dead soldier of the long winter behind him.',
       hero: {who: 'laina', deck: {name: "Freyalise's Chosen", colors: 'GW', list: `
 4 Fyndhorn Elves

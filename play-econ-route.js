@@ -236,24 +236,32 @@ export async function progressRoute(request, env, {verifyBearer, fetcher = fetch
       return json({state: await state()});
     }
     if (path === 'story') {
-      // A won Story battle (story-mode-acts.md B2, play-progression.md section 3). Every ref is paid
-      // once: the first clear (an era pack and XP), each star (own deck: a bonus pack and coins;
-      // villain side: coins), the act's boss (the era-clear seal). A replay of a battle already won
-      // pays one era pack, up to replayPacksPerDay a day.
+      // A won Story battle (Randall, 1 Nov 21:11-21:13Z). The Story precon pays the real rewards, once per
+      // side: your side the battle's era packs (more for harder battles), the villain's side that villain's
+      // signature card. Your own deck clears the battle and earns XP only, so nobody is gatekept and the
+      // precon rewards stay there to come back for. A replay pays nothing.
       const id = String(body.battle || ''), m = id.match(/^a(\d{1,2})b([1-8])$/);
       if (!m) return fail('bad_battle');
       const act = await asset(env, request, `/data/story/act-${Number(m[1])}.json`, fetcher);
       const battle = act?.battles?.find(b => b.id === id);
       if (!battle) return fail('bad_battle', 404);
       const cfg = (await state()).config?.story || {}, set = battle.rewardSet, pack = n => Array.from({length: n}, () => ({set, source: 'story'}));
-      const star = body.seat === 'villain' ? 'villain' : body.deck === 'own' ? 'own' : 'loaner';
+      const reward = battle.reward || {hero: {packs: cfg.firstWinPacks ?? 1, coins: 0}, villain: {card: null, coins: cfg.starCoins ?? 100}};
+      const villain = body.seat === 'villain', own = body.deck === 'own', xp = cfg.firstWinXp ?? 150;
       const paid = [], pay = async (ref, delta) => { const out = await apply(ref, 'story', delta); if (!out?.duplicate) paid.push(ref); return !out?.duplicate; };
-      const first = await pay(`story:${id}:clear`, {packs: pack(cfg.firstWinPacks ?? 1), xp: cfg.firstWinXp ?? 150});
-      const starNew = await pay(`story:${id}:${star}`, star === 'own' ? {packs: pack(cfg.starPacks ?? 1), coins: cfg.starCoins ?? 100} : star === 'villain' ? {coins: cfg.starCoins ?? 100} : {});
-      if (battle.slot === 8) await pay(`story:act${Number(m[1])}:era`, {seals: cfg.eraClearSeals || {m: 1}});
-      if (!first && !starNew) {
-        const day = new Date().toISOString().slice(0, 10);
-        for (let i = 1; i <= (cfg.replayPacksPerDay ?? 3); i++) if (await pay(`story:replay:${day}:${i}`, {packs: pack(1)})) break;
+      if (villain) {
+        const refs = await storyRefs();
+        if (Array.isArray(refs) && !refs.includes(`story:${id}:clear`)) return fail('villain_locked', 403);
+        if (own) await pay(`story:${id}:vown`, {xp});
+        else { const v = reward.villain || {}; await pay(`story:${id}:villain`, {cards: v.card ? [v.card] : [], coins: v.coins | 0, xp}); }
+      } else {
+        await pay(`story:${id}:clear`, {xp});
+        if (own) await pay(`story:${id}:own`, {});
+        else {
+          const h = reward.hero || {};
+          await pay(`story:${id}:loaner`, {packs: pack(h.packs ?? 1), coins: h.coins | 0});
+          if (battle.slot === 8) await pay(`story:act${Number(m[1])}:era`, {seals: cfg.eraClearSeals || {m: 1}});
+        }
       }
       return json({paid, rewardSet: set, refs: await storyRefs(), state: await state()});
     }

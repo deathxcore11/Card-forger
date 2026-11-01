@@ -92,12 +92,19 @@ export const LESSONS = {
   'Racing a card-draw engine': 'They pay life to draw cards. Attack hard: every point you deal is one they can\'t spend.',
   'Playing under a lock': 'A lock stops cards from untapping or moving. Break it, or win with what\'s already in play.',
 };
+// What a battle pays, in words: era packs for your side, the villain's signature card for theirs.
+export const rewardText = (rw = {}, set = '') => rw.card ? `${esc(rw.card.name)}${rw.coins ? ` and ${rw.coins} coins` : ''}`
+  : `${rw.packs || 1} ${esc(SET_NAMES[set] || set.toUpperCase())} ${(rw.packs || 1) > 1 ? 'packs' : 'pack'}${rw.coins ? ` and ${rw.coins} coins` : ''}`;
 export function storyBattleMarkup({act, data, battle: b, progress, econ, ui = {}, ownDecks = [], avatarUrl = '', listHtml = ''}) {
   const rec = progress.battles?.[b.id] || {}, villainOpen = battleCleared(progress, b.id), seat = villainOpen && ui.seat === 'villain' ? 'villain' : 'hero';
   const mine = b[seat], theirs = b[seat === 'hero' ? 'villain' : 'hero'];
   const person = side => data.cast[b[side].who] || {name: 'You'};
   const face = side => b[side].who === 'you' && avatarUrl ? `background-image:url(${esc(avatarUrl)});background-position:50% 50%` : faceStyle(person(side).portrait);
   const listOpen = !!ui.listOpen;
+  // Each side pays once: say what this win pays, or point at the other side's reward once yours is claimed.
+  const rw = b.reward || {}, mineDone = seat === 'villain' ? !!rec.villain : !!rec.loaner, ownPick = (ui.deck || 'loaner') !== 'loaner';
+  const prize = ownPick ? '<small>Your deck</small> XP only' : !mineDone ? `<small>Win</small> ${rewardText(rw[seat], b.rewardSet)}`
+    : seat === 'hero' && !rec.villain && rw.villain?.card ? `<small>Their side</small> ${rewardText(rw.villain, b.rewardSet)}` : '<small>Reward claimed</small>';
   const deckChoice = ui.deck && ui.deck !== 'loaner' ? ownDecks.find(d => d.id === ui.deck) : null;
   const sideCard = (side, you) => `<article class="st-side${you ? ' st-side--you' : ''}" data-side="${side}"><span class="st-side-face" style="${face(side)}" aria-hidden="true"></span>
     <span class="st-side-copy"><span class="st-side-who">${you ? 'You play' : 'Opponent'}</span><h2>${esc(person(side).name)}</h2>${you ? '' : `<p>${esc(b[side].deck.name)}</p>`}</span></article>`;
@@ -108,7 +115,7 @@ export function storyBattleMarkup({act, data, battle: b, progress, econ, ui = {}
   const deckCard = ({id, name, art, sub, ok = true, reason = ''}) => `<button type="button" class="home-personal-deck st-deck-opt" data-act="storyDeckPick" data-story-deck="${esc(id)}" aria-pressed="${(ui.deck || 'loaner') === id}"${(ui.deck || 'loaner') === id ? ` aria-expanded="${listOpen}" aria-controls="stDeckList"` : ''} ${ok ? '' : 'disabled'}><span class="home-personal-art" aria-hidden="true">${art ? `<img src="${esc(art)}" alt="" loading="lazy" referrerpolicy="no-referrer">` : ''}</span><span class="home-personal-copy"><b>${esc(name)}</b><small>${esc(ok ? sub : reason)}</small></span>${(ui.deck || 'loaner') === id ? '<span class="st-deck-chev" aria-hidden="true"></span>' : ''}</button>`;
   const loanLead = lead(mine.deck);
   const picks = [deckCard({id: 'loaner', name: mine.deck.name, art: loanLead?.id ? cropOf(loanLead.id) : '', sub: `Story deck · ${count(mine.deck)} cards`}),
-    ...(seat === 'hero' ? ownDecks.map(d => deckCard({id: d.id, name: d.name, art: d.art || '', sub: `Your deck · ${count(d)} cards`, ok: d.fits.ok, reason: d.fits.reason})) : [])].join('');
+    ...(ownDecks.length ? ownDecks.map(d => deckCard({id: d.id, name: d.name, art: d.art || '', sub: `Your deck · ${count(d)} cards`, ok: d.fits.ok, reason: d.fits.reason})) : [])].join('');
   // Their list stays secret until you've beaten them; after that you can play their side too.
   const listSide = villainOpen && ui.listSide === 'theirs' ? 'theirs' : 'mine';
   const learn = (b.teaches || []).filter(t => LESSONS[t]);
@@ -122,6 +129,7 @@ export function storyBattleMarkup({act, data, battle: b, progress, econ, ui = {}
     <div class="st-duel-bar">
       ${villainOpen ? `<div class="st-seg" role="group" aria-label="Side"><button data-act="storySeat" data-story-seat="hero" aria-pressed="${seat === 'hero'}">${esc(person('hero').name)}</button><button data-act="storySeat" data-story-seat="villain" aria-pressed="${seat === 'villain'}">${esc(person('villain').name)}</button></div>` : ''}
       <span class="st-duel-stars">${starsRow(rec)}</span>
+      <span class="st-reward">${prize}</span>
       <button class="pl-mode-cta st-play" data-act="storyPlay">${battleCleared(progress, b.id) ? 'Replay' : 'Duel'}</button>
     </div>
     ${listOpen ? `<section class="st-decks" id="stDeckList" aria-label="Decklist">

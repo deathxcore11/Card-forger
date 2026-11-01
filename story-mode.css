@@ -96,6 +96,8 @@
 .st-seg button{min-height:44px;padding:0 16px;border:1px solid transparent;border-radius:10px;background:none;color:var(--muted);font:700 14px/1 'DM Sans',system-ui,sans-serif;cursor:pointer}
 .st-seg button[aria-pressed=true]{border-color:#d4b77c66;background:linear-gradient(125deg,#e6c88433,#b39d6c12);color:var(--text)}
 .st-duel-stars{display:inline-flex}
+.st-reward{display:inline-flex;align-items:baseline;gap:6px;font-size:14px;color:var(--text);min-width:0}
+.st-reward small{font:800 11px/1 'DM Sans',system-ui,sans-serif;letter-spacing:.16em;text-transform:uppercase;color:var(--gold)}
 .st-play.pl-mode-cta{margin-left:auto;min-width:132px;cursor:pointer}
 .st-loading{display:grid;place-items:center;min-height:40vh;color:var(--muted);font-size:14px}
 

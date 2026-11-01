@@ -165,7 +165,7 @@ import {createCardFacts} from "./play-econ-cards.js";
 import {stepDeckCard,ownedByName,deckShortfall,legalFormats,mtgjsonDeckRows} from "./play-econ-rules.js";
 import {STORY_ACTS} from "./story-acts.js";
 import {createStoryProgress,loadAct,loadActPool,ownDeckFits,battleCleared,currentAct,currentBattle,actCleared} from "./story-client.js";
-import {storyHomeMarkup,storyActMarkup,storyBattleMarkup,playScene,createStoryBubbles,starsRow} from "./story-ui.js";
+import {storyHomeMarkup,storyActMarkup,storyBattleMarkup,playScene,createStoryBubbles,starsRow,rewardText} from "./story-ui.js";
 import { initCloud, pauseLocalConflict, communityRequest, cloudAccessToken, cloudInfo, isEmptyWorkspace, statusLabel, scheduleSync, signInGoogle, signInEmail, signInPassword, createAccount, requestPasswordReset, finishPasswordReset, signOut, detachDeviceSync, saveProfile, resolvePending, syncNow, resendConfirmation, deleteAccount } from "./cloud.js";
 import { withSnapshot, collectionValue, recordValuePoint, cardSig, engineProfile, swapImpact, lotPrice } from "./insights.js";
 
@@ -2126,7 +2126,7 @@ A.storyOpenAct=t=>{const n=Number(t?.dataset?.storyAct||storyUi.act);if(!STORY_A
 A.storyOpenBattle=t=>{storyUi.battle=t.dataset.storyBattle;storyUi.seat='hero';storyUi.deck='loaner';storyUi.listSide='mine';storyUi.listOpen=false;storyGo('storyBattle');storyWantArt();storyWarm();
  // The boss runs on the host: start warming it while the player reads the setup (story-mode-acts.md A1).
  if(/b8$/.test(storyUi.battle))void import('./play-forge-host-client.js').then(m=>m.warmForgeHost({getAccessToken:cloudAccessToken})).catch(()=>{});};
-A.storySeat=t=>{storyUi.seat=t.dataset.storySeat==='villain'?'villain':'hero';if(storyUi.seat==='villain')storyUi.deck='loaner';storyUi.listSide='mine';refreshPlayMenu();};
+A.storySeat=t=>{storyUi.seat=t.dataset.storySeat==='villain'?'villain':'hero';storyUi.deck='loaner';storyUi.listOpen=false;storyUi.listSide='mine';refreshPlayMenu();};
 A.storyDeckPick=t=>{const id=t.dataset.storyDeck||'loaner';storyUi.listOpen=storyUi.deck===id?!storyUi.listOpen:true;storyUi.deck=id;storyUi.listSide='mine';if(storyUi.listOpen)storyWantArt();refreshPlayMenu();};
 A.storyListSide=t=>{storyUi.listSide=t.dataset.storyList==='theirs'?'theirs':'mine';storyWantArt();refreshPlayMenu();};
 // The decklists use the app's own deck viewer, so its card data loads first (the same lookups the deck pages use).
@@ -2154,7 +2154,7 @@ function storyMarkup(){
  if(playView==='storyAct')return storyActMarkup({act:storyUi.act,data,progress,econ});
  const b=storyBattle();if(!b)return storyActMarkup({act:storyUi.act,data,progress,econ});
  const ownDecks=storyOwnDecks(),seat=storyUi.seat==='villain'&&battleCleared(progress,b.id)?'villain':'hero',other=seat==='hero'?'villain':'hero';
- const own=seat==='hero'&&storyUi.deck!=='loaner'?ownDecks.find(d=>d.id===storyUi.deck):null,list=storyUi.listSide==='theirs'&&battleCleared(progress,b.id)?b[other].deck:own||b[seat].deck;
+ const own=storyUi.deck!=='loaner'?ownDecks.find(d=>d.id===storyUi.deck):null,list=storyUi.listSide==='theirs'&&battleCleared(progress,b.id)?b[other].deck:own||b[seat].deck;
  return storyBattleMarkup({act:storyUi.act,data,battle:b,progress,econ,ui:storyUi,ownDecks,avatarUrl:storyAvatar(),listHtml:!storyUi.listOpen?'':withStoryPrints(list.cards,()=>playDeckPreview({name:list.name,format:'Vintage',cards:list.cards.map(r=>({name:r.name,qty:r.qty})),side:[]}))});
 }
 const storyDeck=(deck,id)=>({id,name:deck.name,format:'Vintage',cards:deck.cards.map(r=>({name:r.name,qty:r.qty,...(r.id?{printingId:r.id}:{})}))});
@@ -2163,7 +2163,7 @@ A.storyPlay=async({skipScene=false}={})=>{
  if(playStarting||playerMatHost||practicePregame||T.game()!=='mtg')return;
  if(!cloudInfo()?.user?.id)return toast('Sign in to play Story mode.');
  const seat=storyUi.seat==='villain'&&battleCleared(storyProgress.snapshot().progress,b.id)?'villain':'hero',other=seat==='hero'?'villain':'hero';
- const own=seat==='hero'&&storyUi.deck!=='loaner'?storyOwnDecks().find(d=>d.id===storyUi.deck&&d.fits.ok):null;
+ const own=storyUi.deck!=='loaner'?storyOwnDecks().find(d=>d.id===storyUi.deck&&d.fits.ok):null;
  // Story launches like Quick Play: decks known, coin flip by the engine, and the match is requested
  // straight away so it loads underneath the talking heads instead of after them.
  const base=playSetup.snapshot();
@@ -2188,8 +2188,8 @@ A.storyPlay=async({skipScene=false}={})=>{
   let paid=false;
   const finished=async outcome=>{bubbles?.finish(outcome);if(outcome!=='win'||paid)return;paid=true;
    const out=await storyProgress.claim({battle:b.id,seat,deck:own?'own':'loaner'});if(out?.state)playEcon.refresh();
-   const panel=root.querySelector('.play-match-result');if(panel){const note=document.createElement('p');note.className='st-result-note';const packs=(out?.paid||[]).filter(r=>/:clear$|:own$|replay/.test(r)).length;
-    note.innerHTML=`${starsRow(storyProgress.snapshot().progress.battles?.[b.id])}<span>${packs?`${packs} ${packs===1?'pack':'packs'} added to Packs`:out?.error?esc(out.error):'Battle won again'}</span>`;panel.querySelector('.play-result-actions')?.before(note);}
+   const panel=root.querySelector('.play-match-result');if(panel){const note=document.createElement('p');note.className='st-result-note';const got=out?.paid||[],won=!own&&got.includes(`story:${b.id}:${seat==='villain'?'villain':'loaner'}`),rw=b.reward?.[seat]||{};
+    note.innerHTML=`${starsRow(storyProgress.snapshot().progress.battles?.[b.id])}<span>${won?rewardText(rw,b.rewardSet)+' added':out?.error?esc(out.error):own?'Your own deck earns XP. Win with the Story deck for the reward.':'Reward already claimed'}</span>`;panel.querySelector('.play-result-actions')?.before(note);}
    if(b.slot===8&&seat==='hero')setTimeout(()=>void playScene({lines:data.finale,cast:data.cast,leftWho:b.hero.who,rightWho:b.villain.who,avatarUrl:storyAvatar(),title:'Act '+data.act+' finale'}),2600);};
   const back=()=>{bubbles?.destroy();bubbles=null;closePlayerMat();playView='storyAct';refreshPlayMenu();scrollTo({top:0});};
   playerMatHost=createForgePlayerMat({root,readAccount:readPlayAccount,readSetup:()=>setup,getAccessToken:cloudAccessToken,createClient:localClient,
