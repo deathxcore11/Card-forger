@@ -1728,6 +1728,9 @@ I.playEconCardSearch=t=>{econUi.cardQuery=t.value;refreshPlayMenu();const f=docu
 // Opening: the server rolls the pack, then the pack opener plays it (the Play variant: no prices).
 // A holo pull says it can be foil, so the reveal shows it in the app's foil finish.
 const econPick=c=>({id:c.id,oracle_id:c.oracle_id,name:c.name,rarity:c.rarity,set:c.set,collector_number:c.number,image_uris:{normal:c.image,art_crop:c.art},finishes:c.foil?['nonfoil','foil']:['nonfoil'],...(c.foil?{packFoil:true}:{}),...(c.slot?{packSlot:c.slot}:{})});
+// A Collector pack says so up front: a surprise one (an ordinary pack that turned) gets the bigger line.
+const econPicks=out=>{const picks=out.pack.contents.map(econPick);if(out.pack.collector){picks.collector=true;picks.surprise=!!out.pack.surprise;}if(out.pack.god)picks.godPack=true;return picks;};
+const econCollector=out=>out?.pack?.god?'God pack! Every card is a holo rare or mythic.':out?.pack?.surprise?'Collector pack surprise! Every card is holo.':out?.pack?.collector?'Collector pack: every card is holo.':'';
 const econOpened=out=>{const bits=[];const sb=out.sealBonus||{};for(const [k,label] of [['u','uncommon'],['r','rare'],['m','mythic']])if(sb[k])bits.push('+1 '+label+' seal');if(out.duplicateCoins)bits.push('+'+out.duplicateCoins+' coins from extra copies');return bits.join(' · ');};
 // Opened cards fly into the Trunk one after another, each with a small tick (the app's add-to-collection flight).
 const econLand=list=>list.slice(0,15).forEach((f,i)=>setTimeout(()=>{flyToCollection(f);haptic('tick');},i*85));
@@ -1735,8 +1738,8 @@ const econLand=list=>list.slice(0,15).forEach((f,i)=>setTimeout(()=>{flyToCollec
 A.playEconOpen=async t=>{let out;const btn=t.closest?.('.pe-pack')||t;btn.classList.add('pe-pack--opening');btn.setAttribute('aria-busy','true');haptic('tap');
  try{out=await playEcon.open(t.dataset.econPack);}catch{return;}finally{btn.classList.remove('pe-pack--opening');btn.removeAttribute('aria-busy');}
  const name=c=>(playEcon.snapshot().state?.shop||[]).find(x=>x.code===c)?.name||c.toUpperCase();
- try{openPackPreview({game:'mtg',set:{code:out.pack.set,name:name(out.pack.set)},cards:[],variant:'play',drawn:out.pack.contents.map(econPick),note:['Added to your Play collection.',econOpened(out)].filter(Boolean).join(' '),onCopy:copyPlain,isCurrent:()=>true,onLand:econLand,
-  onNext:async()=>{const left=playEcon.snapshot().state?.packs||[],next=left.find(p=>p.set===out.pack.set)||left[0];if(!next)return null;out=await playEcon.open(next.id);return {picks:out.pack.contents.map(econPick),set:{code:out.pack.set,name:name(out.pack.set)}};}});}catch(e){toast(e.message||'Could not show this pack.');}};
+ try{openPackPreview({game:'mtg',set:{code:out.pack.set,name:name(out.pack.set)},cards:[],variant:'play',drawn:econPicks(out),note:[econCollector(out),'Added to your Play collection.',econOpened(out)].filter(Boolean).join(' '),onCopy:copyPlain,isCurrent:()=>true,onLand:econLand,
+  onNext:async()=>{const left=playEcon.snapshot().state?.packs||[],next=left.find(p=>p.set===out.pack.set)||left[0];if(!next)return null;out=await playEcon.open(next.id);return {picks:econPicks(out),set:{code:out.pack.set,name:name(out.pack.set)}};}});}catch(e){toast(e.message||'Could not show this pack.');}};
 // Seal press: find a card by name on Scryfall, then stamp it with a seal of its rarity.
 A.playEconFind=async form=>{const q=String(new FormData(form).get('card')||'').trim();if(!q)return;econUi.press={query:q,busy:true};refreshPlayMenu();
  try{const r=await fetch('https://api.scryfall.com/cards/named?fuzzy='+encodeURIComponent(q));const c=r.ok?await r.json():null;econUi.press=c?.oracle_id?{query:q,card:c}:{query:q,error:'No card by that name.'};}catch{econUi.press={query:q,error:'Could not search right now.'};}refreshPlayMenu();};
@@ -2318,8 +2321,8 @@ A.storyPlay=async({skipScene=false}={})=>{
    // Story deeds: what this win earned (story-deeds.js); the server re-checks and pays each once.
    const deeds=storyDeedsEarned(b.id,{...seenStats,seat,own:!!own,onPlay:typeof rec?.onPlay==='boolean'?rec.onPlay:null,turns:rec?.turns||seenStats.turns,endLife:rec?.life??seenStats.endLife},out?.refs||[]);
    if(deeds.length)void playEcon.reportDeeds(b.id,deeds).then(r=>{for(const id of r?.counted||[]){const d=[...STORY_DEEDS,...STORY_ACT_DEEDS].find(x=>x.id===id);if(d)toast(`Deed done: ${d.title}. Claim it in Achievements.`);}});
-   const panel=root.querySelector('.play-match-result');if(panel){const note=document.createElement('p');note.className='st-result-note';const got=out?.paid||[],won=!own&&got.includes(`story:${b.id}:${seat==='villain'?'villain':'loaner'}`),rw=b.reward?.[seat]||{};
-    note.innerHTML=`${starsRow(storyProgress.snapshot().progress.battles?.[b.id])}<span>${won?rewardText(rw,b.rewardSet)+' added':out?.error?esc(out.error):own?'Your own deck earns XP. Win with the Story deck for the reward.':'Reward already claimed'}</span>`;panel.querySelector('.play-result-actions')?.before(note);}
+   const panel=root.querySelector('.play-match-result');if(panel){const note=document.createElement('p');note.className='st-result-note';const got=out?.paid||[],won=!own&&got.includes(`story:${b.id}:${seat==='villain'?'villain':'loaner'}`),rw=b.reward?.[seat]||{},coll=got.includes(`story:${b.id}:collector`);
+    note.innerHTML=`${starsRow(storyProgress.snapshot().progress.battles?.[b.id])}<span>${won?rewardText(rw,b.rewardSet)+(coll?' and a Collector pack':'')+' added':coll?'A Collector pack added':out?.error?esc(out.error):own?'Your own deck earns XP. Win with the Story deck for the reward.':'Reward already claimed'}</span>`;panel.querySelector('.play-result-actions')?.before(note);}
    const ending=b.slot===8?(seat==='hero'?data.finale:data.villainFinale):b.after;
    if(ending?.length)setTimeout(()=>void playScene({lines:ending,cast:data.cast,leftWho:b.hero.who,rightWho:b.villain.who,avatarUrl:storyAvatar(),title:b.slot===8?'Act '+data.act+' finale':b.title}),2600);};
   const back=()=>{removeEventListener('play:match-recorded',onRec);bubbles?.destroy();bubbles=null;closePlayerMat();playView='storyAct';refreshPlayMenu();scrollTo({top:0});};

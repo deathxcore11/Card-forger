@@ -5,6 +5,7 @@ import {selectPackProduct,selectPackGroup} from './set-art.js';
 import {packEligible} from './set-experience.js';
 import {dailyDetails} from './home-today.js';
 import {normalizePtcg} from './ptcg.js';
+import {collectorPicks} from './play-econ-rules.js';
 import {samplePack,packRandom,mtgGodPack,rollYgoPrinting,ptcgSetRarities,packEra,packSize,packFinishes,packArtUrl} from './pack-preview.js';
 import {todayPackMarkup} from './home-today.js';
 // The shipped Android 0.4.0 ImageCache accepts this encoded query alphabet.
@@ -47,10 +48,9 @@ assert.deepEqual(ptcgPack.slice(7).map(c=>c.packSlot),['reverse','reverse','hit'
 assert.equal(ptcgPack.filter(c=>c.rarity==='Double rare').length<=1,true,'never a pile of ex cards');
 assert.equal(samplePack('ptcg',ptcgSet.filter(c=>c.id!=='ir2'),undefined,seq(0),SV).godPack,undefined,'no god pack when the set cannot fill every hit slot');
 const godPack=samplePack('ptcg',ptcgSet,undefined,seq(0),SV);assert.equal(godPack.godPack,true);assert(godPack.slice(7).every(c=>/illustration rare/i.test(c.rarity)),'a god pack fills every hit slot with illustration rares');
-// Magic and Yu-Gi-Oh! god packs: every card a rare or mythic (the foil slot stays foil), or every card a foil.
-const bigMtg=mtgSet.concat([...Array(12)].map((_,i)=>({id:'r'+(i+1),name:'R'+(i+1),rarity:'rare'})));const mtgGod=samplePack('mtg',bigMtg,undefined,seq(0));
-assert.equal(mtgGod.godPack,true);assert(mtgGod.every(c=>/^(rare|mythic)$/.test(c.rarity)));assert.equal(mtgGod[10].packSlot,'foil');
-assert.equal(samplePack('mtg',mtgSet,undefined,seq(0)).godPack,undefined,'no Magic god pack without enough rares');
+// Magic has no rares-only god pack any more: its surprise is a Collector pack (same pull rates, every card holo).
+const bigMtg=mtgSet.concat([...Array(12)].map((_,i)=>({id:'r'+(i+1),name:'R'+(i+1),rarity:'rare'})));assert.equal(samplePack('mtg',bigMtg,undefined,seq(0)).godPack,undefined);
+const coll=collectorPicks([{id:'a',rarity:'common'},{id:'b',rarity:'rare',packSlot:'hit'}]);assert.equal(coll.collector,true);assert(coll.every(c=>c.packFoil));assert.deepEqual(coll.map(c=>c.rarity),['common','rare'],'a Collector pack keeps the pack\'s rarities');
 const sheetGod=mtgGodPack([{id:'c0',packSlot:''},{id:'c1',packFoil:true,packSlot:'foil'}],[{id:'a',rarity:'rare'},{id:'b',rarity:'mythic'},{id:'c',rarity:'common'}],()=>.5);
 assert.equal(sheetGod.godPack,true);assert.equal(sheetGod[1].packFoil,true);assert.equal(new Set(sheetGod.map(c=>c.id)).size,2);
 const ygoFoils=[...Array(12)].map((_,i)=>({id:'yf'+i,name:'YF'+i,setContext:{printings:[{code:'X-'+i,rarity:i%3?'Super Rare':'Ultra Rare'}]}})).concat([...Array(10)].map((_,i)=>({id:'yc'+i,name:'YC'+i,setContext:{printings:[{code:'C-'+i,rarity:'Common'}]}})));

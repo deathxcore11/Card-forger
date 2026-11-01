@@ -4,9 +4,9 @@
 // just shows what this returns. Play's wall: nothing here touches the real collection or prices.
 // Spec: play-progression.md sections 3 to 9.
 import {SUPABASE} from './config.js';
-import {loadMtgBooster, mtgBoosterCards, drawMtgBooster} from './mtg-boosters.js';
+import {loadMtgBooster, mtgBoosterCards, drawMtgBooster, mtgGodPackPicks} from './mtg-boosters.js';
 import {rewardSet, setFormats} from './play-econ-sets.js';
-import {starterGrant, sealTrackBonus, packContentsRow, cardDelta, RARITY_SEAL, FORGE_STEPS, forgeRatio, holoCost, preconPrice, mtgjsonCardDelta, mtgjsonDeckRows, deckShortfall, ownedByName} from './play-econ-rules.js';
+import {starterGrant, sealTrackBonus, packContentsRow, cardDelta, RARITY_SEAL, FORGE_STEPS, forgeRatio, holoCost, preconPrice, mtgjsonCardDelta, mtgjsonDeckRows, deckShortfall, ownedByName, isCollectorPack, collectorOdds, collectorPicks, collectorSource, godPackOdds} from './play-econ-rules.js';
 import {PRACTICE_STARTER_ROWS} from './play-starter-deck.js';
 import {STORY_DEEDS, STORY_ACT_DEEDS, storyDeedsEarned} from './story-deeds.js';
 import {ACHIEVEMENTS, achievementRows, achievementReward, achievementRef, questRows, questReward, loginStamp, rewardDelta, matchCounters, playDay} from './play-achievements.js';
@@ -116,13 +116,19 @@ export async function progressRoute(request, env, {verifyBearer, fetcher = fetch
       if (!data) return fail('no_booster', 503);
       // Scryfall refuses requests without a User-Agent and Accept header, and a Worker sends neither.
       const known = await mtgBoosterCards(data, [], scryfallFetch(fetcher));
-      const picks = drawMtgBooster(data, known, cryptoRandom);
+      // A collector pack (boss, hard achievement) is the same booster with every card holo; any other pack
+      // has a small chance to come out as one too.
+      const earned = isCollectorPack(pack), surprise = !earned && cryptoRandom() < collectorOdds(s.config);
+      const drawn = drawMtgBooster(data, known, cryptoRandom), kind = earned || surprise ? 'collector' : 'regular';
+      // God pack, at Wizards' own odds (1 in 1,000 packs, 1 in 300 Collector packs): every card a holo rare or mythic.
+      const god = cryptoRandom() < godPackOdds(s.config, kind) ? mtgGodPackPicks(data, known, drawn.length, cryptoRandom) : null;
+      const picks = god || (kind === 'collector' ? collectorPicks(drawn) : drawn);
       const contents = picks.map(packContentsRow).filter(c => c.oracle_id);
       // Never spend a pack on an empty draw: the pack stays banked and the player can try again.
       if (contents.length < Math.min(5, picks.length || 5)) return fail('cards_unavailable', 503);
       const bonus = sealTrackBonus(s.config, (s.wallet?.packs_opened || 0) + 1);
       const result = await apply('open:' + pack.id, 'open', {open: {id: pack.id, contents}, cards: contents.filter(c => c.oracle_id).map(cardDelta), seals: bonus});
-      return json({pack: {...pack, contents}, sealBonus: bonus, duplicateCoins: result.duplicate_coins || 0, converted: result.converted || [], state: await state()});
+      return json({pack: {...pack, contents, ...(earned || surprise ? {collector: true} : {}), ...(surprise ? {surprise: true} : {}), ...(god ? {god: true, collector: true} : {})}, sealBonus: bonus, duplicateCoins: result.duplicate_coins || 0, converted: result.converted || [], state: await state()});
     }
     if (path === 'craft') {
       const id = String(body.id || '');
@@ -277,6 +283,8 @@ export async function progressRoute(request, env, {verifyBearer, fetcher = fetch
         else { const v = reward.villain || {}; await pay(`story:${id}:villain`, {cards: v.card ? [v.card] : [], coins: v.coins | 0, xp}); }
       } else {
         await pay(`story:${id}:clear`, {xp});
+        // Every act's boss always gives a Collector pack of its era on the first hero-side win.
+        if (battle.slot === 8 || /boss/i.test(battle.kind || '')) await pay(`story:${id}:collector`, {packs: [{set, source: collectorSource('story')}]});
         if (own) await pay(`story:${id}:own`, {});
         else {
           const h = reward.hero || {};

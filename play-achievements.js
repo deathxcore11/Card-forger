@@ -4,6 +4,7 @@
 // Play collection. Practice never counts, and friend matches count as played, never as won.
 
 import {STORY_DEEDS, STORY_ACT_DEEDS, storyDeedArt} from './story-deeds.js';
+import {collectorSource} from './play-econ-rules.js';
 
 // The tier names for a chain of n steps: the last step of a long chain is mythic.
 const TIER_NAMES = {1: ['gold'], 2: ['bronze', 'gold'], 3: ['bronze', 'silver', 'gold'], 4: ['bronze', 'silver', 'gold', 'mythic'], 5: ['bronze', 'bronze', 'silver', 'gold', 'mythic']};
@@ -70,7 +71,10 @@ export const almostThere = (rows, n = 3) => rows.filter(r => r.next && !r.hidden
 export function achievementReward(a, step, config = {}) {
   if (a.feat) return {...FEAT};
   const tier = tierNames(a.steps.length)[step], cfg = config?.achievement?.[tier] || DEFAULT_TIER_REWARD[tier];
-  return JSON.parse(JSON.stringify(cfg || DEFAULT_TIER_REWARD.bronze));
+  const out = JSON.parse(JSON.stringify(cfg || DEFAULT_TIER_REWARD.bronze));
+  // The hard steps (gold and mythic) also give a Collector pack (play-econ-rules.js), unless the config says otherwise.
+  if ((tier === 'gold' || tier === 'mythic') && out.collector == null) out.collector = 1;
+  return out;
 }
 export {claimedRef as achievementRef};
 
@@ -143,6 +147,7 @@ export function rewardDelta(parts = [], set = '', source = 'quest') {
     out.coins += p.coins | 0; out.xp += p.xp | 0;
     for (const [k, v] of Object.entries(p.seals || {})) out.seals[k] = (out.seals[k] || 0) + (v | 0);
     if (set) for (let i = 0; i < (p.packs | 0); i++) out.packs.push({set, source});
+    if (set) for (let i = 0; i < (p.collector | 0); i++) out.packs.push({set, source: collectorSource(source)});
   }
   if (!out.coins) delete out.coins; if (!out.xp) delete out.xp; if (!Object.keys(out.seals).length) delete out.seals; if (!out.packs.length) delete out.packs;
   return out;

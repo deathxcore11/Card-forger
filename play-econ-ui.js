@@ -2,7 +2,7 @@
 // Play homepage, the Merchant, Packs, Collection and Decks. Legacy of the Duelist style menus
 // on real card art, in the app's glass and gold. Markup only; app.js wires the actions.
 // The wall: no prices anywhere in Play. Cards show art, name, rarity and copies owned (of 4).
-import {SEALS, FORGE_STEPS, forgeRatio, masteryLevel, deckShortfall, deckRules, copiesLeft, isBasicLand, PLAY_FORMATS, ownedByName, preconPrice, scryfallImage} from './play-econ-rules.js';
+import {SEALS, FORGE_STEPS, forgeRatio, masteryLevel, deckShortfall, deckRules, copiesLeft, isBasicLand, PLAY_FORMATS, ownedByName, preconPrice, scryfallImage, isCollectorPack} from './play-econ-rules.js';
 import {cardGroup, cardFact} from './play-econ-cards.js';
 import {setRowContent, setYearSections} from './set-list-ui.js';
 import {segmented, setIconUrl, img, manaCost, symbolUrl, bar} from './ui.js';
@@ -72,9 +72,9 @@ const statusLine = snap => `<p class="pe-status" role="status" aria-live="polite
 // The real booster wrapper in front, the set's own key art behind it.
 // A booster wrapper drawn for every set alike: crimped foil, the set's most played card's art,
 // its symbol and name on the band. No product photos, so no white boxes or doubled titles.
-export function boosterMarkup({code = '', name = '', facts = null, big = false, mini = false} = {}) {
+export function boosterMarkup({code = '', name = '', facts = null, big = false, mini = false, collector = false} = {}) {
   const f = facts?.set?.(code) || {}, label = name || f.name || code.toUpperCase(), icon = f.icon || setIconUrl(code);
-  return `<span class="pe-booster${big ? ' pe-booster--big' : ''}${mini ? ' pe-booster--mini' : ''}" aria-hidden="true"${f.art ? ` style="--art:url('${esc(f.art)}')"` : ''}><span class="pe-booster-art"></span><span class="pe-booster-band"><span class="pe-booster-icon" style="--icon:url('${esc(icon)}')"></span><b>${esc(label)}</b><small>Play booster</small></span><span class="pe-booster-sheen"></span></span>`;
+  return `<span class="pe-booster${big ? ' pe-booster--big' : ''}${mini ? ' pe-booster--mini' : ''}${collector ? ' pe-booster--collector' : ''}" aria-hidden="true"${f.art ? ` style="--art:url('${esc(f.art)}')"` : ''}><span class="pe-booster-art"></span><span class="pe-booster-band"><span class="pe-booster-icon" style="--icon:url('${esc(icon)}')"></span><b>${esc(label)}</b><small>${collector ? 'Collector booster' : 'Play booster'}</small></span><span class="pe-booster-sheen"></span></span>`;
 }
 
 // The Forge (play-progression.md): seals climb one rarity at a time, common to mythic. Each step shows
@@ -123,9 +123,10 @@ export function shopMarkup(snapshot, {query = '', press = null, facts = null, sh
 export function packsMarkup(snapshot, {facts = null} = {}) {
   const s = snapshot.state, packs = s.packs || [], names = new Map([...(s.shop || []).map(x => [x.code, x.name]), ...(s.rewardSet ? [[s.rewardSet.code, s.rewardSet.name]] : [])]);
   const groups = new Map();
-  for (const p of packs) { if (!groups.has(p.set)) groups.set(p.set, []); groups.get(p.set).push(p); }
+  // Collector packs (every card holo) sit on their own shelf slot, in front of the set's ordinary packs.
+  for (const p of [...packs].sort((a, b) => isCollectorPack(b) - isCollectorPack(a))) { const k = (isCollectorPack(p) ? '*' : '') + p.set; if (!groups.has(k)) groups.set(k, []); groups.get(k).push(p); }
   return `<section class="play-menu pe-screen pe-packs" aria-labelledby="playTitle">${head('Packs', snapshot)}
-    ${groups.size ? `<div class="pe-pack-grid pe-pack-grid--open">${[...groups].map(([code, list]) => `<button class="pe-pack pe-pack--open${snapshot.busy === 'open:' + list[0].id ? ' pe-pack--opening' : ''}" data-act="playEconOpen" data-econ-pack="${esc(list[0].id)}" ${snapshot.busy ? 'disabled' : ''} aria-label="Open a ${esc(names.get(code) || code.toUpperCase())} pack, ${list.length} waiting">${boosterMarkup({code, name: names.get(code), facts})}<span class="pe-badge">${n(list.length)}</span></button>`).join('')}</div>`
+    ${groups.size ? `<div class="pe-pack-grid pe-pack-grid--open">${[...groups].map(([key, list]) => { const code = list[0].set, collector = key[0] === '*'; return `<button class="pe-pack pe-pack--open${collector ? ' pe-pack--collector' : ''}${snapshot.busy === 'open:' + list[0].id ? ' pe-pack--opening' : ''}" data-act="playEconOpen" data-econ-pack="${esc(list[0].id)}" ${snapshot.busy ? 'disabled' : ''} aria-label="Open a ${esc(names.get(code) || code.toUpperCase())} ${collector ? 'Collector pack' : 'pack'}, ${list.length} waiting">${boosterMarkup({code, name: names.get(code), facts, collector})}<span class="pe-badge">${n(list.length)}</span></button>`; }).join('')}</div>`
       : `<div class="pe-empty"><h2>Every pack is open</h2><p>Packs come from Story battles, Planeswalk bosses, weekly quests and the Merchant.</p><button class="btn" data-act="playEconView" data-econ-view="shop">Visit the Merchant</button></div>`}
     ${statusLine(snapshot)}</section>`;
 }
