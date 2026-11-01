@@ -706,3 +706,9 @@ body[data-view="play"] #content{padding-left:max(var(--page-edge,16px),calc(env(
 .btn.cs-plate.pl-start--ghost:hover{box-shadow:inset 0 0 0 1px var(--gold);color:var(--gold)}
 .pl-format--fixed{display:flex;align-items:center;min-height:44px;padding:0 16px;border:1px solid color-mix(in srgb,var(--gold) 22%,var(--line));border-radius:999px;font-weight:800;font-size:14px;white-space:nowrap;color:var(--muted)}
 @media(max-width:700px){.pl-invite{justify-content:stretch}.pl-invite-btn{flex:1}}
+/* 4.3.53 Quick Play with a deck chosen starts the match in one tap; "Change deck" opens the setup screen. */
+.pl-mode-hold{position:relative;display:grid;min-width:0}
+.pl-mode-hold>.pl-mode{height:100%}
+.pl-mode-change{position:absolute;left:22px;bottom:22px;z-index:2;min-height:44px;padding:0 18px;border-radius:13px;border:1px solid #ffffff2e;background:#0c0e13a6;color:#f1e9d8;font:600 14px/1 'DM Sans',system-ui,sans-serif;backdrop-filter:blur(8px);cursor:pointer}
+.pl-mode-change:hover{border-color:#f6dfa880;color:#fff}
+@media (max-width:700px){.pl-mode-change{left:16px;bottom:16px}}

@@ -1118,6 +1118,8 @@ function render() {
   reuseLoadedArt($("#content"),loadedArt);
   deckBoxTransitions.afterRender();
   syncDesktopPlayEntries(g);
+  // A deck page's Play vs CPU now starts the match in one tap, so the server engine warms while the page is open.
+  if(g==="mtg"&&document.querySelector('[data-act="deckPlayCpu"]:not([hidden]):not(:disabled)'))warmForgeEngine(playSetup.snapshot());
   restoreDisclosures(content,disclosureStates.get(disclosureKey));
   content.dataset.disclosureKey=disclosureKey;
   restoreSearchFocus(content,searchFocus);
@@ -1621,7 +1623,15 @@ let quickStatus={busy:false,error:null},quickSequence=0;
 A.playPlaymat=t=>{setPlaymatChoice(t.dataset.playmat);refreshPlayMenu();document.querySelector('.pl-mat>summary')?.focus({preventScroll:true});};
 // Play home picks the mode; Quick Play and Practice then share one lobby. Inspect is a sheet over it.
 let playView='home',playInspectOpen=false;
-A.playOpenMode=t=>{playView='lobby';playInspectOpen=false;A.playStyle(t);scrollTo({top:0});document.getElementById('playTitle')?.focus?.({preventScroll:true});};
+A.playOpenMode=t=>{if(t.dataset.playStyle==='quick'&&t.dataset.playDirect==='true')return quickStartNow(t);playView='lobby';playInspectOpen=false;A.playStyle(t);scrollTo({top:0});document.getElementById('playTitle')?.focus?.({preventScroll:true});};
+// Quick Play with a deck already chosen goes straight into the match against a matched CPU (Randall,
+// 1 Nov): no second pick on the setup screen. If the match can't open (sign-in, screen, a deck the engine
+// refuses), the setup screen shows why, and it stays one tap away through "Change deck".
+async function quickStartNow(t){A.playStyle(t);playInspectOpen=false;
+ if(!playSetup.snapshot().selected){playView='lobby';refreshPlayMenu();return;}
+ await A.playStartCandidate();
+ if(!playerMatHost&&!practicePregame&&!playerMatRoot){playView='lobby';refreshPlayMenu();scrollTo({top:0});}}
+A.playChangeDeck=t=>{playView='lobby';playInspectOpen=false;A.playStyle(t);scrollTo({top:0});A.playFocusDecks?.();};
 A.playHome=()=>{playView='home';playInspectOpen=false;refreshPlayMenu();scrollTo({top:0});};
 // The empty Quick Play seat takes you straight to your decks.
 A.playFocusDecks=()=>{const list=document.getElementById('playDecksTitle');list?.scrollIntoView({behavior:matchMedia('(prefers-reduced-motion:reduce)').matches?'auto':'smooth',block:'start'});document.getElementById('playDeckSearch')?.focus?.({preventScroll:true});};
@@ -1950,7 +1960,7 @@ A.playSelectDeck=t=>{cancelPlayBuilds();const before=playSetup.snapshot(),seat=b
 A.playInspectSeat=t=>{playSetup.inspectSeat(t.dataset.playSeat);refreshPlayMenu();};
 A.playClearSelection=()=>{cancelPlayBuilds();playSetup.clearSelection(playSetup.snapshot().inspectedSeat);refreshPlayMenu();};
 // Play vs CPU from a deck page: Quick Play with this saved deck in its own format.
-A.deckPlayCpu=t=>{const d=deckById(t.dataset.id);if(!d)return;cancelPlayBuilds();quickSequence++;quickStatus={busy:false,error:null};if(['Standard','Commander','Modern','Pioneer','Legacy','Vintage','Pauper','Standard Brawl'].includes(d.format))playSetup.configure({format:d.format,mode:'cpu'});playSetup.setPlayStyle('quick');playSetup.selectDeck(d.id,'player');go('#play');};
+A.deckPlayCpu=t=>{const d=deckById(t.dataset.id);if(!d)return;cancelPlayBuilds();quickSequence++;quickStatus={busy:false,error:null};if(['Standard','Commander','Modern','Pioneer','Legacy','Vintage','Pauper','Standard Brawl'].includes(d.format))playSetup.configure({format:d.format,mode:'cpu'});playSetup.setPlayStyle('quick');playSetup.selectDeck(d.id,'player');playView='home';Promise.resolve(go('#play')).then(()=>quickStartNow({dataset:{playStyle:'quick',playDirect:'true'}}));};
 A.playTogglePaste=t=>{const d=document.getElementById('playImportDisclosure');if(!d)return;d.open=!d.open;t.setAttribute('aria-expanded',String(d.open));if(d.open){d.scrollIntoView({block:'nearest',behavior:matchMedia('(prefers-reduced-motion: reduce)').matches?'auto':'smooth'});document.getElementById('playImportText')?.focus({preventScroll:true});}};
 A.playConfigure=t=>{cancelPlayBuilds();quickSequence++;quickStatus={busy:false,error:null};playSetup.configure({[t.dataset.playOption]:t.dataset.playValue});refreshPlayMenu();document.querySelector(`[data-act="playConfigure"][aria-pressed="true"]`)?.focus({preventScroll:true});};
 C.playMatchOption=t=>{cancelPlayBuilds();quickSequence++;quickStatus={busy:false,error:null};const key=t.dataset.playOption,value=t.value;playSetup.configure({[key]:value});refreshPlayMenu();document.querySelector(`[data-play-option="${key}"]${key==='mode'?':checked':''}`)?.focus({preventScroll:true});};
