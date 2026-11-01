@@ -228,3 +228,6 @@ body[data-actnum="2"] #app#app .battle:has(.unit.boss[data-n^="Kozilek"]){--pw-b
    A fight with no figures at all (plates) shows as soon as that is decided; the delay is a safety net only. */
 #app .battle .field:not(.pw-stage):not(.pw-plates){visibility:hidden;animation:pw-field-in 0s 1.2s forwards}
 @keyframes pw-field-in{to{visibility:visible}}
+/* 4.3.46: the block forecast (skull, shield, sword) sits beside the creature's stat pill, not floating under it */
+#app#app#app .battle .unit.ally.pw-fig>.pv{top:auto!important;bottom:4px!important;left:calc(50% + 27px)!important;right:auto!important;transform:none!important;min-width:0!important;width:auto!important;height:25px!important;display:inline-flex!important;align-items:center;gap:2px;white-space:nowrap!important;line-height:1!important;padding:0 6px!important;border-radius:99px!important;font-size:.72rem!important;box-sizing:border-box;z-index:7}
+#app#app#app .battle .unit.ally.pw-fig>.pv svg{width:15px;height:15px}

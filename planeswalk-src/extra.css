@@ -416,3 +416,8 @@ body[data-hero=W]{--aim:#f1d88c;--aim-d:#b88a34;--aim-hi:#fff6d6;--aim-o:#2d1f08
 #app#app .screen:not(.journal) .choices{align-items:stretch!important}
 #app#app .screen:not(.journal) .choices>.card{height:auto!important;align-self:stretch!important;grid-template-rows:auto auto auto minmax(0,1fr)!important}
 #app#app .screen:not(.journal) .choices>.card>.pic{height:auto!important;min-height:0!important;max-height:none!important;aspect-ratio:1.7!important}
+/* 4.3.46: one glass tooltip. A HUD icon says its name in gold, then what it does (no second header, no browser box) */
+.pw-tip{background:linear-gradient(#1a1612e6,#0d0b09e6);-webkit-backdrop-filter:blur(10px);backdrop-filter:blur(10px);border-color:#c9a24aaa;max-width:min(300px,calc(100vw - 16px))}
+.pw-tip.named{display:grid;gap:3px;padding:9px 13px}
+.pw-tip.named>b{font:700 14px/1.2 var(--display,serif);letter-spacing:.03em;color:#f2d496}
+.pw-tip.named>span{font:500 13px/1.4 var(--body);color:var(--ob-text,#efe6d4)}
