@@ -30,7 +30,8 @@ const deck = (d) => {
   }
   return {name: d.name, colors: d.colors, archetype: d.archetype || null, cards};
 };
-const face = (p) => { const c = p.number ? pool.find(x => x.name === p.card && x.number === p.number && (!p.set || x.set === p.set)) || pick(p.card, p.prefer || []) : pick(p.card, p.prefer || []); return c ? {card: c.name, set: c.set, number: c.number, id: c.id, crop: c.art, artist: c.artist, focus: p.focus || '50% 30%'} : null; };
+// A character's face may come from a later card that paints them (Urza, Prince of Kroog): `fixed` names that exact printing.
+const face = (p) => { if (p.fixed) return {...p.fixed, focus: p.focus || '50% 30%'}; const c = p.number ? pool.find(x => x.name === p.card && x.number === p.number && (!p.set || x.set === p.set)) || pick(p.card, p.prefer || []) : pick(p.card, p.prefer || []); return c ? {card: c.name, set: c.set, number: c.number, id: c.id, crop: c.art, artist: c.artist, focus: p.focus || '50% 30%'} : null; };
 const out = {act: n, title: act.title, years: act.years, sets: act.sets, landSet: act.landSet, intro: src.intro, finale: src.finale, cast: {}, battles: []};
 for (const [k, p] of Object.entries(src.cast)) out.cast[k] = {name: p.name, title: p.title || '', portrait: face(p)};
 for (const b of src.battles) {

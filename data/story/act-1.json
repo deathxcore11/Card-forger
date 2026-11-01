@@ -122,26 +122,26 @@
    "name": "Titania",
    "title": "Voice of Argoth",
    "portrait": {
-    "card": "Titania's Song",
-    "set": "atq",
-    "number": "35",
-    "id": "583a53af-2e2a-4f3f-8eab-bd874c6ed80a",
-    "crop": "https://cards.scryfall.io/art_crop/front/5/8/583a53af-2e2a-4f3f-8eab-bd874c6ed80a.jpg?1783948366",
-    "artist": "Kerstin Kaman",
-    "focus": "50% 35%"
+    "card": "Titania, Voice of Gaea",
+    "set": "bro",
+    "number": "193",
+    "id": "deeb6a21-23b0-44f1-b70e-5899bb9d4a84",
+    "crop": "https://cards.scryfall.io/art_crop/front/d/e/deeb6a21-23b0-44f1-b70e-5899bb9d4a84.jpg",
+    "artist": "Cristi Balanescu",
+    "focus": "50% 25%"
    }
   },
   "urza": {
    "name": "Urza",
    "title": "The Artificer",
    "portrait": {
-    "card": "Urza's Avenger",
-    "set": "atq",
-    "number": "74",
-    "id": "448e1811-fb16-4390-ac22-b7066a4a019c",
-    "crop": "https://cards.scryfall.io/art_crop/front/4/4/448e1811-fb16-4390-ac22-b7066a4a019c.jpg?1783948358",
-    "artist": "Amy Weber",
-    "focus": "50% 30%"
+    "card": "Urza, Prince of Kroog",
+    "set": "bro",
+    "number": "226",
+    "id": "5a7329cd-95af-4d71-984f-f5f28982520c",
+    "crop": "https://cards.scryfall.io/art_crop/front/5/a/5a7329cd-95af-4d71-984f-f5f28982520c.jpg",
+    "artist": "Joshua Raphael",
+    "focus": "50% 25%"
    }
   },
   "sindbad": {
@@ -174,39 +174,39 @@
    "name": "Tawnos",
    "title": "Urza's Apprentice",
    "portrait": {
-    "card": "Tawnos's Coffin",
-    "set": "atq",
-    "number": "68",
-    "id": "c27bc1de-8246-4dc8-af51-ec21def9e226",
-    "crop": "https://cards.scryfall.io/art_crop/front/c/2/c27bc1de-8246-4dc8-af51-ec21def9e226.jpg?1783948358",
-    "artist": "Christopher Rush",
-    "focus": "50% 40%"
+    "card": "Tawnos, Urza's Apprentice",
+    "set": "c18",
+    "number": "45",
+    "id": "a031a6c1-d7d1-4980-ac8e-30440ff4408f",
+    "crop": "https://cards.scryfall.io/art_crop/front/a/0/a031a6c1-d7d1-4980-ac8e-30440ff4408f.jpg",
+    "artist": "Matt Stewart",
+    "focus": "50% 25%"
    }
   },
   "ashnod": {
    "name": "Ashnod",
    "title": "Mishra's Lieutenant",
    "portrait": {
-    "card": "Ashnod's Altar",
-    "set": "atq",
-    "number": "38",
-    "id": "cdcccb0f-ce96-453b-9e82-41d87f52e58b",
-    "crop": "https://cards.scryfall.io/art_crop/front/c/d/cdcccb0f-ce96-453b-9e82-41d87f52e58b.jpg?1783948365",
-    "artist": "Anson Maddocks",
-    "focus": "50% 40%"
+    "card": "Ashnod, Flesh Mechanist",
+    "set": "bro",
+    "number": "84",
+    "id": "5eb43c15-50a9-488f-b0be-84a5e0a6d10b",
+    "crop": "https://cards.scryfall.io/art_crop/front/5/e/5eb43c15-50a9-488f-b0be-84a5e0a6d10b.jpg",
+    "artist": "Howard Lyon",
+    "focus": "50% 25%"
    }
   },
   "mishra": {
    "name": "Mishra",
    "title": "The Brother",
    "portrait": {
-    "card": "Mishra's War Machine",
-    "set": "atq",
-    "number": "57",
-    "id": "8f6b4652-a1d4-418f-a89b-6a977a920a9e",
-    "crop": "https://cards.scryfall.io/art_crop/front/8/f/8f6b4652-a1d4-418f-a89b-6a977a920a9e.jpg?1783948361",
-    "artist": "Amy Weber",
-    "focus": "50% 40%"
+    "card": "Mishra, Excavation Prodigy",
+    "set": "bro",
+    "number": "140",
+    "id": "f5d02416-8578-40a5-bf31-d1ef9b8764f1",
+    "crop": "https://cards.scryfall.io/art_crop/front/f/5/f5d02416-8578-40a5-bf31-d1ef9b8764f1.jpg",
+    "artist": "Donato Giancola",
+    "focus": "50% 25%"
    }
   }
  },

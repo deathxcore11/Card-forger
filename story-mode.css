@@ -2,6 +2,9 @@
    the talking-head scenes and the speech bubbles that grow out of a seat's portrait on the table.
    Same glass, gold hairlines and Cinzel titles as the Play home (play-menu.css). */
 
+.st-screen{--pl-cta-edge:#f6dfa8;--pl-cta-top:#f2d18e;--pl-cta-bottom:#c99a4b;--pl-cta-ink:#1b1408}
+.st-screen .pl-mode-cta{cursor:pointer}
+
 /* Set symbols: Scryfall's black SVGs, lit gold. */
 .st-symbols{display:flex;align-items:center;gap:8px;min-height:22px}
 .st-symbols img{width:22px;height:22px;object-fit:contain;filter:brightness(0) invert(.82) sepia(.7) saturate(2.6) hue-rotate(-8deg) drop-shadow(0 1px 3px #000c)}
@@ -23,14 +26,14 @@
 /* The Play home tile: a wide banner above the four modes. */
 .st-tile.pl-mode{flex-direction:row;align-items:flex-end;justify-content:space-between;gap:18px;min-height:clamp(170px,24vh,230px)}
 .st-tile .pl-mode-art{background-position:50% 35%}
-.st-tile.pl-mode::before{background:linear-gradient(90deg,#0c0c0ef0 0%,#0c0c0eb0 42%,#0c0c0e30 75%),linear-gradient(0deg,#0c0c0ecc,#0c0c0e00 60%)}
+.st-tile.pl-mode::before{background:linear-gradient(90deg,#0c0c0ee0 0%,#0c0c0e70 38%,#0c0c0e00 70%),linear-gradient(0deg,#0c0c0eb0,#0c0c0e00 55%)}
 .st-tile-copy{display:grid;gap:6px;min-width:0}
 .st-tile .pl-mode-copy{min-height:0}
 .st-tile .pl-mode-foot{margin:0;flex:none}
 
 /* The road: a shelf of act covers. */
 .st-age{margin:-4px 0 0;font:700 12px/1.3 'DM Sans',system-ui,sans-serif;letter-spacing:.28em;text-transform:uppercase;color:var(--gold)}
-.st-shelf{display:grid;grid-template-columns:repeat(auto-fill,minmax(min(250px,100%),1fr));gap:18px}
+.st-shelf{display:grid;grid-template-columns:repeat(auto-fill,minmax(min(270px,100%),320px));gap:18px}
 .st-cover{position:relative;isolation:isolate;overflow:hidden;display:flex;flex-direction:column;justify-content:flex-end;min-height:clamp(320px,50vh,440px);padding:20px;border:1px solid color-mix(in srgb,var(--gold) 22%,var(--line));border-radius:22px;background:#121318;color:#f6eedb;text-align:left;font:inherit;cursor:pointer;box-shadow:0 22px 50px #0006;transition:transform .2s ease,border-color .2s ease,box-shadow .2s ease}
 .st-cover::before{content:"";position:absolute;inset:0;z-index:-1;background:linear-gradient(180deg,#0c0c0e00 30%,#0c0c0ec4 64%,#0c0c0ef4 100%)}
 .st-cover-art{position:absolute;inset:0;z-index:-2;background-size:cover;background-position:50% 30%;filter:saturate(1.1) contrast(1.05);transition:transform .6s ease}
@@ -47,7 +50,7 @@
 .st-cover--hero{border-color:#d6ad64aa;box-shadow:0 22px 50px #0006,0 0 0 1px #d6ad6433,0 0 40px #d6ad6420}
 .st-cover--done .st-cover-art{filter:saturate(.85) contrast(1.02)}
 .st-cover--tease{cursor:default;pointer-events:none}
-.st-cover--tease .st-cover-art{filter:blur(10px) saturate(.5) brightness(.55);transform:scale(1.1)}
+.st-cover--tease .st-cover-art{filter:blur(8px) saturate(.5) brightness(.55)}
 .st-cover--tease .st-cover-copy{opacity:.7}
 .st-cover--book{cursor:default;background:radial-gradient(80% 70% at 50% 35%,#2a2416,#0e0d0a 80%)}
 .st-book{position:absolute;left:50%;top:38%;width:96px;height:128px;margin:-64px 0 0 -48px;border-radius:4px 10px 10px 4px;border:2px solid #d6ad64;background:linear-gradient(90deg,#3b2a14 0 12%,#5a3f1c 12% 100%);box-shadow:0 18px 40px #000c,0 0 34px #d6ad6430}
@@ -67,7 +70,7 @@
 .st-battle-kind{font:800 11px/1.2 'DM Sans',system-ui,sans-serif;letter-spacing:.18em;text-transform:uppercase;color:var(--gold)}
 .st-battle-kind i{margin-left:8px;font-style:normal;font-weight:700;letter-spacing:.08em;color:var(--muted)}
 .st-battle-title{font:700 clamp(17px,1.6vw,20px)/1.2 Cinzel,Georgia,serif;letter-spacing:.02em;overflow-wrap:anywhere}
-.st-battle-blurb{font-size:13px;line-height:1.45;color:var(--muted);display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden}
+.st-battle-blurb{font-size:13px;line-height:1.45;color:var(--muted);text-wrap:pretty}
 .st-battle-side{display:grid;justify-items:end;gap:8px}
 .st-battle--here{border-color:#d6ad64aa;box-shadow:0 0 0 1px #d6ad6430,0 10px 30px #d6ad6414}
 .st-battle--boss{background:linear-gradient(115deg,#a8402a1f,transparent 60%),color-mix(in srgb,var(--surface) 86%,transparent)}
@@ -77,7 +80,7 @@
 
 /* The duel setup. */
 .st-duel-stage{position:relative;isolation:isolate;display:grid;gap:14px;padding:clamp(14px,2vw,22px);border:1px solid var(--line);border-radius:24px;overflow:hidden;background:#0e1016}
-.st-duel-stage::before{content:"";position:absolute;inset:-30px;z-index:-1;background:var(--st-bg) 50% 30%/cover no-repeat;filter:blur(22px) saturate(1.1) brightness(.45)}
+.st-duel-stage::before{content:"";position:absolute;inset:0;z-index:-1;background:var(--st-bg) 50% 30%/cover no-repeat;filter:blur(22px) saturate(1.1) brightness(.45)}
 .st-arena{gap:0}
 .st-side{position:relative;isolation:isolate;overflow:hidden;display:flex;flex-direction:column;justify-content:flex-end;gap:4px;min-height:clamp(220px,34vh,320px);padding:18px;border:1px solid #ffffff1f;border-radius:20px;background:#121318;color:#f6eedb;box-shadow:0 16px 40px #0007}
 .st-side::after{content:"";position:absolute;inset:0;z-index:-1;background:linear-gradient(180deg,#0c0c0e00 35%,#0c0c0ee6 100%)}
@@ -108,7 +111,7 @@
 /* Talking heads: portraits cut from card art, the speaker lit, the other dimmed. */
 .st-scene{position:fixed;inset:0;z-index:3000;overflow:hidden;cursor:pointer;color:#f4efe2;opacity:0;transition:opacity .26s ease;-webkit-tap-highlight-color:transparent}
 .st-scene--in{opacity:1}.st-scene--out{opacity:0}
-.st-scene-bg{position:absolute;inset:-40px;background:#0b0c10 50% 30%/cover no-repeat;filter:blur(26px) saturate(1.05) brightness(.32)}
+.st-scene-bg{position:absolute;inset:0;background:#0b0c10 50% 30%/cover no-repeat;filter:blur(26px) saturate(1.05) brightness(.32)}
 .st-scene::after{content:"";position:absolute;inset:0;background:radial-gradient(120% 80% at 50% 110%,#000d,#0000 60%);pointer-events:none}
 .st-talker{position:absolute;bottom:0;z-index:1;margin:0;width:min(44vw,520px);height:min(78vh,720px);transition:filter .3s ease,transform .35s cubic-bezier(.2,.8,.2,1),opacity .3s ease;filter:brightness(.42) saturate(.55);transform:translateY(14px) scale(.97);opacity:.9}
 .st-talker--left{left:max(2vw,env(safe-area-inset-left))}

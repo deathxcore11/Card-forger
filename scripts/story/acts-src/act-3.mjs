@@ -14,7 +14,7 @@ export default {
     kjeldor: {name: 'Kjeldoran Guard', title: 'Royal Guard of Kjeldor', card: 'Kjeldoran Royal Guard', number: '38', focus: '50% 25%'},
     balduvian: {name: 'Balduvian Raider', title: 'Barbarian of Balduvia', card: 'Balduvian Barbarians', number: '172', focus: '50% 30%'},
     gustha: {name: 'Gustha Ebbasdotter', title: 'Kjeldoran Royal Mage', card: 'Brainstorm', number: '61', focus: '50% 30%'},
-    varchild: {name: 'Varchild', title: 'Mercenary Captain', card: "Varchild's War-Riders", number: '83', focus: '50% 30%'},
+    varchild: {name: 'Varchild', title: 'Mercenary Captain', fixed: {card: 'Varchild, Betrayer of Kjeldor', set: 'c18', number: '28', id: '7849b360-afad-4f50-b455-3d118f7bfcd0', crop: 'https://cards.scryfall.io/art_crop/front/7/8/7849b360-afad-4f50-b455-3d118f7bfcd0.jpg', artist: 'Lucas Graciano'}, focus: '50% 25%'},
     laina: {name: 'Laina', title: 'Elvish Council of Fyndhorn', card: 'Freyalise Supplicant', number: '239', focus: '50% 25%'},
     leshrac: {name: 'Leshrac', title: 'Walker of Night', card: "Leshrac's Sigil", number: '144', focus: '50% 35%'},
     reveka: {name: 'Reveka', title: 'Wizard Savant', card: 'Reveka, Wizard Savant', focus: '50% 30%'},
@@ -23,7 +23,7 @@ export default {
     lucilde: {name: 'Lucilde Fiksdotter', title: 'Knight Commander', card: 'Legions of Lim-Dûl', focus: '50% 30%'},
     ihsan: {name: "Ihsan's Shade", title: 'The Fallen Knight', card: "Ihsan's Shade", focus: '50% 30%'},
     grandmother: {name: 'Grandmother Sengir', title: 'Matriarch of the Castle', card: 'Grandmother Sengir', focus: '50% 25%'},
-    limdul: {name: 'Lim-Dûl', title: 'The Necromancer', card: "Lim-Dûl's High Guard", number: '55a', focus: '50% 30%'},
+    limdul: {name: 'Lim-Dûl', title: 'The Necromancer', fixed: {card: 'Lim-Dûl the Necromancer', set: 'tsp', number: '114', id: 'b8a3cdfe-0289-474b-b9c4-07e8c6588ec5', crop: 'https://cards.scryfall.io/art_crop/front/b/8/b8a3cdfe-0289-474b-b9c4-07e8c6588ec5.jpg', artist: 'Matt Cavotta'}, focus: '50% 25%'},
   },
   battles: [
     {slot: 1, kind: 'Arrival', title: 'The Pass at Kjeldor', difficulty: 'Easy', rewardSet: 'ice', teaches: ['Snow'],

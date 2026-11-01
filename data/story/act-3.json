@@ -91,13 +91,13 @@
    "name": "Varchild",
    "title": "Mercenary Captain",
    "portrait": {
-    "card": "Varchild's War-Riders",
-    "set": "all",
-    "number": "83",
-    "id": "ee1d41da-aa72-434b-811f-95d4bae4ba5c",
-    "crop": "https://cards.scryfall.io/art_crop/front/e/e/ee1d41da-aa72-434b-811f-95d4bae4ba5c.jpg?1783947174",
-    "artist": "Susan Van Camp",
-    "focus": "50% 30%"
+    "card": "Varchild, Betrayer of Kjeldor",
+    "set": "c18",
+    "number": "28",
+    "id": "7849b360-afad-4f50-b455-3d118f7bfcd0",
+    "crop": "https://cards.scryfall.io/art_crop/front/7/8/7849b360-afad-4f50-b455-3d118f7bfcd0.jpg",
+    "artist": "Lucas Graciano",
+    "focus": "50% 25%"
    }
   },
   "laina": {
@@ -208,13 +208,13 @@
    "name": "Lim-Dûl",
    "title": "The Necromancer",
    "portrait": {
-    "card": "Lim-Dûl's High Guard",
-    "set": "all",
-    "number": "55a",
-    "id": "b5afe9b5-3be8-472a-95c3-2c34231bc042",
-    "crop": "https://cards.scryfall.io/art_crop/front/b/5/b5afe9b5-3be8-472a-95c3-2c34231bc042.jpg?1783947186",
-    "artist": "Anson Maddocks",
-    "focus": "50% 30%"
+    "card": "Lim-Dûl the Necromancer",
+    "set": "tsp",
+    "number": "114",
+    "id": "b8a3cdfe-0289-474b-b9c4-07e8c6588ec5",
+    "crop": "https://cards.scryfall.io/art_crop/front/b/8/b8a3cdfe-0289-474b-b9c4-07e8c6588ec5.jpg",
+    "artist": "Matt Cavotta",
+    "focus": "50% 25%"
    }
   }
  },
