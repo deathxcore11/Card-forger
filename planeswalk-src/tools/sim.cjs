@@ -9,7 +9,7 @@ const ctx={console,Math,JSON,Object,Array,String,Number,structuredClone,Map,Set,
 ctx.PW_FORM=process.env.FORM==='0'?0:1;ctx.PW_FEAT={sig:process.env.SIG==='0'?0:1,ante:process.env.ANTE==='0'?0:1,dun:process.env.DUN==='0'?0:1};ctx.PW_DMG={};ctx.PW_HEADLESS=1;if(process.env.SPARK!=null)ctx.PW_SPARK=+process.env.SPARK;/* Spark level gate runs: SPARK=0|5|10 */for(const k of ['PW_FIGS','PW_CARDART','PW_UIART']){const m=html.match(new RegExp('window\\.'+k+'=(\\[.*?\\]);'));if(m)ctx[k]=JSON.parse(m[1])}/* mirror what ships: art-gated rows stay out */if(process.env.BELT)ctx.PW_UIART=[...(ctx.PW_UIART||[]),...['treasure','food','clue','blood','map','powerstone','monster','younghero','gold','incubator','shard'].map(k=>'tok-'+k)];if(process.env.TRAIL)ctx.PW_TRAIL=+process.env.TRAIL;if(process.env.FIGHT)ctx.PW_FIGHT=JSON.parse(process.env.FIGHT);ctx.PW_SOAK={};if(process.env.AT)ctx.PW_AT=+process.env.AT;if(process.env.TRB)ctx.PW_TR=1;if(process.env.DL)ctx.PW_DL=+process.env.DL;if(process.env.DR)ctx.PW_DR=+process.env.DR;if(process.env.DH)ctx.PW_DH=+process.env.DH;if(process.env.DS)ctx.PW_DS=+process.env.DS;if(process.env.FOEHP)ctx.PW_FOEHP=+process.env.FOEHP;
 vm.createContext(ctx);
 vm.runInContext(src+`;globalThis.G={get run(){return run},get c(){return c},get view(){return view},get reward(){return reward},set view(v){view=v},set reward(v){reward=v},
- newRun,enter,anteFight,startFight,DUN,nextAct,open,play,attack,ability,endTurn,canPlay,ready,alive,pow,tough,costOf,C,E,EMB,toMap:()=>toMap(),heal,mk,evChoice,get POOL(){return POOL},bombard,forecast,PRICE,intentOf,useToken,TOKENS,exN};`,ctx);
+ newRun,enter,anteFight,startFight,DUN,nextAct,open,play,attack,crew,ability,endTurn,canPlay,ready,alive,pow,tough,costOf,C,E,EMB,toMap:()=>toMap(),heal,mk,evChoice,get POOL(){return POOL},bombard,forecast,PRICE,intentOf,useToken,TOKENS,exN};`,ctx);
 const G=ctx.G;
 const stats={wins:0,deaths:{},fights:[],turns:[],errors:[],killers:{},hpAtBoss:[],bossWins:0,bossTries:0,picks:{}};
 // Draft like a player chasing an engine: rarity plus synergy with what the deck already has.
@@ -26,6 +26,7 @@ const CAREFUL=process.env.CAREFUL==='1';
 const threat=e=>{const [t,v]=G.intentOf(e);return e.pacified?0:t==='atk'||t==='annihilate'?v+e.buff:t==='drain'?v:t==='summon'?2:0};
 function bestTarget(n){if(CAREFUL){const k=G.alive().filter(e=>e.hp<=n&&!e.shield).sort((x,y)=>threat(y)-threat(x))[0];if(k&&threat(k)>0)return k}const a=G.alive();const k=a.filter(e=>e.hp<=n).sort((x,y)=>y.hp-x.hp)[0];return k||a.sort((x,y)=>x.hp-y.hp)[0]}
 function attackPhase(c){
+  for(const v of c.allies.filter(x=>x.vehicle&&!x.crewed))G.crew(v,true);/* crew every vehicle it can (the weakest allies crew) */
   // attack: only when the attacker kills, survives, or flies over
   for(const a of [...c.allies]){if(G.view!=='battle')return;if(!c.allies.includes(a)||!G.ready(a))continue;
    const p=G.pow(a)+(a.raid||0);const t=G.alive().find(e=>e.hp<=p)||G.alive().sort((x,y)=>x.hp-y.hp)[0];if(!t)break;

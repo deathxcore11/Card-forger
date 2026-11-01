@@ -224,7 +224,7 @@ function drip(R,gr){const I=R.cur,o=IMGS[fileOf(I.key)];if(!I.drop||!I.tips||!I.
 const perf={ms:[],i:0,max:0};
 function draw(R,t){const e=R.cur,o=IMGS[fileOf(e.key)];if(!o||!o.ok||!R.box||!R.W)return;const c2=R.ctx,b=R.box;
  let pose=null,fname=null;if(R.act){const a=actPose(R,t);if(a){pose=a.p;fname=a.f}}
- const idleF=R.phase2&&e.frames.phase2?'phase2':e.idle;
+ const idleF=R.phase2&&e.frames.phase2?'phase2':e.frames.uncrewed&&R.el&&R.el.classList.contains('uncrewed')?'uncrewed':e.idle;/* a vehicle shows its painted uncrewed pose until it is crewed */
  if(!pose){pose=idlePose(R,t);if(!RM&&!R.dead){if(!R.nf)R.nf=t+2+Math.random()*7;if(t>R.nf&&atRest(R,t)){R.nf=t+7+Math.random()*8;fidget(R,t)}}}
  fname=fname||idleF;const on=!RM&&(R.oz||fname===e.idle)?1:0;
  let alpha=pose.alpha;if(t-R.fadeIn<.45)alpha*=Math.max(0,(t-R.fadeIn)/.45);
