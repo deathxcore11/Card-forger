@@ -83,6 +83,48 @@ export async function warmForgeHost({getAccessToken,fetchImpl=globalThis.fetch,n
  if(r.status===202)warmedAt=asked;
  return r.status===202;
 }
+// Friend matches (two people, one hosted Forge game). A room holds the host's deck until a
+// friend joins with the private invite; the server then starts the match with both seats.
+// Decks go only to the server: the other player sees a filled seat, never the list.
+export const FRIEND_FORMATS=Object.freeze(['Commander','Standard','Modern']);
+const INVITE=/^[A-Za-z0-9_-]{43}$/;
+export const ROOM_MESSAGES=Object.freeze({
+ room_full:'This room already has two players.',
+ invite_expired:'This invite has expired. Ask your friend for a new one.',
+ room_closed:'Your friend closed this room.',
+ invite_not_found:'This invite is no longer valid.',
+ own_room:'This is your own room. Send the invite to a friend.',
+ player_busy:'One of you is still in another match. Finish it, then try again.',
+ global_match_capacity:'Every table is busy right now. Try again in a minute.',
+ invalid_match_input:'This deck does not fit the room\'s format.',
+});
+export const friendInviteLink=invite=>'https://cardstashy.com/#play/join/'+invite;
+export const friendInviteFromHash=hash=>{const m=/^#play\/join\/([A-Za-z0-9_-]{43})$/.exec(hash||'');return m?m[1]:null;};
+const friendDeck=(format,deck)=>{const d=engineDeck(deck);return format===d.format?d:{...d,format};};
+export function createFriendRooms({getAccessToken,fetchImpl=globalThis.fetch}={}){
+ if(typeof getAccessToken!=='function'||typeof fetchImpl!=='function')throw fail('FORGE_HOST_READERS_REQUIRED');
+ async function call(path,{method='POST',body}={}){
+  const token=await getAccessToken();
+  if(typeof token!=='string'||!token||token.length>8192||!/^[-A-Za-z0-9._]+$/.test(token))throw fail('AUTHENTICATION_REQUIRED');
+  const r=await fetchImpl(API_PREFIX+path,{method,body:body===undefined?undefined:JSON.stringify(body),headers:{Accept:'application/json',Authorization:'Bearer '+token,...(body===undefined?{}:{'Content-Type':'application/json'})},credentials:'omit',redirect:'error',referrerPolicy:'no-referrer',cache:'no-store'});
+  const data=r.status===204?null:await r.json().catch(()=>null);
+  if(!r.ok){const code=typeof data?.error==='string'&&/^[a-z0-9_]{1,100}$/.test(data.error)?data.error:'room_request_rejected';throw Object.assign(fail(code),{status:r.status,message:ROOM_MESSAGES[code]||'The room could not be reached. Try again.'});}
+  return data;
+ }
+ const room=id=>{if(!UUID.test(id||''))throw fail('FRIEND_ROOM_INVALID');return '/api/play/rooms/'+id;};
+ const invite=v=>{if(!INVITE.test(v||''))throw Object.assign(fail('invite_not_found'),{message:ROOM_MESSAGES.invite_not_found});return v;};
+ return {
+  // {roomId, format, status:'open', expiresAt, seat:'host', invite}
+  async open(format,deck){if(!FRIEND_FORMATS.includes(format))throw fail('FRIEND_FORMAT_UNSUPPORTED');return call('/api/play/rooms',{body:{format,deck:friendDeck(format,deck)}});},
+  // The room an invite opens, before choosing a deck: {roomId, format, status, seat:'guest'}.
+  async peek(code){return call('/api/play/rooms/join',{body:{invite:invite(code)}});},
+  // Take the second seat; the answer names the match both players then open (attach).
+  async join(code,format,deck){if(!FRIEND_FORMATS.includes(format))throw fail('FRIEND_FORMAT_UNSUPPORTED');return call('/api/play/rooms/join',{body:{invite:invite(code),deck:friendDeck(format,deck)}});},
+  // The host waits here: status 'started' brings matchId.
+  async read(id){return call(room(id),{method:'GET'});},
+  async cancel(id){return call(room(id),{method:'DELETE'});},
+ };
+}
 export function createForgeHostClient({readAccount,getAccessToken,fetchImpl=globalThis.fetch,timeoutMs=15000,newId=()=>crypto.randomUUID()}={}){
  if(typeof readAccount!=='function'||typeof getAccessToken!=='function'||typeof fetchImpl!=='function')throw fail('FORGE_HOST_READERS_REQUIRED');
  const owner=readAccount(),ownerKey=forgeAccountKey(owner);
@@ -119,9 +161,21 @@ export function createForgeHostClient({readAccount,getAccessToken,fetchImpl=glob
   try{return await Promise.race([work,new Promise((_,reject)=>{timer=setTimeout(()=>{controller.abort();reject(fail('HOST_REQUEST_TIMEOUT'));},timeoutMs);})]);}
   finally{clearTimeout(timer);}
  }
- const bind=data=>{if(data?.matchId!==allocation?.matchId||data?.generation!==allocation?.generation)throw fail('HOST_GENERATION_MISMATCH');};
+ const bind=data=>{
+  // A friend match joined by id learns its generation from the first answer, then holds to it.
+  if(allocation&&allocation.generation===null&&data?.matchId===allocation.matchId&&UUID.test(data?.generation||''))allocation.generation=data.generation;
+  if(data?.matchId!==allocation?.matchId||data?.generation!==allocation?.generation)throw fail('HOST_GENERATION_MISMATCH');
+ };
  return {
   status,
+  // A friend match: the server started it when the friend joined the room. Both players open
+  // the same match by id; the server gives each one their own seat and their own view.
+  attach(matchId){
+   if(closed||creating||allocation)throw fail('MATCH_ALREADY_OPEN');
+   if(!UUID.test(matchId||''))throw fail('FRIEND_MATCH_INVALID');
+   allocation={matchId,generation:null,expiresAt:null,deckDigests:null};requestedPregame={selection:'random',playStyle:'quick'};
+   return status();
+  },
   async create(input){
    if(closed||creating||allocation)throw fail('MATCH_ALREADY_OPEN');
    // JSON is the exact wire representation hashed by the server. No row sorting,
