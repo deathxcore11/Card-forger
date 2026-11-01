@@ -1905,7 +1905,8 @@ function knownSetMembership(g,catalogue=g==='ygo'?currentYgoCatalogue():ui(g).se
 export function tcgSetProgress(g,release,owned=null,cards=null,known=null) {
   const base=g==='ygo'?currentYgoCatalogue():ui(g).sets.list,catalogue=release?.id&&!base.some(s=>s.id===release.id)?[...base,release]:base;
   owned ||= ownedBySet(g,catalogue);known ||= knownSetMembership(g,catalogue);
-  const U=ui(g).set,id=release?.id,active=!!id&&U.info?.id===id,info=active?U.info:release,contents=active?U.contents||{}:{},loaded=active?(cards||setDisplayCards(g,U)).length:owned.get(id)||0,total=knownSetCount(g==='ygo'?contents.expectedUniqueCards??info?.expectedUniqueCards:info?.count);
+  const U=ui(g).set,id=release?.id,active=!!id&&U.info?.id===id,info=active?U.info:release,contents=active?U.contents||{}:{},loaded=active?(cards||setDisplayCards(g,U)).length:owned.get(id)||0,total=knownSetCount(contents.expectedUniqueCards??(g==='ygo'?info?.expectedUniqueCards:info?.count));
+  // A loaded Pokémon page's expected total includes subsets shown on it (30th + Classic Collection).
   // Known membership protects against stale source totals without pretending
   // that a partial currently loaded page is the entire catalogue.
   const knownCount=known.get(id)?.size||0;
