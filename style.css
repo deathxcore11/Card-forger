@@ -5436,3 +5436,64 @@ body[data-view="scan"] #content:has(.scan-workspace.is-grid) > .context-guide { 
 .scan-fix-photo-row { display:flex;align-items:center;gap:12px;margin:8px 0 2px;padding:8px 10px;border-radius:14px;background:var(--surface);border:1px solid var(--line); }
 .scan-fix-photo-row img { flex:none;width:52px;height:72px;object-fit:cover;border-radius:7px; }
 .scan-fix-photo-row span { font-size:13px;line-height:1.35;color:var(--muted); }
+
+/* ===== 1 Nov: pages scroll up and down only. The aura room around grid cards and collection lots
+   (padding cancelled by a negative margin) reaches past the screen edge on the outer columns, which let a
+   phone pan the whole page sideways and slide the header and nav with it. The root stops the
+   sideways scroll and the body clips the light at the screen edge without becoming a scroll box, so
+   sticky bars keep working. ===== */
+html { overflow-x: hidden; overscroll-behavior-x: none; }
+body { overflow-x: clip; }
+
+/* ===== Card emblems (1 Nov): one slim glass dock at the card's bottom-left corner instead of two pills
+   that covered the printed name. Type icons, a hairline, then the set symbol in its rarity colour.
+   Opaque glass (no backdrop blur) so a grid of hundreds of cards scrolls without repainting blurs. ===== */
+.tile-chrome { display: flex; align-items: flex-end; padding: 5px; box-sizing: border-box; }
+.tile-chrome > .tile-emb, .tile-chrome > .tile-set {
+  position: static; inset: auto; display: inline-flex; align-items: center; gap: 2px; height: 20px; padding: 0 6px; flex: none;
+  border-radius: 0; color: #fff; backdrop-filter: none; -webkit-backdrop-filter: none;
+  background: linear-gradient(180deg, #ffffff1c, #ffffff03 55%), rgba(10, 12, 18, .78);
+  box-shadow: inset 0 1px 0 #ffffff24, inset 0 -1px 0 #0006, 0 3px 8px -2px #000a;
+}
+.tile-chrome > .tile-emb { border-radius: 10px 0 0 10px; padding-right: 5px; }
+.tile-chrome > .tile-set { position: relative; border-radius: 0 10px 10px 0; padding-left: 6px; }
+.tile-chrome > .tile-set::before { content: ""; position: absolute; left: 0; top: 5px; bottom: 5px; width: 1px; background: linear-gradient(#f4bf5800, #f4bf58a0, #f4bf5800); }
+.tile-chrome > .tile-set:first-child, .tile-chrome > .tile-emb:is(:empty, :has(.emblems:empty)) + .tile-set { border-radius: 10px; padding-left: 6px; }
+.tile-chrome > .tile-set:first-child::before, .tile-chrome > .tile-emb:is(:empty, :has(.emblems:empty)) + .tile-set::before { display: none; }
+.tile-chrome > .tile-emb:not(:has(+ .tile-set)) { border-radius: 10px; padding-right: 6px; }
+.tile-chrome > .tile-set .tset { max-width: 100%; }
+.tile-chrome > .imp-tile { position: absolute; top: auto; left: auto; right: 4px; bottom: 4px; }
+body[data-game="ygo"] .card-grid .tile-chrome { aspect-ratio: 59 / 86; }
+/* The count you own: a small glass chip with a green count, not a bright pill. */
+.card-grid .grid-card > .owned-badge { top: 8px; right: 8px; z-index: 3; min-height: 20px; display: inline-flex; align-items: center; padding: 0 7px; border-radius: 10px; font-size: 11px; font-weight: 800; color: #8ff0b8; background: linear-gradient(180deg, #ffffff1c, #ffffff03 55%), rgba(10, 12, 18, .8); box-shadow: inset 0 1px 0 #ffffff24, inset 0 0 0 1px #5fd39a55, 0 3px 8px -2px #000a; }
+.card-grid .grid-card > .owned-badge.other { color: #cfd5de; box-shadow: inset 0 1px 0 #ffffff24, inset 0 0 0 1px #ffffff26, 0 3px 8px -2px #000a; }
+/* Grid cards with aura room: the chrome and the count sit on the card, not on the light around it. */
+.view-gallery .card-grid > .grid-card[data-tier] > .tile-chrome { left: var(--aura-room); right: var(--aura-room); top: var(--aura-room); }
+.view-gallery .card-grid > .grid-card[data-tier]:not([data-tier="tn"]) > .tile-chrome { left: calc(var(--aura-room) + var(--grid-frame-width)); right: calc(var(--aura-room) + var(--grid-frame-width)); top: calc(var(--aura-room) + var(--grid-frame-width)); }
+.view-gallery .card-grid > .grid-card[data-tier] > .owned-badge { top: calc(var(--aura-room) + 8px); right: calc(var(--aura-room) + 8px); }
+/* List views keep their inline chips. */
+:is(.view-compact, .view-symbols) .card-grid .tile-chrome { padding: 0; }
+:is(.view-compact, .view-symbols) .card-grid .tile-chrome > :is(.tile-emb, .tile-set) { border-radius: 10px; }
+:is(.view-compact, .view-symbols) .card-grid .tile-chrome > .tile-set::before { display: none; }
+:is(.view-compact, .view-symbols) .card-grid .grid-card > .owned-badge { top: auto; right: 10px; bottom: 8px; }
+/* Images waiting to load show a calm card-shaped surface instead of a hole. */
+#content .card-grid img.card-img:not([data-tier]) { background: linear-gradient(160deg, #1d222c, #151920); }
+/* Grid cards render for real instead of being skipped off screen (content-visibility). Skipping made
+   rows paint late while scrolling (blank cells, then a pop), guessed every row at 280px so the page
+   length jumped as rows filled in, and clipped the price light, which needed 28px of padding around
+   every card: that padding pushed the outer columns past the screen and floated the badges off the
+   cards. Grids are capped (load more), images stay lazy, so nothing is lost. The light now spills
+   freely and every card's box is exactly the card. */
+.card-grid > .grid-card { content-visibility: visible; contain-intrinsic-size: none; }
+.view-gallery .card-grid > .grid-card[data-tier] { --aura-room: 0px; padding: 0; margin: 0; pointer-events: auto; }
+/* In card grids the dock clips onto the card's bottom edge like a tab, half on the frame and half below,
+   so it never covers rules text, attacks or the description box. The name row steps down to make room. */
+.card-grid .grid-card > .tile-chrome { padding: 0 0 0 7px; }
+.card-grid .grid-card > .tile-chrome > :is(.tile-emb, .tile-set) { height: 18px; transform: translateY(9px); }
+.card-grid .grid-card > .tile-chrome > .imp-tile { top: auto; left: auto; right: 6px; bottom: -11px; }
+.view-gallery .card-grid .grid-card:has(> .tile-chrome) > .grid-meta { margin-top: 7px; }
+:is(.view-compact, .view-symbols) .card-grid .grid-card > .tile-chrome > :is(.tile-emb, .tile-set) { transform: none; }
+.view-gallery .card-grid > .grid-card[data-tier]:not([data-tier="tn"]) > .tile-chrome > :is(.tile-emb, .tile-set) { transform: translateY(calc(9px + var(--grid-frame-width))); }
+/* The owned count clips onto the top edge the same way, so it no longer sits over the printed name or cost. */
+.view-gallery .card-grid .grid-card > .owned-badge { min-height: 18px; top: 0; right: 8px; transform: translateY(-50%); }
+.view-gallery .card-grid > .grid-card[data-tier] > .owned-badge { top: var(--aura-room); right: calc(var(--aura-room) + 8px); }

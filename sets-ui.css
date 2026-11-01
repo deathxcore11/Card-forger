@@ -318,7 +318,7 @@ body:not(.glass) .set-atmosphere{display:none}
  .set-overview .set-progress-top .eyebrow{font-size:9px;margin-bottom:4px}
  .set-overview .set-progress-top p{font-size:11px}
  .set-overview .set-open-pack{font-size:12px;padding:8px 10px;gap:3px;flex-direction:column}
- .set-overview .set-open-pack>span{font-size:9px}
+ .set-overview .set-open-pack>span{font-size:11px}
  .set-card-toolbar .set-controls{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:7px}
  .set-card-toolbar .set-controls>.seg{grid-column:1/-1;justify-self:start}
  .set-card-toolbar .set-controls>select,.set-card-toolbar .set-controls>.glass-select{width:100%}
@@ -328,3 +328,5 @@ body:not(.glass) .set-atmosphere{display:none}
 .set-browser-more{display:grid;gap:12px;min-width:0}
 .set-browser-more[open]>summary{margin-bottom:4px}
 .set-browser-more>.set-browser-freshness{margin:0;color:var(--muted);font-size:11px;line-height:1.6}
+/* 1 Nov: the set filter tabs keep a full 44px tap target, even the short "All". */
+.set-controls .seg > button, .set-controls .segmented > button, .set-controls [role="tablist"] > button { min-width: 44px; }
