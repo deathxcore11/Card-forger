@@ -247,7 +247,7 @@ export function deckDoctor(rows, card, { format = null, commander = null } = {})
   if (hooks.length && forgeFit(r.c, hooks, { leader }).offPlan) push('off-plan', r);
  }
  const count = k => (bucket.get(k) || []).reduce((n, r) => n + r.qty, 0), names = k => (bucket.get(k) || []).map(r => r.name);
- const wipe = targets.wipe, landsTarget = isCommander ? targets.lands : Math.round(size * .4);
+ const wipe = targets.wipe, landsTarget = forgeLandCount(list.map(r => ({ card: r.c, qty: r.qty })), { size, commander: isCommander, hooks });
  const gauges = [
   { key: 'ramp', label: 'Ramp', count: count('ramp'), target: targets.ramp },
   { key: 'draw', label: 'Card advantage', count: count('draw'), target: targets.draw },
@@ -263,3 +263,21 @@ export function deckDoctor(rows, card, { format = null, commander = null } = {})
 // Deck Forge settings for random builds: power (Casual by default for random
 // decks), variation (Tight/Varied/Wild) and a seed so a deck can be rebuilt.
 export const forgeOptions = forge => ({power:['casual','focused','strong','max'].includes(forge?.power)?forge.power:null,variation:['tight','varied','wild'].includes(forge?.variation)?forge.variation:'tight',forgeSeed:/^[A-Z0-9]{4,12}$/.test(String(forge?.seed||''))?forge.seed:''});
+
+// How many lands this deck needs, from its own cards (Randall, 1 Nov: 38 is
+// a rule of thumb, not a law; the count is contextual). Frank Karsten's
+// regressions: 99-card Commander lands = 31.42 + 3.13 x average mana value
+// - 0.28 x cheap (MV <= 2) ramp and card draw; 60-card = 19.59 + 1.90 x
+// average mana value - 0.28 x the same. Landfall commanders want a few more.
+export function forgeLandCount(spells, { size = 60, commander = false, hooks = [] } = {}) {
+ let n = 0, mv = 0, cheap = 0;
+ for (const { card, qty = 1 } of spells) {
+  if (!card || isLandCard(card)) continue;
+  n += qty; mv += (Number(card.cmc) || 0) * qty;
+  if ((Number(card.cmc) || 0) <= 2 && forgeRoles(card).some(r => r === 'ramp' || r === 'draw')) cheap += qty;
+ }
+ const avg = n ? mv / n : 3, landfall = hooks.some(h => h.id === 'landfall');
+ if (commander && size >= 100) return Math.round(Math.min(42, Math.max(33, 31.42 + 3.13 * avg - 0.28 * cheap + (landfall ? 2 : 0))));
+ const sixty = 19.59 + 1.90 * avg - 0.28 * cheap + (landfall ? 1 : 0);
+ return Math.round(Math.min(size * .45, Math.max(size * .3, sixty * size / 60)));
+}

@@ -25,7 +25,7 @@ assert.equal(d.cards.find((r) => r.name === "Goblin Chieftain").qty, 4);
 assert.ok(!d.cards.some((r) => r.name === "Blue Thing"), "off-color card left out");
 assert.ok(!d.cards.some((r) => r.name === "Banned Goblin"), "banned card left out");
 assert.ok(d.cost <= 25);
-assert.equal(d.lands, 24);
+assert.equal(d.lands, 23); // contextual: Karsten's 60-card land math for this curve
 assert.ok(d.cards.every((r) => r.qty <= 4 || r.name === "Mountain"));
 assert.deepEqual(validateDeck({ format: "Modern", cards: d.cards }, { ...catalog }, []).issues, []);
 // $0 means only actual owned copies, including basic lands; open slots stay open.

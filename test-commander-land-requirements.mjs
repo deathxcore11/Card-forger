@@ -110,7 +110,7 @@ const builtGate=inspectLandRequirements(builtRows,{commander:HZ});
 assert.equal(builtGate.status,'supported',JSON.stringify(builtGate.groups[0]?.summary));
 const desertsBuilt=builtGate.groups[0].sources.copies;
 assert(desertsBuilt>=LAND_REQUIREMENT_POLICY.commander.minimum&&desertsBuilt<=LAND_REQUIREMENT_POLICY.commander.target);
-assert.equal(built.lands,38,'Deserts take land slots, not spell slots');
+assert.equal(built.lands,37,'Deserts take land slots, not spell slots');
 const colorlessDeserts=builtGate.groups[0].sources.cards.filter(c=>!(catalog[cardKey(c.name)].produced_mana||[]).some(m=>'RGW'.includes(m))).length;
 assert(colorlessDeserts<=Math.floor(36*LAND_REQUIREMENT_POLICY.colorlessShare),'colorless Deserts are capped');
 const builtPlan=inspectDeckPlan({game:'mtg',theme:''},builtRows,{commander:HZ});

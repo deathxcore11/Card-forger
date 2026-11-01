@@ -4,7 +4,7 @@ import {commanderCardConditions, inspectCommanderCardConditions, commanderEngine
 import {mtgManaSourceProfile} from './mtg-mana-sources.js';
 import {setupBurden} from './deck-preferences.js';
 import { functionalIn } from "./deck-safety.js";
-import { commanderHooks, forgeScore, forgeRoles, forgeTargets, forgeNoise, forgeDiscoveryQueries, DECK_TAGS } from './deck-forge.js';
+import { commanderHooks, forgeScore, forgeRoles, forgeTargets, forgeNoise, forgeDiscoveryQueries, forgeLandCount, DECK_TAGS } from './deck-forge.js';
 // Format-aware deck generator: builds a full, legal deck around one or more
 // seed cards, preferring cards you own and staying inside a purchase budget.
 // Works for every constructed format in formats.js (60-card, singleton and
@@ -181,7 +181,15 @@ export function scoreCard(c, seedTags, seedSubs, { free = 0, size = 60, tokenKin
  *       available(name) → free copies you own, price(card) → USD or null,
  *       budget (USD for cards you must buy), colors (optional override)
  */
-export function buildDeck({ format, seeds = [], base = [], catalog, available = () => 0, price = (c) => null, budget = Infinity, colors = null, commander = null, completionFirst = false, easy = false, preferred = () => 0, requestedStyle = "", goal = "strongest", suggestedCards = [], excludedCards = [], creatureTypesOnly, excludedSubtypes, power = null, variation = "tight", forgeSeed = "" }) {
+export function buildDeck(opts) {
+  const first = buildDeckOnce(opts);
+  if (Number.isInteger(opts?.landCount) || opts?.completionFirst) return first;
+  const wanted = first.forge?.landsWanted;
+  if (!Number.isInteger(wanted) || wanted === first.lands) return first;
+  const second = buildDeckOnce({ ...opts, landCount: wanted });
+  return second.open <= first.open ? second : first;
+}
+function buildDeckOnce({ format, seeds = [], base = [], catalog, available = () => 0, price = (c) => null, budget = Infinity, colors = null, commander = null, completionFirst = false, easy = false, preferred = () => 0, requestedStyle = "", goal = "strongest", suggestedCards = [], excludedCards = [], creatureTypesOnly, excludedSubtypes, power = null, variation = "tight", forgeSeed = "", landCount = null }) {
   const f = formatOf(format);
   if (f.id === "limited") throw Error("Limited decks come from the cards you open — build those by hand.");
   if ((!Number.isFinite(budget) && budget!==Infinity) || budget < 0) throw Error("Enter a budget of $0 or more.");
@@ -236,7 +244,9 @@ export function buildDeck({ format, seeds = [], base = [], catalog, available = 
   // Deck Forge targets (deck-forge-tags.js): 38 lands in Commander, interaction,
   // card advantage and ramp quotas, and the commander's own theme hooks.
   const forgeT = forgeTargets(f), forgeLead = lead || seeds[0] || null, hooks = commanderHooks(forgeLead, { size });
-  const landTarget = Math.max(f.commander && size >= 100 ? forgeT.lands : Math.round(size * 0.4) - (f.commander ? 1 : 0), landsIn()),
+  // First pass starts from the rule of thumb (38 in Commander); the finished
+  // list then sets its own count (forgeLandCount) and the deck is rebuilt once.
+  const landTarget = Math.max(Number.isInteger(landCount) ? landCount : f.commander && size >= 100 ? forgeT.lands : Math.round(size * 0.4) - (f.commander ? 1 : 0), landsIn()),
     spellTarget = size - landTarget;
   if (lead && !qtyOf(lead)) {
     put(lead, 1, "Leads the deck");
@@ -430,12 +440,15 @@ export function buildDeck({ format, seeds = [], base = [], catalog, available = 
     }
   }
 
+  // The finished list sets its own land count (forgeLandCount); buildDeck
+  // rebuilds once with it and keeps whichever version is more complete.
+  const landsWanted = Math.max(forgeLandCount([...rows.values()].filter(r => cardKey(r.name) !== cardKey(lead?.name)).map(r => ({ card: catalog[cardKey(r.name)], qty: r.qty })), { size, commander: !!f.commander, hooks }), [...rows.values()].filter(r => r.why === 'Already in your list' && isLand(catalog[cardKey(r.name)])).reduce((n, r) => n + r.qty, 0));
   const cards = [...rows.values()].filter((r) => r.qty > 0),
     total = sumQty(cards),
     open = Math.max(0, size - total);
   if(total>size)throw Error("Generated deck exceeds its target; no version was applied.");
   if(open && !completionFirst){
-    const economical=buildDeck({format,seeds,base,catalog,available,price,budget,colors,commander,completionFirst:true,easy,preferred,requestedStyle,goal,suggestedCards,excludedCards,...restrictions,power,variation,forgeSeed});
+    const economical=buildDeck({format,seeds,base,catalog,available,price,budget,colors,commander,completionFirst:true,easy,preferred,requestedStyle,goal,suggestedCards,excludedCards,...restrictions,power,variation,forgeSeed,landCount});
     const seedKept=seeds.every(seed=>isLand(seed)||economical.cards.some(r=>cardKey(r.name)===cardKey(seed.name)));
     if(seedKept && economical.open<open)return economical;
   }
@@ -444,7 +457,7 @@ export function buildDeck({ format, seeds = [], base = [], catalog, available = 
   if (unknown) warnings.push(`${unknown} card${unknown > 1 ? "s have" : " has"} no current price.`);
   if(unknown)warnings.push("Purchase cost is unverified; unknown quotes are not free cards.");
   const owned=cards.reduce((a,r)=>a+Math.min(r.qty,stock(r.name)),0),knownSubtotal=Math.round(spent*1e6)/1e6,priceVerified=unknown===0;
-  return {format:f.name,requestedStyle,goal,...restrictions,forge:{version:DECK_TAGS.version,hooks:hooks.map(h=>h.id),power,variation,seed:forgeSeed||null},colors:deckColors,commander:lead?.name||"",cards,cost:priceVerified?knownSubtotal:null,knownSubtotal,unknown,unpricedCopies:unknown,priceVerified,priceBasis:"purchase",unpricedPurchaseCopies:unknown,withinBudget:priceVerified&&knownSubtotal<=budget+1e-6,budget,total,size,open,owned,warnings,lands:landsIn()};
+  return {format:f.name,requestedStyle,goal,...restrictions,forge:{version:DECK_TAGS.version,hooks:hooks.map(h=>h.id),power,variation,seed:forgeSeed||null,landsWanted},colors:deckColors,commander:lead?.name||"",cards,cost:priceVerified?knownSubtotal:null,knownSubtotal,unknown,unpricedCopies:unknown,priceVerified,priceBasis:"purchase",unpricedPurchaseCopies:unknown,withinBudget:priceVerified&&knownSubtotal<=budget+1e-6,budget,total,size,open,owned,warnings,lands:landsIn()};
 }
 
 
