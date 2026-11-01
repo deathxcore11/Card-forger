@@ -683,8 +683,9 @@ export const ptcgSource = {
       subs = await Promise.all((SET_SUBSETS[set.id] || []).map((id) => this.setOwnCards({ id }).catch(() => [])));
     const seen = new Set(own.map((c) => c.id));
     const extra = subs.flat().filter((c) => !seen.has(c.id) && seen.add(c.id));
-    // Subset cards are counted on top of the parent's own total, so the page stays "complete".
-    return Object.assign([...own, ...extra], { subsetCount: extra.length });
+    // Subset cards and catalogue-supplement cards (not yet in the provider's set count) are counted
+    // on top of the parent's own total, so the page stays "complete".
+    return Object.assign([...own, ...extra], { subsetCount: extra.length + (own.supplemented || 0) });
   },
   async setOwnCards(set) {
     let d = await get("/sets/" + encodeURIComponent(set.id));
@@ -697,9 +698,12 @@ export const ptcgSource = {
     }
     const release = pokemonCatalogueSet(d || set);
     if (release?.id && (d || set.name)) catalogueSets.set(release.id,release);
-    return pokemonCatalogueOverlay((d?.cards || []).map(c => ({...c,set:{...release,...c.set}})),c => c.set?.id === set.id)
+    const upstream = (d?.cards || []).map(c => ({...c,set:{...release,...c.set}}));
+    const cards = pokemonCatalogueOverlay(upstream,c => c.set?.id === set.id)
       .map(brief).filter(c => !c.pocket)
       .sort((a,b) => String(a.set?.number || '').localeCompare(String(b.set?.number || ''),undefined,{numeric:true}) || a.id.localeCompare(b.id));
+    // mee's supplement is already inside its repaired count; other sets' additions are not.
+    return Object.assign(cards, { supplemented: set.id === 'mee' ? 0 : cards.length - new Set(upstream.map(c => c.id)).size });
   },
   // The same card at the lowest cost: reprints and alternate arts with the same name and the same
   // game text (HP, attacks, abilities, retreat, rules) play identically, so a deck only needs the
