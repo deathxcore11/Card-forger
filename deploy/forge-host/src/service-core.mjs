@@ -27,7 +27,7 @@ const ROOMS_PATH = '/api/play/rooms', JOIN_PATH = '/api/play/rooms/join';
 const ROOM_PATH = new RegExp('^/api/play/rooms/(' + UUID + ')$', 'i');
 const INVITE = /^[A-Za-z0-9_-]{43}$/;
 // An invite lasts 30 minutes. Friend matches start with the first three formats.
-const ROOM_MS = 1_800_000, FRIEND_FORMATS = ['Commander', 'Standard', 'Modern'];
+const ROOM_MS = 1_800_000, CHALLENGE_MS = 300_000, FRIEND_FORMATS = ['Commander', 'Standard', 'Modern'];
 // What each player shows the other in a friend match: their display name and profile picture
 // (an https image, with the crop they chose for card art). Anything else is dropped.
 const unit = (v, lo, hi) => typeof v === 'number' && Number.isFinite(v) && v >= lo && v <= hi;
@@ -112,7 +112,7 @@ export async function readJSONWithin(request, maximum, timeoutMs = 5000) {
 // Its service binding is private; also keep origin + owner checks in each DO.
 export async function routeHostRequest(request, env, verifyBearer) {
   const path = new URL(request.url).pathname;
-  const room = path === ROOMS_PATH || path === JOIN_PATH ? request.method === 'POST' : ROOM_PATH.test(path) ? ['GET', 'DELETE'].includes(request.method) : null;
+  const room = path === ROOMS_PATH ? ['GET', 'POST'].includes(request.method) : path === JOIN_PATH ? request.method === 'POST' : ROOM_PATH.test(path) ? ['GET', 'DELETE'].includes(request.method) : null;
   if (room !== null) {
     if (!room) return error('method_not_allowed', 405);
     if (!await verifyHostUser(request, { verifyBearer, origin: ORIGIN })) return error('authentication_required', 401);
@@ -215,13 +215,17 @@ export class AdmissionService {
   async room(request, path, user, access) {
     if (await limited(this.storage, 'attempt:room:' + user.id, [[60_000, 20], [3_600_000, 200]], this.now())) return error('room_rate_limit', 429);
     await scheduleNoLater(this.storage, this.now() + 60_000);
+    // GET /rooms: the challenges waiting for this player, each with the invite that opens it.
+    if (path === ROOMS_PATH && request.method === 'GET') return json({ challenges: await this.challengesFor(user.id) });
     const byId = ROOM_PATH.exec(path);
     if (byId) {
       const key = 'room:' + byId[1].toLowerCase(), room = await this.storage.get(key);
-      if (!room || (room.hostId !== user.id && room.guestId !== user.id)) return error('room_not_found', 404);
+      const challenged = room && room.toId === user.id.toLowerCase() && !room.guestId;
+      if (!room || (room.hostId !== user.id && room.guestId !== user.id && !challenged)) return error('room_not_found', 404);
       if (request.method === 'DELETE') {
-        if (room.hostId !== user.id) return error('room_not_found', 404);
-        if (room.status === 'open') { room.status = 'cancelled'; await this.storage.put(key, room); }
+        // The host cancels; the challenged friend says "not now". Either way it only ends an open room.
+        if (room.hostId !== user.id && !challenged) return error('room_not_found', 404);
+        if (room.status === 'open') { room.status = room.hostId === user.id ? 'cancelled' : 'declined'; await this.storage.put(key, room); }
         return new Response(null, { status: 204, headers: { 'Cache-Control': 'no-store' } });
       }
       return json(this.roomView(room, user.id));
@@ -230,18 +234,25 @@ export class AdmissionService {
     try { body = await readJSONWithin(request, 131072); }
     catch (e) { return error(['body_too_large', 'body_timeout'].includes(e.message) ? e.message : 'invalid_json', e.message === 'body_too_large' ? 413 : e.message === 'body_timeout' ? 408 : 400); }
     if (path === ROOMS_PATH) {
-      if (Object.keys(body).some(k => !['format', 'deck', 'player'].includes(k)) || !FRIEND_FORMATS.includes(body.format)) return error('invalid_room', 400);
+      if (Object.keys(body).some(k => !['format', 'deck', 'player', 'to'].includes(k)) || !FRIEND_FORMATS.includes(body.format)) return error('invalid_room', 400);
+      // A challenge names one friend's account; only that account sees it, and it lasts five minutes.
+      const to = body.to === undefined || body.to === null ? null : String(body.to).toLowerCase();
+      if (to !== null && (!UUID_RE.test(to) || to === user.id.toLowerCase())) return error('invalid_room', 400);
       let hostPlayer; try { hostPlayer = playerCard(body.player); } catch { return error('invalid_room', 400); }
       try { validateExactDeckInput(friendInput(body.format, body.deck, body.deck)); } catch { return error('invalid_match_input', 400); }
       const invite = randomInvite(), roomId = crypto.randomUUID();
       const room = { roomId, hostId: user.id, hostPlayer, format: body.format, hostDeck: body.deck, inviteDigest: await digest(invite),
-        status: 'open', createdAt: this.now(), expiresAt: this.now() + ROOM_MS };
+        status: 'open', createdAt: this.now(), expiresAt: this.now() + (to ? CHALLENGE_MS : ROOM_MS), ...(to ? { toId: to } : {}) };
       await this.storage.transaction(async txn => {
         // One open room per host: a new invite ends the old one.
         const previous = await txn.get('host-room:' + user.id);
         const old = previous && await txn.get('room:' + previous);
         if (old?.status === 'open') { old.status = 'cancelled'; await txn.put('room:' + previous, old); }
         await txn.put('room:' + roomId, room); await txn.put('invite:' + room.inviteDigest, roomId); await txn.put('host-room:' + user.id, roomId);
+        if (to) {
+          const waiting = (await txn.get('challenges:' + to) || []).filter(c => c.expiresAt > this.now()).slice(-9);
+          await txn.put('challenges:' + to, [...waiting, { roomId, invite, expiresAt: room.expiresAt }]);
+        }
       });
       return json({ ...this.roomView(room, user.id), invite }, 201);
     }
@@ -252,6 +263,8 @@ export class AdmissionService {
     const key = 'room:' + roomId, found = roomId && await this.storage.get(key);
     if (!found) return error('invite_not_found', 404);
     if (found.hostId === user.id) return error('own_room', 409);
+    if (found.toId && found.toId !== user.id.toLowerCase()) return error('invite_not_found', 404);
+    if (found.status === 'declined') return error('room_closed', 410);
     if (found.guestId && found.guestId !== user.id) return error('room_full', 409);
     if (found.status === 'cancelled') return error('room_closed', 410);
     if (found.status === 'open' && this.now() >= found.expiresAt) return error('invite_expired', 410);
@@ -285,10 +298,19 @@ export class AdmissionService {
     });
     return this.dispatch(result, input);
   }
+  async challengesFor(userId) {
+    const now = this.now(), list = [];
+    for (const c of await this.storage.get('challenges:' + userId.toLowerCase()) || []) {
+      const room = c.expiresAt > now && await this.storage.get('room:' + c.roomId);
+      if (room?.status === 'open' && room.toId === userId.toLowerCase() && !room.guestId && room.expiresAt > now)
+        list.push({ roomId: room.roomId, invite: c.invite, format: room.format, expiresAt: room.expiresAt, fromId: room.hostId, from: room.hostPlayer || null });
+    }
+    return list;
+  }
   roomView(room, userId) {
     const expired = room.status === 'open' && this.now() >= room.expiresAt;
     return { roomId: room.roomId, format: room.format, status: expired ? 'expired' : room.status, expiresAt: room.expiresAt,
-      seat: room.hostId === userId ? 'host' : 'guest', guestJoined: !!room.guestId,
+      seat: room.hostId === userId ? 'host' : 'guest', guestJoined: !!room.guestId, challenge: !!room.toId,
       // The other player, as they chose to show themselves.
       opponent: (room.hostId === userId ? room.guestPlayer : room.hostPlayer) || null,
       ...(room.matchId && room.status === 'started' ? { matchId: room.matchId } : {}) };
@@ -402,6 +424,11 @@ export class AdmissionService {
       if (room.createdAt > this.now() - 86_400_000) continue;
       await this.storage.delete([key, 'invite:' + room.inviteDigest]);
       if (await this.storage.get('host-room:' + room.hostId) === room.roomId) await this.storage.delete('host-room:' + room.hostId);
+    }
+    for (const [key, list] of await this.storage.list({ prefix: 'challenges:' })) {
+      if (list.every(c => c.expiresAt <= this.now())) await this.storage.transaction(async txn => {
+        if ((await txn.get(key) || []).every(c => c.expiresAt <= this.now())) await txn.delete(key);
+      });
     }
     for (const [key, times] of await this.storage.list({ prefix: 'attempt:' })) {
       if (times.every(t => t <= this.now() - 3_600_000)) await this.storage.transaction(async txn => {

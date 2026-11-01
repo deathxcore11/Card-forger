@@ -158,3 +158,38 @@ test('each player sees the other\'s name and picture, never anything more', asyn
   // A player card that is not an object is refused; no card at all is fine.
   assert.equal((await json(f, '/api/play/rooms', { body: { format: 'Commander', deck: structuredClone(deck), player: 'me' } })).status, 400);
 });
+
+test('a challenge reaches only the friend it names, for five minutes, and "not now" ends it quietly', async () => {
+  const f = fixture();
+  const sent = await json(f, '/api/play/rooms', { body: { format: 'Commander', deck: structuredClone(deck), player: { name: 'deathxcore11' }, to: other } });
+  assert.equal(sent.status, 201); assert.equal(sent.body.challenge, true);
+  // Only the named friend sees it, with the invite that opens it.
+  const mine = await json(f, '/api/play/rooms', { token: 'other', method: 'GET' });
+  assert.equal(mine.body.challenges.length, 1);
+  const [c] = mine.body.challenges;
+  assert.equal(c.invite, sent.body.invite); assert.equal(c.fromId, owner); assert.equal(c.format, 'Commander'); assert.deepEqual(c.from, { name: 'deathxcore11', image: null, crop: null });
+  assert.deepEqual((await json(f, '/api/play/rooms', { token: 'third', method: 'GET' })).body.challenges, []);
+  // Nobody else can use its invite.
+  assert.equal((await json(f, '/api/play/rooms/join', { token: 'third', body: { invite: c.invite } })).status, 404);
+  // Not now: the host's room says declined, and the challenge is gone.
+  assert.equal((await json(f, '/api/play/rooms/' + c.roomId, { token: 'other', method: 'DELETE' })).status, 204);
+  assert.equal((await json(f, '/api/play/rooms/' + c.roomId, { method: 'GET' })).body.status, 'declined');
+  assert.deepEqual((await json(f, '/api/play/rooms', { token: 'other', method: 'GET' })).body.challenges, []);
+  assert.equal((await json(f, '/api/play/rooms/join', { token: 'other', body: { invite: c.invite, deck: structuredClone(deck) } })).status, 410);
+  // You cannot challenge yourself, and a challenge expires after five minutes.
+  assert.equal((await json(f, '/api/play/rooms', { body: { format: 'Commander', deck: structuredClone(deck), to: owner } })).status, 400);
+  const again = await json(f, '/api/play/rooms', { body: { format: 'Commander', deck: structuredClone(deck), to: other } });
+  assert.equal(again.status, 201);
+  f.setTime(again.body.expiresAt);
+  assert.deepEqual((await json(f, '/api/play/rooms', { token: 'other', method: 'GET' })).body.challenges, []);
+});
+
+test('an accepted challenge starts the match like any invite', async () => {
+  const f = fixture();
+  const sent = await json(f, '/api/play/rooms', { body: { format: 'Commander', deck: structuredClone(deck), to: other } });
+  const [c] = (await json(f, '/api/play/rooms', { token: 'other', method: 'GET' })).body.challenges;
+  const joined = await json(f, '/api/play/rooms/join', { token: 'other', body: { invite: c.invite, deck: structuredClone(deck), player: { name: 'ldwd11' } } });
+  assert.equal(joined.status, 202, JSON.stringify(joined.body));
+  const hostRoom = await json(f, '/api/play/rooms/' + sent.body.roomId, { method: 'GET' });
+  assert.equal(hostRoom.body.status, 'started'); assert.equal(hostRoom.body.opponent.name, 'ldwd11');
+});
