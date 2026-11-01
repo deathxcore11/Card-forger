@@ -21,11 +21,13 @@ export function pokemonFallback(c){
 }
 // These exact provider references were confirmed as card backs in the 3.84.2
 // audit (2026-10-18), even with HTTP 200. Quarantine those references only;
-// me55c/29 was also confirmed as a card back in the 3.85.6 live review.
-// A genuine exact-printing alternative remains eligible. Recheck before removing.
+// me55c/29 was also confirmed as a card back in the 3.85.6 live review, and on
+// 1 Nov 2026 the live 30th Classic page showed 13-28 and 30 as card backs too:
+// the whole me55c gallery is placeholders, so every card falls through to the
+// exact TCGplayer product route. Recheck before removing.
 export function knownPokemonPlaceholder(url){
  if(/^https:\/\/images\.pokemontcg\.io\/ecard[23]\/H0[1-9](?:_hires)?\.png(?:\?.*)?$/.test(String(url||'')))return true;
- return /^https:\/\/images\.pokemontcg\.io\/me55c\/(?:[1-9]|1[0-2]|29)(?:_hires)?\.png(?:\?.*)?$/.test(String(url||''));
+ return /^https:\/\/images\.pokemontcg\.io\/me55c\/\d+(?:_hires)?\.png(?:\?.*)?$/.test(String(url||''));
 }
 // assets/cards/ holds scans we ship ourselves for printings no provider has an image of (Ancient Mew).
 export function artworkSources(c,large=false){
