@@ -1,4 +1,4 @@
-const CACHE = "cardforge-shell-pw-meta-4347-appsounds-v406";
+const CACHE = "cardforge-shell-pw-meta-4347-appsounds-v407";
 const ASSETS = [
   "./assets/fonts/fonts.css",
   "./play-forge-feature.js",
