@@ -37,11 +37,19 @@ async function scryfallSets(fetcher) {
 }
 
 export async function currentRewardSet(env, request, fetcher = fetch) {
+  return (await shopSets(env, request, fetcher)).reward;
+}
+
+// The reward set, plus every set the merchant sells (each has a booster file), newest first.
+export async function shopSets(env, request, fetcher = fetch) {
   const [facts, boosterIndex, sets] = await Promise.all([
     asset(env, request, '/forge-rules/current/official-format-facts.json', fetcher),
     asset(env, request, '/data/mtg-boosters/index.json', fetcher),
     scryfallSets(fetcher)]);
-  return rewardSet({standardSets: facts?.standardSets || [], boosterIndex: boosterIndex || {}, scryfallSets: sets});
+  const baked = boosterIndex?.sets || {}, today = new Date().toISOString().slice(0, 10);
+  const shop = sets.filter(s => baked[s.code] && s.released_at && s.released_at <= today)
+    .map(s => ({code: s.code, name: s.name, released: s.released_at})).sort((a, b) => b.released.localeCompare(a.released));
+  return {reward: rewardSet({standardSets: facts?.standardSets || [], boosterIndex: boosterIndex || {}, scryfallSets: sets}), shop};
 }
 
 async function scryfallCollection(identifiers, fetcher) {
@@ -69,8 +77,8 @@ export async function progressRoute(request, env, {verifyBearer, fetcher = fetch
   const state = () => rpc(env, 'play_state', {p_user: uid}, fetcher);
   try {
     if (path === 'state' && request.method === 'GET') {
-      const [s, reward] = await Promise.all([state(), currentRewardSet(env, request, fetcher)]);
-      return json({...s, rewardSet: reward});
+      const [s, sets] = await Promise.all([state(), shopSets(env, request, fetcher)]);
+      return json({...s, rewardSet: sets.reward, shop: sets.shop});
     }
     if (request.method !== 'POST') return fail('method', 405);
     const body = await readBody(request);

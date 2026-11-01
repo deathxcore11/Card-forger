@@ -102,4 +102,22 @@ assert.ok(playEcon.length >= 3);
 for (const f of playEcon) assert.ok(!FORBIDDEN.test(readFileSync(f, 'utf8')), f + ' crosses the Play wall');
 for (const f of ['storage.js', 'cloud.js', 'store.js', 'binders.js', 'sync-merge.js', 'pricefeed.js'])
   assert.ok(!/play-econ-/.test(readFileSync(f, 'utf8')), f + ' must not import Play economy code');
+// --- Screens: the top bar shows only for a signed-in wallet, and no Play screen ever shows a price.
+{
+  const {purseMarkup, stuffRowMarkup, econScreenMarkup} = await import('./play-econ-ui.js');
+  assert.equal(purseMarkup(null), '', 'signed out: no top bar');
+  assert.equal(stuffRowMarkup({state: null}), '');
+  const state = {config, wallet: {coins: 1200, seal_c: 1, seal_u: 2, seal_r: 3, seal_m: 4, xp: 1500, starter_at: 'x'}, packs: [{id: 1, set: 'fra'}],
+    cards: [{o: 'a', n: 'Sheoldred, the Apocalypse', r: 'mythic', c: 2, prices: {usd: '77.77'}}], decks: [], rewardSet: {code: 'fra', name: 'Reality Fracture', released: '2026-10-02'}, shop: [{code: 'fra', name: 'Reality Fracture', released: '2026-10-02'}]};
+  const snap = {state, error: '', busy: '', loading: false};
+  const bar = purseMarkup(snap);
+  assert.ok(bar.includes('1,200') && bar.includes('data-econ-view="packs"') && /Mastery level 2/.test(bar));
+  for (const v of ['shop', 'packs', 'collection', 'decks']) {
+    const html = econScreenMarkup(v, snap, {});
+    assert.ok(html.includes('pe-purse'), v + ' keeps the top bar');
+    assert.ok(!/\$\s?\d|usd|77\.77|tcgplayer/i.test(html), v + ' shows no price');
+  }
+  assert.ok(econScreenMarkup('shop', snap, {}).includes('data-act="playEconBuy"'));
+  assert.ok(/Sign in/.test(econScreenMarkup('packs', {state: null, loading: false}, {})));
+}
 console.log('play economy ok');

@@ -5,6 +5,7 @@ import {brandMark} from './brand.js';
 import {PLAY_DECK_SOURCES,playDeckSupport} from './play-deck-sources.js';
 import {playmatPickerMarkup} from './play-playmats.js';
 import {reviewPracticeSetup} from './experiments/phase-engine/practice-preflight.mjs';
+import {purseMarkup,stuffRowMarkup} from './play-econ-ui.js';
 // Desktop setup only. Format preferences do not certify engine,
 // construction legality, card support or a working opponent connection.
 const esc = value => String(value ?? '').replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
@@ -13,7 +14,7 @@ const count = rows => Array.isArray(rows) && rows.every(row => Number.isSafeInte
 function notices(items, title) {
   return items?.length ? `<details class="note warn"><summary>${esc(title)} (${items.length})</summary><ul>${items.map(item => `<li>${esc(message(item))}</li>`).join('')}</ul></details>` : '';
 }
-export function playMenuMarkup(state, {avatarMarkup = '', deckTiles = new Map(), deckPreview = '', importPreview = '', selectedArt = '', matchupArt = {}, opponentPreview = '', sourceEntries = {}, sourceArt = new Map(), sourceStatus = {}, savedCopy = null, savePending = false, cpuDifficulties = readCpuOptions(), quickStatus = {}, friendRoom = null, canShare = false, matchReleaseReady = false, engine = 'phase', view = 'lobby', inspectOpen = false} = {}) {
+export function playMenuMarkup(state, {avatarMarkup = '', deckTiles = new Map(), deckPreview = '', importPreview = '', selectedArt = '', matchupArt = {}, opponentPreview = '', sourceEntries = {}, sourceArt = new Map(), sourceStatus = {}, savedCopy = null, savePending = false, cpuDifficulties = readCpuOptions(), quickStatus = {}, friendRoom = null, canShare = false, matchReleaseReady = false, engine = 'phase', view = 'lobby', inspectOpen = false, econ = null} = {}) {
   const native=engine==='forge',deckSupport=native?forgeDeckSupport:playDeckSupport;
   if(native)cpuDifficulties=readCpuOptions({engine:'forge'});
   const p = state.profile || {}, draft = state.draft || {}, seatDeck=k=>k==='player'?state.selected:k==='opponent'?state.opponent:state.podDecks?.[k]||null,seatSource=k=>k==='player'?state.selectedSource:k==='opponent'?state.opponentSource:state.podSources?.[k]||null,seatName=k=>k==='player'?'Your deck':k==='opponent'?'CPU deck':k==='cpu3'?'CPU 3 deck':'CPU 4 deck';
@@ -94,13 +95,14 @@ export function playMenuMarkup(state, {avatarMarkup = '', deckTiles = new Map(),
   const MODE_FOCUS={friends:'50% 35%',quick:'58% 40%',practice:'52% 45%'};
   const modeArt=(deckArt,key)=>deckArt?`<span class="pl-mode-art pl-mode-art--deck" aria-hidden="true">${deckArt}</span>`:`<span class="pl-mode-art" style="background-image:url(${MODE_ART[key]});background-position:${MODE_FOCUS[key]}" aria-hidden="true"></span>`;
   if(view==='home')return `<section class="play-menu play-menu--forge pl-home" aria-labelledby="playTitle">
-    <header class="pl-home-head"><div><h1 id="playTitle">Play</h1></div></header>
+    <header class="pl-home-head"><div><h1 id="playTitle">Play</h1></div>${purseMarkup(econ)}</header>
     <div class="pl-modes">
       <button class="pl-mode" data-act="playOpenMode" data-play-style="social">${modeArt('','friends')}<span class="pl-mode-name">Multiplayer</span><span class="pl-mode-copy">Your deck against a friend's.</span><span class="pl-mode-foot"><span class="pl-mode-cta">Invite</span></span></button>
       <div class="pl-mode-hold"><button class="pl-mode pl-mode--quick pl-seam" data-act="playOpenMode" data-play-style="quick"${state.selected&&match.mode==='cpu'?' data-play-direct="true"':''}>${modeArt(matchupArt.player,'quick')}<span class="pl-mode-name">Quick Play</span><span class="pl-mode-copy">${state.selected&&match.mode==='cpu'?esc(state.selected.name||'Your deck'):'Your deck'} against a matched CPU.</span><span class="pl-mode-foot"><span class="pl-mode-cta">${quickStatus.busy?'Finding a CPU…':'Play'}</span></span></button>${state.selected&&match.mode==='cpu'?'<button class="pl-mode-change" data-act="playChangeDeck" data-play-style="quick">Change deck</button>':''}</div>
       <button class="pl-mode" data-act="playOpenMode" data-play-style="practice">${modeArt(matchupArt.opponent,'practice')}<span class="pl-mode-name">Practice</span><span class="pl-mode-copy">Any two decks, head to head.</span><span class="pl-mode-foot"><span class="pl-mode-cta">Set up</span></span></button>
       <a class="pl-mode" href="/planeswalk.html">${'<span class="pl-mode-art pl-mode-art--trim" style="background-image:url(https://cards.scryfall.io/art_crop/front/a/8/a83ca3a1-82a9-4f47-b0b8-21687afd705b.jpg?1783931174);background-position:50% 12%" aria-hidden="true"></span>'}<span class="pl-mode-name">Planeswalk</span><span class="pl-mode-copy">Climb Innistrad. Take down Sorin.</span><span class="pl-mode-foot"><span class="pl-mode-cta">Open</span></span></a>
     </div>
+    ${stuffRowMarkup(econ)}
   </section>`;
   return `<section class="play-menu play-menu--forge pl-lobby${native?'':' pl-lobby--phase'}" data-play-mode="${friends?'friends':quick?'quick':'practice'}" aria-labelledby="playTitle">
     <header class="pl-head"><button class="pl-back" data-act="playHome" aria-label="Back to Play"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="m15 5-7 7 7 7"/></svg></button><div class="pl-head-title"><p class="eyebrow">Play</p><h1 id="playTitle">${friends?'Friends':quick?'Quick Play':'Practice'}</h1></div><div class="pl-head-tools">${formatPicker}${quick?'':playmatPickerMarkup()}</div>${matchReleaseReady?'':'<span class="chip">In development</span>'}</header>

@@ -1,0 +1,56 @@
+// The app side of Play progression: reads the player's Play wallet, packs, collection and decks
+// from /api/progress and asks the server to open, buy or stamp. It never decides a reward itself.
+// The last state is cached on this device (per account) only so the top bar shows at once; the
+// server copy always wins. Play's wall: no collection storage, sync or price code is imported here.
+import {privateKey} from './account-scope.js';
+const CACHE = 'cardstashy-play-econ-state-v1';
+
+export function createPlayEcon({getAccessToken, fetchImpl = globalThis.fetch?.bind(globalThis), storage = globalThis.localStorage, onChange = () => {}} = {}) {
+  let state = null, loading = null, error = '', busy = '';
+  try { state = JSON.parse(storage?.getItem(privateKey(CACHE)) || 'null'); } catch { state = null; }
+  const set = next => { state = next; try { storage?.setItem(privateKey(CACHE), JSON.stringify(next)); } catch {} onChange(); };
+  async function call(path, body) {
+    const token = await getAccessToken?.();
+    if (!token) throw Object.assign(Error('Sign in to use your Play collection.'), {code: 'sign_in'});
+    const r = await fetchImpl('/api/progress/' + path, {method: body === undefined ? 'GET' : 'POST', body: body === undefined ? undefined : JSON.stringify(body),
+      headers: {Accept: 'application/json', Authorization: 'Bearer ' + token, ...(body === undefined ? {} : {'Content-Type': 'application/json'})}, credentials: 'omit', cache: 'no-store'});
+    const out = await r.json().catch(() => ({}));
+    if (!r.ok) throw Object.assign(Error(MESSAGES[out.error] || 'Play rewards are unavailable right now. Try again in a moment.'), {code: out.error || 'failed'});
+    return out;
+  }
+  const run = async (label, job) => { busy = label; error = ''; onChange(); try { return await job(); } catch (e) { error = e.message; throw e; } finally { busy = ''; onChange(); } };
+  const api = {
+    snapshot: () => ({state, error, busy, loading: !!loading}),
+    refresh() {
+      loading ||= call('state').then(async s => { if (!s.wallet?.starter_at && s.rewardSet) s = await call('starter', {}); set(s); return s; })
+        .catch(e => { error = e.code === 'sign_in' ? '' : e.message; onChange(); return state; }).finally(() => { loading = null; onChange(); });
+      return loading;
+    },
+    // Opens one banked pack on the server; returns {pack, sealBonus, duplicateCoins}.
+    open: id => run('open', async () => { const out = await call('open', {id}); set({...out.state, rewardSet: state?.rewardSet, shop: state?.shop}); return out; }),
+    buy: setCode => run('buy', async () => { const out = await call('buy', {set: setCode}); set({...out.state, rewardSet: state?.rewardSet, shop: state?.shop}); return out; }),
+    craft: cardId => run('craft', async () => { const out = await call('craft', {id: cardId}); set({...out.state, rewardSet: state?.rewardSet, shop: state?.shop}); return out; }),
+    saveDeck: deck => run('deck', async () => { const out = await call('deck', deck); await api.refresh(); return out.deck; }),
+    clear() { state = null; try { storage?.removeItem(privateKey(CACHE)); } catch {} onChange(); },
+  };
+  return api;
+}
+
+const MESSAGES = {
+  sign_in: 'Sign in to use your Play collection.',
+  not_configured: 'Play rewards are not switched on yet.',
+  short_coins: 'Not enough coins for that pack yet.',
+  short_balance: 'Not enough coins or seals for that.',
+  no_seal: 'You need a seal of that rarity first.',
+  have_max: 'You already have 4 copies of that card.',
+  pack_not_found: 'That pack was already opened.',
+  no_booster: 'Packs for that set are not available.',
+  bad_card: 'That card cannot be stamped with a seal.',
+};
+
+// The top bar's numbers, from a state (or null while signed out).
+export function purse(state) {
+  if (!state?.wallet) return null;
+  const w = state.wallet;
+  return {coins: w.coins | 0, seals: {c: w.seal_c | 0, u: w.seal_u | 0, r: w.seal_r | 0, m: w.seal_m | 0}, packs: (state.packs || []).length, xp: w.xp | 0};
+}
