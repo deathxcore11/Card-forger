@@ -165,7 +165,7 @@ import {createPlayEcon} from "./play-econ-client.js";
 import {econScreenMarkup,ECON_VIEWS,purseMarkup,cardImageByName,head as econHead,craftPlan} from "./play-econ-ui.js";
 import {createNameFacts,rankFinderLists,finderRow,trunkDeck,finderMarkup,FINDER_FORMATS,FINDER_SORTS} from "./play-deck-finder.js";
 import {createCardFacts,slimCard} from "./play-econ-cards.js";
-import {stepDeckCard,ownedByName,deckShortfall,legalFormats,mtgjsonDeckRows} from "./play-econ-rules.js";
+import {stepDeckCard,ownedByName,deckShortfall,legalFormats,mtgjsonDeckRows,PLAY_FORMATS} from "./play-econ-rules.js";
 import {STORY_ACTS} from "./story-acts.js";
 import {createStoryProgress,loadAct,loadActPool,ownDeckFits,battleCleared,currentAct,currentBattle,actCleared} from "./story-client.js";
 import {storyHomeMarkup,storyActMarkup,storyBattleMarkup,playScene,createStoryBubbles,starsRow,rewardText} from "./story-ui.js";
@@ -1783,6 +1783,7 @@ V.setPlayLensSource(()=>{const st=playEcon.snapshot().state||{};
   get edit(){const e=playView==='deck'&&econUi.edit;if(!e)return null;const copies=e.format==='Commander'?1:4;return {name:e.name||'this deck',qty:n=>(e.cards||[]).filter(c=>c.name===n).reduce((t,c)=>t+c.qty,0),copies};},
   // Craft with seals: one seal of the card's rarity per copy, up to 4 copies in the Trunk.
   craft:(name,card)=>{const seal={common:'c',uncommon:'u',rare:'r',mythic:'m',special:'r',bonus:'m'}[card?.rarity];const have=(card?.oracle_id&&byOracle.get(card.oracle_id))||byName.get(name)||0;if(!seal||!card?.id)return null;return {id:card.id,seal,room:Math.max(0,4-have),seals:st.wallet?.['seal_'+seal]|0,label:{c:'common',u:'uncommon',r:'rare',m:'mythic'}[seal]};},
+  meta:name=>cardMetaStats(name),
   setProgress:code=>{const have=(st.cards||[]).filter(c=>(c.s||[]).includes(code)).length,total=econFacts.set(code)?.total||null;return {key:'play:'+code,owned:have,total,loaded:total||0,known:total||0,complete:true};}};});
 A.playLensBack=()=>{playView='collection';econUi.tab='sets';go('#play');};
 A.playLensSet=t=>{closeSheet();go('#set/'+encodeURIComponent(t.dataset.code)+'/play');};
@@ -1863,6 +1864,18 @@ A.playFinderUse=t=>{const row=(finderUi.rows||[]).find(r=>r.key===t.dataset.find
 A.playEconStep=t=>{const e=econUi.edit;if(!e)return;const name=t.dataset.econCard;e.cards=stepDeckCard(e.cards,name,Number(t.dataset.econStep)||0,new Map([[name,4]]),e.format);e.dirty=true;refreshPlayMenu();if(t.closest?.('#sheet'))refreshSheet?.();};
 I.playEconDeckName=t=>{if(econUi.edit){econUi.edit.name=t.value;econUi.edit.dirty=true;}};
 C.playEconDeckFormat=t=>{if(econUi.edit){econUi.edit.format=t.value;econUi.edit.dirty=true;refreshPlayMenu();}};
+A.playEconToApp=async()=>{const e=econUi.edit;if(!e?.cards?.length)return;const commit=scopedCommit();const lead=e.format==='Commander'?e.cards.find(c=>c.qty===1&&/Legendary/.test(finderFacts.get(c.name)?.type_line||econFacts.card((playEcon.snapshot().state?.cards||[]).find(x=>x.n===c.name)?.o)?.t||'')):null;
+ const d={id:uid(),name:(e.name||'Play deck').slice(0,100),format:e.format||'Standard',commander:lead?.name||'',strategy:'Auto',budget:0,locked:false,cards:[...e.cards.filter(c=>c!==lead).map(c=>({name:c.name,qty:c.qty})),...(e.side||[]).map(c=>({name:c.name,qty:c.qty|0||1,zone:'side'}))],versions:[]};
+ await commit(s=>s.decks.push(d),{msg:`Copied “${d.name}” to My decks.`});};
+A.playEconCopyList=()=>{const e=econUi.edit;if(!e?.cards?.length)return;copyText(e.cards.map(c=>`${c.qty} ${c.name}`).join('\n')+((e.side||[]).length?'\n\nSideboard\n'+e.side.map(c=>`${c.qty|0||1} ${c.name}`).join('\n'):''),'Decklist copied.');};
+// Card meta from the cached tournament lists (no prices): share of lists, the archetype that
+// plays it most, and a jump to Build a deck filtered to lists with the card.
+function cardMetaStats(name){const out=[];for(const fmt of FINDER_FORMATS){const data=metaState('mtg:'+(fmt==='Commander'?'EDH':fmt)).data;const decks=(data?.decks||[]).filter(d=>Array.isArray(d.main));if(decks.length<8)continue;
+ const key=key(name),hit=decks.filter(d=>[...(d.commanders||[]).map(r=>typeof r==='string'?r:r.name),...d.main.map(r=>r.name)].some(n=>key(n)===key||key(String(n).split(' // ')[0])===key));if(!hit.length)continue;
+ const arch=new Map();for(const d of hit){const a=d.archetype||d.name||'';arch.set(a,(arch.get(a)||0)+1);}const top=[...arch].sort((a,b)=>b[1]-a[1])[0];
+ out.push({format:fmt,share:hit.length/decks.length,lists:hit.length,total:decks.length,top:top?.[0]||'',topLists:top?.[1]||0});}
+ return out.sort((a,b)=>b.share-a.share);}
+A.playCardDecks=t=>{closeSheet();finderUi.format=FINDER_FORMATS.includes(t.dataset.format)?t.dataset.format:'Standard';finderUi.query=t.dataset.name||'';finderUi.sort='owned';finderUi.limit=8;finderUi.rows=null;playView='finder';go('#play');};
 A.playEconSaveEdit=async()=>{const e=econUi.edit;if(!e?.cards?.length||e.busy)return;e.busy=true;refreshPlayMenu();try{const d=await playEcon.saveDeck({id:e.id,name:e.name||'Play deck',format:e.format,cards:[...e.cards,...(e.side||[])]});if(d?.id)e.id=d.id;e.dirty=false;toast('Saved to your Play decks.');}catch{}finally{e.busy=false;refreshPlayMenu();}};
 document.addEventListener('submit',e=>{const form=e.target.closest?.('form[data-submit]');if(!form||!A[form.dataset.submit])return;e.preventDefault();safely(A[form.dataset.submit](form));});
 // The empty Quick Play seat takes you straight to your decks.
@@ -5804,6 +5817,7 @@ A.deckMenu = (t) => {
       ${contextAction('deckShare','share','Share deck',{hint:'Send a link'})}
       ${contextAction('deckCopy','copy','Copy decklist')}
       ${contextAction('deckExport','export','Export decklist',{hint:'Text file (.txt)'})}
+      ${contextAction('deckToPlay','play','Copy to Play',{hint:'Missing cards stay greyed there'})}
     </div>
     <div class="context-group" aria-label="Manage deck">
       ${contextAction('snapshot','history','Save a version')}
@@ -5916,6 +5930,12 @@ A.snapshot = async () => {
   toast((currentDeck().versions || []).length > before ? "Version saved." : "No changes since the last version.");
 };
 A.deckCopy = () => copyText(exportDeckText(currentDeck()), "Decklist copied.");
+// Collection app → Play: the same list as a Play deck. Play keeps its own economy: cards the Play
+// collection doesn't have sit greyed in the Play builder until they're crafted, opened or bought.
+A.deckToPlay = async () => {const d=currentDeck();if(!d)return;if(!cloudInfo()?.user?.id)return toast('Sign in to use Play.');
+ const fmt=PLAY_FORMATS.includes(d.format)?d.format:/commander|edh/i.test(d.format||'')?'Commander':'Standard';
+ const cards=[...(d.commander?[{name:d.commander,qty:1}]:[]),...(d.cards||[]).filter(r=>r.name&&r.name!==d.commander).map(r=>({name:r.name,qty:Math.max(1,r.qty|0),...(r.zone==='side'||r.board==='side'?{board:'side'}:{})}))];
+ try{await playEcon.saveDeck({name:(d.name||'Deck').slice(0,80),format:fmt,cards});closeSheet();toast('Copied to your Play decks.');}catch(e){toast(e.message||'Could not copy to Play.');}};
 A.deckExport = () => download(`CardStashy_${fileSafe(currentDeck().name)}.txt`, exportDeckText(currentDeck()) + "\n");
 A.deckDup = async () => {
   const commit=scopedCommit();

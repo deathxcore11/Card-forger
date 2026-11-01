@@ -1274,3 +1274,11 @@ button.pd-near-row{cursor:pointer}
 .pf-filters{align-items:end}
 @media(max-width:700px){.pf-search{flex:1 1 100%}.pe-craft-pop{flex-wrap:wrap;width:max-content;max-width:calc(100vw - 48px)}}
 @media(prefers-reduced-motion:reduce){.pe-pool-skeleton{animation:none}.pe-pool-card{transition:none}}
+.pe-build-tools{display:flex;flex-wrap:wrap;gap:8px}.pe-build-tools .btn{flex:1 1 140px;min-height:44px}
+.play-card-meta{display:flex;flex-wrap:wrap;gap:8px;margin:0 0 12px}
+.play-card-meta-row{display:grid;grid-template-columns:auto minmax(0,1fr);grid-template-rows:auto auto;column-gap:10px;align-items:center;min-height:52px;min-width:150px;flex:1 1 150px;padding:6px 12px;border-radius:14px;border:1px solid color-mix(in srgb,var(--gold) 26%,var(--line));background:#ffffff08;color:inherit;font:inherit;text-align:left;cursor:pointer}
+.play-card-meta-row b{grid-row:1/3;font:800 20px/1 'DM Sans',system-ui,sans-serif;color:#f2d18e;font-variant-numeric:tabular-nums}
+.play-card-meta-row span{font-size:13px;font-weight:700}
+.play-card-meta-row small{font-size:12px;color:var(--muted);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.play-card-meta-row:hover,.play-card-meta-row:focus-visible{border-color:var(--gold);background:#f2d18e14}
+.play-card-meta-row:focus-visible{outline:2px solid var(--gold);outline-offset:2px}
