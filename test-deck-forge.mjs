@@ -55,3 +55,24 @@ assert.equal(forgeNoise('AB12CD', 'Sol Ring'), forgeNoise('AB12CD', 'Sol Ring'))
 assert.equal(forgeNoise('AB12CD', 'Sol Ring', 'tight'), 0);
 assert.ok(forgeDiscoveryQueries(hei).length > 2);
 console.log(`deck forge: ${DECK_TAGS.rules.length} rules, ${Object.keys(cards).length} fixture cards, Hei Bai hooks ${ids.join(', ')}`);
+
+// BUILDER (Slice B, rules only) on the fixture pool: Hei Bai, Casual, any card.
+const { buildDeck } = await import('./builder.js');
+const basic = (name, c) => ({ name, type_line: 'Basic Land — ' + name, oracle_text: `({T}: Add {${c}}.)`, cmc: 0, color_identity: [c], legalities: { commander: 'legal' }, produced_mana: [c] });
+const catalog = Object.fromEntries([...Object.values(cards), basic('Plains', 'W'), basic('Swamp', 'B')].map(c => [c.name.toLowerCase(), c]));
+const built = buildDeck({ format: 'Commander', commander: hei, seeds: [hei], catalog, power: 'casual', variation: 'tight' });
+const picked = new Set(built.cards.map(r => r.name));
+assert.equal(built.total, 100);
+assert.equal(built.lands, 38, '38 lands in Commander');
+for (const n of ['Ichor Wellspring', 'Restoration Angel', 'Skullclamp', 'Pitiless Plunderer', 'Blood Artist', 'Airbender Ascension', 'Angel of Indemnity', 'Brotherhood Regalia']) assert.ok(picked.has(n), n + ' picked');
+for (const n of ['Lotus Petal', 'Cabal Ritual', 'Dark Ritual', 'Starfield Mystic', 'Demonic Tutor', 'Mana Crypt']) assert.ok(!picked.has(n), n + ' kept out at Casual');
+const bdoc = deckDoctor(built.cards, n => catalog[n.toLowerCase()], { format: { size: 100, commander: true }, commander: hei.name });
+const bg = k => bdoc.gauges.find(x => x.key === k);
+assert.ok(bg('ramp').count >= 10, 'ramp ' + bg('ramp').count);
+assert.ok(bg('draw').count >= 12, 'card advantage ' + bg('draw').count);
+assert.ok(bg('wipe').count >= 2 && bg('wipe').count <= 4, 'wipes ' + bg('wipe').count);
+assert.ok(bg('wincon').count >= 3, 'win conditions ' + bg('wincon').count);
+assert.equal(bg('lands').count, 38);
+for (const id of ['fodder', 'sac-outlets', 'death-payoffs', 'reenter']) assert.ok(bg('hook:' + id).full, id + ' ' + bg('hook:' + id).count + '/' + bg('hook:' + id).target);
+assert.deepEqual(built.forge.hooks.includes('fodder'), true);
+console.log(`deck forge builder: Hei Bai ${built.total} cards, ${bdoc.gauges.map(g => g.label + ' ' + g.count + '/' + g.target).join(', ')}`);

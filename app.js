@@ -20,7 +20,9 @@ import {parsePlayDeckImport} from './play-deck-import.js';
 import {playMenuMarkup} from './play-menu.js';
 import {setPlaymatChoice,mountPlaymatScene,nextPlaymat,unmountPlaymatScene} from './play-playmats.js';
 import {lockPlayLandscape,releasePlayOrientation} from './play-orientation.js';
-import {createPracticeOpponentBuilder} from './play-opponent-build.js';
+import {createPracticeOpponentBuilder,createRandomDeckProducer} from './play-opponent-build.js';
+import {createRandomDeckQueue} from './play-random-queue.js';
+import {forgeOptions,newForgeSeed} from './deck-forge.js';
 import {createPlayerMat} from './play-player-mat.js';
 import {createPlayUpdateGate} from './play-update-gate.js';
 import {constructedPrecon,constructedPreconCandidates,CONSTRUCTED_PRECON_TYPES} from './play-precon-formats.js';
@@ -1654,7 +1656,13 @@ const playSetup = createPlaySetup({
   parseImport:text=>parsePlayDeckImport(text,{parseDeckImport}),
   resolveNames:async names=>{const owner=cloudInfo().user?.id,generation=accountGeneration,current=()=>!accountLocked&&generation===accountGeneration&&owner===cloudInfo().user?.id;await resolveNames(names,()=>{},false,current);return {failed:current()?names.filter(name=>!meta(name)):[]};}
 });
-const playBuilders=Object.fromEntries(['player','opponent','cpu3','cpu4'].map(seat=>[seat,createPracticeOpponentBuilder({pipeline:deckPipeline,pickSeed:randomBuildSeed,
+// One finished random deck per format waits in the background (Deck Forge
+// builder, Casual, Varied), so Random and Quick Play don't wait on a build.
+const playRandomProducer=createRandomDeckProducer({pipeline:deckPipeline,pickSeed:randomBuildSeed});
+const playRandomQueue=createRandomDeckQueue({produce:playRandomProducer,readScope:()=>[cloudInfo().user?.id,accountGeneration,accountLocked],idle:()=>!document.hidden&&!playStarting&&!playerMatHost&&!playerMatRoot&&!practicePregame});
+let playRandomWarmAt=0;
+const warmPlayRandom=()=>{if(!cloudInfo().user?.id||accountLocked||Date.now()-playRandomWarmAt<30000)return;playRandomWarmAt=Date.now();const f=playSetup.snapshot().match.format;playRandomQueue.warm([...new Set([f,'Commander','Standard'])].filter(x=>['Commander','Standard'].includes(x)).map(format=>({format,targetBracket:null,deckStyle:'classic'})));};
+const playBuilders=Object.fromEntries(['player','opponent','cpu3','cpu4'].map(seat=>[seat,createPracticeOpponentBuilder({pipeline:deckPipeline,pickSeed:randomBuildSeed,queue:playRandomQueue,produce:playRandomProducer,
  readScope:()=>[cloudInfo().user?.id,accountGeneration,accountLocked,playSetup.snapshot().match.format],
  onSelect:deck=>playSetup.chooseTemporary(deck,{seat,sourceKind:'random'}),onChange:()=>refreshPlayMenu()})]));
 const practiceOpponentBuilder=playBuilders.opponent;
@@ -1957,7 +1965,7 @@ A.playFindOpponent=async()=>{
  try{const metaKey='mtg:'+(state.match.format==='Commander'?'EDH':state.match.format);if(!metaState(metaKey).data)await Promise.race([loadMetaData(metaKey).catch(()=>{}),new Promise(resolve=>setTimeout(resolve,4000))]);
  // Only lists the engine can load are offered: a source that spells a card its own way, or a card newer than the engine, never reaches the table.
  const names=FORGE_PLAY_TEST_ENABLED?await loadEngineCardNames():null,unknown=engineUnknownCards(state.selected,names);if(unknown.length)throw Error(engineMissingText('Your deck',unknown));
- const sources=readPlaySources(),candidates=[...S.state.decks,...Object.values(sources).flat().map(x=>x.deck)].filter(deck=>!FORGE_PLAY_TEST_ENABLED||forgeCpuDeckComplete(deck)&&!engineUnknownCards(deck,names).length);
+ const sources=readPlaySources(),candidates=[...S.state.decks,...Object.values(sources).flat().map(x=>x.deck),...playRandomQueue.peek(state.match.format)].filter(deck=>!FORGE_PLAY_TEST_ENABLED||forgeCpuDeckComplete(deck)&&!engineUnknownCards(deck,names).length);
  const result=chooseQuickOpponent({player:state.selected,candidates,difficulty:state.match.difficulty,...(FORGE_PLAY_TEST_ENABLED?{candidateEligible:deck=>forgeDeckSupport(deck).status==='native-pending',nativeValidationPending:true}:{}),estimate:deck=>capturePracticeDeckContext(deck).practiceContext.power.value});
  const now=playSetup.snapshot();if(ticket!==quickSequence||JSON.stringify([readPlayAccount(),now.selected,now.match])!==scope)return false;playSetup.setQuickOpponent(result);return true;
  }catch(e){if(ticket===quickSequence)quickStatus.error=e.message;}finally{if(ticket===quickSequence){quickStatus.busy=false;refreshPlayMenu();}}
@@ -2261,6 +2269,7 @@ function renderPlayPage() {
   const device=syncDesktopPlayEntries('mtg');
   if(!device.eligible){const gate=playDeviceGate(device);return '<section class="empty play-device-guard"><span class="play-device-guard-icon" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><rect x="2.5" y="4" width="9" height="16" rx="1.6"/><path d="M13.5 5.4 20.2 3.6a.8.8 0 0 1 1 .8v15.2a.8.8 0 0 1-1 .8l-6.7-1.8z"/><path d="M5.5 12h3m-1.3-1.5L8.7 12l-1.5 1.5"/></svg></span><h1>'+esc(gate.title)+'</h1><p>'+esc(gate.line)+'</p><a class="btn" href="#decks">Open Decks</a><a class="btn ghost" href="#home">Home</a></section>';}
   econWake();
+  warmPlayRandom();
   storyProgress.wake();
   if(STORY_VIEWS.has(playView))return storyMarkup();
   if(ECON_VIEWS.has(playView)){const snap=playEcon.snapshot(),cards=snap.state?.cards||[];
@@ -3463,7 +3472,7 @@ async function runBuild() {
     await loadFormatPool(f, colors, seed, buildMsg);
     buildMsg("Building versions…");
     B.avail = V.availability();
-    let candidates=buildTiers({format:f.name,seeds:[seed],catalog:S.catalog,available:B.avail,price:c=>priceOf(c.name)},tierList());
+    let candidates=buildTiers({format:f.name,seeds:[seed],catalog:S.catalog,available:B.avail,price:c=>priceOf(c.name),...(B.forgeFor===seed.name?forgeOptions(B.forge):{})},tierList());
     const baseline=B.baseDeck?deckById(B.baseDeck):null;if(baseline && formatOf(baseline).name===f.name)candidates.push({...baseline,total:sumQty(baseline.cards),size:f.size,warnings:[]});
     const mk=mtgMetaKey({format:f.name}),data=mk?await loadMetaData(mk).catch(()=>metaState(mk).data):null;
     const matching=(data?.decks || []).filter(d=>[...(d.commanders||[]),...(d.main||[])].some(r=>key(r.name)===key(seed.name))).slice(0,4);
@@ -3660,7 +3669,8 @@ A.buildRandom = async (t) => {
   if(f.id==="paupercommander"){c.pdhCommander=true;c.pdhCommanderCheckedAt=new Date().toISOString();saveCatalogSoon();}
   const start = () => {
     if (B.busy) return toast("Your current Magic build is still running. Try again when it finishes.");
-    Object.assign(B, { baseDeck:null,seed:c.name,results:{},format:f.name,openTier:null });
+    // Random builds: Casual power, Varied picks, and a seed so the same deck can be rebuilt.
+    Object.assign(B, { baseDeck:null,seed:c.name,results:{},format:f.name,openTier:null,forge:{power:'casual',variation:'varied',seed:newForgeSeed()},forgeFor:c.name });
     if (t.onPick) openSheet(V.buildSheet(), { type:"build" });
     return runBuild();
   };

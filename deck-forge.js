@@ -151,19 +151,20 @@ export function forgeFit(card, hooks, { leader = null, power = null } = {}) {
  let bar = 'n/a';
  if (hooks.length && !isLandCard(card)) {
   const mv = read.mv, rep = isRepeatable(read);
+  // Interaction and ramp are allowed to be one-shot; a wipe passes at any cost.
   if (mv <= 3) bar = rep && n >= 1 || role || n >= 2 ? 'pass' : 'fail';
-  else if (mv <= 4) bar = n >= 2 || names.has('enter-doubler') || role && rep ? 'pass' : 'fail';
+  else if (mv <= 4) bar = n >= 2 || names.has('enter-doubler') || role ? 'pass' : 'fail';
   else if (mv <= 5) bar = immediate(read) && n >= 1 || names.has('wipe') || names.has('wincon') ? 'pass' : 'fail';
   else bar = names.has('wipe') || names.has('wincon') || rep && immediate(read) && n >= 1 || immediate(read) && n >= 3 ? 'pass' : 'fail';
   if (bar === 'fail') penalty += mv <= 3 ? 1 : mv <= 4 ? 2 : mv <= 5 ? 4 : 6;
  }
  const offPlan = hooks.length > 0 && n === 0 && !role && !isLandCard(card);
- if (offPlan) penalty += 5;
+ if (offPlan) penalty += 7;
  // Theme-fit card advantage: draw that comes from the deck's own engine (Skullclamp in a sacrifice deck).
  const themeDraw = names.has('draw') && hooks.some(h => ['fodder', 'sac-outlets', 'death-payoffs'].includes(h.id)) && /sacrific|dies|die\b|put into a graveyard/.test(read.whole);
  // Power: Casual keeps fast mana, game changers and tutors out.
  const casual = power === 'casual' || power === 'focused';
- if (names.has('burst')) penalty += casual ? 4 : 1;
+ if (names.has('burst')) penalty += casual ? 9 : 1;
  if (casual && GAME_CHANGERS.has(lc(card?.name))) penalty += power === 'casual' ? 10 : 4;
  if (casual && names.has('tutor')) penalty += power === 'casual' ? 3 : 1;
  return { hooks: [...new Set(hit)], conditions: why, n, overlap, bar, offPlan, themeDraw, penalty, tags };
@@ -258,3 +259,7 @@ export function deckDoctor(rows, card, { format = null, commander = null } = {})
  ].map(g => ({ ...g, cards: names(g.key), full: g.count >= g.target && (g.max === undefined || g.count <= g.max) }));
  return { version: DECK_TAGS.version, gauges, hooks: hooks.map(h => ({ id: h.id, label: h.label, question: h.question, min: h.min })), burst: names('burst'), notCounting: names('not-counting'), offPlan: names('off-plan'), averageMv: spells ? Math.round(mvSum / spells * 100) / 100 : 0 };
 }
+
+// Deck Forge settings for random builds: power (Casual by default for random
+// decks), variation (Tight/Varied/Wild) and a seed so a deck can be rebuilt.
+export const forgeOptions = forge => ({power:['casual','focused','strong','max'].includes(forge?.power)?forge.power:null,variation:['tight','varied','wild'].includes(forge?.variation)?forge.variation:'tight',forgeSeed:/^[A-Z0-9]{4,12}$/.test(String(forge?.seed||''))?forge.seed:''});

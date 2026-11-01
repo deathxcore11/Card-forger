@@ -11,7 +11,7 @@ const nodes={'#sheet':{open:false},'#randomFormat':{value:'commander'},'#randomT
 const finishes=new Map(),starts=[],toasts=[];
 let game='mtg',nextCard={name:'Card A'},apiCalls=0;
 const format={id:'commander',name:'Commander',commander:true,legality:'commander'};
-const context={URLSearchParams,A,S,T:{game:()=>game,formatsOf:()=>[]},FORMATS:[format],formatOf:()=>format,$:id=>nodes[id],options:()=>'',esc:String,homeDeckReveal:x=>x.name,artworkHTML:()=>'',isHomeRevealCurrent,
+const context={URLSearchParams,A,S,newForgeSeed:()=>'TEST01',T:{game:()=>game,formatsOf:()=>[]},FORMATS:[format],formatOf:()=>format,$:id=>nodes[id],options:()=>'',esc:String,homeDeckReveal:x=>x.name,artworkHTML:()=>'',isHomeRevealCurrent,
  openSheet:(html,ctx)=>{nodes['#sheet'].open=true;S.ui.sheetCtx=ctx;},toast:x=>toasts.push(x),busy:()=>()=>{},cacheCard:x=>x,api:async()=>{apiCalls++;return nextCard;},V:{buildSheet:()=>''},
  runBuild:()=>{const B=S.ui.build,seed=B.seed;if(B.busy)return;B.busy=true;starts.push(seed);return new Promise(resolve=>finishes.set(seed,()=>{B.results={Commander:[{seed,cards:[seed]}]};B.busy=false;resolve();}));}}
 vm.runInNewContext(callbacks,context);
