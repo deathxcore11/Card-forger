@@ -160,7 +160,7 @@ import { startTabGlide } from "./tab-glide.js";
 import { startSearchHints } from "./search-hints.js";
 import { openZoom, zoomCardOptions } from "./zoom.js";
 import {createPlayEcon} from "./play-econ-client.js";
-import {econScreenMarkup,ECON_VIEWS,purseMarkup} from "./play-econ-ui.js";
+import {econScreenMarkup,ECON_VIEWS,purseMarkup,cardImageByName} from "./play-econ-ui.js";
 import {createCardFacts} from "./play-econ-cards.js";
 import {stepDeckCard,ownedByName,deckShortfall,legalFormats,mtgjsonDeckRows} from "./play-econ-rules.js";
 import {STORY_ACTS} from "./story-acts.js";
@@ -2123,13 +2123,24 @@ function storyNeedAct(n){if(storyUi.data[n])return;loadAct(n).then(d=>{storyUi.d
 const storyGo=view=>{playView=view;playInspectOpen=false;refreshPlayMenu();scrollTo({top:0});requestAnimationFrame(()=>document.getElementById('playTitle')?.focus?.({preventScroll:true}));};
 A.storyHome=()=>{storyProgress.wake();for(const a of STORY_ACTS)storyNeedAct(a.act);storyGo('story');};
 A.storyOpenAct=t=>{const n=Number(t?.dataset?.storyAct||storyUi.act);if(!STORY_ACTS.some(a=>a.act===n))return;storyUi.act=n;storyNeedAct(n);storyGo('storyAct');};
-A.storyOpenBattle=t=>{storyUi.battle=t.dataset.storyBattle;storyUi.seat='hero';storyUi.deck='loaner';storyGo('storyBattle');
+A.storyOpenBattle=t=>{storyUi.battle=t.dataset.storyBattle;storyUi.seat='hero';storyUi.deck='loaner';storyUi.listSide='mine';storyGo('storyBattle');storyWantArt();
  // The boss runs on the host: start warming it while the player reads the setup (story-mode-acts.md A1).
  if(/b8$/.test(storyUi.battle))void import('./play-forge-host-client.js').then(m=>m.warmForgeHost({getAccessToken:cloudAccessToken})).catch(()=>{});};
-A.storySeat=t=>{storyUi.seat=t.dataset.storySeat==='villain'?'villain':'hero';if(storyUi.seat==='villain')storyUi.deck='loaner';refreshPlayMenu();};
-C.storyDeck=t=>{storyUi.deck=t.value||'loaner';refreshPlayMenu();};
+A.storySeat=t=>{storyUi.seat=t.dataset.storySeat==='villain'?'villain':'hero';if(storyUi.seat==='villain')storyUi.deck='loaner';storyUi.listSide='mine';refreshPlayMenu();};
+A.storyDeckPick=t=>{storyUi.deck=t.dataset.storyDeck||'loaner';storyUi.listSide='mine';storyWantArt();refreshPlayMenu();};
+A.storyListSide=t=>{storyUi.listSide=t.dataset.storyList==='theirs'?'theirs':'mine';storyWantArt();refreshPlayMenu();};
+// The decklists use the app's own deck viewer, so its card data loads first (the same lookups the deck pages use).
+// Story decklists show the exact era printing of every card, basics included: the rows carry
+// Scryfall ids, fetched once and swapped into the catalog only while the list renders.
+const storyPrints=new Map(),storyPrintAsk=new Set();
+async function storyWantPrints(ids){const want=ids.filter(id=>id&&!storyPrints.has(id)&&!storyPrintAsk.has(id));if(!want.length)return;want.forEach(id=>storyPrintAsk.add(id));
+ for(let i=0;i<want.length;i+=75){try{const r=await api('/cards/collection',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({identifiers:want.slice(i,i+75).map(id=>({id}))})});for(const c of r?.data||[])storyPrints.set(c.id,slim(c));}catch{want.slice(i,i+75).forEach(id=>storyPrintAsk.delete(id));}}
+ if(STORY_VIEWS.has(playView))refreshPlayMenu();}
+function withStoryPrints(rows,fn){const saved=[];for(const r of rows){const c=r.id&&storyPrints.get(r.id);if(!c)continue;const k=key(r.name);saved.push([k,S.catalog[k]]);S.catalog[k]=c;}
+ try{return fn();}finally{for(let i=saved.length-1;i>=0;i--){const [k,v]=saved[i];if(v===undefined)delete S.catalog[k];else S.catalog[k]=v;}}}
+function storyWantArt(){const b=storyBattle();if(!b)return;void storyWantPrints([b.hero,b.villain].flatMap(s=>s.deck.cards.map(r=>r.id)));const own=storyOwnDecks();const names=[...new Set([b.hero,b.villain].flatMap(s=>s.deck.cards.map(r=>r.name)).concat(own.flatMap(d=>d.cards.map(r=>r.name))))].filter(n=>!meta(n));if(names.length)void resolveNames(names,()=>{},false,()=>!accountLocked).then(()=>{if(STORY_VIEWS.has(playView))refreshPlayMenu();}).catch(()=>{});}
 function storyOwnDecks(){const pool=storyUi.pools[storyUi.act]||null,owned=new Map((playEcon.snapshot().state?.cards||[]).map(c=>[c.n,c.c]));
- return (playEcon.snapshot().state?.decks||[]).map(d=>{let fits=ownDeckFits(d,pool);if(fits.ok){const sh=deckShortfall((d.cards||[]).filter(r=>r.board!=='side'),owned,new Map());if(!sh.complete)fits={ok:false,reason:'Some cards aren\'t in your Play collection yet.'};}return {id:d.id,name:d.name||'Untitled deck',cards:(d.cards||[]).filter(r=>r.board!=='side'),fits};});}
+ return (playEcon.snapshot().state?.decks||[]).map(d=>{let fits=ownDeckFits(d,pool);if(fits.ok){const sh=deckShortfall((d.cards||[]).filter(r=>r.board!=='side'),owned,new Map());if(!sh.complete)fits={ok:false,reason:'Some cards aren\'t in your Play collection yet.'};}const cards=(d.cards||[]).filter(r=>r.board!=='side'),lead=cards.find(r=>!/^(snow-covered )?(plains|island|swamp|mountain|forest)$/i.test(r.name));return {id:d.id,name:d.name||'Untitled deck',cards,fits,art:lead?cardImageByName(lead.name,'art_crop'):''};});}
 // The Play home's Story header: the act you're on and how many of its battles are won.
 const storyHomeAct=()=>{const p=storyProgress.snapshot().progress;return STORY_ACTS.find(a=>a.act===Math.min(currentAct(p),STORY_ACTS.length))||STORY_ACTS[0];};
 function storyHomeProgress(){const p=storyProgress.snapshot().progress,act=storyHomeAct().act,won=Array.from({length:8},(_,i)=>battleCleared(p,`a${act}b${i+1}`)).filter(Boolean).length;return {act,won,done:currentAct(p)>STORY_ACTS.length};}
@@ -2140,7 +2151,9 @@ function storyMarkup(){
  const data=storyUi.data[storyUi.act];if(!data){storyNeedAct(storyUi.act);return wait;}
  if(playView==='storyAct')return storyActMarkup({act:storyUi.act,data,progress,econ});
  const b=storyBattle();if(!b)return storyActMarkup({act:storyUi.act,data,progress,econ});
- return storyBattleMarkup({act:storyUi.act,data,battle:b,progress,econ,ui:storyUi,ownDecks:storyOwnDecks(),avatarUrl:storyAvatar()});
+ const ownDecks=storyOwnDecks(),seat=storyUi.seat==='villain'&&battleCleared(progress,b.id)?'villain':'hero',other=seat==='hero'?'villain':'hero';
+ const own=seat==='hero'&&storyUi.deck!=='loaner'?ownDecks.find(d=>d.id===storyUi.deck):null,list=storyUi.listSide==='theirs'?b[other].deck:own||b[seat].deck;
+ return storyBattleMarkup({act:storyUi.act,data,battle:b,progress,econ,ui:storyUi,ownDecks,avatarUrl:storyAvatar(),listHtml:withStoryPrints(list.cards,()=>playDeckPreview({name:list.name,format:'Vintage',cards:list.cards.map(r=>({name:r.name,qty:r.qty})),side:[]}))});
 }
 const storyDeck=(deck,id)=>({id,name:deck.name,format:'Vintage',cards:deck.cards.map(r=>({name:r.name,qty:r.qty,...(r.id?{printingId:r.id}:{})}))});
 A.storyPlay=async({skipScene=false}={})=>{

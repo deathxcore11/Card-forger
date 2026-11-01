@@ -95,18 +95,19 @@
 .st-seg{display:inline-flex;padding:4px;border:1px solid var(--line);border-radius:14px;background:#0000001a}
 .st-seg button{min-height:44px;padding:0 16px;border:1px solid transparent;border-radius:10px;background:none;color:var(--muted);font:700 14px/1 'DM Sans',system-ui,sans-serif;cursor:pointer}
 .st-seg button[aria-pressed=true]{border-color:#d4b77c66;background:linear-gradient(125deg,#e6c88433,#b39d6c12);color:var(--text)}
-.st-deck-pick{display:flex;align-items:center;gap:10px;flex:1 1 240px;min-width:0}
-.st-deck-pick>span{font:800 11px/1 'DM Sans',system-ui,sans-serif;letter-spacing:.18em;text-transform:uppercase;color:var(--gold)}
-.st-deck-pick select{flex:1;min-width:0;min-height:44px;border-radius:12px}
 .st-duel-stars{display:inline-flex}
 .st-play.pl-mode-cta{margin-left:auto;min-width:132px;cursor:pointer}
-.st-lists{border:1px solid var(--line);border-radius:18px;background:color-mix(in srgb,var(--surface) 84%,transparent)}
-.st-lists summary{display:flex;align-items:center;min-height:48px;padding:0 18px;font-weight:700;cursor:pointer}
-.st-lists-grid{display:grid;grid-template-columns:1fr 1fr;gap:18px;padding:0 18px 18px}
-.st-lists h3{margin:0 0 8px;font:700 15px/1.2 Cinzel,Georgia,serif;color:var(--gold)}
-.st-lists ul{list-style:none;margin:0;padding:0;columns:2 160px;column-gap:16px;font-size:13px;line-height:1.7}
-.st-lists li b{display:inline-block;min-width:1.6em;color:var(--muted)}
 .st-loading{display:grid;place-items:center;min-height:40vh;color:var(--muted);font-size:14px}
+
+/* Decks: the app's deck shelf cards to choose with, then the app's own deck viewer for the lists. */
+.st-decks{display:grid;gap:14px}
+.st-deck-grid{grid-template-columns:repeat(auto-fill,minmax(min(240px,100%),1fr))}
+.st-deck-opt{cursor:pointer;text-align:left;font:inherit;color:inherit}
+.st-deck-opt[aria-pressed=true]{border-color:var(--gold);box-shadow:0 0 0 1px var(--gold),0 10px 30px #d6ad6420}
+.st-deck-opt:disabled{cursor:default;opacity:.55}
+.st-lists{display:grid;gap:12px;min-width:0}
+.st-lists>.st-seg{justify-self:start;max-width:100%;flex-wrap:wrap}
+.st-lists :is(.art-price,.grid-meta>span:last-child,.group>summary>.muted.small){display:none}
 
 /* Talking heads: portraits cut from card art, the speaker lit, the other dimmed. */
 .st-scene{position:fixed;inset:0;z-index:3000;overflow:hidden;cursor:pointer;color:#f4efe2;opacity:0;transition:opacity .26s ease;-webkit-tap-highlight-color:transparent}
@@ -152,6 +153,7 @@
 .st-seat-face{position:absolute;inset:0;z-index:2;border-radius:inherit;background:#1b1b20 center/cover no-repeat;pointer-events:none}
 .st-result-note{margin:6px 0 0;font-size:14px;color:#e6dcc4;text-align:center}
 
+@media(max-width:1199px){.st-duel{padding-bottom:calc(var(--nav-h,64px) + env(safe-area-inset-bottom) + 40px)}}
 @media(max-width:700px){
   .st-tile.pl-mode{flex-direction:column;align-items:stretch;min-height:200px}
   .st-tile .pl-mode-foot{justify-content:space-between}
@@ -163,7 +165,6 @@
   .st-battle--tease{grid-template-columns:56px minmax(0,1fr)}
   .st-side{min-height:170px;padding:14px}
   .st-play.pl-mode-cta{flex:1 1 100%;margin-left:0}
-  .st-lists-grid{grid-template-columns:1fr}
   .st-talker{width:62vw;height:60vh}
   .st-talker--left{left:-8vw}.st-talker--right{right:-8vw}
   .st-say{padding:14px 16px 20px;min-height:110px}
