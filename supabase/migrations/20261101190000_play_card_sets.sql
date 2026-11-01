@@ -113,3 +113,14 @@ update play.cards c set
   sets = (select array_agg(distinct s) from unnest(c.sets || p.sets) s),
   print = case when c.print = '{}'::jsonb then p.print else c.print end
 from pulled p where c.user_id = p.user_id and c.oracle_id = p.oracle_id;
+
+-- One-time repair: a pack opened while the server could not load its cards came out empty.
+-- Put each such pack back (unopened), forget its ledger line, and take it off the opened count.
+with emptied as (
+  update play.packs set opened_at = null, contents = null
+  where opened_at is not null and (contents is null or jsonb_array_length(contents) = 0)
+  returning id, user_id),
+forgot as (
+  delete from play.ledger l using emptied e where l.user_id = e.user_id and l.ref = 'open:' || e.id returning l.user_id)
+update play.wallet w set packs_opened = greatest(0, packs_opened - f.n)
+from (select user_id, count(*) n from forgot group by 1) f where w.user_id = f.user_id;

@@ -47,6 +47,7 @@ const MESSAGES = {
   no_seal: 'You need a seal of that rarity first.',
   have_max: 'You already have 4 copies of that card.',
   pack_not_found: 'That pack was already opened.',
+  cards_unavailable: 'The cards for this pack could not be loaded. Your pack is safe; try again in a moment.',
   no_booster: 'Packs for that set are not available.',
   bad_card: 'That card cannot be stamped with a seal.',
   no_reward_set: 'The reward packs are not ready yet. Try again in a moment.',
