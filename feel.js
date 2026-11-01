@@ -47,7 +47,16 @@ const isIOS = () => typeof navigator !== "undefined" && (/iPhone|iPad|iPod/.test
 // Pack-opening feel: a small, consistent vocabulary. On Android the native shell plays system haptic primitives
 // (they follow the phone's own haptic settings and hardware); the web falls back to short vibration patterns, and
 // a pack's moments never stack into a long buzz.
-export const PACK_PATTERNS = { "pack-tear": [6, 26, 6, 26, 12], "pack-land": 4, "pack-reveal": 10, "pack-value-2": 16, "pack-value-3": [12, 60, 18], "pack-value-4": [10, 40, 10, 90, 26] };
+export const PACK_PATTERNS = { "pack-tear": [6, 26, 6, 26, 12], "pack-land": 4, "pack-reveal": 10, "pack-value-2": 16, "pack-value-3": [12, 60, 18], "pack-value-4": [10, 40, 10, 90, 26],
+  // Each card that lands from the pack is one firm tap, so a deal reads as a quick da-da-da-da run.
+  "pack-deal": 12,
+  // One of the pack's three best cards lands: a short low rumble.
+  "pack-rumble": [14, 14, 18, 14, 26],
+  // A big pull gathers itself before it turns over: taps that close in.
+  "pack-charge": [6, 44, 8, 34, 10, 26, 14],
+  // Every price tier has its own feel, each a step richer: green one tap, up to orange's little drum roll and hit.
+  "pack-tier-1": 14, "pack-tier-2": [14, 50, 22], "pack-tier-3": [12, 40, 16, 40, 28], "pack-tier-4": [12, 34, 16, 34, 20, 60, 36],
+  "pack-tier-5": [8, 22, 10, 22, 12, 22, 16, 22, 24, 44, 40] };
 const native = () => globalThis.CARDSTASHY_HAPTICS || null;
 // Stops anything still playing (a pack closed mid-sequence).
 export function cancelHaptics() {

@@ -12,8 +12,8 @@ assert.equal(trustedPackPrice('ptcg',ptcg,{priceFinish:'reverse-holofoil'}),3);
 assert.equal(trustedPackPrice('ptcg',ptcg,{}),null,'a finish we did not resolve never borrows the holo price');
 assert.equal(trustedPackPrice('ptcg',{prices:{usd:400}},{priceFinish:'holofoil'}),null,'a generic card price is not the pulled variant');
 assert.equal(trustedPackPrice('ygo',{setContext:{printing:{price:900}}},{}),null,'Yu-Gi-Oh! uses only the pulled printing reference');
-// Tier boundaries from tier.js: under $10 ordinary flip, then three restrained accents (t4 and t5 share one).
-for(const [p,k] of [[null,'pack-reveal'],[1.99,'pack-reveal'],[10,'pack-reveal'],[10.01,'pack-value-2'],[50,'pack-value-2'],[50.5,'pack-value-3'],[200,'pack-value-3'],[201,'pack-value-4'],[5000,'pack-value-4']])assert.equal(packRevealHaptic(p),k,String(p));
-// Web fallback patterns stay short: no long buzz.
-for(const [k,v] of Object.entries(PACK_PATTERNS))assert((Array.isArray(v)?v.reduce((a,b)=>a+b,0):v)<=200,k+' stays under 200 ms');
+// Tier boundaries from tier.js: grey or unpriced is the plain flip, then one feel per tier, green to orange.
+for(const [p,k] of [[null,'pack-reveal'],[1.99,'pack-reveal'],[2,'pack-tier-1'],[10,'pack-tier-1'],[10.01,'pack-tier-2'],[50,'pack-tier-2'],[50.5,'pack-tier-3'],[200,'pack-tier-3'],[201,'pack-tier-4'],[1000,'pack-tier-4'],[1000.5,'pack-tier-5'],[5000,'pack-tier-5']])assert.equal(packRevealHaptic(p),k,String(p));
+// Web fallback patterns stay short: no long buzz (orange's little roll is the longest).
+for(const [k,v] of Object.entries(PACK_PATTERNS))assert((Array.isArray(v)?v.reduce((a,b)=>a+b,0):v)<=280,k+' stays under 280 ms');
 console.log('PASS: pack reveal feel uses only exact-finish prices and tier.js bands; web patterns stay short.');

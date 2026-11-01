@@ -86,3 +86,28 @@
 .pack-tilt.pack-tilt-hint:not([aria-pressed="true"]){color:var(--gold,#e8b95b);border-color:#e8b95b99;animation:pack-tilt-hint 1.2s ease-in-out infinite alternate}
 @keyframes pack-tilt-hint{from{opacity:.7}to{opacity:1}}
 @media (prefers-reduced-motion:reduce){.pack-tilt.pack-tilt-hint{animation:none}}
+/* Pack show (4.3.49): every price tier turns over a step bigger than the last. */
+/* Charge: a purple-or-better pull trembles and glows in its own colour before it turns. */
+.pack-focus-card.pack-charge>.pack-backlight{opacity:1;background:var(--charge,#f0c75e);animation:pack-charge-glow var(--charge-ms,600ms) cubic-bezier(.5,0,.9,.6) both}
+.pack-focus-card.pack-charge>.pack-card-back{box-shadow:inset 0 0 0 3px color-mix(in srgb,var(--charge) 70%,transparent),inset 0 0 34px color-mix(in srgb,var(--charge) 55%,transparent);animation:pack-charge-back var(--charge-ms,600ms) ease-in both}
+@keyframes pack-charge-glow{from{opacity:.35;scale:.9}to{opacity:1;scale:1.12}}
+@keyframes pack-charge-back{from{filter:brightness(1)}to{filter:brightness(1.5) saturate(1.2)}}
+/* The pop grows with the tier; the rays last longer for gold and orange, and orange's spin twice as fast. */
+.pack-focus-card.pack-pop[data-level="2"]{animation-name:pack-pop-2}.pack-focus-card.pack-pop[data-level="3"]{animation-name:pack-pop-3;animation-duration:.5s}
+.pack-focus-card.pack-pop:is([data-level="4"],[data-level="5"]){animation-name:pack-pop-4;animation-duration:.62s}
+@keyframes pack-pop-2{0%{scale:1}35%{scale:1.09}100%{scale:1}}
+@keyframes pack-pop-3{0%{scale:1}30%{scale:1.12}62%{scale:.985}100%{scale:1}}
+@keyframes pack-pop-4{0%{scale:1}26%{scale:1.17}56%{scale:.97}80%{scale:1.02}100%{scale:1}}
+.pack-focus-card.pack-hit-big[data-level="4"] .pack-rays{animation-duration:2s}
+.pack-focus-card.pack-hit-grail .pack-rays{animation:pack-rays-grail 2.5s ease-out both}
+@keyframes pack-rays-grail{0%{opacity:0;scale:.4;rotate:0deg}20%{opacity:1;scale:1.1;rotate:30deg}100%{opacity:0;scale:1.3;rotate:150deg}}
+/* Ring, embers and the room's flash sit on the dialog above the stage, so they are never clipped. */
+.pack-ring{position:fixed;z-index:30;pointer-events:none;border-radius:6%/4.4%;box-shadow:0 0 0 3px var(--ring),0 0 26px 6px color-mix(in srgb,var(--ring) 60%,transparent),inset 0 0 22px color-mix(in srgb,var(--ring) 50%,transparent)}
+.pack-ember{position:fixed;z-index:31;pointer-events:none;border-radius:50%}
+.pack-room-flash{position:fixed;inset:0;z-index:29;pointer-events:none;background:radial-gradient(circle at 50% 42%,color-mix(in srgb,var(--flash) 70%,#fff) 0,color-mix(in srgb,var(--flash) 45%,transparent) 30%,transparent 72%);mix-blend-mode:screen}
+/* Gold and up: the table dims for a moment so the card has the stage to itself. */
+.pack-dialog .pack-hand,.pack-dialog .pack-actions,.pack-dialog .pack-header{transition:filter .5s ease,opacity .5s ease}
+.pack-dialog.pack-spotlight .pack-hand,.pack-dialog.pack-spotlight .pack-actions,.pack-dialog.pack-spotlight .pack-header{filter:brightness(.42) saturate(.7)}
+/* One of the pack's three best lands with a glint along its edge. */
+.pack-card.pack-best-land{box-shadow:0 0 0 2px #fff6d099,0 0 22px #ffe39a88}
+@media (prefers-reduced-motion:reduce){.pack-ring,.pack-ember,.pack-room-flash{display:none}.pack-focus-card.pack-charge>*{animation:none!important}.pack-dialog.pack-spotlight *{filter:none!important}}
