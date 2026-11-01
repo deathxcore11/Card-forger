@@ -6,16 +6,15 @@ import {boosterMarkup, playSetRows, econNoticeMarkup, cardImageByName, coinIcon,
 import {purse} from './play-econ-client.js';
 import {deckRules, isBasicLand} from './play-econ-rules.js';
 import {setRowContent} from './set-list-ui.js';
+import {STORY_ACTS as ACTS, SET_NAMES} from './story-acts.js';
 
 const esc = v => String(v ?? '').replace(/[&<>"']/g, c => ({'&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;'}[c]));
 const n = v => Number(v || 0).toLocaleString('en-US');
 
-// Story acts in order (story-mode-acts.md). Only what the header shows; battles live with Story mode.
-export const STORY_ACTS = [
-  {act: 1, name: 'The Dawn of Dominaria', years: '1993 to 1994', line: 'Urza and Mishra, and the first spells ever cast.',
-    sets: [{code: 'lea', name: 'Limited Edition Alpha'}, {code: 'arn', name: 'Arabian Nights'}, {code: 'atq', name: 'Antiquities'}],
-    art: 'https://api.scryfall.com/cards/atq/57?format=image&version=art_crop', battles: 8},
-];
+// Story acts in order, from Story mode's own act list (story-acts.js), in the shape the header shows.
+const ACT_LINES = {1: 'Urza and Mishra, and the first spells ever cast.', 2: 'Legends walk the world, and an Elder Dragon wakes.', 3: "The long winter, and Lim-D\u00fbl's dead on the march."};
+export const STORY_ACTS = ACTS.map(a => ({act: a.act, name: a.title, years: a.years, line: ACT_LINES[a.act] || '',
+  sets: a.packSets.map(code => ({code, name: SET_NAMES[code] || code})), art: a.art.crop, battles: 8}));
 export const storyActFor = (progress = {}) => STORY_ACTS.find(a => a.act === (progress.act || 1)) || STORY_ACTS[0];
 
 const shelf = (title, link, body, id) => `<section class="pe-shelf-row" aria-labelledby="${id}"><div class="home-shelf-heading"><h2 id="${id}">${title}</h2>${link}</div>${body}</section>`;
@@ -28,7 +27,7 @@ function storyHeader(act, facts, progress = {}) {
     <div class="pe-story-body">
       <div class="pe-story-copy"><p class="eyebrow">Story · Act ${act.act}</p><h2 id="peStoryTitle">${esc(act.name)}</h2><p class="pe-story-line">${esc(act.years)}. ${esc(act.line)}</p>
         <div class="pe-story-progress" role="img" aria-label="Battle ${won} of ${act.battles} won">${Array.from({length: act.battles}, (_, i) => `<i class="${i < won ? 'on' : ''}${i === act.battles - 1 ? ' boss' : ''}"></i>`).join('')}</div>
-        <button class="btn cs-plate pe-story-go" disabled><span class="cs-plate-label">Story opens soon</span></button></div>
+        <button class="btn cs-plate pe-story-go" data-act="storyHome"><span class="cs-plate-label">${progress.done ? 'Replay' : won ? 'Continue' : 'Begin'}</span></button></div>
       <div class="pe-story-packs" aria-label="Packs this act gives">${act.sets.map(s => `<span class="pe-story-pack" role="img" aria-label="${esc(s.name)} pack">${boosterMarkup({code: s.code, name: s.name, facts, mini: true})}</span>`).join('')}</div>
     </div></section>`;
 }
@@ -36,7 +35,7 @@ function storyHeader(act, facts, progress = {}) {
 export function playHomeMarkup({econ = null, facts = null, signedIn = false, modesHtml = '', story = {}} = {}) {
   const state = econ?.state, p = purse(state), act = storyActFor(story);
   const head = `<header class="pl-home-head"><div><h1 id="playTitle">Play</h1></div>${purseMarkup(econ)}</header>`;
-  if (!p) return `<section class="play-menu play-menu--forge pl-home pe-home" aria-labelledby="playTitle">${head}${modesHtml}${storyHeader(act, facts)}${econNoticeMarkup(econ, {signedIn})}</section>`;
+  if (!p) return `<section class="play-menu play-menu--forge pl-home pe-home" aria-labelledby="playTitle">${head}${modesHtml}${storyHeader(act, facts, story)}${econNoticeMarkup(econ, {signedIn})}</section>`;
   // Packs: one wrapper per set, with how many are waiting.
   const groups = new Map();
   for (const pk of state.packs || []) { if (!groups.has(pk.set)) groups.set(pk.set, []); groups.get(pk.set).push(pk); }

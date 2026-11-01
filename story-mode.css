@@ -1,0 +1,180 @@
+/* Story mode (story-ui.js): the Play home tile, the road of acts, an act's battles, the duel setup,
+   the talking-head scenes and the speech bubbles that grow out of a seat's portrait on the table.
+   Same glass, gold hairlines and Cinzel titles as the Play home (play-menu.css). */
+
+.st-screen{--pl-cta-edge:#f6dfa8;--pl-cta-top:#f2d18e;--pl-cta-bottom:#c99a4b;--pl-cta-ink:#1b1408}
+.st-screen .pl-mode-cta{cursor:pointer}
+
+/* Set symbols: Scryfall's black SVGs, lit gold. */
+.st-symbols{display:flex;align-items:center;gap:8px;min-height:22px}
+.st-symbols img{width:22px;height:22px;object-fit:contain;filter:brightness(0) invert(.82) sepia(.7) saturate(2.6) hue-rotate(-8deg) drop-shadow(0 1px 3px #000c)}
+
+/* Progress ring (battles won of 8). */
+.st-ring{position:relative;flex:none;display:inline-grid;place-items:center;width:52px;height:52px}
+.st-ring svg{position:absolute;inset:0;width:100%;height:100%;transform:rotate(-90deg)}
+.st-ring circle{fill:none;stroke-width:3}
+.st-ring-track{stroke:#ffffff24}
+.st-ring-fill{stroke:var(--gold);stroke-linecap:round;filter:drop-shadow(0 0 4px #e8b95b66)}
+.st-ring b{position:relative;font:700 15px/1 'DM Sans',system-ui,sans-serif;color:#f6eedb}
+.st-ring small{font-size:11px;font-weight:600;color:#aab3bd}
+
+/* Stars: 3 for the loaner win, 1 for your own deck, 1 for the other side. */
+.st-stars{display:inline-flex;align-items:center;gap:2px}
+.st-star{width:17px;height:17px;fill:#ffffff1c;stroke:#ffffff33;stroke-width:1}
+.st-star.on{fill:var(--gold);stroke:#f6dfa8;filter:drop-shadow(0 0 4px #e8b95b88)}
+
+/* The Play home tile: a wide banner above the four modes. */
+.st-tile.pl-mode{flex-direction:row;align-items:flex-end;justify-content:space-between;gap:18px;min-height:clamp(170px,24vh,230px)}
+.st-tile .pl-mode-art{background-position:50% 35%}
+.st-tile.pl-mode::before{background:linear-gradient(90deg,#0c0c0ee0 0%,#0c0c0e70 38%,#0c0c0e00 70%),linear-gradient(0deg,#0c0c0eb0,#0c0c0e00 55%)}
+.st-tile-copy{display:grid;gap:6px;min-width:0}
+.st-tile .pl-mode-copy{min-height:0}
+.st-tile .pl-mode-foot{margin:0;flex:none}
+
+/* The road: a shelf of act covers. */
+.st-age{margin:-4px 0 0;font:700 12px/1.3 'DM Sans',system-ui,sans-serif;letter-spacing:.28em;text-transform:uppercase;color:var(--gold)}
+.st-shelf{display:grid;grid-template-columns:repeat(auto-fill,minmax(min(270px,100%),320px));gap:18px}
+.st-cover{position:relative;isolation:isolate;overflow:hidden;display:flex;flex-direction:column;justify-content:flex-end;min-height:clamp(320px,50vh,440px);padding:20px;border:1px solid color-mix(in srgb,var(--gold) 22%,var(--line));border-radius:22px;background:#121318;color:#f6eedb;text-align:left;font:inherit;cursor:pointer;box-shadow:0 22px 50px #0006;transition:transform .2s ease,border-color .2s ease,box-shadow .2s ease}
+.st-cover::before{content:"";position:absolute;inset:0;z-index:-1;background:linear-gradient(180deg,#0c0c0e00 30%,#0c0c0ec4 64%,#0c0c0ef4 100%)}
+.st-cover-art{position:absolute;inset:0;z-index:-2;background-size:cover;background-position:50% 30%;filter:saturate(1.1) contrast(1.05);transition:transform .6s ease}
+.st-cover-copy{display:grid;gap:6px;min-width:0}
+.st-cover-act{font:800 11px/1 'DM Sans',system-ui,sans-serif;letter-spacing:.24em;text-transform:uppercase;color:var(--gold)}
+.st-cover-name{font:700 clamp(22px,2.2vw,28px)/1.12 Cinzel,Georgia,serif;letter-spacing:.03em;text-shadow:0 2px 14px #000}
+.st-cover-years{font-size:13px;color:#c9d0d8}
+.st-cover-foot{display:flex;align-items:center;justify-content:space-between;gap:12px;margin-top:8px}
+.st-cover-stars{display:inline-flex;align-items:center;gap:5px;font-size:14px;color:#f6eedb}
+.st-cover-stars small{color:#aab3bd;font-size:12px}
+.st-cover:is(:hover,:focus-visible){transform:translateY(-3px);border-color:#d6ad64aa;box-shadow:0 28px 60px #0008,0 0 30px #d6ad6424}
+.st-cover:hover .st-cover-art{transform:scale(1.04)}
+.st-cover:focus-visible{outline:2px solid var(--gold);outline-offset:4px}
+.st-cover--hero{border-color:#d6ad64aa;box-shadow:0 22px 50px #0006,0 0 0 1px #d6ad6433,0 0 40px #d6ad6420}
+.st-cover--done .st-cover-art{filter:saturate(.85) contrast(1.02)}
+.st-cover--tease{cursor:default;pointer-events:none}
+.st-cover--tease .st-cover-art{filter:blur(8px) saturate(.5) brightness(.55)}
+.st-cover--tease .st-cover-copy{opacity:.7}
+.st-cover--book{cursor:default;background:radial-gradient(80% 70% at 50% 35%,#2a2416,#0e0d0a 80%)}
+.st-book{position:absolute;left:50%;top:38%;width:96px;height:128px;margin:-64px 0 0 -48px;border-radius:4px 10px 10px 4px;border:2px solid #d6ad64;background:linear-gradient(90deg,#3b2a14 0 12%,#5a3f1c 12% 100%);box-shadow:0 18px 40px #000c,0 0 34px #d6ad6430}
+
+/* An act: its banner, then the battles reached so far. */
+.st-banner{position:relative;isolation:isolate;overflow:hidden;display:flex;align-items:flex-end;justify-content:space-between;gap:16px;min-height:clamp(150px,24vh,240px);padding:18px 20px;border:1px solid color-mix(in srgb,var(--gold) 26%,var(--line));border-radius:22px;background:#121318;box-shadow:0 20px 46px #0005}
+.st-banner::before{content:"";position:absolute;inset:0;z-index:-1;background:linear-gradient(0deg,#0c0c0ef0,#0c0c0e10 75%)}
+.st-banner-art{position:absolute;inset:0;z-index:-2;background-size:cover;background-position:50% 32%}
+.st-banner-copy{display:grid;gap:8px;min-width:0}
+.st-banner-years{font-size:14px;color:#d6dbe2}
+.st-battles{list-style:none;margin:0;padding:0;display:grid;gap:10px}
+.st-battle{display:grid;grid-template-columns:72px minmax(0,1fr) auto;align-items:center;gap:16px;width:100%;min-height:96px;padding:12px 16px 12px 12px;border:1px solid var(--line);border-radius:18px;background:linear-gradient(115deg,#d8b76c0d,transparent 60%),color-mix(in srgb,var(--surface) 86%,transparent);backdrop-filter:blur(14px) saturate(1.1);color:var(--text);text-align:left;font:inherit;cursor:pointer;transition:border-color .18s ease,transform .18s ease,box-shadow .18s ease}
+.st-battle:is(:hover,:focus-visible){border-color:#d6ad6499;transform:translateY(-1px);box-shadow:0 12px 30px #0004}
+.st-battle:focus-visible{outline:2px solid var(--gold);outline-offset:3px}
+.st-battle-face{width:72px;height:72px;border-radius:14px;border:1.5px solid #d6ad6488;background:#1b1b20 center/cover no-repeat;box-shadow:0 6px 16px #0007}
+.st-battle-copy{display:grid;gap:3px;min-width:0}
+.st-battle-kind{font:800 11px/1.2 'DM Sans',system-ui,sans-serif;letter-spacing:.18em;text-transform:uppercase;color:var(--gold)}
+.st-battle-kind i{margin-left:8px;font-style:normal;font-weight:700;letter-spacing:.08em;color:var(--muted)}
+.st-battle-title{font:700 clamp(17px,1.6vw,20px)/1.2 Cinzel,Georgia,serif;letter-spacing:.02em;overflow-wrap:anywhere}
+.st-battle-blurb{font-size:13px;line-height:1.45;color:var(--muted);text-wrap:pretty}
+.st-battle-side{display:grid;justify-items:end;gap:8px}
+.st-battle--here{border-color:#d6ad64aa;box-shadow:0 0 0 1px #d6ad6430,0 10px 30px #d6ad6414}
+.st-battle--boss{background:linear-gradient(115deg,#a8402a1f,transparent 60%),color-mix(in srgb,var(--surface) 86%,transparent)}
+.st-battle--boss .st-battle-face{width:72px;height:72px;border-color:#e8b95b;box-shadow:0 0 0 3px #e8b95b22,0 6px 18px #000a}
+.st-battle--tease{cursor:default;opacity:.55;grid-template-columns:72px minmax(0,1fr)}
+.st-battle--tease .st-battle-face{filter:blur(4px) grayscale(.6)}
+
+/* The duel setup. */
+.st-duel-stage{position:relative;isolation:isolate;display:grid;gap:14px;padding:clamp(14px,2vw,22px);border:1px solid var(--line);border-radius:24px;overflow:hidden;background:#0e1016}
+.st-duel-stage::before{content:"";position:absolute;inset:0;z-index:-1;background:var(--st-bg) 50% 30%/cover no-repeat;filter:blur(22px) saturate(1.1) brightness(.45)}
+.st-arena{gap:0}
+.st-side{position:relative;isolation:isolate;overflow:hidden;display:flex;flex-direction:column;justify-content:flex-end;gap:4px;min-height:clamp(220px,34vh,320px);padding:18px;border:1px solid #ffffff1f;border-radius:20px;background:#121318;color:#f6eedb;box-shadow:0 16px 40px #0007}
+.st-side::after{content:"";position:absolute;inset:0;z-index:-1;background:linear-gradient(180deg,#0c0c0e00 35%,#0c0c0ee6 100%)}
+.st-side-face{position:absolute;inset:0;z-index:-2;background:#1b1b20 center/cover no-repeat}
+.st-side--you{border-color:#d6ad64aa}
+.st-side-copy{display:grid;gap:3px;min-width:0}
+.st-side-who{font:800 11px/1 'DM Sans',system-ui,sans-serif;letter-spacing:.2em;text-transform:uppercase;color:var(--gold)}
+.st-side h2{margin:0;font:700 clamp(20px,2vw,26px)/1.15 Cinzel,Georgia,serif;letter-spacing:.02em;text-shadow:0 2px 12px #000;overflow-wrap:anywhere}
+.st-side p{margin:0;font-size:13px;color:#d6dbe2}
+.st-duel-blurb{margin:0;max-width:70ch;font-size:15px;line-height:1.55;color:#e4e7ea;text-wrap:pretty}
+.st-duel-bar{display:flex;align-items:center;flex-wrap:wrap;gap:12px 16px;padding:14px 16px;border:1px solid var(--line);border-radius:20px;background:linear-gradient(115deg,#839b8b0b,#d6bc7710),color-mix(in srgb,var(--surface) 88%,transparent);backdrop-filter:blur(14px)}
+.st-seg{display:inline-flex;padding:4px;border:1px solid var(--line);border-radius:14px;background:#0000001a}
+.st-seg button{min-height:44px;padding:0 16px;border:1px solid transparent;border-radius:10px;background:none;color:var(--muted);font:700 14px/1 'DM Sans',system-ui,sans-serif;cursor:pointer}
+.st-seg button[aria-pressed=true]{border-color:#d4b77c66;background:linear-gradient(125deg,#e6c88433,#b39d6c12);color:var(--text)}
+.st-deck-pick{display:flex;align-items:center;gap:10px;flex:1 1 240px;min-width:0}
+.st-deck-pick>span{font:800 11px/1 'DM Sans',system-ui,sans-serif;letter-spacing:.18em;text-transform:uppercase;color:var(--gold)}
+.st-deck-pick select{flex:1;min-width:0;min-height:44px;border-radius:12px}
+.st-duel-stars{display:inline-flex}
+.st-play.pl-mode-cta{margin-left:auto;min-width:132px;cursor:pointer}
+.st-lists{border:1px solid var(--line);border-radius:18px;background:color-mix(in srgb,var(--surface) 84%,transparent)}
+.st-lists summary{display:flex;align-items:center;min-height:48px;padding:0 18px;font-weight:700;cursor:pointer}
+.st-lists-grid{display:grid;grid-template-columns:1fr 1fr;gap:18px;padding:0 18px 18px}
+.st-lists h3{margin:0 0 8px;font:700 15px/1.2 Cinzel,Georgia,serif;color:var(--gold)}
+.st-lists ul{list-style:none;margin:0;padding:0;columns:2 160px;column-gap:16px;font-size:13px;line-height:1.7}
+.st-lists li b{display:inline-block;min-width:1.6em;color:var(--muted)}
+.st-loading{display:grid;place-items:center;min-height:40vh;color:var(--muted);font-size:14px}
+
+/* Talking heads: portraits cut from card art, the speaker lit, the other dimmed. */
+.st-scene{position:fixed;inset:0;z-index:3000;overflow:hidden;cursor:pointer;color:#f4efe2;opacity:0;transition:opacity .26s ease;-webkit-tap-highlight-color:transparent}
+.st-scene--in{opacity:1}.st-scene--out{opacity:0}
+.st-scene-bg{position:absolute;inset:0;background:#0b0c10 50% 30%/cover no-repeat;filter:blur(26px) saturate(1.05) brightness(.32)}
+.st-scene::after{content:"";position:absolute;inset:0;background:radial-gradient(120% 80% at 50% 110%,#000d,#0000 60%);pointer-events:none}
+.st-talker{position:absolute;bottom:0;z-index:1;margin:0;width:min(44vw,520px);height:min(78vh,720px);transition:filter .3s ease,transform .35s cubic-bezier(.2,.8,.2,1),opacity .3s ease;filter:brightness(.42) saturate(.55);transform:translateY(14px) scale(.97);opacity:.9}
+.st-talker--left{left:max(2vw,env(safe-area-inset-left))}
+.st-talker--right{right:max(2vw,env(safe-area-inset-right))}
+.st-talker-face{position:absolute;inset:0;background:center/cover no-repeat;border-radius:28px 28px 0 0;-webkit-mask:linear-gradient(180deg,#000 55%,#0000 98%);mask:linear-gradient(180deg,#000 55%,#0000 98%);box-shadow:inset 0 0 0 1.5px #d6ad6466}
+.st-talker.on{filter:none;transform:none;opacity:1}
+.st-talker[hidden]{display:none}
+.st-scene--stage .st-talker{filter:brightness(.35) saturate(.4)}
+.st-say{position:absolute;left:50%;bottom:calc(max(22px,env(safe-area-inset-bottom)) + 12px);z-index:2;width:min(860px,calc(100% - 32px));min-height:120px;transform:translateX(-50%);padding:18px 24px 22px;border:1px solid #d6ad6466;border-radius:18px;background:linear-gradient(180deg,#16171ceb,#0d0e12f2);box-shadow:0 20px 60px #000c,inset 0 1px 0 #ffffff14;backdrop-filter:blur(12px)}
+.st-say::before{content:"";position:absolute;left:24px;right:24px;top:0;height:1px;background:linear-gradient(90deg,#0000,#e8b95b,#0000)}
+.st-say-name{display:block;min-height:1.2em;margin-bottom:6px;font:700 15px/1.2 Cinzel,Georgia,serif;letter-spacing:.08em;color:var(--gold)}
+.st-say--right .st-say-name{text-align:right}
+.st-say-line{margin:0;font:500 clamp(16px,1.6vw,19px)/1.55 'DM Sans',system-ui,sans-serif;color:#f4efe2;text-wrap:pretty}
+.st-say--whisper .st-say-line{font-style:italic;color:#c9cdd4}
+.st-scene--stage .st-say-line{font-style:italic;text-align:center;color:#d8d2c2}
+.st-say-next{position:absolute;right:18px;bottom:10px;width:0;height:0;border:7px solid transparent;border-top-color:var(--gold);border-bottom:0;opacity:0}
+.st-say.done .st-say-next{opacity:1;animation:st-nudge 1s ease-in-out infinite}
+@keyframes st-nudge{50%{transform:translateY(3px)}}
+.st-skip{position:absolute;top:max(14px,env(safe-area-inset-top));right:max(14px,env(safe-area-inset-right));z-index:3;min-width:72px;min-height:44px;padding:0 16px;border:1px solid #ffffff2e;border-radius:999px;background:#101218b3;color:#e9e4d6;font:700 14px/1 'DM Sans',system-ui,sans-serif;backdrop-filter:blur(10px);cursor:pointer}
+.st-skip:is(:hover,:focus-visible){border-color:var(--gold);color:var(--gold)}
+
+/* In-match speech: grows out of the seat's portrait, never takes a tap, fades on its own. */
+.st-bubble{position:fixed;z-index:2600;display:flex;align-items:flex-start;gap:10px;width:max-content;max-width:min(300px,calc(100vw - 24px));padding:10px 14px 11px 10px;border:1px solid #d6ad6480;border-radius:16px;background:linear-gradient(180deg,#191a20f0,#0f1015f5);box-shadow:0 12px 32px #000b,inset 0 1px 0 #ffffff14;backdrop-filter:blur(12px);color:#f4efe2;pointer-events:none;opacity:0;transform:scale(.6);transition:opacity .22s ease,transform .32s cubic-bezier(.2,1.4,.4,1)}
+.st-bubble--them{transform-origin:var(--tail-x,40px) -10px}
+.st-bubble--me{transform-origin:var(--tail-x,40px) calc(100% + 10px)}
+.st-bubble.in{opacity:1;transform:none}
+.st-bubble.out{opacity:0;transform:scale(.92);transition-duration:.28s}
+.st-bubble::after{content:"";position:absolute;left:calc(var(--tail-x,40px) - 8px);width:14px;height:14px;background:#15161b;border:1px solid #d6ad6480;transform:rotate(45deg)}
+.st-bubble--them::after{top:-8px;border-right:0;border-bottom:0}
+.st-bubble--me::after{bottom:-8px;border-left:0;border-top:0;background:#101116}
+.st-bubble--dock-them{top:calc(env(safe-area-inset-top) + 76px);left:50%;translate:-50% 0}
+.st-bubble--dock-me{bottom:calc(env(safe-area-inset-bottom) + 150px);left:50%;translate:-50% 0}
+.st-bubble:is(.st-bubble--dock-them,.st-bubble--dock-me)::after{display:none}
+.st-bubble-face{flex:none;width:40px;height:40px;border-radius:10px;border:1.5px solid #d6ad64;background:#1b1b20 center/cover no-repeat}
+.st-bubble-copy{display:grid;gap:2px;min-width:0}
+.st-bubble-copy b{font:700 12px/1.2 Cinzel,Georgia,serif;letter-spacing:.06em;color:var(--gold)}
+.st-bubble-copy span{font:500 14px/1.4 'DM Sans',system-ui,sans-serif;text-wrap:pretty}
+.st-seat-face{position:absolute;inset:0;z-index:2;border-radius:inherit;background:#1b1b20 center/cover no-repeat;pointer-events:none}
+.st-result-note{margin:6px 0 0;font-size:14px;color:#e6dcc4;text-align:center}
+
+@media(max-width:700px){
+  .st-tile.pl-mode{flex-direction:column;align-items:stretch;min-height:200px}
+  .st-tile .pl-mode-foot{justify-content:space-between}
+  .st-shelf{grid-template-columns:1fr;gap:12px}
+  .st-cover{min-height:220px;padding:16px;border-radius:18px}
+  .st-battle{grid-template-columns:56px minmax(0,1fr);gap:12px;padding:10px 12px 10px 10px}
+  .st-battle-face,.st-battle--boss .st-battle-face{width:56px;height:56px;border-radius:12px}
+  .st-battle-side{grid-column:1/-1;display:flex;align-items:center;justify-content:space-between}
+  .st-battle--tease{grid-template-columns:56px minmax(0,1fr)}
+  .st-side{min-height:170px;padding:14px}
+  .st-play.pl-mode-cta{flex:1 1 100%;margin-left:0}
+  .st-lists-grid{grid-template-columns:1fr}
+  .st-talker{width:62vw;height:60vh}
+  .st-talker--left{left:-8vw}.st-talker--right{right:-8vw}
+  .st-say{padding:14px 16px 20px;min-height:110px}
+}
+@media(max-height:520px) and (orientation:landscape){
+  .st-cover{min-height:200px}.st-side{min-height:150px}.st-banner{min-height:130px}
+  .st-talker{height:92vh;width:34vw}
+  .st-say{width:min(560px,calc(100% - 32px));min-height:96px;padding:12px 18px 18px}
+}
+@media(prefers-reduced-motion:reduce){
+  .st-cover,.st-cover-art,.st-battle,.st-talker,.st-bubble,.st-scene{transition:none}
+  .st-cover:hover,.st-battle:hover{transform:none}.st-cover:hover .st-cover-art{transform:none}
+  .st-say.done .st-say-next{animation:none}
+}

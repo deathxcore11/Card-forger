@@ -1,0 +1,2151 @@
+{
+ "act": 3,
+ "title": "Ice Age",
+ "years": "1995 to 1996",
+ "sets": [
+  "ice",
+  "hml",
+  "all",
+  "4ed"
+ ],
+ "landSet": "ice",
+ "intro": [
+  {
+   "who": "narrator",
+   "line": "Centuries after the Sylex, the snow never melts."
+  }
+ ],
+ "finale": [
+  {
+   "who": "laina",
+   "line": "Look. The sky."
+  },
+  {
+   "who": "stage",
+   "line": "Green light. Freyalise casts the World Spell. The ice starts to melt."
+  },
+  {
+   "who": "leshrac",
+   "line": "Pity. He was useful.",
+   "whisper": true
+  },
+  {
+   "who": "laina",
+   "line": "The winter's over. After all this time, it's over."
+  }
+ ],
+ "cast": {
+  "you": {
+   "name": "You",
+   "title": "Planeswalker",
+   "portrait": {
+    "card": "Brainstorm",
+    "set": "ice",
+    "number": "61",
+    "id": "8d42d7aa-7f53-4cfc-842a-086aab2448d1",
+    "crop": "https://cards.scryfall.io/art_crop/front/8/d/8d42d7aa-7f53-4cfc-842a-086aab2448d1.jpg?1783947518",
+    "artist": "Christopher Rush",
+    "focus": "50% 30%"
+   }
+  },
+  "kjeldor": {
+   "name": "Kjeldoran Guard",
+   "title": "Royal Guard of Kjeldor",
+   "portrait": {
+    "card": "Kjeldoran Royal Guard",
+    "set": "ice",
+    "number": "38",
+    "id": "66343008-c38a-48a9-b767-fd2243103690",
+    "crop": "https://cards.scryfall.io/art_crop/front/6/6/66343008-c38a-48a9-b767-fd2243103690.jpg?1783947522",
+    "artist": "Allen Williams",
+    "focus": "50% 25%"
+   }
+  },
+  "balduvian": {
+   "name": "Balduvian Raider",
+   "title": "Barbarian of Balduvia",
+   "portrait": {
+    "card": "Balduvian Barbarians",
+    "set": "ice",
+    "number": "172",
+    "id": "efeabe8e-8107-4d19-8a43-362aa79cdd92",
+    "crop": "https://cards.scryfall.io/art_crop/front/e/f/efeabe8e-8107-4d19-8a43-362aa79cdd92.jpg?1783947493",
+    "artist": "Mark Poole",
+    "focus": "50% 30%"
+   }
+  },
+  "gustha": {
+   "name": "Gustha Ebbasdotter",
+   "title": "Kjeldoran Royal Mage",
+   "portrait": {
+    "card": "Brainstorm",
+    "set": "ice",
+    "number": "61",
+    "id": "8d42d7aa-7f53-4cfc-842a-086aab2448d1",
+    "crop": "https://cards.scryfall.io/art_crop/front/8/d/8d42d7aa-7f53-4cfc-842a-086aab2448d1.jpg?1783947518",
+    "artist": "Christopher Rush",
+    "focus": "50% 30%"
+   }
+  },
+  "varchild": {
+   "name": "Varchild",
+   "title": "Mercenary Captain",
+   "portrait": {
+    "card": "Varchild, Betrayer of Kjeldor",
+    "set": "c18",
+    "number": "28",
+    "id": "7849b360-afad-4f50-b455-3d118f7bfcd0",
+    "crop": "https://cards.scryfall.io/art_crop/front/7/8/7849b360-afad-4f50-b455-3d118f7bfcd0.jpg",
+    "artist": "Lucas Graciano",
+    "focus": "50% 25%"
+   }
+  },
+  "laina": {
+   "name": "Laina",
+   "title": "Elvish Council of Fyndhorn",
+   "portrait": {
+    "card": "Freyalise Supplicant",
+    "set": "ice",
+    "number": "239",
+    "id": "5b1e718a-882a-4bdc-9d62-4dda88da0ba0",
+    "crop": "https://cards.scryfall.io/art_crop/front/5/b/5b1e718a-882a-4bdc-9d62-4dda88da0ba0.jpg?1783947478",
+    "artist": "Liz Danforth & Douglas Shuler",
+    "focus": "50% 25%"
+   }
+  },
+  "leshrac": {
+   "name": "Leshrac",
+   "title": "Walker of Night",
+   "portrait": {
+    "card": "Leshrac's Sigil",
+    "set": "ice",
+    "number": "144",
+    "id": "ad5ba7ee-d6df-4b62-a8a1-c81e6fca392a",
+    "crop": "https://cards.scryfall.io/art_crop/front/a/d/ad5ba7ee-d6df-4b62-a8a1-c81e6fca392a.jpg?1783947498",
+    "artist": "Drew Tucker",
+    "focus": "50% 35%"
+   }
+  },
+  "reveka": {
+   "name": "Reveka",
+   "title": "Wizard Savant",
+   "portrait": {
+    "card": "Reveka, Wizard Savant",
+    "set": "hml",
+    "number": "37",
+    "id": "a952236e-3085-4e6e-8639-355976b7c8f5",
+    "crop": "https://cards.scryfall.io/art_crop/front/a/9/a952236e-3085-4e6e-8639-355976b7c8f5.jpg?1783947294",
+    "artist": "Susan Van Camp",
+    "focus": "50% 30%"
+   }
+  },
+  "baron": {
+   "name": "Baron Sengir",
+   "title": "Lord of Ulgrotha",
+   "portrait": {
+    "card": "Baron Sengir",
+    "set": "hml",
+    "number": "41",
+    "id": "51bdddac-02fc-493a-a0ea-689273252d7e",
+    "crop": "https://cards.scryfall.io/art_crop/front/5/1/51bdddac-02fc-493a-a0ea-689273252d7e.jpg?1783947293",
+    "artist": "Pete Venters",
+    "focus": "50% 25%"
+   }
+  },
+  "cohort": {
+   "name": "Lim-Dûl's Cohort",
+   "title": "The Risen Dead",
+   "portrait": {
+    "card": "Lim-Dûl's Cohort",
+    "set": "ice",
+    "number": "145",
+    "id": "3d0006f6-2f96-453d-9145-eaefa588efbc",
+    "crop": "https://cards.scryfall.io/art_crop/front/3/d/3d0006f6-2f96-453d-9145-eaefa588efbc.jpg?1783947498",
+    "artist": "Douglas Shuler",
+    "focus": "50% 30%"
+   }
+  },
+  "lucilde": {
+   "name": "Lucilde Fiksdotter",
+   "title": "Knight Commander",
+   "portrait": {
+    "card": "Legions of Lim-Dûl",
+    "set": "ice",
+    "number": "142",
+    "id": "75b67eb2-b60e-46b4-9d48-11c284957bec",
+    "crop": "https://cards.scryfall.io/art_crop/front/7/5/75b67eb2-b60e-46b4-9d48-11c284957bec.jpg?1783947499",
+    "artist": "Anson Maddocks",
+    "focus": "50% 30%"
+   }
+  },
+  "ihsan": {
+   "name": "Ihsan's Shade",
+   "title": "The Fallen Knight",
+   "portrait": {
+    "card": "Ihsan's Shade",
+    "set": "hml",
+    "number": "53",
+    "id": "82351724-2814-4d9e-b065-bb72c761b2e7",
+    "crop": "https://cards.scryfall.io/art_crop/front/8/2/82351724-2814-4d9e-b065-bb72c761b2e7.jpg?1783947289",
+    "artist": "Christopher Rush",
+    "focus": "50% 30%"
+   }
+  },
+  "grandmother": {
+   "name": "Grandmother Sengir",
+   "title": "Matriarch of the Castle",
+   "portrait": {
+    "card": "Grandmother Sengir",
+    "set": "hml",
+    "number": "50",
+    "id": "efb0ac91-5e8e-47b1-aa34-902eef60349f",
+    "crop": "https://cards.scryfall.io/art_crop/front/e/f/efb0ac91-5e8e-47b1-aa34-902eef60349f.jpg?1783947290",
+    "artist": "Pete Venters",
+    "focus": "50% 25%"
+   }
+  },
+  "limdul": {
+   "name": "Lim-Dûl",
+   "title": "The Necromancer",
+   "portrait": {
+    "card": "Lim-Dûl the Necromancer",
+    "set": "tsp",
+    "number": "114",
+    "id": "b8a3cdfe-0289-474b-b9c4-07e8c6588ec5",
+    "crop": "https://cards.scryfall.io/art_crop/front/b/8/b8a3cdfe-0289-474b-b9c4-07e8c6588ec5.jpg",
+    "artist": "Matt Cavotta",
+    "focus": "50% 25%"
+   }
+  }
+ },
+ "battles": [
+  {
+   "id": "a3b1",
+   "slot": 1,
+   "kind": "Arrival",
+   "title": "The Pass at Kjeldor",
+   "difficulty": "Easy",
+   "teaches": [
+    "Snow"
+   ],
+   "blurb": "Centuries after the Sylex, the snow never melts. Two nations fight over the last warm valleys.",
+   "rewardSet": "ice",
+   "host": false,
+   "hero": {
+    "who": "kjeldor",
+    "deck": {
+     "name": "The Royal Guard",
+     "colors": "W",
+     "archetype": null,
+     "cards": [
+      {
+       "qty": 4,
+       "name": "Kjeldoran Royal Guard",
+       "set": "ice",
+       "number": "38",
+       "id": "66343008-c38a-48a9-b767-fd2243103690"
+      },
+      {
+       "qty": 4,
+       "name": "Kjeldoran Skycaptain",
+       "set": "ice",
+       "number": "39",
+       "id": "cf0115e0-6192-48a9-9e58-f3ef77ef77c2"
+      },
+      {
+       "qty": 4,
+       "name": "Kjeldoran Elite Guard",
+       "set": "ice",
+       "number": "34",
+       "id": "a73bc4b6-f7d0-494c-9e60-48279c11b7b6"
+      },
+      {
+       "qty": 4,
+       "name": "Kjeldoran Warrior",
+       "set": "ice",
+       "number": "41",
+       "id": "ce76f38f-566e-49ff-b197-510cfa1cb51c"
+      },
+      {
+       "qty": 4,
+       "name": "Benalish Hero",
+       "set": "4ed",
+       "number": "7",
+       "id": "fd204832-5f3b-4213-9c06-b89a296a9d47"
+      },
+      {
+       "qty": 4,
+       "name": "Savannah Lions",
+       "set": "4ed",
+       "number": "48",
+       "id": "a2ee9127-d007-48e8-b797-88ef72bc7c8b"
+      },
+      {
+       "qty": 4,
+       "name": "Pearled Unicorn",
+       "set": "4ed",
+       "number": "39",
+       "id": "6acc78fc-1eab-47aa-993d-6781b2d2408a"
+      },
+      {
+       "qty": 4,
+       "name": "Mesa Pegasus",
+       "set": "4ed",
+       "number": "35",
+       "id": "60c0faf1-0c16-441a-97fd-6d4e91c894a5"
+      },
+      {
+       "qty": 4,
+       "name": "Kjeldoran Skyknight",
+       "set": "ice",
+       "number": "40",
+       "id": "f794665a-8353-482a-b065-2a0777a8acda"
+      },
+      {
+       "qty": 24,
+       "name": "Snow-Covered Plains",
+       "set": "ice",
+       "number": "367",
+       "id": "cb3ac778-fb45-4fd3-a9af-8a0791f833e8"
+      }
+     ]
+    }
+   },
+   "villain": {
+    "who": "balduvian",
+    "deck": {
+     "name": "Balduvian Raiders",
+     "colors": "R",
+     "archetype": null,
+     "cards": [
+      {
+       "qty": 4,
+       "name": "Balduvian Barbarians",
+       "set": "ice",
+       "number": "172",
+       "id": "efeabe8e-8107-4d19-8a43-362aa79cdd92"
+      },
+      {
+       "qty": 4,
+       "name": "Mons's Goblin Raiders",
+       "set": "4ed",
+       "number": "213",
+       "id": "9f31c715-9ab8-4578-989f-141099b6750c"
+      },
+      {
+       "qty": 4,
+       "name": "Fire Elemental",
+       "set": "4ed",
+       "number": "191",
+       "id": "0261cd0f-e763-49b5-96ed-5e5767a3d8d7"
+      },
+      {
+       "qty": 4,
+       "name": "Orcish Cannoneers",
+       "set": "ice",
+       "number": "205",
+       "id": "a4309a2f-27f5-4652-b0b4-6a6119436f75"
+      },
+      {
+       "qty": 4,
+       "name": "Gray Ogre",
+       "set": "4ed",
+       "number": "200",
+       "id": "11bf2cc0-799f-4eb8-b338-ed7543f469e7"
+      },
+      {
+       "qty": 4,
+       "name": "Hill Giant",
+       "set": "4ed",
+       "number": "201",
+       "id": "6ac25236-c2f2-48df-8dbb-d4f9ce790cfb"
+      },
+      {
+       "qty": 4,
+       "name": "Hurloon Minotaur",
+       "set": "4ed",
+       "number": "202",
+       "id": "5c2c27de-e788-4ad7-b1e3-030e7ef00471"
+      },
+      {
+       "qty": 4,
+       "name": "Ironclaw Orcs",
+       "set": "4ed",
+       "number": "206",
+       "id": "d882105f-2de0-46ae-b673-01508c016cc6"
+      },
+      {
+       "qty": 4,
+       "name": "Stone Giant",
+       "set": "4ed",
+       "number": "223",
+       "id": "265de55e-63d2-4a5d-9078-858da70f2a08"
+      },
+      {
+       "qty": 24,
+       "name": "Snow-Covered Mountain",
+       "set": "ice",
+       "number": "379",
+       "id": "ccd3afb3-5574-4f2d-adbe-969a428f1c63"
+      }
+     ]
+    }
+   },
+   "scene": [
+    {
+     "who": "kjeldor",
+     "line": "Honorable in battle, generous in death.",
+     "quote": true
+    },
+    {
+     "who": "balduvian",
+     "line": "Generous? Then give us the valley."
+    },
+    {
+     "who": "kjeldor",
+     "line": "Kjeldor holds the pass. It always has."
+    },
+    {
+     "who": "balduvian",
+     "line": "Kjeldor holds nothing once it's frozen solid."
+    }
+   ],
+   "villainScene": null,
+   "cues": {
+    "hero": {
+     "start": "Shields.",
+     "big": "For Kjeld!",
+     "low": "Hold the pass!",
+     "win": "Go home before the snow takes you.",
+     "loss": "Fall back to the city..."
+    },
+    "villain": {
+     "start": "Burn the fences!",
+     "big": "Balduvia rides!",
+     "low": "The cold bites both ways!",
+     "win": "The valley is ours.",
+     "loss": "We'll be back when it's colder."
+    }
+   },
+   "bigPlays": [],
+   "sim": null
+  },
+  {
+   "id": "a3b2",
+   "slot": 2,
+   "kind": "Lesson",
+   "title": "The Royal Mage's Lesson",
+   "difficulty": "Easy",
+   "teaches": [
+    "Cumulative upkeep"
+   ],
+   "blurb": "Kjeldor's royal mage teaches you a hard truth of the long winter: power that keeps you warm costs more every day you keep it.",
+   "rewardSet": "ice",
+   "host": false,
+   "hero": {
+    "who": "gustha",
+    "deck": {
+     "name": "The Royal Mage",
+     "colors": "U",
+     "archetype": null,
+     "cards": [
+      {
+       "qty": 4,
+       "name": "Illusionary Forces",
+       "set": "ice",
+       "number": "75",
+       "id": "ab02268e-01cf-4729-95ca-5773afd40b56"
+      },
+      {
+       "qty": 4,
+       "name": "Phantom Monster",
+       "set": "4ed",
+       "number": "90",
+       "id": "daa120ce-63a6-4d5e-9801-123d5e05646e"
+      },
+      {
+       "qty": 4,
+       "name": "Air Elemental",
+       "set": "4ed",
+       "number": "59",
+       "id": "e5cfaefb-764c-4c56-bdb3-5f0375168597"
+      },
+      {
+       "qty": 4,
+       "name": "Glacial Wall",
+       "set": "ice",
+       "number": "71",
+       "id": "07b71bc1-d9a2-4e99-a8fa-cd696925328d"
+      },
+      {
+       "qty": 4,
+       "name": "Prodigal Sorcerer",
+       "set": "4ed",
+       "number": "94",
+       "id": "dc4e1161-5008-427f-a88e-5497a8eb84cd"
+      },
+      {
+       "qty": 1,
+       "name": "Brainstorm",
+       "set": "ice",
+       "number": "61",
+       "id": "8d42d7aa-7f53-4cfc-842a-086aab2448d1"
+      },
+      {
+       "qty": 4,
+       "name": "Counterspell",
+       "set": "ice",
+       "number": "64",
+       "id": "aedbcbaa-40f0-485f-8427-778edc2d2ec0"
+      },
+      {
+       "qty": 2,
+       "name": "Mahamoti Djinn",
+       "set": "4ed",
+       "number": "84",
+       "id": "71935f14-d7ca-4406-9263-b2c7f5f5b94f"
+      },
+      {
+       "qty": 4,
+       "name": "Phantasmal Forces",
+       "set": "4ed",
+       "number": "88",
+       "id": "0bc15dcf-6f78-4968-8af9-c115dfa10e4c"
+      },
+      {
+       "qty": 4,
+       "name": "Arcane Denial",
+       "set": "all",
+       "number": "22a",
+       "id": "b0c5728e-43e7-417a-ba18-5038345cec67"
+      },
+      {
+       "qty": 1,
+       "name": "Lord of Atlantis",
+       "set": "4ed",
+       "number": "82",
+       "id": "846572ce-c8fd-402c-9212-8288336c75e8"
+      },
+      {
+       "qty": 24,
+       "name": "Snow-Covered Island",
+       "set": "ice",
+       "number": "371",
+       "id": "ad8b77cf-b53e-4da3-9c27-3851b7b25a98"
+      }
+     ]
+    }
+   },
+   "villain": {
+    "who": "varchild",
+    "deck": {
+     "name": "Varchild's Company",
+     "colors": "R",
+     "archetype": null,
+     "cards": [
+      {
+       "qty": 4,
+       "name": "Varchild's War-Riders",
+       "set": "all",
+       "number": "83",
+       "id": "ee1d41da-aa72-434b-811f-95d4bae4ba5c"
+      },
+      {
+       "qty": 4,
+       "name": "Gray Ogre",
+       "set": "4ed",
+       "number": "200",
+       "id": "11bf2cc0-799f-4eb8-b338-ed7543f469e7"
+      },
+      {
+       "qty": 4,
+       "name": "Balduvian Horde",
+       "set": "all",
+       "number": "65",
+       "id": "8e167a6c-05f8-4d90-9f6b-eb0f1046d54a"
+      },
+      {
+       "qty": 4,
+       "name": "Orcish Cannoneers",
+       "set": "ice",
+       "number": "205",
+       "id": "a4309a2f-27f5-4652-b0b4-6a6119436f75"
+      },
+      {
+       "qty": 4,
+       "name": "Hill Giant",
+       "set": "4ed",
+       "number": "201",
+       "id": "6ac25236-c2f2-48df-8dbb-d4f9ce790cfb"
+      },
+      {
+       "qty": 4,
+       "name": "Hurloon Minotaur",
+       "set": "4ed",
+       "number": "202",
+       "id": "5c2c27de-e788-4ad7-b1e3-030e7ef00471"
+      },
+      {
+       "qty": 4,
+       "name": "Fire Elemental",
+       "set": "4ed",
+       "number": "191",
+       "id": "0261cd0f-e763-49b5-96ed-5e5767a3d8d7"
+      },
+      {
+       "qty": 4,
+       "name": "Lightning Bolt",
+       "set": "4ed",
+       "number": "208",
+       "id": "9521375e-0bc1-45ef-b513-6d332a25f9d2"
+      },
+      {
+       "qty": 4,
+       "name": "Ironclaw Orcs",
+       "set": "4ed",
+       "number": "206",
+       "id": "d882105f-2de0-46ae-b673-01508c016cc6"
+      },
+      {
+       "qty": 24,
+       "name": "Mountain",
+       "set": "ice",
+       "number": "376",
+       "id": "4ecf39c3-3b5f-4263-a7b5-9881bded3494"
+      }
+     ]
+    }
+   },
+   "scene": [
+    {
+     "who": "gustha",
+     "line": "What I want, I take.",
+     "quote": true
+    },
+    {
+     "who": "gustha",
+     "line": "That's the lie the cold tells you. Everything you take, you pay for. Every turn."
+    },
+    {
+     "who": "varchild",
+     "line": "Speeches. I'm paid by the head, mage, not by the word."
+    },
+    {
+     "who": "gustha",
+     "line": "Then let's see what your head's worth."
+    }
+   ],
+   "villainScene": null,
+   "cues": {
+    "hero": {
+     "start": "Mind the cost.",
+     "big": "Within moments, victory was mine.",
+     "low": "Not yet.",
+     "win": "Know a thing's nature.",
+     "loss": "I paid too much..."
+    },
+    "villain": {
+     "start": "Ride!",
+     "big": "Pay me in blood.",
+     "low": "This wasn't the contract!",
+     "win": "Collect the bounty.",
+     "loss": "Somebody owes me."
+    }
+   },
+   "bigPlays": [],
+   "sim": null
+  },
+  {
+   "id": "a3b3",
+   "slot": 3,
+   "kind": "Lesson",
+   "title": "The Black Book",
+   "difficulty": "Normal",
+   "teaches": [
+    "Card advantage",
+    "Paying life"
+   ],
+   "blurb": "In the dark of the forest, a planeswalker offers you a book. Every page is a card. Every card costs life.",
+   "rewardSet": "ice",
+   "host": false,
+   "hero": {
+    "who": "laina",
+    "deck": {
+     "name": "Fyndhorn Council",
+     "colors": "G",
+     "archetype": null,
+     "cards": [
+      {
+       "qty": 4,
+       "name": "Fyndhorn Elves",
+       "set": "ice",
+       "number": "244",
+       "id": "3ba95ffa-990a-4013-98b7-5d8c0b34e9c4"
+      },
+      {
+       "qty": 4,
+       "name": "Fyndhorn Elder",
+       "set": "ice",
+       "number": "243",
+       "id": "fca8aa11-f7cb-4f88-a041-30098579f1d2"
+      },
+      {
+       "qty": 4,
+       "name": "Folk of the Pines",
+       "set": "ice",
+       "number": "235",
+       "id": "0c13311d-db83-483f-ba2b-4f54ceb8b026"
+      },
+      {
+       "qty": 4,
+       "name": "Elvish Ranger",
+       "set": "all",
+       "number": "88a",
+       "id": "ad9f1b09-73c2-43c5-a28b-4a40fff7b727"
+      },
+      {
+       "qty": 4,
+       "name": "Yavimaya Ancients",
+       "set": "all",
+       "number": "104a",
+       "id": "94fc4db5-08e5-4cf8-bf47-f7c6a58162b2"
+      },
+      {
+       "qty": 3,
+       "name": "Lhurgoyf",
+       "set": "ice",
+       "number": "252",
+       "id": "fee6d385-d44b-4f1a-beb1-13aeebde063e"
+      },
+      {
+       "qty": 4,
+       "name": "War Mammoth",
+       "set": "4ed",
+       "number": "286",
+       "id": "2137757c-161c-4a3b-9a99-0fd23aa0c847"
+      },
+      {
+       "qty": 4,
+       "name": "Giant Growth",
+       "set": "ice",
+       "number": "246",
+       "id": "431c9749-fd7b-4960-a910-8d41d3704e6c"
+      },
+      {
+       "qty": 3,
+       "name": "Craw Wurm",
+       "set": "4ed",
+       "number": "238",
+       "id": "57e9cf07-a335-4725-a124-0e983721f2f8"
+      },
+      {
+       "qty": 2,
+       "name": "Pygmy Allosaurus",
+       "set": "ice",
+       "number": "257",
+       "id": "88a68767-9822-4f15-895e-32164e2159be"
+      },
+      {
+       "qty": 24,
+       "name": "Snow-Covered Forest",
+       "set": "ice",
+       "number": "383",
+       "id": "4c0ad95c-d62c-4138-ada0-fa39a63a449e"
+      }
+     ]
+    }
+   },
+   "villain": {
+    "who": "leshrac",
+    "deck": {
+     "name": "Leshrac's Book",
+     "colors": "B",
+     "archetype": null,
+     "cards": [
+      {
+       "qty": 2,
+       "name": "Knight of Stromgald",
+       "set": "ice",
+       "number": "138",
+       "id": "2b87069b-ebaf-4705-b5da-446932af9b73"
+      },
+      {
+       "qty": 28,
+       "name": "Swamp",
+       "set": "ice",
+       "number": "373",
+       "id": "4695653a-5c4c-4ff3-b80c-f4b6c685f370"
+      },
+      {
+       "qty": 2,
+       "name": "Dark Ritual",
+       "set": "ice",
+       "number": "120",
+       "id": "4ebcd681-1871-4914-bcd7-6bd95829f6e0"
+      },
+      {
+       "qty": 4,
+       "name": "Drudge Skeletons",
+       "set": "4ed",
+       "number": "133",
+       "id": "d3d223d3-72c1-4240-9323-84484167c5e0"
+      },
+      {
+       "qty": 2,
+       "name": "Unholy Strength",
+       "set": "4ed",
+       "number": "166",
+       "id": "f52c3c85-1462-406c-8e3b-c25deda9c4e6"
+      },
+      {
+       "qty": 2,
+       "name": "Hypnotic Specter",
+       "set": "4ed",
+       "number": "142",
+       "id": "b5900350-be08-4904-8f1b-cc180ed08485"
+      },
+      {
+       "qty": 4,
+       "name": "Scathe Zombies",
+       "set": "4ed",
+       "number": "158",
+       "id": "dbd55d32-e969-4d12-b101-a35db8a53921"
+      },
+      {
+       "qty": 2,
+       "name": "Drain Life",
+       "set": "4ed",
+       "number": "132",
+       "id": "b9d10677-36f0-4339-a2c3-213e8ee1c51d"
+      },
+      {
+       "qty": 2,
+       "name": "Raise Dead",
+       "set": "4ed",
+       "number": "156",
+       "id": "2096e54e-1a55-4fd7-8415-a6f2fdb2a536"
+      },
+      {
+       "qty": 2,
+       "name": "Sengir Vampire",
+       "set": "4ed",
+       "number": "160",
+       "id": "2e29882a-c194-48b8-ba18-439b0bda395e"
+      },
+      {
+       "qty": 4,
+       "name": "Evil Presence",
+       "set": "4ed",
+       "number": "136",
+       "id": "5cbca45f-7b08-408b-9445-e3f2b9563f1b"
+      },
+      {
+       "qty": 2,
+       "name": "Terror",
+       "set": "4ed",
+       "number": "164",
+       "id": "deb5d44d-977d-4d0d-8242-17c8ffa7247c"
+      },
+      {
+       "qty": 4,
+       "name": "Ashen Ghoul",
+       "set": "ice",
+       "number": "114",
+       "id": "6bb83301-5662-4628-b536-6a3ee0296f2e"
+      }
+     ]
+    }
+   },
+   "scene": [
+    {
+     "who": "leshrac",
+     "line": "Take it. Read."
+    },
+    {
+     "who": "laina",
+     "line": "Don't touch that. Freyalise warned us about his gifts."
+    },
+    {
+     "who": "leshrac",
+     "line": "Freyalise warns. I give."
+    },
+    {
+     "who": "laina",
+     "line": "Our friends of the forest take many forms, yet all serve the will of Freyalise.",
+     "quote": true
+    },
+    {
+     "who": "leshrac",
+     "line": "Then let them serve. I'll wait."
+    }
+   ],
+   "villainScene": null,
+   "cues": {
+    "hero": {
+     "start": "Freyalise, guide us.",
+     "big": "The goddess is generous to her children.",
+     "low": "Don't read it...",
+     "win": "Take your book and go.",
+     "loss": "He's in the trees now."
+    },
+    "villain": {
+     "start": "Read.",
+     "big": "More.",
+     "low": "Pay.",
+     "win": "Mine.",
+     "loss": "Later."
+    }
+   },
+   "bigPlays": [],
+   "sim": null
+  },
+  {
+   "id": "a3b4",
+   "slot": 4,
+   "kind": "Rival",
+   "title": "Baron Sengir's Feast",
+   "difficulty": "Normal",
+   "teaches": [
+    "Direct damage",
+    "Growing creatures"
+   ],
+   "blurb": "A rift pulls you to Ulgrotha, a dying world ruled from a castle. The Baron is having guests for dinner. You're on the menu.",
+   "rewardSet": "hml",
+   "host": false,
+   "hero": {
+    "who": "reveka",
+    "deck": {
+     "name": "Reveka's Fire",
+     "colors": "R",
+     "archetype": null,
+     "cards": [
+      {
+       "qty": 2,
+       "name": "Reveka, Wizard Savant",
+       "set": "hml",
+       "number": "37",
+       "id": "a952236e-3085-4e6e-8639-355976b7c8f5"
+      },
+      {
+       "qty": 4,
+       "name": "Orcish Artillery",
+       "set": "4ed",
+       "number": "214",
+       "id": "19281eb4-f5b6-4b27-8c65-7e56d2a8ab77"
+      },
+      {
+       "qty": 4,
+       "name": "Orcish Cannoneers",
+       "set": "ice",
+       "number": "205",
+       "id": "a4309a2f-27f5-4652-b0b4-6a6119436f75"
+      },
+      {
+       "qty": 4,
+       "name": "Lightning Bolt",
+       "set": "4ed",
+       "number": "208",
+       "id": "9521375e-0bc1-45ef-b513-6d332a25f9d2"
+      },
+      {
+       "qty": 4,
+       "name": "Incinerate",
+       "set": "ice",
+       "number": "194",
+       "id": "9c3f00af-010d-4485-b8b7-47400d99c496"
+      },
+      {
+       "qty": 3,
+       "name": "Fireball",
+       "set": "4ed",
+       "number": "192",
+       "id": "afe078d7-cdde-44bb-942e-417123ebeccb"
+      },
+      {
+       "qty": 4,
+       "name": "Hurloon Minotaur",
+       "set": "4ed",
+       "number": "202",
+       "id": "5c2c27de-e788-4ad7-b1e3-030e7ef00471"
+      },
+      {
+       "qty": 4,
+       "name": "Fire Elemental",
+       "set": "4ed",
+       "number": "191",
+       "id": "0261cd0f-e763-49b5-96ed-5e5767a3d8d7"
+      },
+      {
+       "qty": 3,
+       "name": "Shivan Dragon",
+       "set": "4ed",
+       "number": "220",
+       "id": "70846483-9c23-42c4-9f9f-1fc5cda17c77"
+      },
+      {
+       "qty": 4,
+       "name": "Stone Giant",
+       "set": "4ed",
+       "number": "223",
+       "id": "265de55e-63d2-4a5d-9078-858da70f2a08"
+      },
+      {
+       "qty": 24,
+       "name": "Mountain",
+       "set": "ice",
+       "number": "376",
+       "id": "4ecf39c3-3b5f-4263-a7b5-9881bded3494"
+      }
+     ]
+    }
+   },
+   "villain": {
+    "who": "baron",
+    "deck": {
+     "name": "The Baron's Table",
+     "colors": "B",
+     "archetype": null,
+     "cards": [
+      {
+       "qty": 3,
+       "name": "Baron Sengir",
+       "set": "hml",
+       "number": "41",
+       "id": "51bdddac-02fc-493a-a0ea-689273252d7e"
+      },
+      {
+       "qty": 4,
+       "name": "Sengir Bats",
+       "set": "hml",
+       "number": "57a",
+       "id": "3c745c2c-4311-412d-a137-02bf6d106e46"
+      },
+      {
+       "qty": 4,
+       "name": "Sengir Autocrat",
+       "set": "hml",
+       "number": "56",
+       "id": "0d16e024-7865-43d0-8cd8-8933ef741d05"
+      },
+      {
+       "qty": 4,
+       "name": "Sengir Vampire",
+       "set": "4ed",
+       "number": "160",
+       "id": "2e29882a-c194-48b8-ba18-439b0bda395e"
+      },
+      {
+       "qty": 4,
+       "name": "Black Knight",
+       "set": "4ed",
+       "number": "121",
+       "id": "47716cf4-f35c-4613-9686-4e00b5063408"
+      },
+      {
+       "qty": 4,
+       "name": "Dark Ritual",
+       "set": "ice",
+       "number": "120",
+       "id": "4ebcd681-1871-4914-bcd7-6bd95829f6e0"
+      },
+      {
+       "qty": 4,
+       "name": "Terror",
+       "set": "4ed",
+       "number": "164",
+       "id": "deb5d44d-977d-4d0d-8242-17c8ffa7247c"
+      },
+      {
+       "qty": 3,
+       "name": "Drain Life",
+       "set": "4ed",
+       "number": "132",
+       "id": "b9d10677-36f0-4339-a2c3-213e8ee1c51d"
+      },
+      {
+       "qty": 3,
+       "name": "Royal Assassin",
+       "set": "4ed",
+       "number": "157",
+       "id": "b2d51bdf-f118-4a1e-9060-bdf3c78697f2"
+      },
+      {
+       "qty": 3,
+       "name": "Abomination",
+       "set": "4ed",
+       "number": "117",
+       "id": "a363bc91-8278-448e-9d5c-564e4b51eb62"
+      },
+      {
+       "qty": 24,
+       "name": "Swamp",
+       "set": "ice",
+       "number": "373",
+       "id": "4695653a-5c4c-4ff3-b80c-f4b6c685f370"
+      }
+     ]
+    }
+   },
+   "scene": [
+    {
+     "who": "baron",
+     "line": "A visitor. How rare. How fresh."
+    },
+    {
+     "who": "reveka",
+     "line": "Don't let him get you near the table, rift-walker."
+    },
+    {
+     "who": "baron",
+     "line": "Reveka, you wound me. I'm a host."
+    },
+    {
+     "who": "reveka",
+     "line": "You're a leech in a nice coat."
+    },
+    {
+     "who": "baron",
+     "line": "Every guest grows stronger in my house. Well. I do."
+    }
+   ],
+   "villainScene": null,
+   "cues": {
+    "hero": {
+     "start": "Lights up.",
+     "big": "Choke on that.",
+     "low": "Not dinner. Not today.",
+     "win": "Lock the castle behind us.",
+     "loss": "Run!"
+    },
+    "villain": {
+     "start": "Dinner is served.",
+     "big": "Delicious.",
+     "low": "Rude guests.",
+     "win": "You'll keep.",
+     "loss": "Come back hungrier."
+    }
+   },
+   "bigPlays": [],
+   "sim": null
+  },
+  {
+   "id": "a3b5",
+   "slot": 5,
+   "kind": "Lesson",
+   "title": "The Dead at the Gate",
+   "difficulty": "Normal",
+   "teaches": [
+    "Alternate costs",
+    "Counterspells"
+   ],
+   "blurb": "The dead are walking south. Kjeldor and Balduvia stop fighting each other long enough to form an Alliance.",
+   "rewardSet": "all",
+   "host": false,
+   "hero": {
+    "who": "kjeldor",
+    "deck": {
+     "name": "The Alliance",
+     "colors": "WU",
+     "archetype": null,
+     "cards": [
+      {
+       "qty": 1,
+       "name": "Force of Will",
+       "set": "all",
+       "number": "28",
+       "id": "9a879b60-4381-447d-8a5a-8e0b6a1d49ca"
+      },
+      {
+       "qty": 4,
+       "name": "Benalish Hero",
+       "set": "4ed",
+       "number": "7",
+       "id": "fd204832-5f3b-4213-9c06-b89a296a9d47"
+      },
+      {
+       "qty": 2,
+       "name": "Arcane Denial",
+       "set": "all",
+       "number": "22a",
+       "id": "b0c5728e-43e7-417a-ba18-5038345cec67"
+      },
+      {
+       "qty": 4,
+       "name": "Pearled Unicorn",
+       "set": "4ed",
+       "number": "39",
+       "id": "6acc78fc-1eab-47aa-993d-6781b2d2408a"
+      },
+      {
+       "qty": 2,
+       "name": "Kjeldoran Royal Guard",
+       "set": "ice",
+       "number": "38",
+       "id": "66343008-c38a-48a9-b767-fd2243103690"
+      },
+      {
+       "qty": 2,
+       "name": "Wall of Swords",
+       "set": "4ed",
+       "number": "55",
+       "id": "18ffa85c-61c4-49b7-8946-ab353355a11c"
+      },
+      {
+       "qty": 2,
+       "name": "Swords to Plowshares",
+       "set": "ice",
+       "number": "54",
+       "id": "375fd2cb-443b-4be4-ad60-6d1a8e74f510"
+      },
+      {
+       "qty": 2,
+       "name": "Unsummon",
+       "set": "4ed",
+       "number": "111",
+       "id": "338948aa-463d-4af4-a0d6-64132512334c"
+      },
+      {
+       "qty": 1,
+       "name": "Serra Angel",
+       "set": "4ed",
+       "number": "50",
+       "id": "8072d00a-82ff-4406-bdf8-1af20cd3a170"
+      },
+      {
+       "qty": 2,
+       "name": "Water Elemental",
+       "set": "4ed",
+       "number": "115",
+       "id": "dadea972-714e-4f6d-8fb7-a59c0ac1e028"
+      },
+      {
+       "qty": 1,
+       "name": "Phantom Monster",
+       "set": "4ed",
+       "number": "90",
+       "id": "daa120ce-63a6-4d5e-9801-123d5e05646e"
+      },
+      {
+       "qty": 2,
+       "name": "Merfolk of the Pearl Trident",
+       "set": "4ed",
+       "number": "86",
+       "id": "93661c9f-b529-4d82-b68d-3ce050f77e0d"
+      },
+      {
+       "qty": 4,
+       "name": "White Knight",
+       "set": "4ed",
+       "number": "56",
+       "id": "2e8f8a10-6984-46a7-a641-5f712dab5c57"
+      },
+      {
+       "qty": 1,
+       "name": "Brainstorm",
+       "set": "ice",
+       "number": "61",
+       "id": "8d42d7aa-7f53-4cfc-842a-086aab2448d1"
+      },
+      {
+       "qty": 4,
+       "name": "Mesa Pegasus",
+       "set": "4ed",
+       "number": "35",
+       "id": "60c0faf1-0c16-441a-97fd-6d4e91c894a5"
+      },
+      {
+       "qty": 2,
+       "name": "Air Elemental",
+       "set": "4ed",
+       "number": "59",
+       "id": "e5cfaefb-764c-4c56-bdb3-5f0375168597"
+      },
+      {
+       "qty": 12,
+       "name": "Plains",
+       "set": "ice",
+       "number": "364",
+       "id": "7b68bdb0-41cc-48f6-905e-7da1ff4ba5e0"
+      },
+      {
+       "qty": 12,
+       "name": "Island",
+       "set": "ice",
+       "number": "368",
+       "id": "ef2d6fc9-ddad-4dd2-b218-afa1a5449b7e"
+      }
+     ]
+    }
+   },
+   "villain": {
+    "who": "cohort",
+    "deck": {
+     "name": "Lim-Dûl's Vanguard",
+     "colors": "B",
+     "archetype": null,
+     "cards": [
+      {
+       "qty": 4,
+       "name": "Lim-Dûl's Cohort",
+       "set": "ice",
+       "number": "145",
+       "id": "3d0006f6-2f96-453d-9145-eaefa588efbc"
+      },
+      {
+       "qty": 4,
+       "name": "Ashen Ghoul",
+       "set": "ice",
+       "number": "114",
+       "id": "6bb83301-5662-4628-b536-6a3ee0296f2e"
+      },
+      {
+       "qty": 2,
+       "name": "Drift of the Dead",
+       "set": "ice",
+       "number": "123",
+       "id": "d8b65656-9f8c-4179-81aa-4b15d8280baa"
+      },
+      {
+       "qty": 2,
+       "name": "Drain Life",
+       "set": "4ed",
+       "number": "132",
+       "id": "b9d10677-36f0-4339-a2c3-213e8ee1c51d"
+      },
+      {
+       "qty": 3,
+       "name": "Legions of Lim-Dûl",
+       "set": "ice",
+       "number": "142",
+       "id": "75b67eb2-b60e-46b4-9d48-11c284957bec"
+      },
+      {
+       "qty": 4,
+       "name": "Hypnotic Specter",
+       "set": "4ed",
+       "number": "142",
+       "id": "b5900350-be08-4904-8f1b-cc180ed08485"
+      },
+      {
+       "qty": 4,
+       "name": "Zombie Master",
+       "set": "4ed",
+       "number": "174",
+       "id": "d86753ae-c8da-47d7-b97a-3c75f83ee929"
+      },
+      {
+       "qty": 4,
+       "name": "Scathe Zombies",
+       "set": "4ed",
+       "number": "158",
+       "id": "dbd55d32-e969-4d12-b101-a35db8a53921"
+      },
+      {
+       "qty": 4,
+       "name": "Terror",
+       "set": "4ed",
+       "number": "164",
+       "id": "deb5d44d-977d-4d0d-8242-17c8ffa7247c"
+      },
+      {
+       "qty": 4,
+       "name": "Dark Ritual",
+       "set": "ice",
+       "number": "120",
+       "id": "4ebcd681-1871-4914-bcd7-6bd95829f6e0"
+      },
+      {
+       "qty": 1,
+       "name": "Feast or Famine",
+       "set": "all",
+       "number": "49a",
+       "id": "7c185b4d-8da5-4b8a-85f0-5f0622c7bade"
+      },
+      {
+       "qty": 12,
+       "name": "Snow-Covered Swamp",
+       "set": "ice",
+       "number": "372",
+       "id": "65a3c27f-6b15-49b6-ac89-36cfb79b3b54"
+      },
+      {
+       "qty": 12,
+       "name": "Swamp",
+       "set": "ice",
+       "number": "373",
+       "id": "4695653a-5c4c-4ff3-b80c-f4b6c685f370"
+      }
+     ]
+    }
+   },
+   "scene": [
+    {
+     "who": "limdul",
+     "line": "Join me in the place of power, you risen dead.",
+     "quote": true,
+     "offstage": true
+    },
+    {
+     "who": "kjeldor",
+     "line": "That's the necromancer's voice. He's using our own fallen."
+    },
+    {
+     "who": "lucilde",
+     "line": "I have seen the faces of my dead friends among that grim band, and I can bear no more.",
+     "quote": true
+    },
+    {
+     "who": "kjeldor",
+     "line": "Then we end it. Together."
+    }
+   ],
+   "villainScene": null,
+   "cues": {
+    "villain": {
+     "start": "Rise.",
+     "big": "Serve me, and live forever.",
+     "low": "Rise again.",
+     "win": "They shall kill those whom once they loved.",
+     "loss": "There are always more dead."
+    }
+   },
+   "bigPlays": [],
+   "sim": null
+  },
+  {
+   "id": "a3b6",
+   "slot": 6,
+   "kind": "Meta",
+   "title": "Necro Summer",
+   "difficulty": "Normal",
+   "teaches": [
+    "Racing a card-draw engine"
+   ],
+   "blurb": "A fallen knight of Ulgrotha has found the Black Book. He draws until he wins, or dies trying. The deck that ruled 1996.",
+   "rewardSet": "ice",
+   "host": false,
+   "hero": {
+    "who": "you",
+    "deck": {
+     "name": "Knights of the Pass",
+     "colors": "W",
+     "archetype": null,
+     "cards": [
+      {
+       "qty": 4,
+       "name": "White Knight",
+       "set": "4ed",
+       "number": "56",
+       "id": "2e8f8a10-6984-46a7-a641-5f712dab5c57"
+      },
+      {
+       "qty": 4,
+       "name": "Savannah Lions",
+       "set": "4ed",
+       "number": "48",
+       "id": "a2ee9127-d007-48e8-b797-88ef72bc7c8b"
+      },
+      {
+       "qty": 4,
+       "name": "Kjeldoran Elite Guard",
+       "set": "ice",
+       "number": "34",
+       "id": "a73bc4b6-f7d0-494c-9e60-48279c11b7b6"
+      },
+      {
+       "qty": 4,
+       "name": "Kjeldoran Royal Guard",
+       "set": "ice",
+       "number": "38",
+       "id": "66343008-c38a-48a9-b767-fd2243103690"
+      },
+      {
+       "qty": 3,
+       "name": "Serra Angel",
+       "set": "4ed",
+       "number": "50",
+       "id": "8072d00a-82ff-4406-bdf8-1af20cd3a170"
+      },
+      {
+       "qty": 4,
+       "name": "Swords to Plowshares",
+       "set": "ice",
+       "number": "54",
+       "id": "375fd2cb-443b-4be4-ad60-6d1a8e74f510"
+      },
+      {
+       "qty": 3,
+       "name": "Order of the White Shield",
+       "set": "ice",
+       "number": "46",
+       "id": "92e55b10-375f-4b4f-b676-3b9b8085fdd2"
+      },
+      {
+       "qty": 4,
+       "name": "Kjeldoran Skycaptain",
+       "set": "ice",
+       "number": "39",
+       "id": "cf0115e0-6192-48a9-9e58-f3ef77ef77c2"
+      },
+      {
+       "qty": 4,
+       "name": "Mesa Pegasus",
+       "set": "4ed",
+       "number": "35",
+       "id": "60c0faf1-0c16-441a-97fd-6d4e91c894a5"
+      },
+      {
+       "qty": 2,
+       "name": "Benalish Hero",
+       "set": "4ed",
+       "number": "7",
+       "id": "fd204832-5f3b-4213-9c06-b89a296a9d47"
+      },
+      {
+       "qty": 24,
+       "name": "Plains",
+       "set": "ice",
+       "number": "364",
+       "id": "7b68bdb0-41cc-48f6-905e-7da1ff4ba5e0"
+      }
+     ]
+    }
+   },
+   "villain": {
+    "who": "ihsan",
+    "deck": {
+     "name": "Necropotence",
+     "colors": "B",
+     "archetype": "Necro (1996)",
+     "cards": [
+      {
+       "qty": 24,
+       "name": "Swamp",
+       "set": "ice",
+       "number": "373",
+       "id": "4695653a-5c4c-4ff3-b80c-f4b6c685f370"
+      },
+      {
+       "qty": 4,
+       "name": "Dark Ritual",
+       "set": "ice",
+       "number": "120",
+       "id": "4ebcd681-1871-4914-bcd7-6bd95829f6e0"
+      },
+      {
+       "qty": 2,
+       "name": "Hypnotic Specter",
+       "set": "4ed",
+       "number": "142",
+       "id": "b5900350-be08-4904-8f1b-cc180ed08485"
+      },
+      {
+       "qty": 2,
+       "name": "Scathe Zombies",
+       "set": "4ed",
+       "number": "158",
+       "id": "dbd55d32-e969-4d12-b101-a35db8a53921"
+      },
+      {
+       "qty": 4,
+       "name": "Knight of Stromgald",
+       "set": "ice",
+       "number": "138",
+       "id": "2b87069b-ebaf-4705-b5da-446932af9b73"
+      },
+      {
+       "qty": 3,
+       "name": "Ihsan's Shade",
+       "set": "hml",
+       "number": "53",
+       "id": "82351724-2814-4d9e-b065-bb72c761b2e7"
+      },
+      {
+       "qty": 4,
+       "name": "Ashen Ghoul",
+       "set": "ice",
+       "number": "114",
+       "id": "6bb83301-5662-4628-b536-6a3ee0296f2e"
+      },
+      {
+       "qty": 4,
+       "name": "Black Knight",
+       "set": "4ed",
+       "number": "121",
+       "id": "47716cf4-f35c-4613-9686-4e00b5063408"
+      },
+      {
+       "qty": 3,
+       "name": "Drain Life",
+       "set": "4ed",
+       "number": "132",
+       "id": "b9d10677-36f0-4339-a2c3-213e8ee1c51d"
+      },
+      {
+       "qty": 1,
+       "name": "Icy Manipulator",
+       "set": "ice",
+       "number": "322",
+       "id": "1eda936f-7691-4440-9b83-eb0c6035b109"
+      },
+      {
+       "qty": 2,
+       "name": "Unholy Strength",
+       "set": "4ed",
+       "number": "166",
+       "id": "f52c3c85-1462-406c-8e3b-c25deda9c4e6"
+      },
+      {
+       "qty": 2,
+       "name": "Zuran Orb",
+       "set": "ice",
+       "number": "350",
+       "id": "3a9d1082-a862-45d4-9e5e-392e879fead6"
+      },
+      {
+       "qty": 4,
+       "name": "Terror",
+       "set": "4ed",
+       "number": "164",
+       "id": "deb5d44d-977d-4d0d-8242-17c8ffa7247c"
+      },
+      {
+       "qty": 1,
+       "name": "Strip Mine",
+       "set": "4ed",
+       "number": "363",
+       "id": "a5899b46-226b-4be6-8e80-d2396f54210d"
+      }
+     ]
+    }
+   },
+   "scene": [
+    {
+     "who": "ihsan",
+     "line": "I was a knight once. I had a name. I traded it."
+    },
+    {
+     "who": "ihsan",
+     "line": "Every card is a year of my life. I have so many left to spend."
+    }
+   ],
+   "villainScene": null,
+   "cues": {
+    "villain": {
+     "start": "Draw.",
+     "big": "Was it worth it? Yes.",
+     "low": "Just one more card.",
+     "win": "Paid in full.",
+     "loss": "The book... is empty."
+    }
+   },
+   "bigPlays": [],
+   "sim": null
+  },
+  {
+   "id": "a3b7",
+   "slot": 7,
+   "kind": "Meta",
+   "title": "Stasis",
+   "difficulty": "Normal",
+   "teaches": [
+    "Playing under a lock"
+   ],
+   "blurb": "The Baron's mother has a trick: nothing in her house moves unless she lets it.",
+   "rewardSet": "hml",
+   "host": false,
+   "hero": {
+    "who": "reveka",
+    "deck": {
+     "name": "Reveka's Fire",
+     "colors": "R",
+     "archetype": null,
+     "cards": [
+      {
+       "qty": 2,
+       "name": "Reveka, Wizard Savant",
+       "set": "hml",
+       "number": "37",
+       "id": "a952236e-3085-4e6e-8639-355976b7c8f5"
+      },
+      {
+       "qty": 4,
+       "name": "Orcish Artillery",
+       "set": "4ed",
+       "number": "214",
+       "id": "19281eb4-f5b6-4b27-8c65-7e56d2a8ab77"
+      },
+      {
+       "qty": 4,
+       "name": "Orcish Cannoneers",
+       "set": "ice",
+       "number": "205",
+       "id": "a4309a2f-27f5-4652-b0b4-6a6119436f75"
+      },
+      {
+       "qty": 4,
+       "name": "Lightning Bolt",
+       "set": "4ed",
+       "number": "208",
+       "id": "9521375e-0bc1-45ef-b513-6d332a25f9d2"
+      },
+      {
+       "qty": 4,
+       "name": "Incinerate",
+       "set": "ice",
+       "number": "194",
+       "id": "9c3f00af-010d-4485-b8b7-47400d99c496"
+      },
+      {
+       "qty": 3,
+       "name": "Fireball",
+       "set": "4ed",
+       "number": "192",
+       "id": "afe078d7-cdde-44bb-942e-417123ebeccb"
+      },
+      {
+       "qty": 4,
+       "name": "Hurloon Minotaur",
+       "set": "4ed",
+       "number": "202",
+       "id": "5c2c27de-e788-4ad7-b1e3-030e7ef00471"
+      },
+      {
+       "qty": 4,
+       "name": "Fire Elemental",
+       "set": "4ed",
+       "number": "191",
+       "id": "0261cd0f-e763-49b5-96ed-5e5767a3d8d7"
+      },
+      {
+       "qty": 3,
+       "name": "Shivan Dragon",
+       "set": "4ed",
+       "number": "220",
+       "id": "70846483-9c23-42c4-9f9f-1fc5cda17c77"
+      },
+      {
+       "qty": 4,
+       "name": "Stone Giant",
+       "set": "4ed",
+       "number": "223",
+       "id": "265de55e-63d2-4a5d-9078-858da70f2a08"
+      },
+      {
+       "qty": 24,
+       "name": "Mountain",
+       "set": "ice",
+       "number": "376",
+       "id": "4ecf39c3-3b5f-4263-a7b5-9881bded3494"
+      }
+     ]
+    }
+   },
+   "villain": {
+    "who": "grandmother",
+    "deck": {
+     "name": "The Still House",
+     "colors": "UB",
+     "archetype": "Winter Orb lock",
+     "cards": [
+      {
+       "qty": 2,
+       "name": "Grandmother Sengir",
+       "set": "hml",
+       "number": "50",
+       "id": "efb0ac91-5e8e-47b1-aa34-902eef60349f"
+      },
+      {
+       "qty": 4,
+       "name": "Winter Orb",
+       "set": "4ed",
+       "number": "358",
+       "id": "d60ee90d-5f7b-4294-8d52-9744fada8d36"
+      },
+      {
+       "qty": 4,
+       "name": "Icy Manipulator",
+       "set": "ice",
+       "number": "322",
+       "id": "1eda936f-7691-4440-9b83-eb0c6035b109"
+      },
+      {
+       "qty": 4,
+       "name": "Counterspell",
+       "set": "ice",
+       "number": "64",
+       "id": "aedbcbaa-40f0-485f-8427-778edc2d2ec0"
+      },
+      {
+       "qty": 4,
+       "name": "Arcane Denial",
+       "set": "all",
+       "number": "22a",
+       "id": "b0c5728e-43e7-417a-ba18-5038345cec67"
+      },
+      {
+       "qty": 4,
+       "name": "Hypnotic Specter",
+       "set": "4ed",
+       "number": "142",
+       "id": "b5900350-be08-4904-8f1b-cc180ed08485"
+      },
+      {
+       "qty": 3,
+       "name": "Mahamoti Djinn",
+       "set": "4ed",
+       "number": "84",
+       "id": "71935f14-d7ca-4406-9263-b2c7f5f5b94f"
+      },
+      {
+       "qty": 2,
+       "name": "Air Elemental",
+       "set": "4ed",
+       "number": "59",
+       "id": "e5cfaefb-764c-4c56-bdb3-5f0375168597"
+      },
+      {
+       "qty": 4,
+       "name": "Dark Ritual",
+       "set": "ice",
+       "number": "120",
+       "id": "4ebcd681-1871-4914-bcd7-6bd95829f6e0"
+      },
+      {
+       "qty": 2,
+       "name": "Stasis",
+       "set": "4ed",
+       "number": "104",
+       "id": "f3d29fed-248d-4547-9455-3d69b1f2787d"
+      },
+      {
+       "qty": 3,
+       "name": "Terror",
+       "set": "4ed",
+       "number": "164",
+       "id": "deb5d44d-977d-4d0d-8242-17c8ffa7247c"
+      },
+      {
+       "qty": 12,
+       "name": "Island",
+       "set": "ice",
+       "number": "368",
+       "id": "ef2d6fc9-ddad-4dd2-b218-afa1a5449b7e"
+      },
+      {
+       "qty": 12,
+       "name": "Swamp",
+       "set": "ice",
+       "number": "373",
+       "id": "4695653a-5c4c-4ff3-b80c-f4b6c685f370"
+      }
+     ]
+    }
+   },
+   "scene": [
+    {
+     "who": "grandmother",
+     "line": "My son plays with his food. I simply keep it still."
+    },
+    {
+     "who": "reveka",
+     "line": "She'll freeze the whole table. Make every turn count."
+    },
+    {
+     "who": "grandmother",
+     "line": "Sit. Stay. Good."
+    }
+   ],
+   "villainScene": null,
+   "cues": {
+    "villain": {
+     "start": "Be still.",
+     "big": "Nothing moves in my house.",
+     "low": "Who untapped that?",
+     "win": "There. Quiet.",
+     "loss": "Insolent."
+    }
+   },
+   "bigPlays": [],
+   "sim": null
+  },
+  {
+   "id": "a3b8",
+   "slot": 8,
+   "kind": "Boss",
+   "title": "Lim-Dûl's Legion",
+   "difficulty": "Hard",
+   "teaches": [
+    "Everything so far"
+   ],
+   "blurb": "The necromancer stands at the gates of Kjeldor with every dead soldier of the long winter behind him.",
+   "rewardSet": "all",
+   "host": true,
+   "hero": {
+    "who": "laina",
+    "deck": {
+     "name": "Freyalise's Chosen",
+     "colors": "GW",
+     "archetype": null,
+     "cards": [
+      {
+       "qty": 4,
+       "name": "Fyndhorn Elves",
+       "set": "ice",
+       "number": "244",
+       "id": "3ba95ffa-990a-4013-98b7-5d8c0b34e9c4"
+      },
+      {
+       "qty": 4,
+       "name": "White Knight",
+       "set": "4ed",
+       "number": "56",
+       "id": "2e8f8a10-6984-46a7-a641-5f712dab5c57"
+      },
+      {
+       "qty": 2,
+       "name": "Order of the White Shield",
+       "set": "ice",
+       "number": "46",
+       "id": "92e55b10-375f-4b4f-b676-3b9b8085fdd2"
+      },
+      {
+       "qty": 4,
+       "name": "Grizzly Bears",
+       "set": "4ed",
+       "number": "250",
+       "id": "38fc72de-2093-477b-b39e-696339d2fdbc"
+      },
+      {
+       "qty": 2,
+       "name": "Kjeldoran Royal Guard",
+       "set": "ice",
+       "number": "38",
+       "id": "66343008-c38a-48a9-b767-fd2243103690"
+      },
+      {
+       "qty": 1,
+       "name": "Serra Angel",
+       "set": "4ed",
+       "number": "50",
+       "id": "8072d00a-82ff-4406-bdf8-1af20cd3a170"
+      },
+      {
+       "qty": 3,
+       "name": "Benalish Hero",
+       "set": "4ed",
+       "number": "7",
+       "id": "fd204832-5f3b-4213-9c06-b89a296a9d47"
+      },
+      {
+       "qty": 2,
+       "name": "Swords to Plowshares",
+       "set": "ice",
+       "number": "54",
+       "id": "375fd2cb-443b-4be4-ad60-6d1a8e74f510"
+      },
+      {
+       "qty": 2,
+       "name": "War Mammoth",
+       "set": "4ed",
+       "number": "286",
+       "id": "2137757c-161c-4a3b-9a99-0fd23aa0c847"
+      },
+      {
+       "qty": 1,
+       "name": "Lhurgoyf",
+       "set": "ice",
+       "number": "252",
+       "id": "fee6d385-d44b-4f1a-beb1-13aeebde063e"
+      },
+      {
+       "qty": 4,
+       "name": "Folk of the Pines",
+       "set": "ice",
+       "number": "235",
+       "id": "0c13311d-db83-483f-ba2b-4f54ceb8b026"
+      },
+      {
+       "qty": 3,
+       "name": "Pygmy Allosaurus",
+       "set": "ice",
+       "number": "257",
+       "id": "88a68767-9822-4f15-895e-32164e2159be"
+      },
+      {
+       "qty": 4,
+       "name": "Giant Growth",
+       "set": "ice",
+       "number": "246",
+       "id": "431c9749-fd7b-4960-a910-8d41d3704e6c"
+      },
+      {
+       "qty": 12,
+       "name": "Plains",
+       "set": "ice",
+       "number": "364",
+       "id": "7b68bdb0-41cc-48f6-905e-7da1ff4ba5e0"
+      },
+      {
+       "qty": 12,
+       "name": "Forest",
+       "set": "ice",
+       "number": "380",
+       "id": "fbdcbd97-90a9-45ea-94f6-2a1c6faaf965"
+      }
+     ]
+    }
+   },
+   "villain": {
+    "who": "limdul",
+    "deck": {
+     "name": "Lim-Dûl's Legion",
+     "colors": "B",
+     "archetype": "Necro, lore-shaped",
+     "cards": [
+      {
+       "qty": 4,
+       "name": "Lim-Dûl's High Guard",
+       "set": "all",
+       "number": "55a",
+       "id": "b5afe9b5-3be8-472a-95c3-2c34231bc042"
+      },
+      {
+       "qty": 4,
+       "name": "Lim-Dûl's Cohort",
+       "set": "ice",
+       "number": "145",
+       "id": "3d0006f6-2f96-453d-9145-eaefa588efbc"
+      },
+      {
+       "qty": 1,
+       "name": "Necropotence",
+       "set": "ice",
+       "number": "154",
+       "id": "54d7a0c1-efb4-4a8d-ad92-a96d43835052"
+      },
+      {
+       "qty": 4,
+       "name": "Dark Ritual",
+       "set": "ice",
+       "number": "120",
+       "id": "4ebcd681-1871-4914-bcd7-6bd95829f6e0"
+      },
+      {
+       "qty": 4,
+       "name": "Knight of Stromgald",
+       "set": "ice",
+       "number": "138",
+       "id": "2b87069b-ebaf-4705-b5da-446932af9b73"
+      },
+      {
+       "qty": 3,
+       "name": "Legions of Lim-Dûl",
+       "set": "ice",
+       "number": "142",
+       "id": "75b67eb2-b60e-46b4-9d48-11c284957bec"
+      },
+      {
+       "qty": 2,
+       "name": "Drift of the Dead",
+       "set": "ice",
+       "number": "123",
+       "id": "d8b65656-9f8c-4179-81aa-4b15d8280baa"
+      },
+      {
+       "qty": 4,
+       "name": "Ashen Ghoul",
+       "set": "ice",
+       "number": "114",
+       "id": "6bb83301-5662-4628-b536-6a3ee0296f2e"
+      },
+      {
+       "qty": 4,
+       "name": "Pestilence",
+       "set": "4ed",
+       "number": "152",
+       "id": "90886a02-4c1f-48ea-8563-6d80c97d9f58"
+      },
+      {
+       "qty": 2,
+       "name": "Hypnotic Specter",
+       "set": "4ed",
+       "number": "142",
+       "id": "b5900350-be08-4904-8f1b-cc180ed08485"
+      },
+      {
+       "qty": 4,
+       "name": "Terror",
+       "set": "4ed",
+       "number": "164",
+       "id": "deb5d44d-977d-4d0d-8242-17c8ffa7247c"
+      },
+      {
+       "qty": 12,
+       "name": "Snow-Covered Swamp",
+       "set": "ice",
+       "number": "372",
+       "id": "65a3c27f-6b15-49b6-ac89-36cfb79b3b54"
+      },
+      {
+       "qty": 12,
+       "name": "Swamp",
+       "set": "ice",
+       "number": "373",
+       "id": "4695653a-5c4c-4ff3-b80c-f4b6c685f370"
+      }
+     ]
+    }
+   },
+   "scene": [
+    {
+     "who": "limdul",
+     "line": "My foes serve me twice: in dying, and in death.",
+     "quote": true
+    },
+    {
+     "who": "laina",
+     "line": "Freyalise is coming. She's going to end the winter."
+    },
+    {
+     "who": "limdul",
+     "line": "I will not warm myself by the fire. I will become the flame.",
+     "quote": true
+    },
+    {
+     "who": "limdul",
+     "line": "Leshrac told me about you. The one who walks between.",
+     "aside": "to you"
+    },
+    {
+     "who": "limdul",
+     "line": "Kneel, and I'll keep you. You'd make a fine Cohort."
+    }
+   ],
+   "villainScene": [
+    {
+     "who": "limdul",
+     "line": "Leshrac, my lord. Watch what your servant can do."
+    }
+   ],
+   "cues": {
+    "hero": {
+     "start": "For Fyndhorn.",
+     "big": "Become the fist of Freyalise!",
+     "low": "Hold until the spring!",
+     "win": "The ice is breaking!",
+     "loss": "We'll hold him... somehow."
+    },
+    "villain": {
+     "start": "Open the gates, and bid them enter.",
+     "big": "The weak shall fall. The strong shall remain.",
+     "low": "Leshrac, my liege, grant me the power I am due.",
+     "win": "Take their dead, and entomb them in the snow.",
+     "loss": "Leshrac... you promised..."
+    }
+   },
+   "bigPlays": [],
+   "sim": null
+  }
+ ]
+}

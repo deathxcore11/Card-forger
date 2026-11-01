@@ -80,11 +80,15 @@ export async function progressRoute(request, env, {verifyBearer, fetcher = fetch
   if (!user?.id) return fail('sign_in', 401);
   const uid = user.id, apply = (ref, kind, delta) => rpc(env, 'play_apply', {p_user: uid, p_ref: ref, p_kind: kind, p_delta: delta}, fetcher);
   const state = () => rpc(env, 'play_state', {p_user: uid}, fetcher);
+  // Story progress is the player's own story:* ledger refs (supabase/migrations/20261101190000_play_story.sql).
+  // Before that function exists this answers null and the app keeps its device copy.
+  const storyRefs = () => rpc(env, 'play_story_refs', {p_user: uid}, fetcher).catch(() => null);
   try {
     if (path === 'state' && request.method === 'GET') {
       const [s, sets] = await Promise.all([state(), shopSets(env, request, fetcher)]);
       return json({...s, rewardSet: sets.reward, shop: sets.shop});
     }
+    if (path === 'story' && request.method === 'GET') return json({refs: await storyRefs()});
     if (request.method !== 'POST') return fail('method', 405);
     const body = await readBody(request);
     if (path === 'starter') {
@@ -141,6 +145,28 @@ export async function progressRoute(request, env, {verifyBearer, fetcher = fetch
       if ((s.wallet?.coins || 0) < price) return fail('short_coins', 409);
       await apply('buy:' + crypto.randomUUID(), 'buy', {coins: -price, packs: [{set, source: 'shop'}]});
       return json({state: await state()});
+    }
+    if (path === 'story') {
+      // A won Story battle (story-mode-acts.md B2, play-progression.md section 3). Every ref is paid
+      // once: the first clear (an era pack and XP), each star (own deck: a bonus pack and coins;
+      // villain side: coins), the act's boss (the era-clear seal). A replay of a battle already won
+      // pays one era pack, up to replayPacksPerDay a day.
+      const id = String(body.battle || ''), m = id.match(/^a(\d{1,2})b([1-8])$/);
+      if (!m) return fail('bad_battle');
+      const act = await asset(env, request, `/data/story/act-${Number(m[1])}.json`, fetcher);
+      const battle = act?.battles?.find(b => b.id === id);
+      if (!battle) return fail('bad_battle', 404);
+      const cfg = (await state()).config?.story || {}, set = battle.rewardSet, pack = n => Array.from({length: n}, () => ({set, source: 'story'}));
+      const star = body.seat === 'villain' ? 'villain' : body.deck === 'own' ? 'own' : 'loaner';
+      const paid = [], pay = async (ref, delta) => { const out = await apply(ref, 'story', delta); if (!out?.duplicate) paid.push(ref); return !out?.duplicate; };
+      const first = await pay(`story:${id}:clear`, {packs: pack(cfg.firstWinPacks ?? 1), xp: cfg.firstWinXp ?? 150});
+      const starNew = await pay(`story:${id}:${star}`, star === 'own' ? {packs: pack(cfg.starPacks ?? 1), coins: cfg.starCoins ?? 100} : star === 'villain' ? {coins: cfg.starCoins ?? 100} : {});
+      if (battle.slot === 8) await pay(`story:act${Number(m[1])}:era`, {seals: cfg.eraClearSeals || {m: 1}});
+      if (!first && !starNew) {
+        const day = new Date().toISOString().slice(0, 10);
+        for (let i = 1; i <= (cfg.replayPacksPerDay ?? 3); i++) if (await pay(`story:replay:${day}:${i}`, {packs: pack(1)})) break;
+      }
+      return json({paid, rewardSet: set, refs: await storyRefs(), state: await state()});
     }
     if (path === 'deck') {
       const cards = Array.isArray(body.cards) ? body.cards.slice(0, 250).map(c => ({name: String(c?.name || '').slice(0, 160), qty: Math.max(1, Math.min(250, Number(c?.qty) || 1)), ...(c?.board === 'side' ? {board: 'side'} : {})})).filter(c => c.name) : [];

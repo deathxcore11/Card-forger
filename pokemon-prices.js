@@ -2,7 +2,7 @@ import {syncPokemonVariantAliases} from './pokemon-variant-options.js';
 import {referenceQuote} from './price-reference.js';
 import {pickGroup,pickProduct} from './pokemon-art.js';
 import {pokemonFinishAllowed} from './pokemon-corrections.js';
-import {pokemonCatalogueFallback} from './pokemon-catalogue-supplement.js';
+import {pokemonCatalogueFallback,pokemonSupplementProduct} from './pokemon-catalogue-supplement.js';
 // Exact product/finish fallback; listing estimates are explicitly distinguished.
 export function applyProductPrices(card,body){
  if(body?.cardId!==card.id)return false;
@@ -44,9 +44,12 @@ export async function pokemonPriceRoute(url,ctx,fetchImpl=fetch){
   // The card's TCGplayer product: from TCGdex's variants or its per-finish prices, else found in
   // the set's TCGplayer group by collector number and name (older sets TCGdex never mapped).
   const products=new Set([...(c.variants_detailed || []).map(v=>Number(v.thirdParty?.tcgplayer)),...Object.values(c.pricing?.tcgplayer || {}).map(v=>Number(v?.productId))].filter(Boolean));
-  const groups=await get('https://tcgcsv.com/tcgplayer/3/groups'),group=groups.results?.find(g=>setKey(g.name)===setKey(c.set?.name))||pickGroup(groups.results,c.set?.name);
+  // Upstream-verified product (and its group) the deployed API has not caught up with yet.
+  const known=pokemonSupplementProduct(id),fromSupplement=!!known&&!products.size;if(fromSupplement)products.add(known.productId);
+  const groups=await get('https://tcgcsv.com/tcgplayer/3/groups'),group=(known&&groups.results?.find(g=>Number(g.groupId)===known.groupId))||groups.results?.find(g=>setKey(g.name)===setKey(c.set?.name))||pickGroup(groups.results,c.set?.name);
   if(!group)return Response.json({cardId:id,quotes:[],notice:'No exact set mapping'});
-  let matchedProduct=null;
+  // The client only applies quotes for products it knows; name the supplement's as matched.
+  let matchedProduct=fromSupplement?known.productId:null;
   if(!products.size){const found=pickProduct((await get('https://tcgcsv.com/tcgplayer/3/'+group.groupId+'/products')).results,c);if(found){matchedProduct=found.productId;products.add(Number(found.productId));}}
   if(!products.size)return Response.json({cardId:id,quotes:[],notice:'No exact product mapping'});
   const prices=await get('https://tcgcsv.com/tcgplayer/3/'+group.groupId+'/prices');

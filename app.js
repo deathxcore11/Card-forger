@@ -162,8 +162,10 @@ import { openZoom, zoomCardOptions } from "./zoom.js";
 import {createPlayEcon} from "./play-econ-client.js";
 import {econScreenMarkup,ECON_VIEWS,purseMarkup} from "./play-econ-ui.js";
 import {createCardFacts} from "./play-econ-cards.js";
-import {STORY_ACTS} from "./play-home.js";
-import {stepDeckCard,ownedByName} from "./play-econ-rules.js";
+import {stepDeckCard,ownedByName,deckShortfall} from "./play-econ-rules.js";
+import {STORY_ACTS} from "./story-acts.js";
+import {createStoryProgress,loadAct,loadActPool,ownDeckFits,battleCleared,currentAct,currentBattle,actCleared} from "./story-client.js";
+import {storyHomeMarkup,storyActMarkup,storyBattleMarkup,playScene,createStoryBubbles,starsRow} from "./story-ui.js";
 import { initCloud, pauseLocalConflict, communityRequest, cloudAccessToken, cloudInfo, isEmptyWorkspace, statusLabel, scheduleSync, signInGoogle, signInEmail, signInPassword, createAccount, requestPasswordReset, finishPasswordReset, signOut, detachDeviceSync, saveProfile, resolvePending, syncNow, resendConfirmation, deleteAccount } from "./cloud.js";
 import { withSnapshot, collectionValue, recordValuePoint, cardSig, engineProfile, swapImpact, lotPrice } from "./insights.js";
 
@@ -2078,6 +2080,77 @@ A.playFriendLaunch=async matchId=>{
   try{await playerMatHost.start();}catch{/* The match screen presents the error and recovery action. */}
  }finally{playStarting=false;}
 };
+// Story mode (story-mode-acts.md; Randall 1 Nov 18:05-18:11Z): acts of 8 battles on our Forge engine,
+// talking-head scenes before each duel and speech bubbles from the seat portraits during it.
+// Ordinary battles use the phone's engine when it has one; the boss always runs on the host.
+const storyProgress=createStoryProgress({getAccessToken:cloudAccessToken,accountId:()=>cloudInfo()?.user?.id||null,onChange:()=>{if(S.ui.view==='play')refreshPlayMenu();}});
+let storyUi={act:1,battle:null,seat:'hero',deck:'loaner',data:{},pools:{}};
+const STORY_VIEWS=new Set(['story','storyAct','storyBattle']);
+const STORY_LEVEL={Easy:'Easy',Normal:'Medium',Hard:'Hard'};
+const storyAvatar=()=>{const p=playSetup.snapshot().profile||{};return /^https?:/.test(p.avatarUrl||'')?p.avatarUrl:'';};
+const storyBattle=()=>storyUi.data[storyUi.act]?.battles.find(b=>b.id===storyUi.battle)||null;
+function storyNeedAct(n){if(storyUi.data[n])return;loadAct(n).then(d=>{storyUi.data[n]=d;refreshPlayMenu();}).catch(()=>toast('Story could not load. Check your connection.'));loadActPool(n).then(p=>{storyUi.pools[n]=p;refreshPlayMenu();});}
+const storyGo=view=>{playView=view;playInspectOpen=false;refreshPlayMenu();scrollTo({top:0});requestAnimationFrame(()=>document.getElementById('playTitle')?.focus?.({preventScroll:true}));};
+A.storyHome=()=>{storyProgress.wake();for(const a of STORY_ACTS)storyNeedAct(a.act);storyGo('story');};
+A.storyOpenAct=t=>{const n=Number(t?.dataset?.storyAct||storyUi.act);if(!STORY_ACTS.some(a=>a.act===n))return;storyUi.act=n;storyNeedAct(n);storyGo('storyAct');};
+A.storyOpenBattle=t=>{storyUi.battle=t.dataset.storyBattle;storyUi.seat='hero';storyUi.deck='loaner';storyGo('storyBattle');
+ // The boss runs on the host: start warming it while the player reads the setup (story-mode-acts.md A1).
+ if(/b8$/.test(storyUi.battle))void import('./play-forge-host-client.js').then(m=>m.warmForgeHost({getAccessToken:cloudAccessToken})).catch(()=>{});};
+A.storySeat=t=>{storyUi.seat=t.dataset.storySeat==='villain'?'villain':'hero';if(storyUi.seat==='villain')storyUi.deck='loaner';refreshPlayMenu();};
+C.storyDeck=t=>{storyUi.deck=t.value||'loaner';refreshPlayMenu();};
+function storyOwnDecks(){const pool=storyUi.pools[storyUi.act]||null,owned=new Map((playEcon.snapshot().state?.cards||[]).map(c=>[c.n,c.c]));
+ return (playEcon.snapshot().state?.decks||[]).map(d=>{let fits=ownDeckFits(d,pool);if(fits.ok){const sh=deckShortfall((d.cards||[]).filter(r=>r.board!=='side'),owned,new Map());if(!sh.complete)fits={ok:false,reason:'Some cards aren\'t in your Play collection yet.'};}return {id:d.id,name:d.name||'Untitled deck',cards:(d.cards||[]).filter(r=>r.board!=='side'),fits};});}
+// The Play home's Story header: the act you're on and how many of its battles are won.
+const storyHomeAct=()=>{const p=storyProgress.snapshot().progress;return STORY_ACTS.find(a=>a.act===Math.min(currentAct(p),STORY_ACTS.length))||STORY_ACTS[0];};
+function storyHomeProgress(){const p=storyProgress.snapshot().progress,act=storyHomeAct().act,won=Array.from({length:8},(_,i)=>battleCleared(p,`a${act}b${i+1}`)).filter(Boolean).length;return {act,won,done:currentAct(p)>STORY_ACTS.length};}
+function storyMarkup(){
+ const econ=playEcon.snapshot(),progress=storyProgress.snapshot().progress;
+ const wait=`<section class="play-menu st-screen" aria-labelledby="playTitle"><header class="pl-head pe-head"><button class="pl-back" data-act="playHome" aria-label="Back to Play"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="m15 5-7 7 7 7"/></svg></button><div class="pl-head-title"><p class="eyebrow">Play</p><h1 id="playTitle" tabindex="-1">Story</h1></div></header><div class="st-loading" role="status">${brandMark('brand-loading')}</div></section>`;
+ if(playView==='story')return storyHomeMarkup({progress,econ,actsData:storyUi.data});
+ const data=storyUi.data[storyUi.act];if(!data){storyNeedAct(storyUi.act);return wait;}
+ if(playView==='storyAct')return storyActMarkup({act:storyUi.act,data,progress,econ});
+ const b=storyBattle();if(!b)return storyActMarkup({act:storyUi.act,data,progress,econ});
+ return storyBattleMarkup({act:storyUi.act,data,battle:b,progress,econ,ui:storyUi,ownDecks:storyOwnDecks(),avatarUrl:storyAvatar()});
+}
+const storyDeck=(deck,id)=>({id,name:deck.name,format:'Vintage',cards:deck.cards.map(r=>({name:r.name,qty:r.qty,...(r.id?{printingId:r.id}:{})}))});
+A.storyPlay=async({skipScene=false}={})=>{
+ const data=storyUi.data[storyUi.act],b=storyBattle();if(!data||!b)return;
+ if(playStarting||playerMatHost||practicePregame||T.game()!=='mtg')return;
+ if(!cloudInfo()?.user?.id)return toast('Sign in to play Story mode.');
+ const seat=storyUi.seat==='villain'&&battleCleared(storyProgress.snapshot().progress,b.id)?'villain':'hero',other=seat==='hero'?'villain':'hero';
+ const own=seat==='hero'&&storyUi.deck!=='loaner'?storyOwnDecks().find(d=>d.id===storyUi.deck&&d.fits.ok):null;
+ if(!skipScene){const lines=[...b.scene,...(seat==='villain'&&b.villainScene?b.villainScene:[])];await playScene({lines,cast:data.cast,leftWho:b.hero.who,rightWho:b.villain.who,avatarUrl:storyAvatar(),title:b.title});}
+ const base=playSetup.snapshot();
+ const setup={...base,playStyle:'practice',match:{...base.match,mode:'cpu',format:'Vintage',difficulty:STORY_LEVEL[b.difficulty]||'Medium',startingPlayer:'random',podSize:2},
+  selected:own?{id:own.id,name:own.name,format:'Vintage',cards:own.cards.map(r=>({name:r.name,qty:r.qty}))}:storyDeck(b[seat].deck,`story:${b.id}:${seat}`),opponent:storyDeck(b[other].deck,`story:${b.id}:${other}`),extraOpponents:[],story:{battle:b.id,seat}};
+ playStarting=true;let bubbles=null;
+ try{
+  for(const [id,href] of [['practiceTableStyles','experiments/phase-engine/match-table.css'],['forgeHostedTableStyles','play-forge-table.css']])if(!document.getElementById(id)){const css=document.createElement('link');css.id=id;css.rel='stylesheet';css.href=href;document.head.append(css);}
+  playerMatRoot=document.createElement('main');playerMatRoot.id='practicePlayerMat';playerMatRoot.classList.add('st-match');playerMatRoot.setAttribute('data-playmat',nextPlaymat());playerMatRoot.setAttribute('aria-label','Story battle');document.body.append(playerMatRoot);mountPlaymatScene(playerMatRoot);document.body.classList.add('practice-table-open');void lockPlayLandscape();const app=document.getElementById('app');if(app)app.inert=true;
+  const owner=cloudInfo().user?.id,generation=accountGeneration,current=()=>!accountLocked&&generation===accountGeneration&&owner===cloudInfo().user?.id;
+  let createForgePlayerMat,localClient;
+  try{({createForgePlayerMat}=await import('./play-forge-player-mat.js'));
+   if(b.slot!==8){const local=await import('./play-forge-local-client.js');if(local.localForgeAvailable()&&await local.localForgeCurrent())localClient=local.createForgeLocalClient;}}
+  catch(e){if(playerMatRoot)playModuleFailed(e);return;}
+  if(!current()||!playerMatRoot)return;
+  const root=playerMatRoot;bubbles=createStoryBubbles({root,battle:b,cast:data.cast,playerSide:seat,avatarUrl:storyAvatar()});
+  const cards=createForgeArtworkPreparation({selectionKey:key,isCurrent:current,
+   resolveNames:(names,{isCurrent})=>resolveNames(names,()=>{},false,isCurrent),
+   lookup:(name,id)=>id?S.state.printings?.[id]||null:meta(name),fetchPrinting:id=>api('/cards/'+encodeURIComponent(id))});
+  let paid=false;
+  const finished=async outcome=>{bubbles?.finish(outcome);if(outcome!=='win'||paid)return;paid=true;
+   const out=await storyProgress.claim({battle:b.id,seat,deck:own?'own':'loaner'});if(out?.state)playEcon.refresh();
+   const panel=root.querySelector('.play-match-result');if(panel){const note=document.createElement('p');note.className='st-result-note';const packs=(out?.paid||[]).filter(r=>/:clear$|:own$|replay/.test(r)).length;
+    note.innerHTML=`${starsRow(storyProgress.snapshot().progress.battles?.[b.id])}<span>${packs?`${packs} ${packs===1?'pack':'packs'} added to Packs`:out?.error?esc(out.error):'Battle won again'}</span>`;panel.querySelector('.play-result-actions')?.before(note);}
+   if(b.slot===8&&seat==='hero')setTimeout(()=>void playScene({lines:data.finale,cast:data.cast,leftWho:b.hero.who,rightWho:b.villain.who,avatarUrl:storyAvatar(),title:'Act '+data.act+' finale'}),2600);};
+  const back=()=>{bubbles?.destroy();bubbles=null;closePlayerMat();playView='storyAct';refreshPlayMenu();scrollTo({top:0});};
+  playerMatHost=createForgePlayerMat({root,readAccount:readPlayAccount,readSetup:()=>setup,getAccessToken:cloudAccessToken,createClient:localClient,
+   prepareArtwork:cards.prepare,lookup:cards.lookup,onClose:back,onHome:back,onRematch:()=>{back();void A.storyPlay({skipScene:true});},
+   onChange:state=>{bubbles?.update(state);if(state?.phase==='finished'&&state.outcome)void finished(state.outcome);},
+   onFinished:()=>{}});
+  try{await playerMatHost.start();}catch{/* The match screen presents the error and recovery action. */}
+ }finally{playStarting=false;}
+};
 function playDeckPreview(deck) {
   if(!deck||!Array.isArray(deck.cards)||!Array.isArray(deck.side||[])||(deck.format!==undefined&&typeof deck.format!=='string')||[...deck.cards,...(deck.side||[])].some(row=>!row||typeof row.name!=='string'||!Number.isSafeInteger(row.qty)||row.qty<1))return '<p class="note warn">This deck needs review in Decks before its cards can be displayed.</p>';
   return deckViewer('mtg',V.deckList(deck,{readOnly:true,unfiltered:true,preserveExactList:true,cardAction:'playInspectCard'}));
@@ -2145,6 +2218,8 @@ function renderPlayPage() {
   const device=syncDesktopPlayEntries('mtg');
   if(!device.eligible){const gate=playDeviceGate(device);return '<section class="empty play-device-guard"><span class="play-device-guard-icon" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><rect x="2.5" y="4" width="9" height="16" rx="1.6"/><path d="M13.5 5.4 20.2 3.6a.8.8 0 0 1 1 .8v15.2a.8.8 0 0 1-1 .8l-6.7-1.8z"/><path d="M5.5 12h3m-1.3-1.5L8.7 12l-1.5 1.5"/></svg></span><h1>'+esc(gate.title)+'</h1><p>'+esc(gate.line)+'</p><a class="btn" href="#decks">Open Decks</a><a class="btn ghost" href="#home">Home</a></section>';}
   econWake();
+  storyProgress.wake();
+  if(STORY_VIEWS.has(playView))return storyMarkup();
   if(ECON_VIEWS.has(playView)){const snap=playEcon.snapshot(),cards=snap.state?.cards||[];
    if(['collection','deck'].includes(playView))econFacts.wantCards(cards.map(c=>({o:c.o,id:c.p?.id})));
    if(playView==='collection'||econUi.set)econFacts.wantSets([...cards.flatMap(c=>c.s||[]),snap.state?.rewardSet?.code].filter(Boolean));
@@ -2156,8 +2231,8 @@ function renderPlayPage() {
   const inspected=state.playStyle!=='quick'&&state.match.mode==='cpu'?playSeatDeck(state,state.inspectedSeat):state.selected;
   if(state.match.mode==='cpu')warmForgeEngine(state);
   if(!playUpdateChecked){playUpdateChecked=true;queueMicrotask(updatePlayWhileIdle);}
-  if(playView==='home'){const st=playEcon.snapshot().state;econFacts.wantSets([...STORY_ACTS[0].sets.map(x=>x.code),...(st?.packs||[]).map(p=>p.set),...(st?.shop||[]).slice(0,6).map(x=>x.code),...(st?.cards||[]).flatMap(c=>c.s||[])]);}
-  return playMenuMarkup(state,{econ:playEcon.snapshot(),friendRoom:friendRoomView(),challengeCount:challenges.length,canShare:typeof navigator.share==='function',view:playView,inspectOpen:playInspectOpen,econFacts,engine:FORGE_PLAY_TEST_ENABLED?'forge':'phase',sourceEntries:sources,sourceArt,cpuDifficulties:readCpuOptions({engine:FORGE_PLAY_TEST_ENABLED?'forge':'phase'}),quickStatus,sourceStatus:currentPlaySources().statuses[state.browse.source+':'+state.match.format]||{},savedCopy:savedPlayCopy(inspected),savePending:playSaver.isSaving(inspected),matchReleaseReady:PLAY_MATCH_RELEASE_READY,avatarMarkup:profileAvatar(p.avatarArt,{display_name:p.displayName,username:p.username,avatar_url:p.avatarUrl}),deckTiles:tiles,deckPreview:playDeckPreview(inspected),importPreview:playDeckPreview(state.reviewDeck),selectedArt:V.deckArtwork(inspected),matchupArt:{player:V.deckArtwork(state.selected),opponent:V.deckArtwork(state.opponent),cpu3:state.podDecks?.cpu3?V.deckArtwork(state.podDecks.cpu3):'',cpu4:state.podDecks?.cpu4?V.deckArtwork(state.podDecks.cpu4):''}});
+  if(playView==='home'){const st=playEcon.snapshot().state;econFacts.wantSets([...storyHomeAct().packSets,...(st?.packs||[]).map(p=>p.set),...(st?.shop||[]).slice(0,6).map(x=>x.code),...(st?.cards||[]).flatMap(c=>c.s||[])]);}
+  return playMenuMarkup(state,{econ:playEcon.snapshot(),story:storyHomeProgress(),friendRoom:friendRoomView(),challengeCount:challenges.length,canShare:typeof navigator.share==='function',view:playView,inspectOpen:playInspectOpen,econFacts,engine:FORGE_PLAY_TEST_ENABLED?'forge':'phase',sourceEntries:sources,sourceArt,cpuDifficulties:readCpuOptions({engine:FORGE_PLAY_TEST_ENABLED?'forge':'phase'}),quickStatus,sourceStatus:currentPlaySources().statuses[state.browse.source+':'+state.match.format]||{},savedCopy:savedPlayCopy(inspected),savePending:playSaver.isSaving(inspected),matchReleaseReady:PLAY_MATCH_RELEASE_READY,avatarMarkup:profileAvatar(p.avatarArt,{display_name:p.displayName,username:p.username,avatar_url:p.avatarUrl}),deckTiles:tiles,deckPreview:playDeckPreview(inspected),importPreview:playDeckPreview(state.reviewDeck),selectedArt:V.deckArtwork(inspected),matchupArt:{player:V.deckArtwork(state.selected),opponent:V.deckArtwork(state.opponent),cpu3:state.podDecks?.cpu3?V.deckArtwork(state.podDecks.cpu3):'',cpu4:state.podDecks?.cpu4?V.deckArtwork(state.podDecks.cpu4):''}});
 }
 const refreshPlayMenu=()=>{if(S.ui.view==='play'&&T.game()==='mtg'){
   const scrolls=[...document.querySelectorAll('[data-play-scroll]')].map(n=>[n.dataset.playScroll,n.scrollTop]);
