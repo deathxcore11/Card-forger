@@ -1,8 +1,8 @@
 {
   "schema": 1,
-  "version": "4.3.64",
-  "commit": "9ba852808e32a2d11157fe68b5c061207e36c652",
-  "tree": "3a345d7c5eae444ce70b1dce076d90e012413662",
+  "version": "4.3.66",
+  "commit": "9ebe784b5e8fe53c81d1ee0268412f7fa40f8582",
+  "tree": "ac842beb10736d4b3a485aa3b0d065b850e46e32",
   "repository": "https://github.com/deathxcore11/Card-forger",
   "scope": "Explicit frontend build dependencies plus optional artwork input files. Not full backend repository.",
   "files": [
@@ -133,8 +133,8 @@
     },
     {
       "path": "app.js",
-      "bytes": 535279,
-      "sha256": "a41599f05b30dbf3a68525fe563c46df0716f64900b19b18ab4aa967f0578960"
+      "bytes": 538413,
+      "sha256": "7833b76e965f83bbef2243fa37535d70b0f45938e450e8804803f2c7c742514c"
     },
     {
       "path": "artwork.js",
@@ -3554,7 +3554,7 @@
     {
       "path": "config.js",
       "bytes": 601,
-      "sha256": "71de285fd12b7db1198bbd71f8c5c275b0a79c4d38d522e52a9dedd842afe44e"
+      "sha256": "6d258b47736d2200407cdf43bc592e60245395169404c61c44ae11e0b14c333d"
     },
     {
       "path": "core.js",
@@ -4457,6 +4457,11 @@
       "sha256": "190a6c13af7ceb94461b97c0a084eb0b6225f4a3aa9270e7584a7bd2f559a526"
     },
     {
+      "path": "data/story/act-10.json",
+      "bytes": 60489,
+      "sha256": "942538da6e9dae53bac40078aa1831fd2fca47073910eea33f0a0afa39b7cc9b"
+    },
+    {
       "path": "data/story/act-2.json",
       "bytes": 58446,
       "sha256": "bf3d4ac965241d74f648443df8a90570384837061a97dc7462894e99bb0bf760"
@@ -4477,9 +4482,34 @@
       "sha256": "9c8a77d3afbe5a0419571c6bbc5764c47a64a94f2a07e4a01c36991fd9d0ff27"
     },
     {
+      "path": "data/story/act-6.json",
+      "bytes": 61198,
+      "sha256": "861ca5d971ab15d9527828b761731f224e8aea77a578d69d2d3efb077c292d3a"
+    },
+    {
+      "path": "data/story/act-7.json",
+      "bytes": 65665,
+      "sha256": "3f870d28cb9f50f28068ff061564e77beedeac6f8df0b759ab88ef19d9c8b36e"
+    },
+    {
+      "path": "data/story/act-8.json",
+      "bytes": 63737,
+      "sha256": "e31c97a63c4ede7f0f3e730823b5429c9bcadb40e90bc74d201ab0667ae4f1c7"
+    },
+    {
+      "path": "data/story/act-9.json",
+      "bytes": 60874,
+      "sha256": "c95df6c1f696555d612f8b51a8129b49e7aa13eebadd260e819362aaba5671b0"
+    },
+    {
       "path": "data/story/pool-1.json",
       "bytes": 6890,
       "sha256": "af980c5f4c21e1193e1a4eef798b3f3006be09e35ba850d5945bb49bcededb08"
+    },
+    {
+      "path": "data/story/pool-10.json",
+      "bytes": 15976,
+      "sha256": "9c2818913994631aec6ea87685fc3713c8178f057fef3b1a4e6e466fc953a9ea"
     },
     {
       "path": "data/story/pool-2.json",
@@ -4500,6 +4530,26 @@
       "path": "data/story/pool-5.json",
       "bytes": 12646,
       "sha256": "694bb8705b41952ed78ec8d9a2910cbc08a46e38468185eaf8eeb33b28ac78cc"
+    },
+    {
+      "path": "data/story/pool-6.json",
+      "bytes": 14982,
+      "sha256": "4e86ce7c04771f633d50e92f88376181ce436c2bdea126f740128cfab315fd99"
+    },
+    {
+      "path": "data/story/pool-7.json",
+      "bytes": 10129,
+      "sha256": "358ebdb2d4009011d6d03dd4306483aeb38f94e1e3660018da6b5ba52e185e4d"
+    },
+    {
+      "path": "data/story/pool-8.json",
+      "bytes": 15576,
+      "sha256": "75be685130847b4721b9fea24f7c965b90b83b9703faacff17fafe1639d2ed49"
+    },
+    {
+      "path": "data/story/pool-9.json",
+      "bytes": 10351,
+      "sha256": "f04c745d764f3389908ef39119d48f8f2ffbbe47c17ce084edbe400220e323c4"
     },
     {
       "path": "deck-box.js",
@@ -4648,8 +4698,8 @@
     },
     {
       "path": "experiments/forge-proof/forge-table.mjs",
-      "bytes": 219868,
-      "sha256": "6b1e5946846796006c8d9e561020fc515cd9d8ed40f4ddd3b1588aff4b27bb61"
+      "bytes": 222144,
+      "sha256": "2802ff2c1d62974f841686384c1095b00a31dd3d3598f420d1f43c26edca9193"
     },
     {
       "path": "experiments/forge-proof/motion-kit.mjs",
@@ -5354,7 +5404,7 @@
     {
       "path": "package.json",
       "bytes": 12280,
-      "sha256": "b2e4893be2767f6b4e37b57672d0b888422055ce7b7d1020f1b33207309faa6c"
+      "sha256": "bff767f8a07d408993bb25c8e29ce09485255b5115766751a22d0958927a3071"
     },
     {
       "path": "pairing.js",
@@ -7793,8 +7843,8 @@
     },
     {
       "path": "play-econ-ui.js",
-      "bytes": 50681,
-      "sha256": "703101c863dd3681fd241df1623d76cb9111f7b388be5a430b1c15675e8a617d"
+      "bytes": 51314,
+      "sha256": "1447eb5af07c8910eace308e7b5bc4ec5a48b46d85d7ab416297e80b3af5a884"
     },
     {
       "path": "play-engine-names.js",
@@ -7858,8 +7908,8 @@
     },
     {
       "path": "play-menu.css",
-      "bytes": 145990,
-      "sha256": "35a7283d55f69577d474167062e6d0751ad3fdcae15a18788c02ab0bc39ccf0d"
+      "bytes": 147008,
+      "sha256": "bdfb6053ffc6fd497739811d4e43251a6702cf1210788012033d266a2a75b2bd"
     },
     {
       "path": "play-menu.js",
@@ -8093,8 +8143,8 @@
     },
     {
       "path": "release-record.js",
-      "bytes": 5700,
-      "sha256": "4d4635810c3fe84cdf39dc3b78525d0ffbfe447aaade6fb90b7d0a033ae42164"
+      "bytes": 6631,
+      "sha256": "9d8797427d8529f1d8d66f918aaf91941091b70978a95a74909fc10a1fb155ac"
     },
     {
       "path": "release-status.js",
@@ -8367,6 +8417,11 @@
       "sha256": "4f05a34b98fc2bb134bfe9b0ddf5d46132f695c2625c713ba82c4a0ffe24cb40"
     },
     {
+      "path": "scripts/story/acts-src/act-10.mjs",
+      "bytes": 21654,
+      "sha256": "262d59560751fa3889648b6d30e563e66e7d8dba50f79d49eb030fd9b4d492df"
+    },
+    {
       "path": "scripts/story/acts-src/act-2.mjs",
       "bytes": 14050,
       "sha256": "d9b299ba85f8eda220c6d193ef7da81a41e12ae1cf63d23ea60a81a8b467f51d"
@@ -8387,6 +8442,26 @@
       "sha256": "293715d32efdadf430e007b5792ee5ec8c6d443bc49492a0313e370e90e14d88"
     },
     {
+      "path": "scripts/story/acts-src/act-6.mjs",
+      "bytes": 20987,
+      "sha256": "0417344eb75aebce012d611ecc8d628c4e1e358970e724a46d58c78bdb324a62"
+    },
+    {
+      "path": "scripts/story/acts-src/act-7.mjs",
+      "bytes": 24907,
+      "sha256": "7b851e21422bcbed0551f6eb272f9e2a9b9c06285ce95b6d93ded73f46fb8dba"
+    },
+    {
+      "path": "scripts/story/acts-src/act-8.mjs",
+      "bytes": 23240,
+      "sha256": "0a87a9eddb41a718f53794f069c00757330920239a369d2344ef742277a9a04b"
+    },
+    {
+      "path": "scripts/story/acts-src/act-9.mjs",
+      "bytes": 21582,
+      "sha256": "f71d9dcad4044ecaba1ece5b77617a465f10b15804da6b9440a90d03856fcfe1"
+    },
+    {
       "path": "scripts/story/build-act.mjs",
       "bytes": 5428,
       "sha256": "f1d906f199345ac0ea1d12062c9e802a60b6cba7db42b67bf9f3795e3d828031"
@@ -8405,6 +8480,11 @@
       "path": "scripts/story/export-pool.mjs",
       "bytes": 1860,
       "sha256": "424f0184dca5cf273daf460128994b24e8a86fe699628167b87e3a356509b5df"
+    },
+    {
+      "path": "scripts/story/render-script.mjs",
+      "bytes": 2190,
+      "sha256": "45cbfea8a0ac56d412aad54a3c816ae84decd5650b130979d830704ebcda245d"
     },
     {
       "path": "scripts/story/sim/StorySim.java",
@@ -8523,8 +8603,8 @@
     },
     {
       "path": "story-acts.js",
-      "bytes": 2577,
-      "sha256": "057bfc969e92162caabf7aaf576c774537dd27ab869fc462cf6c588fcaee1a17"
+      "bytes": 4604,
+      "sha256": "d92c24a4675adac83ec01772d4937260f15ebee5a9ed8c6b105a6d3b6e9e59df"
     },
     {
       "path": "story-client.js",
@@ -8533,8 +8613,8 @@
     },
     {
       "path": "story-deeds.js",
-      "bytes": 4640,
-      "sha256": "ba2237e950377fc892410fb865759f5891efd3236e4a4b64dabe00d0210f59bc"
+      "bytes": 7232,
+      "sha256": "477e5f21a5c6d193b7f96c45f956c8f46d87d0dfc1f2d771fe96d25b1cb1f0a1"
     },
     {
       "path": "story-mode.css",
@@ -8543,8 +8623,8 @@
     },
     {
       "path": "story-ui.js",
-      "bytes": 28299,
-      "sha256": "96f3fad83964009a90569ab588a2c5bdc7ae4cf1254213a97c77de553b9218bf"
+      "bytes": 30726,
+      "sha256": "c1a5694884bd8db18fef8c2b70a99bdb9bde9e6079a93f0996e6f576fd956e2b"
     },
     {
       "path": "strategy-risk.js",
@@ -8598,8 +8678,8 @@
     },
     {
       "path": "sw.js",
-      "bytes": 16301,
-      "sha256": "796675196a344edcfe6f9404348b9df1904f01e84ccf4a1d342a2ccb97ba3427"
+      "bytes": 16303,
+      "sha256": "bb459508678008bc316c290a8619ddb9c8f0e5caa187f5b9af24b7699f4ce92a"
     },
     {
       "path": "sync-merge.js",
@@ -8730,6 +8810,11 @@
       "path": "test-home-meta-value.mjs",
       "bytes": 36133,
       "sha256": "e6c49e8fcf23722caca999e233f5a65976c50a4443bb8132b1f76284a46ae8f7"
+    },
+    {
+      "path": "test-home-overview.mjs",
+      "bytes": 7217,
+      "sha256": "91088e6e76d85ae0262528a4d92c1bdd95d6e8a0bb9f9254fb7277d6b0683f0a"
     },
     {
       "path": "test-import-pricing-proven-printings.mjs",
@@ -10533,8 +10618,8 @@
     },
     {
       "path": "views.js",
-      "bytes": 203872,
-      "sha256": "c8626753c0732d58895d4569c084ecd160c253a7a776813783aab9fb59c27d28"
+      "bytes": 205723,
+      "sha256": "6d2e44f967ee4eae824915a044ac21829d5dc8b5a2d1563e6d2d61ba32cd463a"
     },
     {
       "path": "wiki-article-content.js",

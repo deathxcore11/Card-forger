@@ -1,7 +1,7 @@
 {
   "source": "https://github.com/deathxcore11/Card-forger",
-  "commit": "9ba852808e32a2d11157fe68b5c061207e36c652",
-  "sourceVersion": "4.3.64",
+  "commit": "9ebe784b5e8fe53c81d1ee0268412f7fa40f8582",
+  "sourceVersion": "4.3.66",
   "appId": "com.cardstashy.app",
   "releaseReady": false,
   "network": "enabled-exact-hosts",
@@ -597,15 +597,25 @@
     "data/mtg-boosters/zen.json",
     "data/mtg-boosters/znr.json",
     "data/story/act-1.json",
+    "data/story/act-10.json",
     "data/story/act-2.json",
     "data/story/act-3.json",
     "data/story/act-4.json",
     "data/story/act-5.json",
+    "data/story/act-6.json",
+    "data/story/act-7.json",
+    "data/story/act-8.json",
+    "data/story/act-9.json",
     "data/story/pool-1.json",
+    "data/story/pool-10.json",
     "data/story/pool-2.json",
     "data/story/pool-3.json",
     "data/story/pool-4.json",
     "data/story/pool-5.json",
+    "data/story/pool-6.json",
+    "data/story/pool-7.json",
+    "data/story/pool-8.json",
+    "data/story/pool-9.json",
     "deck-box.js",
     "deck-construction.js",
     "deck-experience.js",
@@ -1508,8 +1518,8 @@
     },
     {
       "path": "app.js",
-      "bytes": 540907,
-      "sha256": "a83478f27a1be5bed63e2ae9372591a9ea11dcf06f6e2d839926bbd2ee110c23"
+      "bytes": 544041,
+      "sha256": "cbeea06b592cd6d66de811eccc6a5f4780cf37eb2799f079123a48e3e3db39e9"
     },
     {
       "path": "artwork.js",
@@ -3429,7 +3439,7 @@
     {
       "path": "config.js",
       "bytes": 629,
-      "sha256": "886b13a0bb748175045cc73f96f01acdb6fe404b6f082744808aded4db3d8568"
+      "sha256": "e712ae99c06e9048b5e1cacde2bdc8c14e8e9ba85bd8539736f892f954b50970"
     },
     {
       "path": "core.js",
@@ -4327,6 +4337,11 @@
       "sha256": "190a6c13af7ceb94461b97c0a084eb0b6225f4a3aa9270e7584a7bd2f559a526"
     },
     {
+      "path": "data/story/act-10.json",
+      "bytes": 60489,
+      "sha256": "942538da6e9dae53bac40078aa1831fd2fca47073910eea33f0a0afa39b7cc9b"
+    },
+    {
       "path": "data/story/act-2.json",
       "bytes": 58446,
       "sha256": "bf3d4ac965241d74f648443df8a90570384837061a97dc7462894e99bb0bf760"
@@ -4347,9 +4362,34 @@
       "sha256": "9c8a77d3afbe5a0419571c6bbc5764c47a64a94f2a07e4a01c36991fd9d0ff27"
     },
     {
+      "path": "data/story/act-6.json",
+      "bytes": 61198,
+      "sha256": "861ca5d971ab15d9527828b761731f224e8aea77a578d69d2d3efb077c292d3a"
+    },
+    {
+      "path": "data/story/act-7.json",
+      "bytes": 65665,
+      "sha256": "3f870d28cb9f50f28068ff061564e77beedeac6f8df0b759ab88ef19d9c8b36e"
+    },
+    {
+      "path": "data/story/act-8.json",
+      "bytes": 63737,
+      "sha256": "e31c97a63c4ede7f0f3e730823b5429c9bcadb40e90bc74d201ab0667ae4f1c7"
+    },
+    {
+      "path": "data/story/act-9.json",
+      "bytes": 60874,
+      "sha256": "c95df6c1f696555d612f8b51a8129b49e7aa13eebadd260e819362aaba5671b0"
+    },
+    {
       "path": "data/story/pool-1.json",
       "bytes": 6890,
       "sha256": "af980c5f4c21e1193e1a4eef798b3f3006be09e35ba850d5945bb49bcededb08"
+    },
+    {
+      "path": "data/story/pool-10.json",
+      "bytes": 15976,
+      "sha256": "9c2818913994631aec6ea87685fc3713c8178f057fef3b1a4e6e466fc953a9ea"
     },
     {
       "path": "data/story/pool-2.json",
@@ -4370,6 +4410,26 @@
       "path": "data/story/pool-5.json",
       "bytes": 12646,
       "sha256": "694bb8705b41952ed78ec8d9a2910cbc08a46e38468185eaf8eeb33b28ac78cc"
+    },
+    {
+      "path": "data/story/pool-6.json",
+      "bytes": 14982,
+      "sha256": "4e86ce7c04771f633d50e92f88376181ce436c2bdea126f740128cfab315fd99"
+    },
+    {
+      "path": "data/story/pool-7.json",
+      "bytes": 10129,
+      "sha256": "358ebdb2d4009011d6d03dd4306483aeb38f94e1e3660018da6b5ba52e185e4d"
+    },
+    {
+      "path": "data/story/pool-8.json",
+      "bytes": 15576,
+      "sha256": "75be685130847b4721b9fea24f7c965b90b83b9703faacff17fafe1639d2ed49"
+    },
+    {
+      "path": "data/story/pool-9.json",
+      "bytes": 10351,
+      "sha256": "f04c745d764f3389908ef39119d48f8f2ffbbe47c17ce084edbe400220e323c4"
     },
     {
       "path": "deck-box.js",
@@ -4488,8 +4548,8 @@
     },
     {
       "path": "experiments/forge-proof/forge-table.mjs",
-      "bytes": 219868,
-      "sha256": "6b1e5946846796006c8d9e561020fc515cd9d8ed40f4ddd3b1588aff4b27bb61"
+      "bytes": 222144,
+      "sha256": "2802ff2c1d62974f841686384c1095b00a31dd3d3598f420d1f43c26edca9193"
     },
     {
       "path": "experiments/forge-proof/motion-kit.mjs",
@@ -7488,8 +7548,8 @@
     },
     {
       "path": "play-econ-ui.js",
-      "bytes": 50681,
-      "sha256": "703101c863dd3681fd241df1623d76cb9111f7b388be5a430b1c15675e8a617d"
+      "bytes": 51314,
+      "sha256": "1447eb5af07c8910eace308e7b5bc4ec5a48b46d85d7ab416297e80b3af5a884"
     },
     {
       "path": "play-engine-names.js",
@@ -7553,8 +7613,8 @@
     },
     {
       "path": "play-menu.css",
-      "bytes": 146230,
-      "sha256": "f16667e700df25dd32a9e9d859bfee8b992b56b2c11991a375efacd6e1b6ea2c"
+      "bytes": 147248,
+      "sha256": "4dc8db0079980f09151d320b14415c10ab183d3f617927aba99c3355b8c68517"
     },
     {
       "path": "play-menu.js",
@@ -7788,8 +7848,8 @@
     },
     {
       "path": "release-record.js",
-      "bytes": 5700,
-      "sha256": "4d4635810c3fe84cdf39dc3b78525d0ffbfe447aaade6fb90b7d0a033ae42164"
+      "bytes": 6631,
+      "sha256": "9d8797427d8529f1d8d66f918aaf91941091b70978a95a74909fc10a1fb155ac"
     },
     {
       "path": "release-status.js",
@@ -8098,8 +8158,8 @@
     },
     {
       "path": "story-acts.js",
-      "bytes": 2577,
-      "sha256": "057bfc969e92162caabf7aaf576c774537dd27ab869fc462cf6c588fcaee1a17"
+      "bytes": 4604,
+      "sha256": "d92c24a4675adac83ec01772d4937260f15ebee5a9ed8c6b105a6d3b6e9e59df"
     },
     {
       "path": "story-client.js",
@@ -8108,8 +8168,8 @@
     },
     {
       "path": "story-deeds.js",
-      "bytes": 4640,
-      "sha256": "ba2237e950377fc892410fb865759f5891efd3236e4a4b64dabe00d0210f59bc"
+      "bytes": 7232,
+      "sha256": "477e5f21a5c6d193b7f96c45f956c8f46d87d0dfc1f2d771fe96d25b1cb1f0a1"
     },
     {
       "path": "story-mode.css",
@@ -8118,8 +8178,8 @@
     },
     {
       "path": "story-ui.js",
-      "bytes": 28299,
-      "sha256": "96f3fad83964009a90569ab588a2c5bdc7ae4cf1254213a97c77de553b9218bf"
+      "bytes": 30726,
+      "sha256": "c1a5694884bd8db18fef8c2b70a99bdb9bde9e6079a93f0996e6f576fd956e2b"
     },
     {
       "path": "strategy-risk.js",
@@ -8318,8 +8378,8 @@
     },
     {
       "path": "views.js",
-      "bytes": 204617,
-      "sha256": "ced2cdf233a69e380fd99fb62775bd766c7bde583616aa4729a82ea94f1a326c"
+      "bytes": 206468,
+      "sha256": "9ac6e8ec1cf34a1858eb81db335989242393bb78b106083664555043be59020d"
     },
     {
       "path": "wiki-card-handoff.js",
