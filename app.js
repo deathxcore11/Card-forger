@@ -2212,7 +2212,7 @@ A.storyPlay=async({skipScene=false}={})=>{
   catch(e){if(playerMatRoot)playModuleFailed(e);return;}
   if(!current()||!playerMatRoot)return;
   const root=playerMatRoot;
-  if(!skipScene){const lines=[...b.scene,...(seat==='villain'&&b.villainScene?b.villainScene:[])];void playScene({lines,cast:data.cast,leftWho:b.hero.who,rightWho:b.villain.who,avatarUrl:storyAvatar(),title:b.title});}
+  if(!skipScene){const lines=[...(b.slot===1&&seat==='hero'&&data.intro&&!battleCleared(storyProgress.snapshot().progress,b.id)?data.intro:[]),...b.scene,...(seat==='villain'&&b.villainScene?b.villainScene:[])];void playScene({lines,cast:data.cast,leftWho:b.hero.who,rightWho:b.villain.who,avatarUrl:storyAvatar(),title:b.title});}
   bubbles=createStoryBubbles({root,battle:b,cast:data.cast,playerSide:seat,avatarUrl:storyAvatar()});
   const cards=createForgeArtworkPreparation({selectionKey:key,isCurrent:current,
    resolveNames:(names,{isCurrent})=>resolveNames(names,()=>{},false,isCurrent),
@@ -2222,7 +2222,8 @@ A.storyPlay=async({skipScene=false}={})=>{
    const out=await storyProgress.claim({battle:b.id,seat,deck:own?'own':'loaner'});if(out?.state)playEcon.refresh();
    const panel=root.querySelector('.play-match-result');if(panel){const note=document.createElement('p');note.className='st-result-note';const got=out?.paid||[],won=!own&&got.includes(`story:${b.id}:${seat==='villain'?'villain':'loaner'}`),rw=b.reward?.[seat]||{};
     note.innerHTML=`${starsRow(storyProgress.snapshot().progress.battles?.[b.id])}<span>${won?rewardText(rw,b.rewardSet)+' added':out?.error?esc(out.error):own?'Your own deck earns XP. Win with the Story deck for the reward.':'Reward already claimed'}</span>`;panel.querySelector('.play-result-actions')?.before(note);}
-   if(b.slot===8&&seat==='hero')setTimeout(()=>void playScene({lines:data.finale,cast:data.cast,leftWho:b.hero.who,rightWho:b.villain.who,avatarUrl:storyAvatar(),title:'Act '+data.act+' finale'}),2600);};
+   const ending=b.slot===8?(seat==='hero'?data.finale:data.villainFinale):b.after;
+   if(ending?.length)setTimeout(()=>void playScene({lines:ending,cast:data.cast,leftWho:b.hero.who,rightWho:b.villain.who,avatarUrl:storyAvatar(),title:b.slot===8?'Act '+data.act+' finale':b.title}),2600);};
   const back=()=>{bubbles?.destroy();bubbles=null;closePlayerMat();playView='storyAct';refreshPlayMenu();scrollTo({top:0});};
   playerMatHost=createForgePlayerMat({root,readAccount:readPlayAccount,readSetup:()=>setup,getAccessToken:cloudAccessToken,createClient:localClient,
    prepareArtwork:cards.prepare,lookup:cards.lookup,onClose:back,onHome:back,onRematch:()=>{back();void A.storyPlay({skipScene:true});},
