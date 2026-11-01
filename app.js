@@ -5860,10 +5860,17 @@ async function dbSearch(next = false) {
           if (!current()) return;
           note = `No card numbered ${spec.collector.number} in set ${spec.collector.set.toUpperCase()}, so these are cards named “${spec.typed}”.`;
         } else {
-        const words = spec.term;
-        if (spec.syntax || !words.includes(" ") || !/didn.t match any cards|no cards found/i.test(e.message)) throw e;
-        d = await run(`o:"${words.replace(/"/g, "")}"`);
-        note = `No card names match “${words}”, so these are cards whose text says it.`;
+        const words = spec.term, none = err => /didn.t match any cards|no cards found/i.test(err?.message || "");
+        if (spec.syntax || !none(e)) throw e;
+        // No card is called that: the words may be an artist's name, then words from the cards' text.
+        d = await run(`a:"${words.replace(/"/g, "")}"`).catch(err => { if (none(err)) return null; throw err; });
+        if (!current()) return;
+        if (d) note = `No card names match “${words}”, so these are cards illustrated by ${words}.`;
+        else {
+          if (!words.includes(" ")) throw e;
+          d = await run(`o:"${words.replace(/"/g, "")}"`);
+          note = `No card names match “${words}”, so these are cards whose text says it.`;
+        }
         }
       }
     }

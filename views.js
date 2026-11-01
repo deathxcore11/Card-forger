@@ -1,5 +1,5 @@
 import {deckViewer,deckCardAttrs,deckShell} from './deck-viewer.js';
-import {discoverCardMarkup} from './card-discovery.js';
+import {discoverCardMarkup,artistCredit} from './card-discovery.js';
 import {versionsMarkup,releaseDot} from './release-status.js';
 import {mtgWikiPageMarkup,mtgWikiCredit} from './mtg-wiki-ui.js';
 import {setAtmosphere,packButton} from './set-experience.js';
@@ -385,7 +385,7 @@ export function cardSheet(c, ctx = {}) {
       <p class="eyebrow effect-label">Spellcraft · Rules text</p>${faces.length > 1 ? `<div class="row between"><b>${esc(f.name)}</b>${manaCost(f)}</div><p class="type-line">${esc(f.type_line || "")}</p>` : ""}
       ${f.oracle_text ? `<div class="oracle">${effectText("mtg",f.oracle_text)}</div>` : ""}
       ${f.flavor_text ? `<blockquote class="flavor"><small class="eyebrow">Flavour</small>${esc(f.flavor_text)}</blockquote>` : ""}
-      <div class="row between small muted">${f.power !== undefined && f.power !== null ? `<span class="pt">${esc(f.power)}/${esc(f.toughness)}</span>` : shown.loyalty && !n ? `<span class="pt">Loyalty ${esc(shown.loyalty)}</span>` : "<span></span>"}${f.artist || shown.artist ? `<span>🖌 ${esc(f.artist || shown.artist)}</span>` : ""}</div>
+      <div class="row between small muted">${f.power !== undefined && f.power !== null ? `<span class="pt">${esc(f.power)}/${esc(f.toughness)}</span>` : shown.loyalty && !n ? `<span class="pt">Loyalty ${esc(shown.loyalty)}</span>` : "<span></span>"}${artistCredit("mtg", f.artist || shown.artist)}</div>
     </section>`,
     )
     .join("")}

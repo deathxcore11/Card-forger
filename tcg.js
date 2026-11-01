@@ -1,4 +1,4 @@
-import {discoverCardMarkup} from './card-discovery.js';
+import {discoverCardMarkup,artistCredit} from './card-discovery.js';
 import {setAtmosphere,packButton} from './set-experience.js';
 import {setYgoReleaseLookup} from './ygo-foil-recipes.js';
 import {normalizeSeeds} from './deck-seeds.js';
@@ -681,7 +681,7 @@ export function normalizeTcgSearch(g, U) {
   const normalized = (g === "ygo" ? normalizeYgoSearch : normalizePtcgSearch)({ ...U.f, sort: U.sort });
   U.sort = normalized.sort || defaultSearchSort(g);
   delete normalized.sort;
-  const allowed = g === "ygo" ? ["type", "attribute", "race", "level", "format", "set", "setName", "archetype", "text"] : ["category", "type", "rarity", "stage", "hp", "format", "set", "setName"];
+  const allowed = g === "ygo" ? ["type", "attribute", "race", "level", "format", "set", "setName", "archetype", "text"] : ["category", "type", "rarity", "stage", "hp", "format", "set", "setName", "illustrator"];
   U.f = Object.fromEntries(Object.entries(normalized).filter(([key, value]) => allowed.includes(key) && typeof value === "string" && value));
   const choices = g === "ygo" ? {type:YGO_TYPES, attribute:YGO_ATTRIBUTES} : {category:["Pokemon", "Trainer", "Energy"], type:PTCG_TYPES, stage:PTCG_STAGES.map(([key]) => key), rarity:PTCG_RARITIES};
   for (const [key, values] of Object.entries(choices)) if (U.f[key] && !values.includes(U.f[key])) delete U.f[key];
@@ -737,7 +737,7 @@ export function tcgSearch() {
   const L = (list, v) => (list.find(x => x[0] === v) || [v, v])[1],
     formatLabel = id => g === "ygo" ? ygoSearchFormatLabel(formatOf(g, id)) : "Legal in " + formatOf(g, id).name,
     chips = [
-      ...Object.entries(U.f).filter(([k,v]) => v && k !== "setName").map(([k,v]) => [k, k === "set" ? `Set: ${U.f.setName || v}` : k === "format" ? formatLabel(v) : k === "hp" ? `HP ${v}+` : k === "level" ? `Level ${v}` : k === "stage" ? (PTCG_STAGES.find(x => x[0] === v) || [v,v])[1] : k === "category" ? (v === "Pokemon" ? "Pokémon" : v) : k === "archetype" ? `Archetype: ${v}` : v]),
+      ...Object.entries(U.f).filter(([k,v]) => v && k !== "setName").map(([k,v]) => [k, k === "set" ? `Set: ${U.f.setName || v}` : k === "format" ? formatLabel(v) : k === "hp" ? `HP ${v}+` : k === "level" ? `Level ${v}` : k === "stage" ? (PTCG_STAGES.find(x => x[0] === v) || [v,v])[1] : k === "category" ? (v === "Pokemon" ? "Pokémon" : v) : k === "archetype" ? `Archetype: ${v}` : k === "illustrator" ? `Artist: ${v}` : v]),
       ...(U.maxPrice !== "" ? [["maxPrice", `At most ${usd(Number(U.maxPrice))}`]] : []),
       ...(U.own ? [["own", U.own === "owned" ? "Owned" : "Not owned"]] : []),
       ...(U.sort !== defaultSearchSort(g) ? [["sort", `Sort: ${L(sorts, U.sort)}`]] : []),
@@ -809,7 +809,7 @@ export function tcgCardSheet(c, sctx = {}) {
     heroFallback = g === "ygo" ? c.artDirect || "" : "";
   const ownedLots = c.setContext ? gs(g).collection.filter(e => e === savedUnverifiedLot || ownedInSet(g,c,{id:c.setContext.releaseId},[e],g==='ygo'?currentYgoCatalogue():ui(g).sets.list)>0) : gs(g).collection;
   const readableText = `<div class="cs-readable">${discoverCardMarkup(g,c)}
-  ${g === "ptcg" && !c.brief ? `<div data-rule-card-context="${esc(JSON.stringify(ruleCardContext(g,c)))}">${pokemonText(c)}</div>` : c.text ? `<section class="cd-text effect-card ygo" data-rule-card-context="${esc(JSON.stringify(ruleCardContext(g,c)))}"><p class="eyebrow effect-label">${c.frame==='normal'?'Lore · Flavour text':'Chaincraft · Card effect'}</p>${c.frame==='normal'?`<blockquote class="flavor">${esc(c.text)}</blockquote>`:`<div class="oracle">${effectText(g,c.text)}</div>`}${c.illustrator ? `<div class="small muted right">🖌 ${esc(c.illustrator)}</div>` : ""}</section>` : ""}
+  ${g === "ptcg" && !c.brief ? `<div data-rule-card-context="${esc(JSON.stringify(ruleCardContext(g,c)))}">${pokemonText(c)}</div>` : c.text ? `<section class="cd-text effect-card ygo" data-rule-card-context="${esc(JSON.stringify(ruleCardContext(g,c)))}"><p class="eyebrow effect-label">${c.frame==='normal'?'Lore · Flavour text':'Chaincraft · Card effect'}</p>${c.frame==='normal'?`<blockquote class="flavor">${esc(c.text)}</blockquote>`:`<div class="oracle">${effectText(g,c.text)}</div>`}${c.illustrator ? `<div class="small muted right">${artistCredit("ptcg", c.illustrator)}</div>` : ""}</section>` : ""}
   <div class="card-rules-entry"><button type="button" class="chip" data-act="learnGame" data-game="${g}">Interactive rules · how to play →</button></div>
   </div>`;
   const artworkGallery = g === "ygo" && c.artworks?.length ? `<section class="variant-gallery"><h3>Available artwork</h3><p class="foot">These are the source’s artwork scans. Set code, rarity and edition are not mapped to individual images.</p><div class="artwork-grid">${c.artworks.map((a,i) => `<div class="artwork-item">${variantArtThumb(c,a,`data-art="${esc(a.id)}"`)}<span>${esc(a.label)} ${i+1}</span></div>`).join("")}</div></section>` : "";
@@ -911,7 +911,7 @@ function pokemonText(c) {
     ${!c.attacks?.length && !c.abilities?.length && !c.effect && c.text ? `<div class="oracle">${effectText(g,c.text)}</div>` : ""}
     ${strip.length ? `<div class="pk-strip">${strip.join("")}</div>` : ""}
     ${c.flavor ? `<blockquote class="flavor"><small class="eyebrow">Flavour</small>${esc(c.flavor)}</blockquote>` : ""}
-    ${c.illustrator ? `<div class="small muted right">🖌 ${esc(c.illustrator)}</div>` : ""}
+    ${c.illustrator ? `<div class="small muted right">${artistCredit("ptcg", c.illustrator)}</div>` : ""}
   </section>`;
 }
 const tabs = detailTabs;
@@ -2227,8 +2227,18 @@ export function registerTcg(c) {
     const current = () => U.generation === generation && U.request === request && game() === G && navigationCurrent(screen);
     renderSearch(G);
     try {
-      const r = await SOURCES[G].search({ ...spec.f, q: spec.q, sort: spec.sort, page, ...(append && U.providerPaging ? {paging:{...U.providerPaging}} : {}) });
+      let r = await SOURCES[G].search({ ...spec.f, q: spec.q, sort: spec.sort, page, ...(append && U.providerPaging ? {paging:{...U.providerPaging}} : {}) });
       if (!current()) return;
+      // No Pokémon card is called that: the words may be an artist's name. The search becomes an
+      // Artist filter, so its chip shows what is searched and Load more keeps paging the same list.
+      if (G === "ptcg" && !append && spec.q && !spec.f.illustrator && Array.isArray(r?.cards) && !r.cards.length) {
+        const f = Object.freeze({ ...spec.f, illustrator: spec.q }), byArtist = await SOURCES[G].search({ ...f, q: "", sort: spec.sort, page: 0 });
+        if (!current()) return;
+        if (byArtist?.cards?.length) {
+          r = byArtist; U.q = ""; U.f = { ...f }; U.submitted = Object.freeze({ q: "", f, sort: spec.sort });
+          U.discoveryNote = `No card names match “${spec.q}”, so these are cards illustrated by ${spec.q}.`;
+        }
+      }
       if (!Array.isArray(r?.cards)) throw Error("The card database returned an invalid result. Please retry.");
       const seen = new Set(U.results.map(c => String(c.id))), fresh = [];
       for (const card of r.cards) {

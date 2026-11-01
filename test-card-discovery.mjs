@@ -1,7 +1,7 @@
 import assert from 'node:assert/strict';
 import fs from 'node:fs';
 import {gunzipSync} from 'node:zlib';
-import {cardDiscoverySpec,discoveryButton,discoverCardMarkup} from './card-discovery.js';
+import {cardDiscoverySpec,discoveryButton,discoverCardMarkup,artistCredit} from './card-discovery.js';
 import {keywordHelp,ruleTerms,ruleText,ruleCardContext} from './rule-dex.js';
 import {resolveRuleReference} from './rule-reference.js';
 import {EXTRA_RULES} from './rule-extra.js';
@@ -36,6 +36,15 @@ assert.match(ruleText('mtg','Backup 1, prowess, and cycling {2}.'),/data-rule="b
 assert.match(ruleText('ygo','Perform a Synchro Summon.'),/data-rule="Synchro Summon"/);
 assert.match(ruleText('ptcg','Stage 2 Pokémon'),/data-rule="Stage 2"/);
 assert.doesNotMatch(ruleText('mtg','"Flying Fox" is a quoted card name.'),/data-act/);
+// Artist credits: Magic searches Scryfall by artist, Pokémon filters TCGdex by illustrator, Yu-Gi-Oh! has no artist data.
+assert.deepEqual(cardDiscoverySpec('mtg','artist','Milivoj Ćeran'),{game:'mtg',q:'a:"Milivoj Ćeran"',filters:{},label:'Cards illustrated by Milivoj Ćeran'});
+assert.deepEqual(cardDiscoverySpec('ptcg','artist','Megumi Higuchi'),{game:'ptcg',q:'',filters:{illustrator:'Megumi Higuchi'},label:'Cards illustrated by Megumi Higuchi'});
+assert.equal(cardDiscoverySpec('ygo','artist','Kazuki Takahashi'),null);
+assert.equal(cardDiscoverySpec('mtg','artist','Bad "quote"'),null);
+const credit=artistCredit('mtg','Jason Felix & Dave Kendall');
+assert.equal((credit.match(/data-discovery-kind="artist"/g)||[]).length,2);
+assert.match(credit,/data-discovery-value="Jason Felix"/);assert.match(credit,/data-discovery-value="Dave Kendall"/);
+assert.equal(artistCredit('ptcg',''),'');
 console.log('PASS: typed per-game discovery, combined Legendary Creature, multiword types, exact archetype/race/attribute, honest loaded-only Pokémon abilities and every additional rules source.');
 // Exercise the actual app action; no reimplementation of its dispatch logic.
 const app=fs.readFileSync('app.js','utf8'),start=app.indexOf('A.ruleCards ='),end=app.indexOf('\n};',start)+3;
