@@ -1,8 +1,8 @@
 {
   "schema": 1,
-  "version": "4.3.52",
-  "commit": "1659111c5036e7c0bdf0d2471d54d7ea04e66040",
-  "tree": "39c2d0ea36be3734239c245612d4b7934c80d3e1",
+  "version": "4.3.53",
+  "commit": "e7a9609135ac4c634140fbcca2d952adba3e187f",
+  "tree": "ff401ffa2673e7b0219488366bc91e239a530e9b",
   "repository": "https://github.com/deathxcore11/Card-forger",
   "scope": "Explicit frontend build dependencies plus optional artwork input files. Not full backend repository.",
   "files": [
@@ -118,8 +118,8 @@
     },
     {
       "path": "app.js",
-      "bytes": 462118,
-      "sha256": "8de370990a591479b283d875d9c749a957504374fbb61bea9127f590f1b5ce9e"
+      "bytes": 472164,
+      "sha256": "229600c416da78b9f51447caac5506cec23a97722c509ba3ee5cf226ce98b856"
     },
     {
       "path": "artwork.js",
@@ -3179,7 +3179,7 @@
     {
       "path": "config.js",
       "bytes": 601,
-      "sha256": "329bfb2c45634ae5411a2fa4273215c6397c9ee9e48c26dc294776c151e1cf8b"
+      "sha256": "b700202a63853aaae906be99e71168e70202321ac2e34aac6221e5bf994c1b4a"
     },
     {
       "path": "core.js",
@@ -4128,8 +4128,8 @@
     },
     {
       "path": "deck-viewer.css",
-      "bytes": 27782,
-      "sha256": "0e3ca03e4c392243086e2cfea657066a7a51c8b70291b0796f51483cb8ee3b75"
+      "bytes": 30321,
+      "sha256": "3053c52de5bdf9450011918f16fc0745069c2c25596e4cb8e5e1bf69002faa15"
     },
     {
       "path": "deck-viewer.js",
@@ -4147,6 +4147,16 @@
       "sha256": "829efac88f6fda7c7ec860cb8fd3c97073bbdb7d34b5baa6705c744d25af52c8"
     },
     {
+      "path": "deploy/forge-host/SOURCE-SHA256.json",
+      "bytes": 7728,
+      "sha256": "e3b207e0dcb4ab953a478b3c111fb308d5cd421f8c7a99ca9f012534bfea454e"
+    },
+    {
+      "path": "deploy/forge-host/src/app-route.mjs",
+      "bytes": 1177,
+      "sha256": "439eee09590e01e394819ba759f194f76a82cca52914dacfc79ac0b26de942ae"
+    },
+    {
       "path": "desktop-play.js",
       "bytes": 11207,
       "sha256": "64ea81c07605a111a3034d09edba08291d56290865b7eba587ae153028882fbe"
@@ -4155,6 +4165,16 @@
       "path": "dialog.js",
       "bytes": 2818,
       "sha256": "d3bce22894062ed0e173b390253f0638031a638318c4a66c548c57ba8178b167"
+    },
+    {
+      "path": "docs/handoff/friend-matches-host-on-9109941.patch",
+      "bytes": 157386,
+      "sha256": "813fbb547be26dd5e2cdfc606371ea589395fd670d8cc4f8b8e3c0be4d37681a"
+    },
+    {
+      "path": "docs/handoff/friend-matches.md",
+      "bytes": 2178,
+      "sha256": "dd42dfbcf979ea31252ffa458801451be8213b76ee4a604897fadc6abaa67cbc"
     },
     {
       "path": "emblems.js",
@@ -4863,8 +4883,8 @@
     },
     {
       "path": "package.json",
-      "bytes": 12049,
-      "sha256": "b7113fd84e9c13ac7458e6c448f8add68006dd637601359f671f2ce4eb16721b"
+      "bytes": 12090,
+      "sha256": "02ada19e5143c9fdaeb09103bebcaab54fb25acb3c603eae695ac26d88124e14"
     },
     {
       "path": "pairing.js",
@@ -7063,8 +7083,8 @@
     },
     {
       "path": "planeswalk-src/cast.css",
-      "bytes": 39284,
-      "sha256": "20a6a48173f31d479028a5bc839eeed9b3dced736d5bde16cbf3d652ba18b996"
+      "bytes": 41367,
+      "sha256": "3697f06f199a474ba6fadc0795b17b393efddab26b57995ea33bed18fe7390e2"
     },
     {
       "path": "planeswalk-src/emblem-art.css",
@@ -7128,8 +7148,8 @@
     },
     {
       "path": "planeswalk-src/planeswalk-skin.css",
-      "bytes": 5757946,
-      "sha256": "430bc739c212d20e783c77bd4f86a041654d3359c9a38198fcb257e0529b8e4c"
+      "bytes": 5907836,
+      "sha256": "faebd86c6c167193611d028c253faf0cd94b081f1dd4c378811ee6d754b728f1"
     },
     {
       "path": "planeswalk-src/planeswalk-touch.js",
@@ -7198,8 +7218,8 @@
     },
     {
       "path": "planeswalk.html",
-      "bytes": 6803010,
-      "sha256": "ed8cb9d693e575d9b9c4cbe8f5d4ae04630d7c4bf8afa8c5e2777897edd7dc3b"
+      "bytes": 6955065,
+      "sha256": "14c4987f99ca10b59da15e2c5d32b10dfe1c6165d9023921527711b10b55b284"
     },
     {
       "path": "planner.js",
@@ -7283,8 +7303,8 @@
     },
     {
       "path": "play-forge-host-client.js",
-      "bytes": 20722,
-      "sha256": "cdc455560b02353e69357da8b8d56ee48074dd7b85f386ac7e794caf796c1efe"
+      "bytes": 24947,
+      "sha256": "f4e56ce1088bd38e4f210fb6b8e40cf7070c4c6a7226ff995fd4d1c29d3df7a1"
     },
     {
       "path": "play-forge-local-client.js",
@@ -7293,13 +7313,13 @@
     },
     {
       "path": "play-forge-player-mat.js",
-      "bytes": 35951,
-      "sha256": "1d5acbeeda4f6e52823893d3949707d599da4a1c206ea45090f9e2f4bb86b01d"
+      "bytes": 37153,
+      "sha256": "8a04896d85a08b590abdacb5cf6253dacdf190c2d9707d50662e3a968f72963a"
     },
     {
       "path": "play-forge-pregame.js",
-      "bytes": 11298,
-      "sha256": "b30e3c21abfff9ec311e1fb967c28b439ed04740c2eb1f0694623e254969e6ab"
+      "bytes": 11490,
+      "sha256": "d0df05b10f322a7a023da4655204922133a4ac3b23867bbe072a733cb62e406f"
     },
     {
       "path": "play-forge-setup-review.js",
@@ -7318,13 +7338,13 @@
     },
     {
       "path": "play-menu.css",
-      "bytes": 87891,
-      "sha256": "79139335cfd52a0dc48ec7dd9df0e855f32ee5753e94230851a6d4a42347546b"
+      "bytes": 89890,
+      "sha256": "6bfd7d4bb43b8e3c8c093a29176a32eaa5a64007fdca36cd58bd6061623495f6"
     },
     {
       "path": "play-menu.js",
-      "bytes": 27131,
-      "sha256": "5d67a4c5e331b1447d302fa0299af93c18d7ae589be03d06225fd0d71d48aa70"
+      "bytes": 30327,
+      "sha256": "03db875df0b66fd47e3d0883064d7781338941044248addcc9c4866391f6bc82"
     },
     {
       "path": "play-opponent-build.js",
@@ -7453,8 +7473,8 @@
     },
     {
       "path": "polish.css",
-      "bytes": 67844,
-      "sha256": "22c3ee1b721224ddd25e7ab9d84260fe7271692c264805bc61fab9185cb0e7ee"
+      "bytes": 67731,
+      "sha256": "0b5ec0a89d3dae40e26981a972e91b72f88a82714bf1c7a2d1445b27c7d2846b"
     },
     {
       "path": "power.js",
@@ -7548,8 +7568,8 @@
     },
     {
       "path": "release-record.js",
-      "bytes": 1191,
-      "sha256": "cb8b6ed07608aecd45bcb619f17ed03c087fb490ac79c80c8c04a3df7826ffc4"
+      "bytes": 1309,
+      "sha256": "ec310bf90e205e956e903557d93982f9106bd087352343b2b504ba727b465e60"
     },
     {
       "path": "release-status.js",
@@ -7913,8 +7933,8 @@
     },
     {
       "path": "style.css",
-      "bytes": 573562,
-      "sha256": "90a74e51204e2eaf813febb27c6291a19a724fd03635485be115d3b186241645"
+      "bytes": 575568,
+      "sha256": "f92fa622b085ca59f0b54ae7e7a902c9a460025c1f853e89bc67a6ae5b465f1f"
     },
     {
       "path": "suggest.js",
@@ -7924,7 +7944,7 @@
     {
       "path": "sw.js",
       "bytes": 15873,
-      "sha256": "27a291e7228685d61839cb5880a590a53ae8e0a116d811d7e31f7046271fc954"
+      "sha256": "56703d3fca19e42009fcc30a6b6b555ea31769f4250c4945f7078170bc04a1da"
     },
     {
       "path": "sync-merge.js",
@@ -8027,6 +8047,11 @@
       "sha256": "b92121db03b1e40e25136187e71c228a6bf8d9b7c0b02a4c83d33bd9120674ea"
     },
     {
+      "path": "test-play-forge-friend-rooms.mjs",
+      "bytes": 3710,
+      "sha256": "44080098ae8e7bf8ea856ac82f1e39862e09097325edf04da3c77fd070afeca8"
+    },
+    {
       "path": "test-play-forge-launch.mjs",
       "bytes": 21483,
       "sha256": "0bcde82fead7c4fd69d7a5a148db51b90bf111d26821f3d0ae66eb778164f48d"
@@ -8035,6 +8060,16 @@
       "path": "test-play-forge-playback.mjs",
       "bytes": 12248,
       "sha256": "f35e0afe91418e145f3c73ba87025f9547daff887a2836d27856ad69c8c6fc4a"
+    },
+    {
+      "path": "test-play-journey-ui.mjs",
+      "bytes": 3333,
+      "sha256": "5696a339b59f06844c40bb85eb199dd0697fe9c878b2cc8ab7ffe3328915b532"
+    },
+    {
+      "path": "test-play-menu.mjs",
+      "bytes": 11595,
+      "sha256": "868b6a161985e286aa03228f08209c32c01f34083fc4309eece7eeb810358f5e"
     },
     {
       "path": "test-play-quick-start.mjs",

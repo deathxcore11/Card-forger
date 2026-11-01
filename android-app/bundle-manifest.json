@@ -1,7 +1,7 @@
 {
   "source": "https://github.com/deathxcore11/Card-forger",
-  "commit": "1659111c5036e7c0bdf0d2471d54d7ea04e66040",
-  "sourceVersion": "4.3.52",
+  "commit": "e7a9609135ac4c634140fbcca2d952adba3e187f",
+  "sourceVersion": "4.3.53",
   "appId": "com.cardstashy.app",
   "releaseReady": false,
   "network": "enabled-exact-hosts",
@@ -1473,8 +1473,8 @@
     },
     {
       "path": "app.js",
-      "bytes": 467746,
-      "sha256": "aad236ea530816dea610945b55c858390f4d21db30b624acd1dd720cf3febd09"
+      "bytes": 477792,
+      "sha256": "79069dbca2eaec551c42d20ae3f82d7fcb320802fcc0db93a4b218832e471f85"
     },
     {
       "path": "artwork.js",
@@ -3364,7 +3364,7 @@
     {
       "path": "config.js",
       "bytes": 629,
-      "sha256": "f102cd48c2447f476ca984118da94ffe500076df68dcbd50f065b6048f68df65"
+      "sha256": "3b1835202661c254cbf7150552285156dd82314acbb1b9565b3deb27e1a1a1a8"
     },
     {
       "path": "core.js",
@@ -4313,8 +4313,8 @@
     },
     {
       "path": "deck-viewer.css",
-      "bytes": 27861,
-      "sha256": "0042cd4a1a991de24b4f1c13450c9dcf6e3f63976a5609ad199f24bfff4985cc"
+      "bytes": 30400,
+      "sha256": "79b8eaf8b204963289cc5f4b51de2fb54a118e16dead20e9674cd231c37306e8"
     },
     {
       "path": "deck-viewer.js",
@@ -7258,8 +7258,8 @@
     },
     {
       "path": "planeswalk.html",
-      "bytes": 6803055,
-      "sha256": "5ecd65a5462281442eacdee7f47f3a32f36c5342a59225106617ebef321774e8"
+      "bytes": 6955110,
+      "sha256": "e1f35c0ff4cd9f89688cba697ba4e0234d05e9a979a59056b87d7d77bca2597b"
     },
     {
       "path": "planner.js",
@@ -7343,8 +7343,8 @@
     },
     {
       "path": "play-forge-host-client.js",
-      "bytes": 20722,
-      "sha256": "cdc455560b02353e69357da8b8d56ee48074dd7b85f386ac7e794caf796c1efe"
+      "bytes": 24947,
+      "sha256": "f4e56ce1088bd38e4f210fb6b8e40cf7070c4c6a7226ff995fd4d1c29d3df7a1"
     },
     {
       "path": "play-forge-local-client.js",
@@ -7353,13 +7353,13 @@
     },
     {
       "path": "play-forge-player-mat.js",
-      "bytes": 35951,
-      "sha256": "1d5acbeeda4f6e52823893d3949707d599da4a1c206ea45090f9e2f4bb86b01d"
+      "bytes": 37153,
+      "sha256": "8a04896d85a08b590abdacb5cf6253dacdf190c2d9707d50662e3a968f72963a"
     },
     {
       "path": "play-forge-pregame.js",
-      "bytes": 11298,
-      "sha256": "b30e3c21abfff9ec311e1fb967c28b439ed04740c2eb1f0694623e254969e6ab"
+      "bytes": 11490,
+      "sha256": "d0df05b10f322a7a023da4655204922133a4ac3b23867bbe072a733cb62e406f"
     },
     {
       "path": "play-forge-setup-review.js",
@@ -7378,13 +7378,13 @@
     },
     {
       "path": "play-menu.css",
-      "bytes": 88131,
-      "sha256": "e0c4f458f44f791252c2a8686f037dd361d3a2f6af8556b9ffd493247fb2cdaa"
+      "bytes": 90130,
+      "sha256": "e7943ec8e8963d9807f560235d0d3dfc83383cc90004ba770416c30a001cdeef"
     },
     {
       "path": "play-menu.js",
-      "bytes": 27131,
-      "sha256": "5d67a4c5e331b1447d302fa0299af93c18d7ae589be03d06225fd0d71d48aa70"
+      "bytes": 30327,
+      "sha256": "03db875df0b66fd47e3d0883064d7781338941044248addcc9c4866391f6bc82"
     },
     {
       "path": "play-opponent-build.js",
@@ -7513,8 +7513,8 @@
     },
     {
       "path": "polish.css",
-      "bytes": 67885,
-      "sha256": "170b96fe1724391c0436c5bd18395da2e09388549d1ff9406acfa16295935174"
+      "bytes": 67772,
+      "sha256": "775ab6f1436ac5bb292995e675271115ca5823bef1529a943cf2d4abf1a76bb9"
     },
     {
       "path": "power.js",
@@ -7608,8 +7608,8 @@
     },
     {
       "path": "release-record.js",
-      "bytes": 1191,
-      "sha256": "cb8b6ed07608aecd45bcb619f17ed03c087fb490ac79c80c8c04a3df7826ffc4"
+      "bytes": 1309,
+      "sha256": "ec310bf90e205e956e903557d93982f9106bd087352343b2b504ba727b465e60"
     },
     {
       "path": "release-status.js",
@@ -7923,8 +7923,8 @@
     },
     {
       "path": "style.css",
-      "bytes": 576010,
-      "sha256": "7c686b4e5fbb753bd4164f01cac4374be3bd5d862a220d6cade315af68426c04"
+      "bytes": 578016,
+      "sha256": "e82184d241712982bc06db4b7e9aee716604a82f029f560e11621f596b16b5b6"
     },
     {
       "path": "suggest.js",
