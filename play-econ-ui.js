@@ -4,8 +4,9 @@
 // The wall: no prices anywhere in Play. Cards show art, name, rarity and copies owned (of 4).
 import {SEALS, FORGE_STEPS, forgeRatio, masteryLevel, deckShortfall, deckRules, copiesLeft, isBasicLand, PLAY_FORMATS, ownedByName} from './play-econ-rules.js';
 import {cardGroup} from './play-econ-cards.js';
-import {setRowContent} from './set-list-ui.js';
-import {segmented, setIconUrl, img} from './ui.js';
+import {setRowContent, setYearSections} from './set-list-ui.js';
+import {segmented, setIconUrl, img, manaCost, symbolUrl} from './ui.js';
+import {rowEmblem} from './importance.js';
 import {finishAttrs} from './finish-preview.js';
 import {tileChrome} from './tiles.js';
 import {deckShell} from './deck-viewer.js';
@@ -78,18 +79,23 @@ export function boosterMarkup({code = '', name = '', facts = null, big = false, 
 // The Forge (play-progression.md): seals climb one rarity at a time, common to mythic. Each step shows
 // how close the next seal is, and glows when it can be struck.
 export function forgeMarkup(snapshot, {compact = false} = {}) {
-  const s = snapshot?.state, w = s?.wallet || {}, busy = !!snapshot?.busy;
-  const seal = k => `<span class="pe-forge-seal" data-seal="${k}">${sealIcon(k)}<b>${n(w['seal_' + k])}</b><small>${SEALS.find(x => x.key === k).rarity}</small></span>`;
-  const step = to => {
-    const from = FORGE_STEPS[to], ratio = forgeRatio(s?.config, to), have = w['seal_' + from] | 0, can = Math.min(10, Math.floor(have / ratio)), part = have % ratio || (can ? ratio : 0);
-    const name = SEALS.find(x => x.key === to).rarity;
-    return `<span class="pe-forge-step${can ? ' ready' : ''}"><span class="pe-forge-meter" role="img" aria-label="${n(have)} of ${ratio} ${SEALS.find(x => x.key === from).rarity} seals for the next ${name} seal">${Array.from({length: ratio}, (_, i) => `<i class="${i < part ? 'on' : ''}"></i>`).join('')}</span>
-      <button class="pe-forge-strike" data-act="playEconForge" data-econ-to="${to}" data-econ-times="1" ${can && !busy ? '' : 'disabled'} aria-label="Forge ${ratio} ${SEALS.find(x => x.key === from).rarity} seals into 1 ${name} seal"><span aria-hidden="true">Forge ${name}</span></button>
-      ${can > 1 ? `<button class="link small pe-forge-all" data-act="playEconForge" data-econ-to="${to}" data-econ-times="${can}" ${busy ? 'disabled' : ''}>Forge ${can}</button>` : can ? '' : `<span class="pe-forge-hint">${ratio - have} more ${SEALS.find(x => x.key === from).rarity}</span>`}</span>`;
+  const s = snapshot?.state, w = s?.wallet || {}, busy = !!snapshot?.busy, rar = k => SEALS.find(x => x.key === k).rarity;
+  // One row per step: the lower seals going in (lit as you hold them), an ember arrow, the seal that comes out.
+  const row = to => {
+    const from = FORGE_STEPS[to], ratio = forgeRatio(s?.config, to), have = w['seal_' + from] | 0, can = Math.min(10, Math.floor(have / ratio)), lit = can ? ratio : have % ratio;
+    return `<div class="pe-forge-row${can ? ' ready' : ''}">
+      <span class="pe-forge-in" role="img" aria-label="${n(have)} ${rar(from)} seals; ${ratio} make one ${rar(to)} seal">${Array.from({length: ratio}, (_, i) => sealIcon(from, i < lit ? 'on' : 'off')).join('')}</span>
+      <span class="pe-forge-arrow" aria-hidden="true"></span>
+      <span class="pe-forge-out">${sealIcon(to)}</span>
+      <span class="pe-forge-text"><b>${rar(to)} seal</b><small>${can ? `${can} ready to forge` : `${ratio - have} more ${rar(from)} needed`}</small></span>
+      <span class="pe-forge-acts"><button class="pe-forge-strike" data-act="playEconForge" data-econ-to="${to}" data-econ-times="1" ${can && !busy ? '' : 'disabled'} aria-label="Forge ${ratio} ${rar(from)} seals into 1 ${rar(to)} seal">Forge</button>${can > 1 ? `<button class="link small pe-forge-all" data-act="playEconForge" data-econ-to="${to}" data-econ-times="${can}" ${busy ? 'disabled' : ''} aria-label="Forge ${can} ${rar(to)} seals">All ${can}</button>` : ''}</span>
+    </div>`;
   };
-  return `<section class="pe-forge${compact ? ' pe-forge--compact' : ''}" aria-labelledby="peForgeTitle${compact ? 'Home' : ''}">
-    <div class="pe-forge-head"><h2 id="peForgeTitle${compact ? 'Home' : ''}">The Forge</h2><p>Three seals of one rarity strike one of the next. Seals stamp any card of their rarity at the Merchant.</p></div>
-    <div class="pe-forge-line">${seal('c')}${step('u')}${seal('u')}${step('r')}${seal('r')}${step('m')}${seal('m')}</div></section>`;
+  const id = 'peForgeTitle' + (compact ? 'Home' : '');
+  return `<section class="pe-forge${compact ? ' pe-forge--compact' : ''}" aria-labelledby="${id}" style="--forge-art:url('${cardImageByName('Great Furnace', 'art_crop')}')">
+    <div class="pe-forge-head"><h2 id="${id}">The Forge</h2><p>Three seals strike one of the next rarity.</p>
+      <div class="pe-forge-purse">${SEALS.map(x => `<span class="pe-forge-seal" data-seal="${x.key}" title="${x.rarity} seals">${sealIcon(x.key)}<b>${n(w['seal_' + x.key])}</b></span>`).join('')}</div></div>
+    <div class="pe-forge-rows">${row('u')}${row('r')}${row('m')}</div></section>`;
 }
 
 export function shopMarkup(snapshot, {query = '', press = null, facts = null} = {}) {
@@ -131,9 +137,19 @@ const cardImage = (c, facts) => c.p?.image || facts?.card?.(c.o)?.i || cardImage
 
 // The app's own card tile (foil, holo stamp, colour and set emblems, hover and tilt), with copies
 // owned in Play where the app shows a price. Tapping opens the app's card sheet in Play mode.
-export function playCardTile(c, facts) {
+// The app's set badge look, without its link to the real set page (Play's wall): the art opens the card.
+const playSetBadge = (code, rarity) => `<span class="set-badge r-${esc(rarity || 'common')}"><span class="set-icon" style="--icon:url('${esc(setIconUrl(code))}')" aria-hidden="true"></span><span>${esc(code.toUpperCase())}</span></span>`;
+export function playCardTile(c, facts, i = 0) {
+  // The main collection's own row tile (.lot): art with finish and tile chrome, name with emblem and
+  // set badge, mana cost and set line. Play shows copies owned instead of price, condition and stepper.
   const card = facts?.card?.(c.o)?.card || {name: c.n, rarity: c.r, set: c.p?.set || c.s?.[0] || ''}, n = Math.min(c.c | 0, 4);
-  return `<button class="grid-card own" ${card.id ? finishAttrs('mtg', card, {}) : ''} data-act="card" data-name="${esc(c.n)}" data-play-card="1">${img(cardImage(c, facts), c.n, 'card-img')}${card.id ? tileChrome('mtg', card) : ''}<span class="grid-meta pe-tile-meta"><span class="pe-tile-name">${esc(c.n)}</span>${pips(c)}</span></button>`;
+  const set = card.set || c.p?.set || c.s?.[0] || '', number = card.collector_number || c.p?.number || '';
+  return `<div class="lot pe-lot" data-rarity="${esc(card.rarity || c.r || '')}" style="--i:${Math.min(i, 24)}">
+    <button class="lot-art" ${card.id ? finishAttrs('mtg', card, {}) : ''} data-act="card" data-name="${esc(c.n)}" data-play-card="1" aria-label="Open ${esc(c.n)}">${img(cardImage(c, facts), c.n)}</button>
+    <div class="lot-info"><span class="lot-name">${esc(c.n)}${card.id ? rowEmblem('mtg', card) : ''} ${set ? playSetBadge(set, card.rarity || c.r) : ''}</span>
+      <span class="lot-sub">${manaCost(card)}<span>${esc(set.toUpperCase())}${number ? ' #' + esc(number) : ''}</span></span></div>
+    <div class="lot-side" title="${n} of 4 copies">${pips(c)}</div>
+  </div>`;
 }
 
 // Search, rarity, colour, type and set filters, shared by Collection and the deck builder.
@@ -153,7 +169,7 @@ export function filterPlayCards(cards = [], facts = null, {query = '', rarity = 
 function filterBar(ui = {}, {sets = []} = {}) {
   const setName = code => sets.find(x => x.code === code)?.name || code.toUpperCase();
   return `<div class="pe-tools pe-filters"><label class="pe-search"><span>Find a card</span><input type="search" data-input="playEconCardSearch" value="${esc(ui.cardQuery || '')}" maxlength="80" placeholder="Card name"></label>
-    <div class="pe-color-tabs" role="group" aria-label="Colour">${COLORS.map(([k, l]) => `<button class="pe-mana pe-mana--${k}" data-act="playEconColor" data-econ-color="${k}" aria-pressed="${ui.color === k}" aria-label="${l}" title="${l}"><i aria-hidden="true">${k}</i></button>`).join('')}</div>
+    <div class="pe-color-tabs" role="group" aria-label="Colour">${COLORS.map(([k, l]) => `<button class="pe-mana pe-mana--${k}" data-act="playEconColor" data-econ-color="${k}" aria-pressed="${ui.color === k}" aria-label="${l}" title="${l}"><img class="pe-mana-sym" src="${symbolUrl(k)}" alt="" aria-hidden="true" loading="lazy" decoding="async"></button>`).join('')}</div>
     <select class="pe-type" data-change="playEconType" aria-label="Card type"><option value="">All types</option>${TYPES.map(t => `<option${ui.type === t ? ' selected' : ''}>${t}</option>`).join('')}</select>
     <div class="pe-rarity-tabs" role="group" aria-label="Rarity">${[['', 'All'], ['common', 'Common'], ['uncommon', 'Uncommon'], ['rare', 'Rare'], ['mythic', 'Mythic']].map(([k, l]) => `<button data-act="playEconRarity" data-econ-rarity="${k}" aria-pressed="${(ui.rarity || '') === k}">${l}</button>`).join('')}</div>
     <select class="pe-sort" data-change="playEconSort" aria-label="Sort cards">${PLAY_SORTS.map(([k, l]) => `<option value="${k}"${(ui.sort || '') === k ? ' selected' : ''}>${l}</option>`).join('')}</select></div>
@@ -185,15 +201,33 @@ export function playSetRows(state, facts) {
     .sort((a, b) => (b.released || '').localeCompare(a.released || '') || a.name.localeCompare(b.name));
 }
 
+// Every set the Merchant sells plus every set you own cards from, like the app's Sets page: year
+// sections, the app's set tiles and progress bars. Sets you haven't started sit greyed at 0%.
+export const SET_FORMATS = [['', 'All sets'], ['standard', 'Standard'], ['modern', 'Modern'], ['eternal', 'Vintage & Legacy'], ['started', 'Started']];
+export function allPlaySets(state, facts) {
+  const own = new Map(playSetRows(state, facts).map(x => [x.code, x])), out = new Map();
+  for (const x of state?.shop || []) { const f = facts?.set?.(x.code) || {}, o = own.get(x.code);
+    out.set(x.code, {code: x.code, name: x.name, icon: f.icon || setIconUrl(x.code), released: x.released || f.released || '', total: f.total || x.count || null, owned: o?.owned || 0, format: x.format || 'eternal'}); }
+  for (const [code, o] of own) if (!out.has(code)) out.set(code, {...o, format: 'eternal'});
+  return [...out.values()].sort((a, b) => (b.released || '').localeCompare(a.released || '') || a.name.localeCompare(b.name));
+}
+function playSetsTab(state, facts, ui = {}) {
+  const all = allPlaySets(state, facts), f = ui.setFormat || '', q = String(ui.setQuery || '').trim().toLowerCase();
+  const list = all.filter(x => (!f || (f === 'started' ? x.owned > 0 : x.format === f)) && (!q || x.name.toLowerCase().includes(q) || x.code.includes(q)));
+  const tile = x => `<button class="set-row set-browser-tile${x.owned ? '' : ' pe-set-none'}" data-act="playEconSet" data-econ-set="${esc(x.code)}" aria-label="${esc(x.name)}: ${x.owned} of ${x.total ?? 'unknown'} cards">${setRowContent({name: x.name, ambient: true, magicSet: {code: x.code, name: x.name}, code: x.code.toUpperCase(), image: x.icon, symbol: `<span class="set-icon" style="--icon:url('${esc(x.icon)}')" aria-hidden="true"></span>`, detail: x.released ? x.released.slice(0, 4) : '', count: x.total, progress: {key: 'play:' + x.code, owned: x.owned, total: x.total, loaded: x.total || 0, known: x.total || 0, complete: true}})}</button>`;
+  return `<section class="set-browser-controls pe-set-controls" aria-label="Set filters"><div class="searchbar"><input type="search" value="${esc(ui.setQuery || '')}" placeholder="Search every set by name or code" data-input="playEconSetQuery" aria-label="Search all sets" autocomplete="off"></div>
+    <div class="set-browser-quick" role="group" aria-label="Format" data-audit-scroll>${SET_FORMATS.map(([k, l]) => `<button class="${f === k ? 'on' : ''}" data-act="playEconSetFormat" data-value="${k}" aria-pressed="${f === k}">${esc(l)}</button>`).join('')}</div>
+    <p class="pe-count" role="status">${n(list.length)} of ${n(all.length)} sets · ${n(all.filter(x => x.owned).length)} started</p></section>
+    ${list.length ? setYearSections(list, tile, x => x.released) : `<div class="pe-empty"><h2>No sets match</h2><p>Try another format or name.</p></div>`}`;
+}
+
 export function collectionMarkup(snapshot, ui = {}) {
   const tab = ui.tab === 'sets' ? 'sets' : 'cards', facts = ui.facts, state = snapshot.state;
   const cards = (state.cards || []).slice().sort((a, b) => a.n.localeCompare(b.n)), sets = playSetRows(state, facts);
-  const body = tab === 'sets'
-    ? (sets.length ? `<div class="set-list set-year-grid set-browser-flat pe-set-grid">${sets.map(x => `<button class="set-row set-browser-tile" data-act="playEconSet" data-econ-set="${esc(x.code)}" aria-label="${esc(x.name)}: ${x.owned} of ${x.total ?? 'unknown'} cards. Show them">${setRowContent({name: x.name, ambient: true, magicSet: {code: x.code, name: x.name}, code: x.code.toUpperCase(), image: x.icon, symbol: `<span class="set-icon" style="--icon:url('${esc(x.icon)}')" aria-hidden="true"></span>`, detail: x.released ? x.released.slice(0, 4) : '', count: x.total, progress: {key: 'play:' + x.code, owned: x.owned, total: x.total, loaded: x.total || 0, known: x.total || 0, complete: true}})}</button>`).join('')}</div>`
-      : `<div class="pe-empty"><h2>No sets yet</h2><p>Open a pack and its set starts filling in here.</p></div>`)
+  const body = tab === 'sets' ? playSetsTab(state, facts, ui)
     : (() => { const shown = sortPlayCards(filterPlayCards(cards, facts, {query: ui.cardQuery, rarity: ui.rarity, color: ui.color, type: ui.type, set: ui.set}), facts, ui.sort, sets);
       return `${filterBar(ui, {sets})}<p class="pe-count" role="status">${n(shown.length)} of ${n(cards.length)} cards</p>
-      ${shown.length ? `<div class="card-grid set-grid pe-coll-grid">${shown.slice(0, 300).map(c => playCardTile(c, facts)).join('')}</div>`
+      ${shown.length ? `<div class="view-gallery pe-coll-view"><div class="list display-list deal pe-coll-list">${shown.slice(0, 300).map((c, i) => playCardTile(c, facts, i)).join('')}</div></div>`
         : `<div class="pe-empty"><h2>${cards.length ? 'No cards match' : 'Your binder is empty'}</h2><p>${cards.length ? 'Try another name, colour or type.' : 'Open a pack to start your Play collection.'}</p></div>`}`; })();
   return `<section class="play-menu pe-screen pe-collection" aria-labelledby="playTitle">${head('Collection', snapshot)}
     ${segmented('playEconCollTab', tab, [['cards', 'Cards', 'cardStack'], ['sets', 'Sets', 'binder']])}

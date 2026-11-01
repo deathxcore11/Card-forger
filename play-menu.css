@@ -369,7 +369,7 @@ dialog.play-match-exit>.play-exit-note{margin:8px 0 0;font-size:13px;color:#f0c2
 .pl-mode::before{content:"";position:absolute;inset:0;z-index:-1;background:linear-gradient(180deg,#0c0c0e00 34%,#0c0c0eb8 66%,#0c0c0ef2 100%),radial-gradient(130% 90% at 50% 30%,#0000 55%,#0c0c0e8c 100%)}
 .pl-mode-art{position:absolute;inset:0;z-index:-2;background-size:cover;filter:saturate(1.12) contrast(1.06);transition:transform .6s ease}
 /* This scan carries a black frame with rounded corners; oversize the layer so the frame sits outside the tile. */
-.pl-mode-art--trim{inset:-7% -8%}
+.pl-mode-art--trim{inset:0;background-size:auto 116%!important;background-position:50% 30%!important} /* trims the old scan's black frame without overflowing the tile */
 .pl-mode-art--deck>:is(img,.deck-artwork,.img-missing){width:100%;height:100%;object-fit:cover;object-position:50% 25%}
 .pl-mode:hover,.pl-mode:focus-visible{transform:translateY(-3px);border-color:#d6ad64aa;box-shadow:0 28px 60px #0008,0 0 30px #d6ad6424}
 .pl-mode:hover .pl-mode-art{transform:scale(1.04)}
@@ -847,8 +847,7 @@ button.pe-purse-item:focus-visible{outline:2px solid var(--gold);outline-offset:
 .pe-filters{align-items:center}
 .pe-color-tabs{display:flex;gap:6px}
 .pe-mana{width:44px;height:44px;display:grid;place-items:center;border-radius:50%;border:1px solid var(--line);background:transparent;cursor:pointer;padding:0}
-.pe-mana i{width:26px;height:26px;display:grid;place-items:center;border-radius:50%;font:800 12px/1 'DM Sans',system-ui,sans-serif;font-style:normal;color:#15171c;box-shadow:inset 0 -2px 0 #0003}
-.pe-mana--W i{background:#f4ecd2}.pe-mana--U i{background:#a9d3ee}.pe-mana--B i{background:#b9b0ab}.pe-mana--R i{background:#f0a487}.pe-mana--G i{background:#9fd0a4}.pe-mana--C i{background:#cbc6c1}
+.pe-mana-sym{width:26px;height:26px;display:block;border-radius:50%;box-shadow:0 1px 2px #0006}
 .pe-mana[aria-pressed="true"]{border-color:var(--gold);box-shadow:0 0 0 2px color-mix(in srgb,var(--gold) 40%,transparent)}
 .pe-type{min-height:44px;padding:0 12px;border-radius:12px;border:1px solid var(--line);background:color-mix(in srgb,#0d0f14 70%,transparent);color:var(--text);font:inherit;font-size:14px}
 .pe-set-chip{min-height:44px;cursor:pointer}
@@ -971,27 +970,6 @@ body[data-mode="play"] #gameTabs,body[data-mode="play"] [data-nav="scan"]{displa
 .pe-pack--opening:disabled{opacity:1}
 @keyframes pe-open-shake{0%,100%{transform:rotate(0) translateY(0)}25%{transform:rotate(-2.5deg) translateY(-2px)}75%{transform:rotate(2.5deg) translateY(-2px)}}
 @media (prefers-reduced-motion:reduce){.pe-pack--opening .pe-booster{animation:none}}
-/* The Forge: four seals on one line, a strike between each pair, embers when a step is ready. */
-.pe-forge{display:grid;gap:12px;padding:16px;border-radius:18px;border:1px solid #d6ad6440;background:radial-gradient(120% 140% at 50% 120%,#5a2a0e66,transparent 60%),linear-gradient(180deg,#17120d,#100c09);box-shadow:inset 0 1px 0 #ffffff10}
-.pe-forge-head h2{margin:0;font-family:var(--display,inherit);font-size:20px;color:#f3dfb4}
-.pe-forge-head p{margin:4px 0 0;color:var(--muted);font-size:13px;line-height:1.4;max-width:60ch}
-.pe-forge-line{display:grid;grid-template-columns:auto minmax(0,1fr);align-items:center;gap:8px 14px}
-.pe-forge-seal{display:grid;justify-items:center;gap:2px;min-width:72px;padding:8px 4px;border-radius:14px;background:#ffffff08;border:1px solid #ffffff12}
-.pe-forge-seal .pe-seal{width:34px;height:34px}
-.pe-forge-seal b{font:800 16px/1 'DM Sans',system-ui,sans-serif}
-.pe-forge-seal small{font-size:11px;color:var(--muted);text-transform:capitalize}
-.pe-forge-seal.struck{animation:pe-forge-struck .7s cubic-bezier(.2,.9,.3,1.3)}
-.pe-forge-step{display:flex;flex-wrap:wrap;align-items:center;gap:6px 10px;min-width:0}
-.pe-forge-meter{display:flex;gap:3px}
-.pe-forge-meter i{width:8px;height:8px;border-radius:50%;background:#ffffff1c;box-shadow:inset 0 0 0 1px #ffffff14}
-.pe-forge-meter i.on{background:radial-gradient(circle at 35% 30%,#ffe3a3,#e07a1f);box-shadow:0 0 6px #ff9a3c99}
-.pe-forge-strike{min-height:44px;min-width:44px;padding:6px 14px;white-space:nowrap;text-transform:capitalize;border-radius:999px;border:1px solid #d6ad6455;background:#1d1610;color:#f3dfb4;font:800 13px/1 'DM Sans',system-ui,sans-serif;cursor:pointer}
-.pe-forge-strike:disabled{opacity:.45;cursor:default}
-.pe-forge-step.ready .pe-forge-strike{background:linear-gradient(180deg,#f6cf7a,#c4852a);color:#2a1806;border-color:#ffe0a0;box-shadow:0 0 0 1px #00000040,0 0 18px #ff9a3c66;animation:pe-forge-ember 1.8s ease-in-out infinite}
-.pe-forge-all{font-size:12px;min-height:44px;padding:0 8px}
-@keyframes pe-forge-ember{0%,100%{box-shadow:0 0 0 1px #00000040,0 0 10px #ff9a3c44}50%{box-shadow:0 0 0 1px #00000040,0 0 22px #ff9a3c99}}
-@keyframes pe-forge-struck{0%{transform:scale(1)}35%{transform:scale(1.18);box-shadow:0 0 26px #ffcf7aaa}100%{transform:scale(1)}}
-@media (prefers-reduced-motion:reduce){.pe-forge-step.ready .pe-forge-strike,.pe-forge-seal.struck{animation:none}}
 /* A small wrapper (the Story header) wears only the art and the set symbol; the name is in its label. */
 .pe-booster--mini .pe-booster-band{min-height:20%}
 .pe-booster--mini .pe-booster-band b,.pe-booster--mini .pe-booster-band small{display:none}
@@ -1017,7 +995,71 @@ body[data-mode="play"] #gameTabs,body[data-mode="play"] [data-nav="scan"]{displa
  .pe-home-duo .pe-home-decks>:nth-child(n+5){display:none}
  .pe-home-duo .pe-set-grid{grid-template-columns:minmax(0,1fr)}
  .pe-home-duo .pe-set-grid>:nth-child(n+3){display:none}
- .pe-home-duo .pe-forge{margin-top:0}
 }
-/* The Forge: the "forge all" link sits on the button's line, never under it. */
-.pe-forge-hint{font-size:12px;color:var(--muted);white-space:nowrap}
+/* Trunk rows: the app collection's .lot rows; the side shows copies owned (no price, condition or stepper). */
+.pe-lot .lot-side{display:grid;justify-items:end;align-content:center;gap:6px}
+.pe-lot-count{font:700 13px/1.2 'DM Sans',system-ui,sans-serif;color:var(--muted);white-space:nowrap}
+/* Trunk filter bar: one quiet row like the app collection's toolbar (search grows, symbols and menus beside it). */
+.pe-filters{gap:8px}
+.pe-filters .pe-search{flex:1 1 240px}
+.pe-filters .pe-search>span{position:absolute;width:1px;height:1px;overflow:hidden;clip:rect(0 0 0 0);white-space:nowrap}
+.pe-filters select{width:auto;flex:0 0 auto;min-width:132px}
+.pe-filters .pe-rarity-tabs{flex:1 1 auto}
+.pe-binder-tab{flex:none}
+.pe-coll-view .display-list .pe-lot .lot-name{display:block;white-space:normal;overflow:visible;text-overflow:clip}
+.pe-coll-view .pe-lot .lot-name .set-badge{vertical-align:middle}
+.pe-coll-view .pe-lot .set-badge span{font-size:11px}
+/* The purse inside the app's top pill: the topbar's own button rules are reset so each count keeps its icon beside it. */
+.topbar .play-purse-slot .pe-purse{gap:2px;padding:0 4px;background:#0d0f14b3}
+.topbar .play-purse-slot .pe-purse-item{min-height:40px;padding:0 10px;gap:6px;font-size:13px;white-space:nowrap}
+.topbar .play-purse-slot .pe-purse-seals{gap:10px}
+.topbar .play-purse-slot .pe-seal-count{display:inline-flex;align-items:center;gap:4px}
+.topbar .play-purse-slot :is(.pe-coin,.pe-seal,.pe-pack-icon){width:18px;height:18px;flex:none}
+.topbar .play-purse-slot .pe-purse-item+.pe-purse-item{box-shadow:inset 1px 0 0 #ffffff14}
+@media(max-width:1099px){.topbar .play-purse-slot .pe-purse-seals{display:none}}
+/* The Forge: a furnace panel. Header with the four seal counts over forge art; one row per step with
+   the three seals going in, an ember arrow, and the seal that comes out. Rows stack on any width. */
+.pe-forge{position:relative;isolation:isolate;overflow:hidden;display:grid;gap:12px;padding:16px;border-radius:18px;border:1px solid #d6ad6440;background:#120d09;box-shadow:inset 0 1px 0 #ffffff10,0 18px 40px #0007}
+.pe-forge::before{content:"";position:absolute;inset:0;z-index:-2;background:var(--forge-art) center 30%/cover no-repeat;opacity:.38;filter:saturate(1.15)}
+.pe-forge::after{content:"";position:absolute;inset:0;z-index:-1;background:radial-gradient(120% 90% at 50% 115%,#ff7a1a55,transparent 60%),linear-gradient(180deg,#120d09cc,#120d09f2 55%)}
+.pe-forge-head{display:grid;grid-template-columns:minmax(0,1fr) auto;align-items:center;gap:4px 12px}
+.pe-forge-head h2{margin:0;font:700 clamp(18px,1.6vw,22px)/1.2 Cinzel,Georgia,serif;color:#f6dfa8;letter-spacing:.02em}
+.pe-forge-head p{grid-column:1;margin:0;color:#d9c9a9;font-size:13px;line-height:1.4}
+.pe-forge-purse{grid-column:2;grid-row:1/span 2;display:flex;gap:6px}
+.pe-forge-seal{display:grid;justify-items:center;gap:2px;min-width:40px;padding:6px 4px;border-radius:12px;background:#00000059;border:1px solid #ffffff14}
+.pe-forge-seal .pe-seal{width:24px;height:24px}
+.pe-forge-seal b{font:800 13px/1 'DM Sans',system-ui,sans-serif;color:#f6eedb}
+.pe-forge-seal.struck{animation:pe-forge-struck .7s cubic-bezier(.2,.9,.3,1.3)}
+.pe-forge-rows{display:grid;gap:8px}
+.pe-forge-row{display:grid;grid-template-columns:auto 26px auto minmax(0,1fr) auto;align-items:center;gap:10px;min-height:60px;padding:8px 10px;border-radius:14px;background:#00000066;border:1px solid #ffffff12}
+.pe-forge-row.ready{border-color:#f0b45a66;background:linear-gradient(90deg,#3a1c0a99,#00000066)}
+.pe-forge-in{display:flex}
+.pe-forge-in .pe-seal{width:24px;height:24px;margin-right:-6px;filter:drop-shadow(0 1px 2px #0008)}
+.pe-forge-in .pe-seal.off{opacity:.28;filter:grayscale(1)}
+.pe-forge-arrow{height:2px;border-radius:2px;background:linear-gradient(90deg,#ff9a3c00,#ffb45a);position:relative}
+.pe-forge-arrow::after{content:"";position:absolute;right:-1px;top:-4px;border:5px solid transparent;border-left-color:#ffb45a;border-right:0}
+.pe-forge-row:not(.ready) .pe-forge-arrow{filter:grayscale(1);opacity:.35}
+.pe-forge-out .pe-seal{width:34px;height:34px;filter:drop-shadow(0 0 8px #ffb45a55)}
+.pe-forge-row:not(.ready) .pe-forge-out .pe-seal{filter:grayscale(.6);opacity:.6}
+.pe-forge-text{display:grid;gap:2px;min-width:0}
+.pe-forge-text b{font:700 14px/1.2 'DM Sans',system-ui,sans-serif;color:#f6eedb;text-transform:capitalize}
+.pe-forge-text small{font-size:12px;color:#cdbb98}
+.pe-forge-acts{display:flex;align-items:center;gap:4px}
+.pe-forge-strike{min-height:44px;min-width:76px;padding:0 16px;border-radius:999px;border:1px solid #d6ad6455;background:#1d1610;color:#f3dfb4;font:800 14px/1 'DM Sans',system-ui,sans-serif;cursor:pointer;white-space:nowrap}
+.pe-forge-strike:disabled{opacity:.4;cursor:default}
+.pe-forge-row.ready .pe-forge-strike{background:linear-gradient(180deg,#f6cf7a,#c4852a);color:#2a1806;border-color:#ffe0a0;animation:pe-forge-ember 1.8s ease-in-out infinite}
+.pe-forge-all{min-height:44px;min-width:44px;padding:0 8px;font-size:12px;white-space:nowrap}
+@keyframes pe-forge-ember{0%,100%{box-shadow:0 0 0 1px #00000040,0 0 10px #ff9a3c44}50%{box-shadow:0 0 0 1px #00000040,0 0 22px #ff9a3c99}}
+@keyframes pe-forge-struck{0%{transform:scale(1)}35%{transform:scale(1.2);box-shadow:0 0 26px #ffcf7aaa}100%{transform:scale(1)}}
+@media (prefers-reduced-motion:reduce){.pe-forge-row.ready .pe-forge-strike,.pe-forge-seal.struck{animation:none}}
+/* Narrow panels (phones, the Merchant side column): the text drops under the seals so nothing squeezes. */
+@container forge (max-width:470px){
+ .pe-forge-row{grid-template-columns:auto 22px auto minmax(0,1fr);grid-template-areas:"in arrow out acts" "text text text text";row-gap:4px}
+ .pe-forge-in{grid-area:in}.pe-forge-arrow{grid-area:arrow}.pe-forge-out{grid-area:out}.pe-forge-acts{grid-area:acts;justify-self:end}.pe-forge-text{grid-area:text}
+ .pe-forge-head{grid-template-columns:1fr}.pe-forge-purse{grid-column:1;grid-row:auto}
+}
+.pe-forge{container:forge/inline-size}
+/* Sets you haven't started: greyed like Arena until the first card lands. */
+.pe-set-none{filter:grayscale(.85);opacity:.62}
+.pe-set-none:is(:hover,:focus-visible){filter:none;opacity:1}
+.pe-set-controls{margin-bottom:6px}

@@ -5,7 +5,7 @@
 // Spec: play-progression.md sections 3 to 9.
 import {SUPABASE} from './config.js';
 import {loadMtgBooster, mtgBoosterCards, drawMtgBooster} from './mtg-boosters.js';
-import {rewardSet} from './play-econ-sets.js';
+import {rewardSet, setFormats} from './play-econ-sets.js';
 import {starterGrant, sealTrackBonus, packContentsRow, cardDelta, RARITY_SEAL, FORGE_STEPS, forgeRatio} from './play-econ-rules.js';
 import {PRACTICE_STARTER_ROWS} from './play-starter-deck.js';
 
@@ -51,8 +51,9 @@ export async function shopSets(env, request, fetcher = fetch) {
     asset(env, request, '/data/mtg-boosters/index.json', fetcher),
     scryfallSets(fetcher)]);
   const baked = boosterIndex?.sets || {}, today = new Date().toISOString().slice(0, 10);
+  const formats = setFormats({standardSets: facts?.standardSets || [], modernSets: facts?.modernSets || [], boosterIndex: boosterIndex || {}, scryfallSets: sets});
   const shop = sets.filter(s => baked[s.code] && s.released_at && s.released_at <= today)
-    .map(s => ({code: s.code, name: s.name, released: s.released_at})).sort((a, b) => b.released.localeCompare(a.released));
+    .map(s => ({code: s.code, name: s.name, released: s.released_at, count: s.card_count || null, format: formats.get(s.code) || 'eternal'})).sort((a, b) => b.released.localeCompare(a.released));
   return {reward: rewardSet({standardSets: facts?.standardSets || [], boosterIndex: boosterIndex || {}, scryfallSets: sets}), shop};
 }
 

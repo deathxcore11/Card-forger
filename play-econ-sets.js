@@ -24,10 +24,10 @@ const KINDS = new Set(['expansion', 'core']);
 // standardSets: Wizards' names. boosterIndex: data/mtg-boosters/index.json. scryfallSets: the data
 // array from api.scryfall.com/sets. Returns [{code,name,released}] newest first, and the names that
 // matched no set (each one is a data problem to look at, except digital-only entries).
-export function standardBoosterSets({standardSets = [], boosterIndex = {}, scryfallSets = [], today = new Date()} = {}) {
+export function standardBoosterSets({standardSets = [], boosterIndex = {}, scryfallSets = [], today = new Date(), kinds = KINDS} = {}) {
   const day = (today instanceof Date ? today : new Date(today)).toISOString().slice(0, 10);
   const byName = new Map();
-  for (const s of scryfallSets) if (s && KINDS.has(s.set_type) && !s.digital) byName.set(cleanSetName(s.name), s);
+  for (const s of scryfallSets) if (s && kinds.has(s.set_type) && !s.digital) byName.set(cleanSetName(s.name), s);
   const baked = boosterIndex.sets || {};
   const out = [], unmatched = [];
   for (const raw of standardSets) {
@@ -43,4 +43,16 @@ export function standardBoosterSets({standardSets = [], boosterIndex = {}, scryf
 // The reward set's code, or null when nothing qualifies (callers then keep the last known one).
 export function rewardSet(input) {
   return standardBoosterSets(input).sets[0] || null;
+}
+
+// Format shelf for each Merchant set: 'standard', 'modern', else 'eternal' (Legacy and Vintage only).
+// Wizards' Modern list includes Modern Horizons (draft_innovation), so every booster kind is matched.
+export function setFormats({standardSets = [], modernSets = [], boosterIndex = {}, scryfallSets = [], today = new Date()} = {}) {
+  const all = new Set(['expansion', 'core', 'draft_innovation', 'masters']), out = new Map();
+  for (const s of standardBoosterSets({standardSets: modernSets, boosterIndex, scryfallSets, today, kinds: all}).sets) out.set(s.code, 'modern');
+  // Modern's own rule: every expansion and core set from Eighth Edition on (names on Wizards' page
+  // sometimes differ from Scryfall's, e.g. "Core 2021").
+  for (const s of scryfallSets) if (s && KINDS.has(s.set_type) && !s.digital && (s.released_at || '') >= '2003-07-28' && !out.has(s.code)) out.set(s.code, 'modern');
+  for (const s of standardBoosterSets({standardSets, boosterIndex, scryfallSets, today, kinds: all}).sets) out.set(s.code, 'standard');
+  return out;
 }

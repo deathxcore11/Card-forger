@@ -1698,6 +1698,8 @@ A.playEconForge=async t=>{const to=t.dataset.econTo,times=Number(t.dataset.econT
 A.playEconCraft=async t=>{try{const out=await playEcon.craft(t.dataset.econCard);toast(out.card.name+' added to your Play collection.');}catch{}};
 A.playEconRetry=()=>{playEcon.refresh();};
 A.playEconRarity=t=>{econUi.rarity=t.dataset.econRarity||'';refreshPlayMenu();};
+I.playEconSetQuery=t=>{econUi.setQuery=t.value;refreshPlayMenu();const f=document.querySelector('[data-input="playEconSetQuery"]');f?.focus({preventScroll:true});try{f.setSelectionRange(t.value.length,t.value.length);}catch{}};
+A.playEconSetFormat=t=>{econUi.setFormat=t.dataset.value||'';refreshPlayMenu();};
 I.playEconSetSearch=t=>{econUi.query=t.value;refreshPlayMenu();const f=document.querySelector('[data-input="playEconSetSearch"]');f?.focus({preventScroll:true});try{f.setSelectionRange(t.value.length,t.value.length);}catch{}};
 I.playEconCardSearch=t=>{econUi.cardQuery=t.value;refreshPlayMenu();const f=document.querySelector('[data-input="playEconCardSearch"]');f?.focus({preventScroll:true});try{f.setSelectionRange(t.value.length,t.value.length);}catch{}};
 // Opening: the server rolls the pack, then the pack opener plays it (the Play variant: no prices).
