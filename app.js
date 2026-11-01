@@ -1828,6 +1828,8 @@ async function loadPool(more=false){const P=econUi.pool;if(!P||P.mode!=='all')re
  catch{if(t===P.ticket)P.error='Check your connection and try again.';}finally{if(t===P.ticket){P.busy=false;refreshPlayMenu();}}}
 A.playEconPool=t=>{const mode=t.dataset.id==='all'?'all':'mine';econUi.pool={...(econUi.pool||{cards:[],ticket:0}),mode};econUi.set='';refreshPlayMenu();};
 A.playEconPoolMore=()=>loadPool(true);
+// A missing card's pack: the same Merchant jump as the card view's "Get it at the Merchant".
+A.playGetPack=t=>A.playCardGet(t);
 // Empty slots (a Trunk build that ran out of owned cards): fill them with the format's most-played
 // cards in the deck's colours, one copy each; cards you don't own land greyed, ready to craft.
 A.playFillSlots=async()=>{const e=econUi.edit;if(!e||econUi.filling)return;const size=e.format==='Commander'?100:60,have=(e.cards||[]).reduce((t,c)=>t+c.qty,0),need=size-have;if(need<1)return;
@@ -2559,6 +2561,9 @@ async function pickCompareCard(t) {
 }
 async function cardQuickMenu(t) {
   t?.closest?.("dialog.zoom")?.querySelector('[data-z="close"]')?.click();
+  // Play has its own card actions (Play decks, Craft with seals, packs): right-click and long-press
+  // there open the Play card view, never the collection app's menu.
+  if (S.ui.view === "play" || S.ui.lens === "play") { const el = t?.dataset?.name ? t : t?.querySelector?.('[data-act="card"][data-name]') || t?.closest?.("[data-name]"); if (el?.dataset?.name) A.card(el); return; }
   const ref = t?.quickRef || await resolveActionCard(t); if (!ref) return;
   quickCard = ref; haptic("tap");
   const st = ref.game === "mtg" ? S.state : T.gs(ref.game);
