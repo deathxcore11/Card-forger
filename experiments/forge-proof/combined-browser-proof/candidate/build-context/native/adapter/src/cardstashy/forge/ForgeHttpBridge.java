@@ -351,6 +351,9 @@ public final class ForgeHttpBridge implements IRemote {
         if(startingPlayer==null||event.firstTurn()==null||!pregame.isEmpty())return;
         pregame=obj("schema","cardstashy.forge-pregame.v1","firstPlayerId",event.firstTurn().getId(),"selection",startingPlayer.selection(),"playStyle",startingPlayer.playStyle());
         if(exactAdmission!=null)exactAdmission.receipt().put("pregame",pregame);
+        // A friend match: the seat not asked to act first gets no prompt to publish, so it would
+        // keep reporting "initializing" and the host never sees the table ready. Publish it now.
+        if(humanOpponent){refreshBoard();publish();}
     }
 
     @com.google.common.eventbus.Subscribe
@@ -551,6 +554,9 @@ public final class ForgeHttpBridge implements IRemote {
         // Reserve Smart payment before exposing this update to a concurrent HTTP reader.
         // Publishing an enabled Auto button first creates a second, obsolete human action.
         maybeNativeAutoPay();
+        // In a friend match nothing paces the other person's plays, so a board change is published
+        // as it arrives; otherwise this seat would show a stale board until its own next prompt.
+        if(humanOpponent&&(e.getMethod()==ProtocolMethod.setGameView||e.getMethod()==ProtocolMethod.applyDelta))publish();
         if(e.getMethod()==ProtocolMethod.setSelection || e.getMethod()==ProtocolMethod.updateButtons || e.getMethod()==ProtocolMethod.showPromptMessage || e.getMethod()==ProtocolMethod.flashIncorrectAction || e.getMethod()==ProtocolMethod.message || e.getMethod()==ProtocolMethod.showErrorDialog) publish();
         }
     }

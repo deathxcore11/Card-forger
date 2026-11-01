@@ -143,3 +143,18 @@ test('either player of a friend match can end it, and both then see the same res
   const host = await read(f, matchId, 'owner');
   assert.equal(host.body.status, 'finished'); assert.equal(host.body.viewerId, 0); assert.deepEqual(host.body.result, { draw: false, winnerPlayerId: 1 });
 });
+
+test('each player sees the other\'s name and picture, never anything more', async () => {
+  const f = fixture();
+  const hostPlayer = { name: 'deathxcore11', image: 'https://cards.scryfall.io/art_crop/front/a/b/ab.jpg', crop: { ratio: 1.3, zoom: 1.5, x: 0.5, y: 0.4 }, email: 'x@y.z' };
+  const room = await json(f, '/api/play/rooms', { body: { format: 'Commander', deck: structuredClone(deck), player: hostPlayer } });
+  assert.equal(room.status, 201); assert.equal(room.body.opponent, null);
+  const peek = await json(f, '/api/play/rooms/join', { token: 'other', body: { invite: room.body.invite } });
+  assert.deepEqual(peek.body.opponent, { name: 'deathxcore11', image: hostPlayer.image, crop: hostPlayer.crop });
+  const joined = await json(f, '/api/play/rooms/join', { token: 'other', body: { invite: room.body.invite, deck: structuredClone(deck), player: { name: ' ldwd11\u0000 ', image: 'javascript:alert(1)' } } });
+  assert.equal(joined.status, 202);
+  const hostRoom = await json(f, '/api/play/rooms/' + room.body.roomId, { method: 'GET' });
+  assert.deepEqual(hostRoom.body.opponent, { name: 'ldwd11', image: null, crop: null });
+  // A player card that is not an object is refused; no card at all is fine.
+  assert.equal((await json(f, '/api/play/rooms', { body: { format: 'Commander', deck: structuredClone(deck), player: 'me' } })).status, 400);
+});

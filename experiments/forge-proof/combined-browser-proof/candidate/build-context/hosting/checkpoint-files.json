@@ -1,7 +1,7 @@
 {
-  "checkpoint": "native-starting-player-manifest:f0db7a7af0ade0fdb434424443cefa8bee2deaec927a4d640acd5cf40d5a5e99",
+  "checkpoint": "native-starting-player-manifest:62639e632e51c1d6cb272823f78daa594d3434140c6ce9ef34a6997eb68492f6",
   "forgeRevision": "e5a0f8156da70ffc7866f923bed371c0111707cd",
-  "nativeManifestSha256": "f0db7a7af0ade0fdb434424443cefa8bee2deaec927a4d640acd5cf40d5a5e99",
+  "nativeManifestSha256": "62639e632e51c1d6cb272823f78daa594d3434140c6ce9ef34a6997eb68492f6",
   "adapterCapabilities": [
     "cardstashy.match-input.v1",
     "cardstashy.formats-three.v1",
@@ -23,7 +23,7 @@
     "experiments/forge-proof/native/adapter/src/cardstashy/forge/BridgeContractChecks.java": "6dda6a3aafb5cd566f9f2fd7adb41f4fbd63f4912f7ca433af7c9f67d5228099",
     "experiments/forge-proof/native/adapter/src/cardstashy/forge/BridgeNativeTerminalChecks.java": "0794ccfc0427bbc8abcf4eb3a22dc859dbf9ba00c086b39639ec960d687c7189",
     "experiments/forge-proof/native/adapter/src/cardstashy/forge/BridgeSmartIntentChecks.java": "bb585915a54e79eec24907c5894e25474bfb3b581b03384d40302f5150c580d7",
-    "experiments/forge-proof/native/adapter/src/cardstashy/forge/ForgeHttpBridge.java": "e216984fb60d2f450aef918475722bfd4d0afff83fe7010a3cbc2ee46bc18a49",
+    "experiments/forge-proof/native/adapter/src/cardstashy/forge/ForgeHttpBridge.java": "e83fa32c5695bdcce3367fc531346daecedcb796f3bc33ef58837d797490a0cb",
     "experiments/forge-proof/native/adapter/src/cardstashy/forge/NativeAffordanceChecks.java": "9adf75a18c5453e929316af9a4e62612c64dda63b90de4796a31cbd56269a657",
     "experiments/forge-proof/native/adapter/src/cardstashy/forge/NativeConcessionRaceChecks.java": "1df40584604936cecd83866786b7e2576be318017d98153091be26e2efac9cbb",
     "experiments/forge-proof/native/adapter/src/cardstashy/forge/NativeCpuPolicyIntegration.java": "431c5370d9c96ef88caf8dc9ccfbedc9ee8be1302da137b4cf22c2d3104801d4",

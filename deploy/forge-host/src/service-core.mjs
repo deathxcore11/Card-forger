@@ -28,6 +28,21 @@ const ROOM_PATH = new RegExp('^/api/play/rooms/(' + UUID + ')$', 'i');
 const INVITE = /^[A-Za-z0-9_-]{43}$/;
 // An invite lasts 30 minutes. Friend matches start with the first three formats.
 const ROOM_MS = 1_800_000, FRIEND_FORMATS = ['Commander', 'Standard', 'Modern'];
+// What each player shows the other in a friend match: their display name and profile picture
+// (an https image, with the crop they chose for card art). Anything else is dropped.
+const unit = (v, lo, hi) => typeof v === 'number' && Number.isFinite(v) && v >= lo && v <= hi;
+function playerCard(value) {
+  if (value === undefined || value === null) return null;
+  if (!value || typeof value !== 'object' || Array.isArray(value)) throw Error('invalid_player');
+  const name = typeof value.name === 'string' ? value.name.replace(/[\u0000-\u001f\u007f]/g, '').trim().slice(0, 40) : '';
+  let image = null;
+  if (typeof value.image === 'string' && value.image.length <= 512) {
+    try { const u = new URL(value.image); if (u.protocol === 'https:' && !u.username && !u.password) image = u.href; } catch { /* no picture */ }
+  }
+  const c = value.crop, crop = image && c && typeof c === 'object' && unit(c.ratio, 0.2, 5) && unit(c.zoom, 1, 4) && unit(c.x, 0, 1) && unit(c.y, 0, 1)
+    ? { ratio: c.ratio, zoom: c.zoom, x: c.x, y: c.y } : null;
+  return name || image ? { name: name || null, image, crop } : null;
+}
 // Forge needs a CPU policy version in every input; a friend match has no CPU, so the
 // default one is recorded and never used.
 const FRIEND_POLICY = 'forge-heuristic-medium-beta-v1';
@@ -215,10 +230,11 @@ export class AdmissionService {
     try { body = await readJSONWithin(request, 131072); }
     catch (e) { return error(['body_too_large', 'body_timeout'].includes(e.message) ? e.message : 'invalid_json', e.message === 'body_too_large' ? 413 : e.message === 'body_timeout' ? 408 : 400); }
     if (path === ROOMS_PATH) {
-      if (Object.keys(body).some(k => !['format', 'deck'].includes(k)) || !FRIEND_FORMATS.includes(body.format)) return error('invalid_room', 400);
+      if (Object.keys(body).some(k => !['format', 'deck', 'player'].includes(k)) || !FRIEND_FORMATS.includes(body.format)) return error('invalid_room', 400);
+      let hostPlayer; try { hostPlayer = playerCard(body.player); } catch { return error('invalid_room', 400); }
       try { validateExactDeckInput(friendInput(body.format, body.deck, body.deck)); } catch { return error('invalid_match_input', 400); }
       const invite = randomInvite(), roomId = crypto.randomUUID();
-      const room = { roomId, hostId: user.id, format: body.format, hostDeck: body.deck, inviteDigest: await digest(invite),
+      const room = { roomId, hostId: user.id, hostPlayer, format: body.format, hostDeck: body.deck, inviteDigest: await digest(invite),
         status: 'open', createdAt: this.now(), expiresAt: this.now() + ROOM_MS };
       await this.storage.transaction(async txn => {
         // One open room per host: a new invite ends the old one.
@@ -230,7 +246,8 @@ export class AdmissionService {
       return json({ ...this.roomView(room, user.id), invite }, 201);
     }
     // Join.
-    if (Object.keys(body).some(k => !['invite', 'deck'].includes(k)) || !INVITE.test(body.invite || '')) return error('invalid_invite', 400);
+    if (Object.keys(body).some(k => !['invite', 'deck', 'player'].includes(k)) || !INVITE.test(body.invite || '')) return error('invalid_invite', 400);
+    let guestPlayer; try { guestPlayer = playerCard(body.player); } catch { return error('invalid_invite', 400); }
     const roomId = await this.storage.get('invite:' + await digest(body.invite));
     const key = 'room:' + roomId, found = roomId && await this.storage.get(key);
     if (!found) return error('invite_not_found', 404);
@@ -246,7 +263,7 @@ export class AdmissionService {
       const room = await txn.get(key);
       if (room.guestId && room.guestId !== user.id) return { error: 'room_full', status: 409 };
       if (room.status !== 'open') return { error: room.status === 'started' ? 'room_full' : 'room_closed', status: room.status === 'started' ? 409 : 410 };
-      room.guestId = user.id; await txn.put(key, room); return { room };
+      room.guestId = user.id; room.guestPlayer = guestPlayer; await txn.put(key, room); return { room };
     });
     if (claim.error) return error(claim.error, claim.status);
     const lifetimeMs = access.mode === 'trial' ? Math.min(access.matchMs, access.expiresAt - this.now()) : access.matchMs;
@@ -272,6 +289,8 @@ export class AdmissionService {
     const expired = room.status === 'open' && this.now() >= room.expiresAt;
     return { roomId: room.roomId, format: room.format, status: expired ? 'expired' : room.status, expiresAt: room.expiresAt,
       seat: room.hostId === userId ? 'host' : 'guest', guestJoined: !!room.guestId,
+      // The other player, as they chose to show themselves.
+      opponent: (room.hostId === userId ? room.guestPlayer : room.hostPlayer) || null,
       ...(room.matchId && room.status === 'started' ? { matchId: room.matchId } : {}) };
   }
   // Start the engine for this account's next match before its decks are chosen. Best
