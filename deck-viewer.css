@@ -271,3 +271,20 @@ dialog.sheet:has(.ds-page) #sheetBody{max-height:none;height:100%;overflow-x:aut
 dialog.sheet:has(.ds-page){overflow:visible}
 /* A full-page deck covers the page under it; stop painting that page while the deck is open. */
 body:has(#sheet[open] .ds-page) #content{visibility:hidden}
+
+/* ===== Deck cards, cleaner (1 Nov): nothing sits over the rules text.
+   - The count shows only when there is more than one copy, as a small glass tab in the top-right corner.
+   - Roles join the emblem dock's row on the bottom edge (right side), slim and glassy.
+   - In piles the stepper hangs under the card (always under the pile's top card, under others on
+     hover or focus), never over the art or text.
+   - The "Commander" label is dropped in piles: the group heading already says Commander. ===== */
+.deck-viewer:is([data-deck-view="gallery"],[data-deck-view="stacks"]) [data-deck-card][data-deck-qty="1"]::after { content: none; }
+.deck-viewer[data-deck-view="stacks"] [data-deck-card]::after { top: 5px; right: 5px; padding: 0 7px; min-height: 18px; display: inline-flex; align-items: center; border: 0; border-radius: 9px; font-size: 11px; font-weight: 800; color: #ffe3a3; background: linear-gradient(180deg, #ffffff1c, #ffffff03 55%), rgba(10, 12, 18, .82); box-shadow: inset 0 1px 0 #ffffff24, inset 0 0 0 1px #f4bf5850, 0 3px 8px -2px #000a; }
+.deck-viewer[data-deck-view="stacks"] .deck-stack-roles,
+.deck-viewer[data-deck-view="stacks"] .lot.deck-row .deck-stack-roles { left: auto; right: 4px; bottom: 3px; z-index: 3; max-width: calc(50% - 6px); height: 17px; display: inline-flex; align-items: center; padding: 0 7px; border: 0; border-radius: 9px; font-size: 11px; font-weight: 700; letter-spacing: .01em; color: #e9edf3; background: linear-gradient(180deg, #ffffff1c, #ffffff03 55%), rgba(10, 12, 18, .8); box-shadow: inset 0 1px 0 #ffffff24, inset 0 0 0 1px #8cc6ff40, 0 3px 8px -2px #000a; }
+.deck-viewer[data-deck-view="stacks"] .lot.deck-row .lot-side { top: calc(100% + 6px); bottom: auto; left: 50%; right: auto; transform: translateX(-50%); z-index: 6; padding: 1px; border: 0; border-radius: 12px; background: linear-gradient(180deg, #ffffff1c, #ffffff03 55%), rgba(10, 12, 18, .92); box-shadow: inset 0 1px 0 #ffffff24, inset 0 0 0 1px #f4bf5850, 0 6px 16px -4px #000c; }
+/* The −/+ hangs under the pile's top card (and under any card you point at), never over the art or text. */
+.deck-viewer[data-deck-view="stacks"] .deck-stack-pile:has(> .lot.deck-row .lot-side .stepper) { padding-bottom: 54px; }
+.deck-viewer[data-deck-view="stacks"] .lot.deck-row .lot-side > .chip { display: none; }
+.deck-viewer[data-deck-view="stacks"] .lot.deck-row .lot-side:not(:has(> :not(.chip))) { display: none; }
+.deck-viewer[data-deck-view="stacks"] .lot-side .stepper button { min-height: 44px; min-width: 36px; }
