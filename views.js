@@ -354,14 +354,27 @@ function mtgCardMeta(c) {
 }
 
 // Play lens card actions: copies in the Play collection, add to a Play deck, start one, or get it.
+// Builder open: add or take out copies of this card; Craft 1 to 4 copies with seals.
+function playEditActions(play, name, shown) {
+  const e = play.edit, k = play.craft?.(name, shown);
+  if (!e && !k?.room) return "";
+  const q = e ? e.qty(name) : 0;
+  return `<div class="play-card-build">
+    ${e ? `<div class="play-card-step" role="group" aria-label="Copies in ${esc(e.name)}"><button class="btn ghost" data-act="playEconStep" data-econ-card="${esc(name)}" data-econ-step="-1" ${q ? "" : "disabled"} aria-label="Take one out of the deck">−</button><b>${q} in deck</b><button class="btn" data-act="playEconStep" data-econ-card="${esc(name)}" data-econ-step="1" ${q >= e.copies ? "disabled" : ""} aria-label="Add one to the deck">+</button></div>` : ""}
+    ${k?.room ? `<div class="play-card-craft" role="group" aria-label="Craft with ${esc(k.label)} seals">${Array.from({ length: k.room }, (_, i) => i + 1).map((n) => `<button class="pe-craft-n" data-act="playCraftCopies" data-name="${esc(name)}" data-card-id="${esc(k.id)}" data-n="${n}" ${n > k.seals ? "disabled" : ""} aria-label="Craft ${n} for ${n} ${esc(k.label)} seal${n > 1 ? "s" : ""}">${sealIconMini(k.seal)}<b>${n}</b></button>`).join("")}</div>` : ""}
+  </div>`;
+}
+const SEAL_MINI = { c: ["#9aa1a9", "#5d636b"], u: ["#d9e3ea", "#7e8d99"], r: ["#f1cf7c", "#a77a23"], m: ["#f28a4b", "#a8381b"] };
+const sealIconMini = (key) => { const [a, b] = SEAL_MINI[key] || SEAL_MINI.c; return `<svg class="pe-seal" viewBox="0 0 32 32" aria-hidden="true"><circle cx="16" cy="16" r="13.5" fill="${a}"/><circle cx="16" cy="16" r="8.4" fill="none" stroke="${b}" stroke-width="1.6"/><path d="M16 10.5l1.6 3.4 3.7.4-2.8 2.5.8 3.7-3.3-1.9-3.3 1.9.8-3.7-2.8-2.5 3.7-.4z" fill="${b}"/></svg>`; };
 function playCardActions(play, name, shown) {
   const n = Math.min(play.owned(name, shown), 4), decks = play.decks || [];
   return `<section class="card-secondary-actions play-card-actions" aria-label="Play collection and deck actions">
     <p class="play-card-own"><span class="pe-pips" aria-hidden="true">${[1, 2, 3, 4].map(i => `<i class="${i <= n ? "on" : ""}"></i>`).join("")}</span><b>${n ? `${n} of 4 in your Play collection` : "Not in your Play collection yet"}</b></p>
+    ${playEditActions(play, name, shown)}
     <div class="card-actions"><div class="ca-main">
       ${(() => { const st = n < 4 ? play.stamp?.(name, shown) : null; if (!st) return "";
         const need = (c, label, holo) => `<button class="btn${holo ? " ghost" : ""} play-stamp" data-act="playCardStamp" data-econ-card="${esc(st.id)}" data-holo="${holo ? 1 : 0}" ${st.seals >= c ? "" : "disabled"} aria-label="${esc(label)} for ${c} ${st.rarity} seal${c === 1 ? "" : "s"}, you have ${st.seals}">${label} · ${c} ${st.rarity} seal${c === 1 ? "" : "s"}</button>`;
-        return need(1, "Stamp it", false) + (st.canFoil ? need(st.holoCost, "Stamp holo", true) : ""); })()}
+        return (play.craft?.(name, shown)?.room ? "" : need(1, "Stamp it", false)) + (st.canFoil ? need(st.holoCost, "Stamp holo", true) : ""); })()}
       ${decks.length ? `<details class="play-card-decks"><summary class="btn">Add to deck</summary><div class="play-card-deck-list">${decks.map(d => `<button class="btn ghost small" data-act="playCardToDeck" data-econ-deck="${esc(d.id)}" data-name="${esc(name)}" ${n ? "" : "disabled"}>${esc(d.name || "Untitled deck")}</button>`).join("")}</div></details>` : ""}
       <button class="btn${decks.length || !n ? " ghost" : ""}" data-act="playCardNewDeck" data-name="${esc(name)}" ${n ? "" : "disabled"}>New deck</button>
       ${play.holo?.(name, shown)?.can ? `<button class="btn ghost" data-act="playCardHolo" data-oracle="${esc(play.holo(name, shown).oracle)}" ${play.holo(name, shown).afford ? "" : "disabled"}>Make holo · ${play.holo(name, shown).cost} ${esc(play.holo(name, shown).seal)} seals</button>` : ""}

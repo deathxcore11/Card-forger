@@ -162,10 +162,10 @@ import { startTabGlide } from "./tab-glide.js";
 import { startSearchHints } from "./search-hints.js";
 import { openZoom, zoomCardOptions } from "./zoom.js";
 import {createPlayEcon,purse} from "./play-econ-client.js";
-import {econScreenMarkup,ECON_VIEWS,purseMarkup,cardImageByName,head as econHead} from "./play-econ-ui.js";
+import {econScreenMarkup,ECON_VIEWS,purseMarkup,cardImageByName,head as econHead,craftPlan} from "./play-econ-ui.js";
 import {rewardFlight} from "./reward-flight.js";
-import {createNameFacts,rankFinderRows,trunkDeck,finderMarkup,FINDER_FORMATS} from "./play-deck-finder.js";
-import {createCardFacts} from "./play-econ-cards.js";
+import {createNameFacts,rankFinderLists,finderRow,trunkDeck,finderMarkup,FINDER_FORMATS,FINDER_SORTS} from "./play-deck-finder.js";
+import {createCardFacts,slimCard} from "./play-econ-cards.js";
 import {stepDeckCard,ownedByName,deckShortfall,legalFormats,mtgjsonDeckRows} from "./play-econ-rules.js";
 import {STORY_ACTS} from "./story-acts.js";
 import {createStoryProgress,loadAct,loadActPool,ownDeckFits,battleCleared,currentAct,currentBattle,actCleared} from "./story-client.js";
@@ -1785,6 +1785,10 @@ V.setPlayLensSource(()=>{const st=playEcon.snapshot().state||{};
   stamp:(name,card)=>{if(!card?.id||!card.oracle_id)return null;const key={common:'c',uncommon:'u',rare:'r',mythic:'m'}[card.rarity];if(!key)return null;const c=(st.cards||[]).find(x=>x.o===card.oracle_id),have=c?.c|0,seals=st.wallet?.['seal_'+key]|0,holo=1+Math.max(1,st.config?.holoSeals??2);
    return {id:card.id,have,seals,rarity:{c:'common',u:'uncommon',r:'rare',m:'mythic'}[key],key,holoCost:holo,canFoil:(card.finishes||[]).includes('foil'),sold:(st.shop||[]).some(x=>x.code===card.set)||st.rewardSet?.code===card.set};},
   holo:(name,card)=>{const c=(st.cards||[]).find(x=>x.o===card?.oracle_id)||(st.cards||[]).find(x=>x.n===name||x.n.split(' // ')[0]===name);if(!c)return null;const seal={common:'c',uncommon:'u',rare:'r',mythic:'m'}[c.r],cost=Math.max(1,st.config?.holoSeals??2);return {oracle:c.o,can:(c.h|0)<(c.c|0)&&!!seal,afford:(st.wallet?.['seal_'+seal]|0)>=cost,cost,seal:{c:'common',u:'uncommon',r:'rare',m:'mythic'}[seal]};},
+  // While a deck is open in the builder, the card view adds and removes copies there.
+  get edit(){const e=playView==='deck'&&econUi.edit;if(!e)return null;const copies=e.format==='Commander'?1:4;return {name:e.name||'this deck',qty:n=>(e.cards||[]).filter(c=>c.name===n).reduce((t,c)=>t+c.qty,0),copies};},
+  // Craft with seals: one seal of the card's rarity per copy, up to 4 copies in the Trunk.
+  craft:(name,card)=>{const seal={common:'c',uncommon:'u',rare:'r',mythic:'m',special:'r',bonus:'m'}[card?.rarity];const have=(card?.oracle_id&&byOracle.get(card.oracle_id))||byName.get(name)||0;if(!seal||!card?.id)return null;return {id:card.id,seal,room:Math.max(0,4-have),seals:st.wallet?.['seal_'+seal]|0,label:{c:'common',u:'uncommon',r:'rare',m:'mythic'}[seal]};},
   setProgress:code=>{const have=(st.cards||[]).filter(c=>(c.s||[]).includes(code)).length,total=econFacts.set(code)?.total||null;return {key:'play:'+code,owned:have,total,loaded:total||0,known:total||0,complete:true};}};});
 A.playLensBack=()=>{playView='collection';econUi.tab='sets';go('#play');};
 A.playLensSet=t=>{closeSheet();go('#set/'+encodeURIComponent(t.dataset.code)+'/play');};
@@ -1804,27 +1808,71 @@ A.playCardStamp=async t=>{const holo=t.dataset.holo==='1';try{const out=await pl
 A.playEconEditDeck=t=>{const d=(playEcon.snapshot().state?.decks||[]).find(x=>x.id===t.dataset.econDeck);econUi.edit=d?{id:d.id,name:d.name,format:d.format||'Standard',cards:(d.cards||[]).filter(c=>!c.board).map(c=>({...c,qty:c.qty|0})),side:(d.cards||[]).filter(c=>c.board)}:{id:null,name:'',format:'Standard',cards:[]};playView='deck';refreshPlayMenu();scrollTo({top:0});requestAnimationFrame(()=>document.getElementById('playDeckTitle')?.focus?.({preventScroll:true}));};
 // Play "Build a deck" (Untapped-style finder): the Trunk build plus meta lists,
 // ranked by how much the player owns; missing cards greyed with seal costs.
-const finderFacts=createNameFacts({onChange:()=>{if(S.ui.view==='play'&&playView==='finder')finderRefresh();}});
-const finderUi={format:'Standard',rows:null,busy:false,error:'',limit:8,ticket:0};
-const finderLists=format=>{const data=metaState('mtg:'+(format==='Commander'?'EDH':format)).data;return (data?.decks||[]).filter(d=>d?.key&&Array.isArray(d.main)).slice(0,16).map(d=>{const commanders=(d.commanders||[]).map(r=>typeof r==='string'?{name:r,qty:1}:r);return {key:'meta:'+d.key,name:d.name||d.archetype||'Meta deck',source:'Meta',detail:[d.place,d.event].filter(Boolean).join(' · '),format,commander:commanders[0]?.name||'',cards:[...commanders,...d.main]};});};
+const finderFacts=createNameFacts({onChange:()=>{if(S.ui.view!=='play')return;if(playView==='finder')finderRefresh();else if(playView==='deck')refreshPlayMenu();}});
+// Arena-style builder: cards not in the Trunk get their facts by name (rarity, art, the id that
+// crafting stamps); "All cards" looks through every card legal in the deck's format (no prices).
+function builderWants(snap){const owned=ownedByName(snap.state?.cards||[]),names=(econUi.edit?.cards||[]).map(c=>c.name).filter(n=>!owned.get(n));if(names.length)finderFacts.want(names);
+ if(econUi.pool?.mode==='all'){const k=poolKey();if(k!==econUi.pool.key&&!econUi.pool.timer)econUi.pool.timer=setTimeout(()=>{econUi.pool.timer=0;loadPool();},econUi.pool.key?350:0);}}
+const POOL_COLORS={W:'w',U:'u',B:'b',R:'r',G:'g',C:'c'};
+const POOL_TYPES={Creatures:'creature',Planeswalkers:'planeswalker',Instants:'instant',Sorceries:'sorcery',Artifacts:'artifact',Enchantments:'enchantment',Battles:'battle',Lands:'land'};
+function poolQuery(){const f=(econUi.edit?.format||'Standard').toLowerCase(),q=[`legal:${f}`,'game:paper'];const name=(econUi.cardQuery||'').trim().replace(/["\\]/g,'');if(name)q.push(`name:"${name}"`);
+ if(econUi.color)q.push(econUi.color==='C'?'c:c':`c:${POOL_COLORS[econUi.color]||''}`);if(econUi.type&&POOL_TYPES[econUi.type])q.push('t:'+POOL_TYPES[econUi.type]);if(econUi.rarity)q.push('r:'+econUi.rarity);
+ const lead=(econUi.edit?.format==='Commander')?(econUi.edit.cards||[]).map(c=>finderFacts.get(c.name)||econFacts.card((playEcon.snapshot().state?.cards||[]).find(x=>x.n===c.name)?.o)?.card).find(c=>/Legendary/.test(c?.type_line||'')&&/Creature/.test(c?.type_line||'')):null;
+ if(lead?.color_identity)q.push('id<='+(lead.color_identity.join('').toLowerCase()||'c'));return q.join(' ');}
+const poolKey=()=>poolQuery()+'|'+(econUi.sort||'');
+async function loadPool(more=false){const P=econUi.pool;if(!P||P.mode!=='all')return;const key=poolKey();if(P.busy&&P.key===key&&!more)return;const t=++P.ticket;P.busy=true;P.error='';if(!more){P.key=key;P.cards=[];P.page=1;}refreshPlayMenu();
+ try{const order=econUi.sort==='name'?'name':econUi.sort==='mv'?'cmc':'edhrec';const r=await fetch(`https://api.scryfall.com/cards/search?${new URLSearchParams({q:poolQuery(),order,unique:'cards',page:String(P.page)})}`,{headers:{Accept:'application/json'}});const body=await r.json().catch(()=>null);if(t!==P.ticket)return;
+  if(r.status===404||body?.code==='not_found'){P.more=false;}else if(!r.ok||!body)throw Error();else{const add=(body.data||[]).map(slimCard);add.forEach(c=>finderFacts.put(c));P.cards=[...P.cards,...add];P.more=!!body.has_more;P.page+=1;}}
+ catch{if(t===P.ticket)P.error='Check your connection and try again.';}finally{if(t===P.ticket){P.busy=false;refreshPlayMenu();}}}
+A.playEconPool=t=>{const mode=t.dataset.id==='all'?'all':'mine';econUi.pool={...(econUi.pool||{cards:[],ticket:0}),mode};econUi.set='';refreshPlayMenu();};
+A.playEconPoolMore=()=>loadPool(true);
+const craftIdOf=name=>finderFacts.get(name)?.id||econFacts.card((playEcon.snapshot().state?.cards||[]).find(c=>c.n===name||c.n.split(' // ')[0]===name)?.o)?.card?.id||'';
+async function craftCopies(id,n){let made=0;for(let i=0;i<n;i++){try{await playEcon.craft(id);made++;}catch{break;}}return made;}
+A.playCraftCopies=async t=>{const id=t.dataset.cardId||craftIdOf(t.dataset.name),n=Math.max(1,Math.min(4,Number(t.dataset.n)||1));if(!id)return toast('That card is still loading. Try again in a moment.');
+ t.closest('details')?.removeAttribute('open');const made=await craftCopies(id,n);if(made)toast(`${made} ${t.dataset.name} crafted into your Play collection.`);refreshPlayMenu();refreshSheet?.();};
+A.playCraftAll=async()=>{const e=econUi.edit;if(!e||econUi.crafting)return;if(!econUi.craftArmed){econUi.craftArmed=true;refreshPlayMenu();setTimeout(()=>{if(econUi.craftArmed){econUi.craftArmed=false;refreshPlayMenu();}},5000);return;}
+ econUi.craftArmed=false;econUi.crafting=true;refreshPlayMenu();const st=playEcon.snapshot().state||{};
+ const plan=craftPlan(e.cards||[],ownedByName(st.cards||[]),n=>finderFacts.get(n)?.rarity||(st.cards||[]).find(c=>c.n===n)?.r||'',st.wallet||{});let made=0;
+ try{for(const r of plan.rows){const id=craftIdOf(r.name);if(id&&r.now)made+=await craftCopies(id,r.now);}}finally{econUi.crafting=false;refreshPlayMenu();}
+ toast(made?`${made} card${made>1?'s':''} crafted.${made<plan.missing?' Open packs or forge seals for the rest.':''}`:'Not enough seals for these cards yet.');};
+// Drag a card from the pool (or the list) onto the decklist: pointer events, one lifted copy.
+(()=>{let drag=null;const zone=()=>document.querySelector('[data-drop-deck]');
+ addEventListener('pointerdown',e=>{const el=e.target.closest?.('.pe-pool-card[data-drag-card]');if(!el||e.button>0||e.target.closest('.pe-pool-add'))return;drag={el,name:el.dataset.dragCard,x:e.clientX,y:e.clientY,id:e.pointerId,ghost:null};},{passive:true});
+ addEventListener('pointermove',e=>{if(!drag||e.pointerId!==drag.id)return;const dx=e.clientX-drag.x,dy=e.clientY-drag.y;
+  if(!drag.ghost){if(Math.hypot(dx,dy)<10)return;if(e.pointerType==='touch'&&Math.abs(dy)>Math.abs(dx)*1.2){drag=null;return;}const img=drag.el.querySelector('img');const g=document.createElement('img');g.src=img?.src||'';g.className='pe-drag-ghost';g.alt='';document.body.append(g);drag.ghost=g;drag.el.classList.add('pe-dragging');}
+  drag.ghost.style.transform=`translate(${e.clientX-45}px,${e.clientY-63}px) rotate(${Math.max(-8,Math.min(8,dx/30))}deg)`;const z=zone(),r=z?.getBoundingClientRect();z?.classList.toggle('pe-drop-on',!!r&&e.clientX>=r.left&&e.clientX<=r.right&&e.clientY>=r.top&&e.clientY<=r.bottom);});
+ const end=e=>{if(!drag||e.pointerId!==drag.id)return;const d=drag;drag=null;if(!d.ghost)return;d.ghost.remove();d.el.classList.remove('pe-dragging');const z=zone();const on=z?.classList.contains('pe-drop-on');z?.classList.remove('pe-drop-on');
+  const swallow=ev=>{ev.stopPropagation();ev.preventDefault();};addEventListener('click',swallow,{capture:true,once:true});setTimeout(()=>removeEventListener('click',swallow,{capture:true}),0);
+  if(on&&e.type==='pointerup')A.playEconStep({dataset:{econCard:d.name,econStep:'1'}});};
+ addEventListener('pointerup',end);addEventListener('pointercancel',end);})();
+const finderUi={format:'Standard',rows:null,busy:false,error:'',limit:8,ticket:0,sort:'owned',query:'',total:null,trunk:null};
+// Every meta list the service returns for the format (hundreds for the busy ones), ranked by names
+// alone; only the rows on screen are built in full and have their card facts fetched.
+const finderLists=format=>{const data=metaState('mtg:'+(format==='Commander'?'EDH':format)).data;return (data?.decks||[]).filter(d=>d?.key&&Array.isArray(d.main)).map(d=>{const commanders=(d.commanders||[]).map(r=>typeof r==='string'?{name:r,qty:1}:r);return {key:'meta:'+d.key,name:d.name||d.archetype||'Meta deck',archetype:d.archetype||d.name||'',source:'Meta',detail:[d.place,d.event].filter(Boolean).join(' · '),format,commander:commanders[0]?.name||'',cards:[...commanders,...d.main.filter(r=>!r.board||r.board==='main')]};});};
 function finderRefresh(){const snap=playEcon.snapshot(),s=snap.state;if(!s)return;const owned=ownedByName(s.cards||[]),ownedFact=new Map((s.cards||[]).map(c=>{const f=econFacts.card(c.o)?.card;return f?[f.name,f]:null;}).filter(Boolean));
  const cardOf=name=>finderFacts.get(name)||ownedFact.get(name)||ownedFact.get(String(name).split(' // ')[0])||null;
- const hooksOf=(lead,pool)=>{const h=commanderHooks(lead);return pool.filter(c=>(c.color_identity||[]).every(k=>(lead.color_identity||[]).includes(k))&&forgeFit(c,h,{leader:lead}).n>0).length;};
- const trunk=trunkDeck({format:finderUi.format,ownedCards:s.cards||[],factOf:o=>econFacts.card(o)?.card||null,build:buildDeck,hooksOf});
- finderUi.rows=rankFinderRows([...(trunk?[trunk]:[]),...finderLists(finderUi.format)],{owned,cardOf,seals:{c:s.wallet?.seal_c|0,u:s.wallet?.seal_u|0,r:s.wallet?.seal_r|0,m:s.wallet?.seal_m|0}});refreshPlayMenu();}
-async function loadFinder(){const t=++finderUi.ticket,format=finderUi.format,s=playEcon.snapshot().state;finderUi.busy=true;finderUi.error='';finderUi.rows=null;refreshPlayMenu();
+ if(finderUi.trunk?.format!==finderUi.format){const hooksOf=(lead,pool)=>{const h=commanderHooks(lead);return pool.filter(c=>(c.color_identity||[]).every(k=>(lead.color_identity||[]).includes(k))&&forgeFit(c,h,{leader:lead}).n>0).length;};
+  finderUi.trunk={format:finderUi.format,list:trunkDeck({format:finderUi.format,ownedCards:s.cards||[],factOf:o=>econFacts.card(o)?.card||null,build:buildDeck,hooksOf})};}
+ const ranked=rankFinderLists([...(finderUi.trunk.list?[finderUi.trunk.list]:[]),...finderLists(finderUi.format)],{owned,sort:finderUi.sort,query:finderUi.query});
+ const top=ranked.slice(0,finderUi.limit);finderUi.total=ranked.length;finderFacts.want(top.flatMap(x=>x.list.cards.map(r=>r.name)));
+ const seals={c:s.wallet?.seal_c|0,u:s.wallet?.seal_u|0,r:s.wallet?.seal_r|0,m:s.wallet?.seal_m|0};
+ finderUi.rows=top.map(x=>finderRow(x.list,{owned,cardOf,seals}));refreshPlayMenu();}
+async function loadFinder(){const t=++finderUi.ticket,format=finderUi.format,s=playEcon.snapshot().state;finderUi.busy=true;finderUi.error='';finderUi.rows=null;finderUi.trunk=null;refreshPlayMenu();
  try{await econFacts.wantCards((s?.cards||[]).map(c=>({o:c.o,id:c.p?.id})));const mk='mtg:'+(format==='Commander'?'EDH':format);if(!metaState(mk).data)await Promise.race([loadMetaData(mk).catch(()=>{}),new Promise(r=>setTimeout(r,6000))]);if(t!==finderUi.ticket)return;
-  await finderFacts.want(finderLists(format).flatMap(l=>l.cards.map(r=>r.name)));if(t!==finderUi.ticket)return;
   if(!finderLists(format).length)finderUi.error='Meta lists for this format could not load right now. Your Trunk build is still here.';}
  catch{finderUi.error='Some deck lists could not load right now.';}
  finally{if(t===finderUi.ticket){finderUi.busy=false;finderRefresh();}}}
-function finderView(snap){if(!finderUi.rows&&!finderUi.busy)queueMicrotask(loadFinder);return finderMarkup({headHtml:econHead('Build a deck',snap),format:finderUi.format,rows:finderUi.rows||[],busy:finderUi.busy,error:finderUi.error,limit:finderUi.limit});}
+function finderView(snap){if(!finderUi.rows&&!finderUi.busy)queueMicrotask(loadFinder);return finderMarkup({headHtml:econHead('Build a deck',snap),format:finderUi.format,rows:finderUi.rows||[],busy:finderUi.busy,error:finderUi.error,limit:finderUi.limit,total:finderUi.total,sort:finderUi.sort,query:finderUi.query});}
 A.playFinderFormat=t=>{const f=t.dataset.finderFormat;if(!FINDER_FORMATS.includes(f)||f===finderUi.format)return;finderUi.format=f;finderUi.limit=8;loadFinder();};
-A.playFinderMore=()=>{finderUi.limit+=8;refreshPlayMenu();};
-// Use deck: saved as a Play deck. Missing cards stay greyed in the deck and in the
-// finder until they're opened, crafted with seals or bought in packs.
-A.playFinderUse=async t=>{const row=(finderUi.rows||[]).find(r=>r.key===t.dataset.finderKey);if(!row)return;try{await playEcon.saveDeck({name:row.name.slice(0,80),format:row.format,cards:row.list.cards.map(r=>({name:r.name,qty:r.qty}))});toast(row.complete?'Saved to your Play decks.':'Saved to your Play decks. Missing cards stay greyed until you have them.');playView='decks';refreshPlayMenu();scrollTo({top:0});}catch{}};
-A.playEconStep=t=>{const e=econUi.edit;if(!e)return;const owned=ownedByName(playEcon.snapshot().state?.cards||[]);e.cards=stepDeckCard(e.cards,t.dataset.econCard,Number(t.dataset.econStep)||0,owned,e.format);e.dirty=true;refreshPlayMenu();};
+A.playFinderMore=()=>{finderUi.limit+=8;finderRefresh();};
+A.playFinderSort=t=>{finderUi.sort=FINDER_SORTS.some(([k])=>k===t.dataset.finderSort)?t.dataset.finderSort:'owned';finderUi.limit=8;finderRefresh();};
+let finderQueryTimer=0;I.playFinderQuery=t=>{finderUi.query=t.value;clearTimeout(finderQueryTimer);finderQueryTimer=setTimeout(()=>{finderUi.limit=8;finderRefresh();const f=document.querySelector('[data-input="playFinderQuery"]');f?.focus({preventScroll:true});try{f.setSelectionRange(f.value.length,f.value.length);}catch{}},250);};
+// Use / Build it: the list opens in the deck builder. Cards you don't own sit greyed there with
+// their seal, ready to craft one by one or with Craft all; Save keeps it in your Play decks.
+A.playFinderUse=t=>{const row=(finderUi.rows||[]).find(r=>r.key===t.dataset.finderKey);if(!row)return;row.list.cards.forEach(r=>{const f=finderFacts.get(r.name);if(f)finderFacts.put(f);});
+ const cards=[];for(const r of row.list.cards){const c=cards.find(x=>x.name===r.name);if(c)c.qty+=r.qty|0||1;else cards.push({name:r.name,qty:r.qty|0||1});}
+ econUi.edit={id:null,name:row.name.slice(0,80),format:row.format,cards,dirty:true};econUi.pool={mode:row.complete?'mine':'all',cards:[],ticket:0};playView='deck';refreshPlayMenu();scrollTo({top:0});requestAnimationFrame(()=>document.getElementById('playDeckTitle')?.focus?.({preventScroll:true}));};
+A.playEconStep=t=>{const e=econUi.edit;if(!e)return;const name=t.dataset.econCard;e.cards=stepDeckCard(e.cards,name,Number(t.dataset.econStep)||0,new Map([[name,4]]),e.format);e.dirty=true;refreshPlayMenu();if(t.closest?.('#sheet'))refreshSheet?.();};
 I.playEconDeckName=t=>{if(econUi.edit){econUi.edit.name=t.value;econUi.edit.dirty=true;}};
 C.playEconDeckFormat=t=>{if(econUi.edit){econUi.edit.format=t.value;econUi.edit.dirty=true;refreshPlayMenu();}};
 A.playEconSaveEdit=async()=>{const e=econUi.edit;if(!e?.cards?.length||e.busy)return;e.busy=true;refreshPlayMenu();try{const d=await playEcon.saveDeck({id:e.id,name:e.name||'Play deck',format:e.format,cards:[...e.cards,...(e.side||[])]});if(d?.id)e.id=d.id;e.dirty=false;toast('Saved to your Play decks.');}catch{}finally{e.busy=false;refreshPlayMenu();}};
@@ -2320,7 +2368,8 @@ function renderPlayPage() {
    if(playView==='packs')econFacts.wantSets((snap.state?.packs||[]).map(p=>p.set));
    if(playView==='shop'){const q=(econUi.query||'').trim().toLowerCase(),shop=snap.state?.shop||[];econFacts.wantSets([snap.state?.rewardSet?.code,...(q?shop.filter(x=>x.name.toLowerCase().includes(q)||x.code===q):shop).slice(0,q?60:24).map(x=>x.code)].filter(Boolean));}
    if(playView==='finder')return finderView(snap);
-   return econScreenMarkup(playView,snap,{...econUi,query:econUi.query,facts:econFacts});}
+   if(playView==='deck')builderWants(snap);
+   return econScreenMarkup(playView,snap,{...econUi,query:econUi.query,facts:econFacts,nameFact:n=>finderFacts.get(n)});}
   const state=playSetup.snapshot(),p=state.profile,tiles=new Map();state.opponentBuild=practiceOpponentBuilder.snapshot();state.deckBuild=playBuilders[state.playStyle==='quick'?'player':state.inspectedSeat].snapshot();const sources=readPlaySources(),sourceArt=new Map();for(const entries of Object.values(sources))for(const entry of entries)sourceArt.set(entry.key,V.deckArtwork(entry.deck));
   for(const summary of state.decks){const deck=deckById(summary.id);if(summary.valid&&deck)tiles.set(summary.id,V.deckTile(deck,false,{playSelection:playSeatSource(state,playBrowseSeat(state))==='saved'&&playSeatDeck(state,playBrowseSeat(state))?.id===deck.id}));}
   const inspected=state.playStyle!=='quick'&&state.match.mode==='cpu'?playSeatDeck(state,state.inspectedSeat):state.selected;

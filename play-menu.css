@@ -1235,3 +1235,53 @@ button.pd-near-row{cursor:pointer}
 .pe-purse-item.rw-pop,.pe-seal-count.rw-pop{animation:rw-pop .42s cubic-bezier(.3,1.5,.5,1)}
 @keyframes rw-pop{0%{scale:1}35%{scale:1.22;filter:brightness(1.5)}100%{scale:1;filter:none}}
 @media (prefers-reduced-motion:reduce){.pe-purse-item.rw-pop,.pe-seal-count.rw-pop{animation:none}}
+/* Arena-style Play builder: tap opens the card view, + adds, drag onto the list; missing copies greyed with their seal. */
+.pe-build-row{grid-template-columns:minmax(0,1fr) auto auto}
+.pe-build-open{display:grid;grid-template-columns:44px minmax(0,1fr) auto;align-items:center;gap:8px;min-height:44px;padding:0;border:0;background:transparent;color:inherit;font:inherit;text-align:left;cursor:pointer;min-width:0}
+.pe-build-open:focus-visible{outline:2px solid var(--gold);outline-offset:2px;border-radius:8px}
+.pe-build-row--missing{background:#ffffff05;box-shadow:inset 3px 0 0 #f2d18e66}
+.pe-build-row--missing .pe-build-thumb{filter:grayscale(.9) brightness(.55)}
+.pe-build-row--missing .pe-build-name{color:#aab1ba}
+.pe-craft{position:relative}
+.pe-craft>summary{list-style:none;display:inline-flex;align-items:center;gap:3px;min-width:44px;min-height:44px;justify-content:center;padding:0 6px;border-radius:10px;cursor:pointer;font:800 13px/1 'DM Sans',system-ui,sans-serif;color:#f6e4bb}
+.pe-craft>summary::-webkit-details-marker{display:none}
+.pe-craft>summary:hover,.pe-craft>summary:focus-visible,.pe-craft[open]>summary{background:#f2d18e1f}
+.pe-craft>summary:focus-visible{outline:2px solid var(--gold);outline-offset:1px}
+.pe-craft .pe-seal,.play-card-craft .pe-seal{width:18px;height:18px}
+.pe-craft-pop{position:absolute;right:0;top:calc(100% + 4px);z-index:5;display:flex;gap:6px;padding:8px;border-radius:14px;border:1px solid color-mix(in srgb,var(--gold) 30%,var(--line));background:#101217f2;backdrop-filter:blur(14px);box-shadow:0 14px 30px #000a}
+.pe-craft-n{display:inline-flex;align-items:center;justify-content:center;gap:4px;min-width:52px;min-height:44px;padding:0 10px;border-radius:12px;border:1px solid var(--pl-cta-edge,#f6dfa8);background:linear-gradient(180deg,var(--pl-cta-top,#f2d18e),var(--pl-cta-bottom,#c99a4b));color:var(--pl-cta-ink,#1b1408);font:800 14px/1 'DM Sans',system-ui,sans-serif;cursor:pointer}
+.pe-craft-n:disabled{filter:grayscale(.8) brightness(.6);cursor:default}
+.pe-craft-n:focus-visible{outline:2px solid #fff;outline-offset:2px}
+.pe-craft-all-bar{display:flex;flex-wrap:wrap;align-items:center;justify-content:space-between;gap:8px 12px;padding:8px 10px;border-radius:14px;border:1px solid #f2d18e40;background:#f2d18e10}
+.pe-craft-need{display:flex;flex-wrap:wrap;gap:10px}
+.pe-cost--short{color:#f3b2a2}
+.pe-craft-all{margin-top:0}
+.pe-pool-card{position:relative;border-radius:4.75%/3.5%;transition:transform .15s ease;touch-action:pan-y}
+.pe-pool-card:hover{transform:translateY(-3px)}
+.pe-pool-open{display:block;width:100%;padding:0;border:0;background:transparent;cursor:pointer;border-radius:inherit}
+.pe-pool-open img{display:block;width:100%;aspect-ratio:63/88;object-fit:cover;border-radius:4.75%/3.5%;background:#15171c;box-shadow:0 10px 24px #0007;-webkit-user-drag:none;user-select:none}
+.pe-pool-open:focus-visible{outline:2px solid var(--gold);outline-offset:3px}
+.pe-pool-card--missing img{filter:grayscale(.85) brightness(.5)}
+.pe-pool-card .pe-left{left:8px;right:auto}
+.pe-left .pe-left-seal{width:16px;height:16px}
+.pe-pool-add{position:absolute;right:4px;bottom:4px;width:44px;height:44px;display:grid;place-items:center;border-radius:50%;border:1px solid #f6dfa8;background:linear-gradient(180deg,#f2d18e,#c99a4b);color:#1b1408;font:800 22px/1 system-ui,sans-serif;cursor:pointer;box-shadow:0 4px 12px #0009}
+.pe-pool-add:disabled{filter:grayscale(.8) brightness(.55);cursor:default}
+.pe-pool-add:focus-visible{outline:2px solid #fff;outline-offset:2px}
+.pe-pool-skeleton{display:block;aspect-ratio:63/88;border-radius:4.75%/3.5%;background:linear-gradient(100deg,#ffffff06 30%,#ffffff12 50%,#ffffff06 70%) 0 0/300% 100%,#15171c;animation:pf-shine 1.6s linear infinite}
+.pe-pool-more{justify-self:center;min-height:44px}
+.pe-build-pool .seg{margin:0}
+.pe-dragging{opacity:.35}
+.pe-drag-ghost{position:fixed;left:0;top:0;z-index:9999;width:90px;border-radius:5px;pointer-events:none;box-shadow:0 18px 36px #000c;will-change:transform}
+.pe-build-deck.pe-drop-on{outline:2px dashed var(--gold);outline-offset:4px;box-shadow:0 0 30px #f2d18e33}
+.play-card-build{display:grid;gap:10px;margin:0 0 12px}
+.play-card-step{display:flex;align-items:center;gap:10px}
+.play-card-step .btn{min-width:44px;min-height:44px;font-size:18px}
+.play-card-step b{min-width:74px;text-align:center;font-variant-numeric:tabular-nums}
+.play-card-craft{display:flex;flex-wrap:wrap;gap:6px}
+.pf-meter{display:block;width:72px;height:4px;margin-top:5px;border-radius:2px;background:#ffffff1c;overflow:hidden}
+.pf-meter>i{display:block;height:100%;border-radius:inherit;background:linear-gradient(90deg,#c99a4b,#f2d18e)}
+.pf-search{flex:0 1 280px;display:grid;gap:4px}
+.pf-search .pf-total{font-size:12px;color:var(--muted);min-height:1.2em}
+.pf-filters{align-items:end}
+@media(max-width:700px){.pf-search{flex:1 1 100%}.pe-craft-pop{flex-wrap:wrap;width:max-content;max-width:calc(100vw - 48px)}}
+@media(prefers-reduced-motion:reduce){.pe-pool-skeleton{animation:none}.pe-pool-card{transition:none}}
