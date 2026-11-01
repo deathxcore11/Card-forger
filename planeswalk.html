@@ -2052,6 +2052,25 @@ body[data-actnum="3"] #app .screen.blessing{--pw-bg:url(./planeswalk-art/blessin
 #app .pw-uhero b{font:700 calc(max(11px,.95rem) * var(--pw-ts,1))/1 var(--display,serif);color:#ffe7b0;text-shadow:0 1px 3px #000}
 @keyframes pw-unlock-in{from{opacity:0;transform:translateY(10px) scale(.85)}}
 @media (prefers-reduced-motion:reduce){#app .pw-unlocks>*{animation:none}}
+/* ===== Codex (rulings #7): 7 tabs, archetype groups with their plan line once, tokens, events and planes */
+#app .pw-jtabs{grid-template-columns:44px repeat(7,minmax(0,1fr))!important}
+#app .pw-jtab{font-size:calc(max(11px,.74rem) * var(--pw-ts,1))!important}
+#app .pw-jbody h4{margin:4px 0 0;text-align:left;font:700 calc(max(11px,.78rem) * var(--pw-ts,1))/1.1 Cinzel,var(--display),serif;letter-spacing:.1em;text-transform:uppercase;color:#c9a35a}
+#app .pw-jbody h4.pw-jrest{height:1px;margin:6px 0 2px;background:linear-gradient(90deg,#c9a35a66,transparent)}
+#app .pw-jplan{margin:0;text-align:left;font:500 calc(max(11px,.8rem) * var(--pw-ts,1))/1.35 var(--body);color:#d8cdb4;max-width:65ch}
+#app .pw-jfoe>em,#app .pw-jtok>em{font:italic 500 calc(max(11px,.7rem) * var(--pw-ts,1))/1.25 var(--body);color:#b9ad95}
+#app .pw-jtok>.pw-tok{width:64px;height:64px;border-radius:50%;background-image:var(--img),radial-gradient(120% 120% at 50% 0%,#3a332b,#16130f 70%);background-size:86%,cover;background-position:center;background-repeat:no-repeat;box-shadow:0 0 0 1.5px #e8b45a}
+#app .pw-jevs{display:grid;grid-template-columns:repeat(auto-fill,minmax(150px,1fr));gap:10px}
+#app .pw-jev{display:grid;gap:4px;min-width:0;text-align:center}
+#app .pw-jev>i{display:block;aspect-ratio:3/2;border-radius:10px;background:var(--ev) center/cover no-repeat;box-shadow:0 0 0 1px #ffffff2a}
+#app .pw-jev>b{font:700 calc(max(11px,.74rem) * var(--pw-ts,1))/1.2 var(--body)}
+#app .pw-jev.pw-sil{aspect-ratio:3/2;display:grid;place-items:center;border-radius:10px;background:radial-gradient(#25252b,#0d0d10);border:1px dashed #ffffff2e}
+#app .pw-jplanes{display:grid;grid-template-columns:repeat(auto-fill,minmax(240px,1fr));gap:12px}
+#app .pw-jplane{display:grid;gap:4px;min-width:0;text-align:left}
+#app .pw-jplane>i{display:block;aspect-ratio:16/7;border-radius:12px;background:var(--pl) center/cover no-repeat;box-shadow:0 0 0 1px #ffffff2a}
+#app .pw-jplane>b{font:700 calc(max(11px,1rem) * var(--pw-ts,1)) var(--display);color:#e9d9b8}
+#app .pw-jplane>em{font:500 calc(max(11px,.78rem) * var(--pw-ts,1))/1.35 var(--body);color:#d8cdb4;font-style:normal}
+#app .pw-jplane.pw-sil{aspect-ratio:16/7;display:grid;place-items:center;border-radius:12px;background:radial-gradient(#25252b,#0d0d10);border:1px dashed #ffffff2e}
 
 /* Planeswalk emblem art. Pairs with emblem-art.js. */
 .emb-art{position:relative;flex:none;display:block;border-radius:50%;box-shadow:0 0 0 1px #0008,0 4px 14px #000a}
@@ -3327,7 +3346,7 @@ const pstat=k=>{try{return k==='codex'?codexCount():(profile.stat&&profile.stat[
 const heroOpen=k=>k==='R'||!!(profile.heroes&&profile.heroes[k]);
 function checkGoals(){const H=profile.heroes=profile.heroes||{R:1},got=[];for(const k in HERO_GOALS)if(!H[k]&&HERO_GOALS[k].some(([g,n])=>pstat(g)>=n)){H[k]=1;if(HEROES[k])got.push(k)}return got}
 function bumpStat(k,n=1){const S=profile.stat=profile.stat||{};S[k]=(S[k]||0)+n}
-const codexCount=()=>['seen','seenE','seenF','seenT','seenV'].reduce((t,k)=>t+((profile[k]||[]).length),0);
+const codexCount=()=>Object.values(codexData()).reduce((t,[ks,sn])=>t+ks.filter(k=>sn.has(k)).length,0);
 function bossBeat(bk,a){if(!run)return;run.xpB=(run.xpB||0)+1;const B=profile.bossBeat=profile.bossBeat||{},L=B[run.hero]=B[run.hero]||[];if(!L.includes(bk)){L.push(bk);run.xpF=(run.xpF||0)+1}
  if(a===1)bumpStat('a1');if(a===2)bumpStat('a2');const got=checkGoals();if(got.length)run.newHeroes=[...(run.newHeroes||[]),...got];store.set(PROF,profile)}
 // Art registries from build.py: no placeholders, so a card or UI piece without its art stays out (and switches on when the art lands).
@@ -4259,7 +4278,7 @@ function sparkPicker(hk){const o=sparkOf(hk).open;if(!o)return '';const n=sparkP
 function lockedHero(h){const open=reward&&reward.goals===h.key,G=HERO_GOALS[h.key]||[];
  return `<div class="pw-hcol"><button class="option hero-pick pw-locked${open?' open':''}" data-act="hlock" data-k="${h.key}" data-n="${h.name}" aria-label="${h.short}: locked" aria-expanded="${open}"><b>${h.name}</b><span class="pw-lock">${ico('lock')}</span><span class="pw-goals">${G.map(([g,n,i,t],j)=>`${j?'<i class="pw-or" aria-hidden="true"></i>':''}<span class="pw-goal" role="img" aria-label="${t}: ${Math.min(n,pstat(g))} of ${n}" title="${t}">${ico(i)}<b>${Math.min(n,pstat(g))}/${n}</b></span>`).join('')}</span></button></div>`}
 function heroesView(){
- return `<header class="top"><h1>Planeswalk</h1><span class="spacer"></span>${profile.runs?`<button class="btn pw-jtop" data-act="journal" aria-label="Journal" title="Journal">${ico('book')}</button>`:''}</header><section class="screen heroes"><h2>Choose your planeswalker</h2><div class="choices">${Object.values(HEROES).map(h=>!heroOpen(h.key)?lockedHero(h):`<div class="pw-hcol"><button class="option hero-pick" data-act="hero" data-k="${h.key}" data-n="${h.name}"><b>${h.name}</b><span class="muted">${h.color} · ${h.life} life · ${h.theme}</span><span class="muted">${h.plusLabel()} · ${h.minusLabel} · ${h.ultLabel}</span><span class="pw-kit"><span class="pw-hsig">${embSvg(h.sig)}<span><em>Signature</em>${EMB[h.sig].name.replace(/^Emblem of the /,'')}</span></span><span class="pw-starter"><em>Starter deck</em>${starterList(h)}</span></span></button>${sparkPicker(h.key)}</div>`).join('')}</div></section>`;
+ return `<header class="top"><h1>Planeswalk</h1><span class="spacer"></span>${profile.runs?`<button class="btn pw-jtop" data-act="journal" aria-label="Codex" title="Codex">${ico('book')}</button>`:''}</header><section class="screen heroes"><h2>Choose your planeswalker</h2><div class="choices">${Object.values(HEROES).map(h=>!heroOpen(h.key)?lockedHero(h):`<div class="pw-hcol"><button class="option hero-pick" data-act="hero" data-k="${h.key}" data-n="${h.name}"><b>${h.name}</b><span class="muted">${h.color} · ${h.life} life · ${h.theme}</span><span class="muted">${h.plusLabel()} · ${h.minusLabel} · ${h.ultLabel}</span><span class="pw-kit"><span class="pw-hsig">${embSvg(h.sig)}<span><em>Signature</em>${EMB[h.sig].name.replace(/^Emblem of the /,'')}</span></span><span class="pw-starter"><em>Starter deck</em>${starterList(h)}</span></span></button>${sparkPicker(h.key)}</div>`).join('')}</div></section>`;
 }
 // End of run: the trail bar fills with this run's XP; a new step shows what it opens (its real cards and tokens), a new hero shows its portrait.
 function stepPack(n){const L=[];for(const k in C)if(C[k].trail===n&&(!CARDART||CARDART.has(C[k].name))&&(C[k].col===HERO.key||C[k].col==='C'))L.push(anteCard({key:k}));for(const k in TOKENS)if(TOKENS[k].trail===n&&tokOk(k))L.push(`<span class="pw-tok pw-utok" data-ui="tok-${k}" role="img" aria-label="${TOKENS[k].name}" title="${TOKENS[k].name}: ${TOKENS[k].tip}"></span>`);return L}
@@ -4476,23 +4495,54 @@ function tutGlow(){if(profile.tut||view!=='battle'||!c||c.busy||SIM)return;if(pr
  if(!c.pending&&c.turn===2)el.push(...q('.side.foe .intent'));if(!c.pending&&c.turn===3&&FORM)el.push(...q('.side.you .unit.ally.front'));
  el.filter(Boolean).forEach(x=>x.classList.add('pw-tut'))}
 const HIST='planeswalk.history.v1';let JT='runs',CLOUDH=null;
-function markSeen(){const sn=new Set(profile.seen||[]),se=new Set(profile.seenE||[]),sf=new Set(profile.seenF||[]),n=sn.size+se.size+sf.size;
+// ===== The Codex (meta item 5, rulings #7): Cards, Enemies, Emblems, Tokens, Events, Planes (plus your Runs). Seen entries show their art,
+// the rest a silhouette; each tab shows its completion %. Entries without art are left out and never counted.
+const SEENK=['seen','seenE','seenF','seenT','seenV','seenP'];
+function markSeen(){const S=SEENK.map(k=>new Set(profile[k]||[])),[sn,se,sf,st,sv,sp]=S,n=S.reduce((t,x)=>t+x.size,0);
  if(c&&view==='battle')c.enemies.forEach(e=>sf.add(e.key));
- if(run){run.deck.forEach(x=>sn.add(x.key));run.emblems.forEach(k=>se.add(k))}
+ if(run){run.deck.forEach(x=>sn.add(x.key));run.emblems.forEach(k=>se.add(k));(run.belt||[]).forEach(k=>k&&st.add(k));sp.add(run.act||1)}
+ if(reward&&view==='event'&&reward.ev&&run)sv.add((run.act||1)+':'+reward.ev);
  if(reward&&/reward|shop|event|bossreward|actstart/.test(view))JSON.stringify(reward).replace(/"([a-z0-9]+)"/g,(_,k)=>{if(C[k])sn.add(k);else if(EMB[k])se.add(k);return ''});
- if(sn.size+se.size+sf.size!==n){profile.seen=[...sn];profile.seenE=[...se];profile.seenF=[...sf];store.set(PROF,profile)}}
-function journalView(){const t=JT;const tab=(k,l)=>`<button class="btn pw-jtab" data-act="jtab" data-k="${k}" aria-pressed="${t===k}">${l}</button>`;
+ if(S.reduce((t,x)=>t+x.size,0)!==n){SEENK.forEach((k,i)=>profile[k]=[...S[i]]);store.set(PROF,profile)}}
+// Archetype plans, one line per group, shown once at the head of the group (data rows; Randall's paths only change these).
+const ARCHLINE=[['R','Goblins',()=>`Tokens, then Bombardment, then Tremors. Weakness: the ${MAXBODIES}-body cap.`],['R','Spells',()=>`Rituals, then Fury, then Grapeshot or Fireball. Weakness: running out of cards and the ${RITUAL_CAP}-mana cap.`],
+ ['R','Exile',()=>'Kindling Rite and Exile cards fill the pile, then Pyre Herald and Ashen Scholar grow with it. Weakness: the pile empties after every fight.'],
+ ['W','Go wide',()=>'Tokens, then Anthem, then Charge. Weakness: sweeps.'],['W','Flyers',()=>"Healer's Hawk and other cheap flyers, then Empyrean Eagle and Serra Angel pump them, then Akroma gives them first strike and lifelink. Weakness: a slow start."],
+ ['W','Healing',()=>"Soul Warden and healing, then Ajani's Pridemate grows on each heal, then Archangel of Thune turns the first heal each turn into +1/+1 for every ally. Weakness: burst damage."],
+ ['W','Exile',()=>'Exile cards fill the pile, then Ashes to Glory pumps every ally by the count. Weakness: the pile empties after every fight.']];
+const ARCHNAME={Healing:'Lifegain'};
+const EVNAME={shrine:'The crossroads shrine',cart:'An abandoned cart',cathar:'A wounded cathar',hedron:'The hedron field',ruins:'Expedition ruins',bargain:'The bargain stone'};
+const PLANEART={1:'inn',2:'zen',3:'rav'};
+const cardArtOk=k=>!CARDART||CARDART.has(C[k].name);
+const archOf=k=>{const d=C[k],L=[];const a=ARCH[k]&&ARCH[k][0];if(a&&a!=='Aggro'&&a!=='Tokens')L.push(a);let t='';try{t=String(d.text(false))}catch(e){}if(d.exile||/exiled? (this fight|pile)|cards you've exiled|for each card in your exile/i.test(t))L.push('Exile');return L};
+function codexData(){const sn=new Set(profile.seen||[]);Object.values(HEROES).forEach(h=>h.starter.forEach(k=>sn.add(k)));
+ const cards=Object.keys(C).filter(k=>!C[k].hidden&&C[k].r!=='K'&&cardArtOk(k)),foes=Object.keys(E).filter(k=>!E[k].token&&!E[k].retired&&!/token$/.test(E[k].name)),embs=Object.keys(EMB),toks=Object.keys(TOKENS).filter(k=>hasUI('tok-'+k));
+ const evs=[];ACTS.forEach((A,a)=>{if(!A)return;const ids=[...(A.events||[]),...(a>=2?['bargain']:[])];ids.forEach(id=>{if(EVNAME[id])evs.push(a+':'+id)})});
+ const planes=ACTS.map((A,a)=>A?a:null).filter(Boolean);
+ return {cards:[cards,sn],foes:[foes,new Set(profile.seenF||[])],embs:[embs,new Set(profile.seenE||[])],toks:[toks,new Set(profile.seenT||[])],evs:[evs,new Set(profile.seenV||[])],planes:[planes,new Set((profile.seenP||[]).map(Number))]}}
+const pct=([ks,sn])=>ks.length?Math.floor(100*ks.filter(k=>sn.has(k)).length/ks.length):0;
+const sil=(cls,lbl='Not found yet')=>`<span class="${cls} pw-sil" role="img" aria-label="${lbl}"><span class="pw-sil-q">?</span></span>`;
+function journalView(){const t=JT,D=codexData();const tab=(k,l)=>`<button class="btn pw-jtab" data-act="jtab" data-k="${k}" aria-pressed="${t===k}">${l}</button>`;
+ const head=k=>`<p class="pw-jcount" data-audit-repeat role="img" aria-label="${pct(D[k])}% complete">${pct(D[k])}%</p>`;
  let body='';
  if(t==='runs'){const L=store.get(HIST)||[];const seen=new Set(L.map(h=>h.seed+h.hero));const all=[...L,...(CLOUDH||[]).filter(h=>!seen.has(h.seed+h.hero))].sort((a,b)=>b.at-a.at).slice(0,20);
   body=all.length?`<ol class="pw-runs">${all.map(h=>`<li class="pw-run" data-won="${h.won?1:0}" data-hero="${h.hero}"><span class="pw-run-r" role="img" aria-label="${h.won?'Won':'Lost'}">${ico(h.won?'crown':'skull')}</span><span class="pw-run-t"><b>${(HEROES[h.hero]||HERO).short} · Act ${h.act} · Floor ${h.floor}</b><span class="muted">${h.won?'Victory':h.killedBy?'Fell to '+h.killedBy:'Fell on the road'} · ${h.fights} fights · Best turn ${h.bestTurn}</span></span><button class="btn pw-run-go" data-act="replayseed" data-s="${h.seed}" data-h="${h.hero}" aria-label="Replay seed ${h.seed}">${ico('cycle')}<span>${h.seed}</span></button></li>`).join('')}</ol>`:'<p class="muted">No runs yet.</p>'}
- else if(t==='cards'){const sn=new Set(profile.seen||[]);Object.values(HEROES).forEach(h=>h.starter.forEach(k=>sn.add(k)));
-  const ks=Object.keys(C).filter(k=>!C[k].hidden&&C[k].r!=='K'),grp=[['R','Red'],['W','White'],['C','Colorless']];
-  body=`<p class="pw-jcount" data-audit-repeat>${ks.filter(k=>sn.has(k)).length} / ${ks.length}</p>`+grp.map(([g,l])=>{const gk=ks.filter(k=>(C[k].col||'C')===g);return gk.length?`<h3>${l}</h3><div class="pw-comp">${gk.map(k=>sn.has(k)?cardHtml({key:k,foil:false},'tabindex="-1" data-comp'):`<span class="pw-csil pw-sil" data-rar="${C[k].r}" role="img" aria-label="Not found yet"><span class="pw-sil-q">?</span></span>`).join('')}</div>`:''}).join('')}
- else if(t==='foes'){const sf=new Set(profile.seenF||[]);const ks=Object.keys(E).filter(k=>!E[k].token&&!E[k].retired&&!/token$/.test(E[k].name));
-  body=`<p class="pw-jcount" data-audit-repeat>${ks.filter(k=>sf.has(k)).length} / ${ks.length}</p><div class="pw-jfoes">${ks.map(k=>sf.has(k)?`<span class="pw-jfoe" data-n="${E[k].art||E[k].name}" data-rank="${E[k].rank||''}"><i></i><b>${E[k].name.replace(/,.*$/,'')}</b></span>`:`<span class="pw-jfoe pw-sil" role="img" aria-label="Not met yet"><i><span class="pw-sil-q">?</span></i></span>`).join('')}</div>`}
- else {const se=new Set(profile.seenE||[]);const ks=Object.keys(EMB);
-  body=`<p class="pw-jcount" data-audit-repeat>${ks.filter(k=>se.has(k)).length} / ${ks.length}</p><div class="pw-jembs">${ks.map(k=>se.has(k)?`<span class="pw-jemb" data-col="${EMB[k].col||''}">${embSvg(k)}<b>${EMB[k].name.replace(/^Emblem of (the )?/,'')}</b></span>`:`<span class="pw-jemb pw-sil" role="img" aria-label="Not found yet"><span class="pw-sil-q">?</span></span>`).join('')}</div>`}
- return `<header class="top"><h1>Journal</h1><span class="spacer"></span></header><section class="screen journal"><div class="pw-jtabs" role="group" aria-label="Journal"><button class="btn pw-jback" data-act="jback" aria-label="Back">${ico('back')}</button>${tab('runs','Runs')}${tab('cards','Cards')}${tab('foes','Foes')}${tab('embs','Emblems')}</div><div class="pw-jbody">${body}</div></section>`}
+ else if(t==='cards'){const [ks,sn]=D.cards,tile=k=>sn.has(k)?cardHtml({key:k,foil:false},'tabindex="-1" data-comp'):`<span class="pw-csil pw-sil" data-rar="${C[k].r}" role="img" aria-label="Not found yet"><span class="pw-sil-q">?</span></span>`;
+  const grid=L=>`<div class="pw-comp">${L.map(tile).join('')}</div>`;
+  body=head('cards')+Object.values(HEROES).map(h=>{const hk=ks.filter(k=>C[k].col===h.key);if(!hk.length)return '';const used=new Set();
+   const groups=ARCHLINE.filter(([g])=>g===h.key).map(([,a,line])=>{const L=hk.filter(k=>archOf(k).includes(a));L.forEach(k=>used.add(k));return L.length?`<h4>${ARCHNAME[a]||a}</h4><p class="pw-jplan">${line()}</p>${grid(L)}`:''}).join('');
+   const rest=hk.filter(k=>!used.has(k));return `<h3>${h.short}</h3>${groups}${rest.length?`<h4 class="pw-jrest" aria-label="Other cards"></h4>${grid(rest)}`:''}`}).join('')+(()=>{const L=ks.filter(k=>!C[k].col||C[k].col==='C');return L.length?`<h3>Colorless</h3>${grid(L)}`:''})()}
+ else if(t==='foes'){const [ks,sf]=D.foes;
+  body=head('foes')+`<div class="pw-jfoes">${ks.map(k=>sf.has(k)?`<span class="pw-jfoe" data-n="${E[k].art||E[k].name}" data-rank="${E[k].rank||''}"><i></i><b>${E[k].name.replace(/,.*$/,'')}</b>${E[k].lore?`<em>${E[k].lore}</em>`:''}</span>`:`<span class="pw-jfoe pw-sil" role="img" aria-label="Not met yet"><i><span class="pw-sil-q">?</span></i></span>`).join('')}</div>`}
+ else if(t==='embs'){const [ks,se]=D.embs;
+  body=head('embs')+`<div class="pw-jembs">${ks.map(k=>se.has(k)?`<span class="pw-jemb" data-col="${EMB[k].col||''}">${embSvg(k)}<b>${EMB[k].name.replace(/^Emblem of (the )?/,'')}</b></span>`:sil('pw-jemb')).join('')}</div>`}
+ else if(t==='toks'){const [ks,st]=D.toks;
+  body=head('toks')+`<div class="pw-jembs">${ks.map(k=>st.has(k)?`<span class="pw-jemb pw-jtok"><span class="pw-tok" data-ui="tok-${k}" role="img" aria-label="${TOKENS[k].name}"></span><b>${TOKENS[k].name}</b><em>${TOKENS[k].tip}</em></span>`:sil('pw-jemb')).join('')}</div>`}
+ else if(t==='evs'){const [ks,sv]=D.evs;
+  body=head('evs')+`<div class="pw-jevs">${ks.map(k=>{const [a,id]=k.split(':');return sv.has(k)?`<span class="pw-jev" style="--ev:url('./planeswalk-art/ev-${PLANEART[a]}-${id}.webp')"><i></i><b>${EVNAME[id]}</b></span>`:sil('pw-jev')}).join('')}</div>`}
+ else {const [ks,sp]=D.planes;
+  body=head('planes')+`<div class="pw-jplanes">${ks.map(a=>sp.has(a)?`<span class="pw-jplane" style="--pl:url('./planeswalk-art/blessing-${PLANEART[a]}-wide.webp')"><i></i><b>${ACTS[a].name}</b><em>${(ACTS[a].flavor||'').replace(/\{boss\}/g,ACTS[a].bossShort||'the boss')}</em></span>`:sil('pw-jplane','Not walked yet')).join('')}</div>`}
+ return `<header class="top"><h1>Codex</h1><span class="spacer"></span></header><section class="screen journal"><div class="pw-jtabs" role="group" aria-label="Codex"><button class="btn pw-jback" data-act="jback" aria-label="Back">${ico('back')}</button>${tab('runs','Runs')}${tab('cards','Cards')}${tab('foes','Enemies')}${tab('embs','Emblems')}${tab('toks','Tokens')}${tab('evs','Events')}${tab('planes','Planes')}</div><div class="pw-jbody">${body}</div></section>`}
 function loadCloudHistory(){if(CLOUDH||!window.pwCloud?.history)return;CLOUDH=[];window.pwCloud.history(20).then(rows=>{CLOUDH=(rows||[]).map(r=>({at:Date.parse(r.created_at)||0,hero:r.hero,seed:r.seed,act:r.act,floor:r.floor,won:r.won,killedBy:r.killed_by,fights:'?',bestTurn:r.best_turn}));if(view==='journal')render()}).catch(()=>{})}
 const SHARE_URL='https://cardstashy.com/planeswalk.html';
 async function shareRun(b){const won=view==='victory',act=run.act||1,url=`${SHARE_URL}?seed=${seed}&hero=${HERO.key}`;

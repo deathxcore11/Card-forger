@@ -1806,3 +1806,22 @@ body[data-actnum="3"] #app .screen.blessing{--pw-bg:url(./planeswalk-art/blessin
 #app .pw-uhero b{font:700 .95rem/1 var(--display,serif);color:#ffe7b0;text-shadow:0 1px 3px #000}
 @keyframes pw-unlock-in{from{opacity:0;transform:translateY(10px) scale(.85)}}
 @media (prefers-reduced-motion:reduce){#app .pw-unlocks>*{animation:none}}
+/* ===== Codex (rulings #7): 7 tabs, archetype groups with their plan line once, tokens, events and planes */
+#app .pw-jtabs{grid-template-columns:44px repeat(7,minmax(0,1fr))!important}
+#app .pw-jtab{font-size:.74rem!important}
+#app .pw-jbody h4{margin:4px 0 0;text-align:left;font:700 .78rem/1.1 Cinzel,var(--display),serif;letter-spacing:.1em;text-transform:uppercase;color:#c9a35a}
+#app .pw-jbody h4.pw-jrest{height:1px;margin:6px 0 2px;background:linear-gradient(90deg,#c9a35a66,transparent)}
+#app .pw-jplan{margin:0;text-align:left;font:500 .8rem/1.35 var(--body);color:#d8cdb4;max-width:65ch}
+#app .pw-jfoe>em,#app .pw-jtok>em{font:italic 500 .7rem/1.25 var(--body);color:#b9ad95}
+#app .pw-jtok>.pw-tok{width:64px;height:64px;border-radius:50%;background-image:var(--img),radial-gradient(120% 120% at 50% 0%,#3a332b,#16130f 70%);background-size:86%,cover;background-position:center;background-repeat:no-repeat;box-shadow:0 0 0 1.5px #e8b45a}
+#app .pw-jevs{display:grid;grid-template-columns:repeat(auto-fill,minmax(150px,1fr));gap:10px}
+#app .pw-jev{display:grid;gap:4px;min-width:0;text-align:center}
+#app .pw-jev>i{display:block;aspect-ratio:3/2;border-radius:10px;background:var(--ev) center/cover no-repeat;box-shadow:0 0 0 1px #ffffff2a}
+#app .pw-jev>b{font:700 .74rem/1.2 var(--body)}
+#app .pw-jev.pw-sil{aspect-ratio:3/2;display:grid;place-items:center;border-radius:10px;background:radial-gradient(#25252b,#0d0d10);border:1px dashed #ffffff2e}
+#app .pw-jplanes{display:grid;grid-template-columns:repeat(auto-fill,minmax(240px,1fr));gap:12px}
+#app .pw-jplane{display:grid;gap:4px;min-width:0;text-align:left}
+#app .pw-jplane>i{display:block;aspect-ratio:16/7;border-radius:12px;background:var(--pl) center/cover no-repeat;box-shadow:0 0 0 1px #ffffff2a}
+#app .pw-jplane>b{font:700 1rem var(--display);color:#e9d9b8}
+#app .pw-jplane>em{font:500 .78rem/1.35 var(--body);color:#d8cdb4;font-style:normal}
+#app .pw-jplane.pw-sil{aspect-ratio:16/7;display:grid;place-items:center;border-radius:12px;background:radial-gradient(#25252b,#0d0d10);border:1px dashed #ffffff2e}
