@@ -1212,7 +1212,7 @@ const intentLabel=e=>{const I=(k,cls,tip,n,m='')=>`<span data-audit-repeat class
  if(t==='sweep')return I('waves','drain',`Deals ${v} damage to each of your allies`,v);
  if(t==='bolster')return I('up','buff',`Gives another enemy +${v} attack`,'+'+v);
  if(t==='banner')return I('up','buff',`Raises its banner: the enemy in front of it gets +${v} attack`,'+'+v);
- if(t==='blink')return I('sword','atk',`Blinks your front blocker to the back of your line, then attacks for ${v}`,v);
+ if(t==='blink')return I('sword','atk',`Blinks your front blocker to the back of your line, then attacks for ${v}`,v,mod('back','Moves your front blocker to the back'));
  if(t==='rally')return I('up','buff',`Every enemy gets +${v} attack`,'+'+v,mod('plus','All enemies'));
  if(t==='annihilate')return I('sword','drain',`Attacks for ${v+e.buff}, then destroys your weakest ally`,v+e.buff,mod('skull','Then destroys your weakest ally'));
  if(t==='pay')return I('up','buff',`Pays ${v} life, then its next attack gets +${v}`,'+'+v,mod('drop',`Pays ${v} life`));
