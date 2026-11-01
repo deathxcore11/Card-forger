@@ -3774,7 +3774,7 @@ const SPARK=()=>{try{return typeof PW_SPARK!=='undefined'?PW_SPARK:(run&&run.spa
 const sparkOf=hk=>{try{return (profile.spark&&profile.spark[hk])||{open:0,beat:0}}catch(e){return {open:0,beat:0}}};
 // Hero skins (art D043/D044, MAPPING 16): a skin swaps the hero's portrait and fight figure. Won by a Spark win (beat > level), picked on hero select; profile.skin[hero] = id.
 const SKINS={R:[{id:'torch',name:'Torch of Defiance',fig:'chandra-torch-of-defiance',spark:3},{id:'acolyte',name:'Acolyte of Flame',fig:'chandra-acolyte-of-flame',spark:7}],
- W:[{id:'sun',name:"Sun's Champion",fig:'elspeth-sun-s-champion',spark:3},{id:'knight',name:'Knight-Errant',fig:'elspeth-knight-errant',spark:7,hidden:1/* MAPPING 19: defeat-2 and statue owed; shown when they land */}]};
+ W:[{id:'sun',name:"Sun's Champion",fig:'elspeth-sun-s-champion',spark:3},{id:'knight',name:'Knight-Errant',fig:'elspeth-knight-errant',spark:7}]};
 const skinsOpen=hk=>(SKINS[hk]||[]).filter(s=>!s.hidden&&sparkOf(hk).beat>s.spark);
 const skinOf=hk=>{const id=profile.skin&&profile.skin[hk];return skinsOpen(hk).find(s=>s.id===id)||null};
 function applySkins(){for(const k in HEROES){const s=skinOf(k);HEROES[k].figure=s?s.fig:undefined;if(typeof document!=='undefined'&&document.body){if(s)document.body.dataset['skin'+k]=s.id;else delete document.body.dataset['skin'+k]}}}
