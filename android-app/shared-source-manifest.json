@@ -1,8 +1,8 @@
 {
   "schema": 1,
-  "version": "4.3.55",
-  "commit": "0edd1eeaddd07d7c9f27e58477950014e000050d",
-  "tree": "3f7e86ff4ff03857cd756d339eaf2aeed69a706b",
+  "version": "4.3.63",
+  "commit": "07c2b371969b0aed0487640a9007538188e5e2f6",
+  "tree": "b65c296f65691490c4b36ad87422198ab9ec130e",
   "repository": "https://github.com/deathxcore11/Card-forger",
   "scope": "Explicit frontend build dependencies plus optional artwork input files. Not full backend repository.",
   "files": [
@@ -10,6 +10,21 @@
       "path": ".assetsignore",
       "bytes": 4147,
       "sha256": "38524f907772caab28a6229cd3b3cc51249daa2958d69efa7e945dd14d29f6a8"
+    },
+    {
+      "path": ".github/workflows/forge-host-deploy.yml",
+      "bytes": 3072,
+      "sha256": "1f85ac41de816f1ceb3a7313f34b17c9e96f4dd2d4df5accffcc35391e9d94dc"
+    },
+    {
+      "path": ".github/workflows/rules-refresh.yml",
+      "bytes": 6174,
+      "sha256": "381a8c970b08ad5a4e35c161dcc38ffddd2ee931eb42ffde983977f22d3aeb12"
+    },
+    {
+      "path": ".github/workflows/story-pack-art.yml",
+      "bytes": 506,
+      "sha256": "a539bda75719a38c9f647d120bff099a7620ae15e03b33cc1a44471f9fd96c0f"
     },
     {
       "path": ".gitignore",
@@ -58,8 +73,8 @@
     },
     {
       "path": "ai-deck-builder.js",
-      "bytes": 33233,
-      "sha256": "95ec362a25863bcbdf9d1ec05aad22a2bb83379b05328a2451859b3b666320ae"
+      "bytes": 33309,
+      "sha256": "63552ba931f8109e4389c319cf30b9e6d5f26247869e1b00fa08b97654d0f5e8"
     },
     {
       "path": "ai-deck-goal.js",
@@ -118,13 +133,13 @@
     },
     {
       "path": "app.js",
-      "bytes": 480405,
-      "sha256": "2157e739163173ca5d17f14fce7f4fc9faec156694402b67239f7ce9cc980c7c"
+      "bytes": 520337,
+      "sha256": "952eb0d2520711f80425f4ed48ce5fbf585c190d2986513d9f01faa8c9b212e8"
     },
     {
       "path": "artwork.js",
-      "bytes": 7123,
-      "sha256": "abb307ff9c1c918ddd3d6734c95d8608041aa59a46fbd8cf5fa00e57878cd825"
+      "bytes": 7373,
+      "sha256": "8f4f598900cf27f28d7406fb62876e51e744fe4a500caeb43431e54a0fcfaa02"
     },
     {
       "path": "ask-navigation.js",
@@ -3028,8 +3043,8 @@
     },
     {
       "path": "builder.js",
-      "bytes": 38657,
-      "sha256": "f4a39ce5930a05aeaf52da33ef6c8b2b93d312454964d25fc033ea4ff23dfc7a"
+      "bytes": 41571,
+      "sha256": "35ca72230fda968e66271128b54faa951fb7d673ef6015004ec3bdd92ec4f1d1"
     },
     {
       "path": "buy.js",
@@ -3143,8 +3158,8 @@
     },
     {
       "path": "community-feed.js",
-      "bytes": 15992,
-      "sha256": "3eff38cd396f47e946ea870445313a62193afe6ffe3b205adca1a531ffabf55b"
+      "bytes": 16442,
+      "sha256": "ad6ad210ffed60c9ec1e7aff0979a5ecb654c130f84cb59a87e32e0f3e62f234"
     },
     {
       "path": "community-profile.js",
@@ -3153,8 +3168,8 @@
     },
     {
       "path": "community-sources.js",
-      "bytes": 5222,
-      "sha256": "5f0e02bd19d0b9068637c302850c9e371ac399099ede279584e7d45718fbded5"
+      "bytes": 7644,
+      "sha256": "7b05e9301a31ea39811f8aca9fc89d544044c71af8a4bbcb8761b591c7fcac70"
     },
     {
       "path": "condition-feed.js",
@@ -3179,7 +3194,7 @@
     {
       "path": "config.js",
       "bytes": 601,
-      "sha256": "5d078a4292b1e541e85fcd3e07c0c565eb1af6669079d018ab714ad49ccf6c50"
+      "sha256": "476d4ba9f0f91dae819c02e19cfa3b559169fecf7a2097e167e2604db0bb3823"
     },
     {
       "path": "core.js",
@@ -4072,6 +4087,41 @@
       "sha256": "9f1da068767f2248999e6ac51a4c02d62f1df9e13671e0a5587465261702af99"
     },
     {
+      "path": "data/play-economy.json",
+      "bytes": 1854,
+      "sha256": "43964eb64cd4642de10cb013f6bffe4efea60c398dc63fb33884e6250b7d3e71"
+    },
+    {
+      "path": "data/story/act-1.json",
+      "bytes": 56262,
+      "sha256": "190a6c13af7ceb94461b97c0a084eb0b6225f4a3aa9270e7584a7bd2f559a526"
+    },
+    {
+      "path": "data/story/act-2.json",
+      "bytes": 58446,
+      "sha256": "bf3d4ac965241d74f648443df8a90570384837061a97dc7462894e99bb0bf760"
+    },
+    {
+      "path": "data/story/act-3.json",
+      "bytes": 55331,
+      "sha256": "7465d26a565f38339ea137834a888763c225e7b91518bcbf64b18944716449ac"
+    },
+    {
+      "path": "data/story/pool-1.json",
+      "bytes": 6890,
+      "sha256": "af980c5f4c21e1193e1a4eef798b3f3006be09e35ba850d5945bb49bcededb08"
+    },
+    {
+      "path": "data/story/pool-2.json",
+      "bytes": 12988,
+      "sha256": "e4ffdb2b9486e6acdef463800a6fdca9c9b8e1e93d288fe01ba167b274f69871"
+    },
+    {
+      "path": "data/story/pool-3.json",
+      "bytes": 15488,
+      "sha256": "8497c0f8602e6ae099b19e01534407da47f75aa1b150953411afc6927d537b61"
+    },
+    {
       "path": "deck-box.js",
       "bytes": 4974,
       "sha256": "48d0a0c57c881408370f01e9c733e83dac923efac8c79d3340429b79deb68a78"
@@ -4090,6 +4140,16 @@
       "path": "deck-flow.js",
       "bytes": 6138,
       "sha256": "7b82d8b51a5c8fcf696f059e447259cacc7bd0b3d02ca0ea9589e61400abe61d"
+    },
+    {
+      "path": "deck-forge-tags.js",
+      "bytes": 21767,
+      "sha256": "ddd70d5d228441bc0476deb68ffe83e33d0ad26045ed889d018a3e19228dbc68"
+    },
+    {
+      "path": "deck-forge.js",
+      "bytes": 22379,
+      "sha256": "4892d15d2e74c4ceda91268e7862bb58b82b4e1db765bc8d03a7e573a193a4fe"
     },
     {
       "path": "deck-mechanic-plan.js",
@@ -4643,13 +4703,13 @@
     },
     {
       "path": "home-today.js",
-      "bytes": 4448,
-      "sha256": "f6bd82201ebca722e001807bf7ab6234e043c24a4052495c0a7c42390812a0f4"
+      "bytes": 5331,
+      "sha256": "5fa1bba67e62ce424b12708d5286cf38300241e2410228a46248b35ff2919bdd"
     },
     {
       "path": "home-ui.js",
-      "bytes": 38941,
-      "sha256": "bf6e28e2bd7fa01413d3edac7368c5fe959d258429ee9f5ae6189b2457598a91"
+      "bytes": 39292,
+      "sha256": "2c32f651823f722e6ff349e3217a2c3ad2a69b90ef188328c85bc6f6c1738534"
     },
     {
       "path": "icon-192.png",
@@ -4698,8 +4758,8 @@
     },
     {
       "path": "index.html",
-      "bytes": 20074,
-      "sha256": "f23dfe6e80178f52aac36fb62a34bd1e338683a2abc5136c5b962d15a5ce7b50"
+      "bytes": 21144,
+      "sha256": "900cf8f543c26a298df90c4284248fcc1b5d07d05d7d9408b9c4df42ff2b996b"
     },
     {
       "path": "insights.js",
@@ -4893,18 +4953,28 @@
     },
     {
       "path": "native-service-policy.js",
-      "bytes": 7953,
-      "sha256": "af42c3ad933ee9e14d292bfde453dea7bada340b7460e247135b19b49d23d7b9"
+      "bytes": 8350,
+      "sha256": "44935c3f92b609b436daf24b52a0dcb112f8b26b9c772a3b0e07dd2a965805ec"
+    },
+    {
+      "path": "news-pulse-route.js",
+      "bytes": 3117,
+      "sha256": "a718153c4d1671db858ed99b7b47e54af0b933bcc256d16afc69f73230547f09"
+    },
+    {
+      "path": "news-pulse.js",
+      "bytes": 8922,
+      "sha256": "141e8767b9f07082a47009cc91be08183cd6fb9e837f5ae4200547624adbf963"
     },
     {
       "path": "pack-preview.js",
-      "bytes": 60348,
-      "sha256": "3f22f338703cc959c59efadcd309fccff84e2513a92833053266e0488dd1add8"
+      "bytes": 61965,
+      "sha256": "78dd021b1f7db686c72bdce007d626b55fd69e4f064a3b0a00729f6f68626592"
     },
     {
       "path": "package.json",
-      "bytes": 12090,
-      "sha256": "8d604dbb00b540d8546268b5de76f8fa19b135c43da0b83e773f0e9bd7057309"
+      "bytes": 12280,
+      "sha256": "60611988ceb3a453ef23efd0c7a0c438dc869faa6301ad52ead4dc574a4ffe5e"
     },
     {
       "path": "pairing.js",
@@ -7247,6 +7317,11 @@
       "sha256": "8e0b9b867d2c92ded76fd0c53f77a886280bd1ad744d412e929b9d6fbefaf92d"
     },
     {
+      "path": "play-achievements.js",
+      "bytes": 13528,
+      "sha256": "f59671561b03076ef6dfb4522850018b29a6a4dc75d42d6ed108bce49375afae"
+    },
+    {
       "path": "play-board-badges.js",
       "bytes": 11335,
       "sha256": "86c1cffd5bd778939e2ea8ffd3e3b57d16ab9219f999db4344b45108c8a44425"
@@ -7292,6 +7367,11 @@
       "sha256": "7094ebad2d1bcbe99fa6f54ad39d04413a83d3862b85254b8659dd4fe542226b"
     },
     {
+      "path": "play-deck-finder.js",
+      "bytes": 11618,
+      "sha256": "ca762e7e6e88e10ebf69bd30914653bf30453032e74de3addbeb499812091a38"
+    },
+    {
       "path": "play-deck-import.js",
       "bytes": 17776,
       "sha256": "3daf9cc64d4123ade573100c8481c0420e1ae5b27dad9ae767ba750c7984b4de"
@@ -7300,6 +7380,41 @@
       "path": "play-deck-sources.js",
       "bytes": 6205,
       "sha256": "e0f1d3e7ccf0bad0d3f7a827ac6924cb8b90994ce82a0e5fb837b50ec8b3e8ef"
+    },
+    {
+      "path": "play-deeds-ui.js",
+      "bytes": 8863,
+      "sha256": "197bfc52ec54cb4ab70916d1a4562e1d05e789905af3e380d6644d2e1133f63e"
+    },
+    {
+      "path": "play-econ-cards.js",
+      "bytes": 5766,
+      "sha256": "461adc0059f2016cf4a1432142b289c4116f7a75d2e4d784e5d56dada1cb889f"
+    },
+    {
+      "path": "play-econ-client.js",
+      "bytes": 6424,
+      "sha256": "0286d8639f9678c78f184ae36c0346ab99448bc721b8885a10bd01ecbc8c7e24"
+    },
+    {
+      "path": "play-econ-route.js",
+      "bytes": 20205,
+      "sha256": "15fcf788b3268a5e48ddfbca082f67637e5be828556b849a491a1b7cb30c94f6"
+    },
+    {
+      "path": "play-econ-rules.js",
+      "bytes": 8653,
+      "sha256": "70ceeb4983c2ebab17b7891a14987ed9a97b78ab2abbece69763965800feae57"
+    },
+    {
+      "path": "play-econ-sets.js",
+      "bytes": 3517,
+      "sha256": "c873fc00a404e257421e6cffc8fbf18b38ab064076d55dc813b217a803a85385"
+    },
+    {
+      "path": "play-econ-ui.js",
+      "bytes": 43381,
+      "sha256": "125754573827b2bf2ecea52ce43760abfc6315e4925fbfad0e15f1b8df89bceb"
     },
     {
       "path": "play-engine-names.js",
@@ -7333,13 +7448,13 @@
     },
     {
       "path": "play-forge-player-mat.js",
-      "bytes": 37257,
-      "sha256": "de64f2c064afe3de59f31e18cafd89981c5ef37aef38787b3b9ef0e421be20ea"
+      "bytes": 37560,
+      "sha256": "f2f63f54b5e6ad186dc36b78b9c473f6df0c404a08535ab8aaaec8331ce4ab76"
     },
     {
       "path": "play-forge-pregame.js",
-      "bytes": 11818,
-      "sha256": "44a58f93923f897b2c7f88c4f05fb714c7c678a3cf61a1327d52a2018e631b3f"
+      "bytes": 11883,
+      "sha256": "2e838e0ac1593c37fe7cfda3a5344f78e9c9a5f0da0a626026e1a55d9aa207ac"
     },
     {
       "path": "play-forge-setup-review.js",
@@ -7352,24 +7467,29 @@
       "sha256": "8c944b3b9b1b0f83d1fc6e2fabb0bdb9b0fc056efd23a6c7c47417dd446ad386"
     },
     {
+      "path": "play-home.js",
+      "bytes": 8376,
+      "sha256": "02873c395e6e1bc650ba6997593faed65014a01d88138720ab9205a997b5a3be"
+    },
+    {
       "path": "play-match-record.js",
       "bytes": 2667,
       "sha256": "9f148222cf04966dd3bea109172bde3a2ed7e27579b0a1d599222bca03ef8afc"
     },
     {
       "path": "play-menu.css",
-      "bytes": 90484,
-      "sha256": "e0c7df155843530ae554f2b046d7c1c0b76864dcf1901403850b6d4b1a781b6c"
+      "bytes": 137651,
+      "sha256": "32feccf2db5286241048c98948adca1174ad320054a0f4133f236b81d95b3940"
     },
     {
       "path": "play-menu.js",
-      "bytes": 31849,
-      "sha256": "439b6dc469ea71820a4bfe92d2cf9059da485a7237f4aae0b8face3bb5026a76"
+      "bytes": 32079,
+      "sha256": "68f80733eacf4d155748f5c75d95599be84c74d57c400df4498618562f221967"
     },
     {
       "path": "play-opponent-build.js",
-      "bytes": 3208,
-      "sha256": "f58c41c789832a59fd339ee8c49fcf36e9caf733f3f78c79f02bc29ead8c8ce8"
+      "bytes": 4895,
+      "sha256": "ea03a52395497e476c4edc3ffcd6c2d98f67957ea790f2bc459c35fdb904cf82"
     },
     {
       "path": "play-orientation.js",
@@ -7400,6 +7520,11 @@
       "path": "play-quick-match.js",
       "bytes": 2858,
       "sha256": "99b567a026a111d629755835a740f76a188325240703f0804c791e1729d0ac64"
+    },
+    {
+      "path": "play-random-queue.js",
+      "bytes": 2338,
+      "sha256": "a777960f8a597f9862cb5ad1b0ac01c8ff88e6bc6d7248884798151b46109bf7"
     },
     {
       "path": "play-setup.js",
@@ -7448,13 +7573,13 @@
     },
     {
       "path": "pokemon-art.js",
-      "bytes": 8161,
-      "sha256": "bde7b32ba6388ec00c344a2f935d9883fd3803dacb8ecc80141f09c665dfd830"
+      "bytes": 8408,
+      "sha256": "1f9bc120710939c341a12826b42d1ea50f829772e8014ecf47d65a417cab3c81"
     },
     {
       "path": "pokemon-catalogue-supplement.js",
-      "bytes": 3204,
-      "sha256": "bb04ab13b21791507042116209cb34264890b5e8ac8a0b9b30ddb57a7ab2a937"
+      "bytes": 5632,
+      "sha256": "1b595c979813b49c1785a663dd9fe5875cad04df5c3c5571856428cbb297d2ad"
     },
     {
       "path": "pokemon-corrections.js",
@@ -7468,8 +7593,8 @@
     },
     {
       "path": "pokemon-prices.js",
-      "bytes": 6399,
-      "sha256": "72fa4306a4c52b2aaa334cc5fe4bfd1e0749cc7039ba69b88f82d619c6d4dc18"
+      "bytes": 7084,
+      "sha256": "ee8c9af61544e4406fa6925d639b6a9938c5ca4e6a86664a4984dd1ca5fbb585"
     },
     {
       "path": "pokemon-promo-evidence.js",
@@ -7493,8 +7618,8 @@
     },
     {
       "path": "polish.css",
-      "bytes": 68336,
-      "sha256": "af4f1b0db2eec3f1a451226fb4f86eb39a2b3b058907a826848bf4c431cccc4b"
+      "bytes": 68547,
+      "sha256": "da3266abd473975dfd2ae3eca7eeab3566b9b30dfb34d208007d5ed888fb41dd"
     },
     {
       "path": "power.js",
@@ -7563,8 +7688,8 @@
     },
     {
       "path": "ptcg.js",
-      "bytes": 56791,
-      "sha256": "4445f49f9666aa636071033f61b14ccd36ee5d6581eee3dccfdde8c676c5a7f5"
+      "bytes": 58036,
+      "sha256": "83114dda463128f2b6f219b9597e32bd738154ef5fc2aa1c0514b292b2aa1d2c"
     },
     {
       "path": "quick-quantity.js",
@@ -7588,8 +7713,8 @@
     },
     {
       "path": "release-record.js",
-      "bytes": 1219,
-      "sha256": "db4e5cf5123dc588e1a4536e89ac296558d52043eaa4905607e75781b7ddff1b"
+      "bytes": 4019,
+      "sha256": "c7182045a857d0833567b8c9e68e24f8eeabd2dfb412422a58126eaba87cc0f6"
     },
     {
       "path": "release-status.js",
@@ -7817,6 +7942,16 @@
       "sha256": "2e93163d90ba5caf74940f9e1d0e260f665428d05a358d241f6f7389736715c2"
     },
     {
+      "path": "scripts/rules-refresh/repin.py",
+      "bytes": 4301,
+      "sha256": "daa0db91439c600000900537c62988700bdbe7b3c351e26b8ffc305d9cb1c3f2"
+    },
+    {
+      "path": "scripts/rules-refresh/weekly.py",
+      "bytes": 3919,
+      "sha256": "f1c8bf487fe62053d534ced6a3b1e40043b37352d3605b72b16ffaca841f6c16"
+    },
+    {
       "path": "scripts/sfx/.gitignore",
       "bytes": 29,
       "sha256": "776f3e439294a2be995621f16130c64ee80aa46e6cbfe575dbb18221862d9700"
@@ -7842,6 +7977,51 @@
       "sha256": "61a074d4d2fcba6fe352c0385c1112f4b3a8a499c34988527fc96721870d1965"
     },
     {
+      "path": "scripts/story/acts-src/act-1.mjs",
+      "bytes": 16082,
+      "sha256": "4f05a34b98fc2bb134bfe9b0ddf5d46132f695c2625c713ba82c4a0ffe24cb40"
+    },
+    {
+      "path": "scripts/story/acts-src/act-2.mjs",
+      "bytes": 14050,
+      "sha256": "d9b299ba85f8eda220c6d193ef7da81a41e12ae1cf63d23ea60a81a8b467f51d"
+    },
+    {
+      "path": "scripts/story/acts-src/act-3.mjs",
+      "bytes": 15574,
+      "sha256": "15921e08dcf1c6d02bfee0aa3260cf98df0b524ae8bba734b8dac464d4f2917c"
+    },
+    {
+      "path": "scripts/story/build-act.mjs",
+      "bytes": 5285,
+      "sha256": "cbd3c42c933a052672af03616377ffacaebbe9c7f561b7e45a64f6e0e15f724a"
+    },
+    {
+      "path": "scripts/story/check-pack-art.mjs",
+      "bytes": 1287,
+      "sha256": "79820fd36a82e13e276b2d5f942a0ade92a694f3ba0cc2897757abf39b91cee3"
+    },
+    {
+      "path": "scripts/story/check-story-deck.mjs",
+      "bytes": 3734,
+      "sha256": "3605e6e8bc24f7d8d459d9743da2e0c517a34433af1ad27ecc98f010c8f5995c"
+    },
+    {
+      "path": "scripts/story/export-pool.mjs",
+      "bytes": 1860,
+      "sha256": "424f0184dca5cf273daf460128994b24e8a86fe699628167b87e3a356509b5df"
+    },
+    {
+      "path": "scripts/story/sim/StorySim.java",
+      "bytes": 4616,
+      "sha256": "acaab966d6874e385d7b7342fd6a6db475d304650cc303dd52e06454cbeb4e23"
+    },
+    {
+      "path": "scripts/story/sim/run-sims.sh",
+      "bytes": 757,
+      "sha256": "5d71316f8e50db1e697a15562e489686770b4a4e8cf8ebe00bab4f4866e7532f"
+    },
+    {
       "path": "scripts/verify-deployed-assets.py",
       "bytes": 19302,
       "sha256": "48a3f73e31eff89674355e40da688cab6f5f386a250f55817c54c0b055e54c50"
@@ -7860,6 +8040,11 @@
       "path": "search-hints.js",
       "bytes": 4250,
       "sha256": "f39a23b1a9ff29c5c52b13f3f162d057c628145014ef197e0be2b4bd70314644"
+    },
+    {
+      "path": "set-art.js",
+      "bytes": 5264,
+      "sha256": "b38792569bf12eb2045b60e2974e1832b8668b63f5e0da0a3c6fb9ddf6b9b4f8"
     },
     {
       "path": "set-browser.js",
@@ -7942,6 +8127,26 @@
       "sha256": "984c0cb07a20a6e8c6f76b92c7faca3299fb2b0bd67297b3a3c930fde323fb34"
     },
     {
+      "path": "story-acts.js",
+      "bytes": 1780,
+      "sha256": "08fcd60364b22f3b152d13ebf9281dc26762f22aeabb233a6712b831ac02cabb"
+    },
+    {
+      "path": "story-client.js",
+      "bytes": 7058,
+      "sha256": "fb529fa44392540c50bc8cc977165af9fbff520dca12cdda1d4d96cb0a1c427b"
+    },
+    {
+      "path": "story-mode.css",
+      "bytes": 18310,
+      "sha256": "8f0c30333f9c5fec2e3fa2fa621688274cee78ce57d3f1776891bed8b992e98c"
+    },
+    {
+      "path": "story-ui.js",
+      "bytes": 25725,
+      "sha256": "27f409d14bddd26b78e983b474a47722653a2f5f674a3edeef75903e52bc0f96"
+    },
+    {
       "path": "strategy-risk.js",
       "bytes": 3438,
       "sha256": "cb2d4351d9633c858c0b3732eade696e9f19e60637f95373a78ddd6bc4b318ab"
@@ -7953,8 +8158,8 @@
     },
     {
       "path": "style.css",
-      "bytes": 578959,
-      "sha256": "9aa7c7882b4fab4e06ca37e0aaff4c1a879b46d383dffe400ab4c49bd297cabc"
+      "bytes": 579600,
+      "sha256": "6bd2a64545ee7199b0cce5ff69f6488f6ad427a970d44628feb08fc122fd8f38"
     },
     {
       "path": "suggest.js",
@@ -7962,9 +8167,34 @@
       "sha256": "bd31f9d5e87883d166fb815b6e528c66fd61ea50599430ef9d14b7df5df857d4"
     },
     {
+      "path": "supabase/migrations/20261101180000_play_progression.sql",
+      "bytes": 14545,
+      "sha256": "a04334ee7c14bc7fa151300af9795c947537fa24087935d02024ff05ef4f50cb"
+    },
+    {
+      "path": "supabase/migrations/20261101190000_play_card_sets.sql",
+      "bytes": 7499,
+      "sha256": "cad93718c9c454b0d32182bcbe436e39074d12cddb0d67f5b37d0d40f397ac0c"
+    },
+    {
+      "path": "supabase/migrations/20261101190000_play_story.sql",
+      "bytes": 721,
+      "sha256": "309d632e67504303cd4c3cfbefee08098dd1b11aa1c1c923fdd5cdea0dab7acd"
+    },
+    {
+      "path": "supabase/migrations/20261101210000_play_achievements.sql",
+      "bytes": 3565,
+      "sha256": "72319068de22be925d9bb7c4456c590971943afe204b3503f6501c0cefe3fcad"
+    },
+    {
+      "path": "supabase/migrations/20261101211000_play_holo.sql",
+      "bytes": 7161,
+      "sha256": "c37af940e16aeb4d94731fbd1696b62da1c2124b87c7feae813bf09203b38b8e"
+    },
+    {
       "path": "sw.js",
-      "bytes": 15879,
-      "sha256": "3d98af9894b22b9786833d332daa4de75e929d19ad03e0920b8988e06f29e12b"
+      "bytes": 16264,
+      "sha256": "90c8a4a9c8eaee7b8aca9574a7a2eec5becaac9e40b6884a9bf118829d708162"
     },
     {
       "path": "sync-merge.js",
@@ -7988,8 +8218,8 @@
     },
     {
       "path": "tcg.js",
-      "bytes": 368247,
-      "sha256": "97e135d9bc8e4efcaa060cad49ec702d44e39de76c453a68fbcdbf3542a52b4e"
+      "bytes": 368653,
+      "sha256": "4205cb0ea44725766b6445f9a33d51b82c96c887682694e5a14ee42353dd2397"
     },
     {
       "path": "tcgbuild.js",
@@ -8002,9 +8232,29 @@
       "sha256": "41be760b1d962e9488cf8edaa123b01e40244189e97b9b9e8c1bd6397d610f25"
     },
     {
+      "path": "test-ai-deck-build.mjs",
+      "bytes": 19437,
+      "sha256": "f722ac3196ec605ac7cd29794a7b6c4687b29d57f9342d0ebb41c2be1e8b7ade"
+    },
+    {
+      "path": "test-ai-deck-handoffs.mjs",
+      "bytes": 7608,
+      "sha256": "3cadaef05d2a61f7a5df2e711ab53705bb3706fbbb317e788ebc6ff7d6561391"
+    },
+    {
+      "path": "test-ai-goal-handshake.mjs",
+      "bytes": 20522,
+      "sha256": "c615a8fa0b10746f7954c5f119ab55c51047ff755c93d6e88dc2b4f2b45b70a9"
+    },
+    {
       "path": "test-audit-safety.mjs",
       "bytes": 22144,
       "sha256": "5e608cf849d1a3582d909d56257fb49103045c18ebe00bf55e8650fd911dffbe"
+    },
+    {
+      "path": "test-builder.mjs",
+      "bytes": 4121,
+      "sha256": "801143fa4af87093b9ea6abf6c2c8ced984af501ddceb8bc2ac3a5529a820495"
     },
     {
       "path": "test-card-detail-pricing.mjs",
@@ -8017,6 +8267,11 @@
       "sha256": "e745d4ca9954132825c88550cb2396a18da01e9bfde822668758a4a7a902faf3"
     },
     {
+      "path": "test-commander-land-requirements.mjs",
+      "bytes": 12637,
+      "sha256": "e2369e236c9a7e34ce030ced1bc2269afca83e3986f934177935aa30a1d04885"
+    },
+    {
       "path": "test-community-carousel.mjs",
       "bytes": 6792,
       "sha256": "d6a2ef358f36be7f3c975b995e744fd3b91c3ea4aee69d1292f8c7f0448954d0"
@@ -8027,9 +8282,19 @@
       "sha256": "f69fc509aca68dc71a7522d58dd6fe55d36590a77ba38e977b75b3812b775090"
     },
     {
+      "path": "test-deck-forge.mjs",
+      "bytes": 7569,
+      "sha256": "5ebe51a1ddbe0963009e95d3b7f27069f78c5c18f9648e70f99ad2f49051b6d9"
+    },
+    {
       "path": "test-deck-viewer.mjs",
       "bytes": 5489,
       "sha256": "df0b62465279b72791451172077a446a9d27986f8bea21433afdc59cc0584b21"
+    },
+    {
+      "path": "test-detail-art-regression.mjs",
+      "bytes": 1930,
+      "sha256": "0891ed6e965fb68e5e89a70c7ed21c83e6b0bb0ee01fcc545ee4dda5399b276d"
     },
     {
       "path": "test-detail-catalogue-regression.mjs",
@@ -8037,9 +8302,24 @@
       "sha256": "bcad38728b0e150972f849d48c51305c2ae57c68a98f9cc21a78174a521dab51"
     },
     {
+      "path": "test-discovery-repair.mjs",
+      "bytes": 12900,
+      "sha256": "7ee57527e55ccf0eeebafd4227a289c66362e90518316abbec961dc7fbe86606"
+    },
+    {
+      "path": "test-fixtures/deck-forge-cards.json",
+      "bytes": 65619,
+      "sha256": "f424624463e1c1da12cafd5e26cc553a5c705d10de256cfdd6f735080e62d477"
+    },
+    {
       "path": "test-guide.mjs",
       "bytes": 8073,
       "sha256": "ead1c7e6fb4d2da4a6df65dd809f73af76825b73f370edd3470b5e45ae82b320"
+    },
+    {
+      "path": "test-home-build-race.mjs",
+      "bytes": 5390,
+      "sha256": "90b03a4e9a60e01298c4cb6c39de22577b9fb5036209636eb1da0a4ebdcda88f"
     },
     {
       "path": "test-home-meta-value.mjs",
@@ -8057,6 +8337,11 @@
       "sha256": "655d372fe606e41e8b1146fecfb731a851132ded2403474df42cc25a11fc374e"
     },
     {
+      "path": "test-magic-printing-budget.mjs",
+      "bytes": 11922,
+      "sha256": "25c6b7c6af10424d06b2bb8f771ea81d2f257c727dd4110688fe2c88ce723006"
+    },
+    {
       "path": "test-magic-printing-flow.mjs",
       "bytes": 15736,
       "sha256": "18e802817dd31431cb8d0d70abc6a15431fc886e4807d5524650cd57bd8f3c1e"
@@ -8067,9 +8352,29 @@
       "sha256": "a7585635e6eb7ec15a3d3347902c6da139cd0ca29dcaa0fc7039997e20e5b4b1"
     },
     {
+      "path": "test-news-pulse.mjs",
+      "bytes": 5444,
+      "sha256": "166738b0a100470bfb9dcc554266d564fd11ac01d022de8a1a2e78f1f5223158"
+    },
+    {
       "path": "test-pack-feel.mjs",
       "bytes": 1899,
       "sha256": "2338bd65cc0b5e85d8cfe39329d2e29dc18e8a2366cd8bbb6d30eca9e09b8a54"
+    },
+    {
+      "path": "test-play-achievements.mjs",
+      "bytes": 5981,
+      "sha256": "1931cc39e9c3520e1d00a7a3f7cb6e1c96cf08854e8bdad40b3c4668b3c81a19"
+    },
+    {
+      "path": "test-play-deck-finder.mjs",
+      "bytes": 4274,
+      "sha256": "4d5922e72959149eb63f448e4cddba7897dbe6b71f1292f92750d1d17394b81d"
+    },
+    {
+      "path": "test-play-economy.mjs",
+      "bytes": 20442,
+      "sha256": "2d986ac67df90bdff4f3a2b5293feac3c721cf53406b79594c90cea6c0e25bef"
     },
     {
       "path": "test-play-forge-audit-1101.mjs",
@@ -8105,6 +8410,11 @@
       "path": "test-play-quick-start.mjs",
       "bytes": 3457,
       "sha256": "7794fe6c68497a6b530f1d24bedda92b1a5560b4090ac89706983dedd17d4855"
+    },
+    {
+      "path": "test-play-random-queue.mjs",
+      "bytes": 3451,
+      "sha256": "0f53f740ecf6df0e34b814f42e43bb1b74c0520c0fdd71d18d574825827506c0"
     },
     {
       "path": "test-play-screen-gate.mjs",
@@ -9818,8 +10128,8 @@
     },
     {
       "path": "views.js",
-      "bytes": 196813,
-      "sha256": "e71d9a7ddc1fcc6213b1a86e4dbb4e8f7605288beb39f390ef14fe7215be70dc"
+      "bytes": 200647,
+      "sha256": "856bbf72141b0a6f966bcc1ce92fd0ed7b2ff0f0226911855d9fd02028fdefce"
     },
     {
       "path": "wiki-article-content.js",
@@ -9845,6 +10155,11 @@
       "path": "workbench-ui.js",
       "bytes": 39528,
       "sha256": "34912f8c7943475e4b0d58f577e20175bfe7f44e08ab513133afa7fb0bbe3bb9"
+    },
+    {
+      "path": "worker.js",
+      "bytes": 27673,
+      "sha256": "9f23f10f7fe0d2a212e9a529311daaf94810fd1af04aa3ffdf7e832ce462d767"
     },
     {
       "path": "ygo-foil-analysis.js",
