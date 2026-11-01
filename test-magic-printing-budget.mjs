@@ -73,8 +73,8 @@ S.ui.sheetCtx={prints:[{...expensive,id:'picker-chosen',prices:{usd_foil:'9'},se
 
 // AI preparation uses the same bounded legal basic lookup and selected price basis.
 h=harness();let built=await prepareMtgDeck({format:'Commander',seed:leader.name,commander:leader.name,budget:10,budget_basis:'total'},{...h.ctx,inv:()=>({available:0})});
-assert.equal(built.draft.total,100);assert.equal(built.draft.totalEstimate,9.1);assert.match(built.draft.priceBasis,/bounded Scryfall results, not the whole market/);
+assert.equal(built.draft.total,100);assert.equal(built.draft.totalEstimate,9);assert.match(built.draft.priceBasis,/bounded Scryfall results, not the whole market/);
 h=harness({choice:selected});built=await prepareMtgDeck({format:'Commander',seed:leader.name,commander:leader.name,budget:10,budget_basis:'total'},{...h.ctx,inv:()=>({available:0})});assert.equal(built.draft.complete,false,'AI must not replace an explicit premium-printing budget');assert.equal(S.state.priceChoices.mountain.finish,'foil');assert.equal(S.state.decks.length,0);
-S.state.priceChoices.mountain.price=' \t ';built=await prepareMtgDeck({format:'Commander',seed:leader.name,commander:leader.name,budget:0,budget_basis:'total'},{...h.ctx,inv:()=>({available:0})});assert.equal(built.draft.totalEstimate,null);assert.equal(built.draft.unpricedCopies,36,'AI also treats a whitespace-only selected quote as unknown');
+S.state.priceChoices.mountain.price=' \t ';built=await prepareMtgDeck({format:'Commander',seed:leader.name,commander:leader.name,budget:0,budget_basis:'total'},{...h.ctx,inv:()=>({available:0})});assert.equal(built.draft.totalEstimate,null);assert.equal(built.draft.unpricedCopies,38,'AI also treats a whitespace-only selected quote as unknown');
 assert.equal(liveReads,0);
 console.log('PASS: actual Magic idea/fill, generic/random basic pool, AI preparation and purchase callbacks choose lowest checked eligible quotes, charge all unowned basics, keep unknown prices unknown, disclose bounded coverage, preserve selected printing/finish and physical ownership, and never purchase or save.');
