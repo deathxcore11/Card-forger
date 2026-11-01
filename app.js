@@ -23,7 +23,7 @@ import {lockPlayLandscape,releasePlayOrientation} from './play-orientation.js';
 import {createPracticeOpponentBuilder} from './play-opponent-build.js';
 import {createPlayerMat} from './play-player-mat.js';
 import {createPlayUpdateGate} from './play-update-gate.js';
-import {constructedPrecon,constructedPreconCandidates} from './play-precon-formats.js';
+import {constructedPrecon,constructedPreconCandidates,CONSTRUCTED_PRECON_TYPES} from './play-precon-formats.js';
 import {createPracticeCardPreparation} from './play-card-preparation.js';
 import {createForgeArtworkPreparation} from './play-forge-artwork.js';
 import {createPracticeCatalogReview} from './play-catalog-review.js';
@@ -162,7 +162,7 @@ import { openZoom, zoomCardOptions } from "./zoom.js";
 import {createPlayEcon} from "./play-econ-client.js";
 import {econScreenMarkup,ECON_VIEWS,purseMarkup} from "./play-econ-ui.js";
 import {createCardFacts} from "./play-econ-cards.js";
-import {stepDeckCard,ownedByName,deckShortfall} from "./play-econ-rules.js";
+import {stepDeckCard,ownedByName,deckShortfall,legalFormats,mtgjsonDeckRows} from "./play-econ-rules.js";
 import {STORY_ACTS} from "./story-acts.js";
 import {createStoryProgress,loadAct,loadActPool,ownDeckFits,battleCleared,currentAct,currentBattle,actCleared} from "./story-client.js";
 import {storyHomeMarkup,storyActMarkup,storyBattleMarkup,playScene,createStoryBubbles,starsRow} from "./story-ui.js";
@@ -283,7 +283,7 @@ document.addEventListener('click',e=>{
   if(nav==='play'){e.preventDefault();e.stopImmediatePropagation();go('#collection');return;}
   if(!to)return;
   e.preventDefault();e.stopImmediatePropagation();
-  playView=to;playInspectOpen=false;if(nav==='sets')econUi.tab='sets';else if(nav==='collection')econUi.tab='cards';
+  playView=to;playInspectOpen=false;if(to==='decks')setTimeout(loadPreconIndex,0);if(nav==='sets')econUi.tab='sets';else if(nav==='collection')econUi.tab='cards';
   if(S.ui.view==='play'){refreshPlayMenu();scrollTo({top:0});}else go('#play');
 },true);
 
@@ -1691,7 +1691,7 @@ const econFacts=createCardFacts({onChange:()=>{if(S.ui.view==='play'&&ECON_VIEWS
 // Read the wallet once per signed-in account per visit to Play; a new account starts clean.
 const econWake=()=>{const id=cloudInfo()?.user?.id||null;if(id===econSeen)return;if(econSeen!==null)playEcon.clear();econSeen=id;econUi={query:'',cardQuery:'',rarity:'',press:null,check:null};playView=ECON_VIEWS.has(playView)?'home':playView;if(id)setTimeout(()=>playEcon.refresh(),0);};
 const econFocus=()=>requestAnimationFrame(()=>document.getElementById('playTitle')?.focus?.({preventScroll:true}));
-A.playEconView=t=>{const v=t.dataset.econView;if(!ECON_VIEWS.has(v))return;playView=v;playInspectOpen=false;refreshPlayMenu();scrollTo({top:0});if(v==='shop'&&t.dataset.econFocus==='press')requestAnimationFrame(()=>document.querySelector('.pe-forge')?.scrollIntoView({block:'center',behavior:'smooth'}));else econFocus();};
+A.playEconView=t=>{const v=t.dataset.econView;if(!ECON_VIEWS.has(v))return;playView=v;if(v==='decks')loadPreconIndex();playInspectOpen=false;refreshPlayMenu();scrollTo({top:0});if(v==='shop'&&t.dataset.econFocus==='press')requestAnimationFrame(()=>document.querySelector('.pe-forge')?.scrollIntoView({block:'center',behavior:'smooth'}));else econFocus();};
 A.playEconBuy=async t=>{try{await playEcon.buy(t.dataset.econSet);toast('Pack bought. It is waiting in Packs.');}catch{}};
 // The Forge: strike lower seals into the next rarity; the new seal flares where it lands.
 A.playEconForge=async t=>{const to=t.dataset.econTo,times=Number(t.dataset.econTimes)||1;try{const out=await playEcon.forge(to,times);haptic('success');appSound('PACK-005',{volume:.5,gap:0});
@@ -1719,12 +1719,33 @@ A.playEconOpen=async t=>{let out;const btn=t.closest?.('.pe-pack')||t;btn.classL
 A.playEconFind=async form=>{const q=String(new FormData(form).get('card')||'').trim();if(!q)return;econUi.press={query:q,busy:true};refreshPlayMenu();
  try{const r=await fetch('https://api.scryfall.com/cards/named?fuzzy='+encodeURIComponent(q));const c=r.ok?await r.json():null;econUi.press=c?.oracle_id?{query:q,card:c}:{query:q,error:'No card by that name.'};}catch{econUi.press={query:q,error:'Could not search right now.'};}refreshPlayMenu();};
 // Decks: check a list against the Play collection, then save it as a Play deck.
-A.playEconCheckDeck=async form=>{const d=new FormData(form),text=String(d.get('list')||''),rows=[];for(const line of text.split(/\r?\n/)){const m=line.trim().match(/^(\d+)x?\s+(.+?)(?:\s+\([A-Za-z0-9]{2,8}\)\s*\S*)?$/);if(m)rows.push({name:m[2].trim(),qty:Math.min(250,+m[1])});}
- econUi.check={name:String(d.get('name')||''),format:String(d.get('format')||'Standard'),text,busy:true};refreshPlayMenu();
+// Paste a list: parse it (a "Sideboard" line starts the sideboard), look up rarity and legality on
+// Scryfall, then offer the formats it is legal in (one is picked for you; several, you choose).
+A.playEconCheckDeck=async form=>{const text=String(new FormData(form).get('list')||''),rows=[];let board='';
+ for(const raw of text.split(/\r?\n/)){const line=raw.trim();if(/^(?:\/\/\s*)?side\s*board:?$/i.test(line)){board='side';continue;}if(/^(?:deck|main\s*deck|mainboard|companion|commander):?$/i.test(line))continue;
+  const m=line.match(/^(\d+)x?\s+(.+?)(?:\s+\([A-Za-z0-9]{2,8}\)\s*\S*)?$/);if(m)rows.push({name:m[2].trim(),qty:Math.min(250,+m[1]),...(board?{board}:{})});}
+ const name=econUi.check?.name||'';econUi.check={name,text,busy:true};refreshPlayMenu();
  if(!rows.length){econUi.check={...econUi.check,busy:false,error:'Paste a list like "4 Lightning Bolt", one card per line.'};return refreshPlayMenu();}
- try{const names=[...new Set(rows.map(r=>r.name))],rarity=new Map();for(let i=0;i<names.length;i+=75){const r=await fetch('https://api.scryfall.com/cards/collection',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({identifiers:names.slice(i,i+75).map(name=>({name}))})});const b=r.ok?await r.json():null;for(const c of b?.data||[]){rarity.set(c.name,c.rarity);const front=c.name.split(' // ')[0];if(front!==c.name)rarity.set(front,c.rarity);}}
-  econUi.check={...econUi.check,busy:false,rows,rarity};}catch{econUi.check={...econUi.check,busy:false,error:'Could not check the cards right now.'};}refreshPlayMenu();};
-A.playEconSaveDeck=async()=>{const c=econUi.check;if(!c?.rows)return;try{await playEcon.saveDeck({name:c.name||'Play deck',format:c.format,cards:c.rows});econUi.check=null;toast('Saved to your Play decks.');}catch{}};
+ try{const names=[...new Set(rows.map(r=>r.name))],rarity=new Map(),legal=new Map();for(let i=0;i<names.length;i+=75){const r=await fetch('https://api.scryfall.com/cards/collection',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({identifiers:names.slice(i,i+75).map(name=>({name}))})});const b=r.ok?await r.json():null;for(const c of b?.data||[]){for(const n of new Set([c.name,c.name.split(' // ')[0]])){rarity.set(n,c.rarity);legal.set(n,c.legalities||{});}}}
+  for(const r of rows){const hit=[...legal.keys()].find(k=>k.toLowerCase()===r.name.toLowerCase());if(hit&&hit!==r.name){r.name=hit;}}
+  const formats=legalFormats(rows,legal);econUi.check={...econUi.check,busy:false,rows,rarity,formats,format:formats.length===1?formats[0]:formats.length?null:'Casual'};}catch{econUi.check={...econUi.check,busy:false,error:'Could not check the cards right now.'};}refreshPlayMenu();};
+A.playEconImportFormat=t=>{if(econUi.check){econUi.check.format=t.dataset.econFormat;refreshPlayMenu();}};
+I.playEconImportName=t=>{if(econUi.check)econUi.check.name=t.value;};
+A.playEconSaveDeck=async()=>{const c=econUi.check;if(!c?.rows||!c.format)return;try{await playEcon.saveDeck({name:c.name||'Play deck',format:c.format,cards:c.rows});econUi.check=null;toast('Saved to your Play decks.');}catch{}};
+// Precons: MTGJSON's published 60-card products, newest first. Opening one shows its exact printings.
+const preconUi=()=>econUi.precon||(econUi.precon={});
+async function loadPreconIndex(){const pc=preconUi();if(pc.index||pc.busy)return;pc.busy=true;pc.error='';refreshPlayMenu();
+ try{const j=await fetchJSON('https://mtgjson.com/api/v5/DeckList.json');pc.index=(j.data||[]).filter(d=>CONSTRUCTED_PRECON_TYPES.includes(d?.type)&&typeof d.name==='string'&&/^[A-Za-z0-9_.-]+$/.test(d.fileName||'')).sort((a,b)=>String(b.releaseDate||'').localeCompare(String(a.releaseDate||''))||a.name.localeCompare(b.name));}
+ catch{pc.error='Could not load the precon list right now.';}finally{pc.busy=false;refreshPlayMenu();}}
+A.playEconPrecons=()=>{preconUi().error='';loadPreconIndex();};
+A.playEconPreconMore=()=>{const pc=preconUi();pc.limit=(pc.limit||12)+24;refreshPlayMenu();};
+I.playEconPreconQuery=t=>{const pc=preconUi();pc.query=t.value;pc.limit=12;refreshPlayMenu();const f=document.querySelector('[data-input="playEconPreconQuery"]');f?.focus({preventScroll:true});try{f.setSelectionRange(t.value.length,t.value.length);}catch{}};
+A.playEconPrecon=async t=>{const pc=preconUi(),entry=(pc.index||[]).find(d=>d.fileName===t.dataset.econFile);if(!entry||pc.busy)return;pc.busy=true;refreshPlayMenu();
+ try{const j=await fetchJSON('https://mtgjson.com/api/v5/decks/'+entry.fileName.replace(/\.json$/,'')+'.json'),d=j?.data||j;const legal=constructedPrecon(j,entry);
+  pc.open={file:entry.fileName,name:d.name||entry.name,product:entry.type,released:entry.releaseDate||'',formats:legal?.formats||[],rows:mtgjsonDeckRows(d)};}
+ catch{pc.error='';toast('That precon could not be opened.');}finally{pc.busy=false;refreshPlayMenu();document.querySelector('.pe-precons')?.scrollIntoView({block:'start',behavior:'smooth'});}};
+A.playEconPreconClose=()=>{preconUi().open=null;refreshPlayMenu();};
+A.playEconBuyPrecon=async()=>{const o=preconUi().open;if(!o)return;try{const out=await playEcon.precon(o.file,o.formats[0]||'Casual');preconUi().open=null;toast(out.granted?`${o.name} is yours. ${out.granted} new card${out.granted===1?'':'s'} in your Trunk.`:`${o.name} is in your decks.`);haptic('tick');}catch{}};
 A.playEconDeleteDeck=async t=>{if(!confirm('Delete this Play deck?'))return;try{await playEcon.saveDeck({id:t.dataset.econDeck,delete:true});}catch{}};
 // Collection (Cards / Sets) and the deck builder. Filters are shared; facts come from Scryfall.
 A.playEconCollTab=t=>{econUi.tab=t.dataset.id==='sets'?'sets':'cards';refreshPlayMenu();};

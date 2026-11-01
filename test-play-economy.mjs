@@ -62,16 +62,20 @@ assert.ok(!('prices' in row) && !JSON.stringify(row).includes('9.99'), 'pack rec
   const packs = [{id: 7, set: 'tst'}];
   const booster = {boosters: [{w: 1, c: {common: 2, rare: 1}}], sheets: {common: {cards: [['c1', 1], ['c2', 1], ['c3', 1]]}, rare: {cards: [['r1', 1]]}}};
   const card = id => ({id, oracle_id: id.padEnd(8, '0') + '-0000-0000-0000-000000000000', name: id, rarity: id.startsWith('r') ? 'rare' : 'common', colors: [], prices: {usd: '1.00'}});
+  const pc = (name, count, rarity, extra = {}) => ({name, count, rarity, setCode: 'TMP', number: String(count), identifiers: {scryfallId: name.length.toString(16).padStart(8, '0') + '-1111-2222-3333-444444444444', scryfallOracleId: name.length.toString(16).padStart(8, '0') + '-0000-0000-0000-000000000000'}, ...extra});
+  const precon = {name: 'Test Precon', mainBoard: [pc('Bolt', 4, 'common'), pc('Dragonlord', 2, 'rare'), pc('Mountain', 20, 'common', {supertypes: ['Basic']})], sideBoard: [pc('Bolt', 1, 'common')]};
   const fetcher = async (url, init = {}) => {
     const u = String(url);
     if (u.includes('/rest/v1/rpc/')) {
       const name = u.split('/rpc/')[1], args = JSON.parse(init.body); calls.push([name, args]);
       if (name === 'play_state') return new Response(JSON.stringify({config, wallet, packs, cards: []}));
+      if (name === 'play_save_deck') return new Response(JSON.stringify({id: 'd1', name: args.p_name}));
       if (name === 'play_apply') { if (args.p_delta.coins) wallet = {...wallet, coins: wallet.coins + args.p_delta.coins}; return new Response(JSON.stringify({duplicate_coins: 0, converted: []})); }
     }
     if (u.endsWith('/data/mtg-boosters/tst.json')) return new Response(JSON.stringify(booster));
     if (u.endsWith('/data/mtg-boosters/index.json')) return new Response(JSON.stringify({sets: {fra: {}, tst: {}}}));
     if (u.includes('/cards/collection')) return new Response(JSON.stringify({data: JSON.parse(init.body).identifiers.map(i => card(i.id || i.name))}));
+    if (u.includes('mtgjson.com/api/v5/decks/TST_Precon.json')) return new Response(JSON.stringify({data: precon}));
     if (u.includes('/forge-rules/')) return new Response(JSON.stringify({standardSets: []}));
     if (u.includes('/sets')) return new Response(JSON.stringify({data: []}));
     return new Response('nf', {status: 404});
@@ -94,6 +98,21 @@ assert.ok(!('prices' in row) && !JSON.stringify(row).includes('9.99'), 'pack rec
   assert.equal((await progressRoute(req('buy', {set: 'zzz'}), env, {verifyBearer, fetcher})).status, 404, 'only sets with a booster file');
   // The Forge: 3 lower seals strike 1 of the next rarity, only with enough seals, never past mythic.
   wallet = {...wallet, seal_c: 7, seal_r: 2};
+  calls.length = 0;
+  // Precons: pay 25 coins a missing card (250 at least), get those copies in the exact printing,
+  // and the list is saved with its printings; basic lands are never charged.
+  wallet = {...wallet, coins: 300};
+  const bought = await (await progressRoute(req('precon', {file: 'TST_Precon', format: 'Modern'}), env, {verifyBearer, fetcher})).json();
+  assert.equal(bought.price, 250, '6 missing cards cost the 250 minimum');
+  assert.equal(bought.granted, 6, 'Bolt capped at 4 copies across main and side, Dragonlord x2; no Mountains');
+  const pApply = calls.find(c => c[0] === 'play_apply' && /^precon:/.test(c[1].p_ref));
+  assert.equal(pApply[1].p_delta.coins, -250);
+  assert.ok(pApply[1].p_delta.cards.every(c => c.set === 'tmp' && /cards\.scryfall\.io\/normal/.test(c.image)), 'exact printing for every copy');
+  const pSave = calls.find(c => c[0] === 'play_save_deck');
+  assert.deepEqual(pSave[1].p_cards.find(c => c.name === 'Mountain'), {name: 'Mountain', qty: 20, set: 'tmp', number: '20'}, 'basic lands keep their printing too');
+  assert.equal(pSave[1].p_format, 'Modern');
+  assert.equal((await progressRoute(req('precon', {file: 'TST_Precon'}), env, {verifyBearer, fetcher})).status, 409, '50 coins left is short');
+  assert.equal((await progressRoute(req('precon', {file: '../x'}), env, {verifyBearer, fetcher})).status, 400);
   calls.length = 0;
   const forged = await (await progressRoute(req('forge', {to: 'u', times: 2}), env, {verifyBearer, fetcher})).json();
   assert.deepEqual(forged.forged, {to: 'u', from: 'c', times: 2, cost: 6});

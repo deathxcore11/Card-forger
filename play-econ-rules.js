@@ -102,3 +102,41 @@ export function stepDeckCard(deck = [], name, step, owned = new Map(), format = 
   row.qty -= 1;
   return rows.filter(c => c.qty > 0);
 }
+
+// Precons (Randall 1 Nov 19:49Z): pay only for the cards you don't own yet, 25 coins each, between
+// 250 and 1,500 (three packs). A deck you already own entirely is free to add. play.config can rebalance.
+export function preconPrice(missing = 0, config = {}) {
+  const p = config?.precon || {};
+  return missing <= 0 ? 0 : Math.max(p.min ?? 250, Math.min(p.max ?? 1500, missing * (p.perCard ?? 25)));
+}
+// One MTGJSON deck card as a Play card grant: the exact printing in the product (set and number),
+// so era decks keep their era art, basic lands included.
+export const scryfallImage = id => /^[0-9a-f-]{36}$/i.test(id || '') ? `https://cards.scryfall.io/normal/front/${id[0]}/${id[1]}/${id}.jpg` : '';
+export function mtgjsonCardDelta(c = {}) {
+  const id = c.identifiers?.scryfallId || '';
+  return {oracle_id: c.identifiers?.scryfallOracleId || '', name: c.name || '', rarity: rarityOf(c.rarity), set: String(c.setCode || '').toLowerCase(), id, image: scryfallImage(id)};
+}
+// The rows of an MTGJSON deck (main and sideboard), each with its exact printing.
+export function mtgjsonDeckRows(d = {}) {
+  const row = (c, board) => ({name: String(c.name || ''), qty: Math.max(1, c.count | 0), set: String(c.setCode || '').toLowerCase(), number: String(c.number || ''), id: c.identifiers?.scryfallId || '', rarity: rarityOf(c.rarity), ...(board === 'side' ? {board} : {})});
+  return [...(d.mainBoard || []).map(c => row(c, 'main')), ...(d.sideBoard || []).map(c => row(c, 'side'))].filter(r => r.name);
+}
+
+// Formats a pasted list can be played in: every card legal (Vintage also allows restricted cards at
+// one copy) and the deck rules met. legal: Map name -> Scryfall legalities.
+export function legalFormats(rows = [], legal = new Map()) {
+  const main = rows.filter(r => r.board !== 'side'), size = main.reduce((t, r) => t + (r.qty | 0), 0);
+  const copies = new Map();
+  for (const r of rows) copies.set(r.name, (copies.get(r.name) || 0) + (r.qty | 0));
+  return PLAY_FORMATS.filter(f => {
+    const key = f.toLowerCase(), rule = deckRules(f);
+    if (rule.exact ? size !== rule.size : size < rule.size) return false;
+    for (const [name, n] of copies) {
+      const l = legal.get(name)?.[key];
+      if (!l) return false;
+      if (l === 'restricted' ? n > 1 : l !== 'legal') return false;
+      if (!isBasicLand(name) && n > rule.copies) return false;
+    }
+    return true;
+  });
+}

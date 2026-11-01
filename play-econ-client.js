@@ -33,6 +33,7 @@ export function createPlayEcon({getAccessToken, fetchImpl = globalThis.fetch?.bi
     open: id => run('open:' + id, async () => { const out = await call('open', {id}); set({...out.state, rewardSet: state?.rewardSet, shop: state?.shop}); return out; }),
     buy: setCode => run('buy', async () => { const out = await call('buy', {set: setCode}); set({...out.state, rewardSet: state?.rewardSet, shop: state?.shop}); return out; }),
     forge: (to, times = 1) => run('forge', async () => { const out = await call('forge', {to, times}); set({...out.state, rewardSet: state?.rewardSet, shop: state?.shop}); return out; }),
+    precon: (file, format) => run('precon', async () => { const out = await call('precon', {file, format}); set({...out.state, rewardSet: state?.rewardSet, shop: state?.shop}); return out; }),
     craft: cardId => run('craft', async () => { const out = await call('craft', {id: cardId}); set({...out.state, rewardSet: state?.rewardSet, shop: state?.shop}); return out; }),
     saveDeck: deck => run('deck', async () => { const out = await call('deck', deck); await api.refresh(); return out.deck; }),
     clear() { state = null; try { storage?.removeItem(privateKey(CACHE)); } catch {} onChange(); },
@@ -52,6 +53,7 @@ const MESSAGES = {
   no_booster: 'Packs for that set are not available.',
   bad_card: 'That card cannot be stamped with a seal.',
   bad_forge: 'That seal cannot be forged.',
+  bad_precon: 'That precon could not be opened.',
   no_reward_set: 'The reward packs are not ready yet. Try again in a moment.',
 };
 

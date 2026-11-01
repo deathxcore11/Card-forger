@@ -6,7 +6,7 @@
 import {SUPABASE} from './config.js';
 import {loadMtgBooster, mtgBoosterCards, drawMtgBooster} from './mtg-boosters.js';
 import {rewardSet, setFormats} from './play-econ-sets.js';
-import {starterGrant, sealTrackBonus, packContentsRow, cardDelta, RARITY_SEAL, FORGE_STEPS, forgeRatio} from './play-econ-rules.js';
+import {starterGrant, sealTrackBonus, packContentsRow, cardDelta, RARITY_SEAL, FORGE_STEPS, forgeRatio, preconPrice, mtgjsonCardDelta, mtgjsonDeckRows, deckShortfall, ownedByName} from './play-econ-rules.js';
 import {PRACTICE_STARTER_ROWS} from './play-starter-deck.js';
 
 const json = (body, status = 200) => new Response(JSON.stringify(body), {status, headers: {'Content-Type': 'application/json', 'Cache-Control': 'no-store'}});
@@ -135,6 +135,25 @@ export async function progressRoute(request, env, {verifyBearer, fetcher = fetch
       if ((s.wallet?.['seal_' + from] || 0) < cost) return fail('no_seal', 409);
       await apply('forge:' + crypto.randomUUID(), 'forge', {seals: {[from]: -cost, [to]: times}});
       return json({forged: {to, from, times, cost}, state: await state()});
+    }
+    if (path === 'precon') {
+      // A published 60-card precon from MTGJSON: pay 25 coins per card you don't own (250 to 1,500,
+      // free when you own it all); the missing copies arrive in their exact printings and the list
+      // is saved as a Play deck with those printings.
+      const file = String(body.file || '').replace(/\.json$/, '');
+      if (!/^[A-Za-z0-9_.-]{3,120}$/.test(file)) return fail('bad_precon');
+      const r = await fetcher('https://mtgjson.com/api/v5/decks/' + file + '.json', {headers: {Accept: 'application/json', 'User-Agent': 'CardStashy/1.0 (play precons)'}}).catch(() => null);
+      const d = r?.ok ? (await r.json().catch(() => null))?.data : null;
+      if (!d?.mainBoard?.length || (d.commander || []).length) return fail('bad_precon');
+      const rows = mtgjsonDeckRows(d), byName = new Map([...(d.mainBoard || []), ...(d.sideBoard || [])].map(c => [c.name, c]));
+      const s = await state(), short = deckShortfall(rows, ownedByName(s.cards || []), new Map(rows.map(x => [x.name, x.rarity])), s.config?.maxCopies || 4);
+      const missing = short.missing.reduce((t, m) => t + m.need, 0), price = preconPrice(missing, s.config);
+      if ((s.wallet?.coins || 0) < price) return fail('short_coins', 409);
+      const cards = short.missing.flatMap(m => Array.from({length: m.need}, () => mtgjsonCardDelta(byName.get(m.name)))).filter(c => c.oracle_id);
+      await apply('precon:' + crypto.randomUUID(), 'precon', {coins: -price, cards});
+      const deck = await rpc(env, 'play_save_deck', {p_user: uid, p_id: null, p_name: String(d.name || 'Precon').slice(0, 80), p_format: String(body.format || '').slice(0, 40),
+        p_cards: rows.map(({name, qty, board, set, number}) => ({name, qty, ...(board ? {board} : {}), set, number})), p_delete: false}, fetcher);
+      return json({deck, price, granted: cards.length, state: await state()});
     }
     if (path === 'buy') {
       const set = String(body.set || '').toLowerCase();

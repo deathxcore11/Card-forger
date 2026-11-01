@@ -2,10 +2,10 @@
 // Play homepage, the Merchant, Packs, Collection and Decks. Legacy of the Duelist style menus
 // on real card art, in the app's glass and gold. Markup only; app.js wires the actions.
 // The wall: no prices anywhere in Play. Cards show art, name, rarity and copies owned (of 4).
-import {SEALS, FORGE_STEPS, forgeRatio, masteryLevel, deckShortfall, deckRules, copiesLeft, isBasicLand, PLAY_FORMATS, ownedByName} from './play-econ-rules.js';
+import {SEALS, FORGE_STEPS, forgeRatio, masteryLevel, deckShortfall, deckRules, copiesLeft, isBasicLand, PLAY_FORMATS, ownedByName, preconPrice, scryfallImage} from './play-econ-rules.js';
 import {cardGroup} from './play-econ-cards.js';
 import {setRowContent, setYearSections} from './set-list-ui.js';
-import {segmented, setIconUrl, img, manaCost, symbolUrl} from './ui.js';
+import {segmented, setIconUrl, img, manaCost, symbolUrl, bar} from './ui.js';
 import {rowEmblem} from './importance.js';
 import {finishAttrs} from './finish-preview.js';
 import {tileChrome} from './tiles.js';
@@ -287,20 +287,69 @@ export function deckBuilderMarkup(snapshot, ui = {}) {
     ${statusLine(snapshot)}</section>`;
 }
 
-// decks: Play decks. check: an imported list being checked {name, format, rows, rarity:Map, error}.
-export function decksMarkup(snapshot, {check = null} = {}) {
-  const s = snapshot.state, decks = s.decks || [], owned = ownedByName(s.cards || []);
-  const short = check?.rows ? deckShortfall(check.rows, owned, check.rarity || new Map()) : null;
+// The Decks page, like the app's deck shelf: your decks front and centre as the app's deck tiles,
+// then published precons (browse, see the exact printings, buy only what you're missing), then
+// "Paste a list", which finds the formats the list is legal in and asks when more than one fits.
+const artCrop = id => scryfallImage(id).replace('/normal/', '/art_crop/');
+const deckCover = cards => { const lead = (cards || []).find(c => c.board !== 'side' && !isBasicLand(c.name)) || (cards || [])[0];
+  return lead ? (lead.id ? artCrop(lead.id) : cardImageByName(lead.name, 'art_crop')) : ''; };
+function playDeckTile(d, owned) {
+  const main = (d.cards || []).filter(c => c.board !== 'side'), side = (d.cards || []).filter(c => c.board === 'side');
+  const count = list => list.reduce((t, c) => t + (c.qty | 0), 0), size = deckRules(d.format).size;
+  const sh = deckShortfall(d.cards || [], owned), want = (d.cards || []).filter(c => !isBasicLand(c.name)).reduce((t, c) => t + (c.qty | 0), 0);
+  const missing = sh.missing.reduce((t, m) => t + m.need, 0), share = want ? (want - missing) / want : 1, name = d.name || 'Untitled deck';
+  return `<div class="pe-deck-cell"><button class="deck-tile" data-act="playEconEditDeck" data-econ-deck="${esc(d.id)}" aria-label="Open ${esc(name)}">
+    <span class="tile-art">${img(deckCover(d.cards), name)}</span><span class="tile-shade"></span>
+    <span class="tile-top"><span class="chip dark deck-format-emblem">${esc(d.format || 'Casual')}</span></span>
+    <span class="tile-body"><b>${esc(name)}</b><small>${count(main)}/${size}${side.length ? ` · ${count(side)} sideboard` : ''}</small>
+      <span class="tile-stats"><span class="tile-owned"><em>${Math.round(share * 100)}%</em> in your Trunk</span><span class="tile-find">${missing ? `<em>${missing}</em> to stamp` : 'Ready'}</span></span>${bar(share, 'thin')}</span></button>
+    <button class="pe-deck-delete" data-act="playEconDeleteDeck" data-econ-deck="${esc(d.id)}" aria-label="Delete ${esc(name)}"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M6 6l12 12M18 6 6 18"/></svg></button></div>`;
+}
+const year = d => String(d || '').slice(0, 4);
+// Hyphenated words (Free-for-All) never split across lines.
+const keepWords = t => esc(t).replace(/\S*-\S*/g, w => `<span class="nowrap">${w}</span>`);
+function preconShelf(snapshot, pc = {}) {
+  const s = snapshot.state, owned = ownedByName(s.cards || []);
+  if (pc.open) {
+    const o = pc.open, rows = o.rows || [], sh = deckShortfall(rows, owned, new Map(rows.map(r => [r.name, r.rarity])));
+    const missing = sh.missing.reduce((t, m) => t + m.need, 0), price = preconPrice(missing, s.config), coins = s.wallet?.coins || 0;
+    const have = new Map(owned), card = r => { const got = isBasicLand(r.name) ? r.qty : Math.min(r.qty, have.get(r.name) || 0); have.set(r.name, Math.max(0, (have.get(r.name) || 0) - got));
+      return `<figure class="pe-precon-card${got < r.qty ? ' is-missing' : ''}"><img src="${esc(scryfallImage(r.id) || cardImageByName(r.name))}" alt="${esc(r.name)}" loading="lazy" decoding="async" referrerpolicy="no-referrer"><figcaption>${r.qty}×${got < r.qty ? ` <span>${r.qty - got} new</span>` : ''}</figcaption></figure>`; };
+    const main = rows.filter(r => r.board !== 'side'), side = rows.filter(r => r.board === 'side');
+    return `<div class="pe-precon-open"><div class="pe-precon-top"><button class="btn ghost" data-act="playEconPreconClose">All precons</button>
+      <div class="pe-precon-title"><h3>${keepWords(o.name)}</h3><p>${esc(o.product || 'Precon')} · ${esc(year(o.released))}${o.formats?.length ? ' · ' + o.formats.map(esc).join(', ') : ' · Casual'}</p></div>
+      <div class="pe-precon-buy"><p>${missing ? `${missing} card${missing === 1 ? '' : 's'} to add · <b>${price.toLocaleString()} coins</b>` : 'You own every card'}</p>
+      <button class="btn" data-act="playEconBuyPrecon" ${snapshot.busy || (price > coins) ? 'disabled' : ''}>${price > coins ? 'Not enough coins' : missing ? 'Buy deck' : 'Add to my decks'}</button></div></div>
+      <div class="pe-precon-cards">${main.map(card).join('')}</div>
+      ${side.length ? `<h4 class="pe-precon-side">Sideboard</h4><div class="pe-precon-cards">${side.map(card).join('')}</div>` : ''}</div>`;
+  }
+  if (pc.busy && !pc.index) return '<p class="pe-count" role="status">Loading the precon list…</p>';
+  if (pc.error) return `<p class="note warn">${esc(pc.error)}</p>`;
+  if (!pc.index) return '<button class="btn ghost" data-act="playEconPrecons">Show the precons</button>';
+  const q = (pc.query || '').trim().toLowerCase(), list = pc.index.filter(d => !q || d.name.toLowerCase().includes(q) || (d.code || '').toLowerCase() === q || d.type.toLowerCase().includes(q)), shown = list.slice(0, pc.limit || 12);
+  return `<label class="pe-search"><span>Find a precon</span><input type="search" data-input="playEconPreconQuery" value="${esc(pc.query || '')}" maxlength="80" placeholder="Precon or set name"></label>
+    ${pc.busy ? '<p class="pe-count" role="status">Opening the deck box…</p>' : ''}
+    <div class="pe-precon-grid">${shown.map(d => `<button class="pe-precon" data-act="playEconPrecon" data-econ-file="${esc(d.fileName)}" aria-label="${esc(d.name)}, ${esc(d.type)}, ${esc(year(d.releaseDate))}"><span class="set-icon" style="--icon:url('${esc(setIconUrl(String(d.code || '').toLowerCase()))}')" aria-hidden="true"></span><span class="pe-precon-name">${keepWords(d.name)}</span><span class="pe-precon-line">${esc(d.type)} · ${esc(year(d.releaseDate))}</span></button>`).join('') || '<p class="pe-count">No precons match.</p>'}</div>
+    ${list.length > shown.length ? `<button class="btn ghost" data-act="playEconPreconMore">Show more (${list.length - shown.length})</button>` : ''}`;
+}
+function importPanel(snapshot, check) {
+  const owned = ownedByName(snapshot.state.cards || []), short = check?.rows ? deckShortfall(check.rows, owned, check.rarity || new Map()) : null;
+  const formats = check?.formats || [], pick = check?.format;
   const sealsLine = sh => SEALS.filter(x => sh.seals[x.key]).map(x => `<span class="pe-cost">${sealIcon(x.key)}<b>${sh.seals[x.key]}</b></span>`).join('');
-  const deckCard = d => { const sh = deckShortfall(d.cards || [], owned, new Map((s.cards || []).map(c => [c.n, c.r]))), lead = (d.cards || []).find(c => !/^(?:plains|island|swamp|mountain|forest)$/i.test(c.name));
-    return `<article class="pe-deck"><span class="pe-deck-art" style="background-image:url(${esc(lead ? cardImageByName(lead.name, 'art_crop') : '')})" aria-hidden="true"></span><button class="pe-deck-open" data-act="playEconEditDeck" data-econ-deck="${esc(d.id)}" aria-label="Edit ${esc(d.name || 'Untitled deck')}"></button><span class="pe-deck-name">${esc(d.name || 'Untitled deck')}</span><span class="pe-deck-line">${esc(d.format || 'Any format')} · ${sh.complete ? 'Ready to play' : sh.missing.reduce((t, m) => t + m.need, 0) + ' cards to stamp'}</span>${sh.complete ? '' : `<span class="pe-costs">${sealsLine(sh)}</span>`}<button class="pe-deck-delete" data-act="playEconDeleteDeck" data-econ-deck="${esc(d.id)}" aria-label="Delete ${esc(d.name || 'deck')}"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M6 6l12 12M18 6 6 18"/></svg></button></article>`; };
+  return `<form class="pe-import-form" data-submit="playEconCheckDeck"><textarea name="list" rows="6" maxlength="20000" aria-label="Deck list" placeholder="Paste a list: 4 Lightning Bolt, one card per line. A Sideboard line starts the sideboard.">${esc(check?.text || '')}</textarea><button class="btn" ${check?.busy ? 'disabled' : ''}>${check?.busy ? 'Checking…' : 'Check the list'}</button></form>
+    ${check?.error ? `<p class="note warn">${esc(check.error)}</p>` : ''}
+    ${short ? `<div class="pe-shortfall">
+      <p>${formats.length === 1 ? `Legal in <b>${esc(formats[0])}</b>.` : formats.length ? 'Legal in more than one format. Which is it for?' : 'Not legal in any format as listed, so it is saved as Casual.'}</p>
+      ${formats.length > 1 ? `<div class="pe-format-pick" role="group" aria-label="Format">${formats.map(f => `<button data-act="playEconImportFormat" data-econ-format="${esc(f)}" aria-pressed="${pick === f}">${esc(f)}</button>`).join('')}</div>` : ''}
+      ${short.complete ? '<p class="pe-ready">Every card is in your Trunk.</p>' : `<p>To finish it, stamp ${short.missing.reduce((t, m) => t + m.need, 0)} cards:</p><span class="pe-costs">${sealsLine(short)}</span><ul class="pe-missing">${short.missing.slice(0, 60).map(m => `<li>${sealIcon(m.seal)}<span>${m.need} × ${esc(m.name)}</span></li>`).join('')}</ul>`}
+      <div class="pe-import-save"><input data-input="playEconImportName" maxlength="80" placeholder="Deck name" aria-label="Deck name" value="${esc(check.name || '')}"><button class="btn" data-act="playEconSaveDeck" ${snapshot.busy || (formats.length > 1 && !pick) ? 'disabled' : ''}>Save deck</button></div></div>` : ''}`;
+}
+export function decksMarkup(snapshot, {check = null, precon = {}} = {}) {
+  const s = snapshot.state, decks = s.decks || [], owned = ownedByName(s.cards || []);
   return `<section class="play-menu pe-screen pe-decks" aria-labelledby="playTitle">${head('Decks', snapshot)}
-    <div class="pe-deck-grid"><button class="pe-deck pe-deck--new" data-act="playEconEditDeck" data-econ-deck=""><span class="pe-deck-art" style="background-image:url(${TILE_ART.decks})" aria-hidden="true"></span><span class="pe-deck-name">Build a deck</span><span class="pe-deck-line">From the cards you own</span></button>${decks.map(deckCard).join('')}</div>
-    <section class="pe-import" aria-labelledby="peImportTitle"><h2 id="peImportTitle">Bring in a deck</h2>
-      <form class="pe-import-form" data-submit="playEconCheckDeck"><input name="name" maxlength="80" placeholder="Deck name" aria-label="Deck name" value="${esc(check?.name || '')}"><select name="format" aria-label="Format">${['Standard', 'Pioneer', 'Modern', 'Legacy', 'Vintage', 'Pauper', 'Commander'].map(f => `<option${check?.format === f ? ' selected' : ''}>${f}</option>`).join('')}</select><textarea name="list" rows="5" maxlength="20000" aria-label="Deck list" placeholder="4 Card name">${esc(check?.text || '')}</textarea><button class="btn" ${check?.busy ? 'disabled' : ''}>${check?.busy ? 'Checking…' : 'Check against my collection'}</button></form>
-      ${check?.error ? `<p class="note warn">${esc(check.error)}</p>` : ''}
-      ${short ? `<div class="pe-shortfall">${short.complete ? '<p class="pe-ready">Every card is in your collection.</p>' : `<p>To finish it, stamp ${short.missing.reduce((t, m) => t + m.need, 0)} cards:</p><span class="pe-costs">${sealsLine(short)}</span><ul class="pe-missing">${short.missing.slice(0, 60).map(m => `<li>${sealIcon(m.seal)}<span>${m.need} × ${esc(m.name)}</span></li>`).join('')}</ul>`}<button class="btn" data-act="playEconSaveDeck" ${snapshot.busy ? 'disabled' : ''}>Save as a Play deck</button></div>` : ''}
-    </section>
+    <div class="deck-grid pe-deck-shelf"><button class="deck-tile pe-deck-new" data-act="playEconEditDeck" data-econ-deck=""><span class="tile-art">${img(TILE_ART.decks, '')}</span><span class="tile-shade"></span><span class="tile-body"><b>Build a deck</b><small>From the cards in your Trunk</small></span></button>${decks.map(d => playDeckTile(d, owned)).join('')}</div>
+    <section class="pe-import pe-precons" aria-labelledby="pePreconTitle"><h2 id="pePreconTitle">Precons</h2><p class="pe-sub">Published decks with their real printings. You only pay for the cards you don't have yet.</p>${preconShelf(snapshot, precon)}</section>
+    <section class="pe-import" aria-labelledby="peImportTitle"><h2 id="peImportTitle">Paste a list</h2>${importPanel(snapshot, check)}</section>
     ${statusLine(snapshot)}</section>`;
 }
 

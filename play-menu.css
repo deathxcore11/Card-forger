@@ -1063,3 +1063,43 @@ body[data-mode="play"] #gameTabs,body[data-mode="play"] [data-nav="scan"]{displa
 .pe-set-none{filter:grayscale(.85);opacity:.62}
 .pe-set-none:is(:hover,:focus-visible){filter:none;opacity:1}
 .pe-set-controls{margin-bottom:6px}
+/* Decks page: the app's deck tiles front and centre, then precons, then Paste a list. */
+.pe-decks .pe-deck-shelf{margin-bottom:6px}
+.pe-deck-cell{position:relative;min-width:0}
+.pe-deck-cell>.deck-tile{width:100%}
+.pe-deck-cell .pe-deck-delete{top:12px;right:12px}
+.pe-deck-new .tile-art img{opacity:.75}
+.pe-sub{margin:-6px 0 0;color:var(--muted);font-size:14px}
+.pe-precon-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(220px,1fr));gap:10px}
+.pe-precon{display:grid;grid-template-columns:28px minmax(0,1fr);grid-template-rows:auto auto;column-gap:12px;row-gap:2px;align-items:center;min-height:64px;padding:10px 14px;border-radius:14px;border:1px solid #ffffff14;background:#ffffff06;color:var(--text);text-align:left;cursor:pointer;font:inherit}
+.pe-precon:hover,.pe-precon:focus-visible{border-color:#d6ad6488;background:#d6ad6412}
+.pe-precon .set-icon{grid-row:1/3;width:28px;height:28px}
+.pe-precon-name{font:700 15px/1.25 'DM Sans',system-ui,sans-serif;min-width:0;overflow-wrap:anywhere}
+.pe-precon-line{font-size:13px;color:var(--muted)}
+.pe-precon-open{display:grid;gap:14px}
+.pe-precon-top{display:flex;flex-wrap:wrap;align-items:center;gap:12px 18px}
+.pe-precon-title{flex:1 1 240px;min-width:0}
+.pe-precon-title h3{margin:0;font:700 19px/1.2 Cinzel,Georgia,serif;color:#f3e3bd}
+.pe-precon-title p{margin:4px 0 0;color:var(--muted);font-size:14px}
+.pe-precon-buy{display:flex;flex-wrap:wrap;align-items:center;gap:10px 14px}
+.pe-precon-buy p{margin:0;font-size:14px}
+.pe-precon-buy b{color:#f3dfb4}
+.pe-precon-cards{display:grid;grid-template-columns:repeat(auto-fill,minmax(112px,1fr));gap:10px}
+.pe-precon-card{margin:0;display:grid;gap:4px;min-width:0}
+.pe-precon-card img{width:100%;aspect-ratio:488/680;border-radius:5%;display:block;background:#0c0e13}
+.pe-precon-card figcaption{font:700 13px/1.2 'DM Sans',system-ui,sans-serif;color:var(--muted)}
+.pe-precon-card figcaption span{color:#f3dfb4}
+.pe-precon-card.is-missing img{filter:grayscale(1) brightness(.55)}
+.pe-precon-side{margin:4px 0 0;font:700 14px/1.2 'DM Sans',system-ui,sans-serif;color:var(--muted);letter-spacing:.06em;text-transform:uppercase}
+.pe-format-pick{display:flex;flex-wrap:wrap;gap:6px}
+.pe-format-pick button{min-height:44px;padding:0 16px;border-radius:999px;border:1px solid var(--line);background:transparent;color:var(--text);font:700 13px/1 'DM Sans',system-ui,sans-serif;cursor:pointer}
+.pe-format-pick button[aria-pressed="true"]{border-color:var(--gold);background:color-mix(in srgb,var(--gold) 16%,transparent);color:#f6e4bb}
+.pe-import-save{display:flex;flex-wrap:wrap;gap:10px}
+.pe-import-save input{flex:1 1 200px;min-height:44px;padding:0 14px;border-radius:12px;border:1px solid var(--line);background:color-mix(in srgb,#0d0f14 70%,transparent);color:var(--text);font:inherit;font-size:15px;min-width:0}
+.pe-precons .pe-search{display:block}
+.pe-precons .pe-search>span{position:absolute;width:1px;height:1px;overflow:hidden;clip:rect(0 0 0 0);white-space:nowrap}
+.pe-precons .pe-search input{width:100%}
+.pe-decks .nowrap{white-space:nowrap}
+.pe-deck-shelf .tile-body :is(.tile-stats,.bar){display:flex}
+.pe-deck-shelf .tile-body .bar{display:block}
+@media(max-width:639px){.pe-deck-shelf .pe-deck-new{height:150px!important}}
