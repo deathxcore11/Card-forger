@@ -770,7 +770,7 @@
        "id": "2b87069b-ebaf-4705-b5da-446932af9b73"
       },
       {
-       "qty": 26,
+       "qty": 28,
        "name": "Swamp",
        "set": "ice",
        "number": "373",
@@ -791,7 +791,7 @@
        "id": "d3d223d3-72c1-4240-9323-84484167c5e0"
       },
       {
-       "qty": 1,
+       "qty": 2,
        "name": "Unholy Strength",
        "set": "4ed",
        "number": "166",
@@ -826,14 +826,14 @@
        "id": "2096e54e-1a55-4fd7-8415-a6f2fdb2a536"
       },
       {
-       "qty": 4,
+       "qty": 2,
        "name": "Sengir Vampire",
        "set": "4ed",
        "number": "160",
        "id": "2e29882a-c194-48b8-ba18-439b0bda395e"
       },
       {
-       "qty": 2,
+       "qty": 4,
        "name": "Evil Presence",
        "set": "4ed",
        "number": "136",
@@ -852,13 +852,6 @@
        "set": "ice",
        "number": "114",
        "id": "6bb83301-5662-4628-b536-6a3ee0296f2e"
-      },
-      {
-       "qty": 3,
-       "name": "Feast or Famine",
-       "set": "all",
-       "number": "49a",
-       "id": "7c185b4d-8da5-4b8a-85f0-5f0622c7bade"
       }
      ]
     }
@@ -1163,7 +1156,7 @@
        "id": "9a879b60-4381-447d-8a5a-8e0b6a1d49ca"
       },
       {
-       "qty": 2,
+       "qty": 4,
        "name": "Benalish Hero",
        "set": "4ed",
        "number": "7",
@@ -1184,7 +1177,7 @@
        "id": "6acc78fc-1eab-47aa-993d-6781b2d2408a"
       },
       {
-       "qty": 4,
+       "qty": 2,
        "name": "Kjeldoran Royal Guard",
        "set": "ice",
        "number": "38",
@@ -1192,10 +1185,10 @@
       },
       {
        "qty": 2,
-       "name": "Kjeldoran Skycaptain",
-       "set": "ice",
-       "number": "39",
-       "id": "cf0115e0-6192-48a9-9e58-f3ef77ef77c2"
+       "name": "Wall of Swords",
+       "set": "4ed",
+       "number": "55",
+       "id": "18ffa85c-61c4-49b7-8946-ab353355a11c"
       },
       {
        "qty": 2,
@@ -1306,11 +1299,18 @@
        "id": "6bb83301-5662-4628-b536-6a3ee0296f2e"
       },
       {
-       "qty": 4,
+       "qty": 2,
        "name": "Drift of the Dead",
        "set": "ice",
        "number": "123",
        "id": "d8b65656-9f8c-4179-81aa-4b15d8280baa"
+      },
+      {
+       "qty": 2,
+       "name": "Drain Life",
+       "set": "4ed",
+       "number": "132",
+       "id": "b9d10677-36f0-4339-a2c3-213e8ee1c51d"
       },
       {
        "qty": 3,
@@ -1321,10 +1321,10 @@
       },
       {
        "qty": 4,
-       "name": "Kjeldoran Dead",
-       "set": "ice",
-       "number": "137",
-       "id": "d3f7b614-6075-4b7c-acc7-ab63185b570b"
+       "name": "Hypnotic Specter",
+       "set": "4ed",
+       "number": "142",
+       "id": "b5900350-be08-4904-8f1b-cc180ed08485"
       },
       {
        "qty": 4,
@@ -1917,7 +1917,7 @@
        "id": "38fc72de-2093-477b-b39e-696339d2fdbc"
       },
       {
-       "qty": 4,
+       "qty": 2,
        "name": "Kjeldoran Royal Guard",
        "set": "ice",
        "number": "38",
@@ -1943,6 +1943,13 @@
        "set": "ice",
        "number": "54",
        "id": "375fd2cb-443b-4be4-ad60-6d1a8e74f510"
+      },
+      {
+       "qty": 2,
+       "name": "War Mammoth",
+       "set": "4ed",
+       "number": "286",
+       "id": "2137757c-161c-4a3b-9a99-0fd23aa0c847"
       },
       {
        "qty": 1,
@@ -2039,7 +2046,7 @@
        "id": "75b67eb2-b60e-46b4-9d48-11c284957bec"
       },
       {
-       "qty": 4,
+       "qty": 2,
        "name": "Drift of the Dead",
        "set": "ice",
        "number": "123",
@@ -2053,7 +2060,7 @@
        "id": "6bb83301-5662-4628-b536-6a3ee0296f2e"
       },
       {
-       "qty": 3,
+       "qty": 4,
        "name": "Pestilence",
        "set": "4ed",
        "number": "152",
@@ -2067,7 +2074,7 @@
        "id": "b5900350-be08-4904-8f1b-cc180ed08485"
       },
       {
-       "qty": 3,
+       "qty": 4,
        "name": "Terror",
        "set": "4ed",
        "number": "164",

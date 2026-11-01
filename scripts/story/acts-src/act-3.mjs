@@ -106,14 +106,16 @@ export default {
 2 Scathe Zombies
 2 Drain Life
 2 Raise Dead
-3 Sengir Vampire
+1 Sengir Vampire
+2 Evil Presence
 2 Evil Presence
 2 Drudge Skeletons
 2 Terror
 2 Scathe Zombies
 4 Ashen Ghoul
 1 Sengir Vampire
-3 Feast or Famine
+2 Swamp
+1 Unholy Strength
 24 Swamp`}},
       scene: [{who: 'leshrac', line: 'Take it. Read.'}, {who: 'laina', line: "Don't touch that. Freyalise warned us about his gifts."}, {who: 'leshrac', line: 'Freyalise warns. I give.'}, {who: 'laina', line: 'Our friends of the forest take many forms, yet all serve the will of Freyalise.', quote: true}, {who: 'leshrac', line: "Then let them serve. I'll wait."}],
       cues: {hero: cue('Freyalise, guide us.', 'The goddess is generous to her children.', "Don't read it...", 'Take your book and go.', "He's in the trees now."),
@@ -154,9 +156,10 @@ export default {
 2 Benalish Hero
 2 Arcane Denial
 2 Pearled Unicorn
-4 Kjeldoran Royal Guard
-2 Kjeldoran Skycaptain
+2 Kjeldoran Royal Guard
+2 Benalish Hero
 2 Pearled Unicorn
+2 Wall of Swords
 2 Swords to Plowshares
 2 Unsummon
 1 Serra Angel
@@ -172,9 +175,10 @@ export default {
       villain: {who: 'cohort', deck: {name: "Lim-Dûl's Vanguard", colors: 'B', list: `
 4 Lim-Dûl's Cohort
 4 Ashen Ghoul
-4 Drift of the Dead
+2 Drift of the Dead
+2 Drain Life
 3 Legions of Lim-Dûl
-4 Kjeldoran Dead
+4 Hypnotic Specter
 4 Zombie Master
 4 Scathe Zombies
 4 Terror
@@ -253,11 +257,12 @@ export default {
 4 White Knight
 2 Order of the White Shield
 2 Grizzly Bears
-4 Kjeldoran Royal Guard
+2 Kjeldoran Royal Guard
+2 Grizzly Bears
 1 Serra Angel
 2 Benalish Hero
 2 Swords to Plowshares
-2 Grizzly Bears
+2 War Mammoth
 1 Lhurgoyf
 1 Folk of the Pines
 1 Benalish Hero
@@ -273,11 +278,11 @@ export default {
 4 Dark Ritual
 4 Knight of Stromgald
 3 Legions of Lim-Dûl
-4 Drift of the Dead
+2 Drift of the Dead
 4 Ashen Ghoul
-3 Pestilence
+4 Pestilence
 2 Hypnotic Specter
-3 Terror
+4 Terror
 12 Snow-Covered Swamp
 12 Swamp`}},
       scene: [{who: 'limdul', line: 'My foes serve me twice: in dying, and in death.', quote: true}, {who: 'laina', line: "Freyalise is coming. She's going to end the winter."}, {who: 'limdul', line: 'I will not warm myself by the fire. I will become the flame.', quote: true}, {who: 'limdul', line: 'Leshrac told me about you. The one who walks between.', aside: 'to you'}, {who: 'limdul', line: "Kneel, and I'll keep you. You'd make a fine Cohort."}],
