@@ -308,6 +308,9 @@ body[data-view="scan"] #content>.context-guide{margin:12px 14px 0}
  .coll-tools .collection-sort-controls{width:auto;flex:none}
  .coll-tools .collection-sort-label{flex:none;font-size:0;gap:0}
  .coll-tools .collection-sort-controls select{width:auto;min-width:150px}
+ /* The direction select sizes its own label, so its arrow never runs into the search box. */
+ .coll-tools .collection-direction-label{flex:none}
+ .coll-tools .collection-direction-label select{min-width:112px}
  .coll-tools .collection-primary-tools>input[type="search"]{flex:1 1 auto;min-width:0}
  .coll-tools>.filter-pills{flex:none;margin:0}
 }

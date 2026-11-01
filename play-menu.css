@@ -893,3 +893,57 @@ button.pe-purse-item:focus-visible{outline:2px solid var(--gold);outline-offset:
 .pe-purse-item{min-width:44px;justify-content:center}
 .pe-build-name{white-space:normal;overflow:visible;text-overflow:clip;line-height:1.2}
 .pe-screen .set-tile-progress-label{font-size:11px}
+/* Booster wrapper: one drawn pack for every set (crimped foil, the set's best-known card art, its symbol and name). */
+.pe-booster{position:relative;isolation:isolate;display:block;width:100%;aspect-ratio:5/8.2;border-radius:6px;overflow:hidden;background:linear-gradient(160deg,#2a2f3a,#14171d 60%,#262b35);box-shadow:0 18px 30px #000a,inset 0 0 0 1px #ffffff1f}
+.pe-booster::before,.pe-booster::after{content:"";position:absolute;left:0;right:0;height:5.5%;z-index:3;background:repeating-linear-gradient(90deg,#d9dde3 0 3px,#8c939e 3px 6px);opacity:.9}
+.pe-booster::before{top:0;box-shadow:0 2px 4px #0006}
+.pe-booster::after{bottom:0;box-shadow:0 -2px 4px #0006}
+.pe-booster-art{position:absolute;inset:5.5% 0 30% 0;z-index:0;background:var(--art,radial-gradient(circle at 50% 40%,#3b4152,#15181f));background-size:cover;background-position:50% 30%}
+.pe-booster-art::after{content:"";position:absolute;inset:0;background:linear-gradient(180deg,#0000 55%,#0c0e13 100%)}
+.pe-booster-band{position:absolute;left:0;right:0;bottom:5.5%;height:25%;z-index:1;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:2px;padding:0 8%;text-align:center;background:linear-gradient(180deg,#0c0e13,#1b1f28);border-top:1px solid #d6ad6466}
+.pe-booster-icon{width:22%;aspect-ratio:1;max-width:30px;background:linear-gradient(180deg,#f6e2ae,#c99a4b);-webkit-mask:var(--icon) center/contain no-repeat;mask:var(--icon) center/contain no-repeat}
+.pe-booster-band b{font:700 clamp(11px,1.05vw,14px)/1.1 Cinzel,Georgia,serif;color:#f6eedb;letter-spacing:.02em;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden}
+.pe-booster-band small{font:700 11px/1 'DM Sans',system-ui,sans-serif;letter-spacing:.14em;text-transform:uppercase;color:#d6ad64}
+.pe-booster-sheen{position:absolute;inset:0;z-index:2;pointer-events:none;background:linear-gradient(115deg,#fff0 30%,#ffffff26 45%,#fff0 60%);mix-blend-mode:screen}
+.pe-booster--big .pe-booster-band b{font-size:clamp(14px,1.4vw,18px)}
+/* Pack tiles now hold the wrapper itself instead of a product photo. */
+.pe-pack--open,.pe-pack--shop{min-height:0;padding:10px;background:transparent;border-color:transparent;justify-content:flex-start;align-items:stretch}
+.pe-pack--open::before,.pe-pack--shop::before{display:none}
+.pe-pack--open .pe-badge{position:absolute;top:2px;right:2px;z-index:4}
+.pe-pack--open:hover .pe-booster,.pe-pack--open:focus-visible .pe-booster{box-shadow:0 22px 36px #000c,0 0 26px #d6ad6440,inset 0 0 0 1px #d6ad6488}
+.pe-pack--shop .pe-pack-year{text-align:center}
+.pe-pack--feature{max-width:230px}
+/* Play homepage (app-home layout): Story header, then shelves. */
+.pe-home{display:grid;gap:26px}
+.pe-shelf-row{display:grid;gap:4px;min-width:0}
+.pe-shelf-row .home-shelf-heading h2{font:700 clamp(18px,1.6vw,22px)/1.2 Cinzel,Georgia,serif;letter-spacing:.02em}
+.pe-shelf-row .home-shelf-heading .link{min-height:44px;padding:0 6px}
+.pe-story{position:relative;isolation:isolate;overflow:hidden;min-height:clamp(320px,38vw,440px);border-radius:22px;border:1px solid color-mix(in srgb,var(--gold) 26%,var(--line));background:#101218;box-shadow:0 24px 50px #0008}
+.pe-story-art{position:absolute;inset:0;z-index:-2;width:100%;height:100%;object-fit:cover;object-position:50% 30%}
+.pe-story-shade{position:absolute;inset:0;z-index:-1;background:linear-gradient(90deg,#090b10f2 0%,#090b10c0 38%,#090b1030 70%),linear-gradient(0deg,#090b10d0,transparent 55%)}
+.pe-story-body{display:flex;align-items:flex-end;justify-content:space-between;gap:24px;min-height:inherit;padding:clamp(20px,3vw,36px)}
+.pe-story-copy{display:grid;gap:10px;max-width:560px}
+.pe-story-copy .eyebrow{margin:0;color:#e9cf93;font-size:12px;letter-spacing:.16em}
+.pe-story-copy h2{margin:0;font:700 clamp(28px,3.6vw,46px)/1.08 Cinzel,Georgia,serif;color:#fbf3df;text-shadow:0 2px 20px #000a}
+.pe-story-line{margin:0;color:#dfe3ea;font-size:15px;max-width:46ch}
+.pe-story-progress{display:flex;gap:6px;margin:4px 0}
+.pe-story-progress i{width:22px;height:8px;border-radius:999px;background:#ffffff26;border:1px solid #ffffff22}
+.pe-story-progress i.on{background:var(--gold);border-color:var(--gold)}
+.pe-story-progress i.boss{width:30px;border-color:#d6ad6488}
+.pe-story-go{justify-self:start;min-height:48px}
+.pe-story-go:disabled{opacity:.75;cursor:default}
+.pe-story-packs{display:flex;align-items:flex-end;gap:10px;flex:none}
+.pe-story-pack{display:block;width:clamp(78px,8vw,112px);transform:rotate(var(--tilt,0deg));transition:transform .25s ease}
+.pe-story-pack:nth-child(1){--tilt:-6deg}.pe-story-pack:nth-child(2){--tilt:0deg;width:clamp(92px,9.5vw,132px)}.pe-story-pack:nth-child(3){--tilt:6deg}
+.pe-home-packs,.pe-home-shop{display:grid;grid-auto-flow:column;grid-auto-columns:clamp(128px,13vw,170px);gap:12px;overflow-x:auto;padding:4px 2px 10px;scroll-snap-type:x proximity}
+.pe-home-packs>*,.pe-home-shop>*{scroll-snap-align:start}
+.pe-home-empty{margin:0;color:var(--muted);font-size:14px}
+.pe-home .pl-modes{margin:0}
+.pe-home-decks .home-personal-art img{width:100%;height:100%;object-fit:cover}
+.pe-home-build .home-personal-copy b{font-family:Cinzel,Georgia,serif}
+@media(max-width:700px){
+ .pe-story-body{flex-direction:column;align-items:stretch;justify-content:flex-end}
+ .pe-story-packs{order:-1;justify-content:center}
+ .pe-story-pack{width:74px}.pe-story-pack:nth-child(2){width:86px}
+ .pe-home .home-personal-grid{grid-template-columns:1fr}
+}

@@ -8,7 +8,6 @@ import {setRowContent} from './set-list-ui.js';
 import {segmented, setIconUrl} from './ui.js';
 import {deckShell} from './deck-viewer.js';
 import {purse} from './play-econ-client.js';
-import {packArtUrl} from './pack-preview.js';
 const esc = v => String(v ?? '').replace(/[&<>"']/g, c => ({'&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;'}[c]));
 const n = v => Number(v || 0).toLocaleString('en-US');
 const ART = 'https://cards.scryfall.io/art_crop/front/';
@@ -20,7 +19,7 @@ const TILE_ART = {
   decks: ART + 'f/d/fd99bce1-ce39-464b-8e61-2631eb3ed6f6.jpg'};      // Tolarian Academy
 export const cardImageByName = (name, version = 'normal') => 'https://api.scryfall.com/cards/named?format=image&version=' + version + '&exact=' + encodeURIComponent(name);
 
-export const coinIcon = (cls = '') => `<svg class="pe-coin ${cls}" viewBox="0 0 32 32" aria-hidden="true"><circle cx="16" cy="16" r="14" fill="url(#peGold)"/><circle cx="16" cy="16" r="10.5" fill="none" stroke="#7a5418" stroke-width="1.4" opacity=".7"/><path d="M16 8.5l2.2 4.6 5 .6-3.7 3.4 1 5-4.5-2.5-4.5 2.5 1-5-3.7-3.4 5-.6z" fill="#7a5418" opacity=".75"/></svg>`;
+export const coinIcon = (cls = '') => `<svg class="pe-coin ${cls}" viewBox="0 0 32 32" aria-hidden="true"><circle cx="16" cy="16" r="14" fill="url(#peGold)" stroke="#6b4612" stroke-width="1.6"/><circle cx="16" cy="16" r="10.5" fill="none" stroke="#6b4612" stroke-width="1.5"/><path d="M16 8.5l2.2 4.6 5 .6-3.7 3.4 1 5-4.5-2.5-4.5 2.5 1-5-3.7-3.4 5-.6z" fill="#5c3c0c"/></svg>`;
 const SEAL_INK = {c: ['#9aa1a9', '#5d636b'], u: ['#d9e3ea', '#7e8d99'], r: ['#f1cf7c', '#a77a23'], m: ['#f28a4b', '#a8381b']};
 export const sealIcon = (key, cls = '') => { const [a, b] = SEAL_INK[key] || SEAL_INK.c; return `<svg class="pe-seal ${cls}" data-seal="${key}" viewBox="0 0 32 32" aria-hidden="true"><path d="M16 2.5c2 0 2.6 1.9 4.4 2.5s3.6-.6 5 .8.1 3.2.8 5 2.5 2.4 2.5 4.4-1.9 2.6-2.5 4.4.6 3.6-.8 5-3.2.1-5 .8-2.4 2.5-4.4 2.5-2.6-1.9-4.4-2.5-3.6.6-5-.8-.1-3.2-.8-5S2.5 18 2.5 16s1.9-2.6 2.5-4.4-.6-3.6.8-5 3.2-.1 5-.8S14 2.5 16 2.5z" fill="${a}"/><circle cx="16" cy="16" r="8.4" fill="none" stroke="${b}" stroke-width="1.6"/><path d="M16 10.5l1.6 3.4 3.7.4-2.8 2.5.8 3.7-3.3-1.9-3.3 1.9.8-3.7-2.8-2.5 3.7-.4z" fill="${b}"/></svg>`; };
 const packIcon = `<svg class="pe-pack-icon" viewBox="0 0 32 32" aria-hidden="true"><path d="M8 4h16l-1 3 1 3v15l-1 3 1 3H8l1-3-1-3V10l1-3z" fill="url(#peGold)" stroke="#7a5418" stroke-width="1"/><path d="M12 14h8M12 18h8" stroke="#7a5418" stroke-width="1.4" opacity=".6"/></svg>`;
@@ -67,12 +66,17 @@ export function stuffRowMarkup(snapshot) {
 const head = (title, snapshot, eyebrow = 'Play') => `<header class="pl-head pe-head"><button class="pl-back" data-act="playHome" aria-label="Back to Play"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="m15 5-7 7 7 7"/></svg></button><div class="pl-head-title"><p class="eyebrow">${eyebrow}</p><h1 id="playTitle" tabindex="-1">${title}</h1></div>${purseMarkup(snapshot)}</header>`;
 const statusLine = snap => `<p class="pe-status" role="status" aria-live="polite">${esc(snap?.error || '')}</p>`;
 // The real booster wrapper in front, the set's own key art behind it.
-const packArt = (code, name = '') => `${esc(packArtUrl('mtg', {code, name}))}),url(/img/mtg-set/${esc(code)}.jpg`;
+// A booster wrapper drawn for every set alike: crimped foil, the set's most played card's art,
+// its symbol and name on the band. No product photos, so no white boxes or doubled titles.
+export function boosterMarkup({code = '', name = '', facts = null, big = false} = {}) {
+  const f = facts?.set?.(code) || {}, label = name || f.name || code.toUpperCase(), icon = f.icon || setIconUrl(code);
+  return `<span class="pe-booster${big ? ' pe-booster--big' : ''}" aria-hidden="true"${f.art ? ` style="--art:url('${esc(f.art)}')"` : ''}><span class="pe-booster-art"></span><span class="pe-booster-band"><span class="pe-booster-icon" style="--icon:url('${esc(icon)}')"></span><b>${esc(label)}</b><small>Play booster</small></span><span class="pe-booster-sheen"></span></span>`;
+}
 
-export function shopMarkup(snapshot, {query = '', press = null} = {}) {
+export function shopMarkup(snapshot, {query = '', press = null, facts = null} = {}) {
   const s = snapshot.state, price = s.config?.packPrice || 500, coins = s.wallet?.coins | 0, shop = s.shop || [], reward = s.rewardSet;
   const q = query.trim().toLowerCase(), list = (q ? shop.filter(x => x.name.toLowerCase().includes(q) || x.code === q) : shop).slice(0, q ? 60 : 24);
-  const buy = (set, big = false) => `<article class="pe-pack${big ? ' pe-pack--feature' : ''}"><span class="pe-pack-art" style="background-image:url(${packArt(set.code, set.name)})" aria-hidden="true"></span><span class="pe-pack-name">${esc(set.name)}</span><span class="pe-pack-year">${esc(String(set.released || '').slice(0, 4))}</span><button class="pe-buy" data-act="playEconBuy" data-econ-set="${esc(set.code)}" ${coins < price || snapshot.busy ? 'disabled' : ''} aria-label="Buy a ${esc(set.name)} pack for ${n(price)} coins">${coinIcon('pe-coin--sm')}<b>${n(price)}</b></button></article>`;
+  const buy = (set, big = false) => `<article class="pe-pack pe-pack--shop${big ? ' pe-pack--feature' : ''}" aria-label="${esc(set.name)}, ${esc(String(set.released || '').slice(0, 4))}">${boosterMarkup({code: set.code, name: set.name, facts, big})}<span class="pe-pack-year">${esc(String(set.released || '').slice(0, 4))}</span><button class="pe-buy" data-act="playEconBuy" data-econ-set="${esc(set.code)}" ${coins < price || snapshot.busy ? 'disabled' : ''} aria-label="Buy a ${esc(set.name)} pack for ${n(price)} coins">${coinIcon('pe-coin--sm')}<b>${n(price)}</b></button></article>`;
   const pressCard = press?.card ? (() => { const c = press.card, key = {common: 'c', uncommon: 'u', rare: 'r', mythic: 'm'}[c.rarity] || 'r', have = (s.cards || []).find(x => x.o === c.oracle_id)?.c || 0, seals = s.wallet?.['seal_' + key] | 0;
     return `<div class="pe-press-result"><img src="${esc(c.image_uris?.normal || c.card_faces?.[0]?.image_uris?.normal || cardImageByName(c.name))}" alt="${esc(c.name)}" loading="lazy" referrerpolicy="no-referrer"><div class="pe-press-copy"><strong>${esc(c.name)}</strong><span>${have} of 4 owned</span><button class="pe-stamp" data-act="playEconCraft" data-econ-card="${esc(c.id)}" ${have >= 4 || seals < 1 || snapshot.busy ? 'disabled' : ''}>${sealIcon(key)}<b>${have >= 4 ? 'All 4 owned' : 'Stamp it'}</b></button></div></div>`; })() : press?.error ? `<p class="pe-press-empty">${esc(press.error)}</p>` : '';
   return `<section class="play-menu pe-screen pe-shop" aria-labelledby="playTitle">${head('Merchant', snapshot)}
@@ -90,12 +94,12 @@ export function shopMarkup(snapshot, {query = '', press = null} = {}) {
     </div>${statusLine(snapshot)}</section>`;
 }
 
-export function packsMarkup(snapshot) {
-  const s = snapshot.state, packs = s.packs || [], names = new Map((s.shop || []).map(x => [x.code, x.name]));
+export function packsMarkup(snapshot, {facts = null} = {}) {
+  const s = snapshot.state, packs = s.packs || [], names = new Map([...(s.shop || []).map(x => [x.code, x.name]), ...(s.rewardSet ? [[s.rewardSet.code, s.rewardSet.name]] : [])]);
   const groups = new Map();
   for (const p of packs) { if (!groups.has(p.set)) groups.set(p.set, []); groups.get(p.set).push(p); }
   return `<section class="play-menu pe-screen pe-packs" aria-labelledby="playTitle">${head('Packs', snapshot)}
-    ${groups.size ? `<div class="pe-pack-grid pe-pack-grid--open">${[...groups].map(([code, list]) => `<button class="pe-pack pe-pack--open" data-act="playEconOpen" data-econ-pack="${esc(list[0].id)}" ${snapshot.busy ? 'disabled' : ''} aria-label="Open a ${esc(names.get(code) || code.toUpperCase())} pack, ${list.length} waiting"><span class="pe-pack-art" style="background-image:url(${packArt(code, names.get(code) || '')})" aria-hidden="true"></span><span class="pe-pack-name">${esc(names.get(code) || code.toUpperCase())}</span><span class="pe-badge">${n(list.length)}</span></button>`).join('')}</div>`
+    ${groups.size ? `<div class="pe-pack-grid pe-pack-grid--open">${[...groups].map(([code, list]) => `<button class="pe-pack pe-pack--open" data-act="playEconOpen" data-econ-pack="${esc(list[0].id)}" ${snapshot.busy ? 'disabled' : ''} aria-label="Open a ${esc(names.get(code) || code.toUpperCase())} pack, ${list.length} waiting">${boosterMarkup({code, name: names.get(code), facts})}<span class="pe-badge">${n(list.length)}</span></button>`).join('')}</div>`
       : `<div class="pe-empty"><h2>Every pack is open</h2><p>Packs come from Story battles, Planeswalk bosses, weekly quests and the Merchant.</p><button class="btn" data-act="playEconView" data-econ-view="shop">Visit the Merchant</button></div>`}
     ${statusLine(snapshot)}</section>`;
 }
@@ -218,7 +222,7 @@ export function decksMarkup(snapshot, {check = null} = {}) {
 export function econScreenMarkup(view, snapshot, ui = {}) {
   if (!purse(snapshot?.state)) return `<section class="play-menu pe-screen" aria-labelledby="playTitle"><header class="pl-head pe-head"><button class="pl-back" data-act="playHome" aria-label="Back to Play"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="m15 5-7 7 7 7"/></svg></button><div class="pl-head-title"><p class="eyebrow">Play</p><h1 id="playTitle" tabindex="-1">Your Play collection</h1></div></header><div class="pe-empty"><h2>${snapshot?.loading ? 'Opening your binder…' : 'Sign in to start collecting'}</h2>${snapshot?.loading ? '' : '<p>Your Play collection, coins and seals live with your account.</p><button class="btn" data-act="menu">Sign in</button>'}</div>${statusLine(snapshot)}</section>`;
   if (view === 'shop') return shopMarkup(snapshot, ui);
-  if (view === 'packs') return packsMarkup(snapshot);
+  if (view === 'packs') return packsMarkup(snapshot, ui);
   if (view === 'collection') return collectionMarkup(snapshot, ui);
   if (view === 'decks') return decksMarkup(snapshot, ui);
   if (view === 'deck') return deckBuilderMarkup(snapshot, ui);

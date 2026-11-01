@@ -47,12 +47,20 @@ export function createCardFacts({fetchImpl = globalThis.fetch?.bind(globalThis),
       const need = [...new Set(codes)].filter(c => /^[a-z0-9]{2,8}$/.test(c || '') && !data.sets[c] && !tried.has('set:' + c));
       if (!need.length) return;
       need.forEach(c => tried.add('set:' + c));
-      await Promise.all(need.map(async code => {
-        const [info, search] = await Promise.all([getJson(SCRYFALL + '/sets/' + code),
-          getJson(SCRYFALL + '/cards/search?unique=cards&q=' + encodeURIComponent('e:' + code + ' is:booster'))]);
-        if (info?.code) data.sets[code] = {name: info.name, icon: info.icon_svg_uri || '', released: info.released_at || '',
-          total: Number(search?.total_cards) || Number(info.card_count) || null};
-      }));
+      // Four sets at a time, to stay inside Scryfall's ten requests a second.
+      for (let i = 0; i < need.length; i += 4) {
+        await Promise.all(need.slice(i, i + 4).map(async code => {
+          const find = q => getJson(SCRYFALL + '/cards/search?unique=cards&order=edhrec&q=' + encodeURIComponent(q));
+          // Newer sets are not always tagged is:booster on Scryfall yet; fall back to the whole set.
+          let [info, search] = await Promise.all([getJson(SCRYFALL + '/sets/' + code), find('e:' + code + ' is:booster')]);
+          if (!search?.data?.length) search = await find('e:' + code);
+          // The pack wrapper wears the set's most played card's art.
+          const lead = (search?.data || []).map(cardFact).find(f => f.a);
+          if (info?.code) data.sets[code] = {name: info.name, icon: info.icon_svg_uri || '', released: info.released_at || '',
+            total: Number(search?.total_cards) || Number(info.card_count) || null, art: lead?.a || ''};
+        }));
+        if (i + 4 < need.length) { save(); await new Promise(r => setTimeout(r, 450)); }
+      }
       save();
     },
   };
