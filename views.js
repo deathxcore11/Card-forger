@@ -354,6 +354,13 @@ function mtgCardMeta(c) {
 }
 
 // Play lens card actions: copies in the Play collection, add to a Play deck, start one, or get it.
+// How the card shows up in current tournament lists (popularity, the deck that plays it most);
+// tapping opens Play's Build a deck filtered to lists with the card. No prices.
+function playMetaStats(play, name) {
+  const rows = (play.meta?.(name) || []).slice(0, 3);
+  if (!rows.length) return "";
+  return `<div class="play-card-meta" role="group" aria-label="In current tournament lists">${rows.map((m) => `<button class="play-card-meta-row" data-act="playCardDecks" data-format="${esc(m.format)}" data-name="${esc(name)}" aria-label="${esc(m.format)}: in ${m.lists} of ${m.total} lists. Most played in ${esc(m.top)}. Find decks with it."><b>${Math.max(1, Math.round(m.share * 100))}%</b><span>${esc(m.format)}</span><small>${esc(m.top)}</small></button>`).join("")}</div>`;
+}
 // Builder open: add or take out copies of this card; Craft 1 to 4 copies with seals.
 function playEditActions(play, name, shown) {
   const e = play.edit, k = play.craft?.(name, shown);
@@ -370,6 +377,7 @@ function playCardActions(play, name, shown) {
   const n = Math.min(play.owned(name, shown), 4), decks = play.decks || [];
   return `<section class="card-secondary-actions play-card-actions" aria-label="Play collection and deck actions">
     <p class="play-card-own"><span class="pe-pips" aria-hidden="true">${[1, 2, 3, 4].map(i => `<i class="${i <= n ? "on" : ""}"></i>`).join("")}</span><b>${n ? `${n} of 4 in your Play collection` : "Not in your Play collection yet"}</b></p>
+    ${playMetaStats(play, name)}
     ${playEditActions(play, name, shown)}
     <div class="card-actions"><div class="ca-main">
       ${(() => { const st = n < 4 ? play.stamp?.(name, shown) : null; if (!st) return "";
