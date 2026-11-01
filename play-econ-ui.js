@@ -31,15 +31,21 @@ export const packIcon = `<svg class="pe-pack-icon" viewBox="0 0 32 32" aria-hidd
 export const econDefs = `<svg class="pe-defs" width="0" height="0" aria-hidden="true" focusable="false"><defs><radialGradient id="peGold" cx="35%" cy="30%" r="75%"><stop offset="0" stop-color="#fff3c9"/><stop offset=".45" stop-color="#f0c66d"/><stop offset="1" stop-color="#a8761f"/></radialGradient></defs></svg>`;
 
 // The top bar: always visible on the Play homepage and every Play screen. Each part is a way in.
-export function purseMarkup(snapshot) {
+// The mastery ring on its own, so the Play home can set it beside the title instead of wrapping it under the purse.
+export function levelMarkup(snapshot) {
   const p = purse(snapshot?.state);
   if (!p) return '';
   const lvl = masteryLevel(snapshot.state.config || {}, p.xp), pct = Math.round(lvl.into / lvl.need * 100);
+  return `<span class="pe-purse-item pe-level" role="img" aria-label="Mastery level ${lvl.level}, ${lvl.into} of ${lvl.need} XP"><svg viewBox="0 0 36 36" aria-hidden="true"><circle cx="18" cy="18" r="15" class="pe-level-track"/><circle cx="18" cy="18" r="15" class="pe-level-fill" pathLength="100" stroke-dasharray="${pct} 100"/></svg><b>${lvl.level}</b></span>`;
+}
+export function purseMarkup(snapshot, {level = true} = {}) {
+  const p = purse(snapshot?.state);
+  if (!p) return '';
   return `<nav class="pe-purse" aria-label="Your Play rewards">${econDefs}
     <button class="pe-purse-item pe-purse-coins" data-act="playEconView" data-econ-view="shop" aria-label="${n(p.coins)} coins. Open the Merchant">${coinIcon()}<b>${n(p.coins)}</b></button>
     <button class="pe-purse-item pe-purse-seals" data-act="playEconView" data-econ-view="shop" data-econ-focus="press" aria-label="Seals: ${SEALS.map(s => p.seals[s.key] + ' ' + s.rarity).join(', ')}. Open the seal press">${SEALS.map(s => `<span class="pe-seal-count">${sealIcon(s.key)}<b>${n(p.seals[s.key])}</b></span>`).join('')}</button>
     <button class="pe-purse-item pe-purse-packs${p.packs ? ' pe-glow' : ''}" data-act="playEconView" data-econ-view="packs" aria-label="${p.packs} unopened ${p.packs === 1 ? 'pack' : 'packs'}. Open packs">${packIcon}<b>${n(p.packs)}</b></button>
-    <span class="pe-purse-item pe-level" role="img" aria-label="Mastery level ${lvl.level}, ${lvl.into} of ${lvl.need} XP"><svg viewBox="0 0 36 36" aria-hidden="true"><circle cx="18" cy="18" r="15" class="pe-level-track"/><circle cx="18" cy="18" r="15" class="pe-level-fill" pathLength="100" stroke-dasharray="${pct} 100"/></svg><b>${lvl.level}</b></span>
+    ${level ? levelMarkup(snapshot) : ''}
   </nav>`;
 }
 

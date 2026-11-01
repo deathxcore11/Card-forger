@@ -2,7 +2,7 @@
 // art, its sets' packs, where you are), then your packs, the play modes, your decks, your set
 // progress and the Merchant's newest sets. Markup only; app.js wires the actions.
 // Play's wall: no prices, and nothing here reads the real collection.
-import {boosterMarkup, playSetRows, econNoticeMarkup, cardImageByName, coinIcon, purseMarkup, forgeMarkup} from './play-econ-ui.js';
+import {boosterMarkup, playSetRows, econNoticeMarkup, cardImageByName, coinIcon, purseMarkup, levelMarkup, forgeMarkup} from './play-econ-ui.js';
 import {purse} from './play-econ-client.js';
 import {todayPanel, deedsPanel} from './play-deeds-ui.js';
 import {deckRules, isBasicLand} from './play-econ-rules.js';
@@ -35,7 +35,7 @@ function storyHeader(act, facts, progress = {}) {
 
 export function playHomeMarkup({econ = null, facts = null, signedIn = false, modesHtml = '', story = {}} = {}) {
   const state = econ?.state, p = purse(state), act = storyActFor(story);
-  const head = `<header class="pl-home-head"><div><h1 id="playTitle">Play</h1></div>${purseMarkup(econ)}</header>`;
+  const head = `<header class="pl-home-head"><div><h1 id="playTitle">Play</h1></div>${levelMarkup(econ)}${purseMarkup(econ, {level: false})}</header>`;
   if (!p) return `<section class="play-menu play-menu--forge pl-home pe-home" aria-labelledby="playTitle">${head}${modesHtml}${storyHeader(act, facts, story)}${econNoticeMarkup(econ, {signedIn})}</section>`;
   // Packs: one wrapper per set, with how many are waiting.
   const groups = new Map();

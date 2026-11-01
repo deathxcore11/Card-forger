@@ -1311,3 +1311,58 @@ button.pd-near-row{cursor:pointer}
 .play-get-block h3{margin:0;font:700 13px/1.2 Cinzel,Georgia,serif;letter-spacing:.06em;color:#e9d6a7}
 .play-get-block .ca-main{display:flex;flex-wrap:wrap;gap:8px}
 .play-get-block .btn{min-height:44px}
+/* Play home polish (Randall 1 Nov 23:17Z): one purse row, the mastery ring beside the title, mode cards with the
+   button on the copy's line, an even log-in calendar, quests in two aligned columns, a clean achievements total. */
+.pe-home .pl-home-head{flex-wrap:wrap;align-items:center;gap:12px}
+.pe-home .pl-home-head>div{min-width:0}
+.pe-home .pl-home-head>.pe-level{margin-left:auto;flex:none;width:44px;height:44px;min-height:44px;padding:0;border-radius:50%;background:color-mix(in srgb,#0d0f14 72%,transparent);border:1px solid color-mix(in srgb,var(--gold) 26%,var(--line));box-shadow:0 8px 20px #0004,inset 0 1px 0 #ffffff10}
+.pe-home .pl-home-head>.pe-level svg{inset:3px}
+.pe-home .pl-home-head>.pe-level b{color:#f3dfb4;font:800 14px/1 'DM Sans',system-ui,sans-serif}
+@media(max-width:759px){
+ .pe-home .pl-home-head>.pe-purse{flex:1 0 100%;width:100%;flex-wrap:nowrap;justify-content:space-evenly;gap:0;border-radius:999px;padding:4px 6px}
+ .pe-home .pe-purse-item{padding:0 4px;gap:5px}
+ .pe-home .pe-purse-seals{gap:clamp(4px,1.6vw,10px)}
+ .pe-home .pe-seal-count{display:inline-flex;align-items:center;gap:3px}
+}
+/* Mode cards on phones: the name across the card, then its line on the left and the button on the same row at the right. */
+@media(max-width:700px){
+ .pe-home .pl-mode{display:grid;grid-template-columns:minmax(0,1fr) auto;grid-template-rows:auto auto;align-content:end;column-gap:14px;row-gap:4px;padding:16px}
+ .pe-home .pl-mode>:is(.pl-mode-art,.pl-seal){grid-area:auto}
+ .pe-home .pl-mode-name{grid-column:1/-1;grid-row:1;align-self:end;overflow-wrap:anywhere}
+ .pe-home .pl-mode-copy{grid-column:1;grid-row:2;min-height:0;font-size:13px;line-height:1.4;color:#e4e7ec;text-shadow:0 1px 8px #000c}
+ .pe-home .pl-mode-foot{grid-column:2;grid-row:2;align-self:end;margin:0}
+ .pe-home .pl-mode::before{background:linear-gradient(180deg,#0c0c0e00 30%,#0c0c0ec4 70%,#0c0c0ef5 100%),radial-gradient(130% 90% at 50% 30%,#0000 55%,#0c0c0e8c 100%)}
+}
+/* Today: the log-in calendar, then the quests. */
+.pd-today,.pd-deeds-home{display:grid;gap:12px;align-content:start}
+:is(.pd-today,.pd-deeds-home)>.home-shelf-heading{margin:0}
+.pd-cal li{align-content:start;gap:6px;min-height:72px;padding:8px 2px}
+.pd-cal-day{font:800 11px/1 'DM Sans',system-ui,sans-serif;letter-spacing:.04em}
+.pd-cal li .pd-rws{flex-direction:row;flex-wrap:wrap;justify-content:center;align-content:start;gap:4px 3px;max-width:100%}
+.pd-cal li .pd-rw{flex-direction:column;gap:2px;font-size:11px}
+.pd-cal li .pd-rw svg{width:16px;height:16px}
+/* A quest: name and reward on the first row, the bar and count on the second, so every row lines up. */
+.pd-quest{display:grid;grid-template-columns:minmax(0,1fr) minmax(7.5em,auto);grid-template-areas:"name reward" "bar count";align-items:center;column-gap:14px;row-gap:8px;padding:10px 14px}
+.pd-quest-copy{display:contents}
+.pd-quest-name{grid-area:name}
+.pd-quest-copy .bar{grid-area:bar;margin:0}
+.pd-quest-count{grid-area:count;justify-self:end;font-variant-numeric:tabular-nums}
+.pd-quest>.pd-rws{grid-area:reward;justify-self:end;justify-content:flex-end}
+.pd-quest>:is(.pd-claim,.pd-done){grid-column:2;grid-row:1/3;justify-self:end}
+.pd-quest:is(.is-done,.is-claimed) .pd-quest-name{grid-row:1/3}
+.pd-today>.pd-week{padding:0 2px}
+/* Achievements total: the count on one baseline with its label, the bar under it. */
+.pd-total{gap:8px}
+.pd-total-num{display:flex;align-items:baseline;gap:8px}
+.pd-total-num b{font-size:24px}
+.pd-total .bar{margin:0}
+/* Play's own bottom bar: shown instead of the main bar while Play is open (phones and tablets only). */
+.play-nav[hidden]{display:none!important}
+@media(max-width:1199px){
+ body[data-mode="play"] .bottom-nav:not(.play-nav){display:none!important}
+ body[data-mode="play"] .play-nav:not([hidden]){display:grid;grid-template-columns:1.2fr 1fr 1fr 1fr 1.1fr}
+}
+@media(min-width:1200px){.play-nav{display:none!important}}
+.play-nav button{min-height:44px;cursor:pointer;white-space:nowrap;letter-spacing:0}
+.play-nav button span .ico{width:23px;height:23px}
+.play-nav button[data-play-nav="switch"] span{color:var(--gold)}

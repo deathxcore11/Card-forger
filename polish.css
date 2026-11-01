@@ -760,3 +760,7 @@ body.glass :is(.guide-along-row, .guide-link) { background: linear-gradient(160d
 .page-hero-art .img-missing{display:none}
 .artwork-banner-reset{margin:10px 0 0}
 .artwork-banner-reset .link{min-height:44px}
+/* Card sheet tab bar (Randall 1 Nov): once it sticks, nothing peeks round its rounded ends or above it. A backing strip
+   the sheet's colour runs out to both sheet edges and up to the title bar; at rest it only covers the bar's own margin. */
+#sheetBody .cs-tabs{--tab-backing:rgb(17 19 24);box-shadow:inset 0 1px 3px #00000059,0 8px 24px -12px #000a,calc(var(--gutter) * -1 + 5px) -5px 0 5px var(--tab-backing),calc(var(--gutter) - 5px) -5px 0 5px var(--tab-backing)}
+:root[data-theme="light"] #sheetBody .cs-tabs{--tab-backing:var(--surface)}

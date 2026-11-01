@@ -393,7 +393,6 @@ function playCardActions(play, name, shown) {
       ${n < 4 ? `<button class="btn" data-act="cardTab" data-tab="get">${n ? "Get more copies" : "Get it"}</button>` : ""}
       ${decks.length ? `<details class="play-card-decks"><summary class="btn${n < 4 ? " ghost" : ""}">Add to deck</summary><div class="play-card-deck-list">${decks.map(d => `<button class="btn ghost small" data-act="playCardToDeck" data-econ-deck="${esc(d.id)}" data-name="${esc(name)}">${esc(d.name || "Untitled deck")}</button>`).join("")}</div>${n ? "" : `<p class="play-card-grey">Greyed in the deck until it is in your Trunk.</p>`}</details>` : ""}
       <button class="btn ghost" data-act="playCardNewDeck" data-name="${esc(name)}">New deck</button>
-      <button class="btn ghost" data-act="playCardArtwork">Use artwork as…</button>
     </div></div></section>`;
 }
 function playGetPanel(play, name, shown) {
