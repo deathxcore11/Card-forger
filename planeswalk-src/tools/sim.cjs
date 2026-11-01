@@ -64,7 +64,7 @@ function battle(){
   }
   if(G.view!=='battle')break;
   if(!c.used&&c.loyalty>=6&&(c.kind!=='fight'||G.alive().length>=3))G.ability('ult');
-  if(!c.used){if((process.env.HERO==='W')?(c.loyalty>=3&&c.allies.length>=3):(c.loyalty>=3&&G.alive().length>=2&&c.kind==='fight'))G.ability(true);else G.ability(false,(()=>{if(CAREFUL){const n=G.run.emblems.includes('pyre')?6:4;const k=G.alive().filter(e=>{const [t]=G.intentOf(e);return (t==='atk'||t==='annihilate')&&e.hp+(e.shield||0)-(e.brand||0)<=n}).sort((a,b)=>threat(b)-threat(a))[0];if(k)return k}return bestTarget(2)})())}
+  if(!c.used){if((process.env.HERO==='W')?(c.loyalty>=3&&c.allies.length>=3):(c.loyalty>=3&&G.alive().length>=2&&c.kind==='fight'))G.ability(true);else G.ability(false,(()=>{if(CAREFUL){const n=G.run.emblems.includes('pyre')?7:5;const k=G.alive().filter(e=>{const [t]=G.intentOf(e);return (t==='atk'||t==='annihilate')&&e.hp+(e.shield||0)-(e.brand||0)<=n}).sort((a,b)=>threat(b)-threat(a))[0];if(k)return k}return bestTarget(2)})())}
   if(G.view!=='battle')break;
   attackPhase(c);
   if(G.view!=='battle')break;

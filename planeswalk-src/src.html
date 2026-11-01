@@ -481,10 +481,10 @@ const beside=e=>{const l=alive(),i=l.indexOf(e);return l[i+1]||l[i-1]||null};
 const goaded=e=>!!(c&&e.goad===c.turn&&beside(e));
 // ---------- heroes ----------
 const HEROES={
- R:{key:'R',fury:1,name:'Chandra, Torch of Defiance',short:'Chandra',color:'Red',life:80,energy:3,loyalty:2,theme:'Steady 3 mana. Burn, Goblins and rituals.',
+ R:{key:'R',fury:1,name:'Chandra, Torch of Defiance',short:'Chandra',color:'Red',life:76,energy:3,loyalty:2,theme:'Steady 3 mana. Burn, Goblins and rituals.',
   starter:['shock','shock','ambush','ambush','rgoblin','rgoblin','rgoblin','piker','piker','giant'],sig:'pyre',
-  plusAim:'enemy',plusLabel:()=>`+1 · Deal ${2+(run&&run.emblems.includes('pyre')?2:0)}`,minusLabel:'−3 · 3 to each enemy',ultLabel:'−6 · Every spell burns all',
-  plus:t=>{const n=2+(run.emblems.includes('pyre')?2:0);hit(t,n);return `Chandra +1: ${n} damage to ${t.name}.`},
+  plusAim:'enemy',plusLabel:()=>`+1 · Deal ${3+(run&&run.emblems.includes('pyre')?2:0)}`,minusLabel:'−3 · 3 to each enemy',ultLabel:'−6 · Every spell burns all',
+  plus:t=>{const n=3+(run.emblems.includes('pyre')?2:0);hit(t,n);return `Chandra +1: ${n} damage to ${t.name}.`},
   minus:()=>{c.enemies.forEach(e=>hit(e,3));return 'Chandra −3: 3 damage to each enemy.'},
   ult:()=>{c.ult=true;c.callout='Emblem of the Inferno';return 'Chandra −6: every spell deals 3 to each enemy this fight.'}},
  W:{key:'W',name:"Elspeth, Sun's Champion",short:'Elspeth',color:'White',get life(){return FORM?69:54},energy:3,ramp:[3,7],loyalty:2,theme:'Mana grows each turn. Go wide, then go huge.',

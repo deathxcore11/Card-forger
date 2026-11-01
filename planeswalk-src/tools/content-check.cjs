@@ -3,6 +3,8 @@
    Usage: node planeswalk-src/tools/content-check.cjs [dir] [--sim N]
      dir   holds the BUILT planeswalk.html, planeswalk-art-zen.css, planeswalk-cast/ and planeswalk-art/ (default: the repo root, .)
      --sim seeded runs per hero for the sim smoke (default 3; 0 skips it)
+     --gates N  win-rate gates per hero at Spark 0 with an empty trail, and Spark 5 and 10 with the full trail (TRAIL=12):
+                a player at Spark 5 has already won 5 runs, so the higher levels are judged with the whole pool open
    Stage 1, data (seconds): monsters, intents, acts, heroes, cards, figures, portraits and mats.
    Stage 2, sim smoke: every hero plays N seeded runs with no error, no NaN and no stuck fight (tools/sim.cjs).
    FAIL blocks the change. WARN is allowed (a figure not painted yet shows its own card-art portrait).
@@ -11,6 +13,8 @@
 const fs = require('fs'), vm = require('vm'), path = require('path'), { execFileSync } = require('child_process');
 const args = process.argv.slice(2), dir = path.resolve(args.find(a => !a.startsWith('--')) || '.');
 const simN = args.includes('--sim') ? +args[args.indexOf('--sim') + 1] : 3;
+const gateN = args.includes('--gates') ? +args[args.indexOf('--gates') + 1] : 0;
+const GATES = [[0, 0], [5, 12], [10, 12]];
 const FAIL = [], WARN = [], fail = (k, m) => FAIL.push(`${k}: ${m}`), warn = (k, m) => WARN.push(`${k}: ${m}`);
 const read = f => fs.readFileSync(path.join(dir, f), 'utf8'), exists = f => fs.existsSync(path.join(dir, f));
 
@@ -147,7 +151,21 @@ if (simN > 0) {
   }
 }
 
+/* ---------- stage 3 (on request): Spark win-rate gates ---------- */
+const gateRows = [];
+if (gateN > 0) {
+  const sim = path.join(__dirname, 'sim.cjs');
+  for (const hk of Object.keys(HEROES)) for (const [sp, tr] of GATES) {
+    try {
+      const out = execFileSync(process.execPath, [sim, path.join(dir, 'planeswalk.html'), String(gateN)], { env: { ...process.env, HERO: hk, SPARK: String(sp), TRAIL: String(tr) }, encoding: 'utf8', timeout: 1800000, stdio: ['ignore', 'pipe', 'pipe'] });
+      const m = out.match(/winRate:\s*'([\d.]+)%'/);
+      gateRows.push(`gate ${hk} Spark ${sp} trail ${tr}: ${m ? m[1] + '%' : '?'}`);
+    } catch (e) { fail(`gate ${hk} S${sp}`, (e.stderr || e.message || '').toString().split('\n')[0]) }
+  }
+}
+
 /* ---------- report ---------- */
+for (const g of gateRows) console.log(g);
 for (const w of WARN) console.log('WARN ' + w);
 for (const f of FAIL) console.log('FAIL ' + f);
 console.log(`content-check: ${Object.keys(E).length} monsters, ${Object.keys(HEROES).length} heroes, ${ACTS.length - 1} acts, ${cast.length} figures, ${mats.size} mats | ${FAIL.length} FAIL, ${WARN.length} WARN${simN > 0 ? `, sim ${simN} runs per hero` : ''}`);

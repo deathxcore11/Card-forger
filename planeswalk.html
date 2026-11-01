@@ -2204,6 +2204,25 @@ body[data-actnum="3"] #app .screen.blessing{--pw-bg:url(./planeswalk-art/blessin
 #app .screen.pw-reward>.choices>.card{transition:transform .18s ease,box-shadow .18s ease}
 #app .screen.pw-reward>.choices>.card:hover,#app .screen.pw-reward>.choices>.card:focus-visible{transform:translateY(-6px) scale(1.04);box-shadow:0 0 0 2px #f2d496,0 14px 30px #000c,0 0 24px #f2d49655}
 #app .screen.pw-reward>[data-act=skip].btn{position:static!important;inset:auto!important;margin:6px auto 0!important;min-width:140px;min-height:44px!important;order:9}
+/* feel pass 2: locked heroes are half-height tiles beside the playable heroes, goals always showing, so the hero you can play stays the focus */
+#app .screen.heroes .pw-hcol:has(>.pw-locked){justify-content:center}
+#app .screen.heroes .pw-hcol>.hero-pick.pw-locked{flex:0 0 auto;height:54%!important;min-height:0!important;justify-content:flex-end;gap:6px;padding:10px 12px!important}
+#app .screen.heroes .hero-pick.pw-locked .pw-lock{top:8px;right:8px}
+#app .screen.heroes .hero-pick.pw-locked .pw-goals{display:flex;justify-content:flex-start;gap:4px 6px;margin-top:0}
+#app .screen.heroes .hero-pick.pw-locked .pw-goal{min-height:26px;padding:2px 8px;gap:4px;font-size:calc(max(11px,.72rem) * var(--pw-ts,1))}
+#app .screen.heroes .hero-pick.pw-locked .pw-goal svg{width:14px;height:14px}
+#app .screen.heroes .hero-pick.pw-locked .pw-or{width:4px;height:4px}
+#app .screen.heroes .hero-pick.pw-locked .pw-goal b{font-size:inherit}
+#app .screen.heroes .hero-pick.pw-locked .pw-lock{width:30px;height:30px}
+#app .screen.heroes .hero-pick.pw-locked .pw-lock svg{width:15px;height:15px}
+#app .screen.heroes .hero-pick.pw-locked>b{padding-right:30px;font-size:calc(max(11px,.85rem) * var(--pw-ts,1))!important;line-height:1.1}
+#app .screen.heroes .hero-pick.pw-locked .pw-or{display:none}
+#app .screen.heroes .hero-pick.pw-locked .pw-goals{flex-wrap:nowrap}
+#app .screen.heroes .hero-pick.pw-locked .pw-goal,#app .screen.heroes .hero-pick.pw-locked .pw-goal b{font-size:calc(max(11px,.72rem) * var(--pw-ts,1))!important;white-space:nowrap}
+#app .screen.heroes .hero-pick.pw-locked .pw-goal{padding:2px 7px!important;gap:3px!important;min-height:24px!important}
+#app .screen.heroes .hero-pick.pw-locked .pw-goals{gap:4px!important}
+#app .screen.heroes .hero-pick.pw-locked .pw-goals{flex-wrap:wrap}
+@media (max-height:500px){#app .screen.heroes .hero-pick.pw-locked .pw-goals{flex-wrap:nowrap}#app .screen.heroes .hero-pick.pw-locked .pw-goal{padding:2px 5px!important}}
 
 /* Planeswalk emblem art. Pairs with emblem-art.js. */
 .emb-art{position:relative;flex:none;display:block;border-radius:50%;box-shadow:0 0 0 1px #0008,0 4px 14px #000a}
@@ -3756,10 +3775,10 @@ const beside=e=>{const l=alive(),i=l.indexOf(e);return l[i+1]||l[i-1]||null};
 const goaded=e=>!!(c&&e.goad===c.turn&&beside(e));
 // ---------- heroes ----------
 const HEROES={
- R:{key:'R',fury:1,name:'Chandra, Torch of Defiance',short:'Chandra',color:'Red',life:80,energy:3,loyalty:2,theme:'Steady 3 mana. Burn, Goblins and rituals.',
+ R:{key:'R',fury:1,name:'Chandra, Torch of Defiance',short:'Chandra',color:'Red',life:76,energy:3,loyalty:2,theme:'Steady 3 mana. Burn, Goblins and rituals.',
   starter:['shock','shock','ambush','ambush','rgoblin','rgoblin','rgoblin','piker','piker','giant'],sig:'pyre',
-  plusAim:'enemy',plusLabel:()=>`+1 · Deal ${2+(run&&run.emblems.includes('pyre')?2:0)}`,minusLabel:'−3 · 3 to each enemy',ultLabel:'−6 · Every spell burns all',
-  plus:t=>{const n=2+(run.emblems.includes('pyre')?2:0);hit(t,n);return `Chandra +1: ${n} damage to ${t.name}.`},
+  plusAim:'enemy',plusLabel:()=>`+1 · Deal ${3+(run&&run.emblems.includes('pyre')?2:0)}`,minusLabel:'−3 · 3 to each enemy',ultLabel:'−6 · Every spell burns all',
+  plus:t=>{const n=3+(run.emblems.includes('pyre')?2:0);hit(t,n);return `Chandra +1: ${n} damage to ${t.name}.`},
   minus:()=>{c.enemies.forEach(e=>hit(e,3));return 'Chandra −3: 3 damage to each enemy.'},
   ult:()=>{c.ult=true;c.callout='Emblem of the Inferno';return 'Chandra −6: every spell deals 3 to each enemy this fight.'}},
  W:{key:'W',name:"Elspeth, Sun's Champion",short:'Elspeth',color:'White',get life(){return FORM?69:54},energy:3,ramp:[3,7],loyalty:2,theme:'Mana grows each turn. Go wide, then go huge.',
