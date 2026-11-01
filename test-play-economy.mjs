@@ -1,0 +1,105 @@
+// Play progression slice 1: reward set rule, economy config, pure rules, server route, and the
+// wall between Play and the real collection. Spec: play-progression.md.
+import assert from 'node:assert/strict';
+import {readFileSync, readdirSync} from 'node:fs';
+import {cleanSetName, standardBoosterSets, rewardSet} from './play-econ-sets.js';
+import {starterGrant, sealTrackBonus, deckShortfall, masteryLevel, packContentsRow} from './play-econ-rules.js';
+import {progressRoute} from './play-econ-route.js';
+
+// --- Reward set: newest released Standard set with a booster file, never list order.
+assert.equal(cleanSetName('Magic: The Gathering | The Hobbit'), 'the hobbit');
+assert.equal(cleanSetName('Magic: The Gathering® Foundations'), 'foundations');
+assert.equal(cleanSetName('Magic: The Gathering—FINAL FANTASY'), 'final fantasy');
+assert.equal(cleanSetName('Magic: the Gathering | Avatar: The Last Airbender'), 'avatar: the last airbender');
+assert.equal(cleanSetName('Outlaws of Thunder Junction (including The Big Score)'), 'outlaws of thunder junction');
+assert.equal(cleanSetName('Magic: The Gathering | Marvel’s Spider-Man'), "marvel's spider-man");
+const sets = [
+  {code: 'hob', name: 'The Hobbit', released_at: '2026-08-14', set_type: 'expansion'},
+  {code: 'fra', name: 'Reality Fracture', released_at: '2026-10-02', set_type: 'expansion'},
+  {code: 'stk', name: 'Star Trek', released_at: '2026-12-04', set_type: 'expansion'},
+  {code: 'fdn', name: 'Foundations', released_at: '2024-11-15', set_type: 'core'},
+  {code: 'pfra', name: 'Reality Fracture Promos', released_at: '2026-10-02', set_type: 'promo'}];
+const standardSets = ['Magic: The Gathering | The Hobbit', 'Reality Fracture', 'Star Trek', 'Magic: The Gathering® Foundations', 'Through the Omenpaths - Digital Only', 'Unknown Future Set'];
+const boosterIndex = {sets: {hob: {}, fra: {}, fdn: {}, stk: {}}};
+let r = standardBoosterSets({standardSets, boosterIndex, scryfallSets: sets, today: '2026-11-01'});
+assert.deepEqual(r.sets.map(s => s.code), ['fra', 'hob', 'fdn'], 'newest released first; unreleased Star Trek waits');
+assert.deepEqual(r.unmatched, ['Unknown Future Set'], 'digital-only entries are not data problems');
+assert.equal(rewardSet({standardSets, boosterIndex, scryfallSets: sets, today: '2026-12-05'}).code, 'stk', 'Star Trek takes over by itself once released');
+assert.equal(rewardSet({standardSets, boosterIndex: {sets: {hob: {}, fra: {}}}, scryfallSets: sets, today: '2026-12-05'}).code, 'fra', 'no booster file yet: keep the previous set');
+// The real Standard list matches a set code for every paper entry.
+const facts = JSON.parse(readFileSync('forge-rules/current/official-format-facts.json', 'utf8'));
+for (const name of facts.standardSets) if (!/digital only/i.test(name)) assert.ok(cleanSetName(name).length > 2, name);
+
+// --- One config file; the SQL seed is an exact copy of it.
+const config = JSON.parse(readFileSync('data/play-economy.json', 'utf8'));
+const sql = readFileSync('supabase/migrations/20261101180000_play_progression.sql', 'utf8');
+const seeded = JSON.parse(sql.match(/\$config\$(.*?)\$config\$/s)[1]);
+assert.deepEqual(seeded, config, 'migration seed matches data/play-economy.json');
+assert.equal(config.winsPay, false, 'wins pay nothing on their own (Randall, 1 Nov)');
+assert.ok(!/grant\s+execute\s+on\s+function\s+(?:public\.)?play_?\w*\([^)]*\)\s+to\s+(?:authenticated|anon)/i.test(sql), 'players can never call a grant function');
+assert.ok(/revoke all on all tables in schema play from anon, authenticated/.test(sql));
+assert.ok(!/public\.workspaces/.test(sql.replace(/--.*$/gm, '')), 'Play SQL never touches the real collection');
+
+// --- Pure rules.
+const grant = starterGrant(config, 'fra', [{name: 'Llanowar Elves', oracle_id: '11111111-1111-1111-1111-111111111111', rarity: 'common'}], [{name: 'Forest', qty: 24}, {name: 'Llanowar Elves', qty: 4}]);
+assert.equal(grant.packs.length, 15); assert.equal(grant.packs[0].set, 'fra'); assert.equal(grant.cards.length, 4); assert.equal(grant.coins, 1000);
+assert.ok(grant.starter);
+assert.deepEqual(sealTrackBonus(config, 3), {u: 1});
+assert.deepEqual(sealTrackBonus(config, 5), {r: 1});
+assert.deepEqual(sealTrackBonus(config, 60), {u: 1, r: 1, m: 1});
+assert.deepEqual(sealTrackBonus(config, 1), {});
+assert.deepEqual(masteryLevel(config, 2500), {level: 3, into: 500, need: 1000});
+const short = deckShortfall([{name: 'Forest', qty: 20}, {name: 'Sheoldred', qty: 4}, {name: 'Bolt', qty: 4}], new Map([['Sheoldred', 1], ['Bolt', 4]]), new Map([['Sheoldred', 'mythic'], ['Bolt', 'common']]));
+assert.deepEqual(short.missing, [{name: 'Sheoldred', need: 3, rarity: 'mythic', seal: 'm'}]);
+assert.equal(short.seals.m, 3); assert.equal(short.complete, false);
+const row = packContentsRow({id: 'x', oracle_id: 'o', name: 'N', rarity: 'rare', set: 'fra', prices: {usd: '9.99'}, image_uris: {normal: 'n.jpg'}});
+assert.ok(!('prices' in row) && !JSON.stringify(row).includes('9.99'), 'pack records never carry a price');
+
+// --- Server route: sign-in required, the server rolls, and the ledger ref makes it idempotent.
+{
+  const calls = [];
+  let wallet = {coins: 600, packs_opened: 4, seal_r: 0, starter_at: '2026-11-01'};
+  const packs = [{id: 7, set: 'tst'}];
+  const booster = {boosters: [{w: 1, c: {common: 2, rare: 1}}], sheets: {common: {cards: [['c1', 1], ['c2', 1], ['c3', 1]]}, rare: {cards: [['r1', 1]]}}};
+  const card = id => ({id, oracle_id: id.padEnd(8, '0') + '-0000-0000-0000-000000000000', name: id, rarity: id.startsWith('r') ? 'rare' : 'common', colors: [], prices: {usd: '1.00'}});
+  const fetcher = async (url, init = {}) => {
+    const u = String(url);
+    if (u.includes('/rest/v1/rpc/')) {
+      const name = u.split('/rpc/')[1], args = JSON.parse(init.body); calls.push([name, args]);
+      if (name === 'play_state') return new Response(JSON.stringify({config, wallet, packs, cards: []}));
+      if (name === 'play_apply') { if (args.p_delta.coins) wallet = {...wallet, coins: wallet.coins + args.p_delta.coins}; return new Response(JSON.stringify({duplicate_coins: 0, converted: []})); }
+    }
+    if (u.endsWith('/data/mtg-boosters/tst.json')) return new Response(JSON.stringify(booster));
+    if (u.endsWith('/data/mtg-boosters/index.json')) return new Response(JSON.stringify({sets: {fra: {}, tst: {}}}));
+    if (u.includes('/cards/collection')) return new Response(JSON.stringify({data: JSON.parse(init.body).identifiers.map(i => card(i.id || i.name))}));
+    if (u.includes('/forge-rules/')) return new Response(JSON.stringify({standardSets: []}));
+    if (u.includes('/sets')) return new Response(JSON.stringify({data: []}));
+    return new Response('nf', {status: 404});
+  };
+  const env = {SUPABASE_SERVICE_KEY: 'sb_secret_test', SUPABASE_URL: 'https://example.supabase.co'};
+  const verifyBearer = async a => a === 'Bearer ok' ? {id: 'u1'} : null;
+  const req = (path, body, auth = 'Bearer ok') => new Request('https://cardstashy.com/api/progress/' + path, {method: body ? 'POST' : 'GET', headers: {Authorization: auth}, body: body ? JSON.stringify(body) : undefined});
+  assert.equal((await progressRoute(req('state', null, 'Bearer bad'), env, {verifyBearer, fetcher})).status, 401, 'signed-out players get nothing');
+  const opened = await (await progressRoute(req('open', {id: 7}), env, {verifyBearer, fetcher})).json();
+  assert.equal(opened.pack.contents.length, 3);
+  assert.equal(opened.pack.contents.at(-1).rarity, 'rare', 'the hit comes last');
+  assert.deepEqual(opened.sealBonus, {r: 1}, '5th pack opened gives a rare seal');
+  const applyCall = calls.find(c => c[0] === 'play_apply');
+  assert.equal(applyCall[1].p_ref, 'open:7', 'one pack can only be opened once');
+  assert.equal(applyCall[1].p_user, 'u1', 'grants go to the signed-in player only');
+  assert.ok(!JSON.stringify(applyCall).includes('usd'), 'no price reaches the Play ledger');
+  assert.equal((await progressRoute(req('open', {id: 99}), env, {verifyBearer, fetcher})).status, 404);
+  assert.equal((await progressRoute(req('buy', {set: 'tst'}), env, {verifyBearer, fetcher})).status, 200, '600 coins buys a 500-coin pack');
+  assert.equal((await progressRoute(req('buy', {set: 'tst'}), env, {verifyBearer, fetcher})).status, 409, '100 coins left is short');
+  assert.equal((await progressRoute(req('buy', {set: 'zzz'}), env, {verifyBearer, fetcher})).status, 404, 'only sets with a booster file');
+}
+
+// --- The wall: Play economy code never imports collection storage, sync or price code,
+// and the main app's collection code never imports Play economy code.
+const FORBIDDEN = /from\s+['"]\.\/(?:storage|cloud|store|pricefeed|mtg-tcgprice|price-[\w-]+|pricing-[\w-]+|pricehist|sharedprices|buy|condition-[\w-]+|tcgplayer-[\w-]+|value-[\w-]+|sync-merge|recovery-store)\.js['"]/;
+const playEcon = readdirSync('.').filter(f => /^play-econ-[\w-]+\.js$/.test(f));
+assert.ok(playEcon.length >= 3);
+for (const f of playEcon) assert.ok(!FORBIDDEN.test(readFileSync(f, 'utf8')), f + ' crosses the Play wall');
+for (const f of ['storage.js', 'cloud.js', 'store.js', 'binders.js', 'sync-merge.js', 'pricefeed.js'])
+  assert.ok(!/play-econ-/.test(readFileSync(f, 'utf8')), f + ' must not import Play economy code');
+console.log('play economy ok');

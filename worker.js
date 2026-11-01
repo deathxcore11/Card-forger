@@ -1,6 +1,7 @@
 import {pokemonMetaRoute} from './pokemon-meta-route.js';
 import {RELEASE} from './release-record.js';
 import {proxyForgePlayRequest} from './deploy/forge-host/src/app-route.mjs';
+import { progressRoute } from './play-econ-route.js';
 import { checkNativeBackendRequest, withNativeResponseHeaders, createSupabaseBearerVerifier, isNativeAdmitted, releaseNativeAdmission } from './native-backend-contract.js';
 import { NATIVE_ORIGIN } from './native-service-policy.js';
 import { SUPABASE } from './config.js';
@@ -264,6 +265,11 @@ const handlers = {
     const url = new URL(request.url);
     const forge = proxyForgePlayRequest(request, env);
     if (forge) return forge;
+    if (url.pathname.startsWith('/api/progress/')) {
+      let verifyBearer = null;
+      try { verifyBearer = createSupabaseBearerVerifier({ url: env.SUPABASE_URL || SUPABASE.url, key: env.SUPABASE_ANON_KEY || SUPABASE.key, fetcher: fetch }); } catch {}
+      return progressRoute(request, env, { verifyBearer });
+    }
     if (url.pathname === '/api/reference/mtg-wiki') return mtgWikiReferenceRoute(request);
     if (url.pathname === '/api/reference/wiki') return wikiReferenceRoute(request);
     if (url.pathname === '/api/daily-card') return dailyCardRoute(request, env);

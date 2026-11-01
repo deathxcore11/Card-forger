@@ -21,6 +21,9 @@ const PLAY_MATCH = '[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}
 const playMethods = path => path === '/api/play/warm' || path === '/api/play/matches' ? ['POST']
   : new RegExp(`^/api/play/matches/${PLAY_MATCH}$`, 'i').test(path) ? ['GET', 'DELETE']
   : new RegExp(`^/api/play/matches/${PLAY_MATCH}/actions$`, 'i').test(path) ? ['POST'] : null;
+// Play progression (play-econ-route.js): the wallet read, and the server-side grants and spends.
+const progressMethods = path => path === '/api/progress/state' ? ['GET']
+  : /^\/api\/progress\/(?:starter|open|craft|buy|deck)$/.test(path) ? ['POST'] : null;
 const imagePath = path => /^\/img\/(?:pack|back)\/(?:mtg|ptcg|ygo)\.jpg$/.test(path)
   || /^\/img\/mtg-set\/[a-z0-9]{2,8}\.jpg$/i.test(path)
   || /^\/img\/ygo\/(?:s\/|a\/)?\d{1,12}\.jpg$/.test(path)
@@ -55,15 +58,15 @@ export function resolveServiceURL(input) {
   const pokemon = pathname.match(/^\/img\/ptcg\/(s|l)\/([A-Za-z0-9.!?_-]{1,80})\.jpg$/);
   const canonicalPath = pokemon ? `/img/ptcg/${pokemon[1]}/${encodeURIComponent(pokemon[2])}.jpg` : pathname;
   if (url.pathname !== canonicalPath) fail('Noncanonical service path');
-  const image = imagePath(pathname), ai = AI.has(pathname), publicReference = PUBLIC_REFERENCE_POST.has(pathname), play = playMethods(pathname);
-  if (play && url.search) fail('Play routes take no query');
-  if (!(image || ai || publicReference || play || READ.has(pathname) || ['/api/lens', '/api/prices/watch'].includes(pathname))) fail('Unknown service route');
+  const image = imagePath(pathname), ai = AI.has(pathname), publicReference = PUBLIC_REFERENCE_POST.has(pathname), play = playMethods(pathname), progress = progressMethods(pathname);
+  if ((play || progress) && url.search) fail('Play routes take no query');
+  if (!(image || ai || publicReference || play || progress || READ.has(pathname) || ['/api/lens', '/api/prices/watch'].includes(pathname))) fail('Unknown service route');
   if (publicReference && url.search) fail('Public reference topics belong in the JSON body');
   for (const key of url.searchParams.keys()) if (/^(?:access_token|refresh_token|authorization|apikey|api_key|token)$/i.test(key)) fail('Credentials in query are forbidden');
   return Object.freeze({ kind: 'service', url: SERVICE_ORIGIN + url.pathname + url.search,
     path: pathname, image, ai, publicReference, play: !!play,
-    methods: Object.freeze(play || (image || READ.has(pathname) ? ['GET'] : ai ? ['GET', 'POST'] : ['POST'])),
-    authorizationAllowed: !!play || ai || pathname === '/api/prices/conditions' });
+    methods: Object.freeze(play || progress || (image || READ.has(pathname) ? ['GET'] : ai ? ['GET', 'POST'] : ['POST'])),
+    authorizationAllowed: !!play || !!progress || ai || pathname === '/api/prices/conditions' });
 }
 
 // Returns a transport-ready Request for inventoried service calls only. It does
