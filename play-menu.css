@@ -1170,3 +1170,6 @@ button.pd-near-row{cursor:pointer}
 .pd-card-back{display:block;aspect-ratio:16/7;background:radial-gradient(circle at 50% 50%,#3a2a14,#120d08 70%),#120d08}
 .pd-card--hidden h3{color:var(--muted)}
 .pd-card.struck,.pd-quest.struck{animation:pd-stamp .5s ease both}
+/* Holo copies: their own Trunk tile with the app's foil finish, a small rainbow tag and pips. */
+.pe-holo-tag{font:800 11px/1 'DM Sans',system-ui,sans-serif;letter-spacing:.08em;text-transform:uppercase;background:linear-gradient(90deg,#ff9ad5,#ffe48a,#8affc8,#8ad0ff,#c79aff);-webkit-background-clip:text;background-clip:text;color:transparent}
+.pe-pips--holo i.on{background:linear-gradient(135deg,#ff9ad5,#ffe48a 40%,#8affc8 70%,#8ad0ff);border-color:#fff8}

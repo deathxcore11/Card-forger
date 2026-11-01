@@ -42,6 +42,7 @@ export function createPlayEcon({getAccessToken, fetchImpl = globalThis.fetch?.bi
     // A finished match (never Practice) moves quests and achievements; quiet on failure.
     async reportMatch(m) { try { const out = await call('match', {...m, tz: tz()}); if (out.counters && state) set({...state, counters: out.counters}); return out; } catch { return null; } },
     claim: (kind, id, step) => run('claim:' + kind + ':' + id + ':' + (step ?? ''), async () => { const out = await call('claim', {kind, id, step, tz: tz()}); set(keep(out.state, {claimed: out.claimed})); return out; }),
+    holo: oracle => run('holo', async () => { const out = await call('holo', {oracle}); set(keep(out.state)); return out; }),
     craft: cardId => run('craft', async () => { const out = await call('craft', {id: cardId}); set(keep(out.state)); return out; }),
     saveDeck: deck => run('deck', async () => { const out = await call('deck', deck); await api.refresh(); return out.deck; }),
     clear() { state = null; try { storage?.removeItem(privateKey(CACHE)); } catch {} onChange(); },
@@ -63,6 +64,7 @@ const MESSAGES = {
   bad_forge: 'That seal cannot be forged.',
   bad_precon: 'That precon could not be opened.',
   not_earned: 'That reward is not ready yet.',
+  all_holo: 'Every copy you own is already holo.',
   claimed: 'You already claimed that reward.',
   not_ready: 'Quests open once the next update finishes.',
   no_reward_set: 'The reward packs are not ready yet. Try again in a moment.',

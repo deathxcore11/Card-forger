@@ -58,6 +58,7 @@ assert.ok(!('prices' in row) && !JSON.stringify(row).includes('9.99'), 'pack rec
 // --- Server route: sign-in required, the server rolls, and the ledger ref makes it idempotent.
 {
   const calls = [];
+  let stateCards = [];
   let wallet = {coins: 600, packs_opened: 4, seal_r: 0, starter_at: '2026-11-01'};
   const packs = [{id: 7, set: 'tst'}];
   const booster = {boosters: [{w: 1, c: {common: 2, rare: 1}}], sheets: {common: {cards: [['c1', 1], ['c2', 1], ['c3', 1]]}, rare: {cards: [['r1', 1]]}}};
@@ -68,7 +69,7 @@ assert.ok(!('prices' in row) && !JSON.stringify(row).includes('9.99'), 'pack rec
     const u = String(url);
     if (u.includes('/rest/v1/rpc/')) {
       const name = u.split('/rpc/')[1], args = JSON.parse(init.body); calls.push([name, args]);
-      if (name === 'play_state') return new Response(JSON.stringify({config, wallet, packs, cards: []}));
+      if (name === 'play_state') return new Response(JSON.stringify({config, wallet, packs, cards: stateCards}));
       if (name === 'play_save_deck') return new Response(JSON.stringify({id: 'd1', name: args.p_name}));
       if (name === 'play_apply') { if (args.p_delta.coins) wallet = {...wallet, coins: wallet.coins + args.p_delta.coins}; return new Response(JSON.stringify({duplicate_coins: 0, converted: []})); }
     }
@@ -99,6 +100,21 @@ assert.ok(!('prices' in row) && !JSON.stringify(row).includes('9.99'), 'pack rec
   // The Forge: 3 lower seals strike 1 of the next rarity, only with enough seals, never past mythic.
   wallet = {...wallet, seal_c: 7, seal_r: 2};
   calls.length = 0;
+  // Holo at the Forge: 2 seals of the card's rarity turn one owned copy holo; never more holos than copies.
+  {
+    const o = 'c1000000-0000-0000-0000-000000000000';
+    stateCards = [{o, n: 'c1', r: 'common', c: 2, h: 1}];
+    wallet = {...wallet, seal_c: 2};
+    const [ok] = [await progressRoute(req('holo', {oracle: o}), env, {verifyBearer, fetcher})];
+    assert.equal(ok.status, 200);
+    const hApply = calls.find(c => c[0] === 'play_apply' && /^holo:/.test(c[1].p_ref));
+    assert.deepEqual(hApply[1].p_delta, {seals: {c: -2}, holo: [o]});
+    stateCards = [{o, n: 'c1', r: 'common', c: 2, h: 2}];
+    assert.equal((await progressRoute(req('holo', {oracle: o}), env, {verifyBearer, fetcher})).status, 409, 'every copy already holo');
+    stateCards = [{o, n: 'c1', r: 'common', c: 2, h: 0}]; wallet = {...wallet, seal_c: 1};
+    assert.equal((await progressRoute(req('holo', {oracle: o}), env, {verifyBearer, fetcher})).status, 409, '1 seal is short');
+    stateCards = []; wallet = {...wallet, seal_c: 7};
+  }
   // Precons: pay 25 coins a missing card (250 at least), get those copies in the exact printing,
   // and the list is saved with its printings; basic lands are never charged.
   wallet = {...wallet, coins: 300};

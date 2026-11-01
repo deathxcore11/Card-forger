@@ -31,8 +31,10 @@ export function starterGrant(config = {}, setCode, cards = [], rows = []) {
 export function cardDelta(c = {}) {
   const img = c.image_uris || c.card_faces?.[0]?.image_uris || {};
   return {oracle_id: c.oracle_id || c.card_faces?.[0]?.oracle_id || '', name: c.name || '', rarity: rarityOf(c.rarity),
-    set: c.set || '', id: c.id || '', image: c.image || img.normal || ''};
+    set: c.set || '', id: c.id || '', image: c.image || img.normal || '', ...(c.foil ? {foil: true} : {})};
 }
+// Seals of the card's rarity that turn one owned copy holo at the Forge (Randall 2026-11-01 20:37Z).
+export const holoCost = (config = {}) => Math.max(1, config?.holoSeals ?? 2);
 
 // Seals earned for the Nth pack opened (Arena's wildcard track): every 3rd an uncommon, and so on.
 export function sealTrackBonus(config = {}, nth) {

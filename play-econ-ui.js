@@ -132,7 +132,7 @@ export function packsMarkup(snapshot, {facts = null} = {}) {
 
 const COLORS = [['W', 'White'], ['U', 'Blue'], ['B', 'Black'], ['R', 'Red'], ['G', 'Green'], ['C', 'Colorless']];
 const TYPES = ['Creatures', 'Planeswalkers', 'Instants', 'Sorceries', 'Artifacts', 'Enchantments', 'Lands'];
-const pips = c => `<span class="pe-pips" aria-label="${c.c} of 4">${[1, 2, 3, 4].map(i => `<i class="${i <= c.c ? 'on' : ''}"></i>`).join('')}</span>`;
+const pips = c => `<span class="pe-pips${c.holo ? ' pe-pips--holo' : ''}" aria-label="${c.holo ? `${c.c} holo` : `${c.c} of 4`}">${[1, 2, 3, 4].map(i => `<i class="${i <= c.c ? 'on' : ''}"></i>`).join('')}</span>`;
 // The printing you pulled, else the card's own art, else Scryfall's image by name.
 const cardImage = (c, facts) => c.p?.image || facts?.card?.(c.o)?.i || cardImageByName(c.n);
 
@@ -140,16 +140,21 @@ const cardImage = (c, facts) => c.p?.image || facts?.card?.(c.o)?.i || cardImage
 // owned in Play where the app shows a price. Tapping opens the app's card sheet in Play mode.
 // The app's set badge look, without its link to the real set page (Play's wall): the art opens the card.
 const playSetBadge = (code, rarity) => `<span class="set-badge r-${esc(rarity || 'common')}"><span class="set-icon" style="--icon:url('${esc(setIconUrl(code))}')" aria-hidden="true"></span><span>${esc(code.toUpperCase())}</span></span>`;
+// Normal and holo copies of one card as separate tiles: the holo tile right after its card.
+export const holoSplit = cards => cards.flatMap(c => { const h = Math.min(c.h | 0, c.c | 0), rest = (c.c | 0) - h;
+  return [...(rest > 0 ? [{...c, c: rest}] : []), ...(h > 0 ? [{...c, c: h, holo: true}] : [])]; });
 export function playCardTile(c, facts, i = 0) {
   // The main collection's own row tile (.lot): art with finish and tile chrome, name with emblem and
   // set badge, mana cost and set line. Play shows copies owned instead of price, condition and stepper.
-  const card = facts?.card?.(c.o)?.card || {name: c.n, rarity: c.r, set: c.p?.set || c.s?.[0] || ''}, n = Math.min(c.c | 0, 4);
+  const base = facts?.card?.(c.o)?.card || {name: c.n, rarity: c.r, set: c.p?.set || c.s?.[0] || ''}, n = Math.min(c.c | 0, 4);
+  // Holo copies sit on their own tile with the app's foil finish.
+  const card = c.holo ? {...base, finishes: [...new Set([...(base.finishes || ['nonfoil']), 'foil'])]} : base;
   const set = card.set || c.p?.set || c.s?.[0] || '', number = card.collector_number || c.p?.number || '';
-  return `<div class="lot pe-lot" data-rarity="${esc(card.rarity || c.r || '')}" style="--i:${Math.min(i, 24)}">
-    <button class="lot-art" ${card.id ? finishAttrs('mtg', card, {}) : ''} data-act="card" data-name="${esc(c.n)}" data-play-card="1" aria-label="Open ${esc(c.n)}">${img(cardImage(c, facts), c.n)}</button>
+  return `<div class="lot pe-lot${c.holo ? ' pe-lot--holo' : ''}" data-rarity="${esc(card.rarity || c.r || '')}" style="--i:${Math.min(i, 24)}">
+    <button class="lot-art" ${card.id ? finishAttrs('mtg', card, c.holo ? {priceFinish: 'foil'} : {}) : ''} data-act="card" data-name="${esc(c.n)}" data-play-card="1" aria-label="Open ${esc(c.n)}">${img(cardImage(c, facts), c.n)}</button>
     <div class="lot-info"><span class="lot-name">${esc(c.n)}${card.id ? rowEmblem('mtg', card) : ''} ${set ? playSetBadge(set, card.rarity || c.r) : ''}</span>
       <span class="lot-sub">${manaCost(card)}<span>${esc(set.toUpperCase())}${number ? ' #' + esc(number) : ''}</span></span></div>
-    <div class="lot-side" title="${n} of 4 copies">${pips(c)}</div>
+    <div class="lot-side" title="${c.holo ? `${n} holo` : `${n} of 4 copies`}">${c.holo ? `<span class="pe-holo-tag">Holo</span>` : ''}${pips(c)}</div>
   </div>`;
 }
 
@@ -237,7 +242,7 @@ export function collectionMarkup(snapshot, ui = {}) {
   const body = tab === 'sets' ? playSetsTab(state, facts, ui)
     : (() => { const shown = sortPlayCards(filterPlayCards(cards, facts, {query: ui.cardQuery, rarity: ui.rarity, color: ui.color, type: ui.type, set: ui.set}), facts, ui.sort, sets);
       return `${filterBar(ui, {sets})}<p class="pe-count" role="status">${n(shown.length)} of ${n(cards.length)} cards</p>
-      ${shown.length ? `<div class="view-gallery pe-coll-view"><div class="list display-list deal pe-coll-list">${shown.slice(0, 300).map((c, i) => playCardTile(c, facts, i)).join('')}</div></div>`
+      ${shown.length ? `<div class="view-gallery pe-coll-view"><div class="list display-list deal pe-coll-list">${holoSplit(shown).slice(0, 300).map((c, i) => playCardTile(c, facts, i)).join('')}</div></div>`
         : `<div class="pe-empty"><h2>${cards.length ? 'No cards match' : 'Your binder is empty'}</h2><p>${cards.length ? 'Try another name, colour or type.' : 'Open a pack to start your Play collection.'}</p></div>`}`; })();
   return `<section class="play-menu pe-screen pe-collection" aria-labelledby="playTitle">${head('Collection', snapshot)}
     ${segmented('playEconCollTab', tab, [['cards', 'Cards', 'cardStack'], ['sets', 'Sets', 'binder']])}

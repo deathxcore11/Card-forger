@@ -1699,6 +1699,7 @@ A.playEconForge=async t=>{const to=t.dataset.econTo,times=Number(t.dataset.econT
  requestAnimationFrame(()=>document.querySelectorAll(`.pe-forge-seal[data-seal="${to}"]`).forEach(el=>{el.classList.remove('struck');void el.offsetWidth;el.classList.add('struck');}));return out;}catch{}};
 A.playEconCraft=async t=>{try{const out=await playEcon.craft(t.dataset.econCard);toast(out.card.name+' added to your Play collection.');}catch{}};
 A.playEconRetry=()=>{playEcon.refresh();};
+A.playCardHolo=async t=>{try{const out=await playEcon.holo(t.dataset.oracle);haptic('success');toast(`${out.holo.name} is now holo. It has its own tile in your Trunk.`);refreshSheet?.();}catch{}};
 A.playEconDeedTab=t=>{econUi.deedTab=t.dataset.value||'journey';refreshPlayMenu();};
 A.playEconClaim=async t=>{const {econKind:kind,econId:id,econStep:step}=t.dataset;try{const out=await playEcon.claim(kind,id,step===undefined?undefined:Number(step));t.closest('.pd-card,.pd-quest')?.classList.add('struck');haptic('success');const d=out.delta||{},bits=[d.coins&&d.coins+' coins',d.packs?.length&&d.packs.length+(d.packs.length===1?' pack':' packs'),...Object.entries(d.seals||{}).map(([k,v])=>v+' '+({c:'common',u:'uncommon',r:'rare',m:'mythic'})[k]+(v===1?' seal':' seals')),d.xp&&d.xp+' XP'].filter(Boolean);toast(bits.length?'Claimed: '+bits.join(', ')+'.':'Claimed.');}catch{}};
 // Finished matches move Play quests and achievements (Practice never counts; friend matches count as played).
@@ -1767,6 +1768,7 @@ V.setPlayLensSource(()=>{const st=playEcon.snapshot().state||{};
  const byOracle=new Map((st.cards||[]).map(c=>[c.o,c.c])),byName=ownedByName(st.cards||[]);
  return {byOracle,byName,get decks(){return playEcon.snapshot().state?.decks||[];},coins:st.wallet?.coins|0,price:st.config?.packPrice||500,
   owned:(name,card)=>(card?.oracle_id&&byOracle.get(card.oracle_id))||byName.get(name)||byName.get(String(name).split(' // ')[0])||0,
+  holo:(name,card)=>{const c=(st.cards||[]).find(x=>x.o===card?.oracle_id)||(st.cards||[]).find(x=>x.n===name||x.n.split(' // ')[0]===name);if(!c)return null;const seal={common:'c',uncommon:'u',rare:'r',mythic:'m'}[c.r],cost=Math.max(1,st.config?.holoSeals??2);return {oracle:c.o,can:(c.h|0)<(c.c|0)&&!!seal,afford:(st.wallet?.['seal_'+seal]|0)>=cost,cost,seal:{c:'common',u:'uncommon',r:'rare',m:'mythic'}[seal]};},
   setProgress:code=>{const have=(st.cards||[]).filter(c=>(c.s||[]).includes(code)).length,total=econFacts.set(code)?.total||null;return {key:'play:'+code,owned:have,total,loaded:total||0,known:total||0,complete:true};}};});
 A.playLensBack=()=>{playView='collection';econUi.tab='sets';go('#play');};
 A.playLensSet=t=>{closeSheet();go('#set/'+encodeURIComponent(t.dataset.code)+'/play');};

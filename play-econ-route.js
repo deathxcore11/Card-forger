@@ -6,7 +6,7 @@
 import {SUPABASE} from './config.js';
 import {loadMtgBooster, mtgBoosterCards, drawMtgBooster} from './mtg-boosters.js';
 import {rewardSet, setFormats} from './play-econ-sets.js';
-import {starterGrant, sealTrackBonus, packContentsRow, cardDelta, RARITY_SEAL, FORGE_STEPS, forgeRatio, preconPrice, mtgjsonCardDelta, mtgjsonDeckRows, deckShortfall, ownedByName} from './play-econ-rules.js';
+import {starterGrant, sealTrackBonus, packContentsRow, cardDelta, RARITY_SEAL, FORGE_STEPS, forgeRatio, holoCost, preconPrice, mtgjsonCardDelta, mtgjsonDeckRows, deckShortfall, ownedByName} from './play-econ-rules.js';
 import {PRACTICE_STARTER_ROWS} from './play-starter-deck.js';
 import {ACHIEVEMENTS, achievementRows, achievementReward, achievementRef, questRows, questReward, loginStamp, rewardDelta, matchCounters, playDay} from './play-achievements.js';
 
@@ -143,6 +143,17 @@ export async function progressRoute(request, env, {verifyBearer, fetcher = fetch
       if ((s.wallet?.['seal_' + from] || 0) < cost) return fail('no_seal', 409);
       await apply('forge:' + crypto.randomUUID(), 'forge', {seals: {[from]: -cost, [to]: times}});
       return json({forged: {to, from, times, cost}, state: await state()});
+    }
+    if (path === 'holo') {
+      // The Forge turns one copy you own holo for 2 seals of its rarity. Never more holos than copies.
+      const o = String(body.oracle || '');
+      if (!/^[0-9a-f-]{36}$/i.test(o)) return fail('bad_card');
+      const s = await state(), card = (s.cards || []).find(c => c.o === o), seal = RARITY_SEAL[card?.r], cost = holoCost(s.config);
+      if (!card || !seal) return fail('bad_card', 404);
+      if ((card.h | 0) >= (card.c | 0)) return fail('all_holo', 409);
+      if ((s.wallet?.['seal_' + seal] || 0) < cost) return fail('no_seal', 409);
+      await apply('holo:' + crypto.randomUUID(), 'holo', {seals: {[seal]: -cost}, holo: [o]});
+      return json({holo: {oracle: o, name: card.n, seal, cost}, state: await state()});
     }
     if (path === 'precon') {
       // A published 60-card precon from MTGJSON: pay 25 coins per card you don't own (250 to 1,500,
