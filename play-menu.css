@@ -380,8 +380,9 @@ dialog.play-match-exit>.play-exit-note{margin:8px 0 0;font-size:13px;color:#f0c2
 .pl-mode-foot{display:flex;align-items:center;justify-content:flex-end;gap:12px;margin-top:10px;font-size:12px;color:#aab3bd;min-width:0}
 .pl-mode-foot>span:first-child{min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
 .pl-mode-foot b{color:#f6eedb;font-weight:700}
-.pl-mode-cta{flex:none;display:inline-grid;place-items:center;min-height:44px;padding:0 24px;border-radius:13px;border:1px solid #f6dfa8;background:linear-gradient(180deg,#f2d18e,#c99a4b);color:#1b1408;font:800 14px/1 'DM Sans',system-ui,sans-serif;letter-spacing:.03em;box-shadow:0 8px 22px #c99a4b33,inset 0 1px 0 #fff7}
-.pl-mode-cta--ghost{border-color:#ffffff2e;background:#0c0e13a6;color:#f1e9d8;box-shadow:none;backdrop-filter:blur(8px)}
+/* Every Play card's button wears the game's own colour: Magic is gold. Another game's Play sets its own --pl-cta-* tokens. */
+.pl-home{--pl-cta-edge:#f6dfa8;--pl-cta-top:#f2d18e;--pl-cta-bottom:#c99a4b;--pl-cta-ink:#1b1408}
+.pl-mode-cta{flex:none;display:inline-grid;place-items:center;min-height:44px;padding:0 24px;border-radius:13px;border:1px solid var(--pl-cta-edge);background:linear-gradient(180deg,var(--pl-cta-top),var(--pl-cta-bottom));color:var(--pl-cta-ink);font:800 14px/1 'DM Sans',system-ui,sans-serif;letter-spacing:.03em;box-shadow:0 8px 22px color-mix(in srgb,var(--pl-cta-bottom) 20%,transparent),inset 0 1px 0 #fff7}
 /* Lobby seats */
 .pl-arena{display:grid;grid-template-columns:minmax(0,1fr) 84px minmax(0,1fr);align-items:stretch}
 .pl-seat{position:relative;isolation:isolate;overflow:hidden;display:flex;flex-direction:column;justify-content:flex-end;min-width:0;min-height:clamp(210px,32vh,320px);padding:22px;border:1px solid #d6ad6455;border-radius:22px;background:radial-gradient(80% 80% at 30% 20%,#1d2333,#0e1016);color:#f6eedb;box-shadow:0 22px 50px #0007,0 0 28px #d6ad641a}

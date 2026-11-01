@@ -9,8 +9,8 @@ test('normal deck access does not add a starter funnel or change format on rende
 });
 test('Friends changes the visible instructions and hides CPU-only controls',()=>{
  const state=setup();state.match.mode='friends';state.inspectedSeat='opponent';state.opponent={name:'CPU CANARY',cards:[]};
- const html=playMenuMarkup(state);assert.match(html,/Friends<\/span><h2>Coming later/);assert.doesNotMatch(html,/id="playDifficulty"|data-act="playStarterMatch"|CPU CANARY|data-play-seat="opponent"/);
- assert.match(html,/Choose Practice to play against the CPU/);
+ const html=playMenuMarkup(state);assert.match(html,/Friend<\/span><h2>Invite a friend/);assert.doesNotMatch(html,/id="playDifficulty"|data-act="playStarterMatch"|CPU CANARY|data-play-seat="opponent"/);
+ assert.match(html,/data-act="playFriendCreate"/);
 });
 test('the deck browser marks the inspected seat without replacing either matchup list',()=>{
  const state=setup();state.match.format='Standard';state.selectedSource='saved';state.opponentSource='saved';state.inspectedSeat='opponent';
