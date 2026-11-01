@@ -278,8 +278,8 @@ function syncPlayChrome(){
 // In Play mode the shared nav buttons open Play screens; the Play button leaves Play.
 document.addEventListener('click',e=>{
   if(!playModeOn())return;
-  const b=e.target.closest?.('.top-nav [data-nav],.bottom-nav [data-nav],.header-sets');if(!b)return;
-  const nav=b.classList.contains('header-sets')?'sets':b.dataset.nav,to={collection:'collection',decks:'decks',sets:'collection'}[nav];
+  const b=e.target.closest?.('.top-nav [data-nav],.bottom-nav [data-nav],.header-sets,.brand-home');if(!b)return;
+  const nav=b.classList.contains('header-sets')?'sets':b.dataset.nav,to={collection:'collection',decks:'decks',sets:'collection',home:'home'}[nav];
   if(nav==='play'){e.preventDefault();e.stopImmediatePropagation();go('#collection');return;}
   if(!to)return;
   e.preventDefault();e.stopImmediatePropagation();
