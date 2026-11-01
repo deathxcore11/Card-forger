@@ -1,8 +1,8 @@
 {
   "schema": 1,
-  "version": "4.3.44",
-  "commit": "f6f428d109c9f9176fed336ebd9e5b3bd66654ac",
-  "tree": "fa8f0dbfb8e62b6d1af3a8ef5e7c9b2e52f1cf06",
+  "version": "4.3.45",
+  "commit": "8af32e0d326951f18b90f6603939f8c2c261294e",
+  "tree": "43861cf612f854c258f1b192c3bfa15320833f95",
   "repository": "https://github.com/deathxcore11/Card-forger",
   "scope": "Explicit frontend build dependencies plus optional artwork input files. Not full backend repository.",
   "files": [
@@ -2144,7 +2144,7 @@
     {
       "path": "config.js",
       "bytes": 601,
-      "sha256": "c0c0d977219263bd3ea87a340d732647335fa042155e24df5f6f2b12af3b4dcd"
+      "sha256": "1fe3a234990fe42d4a2fb995a5925a751c169770f8bc1d048a7e345c5ed82c2a"
     },
     {
       "path": "core.js",
@@ -3829,7 +3829,7 @@
     {
       "path": "package.json",
       "bytes": 12049,
-      "sha256": "9068f9592df34ff5a60d26b0c96996b341e0a168e9a0191b55d2eee1e8c105f7"
+      "sha256": "bbe03e936a76b8d585f691ef71da0a47f926dd9cafa86029e4008a1fbf2b3f05"
     },
     {
       "path": "pairing.js",
@@ -5493,8 +5493,8 @@
     },
     {
       "path": "planeswalk-src/cast.css",
-      "bytes": 36474,
-      "sha256": "acd25b7398622a1ef081472e7e313b398d7b4fb98d4217cdfc9026266cfe4251"
+      "bytes": 36885,
+      "sha256": "9baea01b77e363d57099f278ef26163aa92bed8e4cae46a807ccb9509cf9e010"
     },
     {
       "path": "planeswalk-src/emblem-art.css",
@@ -5513,8 +5513,8 @@
     },
     {
       "path": "planeswalk-src/kit.css",
-      "bytes": 173122,
-      "sha256": "575c8499c96ac3c71c37bb86ab149ef0bc52a5d9d4d8255b94730632c49c24bd"
+      "bytes": 173117,
+      "sha256": "9a19b8c7ee6fb0933e5e6cc5348e1a3f9c376761c5e07646e36427fc82f65c74"
     },
     {
       "path": "planeswalk-src/motion/build-motion.sh",
@@ -5563,13 +5563,13 @@
     },
     {
       "path": "planeswalk-src/planeswalk-touch.js",
-      "bytes": 80713,
-      "sha256": "8398aa07a3941c0be2d612160cda39f387e47b201d367a0f9529ffc2aaa51aa2"
+      "bytes": 83907,
+      "sha256": "b00603ddc8323276cc4c8c05788b62a0084455d6818251a8a266cc7c0f9cbd76"
     },
     {
       "path": "planeswalk-src/pw-cast.js",
-      "bytes": 59120,
-      "sha256": "8d38b8ffa7c11078f83244755b26dcab3eb96812fd10f58330cd4e8946417f40"
+      "bytes": 60152,
+      "sha256": "47ef84de24199265c6c2e16afec439faa9e5f2dfa915ae34091b68b13b4e32e2"
     },
     {
       "path": "planeswalk-src/pw-kit.js",
@@ -5583,8 +5583,8 @@
     },
     {
       "path": "planeswalk-src/src.html",
-      "bytes": 389149,
-      "sha256": "06da03626e20c458da1697e4d9915c6e2cab3bef38cf010ca50ef3d2ed962567"
+      "bytes": 389233,
+      "sha256": "8a52fdd29d229aa2db0abd2f65e6bc20e49e05918ec4dd39e4762c6d2d796842"
     },
     {
       "path": "planeswalk-src/tools/addart.py",
@@ -5623,8 +5623,8 @@
     },
     {
       "path": "planeswalk.html",
-      "bytes": 6001574,
-      "sha256": "5d55b5c44a7196796c6d5538dc4ec221014fcd0afe0ade0a3c389f77918ae7fb"
+      "bytes": 6006290,
+      "sha256": "86d1ca122532466e9f09244b4d24775ad13a66d7de61b96440a060dbe193c372"
     },
     {
       "path": "planner.js",
@@ -5973,8 +5973,8 @@
     },
     {
       "path": "release-record.js",
-      "bytes": 734,
-      "sha256": "6a89aaeaf58cec7a4225ea0a011135ec05a5878f3e5a84092cdc965144e4289c"
+      "bytes": 712,
+      "sha256": "f9214c296f3179c76e4f681d9b1fd95f529824ed6c53f0b14f943d6c3130712a"
     },
     {
       "path": "release-status.js",
@@ -6323,8 +6323,8 @@
     },
     {
       "path": "sw.js",
-      "bytes": 15868,
-      "sha256": "1ac32b42703960f68c080880445e8e7cbb574ca648cfcd91d3c8bb09bdc0ff81"
+      "bytes": 15874,
+      "sha256": "137141337f84658e226d2558c3e3991cf8cec756b2505998ced6e8e22e2b4314"
     },
     {
       "path": "sync-merge.js",
