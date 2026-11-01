@@ -1731,6 +1731,7 @@ A.playEconCollTab=t=>{econUi.tab=t.dataset.id==='sets'?'sets':'cards';refreshPla
 A.playEconColor=t=>{const k=t.dataset.econColor||'';econUi.color=econUi.color===k?'':k;refreshPlayMenu();};
 C.playEconType=t=>{econUi.type=t.value||'';refreshPlayMenu();};
 A.playEconSet=t=>{const code=t.dataset.econSet||'';if(t.dataset.econFilter){econUi.set=code;return refreshPlayMenu();}econUi.set='';if(code)return go('#set/'+encodeURIComponent(code)+'/play');refreshPlayMenu();};
+C.playEconSetPick=t=>{econUi.set=t.value||'';refreshPlayMenu();};
 C.playEconSort=t=>{econUi.sort=t.value||'';refreshPlayMenu();};
 // The Play lens (play-progression.md): the app's own set page and card sheet read the Play collection
 // and Play decks instead of prices. Read-only; every change still goes through the Play server.

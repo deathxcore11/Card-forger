@@ -172,8 +172,17 @@ function filterBar(ui = {}, {sets = []} = {}) {
     <div class="pe-color-tabs" role="group" aria-label="Colour">${COLORS.map(([k, l]) => `<button class="pe-mana pe-mana--${k}" data-act="playEconColor" data-econ-color="${k}" aria-pressed="${ui.color === k}" aria-label="${l}" title="${l}"><img class="pe-mana-sym" src="${symbolUrl(k)}" alt="" aria-hidden="true" loading="lazy" decoding="async"></button>`).join('')}</div>
     <select class="pe-type" data-change="playEconType" aria-label="Card type"><option value="">All types</option>${TYPES.map(t => `<option${ui.type === t ? ' selected' : ''}>${t}</option>`).join('')}</select>
     <div class="pe-rarity-tabs" role="group" aria-label="Rarity">${[['', 'All'], ['common', 'Common'], ['uncommon', 'Uncommon'], ['rare', 'Rare'], ['mythic', 'Mythic']].map(([k, l]) => `<button data-act="playEconRarity" data-econ-rarity="${k}" aria-pressed="${(ui.rarity || '') === k}">${l}</button>`).join('')}</div>
-    <select class="pe-sort" data-change="playEconSort" aria-label="Sort cards">${PLAY_SORTS.map(([k, l]) => `<option value="${k}"${(ui.sort || '') === k ? ' selected' : ''}>${l}</option>`).join('')}</select></div>
-    ${sets.length > 1 ? `<div class="pe-binder-tabs" role="group" aria-label="Set">${[{code: '', name: 'Every set'}, ...sets].map(x => `<button class="pe-binder-tab" data-act="playEconSet" data-econ-set="${esc(x.code)}" data-econ-filter="1" aria-pressed="${(ui.set || '') === x.code}" aria-label="${esc(x.name)}" title="${esc(x.name)}">${x.code ? `<span class="set-icon" style="--icon:url('${esc(x.icon)}')" aria-hidden="true"></span><span>${esc(x.code.toUpperCase())}</span>` : '<span>All</span>'}</button>`).join('')}</div>` : ''}`;
+    <select class="pe-sort" data-change="playEconSort" aria-label="Sort cards">${PLAY_SORTS.map(([k, l]) => `<option value="${k}"${(ui.sort || '') === k ? ' selected' : ''}>${l}</option>`).join('')}</select>
+    ${setSelect(ui, sets)}</div>`;
+}
+
+// One menu for the set filter, grouped by release year, so a big binder never grows a wall of chips.
+function setSelect(ui = {}, sets = []) {
+  if (sets.length < 2) return '';
+  const years = new Map();
+  for (const x of sets) { const y = (x.released || '').slice(0, 4) || 'Other'; if (!years.has(y)) years.set(y, []); years.get(y).push(x); }
+  const opt = x => `<option value="${esc(x.code)}"${(ui.set || '') === x.code ? ' selected' : ''}>${esc(x.name)} (${esc(x.code.toUpperCase())})</option>`;
+  return `<select class="pe-set-pick" data-change="playEconSetPick" aria-label="Set"><option value="">Every set</option>${[...years].map(([y, list]) => `<optgroup label="${esc(y)}">${list.map(opt).join('')}</optgroup>`).join('')}</select>`;
 }
 
 // How the Trunk can be ordered. Set order puts the newest set first, like the Merchant.

@@ -1005,7 +1005,7 @@ body[data-mode="play"] #gameTabs,body[data-mode="play"] [data-nav="scan"]{displa
 .pe-filters .pe-search>span{position:absolute;width:1px;height:1px;overflow:hidden;clip:rect(0 0 0 0);white-space:nowrap}
 .pe-filters select{width:auto;flex:0 0 auto;min-width:132px}
 .pe-filters .pe-rarity-tabs{flex:1 1 auto}
-.pe-binder-tab{flex:none}
+.pe-filters .pe-set-pick{min-height:44px;max-width:min(100%,280px)}
 .pe-coll-view .display-list .pe-lot .lot-name{display:block;white-space:normal;overflow:visible;text-overflow:clip}
 .pe-coll-view .pe-lot .lot-name .set-badge{vertical-align:middle}
 .pe-coll-view .pe-lot .set-badge span{font-size:11px}
