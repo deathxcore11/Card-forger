@@ -2,7 +2,7 @@
 // art, its sets' packs, where you are), then your packs, the play modes, your decks, your set
 // progress and the Merchant's newest sets. Markup only; app.js wires the actions.
 // Play's wall: no prices, and nothing here reads the real collection.
-import {boosterMarkup, playSetRows, econNoticeMarkup, cardImageByName, coinIcon, purseMarkup} from './play-econ-ui.js';
+import {boosterMarkup, playSetRows, econNoticeMarkup, cardImageByName, coinIcon, purseMarkup, forgeMarkup} from './play-econ-ui.js';
 import {purse} from './play-econ-client.js';
 import {deckRules, isBasicLand} from './play-econ-rules.js';
 import {setRowContent} from './set-list-ui.js';
@@ -29,7 +29,7 @@ function storyHeader(act, facts, progress = {}) {
       <div class="pe-story-copy"><p class="eyebrow">Story · Act ${act.act}</p><h2 id="peStoryTitle">${esc(act.name)}</h2><p class="pe-story-line">${esc(act.years)}. ${esc(act.line)}</p>
         <div class="pe-story-progress" role="img" aria-label="Battle ${won} of ${act.battles} won">${Array.from({length: act.battles}, (_, i) => `<i class="${i < won ? 'on' : ''}${i === act.battles - 1 ? ' boss' : ''}"></i>`).join('')}</div>
         <button class="btn cs-plate pe-story-go" disabled><span class="cs-plate-label">Story opens soon</span></button></div>
-      <div class="pe-story-packs" aria-label="Packs this act gives">${act.sets.map(s => `<span class="pe-story-pack">${boosterMarkup({code: s.code, name: s.name, facts})}</span>`).join('')}</div>
+      <div class="pe-story-packs" aria-label="Packs this act gives">${act.sets.map(s => `<span class="pe-story-pack" role="img" aria-label="${esc(s.name)} pack">${boosterMarkup({code: s.code, name: s.name, facts, mini: true})}</span>`).join('')}</div>
     </div></section>`;
 }
 
@@ -42,7 +42,7 @@ export function playHomeMarkup({econ = null, facts = null, signedIn = false, mod
   for (const pk of state.packs || []) { if (!groups.has(pk.set)) groups.set(pk.set, []); groups.get(pk.set).push(pk); }
   const names = new Map([...(state.shop || []).map(x => [x.code, x.name]), ...(state.rewardSet ? [[state.rewardSet.code, state.rewardSet.name]] : [])]);
   const packs = groups.size
-    ? `<div class="pe-home-packs">${[...groups].map(([code, list]) => `<button class="pe-pack pe-pack--open${econ.busy === 'open:' + list[0].id ? ' pe-pack--opening' : ''}" data-act="playEconOpen" data-econ-pack="${esc(list[0].id)}" ${econ.busy ? 'disabled' : ''} aria-label="Open a ${esc(names.get(code) || code.toUpperCase())} pack, ${list.length} waiting">${boosterMarkup({code, name: names.get(code), facts})}<span class="pe-badge">${n(list.length)}</span></button>`).join('')}</div>`
+    ? `<div class="pe-home-packs">${[...groups].slice(0, 6).map(([code, list]) => `<button class="pe-pack pe-pack--open${econ.busy === 'open:' + list[0].id ? ' pe-pack--opening' : ''}" data-act="playEconOpen" data-econ-pack="${esc(list[0].id)}" ${econ.busy ? 'disabled' : ''} aria-label="Open a ${esc(names.get(code) || code.toUpperCase())} pack, ${list.length} waiting">${boosterMarkup({code, name: names.get(code), facts})}<span class="pe-badge">${n(list.length)}</span></button>`).join('')}</div>`
     : `<p class="pe-home-empty">Every pack is open. Story battles, Planeswalk bosses and the Merchant give more.</p>`;
   // Decks: the app's deck shelf cards, with Build a deck first.
   const decks = state.decks || [];
@@ -62,6 +62,7 @@ export function playHomeMarkup({econ = null, facts = null, signedIn = false, mod
     ${storyHeader(act, facts, story)}
     ${shelf('Your packs', viewLink('packs', 'All packs'), packs, 'peHomePacks')}
     ${shelf('Play', '', modesHtml, 'peHomeModes')}
+    ${forgeMarkup(econ, {compact: true})}
     ${shelf('Your decks', viewLink('decks', 'All decks'), deckRow, 'peHomeDecks')}
     ${shelf('Your collection', viewLink('collection', `${n(owned)} cards`), setRow || `<p class="pe-home-empty">Open a pack and your first set starts filling in.</p>`, 'peHomeColl')}
     ${shopRow ? shelf('Merchant', viewLink('shop', 'Every set'), shopRow, 'peHomeShop') : ''}

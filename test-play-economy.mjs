@@ -92,6 +92,17 @@ assert.ok(!('prices' in row) && !JSON.stringify(row).includes('9.99'), 'pack rec
   assert.equal((await progressRoute(req('buy', {set: 'tst'}), env, {verifyBearer, fetcher})).status, 200, '600 coins buys a 500-coin pack');
   assert.equal((await progressRoute(req('buy', {set: 'tst'}), env, {verifyBearer, fetcher})).status, 409, '100 coins left is short');
   assert.equal((await progressRoute(req('buy', {set: 'zzz'}), env, {verifyBearer, fetcher})).status, 404, 'only sets with a booster file');
+  // The Forge: 3 lower seals strike 1 of the next rarity, only with enough seals, never past mythic.
+  wallet = {...wallet, seal_c: 7, seal_r: 2};
+  calls.length = 0;
+  const forged = await (await progressRoute(req('forge', {to: 'u', times: 2}), env, {verifyBearer, fetcher})).json();
+  assert.deepEqual(forged.forged, {to: 'u', from: 'c', times: 2, cost: 6});
+  const forgeCall = calls.find(c => c[0] === 'play_apply');
+  assert.deepEqual(forgeCall[1].p_delta, {seals: {c: -6, u: 2}});
+  assert.match(forgeCall[1].p_ref, /^forge:/);
+  assert.equal((await progressRoute(req('forge', {to: 'm'}), env, {verifyBearer, fetcher})).status, 409, '2 rare seals cannot strike a mythic');
+  assert.equal((await progressRoute(req('forge', {to: 'c'}), env, {verifyBearer, fetcher})).status, 400, 'nothing forges into common');
+  assert.equal((await progressRoute(req('forge', {to: 'u', times: 11}), env, {verifyBearer, fetcher})).status, 400, 'ten at most');
 }
 
 // --- The wall: Play economy code never imports collection storage, sync or price code,
@@ -179,3 +190,15 @@ for (const f of ['storage.js', 'cloud.js', 'store.js', 'binders.js', 'sync-merge
   for (const html of [builder, coll, collectionMarkup(snap, {facts})]) assert.ok(!/\$\s?\d|usd|price/i.test(html), 'no prices in Play');
 }
 console.log('play economy ok');
+
+// --- Trunk sorting and binder tabs.
+{
+  const ui = await import('./play-econ-ui.js');
+  const cards = [{o: 'a', n: 'Bolt', r: 'common', c: 4, s: ['old']}, {o: 'b', n: 'Angel', r: 'mythic', c: 1, s: ['new']}, {o: 'c', n: 'Cat', r: 'rare', c: 2, s: ['old']}];
+  const sets = [{code: 'new', released: '2026-10-01'}, {code: 'old', released: '1993-08-05'}];
+  assert.deepEqual(ui.sortPlayCards(cards).map(c => c.n), ['Angel', 'Bolt', 'Cat']);
+  assert.deepEqual(ui.sortPlayCards(cards, null, 'rarity').map(c => c.n), ['Angel', 'Cat', 'Bolt']);
+  assert.deepEqual(ui.sortPlayCards(cards, null, 'set', sets).map(c => c.n), ['Angel', 'Bolt', 'Cat']);
+  assert.deepEqual(ui.sortPlayCards(cards, null, 'count').map(c => c.n), ['Bolt', 'Cat', 'Angel']);
+}
+

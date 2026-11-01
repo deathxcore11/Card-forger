@@ -6,7 +6,7 @@
 import {SUPABASE} from './config.js';
 import {loadMtgBooster, mtgBoosterCards, drawMtgBooster} from './mtg-boosters.js';
 import {rewardSet} from './play-econ-sets.js';
-import {starterGrant, sealTrackBonus, packContentsRow, cardDelta, RARITY_SEAL} from './play-econ-rules.js';
+import {starterGrant, sealTrackBonus, packContentsRow, cardDelta, RARITY_SEAL, FORGE_STEPS, forgeRatio} from './play-econ-rules.js';
 import {PRACTICE_STARTER_ROWS} from './play-starter-deck.js';
 
 const json = (body, status = 200) => new Response(JSON.stringify(body), {status, headers: {'Content-Type': 'application/json', 'Cache-Control': 'no-store'}});
@@ -121,6 +121,15 @@ export async function progressRoute(request, env, {verifyBearer, fetcher = fetch
       if ((s.wallet?.['seal_' + seal] || 0) < 1) return fail('no_seal', 409);
       await apply('craft:' + crypto.randomUUID(), 'craft', {seals: {[seal]: -1}, cards: [cardDelta(card)]});
       return json({card: {id: card.id, oracle_id: card.oracle_id, name: card.name, rarity: card.rarity}, state: await state()});
+    }
+    if (path === 'forge') {
+      // Seals step up one rarity: ratio x the lower seal for 1 of the next, up to 10 at once.
+      const to = String(body.to || ''), from = FORGE_STEPS[to], times = Math.floor(Number(body.times) || 1);
+      if (!from || times < 1 || times > 10) return fail('bad_forge');
+      const s = await state(), cost = forgeRatio(s.config, to) * times;
+      if ((s.wallet?.['seal_' + from] || 0) < cost) return fail('no_seal', 409);
+      await apply('forge:' + crypto.randomUUID(), 'forge', {seals: {[from]: -cost, [to]: times}});
+      return json({forged: {to, from, times, cost}, state: await state()});
     }
     if (path === 'buy') {
       const set = String(body.set || '').toLowerCase();

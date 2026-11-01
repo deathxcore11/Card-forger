@@ -1,6 +1,10 @@
 // Pure Play economy rules, shared by the server routes and the app. No storage, no network,
 // no prices. Values come from the play.config row (seeded from data/play-economy.json).
 export const RARITY_SEAL = Object.freeze({common: 'c', uncommon: 'u', rare: 'r', mythic: 'm', special: 'r', bonus: 'm'});
+// The Forge: three seals of one rarity become one seal of the next (settled 3:1, Randall 1 Nov).
+// play.config can rebalance each step with forge: {u, r, m}; meltRareToMythic is the older name for m.
+export const FORGE_STEPS = Object.freeze({u: 'c', r: 'u', m: 'r'});
+export const forgeRatio = (config = {}, to = 'u') => Math.max(2, Number(config?.forge?.[to]) || (to === 'm' ? Number(config?.meltRareToMythic) : 0) || 3);
 export const SEALS = Object.freeze([
   {key: 'c', rarity: 'common', label: 'Common seal'},
   {key: 'u', rarity: 'uncommon', label: 'Uncommon seal'},

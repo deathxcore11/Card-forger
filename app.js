@@ -1689,8 +1689,12 @@ const econFacts=createCardFacts({onChange:()=>{if(S.ui.view==='play'&&ECON_VIEWS
 // Read the wallet once per signed-in account per visit to Play; a new account starts clean.
 const econWake=()=>{const id=cloudInfo()?.user?.id||null;if(id===econSeen)return;if(econSeen!==null)playEcon.clear();econSeen=id;econUi={query:'',cardQuery:'',rarity:'',press:null,check:null};playView=ECON_VIEWS.has(playView)?'home':playView;if(id)setTimeout(()=>playEcon.refresh(),0);};
 const econFocus=()=>requestAnimationFrame(()=>document.getElementById('playTitle')?.focus?.({preventScroll:true}));
-A.playEconView=t=>{const v=t.dataset.econView;if(!ECON_VIEWS.has(v))return;playView=v;playInspectOpen=false;refreshPlayMenu();scrollTo({top:0});if(v==='shop'&&t.dataset.econFocus==='press')requestAnimationFrame(()=>document.querySelector('.pe-press-find input')?.focus());else econFocus();};
+A.playEconView=t=>{const v=t.dataset.econView;if(!ECON_VIEWS.has(v))return;playView=v;playInspectOpen=false;refreshPlayMenu();scrollTo({top:0});if(v==='shop'&&t.dataset.econFocus==='press')requestAnimationFrame(()=>document.querySelector('.pe-forge')?.scrollIntoView({block:'center',behavior:'smooth'}));else econFocus();};
 A.playEconBuy=async t=>{try{await playEcon.buy(t.dataset.econSet);toast('Pack bought. It is waiting in Packs.');}catch{}};
+// The Forge: strike lower seals into the next rarity; the new seal flares where it lands.
+A.playEconForge=async t=>{const to=t.dataset.econTo,times=Number(t.dataset.econTimes)||1;try{const out=await playEcon.forge(to,times);haptic('success');appSound('PACK-005',{volume:.5,gap:0});
+ const name={u:'uncommon',r:'rare',m:'mythic'}[to];toast(`Forged ${times} ${name} seal${times>1?'s':''}.`);
+ requestAnimationFrame(()=>document.querySelectorAll(`.pe-forge-seal[data-seal="${to}"]`).forEach(el=>{el.classList.remove('struck');void el.offsetWidth;el.classList.add('struck');}));return out;}catch{}};
 A.playEconCraft=async t=>{try{const out=await playEcon.craft(t.dataset.econCard);toast(out.card.name+' added to your Play collection.');}catch{}};
 A.playEconRetry=()=>{playEcon.refresh();};
 A.playEconRarity=t=>{econUi.rarity=t.dataset.econRarity||'';refreshPlayMenu();};
@@ -1722,7 +1726,8 @@ A.playEconDeleteDeck=async t=>{if(!confirm('Delete this Play deck?'))return;try{
 A.playEconCollTab=t=>{econUi.tab=t.dataset.id==='sets'?'sets':'cards';refreshPlayMenu();};
 A.playEconColor=t=>{const k=t.dataset.econColor||'';econUi.color=econUi.color===k?'':k;refreshPlayMenu();};
 C.playEconType=t=>{econUi.type=t.value||'';refreshPlayMenu();};
-A.playEconSet=t=>{const code=t.dataset.econSet||'';econUi.set='';if(code)return go('#set/'+encodeURIComponent(code)+'/play');refreshPlayMenu();};
+A.playEconSet=t=>{const code=t.dataset.econSet||'';if(t.dataset.econFilter){econUi.set=code;return refreshPlayMenu();}econUi.set='';if(code)return go('#set/'+encodeURIComponent(code)+'/play');refreshPlayMenu();};
+C.playEconSort=t=>{econUi.sort=t.value||'';refreshPlayMenu();};
 // The Play lens (play-progression.md): the app's own set page and card sheet read the Play collection
 // and Play decks instead of prices. Read-only; every change still goes through the Play server.
 // Signed out or still loading, the lens still holds the wall: no prices, nothing owned yet.
