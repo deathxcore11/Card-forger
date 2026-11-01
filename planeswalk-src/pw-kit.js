@@ -12,7 +12,7 @@
  const ring=k=>typeof ico==='function'&&typeof PWI!=='undefined'&&PWI[k]?`<span class="ev-ring">${ico(k)}</span>`:'<span class="ev-ring"></span>';
  function evIcons(){for(const o of app.querySelectorAll('.screen.event .option:not(:has(>.emb-art,>svg,>.ev-ic))')){const k=ICON[o.dataset.act];const i=document.createElement('span');i.className='ev-ic';i.setAttribute('aria-hidden','true');
   i.innerHTML=k==='pyre'&&window.PW_EMB_ART?.html?PW_EMB_ART.html('pyre'):k&&k.startsWith('<')?k:ring(k||'star');o.prepend(i)}
-  const h=app.querySelector('.screen.event>h2:not(.pwk-ribbon)');if(h){h.classList.add('pwk-ribbon','hero')}}
+  /* 4.3.46: event titles are gold lettering over the painting (StS 2 events), not a ribbon */}
  function tick(){const v=G('view');
   if(v==='event')evIcons()}
  let q=0;new MutationObserver(()=>{if(!q){q=1;requestAnimationFrame(()=>{q=0;tick()})}}).observe(app,{childList:true,subtree:true});tick();

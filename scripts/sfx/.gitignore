@@ -1,0 +1,4 @@
+wav/
+out/
+__pycache__/
+*.log
