@@ -108,7 +108,9 @@ def _(): return mix((whoosh(.1, 1000, 4000), 0, .3), (snap(7000), .06, 1))
 @cue('COL-004')
 def _(): return verb(glass(1800, 1.2), .3, 1.2) * .5
 @cue('COL-005')
-def _(): return mix((card_slide(.2, 2800), 0, .8), (pouch(), .2, .5))
+def _():
+    # Added to collection, a deck or a binder: a card slides into a sleeve, then a soft celesta fifth.
+    return verb(mix((lp(card_slide(.16, 2600), 6000), 0, .6), (inst(CELESTA, [(.12, .5, 79, 58), (.22, .8, 86, 52)]), 0, .7)), .25, 1.2, 5000)
 @cue('COL-006')
 def _(): return pitch(mix((card_slide(.2, 2800), 0, .8)), .85)
 @cue('COL-007')
@@ -121,23 +123,34 @@ def _(): return mix((coin(3800), 0, .7), (coin(4600), .12, .8))
 def _(): return mix(*[(snap(4500 + rng.uniform(-800, 800)), i * .022, rng.uniform(.4, .8)) for i in range(26)], (paper(.08, 3000), .62, .8))
 @cue('PACK-002')
 def _(): return mix((whoosh(.45, 300, 1800, 1.2, .6, 'white'), 0, .6), (inst(SLOWSTR, [(0, .6, 50, 50)]), 0, .3))
+# Pack opening in the main app: gentle, never a fanfare (Randall, 1 Nov). Rarer pulls get warmer, not louder.
 @cue('PACK-003')
-def _(): return mix((inst(TREM, [(0, 2, 50, 40), (0, 2, 57, 40), (0, 2, 62, 40)]), 0, .6), (shimmer(84, 108, 1.8, CELESTA, 40), 0, .4))
+def _():
+    # A rare is waiting face down: a low warm hum with a faint shimmer.
+    return verb(mix((inst(SLOWSTR, [(0, 1.3, 50, 45), (0, 1.3, 57, 40)]), 0, .7), (inst(CHOIR, [(.1, 1.2, 62, 30)]), 0, .3), (shimmer(88, 100, .9, CELESTA, 28), .3, .3)), .35, 1.6, 3500)
 @cue('PACK-004')
 def _():
-    tear = hp(noise(.35), 1500) * (np.abs(np.sin(np.linspace(0, 90, N(.35)))) ** 6) * env_ar(N(.35), .1, .9)
-    return verb(mix((tear, 0, .9), (whoosh(.3, 800, 6000), .2, .4), (sparkle(10, .4), .25, .5)), .15, .9)
+    tear = hp(noise(.32), 1800) * (np.abs(np.sin(np.linspace(0, 80, N(.32)))) ** 6) * env_ar(N(.32), .1, .9)
+    return verb(mix((lp(tear, 7000), 0, .8), (whoosh(.3, 700, 4000), .18, .3), (sparkle(5, .3, 3000, 7000), .24, .25)), .2, 1.0, 5000)
 @cue('PACK-005')
-def _(): return mix(*[(paper(.05, 3500 + rng.uniform(-600, 600)), i * .05 + rng.uniform(0, .02), .7) for i in range(12)])
+def _():
+    # One card lands on the table: a soft paper tap on felt.
+    return mix((lp(paper(.035, 2600), 6000), 0, .8), (thump(190, 110, .06, .015, .05), 0, .25))
 @cue('PACK-006', 'PACK-011')
-def _(): return CUES['COL-003']()
+def _(): return lp(mix((whoosh(.08, 900, 3000), 0, .25), (snap(5200), .05, .8)), 7000)
 @cue('PACK-007')
-def _(): return mix((CUES['COL-003'](), 0, 1), (crystal_ping(mf(93), .4), .06, .4))
+def _(): return verb(mix((CUES['PACK-006'](), 0, 1), (glass(mf(93), .35), .06, .18)), .2, 1.0, 6000)
 @cue('PACK-008')
-def _(): return verb(mix((CUES['COL-003'](), 0, 1), (chord(CELESTA, [76, 79, 84, 88], .06, .8, 75, .02), 0, .6), (inst(CHOIR, [(.06, .8, 72, 60), (.06, .8, 76, 60)]), 0, .4)), .25, 1.4)
+def _():
+    # Rare: three warm celesta notes rising over a soft choir.
+    return verb(mix((CUES['PACK-006'](), 0, .9), (inst(CELESTA, [(.06, .5, 76, 62), (.16, .5, 79, 62), (.26, .9, 84, 64)]), 0, .7),
+                    (inst(CHOIR, [(.06, 1.0, 64, 38), (.06, 1.0, 71, 34)]), 0, .35)), .3, 1.4, 5000)
 @cue('PACK-009')
-def _(): return verb(mix((CUES['COL-003'](), 0, 1), (inst(TIMP, [(.3, 1, 38, 120)]), 0, .9), (chord(BRASS, [55, 62, 67, 71, 74], .3, 1.4, 105), 0, .8),
-                         (inst(CHOIR, [(.3, 1.8, p, 80) for p in (60, 67, 72, 76)]), 0, .6), (gliss(HARP, 72, 100, .9, 70), .4, .6)), .3, 2.0)
+def _():
+    # Mythic or better: a harp sweep into a warm major chord, strings and choir, all soft.
+    return verb(mix((CUES['PACK-006'](), 0, .9), (gliss(HARP, 67, 96, .55, 60, (0, 2, 4, 7, 9)), .05, .6),
+                    (inst(SLOWSTR, [(.45, 1.6, p, 50) for p in (55, 62, 67, 71)]), 0, .55), (inst(CHOIR, [(.45, 1.5, p, 42) for p in (67, 71, 74)]), 0, .4),
+                    (sparkle(7, .8, 3500, 8000), .5, .25)), .35, 1.8, 4500)
 @cue('PACK-010')
 def _(): return verb(mix((whoosh(.55, 2500, 9000, 2, .5, 'white', -.8, .8), 0, .4), (shimmer(88, 108, .5, CELESTA, 50), 0, .5)), .25, 1.2)
 @cue('PACK-012')
@@ -477,4 +490,6 @@ def _(): return verb(mix((shatter(.5, 1500, 24), 0, .9), (thump(90, 35, .4, .05,
 @cue('RAV-006')
 def _(): return verb(mix((inst(TUBULAR, [(0, 2, 74, 100)]), 0, .6), (chord(CHOIR, [62, 69, 74, 78], .1, 1.4, 85), 0, .6), (sparkle(10, .8), .1, .5), (whoosh(.8, 300, 6000, 1.2, .3), 0, .3)), .35, 2.0)
 
+# Cues the main app plays: kept well under the game's effects.
+QUIET = {'PACK-003': -8, 'PACK-004': -6, 'PACK-005': -8, 'PACK-006': -6, 'PACK-007': -6, 'PACK-008': -5, 'PACK-009': -4, 'PACK-011': -8, 'COL-005': -5}
 PUBLIC = sorted(k for k in CUES if not k.startswith('_'))

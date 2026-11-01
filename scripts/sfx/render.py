@@ -5,7 +5,7 @@ import sys, os, zlib, subprocess, wave, json
 import numpy as np
 D = os.path.dirname(os.path.abspath(__file__)); sys.path.insert(0, D)
 import kit
-from cues import CUES, PUBLIC
+from cues import CUES, PUBLIC, QUIET
 OLD = os.path.join(D, '../../assets/audio/sfx')
 
 def loud(x):
@@ -47,7 +47,7 @@ if __name__ == '__main__':
     report = {}
     for cid in ids:
         x = cap(kit.finish(build(cid)), max_len(cid))      # pass 2: real audio
-        target = levels[cid] or default
+        target = (levels[cid] or default) * 10 ** (QUIET.get(cid, 0) / 20)
         g = min(target / loud(x), 10 ** (-1 / 20) / (np.abs(x).max() + 1e-9))
         x = np.clip(x * g, -1, 1)
         with wave.open(f'{D}/wav/{cid}.wav', 'wb') as w:

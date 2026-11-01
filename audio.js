@@ -10,7 +10,7 @@ import { LOOPS } from "./audio-loops.js";
 const KEY = "cardstashy-audio", CACHE = "cardstashy-audio-v2", SITE = "https://cardstashy.com";
 // v2 holds the original score; older copies (the placeholder music) are cleared once.
 try { globalThis.caches?.keys().then((keys) => keys.filter((k) => k.startsWith("cardstashy-audio-") && k !== CACHE).forEach((k) => caches.delete(k))).catch(() => {}); } catch {}
-const DEFAULTS = { on: true, master: 1, sfx: 0.7, music: 0.4 };
+const DEFAULTS = { on: true, master: 1, sfx: 0.7, music: 0.4, app: true };
 // Which cues have a file: prefix → [last number, ...numbers that are music rows instead].
 const RANGES = { APP: [20, 2], COL: [10], PACK: [13, 1], QP: [24, 1, 3], TT: [10], CARD: [31], CMB: [21], PW: [38, 1], PWB: [20], AMB: [7], RAV: [6] };
 // RAV-001…006: Planeswalk Ravnica drafts (dungeon gate, vault lock, vault reveal, room advance, ante shatter, signature reveal).
@@ -23,7 +23,7 @@ const base = new URL("./assets/audio/", import.meta.url);
 // The app bundles only the Opus effects; Safari (no Ogg Opus before 18.4) gets the AAC copies.
 let ext = (() => { if (native()) return "ogg"; try { return new Audio().canPlayType('audio/ogg; codecs="opus"') ? "ogg" : "m4a"; } catch { return "m4a"; } })();
 // Same for the effects: bump SFX_REV whenever they are remade under the same names.
-const SFX_REV = "kit2";
+const SFX_REV = "kit3";
 const sfxURL = (id) => new URL(`sfx/${id}.${ext}`, base).href + `?v=${SFX_REV}`;
 // The music files are cached for a week by browsers and the app's WebView, so a new score needs a new
 // address: bump MUSIC_REV whenever the tracks change under the same names.
@@ -122,6 +122,11 @@ export function sfx(id, { volume = 1, rate = 1, delay = 0, gap = 45 } = {}) {
   }, () => {});
 }
 // Music steps back under a stinger, then comes back up.
+// The main app's few sounds (pack opening, a card added): quiet, paired with a haptic, and with their own switch.
+export function appSound(id, { volume = 0.6, rate = 1, delay = 0, gap = 45 } = {}) {
+  if (audioSettings().app === false) return;
+  sfx(id, { volume, rate, delay, gap });
+}
 export function duck(ms = 1200, depth = 0.4) {
   if (!ctx) return;
   const t = ctx.currentTime, g = duckBus.gain;

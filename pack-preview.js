@@ -10,6 +10,9 @@ import {ygoSetReference} from './ygo-set-prices.js';
 import {pkCatalogueSymbolSources} from './emblems.js';
 import {drawMtgBooster} from './mtg-boosters.js';
 import {haptic,cancelHaptics} from './feel.js';
+import {appSound} from './audio.js';
+// Each haptic of a pack's moments has a soft sound beside it; rarer pulls sound warmer, never louder.
+const PACK_SOUND={'pack-reveal':'PACK-006','pack-value-2':'PACK-007','pack-value-3':'PACK-008','pack-value-4':'PACK-009'};
 import {catchLight} from './foil-fx.js';
 // A discovery sampler. No collation, print-run odds, purchases or ownership are implied.
 export function sampleSetCards(cards,count=10,random=packRandom){
@@ -323,7 +326,7 @@ export function openPackPreview({game,set,cards,complete=false,featured=null,hyd
   if(open){const src=setImageUrl(cardArt(c));if(faceImg.getAttribute('src')!==src)faceImg.src=src;const attrs=finishAttrs(game,c,ctxs[focus],'pack');const tmp=document.createElement('span');tmp.innerHTML=`<i ${attrs}></i>`;const i2=tmp.firstChild;for(const a of ['data-finish-game','data-finish-effect','data-finish-model'])face.setAttribute(a,i2.getAttribute(a));face.dataset.finishSurface='pack';}
   else{face.removeAttribute('data-finish-model');faceImg.removeAttribute('src');focusCard.style.removeProperty('aspect-ratio');}
   // A face-down hit glows before it is flipped, so the next tap feels worth it.
-  const tease=!open&&rarity.rank>=2;if(tease&&!focusCard.classList.contains('pack-tease')&&dialog.classList.contains('pack-dealt'))haptic('pack-land');focusCard.classList.toggle('pack-tease',tease);
+  const tease=!open&&rarity.rank>=2;if(tease&&!focusCard.classList.contains('pack-tease')&&dialog.classList.contains('pack-dealt')){haptic('pack-land');appSound('PACK-003',{volume:.5,gap:600});}focusCard.classList.toggle('pack-tease',tease);
   focusCard.classList.toggle('pack-foil',open&&!!face.dataset.finishEffect&&face.dataset.finishEffect!=='plain');
   meta.querySelector('b').textContent=open?c.name:'';meta.querySelector('.pack-rarity').innerHTML=open?rarityEmblem(game,rarity.label,{finish:packFinishLabel(game,ctxs[focus]||{},rarity.label)}):'';
  };
@@ -334,7 +337,7 @@ export function openPackPreview({game,set,cards,complete=false,featured=null,hyd
  // A pull feels as good as its price or its rarity, whichever is bigger, so an unpriced mythic still hits hard.
  const RARITY_FEEL=['pack-reveal','pack-reveal','pack-value-2','pack-value-3','pack-value-4'],FEELS=['pack-reveal','pack-value-2','pack-value-3','pack-value-4'];
  const feelOf=i=>{const byPrice=packRevealHaptic(trustedPackPrice(game,picks[i],ctxs[i]||{})),byRarity=RARITY_FEEL[Math.min(4,packRarity(game,picks[i]).rank)];return FEELS.indexOf(byRarity)>FEELS.indexOf(byPrice)?byRarity:byPrice;};
- const reveal=(i,{silent=false}={})=>{if(!Number.isInteger(i)||!picks[i])return;if(!revealed.has(i)){revealed.add(i);if(!silent)haptic(feelOf(i));const b=dialog.querySelector(`.pack-card[data-index="${i}"]`),img=b.querySelector('img[data-pack-src]');img.src=img.dataset.packSrc;b.classList.add('revealed');flipLift(b,22);if(!silent)flipLift(focusCard,3);b.setAttribute('aria-pressed','true');b.setAttribute('aria-label',picks[i].name+' · revealed');
+ const reveal=(i,{silent=false}={})=>{if(!Number.isInteger(i)||!picks[i])return;if(!revealed.has(i)){revealed.add(i);if(!silent){const f=feelOf(i);haptic(f);appSound(PACK_SOUND[f]||'PACK-006');}const b=dialog.querySelector(`.pack-card[data-index="${i}"]`),img=b.querySelector('img[data-pack-src]');img.src=img.dataset.packSrc;b.classList.add('revealed');flipLift(b,22);if(!silent)flipLift(focusCard,3);b.setAttribute('aria-pressed','true');b.setAttribute('aria-label',picks[i].name+' · revealed');
    setTier(b,tierOf(i));status.textContent=`${revealed.size} of ${picks.length} revealed`;
    if(!silent)later(()=>revealMoment(i),330);
    if(revealed.size===picks.length){dialog.classList.add('pack-done');if(picks.godPack)status.textContent=godPackText(game);for(const x of dialog.querySelectorAll('.pack-actions [disabled]'))x.disabled=false;}}
@@ -366,7 +369,7 @@ export function openPackPreview({game,set,cards,complete=false,featured=null,hyd
     const inside=from.top+from.height*.42-cy,above=from.top-c.height*k*.32-cy,spread=(i-mid)*Math.min(14,from.width*.05);
     b.animate([{transform:`translate(${ox}px,${inside}px) scale(${k})`,zIndex:0,opacity:1,offset:0},{transform:`translate(${ox+spread*.4}px,${above}px) rotate(${(i-mid)*1.5}deg) scale(${k*.92})`,zIndex:0,opacity:1,offset:.34},{transform:`translate(${ox+spread}px,${above}px) rotate(${(i-mid)*3}deg) scale(${k*.9})`,zIndex:200,offset:.4},{zIndex:200,offset:.97}],
      {duration:fly,delay:i*gap,easing:'cubic-bezier(.3,.7,.25,1)',fill:'backwards'});
-    later(()=>{if(!suspended&&(i===0||i===n-1||i%3===0))haptic('pack-land');},i*gap+fly-40);});
+    later(()=>{if(suspended)return;appSound('PACK-005',{volume:.5,rate:1+i*.02,gap:0});if(i===0||i===n-1||i%3===0)haptic('pack-land');},i*gap+fly-40);});
    // Rotating or unfolding mid-deal moves the layout away from the pack's old place: the torn pack just goes.
    const dropGhost=()=>ghost.remove();addEventListener('resize',dropGhost,{once:true});
    ghost.animate([{transform:'none',opacity:1},{transform:'none',opacity:1,offset:Math.min(.8,(n*gap)/(last+260))},{transform:'translateY(36%) scale(.9)',opacity:0}],{duration:last+260,easing:'cubic-bezier(.45,0,.55,1)',fill:'forwards'}).finished.catch(()=>{}).then(()=>{removeEventListener('resize',dropGhost);ghost.remove();});
@@ -376,7 +379,7 @@ export function openPackPreview({game,set,cards,complete=false,featured=null,hyd
    // A tap during the deal skips it, as in Arena: every card lands at once and the big card comes up.
    skipDeal=()=>{skipDeal=null;for(const b of cards)for(const a of b.getAnimations())if(!(a instanceof CSSAnimation))a.finish();for(const a of ghost.getAnimations())a.finish();landed();};
    later(()=>{skipDeal=null;landed();},last);};
-  haptic('pack-tear');
+  haptic('pack-tear');appSound('PACK-004');
   if(reduce()){done();return;}w.classList.add('tearing');later(done,440);};
  // Turning a card over: it lifts off the table as it flips and settles back down.
  const flipLift=(el,lift)=>{if(reduce()||!el?.animate)return;el.animate([{translate:'0 0',rotate:'0deg'},{translate:`0 ${-lift}%`,rotate:'-1.5deg',offset:.42},{translate:'0 0',rotate:'0deg'}],{duration:560,easing:'cubic-bezier(.3,.7,.3,1)',composite:'add'});};
@@ -447,7 +450,7 @@ export function openPackPreview({game,set,cards,complete=false,featured=null,hyd
   if(action==='reveal')return reveal(i);
   if(action==='focus'){if(swipe?.moved){swipe=null;return;}swipe=null;if(!revealed.has(focus))return reveal(focus);return inspect(focus);}
   // Reveal All is one moment: a single feel for the best newly revealed pull, not every card's at once.
-  if(action==='reveal-all'){const order=['pack-reveal','pack-value-2','pack-value-3','pack-value-4'];let best=-1;picks.forEach((_,j)=>{if(!revealed.has(j)){best=Math.max(best,order.indexOf(feelOf(j)));reveal(j,{silent:true});}});if(best>=0)haptic(order[best]);show(Math.floor(picks.length/2));return;}
+  if(action==='reveal-all'){const order=['pack-reveal','pack-value-2','pack-value-3','pack-value-4'];let best=-1;picks.forEach((_,j)=>{if(!revealed.has(j)){best=Math.max(best,order.indexOf(feelOf(j)));reveal(j,{silent:true});}});if(best>=0){haptic(order[best]);appSound(PACK_SOUND[order[best]]);}show(Math.floor(picks.length/2));return;}
   // A new pack is a new sealed pack: it waits to be torn open, rather than dealing straight away.
   if(action==='again'){quiet();opening=false;picks=draw();ctxs=packFinishes(game,picks);fill();revealed=new Set();dialog.classList.remove('pack-done','pack-dealt');handEl.innerHTML=hand();wireHold();for(const x of dialog.querySelectorAll('[data-pack="copy"],[data-pack="wish"],[data-pack="buy"]'))x.disabled=true;status.textContent='';
    dialog.querySelector('.pack-content').hidden=true;const sealed=dialog.querySelector('.pack-sealed');sealed.hidden=false;sealed.querySelector('.pack-wrapper')?.classList.remove('tearing');sealed.querySelector('.pack-wrapper')?.focus({preventScroll:true});return;}
