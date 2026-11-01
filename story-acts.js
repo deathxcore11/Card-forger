@@ -26,6 +26,9 @@ export const STORY_ACTS = [
   {act: 8, age: 'The Weatherlight Saga', title: 'The Invasion', years: '2000 to 2001',
     sets: ['inv', 'pls', '7ed', 'apc'], landSet: 'inv', packSets: ['inv', 'pls', 'apc'],
     art: {set: 'inv', number: '135', name: "Yawgmoth's Agenda", crop: 'https://cards.scryfall.io/art_crop/front/5/0/50f7ea7f-4f17-4f78-b68e-693e265ca829.jpg'}},
+  {act: 9, age: 'The Otaria Years', title: 'The Mirari', years: '2001 to 2002',
+    sets: ['ody', 'tor', 'jud'], landSet: 'ody', packSets: ['ody', 'tor', 'jud'],
+    art: {set: 'ody', number: '303', name: 'Mirari', crop: 'https://cards.scryfall.io/art_crop/front/3/c/3cbaad4f-fb66-4e56-b383-32f55552c8b2.jpg'}},
 ];
 export const SET_NAMES = {lea: 'Limited Edition Alpha', leb: 'Limited Edition Beta', '2ed': 'Unlimited Edition', arn: 'Arabian Nights', atq: 'Antiquities',
   '3ed': 'Revised Edition', leg: 'Legends', drk: 'The Dark', fem: 'Fallen Empires', ice: 'Ice Age', hml: 'Homelands', all: 'Alliances', '4ed': 'Fourth Edition',
@@ -33,6 +36,7 @@ export const SET_NAMES = {lea: 'Limited Edition Alpha', leb: 'Limited Edition Be
   wth: 'Weatherlight', tmp: 'Tempest', sth: 'Stronghold', exo: 'Exodus',
   usg: "Urza's Saga", ulg: "Urza's Legacy", uds: "Urza's Destiny", '6ed': 'Classic Sixth Edition',
   mmq: 'Mercadian Masques', nem: 'Nemesis', pcy: 'Prophecy',
-  inv: 'Invasion', pls: 'Planeshift', '7ed': 'Seventh Edition', apc: 'Apocalypse'};
+  inv: 'Invasion', pls: 'Planeshift', '7ed': 'Seventh Edition', apc: 'Apocalypse',
+  ody: 'Odyssey', tor: 'Torment', jud: 'Judgment'};
 export const storyAct = n => STORY_ACTS.find(a => a.act === Number(n)) || null;
 export const setSymbolUrl = code => `https://svgs.scryfall.io/sets/${encodeURIComponent(code)}.svg`;

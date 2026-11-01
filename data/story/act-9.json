@@ -1,0 +1,2490 @@
+{
+ "act": 9,
+ "title": "The Mirari",
+ "years": "2001 to 2002",
+ "sets": [
+  "ody",
+  "tor",
+  "jud"
+ ],
+ "landSet": "ody",
+ "intro": [
+  {
+   "who": "stage",
+   "line": "A hundred years after the Phyrexians. Dominaria has scars where whole nations used to be."
+  },
+  {
+   "who": "stage",
+   "line": "On the continent of Otaria, the Cabal runs the pits. People bet on who bleeds."
+  },
+  {
+   "who": "stage",
+   "line": "The crowd roared, the fighters bled, and the dead piled high in the pits. Only the Cabal could win.",
+   "quote": true
+  },
+  {
+   "who": "kamahl",
+   "line": "Tonight's prize is a silver ball nobody can explain. I don't need to understand it. I just need to win it."
+  },
+  {
+   "who": "braids",
+   "line": "It offers you what you want, not what you need.",
+   "quote": true
+  }
+ ],
+ "finale": [
+  {
+   "who": "stage",
+   "line": "Krosa, the great forest. Kamahl carries the Mirari into its heart, his sister's blood still on his hands."
+  },
+  {
+   "who": "kamahl",
+   "line": "Everyone who touched it wanted more. I wanted more."
+  },
+  {
+   "who": "kamahl",
+   "line": "Jeska wanted me to stop. I did not stop."
+  },
+  {
+   "who": "seton",
+   "line": "Then put it down, Kamahl. Give it to the forest. Let something grow from it."
+  },
+  {
+   "who": "stage",
+   "line": "He drives the Mirari into the ground like a sword."
+  },
+  {
+   "who": "stage",
+   "line": "The Mirari's magic transformed the Krosan Forest—and its inhabitants.",
+   "quote": true
+  },
+  {
+   "who": "stage",
+   "line": "The trees grow in an hour what should take a thousand years. Something old is waking in Krosa."
+  },
+  {
+   "who": "stage",
+   "line": "Far away, the Cabal carries Jeska into a room with no windows. She is still breathing."
+  }
+ ],
+ "villainFinale": [
+  {
+   "who": "stage",
+   "line": "The Cabal vault. The Mirari pulses like a dead sun."
+  },
+  {
+   "who": "patriarch",
+   "line": "Each syllable chills your veins. Each word rattles your mind.",
+   "quote": true
+  },
+  {
+   "who": "patriarch",
+   "line": "The barbarian thinks he lost his sister. He lost nothing. We found her."
+  },
+  {
+   "who": "patriarch",
+   "line": "Bring the girl. Bring the Mirari. We will make something the Order will kneel to."
+  },
+  {
+   "who": "braids",
+   "line": "And if it wakes up angry?"
+  },
+  {
+   "who": "patriarch",
+   "line": "Then she will be very useful."
+  },
+  {
+   "who": "stage",
+   "line": "The Mirari was never anyone's. It only wanted to be found."
+  }
+ ],
+ "vibe": "otarian-pit-fights-dementia",
+ "cast": {
+  "you": {
+   "name": "You",
+   "title": "Planeswalker",
+   "portrait": {
+    "card": "Careful Study",
+    "set": "ody",
+    "number": "70",
+    "id": "dea15b53-2940-40e7-8d48-8ec11341da83",
+    "crop": "https://cards.scryfall.io/art_crop/front/d/e/dea15b53-2940-40e7-8d48-8ec11341da83.jpg?1783945264",
+    "artist": "Scott M. Fischer",
+    "focus": "50% 30%"
+   }
+  },
+  "kamahl": {
+   "name": "Kamahl",
+   "title": "Pit Fighter",
+   "portrait": {
+    "card": "Kamahl, Pit Fighter",
+    "set": "ody",
+    "number": "198",
+    "id": "ee88c776-85f1-4beb-a814-f706f5c4f341",
+    "crop": "https://cards.scryfall.io/art_crop/front/e/e/ee88c776-85f1-4beb-a814-f706f5c4f341.jpg?1783945229",
+    "artist": "Kev Walker",
+    "focus": "50% 25%"
+   }
+  },
+  "jeska": {
+   "name": "Jeska",
+   "title": "Warrior Adept",
+   "portrait": {
+    "card": "Jeska, Warrior Adept",
+    "set": "jud",
+    "number": "93",
+    "id": "1cf96a59-8b7d-4a5b-adfd-17eeedd95db5",
+    "crop": "https://cards.scryfall.io/art_crop/front/1/c/1cf96a59-8b7d-4a5b-adfd-17eeedd95db5.jpg?1783945117",
+    "artist": "rk post",
+    "focus": "50% 25%"
+   }
+  },
+  "seton": {
+   "name": "Seton",
+   "title": "Centaur Druid",
+   "portrait": {
+    "card": "Seton, Krosan Protector",
+    "set": "ody",
+    "number": "267",
+    "id": "641a3bae-9146-4e70-862a-86a56f7c3816",
+    "crop": "https://cards.scryfall.io/art_crop/front/6/4/641a3bae-9146-4e70-862a-86a56f7c3816.jpg?1783945212",
+    "artist": "Greg Staples",
+    "focus": "50% 25%"
+   }
+  },
+  "teroh": {
+   "name": "Teroh",
+   "title": "Major of the Order",
+   "portrait": {
+    "card": "Major Teroh",
+    "set": "tor",
+    "number": "8",
+    "id": "3229ca5a-5340-48b8-bd46-b0b924c8faf7",
+    "crop": "https://cards.scryfall.io/art_crop/front/3/2/3229ca5a-5340-48b8-bd46-b0b924c8faf7.jpg?1783945169",
+    "artist": "Daren Bader",
+    "focus": "50% 25%"
+   }
+  },
+  "collector": {
+   "name": "The Nut Collector",
+   "title": "Krosan Hermit",
+   "portrait": {
+    "card": "Nut Collector",
+    "set": "ody",
+    "number": "259",
+    "id": "f4eec210-5df0-4fb8-8eb1-e616d9995acc",
+    "crop": "https://cards.scryfall.io/art_crop/front/f/4/f4eec210-5df0-4fb8-8eb1-e616d9995acc.jpg?1783945213",
+    "artist": "Christopher Moeller",
+    "focus": "50% 30%"
+   }
+  },
+  "torturer": {
+   "name": "Cabal Torturer",
+   "title": "Pit Champion",
+   "portrait": {
+    "card": "Cabal Torturer",
+    "set": "tor",
+    "number": "53",
+    "id": "ebcf8dd7-f45c-4ac2-9507-fa175fe89887",
+    "crop": "https://cards.scryfall.io/art_crop/front/e/b/ebcf8dd7-f45c-4ac2-9507-fa175fe89887.jpg?1783945158",
+    "artist": "Pete Venters",
+    "focus": "50% 30%"
+   }
+  },
+  "surgeon": {
+   "name": "Cabal Surgeon",
+   "title": "Recruiter",
+   "portrait": {
+    "card": "Cabal Surgeon",
+    "set": "tor",
+    "number": "52",
+    "id": "29ce55a2-d838-48ab-862e-d419b0cda3c9",
+    "crop": "https://cards.scryfall.io/art_crop/front/2/9/29ce55a2-d838-48ab-862e-d419b0cda3c9.jpg?1783945159",
+    "artist": "Donato Giancola",
+    "focus": "50% 30%"
+   }
+  },
+  "robber": {
+   "name": "Cabal Grave Robber",
+   "title": "Small Businessman",
+   "portrait": {
+    "card": "Decompose",
+    "set": "ody",
+    "number": "128",
+    "id": "916fb8a8-f402-4ef6-8a6b-8fc591e04367",
+    "crop": "https://cards.scryfall.io/art_crop/front/9/1/916fb8a8-f402-4ef6-8a6b-8fc591e04367.jpg?1783945248",
+    "artist": "Tony Szczudlo",
+    "focus": "50% 30%"
+   }
+  },
+  "chainer": {
+   "name": "Chainer",
+   "title": "Dementia Master",
+   "portrait": {
+    "card": "Chainer, Dementia Master",
+    "set": "tor",
+    "number": "56",
+    "id": "40342b11-1005-4ccc-bef4-9ea4c640b048",
+    "crop": "https://cards.scryfall.io/art_crop/front/4/0/40342b11-1005-4ccc-bef4-9ea4c640b048.jpg?1783945158",
+    "artist": "Mark Zug",
+    "focus": "50% 25%"
+   }
+  },
+  "laquatus": {
+   "name": "Laquatus",
+   "title": "Cephalid Ambassador",
+   "portrait": {
+    "card": "Ambassador Laquatus",
+    "set": "tor",
+    "number": "23",
+    "id": "887cac61-2001-4bd1-aeeb-20149ebc5856",
+    "crop": "https://cards.scryfall.io/art_crop/front/8/8/887cac61-2001-4bd1-aeeb-20149ebc5856.jpg?1783945165",
+    "artist": "Eric Peterson",
+    "focus": "50% 30%"
+   }
+  },
+  "braids": {
+   "name": "Braids",
+   "title": "Dementia Summoner",
+   "portrait": {
+    "card": "Braids, Cabal Minion",
+    "set": "ody",
+    "number": "117",
+    "id": "4dcdcad5-e4fb-480e-984f-1ac5cdc986b9",
+    "crop": "https://cards.scryfall.io/art_crop/front/4/d/4dcdcad5-e4fb-480e-984f-1ac5cdc986b9.jpg?1783945253",
+    "artist": "Eric Peterson",
+    "focus": "50% 25%"
+   }
+  },
+  "patriarch": {
+   "name": "The Patriarch",
+   "title": "Head of the Cabal",
+   "portrait": {
+    "card": "Cabal Patriarch",
+    "set": "ody",
+    "number": "120",
+    "id": "0d2f0da3-a13e-4a45-98dc-6227cf952a5e",
+    "artist": "Mark Zug",
+    "crop": "https://cards.scryfall.io/art_crop/front/0/d/0d2f0da3-a13e-4a45-98dc-6227cf952a5e.jpg",
+    "focus": "50% 25%"
+   }
+  }
+ },
+ "battles": [
+  {
+   "id": "a9b1",
+   "slot": 1,
+   "kind": "Arrival",
+   "mood": "tension",
+   "title": "The Pit Fights",
+   "difficulty": "Easy",
+   "teaches": [
+    "Combat math"
+   ],
+   "blurb": "Kamahl is a barbarian from the mountains who fights in the Cabal's pits for coin. Tonight the prize is the Mirari. The Cabal's champion has never lost.",
+   "rewardSet": "ody",
+   "host": false,
+   "hero": {
+    "who": "kamahl",
+    "deck": {
+     "name": "The Pit Fighter",
+     "colors": "R",
+     "archetype": null,
+     "cards": [
+      {
+       "qty": 2,
+       "name": "Kamahl, Pit Fighter",
+       "set": "ody",
+       "number": "198",
+       "id": "ee88c776-85f1-4beb-a814-f706f5c4f341"
+      },
+      {
+       "qty": 4,
+       "name": "Barbarian Lunatic",
+       "set": "ody",
+       "number": "175",
+       "id": "6c899f9b-ebce-4424-9cd9-861a50a5f7d2"
+      },
+      {
+       "qty": 4,
+       "name": "Dwarven Grunt",
+       "set": "ody",
+       "number": "185",
+       "id": "6f00d726-4289-48ff-8c14-6a5080a00fda"
+      },
+      {
+       "qty": 4,
+       "name": "Halberdier",
+       "set": "ody",
+       "number": "196",
+       "id": "b69dfc05-51ba-4798-ac00-1e9b8bbbf280"
+      },
+      {
+       "qty": 4,
+       "name": "Minotaur Explorer",
+       "set": "ody",
+       "number": "206",
+       "id": "55725e38-d60a-41a2-93b0-2eefe6d2cc59"
+      },
+      {
+       "qty": 4,
+       "name": "Pardic Firecat",
+       "set": "ody",
+       "number": "211",
+       "id": "16858395-c742-4657-88c2-5af20c92718d"
+      },
+      {
+       "qty": 4,
+       "name": "Ember Beast",
+       "set": "ody",
+       "number": "190",
+       "id": "25080720-612f-40c0-8894-cda8e3e8afb8"
+      },
+      {
+       "qty": 4,
+       "name": "Longhorn Firebeast",
+       "set": "tor",
+       "number": "103",
+       "id": "bf0dcf33-8d3f-429c-8ad8-a65d07d7c790"
+      },
+      {
+       "qty": 2,
+       "name": "Balthor the Stout",
+       "set": "tor",
+       "number": "91",
+       "id": "e81ecdc5-d2c7-4292-9b59-fd6bf3ba29d5"
+      },
+      {
+       "qty": 4,
+       "name": "Firebolt",
+       "set": "ody",
+       "number": "193",
+       "id": "d5e45005-dd81-4d80-b043-02f719aca929"
+      },
+      {
+       "qty": 24,
+       "name": "Mountain",
+       "set": "ody",
+       "number": "343",
+       "id": "3c22765e-a131-4be6-ba48-64b84564ea51"
+      }
+     ]
+    }
+   },
+   "villain": {
+    "who": "torturer",
+    "deck": {
+     "name": "The House Champion",
+     "colors": "B",
+     "archetype": null,
+     "cards": [
+      {
+       "qty": 4,
+       "name": "Cabal Torturer",
+       "set": "tor",
+       "number": "53",
+       "id": "ebcf8dd7-f45c-4ac2-9507-fa175fe89887"
+      },
+      {
+       "qty": 4,
+       "name": "Zombie Cannibal",
+       "set": "ody",
+       "number": "169",
+       "id": "5fe73ea4-caa2-41de-a065-272a4d850362"
+      },
+      {
+       "qty": 4,
+       "name": "Dirty Wererat",
+       "set": "ody",
+       "number": "130",
+       "id": "97d15534-310f-4f9d-be0d-59b0ed8a5f53"
+      },
+      {
+       "qty": 4,
+       "name": "Filthy Cur",
+       "set": "ody",
+       "number": "136",
+       "id": "634b2b46-b213-4eb0-81d8-0e9dd161b85f"
+      },
+      {
+       "qty": 4,
+       "name": "Gravegouger",
+       "set": "tor",
+       "number": "62",
+       "id": "acfcd559-374e-4e6f-9333-2e5c855abff5"
+      },
+      {
+       "qty": 4,
+       "name": "Infected Vermin",
+       "set": "ody",
+       "number": "144",
+       "id": "00615487-3526-4b4c-bb06-8f2af1f101d0"
+      },
+      {
+       "qty": 4,
+       "name": "Skull Fracture",
+       "set": "ody",
+       "number": "162",
+       "id": "93e3c013-319f-4a77-a55e-11323468b8ea"
+      },
+      {
+       "qty": 4,
+       "name": "Ghastly Demise",
+       "set": "ody",
+       "number": "139",
+       "id": "d9d2bfa3-0499-43ea-a76d-b12fddbc104e"
+      },
+      {
+       "qty": 4,
+       "name": "Organ Grinder",
+       "set": "tor",
+       "number": "75",
+       "id": "6233d4c3-9407-41b0-92a9-5f90dfd6a584"
+      },
+      {
+       "qty": 24,
+       "name": "Swamp",
+       "set": "ody",
+       "number": "339",
+       "id": "276b18fb-66cb-4dc0-9c67-60cee1502c7f"
+      }
+     ]
+    }
+   },
+   "reward": {
+    "hero": {
+     "packs": 1,
+     "coins": 0
+    },
+    "villain": {
+     "card": {
+      "oracle_id": "fbd295ee-545a-4eab-b000-c0b228dd412d",
+      "name": "Cabal Torturer",
+      "rarity": "common",
+      "set": "tor",
+      "id": "ebcf8dd7-f45c-4ac2-9507-fa175fe89887",
+      "image": "https://cards.scryfall.io/normal/front/e/b/ebcf8dd7-f45c-4ac2-9507-fa175fe89887.jpg"
+     },
+     "coins": 50
+    }
+   },
+   "scene": [
+    {
+     "who": "kamahl",
+     "line": "Pain teaches lessons no scholar can.",
+     "quote": true
+    },
+    {
+     "who": "torturer",
+     "line": "The barbarian. Twelve wins. The house says thirteen is unlucky."
+    },
+    {
+     "who": "kamahl",
+     "line": "True strength lies in action. Let the weak react to me.",
+     "quote": true
+    },
+    {
+     "who": "jeska",
+     "line": "Count before you swing, brother. Their power against your toughness. Every attack is arithmetic."
+    },
+    {
+     "who": "kamahl",
+     "line": "I'm counting. One of us goes home."
+    }
+   ],
+   "villainScene": [
+    {
+     "who": "torturer",
+     "line": "The Cabal feeds me, houses me, heals me between bouts."
+    },
+    {
+     "who": "torturer",
+     "line": "All I have to do is win. And when I lose, I will be fed to the next one."
+    },
+    {
+     "who": "torturer",
+     "line": "The Cabal offers power to anyone willing to take it. I took it. Look where it got me."
+    }
+   ],
+   "after": [
+    {
+     "who": "stage",
+     "line": "Kamahl takes the Mirari from the pit floor. It is warm in his hand, and it hums."
+    },
+    {
+     "who": "stage",
+     "line": "Deep within the Cabal's vault, the Mirari pulsed like a dead sun—and its darkness radiated across Otaria.",
+     "quote": true
+    },
+    {
+     "who": "stage",
+     "line": "By morning, the Cabal, the Order and the cephalids of the sea all know his name."
+    }
+   ],
+   "cues": {
+    "hero": {
+     "start": "Ring the bell.",
+     "big": "Now you see it.",
+     "low": "Still standing... still standing...",
+     "win": "Thirteen.",
+     "loss": "Get me out of the pit, Jeska.",
+     "half": "Arithmetic. Right."
+    },
+    "villain": {
+     "start": "The house always wins.",
+     "big": "The crowd loves this one.",
+     "low": "The house... is losing...",
+     "win": "Feed him to the next one.",
+     "loss": "Nobody remembers the twelfth win."
+    }
+   },
+   "bigPlays": [],
+   "sim": null
+  },
+  {
+   "id": "a9b2",
+   "slot": 2,
+   "kind": "Lesson",
+   "mood": "march",
+   "title": "Krosa's Keepers",
+   "difficulty": "Easy",
+   "teaches": [
+    "Threshold"
+   ],
+   "blurb": "Seton is a centaur druid who guards the Krosan Forest. The Cabal is recruiting at its edge, offering power to anyone who will take it. Seton's beasts get stronger as the battle goes on.",
+   "rewardSet": "ody",
+   "host": false,
+   "hero": {
+    "who": "seton",
+    "deck": {
+     "name": "Seton's Grove",
+     "colors": "G",
+     "archetype": null,
+     "cards": [
+      {
+       "qty": 4,
+       "name": "Werebear",
+       "set": "ody",
+       "number": "282",
+       "id": "964cf7e3-932d-432f-8ad4-9bd651aada96"
+      },
+      {
+       "qty": 4,
+       "name": "Krosan Avenger",
+       "set": "ody",
+       "number": "247",
+       "id": "0afd6911-32b5-410a-afb0-fd3d2996fe59"
+      },
+      {
+       "qty": 4,
+       "name": "Nimble Mongoose",
+       "set": "ody",
+       "number": "258",
+       "id": "99e5ecf5-a662-4df0-a6ba-9177c62b6503"
+      },
+      {
+       "qty": 4,
+       "name": "Centaur Chieftain",
+       "set": "tor",
+       "number": "122",
+       "id": "a8fa0a57-e7eb-454e-9527-3db702b54935"
+      },
+      {
+       "qty": 4,
+       "name": "Krosan Beast",
+       "set": "ody",
+       "number": "248",
+       "id": "af822507-fd4c-454b-ab07-106c81c535bf"
+      },
+      {
+       "qty": 4,
+       "name": "Seton's Scout",
+       "set": "tor",
+       "number": "138",
+       "id": "732bf7bb-5326-4742-8311-96ddbfe14b38"
+      },
+      {
+       "qty": 2,
+       "name": "Seton, Krosan Protector",
+       "set": "ody",
+       "number": "267",
+       "id": "641a3bae-9146-4e70-862a-86a56f7c3816"
+      },
+      {
+       "qty": 4,
+       "name": "Call of the Herd",
+       "set": "ody",
+       "number": "231",
+       "id": "429a88cc-53db-4c5e-a061-f0f49a38c675"
+      },
+      {
+       "qty": 4,
+       "name": "Muscle Burst",
+       "set": "ody",
+       "number": "252",
+       "id": "217dada5-7ffc-488b-8062-34c034906ea9"
+      },
+      {
+       "qty": 2,
+       "name": "Roar of the Wurm",
+       "set": "ody",
+       "number": "266",
+       "id": "ddf54317-4c08-4a66-9fd2-9983384e2374"
+      },
+      {
+       "qty": 24,
+       "name": "Forest",
+       "set": "ody",
+       "number": "347",
+       "id": "73029d4b-f073-4df0-a6cc-8014284a1ced"
+      }
+     ]
+    }
+   },
+   "villain": {
+    "who": "surgeon",
+    "deck": {
+     "name": "The Cabal's Offer",
+     "colors": "B",
+     "archetype": null,
+     "cards": [
+      {
+       "qty": 4,
+       "name": "Cabal Surgeon",
+       "set": "tor",
+       "number": "52",
+       "id": "29ce55a2-d838-48ab-862e-d419b0cda3c9"
+      },
+      {
+       "qty": 4,
+       "name": "Childhood Horror",
+       "set": "ody",
+       "number": "123",
+       "id": "10c180ea-2d1e-458e-b5d4-e87975eba968"
+      },
+      {
+       "qty": 4,
+       "name": "Frightcrawler",
+       "set": "ody",
+       "number": "138",
+       "id": "d79129e7-6cc4-4060-8b76-3afbd2e0d456"
+      },
+      {
+       "qty": 4,
+       "name": "Bloodcurdler",
+       "set": "ody",
+       "number": "116",
+       "id": "dd1452ff-cec6-4df3-8bdc-bfb7869553a1"
+      },
+      {
+       "qty": 4,
+       "name": "Mortivore",
+       "set": "ody",
+       "number": "152",
+       "id": "fdc0d499-4a22-4f33-83c7-4e8cdbc3ebe6"
+      },
+      {
+       "qty": 4,
+       "name": "Grotesque Hybrid",
+       "set": "tor",
+       "number": "63",
+       "id": "6b063c3a-267f-4f22-be51-0a14880afc24"
+      },
+      {
+       "qty": 4,
+       "name": "Execute",
+       "set": "ody",
+       "number": "133",
+       "id": "333123bc-fb66-4b5a-bf55-045d2906c8c3"
+      },
+      {
+       "qty": 4,
+       "name": "Afflict",
+       "set": "ody",
+       "number": "115",
+       "id": "0012621b-c0e1-48d6-99b9-ecca4763d748"
+      },
+      {
+       "qty": 4,
+       "name": "Cabal Ritual",
+       "set": "tor",
+       "number": "51",
+       "id": "5403b49d-03a7-4cc3-af3c-df098c1c9c2e"
+      },
+      {
+       "qty": 24,
+       "name": "Swamp",
+       "set": "ody",
+       "number": "339",
+       "id": "276b18fb-66cb-4dc0-9c67-60cee1502c7f"
+      }
+     ]
+    }
+   },
+   "reward": {
+    "hero": {
+     "packs": 1,
+     "coins": 0
+    },
+    "villain": {
+     "card": {
+      "oracle_id": "5528d0f1-4774-419f-ba1e-b2abdbce8735",
+      "name": "Cabal Surgeon",
+      "rarity": "common",
+      "set": "tor",
+      "id": "29ce55a2-d838-48ab-862e-d419b0cda3c9",
+      "image": "https://cards.scryfall.io/normal/front/2/9/29ce55a2-d838-48ab-862e-d419b0cda3c9.jpg"
+     },
+     "coins": 50
+    }
+   },
+   "scene": [
+    {
+     "who": "seton",
+     "line": "Nature is the endless dance between life and death.",
+     "quote": true
+    },
+    {
+     "who": "surgeon",
+     "line": "Such a big forest. Such a lot of bodies to work with."
+    },
+    {
+     "who": "surgeon",
+     "line": "We offer power to anyone willing to take it.",
+     "quote": true
+    },
+    {
+     "who": "seton",
+     "line": "True strength comes from within. The false promise of unnatural power only incurs Krosa's wrath.",
+     "quote": true
+    },
+    {
+     "who": "seton",
+     "line": "Threshold: once seven cards are in your graveyard, my beasts grow. The longer we fight, the stronger the forest gets."
+    }
+   ],
+   "villainScene": [
+    {
+     "who": "surgeon",
+     "line": "The Order calls us monsters. The Order also lets its poor starve."
+    },
+    {
+     "who": "surgeon",
+     "line": "The Cabal pays. The Cabal heals. The Cabal only asks for a little of you in return."
+    },
+    {
+     "who": "surgeon",
+     "line": "Every corpse in that forest is a recruit who has not signed yet."
+    }
+   ],
+   "after": [
+    {
+     "who": "seton",
+     "line": "Don't dismiss its anger as mindless fury. I assure you, it has purpose.",
+     "quote": true
+    }
+   ],
+   "cues": {
+    "hero": {
+     "start": "Krosa wakes.",
+     "big": "The herd answers.",
+     "low": "Even the trees are bleeding...",
+     "win": "Go back to your pits.",
+     "loss": "Krosa will remember this.",
+     "half": "Seven cards. Now the forest fights."
+    },
+    "villain": {
+     "start": "Sign here.",
+     "big": "A fine specimen.",
+     "low": "My patients... are leaving...",
+     "win": "Another recruit for the pits.",
+     "loss": "The offer stands."
+    }
+   },
+   "bigPlays": [],
+   "sim": null
+  },
+  {
+   "id": "a9b3",
+   "slot": 3,
+   "kind": "Lesson",
+   "mood": "comic",
+   "title": "Keep an Eye on the Squirrels",
+   "difficulty": "Easy",
+   "teaches": [
+    "Flashback"
+   ],
+   "blurb": "A Cabal grave robber has come to Krosa to dig up the dead. The forest's oldest hermit and his squirrels have opinions about that. The dead stay buried. The squirrels keep coming back.",
+   "rewardSet": "ody",
+   "host": false,
+   "hero": {
+    "who": "collector",
+    "deck": {
+     "name": "The Squirrels of Krosa",
+     "colors": "G",
+     "archetype": null,
+     "cards": [
+      {
+       "qty": 4,
+       "name": "Nut Collector",
+       "set": "ody",
+       "number": "259",
+       "id": "f4eec210-5df0-4fb8-8eb1-e616d9995acc"
+      },
+      {
+       "qty": 4,
+       "name": "Squirrel Mob",
+       "set": "ody",
+       "number": "273",
+       "id": "181254ce-259a-4b31-8937-728564f2baf3"
+      },
+      {
+       "qty": 4,
+       "name": "Squirrel Nest",
+       "set": "ody",
+       "number": "274",
+       "id": "22eccb27-1723-4c5a-96b8-85e6e5739c30"
+      },
+      {
+       "qty": 4,
+       "name": "Chatter of the Squirrel",
+       "set": "ody",
+       "number": "233",
+       "id": "84273844-7fab-4ff7-afb3-c82153132daf"
+      },
+      {
+       "qty": 4,
+       "name": "Acorn Harvest",
+       "set": "tor",
+       "number": "118",
+       "id": "32987720-cc0c-416b-b79b-217d3b37542d"
+      },
+      {
+       "qty": 4,
+       "name": "Druid Lyrist",
+       "set": "ody",
+       "number": "238",
+       "id": "e9923532-bc4f-44de-b963-d6914321c49a"
+      },
+      {
+       "qty": 4,
+       "name": "Krosan Wayfarer",
+       "set": "jud",
+       "number": "123",
+       "id": "5356e684-c2fc-465e-a16c-7300824d2a8d"
+      },
+      {
+       "qty": 4,
+       "name": "Elephant Ambush",
+       "set": "ody",
+       "number": "240",
+       "id": "b4abdf1c-a0a9-4e1d-b448-58742830f767"
+      },
+      {
+       "qty": 4,
+       "name": "Muscle Burst",
+       "set": "ody",
+       "number": "252",
+       "id": "217dada5-7ffc-488b-8062-34c034906ea9"
+      },
+      {
+       "qty": 24,
+       "name": "Forest",
+       "set": "ody",
+       "number": "347",
+       "id": "73029d4b-f073-4df0-a6cc-8014284a1ced"
+      }
+     ]
+    }
+   },
+   "villain": {
+    "who": "robber",
+    "deck": {
+     "name": "Cabal Grave Robbers",
+     "colors": "B",
+     "archetype": null,
+     "cards": [
+      {
+       "qty": 4,
+       "name": "Gravedigger",
+       "set": "ody",
+       "number": "140",
+       "id": "c92e67ef-d1e9-427f-827b-d07e06126821"
+      },
+      {
+       "qty": 4,
+       "name": "Zombie Cannibal",
+       "set": "ody",
+       "number": "169",
+       "id": "5fe73ea4-caa2-41de-a065-272a4d850362"
+      },
+      {
+       "qty": 4,
+       "name": "Morgue Theft",
+       "set": "ody",
+       "number": "151",
+       "id": "937465ca-4cf7-4412-86eb-264efb0fdddd"
+      },
+      {
+       "qty": 4,
+       "name": "Decompose",
+       "set": "ody",
+       "number": "128",
+       "id": "916fb8a8-f402-4ef6-8a6b-8fc591e04367"
+      },
+      {
+       "qty": 4,
+       "name": "Gravegouger",
+       "set": "tor",
+       "number": "62",
+       "id": "acfcd559-374e-4e6f-9333-2e5c855abff5"
+      },
+      {
+       "qty": 4,
+       "name": "Dusk Imp",
+       "set": "ody",
+       "number": "131",
+       "id": "f67943c0-304a-4d04-8e26-f45b3ab27a45"
+      },
+      {
+       "qty": 4,
+       "name": "Fledgling Imp",
+       "set": "ody",
+       "number": "137",
+       "id": "d11770ee-dcf0-4dd4-ab43-b98f1133cec7"
+      },
+      {
+       "qty": 4,
+       "name": "Skull Fracture",
+       "set": "ody",
+       "number": "162",
+       "id": "93e3c013-319f-4a77-a55e-11323468b8ea"
+      },
+      {
+       "qty": 4,
+       "name": "Ghastly Demise",
+       "set": "ody",
+       "number": "139",
+       "id": "d9d2bfa3-0499-43ea-a76d-b12fddbc104e"
+      },
+      {
+       "qty": 24,
+       "name": "Swamp",
+       "set": "ody",
+       "number": "339",
+       "id": "276b18fb-66cb-4dc0-9c67-60cee1502c7f"
+      }
+     ]
+    }
+   },
+   "reward": {
+    "hero": {
+     "packs": 1,
+     "coins": 0
+    },
+    "villain": {
+     "card": {
+      "oracle_id": "12c2b6bb-05f8-4291-b9a5-c4ddb7a69b9e",
+      "name": "Decompose",
+      "rarity": "uncommon",
+      "set": "ody",
+      "id": "916fb8a8-f402-4ef6-8a6b-8fc591e04367",
+      "image": "https://cards.scryfall.io/normal/front/9/1/916fb8a8-f402-4ef6-8a6b-8fc591e04367.jpg"
+     },
+     "coins": 50
+    }
+   },
+   "scene": [
+    {
+     "who": "stage",
+     "line": "In the Krosan Forest, you've got to keep an eye out for the squirrels.",
+     "quote": true
+    },
+    {
+     "who": "robber",
+     "line": "Sheesh! How am I supposed to make a decent living around here?",
+     "quote": true
+    },
+    {
+     "who": "collector",
+     "line": "The dead are ours. The nuts are ours. The whole forest is ours, and it is not for sale."
+    },
+    {
+     "who": "robber",
+     "line": "Look, pal, I've got a quota. Six skeletons by Thursday."
+    },
+    {
+     "who": "collector",
+     "line": "Flashback lets a spell come back from the graveyard for its other cost. Squirrels are like that too."
+    }
+   ],
+   "villainScene": [
+    {
+     "who": "robber",
+     "line": "The Cabal pays by the bone. Good bones. Clean bones."
+    },
+    {
+     "who": "robber",
+     "line": "Just what I need—more competition.",
+     "quote": true
+    },
+    {
+     "who": "robber",
+     "line": "Nobody told me the squirrels were armed."
+    }
+   ],
+   "after": [
+    {
+     "who": "robber",
+     "line": "That does it—I quit!",
+     "quote": true
+    },
+    {
+     "who": "collector",
+     "line": "He will be back. They always come back. So do we."
+    }
+   ],
+   "cues": {
+    "hero": {
+     "start": "Squirrels! Positions!",
+     "big": "The Mob is here!",
+     "low": "They are digging up my acorns...",
+     "win": "And stay out of Krosa!",
+     "loss": "Regroup at the big tree!",
+     "half": "More squirrels. Always more squirrels."
+    },
+    "villain": {
+     "start": "Just passing through. With a shovel.",
+     "big": "Now that is a fine skeleton.",
+     "low": "Why are there so MANY of them?",
+     "win": "Quota met. Don't follow me.",
+     "loss": "That does it—I quit!"
+    }
+   },
+   "bigPlays": [],
+   "sim": null
+  },
+  {
+   "id": "a9b4",
+   "slot": 4,
+   "kind": "Rival",
+   "mood": "tension",
+   "title": "Chainer's Nightmares",
+   "difficulty": "Normal",
+   "teaches": [
+    "Playing against reanimation"
+   ],
+   "blurb": "Chainer, the Cabal's dementia master, took the Mirari from Kamahl. It shows him everything. He summons nightmares from his own mind, and his mind is not well.",
+   "rewardSet": "tor",
+   "host": false,
+   "hero": {
+    "who": "kamahl",
+    "deck": {
+     "name": "Kamahl's Fury",
+     "colors": "RG",
+     "archetype": null,
+     "cards": [
+      {
+       "qty": 2,
+       "name": "Kamahl, Pit Fighter",
+       "set": "ody",
+       "number": "198",
+       "id": "ee88c776-85f1-4beb-a814-f706f5c4f341"
+      },
+      {
+       "qty": 4,
+       "name": "Wild Mongrel",
+       "set": "ody",
+       "number": "283",
+       "id": "5bb8dd5c-a79a-4afc-80b2-64645bb17a34"
+      },
+      {
+       "qty": 4,
+       "name": "Werebear",
+       "set": "ody",
+       "number": "282",
+       "id": "964cf7e3-932d-432f-8ad4-9bd651aada96"
+      },
+      {
+       "qty": 4,
+       "name": "Barbarian Lunatic",
+       "set": "ody",
+       "number": "175",
+       "id": "6c899f9b-ebce-4424-9cd9-861a50a5f7d2"
+      },
+      {
+       "qty": 4,
+       "name": "Ember Beast",
+       "set": "ody",
+       "number": "190",
+       "id": "25080720-612f-40c0-8894-cda8e3e8afb8"
+      },
+      {
+       "qty": 4,
+       "name": "Centaur Chieftain",
+       "set": "tor",
+       "number": "122",
+       "id": "a8fa0a57-e7eb-454e-9527-3db702b54935"
+      },
+      {
+       "qty": 4,
+       "name": "Firebolt",
+       "set": "ody",
+       "number": "193",
+       "id": "d5e45005-dd81-4d80-b043-02f719aca929"
+      },
+      {
+       "qty": 4,
+       "name": "Call of the Herd",
+       "set": "ody",
+       "number": "231",
+       "id": "429a88cc-53db-4c5e-a061-f0f49a38c675"
+      },
+      {
+       "qty": 2,
+       "name": "Kamahl's Sledge",
+       "set": "tor",
+       "number": "102",
+       "id": "38c55518-7bdf-4a42-ae30-cd6525557a59"
+      },
+      {
+       "qty": 4,
+       "name": "Volcanic Spray",
+       "set": "ody",
+       "number": "226",
+       "id": "97daab4b-d934-4a3f-a043-f7c9c1dd32bf"
+      },
+      {
+       "qty": 12,
+       "name": "Mountain",
+       "set": "ody",
+       "number": "343",
+       "id": "3c22765e-a131-4be6-ba48-64b84564ea51"
+      },
+      {
+       "qty": 12,
+       "name": "Forest",
+       "set": "ody",
+       "number": "347",
+       "id": "73029d4b-f073-4df0-a6cc-8014284a1ced"
+      }
+     ]
+    }
+   },
+   "villain": {
+    "who": "chainer",
+    "deck": {
+     "name": "Chainer's Nightmares",
+     "colors": "B",
+     "archetype": null,
+     "cards": [
+      {
+       "qty": 2,
+       "name": "Chainer, Dementia Master",
+       "set": "tor",
+       "number": "56",
+       "id": "40342b11-1005-4ccc-bef4-9ea4c640b048"
+      },
+      {
+       "qty": 4,
+       "name": "Nantuko Shade",
+       "set": "tor",
+       "number": "74",
+       "id": "2ed9dc9c-b92b-4305-8c54-1a63f750f8d1"
+      },
+      {
+       "qty": 4,
+       "name": "Zombify",
+       "set": "ody",
+       "number": "171",
+       "id": "513a2a6f-9ae6-42cb-b75f-6b45fc35f36e"
+      },
+      {
+       "qty": 2,
+       "name": "Entomb",
+       "set": "ody",
+       "number": "132",
+       "id": "f60a2091-fb97-4f04-911b-fce9b6351044"
+      },
+      {
+       "qty": 4,
+       "name": "Gravedigger",
+       "set": "ody",
+       "number": "140",
+       "id": "c92e67ef-d1e9-427f-827b-d07e06126821"
+      },
+      {
+       "qty": 4,
+       "name": "Sengir Vampire",
+       "set": "tor",
+       "number": "80",
+       "id": "2308c0c4-7a78-4da8-8dd8-5b35b49a1896"
+      },
+      {
+       "qty": 2,
+       "name": "Laquatus's Champion",
+       "set": "tor",
+       "number": "67",
+       "id": "74a397bb-6910-4724-833d-7f2d92723e3b"
+      },
+      {
+       "qty": 4,
+       "name": "Chainer's Edict",
+       "set": "tor",
+       "number": "57",
+       "id": "014af391-3b4a-4aab-a3e9-f60e61016985"
+      },
+      {
+       "qty": 4,
+       "name": "Cabal Ritual",
+       "set": "tor",
+       "number": "51",
+       "id": "5403b49d-03a7-4cc3-af3c-df098c1c9c2e"
+      },
+      {
+       "qty": 4,
+       "name": "Mesmeric Fiend",
+       "set": "tor",
+       "number": "69",
+       "id": "b6edd4ea-c587-4d93-a675-4cdec3e0b1ca"
+      },
+      {
+       "qty": 2,
+       "name": "Zombie Assassin",
+       "set": "ody",
+       "number": "168",
+       "id": "c4649311-1300-42fb-ac10-90490756c7aa"
+      },
+      {
+       "qty": 24,
+       "name": "Swamp",
+       "set": "ody",
+       "number": "339",
+       "id": "276b18fb-66cb-4dc0-9c67-60cee1502c7f"
+      }
+     ]
+    }
+   },
+   "reward": {
+    "hero": {
+     "packs": 1,
+     "coins": 100
+    },
+    "villain": {
+     "card": {
+      "oracle_id": "cb905eb0-bb20-41c0-9695-0f5c71972561",
+      "name": "Chainer, Dementia Master",
+      "rarity": "rare",
+      "set": "tor",
+      "id": "40342b11-1005-4ccc-bef4-9ea4c640b048",
+      "image": "https://cards.scryfall.io/normal/front/4/0/40342b11-1005-4ccc-bef4-9ea4c640b048.jpg"
+     },
+     "coins": 100
+    }
+   },
+   "scene": [
+    {
+     "who": "stage",
+     "line": "Chainer dreams of ultimate knowledge.",
+     "quote": true
+    },
+    {
+     "who": "chainer",
+     "line": "They appreciate my handiwork. I hear their joy in every scream.",
+     "quote": true
+    },
+    {
+     "who": "kamahl",
+     "line": "Give it back, Chainer. It's eating you."
+    },
+    {
+     "who": "chainer",
+     "line": "It is feeding me, barbarian. There is a difference. I think."
+    },
+    {
+     "who": "kamahl",
+     "line": "He brings his dead back to fight. Kill the same thing twice if you have to. Keep his graveyard in mind."
+    }
+   ],
+   "villainScene": [
+    {
+     "who": "chainer",
+     "line": "I was a pit fighter too, once. The Cabal taught me to fight with my head."
+    },
+    {
+     "who": "chainer",
+     "line": "Now the Mirari teaches me to fight with what is inside it. It is very crowded in there."
+    },
+    {
+     "who": "chainer",
+     "line": "Power, gold, crackers—every bird has its price.",
+     "quote": true
+    }
+   ],
+   "after": [
+    {
+     "who": "stage",
+     "line": "Chainer's madness personified, it exists only to slaughter the innocent.",
+     "quote": true
+    },
+    {
+     "who": "stage",
+     "line": "Chainer burns out like a candle. The Mirari rolls out of his hand, and Kamahl picks it up again. He should not have."
+    }
+   ],
+   "cues": {
+    "hero": {
+     "start": "Give it back.",
+     "big": "That is a real beast, Chainer. Not a dream.",
+     "low": "Stay out of my head...",
+     "win": "Wake up, Chainer.",
+     "loss": "I'll get it back. I swear it.",
+     "half": "Kill it twice, then."
+    },
+    "villain": {
+     "start": "Let me show you what I dreamed.",
+     "big": "Born from my mind. Isn't it beautiful?",
+     "low": "The dreams... are leaving me...",
+     "win": "Sleep, barbarian. Dream with me.",
+     "loss": "Even this is a nightmare I had."
+    }
+   },
+   "bigPlays": [],
+   "sim": null
+  },
+  {
+   "id": "a9b5",
+   "slot": 5,
+   "kind": "Lesson",
+   "mood": "tension",
+   "title": "Under New Management",
+   "difficulty": "Normal",
+   "teaches": [
+    "Madness"
+   ],
+   "blurb": "Laquatus, the cephalid ambassador, has poisoned his way into power under the sea. He wants the Mirari, and he has decided Kamahl's sister is the easiest way to get it.",
+   "rewardSet": "tor",
+   "host": false,
+   "hero": {
+    "who": "jeska",
+    "deck": {
+     "name": "Temper of Steel",
+     "colors": "RG",
+     "archetype": null,
+     "cards": [
+      {
+       "qty": 2,
+       "name": "Jeska, Warrior Adept",
+       "set": "jud",
+       "number": "93",
+       "id": "1cf96a59-8b7d-4a5b-adfd-17eeedd95db5"
+      },
+      {
+       "qty": 4,
+       "name": "Wild Mongrel",
+       "set": "ody",
+       "number": "283",
+       "id": "5bb8dd5c-a79a-4afc-80b2-64645bb17a34"
+      },
+      {
+       "qty": 4,
+       "name": "Arrogant Wurm",
+       "set": "tor",
+       "number": "120",
+       "id": "11b849c7-c91d-4c67-a357-f7d17f9b187a"
+      },
+      {
+       "qty": 4,
+       "name": "Basking Rootwalla",
+       "set": "tor",
+       "number": "121",
+       "id": "1a67768a-6cd9-4163-b941-752f29c87a8d"
+      },
+      {
+       "qty": 4,
+       "name": "Fiery Temper",
+       "set": "tor",
+       "number": "97",
+       "id": "918e46b7-cbca-4acf-8e83-94b5fcadcc49"
+      },
+      {
+       "qty": 2,
+       "name": "Violent Eruption",
+       "set": "tor",
+       "number": "117",
+       "id": "ff19c870-331d-4703-a92d-c5b1d4289338"
+      },
+      {
+       "qty": 4,
+       "name": "Firebolt",
+       "set": "ody",
+       "number": "193",
+       "id": "d5e45005-dd81-4d80-b043-02f719aca929"
+      },
+      {
+       "qty": 4,
+       "name": "Grim Lavamancer",
+       "set": "tor",
+       "number": "100",
+       "id": "5dd72697-24be-42c7-a6d9-a837bdbd4662"
+      },
+      {
+       "qty": 4,
+       "name": "Barbarian Lunatic",
+       "set": "ody",
+       "number": "175",
+       "id": "6c899f9b-ebce-4424-9cd9-861a50a5f7d2"
+      },
+      {
+       "qty": 4,
+       "name": "Pardic Firecat",
+       "set": "ody",
+       "number": "211",
+       "id": "16858395-c742-4657-88c2-5af20c92718d"
+      },
+      {
+       "qty": 12,
+       "name": "Mountain",
+       "set": "ody",
+       "number": "343",
+       "id": "3c22765e-a131-4be6-ba48-64b84564ea51"
+      },
+      {
+       "qty": 12,
+       "name": "Forest",
+       "set": "ody",
+       "number": "347",
+       "id": "73029d4b-f073-4df0-a6cc-8014284a1ced"
+      }
+     ]
+    }
+   },
+   "villain": {
+    "who": "laquatus",
+    "deck": {
+     "name": "The Cephalid Court",
+     "colors": "U",
+     "archetype": null,
+     "cards": [
+      {
+       "qty": 2,
+       "name": "Ambassador Laquatus",
+       "set": "tor",
+       "number": "23",
+       "id": "887cac61-2001-4bd1-aeeb-20149ebc5856"
+      },
+      {
+       "qty": 2,
+       "name": "Aboshan, Cephalid Emperor",
+       "set": "ody",
+       "number": "58",
+       "id": "82db4a41-03e8-4f0c-946c-a98fc5c9f7c8"
+      },
+      {
+       "qty": 4,
+       "name": "Cephalid Looter",
+       "set": "ody",
+       "number": "72",
+       "id": "cb6f1c4e-4fbc-4474-8dd2-5846d417b6ab"
+      },
+      {
+       "qty": 4,
+       "name": "Cephalid Retainer",
+       "set": "ody",
+       "number": "73",
+       "id": "78480527-cfd6-4065-b702-82de4694f9bb"
+      },
+      {
+       "qty": 4,
+       "name": "Aven Fisher",
+       "set": "ody",
+       "number": "63",
+       "id": "5b27130d-2296-4076-9829-15ab63081896"
+      },
+      {
+       "qty": 4,
+       "name": "Thought Devourer",
+       "set": "ody",
+       "number": "105",
+       "id": "ba7a96ee-e2d1-4d76-a09e-d6868ddd9282"
+      },
+      {
+       "qty": 4,
+       "name": "Repel",
+       "set": "ody",
+       "number": "98",
+       "id": "68ea14a6-539a-47eb-9147-a310be7b63fe"
+      },
+      {
+       "qty": 4,
+       "name": "Syncopate",
+       "set": "ody",
+       "number": "103",
+       "id": "b7850794-4c85-4844-a461-650cd4eaec93"
+      },
+      {
+       "qty": 4,
+       "name": "Circular Logic",
+       "set": "tor",
+       "number": "33",
+       "id": "cd9198d6-201d-4175-8f70-eef92d7d5bb5"
+      },
+      {
+       "qty": 4,
+       "name": "Deep Analysis",
+       "set": "tor",
+       "number": "36",
+       "id": "01e3c2e9-d8df-4a7a-be86-7be8c6254fa2"
+      },
+      {
+       "qty": 24,
+       "name": "Island",
+       "set": "ody",
+       "number": "335",
+       "id": "527f36a0-80b8-4492-b1c3-20a34953ceb7"
+      }
+     ]
+    }
+   },
+   "reward": {
+    "hero": {
+     "packs": 1,
+     "coins": 100
+    },
+    "villain": {
+     "card": {
+      "oracle_id": "2df8f253-1d3c-4b1f-8549-93fb90623474",
+      "name": "Ambassador Laquatus",
+      "rarity": "rare",
+      "set": "tor",
+      "id": "887cac61-2001-4bd1-aeeb-20149ebc5856",
+      "image": "https://cards.scryfall.io/normal/front/8/8/887cac61-2001-4bd1-aeeb-20149ebc5856.jpg"
+     },
+     "coins": 100
+    }
+   },
+   "scene": [
+    {
+     "who": "jeska",
+     "line": "My brother and I both come from Balthor's forge. Kamahl has a temper of fire. I have a temper of steel.",
+     "quote": true
+    },
+    {
+     "who": "laquatus",
+     "line": "Nature's been fired. The oceans are under new management.",
+     "quote": true
+    },
+    {
+     "who": "laquatus",
+     "line": "My enemies will forget everything but their anguish.",
+     "quote": true
+    },
+    {
+     "who": "jeska",
+     "line": "You're not getting my brother, fish."
+    },
+    {
+     "who": "jeska",
+     "line": "Madness: when you discard a madness card, you can cast it for its madness cost instead. Throwing a card away is a weapon."
+    }
+   ],
+   "villainScene": [
+    {
+     "who": "laquatus",
+     "line": "Would you abandon your past to save your future?",
+     "quote": true
+    },
+    {
+     "who": "laquatus",
+     "line": "Aboshan was emperor. Llawan will be empress. I prefer to be the hand behind both."
+    },
+    {
+     "who": "laquatus",
+     "line": "Memories can't simply be washed away. The mind must be scrubbed clean.",
+     "quote": true
+    }
+   ],
+   "after": [
+    {
+     "who": "laquatus",
+     "line": "I have a hunch we'll be seeing that one again soon.",
+     "quote": true
+    },
+    {
+     "who": "stage",
+     "line": "Laquatus dreams of seizing control.",
+     "quote": true
+    }
+   ],
+   "cues": {
+    "hero": {
+     "start": "Steel, not fire.",
+     "big": "Even the threat of power has power.",
+     "low": "Losing my footing...",
+     "win": "Swim home, ambassador.",
+     "loss": "Kamahl... I couldn't...",
+     "half": "Throw it away. Burn it on the way out."
+    },
+    "villain": {
+     "start": "What you made will be unmade.",
+     "big": "Your tenacity is admirable. And futile.",
+     "low": "The tide... is turning...",
+     "win": "And when you're done, you will be undone.",
+     "loss": "I have a hunch we'll be seeing that one again soon."
+    }
+   },
+   "bigPlays": [],
+   "sim": null
+  },
+  {
+   "id": "a9b6",
+   "slot": 6,
+   "kind": "Meta",
+   "mood": "march",
+   "title": "The Holy Wind",
+   "difficulty": "Normal",
+   "teaches": [
+    "Card advantage"
+   ],
+   "blurb": "The Order is Otaria's other great power, the aven and their soldiers. Major Teroh has sworn to wipe out the Cabal. Braids, the Cabal's dementia summoner, plays the coldest deck of the era: kill everything, draw more, never blink.",
+   "rewardSet": "tor",
+   "host": false,
+   "hero": {
+    "who": "teroh",
+    "deck": {
+     "name": "The Order",
+     "colors": "W",
+     "archetype": null,
+     "cards": [
+      {
+       "qty": 2,
+       "name": "Major Teroh",
+       "set": "tor",
+       "number": "8",
+       "id": "3229ca5a-5340-48b8-bd46-b0b924c8faf7"
+      },
+      {
+       "qty": 4,
+       "name": "Aven Trooper",
+       "set": "tor",
+       "number": "2",
+       "id": "79c8f774-6d4f-4fd0-85c0-26ef713e6b89"
+      },
+      {
+       "qty": 4,
+       "name": "Teroh's Faithful",
+       "set": "tor",
+       "number": "18",
+       "id": "bff8cf45-c84f-49d7-ad3d-b5e046286cb3"
+      },
+      {
+       "qty": 4,
+       "name": "Teroh's Vanguard",
+       "set": "tor",
+       "number": "19",
+       "id": "1a39f909-7114-4482-8302-b2a56ca9f556"
+      },
+      {
+       "qty": 4,
+       "name": "Aven Cloudchaser",
+       "set": "ody",
+       "number": "7",
+       "id": "08afe190-368e-4259-9959-00beaccee7ba"
+      },
+      {
+       "qty": 4,
+       "name": "Mystic Zealot",
+       "set": "ody",
+       "number": "36",
+       "id": "1ba21062-5d13-47b9-bea1-ded8530a9aeb"
+      },
+      {
+       "qty": 4,
+       "name": "Militant Monk",
+       "set": "tor",
+       "number": "9",
+       "id": "886a3cfd-7f83-480a-bb22-eec67ad35e4f"
+      },
+      {
+       "qty": 4,
+       "name": "Battle Screech",
+       "set": "jud",
+       "number": "3",
+       "id": "c3c38264-0d79-47d4-bca2-a20a991bbac9"
+      },
+      {
+       "qty": 4,
+       "name": "Pilgrim of Justice",
+       "set": "ody",
+       "number": "40",
+       "id": "6103a3a7-78ce-4a66-bd82-434e0bd9dea4"
+      },
+      {
+       "qty": 2,
+       "name": "Silver Seraph",
+       "set": "jud",
+       "number": "23",
+       "id": "1465ca9e-a997-4b8c-9677-6c7961f67eba"
+      },
+      {
+       "qty": 24,
+       "name": "Plains",
+       "set": "ody",
+       "number": "331",
+       "id": "eecfb420-ace3-4627-a2e0-62a701d025c9"
+      }
+     ]
+    }
+   },
+   "villain": {
+    "who": "braids",
+    "deck": {
+     "name": "Mono-Black Control",
+     "colors": "B",
+     "archetype": null,
+     "cards": [
+      {
+       "qty": 2,
+       "name": "Braids, Cabal Minion",
+       "set": "ody",
+       "number": "117",
+       "id": "4dcdcad5-e4fb-480e-984f-1ac5cdc986b9"
+      },
+      {
+       "qty": 4,
+       "name": "Nantuko Shade",
+       "set": "tor",
+       "number": "74",
+       "id": "2ed9dc9c-b92b-4305-8c54-1a63f750f8d1"
+      },
+      {
+       "qty": 4,
+       "name": "Chainer's Edict",
+       "set": "tor",
+       "number": "57",
+       "id": "014af391-3b4a-4aab-a3e9-f60e61016985"
+      },
+      {
+       "qty": 4,
+       "name": "Mutilate",
+       "set": "tor",
+       "number": "73",
+       "id": "6189cab3-1963-4590-9cbc-7ab4a693d7c6"
+      },
+      {
+       "qty": 4,
+       "name": "Gravedigger",
+       "set": "ody",
+       "number": "140",
+       "id": "c92e67ef-d1e9-427f-827b-d07e06126821"
+      },
+      {
+       "qty": 4,
+       "name": "Mesmeric Fiend",
+       "set": "tor",
+       "number": "69",
+       "id": "b6edd4ea-c587-4d93-a675-4cdec3e0b1ca"
+      },
+      {
+       "qty": 4,
+       "name": "Faceless Butcher",
+       "set": "tor",
+       "number": "60",
+       "id": "4073be21-c54a-4eee-9109-f3adfe757c4e"
+      },
+      {
+       "qty": 4,
+       "name": "Ghastly Demise",
+       "set": "ody",
+       "number": "139",
+       "id": "d9d2bfa3-0499-43ea-a76d-b12fddbc104e"
+      },
+      {
+       "qty": 2,
+       "name": "Haunting Echoes",
+       "set": "ody",
+       "number": "142",
+       "id": "aca4c571-48b8-4150-93f8-4cb5c8e797c4"
+      },
+      {
+       "qty": 4,
+       "name": "Cabal Ritual",
+       "set": "tor",
+       "number": "51",
+       "id": "5403b49d-03a7-4cc3-af3c-df098c1c9c2e"
+      },
+      {
+       "qty": 24,
+       "name": "Swamp",
+       "set": "ody",
+       "number": "339",
+       "id": "276b18fb-66cb-4dc0-9c67-60cee1502c7f"
+      }
+     ]
+    }
+   },
+   "reward": {
+    "hero": {
+     "packs": 1,
+     "coins": 100
+    },
+    "villain": {
+     "card": {
+      "oracle_id": "d85aa59b-c6aa-4b2f-885c-59d6e5e6e8b9",
+      "name": "Braids, Cabal Minion",
+      "rarity": "rare",
+      "set": "ody",
+      "id": "4dcdcad5-e4fb-480e-984f-1ac5cdc986b9",
+      "image": "https://cards.scryfall.io/normal/front/4/d/4dcdcad5-e4fb-480e-984f-1ac5cdc986b9.jpg"
+     },
+     "coins": 100
+    }
+   },
+   "scene": [
+    {
+     "who": "teroh",
+     "line": "I am the holy wind that shall avenge the Cabal's victims.",
+     "quote": true
+    },
+    {
+     "who": "braids",
+     "line": "It's only frightened five people to death. Not my best work.",
+     "quote": true
+    },
+    {
+     "who": "teroh",
+     "line": "The spirits of the righteous shall rise into the sky. Even dirtwalkers will fly like aven.",
+     "quote": true
+    },
+    {
+     "who": "braids",
+     "line": "Oh, I like him. He means it."
+    },
+    {
+     "who": "teroh",
+     "line": "She kills one creature at a time and draws two cards for it. Go wide. Make her answers too small."
+    }
+   ],
+   "villainScene": [
+    {
+     "who": "braids",
+     "line": "Anyone can snap her fingers and yank a soul. I prefer to kill creatively.",
+     "quote": true
+    },
+    {
+     "who": "braids",
+     "line": "The Order prays to the Ancestor. The Cabal pays the bills. Guess which one the poor come to."
+    },
+    {
+     "who": "braids",
+     "line": "Zombies don't kill. They recruit.",
+     "quote": true
+    }
+   ],
+   "after": [
+    {
+     "who": "stage",
+     "line": "Teroh dreams of his enemies' doom.",
+     "quote": true
+    },
+    {
+     "who": "stage",
+     "line": "Braids smiles at Teroh as she retreats. She has seen how his story ends."
+    }
+   ],
+   "cues": {
+    "hero": {
+     "start": "Rise, the Order.",
+     "big": "The holy wind!",
+     "low": "The sky darkens...",
+     "win": "The Cabal will fall.",
+     "loss": "Our wings are broken. Not our faith.",
+     "half": "The Ancestor watches."
+    },
+    "villain": {
+     "start": "Let's see what you dream about.",
+     "big": "You call *that* a nightmare?",
+     "low": "Not my best work...",
+     "win": "Unhinged.",
+     "loss": "Don't let your mind wander—it might not come back."
+    }
+   },
+   "bigPlays": [],
+   "sim": null
+  },
+  {
+   "id": "a9b7",
+   "slot": 7,
+   "kind": "Meta",
+   "mood": "tension",
+   "title": "Brother and Sister",
+   "difficulty": "Normal",
+   "teaches": [
+    "Racing"
+   ],
+   "blurb": "Kamahl has the Mirari again, and it has changed him. It plays itself now, the Mirari's Wake. Jeska comes to make him put it down. He will not.",
+   "rewardSet": "jud",
+   "host": false,
+   "hero": {
+    "who": "jeska",
+    "deck": {
+     "name": "Balthor's Forge",
+     "colors": "RW",
+     "archetype": null,
+     "cards": [
+      {
+       "qty": 2,
+       "name": "Jeska, Warrior Adept",
+       "set": "jud",
+       "number": "93",
+       "id": "1cf96a59-8b7d-4a5b-adfd-17eeedd95db5"
+      },
+      {
+       "qty": 4,
+       "name": "Barbarian Lunatic",
+       "set": "ody",
+       "number": "175",
+       "id": "6c899f9b-ebce-4424-9cd9-861a50a5f7d2"
+      },
+      {
+       "qty": 4,
+       "name": "Halberdier",
+       "set": "ody",
+       "number": "196",
+       "id": "b69dfc05-51ba-4798-ac00-1e9b8bbbf280"
+      },
+      {
+       "qty": 4,
+       "name": "Dwarven Bloodboiler",
+       "set": "jud",
+       "number": "84",
+       "id": "9ac576b2-cda4-4aea-aa5c-933ec0457dda"
+      },
+      {
+       "qty": 4,
+       "name": "Pardic Firecat",
+       "set": "ody",
+       "number": "211",
+       "id": "16858395-c742-4657-88c2-5af20c92718d"
+      },
+      {
+       "qty": 4,
+       "name": "Aven Cloudchaser",
+       "set": "ody",
+       "number": "7",
+       "id": "08afe190-368e-4259-9959-00beaccee7ba"
+      },
+      {
+       "qty": 4,
+       "name": "Mystic Zealot",
+       "set": "ody",
+       "number": "36",
+       "id": "1ba21062-5d13-47b9-bea1-ded8530a9aeb"
+      },
+      {
+       "qty": 4,
+       "name": "Firebolt",
+       "set": "ody",
+       "number": "193",
+       "id": "d5e45005-dd81-4d80-b043-02f719aca929"
+      },
+      {
+       "qty": 4,
+       "name": "Lava Dart",
+       "set": "jud",
+       "number": "94",
+       "id": "865bb1d3-5b7d-40e9-87cc-96be9524a105"
+      },
+      {
+       "qty": 2,
+       "name": "Balthor the Stout",
+       "set": "tor",
+       "number": "91",
+       "id": "e81ecdc5-d2c7-4292-9b59-fd6bf3ba29d5"
+      },
+      {
+       "qty": 12,
+       "name": "Mountain",
+       "set": "ody",
+       "number": "343",
+       "id": "3c22765e-a131-4be6-ba48-64b84564ea51"
+      },
+      {
+       "qty": 12,
+       "name": "Plains",
+       "set": "ody",
+       "number": "331",
+       "id": "eecfb420-ace3-4627-a2e0-62a701d025c9"
+      }
+     ]
+    }
+   },
+   "villain": {
+    "who": "kamahl",
+    "deck": {
+     "name": "Mirari's Wake",
+     "colors": "GW",
+     "archetype": null,
+     "cards": [
+      {
+       "qty": 4,
+       "name": "Mirari's Wake",
+       "set": "jud",
+       "number": "139",
+       "id": "b5ddad46-5e2e-43c9-8c91-7aca6ca23562"
+      },
+      {
+       "qty": 2,
+       "name": "Mirari",
+       "set": "ody",
+       "number": "303",
+       "id": "3cbaad4f-fb66-4e56-b383-32f55552c8b2"
+      },
+      {
+       "qty": 4,
+       "name": "Phantom Centaur",
+       "set": "jud",
+       "number": "127",
+       "id": "c421c2f1-2137-41bd-9a89-74d8a76fb5c5"
+      },
+      {
+       "qty": 4,
+       "name": "Krosan Wayfarer",
+       "set": "jud",
+       "number": "123",
+       "id": "5356e684-c2fc-465e-a16c-7300824d2a8d"
+      },
+      {
+       "qty": 4,
+       "name": "Mystic Enforcer",
+       "set": "ody",
+       "number": "290",
+       "id": "eb68983d-fd8c-4844-8ceb-afd3cae7e4df"
+      },
+      {
+       "qty": 2,
+       "name": "Phantom Nishoba",
+       "set": "jud",
+       "number": "140",
+       "id": "56ebc372-aabd-4174-a943-c7bf59e5028d"
+      },
+      {
+       "qty": 4,
+       "name": "Moment's Peace",
+       "set": "ody",
+       "number": "251",
+       "id": "40ebe935-ccf9-435e-8fe8-53bcbf3526e7"
+      },
+      {
+       "qty": 4,
+       "name": "Elephant Guide",
+       "set": "jud",
+       "number": "111",
+       "id": "7d3a7226-f574-430e-9b8f-4e531a21540f"
+      },
+      {
+       "qty": 4,
+       "name": "Werebear",
+       "set": "ody",
+       "number": "282",
+       "id": "964cf7e3-932d-432f-8ad4-9bd651aada96"
+      },
+      {
+       "qty": 4,
+       "name": "Call of the Herd",
+       "set": "ody",
+       "number": "231",
+       "id": "429a88cc-53db-4c5e-a061-f0f49a38c675"
+      },
+      {
+       "qty": 12,
+       "name": "Forest",
+       "set": "ody",
+       "number": "347",
+       "id": "73029d4b-f073-4df0-a6cc-8014284a1ced"
+      },
+      {
+       "qty": 12,
+       "name": "Plains",
+       "set": "ody",
+       "number": "331",
+       "id": "eecfb420-ace3-4627-a2e0-62a701d025c9"
+      }
+     ]
+    }
+   },
+   "reward": {
+    "hero": {
+     "packs": 1,
+     "coins": 100
+    },
+    "villain": {
+     "card": {
+      "oracle_id": "e43e06fb-52b7-4f38-8fac-f31973b043f7",
+      "name": "Phantom Nishoba",
+      "rarity": "rare",
+      "set": "jud",
+      "id": "56ebc372-aabd-4174-a943-c7bf59e5028d",
+      "image": "https://cards.scryfall.io/normal/front/5/6/56ebc372-aabd-4174-a943-c7bf59e5028d.jpg"
+     },
+     "coins": 100
+    }
+   },
+   "scene": [
+    {
+     "who": "jeska",
+     "line": "Kamahl. Look at your hands."
+    },
+    {
+     "who": "kamahl",
+     "line": "They are strong. Stronger than they have ever been."
+    },
+    {
+     "who": "jeska",
+     "line": "They are shaking."
+    },
+    {
+     "who": "stage",
+     "line": "The land drank power from the Mirari as though it had thirsted forever.",
+     "quote": true
+    },
+    {
+     "who": "kamahl",
+     "line": "Go home, Jeska. Balthor needs you. I need this."
+    },
+    {
+     "who": "jeska",
+     "line": "He has endless mana and Moment's Peace to hold me off. Race him. Every turn he waits, he gets bigger."
+    }
+   ],
+   "villainScene": [
+    {
+     "who": "kamahl",
+     "line": "Everyone wants the Mirari. The Cabal. The Order. The fish."
+    },
+    {
+     "who": "kamahl",
+     "line": "If I let it go, one of them takes it. Then what?"
+    },
+    {
+     "who": "kamahl",
+     "line": "Anyone can admire creation. Only a barbarian sees the beauty in demolition.",
+     "quote": true
+    },
+    {
+     "who": "kamahl",
+     "line": "She won't stop. Why won't she stop?"
+    }
+   ],
+   "after": [
+    {
+     "who": "stage",
+     "line": "Kamahl swings without looking. The Mirari sword finds Jeska."
+    },
+    {
+     "who": "kamahl",
+     "line": "Jeska? JESKA!"
+    },
+    {
+     "who": "stage",
+     "line": "He carries her for a day. Then Cabal riders take her from him, and he is too broken to stop them."
+    }
+   ],
+   "cues": {
+    "hero": {
+     "start": "Put it down, brother.",
+     "big": "Steel, Kamahl. Remember?",
+     "low": "Kamahl... please...",
+     "win": "Now you put it down.",
+     "loss": "Kamahl... I'm cold...",
+     "half": "I am not afraid of you. I am afraid for you."
+    },
+    "villain": {
+     "start": "Go home.",
+     "big": "Feel that? That is the Mirari.",
+     "low": "It wants... it wants more...",
+     "win": "Jeska? Jeska!",
+     "loss": "What... have I done..."
+    }
+   },
+   "bigPlays": [],
+   "sim": null
+  },
+  {
+   "id": "a9b8",
+   "slot": 8,
+   "kind": "Boss",
+   "mood": "boss",
+   "title": "The Cabal Patriarch",
+   "difficulty": "Hard",
+   "teaches": [
+    "Everything so far"
+   ],
+   "blurb": "The Patriarch rules the Cabal. He has Jeska. He wants the Mirari. Kamahl walks into the Cabal's city alone, carrying both his guilt and the sphere.",
+   "rewardSet": "jud",
+   "host": true,
+   "hero": {
+    "who": "kamahl",
+    "deck": {
+     "name": "The Barbarian's Penance",
+     "colors": "RG",
+     "archetype": null,
+     "cards": [
+      {
+       "qty": 2,
+       "name": "Kamahl, Pit Fighter",
+       "set": "ody",
+       "number": "198",
+       "id": "ee88c776-85f1-4beb-a814-f706f5c4f341"
+      },
+      {
+       "qty": 4,
+       "name": "Werebear",
+       "set": "ody",
+       "number": "282",
+       "id": "964cf7e3-932d-432f-8ad4-9bd651aada96"
+      },
+      {
+       "qty": 4,
+       "name": "Krosan Beast",
+       "set": "ody",
+       "number": "248",
+       "id": "af822507-fd4c-454b-ab07-106c81c535bf"
+      },
+      {
+       "qty": 4,
+       "name": "Centaur Chieftain",
+       "set": "tor",
+       "number": "122",
+       "id": "a8fa0a57-e7eb-454e-9527-3db702b54935"
+      },
+      {
+       "qty": 4,
+       "name": "Wild Mongrel",
+       "set": "ody",
+       "number": "283",
+       "id": "5bb8dd5c-a79a-4afc-80b2-64645bb17a34"
+      },
+      {
+       "qty": 4,
+       "name": "Arrogant Wurm",
+       "set": "tor",
+       "number": "120",
+       "id": "11b849c7-c91d-4c67-a357-f7d17f9b187a"
+      },
+      {
+       "qty": 4,
+       "name": "Firebolt",
+       "set": "ody",
+       "number": "193",
+       "id": "d5e45005-dd81-4d80-b043-02f719aca929"
+      },
+      {
+       "qty": 4,
+       "name": "Call of the Herd",
+       "set": "ody",
+       "number": "231",
+       "id": "429a88cc-53db-4c5e-a061-f0f49a38c675"
+      },
+      {
+       "qty": 2,
+       "name": "Roar of the Wurm",
+       "set": "ody",
+       "number": "266",
+       "id": "ddf54317-4c08-4a66-9fd2-9983384e2374"
+      },
+      {
+       "qty": 4,
+       "name": "Volcanic Spray",
+       "set": "ody",
+       "number": "226",
+       "id": "97daab4b-d934-4a3f-a043-f7c9c1dd32bf"
+      },
+      {
+       "qty": 12,
+       "name": "Mountain",
+       "set": "ody",
+       "number": "343",
+       "id": "3c22765e-a131-4be6-ba48-64b84564ea51"
+      },
+      {
+       "qty": 12,
+       "name": "Forest",
+       "set": "ody",
+       "number": "347",
+       "id": "73029d4b-f073-4df0-a6cc-8014284a1ced"
+      }
+     ]
+    }
+   },
+   "villain": {
+    "who": "patriarch",
+    "deck": {
+     "name": "The Cabal",
+     "colors": "B",
+     "archetype": null,
+     "cards": [
+      {
+       "qty": 4,
+       "name": "Chainer's Edict",
+       "set": "tor",
+       "number": "57",
+       "id": "014af391-3b4a-4aab-a3e9-f60e61016985"
+      },
+      {
+       "qty": 4,
+       "name": "Nantuko Shade",
+       "set": "tor",
+       "number": "74",
+       "id": "2ed9dc9c-b92b-4305-8c54-1a63f750f8d1"
+      },
+      {
+       "qty": 4,
+       "name": "Mesmeric Fiend",
+       "set": "tor",
+       "number": "69",
+       "id": "b6edd4ea-c587-4d93-a675-4cdec3e0b1ca"
+      },
+      {
+       "qty": 4,
+       "name": "Faceless Butcher",
+       "set": "tor",
+       "number": "60",
+       "id": "4073be21-c54a-4eee-9109-f3adfe757c4e"
+      },
+      {
+       "qty": 4,
+       "name": "Cabal Torturer",
+       "set": "tor",
+       "number": "53",
+       "id": "ebcf8dd7-f45c-4ac2-9507-fa175fe89887"
+      },
+      {
+       "qty": 2,
+       "name": "Sengir Vampire",
+       "set": "tor",
+       "number": "80",
+       "id": "2308c0c4-7a78-4da8-8dd8-5b35b49a1896"
+      },
+      {
+       "qty": 2,
+       "name": "Braids, Cabal Minion",
+       "set": "ody",
+       "number": "117",
+       "id": "4dcdcad5-e4fb-480e-984f-1ac5cdc986b9"
+      },
+      {
+       "qty": 4,
+       "name": "Gravedigger",
+       "set": "ody",
+       "number": "140",
+       "id": "c92e67ef-d1e9-427f-827b-d07e06126821"
+      },
+      {
+       "qty": 4,
+       "name": "Mutilate",
+       "set": "tor",
+       "number": "73",
+       "id": "6189cab3-1963-4590-9cbc-7ab4a693d7c6"
+      },
+      {
+       "qty": 4,
+       "name": "Cabal Ritual",
+       "set": "tor",
+       "number": "51",
+       "id": "5403b49d-03a7-4cc3-af3c-df098c1c9c2e"
+      },
+      {
+       "qty": 24,
+       "name": "Swamp",
+       "set": "ody",
+       "number": "339",
+       "id": "276b18fb-66cb-4dc0-9c67-60cee1502c7f"
+      }
+     ]
+    }
+   },
+   "reward": {
+    "hero": {
+     "packs": 2,
+     "coins": 200
+    },
+    "villain": {
+     "card": {
+      "oracle_id": "7975cb9d-d37e-44f8-9614-86d2ad453c35",
+      "name": "Chainer's Edict",
+      "rarity": "uncommon",
+      "set": "tor",
+      "id": "014af391-3b4a-4aab-a3e9-f60e61016985",
+      "image": "https://cards.scryfall.io/normal/front/0/1/014af391-3b4a-4aab-a3e9-f60e61016985.jpg"
+     },
+     "coins": 200
+    }
+   },
+   "scene": [
+    {
+     "who": "patriarch",
+     "line": "Any fool who would die for honor is better off dead.",
+     "quote": true
+    },
+    {
+     "who": "kamahl",
+     "line": "Where is my sister?"
+    },
+    {
+     "who": "patriarch",
+     "line": "Safe. Changed, a little. She is ours now, barbarian. You saw to that."
+    },
+    {
+     "who": "patriarch",
+     "line": "If the Nantuko only knew what awaits them beyond death, they would abandon all they hold dear.",
+     "quote": true
+    },
+    {
+     "who": "kamahl",
+     "line": "I am not here to win. I am here to end it."
+    }
+   ],
+   "villainScene": [
+    {
+     "who": "patriarch",
+     "line": "If he's so willing to suffer for his cause, then by all means, let us oblige him.",
+     "quote": true
+    },
+    {
+     "who": "patriarch",
+     "line": "The Order kneels to an Ancestor nobody has seen. The Cabal kneels to me. I am at least real."
+    },
+    {
+     "who": "stage",
+     "line": "When one of the Patriarch's champions displeased him, he would only shake his finger. That was enough.",
+     "quote": true
+    }
+   ],
+   "after": null,
+   "cues": {
+    "hero": {
+     "start": "Give her back.",
+     "big": "For Jeska.",
+     "low": "Not yet... not until she is free...",
+     "win": "It ends here.",
+     "loss": "Jeska... forgive me...",
+     "half": "Pain teaches lessons no scholar can."
+    },
+    "villain": {
+     "start": "Kneel.",
+     "big": "Each word rattles your mind.",
+     "low": "Impossible...",
+     "win": "The Mirari is the Cabal's.",
+     "loss": "Take it, then. See where it leads you.",
+     "half": {
+      "who": "braids",
+      "line": "Patriarch? He is winning. I just thought you should know. I am leaving now."
+     }
+    }
+   },
+   "bigPlays": [],
+   "sim": null
+  }
+ ]
+}
