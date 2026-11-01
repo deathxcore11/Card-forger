@@ -363,7 +363,7 @@ const SPARK=()=>{try{return typeof PW_SPARK!=='undefined'?PW_SPARK:(run&&run.spa
 const sparkOf=hk=>{try{return (profile.spark&&profile.spark[hk])||{open:0,beat:0}}catch(e){return {open:0,beat:0}}};
 const LAST_ACT=()=>Object.keys(ACTS).length;
 function sparkFoe(e){const d=E[e.key];if(!SPARK()||!d)return e;const up=m=>{e.hp=Math.ceil(e.hp*m);e.max=e.hp};
- if(!d.rank){if(SP(2))up(1.08);if(SP(8))e.buff++}
+ if(!d.rank){if(SP(2))up(1.05);if(SP(8))e.buff++}
  else if(d.rank==='elite'){if(SP(3)){up(1.1);e.buff++}if(SP(7))e.x7=d.sp7||['sweep',2]}
  else if(d.rank==='boss'){if(SP(4))up(1.1);if(SP(9)&&d.phase2){e.p2on=1;if(d.p2fly)e.fly=true}}
  return e}
@@ -389,6 +389,8 @@ const TRAIL=n=>{let v=0;try{v=typeof PW_TRAIL!=='undefined'?PW_TRAIL:Math.max((p
 // Hero unlocks (rulings #8): goals, not trail steps. A goal met before a hero's kit ships is kept, and the hero opens when the kit lands.
 const HERO_GOALS={W:[['a1',1,'skull','Beat an Act 1 boss']],B:[['a2',1,'skull','Beat the Act 2 boss'],['deaths',3,'ghost','Fall in battle 3 times']],U:[['codex',40,'book','Fill 40 Codex entries'],['wins',1,'crown','Win a run']],G:[['elites',10,'sword','Beat 10 elites'],['winW',1,'crown','Win a run as Elspeth']]};
 const pstat=k=>{try{return k==='codex'?codexCount():(profile.stat&&profile.stat[k])||0}catch(e){return 0}};
+// Heroes still to ship show at hero select as locked outlines in their own card art (rulings #8); their kits join HEROES later.
+const LOCKED_HEROES={B:{key:'B',name:'Liliana, the Last Hope',short:'Liliana',color:'Black'},U:{key:'U',name:'Jace, the Mind Sculptor',short:'Jace',color:'Blue'},G:{key:'G',name:'Garruk Wildspeaker',short:'Garruk',color:'Green'}};
 const heroOpen=k=>k==='R'||!!(profile.heroes&&profile.heroes[k]);
 function checkGoals(){const H=profile.heroes=profile.heroes||{R:1},got=[];for(const k in HERO_GOALS)if(!H[k]&&HERO_GOALS[k].some(([g,n])=>pstat(g)>=n)){H[k]=1;if(HEROES[k])got.push(k)}return got}
 function bumpStat(k,n=1){const S=profile.stat=profile.stat||{};S[k]=(S[k]||0)+n}
@@ -401,13 +403,13 @@ const TITLES=[['flame','Flamecaller','winR','Win as Chandra'],['dawn','Dawnbring
  ['wayfarer','Wayfarer','trail6','Reach trail step 6 with any hero'],['trailblazer','Trailblazer','trail15','Reach trail step 15 with any hero'],
  ['lore','Lorekeeper','codex40','Fill 40 Codex entries'],['archivist','Archivist','codex100','Fill the whole Codex'],['lean','Lean Walker','lean','Win with 15 cards or fewer'],
  ['bloodied','Bloodied','bloodied','Win with 5 life or less'],['hoard','Dragon Hoard','gold300','Hold 300 gold at once'],['laden','Emblem-Laden','emb10','Hold 10 emblems in one run'],
- ['devotee','Devotee','daily7','Play the Daily 7 days in a row']];
+ ['devotee','Devotee','daily7','Play the Daily 7 days in a row'],['riot','Riot-Favored','jackpot',"Claim a wildcard's jackpot"],['sealed','Walked Away','declineWild',"Leave a wildcard's offers untouched"]];
 const anyH=f=>Object.keys(HEROES).some(f),RW=()=>run&&run.won;
 const TCHECK={winR:()=>pstat('winR')>0,winW:()=>pstat('winW')>0,winBoth:()=>Object.keys(HEROES).filter(k=>pstat('win'+k)>0).length>=2,firstRun:()=>profile.runs>0,
  unscarred:()=>pstat('unscarred')>0,turn100:()=>(profile.bestTurn||0)>=100,spark5:()=>anyH(k=>sparkOf(k).open>=5),winSpark5:()=>anyH(k=>sparkOf(k).beat>=6),winSpark10:()=>anyH(k=>sparkOf(k).beat>=11),
  elites25:()=>pstat('elites')>=25,bosses10:()=>pstat('bosses')>=10,deaths10:()=>pstat('deaths')>=10,trail6:()=>anyH(k=>stepOf(heroXP(k))>=6),trail15:()=>anyH(k=>stepOf(heroXP(k))>=15),
  codex40:()=>codexCount()>=40,codex100:()=>Object.values(codexData()).every(([ks,sn])=>ks.every(k=>sn.has(k))),lean:()=>pstat('lean')>0,bloodied:()=>pstat('bloodied')>0,
- gold300:()=>pstat('gold')>=300,emb10:()=>pstat('embs')>=10,daily7:()=>pstat('dailyStreak')>=7};
+ gold300:()=>pstat('gold')>=300,jackpot:()=>pstat('jackpot')>0,declineWild:()=>pstat('walkaway')>0,emb10:()=>pstat('embs')>=10,daily7:()=>pstat('dailyStreak')>=7};
 function checkTitles(){const T=profile.titles=profile.titles||[],got=[];for(const [k,,f] of TITLES)if(!T.includes(k)&&TCHECK[f]&&(()=>{try{return TCHECK[f]()}catch(e){return false}})()){T.push(k);got.push(k)}if(got.length&&!profile.title)profile.title=got[0];return got}
 // ===== Card mastery (meta item 6, rulings #28): wins with a card in the deck. 3 = the app's foil (outside runs only), 6 = showcase frame,
 // 10 = borderless (frames show everywhere). Each card keeps a Codex toggle for which treatment it shows (profile.mShow).
@@ -479,7 +481,7 @@ const beside=e=>{const l=alive(),i=l.indexOf(e);return l[i+1]||l[i-1]||null};
 const goaded=e=>!!(c&&e.goad===c.turn&&beside(e));
 // ---------- heroes ----------
 const HEROES={
- R:{key:'R',fury:1,name:'Chandra, Torch of Defiance',short:'Chandra',color:'Red',life:76,energy:3,loyalty:2,theme:'Steady 3 mana. Burn, Goblins and rituals.',
+ R:{key:'R',fury:1,name:'Chandra, Torch of Defiance',short:'Chandra',color:'Red',life:80,energy:3,loyalty:2,theme:'Steady 3 mana. Burn, Goblins and rituals.',
   starter:['shock','shock','ambush','ambush','rgoblin','rgoblin','rgoblin','piker','piker','giant'],sig:'pyre',
   plusAim:'enemy',plusLabel:()=>`+1 · Deal ${2+(run&&run.emblems.includes('pyre')?2:0)}`,minusLabel:'−3 · 3 to each enemy',ultLabel:'−6 · Every spell burns all',
   plus:t=>{const n=2+(run.emblems.includes('pyre')?2:0);hit(t,n);return `Chandra +1: ${n} damage to ${t.name}.`},
@@ -523,13 +525,20 @@ const pairOf=k=>{const a=ARCH[k];if(!a||!run)return '';const e=a[1].find(x=>run.
 const pairEmb=k=>{if(!run)return '';const p=(EPAIR[k]||[]).find(x=>run.emblems.includes(x))||Object.keys(EPAIR).find(x=>run.emblems.includes(x)&&EPAIR[x].includes(k));return p?` data-pairs="${EMB[p].name.replace(/^Emblem of (the )?/,'')}" data-pairs-k="${p}"`:''};
 const sigOf=k=>{const m=SIG[k];const v=typeof m==='string'?m:m&&m[HERO.key];if(v&&C[v]&&(C[v].sig||POOL.includes(v)))return {k:v,fb:0};
  const pl=poolOf('U');return {k:pick(pl),fb:1}};
-const POOL_ALL=Object.keys(C).filter(k=>C[k].r!=='S'&&C[k].r!=='K'&&!C[k].hidden&&!C[k].bossOnly&&(!C[k].trail||TRAIL(C[k].trail))&&(!CARDART||CARDART.has(C[k].name)));
+// ===== Meta data rows (game-design thread, 1 Nov, meta-data-1101/meta-data.json): trail packs, Spark-7 elite moves, enemy lore.
+const META_TRAIL_C={"song":1,"electro":1,"mana":1,"warden":1,"pridemate":1,"welcome":1,"grape":4,"kfury":4,"impetus":4,"hawk":4,"eagle":4,"overseer":4,"siege":8,"decorum":8,"ant":8,"marshal":8,"cathars":8,"decree":8,"emanc":10,"visit":10,"lattice":10},META_TRAIL_E={"twin":2,"archive":2,"beacon":2,"legion":6,"font":6,"satchel":6,"furnace":11,"paradox":11};
+const META_SP7={"gisa":["rally",1],"thalia":["guard",12],"ironalpha":["buff",3],"alphasmith":["buff",3],"drana":["drain",6],"omnath":["sweep",3],"drone":["summon","spawn"]};
+const META_LORE={"diregraf":"It was buried twice. Neither took.","acolyte":"The Skirsdag pray to things that never answer kindly.","crawler":"What the ghoulcallers leave behind keeps crawling.","interloper":"It comes through windows the moon leaves open.","geist":"The chapel bell still rings. No one pulls the rope.","patrol":"Stromkirk's hounds of the night. They are always hungry.","cultist":"Every offering asks for a little more blood.","ironsmith":"He forges silver by day. At night he forgets his name.","ironfang":"The moon chose him. He did not choose back.","zombie":"Gisa's work. Sloppy, she would say. Effective.","gisa":"A ghoulcaller who loves her craft far too much.","olivia":"The oldest blood on Innistrad, and the most bored.","thalia":"Thraben's last guardian. She does not yield the gate.","sorin":"He made Avacyn to save this plane. He will not forgive you for walking it.","oliviaB":"She wed the night itself. The guests did not leave.","thrall":"Once a villager. Now a mouthful.","ironalpha":"The pack follows the loudest howl.","alphasmith":"His hammer still rings. His hands are claws now.","sentinel":"It guards a grave no one remembers digging.","ghast":"It hooks the living and drags them down to wait.","spawn":"The smallest piece of a hunger without end.","scion":"Born of the brood. It feeds the larger ones.","intruder":"It drinks memory and leaves only mist.","herder":"It shepherds the brood across what used to be Zendikar.","baloth":"Every time the land shifts, it gets angrier.","ranger":"Turntimber teaches one lesson: never hunt alone.","wolf":"The ranger's pack. Loyal to the end.","skyfisher":"The kor ride the wind to keep the hedrons whole.","drana":"She freed Malakir from the Eldrazi. She did not free it from herself.","kozilek":"The titan's voice. It speaks in broken geometry.","drone":"It hums a single note that makes stone forget its shape.","heraldB":"The voice of Kozilek, now wide awake.","omnath":"The land's rage, given one body and no patience.","ob":"A demon who signed away his spark and wants yours."};
+for(const k in META_TRAIL_C)if(C[k])C[k].trail=META_TRAIL_C[k];
+// The card pool is rebuilt for each hero at setHero, so a hero's own trail step decides what it can find.
+const poolAll=()=>Object.keys(C).filter(k=>C[k].r!=='S'&&C[k].r!=='K'&&!C[k].hidden&&!C[k].bossOnly&&(!C[k].trail||TRAIL(C[k].trail))&&(!CARDART||CARDART.has(C[k].name)));
+const POOL_ALL=poolAll();
 let POOL=POOL_ALL.filter(k=>C[k].col==='R'||C[k].col==='C');
 // The hero's cards of one rarity. A thin pool steps down M, R, U, C, then up, so a pick is never undefined (same array, same rolls, when the rarity exists).
 const RSTEP=['M','R','U','C'],poolOf=r=>{const i=Math.max(0,RSTEP.indexOf(r)),by=x=>POOL.filter(k=>C[k].r===x);for(const x of [...RSTEP.slice(i),...RSTEP.slice(0,i).reverse()]){const pl=by(x);if(pl.length)return pl}return POOL_ALL.filter(k=>C[k].r==='C')};
-const setHero=k=>{HERO=HEROES[k]||HEROES.R;POOL=POOL_ALL.filter(x=>C[x].col===HERO.key||C[x].col==='C');if(typeof document!=='undefined'&&document.body)document.body.dataset.hero=HERO.key};
+const setHero=k=>{HERO=HEROES[k]||HEROES.R;POOL=poolAll().filter(x=>C[x].col===HERO.key||C[x].col==='C');if(typeof document!=='undefined'&&document.body)document.body.dataset.hero=HERO.key};
 // Emblems tagged with a hero colour only appear for that hero.
-const forHero=k=>!EMB[k].dungeon&&(!EMB[k].col||EMB[k].col===HERO.key)&&(!EMB[k].belt||beltOn());
+const forHero=k=>!EMB[k].dungeon&&(!EMB[k].trail||TRAIL(EMB[k].trail))&&(!EMB[k].col||EMB[k].col===HERO.key)&&(!EMB[k].belt||beltOn());
 const mk=key=>({id:++uid,key,foil:false});
 // Formation is the combat model. The hero-screen toggle (or ?form=0, localStorage pw-form=0) turns on the old rules.
 const FORM=typeof PW_FORM!=='undefined'?!!PW_FORM:(()=>{try{if(/[?&]form=0/.test(location.search))return false;if(/[?&]form=1/.test(location.search))return true;return localStorage.getItem('pw-form')!=='0'}catch(e){return true}})();
@@ -631,6 +640,7 @@ const ACTS=[null,
   easy:[['spawn','spawn','scion'],['intruder','spawn'],['skyfisher','spawn','spawn'],['wolf','wolf','spawn']],
   hard:[['herder','intruder'],['baloth','spawn','spawn'],['ranger','spawn'],['intruder','intruder','scion'],['skyfisher','baloth']]}];
 // Boss emblems: big power with a drawback, picked after an act boss.
+for(const k in META_TRAIL_E)if(EMB[k])EMB[k].trail=META_TRAIL_E[k];for(const k in META_SP7)if(E[k])E[k].sp7=META_SP7[k];for(const k in META_LORE)if(E[k])E[k].lore=META_LORE[k];
 const BOSSEMB={
  signet:{name:"Sorin's Signet",g:'♦',r:'B',text:'You get 1 extra energy every turn after the first. You can no longer heal outside of fights.',gain:'You get 1 extra energy every turn after the first.',cost:'No healing outside fights.'},
  monument:{name:'Eldrazi Monument',g:'⬟',r:'B',text:'Allies have flying. At the start of each even turn, sacrifice your weakest ally and lose 1 life.',gain:'Allies have flying.',cost:'On even turns, sacrifice your weakest ally and lose 1 life.'},
@@ -1348,11 +1358,11 @@ function sparkPicker(hk){const o=sparkOf(hk).open;if(!o)return '';const n=sparkP
  return `<div class="pw-spk" role="group" aria-label="Spark level"><button type="button" class="btn pw-spk-b" data-act="spk" data-k="${hk}" data-d="-1" aria-label="Lower Spark level"${n<=0?' disabled':''}>${ico('back')}</button><span class="pw-spk-n" role="img" aria-label="Spark level ${n}" title="Spark level ${n}">${ico('star')}<b>${n}</b></span><button type="button" class="btn pw-spk-b up" data-act="spk" data-k="${hk}" data-d="1" aria-label="Raise Spark level"${n>=o?' disabled':''}>${ico('back')}</button></div>`}
 // A locked hero: greyed, tinted toward its color, a lock; a tap shows its goals as icons with progress.
 function lockedHero(h){const open=reward&&reward.goals===h.key,G=HERO_GOALS[h.key]||[];
- return `<div class="pw-hcol"><button class="option hero-pick pw-locked${open?' open':''}" data-act="hlock" data-k="${h.key}" data-n="${h.name}" aria-label="${h.short}: locked" aria-expanded="${open}"><b>${h.name}</b><span class="pw-lock">${ico('lock')}</span><span class="pw-goals">${G.map(([g,n,i,t],j)=>`${j?'<i class="pw-or" aria-hidden="true"></i>':''}<span class="pw-goal" role="img" aria-label="${t}: ${Math.min(n,pstat(g))} of ${n}" title="${t}">${ico(i)}<b>${Math.min(n,pstat(g))}/${n}</b></span>`).join('')}</span></button></div>`}
+ return `<div class="pw-hcol"><button class="option hero-pick pw-locked${open?' open':''}" data-act="hlock" data-k="${h.key}" data-n="${h.name}" aria-label="${h.name}: locked" aria-expanded="${open}"><b>${h.short}</b><span class="pw-lock">${ico('lock')}</span><span class="pw-goals">${G.map(([g,n,i,t],j)=>`${j?'<i class="pw-or" aria-hidden="true"></i>':''}<span class="pw-goal" role="img" aria-label="${t}: ${Math.min(n,pstat(g))} of ${n}" title="${t}">${ico(i)}<b>${Math.min(n,pstat(g))}/${n}</b></span>`).join('')}</span></button></div>`}
 function dailyBtn(){const D=profile.daily||{},d=UTCDAY(),done=D.started===d,st=D.lastDay>=d-1?D.streak||0:0;
  return `<button class="btn pw-jtop pw-daily${done?' done':''}" data-act="daily" aria-label="Daily run${st?`, day ${st} streak`:''}${done?', played today':''}" title="Daily run">${ico('sun')}${st?`<b>${st}</b>`:''}</button>`}
 function heroesView(){
- return `<header class="top"><h1>Planeswalk</h1><span class="spacer"></span>${dailyOk()?dailyBtn():''}${profile.runs?`<button class="btn pw-jtop" data-act="journal" aria-label="Codex" title="Codex">${ico('book')}</button>`:''}</header><section class="screen heroes"><h2>Choose your planeswalker</h2><div class="choices">${Object.values(HEROES).map(h=>!heroOpen(h.key)?lockedHero(h):`<div class="pw-hcol"><button class="option hero-pick" data-act="hero" data-k="${h.key}" data-n="${h.name}"><b>${h.name}</b><span class="muted">${h.color} · ${h.life} life · ${h.theme}</span><span class="muted">${h.plusLabel()} · ${h.minusLabel} · ${h.ultLabel}</span><span class="pw-kit"><span class="pw-hsig">${embSvg(h.sig)}<span><em>Signature</em>${EMB[h.sig].name.replace(/^Emblem of the /,'')}</span></span><span class="pw-starter"><em>Starter deck</em>${starterList(h)}</span></span></button>${sparkPicker(h.key)}</div>`).join('')}</div></section>`;
+ return `<header class="top"><h1>Planeswalk</h1><span class="spacer"></span>${dailyOk()?dailyBtn():''}<button class="btn pw-jtop" data-act="journal" aria-label="Codex" title="Codex">${ico('book')}</button></header><section class="screen heroes"><h2>Choose your planeswalker</h2><div class="choices">${Object.values(HEROES).map(h=>!heroOpen(h.key)?lockedHero(h):`<div class="pw-hcol"><button class="option hero-pick" data-act="hero" data-k="${h.key}" data-n="${h.name}"><b>${h.name}</b><span class="muted">${h.color} · ${h.life} life · ${h.theme}</span><span class="muted">${h.plusLabel()} · ${h.minusLabel} · ${h.ultLabel}</span><span class="pw-kit"><span class="pw-hsig">${embSvg(h.sig)}<span><em>Signature</em>${EMB[h.sig].name.replace(/^Emblem of the /,'')}</span></span><span class="pw-starter"><em>Starter deck</em>${starterList(h)}</span></span></button>${sparkPicker(h.key)}</div>`).join('')}${Object.values(LOCKED_HEROES).filter(h=>!HEROES[h.key]&&(!CARDART||CARDART.has(h.name))).map(lockedHero).join('')}</div></section>`;
 }
 // End of run: the trail bar fills with this run's XP; a new step shows what it opens (its real cards and tokens), a new hero shows its portrait.
 function stepPack(n){const L=[];for(const k in C)if(C[k].trail===n&&(!CARDART||CARDART.has(C[k].name))&&(C[k].col===HERO.key||C[k].col==='C'))L.push(anteCard({key:k}));for(const k in TOKENS)if(TOKENS[k].trail===n&&tokOk(k))L.push(`<span class="pw-tok pw-utok" data-ui="tok-${k}" role="img" aria-label="${TOKENS[k].name}" title="${TOKENS[k].name}: ${TOKENS[k].tip}"></span>`);return L}
@@ -1507,7 +1517,7 @@ function patronView(){const P=run.patron,G=PATRONS[P.k],st=P.step;
   return `<section class="screen blessing" data-giver="${P.k}">${panel}<div class="choices pw-deckpick">${L.map(card=>cardHtml(card,`data-act="${act}" data-id="${card.id}"`)).join('')}</div></section>`}
  if(P.wild){if(P.open!=null){const b=BOONS[P.offers[P.open]];return `<section class="screen blessing wild" data-giver="${P.k}">${panel}${b.anti&&G.anti_line?`<p class="pw-pline">${G.anti_line}</p>`:line}<div class="pw-seals"><div class="pw-seal open${b.anti?' anti':b.jack?' jack':''}"><span class="pw-boon-ico">${ico(b.ico)}</span><b>${b.name}</b><span class="muted">${b.text}</span></div></div><button class="btn primary" data-act="bdone">${ico('up')}</button></section>`}
   return `<section class="screen blessing wild" data-giver="${P.k}">${panel}${line}<div class="pw-seals">${P.offers.map((b,i)=>`<button class="pw-seal" data-act="bseal" data-i="${i}" aria-label="Sealed offer ${i+1}"></button>`).join('')}</div><button class="btn" data-act="bdone" aria-label="Walk away">${ico('back')}</button></section>`}
- return `<section class="screen blessing" data-giver="${P.k}">${panel}${line}<div class="choices pw-boons">${P.offers.map((k,i)=>{const b=BOONS[k],on=P.sel===i;return `<button class="option pw-boon${b.sig?' sig':''}" data-act="boon" data-i="${i}" data-slot="${b.s}" aria-pressed="${on}" title="${b.name}: ${b.text}"><span class="pw-boon-ico">${ico(b.ico)}</span><b>${b.name}</b>${on?`<span class="muted">${b.text}</span>`:''}</button>`}).join('')}</div>${P.sel!=null?`<button class="btn primary" data-act="btake" aria-label="Take ${BOONS[P.offers[P.sel]].name}">${ico('up')}</button>`:''}</section>`}
+ return `<section class="screen blessing" data-giver="${P.k}">${panel}${line}<div class="choices pw-boons">${P.offers.map((k,i)=>{const b=BOONS[k],on=P.sel===i;return `<button class="option pw-boon${b.sig?' sig':''}" data-act="boon" data-i="${i}" data-slot="${b.s}" aria-pressed="${on}" aria-label="${b.name}: ${b.text}"><span class="pw-boon-ico">${ico(b.ico)}</span><b>${b.name}</b>${on?`<span class="muted">${b.text}</span>`:''}</button>`}).join('')}</div>${P.sel!=null?`<button class="btn primary" data-act="btake" aria-label="Take ${BOONS[P.offers[P.sel]].name}">${ico('up')}</button>`:''}</section>`}
 function patronApply(k){const r=BOONS[k].go();const P=run.patron;P.step=r&&(r.pick&&r.pick.length||r.remove||r.upgrade||r.copy)?r:null;if(P.step&&P.step.pick)P.step.pick=P.step.pick.filter(Boolean);if(!P.step)patronDone();else render()}
 function patronDone(){run.patron=null;toMap()}
 function patronStep(){const st=run.patron.step;for(const n of ['remove','upgrade','copy'])if(st[n]){st[n]--;if(st[n]>0&&(n!=='upgrade'||canUp())&&(n!=='remove'||deckMin()))return render()}patronDone()}
@@ -1515,8 +1525,8 @@ function patronStep(){const st=run.patron.step;for(const n of ['remove','upgrade
 function patronClick(a,b){const P=run&&run.patron;if(!P)return false;
  if(a==='boon'){const i=+b.dataset.i;P.sel=P.sel===i?null:i;render();return true}
  if(a==='btake'){if(P.sel==null)return true;const k=P.offers[P.sel];P.taken=k;patronApply(k);return true}
- if(a==='bseal'){const i=+b.dataset.i;P.open=i;const k=P.offers[i];BOONS[k].go();render();return true}
- if(a==='bdone'){patronDone();return true}
+ if(a==='bseal'){const i=+b.dataset.i;P.open=i;const k=P.offers[i];if(BOONS[k].jack)bumpStat('jackpot');BOONS[k].go();render();return true}
+ if(a==='bdone'){if(P.wild&&P.open==null)bumpStat('walkaway');patronDone();return true}
  if(a==='bskip'){patronDone();return true}
  if(a==='bpick'){addCards([b.dataset.k]);patronDone();return true}
  if(a==='bremove'){run.deck=run.deck.filter(d=>d.id!==+b.dataset.id);run.removed=(run.removed||0)+1;patronStep();return true}
