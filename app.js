@@ -769,7 +769,9 @@ function openSheet(html, ctx = null, scrollTop = 0) {
   if (S.ui.sheetCtx !== ctx || $("#sheetBody")?.dataset?.detailIdentity !== detailContextIdentity(ctx)) dismissRulesGuide();
   const dlg = $("#sheet");
   if (S.ui.sheetCtx !== ctx || !dlg.open) T.cancelProvenBuild();
-  const detailState = dlg.open && S.ui.sheetCtx === ctx && !!detailContextIdentity(ctx) && $("#sheetBody").dataset.detailIdentity === detailContextIdentity(ctx) ? captureDetailState($("#sheetBody")) : null;
+  const sameDetail = dlg.open && !!detailContextIdentity(ctx) && $("#sheetBody").dataset.detailIdentity === detailContextIdentity(ctx);
+  const detailState = sameDetail && S.ui.sheetCtx === ctx ? captureDetailState($("#sheetBody")) : null;
+  const keptArt = sameDetail ? collectLoadedArt($("#sheetBody")) : null, motion = sameDetail ? captureSheetMotion($("#sheetBody")) : null, stable = sameDetail ? collectSheetNodes($("#sheetBody")) : null;
   const cardPopup = ["card","tcard"].includes(ctx?.type);
   const enteringCard = cardPopup && (!dlg.open || sheetKey(S.ui.sheetCtx) !== sheetKey(ctx));
   dlg.dataset.cardPopup = String(cardPopup);
@@ -780,6 +782,8 @@ function openSheet(html, ctx = null, scrollTop = 0) {
   S.ui.sheetCtx = ctx;
   $("#sheetBody").detailMountGeneration = ($("#sheetBody").detailMountGeneration || 0) + 1;
   $("#sheetBody").innerHTML = html;
+  reuseLoadedArt($("#sheetBody"),keptArt,keepSheetNodes($("#sheetBody"),stable,keptArt));
+  restoreSheetMotion($("#sheetBody"),motion);
   syncDeckViewers();
   $("#sheetBody").dataset.detailIdentity = detailContextIdentity(ctx);
   if (lastSheetStep && lastSheetStep !== stepKey) {
@@ -888,13 +892,16 @@ function refreshSheet() {
     }
     const c = ctx.type === "card" ? ctx.print || meta(ctx.name) : ctx.type === "tcard" ? contextTcgCard(ctx.game,ctx.id,ctx) : ctx.print;
     if (!c && ctx.type !== "buy") return;
-    const body = $("#sheetBody"), saved = body.dataset.detailIdentity === detailContextIdentity(ctx) ? captureDetailState(body) : null;
+    const body = $("#sheetBody"), same = body.dataset.detailIdentity === detailContextIdentity(ctx), saved = same ? captureDetailState(body) : null;
+    const keptArt = same ? collectLoadedArt(body) : null, motion = same ? captureSheetMotion(body) : null, stable = same ? collectSheetNodes(body) : null;
     // A later redraw (prices, history arriving) keeps whatever the person is using at the same spot on screen,
     // and the card picture keeps its height until its replacement has loaded, so nothing collapses meanwhile.
     const artHeights=[...(body.querySelectorAll?.('.cd-zoom')||[])].map(el=>el.getBoundingClientRect().height);
     const held=body.contains?.(globalThis.document?.activeElement)&&globalThis.document.activeElement!==body?globalThis.document.activeElement:null,heldTop=held?.getBoundingClientRect().top,heldAct=held?.dataset?.act,heldKey=held&&(held.dataset.finish||held.dataset.edition||held.getAttribute('aria-label')||held.textContent);
     body.detailMountGeneration = (body.detailMountGeneration || 0) + 1;
     body.innerHTML = ctx.type === "card" ? V.cardSheet(c,ctx) : ctx.type === "tcard" ? T.tcgCardSheet(c,ctx) : V.buySheet(ctx);
+    reuseLoadedArt(body,keptArt,keepSheetNodes(body,stable,keptArt));
+    restoreSheetMotion(body,motion);
     body.dataset.detailIdentity = detailContextIdentity(ctx);
     wireSheetBack();
     (body.querySelectorAll?.('.cd-zoom')||[]).forEach((el,i)=>{const img=el.querySelector('img');if(!artHeights[i]||!img||img.complete)return;el.style.minHeight=artHeights[i]+'px';const free=()=>{el.style.minHeight='';};img.addEventListener('load',free,{once:true});img.addEventListener('error',free,{once:true});});
@@ -1265,14 +1272,53 @@ function collectLoadedArt(root){
   for(const im of root.querySelectorAll('img[src]')){if(!im.complete||!im.naturalWidth||im.hidden)continue;const src=im.getAttribute('src');const list=map.get(src);if(list)list.push(im);else map.set(src,[im]);}
   return map;
 }
-function reuseLoadedArt(root,map){
+function reuseLoadedArt(root,map,skip){
   if(!map?.size||!root?.querySelectorAll)return;
   for(const fresh of root.querySelectorAll('img[src]')){
+    if(skip?.has(fresh))continue;
     const list=map.get(fresh.getAttribute('src'));const old=list?.shift();if(!old)continue;
     for(const a of [...old.attributes])if(!fresh.hasAttribute(a.name))old.removeAttribute(a.name);
     for(const a of fresh.attributes)if(old.getAttribute(a.name)!==a.value)old.setAttribute(a.name,a.value);
     fresh.replaceWith(old);
   }
+}
+// A card page also redraws several times while it fills in (details, prices, history, owned counts),
+// and each pass used to rebuild the header art and the big card: they blinked, replayed their
+// entrance (header fading in, card swinging in with its shine) and restarted the header's slow drift.
+// When the same card is redrawn, the parts that settle once (header glass, header art, big card) are
+// kept whole if their markup is unchanged, so the big card keeps its foil and light layers too; other
+// loaded pictures are reused, and running animations carry on from where they were.
+const SHEET_STABLE=['.cs-bleed','.cs-hero','.cd-img'];
+function collectSheetNodes(root){return root?.querySelectorAll?SHEET_STABLE.map(sel=>[...root.querySelectorAll(sel)]):null;}
+// Returns the pictures inside the kept parts, which the image reuse pass must leave alone.
+function keepSheetNodes(root,old,keptArt){
+  const kept=new Set();
+  if(!root?.querySelectorAll)return kept;
+  SHEET_STABLE.forEach((sel,i)=>[...root.querySelectorAll(sel)].forEach((fresh,j)=>{
+    const markup=fresh.outerHTML,was=old?.[i]?.[j];
+    if(!was||was.sheetMarkup!==markup){fresh.sheetMarkup=markup;return;}
+    fresh.replaceWith(was);
+    for(const im of was.querySelectorAll('img')){kept.add(im);const list=keptArt?.get(im.getAttribute('src')),k=list?list.indexOf(im):-1;if(k>=0)list.splice(k,1);}
+  }));
+  return kept;
+}
+const SHEET_MOTION=['.cs-hero','.cs-banner .cs-art','.cd-img'];
+function captureSheetMotion(root){
+  if(!root?.querySelectorAll)return null;
+  return SHEET_MOTION.map(sel=>[...root.querySelectorAll(sel)].map(el=>({
+    shone:el.dataset?.shone==='done',shining:el.classList?.contains('shine-once'),
+    runs:(el.getAnimations?.({subtree:true})||[]).filter(a=>a.animationName&&(a.startTime!=null||a.currentTime!=null)).map(a=>({name:a.animationName,pseudo:a.effect?.pseudoElement||null,start:a.startTime,t:a.currentTime}))
+  })));
+}
+function restoreSheetMotion(root,saved){
+  if(!saved||!root?.querySelectorAll)return;
+  SHEET_MOTION.forEach((sel,i)=>[...root.querySelectorAll(sel)].forEach((el,j)=>{
+    const was=saved[i]?.[j];if(!was)return;
+    // The big card already swept its light: it stays settled instead of swinging in again.
+    if(was.shone)el.dataset.shone='done';
+    if(was.shining){el.classList.add('shine-once');const run=was.runs.find(r=>r.name==='card-catch');setTimeout(()=>el.classList.remove('shine-once'),Math.max(0,1300-(run?.t||0)));}
+    for(const a of el.getAnimations?.({subtree:true})||[]){const run=was.runs.find(r=>r.name===a.animationName&&r.pseudo===(a.effect?.pseudoElement||null));if(!run)continue;if(run.start!=null)a.startTime=run.start;else a.currentTime=run.t;}
+  }));
 }
 const navigationStamp = () => ({ revision:navigation.revision, workspace:workspaceVisitRevision, game:T.game(), hash:location.hash });
 const navigationCurrent = stamp => stamp.revision === navigation.revision && stamp.workspace === workspaceVisitRevision && stamp.game === T.game() && stamp.hash === location.hash;

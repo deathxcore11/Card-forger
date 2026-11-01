@@ -418,6 +418,7 @@ function attachMotionTilt(root, pressed) {
       schedule();
       if(x.target.classList.contains("tilting") || pressed() === x.target)continue;
       x.target.classList.add("shine-once");
+      x.target.dataset.shone = "done";
       setTimeout(() => x.target.classList.remove("shine-once"), 1300);
     }
   }, { threshold: 0.6 });
