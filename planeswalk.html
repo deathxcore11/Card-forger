@@ -2831,7 +2831,7 @@ body:has(#app .battle>.pw-esc) #app>.top .emblems{left:calc(max(10px,calc(env(sa
    sets .pw-big and trades width for margin so the fan footprint stays put and no other card moves; the type line and rules text come back
    while it is big. Disabled (unaffordable) cards grow too, so they can be read. The scale divides out the hand's own zoom, so the big card
    is the same size on every monitor. */
-#app#app .battle .hand>.card.pw-big{width:130px!important;flex:0 0 130px!important;transform:translateY(-10px) rotate(0) scale(max(1.25,calc(1.6 / var(--pw-zoom,1))))!important;transform-origin:50% 100%;z-index:12;height:auto!important;min-height:0!important;grid-template-rows:auto minmax(64px,1fr) auto auto!important;aspect-ratio:auto;filter:none!important;opacity:1!important;transition:transform .12s ease-out}
+#app#app .battle .hand>.card.pw-big{width:var(--pw-bigw,130px)!important;flex:0 0 var(--pw-bigw,130px)!important;transform:translateY(-8px) rotate(0) scale(1.22)!important;transform-origin:50% 100%;z-index:12;height:auto!important;min-height:0!important;grid-template-rows:auto minmax(64px,1fr) auto auto!important;aspect-ratio:auto;filter:none!important;opacity:1!important;transition:transform .12s ease-out}
 #app#app .battle .hand>.card.pw-big .kind{display:flex!important;font-size:calc(max(11px,.46rem) * var(--pw-ts,1));padding:2px 5px;white-space:normal;overflow:visible;text-overflow:clip}
 #app#app .battle .hand>.card.pw-big>span:last-child{display:block!important;font-size:calc(max(11px,.5rem) * var(--pw-ts,1));line-height:1.3;padding:3px 6px 5px}
 #app#app .battle .hand>.card.pw-big .pic{min-height:64px}
@@ -3140,6 +3140,10 @@ body[data-actnum="2"] #app#app .battle:has(.unit.boss[data-n^="Kozilek"]){--pw-b
 #app#app#app#app#app .battle .field.pw-squeeze .unit.pw-fig{min-width:calc(56px * var(--pw-sq,1))!important;--pw-bw:max(calc(52px * var(--pw-sq,1)),min(100%,calc(var(--pw-cw,.6) * 125%)))}
 #app#app#app#app#app .battle .field.pw-squeeze .unit.hero.pw-fig{min-width:calc(92px * var(--pw-sq,1))!important;--pw-bw:max(calc(88px * var(--pw-sq,1)),min(100%,calc(var(--pw-cw,.6) * 125%)))}
 #app#app#app#app#app .battle .field.pw-squeeze .side .unit:not(.pw-fig){min-width:calc(3.3em * var(--pw-sq,1))!important}
+/* Slay the Spire framing (Randall 1 Nov): the line shows once its figures stand and the camera is set, never portraits first and then a zoom.
+   A fight with no figures at all (plates) shows as soon as that is decided; the delay is a safety net only. */
+#app .battle .field:not(.pw-stage):not(.pw-plates){visibility:hidden;animation:pw-field-in 0s 1.2s forwards}
+@keyframes pw-field-in{to{visibility:visible}}
 
 </style>
 
@@ -4110,7 +4114,7 @@ const P=c.pending;const F=c.busy?{you:0,dead:new Set(),took:new Map(),over:0}:fo
    <button class="btn main" data-act="end" ${c.busy?'disabled':''}>End turn</button>
   </div>
   <div class="foot"><div class="tally" title="Damage you've dealt this turn"><small>This turn</small>${c.stats.dealt-c.turnStart}${(c.juice||[]).length?`<span class="juice">${c.juice.map(j=>`<i class="${j.mul?'mul':'add'}">${j.t}${j.n>1?` <b>x${j.n}</b>`:''}</i>`).join('')}</span>`:''}</div><div class="energy" title="Mana: ${c.energy} of ${eMax} left this turn. Each lit symbol is one mana to spend. Unspent mana empties at the end of your turn.${HERO.ramp?` ${HERO.short} gets 1 more mana each turn, up to ${HERO.ramp[1]}.`:''}"><span class="e-n">${c.energy}</span><span class="pips" aria-hidden="true">${Array.from({length:Math.min(eMax,10)},(_,i)=>`<i class="${i<c.energy?'on':''}" style="--a:${((i-(Math.min(eMax,10)-1)/2)*(eMax>6?20:26)).toFixed(1)}deg"></i>`).join('')}</span></div>${HERO.fury?`<div class="chain" role="img" aria-label="Fury ${c.chain%4||(c.chain?4:0)} of 4" title="Fury: every 4th card you play in a turn, ${HERO.short} deals 3 to each enemy (6 on the 8th, 9 on the 12th) and adds {R}. Cards played this turn: ${c.chain}.">${[1,2,3,4].map(n=>`<i class="${(c.chain%4||(c.chain?4:0))>=n?'on':''}">${ico('flame')}</i>`).join('')}</div>`:''}
-   <div class="hand" data-audit-stack>${c.hand.map((card,i)=>cardHtml(card,`data-act="play" data-i="${i}" ${canPlay(card)||P&&P.kind==='hand'?'':'disabled'} ${P&&(P.kind==='card'||P.kind==='mode'||P.kind==='hand')&&P.cid===card.id?'data-chosen="1"':''}`)).join('')}</div>${modePick(P)}
+   <div class="hand" data-audit-stack>${c.hand.map((card,i)=>cardHtml(card,`data-act="play" data-i="${i}" data-cid="${card.id}" ${canPlay(card)||P&&P.kind==='hand'?'':'disabled'} ${P&&(P.kind==='card'||P.kind==='mode'||P.kind==='hand')&&P.cid===card.id?'data-chosen="1"':''}`)).join('')}</div>${modePick(P)}
    <div class="piles"><span data-pile="draw" role="img" aria-label="Draw pile: ${c.draw.length} cards"><b>${c.draw.length}</b></span><span data-pile="discard" role="img" aria-label="Discard pile: ${c.discard.length} cards"><b>${c.discard.length}</b></span>${hasUI('exile-pile')&&c.exile.length?`<span data-pile="exile" data-ui="exile-pile" role="img" aria-label="Exile pile: ${c.exile.length} cards"><b>${c.exile.length}</b></span>`:''}${!c.busy&&c.energy?`<span class="bankhint">${Math.min(2,c.energy)} <span class="bh-e">energy </span>saved</span>`:''}${c.tax?'<span style="color:var(--red)">Thalia: spells +1</span>':''}</div></div>
  </section>`;
 }
@@ -4349,7 +4353,7 @@ function patronClick(a,b){const P=run&&run.patron;if(!P)return false;
  if(a==='bupg'){const d=run.deck.find(d=>d.id===+b.dataset.id);if(d)d.foil=true;patronStep();return true}
  if(a==='bcopy'){const d=run.deck.find(d=>d.id===+b.dataset.id);if(d){const n=mk(d.key);n.foil=d.foil;run.deck.push(n)}patronStep();return true}
  return false}
-function render(){if(SIM)return;
+function render(){if(SIM)return;try{window.dispatchEvent(new Event('pw-prerender'))}catch(e){}
  if(view==='over'||view==='victory')endRun(view==='victory');
  markSeen();
  if(view==='heroes'||view==='journal'){document.getElementById('app').innerHTML=view==='journal'?journalView():heroesView();try{delete document.body.dataset.actnum}catch(e){}return}
@@ -5032,8 +5036,9 @@ if(document.querySelector('.screen.heroes')&&typeof render==='function')try{rend
    the hand splits into two rows of whole cards, the second row set between the first like bricks. */
 (()=>{const app=document.getElementById('app');if(!app)return;let raf=0;
  // a name's box changes height when the text size changes (settings, or a text-scale pass): the hand fits again
- const ro=new ResizeObserver(()=>{if(raf){cancelAnimationFrame(raf)}fit()});
- const fit=()=>{raf=0;const h=app.querySelector('.battle .hand');if(!h)return;const cs=[...h.children].filter(x=>x.classList.contains('card'));
+ let tx='';const txOf=()=>{const b=app.querySelector('.battle .hand>.card .head>b');return b?getComputedStyle(b).fontSize+'|'+innerWidth+'x'+innerHeight:''};
+ const ro=new ResizeObserver(()=>{const t=txOf();if(t===tx)return;/* only a text-size change re-fits; a card growing under the mouse does not */if(raf){cancelAnimationFrame(raf)}fit()});
+ const fit=()=>{raf=0;const h=app.querySelector('.battle .hand');if(!h)return;tx=txOf();/* a card grown under the mouse or held in a drag shows its full name: that is not a reason to re-fit the hand (1 Nov hotfix: the whole hand jumped on hover) */if(h.querySelector(':scope>.card.pw-big,:scope>.card.pw-lifted')||document.documentElement.classList.contains('pw-dragging'))return;const cs=[...h.children].filter(x=>x.classList.contains('card'));
   const bs=cs.map(x=>x.querySelector('.head>b'));bs.forEach(b=>b&&ro.observe(b));h.classList.remove('pw-flat','pw-rows','pw-dense','pw-nameless');['--cols','--cw','--ch','--hshift'].forEach(p=>h.style.removeProperty(p));
   cs.forEach((x,i)=>{x.classList.remove('pw-noname');['margin-inline','grid-column','grid-row','--hw'].forEach(p=>x.style.removeProperty(p));bs[i]&&['max-width','margin-left'].forEach(p=>bs[i].style.removeProperty(p))});
   if(cs.length<2)return;
@@ -5086,7 +5091,7 @@ if(document.querySelector('.screen.heroes')&&typeof render==='function')try{rend
  const units=f=>[...f.querySelectorAll(':scope>.side .unit')];
  const idOf=u=>(u.closest('.foe')?'f':'a')+(u.dataset.id||'h');
  // B: how far the board may reach (the field, or as far as its badges already reach at zoom 1); G: the gap the sides need
- const boxes=f=>{let all=null;const sides=[...f.querySelectorAll(':scope>.side')].map(s=>{let b=null;for(const e of s.querySelectorAll('*')){const r=e.getBoundingClientRect();if(!r.width||!r.height)continue;
+ const boxes=f=>{let all=null;const sides=[...f.querySelectorAll(':scope>.side')].map(s=>{let b=null;for(const e of [s,...s.querySelectorAll('*')]){const r=e.getBoundingClientRect();if(!r.width||!r.height)continue;
    all=all?{l:Math.min(all.l,r.left),r:Math.max(all.r,r.right),t:Math.min(all.t,r.top),b:Math.max(all.b,r.bottom)}:{l:r.left,r:r.right,t:r.top,b:r.bottom};
    b=b?{l:Math.min(b.l,r.left),r:Math.max(b.r,r.right),t:Math.min(b.t,r.top),b:Math.max(b.b,r.bottom)}:{l:r.left,r:r.right,t:r.top,b:r.bottom}}return b});return {all,sides}};
  const gap=([a,b])=>!a||!b?1e9:Math.max(b.l-a.r,a.l-b.r,b.t-a.b,a.t-b.b);
@@ -5108,10 +5113,14 @@ if(document.querySelector('.screen.heroes')&&typeof render==='function')try{rend
  const hit=(a,b)=>Math.max(0,Math.min(a.right,b.right)-Math.max(a.left,b.left))*Math.max(0,Math.min(a.bottom,b.bottom)-Math.max(a.top,b.top))>4;
  const fitTags=f=>{for(const t of f.querySelectorAll('.unit .tag')){t.classList.remove('pw-tag-off');const u=t.closest('.unit'),tr=t.getBoundingClientRect();
    for(const s of u.querySelectorAll('*'))if(s!==t&&!t.contains(s)&&!s.contains(t)&&!s.children.length&&s.textContent.trim()&&hit(tr,s.getBoundingClientRect())){t.classList.add('pw-tag-off');break}}};
- const run=()=>{if(busy)return;const f=app.querySelector('.battle .field');if(!f){key='';return}fitNames(f);
+ const spill=f=>{const F=f.getBoundingClientRect(),{all}=boxes(f);return !!all&&(all.l<F.left-2||all.r>F.right+2)};
+ const run=()=>{if(busy)return;const f=app.querySelector('.battle .field');if(!f){key='';return}if(!f.matches('.pw-stage,.pw-plates')){if(key)set(f,Z);return}/* frame once the figures stand (pw-cast), never on the portraits first */fitNames(f);
   if(de.classList.contains('pw-dragging')||document.querySelector('svg.pw-arrow')){set(f,Z);return}
-  const us=units(f),k=us.map(idOf).join()+'|'+innerWidth+'x'+innerHeight+'|'+(app.dataset.pwZoom!=null);
-  set(f,Z);if(k===key)return fitTags(f);const fresh=!key||!key.split('|')[0].split(',').some(x=>us.some(u=>idOf(u)===x));key=k;busy=true;
+  // Slay the Spire framing (Randall 1 Nov): pw-cast sizes the figures for the full line (hero + 4 allies, 4 foes) from the first frame,
+  // so the camera never zooms in, and it is set once per fight: units arriving or falling never move it. Only a new screen size, or a line
+  // that really spills out of the field, frames it again.
+  const us=units(f),k=innerWidth+'x'+innerHeight+'|'+(app.dataset.pwZoom!=null);
+  set(f,Z);if(k===key&&!spill(f))return fitTags(f);const fresh=true;key=k;busy=true;
   try{const before=new Map(us.map(u=>[idOf(u),u.getBoundingClientRect()]));set(f,1);const F=f.getBoundingClientRect(),o=boxes(f),A=o.all||{l:F.left,r:F.right,t:F.top,b:F.bottom};
    const B={l:Math.min(F.left,A.l),r:Math.max(F.right,A.r),t:Math.min(F.top,A.t),b:Math.max(F.bottom,A.b)};const lg=app.querySelector('.battle .controls .log')?.getBoundingClientRect();
    // where the turn pill rides up over the field's foot (wide screens), the units stay above it
@@ -5122,8 +5131,10 @@ if(document.querySelector('.screen.heroes')&&typeof render==='function')try{rend
    const crowd=f.querySelectorAll(':scope>.side.foe .unit').length>=4||f.querySelectorAll(':scope>.side.you .unit').length>=5;
    // never pull back so far that a unit drops under a 44px target
    const w1=Math.min(...us.map(u=>u.getBoundingClientRect().width).filter(Boolean),1e9);
-   let z=1,lo=tight?Math.min(1,Math.max(.6,44.5/w1)):1,hi=tight?1:crowd?2:1.6;if(tight){B.l=F.left;B.r=F.right;B.b=Math.min(F.bottom,LB)}const g=tight?8:G;
-   set(f,hi);if(!tight&&fits(f,F,B,g))z=hi;else{for(let i=0;i<7;i++){const m=(lo+hi)/2;set(f,m);if(fits(f,F,B,g))lo=m;else hi=m}z=lo}
+   let z=1,lo=tight?Math.min(1,Math.max(.6,44.5/w1)):1,hi=1;if(tight){B.l=F.left;B.r=F.right;B.b=Math.min(F.bottom,LB)}const g=tight?8:G;
+   /* Slay the Spire 2 scale (Randall 1 Nov: "keep the camera backed up", "keep scale"): the camera holds at 1. pw-cast already sizes every figure for the
+      full 4v4 at about a third of the screen and shrinks the line itself only if it truly overflows, so a zoom here only made figures jump or shrink */
+   z=1;
    z=Math.round(z*100)/100;if(Math.abs(z-Z)<.03&&!fresh)z=Z;set(f,z);const old=Z;Z=z;
    if(!fresh&&Math.abs(z-old)>=.03&&!matchMedia('(prefers-reduced-motion:reduce)').matches)for(const u of us){const a=before.get(idOf(u)),b=u.getBoundingClientRect();if(!a||!b.width)continue;
     const s=a.width/b.width;u.animate([{transform:`translate(${a.left+a.width/2-(b.left+b.width/2)}px,${a.top+a.height/2-(b.top+b.height/2)}px) scale(${s})`},{transform:'none'}],{duration:480,easing:'cubic-bezier(.22,.8,.24,1)'})}
@@ -5131,7 +5142,7 @@ if(document.querySelector('.screen.heroes')&&typeof render==='function')try{rend
   fitTags(f);window.dispatchEvent(new Event('pw-cam'))};
  new MutationObserver(run).observe(app,{childList:true,subtree:true});addEventListener('pw-fit',()=>{key='';run()});
  // bigger system text re-flows the units, so measure again (our own zoom writes on the field itself are ignored)
- let rq=0;new MutationObserver(ms=>{if(busy||rq||!ms.some(m=>!m.target.matches('.field,.unit>.name')&&!m.target.closest('.hand')))return;rq=requestAnimationFrame(()=>{rq=0;key='';run()})}).observe(app,{attributes:true,attributeFilter:['style'],subtree:true});run()})();
+ let rq=0;new MutationObserver(ms=>{if(busy||rq||!ms.some(m=>!m.target.matches('.field,.field>.side,.unit>.name')&&!m.target.closest('.hand')))return;rq=requestAnimationFrame(()=>{rq=0;key='';run()})}).observe(app,{attributes:true,attributeFilter:['style'],subtree:true});run()})();
 /* Modal focus: while a dialog is up (pause menu, help, zoom, found card, deck list, combat log) everything behind it is
    inert, so taps and keyboard focus can't reach the dimmed game, and the layout check skips what the dialog covers.
    The controls that close a dialog (the deck summary, the log button, ✕) stay live. */
@@ -5173,10 +5184,11 @@ if(document.querySelector('.screen.heroes')&&typeof render==='function')try{rend
    takes 54px more width and gives it back as margin, so the fan footprint stays the same and no other card moves. Touch keeps hold-to-read. */
 (()=>{const app=document.getElementById('app');if(!app||!matchMedia('(hover:hover) and (pointer:fine)').matches)return;
  let cur=null,saved=null;
- const drop=()=>{if(!cur)return;const el=cur;cur=null;el.classList.remove('pw-big');if(saved){if(saved.m==null)el.style.removeProperty('margin-inline');else el.style.setProperty('margin-inline',saved.m,'important')}saved=null};
+ const drop=()=>{if(!cur)return;const el=cur;cur=null;el.classList.remove('pw-big');el.style.removeProperty('--pw-bigw');if(saved){if(saved.m==null)el.style.removeProperty('margin-inline');else el.style.setProperty('margin-inline',saved.m,'important')}saved=null};
  const grow=el=>{if(cur===el||document.documentElement.classList.contains('pw-dragging')||document.querySelector('.pw-zoom'))return;drop();cur=el;
   const m=el.style.getPropertyValue('margin-inline');saved={m:m||null};const base=parseFloat(getComputedStyle(el).marginLeft)||0;
-  el.style.setProperty('margin-inline',(base-27)+'px','important');el.classList.add('pw-big')};
+  /* the big card is 130px wide or its own width, whichever is more, and the extra goes back as margin: on wide screens the cards are already wider than 130, so no card moves (1 Nov hotfix: the hand used to shift on hover) */
+  const w0=el.offsetWidth,W=Math.max(130,w0);el.style.setProperty('--pw-bigw',W+'px');el.style.setProperty('margin-inline',(base-(W-w0)/2)+'px','important');el.classList.add('pw-big')};
  app.addEventListener('pointerover',e=>{if(e.pointerType!=='mouse')return;const el=e.target.closest('.battle .hand>.card');if(el)grow(el)});
  app.addEventListener('pointerout',e=>{if(e.pointerType!=='mouse'||!cur)return;const el=e.target.closest('.battle .hand>.card');if(el!==cur||(e.relatedTarget&&cur.contains(e.relatedTarget)))return;
   // the card changes shape under the pointer, so a leave is believed only when the pointer has really gone
@@ -5206,6 +5218,16 @@ if(document.querySelector('.screen.heroes')&&typeof render==='function')try{rend
 (()=>{const app=document.getElementById('app');if(!app)return;
  const run=()=>{for(const c of app.querySelectorAll('.screen .choices .card')){const cost=c.querySelector(':scope>.head>.cost'),pic=c.querySelector(':scope>.pic');if(cost&&pic)pic.prepend(cost)}};
  let q=0;new MutationObserver(()=>{if(!q){q=1;requestAnimationFrame(()=>{q=0;run()})}}).observe(app,{childList:true,subtree:true});run()})();
+/* Hand glide (1 Nov hotfix, Randall: "glitchy on the hand and cards"): a re-render rebuilds the hand, so after a play or a draw the cards
+   that stay used to jump to their new seats. Their old places are read just before the render; once the hand has been fitted (same frame,
+   before paint) each card slides from where it was, like Slay the Spire. */
+(()=>{const app=document.getElementById('app');if(!app)return;let old=null;
+ const rm=matchMedia('(prefers-reduced-motion:reduce)');
+ addEventListener('pw-prerender',()=>{old=null;if(rm.matches)return;const h=app.querySelector('.battle .hand');if(!h)return;old=new Map();for(const c of h.querySelectorAll(':scope>.card[data-cid]'))old.set(c.dataset.cid,c.getBoundingClientRect())});
+ new MutationObserver(()=>{if(!old)return;const o=old;old=null;requestAnimationFrame(()=>{const h=app.querySelector('.battle .hand');if(!h||document.documentElement.classList.contains('pw-dragging'))return;
+  const k=h.getBoundingClientRect().width/(h.offsetWidth||1)||1;
+  for(const c of h.querySelectorAll(':scope>.card[data-cid]')){const a=o.get(c.dataset.cid);if(!a)continue;const b=c.getBoundingClientRect(),dx=(a.left+a.width/2-(b.left+b.width/2))/k,dy=(a.top+a.height/2-(b.top+b.height/2))/k;
+   if(Math.abs(dx)<1&&Math.abs(dy)<1)continue;c.animate([{transform:`translate(${dx}px,${dy}px)`},{transform:'translate(0px,0px)'}],{duration:220,easing:'cubic-bezier(.22,.8,.24,1)',composite:'add'})/* translate is pinned with !important in the skins, so the slide adds onto the fan's transform */}})}).observe(app,{childList:true})})();
 
 </script>
 <script id="pw-motion">
@@ -5999,7 +6021,7 @@ function snap(g){const c=g.c;const foes=new Map();for(const e of c.enemies)foes.
 function unmountAll(){for(const R of rigs.values()){R.cv.remove();ro.unobserve(R.cv)}rigs.clear();holds.clear();groundOff(app.querySelector('.battle'))}
 function sync(){const g=G();if(!g||!g.c||g.view!=='battle'||!app.querySelector('.battle .field')){if(rigs.size)unmountAll();prev=null;fightC=null;if(g&&D&&D.length&&g.view!=='battle'){preload([entryForHero(g)&&entryForHero(g).key,...actKeys(g)]);preloadGround()}return}
  if(!D){loadData().then(()=>sync());return}
- const now=snap(g);if(fightC!==now.c){fightC=now.c;fightReady=false;fightT0=performance.now();plates=null;unmountAll();prev=null}
+ const now=snap(g);if(fightC!==now.c){fightC=now.c;fightReady=false;fightT0=performance.now();plates=null;fightH=null;unmountAll();prev=null}
  // the fight opens with every figure ready, or it stays on the portraits until they are
  const hero=app.querySelector('.battle .unit.hero'),foeEls=[...app.querySelectorAll('.battle .side.foe .unit[data-id]')],allyEls=[...app.querySelectorAll('.battle .side.you .unit.ally[data-id]')];
  const allyOf=el=>entryForAlly(now.c.allies.find(x=>String(x.id)===el.dataset.id));
@@ -6054,7 +6076,7 @@ function fitWidth(field){const you=field.querySelector('.side.you'),foe=field.qu
 // Everyone stands on one line, heroes left and foes right (Randall 31 Oct: never stack the foes above the hero).
 // Under the floor (96px, or 11% of the screen height) the figures read as specks, so a fight that cannot seat them at the floor keeps the portrait plates
 // (decided once per fight and viewport; a fight already on figures only drops to plates when a summon crowds it hard).
-const ALLY=.42,SEAL=.5,CHROME=36,MINW={hero:92,fig:56};/* = cast.css min-width of a hero / other figure unit *//* under 80px on screen the figures read as specks; a 5-on-5 on a phone or the Fold just makes it, Slay the Spire style, instead of falling back to plates */const floor=()=>80;let plates=null;
+const ALLY=.42,SEAL=.5,CHROME=36,MINW={hero:92,fig:56};/* = cast.css min-width of a hero / other figure unit *//* under 80px on screen the figures read as specks; a 5-on-5 on a phone or the Fold just makes it, Slay the Spire style, instead of falling back to plates */const floor=()=>80;let plates=null,fightH=null;
 function size(field,hero,foeEls,now,g,hE,allyOf){if(!field)return;const you=field.querySelector('.side.you'),foe=field.querySelector('.side.foe');if(!you||!foe)return;
  const cs=getComputedStyle(field),W=field.clientWidth-px(cs.paddingLeft)-px(cs.paddingRight),Hf=field.clientHeight;// the room between the paddings
  const gapF=Math.min(20,px(cs.columnGap)||px(cs.gap)||12),// figure fields get a 20px column gap (cast.css); the first measure happens before any figure mounts
@@ -6063,6 +6085,12 @@ function size(field,hero,foeEls,now,g,hE,allyOf){if(!field)return;const you=fiel
  for(const el of you.children){if(el.matches('.slot'))continue;if(el===hero&&hE){const p=hE.fw/hE.fh*packOf(hE);arY+=p;its.push([p,MINW.hero])}else if(el.matches('.unit')){const ae=el.matches('.ally[data-id]')&&allyOf?allyOf(el):null;if(ae){const k=ae.scale||.8,p=k*ae.fw/ae.fh*packOf(ae);arY+=p;its.push([p,MINW.fig]);el.style.setProperty('--k',k)}else{arY+=ALLY;nA++;its.push([ALLY,-1])}}else continue;nY++}
  for(const el of foeEls){const fe=now.c.enemies.find(x=>String(x.id)===el.dataset.id),en=entryForFoe(fe,g);if(en){const k=KSCALE[fe.rank||(en.rank==='token'?'token':'regular')]||.8,p=k*en.fw/en.fh*packOf(en);arF+=p;its.push([p,MINW.fig]);el.style.setProperty('--k',k);if(k>kmax)kmax=k}else{arF+=SEAL;its.push([SEAL,-1])}nF++}
  if(!arY&&!arF)return;
+ /* Slay the Spire framing (Randall 1 Nov): solve the height for the full line, hero + 4 allies and 4 foes, from the first frame, so figures
+    never grow when a fight starts small or shrink when summons arrive. Missing seats count as the average figure already on that side. */
+ const real=its.slice(),nYr=nY,nFr=nF;
+ {const fy=its.slice(0,nY).filter(([p,m])=>m===MINW.fig),pY=fy.length?fy.reduce((t,[p])=>t+p,0)/fy.length:.42,ff=its.slice(nY).filter(([p])=>p>0),pF=ff.length?ff.reduce((t,[p])=>t+p,0)/ff.length:.5;
+  for(;nY<5;nY++){arY+=pY;its.push([pY,MINW.fig])}for(;nF<4;nF++){arF+=pF;its.push([pF,MINW.fig])}
+  field.__pwFull={pY,pF}}
  const Hmax=(Hf-CHROME)/kmax;// a boss fight: the hero gives up a little height, the boss takes what the field allows (below)
  const sc=field.getBoundingClientRect().width/(field.clientWidth||1)||1,tap=Math.max(44/Math.max(1,sc),37);/* and never under the plate's stat pill (cast.css min-width 3.3em) */field.style.setProperty('--pw-tap',tap.toFixed(2)+'px');/* a portrait needs 44 on-screen px to tap, not 44 of the zoomed phone layout's px (on the Fold those dwarfed the figures) */
  /* the tallest height whose line fits: each unit is its body's width at that height, but never under its min width (cast.css: the bar's room, a portrait's tap), so solve by halving */
@@ -6070,7 +6098,10 @@ function size(field,hero,foeEls,now,g,hE,allyOf){if(!field)return;const you=fiel
  let H1=Hmax;if(need(0)>room)H1=Math.min(Hmax,...its.filter(([p])=>p>0).map(([p,m])=>(m<0?pmin:m)/p));/* even the minimum widths overflow: keep every unit at its minimum, as tall as that width allows (was the 44px floor, specks on the Fold) */
  else if(need(H1)>room){let lo=0,hi=Hmax;for(let i=0;i<24;i++){const mid=(lo+hi)/2;if(need(mid)<=room)lo=mid;else hi=mid}H1=lo}
  const vk=innerWidth+'x'+innerHeight;if(plates&&plates.vk!==vk)plates=null;
- const H=Math.min(innerHeight*.42/sc,Math.max(44,H1)),Hs=H*sc;// a figure never takes more than 42% of the screen height// on-screen pixels: tablets scale the phone layout up
+ let H=Math.min(innerHeight*.42/sc,Math.max(44,H1));
+ /* one height per fight and screen: kept while the real line still fits at it, so a summon or a death never re-frames the fight */
+ if(fightH&&fightH.vk===vk){const roomR=W-gapF-Math.max(0,nYr-1)*gapY-Math.max(0,nFr-1)*gapE-8,needR=h=>real.reduce((t,[p,m])=>t+Math.max(m<0?pmin:m,p*h),0);H=needR(fightH.H)<=roomR?fightH.H:Math.min(H,fightH.H)}
+ fightH={vk,H};const Hs=H*sc;// a figure never takes more than 42% of the screen height// on-screen pixels: tablets scale the phone layout up
  if(!plates)plates={vk,on:Hs<floor()};else if(!plates.on&&Hs<floor()*.75)plates.on=true
  window.__pwSize={W,Hf,gapF,gapY,gapE,arY,arF,nY,nF,H1,H,sc,Hs,plates:plates.on};
  if(plates.on){field.classList.add('pw-plates');field.classList.remove('pw-small','pw-stage');field.style.removeProperty('--pw-fh');return false}

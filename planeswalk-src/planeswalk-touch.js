@@ -512,8 +512,9 @@
    the hand splits into two rows of whole cards, the second row set between the first like bricks. */
 (()=>{const app=document.getElementById('app');if(!app)return;let raf=0;
  // a name's box changes height when the text size changes (settings, or a text-scale pass): the hand fits again
- const ro=new ResizeObserver(()=>{if(raf){cancelAnimationFrame(raf)}fit()});
- const fit=()=>{raf=0;const h=app.querySelector('.battle .hand');if(!h)return;const cs=[...h.children].filter(x=>x.classList.contains('card'));
+ let tx='';const txOf=()=>{const b=app.querySelector('.battle .hand>.card .head>b');return b?getComputedStyle(b).fontSize+'|'+innerWidth+'x'+innerHeight:''};
+ const ro=new ResizeObserver(()=>{const t=txOf();if(t===tx)return;/* only a text-size change re-fits; a card growing under the mouse does not */if(raf){cancelAnimationFrame(raf)}fit()});
+ const fit=()=>{raf=0;const h=app.querySelector('.battle .hand');if(!h)return;tx=txOf();/* a card grown under the mouse or held in a drag shows its full name: that is not a reason to re-fit the hand (1 Nov hotfix: the whole hand jumped on hover) */if(h.querySelector(':scope>.card.pw-big,:scope>.card.pw-lifted')||document.documentElement.classList.contains('pw-dragging'))return;const cs=[...h.children].filter(x=>x.classList.contains('card'));
   const bs=cs.map(x=>x.querySelector('.head>b'));bs.forEach(b=>b&&ro.observe(b));h.classList.remove('pw-flat','pw-rows','pw-dense','pw-nameless');['--cols','--cw','--ch','--hshift'].forEach(p=>h.style.removeProperty(p));
   cs.forEach((x,i)=>{x.classList.remove('pw-noname');['margin-inline','grid-column','grid-row','--hw'].forEach(p=>x.style.removeProperty(p));bs[i]&&['max-width','margin-left'].forEach(p=>bs[i].style.removeProperty(p))});
   if(cs.length<2)return;
@@ -566,7 +567,7 @@
  const units=f=>[...f.querySelectorAll(':scope>.side .unit')];
  const idOf=u=>(u.closest('.foe')?'f':'a')+(u.dataset.id||'h');
  // B: how far the board may reach (the field, or as far as its badges already reach at zoom 1); G: the gap the sides need
- const boxes=f=>{let all=null;const sides=[...f.querySelectorAll(':scope>.side')].map(s=>{let b=null;for(const e of s.querySelectorAll('*')){const r=e.getBoundingClientRect();if(!r.width||!r.height)continue;
+ const boxes=f=>{let all=null;const sides=[...f.querySelectorAll(':scope>.side')].map(s=>{let b=null;for(const e of [s,...s.querySelectorAll('*')]){const r=e.getBoundingClientRect();if(!r.width||!r.height)continue;
    all=all?{l:Math.min(all.l,r.left),r:Math.max(all.r,r.right),t:Math.min(all.t,r.top),b:Math.max(all.b,r.bottom)}:{l:r.left,r:r.right,t:r.top,b:r.bottom};
    b=b?{l:Math.min(b.l,r.left),r:Math.max(b.r,r.right),t:Math.min(b.t,r.top),b:Math.max(b.b,r.bottom)}:{l:r.left,r:r.right,t:r.top,b:r.bottom}}return b});return {all,sides}};
  const gap=([a,b])=>!a||!b?1e9:Math.max(b.l-a.r,a.l-b.r,b.t-a.b,a.t-b.b);
@@ -588,10 +589,14 @@
  const hit=(a,b)=>Math.max(0,Math.min(a.right,b.right)-Math.max(a.left,b.left))*Math.max(0,Math.min(a.bottom,b.bottom)-Math.max(a.top,b.top))>4;
  const fitTags=f=>{for(const t of f.querySelectorAll('.unit .tag')){t.classList.remove('pw-tag-off');const u=t.closest('.unit'),tr=t.getBoundingClientRect();
    for(const s of u.querySelectorAll('*'))if(s!==t&&!t.contains(s)&&!s.contains(t)&&!s.children.length&&s.textContent.trim()&&hit(tr,s.getBoundingClientRect())){t.classList.add('pw-tag-off');break}}};
- const run=()=>{if(busy)return;const f=app.querySelector('.battle .field');if(!f){key='';return}fitNames(f);
+ const spill=f=>{const F=f.getBoundingClientRect(),{all}=boxes(f);return !!all&&(all.l<F.left-2||all.r>F.right+2)};
+ const run=()=>{if(busy)return;const f=app.querySelector('.battle .field');if(!f){key='';return}if(!f.matches('.pw-stage,.pw-plates')){if(key)set(f,Z);return}/* frame once the figures stand (pw-cast), never on the portraits first */fitNames(f);
   if(de.classList.contains('pw-dragging')||document.querySelector('svg.pw-arrow')){set(f,Z);return}
-  const us=units(f),k=us.map(idOf).join()+'|'+innerWidth+'x'+innerHeight+'|'+(app.dataset.pwZoom!=null);
-  set(f,Z);if(k===key)return fitTags(f);const fresh=!key||!key.split('|')[0].split(',').some(x=>us.some(u=>idOf(u)===x));key=k;busy=true;
+  // Slay the Spire framing (Randall 1 Nov): pw-cast sizes the figures for the full line (hero + 4 allies, 4 foes) from the first frame,
+  // so the camera never zooms in, and it is set once per fight: units arriving or falling never move it. Only a new screen size, or a line
+  // that really spills out of the field, frames it again.
+  const us=units(f),k=innerWidth+'x'+innerHeight+'|'+(app.dataset.pwZoom!=null);
+  set(f,Z);if(k===key&&!spill(f))return fitTags(f);const fresh=true;key=k;busy=true;
   try{const before=new Map(us.map(u=>[idOf(u),u.getBoundingClientRect()]));set(f,1);const F=f.getBoundingClientRect(),o=boxes(f),A=o.all||{l:F.left,r:F.right,t:F.top,b:F.bottom};
    const B={l:Math.min(F.left,A.l),r:Math.max(F.right,A.r),t:Math.min(F.top,A.t),b:Math.max(F.bottom,A.b)};const lg=app.querySelector('.battle .controls .log')?.getBoundingClientRect();
    // where the turn pill rides up over the field's foot (wide screens), the units stay above it
@@ -602,8 +607,10 @@
    const crowd=f.querySelectorAll(':scope>.side.foe .unit').length>=4||f.querySelectorAll(':scope>.side.you .unit').length>=5;
    // never pull back so far that a unit drops under a 44px target
    const w1=Math.min(...us.map(u=>u.getBoundingClientRect().width).filter(Boolean),1e9);
-   let z=1,lo=tight?Math.min(1,Math.max(.6,44.5/w1)):1,hi=tight?1:crowd?2:1.6;if(tight){B.l=F.left;B.r=F.right;B.b=Math.min(F.bottom,LB)}const g=tight?8:G;
-   set(f,hi);if(!tight&&fits(f,F,B,g))z=hi;else{for(let i=0;i<7;i++){const m=(lo+hi)/2;set(f,m);if(fits(f,F,B,g))lo=m;else hi=m}z=lo}
+   let z=1,lo=tight?Math.min(1,Math.max(.6,44.5/w1)):1,hi=1;if(tight){B.l=F.left;B.r=F.right;B.b=Math.min(F.bottom,LB)}const g=tight?8:G;
+   /* Slay the Spire 2 scale (Randall 1 Nov: "keep the camera backed up", "keep scale"): the camera holds at 1. pw-cast already sizes every figure for the
+      full 4v4 at about a third of the screen and shrinks the line itself only if it truly overflows, so a zoom here only made figures jump or shrink */
+   z=1;
    z=Math.round(z*100)/100;if(Math.abs(z-Z)<.03&&!fresh)z=Z;set(f,z);const old=Z;Z=z;
    if(!fresh&&Math.abs(z-old)>=.03&&!matchMedia('(prefers-reduced-motion:reduce)').matches)for(const u of us){const a=before.get(idOf(u)),b=u.getBoundingClientRect();if(!a||!b.width)continue;
     const s=a.width/b.width;u.animate([{transform:`translate(${a.left+a.width/2-(b.left+b.width/2)}px,${a.top+a.height/2-(b.top+b.height/2)}px) scale(${s})`},{transform:'none'}],{duration:480,easing:'cubic-bezier(.22,.8,.24,1)'})}
@@ -611,7 +618,7 @@
   fitTags(f);window.dispatchEvent(new Event('pw-cam'))};
  new MutationObserver(run).observe(app,{childList:true,subtree:true});addEventListener('pw-fit',()=>{key='';run()});
  // bigger system text re-flows the units, so measure again (our own zoom writes on the field itself are ignored)
- let rq=0;new MutationObserver(ms=>{if(busy||rq||!ms.some(m=>!m.target.matches('.field,.unit>.name')&&!m.target.closest('.hand')))return;rq=requestAnimationFrame(()=>{rq=0;key='';run()})}).observe(app,{attributes:true,attributeFilter:['style'],subtree:true});run()})();
+ let rq=0;new MutationObserver(ms=>{if(busy||rq||!ms.some(m=>!m.target.matches('.field,.field>.side,.unit>.name')&&!m.target.closest('.hand')))return;rq=requestAnimationFrame(()=>{rq=0;key='';run()})}).observe(app,{attributes:true,attributeFilter:['style'],subtree:true});run()})();
 /* Modal focus: while a dialog is up (pause menu, help, zoom, found card, deck list, combat log) everything behind it is
    inert, so taps and keyboard focus can't reach the dimmed game, and the layout check skips what the dialog covers.
    The controls that close a dialog (the deck summary, the log button, ✕) stay live. */
@@ -653,10 +660,11 @@
    takes 54px more width and gives it back as margin, so the fan footprint stays the same and no other card moves. Touch keeps hold-to-read. */
 (()=>{const app=document.getElementById('app');if(!app||!matchMedia('(hover:hover) and (pointer:fine)').matches)return;
  let cur=null,saved=null;
- const drop=()=>{if(!cur)return;const el=cur;cur=null;el.classList.remove('pw-big');if(saved){if(saved.m==null)el.style.removeProperty('margin-inline');else el.style.setProperty('margin-inline',saved.m,'important')}saved=null};
+ const drop=()=>{if(!cur)return;const el=cur;cur=null;el.classList.remove('pw-big');el.style.removeProperty('--pw-bigw');if(saved){if(saved.m==null)el.style.removeProperty('margin-inline');else el.style.setProperty('margin-inline',saved.m,'important')}saved=null};
  const grow=el=>{if(cur===el||document.documentElement.classList.contains('pw-dragging')||document.querySelector('.pw-zoom'))return;drop();cur=el;
   const m=el.style.getPropertyValue('margin-inline');saved={m:m||null};const base=parseFloat(getComputedStyle(el).marginLeft)||0;
-  el.style.setProperty('margin-inline',(base-27)+'px','important');el.classList.add('pw-big')};
+  /* the big card is 130px wide or its own width, whichever is more, and the extra goes back as margin: on wide screens the cards are already wider than 130, so no card moves (1 Nov hotfix: the hand used to shift on hover) */
+  const w0=el.offsetWidth,W=Math.max(130,w0);el.style.setProperty('--pw-bigw',W+'px');el.style.setProperty('margin-inline',(base-(W-w0)/2)+'px','important');el.classList.add('pw-big')};
  app.addEventListener('pointerover',e=>{if(e.pointerType!=='mouse')return;const el=e.target.closest('.battle .hand>.card');if(el)grow(el)});
  app.addEventListener('pointerout',e=>{if(e.pointerType!=='mouse'||!cur)return;const el=e.target.closest('.battle .hand>.card');if(el!==cur||(e.relatedTarget&&cur.contains(e.relatedTarget)))return;
   // the card changes shape under the pointer, so a leave is believed only when the pointer has really gone
@@ -686,3 +694,13 @@
 (()=>{const app=document.getElementById('app');if(!app)return;
  const run=()=>{for(const c of app.querySelectorAll('.screen .choices .card')){const cost=c.querySelector(':scope>.head>.cost'),pic=c.querySelector(':scope>.pic');if(cost&&pic)pic.prepend(cost)}};
  let q=0;new MutationObserver(()=>{if(!q){q=1;requestAnimationFrame(()=>{q=0;run()})}}).observe(app,{childList:true,subtree:true});run()})();
+/* Hand glide (1 Nov hotfix, Randall: "glitchy on the hand and cards"): a re-render rebuilds the hand, so after a play or a draw the cards
+   that stay used to jump to their new seats. Their old places are read just before the render; once the hand has been fitted (same frame,
+   before paint) each card slides from where it was, like Slay the Spire. */
+(()=>{const app=document.getElementById('app');if(!app)return;let old=null;
+ const rm=matchMedia('(prefers-reduced-motion:reduce)');
+ addEventListener('pw-prerender',()=>{old=null;if(rm.matches)return;const h=app.querySelector('.battle .hand');if(!h)return;old=new Map();for(const c of h.querySelectorAll(':scope>.card[data-cid]'))old.set(c.dataset.cid,c.getBoundingClientRect())});
+ new MutationObserver(()=>{if(!old)return;const o=old;old=null;requestAnimationFrame(()=>{const h=app.querySelector('.battle .hand');if(!h||document.documentElement.classList.contains('pw-dragging'))return;
+  const k=h.getBoundingClientRect().width/(h.offsetWidth||1)||1;
+  for(const c of h.querySelectorAll(':scope>.card[data-cid]')){const a=o.get(c.dataset.cid);if(!a)continue;const b=c.getBoundingClientRect(),dx=(a.left+a.width/2-(b.left+b.width/2))/k,dy=(a.top+a.height/2-(b.top+b.height/2))/k;
+   if(Math.abs(dx)<1&&Math.abs(dy)<1)continue;c.animate([{transform:`translate(${dx}px,${dy}px)`},{transform:'translate(0px,0px)'}],{duration:220,easing:'cubic-bezier(.22,.8,.24,1)',composite:'add'})/* translate is pinned with !important in the skins, so the slide adds onto the fan's transform */}})}).observe(app,{childList:true})})();

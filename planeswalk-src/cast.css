@@ -224,3 +224,7 @@ body[data-actnum="2"] #app#app .battle:has(.unit.boss[data-n^="Kozilek"]){--pw-b
 #app#app#app#app#app .battle .field.pw-squeeze .unit.pw-fig{min-width:calc(56px * var(--pw-sq,1))!important;--pw-bw:max(calc(52px * var(--pw-sq,1)),min(100%,calc(var(--pw-cw,.6) * 125%)))}
 #app#app#app#app#app .battle .field.pw-squeeze .unit.hero.pw-fig{min-width:calc(92px * var(--pw-sq,1))!important;--pw-bw:max(calc(88px * var(--pw-sq,1)),min(100%,calc(var(--pw-cw,.6) * 125%)))}
 #app#app#app#app#app .battle .field.pw-squeeze .side .unit:not(.pw-fig){min-width:calc(3.3em * var(--pw-sq,1))!important}
+/* Slay the Spire framing (Randall 1 Nov): the line shows once its figures stand and the camera is set, never portraits first and then a zoom.
+   A fight with no figures at all (plates) shows as soon as that is decided; the delay is a safety net only. */
+#app .battle .field:not(.pw-stage):not(.pw-plates){visibility:hidden;animation:pw-field-in 0s 1.2s forwards}
+@keyframes pw-field-in{to{visibility:visible}}

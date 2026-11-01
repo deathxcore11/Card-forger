@@ -361,7 +361,7 @@ body:has(#app .battle>.pw-esc) #app>.top .emblems{left:calc(max(10px,env(safe-ar
    sets .pw-big and trades width for margin so the fan footprint stays put and no other card moves; the type line and rules text come back
    while it is big. Disabled (unaffordable) cards grow too, so they can be read. The scale divides out the hand's own zoom, so the big card
    is the same size on every monitor. */
-#app#app .battle .hand>.card.pw-big{width:130px!important;flex:0 0 130px!important;transform:translateY(-10px) rotate(0) scale(max(1.25,calc(1.6 / var(--pw-zoom,1))))!important;transform-origin:50% 100%;z-index:12;height:auto!important;min-height:0!important;grid-template-rows:auto minmax(64px,1fr) auto auto!important;aspect-ratio:auto;filter:none!important;opacity:1!important;transition:transform .12s ease-out}
+#app#app .battle .hand>.card.pw-big{width:var(--pw-bigw,130px)!important;flex:0 0 var(--pw-bigw,130px)!important;transform:translateY(-8px) rotate(0) scale(1.22)!important;transform-origin:50% 100%;z-index:12;height:auto!important;min-height:0!important;grid-template-rows:auto minmax(64px,1fr) auto auto!important;aspect-ratio:auto;filter:none!important;opacity:1!important;transition:transform .12s ease-out}
 #app#app .battle .hand>.card.pw-big .kind{display:flex!important;font-size:.46rem;padding:2px 5px;white-space:normal;overflow:visible;text-overflow:clip}
 #app#app .battle .hand>.card.pw-big>span:last-child{display:block!important;font-size:.5rem;line-height:1.3;padding:3px 6px 5px}
 #app#app .battle .hand>.card.pw-big .pic{min-height:64px}

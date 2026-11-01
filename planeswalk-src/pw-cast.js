@@ -261,7 +261,7 @@ function snap(g){const c=g.c;const foes=new Map();for(const e of c.enemies)foes.
 function unmountAll(){for(const R of rigs.values()){R.cv.remove();ro.unobserve(R.cv)}rigs.clear();holds.clear();groundOff(app.querySelector('.battle'))}
 function sync(){const g=G();if(!g||!g.c||g.view!=='battle'||!app.querySelector('.battle .field')){if(rigs.size)unmountAll();prev=null;fightC=null;if(g&&D&&D.length&&g.view!=='battle'){preload([entryForHero(g)&&entryForHero(g).key,...actKeys(g)]);preloadGround()}return}
  if(!D){loadData().then(()=>sync());return}
- const now=snap(g);if(fightC!==now.c){fightC=now.c;fightReady=false;fightT0=performance.now();plates=null;unmountAll();prev=null}
+ const now=snap(g);if(fightC!==now.c){fightC=now.c;fightReady=false;fightT0=performance.now();plates=null;fightH=null;unmountAll();prev=null}
  // the fight opens with every figure ready, or it stays on the portraits until they are
  const hero=app.querySelector('.battle .unit.hero'),foeEls=[...app.querySelectorAll('.battle .side.foe .unit[data-id]')],allyEls=[...app.querySelectorAll('.battle .side.you .unit.ally[data-id]')];
  const allyOf=el=>entryForAlly(now.c.allies.find(x=>String(x.id)===el.dataset.id));
@@ -316,7 +316,7 @@ function fitWidth(field){const you=field.querySelector('.side.you'),foe=field.qu
 // Everyone stands on one line, heroes left and foes right (Randall 31 Oct: never stack the foes above the hero).
 // Under the floor (96px, or 11% of the screen height) the figures read as specks, so a fight that cannot seat them at the floor keeps the portrait plates
 // (decided once per fight and viewport; a fight already on figures only drops to plates when a summon crowds it hard).
-const ALLY=.42,SEAL=.5,CHROME=36,MINW={hero:92,fig:56};/* = cast.css min-width of a hero / other figure unit *//* under 80px on screen the figures read as specks; a 5-on-5 on a phone or the Fold just makes it, Slay the Spire style, instead of falling back to plates */const floor=()=>80;let plates=null;
+const ALLY=.42,SEAL=.5,CHROME=36,MINW={hero:92,fig:56};/* = cast.css min-width of a hero / other figure unit *//* under 80px on screen the figures read as specks; a 5-on-5 on a phone or the Fold just makes it, Slay the Spire style, instead of falling back to plates */const floor=()=>80;let plates=null,fightH=null;
 function size(field,hero,foeEls,now,g,hE,allyOf){if(!field)return;const you=field.querySelector('.side.you'),foe=field.querySelector('.side.foe');if(!you||!foe)return;
  const cs=getComputedStyle(field),W=field.clientWidth-px(cs.paddingLeft)-px(cs.paddingRight),Hf=field.clientHeight;// the room between the paddings
  const gapF=Math.min(20,px(cs.columnGap)||px(cs.gap)||12),// figure fields get a 20px column gap (cast.css); the first measure happens before any figure mounts
@@ -325,6 +325,12 @@ function size(field,hero,foeEls,now,g,hE,allyOf){if(!field)return;const you=fiel
  for(const el of you.children){if(el.matches('.slot'))continue;if(el===hero&&hE){const p=hE.fw/hE.fh*packOf(hE);arY+=p;its.push([p,MINW.hero])}else if(el.matches('.unit')){const ae=el.matches('.ally[data-id]')&&allyOf?allyOf(el):null;if(ae){const k=ae.scale||.8,p=k*ae.fw/ae.fh*packOf(ae);arY+=p;its.push([p,MINW.fig]);el.style.setProperty('--k',k)}else{arY+=ALLY;nA++;its.push([ALLY,-1])}}else continue;nY++}
  for(const el of foeEls){const fe=now.c.enemies.find(x=>String(x.id)===el.dataset.id),en=entryForFoe(fe,g);if(en){const k=KSCALE[fe.rank||(en.rank==='token'?'token':'regular')]||.8,p=k*en.fw/en.fh*packOf(en);arF+=p;its.push([p,MINW.fig]);el.style.setProperty('--k',k);if(k>kmax)kmax=k}else{arF+=SEAL;its.push([SEAL,-1])}nF++}
  if(!arY&&!arF)return;
+ /* Slay the Spire framing (Randall 1 Nov): solve the height for the full line, hero + 4 allies and 4 foes, from the first frame, so figures
+    never grow when a fight starts small or shrink when summons arrive. Missing seats count as the average figure already on that side. */
+ const real=its.slice(),nYr=nY,nFr=nF;
+ {const fy=its.slice(0,nY).filter(([p,m])=>m===MINW.fig),pY=fy.length?fy.reduce((t,[p])=>t+p,0)/fy.length:.42,ff=its.slice(nY).filter(([p])=>p>0),pF=ff.length?ff.reduce((t,[p])=>t+p,0)/ff.length:.5;
+  for(;nY<5;nY++){arY+=pY;its.push([pY,MINW.fig])}for(;nF<4;nF++){arF+=pF;its.push([pF,MINW.fig])}
+  field.__pwFull={pY,pF}}
  const Hmax=(Hf-CHROME)/kmax;// a boss fight: the hero gives up a little height, the boss takes what the field allows (below)
  const sc=field.getBoundingClientRect().width/(field.clientWidth||1)||1,tap=Math.max(44/Math.max(1,sc),37);/* and never under the plate's stat pill (cast.css min-width 3.3em) */field.style.setProperty('--pw-tap',tap.toFixed(2)+'px');/* a portrait needs 44 on-screen px to tap, not 44 of the zoomed phone layout's px (on the Fold those dwarfed the figures) */
  /* the tallest height whose line fits: each unit is its body's width at that height, but never under its min width (cast.css: the bar's room, a portrait's tap), so solve by halving */
@@ -332,7 +338,10 @@ function size(field,hero,foeEls,now,g,hE,allyOf){if(!field)return;const you=fiel
  let H1=Hmax;if(need(0)>room)H1=Math.min(Hmax,...its.filter(([p])=>p>0).map(([p,m])=>(m<0?pmin:m)/p));/* even the minimum widths overflow: keep every unit at its minimum, as tall as that width allows (was the 44px floor, specks on the Fold) */
  else if(need(H1)>room){let lo=0,hi=Hmax;for(let i=0;i<24;i++){const mid=(lo+hi)/2;if(need(mid)<=room)lo=mid;else hi=mid}H1=lo}
  const vk=innerWidth+'x'+innerHeight;if(plates&&plates.vk!==vk)plates=null;
- const H=Math.min(innerHeight*.42/sc,Math.max(44,H1)),Hs=H*sc;// a figure never takes more than 42% of the screen height// on-screen pixels: tablets scale the phone layout up
+ let H=Math.min(innerHeight*.42/sc,Math.max(44,H1));
+ /* one height per fight and screen: kept while the real line still fits at it, so a summon or a death never re-frames the fight */
+ if(fightH&&fightH.vk===vk){const roomR=W-gapF-Math.max(0,nYr-1)*gapY-Math.max(0,nFr-1)*gapE-8,needR=h=>real.reduce((t,[p,m])=>t+Math.max(m<0?pmin:m,p*h),0);H=needR(fightH.H)<=roomR?fightH.H:Math.min(H,fightH.H)}
+ fightH={vk,H};const Hs=H*sc;// a figure never takes more than 42% of the screen height// on-screen pixels: tablets scale the phone layout up
  if(!plates)plates={vk,on:Hs<floor()};else if(!plates.on&&Hs<floor()*.75)plates.on=true
  window.__pwSize={W,Hf,gapF,gapY,gapE,arY,arF,nY,nF,H1,H,sc,Hs,plates:plates.on};
  if(plates.on){field.classList.add('pw-plates');field.classList.remove('pw-small','pw-stage');field.style.removeProperty('--pw-fh');return false}

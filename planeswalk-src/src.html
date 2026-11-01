@@ -1203,7 +1203,7 @@ const P=c.pending;const F=c.busy?{you:0,dead:new Set(),took:new Map(),over:0}:fo
    <button class="btn main" data-act="end" ${c.busy?'disabled':''}>End turn</button>
   </div>
   <div class="foot"><div class="tally" title="Damage you've dealt this turn"><small>This turn</small>${c.stats.dealt-c.turnStart}${(c.juice||[]).length?`<span class="juice">${c.juice.map(j=>`<i class="${j.mul?'mul':'add'}">${j.t}${j.n>1?` <b>x${j.n}</b>`:''}</i>`).join('')}</span>`:''}</div><div class="energy" title="Mana: ${c.energy} of ${eMax} left this turn. Each lit symbol is one mana to spend. Unspent mana empties at the end of your turn.${HERO.ramp?` ${HERO.short} gets 1 more mana each turn, up to ${HERO.ramp[1]}.`:''}"><span class="e-n">${c.energy}</span><span class="pips" aria-hidden="true">${Array.from({length:Math.min(eMax,10)},(_,i)=>`<i class="${i<c.energy?'on':''}" style="--a:${((i-(Math.min(eMax,10)-1)/2)*(eMax>6?20:26)).toFixed(1)}deg"></i>`).join('')}</span></div>${HERO.fury?`<div class="chain" role="img" aria-label="Fury ${c.chain%4||(c.chain?4:0)} of 4" title="Fury: every 4th card you play in a turn, ${HERO.short} deals 3 to each enemy (6 on the 8th, 9 on the 12th) and adds {R}. Cards played this turn: ${c.chain}.">${[1,2,3,4].map(n=>`<i class="${(c.chain%4||(c.chain?4:0))>=n?'on':''}">${ico('flame')}</i>`).join('')}</div>`:''}
-   <div class="hand" data-audit-stack>${c.hand.map((card,i)=>cardHtml(card,`data-act="play" data-i="${i}" ${canPlay(card)||P&&P.kind==='hand'?'':'disabled'} ${P&&(P.kind==='card'||P.kind==='mode'||P.kind==='hand')&&P.cid===card.id?'data-chosen="1"':''}`)).join('')}</div>${modePick(P)}
+   <div class="hand" data-audit-stack>${c.hand.map((card,i)=>cardHtml(card,`data-act="play" data-i="${i}" data-cid="${card.id}" ${canPlay(card)||P&&P.kind==='hand'?'':'disabled'} ${P&&(P.kind==='card'||P.kind==='mode'||P.kind==='hand')&&P.cid===card.id?'data-chosen="1"':''}`)).join('')}</div>${modePick(P)}
    <div class="piles"><span data-pile="draw" role="img" aria-label="Draw pile: ${c.draw.length} cards"><b>${c.draw.length}</b></span><span data-pile="discard" role="img" aria-label="Discard pile: ${c.discard.length} cards"><b>${c.discard.length}</b></span>${hasUI('exile-pile')&&c.exile.length?`<span data-pile="exile" data-ui="exile-pile" role="img" aria-label="Exile pile: ${c.exile.length} cards"><b>${c.exile.length}</b></span>`:''}${!c.busy&&c.energy?`<span class="bankhint">${Math.min(2,c.energy)} <span class="bh-e">energy </span>saved</span>`:''}${c.tax?'<span style="color:var(--red)">Thalia: spells +1</span>':''}</div></div>
  </section>`;
 }
@@ -1442,7 +1442,7 @@ function patronClick(a,b){const P=run&&run.patron;if(!P)return false;
  if(a==='bupg'){const d=run.deck.find(d=>d.id===+b.dataset.id);if(d)d.foil=true;patronStep();return true}
  if(a==='bcopy'){const d=run.deck.find(d=>d.id===+b.dataset.id);if(d){const n=mk(d.key);n.foil=d.foil;run.deck.push(n)}patronStep();return true}
  return false}
-function render(){if(SIM)return;
+function render(){if(SIM)return;try{window.dispatchEvent(new Event('pw-prerender'))}catch(e){}
  if(view==='over'||view==='victory')endRun(view==='victory');
  markSeen();
  if(view==='heroes'||view==='journal'){document.getElementById('app').innerHTML=view==='journal'?journalView():heroesView();try{delete document.body.dataset.actnum}catch(e){}return}
