@@ -373,7 +373,11 @@ function playEditActions(play, name, shown) {
 }
 const SEAL_MINI = { c: ["#9aa1a9", "#5d636b"], u: ["#d9e3ea", "#7e8d99"], r: ["#f1cf7c", "#a77a23"], m: ["#f28a4b", "#a8381b"] };
 const sealIconMini = (key) => { const [a, b] = SEAL_MINI[key] || SEAL_MINI.c; return `<svg class="pe-seal" viewBox="0 0 32 32" aria-hidden="true"><circle cx="16" cy="16" r="13.5" fill="${a}"/><circle cx="16" cy="16" r="8.4" fill="none" stroke="${b}" stroke-width="1.6"/><path d="M16 10.5l1.6 3.4 3.7.4-2.8 2.5.8 3.7-3.3-1.9-3.3 1.9.8-3.7-2.8-2.5 3.7-.4z" fill="${b}"/></svg>`; };
+// The card the Play card view shows, for "Use artwork" (app.js reads it back).
+let playShown = null;
+export const playShownCard = () => playShown;
 function playCardActions(play, name, shown) {
+  playShown = shown || null;
   const n = Math.min(play.owned(name, shown), 4), decks = play.decks || [];
   return `<section class="card-secondary-actions play-card-actions" aria-label="Play collection and deck actions">
     <p class="play-card-own"><span class="pe-pips" aria-hidden="true">${[1, 2, 3, 4].map(i => `<i class="${i <= n ? "on" : ""}"></i>`).join("")}</span><b>${n ? `${n} of 4 in your Play collection` : "Not in your Play collection yet"}</b></p>
@@ -383,11 +387,13 @@ function playCardActions(play, name, shown) {
       ${(() => { const st = n < 4 ? play.stamp?.(name, shown) : null; if (!st) return "";
         const need = (c, label, holo) => `<button class="btn${holo ? " ghost" : ""} play-stamp" data-act="playCardStamp" data-econ-card="${esc(st.id)}" data-holo="${holo ? 1 : 0}" ${st.seals >= c ? "" : "disabled"} aria-label="${esc(label)} for ${c} ${st.rarity} seal${c === 1 ? "" : "s"}, you have ${st.seals}">${label} · ${c} ${st.rarity} seal${c === 1 ? "" : "s"}</button>`;
         return (play.craft?.(name, shown)?.room ? "" : need(1, "Stamp it", false)) + (st.canFoil ? need(st.holoCost, "Stamp holo", true) : ""); })()}
-      ${decks.length ? `<details class="play-card-decks"><summary class="btn">Add to deck</summary><div class="play-card-deck-list">${decks.map(d => `<button class="btn ghost small" data-act="playCardToDeck" data-econ-deck="${esc(d.id)}" data-name="${esc(name)}" ${n ? "" : "disabled"}>${esc(d.name || "Untitled deck")}</button>`).join("")}</div></details>` : ""}
-      <button class="btn${decks.length || !n ? " ghost" : ""}" data-act="playCardNewDeck" data-name="${esc(name)}" ${n ? "" : "disabled"}>New deck</button>
+      ${decks.length ? `<details class="play-card-decks"><summary class="btn">Add to deck</summary><div class="play-card-deck-list">${decks.map(d => `<button class="btn ghost small" data-act="playCardToDeck" data-econ-deck="${esc(d.id)}" data-name="${esc(name)}">${esc(d.name || "Untitled deck")}</button>`).join("")}</div>${n ? "" : `<p class="play-card-grey">Greyed in the deck until it is in your Trunk.</p>`}</details>` : ""}
+      <button class="btn${decks.length || !n ? " ghost" : ""}" data-act="playCardNewDeck" data-name="${esc(name)}">New deck</button>
       ${play.holo?.(name, shown)?.can ? `<button class="btn ghost" data-act="playCardHolo" data-oracle="${esc(play.holo(name, shown).oracle)}" ${play.holo(name, shown).afford ? "" : "disabled"}>Make holo · ${play.holo(name, shown).cost} ${esc(play.holo(name, shown).seal)} seals</button>` : ""}
       ${n < 4 ? `<button class="btn ghost" data-act="playCardGet" data-name="${esc(name)}" data-code="${esc(shown?.set || "")}">Get it at the Merchant</button>` : ""}
-    </div></div></section>`;
+      ${n < 4 && shown?.name ? `<button class="btn ghost" data-act="playCardPrecon" data-name="${esc(name)}" data-code="${esc(shown?.set || "")}">Find it in a precon</button>` : ""}
+    </div></div>
+    <div class="context-group context-utilities play-card-more">${shown?.set ? `<button class="btn ghost small" data-act="playLensSet" data-code="${esc(shown.set)}">Go to set</button>` : ""}<button class="btn ghost small" data-act="playCardArtwork">Use artwork as…</button></div></section>`;
 }
 
 export function cardSheet(c, ctx = {}) {

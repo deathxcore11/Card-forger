@@ -1796,9 +1796,16 @@ A.playLensBack=()=>{playView='collection';econUi.tab='sets';go('#play');};
 A.playLensSet=t=>{closeSheet();go('#set/'+encodeURIComponent(t.dataset.code)+'/play');};
 A.playLensBuy=async t=>{try{await playEcon.buy(t.dataset.code);toast('Pack bought. It is waiting in Packs.');render();}catch(e){toast(e.message);}};
 A.playCardToDeck=async t=>{const st=playEcon.snapshot().state,d=(st?.decks||[]).find(x=>x.id===t.dataset.econDeck);if(!d)return;
- const cards=stepDeckCard((d.cards||[]).filter(c=>!c.board).map(c=>({name:c.name,qty:c.qty|0})),t.dataset.name,1,ownedByName(st.cards||[]),d.format);
+ const cards=stepDeckCard((d.cards||[]).filter(c=>!c.board).map(c=>({name:c.name,qty:c.qty|0})),t.dataset.name,1,new Map([[t.dataset.name,4]]),d.format);
  if(cards.reduce((a,c)=>a+c.qty,0)===(d.cards||[]).filter(c=>!c.board).reduce((a,c)=>a+(c.qty|0),0))return toast('No more copies of that card can go in '+(d.name||'that deck')+'.');
- try{await playEcon.saveDeck({id:d.id,name:d.name,format:d.format,cards:[...cards,...(d.cards||[]).filter(c=>c.board)]});toast('Added to '+(d.name||'your deck')+'.');refreshSheet?.();}catch(e){toast(e.message);}};
+ try{await playEcon.saveDeck({id:d.id,name:d.name,format:d.format,cards:[...cards,...(d.cards||[]).filter(c=>c.board)]});toast('Added to '+(d.name||'your deck')+(ownedByName(st.cards||[]).get(t.dataset.name)?'.':'. It stays greyed until it is in your Trunk.'));refreshSheet?.();}catch(e){toast(e.message);}};
+// Use artwork from the Play card view: avatar or profile header only, never the collection banner.
+A.playCardArtwork=()=>{const card=V.playShownCard();if(!card)return;quickCard={game:'mtg',card,play:true};A.quickArtwork();};
+// The precon that holds this card: precons of the card's set first, then a name match; opens it in Decks.
+A.playCardPrecon=async t=>{const name=t.dataset.name,code=String(t.dataset.code||'').toLowerCase();closeSheet();playView='decks';go('#play');await loadPreconIndex();const pc=preconUi(),idx=pc.index||[];
+ const pool=idx.filter(d=>String(d.code||'').toLowerCase()===code).slice(0,8);
+ for(const e of pool){try{const j=await fetchJSON('https://mtgjson.com/api/v5/decks/'+e.fileName.replace(/\.json$/,'')+'.json'),d=j?.data||j,rows=mtgjsonDeckRows(d);if(rows.some(r=>r.name===name||r.name.split(' // ')[0]===name)){return A.playEconPrecon({dataset:{econFile:e.fileName}});}}catch{}}
+ toast('No precon from this set has that card. Packs and seals still work.');};
 A.playCardNewDeck=t=>{closeSheet();econUi.edit={id:null,name:'',format:'Standard',cards:[{name:t.dataset.name,qty:1}]};playView='deck';go('#play');};
 // Get it at the Merchant: open the Merchant on that card's set with its pack highlighted (or the
 // seal press with the card found, when the Merchant doesn't sell that set).
@@ -1828,6 +1835,17 @@ async function loadPool(more=false){const P=econUi.pool;if(!P||P.mode!=='all')re
  catch{if(t===P.ticket)P.error='Check your connection and try again.';}finally{if(t===P.ticket){P.busy=false;refreshPlayMenu();}}}
 A.playEconPool=t=>{const mode=t.dataset.id==='all'?'all':'mine';econUi.pool={...(econUi.pool||{cards:[],ticket:0}),mode};econUi.set='';refreshPlayMenu();};
 A.playEconPoolMore=()=>loadPool(true);
+// A missing card's pack: the Merchant, filtered to that set, its pack lit up.
+A.playGetPack=t=>{const code=t.dataset.code;if(!code)return;closeSheet?.();playView='shop';econUi.query=code;econUi.shopFocus=code;econUi.press=null;go('#play');refreshPlayMenu();requestAnimationFrame(()=>document.querySelector(`[data-pack-code="${CSS.escape(code)}"]`)?.scrollIntoView({block:'center',behavior:'smooth'}));};
+// Empty slots (a Trunk build that ran out of owned cards): fill them with the format's most-played
+// cards in the deck's colours, one copy each; cards you don't own land greyed, ready to craft.
+A.playFillSlots=async()=>{const e=econUi.edit;if(!e||econUi.filling)return;const size=e.format==='Commander'?100:60,have=(e.cards||[]).reduce((t,c)=>t+c.qty,0),need=size-have;if(need<1)return;
+ econUi.filling=true;refreshPlayMenu();const saved={cardQuery:econUi.cardQuery,color:econUi.color,type:econUi.type,rarity:econUi.rarity};Object.assign(econUi,{cardQuery:'',color:'',type:'',rarity:''});const q=poolQuery();Object.assign(econUi,saved);
+ try{const inDeck=new Set((e.cards||[]).map(c=>key(c.name)));let added=0;
+  for(let page=1;page<=3&&added<need;page++){const r=await fetch(`https://api.scryfall.com/cards/search?${new URLSearchParams({q:q+' -t:land',order:'edhrec',unique:'cards',page:String(page)})}`,{headers:{Accept:'application/json'}});const body=r.ok?await r.json().catch(()=>null):null;if(!body?.data)break;
+   for(const c of body.data.map(slimCard)){if(added>=need)break;if(inDeck.has(key(c.name)))continue;finderFacts.put(c);inDeck.add(key(c.name));e.cards.push({name:c.name,qty:1});added++;}if(!body.has_more)break;}
+  e.dirty=true;toast(added?`${added} suggested card${added>1?'s':''} added. Greyed ones are still to craft.`:'No suggestions found right now.');}
+ catch{toast('Suggestions could not load. Check your connection.');}finally{econUi.filling=false;refreshPlayMenu();}};
 const craftIdOf=name=>finderFacts.get(name)?.id||econFacts.card((playEcon.snapshot().state?.cards||[]).find(c=>c.n===name||c.n.split(' // ')[0]===name)?.o)?.card?.id||'';
 async function craftCopies(id,n){let made=0;for(let i=0;i<n;i++){try{await playEcon.craft(id);made++;}catch{break;}}return made;}
 A.playCraftCopies=async t=>{const id=t.dataset.cardId||craftIdOf(t.dataset.name),n=Math.max(1,Math.min(4,Number(t.dataset.n)||1));if(!id)return toast('That card is still loading. Try again in a moment.');
@@ -1884,7 +1902,7 @@ A.playEconCopyList=()=>{const e=econUi.edit;if(!e?.cards?.length)return;copyText
 // Card meta from the cached tournament lists (no prices): share of lists, the archetype that
 // plays it most, and a jump to Build a deck filtered to lists with the card.
 function cardMetaStats(name){const out=[];for(const fmt of FINDER_FORMATS){const data=metaState('mtg:'+(fmt==='Commander'?'EDH':fmt)).data;const decks=(data?.decks||[]).filter(d=>Array.isArray(d.main));if(decks.length<8)continue;
- const key=key(name),hit=decks.filter(d=>[...(d.commanders||[]).map(r=>typeof r==='string'?r:r.name),...d.main.map(r=>r.name)].some(n=>key(n)===key||key(String(n).split(' // ')[0])===key));if(!hit.length)continue;
+ const want=key(name),hit=decks.filter(d=>[...(d.commanders||[]).map(r=>typeof r==='string'?r:r.name),...d.main.map(r=>r.name)].some(n=>key(n)===want||key(String(n).split(' // ')[0])===want));if(!hit.length)continue;
  const arch=new Map();for(const d of hit){const a=d.archetype||d.name||'';arch.set(a,(arch.get(a)||0)+1);}const top=[...arch].sort((a,b)=>b[1]-a[1])[0];
  out.push({format:fmt,share:hit.length/decks.length,lists:hit.length,total:decks.length,top:top?.[0]||'',topLists:top?.[1]||0});}
  return out.sort((a,b)=>b.share-a.share);}
@@ -2550,6 +2568,9 @@ async function pickCompareCard(t) {
 }
 async function cardQuickMenu(t) {
   t?.closest?.("dialog.zoom")?.querySelector('[data-z="close"]')?.click();
+  // Play has its own card actions (Play decks, Craft with seals, packs): right-click and long-press
+  // there open the Play card view, never the collection app's menu.
+  if (S.ui.view === "play" || S.ui.lens === "play") { const el = t?.dataset?.name ? t : t?.querySelector?.('[data-act="card"][data-name]') || t?.closest?.("[data-name]"); if (el?.dataset?.name) A.card(el); return; }
   const ref = t?.quickRef || await resolveActionCard(t); if (!ref) return;
   quickCard = ref; haptic("tap");
   const st = ref.game === "mtg" ? S.state : T.gs(ref.game);
@@ -4453,7 +4474,7 @@ A.profileHeader=()=>headerPicker.open();
 // Collection banner art: a pin stays until the player changes it; without one the banner
 // changes every hour (collection-banner.js).
 const bannerImage=(game,card)=>game==='mtg'?card?.image_uris?.art_crop||card?.card_faces?.[0]?.image_uris?.art_crop:game==='ygo'?(/^\d{1,12}$/.test(String(card?.id||''))?`https://images.ygoprodeck.com/images/cards_cropped/${card.id}.jpg`:''):artworkSources(card,true)[0];
-A.quickArtwork=()=>{if(!quickCard)return;const ref=quickCard,pinned=S.state.settings.collectionBanner?.[ref.game],canPin=!!bannerPin(ref.game,ref.card,bannerImage(ref.game,ref.card));openSheet(`<div class="sheet-head"><h2>Use artwork as…</h2><button class="icon" data-act="closeSheet">✕</button></div><div class="actions"><button class="btn" data-act="quickArtworkAvatar">Avatar</button><button class="btn ghost" data-act="quickArtworkHeader">Profile header</button>${canPin?'<button class="btn ghost" data-act="quickArtworkBanner">Collection banner</button>':''}</div>${pinned?'<p class="artwork-banner-reset"><button class="link" data-act="quickArtworkBannerRotate">Change the banner every hour again</button></p>':''}`,{type:"artwork-actions"});A.quickArtworkAvatar=()=>profilePicker.open({card:ref.card,game:ref.game});A.quickArtworkHeader=()=>headerPicker.open({card:ref.card,game:ref.game});
+A.quickArtwork=()=>{if(!quickCard)return;const ref=quickCard,pinned=!ref.play&&S.state.settings.collectionBanner?.[ref.game],canPin=!ref.play&&!!bannerPin(ref.game,ref.card,bannerImage(ref.game,ref.card));openSheet(`<div class="sheet-head"><h2>Use artwork as…</h2><button class="icon" data-act="closeSheet">✕</button></div><div class="actions"><button class="btn" data-act="quickArtworkAvatar">Avatar</button><button class="btn ghost" data-act="quickArtworkHeader">Profile header</button>${canPin?'<button class="btn ghost" data-act="quickArtworkBanner">Collection banner</button>':''}</div>${pinned?'<p class="artwork-banner-reset"><button class="link" data-act="quickArtworkBannerRotate">Change the banner every hour again</button></p>':''}`,{type:"artwork-actions"});A.quickArtworkAvatar=()=>profilePicker.open({card:ref.card,game:ref.game});A.quickArtworkHeader=()=>headerPicker.open({card:ref.card,game:ref.game});
  A.quickArtworkBanner=async()=>{const pin=bannerPin(ref.game,ref.card,bannerImage(ref.game,ref.card));if(!pin)return toast('This card has no artwork to use.');await commit(st=>{st.settings.collectionBanner={...(st.settings.collectionBanner||{}),[ref.game]:pin};},{enrich:false,recordDeckWork:false,observeValue:false});closeSheet();toast(`${ref.card.name} is your Collection banner.`);};
  A.quickArtworkBannerRotate=async()=>{await commit(st=>{const next={...(st.settings.collectionBanner||{})};delete next[ref.game];st.settings.collectionBanner=next;},{enrich:false,recordDeckWork:false,observeValue:false});closeSheet();toast('The Collection banner changes every hour again.');};};
 A.cardProfileHeader=async t=>{

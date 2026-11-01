@@ -1300,3 +1300,10 @@ button.pd-near-row{cursor:pointer}
 .pe-pack-goal b{color:#f2d18e;font-variant-numeric:tabular-nums}
 .pe-pack-goal:hover,.pe-pack-goal:focus-visible{border-color:var(--gold);background:#f2d18e14}
 .pe-pack-goal:focus-visible{outline:2px solid var(--gold);outline-offset:2px}
+.pe-fill{min-height:44px;width:100%}
+.pe-craft-set{display:grid;place-items:center;min-width:44px;min-height:44px;border-radius:12px;border:1px solid color-mix(in srgb,var(--gold) 30%,var(--line));background:#ffffff0d;cursor:pointer}
+.pe-craft-set .set-icon{width:20px;height:20px;background:#e9d6a7;-webkit-mask:var(--icon) center/contain no-repeat;mask:var(--icon) center/contain no-repeat}
+.pe-craft-set:focus-visible{outline:2px solid var(--gold);outline-offset:2px}
+.pe-pack--focus{border-color:var(--gold);box-shadow:0 0 0 2px var(--gold),0 0 34px #f2d18e55}
+.play-card-grey{margin:.4rem 0 0;font-size:.85em;opacity:.75}
+.play-card-more{display:flex;flex-wrap:wrap;gap:.5rem;margin-top:.6rem}
