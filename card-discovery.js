@@ -22,6 +22,8 @@ export function cardDiscoverySpec(game,kind,raw) {
   }
  }
  if(game==='ptcg'&&kind==='keyword')return {game,q:'',filters:{},loadedText:value,label:'Loaded card text mentioning '+value};
+ // An artist's name opens every card they illustrated (Magic via Scryfall, Pokémon via TCGdex; Yu-Gi-Oh! cards carry no artist).
+ if(kind==='artist')return game==='mtg'?{game,q:'a:"'+value+'"',filters:{},label:'Cards illustrated by '+value}:game==='ptcg'?{game,q:'',filters:{illustrator:value},label:'Cards illustrated by '+value}:null;
  const fields=game==='ygo'?{archetype:'archetype',race:'race',attribute:'attribute',type:'type',keyword:'text'}:{type:'type',stage:'stage',category:'category',ability:'ability'};
  const field=fields[kind];if(!field)return null;
  return {game,q:'',filters:kind==='ability'?{}:{[field]:value},...(kind==='ability'?{loadedAbility:value}:{}),label:kind==='keyword'?'Card text mentioning '+value:kind==='ability'?'Loaded Pokémon with Ability: '+value:value+' cards'};
@@ -50,4 +52,10 @@ export function discoverCardMarkup(game,card={}) {
   for(const ability of card.abilities||[])if(ability.name)chips.push(discoveryButton(game,'ability',ability.name));
  }
  return chips.length?`<details class="card-discovery"><summary>Explore types &amp; abilities</summary><p class="small muted">Find related cards using these properties. Shared properties do not establish a working combo. Results depend on available card data.</p><div class="row wrap">${[...new Set(chips)].join('')}</div></details>`:'';
+}
+// The artist credit on a card page: each named artist ("A & B" credits two) opens their cards.
+export function artistCredit(game,credit,css='') {
+ const names=String(credit||'').split(/\s+&\s+/).map(clean).filter(Boolean);
+ if(!names.length)return '';
+ return `<span class="card-artist${css?' '+css:''}">🖌 ${names.map(n=>discoveryButton(game,'artist',n,n,'link artist-link')).join(' &amp; ')}</span>`;
 }
