@@ -35,3 +35,21 @@ export async function packArtwork(game,set,fetcher=fetch){
  const product=selectPackProduct((await get(`https://tcgcsv.com/tcgplayer/${cat}/${group.groupId}/products`)).results,set.name||group.name);
  return product?{url:product.imageUrl.replace(/_\d+w\.jpg$/,'_400w.jpg'),name:product.name}:null;
 }
+// When TCGplayer has no single booster pack: the set's own product shot. Yu-Gi-Oh! sets carry one on
+// YGOPRODeck (its set list names the code), Magic falls back to MTGJSON's booster box.
+let ygoSetsPromise=null,ygoSetsAt=0;
+const ygoKey=s=>String(s||'').normalize('NFKD').toLowerCase().replace(/[^a-z0-9]/g,'');
+export async function packArtFallbacks(game,{code='',name=''}={},fetcher=fetch){
+ const urls=[];
+ if(game==='ygo'){
+  try{
+   if(!ygoSetsPromise||Date.now()-ygoSetsAt>864e5){ygoSetsAt=Date.now();ygoSetsPromise=fetcher('https://db.ygoprodeck.com/api/v7/cardsets.php',{signal:AbortSignal.timeout(15000)}).then(r=>{if(!r.ok)throw Error('Set list unavailable');return r.json();}).catch(e=>{ygoSetsPromise=null;throw e;});}
+   const sets=await ygoSetsPromise,key=ygoKey(name),hit=(Array.isArray(sets)?sets:[]).find(s=>key&&ygoKey(s.set_name)===key)||(Array.isArray(sets)?sets:[]).find(s=>code&&String(s.set_code).toLowerCase()===code.toLowerCase());
+   if(/^https:\/\/images\.ygoprodeck\.com\/images\/sets\/[A-Za-z0-9_-]+\.jpg$/.test(hit?.set_image||''))urls.push(hit.set_image);
+   else if(hit?.set_code&&/^[A-Za-z0-9]{2,8}$/.test(hit.set_code))urls.push(`https://images.ygoprodeck.com/images/sets/${hit.set_code}.jpg`);
+  }catch{}
+  if(!urls.length&&/^[a-z0-9]{2,8}$/i.test(code))urls.push(`https://images.ygoprodeck.com/images/sets/${code.toUpperCase()}.jpg`);
+ }
+ if(game==='mtg'&&code){try{const art=await magicSetArtwork(code,fetcher);if(art)urls.push(art.url);}catch{}}
+ return urls;
+}

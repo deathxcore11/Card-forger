@@ -9,7 +9,16 @@ export const NEWS_SOURCES = Object.freeze({
   konami: Object.freeze({ game: 'ygo', name: 'Konami', url: 'https://www.yugioh-card.com/en/news/', official: true }),
   'konami-events': Object.freeze({ game: 'ygo', name: 'Konami events', url: 'https://www.yugioh-card.com/en/events/', official: true }),
   ygorganization: Object.freeze({ game: 'ygo', name: 'YGOrganization', url: 'https://ygorganization.com/category/ocg-tcg', official: false, linkOnly: true }),
+  // Live pulse (news-pulse.js): each game's main subreddit and a public article feed, refreshed every half hour.
+  'reddit-mtg': Object.freeze({ game: 'mtg', name: 'r/magicTCG', url: 'https://www.reddit.com/r/magicTCG/', official: false, community: true, sub: 'magicTCG' }),
+  'reddit-ptcg': Object.freeze({ game: 'ptcg', name: 'r/PokemonTCG', url: 'https://www.reddit.com/r/PokemonTCG/', official: false, community: true, sub: 'PokemonTCG' }),
+  'reddit-ygo': Object.freeze({ game: 'ygo', name: 'r/yugioh', url: 'https://www.reddit.com/r/yugioh/', official: false, community: true, sub: 'yugioh' }),
+  mtggoldfish: Object.freeze({ game: 'mtg', name: 'MTGGoldfish', url: 'https://www.mtggoldfish.com/articles', official: false, feed: 'https://www.mtggoldfish.com/feed' }),
+  pokebeach: Object.freeze({ game: 'ptcg', name: 'PokéBeach', url: 'https://www.pokebeach.com/', official: false, feed: 'https://www.pokebeach.com/feed' }),
+  'ygorg-feed': Object.freeze({ game: 'ygo', name: 'YGOrganization', url: 'https://ygorganization.com/', official: false, feed: 'https://ygorganization.com/feed/' }),
 });
+// The live pulse: one subreddit and one article feed per game (news-pulse.js).
+export const PULSE_SOURCES = Object.freeze({ mtg: ['reddit-mtg', 'mtggoldfish'], ptcg: ['reddit-ptcg', 'pokebeach'], ygo: ['reddit-ygo', 'ygorg-feed'] });
 export const GAME_NEWS_SOURCES = Object.freeze({ mtg: ['wizards'], ptcg: ['serebii', 'pokeguardian'], ygo: ['konami', 'ygorganization'] });
 function secureUrl(value) {
   if (typeof value !== 'string' || value.length > 2048 || /[\u0000-\u0020\u007f\\]/.test(value)) return null;
@@ -33,6 +42,10 @@ export function safeNewsArticle(value, game, sourceId, kind = 'news') {
     : sourceId === 'pokeguardian' ? kind === 'news' && /^\/[1-9]\d{3,11}_[a-z0-9-]+\/?$/.test(path)
     : sourceId === 'konami' ? kind === 'news' && /^\/en\/news\/[a-z0-9_-]+\/?$/.test(path)
     : sourceId === 'konami-events' ? kind === 'event' && /^\/en\/events-item\/[a-z0-9-]+\/$/.test(path)
+    : /^reddit-/.test(sourceId) ? kind === 'news' && new RegExp(`^/r/${newsSource(sourceId, game).sub}/comments/[a-z0-9]{4,12}/[A-Za-z0-9_]{0,140}/?$`, 'i').test(path)
+    : sourceId === 'mtggoldfish' ? kind === 'news' && /^\/articles\/[a-z0-9-]{3,180}$/.test(path)
+    : sourceId === 'pokebeach' ? kind === 'news' && /^\/20\d{2}\/\d{2}\/[a-z0-9-]{3,180}\/?$/.test(path)
+    : sourceId === 'ygorg-feed' ? kind === 'news' && /^\/[a-z0-9][a-z0-9-]{3,180}\/?$/.test(path) && !/^\/(?:category|tag|author|about|contact|privacy|feed|wp-)/.test(path)
     : sourceId === 'ygorganization' ? kind === 'news' && /^\/[a-z0-9][a-z0-9-]{3,180}$/.test(path) && !/^\/(?:category|tag|author|about|contact|privacy|terms|tos|disclaimer|donate|shop|store|feed|login|register|account|wp-admin|wp-login|partner|partners|sponsor|sponsors|advertising|subscribe)\b/.test(path) : false;
   return valid ? u.href : '';
 }
@@ -43,6 +56,8 @@ export function safeNewsSourceUrl(value, game, sourceId) {
 export function safeNewsImage(value, game, sourceId, articleUrl, kind = 'news') {
   if (!safeNewsArticle(articleUrl, game, sourceId, kind) || newsSource(sourceId, game)?.linkOnly) return '';
   const u = secureUrl(value);
+  // Reddit's own image hosts. Preview links are signed (?width&format&auto&s), so the query is kept as given.
+  if (/^reddit-/.test(sourceId)) return u && !u.hash && (u.hostname === 'i.redd.it' && /^\/[A-Za-z0-9_-]{6,40}\.(?:jpe?g|png|webp|gif)$/.test(u.pathname) && !u.search || ['preview.redd.it', 'external-preview.redd.it'].includes(u.hostname) && /^\/[A-Za-z0-9_.%-]{6,200}\.(?:jpe?g|png|webp|gif)$/.test(u.pathname) && [...u.searchParams.keys()].every(k => ['width', 'height', 'format', 'auto', 's', 'crop'].includes(k))) ? u.href : '';
   if (!u || u.hash || /(?:^|[\/_-])(?:logo|favicon|avatar|placeholder|default|footer|yugioh-share|banner-logo)(?:[\/_.-]|$)/i.test(u.pathname) || !/\.(?:jpe?g|png|webp|avif)$/i.test(u.pathname)) return '';
   const transforms = { 'enable-io': /^(?:true|false)$/, enable: /^upscale$/, fit: /^bounds$/, width: /^(?:[1-9]\d{0,2}|1\d{3}|2000)$/, height: /^(?:[1-9]\d{0,2}|1\d{3}|2000)$/ };
   if ([...u.searchParams].some(([key, val]) => !Object.hasOwn(transforms, key) || !transforms[key].test(val)) || [...u.searchParams.keys()].some((key, i, keys) => keys.indexOf(key) !== i)) return '';
