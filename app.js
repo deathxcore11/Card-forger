@@ -1689,9 +1689,9 @@ const playEcon=createPlayEcon({getAccessToken:cloudAccessToken,onChange:()=>{syn
 let econUi={query:'',cardQuery:'',rarity:'',press:null,check:null},econSeen=null;
 const econFacts=createCardFacts({onChange:()=>{if(S.ui.view==='play'&&ECON_VIEWS.has(playView))refreshPlayMenu();}});
 // Read the wallet once per signed-in account per visit to Play; a new account starts clean.
-const econWake=()=>{const id=cloudInfo()?.user?.id||null;if(id===econSeen)return;if(econSeen!==null)playEcon.clear();econSeen=id;econUi={query:'',cardQuery:'',rarity:'',press:null,check:null};playView=ECON_VIEWS.has(playView)?'home':playView;if(id)setTimeout(()=>playEcon.refresh(),0);};
+const econWake=()=>{const id=cloudInfo()?.user?.id||null;if(id===econSeen)return;if(econSeen!==null)playEcon.clear();econSeen=id;econUi={query:'',cardQuery:'',rarity:'',press:null,check:null};playView=ECON_VIEWS.has(playView)?'home':playView;if(id)setTimeout(()=>playEcon.refresh().then(()=>playEcon.login()).then(l=>{if(l?.fresh)toast(`Day ${l.stamp} stamped on your log-in calendar.`);}),0);};
 const econFocus=()=>requestAnimationFrame(()=>document.getElementById('playTitle')?.focus?.({preventScroll:true}));
-A.playEconView=t=>{const v=t.dataset.econView;if(!ECON_VIEWS.has(v))return;playView=v;if(v==='decks')loadPreconIndex();playInspectOpen=false;refreshPlayMenu();scrollTo({top:0});if(v==='shop'&&t.dataset.econFocus==='press')requestAnimationFrame(()=>document.querySelector('.pe-forge')?.scrollIntoView({block:'center',behavior:'smooth'}));else econFocus();};
+A.playEconView=t=>{const v=t.dataset.econView;if(!ECON_VIEWS.has(v))return;playView=v;if(t.dataset.econTab)econUi.deedTab=t.dataset.econTab;if(v==='decks')loadPreconIndex();playInspectOpen=false;refreshPlayMenu();scrollTo({top:0});if(v==='shop'&&t.dataset.econFocus==='press')requestAnimationFrame(()=>document.querySelector('.pe-forge')?.scrollIntoView({block:'center',behavior:'smooth'}));else econFocus();};
 A.playEconBuy=async t=>{try{await playEcon.buy(t.dataset.econSet);toast('Pack bought. It is waiting in Packs.');}catch{}};
 // The Forge: strike lower seals into the next rarity; the new seal flares where it lands.
 A.playEconForge=async t=>{const to=t.dataset.econTo,times=Number(t.dataset.econTimes)||1;try{const out=await playEcon.forge(to,times);haptic('success');appSound('PACK-005',{volume:.5,gap:0});
@@ -1699,6 +1699,12 @@ A.playEconForge=async t=>{const to=t.dataset.econTo,times=Number(t.dataset.econT
  requestAnimationFrame(()=>document.querySelectorAll(`.pe-forge-seal[data-seal="${to}"]`).forEach(el=>{el.classList.remove('struck');void el.offsetWidth;el.classList.add('struck');}));return out;}catch{}};
 A.playEconCraft=async t=>{try{const out=await playEcon.craft(t.dataset.econCard);toast(out.card.name+' added to your Play collection.');}catch{}};
 A.playEconRetry=()=>{playEcon.refresh();};
+A.playEconDeedTab=t=>{econUi.deedTab=t.dataset.value||'journey';refreshPlayMenu();};
+A.playEconClaim=async t=>{const {econKind:kind,econId:id,econStep:step}=t.dataset;try{const out=await playEcon.claim(kind,id,step===undefined?undefined:Number(step));t.closest('.pd-card,.pd-quest')?.classList.add('struck');haptic('success');const d=out.delta||{},bits=[d.coins&&d.coins+' coins',d.packs?.length&&d.packs.length+(d.packs.length===1?' pack':' packs'),...Object.entries(d.seals||{}).map(([k,v])=>v+' '+({c:'common',u:'uncommon',r:'rare',m:'mythic'})[k]+(v===1?' seal':' seals')),d.xp&&d.xp+' XP'].filter(Boolean);toast(bits.length?'Claimed: '+bits.join(', ')+'.':'Claimed.');}catch{}};
+// Finished matches move Play quests and achievements (Practice never counts; friend matches count as played).
+addEventListener('play:match-recorded',e=>{const m=e.detail||{};if(!cloudInfo()?.user?.id)return;const mode=m.story?'story':m.friend?'friend':m.playStyle==='practice'?'practice':'quick';if(mode==='practice')return;
+ const id=(crypto.randomUUID?.()||String(Date.now())+Math.random().toString(36).slice(2)).replace(/[^A-Za-z0-9_-]/g,'');
+ playEcon.reportMatch({id,mode,outcome:m.outcome,format:m.format,turns:m.turns,life:m.life,onPlay:m.onPlay,durationMs:m.durationMs});});
 A.playEconRarity=t=>{econUi.rarity=t.dataset.econRarity||'';refreshPlayMenu();};
 I.playEconSetQuery=t=>{econUi.setQuery=t.value;refreshPlayMenu();const f=document.querySelector('[data-input="playEconSetQuery"]');f?.focus({preventScroll:true});try{f.setSelectionRange(t.value.length,t.value.length);}catch{}};
 A.playEconSetFormat=t=>{econUi.setFormat=t.dataset.value||'';refreshPlayMenu();};

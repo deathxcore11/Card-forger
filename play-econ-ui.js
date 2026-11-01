@@ -11,6 +11,7 @@ import {finishAttrs} from './finish-preview.js';
 import {tileChrome} from './tiles.js';
 import {deckShell} from './deck-viewer.js';
 import {purse} from './play-econ-client.js';
+import {deedsScreenMarkup} from './play-deeds-ui.js';
 const esc = v => String(v ?? '').replace(/[&<>"']/g, c => ({'&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;'}[c]));
 const n = v => Number(v || 0).toLocaleString('en-US');
 const ART = 'https://cards.scryfall.io/art_crop/front/';
@@ -25,7 +26,7 @@ export const cardImageByName = (name, version = 'normal') => 'https://api.scryfa
 export const coinIcon = (cls = '') => `<svg class="pe-coin ${cls}" viewBox="0 0 32 32" aria-hidden="true"><circle cx="16" cy="16" r="14" fill="url(#peGold)" stroke="#6b4612" stroke-width="1.6"/><circle cx="16" cy="16" r="10.5" fill="none" stroke="#6b4612" stroke-width="1.5"/><path d="M16 8.5l2.2 4.6 5 .6-3.7 3.4 1 5-4.5-2.5-4.5 2.5 1-5-3.7-3.4 5-.6z" fill="#5c3c0c"/></svg>`;
 const SEAL_INK = {c: ['#9aa1a9', '#5d636b'], u: ['#d9e3ea', '#7e8d99'], r: ['#f1cf7c', '#a77a23'], m: ['#f28a4b', '#a8381b']};
 export const sealIcon = (key, cls = '') => { const [a, b] = SEAL_INK[key] || SEAL_INK.c; return `<svg class="pe-seal ${cls}" data-seal="${key}" viewBox="0 0 32 32" aria-hidden="true"><path d="M16 2.5c2 0 2.6 1.9 4.4 2.5s3.6-.6 5 .8.1 3.2.8 5 2.5 2.4 2.5 4.4-1.9 2.6-2.5 4.4.6 3.6-.8 5-3.2.1-5 .8-2.4 2.5-4.4 2.5-2.6-1.9-4.4-2.5-3.6.6-5-.8-.1-3.2-.8-5S2.5 18 2.5 16s1.9-2.6 2.5-4.4-.6-3.6.8-5 3.2-.1 5-.8S14 2.5 16 2.5z" fill="${a}"/><circle cx="16" cy="16" r="8.4" fill="none" stroke="${b}" stroke-width="1.6"/><path d="M16 10.5l1.6 3.4 3.7.4-2.8 2.5.8 3.7-3.3-1.9-3.3 1.9.8-3.7-2.8-2.5 3.7-.4z" fill="${b}"/></svg>`; };
-const packIcon = `<svg class="pe-pack-icon" viewBox="0 0 32 32" aria-hidden="true"><path d="M8 4h16l-1 3 1 3v15l-1 3 1 3H8l1-3-1-3V10l1-3z" fill="url(#peGold)" stroke="#7a5418" stroke-width="1"/><path d="M12 14h8M12 18h8" stroke="#7a5418" stroke-width="1.4" opacity=".6"/></svg>`;
+export const packIcon = `<svg class="pe-pack-icon" viewBox="0 0 32 32" aria-hidden="true"><path d="M8 4h16l-1 3 1 3v15l-1 3 1 3H8l1-3-1-3V10l1-3z" fill="url(#peGold)" stroke="#7a5418" stroke-width="1"/><path d="M12 14h8M12 18h8" stroke="#7a5418" stroke-width="1.4" opacity=".6"/></svg>`;
 // One shared gradient, so every coin and wrapper is the same stamped gold.
 export const econDefs = `<svg class="pe-defs" width="0" height="0" aria-hidden="true" focusable="false"><defs><radialGradient id="peGold" cx="35%" cy="30%" r="75%"><stop offset="0" stop-color="#fff3c9"/><stop offset=".45" stop-color="#f0c66d"/><stop offset="1" stop-color="#a8761f"/></radialGradient></defs></svg>`;
 
@@ -66,7 +67,7 @@ export function stuffRowMarkup(snapshot) {
   </div>`;
 }
 
-const head = (title, snapshot, eyebrow = 'Play') => `<header class="pl-head pe-head"><button class="pl-back" data-act="playHome" aria-label="Back to Play"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="m15 5-7 7 7 7"/></svg></button><div class="pl-head-title"><p class="eyebrow">${eyebrow}</p><h1 id="playTitle" tabindex="-1">${title}</h1></div>${purseMarkup(snapshot)}</header>`;
+export const head = (title, snapshot, eyebrow = 'Play') => `<header class="pl-head pe-head"><button class="pl-back" data-act="playHome" aria-label="Back to Play"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="m15 5-7 7 7 7"/></svg></button><div class="pl-head-title"><p class="eyebrow">${eyebrow}</p><h1 id="playTitle" tabindex="-1">${title}</h1></div>${purseMarkup(snapshot)}</header>`;
 const statusLine = snap => `<p class="pe-status" role="status" aria-live="polite">${esc(snap?.error || '')}</p>`;
 // The real booster wrapper in front, the set's own key art behind it.
 // A booster wrapper drawn for every set alike: crimped foil, the set's most played card's art,
@@ -360,6 +361,7 @@ export function econScreenMarkup(view, snapshot, ui = {}) {
   if (view === 'collection') return collectionMarkup(snapshot, ui);
   if (view === 'decks') return decksMarkup(snapshot, ui);
   if (view === 'deck') return deckBuilderMarkup(snapshot, ui);
+  if (view === 'deeds') return deedsScreenMarkup(snapshot, ui);
   return '';
 }
-export const ECON_VIEWS = new Set(['shop', 'packs', 'collection', 'decks', 'deck']);
+export const ECON_VIEWS = new Set(['shop', 'packs', 'collection', 'decks', 'deck', 'deeds']);

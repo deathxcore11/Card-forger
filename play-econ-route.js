@@ -8,6 +8,7 @@ import {loadMtgBooster, mtgBoosterCards, drawMtgBooster} from './mtg-boosters.js
 import {rewardSet, setFormats} from './play-econ-sets.js';
 import {starterGrant, sealTrackBonus, packContentsRow, cardDelta, RARITY_SEAL, FORGE_STEPS, forgeRatio, preconPrice, mtgjsonCardDelta, mtgjsonDeckRows, deckShortfall, ownedByName} from './play-econ-rules.js';
 import {PRACTICE_STARTER_ROWS} from './play-starter-deck.js';
+import {ACHIEVEMENTS, achievementRows, achievementReward, achievementRef, questRows, questReward, loginStamp, rewardDelta, matchCounters, playDay} from './play-achievements.js';
 
 const json = (body, status = 200) => new Response(JSON.stringify(body), {status, headers: {'Content-Type': 'application/json', 'Cache-Control': 'no-store'}});
 const fail = (error, status = 400) => json({error}, status);
@@ -83,10 +84,17 @@ export async function progressRoute(request, env, {verifyBearer, fetcher = fetch
   // Story progress is the player's own story:* ledger refs (supabase/migrations/20261101190000_play_story.sql).
   // Before that function exists this answers null and the app keeps its device copy.
   const storyRefs = () => rpc(env, 'play_story_refs', {p_user: uid}, fetcher).catch(() => null);
+  // Achievement counters and claims (supabase/migrations/20261101210000_play_achievements.sql). Until
+  // that SQL runs these answer null, and the app shows quests and achievements at zero.
+  const counters = {
+    bump: (ref, kind, c) => rpc(env, 'play_bump', {p_user: uid, p_ref: ref, p_kind: kind, p_counters: c}, fetcher).catch(() => null),
+    read: () => rpc(env, 'play_counters', {p_user: uid}, fetcher).catch(() => null),
+    claims: () => rpc(env, 'play_claims', {p_user: uid}, fetcher).catch(() => null),
+  };
   try {
     if (path === 'state' && request.method === 'GET') {
-      const [s, sets] = await Promise.all([state(), shopSets(env, request, fetcher)]);
-      return json({...s, rewardSet: sets.reward, shop: sets.shop});
+      const [s, sets, c, claimed] = await Promise.all([state(), shopSets(env, request, fetcher), counters.read(), counters.claims()]);
+      return json({...s, rewardSet: sets.reward, shop: sets.shop, counters: c || {}, claimed: claimed || []});
     }
     if (path === 'story' && request.method === 'GET') return json({refs: await storyRefs()});
     if (request.method !== 'POST') return fail('method', 405);
@@ -154,6 +162,57 @@ export async function progressRoute(request, env, {verifyBearer, fetcher = fetch
       const deck = await rpc(env, 'play_save_deck', {p_user: uid, p_id: null, p_name: String(d.name || 'Precon').slice(0, 80), p_format: String(body.format || '').slice(0, 40),
         p_cards: rows.map(({name, qty, board, set, number}) => ({name, qty, ...(board ? {board} : {}), set, number})), p_delete: false}, fetcher);
       return json({deck, price, granted: cards.length, state: await state()});
+    }
+    if (path === 'login') {
+      // The first visit of the day stamps the log-in calendar (counted days, never a streak). The day
+      // follows the device's offset, limited to UTC-12..UTC+14.
+      const day = playDay(body.tz), s = await state();
+      if (!s.wallet?.starter_at) return json({login: null});
+      const bump = await counters.bump('login:' + day, 'login', {logins: 1});
+      if (!bump) return json({login: null});
+      const st = loginStamp(bump.counters?.logins);
+      if (bump.duplicate) return json({login: {day, ...st, fresh: false}, counters: bump.counters});
+      const reward = await currentRewardSet(env, request, fetcher);
+      await apply('loginpay:' + day, 'login', rewardDelta([st.reward, st.monthReward], reward?.code, 'login'));
+      return json({login: {day, ...st, fresh: true}, counters: bump.counters, state: await state()});
+    }
+    if (path === 'match') {
+      // A finished match from the app's match record. Device-reported, so it only moves quests and
+      // achievements, within caps: 40 matches a day, 3 friend matches a day, 90 minutes a match.
+      const id = String(body.id || '');
+      if (!/^[A-Za-z0-9_-]{8,64}$/.test(id)) return fail('bad_match');
+      const day = playDay(body.tz), now = await counters.read();
+      if (!now) return fail('not_ready', 503);
+      if ((now[`d:${day}:matches`] || 0) >= 40) return json({counted: false, counters: now});
+      const c = matchCounters(body, day, {friendsToday: now[`d:${day}:friend_matches`] || 0});
+      if (!c) return fail('bad_match');
+      if (!Object.keys(c).length) return json({counted: false, counters: now});
+      const out = await counters.bump('match:' + id, 'match', c);
+      return json({counted: !out?.duplicate, counters: out?.counters || now});
+    }
+    if (path === 'claim') {
+      // Pays one finished achievement step, daily or weekly quest. The server re-checks the progress.
+      const [s, c, claimed, reward] = await Promise.all([state(), counters.read(), counters.claims(), currentRewardSet(env, request, fetcher)]);
+      if (!c || !claimed) return fail('not_ready', 503);
+      const set = reward?.code || '';
+      let ref = '', delta = null;
+      if (body.kind === 'ach') {
+        const step = Number(body.step), row = achievementRows({counters: c, state: s, claimed}).find(r => r.id === body.id);
+        if (!row || !Number.isSafeInteger(step) || !row.steps[step]?.done) return fail('not_earned', 409);
+        ref = achievementRef(row.id, step); delta = rewardDelta([achievementReward(ACHIEVEMENTS.find(a => a.id === row.id), step, s.config)], set, 'achievement');
+      } else {
+        const q = questRows({counters: c, claimed, day: playDay(body.tz)});
+        if (body.kind === 'weekly-all') { if (!q.weeklyAll.done) return fail('not_earned', 409); ref = q.weeklyAll.ref; delta = rewardDelta([{seals: s.config?.weekly?.allDoneSeals || {r: 1}}], set, 'quest'); }
+        else {
+          const row = [...q.daily, ...q.weekly].find(x => x.id === body.id);
+          if (!row?.done) return fail('not_earned', 409);
+          ref = row.ref; delta = rewardDelta([questReward(row, s.config)], set, 'quest');
+        }
+      }
+      if (claimed.includes(ref)) return fail('claimed', 409);
+      const paid = await apply(ref, body.kind === 'ach' ? 'achievement' : 'quest', delta);
+      if (paid?.duplicate) return fail('claimed', 409);
+      return json({ref, delta, state: await state(), claimed: [...claimed, ref]});
     }
     if (path === 'buy') {
       const set = String(body.set || '').toLowerCase();

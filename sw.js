@@ -20,6 +20,8 @@ const ASSETS = [
   "./play-econ-ui.js",
   "./play-econ-cards.js",
   "./play-home.js",
+  "./play-deeds-ui.js",
+  "./play-achievements.js",
   "./play-econ-rules.js",
   "./play-econ-sets.js", "./story-acts.js", "./story-client.js", "./story-ui.js", "./story-mode.css",
   "./play-daily-goals.js",

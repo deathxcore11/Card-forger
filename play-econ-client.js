@@ -18,6 +18,9 @@ export function createPlayEcon({getAccessToken, fetchImpl = globalThis.fetch?.bi
     if (!r.ok) throw Object.assign(Error(MESSAGES[out.error] || 'Play rewards are unavailable right now. Try again in a moment.'), {code: out.error || 'http_' + r.status});
     return out;
   }
+  // Server answers carry the wallet; the shop, reward set, quest counters and claims ride along.
+  const keep = (next, extra = {}) => ({...next, rewardSet: state?.rewardSet, shop: state?.shop, counters: state?.counters || {}, claimed: state?.claimed || [], login: state?.login || null, ...extra});
+  const tz = () => -new Date().getTimezoneOffset();
   const run = async (label, job) => { busy = label; error = ''; errorCode = ''; onChange(); try { return await job(); } catch (e) { error = e.message; errorCode = e.code || 'failed'; throw e; } finally { busy = ''; onChange(); } };
   const api = {
     snapshot: () => ({state, error, errorCode, busy, loading: !!loading}),
@@ -25,16 +28,21 @@ export function createPlayEcon({getAccessToken, fetchImpl = globalThis.fetch?.bi
       // A first visit always asks for the starter gift, so a missing reward set comes back as a
       // visible error (no_reward_set) instead of an empty wallet. The home shows every error;
       // sign_in is only shown there when the app thinks a session exists.
-      loading ||= (error = '', errorCode = '', call('state')).then(async s => { if (!s.wallet?.starter_at) s = {...await call('starter', {}), shop: s.shop}; set(s); return s; })
+      loading ||= (error = '', errorCode = '', call('state')).then(async s => { if (!s.wallet?.starter_at) s = {...await call('starter', {}), shop: s.shop}; set({...s, login: state?.login || null}); return s; })
         .catch(e => { error = e.message; errorCode = e.code || 'failed'; onChange(); return state; }).finally(() => { loading = null; onChange(); });
       return loading;
     },
     // Opens one banked pack on the server; returns {pack, sealBonus, duplicateCoins}.
-    open: id => run('open:' + id, async () => { const out = await call('open', {id}); set({...out.state, rewardSet: state?.rewardSet, shop: state?.shop}); return out; }),
-    buy: setCode => run('buy', async () => { const out = await call('buy', {set: setCode}); set({...out.state, rewardSet: state?.rewardSet, shop: state?.shop}); return out; }),
-    forge: (to, times = 1) => run('forge', async () => { const out = await call('forge', {to, times}); set({...out.state, rewardSet: state?.rewardSet, shop: state?.shop}); return out; }),
-    precon: (file, format) => run('precon', async () => { const out = await call('precon', {file, format}); set({...out.state, rewardSet: state?.rewardSet, shop: state?.shop}); return out; }),
-    craft: cardId => run('craft', async () => { const out = await call('craft', {id: cardId}); set({...out.state, rewardSet: state?.rewardSet, shop: state?.shop}); return out; }),
+    open: id => run('open:' + id, async () => { const out = await call('open', {id}); set(keep(out.state)); return out; }),
+    buy: setCode => run('buy', async () => { const out = await call('buy', {set: setCode}); set(keep(out.state)); return out; }),
+    forge: (to, times = 1) => run('forge', async () => { const out = await call('forge', {to, times}); set(keep(out.state)); return out; }),
+    precon: (file, format) => run('precon', async () => { const out = await call('precon', {file, format}); set(keep(out.state)); return out; }),
+    // The day's log-in stamp; returns {day, stamp, reward, monthReward, fresh} or null.
+    async login() { try { const out = await call('login', {tz: tz()}); if (!out.login) return null; set(out.state ? keep(out.state, {counters: out.counters, login: out.login}) : {...state, counters: out.counters || state?.counters, login: out.login}); return out.login; } catch { return null; } },
+    // A finished match (never Practice) moves quests and achievements; quiet on failure.
+    async reportMatch(m) { try { const out = await call('match', {...m, tz: tz()}); if (out.counters && state) set({...state, counters: out.counters}); return out; } catch { return null; } },
+    claim: (kind, id, step) => run('claim:' + kind + ':' + id + ':' + (step ?? ''), async () => { const out = await call('claim', {kind, id, step, tz: tz()}); set(keep(out.state, {claimed: out.claimed})); return out; }),
+    craft: cardId => run('craft', async () => { const out = await call('craft', {id: cardId}); set(keep(out.state)); return out; }),
     saveDeck: deck => run('deck', async () => { const out = await call('deck', deck); await api.refresh(); return out.deck; }),
     clear() { state = null; try { storage?.removeItem(privateKey(CACHE)); } catch {} onChange(); },
   };
@@ -54,6 +62,9 @@ const MESSAGES = {
   bad_card: 'That card cannot be stamped with a seal.',
   bad_forge: 'That seal cannot be forged.',
   bad_precon: 'That precon could not be opened.',
+  not_earned: 'That reward is not ready yet.',
+  claimed: 'You already claimed that reward.',
+  not_ready: 'Quests open once the next update finishes.',
   no_reward_set: 'The reward packs are not ready yet. Try again in a moment.',
 };
 

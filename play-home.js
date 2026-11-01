@@ -4,6 +4,7 @@
 // Play's wall: no prices, and nothing here reads the real collection.
 import {boosterMarkup, playSetRows, econNoticeMarkup, cardImageByName, coinIcon, purseMarkup, forgeMarkup} from './play-econ-ui.js';
 import {purse} from './play-econ-client.js';
+import {todayPanel, deedsPanel} from './play-deeds-ui.js';
 import {deckRules, isBasicLand} from './play-econ-rules.js';
 import {setRowContent} from './set-list-ui.js';
 import {STORY_ACTS as ACTS, SET_NAMES} from './story-acts.js';
@@ -60,6 +61,7 @@ export function playHomeMarkup({econ = null, facts = null, signedIn = false, mod
     ${head}
     ${modesHtml}
     ${storyHeader(act, facts, story)}
+    <div class="pe-home-duo pd-home-duo">${todayPanel(econ)}${deedsPanel(econ)}</div>
     <div class="pe-home-duo">${shelf('Your packs', viewLink('packs', 'All packs'), packs, 'peHomePacks')}${forgeMarkup(econ, {compact: true})}</div>
     <div class="pe-home-duo">${shelf('Your decks', viewLink('decks', 'All decks'), deckRow, 'peHomeDecks')}
     ${shelf('Your collection', viewLink('collection', `${n(owned)} cards`), setRow || `<p class="pe-home-empty">Open a pack and your first set starts filling in.</p>`, 'peHomeColl')}</div>

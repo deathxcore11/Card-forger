@@ -158,6 +158,8 @@ export function createForgePlayerMat({root,readAccount,readSetup,getAccessToken,
   const outcome=result.draw?'draw':viewer===null?null:result.winnerPlayerId===viewer?'win':'loss';
   // A match is recorded once, even if Forge reports its end on more than one read.
   const saved=matchup&&outcome&&!recorded?recordMatch(matchRow(outcome)):null;if(saved)recorded=true;
+  // Play quests and achievements hear about every recorded match; the app decides what counts (never Practice).
+  if(saved)try{globalThis.dispatchEvent?.(new CustomEvent('play:match-recorded',{detail:{...saved,story:!!matchup.story,friend:!!matchup.friendMatch}}));}catch{/* quests are best effort */}
   const title=outcome==='draw'?'Draw':outcome==='win'?'Victory':outcome==='loss'?'Defeat':'Your result is not yet identified';
   publish({phase:'finished',result:structuredClone(result),viewerId:viewer,outcome,endingReason:'unclassified-engine-terminal',deckDigests:client?.status().allocation?.deckDigests||null});message('Match finished',[title,...(outcome===null?[`Forge reported winner player ${result.winnerPlayerId}, but this receipt does not identify your seat. No win or loss has been assigned.`]:[]),...(board?[]:['This match has ended. Return to setup whenever you are ready for another game.',saved?'Saved to this device’s match record.':'Results are not yet saved to your account.'])],{close:!board});
   root.classList.add('play-mat-result');const panel=root.querySelector('section');panel.classList.add('play-match-result');panel.setAttribute('data-outcome',outcome||'unknown');
