@@ -718,3 +718,124 @@ body[data-view="play"] #content{padding-left:max(var(--page-edge,16px),calc(env(
 .pl-mode-change{position:absolute;left:22px;bottom:22px;z-index:2;min-height:44px;padding:0 18px;border-radius:13px;border:1px solid #ffffff2e;background:#0c0e13a6;color:#f1e9d8;font:600 14px/1 'DM Sans',system-ui,sans-serif;backdrop-filter:blur(8px);cursor:pointer}
 .pl-mode-change:hover{border-color:#f6dfa880;color:#fff}
 @media (max-width:700px){.pl-mode-change{left:16px;bottom:16px}}
+
+/* ---- Play progression (play-econ-ui.js): top bar, your-stuff row, Merchant, Packs, Collection, Decks.
+   Same glass and gold as the Play cards. Coins are stamped gold, seals are rarity-coloured wax. No prices. */
+.pe-defs{position:absolute;width:0;height:0;overflow:hidden}
+.pe-purse{display:flex;align-items:center;gap:6px;margin-left:auto;padding:4px;border-radius:999px;border:1px solid color-mix(in srgb,var(--gold) 26%,var(--line));background:color-mix(in srgb,#0d0f14 72%,transparent);backdrop-filter:blur(14px);box-shadow:0 10px 26px #0005,inset 0 1px 0 #ffffff10;min-width:0;max-width:100%}
+.pe-purse-item{display:inline-flex;align-items:center;gap:6px;min-height:44px;padding:0 12px;border-radius:999px;border:0;background:transparent;color:#f6eedb;font:800 14px/1 'DM Sans',system-ui,sans-serif;font-variant-numeric:tabular-nums;cursor:pointer;white-space:nowrap}
+button.pe-purse-item:hover,button.pe-purse-item:focus-visible{background:#ffffff12}
+button.pe-purse-item:focus-visible{outline:2px solid var(--gold);outline-offset:1px}
+.pe-purse-seals{gap:10px}
+.pe-seal-count{display:inline-flex;align-items:center;gap:4px}
+.pe-coin,.pe-seal,.pe-pack-icon{width:22px;height:22px;flex:none;filter:drop-shadow(0 2px 3px #0008)}
+.pe-coin--sm{width:18px;height:18px}
+.pe-purse-packs.pe-glow .pe-pack-icon{animation:pe-glow 2.4s ease-in-out infinite}
+@keyframes pe-glow{50%{filter:drop-shadow(0 0 7px #f2d18e) drop-shadow(0 2px 3px #0008)}}
+.pe-level{position:relative;width:44px;padding:0;justify-content:center;cursor:default}
+.pe-level svg{position:absolute;inset:4px;width:36px;height:36px;transform:rotate(-90deg)}
+.pe-level-track{fill:none;stroke:#ffffff1c;stroke-width:3}
+.pe-level-fill{fill:none;stroke:var(--gold);stroke-width:3;stroke-linecap:round}
+.pe-level b{position:relative;font-size:13px}
+.pl-home-head{gap:12px 18px}
+/* Your stuff: four smaller cards on real art under the modes. */
+.pe-row{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:18px}
+.pe-tile{position:relative;isolation:isolate;overflow:hidden;display:flex;flex-direction:column;justify-content:flex-end;gap:3px;min-height:clamp(128px,18vh,170px);padding:16px 18px;border:1px solid color-mix(in srgb,var(--gold) 20%,var(--line));border-radius:18px;background:#121318;color:#f6eedb;text-align:left;font:inherit;cursor:pointer;box-shadow:0 16px 36px #0005;transition:transform .2s ease,border-color .2s ease,box-shadow .2s ease}
+.pe-tile::before{content:"";position:absolute;inset:0;z-index:-1;background:linear-gradient(180deg,#0c0c0e10 20%,#0c0c0ed0 78%,#0c0c0ef2)}
+.pe-tile-art{position:absolute;inset:0;z-index:-2;background-size:cover;background-position:50% 35%;filter:saturate(1.08);transition:transform .6s ease}
+.pe-tile:hover,.pe-tile:focus-visible{transform:translateY(-2px);border-color:#d6ad64aa;box-shadow:0 22px 44px #0007,0 0 24px #d6ad6420}
+.pe-tile:hover .pe-tile-art{transform:scale(1.05)}
+.pe-tile:focus-visible{outline:2px solid var(--gold);outline-offset:4px}
+.pe-tile-name{font:700 clamp(18px,1.6vw,22px)/1.1 Cinzel,Georgia,serif;letter-spacing:.03em;text-shadow:0 2px 12px #000}
+.pe-tile-line{font-size:13px;color:#d6dbe2}
+.pe-badge{position:absolute;top:12px;right:12px;min-width:28px;height:28px;padding:0 8px;display:grid;place-items:center;border-radius:999px;background:linear-gradient(180deg,#f2d18e,#c99a4b);color:#1b1408;font:800 13px/1 'DM Sans',system-ui,sans-serif;box-shadow:0 0 0 2px #0c0d11,0 4px 12px #0008}
+/* Play screens share the lobby's head; the top bar sits at its right. */
+.pe-screen{display:grid;gap:18px}
+.pe-head{flex-wrap:wrap}
+.pe-status{min-height:1.4em;margin:0;color:#f3b2a2;font-size:13px}
+.pe-status:empty{display:none}
+.pe-empty{display:grid;justify-items:center;gap:10px;padding:48px 20px;text-align:center;border:1px solid var(--line);border-radius:20px;background:color-mix(in srgb,var(--surface) 78%,transparent)}
+.pe-empty h2{margin:0;font:700 22px/1.2 Cinzel,Georgia,serif}
+.pe-empty p{margin:0;color:var(--muted);max-width:42ch}
+.pe-search{display:grid;gap:6px;font-size:12px;color:var(--muted);min-width:0}
+.pe-search input,.pe-press-find input,.pe-import-form :is(input,select,textarea){min-height:44px;padding:0 14px;border-radius:12px;border:1px solid var(--line);background:color-mix(in srgb,#0d0f14 70%,transparent);color:var(--text);font:inherit;font-size:15px;min-width:0}
+.pe-import-form textarea{padding:12px 14px;resize:vertical}
+/* The Merchant's table: the pack shelf on the left, the seal press on the right. */
+.pe-table{display:grid;grid-template-columns:minmax(0,1.6fr) minmax(300px,1fr);gap:18px;align-items:start}
+.pe-shelf,.pe-press,.pe-import{display:grid;gap:14px;padding:20px;border-radius:22px;border:1px solid color-mix(in srgb,var(--gold) 18%,var(--line));background:linear-gradient(180deg,#ffffff08,#ffffff02),color-mix(in srgb,#0d0f14 80%,transparent);backdrop-filter:blur(12px);box-shadow:0 20px 44px #0005,inset 0 1px 0 #ffffff0d;min-width:0}
+.pe-shelf h2,.pe-press h2,.pe-import h2{margin:0;font:700 20px/1.2 Cinzel,Georgia,serif;letter-spacing:.04em;color:#f3e3bd}
+.pe-pack-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(150px,1fr));gap:14px}
+.pe-pack{position:relative;isolation:isolate;overflow:hidden;display:flex;flex-direction:column;justify-content:flex-end;gap:4px;min-height:200px;padding:12px;border-radius:16px;border:1px solid #ffffff18;background:#121318;color:#f6eedb;text-align:left;font:inherit}
+.pe-pack::before{content:"";position:absolute;inset:0;z-index:-1;background:linear-gradient(180deg,#0c0c0e00 30%,#0c0c0ee0 85%)}
+.pe-pack-art{position:absolute;inset:0 0 34% 0;z-index:-2;background-size:contain,cover;background-repeat:no-repeat;background-position:50% 40%,50% 30%;filter:drop-shadow(0 12px 18px #000a)}
+.pe-pack-name{font:700 15px/1.2 Cinzel,Georgia,serif;text-shadow:0 2px 10px #000}
+.pe-pack-year{font-size:12px;color:#c7ccd3}
+.pe-pack--feature{min-height:260px}
+.pe-pack--feature .pe-pack-name{font-size:22px}
+.pe-feature{display:grid}
+.pe-buy,.pe-stamp{display:inline-flex;align-items:center;justify-content:center;gap:6px;min-height:44px;padding:0 16px;margin-top:6px;border-radius:12px;border:1px solid var(--pl-cta-edge,#f6dfa8);background:linear-gradient(180deg,var(--pl-cta-top,#f2d18e),var(--pl-cta-bottom,#c99a4b));color:var(--pl-cta-ink,#1b1408);font:800 14px/1 'DM Sans',system-ui,sans-serif;cursor:pointer;box-shadow:inset 0 1px 0 #fff7}
+.pe-buy:disabled,.pe-stamp:disabled{filter:grayscale(.7) brightness(.7);cursor:default}
+.pe-pack--open{cursor:pointer;min-height:240px;transition:transform .2s ease,border-color .2s ease}
+.pe-pack--open:hover,.pe-pack--open:focus-visible{transform:translateY(-3px);border-color:#d6ad64aa}
+.pe-pack-grid--open{grid-template-columns:repeat(auto-fill,minmax(180px,1fr))}
+.pe-press-seals{display:grid;grid-template-columns:repeat(4,1fr);gap:8px}
+.pe-press-seal{display:grid;justify-items:center;gap:2px;padding:10px 4px;border-radius:14px;background:#ffffff08;border:1px solid #ffffff12}
+.pe-press-seal .pe-seal{width:34px;height:34px}
+.pe-press-seal b{font:800 16px/1 'DM Sans',system-ui,sans-serif}
+.pe-press-seal small{font-size:11px;color:var(--muted);text-transform:capitalize}
+.pe-press-find{display:flex;gap:8px}
+.pe-press-find input{flex:1}
+.pe-press-result{display:grid;grid-template-columns:120px minmax(0,1fr);gap:14px;align-items:center}
+.pe-press-result img{width:120px;border-radius:7px;box-shadow:0 10px 24px #0008}
+.pe-press-copy{display:grid;gap:6px;min-width:0}
+.pe-press-copy span,.pe-press-empty{color:var(--muted);font-size:13px;margin:0}
+/* Collection: art, name and copies owned out of 4. */
+.pe-tools{display:flex;flex-wrap:wrap;gap:12px;align-items:end}
+.pe-tools .pe-search{flex:1 1 220px}
+.pe-rarity-tabs{display:flex;flex-wrap:wrap;gap:6px}
+.pe-rarity-tabs button{min-height:44px;padding:0 14px;border-radius:999px;border:1px solid var(--line);background:transparent;color:var(--text);font:700 13px/1 'DM Sans',system-ui,sans-serif;cursor:pointer}
+.pe-rarity-tabs button[aria-pressed="true"]{border-color:var(--gold);background:color-mix(in srgb,var(--gold) 16%,transparent);color:#f6e4bb}
+.pe-count{margin:0;color:var(--muted);font-size:13px}
+.pe-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(150px,1fr));gap:16px}
+.pe-card{margin:0;display:grid;gap:8px;justify-items:center}
+.pe-card img{width:100%;aspect-ratio:63/88;object-fit:cover;border-radius:4.75%/3.5%;background:#15171c;box-shadow:0 10px 24px #0007}
+.pe-pips{display:flex;gap:5px}
+.pe-pips i{width:10px;height:10px;border-radius:50%;border:1px solid #d6ad6488;background:transparent}
+.pe-pips i.on{background:var(--gold);border-color:var(--gold);box-shadow:0 0 6px #d6ad6466}
+/* Decks */
+.pe-import-form{display:grid;grid-template-columns:minmax(0,2fr) minmax(0,1fr);gap:10px}
+.pe-import-form textarea,.pe-import-form .btn{grid-column:1/-1}
+.pe-shortfall{display:grid;gap:10px}
+.pe-shortfall p{margin:0}
+.pe-ready{color:#bfe3b0}
+.pe-costs{display:flex;flex-wrap:wrap;gap:10px}
+.pe-cost{display:inline-flex;align-items:center;gap:4px;font:800 14px/1 'DM Sans',system-ui,sans-serif}
+.pe-missing{list-style:none;margin:0;padding:0;display:grid;grid-template-columns:repeat(auto-fill,minmax(220px,1fr));gap:6px 14px;max-height:280px;overflow:auto}
+.pe-missing li{display:flex;align-items:center;gap:8px;font-size:14px;min-width:0}
+.pe-missing .pe-seal{width:18px;height:18px}
+.pe-deck-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(240px,1fr));gap:16px}
+.pe-deck{position:relative;isolation:isolate;overflow:hidden;display:flex;flex-direction:column;justify-content:flex-end;gap:4px;min-height:170px;padding:16px;border-radius:18px;border:1px solid color-mix(in srgb,var(--gold) 18%,var(--line));background:#121318;color:#f6eedb}
+.pe-deck::before{content:"";position:absolute;inset:0;z-index:-1;background:linear-gradient(180deg,#0c0c0e10,#0c0c0ef0 85%)}
+.pe-deck-art{position:absolute;inset:0;z-index:-2;background-size:cover;background-position:50% 30%}
+.pe-deck-name{font:700 19px/1.15 Cinzel,Georgia,serif;text-shadow:0 2px 10px #000}
+.pe-deck-line{font-size:13px;color:#d6dbe2}
+.pe-deck-delete{position:absolute;top:10px;right:10px;width:44px;height:44px;display:grid;place-items:center;border-radius:50%;border:1px solid #ffffff22;background:#0c0e13b3;color:#f6eedb;cursor:pointer;backdrop-filter:blur(8px)}
+.pe-deck-delete svg{width:18px;height:18px;fill:none;stroke:currentColor;stroke-width:2;stroke-linecap:round}
+@media(max-width:1180px){.pe-row{grid-template-columns:1fr 1fr}.pe-table{grid-template-columns:1fr}}
+@media(max-width:700px){
+ .pe-row{gap:12px}.pe-tile{min-height:112px;padding:12px 14px}
+ .pe-purse{width:100%;justify-content:space-between;margin-left:0}
+ .pe-purse-item{padding:0 8px;font-size:13px}.pe-purse-seals{gap:6px}
+ .pe-coin,.pe-seal,.pe-pack-icon{width:19px;height:19px}
+ .pe-grid{grid-template-columns:repeat(auto-fill,minmax(104px,1fr));gap:10px}
+ .pe-import-form{grid-template-columns:1fr}
+ .pe-pack-grid{grid-template-columns:repeat(auto-fill,minmax(130px,1fr))}
+}
+@media(max-height:520px) and (orientation:landscape){.pe-row{grid-template-columns:repeat(4,minmax(0,1fr))}.pe-tile{min-height:96px}}
+@media(prefers-reduced-motion:reduce){.pe-purse-packs.pe-glow .pe-pack-icon{animation:none}}
+.pe-head .eyebrow{font-size:11px}
+@media(max-width:420px){.pe-purse{flex-wrap:wrap;justify-content:center;border-radius:22px;gap:2px}.pe-purse-item{padding:0 6px}.pe-purse-seals{gap:5px}}
+/* Practice: bring a friend to the same anything-goes table (no rewards). */
+.pl-invite{display:inline-flex;align-items:center;gap:8px;min-height:44px;padding:0 16px;border-radius:999px;border:1px solid color-mix(in srgb,var(--gold) 40%,var(--line));background:color-mix(in srgb,#0d0f14 70%,transparent);color:#f6e4bb;font:700 14px/1 'DM Sans',system-ui,sans-serif;cursor:pointer;white-space:nowrap}
+.pl-invite:hover,.pl-invite:focus-visible{border-color:var(--gold);background:color-mix(in srgb,var(--gold) 14%,transparent)}
+.pl-invite svg{width:18px;height:18px;fill:none;stroke:currentColor;stroke-width:1.8;stroke-linecap:round}

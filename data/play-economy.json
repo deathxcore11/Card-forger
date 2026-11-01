@@ -1,0 +1,116 @@
+{
+  "version": 1,
+  "note": "Play economy starting values (play-progression.md sections 3 and 4). The live copy is the play.config row in Supabase; edit that to rebalance without a release.",
+  "starter": {
+    "packs": 15,
+    "coins": 1000,
+    "seals": {
+      "c": 0,
+      "u": 4,
+      "r": 3,
+      "m": 1
+    },
+    "starterDecks": true
+  },
+  "packPrice": 500,
+  "sealTrack": {
+    "u": 3,
+    "r": 5,
+    "m": 20
+  },
+  "duplicates": {
+    "common": 20,
+    "uncommon": 50,
+    "rare": 150,
+    "mythic": 0
+  },
+  "maxCopies": 4,
+  "daily": {
+    "easy": {
+      "coins": 250,
+      "xp": 50
+    },
+    "hard": {
+      "coins": 500,
+      "xp": 100
+    },
+    "firstMatch": {
+      "coins": 100,
+      "minTurns": 5
+    },
+    "slots": 2,
+    "stack": 3,
+    "rerolls": 1
+  },
+  "weekly": {
+    "slots": 3,
+    "pack": 1,
+    "xp": 250,
+    "allDoneSeals": {
+      "r": 1
+    }
+  },
+  "achievement": {
+    "bronze": {
+      "seals": {
+        "u": 1
+      },
+      "xp": 100
+    },
+    "silver": {
+      "seals": {
+        "r": 1
+      },
+      "xp": 250
+    },
+    "gold": {
+      "seals": {
+        "m": 1
+      },
+      "xp": 500
+    }
+  },
+  "story": {
+    "firstWinPacks": 1,
+    "starPacks": 1,
+    "starCoins": 100,
+    "firstWinXp": 150,
+    "replayPacksPerDay": 3,
+    "eraClearSeals": {
+      "m": 1
+    }
+  },
+  "planeswalk": {
+    "actBossPacks": 1,
+    "finalBossPacks": 2,
+    "packsPerDay": 5
+  },
+  "friends": {
+    "countPerDay": 3,
+    "winsCount": false
+  },
+  "mastery": {
+    "xpPerLevel": 1000,
+    "cycle": [
+      {
+        "coins": 300
+      },
+      {
+        "packs": 1
+      },
+      {
+        "cosmetic": true
+      },
+      {
+        "seals": {
+          "r": 1
+        }
+      }
+    ]
+  },
+  "winsPay": false,
+  "concedeMinTurns": 5,
+  "mythicDuplicateShards": 4,
+  "meltRareToMythic": 3,
+  "sealOverrides": {}
+}

@@ -1138,7 +1138,7 @@ export function deckPage() {
       {value:power ?? "—",label:power == null ? "power unavailable" : "power",attrs:'data-act="deckTab" data-id="engine"'}],
     owned:t.copies ? t.covered / t.copies : 0,
     actions:[
-      {html:`<button class="btn ds-primary deck-play-cpu cs-plate" data-act="deckPlayCpu" data-id="${esc(d.id)}" data-desktop-play-entry="practice" hidden disabled><span class="cs-plate-label">Play vs CPU</span></button>`},
+      {html:`<button class="btn ds-primary deck-play-cpu cs-plate" data-act="deckPlayCpu" data-id="${esc(d.id)}" data-desktop-play-entry="practice" hidden disabled><span class="cs-plate-label">Practice</span></button>`},
       {label:"Playtest",attrs:'data-act="deckTab" data-id="playtest"'},
       {label:"Share",attrs:'data-act="deckShare"'}]})}
   ${mainCopies < target ? `<div class="note warn">Incomplete draft: ${target - mainCopies} slots remain. Power is unavailable. The listed-card price does not include empty slots.${(d.buildDiagnostics?.warnings || []).slice(0, 2).map(w => `<p class="small">${esc(w)}</p>`).join("")}</div>` : ""}
