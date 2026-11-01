@@ -23,12 +23,24 @@ export const STORY_ACTS = [
   {act: 7, age: 'The Weatherlight Saga', title: 'The Mercadian Masques', years: '1999 to 2000',
     sets: ['mmq', 'nem', 'pcy'], landSet: 'mmq', packSets: ['mmq', 'nem', 'pcy'],
     art: {set: 'nem', number: '75', name: 'Volrath the Fallen', crop: 'https://cards.scryfall.io/art_crop/front/0/8/08bdd66e-9ca1-456e-a61c-7c96cf6f7c56.jpg'}},
+  {act: 8, age: 'The Weatherlight Saga', title: 'The Invasion', years: '2000 to 2001',
+    sets: ['inv', 'pls', '7ed', 'apc'], landSet: 'inv', packSets: ['inv', 'pls', 'apc'],
+    art: {set: 'inv', number: '135', name: "Yawgmoth's Agenda", crop: 'https://cards.scryfall.io/art_crop/front/5/0/50f7ea7f-4f17-4f78-b68e-693e265ca829.jpg'}},
+  {act: 9, age: 'The Otaria Years', title: 'The Mirari', years: '2001 to 2002',
+    sets: ['ody', 'tor', 'jud'], landSet: 'ody', packSets: ['ody', 'tor', 'jud'],
+    art: {set: 'ody', number: '303', name: 'Mirari', crop: 'https://cards.scryfall.io/art_crop/front/3/c/3cbaad4f-fb66-4e56-b383-32f55552c8b2.jpg'}},
+  {act: 10, age: 'The Otaria Years', title: 'The False God', years: '2002 to 2003',
+    sets: ['ons', 'lgn', 'scg', '8ed'], landSet: 'ons', packSets: ['ons', 'lgn', 'scg'],
+    art: {set: 'scg', number: '138', name: 'Karona, False God', crop: 'https://cards.scryfall.io/art_crop/front/d/e/de53d083-251e-42a4-9e2e-c2978c80615b.jpg'}},
 ];
 export const SET_NAMES = {lea: 'Limited Edition Alpha', leb: 'Limited Edition Beta', '2ed': 'Unlimited Edition', arn: 'Arabian Nights', atq: 'Antiquities',
   '3ed': 'Revised Edition', leg: 'Legends', drk: 'The Dark', fem: 'Fallen Empires', ice: 'Ice Age', hml: 'Homelands', all: 'Alliances', '4ed': 'Fourth Edition',
   mir: 'Mirage', vis: 'Visions', '5ed': 'Fifth Edition',
   wth: 'Weatherlight', tmp: 'Tempest', sth: 'Stronghold', exo: 'Exodus',
   usg: "Urza's Saga", ulg: "Urza's Legacy", uds: "Urza's Destiny", '6ed': 'Classic Sixth Edition',
-  mmq: 'Mercadian Masques', nem: 'Nemesis', pcy: 'Prophecy'};
+  mmq: 'Mercadian Masques', nem: 'Nemesis', pcy: 'Prophecy',
+  inv: 'Invasion', pls: 'Planeshift', '7ed': 'Seventh Edition', apc: 'Apocalypse',
+  ody: 'Odyssey', tor: 'Torment', jud: 'Judgment',
+  ons: 'Onslaught', lgn: 'Legions', scg: 'Scourge', '8ed': 'Eighth Edition'};
 export const storyAct = n => STORY_ACTS.find(a => a.act === Number(n)) || null;
 export const setSymbolUrl = code => `https://svgs.scryfall.io/sets/${encodeURIComponent(code)}.svg`;

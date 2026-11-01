@@ -1,0 +1,2468 @@
+{
+ "act": 10,
+ "title": "The False God",
+ "years": "2002 to 2003",
+ "sets": [
+  "ons",
+  "lgn",
+  "scg",
+  "8ed"
+ ],
+ "landSet": "ons",
+ "intro": [
+  {
+   "who": "stage",
+   "line": "Otaria, a few years after the Mirari went into the ground."
+  },
+  {
+   "who": "stage",
+   "line": "The Mirari twisted all that lived in the Krosan Forest into gross mockeries of their former selves.",
+   "quote": true
+  },
+  {
+   "who": "stage",
+   "line": "Kamahl lives in Krosa now. He does not fight anymore. He listens to the trees."
+  },
+  {
+   "who": "kamahl",
+   "line": "Destruction is the work of an afternoon. Creation is the work of a lifetime.",
+   "quote": true
+  },
+  {
+   "who": "stage",
+   "line": "In the Grand Coliseum, the Cabal has a new champion. Her touch is death. They call her Phage."
+  }
+ ],
+ "finale": [
+  {
+   "who": "stage",
+   "line": "Karona falls. Whatever was Akroma and whatever was Phage goes quiet with her."
+  },
+  {
+   "who": "karona",
+   "line": "Rise once more, so you may continue to destroy our enemies.",
+   "quote": true
+  },
+  {
+   "who": "stage",
+   "line": "Nobody rises."
+  },
+  {
+   "who": "ixidor",
+   "line": "I made her to kill Phage. I never asked what she wanted. Neither did the Cabal."
+  },
+  {
+   "who": "kamahl",
+   "line": "Jeska wanted to go home. That was all she ever wanted."
+  },
+  {
+   "who": "stage",
+   "line": "As Phage drank their energy, a vague memory of Jeska stirred. Then she lost herself again in the joy of her victims' suffering.",
+   "quote": true
+  },
+  {
+   "who": "stage",
+   "line": "Kamahl buries what is left in Krosa. The forest grows around it, slowly, the normal way."
+  },
+  {
+   "who": "stage",
+   "line": "Otaria rests. The Mirari is spent. For a while, nobody on Dominaria is anybody's god."
+  }
+ ],
+ "villainFinale": [
+  {
+   "who": "stage",
+   "line": "Karona stands over the Coliseum. Every eye in Otaria turns to her, and every heart."
+  },
+  {
+   "who": "karona",
+   "line": "They worship me. I do not know why. I do not know what I am."
+  },
+  {
+   "who": "karona",
+   "line": "An angel built from a grieving man's dream. A girl the Cabal broke and rebuilt."
+  },
+  {
+   "who": "karona",
+   "line": "I only ever wanted to know what I was. Nobody can tell me. So I will make them kneel until someone does."
+  },
+  {
+   "who": "stage",
+   "line": "Across Otaria, people kneel. None of them can answer her."
+  }
+ ],
+ "vibe": "grand-coliseum-mutant-krosa",
+ "cast": {
+  "you": {
+   "name": "You",
+   "title": "Planeswalker",
+   "portrait": {
+    "card": "Future Sight",
+    "set": "ons",
+    "number": "84",
+    "id": "688bd665-4948-4961-aec5-f17782257f9b",
+    "crop": "https://cards.scryfall.io/art_crop/front/6/8/688bd665-4948-4961-aec5-f17782257f9b.jpg?1783945084",
+    "artist": "Matt Cavotta",
+    "focus": "50% 30%"
+   }
+  },
+  "kamahl": {
+   "name": "Kamahl",
+   "title": "Fist of Krosa",
+   "portrait": {
+    "card": "Kamahl, Fist of Krosa",
+    "set": "ons",
+    "number": "268",
+    "id": "150d5229-b1a5-42cf-bf6a-04d246f1124f",
+    "crop": "https://cards.scryfall.io/art_crop/front/1/5/150d5229-b1a5-42cf-bf6a-04d246f1124f.jpg?1783945040",
+    "artist": "Matthew D. Wilson",
+    "focus": "50% 25%"
+   }
+  },
+  "ixidor": {
+   "name": "Ixidor",
+   "title": "Reality Sculptor",
+   "portrait": {
+    "card": "Ixidor, Reality Sculptor",
+    "set": "ons",
+    "number": "89",
+    "id": "314d5e89-55f7-42b4-af19-d4d0f499a265",
+    "crop": "https://cards.scryfall.io/art_crop/front/3/1/314d5e89-55f7-42b4-af19-d4d0f499a265.jpg?1783945082",
+    "artist": "Kev Walker",
+    "focus": "50% 25%"
+   }
+  },
+  "akroma": {
+   "name": "Akroma",
+   "title": "Angel of Wrath",
+   "portrait": {
+    "card": "Akroma, Angel of Wrath",
+    "set": "lgn",
+    "number": "1",
+    "id": "814245de-6105-43ef-acbf-d12d304b6331",
+    "crop": "https://cards.scryfall.io/art_crop/front/8/1/814245de-6105-43ef-acbf-d12d304b6331.jpg?1783944932",
+    "artist": "Ron Spears",
+    "focus": "50% 25%"
+   }
+  },
+  "phage": {
+   "name": "Phage",
+   "title": "The Untouchable",
+   "portrait": {
+    "card": "Phage the Untouchable",
+    "set": "lgn",
+    "number": "78",
+    "id": "a410b933-99d0-4383-b54b-4839a76eb6fe",
+    "crop": "https://cards.scryfall.io/art_crop/front/a/4/a410b933-99d0-4383-b54b-4839a76eb6fe.jpg?1783944912",
+    "artist": "Ron Spears",
+    "focus": "50% 25%"
+   }
+  },
+  "karona": {
+   "name": "Karona",
+   "title": "False God",
+   "portrait": {
+    "card": "Karona, False God",
+    "set": "scg",
+    "number": "138",
+    "id": "de53d083-251e-42a4-9e2e-c2978c80615b",
+    "crop": "https://cards.scryfall.io/art_crop/front/d/e/de53d083-251e-42a4-9e2e-c2978c80615b.jpg?1783944864",
+    "artist": "Matthew D. Wilson",
+    "focus": "50% 25%"
+   }
+  },
+  "patriarch": {
+   "name": "The Patriarch",
+   "title": "Head of the Cabal",
+   "portrait": {
+    "card": "Cabal Patriarch",
+    "set": "ody",
+    "number": "120",
+    "id": "0d2f0da3-a13e-4a45-98dc-6227cf952a5e",
+    "artist": "Mark Zug",
+    "crop": "https://cards.scryfall.io/art_crop/front/0/d/0d2f0da3-a13e-4a45-98dc-6227cf952a5e.jpg",
+    "focus": "50% 25%"
+   }
+  },
+  "braids": {
+   "name": "Braids",
+   "title": "Dementia Summoner",
+   "portrait": {
+    "card": "Braids, Cabal Minion",
+    "set": "ody",
+    "number": "117",
+    "id": "4dcdcad5-e4fb-480e-984f-1ac5cdc986b9",
+    "artist": "Eric Peterson",
+    "crop": "https://cards.scryfall.io/art_crop/front/4/d/4dcdcad5-e4fb-480e-984f-1ac5cdc986b9.jpg",
+    "focus": "50% 25%"
+   }
+  },
+  "pemmin": {
+   "name": "Pemmin",
+   "title": "Riptide Survivor",
+   "portrait": {
+    "card": "Riptide Survivor",
+    "set": "scg",
+    "number": "48",
+    "id": "7515187f-4821-400d-b78f-cec173df6b84",
+    "crop": "https://cards.scryfall.io/art_crop/front/7/5/7515187f-4821-400d-b78f-cec173df6b84.jpg?1783944884",
+    "artist": "Thomas M. Baxa",
+    "focus": "50% 30%"
+   }
+  },
+  "hivemaster": {
+   "name": "The Hivemaster",
+   "title": "Keeper of Wirewood",
+   "portrait": {
+    "card": "Wirewood Hivemaster",
+    "set": "lgn",
+    "number": "145",
+    "id": "ea55b4fc-366f-4906-9eaa-9085f6a22612",
+    "crop": "https://cards.scryfall.io/art_crop/front/e/a/ea55b4fc-366f-4906-9eaa-9085f6a22612.jpg?1783944896",
+    "artist": "Darrell Riche",
+    "focus": "50% 30%"
+   }
+  },
+  "beast": {
+   "name": "The Towering Baloth",
+   "title": "Child of the Mirari",
+   "portrait": {
+    "card": "Towering Baloth",
+    "set": "ons",
+    "number": "292",
+    "id": "2a8cc948-28ff-4bbe-b8c9-71de37478023",
+    "crop": "https://cards.scryfall.io/art_crop/front/2/a/2a8cc948-28ff-4bbe-b8c9-71de37478023.jpg?1783945035",
+    "artist": "Arnie Swekel",
+    "focus": "50% 30%"
+   }
+  },
+  "sliver": {
+   "name": "The Slivers",
+   "title": "Riptide Escapees",
+   "portrait": {
+    "card": "Sliver Overlord",
+    "set": "scg",
+    "number": "139",
+    "id": "3c16915b-c50d-4fb5-830f-9ca4597a9c0f",
+    "crop": "https://cards.scryfall.io/art_crop/front/3/c/3c16915b-c50d-4fb5-830f-9ca4597a9c0f.jpg?1783944864",
+    "artist": "Tony Szczudlo",
+    "focus": "50% 30%"
+   }
+  },
+  "daru": {
+   "name": "Daru Warchief",
+   "title": "The Order",
+   "portrait": {
+    "card": "Daru Warchief",
+    "set": "scg",
+    "number": "6",
+    "id": "2630d3b5-8f3a-4aad-a45e-22a7979429f3",
+    "crop": "https://cards.scryfall.io/art_crop/front/2/6/2630d3b5-8f3a-4aad-a45e-22a7979429f3.jpg?1783944894",
+    "artist": "Tim Hildebrandt",
+    "focus": "50% 30%"
+   }
+  },
+  "goblin": {
+   "name": "Siege-Gang Commander",
+   "title": "Skirk Ridge Boss",
+   "portrait": {
+    "card": "Siege-Gang Commander",
+    "set": "scg",
+    "number": "103",
+    "id": "92e78cec-aaf9-4fe8-887b-b7e356d63315",
+    "crop": "https://cards.scryfall.io/art_crop/front/9/2/92e78cec-aaf9-4fe8-887b-b7e356d63315.jpg?1783944871",
+    "artist": "Christopher Moeller",
+    "focus": "50% 30%"
+   }
+  }
+ },
+ "battles": [
+  {
+   "id": "a10b1",
+   "slot": 1,
+   "kind": "Arrival",
+   "mood": "tension",
+   "title": "Faces in the Crowd",
+   "difficulty": "Easy",
+   "teaches": [
+    "Morph"
+   ],
+   "blurb": "Ixidor and Nivea are illusionists who fight in the Grand Coliseum, and they are in love. They are also winning too much, and the Patriarch does not like surprises.",
+   "rewardSet": "ons",
+   "host": false,
+   "hero": {
+    "who": "ixidor",
+    "deck": {
+     "name": "Reality Sculptor",
+     "colors": "U",
+     "archetype": null,
+     "cards": [
+      {
+       "qty": 2,
+       "name": "Ixidor, Reality Sculptor",
+       "set": "ons",
+       "number": "89",
+       "id": "314d5e89-55f7-42b4-af19-d4d0f499a265"
+      },
+      {
+       "qty": 4,
+       "name": "Echo Tracer",
+       "set": "lgn",
+       "number": "37",
+       "id": "63390760-35a7-4b4c-8c68-5c84f90d0c58"
+      },
+      {
+       "qty": 4,
+       "name": "Riptide Entrancer",
+       "set": "ons",
+       "number": "108",
+       "id": "2cd9abc9-f289-4294-bc0f-4addc8b92a4e"
+      },
+      {
+       "qty": 4,
+       "name": "Ascending Aven",
+       "set": "ons",
+       "number": "68",
+       "id": "bd8b17df-615c-4cc1-af1a-2fc35a985af9"
+      },
+      {
+       "qty": 4,
+       "name": "Keeneye Aven",
+       "set": "lgn",
+       "number": "41",
+       "id": "1a355c58-cd28-4d2d-9df1-91b4196b01ef"
+      },
+      {
+       "qty": 4,
+       "name": "Riptide Survivor",
+       "set": "scg",
+       "number": "48",
+       "id": "7515187f-4821-400d-b78f-cec173df6b84"
+      },
+      {
+       "qty": 4,
+       "name": "Sage Aven",
+       "set": "ons",
+       "number": "111",
+       "id": "4c03afc5-7ca3-4ac6-a06e-091e2cce13a0"
+      },
+      {
+       "qty": 4,
+       "name": "Complicate",
+       "set": "ons",
+       "number": "76",
+       "id": "33f69670-e494-42b8-9148-fe105ec61aa0"
+      },
+      {
+       "qty": 4,
+       "name": "Ghosthelm Courier",
+       "set": "ons",
+       "number": "85",
+       "id": "cd6cc30a-9ed4-4f36-95cb-6f0a2b8dce02"
+      },
+      {
+       "qty": 2,
+       "name": "Arcanis the Omnipotent",
+       "set": "ons",
+       "number": "66",
+       "id": "90865f52-c062-4505-a204-b4d7d4b3fc4c"
+      },
+      {
+       "qty": 24,
+       "name": "Island",
+       "set": "ons",
+       "number": "335",
+       "id": "36e062ec-df51-40c0-ad8a-2ee1cb8f8f17"
+      }
+     ]
+    }
+   },
+   "villain": {
+    "who": "patriarch",
+    "deck": {
+     "name": "Crowd Favorites",
+     "colors": "B",
+     "archetype": null,
+     "cards": [
+      {
+       "qty": 4,
+       "name": "Cabal Executioner",
+       "set": "ons",
+       "number": "130",
+       "id": "cd7727a7-0cdf-4fd5-82b4-e6587c10ca80"
+      },
+      {
+       "qty": 4,
+       "name": "Severed Legion",
+       "set": "ons",
+       "number": "166",
+       "id": "efe12afd-da41-436e-af84-fa3b36a58030"
+      },
+      {
+       "qty": 4,
+       "name": "Undead Gladiator",
+       "set": "ons",
+       "number": "178",
+       "id": "bbc779d9-3200-4369-9289-1a8e90e243b9"
+      },
+      {
+       "qty": 4,
+       "name": "Festering Goblin",
+       "set": "ons",
+       "number": "148",
+       "id": "e7209cc8-b519-4f27-87d8-b12e239a121f"
+      },
+      {
+       "qty": 4,
+       "name": "Headhunter",
+       "set": "ons",
+       "number": "156",
+       "id": "3cbd82d5-d64f-4833-b1a9-9652fcfa1578"
+      },
+      {
+       "qty": 4,
+       "name": "Grinning Demon",
+       "set": "ons",
+       "number": "153",
+       "id": "72de2f66-0b86-4c21-b4c8-c2d97e3fd095"
+      },
+      {
+       "qty": 4,
+       "name": "Smother",
+       "set": "ons",
+       "number": "170",
+       "id": "9a8321af-d667-44e7-8c03-3957286604b9"
+      },
+      {
+       "qty": 4,
+       "name": "Cruel Revival",
+       "set": "ons",
+       "number": "135",
+       "id": "245aba23-2abb-4084-b4cb-d06e46de2108"
+      },
+      {
+       "qty": 4,
+       "name": "Withering Hex",
+       "set": "ons",
+       "number": "181",
+       "id": "9ce4be1e-97dd-45ec-89e5-2fb56145c098"
+      },
+      {
+       "qty": 24,
+       "name": "Swamp",
+       "set": "ons",
+       "number": "339",
+       "id": "0356ae45-e5ca-46b9-8ebc-42bf4776e89c"
+      }
+     ]
+    }
+   },
+   "reward": {
+    "hero": {
+     "packs": 1,
+     "coins": 0
+    },
+    "villain": {
+     "card": {
+      "oracle_id": "3db0207d-d80b-4915-b157-6a3e5b3a154e",
+      "name": "Grinning Demon",
+      "rarity": "rare",
+      "set": "ons",
+      "id": "72de2f66-0b86-4c21-b4c8-c2d97e3fd095",
+      "image": "https://cards.scryfall.io/normal/front/7/2/72de2f66-0b86-4c21-b4c8-c2d97e3fd095.jpg"
+     },
+     "coins": 50
+    }
+   },
+   "scene": [
+    {
+     "who": "patriarch",
+     "line": "The rabble likes them. Make sure they win, then book them for tomorrow.",
+     "quote": true
+    },
+    {
+     "who": "ixidor",
+     "line": "Nivea says the crowd is louder tonight. I think they are louder for us."
+    },
+    {
+     "who": "stage",
+     "line": "Newcomers to Otaria find themselves at the bottom of the heap. In the pits, they at least have the chance to climb atop a heap of bodies.",
+     "quote": true
+    },
+    {
+     "who": "ixidor",
+     "line": "Morph: play a creature face down as a 2/2 for three. Turn it up when they least expect it. Every face in the crowd is a secret."
+    },
+    {
+     "who": "ixidor",
+     "line": "Shaping reality is simply a matter of knowing where to apply pressure.",
+     "quote": true
+    }
+   ],
+   "villainScene": [
+    {
+     "who": "patriarch",
+     "line": "The illusionists are popular. Popular is useful. Too popular is dangerous."
+    },
+    {
+     "who": "patriarch",
+     "line": "Family plots are so convenient.",
+     "quote": true
+    },
+    {
+     "who": "patriarch",
+     "line": "Let them win tonight. Tomorrow, give the girl a real opponent."
+    }
+   ],
+   "after": [
+    {
+     "who": "stage",
+     "line": "Tomorrow, Nivea is given a real opponent. Ixidor is made to watch."
+    },
+    {
+     "who": "ixidor",
+     "line": "My past holds only pain and loss. I will conquer it by creating the perfect future.",
+     "quote": true
+    },
+    {
+     "who": "stage",
+     "line": "Exiled to the desert, alone, Ixidor begins to dream of an angel. A beautiful one, with a sword, who hates the Cabal as much as he does."
+    }
+   ],
+   "cues": {
+    "hero": {
+     "start": "For Nivea.",
+     "big": "Now you see it.",
+     "low": "Something is wrong tonight...",
+     "win": "Did you hear them, Nivea? They were cheering.",
+     "loss": "Nivea, get out of the arena!",
+     "half": "Every face is a lie. Some lies bite."
+    },
+    "villain": {
+     "start": "Begin.",
+     "big": "The crowd loves a reveal.",
+     "low": "The odds are shifting...",
+     "win": "Book them for tomorrow.",
+     "loss": "Tomorrow, then."
+    }
+   },
+   "bigPlays": [],
+   "sim": null
+  },
+  {
+   "id": "a10b2",
+   "slot": 2,
+   "kind": "Lesson",
+   "mood": "march",
+   "title": "Kinship",
+   "difficulty": "Easy",
+   "teaches": [
+    "Tribes"
+   ],
+   "blurb": "The Mirari's power is still bleeding out of Krosa, and the beasts it made are spilling into the Wirewood forest next door. The elves of Wirewood are few, but they fight together.",
+   "rewardSet": "ons",
+   "host": false,
+   "hero": {
+    "who": "hivemaster",
+    "deck": {
+     "name": "Wirewood",
+     "colors": "G",
+     "archetype": null,
+     "cards": [
+      {
+       "qty": 4,
+       "name": "Wirewood Elf",
+       "set": "ons",
+       "number": "301",
+       "id": "10a34e31-97f1-40e8-9d91-a8139af7f096"
+      },
+      {
+       "qty": 4,
+       "name": "Elvish Warrior",
+       "set": "ons",
+       "number": "260",
+       "id": "2c6b767b-49e5-4845-9b3f-29540e5fa330"
+      },
+      {
+       "qty": 4,
+       "name": "Elvish Vanguard",
+       "set": "ons",
+       "number": "259",
+       "id": "455c6923-8d0e-4a7f-a5c0-add8db519ee3"
+      },
+      {
+       "qty": 4,
+       "name": "Timberwatch Elf",
+       "set": "lgn",
+       "number": "140",
+       "id": "045ae4ec-07f2-4098-a2d9-4bfcbd0273b2"
+      },
+      {
+       "qty": 4,
+       "name": "Wirewood Hivemaster",
+       "set": "lgn",
+       "number": "145",
+       "id": "ea55b4fc-366f-4906-9eaa-9085f6a22612"
+      },
+      {
+       "qty": 4,
+       "name": "Elvish Pioneer",
+       "set": "ons",
+       "number": "257",
+       "id": "7e71fc2d-643b-4fad-89a8-624d330895d6"
+      },
+      {
+       "qty": 4,
+       "name": "Wellwisher",
+       "set": "ons",
+       "number": "300",
+       "id": "be95ab7c-0e77-4293-aa48-ee54902a363f"
+      },
+      {
+       "qty": 4,
+       "name": "Wirewood Herald",
+       "set": "ons",
+       "number": "302",
+       "id": "35724e9f-efa6-47e7-ab4d-7defe38ba576"
+      },
+      {
+       "qty": 4,
+       "name": "Wirewood Pride",
+       "set": "ons",
+       "number": "303",
+       "id": "a559e844-06c9-4953-bc2c-a58e4170fe47"
+      },
+      {
+       "qty": 24,
+       "name": "Forest",
+       "set": "ons",
+       "number": "347",
+       "id": "b361b42d-401f-440a-bae9-35338b5dde0e"
+      }
+     ]
+    }
+   },
+   "villain": {
+    "who": "beast",
+    "deck": {
+     "name": "Mutated Krosa",
+     "colors": "G",
+     "archetype": null,
+     "cards": [
+      {
+       "qty": 4,
+       "name": "Krosan Tusker",
+       "set": "ons",
+       "number": "272",
+       "id": "0b872f85-60c5-44c4-956d-a8aa8132908b"
+      },
+      {
+       "qty": 4,
+       "name": "Ravenous Baloth",
+       "set": "ons",
+       "number": "278",
+       "id": "c98182d6-5b25-4493-9286-f29633e1bec4"
+      },
+      {
+       "qty": 4,
+       "name": "Snarling Undorak",
+       "set": "ons",
+       "number": "283",
+       "id": "05788d63-6210-44f2-9ae4-e55e9507a3a9"
+      },
+      {
+       "qty": 4,
+       "name": "Barkhide Mauler",
+       "set": "ons",
+       "number": "246",
+       "id": "b9196ce7-3ff4-4dda-a628-559ada11c9ba"
+      },
+      {
+       "qty": 4,
+       "name": "Spitting Gourna",
+       "set": "ons",
+       "number": "284",
+       "id": "746b98bf-5398-4a00-b4fe-a990ea9cfd77"
+      },
+      {
+       "qty": 4,
+       "name": "Berserk Murlodont",
+       "set": "lgn",
+       "number": "117",
+       "id": "499c4674-dd9f-4848-8447-721f842a0213"
+      },
+      {
+       "qty": 4,
+       "name": "Krosan Vorine",
+       "set": "lgn",
+       "number": "131",
+       "id": "b7d1c6c6-16b3-4a52-aeda-683b1aeb0e7f"
+      },
+      {
+       "qty": 4,
+       "name": "Explosive Vegetation",
+       "set": "ons",
+       "number": "263",
+       "id": "da6efd31-ab5e-46ff-80d2-9382438e302c"
+      },
+      {
+       "qty": 4,
+       "name": "Silklash Spider",
+       "set": "ons",
+       "number": "281",
+       "id": "e41680e2-6689-4263-a5a3-9fb2e4280d52"
+      },
+      {
+       "qty": 24,
+       "name": "Forest",
+       "set": "ons",
+       "number": "347",
+       "id": "b361b42d-401f-440a-bae9-35338b5dde0e"
+      }
+     ]
+    }
+   },
+   "reward": {
+    "hero": {
+     "packs": 1,
+     "coins": 0
+    },
+    "villain": {
+     "card": {
+      "oracle_id": "2d0c73da-ed8c-44fc-abd9-7c344b1f890d",
+      "name": "Silklash Spider",
+      "rarity": "rare",
+      "set": "ons",
+      "id": "e41680e2-6689-4263-a5a3-9fb2e4280d52",
+      "image": "https://cards.scryfall.io/normal/front/e/4/e41680e2-6689-4263-a5a3-9fb2e4280d52.jpg"
+     },
+     "coins": 50
+    }
+   },
+   "scene": [
+    {
+     "who": "stage",
+     "line": "No one in Wirewood understands what is happening. They just know it's unnatural—and coming from Krosa.",
+     "quote": true
+    },
+    {
+     "who": "hivemaster",
+     "line": "Most insects have been drawn to the Mirari. But all that remain in Wirewood are under my care.",
+     "quote": true
+    },
+    {
+     "who": "beast",
+     "line": "HRRRRMMMMMM."
+    },
+    {
+     "who": "stage",
+     "line": "Even through the Mirari's voice, the elves still hear the call of their kinship.",
+     "quote": true
+    },
+    {
+     "who": "hivemaster",
+     "line": "Every elf makes every other elf stronger. A tribe is a card that counts its friends. Play them together."
+    }
+   ],
+   "villainScene": [
+    {
+     "who": "stage",
+     "line": "\"The harder we press forward, the harder Krosa pushes us back.\" —Aven scout",
+     "quote": true
+    },
+    {
+     "who": "beast",
+     "line": "HRRRM. Hungry. Was a deer once. Remember being a deer."
+    },
+    {
+     "who": "stage",
+     "line": "The blood of Krosa turns rational beings into primal forces.",
+     "quote": true
+    }
+   ],
+   "after": [
+    {
+     "who": "stage",
+     "line": "No matter your strength, the Krosan Forest is stronger. No matter your speed, the Wirewood Forest is faster.",
+     "quote": true
+    }
+   ],
+   "cues": {
+    "hero": {
+     "start": "Wirewood, together.",
+     "big": "The kin answers!",
+     "low": "Too big... they are too big...",
+     "win": "Go home, poor thing. If you still have one.",
+     "loss": "Fall back to the old trees!",
+     "half": "Elves never fight alone."
+    },
+    "villain": {
+     "start": "HRRRRM!",
+     "big": "BIGGER. ALWAYS BIGGER.",
+     "low": "Hurt... remember hurt...",
+     "win": "HRRRM. Quiet now.",
+     "loss": "Was... a deer..."
+    }
+   },
+   "bigPlays": [],
+   "sim": null
+  },
+  {
+   "id": "a10b3",
+   "slot": 3,
+   "kind": "Lesson",
+   "mood": "comic",
+   "title": "The Riptide Project",
+   "difficulty": "Easy",
+   "teaches": [
+    "Slivers"
+   ],
+   "blurb": "A school of wizards on an island tried to recreate the slivers in a lab. They did. Now the slivers own the island, and Pemmin is the last researcher who hasn't been eaten.",
+   "rewardSet": "lgn",
+   "host": false,
+   "hero": {
+    "who": "pemmin",
+    "deck": {
+     "name": "Riptide Survivors",
+     "colors": "U",
+     "archetype": null,
+     "cards": [
+      {
+       "qty": 4,
+       "name": "Riptide Survivor",
+       "set": "scg",
+       "number": "48",
+       "id": "7515187f-4821-400d-b78f-cec173df6b84"
+      },
+      {
+       "qty": 4,
+       "name": "Information Dealer",
+       "set": "ons",
+       "number": "88",
+       "id": "a45ac59c-654d-44de-b266-532d44b34137"
+      },
+      {
+       "qty": 4,
+       "name": "Fugitive Wizard",
+       "set": "lgn",
+       "number": "38",
+       "id": "a1020538-89c8-4986-9687-78ab326acb3e"
+      },
+      {
+       "qty": 4,
+       "name": "Riptide Biologist",
+       "set": "ons",
+       "number": "106",
+       "id": "4d399b71-c365-492c-976e-2c79d97d08bc"
+      },
+      {
+       "qty": 4,
+       "name": "Crafty Pathmage",
+       "set": "ons",
+       "number": "77",
+       "id": "c5d91378-f831-40ef-a79b-b044af1470e0"
+      },
+      {
+       "qty": 4,
+       "name": "Disruptive Pitmage",
+       "set": "ons",
+       "number": "81",
+       "id": "5b0d9c2f-356c-4f27-8560-8ffceadac31c"
+      },
+      {
+       "qty": 4,
+       "name": "Sage Aven",
+       "set": "ons",
+       "number": "111",
+       "id": "4c03afc5-7ca3-4ac6-a06e-091e2cce13a0"
+      },
+      {
+       "qty": 4,
+       "name": "Mage's Guile",
+       "set": "ons",
+       "number": "91",
+       "id": "301cb538-a931-4916-927b-4986046b1158"
+      },
+      {
+       "qty": 4,
+       "name": "Aven Envoy",
+       "set": "lgn",
+       "number": "30",
+       "id": "40ead30e-9f96-4fca-b619-fdc8d1b5e2e0"
+      },
+      {
+       "qty": 24,
+       "name": "Island",
+       "set": "ons",
+       "number": "335",
+       "id": "36e062ec-df51-40c0-ad8a-2ee1cb8f8f17"
+      }
+     ]
+    }
+   },
+   "villain": {
+    "who": "sliver",
+    "deck": {
+     "name": "The Escapees",
+     "colors": "RG",
+     "archetype": null,
+     "cards": [
+      {
+       "qty": 4,
+       "name": "Blade Sliver",
+       "set": "lgn",
+       "number": "88",
+       "id": "a8d6f7a6-7b6a-44f4-be04-7c02806b9f09"
+      },
+      {
+       "qty": 4,
+       "name": "Hunter Sliver",
+       "set": "lgn",
+       "number": "102",
+       "id": "ca9aea1a-6f50-4f66-9f36-2e214dce41b4"
+      },
+      {
+       "qty": 4,
+       "name": "Magma Sliver",
+       "set": "lgn",
+       "number": "107",
+       "id": "9091d908-456f-4127-857d-b22fdb4f2fd9"
+      },
+      {
+       "qty": 4,
+       "name": "Quick Sliver",
+       "set": "lgn",
+       "number": "136",
+       "id": "30a60b2d-aeeb-4dbf-bf1a-20a274fe323f"
+      },
+      {
+       "qty": 4,
+       "name": "Root Sliver",
+       "set": "lgn",
+       "number": "137",
+       "id": "fdf5a106-5fb7-40e4-82a7-db559302a923"
+      },
+      {
+       "qty": 2,
+       "name": "Brood Sliver",
+       "set": "lgn",
+       "number": "120",
+       "id": "33803c12-1d78-49fe-a3a3-7f47c60a96b6"
+      },
+      {
+       "qty": 4,
+       "name": "Shock",
+       "set": "ons",
+       "number": "227",
+       "id": "83c92b5d-103c-4719-a850-690a7010291a"
+      },
+      {
+       "qty": 4,
+       "name": "Primal Boost",
+       "set": "ons",
+       "number": "277",
+       "id": "f1b91a5a-9328-4fc6-a2f6-a7879281e145"
+      },
+      {
+       "qty": 4,
+       "name": "Spark Spray",
+       "set": "scg",
+       "number": "105",
+       "id": "f60d8716-4297-484c-8e02-c30ce2773a65"
+      },
+      {
+       "qty": 2,
+       "name": "Run Wild",
+       "set": "ons",
+       "number": "279",
+       "id": "939a7354-162c-489d-955d-4df17b930e1c"
+      },
+      {
+       "qty": 12,
+       "name": "Mountain",
+       "set": "ons",
+       "number": "343",
+       "id": "05f9bdca-0d54-46c7-b803-9083dfc9ee24"
+      },
+      {
+       "qty": 12,
+       "name": "Forest",
+       "set": "ons",
+       "number": "347",
+       "id": "b361b42d-401f-440a-bae9-35338b5dde0e"
+      }
+     ]
+    }
+   },
+   "reward": {
+    "hero": {
+     "packs": 1,
+     "coins": 0
+    },
+    "villain": {
+     "card": {
+      "oracle_id": "6b1d178f-9713-4dcf-920b-ddf2c94cc427",
+      "name": "Brood Sliver",
+      "rarity": "rare",
+      "set": "lgn",
+      "id": "33803c12-1d78-49fe-a3a3-7f47c60a96b6",
+      "image": "https://cards.scryfall.io/normal/front/3/3/33803c12-1d78-49fe-a3a3-7f47c60a96b6.jpg"
+     },
+     "coins": 50
+    }
+   },
+   "scene": [
+    {
+     "who": "stage",
+     "line": "Taking the form of a junior researcher, the first sliver slipped out of Riptide.",
+     "quote": true
+    },
+    {
+     "who": "stage",
+     "line": "The directors of the Riptide Project wanted instant results on the sliver experiments. They got their wish.",
+     "quote": true
+    },
+    {
+     "who": "pemmin",
+     "line": "Right. Nobody panic. I am panicking for all of us."
+    },
+    {
+     "who": "pemmin",
+     "line": "Hold that thought.",
+     "quote": true
+    },
+    {
+     "who": "pemmin",
+     "line": "Every sliver shares its ability with every other sliver. So kill the one that shares the best thing first."
+    }
+   ],
+   "villainScene": [
+    {
+     "who": "sliver",
+     "line": "sssss."
+    },
+    {
+     "who": "sliver",
+     "line": "sssss. SSSSSS."
+    },
+    {
+     "who": "stage",
+     "line": "There are a lot more of them now."
+    },
+    {
+     "who": "stage",
+     "line": "\"Death couldn't contain the slivers. What made us think we could?\" —Riptide Project researcher",
+     "quote": true
+    }
+   ],
+   "after": [
+    {
+     "who": "stage",
+     "line": "The grounds of the Riptide Project are now populated only by slivers, broken beakers, and the lonely screeching of gulls.",
+     "quote": true
+    },
+    {
+     "who": "pemmin",
+     "line": "I am putting in for a transfer."
+    }
+   ],
+   "cues": {
+    "hero": {
+     "start": "Positions, everyone! Everyone? Hello?",
+     "big": "Got one!",
+     "low": "They learned to open doors...",
+     "win": "Write it down: we survived. Underline it.",
+     "loss": "If I wanted your opinion, I'd have told you what it was.",
+     "half": "Hold that thought."
+    },
+    "villain": {
+     "start": "sssss.",
+     "big": "SSSSSS!",
+     "low": "sss...",
+     "win": "SSSSSSSSS.",
+     "loss": "sss."
+    }
+   },
+   "bigPlays": [],
+   "sim": null
+  },
+  {
+   "id": "a10b4",
+   "slot": 4,
+   "kind": "Rival",
+   "mood": "tension",
+   "title": "The Untouchable",
+   "difficulty": "Normal",
+   "teaches": [
+    "Alternate wins"
+   ],
+   "blurb": "Kamahl hears that the Cabal's champion has a face he knows. He leaves Krosa for the first time in years and walks into the Coliseum. Phage is waiting. She does not remember him.",
+   "rewardSet": "lgn",
+   "host": false,
+   "hero": {
+    "who": "kamahl",
+    "deck": {
+     "name": "Fist of Krosa",
+     "colors": "G",
+     "archetype": null,
+     "cards": [
+      {
+       "qty": 2,
+       "name": "Kamahl, Fist of Krosa",
+       "set": "ons",
+       "number": "268",
+       "id": "150d5229-b1a5-42cf-bf6a-04d246f1124f"
+      },
+      {
+       "qty": 4,
+       "name": "Elvish Warrior",
+       "set": "ons",
+       "number": "260",
+       "id": "2c6b767b-49e5-4845-9b3f-29540e5fa330"
+      },
+      {
+       "qty": 4,
+       "name": "Krosan Tusker",
+       "set": "ons",
+       "number": "272",
+       "id": "0b872f85-60c5-44c4-956d-a8aa8132908b"
+      },
+      {
+       "qty": 4,
+       "name": "Ravenous Baloth",
+       "set": "ons",
+       "number": "278",
+       "id": "c98182d6-5b25-4493-9286-f29633e1bec4"
+      },
+      {
+       "qty": 4,
+       "name": "Wirewood Savage",
+       "set": "ons",
+       "number": "304",
+       "id": "99982622-98bc-45ae-8642-41cd543f32a8"
+      },
+      {
+       "qty": 4,
+       "name": "Timberwatch Elf",
+       "set": "lgn",
+       "number": "140",
+       "id": "045ae4ec-07f2-4098-a2d9-4bfcbd0273b2"
+      },
+      {
+       "qty": 4,
+       "name": "Wellwisher",
+       "set": "ons",
+       "number": "300",
+       "id": "be95ab7c-0e77-4293-aa48-ee54902a363f"
+      },
+      {
+       "qty": 4,
+       "name": "Krosan Vorine",
+       "set": "lgn",
+       "number": "131",
+       "id": "b7d1c6c6-16b3-4a52-aeda-683b1aeb0e7f"
+      },
+      {
+       "qty": 4,
+       "name": "Silklash Spider",
+       "set": "ons",
+       "number": "281",
+       "id": "e41680e2-6689-4263-a5a3-9fb2e4280d52"
+      },
+      {
+       "qty": 2,
+       "name": "Krosan Colossus",
+       "set": "ons",
+       "number": "270",
+       "id": "a804f3c0-5ebf-43ca-b200-09f7c1bbe902"
+      },
+      {
+       "qty": 24,
+       "name": "Forest",
+       "set": "ons",
+       "number": "347",
+       "id": "b361b42d-401f-440a-bae9-35338b5dde0e"
+      }
+     ]
+    }
+   },
+   "villain": {
+    "who": "phage",
+    "deck": {
+     "name": "The Untouchable",
+     "colors": "B",
+     "archetype": null,
+     "cards": [
+      {
+       "qty": 2,
+       "name": "Phage the Untouchable",
+       "set": "lgn",
+       "number": "78",
+       "id": "a410b933-99d0-4383-b54b-4839a76eb6fe"
+      },
+      {
+       "qty": 4,
+       "name": "Skinthinner",
+       "set": "lgn",
+       "number": "80",
+       "id": "89b8c392-da68-4894-b6e8-eb430141a0d7"
+      },
+      {
+       "qty": 4,
+       "name": "Withered Wretch",
+       "set": "lgn",
+       "number": "86",
+       "id": "b8a82948-503f-4ad4-9e3c-c080c16afd63"
+      },
+      {
+       "qty": 4,
+       "name": "Vile Deacon",
+       "set": "lgn",
+       "number": "85",
+       "id": "b2641bd5-c845-47a1-8038-bb28b06f896e"
+      },
+      {
+       "qty": 4,
+       "name": "Drinker of Sorrow",
+       "set": "lgn",
+       "number": "66",
+       "id": "2bc8758b-68cc-45ab-85d0-b870cef7dd85"
+      },
+      {
+       "qty": 4,
+       "name": "Graveborn Muse",
+       "set": "lgn",
+       "number": "73",
+       "id": "aa432e4e-ff23-4ad2-8d0a-403efee86f11"
+      },
+      {
+       "qty": 4,
+       "name": "Smother",
+       "set": "ons",
+       "number": "170",
+       "id": "9a8321af-d667-44e7-8c03-3957286604b9"
+      },
+      {
+       "qty": 4,
+       "name": "Swat",
+       "set": "ons",
+       "number": "174",
+       "id": "cec3a260-6c50-401d-a0ff-bf49a973e1a1"
+      },
+      {
+       "qty": 4,
+       "name": "Cabal Executioner",
+       "set": "ons",
+       "number": "130",
+       "id": "cd7727a7-0cdf-4fd5-82b4-e6587c10ca80"
+      },
+      {
+       "qty": 2,
+       "name": "Infest",
+       "set": "ons",
+       "number": "157",
+       "id": "b7890ba2-aa42-4c8d-bbc1-94fb1d4150fc"
+      },
+      {
+       "qty": 24,
+       "name": "Swamp",
+       "set": "ons",
+       "number": "339",
+       "id": "0356ae45-e5ca-46b9-8ebc-42bf4776e89c"
+      }
+     ]
+    }
+   },
+   "reward": {
+    "hero": {
+     "packs": 1,
+     "coins": 100
+    },
+    "villain": {
+     "card": {
+      "oracle_id": "09d01406-b529-4c3b-900e-d8c889a4c400",
+      "name": "Phage the Untouchable",
+      "rarity": "rare",
+      "set": "lgn",
+      "id": "a410b933-99d0-4383-b54b-4839a76eb6fe",
+      "image": "https://cards.scryfall.io/normal/front/a/4/a410b933-99d0-4383-b54b-4839a76eb6fe.jpg"
+     },
+     "coins": 100
+    }
+   },
+   "scene": [
+    {
+     "who": "kamahl",
+     "line": "Jeska."
+    },
+    {
+     "who": "phage",
+     "line": "Who?"
+    },
+    {
+     "who": "phage",
+     "line": "I do unto others as others have done unto me.",
+     "quote": true
+    },
+    {
+     "who": "kamahl",
+     "line": "I did this to you. I know. Come home and let me make it right."
+    },
+    {
+     "who": "phage",
+     "line": "I can't hear them scream, but at least I don't have to listen to them beg.",
+     "quote": true
+    },
+    {
+     "who": "kamahl",
+     "line": "If Phage hits you even once, you lose the game. Not life. The game. Never let her through."
+    }
+   ],
+   "villainScene": [
+    {
+     "who": "phage",
+     "line": "Their blood is the nectar that nourishes the Cabal.",
+     "quote": true
+    },
+    {
+     "who": "phage",
+     "line": "The barbarian keeps saying a name. It makes my head hurt."
+    },
+    {
+     "who": "phage",
+     "line": "The Cabal says I was born in a vat. The Cabal is never wrong. I touch him, and the hurting stops."
+    }
+   ],
+   "after": [
+    {
+     "who": "stage",
+     "line": "Phage escapes into the Coliseum tunnels. For one heartbeat, at the end, she had looked at him like a sister."
+    },
+    {
+     "who": "stage",
+     "line": "Phage became both executioner and savior, helping others to the same rebirth she had found.",
+     "quote": true
+    }
+   ],
+   "cues": {
+    "hero": {
+     "start": "Jeska. Please.",
+     "big": "Krosa, hold her back. Gently.",
+     "low": "Do not let her touch you...",
+     "win": "You are still in there. I saw it.",
+     "loss": "Jeska... I am sorry...",
+     "half": "Steel, Jeska. Remember? You had a temper of steel."
+    },
+    "villain": {
+     "start": "Come here, barbarian.",
+     "big": "Few cross me twice.",
+     "low": "Stop... saying... that name...",
+     "win": "Untouchable.",
+     "loss": "Who... was Jeska?"
+    }
+   },
+   "bigPlays": [],
+   "sim": null
+  },
+  {
+   "id": "a10b5",
+   "slot": 5,
+   "kind": "Lesson",
+   "mood": "tension",
+   "title": "The Angel of Wrath",
+   "difficulty": "Normal",
+   "teaches": [
+    "Cycling"
+   ],
+   "blurb": "Out in the desert, Ixidor's dream has opened its eyes. Akroma was made for one purpose: destroy Phage. She starts with the Cabal's Coliseum, and Braids is running it tonight.",
+   "rewardSet": "lgn",
+   "host": false,
+   "hero": {
+    "who": "akroma",
+    "deck": {
+     "name": "Akroma's Wrath",
+     "colors": "WR",
+     "archetype": null,
+     "cards": [
+      {
+       "qty": 2,
+       "name": "Akroma, Angel of Wrath",
+       "set": "lgn",
+       "number": "1",
+       "id": "814245de-6105-43ef-acbf-d12d304b6331"
+      },
+      {
+       "qty": 4,
+       "name": "Exalted Angel",
+       "set": "ons",
+       "number": "28",
+       "id": "c2213eac-cea4-4dfd-90c4-c1f466967e2e"
+      },
+      {
+       "qty": 4,
+       "name": "Lightning Rift",
+       "set": "ons",
+       "number": "217",
+       "id": "d775d729-0ad9-4b14-9d44-6282f6936e07"
+      },
+      {
+       "qty": 2,
+       "name": "Akroma's Vengeance",
+       "set": "ons",
+       "number": "2",
+       "id": "5e33aaf7-7490-4b64-a966-82fbf7ca8686"
+      },
+      {
+       "qty": 4,
+       "name": "Renewed Faith",
+       "set": "ons",
+       "number": "50",
+       "id": "1ea572b5-ff68-45aa-8200-78ee7f64a0ce"
+      },
+      {
+       "qty": 4,
+       "name": "Gustcloak Harrier",
+       "set": "ons",
+       "number": "34",
+       "id": "b5ff5c7d-7823-4d1e-8abb-77e2d8126996"
+      },
+      {
+       "qty": 4,
+       "name": "Daru Lancer",
+       "set": "ons",
+       "number": "20",
+       "id": "cd888ca8-0ebe-46f0-9317-3b193ccc43fb"
+      },
+      {
+       "qty": 4,
+       "name": "Akroma's Devoted",
+       "set": "lgn",
+       "number": "2",
+       "id": "798893df-e720-471d-822d-50284de23efd"
+      },
+      {
+       "qty": 4,
+       "name": "Spark Spray",
+       "set": "scg",
+       "number": "105",
+       "id": "f60d8716-4297-484c-8e02-c30ce2773a65"
+      },
+      {
+       "qty": 4,
+       "name": "Shock",
+       "set": "ons",
+       "number": "227",
+       "id": "83c92b5d-103c-4719-a850-690a7010291a"
+      },
+      {
+       "qty": 12,
+       "name": "Plains",
+       "set": "ons",
+       "number": "331",
+       "id": "7bf7d68a-dbd0-45f3-acbb-59ee38e6057e"
+      },
+      {
+       "qty": 12,
+       "name": "Mountain",
+       "set": "ons",
+       "number": "343",
+       "id": "05f9bdca-0d54-46c7-b803-9083dfc9ee24"
+      }
+     ]
+    }
+   },
+   "villain": {
+    "who": "braids",
+    "deck": {
+     "name": "The Cabal's Coliseum",
+     "colors": "B",
+     "archetype": null,
+     "cards": [
+      {
+       "qty": 4,
+       "name": "Undead Gladiator",
+       "set": "ons",
+       "number": "178",
+       "id": "bbc779d9-3200-4369-9289-1a8e90e243b9"
+      },
+      {
+       "qty": 4,
+       "name": "Gluttonous Zombie",
+       "set": "ons",
+       "number": "151",
+       "id": "db909e95-7979-41f0-b17a-874c4137fcc1"
+      },
+      {
+       "qty": 4,
+       "name": "Severed Legion",
+       "set": "ons",
+       "number": "166",
+       "id": "efe12afd-da41-436e-af84-fa3b36a58030"
+      },
+      {
+       "qty": 4,
+       "name": "Nantuko Husk",
+       "set": "ons",
+       "number": "159",
+       "id": "1ff31ece-f132-4107-9415-fcf30e251167"
+      },
+      {
+       "qty": 4,
+       "name": "Carrion Feeder",
+       "set": "scg",
+       "number": "59",
+       "id": "88042031-64af-4f84-85d5-95992b43aa6c"
+      },
+      {
+       "qty": 4,
+       "name": "Festering Goblin",
+       "set": "ons",
+       "number": "148",
+       "id": "e7209cc8-b519-4f27-87d8-b12e239a121f"
+      },
+      {
+       "qty": 4,
+       "name": "Smother",
+       "set": "ons",
+       "number": "170",
+       "id": "9a8321af-d667-44e7-8c03-3957286604b9"
+      },
+      {
+       "qty": 4,
+       "name": "Cruel Revival",
+       "set": "ons",
+       "number": "135",
+       "id": "245aba23-2abb-4084-b4cb-d06e46de2108"
+      },
+      {
+       "qty": 4,
+       "name": "Soulless One",
+       "set": "ons",
+       "number": "171",
+       "id": "c826d786-0d96-4f77-94ae-6907fbce51e0"
+      },
+      {
+       "qty": 24,
+       "name": "Swamp",
+       "set": "ons",
+       "number": "339",
+       "id": "0356ae45-e5ca-46b9-8ebc-42bf4776e89c"
+      }
+     ]
+    }
+   },
+   "reward": {
+    "hero": {
+     "packs": 1,
+     "coins": 100
+    },
+    "villain": {
+     "card": {
+      "oracle_id": "4da2425d-2118-4116-855d-2ef80693a7b7",
+      "name": "Undead Gladiator",
+      "rarity": "rare",
+      "set": "ons",
+      "id": "bbc779d9-3200-4369-9289-1a8e90e243b9",
+      "image": "https://cards.scryfall.io/normal/front/b/b/bbc779d9-3200-4369-9289-1a8e90e243b9.jpg"
+     },
+     "coins": 100
+    }
+   },
+   "scene": [
+    {
+     "who": "stage",
+     "line": "Akroma asked for only one thing from her troops: unwavering, unconditional loyalty.",
+     "quote": true
+    },
+    {
+     "who": "akroma",
+     "line": "Until the world unites in vengeful fury and Phage is destroyed, I will not stay my hand.",
+     "quote": true
+    },
+    {
+     "who": "braids",
+     "line": "How cute. Does it do any other tricks?",
+     "quote": true
+    },
+    {
+     "who": "akroma",
+     "line": "Cycling: pay to discard a card and draw another. With Lightning Rift, every cycle is a bolt."
+    },
+    {
+     "who": "akroma",
+     "line": "It is from Phage that this evil springs, and to her it shall return.",
+     "quote": true
+    }
+   ],
+   "villainScene": [
+    {
+     "who": "braids",
+     "line": "I like goblins. They make funny little popping sounds when they die.",
+     "quote": true
+    },
+    {
+     "who": "braids",
+     "line": "An angel who only wants one thing. I could have built that in an afternoon."
+    },
+    {
+     "who": "braids",
+     "line": "Finally, a use for that head of yours.",
+     "quote": true
+    }
+   ],
+   "after": [
+    {
+     "who": "stage",
+     "line": "Ixidor had only to imagine their ruin and Akroma made it so.",
+     "quote": true
+    }
+   ],
+   "cues": {
+    "hero": {
+     "start": "Where is Phage?",
+     "big": "Wrath.",
+     "low": "Ixidor... your dream is bleeding...",
+     "win": "Tell Phage I am coming.",
+     "loss": "I will not stay my hand.",
+     "half": "I feed my hatred to the righteous and they join my crusade."
+    },
+    "villain": {
+     "start": "Welcome to the Coliseum.",
+     "big": "Gratuitous, isn't it?",
+     "low": "Not my best work...",
+     "win": "Book her for tomorrow.",
+     "loss": "She will find Phage anyway. That will be fun to watch."
+    }
+   },
+   "bigPlays": [],
+   "sim": null
+  },
+  {
+   "id": "a10b6",
+   "slot": 6,
+   "kind": "Meta",
+   "mood": "march",
+   "title": "Goblin Tides",
+   "difficulty": "Normal",
+   "teaches": [
+    "Tokens"
+   ],
+   "blurb": "The Order's soldiers hold the Daru Plains against everything Otaria throws at them. This week it is goblins. A lot of goblins. They have a commander now, which is worse.",
+   "rewardSet": "scg",
+   "host": false,
+   "hero": {
+    "who": "daru",
+    "deck": {
+     "name": "The Daru Line",
+     "colors": "W",
+     "archetype": null,
+     "cards": [
+      {
+       "qty": 4,
+       "name": "Daru Warchief",
+       "set": "scg",
+       "number": "6",
+       "id": "2630d3b5-8f3a-4aad-a45e-22a7979429f3"
+      },
+      {
+       "qty": 4,
+       "name": "Daru Lancer",
+       "set": "ons",
+       "number": "20",
+       "id": "cd888ca8-0ebe-46f0-9317-3b193ccc43fb"
+      },
+      {
+       "qty": 4,
+       "name": "Daru Healer",
+       "set": "ons",
+       "number": "19",
+       "id": "0e4f3eff-ac99-41e2-9003-9630cdb3ae23"
+      },
+      {
+       "qty": 4,
+       "name": "Glory Seeker",
+       "set": "ons",
+       "number": "31",
+       "id": "9047075e-9fca-484d-bb79-32c0d6821281"
+      },
+      {
+       "qty": 4,
+       "name": "Whipcorder",
+       "set": "ons",
+       "number": "60",
+       "id": "3bf6987e-a6e4-4a88-af0b-cf3b2d2b80c7"
+      },
+      {
+       "qty": 4,
+       "name": "Sunstrike Legionnaire",
+       "set": "lgn",
+       "number": "22",
+       "id": "0f5d519a-9f11-4b10-97ad-edccfda639bb"
+      },
+      {
+       "qty": 4,
+       "name": "Catapult Squad",
+       "set": "ons",
+       "number": "11",
+       "id": "75a71d29-29eb-43c4-b0f3-457435e8f629"
+      },
+      {
+       "qty": 4,
+       "name": "Gustcloak Skirmisher",
+       "set": "ons",
+       "number": "38",
+       "id": "cbbff06c-5f92-4320-8b70-df3c8344f600"
+      },
+      {
+       "qty": 4,
+       "name": "Daru Cavalier",
+       "set": "ons",
+       "number": "18",
+       "id": "eb2e9b7e-434e-477f-b3e8-e85ceb913650"
+      },
+      {
+       "qty": 24,
+       "name": "Plains",
+       "set": "ons",
+       "number": "331",
+       "id": "7bf7d68a-dbd0-45f3-acbb-59ee38e6057e"
+      }
+     ]
+    }
+   },
+   "villain": {
+    "who": "goblin",
+    "deck": {
+     "name": "Siege-Gang",
+     "colors": "R",
+     "archetype": null,
+     "cards": [
+      {
+       "qty": 2,
+       "name": "Siege-Gang Commander",
+       "set": "scg",
+       "number": "103",
+       "id": "92e78cec-aaf9-4fe8-887b-b7e356d63315"
+      },
+      {
+       "qty": 4,
+       "name": "Goblin Piledriver",
+       "set": "ons",
+       "number": "205",
+       "id": "f6c4df1f-f148-42ec-8e22-e7114216927d"
+      },
+      {
+       "qty": 4,
+       "name": "Goblin Warchief",
+       "set": "scg",
+       "number": "97",
+       "id": "66864a4b-8924-40ef-a337-15b12413a158"
+      },
+      {
+       "qty": 4,
+       "name": "Goblin Sledder",
+       "set": "ons",
+       "number": "209",
+       "id": "3a9a1ecf-29f6-474e-bbcf-3455d388aa94"
+      },
+      {
+       "qty": 4,
+       "name": "Skirk Prospector",
+       "set": "ons",
+       "number": "230",
+       "id": "eb545dcd-3a7a-46a7-9c35-d28faebc6d17"
+      },
+      {
+       "qty": 4,
+       "name": "Goblin Sharpshooter",
+       "set": "ons",
+       "number": "207",
+       "id": "7e689df7-b85d-4346-bee8-5e978b5cbbbc"
+      },
+      {
+       "qty": 4,
+       "name": "Sparksmith",
+       "set": "ons",
+       "number": "235",
+       "id": "15a4460d-3fe8-4b1f-9990-0a19c3345367"
+      },
+      {
+       "qty": 4,
+       "name": "Goblin Taskmaster",
+       "set": "ons",
+       "number": "210",
+       "id": "feff65ca-aedf-4434-b701-590d600d1a0b"
+      },
+      {
+       "qty": 4,
+       "name": "Shock",
+       "set": "ons",
+       "number": "227",
+       "id": "83c92b5d-103c-4719-a850-690a7010291a"
+      },
+      {
+       "qty": 2,
+       "name": "Gempalm Incinerator",
+       "set": "lgn",
+       "number": "94",
+       "id": "2687c311-fd0c-4fe0-bce8-e3f412216796"
+      },
+      {
+       "qty": 24,
+       "name": "Mountain",
+       "set": "ons",
+       "number": "343",
+       "id": "05f9bdca-0d54-46c7-b803-9083dfc9ee24"
+      }
+     ]
+    }
+   },
+   "reward": {
+    "hero": {
+     "packs": 1,
+     "coins": 100
+    },
+    "villain": {
+     "card": {
+      "oracle_id": "ddc7f59a-bbb1-4ba1-82c8-6813fd191940",
+      "name": "Siege-Gang Commander",
+      "rarity": "rare",
+      "set": "scg",
+      "id": "92e78cec-aaf9-4fe8-887b-b7e356d63315",
+      "image": "https://cards.scryfall.io/normal/front/9/2/92e78cec-aaf9-4fe8-887b-b7e356d63315.jpg"
+     },
+     "coins": 100
+    }
+   },
+   "scene": [
+    {
+     "who": "stage",
+     "line": "The tall, reedy grass of the Daru Plains rustles loudly in the winds, a perfect cover for any ambush.",
+     "quote": true
+    },
+    {
+     "who": "goblin",
+     "line": "Boys! I count four soldiers. Charge!"
+    },
+    {
+     "who": "daru",
+     "line": "There are forty of us."
+    },
+    {
+     "who": "goblin",
+     "line": "Boys! Count again!"
+    },
+    {
+     "who": "stage",
+     "line": "Daru soldiers learned it's better to have a clean death from a sharp blade than to tangle with a goblin's rusted chains.",
+     "quote": true
+    },
+    {
+     "who": "daru",
+     "line": "The commander makes more goblins every turn. Tokens count as creatures. Clear them before they snowball."
+    }
+   ],
+   "villainScene": [
+    {
+     "who": "goblin",
+     "line": "Siege-Gang! Siege-Gang! We are a gang AND we siege!"
+    },
+    {
+     "who": "stage",
+     "line": "Goblins resolve disputes by splitting everything straight down the middle.",
+     "quote": true
+    },
+    {
+     "who": "stage",
+     "line": "Goblins' motivational techniques are crude, but effective.",
+     "quote": true
+    }
+   ],
+   "after": [
+    {
+     "who": "stage",
+     "line": "Giant-sized body. Goblin-sized brain.",
+     "quote": true
+    },
+    {
+     "who": "daru",
+     "line": "They will be back tomorrow. They are always back tomorrow."
+    }
+   ],
+   "cues": {
+    "hero": {
+     "start": "Hold the line, Daru!",
+     "big": "For the Order!",
+     "low": "They just keep coming...",
+     "win": "Count again, goblin.",
+     "loss": "Fall back to the ridge!",
+     "half": "One more volley. Then one more."
+    },
+    "villain": {
+     "start": "CHARGE! Wait. Count. CHARGE!",
+     "big": "MORE GOBLINS!",
+     "low": "Boys? Boys, where did everybody go?",
+     "win": "Goblins is always winning!",
+     "loss": "Tactical retreat! That means run!"
+    }
+   },
+   "bigPlays": [],
+   "sim": null
+  },
+  {
+   "id": "a10b7",
+   "slot": 7,
+   "kind": "Meta",
+   "mood": "tension",
+   "title": "Angel and Untouchable",
+   "difficulty": "Normal",
+   "teaches": [
+    "Protection from a colour"
+   ],
+   "blurb": "Akroma finally finds Phage. The angel made to kill her, and the girl made to kill everything. Both were made by someone else. Neither knows it.",
+   "rewardSet": "scg",
+   "host": false,
+   "hero": {
+    "who": "akroma",
+    "deck": {
+     "name": "Angel of Wrath",
+     "colors": "W",
+     "archetype": null,
+     "cards": [
+      {
+       "qty": 2,
+       "name": "Akroma, Angel of Wrath",
+       "set": "lgn",
+       "number": "1",
+       "id": "814245de-6105-43ef-acbf-d12d304b6331"
+      },
+      {
+       "qty": 4,
+       "name": "Exalted Angel",
+       "set": "ons",
+       "number": "28",
+       "id": "c2213eac-cea4-4dfd-90c4-c1f466967e2e"
+      },
+      {
+       "qty": 4,
+       "name": "Akroma's Devoted",
+       "set": "lgn",
+       "number": "2",
+       "id": "798893df-e720-471d-822d-50284de23efd"
+      },
+      {
+       "qty": 4,
+       "name": "Daru Lancer",
+       "set": "ons",
+       "number": "20",
+       "id": "cd888ca8-0ebe-46f0-9317-3b193ccc43fb"
+      },
+      {
+       "qty": 4,
+       "name": "Gustcloak Savior",
+       "set": "ons",
+       "number": "36",
+       "id": "0e9d6e81-1869-4ab7-8a4e-477d5c4aed6b"
+      },
+      {
+       "qty": 4,
+       "name": "Whipcorder",
+       "set": "ons",
+       "number": "60",
+       "id": "3bf6987e-a6e4-4a88-af0b-cf3b2d2b80c7"
+      },
+      {
+       "qty": 4,
+       "name": "Glory Seeker",
+       "set": "ons",
+       "number": "31",
+       "id": "9047075e-9fca-484d-bb79-32c0d6821281"
+      },
+      {
+       "qty": 4,
+       "name": "Pacifism",
+       "set": "ons",
+       "number": "47",
+       "id": "ee262fde-8df1-431f-9e5c-0cafe9212b49"
+      },
+      {
+       "qty": 4,
+       "name": "Renewed Faith",
+       "set": "ons",
+       "number": "50",
+       "id": "1ea572b5-ff68-45aa-8200-78ee7f64a0ce"
+      },
+      {
+       "qty": 2,
+       "name": "Akroma's Vengeance",
+       "set": "ons",
+       "number": "2",
+       "id": "5e33aaf7-7490-4b64-a966-82fbf7ca8686"
+      },
+      {
+       "qty": 24,
+       "name": "Plains",
+       "set": "ons",
+       "number": "331",
+       "id": "7bf7d68a-dbd0-45f3-acbb-59ee38e6057e"
+      }
+     ]
+    }
+   },
+   "villain": {
+    "who": "phage",
+    "deck": {
+     "name": "The Cabal's Champion",
+     "colors": "B",
+     "archetype": null,
+     "cards": [
+      {
+       "qty": 2,
+       "name": "Phage the Untouchable",
+       "set": "lgn",
+       "number": "78",
+       "id": "a410b933-99d0-4383-b54b-4839a76eb6fe"
+      },
+      {
+       "qty": 4,
+       "name": "Skinthinner",
+       "set": "lgn",
+       "number": "80",
+       "id": "89b8c392-da68-4894-b6e8-eb430141a0d7"
+      },
+      {
+       "qty": 4,
+       "name": "Withered Wretch",
+       "set": "lgn",
+       "number": "86",
+       "id": "b8a82948-503f-4ad4-9e3c-c080c16afd63"
+      },
+      {
+       "qty": 4,
+       "name": "Vile Deacon",
+       "set": "lgn",
+       "number": "85",
+       "id": "b2641bd5-c845-47a1-8038-bb28b06f896e"
+      },
+      {
+       "qty": 4,
+       "name": "Graveborn Muse",
+       "set": "lgn",
+       "number": "73",
+       "id": "aa432e4e-ff23-4ad2-8d0a-403efee86f11"
+      },
+      {
+       "qty": 4,
+       "name": "Smother",
+       "set": "ons",
+       "number": "170",
+       "id": "9a8321af-d667-44e7-8c03-3957286604b9"
+      },
+      {
+       "qty": 4,
+       "name": "Cabal Executioner",
+       "set": "ons",
+       "number": "130",
+       "id": "cd7727a7-0cdf-4fd5-82b4-e6587c10ca80"
+      },
+      {
+       "qty": 4,
+       "name": "Grinning Demon",
+       "set": "ons",
+       "number": "153",
+       "id": "72de2f66-0b86-4c21-b4c8-c2d97e3fd095"
+      },
+      {
+       "qty": 4,
+       "name": "Severed Legion",
+       "set": "ons",
+       "number": "166",
+       "id": "efe12afd-da41-436e-af84-fa3b36a58030"
+      },
+      {
+       "qty": 2,
+       "name": "Infest",
+       "set": "ons",
+       "number": "157",
+       "id": "b7890ba2-aa42-4c8d-bbc1-94fb1d4150fc"
+      },
+      {
+       "qty": 24,
+       "name": "Swamp",
+       "set": "ons",
+       "number": "339",
+       "id": "0356ae45-e5ca-46b9-8ebc-42bf4776e89c"
+      }
+     ]
+    }
+   },
+   "reward": {
+    "hero": {
+     "packs": 1,
+     "coins": 100
+    },
+    "villain": {
+     "card": {
+      "oracle_id": "09d01406-b529-4c3b-900e-d8c889a4c400",
+      "name": "Phage the Untouchable",
+      "rarity": "rare",
+      "set": "lgn",
+      "id": "a410b933-99d0-4383-b54b-4839a76eb6fe",
+      "image": "https://cards.scryfall.io/normal/front/a/4/a410b933-99d0-4383-b54b-4839a76eb6fe.jpg"
+     },
+     "coins": 100
+    }
+   },
+   "scene": [
+    {
+     "who": "akroma",
+     "line": "Phage. I was made for you."
+    },
+    {
+     "who": "phage",
+     "line": "Everyone says that. Then they touch me."
+    },
+    {
+     "who": "akroma",
+     "line": "My voice is justice. Clear and relentless."
+    },
+    {
+     "who": "phage",
+     "line": "You have a strange face, angel. Like someone dreamed you."
+    },
+    {
+     "who": "akroma",
+     "line": "Protection from black means her black spells and creatures cannot touch me. Not even her."
+    }
+   ],
+   "villainScene": [
+    {
+     "who": "phage",
+     "line": "The barbarian said I had a brother. The angel says I have to die. Everyone knows what I am except me."
+    },
+    {
+     "who": "phage",
+     "line": "My voice is damnation, they tell me. Unyielding and certain."
+    },
+    {
+     "who": "phage",
+     "line": "I will touch the angel. Then maybe the hurting stops."
+    }
+   ],
+   "after": [
+    {
+     "who": "stage",
+     "line": "Neither one wins. At the moment their hands meet, Krosa answers, and the Mirari's last power pulls them together."
+    },
+    {
+     "who": "stage",
+     "line": "Angel and girl melt into one shape, crowned in light. Every eye in Otaria turns to look."
+    }
+   ],
+   "cues": {
+    "hero": {
+     "start": "For Ixidor.",
+     "big": "Wrath.",
+     "low": "Her touch... I can feel it through the steel...",
+     "win": "It is done. Why do I feel nothing?",
+     "loss": "This was all I was for...",
+     "half": "You cannot touch me."
+    },
+    "villain": {
+     "start": "Come here, angel.",
+     "big": "Untouchable.",
+     "low": "Stop... looking at me like that...",
+     "win": "Even angels die.",
+     "loss": "I... remember a forge..."
+    }
+   },
+   "bigPlays": [],
+   "sim": null
+  },
+  {
+   "id": "a10b8",
+   "slot": 8,
+   "kind": "Boss",
+   "mood": "boss",
+   "title": "Karona, False God",
+   "difficulty": "Hard",
+   "teaches": [
+    "Everything so far"
+   ],
+   "blurb": "Akroma and Phage are gone. In their place stands Karona, a god made of an angel and a girl, worshipped by everyone who sees her. Kamahl and Ixidor, the two men who made her halves, go to end it.",
+   "rewardSet": "scg",
+   "host": true,
+   "hero": {
+    "who": "kamahl",
+    "deck": {
+     "name": "Kamahl and Ixidor",
+     "colors": "GU",
+     "archetype": null,
+     "cards": [
+      {
+       "qty": 2,
+       "name": "Kamahl, Fist of Krosa",
+       "set": "ons",
+       "number": "268",
+       "id": "150d5229-b1a5-42cf-bf6a-04d246f1124f"
+      },
+      {
+       "qty": 2,
+       "name": "Ixidor, Reality Sculptor",
+       "set": "ons",
+       "number": "89",
+       "id": "314d5e89-55f7-42b4-af19-d4d0f499a265"
+      },
+      {
+       "qty": 4,
+       "name": "Elvish Warrior",
+       "set": "ons",
+       "number": "260",
+       "id": "2c6b767b-49e5-4845-9b3f-29540e5fa330"
+      },
+      {
+       "qty": 4,
+       "name": "Ravenous Baloth",
+       "set": "ons",
+       "number": "278",
+       "id": "c98182d6-5b25-4493-9286-f29633e1bec4"
+      },
+      {
+       "qty": 4,
+       "name": "Krosan Tusker",
+       "set": "ons",
+       "number": "272",
+       "id": "0b872f85-60c5-44c4-956d-a8aa8132908b"
+      },
+      {
+       "qty": 4,
+       "name": "Echo Tracer",
+       "set": "lgn",
+       "number": "37",
+       "id": "63390760-35a7-4b4c-8c68-5c84f90d0c58"
+      },
+      {
+       "qty": 4,
+       "name": "Riptide Entrancer",
+       "set": "ons",
+       "number": "108",
+       "id": "2cd9abc9-f289-4294-bc0f-4addc8b92a4e"
+      },
+      {
+       "qty": 4,
+       "name": "Timberwatch Elf",
+       "set": "lgn",
+       "number": "140",
+       "id": "045ae4ec-07f2-4098-a2d9-4bfcbd0273b2"
+      },
+      {
+       "qty": 4,
+       "name": "Silklash Spider",
+       "set": "ons",
+       "number": "281",
+       "id": "e41680e2-6689-4263-a5a3-9fb2e4280d52"
+      },
+      {
+       "qty": 4,
+       "name": "Complicate",
+       "set": "ons",
+       "number": "76",
+       "id": "33f69670-e494-42b8-9148-fe105ec61aa0"
+      },
+      {
+       "qty": 12,
+       "name": "Forest",
+       "set": "ons",
+       "number": "347",
+       "id": "b361b42d-401f-440a-bae9-35338b5dde0e"
+      },
+      {
+       "qty": 12,
+       "name": "Island",
+       "set": "ons",
+       "number": "335",
+       "id": "36e062ec-df51-40c0-ad8a-2ee1cb8f8f17"
+      }
+     ]
+    }
+   },
+   "villain": {
+    "who": "karona",
+    "deck": {
+     "name": "The False God",
+     "colors": "WB",
+     "archetype": null,
+     "cards": [
+      {
+       "qty": 2,
+       "name": "Akroma, Angel of Wrath",
+       "set": "lgn",
+       "number": "1",
+       "id": "814245de-6105-43ef-acbf-d12d304b6331"
+      },
+      {
+       "qty": 2,
+       "name": "Phage the Untouchable",
+       "set": "lgn",
+       "number": "78",
+       "id": "a410b933-99d0-4383-b54b-4839a76eb6fe"
+      },
+      {
+       "qty": 4,
+       "name": "Exalted Angel",
+       "set": "ons",
+       "number": "28",
+       "id": "c2213eac-cea4-4dfd-90c4-c1f466967e2e"
+      },
+      {
+       "qty": 4,
+       "name": "Skinthinner",
+       "set": "lgn",
+       "number": "80",
+       "id": "89b8c392-da68-4894-b6e8-eb430141a0d7"
+      },
+      {
+       "qty": 4,
+       "name": "Withered Wretch",
+       "set": "lgn",
+       "number": "86",
+       "id": "b8a82948-503f-4ad4-9e3c-c080c16afd63"
+      },
+      {
+       "qty": 4,
+       "name": "Smother",
+       "set": "ons",
+       "number": "170",
+       "id": "9a8321af-d667-44e7-8c03-3957286604b9"
+      },
+      {
+       "qty": 4,
+       "name": "Akroma's Devoted",
+       "set": "lgn",
+       "number": "2",
+       "id": "798893df-e720-471d-822d-50284de23efd"
+      },
+      {
+       "qty": 4,
+       "name": "Graveborn Muse",
+       "set": "lgn",
+       "number": "73",
+       "id": "aa432e4e-ff23-4ad2-8d0a-403efee86f11"
+      },
+      {
+       "qty": 4,
+       "name": "Vile Deacon",
+       "set": "lgn",
+       "number": "85",
+       "id": "b2641bd5-c845-47a1-8038-bb28b06f896e"
+      },
+      {
+       "qty": 4,
+       "name": "Renewed Faith",
+       "set": "ons",
+       "number": "50",
+       "id": "1ea572b5-ff68-45aa-8200-78ee7f64a0ce"
+      },
+      {
+       "qty": 12,
+       "name": "Plains",
+       "set": "ons",
+       "number": "331",
+       "id": "7bf7d68a-dbd0-45f3-acbb-59ee38e6057e"
+      },
+      {
+       "qty": 12,
+       "name": "Swamp",
+       "set": "ons",
+       "number": "339",
+       "id": "0356ae45-e5ca-46b9-8ebc-42bf4776e89c"
+      }
+     ]
+    }
+   },
+   "reward": {
+    "hero": {
+     "packs": 2,
+     "coins": 200
+    },
+    "villain": {
+     "card": {
+      "oracle_id": "2f6e9ab8-6951-4c5f-bcde-0e96e0fe87f2",
+      "name": "Exalted Angel",
+      "rarity": "rare",
+      "set": "ons",
+      "id": "c2213eac-cea4-4dfd-90c4-c1f466967e2e",
+      "image": "https://cards.scryfall.io/normal/front/c/2/c2213eac-cea4-4dfd-90c4-c1f466967e2e.jpg"
+     },
+     "coins": 200
+    }
+   },
+   "scene": [
+    {
+     "who": "karona",
+     "line": "Kneel."
+    },
+    {
+     "who": "stage",
+     "line": "Half of the Daru army kneels. So does half of the Cabal."
+    },
+    {
+     "who": "ixidor",
+     "line": "I made half of you. I am sorry."
+    },
+    {
+     "who": "kamahl",
+     "line": "I made the other half. I am sorrier."
+    },
+    {
+     "who": "kamahl",
+     "line": "There is no greater burden than choosing who to save.",
+     "quote": true
+    },
+    {
+     "who": "kamahl",
+     "line": "She has both their decks, light and dark. Answer the angels and the Untouchable both. Nothing gets through."
+    }
+   ],
+   "villainScene": [
+    {
+     "who": "karona",
+     "line": "You. You are the dreamer. And you, the brother."
+    },
+    {
+     "who": "karona",
+     "line": "Tell me what I am. Everyone kneels, but nobody can tell me what I am."
+    },
+    {
+     "who": "karona",
+     "line": "Rise once more, so you may continue to destroy our enemies.",
+     "quote": true
+    }
+   ],
+   "after": null,
+   "cues": {
+    "hero": {
+     "start": "For Jeska. For Akroma. For both of them.",
+     "big": "Krosa, wake!",
+     "low": "She is too bright...",
+     "win": "Rest now. Both of you.",
+     "loss": "Jeska... Akroma... I failed you both...",
+     "half": "Nothing gets through."
+    },
+    "villain": {
+     "start": "Kneel.",
+     "big": "Rise once more.",
+     "low": "I... am... what?",
+     "win": "Everyone kneels.",
+     "loss": "At last... I know...",
+     "half": {
+      "who": "ixidor",
+      "line": "Akroma, if you are still in there, I am sorry I never asked what you wanted."
+     }
+    }
+   },
+   "bigPlays": [],
+   "sim": null
+  }
+ ]
+}
