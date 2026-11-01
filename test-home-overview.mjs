@@ -53,7 +53,9 @@ const touchNodes=[{dataset:{touchPlayEntry:'practice'},hidden:true,disabled:true
 const tablet={navigator:{userAgent:'Mozilla/5.0 (Linux; Android 14; SM-X710) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/130.0.0.0 Safari/537.36',platform:'Linux armv8l',maxTouchPoints:10},matchMedia:query=>({matches:query.includes('coarse')}),CSS:{supports:()=>true},PointerEvent:function(){}};
 assert.equal(syncDesktopPlayEntries('mtg',tabletRoot,tablet).eligible,true);
 assert.deepEqual(touchNodes.map(n=>[n.hidden,n.disabled,n.dataset.playReadiness]),[[false,false,'cpu-beta']]);for(const n of nodes){assert.equal(n.hidden,false);assert.equal(n.dataset.playReadiness,'cpu-beta');}
-// A narrow phone still sees the entry; the Play route explains the space guard.
-syncDesktopPlayEntries('mtg',{...tabletRoot,documentElement:{clientWidth:390,clientHeight:844}},tablet);assert.deepEqual(touchNodes.map(n=>[n.hidden,n.dataset.playReadiness]),[[false,'device-guard']]);
+// An upright phone is admitted (setup works upright; the match turns it sideways, desktop-play.js playScreenFits).
+syncDesktopPlayEntries('mtg',{...tabletRoot,documentElement:{clientWidth:390,clientHeight:844}},tablet);assert.deepEqual(touchNodes.map(n=>[n.hidden,n.dataset.playReadiness]),[[false,'cpu-beta']]);
+// A screen too small even sideways (a folded cover screen) still sees the entry; the Play route explains the space guard.
+syncDesktopPlayEntries('mtg',{...tabletRoot,documentElement:{clientWidth:280,clientHeight:560}},tablet);assert.deepEqual(touchNodes.map(n=>[n.hidden,n.dataset.playReadiness]),[[false,'device-guard']]);
 syncDesktopPlayEntries('ptcg',tabletRoot,tablet);assert.equal(touchNodes[0].hidden,true);
 console.log('PASS: Home order and ownership stay unchanged; desktop Magic Practice entry is admitted; touch devices get the nav Play and wide Chrome tablets are admitted; other games, native and Draft stay unavailable.');
