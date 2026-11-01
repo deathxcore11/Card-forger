@@ -5497,3 +5497,23 @@ body[data-game="ygo"] .card-grid .tile-chrome { aspect-ratio: 59 / 86; }
 /* The owned count clips onto the top edge the same way, so it no longer sits over the printed name or cost. */
 .view-gallery .card-grid .grid-card > .owned-badge { min-height: 18px; top: 0; right: 8px; transform: translateY(-50%); }
 .view-gallery .card-grid > .grid-card[data-tier] > .owned-badge { top: var(--aura-room); right: calc(var(--aura-room) + 8px); }
+
+/* ===== Emblems, round 2 (1 Nov): they stay put when a card is hovered or tilted (they no longer cover
+   printed text, so there is nothing to step aside for), and inside framed art (collection and deck lots,
+   which clip their corners) the dock sits flush on the bottom edge over the collector line. ===== */
+.tilting .tile-chrome > *, .tilting + .tile-chrome > *, :is(.lot-art, .grid-card).tilting .tile-chrome > * { opacity: 1; }
+.view-gallery .display-list .lot .lot-art > .tile-chrome,
+#content.view-gallery .display-list .lot:not(.wanted) .lot-art > .tile-chrome,
+.deck-viewer .lot.deck-row .lot-art > .tile-chrome { display: flex; justify-content: flex-start; top: auto; bottom: 3px; left: 4px; right: 4px; height: auto; aspect-ratio: auto; padding: 0; align-items: center; }
+.view-gallery .display-list .lot .lot-art > .tile-chrome > :is(.tile-emb, .tile-set),
+.deck-viewer .lot.deck-row .lot-art > .tile-chrome > :is(.tile-emb, .tile-set) { height: 17px; }
+.view-gallery .display-list .lot .lot-art > .tile-chrome > .imp-tile,
+.deck-viewer .lot.deck-row .lot-art > .tile-chrome > .imp-tile { position: static; margin-left: auto; transform: scale(.8); transform-origin: right center; }
+/* A little light runs along the dock's gold hairline when you point at a card. */
+@media (hover: hover) and (prefers-reduced-motion: no-preference) {
+  .tile-chrome > .tile-set::before { transition: opacity .25s, box-shadow .25s; }
+  :is(.grid-card, .lot, [data-deck-card]):hover .tile-chrome > :is(.tile-emb, .tile-set) { box-shadow: inset 0 1px 0 #ffffff38, inset 0 -1px 0 #0006, 0 0 0 1px #f4bf5840, 0 4px 14px -3px #f4bf5866; }
+  :is(.grid-card, .lot, [data-deck-card]):hover .tile-chrome > .tile-set::before { box-shadow: 0 0 6px 1px #f4bf58aa; }
+}
+.view-gallery .display-list .lot .lot-art > .tile-chrome > :is(.tile-emb, .tile-set),
+.deck-viewer .lot.deck-row .lot-art > .tile-chrome > :is(.tile-emb, .tile-set) { background: linear-gradient(180deg, #ffffff1c, #ffffff03 55%), rgba(10, 12, 18, .8); }

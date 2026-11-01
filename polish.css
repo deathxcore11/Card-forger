@@ -154,11 +154,10 @@ input[data-home-search].hint-out::placeholder { opacity: 0; }
    strip is tall enough for the bottom card's controls, and the controls sit above the card's
    own badges. */
 .deck-viewer[data-deck-view="stacks"] .deck-stack-pile { --deck-stack-step: 48px; }
-.deck-viewer[data-deck-view="stacks"] .lot.deck-row .lot-side { z-index: 5; bottom: 5px; right: 5px; }
+.deck-viewer[data-deck-view="stacks"] .lot.deck-row .lot-side { z-index: 6; }
 .deck-viewer[data-deck-view="stacks"] .lot.deck-row .deck-stack-roles { z-index: 4; }
 @media (max-width: 480px) {
   .deck-viewer[data-deck-view="stacks"] .deck-stack-pile { --deck-stack-step: 44px; }
-  .deck-viewer[data-deck-view="stacks"] .lot-side .stepper button { min-height: 28px; }
 }
 
 /* Text links read as part of the app: the game color, no browser underline or arrow until hover. */
