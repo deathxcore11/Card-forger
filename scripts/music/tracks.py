@@ -378,3 +378,5 @@ CUES.update(PATRONS)
 # A theme for every boss (MUS-BOSS-*) lives in bosses.py.
 from bosses import BOSSES
 CUES.update(BOSSES)
+from story import STORY
+CUES.update(STORY)

@@ -11,4 +11,4 @@ def go(f):
         subprocess.run(['ffmpeg','-v','error','-y','-i',src,'-af',f'volume={gain:.2f}dB','-ar','48000' if ext=='ogg' else '44100',*args,'-map_metadata','-1',f'{D}/out/{cid}.{ext}'],check=True)
     return cid, round(I,1), round(gain,1)
 with ThreadPoolExecutor(4) as ex:
-    for r in ex.map(go, sorted(os.listdir(f'{D}/wav'))): print(*r)
+    for r in ex.map(go, sorted(f for f in os.listdir(f'{D}/wav') if not sys.argv[1:] or any(f.startswith(a) for a in sys.argv[1:]))): print(*r)
