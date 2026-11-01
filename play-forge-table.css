@@ -38,6 +38,17 @@
 .forge-intro-vs{position:relative;isolation:isolate;display:grid;place-items:center;justify-self:center;width:clamp(56px,5.6vw,80px);aspect-ratio:1;color:var(--ob-gold-hi,#f2d496);font:700 clamp(18px,1.8vw,26px)/1 Cinzel,Georgia,serif;letter-spacing:.04em;text-shadow:0 0 18px #d6ad6488;animation:forge-vs-in .6s .35s cubic-bezier(.2,1.4,.4,1) both}
 .forge-intro-vs:before{content:'';position:absolute;inset:12%;z-index:-1;transform:rotate(45deg);border:1.5px solid var(--ob-gold,#d6ad64);border-radius:6px;background:radial-gradient(circle,#2a2416,#0e0e11 75%);box-shadow:0 0 0 5px #0c0c0ecc,0 0 40px #d6ad6440}
 .forge-intro-footer{display:grid;justify-items:center;gap:14px;margin-top:clamp(22px,4vh,40px);text-align:center}
+/* Commander pod: CPU 2-4 stacked as equal rows beside your seat, each with its own deck art. */
+.forge-intro-versus--pod{align-items:stretch}
+.forge-intro-versus--pod>.forge-intro-vs{align-self:center}
+.forge-intro-pod{display:grid;grid-auto-rows:minmax(0,1fr);gap:clamp(8px,1.2vh,14px);min-width:0}
+.forge-intro-pod .forge-intro-seat{min-height:0;flex-direction:row;align-items:center;justify-content:space-between;gap:14px;padding:clamp(12px,1.4vw,20px) clamp(14px,1.8vw,26px);border-radius:18px}
+.forge-intro-pod .forge-intro-seat:before{inset:6px;border-radius:12px}
+.forge-intro-pod .forge-intro-seat:after{background:linear-gradient(90deg,#0c0c0ef0 0%,#0c0c0eb0 50%,#0c0c0e40 100%)}
+.forge-intro-pod .forge-intro-avatar{flex-basis:44px;width:44px;height:44px;box-shadow:0 0 0 3px #0c0c0e99}
+.forge-intro-pod .forge-intro-name h2{font-size:clamp(15px,1.3vw,18px);margin:2px 0 0}
+.forge-intro-pod .forge-intro-deck{margin:0;text-align:right;min-width:0;max-width:60%}
+.forge-intro-pod .forge-intro-deck h3{font-size:clamp(15px,1.5vw,22px);margin-top:4px}
 .forge-intro-steps{display:flex;justify-content:center;gap:0;list-style:none;margin:0;padding:0;color:#8f877a;font:600 11px/1.3 'DM Sans',system-ui,sans-serif;letter-spacing:.08em;text-transform:uppercase;isolation:isolate}
 .forge-intro-steps li{position:relative;min-width:clamp(96px,10vw,140px);padding-top:18px}
 .forge-intro-steps li:before{content:'';position:absolute;top:2px;left:calc(50% - 4px);width:8px;height:8px;border-radius:50%;background:#3a3631;box-shadow:0 0 0 3px #0c0c0e}
@@ -51,7 +62,7 @@
 .forge-intro-note{max-width:34em;margin:-6px 0 0!important;color:#aeb6c2;font:500 12px/1.45 'DM Sans',system-ui,sans-serif}
 .forge-intro-elapsed[hidden],.forge-intro-note[hidden]{display:none}
 .forge-intro-status:before{content:'';width:12px;height:12px;border:1.5px solid #d6ad6440;border-top-color:var(--ob-gold-hi,#f2d496);border-radius:50%;animation:forge-loading-spin 1s linear infinite}
-.forge-intro-cancel{font:600 12px/1 'DM Sans',system-ui,sans-serif;min-height:40px;border:1px solid #ffffff22!important;border-radius:999px!important;background:#0c0c0e99!important;color:#cfc6b4!important;padding:10px 20px}
+.forge-intro-cancel{font:600 12px/1 'DM Sans',system-ui,sans-serif;min-height:44px;border:1px solid #ffffff22!important;border-radius:999px!important;background:#0c0c0e99!important;color:#cfc6b4!important;padding:10px 20px}
 .forge-intro-cancel:hover{border-color:#d6ad6488!important;color:#f6eedb!important}
 .forge-intro-cancel:focus-visible{outline:2px solid var(--ob-gold-hi,#f2d496);outline-offset:4px}
 
@@ -117,6 +128,11 @@
  .forge-intro-steps{font-size:11px;letter-spacing:.05em;width:100%}
  .forge-intro-steps li{flex:1;min-width:0}
  .forge-intro-seat:after{background:linear-gradient(180deg,#0c0c0ee0 0%,#0c0c0e99 34%,transparent 52%,#0c0c0ed9 74%,#0c0c0ef7 100%)}
+ .forge-intro-pod .forge-intro-seat{flex-direction:column;align-items:flex-start;justify-content:center;gap:6px;padding:10px 12px}
+ .forge-intro-pod .forge-intro-identity{flex-direction:row;align-items:center}
+ .forge-intro-pod .forge-intro-avatar{flex-basis:36px;width:36px;height:36px}
+ .forge-intro-pod .forge-intro-deck{text-align:left;max-width:100%}
+ .forge-intro-pod .forge-intro-deck h3{font-size:15px}
  .forge-intro-start-options{grid-template-columns:1fr;gap:10px;margin:22px 0 16px}
  .forge-intro-start-options button{display:grid;grid-template-columns:48px 1fr;align-items:center;column-gap:14px;row-gap:2px;min-height:84px;padding:14px 18px;text-align:left}
  .forge-intro-option-icon{grid-row:span 2;width:48px;height:48px;margin:0}
@@ -2479,3 +2495,8 @@ body.practice-table-open:has(.forge-order-cards,.forge-zone-search-dialog) .forg
 }
 /* 4.3.52 A blocked attacker's line to the player fades: its damage goes to the blockers (trample keeps it). */
 :where(body.practice-table-open) .forge-arrow[data-kind=attack][data-held=true]{opacity:.22;filter:none;animation:none;stroke-dasharray:3 9}
+/* Commander pod, your side: your permanents get a home of their own. Lands and other permanents sit
+   together in the middle of your half (not pinned to its left edge), creatures in front of them,
+   all at full card size, so your first land lands where the eye expects it. 1v1 keeps its layout. */
+:where(body.practice-table-open) .play-match-table[data-stage=match][data-forge-native][data-pod=true] .play-match-battlefields [data-owner=you] .play-match-zone-groups{justify-content:center;align-content:center;column-gap:calc(var(--play-piece)*.3)}
+:where(body.practice-table-open) .play-match-table[data-stage=match][data-forge-native][data-pod=true] .play-match-battlefields [data-owner=you] .play-match-zone-groups>.play-match-lane:not([data-card-group=creatures]){margin-inline:0;padding-inline:0;flex:0 1 auto}
