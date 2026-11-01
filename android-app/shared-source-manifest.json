@@ -1,8 +1,8 @@
 {
   "schema": 1,
-  "version": "4.3.53",
-  "commit": "e7a9609135ac4c634140fbcca2d952adba3e187f",
-  "tree": "ff401ffa2673e7b0219488366bc91e239a530e9b",
+  "version": "4.3.54",
+  "commit": "b690c52d8e409fc5633a43cf1e3dac69b9b50a0a",
+  "tree": "6a07ac010ac639213546cce39f910d06b06e0ccf",
   "repository": "https://github.com/deathxcore11/Card-forger",
   "scope": "Explicit frontend build dependencies plus optional artwork input files. Not full backend repository.",
   "files": [
@@ -118,8 +118,8 @@
     },
     {
       "path": "app.js",
-      "bytes": 472164,
-      "sha256": "229600c416da78b9f51447caac5506cec23a97722c509ba3ee5cf226ce98b856"
+      "bytes": 472777,
+      "sha256": "02594f461217da45f89598e72e5530c0bf9cea160cf85b7c8a8d27d01835180d"
     },
     {
       "path": "artwork.js",
@@ -3179,7 +3179,7 @@
     {
       "path": "config.js",
       "bytes": 601,
-      "sha256": "b700202a63853aaae906be99e71168e70202321ac2e34aac6221e5bf994c1b4a"
+      "sha256": "39595d72db5ef96db3a9e9d6864645ea49c90d24b5bdcfc819425d4457984e23"
     },
     {
       "path": "core.js",
@@ -4884,7 +4884,7 @@
     {
       "path": "package.json",
       "bytes": 12090,
-      "sha256": "02ada19e5143c9fdaeb09103bebcaab54fb25acb3c603eae695ac26d88124e14"
+      "sha256": "8e986579cdd1878f5b6c7b1a3fb59f7803f09229be2396069e3b276e659ea6dd"
     },
     {
       "path": "pairing.js",
@@ -7338,13 +7338,13 @@
     },
     {
       "path": "play-menu.css",
-      "bytes": 89890,
-      "sha256": "6bfd7d4bb43b8e3c8c093a29176a32eaa5a64007fdca36cd58bd6061623495f6"
+      "bytes": 90484,
+      "sha256": "e0c7df155843530ae554f2b046d7c1c0b76864dcf1901403850b6d4b1a781b6c"
     },
     {
       "path": "play-menu.js",
-      "bytes": 30327,
-      "sha256": "03db875df0b66fd47e3d0883064d7781338941044248addcc9c4866391f6bc82"
+      "bytes": 30489,
+      "sha256": "c9c2287b12602da9f4edeb1bfb7b0059221f8e68eb2532c5da5f83db4dac9a73"
     },
     {
       "path": "play-opponent-build.js",
@@ -7568,8 +7568,8 @@
     },
     {
       "path": "release-record.js",
-      "bytes": 1309,
-      "sha256": "ec310bf90e205e956e903557d93982f9106bd087352343b2b504ba727b465e60"
+      "bytes": 681,
+      "sha256": "262c551ec5ebeeae6901d25c69a112d28f9a8ffce50397fd2488d38a096c64b4"
     },
     {
       "path": "release-status.js",
@@ -7944,7 +7944,7 @@
     {
       "path": "sw.js",
       "bytes": 15873,
-      "sha256": "56703d3fca19e42009fcc30a6b6b555ea31769f4250c4945f7078170bc04a1da"
+      "sha256": "e8c7cbae8f4ae99c2bddb9117a476f3d8123d0bc503413ce4f3d12aff676fd22"
     },
     {
       "path": "sync-merge.js",
@@ -9600,6 +9600,11 @@
       "path": "tests/frame-art/sv09-003.webp",
       "bytes": 65536,
       "sha256": "1200acdcf634281be4ff72dd0ffb7771b3c43c395cf3a1f1a5fe01e1fceb7df0"
+    },
+    {
+      "path": "tests/friend-invite-browser.mjs",
+      "bytes": 4849,
+      "sha256": "300ace6d9ef6ee1e715c61734e287929cc1d14b1f56e5f9a27a4f72b2d234ba9"
     },
     {
       "path": "tests/power-release-browser.mjs",
