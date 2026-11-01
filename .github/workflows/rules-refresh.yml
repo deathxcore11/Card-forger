@@ -1,0 +1,111 @@
+name: Refresh Forge rules data
+
+# Forge refuses new matches once its dated rules data is 7 days old. Every day this checks
+# the bundle; once it is 3 days old it rebuilds it from Scryfall, re-pins and redeploys the
+# Forge host, and gives the Android app the same bundle on the website. A failed day leaves
+# several days to retry, and opens an issue.
+on:
+  schedule:
+    - cron: '23 9 * * *'
+  workflow_dispatch:
+
+permissions:
+  contents: write
+  actions: write
+  issues: write
+
+concurrency:
+  group: forge-rules-refresh
+  cancel-in-progress: false
+
+env:
+  HOST_BRANCH: codex/forge-github-host-prep-20261026
+  PYTHONDONTWRITEBYTECODE: '1'
+
+jobs:
+  refresh:
+    if: github.repository == 'deathxcore11/Card-forger'
+    runs-on: ubuntu-24.04
+    timeout-minutes: 30
+    steps:
+      - name: Check out the website
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
+        with:
+          path: web
+          fetch-depth: 1
+      - name: Check out the Forge host
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
+        with:
+          ref: ${{ env.HOST_BRANCH }}
+          path: host
+          fetch-depth: 1
+      - name: Set up Node
+        uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1
+        with:
+          node-version: '24'
+          package-manager-cache: false
+      - name: Rebuild the rules data when it is due
+        id: refresh
+        run: |
+          out=$(python3 web/scripts/rules-refresh/weekly.py host web "$RUNNER_TEMP/rules")
+          printf '%s\n' "$out"
+          last=$(printf '%s\n' "$out" | tail -n 1)
+          echo "state=${last%% *}" >> "$GITHUB_OUTPUT"
+          echo "version=${last#* }" >> "$GITHUB_OUTPUT"
+      # Only a host whose head is what is deployed is refreshed, so prepared but unreleased
+      # host changes are never shipped by this job.
+      - name: Require the host head to be the deployed one
+        if: steps.refresh.outputs.state == 'REFRESHED'
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          head=$(git -C host rev-parse HEAD)
+          deployed=$(gh api "repos/$GITHUB_REPOSITORY/actions/workflows/forge-host-deploy.yml/runs?branch=$HOST_BRANCH&status=success&per_page=1" --jq '.workflow_runs[0].head_sha')
+          if [ "$head" != "$deployed" ]; then
+            echo "::error::The Forge host branch head $head is not the deployed commit ($deployed). Release or revert the pending host change, then run this again."
+            exit 1
+          fi
+      - name: Check the re-pinned host
+        if: steps.refresh.outputs.state == 'REFRESHED'
+        run: |
+          (cd host/deploy/forge-host && node --check src/service-core.mjs && node --check src/worker.mjs && npm test)
+          cd host/experiments/forge-proof/combined-browser-proof
+          mkdir -p "$RUNNER_TEMP/static"
+          FORGE_COMBINED_WORK="$RUNNER_TEMP/static" FORGE_COMBINED_CANDIDATE_ROOT="$PWD/candidate" bash harness/run-static-checks.sh
+          python3 harness/verify-inputs.py
+      - name: Publish the host and start its deployment
+        if: steps.refresh.outputs.state == 'REFRESHED'
+        env:
+          GH_TOKEN: ${{ github.token }}
+          VERSION: ${{ steps.refresh.outputs.version }}
+        run: |
+          cd host
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          until=$(python3 -c "import json;print(json.load(open('experiments/forge-proof/combined-browser-proof/candidate/build-context/native/rules-data/current/manifest.json'))['validUntilExclusive'])")
+          git add -A
+          git commit -q -m "Refresh Forge rules data to $VERSION (valid until $until)" -m "Automatic refresh from Scryfall's Oracle bulk by the Refresh Forge rules data workflow (run $GITHUB_SERVER_URL/$GITHUB_REPOSITORY/actions/runs/$GITHUB_RUN_ID). Official format facts carried over with today's checkedAt and cross-checked against the source; every pin moved by scripts/rules-refresh/repin.py; host npm check, harness static checks and verify-inputs pass."
+          git push origin "HEAD:$HOST_BRANCH"
+          # A push by this job's token starts no workflow, so the deployment is started directly.
+          gh workflow run forge-host-deploy.yml --repo "$GITHUB_REPOSITORY" --ref "$HOST_BRANCH"
+      - name: Publish the app's copy on the website
+        if: steps.refresh.outputs.state == 'REFRESHED' || steps.refresh.outputs.state == 'SYNCED'
+        env:
+          VERSION: ${{ steps.refresh.outputs.version }}
+        run: |
+          cd web
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git add forge-rules/current
+          git commit -q -m "App rules data: $VERSION" -m "The Android app's engine fetches this bundle once per launch (Refresh Forge rules data workflow)."
+          git push origin "HEAD:$GITHUB_REF_NAME"
+      - name: Open an issue when the refresh fails
+        if: failure()
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          until=$(python3 -c "import json;print(json.load(open('host/experiments/forge-proof/combined-browser-proof/candidate/build-context/native/rules-data/current/manifest.json'))['validUntilExclusive'])" 2>/dev/null || echo unknown)
+          git -C host checkout -q -- . 2>/dev/null || true
+          body="The daily Forge rules refresh failed: $GITHUB_SERVER_URL/$GITHUB_REPOSITORY/actions/runs/$GITHUB_RUN_ID. It runs again tomorrow. Matches keep working until the current bundle lapses (validUntilExclusive $until, 00:00 UTC). A failed ban cross-check (official_facts_disagree_with_source) means a banned or restricted list changed: update official-format-facts.json on the host branch by hand."
+          open=$(gh issue list --repo "$GITHUB_REPOSITORY" --state open --search 'in:title "Forge rules refresh failed"' --json number --jq '.[0].number')
+          if [ -n "$open" ]; then gh issue comment "$open" --repo "$GITHUB_REPOSITORY" --body "$body"; else gh issue create --repo "$GITHUB_REPOSITORY" --title 'Forge rules refresh failed' --body "$body"; fi
