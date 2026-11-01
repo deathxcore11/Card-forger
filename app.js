@@ -22,7 +22,7 @@ import {setPlaymatChoice,mountPlaymatScene,nextPlaymat,unmountPlaymatScene} from
 import {lockPlayLandscape,releasePlayOrientation} from './play-orientation.js';
 import {createPracticeOpponentBuilder,createRandomDeckProducer} from './play-opponent-build.js';
 import {createRandomDeckQueue} from './play-random-queue.js';
-import {forgeOptions,newForgeSeed} from './deck-forge.js';
+import {forgeOptions,newForgeSeed,commanderHooks,forgeFit} from './deck-forge.js';
 import {createPlayerMat} from './play-player-mat.js';
 import {createPlayUpdateGate} from './play-update-gate.js';
 import {constructedPrecon,constructedPreconCandidates,CONSTRUCTED_PRECON_TYPES} from './play-precon-formats.js';
@@ -153,7 +153,7 @@ import { registerScanner, scanView } from "./scancam.js";
 import { newGame, proxyList, proxySheetHTML, podSpeed } from "./extras.js";
 import { sharePayload, encodeShare, decodeShare } from "./share.js";
 import { FORMATS, formatOf, hasCommander, canLead, verifyLeader, sizeLabel } from "./formats.js";
-import { buildTiers, formatsFor, themeQueries, BUDGET_TIERS, upgradePool, copyLimit, fitFor } from "./builder.js";
+import { buildTiers, buildDeck, formatsFor, themeQueries, BUDGET_TIERS, upgradePool, copyLimit, fitFor } from "./builder.js";
 import * as T from "./tcg.js";
 import { rulesPage, learnSheet } from "./rules.js";
 import { GAMES, GAME_ICON, GAME_COLOR } from "./games.js";
@@ -162,7 +162,8 @@ import { startTabGlide } from "./tab-glide.js";
 import { startSearchHints } from "./search-hints.js";
 import { openZoom, zoomCardOptions } from "./zoom.js";
 import {createPlayEcon} from "./play-econ-client.js";
-import {econScreenMarkup,ECON_VIEWS,purseMarkup,cardImageByName} from "./play-econ-ui.js";
+import {econScreenMarkup,ECON_VIEWS,purseMarkup,cardImageByName,head as econHead} from "./play-econ-ui.js";
+import {createNameFacts,rankFinderRows,trunkDeck,finderMarkup,FINDER_FORMATS} from "./play-deck-finder.js";
 import {createCardFacts} from "./play-econ-cards.js";
 import {stepDeckCard,ownedByName,deckShortfall,legalFormats,mtgjsonDeckRows} from "./play-econ-rules.js";
 import {STORY_ACTS} from "./story-acts.js";
@@ -1789,6 +1790,28 @@ A.playCardToDeck=async t=>{const st=playEcon.snapshot().state,d=(st?.decks||[]).
 A.playCardNewDeck=t=>{closeSheet();econUi.edit={id:null,name:'',format:'Standard',cards:[{name:t.dataset.name,qty:1}]};playView='deck';go('#play');};
 A.playCardGet=t=>{closeSheet();playView='shop';econUi.press={query:t.dataset.name,busy:false};go('#play');};
 A.playEconEditDeck=t=>{const d=(playEcon.snapshot().state?.decks||[]).find(x=>x.id===t.dataset.econDeck);econUi.edit=d?{id:d.id,name:d.name,format:d.format||'Standard',cards:(d.cards||[]).filter(c=>!c.board).map(c=>({...c,qty:c.qty|0})),side:(d.cards||[]).filter(c=>c.board)}:{id:null,name:'',format:'Standard',cards:[]};playView='deck';refreshPlayMenu();scrollTo({top:0});requestAnimationFrame(()=>document.getElementById('playDeckTitle')?.focus?.({preventScroll:true}));};
+// Play "Build a deck" (Untapped-style finder): the Trunk build plus meta lists,
+// ranked by how much the player owns; missing cards greyed with seal costs.
+const finderFacts=createNameFacts({onChange:()=>{if(S.ui.view==='play'&&playView==='finder')finderRefresh();}});
+const finderUi={format:'Standard',rows:null,busy:false,error:'',limit:8,ticket:0};
+const finderLists=format=>{const data=metaState('mtg:'+(format==='Commander'?'EDH':format)).data;return (data?.decks||[]).filter(d=>d?.key&&Array.isArray(d.main)).slice(0,16).map(d=>{const commanders=(d.commanders||[]).map(r=>typeof r==='string'?{name:r,qty:1}:r);return {key:'meta:'+d.key,name:d.name||d.archetype||'Meta deck',source:'Meta',detail:[d.place,d.event].filter(Boolean).join(' · '),format,commander:commanders[0]?.name||'',cards:[...commanders,...d.main]};});};
+function finderRefresh(){const snap=playEcon.snapshot(),s=snap.state;if(!s)return;const owned=ownedByName(s.cards||[]),ownedFact=new Map((s.cards||[]).map(c=>{const f=econFacts.card(c.o)?.card;return f?[f.name,f]:null;}).filter(Boolean));
+ const cardOf=name=>finderFacts.get(name)||ownedFact.get(name)||ownedFact.get(String(name).split(' // ')[0])||null;
+ const hooksOf=(lead,pool)=>{const h=commanderHooks(lead);return pool.filter(c=>(c.color_identity||[]).every(k=>(lead.color_identity||[]).includes(k))&&forgeFit(c,h,{leader:lead}).n>0).length;};
+ const trunk=trunkDeck({format:finderUi.format,ownedCards:s.cards||[],factOf:o=>econFacts.card(o)?.card||null,build:buildDeck,hooksOf});
+ finderUi.rows=rankFinderRows([...(trunk?[trunk]:[]),...finderLists(finderUi.format)],{owned,cardOf,seals:{c:s.wallet?.seal_c|0,u:s.wallet?.seal_u|0,r:s.wallet?.seal_r|0,m:s.wallet?.seal_m|0}});refreshPlayMenu();}
+async function loadFinder(){const t=++finderUi.ticket,format=finderUi.format,s=playEcon.snapshot().state;finderUi.busy=true;finderUi.error='';finderUi.rows=null;refreshPlayMenu();
+ try{await econFacts.wantCards((s?.cards||[]).map(c=>({o:c.o,id:c.p?.id})));const mk='mtg:'+(format==='Commander'?'EDH':format);if(!metaState(mk).data)await Promise.race([loadMetaData(mk).catch(()=>{}),new Promise(r=>setTimeout(r,6000))]);if(t!==finderUi.ticket)return;
+  await finderFacts.want(finderLists(format).flatMap(l=>l.cards.map(r=>r.name)));if(t!==finderUi.ticket)return;
+  if(!finderLists(format).length)finderUi.error='Meta lists for this format could not load right now. Your Trunk build is still here.';}
+ catch{finderUi.error='Some deck lists could not load right now.';}
+ finally{if(t===finderUi.ticket){finderUi.busy=false;finderRefresh();}}}
+function finderView(snap){if(!finderUi.rows&&!finderUi.busy)queueMicrotask(loadFinder);return finderMarkup({headHtml:econHead('Build a deck',snap),format:finderUi.format,rows:finderUi.rows||[],busy:finderUi.busy,error:finderUi.error,limit:finderUi.limit});}
+A.playFinderFormat=t=>{const f=t.dataset.finderFormat;if(!FINDER_FORMATS.includes(f)||f===finderUi.format)return;finderUi.format=f;finderUi.limit=8;loadFinder();};
+A.playFinderMore=()=>{finderUi.limit+=8;refreshPlayMenu();};
+// Use deck: saved as a Play deck. Missing cards stay greyed in the deck and in the
+// finder until they're opened, crafted with seals or bought in packs.
+A.playFinderUse=async t=>{const row=(finderUi.rows||[]).find(r=>r.key===t.dataset.finderKey);if(!row)return;try{await playEcon.saveDeck({name:row.name.slice(0,80),format:row.format,cards:row.list.cards.map(r=>({name:r.name,qty:r.qty}))});toast(row.complete?'Saved to your Play decks.':'Saved to your Play decks. Missing cards stay greyed until you have them.');playView='decks';refreshPlayMenu();scrollTo({top:0});}catch{}};
 A.playEconStep=t=>{const e=econUi.edit;if(!e)return;const owned=ownedByName(playEcon.snapshot().state?.cards||[]);e.cards=stepDeckCard(e.cards,t.dataset.econCard,Number(t.dataset.econStep)||0,owned,e.format);e.dirty=true;refreshPlayMenu();};
 I.playEconDeckName=t=>{if(econUi.edit){econUi.edit.name=t.value;econUi.edit.dirty=true;}};
 C.playEconDeckFormat=t=>{if(econUi.edit){econUi.edit.format=t.value;econUi.edit.dirty=true;refreshPlayMenu();}};
@@ -2283,6 +2306,7 @@ function renderPlayPage() {
    if(playView==='collection'||econUi.set)econFacts.wantSets([...cards.flatMap(c=>c.s||[]),snap.state?.rewardSet?.code].filter(Boolean));
    if(playView==='packs')econFacts.wantSets((snap.state?.packs||[]).map(p=>p.set));
    if(playView==='shop'){const q=(econUi.query||'').trim().toLowerCase(),shop=snap.state?.shop||[];econFacts.wantSets([snap.state?.rewardSet?.code,...(q?shop.filter(x=>x.name.toLowerCase().includes(q)||x.code===q):shop).slice(0,q?60:24).map(x=>x.code)].filter(Boolean));}
+   if(playView==='finder')return finderView(snap);
    return econScreenMarkup(playView,snap,{...econUi,query:econUi.query,facts:econFacts});}
   const state=playSetup.snapshot(),p=state.profile,tiles=new Map();state.opponentBuild=practiceOpponentBuilder.snapshot();state.deckBuild=playBuilders[state.playStyle==='quick'?'player':state.inspectedSeat].snapshot();const sources=readPlaySources(),sourceArt=new Map();for(const entries of Object.values(sources))for(const entry of entries)sourceArt.set(entry.key,V.deckArtwork(entry.deck));
   for(const summary of state.decks){const deck=deckById(summary.id);if(summary.valid&&deck)tiles.set(summary.id,V.deckTile(deck,false,{playSelection:playSeatSource(state,playBrowseSeat(state))==='saved'&&playSeatDeck(state,playBrowseSeat(state))?.id===deck.id}));}

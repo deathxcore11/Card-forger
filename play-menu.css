@@ -1173,3 +1173,54 @@ button.pd-near-row{cursor:pointer}
 /* Holo copies: their own Trunk tile with the app's foil finish, a small rainbow tag and pips. */
 .pe-holo-tag{font:800 11px/1 'DM Sans',system-ui,sans-serif;letter-spacing:.08em;text-transform:uppercase;background:linear-gradient(90deg,#ff9ad5,#ffe48a,#8affc8,#8ad0ff,#c79aff);-webkit-background-clip:text;background-clip:text;color:transparent}
 .pe-pips--holo i.on{background:linear-gradient(135deg,#ff9ad5,#ffe48a 40%,#8affc8 70%,#8ad0ff);border-color:#fff8}
+/* Play "Build a deck": Untapped-style finder rows. Owned cards in full colour, missing ones greyed with their seal cost. */
+.pf-bar{display:flex;flex-wrap:wrap;align-items:center;gap:10px 14px}
+.pf-tabs{display:flex;flex-wrap:wrap;gap:6px;flex:1 1 auto;min-width:0}
+.pf-tab{min-height:44px;padding:0 14px;border-radius:999px;border:1px solid var(--line);background:transparent;color:var(--text);font:700 13px/1 'DM Sans',system-ui,sans-serif;cursor:pointer}
+.pf-tab.on{border-color:var(--gold);background:color-mix(in srgb,var(--gold) 16%,transparent);color:#f6e4bb}
+.pf-tab:focus-visible,.pf-card:focus-visible{outline:2px solid var(--gold);outline-offset:3px}
+.pf-empty{min-height:44px}
+.pf-list{display:grid;gap:16px}
+.pf-row{position:relative;isolation:isolate;overflow:hidden;display:grid;gap:12px;padding:16px 18px 18px;border-radius:20px;border:1px solid color-mix(in srgb,var(--gold) 18%,var(--line));background:linear-gradient(180deg,#0c0d11d9,#0c0d11f5 46%),var(--pf-art) 50% 22%/cover no-repeat,#121318;box-shadow:0 18px 40px #0006,inset 0 1px 0 #ffffff0d;color:#f6eedb}
+.pf-head{display:grid;grid-template-columns:minmax(0,1fr) auto auto auto;align-items:center;gap:10px 18px}
+.pf-title{display:flex;flex-wrap:wrap;align-items:center;gap:4px 8px;min-width:0}
+.pf-title h3{margin:0 4px 0 2px;font:700 clamp(17px,1.5vw,21px)/1.15 Cinzel,Georgia,serif;letter-spacing:.03em;text-shadow:0 2px 10px #000;overflow-wrap:anywhere}
+.pf-title small{flex-basis:100%;font-size:12px;color:#c9cfd6}
+.pf-pip{width:20px;height:20px;border-radius:50%;box-shadow:0 1px 3px #0008}
+.pf-own{display:grid;justify-items:end;line-height:1.1}
+.pf-own b{font:800 18px/1 'DM Sans',system-ui,sans-serif;font-variant-numeric:tabular-nums}
+.pf-own span{font-size:11px;color:#c9cfd6;letter-spacing:.06em}
+.pf-state{display:flex;flex-wrap:wrap;align-items:center;justify-content:flex-end;gap:4px 10px;font-size:13px}
+.pf-ready{display:grid;place-items:center;width:32px;height:32px;border-radius:50%;border:1px solid #bfe3b088;background:#bfe3b01a}.pf-ready svg{width:18px;height:18px;fill:none;stroke:#bfe3b0;stroke-width:2.4;stroke-linecap:round;stroke-linejoin:round}
+.pf-cost{display:inline-flex;flex-wrap:wrap;gap:8px}
+.pf-seal{display:inline-flex;align-items:center;gap:3px;font:800 14px/1 'DM Sans',system-ui,sans-serif}
+.pf-seal .pe-seal{width:20px;height:20px}
+.pf-cost--covered{padding:4px 10px;border-radius:999px;border:1px solid #f2d18e88;background:#f2d18e1a;box-shadow:0 0 14px #f2d18e26}
+.pf-mini{width:14px;height:14px}
+.pf-card.pf-card--slim{display:inline-flex;align-items:center;gap:6px;width:auto;padding:0 10px;background:#ffffff0d;border:1px solid #ffffff1a;box-shadow:none;color:#f6eedb;font:600 13px/1.2 'DM Sans',system-ui,sans-serif}
+.pf-card--slim b{font-variant-numeric:tabular-nums;color:#e9d6a7}
+.pf-card.pf-card--slim.pf-card--missing{opacity:.55}
+.pf-use{min-height:44px;white-space:nowrap}
+.pf-groups{display:flex;flex-wrap:wrap;gap:12px 20px}
+.pf-group{min-width:0}
+.pf-group h4{margin:0 0 6px;font:700 12px/1.2 Cinzel,Georgia,serif;letter-spacing:.06em;color:#e9d6a7}
+.pf-group h4 span{font-family:'DM Sans',system-ui,sans-serif;color:#c9cfd6}
+.pf-cards{display:flex;flex-wrap:wrap;gap:6px}
+.pf-card{position:relative;width:62px;min-height:44px;padding:0;border:0;border-radius:6px;background:#15171c;cursor:pointer;overflow:hidden;box-shadow:0 6px 14px #0007;transition:transform .15s ease}
+.pf-card:hover{transform:translateY(-2px)}
+.pf-card .pf-art{display:block;width:100%;aspect-ratio:63/88;object-fit:cover}
+.pf-card--missing img{filter:grayscale(.9) brightness(.5)}
+.pf-count{position:absolute;left:0;right:0;bottom:0;display:flex;justify-content:space-between;align-items:center;gap:2px;padding:2px 4px;background:#0c0e13d9;font:700 11px/1.2 'DM Sans',system-ui,sans-serif;color:#f6eedb}
+.pf-count i{font-style:normal;color:#f2d18e}
+.pf-skeleton{height:220px;border-radius:20px;border:1px solid var(--line);background:linear-gradient(100deg,#ffffff06 30%,#ffffff12 50%,#ffffff06 70%) 0 0/300% 100%,#121318;animation:pf-shine 1.6s linear infinite}
+@keyframes pf-shine{to{background-position:-300% 0,0 0}}
+.pf-more{justify-self:center;min-height:44px}
+.pf-note{margin:0;color:var(--muted);font-size:14px}
+@media(max-width:700px){
+ .pf-head{grid-template-columns:minmax(0,1fr) auto}
+ .pf-state{grid-column:1/-1;justify-content:flex-start}
+ .pf-use{grid-column:1/-1;width:100%}
+ .pf-row{padding:14px}
+ .pf-card:not(.pf-card--slim){width:52px}
+}
+@media(prefers-reduced-motion:reduce){.pf-skeleton{animation:none}.pf-card{transition:none}}
