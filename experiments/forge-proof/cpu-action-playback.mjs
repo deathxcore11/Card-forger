@@ -332,3 +332,39 @@ export class CpuActionPlaybackQueue {
  }
  destroy(){this.closed=true;this.cancel(this.timer);this.timer=null;this.pending=[];this.current=null;this.latest=null;this.running=false;this.overlay=false;this.clear();}
 }
+
+// The match history in plain words, for both sides (Arena's game log): "You cast Biotech Specialist.",
+// "Chandra's Pyreling and Burnished Hart blocked Biotech Specialist." One entry per public event, keyed by
+// its sequence number so a history kept across boards never repeats a line. Draws and other hidden moves stay out.
+export function storyLines(items,surface){
+ if(!Array.isArray(items)||!surface?.players)return [];
+ const me=surface.players.find(p=>p.seat===surface.seat)?.nativeId,rivals=surface.players.filter(p=>p.seat!==surface.seat),pod=rivals.length>1;
+ const cards=new Map((surface.cards||[]).map(c=>[c.id,c]));
+ const who=id=>id===me?'You':pod?rivals.find(p=>p.nativeId===id)?.label||'CPU':'CPU';
+ const card=ref=>ref?.kind==='card'?(cards.get(ref.id)?.known?cards.get(ref.id).name:typeof ref.name==='string'&&ref.name?ref.name:null):null;
+ const target=ref=>ref?.kind==='player'?(ref.id===me?'you':who(ref.id)):card(ref);
+ const out=[],push=(e,text,id=null)=>{if(text)out.push({seq:e.seq,turn:e.turn,text,...(Number.isSafeInteger(id)?{card:id}:{})});};
+ const list=xs=>xs.length<3?xs.join(' and '):`${xs.slice(0,-1).join(', ')} and ${xs.at(-1)}`;
+ for(const e of items){if(!Number.isSafeInteger(e?.seq))continue;
+  switch(e.type){
+   case 'turn':push(e,`Turn ${e.number??e.turn} · ${e.player===me?'your turn':`${who(e.player)}’s turn`}`);break;
+   case 'land':push(e,card(e.card)&&`${who(e.player)} played ${card(e.card)}.`,e.card?.id);break;
+   case 'cast':case 'ability':{const name=card(e.source);if(!name)break;const aims=(e.targets||[]).map(target).filter(Boolean);
+    push(e,`${who(e.player)} ${e.type==='cast'?'cast':'activated'} ${name}${e.type==='ability'?'’s ability':''}${aims.length?` targeting ${list(aims)}`:''}.`,e.source.id);break;}
+   case 'trigger':push(e,card(e.source)&&`${card(e.source)} triggered.`,e.source?.id);break;
+   case 'resolve':if(e.fizzled)push(e,card(e.source)&&`${card(e.source)} didn’t resolve: no legal targets.`,e.source?.id);break;
+   case 'attack':{const by=(e.attackers||[]).map(a=>({name:card(a),to:target(a.target)})).filter(a=>a.name);if(!by.length)break;
+    const tos=[...new Set(by.map(a=>a.to).filter(Boolean))];push(e,`${who(e.player)} attacked${tos.length===1?` ${tos[0]}`:''} with ${list(by.map(a=>a.name))}.`);break;}
+   case 'block':{const by=new Map();for(const b of e.blockers||[]){const n=card(b),a=card({kind:'card',id:b.blocking});if(n&&a)by.set(a,[...(by.get(a)||[]),n]);}
+    for(const [a,bs] of by)push(e,`${list(bs)} blocked ${a}.`);break;}
+   case 'damage':{const from=card(e.source),to=target(e.target);if(from&&to&&e.amount>0)push(e,`${from} dealt ${e.amount} damage to ${to}.`,e.source.id);break;}
+   case 'life':if(Number.isSafeInteger(e.from)&&Number.isSafeInteger(e.to)&&e.to>e.from)push(e,`${who(e.player)} gained ${e.to-e.from} life.`);break;
+   case 'zone':{const n=card(e.card);if(!n)break;
+    if(e.from==='Battlefield'&&e.to==='Graveyard')push(e,`${n} ${/Creature/.test(cards.get(e.card.id)?.type||'Creature')?'died':'went to the graveyard'}.`,e.card.id);
+    else if(e.to==='Exile'&&e.from!=='Stack')push(e,`${n} was exiled.`,e.card.id);
+    else if(e.to==='Battlefield'&&e.token)push(e,`${who(e.player)} created ${/^[aeiou]/i.test(n)?'an':'a'} ${n}.`,e.card.id);
+    else if(e.from==='Battlefield'&&e.to==='Hand')push(e,`${n} returned to its owner’s hand.`,e.card.id);
+    break;}
+  }}
+ return out;
+}
