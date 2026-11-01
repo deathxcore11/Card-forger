@@ -390,7 +390,11 @@ const name=String(card.name);if(Math.max(...name.split(/\s+/).map(word=>word.len
   if(!before.size||reducedMotion())return;let moved=0;
   for(const el of root.querySelectorAll('.play-match-card[data-instance]')){
    const w=el.closest('.play-match-card-wrap')||el,prev=before.get(el.dataset.instance),r=w.getBoundingClientRect();if(!r.width||moved>24)continue;
-   if(prev){const dx=prev.r.left-r.left,dy=prev.r.top-r.top;if(Math.hypot(dx,dy)<6)continue;const s=Math.max(.4,Math.min(2.2,prev.r.width/r.width));moved++;const played=prev.hand&&el.dataset.presentation==='battlefield';if(played){land(w,el.dataset.instance,dx,dy,s);continue;}w.animate([{transform:`translate(${dx}px,${dy}px) scale(${s})`,zIndex:50},{transform:'none',zIndex:50}],{duration:380,easing:'cubic-bezier(.2,.8,.2,1)'});}
+   if(prev){const inHand=prev.hand&&!!el.closest('.play-match-hand');
+    // A card that only shifts inside your hand (a draw or a play beside it) slides by its centre, on top of
+    // its fan angle, arc and any pop: it never changes size or flattens on the way.
+    if(inHand){const dx=prev.r.left+prev.r.width/2-(r.left+r.width/2),dy=prev.r.top+prev.r.height/2-(r.top+r.height/2);if(Math.hypot(dx,dy)<6)continue;moved++;w.animate([{transform:`translate(${dx}px,${dy}px)`},{transform:'translate(0px,0px)'}],{duration:320,easing:'cubic-bezier(.2,.8,.2,1)',composite:'add'});continue;}
+    const dx=prev.r.left-r.left,dy=prev.r.top-r.top;if(Math.hypot(dx,dy)<6)continue;const s=Math.max(.4,Math.min(2.2,prev.r.width/r.width));moved++;const played=prev.hand&&el.dataset.presentation==='battlefield';if(played){land(w,el.dataset.instance,dx,dy,s);continue;}w.animate([{transform:`translate(${dx}px,${dy}px) scale(${s})`,zIndex:50},{transform:'none',zIndex:50}],{duration:380,easing:'cubic-bezier(.2,.8,.2,1)'});}
    else if(el.dataset.presentation==='battlefield'){moved++;w.animate([{opacity:0,transform:'translateY(-14px) scale(.86)'},{opacity:1,transform:'none'}],{duration:420,easing:'cubic-bezier(.2,.8,.2,1)'});}
   }
  };
@@ -522,7 +526,7 @@ const name=String(card.name);if(Math.max(...name.split(/\s+/).map(word=>word.len
   // 5b. Cast: your card lifts as it goes on the stack (it waits in hand, dimmed, until Forge confirms),
   // and a spell that resolves from your hand flies to the middle of the table and bursts there.
   for(const c of b.cards){if(!c.inTransit||was.get(c.id)?.inTransit||c.controller!==b.seat)continue;const el=cardEl(c.id);if(!el)continue;
-   el.closest('.play-match-card-wrap')?.animate([{transform:'none'},{transform:'translateY(-22px) scale(1.08)',offset:.45},{transform:'none'}],{duration:420,easing:'cubic-bezier(.2,.8,.3,1)'});pulse(el,'cast');}
+   el.closest('.play-match-card-wrap')?.animate([{transform:'translateY(0px)'},{transform:'translateY(-22px)',offset:.45},{transform:'translateY(0px)'}],{duration:420,easing:'cubic-bezier(.2,.8,.3,1)',composite:'add'});pulse(el,'cast');}
   const middle=rectOf(root.querySelector('.play-match-battlefields')),discarding=/\bdiscard/i.test(String(prev?.native?.message||''));
   if(middle&&!discarding&&leaving?.size){let cast=0;for(const c of a.cards){if(c.zone!=='Hand'||c.controller!==a.seat||cast>=2)continue;const now=b.cards.find(x=>x.id===c.id);if(now&&!/^(Graveyard|Exile)$/.test(now.zone))continue;
    const old=leaving.get(String(c.id)),r=before?.get(String(c.id))?.r;if(!old||!r)continue;cast++;const src=old.querySelector('img')?.currentSrc||old.querySelector('img')?.src||'';
@@ -534,9 +538,9 @@ const name=String(card.name);if(Math.max(...name.split(/\s+/).map(word=>word.len
   const isNew=c=>c.zone==='Hand'&&c.controller===b.seat&&!before?.has(String(c.id))&&was.get(c.id)?.zone!=='Hand',deal=b.cards.filter(isNew).length>=5,most=deal?(lowPower?4:8):3,gap=deal?70:120;
   if(seatBox)for(const c of b.cards){if(!isNew(c)||drawn>=most)continue;const el=cardEl(c.id),w=el?.closest('.play-match-card-wrap'),r=rectOf(el);if(!w||!r)continue;
    const dx=seatBox.left+seatBox.width/2-(r.left+r.width/2),dy=seatBox.top+seatBox.height/2-(r.top+r.height/2);
-   w.animate([{transform:`translate(${dx}px,${dy}px) rotateY(90deg) scale(.7)`,opacity:.4},{transform:`translate(${dx/2}px,${dy/2-50}px) rotateY(30deg) scale(1.2)`,opacity:1,offset:.55},{transform:'translateY(-6px) scale(1.04)',offset:.85},{transform:'none'}],{duration:deal?400:480,delay:drawn++*gap,easing:'cubic-bezier(.3,.1,.3,1)',fill:'backwards'});}
+   w.animate([{transform:`translate(${dx}px,${dy}px) rotateY(90deg) scale(.7)`,opacity:.4},{transform:`translate(${dx/2}px,${dy/2-50}px) rotateY(30deg) scale(1.2)`,opacity:1,offset:.55},{transform:'translateY(-6px) scale(1.04)',offset:.85},{transform:'translate(0px,0px)'}],{duration:deal?400:480,delay:drawn++*gap,easing:'cubic-bezier(.3,.1,.3,1)',fill:'backwards',composite:'add'});}
   // 7. Your turn: once the banner has gone, a blue wave runs through the cards you can play now.
-  if(b.activeSeat===b.seat&&a.activeSeat!==b.seat)setTimeout(()=>{if(closed)return;[...root.querySelectorAll('.play-match-hand .play-match-card[data-forge-role=playable]')].slice(0,10).forEach((el,i)=>setTimeout(()=>{if(!el.isConnected)return;pulse(el,'playable');el.closest('.play-match-card-wrap')?.animate([{transform:'none'},{transform:'translateY(-10px)',offset:.4},{transform:'none'}],{duration:420,easing:'ease-out'});},i*70));},900);
+  if(b.activeSeat===b.seat&&a.activeSeat!==b.seat)setTimeout(()=>{if(closed)return;[...root.querySelectorAll('.play-match-hand .play-match-card[data-forge-role=playable]')].slice(0,10).forEach((el,i)=>setTimeout(()=>{if(!el.isConnected)return;pulse(el,'playable');el.closest('.play-match-card-wrap')?.animate([{transform:'translateY(0px)'},{transform:'translateY(-10px)',offset:.4},{transform:'translateY(0px)'}],{duration:420,easing:'ease-out',composite:'add'});},i*70));},900);
  }
  // Hold the previous accepted board while a meaningful observed update is announced.
  // Only projected public cards reach this queue; it cannot recover events omitted by a poll.
@@ -1418,7 +1422,10 @@ const name=String(card.name);if(Math.max(...name.split(/\s+/).map(word=>word.len
    let room=1;idx.forEach((i,j)=>{if(!sh[j])return;const edge=side>0?W-6-g.sx(L[i].x+L[i].w):g.sx(L[i].x)-6;room=Math.min(room,Math.max(0,edge)/sh[j]);});
    idx.forEach((i,j)=>{const v=side*sh[j]*room/K;if(Math.abs(v)<.5)g.wraps[i].style.removeProperty('--shove');else g.wraps[i].style.setProperty('--shove',`${v.toFixed(1)}px`);for(const p of ['--focus-k','--focus-x','--focus-y'])g.wraps[i].style.removeProperty(p);});}}
  // The table redraws its hand on every update; the focused card keeps its place across redraws.
- function refocusHand(){if(handFocusId===null){handFocus=null;return;}const card=root.querySelector(`.play-match-hand .play-match-card[data-instance="${CSS.escape(String(handFocusId))}"]`);handFocus=card?.closest('.play-match-card-wrap')||null;if(!handFocus)handFocusId=null;layoutHand();}
+ // After a redraw the hand's cards are new nodes: the card you were on is popped again at once, and its
+ // neighbours stand aside at once, so an update elsewhere in the game never shrinks and regrows it.
+ function refocusHand(){if(handFocusId===null){handFocus=null;return;}const card=root.querySelector(`.play-match-hand .play-match-card[data-instance="${CSS.escape(String(handFocusId))}"]`);handFocus=card?.closest('.play-match-card-wrap')||null;if(!handFocus)handFocusId=null;layoutHand();
+  const wraps=[...root.querySelectorAll('.play-match-hand .play-match-card-wrap')];for(const w of wraps)w.style.transition='none';void root.offsetWidth;for(const w of wraps)w.style.removeProperty('transition');}
  // Scale the risen hand up a touch, but never past the screen edges.
  const handScale=()=>{const area=root.querySelector('.play-match-hand-area'),wraps=[...root.querySelectorAll('.play-match-hand .play-match-card-wrap')];if(!area||!wraps.length)return 1;const a=area.getBoundingClientRect(),cx=a.left+a.width/2,k=Number(root.style.getPropertyValue('--hand-scale'))||1,cur=root.dataset.handLift==='true'?k:1;
   const left=(cx-Math.min(...wraps.map(w=>w.getBoundingClientRect().left)))/cur,right=(Math.max(...wraps.map(w=>w.getBoundingClientRect().right))-cx)/cur;return Math.max(1,Math.min(1.1,(cx-6)/Math.max(left,1),(win.innerWidth-6-cx)/Math.max(right,1)));};
