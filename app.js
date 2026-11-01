@@ -1835,8 +1835,8 @@ async function loadPool(more=false){const P=econUi.pool;if(!P||P.mode!=='all')re
  catch{if(t===P.ticket)P.error='Check your connection and try again.';}finally{if(t===P.ticket){P.busy=false;refreshPlayMenu();}}}
 A.playEconPool=t=>{const mode=t.dataset.id==='all'?'all':'mine';econUi.pool={...(econUi.pool||{cards:[],ticket:0}),mode};econUi.set='';refreshPlayMenu();};
 A.playEconPoolMore=()=>loadPool(true);
-// A missing card's pack: the Merchant, filtered to that set, its pack lit up.
-A.playGetPack=t=>{const code=t.dataset.code;if(!code)return;closeSheet?.();playView='shop';econUi.query=code;econUi.shopFocus=code;econUi.press=null;go('#play');refreshPlayMenu();requestAnimationFrame(()=>document.querySelector(`[data-pack-code="${CSS.escape(code)}"]`)?.scrollIntoView({block:'center',behavior:'smooth'}));};
+// A missing card's pack: the same Merchant jump as the card view's "Get it at the Merchant".
+A.playGetPack=t=>A.playCardGet(t);
 // Empty slots (a Trunk build that ran out of owned cards): fill them with the format's most-played
 // cards in the deck's colours, one copy each; cards you don't own land greyed, ready to craft.
 A.playFillSlots=async()=>{const e=econUi.edit;if(!e||econUi.filling)return;const size=e.format==='Commander'?100:60,have=(e.cards||[]).reduce((t,c)=>t+c.qty,0),need=size-have;if(need<1)return;
@@ -4777,7 +4777,7 @@ A.mtgWikiAsk=()=>{const text=$('#wikiQ')?.value.trim()||currentWikiPage().state.
 A.cardTab = async (t) => {
   const commit=scopedCommit();
   const ctx = S.ui.sheetCtx;
-  if (!["card","tcard"].includes(ctx?.type) || !["overview","meta","guide","prices","rulings","legal","trade"].includes(t.dataset.tab)) return;
+  if (!["card","tcard"].includes(ctx?.type) || !["overview","meta","guide","prices","get","rulings","legal","trade"].includes(t.dataset.tab)) return;
   ctx.tab = ["legal","rulings"].includes(t.dataset.tab) ? "guide" : t.dataset.tab; // Rules & legality live in the Play guide
   for (const b of $$("#sheetBody .cs-tabs [data-tab]")) {
     const on = b.dataset.tab === ctx.tab;

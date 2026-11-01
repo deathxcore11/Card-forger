@@ -362,8 +362,8 @@ function playMetaStats(play, name) {
   return `<div class="play-card-meta" role="group" aria-label="In current tournament lists">${rows.map((m) => `<button class="play-card-meta-row" data-act="playCardDecks" data-format="${esc(m.format)}" data-name="${esc(name)}" aria-label="${esc(m.format)}: in ${m.lists} of ${m.total} lists. Most played in ${esc(m.top)}. Find decks with it."><b>${Math.max(1, Math.round(m.share * 100))}%</b><span>${esc(m.format)}</span><small>${esc(m.top)}</small></button>`).join("")}</div>`;
 }
 // Builder open: add or take out copies of this card; Craft 1 to 4 copies with seals.
-function playEditActions(play, name, shown) {
-  const e = play.edit, k = play.craft?.(name, shown);
+function playEditActions(play, name, shown, craftOnly = null) {
+  const e = craftOnly === true ? null : play.edit, k = craftOnly === false ? null : play.craft?.(name, shown);
   if (!e && !k?.room) return "";
   const q = e ? e.qty(name) : 0;
   return `<div class="play-card-build">
@@ -376,24 +376,38 @@ const sealIconMini = (key) => { const [a, b] = SEAL_MINI[key] || SEAL_MINI.c; re
 // The card the Play card view shows, for "Use artwork" (app.js reads it back).
 let playShown = null;
 export const playShownCard = () => playShown;
+// Play card view: Overview keeps your copies and decks; "Get it" (where Prices sits in the app)
+// holds every way to get the card in Play: craft with seals, holo, its pack at the Merchant, its
+// set, and the tournament decks that run it. Never real prices.
+function playOwnLine(play, name, shown) {
+  const n = Math.min(play.owned(name, shown), 4);
+  return `<p class="play-card-own"><span class="pe-pips" aria-hidden="true">${[1, 2, 3, 4].map(i => `<i class="${i <= n ? "on" : ""}"></i>`).join("")}</span><b>${n ? `${n} of 4 in your Play collection` : "Not in your Play collection yet"}</b></p>`;
+}
 function playCardActions(play, name, shown) {
   playShown = shown || null;
   const n = Math.min(play.owned(name, shown), 4), decks = play.decks || [];
   return `<section class="card-secondary-actions play-card-actions" aria-label="Play collection and deck actions">
-    <p class="play-card-own"><span class="pe-pips" aria-hidden="true">${[1, 2, 3, 4].map(i => `<i class="${i <= n ? "on" : ""}"></i>`).join("")}</span><b>${n ? `${n} of 4 in your Play collection` : "Not in your Play collection yet"}</b></p>
-    ${playMetaStats(play, name)}
-    ${playEditActions(play, name, shown)}
+    ${playOwnLine(play, name, shown)}
+    ${playEditActions(play, name, shown, false)}
     <div class="card-actions"><div class="ca-main">
-      ${(() => { const st = n < 4 ? play.stamp?.(name, shown) : null; if (!st) return "";
-        const need = (c, label, holo) => `<button class="btn${holo ? " ghost" : ""} play-stamp" data-act="playCardStamp" data-econ-card="${esc(st.id)}" data-holo="${holo ? 1 : 0}" ${st.seals >= c ? "" : "disabled"} aria-label="${esc(label)} for ${c} ${st.rarity} seal${c === 1 ? "" : "s"}, you have ${st.seals}">${label} · ${c} ${st.rarity} seal${c === 1 ? "" : "s"}</button>`;
-        return (play.craft?.(name, shown)?.room ? "" : need(1, "Stamp it", false)) + (st.canFoil ? need(st.holoCost, "Stamp holo", true) : ""); })()}
-      ${decks.length ? `<details class="play-card-decks"><summary class="btn">Add to deck</summary><div class="play-card-deck-list">${decks.map(d => `<button class="btn ghost small" data-act="playCardToDeck" data-econ-deck="${esc(d.id)}" data-name="${esc(name)}">${esc(d.name || "Untitled deck")}</button>`).join("")}</div>${n ? "" : `<p class="play-card-grey">Greyed in the deck until it is in your Trunk.</p>`}</details>` : ""}
-      <button class="btn${decks.length || !n ? " ghost" : ""}" data-act="playCardNewDeck" data-name="${esc(name)}">New deck</button>
-      ${play.holo?.(name, shown)?.can ? `<button class="btn ghost" data-act="playCardHolo" data-oracle="${esc(play.holo(name, shown).oracle)}" ${play.holo(name, shown).afford ? "" : "disabled"}>Make holo · ${play.holo(name, shown).cost} ${esc(play.holo(name, shown).seal)} seals</button>` : ""}
-      ${n < 4 ? `<button class="btn ghost" data-act="playCardGet" data-name="${esc(name)}" data-code="${esc(shown?.set || "")}">Get it at the Merchant</button>` : ""}
-      ${n < 4 && shown?.name ? `<button class="btn ghost" data-act="playCardPrecon" data-name="${esc(name)}" data-code="${esc(shown?.set || "")}">Find it in a precon</button>` : ""}
-    </div></div>
-    <div class="context-group context-utilities play-card-more">${shown?.set ? `<button class="btn ghost small" data-act="playLensSet" data-code="${esc(shown.set)}">Go to set</button>` : ""}<button class="btn ghost small" data-act="playCardArtwork">Use artwork as…</button></div></section>`;
+      ${n < 4 ? `<button class="btn" data-act="cardTab" data-tab="get">${n ? "Get more copies" : "Get it"}</button>` : ""}
+      ${decks.length ? `<details class="play-card-decks"><summary class="btn${n < 4 ? " ghost" : ""}">Add to deck</summary><div class="play-card-deck-list">${decks.map(d => `<button class="btn ghost small" data-act="playCardToDeck" data-econ-deck="${esc(d.id)}" data-name="${esc(name)}">${esc(d.name || "Untitled deck")}</button>`).join("")}</div>${n ? "" : `<p class="play-card-grey">Greyed in the deck until it is in your Trunk.</p>`}</details>` : ""}
+      <button class="btn ghost" data-act="playCardNewDeck" data-name="${esc(name)}">New deck</button>
+      <button class="btn ghost" data-act="playCardArtwork">Use artwork as…</button>
+    </div></div></section>`;
+}
+function playGetPanel(play, name, shown) {
+  const n = Math.min(play.owned(name, shown), 4), set = shown?.set || "";
+  const st = n < 4 ? play.stamp?.(name, shown) : null;
+  const stamp = (c, label, holo) => `<button class="btn${holo ? " ghost" : ""} play-stamp" data-act="playCardStamp" data-econ-card="${esc(st.id)}" data-holo="${holo ? 1 : 0}" ${st.seals >= c ? "" : "disabled"} aria-label="${esc(label)} for ${c} ${esc(st.rarity)} seal${c === 1 ? "" : "s"}, you have ${st.seals}">${label} · ${c} ${esc(st.rarity)} seal${c === 1 ? "" : "s"}</button>`;
+  const holo = play.holo?.(name, shown);
+  return `<section class="play-get" aria-label="Get this card in Play">
+    ${playOwnLine(play, name, shown)}
+    ${n < 4 ? `<div class="play-get-block"><h3>Craft with seals</h3>${play.craft?.(name, shown)?.room ? playEditActions(play, name, shown, true) : st ? stamp(1, "Stamp it", false) : `<p class="muted small">This printing can't be stamped. Try another printing on Overview.</p>`}</div>` : ""}
+    ${(st?.canFoil || holo?.can) ? `<div class="play-get-block"><h3>Holo</h3>${st?.canFoil ? stamp(st.holoCost, "Stamp holo", true) : `<button class="btn ghost" data-act="playCardHolo" data-oracle="${esc(holo.oracle)}" ${holo.afford ? "" : "disabled"}>Make holo · ${holo.cost} ${esc(holo.seal)} seals</button>`}</div>` : ""}
+    ${set ? `<div class="play-get-block"><h3>Packs and precons</h3><div class="ca-main"><button class="btn${n < 4 ? "" : " ghost"}" data-act="playCardGet" data-name="${esc(name)}" data-code="${esc(set)}">Its pack at the Merchant</button><button class="btn ghost" data-act="playLensSet" data-code="${esc(set)}">See the whole set</button>${n < 4 ? `<button class="btn ghost" data-act="playCardPrecon" data-name="${esc(name)}" data-code="${esc(set)}">Find it in a precon</button>` : ""}</div></div>` : ""}
+    ${(() => { const m = playMetaStats(play, name); return m ? `<div class="play-get-block"><h3>Decks that run it</h3>${m}</div>` : ""; })()}
+  </section>`;
 }
 
 export function cardSheet(c, ctx = {}) {
@@ -401,7 +415,7 @@ export function cardSheet(c, ctx = {}) {
     shown = ctx.print || c, // the printing currently being looked at
     // Meta shows only for cards with meta data; Versions lives in Overview's printings strip.
     play = ctx.play || null, // Play lens: Play collection and decks, never prices (play-progression.md)
-    tabList = [["overview", "Overview", "info"], ...(hasCardMeta("mtg", c) ? [["meta", "Meta", "trophy"]] : []), ["guide", "Play guide", "ideas"], ...(play ? [] : [["prices", "Prices", "bag"]])],
+    tabList = [["overview", "Overview", "info"], ...(hasCardMeta("mtg", c) ? [["meta", "Meta", "trophy"]] : []), ["guide", "Play guide", "ideas"], ...(play ? [["get", "Get it", "bag"]] : [["prices", "Prices", "bag"]])],
     asked = ["legal", "rulings"].includes(ctx.tab) ? "guide" : ctx.tab, // Rules & legality now live in the Play guide; Trade tab retired
     tab = tabList.some(([id]) => id === asked) ? asked : "overview",
     i = inv(name),
@@ -486,7 +500,7 @@ export function cardSheet(c, ctx = {}) {
   ${cardPanel("overview", tab, overview)}
   ${tabList.some(([id]) => id === "meta") ? cardPanel("meta", tab, mtgCardMeta(c)) : ""}
   ${cardPanel("guide", tab, mtgCardGuide(c, rulings, ruleLinks))}
-  ${play ? "" : cardPanel("prices", tab, pricesTab)}
+  ${play ? cardPanel("get", tab, playGetPanel(play, name, shown)) : cardPanel("prices", tab, pricesTab)}
   ${tab === "trade" && !play ? cardPanel("trade", tab, mtgTradePanel(name, shown, ctx)) : ""}`;
 }
 
