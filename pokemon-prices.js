@@ -2,6 +2,7 @@ import {syncPokemonVariantAliases} from './pokemon-variant-options.js';
 import {referenceQuote} from './price-reference.js';
 import {pickGroup,pickProduct} from './pokemon-art.js';
 import {pokemonFinishAllowed} from './pokemon-corrections.js';
+import {pokemonCatalogueFallback} from './pokemon-catalogue-supplement.js';
 // Exact product/finish fallback; listing estimates are explicitly distinguished.
 export function applyProductPrices(card,body){
  if(body?.cardId!==card.id)return false;
@@ -38,7 +39,8 @@ export async function pokemonPriceRoute(url,ctx,fetchImpl=fetch){
  const cached=await caches.default.match(cacheKey.href);if(cached)return cached;
  const get=async u=>{const saved=await caches.default.match(u);if(saved)return saved.json();const r=await fetchImpl(u,{headers:{Accept:'application/json','User-Agent':'CardStashy/3.34 (exact product pricing)'},signal:AbortSignal.timeout(15000)});if(!r.ok)throw Error('Price source unavailable');const d=await r.json();ctx?.waitUntil?.(caches.default.put(u,Response.json(d,{headers:{'Cache-Control':'public,max-age=86400'}})));return d;};
  try{
-  const c=await get('https://api.tcgdex.net/v2/en/cards/'+encodeURIComponent(id));if(c.id!==id)throw Error('Wrong printing');
+  // Supplement cards (upstream-only, not yet served by the API) carry their exact product IDs.
+  const c=await get('https://api.tcgdex.net/v2/en/cards/'+encodeURIComponent(id)).catch(e=>{const f=pokemonCatalogueFallback(id);if(f)return f;throw e;});if(c.id!==id)throw Error('Wrong printing');
   // The card's TCGplayer product: from TCGdex's variants or its per-finish prices, else found in
   // the set's TCGplayer group by collector number and name (older sets TCGdex never mapped).
   const products=new Set([...(c.variants_detailed || []).map(v=>Number(v.thirdParty?.tcgplayer)),...Object.values(c.pricing?.tcgplayer || {}).map(v=>Number(v?.productId))].filter(Boolean));
