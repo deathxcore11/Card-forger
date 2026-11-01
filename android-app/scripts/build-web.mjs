@@ -44,6 +44,8 @@ for (const game of ['mtg', 'ptcg', 'ygo']) extras.push(`scanidx/${game}.bin`, `s
 for (const name of ['collection', 'power', 'decks', 'ask', 'find']) for (const ext of ['webm', 'jpg']) extras.push(`tour/${name}.${ext}`);
 // Real Magic booster sheets load from /data/mtg-boosters/<set>.json; the app ships them so packs open offline.
 for (const file of await readdir(path.join(source, 'data/mtg-boosters')).catch(() => [])) if (/^[a-z0-9]{2,8}\.json$|^index\.json$/.test(file)) extras.push(`data/mtg-boosters/${file}`);
+// Story mode loads each act's battles and card pool from /data/story/; ship them so Story works in the app.
+for (const file of await readdir(path.join(source, 'data/story')).catch(() => [])) if (/^(act|pool)-\d+\.json$/.test(file)) extras.push(`data/story/${file}`);
 // Sound effects ship with the app (Opus only; the AAC copies are for Safari). Music streams from the website
 // and is cached on the phone after its first play (audio.js), so it never adds to the download.
 for (const file of await readdir(path.join(source, 'assets/audio/sfx')).catch(() => [])) if (/^[A-Z]{2,4}-\d{3}\.ogg$/.test(file)) extras.push(`assets/audio/sfx/${file}`);
