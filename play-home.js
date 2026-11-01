@@ -36,7 +36,7 @@ function storyHeader(act, facts, progress = {}) {
 export function playHomeMarkup({econ = null, facts = null, signedIn = false, modesHtml = '', story = {}} = {}) {
   const state = econ?.state, p = purse(state), act = storyActFor(story);
   const head = `<header class="pl-home-head"><div><h1 id="playTitle">Play</h1></div>${purseMarkup(econ)}</header>`;
-  if (!p) return `<section class="play-menu play-menu--forge pl-home pe-home" aria-labelledby="playTitle">${head}${storyHeader(act, facts)}${modesHtml}${econNoticeMarkup(econ, {signedIn})}</section>`;
+  if (!p) return `<section class="play-menu play-menu--forge pl-home pe-home" aria-labelledby="playTitle">${head}${modesHtml}${storyHeader(act, facts)}${econNoticeMarkup(econ, {signedIn})}</section>`;
   // Packs: one wrapper per set, with how many are waiting.
   const groups = new Map();
   for (const pk of state.packs || []) { if (!groups.has(pk.set)) groups.set(pk.set, []); groups.get(pk.set).push(pk); }
@@ -59,9 +59,9 @@ export function playHomeMarkup({econ = null, facts = null, signedIn = false, mod
   const shopRow = shop.length ? `<div class="pe-home-shop">${shop.map(s => `<article class="pe-pack pe-pack--shop" aria-label="${esc(s.name)}">${boosterMarkup({code: s.code, name: s.name, facts})}<button class="pe-buy" data-act="playEconBuy" data-econ-set="${esc(s.code)}" ${coins < price || econ.busy ? 'disabled' : ''} aria-label="Buy a ${esc(s.name)} pack for ${n(price)} coins">${coinIcon('pe-coin--sm')}<b>${n(price)}</b></button></article>`).join('')}</div>` : '';
   return `<section class="play-menu play-menu--forge pl-home pe-home" aria-labelledby="playTitle">
     ${head}
+    ${modesHtml}
     ${storyHeader(act, facts, story)}
     <div class="pe-home-duo">${shelf('Your packs', viewLink('packs', 'All packs'), packs, 'peHomePacks')}${forgeMarkup(econ, {compact: true})}</div>
-    ${shelf('Play', '', modesHtml, 'peHomeModes')}
     <div class="pe-home-duo">${shelf('Your decks', viewLink('decks', 'All decks'), deckRow, 'peHomeDecks')}
     ${shelf('Your collection', viewLink('collection', `${n(owned)} cards`), setRow || `<p class="pe-home-empty">Open a pack and your first set starts filling in.</p>`, 'peHomeColl')}</div>
     ${shopRow ? shelf('Merchant', viewLink('shop', 'Every set'), shopRow, 'peHomeShop') : ''}
