@@ -15,8 +15,9 @@ export function rewardIcons(r = {}) {
   if (r.coins) out.push(`<span class="pd-rw">${coinIcon()}<b>${n(r.coins)}</b></span>`);
   for (const [k, v] of Object.entries(r.seals || {})) if (v) out.push(`<span class="pd-rw">${sealIcon(k)}<b>${v}</b></span>`);
   if (r.packs) out.push(`<span class="pd-rw">${packIcon}<b>${r.packs}</b></span>`);
+  if (r.collector) out.push(`<span class="pd-rw pd-rw-collector">${packIcon}<b>${r.collector}</b></span>`);
   if (r.xp) out.push(`<span class="pd-rw pd-rw-xp"><b>${n(r.xp)}</b> XP</span>`);
-  const label = [r.coins && `${n(r.coins)} coins`, ...Object.entries(r.seals || {}).filter(([, v]) => v).map(([k, v]) => `${v} ${({c: 'common', u: 'uncommon', r: 'rare', m: 'mythic'})[k]} seal${v === 1 ? '' : 's'}`), r.packs && `${r.packs} pack${r.packs === 1 ? '' : 's'}`, r.xp && `${n(r.xp)} XP`].filter(Boolean).join(', ');
+  const label = [r.coins && `${n(r.coins)} coins`, ...Object.entries(r.seals || {}).filter(([, v]) => v).map(([k, v]) => `${v} ${({c: 'common', u: 'uncommon', r: 'rare', m: 'mythic'})[k]} seal${v === 1 ? '' : 's'}`), r.packs && `${r.packs} pack${r.packs === 1 ? '' : 's'}`, r.collector && `${r.collector} Collector pack${r.collector === 1 ? '' : 's'}`, r.xp && `${n(r.xp)} XP`].filter(Boolean).join(', ');
   return `<span class="pd-rws" role="img" aria-label="Reward: ${esc(label)}">${out.join('')}</span>`;
 }
 const ctxOf = (state, user) => ({counters: state?.counters || {}, claimed: state?.claimed || [], state, day: today(), user});

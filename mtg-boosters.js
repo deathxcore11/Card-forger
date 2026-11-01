@@ -55,3 +55,18 @@ export function drawMtgBooster(data,cards,random=Math.random){
  }
  return out;
 }
+// God pack (Wizards, 5 Oct 2026: from 2027 every regular booster has a 1 in 1,000 chance and every Collector
+// Booster 1 in 300): every card in the pack is a rare or mythic. Drawn from the set's own rare/mythic sheets
+// by their weights, so mythics and Booster Fun treatments keep their real share, and never twice the same card.
+// CardStashy's god packs are all holo too. Null when the sheets can't fill the pack.
+export const GOD_PACK_ODDS=Object.freeze({regular:1/1000,collector:1/300});
+export function mtgGodPackPicks(data,cards,size,random=Math.random){
+ const pool=new Map();
+ for(const [name,sheet] of Object.entries(data?.sheets||{}))if(isRare(name))for(const [id,w] of sheet.cards)if(cards.has(id)&&/^(rare|mythic)$/.test(cards.get(id).rarity||''))pool.set(id,(pool.get(id)||0)+w);
+ let list=[...pool];if(!size||list.length<size)return null;
+ const out=[];
+ while(out.length<size){const [id]=pickWeighted(list,random);list=list.filter(x=>x[0]!==id);out.push({...cards.get(id),packSlot:'hit',packFoil:true,packSheet:'god'});}
+ // Mythics last, so the reveal builds up to them.
+ out.sort((a,b)=>(a.rarity==='mythic')-(b.rarity==='mythic'));
+ out.godPack=true;out.collector=true;return out;
+}

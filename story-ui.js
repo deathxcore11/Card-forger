@@ -133,7 +133,9 @@ export function storyBattleMarkup({act, data, battle: b, progress, econ, ui = {}
   const listOpen = !!ui.listOpen;
   // Each side pays once: say what this win pays, or point at the other side's reward once yours is claimed.
   const rw = b.reward || {}, mineDone = seat === 'villain' ? !!rec.villain : !!rec.loaner, ownPick = (ui.deck || 'loaner') !== 'loaner';
-  const prize = ownPick ? '<small>Your deck</small> XP only' : !mineDone ? `<small>Win</small> ${rewardText(rw[seat], b.rewardSet)}`
+  // A boss pays a Collector pack (every card holo) on the first hero-side win, with any deck.
+  const collector = b.slot === 8 && seat === 'hero' && !villainOpen ? ' + a Collector pack' : '';
+  const prize = ownPick ? (collector ? `<small>Your deck</small> XP${collector}` : '<small>Your deck</small> XP only') : !mineDone ? `<small>Win</small> ${rewardText(rw[seat], b.rewardSet)}${collector}`
     : seat === 'hero' && !rec.villain && rw.villain?.card ? `<small>Their side</small> ${rewardText(rw.villain, b.rewardSet)}` : '<small>Reward claimed</small>';
   const deckChoice = ui.deck && ui.deck !== 'loaner' ? ownDecks.find(d => d.id === ui.deck) : null;
   const sideCard = (side, you) => `<article class="st-side${you ? ' st-side--you' : ''}" data-side="${side}"><span class="st-side-face" style="${face(side)}" aria-hidden="true"></span>

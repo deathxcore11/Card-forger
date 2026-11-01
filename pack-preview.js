@@ -8,7 +8,8 @@ import {attachZoomMotion} from './mobile-tilt.js';
 import {rarityEmblem} from './rarity-emblem.js';
 import {ygoSetReference} from './ygo-set-prices.js';
 import {pkCatalogueSymbolSources} from './emblems.js';
-import {drawMtgBooster} from './mtg-boosters.js';
+import {drawMtgBooster,mtgGodPackPicks,GOD_PACK_ODDS as MTG_GOD_ODDS} from './mtg-boosters.js';
+import {COLLECTOR_ODDS,collectorPicks} from './play-econ-rules.js';
 import {haptic,cancelHaptics} from './feel.js';
 import {appSound,audioSettings,setAudioSettings,preload} from './audio.js';
 // Every price tier has its own jingle beside its own feel, each a step grander: grey a plain flip, green a ding, up to
@@ -121,9 +122,12 @@ export function packRandom(){
 const GOD_SLOT=slot({illustrationrare:2,specialillustrationrare:1},'hit'),GOD_PACK_ODDS=1/1000;
 const GOD={
  ptcg:{odds:GOD_PACK_ODDS,slot:GOD_SLOT,all:false,text:'God pack! Every hit is an illustration rare.'},
- mtg:{odds:1/2000,slot:slot({rare:6.4,mythic:1},'hit'),all:true,text:'God pack! Every card is a rare or mythic.'},
+ mtg:{odds:MTG_GOD_ODDS.regular,text:'God pack! Every card is a holo rare or mythic.'},
  ygo:{odds:1/1500,slot:slot({superrare:6,ultrarare:3,secretrare:1.5,ultimaterare:.6,quartercenturysecretrare:.5,collectorsrare:.5,platinumsecretrare:.3},'hit'),all:true,text:'God pack! Every card is a foil.'}};
 export const godPackText=game=>GOD[game]?.text||'God pack!';
+// Magic's surprise is a Collector pack: the same real booster (same sheets and pull rates), every card holo,
+// 1 pack in 200 (play-econ-rules.js; Play rolls it on the server, this free preview rolls it here).
+export const collectorText=picks=>picks?.surprise===false?'Collector pack: every card is holo.':'Collector pack surprise! Every card is holo.';
 // A Magic pack from real booster sheets becomes a god pack by swapping every card for a different rare or mythic
 // of the set; foils stay foil. Null when the set has too few rares and mythics to fill it.
 export function mtgGodPack(picks,cards,random=packRandom){
@@ -170,7 +174,7 @@ export function rollYgoPrinting(card,random=packRandom,prefer=''){
 export function samplePack(game,cards,count,random=packRandom,set={}){
  let slots=slotsFor(game,set);count??=slots.length||10;if(!slots.length)return sampleSetCards(cards,count,random);
  const pool=[...new Map(cards.filter(c=>c?.id&&c.name).map(c=>[String(c.id),game==='ygo'?rollYgoPrinting(c,random):c])).values()],used=new Set(),picks=[],rarityOf=c=>R(packRarity(game,c).label);
- const g=GOD[game],godSlots=g?slots.slice(0,count).filter(s=>g.all||s.role).length:0;
+ const g=game==='mtg'?null:GOD[game],godSlots=g?slots.slice(0,count).filter(s=>g.all||s.role).length:0;
  const god=!!g&&random()<g.odds&&pool.filter(c=>g.slot.w[rarityOf(c)]).length>=godSlots;
  // A Magic god pack keeps its foil slot foil.
  if(god)slots=slots.map(s=>g.all||s.role?(s.role==='foil'?{...g.slot,role:'foil'}:g.slot):s);
@@ -288,7 +292,8 @@ export function openPackPreview({game,set,cards,complete=false,featured=null,hyd
  // The pack's own release date stands in when a card's context lacks one: star and Attribute foil depend on the print era.
  const inRelease=c=>c?.setContext?.releaseId?{...c,setContext:{...c.setContext,game:'ygo',cardId:c.id,status:'resolved',date:c.setContext.date||set?.date||''}}:c;
  if(game==='ygo'){cards=cards.map(inRelease);featured=featured&&rollYgoPrinting(inRelease(featured),packRandom,featured.featuredRarity);}
- const size=packSize(game,set),draw=()=>{if(play)return drawn||[];if(!booster)return samplePack(game,cards,size,packRandom,set);const p=drawMtgBooster(booster.data,booster.cards,packRandom);return packRandom()<GOD.mtg.odds&&mtgGodPack(p,[...cards,...booster.cards.values()])||p;};
+ const collectorRoll=p=>game==='mtg'&&packRandom()<COLLECTOR_ODDS?collectorPicks(p):p;
+ const size=packSize(game,set),draw=()=>{if(play)return drawn||[];if(!booster)return collectorRoll(samplePack(game,cards,size,packRandom,set));const p=collectorRoll(drawMtgBooster(booster.data,booster.cards,packRandom));return packRandom()<MTG_GOD_ODDS[p.collector?'collector':'regular']&&mtgGodPackPicks(booster.data,booster.cards,p.length,packRandom)||p;};
  let picks=draw();
  // Today's pack: the Card of the Day takes the hit's place.
  if(featured){picks=booster?[...picks.slice(0,-1).filter(c=>String(c.id)!==String(featured.id)),featured]:[...samplePack(game,cards.filter(c=>String(c.id)!==String(featured.id)),size-1,packRandom,set).slice(0,size-1),featured];}if(!picks.length)throw Error('Load this set’s cards first.');
@@ -369,7 +374,7 @@ export function openPackPreview({game,set,cards,complete=false,featured=null,hyd
    if(focus===i||!silent){focusCard.classList.add('pack-flipping');later(()=>focusCard.classList.remove('pack-flipping'),400);}flipLift(b,22);if(!silent){const L=levelOf(i);flipLift(focusCard,[3,5,7,10,13,17][L]||3,560+L*70);}b.setAttribute('aria-pressed','true');b.setAttribute('aria-label',picks[i].name+' · revealed');
    setTier(b,tierOf(i));status.textContent=`${revealed.size} of ${picks.length} revealed`;
    if(!silent)later(()=>revealMoment(i),330);
-   if(revealed.size===picks.length){dialog.classList.add('pack-done');if(picks.godPack)status.textContent=godPackText(game);for(const x of dialog.querySelectorAll('.pack-actions [disabled]'))x.disabled=false;}}
+   if(revealed.size===picks.length){dialog.classList.add('pack-done');if(picks.godPack)status.textContent=godPackText(game);else if(picks.collector)status.textContent=collectorText(picks);for(const x of dialog.querySelectorAll('.pack-actions [disabled]'))x.disabled=false;}}
   show(i);if(focus===i)fit(focusCard,faceImg);};
  // The flip lands, a bigger show the better the pull: every flip gets the light catch and a pop. Green and up add a
  // ring in the tier's colour, blue and up a burst of embers, purple and up the rays and a sway of the foil, gold and up

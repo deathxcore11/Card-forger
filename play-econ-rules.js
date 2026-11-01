@@ -142,3 +142,20 @@ export function legalFormats(rows = [], legal = new Map()) {
     return true;
   });
 }
+
+// Collector packs: the set's own booster with its real pull rates (same sheets, same rare and mythic
+// odds), but every card comes out holo. Story bosses and the hard achievement steps always give one,
+// and any ordinary pack can turn into one when it's opened (config.collectorOdds, 1 in 200 by default).
+// A collector pack is a play.packs row whose source ends in ':collector', so no new column is needed.
+export const COLLECTOR_ODDS = 1 / 200;
+export const collectorSource = (source = 'reward') => String(source || 'reward').replace(/:collector$/, '') + ':collector';
+export const isCollectorPack = pack => /(?:^|:)collector$/.test(String(pack?.source || ''));
+export const collectorOdds = (config = {}) => { const n = Number(config?.collectorOdds); return Number.isFinite(n) && n >= 0 && n <= 1 ? n : COLLECTOR_ODDS; };
+// Every pick holo; the pack keeps its cards, order and slots.
+export function collectorPicks(picks = []) {
+  const out = picks.map(p => ({...p, packFoil: true}));
+  out.collector = true;
+  return out;
+}
+// God pack odds by pack kind (mtg-boosters.js GOD_PACK_ODDS); config.godPackOdds can retune them.
+export const godPackOdds = (config = {}, kind = 'regular') => { const n = Number(config?.godPackOdds?.[kind]); return Number.isFinite(n) && n >= 0 && n <= 1 ? n : kind === 'collector' ? 1 / 300 : 1 / 1000; };
