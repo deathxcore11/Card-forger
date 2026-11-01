@@ -1,6 +1,7 @@
 // Play "Build a deck" finder: ownership share, seal costs, ranking, Trunk build, and the price wall.
 import assert from 'node:assert/strict';
-import {finderRow, rankFinderRows, trunkDeck, finderMarkup, createNameFacts} from './play-deck-finder.js';
+import {finderRow, rankFinderRows, rankFinderLists, ownedShare, trunkDeck, finderMarkup, createNameFacts} from './play-deck-finder.js';
+import {craftPlan} from './play-econ-ui.js';
 
 const card = (name, type, rarity = 'common', ci = ['R'], extra = {}) => ({name, type_line: type, rarity, color_identity: ci, cmc: 2, oracle_text: '', legalities: {standard: 'legal', commander: 'legal'}, image_uris: {normal: `https://img/${name}.jpg`, art_crop: `https://art/${name}.jpg`}, ...extra});
 const facts = new Map([
@@ -27,7 +28,7 @@ assert.equal(row.groups.find(g => g.label === 'Lands').count, 20);
 assert.match(row.cover, /Glorybringer|Goblin Guide/, 'cover is creature art');
 
 // Ranking: Trunk build first, then complete, then most owned.
-const ready = {key: 'meta:shock', name: 'Shock pile', format: 'Standard', cards: [{name: 'Shock', qty: 4}, {name: 'Mountain', qty: 20}]};
+const ready = {key: 'meta:shock', name: 'Shock pile', format: 'Standard', cards: [{name: 'Shock', qty: 4}, {name: 'Mountain', qty: 56}]};
 const far = {key: 'meta:dragons', name: 'Dragons', format: 'Standard', cards: [{name: 'Glorybringer', qty: 4}]};
 const trunk = {key: 'trunk:Standard', trunk: true, name: 'Forged from your Trunk', format: 'Standard', cards: [{name: 'Goblin Guide', qty: 1}]};
 const ranked = rankFinderRows([far, list, ready, trunk], {owned, cardOf});
@@ -65,4 +66,33 @@ await nf.want(['Shock']);
 assert.equal(calls, 1);
 assert.equal(nf.get('Shock').name, 'Shock');
 assert.equal(nf.get('Shock').prices, undefined, 'slim cards drop prices');
+
+// Counted like the builder: an unfinished Trunk build reads 80/100, never 39/39, and is not ready.
+const commanderTrunk = {key: 'trunk:Commander', trunk: true, format: 'Commander', size: 100, cards: [...Array.from({length: 39}, (_, i) => ({name: 'Card ' + i, qty: 1})), {name: 'Plains', qty: 21}, {name: 'Swamp', qty: 20}]};
+const ownAll = new Map(Array.from({length: 39}, (_, i) => ['Card ' + i, 1]));
+const tr = finderRow(commanderTrunk, {owned: ownAll});
+assert.equal(`${tr.cardsHave}/${tr.size}`, '80/100');
+assert.equal(tr.open, 20);
+assert.equal(tr.complete, false);
+assert.match(finderMarkup({rows: [tr], total: 1}), /80\/100/);
+
+// Hundreds of lists rank by names alone; sorts and search.
+assert.deepEqual(ownedShare(ready, owned), {have: 60, size: 60, share: 1, complete: true});
+const many = Array.from({length: 300}, (_, i) => ({key: 'm' + i, name: i % 3 ? 'Burn' : 'Dragons', format: 'Standard', cards: [{name: 'Shock', qty: i % 5}, {name: 'Glorybringer', qty: 4}, {name: 'Mountain', qty: 56 - (i % 5)}]}));
+const r1 = rankFinderLists([...many, trunk], {owned});
+assert.equal(r1.length, 301);
+assert.equal(r1[0].list.trunk, true);
+assert.ok(r1[1].share >= r1[50].share);
+assert.equal(rankFinderLists(many, {owned, sort: 'popular'})[0].list.name, 'Burn');
+assert.equal(rankFinderLists([...many, ready], {owned, sort: 'ready'}).map(x => x.list.key).join(), 'meta:shock');
+assert.equal(rankFinderLists(many, {owned, query: 'dragons'}).length, 100);
+assert.equal(rankFinderLists(many, {owned, query: 'glorybringer'}).length, 300, 'search matches card names too');
+assert.match(finderMarkup({rows: [tr], total: 301, limit: 8}), /More decks/);
+assert.match(finderMarkup({rows: [], sort: 'ready'}), /aria-pressed="true">Ready to play/);
+
+// Craft plan: seals per missing copy, what the wallet covers now.
+const plan = craftPlan([{name: 'Goblin Guide', qty: 4}, {name: 'Glorybringer', qty: 2}, {name: 'Shock', qty: 4}, {name: 'Mountain', qty: 20}], owned, n => facts.get(n)?.rarity, {seal_r: 2, seal_m: 5});
+assert.equal(plan.missing, 5);
+assert.deepEqual(plan.need, {c: 0, u: 0, r: 3, m: 2});
+assert.equal(plan.craftable, 4, 'two rare seals cover two of three Goblin Guides; both Glorybringers');
 console.log('play deck finder ok');

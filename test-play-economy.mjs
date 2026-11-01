@@ -219,7 +219,14 @@ for (const f of ['storage.js', 'cloud.js', 'store.js', 'binders.js', 'sync-merge
   const snap = {state: {config, wallet: {coins: 1, starter_at: 'x'}, packs: [], cards, decks: []}};
   const builder = deckBuilderMarkup(snap, {facts, edit: {name: 'Elves', format: 'Standard', cards: [{name: 'Llanowar Elves', qty: 4}, {name: 'Forest', qty: 20}]}});
   assert.ok(builder.includes('24/60') && builder.includes('data-act="playEconSaveEdit"'));
-  assert.ok(/aria-label="Add Llanowar Elves, 0 left"[^>]*disabled|disabled[^>]*aria-label="Add Llanowar Elves, 0 left"/.test(builder), 'a card at its limit cannot be added');
+  assert.ok(/disabled aria-label="Add Llanowar Elves to the deck"/.test(builder), 'a card at its format limit cannot be added');
+  assert.ok(/aria-label="Add Shock to the deck"/.test(builder) && !/disabled aria-label="Add Shock to the deck"/.test(builder), 'a card with room can be added');
+  assert.ok(builder.includes('data-act="card" data-name="Shock" data-play-card="1"'), 'tapping a pool card opens its card view');
+  // Arena style: a card you don't own can go in greyed, with its seal and a Craft menu.
+  const planned = deckBuilderMarkup({state: {...snap.state, wallet: {seal_c: 1}}}, {facts, nameFact: n => n === 'Duress' ? {id: '11111111-1111-1111-1111-111111111111', name: 'Duress', rarity: 'common', type_line: 'Sorcery', cmc: 1} : null, edit: {name: 'Mix', format: 'Standard', cards: [{name: 'Duress', qty: 3}, {name: 'Swamp', qty: 20}]}});
+  assert.ok(planned.includes('pe-build-row--missing') && planned.includes('data-act="playCraftCopies"') && planned.includes('data-act="playCraftAll"'));
+  assert.ok(/data-n="1"\s+aria/.test(planned) && /data-n="2" disabled/.test(planned), 'craft choices beyond your seals are disabled');
+  assert.ok(planned.includes('Craft 1 of 3'), 'Craft all says how many your seals cover');
   const coll = collectionMarkup(snap, {tab: 'sets', facts});
   assert.ok(coll.includes('set-progress-track') && coll.includes('Reality Fracture'));
   for (const html of [builder, coll, collectionMarkup(snap, {facts})]) assert.ok(!/\$\s?\d|usd|price/i.test(html), 'no prices in Play');
