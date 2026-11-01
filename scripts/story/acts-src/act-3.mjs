@@ -97,17 +97,20 @@ export default {
 2 Pygmy Allosaurus
 24 Snow-Covered Forest`}},
       villain: {who: 'leshrac', deck: {name: "Leshrac's Book", colors: 'B', list: `
-4 Knight of Stromgald
-4 Dark Ritual
+2 Knight of Stromgald
+2 Swamp
+2 Dark Ritual
+2 Drudge Skeletons
 1 Unholy Strength
 2 Hypnotic Specter
 2 Scathe Zombies
 2 Drain Life
 2 Raise Dead
 3 Sengir Vampire
-2 Abomination
+2 Evil Presence
 2 Drudge Skeletons
-4 Terror
+2 Terror
+2 Scathe Zombies
 4 Ashen Ghoul
 1 Sengir Vampire
 3 Feast or Famine
@@ -152,12 +155,14 @@ export default {
 2 Arcane Denial
 2 Pearled Unicorn
 4 Kjeldoran Royal Guard
-4 Kjeldoran Skycaptain
+2 Kjeldoran Skycaptain
+2 Pearled Unicorn
 2 Swords to Plowshares
 2 Unsummon
 1 Serra Angel
 2 Water Elemental
-3 Phantom Monster
+1 Phantom Monster
+2 Merfolk of the Pearl Trident
 4 White Knight
 1 Brainstorm
 4 Mesa Pegasus
@@ -246,13 +251,16 @@ export default {
       hero: {who: 'laina', deck: {name: "Freyalise's Chosen", colors: 'GW', list: `
 4 Fyndhorn Elves
 4 White Knight
-4 Order of the White Shield
+2 Order of the White Shield
+2 Grizzly Bears
 4 Kjeldoran Royal Guard
 1 Serra Angel
 2 Benalish Hero
 2 Swords to Plowshares
 2 Grizzly Bears
-3 Lhurgoyf
+1 Lhurgoyf
+1 Folk of the Pines
+1 Benalish Hero
 3 Pygmy Allosaurus
 4 Giant Growth
 3 Folk of the Pines
@@ -268,7 +276,7 @@ export default {
 4 Drift of the Dead
 4 Ashen Ghoul
 3 Pestilence
-2 Feast or Famine
+2 Hypnotic Specter
 3 Terror
 12 Snow-Covered Swamp
 12 Swamp`}},

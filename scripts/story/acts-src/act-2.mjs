@@ -105,8 +105,10 @@ export default {
 24 Forest`}},
       villain: {who: 'initiate', deck: {name: 'The Ebon Hand', colors: 'B', list: `
 4 Bog Rats
-4 Order of the Ebon Hand
-4 Necrite
+2 Order of the Ebon Hand
+2 Swamp
+2 Necrite
+2 Evil Presence
 4 Scathe Zombies
 
 4 Armor Thrull
