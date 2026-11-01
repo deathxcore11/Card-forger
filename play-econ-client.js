@@ -41,6 +41,7 @@ export function createPlayEcon({getAccessToken, fetchImpl = globalThis.fetch?.bi
     async login() { try { const out = await call('login', {tz: tz()}); if (!out.login) return null; set(out.state ? keep(out.state, {counters: out.counters, login: out.login}) : {...state, counters: out.counters || state?.counters, login: out.login}); return out.login; } catch { return null; } },
     // A finished match (never Practice) moves quests and achievements; quiet on failure.
     async reportMatch(m) { try { const out = await call('match', {...m, tz: tz()}); if (out.counters && state) set({...state, counters: out.counters}); return out; } catch { return null; } },
+    async reportDeeds(battle, deeds) { if (!deeds?.length) return null; try { const out = await call('deeds', {battle, deeds}); if (out.counters && state) set({...state, counters: out.counters}); return out; } catch { return null; } },
     claim: (kind, id, step) => run('claim:' + kind + ':' + id + ':' + (step ?? ''), async () => { const out = await call('claim', {kind, id, step, tz: tz()}); set(keep(out.state, {claimed: out.claimed})); return out; }),
     holo: oracle => run('holo', async () => { const out = await call('holo', {oracle}); set(keep(out.state)); return out; }),
     craft: (cardId, holo = false) => run('craft', async () => { const out = await call('craft', {id: cardId, holo}); set(keep(out.state)); return out; }),

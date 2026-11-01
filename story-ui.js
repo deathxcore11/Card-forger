@@ -200,6 +200,8 @@ export function createStoryBubbles({root, battle, cast, playerSide, avatarUrl = 
   const cpuSide = playerSide === 'hero' ? 'villain' : 'hero';
   const said = new Set(), queue = [];
   let busy = false, mySeat = null, faced = false, disposed = false;
+  // What the table showed this match, for Story deeds (story-deeds.js): only what the viewer saw.
+  const seen = {turns: 0, minLife: null, endLife: null, maxCreatures: 0, maxSlivers: 0, myCards: new Set(), theirCards: new Set()};
   const sideOf = who => who === 'me' ? playerSide : cpuSide;
   const speaker = side => battle[side].who;
   const lineFor = (side, cue) => battle.cues?.[side]?.[cue] || null;
@@ -236,6 +238,12 @@ export function createStoryBubbles({root, battle, cast, playerSide, avatarUrl = 
       if (disposed || state?.phase !== 'playing') return;
       const s = state.game?.status?.surface; if (!s) return;
       mySeat = s.seat ?? mySeat; dressSeat();
+      seen.turns = Math.max(seen.turns, s.turn || 0);
+      const me = (s.players || []).find(p => p.seat === mySeat);
+      if (Number.isFinite(me?.life)) { seen.endLife = me.life; seen.minLife = seen.minLife === null ? me.life : Math.min(seen.minLife, me.life); }
+      const field = (s.cards || []).filter(c => c.zone === 'Battlefield'), mine = field.filter(c => c.controller === mySeat), mineC = mine.filter(c => c.types?.includes('Creature'));
+      seen.maxCreatures = Math.max(seen.maxCreatures, mineC.length); seen.maxSlivers = Math.max(seen.maxSlivers, mineC.filter(c => /Sliver/.test(c.name || '')).length);
+      for (const c of field) if (c.name) (c.controller === mySeat ? seen.myCards : seen.theirCards).add(c.name);
       if ((s.turn || 0) >= 1 && !said.has(cpuSide + ':start')) { say('cpu', 'start'); setTimeout(() => say('me', 'start'), 400); }
       for (const p of s.players || []) if (Number.isFinite(p.life) && p.life <= 5 && p.life > 0) say(p.seat === mySeat ? 'me' : 'cpu', 'low');
       for (const p of s.players || []) if (Number.isFinite(p.life) && p.life <= 10 && p.life > 5) say(p.seat === mySeat ? 'me' : 'cpu', 'half');
@@ -246,6 +254,7 @@ export function createStoryBubbles({root, battle, cast, playerSide, avatarUrl = 
       say('cpu', outcome === 'win' ? 'loss' : 'win'); say('me', outcome === 'win' ? 'win' : 'loss');
     },
     destroy() { disposed = true; queue.length = 0; root.querySelectorAll('.st-bubble,.st-seat-face').forEach(n => n.remove()); },
+    stats: () => ({turns: seen.turns, minLife: seen.minLife, endLife: seen.endLife, maxCreatures: seen.maxCreatures, maxSlivers: seen.maxSlivers, myCards: [...seen.myCards], theirCards: [...seen.theirCards]}),
     _faced: () => faced,
   };
 }
