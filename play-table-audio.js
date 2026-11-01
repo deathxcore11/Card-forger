@@ -2,6 +2,7 @@
 // cues for what changed (draws, lands, casts, arrivals, combat, deaths, life, turns, the result), and
 // picks the table music for the state of the game. Forge stays the authority: this only listens.
 import {sfx,setMusic,preload} from './audio.js';
+import {LOOPS} from './audio-loops.js';
 
 const onField=c=>c.zone==='Battlefield';
 const has=(c,t)=>!!c?.types?.includes(t)||new RegExp(`\\b${t}\\b`).test(c?.type||'');
@@ -67,7 +68,37 @@ export function createTableAudio(root=null){
   // Low life: once per match when anyone first drops to 5 or less.
   if(!lowSeen&&b.players.some(p=>p.life<=5&&p.life>0)){lowSeen=true;play('CMB-019');}
  }
- // Early turns, then the fuller table, then the low-life track once anyone is close to losing.
- function music(b){setMusic('play',b.players.some(p=>p.life<=5)?'MUS-TBL-05':(b.turn||0)<=8?'MUS-TBL-03':'MUS-TBL-04',{alive:onTable});}
+ // Story battles play their act's own music (Randall, 1 Nov): A the battle song, B the lighter song for
+ // lessons and funny fights, C the boss song. The battle's mood picks the first track, and on a long
+ // match the music crossfades on to the act's next song after each full loop. Other matches mostly keep
+ // the table score, but now and then shuffle in Story songs (never a boss song) the same way.
+ const story=storyTrack(root);
+ const pool=story||(Math.random()<0.35?shuffle(STORY_IDS.filter(id=>!id.endsWith('C'))).slice(0,4):null);
+ let at=0,since=0;
+ function music(b){
+  const low=b.players.some(p=>p.life<=5);
+  if(pool&&!(low&&!story)){
+   const now=Date.now(),id=pool[at%pool.length],span=LOOPS[id]?(LOOPS[id][1]-LOOPS[id][0])*1000:240000;
+   if(!since)since=now;else if(now-since>=span){at++;since=now;}
+   return setMusic('play',pool[at%pool.length],{alive:onTable});
+  }
+  // Early turns, then the fuller table, then the low-life track once anyone is close to losing.
+  setMusic('play',low?'MUS-TBL-05':(b.turn||0)<=8?'MUS-TBL-03':'MUS-TBL-04',{alive:onTable});
+ }
  return {update,destroy:stop};
+}
+
+const STORY_IDS=Object.keys(LOOPS).filter(id=>id.startsWith('MUS-ST-'));
+const shuffle=a=>{for(let i=a.length-1;i>0;i--){const j=Math.floor(Math.random()*(i+1));[a[i],a[j]]=[a[j],a[i]];}return a;};
+// The Story launcher marks the table's host with the act and the battle's mood (or its kind until the
+// act's moods are written). Returns the act's tracks in play order, or null outside Story.
+const MOOD={march:'A',duel:'A',tension:'A',lesson:'B',comic:'B',boss:'C'},KIND={Boss:'C',Lesson:'B'};
+export function storyTrack(root){
+ const sel='.st-match[data-story-act]',host=root?.closest?.(sel)||globalThis.document?.querySelector?.(sel);
+ const act=Number(host?.dataset.storyAct);if(!act)return null;
+ const n=String(act).padStart(2,'0'),have=k=>STORY_IDS.includes(`MUS-ST-${n}${k}`);
+ const first=MOOD[host.dataset.storyMood]||KIND[host.dataset.storyKind]||'A';
+ // A boss fight goes from the boss song to the battle song; lighter fights never reach the boss song.
+ const order={A:['A','B'],B:['B','A'],C:['C','A']}[first].filter(have);
+ return order.length?order.map(k=>`MUS-ST-${n}${k}`):null;
 }

@@ -2216,7 +2216,7 @@ A.storyPlay=async({skipScene=false}={})=>{
  playStarting=true;let bubbles=null;
  try{
   for(const [id,href] of [['practiceTableStyles','experiments/phase-engine/match-table.css'],['forgeHostedTableStyles','play-forge-table.css']])if(!document.getElementById(id)){const css=document.createElement('link');css.id=id;css.rel='stylesheet';css.href=href;document.head.append(css);}
-  playerMatRoot=document.createElement('main');playerMatRoot.id='practicePlayerMat';playerMatRoot.classList.add('st-match');playerMatRoot.setAttribute('data-playmat',nextPlaymat());playerMatRoot.setAttribute('aria-label','Story battle');document.body.append(playerMatRoot);mountPlaymatScene(playerMatRoot);document.body.classList.add('practice-table-open');void lockPlayLandscape();const app=document.getElementById('app');if(app)app.inert=true;
+  playerMatRoot=document.createElement('main');playerMatRoot.id='practicePlayerMat';playerMatRoot.classList.add('st-match');playerMatRoot.dataset.storyAct=String(storyUi.act);if(b.mood)playerMatRoot.dataset.storyMood=b.mood;if(b.kind)playerMatRoot.dataset.storyKind=b.kind;playerMatRoot.setAttribute('data-playmat',nextPlaymat());playerMatRoot.setAttribute('aria-label','Story battle');document.body.append(playerMatRoot);mountPlaymatScene(playerMatRoot);document.body.classList.add('practice-table-open');void lockPlayLandscape();const app=document.getElementById('app');if(app)app.inert=true;
   const owner=cloudInfo().user?.id,generation=accountGeneration,current=()=>!accountLocked&&generation===accountGeneration&&owner===cloudInfo().user?.id;
   let createForgePlayerMat,localClient;
   try{({createForgePlayerMat}=await import('./play-forge-player-mat.js'));
