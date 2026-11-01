@@ -300,7 +300,7 @@ export function openPackPreview({game,set,cards,complete=false,featured=null,hyd
  if(featured){const f=featuredFinish(featured);if(f)ctxs[picks.length-1]=f;}
  // Face-down cards wear the game's own card back (same-origin from the worker); the emblem stays beneath if it can't load.
  const back=`<span class="pack-card-back" data-back="${esc(game)}">${brandStaticMark()}<img class="pack-back-img" src="/img/back/${esc(game)}.jpg" alt="" decoding="async" onerror="this.remove()"></span>`;
- const hand=()=>picks.map((c,i)=>{return `<button class="pack-card" data-pack="reveal" data-index="${i}" data-hold-card style="--i:${i}" aria-label="Card ${i+1}, face down" aria-pressed="false">${back}<span class="pack-card-front"><img data-pack-src="${esc(setImageUrl(cardArt(c)))}" alt="" referrerpolicy="no-referrer" onerror="this.hidden=true"></span></button>`;}).join('');
+ const hand=()=>picks.map((c,i)=>{return `<button class="pack-card" data-pack="reveal" data-index="${i}" data-hold-card style="--i:${i}" aria-label="Card ${i+1}, face down" aria-pressed="false">${back}<span class="pack-card-front"><img data-pack-src="${esc(setImageUrl(cardArt(c)))}" src="${esc(setImageUrl(cardArt(c)))}" decoding="async" alt="" referrerpolicy="no-referrer" onerror="this.hidden=true"></span></button>`;}).join('');
  dialog.innerHTML=`<header class="pack-header"><div class="pack-title">${(([first,...rest])=>first?`<img class="pack-emblem" data-game="${esc(game)}" src="${esc(first)}" data-alt="${esc(rest.join(' '))}" alt="" referrerpolicy="no-referrer" onerror="const n=this.dataset.alt.split(' ').filter(Boolean);if(n.length){this.src=n.shift();this.dataset.alt=n.join(' ')}else this.remove()">`:'')(setEmblems(game,set))}<h2>${esc(set.name)}</h2><p class="pack-explanation">${booster?'Free preview drawn from this set’s real booster sheets and pull rates (MTGJSON). Nothing is added to your collection.':'Free preview with approximate pull rates, not a real booster. Nothing is added to your collection.'}</p></div><div class="pack-header-tools"><button type="button" class="pack-mute" data-pack="mute" aria-label="Pack sounds" aria-pressed="false" title="Sounds"></button><button type="button" class="pack-tilt" title="Tilt your device to move the foil light" hidden>Enable tilt</button><button class="icon" data-pack="close" aria-label="Close pack">✕</button></div></header>
 <div class="pack-sealed"><button class="pack-wrapper" data-pack="open" aria-label="Open the ${esc(set.name)} pack"><span class="pack-body"><span class="pack-wrap-art">${sources.length?`<img data-pack-art src="${esc(safeHref(setImageUrl(sources[0])))}" data-sources="${esc(JSON.stringify(sources))}" alt="" referrerpolicy="no-referrer" onerror="const s=JSON.parse(this.dataset.sources),i=(+this.dataset.i||0)+1;if(s[i]){this.dataset.i=i;this.src=s[i];this.closest('.pack-wrapper').classList.add('pack-generic');}else this.hidden=true">`:''}<span class="pack-wrap-brand">${brandStaticMark()}<b>${esc(set.name)}</b></span></span><span class="pack-crimp top"></span><span class="pack-crimp bottom"></span><span class="pack-sheen"></span><span class="pack-slice"></span><span class="pack-flash"></span></span></button></div>
 <div class="pack-content" hidden><div class="pack-focus"><button class="pack-focus-card" data-pack="focus" data-hold-card aria-label="Card 1"><i class="pack-backlight" aria-hidden="true"></i><i class="pack-frame" aria-hidden="true"></i><span class="pack-face" data-finish-surface="pack"><img alt="" referrerpolicy="no-referrer"><i class="fx-catch" aria-hidden="true"></i></span>${back}<i class="pack-rays" aria-hidden="true"></i></button><p class="pack-focus-meta" aria-live="polite"><b></b><span class="pack-rarity"></span></p></div><div class="pack-hand" role="group" aria-label="Cards in this pack" style="--pack-n:${picks.length}">${hand()}</div>
@@ -314,8 +314,13 @@ export function openPackPreview({game,set,cards,complete=false,featured=null,hyd
  // Each card box takes its picture's own proportions (scans are not all exactly 63:88), so the price
  // frame hugs the printed card instead of leaving a gap above and below it.
  const fit=(box,img)=>{if(img.naturalWidth&&img.naturalHeight)box.style.aspectRatio=`${img.naturalWidth}/${img.naturalHeight}`;};
- faceImg.addEventListener('load',()=>fit(focusCard,faceImg));
- dialog.querySelectorAll('.pack-card img[data-pack-src]').forEach(img=>img.addEventListener('load',()=>fit(img.closest('.pack-card'),img)));
+ // Every front loads as soon as the pack is dealt, hidden behind its back, so a flip never turns over onto an empty card.
+ // A box takes its picture's shape only once it is face up.
+ faceImg.addEventListener('load',()=>{if(focusCard.classList.contains('revealed'))fit(focusCard,faceImg);});
+ dialog.addEventListener('load',e=>{const img=e.target,b=img?.closest?.('.pack-card');if(b&&img.matches('img[data-pack-src]')&&b.classList.contains('revealed'))fit(b,img);},true);
+ const handImg=i=>dialog.querySelector(`.pack-card[data-index="${i}"] img[data-pack-src]`);
+ // Ready to turn: the front is decoded (or failed, or took longer than a breath, so a slow network never stalls a tap).
+ const ready=i=>{const img=handImg(i);if(!img||(img.complete&&img.naturalWidth))return Promise.resolve();return Promise.race([img.decode?img.decode().catch(()=>{}):new Promise(r=>img.addEventListener('load',r,{once:true})),new Promise(r=>setTimeout(r,700))]);};
  // Long-press / right-click on any card opens the same card actions as everywhere else.
  const wireHold=()=>{dialog.querySelectorAll('.pack-card').forEach((b,i)=>{b.quickRef=ref(i);});};wireHold();
  // Price tier of a pulled card: the same colours as the collection's borders; unpriced cards stay neutral.
@@ -330,7 +335,7 @@ export function openPackPreview({game,set,cards,complete=false,featured=null,hyd
   setTier(focusCard,open?tierOf(focus):'');
   focusCard.setAttribute('aria-label',open?`${c.name}. Open card`:`Card ${focus+1}, face down. Reveal`);
   if(open){const src=setImageUrl(cardArt(c));if(faceImg.getAttribute('src')!==src)faceImg.src=src;const attrs=finishAttrs(game,c,ctxs[focus],'pack');const tmp=document.createElement('span');tmp.innerHTML=`<i ${attrs}></i>`;const i2=tmp.firstChild;for(const a of ['data-finish-game','data-finish-effect','data-finish-model'])face.setAttribute(a,i2.getAttribute(a));face.dataset.finishSurface='pack';}
-  else{face.removeAttribute('data-finish-model');faceImg.removeAttribute('src');focusCard.style.removeProperty('aspect-ratio');}
+  else{face.removeAttribute('data-finish-model');const src=setImageUrl(cardArt(c));if(faceImg.getAttribute('src')!==src)faceImg.src=src;focusCard.style.removeProperty('aspect-ratio');}
   // A face-down hit glows before it is flipped, so the next tap feels worth it.
   const tease=!open&&rarity.rank>=2;if(tease&&!focusCard.classList.contains('pack-tease')&&dialog.classList.contains('pack-dealt')){haptic('pack-land');appSound('PACK-003',{volume:.5,gap:600});}focusCard.classList.toggle('pack-tease',tease);
   focusCard.classList.toggle('pack-foil',open&&!!face.dataset.finishEffect&&face.dataset.finishEffect!=='plain');
@@ -350,14 +355,18 @@ export function openPackPreview({game,set,cards,complete=false,featured=null,hyd
  const charge=i=>{const L=levelOf(i),ms=CHARGE[L];charging=i;const color=TIERS[L]?.color||'#f0c75e';focusCard.style.setProperty('--charge',color);focusCard.style.setProperty('--charge-ms',ms+'ms');focusCard.classList.add('pack-charge');focusCard.dataset.level=L;
   haptic('pack-charge');appSound('PACK-020',{volume:.45+L*.08,rate:L>=5?.94:1,gap:0});
   focusCard.animate(Array.from({length:12},(_,k)=>{const a=(k/11)**1.4*(1.2+L*.9);return{translate:`${(k%2?1:-1)*a}px ${(k%3-1)*a*.5}px`};}).concat([{translate:'0 0'}]),{duration:ms,easing:'linear',composite:'add'});
-  later(()=>{charging=null;focusCard.classList.remove('pack-charge');reveal(i,{charged:true});},ms);};
+  Promise.all([new Promise(r=>later(r,ms)),ready(i)]).then(()=>{if(disposed||charging!==i)return;charging=null;focusCard.classList.remove('pack-charge');reveal(i,{charged:true,loaded:true});});};
  // Closing the pack or opening a new one mid-charge drops it cleanly.
  const unCharge=()=>{charging=null;focusCard.classList.remove('pack-charge');};
- const reveal=(i,{silent=false,charged=false}={})=>{if(!Number.isInteger(i)||!picks[i]||charging!==null)return;if(!revealed.has(i)){if(!silent&&!charged&&!reduce()&&focus===i&&levelOf(i)>=3)return charge(i);revealed.add(i);if(!silent){const f=feelOf(i);haptic(f);appSound(PACK_SOUND[f]||'PACK-006',{gap:0});}const b=dialog.querySelector(`.pack-card[data-index="${i}"]`),img=b.querySelector('img[data-pack-src]');img.src=img.dataset.packSrc;b.classList.add('revealed');flipLift(b,22);if(!silent){const L=levelOf(i);flipLift(focusCard,[3,5,7,10,13,17][L]||3,560+L*70);}b.setAttribute('aria-pressed','true');b.setAttribute('aria-label',picks[i].name+' · revealed');
+ const reveal=(i,{silent=false,charged=false,loaded=false}={})=>{if(!Number.isInteger(i)||!picks[i]||charging!==null)return;if(!revealed.has(i)){
+   // Wait (briefly) for the front to be decoded first; the card lifts a touch so the tap still answers at once.
+   if(!silent&&!loaded){const img=handImg(i);if(img&&!(img.complete&&img.naturalWidth)){charging=i;if(focus===i)flipLift(focusCard,2,420);ready(i).then(()=>{if(disposed||charging!==i)return;charging=null;reveal(i,{charged,loaded:true});});return;}}if(!silent&&!charged&&!reduce()&&focus===i&&levelOf(i)>=3)return charge(i);revealed.add(i);if(!silent){const f=feelOf(i);haptic(f);appSound(PACK_SOUND[f]||'PACK-006',{gap:0});}const b=dialog.querySelector(`.pack-card[data-index="${i}"]`),img=b.querySelector('img[data-pack-src]');if(img.getAttribute('src')!==img.dataset.packSrc)img.src=img.dataset.packSrc;b.classList.add('revealed','pack-flipping');later(()=>b.classList.remove('pack-flipping'),360);fit(b,img);
+   // The price frame and its glow wait until the face has turned, so nothing flat shows behind the card mid-turn.
+   if(focus===i||!silent){focusCard.classList.add('pack-flipping');later(()=>focusCard.classList.remove('pack-flipping'),400);}flipLift(b,22);if(!silent){const L=levelOf(i);flipLift(focusCard,[3,5,7,10,13,17][L]||3,560+L*70);}b.setAttribute('aria-pressed','true');b.setAttribute('aria-label',picks[i].name+' · revealed');
    setTier(b,tierOf(i));status.textContent=`${revealed.size} of ${picks.length} revealed`;
    if(!silent)later(()=>revealMoment(i),330);
    if(revealed.size===picks.length){dialog.classList.add('pack-done');if(picks.godPack)status.textContent=godPackText(game);for(const x of dialog.querySelectorAll('.pack-actions [disabled]'))x.disabled=false;}}
-  show(i);};
+  show(i);if(focus===i)fit(focusCard,faceImg);};
  // The flip lands, a bigger show the better the pull: every flip gets the light catch and a pop. Green and up add a
  // ring in the tier's colour, blue and up a burst of embers, purple and up the rays and a sway of the foil, gold and up
  // dim the table, flash the room in its colour and shake it a little, and orange throws a second ring and twice the embers.
