@@ -1304,3 +1304,8 @@ button.pd-near-row{cursor:pointer}
 .pe-craft-set{display:grid;place-items:center;min-width:44px;min-height:44px;border-radius:12px;border:1px solid color-mix(in srgb,var(--gold) 30%,var(--line));background:#ffffff0d;cursor:pointer}
 .pe-craft-set .set-icon{width:20px;height:20px;background:#e9d6a7;-webkit-mask:var(--icon) center/contain no-repeat;mask:var(--icon) center/contain no-repeat}
 .pe-craft-set:focus-visible{outline:2px solid var(--gold);outline-offset:2px}
+.play-get{display:grid;gap:14px}
+.play-get-block{display:grid;gap:8px;padding:14px;border-radius:16px;border:1px solid color-mix(in srgb,var(--gold) 18%,var(--line));background:#ffffff06}
+.play-get-block h3{margin:0;font:700 13px/1.2 Cinzel,Georgia,serif;letter-spacing:.06em;color:#e9d6a7}
+.play-get-block .ca-main{display:flex;flex-wrap:wrap;gap:8px}
+.play-get-block .btn{min-height:44px}
