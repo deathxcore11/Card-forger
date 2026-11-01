@@ -1,0 +1,2591 @@
+{
+ "act": 8,
+ "title": "The Invasion",
+ "years": "2000 to 2001",
+ "sets": [
+  "inv",
+  "pls",
+  "7ed",
+  "apc"
+ ],
+ "landSet": "inv",
+ "intro": [
+  {
+   "who": "stage",
+   "line": "Dominaria. The sky over Benalia splits open, and things with too many legs pour out."
+  },
+  {
+   "who": "stage",
+   "line": "All of Dominaria recoiled as Yawgmoth and his retainers arrived.",
+   "quote": true
+  },
+  {
+   "who": "urza",
+   "line": "Four thousand years. Everything I built was for today."
+  },
+  {
+   "who": "urza",
+   "line": "You can build a perfect machine out of imperfect parts.",
+   "quote": true
+  },
+  {
+   "who": "gerrard",
+   "line": "And which part am I, Urza? The heir? The weapon?"
+  },
+  {
+   "who": "urza",
+   "line": "Yes."
+  },
+  {
+   "who": "urza",
+   "line": "Our victory must come from all of Dominaria, or it will not come.",
+   "quote": true
+  }
+ ],
+ "finale": [
+  {
+   "who": "stage",
+   "line": "Phyrexia. The Weatherlight crew reaches the heart of the machine."
+  },
+  {
+   "who": "stage",
+   "line": "Deep in Yawgmoth's realm, Urza stopped dead in his tracks and rubbed his soot-filled eyes. \"Mishra?\"",
+   "quote": true
+  },
+  {
+   "who": "urza",
+   "line": "Before the glory of Yawgmoth, yes, even this makes sense.",
+   "quote": true
+  },
+  {
+   "who": "gerrard",
+   "line": "Urza? Urza, look at me!"
+  },
+  {
+   "who": "stage",
+   "line": "Yawgmoth's greatest joy came from watching one hero defeat another.",
+   "quote": true
+  },
+  {
+   "who": "stage",
+   "line": "Urza falls. Not to Yawgmoth. To his own heir, with Yawgmoth whispering in the dark."
+  },
+  {
+   "who": "karn",
+   "line": "Gerrard. The Legacy. It needs one more piece."
+  },
+  {
+   "who": "gerrard",
+   "line": "Don't mourn for me. This is my destiny.",
+   "quote": true
+  },
+  {
+   "who": "stage",
+   "line": "Gerrard falls. The Legacy Weapon fires. Yawgmoth, Father of Machines, is unmade in a single white instant."
+  },
+  {
+   "who": "stage",
+   "line": "Karn wakes with a spark inside him. The silver golem is a planeswalker now. He stares at his hands for a long time."
+  },
+  {
+   "who": "sisay",
+   "line": "Hanna. Mirri. Gerrard. Urza."
+  },
+  {
+   "who": "sisay",
+   "line": "We won. Why does it feel like this?"
+  },
+  {
+   "who": "stage",
+   "line": "Dominaria survives. Barely. The Weatherlight sails on, half empty, into a long quiet."
+  }
+ ],
+ "villainFinale": [
+  {
+   "who": "stage",
+   "line": "Dominaria under a black sky. The Legacy lies in pieces."
+  },
+  {
+   "who": "yawgmoth",
+   "line": "Before the Thran, before the machines, I was a healer."
+  },
+  {
+   "who": "yawgmoth",
+   "line": "I watched flesh fail. Rot. Forget. I only ever wanted to fix it."
+  },
+  {
+   "who": "yawgmoth",
+   "line": "They called it a plague. I called it a cure. History belongs to whoever is left to write it."
+  },
+  {
+   "who": "stage",
+   "line": "They danced like puppets to a tune only Yawgmoth could hear.",
+   "quote": true
+  },
+  {
+   "who": "stage",
+   "line": "Somewhere in the ruins, a goblin sits up, rubs his head, and starts walking. Nobody knows why Squee keeps coming back."
+  }
+ ],
+ "vibe": "phyrexian-invasion-last-stand",
+ "cast": {
+  "you": {
+   "name": "You",
+   "title": "Planeswalker",
+   "portrait": {
+    "card": "Opt",
+    "set": "inv",
+    "number": "64",
+    "id": "958262ec-8e52-40cf-a9fd-a60e42643e15",
+    "crop": "https://cards.scryfall.io/art_crop/front/9/5/958262ec-8e52-40cf-a9fd-a60e42643e15.jpg?1783945706",
+    "artist": "John Howe",
+    "focus": "50% 30%"
+   }
+  },
+  "gerrard": {
+   "name": "Gerrard",
+   "title": "Heir of the Legacy",
+   "portrait": {
+    "card": "Gerrard Capashen",
+    "set": "apc",
+    "number": "11",
+    "id": "ccca800f-e850-4bec-95d0-70280b51b7a7",
+    "crop": "https://cards.scryfall.io/art_crop/front/c/c/ccca800f-e850-4bec-95d0-70280b51b7a7.jpg?1783945356",
+    "artist": "Brom",
+    "focus": "50% 25%"
+   }
+  },
+  "sisay": {
+   "name": "Sisay",
+   "title": "Captain of the Weatherlight",
+   "portrait": {
+    "card": "Captain Sisay",
+    "set": "inv",
+    "number": "237",
+    "id": "d24d441c-f37f-44fe-8a93-f5c89df807e4",
+    "crop": "https://cards.scryfall.io/art_crop/front/d/2/d24d441c-f37f-44fe-8a93-f5c89df807e4.jpg?1783945664",
+    "artist": "Ray Lago",
+    "focus": "50% 25%"
+   }
+  },
+  "hanna": {
+   "name": "Hanna",
+   "title": "Ship's Navigator",
+   "portrait": {
+    "card": "Hanna, Ship's Navigator",
+    "set": "inv",
+    "number": "249",
+    "id": "83a4e48d-6452-4245-bdad-63fe3263550e",
+    "crop": "https://cards.scryfall.io/art_crop/front/8/3/83a4e48d-6452-4245-bdad-63fe3263550e.jpg?1783945662",
+    "artist": "Dave Dorman",
+    "focus": "50% 25%"
+   }
+  },
+  "tahngarth": {
+   "name": "Tahngarth",
+   "title": "Talruum Hero",
+   "portrait": {
+    "card": "Tahngarth, Talruum Hero",
+    "set": "pls",
+    "number": "74",
+    "id": "c1778f37-af01-4f8c-ab9d-a4c60abf7e78",
+    "crop": "https://cards.scryfall.io/art_crop/front/c/1/c1778f37-af01-4f8c-ab9d-a4c60abf7e78.jpg?1783945614",
+    "artist": "Dave Dorman",
+    "focus": "50% 25%"
+   }
+  },
+  "squee": {
+   "name": "Squee",
+   "title": "Goblin Who Will Not Stay Dead",
+   "portrait": {
+    "card": "Squee, Goblin Nabob",
+    "set": "mmq",
+    "number": "214",
+    "id": "4ba8325a-1203-4125-9111-94d9e2b1f14b",
+    "artist": "David Monette",
+    "crop": "https://cards.scryfall.io/art_crop/front/4/b/4ba8325a-1203-4125-9111-94d9e2b1f14b.jpg",
+    "focus": "50% 30%"
+   }
+  },
+  "multani": {
+   "name": "Multani",
+   "title": "Maro-Sorcerer of Yavimaya",
+   "portrait": {
+    "card": "Multani, Maro-Sorcerer",
+    "set": "ulg",
+    "number": "107",
+    "id": "0d6cc98b-b376-40af-8308-198bab00b2b1",
+    "artist": "Daren Bader",
+    "crop": "https://cards.scryfall.io/art_crop/front/0/d/0d6cc98b-b376-40af-8308-198bab00b2b1.jpg",
+    "focus": "50% 30%"
+   }
+  },
+  "barrin": {
+   "name": "Barrin",
+   "title": "Master Wizard",
+   "portrait": {
+    "card": "Barrin, Master Wizard",
+    "set": "usg",
+    "number": "63",
+    "id": "ec79e35f-9e78-462d-8b71-4f044e2eff90",
+    "artist": "Michael Sutfin",
+    "crop": "https://cards.scryfall.io/art_crop/front/e/c/ec79e35f-9e78-462d-8b71-4f044e2eff90.jpg",
+    "focus": "50% 25%"
+   }
+  },
+  "urza": {
+   "name": "Urza",
+   "title": "Lord High Artificer",
+   "portrait": {
+    "card": "Urza, Lord High Artificer",
+    "set": "mh1",
+    "number": "75",
+    "id": "9e7fb3c0-5159-4d1f-8490-ce4c9a60f567",
+    "artist": "Grzegorz Rutkowski",
+    "crop": "https://cards.scryfall.io/art_crop/front/9/e/9e7fb3c0-5159-4d1f-8490-ce4c9a60f567.jpg",
+    "focus": "50% 25%"
+   }
+  },
+  "karn": {
+   "name": "Karn",
+   "title": "Silver Golem",
+   "portrait": {
+    "card": "Karn, Silver Golem",
+    "set": "usg",
+    "number": "298",
+    "id": "811a0988-2900-426c-9413-8f1778d99678",
+    "artist": "Mark Zug",
+    "crop": "https://cards.scryfall.io/art_crop/front/8/1/811a0988-2900-426c-9413-8f1778d99678.jpg",
+    "focus": "50% 25%"
+   }
+  },
+  "yawgmoth": {
+   "name": "Yawgmoth",
+   "title": "Father of Machines",
+   "portrait": {
+    "card": "Yawgmoth, Thran Physician",
+    "set": "mh1",
+    "number": "116",
+    "id": "8690cbcc-f8fd-41f7-9e28-e61c12b04014",
+    "artist": "Mark Winters",
+    "crop": "https://cards.scryfall.io/art_crop/front/8/6/8690cbcc-f8fd-41f7-9e28-e61c12b04014.jpg",
+    "focus": "50% 25%"
+   }
+  },
+  "tsabo": {
+   "name": "Tsabo Tavoc",
+   "title": "Phyrexian General",
+   "portrait": {
+    "card": "Tsabo Tavoc",
+    "set": "inv",
+    "number": "281",
+    "id": "ccbe2539-7a7c-468b-a270-7ca1bdcccb1e",
+    "crop": "https://cards.scryfall.io/art_crop/front/c/c/ccbe2539-7a7c-468b-a270-7ca1bdcccb1e.jpg?1783945654",
+    "artist": "Michael Sutfin",
+    "focus": "50% 30%"
+   }
+  },
+  "slayer": {
+   "name": "Phyrexian Slayer",
+   "title": "Tsabo's Killer",
+   "portrait": {
+    "card": "Phyrexian Slayer",
+    "set": "inv",
+    "number": "118",
+    "id": "5fa8c604-343f-4c94-ac25-439ab1845c19",
+    "crop": "https://cards.scryfall.io/art_crop/front/5/f/5fa8c604-343f-4c94-ac25-439ab1845c19.jpg?1783945692",
+    "artist": "Sam Wood",
+    "focus": "50% 30%"
+   }
+  },
+  "scuta": {
+   "name": "Phyrexian Scuta",
+   "title": "Invasion Vanguard",
+   "portrait": {
+    "card": "Phyrexian Scuta",
+    "set": "pls",
+    "number": "51",
+    "id": "eb57e656-c94e-4cc2-ae8d-9300f51f941f",
+    "crop": "https://cards.scryfall.io/art_crop/front/e/b/eb57e656-c94e-4cc2-ae8d-9300f51f941f.jpg?1783945619",
+    "artist": "Scott M. Fischer",
+    "focus": "50% 30%"
+   }
+  },
+  "dralnu": {
+   "name": "Lord Dralnu",
+   "title": "Lord of the Undead",
+   "portrait": {
+    "card": "Lord of the Undead",
+    "set": "pls",
+    "number": "44",
+    "id": "0a7f50f4-37a0-476e-8655-edba228aafd6",
+    "crop": "https://cards.scryfall.io/art_crop/front/0/a/0a7f50f4-37a0-476e-8655-edba228aafd6.jpg?1783945621",
+    "artist": "Brom",
+    "focus": "50% 30%"
+   }
+  },
+  "ertai": {
+   "name": "Ertai",
+   "title": "The Corrupted",
+   "portrait": {
+    "card": "Ertai, the Corrupted",
+    "set": "pls",
+    "number": "107",
+    "id": "66b950d9-8fef-4deb-b51b-26edb90abc56",
+    "artist": "Mark Tedin",
+    "crop": "https://cards.scryfall.io/art_crop/front/6/6/66b950d9-8fef-4deb-b51b-26edb90abc56.jpg",
+    "focus": "50% 25%"
+   }
+  },
+  "evincar": {
+   "name": "Crovax",
+   "title": "Ascendant Evincar",
+   "portrait": {
+    "card": "Ascendant Evincar",
+    "set": "nem",
+    "number": "51",
+    "id": "e5c87c93-8cf4-4d1a-9bb8-349600da55bc",
+    "artist": "Mark Zug",
+    "crop": "https://cards.scryfall.io/art_crop/front/e/5/e5c87c93-8cf4-4d1a-9bb8-349600da55bc.jpg",
+    "focus": "50% 25%"
+   }
+  }
+ },
+ "battles": [
+  {
+   "id": "a8b1",
+   "slot": 1,
+   "kind": "Arrival",
+   "mood": "tension",
+   "title": "The First Wave",
+   "difficulty": "Easy",
+   "teaches": [
+    "Multicolour gold cards"
+   ],
+   "blurb": "Benalia was the first nation to see the sky open. Gerrard was born a Capashen of Benalia. He comes home to find Tsabo Tavoc's killers in the streets.",
+   "rewardSet": "inv",
+   "host": false,
+   "hero": {
+    "who": "gerrard",
+    "deck": {
+     "name": "The Coalition Vanguard",
+     "colors": "GW",
+     "archetype": null,
+     "cards": [
+      {
+       "qty": 4,
+       "name": "Llanowar Knight",
+       "set": "inv",
+       "number": "254",
+       "id": "e6c75d89-e432-49aa-a407-555b223b7eff"
+      },
+      {
+       "qty": 4,
+       "name": "Noble Panther",
+       "set": "inv",
+       "number": "257",
+       "id": "3f327818-8222-4295-8cef-118757b34d17"
+      },
+      {
+       "qty": 4,
+       "name": "Charging Troll",
+       "set": "inv",
+       "number": "239",
+       "id": "58956099-6b97-4c7b-ab23-9f9b4d50ef95"
+      },
+      {
+       "qty": 4,
+       "name": "Benalish Trapper",
+       "set": "inv",
+       "number": "8",
+       "id": "e312653d-c3e1-4c79-90d2-0963419b618c"
+      },
+      {
+       "qty": 4,
+       "name": "Llanowar Elite",
+       "set": "inv",
+       "number": "196",
+       "id": "3e207863-de68-47e1-8c63-413b5fa48943"
+      },
+      {
+       "qty": 4,
+       "name": "Benalish Lancer",
+       "set": "inv",
+       "number": "7",
+       "id": "3a38d40a-e745-4fee-b179-f8c27e9b2fbd"
+      },
+      {
+       "qty": 4,
+       "name": "Quirion Sentinel",
+       "set": "inv",
+       "number": "204",
+       "id": "2fc639ea-a925-4f1e-879f-b8fcb12bf257"
+      },
+      {
+       "qty": 4,
+       "name": "Armadillo Cloak",
+       "set": "inv",
+       "number": "229",
+       "id": "9d816f98-6cb6-432c-b0a4-a0eed21658ac"
+      },
+      {
+       "qty": 4,
+       "name": "Pacifism",
+       "set": "7ed",
+       "number": "29",
+       "id": "ee6758f0-86da-4812-bbe0-ebbb8c67937a"
+      },
+      {
+       "qty": 12,
+       "name": "Forest",
+       "set": "inv",
+       "number": "347",
+       "id": "f82d0a1c-5812-4254-a000-e4ff9aece3d9"
+      },
+      {
+       "qty": 12,
+       "name": "Plains",
+       "set": "inv",
+       "number": "331",
+       "id": "5ba9ef2e-d3ec-41f7-802e-e1414f14dd10"
+      }
+     ]
+    }
+   },
+   "villain": {
+    "who": "slayer",
+    "deck": {
+     "name": "The First Wave",
+     "colors": "B",
+     "archetype": null,
+     "cards": [
+      {
+       "qty": 4,
+       "name": "Phyrexian Slayer",
+       "set": "inv",
+       "number": "118",
+       "id": "5fa8c604-343f-4c94-ac25-439ab1845c19"
+      },
+      {
+       "qty": 4,
+       "name": "Phyrexian Infiltrator",
+       "set": "inv",
+       "number": "116",
+       "id": "224b8254-553d-4d88-8163-1f15e1244bd2"
+      },
+      {
+       "qty": 4,
+       "name": "Phyrexian Battleflies",
+       "set": "inv",
+       "number": "114",
+       "id": "da27c489-c541-4b0d-a844-71aa65e55ceb"
+      },
+      {
+       "qty": 4,
+       "name": "Phyrexian Reaper",
+       "set": "inv",
+       "number": "117",
+       "id": "ccdd498b-1081-43fe-8193-518337a5a3ea"
+      },
+      {
+       "qty": 4,
+       "name": "Ravenous Rats",
+       "set": "inv",
+       "number": "120",
+       "id": "89e29069-add5-4099-b800-9f1e4402cc1a"
+      },
+      {
+       "qty": 4,
+       "name": "Urborg Skeleton",
+       "set": "inv",
+       "number": "134",
+       "id": "6e522a62-fbca-4362-9006-d4356c525704"
+      },
+      {
+       "qty": 4,
+       "name": "Plague Spitter",
+       "set": "inv",
+       "number": "119",
+       "id": "8845e6bd-40ee-45ca-a099-53f19ff20a8a"
+      },
+      {
+       "qty": 4,
+       "name": "Phyrexian Rager",
+       "set": "apc",
+       "number": "49",
+       "id": "3addf34c-ea54-42a3-bccd-b73453d964d2"
+      },
+      {
+       "qty": 4,
+       "name": "Dark Banishing",
+       "set": "7ed",
+       "number": "127",
+       "id": "9d03720d-b0ca-4892-9ad1-52189f4a30a1"
+      },
+      {
+       "qty": 24,
+       "name": "Swamp",
+       "set": "inv",
+       "number": "339",
+       "id": "2a7ce037-e04d-404a-afde-9122518e6a31"
+      }
+     ]
+    }
+   },
+   "reward": {
+    "hero": {
+     "packs": 1,
+     "coins": 0
+    },
+    "villain": {
+     "card": {
+      "oracle_id": "da74cb57-f6de-4d05-a339-6412beb8df25",
+      "name": "Phyrexian Slayer",
+      "rarity": "common",
+      "set": "inv",
+      "id": "5fa8c604-343f-4c94-ac25-439ab1845c19",
+      "image": "https://cards.scryfall.io/normal/front/5/f/5fa8c604-343f-4c94-ac25-439ab1845c19.jpg"
+     },
+     "coins": 50
+    }
+   },
+   "scene": [
+    {
+     "who": "stage",
+     "line": "Benalia was only the first nation victimized by Tsabo Tavoc's specialized killers.",
+     "quote": true
+    },
+    {
+     "who": "gerrard",
+     "line": "At least they remember me.",
+     "quote": true
+    },
+    {
+     "who": "slayer",
+     "line": "Capashen. White. The mark says: kill the white ones first."
+    },
+    {
+     "who": "stage",
+     "line": "The Capashen built the highest towers in Benalia to afford themselves the best view.",
+     "quote": true
+    },
+    {
+     "who": "gerrard",
+     "line": "Then let them see this. Gold cards need two colours of mana. Green and white, Llanowar and Benalia, fighting as one."
+    },
+    {
+     "who": "gerrard",
+     "line": "All right, let's light 'em up!",
+     "quote": true
+    }
+   ],
+   "villainScene": [
+    {
+     "who": "slayer",
+     "line": "We were grown for this. Bred in the vats, aimed at Benalia."
+    },
+    {
+     "who": "slayer",
+     "line": "The ones in white fall easily. The ones who stand together take longer."
+    },
+    {
+     "who": "slayer",
+     "line": "Your life is meaningless. Your death will glorify Yawgmoth. So the general teaches."
+    }
+   ],
+   "after": [
+    {
+     "who": "stage",
+     "line": "Benalia holds for a day. Then for a week. Across Dominaria, other portals open."
+    },
+    {
+     "who": "stage",
+     "line": "Urza convinced many Dominarians not only to set aside their differences, but to embrace them.",
+     "quote": true
+    }
+   ],
+   "cues": {
+    "hero": {
+     "start": "Benalia stands.",
+     "big": "Wear courage as your armor.",
+     "low": "Too many... hold the gate...",
+     "win": "One street back. A thousand to go.",
+     "loss": "Fall back to the towers!",
+     "half": "Strength in numbers? I think not."
+    },
+    "villain": {
+     "start": "Excise the white ones.",
+     "big": "Yawgmoth wills it.",
+     "low": "They... stand together...",
+     "win": "Benalia is cleansed.",
+     "loss": "More vats. More of us."
+    }
+   },
+   "bigPlays": [],
+   "sim": null
+  },
+  {
+   "id": "a8b2",
+   "slot": 2,
+   "kind": "Lesson",
+   "mood": "march",
+   "title": "Yavimaya Wakes",
+   "difficulty": "Easy",
+   "teaches": [
+    "Kicker"
+   ],
+   "blurb": "The living forest of Yavimaya has a guardian, Multani, who is the forest. When the Phyrexian vanguard lands on its edge, the forest answers with things nobody has seen in a thousand years.",
+   "rewardSet": "inv",
+   "host": false,
+   "hero": {
+    "who": "multani",
+    "deck": {
+     "name": "The Heart of Yavimaya",
+     "colors": "G",
+     "archetype": null,
+     "cards": [
+      {
+       "qty": 4,
+       "name": "Llanowar Elves",
+       "set": "7ed",
+       "number": "253",
+       "id": "ed8a8cfd-baef-4198-b1f3-4926139588b2"
+      },
+      {
+       "qty": 4,
+       "name": "Kavu Titan",
+       "set": "inv",
+       "number": "194",
+       "id": "2c5fb86d-1d9a-4da2-bb5b-4266faa20197"
+      },
+      {
+       "qty": 4,
+       "name": "Llanowar Elite",
+       "set": "inv",
+       "number": "196",
+       "id": "3e207863-de68-47e1-8c63-413b5fa48943"
+      },
+      {
+       "qty": 4,
+       "name": "Pincer Spider",
+       "set": "inv",
+       "number": "201",
+       "id": "23271658-19ae-420d-beeb-4bed4fdbb891"
+      },
+      {
+       "qty": 4,
+       "name": "Kavu Climber",
+       "set": "inv",
+       "number": "192",
+       "id": "2063f31e-d972-411e-a265-1d409153b49c"
+      },
+      {
+       "qty": 4,
+       "name": "Thicket Elemental",
+       "set": "inv",
+       "number": "214",
+       "id": "f80a56ed-3ebb-4e20-bf6a-e27127f762e8"
+      },
+      {
+       "qty": 2,
+       "name": "Verdeloth the Ancient",
+       "set": "inv",
+       "number": "220",
+       "id": "72d5fab1-fa20-4006-b19d-179d36238c9b"
+      },
+      {
+       "qty": 4,
+       "name": "Giant Growth",
+       "set": "7ed",
+       "number": "248",
+       "id": "9ade9b45-a1f5-4680-8d26-d2ae5879b1b6"
+      },
+      {
+       "qty": 4,
+       "name": "Rampant Growth",
+       "set": "7ed",
+       "number": "262",
+       "id": "c305376d-fcfb-48a1-947f-a9eec0dbc610"
+      },
+      {
+       "qty": 2,
+       "name": "Explosive Growth",
+       "set": "inv",
+       "number": "187",
+       "id": "eabc1e77-404c-436b-bde1-be1b21d00584"
+      },
+      {
+       "qty": 24,
+       "name": "Forest",
+       "set": "inv",
+       "number": "347",
+       "id": "f82d0a1c-5812-4254-a000-e4ff9aece3d9"
+      }
+     ]
+    }
+   },
+   "villain": {
+    "who": "scuta",
+    "deck": {
+     "name": "The Vanguard",
+     "colors": "B",
+     "archetype": null,
+     "cards": [
+      {
+       "qty": 4,
+       "name": "Phyrexian Scuta",
+       "set": "pls",
+       "number": "51",
+       "id": "eb57e656-c94e-4cc2-ae8d-9300f51f941f"
+      },
+      {
+       "qty": 4,
+       "name": "Urborg Skeleton",
+       "set": "inv",
+       "number": "134",
+       "id": "6e522a62-fbca-4362-9006-d4356c525704"
+      },
+      {
+       "qty": 4,
+       "name": "Agonizing Demise",
+       "set": "inv",
+       "number": "92",
+       "id": "539ac5e1-4bad-4f70-abac-e70c406bebec"
+      },
+      {
+       "qty": 4,
+       "name": "Phyrexian Battleflies",
+       "set": "inv",
+       "number": "114",
+       "id": "da27c489-c541-4b0d-a844-71aa65e55ceb"
+      },
+      {
+       "qty": 4,
+       "name": "Hate Weaver",
+       "set": "inv",
+       "number": "108",
+       "id": "8328e131-b44d-4dd0-9ce4-454c6afe6fa6"
+      },
+      {
+       "qty": 4,
+       "name": "Andradite Leech",
+       "set": "inv",
+       "number": "93",
+       "id": "6da0d4f3-9216-406c-8f3e-b9bb0a11dc75"
+      },
+      {
+       "qty": 4,
+       "name": "Maggot Carrier",
+       "set": "pls",
+       "number": "45",
+       "id": "ab2c3dc4-bb49-4ec3-a6c8-4256d1939326"
+      },
+      {
+       "qty": 4,
+       "name": "Phyrexian Bloodstock",
+       "set": "pls",
+       "number": "50",
+       "id": "785e1a67-af94-48e8-bb37-4999d1fb4c66"
+      },
+      {
+       "qty": 4,
+       "name": "Slay",
+       "set": "pls",
+       "number": "55",
+       "id": "eccda747-2680-4793-8a13-35e49b4de12f"
+      },
+      {
+       "qty": 24,
+       "name": "Swamp",
+       "set": "inv",
+       "number": "339",
+       "id": "2a7ce037-e04d-404a-afde-9122518e6a31"
+      }
+     ]
+    }
+   },
+   "reward": {
+    "hero": {
+     "packs": 1,
+     "coins": 0
+    },
+    "villain": {
+     "card": {
+      "oracle_id": "af2845cf-8770-4efa-8a83-bf9eb4122b78",
+      "name": "Phyrexian Scuta",
+      "rarity": "rare",
+      "set": "pls",
+      "id": "eb57e656-c94e-4cc2-ae8d-9300f51f941f",
+      "image": "https://cards.scryfall.io/normal/front/e/b/eb57e656-c94e-4cc2-ae8d-9300f51f941f.jpg"
+     },
+     "coins": 50
+    }
+   },
+   "scene": [
+    {
+     "who": "multani",
+     "line": "Life can be found in all things, even things unnatural.",
+     "quote": true
+    },
+    {
+     "who": "scuta",
+     "line": "Trees. Many trees. Burn them."
+    },
+    {
+     "who": "stage",
+     "line": "As Phyrexians descended, Multani paused to reflect on the beauty that might never be seen again.",
+     "quote": true
+    },
+    {
+     "who": "multani",
+     "line": "Then I will not let it be the last time. Wake, my children."
+    },
+    {
+     "who": "multani",
+     "line": "Kicker: pay extra when you cast it, and the card does more. A small beast early, or a great one later. You choose."
+    }
+   ],
+   "villainScene": [
+    {
+     "who": "scuta",
+     "line": "Pay in life, Scuta grows. Scuta always pays."
+    },
+    {
+     "who": "scuta",
+     "line": "Forest is soft. Forest is wet. Forest burns slow."
+    },
+    {
+     "who": "scuta",
+     "line": "Scuta likes the hurting. Hurting means Scuta is working."
+    }
+   ],
+   "after": [
+    {
+     "who": "stage",
+     "line": "Kavu emerged all across Dominaria, but the first and the strongest came from Yavimaya.",
+     "quote": true
+    },
+    {
+     "who": "urza",
+     "line": "They weren't part of my plan, but Gaea insisted.",
+     "quote": true
+    }
+   ],
+   "cues": {
+    "hero": {
+     "start": "Yavimaya remembers.",
+     "big": "Kavu! The forest sends kavu!",
+     "low": "The roots are burning...",
+     "win": "Go back through your portal. Tell them the forest is awake.",
+     "loss": "I will grow again. I always do.",
+     "half": "Beneath her scars, Dominaria's beauty yet shines."
+    },
+    "villain": {
+     "start": "Burn.",
+     "big": "Scuta paid. Scuta big.",
+     "low": "The trees... bite...",
+     "win": "Ash. Good.",
+     "loss": "Forest wins this time."
+    }
+   },
+   "bigPlays": [],
+   "sim": null
+  },
+  {
+   "id": "a8b3",
+   "slot": 3,
+   "kind": "Lesson",
+   "mood": "comic",
+   "title": "Squee Isn't Thirsty",
+   "difficulty": "Easy",
+   "teaches": [
+    "The graveyard"
+   ],
+   "blurb": "In the swamps of Urborg, Lord Dralnu raises the dead to fight Phyrexia. He has heard of a goblin who comes back every time he dies, and he would very much like to study him.",
+   "rewardSet": "pls",
+   "host": false,
+   "hero": {
+    "who": "squee",
+    "deck": {
+     "name": "Squee's Goblins",
+     "colors": "R",
+     "archetype": null,
+     "cards": [
+      {
+       "qty": 4,
+       "name": "Goblin Raider",
+       "set": "7ed",
+       "number": "192",
+       "id": "3315d75d-08dc-456c-a8e7-fe3136bf1a6b"
+      },
+      {
+       "qty": 4,
+       "name": "Raging Goblin",
+       "set": "7ed",
+       "number": "211",
+       "id": "657190fe-9c18-4134-a556-e081daff73cd"
+      },
+      {
+       "qty": 4,
+       "name": "Goblin Spy",
+       "set": "inv",
+       "number": "145",
+       "id": "2a89a099-8805-4b26-babd-5d9f48ee406a"
+      },
+      {
+       "qty": 4,
+       "name": "Goblin Matron",
+       "set": "7ed",
+       "number": "191",
+       "id": "862409e1-33e0-474c-8627-b03d25b654b9"
+      },
+      {
+       "qty": 4,
+       "name": "Goblin King",
+       "set": "7ed",
+       "number": "190",
+       "id": "0c77029a-7f00-490e-bf8b-dce192d72e2f"
+      },
+      {
+       "qty": 4,
+       "name": "Goblin Elite Infantry",
+       "set": "7ed",
+       "number": "187",
+       "id": "3f5b7dfe-f24b-4d73-813f-f63c926f3672"
+      },
+      {
+       "qty": 4,
+       "name": "Goblin Ringleader",
+       "set": "apc",
+       "number": "62",
+       "id": "b6b2cd77-9552-48b1-80cb-26966323c1ea"
+      },
+      {
+       "qty": 4,
+       "name": "Goblin War Drums",
+       "set": "7ed",
+       "number": "194",
+       "id": "b226987d-e271-483c-9d18-09c461ebbf36"
+      },
+      {
+       "qty": 4,
+       "name": "Shock",
+       "set": "7ed",
+       "number": "219",
+       "id": "ea653772-a5fe-4416-bef3-fd41133371db"
+      },
+      {
+       "qty": 24,
+       "name": "Mountain",
+       "set": "inv",
+       "number": "343",
+       "id": "ba6694bb-f3b7-48ff-9d93-cbed84fac210"
+      }
+     ]
+    }
+   },
+   "villain": {
+    "who": "dralnu",
+    "deck": {
+     "name": "Dralnu's Crusade",
+     "colors": "BR",
+     "archetype": null,
+     "cards": [
+      {
+       "qty": 4,
+       "name": "Pyre Zombie",
+       "set": "inv",
+       "number": "261",
+       "id": "6c030108-2995-4fb0-9b80-efdfdd0f11e0"
+      },
+      {
+       "qty": 4,
+       "name": "Shivan Zombie",
+       "set": "inv",
+       "number": "271",
+       "id": "f4c99269-f730-4d33-bbce-9e855e9ad0fc"
+      },
+      {
+       "qty": 4,
+       "name": "Cinder Shade",
+       "set": "inv",
+       "number": "240",
+       "id": "b8dd933a-19ed-4d30-a94a-bfb2f66f8f13"
+      },
+      {
+       "qty": 4,
+       "name": "Vicious Kavu",
+       "set": "inv",
+       "number": "284",
+       "id": "31e9e629-7c25-4d45-aa35-9ba5f95b43cb"
+      },
+      {
+       "qty": 4,
+       "name": "Lava Zombie",
+       "set": "pls",
+       "number": "113",
+       "id": "fd87185b-1242-4fb3-abee-44bc267ee5fb"
+      },
+      {
+       "qty": 4,
+       "name": "Blazing Specter",
+       "set": "inv",
+       "number": "236",
+       "id": "3bd397be-0e61-4f41-b0cf-f0c9d2440da7"
+      },
+      {
+       "qty": 4,
+       "name": "Phyrexian Rager",
+       "set": "apc",
+       "number": "49",
+       "id": "3addf34c-ea54-42a3-bccd-b73453d964d2"
+      },
+      {
+       "qty": 4,
+       "name": "Urborg Skeleton",
+       "set": "inv",
+       "number": "134",
+       "id": "6e522a62-fbca-4362-9006-d4356c525704"
+      },
+      {
+       "qty": 4,
+       "name": "Terminate",
+       "set": "pls",
+       "number": "128",
+       "id": "190ca502-672d-4cc0-b6e0-b9de517058d0"
+      },
+      {
+       "qty": 12,
+       "name": "Swamp",
+       "set": "inv",
+       "number": "339",
+       "id": "2a7ce037-e04d-404a-afde-9122518e6a31"
+      },
+      {
+       "qty": 12,
+       "name": "Mountain",
+       "set": "inv",
+       "number": "343",
+       "id": "ba6694bb-f3b7-48ff-9d93-cbed84fac210"
+      }
+     ]
+    }
+   },
+   "reward": {
+    "hero": {
+     "packs": 1,
+     "coins": 0
+    },
+    "villain": {
+     "card": {
+      "oracle_id": "4c046368-5899-42ef-9972-3a3a6c8fe3fd",
+      "name": "Blazing Specter",
+      "rarity": "rare",
+      "set": "inv",
+      "id": "3bd397be-0e61-4f41-b0cf-f0c9d2440da7",
+      "image": "https://cards.scryfall.io/normal/front/3/b/3bd397be-0e61-4f41-b0cf-f0c9d2440da7.jpg"
+     },
+     "coins": 50
+    }
+   },
+   "scene": [
+    {
+     "who": "squee",
+     "line": "No, *you* get the water. I ain't thirsty.",
+     "quote": true
+    },
+    {
+     "who": "stage",
+     "line": "Squee gets the water. Something in the water gets Squee."
+    },
+    {
+     "who": "dralnu",
+     "line": "Remarkable. Drowned, and walking. Do it again."
+    },
+    {
+     "who": "squee",
+     "line": "Squee does not want to do it again!"
+    },
+    {
+     "who": "dralnu",
+     "line": "Don't you agree that mogg intellects are improved by zombification?",
+     "quote": true
+    },
+    {
+     "who": "squee",
+     "line": "Dead things keep coming back from the graveyard! So does Squee! Squee is like a zombie but cuter!"
+    }
+   ],
+   "villainScene": [
+    {
+     "who": "dralnu",
+     "line": "I confer with Death itself. What could you possibly do to injure me?",
+     "quote": true
+    },
+    {
+     "who": "dralnu",
+     "line": "Urborg fights Phyrexia with the only army it has. The dead do not tire and do not grieve."
+    },
+    {
+     "who": "dralnu",
+     "line": "A goblin who cannot die is worth a thousand who can. I only want to borrow him. Forever."
+    }
+   ],
+   "after": [
+    {
+     "who": "sisay",
+     "line": "All this time I thought Squee was useless. Who knew he'd be such a good shot?",
+     "quote": true
+    },
+    {
+     "who": "squee",
+     "line": "Squee is very hard to kill. Squee does not know why."
+    },
+    {
+     "who": "sisay",
+     "line": "Let's keep it that way."
+    }
+   ],
+   "cues": {
+    "hero": {
+     "start": "Goblins! Get them! Squee will be over here.",
+     "big": "BIG goblin!",
+     "low": "Squee feels a little dead again...",
+     "win": "Squee wins! Squee is still alive! Probably!",
+     "loss": "Squee will be back in a minute.",
+     "half": "Is Squee dead yet? No? Good."
+    },
+    "villain": {
+     "start": "Rise.",
+     "big": "I bless the living with a song of death.",
+     "low": "My dead... are dying...",
+     "win": "Bring me the goblin. Gently. He bruises.",
+     "loss": "Keep him. For now."
+    }
+   },
+   "bigPlays": [],
+   "sim": null
+  },
+  {
+   "id": "a8b4",
+   "slot": 4,
+   "kind": "Rival",
+   "mood": "tension",
+   "title": "Dueling Grounds",
+   "difficulty": "Normal",
+   "teaches": [
+    "Paying life"
+   ],
+   "blurb": "Tsabo Tavoc, Yawgmoth's general, poisoned Benalia's wells and let her plague loose across Llanowar. Gerrard finds her where the forest is dying fastest.",
+   "rewardSet": "inv",
+   "host": false,
+   "hero": {
+    "who": "gerrard",
+    "deck": {
+     "name": "Llanowar",
+     "colors": "GW",
+     "archetype": null,
+     "cards": [
+      {
+       "qty": 4,
+       "name": "Llanowar Elves",
+       "set": "7ed",
+       "number": "253",
+       "id": "ed8a8cfd-baef-4198-b1f3-4926139588b2"
+      },
+      {
+       "qty": 4,
+       "name": "Llanowar Knight",
+       "set": "inv",
+       "number": "254",
+       "id": "e6c75d89-e432-49aa-a407-555b223b7eff"
+      },
+      {
+       "qty": 4,
+       "name": "Elvish Champion",
+       "set": "inv",
+       "number": "186",
+       "id": "c19bb473-03b0-4e6d-a7da-0ec1e7707a68"
+      },
+      {
+       "qty": 4,
+       "name": "Wood Elves",
+       "set": "7ed",
+       "number": "284",
+       "id": "263feecf-a657-4892-a2bb-cd7080d283c2"
+      },
+      {
+       "qty": 4,
+       "name": "Llanowar Cavalry",
+       "set": "inv",
+       "number": "195",
+       "id": "21d92191-a743-4916-bbe4-5e207e964d9b"
+      },
+      {
+       "qty": 2,
+       "name": "Captain Sisay",
+       "set": "inv",
+       "number": "237",
+       "id": "d24d441c-f37f-44fe-8a93-f5c89df807e4"
+      },
+      {
+       "qty": 2,
+       "name": "Gerrard Capashen",
+       "set": "apc",
+       "number": "11",
+       "id": "ccca800f-e850-4bec-95d0-70280b51b7a7"
+      },
+      {
+       "qty": 4,
+       "name": "Noble Panther",
+       "set": "inv",
+       "number": "257",
+       "id": "3f327818-8222-4295-8cef-118757b34d17"
+      },
+      {
+       "qty": 4,
+       "name": "Armadillo Cloak",
+       "set": "inv",
+       "number": "229",
+       "id": "9d816f98-6cb6-432c-b0a4-a0eed21658ac"
+      },
+      {
+       "qty": 4,
+       "name": "Giant Growth",
+       "set": "7ed",
+       "number": "248",
+       "id": "9ade9b45-a1f5-4680-8d26-d2ae5879b1b6"
+      },
+      {
+       "qty": 12,
+       "name": "Forest",
+       "set": "inv",
+       "number": "347",
+       "id": "f82d0a1c-5812-4254-a000-e4ff9aece3d9"
+      },
+      {
+       "qty": 12,
+       "name": "Plains",
+       "set": "inv",
+       "number": "331",
+       "id": "5ba9ef2e-d3ec-41f7-802e-e1414f14dd10"
+      }
+     ]
+    }
+   },
+   "villain": {
+    "who": "tsabo",
+    "deck": {
+     "name": "Tsabo's Legion",
+     "colors": "BR",
+     "archetype": null,
+     "cards": [
+      {
+       "qty": 2,
+       "name": "Tsabo Tavoc",
+       "set": "inv",
+       "number": "281",
+       "id": "ccbe2539-7a7c-468b-a270-7ca1bdcccb1e"
+      },
+      {
+       "qty": 4,
+       "name": "Phyrexian Slayer",
+       "set": "inv",
+       "number": "118",
+       "id": "5fa8c604-343f-4c94-ac25-439ab1845c19"
+      },
+      {
+       "qty": 4,
+       "name": "Tsabo's Assassin",
+       "set": "inv",
+       "number": "128",
+       "id": "0047302d-4e3d-4327-9bb2-ecd5b00b00e3"
+      },
+      {
+       "qty": 4,
+       "name": "Phyrexian Scuta",
+       "set": "pls",
+       "number": "51",
+       "id": "eb57e656-c94e-4cc2-ae8d-9300f51f941f"
+      },
+      {
+       "qty": 4,
+       "name": "Firescreamer",
+       "set": "inv",
+       "number": "106",
+       "id": "155a2213-bf6e-4a54-924b-e450b7d06f26"
+      },
+      {
+       "qty": 4,
+       "name": "Blazing Specter",
+       "set": "inv",
+       "number": "236",
+       "id": "3bd397be-0e61-4f41-b0cf-f0c9d2440da7"
+      },
+      {
+       "qty": 4,
+       "name": "Hooded Kavu",
+       "set": "inv",
+       "number": "147",
+       "id": "5464b80a-22fe-42c7-a839-31667712fb2d"
+      },
+      {
+       "qty": 2,
+       "name": "Plague Spitter",
+       "set": "inv",
+       "number": "119",
+       "id": "8845e6bd-40ee-45ca-a099-53f19ff20a8a"
+      },
+      {
+       "qty": 4,
+       "name": "Terminate",
+       "set": "pls",
+       "number": "128",
+       "id": "190ca502-672d-4cc0-b6e0-b9de517058d0"
+      },
+      {
+       "qty": 4,
+       "name": "Agonizing Demise",
+       "set": "inv",
+       "number": "92",
+       "id": "539ac5e1-4bad-4f70-abac-e70c406bebec"
+      },
+      {
+       "qty": 12,
+       "name": "Swamp",
+       "set": "inv",
+       "number": "339",
+       "id": "2a7ce037-e04d-404a-afde-9122518e6a31"
+      },
+      {
+       "qty": 12,
+       "name": "Mountain",
+       "set": "inv",
+       "number": "343",
+       "id": "ba6694bb-f3b7-48ff-9d93-cbed84fac210"
+      }
+     ]
+    }
+   },
+   "reward": {
+    "hero": {
+     "packs": 1,
+     "coins": 100
+    },
+    "villain": {
+     "card": {
+      "oracle_id": "f98f1f71-99ec-4ffb-9d8e-acbab173f972",
+      "name": "Tsabo Tavoc",
+      "rarity": "rare",
+      "set": "inv",
+      "id": "ccbe2539-7a7c-468b-a270-7ca1bdcccb1e",
+      "image": "https://cards.scryfall.io/normal/front/c/c/ccbe2539-7a7c-468b-a270-7ca1bdcccb1e.jpg"
+     },
+     "coins": 100
+    }
+   },
+   "scene": [
+    {
+     "who": "tsabo",
+     "line": "Breathe deep, Dominaria. Breathe deep and die.",
+     "quote": true
+    },
+    {
+     "who": "stage",
+     "line": "\"You think you can stop me?\" hissed Tsabo. \"I think I can kill you,\" replied Gerrard.",
+     "quote": true
+    },
+    {
+     "who": "tsabo",
+     "line": "There's nothing I wouldn't give to achieve victory. Can you say the same?",
+     "quote": true
+    },
+    {
+     "who": "gerrard",
+     "line": "You're giving your own blood to win. That's how you keep paying for it."
+    },
+    {
+     "who": "gerrard",
+     "line": "Paying life is a cost like any other. Make her pay it while you hit her."
+    }
+   ],
+   "villainScene": [
+    {
+     "who": "tsabo",
+     "line": "Those who can't survive are of no consequence.",
+     "quote": true
+    },
+    {
+     "who": "tsabo",
+     "line": "I was made to be perfect. Every piece of me replaced with something better."
+    },
+    {
+     "who": "tsabo",
+     "line": "Dominarians are so proud of their flesh. I will show them what it is worth."
+    }
+   ],
+   "after": null,
+   "cues": {
+    "hero": {
+     "start": "Tsabo. Let's finish this.",
+     "big": "For Benalia!",
+     "low": "The plague... I can taste it...",
+     "win": "Not well balanced, are you?",
+     "loss": "Pull back... get the elves out...",
+     "half": "That's the general. Keep pressing."
+    },
+    "villain": {
+     "start": "Whatever Yawgmoth marks, dies.",
+     "big": "Rise, metathran. You shall serve a nobler cause in death.",
+     "low": "My legs... my perfect legs...",
+     "win": "Your blood will feed the vats.",
+     "loss": "I will be rebuilt. You will not."
+    }
+   },
+   "bigPlays": [],
+   "sim": null
+  },
+  {
+   "id": "a8b5",
+   "slot": 5,
+   "kind": "Meta",
+   "mood": "tension",
+   "title": "The Corrupted",
+   "difficulty": "Normal",
+   "teaches": [
+    "Counterspells"
+   ],
+   "blurb": "Ertai stayed behind on Rath to hold the portal so the Weatherlight could escape. Phyrexia found him there. Now he has come home on the overlay, and he wants Hanna's ship.",
+   "rewardSet": "pls",
+   "host": false,
+   "hero": {
+    "who": "hanna",
+    "deck": {
+     "name": "The Weatherlight",
+     "colors": "WU",
+     "archetype": null,
+     "cards": [
+      {
+       "qty": 2,
+       "name": "Hanna, Ship's Navigator",
+       "set": "inv",
+       "number": "249",
+       "id": "83a4e48d-6452-4245-bdad-63fe3263550e"
+      },
+      {
+       "qty": 4,
+       "name": "Galina's Knight",
+       "set": "inv",
+       "number": "248",
+       "id": "11b492d6-5e28-4f4b-942c-080d03cb0e92"
+      },
+      {
+       "qty": 4,
+       "name": "Samite Archer",
+       "set": "inv",
+       "number": "269",
+       "id": "07a262d7-6d0c-43d0-89b6-9f46a1a9eb69"
+      },
+      {
+       "qty": 4,
+       "name": "Riptide Crab",
+       "set": "inv",
+       "number": "266",
+       "id": "7e42ae1d-62b4-4b19-aafc-f12bdd6fb8cc"
+      },
+      {
+       "qty": 4,
+       "name": "Silver Drake",
+       "set": "pls",
+       "number": "125",
+       "id": "ac35ee86-96b2-47aa-a1ba-2988737f11ee"
+      },
+      {
+       "qty": 4,
+       "name": "Angel of Mercy",
+       "set": "inv",
+       "number": "2",
+       "id": "5b6de688-685f-4389-be35-a472ada988e1"
+      },
+      {
+       "qty": 4,
+       "name": "Absorb",
+       "set": "inv",
+       "number": "226",
+       "id": "5d6a0f3e-457f-41f5-be26-5fb249874f1a"
+      },
+      {
+       "qty": 4,
+       "name": "Counterspell",
+       "set": "7ed",
+       "number": "67",
+       "id": "29bb1b85-9444-4bfa-b622-092a6873631c"
+      },
+      {
+       "qty": 2,
+       "name": "Stand // Deliver",
+       "set": "inv",
+       "number": "292",
+       "id": "be8b338f-6f05-43c6-beeb-c5052cc0d6a9"
+      },
+      {
+       "qty": 4,
+       "name": "Repulse",
+       "set": "inv",
+       "number": "70",
+       "id": "9a04e9be-48be-440e-9825-cfffd4c2b1a4"
+      },
+      {
+       "qty": 12,
+       "name": "Plains",
+       "set": "inv",
+       "number": "331",
+       "id": "5ba9ef2e-d3ec-41f7-802e-e1414f14dd10"
+      },
+      {
+       "qty": 12,
+       "name": "Island",
+       "set": "inv",
+       "number": "335",
+       "id": "8a3fc29c-f5cb-49b9-aabf-a5fef97e7a7e"
+      }
+     ]
+    }
+   },
+   "villain": {
+    "who": "ertai",
+    "deck": {
+     "name": "The Corrupted",
+     "colors": "UB",
+     "archetype": null,
+     "cards": [
+      {
+       "qty": 4,
+       "name": "Fact or Fiction",
+       "set": "inv",
+       "number": "57",
+       "id": "7fd4d018-dcf3-4439-8445-02d66e44f7d3"
+      },
+      {
+       "qty": 4,
+       "name": "Counterspell",
+       "set": "7ed",
+       "number": "67",
+       "id": "29bb1b85-9444-4bfa-b622-092a6873631c"
+      },
+      {
+       "qty": 4,
+       "name": "Undermine",
+       "set": "inv",
+       "number": "282",
+       "id": "2334bc71-5f85-47ff-b393-601a1e746a4e"
+      },
+      {
+       "qty": 2,
+       "name": "Exclude",
+       "set": "inv",
+       "number": "56",
+       "id": "aeb359c8-209c-455f-84b2-970e5678a9fa"
+      },
+      {
+       "qty": 4,
+       "name": "Recoil",
+       "set": "inv",
+       "number": "264",
+       "id": "b6a77be3-e3b0-40f5-a470-414bac49da60"
+      },
+      {
+       "qty": 2,
+       "name": "Barrin's Spite",
+       "set": "inv",
+       "number": "235",
+       "id": "6d8ec4dc-c74a-4d49-856e-95703675fe9b"
+      },
+      {
+       "qty": 4,
+       "name": "Doomsday Specter",
+       "set": "pls",
+       "number": "103",
+       "id": "85206cc1-5484-40c6-b11d-b8d6fad4fc5c"
+      },
+      {
+       "qty": 4,
+       "name": "Urborg Drake",
+       "set": "inv",
+       "number": "283",
+       "id": "97d1327e-bf87-423f-8a04-8124e45b9ae0"
+      },
+      {
+       "qty": 4,
+       "name": "Stalking Assassin",
+       "set": "inv",
+       "number": "277",
+       "id": "ff8cc71f-3070-497f-908f-35aa13a8a857"
+      },
+      {
+       "qty": 4,
+       "name": "Vodalian Zombie",
+       "set": "inv",
+       "number": "286",
+       "id": "f30a5a06-32ce-4d71-b71f-e3e1d8d4511a"
+      },
+      {
+       "qty": 12,
+       "name": "Island",
+       "set": "inv",
+       "number": "335",
+       "id": "8a3fc29c-f5cb-49b9-aabf-a5fef97e7a7e"
+      },
+      {
+       "qty": 12,
+       "name": "Swamp",
+       "set": "inv",
+       "number": "339",
+       "id": "2a7ce037-e04d-404a-afde-9122518e6a31"
+      }
+     ]
+    }
+   },
+   "reward": {
+    "hero": {
+     "packs": 1,
+     "coins": 100
+    },
+    "villain": {
+     "card": {
+      "oracle_id": "68b038ef-71c4-4ca5-9821-57bf85831bb7",
+      "name": "Barrin's Spite",
+      "rarity": "rare",
+      "set": "inv",
+      "id": "6d8ec4dc-c74a-4d49-856e-95703675fe9b",
+      "image": "https://cards.scryfall.io/normal/front/6/d/6d8ec4dc-c74a-4d49-856e-95703675fe9b.jpg"
+     },
+     "coins": 100
+    }
+   },
+   "scene": [
+    {
+     "who": "ertai",
+     "line": "Hello, Hanna. You look well. I suppose you would."
+    },
+    {
+     "who": "stage",
+     "line": "Altered by Phyrexian science, corrupted by black mana, and twisted by rage, Ertai still looked in the mirror and saw only glory.",
+     "quote": true
+    },
+    {
+     "who": "ertai",
+     "line": "Don't worry, Gerrard. I'm sure the crew will come to your rescue as quickly as they came to mine.",
+     "quote": true
+    },
+    {
+     "who": "hanna",
+     "line": "We thought you were dead, Ertai. We mourned you."
+    },
+    {
+     "who": "ertai",
+     "line": "Then you wasted your tears. I got better."
+    },
+    {
+     "who": "hanna",
+     "line": "He holds up counterspells and does nothing on his own turn. Make him choose. Cast the small spell first."
+    }
+   ],
+   "villainScene": [
+    {
+     "who": "ertai",
+     "line": "I held that portal open for them. I was a hero for exactly one minute."
+    },
+    {
+     "who": "ertai",
+     "line": "Then they left. Everyone always leaves. Phyrexia stayed."
+    },
+    {
+     "who": "ertai",
+     "line": "I am the greatest wizard on Dominaria now. It only cost me everything I was."
+    }
+   ],
+   "after": [
+    {
+     "who": "stage",
+     "line": "Ertai escapes into the overlay. The plague does not."
+    },
+    {
+     "who": "sisay",
+     "line": "Hanna would give up her own life before she'd abandon the *Weatherlight*.",
+     "quote": true
+    },
+    {
+     "who": "stage",
+     "line": "Orim tries everything. Gerrard does not leave her side. Hanna dies on the ship she loved, before the war is over."
+    }
+   ],
+   "cues": {
+    "hero": {
+     "start": "Weatherlight, with me.",
+     "big": "Not everyone gets a second chance.",
+     "low": "He knows every move I make...",
+     "win": "Come home, Ertai. Please.",
+     "loss": "The ship... protect the ship...",
+     "half": "We need alternatives. Now!"
+    },
+    "villain": {
+     "start": "Let me show you what I learned.",
+     "big": "Glory.",
+     "low": "This is not... I am perfect...",
+     "win": "You should have come back for me.",
+     "loss": "Another time, navigator."
+    }
+   },
+   "bigPlays": [],
+   "sim": null
+  },
+  {
+   "id": "a8b6",
+   "slot": 6,
+   "kind": "Lesson",
+   "mood": "tension",
+   "title": "A Funeral Pyre",
+   "difficulty": "Normal",
+   "teaches": [
+    "Split cards"
+   ],
+   "blurb": "Barrin trusted Urza for three thousand years. His wife Rayne is gone. Now his daughter Hanna is gone too. He goes home to Tolaria, and the Phyrexians are waiting.",
+   "rewardSet": "apc",
+   "host": false,
+   "hero": {
+    "who": "barrin",
+    "deck": {
+     "name": "Barrin's Spite",
+     "colors": "UR",
+     "archetype": null,
+     "cards": [
+      {
+       "qty": 4,
+       "name": "Fire // Ice",
+       "set": "apc",
+       "number": "128",
+       "id": "f98f4538-5b5b-475d-b98f-49d01dae6f04"
+      },
+      {
+       "qty": 2,
+       "name": "Prophetic Bolt",
+       "set": "apc",
+       "number": "116",
+       "id": "79f74291-c452-4a60-bf5f-73efad6583d4"
+      },
+      {
+       "qty": 4,
+       "name": "Razorfin Hunter",
+       "set": "apc",
+       "number": "119",
+       "id": "99829552-917a-4373-9772-4255dff542d6"
+      },
+      {
+       "qty": 4,
+       "name": "Tower Drake",
+       "set": "inv",
+       "number": "82",
+       "id": "aef97b38-f7a5-4db7-9550-24aa1a1ebbda"
+      },
+      {
+       "qty": 4,
+       "name": "Tolarian Emissary",
+       "set": "inv",
+       "number": "81",
+       "id": "1cbc55e5-b84c-4449-a288-ec26cdd3997c"
+      },
+      {
+       "qty": 4,
+       "name": "Viashino Grappler",
+       "set": "inv",
+       "number": "179",
+       "id": "4a94aeb4-349c-4394-848d-c1c9133856e2"
+      },
+      {
+       "qty": 2,
+       "name": "Shivan Emissary",
+       "set": "inv",
+       "number": "166",
+       "id": "945c596e-492e-4cf5-857c-4ddbbdd78485"
+      },
+      {
+       "qty": 4,
+       "name": "Thunderscape Battlemage",
+       "set": "pls",
+       "number": "75",
+       "id": "d707243e-7f11-44bc-b8b8-af635ab1dc87"
+      },
+      {
+       "qty": 4,
+       "name": "Repulse",
+       "set": "inv",
+       "number": "70",
+       "id": "9a04e9be-48be-440e-9825-cfffd4c2b1a4"
+      },
+      {
+       "qty": 4,
+       "name": "Zap",
+       "set": "inv",
+       "number": "180",
+       "id": "7502ce01-b762-40fe-a064-c7b20b08a722"
+      },
+      {
+       "qty": 12,
+       "name": "Island",
+       "set": "inv",
+       "number": "335",
+       "id": "8a3fc29c-f5cb-49b9-aabf-a5fef97e7a7e"
+      },
+      {
+       "qty": 12,
+       "name": "Mountain",
+       "set": "inv",
+       "number": "343",
+       "id": "ba6694bb-f3b7-48ff-9d93-cbed84fac210"
+      }
+     ]
+    }
+   },
+   "villain": {
+    "who": "slayer",
+    "deck": {
+     "name": "The Tolarian Blight",
+     "colors": "UB",
+     "archetype": null,
+     "cards": [
+      {
+       "qty": 4,
+       "name": "Phyrexian Infiltrator",
+       "set": "inv",
+       "number": "116",
+       "id": "224b8254-553d-4d88-8163-1f15e1244bd2"
+      },
+      {
+       "qty": 4,
+       "name": "Urborg Phantom",
+       "set": "inv",
+       "number": "132",
+       "id": "397355b9-5b67-4973-972e-3505c500d116"
+      },
+      {
+       "qty": 4,
+       "name": "Phyrexian Reaper",
+       "set": "inv",
+       "number": "117",
+       "id": "ccdd498b-1081-43fe-8193-518337a5a3ea"
+      },
+      {
+       "qty": 4,
+       "name": "Plague Spitter",
+       "set": "inv",
+       "number": "119",
+       "id": "8845e6bd-40ee-45ca-a099-53f19ff20a8a"
+      },
+      {
+       "qty": 4,
+       "name": "Stalking Assassin",
+       "set": "inv",
+       "number": "277",
+       "id": "ff8cc71f-3070-497f-908f-35aa13a8a857"
+      },
+      {
+       "qty": 4,
+       "name": "Vodalian Zombie",
+       "set": "inv",
+       "number": "286",
+       "id": "f30a5a06-32ce-4d71-b71f-e3e1d8d4511a"
+      },
+      {
+       "qty": 4,
+       "name": "Urborg Drake",
+       "set": "inv",
+       "number": "283",
+       "id": "97d1327e-bf87-423f-8a04-8124e45b9ae0"
+      },
+      {
+       "qty": 4,
+       "name": "Recoil",
+       "set": "inv",
+       "number": "264",
+       "id": "b6a77be3-e3b0-40f5-a470-414bac49da60"
+      },
+      {
+       "qty": 4,
+       "name": "Agonizing Demise",
+       "set": "inv",
+       "number": "92",
+       "id": "539ac5e1-4bad-4f70-abac-e70c406bebec"
+      },
+      {
+       "qty": 12,
+       "name": "Island",
+       "set": "inv",
+       "number": "335",
+       "id": "8a3fc29c-f5cb-49b9-aabf-a5fef97e7a7e"
+      },
+      {
+       "qty": 12,
+       "name": "Swamp",
+       "set": "inv",
+       "number": "339",
+       "id": "2a7ce037-e04d-404a-afde-9122518e6a31"
+      }
+     ]
+    }
+   },
+   "reward": {
+    "hero": {
+     "packs": 1,
+     "coins": 100
+    },
+    "villain": {
+     "card": {
+      "oracle_id": "f444a0f8-32d8-4748-af58-51a1a8ed72b4",
+      "name": "Phyrexian Infiltrator",
+      "rarity": "rare",
+      "set": "inv",
+      "id": "224b8254-553d-4d88-8163-1f15e1244bd2",
+      "image": "https://cards.scryfall.io/normal/front/2/2/224b8254-553d-4d88-8163-1f15e1244bd2.jpg"
+     },
+     "coins": 100
+    }
+   },
+   "scene": [
+    {
+     "who": "stage",
+     "line": "As Barrin exhumed his daughter's body, he finally realized the full price of his faith in Urza.",
+     "quote": true
+    },
+    {
+     "who": "stage",
+     "line": "Barrin waited for the nausea to pass or for Urza to say something else. He waited in vain.",
+     "quote": true
+    },
+    {
+     "who": "barrin",
+     "line": "Only vengeance matters now.",
+     "quote": true
+    },
+    {
+     "who": "barrin",
+     "line": "Fire or ice. A split card is two spells on one card. Read both halves and pick the one the moment needs."
+    },
+    {
+     "who": "barrin",
+     "line": "All my life I've fought these monsters. Today I finish that fight.",
+     "quote": true
+    }
+   ],
+   "villainScene": [
+    {
+     "who": "slayer",
+     "line": "The island of wizards is ours. The old one is alone."
+    },
+    {
+     "who": "slayer",
+     "line": "Alone ones break."
+    },
+    {
+     "who": "slayer",
+     "line": "Kill the father. The Mark says the father is the last of them."
+    }
+   ],
+   "after": [
+    {
+     "who": "stage",
+     "line": "For his family, Barrin made a funeral pyre of Tolaria.",
+     "quote": true
+    },
+    {
+     "who": "stage",
+     "line": "\"I knew this day would come,\" said Urza. Looking at the destruction, Barrin sighed, \"You don't have to revel in it.\"",
+     "quote": true
+    }
+   ],
+   "cues": {
+    "hero": {
+     "start": "Tolaria. One last lesson.",
+     "big": "For Rayne. For Hanna.",
+     "low": "Not yet. Not until it is done.",
+     "win": "It is done. Now let it burn.",
+     "loss": "Urza... you could have said something...",
+     "half": "Only vengeance matters now."
+    },
+    "villain": {
+     "start": "The old one is weak.",
+     "big": "Excise.",
+     "low": "The island... shakes...",
+     "win": "Tolaria is Phyrexia.",
+     "loss": "Retreat. Retreat!"
+    }
+   },
+   "bigPlays": [],
+   "sim": null
+  },
+  {
+   "id": "a8b7",
+   "slot": 7,
+   "kind": "Meta",
+   "mood": "march",
+   "title": "Remember Me?",
+   "difficulty": "Normal",
+   "teaches": [
+    "Racing"
+   ],
+   "blurb": "On Rath, Crovax had Tahngarth tortured and remade. Now the stronghold has fallen onto Dominaria, Tahngarth has broken free, and the Fires of Yavimaya burn in his blood.",
+   "rewardSet": "pls",
+   "host": false,
+   "hero": {
+    "who": "tahngarth",
+    "deck": {
+     "name": "Fires of Yavimaya",
+     "colors": "RG",
+     "archetype": null,
+     "cards": [
+      {
+       "qty": 4,
+       "name": "Fires of Yavimaya",
+       "set": "inv",
+       "number": "246",
+       "id": "967f1658-8777-46fc-a648-07fb19e46745"
+      },
+      {
+       "qty": 4,
+       "name": "Raging Kavu",
+       "set": "inv",
+       "number": "262",
+       "id": "27573679-e9e5-4bfc-b5d5-85d4648b01b6"
+      },
+      {
+       "qty": 4,
+       "name": "Yavimaya Barbarian",
+       "set": "inv",
+       "number": "290",
+       "id": "8e17377d-4dad-4144-b0ce-c849636096a2"
+      },
+      {
+       "qty": 4,
+       "name": "Blurred Mongoose",
+       "set": "inv",
+       "number": "183",
+       "id": "4b073e3f-6a6f-495a-ab16-39d906b660f1"
+      },
+      {
+       "qty": 4,
+       "name": "Kavu Titan",
+       "set": "inv",
+       "number": "194",
+       "id": "2c5fb86d-1d9a-4da2-bb5b-4266faa20197"
+      },
+      {
+       "qty": 4,
+       "name": "Skizzik",
+       "set": "inv",
+       "number": "169",
+       "id": "dc7732bc-e168-44d9-923a-db7e985bd6db"
+      },
+      {
+       "qty": 2,
+       "name": "Tahngarth, Talruum Hero",
+       "set": "pls",
+       "number": "74",
+       "id": "c1778f37-af01-4f8c-ab9d-a4c60abf7e78"
+      },
+      {
+       "qty": 4,
+       "name": "Llanowar Elves",
+       "set": "7ed",
+       "number": "253",
+       "id": "ed8a8cfd-baef-4198-b1f3-4926139588b2"
+      },
+      {
+       "qty": 4,
+       "name": "Assault // Battery",
+       "set": "inv",
+       "number": "295",
+       "id": "0ec6a889-c941-4898-a2f6-4d3863faf535"
+      },
+      {
+       "qty": 2,
+       "name": "Ancient Kavu",
+       "set": "inv",
+       "number": "136",
+       "id": "c8ccb5d0-735b-443f-addd-8b70f5f2c60d"
+      },
+      {
+       "qty": 12,
+       "name": "Mountain",
+       "set": "inv",
+       "number": "343",
+       "id": "ba6694bb-f3b7-48ff-9d93-cbed84fac210"
+      },
+      {
+       "qty": 12,
+       "name": "Forest",
+       "set": "inv",
+       "number": "347",
+       "id": "f82d0a1c-5812-4254-a000-e4ff9aece3d9"
+      }
+     ]
+    }
+   },
+   "villain": {
+    "who": "evincar",
+    "deck": {
+     "name": "The Overlay",
+     "colors": "B",
+     "archetype": null,
+     "cards": [
+      {
+       "qty": 4,
+       "name": "Maggot Carrier",
+       "set": "pls",
+       "number": "45",
+       "id": "ab2c3dc4-bb49-4ec3-a6c8-4256d1939326"
+      },
+      {
+       "qty": 4,
+       "name": "Nightscape Familiar",
+       "set": "pls",
+       "number": "48",
+       "id": "24fa6853-09b0-4c9f-a138-9dd005780255"
+      },
+      {
+       "qty": 4,
+       "name": "Volcano Imp",
+       "set": "pls",
+       "number": "56",
+       "id": "a8281cc6-2132-4f76-841e-d1ade9cafb84"
+      },
+      {
+       "qty": 4,
+       "name": "Phyrexian Bloodstock",
+       "set": "pls",
+       "number": "50",
+       "id": "785e1a67-af94-48e8-bb37-4999d1fb4c66"
+      },
+      {
+       "qty": 2,
+       "name": "Lord of the Undead",
+       "set": "pls",
+       "number": "44",
+       "id": "0a7f50f4-37a0-476e-8655-edba228aafd6"
+      },
+      {
+       "qty": 4,
+       "name": "Spineless Thug",
+       "set": "7ed",
+       "number": "164",
+       "id": "0c091d07-5813-47b9-b1da-d749e3f4e5aa"
+      },
+      {
+       "qty": 4,
+       "name": "Crypt Rats",
+       "set": "7ed",
+       "number": "125",
+       "id": "f9b2f697-01cc-4610-b4aa-cae83b38647a"
+      },
+      {
+       "qty": 4,
+       "name": "Slay",
+       "set": "pls",
+       "number": "55",
+       "id": "eccda747-2680-4793-8a13-35e49b4de12f"
+      },
+      {
+       "qty": 4,
+       "name": "Dark Banishing",
+       "set": "7ed",
+       "number": "127",
+       "id": "9d03720d-b0ca-4892-9ad1-52189f4a30a1"
+      },
+      {
+       "qty": 2,
+       "name": "Gravedigger",
+       "set": "7ed",
+       "number": "139",
+       "id": "961dec46-b96e-486c-939f-9c11aa75bd04"
+      },
+      {
+       "qty": 24,
+       "name": "Swamp",
+       "set": "inv",
+       "number": "339",
+       "id": "2a7ce037-e04d-404a-afde-9122518e6a31"
+      }
+     ]
+    }
+   },
+   "reward": {
+    "hero": {
+     "packs": 1,
+     "coins": 100
+    },
+    "villain": {
+     "card": {
+      "oracle_id": "7714af0e-41d9-4609-967f-27233b46055f",
+      "name": "Lord of the Undead",
+      "rarity": "rare",
+      "set": "pls",
+      "id": "0a7f50f4-37a0-476e-8655-edba228aafd6",
+      "image": "https://cards.scryfall.io/normal/front/0/a/0a7f50f4-37a0-476e-8655-edba228aafd6.jpg"
+     },
+     "coins": 100
+    }
+   },
+   "scene": [
+    {
+     "who": "stage",
+     "line": "\"Beautiful, isn't it?\" crowed Crovax. \"They fought together. Now they will die together.\"",
+     "quote": true
+    },
+    {
+     "who": "stage",
+     "line": "\"Remember me?\" Tahngarth roared. \"Now I'll repay you for my stay on Rath!\"",
+     "quote": true
+    },
+    {
+     "who": "stage",
+     "line": "\"Crovax knows we're coming now,\" said a grinning Sisay. \"I just sent the *Predator* crashing into his stronghold.\"",
+     "quote": true
+    },
+    {
+     "who": "tahngarth",
+     "line": "Fires of Yavimaya gives every creature haste. Play them, swing at once, race him down."
+    }
+   ],
+   "villainScene": [
+    {
+     "who": "evincar",
+     "line": "Yawgmoth promised me Dominaria. He gave me a burning ridge and a minotaur."
+    },
+    {
+     "who": "evincar",
+     "line": "Selenia would have hated what I am. I made sure she never saw it."
+    },
+    {
+     "who": "evincar",
+     "line": "He is Yawgmoth's reward to me. I shall kill him a hundred times a day.",
+     "quote": true
+    }
+   ],
+   "after": [
+    {
+     "who": "stage",
+     "line": "The decay of Crovax's ancestral home matched the state of his soul.",
+     "quote": true
+    },
+    {
+     "who": "stage",
+     "line": "Crovax dies in the stronghold he stole. Nobody mourns him except, perhaps, a memory of an angel."
+    }
+   ],
+   "cues": {
+    "hero": {
+     "start": "Remember me?",
+     "big": "They're ugly, and they're in my way.",
+     "low": "Not again. Not his cell again...",
+     "win": "That was for Mirri.",
+     "loss": "Get the others out. I will hold him.",
+     "half": "Burn, Crovax. Burn."
+    },
+    "villain": {
+     "start": "Kneel, cow.",
+     "big": "Feast.",
+     "low": "Selenia... I am so hungry...",
+     "win": "Back in the cell.",
+     "loss": "This is not the end of my ascension."
+    }
+   },
+   "bigPlays": [],
+   "sim": null
+  },
+  {
+   "id": "a8b8",
+   "slot": 8,
+   "kind": "Boss",
+   "mood": "boss",
+   "title": "Yawgmoth's Agenda",
+   "difficulty": "Hard",
+   "teaches": [
+    "Everything so far"
+   ],
+   "blurb": "The Dark Lord of Phyrexia has come to Dominaria himself. He was a Thran healer once. Now he is a god of machines, and he knows every hero's grief by name.",
+   "rewardSet": "apc",
+   "host": true,
+   "hero": {
+    "who": "gerrard",
+    "deck": {
+     "name": "The Legacy",
+     "colors": "GW",
+     "archetype": null,
+     "cards": [
+      {
+       "qty": 2,
+       "name": "Gerrard Capashen",
+       "set": "apc",
+       "number": "11",
+       "id": "ccca800f-e850-4bec-95d0-70280b51b7a7"
+      },
+      {
+       "qty": 2,
+       "name": "Captain Sisay",
+       "set": "inv",
+       "number": "237",
+       "id": "d24d441c-f37f-44fe-8a93-f5c89df807e4"
+      },
+      {
+       "qty": 4,
+       "name": "Coalition Honor Guard",
+       "set": "apc",
+       "number": "3",
+       "id": "c5b7be3e-b4af-46d4-bcc6-b44c651f2012"
+      },
+      {
+       "qty": 4,
+       "name": "Llanowar Knight",
+       "set": "inv",
+       "number": "254",
+       "id": "e6c75d89-e432-49aa-a407-555b223b7eff"
+      },
+      {
+       "qty": 4,
+       "name": "Noble Panther",
+       "set": "inv",
+       "number": "257",
+       "id": "3f327818-8222-4295-8cef-118757b34d17"
+      },
+      {
+       "qty": 4,
+       "name": "Charging Troll",
+       "set": "inv",
+       "number": "239",
+       "id": "58956099-6b97-4c7b-ab23-9f9b4d50ef95"
+      },
+      {
+       "qty": 4,
+       "name": "Llanowar Elves",
+       "set": "7ed",
+       "number": "253",
+       "id": "ed8a8cfd-baef-4198-b1f3-4926139588b2"
+      },
+      {
+       "qty": 4,
+       "name": "Steel Leaf Paladin",
+       "set": "pls",
+       "number": "127",
+       "id": "28e8697f-fdf3-4a1a-a84d-dd29b17336c2"
+      },
+      {
+       "qty": 4,
+       "name": "Armadillo Cloak",
+       "set": "inv",
+       "number": "229",
+       "id": "9d816f98-6cb6-432c-b0a4-a0eed21658ac"
+      },
+      {
+       "qty": 4,
+       "name": "Pacifism",
+       "set": "7ed",
+       "number": "29",
+       "id": "ee6758f0-86da-4812-bbe0-ebbb8c67937a"
+      },
+      {
+       "qty": 12,
+       "name": "Forest",
+       "set": "inv",
+       "number": "347",
+       "id": "f82d0a1c-5812-4254-a000-e4ff9aece3d9"
+      },
+      {
+       "qty": 12,
+       "name": "Plains",
+       "set": "inv",
+       "number": "331",
+       "id": "5ba9ef2e-d3ec-41f7-802e-e1414f14dd10"
+      }
+     ]
+    }
+   },
+   "villain": {
+    "who": "yawgmoth",
+    "deck": {
+     "name": "Yawgmoth's Agenda",
+     "colors": "B",
+     "archetype": null,
+     "cards": [
+      {
+       "qty": 4,
+       "name": "Phyrexian Arena",
+       "set": "apc",
+       "number": "47",
+       "id": "84e19975-e3e1-453b-b902-a1b1fc1d8504"
+      },
+      {
+       "qty": 2,
+       "name": "Desolation Angel",
+       "set": "apc",
+       "number": "38",
+       "id": "445127d4-8afb-47cf-b2a1-564540b1fdae"
+      },
+      {
+       "qty": 2,
+       "name": "Phyrexian Gargantua",
+       "set": "apc",
+       "number": "48",
+       "id": "47c80cdd-4287-4ecb-992b-f265cd422098"
+      },
+      {
+       "qty": 4,
+       "name": "Phyrexian Reaper",
+       "set": "inv",
+       "number": "117",
+       "id": "ccdd498b-1081-43fe-8193-518337a5a3ea"
+      },
+      {
+       "qty": 4,
+       "name": "Phyrexian Slayer",
+       "set": "inv",
+       "number": "118",
+       "id": "5fa8c604-343f-4c94-ac25-439ab1845c19"
+      },
+      {
+       "qty": 4,
+       "name": "Plague Spitter",
+       "set": "inv",
+       "number": "119",
+       "id": "8845e6bd-40ee-45ca-a099-53f19ff20a8a"
+      },
+      {
+       "qty": 4,
+       "name": "Ravenous Rats",
+       "set": "inv",
+       "number": "120",
+       "id": "89e29069-add5-4099-b800-9f1e4402cc1a"
+      },
+      {
+       "qty": 4,
+       "name": "Dark Banishing",
+       "set": "7ed",
+       "number": "127",
+       "id": "9d03720d-b0ca-4892-9ad1-52189f4a30a1"
+      },
+      {
+       "qty": 4,
+       "name": "Yawgmoth's Edict",
+       "set": "7ed",
+       "number": "171",
+       "id": "f72ed0e5-37a0-4909-a37e-ba4745bfae3b"
+      },
+      {
+       "qty": 2,
+       "name": "Yawgmoth's Agenda",
+       "set": "inv",
+       "number": "135",
+       "id": "50f7ea7f-4f17-4f78-b68e-693e265ca829"
+      },
+      {
+       "qty": 2,
+       "name": "Twilight's Call",
+       "set": "inv",
+       "number": "130",
+       "id": "3c97c8a5-33b3-4f7f-a224-bb4df7b4bcc0"
+      },
+      {
+       "qty": 24,
+       "name": "Swamp",
+       "set": "inv",
+       "number": "339",
+       "id": "2a7ce037-e04d-404a-afde-9122518e6a31"
+      }
+     ]
+    }
+   },
+   "reward": {
+    "hero": {
+     "packs": 2,
+     "coins": 200
+    },
+    "villain": {
+     "card": {
+      "oracle_id": "ee579a32-a048-4335-b966-231ba731cdea",
+      "name": "Phyrexian Arena",
+      "rarity": "rare",
+      "set": "apc",
+      "id": "84e19975-e3e1-453b-b902-a1b1fc1d8504",
+      "image": "https://cards.scryfall.io/normal/front/8/4/84e19975-e3e1-453b-b902-a1b1fc1d8504.jpg"
+     },
+     "coins": 200
+    }
+   },
+   "scene": [
+    {
+     "who": "yawgmoth",
+     "line": "Gerrard. You look tired. Let me help."
+    },
+    {
+     "who": "stage",
+     "line": "His shape blurs, and it is Hanna standing there. Hanna, smiling."
+    },
+    {
+     "who": "gerrard",
+     "line": "You're not my Hanna!",
+     "quote": true
+    },
+    {
+     "who": "urza",
+     "line": "This is a battle of pawns, for the highest stakes imaginable.",
+     "quote": true
+    },
+    {
+     "who": "urza",
+     "line": "Everything is in place. Nothing can happen that isn't part of my plan.",
+     "quote": true
+    },
+    {
+     "who": "gerrard",
+     "line": "Then for once, Urza, I hope your plan is right."
+    }
+   ],
+   "villainScene": [
+    {
+     "who": "yawgmoth",
+     "line": "Urza. Gerrard. The brother. The heir. The navigator. The cat."
+    },
+    {
+     "who": "yawgmoth",
+     "line": "I have their names. I have their griefs. That is all a god needs."
+    },
+    {
+     "who": "yawgmoth",
+     "line": "Come, little heir. Show me what four thousand years of planning bought."
+    }
+   ],
+   "after": null,
+   "cues": {
+    "hero": {
+     "start": "For Dominaria.",
+     "big": "Wear courage as your armor. Wield honor as your blade.",
+     "low": "Hanna... I'm sorry...",
+     "win": "It is finished.",
+     "loss": "Don't mourn for me...",
+     "half": "Everyone. Now. Together."
+    },
+    "villain": {
+     "start": "Flesh is a mistake. I am the cure.",
+     "big": "Behold perfection.",
+     "low": "Impossible. I am the Father of Machines.",
+     "win": "Rest now, Dominaria. The pain is over.",
+     "loss": "This flesh... remembers...",
+     "half": {
+      "who": "urza",
+      "line": "Mishra? No. Not you. Not now. Focus, Urza."
+     }
+    }
+   },
+   "bigPlays": [],
+   "sim": null
+  }
+ ]
+}

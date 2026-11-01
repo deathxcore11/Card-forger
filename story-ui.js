@@ -111,6 +111,8 @@ export const LESSONS = {
   'Rhystic': 'Rhystic spells work unless any player pays. If they keep mana open to pay, they cannot spend it on their own turn.',
   'Fading': 'Fading creatures arrive with counters and lose one each turn. When they run out, they are gone. Attack while they are big.',
   'Lords': 'A lord changes the creatures around it. Kill the lord and the whole army shrinks back.',
+  'Kicker': 'Kicker is an optional extra cost. Pay it and the spell does more. Cheap early, strong late.',
+  'Split cards': 'A split card is two spells on one card. You cast one half, and it goes to the graveyard.',
   'Playing under a lock': 'A lock stops cards from untapping or moving. Break it, or win with what\'s already in play.',
 };
 // What a battle pays, in words: era packs for your side, the villain's signature card for theirs.
