@@ -20,7 +20,7 @@ function addForm(c,{condition='Near Mint',qty=1,focus='',receipt=false}={}){
 }
 export function tourScenes(game='mtg'){
  const g=DEMO_CARDS[game]?game:'mtg',c=DEMO_CARDS[g],wrap=(title,body)=>shell(g,title,body),name=c.name;
- const search=value=>`<div class="home-search-pill demo-search"><span class="home-ai-label">AI-powered</span><input tabindex="-1" readonly value="${esc(value)}" placeholder="Find a card or ask a question…"><span>↗</span></div>`;
+ const search=value=>`<div class="home-search-pill demo-search"><input tabindex="-1" readonly value="${esc(value)}" placeholder="Find a card or ask a question…"><span>↗</span></div>`;
  const result=`<div class="view-compact demo-results"><div class="display-list">${homeResultRow(g,c,0)}</div></div>`;
  const open=`<div class="demo-detail"><img src="${image(c)}" alt=""><div><b>${esc(name)}</b><p>Check the set and version</p>${button('Add to collection',true)}</div></div>`;
  const find=[frame('Tap Home search.',wrap('Your cards. Your next adventure.',target('Find cards',search('')))),frame('Type a card name. Matching cards appear below.',wrap('Find a card',search(name.slice(0,4))+result),1300),frame(`Choose ${name} from the actual card results.`,wrap('Find a card',search(name)+target('Open this card',result))),frame('The card opens. Check the printing before adding it.',wrap('Card details',open),3200)];

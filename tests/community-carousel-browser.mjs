@@ -36,7 +36,7 @@ try{
    await page.locator('[data-avatar-close]').click();await page.keyboard.press('Escape');
    await page.evaluate(()=>{location.hash='#community';});
    for(const width of [320,390,768,1440]){await page.setViewportSize({width,height:900});await noOverflow(page,'.community-page',`${game} Community ${width}`);}
-   assert.equal(await page.getByRole('button',{name:/Showcase.*Coming soon/}).isEnabled(),false);assert.equal(await page.getByRole('button',{name:/Deck discussions.*Coming soon/}).isEnabled(),false);
+   assert.equal(await page.getByText('Coming soon').count(),0,'unreleased sections are not shown as tabs');
    assert.equal(await inventorySnapshot(page),before,'browsing, filtering, crop cancel and Community never change ownership');app.health();
    console.log(`PASS: ${game} default carousel, full pages, keyboard/snap/resize, direct avatar crop and responsive Community`);
   }finally{await app.context.close();}

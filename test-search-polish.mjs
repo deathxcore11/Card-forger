@@ -10,7 +10,8 @@ for(const game of ['mtg','ptcg','ygo']) {
  assert.equal((html.match(/data-act="askOpen"/g)||[]).length,1,`${game}: one Ask entry on Search`);
  assert.match(html,/search-query/); assert.doesNotMatch(html,/ask-chip/);
  const hero=homeHero(game,'Your cards');
- assert.match(hero,/data-act="homeSearch"/,`${game}: Home uses the integrated search entry`);
+ assert.match(hero,/data-home-search=/,`${game}: Home uses the integrated search entry`);
+ assert.doesNotMatch(hero,/home-search-submit|home-ai-submit/,`${game}: the bar speaks for itself, no extra icon buttons`);
  assert.doesNotMatch(hero,/data-act="askOpen"|data-suggest=/,"no competing Ask control or names-only autocomplete");
 }
 // Small DOM boundary fake: hold network/tool completions while dialogs close and reopen.

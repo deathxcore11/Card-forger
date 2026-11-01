@@ -50,7 +50,7 @@ export function rulesPage(g, R) {
   const G = GAMES[g],
     lists = BANLISTS[g],
     pick = R.list && lists.find((x) => x.id === R.list) ? R.list : lists[0]?.id;
-  return `<div class="page-head"><h1>${esc(G.short)} rules</h1></div>
+  return `<div class="page-head"><h1>${esc(G.short)} rules</h1><div class="head-actions"><button class="btn ghost small" data-act="learnGame">How to play · keywords</button><button class="btn ghost small" data-act="tabletop">Tabletop · play together</button></div></div>
   ${interactiveRules(g)}
   <details class="panel rules-supplement"><summary><b>Formats & deck limits</b><small>Deck size, copies and starting life</small></summary>
   <section class="panel"><h3>Formats</h3><table class="metrics rules-table"><thead><tr><th>Format</th><th>Deck</th><th class="num">${g === "ptcg" ? "" : "Life"}</th></tr></thead><tbody>${formatTable(g)}</tbody></table>

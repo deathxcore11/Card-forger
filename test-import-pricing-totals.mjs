@@ -7,16 +7,16 @@ const row=(name,price,qty=2,owned=0)=>({key:name,name,price,qty,owned,kind:'crea
 const make=(rows,side=[])=>({g:'mtg',key:Math.random().toString(),title:'Fixture',sub:'',evidence:'',rows,sideRowsFn:()=>side,lists:[],load:async()=>{}});
 const show=(spec,mode='original')=>{Object.assign(proven,{spec,mode,busy:false,msg:'',budget:0,last:null});return provenSheetHtml();};
 let html=show(make([row('Unknown',null)]));
-assert.match(html,/Price unavailable/);assert.match(html,/\$0<\/b> known subtotal · 2 unpriced · Incomplete total/);assert.doesNotMatch(html,/\$0<\/b> to finish/);assert.match(html,/provenRetry/);
+assert.match(html,/Price unavailable/);assert.match(html,/\$0\+<\/b><span>to finish · 2 cards without a price/);assert.doesNotMatch(html,/\$0<\/b><span>to finish/);assert.match(html,/provenRetry/);
 html=show(make([row('Known',5),row('Unknown',null,3,1)]));
-assert.match(html,/\$10<\/b> known subtotal · 2 unpriced/);
-html=show(make([row('Owned unknown',null,3,3)]));assert.match(html,/complete ✓/);assert.doesNotMatch(html,/Price unavailable|Incomplete total/);
-html=show(make([row('Free',0)]));assert.match(html,/\$0<\/b> to finish/);assert.doesNotMatch(html,/unpriced|Incomplete total/);
-html=show(make([row('Free',0)],[row('Side unknown',null,3,1)]));assert.match(html,/Sideboard/);assert.match(html,/\$0 known subtotal · 2 unpriced · Incomplete total/);
+assert.match(html,/\$10\+<\/b><span>to finish · 2 cards without a price/);
+html=show(make([row('Owned unknown',null,3,3)]));assert.match(html,/complete ✓/);assert.doesNotMatch(html,/Price unavailable|without a price/);
+html=show(make([row('Free',0)]));assert.match(html,/\$0<\/b><span>to finish/);assert.doesNotMatch(html,/unpriced|without a price/);
+html=show(make([row('Free',0)],[row('Side unknown',null,3,1)]));assert.match(html,/Sideboard/);assert.match(html,/\$0\+ to finish · 2 cards without a price/);
 html=show(make([row('Known',10)],[row('Side unknown',null)]),'budget');
 assert.match(html,/Price check incomplete/);assert.doesNotMatch(html,/already costs little|fits \$|data-act="provenBudget"/);assert.match(html,/data-act="provenSave" disabled/);assert.equal(proven.last,null);
 html=show(make([row('Known',1)],[row('Side known',50)]),'budget');assert.match(html,/Budgets below cover the main deck only/);
-html=show(make([row('Unknown',null)]),'draft');assert.match(html,/known subtotal · 2 unpriced · Incomplete total/);
+html=show(make([row('Unknown',null)]),'draft');assert.match(html,/2 cards without a price/);
 html=show({...make([]),sourceUrl:'javascript:alert(1)'});assert.doesNotMatch(html,/href="javascript:/);
 
 const A={}, status={textContent:''};let rendered='',opens=0,toasts=[];
@@ -28,7 +28,7 @@ const retry={...make(rows),rowsFn:()=>rows,load:async status=>{status('Checking 
 await c.openProven(retry);assert.equal(proven.busy,false);assert.match(proven.msg,/couldn’t load/);assert.match(rendered,/Retry prices/);
 A.provenMode({dataset:{id:'budget'}});proven.budget=50;
 await A.provenSave({dataset:{}});assert.match(toasts.at(-1),/total is incomplete/);
-await A.provenRetry();assert.equal(attempts,2);assert.equal(proven.mode,'budget');assert.equal(proven.budget,50);assert.equal(proven.msg,'');assert.doesNotMatch(rendered,/Price unavailable|Incomplete total/);
+await A.provenRetry();assert.equal(attempts,2);assert.equal(proven.mode,'budget');assert.equal(proven.budget,50);assert.equal(proven.msg,'');assert.doesNotMatch(rendered,/Price unavailable|without a price/);
 await c.openProven({...make([]),load:async()=>{throw Error('Provider 503');}});assert.match(proven.msg,/Provider 503/);assert.match(rendered,/Retry prices/);
 // A retry already in progress is never duplicated.
 let finishRetry;const deferred={...make(rows),load:()=>new Promise(r=>finishRetry=r)};

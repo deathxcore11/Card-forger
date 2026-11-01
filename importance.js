@@ -288,6 +288,10 @@ export function cardMetaUsage(game, card, cached) {
   return { sets: sets.sort((a, b) => b.pct - a.pct), loaded };
 }
 
+// The card sheet shows its Meta tab only when there is something real to explain: an emblem
+// (meta staple, Commander staple, tournament played…) or a recent top list that plays the card.
+export const hasCardMeta = (game, card, usage = cardMetaUsage(game, card)) => importance(game, card).length > 0 || usage.sets.length > 0;
+
 /**
  * opts: { deckAttrs(set, deck), buildAttrs, loadAttrs, loadLabel, busy, extra }
  */

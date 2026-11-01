@@ -55,7 +55,7 @@ function visibilityGrants(raw,seatById){
 }
 export function projectForge(raw,{lookupArtwork=()=>null}={}){
  if(raw?.schema!==SCHEMA){if(raw?.status==='initializing')return null;throw Error('Unsupported Forge snapshot schema.');}
- if(!id(raw.revision)||!Array.isArray(raw.players)||raw.players.length!==2||raw.players.some(p=>!id(p?.id))||new Set(raw.players.map(p=>p.id)).size!==2)throw Error('Invalid Forge snapshot.');
+ if(!id(raw.revision)||!Array.isArray(raw.players)||raw.players.length<2||raw.players.length>4||raw.players.some(p=>!id(p?.id))||new Set(raw.players.map(p=>p.id)).size!==raw.players.length)throw Error('Invalid Forge snapshot.');
  const seatById=new Map(raw.players.map((p,seat)=>[p.id,seat])),seat=seatById.get(raw.viewer);
  if(seat===undefined||raw.players.filter(p=>p.isViewer).length!==1||raw.players[seat].isViewer!==true)throw Error('Forge viewer identity mismatch.');
  const failed=raw.status==='failed'||!!raw.failure;
@@ -87,7 +87,7 @@ export function projectForge(raw,{lookupArtwork=()=>null}={}){
   if(c.hidden===true){cards.set(c.id,{id:c.id,owner:seatById.get(c.owner),controller:seatById.get(c.controller),zone,known:false,tapped:c.tapped===true});return;}
   if(c.hidden!==false||typeof c.name!=='string'||!c.name)return;
   const types=typeof c.type==='string'?c.type.split(/\s+/).filter(t=>['Creature','Land','Artifact','Enchantment','Planeswalker','Battle','Instant','Sorcery'].includes(t)):[];
-  const card={id:c.id,owner:seatById.get(c.owner),controller:seatById.get(c.controller),zone,known:true,name:c.name,types,type:c.type||'',manaCost:c.manaCost||'',text:c.text||'',power:c.power??null,toughness:c.toughness??null,tapped:c.tapped===true,attacking:c.attacking===true,blocking:c.blocking===true,isToken:c.token===true,commander:c.commander===true,damage:c.damage||0,summoningSick:c.summoningSick===true,counters:c.counters||{},keywords:keywordList(c.keywords),crew:Number.isSafeInteger(c.crew)&&c.crew>=0?c.crew:null,attachedTo:Number.isSafeInteger(c.attachedTo)?c.attachedTo:null,attachments:list(c.attachments).filter(Number.isSafeInteger),attackTarget:['player','card'].includes(c.attackTarget?.kind)&&Number.isSafeInteger(c.attackTarget?.id)?{kind:c.attackTarget.kind,id:c.attackTarget.id}:null,blockingIds:list(c.blockingIds).filter(Number.isSafeInteger)};
+  const card={id:c.id,owner:seatById.get(c.owner),controller:seatById.get(c.controller),zone,known:true,name:c.name,types,type:c.type||'',manaCost:c.manaCost||'',text:c.text||'',power:c.power??null,toughness:c.toughness??null,tapped:c.tapped===true,attacking:c.attacking===true,blocking:c.blocking===true,isToken:c.token===true,commander:c.commander===true,damage:c.damage||0,summoningSick:c.summoningSick===true,counters:c.counters||{},keywords:keywordList(c.keywords),crew:Number.isSafeInteger(c.crew)&&c.crew>=0?c.crew:null,attachedTo:Number.isSafeInteger(c.attachedTo)?c.attachedTo:null,attachments:list(c.attachments).filter(Number.isSafeInteger),attackTarget:['player','card'].includes(c.attackTarget?.kind)&&Number.isSafeInteger(c.attackTarget?.id)?{kind:c.attackTarget.kind,id:c.attackTarget.id}:null,blockingIds:list(c.blockingIds).filter(Number.isSafeInteger),...(c.mustAttack===true?{mustAttack:true}:{})};
   if(card.isToken){const colors=tokenColors(c.imageKey);if(colors)card.tokenColors=colors;}
   if(privateZone){card.zoneHolder=seatById.get(holder);if(permitted)card.zoneVisibility='native-face-visible';}
   const artwork=lookupArtwork(card.name,c);if(artwork)card.printing={playArtwork:artwork};
@@ -96,7 +96,14 @@ export function projectForge(raw,{lookupArtwork=()=>null}={}){
  for(const {c,zone,holder}of rows)addCard(c,zone,holder);
  const count=n=>id(n)&&n>=0?n:0;
  const playerCounters=c=>Object.fromEntries(Object.entries(c&&typeof c==='object'?c:{}).filter(([k,v])=>typeof k==='string'&&k.length<=40&&Number.isSafeInteger(v)&&v>0));
- const players=raw.players.map((p,seat)=>({seat,nativeId:p.id,name:p.name,life:p.life,handCount:count(p.zones?.Hand?.count),libraryCount:count(p.zones?.Library?.count),counters:playerCounters(p.counters)}));
+ const players=raw.players.map((p,seat)=>({seat,nativeId:p.id,name:p.name,life:p.life,handCount:count(p.zones?.Hand?.count),libraryCount:count(p.zones?.Library?.count),counters:playerCounters(p.counters),
+  // Commander pods: who is out, the deck each CPU plays and the commander damage this seat has taken.
+  deckAlias:typeof p.deckAlias==='string'?p.deckAlias.slice(0,160):null,lost:p.lost===true,
+  commanderDamage:list(p.commanderDamage).filter(d=>seatById.has(d?.from)&&Number.isSafeInteger(d?.damage)&&d.damage>=0&&typeof d?.commander==='string').map(d=>({from:seatById.get(d.from),commander:d.commander.slice(0,200),damage:d.damage}))}));
+ // What the table calls each seat: "CPU" in a duel; in a Commander pod each CPU by its commander.
+ for(const p of players){if(p.seat===seat){p.label='You';continue;}if(players.length===2){p.label='CPU';continue;}
+  const cmd=[...cards.values()].find(c=>c.commander===true&&c.owner===p.seat&&c.known&&c.name);
+  p.label=(cmd?String(cmd.name).split(/,| \/\/ /)[0].trim():'')||(p.deckAlias||'').split(/\s+/).slice(0,2).join(' ')||'CPU '+p.seat;}
  const stack=list(raw.stack).map(s=>{if(s.source&&!cards.has(s.source.id)&&s.source.zone==='Stack')addCard(s.source);return {id:s.id,source:cards.has(s.source?.id)?s.source.id:null,text:stackText(s.text),controller:seatById.get(s.activatingPlayer)};});
  const revealedZones=[];
  for(const p of players)for(const zone of ['Hand','Library']){
@@ -248,6 +255,8 @@ export function createForgePresentationSession({request,pollMs=350,lookupArtwork
   rememberPrompt(value){const p=currentPrompt();if(p.method!=='order'||p.rememberAllowed!==true||typeof value!=='boolean')throw Error('Native remember choice not offered.');draft={...effectiveDraft(),remember:value};emit();},
   reorderPrompt(index,direction){const p=currentPrompt();if(p.method!=='order'||p.ordered!==true||![1,-1].includes(direction))throw Error('Native order movement not offered.');const indexes=[...promptIndexes()],at=indexes.indexOf(index),to=at+direction;if(at<0||to<0||to>=indexes.length)return;[indexes[at],indexes[to]]=[indexes[to],indexes[at]];draft={...effectiveDraft(),indexes};emit();},
   replyValue(value){const p=currentPrompt();return send('reply',{promptId:p.id,value});},
+  // Combat damage or a divided amount: one whole number per option, or null to skip when Forge offers that.
+  replyAmounts(amounts){const p=currentPrompt();return send('reply',amounts===null?{promptId:p.id,skip:true}:{promptId:p.id,amounts:amounts.map(Number)});},
   setControlMode(value){if(!allowControlMode||!['smart','full'].includes(value)||!['smart','full'].includes(native?.controlMode))throw Error('NATIVE_CONTROL_MODE_UNAVAILABLE');if(native.prompt||native.inputType==='InputLockUI')throw Error('MATCH_NOT_READY');return send('controlMode',{value});},
   setAutoPay(value){if(!allowControlMode||typeof value!=='boolean'||typeof native?.autoPay!=='boolean')throw Error('NATIVE_AUTO_PAY_UNAVAILABLE');if(native.prompt||native.inputType==='InputLockUI')throw Error('MATCH_NOT_READY');return send('autoPay',{value});},
   // Older bridges carry no phaseStops; the table then offers no stop controls.

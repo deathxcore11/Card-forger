@@ -1,7 +1,9 @@
-const CACHE = "cardforge-shell-phone-engine-v380";
+const CACHE = "cardforge-shell-invite-copy-4354-v422";
 const ASSETS = [
+  "./assets/fonts/fonts.css",
   "./play-forge-feature.js",
   "./audio.js",
+  "./audio-loops.js",
   "./play-table-audio.js",
   "./planeswalk-audio.js",
   "./play-update-gate.js",
@@ -26,6 +28,7 @@ const ASSETS = [
   "./play-token-art.js",
   "./play-token-printing.js",
   "./play-playmats.js",
+  "./play-orientation.js",
   "./experiments/forge-proof/native-panel.mjs",
   "./experiments/phase-engine/choice-presentation.mjs",
   "./play-card-support.js",
@@ -34,6 +37,7 @@ const ASSETS = [
   "./experiments/phase-engine/priority-flow.mjs",
   "./play-deck-sources.js",
   "./play-quick-match.js",
+  "./play-engine-names.js",
   "./play-cpu-options.js",
   "./play-turn-controls.js",
   "./experiments/phase-engine/commander-projection.mjs",
@@ -54,6 +58,7 @@ const ASSETS = [
   "./home-overview.css",
   "./polish.css",
   "./deck-viewer.js",
+  "./collection-banner.js",
   "./deck-viewer.css",
   "./deck-mechanic-plan.js", "./mtg-land-requirements.js", "./mtg-commander-conditions.js", "./mtg-primary-inputs.js", "./mtg-ability-endpoints.js", "./mtg-final-support.js", "./mtg-reference-construction.js", "./mtg-mana-sources.js", "./mtg-wiki-knowledge.js", "./mtg-wiki-client.js", "./mtg-wiki-ui.js", "./wiki-sources.js", "./game-wiki-knowledge.js", "./game-glossary-data.js", "./game-wiki-article.js", "./wiki-card-handoff.js", "./wiki-deck-handoff.js",
   "./community-edition.js", "./img/news/2026-10-19-magic-delay.webp", "./img/news/2026-10-22-pokemon-rules.webp", "./img/news/2026-10-19-ygo-list.webp",
@@ -234,6 +239,7 @@ const ASSETS = [
   "./suggest.js",
   "./tour.js",
   "./home-search.js",
+  "./universal-search.js",
   "./search-fan.js",
   "./app-info.js",
   "./tabletop.js", "./tabletop-themes.js",
@@ -250,6 +256,8 @@ const ASSETS = [
   "./extras.js",
   "./share.js",
   "./cloud.js",
+  "./app-errors.js",
+  "./planeswalk-cloud.js",
   "./password-auth.js",
   "./auth-form.js",
   "./config.js",
@@ -277,6 +285,7 @@ const ASSETS = [
   "./zoom.js",
   "./scansession.js",
   "./scancam.js",
+  "./scan-grid.js",
   "./scan-batch.js",
   "./scan-catalog.js",
   "./scan-collector.js",
@@ -298,7 +307,8 @@ const SHELL = new Set(ASSETS.filter((a) => !a.endsWith(".css")).map((a) => new U
 // A new release takes over at once; the page picks it up on its next open.
 self.addEventListener("install", (e) => {
   self.skipWaiting?.();
-  e.waitUntil(caches.open(CACHE).then((c) => c.addAll(ASSETS)));
+  // Fetch past the browser's HTTP cache so a release never saves an older copy of a file.
+  e.waitUntil(caches.open(CACHE).then((c) => c.addAll(ASSETS.map((a) => new Request(a, { cache: "reload" })))));
 });
 let trimming = null;
 const trimArt = () => trimming ||= caches.open(ART).then(async (c) => {

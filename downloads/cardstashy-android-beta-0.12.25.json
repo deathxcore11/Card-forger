@@ -1,0 +1,11 @@
+{
+  "package": "com.cardstashy.app",
+  "versionName": "0.12.25-beta",
+  "versionCode": 61,
+  "appSource": "CardStashy 4.3.53 (commit e7a9609135ac4c634140fbcca2d952adba3e187f)",
+  "minSdk": 26,
+  "targetSdk": 36,
+  "bytes": 122605733,
+  "sha256": "8eb745b58d32e47b82f424edfc2ca929c19e28e7c94a26c238bf8dff77f90cb5",
+  "signingCertificateSha256": "E6:E4:01:A6:1B:7B:1B:9A:52:5B:A0:6F:F6:9E:7E:B7:6B:7E:D3:C4:A9:A8:83:1C:61:F1:56:4E:AA:DC:3F:55"
+}

@@ -2,7 +2,7 @@ import {foregroundDialog} from './feedback-layer.js';
 import assert from 'node:assert/strict';
 import {readFile} from 'node:fs/promises';
 import {finishChoices,finishEffect,resolveFinish,selectPreviewFinish,finishArtworkCard,FINISH_MASKS} from './finish-effects.js';
-import {finishAttrs,finishPreview,containedImageBox,finishEligible,attachFinishPreview,finishSwatch} from './finish-preview.js';
+import {finishAttrs,finishPreview,containedImageBox,finishEligible,attachFinishPreview,finishSwatch,mtgOvalStamp} from './finish-preview.js';
 import {presentationQuote} from './pricing-presentation.js';
 import {normalizePtcg,pokemonVariants} from './ptcg.js';
 import {zoomCardOptions} from './zoom.js';
@@ -160,3 +160,8 @@ console.log('PASS: same Holofoil label maps to Zekrom illustration-only, Mega Ch
 console.log('PASS: pack details, focused modal, nested zoom, and empty modal stack share foreground ownership.');
 
 assert.equal(finishSwatch('mtg',{effect:'plain'}),'plain');assert.equal(finishSwatch('mtg',{key:'foil',effect:'mtg-foil'}),'rainbow');assert.equal(finishSwatch('mtg',{key:'etched',effect:'mtg-etched'}),'silver');assert.equal(finishSwatch('ptcg',{key:'reverse-holofoil',effect:'ptcg-reverse'}),'reverse');assert.equal(finishSwatch('ptcg',{key:'holofoil',effect:'ptcg-holo'}),'glitter');assert.equal(finishSwatch('ptcg',{status:'unknown'}),'unknown');
+// Holo oval stamp: modern-frame Magic rares and mythics (foil or not) carry it; commons, retro frames, borderless and other stamps don't.
+const stampCard={name:'S',frame:'2015',rarity:'rare',border_color:'black',security_stamp:'oval',finishes:['nonfoil']};
+assert(mtgOvalStamp(stampCard));assert(mtgOvalStamp({...stampCard,rarity:'mythic'}));
+for(const x of [{rarity:'common'},{frame:'1997'},{border_color:'borderless'},{security_stamp:'triangle'},{full_art:true}])assert(!mtgOvalStamp({...stampCard,...x}),JSON.stringify(x));
+assert.match(finishAttrs('mtg',stampCard,{}),/data-holostamp="1"/);assert.doesNotMatch(finishAttrs('mtg',{...stampCard,rarity:'uncommon'},{}),/data-holostamp/);

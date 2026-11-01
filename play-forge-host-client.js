@@ -1,7 +1,8 @@
 // Same-origin host transport only. No local bridge credential, URL override,
 // persistence, automatic command retry, or card-provider request is supported.
 const UUID=/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
-import {forgeCpuPolicy} from './play-forge-cpu-policy.js';
+import {forgeCpuPolicy,forgeMatchDifficulty} from './play-forge-cpu-policy.js';
+import {engineDeck} from './play-engine-names.js';
 export const FORGE_REVISION='e5a0f8156da70ffc7866f923bed371c0111707cd';
 const SCHEMA='cardstashy.forge-proof.v1';
 // The acceptance page is mounted on the same account origin. Its private
@@ -37,15 +38,34 @@ export async function exactDigest(value){
 }
 export function exactForgeInput(setup,{startingPlayer=setup?.match?.startingPlayer??'random'}={}){
  if(setup?.match?.mode!=='cpu'||!setup.selected||!setup.opponent||!['Commander','Standard','Modern','Pioneer','Legacy','Vintage','Pauper','Standard Brawl'].includes(setup.match.format))throw fail('FORGE_SETUP_INCOMPLETE');
- const {difficultyPolicyVersion}=forgeCpuPolicy(setup.match.difficulty);
  const playStyle=setup.playStyle==='quick'?'quick':'practice';
+ const {difficultyPolicyVersion}=forgeCpuPolicy(forgeMatchDifficulty(setup));
  if(!['random','first','second'].includes(startingPlayer))throw fail('FORGE_STARTING_PLAYER_INVALID');
  if(playStyle==='quick')startingPlayer='random';
  // Preserve both exact snapshots. The host binds the opening preference and
  // Forge reports the actual starting player before the opening hand.
  // Forge calls 60-card Standard Brawl just Brawl; only the format label changes.
- const format=setup.match.format==='Standard Brawl'?'Brawl':setup.match.format,seat=deck=>format===deck.format?deck:{...deck,format};
- return structuredClone({format,humanDeck:seat(setup.selected),opponentDeck:seat(setup.opponent),difficultyPolicyVersion,startingPlayer,playStyle});
+ // Every name is sent in Forge's spelling ("Wear/Tear" becomes "Wear // Tear"); see play-engine-names.js.
+ const format=setup.match.format==='Standard Brawl'?'Brawl':setup.match.format,seat=d=>{const deck=engineDeck(d);return format===deck.format?deck:{...deck,format};};
+ const input={format,humanDeck:seat(setup.selected),opponentDeck:seat(setup.opponent),difficultyPolicyVersion,startingPlayer,playStyle};
+ // A Commander pod: one or two more CPU seats, each with its own deck and level. Four full
+ // saved decks can pass the host's size limit, so pod decks travel as the rows Forge reads.
+ const extra=Array.isArray(setup.extraOpponents)?setup.extraOpponents.filter(o=>o?.deck):[];
+ if(extra.length){
+  if(format!=='Commander'||playStyle!=='practice'||extra.length>2)throw fail('FORGE_POD_INVALID');
+  input.humanDeck=podDeck(input.humanDeck);input.opponentDeck=podDeck(input.opponentDeck);
+  input.extraOpponents=extra.map(o=>({deck:podDeck(seat(o.deck)),difficultyPolicyVersion:forgeCpuPolicy(o.difficulty||'Medium').difficultyPolicyVersion}));
+ }
+ return structuredClone(input);
+}
+const POD_ROW=['name','qty','set','setCode','collectorNumber','collector_number','foil','finish'];
+const podRow=r=>Object.fromEntries(POD_ROW.filter(k=>r?.[k]!==undefined&&r[k]!==null).map(k=>[k,r[k]]));
+export function podDeck(deck){
+ const out={format:deck.format};for(const k of ['name','commander','companion'])if(deck[k]!==undefined&&deck[k]!==null)out[k]=deck[k];
+ out.cards=(deck.cards||[]).map(podRow);
+ for(const k of ['side','commanders'])if(Array.isArray(deck[k])&&deck[k].length)out[k]=deck[k].map(podRow);
+ if(Array.isArray(deck.errors)&&deck.errors.length)out.errors=deck.errors;
+ return out;
 }
 // Ask the host to start the engine for this account's next match while the player
 // is still choosing decks. Best effort and idempotent on the server: it never ends a
@@ -62,6 +82,48 @@ export async function warmForgeHost({getAccessToken,fetchImpl=globalThis.fetch,n
  void r.body?.cancel().catch(()=>{});
  if(r.status===202)warmedAt=asked;
  return r.status===202;
+}
+// Friend matches (two people, one hosted Forge game). A room holds the host's deck until a
+// friend joins with the private invite; the server then starts the match with both seats.
+// Decks go only to the server: the other player sees a filled seat, never the list.
+export const FRIEND_FORMATS=Object.freeze(['Commander','Standard','Modern']);
+const INVITE=/^[A-Za-z0-9_-]{43}$/;
+export const ROOM_MESSAGES=Object.freeze({
+ room_full:'This room already has two players.',
+ invite_expired:'This invite has expired. Ask your friend for a new one.',
+ room_closed:'Your friend closed this room.',
+ invite_not_found:'This invite is no longer valid.',
+ own_room:'This is your own room. Send the invite to a friend.',
+ player_busy:'One of you is still in another match. Finish it, then try again.',
+ global_match_capacity:'Every table is busy right now. Try again in a minute.',
+ invalid_match_input:'This deck does not fit the room\'s format.',
+});
+export const friendInviteLink=invite=>'https://cardstashy.com/#play/join/'+invite;
+export const friendInviteFromHash=hash=>{const m=/^#play\/join\/([A-Za-z0-9_-]{43})$/.exec(hash||'');return m?m[1]:null;};
+const friendDeck=(format,deck)=>{const d=engineDeck(deck);return format===d.format?d:{...d,format};};
+export function createFriendRooms({getAccessToken,fetchImpl=globalThis.fetch}={}){
+ if(typeof getAccessToken!=='function'||typeof fetchImpl!=='function')throw fail('FORGE_HOST_READERS_REQUIRED');
+ async function call(path,{method='POST',body}={}){
+  const token=await getAccessToken();
+  if(typeof token!=='string'||!token||token.length>8192||!/^[-A-Za-z0-9._]+$/.test(token))throw fail('AUTHENTICATION_REQUIRED');
+  const r=await fetchImpl(API_PREFIX+path,{method,body:body===undefined?undefined:JSON.stringify(body),headers:{Accept:'application/json',Authorization:'Bearer '+token,...(body===undefined?{}:{'Content-Type':'application/json'})},credentials:'omit',redirect:'error',referrerPolicy:'no-referrer',cache:'no-store'});
+  const data=r.status===204?null:await r.json().catch(()=>null);
+  if(!r.ok){const code=typeof data?.error==='string'&&/^[a-z0-9_]{1,100}$/.test(data.error)?data.error:'room_request_rejected';throw Object.assign(fail(code),{status:r.status,message:ROOM_MESSAGES[code]||'The room could not be reached. Try again.'});}
+  return data;
+ }
+ const room=id=>{if(!UUID.test(id||''))throw fail('FRIEND_ROOM_INVALID');return '/api/play/rooms/'+id;};
+ const invite=v=>{if(!INVITE.test(v||''))throw Object.assign(fail('invite_not_found'),{message:ROOM_MESSAGES.invite_not_found});return v;};
+ return {
+  // {roomId, format, status:'open', expiresAt, seat:'host', invite}
+  async open(format,deck){if(!FRIEND_FORMATS.includes(format))throw fail('FRIEND_FORMAT_UNSUPPORTED');return call('/api/play/rooms',{body:{format,deck:friendDeck(format,deck)}});},
+  // The room an invite opens, before choosing a deck: {roomId, format, status, seat:'guest'}.
+  async peek(code){return call('/api/play/rooms/join',{body:{invite:invite(code)}});},
+  // Take the second seat; the answer names the match both players then open (attach).
+  async join(code,format,deck){if(!FRIEND_FORMATS.includes(format))throw fail('FRIEND_FORMAT_UNSUPPORTED');return call('/api/play/rooms/join',{body:{invite:invite(code),deck:friendDeck(format,deck)}});},
+  // The host waits here: status 'started' brings matchId.
+  async read(id){return call(room(id),{method:'GET'});},
+  async cancel(id){return call(room(id),{method:'DELETE'});},
+ };
 }
 export function createForgeHostClient({readAccount,getAccessToken,fetchImpl=globalThis.fetch,timeoutMs=15000,newId=()=>crypto.randomUUID()}={}){
  if(typeof readAccount!=='function'||typeof getAccessToken!=='function'||typeof fetchImpl!=='function')throw fail('FORGE_HOST_READERS_REQUIRED');
@@ -99,9 +161,21 @@ export function createForgeHostClient({readAccount,getAccessToken,fetchImpl=glob
   try{return await Promise.race([work,new Promise((_,reject)=>{timer=setTimeout(()=>{controller.abort();reject(fail('HOST_REQUEST_TIMEOUT'));},timeoutMs);})]);}
   finally{clearTimeout(timer);}
  }
- const bind=data=>{if(data?.matchId!==allocation?.matchId||data?.generation!==allocation?.generation)throw fail('HOST_GENERATION_MISMATCH');};
+ const bind=data=>{
+  // A friend match joined by id learns its generation from the first answer, then holds to it.
+  if(allocation&&allocation.generation===null&&data?.matchId===allocation.matchId&&UUID.test(data?.generation||''))allocation.generation=data.generation;
+  if(data?.matchId!==allocation?.matchId||data?.generation!==allocation?.generation)throw fail('HOST_GENERATION_MISMATCH');
+ };
  return {
   status,
+  // A friend match: the server started it when the friend joined the room. Both players open
+  // the same match by id; the server gives each one their own seat and their own view.
+  attach(matchId){
+   if(closed||creating||allocation)throw fail('MATCH_ALREADY_OPEN');
+   if(!UUID.test(matchId||''))throw fail('FRIEND_MATCH_INVALID');
+   allocation={matchId,generation:null,expiresAt:null,deckDigests:null};requestedPregame={selection:'random',playStyle:'quick'};
+   return status();
+  },
   async create(input){
    if(closed||creating||allocation)throw fail('MATCH_ALREADY_OPEN');
    // JSON is the exact wire representation hashed by the server. No row sorting,
@@ -138,7 +212,7 @@ export function createForgeHostClient({readAccount,getAccessToken,fetchImpl=glob
     const s=data.snapshot;
     // An action whose reply was lost is settled by the server: either the board moved past
     // the revision it was built from, or the server released it. Only then may the next action go.
-    if(unsettled&&code===200&&data.status==='running'&&Number.isSafeInteger(s?.revision)&&(data.commandPending===false||s.revision!==unsettled.revision)){unsettled=null;if(!blocked)error=null;}if(code!==200||data.status!=='running'||s?.schema!==SCHEMA||s.forgeRevision!==FORGE_REVISION||!Number.isSafeInteger(s.revision)||!Number.isSafeInteger(s.viewer)||!Array.isArray(s.players)||s.players.length!==2||s.players.some(p=>!Number.isSafeInteger(p?.id))||new Set(s.players.map(p=>p.id)).size!==2||s.players.filter(p=>p.isViewer).length!==1||s.players.filter(p=>p.isViewer&&p.id===s.viewer).length!==1)throw fail('HOST_NATIVE_PROJECTION_MISMATCH');
+    if(unsettled&&code===200&&data.status==='running'&&Number.isSafeInteger(s?.revision)&&(data.commandPending===false||s.revision!==unsettled.revision)){unsettled=null;if(!blocked)error=null;}if(code!==200||data.status!=='running'||s?.schema!==SCHEMA||s.forgeRevision!==FORGE_REVISION||!Number.isSafeInteger(s.revision)||!Number.isSafeInteger(s.viewer)||!Array.isArray(s.players)||s.players.length<2||s.players.length>4||s.players.some(p=>!Number.isSafeInteger(p?.id))||new Set(s.players.map(p=>p.id)).size!==s.players.length||s.players.filter(p=>p.isViewer).length!==1||s.players.filter(p=>p.isViewer&&p.id===s.viewer).length!==1)throw fail('HOST_NATIVE_PROJECTION_MISMATCH');
     if(expectedViewer!==null&&s.viewer!==expectedViewer)throw fail('HOST_NATIVE_PROJECTION_MISMATCH');expectedViewer=s.viewer;knownPlayers=s.players.map(p=>p.id);
     if(s.pregame!==undefined&&s.pregame!==null){
      const p=s.pregame;

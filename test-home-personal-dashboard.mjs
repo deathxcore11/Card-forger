@@ -78,7 +78,7 @@ assert.match(app.slice(app.indexOf('A.refreshDeck ='),app.indexOf('A.deckAdd =')
 const saved=S.state;
 try {
   for(const game of games){
-    S.state=makeState();assert.match(homeResume(game),/Choose a deck/);assert.doesNotMatch(homeResume(game),/Last worked on|data-resume-deck/);
+    S.state=makeState();assert.match(homeResume(game),/data-home-deck-pick=/);assert.doesNotMatch(homeResume(game),/Last worked on|data-resume-deck/);
     S.state.homeDeckActivity={[game]:[{id:'same-id',at:iso}]};
     const html=homeResume(game);assert.match(html,/Last worked on/);assert.match(html,/data-resume-deck="same-id"/);
     assert(html.includes(`data-to="#${game==='mtg'?'deck':'tdeck'}/same-id/cards"`));

@@ -2,8 +2,8 @@
 // rules engine, external artwork query, or persisted private match state.
 import {APP_VERSION} from './config.js';
 import {capturePracticeArtwork} from './play-card-surface.js';
-import {forgeCpuPolicy} from './play-forge-cpu-policy.js';
-import {createForgeHostClient,exactForgeInput,forgeAccountKey,forgeWarmedAt} from './play-forge-host-client.js';
+import {forgeCpuPolicy,forgeMatchDifficulty} from './play-forge-cpu-policy.js';
+import {createForgeHostClient,exactForgeInput,forgeAccountKey} from './play-forge-host-client.js';
 import {createForgePresentationSession} from './experiments/forge-proof/forge-session.mjs';
 import {mountForgeTable} from './experiments/forge-proof/forge-table.mjs';
 import {nativePromptUnanswerable} from './experiments/forge-proof/native-panel.mjs';
@@ -30,9 +30,21 @@ export function trackerDeck(setup,artwork){
  return (setup?.selected?.cards||[]).filter(r=>r?.name&&r.qty>0).map(r=>{const c=artwork(r.name)?.card,face=c?.card_faces?.[0];
   return {name:r.name,qty:r.qty,art:c?.image_uris?.art_crop||face?.image_uris?.art_crop||'',cost:c?.mana_cost||face?.mana_cost||'',land:c?/\bLand\b/.test(c.type_line||''):BASIC_LAND.test(r.name)};});
 }
-export function capturedForgeArtwork(setup,lookup){
+// A friend's deck is never sent to this player, so its cards are looked up by name as they are
+// seen (resolveLate fetches a missing one; it shows once the catalogue has it).
+export function capturedForgeArtwork(setup,lookup,resolveLate=null){
  const rows=[setup.selected,setup.opponent].flatMap(deck=>{const d=capturePracticeArtwork(deck,lookup);return [...d.cards,...(d.side||[])];});
+ const seen=new Map(),asked=new Set();
+ const late=name=>{
+  if(!resolveLate||!name||rows.some(r=>r.name===name))return null;
+  if(seen.has(name))return seen.get(name);
+  const row=capturePracticeArtwork({cards:[{name,qty:1}]},lookup).cards[0];
+  if(row?.playArtwork){seen.set(name,row.playArtwork);return row.playArtwork;}
+  if(!asked.has(name)){asked.add(name);Promise.resolve().then(()=>resolveLate(name)).catch(()=>{});}
+  return null;
+ };
  return (name,native)=>{
+  const friend=late(name);if(friend)return structuredClone(friend);
   let options=rows.filter(r=>r.name===name&&r.playArtwork).map(r=>r.playArtwork);
   // A two-part card (The Arkenstone // Seek the Heart) is listed by its full name but Forge names it by one half.
   if(!options.length)options=rows.filter(r=>r.playArtwork&&(r.playArtwork.card?.card_faces||[]).some(f=>String(f?.name||'').toLowerCase()===String(name||'').toLowerCase())).map(r=>r.playArtwork);
@@ -76,7 +88,7 @@ export function forgeMatchError(error){
  })[code]||'The game could not open this match. Review any card or format details below, then return to setup.';
 }
 
-export function createForgePlayerMat({root,readAccount,readSetup,getAccessToken,lookup,prepareArtwork=async()=>{},onChange=()=>{},onClose=()=>{},onHome=null,onRematch=null,onFinished=()=>{},createClient=createForgeHostClient,mountTable=mountForgeTable,mountIntro=mountForgeMatchIntro,pollMs=500,startupPollMs=250,wait=ms=>new Promise(r=>setTimeout(r,ms)),now=()=>Date.now()}={}){
+export function createForgePlayerMat({root,readAccount,readSetup,getAccessToken,lookup,prepareArtwork=async()=>{},onChange=()=>{},onClose=()=>{},onHome=null,onRematch=null,onFinished=()=>{},createClient=createForgeHostClient,resolveLate=null,mountTable=mountForgeTable,mountIntro=mountForgeMatchIntro,pollMs=500,startupPollMs=250,wait=ms=>new Promise(r=>setTimeout(r,ms)),now=()=>Date.now()}={}){
  if(!root||[readAccount,readSetup,getAccessToken,lookup].some(f=>typeof f!=='function'))throw Error('FORGE_PLAYER_MAT_READERS_REQUIRED');
  const doc=root.ownerDocument,view=doc.defaultView;
  let generation=0,opening=false,startupMs=null,client=null,session=null,table=null,last=null,warning=false,viewer=null,matchup=null,matchPolicy=null,matchAccount=null,intro=null,exitDialog=null,exitConfirm=null,exitSubmitting=false,disposed=false,playedFrom=null,ownFirst=null,lastSurface=null,conceding=false,recorded=false;
@@ -104,7 +116,7 @@ export function createForgePlayerMat({root,readAccount,readSetup,getAccessToken,
  function showPause(){
   if(pauseCard||disposed)return;pauseCard=node('section');pauseCard.className='play-screen-pause';pauseCard.setAttribute('role','alertdialog');pauseCard.setAttribute('aria-modal','true');pauseCard.setAttribute('aria-labelledby','playScreenPauseTitle');
   const card=node('div');card.className='play-screen-pause-card';const icon=node('span');icon.className='play-screen-pause-icon';icon.setAttribute('aria-hidden','true');icon.innerHTML='<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><rect x="2.5" y="4" width="9" height="16" rx="1.6"/><path d="M13.5 5.4 20.2 3.6a.8.8 0 0 1 1 .8v15.2a.8.8 0 0 1-1 .8l-6.7-1.8z"/><path d="M5.5 12h3m-1.3-1.5L8.7 12l-1.5 1.5"/></svg>';
-  const upright=(view?.innerHeight||0)>(view?.innerWidth||0),title=node('h2',upright?'Turn sideways to keep playing':'Unfold to keep playing');title.id='playScreenPauseTitle';title.tabIndex=-1;const line=node('p','Your match is waiting. If the screen stays this small for 5 minutes, you concede.'),left=node('p');left.className='play-screen-pause-left';left.setAttribute('aria-live','off');
+  const upright=(view?.innerHeight||0)>(view?.innerWidth||0),title=node('h2',upright?'Turn sideways to keep playing':'Unfold to keep playing');title.id='playScreenPauseTitle';title.tabIndex=-1;const line=node('p',upright?'Play runs sideways. Your match waits 5 minutes, then you concede.':'Your match is waiting. If the screen stays this small for 5 minutes, you concede.'),left=node('p');left.className='play-screen-pause-left';left.setAttribute('aria-live','off');
   card.append(icon,title,line,left);pauseCard.append(card);
   // The table redraws its own children on every update, so the notice sits on the page and the table itself is made inert.
   root.inert=true;doc.body.append(pauseCard);title.focus({preventScroll:true});
@@ -115,7 +127,7 @@ export function createForgePlayerMat({root,readAccount,readSetup,getAccessToken,
   screenPause=createPlayScreenPause({limitMs:PLAY_SMALL_SCREEN_LIMIT_MS,onPause:showPause,onResume:hidePause,
    onTick:left=>{const el=pauseCard?.querySelector('.play-screen-pause-left');if(el)el.textContent=`${minutes(left)} left`;},
    onExpire:()=>{hidePause();void expireMatch();}});
-  unwatchScreen=watchPlayScreen(view,()=>screenPause?.update(readPlayScreen(view,doc).fits));screenPause.update(readPlayScreen(view,doc).fits);
+  const fits=()=>readPlayScreen(view,doc,{table:true}).fits;unwatchScreen=watchPlayScreen(view,()=>screenPause?.update(fits()));screenPause.update(fits());
  }
  function unwatch(){unwatchScreen?.();unwatchScreen=null;screenPause?.destroy();screenPause=null;hidePause();}
  async function expireMatch(){
@@ -131,12 +143,15 @@ export function createForgePlayerMat({root,readAccount,readSetup,getAccessToken,
   if(diagnostic){const details=node('details');details.append(node('summary','Technical details'),node('code',diagnostic));panel.append(details);}
   if(close){const b=node('button','Return to Play setup');b.type='button';b.className='btn';b.addEventListener('click',requestExit);panel.append(b);}root.append(panel);heading.focus();
  }
+ // The result waits for the blow that won the game to land on the board (at most two seconds), as in Arena.
+ async function lethalBlow(){if(conceding||disposed)return;let ms=0;try{ms=table?.finale?.()||0;}catch{ms=0;}if(ms>0)await wait(Math.min(ms,2000));}
  function finish(result,terminalViewer=null){
   if(disposed)return;
   if(matchAccount!==forgeAccountKey(readAccount())){client?.detach();stopped({code:'ACCOUNT_CHANGED'});return;}
   if(terminalViewer!==null&&(!Number.isSafeInteger(terminalViewer)||terminalViewer<0||viewer!==null&&terminalViewer!==viewer)){stopped({code:'INVALID_NATIVE_TERMINAL_RECEIPT'});return;}
   // The final board is kept as a still copy for Inspect board: only what this viewer already saw.
-  const board=table&&root.dataset.engine==='forge-hosted'&&root.childElementCount?{nodes:[...root.children].map(el=>el.cloneNode(true)),className:root.className}:null;
+  // The root itself is the styled table (class, data-stage and layout variables), so its attributes travel with the copy.
+  const board=table&&root.dataset.engine==='forge-hosted'&&root.childElementCount?{nodes:[...root.children].map(el=>el.cloneNode(true)),className:root.className,attrs:[...root.attributes].filter(a=>a.name!=='id'&&a.name!=='class'&&a.name!=='aria-label').map(a=>[a.name,a.value])}:null;
   session?.close();warn(false);exitDialog?.remove();exitDialog=null;exitConfirm=null;
   try{onFinished();}catch{/* warming the next match is best effort */}
   if(Number.isSafeInteger(terminalViewer)&&terminalViewer>=0)viewer=terminalViewer;
@@ -151,11 +166,11 @@ export function createForgePlayerMat({root,readAccount,readSetup,getAccessToken,
   const actions=node('div');actions.className='play-result-actions';panel.append(actions);
   if(onRematch){const b=node('button','Rematch');b.type='button';b.className='btn play-result-rematch';b.addEventListener('click',()=>{if(selectionKey(readSetup())!==selectionKey(matchup)){message('Match setup changed',['Your deck selection changed after this match opened. Review the current setup before starting another match.']);return;}onRematch();});actions.append(b);}
   if(board){const b=node('button','Inspect board');b.type='button';b.className='btn ghost';b.addEventListener('click',()=>inspectBoard(board));actions.append(b);
-   root.classList.add('play-result-over-board');root.prepend(...board.nodes.map(el=>{const copy=el.cloneNode(true);copy.setAttribute('aria-hidden','true');copy.inert=true;copy.dataset.resultBackdrop='true';return copy;}));}
+   root.classList.add('play-result-over-board');root.prepend(boardCopy(board,{backdrop:true}));}
   if(onHome){const b=node('button','Home');b.type='button';b.className='btn ghost';b.addEventListener('click',onHome);actions.append(b);}
   if(!board||!onHome){const b=node('button','Return to Play setup');b.type='button';b.className='btn ghost';b.addEventListener('click',requestExit);actions.append(b);}
   if(matchup){const decks=node('details');decks.append(node('summary','Decklists'));
-   for(const [seat,deck]of [['human',matchup.selected],['opponent',matchup.opponent]]){decks.append(node('h3',(seat==='human'?'Your deck: ':'CPU deck: ')+deck.name));const list=node('ul');for(const row of deck.cards||[])list.append(node('li',`${row.qty} ${row.name}`));decks.append(list,copyDeckButton(deck));if(deck.side?.length){decks.append(node('p','Sideboard'));for(const row of deck.side)decks.append(node('p',`${row.qty} ${row.name}`));}const metadata=node('details'),source=node('pre',JSON.stringify(deck,null,2));source.style.whiteSpace='pre-wrap';source.style.overflowWrap='anywhere';metadata.append(node('summary','Read-only snapshot metadata'),source);decks.append(metadata);}
+   for(const [seat,deck]of [['human',matchup.selected],['opponent',matchup.opponent]].filter(([seat])=>seat==='human'||!matchup.friend)){decks.append(node('h3',(seat==='human'?'Your deck: ':'CPU deck: ')+deck.name));const list=node('ul');for(const row of deck.cards||[])list.append(node('li',`${row.qty} ${row.name}`));decks.append(list,copyDeckButton(deck));if(deck.side?.length){decks.append(node('p','Sideboard'));for(const row of deck.side)decks.append(node('p',`${row.qty} ${row.name}`));}const metadata=node('details'),source=node('pre',JSON.stringify(deck,null,2));source.style.whiteSpace='pre-wrap';source.style.overflowWrap='anywhere';metadata.append(node('summary','Read-only snapshot metadata'),source);decks.append(metadata);}
    panel.append(decks);
   }
  }
@@ -166,9 +181,10 @@ export function createForgePlayerMat({root,readAccount,readSetup,getAccessToken,
  }
  // Like Snap and Hearthstone, the banner recaps the game and the deck's record so far.
  function recap(row){
-  const r=deckRecord(row.deck),box=node('div');box.className='play-result-recap';
+  // The saved row keeps only the deck's record key and name, so the record is read from the deck itself.
+  const r=deckRecord(matchup?.selected||row.deck),box=node('div');box.className='play-result-recap';
   const mins=row.durationMs===null?null:Math.max(1,Math.round(row.durationMs/60000));
-  const stats=[[row.turns===null?'–':String(row.turns),'Turns'],[mins===null?'–':mins+' min','Time'],[row.life===null?'–':`${row.life} – ${row.opponentLife??'–'}`,'Life','You · CPU'],[row.onPlay===null?'–':row.onPlay?'Play':'Draw','On the']];
+  const stats=[[row.turns===null?'–':String(row.turns),'Turns'],[mins===null?'–':mins+' min','Time'],[row.life===null?'–':`${row.life} – ${row.opponentLife??'–'}`,'Life',matchup.friend?'You · Friend':'You · CPU'],[row.onPlay===null?'–':row.onPlay?'Play':'Draw','On the']];
   const list=node('dl');for(const [v,k,note]of stats){const cell=node('div');cell.append(node('dt',k),node('dd',v));if(note)cell.append(node('small',note));list.append(cell);}
   const deck=node('p');deck.className='play-result-record';
   const streak=Math.abs(r.streak)>1?` · ${Math.abs(r.streak)} ${r.streak>0?'wins':'losses'} in a row`:'';
@@ -179,12 +195,19 @@ export function createForgePlayerMat({root,readAccount,readSetup,getAccessToken,
   for(const g of goalProgress()){const li=node('li');li.setAttribute('data-done',String(g.done));if(g.justDone)li.setAttribute('data-just','true');if(g.done)li.append(node('span','✓'));li.append(node('b',g.justDone?`${g.label} · done!`:g.done?g.label:`${g.label} · ${g.have}/${g.need}`));goals.append(li);}
   box.append(goals);return box;
  }
+ // A still copy of the final table, wrapped in an element that carries the table's own class and attributes.
+ function boardCopy(board,{backdrop=false}={}){
+  const copy=node('div');copy.className=board.className;for(const [k,v]of board.attrs||[])if(k!=='aria-busy'&&k!=='inert')copy.setAttribute(k,v);
+  copy.append(...board.nodes.map(el=>el.cloneNode(true)));
+  if(backdrop){copy.setAttribute('aria-hidden','true');copy.inert=true;copy.dataset.resultBackdrop='true';}else copy.dataset.resultBoard='true';
+  return copy;
+ }
  // Inspect board swaps the result for the frozen final table, read only, with a way back.
  function inspectBoard(board){
   const results=[...root.childNodes],resultsClass=root.className;
   const bar=node('div');bar.className='play-result-board-bar';const back=node('button','Back to results');back.type='button';back.className='btn';bar.append(node('span','Final board'),back);
   back.addEventListener('click',()=>{root.className=resultsClass;root.replaceChildren(...results);root.querySelector('.play-match-result button')?.focus();});
-  root.className=board.className;root.replaceChildren(...board.nodes.map(el=>{const copy=el.cloneNode(true);copy.setAttribute('aria-hidden','false');copy.dataset.resultBoard='true';return copy;}),bar);back.focus();
+  root.className='play-result-inspect';root.replaceChildren(boardCopy(board),bar);back.focus();
  }
  function copyDeckButton(deck){
   const b=node('button','Copy deck');b.type='button';b.className='btn ghost';
@@ -227,7 +250,8 @@ export function createForgePlayerMat({root,readAccount,readSetup,getAccessToken,
   // saying it can take a minute (then why, after 25 s). It all stops when the table opens
   // or the start ends.
   // A warm engine started loading while the player picked decks (the host keeps it 3 minutes).
-  const tick=()=>{if(requestedAt===null||!intro)return;const seconds=Math.max(0,Math.floor((now()-requestedAt)/1000)),warm=forgeWarmedAt(),head=warm!==null&&warm<=requestedAt&&requestedAt-warm<180000?Math.floor((requestedAt-warm)/1000):null;intro.elapsed?.(`${seconds} s`);if(progress){intro.note?.(stepsLine(progress));return;}intro.note?.(seconds>=25?'Still setting up. The first match after an update takes longer.':head!==null?`The engine started loading ${head} s before you pressed Start.`:'Setting up a table can take up to a minute. Keep this page open.');};
+  const tick=()=>{if(requestedAt===null||!intro)return;const seconds=Math.max(0,Math.floor((now()-requestedAt)/1000));intro.elapsed?.(`${seconds} s`);if(progress?.ms?.ready!==undefined){intro.note?.(seconds>=25?'Still shuffling. The first match after an update takes longer.':'Shuffling up and dealing…');return;}intro.note?.(seconds>=25?'Still setting up. The first match after an update takes longer.':'Setting up a table can take up to a minute. Keep this page open.');};
+  // The host's step times (warm or fresh engine, container, engine) stay in the console for diagnosis; the player sees plain words.
   // Where a slow start spends its time, from the host's own step times: a warm engine or
   // a fresh one, then the container and the engine. Shown while it starts, and briefly
   // once the table opens.
@@ -241,7 +265,7 @@ export function createForgePlayerMat({root,readAccount,readSetup,getAccessToken,
    if(totalMs!==null)parts.unshift('Ready in '+secs(totalMs));return parts.join(' · ');};
   const stopTicker=()=>{if(ticker!==null)view?.clearInterval?.(ticker);ticker=null;intro?.elapsed?.('');intro?.note?.('');};
   try{
-   matchup=structuredClone(setup);playedFrom=ownFirst=lastSurface=null;conceding=recorded=false;matchPolicy=forgeCpuPolicy(setup.match.difficulty);
+   matchup=structuredClone(setup);playedFrom=ownFirst=lastSurface=null;conceding=recorded=false;matchPolicy=forgeCpuPolicy(forgeMatchDifficulty(setup));
    if(!current()||setup.profile?.ownerId!==readAccount()?.user?.id)throw Object.assign(Error('ACCOUNT_CHANGED'),{code:'ACCOUNT_CHANGED'});
    intro=mountIntro({root,setup,lookup,onCancel:requestExit,wait,isCurrent:current});watchScreen();
    // Card art is needed only once the table opens, so it loads while the server starts
@@ -264,7 +288,9 @@ export function createForgePlayerMat({root,readAccount,readSetup,getAccessToken,
      }
     })();created.catch(()=>{});
    };
-   if(setup.playStyle==='quick')request('random');
+   // A friend match was started by the server when the friend joined: open it on this seat.
+   if(setup.friendMatch){client=createClient({readAccount,getAccessToken});client.attach(setup.friendMatch.matchId);requestedAt=now();tick();if(typeof view?.setInterval==='function')ticker=view.setInterval(tick,1000);created=Promise.resolve();}
+   else if(setup.playStyle==='quick')request('random');
    await Promise.race([preparing,wait(1200)]);
    if(!current())throw Object.assign(Error('ACCOUNT_CHANGED'),{code:'ACCOUNT_CHANGED'});
    await intro.showMatchup?.();
@@ -273,7 +299,7 @@ export function createForgePlayerMat({root,readAccount,readSetup,getAccessToken,
     if(!current()||startingPlayer===null)throw Object.assign(Error('SELECTION_CHANGED'),{code:'SELECTION_CHANGED'});
     request(startingPlayer);
    }
-   intro.status('Starting the rules engine…');
+   intro.status('Setting up the table…');
    await created;
    warn(true);if(!current()){await client.close();throw Error('SELECTION_CHANGED');}
    let state,deadline=Date.now()+125000,allocationRetries=0;
@@ -281,7 +307,7 @@ export function createForgePlayerMat({root,readAccount,readSetup,getAccessToken,
     try{state=await client.read();}catch(e){
      // Cloudflare sometimes has no container free for a second or two. That refusal
      // comes before the engine got the decks, so a fresh start is safe: twice, quietly.
-     if(e.status===410&&/no container instance/i.test(e.failure||'')&&allocationRetries<2&&current()){allocationRetries++;await client.close().catch(()=>{});await wait(1500*allocationRetries);if(!current())throw Error('SELECTION_CHANGED');client=createClient({readAccount,getAccessToken});await client.create(input);deadline=Date.now()+125000;continue;}
+     if(e.status===410&&!setup.friendMatch&&/no container instance/i.test(e.failure||'')&&allocationRetries<2&&current()){allocationRetries++;await client.close().catch(()=>{});await wait(1500*allocationRetries);if(!current())throw Error('SELECTION_CHANGED');client=createClient({readAccount,getAccessToken});await client.create(input);deadline=Date.now()+125000;continue;}
      if(![429,503].includes(e.status))throw e;await wait(e.retryAfterMs||1000);continue;}
     const waitingForFirst=state.status==='running'&&!forgeStartingPlayer(state.snapshot)&&state.snapshot.turn===0&&!state.snapshot.prompt&&(state.snapshot.busy===true||state.snapshot.inputType==='InputLockUI');
     if(state.status==='initializing'&&state.progress){progress=state.progress;tick();}
@@ -297,18 +323,19 @@ export function createForgePlayerMat({root,readAccount,readSetup,getAccessToken,
    try{await preparing;}catch(e){await client.close().catch(()=>{});throw e;}
    stopTicker();
    if(!current()){await client.close();throw Error('SELECTION_CHANGED');}
-   const artwork=capturedForgeArtwork(setup,lookup);
+   const artwork=capturedForgeArtwork(setup,lookup,setup.friendMatch?resolveLate:null);
    if(!forgeStartingPlayer(state.snapshot))throw Object.assign(Error('STARTING_PLAYER_UNCONFIRMED'),{code:'STARTING_PLAYER_UNCONFIRMED'});
    session=createForgePresentationSession({lookupArtwork:artwork,pollMs,allowControlMode:true,transportStatus:()=>client.status(),request:async(path,body)=>{
     if(body)return client.submit(body);
-    try{const next=await client.read();if(next.status==='finished'){finish(next.result,next.viewerId);return null;}if(next.status!=='running')throw Error('HOST_SESSION_NOT_RUNNING');return next.snapshot;}
+    try{const next=await client.read();if(next.status==='finished'){await lethalBlow();finish(next.result,next.viewerId);return null;}if(next.status!=='running')throw Error('HOST_SESSION_NOT_RUNNING');return next.snapshot;}
     catch(e){if(e.status===410||e.status===401||e.code==='ACCOUNT_CHANGED')stopped(e);throw e;}
    }});
    await intro?.reveal(state.snapshot);if(!current()){await client.close();throw Error('SELECTION_CHANGED');}intro?.destroy();intro=null;
    playedFrom=now();ownFirst=forgeStartingPlayer(state.snapshot)?.ownFirst??null;
    session.acceptState(state.snapshot);session.subscribe(s=>{lastSurface=s.status?.surface||lastSurface;updateExit();if(!disposed&&ticket===generation&&last?.phase!=='finished')publish({phase:'playing',game:s});});
    // The engine and website build stay identifiable on screen and in diagnostics.
-   root.className='';root.dataset.engine='forge-hosted';root.dataset.build=APP_VERSION;table=mountTable(root,{session,profile:setup.profile,format:setup.match.format,title:`CardStashy · Magic · ${APP_VERSION}`,onExit:requestExit,presentation:{hosted:true,allowControlMode:true,tracker:trackerDeck(setup,artwork)}});if(progress){const chip=node('div',stepsLine(progress,startupMs));chip.className='forge-startup-chip';chip.setAttribute('role','status');root.append(chip);view?.setTimeout?.(()=>chip.remove(),7000);}warn(true);await session.start({readInitial:false});return last;
+   root.className='';root.dataset.engine='forge-hosted';root.dataset.build=APP_VERSION;table=mountTable(root,{session,profile:setup.profile,format:setup.match.format,title:`CardStashy · Magic · ${APP_VERSION}`,onExit:requestExit,presentation:{hosted:true,allowControlMode:true,tracker:trackerDeck(setup,artwork)}});// Start timings stay out of the player's view (they read like a developer readout); the console keeps them.
+   if(progress)view?.console?.info?.('[play] '+stepsLine(progress,startupMs));warn(true);await session.start({readInitial:false});return last;
   }catch(e){stopTicker();if(current()){session?.close();warn(false);message('Your match could not start',[forgeMatchError(e),'Your selected decks are unchanged.',...(e.details||[])],{diagnostic:forgeDiagnostic(e)+(requestedAt===null?'':` · ${Math.round((now()-requestedAt)/1000)}s after the table was requested`)});publish({phase:'session-ended',error:e.code||e.message});}throw e;}
   finally{stopTicker();opening=false;}
  }

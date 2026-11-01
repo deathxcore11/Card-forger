@@ -37,10 +37,14 @@ function createMotion({doc=document,win=doc.defaultView,lowPower=false,reduced=(
   const dx=a.x-b.x,dy=a.y-b.y;return n.animate([{transform:`translate(${dx}px,${dy}px) rotate(${r0}deg) scale(${s0})`},{transform:`translate(${dx/2}px,${dy/2-lift}px) rotate(${(r0+r1)/2}deg) scale(${mid})`,offset:.5},{transform:`rotate(${r1}deg) scale(${s1})`}],{duration:ms,delay,easing,fill:'backwards'});}
  // Arena strike with weight: wind-up, lunge, a short freeze on contact (hit-stop), spring back.
  // onHit runs at contact so the caller can pop numbers and shake the target in time with it.
- function strike(n,to,{reach=.78,ms=520,hold=70,delay=0,onHit}={}){if(off()||!n)return 0;const a=center(n),b=center(to);if(!a||!b)return 0;
-  const dx=(b.x-a.x)*reach,dy=(b.y-a.y)*reach,tilt=Math.max(-8,Math.min(8,dx/30)),hit=.55,stop=Math.min(.8,hit+hold/ms);
-  n.animate([{transform:'none'},{transform:`translate(${-dx*.06}px,${-dy*.06+6}px) scale(1.05) rotate(${-tilt/2}deg)`,offset:.3,easing:'cubic-bezier(.55,0,.85,.35)'},{transform:`translate(${dx}px,${dy}px) scale(1.16) rotate(${tilt}deg)`,offset:hit},{transform:`translate(${dx}px,${dy}px) scale(1.16) rotate(${tilt}deg)`,offset:stop,easing:'cubic-bezier(.3,.6,.3,1)'},{transform:'none'}],{duration:ms,delay});
-  const at=delay+ms*hit;win.setTimeout(()=>{if(to?.isConnected===false)return;flash(to);sparks(to,{n:10,spread:56});onHit?.();},at);return at;}
+ // Timed by phase when the caller gives them (windup, travel, hold, back in ms): the travel can then be
+ // sized to the distance, so a long flight across the table reads as a flight and a blocker next door as a shove.
+ function strike(n,to,{reach=.78,ms=520,hold=70,delay=0,onHit,windup,travel,back}={}){if(off()||!n)return 0;const a=center(n),b=center(to);if(!a||!b)return 0;
+  const phased=windup>0&&travel>0&&back>0,total=phased?windup+travel+hold+back:ms;
+  const dx=(b.x-a.x)*reach,dy=(b.y-a.y)*reach,tilt=Math.max(-8,Math.min(8,dx/30)),pull=phased?windup/total:.3,hit=phased?(windup+travel)/total:.55,stop=phased?(windup+travel+hold)/total:Math.min(.8,hit+hold/ms);
+  n.animate([{transform:'none',easing:phased?'cubic-bezier(.33,0,.4,1)':'linear'},{transform:`translate(${-dx*.06}px,${-dy*.06+6}px) scale(1.05) rotate(${-tilt/2}deg)`,offset:pull,easing:phased?'cubic-bezier(.45,0,.75,.6)':'cubic-bezier(.55,0,.85,.35)'},{transform:`translate(${dx}px,${dy}px) scale(1.16) rotate(${tilt}deg)`,offset:hit},{transform:`translate(${dx}px,${dy}px) scale(1.16) rotate(${tilt}deg)`,offset:stop,easing:phased?'cubic-bezier(.25,.7,.35,1)':'cubic-bezier(.3,.6,.3,1)'},{transform:'none'}],{duration:total,delay});
+  // onHit may hand back the target's new element when a redraw replaced it mid-flight.
+  const at=delay+total*hit;win.setTimeout(()=>{const t=onHit?.()||to;if(t?.isConnected===false)return;flash(t);sparks(t,{n:10,spread:56});},at);return at;}
  // Break a card into six shards and a few embers. Pass the card element (still in place) or a
  // snapshot {rect, html} taken before a redraw removed it.
  const SHARDS=['0 0,55% 0,40% 45%,0 35%','55% 0,100% 0,100% 30%,40% 45%','0 35%,40% 45%,30% 75%,0 70%','40% 45%,100% 30%,100% 65%,60% 60%','0 70%,30% 75%,45% 100%,0 100%','30% 75%,60% 60%,100% 65%,100% 100%,45% 100%'];

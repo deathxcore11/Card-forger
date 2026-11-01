@@ -1,6 +1,6 @@
 /* Play owns desktop space; all art, cards, colors and finish rendering remain
    shared with CardStashy. These rules do not change other routes. */
-body[data-view="play"] #content{max-width:none;width:100%;padding:18px clamp(16px,2vw,40px) 20px}
+body[data-view="play"] #content{max-width:none;width:100%;padding:18px var(--page-edge,16px) 20px}
 .play-menu{display:grid;gap:16px;min-width:0}
 .play-menu .panel{margin:0;background:color-mix(in srgb,var(--surface) 84%,transparent);backdrop-filter:blur(18px) saturate(1.15);box-shadow:0 12px 40px #0001}
 .play-heading{display:flex;align-items:center;gap:24px;min-width:0}
@@ -136,7 +136,7 @@ body.practice-table-open{overflow:hidden}#practicePlayerMat{position:fixed;inset
 .play-menu--forge .play-heading h1{font-size:clamp(30px,3vw,42px);line-height:1.1;letter-spacing:-.035em;margin:2px 0 0}
 .play-menu--forge .play-heading .eyebrow{font-size:10px;letter-spacing:.16em;text-transform:uppercase;color:var(--gold)}
 .play-menu--forge .play-format{margin-left:auto;flex-wrap:wrap;padding:5px;border:1px solid var(--line);border-radius:999px;background:color-mix(in srgb,var(--surface) 75%,transparent)}
-.play-menu--forge .play-format .btn{border-radius:999px;min-height:40px;padding-inline:17px}
+.play-menu--forge .play-format .btn{border-radius:999px;min-height:44px;padding-inline:17px}
 .play-menu--forge .play-format [aria-pressed=true]{background:linear-gradient(125deg,#e6c88433,#b39d6c12);border-color:#d4b77c80;box-shadow:inset 0 1px 0 #fff2;color:var(--text)}
 .play-menu--forge .play-match-bar{border-radius:22px;padding:16px 20px;background:linear-gradient(115deg,#839b8b0b,#d6bc7710),color-mix(in srgb,var(--surface) 88%,transparent)}
 .play-menu--forge .play-paths{padding:4px;border:1px solid var(--line);border-radius:14px;background:#0000000c}
@@ -364,10 +364,12 @@ dialog.play-match-exit>.play-exit-note{margin:8px 0 0;font-size:13px;color:#f0c2
 .pl-head-title{min-width:0}
 .pl-head-tools{margin-left:auto;display:flex;align-items:center;gap:10px}
 /* Mode cards */
-.pl-modes{display:grid;grid-template-columns:1.25fr 1fr 1fr;gap:18px}
+.pl-modes{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:18px}
 .pl-mode{position:relative;isolation:isolate;overflow:hidden;display:flex;flex-direction:column;justify-content:flex-end;gap:6px;min-height:clamp(300px,52vh,460px);padding:22px;border:1px solid color-mix(in srgb,var(--gold) 22%,var(--line));border-radius:22px;background:#121318;color:#f6eedb;text-align:left;text-decoration:none;font:inherit;cursor:pointer;box-shadow:0 22px 50px #0006;transition:transform .2s ease,border-color .2s ease,box-shadow .2s ease}
-.pl-mode::before{content:"";position:absolute;inset:0;z-index:-1;background:linear-gradient(180deg,#0c0c0e00 28%,#0c0c0ec7 62%,#0c0c0ef5 100%)}
-.pl-mode-art{position:absolute;inset:0;z-index:-2;background-size:cover;transition:transform .6s ease}
+.pl-mode::before{content:"";position:absolute;inset:0;z-index:-1;background:linear-gradient(180deg,#0c0c0e00 34%,#0c0c0eb8 66%,#0c0c0ef2 100%),radial-gradient(130% 90% at 50% 30%,#0000 55%,#0c0c0e8c 100%)}
+.pl-mode-art{position:absolute;inset:0;z-index:-2;background-size:cover;filter:saturate(1.12) contrast(1.06);transition:transform .6s ease}
+/* This scan carries a black frame with rounded corners; oversize the layer so the frame sits outside the tile. */
+.pl-mode-art--trim{inset:-7% -8%}
 .pl-mode-art--deck>:is(img,.deck-artwork,.img-missing){width:100%;height:100%;object-fit:cover;object-position:50% 25%}
 .pl-mode:hover,.pl-mode:focus-visible{transform:translateY(-3px);border-color:#d6ad64aa;box-shadow:0 28px 60px #0008,0 0 30px #d6ad6424}
 .pl-mode:hover .pl-mode-art{transform:scale(1.04)}
@@ -375,11 +377,12 @@ dialog.play-match-exit>.play-exit-note{margin:8px 0 0;font-size:13px;color:#f0c2
 .pl-mode-tag{align-self:flex-start;margin-bottom:auto;padding:5px 11px;border-radius:999px;border:1px solid #ffffff1f;background:#0c0e13b3;color:var(--gold);font-size:10.5px;font-weight:800;letter-spacing:.14em;text-transform:uppercase;backdrop-filter:blur(8px)}
 .pl-mode-name{font:700 clamp(24px,2.4vw,32px)/1.1 Cinzel,Georgia,serif;letter-spacing:.03em;text-shadow:0 2px 14px #000}
 .pl-mode-copy{max-width:36ch;font-size:14px;line-height:1.5;color:#d6dbe2}
-.pl-mode-foot{display:flex;align-items:center;justify-content:space-between;gap:12px;margin-top:10px;font-size:12px;color:#aab3bd;min-width:0}
+.pl-mode-foot{display:flex;align-items:center;justify-content:flex-end;gap:12px;margin-top:10px;font-size:12px;color:#aab3bd;min-width:0}
 .pl-mode-foot>span:first-child{min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
 .pl-mode-foot b{color:#f6eedb;font-weight:700}
-.pl-mode-cta{flex:none;display:inline-grid;place-items:center;min-height:44px;padding:0 24px;border-radius:13px;border:1px solid #f6dfa8;background:linear-gradient(180deg,#f2d18e,#c99a4b);color:#1b1408;font:800 14px/1 'DM Sans',system-ui,sans-serif;letter-spacing:.03em;box-shadow:0 8px 22px #c99a4b33,inset 0 1px 0 #fff7}
-.pl-mode-cta--ghost{border-color:#ffffff2e;background:#0c0e13a6;color:#f1e9d8;box-shadow:none;backdrop-filter:blur(8px)}
+/* Every Play card's button wears the game's own colour: Magic is gold. Another game's Play sets its own --pl-cta-* tokens. */
+.pl-home{--pl-cta-edge:#f6dfa8;--pl-cta-top:#f2d18e;--pl-cta-bottom:#c99a4b;--pl-cta-ink:#1b1408}
+.pl-mode-cta{flex:none;display:inline-grid;place-items:center;min-height:44px;padding:0 24px;border-radius:13px;border:1px solid var(--pl-cta-edge);background:linear-gradient(180deg,var(--pl-cta-top),var(--pl-cta-bottom));color:var(--pl-cta-ink);font:800 14px/1 'DM Sans',system-ui,sans-serif;letter-spacing:.03em;box-shadow:0 8px 22px color-mix(in srgb,var(--pl-cta-bottom) 20%,transparent),inset 0 1px 0 #fff7}
 /* Lobby seats */
 .pl-arena{display:grid;grid-template-columns:minmax(0,1fr) 84px minmax(0,1fr);align-items:stretch}
 .pl-seat{position:relative;isolation:isolate;overflow:hidden;display:flex;flex-direction:column;justify-content:flex-end;min-width:0;min-height:clamp(210px,32vh,320px);padding:22px;border:1px solid #d6ad6455;border-radius:22px;background:radial-gradient(80% 80% at 30% 20%,#1d2333,#0e1016);color:#f6eedb;box-shadow:0 22px 50px #0007,0 0 28px #d6ad641a}
@@ -410,7 +413,8 @@ dialog.play-match-exit>.play-exit-note{margin:8px 0 0;font-size:13px;color:#f0c2
 .pl-backs i:nth-child(3){transform:rotate(13deg) translateX(52px)}
 .pl-vs{display:grid;place-items:center;position:relative;z-index:4}
 .pl-vs b{display:grid;place-items:center;width:62px;height:62px;transform:rotate(45deg);border:2px solid var(--gold);border-radius:12px;background:linear-gradient(145deg,#2a2416,#121008);box-shadow:0 0 0 6px #e8b95b14,0 0 34px #e8b95b44;font:700 0/1 Cinzel,Georgia,serif}
-.pl-vs b::before{content:"VS";transform:rotate(-45deg);font-size:19px;color:var(--gold)}
+/* The label is a real child (one grid item), so it centres in the diamond; a pseudo-element plus the text node made two rows. */
+.pl-vs b>span{display:block;transform:rotate(-45deg) translate(.5px,.8px);font-size:19px;line-height:1;color:var(--gold)}
 .pl-startbar{display:flex;align-items:center;gap:14px;padding:12px 14px 12px 20px;border:1px solid var(--line);border-radius:18px;background:color-mix(in srgb,var(--surface) 82%,transparent);backdrop-filter:blur(14px)}
 .pl-status{flex:1;min-width:0;font-size:13px;color:var(--muted)}
 .pl-status>p{margin:0;line-height:1.5}
@@ -444,21 +448,22 @@ dialog.play-match-exit>.play-exit-note{margin:8px 0 0;font-size:13px;color:#f0c2
 .pl-scrim{position:fixed;inset:0;z-index:1500;background:#05060a8c;backdrop-filter:blur(3px)}
 .pl-sheet.play-inspector{position:fixed;top:0;right:0;bottom:0;z-index:1501;width:min(460px,100%);margin:0;border-radius:22px 0 0 22px;border:1px solid var(--line);border-right:0;background:color-mix(in srgb,var(--surface) 97%,transparent);box-shadow:-30px 0 70px #0009;padding-top:env(safe-area-inset-top);padding-bottom:env(safe-area-inset-bottom);animation:pl-sheet-in .28s cubic-bezier(.2,.8,.2,1) both}
 .pl-sheet[hidden],.pl-scrim[hidden]{display:none!important}
-.pl-sheet .play-inspector-scroll{flex:1;max-height:none}
+/* The deck sheet scrolls on its own, also on touch screens (pointer:coarse lets other panels grow instead). */
+.pl-sheet .play-inspector-scroll{flex:1 1 auto;min-height:0;max-height:none;overflow-x:hidden;overflow-y:auto;overscroll-behavior:contain;-webkit-overflow-scrolling:touch}
 .pl-sheet .page-head{display:flex;align-items:center;justify-content:space-between}
 .pl-sheet-tools{display:flex;align-items:center;gap:8px}
 .pl-sheet-close{display:grid;place-items:center;width:44px;height:44px;border-radius:50%;border:1px solid var(--line);background:none;color:var(--text);cursor:pointer}
 .pl-sheet-close:hover,.pl-sheet-close:focus-visible{border-color:var(--gold);color:var(--gold)}
 @keyframes pl-sheet-in{from{transform:translateX(40px);opacity:0}to{transform:none;opacity:1}}
 /* Smaller screens */
-@media(max-width:1000px){.pl-modes{grid-template-columns:1fr 1fr}.pl-mode--quick{grid-column:1/-1}}
+@media(max-width:1180px){.pl-modes{grid-template-columns:1fr 1fr}}
 @media(max-width:700px){
  .pl-modes{grid-template-columns:1fr;gap:12px}.pl-mode{min-height:200px;padding:14px 16px 16px;border-radius:18px}.pl-mode-name{font-size:22px}.pl-mode-copy{font-size:12.5px}.pl-mode-foot{margin-top:4px}.pl-mode-cta{min-height:44px;padding:0 18px}
  .pl-head{flex-wrap:wrap;gap:10px}.pl-head-tools{margin-left:0;flex-basis:100%;order:3}.pl-head-tools .pl-format{flex:1}.pl-format>summary{justify-content:space-between}
- .pl-arena{grid-template-columns:1fr;gap:0}.pl-seat{min-height:150px;padding:16px;border-radius:18px}.pl-vs{height:0}.pl-vs b{width:44px;height:44px;border-radius:10px}.pl-vs b::before{font-size:14px}
+ .pl-arena{grid-template-columns:1fr;gap:0}.pl-seat{min-height:150px;padding:16px;border-radius:18px}.pl-vs{height:0}.pl-vs b{width:44px;height:44px;border-radius:10px}.pl-vs b>span{font-size:14px}
  .pl-backs i{width:66px;height:92px;margin:-46px 0 0 -33px;left:26%;top:44%}.pl-backs i:nth-child(1){transform:rotate(-13deg) translateX(-28px)}.pl-backs i:nth-child(3){transform:rotate(13deg) translateX(28px)}
  .pl-seat--cpu::before{background:linear-gradient(270deg,#0c0c0ef5 0%,#0c0c0ed0 55%,#0c0c0e55 100%)}
- .pl-startbar{position:sticky;bottom:calc(var(--nav-h,64px) + env(safe-area-inset-bottom) + 8px);z-index:20;flex-wrap:wrap;padding:12px}.pl-status{flex-basis:100%;font-size:12px}.pl-start.btn{flex:1;min-width:0}
+ .pl-startbar{position:sticky;bottom:calc(var(--nav-h,64px) + env(safe-area-inset-bottom));z-index:20;flex-wrap:wrap;padding:12px}.pl-status{flex-basis:100%;font-size:12px}.pl-start.btn{flex:1;min-width:0}
  .pl-format-sheet{position:fixed;left:16px;right:16px;top:auto;bottom:calc(var(--nav-h,64px) + env(safe-area-inset-bottom) + 12px);width:auto;max-height:70vh;overflow:auto}.pl-format-grid{grid-template-columns:1fr 1fr}
  .pl-sheet.play-inspector{width:100%;border-radius:0}
 }
@@ -481,6 +486,12 @@ dialog.play-match-exit>.play-exit-note{margin:8px 0 0;font-size:13px;color:#f0c2
 /* Arena's result moment: the final board stays behind a dimmed glass, the banner lands over it,
    Rematch is the gold primary. Inspect board still opens the board on its own. */
 #practicePlayerMat.play-result-over-board{overflow:hidden;isolation:isolate}
+/* The final board keeps its playmat behind the result and on Inspect board. */
+:where(body.practice-table-open) #practicePlayerMat:is(.play-result-over-board,.play-result-inspect)[data-playmat]+.playmat-scene{display:block}
+#practicePlayerMat:is(.play-result-over-board,.play-result-inspect)[data-playmat]{background:transparent}
+#practicePlayerMat.play-result-over-board>[data-result-backdrop]{background:#05060a66}
+#practicePlayerMat.play-result-inspect{overflow:hidden;isolation:isolate}
+#practicePlayerMat.play-result-inspect>[data-result-board]{position:absolute;inset:0}
 #practicePlayerMat.play-result-over-board>[data-result-backdrop]{position:absolute!important;inset:0!important;z-index:0!important;pointer-events:none;filter:saturate(.7) brightness(.55) blur(1.5px);animation:play-result-dim .7s ease-out both}
 #practicePlayerMat.play-result-over-board>.play-match-result{position:absolute;left:50%;top:50%;translate:-50% -50%;z-index:60;width:min(600px,calc(100% - 32px));max-height:calc(100% - 32px);overflow:auto;margin:0;background:linear-gradient(180deg,#14141acc,#0b0b0fe6);border:1px solid #d6ad6440;border-radius:22px;backdrop-filter:blur(6px);box-shadow:0 30px 90px #000c;box-sizing:border-box;animation:play-message-in .45s .25s cubic-bezier(.2,.8,.2,1) both}
 #practicePlayerMat .play-match-result .play-result-actions{order:3;display:flex;flex-wrap:wrap;justify-content:center;gap:10px;margin-top:18px}
@@ -557,3 +568,153 @@ dialog.play-match-exit>.play-exit-note{margin:8px 0 0;font-size:13px;color:#f0c2
 @media (max-height:480px){#practicePlayerMat .play-result-goals>li{padding-block:2px;font-size:11px}}
 @media (prefers-reduced-motion:reduce){#practicePlayerMat .play-result-goals>li[data-just=true]{animation:none}}
 #practicePlayerMat .play-result-goals>li[data-done=true]{padding-left:4px}
+/* Practice CPU level: one segmented pill, Normal is the Quick Play level. */
+.pl-cpu-level{display:flex;align-items:center;gap:4px;padding:4px;border:1px solid var(--line);border-radius:999px;background:color-mix(in srgb,var(--surface-2) 65%,transparent)}
+.pl-cpu-level>button{min-width:72px;min-height:44px;padding:0 14px;border:1px solid transparent;border-radius:999px;background:transparent;color:var(--muted);font:700 13px inherit;cursor:pointer}
+.pl-cpu-level>button[aria-pressed=true]{background:linear-gradient(130deg,#e3c37c25,#c4a85c0a);color:var(--gold);border-color:#d8b76c66;box-shadow:0 3px 15px #0002}
+.pl-cpu-level>button:not([aria-pressed=true]):hover{color:var(--text)}
+.pl-cpu-level>button:focus-visible{outline:2px solid var(--gold);outline-offset:2px}
+@media(min-width:701px){.pl-startbar .pl-cpu-level{order:-1}}
+@media(max-width:700px){.pl-cpu-level{flex-basis:100%}.pl-cpu-level>button{flex:1;min-width:0}}
+@media(max-width:700px){.pl-startbar .pl-status{order:3}}
+/* Commander Practice pods: player count, then one level row per CPU. */
+.pl-cpu-levels{display:flex;flex-direction:column;align-items:center;gap:6px}
+.pl-cpu-tag{padding:0 8px 0 10px;font:700 12px/1 inherit;color:var(--muted);white-space:nowrap;min-width:52px}
+.pl-pod-size>button{min-width:52px}
+.pl-cpu-level>button:disabled{opacity:.4;cursor:not-allowed}
+.pl-pod-note{margin:0;font-size:12px;color:var(--muted)}
+@media(min-width:701px){.pl-startbar .pl-cpu-levels{order:-1}}
+@media(max-width:700px){.pl-cpu-levels{flex-basis:100%;align-items:stretch}}
+.pl-pod-seats{display:flex;flex-wrap:wrap;justify-content:center;gap:8px;margin:-4px 0 4px}
+/* CPU 3 and CPU 4: small glass seats you fill like CPU 2. */
+.pl-pod-seat{position:relative;isolation:isolate;overflow:hidden;display:flex;align-items:center;gap:12px;flex:1 1 260px;max-width:440px;min-height:64px;padding:10px 12px 10px 18px;border:1px solid #d6ad6433;border-radius:16px;background:radial-gradient(90% 120% at 20% 50%,#1b2130,#0e1016);box-shadow:0 8px 24px #0006;color:#f1e9d8}
+.pl-pod-seat:hover{border-color:#d6ad64aa}
+.pl-pod-art{position:absolute;inset:0;z-index:-2}
+.pl-pod-art>:is(img,.deck-artwork,.img-missing){position:absolute;inset:0;width:100%;height:100%;object-fit:cover;object-position:50% 30%}
+.pl-pod-seat--set::before{content:"";position:absolute;inset:0;z-index:-1;background:linear-gradient(90deg,#0c0c0ef2 0%,#0c0c0ec4 55%,#0c0c0e55 100%)}
+.pl-pod-copy{position:relative;z-index:2;display:grid;gap:2px;min-width:0;flex:1;pointer-events:none}
+.pl-pod-copy b{font-size:11px;font-weight:800;letter-spacing:.14em;text-transform:uppercase;color:#9fd0ff}
+.pl-pod-copy span{font:700 15px/1.2 Cinzel,Georgia,serif;color:#f6eedb;overflow-wrap:anywhere}
+.pl-pod-seat:not(.pl-pod-seat--set) .pl-pod-copy span{color:#c9ccd3}
+.pl-pod-seat .pl-seat-inspect.btn{position:relative;z-index:2;margin:0;flex:none}
+/* 4.3.34 Play sweep: lobby polish. */
+.play-source-tabs>button{min-width:44px}
+.play-library .deck-format-emblem,.pl-sheet .deck-format-emblem,.play-menu .deck-format-emblem{max-width:none;overflow:visible;text-overflow:clip;white-space:nowrap;flex:none}
+/* Play shows the deck you'll play, not what it costs. */
+.play-inspector :is(.art-price,.grid-meta>span:last-child,.group>summary>.muted.small,.pick-side>b){display:none}
+/* Phones: a slimmer Play bar, and the inspect sheet's rows, view switch and sections are full 44px targets. */
+@media(max-width:700px){.pl-startbar{padding:8px 10px;gap:8px}.pl-startbar .pl-status{margin:0}}
+.play-inspector .deck-view-switch>button{min-width:44px;min-height:44px}
+.play-inspector .group>summary{min-height:44px;display:flex;align-items:center}
+.play-inspector .lot-name{position:static}.play-inspector .lot-info{position:relative}
+.play-inspector .lot-name::after{content:"";position:absolute;inset:-13px -6px}
+/* 4.3.34 app-wide design pass: Quick Play and Practice seats mirror each other.
+   Same height, copy centred on the same line, art or card slot on the side that faces out,
+   and the VS diamond sits exactly on the seam between them. */
+.pl-seat{justify-content:center}
+.pl-seat--empty{background:radial-gradient(90% 90% at 70% 50%,#1b2130,#0e1016)}
+.pl-seat--cpu.pl-seat--empty{background:radial-gradient(90% 90% at 30% 50%,#1b2130,#0e1016)}
+.pl-seat--empty::before{display:none}
+.pl-seat-copy:has(>h2:last-child) h2{margin-bottom:2px}
+/* An empty seat shows a card slot with a gold plus, opposite the CPU's card backs. */
+.pl-slot{position:absolute;inset:0;z-index:-2;pointer-events:none}
+.pl-slot i{position:absolute;right:13%;top:50%;width:96px;height:134px;translate:0 -50%;border:1.5px dashed #d6ad6488;border-radius:10px;background:radial-gradient(circle at 50% 50%,#e8b95b22,#0000 70%),#0c0e14b3;box-shadow:inset 0 0 0 4px #0c0e14,0 0 28px #d6ad641f;transition:border-color .2s ease,box-shadow .2s ease}
+.pl-slot i::before,.pl-slot i::after{content:"";position:absolute;left:50%;top:50%;width:26px;height:2px;margin:-1px 0 0 -13px;border-radius:2px;background:var(--gold);box-shadow:0 0 10px #e8b95b88}
+.pl-slot i::after{transform:rotate(90deg)}
+.pl-seat--cpu .pl-slot i{right:auto;left:13%}
+.pl-seat:has(.pl-seat-hit):hover .pl-slot i,.pl-seat-hit:focus-visible~.pl-slot i{border-color:var(--gold);box-shadow:inset 0 0 0 4px #0c0e14,0 0 34px #d6ad6455}
+.pl-seat--empty:not(.pl-seat--cpu) .pl-seat-copy{max-width:calc(100% - 150px)}
+.pl-seat--cpu.pl-seat--empty .pl-seat-copy{max-width:calc(100% - 150px);margin-left:auto}
+/* The VS diamond is absolutely centred on its seam, so it overlaps both seats equally. */
+.pl-vs{position:relative;display:block}
+.pl-vs b{position:absolute;left:50%;top:50%;margin:0;translate:-50% -50%}
+/* Disabled Play stays on brand: obsidian glass with a gold hairline, and the reason is its label. */
+.btn.cs-plate:disabled{filter:none;opacity:1;cursor:not-allowed;background:linear-gradient(180deg,#1d1a14,#121014);color:#d6ad64;box-shadow:inset 0 1px 0 #ffffff12,0 0 0 1px #d6ad6455;text-shadow:none}
+.btn.cs-plate:disabled::before{display:none}
+.pl-seat:not(.pl-seat--set){border-style:solid;border-color:#d6ad6440}
+.pl-startbar:has(.pl-status[data-empty]){border-color:transparent;background:color-mix(in srgb,var(--bg,#0c0d10) 70%,transparent)}
+.btn.cs-plate:disabled .cs-plate-label::before,.btn.cs-plate:disabled .cs-plate-label::after{background:#d6ad6466;box-shadow:none}
+.pl-status[data-empty]{display:none}
+/* The deck list is already one format, so tiles drop the format chip; only the chosen deck is labelled. */
+.play-deck-choices .deck-format-emblem{display:none}
+.play-menu .play-deck-choices .tile-body{bottom:16px}
+.play-deck-choice.selected .tile-body{bottom:50px}
+.play-deck-choice .play-deck-selection{z-index:3;bottom:14px;left:14px;display:inline-flex;align-items:center;min-height:26px;padding:0 10px;border-radius:999px;background:var(--gold);color:#1b1406;font-size:12px;box-shadow:0 4px 14px #0008}
+/* Practice: the CPU level row gets a label so it lines up with the Players row. */
+.pl-cpu-level>.pl-cpu-tag:first-child{text-align:left}
+/* Play home: mode titles sit on one line across the row, whatever the copy length. */
+.pl-mode-copy{min-height:3em}
+/* The CPU's card backs mirror the empty slot: same size, same distance from the outer edge. */
+.pl-backs i{left:calc(13% + 48px);top:50%;width:96px;height:134px;margin:-67px 0 0 -48px}
+.pl-backs i:nth-child(1){transform:rotate(-12deg) translateX(-34px)}.pl-backs i:nth-child(3){transform:rotate(12deg) translateX(34px)}
+.pl-seat--cpu:has(.pl-backs) .pl-seat-copy{max-width:calc(100% - 190px);margin-left:auto}
+@media(max-width:700px){
+ .pl-arena{gap:0;grid-template-rows:1fr auto 1fr}.pl-vs{height:18px}
+ .pl-seat-copy h2{font-size:21px}
+ .pl-seat,.pl-seat--cpu{min-height:136px;padding:18px}
+ .pl-backs i{left:calc(11% + 33px);width:66px;height:92px;margin:-46px 0 0 -33px}
+ .pl-backs i:nth-child(1){transform:rotate(-12deg) translateX(-22px)}.pl-backs i:nth-child(3){transform:rotate(12deg) translateX(22px)}
+ .pl-slot i{width:66px;height:92px;right:11%}.pl-seat--cpu .pl-slot i{left:11%}
+ .pl-slot i::before,.pl-slot i::after{width:20px;margin-left:-10px}
+ .pl-seat--empty:not(.pl-seat--cpu) .pl-seat-copy,.pl-seat--cpu.pl-seat--empty .pl-seat-copy{max-width:calc(100% - 104px)}
+ .pl-seat--cpu:has(.pl-backs) .pl-seat-copy{max-width:calc(100% - 126px)}.pl-backs{opacity:1}
+ .pl-mode-copy{min-height:0}
+}
+/* Narrow side-by-side seats (a phone or small tablet held sideways): the backs shrink and fade behind the copy,
+   so the opponent's name keeps whole words. */
+@media(min-width:701px) and (max-width:1100px){
+ .pl-backs i{left:calc(11% + 33px);width:66px;height:92px;margin:-46px 0 0 -33px}
+ .pl-backs i:nth-child(1){transform:rotate(-12deg) translateX(-22px)}.pl-backs i:nth-child(3){transform:rotate(12deg) translateX(22px)}
+ .pl-backs{opacity:.45}.pl-seat--cpu:has(.pl-backs) .pl-seat-copy{max-width:100%}
+}
+.pl-cpu-levels .pl-cpu-tag{flex:none;width:76px;min-width:0;box-sizing:border-box}
+.pl-lobby .play-search>span{position:absolute;width:1px;height:1px;overflow:hidden;clip-path:inset(50%);white-space:nowrap}
+@media(min-width:701px){.pl-startbar:has(.pl-status[data-empty]){background:none;backdrop-filter:none;padding-block:4px}}
+/* VS medallion: a solid obsidian disc behind the diamond covers the seam hairlines, and its glow is a
+   circular halo (radial gradient) instead of a box-shadow band that lit the gap between the seats. */
+.pl-vs::before{content:"";position:absolute;left:50%;top:50%;width:112px;height:112px;translate:-50% -50%;border-radius:50%;background:radial-gradient(circle,#e8b95b3d 0,#e8b95b14 38%,#e8b95b00 62%);pointer-events:none;z-index:0}
+.pl-vs b{box-shadow:0 0 0 6px #0c0d10,0 0 0 7px #e8b95b26;z-index:1}
+@media(max-width:700px){.pl-vs::before{width:92px;height:92px}}
+/* Zero-gap seats: the two cards share one edge with a single hairline, so nothing shows through
+   behind the VS medallion. Inner corners are square; outer corners keep their radius. */
+.pl-arena:not(.pl-arena--pod){grid-template-columns:minmax(0,1fr) 0 minmax(0,1fr);gap:0}
+.pl-arena:not(.pl-arena--pod) .pl-vs{width:0;height:auto;overflow:visible}
+.pl-arena:not(.pl-arena--pod) .pl-seat[data-seat=player]{border-right:0;border-top-right-radius:0;border-bottom-right-radius:0}
+.pl-arena:not(.pl-arena--pod) .pl-seat--cpu{border-top-left-radius:0;border-bottom-left-radius:0}
+.pl-vs::before{z-index:2}.pl-vs b{z-index:3}
+@media(max-width:700px){
+ .pl-arena:not(.pl-arena--pod){grid-template-columns:1fr;grid-template-rows:1fr 0 1fr}
+ .pl-arena:not(.pl-arena--pod) .pl-vs{width:auto;height:0}
+ .pl-arena:not(.pl-arena--pod) .pl-seat[data-seat=player]{border-right:1px solid #d6ad6440;border-bottom:0;border-radius:18px 18px 0 0}
+ .pl-arena:not(.pl-arena--pod) .pl-seat--cpu{border-radius:0 0 18px 18px}
+ .pl-arena:not(.pl-arena--pod) .pl-seat.pl-seat--set[data-seat=player]{border-right-color:#d6ad6455}
+}
+/* Held sideways, a phone's notch and nav bar sit on the left and right: the setup screens keep clear of both. */
+body[data-view="play"] #content{padding-left:max(var(--page-edge,16px),calc(env(safe-area-inset-left,0px) + 8px));padding-right:max(var(--page-edge,16px),calc(env(safe-area-inset-right,0px) + 8px))}
+/* The page gutter token follows the same inset, so headings line up with the padded edge. */
+@property --gutter{syntax:'<length>';inherits:true;initial-value:16px}
+:root:has(body[data-view="play"]){--gutter:max(16px,calc(env(safe-area-inset-left,0px) + 8px))}
+/* A 3-4 player pod adds a picker row per CPU: on phones that bar is too tall to float over the seats, so it sits in the page. */
+@media(max-width:700px){.pl-lobby:has(.pl-arena--pod) .pl-startbar{position:static}}
+
+/* Friends: the invite lives on the friend's seat; the room's format is fixed once the invite exists. */
+.pl-invite{display:flex;flex-wrap:wrap;justify-content:flex-end;gap:8px;margin-top:8px;pointer-events:auto}
+/* The seat copy ignores clicks so its card can be tapped; the invite controls take them back. */
+.pl-invite :is(button,input){pointer-events:auto}
+.pl-invite-link{flex:1 1 100%;min-width:0;min-height:40px;padding:0 14px;border:1px solid #ffffff2e;border-radius:12px;background:#0c0e13b8;color:#f1e9d8;font:500 13px/1 'DM Sans',system-ui,sans-serif;text-overflow:ellipsis;user-select:all;-webkit-user-select:all;cursor:text}
+.pl-invite-link:focus-visible{outline:2px solid var(--gold);outline-offset:2px}
+.pl-invite-btn.is-copied{border-color:var(--gold);color:var(--gold)}
+.pl-invite-btn{display:inline-grid;place-items:center;min-height:44px;padding:0 18px;white-space:nowrap;border:1px solid color-mix(in srgb,var(--gold) 55%,transparent);border-radius:999px;background:#0c0e13b8;color:#f6eedb;font:750 14px/1 'DM Sans',system-ui,sans-serif;cursor:pointer;backdrop-filter:blur(8px)}
+.pl-invite-btn:hover{border-color:var(--gold);color:var(--gold)}
+.pl-invite-btn:focus-visible{outline:2px solid var(--gold);outline-offset:3px}
+.btn.cs-plate.pl-start--ghost{background:transparent;color:#f1e9d8;box-shadow:inset 0 0 0 1px #ffffff40;text-shadow:none}
+.btn.cs-plate.pl-start--ghost::before{display:none}
+.btn.cs-plate.pl-start--ghost:hover{box-shadow:inset 0 0 0 1px var(--gold);color:var(--gold)}
+.pl-format--fixed{display:flex;align-items:center;min-height:44px;padding:0 16px;border:1px solid color-mix(in srgb,var(--gold) 22%,var(--line));border-radius:999px;font-weight:800;font-size:14px;white-space:nowrap;color:var(--muted)}
+@media(max-width:700px){.pl-invite{justify-content:stretch}.pl-invite-btn{flex:1}}
+/* 4.3.53 Quick Play with a deck chosen starts the match in one tap; "Change deck" opens the setup screen. */
+.pl-mode-hold{position:relative;display:grid;min-width:0}
+.pl-mode-hold>.pl-mode{height:100%}
+.pl-mode-change{position:absolute;left:22px;bottom:22px;z-index:2;min-height:44px;padding:0 18px;border-radius:13px;border:1px solid #ffffff2e;background:#0c0e13a6;color:#f1e9d8;font:600 14px/1 'DM Sans',system-ui,sans-serif;backdrop-filter:blur(8px);cursor:pointer}
+.pl-mode-change:hover{border-color:#f6dfa880;color:#fff}
+@media (max-width:700px){.pl-mode-change{left:16px;bottom:16px}}

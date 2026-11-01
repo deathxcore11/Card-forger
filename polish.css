@@ -35,10 +35,12 @@ nav.tabs > button { flex: none; padding: 8px 14px; white-space: nowrap; }
 /* The tabs */
 :is(.seg, .set-browser-quick, nav.tabs) > button, .cs-tabs > button {
   position: relative; z-index: 1; display: inline-flex; align-items: center; justify-content: center; gap: 7px;
-  min-height: 40px; border: 0; border-radius: 999px; background: transparent; box-shadow: none;
+  min-height: 44px; border: 0; border-radius: 999px; background: transparent; box-shadow: none;
   color: var(--muted); font-weight: 650; letter-spacing: -.01em; cursor: pointer;
   transition: color .35s var(--glide-ease), transform .2s var(--glide-ease);
 }
+/* Card sheet tabs share any spare width, so the row stays even when a tab (like Meta) is left out. */
+.cs-tabs > button { flex: 1 0 auto; }
 @media (hover: hover) { :is(.seg, .set-browser-quick, .cs-tabs, nav.tabs) > button:not(.on):hover { color: var(--text); } }
 :is(.seg, .set-browser-quick, .cs-tabs, nav.tabs) > :is(.on, [aria-selected="true"], [aria-pressed="true"]) { color: var(--gold-ink); animation: none; }
 :is(.seg, .set-browser-quick, .cs-tabs, nav.tabs) > button:active { transform: scale(.96); }
@@ -86,6 +88,7 @@ nav.tabs > button { flex: none; padding: 8px 14px; white-space: nowrap; }
   .home-personal-deck:hover, section.home-resume:has(.home-card-hit):not(.home-personal-resume > *):hover {
     transform: translateY(-2px); box-shadow: 0 16px 36px -12px #000c; border-color: color-mix(in srgb, var(--gold) 38%, #ffffff26);
   }
+  .home-personal-deck:hover::after { background: linear-gradient(155deg, #f6d891, #ffffff4d 26%, #ffffff1a 52%, #ffffff0f 70%, #f1d08a99); }
 }
 .home-personal-deck:active, section.home-resume:has(.home-card-hit):not(.home-personal-resume > *):active { transform: scale(.985); }
 @media (prefers-reduced-motion: reduce) { .home-personal-deck, section.home-resume { transition: none; transform: none !important; } }
@@ -151,11 +154,10 @@ input[data-home-search].hint-out::placeholder { opacity: 0; }
    strip is tall enough for the bottom card's controls, and the controls sit above the card's
    own badges. */
 .deck-viewer[data-deck-view="stacks"] .deck-stack-pile { --deck-stack-step: 48px; }
-.deck-viewer[data-deck-view="stacks"] .lot.deck-row .lot-side { z-index: 5; bottom: 5px; right: 5px; }
+.deck-viewer[data-deck-view="stacks"] .lot.deck-row .lot-side { z-index: 6; }
 .deck-viewer[data-deck-view="stacks"] .lot.deck-row .deck-stack-roles { z-index: 4; }
 @media (max-width: 480px) {
   .deck-viewer[data-deck-view="stacks"] .deck-stack-pile { --deck-stack-step: 44px; }
-  .deck-viewer[data-deck-view="stacks"] .lot-side .stepper button { min-height: 28px; }
 }
 
 /* Text links read as part of the app: the game color, no browser underline or arrow until hover. */
@@ -192,7 +194,7 @@ input[data-home-search].hint-out::placeholder { opacity: 0; }
 }
 .searchbar.search-query > input::placeholder { color: var(--muted); opacity: .85; }
 .searchbar.search-query > .search-go {
-  grid-area: 1 / 2; position: relative; display: grid; place-items: center; width: 40px; height: 40px; min-height: 0;
+  grid-area: 1 / 2; position: relative; display: grid; place-items: center; width: 44px; height: 44px; min-height: 0;
   margin-right: 6px; padding: 0; border: 0; border-radius: 50%; background: var(--gold); color: var(--gold-ink);
   box-shadow: inset 0 1px 0 #ffffff59, 0 6px 16px -6px color-mix(in srgb, var(--gold) 75%, transparent);
   transition: transform .15s ease, filter .15s ease;
@@ -365,3 +367,388 @@ body[data-view="scan"] #content>.context-guide{margin:12px 14px 0}
 .search-fan p{margin:0}
 .search-fan+.hints,.search-fan+.center{justify-content:center;text-align:center}
 @media(prefers-reduced-motion:reduce){.search-fan-card{transition:none}}
+/* 4.3.34 design pass: one page container. Every top-level screen puts its content and title on the
+   same left edge (16px on phones, the 1196px column on desktop, 85px at 1366). */
+:root{--page-max:1196px;--page-edge:max(var(--gutter),calc((100% - var(--page-max)) / 2))}
+@media(min-width:1200px){
+ body:is([data-view="home"],[data-view="play"]) #content{max-width:1240px;margin-inline:auto;padding-inline:22px}
+}
+/* Scan: the floating title bar only floats over a live camera. Before that it is a plain page header. */
+body[data-view="scan"] #content>.context-guide{margin:12px var(--page-edge) 0}
+#app .scan-workspace.is-camera:not(.is-live)>.scan-toolbar{left:var(--page-edge);right:var(--page-edge);padding:6px 0;border-color:transparent;background:none;backdrop-filter:none;box-shadow:none}
+.scan-pile-tray[data-batch-count="0"]{display:none}
+/* Settings: the account column fills the page instead of leaving an empty second column. */
+.settings-page{max-width:none}
+.settings-account-layout:not(:has(.settings-aside)){grid-template-columns:minmax(0,1fr)}
+/* Rules: the lesson column starts on the page edge like its title. */
+.rule-learning{max-width:none;margin-inline:0}
+/* Primary actions are gold everywhere (Settings, the deck builder, scan chips), never lavender. */
+:root{--brand-action:#e8b95b;--brand-action-ink:#1b1406}
+/* Settings: the save status line under the title already says "Sync needs your decision"; the account card says it once. */
+.settings-page:has(#settings-account:not([hidden])) .settings-save-overview{display:none}
+/* Wiki shares the page column with every other screen. */
+.wiki-page,.wiki-page-head{max-width:none}
+/* Phones: an empty screen's one message sits in the middle of the free space instead of leaving half the screen dark. */
+@media(max-width:700px){
+ #content>.empty:last-child,#content>section>.empty:last-child{display:flex;flex-direction:column;justify-content:center;min-height:min(46vh,420px)}
+}
+/* Inside Settings the Backup tab's dot is the one pointer to unread release notes; the header dot waits outside. */
+body[data-view="settings"] .profile-menu>.release-dot{display:none}
+/* Wiki: the daily topic's refresh is a small corner control, not a third link on the Read article row. */
+.wiki-daily{position:relative}.wiki-daily .wiki-daily-refresh{position:absolute;top:10px;right:10px;z-index:3;width:44px;height:44px;border-radius:50%;background:#0c0e13a6;color:#f1e9d8;backdrop-filter:blur(8px)}
+/* Next-patch minors from the 29 Oct gate: Scan's idle panel keeps the page gutters; seat badge rows match. */
+#app .scan-workspace.is-camera:not(.is-live)>.scan-panel{margin-inline:var(--page-edge);border-radius:18px;border:1px solid var(--line)}
+.pl-seat-who{min-height:30px}
+
+/* ---- Design-gate cleanup (29 Oct): structural fixes ---- */
+/* Ambient art: the oversized, blurred layer is a pseudo-element so the host element stays inside the viewport (nothing off-screen, nothing clipped). */
+body.glass #ambient .amb-art{inset:0;transform:none;background-size:0 0;overflow:visible}
+body.glass #ambient .amb-art::before{content:"";position:absolute;inset:-8%;background-image:inherit;background-size:cover;background-position:center 30%;transform:scale(1.08)}
+/* A closed disclosure has no box: its menu options are neither tappable nor measurable until it opens. */
+details:not([open])>:not(summary){display:none}
+/* Phone bottom nav: solid enough that the page under it does not read through the gesture band. */
+:is(body,body.glass) .bottom-nav{background:color-mix(in srgb,var(--bg) 94%,transparent)}
+/* 44px hit area for compact controls (chips, text links, small buttons): an invisible pseudo extends the touch target without changing the look. */
+:is(button,a,summary).chip,.chip[data-act],.chip[role=button],button.link,a.link,.link[data-act],.btn.small{position:relative}
+:is(:is(button,a,summary).chip,.chip[data-act],.chip[role=button],button.link,a.link,.link[data-act],.btn.small):not(.cs-plate)::before{content:"";position:absolute;left:50%;top:50%;width:max(100%,44px);height:max(100%,44px);translate:-50% -50%;border-radius:inherit}
+/* Text floor: nothing under 11px (eyebrows, set codes, mode tags, pill labels). */
+.eyebrow,.pl-home-head .eyebrow,.pl-head .eyebrow,.play-menu--forge .play-heading .eyebrow,.home-personal-resume .home-resume .eyebrow,.home-value-main>.eyebrow,.home-ai-label,body .topbar .home-ai-label,.home-meta-heading .link.small,.pl-mode-tag,.set-code-mark,.pl-mat-now small,.pl-format-opt em,.pl-format-opt small,.pl-format-group,.set-tile-progress-label,.home-value-note,.home-value-movement,.pl-mat-sheet small,.pl-mat-opt small,.pl-cpu-tag{font-size:11px}
+@media(max-width:380px){.set-tile-progress-label,.home-value-note{font-size:11px}}
+/* Search pill: the label has its own row above the field instead of floating over the field's box. */
+.home-search-pill{grid-template-rows:auto minmax(0,1fr);align-items:stretch}
+.home-search-pill>.home-ai-label{position:static;grid-column:1;grid-row:1;align-self:end;padding:10px 0 0 20px;line-height:1}
+.home-search-pill>input{grid-column:1;grid-row:2;align-self:start;padding-top:4px;min-height:44px}
+.home-search-pill>:not(.home-ai-label):not(input){grid-row:1/3;align-self:center}
+body .topbar .home-search-pill>.home-ai-label{padding-left:12px}
+/* Scan on a landscape phone: the page flows and scrolls instead of squeezing the drop zone to a sliver. */
+@media(max-height:520px) and (orientation:landscape){
+ body[data-view="scan"] #app:has(.scan-workspace.is-camera:not(.is-live)){height:auto;min-height:100dvh;overflow:visible}
+ body[data-view="scan"] #app:has(.scan-workspace.is-camera:not(.is-live))>#content{overflow:visible;flex:none;min-height:0}
+ #app .scan-workspace.is-camera:not(.is-live){flex:none}
+ #app .scan-workspace.is-camera:not(.is-live)>.scan-toolbar{position:static;margin:8px 0 0;padding-inline:var(--page-edge)}
+ #app .scan-workspace.is-camera:not(.is-live)>.scan-panel{flex:none;min-height:0;margin-bottom:12px}
+ #app .scan-workspace.is-camera:not(.is-live) .cam-wrap{flex:none;min-height:0}
+ #app .scan-workspace.is-camera:not(.is-live) .scan-drop{position:relative;inset:auto;margin:16px auto;min-height:0}
+}
+
+/* Desktop top nav, home counters and disclosure rows reach 44px; the gesture pad under the nav is solid. */
+.top-nav button{min-width:44px;min-height:44px}
+.home-value-counts button{min-width:44px;min-height:44px}
+:is(.filters,details.more,.group,.side-group,.glossary,.play-import,details.note,.set-browser-more,.rule-learning details) > summary{min-height:44px;display:flex;align-items:center;flex-wrap:wrap;gap:6px 10px;box-sizing:border-box}
+.bottom-nav{box-shadow:inset 0 calc(-1 * env(safe-area-inset-bottom)) 0 var(--bg)}
+body[data-view="settings"] .profile-menu>.sr-only{display:none}
+.wiki-daily .hh-body{padding-right:72px}
+/* Seat tap overlays stop short of the VS medallion on the seam; VS stays above them. */
+.pl-arena:not(.pl-arena--pod) .pl-seat:not(.pl-seat--cpu) .pl-seat-hit{right:40px}
+.pl-arena:not(.pl-arena--pod) .pl-seat--cpu .pl-seat-hit{left:40px}
+@media(max-width:700px){.pl-arena:not(.pl-arena--pod) .pl-seat:not(.pl-seat--cpu) .pl-seat-hit{right:0;bottom:36px}.pl-arena:not(.pl-arena--pod) .pl-seat--cpu .pl-seat-hit{left:0;top:36px}}
+#content .eyebrow,.hh-body .eyebrow,.set-progress-top .eyebrow,.set-overview .set-progress-top .eyebrow,.settings-dialog-head .eyebrow,.settings-profile-inline>.eyebrow,.settings-section-intro .eyebrow,.settings-card-heading .eyebrow,.flavor .eyebrow{font-size:11px}
+.community-source-links a{position:relative}
+.community-source-links a::before{content:"";position:absolute;left:50%;top:50%;width:max(100%,44px);height:max(100%,44px);translate:-50% -50%}
+/* Seat avatar initial fits its ring at 130% text. */
+.pl-seat .profile-avatar>span{font-size:16px;line-height:1}
+/* Scan drop zone (camera off): no shutter row to reserve, so the frame can hold 130% text. */
+#app .scan-workspace.is-camera:not(.is-live) .scan-drop{inset:64px 16px 24px}
+/* Scan title bar sits on the page edge (the centred width rule is for the live-camera pill). */
+#app .scan-workspace.is-camera:not(.is-live)>.scan-toolbar{width:auto;margin-inline:0;justify-self:auto;align-self:stretch}
+/* Phones: the Play bar is laid out after the deck list, so sticky keeps it pinned all the way down and it rests at the end. */
+@media(max-width:700px){.pl-lobby .pl-startbar{order:9}}
+/* Desktop top bar: the pill's label is for screen readers; the placeholder says it, so the bar keeps its single-row height. */
+@media(min-width:1200px){body .topbar .home-search-pill>.home-ai-label{position:absolute;width:1px;height:1px;padding:0;margin:-1px;overflow:hidden;clip:rect(0 0 0 0);white-space:nowrap}body .topbar .home-search-pill{grid-template-rows:minmax(0,1fr)}body .topbar .home-search-pill>input{grid-row:1;padding-top:9px;min-height:44px}body .topbar .home-search-pill>:not(.home-ai-label):not(input){grid-row:1}}
+/* Phones: a short fade above the pinned Play bar so the panel it covers reads as sliding under a dock, not as cut. */
+@media(max-width:700px){.pl-lobby .pl-startbar{position:sticky}.pl-lobby .pl-startbar::before{content:"";position:absolute;left:-20px;right:-20px;bottom:calc(100% - 1px);height:28px;background:linear-gradient(to bottom,transparent,color-mix(in srgb,var(--bg) 92%,transparent));pointer-events:none}}
+/* Room for the last letter's tracking, so the label never runs past its own box. */
+.cs-plate-label{padding-right:2px}
+
+/* ===== Search bar speaks for itself (Randall 31 Oct): no icon buttons beside or inside it. Typing wakes a gold
+   bezel that sweeps the rim; the dropdown is one glass sheet with the app's own matches first and AI only when it helps. ===== */
+.home-search-wrap { gap:0; }
+.home-search-wrap>.home-search-pill,
+body .topbar .home-search-pill,
+.home-search-pill { grid-template-columns:minmax(0,1fr); grid-template-rows:minmax(0,1fr); padding-right:0; }
+.home-search-pill>input { grid-row:1; align-self:center; padding:0 22px; min-height:48px; }
+body .topbar .home-search-pill>input { padding-left:18px; }
+.home-search-pill { transition:box-shadow .35s ease, border-color .35s ease, background-color .35s ease; }
+.home-search-pill:focus-within { outline:0; border-color:color-mix(in srgb,var(--gold) 70%,transparent);
+  box-shadow:0 0 0 3px color-mix(in srgb,var(--gold) 14%,transparent),0 0 28px -8px color-mix(in srgb,var(--gold) 70%,transparent),inset 0 1px 0 #ffffff14; }
+.home-search-pill:focus-within::before { padding:1.5px; animation-duration:2.6s;
+  background:linear-gradient(110deg,transparent 12%,#c99a4b 34%,#fff4d0 50%,#c99a4b 66%,transparent 88%); background-size:250% 100%; }
+.home-search-pill:has(input:not(:placeholder-shown))::before { animation-duration:1.6s; }
+@media (prefers-reduced-motion: reduce) { .home-search-pill:focus-within::before { animation:none; background-position:50% 0; } }
+.home-suggestions { border-radius:20px; border:1px solid color-mix(in srgb,var(--gold) 26%,#ffffff14);
+  background:linear-gradient(160deg,#1d1f29,#12141b); backdrop-filter:blur(18px) saturate(1.2); -webkit-backdrop-filter:blur(18px) saturate(1.2);
+  box-shadow:0 24px 50px -18px #000e,inset 0 1px 0 #ffffff12; padding:8px; }
+.home-suggestions .home-result-status { margin:4px 8px 8px; font-size:11px; letter-spacing:.04em; color:var(--gold); }
+.home-result-actions { padding:6px 0 0; gap:8px; }
+.home-suggestions.is-asking .home-result-actions, .home-result-actions:only-child { padding-top:0; }
+.home-result-actions>button { border-radius:14px; border-color:#ffffff14; background:#ffffff08; transition:background-color .2s, border-color .2s; }
+.home-result-actions>button:hover { background:#ffffff12; border-color:color-mix(in srgb,var(--gold) 45%,transparent); }
+.home-result-actions .home-assistant-action.is-lead { flex:1 1 100%; justify-content:flex-start; padding-inline:14px;
+  border-color:color-mix(in srgb,var(--gold) 55%,transparent); background:linear-gradient(115deg,#2c2638,#1b2232); }
+.home-assistant-action>span { min-width:0; overflow-wrap:anywhere; }
+/* Result rows: one quiet line per printing, art + name + set, price only when known. No boxes, hairline separators. */
+.home-suggestions .display-list { gap:0; }
+.home-suggestions .display-list>.lot.home-result { min-height:56px; padding:6px 10px; gap:12px; border:0; border-radius:12px; background:transparent; box-shadow:none; }
+.home-suggestions .display-list>.lot.home-result+.lot.home-result { box-shadow:inset 0 1px 0 #ffffff0d; }
+.home-suggestions .display-list>.lot.home-result:is(:hover,[aria-selected="true"]) { background:#ffffff0c; }
+.home-suggestions .lot.home-result .lot-art { width:34px; height:47px; border-radius:4px; overflow:hidden; }
+.home-suggestions .lot.home-result .lot-name { font-size:14px; }
+.home-suggestions .lot.home-result .lot-sub { font-size:11px; color:var(--muted); }
+.home-suggestions .lot.home-result .lot-side { align-self:center; }
+.home-suggestions .lot.home-result .price { font-size:13px; color:var(--gold); }
+
+/* Idea tiles share the deck-tile art direction (Randall 31 Oct): full-bleed art, a soft melt into the dark backing,
+   a glass band at the bottom carrying a Cinzel title, a slim stats line and the action. One style, two markups:
+   Pokémon / Yu-Gi-Oh! "build around" (.collection-idea) and Magic "Build from my cards" (.build-own .idea). */
+:is(.collection-idea,.build-own .idea) { position:relative; isolation:isolate; display:flex; flex-direction:column; justify-content:flex-end;
+  min-height:248px; overflow:hidden; border:0; border-radius:18px; background:#0d0f15;
+  box-shadow:0 18px 34px -20px #000e,0 3px 10px -4px #0009; }
+:is(.collection-idea,.build-own .idea)::after { content:''; position:absolute; inset:0; z-index:2; border-radius:inherit; pointer-events:none; padding:1px;
+  background:linear-gradient(155deg,#f1d08ab3,#ffffff38 26%,#ffffff12 52%,#ffffff0a 70%,#f1d08a66);
+  -webkit-mask:linear-gradient(#000 0 0) content-box,linear-gradient(#000 0 0); -webkit-mask-composite:xor; mask:linear-gradient(#000 0 0) content-box exclude,linear-gradient(#000 0 0); }
+.collection-idea>.idea-card-open, .build-own .idea>.idea-art { position:absolute; inset:0; z-index:0; height:auto; background:transparent; }
+.collection-idea>.idea-card-open .idea-row-art { height:100%; }
+.build-own .idea>.idea-art img { height:100%; object-position:50% 30%; }
+.collection-idea>.idea-card-open::after, .build-own .idea>.idea-art::after { content:''; position:absolute; inset:0; pointer-events:none;
+  background:linear-gradient(0deg,#0b0e15f5,#0b0e15b8 38%,#0b0e1540 64%,#0b0e1500 82%); }
+:is(.collection-idea>.idea-card-body,.build-own .idea>.idea-body) { position:relative; z-index:1; margin:0; padding:34px 16px 14px; color:#f5f6fa;
+  background:linear-gradient(180deg,#0b0e1500,#0b0e1566 40%,#0b0e15a6);
+  -webkit-backdrop-filter:blur(10px) saturate(1.15); backdrop-filter:blur(10px) saturate(1.15);
+  -webkit-mask-image:linear-gradient(180deg,transparent,#000 30px); mask-image:linear-gradient(180deg,transparent,#000 30px); }
+:is(.collection-idea .idea-card-name,.build-own .idea .idea-title) { font:700 17px/1.2 Cinzel,Georgia,serif; letter-spacing:.02em; color:#f8f1e1; text-shadow:0 1px 2px #000b,0 0 14px #0008; }
+:is(.collection-idea .idea-card-facts,.build-own .idea .idea-body small,.build-own .idea .idea-body .row) { color:#dfe3ea; }
+.build-own .idea .idea-art .chip { z-index:1; }
+.collection-idea:has(.idea-card-open:focus-visible), .build-own .idea:has(.idea-art:focus-visible) { outline:2px solid var(--gold); outline-offset:3px; }
+
+/* Meta decks share the deck-tile art direction too (Randall 31 Oct, all 3 games): "Top decks right now" tiles are
+   full-bleed art melting into a glass base with a Cinzel title; "Recent top lists" rows carry their deck art as a
+   strip that fades into the row. The long source text sits behind a quiet one-line, tap-to-reveal summary. */
+.meta-source { margin:2px 0 14px; color:var(--muted); font-size:12px; }
+.meta-source>summary { display:inline-flex; align-items:center; gap:6px; min-height:32px; cursor:pointer; list-style:none; opacity:.8; transition:opacity .2s; }
+.meta-source>summary::-webkit-details-marker { display:none; }
+.meta-source>summary::after { content:''; width:6px; height:6px; margin-left:2px; border:solid currentColor; border-width:0 1.5px 1.5px 0; transform:rotate(45deg) translateY(-2px); transition:transform .2s; }
+.meta-source[open]>summary::after { transform:rotate(-135deg) translate(-1px,-1px); }
+.meta-source>summary:hover, .meta-source[open]>summary { opacity:1; }
+.meta-source>p { margin:4px 0 0; max-width:68ch; line-height:1.5; }
+
+.arch-grid { gap:12px; }
+.arch-grid .arch { isolation:isolate; display:flex; flex-direction:column; justify-content:flex-end; min-height:212px; padding:0; gap:0;
+  border:0; border-radius:18px; background:#0d0f15; box-shadow:0 18px 34px -20px #000e,0 3px 10px -4px #0009; transition:transform .25s ease, box-shadow .25s ease; }
+.arch-grid .arch::after, .meta-row::after { content:''; position:absolute; inset:0; z-index:3; border-radius:inherit; pointer-events:none; padding:1px;
+  background:linear-gradient(155deg,#f1d08ab3,#ffffff38 26%,#ffffff12 52%,#ffffff0a 70%,#f1d08a66);
+  -webkit-mask:linear-gradient(#000 0 0) content-box,linear-gradient(#000 0 0); -webkit-mask-composite:xor; mask:linear-gradient(#000 0 0) content-box exclude,linear-gradient(#000 0 0); }
+.meta-row::after { background:linear-gradient(155deg,#f1d08a80,#ffffff24 30%,#ffffff0d 60%,#f1d08a40); }
+.arch-grid .arch>.arch-art { position:absolute; inset:0; z-index:0; width:100%; height:100%; opacity:1; filter:saturate(1.1) contrast(1.05); transition:transform .6s cubic-bezier(.2,.8,.2,1); }
+.arch-grid .arch::before { content:''; position:absolute; inset:0; z-index:1; pointer-events:none;
+  background:linear-gradient(0deg,#0b0e15f5,#0b0e15b8 38%,#0b0e1540 64%,#0b0e1500 82%); }
+.arch-grid .arch>.arch-body { position:relative; z-index:2; display:grid; gap:4px; padding:30px 14px 12px; color:#f5f6fa;
+  background:linear-gradient(180deg,#0b0e1500,#0b0e1566 40%,#0b0e15a6);
+  -webkit-backdrop-filter:blur(10px) saturate(1.15); backdrop-filter:blur(10px) saturate(1.15);
+  -webkit-mask-image:linear-gradient(180deg,transparent,#000 26px); mask-image:linear-gradient(180deg,transparent,#000 26px); }
+.arch-grid .arch .arch-body b { font:700 16px/1.2 Cinzel,Georgia,serif; letter-spacing:.02em; color:#f8f1e1; text-shadow:0 1px 2px #000b,0 0 14px #0008; }
+.arch-grid .arch .arch-body small { color:#dfe3ea; text-shadow:0 1px 2px #000a; }
+.arch-grid .arch .arch-body .bar { height:3px; margin:4px 0 0; background:#ffffff1a; }
+.arch-grid .arch .arch-body .bar>span { background:linear-gradient(90deg,#c9a45c,#f1d08a); }
+.arch-grid .arch>.arch-icons:not(:empty) { z-index:2; }
+.arch-grid .arch>.arch-art-state { z-index:2; }
+@media (hover:hover) {
+  .arch-grid .arch:not(:disabled):hover { transform:translateY(-2px); box-shadow:0 24px 40px -20px #000,0 4px 14px -4px #000a; }
+  .arch-grid .arch:not(:disabled):hover>.arch-art { transform:scale(1.04); }
+  .meta-row:hover>.meta-art { transform:scale(1.04); }
+}
+.arch-grid .arch:focus-visible, .meta-row:focus-visible { outline:2px solid var(--gold); outline-offset:3px; }
+
+.meta-row { position:relative; isolation:isolate; overflow:hidden; display:grid; grid-template-columns:minmax(0,1fr); min-height:76px;
+  padding:12px 14px 12px clamp(96px,30%,190px); border:0; border-radius:14px; background:#0f1219; box-shadow:0 10px 22px -16px #000d; }
+.meta-row:hover { border-color:transparent; }
+.meta-row>.meta-art { position:absolute; inset:0 auto 0 0; z-index:-1; width:clamp(150px,46%,300px); min-height:0; display:flex; justify-content:center; align-items:center; gap:4px;
+  -webkit-mask-image:linear-gradient(90deg,#000 35%,transparent); mask-image:linear-gradient(90deg,#000 35%,transparent); transition:transform .6s cubic-bezier(.2,.8,.2,1); }
+.meta-row>.meta-art :is(.mini-art,.meta-card-art) { width:100%; height:100%; border-radius:0; object-fit:cover; object-position:50% 30%; filter:saturate(1.1) contrast(1.05); }
+.meta-row>.meta-art .pk-icon { width:32px; height:32px; }
+.meta-row .meta-main>b { text-shadow:0 1px 2px #000c,0 0 10px #000a; }
+.meta-row .meta-main small { text-shadow:0 1px 2px #000c; }
+.meta-row .meta-own .bar { height:3px; margin:4px 0; background:#ffffff1a; }
+.meta-row .meta-own .bar>span { background:linear-gradient(90deg,#c9a45c,#f1d08a); }
+.list:has(>.meta-row) { display:grid; gap:8px; }
+.meta-row { color:#f5f6fa; }
+.meta-row :is(.muted,.meta-own small) { color:#c4cad4; }
+.meta-row:not(:has(>.meta-art :is(img,.pk-crop:not(.img-missing)))) { padding-left:14px; }
+.meta-row:not(:has(>.meta-art :is(img,.pk-crop:not(.img-missing)))) > .meta-art { display:none; }
+@media (max-width:419px) { .arch-grid .arch { min-height:176px; } }
+
+/* One search for the whole app (Randall 31 Oct): grouped answers from CardStashy itself (your decks, sets,
+   tournament decks, wiki, news, pages) above the card matches, in the same slim glass rows. */
+.home-app-results { display:grid; gap:2px; }
+.home-app-group { display:grid; }
+.home-app-group+.home-app-group, .home-app-results+.home-app-group, .home-app-results+.home-result-status { margin-top:6px; }
+.home-app-label { margin:4px 10px 2px; font-size:11px; font-weight:700; letter-spacing:.12em; text-transform:uppercase; color:color-mix(in srgb,var(--gold) 80%,#fff 0%); opacity:.85; }
+.home-app-row { display:grid; grid-template-columns:34px minmax(0,1fr) auto; align-items:center; gap:12px; width:100%; min-height:48px; padding:6px 10px;
+  border:0; border-radius:12px; background:transparent; color:var(--text); text-align:left; cursor:pointer; transition:background-color .15s; }
+.home-app-row+.home-app-row { box-shadow:inset 0 1px 0 #ffffff0d; }
+.home-app-row:hover, .home-app-row[aria-selected="true"] { background:#ffffff0f; }
+.home-app-row:focus-visible { outline:2px solid var(--gold); outline-offset:-2px; }
+.home-app-art { display:grid; place-items:center; width:34px; height:34px; border-radius:9px; overflow:hidden; background:#ffffff0a; color:var(--gold); font-size:16px; line-height:1; }
+.home-app-art img { width:100%; height:100%; object-fit:cover; }
+.home-app-art img.is-icon { width:22px; height:22px; object-fit:contain; filter:invert(1) brightness(.92) sepia(.35) saturate(1.6) hue-rotate(5deg); }
+:root[data-theme="light"] .home-app-art img.is-icon { filter:none; }
+.home-app-text { display:grid; gap:1px; min-width:0; }
+.home-app-text b { font-size:14px; font-weight:650; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
+.home-app-text small { font-size:11.5px; color:var(--muted); overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
+.home-app-out { color:var(--muted); font-size:13px; }
+.home-suggestions.has-app .home-app-group>.display-list { margin:0; }
+/* Card matches sit in the same rhythm as the app's own rows: art, name and set, price on the right. */
+.home-suggestions .display-list>.lot.home-result { grid-template-columns:34px minmax(0,1fr) auto; gap:12px; }
+.home-suggestions .lot.home-result .lot-side { grid-column:auto; justify-self:end; align-self:center; }
+/* ---------- Card sheet · Play guide, Rules & legality, Prices ----------
+   Uniform with the rest of the card sheet: the same panel as the set summary and price history
+   (1px line, 18px radius, glass sheen), 16px section titles, the game's accent for the one
+   primary element, 44px rows. Every line is card data, not filler. */
+#sheetBody :is(.card-guide .guide-panel, .guide-hero, .price-hero, .price-copy) {
+  padding: 14px 16px; border: 1px solid var(--line); border-radius: 18px;
+  background: linear-gradient(135deg, #ffffff09, #ffffff03); box-shadow: inset 0 1px #ffffff0a; backdrop-filter: blur(16px);
+}
+#sheetBody :is(.guide-hero, .price-hero) { background: linear-gradient(160deg, color-mix(in srgb, var(--gold) 5%, var(--surface)), var(--surface)); }
+.card-guide { display: grid; gap: 14px; margin-top: 6px; }
+.card-guide .guide-sec { margin: 0; min-width: 0; }
+.card-guide .guide-sec > h3 { margin: 0 0 12px; font-size: 16px; line-height: 1.4; display: flex; flex-wrap: wrap; align-items: baseline; gap: 4px 8px; }
+.guide-hero { display: grid; gap: 10px; }
+.guide-hero .eyebrow { margin: 0; }
+.guide-roles { display: flex; flex-wrap: wrap; gap: 6px; margin: 0; }
+.guide-role { display: inline-flex; align-items: center; min-height: 30px; padding: 4px 12px; border-radius: 999px; font-size: 13px; font-weight: 700; color: var(--text); border: 1px solid var(--line); background: var(--glass-2, var(--surface-2)); }
+.guide-role.main { color: var(--gold-ink); border-color: transparent; background: linear-gradient(180deg, color-mix(in srgb, var(--gold) 78%, #fff 22%), var(--gold) 58%, color-mix(in srgb, var(--gold) 86%, #000 14%)); }
+.card-guide .guide-what { margin: 0; font-size: 15px; line-height: 1.5; }
+.guide-steps { list-style: none; counter-reset: step; margin: 0; padding: 0; display: grid; gap: 10px; }
+.guide-steps li { counter-increment: step; display: grid; grid-template-columns: 26px minmax(0, 1fr); gap: 10px; align-items: start; line-height: 1.5; }
+.guide-steps li::before { content: counter(step); display: grid; place-items: center; width: 26px; height: 26px; border-radius: 50%; font-size: 12px; font-weight: 800; color: var(--gold); border: 1px solid color-mix(in srgb, var(--gold) 45%, transparent); background: color-mix(in srgb, var(--gold) 10%, transparent); }
+.card-guide .guide-list { padding-left: 18px; gap: 8px; }
+.card-guide .guide-list li::marker { color: var(--gold); }
+.guide-along { display: grid; gap: 6px; }
+.guide-along-row { display: grid; grid-template-columns: minmax(0, 1fr) minmax(60px, 34%) 40px; gap: 10px; align-items: center; min-height: 44px; padding: 6px 12px; border-radius: 12px; border: 1px solid var(--line); background: var(--surface); color: var(--text); text-align: left; cursor: pointer; }
+.guide-along-row b { text-align: right; font-size: 13px; font-variant-numeric: tabular-nums; }
+.guide-meter { height: 5px; border-radius: 999px; background: var(--line); overflow: hidden; }
+.guide-meter i { display: block; height: 100%; border-radius: inherit; background: var(--gold); }
+.card-guide .pair-list { grid-template-columns: repeat(auto-fill, minmax(min(100%, 300px), 1fr)); }
+.card-guide .pair-shared { margin: 0 0 10px; }
+.card-guide .guide-limits { grid-template-columns: repeat(auto-fill, minmax(132px, 1fr)); gap: 8px; margin: 0 0 10px; }
+.card-guide .guide-limits span { position: relative; gap: 2px; padding: 8px 12px 8px 14px; border-radius: 14px; overflow: hidden; }
+.card-guide .guide-limits span::before { content: ""; position: absolute; left: 0; top: 8px; bottom: 8px; width: 3px; border-radius: 0 3px 3px 0; background: var(--good); }
+.card-guide .guide-limits span.warn::before { background: var(--warn); }
+.card-guide .guide-limits span.bad::before { background: var(--bad); }
+.card-guide .guide-limits span.bad b { color: var(--bad); }
+.guide-rulings { margin-top: 12px; padding-top: 12px; border-top: 1px solid var(--line); }
+.guide-link-list { display: grid; gap: 6px; }
+.guide-link { display: flex; align-items: center; justify-content: space-between; gap: 10px; min-height: 44px; padding: 8px 14px; border-radius: 12px; border: 1px solid var(--line); background: var(--surface); color: var(--text); text-decoration: none; font-weight: 650; }
+.guide-rule-links { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 12px; }
+.guide-rule-links .chip { min-height: 44px; }
+#sheetBody .card-discovery > summary { min-height: 44px; display: flex; align-items: center; cursor: pointer; }
+
+/* Prices: one hero with the number that matters, then your copy at its condition. */
+#sheetBody .price-hero { display: grid; grid-template-columns: minmax(0, 1fr) auto; align-items: start; gap: 8px 12px; margin: 6px 0 12px; }
+.price-hero-main { display: grid; gap: 2px; min-width: 0; }
+.price-hero .eyebrow { margin: 0; }
+.price-hero-value { font-size: 32px; line-height: 1.15; font-weight: 800; letter-spacing: -.02em; font-variant-numeric: tabular-nums; }
+.price-hero-id { color: var(--muted); font-size: 13px; line-height: 1.4; overflow-wrap: anywhere; }
+.price-fresh { display: inline-flex; align-items: center; gap: 6px; min-height: 28px; padding: 4px 10px; border-radius: 999px; font-size: 12px; font-weight: 700; white-space: nowrap; border: 1px solid var(--line); background: var(--glass-2, var(--surface-2)); color: var(--muted); }
+.price-fresh::before { content: ""; width: 7px; height: 7px; border-radius: 50%; background: currentColor; }
+.price-fresh.fresh { color: var(--good); }
+.price-fresh.stale { color: var(--warn); }
+.price-hero > :is(.price-selectors, .current-printing-reference, .history-status) { grid-column: 1 / -1; margin: 4px 0 0; }
+#sheetBody .price-hero select { width: 100%; min-width: 0; min-height: 44px; }
+#sheetBody .price-copy { display: grid; grid-template-columns: minmax(0, 1fr) auto; align-items: center; gap: 4px 12px; margin: 0 0 12px; }
+.price-copy-label, .price-copy-value { display: grid; gap: 2px; min-width: 0; }
+.price-copy-label b { font-size: 14px; }
+.price-copy-value { text-align: right; }
+.price-copy small { color: var(--muted); font-size: 12px; }
+.price-copy-value b { font-size: 18px; font-variant-numeric: tabular-nums; }
+.price-copy .foot { grid-column: 1 / -1; margin: 2px 0 0; }
+@media (max-width: 420px) { #sheetBody .price-hero { grid-template-columns: minmax(0, 1fr); } .price-fresh { justify-self: start; } }
+/* Rows in the guide wear the same frosted glass as pairing rows and list tiles. */
+body.glass :is(.guide-along-row, .guide-link) { background: linear-gradient(160deg, rgba(255, 255, 255, 0.045), rgba(255, 255, 255, 0) 45%), var(--glass); border-color: var(--glass-line); box-shadow: var(--glass-hi), 0 10px 30px rgba(0, 0, 0, 0.22); }
+/* Phones: card tabs are text-only so Overview · Meta · Play guide · Prices all fit in one row,
+   the same on every card whether or not it has a Meta tab. */
+@media (max-width: 480px) {
+  .cs-tabs[aria-label="Card details"] > button { padding-inline: clamp(8px, 2.6vw, 16px); gap: 0; }
+  .cs-tabs[aria-label="Card details"] > button .label-ico { display: none; }
+}
+
+/* Card detail art: the frame hugs the printed card on every game.
+   Pokémon (600×825 and 734×1024) and Yu-Gi-Oh! (421×614) scans are not Magic's 488×680, so the
+   shared cover box cropped them and slid the scan's rounded corner off the clip, which let the
+   dark fill show between card and frame. Their art keeps its own shape, the way the collection
+   grid already does, and any see-through corner pixel shows the frame, never a dark fill. */
+.cd-img .cd-zoom > img.card-img[data-tier] { background: transparent; }
+.cd-img:is([data-finish-game="ptcg"], [data-finish-game="ygo"]) .card-img { height: auto; aspect-ratio: auto 600 / 825; object-fit: contain; }
+.cd-img[data-finish-game="ygo"] .card-img { aspect-ratio: auto 421 / 614; }
+
+/* Card sheet header: the art fills the header edge to edge and flows on into the sheet.
+   Each screen shape gets its own header height and crop instead of one compromise:
+   phone portrait, phone landscape, foldable or tablet portrait, and tablet landscape or PC.
+   The art is cropped to the header (Magic art crop, Yu-Gi-Oh! cropped art, and the Pokémon
+   art window zoomed past the card's frame, stage badge and evolve bar). */
+#sheetBody { --hero-h: clamp(240px, 74vw, 340px); }
+#sheetBody:has(> .cs-banner > .cs-hero.ptcg) { --hero-h: clamp(220px, 64vw, 300px); }
+#sheetBody:has(> .cs-banner > .cs-hero.ygo) { --hero-h: clamp(250px, 82vw, 360px); }
+/* Foldable or tablet held upright: a tall, roomy header. */
+@media (min-width: 700px) and (orientation: portrait) { #sheetBody:has(> .cs-banner > .cs-hero:not(.compact)) { --hero-h: clamp(340px, 38dvh, 460px); } }
+/* Tablet landscape and PC: a wide, cinematic header. */
+@media (min-width: 700px) and (orientation: landscape) { #sheetBody:has(> .cs-banner > .cs-hero:not(.compact)) { --hero-h: clamp(300px, 46dvh, 420px); } }
+/* Phone on its side: a short panorama, so the tabs and details stay in view. */
+@media (orientation: landscape) and (max-height: 500px) { #sheetBody:has(> .cs-banner > .cs-hero:not(.compact)) { --hero-h: clamp(170px, 48dvh, 220px); } }
+.cs-banner:not(.no-art) { --banner-art-height: var(--hero-h, clamp(240px, 74vw, 340px)); }
+
+/* Below the header the art keeps going, behind the sheet, like a painting seen through frosted
+   glass: first softly blurred, then frosted, then only its colour, darkening as it goes so text
+   on the sheet stays crisp. The soft and frost layers line up with the header crop (same cover
+   box and focus point), and Magic and Yu-Gi-Oh! add a mirrored copy under the picture so the
+   glass never ends on a hard edge where the art runs out. */
+#sheetBody:has(> .cs-bleed) { position: relative; isolation: isolate; }
+#sheetBody > .cs-bleed { --oy: .32; container-type: inline-size; position: absolute; top: 0; left: 0; right: 0; height: calc(var(--hero-h) * 1.25 + 300px); z-index: -1; pointer-events: none;
+  -webkit-mask-image: linear-gradient(180deg, #000 calc(var(--hero-h) + 120px), transparent 100%); mask-image: linear-gradient(180deg, #000 calc(var(--hero-h) + 120px), transparent 100%); }
+#sheetBody > .cs-bleed.ygo { --oy: .28; }
+#sheetBody > .cs-bleed > span { position: absolute; inset: 0; }
+#sheetBody > .cs-bleed > .cs-bleed-glow > :is(img, .pk-crop) { display: block; width: 100%; height: 100%; object-fit: cover; object-position: center 30%; filter: blur(40px) saturate(1.45) brightness(.62); }
+#sheetBody > .cs-bleed .cs-bleed-fit { position: absolute; top: 0; left: 0; width: 100%; height: var(--hero-h); }
+#sheetBody > .cs-bleed .cs-bleed-fit > img { position: absolute; left: 0; top: calc(var(--hero-h) * var(--oy)); width: 100%; height: auto; min-height: var(--hero-h); max-width: none; object-fit: cover; object-position: center calc(var(--oy) * 100%); translate: 0 calc(var(--oy) * -100%); }
+#sheetBody > .cs-bleed .cs-bleed-fit > img.cs-bleed-mirror { transform: translateY(100%) scaleY(-1); }
+#sheetBody > .cs-bleed .cs-bleed-fit.pk-crop { overflow: visible; display: flex; align-items: flex-start; justify-content: center; }
+#sheetBody > .cs-bleed .cs-bleed-fit.pk-crop .pk-win { transform: scale(1.22); transform-origin: 50% 88%; -webkit-mask-image: linear-gradient(180deg, #000 94%, transparent 100%); mask-image: linear-gradient(180deg, #000 94%, transparent 100%); }
+/* The mirrored window flips about the window's lower edge as zoomed above: the window is
+   max(width / 1.68, header) tall and its zoomed lower edge sits at 1.0264 of that. */
+#sheetBody > .cs-bleed .cs-bleed-fit.pk-crop.cs-bleed-mirror { transform: scaleY(-1); transform-origin: 50% calc(max(100cqw / 1.68, var(--hero-h)) * 1.0264); }
+#sheetBody > .cs-bleed > .frost { -webkit-mask-image: linear-gradient(180deg, #000 calc(var(--hero-h) + 60px), transparent calc(var(--hero-h) + 340px)); mask-image: linear-gradient(180deg, #000 calc(var(--hero-h) + 60px), transparent calc(var(--hero-h) + 340px)); }
+#sheetBody > .cs-bleed > .frost .cs-bleed-fit { filter: blur(18px) saturate(1.3) brightness(.72); }
+#sheetBody > .cs-bleed > .soft { -webkit-mask-image: linear-gradient(180deg, #000 calc(var(--hero-h) - 10px), transparent calc(var(--hero-h) + 130px)); mask-image: linear-gradient(180deg, #000 calc(var(--hero-h) - 10px), transparent calc(var(--hero-h) + 130px)); }
+#sheetBody > .cs-bleed > .soft .cs-bleed-fit { filter: blur(6px) saturate(1.15) brightness(.9); }
+#sheetBody > .cs-bleed::after { content: ""; position: absolute; inset: 0; background: linear-gradient(180deg, transparent 0, transparent calc(var(--hero-h) * .45), #0a0b1047 calc(var(--hero-h) * .85), #0a0b1061 var(--hero-h), #0a0b1099 calc(var(--hero-h) + 70px), #0a0b10a8 calc(var(--hero-h) + 220px), #0a0b10b3 100%); }
+/* A card page's art waits for its picture, then comes in once (app.js settleSheetArt): the header art and its glass
+   together, the big card on its own. The glass shares the header's entrance too, so it never shows ahead of the art. */
+#sheetBody[data-settling~="art"] > .cs-bleed > span, #sheetBody[data-settling~="art"] > .cs-banner > .cs-hero > .cs-art, #sheetBody[data-settling~="card"] .cd-img .cd-zoom { opacity: 0; }
+#sheetBody[data-settling~="card"] .cd-img.shine-once, #sheetBody[data-settling~="card"] .cd-img.shine-once::after { animation-play-state: paused; }
+@media (prefers-reduced-motion: no-preference) {
+  dialog.sheet[open] #sheetBody > .cs-bleed { animation: art-reveal-glass .32s cubic-bezier(.2, .8, .2, 1) both; }
+  @keyframes art-reveal-glass { from { opacity: 0; } to { opacity: 1; } }
+  #sheetBody > .cs-bleed > span, #sheetBody > .cs-banner > .cs-hero > .cs-art, #sheetBody .cd-img .cd-zoom { transition: opacity .32s cubic-bezier(.2, .8, .2, 1); }
+}
+
+/* The art covers the whole header, edge to edge, and fades out only at the bottom. */
+.cs-banner > .cs-hero:not(.compact) { -webkit-mask-image: none; mask-image: none; }
+.cs-banner > .cs-hero:not(.compact) .cs-art { position: absolute; inset: 0; width: 100%; height: 100%; max-width: none; aspect-ratio: auto; translate: none; transform: none; object-fit: cover; object-position: center 32%;
+  -webkit-mask-image: linear-gradient(180deg, #000 0, #000 50%, #0008 74%, transparent 94%); mask-image: linear-gradient(180deg, #000 0, #000 50%, #0008 74%, transparent 94%); }
+.cs-banner > .cs-hero.ygo:not(.compact) .cs-art { object-position: center 28%; }
+/* Pokémon: the art window, zoomed past the card frame. It hangs from the top and the zoom pivots
+   low, so the same top band (evolve bar and stage badge) is cut on every screen shape and a short
+   header shows the face rather than the feet. */
+.cs-banner > .cs-hero.ptcg:not(.compact) .cs-art.pk-crop { display: flex; align-items: flex-start; justify-content: center; }
+.cs-banner > .cs-hero.ptcg .pk-crop .pk-win { transform: scale(1.22); transform-origin: 50% 88%; }
+.cs-banner > .cs-hero:not(.compact) .cs-shade { background: linear-gradient(180deg, #00000052 0, transparent 30%); }
+
+/* Price history with one point: a compact start line instead of an empty chart. */
+#sheetBody #card-history .history-start { display: flex; height: auto; min-height: 0; align-items: center; gap: 10px; margin: 10px 0 4px; padding: 12px 14px; border-radius: 14px; background: color-mix(in srgb, var(--text) 5%, transparent); color: var(--muted); font-size: 14px; }
+#sheetBody #card-history .history-start b { color: var(--text); }
+#sheetBody .history-start-dot { width: 10px; height: 10px; flex: none; border-radius: 50%; background: var(--accent, var(--gold)); box-shadow: 0 0 0 4px color-mix(in srgb, var(--accent, var(--gold)) 22%, transparent); }
+.meta-row .meta-main small.ellip { white-space:normal; display:-webkit-box; -webkit-line-clamp:2; -webkit-box-orient:vertical; overflow:hidden; }
+/* Collection banner on all three games: Pokémon art crops cover the band; a missing image leaves the dark band. */
+.page-hero-art .pk-crop{position:absolute;inset:0;width:100%;height:100%}
+.page-hero-art .img-missing{display:none}
+.artwork-banner-reset{margin:10px 0 0}
+.artwork-banner-reset .link{min-height:44px}

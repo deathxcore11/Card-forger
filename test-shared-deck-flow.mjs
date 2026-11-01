@@ -62,7 +62,7 @@ console.log('PASS: Save → Export stays usable; account changes before or durin
 // Every game and AI/manual result uses the same existing deck design.
 for(const game of ['mtg','ygo','ptcg']){
  const html=deckResultMarkup({...result,request:{...result.request,game}},'presentation');
- assert.match(html,/class="cs-hero compact/);assert.match(html,/class="cs-title"/);
+ assert.match(html,/class="deck-hero ds-hero"/);assert.match(html,/<h1>/);
  assert.match(html,/list compact deck-compact-list/);assert.match(html,/mini-row art-row deck-compact-row/);
  assert.doesNotMatch(html,/deck-flow-row|Tournament-backed/);assert.match(html,/data-flow-budget[^>]*value=""/);assert.match(html,/Rebuild with budget/);
  const busy=deckSetupMarkup({request:{...request,game},busy:true,status:'Checking the selected cards…'},pipeline.formats);

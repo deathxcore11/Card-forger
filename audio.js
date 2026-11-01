@@ -5,21 +5,30 @@
 // kept in Cache Storage after that, so the Android download stays small. Nothing sounds until the
 // first tap or key press (browser autoplay rules). Settings: on/off, effects and music volume.
 
-const KEY = "cardstashy-audio", CACHE = "cardstashy-audio-v1", SITE = "https://cardstashy.com";
-const DEFAULTS = { on: true, master: 1, sfx: 0.7, music: 0.4 };
+import { LOOPS } from "./audio-loops.js";
+
+const KEY = "cardstashy-audio", CACHE = "cardstashy-audio-v2", SITE = "https://cardstashy.com";
+// v2 holds the original score; older copies (the placeholder music) are cleared once.
+try { globalThis.caches?.keys().then((keys) => keys.filter((k) => k.startsWith("cardstashy-audio-") && k !== CACHE).forEach((k) => caches.delete(k))).catch(() => {}); } catch {}
+const DEFAULTS = { on: true, master: 1, sfx: 0.7, music: 0.4, app: true };
 // Which cues have a file: prefix → [last number, ...numbers that are music rows instead].
-const RANGES = { APP: [20, 2], COL: [10], PACK: [13, 1], QP: [24, 1, 3], TT: [10], CARD: [31], CMB: [21], PW: [33, 1], PWB: [20], AMB: [7], RAV: [6] };
+const RANGES = { APP: [20, 2], COL: [10], PACK: [20, 1], QP: [24, 1, 3], TT: [10], CARD: [31], CMB: [21], PW: [38, 1], PWB: [20], AMB: [7], RAV: [6] };
 // RAV-001…006: Planeswalk Ravnica drafts (dungeon gate, vault lock, vault reveal, room advance, ante shatter, signature reveal).
 const hasCue = (id) => { const m = /^([A-Z]+)-(\d{3})$/.exec(id || ""), r = m && RANGES[m[1]], n = m && +m[2]; return !!r && n >= 1 && n <= r[0] && !r.slice(1).includes(n); };
 // Stingers duck the music for a moment so they read over it.
-const STINGERS = new Set(["APP-001", "PACK-009", "PACK-013", "QP-006", "QP-007", "QP-016", "QP-017", "QP-018", "QP-019", "TT-001", "TT-002", "PW-003", "PW-004", "PW-009", "PW-010", "PW-011", "PW-014", "PW-029", "PW-030", "PW-031"]);
+const STINGERS = new Set(["APP-001", "PACK-009", "PACK-013", "PACK-017", "PACK-018", "QP-006", "QP-007", "QP-016", "QP-017", "QP-018", "QP-019", "TT-001", "TT-002", "PW-003", "PW-004", "PW-009", "PW-010", "PW-011", "PW-014", "PW-029", "PW-030", "PW-031", "PW-036", "PW-037"]);
 
 const native = () => { try { return !!globalThis.Capacitor?.isNativePlatform?.() || /\.invalid$/.test(location.hostname); } catch { return false; } };
 const base = new URL("./assets/audio/", import.meta.url);
 // The app bundles only the Opus effects; Safari (no Ogg Opus before 18.4) gets the AAC copies.
 let ext = (() => { if (native()) return "ogg"; try { return new Audio().canPlayType('audio/ogg; codecs="opus"') ? "ogg" : "m4a"; } catch { return "m4a"; } })();
-const sfxURL = (id) => new URL(`sfx/${id}.${ext}`, base).href;
-const musicURL = (id) => native() ? `${SITE}/assets/audio/music/${id}.${ext}` : new URL(`music/${id}.${ext}`, base).href;
+// Same for the effects: bump SFX_REV whenever they are remade under the same names.
+const SFX_REV = "kit3";
+const sfxURL = (id) => new URL(`sfx/${id}.${ext}`, base).href + `?v=${SFX_REV}`;
+// The music files are cached for a week by browsers and the app's WebView, so a new score needs a new
+// address: bump MUSIC_REV whenever the tracks change under the same names.
+const MUSIC_REV = "score1";
+const musicURL = (id) => (native() ? `${SITE}/assets/audio/music/${id}.${ext}` : new URL(`music/${id}.${ext}`, base).href) + `?v=${MUSIC_REV}`;
 
 export function audioSettings() {
   try { return { ...DEFAULTS, ...JSON.parse(localStorage.getItem(KEY) || "{}") }; } catch { return { ...DEFAULTS }; }
@@ -82,7 +91,7 @@ async function load(url, keep) {
   try { return await decode(await bytes(url, keep)); }
   catch (e) {
     // A browser that said yes to Opus but cannot decode it switches to the AAC copies.
-    if (ext === "ogg" && !native()) { ext = "m4a"; return decode(await bytes(url.replace(/\.ogg$/, ".m4a"), keep)); }
+    if (ext === "ogg" && !native()) { ext = "m4a"; return decode(await bytes(url.replace(/\.ogg(?=\?|$)/, ".m4a"), keep)); }
     throw e;
   }
 }
@@ -113,6 +122,11 @@ export function sfx(id, { volume = 1, rate = 1, delay = 0, gap = 45 } = {}) {
   }, () => {});
 }
 // Music steps back under a stinger, then comes back up.
+// The main app's few sounds (pack opening, a card added): quiet, paired with a haptic, and with their own switch.
+export function appSound(id, { volume = 0.6, rate = 1, delay = 0, gap = 45 } = {}) {
+  if (audioSettings().app === false) return;
+  sfx(id, { volume, rate, delay, gap });
+}
 export function duck(ms = 1200, depth = 0.4) {
   if (!ctx) return;
   const t = ctx.currentTime, g = duckBus.gain;
@@ -153,11 +167,15 @@ function playWanted() {
   load(musicURL(w.id), true).then((buf) => {
     if (pending !== key) return; pending = "";
     const src = ctx.createBufferSource(), g = ctx.createGain(), t = ctx.currentTime;
+    // Looping tracks carry their loop points (audio-loops.js): the seam sits inside continuous audio,
+    // so it is exact whatever padding the encoder added at the file's edges.
+    const pts = w.loop && LOOPS[w.id];
     src.buffer = buf; src.loop = w.loop; src.connect(g).connect(musicBus);
+    if (pts && pts[1] <= buf.duration) { src.loopStart = pts[0]; src.loopEnd = pts[1]; }
     g.gain.setValueAtTime(0.0001, t); g.gain.exponentialRampToValueAtTime(1, t + 1.2);
     fadeOut(playing);
     const me = playing = { key, src, g };
-    src.start(t);
+    src.start(t, pts && pts[1] <= buf.duration ? pts[0] : 0);
     // A one-shot (victory, defeat) hands over to its follow-up track when it ends.
     if (!w.loop) src.onended = () => { if (playing !== me) return; playing = null; const layer = LAYERS.find((l) => wants[l] === w); if (layer) wants[layer] = w.then ? { id: w.then, loop: true, then: "" } : null; playWanted(); };
   }, () => { if (pending === key) pending = ""; });

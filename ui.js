@@ -202,6 +202,14 @@ export function customBudget(value) {
 }
 
 // Placeholder cards while results load: the layout appears at once and fills in.
+// Card sheet bleed: the header art carries on below the header, behind the sheet, as layers of the
+// same picture that get softer and darker the farther down they reach. art(cls) returns the art
+// markup with an extra class (Pokémon: its art window). A mirrored copy continues each layer past
+// the art's lower edge, so the glass never ends on a hard edge.
+export const cardBleed = (game, art) => {
+  const fit = () => game === "ptcg" ? art("cs-bleed-fit") + art("cs-bleed-fit cs-bleed-mirror") : `<span class="cs-bleed-fit">${art("")}${art("cs-bleed-mirror")}</span>`;
+  return `<div class="cs-bleed ${game}" aria-hidden="true"><span class="cs-bleed-glow">${art("")}</span><span class="cs-bleed-layer frost">${fit()}</span><span class="cs-bleed-layer soft">${fit()}</span></div>`;
+};
 export const skeletonGrid = (n = 6) => `<div class="card-grid skeleton-grid" aria-busy="true" aria-label="Loading cards">${Array.from({ length: n }, () => `<div class="skel-card"><span class="skel-img"></span><span class="skel-line"></span><span class="skel-line short"></span></div>`).join("")}</div>`;
 
 // Async prices/results must not close the disclosure the player is using.

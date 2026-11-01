@@ -8,7 +8,8 @@
      Play menu markup, match introduction, coin flip and out-of-match screens with
      sample decks so their styling can be compared. Nothing is sent anywhere. -->
 <script>document.documentElement.dataset.theme=new URLSearchParams(location.search).get('theme')||'dark';</script>
-<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=DM+Sans:opsz,wght@9..40,400;9..40,500;9..40,600;9..40,700&family=Manrope:wght@600;700;800&family=Cinzel:wght@600;700&display=swap">
+<link rel="stylesheet" href="../../assets/fonts/fonts.css">
+<script>for(const f of ["600 16px Manrope","600 16px Cinzel","16px \"DM Sans\""])document.fonts?.load(f);</script>
 <link rel="stylesheet" href="../../style.css">
 <link rel="stylesheet" href="../../community-curation.css">
 <link rel="stylesheet" href="../../magic-matchups.css">
@@ -50,22 +51,29 @@ const decks = {
 };
 const names = [...new Set([decks.you, decks.cpu, ...decks.more].map(d => d.commander))];
 const scry = new Map();
+// Saved card data first (fixture-cards.json, shared with the table fixture), so the design gate sees real art offline.
+try { for (const [name, c] of Object.entries(await (await fetch('./fixture-cards.json')).json())) scry.set(name, c); } catch {}
 try {
-  const r = await fetch('https://api.scryfall.com/cards/collection', {method: 'POST', headers: {'Content-Type': 'application/json'}, body: JSON.stringify({identifiers: names.map(name => ({name}))})});
+  const missing = names.filter(n => !scry.has(n));
+  if (!missing.length) throw 0;
+  const r = await fetch('https://api.scryfall.com/cards/collection', {method: 'POST', headers: {'Content-Type': 'application/json'}, body: JSON.stringify({identifiers: missing.map(name => ({name}))})});
   for (const c of (await r.json()).data || []) scry.set(c.name, c);
-} catch (e) { console.warn('Scryfall unavailable', e); }
+} catch (e) { if (e !== 0) console.warn('Scryfall unavailable', e); }
 const lookup = name => scry.get(name) || null;
 const artOf = d => lookup(d?.commander)?.image_uris?.art_crop || '';
 const avatarUrl = artOf(decks.you);
 const profile = {signedIn: true, displayName: 'idw011', username: 'idw011', avatarUrl, ownerId: 'u1'};
 const tile = (d, on) => `<button class="deck-tile" data-act="playSelectDeck" data-play-deck="${d.id}" aria-pressed="${on}" aria-label="Select ${d.name}"><span class="tile-art">${img(artOf(d), d.name)}</span><span class="tile-shade"></span><span class="tile-top"><span class="deck-format-stack"><span class="chip dark">Commander</span></span></span><span class="tile-body"><b>${d.name}</b><small>${d.commander} · 100/100</small></span></button>`;
 const content = document.getElementById('content'), mat = document.getElementById('practicePlayerMat');
-const setup = {profile, selected: decks.you, opponent: decks.cpu, match: {format: 'Commander', mode: 'cpu', difficulty: 'Medium'}, playStyle: params.get('style') || 'quick'};
+// ?pod=4 (or 3): a Commander pod. The intro shows every CPU; the lobby shows CPU 3 (chosen) and CPU 4 (random).
+const POD = Number(params.get('pod')) || 2;
+const setup = {profile, selected: decks.you, opponent: decks.cpu, match: {format: 'Commander', mode: 'cpu', difficulty: 'Medium', podSize: String(POD), cpu3Level: 'Medium', cpu4Level: 'Hard'}, playStyle: POD > 2 ? 'practice' : params.get('style') || 'quick',
+  extraOpponents: decks.more.slice(0, POD - 2).map(deck => ({deck, difficulty: 'Medium'})), podDecks: {cpu3: POD > 2 ? decks.more[0] : null, cpu4: null}, podSources: {cpu3: POD > 2 ? 'saved' : null, cpu4: null}};
 
 if (SCREEN === 'menu') {
   const all = [decks.you, decks.cpu, ...decks.more], tiles = new Map(all.map(d => [d.id, tile(d, d.id === decks.you.id)]));
-  const state = {profile, match: setup.match, playStyle: params.get('style') || 'quick', decks: all.map(d => ({...d, valid: true})), selected: decks.you, opponent: params.get('style') === 'practice' ? decks.cpu : null, selectedSource: 'saved', opponentSource: 'saved', browse: {source: 'yours', query: ''}, inspectedSeat: 'player', draft: {}};
-  content.innerHTML = playMenuMarkup(state, {engine: 'forge', matchReleaseReady: true, avatarMarkup: profileAvatar(null, {display_name: profile.displayName, username: profile.username, avatar_url: avatarUrl}), deckTiles: tiles, selectedArt: img(artOf(decks.you), ''), matchupArt: {player: img(artOf(decks.you), ''), opponent: state.opponent ? img(artOf(decks.cpu), '') : ''}, deckPreview: '<div class="deck-viewer"><p class="muted small">100 cards · Klothys, God of Destiny</p></div>'});
+  const state = {profile, match: setup.match, podDecks: setup.podDecks, podSources: setup.podSources, playStyle: POD > 2 ? 'practice' : params.get('style') || 'quick', decks: all.map(d => ({...d, valid: true})), selected: decks.you, opponent: params.get('style') === 'practice' || POD > 2 ? decks.cpu : null, selectedSource: 'saved', opponentSource: 'saved', browse: {source: 'yours', query: ''}, inspectedSeat: 'player', draft: {}};
+  content.innerHTML = playMenuMarkup(state, {engine: 'forge', matchReleaseReady: true, avatarMarkup: profileAvatar(null, {display_name: profile.displayName, username: profile.username, avatar_url: avatarUrl}), deckTiles: tiles, selectedArt: img(artOf(decks.you), ''), matchupArt: {player: img(artOf(decks.you), ''), opponent: state.opponent ? img(artOf(decks.cpu), '') : '', cpu3: POD > 2 ? img(artOf(decks.more[0]), '') : ''}, deckPreview: '<div class="deck-viewer"><p class="muted small">100 cards · Klothys, God of Destiny</p></div>'});
 } else if (['intro', 'choice', 'flip', 'landed'].includes(SCREEN)) {
   document.body.classList.add('practice-table-open'); content.hidden = true; mat.hidden = false;
   const own = params.get('first') !== 'cpu';

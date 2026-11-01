@@ -33,7 +33,11 @@ const extras = ['assets/cards/miscp-001.webp', 'assets/finishes/stamp-first-movi
   'vendor/tesseract.min.js', 'vendor/worker.min.js', 'vendor/TESSERACT-LICENSE.txt', 'vendor/SUPABASE-LICENSE.txt',
   'scanidx/catalog-manifest.json', 'scanidx/TCGDEX-LICENSE.txt', 'rulebooks/manifest.json',
   // Planeswalk, the solo roguelite: one self-contained page that saves runs on the phone.
-  'planeswalk.html'];
+  'planeswalk.html',
+  // Zendikar's art, split out of the page so the first load is lighter; the game fetches it near the end of Act 1.
+  'planeswalk-art-zen.css',
+  // Card names the bundled Forge accepts (play-engine-names.js), so Play checks decks offline.
+  'forge-card-names-e5a0f815.txt'];
 for (const game of ['mtg', 'ptcg', 'ygo']) extras.push(`scanidx/${game}.bin`, `scanidx/${game}-ids.txt`, `scanidx/${game}-catalog-v1.json.gz`, `scanidx/${game}-signals-v1.json.gz`, `rulebooks/${game}-rules-v1.json.gz`);
 // The tour lists WebM first and Android's WebView plays it, so the MP4 copies (for Safari) stay off the APK:
 // they would only add ~1.9 MB and push the download past Cloudflare's 25 MiB per-file limit.
@@ -43,6 +47,12 @@ for (const file of await readdir(path.join(source, 'data/mtg-boosters')).catch((
 // Sound effects ship with the app (Opus only; the AAC copies are for Safari). Music streams from the website
 // and is cached on the phone after its first play (audio.js), so it never adds to the download.
 for (const file of await readdir(path.join(source, 'assets/audio/sfx')).catch(() => [])) if (/^[A-Z]{2,4}-\d{3}\.ogg$/.test(file)) extras.push(`assets/audio/sfx/${file}`);
+// Planeswalk's painted characters (planeswalk-cast/): each figure's key-pose atlas, light mask and drip sprite, plus the spell effect art (fx/), so fights animate offline.
+extras.push('planeswalk-cast/cast.json');
+for (const dir of ['atlas', 'mask', 'drop', 'fx']) for (const file of await readdir(path.join(source, `planeswalk-cast/${dir}`)).catch(() => [])) if (/^[a-z0-9-]+\.webp$/.test(file)) extras.push(`planeswalk-cast/${dir}/${file}`);
+// Planeswalk's painted fight mats (planeswalk-art/<key>.webp and their <key>-wide.webp phone twins), so fights open on their painting offline.
+// Folders one level down hold more art (patrons/ portraits, codex/ entries), so every subfolder comes along.
+for (const dir of ['', ...(await readdir(path.join(source, 'planeswalk-art'), { withFileTypes: true }).catch(() => [])).filter(d => d.isDirectory()).map(d => `${d.name}/`)]) for (const file of await readdir(path.join(source, `planeswalk-art/${dir}`)).catch(() => [])) if (/^[a-z0-9-]+\.webp$/.test(file)) extras.push(`planeswalk-art/${dir}${file}`);
 // Only files the website itself serves: .assetsignore is gitignore syntax (last matching rule wins,
 // nothing under an ignored directory is served), so .mjs ships only where a ! rule publishes it.
 const rules = (await readFile(path.join(source, '.assetsignore'), 'utf8')).split('\n').map(x => x.trim()).filter(x => x && !x.startsWith('#')).map(line => {

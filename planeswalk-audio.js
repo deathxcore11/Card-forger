@@ -10,10 +10,23 @@ addEventListener('click',e=>{if(e.target.closest?.('.pw-sndbtn'))setTimeout(()=>
  // The hero's loyalty diamond opens the ability fan; the game stops that click at #app, so listen above it.
  if(e.target.closest?.('.battle .loyal'))sfx('APP-007',{volume:.6});},true);
 const app=document.getElementById('app');
+const BOSS_THEMES=[[/^sorin/i,'SORIN'],[/^olivia/i,'OLIVIA'],[/^ob(\b| nixilis)/i,'OB'],[/herald/i,'HERALD'],[/^vraska/i,'VRASKA'],[/^lazav/i,'LAZAV'],[/bolas/i,'BOLAS']];
+const GIVERS={ugin:'MUS-PWG-01',sigarda:'MUS-PWG-02',geist:'MUS-PWG-03',tamiyo:'MUS-PWG-04',noyan:'MUS-PWG-05',kiora:'MUS-PWG-06',
+ anowon:'MUS-PWG-07',zada:'MUS-PWG-08',teferi:'MUS-PWG-09',niv:'MUS-PWG-10',kaya:'MUS-PWG-11',rakdos:'MUS-PWG-12'};
 const CLICK={go:'PW-006',hero:'PW-003',take:'PW-017',skip:'PW-018',emb:'PW-026',bossemb:'PW-026',startemb:'PW-026',buyemb:'PW-020',buy:'PW-020',
  end:'PWB-017',play:'PWB-003',plus:'PWB-009',minus:'PWB-009',ult:'PWB-009',target:'CARD-017',heal:'PW-023',restburn:'PW-023',tend:'PW-023',
  foil:'PW-024',foilpick:'PW-024',shopfoil:'PW-024',shopfoilpick:'PW-024',remove:'PW-022',shopremove:'PW-022',shopremovepick:'PW-022',
- pactmyth:'PW-013','ante-wager':'PW-013','ante-skip':'PW-018',pactcurse:'PW-013',sac:'PWB-015',new:'PW-033',replay:'PW-033',leave:'APP-004',back:'APP-004',shopback:'APP-004',cancel:'APP-004'};
+ pactmyth:'PW-013','ante-wager':'PW-013','ante-skip':'PW-018',pactcurse:'PW-013',sac:'PWB-015',new:'PW-033',replay:'PW-033',leave:'APP-004',back:'APP-004',shopback:'APP-004',cancel:'APP-004',
+ // Blessings: pick a boon, take it, break a wildcard's seal, or walk on.
+ boon:'CARD-016',btake:'PW-037',bless:'PW-037',bseal:'PW-036',bskip:'PW-018',bdone:'APP-004',bpick:'PW-017',
+ // The Token Belt: using a token. Gaining one is heard from the belt itself (below).
+ belt:'PW-035',
+ // Events and gifts.
+ giftok:'PW-017',claim:'PW-017',loot:'PW-025',dig:'PW-025',hedron:'PW-026',purify:'CMB-007',bandage:'PW-023',blood:'PWB-015',burn:'PW-022',
+ 'ante-pick':'PW-017','ante-change':'TT-003','ante-back':'APP-004',
+ // Fight controls.
+ atk:'CMB-001',all:'CMB-002','target-ally':'CARD-017',front:'CMB-003',arrange:'TT-003',mode:'TT-003',
+ journal:'PW-027',jtab:'APP-005',jback:'APP-004',closeinspect:'APP-008',share:'APP-013',replayseed:'APP-013'};
 if(app){
  app.addEventListener('click',e=>{const b=e.target.closest('[data-act]');if(!b)return;
   // A button the game shows but you cannot use yet (not enough energy or gold) gets the "can't" knock.
@@ -24,9 +37,18 @@ if(app){
  new MutationObserver(l=>{for(const m of l)for(const n of m.addedNodes)if(n.classList?.contains('pw-room'))sfx('RAV-004');}).observe(document.body,{childList:true});
  const read=()=>{
   const q=s=>app.querySelector(s),act=+document.body.dataset.actnum||1;
+  // Each blessing patron has a theme of their own; the blessing screen names its patron in data-giver.
+  const g=q('[data-giver]');if(g&&GIVERS[g.dataset.giver])return ['giver-'+g.dataset.giver,GIVERS[g.dataset.giver]];
   if(q('.screen.heroes'))return ['heroes','MUS-PW-01'];
-  if(q('section.battle[data-dungeon]'))return ['dungeon','MUS-PW-06'];
-  if(q('section.battle'))return q('section.battle .unit.boss')?['boss','MUS-PW-10']:q('section.battle .unit.elite')?['elite','MUS-PW-06']:['battle','MUS-PW-05'];
+  // Ugin's blessing in the Blind Eternities has its own music.
+  if(q('.screen.blind-eternities, [data-scene="blind-eternities"]'))return ['eternities','MUS-PW-13'];
+  // Fights have a track per act: MUS-PW-05/06/10 for Innistrad, -2 Zendikar, -3 Ravnica.
+  const A=act>1?'-'+Math.min(3,act):'';
+  if(q('section.battle[data-dungeon]'))return ['dungeon','MUS-PW-06'+A];
+  // Every boss has a theme of its own, found by the boss's name on its card (or data-boss on the battle).
+  const bu=q('section.battle .unit.boss'),bn=(q('section.battle[data-boss]')?.dataset.boss||bu?.dataset.n||'');
+  const bt=bu&&BOSS_THEMES.find(([re])=>re.test(bn));if(bt)return ['boss','MUS-BOSS-'+bt[1]];
+  if(q('section.battle'))return q('section.battle .unit.boss')?['boss','MUS-PW-10'+A]:q('section.battle .unit.elite')?['elite','MUS-PW-06'+A]:['battle','MUS-PW-05'+A];
   if(q('section.map')||q('.screen.actstart')||q('.screen.bosspick'))return ['map',['MUS-PW-02','MUS-PW-03','MUS-PW-04'][Math.min(2,act-1)]];
   if(q('section.screen.ante'))return ['ante',''];
   if(q('.screen.shop'))return ['shop','MUS-PW-07'];
@@ -37,9 +59,36 @@ if(app){
   if(/defeated$/.test(h))return ['reward',''];
   return [screen,''];
  };
+ // What the run shows on screen, read after each render; a change in it is an action to hear.
+ const num=s=>{const e=app.querySelector(s);return e?parseFloat(e.dataset.v??e.textContent)||0:null;};
+ const count=s=>app.querySelectorAll(s).length;
+ const snap=()=>({gold:num('.gold'),hp:num('.life'),belt:count('.pw-tok[data-act="belt"]'),emb:app.querySelector('.emblems')?count('.emblems > :not(.muted)'):null,
+  ward:num('.unit.hero .ward b'),eshield:count('.foe .unit .shield'),foes:count('.foe .unit'),allies:count('.unit.ally'),energy:count('.energy .on'),
+  hand:count('.hand .card'),yours:!!app.querySelector('section.battle.your-turn'),acting:count('.foe .unit.acting'),call:app.querySelector('.battle .callout')?.textContent||''});
+ let was=null,lastClick='';
+ app.addEventListener('click',e=>{lastClick=e.target.closest?.('[data-act]')?.dataset.act||'';setTimeout(()=>{lastClick='';},1200);},true);
+ const hear=(a,b,sameScreen)=>{
+  if(a.gold!=null&&b.gold!=null&&b.gold>a.gold)sfx(b.gold-a.gold>=10?'PW-015':'PW-038',{gap:400});
+  if(a.belt!=null&&b.belt>a.belt)sfx('PW-034',{gap:400});
+  if(a.emb!=null&&b.emb!=null&&b.emb>a.emb)sfx('PW-026',{gap:1500});
+  if(a.hp!=null&&b.hp!=null&&b.hp>a.hp&&!/^(heal|restburn|tend|bandage|purify)$/.test(lastClick))sfx('CMB-007',{gap:600});
+  if(!sameScreen)return;
+  if(b.ward>a.ward)sfx('PWB-013',{gap:300});else if(a.ward>0&&!b.ward)sfx('PWB-014',{gap:300});
+  if(b.eshield<a.eshield&&b.foes>=a.foes)sfx('PWB-014',{gap:300});
+  if(b.foes<a.foes)sfx('PWB-018',{gap:250});
+  if(b.allies>a.allies)sfx('PWB-005',{gap:250});else if(b.allies<a.allies&&lastClick!=='sac')sfx('CMB-009',{volume:.7,gap:250});
+  if(b.yours&&!a.yours)sfx('PWB-001');
+  if(!b.yours&&a.yours&&b.foes)sfx('TT-002',{volume:.6});
+  if(b.hand>a.hand+1)sfx('PWB-002',{gap:400});else if(b.hand===a.hand+1&&lastClick!=='play')sfx('CARD-001',{gap:150});
+  if(b.acting>a.acting)sfx('PWB-011',{gap:150});
+  if(b.call&&b.call!==a.call){if(/kill!$/i.test(b.call))sfx('PW-028');else if(app.querySelector('.foe .unit.boss')&&/(form|^Bride of Night|^Awakened|^Reignited|^Phase two)$/i.test(b.call.trim()))sfx('PWB-019');}
+ };
+ // A spell's own effect (the game's pw-spellfx event) lands with a magical burst.
+ addEventListener('pw-spellfx',()=>sfx('CARD-011',{volume:.8,gap:200}));
  const STING={ante:'PW-012',boss:'PW-011',elite:'PW-010',battle:'PW-009',won:'PW-030',lost:'PW-031',shop:'PW-019',event:'PW-027',heroes:''};
  const look=()=>{
-  const [next,track]=read(),q=s=>app.querySelector(s);
+  const [next,track]=read(),q=s=>app.querySelector(s),now=snap();
+  if(was)hear(was,now,next===screen);was=now;
   const dg=q('section.battle[data-dungeon]');if(dg)lastDungeon=dg.dataset.dungeon;
   // The ante settles after the fight: the wager paid off, or the staked card burned.
   const ar=q('.ante-result');if(ar&&!told.has(ar)){told.add(ar);if(ar.dataset.r==='won')sfx('PW-015');else sfx('RAV-005',{delay:900});}
@@ -57,5 +106,6 @@ if(app){
   if(app.querySelector('.battle.quake2'))sfx('CMB-010',{gap:300});
   const n=app.querySelectorAll('.pop').length;if(n>pops)sfx(app.querySelector('.pop.big')?'CMB-005':'CMB-004',{volume:.7,gap:120});pops=n;
  };
- new MutationObserver(look).observe(app,{childList:true});look();
+ // The game patches parts of the screen in place too, so watch the whole tree, at most once a frame.
+ let queued=false;new MutationObserver(()=>{if(!queued){queued=true;requestAnimationFrame(()=>{queued=false;look();});}}).observe(app,{childList:true,subtree:true,attributes:true,attributeFilter:['class','data-v']});look();
 }

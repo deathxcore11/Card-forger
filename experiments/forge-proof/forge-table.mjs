@@ -1,10 +1,10 @@
 import {mountMatchTable} from '../phase-engine/match-table.mjs';
 import {practiceArtworkHooks,resolvePracticeArtwork} from '../../play-card-surface.js';
 import {practicePlayerPortrait} from '../../play-player-mat.js';
-import {mountNativePanel} from './native-panel.mjs';
+import {mountNativePanel,nativePayment,owesAttack} from './native-panel.mjs';
 import {createMotion} from './motion-kit.mjs';
 import {optionCardId} from './forge-session.mjs';
-import {CpuActionPlaybackQueue,createPlaybackSession,tableActivity} from './cpu-action-playback.mjs';
+import {CpuActionPlaybackQueue,createPlaybackSession,storyLines,tableActivity} from './cpu-action-playback.mjs';
 import {tileBadges,tileLayerHtml,badgeSummary,currentKeywords,counterList,playerCounterBadges,playerCountersHtml} from '../../play-board-badges.js';
 import {boardIcon} from '../../play-board-icons.js';
 import {drawnArtwork,frameTone,surfaceColors} from '../../play-token-art.js';
@@ -31,26 +31,35 @@ const COUNTER_NAMES={P1P1:'+1/+1',M1M1:'\u22121/\u22121',LOYALTY:'Loyalty',DEFEN
 // untapped source of yours readable. Anything unclear keeps the glow; Forge still validates every play.
 const COST_BENDERS=/\bcosts?\b[^.]*\bless\b|\breduc|without paying|rather than pay|alternative|convoke|delve|improvise|affinity|evoke|emerge|offering|assist|spectacle|surge|prowl|\bdash\b|blitz|madness|foretell|\bplot\b|bestow|mutate|overload|prototype|flashback|escape|unearth|cycling|channel|ninjutsu|morph|disguise|\bwarp\b|sneak|freerunning|impending|mayhem|from your hand|discard this card|exile this card|reveal this card/i;
 const MANA_SYMBOL=/^(?:\d+|[WUBRGC])$/;
-function manaSources(card){
+function manaSources(card,tapped=false){
  const lines=String(card.text||'').split(/\n|(?<=\.)\s+(?=[A-Z{])/).map(l=>l.trim().replace(/^\((.*)\)$/,'$1')).filter(l=>/\badd\b/i.test(l));
- if(!lines.length){if(!card.types?.includes('Land'))return [];const basic={Plains:'W',Island:'U',Swamp:'B',Mountain:'R',Forest:'G'},colors=Object.entries(basic).filter(([t])=>new RegExp(`\\b${t}\\b`).test(card.type||'')).map(([,c])=>c);return colors.length?[colors.map(c=>[c])]:null;}
+ if(!lines.length){if(!card.types?.includes('Land')||tapped)return [];const basic={Plains:'W',Island:'U',Swamp:'B',Mountain:'R',Forest:'G'},colors=Object.entries(basic).filter(([t])=>new RegExp(`\\b${t}\\b`).test(card.type||'')).map(([,c])=>c);return colors.length?[colors.map(c=>[c])]:null;}
  const options=[];
  for(const line of lines){const [cost,effect]=line.split(/:\s*/,2);if(effect===undefined)return null;
   const parts=cost.split(/,\s*/).map(x=>x.trim());if(!parts.every(x=>x==='{T}'||/^sacrifice (?:this|~|it|cardname)/i.test(x)||/^sacrifice /i.test(x)&&x.toLowerCase().includes(String(card.name).toLowerCase())))return null;
-  if(parts.includes('{T}')&&card.summoningSick&&card.types?.includes('Creature'))continue;
+  // A tapped source still counts when an ability of its needs no tap ("Sacrifice this: Add {W}.").
+  if(parts.includes('{T}')&&(tapped||card.summoningSick&&card.types?.includes('Creature')))continue;
   const add=effect.replace(/\.?\s*(?:\(.*\))?$/,'').match(/^add (.+)$/i);if(!add)return null;const what=add[1].trim();
-  if(/^one mana of any color$/i.test(what)){options.push(['WUBRG'.split('')]);continue;}
+  {const any=what.match(/^(one|two|three) mana of any (?:one )?(?:color|type)\b(?:[^.]*\bcommander'?s? color identity)?$/i);if(any){options.push(Array({one:1,two:2,three:3}[any[1].toLowerCase()]).fill('WUBRGC'.split('')));continue;}}
   const alts=what.split(/,\s*(?:or\s+)?|\s+or\s+/);const parsed=alts.map(a=>(a.match(/^(?:\{[WUBRGC]\})+$/)?a.match(/[WUBRGC]/g):null));if(parsed.some(x=>!x))return null;
   for(const tokens of parsed)options.push(tokens.map(c=>[c]));}
  return options.length?options:[];}
+// What a land whose text this reader can't follow could make at most: any colour, as many mana as its
+// longest Add clause names (a fetch land counts as one). Anything that scales (X, "for each") stays unknown.
+function landCeiling(card){
+ if(!card.types?.includes('Land')||card.tapped)return null;const text=String(card.text||'');if(/for each|\bX\b|amount|double|twice|additional|instead/i.test(text))return null;
+ const adds=[...text.matchAll(/\badd ([^.]+)/gi)].map(m=>Math.max((m[1].match(/\{[^}]+\}/g)||[]).length,/\btwo\b/i.test(m[1])?2:/\bthree\b/i.test(m[1])?3:1));
+ return [Array(Math.max(1,...adds)).fill('WUBRGC'.split(''))];}
+// Only an effect that changes what your spells cost (or how they can be paid) keeps a card lit.
+const TABLE_BENDERS=/\bcosts?\b[^.]*\bless\b|\breduc|without paying|rather than pay|alternative cost|as though it were mana|spend mana as though|convoke|improvise|affinity|\bdelve\b/i;
 export function provenUnaffordable(card,surface,pool={}){
  if(!card?.known||card.zone!=='Hand'||card.types?.includes('Land')||COST_BENDERS.test(card.text||''))return false;
  const symbols=(String(card.manaCost||'').match(/\{[^}]+\}/g)||[]).map(x=>x.slice(1,-1));if(!symbols.length||!symbols.every(x=>MANA_SYMBOL.test(x)))return false;
  const generic=symbols.filter(x=>/\d/.test(x)).reduce((a,x)=>a+Number(x),0),colored=symbols.filter(x=>!/\d/.test(x));
- const table=surface.cards.filter(c=>c.zone==='Battlefield'||c.zone==='Command');if(table.some(c=>!c.known||COST_BENDERS.test(c.text||'')&&!/from your hand|discard this card|exile this card|reveal this card|cycling|channel/i.test(c.text||'')))return false;
+ const table=surface.cards.filter(c=>c.zone==='Battlefield'||c.zone==='Command');if(table.some(c=>!c.known||TABLE_BENDERS.test(c.text||'')))return false;
  if(surface.cards.some(c=>c.zone==='Hand'&&c.controller===surface.seat&&c.id!==card.id&&/from your hand[^.]*:\s*add|:\s*add[^.]*\bfrom your hand/i.test(c.text||'')))return false;
  const floating=Object.entries(pool||{}).flatMap(([c,n])=>Array(Math.max(0,Number(n)||0)).fill([String(c).toUpperCase()]));
- const sources=[];for(const c of table){if(c.controller!==surface.seat||c.zone!=='Battlefield'||c.tapped)continue;const o=manaSources(c);if(o===null)return false;if(o.length)sources.push(o);}
+ const sources=[];for(const c of table){if(c.controller!==surface.seat||c.zone!=='Battlefield')continue;const o=manaSources(c,c.tapped===true)??landCeiling(c);if(o===null)return false;if(o.length)sources.push(o);}
  if(sources.length>14||sources.reduce((a,o)=>a*o.length,1)>4096)return false;
  const pays=tokens=>{if(tokens.length<generic+colored.length)return false;const used=new Array(tokens.length).fill(false);
   const fit=i=>{if(i===colored.length)return true;for(let k=0;k<tokens.length;k++)if(!used[k]&&tokens[k].includes(colored[i])){used[k]=true;if(fit(i+1))return true;used[k]=false;}return false;};return fit(0);};
@@ -69,8 +78,26 @@ export function mountForgeTable(root,{session,onExit=()=>{},profile={displayName
  const authority=session;let displayed=authority.snapshot(),playbackBusy=false,activeBeat=null;
  session=createPlaybackSession(authority,{displayed:()=>displayed,busy:()=>playbackBusy});
  const doc=root.ownerDocument,win=doc.defaultView,hooks=practiceArtworkHooks();let handFocusRect=null,handDownAt=null,handTap=null,handLiftTimer=0,handFocus=null,handFocusId=null,handPointer=null,handSifted=false,localError='',panelKey='',drag=null,ghost=null,ghostFrame=0,suppressUntil=0,closed=false,nativeValueDraft=null,openingFocused=false;
+ // The table redraws by building new card elements, which would cut a glide, a landing or a strike off
+ // mid-flight. Card motion is kept per card, and a redraw picks each one up on the new element where it was.
+ const carried=new Map();
+ const keep=(el,a)=>{const card=el?.matches?.('.play-match-card')?el:el?.querySelector?.(':scope>.play-match-card[data-instance]'),id=card?.dataset.instance;if(!id||!a)return a;
+  const key=id+(el===card?'|c':'|w');let set=carried.get(key);if(!set)carried.set(key,set=new Set());set.add(a);a.finished.then(()=>set.delete(a),()=>set.delete(a));return a;};
+ const anim=(el,frames,opts)=>el?keep(el,el.animate(frames,opts)):null;
+ const keepLatest=el=>{for(const a of el?.getAnimations?.()||[])if(!(a instanceof CSSTransition||a instanceof CSSAnimation))keep(el,a);};
+ function carryOver(){for(const [key,set] of carried){for(const a of [...set]){const t=a.effect?.target;if(!t||t.isConnected)continue;set.delete(a);if(a.playState==='finished'||a.playState==='idle')continue;
+   const [id,role]=key.split('|'),card=root.querySelector(`.play-match-card[data-instance="${CSS.escape(id)}"]`),el=role==='c'?card:card?.closest('.play-match-card-wrap');const at=a.currentTime;a.cancel();if(!el)continue;
+   const {delay,duration,easing,fill,iterations,direction,endDelay}=a.effect.getTiming(),frames=a.effect.getKeyframes().map(({computedOffset,...k})=>k);
+   const n=anim(el,frames,{delay,duration,easing,fill,iterations,direction,endDelay,composite:a.effect.composite});if(n&&at!==null)n.currentTime=at;}
+  if(!set.size)carried.delete(key);}}
+ // A target the redraw replaced is found again by its card or its seat.
+ const again=n=>{if(!n||n.isConnected)return n;const id=n.dataset?.instance||n.querySelector?.('.play-match-card[data-instance]')?.dataset.instance;
+  if(id){const c=root.querySelector(`.play-match-card[data-instance="${CSS.escape(id)}"]`);return c?(n.matches?.('.play-match-card')?c:c.closest('.play-match-card-wrap')||c):null;}
+  const seat=n.closest?.('.play-match-seat')?.dataset.playerSeat;if(seat===undefined)return null;const s=root.querySelector(`.play-match-seat[data-player-seat="${CSS.escape(seat)}"]`);return n.matches?.('.play-match-profile-badge')?s?.querySelector('.play-match-profile-badge')||s:s;};
  const reducedMotion=()=>win.matchMedia?.('(prefers-reduced-motion: reduce)').matches;
  let dockObserver=null,dockObserved=null;
+ // Cards whose payment came up short, with the mana you had when you tried (see enhance).
+ const shortCasts=new Map();let shortSig='';
  // Low power: Android's web view, reduced motion, or a small device trades blur, drifting fog and
  // foil sheen for flat glass. localStorage 'cardstashy.lowPower' = 'on' or 'off' overrides it.
  const lowPower=(()=>{let pref='';try{pref=win.localStorage?.getItem('cardstashy.lowPower')||'';}catch{}if(pref==='on')return true;if(pref==='off')return false;
@@ -78,8 +105,32 @@ export function mountForgeTable(root,{session,onExit=()=>{},profile={displayName
  if(lowPower)root.dataset.lowPower='true';
  // Where the finger let a played card go: glide() lands it from here (read within 3 s, then cleared).
  let lastDrop=null;
+// A card let go over the table hangs where it was dropped until Forge answers, then snaps into its slot
+// (or floats back to the hand if the play didn't happen). Never more than DROP_HOLD ms.
+let heldDrop=null;const DROP_HOLD=2500;
  const peek=doc.createElement('div');let peekFor=null,peekPinned=false,peekTimer=0,pressTimer=0,pressAt=null,pressShown=false,peekKey='',lastPointerType='mouse';
  const failedArt=new Set(),castShow=doc.createElement('div');castShow.className='forge-cast';castShow.setAttribute('role','status');castShow.setAttribute('aria-live','polite');castShow.dataset.open='false';doc.body.append(castShow);
+ // Your own spell while you choose its targets or pay for it. Forge has already moved it to the stack but lists it
+ // there only once it is cast, so until then it is shown here, large, the way Arena lifts the card you are casting.
+ const ownCast=doc.createElement('div');ownCast.className='forge-cast forge-own-cast';ownCast.dataset.open='false';ownCast.dataset.kind='own';ownCast.setAttribute('aria-hidden','true');doc.body.append(ownCast);
+ let ownCastKey='',aim=null;const seenInHand=new Map();
+ function pendingCast(n,surface){
+  const input=String(n?.inputType||'');if(!presentation.hosted||!(input==='InputSelectTargets'||input.startsWith('InputPayMana')||n?.prompt))return null;
+  const events=Array.isArray(n.events?.items)?n.events.items:[],last=new Map();for(const e of events)if(e?.type==='zone'&&e.card?.kind==='card')last.set(e.card.id,e);
+  // The engine leaves the player off some casts; a card that was in your hand is yours.
+  const ev=[...last.values()].filter(e=>e.to==='Stack'&&e.from==='Hand'&&(e.player===n.viewer||e.player==null&&seenInHand.has(e.card.id))).sort((a,b)=>b.seq-a.seq)[0];if(!ev)return null;
+  if((n.stack||[]).some(x=>x.id===ev.card.id||x.source?.id===ev.card.id)||surface.cards.some(c=>c.id===ev.card.id&&c.zone!=='Stack'))return null;
+  return seenInHand.get(ev.card.id)||surface.cards.find(c=>c.id===ev.card.id)||{id:ev.card.id,name:ev.card.name,known:true,zone:'Stack'};
+ }
+ function paintOwnCast(n,surface){
+  for(const c of surface.cards)if(c.zone==='Hand'&&c.known&&c.controller===surface.seat)seenInHand.set(c.id,c);
+  const c=pendingCast(n,surface),key=c?`${c.id}:${c.name}`:'';if(key===ownCastKey)return;ownCastKey=key;
+  if(!c){ownCast.dataset.open='false';root.removeAttribute('data-own-cast');aim=null;queueArrows();return;}
+  const art=resolvePracticeArtwork(c);
+  ownCast.innerHTML=`<figure>${art?.imageUrl?`<img src="${esc(art.imageUrl)}" alt="" referrerpolicy="no-referrer" decoding="async">`:''}</figure><p><span>Casting</span><strong>${esc(c.name)}</strong></p>`;
+  if(!art?.imageUrl)ownCast.querySelector('figure').append(drawnArtwork(doc,c,surfaceColors(c)));
+  ownCast.dataset.open='true';root.dataset.ownCast=String(c.id);queueArrows();
+ }
  // Whose move it is and what just happened, from the accepted state and the playback alone.
  const activity=doc.createElement('div');activity.className='forge-activity';activity.setAttribute('role','status');activity.setAttribute('aria-live','polite');activity.hidden=true;doc.body.append(activity);let playback=null;
  // Tokens have no deck printing: show a real one from Scryfall once it is found, in place of the crest.
@@ -121,7 +172,7 @@ const name=String(card.name);if(Math.max(...name.split(/\s+/).map(word=>word.len
  // clock instead, so a re-inserted element carries on from where it was.
  const syncLoops=()=>{loopFrame=0;if(closed)return;for(const a of root.getAnimations?.({subtree:true})||[])if(a.animationName&&a.startTime!==0&&a.effect?.getTiming?.().iterations===Infinity)try{a.startTime=0;}catch{}};
  function enhance(){
-  if(closed)return;if(!loopFrame&&typeof win.requestAnimationFrame==='function')loopFrame=win.requestAnimationFrame(syncLoops);const snap=session.snapshot(),n=snap.native;if(!snap.status||!n)return;
+  if(closed)return;carryOver();if(flights.size)flyNow();if(!loopFrame&&typeof win.requestAnimationFrame==='function')loopFrame=win.requestAnimationFrame(syncLoops);const snap=session.snapshot(),n=snap.native;if(!snap.status||!n)return;
   if(presentation.hosted){const exit=root.querySelector('[data-focus-key=exit-match]');if(exit&&exit.textContent!=='Return to Play setup')exit.textContent='Return to Play setup';}
   const footer=root.querySelector('.play-match-decisions');if(!footer)return;
   const key=JSON.stringify([n.revision,snap.busy,snap.nativeDraft,snap.transportError,snap.selected,localError]);
@@ -136,16 +187,26 @@ const name=String(card.name);if(Math.max(...name.split(/\s+/).map(word=>word.len
    if(focused)footer.querySelector(`[data-native-key="${CSS.escape(focused)}"]`)?.focus();
   }
   const ids=list=>new Set((list||[]).filter(r=>r.kind==='card').map(r=>r.id));
-  const blockedWhy=new Map((n.selection?.blocked||[]).filter(b=>b?.kind==='card'&&typeof b.reason==='string').map(b=>[Number(b.id),b.reason])),actionable=ids(n.selection?.actionable),targets=ids(n.selection?.targets),choices=ids(n.selection?.cards),chosen=ids(n.selection?.chosen);
-  if(presentation.hosted&&!n.prompt){const sf=snap.status.surface,you=n.players?.find(p=>p.id===sf.players.find(p=>p.seat===sf.seat)?.nativeId);for(const id of [...actionable]){const card=snap.status.surface.cards.find(c=>c.id===id);if(card&&card.controller===snap.status.surface.seat&&provenUnaffordable(card,snap.status.surface,you?.mana)){actionable.delete(id);if(!blockedWhy.has(id))blockedWhy.set(id,'Not enough mana');}}}
+  const blockedWhy=new Map((n.selection?.blocked||[]).filter(b=>b?.kind==='card'&&typeof b.reason==='string').map(b=>[Number(b.id),b.reason])),actionable=ids(n.selection?.actionable),
+  // Newer hosts say how sure they are per action; 'unavailable' is blocked, 'unknown' gets the quiet rim, 'available' the halo.
+  affordability=new Map((n.selection?.actionable||[]).filter(r=>r?.kind==='card'&&typeof r.affordability==='string').map(r=>[Number(r.id),r.affordability])),targets=ids(n.selection?.targets),choices=ids(n.selection?.cards),chosen=ids(n.selection?.chosen);
+  paintOwnCast(n,snap.status.surface);
+  // A spell whose payment Forge couldn't finish stays dark until your mana changes (a land, a new turn, floating mana).
+  if(presentation.hosted){const sf=snap.status.surface,you=n.players?.find(p=>p.id===sf.players.find(p=>p.seat===sf.seat)?.nativeId),sig=JSON.stringify([n.turn,sf.cards.filter(c=>c.controller===sf.seat&&c.zone==='Battlefield'&&!c.tapped).map(c=>c.id),you?.mana||{}]),paying=String(n.inputType||'').startsWith('InputPayMana')?nativePayment(n,sf.cards):null;
+   if(paying?.short&&paying.forCard!==null&&sf.cards.find(c=>c.id===paying.forCard)?.zone!=='Battlefield')shortCasts.set(paying.forCard,shortSig);
+   if(!paying){shortSig=sig;for(const [id,was]of shortCasts)if(was!==sig)shortCasts.delete(id);}}
+  if(presentation.hosted&&!n.prompt){const sf=snap.status.surface,you=n.players?.find(p=>p.id===sf.players.find(p=>p.seat===sf.seat)?.nativeId);for(const id of [...actionable]){const card=snap.status.surface.cards.find(c=>c.id===id);if(card&&card.controller===snap.status.surface.seat&&(affordability.get(id)==='unavailable'||shortCasts.has(id)||affordability.get(id)!=='available'&&provenUnaffordable(card,snap.status.surface,you?.mana))){actionable.delete(id);if(!blockedWhy.has(id))blockedWhy.set(id,'Not enough mana');}}}
   for(const index of snap.nativeDraft?.indexes||[]){const o=n.prompt?.options.find(o=>o.index===index);const cardId=optionCardId(o?.value);if(cardId!==null)chosen.add(cardId);}
   // Forge's own hint lists, shown by meaning: something you can play or use now,
   // a target for the spell or ability being cast, a card this prompt asks about,
   // and what you have already picked. Forge still validates every click.
   const discarding=!n.prompt&&choices.size>0&&/\bdiscard\b/i.test(String(n.message||''));
   const role=id=>chosen.has(id)?'chosen':targets.has(id)?'target':choices.has(id)?(discarding?'discard':'choice'):actionable.has(id)?'playable':'';
+  const inputName=String(n.inputType||'');if(root.dataset.forgeInput!==inputName)root.dataset.forgeInput=inputName;
   const combatInput=n.inputType==='InputAttack'||n.inputType==='InputBlock';
-  for(const el of root.querySelectorAll('.play-match-card[data-instance]')){const cardId=Number(el.dataset.instance),r=role(cardId);const dragOk=combatInput&&!!combatDrops(cardId);if((el.dataset.forgeDrag==='true')!==dragOk){if(dragOk)el.dataset.forgeDrag='true';else delete el.dataset.forgeDrag;}el.dataset.forgeHint=String(actionable.has(cardId)||targets.has(cardId)||choices.has(cardId));el.dataset.forgeChosen=String(chosen.has(cardId));const why=!actionable.has(cardId)&&blockedWhy.get(cardId);if(why){el.dataset.forgeBlocked=why;el.title=why;}else if(el.dataset.forgeBlocked){delete el.dataset.forgeBlocked;el.removeAttribute('title');}if(el.dataset.forgeRole!==r)el.dataset.forgeRole=r;el.setAttribute('aria-description',presentation.hosted?'When highlighted, click to play or select this card, or drag it up onto the table to play. Otherwise click to see it larger. Press I to see it larger at any time.':'Click sends this card to Forge; legality is checked by Forge. Magnifier or I inspects without acting.');}
+  for(const el of root.querySelectorAll('.play-match-card[data-instance]')){const cardId=Number(el.dataset.instance),r=role(cardId);const dragOk=combatInput&&!!combatDrops(cardId);if((el.dataset.forgeDrag==='true')!==dragOk){if(dragOk)el.dataset.forgeDrag='true';else delete el.dataset.forgeDrag;}el.dataset.forgeHint=String(actionable.has(cardId)||targets.has(cardId)||choices.has(cardId));if(actionable.has(cardId)&&el.closest('.play-match-hand')){const c=snap.status.surface.cards.find(x=>x.id===cardId);const a=affordability.get(cardId);el.dataset.forgeSure=String(a?a==='available':!(c&&COST_BENDERS.test(c.text||'')));}else delete el.dataset.forgeSure;
+   // A creature Forge says must attack this combat wears a tag until it is in the attack.
+   const must=n.inputType==='InputAttack'&&!!snap.status.surface.cards.find(x=>x.id===cardId&&owesAttack(x));if(must&&el.dataset.forgeMust!=='true'){el.dataset.forgeMust='true';const tag=doc.createElement('span');tag.className='forge-must-tag';tag.textContent='Must attack';el.append(tag);}else if(!must&&el.dataset.forgeMust){delete el.dataset.forgeMust;el.querySelector(':scope>.forge-must-tag')?.remove();}el.dataset.forgeChosen=String(chosen.has(cardId));const why=!actionable.has(cardId)&&blockedWhy.get(cardId);if(why){el.dataset.forgeBlocked=why;el.title=why;}else if(el.dataset.forgeBlocked){delete el.dataset.forgeBlocked;el.removeAttribute('title');}if(el.dataset.forgeRole!==r)el.dataset.forgeRole=r;el.setAttribute('aria-description',presentation.hosted?'When highlighted, click to play or select this card, or drag it up onto the table to play. Otherwise click to see it larger. Press I to see it larger at any time.':'Click sends this card to Forge; legality is checked by Forge. Magnifier or I inspects without acting.');}
   const surface=snap.status.surface,nativePlayer=seat=>n.players.find(p=>p.id===surface.players.find(p=>p.seat===seat)?.nativeId);
   // Floating mana is the native pool only, never untapped lands or potential production.
   const manaEntries=player=>Object.entries(player?.mana||{}).map(([color,amount])=>[String(color).toUpperCase(),Number(amount)||0]);
@@ -155,7 +216,8 @@ const name=String(card.name);if(Math.max(...name.split(/\s+/).map(word=>word.len
    const seatRole=!player?'':playerChosen.has(player.id)?'chosen':playerTargets.has(player.id)?'target':'';if(presentation.hosted&&(el.dataset.forgeRole||'')!==seatRole)el.dataset.forgeRole=seatRole;
    if(presentation.hosted){
     // A targetable player is a real control for keyboard and screen readers too.
-    if(seatRole==='target'&&el.tabIndex!==0){el.tabIndex=0;el.setAttribute('role','button');el.dataset.nativeKey=`seat-${el.dataset.seat}`;}else if(seatRole!=='target'&&el.hasAttribute('role')){el.removeAttribute('tabindex');el.removeAttribute('role');delete el.dataset.nativeKey;}
+    if(el.classList.contains('play-pod-chip')){}
+    else if(seatRole==='target'&&el.tabIndex!==0){el.tabIndex=0;el.setAttribute('role','button');el.dataset.nativeKey=`seat-${el.dataset.seat}`;}else if(seatRole!=='target'&&el.hasAttribute('role')){el.removeAttribute('tabindex');el.removeAttribute('role');delete el.dataset.nativeKey;}
     // The player's commander art (or your profile picture) glows softly behind the panel.
     const own=el.dataset.seat==='you',commander=surface.cards.find(c=>c.commander===true&&c.known&&(c.owner===surface.seat)===own),artUrl=(commander&&resolvePracticeArtwork(commander)?.artImageUrl)||(own&&/^https?:/.test(profile.avatarUrl||'')?profile.avatarUrl:''),art=failedArt.has(artUrl)?'':artUrl;
     let glass=el.querySelector(':scope>.forge-seat-glass');
@@ -176,7 +238,9 @@ const name=String(card.name);if(Math.max(...name.split(/\s+/).map(word=>word.len
    // Upright tablets set your hand beside your commander's card instead of under it.
    const yourCommander=String(!!root.querySelector('.play-command-zone[data-seat=you]'));if(root.dataset.yourCommander!==yourCommander)root.dataset.yourCommander=yourCommander;
    // Each player's public zone counts sit beside their portrait; a count opens just that list in the Zones menu.
-   for(const p of surface.players){
+   // In a Commander pod only the opponent on show has a seat panel, so only that one gets counts.
+   const shownCpu=Number(root.querySelector('.play-match-seat[data-seat=cpu]')?.dataset.playerSeat);
+   for(const p of surface.players.filter(p=>p.seat===surface.seat||p.seat===shownCpu)){
     const own=p.seat===surface.seat,count=zone=>surface.cards.filter(c=>c.zone===zone&&c.owner===p.seat).length;
     const counts=[['Library',p.libraryCount],['Graveyard',count('Graveyard')],['Exile',count('Exile')],['Command',count('Command')]],key=counts.map(c=>c[1]).join(',');
     // Library and graveyard always show; exile and the command zone only once something is there.
@@ -202,21 +266,30 @@ const name=String(card.name);if(Math.max(...name.split(/\s+/).map(word=>word.len
    const lock=!!n.prompt||n.inputType==='InputLockUI'||snap.busy===true,autoPay=typeof n.autoPay==='boolean'&&typeof session.setAutoPay==='function',emblemKey=[n.controlMode,autoPay?n.autoPay:'',lock].join(',');
    if(!modes||!youInfo)emblems?.remove();
    else if(!emblems||emblems.dataset.key!==emblemKey){
-    if(!emblems){emblems=doc.createElement('div');emblems.className='forge-control-emblems';emblems.setAttribute('role','group');emblems.setAttribute('aria-label','Response controls');youInfo.append(emblems);}
+    if(!emblems){emblems=doc.createElement('div');emblems.className='forge-control-emblems';emblems.setAttribute('role','group');emblems.setAttribute('aria-label','Response controls');youInfo.append(emblems);
+     // On an upright phone the three emblems fold into the one that is on, so they never sit under the main action;
+     // a tap opens them as a small column, a pick (or a tap elsewhere) folds them again.
+     emblems.addEventListener('click',e=>{if(!win.matchMedia?.('(max-width:640px) and (orientation:portrait)').matches)return;if(emblems.dataset.open!=='true'){e.preventDefault();e.stopImmediatePropagation();emblems.dataset.open='true';}else win.setTimeout(()=>{emblems.dataset.open='false';},0);},true);
+     doc.addEventListener('pointerdown',e=>{if(emblems.dataset.open==='true'&&!emblems.contains(e.target))emblems.dataset.open='false';},true);}
     emblems.dataset.key=emblemKey;
     const make=(key,label,tip,icon,on,fn)=>{const b=doc.createElement('button');b.type='button';b.className='forge-control-emblem';b.dataset.nativeKey=key;b.dataset.label=label;b.setAttribute('aria-label',label);b.setAttribute('aria-pressed',String(on));b.title=tip;b.disabled=lock;b.innerHTML=`<svg viewBox="0 0 24 24" aria-hidden="true">${icon}</svg>`;b.addEventListener('click',()=>act(fn));return b;};
     emblems.replaceChildren(
-     make('mode-smart','Smart','Smart: automatic mana and passing empty response windows. Targets and required choices stay yours.','<path d="M13 2 4 14h7l-1 8 9-12h-7z"/>',n.controlMode==='smart',()=>session.setControlMode('smart')),
-     make('mode-full','Full Control','Full Control: stop at every response window.','<path d="M8 13V5a1.5 1.5 0 0 1 3 0v6M11 11V4a1.5 1.5 0 0 1 3 0v7M14 11V5.5a1.5 1.5 0 0 1 3 0V14a6 6 0 0 1-6 6h-1a5 5 0 0 1-4.3-2.4L4 15a1.5 1.5 0 0 1 2.5-1.7L8 15"/>',n.controlMode==='full',()=>session.setControlMode('full')),
+     make('mode-smart','Smart','Smart: passes empty response windows. Targets and required choices stay yours.','<path d="M13 2 4 14h7l-1 8 9-12h-7z"/>',n.controlMode==='smart',()=>switchMode('smart')),
+     make('mode-full','Full Control','Full Control: stop at every response window.','<path d="M8 13V5a1.5 1.5 0 0 1 3 0v6M11 11V4a1.5 1.5 0 0 1 3 0v7M14 11V5.5a1.5 1.5 0 0 1 3 0V14a6 6 0 0 1-6 6h-1a5 5 0 0 1-4.3-2.4L4 15a1.5 1.5 0 0 1 2.5-1.7L8 15"/>',n.controlMode==='full',()=>switchMode('full')),
      ...(autoPay?[make('auto-pay',n.autoPay?'Auto-pay mana: on':'Auto-pay mana: off','Auto-pay: pay mana costs automatically. Turn off to tap each source yourself.','<circle cx="12" cy="12" r="8"/><path d="M12 7v10M9.5 9.5h3.75a1.75 1.75 0 0 1 0 3.5h-2.5a1.75 1.75 0 0 0 0 3.5H14.5"/>',n.autoPay,()=>session.setAutoPay(!n.autoPay))]:[]));
    }
    // The CPU has no profile picture; its commander's art becomes its portrait.
    const cpuBadge=root.querySelector('.play-match-seat[data-seat=cpu] .play-match-profile-badge');
-   const cpuCommander=surface.cards.find(c=>c.commander===true&&c.owner!==surface.seat&&c.known),cpuArt=cpuCommander?resolvePracticeArtwork(cpuCommander)?.artImageUrl:null;
+   const cpuSeat=Number(cpuBadge?.closest('.play-match-seat')?.dataset.playerSeat),cpuCommander=surface.cards.find(c=>c.commander===true&&c.owner!==surface.seat&&(surface.players.length===2||c.owner===cpuSeat)&&c.known),cpuArt=cpuCommander?resolvePracticeArtwork(cpuCommander)?.artImageUrl:null;
    if(cpuBadge&&cpuArt&&!(presentation.hosted&&format==='Commander')&&cpuBadge.dataset.portrait!==cpuArt){cpuBadge.dataset.portrait=cpuArt;let img=cpuBadge.querySelector('img.forge-seat-portrait');if(!img){img=doc.createElement('img');img.className='forge-seat-portrait';img.alt='';img.referrerPolicy='no-referrer';img.onerror=()=>{img.hidden=true;};cpuBadge.append(img);}img.src=cpuArt;}
+   // Each pod chip wears its CPU's commander art.
+   for(const face of root.querySelectorAll('.play-pod-chip .play-pod-face')){const seat=Number(face.closest('.play-pod-chip').dataset.playerSeat),c=surface.cards.find(c=>c.commander===true&&c.owner===seat&&c.known),url=c?resolvePracticeArtwork(c)?.artImageUrl:null;
+    if(url&&face.dataset.art!==url){face.dataset.art=url;const img=doc.createElement('img');img.alt='';img.referrerPolicy='no-referrer';img.onerror=()=>{img.remove();delete face.dataset.art;};img.src=url;face.querySelector('img')?.remove();face.append(img);}}
    // The turn-change notice gets its banner art: whose turn large, the turn number small.
    const banner=root.querySelector('.play-match-turn-banner');
    if(banner&&!banner.dataset.owner){const [who,...rest]=banner.textContent.split(' · ');banner.dataset.owner=who==='Your turn'?'you':'cpu';const big=doc.createElement('strong'),small=doc.createElement('span');big.textContent=who;small.textContent=rest.join(' · ');banner.replaceChildren(big,small);}
+   // A CPU-turn banner still playing back never sits over a dock that already says it is your move.
+   if(banner?.dataset.owner==='cpu'&&n.activePlayer===n.viewer&&n.priorityPlayer===n.viewer&&!playbackBusy)banner.remove();
    // Ambience: the board's corners breathe a soft fog in each player's colours, read from their
    // known cards (mana symbols and basic land types). Yours along the bottom, the CPU's along the top.
    const main=root.querySelector('.play-match-main');
@@ -285,19 +358,27 @@ const name=String(card.name);if(Math.max(...name.split(/\s+/).map(word=>word.len
    fitRails();fitBoard();
    // A gentle arc: cards further from the middle of the hand sit a little lower.
    // The count lets the hand tighten its spacing only when it would not fit.
-   const hand=[...root.querySelectorAll('.play-match-hand .play-match-card-wrap')],handRow=root.querySelector('.play-match-hand .play-match-card-row');if(handRow&&handRow.style.getPropertyValue('--hand-count')!==String(hand.length))handRow.style.setProperty('--hand-count',String(hand.length));hand.forEach((w,i)=>{const lift=Math.abs(i-(hand.length-1)/2);const v=`${Math.min(Math.round(lift*lift*2.2),22)}px`;if(w.style.getPropertyValue('--arc-drop')!==v)w.style.setProperty('--arc-drop',v);});if(handFocusId!==null&&!handFocus?.isConnected)refocusHand();
+   const hand=[...root.querySelectorAll('.play-match-hand .play-match-card-wrap')],handRow=root.querySelector('.play-match-hand .play-match-card-row');if(handRow&&handRow.style.getPropertyValue('--hand-count')!==String(hand.length))handRow.style.setProperty('--hand-count',String(hand.length));hand.forEach((w,i)=>{const lift=Math.abs(i-(hand.length-1)/2);const v=`${Math.min(Math.round(lift*lift*2.2),22)}px`;if(w.style.getPropertyValue('--arc-drop')!==v)w.style.setProperty('--arc-drop',v);});if(handFocusId!==null&&!handFocus?.isConnected)refocusHand();fitHandFan(hand);placeHandSlider(hand);
    // Past eight cards a toggle lays the whole hand out in two rows, so a big hand never overlaps into a mis-tap.
    const handArea=root.querySelector('.play-match-hand-area');let fan=handArea?.querySelector(':scope>.forge-hand-expand');
    if(hand.length>8&&handArea){if(!fan){fan=doc.createElement('button');fan.type='button';fan.className='forge-hand-expand';fan.dataset.nativeKey='hand-expand';fan.addEventListener('click',()=>{root.dataset.handExpanded=String(root.dataset.handExpanded!=='true');paintFan();});handArea.append(fan);}
+    if(!root.querySelector(':scope>.forge-hand-slider')){const slider=doc.createElement('div');slider.className='forge-hand-slider';slider.setAttribute('aria-hidden','true');slider.innerHTML='<i></i>';slider.addEventListener('pointerdown',slideHand);root.append(slider);}
     const cols=String(Math.ceil(hand.length/2));if(root.style.getPropertyValue('--hand-cols')!==cols)root.style.setProperty('--hand-cols',cols);paintFan();}
-   else{fan?.remove();if(root.dataset.handExpanded)delete root.dataset.handExpanded;}
+   else{fan?.remove();root.querySelector(':scope>.forge-hand-slider')?.remove();if(root.dataset.handExpanded)delete root.dataset.handExpanded;}
   }
 
  }
  function paintFan(){const fan=root.querySelector('.forge-hand-expand');if(!fan)return;const open=root.dataset.handExpanded==='true',count=root.querySelectorAll('.play-match-hand .play-match-card-wrap').length,label=open?'Close hand':`View full hand (${count})`;if(fan.textContent!==label)fan.textContent=label;fan.setAttribute('aria-pressed',String(open));}
  const saveInput=e=>{if(e.target.dataset?.nativeKey==='native-value'){const n=session.snapshot().native;nativeValueDraft={revision:n.revision,promptId:n.prompt?.id,value:e.target.value};}};
  root.addEventListener('input',saveInput);root.addEventListener('change',saveInput);
- const observer=new MutationObserver(()=>enhance());observer.observe(root,{childList:true,subtree:true});
+ // The board fitter adds, relabels and removes a crowded lane's "+N" chip itself. Those changes must not
+ // start another pass: the fitter measures the lane twice (natural width, then fitted) and the two can
+ // disagree on the count, which re-ran the fitter forever and froze the table (seen at 740x360).
+ // Effects laid over the table (impact rings, life deltas, the rope, the emote button that mounts after
+ // each redraw) don't move the board either; each extra pass is a full layout, and a CPU turn redraws per beat.
+ const overlay=n=>n.classList?.contains('forge-lane-more')||n.classList?.contains('forge-fx-ring')||n.classList?.contains('forge-life-delta')||n.classList?.contains('forge-rope')||n.classList?.contains('forge-emote-button');
+ const fitterOnly=list=>list.every(m=>m.target.classList?.contains('forge-lane-more')||[...m.addedNodes,...m.removedNodes].every(overlay));
+ const observer=new MutationObserver(list=>{if(!fitterOnly(list))enhance();});observer.observe(root,{childList:true,subtree:true});
  // Cards keep their engine identity between renders, so a card that moves (hand to
  // battlefield, a lane change) glides from where it was to where Forge put it, and a
  // permanent that appears from nowhere fades in. Purely visual; placement is Forge's.
@@ -311,19 +392,26 @@ const name=String(card.name);if(Math.max(...name.split(/\s+/).map(word=>word.len
  function land(w,id,dx,dy,s){
   const r=w.getBoundingClientRect(),drop=lastDrop&&lastDrop.instance===id&&Date.now()-lastDrop.at<3000?lastDrop.rect:null;lastDrop=null;
   if(drop){dx=drop.left-r.left;dy=drop.top-r.top;s=Math.max(.4,Math.min(2.2,drop.width/r.width));}
-  const tilt=Math.max(-8,Math.min(8,-dx/40)),ms=MOTION.land+200;
+  const tilt=Math.max(-8,Math.min(8,-dx/40)),ms=drop?MOTION.snap:MOTION.land+200;
   // Let the card leave its clipped lane while it flies, as a strike does.
   root.dataset.csStriking='true';strikeEnd=Math.max(strikeEnd,Date.now()+ms);setTimeout(()=>{if(Date.now()>=strikeEnd-20)delete root.dataset.csStriking;},ms+40);
-  w.animate([{transform:`translate(${dx}px,${dy}px) scale(${s}) rotate(${tilt}deg)`,zIndex:50,easing:'cubic-bezier(.2,.7,.3,1)'},{transform:`translate(${dx*.12}px,${dy*.12-26}px) scale(1.2) rotate(${tilt*.3}deg)`,zIndex:50,offset:.5,easing:'cubic-bezier(.6,0,.9,.5)'},{transform:'translateY(3px) scale(.95)',zIndex:50,offset:.8,easing:'ease-out'},{transform:'translateY(-1px) scale(1.01)',zIndex:50,offset:.9},{transform:'none',zIndex:50}],{duration:ms});
+  // Dragged there, it goes straight from your finger into its slot, Arena style: no second lift, just a quick
+  // glide that seats with a small press and settle. Tapped to play, it rises off the hand, hangs, then slams.
+  if(drop)anim(w,[{transform:`translate(${dx}px,${dy}px) scale(${s}) rotate(${tilt}deg)`,zIndex:50,easing:'cubic-bezier(.25,.8,.3,1)'},{transform:'translateY(2px) scale(.96)',zIndex:50,offset:.72,easing:'ease-out'},{transform:'translateY(-1px) scale(1.01)',zIndex:50,offset:.88},{transform:'none',zIndex:50}],{duration:ms});
+  else anim(w,[{transform:`translate(${dx}px,${dy}px) scale(${s}) rotate(${tilt}deg)`,zIndex:50,easing:'cubic-bezier(.2,.7,.3,1)'},{transform:`translate(${dx*.12}px,${dy*.12-26}px) scale(1.2) rotate(${tilt*.3}deg)`,zIndex:50,offset:.5,easing:'cubic-bezier(.6,0,.9,.5)'},{transform:'translateY(3px) scale(.95)',zIndex:50,offset:.8,easing:'ease-out'},{transform:'translateY(-1px) scale(1.01)',zIndex:50,offset:.9},{transform:'none',zIndex:50}],{duration:ms});
   setTimeout(()=>{if(!w.isConnected)return;catchFoil(w);motion.ring(w,'#f0d48a',420);motion.sparks(w,{n:6,spread:40,color:'#f0d48a'});
    for(const n of w.parentElement?.children||[]){if(n===w)continue;const nr=n.getBoundingClientRect(),side=Math.sign(nr.left-r.left);if(!side||Math.abs(nr.left-r.left)>r.width*2.4)continue;n.animate([{transform:'none'},{transform:`translateX(${side*5}px)`,offset:.35},{transform:'none'}],{duration:260,easing:'ease-out'});}},ms*.8);
  }
  const glide=before=>{
   if(!before.size||reducedMotion())return;let moved=0;
   for(const el of root.querySelectorAll('.play-match-card[data-instance]')){
-   const w=el.closest('.play-match-card-wrap')||el,prev=before.get(el.dataset.instance),r=w.getBoundingClientRect();if(!r.width||moved>24)continue;
-   if(prev){const dx=prev.r.left-r.left,dy=prev.r.top-r.top;if(Math.hypot(dx,dy)<6)continue;const s=Math.max(.4,Math.min(2.2,prev.r.width/r.width));moved++;const played=prev.hand&&el.dataset.presentation==='battlefield';if(played){land(w,el.dataset.instance,dx,dy,s);continue;}w.animate([{transform:`translate(${dx}px,${dy}px) scale(${s})`,zIndex:50},{transform:'none',zIndex:50}],{duration:380,easing:'cubic-bezier(.2,.8,.2,1)'});}
-   else if(el.dataset.presentation==='battlefield'){moved++;w.animate([{opacity:0,transform:'translateY(-14px) scale(.86)'},{opacity:1,transform:'none'}],{duration:420,easing:'cubic-bezier(.2,.8,.2,1)'});}
+   const w=el.closest('.play-match-card-wrap')||el,prev=before.get(el.dataset.instance),r=w.getBoundingClientRect();if(!r.width||moved>24||flights.has(el.dataset.instance))continue;
+   if(prev){const inHand=prev.hand&&!!el.closest('.play-match-hand');
+    // A card that only shifts inside your hand (a draw or a play beside it) slides by its centre, on top of
+    // its fan angle, arc and any pop: it never changes size or flattens on the way.
+    if(inHand){const dx=prev.r.left+prev.r.width/2-(r.left+r.width/2),dy=prev.r.top+prev.r.height/2-(r.top+r.height/2);if(Math.hypot(dx,dy)<6)continue;moved++;anim(w,[{transform:`translate(${dx}px,${dy}px)`},{transform:'translate(0px,0px)'}],{duration:320,easing:'cubic-bezier(.2,.8,.2,1)',composite:'add'});continue;}
+    const dx=prev.r.left-r.left,dy=prev.r.top-r.top;if(Math.hypot(dx,dy)<6)continue;const s=Math.max(.4,Math.min(2.2,prev.r.width/r.width));moved++;const played=prev.hand&&el.dataset.presentation==='battlefield';if(played){land(w,el.dataset.instance,dx,dy,s);continue;}anim(w,[{transform:`translate(${dx}px,${dy}px) scale(${s})`,zIndex:50},{transform:'none',zIndex:50}],{duration:380,easing:'cubic-bezier(.2,.8,.2,1)'});}
+   else if(el.dataset.presentation==='battlefield'){moved++;anim(w,[{opacity:0,transform:'translateY(-14px) scale(.86)'},{opacity:1,transform:'none'}],{duration:420,easing:'cubic-bezier(.2,.8,.2,1)'});}
   }
  };
  // Four short sequences that explain ordinary play, drawn only from what Forge accepted between two
@@ -337,6 +425,10 @@ const name=String(card.name);if(Math.max(...name.split(/\s+/).map(word=>word.len
  const motion=createMotion({doc,win,lowPower,reduced:reducedMotion}),tableAudio=createTableAudio(root),emotes=presentation.hosted?createTableEmotes({root,doc,win}):null;
  const rectOf=el=>{const b=el&&(el.closest('.play-match-card-wrap')||el).getBoundingClientRect();return b&&b.width>0?b:null;};
  const cardEl=id=>root.querySelector(`.play-match-card[data-instance="${id}"]`);
+ // A player's seat panel, or in a Commander pod the chip of an opponent whose board is not on show.
+ const seatEl=seat=>root.querySelector(`.play-match-seat[data-player-seat="${seat}"]`)||root.querySelector(`.play-pod-chip[data-player-seat="${seat}"]`);
+ // Whom an attacker is attacking: its declared target, or in a duel simply the other player.
+ const defenderOf=(players,c)=>players.find(p=>p.nativeId===c.attackTarget?.id)?.seat??(players.length===2?players.find(p=>p.seat!==c.controller)?.seat:undefined);
  const sourceTint=c=>{if(!c?.known)return MANA_TINT.C;const basic=Object.entries({Plains:'W',Island:'U',Swamp:'B',Mountain:'R',Forest:'G'}).find(([t])=>new RegExp('\\b'+t+'\\b').test(c.type||''));if(basic)return MANA_TINT[basic[1]];const pip=/\{([WUBRG])\}/.exec(c.text||'');return MANA_TINT[pip?.[1]]||'#e3bb68';};
  function stream(from,to,tint,delay){
   const a=rectOf(from),b=to&&(to.getBoundingClientRect?.()||to);if(!a||!b?.width)return;
@@ -350,24 +442,80 @@ const name=String(card.name);if(Math.max(...name.split(/\s+/).map(word=>word.len
   ring.animate([{opacity:.9,transform:'scale(.92)'},{opacity:0,transform:'scale(1.18)'}],{duration:kind==='land'?380:520,easing:'ease-out'}).finished.then(()=>ring.remove(),()=>ring.remove());
  }
  // One motion scale for the table, tunable in one place: press, move, land, lunge.
- const MOTION={press:120,move:220,land:360,lunge:500,stagger:140};
+ // A strike: a gentle wind-up, a flight timed by its distance (never a blink across a big table, never a crawl
+ // to a blocker next door), a short freeze on contact, then an unhurried return to its place.
+ const MOTION={press:120,move:220,land:360,snap:300,windup:160,flight:[200,320],hold:70,back:280,stagger:150};
  let strikeEnd=0,hitAt=0;
- function strike(el,to,{face=false,delay=0,big=false}={}){
-  const w=el?.closest('.play-match-card-wrap');if(!w||!rectOf(el)||!rectOf(to))return;
+ // Where a blow lands: a player's portrait rather than the middle of their whole seat panel, a card's frame.
+ const aimOf=to=>{if(!to?.getBoundingClientRect)return to;const p=to.matches?.('.play-match-seat')&&to.querySelector('.play-match-profile-badge');return p&&rectOf(p)?p:(to.closest?.('.play-match-card-wrap')||to);};
+ const boxOf=to=>to?.getBoundingClientRect?rectOf(to):to?.width>0?to:null;
+ // Arena's lunge travels until the striker's leading edge meets what it hits, with a little bite, however near
+ // or far the two sit (a fixed share of the distance stopped short across a PC table and overshot on a phone).
+ // The edges are found along the line between the two centres (a diagonal flight meets a corner, not a side).
+ const edgeOf=(r,ux,uy)=>Math.min(ux>1e-3?r.width/2/ux:Infinity,uy>1e-3?r.height/2/uy:Infinity);
+ const contactReach=(a,b)=>{const dx=b.left+b.width/2-(a.left+a.width/2),dy=b.top+b.height/2-(a.top+a.height/2),d=Math.hypot(dx,dy);if(d<1)return 0;
+  const ux=Math.abs(dx/d),uy=Math.abs(dy/d),ea=edgeOf(a,ux,uy)*1.16,eb=edgeOf(b,ux,uy),bite=Math.max(10,Math.min(a.height,b.height)*.12);
+  // Even a blocker right across the line gets a real swing, not a twitch: at least 40% of a card height.
+  return Math.min(1,Math.max(d-ea-eb+bite,a.height*.4)/d);};
+ // `to` is an element or, for a creature the same blow killed, the rect it stood in. `stand` lunges a
+ // stand-in instead of the card (an attacker that dies in the exchange still swings first). Returns when it is home.
+ function strike(el,to,{face=false,delay=0,big=false,power=0,stand=null}={}){
+  const w=stand||el?.closest('.play-match-card-wrap'),aim=aimOf(to),a=rectOf(w),b=boxOf(aim);if(!w||!a||!b)return 0;
   // The battlefields clip their overflow; let the striker leave its lane for the flight.
-  const ms=MOTION.lunge+20;root.dataset.csStriking='true';strikeEnd=Math.max(strikeEnd,Date.now()+delay+ms);
+  const reach=contactReach(a,b),span=reach*Math.hypot(b.left+b.width/2-(a.left+a.width/2),b.top+b.height/2-(a.top+a.height/2));
+  const travel=Math.round(Math.max(MOTION.flight[0],Math.min(MOTION.flight[1],150+span*.2))),ms=MOTION.windup+travel+MOTION.hold+MOTION.back;root.dataset.csStriking='true';strikeEnd=Math.max(strikeEnd,Date.now()+delay+ms);
   // The arrows would point from where the striker was; hide them for the flight and bring them back after.
   arrows.style.opacity='0';setTimeout(()=>{if(Date.now()>=strikeEnd-20){delete root.dataset.csStriking;arrows.style.opacity='';}},delay+ms+40);
-  if(!delay||hitAt<Date.now())hitAt=Date.now()+delay+ms*.55;
+  if(!delay||hitAt<Date.now())hitAt=Date.now()+delay+MOTION.windup+travel;
   w.dataset.csStriker='true';setTimeout(()=>delete w.dataset.csStriker,delay+ms+20);
   setTimeout(()=>catchFoil(w),delay);
-  // Wind-up, lunge, a short freeze on contact (hit-stop), then spring back. The target shakes on contact,
-  // and a big hit (5 or more) nudges the whole board unless low power is on.
-  motion.strike(w,to.closest?.('.play-match-card-wrap')||to,{reach:face?.8:.5,ms,delay,onHit:()=>{if(!to.isConnected)return;pulse(to,face?'face':'hit');haptic(big||face?'warn':'tick');
-   const target=to.closest('.play-match-seat')||to.closest('.play-match-card-wrap')||to;motion.shake(target,face?9:6,360);
-   if(big)motion.shake(root.querySelector('.play-match-main')||root,4,260,{garnish:true});
-   if(face){target.classList.remove('cs-face-hit');void target.offsetWidth;target.classList.add('cs-face-hit');setTimeout(()=>target.classList.remove('cs-face-hit'),700);}}});
+  // Wind-up, lunge, a short freeze on contact (hit-stop), then spring back. The target shakes on contact, harder
+  // the more power behind the hit (light under 4, medium 4-7, heavy 8+); a big hit (5 or more) nudges the
+  // whole board, and a heavy one shakes it harder, unless low power is on.
+  const aim0=aim?.getBoundingClientRect?aim:null,node=aim0;
+  // The kit moves the card in its own pixels; a board the fitter has scaled down needs the reach scaled up to match.
+  const host=stand?null:w.parentElement,k=host?.offsetWidth?host.getBoundingClientRect().width/host.offsetWidth:1,scale=k>.2&&k<5?k:1;
+  const onHit=()=>{haptic(big||face?'warn':'tick');const node=again(aim0);if(!node?.isConnected)return;pulse(node,face?'face':'hit');
+   const target=node.closest('.play-match-seat')||node.closest('.play-match-card-wrap')||node,tier=power>=8?1.6:power>=4?1.2:.8;motion.shake(target,(face?9:6)*tier,360);
+   if(big)motion.shake(root.querySelector('.play-match-main')||root,power>=8?8:4,power>=8?380:260,{garnish:true});
+   if(face){target.classList.remove('cs-face-hit');void target.offsetWidth;target.classList.add('cs-face-hit');setTimeout(()=>target.classList.remove('cs-face-hit'),700);}return node;};
+  // A stand-in flies on its own layer; a live card flies frame by frame (fly), so it still lands on its target
+  // when the table redraws or refits under it mid-flight.
+  if(stand)motion.strike(w,node||b,{reach:reach/scale,windup:MOTION.windup,travel,hold:MOTION.hold,back:MOTION.back,delay,onHit});
+  else fly(el.dataset.instance,aim0||b,{delay,travel,onHit});
+  return delay+ms;
  }
+ // A permanent that taps, untaps, steps out to attack or back keeps that pose on the card itself (CSS by state).
+ // The redraw rebuilds the card's place, which would snap it; it turns into its new pose instead (its stats with it).
+ const POSE='.play-match-battlefields .play-match-card[data-instance]',POSE_PARTS=':scope :is(.play-current-stats,.cs-counters)';
+ function posesNow(){const m=new Map();for(const el of root.querySelectorAll(POSE)){const t=getComputedStyle(el).transform;m.set(el.dataset.instance,{t,parts:[...el.querySelectorAll(POSE_PARTS)].map(n=>getComputedStyle(n).transform)});}return m;}
+ function settlePoses(was){for(const el of root.querySelectorAll(POSE)){const old=was.get(el.dataset.instance);if(!old)continue;const t=getComputedStyle(el).transform;if(t===old.t)continue;
+   const o={duration:260,easing:'cubic-bezier(.25,.8,.3,1)'};anim(el,[{transform:old.t},{transform:t}],o);[...el.querySelectorAll(POSE_PARTS)].forEach((n,i)=>{const was=old.parts[i],now=getComputedStyle(n).transform;if(was&&was!==now)n.animate([{transform:was},{transform:now}],o);});}}
+ // Live strikes. Each frame finds the card and its target where they are now (a redraw builds new elements,
+ // a refit rescales the lanes), so the card always meets what it hits. Wind-up, a flight that gathers speed
+ // into contact, a short freeze, then an easy glide home.
+ const flights=new Map();let flightFrame=0;
+ function fly(id,to,{delay=0,travel=240,onHit}){if(!id)return;const t0=performance.now()+delay;flights.set(String(id),{t0,travel,to,last:null,hit:false,onHit,tx:0,ty:0});if(!flightFrame)flightFrame=win.requestAnimationFrame(flyFrame);}
+ function flyFrame(){flightFrame=0;flyNow();if(flights.size)flightFrame=win.requestAnimationFrame(flyFrame);}
+ function flyNow(){const now=performance.now();
+  for(const [id,f] of flights){const el=cardEl(id),w=el?.closest('.play-match-card-wrap');const W=MOTION.windup,T=f.travel,Hd=MOTION.hold,B=MOTION.back,t=now-f.t0;
+   if(t>=W+T+Hd+B||!w){if(w){w.style.removeProperty('transform');delete w.dataset.csStriker;}if(w||t>=W+T+Hd+B)flights.delete(id);continue;}
+   if(t<0)continue;
+   // A glide or lean still running on the card would override the flight; the flight takes over from here.
+   for(const an of w.getAnimations())if(!(an instanceof CSSTransition||an instanceof CSSAnimation))an.cancel();
+   const host=w.parentElement,k=host?.offsetWidth?host.getBoundingClientRect().width/host.offsetWidth:1,K=k>.2&&k<5?k:1;
+   // Where the card sits at rest: its box now, less the shift this flight last gave it.
+   const r=w.getBoundingClientRect(),cx=r.left+r.width/2-f.tx*K,cy=r.top+r.height/2-f.ty*K,a={left:cx-w.offsetWidth*K/2,top:cy-w.offsetHeight*K/2,width:w.offsetWidth*K,height:w.offsetHeight*K};
+   const node=f.to?.getBoundingClientRect?again(f.to):null;if(node)f.to=node;const b=(node?.isConnected?rectOf(node):null)||f.last||boxOf(f.to);if(!b)continue;f.last=b;
+   const dx=b.left+b.width/2-cx,dy=b.top+b.height/2-cy,R=contactReach(a,b),X=dx*R,Y=dy*R,tilt=Math.max(-8,Math.min(8,X/30));
+   let p,sc,rot,lift;
+   if(t<W){const u=t/W,e=1-(1-u)**3;p=-.06*e;sc=1+.05*e;rot=-tilt/2*e;lift=6*e;}
+   else if(t<W+T){const u=(t-W)/T,e=u*u*(2.2-1.2*u);p=-.06+1.06*e;sc=1.05+.11*e;rot=-tilt/2+tilt*1.5*e;lift=6*(1-e);}
+   else if(t<W+T+Hd){p=1;sc=1.16;rot=tilt;lift=0;}
+   else{const u=(t-W-T-Hd)/B,e=1-(1-u)**3;p=1-e;sc=1.16-.16*e;rot=tilt*(1-e);lift=0;}
+   if(!f.hit&&t>=W+T){f.hit=true;const n=f.onHit?.();const at=n?.isConnected?n:null;if(at){motion.flash(at);motion.sparks(at,{n:10,spread:56});}}
+   f.tx=X*p/K;f.ty=(Y*p+lift)/K;w.style.transform=`translate(${f.tx.toFixed(1)}px,${f.ty.toFixed(1)}px) scale(${sc.toFixed(3)}) rotate(${rot.toFixed(2)}deg)`;
+   if(w.dataset.csStriker!=='true')w.dataset.csStriker='true';}}
  function popNumber(el,text,kind,size=''){if(rectOf(el))motion.number(el.closest('.play-match-card-wrap')||el,text,{kind,size});}
  function boardEffects(prev,next,before,leaving){
   const a=prev?.status?.surface,b=next?.status?.surface;if(!a||!b||!presentation.hosted||reducedMotion()||root.dataset.stage!=='match')return;
@@ -382,30 +530,46 @@ const name=String(card.name);if(Math.max(...name.split(/\s+/).map(word=>word.len
   // Tokens arriving together get one ring each at most six, so a swarm reads as one arrival.
   let rings=0;for(const c of b.cards){if(!onField(c)||was.get(c.id)?.zone==='Battlefield'||rings>=6)continue;const el=cardEl(c.id);if(!el)continue;rings++;const land=c.known&&c.types?.includes('Land');
    // The card itself drops onto the table from your side (or the CPU's) and settles, then the ring.
-   const w=el.closest('.play-match-card-wrap'),own=c.controller===b.seat;if(w&&rings<=3&&!before?.has(String(c.id)))w.animate([{transform:`translateY(${own?34:-34}px) scale(1.22)`,opacity:.35},{transform:'translateY(0) scale(.96)',opacity:1,offset:.62},{transform:'none',opacity:1}],{duration:land?380:520,easing:'cubic-bezier(.2,.75,.25,1)'});
+   const w=el.closest('.play-match-card-wrap'),own=c.controller===b.seat;if(w&&rings<=3&&!before?.has(String(c.id)))anim(w,[{transform:`translateY(${own?34:-34}px) scale(1.22)`,opacity:.35},{transform:'translateY(0) scale(.96)',opacity:1,offset:.62},{transform:'none',opacity:1}],{duration:land?380:520,easing:'cubic-bezier(.2,.75,.25,1)'});
    setTimeout(()=>{if(el.isConnected)pulse(el,land?'land':c.known&&c.types?.includes('Creature')?'creature':'permanent',land?sourceTint(c):null);},land?300:420);}
   // 3. Combat impact: damage newly marked on a creature pops as a number where it lands; attackers
   // that dealt it lean in toward what they attacked. Life totals already count on the seats.
   const damaged=b.cards.filter(c=>onField(c)&&c.known&&(c.damage||0)>(was.get(c.id)?.damage||0)&&was.get(c.id)?.zone==='Battlefield');
   const lifeLost=b.players.some(p=>p.life<(a.players.find(x=>x.seat===p.seat)?.life??p.life));
-  const combat=/Damage$/.test(String(b.phase||''))||/Damage$/.test(String(a.phase||''));
-  if(combat&&(damaged.length||lifeLost)){
+  // A board can also jump from blocks straight past the damage step (nobody held priority there): the attackers
+  // have stopped attacking, so the blows that landed in between are still drawn.
+  const combat=/Damage$/.test(String(b.phase||''))||/Damage$/.test(String(a.phase||''))||a.cards.some(c=>c.attacking&&onField(c))&&!b.cards.some(c=>c.attacking&&onField(c));
+  // A planeswalker (or battle) takes combat damage as lost loyalty (or defense) counters, not marked damage.
+  const guard=c=>(c?.counters?.LOYALTY??c?.counters?.DEFENSE??null),worn=b.cards.filter(c=>onField(c)&&guard(c)!==null&&guard(was.get(c.id))!==null&&guard(c)<guard(was.get(c.id))&&was.get(c.id)?.zone==='Battlefield');
+  const targetFell=a.cards.some(c=>c.attacking&&c.attackTarget?.kind==='card'&&b.cards.find(x=>x.id===c.attackTarget.id)?.zone!=='Battlefield');
+  // A creature in the fight that left the battlefield (died in it): a trade marks no damage and may cost no life.
+  const gone=c=>b.cards.find(x=>x.id===c.id)?.zone!=='Battlefield',fell=a.cards.filter(c=>onField(c)&&(c.attacking||c.blockingIds?.length)&&gone(c));
+  const dying=new Map();
+  if(combat&&(damaged.length||lifeLost||fell.length||worn.length||targetFell)){
    // Arena's strike: an unblocked attacker flies at the defending player's portrait and hits it;
-   // a blocked one crashes into its blocker. Both spring back to their place.
+   // a blocked one crashes into its blocker, even one the blow kills. Both spring back to their place.
    const blockerOf=new Map();for(const c of [...a.cards,...b.cards])for(const id of c.blockingIds||[])if(!blockerOf.has(id))blockerOf.set(id,c.id);
+   const live=id=>{const now=b.cards.find(x=>x.id===id),el=now?.zone==='Battlefield'?cardEl(id):null;return el||before?.get(String(id))?.r||null;};
    let struck=0;
-   for(const c of a.cards.filter(c=>c.attacking&&b.cards.some(x=>x.id===c.id))){const el=cardEl(c.id);if(!el)continue;
-    const seat=root.querySelector(`.play-match-seat[data-player-seat="${b.players.find(p=>p.nativeId===c.attackTarget?.id)?.seat??b.players.find(p=>p.seat!==c.controller)?.seat}"]`);
-    const blocker=blockerOf.has(c.id)?cardEl(blockerOf.get(c.id)):null,to=blocker||(c.attackTarget?.kind==='card'?cardEl(c.attackTarget.id):seat);
-    strike(el,to,{face:!blocker&&to===seat,delay:struck++*MOTION.stagger,big:(c.power||0)>=5});}
-   damaged.forEach((c,i)=>setTimeout(()=>{const el=cardEl(c.id);if(el){const d=c.damage-(was.get(c.id)?.damage||0);popNumber(el,`−${d}`,'damage',d>=5?'big':'');pulse(el,'hit');}},MOTION.lunge*.58+i*60));
+   for(const c of a.cards.filter(c=>c.attacking&&onField(c))){const dies=gone(c),el=dies?null:cardEl(c.id);if(!dies&&!el)continue;
+    const seat=seatEl(defenderOf(b.players,c)),blocked=blockerOf.has(c.id)?live(blockerOf.get(c.id)):null;
+    const to=blocked||(c.attackTarget?.kind==='card'?live(c.attackTarget.id):seat);if(!to)continue;
+    const opts={face:!blocked&&to===seat,delay:struck++*MOTION.stagger,big:(c.power||0)>=5,power:c.power||0};
+    // An attacker that dies in the exchange swings as a stand-in (drawn below with the other deaths).
+    if(dies)dying.set(c.id,{to,opts});else strike(el,to,opts);}
+   const contact=Math.max(0,hitAt-Date.now());
+   damaged.forEach((c,i)=>setTimeout(()=>{const el=cardEl(c.id);if(el){const d=c.damage-(was.get(c.id)?.damage||0);popNumber(el,`−${d}`,'damage',d>=5?'big':'');pulse(el,'hit');}},contact+i*60));
+   worn.forEach((c,i)=>setTimeout(()=>{const el=cardEl(c.id);if(el){const d=guard(was.get(c.id))-guard(c);popNumber(el,`−${d}`,'damage',d>=5?'big':'');pulse(el,'hit');}},contact+i*60));
   }
   // 3b. Declared: a new attacker surges forward toward what it attacks and settles; a new blocker
   // steps across to meet its attacker with a blue shield flash. Arrows then hold the pairing.
-  const lean=(el,to,amount,ms)=>{const w=el?.closest('.play-match-card-wrap'),r=rectOf(el),t=rectOf(to);if(!w||!r)return;const dx=t?(t.left+t.width/2-(r.left+r.width/2))*amount:0,dy=t?(t.top+t.height/2-(r.top+r.height/2))*amount:0;
-   w.animate([{transform:'none'},{transform:`translate(${dx}px,${dy}px) scale(1.08)`,offset:.45},{transform:'none'}],{duration:ms,easing:'cubic-bezier(.3,.1,.3,1)'});};
+  // The surge is measured in card sizes, not screen pixels: a far target on a big screen otherwise threw a
+  // small fitted card most of a slot sideways, over its neighbour. It leans mostly forward, out of its row.
+  const lean=(el,to,amount,ms)=>{const w=el?.closest('.play-match-card-wrap'),r=rectOf(el),t=rectOf(to);if(!w||!r)return;let dx=t?(t.left+t.width/2-(r.left+r.width/2))*amount:0,dy=t?(t.top+t.height/2-(r.top+r.height/2))*amount:0;
+   dx*=.15;const len=Math.hypot(dx,dy),cap=r.height*.22;if(len>cap){dx*=cap/len;dy*=cap/len;}
+   anim(w,[{transform:'none'},{transform:`translate(${dx}px,${dy}px) scale(1.08)`,offset:.45},{transform:'none'}],{duration:ms,easing:'cubic-bezier(.3,.1,.3,1)'});};
   b.cards.filter(c=>onField(c)&&c.attacking&&was.get(c.id)?.zone==='Battlefield'&&!was.get(c.id)?.attacking).slice(0,8).forEach((c,i)=>setTimeout(()=>{const el=cardEl(c.id);if(!el?.isConnected)return;
-   const to=c.attackTarget?.kind==='card'?cardEl(c.attackTarget.id):root.querySelector(`.play-match-seat[data-player-seat="${b.players.find(p=>p.nativeId===c.attackTarget?.id)?.seat??b.players.find(p=>p.seat!==c.controller)?.seat}"]`);
+   const to=c.attackTarget?.kind==='card'?cardEl(c.attackTarget.id):seatEl(defenderOf(b.players,c));
    lean(el,to,.1,460);pulse(el,'attack');},i*70));
   b.cards.filter(c=>onField(c)&&c.blockingIds?.length&&(c.blockingIds.length>(was.get(c.id)?.blockingIds?.length||0))).slice(0,8).forEach((c,i)=>setTimeout(()=>{const el=cardEl(c.id);if(!el?.isConnected)return;lean(el,cardEl(c.blockingIds[c.blockingIds.length-1]),.22,520);pulse(el,'block');},i*70));
   // 4. Attach: an Equipment or Aura that joined a host glides there (the card glide does the travel);
@@ -416,14 +580,16 @@ const name=String(card.name);if(Math.max(...name.split(/\s+/).map(word=>word.len
   // 5. Death: a permanent that went to a graveyard or exile (or a token that ceased to exist) breaks
   // into shards where it stood. The shards sit outside the table's scoped styles, so they carry the
   // art of the element the redraw just replaced on a plain frame.
-  if(leaving?.size){let broke=0;const at=Math.max(0,hitAt-Date.now()+80);for(const c of a.cards){if(!onField(c)||broke>=4)continue;const now=b.cards.find(x=>x.id===c.id);if(now&&!/^(Graveyard|Exile)$/.test(now.zone))continue;
-   const old=leaving.get(String(c.id)),r=before?.get(String(c.id))?.r;if(!old||!r)continue;broke++;const src=old.querySelector('img')?.currentSrc||old.querySelector('img')?.src||'',shot={rect:{left:r.left,top:r.top,width:r.width,height:r.height},html:`<div class="forge-shard-face" style="background-image:${src?`url(&quot;${esc(src)}&quot;)`:'none'}"></div>`};
+  if(leaving?.size){let broke=0;const shots=[];for(const c of a.cards){if(!onField(c)||broke>=4)continue;const now=b.cards.find(x=>x.id===c.id);if(now&&!/^(Graveyard|Exile)$/.test(now.zone))continue;
+   const old=leaving.get(String(c.id)),r=before?.get(String(c.id))?.r;if(!old||!r)continue;broke++;const src=old.querySelector('img')?.currentSrc||old.querySelector('img')?.src||'';shots.push({c,shot:{rect:{left:r.left,top:r.top,width:r.width,height:r.height},html:`<div class="forge-shard-face" style="background-image:${src?`url(&quot;${esc(src)}&quot;)`:'none'}"></div>`}});}
+   // An attacker the exchange kills lunges as its stand-in first, and breaks once it is back in its place.
+   const swung=new Map();for(const {c,shot} of shots){const lunge=dying.get(c.id),stand=lunge&&motion.ghost(shot.rect,shot.html);if(stand)swung.set(c.id,{stand,end:strike(null,lunge.to,{...lunge.opts,stand})});}
    // Until the blow that kills it lands, a stand-in holds its place so it never just blinks out.
-   const wait=at+broke*60,stand=wait>30?motion.ghost(shot.rect,shot.html):null;setTimeout(()=>{stand?.remove();motion.shatter(shot);},wait);}}
+   const at=Math.max(0,hitAt-Date.now()+80);shots.forEach(({c,shot},i)=>{const own=swung.get(c.id),wait=own?own.end+40:at+(i+1)*60,stand=own?.stand||(wait>30?motion.ghost(shot.rect,shot.html):null);setTimeout(()=>{stand?.remove();motion.shatter(shot);},wait);});}
   // 5b. Cast: your card lifts as it goes on the stack (it waits in hand, dimmed, until Forge confirms),
   // and a spell that resolves from your hand flies to the middle of the table and bursts there.
   for(const c of b.cards){if(!c.inTransit||was.get(c.id)?.inTransit||c.controller!==b.seat)continue;const el=cardEl(c.id);if(!el)continue;
-   el.closest('.play-match-card-wrap')?.animate([{transform:'none'},{transform:'translateY(-22px) scale(1.08)',offset:.45},{transform:'none'}],{duration:420,easing:'cubic-bezier(.2,.8,.3,1)'});pulse(el,'cast');}
+   el.closest('.play-match-card-wrap')?.animate([{transform:'translateY(0px)'},{transform:'translateY(-22px)',offset:.45},{transform:'translateY(0px)'}],{duration:420,easing:'cubic-bezier(.2,.8,.3,1)',composite:'add'});pulse(el,'cast');}
   const middle=rectOf(root.querySelector('.play-match-battlefields')),discarding=/\bdiscard/i.test(String(prev?.native?.message||''));
   if(middle&&!discarding&&leaving?.size){let cast=0;for(const c of a.cards){if(c.zone!=='Hand'||c.controller!==a.seat||cast>=2)continue;const now=b.cards.find(x=>x.id===c.id);if(now&&!/^(Graveyard|Exile)$/.test(now.zone))continue;
    const old=leaving.get(String(c.id)),r=before?.get(String(c.id))?.r;if(!old||!r)continue;cast++;const src=old.querySelector('img')?.currentSrc||old.querySelector('img')?.src||'';
@@ -435,9 +601,9 @@ const name=String(card.name);if(Math.max(...name.split(/\s+/).map(word=>word.len
   const isNew=c=>c.zone==='Hand'&&c.controller===b.seat&&!before?.has(String(c.id))&&was.get(c.id)?.zone!=='Hand',deal=b.cards.filter(isNew).length>=5,most=deal?(lowPower?4:8):3,gap=deal?70:120;
   if(seatBox)for(const c of b.cards){if(!isNew(c)||drawn>=most)continue;const el=cardEl(c.id),w=el?.closest('.play-match-card-wrap'),r=rectOf(el);if(!w||!r)continue;
    const dx=seatBox.left+seatBox.width/2-(r.left+r.width/2),dy=seatBox.top+seatBox.height/2-(r.top+r.height/2);
-   w.animate([{transform:`translate(${dx}px,${dy}px) rotateY(90deg) scale(.7)`,opacity:.4},{transform:`translate(${dx/2}px,${dy/2-50}px) rotateY(30deg) scale(1.2)`,opacity:1,offset:.55},{transform:'translateY(-6px) scale(1.04)',offset:.85},{transform:'none'}],{duration:deal?400:480,delay:drawn++*gap,easing:'cubic-bezier(.3,.1,.3,1)',fill:'backwards'});}
+   w.animate([{transform:`translate(${dx}px,${dy}px) rotateY(90deg) scale(.7)`,opacity:.4},{transform:`translate(${dx/2}px,${dy/2-50}px) rotateY(30deg) scale(1.2)`,opacity:1,offset:.55},{transform:'translateY(-6px) scale(1.04)',offset:.85},{transform:'translate(0px,0px)'}],{duration:deal?400:480,delay:drawn++*gap,easing:'cubic-bezier(.3,.1,.3,1)',fill:'backwards',composite:'add'});}
   // 7. Your turn: once the banner has gone, a blue wave runs through the cards you can play now.
-  if(b.activeSeat===b.seat&&a.activeSeat!==b.seat)setTimeout(()=>{if(closed)return;[...root.querySelectorAll('.play-match-hand .play-match-card[data-forge-role=playable]')].slice(0,10).forEach((el,i)=>setTimeout(()=>{if(!el.isConnected)return;pulse(el,'playable');el.closest('.play-match-card-wrap')?.animate([{transform:'none'},{transform:'translateY(-10px)',offset:.4},{transform:'none'}],{duration:420,easing:'ease-out'});},i*70));},900);
+  if(b.activeSeat===b.seat&&a.activeSeat!==b.seat)setTimeout(()=>{if(closed)return;[...root.querySelectorAll('.play-match-hand .play-match-card[data-forge-role=playable]')].slice(0,10).forEach((el,i)=>setTimeout(()=>{if(!el.isConnected)return;pulse(el,'playable');el.closest('.play-match-card-wrap')?.animate([{transform:'translateY(0px)'},{transform:'translateY(-10px)',offset:.4},{transform:'translateY(0px)'}],{duration:420,easing:'ease-out',composite:'add'});},i*70));},900);
  }
  // Hold the previous accepted board while a meaningful observed update is announced.
  // Only projected public cards reach this queue; it cannot recover events omitted by a poll.
@@ -446,23 +612,36 @@ const name=String(card.name);if(Math.max(...name.split(/\s+/).map(word=>word.len
   // Over a decision the story is told in the activity line and the stack's arrows; a spotlight
   // there would cover the very prompt it explains.
   if(playback?.overlay){updateActivity();return;}
+  // A land has no spotlight: it drops into its row (the staged board moves it) and the line says so.
+  // A turn change is shown by the staged board's own turn banner; a second one would repeat it.
+  if(beat.kind==='land'||beat.tone==='turn'){queueArrows();updateActivity();return;}
+  // An attack is told by the swing and its arrow, as on Arena, and its damage by the falling life total;
+  // a banner there would cover the attackers or the CPU's front row.
+  if(beat.tone==='attack'||beat.tone==='damage'&&beat.combat){queueArrows();updateActivity();return;}
   if(beat.kind==='phase'){
    const banner=doc.createElement('div');banner.className='forge-playback-status';banner.setAttribute('role','status');banner.textContent=beat.label;if(beat.tone)banner.dataset.tone=beat.tone;mat?.append(banner);
   }else if(beat.card){
    const c=beat.card,art=resolvePracticeArtwork(c);
    castShow.innerHTML=`<figure>${art?.imageUrl?`<img src="${esc(art.imageUrl)}" alt="" referrerpolicy="no-referrer" decoding="async">`:''}</figure><p><span>${esc(beat.label)}</span><strong>${esc(c.name)}</strong></p>${beat.text?`<div class="forge-cast-text">${symbolText(beat.text)}</div>`:''}`;
-   if(!art?.imageUrl)castShow.querySelector('figure').append(drawnArtwork(doc,c,surfaceColors(c)));
-   castShow.dataset.open='true';castShow.dataset.kind=beat.kind;
+   // Drawn art sits under the photo, so a slow image never leaves the spotlight blank for its beat.
+   castShow.querySelector('figure').prepend(drawnArtwork(doc,c,surfaceColors(c)));
+   castShow.dataset.open='true';castShow.dataset.kind=beat.kind;doc.body.dataset.forgeSpotlight='true';
   }
   queueArrows();updateActivity();
  }
- function clearPlaybackBeat(){activeBeat=null;castShow.dataset.open='false';root.querySelector('.forge-playback-status')?.remove();queueArrows();updateActivity();}
+ // The spotlight's photo starts loading when the story is queued, not when its beat opens.
+ const preloaded=new Set();
+ function preloadBeatArt(beats){for(const b of beats){if(!b.card||b.kind==='land')continue;const url=resolvePracticeArtwork(b.card)?.imageUrl;if(!url||preloaded.has(url))continue;if(preloaded.size>200)preloaded.clear();preloaded.add(url);const img=new win.Image();img.referrerPolicy='no-referrer';img.decoding='async';img.src=url;}}
+ function clearPlaybackBeat(){activeBeat=null;castShow.dataset.open='false';delete doc.body.dataset.forgeSpotlight;root.querySelector('.forge-playback-status')?.remove();queueArrows();updateActivity();}
  let activityKey='';
  // Like Snap and Master Duel, CPU turns can play at Normal or Fast; the choice stays on this device.
  const SPEED_KEY='cardstashy-cpu-speed';let cpuSpeed='normal';try{if(win.localStorage?.getItem(SPEED_KEY)==='fast')cpuSpeed='fast';}catch{/* blocked storage keeps Normal */}
  activity.addEventListener('click',e=>{if(!e.target.closest?.('.forge-speed'))return;cpuSpeed=cpuSpeed==='fast'?'normal':'fast';try{win.localStorage?.setItem(SPEED_KEY,cpuSpeed);}catch{/* the choice lasts this match */}activityKey='';updateActivity();});
  function updateActivity(){
-  const a=presentation.hosted&&root.dataset.stage==='match'&&playback?tableActivity(displayed,{beat:activeBeat,overlay:playback.overlay,recent:playback.recent}):null;
+  let a=presentation.hosted&&root.dataset.stage==='match'&&playback?tableActivity(displayed,{beat:activeBeat,overlay:playback.overlay,recent:playback.recent}):null;
+  // Like Arena, no running commentary: the CPU's moves show on the board, so this only says the CPU is
+  // playing (with its speed switch) or that the connection or match needs attention.
+  if(a){if(['working','resolving'].includes(a.kind))a=null;else if(['thinking','replay'].includes(a.kind))a={...a,label:a.label==='Your turn'?'Your turn':'CPU playing',detail:''};}
   const key=a?`${a.kind}|${a.label}|${a.detail}|${cpuSpeed}`:'';if(key===activityKey)return;activityKey=key;
   activity.hidden=!a||a.kind==='decision';if(activity.hidden)return;
   const fast=cpuSpeed==='fast',speed=['replay','thinking'].includes(a.kind)?`<button type="button" class="forge-speed" aria-pressed="${fast}" aria-label="CPU speed: ${fast?'Fast':'Normal'}. Tap to switch.">${fast?'▶▶ Fast':'▶ Normal'}</button>`:'';
@@ -474,16 +653,18 @@ const name=String(card.name);if(Math.max(...name.split(/\s+/).map(word=>word.len
  // certain are drawn: an attack goes to the player unless they also control something
  // attackable, and a block is paired only when Forge names the attacker or there is one.
  const SVG='http://www.w3.org/2000/svg',arrows=doc.createElementNS(SVG,'svg');arrows.setAttribute('class','forge-arrows');arrows.setAttribute('aria-hidden','true');doc.body.append(arrows);let arrowFrame=0;
- arrows.innerHTML=['attack','block','target'].map(k=>`<marker id="forge-head-${k}" viewBox="0 0 10 10" refX="7" refY="5" markerWidth="5.5" markerHeight="5.5" orient="auto-start-reverse"><path d="M0 0L10 5L0 10z" class="forge-head-${k}"/></marker>`).join('').replace(/^/,'<defs>').replace(/$/,'</defs>');
+ arrows.innerHTML=['attack','block','target'].map(k=>`<marker id="forge-head-${k}" viewBox="0 0 10 10" refX="7" refY="5" markerWidth="4.5" markerHeight="4.5" orient="auto-start-reverse"><path d="M0 0L10 5L0 10z" class="forge-head-${k}"/></marker>`).join('').replace(/^/,'<defs>').replace(/$/,'</defs>');
  function relations(snap){
   const n=snap.native,surface=snap.status?.surface;if(!n||!surface||root.dataset.stage!=='match')return [];
   const out=[],cards=surface.cards,bySeat=seat=>({kind:'seat',seat}),byCard=id=>({kind:'card',id}),playerSeat=nativeId=>surface.players.find(p=>p.nativeId===nativeId)?.seat;
   const attackers=cards.filter(c=>c.zone==='Battlefield'&&c.attacking);
   for(const a of attackers){
-   const defending=surface.players.find(p=>p.seat!==a.controller)?.seat;
+   const defending=defenderOf(surface.players,a);
    const t=a.attackTarget,attackable=cards.some(c=>c.zone==='Battlefield'&&c.controller===defending&&/Planeswalker|Battle/.test(c.type||''));
    const to=t?.kind==='card'&&cards.some(c=>c.id===t.id)?byCard(t.id):t?.kind==='player'&&playerSeat(t.id)!==undefined?bySeat(playerSeat(t.id)):!attackable&&defending!==undefined?bySeat(defending):null;
-   if(to)out.push({kind:'attack',from:byCard(a.id),to});
+   // Once blocked, an attacker without trample deals no damage past its blockers: its line to the player fades.
+   const held=cards.some(c=>c.zone==='Battlefield'&&(c.blockingIds||[]).includes(a.id))&&!currentKeywords(a).some(k=>/trample/i.test(k.text||''));
+   if(to)out.push({kind:'attack',from:byCard(a.id),to,...(held?{held:true}:{})});
   }
   for(const b of cards.filter(c=>c.zone==='Battlefield'&&c.blocking)){
    const named=(b.blockingIds||[]).filter(id=>attackers.some(a=>a.id===id)),pair=named.length?named:attackers.length===1?[attackers[0].id]:[];
@@ -492,29 +673,40 @@ const name=String(card.name);if(Math.max(...name.split(/\s+/).map(word=>word.len
   if(n.inputType==='InputSelectTargets'){
    const named=String(n.message||'').match(/targets? for ([^\n]+)/i)?.[1]?.trim(),mine=c=>c.known&&c.controller===surface.seat;
    const source=cards.filter(c=>mine(c)&&c.zone==='Stack').sort((a,b)=>b.id-a.id)[0]||(named&&(cards.find(c=>mine(c)&&c.zone==='Battlefield'&&c.name===named)||cards.find(c=>mine(c)&&c.zone==='Hand'&&c.name===named)));
-   if(source)for(const r of n.selection?.chosen||[]){const to=r.kind==='card'?byCard(r.id):r.kind==='player'&&playerSeat(r.id)!==undefined?bySeat(playerSeat(r.id)):null;if(to)out.push({kind:'target',from:byCard(source.id),to});}
+   // A spell being cast has no tile on the table, so its arrows start from the Casting panel.
+   const from=source&&cardEl(source.id)?byCard(source.id):ownCast.dataset.open==='true'?{kind:'own'}:null;
+   // Arena's aiming line: until every target is chosen, a curved line runs from the spell to your finger or pointer.
+   if(from&&aim&&(n.selection?.chosen||[]).length<Math.max(1,n.selection?.max||1))out.push({kind:'aim',from,to:{kind:'point',x:aim.x,y:aim.y}});
+   if(from)for(const r of n.selection?.chosen||[]){const to=r.kind==='card'?byCard(r.id):r.kind==='player'&&playerSeat(r.id)!==undefined?bySeat(playerSeat(r.id)):null;if(to)out.push({kind:'target',from,to});}
   }
-  // A spell or ability on the stack points from its line in the decision card to its
-  // targets, when Forge names them.
-  for(const item of n.stack||[])for(const r of Array.isArray(item.targets)?item.targets:[]){const to=r?.kind==='card'&&cards.some(c=>c.id===r.id)?byCard(r.id):r?.kind==='player'&&playerSeat(r.id)!==undefined?bySeat(playerSeat(r.id)):null;if(to)out.push({kind:'target',from:{kind:'stack',id:item.id},to});}
+  // The top spell or ability on the stack points from its line in the decision card to
+  // its targets, when Forge names them. Only the top of the stack draws, and none while you are picking your own.
+  const topItem=String(n.inputType||'')==='InputSelectTargets'?null:(n.stack||[])[0];
+  for(const item of topItem?[topItem]:[])for(const r of Array.isArray(item.targets)?item.targets:[]){const to=r?.kind==='card'&&cards.some(c=>c.id===r.id)?byCard(r.id):r?.kind==='player'&&playerSeat(r.id)!==undefined?bySeat(playerSeat(r.id)):null;if(to)out.push({kind:'target',from:{kind:'stack',id:item.id},to});}
   if(activeBeat&&castShow.dataset.open==='true')for(const r of activeBeat.targets||[]){const to=r.kind==='card'&&cards.some(c=>c.id===r.id)?byCard(r.id):r.kind==='player'&&playerSeat(r.id)!==undefined?bySeat(playerSeat(r.id)):null;if(to)out.push({kind:'target',from:{kind:'spotlight'},to});}
   return out;
  }
  function anchorRect(ref){
-  const el=ref.kind==='spotlight'?castShow:ref.kind==='seat'?root.querySelector(`.play-match-seat[data-player-seat="${ref.seat}"]`):ref.kind==='stack'?root.querySelector(`[data-native-key="stack-${ref.id}"]`):root.querySelector(`.play-match-card[data-instance="${ref.id}"]`);
+  if(ref.kind==='point')return {left:ref.x-1,top:ref.y-1,width:2,height:2};
+  const el=ref.kind==='spotlight'?castShow:ref.kind==='own'?ownCast.querySelector('figure'):ref.kind==='seat'?seatEl(ref.seat):ref.kind==='stack'?root.querySelector(`[data-native-key="stack-${ref.id}"]`):root.querySelector(`.play-match-card[data-instance="${ref.id}"]`);
   const box=el&&(el.closest('.play-match-card-wrap')||el).getBoundingClientRect();return box&&box.width>0?box:null;
  }
  function drawArrows(){
-  arrowFrame=0;const list=relations(session.snapshot()),paths=[];
+  arrowFrame=0;const snapNow=session.snapshot(),list=relations(snapNow),paths=[],blocking=snapNow.native?.inputType==='InputBlock'&&!snapNow.native?.prompt,mineOnBoard=id=>snapNow.status?.surface.cards.some(c=>c.id===id&&c.controller===snapNow.status.surface.seat);
   for(const r of list){
    const a=anchorRect(r.from),b=anchorRect(r.to);if(!a||!b)continue;
    const ax=a.left+a.width/2,ay=a.top+a.height/2,bx=b.left+b.width/2,by=b.top+b.height/2,len=Math.hypot(bx-ax,by-ay);if(len<20)continue;
    // Start at the source's edge, stop short of the target's edge, and bow the line a little.
    const ux=(bx-ax)/len,uy=(by-ay)/len,start=Math.min(a.width,a.height)*.42,stop=Math.min(b.width,b.height)*.48+4;
-   const sx=ax+ux*start,sy=ay+uy*start,ex=bx-ux*stop,ey=by-uy*stop,bend=Math.min(60,len*.16),cx=(sx+ex)/2-uy*bend,cy=(sy+ey)/2+ux*bend;
-   paths.push(`<path class="forge-arrow" data-kind="${r.kind}" d="M${sx.toFixed(1)} ${sy.toFixed(1)}Q${cx.toFixed(1)} ${cy.toFixed(1)} ${ex.toFixed(1)} ${ey.toFixed(1)}" marker-end="url(#forge-head-${r.kind})"/>`);
+   const sx=ax+ux*start,sy=ay+uy*start,ex=r.kind==='aim'?bx:bx-ux*stop,ey=r.kind==='aim'?by:by-uy*stop,bend=Math.min(60,len*.16),cx=(sx+ex)/2-uy*bend,cy=(sy+ey)/2+ux*bend;
+   // Arena-style: a thin line from the source to a ring around the target, with a small dot where it leaves the
+   // source. Combat keeps a (thinner) arrowhead so attackers and blockers still read at a glance.
+   const rx=Math.min(14,b.width*.18);paths.push(`<path class="forge-arrow" data-kind="${r.kind}"${r.held?' data-held="true"':''} d="M${sx.toFixed(1)} ${sy.toFixed(1)}Q${cx.toFixed(1)} ${cy.toFixed(1)} ${ex.toFixed(1)} ${ey.toFixed(1)}"${r.kind==='target'||r.kind==='aim'?'':` marker-end="url(#forge-head-${r.kind})"`}/><circle class="forge-arrow-dot" data-kind="${r.kind}" cx="${sx.toFixed(1)}" cy="${sy.toFixed(1)}" r="3.5"/>${r.kind==='aim'?`<circle class="forge-aim-reticle" cx="${ex.toFixed(1)}" cy="${ey.toFixed(1)}" r="9"/>`:`<rect class="forge-target-ring" data-kind="${r.kind}" x="${(b.left-4).toFixed(1)}" y="${(b.top-4).toFixed(1)}" width="${(b.width+8).toFixed(1)}" height="${(b.height+8).toFixed(1)}" rx="${rx.toFixed(1)}"/>`}`);
+   // While you block, your block line is a control: a wide invisible stroke and a small x at its middle undo it.
+   if(r.kind==='block'&&blocking&&r.from.kind==='card'&&r.to.kind==='card'&&mineOnBoard(r.from.id)){const mx=(sx+2*cx+ex)/4,my=(sy+2*cy+ey)/4,ids=`data-blocker="${r.from.id}" data-attacker="${r.to.id}"`;
+    paths.push(`<path class="forge-arrow-hit" ${ids} d="M${sx.toFixed(1)} ${sy.toFixed(1)}Q${cx.toFixed(1)} ${cy.toFixed(1)} ${ex.toFixed(1)} ${ey.toFixed(1)}"/><g class="forge-unblock" ${ids} transform="translate(${mx.toFixed(1)} ${my.toFixed(1)})"><circle r="11"/><path d="M-4 -4L4 4M4 -4L-4 4"/></g>`);}
   }
-  const defs=arrows.querySelector('defs')?.outerHTML||'',html=defs+paths.join('');if(arrows.dataset.html!==html){arrows.dataset.html=html;arrows.innerHTML=html;}
+  {const t=root.style.getPropertyValue('--forge-hand-top');if(t&&arrows.style.getPropertyValue('--hand-top')!==t)arrows.style.setProperty('--hand-top',t);}const defs=arrows.querySelector('defs')?.outerHTML||'',html=defs+paths.join('');if(arrows.dataset.html!==html){arrows.dataset.html=html;arrows.innerHTML=html;}
  }
  const queueArrows=()=>{if(!arrowFrame)arrowFrame=win.requestAnimationFrame(drawArrows);};
  win.addEventListener('resize',queueArrows);
@@ -531,49 +723,120 @@ const name=String(card.name);if(Math.max(...name.split(/\s+/).map(word=>word.len
  // scrolling sideways, and a side that is still too tall or wide scales down as one piece,
  // laid out wider by the same factor so it uses the whole width. The CPU's side stays
  // against the middle line. Transforms keep hit testing, drag and arrows on real rects.
+ // The folded cards of a crowded lane, at full size, in a tray above the board. Each copy acts like the card
+ // (tap to read or pick it); any other touch, or the next board update, closes the tray.
+ function openLaneTray(hidden,chip){
+  closeLaneTray();const tray=doc.createElement('div');tray.className='forge-lane-tray';tray.setAttribute('role','dialog');
+  const own=!!chip.closest('.play-match-seat-area[data-seat=you]'),title=`${own?'Your':'CPU'} board · ${hidden.length} more`;tray.setAttribute('aria-label',title);
+  const head=doc.createElement('header'),h=doc.createElement('h3'),x=doc.createElement('button');h.textContent=title;x.type='button';x.className='forge-lane-tray-close';x.textContent='×';x.setAttribute('aria-label','Close');x.addEventListener('click',e=>{e.stopPropagation();closeLaneTray();});head.append(h,x);tray.append(head);
+  for(const w of hidden){const copy=w.cloneNode(true);copy.hidden=false;copy.removeAttribute('style');tray.append(copy);}
+  root.append(tray);const r=chip.getBoundingClientRect(),t=tray.getBoundingClientRect();
+  tray.style.left=`${Math.round(Math.max(8,Math.min(win.innerWidth-8-t.width,r.left+r.width/2-t.width/2)))}px`;tray.style.top=`${Math.round(Math.max(8,r.top-t.height-10))}px`;
+  const away=e=>{if(!tray.contains(e.target))closeLaneTray();};doc.addEventListener('pointerdown',away,true);tray._away=away;
+ }
+ function closeLaneTray(){const tray=root.querySelector(':scope>.forge-lane-tray');if(!tray)return;doc.removeEventListener('pointerdown',tray._away,true);tray.remove();}
+ const growLimit=()=>Math.min(win.innerWidth,win.innerHeight)<600&&win.matchMedia?.('(pointer:coarse)').matches?1.7:1;
+ // Tall touch screens lift the turn buttons above a full-width hand (play-forge-table.css), into your side's lower edge.
+ const raisedDock=()=>!!win.matchMedia?.('(hover:none) and (pointer:coarse) and (min-width:600px) and (min-height:480px)').matches;
+ // A side that changes size after the fit (fonts landing, a chip appearing, 130% text) fits again.
+ let boardSizes=null;const boardSeen=new Map(),boardKey=a=>a.dataset.seat||a.className,boardSize=a=>`${a.offsetWidth}x${a.offsetHeight}`;
  function fitBoard(){
   boardFrame=0;if(closed||!presentation.hosted)return;
+  // A redraw replaces the sides, and a newly observed box always reports its size once; only a size this
+  // fit has not seen yet fits again (each fit is a full layout pass, so a redraw must not cost three).
+  if(typeof ResizeObserver==='function'){boardSizes??=new ResizeObserver(list=>{if(list.some(e=>e.target.isConnected&&boardSeen.get(boardKey(e.target))!==boardSize(e.target)))queueBoard();});boardSizes.disconnect();
+   for(const a of root.querySelectorAll('.play-match-battlefields>.play-match-seat-area,.play-match-hand-area')){boardSeen.set(boardKey(a),boardSize(a));boardSizes.observe(a);}}
   // Your side stops above your hand where it rests, not where a lift or a popped card has carried it, so
   // hovering the hand never shrinks the board. Both sides then share one scale, so cards read the same size.
   const g=handGeometry(),rest=g?g.wraps.map(w=>{const l=g.local(w);return {top:g.box.top+l.y,left:g.box.left+l.x,right:g.box.left+l.x+l.w,width:l.w};}):[];
-  const fits=[];
-  for(const area of root.querySelectorAll('.play-match-battlefields>.play-match-seat-area')){
-   const zone=area.querySelector(':scope>.play-match-zone');if(!zone)continue;
-   zone.style.removeProperty('transform');zone.style.removeProperty('width');delete zone.dataset.scaled;
+  const fits=[];if(rest.length){const top=`${Math.round(Math.min(...rest.map(r=>r.top)))}px`;root.style.setProperty('--forge-hand-top',top);doc.body.style.setProperty('--forge-hand-top',top);
+   // The phone ask line floats above whichever is higher: the hand at rest or the stack strip over it.
+   const tops=[...rest.map(r=>r.top),...[...root.querySelectorAll('.forge-native-stack')].filter(n=>getComputedStyle(n).position==='fixed').map(n=>n.getBoundingClientRect()).filter(r=>r.height).map(r=>r.top)];doc.body.style.setProperty('--forge-ask-top',`${Math.round(Math.min(...tops))}px`);}
+  // Where the board is laid out on its own (a Fold opened up), it ends above the stack strip and the hand
+  // slider instead of running under them, so both sides lay out in the room that is left.
+  {const bf=root.querySelector('.play-match-battlefields');if(bf){bf.style.removeProperty('bottom');const floats=[...root.querySelectorAll('.forge-native-stack,:scope>.forge-hand-slider')].filter(n=>getComputedStyle(n).position==='fixed').map(n=>n.getBoundingClientRect()).filter(r=>r.height);
+   // Only a strip that runs under the board counts: a side panel beside it (the stack in a sideways
+   // phone's right column) starts above the board's middle and would otherwise squeeze the board to nothing.
+   const b=bf.getBoundingClientRect(),under=floats.filter(r=>r.right>b.left&&r.left<b.right&&r.top>b.top+b.height/2);
+   if(under.length&&getComputedStyle(bf).position==='absolute'){const top=Math.min(...under.map(r=>r.top));if(b.bottom>top-6)bf.style.setProperty('bottom',`${Math.round(parseFloat(getComputedStyle(bf).bottom)+b.bottom-top+6)}px`,'important');}}}
+  // A Commander pod's CPU side holds one board per opponent: the one on show, or all of them side by side.
+  const zonesOf=area=>{const all=[...area.querySelectorAll(':scope>.play-match-zone')];for(const z of all){z.style.removeProperty('transform');z.style.removeProperty('width');delete z.dataset.scaled;}return all.filter(z=>z.getClientRects().length);};
+  for(const area of root.querySelectorAll('.play-match-battlefields>.play-match-seat-area'))for(const zone of zonesOf(area)){
+   const columns=area.querySelectorAll(':scope>.play-match-zone').length>1&&getComputedStyle(area).display==='grid';
    // Your side stops above your hand; the CPU's stops below its row of card backs.
-   const box=area.getBoundingClientRect(),own=area.dataset.seat!=='cpu',edges=(own?rest:[...root.querySelectorAll('.play-match-opponent-fan')].map(n=>n.getBoundingClientRect())).filter(r=>r.width&&r.right>box.left&&r.left<box.right);
-   const top=own?box.top:Math.max(box.top,...edges.map(r=>r.bottom+4)),bottom=own?Math.min(box.bottom,...edges.map(r=>r.top-4)):box.bottom;
-   const W=area.clientWidth,H=Math.min(area.clientHeight,Math.round(bottom-top));if(!W||H<=0)continue;
+   // On a portrait screen the stack strip and the hand slider float over your side, so it stops above them too;
+   // a sideways phone's hand button and control emblems sit just over the hand, and a tall screen's turn buttons
+   // ride above it, so it stops above those as well.
+   const box=area.getBoundingClientRect(),own=area.dataset.seat!=='cpu',edges=(own?[...rest,...[...root.querySelectorAll('.forge-native-stack,:scope>.forge-hand-slider')].filter(n=>getComputedStyle(n).position==='fixed').map(n=>n.getBoundingClientRect()),...[...root.querySelectorAll('.forge-hand-expand,.forge-control-emblem')].map(n=>n.getBoundingClientRect()),...[...(raisedDock()?root.querySelectorAll('.play-match-decisions:not(:has(.forge-order-cards,.forge-zone-search))'):[])].map(n=>n.getBoundingClientRect()).filter(r=>r.height&&r.top>box.top+40)]:[...root.querySelectorAll('.play-match-opponent-fan,.play-pod-rail')].map(n=>n.getBoundingClientRect())).filter(r=>r.width&&r.right>box.left&&r.left<box.right);
+   const top=own?box.top:Math.max(box.top,...edges.map(r=>r.bottom+8)),bottom=own?Math.min(box.bottom,...edges.map(r=>r.top-4)):box.bottom;
+   const W=columns?Math.floor(zone.getBoundingClientRect().width):area.clientWidth,H=Math.min(area.clientHeight,Math.round(bottom-top))-(columns?22:0);if(!W||H<=0)continue;
    // Side-by-side lanes (a grid) have fixed boxes: a row that spills out of its lane shrinks inside it.
    const fitRows=()=>{for(const row of zone.querySelectorAll('.play-match-card-row')){row.style.removeProperty('transform');const lane=row.closest('.play-match-lane'),h=lane?.clientHeight||0;
-    const kr=Math.min(1,h&&row.scrollHeight>h+1?h/row.scrollHeight:1,row.scrollWidth>row.clientWidth+1?row.clientWidth/row.scrollWidth:1);if(kr<.995){row.style.transformOrigin='top center';row.style.transform=`scale(${kr.toFixed(3)})`;}}};
-   fitRows();let k=1;for(let i=0;i<6;i++){const next=Math.max(.4,Math.min(1,H/zone.scrollHeight,W/zone.scrollWidth));if(Math.abs(next-k)<.01&&i)break;k=next;zone.style.width=`${W/k}px`;}
-   fits.push({area,zone,own,W,k,fitRows});
+    const scaleOf=()=>Math.min(1,h&&row.scrollHeight>h+1?h/row.scrollHeight:1,row.scrollWidth>row.clientWidth+1?row.clientWidth/row.scrollWidth:1);
+    // A lane that would have to shrink its tiles past readable keeps the ones that fit and folds the rest
+    // into a "+N" chip; tapping it lays them out at full size in a tray above the board.
+    // (The chip is only added or removed when that changes: the table redraws on any child change.)
+    const wraps=[...row.querySelectorAll(':scope>.play-match-card-wrap')];let more=row.querySelector(':scope>.forge-lane-more');for(const w of wraps)if(w.hidden)w.hidden=false;
+    let kr=scaleOf();
+    if(kr<.62&&wraps.length>=4){let keep=Math.max(1,Math.floor(wraps.length*(kr/.75)**2)-1);
+     if(!more){more=doc.createElement('button');more.type='button';more.className='forge-lane-more';more.dataset.nativeKey='lane-more';more.addEventListener('click',e=>{e.preventDefault();e.stopPropagation();const row=more.parentElement,k=Number(more.dataset.keep)||0;openLaneTray([...row.querySelectorAll(':scope>.play-match-card-wrap')].slice(k),more);});row.append(more);}more.hidden=false;
+     const fold=k=>{wraps.forEach((w,i)=>{const hide=i>=k;if(w.hidden!==hide)w.hidden=hide;});const label=`+${wraps.length-k}`;if(more.textContent!==label){more.textContent=label;more.setAttribute('aria-label',`${wraps.length-k} more cards`);}more.dataset.keep=String(k);};
+     fold(keep);while(keep>1&&scaleOf()<.72){keep--;fold(keep);}kr=scaleOf();}
+    else if(more)more.remove();
+    if(kr<.995){row.style.transformOrigin='top center';row.style.transform=`scale(${kr.toFixed(3)})`;}}};
+   // On a phone the pieces start small; a board with room to spare grows them to fill it (Arena's cards fill the table).
+   // The largest scale whose reflowed layout (rows wrap at width W/k) still fits both ways. Height is not monotonic in
+   // k (a wider layout grows its pieces until a back row joins the lands), so step down to the first fit, then refine.
+   // Trials measure every row unscaled and unfolded, the same way on every pass, so the result never depends on
+   // what the previous pass folded (a fold adds or removes a chip, which redraws the table and fits again).
+   const rows=[...zone.querySelectorAll('.play-match-card-row')];
+   const fitsAt=k=>{zone.dataset.scaled='true';zone.style.width=`${W/k}px`;for(const r of rows){r.style.removeProperty('transform');for(const w of r.querySelectorAll(':scope>.play-match-card-wrap[hidden]'))w.hidden=false;const more=r.querySelector(':scope>.forge-lane-more');if(more)more.hidden=true;}return zone.scrollHeight*k<=H+1&&zone.scrollWidth*k<=W+1;};let k=growLimit();
+   if(!fitsAt(k)){let lo=.4,hi=k;for(let t=k-.05;t>.4;t-=.05)if(fitsAt(t)){lo=t;hi=t+.05;break;}for(let i=0;i<3;i++){const mid=(lo+hi)/2;if(fitsAt(mid))lo=mid;else hi=mid;}k=lo;}
+   fits.push({area,zone,own,W,H,k,fitRows,drop:own?0:Math.max(0,top-box.top)});
   }
-  const k=Math.min(1,...fits.map(f=>f.k));
-  for(const f of fits){const {area,zone,own,W,fitRows}=f;
-   if(k>=.995){zone.style.removeProperty('width');fitRows();continue;}
-   zone.style.width=`${W/k}px`;fitRows();
-   const h=zone.scrollHeight*k,lift=own?0:Math.max(0,area.clientHeight-h);
-   zone.dataset.scaled='true';zone.style.transform=`translateY(${lift.toFixed(1)}px) scale(${k.toFixed(3)})`;
-  }
+  // A row that fits its lane at one width can fold or shrink differently at another, so the shared scale is checked
+  // once laid out and stepped down until every side really fits.
+  let k=Math.min(growLimit(),...fits.map(f=>f.k));
+  for(let pass=0;pass<8;pass++){let over=false;
+   for(const f of fits){const {area,zone,own,W,H,fitRows,drop}=f;
+    if(Math.abs(k-1)<.005){zone.style.removeProperty('width');zone.style.removeProperty('transform');delete zone.dataset.scaled;fitRows();if(drop)zone.style.transform=`translateY(${drop.toFixed(1)}px)`;if(zone.scrollHeight>H+1)over=true;continue;}
+    zone.dataset.scaled='true';zone.style.width=`${W/k}px`;fitRows();
+    // The CPU side settles toward the divider, leaving room for keyword badges hanging under its cards.
+    const h=zone.scrollHeight*k,lift=own?0:area.querySelectorAll(':scope>.play-match-zone').length>1?drop:Math.max(0,area.clientHeight-h-10);if(h>H+1)over=true;
+    zone.style.transform=`translateY(${lift.toFixed(1)}px) scale(${k.toFixed(3)})`;
+   }
+   if(!over||k<=.4)break;k=Math.max(.4,k-.04);}
+  // A pile's top card shows its name only when the whole name fits; otherwise the ×N badge and art carry it
+  // (the full name stays in its title, label and peek), so a cut-off name never pokes out over the pile.
+  for(const n of root.querySelectorAll('.play-match-battlefields .play-match-card-wrap[data-pile-top=true] .play-match-card-name')){const cut=n.scrollWidth>n.clientWidth+1;if(n.hasAttribute('data-cut')!==cut)n.toggleAttribute('data-cut',cut);}
+  // Target rings and aim lines follow the cards to wherever this fit (or a later resize refit) put them.
+  queueArrows();
  }
  const queueBoard=()=>{if(!boardFrame)boardFrame=win.requestAnimationFrame(fitBoard);};
  win.addEventListener('resize',queueBoard);
  const queueRails=()=>{if(!railFrame)railFrame=win.requestAnimationFrame(fitRails);};
  win.addEventListener('resize',queueRails);
- function renderAccepted(s,blocked=false){
+ // A held board normally redraws without motion; a CPU playback beat (staged) moves it as it goes.
+ function renderAccepted(s,blocked=false,staged=false){
   const previous=displayed,lifeBefore=new Map((displayed?.status?.surface?.players||[]).map(p=>[p.seat,p.life]));displayed=s;playbackBusy=blocked;root.dataset.forgePlayback=String(blocked);root.setAttribute('aria-busy',String(blocked));
   const focused=root.contains(doc.activeElement)?doc.activeElement.dataset.nativeKey:null;
-  const before=presentation.hosted?positions():null,leaving=presentation.hosted?new Map([...root.querySelectorAll('.play-match-card[data-instance]')].map(el=>[el.dataset.instance,el.closest('.play-match-card-wrap')||el])):null;
-  localError='';table.render(session.snapshot());enhance();if(root.dataset.stage==='match')emotes?.mount();
+  const before=presentation.hosted?positions():null,poses=presentation.hosted&&!reducedMotion()?posesNow():null,leaving=presentation.hosted?new Map([...root.querySelectorAll('.play-match-card[data-instance]')].map(el=>[el.dataset.instance,el.closest('.play-match-card-wrap')||el])):null;
+  if(heldDrop?.ghost.isConnected&&lastDrop?.instance===String(heldDrop.id))lastDrop={...lastDrop,rect:heldDrop.ghost.getBoundingClientRect(),at:Date.now()};
+  localError='';table.render(session.snapshot());enhance();observer.takeRecords();if(root.dataset.stage==='match')emotes?.mount();
+  if(heldDrop&&!heldDrop.ghost.isConnected)root.append(heldDrop.ghost);
   // The stylesheet scopes the Forge table by this attribute. It changes only when the
   // native panel comes or goes, unlike a :has() test that rechecks the whole table each redraw.
   root.toggleAttribute('data-forge-native',!!root.querySelector('.forge-native-panel'));
   doc.body.toggleAttribute('data-forge-search',!!root.querySelector('.forge-zone-search'));
-  if(before&&!blocked){glide(before);boardEffects(previous,s,before,leaving);}
+  // While a full-screen sheet asks (a library search, ordering triggers), the board behind it is out of reach.
+  {const main=root.querySelector(':scope>.play-match-main'),sheet=!!root.querySelector('.forge-zone-search,.forge-order-cards');if(main&&main.inert!==sheet)main.inert=sheet;}
+  if(before&&(!blocked||staged)){glide(before);boardEffects(previous,s,before,leaving);}
+  if(poses)settlePoses(poses);
+  dropHeld();
   if(presentation.hosted)tableAudio.update(previous,s);
-  if(presentation.hosted&&!reducedMotion())for(const p of s.status?.surface?.players||[]){const was=lifeBefore.get(p.seat);if(was===undefined||was===p.life)continue;const seat=root.querySelector(`.play-match-seat[data-player-seat="${p.seat}"]`),life=seat?.querySelector('.play-match-life strong');if(!seat||!life)continue;const delta=p.life-was,wait=Math.max(0,hitAt-Date.now()),badge=doc.createElement('span');badge.className='forge-life-delta';badge.dataset.dir=delta<0?'down':'up';badge.textContent=(delta>0?'+':'\u2212')+Math.abs(delta);badge.setAttribute('aria-hidden','true');seat.append(badge);badge.animate([{opacity:0,transform:'translateY(6px)'},{opacity:1,transform:'translateY(-4px)',offset:.25},{opacity:1,transform:'translateY(-10px)',offset:.75},{opacity:0,transform:'translateY(-18px)'}],{duration:1300,delay:wait,fill:'both'}).finished.then(()=>badge.remove(),()=>badge.remove());life.animate([{transform:'scale(1)'},{transform:'scale(1.22)',color:delta<0?'#ff9a8a':'#8fe7a3',offset:.35},{transform:'scale(1)'}],{duration:700,delay:wait});
+  // Arena's low-life state: under 10 life the portrait cracks, under 6 it also bleeds a slow red glow.
+  if(presentation.hosted)for(const p of s.status?.surface?.players||[]){const seat=seatEl(p.seat),band=typeof p.life!=='number'?'':p.life<=5?'critical':p.life<10?'low':'';if(seat&&(seat.dataset.lifeBand||'')!==band){if(band)seat.dataset.lifeBand=band;else delete seat.dataset.lifeBand;}}
+  if(presentation.hosted&&!reducedMotion())for(const p of s.status?.surface?.players||[]){const was=lifeBefore.get(p.seat);if(was===undefined||was===p.life)continue;const seat=seatEl(p.seat),life=seat?.querySelector('.play-match-life strong,.play-pod-life');if(!seat||!life)continue;const delta=p.life-was,wait=Math.max(0,hitAt-Date.now()),badge=doc.createElement('span');badge.className='forge-life-delta';badge.dataset.dir=delta<0?'down':'up';badge.textContent=(delta>0?'+':'\u2212')+Math.abs(delta);badge.setAttribute('aria-hidden','true');seat.append(badge);badge.animate([{opacity:0,transform:'translateY(6px)'},{opacity:1,transform:'translateY(-4px)',offset:.25},{opacity:1,transform:'translateY(-10px)',offset:.75},{opacity:0,transform:'translateY(-18px)'}],{duration:1300,delay:wait,fill:'both'}).finished.then(()=>badge.remove(),()=>badge.remove());life.animate([{transform:'scale(1)'},{transform:'scale(1.22)',color:delta<0?'#ff9a8a':'#8fe7a3',offset:.35},{transform:'scale(1)'}],{duration:700,delay:wait});
    // During combat the total changes when the blow lands, not when the board updates.
    if(wait)life.textContent=String(was);setTimeout(()=>{if(!life.isConnected)return;if(Math.abs(delta)>1)motion.countUp(life,was,p.life,Math.min(700,240+Math.abs(delta)*40));else life.textContent=String(p.life);},wait);}
   // A redraw that replaced the card's element keeps its open preview on the new one.
@@ -589,10 +852,10 @@ const name=String(card.name);if(Math.max(...name.split(/\s+/).map(word=>word.len
   if(drag?.active)markDrops();
   restoreAutoPay(s);
   markAutoTap(s);
-  if(!blocked){autoPassOwnStack(s);autoPassIdle(s);}
+  if(!blocked){autoPassOwnStack(s);autoPassIdle(s);autoPassNoResponse(s);autoDeclareMust(s);}
  }
  // Engine and transport codes in plain words; a refusal Forge explains stays as Forge said it.
- const plainError=msg=>/ordered-source|order/i.test(msg)&&/unavailable|not supported/i.test(msg)?'These can\u2019t be reordered here yet, so they\u2019ll resolve in the default order.':/contract is unavailable|is not supported/i.test(msg)?'That choice isn\u2019t available on this table yet.':msg==='MATCH_NOT_READY'?'One moment, the table is catching up.':msg==='STALE_CHOICE'?'That choice ran out. Try again.':/^(CHOICE_INCOMPLETE)$/.test(msg)?'Pick everything this asks for first.':msg==='CHOICE_FULL'?'You\u2019ve already picked the most allowed.':msg;
+ const plainError=msg=>/ordered-source|order/i.test(msg)&&/unavailable|not supported/i.test(msg)?'These can\u2019t be reordered here yet, so they\u2019ll resolve in the default order.':/contract is unavailable|is not supported/i.test(msg)?'That choice isn\u2019t available on this table yet.':msg==='MATCH_NOT_READY'?'One moment, the table is catching up.':msg==='STALE_CHOICE'?'That choice ran out. Try again.':/^(CHOICE_INCOMPLETE)$/.test(msg)?'Pick everything this asks for first.':msg==='CHOICE_FULL'?'You\u2019ve already picked the most allowed.':/attack declaration invalid/i.test(msg)?'That attack isn\u2019t allowed. A creature that must attack this turn has to be in it.':/block declaration invalid/i.test(msg)?'Those blocks aren\u2019t allowed. Check creatures that must block or can\u2019t.':String(msg).replace(/^message:\s*/i,'');
  // Arena's combat line: while you choose attackers or blockers, a gold line runs across the
  // middle of the board, with a small running count at its right end once you have picked one.
  // It never carries text over your creatures; the dock already says what is being asked.
@@ -602,7 +865,8 @@ const name=String(card.name);if(Math.max(...name.split(/\s+/).map(word=>word.len
   const mine=surface.cards.filter(c=>c.zone==='Battlefield'&&c.controller===surface.seat),k=mode==='attack'?mine.filter(c=>c.attacking).length:mine.filter(c=>c.blockingIds?.length||c.blocking).length;
   const key=`${mode}|${k}`;if(!line){line=combatLine=doc.createElement('div');line.className='forge-combat-line';line.setAttribute('aria-hidden','true');}const mat=root.querySelector('.play-match-mat');if(mat&&line.parentElement!==mat){if(line.parentElement||line.dataset.key)line.dataset.settled='';mat.append(line);}
   if(line.dataset.key!==key){line.dataset.key=key;line.dataset.mode=mode;line.innerHTML=k?`<i></i><span><b>${k}</b><small>${mode==='attack'?'attacking':'blocking'}</small></span>`:'<i></i><i></i>';}
-  const r=zone.getBoundingClientRect(),v=`${Math.round(r.left)}|${Math.round(r.top)}|${Math.round(r.width)}`;if(line.dataset.at!==v){line.dataset.at=v;line.style.left=Math.round(r.left)+'px';line.style.top=Math.round(r.top)+'px';line.style.width=Math.round(r.width)+'px';}
+  // Measured on your side's box, not the zone: the zone is laid out wider and scaled down, so its box changes mid-fit.
+  const r=(zone.closest('.play-match-seat-area')||zone).getBoundingClientRect(),v=`${Math.round(r.left)}|${Math.round(r.top)}|${Math.round(r.width)}`;if(line.dataset.at!==v){line.dataset.at=v;line.style.left=Math.round(r.left)+'px';line.style.top=Math.round(r.top)+'px';line.style.width=Math.round(r.width)+'px';}
  }
  let manaOpen=false;
  const PHASE_STEPS=[['Upkeep',['Untap','Upkeep']],['Draw',['Draw']],['Main',['PreCombatMain']],['Combat',['BeginningOfCombat','DeclareAttackers','DeclareBlockers','FirstStrikeDamage','CombatDamage','EndCombat']],['Main 2',['PostCombatMain']],['End',['End','Cleanup']]];
@@ -612,7 +876,7 @@ const name=String(card.name);if(Math.max(...name.split(/\s+/).map(word=>word.len
   if(!track){track=doc.createElement('div');track.className='forge-phase-track';track.setAttribute('role','status');mat.append(track);}
   if(track.dataset.key===key)return;track.dataset.key=key;track.dataset.owner=owner;
   const step=PHASE_STEPS[at]?.[0]||'';track.setAttribute('aria-label',`${owner==='you'?'Your':'CPU'} turn ${surface.turn}${step?', '+step:''}`);
-  track.innerHTML=`<b>${owner==='you'?'You':'CPU'} · T${surface.turn}</b><ol>${PHASE_STEPS.map(([label],i)=>`<li${i===at?' data-now="true"':i<at?' data-done="true"':''} title="${label}"><i></i>${i===at?`<span>${label}</span>`:''}</li>`).join('')}</ol>`;
+  track.innerHTML=`<b><span class="forge-phase-who">${owner==='you'?'You':'CPU'} · </span>Turn ${surface.turn}</b><ol>${PHASE_STEPS.map(([label],i)=>`<li${i===at?' data-now="true"':i<at?' data-done="true"':''} title="${label}"><i></i>${i===at?`<span>${label}</span>`:''}</li>`).join('')}</ol>`;
  }
  const trackerSeen=new Map(),trackerOpen={deck:false,opponent:false},trackerIdentity=new Map();
  // The deck-list name of one physical card. Forge keeps a card's id when it transforms or becomes a
@@ -662,7 +926,23 @@ const name=String(card.name);if(Math.max(...name.split(/\s+/).map(word=>word.len
  }
  // One menu button: History & stack and the deck tracker live inside the match menu instead of
  // as their own round buttons; the menu button carries the stack count.
+ // History & stack tells the match in plain words (both sides) instead of the table's decision steps.
+ // Lines are kept by event number, so the story outlives the engine's short event window.
+ const story=new Map();
+ function tellStory(){
+  const list=root.querySelector('details[data-keep-open=game-progress]>ol');if(!presentation.hosted||!list)return;
+  const snap=session.snapshot();for(const line of storyLines(snap.native?.events?.items,snap.status?.surface))if(!story.has(line.seq))story.set(line.seq,line);
+  if(story.size>400)for(const k of [...story.keys()].slice(0,story.size-400))story.delete(k);
+  const rows=[...story.values()].slice(-40),key=rows.map(r=>r.seq).join(',');if(!rows.length||list.dataset.story===key)return;list.dataset.story=key;
+  list.replaceChildren(...rows.map(r=>{const li=doc.createElement('li');li.textContent=r.text;if(/^Turn \d/.test(r.text))li.dataset.turn='true';if(r.card!==undefined)li.dataset.card=String(r.card);return li;}));
+ }
+ // Smart or Full Control decides only where the game stops; auto-pay keeps the player's own setting
+ // (the engine resets it to the mode's default on a switch, so it is put back right after).
+ async function switchMode(mode){const keep=session.snapshot().native?.autoPay;await session.setControlMode(mode);
+  if(typeof keep==='boolean'&&typeof session.setAutoPay==='function'){const until=Date.now()+3000;while(Date.now()<until&&session.snapshot().native?.controlMode!==mode)await new Promise(r=>setTimeout(r,100));
+   const now=session.snapshot().native;if(now?.controlMode===mode&&typeof now.autoPay==='boolean'&&now.autoPay!==keep&&!now.prompt&&now.inputType!=='InputLockUI')await session.setAutoPay(keep);}}
  function foldMenu(){
+  tellStory();
   const menu=root.querySelector('.play-match-header>.play-match-menu');if(!presentation.hosted||!menu)return;
   let panel=menu.querySelector(':scope>.forge-menu-panel');
   if(!panel){panel=doc.createElement('div');panel.className='forge-menu-panel';for(const el of [...menu.children])if(el.tagName!=='SUMMARY')panel.append(el);menu.append(panel);}
@@ -688,7 +968,7 @@ const name=String(card.name);if(Math.max(...name.split(/\s+/).map(word=>word.len
  function renderCrests(surface,mat){
   if(!presentation.hosted||format!=='Commander'||!mat)return;
   const ledger=surface.commander?.commanders||[],tax=id=>{const t=ledger.find(e=>e.id===id)?.tax;return Number.isSafeInteger(t)&&t>0?t:0;};
-  for(const own of [true,false]){
+  for(const own of surface.players.length>2?[true]:[true,false]){
    const seat=own?'you':'cpu',tone=own?'you':'cpu',commanders=surface.cards.filter(c=>c.commander===true&&c.known&&(c.owner===surface.seat)===own);
    let zone=mat.querySelector(`:scope>.play-command-zone[data-seat=${seat}]:not(.forge-crest-away)`),away=mat.querySelector(`:scope>.forge-crest-away[data-seat=${seat}]`);
    if(zone){away?.remove();zone.classList.add('forge-crest');
@@ -733,19 +1013,42 @@ const name=String(card.name);if(Math.max(...name.split(/\s+/).map(word=>word.len
   const key=`${n.revision}:${top.id}:${n.stack.length}`;if(autoPassed===key)return;autoPassed=key;
   act(()=>session.nativeButton('ok',n.revision));
  }
+ // Arena puts a creature that must attack into the attack for you, so "N must attack" stays rare.
+ // Once per creature per turn: if Forge takes it back out, the tag and the disabled button explain why.
+ const mustDeclared=new Set();
+ function autoDeclareMust(s){
+  const n=s?.native,surface=s?.status?.surface;
+  if(!presentation.hosted||!n||!surface||s.busy||s.transportError||n.prompt||n.inputType!=='InputAttack')return;
+  const card=surface.cards.find(c=>c.zone==='Battlefield'&&c.controller===surface.seat&&owesAttack(c)&&c.attacking!==true&&!mustDeclared.has(`${n.turn}:${c.id}`));
+  if(!card)return;mustDeclared.add(`${n.turn}:${card.id}`);
+  act(()=>session.nativeSelect('card',card.id));
+ }
  // Smart also moves on when your main phase has nothing left to play, as Arena does:
  // after your last land or spell resolves, a short beat to see it land, then Next.
  // Any playable card, stack item, prompt or Full Control keeps the stop.
  let idleTimer=0,idleKey='';
  const idleReady=s=>{const n=s?.native;return !!(presentation.hosted&&n&&n.controlMode==='smart'&&!s.busy&&!s.transportError&&!n.prompt&&!n.failure&&(n.status==='running'||n.status===undefined)
    &&n.inputType==='InputPassPriority'&&n.priorityPlayer===n.viewer&&n.activePlayer===n.viewer&&['MAIN1','MAIN2'].includes(n.phase)&&!n.stack?.length&&!(n.selection?.actionable||[]).length&&n.buttons?.okEnabled===true&&!drag?.active&&!playback?.running);};
+ // Smart's last check, as on Arena: when Forge says you have nothing you could cast or activate right now
+ // (native.canRespond false), your priority passes on its own after a short beat to see what happened, unless
+ // you set a stop on this step. Without the flag nothing changes.
+ let noResponseKey='',noResponseTimer=0;
+ const noResponseReady=s=>{const n=s?.native;if(!(presentation.hosted&&n&&n.controlMode==='smart'&&n.canRespond===false&&!s.busy&&!s.transportError&&!n.prompt&&!n.failure&&(n.status==='running'||n.status===undefined)
+   &&n.inputType==='InputPassPriority'&&n.priorityPlayer===n.viewer&&n.buttons?.okEnabled===true&&!drag?.active&&!playback?.running&&!handFocus&&peek.dataset.open!=='true'))return false;
+  const stop=n.phaseStops?.[`${n.activePlayer===n.viewer?'you':'opponent'}:${n.phase}`];return stop!==true&&stop!==false;};
+ function autoPassNoResponse(s){
+  const n=s?.native,key=n?`${n.revision}`:'';
+  if(!noResponseReady(s)){clearTimeout(noResponseTimer);noResponseTimer=0;return;}
+  if(noResponseKey===key)return;noResponseKey=key;clearTimeout(noResponseTimer);
+  noResponseTimer=setTimeout(()=>{noResponseTimer=0;const now=session.snapshot();if(closed||!noResponseReady(now)||now.native.revision!==n.revision)return;act(()=>session.nativeButton('ok',n.revision));},reducedMotion()?300:700);
+ }
  function autoPassIdle(s){
   const n=s?.native,key=n?`${n.revision}:${n.phase}`:'';
   if(!idleReady(s)){clearTimeout(idleTimer);idleTimer=0;return;}
   if(idleKey===key)return;idleKey=key;clearTimeout(idleTimer);
   idleTimer=setTimeout(()=>{idleTimer=0;const now=session.snapshot();if(closed||!idleReady(now)||now.native.revision!==n.revision)return;act(()=>session.nativeButton('ok',n.revision));},reducedMotion()?250:900);
  }
- playback=new CpuActionPlaybackQueue({present:renderAccepted,beat:showPlaybackBeat,clear:clearPlaybackBeat,reducedMotion,speed:()=>cpuSpeed==='fast'?.45:1});
+ playback=new CpuActionPlaybackQueue({present:renderAccepted,beat:showPlaybackBeat,clear:clearPlaybackBeat,preload:preloadBeatArt,reducedMotion,speed:()=>cpuSpeed==='fast'?.5:1});
  // A tap skips held playback. Playback over a decision never holds the board, so a tap there
  // only clears the spotlight and goes on to whatever was tapped.
  const skipPlayback=e=>{if(!playback.running||e.button>0)return;if(playback.overlay){playback.stop();return;}suppressUntil=Date.now()+400;playback.flush();};
@@ -789,11 +1092,13 @@ const name=String(card.name);if(Math.max(...name.split(/\s+/).map(word=>word.len
   const lines=printedSame?[]:String(c.text||'').split(/\n+/).map(x=>x.trim()).filter(Boolean).filter(line=>!line.replace(/\([^)]*\)/g,'').trim().split(/,\s*|\s+and\s+/).every(part=>explained.has(keywordKey(part.replace(/\.$/,'')))));
   const rule=line=>symbolText(line).replace(/\(([^)]*)\)/g,'<i>($1)</i>');
   const image=art?.imageUrl?`<img src="${esc(art.imageUrl)}" alt="" referrerpolicy="no-referrer" decoding="async">`:'';
+  // Over the printed card its own power and toughness only repeat what it shows; a changed one still says so.
+  const showPT=creature&&c.power!==null&&c.power!==undefined&&(!image||String(c.power)!==String(face?.power)||String(c.toughness)!==String(face?.toughness));
   return `<figure class="forge-peek-card" data-art="${image?'image':'drawn'}">${image}</figure>
 <section class="forge-peek-info">
  <header><h3>${esc(c.name)}</h3>${c.manaCost?manaCost({mana_cost:c.manaCost}):''}</header>
  ${c.type?`<p class="forge-peek-type">${esc(c.type)}</p>`:''}
- ${creature&&c.power!==null&&c.power!==undefined||chips.length?`<div class="forge-peek-state">${creature&&c.power!==null&&c.power!==undefined?`<span class="forge-peek-pt">${stat(c.power,face.power)}<i>/</i>${stat(c.toughness,face.toughness)}</span>`:''}${chips.map(([k,t,icon])=>`<span class="forge-peek-chip" data-kind="${k}">${boardIcon(icon||chipIcon[k],'cs-icon forge-peek-icon')}${t}</span>`).join('')}</div>`:''}
+ ${showPT||chips.length?`<div class="forge-peek-state">${showPT?`<span class="forge-peek-pt">${stat(c.power,face.power)}<i>/</i>${stat(c.toughness,face.toughness)}</span>`:''}${chips.map(([k,t,icon])=>`<span class="forge-peek-chip" data-kind="${k}">${boardIcon(icon||chipIcon[k],'cs-icon forge-peek-icon')}${t}</span>`).join('')}</div>`:''}
  ${keywords.length?`<ul class="forge-peek-keywords">${keywords.map(k=>{const hint=keywordHint(k,reference);return `<li><b>${boardIcon(kwIcon.get(k),'cs-icon forge-peek-icon')}${symbolText(k.replace(/([a-z])([A-Z])/g,'$1 $2').replace(/:/g,' '))}</b>${hint?`<span>${symbolText(hint)}</span>`:''}</li>`;}).join('')}</ul>`:''}
  ${lines.length?`<div class="forge-peek-rules">${lines.map(l=>`<p>${rule(l)}</p>`).join('')}</div>`:''}
  ${c.commander?commanderFacts(c):''}
@@ -811,7 +1116,9 @@ const name=String(card.name);if(Math.max(...name.split(/\s+/).map(word=>word.len
   // A focused hand card is already the big card: show only the glass info beside it (the side with room,
   // else above it), never a second copy of the card on top of it.
   let x,y;
-  if(solo){const f=handFocusRect,w=peek.offsetWidth,h=peek.offsetHeight;
+  if(solo){const f=handFocusRect,room=Math.max(vw-f.right,f.left)-gap-8;
+   // Beside the card wherever 140px fit (narrowed to the room), so on phones it covers the hand, not the board.
+   peek.style.setProperty('--solo-max',`${Math.round(Math.min(260,Math.max(140,room)))}px`);const w=peek.offsetWidth,h=peek.offsetHeight;
    if(vw-f.right-gap-8>=w){x=f.right+gap;y=f.top;}
    else if(f.left-gap-8>=w){x=f.left-gap-w;y=f.top;}
    else{x=(f.left+f.right)/2-w/2;y=f.top-h-gap;if(y<8)y=Math.min(vh-h-8,f.bottom+gap);}
@@ -859,6 +1166,8 @@ const name=String(card.name);if(Math.max(...name.split(/\s+/).map(word=>word.len
   for(const el of root.querySelectorAll('.play-match-card[data-auto-tap]'))if(!(seen.get(Number(el.dataset.instance))>1))delete el.dataset.autoTap;
   for(const [id,count]of seen)if(count>1){const el=root.querySelector(`.play-match-card[data-instance="${id}"]`);if(el&&el.dataset.autoTap!=='true')el.dataset.autoTap='true';}
  }
+ // Cast it with auto-pay off for this one payment, so you tap the sources yourself.
+ function payByHand(id){act(async()=>{await session.setAutoPay(false);manualPay={seen:false,at:Date.now()};await session.nativeSelect('card',id);});}
  // The one spell cast with "Pick lands": once its payment has come and gone, auto-pay is restored.
  function restoreAutoPay(s){
   const n=s?.native;if(!manualPay||!n)return;
@@ -870,7 +1179,7 @@ const name=String(card.name);if(Math.max(...name.split(/\s+/).map(word=>word.len
  peek.addEventListener('click',e=>{if(!e.target.closest?.('[data-peek-play]')){hidePeek();return;}e.preventDefault();e.stopPropagation();const card=peekFor,s=session.snapshot();
   if(!card||card.dataset.forgeHint!=='true'||s.busy){hidePeek();return;}const id=Number(card.dataset.instance),manual=e.target.closest('[data-peek-play]').dataset.peekPlay==='manual';hidePeek();
   if(!manual){act(()=>session.nativeSelect('card',id));return;}
-  act(async()=>{await session.setAutoPay(false);manualPay={seen:false,at:Date.now()};await session.nativeSelect('card',id);});});
+  payByHand(id);});
  const peekCard=e=>{const card=e.target.closest?.('.play-match-card[data-instance]');return card&&root.contains(card)&&!card.closest('.forge-drag-ghost')?card:null;};
  const over=e=>{if(e.pointerType==='touch'||peekPinned)return;const card=peekCard(e);if(!card||e.pointerType==='mouse'&&presentation.hosted&&card.closest?.('.play-match-hand'))return;clearTimeout(peekTimer);peekTimer=setTimeout(()=>showPeek(card),peekFor?40:240);};
  const out=e=>{if(e.pointerType==='touch'||peekPinned)return;const card=peekCard(e);if(!card||card.contains(e.relatedTarget)||e.pointerType==='mouse'&&presentation.hosted&&card.closest?.('.play-match-hand'))return;clearTimeout(peekTimer);peekTimer=setTimeout(()=>{if(!peekPinned)hidePeek();},90);};
@@ -902,7 +1211,7 @@ const name=String(card.name);if(Math.max(...name.split(/\s+/).map(word=>word.len
   // A card listed in the Zones menu opens its preview here: the shared inspector stays hidden on this table.
   const listed=presentation.hosted&&e.target.closest?.('button[data-focus-key^="zone-card-"],button[data-focus-key^="revealed-card-"]');
   if(listed&&root.contains(listed)){e.preventDefault();e.stopImmediatePropagation();listed.dataset.instance=listed.dataset.focusKey.replace(/^\D+/,'');pinned===listed?hidePeek():showPeek(listed,true);return;}
-  const card=e.target.closest?.('.play-match-card[data-instance]');if(card&&root.contains(card)){e.preventDefault();e.stopImmediatePropagation();const snapshot=session.snapshot(),cardId=Number(card.dataset.instance);if(previewOnly(card,snapshot,(e.pointerType||lastPointerType)==='touch')){pinned===card?hidePeek():showPeek(card,true);}else if(!snapshot.busy){card.classList.remove('forge-pressed');void card.offsetWidth;card.classList.add('forge-pressed');setTimeout(()=>card.classList.remove('forge-pressed'),420);act(()=>session.nativeSelect('card',cardId));}return;}
+  const card=e.target.closest?.('.play-match-card[data-instance]');if(card&&root.contains(card)){e.preventDefault();e.stopImmediatePropagation();const snapshot=session.snapshot(),cardId=Number(card.dataset.instance);if(previewOnly(card,snapshot,(e.pointerType||lastPointerType)==='touch')){pinned===card?hidePeek():showPeek(card,true);}else if(!snapshot.busy){card.classList.remove('forge-pressed');void card.offsetWidth;card.classList.add('forge-pressed');setTimeout(()=>card.classList.remove('forge-pressed'),420);const go=()=>act(()=>session.nativeSelect('card',cardId)),plan=card.closest('.play-match-hand')&&tapPlan(cardId),warn=plan?.warning;if(warn)confirmCostly(warn,e.clientX,e.clientY,go,plan.amount,plan.lands,()=>payByHand(cardId));else go();}return;}
   // A button inside the seat (Smart, Full Control, Auto-pay, the zone counts) is its own control, never a pick
   // of that player; and on the hosted table a seat is picked only while Forge offers players.
   const player=e.target.closest?.('[data-player-seat]'),inner=player&&e.target.closest?.('button,a,input,select,summary,[role=button]:not([data-player-seat])');
@@ -938,20 +1247,27 @@ const name=String(card.name);if(Math.max(...name.split(/\s+/).map(word=>word.len
   const s=session.snapshot(),n=s.native,surface=s.status?.surface;if(!n||n.prompt||!surface)return null;
   const card=surface.cards.find(c=>c.id===cardId);
   if(!card?.known||card.zone!=='Battlefield'||card.controller!==surface.seat||!card.types?.includes('Creature'))return null;
-  const opponent=surface.players.find(p=>p.seat!==surface.seat);if(!opponent)return null;
-  if(n.inputType==='InputBlock'&&!card.attacking){const attackers=surface.cards.filter(c=>c.zone==='Battlefield'&&c.attacking&&c.controller===opponent.seat);return attackers.length?{mode:'block',targets:attackers.map(a=>({kind:'card',id:a.id}))}:null;}
-  if(n.inputType==='InputAttack')return {mode:'attack',targets:[{kind:'player',seat:opponent.seat,nativeId:opponent.nativeId},...surface.cards.filter(c=>c.zone==='Battlefield'&&c.controller===opponent.seat&&/\b(Planeswalker|Battle)\b/.test(c.type||'')).map(c=>({kind:'card',id:c.id}))]};
+  // In a Commander pod every opponent still in the game can be attacked, on its seat or its chip.
+  const opponents=surface.players.filter(p=>p.seat!==surface.seat&&!p.lost),theirs=new Set(opponents.map(p=>p.seat));if(!opponents.length)return null;
+  if(n.inputType==='InputBlock'&&!card.attacking){const attackers=surface.cards.filter(c=>c.zone==='Battlefield'&&c.attacking&&c.controller!==surface.seat);return attackers.length?{mode:'block',targets:attackers.map(a=>({kind:'card',id:a.id}))}:null;}
+  if(n.inputType==='InputAttack')return {mode:'attack',targets:[...opponents.map(p=>({kind:'player',seat:p.seat,nativeId:p.nativeId})),...surface.cards.filter(c=>c.zone==='Battlefield'&&theirs.has(c.controller)&&/\b(Planeswalker|Battle)\b/.test(c.type||'')).map(c=>({kind:'card',id:c.id}))]};
   return null;
  }
- const dropElement=t=>t.kind==='player'?root.querySelector(`.play-match-seat[data-player-seat="${t.seat}"]`):root.querySelector(`.play-match-card[data-instance="${t.id}"]`);
+ const dropElement=t=>t.kind==='player'?seatEl(t.seat):root.querySelector(`.play-match-card[data-instance="${t.id}"]`);
+ const dropElements=t=>t.kind==='player'?[...root.querySelectorAll(`.play-match-seat[data-player-seat="${t.seat}"],.play-pod-chip[data-player-seat="${t.seat}"]`)]:[dropElement(t)].filter(Boolean);
  // Re-applied after every redraw, so a board update during a drag keeps the lit targets.
  function markDrops(){
   for(const el of root.querySelectorAll('[data-forge-drop]'))el.removeAttribute('data-forge-drop');
   if(!drag?.active||!drag.combat){delete root.dataset.forgeDragMode;return;}
   root.dataset.forgeDragMode=drag.combat.mode;
-  for(const t of drag.combat.targets){const el=dropElement(t);if(el)el.dataset.forgeDrop=drag.over===t?'over':'true';}
+  for(const t of drag.combat.targets)for(const el of dropElements(t))el.dataset.forgeDrop=drag.over===t?'over':'true';
  }
- const dropTargetAt=(x,y)=>{if(!drag?.combat)return null;const hit=doc.elementFromPoint(x,y);if(!hit)return null;return drag.combat.targets.find(t=>{const el=dropElement(t);return el&&(el===hit||el.contains(hit)||(el.closest('.play-match-card-wrap')||el).contains(hit));})||null;};
+ // A target counts a little past its edges (more for small, tapped or crowded cards), so a drop just outside
+ // an attacker still lands; the nearest one wins.
+ const DROP_SLACK=22;
+ const dropTargetAt=(x,y)=>{if(!drag?.combat)return null;const hit=doc.elementFromPoint(x,y);
+  const direct=hit&&drag.combat.targets.find(t=>dropElements(t).some(el=>el===hit||el.contains(hit)||(el.closest('.play-match-card-wrap')||el).contains(hit)));if(direct)return direct;
+  let best=null,bestD=Infinity;for(const t of drag.combat.targets)for(const el of dropElements(t)){const r=el.getBoundingClientRect();if(!r?.width)continue;const dx=Math.max(r.left-x,0,x-r.right),dy=Math.max(r.top-y,0,y-r.bottom),d=Math.hypot(dx,dy);if(d<=DROP_SLACK&&d<bestD){best=t;bestD=d;}}return best;};
  // Waits until the table is ready for the next click of a two-click pairing.
  const settled=(ms=4000)=>new Promise(resolve=>{let off=null,timer=0;const done=ok=>{clearTimeout(timer);off?.();resolve(ok);};const check=s=>{if(!s.busy&&!playbackBusy)done(true);};off=authority.subscribe(check);timer=setTimeout(()=>done(false),ms);});
  async function dropCombat(plan,cardId,target){
@@ -968,18 +1284,64 @@ const name=String(card.name);if(Math.max(...name.split(/\s+/).map(word=>word.len
   if(!await settled())return;
   const now=session.snapshot();if(now.native?.lastActionError||now.native?.inputType!==input||now.native?.prompt||!now.status?.surface.cards.some(c=>c.id===cardId))return;
   await session.nativeSelect('card',cardId);
+  // A block that did not take says so, instead of leaving you to guess.
+  if(plan.mode==='block'&&await settled()){const after=session.snapshot(),me=after.status?.surface.cards.find(c=>c.id===cardId);if(after.native?.inputType==='InputBlock'&&!after.native?.prompt&&me&&!me.blockingIds?.includes(target.id)){localError=`Block not assigned. Try again.`;panelKey='';enhance();}}
  }
+ // Tapping a block line (or its x) takes that block back: Forge drops a blocker that is clicked again
+ // while its attacker is the one in focus.
+ async function unblock(blockerId,attackerId){
+  const s=session.snapshot();if(s.native?.inputType!=='InputBlock'||s.native?.prompt)return;
+  await session.nativeSelect('card',attackerId);if(!await settled())return;
+  const now=session.snapshot();if(now.native?.inputType!=='InputBlock'||now.native?.prompt||now.native?.lastActionError)return;
+  await session.nativeSelect('card',blockerId);
+ }
+ const unblockTap=e=>{const hit=e.target.closest?.('[data-blocker][data-attacker]');if(!hit)return;e.preventDefault();e.stopPropagation();haptic('tap');act(()=>unblock(Number(hit.dataset.blocker),Number(hit.dataset.attacker)));};
+ arrows.addEventListener('click',unblockTap);
  // Arena's lift: a playable card from your hand glows blue in the hand and turns gold once
  // it is high enough to play; the lane it will settle in lights up softly under it.
  const laneFor=card=>{const c=surfaceCard(card);if(!c?.known)return '';return c.types?.includes('Creature')?'creatures':c.types?.includes('Land')?'lands':c.types?.some(t=>['Artifact','Enchantment','Planeswalker','Battle'].includes(t))?'other':'';};
  // One rule for the gold "ready" lift and for the release that plays: over the battlefield, or anywhere
  // above your hand that is not the decision dock. Dropping on the dock or back on the hand cancels.
- const playDropAt=(x,y)=>{const hit=doc.elementFromPoint(x,y),handTop=root.querySelector('.play-match-hand-area')?.getBoundingClientRect().top;if(hit?.closest('.play-match-decisions,.forge-native-panel,.play-match-hand-area'))return false;return !!hit?.closest('[data-placement-zone=battlefield]')||handTop!==undefined&&y<handTop;};
+ // Arena's auto-tap preview: while you carry a card, the lands Forge's auto-pay would tap for it lift and glow
+ // (selection.actionable[].tapPreview). A payment that costs life or sacrifices a Treasure (tapWarning) asks
+ // once more, in orange, before it goes. Without those fields nothing changes.
+ // The planned sources that pay by being sacrificed (a Treasure, an Eldrazi Spawn or Scion, a Food that makes mana).
+ // What a payment sacrifices, named as the player sees it: a self-sacrificing source by its name (Treasure, Eldrazi
+ // Spawn), a source that eats another permanent as "Food (Gilded Goose)". Only mana abilities count.
+ const sacrificeNames=ids=>{const cards=session.snapshot().status?.surface?.cards||[];return (ids||[]).map(id=>cards.find(c=>c.id===id)).filter(c=>c?.known).flatMap(c=>{
+  const m=/sacrifice ([^:,.]+?)\s*:[^.]*\badd\b/i.exec(c.text||'');if(!m)return /^treasure$/i.test(c.name)?[c.name]:[];
+  const what=m[1].trim(),self=/^(this|it|~)\b/i.test(what)||what.toLowerCase()===c.name.toLowerCase();if(self)return [c.name];
+  const other=/^(?:an?|another)\s+(.+)$/i.exec(what);return [`${other?other[1].replace(/\b\w/,x=>x.toUpperCase()):what} (${c.name})`];});};
+ const listNames=names=>{const counts=new Map();for(const x of names)counts.set(x,(counts.get(x)||0)+1);const parts=[...counts].map(([x,k])=>k>1?`${k} ${x}s`:x);return parts.length>1?`${parts.slice(0,-1).join(', ')} and ${parts.at(-1)}`:parts[0];};
+ const tapPlan=id=>{const row=(session.snapshot().native?.selection?.actionable||[]).find(r=>r?.kind==='card'&&Number(r.id)===Number(id));if(!row)return null;
+  return {lands:Array.isArray(row.tapPreview)?row.tapPreview.map(Number).filter(Number.isSafeInteger):null,warning:row.tapWarning==='life'||row.tapWarning==='sacrifice'?row.tapWarning:null,amount:Number(row.tapWarningAmount)};};
+ function markTapPreview(ids){const want=new Set(ids||[]);for(const el of root.querySelectorAll('[data-forge-tap-preview]'))if(!want.has(Number(el.dataset.instance)))el.removeAttribute('data-forge-tap-preview');
+  for(const id of want){const el=root.querySelector(`.play-match-battlefields .play-match-card[data-instance="${id}"]`);if(el&&!el.hasAttribute('data-forge-tap-preview'))el.setAttribute('data-forge-tap-preview','true');}}
+ function confirmCostly(kind,x,y,go,amount,lands=null,manual=null){
+  root.querySelector(':scope>.forge-pay-warn')?.remove();const box=doc.createElement('div');box.className='forge-pay-warn';box.setAttribute('role','alertdialog');
+  // Name what auto-pay would sacrifice (an Eldrazi Spawn is not a Treasure), and offer to pay with lands instead.
+  const text=doc.createElement('p');const n=Number.isFinite(amount)&&amount>0?amount:0,names=kind==='sacrifice'?sacrificeNames(lands):[],what=names.length?listNames(names):n>1?`${n} permanents`:'a permanent';
+  text.textContent=kind==='life'?(n?`Auto-pay costs ${n} life.`:'Auto-pay will cost you life.'):`Auto-pay sacrifices ${what}.`;
+  const yes=doc.createElement('button');yes.type='button';yes.className='forge-pay-warn-go';yes.textContent=kind==='life'?(n?`Pay ${n} life`:'Pay life'):'Sacrifice';
+  const no=doc.createElement('button');no.type='button';no.textContent='Cancel';box.append(text,no);
+  const pick=manual&&typeof session.setAutoPay==='function'&&session.snapshot().native?.autoPay===true?doc.createElement('button'):null;
+  if(pick){pick.type='button';pick.className='forge-pay-warn-go';pick.textContent='Pick lands';pick.addEventListener('click',()=>{close();haptic('tap');manual();});box.append(pick);yes.className='';}
+  box.append(yes);root.append(box);
+  const b=box.getBoundingClientRect();box.style.left=`${Math.round(Math.max(8,Math.min(win.innerWidth-8-b.width,x-b.width/2)))}px`;box.style.top=`${Math.round(Math.max(8,Math.min(win.innerHeight-8-b.height,y-b.height-16)))}px`;
+  const close=()=>{box.remove();doc.removeEventListener('pointerdown',away,true);},away=e=>{if(!box.contains(e.target))close();};
+  yes.addEventListener('click',()=>{close();haptic('tap');go();});no.addEventListener('click',close);doc.addEventListener('pointerdown',away,true);(pick||yes).focus();
+ }
+ // A card from your hand plays once it is carried past the glowing line a little above the hand, over the
+ // table; never over a control, a portrait, the stack strip or the hand itself. Elsewhere it floats back.
+ const PLAY_LINE=28,playLineY=()=>{const t=parseFloat(root.style.getPropertyValue('--forge-hand-top'));return Number.isFinite(t)?t-PLAY_LINE:(root.querySelector('.play-match-hand-area')?.getBoundingClientRect().top??win.innerHeight*.6)-PLAY_LINE;};
+ const playDropAt=(x,y)=>{const hit=doc.elementFromPoint(x,y);if(hit?.closest('.play-match-decisions,.forge-native-panel,.play-match-hand-area,.forge-hand-slider,.play-match-seat,.play-command-zone,.forge-zone-row,.forge-menu-panel,.forge-native-actions,button:not(.play-match-card),summary'))return false;return y<playLineY()&&!!hit?.closest('.play-match-table');};
  function markPlayDrop(e){
   if(!ghost||!drag?.active||drag.combat)return;
   const fromHand=!!drag.source.closest('.play-match-hand'),playable=drag.source.dataset.forgeRole==='playable';
   const ready=presentation.hosted&&fromHand&&playable&&playDropAt(e.clientX,e.clientY);
-  const state=ready?'ready':fromHand&&playable?'lift':'';if((ghost.dataset.drop||'')!==state){if(state==='ready')haptic('tick');ghost.dataset.drop=state;}
+  const state=ready?'ready':fromHand&&playable?'lift':'';markTapPreview(state?tapPlan(drag.id)?.lands:null);
+  if(presentation.hosted){let line=root.querySelector(':scope>.forge-play-line');if(state&&!line){line=doc.createElement('div');line.className='forge-play-line';line.setAttribute('aria-hidden','true');root.append(line);}
+   if(line){line.style.top=`${Math.round(playLineY())}px`;if(state)root.dataset.playLine=state;else delete root.dataset.playLine;}}if((ghost.dataset.drop||'')!==state){if(state==='ready')haptic('tick');ghost.dataset.drop=state;}
   const lane=ready?laneFor(drag.source):'';
   for(const el of root.querySelectorAll('[data-forge-lane-drop]'))if(el.dataset.cardGroup!==lane||!el.closest('[data-placement-zone=battlefield]'))el.removeAttribute('data-forge-lane-drop');
   const groups=root.querySelector('[data-placement-zone=battlefield] .play-match-zone-groups');
@@ -989,21 +1351,87 @@ const name=String(card.name);if(Math.max(...name.split(/\s+/).map(word=>word.len
  // The lifted card trails the finger a touch (eased each frame) and leans into the motion.
  const followGhost=()=>{ghostFrame=0;if(!ghost||!drag?.active)return;const g=drag.g;g.x+=(g.tx-g.x)*.62;g.y+=(g.ty-g.y)*.62;g.tilt+=(Math.max(-14,Math.min(14,(g.tx-g.x)*.5))-g.tilt)*.3;ghost.style.translate=`${g.x.toFixed(1)}px ${g.y.toFixed(1)}px`;ghost.style.setProperty('--tilt',`${g.tilt.toFixed(2)}deg`);if(Math.abs(g.tx-g.x)+Math.abs(g.ty-g.y)+Math.abs(g.tilt)>.3)ghostFrame=win.requestAnimationFrame(followGhost);};
  // A drop that plays nothing floats the card back to its slot instead of vanishing.
- const returnGhost=(el,source)=>{const r=source?.isConnected&&source.getBoundingClientRect();if(!r||typeof el.animate!=='function'||win.matchMedia?.('(prefers-reduced-motion: reduce)').matches){el.remove();return;}const [x,y]=(el.style.translate||'0px 0px').split(' ').map(parseFloat);const a=el.animate([{translate:`${x}px ${y}px`,scale:1},{translate:`${r.left+r.width/2}px ${r.top+r.height/2}px`,scale:.9,opacity:.6}],{duration:220,easing:'cubic-bezier(.3,.7,.2,1)'});a.onfinish=a.oncancel=()=>el.remove();};
- const cancel=(back=false)=>{if(ghostFrame)win.cancelAnimationFrame(ghostFrame);ghostFrame=0;drag?.source?.classList.remove('forge-drag-source');if(ghost){if(back)returnGhost(ghost,drag?.source);else ghost.remove();}drag=null;ghost=null;root.classList.remove('forge-dragging');for(const el of root.querySelectorAll('[data-forge-lane-drop]'))el.removeAttribute('data-forge-lane-drop');markDrops();};
- const down=e=>{lastPointerType=e.pointerType||'mouse';if(e.button!==0||e.isPrimary===false)return;const card=e.target.closest?.('.play-match-card[data-instance]'),s=session.snapshot();
+ const returnGhost=(el,source,home)=>{const r=home?{left:home.ox,top:home.oy,width:0,height:0}:source?.isConnected&&source.getBoundingClientRect();if(!r||typeof el.animate!=='function'||win.matchMedia?.('(prefers-reduced-motion: reduce)').matches){el.remove();return;}const [x,y]=(el.style.translate||'0px 0px').split(' ').map(parseFloat);const a=el.animate([{translate:`${x}px ${y}px`,scale:1},{translate:`${r.left+r.width/2}px ${r.top+r.height/2}px`,scale:.9,opacity:.6}],{duration:220,easing:'cubic-bezier(.3,.7,.2,1)'});a.onfinish=a.oncancel=()=>el.remove();};
+ // The dropped card stays where your finger let it go (cancel() leaves a held ghost alone) until the next
+ // accepted board says where it went: onto the battlefield it snaps into its slot from here (land() reads
+ // lastDrop, refreshed from this ghost just before the redraw); still in your hand (refused, or waiting
+ // there dimmed while it is cast) it floats back to it. If Forge says nothing within DROP_HOLD it floats back too.
+ function holdDrop(pending){if(reducedMotion())return;dropHeld(true);const g=ghost;ghost=null;g.dataset.held='true';heldDrop={ghost:g,id:pending.id,revision:session.snapshot().status?.revision,gone:pending.gone,timer:setTimeout(()=>dropHeld(true),DROP_HOLD)};}
+ function dropHeld(force=false){
+  const h=heldDrop;if(!h)return;const s=session.snapshot(),c=s.status?.surface.cards.find(x=>x.id===h.id);
+  if(!force&&c?.zone==='Hand'&&!c.inTransit&&(s.busy||s.status?.revision===h.revision)&&!s.native?.lastActionError)return;
+  heldDrop=null;clearTimeout(h.timer);const el=cardEl(h.id),fade=()=>{const a=h.ghost.animate?.([{opacity:1},{opacity:0,scale:1.12}],{duration:180,easing:'ease-out',fill:'forwards'});if(a)a.onfinish=a.oncancel=()=>h.ghost.remove();else h.ghost.remove();};
+  if(force&&!c)return h.ghost.remove();
+  if(c?.zone==='Battlefield'&&el&&!el.closest('.play-match-hand'))return h.ghost.remove();
+  // Anything else starts from the hand when it does arrive (a spell waits there, dimmed, while it is cast).
+  lastDrop=null;if(c?.zone==='Hand'&&el){if(h.gone?.isConnected)delete h.gone.dataset.handGone;return returnGhost(h.ghost,el);}
+  fade();
+ }
+ const cancel=(back=false)=>{if(ghostFrame)win.cancelAnimationFrame(ghostFrame);ghostFrame=0;drag?.source?.classList.remove('forge-drag-source');
+  // A card that goes back reopens its slot; a played one keeps it shut until the hand redraws (or the play doesn't land).
+  const gone=drag?.gone,reopen=()=>{if(gone?.isConnected)delete gone.dataset.handGone;};if(gone){if(back)reopen();else setTimeout(reopen,1500);}
+  if(ghost){if(back)returnGhost(ghost,gone?null:drag?.source,gone?drag.g:null);else ghost.remove();}drag=null;ghost=null;root.classList.remove('forge-dragging');delete root.dataset.playLine;markTapPreview(null);for(const el of root.querySelectorAll('[data-forge-lane-drop]'))el.removeAttribute('data-forge-lane-drop');markDrops();};
+ const down=e=>{lastPointerType=e.pointerType||'mouse';
+  // Two fingers, like a physical table: while one thumb holds a card open to read it, another can drag a card.
+  const second=e.isPrimary===false;if(e.button!==0||second&&!(pressAt&&pressAt.id!==e.pointerId&&!drag?.active))return;const card=e.target.closest?.('.play-match-card[data-instance]'),s=session.snapshot();
+  if(second){if(!card||s.busy||s.native?.prompt||s.native?.inputType==='InputConfirmMulligan'||s.status?.terminal)return;drag={id:Number(card.dataset.instance),revision:s.status.revision,pointerId:e.pointerId,x:e.clientX,y:e.clientY,source:card,active:false,intent:'',ax:e.clientX,ay:e.clientY,second:true};return;}
+  // In your hand a still hold reads the card under your thumb (it follows as you slide); elsewhere it reads the card you pressed.
+  if(card&&e.pointerType!=='mouse'&&presentation.hosted&&card.closest('.play-match-hand')){clearTimeout(pressTimer);pressAt={x:e.clientX,y:e.clientY,id:e.pointerId};pressShown=false;pressTimer=setTimeout(()=>{if(drag?.active||drag?.intent==='browse')return;const c=handFocus?.querySelector('.play-match-card[data-instance]')||card;if(!c.isConnected)return;showPeek(c,true);pressShown=true;haptic('tick');suppressUntil=Date.now()+60000;},HAND_HOLD);}
   if(card&&e.pointerType!=='mouse'&&!(presentation.hosted&&card.closest('.play-match-hand'))){clearTimeout(pressTimer);pressAt={x:e.clientX,y:e.clientY,id:e.pointerId};pressShown=false;pressTimer=setTimeout(()=>{if(drag?.active)return;showPeek(card,true);pressShown=true;suppressUntil=Date.now()+60000;},420);}
- if(!card||s.busy||s.native?.prompt||s.native?.inputType==='InputConfirmMulligan'||s.status?.terminal)return;drag={id:Number(card.dataset.instance),revision:s.status.revision,pointerId:e.pointerId,x:e.clientX,y:e.clientY,source:card,active:false};};
+ if(!card||s.busy||s.native?.prompt||s.native?.inputType==='InputConfirmMulligan'||s.status?.terminal)return;drag={id:Number(card.dataset.instance),revision:s.status.revision,pointerId:e.pointerId,x:e.clientX,y:e.clientY,source:card,active:false,intent:'',ax:e.clientX,ay:e.clientY};};
+ // A thumb on your hand stays undecided until its movement shows what it means, as on Arena: sideways
+ // browses the whole hand (even when it started on a card), a clear upward stroke picks up the card under
+ // the thumb to play, and holding still reads it. Once browsing, only a fresh, steep upward stroke of
+ // HAND_PLAY px plays, so the arc of a sliding thumb never grabs a card. Playable cards grab no sooner.
+ const HAND_HOLD=380,HAND_SIDE=10,HAND_UP=22,HAND_PLAY=40;
+ function handIntent(e){
+  const c=drag.second?null:handFocus?.querySelector('.play-match-card[data-instance]');if(c&&c!==drag.source){drag.source=c;drag.id=Number(c.dataset.instance);}
+  const dx=e.clientX-drag.ax,up=drag.ay-e.clientY;
+  if(!drag.intent){if(Math.abs(dx)>=HAND_SIDE&&Math.abs(dx)>up*1.2)drag.intent='browse';else if(up>=HAND_UP&&up>Math.abs(dx)*1.4)drag.intent='play';}
+  else if(drag.intent==='browse'){
+   // Sideways travel and any downward drift move the anchor along, so only a new upward stroke counts.
+   if(e.clientY>drag.ay||Math.abs(dx)>Math.max(up,0)*1.6){drag.ax=e.clientX;drag.ay=Math.max(drag.ay,e.clientY);}
+   else if(up>=HAND_PLAY&&up>Math.abs(dx)*1.6)drag.intent='play';}
+  if(drag.intent!=='play')return false;
+  drag.x=drag.ax;drag.y=drag.ay;return true;
+ }
+ // Arena on touch: run your thumb sideways across your creatures while declaring attackers and each one you
+ // pass joins the attack (or leaves it, if the first one was already attacking). Up or down still drags a
+ // single creature to a target. Forge takes the clicks one at a time, in order.
+ let swipeChain=Promise.resolve();
+ function attackSwipe(e){
+  if(e.pointerType==='mouse'||drag.active||drag.source.closest('.play-match-hand'))return false;
+  const s=session.snapshot(),surface=s.status?.surface;if(s.native?.inputType!=='InputAttack'||s.native?.prompt||!surface)return false;
+  const mineReady=el=>{const c=el&&surface.cards.find(x=>x.id===Number(el.dataset.instance));return c&&c.zone==='Battlefield'&&c.controller===surface.seat?c:null;};
+  if(!drag.swipe){const dx=e.clientX-drag.x,dy=e.clientY-drag.y,first=mineReady(drag.source);if(!first||Math.abs(dx)<16||Math.abs(dx)<Math.abs(dy)*1.5)return false;
+   drag.swipe={add:first.attacking!==true,seen:new Set()};clearTimeout(pressTimer);pressAt=null;pressShown=false;if(peekPinned)hidePeek();take(drag.source);}
+  take(doc.elementFromPoint(e.clientX,e.clientY)?.closest?.('.play-match-battlefields .play-match-card[data-instance]'));return true;
+  function take(el){const c=mineReady(el);if(!c||drag.swipe.seen.has(c.id))return;drag.swipe.seen.add(c.id);
+   if(drag.swipe.add?c.attacking===true||el.dataset.forgeRole!=='choice':c.attacking!==true)return;
+   el.setAttribute('data-forge-swiped','true');haptic('tick');
+   swipeChain=swipeChain.then(async()=>{const now=session.snapshot();if(now.native?.inputType!=='InputAttack'||now.native?.prompt)return;await session.nativeSelect('card',c.id);await settled();}).catch(fail);}
+ }
+ // A thumb wobbles: on touch a hold survives TOUCH_SLOP px of drift before it counts as a drag.
+ const TOUCH_SLOP=14;
  // Drift cancels a press only before its preview opens; after that the press is kept so
  // its release or cancel still ends the 60 s click guard.
- const move=e=>{if(pressAt?.id===e.pointerId&&!pressShown&&Math.hypot(e.clientX-pressAt.x,e.clientY-pressAt.y)>8){clearTimeout(pressTimer);pressAt=null;}
-  if(!drag||drag.pointerId!==e.pointerId)return;if(peekFor&&drag.active)hidePeek();if(drag.revision!==session.snapshot().status?.revision&&!session.snapshot().status?.surface.cards.some(c=>c.id===drag.id)){cancel();return;}if(!drag.active&&e.pointerType!=='mouse'&&drag.source.closest('.play-match-hand')){const area=root.querySelector('.play-match-hand-area')?.getBoundingClientRect();
-   if(e.clientY>drag.y)drag.y=e.clientY;if(drag.y-e.clientY<26&&!(area&&e.clientY<area.top-4)){const c=handFocus?.querySelector('.play-match-card[data-instance]');if(c&&c!==drag.source){drag.source=c;drag.id=Number(c.dataset.instance);}drag.x=e.clientX;return;}drag.x=e.clientX;}
-  if(!drag.active&&Math.hypot(e.clientX-drag.x,e.clientY-drag.y)>(pressShown&&pressAt?.id===e.pointerId?14:8)){drag.active=true;drag.combat=combatDrops(drag.id);haptic('tick');}if(!drag.active)return;if(e.cancelable)e.preventDefault();if(!ghost){ghost=drag.source.cloneNode(true);ghost.removeAttribute('data-instance');ghost.classList.add('forge-drag-ghost');ghost.setAttribute('aria-hidden','true');ghost.setAttribute('inert','');const sr=drag.source.getBoundingClientRect();ghost.style.width=Math.min(sr.width,drag.source.offsetWidth||sr.width)+'px';ghost.style.left='0px';ghost.style.top='0px';drag.g={x:sr.left+sr.width/2,y:sr.top+sr.height/2,tx:e.clientX,ty:e.clientY,tilt:0};ghost.style.translate=`${drag.g.x}px ${drag.g.y}px`;root.append(ghost);drag.source.classList.add('forge-drag-source');root.classList.add('forge-dragging');}drag.g.tx=e.clientX;drag.g.ty=e.clientY;if(!ghostFrame)ghostFrame=win.requestAnimationFrame(followGhost);markPlayDrop(e);if(drag.combat){const over=dropTargetAt(e.clientX,e.clientY);if(over!==drag.over||!root.querySelector('[data-forge-drop]')){if(over&&over!==drag.over)haptic('tick');drag.over=over;markDrops();}}};
+ const move=e=>{if(root.dataset.forgeInput==='InputSelectTargets'&&presentation.hosted&&(e.pointerType==='mouse'||e.buttons)){aim={x:e.clientX,y:e.clientY};queueArrows();}else if(aim&&root.dataset.forgeInput!=='InputSelectTargets'){aim=null;queueArrows();}
+  if(pressAt?.id===e.pointerId&&!pressShown&&Math.hypot(e.clientX-pressAt.x,e.clientY-pressAt.y)>(e.pointerType==='mouse'?8:TOUCH_SLOP)){clearTimeout(pressTimer);pressAt=null;}
+  if(!drag||drag.pointerId!==e.pointerId)return;if(attackSwipe(e)){if(e.cancelable)e.preventDefault();return;}if(peekFor&&drag.active&&!(drag.second&&pressShown))hidePeek();if(drag.revision!==session.snapshot().status?.revision&&!session.snapshot().status?.surface.cards.some(c=>c.id===drag.id)){cancel();return;}if(!drag.active&&e.pointerType!=='mouse'&&drag.source.closest('.play-match-hand')&&!handIntent(e))return;
+  if(!drag.active&&Math.hypot(e.clientX-drag.x,e.clientY-drag.y)>(pressShown&&pressAt?.id===e.pointerId?18:e.pointerType==='mouse'?8:TOUCH_SLOP+2)){drag.active=true;drag.combat=combatDrops(drag.id);haptic('tick');}if(!drag.active)return;if(e.cancelable)e.preventDefault();if(!ghost){ghost=drag.source.cloneNode(true);ghost.removeAttribute('data-instance');ghost.classList.add('forge-drag-ghost');ghost.setAttribute('aria-hidden','true');ghost.setAttribute('inert','');const sr=drag.source.getBoundingClientRect();ghost.style.width=Math.min(sr.width,drag.source.offsetWidth||sr.width)+'px';ghost.style.left='0px';ghost.style.top='0px';drag.g={x:sr.left+sr.width/2,y:sr.top+sr.height/2,ox:sr.left+sr.width/2,oy:sr.top+sr.height/2,tx:e.clientX,ty:e.clientY,tilt:0};drag.rubber=presentation.hosted&&!!drag.source.closest('.play-match-hand')&&!drag.combat&&drag.source.dataset.forgeRole!=='playable';if(drag.rubber)ghost.classList.add('forge-rubber');ghost.style.translate=`${drag.g.x}px ${drag.g.y}px`;root.append(ghost);drag.source.classList.add('forge-drag-source');root.classList.add('forge-dragging');
+   // An attacker or blocker rides above the finger (below it at the top edge), so the player or creature under it stays in view.
+   drag.lift=drag.combat?Math.round((ghost.offsetHeight||60)/2+(e.pointerType==='mouse'?14:36)):0;
+   // Like Arena, a card dragged out of the hand leaves no hole: its slot closes and the fan slides together.
+   {const w=!drag.rubber&&!drag.second&&drag.source.closest('.play-match-hand .play-match-card-wrap');if(w){w.style.setProperty('--gone-w',`${w.offsetWidth}px`);focusHand(null);w.dataset.handGone='true';drag.gone=w;}}}{const t=e.timeStamp||Date.now(),dt=Math.max(1,t-(drag.vt||t-16));drag.vy=.6*(drag.vy||0)+.4*((drag.vly??e.clientY)-e.clientY)/dt;drag.vt=t;drag.vly=e.clientY;}
+  // A card you can't play now stretches a little toward your finger and springs back: it never leaves the hand.
+  if(drag.rubber){const dx=e.clientX-drag.x,dy=e.clientY-drag.y,d=Math.hypot(dx,dy)||1,reach=44*(1-Math.exp(-d/110));drag.g.tx=drag.g.ox+dx/d*reach;drag.g.ty=drag.g.oy+dy/d*reach;if(!drag.rubberSaid){drag.rubberSaid=true;haptic('tick');}}
+  else{drag.g.tx=e.clientX;drag.g.ty=drag.lift&&e.clientY-drag.lift<drag.lift?e.clientY+drag.lift+8:e.clientY-(drag.lift||0);}if(!ghostFrame)ghostFrame=win.requestAnimationFrame(followGhost);if(!drag.rubber)markPlayDrop(e);if(drag.combat){const over=dropTargetAt(e.clientX,e.clientY);if(over!==drag.over||!root.querySelector('[data-forge-drop]')){if(over&&over!==drag.over)haptic('tick');drag.over=over;markDrops();}}};
  // Like Arena, a card dragged out of your hand plays when released anywhere above
  // the hand; Forge decides where it goes. Other drags keep their drop targets.
  const up=e=>{if(pressAt?.id===e.pointerId){clearTimeout(pressTimer);pressAt=null;if(pressShown){pressShown=false;if(peekPinned)hidePeek();suppressUntil=Date.now()+350;}}
-  if(!drag||drag.pointerId!==e.pointerId)return;const pending=drag,target=doc.elementFromPoint(e.clientX,e.clientY)?.closest('[data-placement-zone=battlefield],.forge-native-panel'),handTop=root.querySelector('.play-match-hand-area')?.getBoundingClientRect().top,fromHand=!!pending.source.closest('.play-match-hand'),overHand=!!doc.elementFromPoint(e.clientX,e.clientY)?.closest('.play-match-hand-area'),aboveHand=presentation.hosted&&fromHand&&handTop!==undefined&&e.clientY<handTop&&!overHand;if(pending.active)suppressUntil=Date.now()+300;const combatTarget=pending.active?dropTargetAt(e.clientX,e.clientY):null;const plays=pending.active&&!combatTarget&&(presentation.hosted&&fromHand?pending.source.dataset.forgeRole==='playable'&&playDropAt(e.clientX,e.clientY):target&&root.contains(target)||aboveHand);if(plays&&ghost)lastDrop={instance:String(pending.id),rect:ghost.getBoundingClientRect(),at:Date.now()};cancel(pending.active&&!plays&&!combatTarget);if(plays||combatTarget)haptic('tap');if(combatTarget){act(()=>dropCombat(pending.combat,pending.id,combatTarget));return;}if(plays){const now=session.snapshot().status?.revision;act(()=>session.nativeSelect('card',pending.id,now===pending.revision||session.snapshot().status?.surface.cards.some(c=>c.id===pending.id)?now:pending.revision));}};
+  if(!drag||drag.pointerId!==e.pointerId)return;if(drag.swipe){suppressUntil=Date.now()+350;for(const el of root.querySelectorAll('[data-forge-swiped]'))el.removeAttribute('data-forge-swiped');cancel();return;}const pending=drag,target=doc.elementFromPoint(e.clientX,e.clientY)?.closest('[data-placement-zone=battlefield],.forge-native-panel'),handTop=root.querySelector('.play-match-hand-area')?.getBoundingClientRect().top,fromHand=!!pending.source.closest('.play-match-hand'),overHand=!!doc.elementFromPoint(e.clientX,e.clientY)?.closest('.play-match-hand-area'),aboveHand=presentation.hosted&&fromHand&&handTop!==undefined&&e.clientY<handTop&&!overHand;if(pending.active)suppressUntil=Date.now()+300;const combatTarget=pending.active?dropTargetAt(e.clientX,e.clientY):null;// A quick upward flick plays a playable card even when it is let go short of the play line.
+  const flick=presentation.hosted&&fromHand&&pending.active&&!pending.rubber&&(pending.vy||0)>.55&&pending.y-e.clientY>=36;
+  const plays=pending.active&&!combatTarget&&(presentation.hosted&&fromHand?pending.source.dataset.forgeRole==='playable'&&(playDropAt(e.clientX,e.clientY)||flick):target&&root.contains(target)||aboveHand);if(plays&&ghost){lastDrop={instance:String(pending.id),rect:ghost.getBoundingClientRect(),at:Date.now()};holdDrop(pending);}cancel(pending.active&&!plays&&!combatTarget);if(plays||combatTarget)haptic('tap');if(combatTarget){act(()=>dropCombat(pending.combat,pending.id,combatTarget));return;}if(plays){const now=session.snapshot().status?.revision,go=()=>act(()=>session.nativeSelect('card',pending.id,now===pending.revision||session.snapshot().status?.surface.cards.some(c=>c.id===pending.id)?now:pending.revision));const plan=tapPlan(pending.id),warn=plan?.warning;if(warn)confirmCostly(warn,e.clientX,e.clientY,go,plan.amount,plan.lands,()=>payByHand(pending.id));else go();}};
  // A press that the browser takes over (a scroll, a system gesture) ends the preview and its click guard.
  // A long press's 60 s click guard ends with that press even when a redraw, scroll or
  // resize already closed its preview; otherwise the table would ignore taps for a minute.
@@ -1013,7 +1441,7 @@ const name=String(card.name);if(Math.max(...name.split(/\s+/).map(word=>word.len
  const mainKey=e=>{if(e.key!==' '&&e.key!=='Enter'||e.repeat||e.altKey||e.ctrlKey||e.metaKey||e.shiftKey||!presentation.hosted||root.dataset.stage!=='match'||drag?.active)return false;
   if(!e.target?.closest?.('.play-match-card')&&e.target?.closest?.('input,textarea,select,button,a[href],summary,dialog,[contenteditable],[role=button],[role=dialog],[tabindex]:not([tabindex="-1"])')||doc.querySelector('dialog[open]'))return false;
   const ok=root.querySelector('.play-match-decisions [data-native-key=ok]');if(!ok||ok.disabled||!ok.getClientRects().length)return false;e.preventDefault();ok.click();return true;};
- const key=e=>{if(mainKey(e))return;if(e.key==='Escape')cancel();const seat=e.target.closest?.('[data-player-seat][role=button]');if(seat&&seat===e.target&&root.contains(seat)&&(e.key==='Enter'||e.key===' ')){e.preventDefault();const p=session.snapshot().status?.surface.players.find(p=>p.seat===Number(seat.dataset.playerSeat));if(p)act(()=>session.nativeSelect('player',p.nativeId));}};
+ const key=e=>{if(mainKey(e))return;if(e.key==='Escape')cancel();const seat=e.target.closest?.('[data-player-seat][role=button]');if(seat&&seat===e.target&&root.contains(seat)&&(e.key==='Enter'||e.key===' ')&&(!seat.classList.contains('play-pod-chip')||playerOffered(seat))){e.preventDefault();const p=session.snapshot().status?.surface.players.find(p=>p.seat===Number(seat.dataset.playerSeat));if(p)act(()=>session.nativeSelect('player',p.nativeId));}};
  // Arena's hand: it rests low, tucked above your profile strip, and rises into full view while
  // a thumb is on it or the mouse is over it, then settles back once you let go. The rise is just
  // enough to clear the strip and the screen edge, measured each time, so nothing else moves; on a
@@ -1021,7 +1449,14 @@ const name=String(card.name);if(Math.max(...name.split(/\s+/).map(word=>word.len
  // pops clear on its own).
  // The card under your thumb rises out of the fan; sliding sideways moves through the hand by x alone,
  // so a thumb drifting up or down never skips cards.
- const focusHand=wrap=>{if(wrap===handFocus)return;handFocus=wrap||null;handFocusId=handFocus?.querySelector('.play-match-card[data-instance]')?.dataset.instance??null;layoutHand();if(handFocus)haptic('tick');};
+ const focusHand=wrap=>{if(wrap===handFocus)return;handFocus=wrap||null;handFocusId=handFocus?.querySelector('.play-match-card[data-instance]')?.dataset.instance??null;layoutHand();if(handFocus)haptic('tick');
+  const slider=root.querySelector(':scope>.forge-hand-slider');if(slider){const wraps=[...root.querySelectorAll('.play-match-hand .play-match-card-wrap')],i=wraps.indexOf(handFocus);slider.dataset.active=String(i>=0);if(i>=0)slider.style.setProperty('--pos',(i/Math.max(1,wraps.length-1)).toFixed(3));}};
+ // A big hand also gets a slim slider above it on touch screens: sliding along it walks the whole hand
+ // card by card, a steadier backup to browsing on the fan itself. It never plays a card.
+ function slideHand(e){if(e.pointerType==='mouse'||e.button||e.isPrimary===false)return;e.preventDefault();e.stopPropagation();const slider=e.currentTarget,id=e.pointerId;lastPointerType=e.pointerType;slider.setPointerCapture?.(id);clearTimeout(handLiftTimer);setHandLift(true);
+  const to=ev=>{const r=slider.getBoundingClientRect(),wraps=[...root.querySelectorAll('.play-match-hand .play-match-card-wrap')];if(!wraps.length)return;const t=Math.max(0,Math.min(1,(ev.clientX-r.left-18)/Math.max(1,r.width-36)));focusHand(wraps[Math.round(t*(wraps.length-1))]);};
+  const move=ev=>{if(ev.pointerId===id)to(ev);},end=ev=>{if(ev.pointerId!==id)return;slider.removeEventListener('pointermove',move);slider.removeEventListener('pointerup',end);slider.removeEventListener('pointercancel',end);suppressUntil=Math.max(suppressUntil,Date.now()+300);dropHandLift(1600);};
+  slider.addEventListener('pointermove',move);slider.addEventListener('pointerup',end);slider.addEventListener('pointercancel',end);to(e);}
  const handWrapAt=x=>{const g=handGeometry();if(!g)return null;const xl=(x-g.ox)/g.K+g.ox-g.box.left;let hit=g.wraps[0];for(const w of g.wraps)if(g.local(w).x<=xl)hit=w;return hit;};
 
  // Arena's hand fan. The focused card pops to about 1.5x (bigger when cards are small, so its text reads),
@@ -1034,6 +1469,26 @@ const name=String(card.name);if(Math.max(...name.split(/\s+/).map(word=>word.len
   const lifted=root.dataset.handLift==='true',K=lifted?Number(root.style.getPropertyValue('--hand-scale'))||1:1,R=lifted?Number(root.style.getPropertyValue('--hand-raise').replace('px',''))||0:0,ox=box.left+box.w/2,oy=box.top+box.h;
   const local=el=>{let x=0,y=0,n=el;while(n&&n!==area){x+=n.offsetLeft;y+=n.offsetTop;n=n.offsetParent;}return {x,y,w:el.offsetWidth,h:el.offsetHeight};};
   const sx=xl=>ox+(box.left+xl-ox)*K,sy=yl=>oy-R+(box.top+yl-oy)*K;return {area,wraps,box,K,R,ox,oy,local,sx,sy};}
+ // On a portrait screen (a phone, or a Fold opened up) a big hand squeezes its fan to sit inside the 16px gutters instead of running off the edge;
+ // "View full hand" shows every card at full size.
+ function fitHandFan(hand){
+  for(const w of hand)w.style.removeProperty('margin-left');
+  if(hand.length<2||root.dataset.handExpanded==='true'||win.innerWidth>win.innerHeight*.9)return;
+  const rect=w=>(w.querySelector('.play-match-card')||w).getBoundingClientRect(),a=rect(hand[0]),b=rect(hand[hand.length-1]),over=b.right-a.left-(win.innerWidth-32);
+  if(over<=0)return;const step=over/(hand.length-1);
+  hand.slice(1).forEach(w=>w.style.setProperty('margin-left',`${(parseFloat(getComputedStyle(w).marginLeft)||0)-step}px`));
+ }
+ // The hand slider has its own strip above the fan, at least 8px clear of the highest card, sharing it with
+ // "View full hand" on the right; it spans the fan itself, not the whole screen. Measured at rest; a lifted
+ // hand carries it up by the same amount (CSS).
+ function placeHandSlider(hand){const slider=root.querySelector(':scope>.forge-hand-slider');if(!slider||!hand.length||root.dataset.handLift==='true')return;
+  const rects=hand.map(w=>(w.querySelector('.play-match-card')||w).getBoundingClientRect()),pill=root.querySelector('.forge-hand-expand')?.getBoundingClientRect(),cardTop=Math.min(...rects.map(r=>r.top));
+  const l=Math.max(16,Math.min(...rects.map(r=>r.left))),r=Math.min(win.innerWidth-16,Math.max(...rects.map(r=>r.right)),pill?.width?pill.left-8:Infinity),top=Math.min(pill?.height?pill.top+pill.height/2-22:Infinity,cardTop-8-44);
+  // A turn dock that reaches down beside the hand (a tall touch screen) ends the slider at its left edge.
+  const dock=root.querySelector('.play-match-decisions:not(:has(.forge-order-cards,.forge-zone-search))')?.getBoundingClientRect(),end=dock?.height&&dock.top<top+44&&dock.bottom>top&&dock.left>l?Math.min(r,dock.left-8):r;
+  // A hand squeezed too narrow for a slider beside its expand pill drops the slider; the pill opens the whole hand.
+  slider.style.display=end-l<120?'none':'';
+  slider.style.left=`${Math.round(l)}px`;slider.style.width=`${Math.round(Math.max(120,end-l))}px`;slider.style.right='auto';slider.style.top=`${Math.round(top)}px`;}
  function layoutHand(){const g=handGeometry();if(!g)return;const fi=g.wraps.indexOf(handFocus);
   for(const w of g.wraps){if(w!==handFocus)w.removeAttribute('data-hand-focus');}
   if(fi<0){delete root.dataset.handFocused;handFocusRect=null;}else root.dataset.handFocused='true';
@@ -1043,7 +1498,9 @@ const name=String(card.name);if(Math.max(...name.split(/\s+/).map(word=>word.len
   // A playable card already sits a few pixels up inside its slot; count that so the popped card's top
   // edge (its name) stays on screen. Short screens keep it nearer 1.5x.
   const lift=-Math.min(0,parseFloat(String(getComputedStyle(handFocus.querySelector('.play-match-card')||handFocus).translate).split(' ')[1])||0),top=12;
-  let k=Math.max(1,Math.min(H<500||W<600&&H>W?2:3,Math.max(1.5,230/(f.w*K)),(bottom-top)/((f.h+lift)*K),(W-12)/(f.w*K))),half=f.w*K*k/2,dx=Math.max(6+half-cx,Math.min(0,W-6-half-cx));
+  // While you pick targets or pay a cost the board must stay visible, so the pop is small then.
+  const picking=(()=>{const i=String(session.snapshot().native?.inputType||'');return i==='InputSelectTargets'||i.startsWith('InputPayMana');})();
+  let k=Math.max(1,Math.min(picking?1.2:H<500||W<600&&H>W?2:3,Math.max(1.5,230/(f.w*K)),(bottom-top)/((f.h+lift)*K),(W-12)/(f.w*K))),half=f.w*K*k/2,dx=Math.max(6+half-cx,Math.min(0,W-6-half-cx));
   let fk=k,fx=dx/K,fy=(bottom-restBottom)/K;
   // Then check against the real box: try the target with transitions off, measure the card, pull it back
   // inside 8px of every edge (shrinking it if it can't fit), and let it animate from where it was.
@@ -1062,7 +1519,10 @@ const name=String(card.name);if(Math.max(...name.split(/\s+/).map(word=>word.len
    let room=1;idx.forEach((i,j)=>{if(!sh[j])return;const edge=side>0?W-6-g.sx(L[i].x+L[i].w):g.sx(L[i].x)-6;room=Math.min(room,Math.max(0,edge)/sh[j]);});
    idx.forEach((i,j)=>{const v=side*sh[j]*room/K;if(Math.abs(v)<.5)g.wraps[i].style.removeProperty('--shove');else g.wraps[i].style.setProperty('--shove',`${v.toFixed(1)}px`);for(const p of ['--focus-k','--focus-x','--focus-y'])g.wraps[i].style.removeProperty(p);});}}
  // The table redraws its hand on every update; the focused card keeps its place across redraws.
- function refocusHand(){if(handFocusId===null){handFocus=null;return;}const card=root.querySelector(`.play-match-hand .play-match-card[data-instance="${CSS.escape(String(handFocusId))}"]`);handFocus=card?.closest('.play-match-card-wrap')||null;if(!handFocus)handFocusId=null;layoutHand();}
+ // After a redraw the hand's cards are new nodes: the card you were on is popped again at once, and its
+ // neighbours stand aside at once, so an update elsewhere in the game never shrinks and regrows it.
+ function refocusHand(){if(handFocusId===null){handFocus=null;return;}const card=root.querySelector(`.play-match-hand .play-match-card[data-instance="${CSS.escape(String(handFocusId))}"]`);handFocus=card?.closest('.play-match-card-wrap')||null;if(!handFocus)handFocusId=null;layoutHand();
+  const wraps=[...root.querySelectorAll('.play-match-hand .play-match-card-wrap')];for(const w of wraps)w.style.transition='none';void root.offsetWidth;for(const w of wraps)w.style.removeProperty('transition');}
  // Scale the risen hand up a touch, but never past the screen edges.
  const handScale=()=>{const area=root.querySelector('.play-match-hand-area'),wraps=[...root.querySelectorAll('.play-match-hand .play-match-card-wrap')];if(!area||!wraps.length)return 1;const a=area.getBoundingClientRect(),cx=a.left+a.width/2,k=Number(root.style.getPropertyValue('--hand-scale'))||1,cur=root.dataset.handLift==='true'?k:1;
   const left=(cx-Math.min(...wraps.map(w=>w.getBoundingClientRect().left)))/cur,right=(Math.max(...wraps.map(w=>w.getBoundingClientRect().right))-cx)/cur;return Math.max(1,Math.min(1.1,(cx-6)/Math.max(left,1),(win.innerWidth-6-cx)/Math.max(right,1)));};
@@ -1074,7 +1534,9 @@ const name=String(card.name);if(Math.max(...name.split(/\s+/).map(word=>word.len
   if(on){const r=handRaise(),k=handScale();if(r<4&&k<1.02)return;root.style.setProperty('--hand-raise',`${r}px`);root.style.setProperty('--hand-scale',k.toFixed(3));root.dataset.handLift='true';layoutHand();}else{delete root.dataset.handLift;focusHand(null);}};
  // A preview opened from the hand keeps it up until the preview closes.
  const dropHandLift=(ms=260)=>{clearTimeout(handLiftTimer);handLiftTimer=setTimeout(()=>{if(!drag?.active&&!(peek.dataset.open==='true'&&peekFor?.closest?.('.play-match-hand')))setHandLift(false);},ms);};
- const handDown=e=>{if(e.pointerType==='mouse'||e.isPrimary===false||!e.target.closest?.('.play-match-hand-area'))return;lastPointerType=e.pointerType;handPointer=e.pointerId;handSifted=false;handDownAt={x:e.clientX,y:e.clientY};focusHand(handWrapAt(e.clientX));setHandLift(true);};
+ const handDown=e=>{if(e.pointerType==='mouse'||e.isPrimary===false)return;
+  // A tap on the table (not a control, the preview or the hand slider) tucks the hand away.
+  if(!e.target.closest?.('.play-match-hand-area')){if(root.dataset.handLift==='true'&&!e.target.closest?.('.forge-peek,.forge-hand-slider,button,summary,.play-match-decisions')){if(peekFor?.closest?.('.play-match-hand'))hidePeek();setHandLift(false);}return;}lastPointerType=e.pointerType;if(peekPinned&&peekFor?.closest?.('.play-match-hand'))hidePeek();handPointer=e.pointerId;handSifted=false;handDownAt={x:e.clientX,y:e.clientY};focusHand(handWrapAt(e.clientX));setHandLift(true);};
  // Once a card is carried up out of the hand, the hand settles so the whole board shows; bringing
  // it back down over the hand raises it again. The gap between the two lines keeps it from flickering.
  const handSift=e=>{if(drag?.active&&drag.pointerId===e.pointerId&&drag.source.closest?.('.play-match-hand')){const a=root.querySelector('.play-match-hand-area')?.getBoundingClientRect();if(!a)return;const lifted=root.dataset.handLift==='true';
@@ -1083,7 +1545,7 @@ const name=String(card.name);if(Math.max(...name.split(/\s+/).map(word=>word.len
  // A tap belongs to the card that rose under the thumb. The rise moves cards under the finger, so the
  // browser's own click would land on whatever slid there; it is swallowed and the focused card is clicked.
  const handUp=e=>{if(e.pointerType==='mouse'||e.pointerId!==handPointer)return;handPointer=null;const played=!!drag?.active;if(handSifted&&!played)suppressUntil=Math.max(suppressUntil,Date.now()+300);
-  const tap=!played&&!handSifted&&!!handDownAt&&Math.hypot(e.clientX-handDownAt.x,e.clientY-handDownAt.y)<12&&handFocus?.querySelector('.play-match-card[data-instance]');handDownAt=null;
+  const tap=e.type!=='pointercancel'&&!played&&!handSifted&&!!handDownAt&&Math.hypot(e.clientX-handDownAt.x,e.clientY-handDownAt.y)<12&&handFocus?.querySelector('.play-match-card[data-instance]');handDownAt=null;
   if(tap){handTap=tap;win.setTimeout(()=>{if(handTap===tap){handTap=null;if(tap.isConnected)tap.click();}},0);}
   else if(played||!(pressShown||peek.dataset.open==='true'))focusHand(null);if(root.dataset.handLift==='true')dropHandLift(played?90:1600);};
  const swallowTapClick=e=>{if(!handTap||!e.isTrusted)return;e.preventDefault();e.stopImmediatePropagation();};
@@ -1091,7 +1553,47 @@ const name=String(card.name);if(Math.max(...name.split(/\s+/).map(word=>word.len
   const f=handFocus?.getBoundingClientRect(),onFocus=!!f&&e.clientX>=f.left&&e.clientX<=f.right&&e.clientY>=f.top&&e.clientY<=f.bottom;
   const inside=root.contains(e.target)&&(onFocus||e.clientX>=a.left&&e.clientX<=a.right&&e.clientY>=a.top-(lifted?8:0));
   if(inside){clearTimeout(handLiftTimer);if(!lifted)handLiftTimer=setTimeout(()=>setHandLift(true),90);focusHand(handWrapAt(e.clientX));if(presentation.hosted&&!peekPinned){const c=handFocus?.querySelector('.play-match-card[data-instance]');if(c&&c!==peekFor){clearTimeout(peekTimer);peekTimer=setTimeout(()=>{if(c.isConnected&&handFocus?.contains(c)&&!drag?.active)showPeek(c);},peek.dataset.open==='true'?40:320);}}}else{if(presentation.hosted&&!peekPinned&&peekFor?.closest?.('.play-match-hand')){clearTimeout(peekTimer);hidePeek();}focusHand(null);if(lifted)dropHandLift(180);else clearTimeout(handLiftTimer);}};
+  // A gesture cut short (the app goes to the background, the screen rotates or unfolds) lets go of everything.
+ const dropGesture=()=>{if(handPointer===null&&!drag&&!pressAt)return;handPointer=null;handDownAt=null;clearTimeout(pressTimer);pressAt=null;pressShown=false;if(peekPinned)hidePeek();suppressUntil=Date.now()+350;cancel(!!drag?.active);focusHand(null);setHandLift(false);};
+ const dropOnHide=()=>{if(doc.hidden)dropGesture();};
+ doc.addEventListener('visibilitychange',dropOnHide);win.addEventListener('orientationchange',dropGesture);let gestureW=win.innerWidth;const dropOnFold=()=>{if(win.innerWidth===gestureW)return;gestureW=win.innerWidth;dropGesture();};win.addEventListener('resize',dropOnFold);
  doc.addEventListener('click',swallowTapClick,true);root.addEventListener('pointerdown',handDown,true);doc.addEventListener('pointerup',handUp,true);doc.addEventListener('pointercancel',handUp,true);doc.addEventListener('pointermove',handHover,{passive:true});doc.addEventListener('pointermove',handSift,{passive:true});root.addEventListener('pointerleave',e=>{if(e.pointerType==='mouse')dropHandLift(180);});
  root.addEventListener('click',click,true);root.addEventListener('pointerdown',down);doc.addEventListener('pointermove',move,{passive:false});doc.addEventListener('pointerup',up);doc.addEventListener('pointercancel',pressCancel);doc.addEventListener('keydown',key);win.addEventListener('blur',cancel);
- return {destroy(){closed=true;tableAudio.destroy();emotes?.destroy();clearTimeout(handLiftTimer);doc.removeEventListener('pointerup',handUp,true);doc.removeEventListener('click',swallowTapClick,true);doc.removeEventListener('pointermove',handSift);doc.removeEventListener('pointercancel',handUp,true);doc.removeEventListener('pointermove',handHover);clearTimeout(idleTimer);delete root.dataset.lowPower;delete root.dataset.csStriking;playback.destroy();motion.destroy();activity.remove();root.removeEventListener('pointerdown',skipPlayback,true);doc.removeEventListener('pointerdown',closeZones,true);root.removeEventListener('click',trackerClick,true);root.removeEventListener('toggle',zonesToggled,true);doc.body.removeAttribute('data-forge-search');dockObserver?.disconnect();unsub();observer.disconnect();cancel();hidePeek();clearTimeout(pressTimer);if(arrowFrame)win.cancelAnimationFrame(arrowFrame);if(loopFrame)win.cancelAnimationFrame(loopFrame);win.removeEventListener('resize',queueArrows);if(railFrame)win.cancelAnimationFrame(railFrame);win.removeEventListener('resize',queueRails);peek.remove();castShow.remove();arrows.remove();fx.remove();root.removeEventListener('pointerover',over);root.removeEventListener('pointerout',out);root.removeEventListener('contextmenu',contextMenu,true);root.removeEventListener('keydown',peekKeys,true);win.removeEventListener('resize',reflow);root.removeEventListener('scroll',reflow,true);table.destroy();root.removeEventListener('input',saveInput);root.removeEventListener('change',saveInput);root.removeEventListener('click',click,true);root.removeEventListener('pointerdown',down);doc.removeEventListener('pointermove',move);doc.removeEventListener('pointerup',up);doc.removeEventListener('pointercancel',pressCancel);doc.removeEventListener('keydown',key);win.removeEventListener('blur',cancel);}};
+ // Arena's rope: your decision clock runs quietly; after ROPE_IDLE with no touch or key, a gold fuse appears over
+ // Next and burns down for ROPE_RUN (red, counting, in its last 10 s). When it runs out it only ever passes priority:
+ // attacks and blocks are never committed for you. The clock holds while you read a card, drag one, or the app is
+ // in the background, and any touch, click or key starts it over.
+ const ROPE_IDLE=45000,ROPE_RUN=20000,rope=doc.createElement('div');rope.className='forge-rope';rope.hidden=true;rope.setAttribute('aria-hidden','true');rope.innerHTML='<i></i><b></b><s></s>';root.append(rope);
+ let ropeKey='',ropeSince=Date.now();const ropeReset=()=>{ropeSince=Date.now();};
+ // Arena's timeouts: a small bank of extensions. When the fuse runs out with one banked, it is spent and the
+ // fuse starts over instead of passing. You start with one and earn another (up to three) for every eight
+ // decisions made before the fuse appears.
+ const ROPE_BANK_MAX=3,ROPE_EARN=8;let ropeBank=1,ropeQuick=0,ropeShown=false;
+ const ropeLoop=presentation.hosted?win.setInterval(()=>{
+  const s=session.snapshot(),n=s.native,ok=root.querySelector('.forge-native-panel [data-native-key=ok]');
+  const timed=root.dataset.stage==='match'&&!s.busy&&!s.status?.terminal&&n?.inputType==='InputPassPriority'&&!n?.prompt&&!!ok&&!ok.disabled;
+  if(doc.hidden||drag?.active||handFocus||peek.dataset.open==='true'||root.querySelector('.play-match-zones-menu[open]'))ropeReset();
+  if(s.status?.terminal){ropeBank=1;ropeQuick=0;}
+  const key=timed?`${n.revision}|${n.inputType}`:'';if(key!==ropeKey){if(ropeKey&&!ropeShown&&++ropeQuick>=ROPE_EARN){ropeQuick=0;ropeBank=Math.min(ROPE_BANK_MAX,ropeBank+1);}if(ropeShown)ropeQuick=0;ropeShown=false;ropeKey=key;ropeReset();}
+  const left=timed?ROPE_IDLE+ROPE_RUN-(Date.now()-ropeSince):Infinity;
+  if(!timed||left>ROPE_RUN){if(!rope.hidden){rope.hidden=true;delete rope.dataset.hot;}delete root.dataset.ropeOn;return;}
+  if(left<=0&&ropeBank>0){ropeBank--;ropeSince=Date.now()-ROPE_IDLE;rope.dataset.spent='true';setTimeout(()=>delete rope.dataset.spent,1200);haptic('tap');return;}
+  if(left<=0){rope.hidden=true;delete root.dataset.ropeOn;ropeReset();ok.click();return;}
+  ropeShown=true;{const bank=rope.querySelector('s'),label=ropeBank?'⌛'.repeat(ropeBank):'';if(bank.textContent!==label){bank.textContent=label;bank.setAttribute('aria-label',`${ropeBank} timeouts left`);}}
+  if(root.dataset.ropeOn!=='true')root.dataset.ropeOn='true';const r=ok.getBoundingClientRect(),secs=Math.ceil(left/1000);rope.hidden=false;rope.style.left=`${Math.round(r.left)}px`;rope.style.top=`${Math.round(r.top-10)}px`;rope.style.width=`${Math.round(r.width)}px`;
+  rope.style.setProperty('--burn',(left/ROPE_RUN).toFixed(3));rope.dataset.hot=String(secs<=10);const b=rope.querySelector('b');if(secs<=10&&b.textContent!==String(secs)){b.textContent=String(secs);if(secs<=5)haptic('tick');}else if(secs>10)b.textContent='';
+ },200):0;
+ doc.addEventListener('pointerdown',ropeReset,true);doc.addEventListener('keydown',ropeReset,true);doc.addEventListener('visibilitychange',ropeReset);
+ // The engine's last word is the result alone, with no final board, so the lethal blow is drawn here from the
+ // last board shown: its attackers swing at what they were attacking (or their blocker) before the result lands.
+ // Returns how long to hold the result back, letting any strike already in the air finish too.
+ function finale(){
+  if(closed)return 0;const sf=session.snapshot().status?.surface;let ms=Math.max(0,strikeEnd-Date.now());
+  if(!sf||reducedMotion)return ms;
+  const blockerOf=new Map();for(const c of sf.cards)for(const id of c.blockingIds||[])if(!blockerOf.has(id))blockerOf.set(id,c.id);
+  let struck=0;for(const c of sf.cards.filter(c=>c.zone==='Battlefield'&&c.attacking).slice(0,8)){const el=cardEl(c.id);if(!el)continue;
+   const seat=seatEl(defenderOf(sf.players,c)),blocked=blockerOf.has(c.id)?cardEl(blockerOf.get(c.id)):null,to=blocked||(c.attackTarget?.kind==='card'?cardEl(c.attackTarget.id):seat);if(!to)continue;
+   ms=Math.max(ms,strike(el,to,{face:!blocked&&to===seat,delay:struck++*MOTION.stagger,big:(c.power||0)>=5,power:c.power||0}));}
+  return struck?Math.max(ms,strikeEnd-Date.now())+250:ms;}
+ return {finale,destroy(){closed=true;if(heldDrop){clearTimeout(heldDrop.timer);heldDrop.ghost.remove();heldDrop=null;}boardSizes?.disconnect();doc.removeEventListener('visibilitychange',dropOnHide);win.removeEventListener('orientationchange',dropGesture);win.removeEventListener('resize',dropOnFold);win.clearInterval(ropeLoop);rope.remove();doc.removeEventListener('pointerdown',ropeReset,true);doc.removeEventListener('keydown',ropeReset,true);doc.removeEventListener('visibilitychange',ropeReset);tableAudio.destroy();emotes?.destroy();clearTimeout(handLiftTimer);doc.removeEventListener('pointerup',handUp,true);doc.removeEventListener('click',swallowTapClick,true);doc.removeEventListener('pointermove',handSift);doc.removeEventListener('pointercancel',handUp,true);doc.removeEventListener('pointermove',handHover);clearTimeout(idleTimer);clearTimeout(noResponseTimer);delete root.dataset.lowPower;delete root.dataset.csStriking;playback.destroy();motion.destroy();activity.remove();root.removeEventListener('pointerdown',skipPlayback,true);doc.removeEventListener('pointerdown',closeZones,true);root.removeEventListener('click',trackerClick,true);root.removeEventListener('toggle',zonesToggled,true);doc.body.removeAttribute('data-forge-search');dockObserver?.disconnect();unsub();observer.disconnect();cancel();hidePeek();clearTimeout(pressTimer);if(arrowFrame)win.cancelAnimationFrame(arrowFrame);if(loopFrame)win.cancelAnimationFrame(loopFrame);win.removeEventListener('resize',queueArrows);if(railFrame)win.cancelAnimationFrame(railFrame);win.removeEventListener('resize',queueRails);peek.remove();ownCast.remove();doc.body.querySelector(':scope>.forge-ask-line')?.remove();doc.body.style.removeProperty('--forge-hand-top');castShow.remove();arrows.remove();fx.remove();root.removeEventListener('pointerover',over);root.removeEventListener('pointerout',out);root.removeEventListener('contextmenu',contextMenu,true);root.removeEventListener('keydown',peekKeys,true);win.removeEventListener('resize',reflow);root.removeEventListener('scroll',reflow,true);table.destroy();root.removeEventListener('input',saveInput);root.removeEventListener('change',saveInput);root.removeEventListener('click',click,true);root.removeEventListener('pointerdown',down);doc.removeEventListener('pointermove',move);doc.removeEventListener('pointerup',up);doc.removeEventListener('pointercancel',pressCancel);doc.removeEventListener('keydown',key);win.removeEventListener('blur',cancel);}};
 }

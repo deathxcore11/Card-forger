@@ -129,7 +129,11 @@ export function slim(c) {
 }
 
 export function cacheCard(c, aliases = []) {
-  const copy = slim({ ...c, checkedAt: new Date().toISOString() });
+  // A price refresh must not drop the condition quotes (NM/LP… prices) already learned for this
+  // printing, or saved copies fall back to estimates until they're fetched again.
+  const prev = S.catalog[cardKey(c.name)],
+    kept = c.id && !c.conditionQuotes && prev?.id === c.id && prev.conditionQuotes?.length ? { conditionQuotes: prev.conditionQuotes } : {};
+  const copy = slim({ ...c, ...kept, checkedAt: new Date().toISOString() });
   if (c.id) recordCardPrice("mtg", c);
   S.catalog[cardKey(c.name)] = copy;
   for (const a of aliases) S.catalog[cardKey(a)] = copy;

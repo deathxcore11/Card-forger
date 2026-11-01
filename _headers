@@ -7,3 +7,11 @@
 # This week's Forge rules data for the engine inside the Android app (it checks once per launch).
 /forge-rules/*
   Cache-Control: public, max-age=3600
+
+# Planeswalk painted characters (atlas, mask and drop sheets); versioned by content, cached a week.
+/planeswalk-cast/*
+  Cache-Control: public, max-age=604800
+
+# Planeswalk fight mats (the painted grounds the characters stand on); versioned by content, cached a week.
+/planeswalk-art/*
+  Cache-Control: public, max-age=604800

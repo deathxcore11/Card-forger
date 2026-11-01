@@ -19,6 +19,7 @@ import {forgeDeckSupport,forgeCpuDeckComplete} from './play-forge-setup-review.j
 import {parsePlayDeckImport} from './play-deck-import.js';
 import {playMenuMarkup} from './play-menu.js';
 import {setPlaymatChoice,mountPlaymatScene,nextPlaymat,unmountPlaymatScene} from './play-playmats.js';
+import {lockPlayLandscape,releasePlayOrientation} from './play-orientation.js';
 import {createPracticeOpponentBuilder} from './play-opponent-build.js';
 import {createPlayerMat} from './play-player-mat.js';
 import {createPlayUpdateGate} from './play-update-gate.js';
@@ -49,6 +50,7 @@ import {createAccountWorkspaces} from './account-workspaces.js';
 import {mountFeedback} from './feedback-layer.js';
 import {playSourceEntries,createPlayDeckSaver} from './play-deck-sources.js';
 import {chooseQuickOpponent} from './play-quick-match.js';
+import {loadEngineCardNames,engineUnknownCards} from './play-engine-names.js';
 import {readCpuOptions} from './play-cpu-options.js';
 import {capturePracticeDeckContext} from './play-deck-context.js';
 import {createCommunity,incomingRequestCount,sharedDeckCopy} from './community-profile.js';
@@ -87,7 +89,8 @@ import { playRate } from './importance.js';
 import { budgetNotes, variantsFrom, difficultyOf } from './deck-optimizer.js';
 import {attachCardGestures, CompareSelection, cardActionButtons, contextAction, contextHeader, deckContextShortcuts, HOLD_MS, moved as movedFrom} from './card-actions.js';
 import {tcgCompareSheet} from './tcgcompare.js';
-import {artworkHTML} from './artwork.js';
+import {artworkHTML,artworkSources} from './artwork.js';
+import {bannerPin} from './collection-banner.js';
 import {attachAutomaticBrowse} from './auto-browse.js';
 import { createPrintingPicker } from "./printing-picker.js";
 import {magicOwnedDetail,magicOwnedCard,magicOwnedCurrent,magicOwnedContext,magicOwnedNotice} from './magic-owned-detail.js';
@@ -107,6 +110,9 @@ import { binderPage, binderMatches, BINDER_COLORS, attachBinderDrag, animateTurn
 // Screens live in views.js; deck/collection math in core.js, planner.js,
 // strategy.js, deck-flow.js and insights.js.
 import { metaState, loadMeta as loadMetaData, MTG_META_FORMATS, DEFAULT_MTG_META_FORMAT, allCachedMeta } from "./meta.js";
+import {searchApp,parseQuery} from './universal-search.js';
+import {searchGameConcepts} from './game-wiki-knowledge.js';
+import {communityState,communitySlideUrl} from './community-feed.js';
 import { mtgPower, mtgMetaKey, asShown, shownPower } from "./power.js";
 import { playedAlongside } from "./guide.js";
 import { mtgPairQueries, rankPairs, edhPop } from "./pairing.js";
@@ -137,7 +143,7 @@ import { attachSuggest } from "./suggest.js";
 import { shouldTour, openTour, resetOnboarding, markGuide, guidePrompt } from "./tour.js";
 import { tourScenes } from "./tour-scenes.js";
 import { haptic, hapticFor, flyToCollection, captureCollectionFlight, countUp, ripple, setHaptics, attachGestures, attachTilt } from "./feel.js";
-import { setAudioSettings, viewMusic, setMusic } from "./audio.js";
+import { setAudioSettings, viewMusic, setMusic, appSound } from "./audio.js";
 import { alertSheet, setAlert, onAlert, alertText, priceSeries } from "./pricehist.js";
 import { onSharedPrices, watchCards } from "./sharedprices.js";
 import { mtgCollector, nameCandidates, textPhrases } from "./scan.js";
@@ -379,6 +385,8 @@ async function commit(fn, { msg = "", recovery = false, rerender = true, enrich 
     if (said) {
       const removed = /^(−|-|Removed|Deleted|Cleared|Undid)/.test(said);
       haptic(removed ? "warn" : "success");
+      // Something kept (a card added, a deck or binder saved) gets a soft chime with its haptic.
+      if (!removed && /^(Added|Saved|Moved|Cards added|Deck (saved|imported|updated))\b/.test(said)) appSound("COL-005");
       if (/^Added\b/.test(said)) flyToCollection(flight||lastActTarget);
     }
     if (undo) {
@@ -761,7 +769,9 @@ function openSheet(html, ctx = null, scrollTop = 0) {
   if (S.ui.sheetCtx !== ctx || $("#sheetBody")?.dataset?.detailIdentity !== detailContextIdentity(ctx)) dismissRulesGuide();
   const dlg = $("#sheet");
   if (S.ui.sheetCtx !== ctx || !dlg.open) T.cancelProvenBuild();
-  const detailState = dlg.open && S.ui.sheetCtx === ctx && !!detailContextIdentity(ctx) && $("#sheetBody").dataset.detailIdentity === detailContextIdentity(ctx) ? captureDetailState($("#sheetBody")) : null;
+  const sameDetail = dlg.open && !!detailContextIdentity(ctx) && $("#sheetBody").dataset.detailIdentity === detailContextIdentity(ctx);
+  const detailState = sameDetail && S.ui.sheetCtx === ctx ? captureDetailState($("#sheetBody")) : null;
+  const keptArt = sameDetail ? collectLoadedArt($("#sheetBody")) : null, motion = sameDetail ? captureSheetMotion($("#sheetBody")) : null, stable = sameDetail ? collectSheetNodes($("#sheetBody")) : null;
   const cardPopup = ["card","tcard"].includes(ctx?.type);
   const enteringCard = cardPopup && (!dlg.open || sheetKey(S.ui.sheetCtx) !== sheetKey(ctx));
   dlg.dataset.cardPopup = String(cardPopup);
@@ -772,6 +782,9 @@ function openSheet(html, ctx = null, scrollTop = 0) {
   S.ui.sheetCtx = ctx;
   $("#sheetBody").detailMountGeneration = ($("#sheetBody").detailMountGeneration || 0) + 1;
   $("#sheetBody").innerHTML = html;
+  reuseLoadedArt($("#sheetBody"),keptArt,keepSheetNodes($("#sheetBody"),stable,keptArt));
+  restoreSheetMotion($("#sheetBody"),motion);
+  settleSheetArt($("#sheetBody"));
   syncDeckViewers();
   $("#sheetBody").dataset.detailIdentity = detailContextIdentity(ctx);
   if (lastSheetStep && lastSheetStep !== stepKey) {
@@ -880,13 +893,17 @@ function refreshSheet() {
     }
     const c = ctx.type === "card" ? ctx.print || meta(ctx.name) : ctx.type === "tcard" ? contextTcgCard(ctx.game,ctx.id,ctx) : ctx.print;
     if (!c && ctx.type !== "buy") return;
-    const body = $("#sheetBody"), saved = body.dataset.detailIdentity === detailContextIdentity(ctx) ? captureDetailState(body) : null;
+    const body = $("#sheetBody"), same = body.dataset.detailIdentity === detailContextIdentity(ctx), saved = same ? captureDetailState(body) : null;
+    const keptArt = same ? collectLoadedArt(body) : null, motion = same ? captureSheetMotion(body) : null, stable = same ? collectSheetNodes(body) : null;
     // A later redraw (prices, history arriving) keeps whatever the person is using at the same spot on screen,
     // and the card picture keeps its height until its replacement has loaded, so nothing collapses meanwhile.
     const artHeights=[...(body.querySelectorAll?.('.cd-zoom')||[])].map(el=>el.getBoundingClientRect().height);
     const held=body.contains?.(globalThis.document?.activeElement)&&globalThis.document.activeElement!==body?globalThis.document.activeElement:null,heldTop=held?.getBoundingClientRect().top,heldAct=held?.dataset?.act,heldKey=held&&(held.dataset.finish||held.dataset.edition||held.getAttribute('aria-label')||held.textContent);
     body.detailMountGeneration = (body.detailMountGeneration || 0) + 1;
     body.innerHTML = ctx.type === "card" ? V.cardSheet(c,ctx) : ctx.type === "tcard" ? T.tcgCardSheet(c,ctx) : V.buySheet(ctx);
+    reuseLoadedArt(body,keptArt,keepSheetNodes(body,stable,keptArt));
+    restoreSheetMotion(body,motion);
+    settleSheetArt(body);
     body.dataset.detailIdentity = detailContextIdentity(ctx);
     wireSheetBack();
     (body.querySelectorAll?.('.cd-zoom')||[]).forEach((el,i)=>{const img=el.querySelector('img');if(!artHeights[i]||!img||img.complete)return;el.style.minHeight=artHeights[i]+'px';const free=()=>{el.style.minHeight='';};img.addEventListener('load',free,{once:true});img.addEventListener('error',free,{once:true});});
@@ -955,6 +972,8 @@ function parseHash() {
     if(T.isTcg()) { T.ui().coll.tab = a === "wishlist" ? "cards" : a; if(a === "wishlist")T.ui().coll.show="wanted"; }
   }
   if (ui.view === "wiki") currentWikiPage()?.route(a,{query:b==="search"});
+  // An invite link: #play/join/<invite>.
+  if (ui.view === "play" && a === "join" && /^[A-Za-z0-9_-]{43}$/.test(b || "")) queueMicrotask(() => openFriendInvite(b));
   if (ui.view === "shared" && a !== ui.shared.code) openShared(a);
   if (ui.view === "tdeck") { ui.tdeckId = a; if (b && ["cards","insights","matchups","upgrade","versions","playtest","rules"].includes(b)) (ui.tdeckTab ||= {})[T.game()+":"+a]=b; }
   if (ui.view === "set" && T.isTcg()) {
@@ -1094,9 +1113,13 @@ function render() {
     return;
   }
   deckBoxTransitions.beforeRender();
+  const loadedArt=collectLoadedArt($("#content"));
   $("#content").innerHTML = (g !== "mtg" && tcgViews[ui.view] ? tcgViews[ui.view] : views[ui.view] || V.home)();
+  reuseLoadedArt($("#content"),loadedArt);
   deckBoxTransitions.afterRender();
   syncDesktopPlayEntries(g);
+  // A deck page's Play vs CPU now starts the match in one tap, so the server engine warms while the page is open.
+  if(g==="mtg"&&document.querySelector('[data-act="deckPlayCpu"]:not([hidden]):not(:disabled)'))warmForgeEngine(playSetup.snapshot());
   restoreDisclosures(content,disclosureStates.get(disclosureKey));
   content.dataset.disclosureKey=disclosureKey;
   restoreSearchFocus(content,searchFocus);
@@ -1246,6 +1269,92 @@ let activeEntry = null, entrySequence = 0, navigationPending = false, navigation
 const entryOrigins = new Map();
 let rollbackHistoryId=null;
 const makeEntry = (game, route, index) => ({ version:1, game, route, entryId:Date.now().toString(36)+"-"+(++entrySequence), index });
+// A page re-renders several times while a set, binder or deck fills in (prices, details, owned counts).
+// Each pass used to throw away every card image and decode it again, which made the grid blink.
+// Loaded images are kept and moved into the new markup when the same picture is asked for again;
+// the new tag's attributes win, so tier rings, classes and fallbacks stay current.
+function collectLoadedArt(root){
+  const map=new Map();if(!root?.querySelectorAll)return map;
+  for(const im of root.querySelectorAll('img[src]')){if(!im.complete||!im.naturalWidth||im.hidden)continue;const src=im.getAttribute('src');const list=map.get(src);if(list)list.push(im);else map.set(src,[im]);}
+  return map;
+}
+function reuseLoadedArt(root,map,skip){
+  if(!map?.size||!root?.querySelectorAll)return;
+  for(const fresh of root.querySelectorAll('img[src]')){
+    if(skip?.has(fresh))continue;
+    const list=map.get(fresh.getAttribute('src'));const old=list?.shift();if(!old)continue;
+    for(const a of [...old.attributes])if(!fresh.hasAttribute(a.name))old.removeAttribute(a.name);
+    for(const a of fresh.attributes)if(old.getAttribute(a.name)!==a.value)old.setAttribute(a.name,a.value);
+    fresh.replaceWith(old);
+  }
+}
+// A card page also redraws several times while it fills in (details, prices, history, owned counts),
+// and each pass used to rebuild the header art and the big card: they blinked, replayed their
+// entrance (header fading in, card swinging in with its shine) and restarted the header's slow drift.
+// When the same card is redrawn, the parts that settle once (header glass, header art, big card) are
+// kept whole if their markup is unchanged, so the big card keeps its foil and light layers too; other
+// loaded pictures are reused, and running animations carry on from where they were.
+const SHEET_STABLE=['.cs-bleed','.cs-hero','.cd-img'];
+function collectSheetNodes(root){return root?.querySelectorAll?SHEET_STABLE.map(sel=>[...root.querySelectorAll(sel)]):null;}
+// Returns the pictures inside the kept parts, which the image reuse pass must leave alone.
+function keepSheetNodes(root,old,keptArt){
+  const kept=new Set();
+  if(!root?.querySelectorAll)return kept;
+  SHEET_STABLE.forEach((sel,i)=>[...root.querySelectorAll(sel)].forEach((fresh,j)=>{
+    const markup=fresh.outerHTML,was=old?.[i]?.[j];
+    if(!was||was.sheetMarkup!==markup){fresh.sheetMarkup=markup;return;}
+    fresh.replaceWith(was);
+    for(const im of was.querySelectorAll('img')){kept.add(im);const list=keptArt?.get(im.getAttribute('src')),k=list?list.indexOf(im):-1;if(k>=0)list.splice(k,1);}
+  }));
+  return kept;
+}
+const SHEET_MOTION=['.cs-hero','.cs-banner .cs-art','.cd-img','.cs-bleed','.cs-panel'];
+// A tab panel (the big card with its text on Overview) fades in when the card opens. Its own entrance is
+// matched panel by panel, and a rebuilt panel that was already showing does not fade in again: each
+// replay dimmed the big card and its text for a moment, several times while the page filled in.
+const SHEET_MOTION_OWN=new Set(['.cs-panel']);
+function captureSheetMotion(root){
+  if(!root?.querySelectorAll)return null;
+  return SHEET_MOTION.map(sel=>[...root.querySelectorAll(sel)].map(el=>({
+    key:el.id||'',shone:el.dataset?.shone==='done',shining:el.classList?.contains('shine-once'),
+    runs:(el.getAnimations?.({subtree:!SHEET_MOTION_OWN.has(sel)})||[]).filter(a=>a.animationName&&(a.startTime!=null||a.currentTime!=null)).map(a=>({name:a.animationName,pseudo:a.effect?.pseudoElement||null,start:a.startTime,t:a.currentTime}))
+  })));
+}
+function restoreSheetMotion(root,saved){
+  if(!saved||!root?.querySelectorAll)return;
+  SHEET_MOTION.forEach((sel,i)=>[...root.querySelectorAll(sel)].forEach((el,j)=>{
+    const own=SHEET_MOTION_OWN.has(sel),was=(el.id&&saved[i]?.find(w=>w.key===el.id))||(own&&el.id?null:saved[i]?.[j]);if(!was)return;
+    // The big card already swept its light: it stays settled instead of swinging in again.
+    if(was.shone)el.dataset.shone='done';
+    if(was.shining){el.classList.add('shine-once');const run=was.runs.find(r=>r.name==='card-catch');setTimeout(()=>el.classList.remove('shine-once'),Math.max(0,1300-(run?.t||0)));}
+    for(const a of el.getAnimations?.({subtree:!own})||[]){
+      const run=was.runs.find(r=>r.name===a.animationName&&r.pseudo===(a.effect?.pseudoElement||null));
+      // A panel whose fade had not begun yet shows at once rather than wait for it to restart.
+      if(run&&(run.start!=null||!own)){if(run.start!=null)a.startTime=run.start;else a.currentTime=run.t;continue;}
+      if(own&&a.animationName&&Number.isFinite(a.effect?.getComputedTiming?.().endTime))a.finish();
+    }
+  }));
+}
+// On a card page's first showing, the header art with the glass that carries it down the sheet, and the
+// big card, each wait for their picture and then come in once. Shown before it, the blurred glass
+// arrived first, the sharp art landed on it a moment later and the big card flashed an empty frame.
+// A picture already loaded shows at once; a new printing's picture waits the same way.
+const SHEET_SETTLE=[['art','.cs-bleed img, .cs-banner > .cs-hero img'],['card','.cd-img .cd-zoom img']];
+function settleSheetArt(root){
+  if(!root?.querySelectorAll||!root.dataset)return;
+  const mark=(part,on)=>{const list=new Set((root.dataset.settling||'').split(' ').filter(Boolean));if(on)list.add(part);else list.delete(part);if(list.size)root.dataset.settling=[...list].join(' ');else delete root.dataset.settling;};
+  root.settleState||={};
+  for(const [part,sel] of SHEET_SETTLE){
+    const pics=[...root.querySelectorAll(sel)],key=pics.map(im=>im.getAttribute('src')).join(' ');
+    if(root.settleState[part]?.key===key)continue;
+    const state={key};root.settleState[part]=state;
+    if(pics.every(im=>im.complete)){mark(part,false);continue;}
+    mark(part,true);
+    const done=()=>{if(root.settleState[part]===state)mark(part,false);};
+    Promise.all(pics.map(im=>im.decode?.().catch(()=>{}))).then(()=>(globalThis.requestAnimationFrame||setTimeout)(done));
+    setTimeout(done,2500);
+  }
+}
 const navigationStamp = () => ({ revision:navigation.revision, workspace:workspaceVisitRevision, game:T.game(), hash:location.hash });
 const navigationCurrent = stamp => stamp.revision === navigation.revision && stamp.workspace === workspaceVisitRevision && stamp.game === T.game() && stamp.hash === location.hash;
 function rememberScroll() { if(activeEntry) { scrollMem.set(activeEntry.entryId,window.scrollY); if(scrollMem.size>100)scrollMem.delete(scrollMem.keys().next().value); } }
@@ -1504,10 +1613,14 @@ const playSetup = createPlaySetup({
   parseImport:text=>parsePlayDeckImport(text,{parseDeckImport}),
   resolveNames:async names=>{const owner=cloudInfo().user?.id,generation=accountGeneration,current=()=>!accountLocked&&generation===accountGeneration&&owner===cloudInfo().user?.id;await resolveNames(names,()=>{},false,current);return {failed:current()?names.filter(name=>!meta(name)):[]};}
 });
-const playBuilders=Object.fromEntries(['player','opponent'].map(seat=>[seat,createPracticeOpponentBuilder({pipeline:deckPipeline,pickSeed:randomBuildSeed,
+const playBuilders=Object.fromEntries(['player','opponent','cpu3','cpu4'].map(seat=>[seat,createPracticeOpponentBuilder({pipeline:deckPipeline,pickSeed:randomBuildSeed,
  readScope:()=>[cloudInfo().user?.id,accountGeneration,accountLocked,playSetup.snapshot().match.format],
  onSelect:deck=>playSetup.chooseTemporary(deck,{seat,sourceKind:'random'}),onChange:()=>refreshPlayMenu()})]));
 const practiceOpponentBuilder=playBuilders.opponent;
+// The deck and source in any seat: you, CPU 2, or a pod seat (CPU 3, CPU 4).
+const playSeatDeck=(state,seat)=>seat==='player'?state.selected:seat==='opponent'?state.opponent:state.podDecks?.[seat]||null;
+const playSeatSource=(state,seat)=>seat==='player'?state.selectedSource:seat==='opponent'?state.opponentSource:state.podSources?.[seat]||null;
+const playBrowseSeat=state=>state.playStyle==='quick'?'player':state.inspectedSeat;
 let playSources={scope:null,community:[],statuses:{}};
 function currentPlaySources(){const scope=JSON.stringify([cloudInfo().user?.id||null,accountGeneration,accountLocked]);if(playSources.scope!==scope)playSources={scope,community:[],statuses:{}};return playSources;}
 function readPlaySources(){const state=playSetup.snapshot(),cache=currentPlaySources(),format=state.match.format;return playSourceEntries({format,precons:S.ui.finder.precons,metaData:metaState('mtg:'+(format==='Commander'?'EDH':format)).data,community:state.profile.signedIn?cache.community:[],references:state.profile.signedIn?S.state.references:[]});}
@@ -1519,26 +1632,141 @@ let quickStatus={busy:false,error:null},quickSequence=0;
 A.playPlaymat=t=>{setPlaymatChoice(t.dataset.playmat);refreshPlayMenu();document.querySelector('.pl-mat>summary')?.focus({preventScroll:true});};
 // Play home picks the mode; Quick Play and Practice then share one lobby. Inspect is a sheet over it.
 let playView='home',playInspectOpen=false;
-A.playOpenMode=t=>{playView='lobby';playInspectOpen=false;A.playStyle(t);scrollTo({top:0});document.getElementById('playTitle')?.focus?.({preventScroll:true});};
+A.playOpenMode=t=>{if(t.dataset.playStyle==='quick'&&t.dataset.playDirect==='true')return quickStartNow(t);playView='lobby';playInspectOpen=false;A.playStyle(t);scrollTo({top:0});document.getElementById('playTitle')?.focus?.({preventScroll:true});};
+// Quick Play with a deck already chosen goes straight into the match against a matched CPU (Randall,
+// 1 Nov): no second pick on the setup screen. If the match can't open (sign-in, screen, a deck the engine
+// refuses), the setup screen shows why, and it stays one tap away through "Change deck".
+async function quickStartNow(t){A.playStyle(t);playInspectOpen=false;
+ if(!playSetup.snapshot().selected){playView='lobby';refreshPlayMenu();return;}
+ await A.playStartCandidate();
+ if(!playerMatHost&&!practicePregame&&!playerMatRoot){playView='lobby';refreshPlayMenu();scrollTo({top:0});}}
+A.playChangeDeck=t=>{playView='lobby';playInspectOpen=false;A.playStyle(t);scrollTo({top:0});A.playFocusDecks?.();};
 A.playHome=()=>{playView='home';playInspectOpen=false;refreshPlayMenu();scrollTo({top:0});};
+// The empty Quick Play seat takes you straight to your decks.
+A.playFocusDecks=()=>{const list=document.getElementById('playDecksTitle');list?.scrollIntoView({behavior:matchMedia('(prefers-reduced-motion:reduce)').matches?'auto':'smooth',block:'start'});document.getElementById('playDeckSearch')?.focus?.({preventScroll:true});};
 A.playOpenInspect=t=>{playSetup.inspectSeat(t.dataset.playSeat);playInspectOpen=true;refreshPlayMenu();document.querySelector('.pl-sheet-close')?.focus({preventScroll:true});};
 A.playCloseInspect=()=>{if(!playInspectOpen)return;playInspectOpen=false;refreshPlayMenu();};
 // The playmat sheet opens with the chosen mat in view.
 document.addEventListener('toggle',e=>{if(e.target.matches?.('.pl-mat[open]'))e.target.querySelector('.pl-mat-opt[aria-pressed="true"]')?.scrollIntoView({block:'nearest'});},true);
 document.addEventListener('click',e=>{for(const d of document.querySelectorAll('.pl-format[open]'))if(!d.contains(e.target))d.open=false;});
 document.addEventListener('keydown',e=>{if(e.key==='Escape')for(const d of document.querySelectorAll('.pl-format[open]'))d.open=false;if(e.key==='Escape'&&playInspectOpen&&S.ui.view==='play'){e.preventDefault();A.playCloseInspect();}});
-A.playStyle=t=>{quickSequence++;quickStatus={busy:false,error:null};cancelPlayBuilds();playSetup.configure({mode:t.dataset.playStyle==='social'?'friends':'cpu'});if(t.dataset.playStyle!=='social')playSetup.setPlayStyle(t.dataset.playStyle);refreshPlayMenu();};
+A.playStyle=t=>{quickSequence++;quickStatus={busy:false,error:null};cancelPlayBuilds();const social=t.dataset.playStyle==='social';
+ if(social&&!FRIEND_FORMATS.includes(playSetup.snapshot().match.format))playSetup.configure({format:'Commander'});
+ if(!social&&friendRoom?.seat==='host'&&friendRoom.status==='open')void A.playFriendCancel();if(!social&&friendRoom?.seat==='guest'){friendRoom=null;forgetFriendInvite();}
+ playSetup.configure({mode:social?'friends':'cpu'});if(t.dataset.playStyle!=='social')playSetup.setPlayStyle(t.dataset.playStyle);refreshPlayMenu();};
+// Friend matches. The host opens a room with their deck and sends the invite link; the friend
+// opens it (signing in first if needed: the invite waits in this tab), picks a deck and joins.
+// The server starts one match; both players then open it on their own seat.
+const FRIEND_INVITE_KEY='cs-friend-invite',FRIEND_FORMATS=['Commander','Standard','Modern'];
+let friendRoom=null,friendPoll=null,friendRooms=null;
+const rooms=async()=>friendRooms||=(await import('./play-forge-host-client.js')).createFriendRooms({getAccessToken:cloudAccessToken});
+// An invite waiting from before sign-in opens as soon as Play shows for a signed-in player.
+let inviteOpening=false;
+const friendRoomView=()=>{
+ const waiting=!friendRoom&&!inviteOpening&&pendingFriendInvite();
+ if(waiting&&T.game()==='mtg'&&cloudInfo().user)queueMicrotask(()=>openFriendInvite(waiting));
+ return friendRoom&&{...friendRoom,invite:undefined,link:friendRoom.seat==='host'&&friendRoom.status==='open'?inviteLink():null};
+};
+const setFriendRoom=patch=>{friendRoom=patch&&{...(friendRoom||{}),...patch};refreshPlayMenu();};
+const stopFriendPoll=()=>{clearTimeout(friendPoll);friendPoll=null;};
+const friendError=e=>e?.message&&!/^[A-Z_]+$/.test(e.message)?e.message:'The room could not be reached. Try again.';
+function pollFriendRoom(){
+ stopFriendPoll();
+ friendPoll=setTimeout(async()=>{
+  const room=friendRoom;if(!room?.roomId||room.seat!=='host'||room.status!=='open')return;
+  try{const next=await (await rooms()).read(room.roomId);if(friendRoom?.roomId!==room.roomId)return;
+   if(next.status==='started'&&next.matchId){setFriendRoom({status:'started'});return A.playFriendLaunch(next.matchId);}
+   if(next.status!=='open'){setFriendRoom({status:null,roomId:null,error:next.status==='expired'?'Your invite expired. Make a new one.':'This room closed.'});return;}
+  }catch{/* a missed look is retried */}
+  pollFriendRoom();
+ },2000);
+}
+A.playFriendCreate=async()=>{
+ const state=playSetup.snapshot();if(!state.selected||friendRoom?.busy)return;
+ setFriendRoom({seat:'host',busy:true,error:null});
+ try{const room=await (await rooms()).open(state.match.format,state.selected);
+  setFriendRoom({seat:'host',busy:false,roomId:room.roomId,invite:room.invite,status:'open',copied:false});pollFriendRoom();
+ }catch(e){setFriendRoom({busy:false,error:friendError(e)});}
+};
+A.playFriendCancel=async()=>{
+ const room=friendRoom;stopFriendPoll();if(!room?.roomId)return;friendRoom=null;refreshPlayMenu();
+ try{await (await rooms()).cancel(room.roomId);}catch{/* it expires by itself */}
+};
+// The link is built here, at once, so the copy still counts as the player's own click.
+const inviteLink=()=>friendRoom?.invite?'https://cardstashy.com/#play/join/'+friendRoom.invite:null;
+let copiedTimer=0;
+A.playFriendCopy=async()=>{
+ const link=inviteLink();if(!link)return;
+ let copied=false;
+ try{await navigator.clipboard.writeText(link);copied=true;}
+ catch{const field=document.getElementById('playInviteLink');if(field){field.focus();field.select();try{copied=document.execCommand('copy');}catch{/* the link stays selected */}}}
+ if(!copied){toast('Copying was blocked. The link is selected: press Ctrl+C (or long-press) to copy it.');return;}
+ setFriendRoom({copied:true});toast('Invite link copied. Send it to your friend.');
+ clearTimeout(copiedTimer);copiedTimer=setTimeout(()=>{if(friendRoom?.copied)setFriendRoom({copied:false});},4000);
+};
+A.playFriendShare=async()=>{
+ const link=inviteLink();if(!link)return;
+ try{await navigator.share({title:'CardStashy match',text:`Play ${playSetup.snapshot().match.format} with me on CardStashy.`,url:link});}catch{/* the player closed the share sheet */}
+};
+// An invite link: kept in this tab through sign-in, then shown as the friend's room.
+async function openFriendInvite(invite){
+ try{sessionStorage.setItem(FRIEND_INVITE_KEY,invite);}catch{/* this visit only */}
+ if(T.game()!=='mtg'||!cloudInfo().user||inviteOpening)return;
+ inviteOpening=true;try{await showFriendInvite(invite);}finally{inviteOpening=false;}
+}
+async function showFriendInvite(invite){
+ playView='lobby';playInspectOpen=false;
+ try{const room=await (await rooms()).peek(invite);
+  if(FRIEND_FORMATS.includes(room.format)&&playSetup.snapshot().match.format!==room.format)playSetup.configure({format:room.format});
+  playSetup.configure({mode:'friends'});if(room.status!=='open')forgetFriendInvite();
+  if(room.status==='started'&&room.matchId){friendRoom={seat:'guest',roomId:room.roomId,status:'started',invite};refreshPlayMenu();return A.playFriendLaunch(room.matchId);}
+  friendRoom={seat:'guest',roomId:room.roomId,status:room.status,invite,error:room.status==='open'?null:room.status==='started'?'This match is already full.':'This invite has ended. Ask your friend for a new one.'};
+ }catch(e){playSetup.configure({mode:'friends'});friendRoom={seat:'host',error:friendError(e)};forgetFriendInvite();}
+ refreshPlayMenu();
+}
+const pendingFriendInvite=()=>{try{return sessionStorage.getItem(FRIEND_INVITE_KEY);}catch{return null;}};
+function forgetFriendInvite(){try{sessionStorage.removeItem(FRIEND_INVITE_KEY);}catch{/* nothing kept */}}
+A.playFriendJoin=async()=>{
+ const state=playSetup.snapshot(),room=friendRoom;if(!state.selected||room?.seat!=='guest'||room.busy)return;
+ setFriendRoom({busy:true,error:null});
+ try{const joined=await (await rooms()).join(room.invite,state.match.format,state.selected);
+  forgetFriendInvite();
+  setFriendRoom({busy:false,status:'started'});await A.playFriendLaunch(joined.matchId);
+ }catch(e){setFriendRoom({busy:false,error:friendError(e)});}
+};
 A.playFindOpponent=async()=>{
  const state=playSetup.snapshot();if(quickStatus.busy||!state.profile.signedIn||!state.selected)return false;
  const ticket=++quickSequence,scope=JSON.stringify([readPlayAccount(),state.selected,state.match]);quickStatus={busy:true,error:null};refreshPlayMenu();await new Promise(resolve=>requestAnimationFrame(resolve));
  // Random means every source: fetch the format's tournament lists too if this page has none yet (bounded wait).
  try{const metaKey='mtg:'+(state.match.format==='Commander'?'EDH':state.match.format);if(!metaState(metaKey).data)await Promise.race([loadMetaData(metaKey).catch(()=>{}),new Promise(resolve=>setTimeout(resolve,4000))]);
- const sources=readPlaySources(),candidates=[...S.state.decks,...Object.values(sources).flat().map(x=>x.deck)].filter(deck=>!FORGE_PLAY_TEST_ENABLED||forgeCpuDeckComplete(deck));
+ // Only lists the engine can load are offered: a source that spells a card its own way, or a card newer than the engine, never reaches the table.
+ const names=FORGE_PLAY_TEST_ENABLED?await loadEngineCardNames():null,unknown=engineUnknownCards(state.selected,names);if(unknown.length)throw Error(engineMissingText('Your deck',unknown));
+ const sources=readPlaySources(),candidates=[...S.state.decks,...Object.values(sources).flat().map(x=>x.deck)].filter(deck=>!FORGE_PLAY_TEST_ENABLED||forgeCpuDeckComplete(deck)&&!engineUnknownCards(deck,names).length);
  const result=chooseQuickOpponent({player:state.selected,candidates,difficulty:state.match.difficulty,...(FORGE_PLAY_TEST_ENABLED?{candidateEligible:deck=>forgeDeckSupport(deck).status==='native-pending',nativeValidationPending:true}:{}),estimate:deck=>capturePracticeDeckContext(deck).practiceContext.power.value});
  const now=playSetup.snapshot();if(ticket!==quickSequence||JSON.stringify([readPlayAccount(),now.selected,now.match])!==scope)return false;playSetup.setQuickOpponent(result);return true;
  }catch(e){if(ticket===quickSequence)quickStatus.error=e.message;}finally{if(ticket===quickSequence){quickStatus.busy=false;refreshPlayMenu();}}
 };
-A.playSaveDeck=async()=>{const state=playSetup.snapshot(),deck=state.inspectedSeat==='opponent'?state.opponent:state.selected;if(!deck)return;try{const job=savePlayDeck(deck);refreshPlayMenu();await job;}catch(e){toast(e.message);}finally{refreshPlayMenu();}};
+// Names the engine would refuse, said plainly; the first one is named.
+const engineMissingText=(label,names)=>label+' has '+(names.length===1?'a card the rules engine can’t load yet: ':names.length+' cards the rules engine can’t load yet, including ')+names[0]+'.';
+async function pickPodDecks(state,count){
+ // Seats you filled keep your deck; only empty seats draw a random Commander deck.
+ const chosen=['cpu3','cpu4'].slice(0,count).map(seat=>state.podDecks?.[seat]||null);
+ if(chosen.every(Boolean))return playSetup.setExtraOpponents(chosen);
+ try{if(!metaState('mtg:EDH').data)await Promise.race([loadMetaData('mtg:EDH').catch(()=>{}),new Promise(resolve=>setTimeout(resolve,4000))]);}catch{}
+ const names=FORGE_PLAY_TEST_ENABLED?await loadEngineCardNames():null;
+ const cardsOf=deck=>JSON.stringify([deck.commander||'',(deck.cards||[]).map(r=>String(r?.name||'').toLowerCase()).sort()]);
+ const taken=new Set([state.selected,state.opponent,...chosen.filter(Boolean)].map(cardsOf)),picks=[];
+ let pool=[...S.state.decks,...Object.values(readPlaySources()).flat().map(x=>x.deck)].filter(deck=>deck?.format==='Commander'&&(!FORGE_PLAY_TEST_ENABLED||forgeCpuDeckComplete(deck)&&!engineUnknownCards(deck,names).length));
+ for(let i=0;i<count;i++){
+  if(chosen[i]){picks.push(chosen[i]);continue;}
+  const candidates=pool.filter(deck=>!taken.has(cardsOf(deck)));
+  const result=chooseQuickOpponent({player:state.selected,candidates,difficulty:'Medium',...(FORGE_PLAY_TEST_ENABLED?{candidateEligible:deck=>deck===state.selected||forgeDeckSupport(deck).status==='native-pending',nativeValidationPending:true}:{candidateEligible:()=>true})});
+  if(taken.has(cardsOf(result.deck)))throw Error('Four-player games need more Commander decks. Load Precons or Meta in Practice, then try again.');
+  taken.add(cardsOf(result.deck));picks.push(result.deck);
+ }
+ playSetup.setExtraOpponents(picks);
+}
+A.playSaveDeck=async()=>{const state=playSetup.snapshot(),deck=playSeatDeck(state,state.inspectedSeat);if(!deck)return;try{const job=savePlayDeck(deck);refreshPlayMenu();await job;}catch(e){toast(e.message);}finally{refreshPlayMenu();}};
 A.playDeckSource=async t=>{playSetup.setSource(t.dataset.playSource);refreshPlayMenu();const source=t.dataset.playSource;if(['precons','community','meta'].includes(source)&&!(readPlaySources()[source]||[]).length)await A.playLoadSource();};
 A.playLoadSource=async()=>{
  const state=playSetup.snapshot(),source=state.browse.source,cache=currentPlaySources(),format=state.match.format,key=source+':'+format;
@@ -1570,7 +1798,7 @@ A.playUseSelectedOpponent=()=>{const state=playSetup.snapshot();if(!state.profil
 // pass. The account/table lifecycle below is testable independently of activation.
 const PLAY_MATCH_RELEASE_READY=true;
 let playerMatHost=null,playerMatRoot=null,practicePregame=null,playStarting=false;
-function closePlayerMat(){setMusic("play",null);practicePregame?.destroy();practicePregame=null;playerMatHost?.detach();playerMatHost=null;playerMatRoot?.remove();playerMatRoot=null;unmountPlaymatScene();document.body.classList.remove('practice-table-open');const app=document.getElementById('app');if(app)app.inert=false;if(!accountLocked&&S.ui.view==='play'&&!syncDesktopPlayEntries(T.game()).eligible)refreshPlayMenu();document.querySelector('[data-act="playStartCandidate"]')?.focus({preventScroll:true});}
+function closePlayerMat(){setMusic("play",null);void releasePlayOrientation();practicePregame?.destroy();practicePregame=null;playerMatHost?.detach();playerMatHost=null;playerMatRoot?.remove();playerMatRoot=null;unmountPlaymatScene();document.body.classList.remove('practice-table-open');const app=document.getElementById('app');if(app)app.inert=false;if(!accountLocked&&S.ui.view==='play'&&!syncDesktopPlayEntries(T.game()).eligible)refreshPlayMenu();document.querySelector('[data-act="playStartCandidate"]')?.focus({preventScroll:true});}
 // A failed Play download must never leave the app inert behind an empty layer.
 // The screen offers Return (restores the app) and Reload (fetches the current
 // release, which also covers an old page asking for a chunk a deploy removed).
@@ -1592,9 +1820,17 @@ A.playStartCandidate=async()=>{
  if(initial.playStyle==='quick'&&initial.match.mode==='cpu'&&!initial.quickMatch){if(!await A.playFindOpponent())return;}
  if(T.game()!=='mtg'||S.ui.view!=='play'||!syncDesktopPlayEntries('mtg').eligible)return;
  const source=playSetup.snapshot();if(!source.selected||!source.opponent||source.match.mode!=='cpu')return toast('Choose both Practice decks first.');
+ // A Commander pod: CPU 3 and CPU 4 play the decks you chose; an empty seat gets a random Commander deck (not yours, not CPU 2's, not each other's).
+ if(source.playStyle==='practice'&&source.match.format==='Commander'&&Number(source.match.podSize)>2){
+  const size=Number(source.match.podSize),levels=[source.match.difficulty,source.match.cpu3Level,source.match.cpu4Level].slice(0,size-1);
+  if(globalThis.matchMedia?.('(pointer:coarse) and (max-width:900px)')?.matches&&levels.filter(l=>l==='Hard').length>1)return toast('Phones run one Hard CPU per game. Set the others to Easy or Normal.');
+  try{await pickPodDecks(source,size-2);}catch(e){return toast(e.message);}
+ }
+ // Every list must load in the engine before the table opens; a refused name is said in the Play status line, not on a failed table.
+ if(FORGE_PLAY_TEST_ENABLED){const names=await loadEngineCardNames(),seats=playSetup.snapshot();for(const [deck,label] of [[seats.selected,'Your deck'],[seats.opponent,'The CPU deck'],...(seats.extraOpponents||[]).map(o=>[o.deck,'A CPU deck'])]){const unknown=engineUnknownCards(deck,names);if(unknown.length){quickStatus={busy:false,error:engineMissingText(label,unknown)};return refreshPlayMenu();}}}
  if(await playUpdates.beforeMatch())return; // The page reopens Play on the current release.
  if(!document.getElementById('practiceTableStyles')){const css=document.createElement('link');css.id='practiceTableStyles';css.rel='stylesheet';css.href='experiments/phase-engine/match-table.css';document.head.append(css);}
- playerMatRoot=document.createElement('main');playerMatRoot.id='practicePlayerMat';playerMatRoot.setAttribute('data-playmat',nextPlaymat());playerMatRoot.setAttribute('aria-label','Practice player mat');document.body.append(playerMatRoot);mountPlaymatScene(playerMatRoot);document.body.classList.add('practice-table-open');const app=document.getElementById('app');if(app)app.inert=true;
+ playerMatRoot=document.createElement('main');playerMatRoot.id='practicePlayerMat';playerMatRoot.setAttribute('data-playmat',nextPlaymat());playerMatRoot.setAttribute('aria-label','Practice player mat');document.body.append(playerMatRoot);mountPlaymatScene(playerMatRoot);document.body.classList.add('practice-table-open');void lockPlayLandscape();const app=document.getElementById('app');if(app)app.inert=true;
  const beginGame=async options=>{
   practicePregame?.destroy();practicePregame=null;
   const owner=cloudInfo().user?.id,generation=accountGeneration,current=()=>!accountLocked&&generation===accountGeneration&&owner===cloudInfo().user?.id;
@@ -1625,6 +1861,31 @@ A.playStartCandidate=async()=>{
  if(FORGE_PLAY_TEST_ENABLED)await beginGame({}); // Forge owns its opening decisions.
  else if(source.playStyle==='quick')await beginGame(resolvePracticePregame('random'));
  else practicePregame=mountPracticePregame({root:playerMatRoot,renderDeckArtwork:deck=>{const art=document.createElement('div');art.className='play-pregame-art';art.innerHTML=V.deckArtwork(deck);return art;},readAccount:readPlayAccount,readSetup:()=>playSetup.snapshot(),onCancel:closePlayerMat,onConfirm:beginGame});
+ }finally{playStarting=false;}
+};
+// Both players open the friend match the server started, each on their own seat. The friend's
+// deck stays hidden: their cards are looked up by name as they are played.
+A.playFriendLaunch=async matchId=>{
+ stopFriendPoll();
+ if(playStarting||playerMatHost||practicePregame||T.game()!=='mtg')return;
+ playStarting=true;
+ try{
+  const base=playSetup.snapshot();if(!base.selected)return toast('Pick your deck first.');
+  if(await playUpdates.beforeMatch())return;
+  for(const [id,href] of [['practiceTableStyles','experiments/phase-engine/match-table.css'],['forgeHostedTableStyles','play-forge-table.css']])if(!document.getElementById(id)){const css=document.createElement('link');css.id=id;css.rel='stylesheet';css.href=href;document.head.append(css);}
+  playerMatRoot=document.createElement('main');playerMatRoot.id='practicePlayerMat';playerMatRoot.setAttribute('data-playmat',nextPlaymat());playerMatRoot.setAttribute('aria-label','Friend match player mat');document.body.append(playerMatRoot);mountPlaymatScene(playerMatRoot);document.body.classList.add('practice-table-open');void lockPlayLandscape();const app=document.getElementById('app');if(app)app.inert=true;
+  const setup={...base,playStyle:'quick',opponent:{name:'Friend\'s deck',format:base.match.format,cards:[]},friend:{name:'Friend'},friendMatch:{matchId}};
+  const owner=cloudInfo().user?.id,generation=accountGeneration,current=()=>!accountLocked&&generation===accountGeneration&&owner===cloudInfo().user?.id;
+  let createForgePlayerMat,lateTimer=0;const late=new Set();
+  try{({createForgePlayerMat}=await import('./play-forge-player-mat.js'));}catch(e){if(playerMatRoot)playModuleFailed(e);return;}
+  if(!current()||!playerMatRoot)return;
+  const cards=createForgeArtworkPreparation({selectionKey:key,isCurrent:current,
+   resolveNames:(names,{isCurrent})=>resolveNames(names,()=>{},false,isCurrent),
+   lookup:(name,id)=>id?S.state.printings?.[id]||null:meta(name),fetchPrinting:id=>api('/cards/'+encodeURIComponent(id))});
+  playerMatHost=createForgePlayerMat({root:playerMatRoot,readAccount:readPlayAccount,readSetup:()=>setup,getAccessToken:cloudAccessToken,
+   prepareArtwork:cards.prepare,lookup:cards.lookup,resolveLate:name=>{late.add(name);clearTimeout(lateTimer);lateTimer=setTimeout(()=>{const names=[...late];late.clear();if(current())void resolveNames(names,()=>{},false,current);},250);},
+   onClose:()=>{friendRoom=null;closePlayerMat();},onHome:()=>{friendRoom=null;closePlayerMat();go('#home');}});
+  try{await playerMatHost.start();}catch{/* The match screen presents the error and recovery action. */}
  }finally{playStarting=false;}
 };
 function playDeckPreview(deck) {
@@ -1694,10 +1955,10 @@ function renderPlayPage() {
   const device=syncDesktopPlayEntries('mtg');
   if(!device.eligible){const gate=playDeviceGate(device);return '<section class="empty play-device-guard"><span class="play-device-guard-icon" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><rect x="2.5" y="4" width="9" height="16" rx="1.6"/><path d="M13.5 5.4 20.2 3.6a.8.8 0 0 1 1 .8v15.2a.8.8 0 0 1-1 .8l-6.7-1.8z"/><path d="M5.5 12h3m-1.3-1.5L8.7 12l-1.5 1.5"/></svg></span><h1>'+esc(gate.title)+'</h1><p>'+esc(gate.line)+'</p><a class="btn" href="#decks">Open Decks</a><a class="btn ghost" href="#home">Home</a></section>';}
   const state=playSetup.snapshot(),p=state.profile,tiles=new Map();state.opponentBuild=practiceOpponentBuilder.snapshot();state.deckBuild=playBuilders[state.playStyle==='quick'?'player':state.inspectedSeat].snapshot();const sources=readPlaySources(),sourceArt=new Map();for(const entries of Object.values(sources))for(const entry of entries)sourceArt.set(entry.key,V.deckArtwork(entry.deck));
-  for(const summary of state.decks){const deck=deckById(summary.id);if(summary.valid&&deck)tiles.set(summary.id,V.deckTile(deck,false,{playSelection:(state.playStyle!=='quick'&&state.inspectedSeat==='opponent'?state.opponentSource==='saved'&&state.opponent?.id===deck.id:state.selectedSource==='saved'&&state.selected?.id===deck.id)}));}
-  const inspected=state.playStyle!=='quick'&&state.match.mode==='cpu'&&state.inspectedSeat==='opponent'?state.opponent:state.selected;
-  warmForgeEngine(state);
-  return playMenuMarkup(state,{view:playView,inspectOpen:playInspectOpen,engine:FORGE_PLAY_TEST_ENABLED?'forge':'phase',sourceEntries:sources,sourceArt,cpuDifficulties:readCpuOptions({engine:FORGE_PLAY_TEST_ENABLED?'forge':'phase'}),quickStatus,sourceStatus:currentPlaySources().statuses[state.browse.source+':'+state.match.format]||{},savedCopy:savedPlayCopy(inspected),savePending:playSaver.isSaving(inspected),matchReleaseReady:PLAY_MATCH_RELEASE_READY,avatarMarkup:profileAvatar(p.avatarArt,{display_name:p.displayName,username:p.username,avatar_url:p.avatarUrl}),deckTiles:tiles,deckPreview:playDeckPreview(inspected),importPreview:playDeckPreview(state.reviewDeck),selectedArt:V.deckArtwork(inspected),matchupArt:{player:V.deckArtwork(state.selected),opponent:V.deckArtwork(state.opponent)}});
+  for(const summary of state.decks){const deck=deckById(summary.id);if(summary.valid&&deck)tiles.set(summary.id,V.deckTile(deck,false,{playSelection:playSeatSource(state,playBrowseSeat(state))==='saved'&&playSeatDeck(state,playBrowseSeat(state))?.id===deck.id}));}
+  const inspected=state.playStyle!=='quick'&&state.match.mode==='cpu'?playSeatDeck(state,state.inspectedSeat):state.selected;
+  if(state.match.mode==='cpu')warmForgeEngine(state);
+  return playMenuMarkup(state,{friendRoom:friendRoomView(),canShare:typeof navigator.share==='function',view:playView,inspectOpen:playInspectOpen,engine:FORGE_PLAY_TEST_ENABLED?'forge':'phase',sourceEntries:sources,sourceArt,cpuDifficulties:readCpuOptions({engine:FORGE_PLAY_TEST_ENABLED?'forge':'phase'}),quickStatus,sourceStatus:currentPlaySources().statuses[state.browse.source+':'+state.match.format]||{},savedCopy:savedPlayCopy(inspected),savePending:playSaver.isSaving(inspected),matchReleaseReady:PLAY_MATCH_RELEASE_READY,avatarMarkup:profileAvatar(p.avatarArt,{display_name:p.displayName,username:p.username,avatar_url:p.avatarUrl}),deckTiles:tiles,deckPreview:playDeckPreview(inspected),importPreview:playDeckPreview(state.reviewDeck),selectedArt:V.deckArtwork(inspected),matchupArt:{player:V.deckArtwork(state.selected),opponent:V.deckArtwork(state.opponent),cpu3:state.podDecks?.cpu3?V.deckArtwork(state.podDecks.cpu3):'',cpu4:state.podDecks?.cpu4?V.deckArtwork(state.podDecks.cpu4):''}});
 }
 const refreshPlayMenu=()=>{if(S.ui.view==='play'&&T.game()==='mtg'){
   const scrolls=[...document.querySelectorAll('[data-play-scroll]')].map(n=>[n.dataset.playScroll,n.scrollTop]);
@@ -1707,12 +1968,15 @@ const refreshPlayMenu=()=>{if(S.ui.view==='play'&&T.game()==='mtg'){
   const disclosure=document.getElementById('playImportDisclosure');if(disclosure&&importOpen!==undefined)disclosure.open=importOpen;
   if(disclosure)document.querySelector('.play-paste-pill')?.setAttribute('aria-expanded',String(disclosure.open));
 }};
-function focusNextPlaySelection(){const state=playSetup.snapshot();const target=state.match.mode==='cpu'&&state.playStyle!=='quick'&&state.selected&&!state.opponent?document.querySelector('[data-act="playInspectSeat"][data-play-seat="opponent"]'):document.getElementById('playSelectedTitle');target?.focus({preventScroll:true});}
-A.playSelectDeck=t=>{cancelPlayBuilds();playSetup.selectDeck(t.dataset.playDeck,playSetup.snapshot().playStyle==='quick'?'player':playSetup.snapshot().inspectedSeat);refreshPlayMenu();focusNextPlaySelection();};
+function focusNextPlaySelection(){const state=playSetup.snapshot();const target=state.match.mode==='cpu'&&state.playStyle!=='quick'&&state.selected&&!state.opponent?document.querySelector('[data-act="playInspectSeat"][data-play-seat="opponent"]'):document.getElementById('playSelectedTitle');target?.focus({preventScroll:true});
+ // On a phone the sticky Play bar would cover the CPU seat that is up next, so bring it to the middle.
+ if(target?.dataset.playSeat==='opponent'&&matchMedia('(max-width:700px)').matches)target.closest('.pl-seat')?.scrollIntoView({block:'center',behavior:matchMedia('(prefers-reduced-motion: reduce)').matches?'auto':'smooth'});}
+// In Practice, once your deck is in, the next pick goes to the CPU's seat (it used to replace yours).
+A.playSelectDeck=t=>{cancelPlayBuilds();const before=playSetup.snapshot(),seat=before.playStyle==='quick'?'player':before.inspectedSeat;playSetup.selectDeck(t.dataset.playDeck,seat);const after=playSetup.snapshot();if(after.playStyle!=='quick'&&after.match.mode==='cpu'&&seat==='player'&&after.selected&&!after.opponent)playSetup.inspectSeat('opponent');refreshPlayMenu();focusNextPlaySelection();};
 A.playInspectSeat=t=>{playSetup.inspectSeat(t.dataset.playSeat);refreshPlayMenu();};
 A.playClearSelection=()=>{cancelPlayBuilds();playSetup.clearSelection(playSetup.snapshot().inspectedSeat);refreshPlayMenu();};
 // Play vs CPU from a deck page: Quick Play with this saved deck in its own format.
-A.deckPlayCpu=t=>{const d=deckById(t.dataset.id);if(!d)return;cancelPlayBuilds();quickSequence++;quickStatus={busy:false,error:null};if(['Standard','Commander','Modern','Pioneer','Legacy','Vintage','Pauper','Standard Brawl'].includes(d.format))playSetup.configure({format:d.format,mode:'cpu'});playSetup.setPlayStyle('quick');playSetup.selectDeck(d.id,'player');go('#play');};
+A.deckPlayCpu=t=>{const d=deckById(t.dataset.id);if(!d)return;cancelPlayBuilds();quickSequence++;quickStatus={busy:false,error:null};if(['Standard','Commander','Modern','Pioneer','Legacy','Vintage','Pauper','Standard Brawl'].includes(d.format))playSetup.configure({format:d.format,mode:'cpu'});playSetup.setPlayStyle('quick');playSetup.selectDeck(d.id,'player');playView='home';Promise.resolve(go('#play')).then(()=>quickStartNow({dataset:{playStyle:'quick',playDirect:'true'}}));};
 A.playTogglePaste=t=>{const d=document.getElementById('playImportDisclosure');if(!d)return;d.open=!d.open;t.setAttribute('aria-expanded',String(d.open));if(d.open){d.scrollIntoView({block:'nearest',behavior:matchMedia('(prefers-reduced-motion: reduce)').matches?'auto':'smooth'});document.getElementById('playImportText')?.focus({preventScroll:true});}};
 A.playConfigure=t=>{cancelPlayBuilds();quickSequence++;quickStatus={busy:false,error:null};playSetup.configure({[t.dataset.playOption]:t.dataset.playValue});refreshPlayMenu();document.querySelector(`[data-act="playConfigure"][aria-pressed="true"]`)?.focus({preventScroll:true});};
 C.playMatchOption=t=>{cancelPlayBuilds();quickSequence++;quickStatus={busy:false,error:null};const key=t.dataset.playOption,value=t.value;playSetup.configure({[key]:value});refreshPlayMenu();document.querySelector(`[data-play-option="${key}"]${key==='mode'?':checked':''}`)?.focus({preventScroll:true});};
@@ -2765,6 +3029,7 @@ A.viewPrint = (t) => {
   refreshSheet();
   $("#sheetBody").scrollTo({ top: 0, behavior: globalThis.matchMedia?.("(prefers-reduced-motion: reduce)").matches ? "auto" : "smooth" });
 };
+// Continue or retry loading this card's details and printings (the Retry button on a paused load).
 A.magicVersionsMore = () => {
   const ctx = S.ui.sheetCtx;
   if (ctx?.type !== "card" || ctx.detailsBusy) return;
@@ -3642,12 +3907,12 @@ async function homeLookup(g,q){
  const cached=g==='mtg'?Object.values(S.catalog):Object.values(T.cache[g]||{}),pack=catalogState(g).pack;
  const local=[...cached];
  if(pack){const query=q.toLowerCase();for(const [name,indexes]of pack.names)if(name.includes(query)||name.startsWith(query.slice(0,3)))for(const i of indexes.slice(0,3))local.push(catalogCandidate(pack,i).card);}
- let cards=rankHomeCards(local,q),error=false,corrected=false;
+ let cards=rankHomeCards(local,q,7,{byName:g==='mtg'}),error=false,corrected=false;
  if(cards.length<5){try{
    if(g==='mtg'){
     let data;try{data=await api('/cards/search?'+new URLSearchParams({q:q+' game:paper',unique:'prints',order:'released'}));}catch(e){if(e.status!==404&&!/404|no cards|not found|zero results|didn.t match/i.test(e.message||''))throw e;data={data:[]};}
     if(!data.data?.length){try{const c=await api('/cards/named?'+new URLSearchParams({fuzzy:q}));data={data:[c]};corrected=true;}catch(e){if(e.status!==404&&!/404|no cards|not found|zero results|ambiguous|didn.t match/i.test(e.message||''))throw e;}}
-    cards=rankHomeCards([...cards,...(data.data||[])],q);
+    cards=rankHomeCards([...cards,...(data.data||[])],q,7,{byName:true});
    }else{
     let result=await T.SOURCES[g].search({q,size:7,page:0});
     if(!result.cards.length&&q.length>=5){result=await T.SOURCES[g].search({q:q.slice(0,3),size:40,page:0});corrected=true;}
@@ -3658,6 +3923,7 @@ async function homeLookup(g,q){
 }
 async function submitHome(q,mode){
  q=String(q||'').trim();if(!q)return;const g=T.game();homeQueries[g]=q;
+ if(mode==='build'){const core=parseQuery(q).core;return A.askOpen({query:isDeckBuildRequest(q)?q:`Build me a ${core} deck`});}
  if((mode||homeIntent(q))==='ask'){
   if(!isDeckBuildRequest(q)&&/\b(?:rules?|ruling|resolve|stack|trigger|can i (?:cast|summon|attack|activate)|when can)\b/i.test(q)){
    A.askRules({dataset:{game:g}});const input=document.querySelector('.rules-ask-dialog .ask-input');if(input){input.value=q;input.focus();}return;
@@ -3735,7 +4001,12 @@ const checkCommunityNotices=()=>{if(document.hidden||accountLocked||!cloudInfo()
 window.addEventListener('focus',checkCommunityNotices);document.addEventListener('visibilitychange',checkCommunityNotices);
 A.profileSource=()=>{const a=profileArt(cloudInfo().art?.avatar||community.data?.art?.avatar||S.state.settings.cardAvatar);if(a)openZoom({src:a.image,alt:a.name});else profilePicker.open();};
 A.profileHeader=()=>headerPicker.open();
-A.quickArtwork=()=>{if(!quickCard)return;const ref=quickCard;openSheet(`<div class="sheet-head"><h2>Use artwork as…</h2><button class="icon" data-act="closeSheet">✕</button></div><div class="actions"><button class="btn" data-act="quickArtworkAvatar">Avatar</button><button class="btn ghost" data-act="quickArtworkHeader">Profile header</button></div>`,{type:"artwork-actions"});A.quickArtworkAvatar=()=>profilePicker.open({card:ref.card,game:ref.game});A.quickArtworkHeader=()=>headerPicker.open({card:ref.card,game:ref.game});};
+// Collection banner art: a pin stays until the player changes it; without one the banner
+// changes every hour (collection-banner.js).
+const bannerImage=(game,card)=>game==='mtg'?card?.image_uris?.art_crop||card?.card_faces?.[0]?.image_uris?.art_crop:game==='ygo'?(/^\d{1,12}$/.test(String(card?.id||''))?`https://images.ygoprodeck.com/images/cards_cropped/${card.id}.jpg`:''):artworkSources(card,true)[0];
+A.quickArtwork=()=>{if(!quickCard)return;const ref=quickCard,pinned=S.state.settings.collectionBanner?.[ref.game],canPin=!!bannerPin(ref.game,ref.card,bannerImage(ref.game,ref.card));openSheet(`<div class="sheet-head"><h2>Use artwork as…</h2><button class="icon" data-act="closeSheet">✕</button></div><div class="actions"><button class="btn" data-act="quickArtworkAvatar">Avatar</button><button class="btn ghost" data-act="quickArtworkHeader">Profile header</button>${canPin?'<button class="btn ghost" data-act="quickArtworkBanner">Collection banner</button>':''}</div>${pinned?'<p class="artwork-banner-reset"><button class="link" data-act="quickArtworkBannerRotate">Change the banner every hour again</button></p>':''}`,{type:"artwork-actions"});A.quickArtworkAvatar=()=>profilePicker.open({card:ref.card,game:ref.game});A.quickArtworkHeader=()=>headerPicker.open({card:ref.card,game:ref.game});
+ A.quickArtworkBanner=async()=>{const pin=bannerPin(ref.game,ref.card,bannerImage(ref.game,ref.card));if(!pin)return toast('This card has no artwork to use.');await commit(st=>{st.settings.collectionBanner={...(st.settings.collectionBanner||{}),[ref.game]:pin};},{enrich:false,recordDeckWork:false,observeValue:false});closeSheet();toast(`${ref.card.name} is your Collection banner.`);};
+ A.quickArtworkBannerRotate=async()=>{await commit(st=>{const next={...(st.settings.collectionBanner||{})};delete next[ref.game];st.settings.collectionBanner=next;},{enrich:false,recordDeckWork:false,observeValue:false});closeSheet();toast('The Collection banner changes every hour again.');};};
 A.cardProfileHeader=async t=>{
 const ref=await resolveActionCard(t);if(ref)headerPicker.open({card:ref.card,game:ref.game});};
 A.profilePhoto=()=>profilePicker.open();
@@ -3787,7 +4058,47 @@ A.cardDeckAdd=async()=>{
  await A[ctx.game==='mtg'?'addToDeck':'tAddToDeck']({dataset:{id:ctx.id,name:ctx.name}});
  if(S.ui.sheetCtx===ctx)A.sheetHistoryBack();
 };
-const homeSearchController=attachHomeSearch({game:T.game,lookup:homeLookup,submit:submitHome,open:async(g,c)=>{
+// Everything in the app the search bar can reach, gathered from what is already on the device.
+let searchSetWarm={};
+function homeAppSources(g){
+ const mtg=g==='mtg',decks=(mtg?S.state:T.gs(g)).decks||[],sets=mtg?S.ui.sets.list:(T.ui(g).sets?.list||[]);
+ if(!sets.length&&!searchSetWarm[g]){searchSetWarm[g]=1;setTimeout(()=>{try{mtg?loadSetIndex():tcgCtx.loadSets?.(g);}catch{}},0);}
+ const year=d=>String(d||'').slice(0,4);
+ const meta=[];
+ for(const [k,v] of Object.entries(allCachedMeta())){
+  const data=v?.data;if(!data||!(mtg?k.startsWith('mtg:'):k===g||k.startsWith(g+':')))continue;
+  const fmt=mtg?k.slice(4):(k.includes(':')?k.split(':')[1]:'');
+  for(const a of (data.archetypes||[]).slice(0,40)){const key=a.best||a.representative?.key;if(!key)continue;
+   meta.push({title:a.name,sub:[fmt,Number.isFinite(a.share)?(a.share*100).toFixed(a.share<.1?1:0)+'% of the field':''].filter(Boolean).join(' · '),kind:'meta',act:mtg?'mtgProven':'tMetaDeck',data:mtg?{key,format:fmt}:{key,metaKey:k}});}
+ }
+ const N=communityState(g).data;
+ return {
+  decks:decks.map(d=>({title:d.name||'Untitled deck',sub:[d.commander,d.format].filter(Boolean).join(' · '),route:(mtg?'#deck/':'#tdeck/')+encodeURIComponent(d.id)})),
+  sets:sets.filter(x=>!x.digital).map(x=>({title:x.name,code:x.code||x.id||'',sub:[String(x.code||'').toUpperCase(),year(x.released_at||x.releaseDate||x.date)].filter(Boolean).join(' · '),icon:mtg?x.icon:'',act:mtg?'set':'tSet',data:mtg?{code:x.code}:{id:x.id}})),
+  meta,
+  wiki:[],
+  news:(N?.items||[]).filter(x=>x.title).map(x=>({title:x.title,sub:typeof x.source==='string'?x.source:(x.source?.name||x.sourceName||''),url:communitySlideUrl(g,x)})).filter(x=>x.url),
+ };
+}
+function homeLocal(g,q){
+ const src=homeAppSources(g),P=parseQuery(q);
+ src.wiki=searchGameConcepts(g,P.core,{limit:3}).map(c=>({title:c.label,sub:c.summary?String(c.summary).slice(0,90):'',route:'#wiki/'+encodeURIComponent(c.label)}));
+ const found=searchApp(q,src);
+ // A deck nobody has made yet: offer to build it, the one place AI earns its spot.
+ const hasDeck=found.sections.some(s=>(s.id==='deck'||s.id==='meta')&&s.items.some(i=>i.score<=2));
+ const theme=P.core.replace(/\b\w/g,c=>c.toUpperCase());
+ found.build=P.hint==='deck'&&!hasDeck&&P.core.length>=3?`${/^[aeiou]/i.test(theme)?'an':'a'} ${theme} deck`:null;
+ found.skipCards=!!found.build;
+ return found;
+}
+function runHomeItem(item,g){
+ if(T.game()!==g)return;
+ if(item.url){window.open(item.url,'_blank','noopener');return;}
+ if(item.act){const fn=A[item.act];if(fn)return fn({dataset:{...item.data}});return;}
+ if(item.route==='planeswalk.html'){location.href='planeswalk.html';return;}
+ if(item.route)return go(item.route);
+}
+const homeSearchController=attachHomeSearch({game:T.game,lookup:homeLookup,submit:submitHome,local:homeLocal,run:runHomeItem,open:async(g,c)=>{
  if(T.game()!==g)return;
  if(g==='mtg'){
   if(c.oracle_text!==undefined||c.card_faces?.some(f=>f.oracle_text!==undefined))return A.card({dataset:{name:c.name},printing:c});
@@ -3996,14 +4307,16 @@ A.mtgWikiAsk=()=>{const text=$('#wikiQ')?.value.trim()||currentWikiPage().state.
 A.cardTab = async (t) => {
   const commit=scopedCommit();
   const ctx = S.ui.sheetCtx;
-  if (!["card","tcard"].includes(ctx?.type) || !["overview","meta","guide","versions","prices","rulings","legal","trade"].includes(t.dataset.tab)) return;
-  ctx.tab = t.dataset.tab === "legal" ? "rulings" : t.dataset.tab;
+  if (!["card","tcard"].includes(ctx?.type) || !["overview","meta","guide","prices","rulings","legal","trade"].includes(t.dataset.tab)) return;
+  ctx.tab = ["legal","rulings"].includes(t.dataset.tab) ? "guide" : t.dataset.tab; // Rules & legality live in the Play guide
   for (const b of $$("#sheetBody .cs-tabs [data-tab]")) {
     const on = b.dataset.tab === ctx.tab;
     b.classList.toggle("on", on);
     b.setAttribute("aria-selected", on);
     b.tabIndex = on ? 0 : -1;
   }
+  // Set progress, quick price and badges belong to Overview; the other tabs open on their own content.
+  for (const el of $$("#sheetBody [data-overview-only]")) el.hidden = ctx.tab !== "overview";
   for (const p of $$("#sheetBody .cs-panel")) {
     p.hidden = p.dataset.tab !== ctx.tab;
     if (!p.hidden) { p.classList.remove("tab-enter"); void p.offsetWidth; p.classList.add("tab-enter"); }
@@ -4023,8 +4336,8 @@ A.cardTab = async (t) => {
     if(S.ui.sheetCtx === ctx)refreshSheet();
   }
   sheetScrolled();
-  // Official rulings load the first time the tab opens.
-  if (ctx.tab === "rulings" && ctx.type === "card" && !ctx.rulings) {
+  // Official rulings (inside the Play guide) load the first time it opens.
+  if (ctx.tab === "guide" && ctx.type === "card" && !ctx.rulings) {
     const c = ctx.print || meta(ctx.name);
     try {
       const r = await api("/cards/" + encodeURIComponent(c.id) + "/rulings");
@@ -4208,8 +4521,8 @@ function backToCard(scrollTo) {
 A.buyBack = () => backToCard();
 A.buyCompare = () => {
   const ctx = S.ui.sheetCtx;
-  if (ctx?.back) ctx.back.tab = "versions";
-  backToCard(".cs-tabs");
+  if (ctx?.back) ctx.back.tab = "overview";
+  backToCard(".card-printing-preview");
 };
 
 /* ---------- deck review ---------- */
@@ -5140,7 +5453,7 @@ async function mtgGuideLoad(c) {
   const ranked = rankPairs("mtg", c, cands);
   S.ui.guide[k] = {
     cards: ranked.map((p) => ({ name: p.card.name, image: p.card.image_uris?.small || p.card.card_faces?.[0]?.image_uris?.small || "", attrs: `data-act="card" data-name="${esc(p.card.name)}"`, reasons: p.reasons, score: p.score, fallback: p.fallback })),
-    note: ranked.length ? "Ranked by how well they fit (what each card needs and gives), tournament pairings, popularity and what you own." : results.some((r) => !r) ? "Couldn’t reach Scryfall right now." : "No strong pairings found in its text — try Build decks around it.",
+    note: ranked.length ? "Ranked by how well they fit (what each card needs and gives), tournament pairings, popularity and what you own." : results.some((r) => !r) ? "Couldn’t reach Scryfall right now." : "No strong pairings found in its text or tournament lists.",
   };
   refreshSheet();
 }
@@ -5844,6 +6157,7 @@ A.mtgProven = (t) => {
     evidence: `Tournament-backed · ${esc(label)} · last ${data.days} days · compared with ${data.decks.length} lists from ${data.coverage?.events || 0} events · ${esc(data.source)}`,
     attribution: `${{ "Magic Online (official decklists)": `Decklist from <a href="https://www.mtgo.com/decklists" target="_blank" rel="noopener">Magic Online</a> (Wizards of the Coast).`, "MTGTop8 (competitive Commander)": `Decklist from <a href="https://www.mtgtop8.com/format?f=cEDH" target="_blank" rel="noopener">MTGTop8</a>; most events are reported through TopDeck.gg.` }[data.source] || `Data provided by <a href="https://topdeck.gg" target="_blank" rel="noopener">TopDeck.gg</a>.`} Prices are Scryfall’s TCGplayer estimates.`,
     sourceUrl: d.url || d.eventUrl,
+    formatLabel: `Magic · ${label}`,
     sourceLabel: data.source.startsWith("Magic Online") ? "Magic Online event" : data.source.startsWith("MTGTop8") ? "MTGTop8 event" : "TopDeck.gg event",
     rowsFn: () => rowsOf(d),
     // The 15-card sideboard travels with the list (not in Commander, which has none).
@@ -6420,6 +6734,8 @@ const scanCtx = {
   details: (g, c) => (g === "mtg" ? A.card({ dataset: { name: c.name } }) : A.tCard({ dataset: { id: c.id } })),
 };
 scanCtx.aiAccount=()=>!!cloudInfo().user;
+// The scanner's "Add to" chips: remember a place or make a binder for it, in the same commit path as the collection.
+scanCtx.rememberLocation=(g,name,{createBinder=false}={})=>commit(s=>{rememberLocation(s,g,name,{createBinder});},{rerender:false});
 scanCtx.lookupCandidates=createScannerLookup({requestMagic:api,sources:T.SOURCES,candById:scanCtx.candById,match:scanCtx.match});
 registerScanner(scanCtx);
 
@@ -6608,6 +6924,7 @@ C.setHaptics = (t) => {
   toast(saved?"Saved vibration preference on this device.":"Vibration preference could not be saved. Your previous setting is kept.");
   if (saved&&t.checked) haptic("success");
 };
+C.setAppSounds = (t) => { if (!setAudioSettings({ app: t.checked })) { t.checked = !t.checked; toast("Could not save the sound setting."); } };
 C.setSoundOn = (t) => { if (!setAudioSettings({ on: t.checked })) { t.checked = !t.checked; toast("Could not save the sound setting."); return; } };
 C.setMasterVolume = (t) => setAudioSettings({ master: Number(t.value) / 100 });
 C.setSfxVolume = (t) => setAudioSettings({ sfx: Number(t.value) / 100 });
@@ -6856,10 +7173,19 @@ async function boot() {
   if ("serviceWorker" in navigator) {
     // The app opens from its saved copy. A release that arrives in the first moments, before anything
     // has been touched, is switched to straight away; otherwise it is used from the next open.
-    const updating = !!navigator.serviceWorker.controller, opened = Date.now();let touched = false;
-    for (const type of ["pointerdown", "keydown"]) addEventListener(type, () => { touched = true; }, { once: true, capture: true });
-    navigator.serviceWorker.addEventListener("controllerchange", () => { if (updating && !touched && Date.now() - opened < 12000 && !document.querySelector("dialog[open]")) location.reload(); });
-    navigator.serviceWorker.register("./sw.js", { updateViaCache: "none" }).catch(() => {});
+    // A tab left open (phones keep them for days) checks for a release each time it comes back,
+    // and switches to it in the same untouched moment, or the next time it comes back.
+    const updating = !!navigator.serviceWorker.controller;let opened = Date.now(), touched = false, waiting = false, checked = 0, registration = null;
+    const quiet = () => !document.querySelector("dialog[open]") && !/^#\/?(play|scan)/.test(location.hash) && !document.activeElement?.matches?.("input,textarea,select,[contenteditable]") && ![...document.querySelectorAll("input:not([type=hidden]):not([type=checkbox]):not([type=radio]),textarea")].some((f) => f.value && f.value !== f.defaultValue);
+    for (const type of ["pointerdown", "keydown"]) addEventListener(type, () => { touched = true; }, { capture: true });
+    navigator.serviceWorker.addEventListener("controllerchange", () => { if (updating && !touched && Date.now() - opened < 12000 && quiet()) location.reload(); else waiting = true; });
+    document.addEventListener("visibilitychange", () => {
+      if (document.visibilityState !== "visible") return;
+      if (waiting && quiet()) return location.reload();
+      opened = Date.now(); touched = false;
+      if (registration && opened - checked > 600000) { checked = opened; registration.update().catch(() => {}); }
+    });
+    navigator.serviceWorker.register("./sw.js", { updateViaCache: "none" }).then((r) => { registration = r; checked = Date.now(); }).catch(() => {});
   }
   // Scryfall role tags arrive after first paint; redraw Magic pages so Deck Power counts them.
   // TCGplayer prices for printings Scryfall leaves unpriced arrive in the background.

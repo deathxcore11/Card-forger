@@ -12,7 +12,7 @@ S.catalog['shared zone card']=card;
 const deck={id:'zones',name:'Separate quantities',format:'Standard',cards:[{name:card.name,qty:2}],side:[{name:card.name,qty:1}],versions:[]};
 S.state.decks=[deck];S.state.activeDeck=deck.id;S.ui.deckId=deck.id;S.ui.deckTab='cards';S.ui.q.deck='';S.ui.deckFilter='all';
 const html=deckPage();
-assert.match(html,/2\/60<\/b>cards · 1 sideboard/);
+assert.match(html,/2\/60<\/b><span>cards · 1 sideboard/);
 assert.match(html,/58 slots remain/);
 assert.match(html,/data-deck-name="Shared zone card" data-deck-qty="2" data-deck-zone="main"/);
 assert.match(html,/data-deck-name="Shared zone card" data-deck-qty="1" data-deck-zone="side"/);
@@ -59,5 +59,5 @@ for(const mutate of [s=>s.collection.push({name:'Changed',qty:1}),s=>s.decks[0].
 }
 assert.equal(closes,0);assert(calls.every(c=>c.rerender===false&&c.enrich===false&&c.recordDeckWork===false&&c.observeValue===false));
 const n=calls.length;await actions.deckView({dataset:{game:'mtg',mode:'unknown'}});await actions.deckView({dataset:{game:'other',mode:'stacks'}});assert.equal(calls.length,n);
-S.state.settings.displayModes.mtg.deck='obsolete';assert.equal(deckViewFor('mtg'),'compact');
+S.state.settings.displayModes.mtg.deck='obsolete';assert.equal(deckViewFor('mtg'),'gallery');
 console.log('PASS: main/side quantities and size remain separate, whole-list purchases remain intact, four shared preferences preserve source context and ownership without rerendering, and collection views remain independent.');

@@ -6,6 +6,7 @@ import { collectionValue as magicValue, recordValuePoint } from './insights.js';
 import * as T from './tcg.js';
 import { home as magicHome, decks as magicDecks } from './views.js';
 import { metaState, DEFAULT_MTG_META_FORMAT } from './meta.js';
+import { GAMES } from './games.js';
 import { homeValue, homeValueCoverage, homeValueComparison, homeValueModel, refreshHomeValue, homeMetaSlides, homeMetaCarousel, homeMetaKey, attachHomeMeta, refreshHomeCommunity, homeMetaSnapshot } from './home-ui.js';
 import { metaDeckSlides, communityState } from './community-feed.js';
 
@@ -119,7 +120,7 @@ for(const game of ['mtg','ygo','ptcg']) for(const progress of ['new','cards','sa
   assert(order.every((position,i)=>position>=0 && (!i || position>order[i-1])), 'value, resume, Meta, then news');
   assert.doesNotMatch(html,/home-deck-section|home-start|homeRandomDeck|Build from my cards/);
   assert.match(html,/data-home-resume=/);
-  if(progress==='saved')assert.match(html,/Choose a deck/,'an unrecorded deck is not falsely called recently worked');
+  if(progress==='saved'){assert.match(html,/data-home-deck-pick=/);assert.doesNotMatch(html,/Last worked on/,'an unrecorded deck is not falsely called recently worked');}
   if(progress==='new')assert.match(html,/No saved decks yet/);
   assert.equal(JSON.stringify(S.state),before,'presentation does not create decks or edit collection');
 }
@@ -218,7 +219,7 @@ for (const game of ['mtg','ygo','ptcg']) {
   const app = carouselDom(game), target = app.opener(), old = metaState(homeMetaKey(game)).data, oldDeck=old.decks.find(d=>d.key===target.dataset.key);
   app.documentRef.activeElement = target; app.event('focusin', target);
   const opened = [], notices = [], common = {
-    A:{}, S, metaState, provenBuildSequence:0, homeMetaSnapshot:(t,g)=>homeMetaSnapshot(t,g,app.documentRef),
+    A:{}, S, GAMES, metaState, provenBuildSequence:0, homeMetaSnapshot:(t,g)=>homeMetaSnapshot(t,g,app.documentRef),
     toast:text=>notices.push(text), esc:x=>String(x || ''), key:x=>String(x).toLowerCase(),
     meta:()=>null, inv:()=>({owned:0}), namePrice:()=>null, priceOf:()=>null,
     mtgMetaFormat:()=>homeMetaKey('mtg').slice(4), MTG_META_FORMATS:[],
@@ -286,7 +287,7 @@ for (const outcome of ['success','direct-entry','close','native-close','newer-in
   const pending=new Promise((yes,no)=>{resolve=yes;reject=no;}),calls=[],builds=[],notices=[],opened=[];
   const sheet={open:true,contains:t=>t===button && t.isConnected};
   const state={ui:{sheetCtx:null},state:{settings:{}}};
-  const context={
+  const context={GAMES,
     A:{},S:state,proven:{spec:null},metaState,g:()=>activeGame,
     homeMetaSnapshot:(t,g)=>homeMetaSnapshot(t,g,app.documentRef),
     toast:text=>notices.push(text),esc:x=>String(x || ''),cleanName:x=>x,

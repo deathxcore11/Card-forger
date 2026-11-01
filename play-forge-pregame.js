@@ -6,8 +6,8 @@ import {cardKey} from './core.js';
 export function forgeStartingPlayer(snapshot){
  const receipt=snapshot?.pregame,players=snapshot?.players;
  if(receipt?.schema!=='cardstashy.forge-pregame.v1'||!['random','first','second'].includes(receipt.selection)||!['quick','practice'].includes(receipt.playStyle)
-   ||!Number.isSafeInteger(receipt.firstPlayerId)||!Array.isArray(players)||players.length!==2
-   ||players.some(p=>!Number.isSafeInteger(p?.id))||new Set(players.map(p=>p.id)).size!==2
+   ||!Number.isSafeInteger(receipt.firstPlayerId)||!Array.isArray(players)||players.length<2||players.length>4
+   ||players.some(p=>!Number.isSafeInteger(p?.id))||new Set(players.map(p=>p.id)).size!==players.length
    ||!players.some(p=>p.id===receipt.firstPlayerId)||players.filter(p=>p.isViewer===true).length!==1||players.filter(p=>p.id===snapshot.viewer&&p.isViewer===true).length!==1
    ||receipt.playStyle==='quick'&&receipt.selection!=='random')return null;
  return {firstPlayerId:receipt.firstPlayerId,ownFirst:receipt.firstPlayerId===snapshot.viewer,selection:receipt.selection};
@@ -38,21 +38,27 @@ export function mountForgeMatchIntro({root,setup,lookup=()=>null,onCancel=()=>{}
  let closed=false,pendingChoice=null;
  const stage=node('section',undefined,'forge-match-intro'),header=node('header',undefined,'forge-intro-header');
  stage.setAttribute('aria-label','Your matchup');
- const format=node('p',`${setup.match.format} · ${setup.playStyle==='quick'?'Quick Play':'Practice'}`,'forge-intro-eyebrow');
+ const rival=setup.friend?.name||'CPU',format=node('p',`${setup.match.format} · ${setup.friend?'Friend match':setup.playStyle==='quick'?'Quick Play':'Practice'}`,'forge-intro-eyebrow');
  const heading=node('h1','A new match awaits');heading.tabIndex=-1;
  header.append(format,heading);
  const versus=node('div',undefined,'forge-intro-versus'),seats=[];
- for(const [own,deck]of [[true,setup.selected],[false,setup.opponent]]){
+ // A Commander pod shows every CPU: you on one side, CPU 2-4 stacked on the other.
+ const extra=Array.isArray(setup.extraOpponents)?setup.extraOpponents.filter(o=>o?.deck).map(o=>o.deck):[],pod=extra.length>0;
+ let cpuColumn=null;
+ if(pod)versus.classList.add('forge-intro-versus--pod');
+ for(const [index,[own,deck]]of [[true,setup.selected],[false,setup.opponent],...extra.map(d=>[false,d])].entries()){
   const seat=node('section',undefined,'forge-intro-seat '+(own?'forge-intro-you':'forge-intro-cpu'));
+  const cpuName=pod?'CPU '+(index+1):rival;
   const artwork=node('div',undefined,'forge-intro-art'),identity=node('div',undefined,'forge-intro-identity'),avatar=node('span',undefined,'forge-intro-avatar');
   artwork.setAttribute('aria-hidden','true');
   if(own)avatar.innerHTML=profileAvatar(profile.avatarArt,{display_name:profile.displayName,username:profile.username,avatar_url:profile.avatarUrl});
-  else{const crest=node('span','CPU','forge-cpu-crest');crest.setAttribute('aria-hidden','true');avatar.append(crest);}
-  const name=node('div',undefined,'forge-intro-name');name.append(node('small',own?'YOU':'YOUR OPPONENT'),node('h2',own?(profile.displayName||profile.username||'You'):'CPU'));
+  else{const crest=node('span',setup.friend?rival.slice(0,1).toUpperCase():'CPU','forge-cpu-crest');crest.setAttribute('aria-hidden','true');avatar.append(crest);}
+  const name=node('div',undefined,'forge-intro-name');if(own||!pod)name.append(node('small',own?'YOU':'YOUR OPPONENT'));name.append(node('h2',own?(profile.displayName||profile.username||'You'):cpuName));
   if(own&&profile.username)name.append(node('span','@'+profile.username.replace(/^@/,'')));
   identity.append(avatar,name);
-  const deckInfo=node('div',undefined,'forge-intro-deck');deckInfo.append(node('span','DECK'),node('h3',deck?.name||'Selected deck'));
-  seat.append(artwork,identity,deckInfo);seats.push({deck,artwork});versus.append(seat);
+  const deckInfo=node('div',undefined,'forge-intro-deck');deckInfo.append(node('span','DECK'),node('h3',!own&&setup.friend?'Hidden until played':deck?.name||'Selected deck'));
+  seat.append(artwork,identity,deckInfo);seats.push({deck,artwork});
+  if(own||!pod)versus.append(seat);else{if(!cpuColumn){cpuColumn=node('div',undefined,'forge-intro-pod');versus.append(cpuColumn);}cpuColumn.append(seat);}
   if(own){const vs=node('span','VS','forge-intro-vs');vs.setAttribute('aria-hidden','true');versus.append(vs);}
  }
  const footer=node('footer',undefined,'forge-intro-footer'),steps=node('ol',undefined,'forge-intro-steps');
@@ -93,10 +99,10 @@ export function mountForgeMatchIntro({root,setup,lookup=()=>null,onCancel=()=>{}
   const coin=node('div',undefined,'forge-intro-coin'),body=node('div',undefined,'forge-coin-body'),you=node('span',undefined,'forge-coin-face forge-coin-you'),cpu=node('span',undefined,'forge-coin-face forge-coin-cpu');
   coin.setAttribute('aria-hidden','true');coin.setAttribute('data-result',result.ownFirst?'you':'cpu');
   you.innerHTML=profileAvatar(profile.avatarArt,{display_name:profile.displayName,username:profile.username,avatar_url:profile.avatarUrl});you.append(node('b','YOU'));
-  const cpuArt=forgeDeckBackdrop(setup.opponent,lookup);if(cpuArt){const img=node('img');img.src=cpuArt;img.alt='';img.referrerPolicy='no-referrer';cpu.append(img);}cpu.append(node('b','CPU'));
+  const cpuArt=forgeDeckBackdrop(setup.opponent,lookup);if(cpuArt){const img=node('img');img.src=cpuArt;img.alt='';img.referrerPolicy='no-referrer';cpu.append(img);}cpu.append(node('b',setup.friend?'FRIEND':'CPU'));
   body.append(you,cpu);coin.append(body);
   const label=node('p',result.selection==='random'?'Flipping the coin…':'Starting player','forge-intro-eyebrow');
-  const outcome=node('h2',result.ownFirst?'You play first':'CPU plays first');outcome.hidden=!reduced;
+  const outcome=node('h2',result.ownFirst?'You play first':`${setup.friend?.name||'CPU'} plays first`);outcome.hidden=!reduced;
   curtain.append(label,coin,outcome,node('p',rulesChanged?'Card rules determined the starting player. Your opening hand is next.':'Your opening hand is next.'));stage.append(curtain);
   for(const step of steps.children)step.removeAttribute?.('aria-current');steps.children[1]?.setAttribute('aria-current','step');
   if(!reduced&&result.selection==='random')curtain.classList.add('is-flipping');

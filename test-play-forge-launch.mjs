@@ -27,6 +27,14 @@ test('artwork prepares both complete lists, keeps printings distinct and freezes
  assert.equal(p.lookup('Test Commander','human-printing').id,'human-printing');assert.equal(p.lookup('Test Commander','cpu-printing').id,'cpu-printing');
  const count=network,copy=p.lookup('Side card',null);copy.name='mutated';cards.get('Side card').name='changed catalogue';assert.equal(p.lookup('Side card',null).name,'Side card');assert.equal(network,count);
 });
+test('artwork covers a Commander pod\'s extra CPU decks and commanders kept beside the list',async()=>{
+ const s={...setup(),extraOpponents:[{deck:{name:'Pod deck',format:'Commander',commanders:[{name:'Pod Commander',qty:1}],cards:[{name:'Pod card',qty:99}]},difficulty:'Medium'}]},names=[];
+ const known=new Map(['Test Commander','Plains','Side card','Pod Commander','Pod card'].map(n=>[n,{id:n,name:n}]));
+ const p=createForgeArtworkPreparation({isCurrent:()=>true,resolveNames:async n=>{names.push(...n);},lookup:(name,id)=>id?null:known.get(name),fetchPrinting:async id=>({id,name:'Test Commander'})});
+ await p.prepare(s);
+ assert.ok(names.includes('Pod Commander')&&names.includes('Pod card'),'the third and fourth seats get art too');
+ assert.equal(p.lookup('Pod card',null)?.name,'Pod card');
+});
 test('artwork outage and wrong printing do not substitute a card or reject deck access',async()=>{
  const p=createForgeArtworkPreparation({isCurrent:()=>true,resolveNames:async()=>{throw Error('offline');},lookup:()=>({id:'wrong',name:'Test Commander'}),fetchPrinting:async()=>({id:'wrong',name:'Test Commander'})});
  await p.prepare(setup());assert.equal(p.lookup('Test Commander','human-printing'),null);assert.equal(p.lookup('Plains','selected-plains'),null);
@@ -83,7 +91,7 @@ test('real app handler takes the Forge branch and bypasses legacy pregame and ca
  source=source.replace("import('./play-forge-player-mat.js')",'loadForgeMat()');
  const {doc}=dom(),s=setup(),events=[];
  const forbidden=()=>{throw Error('legacy path entered');};
- const deps={A:{},nextPlaymat:()=>'ashen-forge',mountPlaymatScene:()=>null,unmountPlaymatScene:()=>{},FORGE_PLAY_TEST_ENABLED:true,PLAY_MATCH_RELEASE_READY:true,playUpdates:{beforeMatch:async()=>false},toast:forbidden,T:{game:()=> 'mtg'},syncDesktopPlayEntries:()=>({eligible:true}),playSetup:{snapshot:()=>s},S:{ui:{view:'play'},state:{printings:{}}},document:doc,readPlayAccount:()=>({user:{id:OWNER}}),cloudInfo:()=>({user:{id:OWNER}}),cloudAccessToken:async()=>'token',accountGeneration:1,accountLocked:false,key:x=>x,resolveNames(){},meta(){},api(){},createForgeArtworkPreparation,createPracticeCardPreparation:forbidden,createPlayerMat:forbidden,createPracticeCatalogReview:forbidden,savePlayDeck:forbidden,closePlayerMat(){},go(){},V:{deckArtwork:forbidden},mountPracticePregame:forbidden,resolvePracticePregame:forbidden,loadForgeMat:async()=>({createForgePlayerMat:options=>({start:async()=>{assert.deepEqual(options.readSetup(),s);assert.equal(await options.getAccessToken(),'token');assert.equal(typeof options.prepareArtwork,'function');events.push('native');}})})};
+ const deps={A:{},loadEngineCardNames:async()=>new Set(),engineUnknownCards:()=>[],engineMissingText:forbidden,nextPlaymat:()=>'ashen-forge',mountPlaymatScene:()=>null,lockPlayLandscape:async()=>'native',unmountPlaymatScene:()=>{},FORGE_PLAY_TEST_ENABLED:true,PLAY_MATCH_RELEASE_READY:true,playUpdates:{beforeMatch:async()=>false},toast:forbidden,T:{game:()=> 'mtg'},syncDesktopPlayEntries:()=>({eligible:true}),playSetup:{snapshot:()=>s},S:{ui:{view:'play'},state:{printings:{}}},document:doc,readPlayAccount:()=>({user:{id:OWNER}}),cloudInfo:()=>({user:{id:OWNER}}),cloudAccessToken:async()=>'token',accountGeneration:1,accountLocked:false,key:x=>x,resolveNames(){},meta(){},api(){},createForgeArtworkPreparation,createPracticeCardPreparation:forbidden,createPlayerMat:forbidden,createPracticeCatalogReview:forbidden,savePlayDeck:forbidden,closePlayerMat(){},go(){},V:{deckArtwork:forbidden},mountPracticePregame:forbidden,resolvePracticePregame:forbidden,loadForgeMat:async()=>({createForgePlayerMat:options=>({start:async()=>{assert.deepEqual(options.readSetup(),s);assert.equal(await options.getAccessToken(),'token');assert.equal(typeof options.prepareArtwork,'function');events.push('native');}})})};
  new Function(...Object.keys(deps),'let playStarting=false,playerMatHost=null,practicePregame=null,playerMatRoot=null;'+source)(...Object.values(deps));
  await deps.A.playStartCandidate();assert.deepEqual(events,['native']);
 });
@@ -154,7 +162,7 @@ test('while the server starts the match the intro shows the stage and the second
    return Response.json({matchId:MATCH,generation:GENERATION,status:'finished',viewerId:1,result:{draw:false,winnerPlayerId:1}});
   }})});
  await mat.start();
- assert.deepEqual(calls.find(c=>c[0]==='status'),['status','Starting the rules engine…']);
+ assert.deepEqual(calls.find(c=>c[0]==='status'),['status','Setting up the table…']);
  const seconds=calls.filter(c=>c[0]==='elapsed'&&c[1]).map(c=>c[1]);
  assert.equal(seconds[0],'0 s');assert.ok(seconds.includes('12 s')&&seconds.includes('29 s'),'the counter follows the clock');
  const notes=calls.filter(c=>c[0]==='note'&&c[1]).map(c=>c[1]);

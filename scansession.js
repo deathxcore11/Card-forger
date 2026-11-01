@@ -1,4 +1,5 @@
 import {haptic} from './feel.js';
+import {sfx} from './audio.js';
 import {YGO_EDITIONS} from './ygo-identity.js';
 import {privateKey} from './account-scope.js';
 // Scan sessions: defaults you set once (finish, condition, language, quantity), a running list of
@@ -29,7 +30,7 @@ const write = (k, v) => {
   } catch {}
 };
 
-export const DEFAULT_PREFS = { quick: false, sounds: true, haptics: true, showValue: true, preferFoil: false, ignorePromos: false, lockSet: "", camera: "", qty: 1, condition: "Near Mint", lang: "en", location: "" };
+export const DEFAULT_PREFS = { quick: false, aiRead: true, confirmEach: false, sounds: true, haptics: true, showValue: true, preferFoil: false, ignorePromos: false, lockSet: "", camera: "", qty: 1, condition: "Near Mint", lang: "en", location: "" };
 // Per-game finish default, shared settings otherwise.
 export function loadPrefs(g) {
   const all = read(PREFS_KEY, {}) || {};
@@ -79,23 +80,24 @@ export function sessionText(list) {
     .join("\n");
 }
 
-// Short success/fail sounds (no files) and a tap of vibration.
+// A soft chime when a card is added (the same one the app uses), a quiet low tone when nothing matched, and a tap of vibration.
 let audio = null;
 export function feedback(kind, prefs) {
   // The scanner's own switch and the app-wide Haptics setting both have to be on; one shared haptic path.
   if (prefs.haptics) haptic(kind === "ok" ? "success" : "error");
   if (!prefs.sounds) return;
+  if (kind === "ok") return sfx("COL-005", { volume: 0.5, gap: 120 });
   try {
     audio ||= new (window.AudioContext || window.webkitAudioContext)();
     const t = audio.currentTime,
-      notes = kind === "ok" ? [880, 1320] : [300, 220];
+      notes = [300, 220];
     notes.forEach((f, i) => {
       const o = audio.createOscillator(),
         gn = audio.createGain();
       o.type = "sine";
       o.frequency.value = f;
       gn.gain.setValueAtTime(0.0001, t + i * 0.09);
-      gn.gain.exponentialRampToValueAtTime(0.18, t + i * 0.09 + 0.01);
+      gn.gain.exponentialRampToValueAtTime(0.08, t + i * 0.09 + 0.01);
       gn.gain.exponentialRampToValueAtTime(0.0001, t + i * 0.09 + 0.12);
       o.connect(gn).connect(audio.destination);
       o.start(t + i * 0.09);

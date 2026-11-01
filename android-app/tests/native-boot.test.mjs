@@ -54,7 +54,9 @@ test('card art is served at the app origin by the native art cache, with the web
 // reset the top bar's padding-block and size pop-ups against the whole screen.
 test('the top bar and pop-ups stay clear of the status bar', async () => {
   const css = await readFile(path.join(root, 'www/native-integration.css'), 'utf8'), site = await readFile(path.join(root, 'www/style.css'), 'utf8');
-  assert.match(site, /\.topbar\{grid-template-columns:auto minmax\(0,1fr\) auto;gap:8px;padding-block:8px\}/, 'the phone rule this guards against is still in the website');
+  // Since 4.3.36 the website pads the phone top bar by env(safe-area-inset-top) itself (build-web adds
+  // Capacitor's --safe-area-inset-top beside it); the app's own html .topbar rule still sets the top padding.
+  assert.match(site, /\.topbar\{grid-template-columns:auto minmax\(0,1fr\) auto;gap:8px;padding-block:calc\(max\(env\(safe-area-inset-top\), var\(--safe-area-inset-top, 0px\)\) \+ 8px\) 8px\}/, 'the phone rule this guards against is still in the website');
   assert.match(css, /@media \(max-width:1199px\) \{ html \.topbar \{ padding-top: calc\(max\(env\(safe-area-inset-top\), var\(--safe-area-inset-top, 0px\)\) \+ 8px\); \} \}/);
   for (const name of ['settings', 'profile-art', 'pack', 'community', 'tabletop', 'ai-review', 'ask']) {
     assert.match(css, new RegExp(`html \\.${name}-dialog:modal \\{ (max-height|height):`), `${name} dialog is capped to the safe area`);

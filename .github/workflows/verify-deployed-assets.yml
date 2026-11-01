@@ -30,4 +30,4 @@ jobs:
           name: deployed-assets-${{ github.sha }}
           path: test-results/deployed-assets.json
           if-no-files-found: warn
-          retention-days: 14
+          retention-days: 2
