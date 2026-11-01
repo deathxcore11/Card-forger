@@ -153,6 +153,12 @@ const remember = (card) => {
   // Fresh card data has no condition quotes: keep the ones already learned (NM/LP… prices),
   // so a saved copy's condition keeps its price across refreshes.
   if (!card.conditionQuotes && prev?.conditionQuotes?.length) card.conditionQuotes = prev.conditionQuotes;
+  // YGOPRODeck answers a lookup by passcode with only that passcode's artwork, while searches list
+  // every artwork. A refresh keeps the artworks already known, so the card page's choices don't shrink.
+  if (card.game === "ygo" && prev?.artworks?.length) {
+    const known = new Set(prev.artworks.map((a) => a.id)), added = (card.artworks || []).filter((a) => !known.has(a.id));
+    if (prev.artworks.length > (card.artworks?.length || 0) || added.length) card.artworks = [...prev.artworks, ...added];
+  }
   cache[card.game][card.id] = card;
   saveCacheSoon();
   return card;
