@@ -58,11 +58,46 @@ export function storyActMarkup({act, data, progress, econ}) {
 }
 
 // The duel setup: both sides, your deck, and Play. ui: {seat, deck:'loaner'|<play deck id>}.
+// "New in this battle": one plain sentence per mechanic a battle introduces (battle.teaches).
+export const LESSONS = {
+  'Land drops and mana': 'Play one land a turn and tap lands for mana to cast your spells.',
+  'Casting creatures': 'Creatures can\'t attack the turn they arrive. Next turn, they fight.',
+  'Attacking and blocking': 'Attack with creatures; your opponent chooses which of theirs block. Unblocked damage hits the player.',
+  'Flying': 'Creatures with flying can only be blocked by other flyers.',
+  'First strike': 'A first striker deals its combat damage before creatures without it.',
+  'Protection from a colour': 'Protection from a colour: it can\'t be blocked, targeted, damaged or enchanted by that colour.',
+  "Instants on the opponent's turn": 'Instants can be cast any time, even during your opponent\'s turn. Hold mana open to surprise them.',
+  'Bounce': 'Bounce returns a permanent to its owner\'s hand. They have to pay for it again.',
+  'Artifacts': 'Artifacts are colourless, so any deck can play them.',
+  'Answering artifacts': 'Some cards destroy artifacts outright. Save them for the biggest machine.',
+  'Tempo': 'Tempo means using your mana better than your opponent each turn, so they fall behind.',
+  'Counterspells': 'A counterspell stops a spell as it\'s cast. Leave blue mana open to threaten one.',
+  'Artifact creatures': 'Artifact creatures are both artifacts and creatures, so artifact removal hits them too.',
+  'Sacrifice': 'Sacrifice means putting your own permanent into the graveyard to pay for an effect.',
+  'Two colours of mana': 'Two-colour decks need both land types. Watch which colours your hand needs.',
+  'Legendary creatures': 'Legendary creatures are named heroes. You can only control one with each name.',
+  'Three colours': 'Three-colour cards need all three mana colours. Dual lands make that possible.',
+  'Tokens': 'Tokens are creatures made by other cards. They count as creatures until they leave play.',
+  'Counters': 'Counters placed on a card change it, like spore counters that grow into Thallids.',
+  'Multicolour gold cards': 'Gold cards need more than one colour of mana and are usually stronger for it.',
+  'Card advantage': 'Card advantage: getting more cards than your opponent. More cards, more choices.',
+  'Playing around counterspells': 'Against counterspells, cast your less important spell first, or wait until their mana is tapped.',
+  'Discard': 'Discard makes a player throw cards from hand. Play your cards before they\'re taken.',
+  'Snow': 'Snow lands make snow mana, which powers the cards of the long winter.',
+  'Cumulative upkeep': 'Cumulative upkeep: pay more each turn to keep it, or let it go.',
+  'Paying life': 'Some cards cost life instead of mana. Life is a resource until it runs out.',
+  'Direct damage': 'Direct damage spells hit creatures or go straight at the player.',
+  'Growing creatures': 'Some creatures grow with counters or pump spells. Answer them early.',
+  'Alternate costs': 'Alternate costs let you cast a spell without paying its mana, at a price.',
+  'Racing a card-draw engine': 'They pay life to draw cards. Attack hard: every point you deal is one they can\'t spend.',
+  'Playing under a lock': 'A lock stops cards from untapping or moving. Break it, or win with what\'s already in play.',
+};
 export function storyBattleMarkup({act, data, battle: b, progress, econ, ui = {}, ownDecks = [], avatarUrl = '', listHtml = ''}) {
   const rec = progress.battles?.[b.id] || {}, villainOpen = battleCleared(progress, b.id), seat = villainOpen && ui.seat === 'villain' ? 'villain' : 'hero';
   const mine = b[seat], theirs = b[seat === 'hero' ? 'villain' : 'hero'];
   const person = side => data.cast[b[side].who] || {name: 'You'};
   const face = side => b[side].who === 'you' && avatarUrl ? `background-image:url(${esc(avatarUrl)});background-position:50% 50%` : faceStyle(person(side).portrait);
+  const listOpen = !!ui.listOpen;
   const deckChoice = ui.deck && ui.deck !== 'loaner' ? ownDecks.find(d => d.id === ui.deck) : null;
   const sideCard = (side, you) => `<article class="st-side${you ? ' st-side--you' : ''}" data-side="${side}"><span class="st-side-face" style="${face(side)}" aria-hidden="true"></span>
     <span class="st-side-copy"><span class="st-side-who">${you ? 'You play' : 'Opponent'}</span><h2>${esc(person(side).name)}</h2>${you ? '' : `<p>${esc(b[side].deck.name)}</p>`}</span></article>`;
@@ -70,28 +105,31 @@ export function storyBattleMarkup({act, data, battle: b, progress, econ, ui = {}
   const cropOf = id => `https://cards.scryfall.io/art_crop/front/${id[0]}/${id[1]}/${id}.jpg`;
   const lead = deck => deck.cards.find(r => !/^(snow-covered )?(plains|island|swamp|mountain|forest)$/i.test(r.name));
   const count = deck => deck.cards.reduce((t, r) => t + (Number(r.qty) || 0), 0);
-  const deckCard = ({id, name, art, sub, ok = true, reason = ''}) => `<button type="button" class="home-personal-deck st-deck-opt" data-act="storyDeckPick" data-story-deck="${esc(id)}" aria-pressed="${(ui.deck || 'loaner') === id}" ${ok ? '' : 'disabled'}><span class="home-personal-art" aria-hidden="true">${art ? `<img src="${esc(art)}" alt="" loading="lazy" referrerpolicy="no-referrer">` : ''}</span><span class="home-personal-copy"><b>${esc(name)}</b><small>${esc(ok ? sub : reason)}</small></span></button>`;
+  const deckCard = ({id, name, art, sub, ok = true, reason = ''}) => `<button type="button" class="home-personal-deck st-deck-opt" data-act="storyDeckPick" data-story-deck="${esc(id)}" aria-pressed="${(ui.deck || 'loaner') === id}"${(ui.deck || 'loaner') === id ? ` aria-expanded="${listOpen}" aria-controls="stDeckList"` : ''} ${ok ? '' : 'disabled'}><span class="home-personal-art" aria-hidden="true">${art ? `<img src="${esc(art)}" alt="" loading="lazy" referrerpolicy="no-referrer">` : ''}</span><span class="home-personal-copy"><b>${esc(name)}</b><small>${esc(ok ? sub : reason)}</small></span>${(ui.deck || 'loaner') === id ? '<span class="st-deck-chev" aria-hidden="true"></span>' : ''}</button>`;
   const loanLead = lead(mine.deck);
   const picks = [deckCard({id: 'loaner', name: mine.deck.name, art: loanLead?.id ? cropOf(loanLead.id) : '', sub: `Story deck · ${count(mine.deck)} cards`}),
     ...(seat === 'hero' ? ownDecks.map(d => deckCard({id: d.id, name: d.name, art: d.art || '', sub: `Your deck · ${count(d)} cards`, ok: d.fits.ok, reason: d.fits.reason})) : [])].join('');
-  const listSide = ui.listSide === 'theirs' ? 'theirs' : 'mine';
+  // Their list stays secret until you've beaten them; after that you can play their side too.
+  const listSide = villainOpen && ui.listSide === 'theirs' ? 'theirs' : 'mine';
+  const learn = (b.teaches || []).filter(t => LESSONS[t]);
   return `<section class="play-menu st-screen st-duel" aria-labelledby="playTitle">${head(b.title, econ, `Act ${act} · ${b.slot === 8 ? 'Boss' : b.kind}`, 'storyOpenAct', 'Back to the act')}
     <div class="st-duel-stage" style="--st-bg:url(${esc(person('villain').portrait?.crop || '')})">
       <section class="pl-arena st-arena" aria-label="This battle">${sideCard(seat, true)}<span class="pl-vs" aria-hidden="true"><b><span>VS</span></b></span>${sideCard(seat === 'hero' ? 'villain' : 'hero', false)}</section>
       <p class="st-duel-blurb">${esc(b.blurb)}</p>
     </div>
+    ${learn.length ? `<aside class="st-learn" aria-label="New in this battle"><span class="st-learn-tag">New in this battle</span>${learn.map(t => `<p><b>${esc(t)}</b> ${esc(LESSONS[t])}</p>`).join('')}</aside>` : ''}
     <div class="home-personal-grid st-deck-grid" role="group" aria-label="Your deck">${picks}</div>
     <div class="st-duel-bar">
       ${villainOpen ? `<div class="st-seg" role="group" aria-label="Side"><button data-act="storySeat" data-story-seat="hero" aria-pressed="${seat === 'hero'}">${esc(person('hero').name)}</button><button data-act="storySeat" data-story-seat="villain" aria-pressed="${seat === 'villain'}">${esc(person('villain').name)}</button></div>` : ''}
       <span class="st-duel-stars">${starsRow(rec)}</span>
       <button class="pl-mode-cta st-play" data-act="storyPlay">${battleCleared(progress, b.id) ? 'Replay' : 'Duel'}</button>
     </div>
-    <section class="st-decks" aria-label="Decks">
+    ${listOpen ? `<section class="st-decks" id="stDeckList" aria-label="Decklist">
       <div class="st-lists">
-        <div class="st-seg" role="group" aria-label="Decklist"><button data-act="storyListSide" data-story-list="mine" aria-pressed="${listSide === 'mine'}">Your deck</button><button data-act="storyListSide" data-story-list="theirs" aria-pressed="${listSide === 'theirs'}">Their deck</button></div>
+        ${villainOpen ? `<div class="st-seg" role="group" aria-label="Decklist"><button data-act="storyListSide" data-story-list="mine" aria-pressed="${listSide === 'mine'}">Your deck</button><button data-act="storyListSide" data-story-list="theirs" aria-pressed="${listSide === 'theirs'}">Their deck</button></div>` : ''}
         ${listHtml}
       </div>
-    </section>
+    </section>` : ''}
   </section>`;
 }
 

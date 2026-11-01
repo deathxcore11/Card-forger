@@ -105,6 +105,18 @@
 .st-deck-opt{cursor:pointer;text-align:left;font:inherit;color:inherit}
 .st-deck-opt[aria-pressed=true]{border-color:var(--gold);box-shadow:0 0 0 1px var(--gold),0 10px 30px #d6ad6420}
 .st-deck-opt:disabled{cursor:default;opacity:.55}
+/* The chosen deck opens its card list: a quiet chevron says so, and turns when it's open. */
+.st-deck-opt{position:relative}
+.st-deck-chev{position:absolute;z-index:2;right:16px;bottom:18px;width:8px;height:8px;border-right:2px solid var(--gold);border-bottom:2px solid var(--gold);transform:rotate(45deg);transition:transform .2s ease}
+.st-deck-opt[aria-expanded=true] .st-deck-chev{transform:translateY(3px) rotate(-135deg)}
+.st-decks{animation:stListIn .24s ease both}
+@keyframes stListIn{from{opacity:0;transform:translateY(-6px)}to{opacity:1;transform:none}}
+@media (prefers-reduced-motion:reduce){.st-decks{animation:none}.st-deck-chev{transition:none}}
+/* New in this battle: the mechanic the battle introduces, in one plain sentence. */
+.st-learn{display:grid;gap:6px;padding:14px 16px;border:1px solid #d6ad6455;border-radius:18px;background:linear-gradient(115deg,#e6c8841a,#b39d6c08),color-mix(in srgb,var(--surface) 90%,transparent)}
+.st-learn-tag{font:800 11px/1 'DM Sans',system-ui,sans-serif;letter-spacing:.2em;text-transform:uppercase;color:var(--gold)}
+.st-learn p{margin:0;font-size:14px;line-height:1.5;color:#e4e7ea;text-wrap:pretty}
+.st-learn b{color:#f6eedb;margin-right:4px}
 .st-lists{display:grid;gap:12px;min-width:0}
 .st-lists>.st-seg{justify-self:start;max-width:100%;flex-wrap:wrap}
 .st-lists :is(.art-price,.grid-meta>span:last-child,.group>summary>.muted.small){display:none}

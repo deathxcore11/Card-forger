@@ -2123,11 +2123,11 @@ function storyNeedAct(n){if(storyUi.data[n])return;loadAct(n).then(d=>{storyUi.d
 const storyGo=view=>{playView=view;playInspectOpen=false;refreshPlayMenu();scrollTo({top:0});requestAnimationFrame(()=>document.getElementById('playTitle')?.focus?.({preventScroll:true}));};
 A.storyHome=()=>{storyProgress.wake();for(const a of STORY_ACTS)storyNeedAct(a.act);storyGo('story');};
 A.storyOpenAct=t=>{const n=Number(t?.dataset?.storyAct||storyUi.act);if(!STORY_ACTS.some(a=>a.act===n))return;storyUi.act=n;storyNeedAct(n);storyGo('storyAct');};
-A.storyOpenBattle=t=>{storyUi.battle=t.dataset.storyBattle;storyUi.seat='hero';storyUi.deck='loaner';storyUi.listSide='mine';storyGo('storyBattle');storyWantArt();
+A.storyOpenBattle=t=>{storyUi.battle=t.dataset.storyBattle;storyUi.seat='hero';storyUi.deck='loaner';storyUi.listSide='mine';storyUi.listOpen=false;storyGo('storyBattle');storyWantArt();
  // The boss runs on the host: start warming it while the player reads the setup (story-mode-acts.md A1).
  if(/b8$/.test(storyUi.battle))void import('./play-forge-host-client.js').then(m=>m.warmForgeHost({getAccessToken:cloudAccessToken})).catch(()=>{});};
 A.storySeat=t=>{storyUi.seat=t.dataset.storySeat==='villain'?'villain':'hero';if(storyUi.seat==='villain')storyUi.deck='loaner';storyUi.listSide='mine';refreshPlayMenu();};
-A.storyDeckPick=t=>{storyUi.deck=t.dataset.storyDeck||'loaner';storyUi.listSide='mine';storyWantArt();refreshPlayMenu();};
+A.storyDeckPick=t=>{const id=t.dataset.storyDeck||'loaner';storyUi.listOpen=storyUi.deck===id?!storyUi.listOpen:true;storyUi.deck=id;storyUi.listSide='mine';if(storyUi.listOpen)storyWantArt();refreshPlayMenu();};
 A.storyListSide=t=>{storyUi.listSide=t.dataset.storyList==='theirs'?'theirs':'mine';storyWantArt();refreshPlayMenu();};
 // The decklists use the app's own deck viewer, so its card data loads first (the same lookups the deck pages use).
 // Story decklists show the exact era printing of every card, basics included: the rows carry
@@ -2152,8 +2152,8 @@ function storyMarkup(){
  if(playView==='storyAct')return storyActMarkup({act:storyUi.act,data,progress,econ});
  const b=storyBattle();if(!b)return storyActMarkup({act:storyUi.act,data,progress,econ});
  const ownDecks=storyOwnDecks(),seat=storyUi.seat==='villain'&&battleCleared(progress,b.id)?'villain':'hero',other=seat==='hero'?'villain':'hero';
- const own=seat==='hero'&&storyUi.deck!=='loaner'?ownDecks.find(d=>d.id===storyUi.deck):null,list=storyUi.listSide==='theirs'?b[other].deck:own||b[seat].deck;
- return storyBattleMarkup({act:storyUi.act,data,battle:b,progress,econ,ui:storyUi,ownDecks,avatarUrl:storyAvatar(),listHtml:withStoryPrints(list.cards,()=>playDeckPreview({name:list.name,format:'Vintage',cards:list.cards.map(r=>({name:r.name,qty:r.qty})),side:[]}))});
+ const own=seat==='hero'&&storyUi.deck!=='loaner'?ownDecks.find(d=>d.id===storyUi.deck):null,list=storyUi.listSide==='theirs'&&battleCleared(progress,b.id)?b[other].deck:own||b[seat].deck;
+ return storyBattleMarkup({act:storyUi.act,data,battle:b,progress,econ,ui:storyUi,ownDecks,avatarUrl:storyAvatar(),listHtml:!storyUi.listOpen?'':withStoryPrints(list.cards,()=>playDeckPreview({name:list.name,format:'Vintage',cards:list.cards.map(r=>({name:r.name,qty:r.qty})),side:[]}))});
 }
 const storyDeck=(deck,id)=>({id,name:deck.name,format:'Vintage',cards:deck.cards.map(r=>({name:r.name,qty:r.qty,...(r.id?{printingId:r.id}:{})}))});
 A.storyPlay=async({skipScene=false}={})=>{

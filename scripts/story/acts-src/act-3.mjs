@@ -51,6 +51,7 @@ export default {
 4 Stone Giant
 24 Snow-Covered Mountain`}},
       scene: [{who: 'kjeldor', line: 'Honorable in battle, generous in death.', quote: true}, {who: 'balduvian', line: 'Generous? Then give us the valley.'}, {who: 'kjeldor', line: 'Kjeldor holds the pass. It always has.'}, {who: 'balduvian', line: "Kjeldor holds nothing once it's frozen solid."}],
+      villainScene: [{who: 'balduvian', line: "Kjeldor sits in the warm valley while Balduvia freezes."}, {who: 'balduvian', line: "Not this winter. Raiders, to the pass!"}],
       cues: {hero: cue('Shields.', 'For Kjeld!', 'Hold the pass!', 'Go home before the snow takes you.', 'Fall back to the city...'),
         villain: cue('Burn the fences!', 'Balduvia rides!', 'The cold bites both ways!', 'The valley is ours.', "We'll be back when it's colder.")}},
     {slot: 2, kind: 'Lesson', title: "The Royal Mage's Lesson", difficulty: 'Easy', rewardSet: 'ice', teaches: ['Cumulative upkeep'],
@@ -80,6 +81,7 @@ export default {
 4 Ironclaw Orcs
 24 Mountain`}},
       scene: [{who: 'gustha', line: 'What I want, I take.', quote: true}, {who: 'gustha', line: "That's the lie the cold tells you. Everything you take, you pay for. Every turn."}, {who: 'varchild', line: "Speeches. I'm paid by the head, mage, not by the word."}, {who: 'gustha', line: "Then let's see what your head's worth."}],
+      villainScene: [{who: 'varchild', line: "A mage who lectures. My favourite kind of target."}, {who: 'varchild', line: "Paid by the head. Let's earn a fortune."}],
       cues: {hero: cue('Mind the cost.', 'Within moments, victory was mine.', 'Not yet.', "Know a thing's nature.", 'I paid too much...'),
         villain: cue('Ride!', 'Pay me in blood.', "This wasn't the contract!", 'Collect the bounty.', 'Somebody owes me.')}},
     {slot: 3, kind: 'Lesson', title: 'The Black Book', difficulty: 'Normal', rewardSet: 'ice', teaches: ['Card advantage', 'Paying life'],
@@ -107,8 +109,8 @@ export default {
 2 Drain Life
 2 Raise Dead
 1 Sengir Vampire
-2 Evil Presence
-2 Evil Presence
+3 Evil Presence
+1 Necropotence
 2 Drudge Skeletons
 2 Terror
 2 Scathe Zombies
@@ -118,6 +120,7 @@ export default {
 1 Unholy Strength
 24 Swamp`}},
       scene: [{who: 'leshrac', line: 'Take it. Read.'}, {who: 'laina', line: "Don't touch that. Freyalise warned us about his gifts."}, {who: 'leshrac', line: 'Freyalise warns. I give.'}, {who: 'laina', line: 'Our friends of the forest take many forms, yet all serve the will of Freyalise.', quote: true}, {who: 'leshrac', line: "Then let them serve. I'll wait."}],
+      villainScene: [{who: 'leshrac', line: "Every planeswalker wants power. They just pretend they don't."}, {who: 'leshrac', line: "Give it the book. Let it pay, page by page."}],
       cues: {hero: cue('Freyalise, guide us.', 'The goddess is generous to her children.', "Don't read it...", 'Take your book and go.', "He's in the trees now."),
         villain: cue('Read.', 'More.', 'Pay.', 'Mine.', 'Later.')}},
     {slot: 4, kind: 'Rival', title: "Baron Sengir's Feast", difficulty: 'Normal', rewardSet: 'hml', teaches: ['Direct damage', 'Growing creatures'],
@@ -147,12 +150,13 @@ export default {
 3 Abomination
 24 Swamp`}},
       scene: [{who: 'baron', line: 'A visitor. How rare. How fresh.'}, {who: 'reveka', line: "Don't let him get you near the table, rift-walker."}, {who: 'baron', line: "Reveka, you wound me. I'm a host."}, {who: 'reveka', line: "You're a leech in a nice coat."}, {who: 'baron', line: 'Every guest grows stronger in my house. Well. I do.'}],
+      villainScene: [{who: 'baron', line: "Fresh blood from another world. Set another place at the table."}, {who: 'baron', line: "Reveka will warn it. They always warn them. It never helps."}],
       cues: {hero: cue('Lights up.', 'Choke on that.', 'Not dinner. Not today.', 'Lock the castle behind us.', 'Run!'),
         villain: cue('Dinner is served.', 'Delicious.', 'Rude guests.', "You'll keep.", 'Come back hungrier.')}},
     {slot: 5, kind: 'Lesson', title: 'The Dead at the Gate', difficulty: 'Normal', rewardSet: 'all', teaches: ['Alternate costs', 'Counterspells'],
       blurb: 'The dead are walking south. Kjeldor and Balduvia stop fighting each other long enough to form an Alliance.',
       hero: {who: 'kjeldor', deck: {name: 'The Alliance', colors: 'WU', list: `
-1 Force of Will
+2 Force of Will
 2 Benalish Hero
 2 Arcane Denial
 2 Pearled Unicorn
@@ -169,7 +173,7 @@ export default {
 4 White Knight
 1 Brainstorm
 4 Mesa Pegasus
-2 Air Elemental
+1 Air Elemental
 12 Plains
 12 Island`}},
       villain: {who: 'cohort', deck: {name: "Lim-Dûl's Vanguard", colors: 'B', list: `
@@ -187,6 +191,7 @@ export default {
 12 Snow-Covered Swamp
 12 Swamp`}},
       scene: [{who: 'limdul', line: 'Join me in the place of power, you risen dead.', quote: true, offstage: true}, {who: 'kjeldor', line: "That's the necromancer's voice. He's using our own fallen."}, {who: 'lucilde', line: 'I have seen the faces of my dead friends among that grim band, and I can bear no more.', quote: true}, {who: 'kjeldor', line: 'Then we end it. Together.'}],
+      villainScene: [{who: 'cohort', line: "Rise. The master calls us south."}, {who: 'cohort', line: "We remember their names. They will not remember ours."}],
       cues: {villain: cue('Rise.', 'Serve me, and live forever.', 'Rise again.', 'They shall kill those whom once they loved.', 'There are always more dead.')}},
     {slot: 6, kind: 'Meta', title: 'Necro Summer', difficulty: 'Normal', rewardSet: 'ice', teaches: ['Racing a card-draw engine'],
       blurb: 'A fallen knight of Ulgrotha has found the Black Book. He draws until he wins, or dies trying. The deck that ruled 1996.',
@@ -210,7 +215,8 @@ export default {
 4 Knight of Stromgald
 3 Ihsan's Shade
 4 Ashen Ghoul
-4 Black Knight
+3 Black Knight
+1 Necropotence
 3 Drain Life
 1 Icy Manipulator
 2 Unholy Strength
@@ -219,6 +225,7 @@ export default {
 1 Strip Mine
 23 Swamp`}},
       scene: [{who: 'ihsan', line: 'I was a knight once. I had a name. I traded it.'}, {who: 'ihsan', line: 'Every card is a year of my life. I have so many left to spend.'}],
+      villainScene: [{who: 'ihsan', line: "One more card. One more year. One more win."}, {who: 'ihsan', line: "I gave my name for this book. It owes me this victory."}],
       cues: {villain: cue('Draw.', 'Was it worth it? Yes.', 'Just one more card.', 'Paid in full.', 'The book... is empty.')}},
     {slot: 7, kind: 'Meta', title: 'Stasis', difficulty: 'Normal', rewardSet: 'hml', teaches: ['Playing under a lock'],
       blurb: "The Baron's mother has a trick: nothing in her house moves unless she lets it.",
@@ -249,6 +256,7 @@ export default {
 12 Island
 12 Swamp`}},
       scene: [{who: 'grandmother', line: 'My son plays with his food. I simply keep it still.'}, {who: 'reveka', line: "She'll freeze the whole table. Make every turn count."}, {who: 'grandmother', line: 'Sit. Stay. Good.'}],
+      villainScene: [{who: 'grandmother', line: "My son plays with his food. Messy boy."}, {who: 'grandmother', line: "Everything stays where I put it. Including you, dear."}],
       cues: {villain: cue('Be still.', 'Nothing moves in my house.', 'Who untapped that?', 'There. Quiet.', 'Insolent.')}},
     {slot: 8, kind: 'Boss', title: "Lim-Dûl's Legion", difficulty: 'Hard', rewardSet: 'all', teaches: ['Everything so far'],
       blurb: 'The necromancer stands at the gates of Kjeldor with every dead soldier of the long winter behind him.',

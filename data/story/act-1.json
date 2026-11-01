@@ -413,7 +413,16 @@
      "line": "Show us what you are. Call something."
     }
    ],
-   "villainScene": null,
+   "villainScene": [
+    {
+     "who": "archers",
+     "line": "Something fell out of the sky into our forest."
+    },
+    {
+     "who": "archers",
+     "line": "Eyes on it. If it calls one beast, we call ten."
+    }
+   ],
    "cues": {
     "villain": {
      "start": "Bows up.",
@@ -623,7 +632,16 @@
      "line": "...Why is your stuff flying? Nobody said flying was allowed."
     }
    ],
-   "villainScene": null,
+   "villainScene": [
+    {
+     "who": "goblinKing",
+     "line": "Big toll today, boys. Biggest ever."
+    },
+    {
+     "who": "goblinKing",
+     "line": "If it flies, throw rocks at it. Rocks fly too. Sort of."
+    }
+   ],
    "cues": {
     "villain": {
      "start": "Charge! No, the OTHER way!",
@@ -877,7 +895,16 @@
      "line": "Then let them see how it's done. Watch the first blow. It's the only one that matters."
     }
    ],
-   "villainScene": null,
+   "villainScene": [
+    {
+     "who": "blackKnight",
+     "line": "Years at this ford. Every morning, the same white armour."
+    },
+    {
+     "who": "blackKnight",
+     "line": "Today it ends. No prayers, no tricks. Just steel."
+    }
+   ],
    "cues": {
     "hero": {
      "start": "Steady.",
@@ -1123,7 +1150,16 @@
      "line": "Lose, and you stay. I collect people."
     }
    ],
-   "villainScene": null,
+   "villainScene": [
+    {
+     "who": "erhnam",
+     "line": "A rift-walker. I've collected kings, but never one of those."
+    },
+    {
+     "who": "erhnam",
+     "line": "Make it a long duel. I want to savour this one."
+    }
+   ],
    "cues": {
     "villain": {
      "start": "Entertain me.",
@@ -1394,7 +1430,16 @@
      "line": "Then we will be very expensive."
     }
    ],
-   "villainScene": null,
+   "villainScene": [
+    {
+     "who": "urza",
+     "line": "Titania thinks the trees are sacred. Mishra thinks they're spite."
+    },
+    {
+     "who": "urza",
+     "line": "I think they're fuel. And I am out of fuel."
+    }
+   ],
    "cues": {
     "hero": {
      "start": "The forest stands.",
@@ -1633,7 +1678,16 @@
      "line": "Then the sea may have what's left of you."
     }
    ],
-   "villainScene": null,
+   "villainScene": [
+    {
+     "who": "efreet",
+     "line": "Another sailor, another promise of treasure."
+    },
+    {
+     "who": "efreet",
+     "line": "Serendib has outlasted a thousand ships. It can outlast one more."
+    }
+   ],
    "cues": {
     "hero": {
      "start": "Hoist!",
@@ -1884,7 +1938,16 @@
      "line": "Oh, bring your friend. I've never taken a planeswalker apart."
     }
    ],
-   "villainScene": null,
+   "villainScene": [
+    {
+     "who": "ashnod",
+     "line": "Kroog's walls, Tawnos's toys, and a planeswalker to open up."
+    },
+    {
+     "who": "ashnod",
+     "line": "Mishra wants the factories. I want to see how everything works inside."
+    }
+   ],
    "cues": {
     "hero": {
      "start": "Seal the gates.",

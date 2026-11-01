@@ -53,6 +53,7 @@ export default {
 4 Shanodin Dryads
 24 Forest`}},
       scene: [{who: 'archers', line: 'Stop. You came out of the air.'}, {who: 'archers', line: "Things that come out of the air don't usually leave."}, {who: 'archers', line: 'Show us what you are. Call something.'}],
+      villainScene: [{who: 'archers', line: "Something fell out of the sky into our forest."}, {who: 'archers', line: "Eyes on it. If it calls one beast, we call ten."}],
       cues: {villain: cue('Bows up.', 'The forest answers us, not you.', 'Fall back to the trees!', 'Go back to wherever you fell from.', 'Fine. The forest will remember you.')}},
     {slot: 2, kind: 'Lesson', title: "The Goblin King's Toll", difficulty: 'Easy', rewardSet: 'lea', teaches: ['Flying'],
       blurb: 'A mountain pass with a toll and a king who collects it. His army is big, loud and stuck on the ground.',
@@ -80,6 +81,7 @@ export default {
 4 Uthden Troll
 24 Mountain`}},
       scene: [{who: 'goblinKing', line: 'Halt! This pass belongs to the king.'}, {who: 'goblinKing', line: 'I am the king.'}, {who: 'goblinKing', line: "Toll is everything you've got. Pay or get stomped."}, {who: 'goblinKing', line: '...Why is your stuff flying? Nobody said flying was allowed.'}],
+      villainScene: [{who: 'goblinKing', line: "Big toll today, boys. Biggest ever."}, {who: 'goblinKing', line: "If it flies, throw rocks at it. Rocks fly too. Sort of."}],
       cues: {villain: cue('Charge! No, the OTHER way!', "Look at THAT one. That one's mine.", 'Who let the sky in?!', "Toll's paid! Hah!", 'Next time, nets. Lots of nets.')}},
     {slot: 3, kind: 'Lesson', title: 'Knights at the Ford', difficulty: 'Normal', rewardSet: 'lea', teaches: ['First strike', 'Protection from a colour'],
       blurb: 'Two knights have held the same river crossing for years. Today one of them finally wants it settled.',
@@ -113,6 +115,7 @@ export default {
 4 Drudge Skeletons
 24 Swamp`}},
       scene: [{who: 'blackKnight', line: 'Every morning, you. Every evening, you.'}, {who: 'whiteKnight', line: 'Every morning, you lose.'}, {who: 'blackKnight', line: 'Not today. Today I brought a witness.', aside: 'He looks at you.'}, {who: 'whiteKnight', line: "Then let them see how it's done. Watch the first blow. It's the only one that matters."}],
+      villainScene: [{who: 'blackKnight', line: "Years at this ford. Every morning, the same white armour."}, {who: 'blackKnight', line: "Today it ends. No prayers, no tricks. Just steel."}],
       cues: {hero: cue('Steady.', 'There. First, and last.', "I've held this ford through worse.", 'Same time tomorrow.', 'Go on, cross. Just this once.'),
         villain: cue('No mercy at the ford.', 'Feel that, paladin?', "The river's getting deeper...", 'At last!', 'Tomorrow, then.')}},
     {slot: 4, kind: 'Rival', title: 'The Djinn of the Bottle', difficulty: 'Normal', rewardSet: 'arn', teaches: ['Instants on the opponent\'s turn', 'Bounce'],
@@ -145,6 +148,7 @@ export default {
 20 Forest
 4 Taiga`}},
       scene: [{who: 'erhnam', line: "A new face! Do you know how long it's been since I had a new face?"}, {who: 'erhnam', line: 'Every visitor wishes. Gold, wives, kingdoms. Tiresome.'}, {who: 'erhnam', line: "You will not wish. You will duel. Win, and I'll show you the way home."}, {who: 'erhnam', line: 'Lose, and you stay. I collect people.'}],
+      villainScene: [{who: 'erhnam', line: "A rift-walker. I've collected kings, but never one of those."}, {who: 'erhnam', line: "Make it a long duel. I want to savour this one."}],
       cues: {villain: cue('Entertain me.', 'Behold the gift of the djinn.', 'Ah. That stung. How novel.', 'Another for my collection.', 'Go, then! The rift is that way. Visit.')}},
     {slot: 5, kind: 'Lesson', title: 'Argoth Burns', difficulty: 'Normal', rewardSet: 'atq', teaches: ['Artifacts', 'Answering artifacts'],
       blurb: 'The rift spits you out on Argoth, a forest island. Two brothers are cutting it down to build their war.',
@@ -180,6 +184,7 @@ export default {
 8 Plains
 4 Swords to Plowshares`}},
       scene: [{who: 'titania', line: "You smell of the rift. Good. You're not one of his."}, {who: 'titania', line: 'Urza takes our trees for fuel. Mishra takes them for spite. Both take.'}, {who: 'urza', line: 'The island has the finest timber in the world. That makes it a resource.'}, {who: 'urza', line: 'I have a war to win. Sentiment is a luxury.'}, {who: 'titania', line: 'Then we will be very expensive.'}],
+      villainScene: [{who: 'urza', line: "Titania thinks the trees are sacred. Mishra thinks they're spite."}, {who: 'urza', line: "I think they're fuel. And I am out of fuel."}],
       cues: {hero: cue('The forest stands.', 'Roots, rise!', 'Argoth bleeds.', 'Go home, artificer.', "He'll burn us all..."),
         villain: cue('Proceed.', 'Note the efficiency.', 'Recalculating.', 'Clear it.', 'A delay. Nothing more.')}},
     {slot: 6, kind: 'Meta', title: 'The Efreet of Serendib', difficulty: 'Normal', rewardSet: 'arn', teaches: ['Tempo', 'Counterspells'],
@@ -211,6 +216,7 @@ export default {
 10 Island
 10 Mountain`}},
       scene: [{who: 'sindbad', line: "You again! The rift-walker. I've a ship, a map and no crew. You'll do."}, {who: 'efreet', line: 'Serendib is not for sailors.'}, {who: 'sindbad', line: "Everything is for sailors, friend. That's what the sea is for."}, {who: 'efreet', line: 'Then the sea may have what\'s left of you.'}],
+      villainScene: [{who: 'efreet', line: "Another sailor, another promise of treasure."}, {who: 'efreet', line: "Serendib has outlasted a thousand ships. It can outlast one more."}],
       cues: {hero: cue('Hoist!', 'Fair winds!', "I've been shipwrecked six times. Seven's fine.", 'To Serendib!', 'Back to port...'),
         villain: cue('Turn back.', 'Burn, little boats.', 'Even fire tires.', 'Serendib keeps its own.', 'Go. Take nothing.')}},
     {slot: 7, kind: 'Meta', title: 'Factories at Kroog', difficulty: 'Normal', rewardSet: 'atq', teaches: ['Artifact creatures', 'Sacrifice'],
@@ -243,6 +249,7 @@ export default {
 20 Swamp
 4 Mishra's Factory`}},
       scene: [{who: 'ashnod', line: "Tawnos! Still holding the master's tools?"}, {who: 'tawnos', line: 'Still taking people apart, Ashnod?'}, {who: 'ashnod', line: "Only to see how they work. You'd do the same if he let you."}, {who: 'tawnos', line: 'Help me hold the factories. If Kroog falls, nothing stops her.', aside: 'to you'}, {who: 'ashnod', line: "Oh, bring your friend. I've never taken a planeswalker apart."}],
+      villainScene: [{who: 'ashnod', line: "Kroog's walls, Tawnos's toys, and a planeswalker to open up."}, {who: 'ashnod', line: "Mishra wants the factories. I want to see how everything works inside."}],
       cues: {hero: cue('Seal the gates.', 'Built for exactly this.', 'Hold the line!', 'Kroog stands.', 'Get the people out...'),
         villain: cue("Let's see what's inside.", "Isn't she beautiful?", "That's... rude.", 'Mishra will be so pleased.', "Next time I'm bringing the big altar.")}},
     {slot: 8, kind: 'Boss', title: "Mishra's War Machine", difficulty: 'Normal', rewardSet: 'atq', teaches: ['Everything so far'],

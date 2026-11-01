@@ -396,7 +396,16 @@
      "line": "Confess, or be shown."
     }
    ],
-   "villainScene": null,
+   "villainScene": [
+    {
+     "who": "inquisitor",
+     "line": "The sun went dark because of people like this one."
+    },
+    {
+     "who": "inquisitor",
+     "line": "Burn the magic out and the light comes back. It must."
+    }
+   ],
    "cues": {
     "villain": {
      "start": "Burn the witch.",
@@ -671,7 +680,16 @@
      "aside": "to you"
     }
    ],
-   "villainScene": null,
+   "villainScene": [
+    {
+     "who": "johan",
+     "line": "Hazezon talks about his people as if they were walls."
+    },
+    {
+     "who": "johan",
+     "line": "Walls fall. Bring the army forward."
+    }
+   ],
    "cues": {
     "hero": {
      "start": "Bazaar's closed.",
@@ -919,7 +937,16 @@
      "line": "The thallids grow faster than you can cut. Watch."
     }
    ],
-   "villainScene": null,
+   "villainScene": [
+    {
+     "who": "initiate",
+     "line": "The elves grow soldiers out of rot. Clever."
+    },
+    {
+     "who": "initiate",
+     "line": "The Ebon Hand needs that rot more than they do. Take the grove."
+    }
+   ],
    "cues": {
     "hero": {
      "start": "Grow.",
@@ -1210,7 +1237,16 @@
      "line": "Show me you can't be collected."
     }
    ],
-   "villainScene": null,
+   "villainScene": [
+    {
+     "who": "tetsuo",
+     "line": "Every wizard the dragon collected thought they were strong."
+    },
+    {
+     "who": "tetsuo",
+     "line": "Let's see if this one learns faster than they did."
+    }
+   ],
    "cues": {
     "villain": {
      "start": "Show me.",
@@ -1449,7 +1485,16 @@
      "line": "...Did that thrull just ask a question?"
     }
    ],
-   "villainScene": null,
+   "villainScene": [
+    {
+     "who": "thrullWizard",
+     "line": "Master made thrull to sacrifice others."
+    },
+    {
+     "who": "thrullWizard",
+     "line": "Thrull has been thinking. Thrull has a list."
+    }
+   ],
    "cues": {
     "villain": {
      "start": "Feed the altar.",
@@ -1726,7 +1771,16 @@
      "line": "Begin. Or don't. The result is the same."
     }
    ],
-   "villainScene": null,
+   "villainScene": [
+    {
+     "who": "arcades",
+     "line": "Order is not cruelty. It is patience."
+    },
+    {
+     "who": "arcades",
+     "line": "Let them cast. Every spell they waste brings the end closer."
+    }
+   ],
    "cues": {
     "villain": {
      "start": "Proceed.",
@@ -1990,7 +2044,16 @@
      "quote": true
     }
    ],
-   "villainScene": null,
+   "villainScene": [
+    {
+     "who": "choir",
+     "line": "Sing louder, sisters. The warriors are listening."
+    },
+    {
+     "who": "choir",
+     "line": "Tourach... Tourach... let them forget what they hold."
+    }
+   ],
    "cues": {
     "villain": {
      "start": "Sing.",
