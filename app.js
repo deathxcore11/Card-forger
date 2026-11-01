@@ -1712,7 +1712,8 @@ A.playEconSetFormat=t=>{econUi.setFormat=t.dataset.value||'';refreshPlayMenu();}
 I.playEconSetSearch=t=>{econUi.query=t.value;refreshPlayMenu();const f=document.querySelector('[data-input="playEconSetSearch"]');f?.focus({preventScroll:true});try{f.setSelectionRange(t.value.length,t.value.length);}catch{}};
 I.playEconCardSearch=t=>{econUi.cardQuery=t.value;refreshPlayMenu();const f=document.querySelector('[data-input="playEconCardSearch"]');f?.focus({preventScroll:true});try{f.setSelectionRange(t.value.length,t.value.length);}catch{}};
 // Opening: the server rolls the pack, then the pack opener plays it (the Play variant: no prices).
-const econPick=c=>({id:c.id,oracle_id:c.oracle_id,name:c.name,rarity:c.rarity,set:c.set,collector_number:c.number,image_uris:{normal:c.image,art_crop:c.art},...(c.foil?{packFoil:true}:{}),...(c.slot?{packSlot:c.slot}:{})});
+// A holo pull says it can be foil, so the reveal shows it in the app's foil finish.
+const econPick=c=>({id:c.id,oracle_id:c.oracle_id,name:c.name,rarity:c.rarity,set:c.set,collector_number:c.number,image_uris:{normal:c.image,art_crop:c.art},finishes:c.foil?['nonfoil','foil']:['nonfoil'],...(c.foil?{packFoil:true}:{}),...(c.slot?{packSlot:c.slot}:{})});
 const econOpened=out=>{const bits=[];const sb=out.sealBonus||{};for(const [k,label] of [['u','uncommon'],['r','rare'],['m','mythic']])if(sb[k])bits.push('+1 '+label+' seal');if(out.duplicateCoins)bits.push('+'+out.duplicateCoins+' coins from extra copies');return bits.join(' · ');};
 // Opened cards fly into the Trunk one after another, each with a small tick (the app's add-to-collection flight).
 const econLand=list=>list.slice(0,15).forEach((f,i)=>setTimeout(()=>{flyToCollection(f);haptic('tick');},i*85));
@@ -3214,6 +3215,12 @@ A.card = async (t) => {
     ctx = { type: "card", name, entryId:t.dataset.entry||"", deckId: t.dataset.readOnly ? null : t.dataset.deck || (S.ui.view === "deck" ? currentDeck()?.id : null), random: !!t.dataset.random };
   // Play lens: from Play screens and Play set pages the sheet shows Play copies and Play decks, no prices.
   if (S.ui.view === "play" || S.ui.lens === "play") { ctx.play = V.playLensNow(); if (ctx.play) { ctx.entryId = ""; ctx.deckId = null; } }
+  // A Play Trunk tile opens the copy it shows: its own printing, and foil for a holo copy.
+  if (ctx.play && t.dataset.playCard) {
+    const own = t.dataset.oracle ? econFacts.card(t.dataset.oracle)?.card : null;
+    if (own?.id && (own.image_uris || own.card_faces?.[0]?.image_uris)) t.printing = own;
+    if (t.dataset.playFinish === "foil") { ctx.priceFinish = "foil"; ctx.setVariant = "foil"; }
+  }
   if(ctx.entryId){
     let owned=magicOwnedDetail(S.state,ctx.entryId,name);
     if(!owned.identity)return toast(owned.reason);
@@ -3241,7 +3248,7 @@ A.card = async (t) => {
   if (print?.id && key(print.name) === key(name) && (t.printing ? typeof print.set === "string" : print.set === S.ui.set.code)) {
     ctx.print = print;
     ctx.setId = print.set;
-    ctx.priceFinish = selectedFinish("mtg",print,t.dataset.setFinish);
+    ctx.priceFinish = t.dataset.playFinish === "foil" ? "foil" : selectedFinish("mtg",print,t.dataset.setFinish);
   }
   if(t.dataset.setI !== undefined && !ctx.print)return toast("This set changed. Open the card again.");
   let c = ctx.print || meta(name);
