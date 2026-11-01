@@ -35,6 +35,22 @@ export const subtypes = creatureTypes;
 
 const ident = (c) => c?.color_identity || [];
 export const fitsColors = (c, colors) => ident(c).every((x) => colors.includes(x));
+// 60-card formats go by what you can actually pay: a hybrid {W/U} needs either colour, {2/W} and
+// Phyrexian symbols can be paid without it. Every plain coloured symbol in the cost or the rules
+// text still has to be in the deck's colours. Commander keeps colour identity (fitsColors).
+export function castableIn(c, colors) {
+  const faces = [c, ...(c?.card_faces || [])], text = faces.map((f) => `${f?.mana_cost || ""} ${f?.oracle_text || ""}`).join(" ").replace(/\([^)]*\)/g, "");
+  for (const [, sym] of text.matchAll(/\{([^}]+)\}/g)) {
+    if (/^[WUBRG]$/.test(sym)) { if (!colors.includes(sym)) return false; continue; }
+    if (!sym.includes("/")) continue;
+    const parts = sym.split("/");
+    if (parts.includes("P") || parts.some((x) => /^\d+$/.test(x))) continue;
+    if (!parts.some((x) => colors.includes(x))) return false;
+  }
+  // Colour indicators (no mana cost, e.g. suspend cards) still need their colours.
+  return faces.every((f) => f?.mana_cost || !(f?.colors || []).length || f.colors.every((x) => colors.includes(x)));
+}
+export const fitsDeck = (c, colors, commander) => (commander ? fitsColors(c, colors) : castableIn(c, colors));
 
 // Keep explicit style independent from inferred commander/seed mechanics.
 const THEME_TERMS = {Tokens:'(o:"creature token" or o:populate)',Graveyard:'o:graveyard',Spells:'(t:instant or t:sorcery or o:"instant or sorcery")',Dragons:'t:dragon',Artifacts:'(t:artifact or o:artifact)',Lifegain:'(keyword:lifelink or (o:gain o:life))',Lifelink:'(keyword:lifelink or o:lifelink)',Landfall:'o:landfall',Counters:'(o:"+1/+1 counter" or o:proliferate)'};
@@ -280,7 +296,7 @@ function buildDeckOnce({ format, seeds = [], base = [], catalog, available = () 
   const cardConditions=commanderCardConditions(lead||seeds[0]),primaryNeeds=primaryInputRequirements(lead||seeds[0]),conditionBoost=c=>(cardConditions.some(condition=>condition.matches(c))?8:0)+primaryNeeds.reduce((n,need)=>n+(need.match(c)?8*need.priority(c):0),0);
   const needBoost=c=>landNeeds.reduce((n,need)=>n+landSubtypeRoles(c,need.subtype).reduce((s,r)=>s+({fetch:8,grant:8,tutor:5,setup:3,payoff:4}[r.kind]||0),0),0);
 
-  const pool = [...new Map(Object.values(catalog).filter((c) => c?.name && !isLand(c) && isLegal(c) && fitsColors(c, deckColors)).map((c) => [cardKey(c.name), c])).values()],
+  const pool = [...new Map(Object.values(catalog).filter((c) => c?.name && !isLand(c) && isLegal(c) && fitsDeck(c, deckColors, f.commander)).map((c) => [cardKey(c.name), c])).values()],
     supports=c=>seedSubs.some(t=>tribalSupport(c,t))||themeSupport(c,{roles:seedTags,tokenKinds:intent.tokenKinds}).length>0,
     scored = pool.map((c) => ({ c, plan:supports(c), forge:forgeScore(c, hooks, { leader: forgeLead, power }), s: -(easy?setupBurden('mtg',c)*3:0) + scoreCard(c, seedTags, seedSubs, { free: available(c.name) || preferred(c), size, tokenKinds:intent.tokenKinds, goal }) + goalCardPreference(c,goal,{suggested:suggestedCards.some(name=>cardKey(name)===cardKey(c.name))}) + (styleFit(c,intent.requested)?(goal === "theme"?16:8):0) - (mtgSelfConflicts([...seeds,...(lead?[lead]:[]),c]).length?24:0) + needBoost(c) + conditionBoost(c) }));
   for (const x of scored) { x.s += x.forge.score + forgeNoise(forgeSeed, x.c.name, variation); x.roles = forgeRoles(x.c); x.hookIds = x.forge.fit.hooks; }
@@ -496,7 +512,7 @@ export function formatsFor(card, all) {
 // Spells a deck in this format and these colors could play (for spending a budget on upgrades).
 export function upgradePool(format, catalog, colors) {
   const f = formatOf(format);
-  return [...new Map(Object.values(catalog).filter((c) => c?.name && !isLand(c) && functionalIn(c, f) && (!f.legality || ["legal", "restricted"].includes(legalityIn(c, f))) && fitsColors(c, colors)).map((c) => [cardKey(c.name), c])).values()];
+  return [...new Map(Object.values(catalog).filter((c) => c?.name && !isLand(c) && functionalIn(c, f) && (!f.legality || ["legal", "restricted"].includes(legalityIn(c, f))) && fitsDeck(c, colors, f.commander)).map((c) => [cardKey(c.name), c])).values()];
 }
 export const copyLimit = (c, format) => {
   const f = formatOf(format);

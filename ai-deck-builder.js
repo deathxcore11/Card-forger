@@ -1,7 +1,7 @@
 // One bounded app-data operation, not one AI call per card. Recommendations stay
 // unsaved until the player reviews the exact list and uses the normal save action.
 import { forgeOptions } from './deck-forge.js';
-import { buildDeck, themeQuery, themeQueries, fitsColors, requestedIntent, inspectMtgTheme, scoreCard } from './builder.js';
+import { buildDeck, themeQuery, themeQueries, fitsColors, fitsDeck, requestedIntent, inspectMtgTheme, scoreCard } from './builder.js';
 import { cardKey, cardPrice, sumQty, validateDeck } from './core.js';
 import { formatOf, canLead, legalityIn, verifyLeader } from './formats.js';
 import { normalizeDeckGoal, goalDescription } from './ai-deck-goal.js';
@@ -105,7 +105,7 @@ export async function prepareMtgDeck(args,x) {
  if(requiredCards.some(c=>!isLegal(c,f)||!functionalIn(c,f)))return {requiresChoice:true,note:'A required card is not confirmed legal in this format. Choose another format or remove that requirement.'};
  if([seed,lead,...requiredCards].filter(Boolean).some(c=>!fitsTypeRestrictions(c,args)))return {requiresChoice:true,note:'A required card or commander conflicts with your explicit creature-type restriction. Change that card or revise the restriction.'};
  const allowedColors=requestedColors.filter(c=>c!=='C');
- if(requestedColors.length && [seed,lead,...requiredCards].filter(Boolean).some(c=>!fitsColors(c,allowedColors)))return {requiresChoice:true,note:'A required card or commander is outside your requested colors. Change the card or the color constraint.'};
+ if(requestedColors.length && [seed,lead,...requiredCards].filter(Boolean).some(c=>!fitsDeck(c,allowedColors,f.commander)))return {requiresChoice:true,note:'A required card or commander is outside your requested colors. Change the card or the color constraint.'};
  if(seedName&&!seed)return {requiresChoice:true,note:`Which card did you mean by “${seedName}”? I could not resolve one card reliably.`};
  if(leaderName&&!lead)return {requiresChoice:true,note:`Which commander did you mean by “${leaderName}”? I could not resolve one card reliably.`};
  if(seed&&!isLegal(seed,f))return {requiresChoice:true,note:`${seed.name} is not confirmed legal in ${f.name}. Choose a different format or build-around.`};
@@ -135,7 +135,7 @@ export async function prepareMtgDeck(args,x) {
   const candidates=[...choices,...fallback.filter(c=>!choices.some(found=>cardKey(found.name)===cardKey(c.name)))];
   const loopRoutes=loopIntent.requireLoop?manaLoopCandidates({...args,...loopIntent},{excluded_cards:excludedNames}):null;
   const leaderCost=c=>basis!=='total'&&available(x,c.name)>0?0:quote(c);
-  const usable=candidates.filter(c=>!excludedKeys.has(cardKey(c.name))&&fitsTypeRestrictions(c,args)&&(!requestedColors.length||fitsColors(c,allowedColors))&&requiredCards.every(r=>!f.commander||fitsColors(r,c.color_identity||[]))&&isLegal(c,f)&&(!f.commander||canLead(c,f)||f.id==='paupercommander')&&(!seed||!f.commander||fitsColors(seed,c.color_identity||[]))&&(!loopRoutes||!f.commander||loopRoutes.some(p=>p.colors.every(color=>(c.color_identity||[]).includes(color))))).filter(c=>basis==='owned'?available(x,c.name)>0:limit===Infinity||args.flow&&args.budgetMode==='target'||leaderCost(c)!==null&&leaderCost(c)<=limit);
+  const usable=candidates.filter(c=>!excludedKeys.has(cardKey(c.name))&&fitsTypeRestrictions(c,args)&&(!requestedColors.length||fitsDeck(c,allowedColors,f.commander))&&requiredCards.every(r=>!f.commander||fitsColors(r,c.color_identity||[]))&&isLegal(c,f)&&(!f.commander||canLead(c,f)||f.id==='paupercommander')&&(!seed||!f.commander||fitsColors(seed,c.color_identity||[]))&&(!loopRoutes||!f.commander||loopRoutes.some(p=>p.colors.every(color=>(c.color_identity||[]).includes(color))))).filter(c=>basis==='owned'?available(x,c.name)>0:limit===Infinity||args.flow&&args.budgetMode==='target'||leaderCost(c)!==null&&leaderCost(c)<=limit);
   // A requested plan needs an appropriate engine, not an arbitrary member of
   // the first page. These are bounded, explained tie-breaks, not a power score.
   const planFit=c=>intent.tribes.reduce((n,type)=>n+tribeEvidence(c,type).reduce((s,e)=>s+(e.kind==='payoff'?4:e.kind==='token'?2:1),0),0)+intent.roles.reduce((n,role)=>n+themeSupport(c,{roles:[role]}).length,0)+intent.abilities.reduce((n,ability)=>n+mtgAbilityEvidence(c,ability).length,0)+(mechanicCardMatches(c,intent.mechanics||[])?4:0);
@@ -152,7 +152,7 @@ export async function prepareMtgDeck(args,x) {
   const possible=manaLoopCandidates({...args,...loopIntent},{excluded_cards:excludedNames}).filter(p=>p.colors.every(color=>colors.includes(color)));
   const pieceNames=[...new Set(possible.flatMap(p=>p.cards))],resolved=await batches(pieceNames,resolve),pieces=new Map(pieceNames.map((name,i)=>[cardKey(name),resolved[i]]));
   if(!active())return {cancelled:true,note:'The question was closed or replaced. Nothing was saved.'};
-  loopPackages=possible.filter(p=>p.cards.every(name=>{const c=pieces.get(cardKey(name));return c&&!c.brief&&isLegal(c,f)&&functionalIn(c,f)&&fitsColors(c,colors)&&fitsTypeRestrictions(c,args)&&!excludedKeys.has(cardKey(c.name));})&&inspectManaLoop(p.cards.map(name=>({card:pieces.get(cardKey(name)),qty:1,zone:'main'})),{...args,...loopIntent}).status==='verified');
+  loopPackages=possible.filter(p=>p.cards.every(name=>{const c=pieces.get(cardKey(name));return c&&!c.brief&&isLegal(c,f)&&functionalIn(c,f)&&fitsDeck(c,colors,f.commander)&&fitsTypeRestrictions(c,args)&&!excludedKeys.has(cardKey(c.name));})&&inspectManaLoop(p.cards.map(name=>({card:pieces.get(cardKey(name)),qty:1,zone:'main'})),{...args,...loopIntent}).status==='verified');
   if(!loopPackages.length)return {requiresChoice:true,choice:'loop',goal,note:'No reviewed repeatable-mana package could be resolved within your format, commander colors, creature types, exclusions and requested mana output. Missing or incompatible pieces were not substituted. Revise a requirement or name an exact route for review.'};
  }
  const requestedTribes=[...new Set([...requestedIntent(style).tribes,...(args.creatureTypesOnly||[]),...(lead?commanderTheme(lead).tribes:[])])];
@@ -172,7 +172,7 @@ export async function prepareMtgDeck(args,x) {
  await batches([...new Set(queries)],async q=>{const found=await search(q,{pages:planQueries.some(p=>q.endsWith(p))||needQueries.includes(q)?2:1});if(alternativeQueries.includes(q))alternativeCards.push(...found);return found;});
  // The same selector can work without the AI/provider on already loaded rules
  // records. This is a bounded cached pool, not a claim of a full offline catalog.
- if(!successfulSearches)for(const c of Object.values(x.S?.catalog||{}))if(c?.name&&c.type_line&&isLegal(c,f)&&fitsColors(c,colors)&&!excludedKeys.has(cardKey(c.name)))remember(c);
+ if(!successfulSearches)for(const c of Object.values(x.S?.catalog||{}))if(c?.name&&c.type_line&&isLegal(c,f)&&fitsDeck(c,colors,f.commander)&&!excludedKeys.has(cardKey(c.name)))remember(c);
  // Basics are real catalog cards with actual quote coverage, never fabricated $0 rows.
  const basicNames=(colors.length?colors:['C']).map(c=>BASIC[c]).filter(Boolean);
  await batches(basicNames,async name => {
@@ -185,7 +185,7 @@ export async function prepareMtgDeck(args,x) {
  });
  if(!active())return {cancelled:true,note:'The question was closed or replaced. Nothing was saved.'};
  const own=n=>available(x,n),required=[...new Map([seed,...requiredCards].filter(c=>c&&cardKey(c.name)!==cardKey(lead?.name)).map(c=>[cardKey(c.name),{name:c.name,qty:1}])).values()];
- if(args.flow&&args.preferOwned!==false)for(const c of Object.values(x.S?.catalog||{}))if(c?.name&&available(x,c.name)>0&&!catalog[cardKey(c.name)]&&isLegal(c,f)&&fitsColors(c,colors))remember(c);
+ if(args.flow&&args.preferOwned!==false)for(const c of Object.values(x.S?.catalog||{}))if(c?.name&&available(x,c.name)>0&&!catalog[cardKey(c.name)]&&isLegal(c,f)&&fitsDeck(c,colors,f.commander))remember(c);
  const buildCatalog=Object.fromEntries(Object.entries(catalog).filter(([,c])=>!excludedKeys.has(cardKey(c.name))&&fitsTypeRestrictions(c,args)));
  const options=({format:f.name,seeds:[seed],commander:lead,easy:args.easy===true,preferred:args.preferOwned===true?c=>own(c.name):()=>0,requestedStyle:style,goal,creatureTypesOnly:args.creatureTypesOnly,excludedSubtypes:args.excludedSubtypes,suggestedCards:suggested.filter(Boolean).map(c=>c.name),...forgeOptions(args.forge),excludedCards:excludedCards.map(c=>c.name),catalog:buildCatalog,base:required,colors:colors.length?colors:['C'],available:basis==='total'?()=>0:own,price:quote,budget:limit});
  const alternativeDrafts=[];
@@ -196,7 +196,7 @@ export async function prepareMtgDeck(args,x) {
    const primary=buildDeck({...options,base,budget:cap}),drafts=[decorate(primary),...(args.flow?[decorate(buildDeck({...options,base,budget:cap,completionFirst:true}))]:[])];
    if(args.flow&&active()&&alternativeDrafts.length<2){
     const present=new Set(primary.cards.map(r=>cardKey(r.name))),intent=requestedIntent(style),themes=[seed,lead].filter(Boolean).map(commanderTheme),tags=[...new Set([...intent.roles,...themes.flatMap(t=>t.roles)])],tribes=[...new Set([...intent.tribes,...themes.flatMap(t=>t.tribes)])];
-    const alternatives=[...new Map(alternativeCards.filter(c=>c&&buildCatalog[cardKey(c.name)]&&isLegal(c,f)&&functionalIn(c,f)&&fitsColors(c,colors)&&!present.has(cardKey(c.name))&&(basis==='owned'?own(c.name)>0:cap===Infinity||basis!=='total'&&own(c.name)>0||quote(c)!==null&&quote(c)<=cap)&&!/\bLand\b/.test(c.type_line||'')).map(c=>[cardKey(c.name),c])).values()].sort((a,b)=>scoreCard(b,tags,tribes,{size:f.size,goal})-scoreCard(a,tags,tribes,{size:f.size,goal})||a.name.localeCompare(b.name)).slice(0,2);
+    const alternatives=[...new Map(alternativeCards.filter(c=>c&&buildCatalog[cardKey(c.name)]&&isLegal(c,f)&&functionalIn(c,f)&&fitsDeck(c,colors,f.commander)&&!present.has(cardKey(c.name))&&(basis==='owned'?own(c.name)>0:cap===Infinity||basis!=='total'&&own(c.name)>0||quote(c)!==null&&quote(c)<=cap)&&!/\bLand\b/.test(c.type_line||'')).map(c=>[cardKey(c.name),c])).values()].sort((a,b)=>scoreCard(b,tags,tribes,{size:f.size,goal})-scoreCard(a,tags,tribes,{size:f.size,goal})||a.name.localeCompare(b.name)).slice(0,2);
     // A discovery anchor creates an alternative, not a user-required card. It
     // is never persisted as an instruction and can lose to the original list.
     for(const c of alternatives.slice(0,2-alternativeDrafts.length))alternativeDrafts.push(decorate(buildDeck({...options,base:[...base,{name:c.name,qty:1}],budget:cap})));
