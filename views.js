@@ -359,8 +359,11 @@ function playCardActions(play, name, shown) {
   return `<section class="card-secondary-actions play-card-actions" aria-label="Play collection and deck actions">
     <p class="play-card-own"><span class="pe-pips" aria-hidden="true">${[1, 2, 3, 4].map(i => `<i class="${i <= n ? "on" : ""}"></i>`).join("")}</span><b>${n ? `${n} of 4 in your Play collection` : "Not in your Play collection yet"}</b></p>
     <div class="card-actions"><div class="ca-main">
+      ${(() => { const st = n < 4 ? play.stamp?.(name, shown) : null; if (!st) return "";
+        const need = (c, label, holo) => `<button class="btn${holo ? " ghost" : ""} play-stamp" data-act="playCardStamp" data-econ-card="${esc(st.id)}" data-holo="${holo ? 1 : 0}" ${st.seals >= c ? "" : "disabled"} aria-label="${esc(label)} for ${c} ${st.rarity} seal${c === 1 ? "" : "s"}, you have ${st.seals}">${label} · ${c} ${st.rarity} seal${c === 1 ? "" : "s"}</button>`;
+        return need(1, "Stamp it", false) + (st.canFoil ? need(st.holoCost, "Stamp holo", true) : ""); })()}
       ${decks.length ? `<details class="play-card-decks"><summary class="btn">Add to deck</summary><div class="play-card-deck-list">${decks.map(d => `<button class="btn ghost small" data-act="playCardToDeck" data-econ-deck="${esc(d.id)}" data-name="${esc(name)}" ${n ? "" : "disabled"}>${esc(d.name || "Untitled deck")}</button>`).join("")}</div></details>` : ""}
-      <button class="btn${decks.length ? " ghost" : ""}" data-act="playCardNewDeck" data-name="${esc(name)}" ${n ? "" : "disabled"}>New deck</button>
+      <button class="btn${decks.length || !n ? " ghost" : ""}" data-act="playCardNewDeck" data-name="${esc(name)}" ${n ? "" : "disabled"}>New deck</button>
       ${play.holo?.(name, shown)?.can ? `<button class="btn ghost" data-act="playCardHolo" data-oracle="${esc(play.holo(name, shown).oracle)}" ${play.holo(name, shown).afford ? "" : "disabled"}>Make holo · ${play.holo(name, shown).cost} ${esc(play.holo(name, shown).seal)} seals</button>` : ""}
       ${n < 4 ? `<button class="btn ghost" data-act="playCardGet" data-name="${esc(name)}" data-code="${esc(shown?.set || "")}">Get it at the Merchant</button>` : ""}
     </div></div></section>`;

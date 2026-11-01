@@ -1718,7 +1718,7 @@ addEventListener('play:match-recorded',e=>{const m=e.detail||{};if(!cloudInfo()?
 A.playEconRarity=t=>{econUi.rarity=t.dataset.econRarity||'';refreshPlayMenu();};
 I.playEconSetQuery=t=>{econUi.setQuery=t.value;refreshPlayMenu();const f=document.querySelector('[data-input="playEconSetQuery"]');f?.focus({preventScroll:true});try{f.setSelectionRange(t.value.length,t.value.length);}catch{}};
 A.playEconSetFormat=t=>{econUi.setFormat=t.dataset.value||'';refreshPlayMenu();};
-I.playEconSetSearch=t=>{econUi.query=t.value;refreshPlayMenu();const f=document.querySelector('[data-input="playEconSetSearch"]');f?.focus({preventScroll:true});try{f.setSelectionRange(t.value.length,t.value.length);}catch{}};
+I.playEconSetSearch=t=>{econUi.shopFocus='';econUi.query=t.value;refreshPlayMenu();const f=document.querySelector('[data-input="playEconSetSearch"]');f?.focus({preventScroll:true});try{f.setSelectionRange(t.value.length,t.value.length);}catch{}};
 I.playEconCardSearch=t=>{econUi.cardQuery=t.value;refreshPlayMenu();const f=document.querySelector('[data-input="playEconCardSearch"]');f?.focus({preventScroll:true});try{f.setSelectionRange(t.value.length,t.value.length);}catch{}};
 // Opening: the server rolls the pack, then the pack opener plays it (the Play variant: no prices).
 // A holo pull says it can be foil, so the reveal shows it in the app's foil finish.
@@ -1778,6 +1778,8 @@ V.setPlayLensSource(()=>{const st=playEcon.snapshot().state||{};
  const byOracle=new Map((st.cards||[]).map(c=>[c.o,c.c])),byName=ownedByName(st.cards||[]);
  return {byOracle,byName,get decks(){return playEcon.snapshot().state?.decks||[];},coins:st.wallet?.coins|0,price:st.config?.packPrice||500,
   owned:(name,card)=>(card?.oracle_id&&byOracle.get(card.oracle_id))||byName.get(name)||byName.get(String(name).split(' // ')[0])||0,
+  stamp:(name,card)=>{if(!card?.id||!card.oracle_id)return null;const key={common:'c',uncommon:'u',rare:'r',mythic:'m'}[card.rarity];if(!key)return null;const c=(st.cards||[]).find(x=>x.o===card.oracle_id),have=c?.c|0,seals=st.wallet?.['seal_'+key]|0,holo=1+Math.max(1,st.config?.holoSeals??2);
+   return {id:card.id,have,seals,rarity:{c:'common',u:'uncommon',r:'rare',m:'mythic'}[key],key,holoCost:holo,canFoil:(card.finishes||[]).includes('foil'),sold:(st.shop||[]).some(x=>x.code===card.set)||st.rewardSet?.code===card.set};},
   holo:(name,card)=>{const c=(st.cards||[]).find(x=>x.o===card?.oracle_id)||(st.cards||[]).find(x=>x.n===name||x.n.split(' // ')[0]===name);if(!c)return null;const seal={common:'c',uncommon:'u',rare:'r',mythic:'m'}[c.r],cost=Math.max(1,st.config?.holoSeals??2);return {oracle:c.o,can:(c.h|0)<(c.c|0)&&!!seal,afford:(st.wallet?.['seal_'+seal]|0)>=cost,cost,seal:{c:'common',u:'uncommon',r:'rare',m:'mythic'}[seal]};},
   setProgress:code=>{const have=(st.cards||[]).filter(c=>(c.s||[]).includes(code)).length,total=econFacts.set(code)?.total||null;return {key:'play:'+code,owned:have,total,loaded:total||0,known:total||0,complete:true};}};});
 A.playLensBack=()=>{playView='collection';econUi.tab='sets';go('#play');};
@@ -1788,7 +1790,13 @@ A.playCardToDeck=async t=>{const st=playEcon.snapshot().state,d=(st?.decks||[]).
  if(cards.reduce((a,c)=>a+c.qty,0)===(d.cards||[]).filter(c=>!c.board).reduce((a,c)=>a+(c.qty|0),0))return toast('No more copies of that card can go in '+(d.name||'that deck')+'.');
  try{await playEcon.saveDeck({id:d.id,name:d.name,format:d.format,cards:[...cards,...(d.cards||[]).filter(c=>c.board)]});toast('Added to '+(d.name||'your deck')+'.');refreshSheet?.();}catch(e){toast(e.message);}};
 A.playCardNewDeck=t=>{closeSheet();econUi.edit={id:null,name:'',format:'Standard',cards:[{name:t.dataset.name,qty:1}]};playView='deck';go('#play');};
-A.playCardGet=t=>{closeSheet();playView='shop';econUi.press={query:t.dataset.name,busy:false};go('#play');};
+// Get it at the Merchant: open the Merchant on that card's set with its pack highlighted (or the
+// seal press with the card found, when the Merchant doesn't sell that set).
+A.playCardGet=t=>{closeSheet();playView='shop';const code=t.dataset.code||'',sold=(playEcon.snapshot().state?.shop||[]).some(x=>x.code===code)||playEcon.snapshot().state?.rewardSet?.code===code;
+ if(sold){econUi.query=code;econUi.shopFocus=code;econUi.press=null;}else{econUi.query='';econUi.shopFocus='';econUi.press={query:t.dataset.name,busy:false};}
+ go('#play');setTimeout(()=>{const el=document.querySelector(sold?`.pe-pack--focus`:'.pe-press');el?.scrollIntoView({block:'center',behavior:'smooth'});},350);};
+// Stamp an unowned card straight from its Play card view: 1 seal of its rarity, or the holo for 1 + 2.
+A.playCardStamp=async t=>{const holo=t.dataset.holo==='1';try{const out=await playEcon.craft(t.dataset.econCard,holo);haptic('success');toast(`${out.card.name}${holo?' (holo)':''} is in your Trunk.`);refreshSheet?.();}catch{}};
 A.playEconEditDeck=t=>{const d=(playEcon.snapshot().state?.decks||[]).find(x=>x.id===t.dataset.econDeck);econUi.edit=d?{id:d.id,name:d.name,format:d.format||'Standard',cards:(d.cards||[]).filter(c=>!c.board).map(c=>({...c,qty:c.qty|0})),side:(d.cards||[]).filter(c=>c.board)}:{id:null,name:'',format:'Standard',cards:[]};playView='deck';refreshPlayMenu();scrollTo({top:0});requestAnimationFrame(()=>document.getElementById('playDeckTitle')?.focus?.({preventScroll:true}));};
 // Play "Build a deck" (Untapped-style finder): the Trunk build plus meta lists,
 // ranked by how much the player owns; missing cards greyed with seal costs.

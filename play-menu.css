@@ -1224,3 +1224,4 @@ button.pd-near-row{cursor:pointer}
  .pf-card:not(.pf-card--slim){width:52px}
 }
 @media(prefers-reduced-motion:reduce){.pf-skeleton{animation:none}.pf-card{transition:none}}
+.pe-pack--focus{outline:2px solid var(--gold);outline-offset:6px;border-radius:14px;animation:pd-stamp .6s ease both}

@@ -62,7 +62,8 @@ assert.ok(!('prices' in row) && !JSON.stringify(row).includes('9.99'), 'pack rec
   let wallet = {coins: 600, packs_opened: 4, seal_r: 0, starter_at: '2026-11-01'};
   const packs = [{id: 7, set: 'tst'}];
   const booster = {boosters: [{w: 1, c: {common: 2, rare: 1}}], sheets: {common: {cards: [['c1', 1], ['c2', 1], ['c3', 1]]}, rare: {cards: [['r1', 1]]}}};
-  const card = id => ({id, oracle_id: id.padEnd(8, '0') + '-0000-0000-0000-000000000000', name: id, rarity: id.startsWith('r') ? 'rare' : 'common', colors: [], prices: {usd: '1.00'}});
+  let foilCards = false;
+  const card = id => ({id, ...(foilCards ? {finishes: ['nonfoil', 'foil']} : {}), oracle_id: id.padEnd(8, '0') + '-0000-0000-0000-000000000000', name: id, rarity: id.startsWith('r') ? 'rare' : 'common', colors: [], prices: {usd: '1.00'}});
   const pc = (name, count, rarity, extra = {}) => ({name, count, rarity, setCode: 'TMP', number: String(count), identifiers: {scryfallId: name.length.toString(16).padStart(8, '0') + '-1111-2222-3333-444444444444', scryfallOracleId: name.length.toString(16).padStart(8, '0') + '-0000-0000-0000-000000000000'}, ...extra});
   const precon = {name: 'Test Precon', mainBoard: [pc('Bolt', 4, 'common'), pc('Dragonlord', 2, 'rare'), pc('Mountain', 20, 'common', {supertypes: ['Basic']})], sideBoard: [pc('Bolt', 1, 'common')]};
   const fetcher = async (url, init = {}) => {
@@ -100,6 +101,20 @@ assert.ok(!('prices' in row) && !JSON.stringify(row).includes('9.99'), 'pack rec
   // The Forge: 3 lower seals strike 1 of the next rarity, only with enough seals, never past mythic.
   wallet = {...wallet, seal_c: 7, seal_r: 2};
   calls.length = 0;
+  // Stamping from the card view: 1 seal of the card's rarity, or 1 + 2 for the holo of a printing that has a foil.
+  {
+    const id = 'a1000000-1111-2222-3333-444444444444';
+    const keepC = wallet.seal_c; wallet = {...wallet, seal_c: 3}; calls.length = 0;
+    assert.equal((await progressRoute(req('craft', {id, holo: true}), env, {verifyBearer, fetcher})).status, 409, 'no foil printing, no holo stamp');
+    const made = await (await progressRoute(req('craft', {id}), env, {verifyBearer, fetcher})).json();
+    assert.equal(made.card.holo, false);
+    assert.deepEqual(calls.find(c => c[0] === 'play_apply')[1].p_delta.seals, {c: -1});
+    wallet = {...wallet, seal_c: 3}; foilCards = true; calls.length = 0;
+    const holo = await (await progressRoute(req('craft', {id, holo: true}), env, {verifyBearer, fetcher})).json();
+    const d = calls.find(c => c[0] === 'play_apply')[1].p_delta;
+    assert.equal(holo.card.holo, true); assert.deepEqual(d.seals, {c: -3}); assert.equal(d.cards[0].foil, true);
+    foilCards = false; wallet = {...wallet, seal_c: keepC};
+  }
   // Holo at the Forge: 2 seals of the card's rarity turn one owned copy holo; never more holos than copies.
   {
     const o = 'c1000000-0000-0000-0000-000000000000';
