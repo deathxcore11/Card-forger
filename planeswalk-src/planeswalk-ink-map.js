@@ -164,7 +164,9 @@ const st=document.createElement('style');st.id='ink2-css';st.textContent=CSS;doc
 const hero=()=>{try{return run&&run.hero==='W'?'W':'R'}catch{return 'R'}};
 const art=n=>{const e=document.createElement('i');e.dataset.n=n;e.style.display='none';document.body.append(e);const v=getComputedStyle(e).getPropertyValue('--img');e.remove();return v};
 const apply=()=>{const t=document.querySelector('#app>.top');const h=hero();
- if(t&&!t.querySelector('.ink-hero')){const p=document.createElement('span');p.className='ink-hero';p.setAttribute('aria-hidden','true');
+ /* no run yet on hero select or the Codex: no hero seal in their bar (Randall 1 Nov: it showed Chandra before a pick) */const pre=!!document.querySelector('#app>.screen:is(.heroes,.journal)');
+ if(t&&pre){const o=t.querySelector(':scope>.ink-hero');if(o)o.remove()}
+ if(t&&!pre&&!t.querySelector('.ink-hero')){const p=document.createElement('span');p.className='ink-hero';p.setAttribute('aria-hidden','true');
   p.style.setProperty('--hero-img',art(h==='W'?'Elspeth, Sun\'s Champion':'Chandra, Torch of Defiance'));p.innerHTML=`<i style='--pip:${pip(h)}'></i>`;const h1=t.querySelector(':scope>h1');h1?h1.after(p):t.prepend(p)}
  // a full top bar (big text, narrow phone) drops the portrait seal before anything spills off the screen
  if(t){// the bar is tight once its items reach within 4px of the screen edge: first the gaps, emblems and deck button slim down, then the portrait goes

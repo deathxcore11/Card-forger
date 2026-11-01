@@ -1582,10 +1582,21 @@ function patronClick(a,b){const P=run&&run.patron;if(!P)return false;
  if(a==='bupg'){const d=run.deck.find(d=>d.id===+b.dataset.id);if(d)d.foil=true;patronStep();return true}
  if(a==='bcopy'){const d=run.deck.find(d=>d.id===+b.dataset.id);if(d){const n=mk(d.key);n.foil=d.foil;run.deck.push(n)}patronStep();return true}
  return false}
+// patch a live element's children to match a fresh copy: same-tag nodes are kept and only their attributes and text change, so art and hover state stay put
+function morphKids(to,from){const A=[...to.childNodes],B=[...from.childNodes];
+ B.forEach((y,i)=>{const x=A[i];if(!x){to.append(y);return}
+  if(x.nodeType!==y.nodeType||x.nodeName!==y.nodeName){to.replaceChild(y,x);return}
+  if(x.nodeType!==1){if(x.nodeValue!==y.nodeValue)x.nodeValue=y.nodeValue;return}
+  for(const at of [...x.attributes])if(!y.hasAttribute(at.name))x.removeAttribute(at.name);
+  for(const at of y.attributes)if(x.getAttribute(at.name)!==at.value)x.setAttribute(at.name,at.value);
+  if(!x.isEqualNode(y))morphKids(x,y)});
+ for(let j=B.length;j<A.length;j++)A[j].remove()}
 function render(){if(SIM)return;try{window.dispatchEvent(new Event('pw-prerender'))}catch(e){}
  if(view==='over'||view==='victory')endRun(view==='victory');
  markSeen();
- if(view==='heroes'||view==='journal'){document.getElementById('app').innerHTML=view==='journal'?journalView():heroesView();try{delete document.body.dataset.actnum}catch(e){}return}
+ if(view==='heroes'||view==='journal'){const app=document.getElementById('app'),html=view==='journal'?journalView():heroesView();
+  /* a tap on hero select (spark, look, a locked hero) patches the screen in place: a full rebuild re-decoded every portrait and dropped the hover lift, a visible flicker on tablets (Randall 1 Nov) */
+  if(view==='heroes'&&app.querySelector&&app.querySelector(':scope>.screen.heroes')){const t=document.createElement('div');t.innerHTML=html;morphKids(app,t)}else app.innerHTML=html;try{delete document.body.dataset.actnum}catch(e){}return}
  const body=view==='patron'&&run.patron?patronView():view==='ante'?anteView():view==='actstart'?actStartView():view==='bossreward'?bossRewardView():view==='shop'?shopView():view==='map'?mapView():view==='battle'?battleView():view==='reward'?rewardView():view==='rest'?restView():view==='event'?eventView():endView(view==='victory');
  document.getElementById('app').innerHTML=topBar()+body+`<details class="howto"><summary>How to play</summary><p class="note">${HERO.ramp?`You get ${HERO.ramp[0]} mana on your first turn and 1 more each turn, up to ${HERO.ramp[1]}.`:`You get ${HERO.energy} mana a turn. Rituals like Rite of Flame add more for this turn only.`} Unspent mana empties at the end of your turn. ${HERO.short}'s loyalty carries between fights: spend it now or save 6 for the ultimate. ${HERO.fury?'Play 4 cards in one turn for Fury: it burns every enemy and adds {R}.':''} The chip over ${HERO.short} shows what the enemies will do if you end your turn now. New creatures are asleep: they can block but not attack, unless they have haste. Tap a glowing creature, then an enemy, to attack. Targeted spells work the same way. Enemies strike back, and tapped creatures can't block. Your run saves on the map after every node.</p>${FORM?`<p class="note">Formation: your front ally blocks first. Tap ⇄ Formation, then an ally, then an enemy, to have that ally guard against it. ↷ flying: only flying or reach allies can block it. ⤳ bypass: skips your line unless an ally guards against it. ⇶ trample: a blocker that dies doesn't stop the hit. +N/turn: enrage, its attack grows every turn. A creature that dies blocking soaks the whole hit; a token soaks only its toughness.</p>`:''}</details><p class="note record">Runs ${profile.runs} · Wins ${profile.wins} · Best turn ${profile.bestTurn}</p>`+(gift&&view==='map'?`<div class="pw-gift" role="dialog" aria-modal="true" aria-label="New card"><div class="pw-gift-box"><p class="pw-gift-why">${gift.why}</p>${cardHtml({key:gift.k,foil:!!gift.foil},'tabindex="-1"')}<button class="btn main" data-act="giftok">${gift.foil?'Nice':'Keep it'}</button></div></div>`:'');
  // Skin hooks: every screen can read the act (for its location art) and its own kind.

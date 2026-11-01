@@ -428,7 +428,10 @@ function sceneOf(b){const v=getComputedStyle(b).getPropertyValue('--pw-bg').trim
 function groundLoad(b){const k=b&&sceneOf(b);if(!k)return null;const im=matImg(b,k);return im.complete?null:gwait(im)}
 // The act's mats load one after another while the map shows, so a fight opens on its painting without a wait.
 function preloadGround(){const a=ACTS[document.body.dataset.actnum]||'inn',wide=innerWidth/innerHeight>WIDE_AT;let q=Promise.resolve();for(const k of MATS)if(k.startsWith(a))q=q.then(()=>gwait(bimg(k,wide)))}
-function groundOff(b){if(!b)return;b.classList.remove('pw-ground');b.style.removeProperty('--pw-mat')}
+const TALL_AT=1.15;const SKY=new Map();// a painting's sky colour: the mean of its top strip, and a deeper shade for the top of a tall screen
+function skyOf(im){let v=SKY.get(im.src);if(v)return v;let r=13,g=16,bl=22;try{const cv=document.createElement('canvas');cv.width=32;cv.height=4;const x=cv.getContext('2d');x.drawImage(im,0,0,im.naturalWidth,im.naturalHeight*.05,0,0,32,4);const d=x.getImageData(0,0,32,4).data;let n=0;r=g=bl=0;for(let i=0;i<d.length;i+=4){r+=d[i];g+=d[i+1];bl+=d[i+2];n++}r/=n;g/=n;bl/=n}catch(e){}
+ const c=(k)=>`rgb(${Math.round(r*k)},${Math.round(g*k)},${Math.round(bl*k)})`;v=[c(1),c(.42)];SKY.set(im.src,v);return v}
+function groundOff(b){if(!b)return;b.classList.remove('pw-ground','pw-tall');b.style.removeProperty('--pw-mat')}
 function ground(){const b=app.querySelector('.battle'),field=b&&b.querySelector('.field.pw-stage'),hero=field&&(field.querySelector('.unit.hero.pw-fig>.art')||field.querySelector('.unit.pw-fig>.art'));// everyone stands on one line: a hero without a figure anchors the mat to any figure's feet
  if(!b||!hero||!rigs.size)return groundOff(b);
  const k=sceneOf(b),im=k&&matImg(b,k);if(!im||!gready(im))return groundOff(b);const BOX=im.naturalWidth/im.naturalHeight;
@@ -437,7 +440,12 @@ function ground(){const b=app.querySelector('.battle'),field=b&&b.querySelector(
  const Ys=(hero.getBoundingClientRect().bottom-r.top)/zb+10;// the hero's feet
  let f=FEET;const boxH=f=>Math.max(Hb,Wb/BOX,Ys/f,(Hb-Ys)/(1-f));let Hg=boxH(f);// the picture's feet line under the feet, never short of the screen
  while(f>FEET-SLIDE+1e-6&&f*Hg-Ys>CROP*Hg){f=Math.max(FEET-SLIDE,f-.01);Hg=boxH(f)}// a wide phone cuts the sky: the feet slide up before the landmarks go
+ /* a screen taller than the painting (a tablet, the open Fold): covering its height blew the scene up around a line of figures sized by the
+    width, so they read as specks in the distance (Randall 1 Nov). The painting keeps the scale the width gives it, the figures stand on its
+    near ground, and the sky above deepens into the painting's own night colour. */
+ const tall=Hb>Wb/BOX*TALL_AT;if(tall){f=FEET+.02;Hg=Math.max(Wb/BOX*TALL_AT,(Hb-Ys)/(1-f));if(Ys-f*Hg<0)Hg=Math.min(Hg,Ys/f)}
  const topG=Ys-f*Hg;
+ if(tall&&topG>1){const sk=skyOf(im),y=(topG+1).toFixed(1),y2=(topG+Hg*.14).toFixed(1);b.style.setProperty('--pw-sky',sk[0]);b.style.setProperty('--pw-sky-d',sk[1]);b.style.setProperty('--pw-sky-y',y+'px');b.style.setProperty('--pw-sky-y2',y2+'px');b.classList.add('pw-tall')}else b.classList.remove('pw-tall');
  const Wg=Hg*BOX,leftG=(Wb-Wg)/2;
  b.style.setProperty('--pw-bg-size',Wg.toFixed(1)+'px '+Hg.toFixed(1)+'px');b.style.setProperty('--pw-bg-pos',leftG.toFixed(1)+'px '+topG.toFixed(1)+'px');b.style.setProperty('--pw-mat','url("'+im.src+'")');
  b.classList.add('pw-ground')}
