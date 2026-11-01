@@ -1,4 +1,4 @@
-const CACHE = "cardforge-shell-pokemon-subsets-4360-v429";
+const CACHE = "cardforge-shell-story-acts-4361-v430";
 const ASSETS = [
   "./assets/fonts/fonts.css",
   "./play-forge-feature.js",
