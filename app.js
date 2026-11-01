@@ -1695,10 +1695,12 @@ A.playHome=()=>{playView='home';playInspectOpen=false;refreshPlayMenu();scrollTo
 // Play progression (play-progression.md): the Play collection, coins, seals and packs. The server
 // grants everything; this only asks it and shows the answer. Nothing here touches the real collection.
 const playEcon=createPlayEcon({getAccessToken:cloudAccessToken,onChange:()=>{syncPlayChrome();if(S.ui.view==='play')refreshPlayMenu();else if(S.ui.lens==='play'&&S.ui.view==='set')render();}});
-let econUi={query:'',cardQuery:'',rarity:'',press:null,check:null},econSeen=null;
+// The Trunk sort sticks until the player picks another (default: Recently added).
+function savedEconSort(){try{return localStorage.getItem('cardstashy-play-sort')||'';}catch{return '';}}
+let econUi={query:'',cardQuery:'',rarity:'',press:null,check:null,sort:savedEconSort()},econSeen=null;
 const econFacts=createCardFacts({onChange:()=>{if(S.ui.view==='play'&&ECON_VIEWS.has(playView))refreshPlayMenu();}});
 // Read the wallet once per signed-in account per visit to Play; a new account starts clean.
-const econWake=()=>{const id=cloudInfo()?.user?.id||null;if(id===econSeen)return;if(econSeen!==null)playEcon.clear();econSeen=id;econUi={query:'',cardQuery:'',rarity:'',press:null,check:null};playView=ECON_VIEWS.has(playView)?'home':playView;if(id)setTimeout(()=>playEcon.refresh().then(()=>playEcon.login()).then(l=>{if(l?.fresh)toast(`Day ${l.stamp} stamped on your log-in calendar.`);}),0);};
+const econWake=()=>{const id=cloudInfo()?.user?.id||null;if(id===econSeen)return;if(econSeen!==null)playEcon.clear();econSeen=id;econUi={query:'',cardQuery:'',rarity:'',press:null,check:null,sort:savedEconSort()};playView=ECON_VIEWS.has(playView)?'home':playView;if(id)setTimeout(()=>playEcon.refresh().then(()=>playEcon.login()).then(l=>{if(l?.fresh)toast(`Day ${l.stamp} stamped on your log-in calendar.`);}),0);};
 const econFocus=()=>requestAnimationFrame(()=>document.getElementById('playTitle')?.focus?.({preventScroll:true}));
 A.playEconView=t=>{const v=t.dataset.econView;if(!ECON_VIEWS.has(v))return;playView=v;if(t.dataset.econTab)econUi.deedTab=t.dataset.econTab;if(v==='decks')loadPreconIndex();playInspectOpen=false;refreshPlayMenu();scrollTo({top:0});if(v==='shop'&&t.dataset.econFocus==='press')requestAnimationFrame(()=>document.querySelector('.pe-forge')?.scrollIntoView({block:'center',behavior:'smooth'}));else econFocus();};
 A.playEconBuy=async t=>{try{await playEcon.buy(t.dataset.econSet);toast('Pack bought. It is waiting in Packs.');}catch{}};
@@ -1770,7 +1772,7 @@ A.playEconColor=t=>{const k=t.dataset.econColor||'';econUi.color=econUi.color===
 C.playEconType=t=>{econUi.type=t.value||'';refreshPlayMenu();};
 A.playEconSet=t=>{const code=t.dataset.econSet||'';if(t.dataset.econFilter){econUi.set=code;return refreshPlayMenu();}econUi.set='';if(code)return go('#set/'+encodeURIComponent(code)+'/play');refreshPlayMenu();};
 C.playEconSetPick=t=>{econUi.set=t.value||'';refreshPlayMenu();};
-C.playEconSort=t=>{econUi.sort=t.value||'';refreshPlayMenu();};
+C.playEconSort=t=>{econUi.sort=t.value||'';try{localStorage.setItem('cardstashy-play-sort',econUi.sort);}catch{}refreshPlayMenu();};
 // The Play lens (play-progression.md): the app's own set page and card sheet read the Play collection
 // and Play decks instead of prices. Read-only; every change still goes through the Play server.
 // Signed out or still loading, the lens still holds the wall: no prices, nothing owned yet.

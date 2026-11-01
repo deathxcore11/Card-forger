@@ -192,7 +192,8 @@ function setSelect(ui = {}, sets = []) {
 }
 
 // How the Trunk can be ordered. Set order puts the newest set first, like the Merchant.
-export const PLAY_SORTS = [['', 'Name'], ['rarity', 'Rarity'], ['set', 'Newest set'], ['cmc', 'Mana value'], ['count', 'Most copies']];
+// '' (the default) is Recently added: the card that last gained a copy first (state cards[].a).
+export const PLAY_SORTS = [['', 'Recently added'], ['name', 'Name'], ['rarity', 'Rarity'], ['set', 'Newest set'], ['cmc', 'Mana value'], ['count', 'Most copies']];
 const RARITY_RANK = {mythic: 0, rare: 1, uncommon: 2, common: 3};
 export function sortPlayCards(cards = [], facts = null, sort = '', sets = []) {
   const byName = (a, b) => a.n.localeCompare(b.n), rel = new Map(sets.map(x => [x.code, x.released || '']));
@@ -202,7 +203,8 @@ export function sortPlayCards(cards = [], facts = null, sort = '', sets = []) {
     set: (a, b) => (rel.get(setOf(b)) || '').localeCompare(rel.get(setOf(a)) || '') || setOf(a).localeCompare(setOf(b)) || byName(a, b),
     cmc: (a, b) => (facts?.card?.(a.o)?.m ?? 99) - (facts?.card?.(b.o)?.m ?? 99) || byName(a, b),
     count: (a, b) => (b.c | 0) - (a.c | 0) || byName(a, b),
-  }[sort] || byName;
+    name: byName,
+  }[sort] || ((a, b) => String(b.a || '').localeCompare(String(a.a || '')) || byName(a, b));
   return cards.slice().sort(cmp);
 }
 
