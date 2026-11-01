@@ -817,6 +817,10 @@ const name=String(card.name);if(Math.max(...name.split(/\s+/).map(word=>word.len
  const queueRails=()=>{if(!railFrame)railFrame=win.requestAnimationFrame(fitRails);};
  win.addEventListener('resize',queueRails);
  // A held board normally redraws without motion; a CPU playback beat (staged) moves it as it goes.
+ // A board that arrives while a card is being dragged waits until the drop: nothing redraws under the finger.
+ let frozen=null;
+ function presentBoard(s,blocked=false,staged=false){if(drag?.active&&!closed){frozen=[s,blocked,staged];return;}frozen=null;renderAccepted(s,blocked,staged);}
+ function thaw(){if(!frozen||drag?.active)return;const f=frozen;frozen=null;renderAccepted(...f);}
  function renderAccepted(s,blocked=false,staged=false){
   const previous=displayed,lifeBefore=new Map((displayed?.status?.surface?.players||[]).map(p=>[p.seat,p.life]));displayed=s;playbackBusy=blocked;root.dataset.forgePlayback=String(blocked);root.setAttribute('aria-busy',String(blocked));
   const focused=root.contains(doc.activeElement)?doc.activeElement.dataset.nativeKey:null;
@@ -1048,7 +1052,7 @@ const name=String(card.name);if(Math.max(...name.split(/\s+/).map(word=>word.len
   if(idleKey===key)return;idleKey=key;clearTimeout(idleTimer);
   idleTimer=setTimeout(()=>{idleTimer=0;const now=session.snapshot();if(closed||!idleReady(now)||now.native.revision!==n.revision)return;act(()=>session.nativeButton('ok',n.revision));},reducedMotion()?250:900);
  }
- playback=new CpuActionPlaybackQueue({present:renderAccepted,beat:showPlaybackBeat,clear:clearPlaybackBeat,preload:preloadBeatArt,reducedMotion,speed:()=>cpuSpeed==='fast'?.5:1});
+ playback=new CpuActionPlaybackQueue({present:presentBoard,beat:showPlaybackBeat,clear:clearPlaybackBeat,preload:preloadBeatArt,reducedMotion,speed:()=>cpuSpeed==='fast'?.5:1});
  // A tap skips held playback. Playback over a decision never holds the board, so a tap there
  // only clears the spotlight and goes on to whatever was tapped.
  const skipPlayback=e=>{if(!playback.running||e.button>0)return;if(playback.overlay){playback.stop();return;}suppressUntil=Date.now()+400;playback.flush();};
@@ -1265,9 +1269,10 @@ const name=String(card.name);if(Math.max(...name.split(/\s+/).map(word=>word.len
  // A target counts a little past its edges (more for small, tapped or crowded cards), so a drop just outside
  // an attacker still lands; the nearest one wins.
  const DROP_SLACK=22;
- const dropTargetAt=(x,y)=>{if(!drag?.combat)return null;const hit=doc.elementFromPoint(x,y);
-  const direct=hit&&drag.combat.targets.find(t=>dropElements(t).some(el=>el===hit||el.contains(hit)||(el.closest('.play-match-card-wrap')||el).contains(hit)));if(direct)return direct;
-  let best=null,bestD=Infinity;for(const t of drag.combat.targets)for(const el of dropElements(t)){const r=el.getBoundingClientRect();if(!r?.width)continue;const dx=Math.max(r.left-x,0,x-r.right),dy=Math.max(r.top-y,0,y-r.bottom),d=Math.hypot(dx,dy);if(d<=DROP_SLACK&&d<bestD){best=t;bestD=d;}}return best;};
+ // The targets' boxes are measured once when the drag starts (the board is frozen while it lasts), so a drag reads no layout.
+ const dropRects=()=>drag.combatRects||(drag.combatRects=drag.combat.targets.flatMap(t=>dropElements(t).map(el=>{const r=(el.closest('.play-match-card-wrap')||el).getBoundingClientRect();return {t,r:{left:r.left,top:r.top,right:r.right,bottom:r.bottom,width:r.width}};})));
+ const dropTargetAt=(x,y)=>{if(!drag?.combat)return null;
+  let best=null,bestD=Infinity;for(const {t,r} of dropRects()){if(!r?.width)continue;const dx=Math.max(r.left-x,0,x-r.right),dy=Math.max(r.top-y,0,y-r.bottom),d=Math.hypot(dx,dy);if(d<=DROP_SLACK&&d<bestD){best=t;bestD=d;}}return best;};
  // Waits until the table is ready for the next click of a two-click pairing.
  const settled=(ms=4000)=>new Promise(resolve=>{let off=null,timer=0;const done=ok=>{clearTimeout(timer);off?.();resolve(ok);};const check=s=>{if(!s.busy&&!playbackBusy)done(true);};off=authority.subscribe(check);timer=setTimeout(()=>done(false),ms);});
  async function dropCombat(plan,cardId,target){
@@ -1334,43 +1339,57 @@ const name=String(card.name);if(Math.max(...name.split(/\s+/).map(word=>word.len
  // A card from your hand plays once it is carried past the glowing line a little above the hand, over the
  // table; never over a control, a portrait, the stack strip or the hand itself. Elsewhere it floats back.
  const PLAY_LINE=28,playLineY=()=>{const t=parseFloat(root.style.getPropertyValue('--forge-hand-top'));return Number.isFinite(t)?t-PLAY_LINE:(root.querySelector('.play-match-hand-area')?.getBoundingClientRect().top??win.innerHeight*.6)-PLAY_LINE;};
- const playDropAt=(x,y)=>{const hit=doc.elementFromPoint(x,y);if(hit?.closest('.play-match-decisions,.forge-native-panel,.play-match-hand-area,.forge-hand-slider,.play-match-seat,.play-command-zone,.forge-zone-row,.forge-menu-panel,.forge-native-actions,button:not(.play-match-card),summary'))return false;return y<playLineY()&&!!hit?.closest('.play-match-table');};
+ // Measured once per drag: the play line and the controls a card is never dropped on. No layout is read while it moves.
+ const NO_DROP='.play-match-decisions,.forge-native-panel,.play-match-hand-area,.forge-hand-slider,.play-match-seat,.play-command-zone,.forge-zone-row,.forge-menu-panel,.forge-native-actions,.play-match-table button:not(.play-match-card),.play-match-table summary';
+ const dropMap=()=>{if(drag?.dropMap)return drag.dropMap;const t=root.getBoundingClientRect(),m={line:playLineY(),table:{left:t.left,top:t.top,right:t.right,bottom:t.bottom},blocked:[...root.querySelectorAll(NO_DROP)].map(el=>el.getBoundingClientRect()).filter(r=>r.width&&r.height).map(r=>({left:r.left,top:r.top,right:r.right,bottom:r.bottom}))};if(drag)drag.dropMap=m;return m;};
+ const inBox=(r,x,y)=>x>=r.left&&x<=r.right&&y>=r.top&&y<=r.bottom;
+ const playDropAt=(x,y)=>{const m=dropMap();if(!inBox(m.table,x,y)||m.blocked.some(r=>inBox(r,x,y)))return false;return y<m.line;};
  function markPlayDrop(e){
   if(!ghost||!drag?.active||drag.combat)return;
   const fromHand=!!drag.source.closest('.play-match-hand'),playable=drag.source.dataset.forgeRole==='playable';
   const ready=presentation.hosted&&fromHand&&playable&&playDropAt(e.clientX,e.clientY);
   const state=ready?'ready':fromHand&&playable?'lift':'';markTapPreview(state?tapPlan(drag.id)?.lands:null);
   if(presentation.hosted){let line=root.querySelector(':scope>.forge-play-line');if(state&&!line){line=doc.createElement('div');line.className='forge-play-line';line.setAttribute('aria-hidden','true');root.append(line);}
-   if(line){line.style.top=`${Math.round(playLineY())}px`;if(state)root.dataset.playLine=state;else delete root.dataset.playLine;}}if((ghost.dataset.drop||'')!==state){if(state==='ready')haptic('tick');ghost.dataset.drop=state;}
+   if(line){const y=`${Math.round(dropMap().line)}px`;if(line.style.top!==y)line.style.top=y;if(state)root.dataset.playLine=state;else delete root.dataset.playLine;}}if((ghost.dataset.drop||'')!==state){if(state==='ready')haptic('tick');ghost.dataset.drop=state;}
   const lane=ready?laneFor(drag.source):'';
   for(const el of root.querySelectorAll('[data-forge-lane-drop]'))if(el.dataset.cardGroup!==lane||!el.closest('[data-placement-zone=battlefield]'))el.removeAttribute('data-forge-lane-drop');
   const groups=root.querySelector('[data-placement-zone=battlefield] .play-match-zone-groups');
   if(lane&&groups){const at=groups.querySelector(`.play-match-lane[data-card-group="${lane}"]`);if(at)at.dataset.forgeLaneDrop='true';else groups.dataset.forgeLaneDrop=lane;}
   if(groups&&groups.dataset.forgeLaneDrop&&(!lane||groups.querySelector(`.play-match-lane[data-card-group="${lane}"]`)))delete groups.dataset.forgeLaneDrop;
  }
- // The lifted card trails the finger a touch (eased each frame) and leans into the motion.
- const followGhost=()=>{ghostFrame=0;if(!ghost||!drag?.active)return;const g=drag.g;g.x+=(g.tx-g.x)*.62;g.y+=(g.ty-g.y)*.62;g.tilt+=(Math.max(-14,Math.min(14,(g.tx-g.x)*.5))-g.tilt)*.3;ghost.style.translate=`${g.x.toFixed(1)}px ${g.y.toFixed(1)}px`;ghost.style.setProperty('--tilt',`${g.tilt.toFixed(2)}deg`);if(Math.abs(g.tx-g.x)+Math.abs(g.ty-g.y)+Math.abs(g.tilt)>.3)ghostFrame=win.requestAnimationFrame(followGhost);};
+ // The lifted card sits under the finger with no lag (Randall's drag rules, 1 Nov): one write per frame, the
+ // latest pointer position only, and it leans with its speed, settling upright when the finger stops.
+ const followGhost=()=>{ghostFrame=0;if(!ghost||!drag?.active)return;const g=drag.g,vx=g.tx-g.x;g.x=g.tx;g.y=g.ty;g.tilt+=(Math.max(-14,Math.min(14,vx*.5))-g.tilt)*.3;ghost.style.translate=`${g.x.toFixed(1)}px ${g.y.toFixed(1)}px`;ghost.style.setProperty('--tilt',`${g.tilt.toFixed(2)}deg`);if(Math.abs(g.tilt)>.3)ghostFrame=win.requestAnimationFrame(followGhost);};
  // A drop that plays nothing floats the card back to its slot instead of vanishing.
- const returnGhost=(el,source,home)=>{const r=home?{left:home.ox,top:home.oy,width:0,height:0}:source?.isConnected&&source.getBoundingClientRect();if(!r||typeof el.animate!=='function'||win.matchMedia?.('(prefers-reduced-motion: reduce)').matches){el.remove();return;}const [x,y]=(el.style.translate||'0px 0px').split(' ').map(parseFloat);const a=el.animate([{translate:`${x}px ${y}px`,scale:1},{translate:`${r.left+r.width/2}px ${r.top+r.height/2}px`,scale:.9,opacity:.6}],{duration:220,easing:'cubic-bezier(.3,.7,.2,1)'});a.onfinish=a.oncancel=()=>el.remove();};
+ const returnGhost=(el,source,home)=>{const r=home?{left:home.ox,top:home.oy,width:0,height:0}:source?.isConnected&&source.getBoundingClientRect();if(!r||typeof el.animate!=='function'||win.matchMedia?.('(prefers-reduced-motion: reduce)').matches){el.remove();return;}const [x,y]=(el.style.translate||'0px 0px').split(' ').map(parseFloat);const a=el.animate([{translate:`${x}px ${y}px`,scale:1},{translate:`${r.left+r.width/2}px ${r.top+r.height/2}px`,scale:.9,opacity:.6}],{duration:340,easing:'cubic-bezier(.34,1.45,.64,1)'});a.onfinish=a.oncancel=()=>el.remove();};
  // The dropped card stays where your finger let it go (cancel() leaves a held ghost alone) until the next
  // accepted board says where it went: onto the battlefield it snaps into its slot from here (land() reads
  // lastDrop, refreshed from this ghost just before the redraw); still in your hand (refused, or waiting
  // there dimmed while it is cast) it floats back to it. If Forge says nothing within DROP_HOLD it floats back too.
- function holdDrop(pending){if(reducedMotion())return;dropHeld(true);const g=ghost;ghost=null;g.dataset.held='true';heldDrop={ghost:g,id:pending.id,revision:session.snapshot().status?.revision,gone:pending.gone,timer:setTimeout(()=>dropHeld(true),DROP_HOLD)};}
+ function holdDrop(pending){if(reducedMotion())return;dropHeld(true);const g=ghost;ghost=null;g.dataset.held='true';heldDrop={ghost:g,id:pending.id,revision:(frozen?frozen[0]:session.snapshot()).status?.revision,gone:pending.gone,timer:setTimeout(()=>dropHeld(true),DROP_HOLD)};
+  // A spell goes straight to where it is cast (the stack spotlight) while Forge confirms; a land waits to snap into its row.
+  const c=session.snapshot().status?.surface.cards.find(x=>x.id===pending.id);if(c&&!/\bLand\b/.test(c.type||''))toStack(g);}
+ function toStack(g){
+  const small=win.matchMedia?.('(max-width:600px),(max-height:520px)').matches,gw=g.offsetWidth||100,vw=win.innerWidth,vh=win.innerHeight;
+  const w=small?76:Math.max(170,Math.min(250,Math.min(vw*.15,vh*.52/1.394))),x=small?8+w/2:vw/2,y=small?58+w*1.394/2:vh*.44,k=w/gw;
+  const [x0,y0]=(g.style.translate||'0px 0px').split(' ').map(parseFloat);g.dataset.drop='';g.dataset.stacked='true';
+  const a=g.animate?.([{translate:`${x0}px ${y0}px`,scale:getComputedStyle(g).scale==='none'?1:getComputedStyle(g).scale},{translate:`${x}px ${y}px`,scale:k}],{duration:300,easing:'cubic-bezier(.3,1.25,.55,1)',fill:'forwards'});
+  const settle=()=>{g.style.translate=`${x}px ${y}px`;g.style.scale=String(k);a?.cancel();};if(a)a.onfinish=settle;else settle();
+ }
  function dropHeld(force=false){
   const h=heldDrop;if(!h)return;const s=session.snapshot(),c=s.status?.surface.cards.find(x=>x.id===h.id);
   if(!force&&c?.zone==='Hand'&&!c.inTransit&&(s.busy||s.status?.revision===h.revision)&&!s.native?.lastActionError)return;
-  heldDrop=null;clearTimeout(h.timer);const el=cardEl(h.id),fade=()=>{const a=h.ghost.animate?.([{opacity:1},{opacity:0,scale:1.12}],{duration:180,easing:'ease-out',fill:'forwards'});if(a)a.onfinish=a.oncancel=()=>h.ghost.remove();else h.ghost.remove();};
+  heldDrop=null;clearTimeout(h.timer);const el=cardEl(h.id),fade=()=>{const a=h.ghost.animate?.([{opacity:1},h.ghost.dataset.stacked?{opacity:0}:{opacity:0,scale:1.12}],{duration:h.ghost.dataset.stacked?240:180,easing:'ease-out',fill:'forwards'});if(a)a.onfinish=a.oncancel=()=>h.ghost.remove();else h.ghost.remove();};
   if(force&&!c)return h.ghost.remove();
   if(c?.zone==='Battlefield'&&el&&!el.closest('.play-match-hand'))return h.ghost.remove();
   // Anything else starts from the hand when it does arrive (a spell waits there, dimmed, while it is cast).
   lastDrop=null;if(c?.zone==='Hand'&&el){if(h.gone?.isConnected)delete h.gone.dataset.handGone;return returnGhost(h.ghost,el);}
   fade();
  }
- const cancel=(back=false)=>{if(ghostFrame)win.cancelAnimationFrame(ghostFrame);ghostFrame=0;drag?.source?.classList.remove('forge-drag-source');
+ const cancel=(back=false)=>{if(ghostFrame)win.cancelAnimationFrame(ghostFrame);ghostFrame=0;drag?.source?.classList.remove('forge-drag-source');if(drag?.captured)try{root.releasePointerCapture?.(drag.pointerId);}catch{}
   // A card that goes back reopens its slot; a played one keeps it shut until the hand redraws (or the play doesn't land).
   const gone=drag?.gone,reopen=()=>{if(gone?.isConnected)delete gone.dataset.handGone;};if(gone){if(back)reopen();else setTimeout(reopen,1500);}
-  if(ghost){if(back)returnGhost(ghost,gone?null:drag?.source,gone?drag.g:null);else ghost.remove();}drag=null;ghost=null;root.classList.remove('forge-dragging');delete root.dataset.playLine;markTapPreview(null);for(const el of root.querySelectorAll('[data-forge-lane-drop]'))el.removeAttribute('data-forge-lane-drop');markDrops();};
+  if(ghost){if(back)returnGhost(ghost,gone?null:drag?.source,gone?drag.g:null);else ghost.remove();}drag=null;ghost=null;root.classList.remove('forge-dragging');delete root.dataset.playLine;markTapPreview(null);for(const el of root.querySelectorAll('[data-forge-lane-drop]'))el.removeAttribute('data-forge-lane-drop');markDrops();thaw();};
  const down=e=>{lastPointerType=e.pointerType||'mouse';
   // Two fingers, like a physical table: while one thumb holds a card open to read it, another can drag a card.
   const second=e.isPrimary===false;if(e.button!==0||second&&!(pressAt&&pressAt.id!==e.pointerId&&!drag?.active))return;const card=e.target.closest?.('.play-match-card[data-instance]'),s=session.snapshot();
@@ -1418,7 +1437,7 @@ const name=String(card.name);if(Math.max(...name.split(/\s+/).map(word=>word.len
  const move=e=>{if(root.dataset.forgeInput==='InputSelectTargets'&&presentation.hosted&&(e.pointerType==='mouse'||e.buttons)){aim={x:e.clientX,y:e.clientY};queueArrows();}else if(aim&&root.dataset.forgeInput!=='InputSelectTargets'){aim=null;queueArrows();}
   if(pressAt?.id===e.pointerId&&!pressShown&&Math.hypot(e.clientX-pressAt.x,e.clientY-pressAt.y)>(e.pointerType==='mouse'?8:TOUCH_SLOP)){clearTimeout(pressTimer);pressAt=null;}
   if(!drag||drag.pointerId!==e.pointerId)return;if(attackSwipe(e)){if(e.cancelable)e.preventDefault();return;}if(peekFor&&drag.active&&!(drag.second&&pressShown))hidePeek();if(drag.revision!==session.snapshot().status?.revision&&!session.snapshot().status?.surface.cards.some(c=>c.id===drag.id)){cancel();return;}if(!drag.active&&e.pointerType!=='mouse'&&drag.source.closest('.play-match-hand')&&!handIntent(e))return;
-  if(!drag.active&&Math.hypot(e.clientX-drag.x,e.clientY-drag.y)>(pressShown&&pressAt?.id===e.pointerId?18:e.pointerType==='mouse'?8:TOUCH_SLOP+2)){drag.active=true;drag.combat=combatDrops(drag.id);haptic('tick');}if(!drag.active)return;if(e.cancelable)e.preventDefault();if(!ghost){ghost=drag.source.cloneNode(true);ghost.removeAttribute('data-instance');ghost.classList.add('forge-drag-ghost');ghost.setAttribute('aria-hidden','true');ghost.setAttribute('inert','');const sr=drag.source.getBoundingClientRect();ghost.style.width=Math.min(sr.width,drag.source.offsetWidth||sr.width)+'px';ghost.style.left='0px';ghost.style.top='0px';drag.g={x:sr.left+sr.width/2,y:sr.top+sr.height/2,ox:sr.left+sr.width/2,oy:sr.top+sr.height/2,tx:e.clientX,ty:e.clientY,tilt:0};drag.rubber=presentation.hosted&&!!drag.source.closest('.play-match-hand')&&!drag.combat&&drag.source.dataset.forgeRole!=='playable';if(drag.rubber)ghost.classList.add('forge-rubber');ghost.style.translate=`${drag.g.x}px ${drag.g.y}px`;root.append(ghost);drag.source.classList.add('forge-drag-source');root.classList.add('forge-dragging');
+  if(!drag.active&&Math.hypot(e.clientX-drag.x,e.clientY-drag.y)>(pressShown&&pressAt?.id===e.pointerId?18:e.pointerType==='mouse'?8:TOUCH_SLOP+2)){drag.active=true;drag.combat=combatDrops(drag.id);haptic('tick');try{root.setPointerCapture?.(e.pointerId);drag.captured=true;}catch{}dropMap();if(drag.combat)dropRects();}if(!drag.active)return;if(e.cancelable)e.preventDefault();if(!ghost){ghost=drag.source.cloneNode(true);ghost.removeAttribute('data-instance');ghost.classList.add('forge-drag-ghost');ghost.setAttribute('aria-hidden','true');ghost.setAttribute('inert','');const sr=drag.source.getBoundingClientRect();ghost.style.width=Math.min(sr.width,drag.source.offsetWidth||sr.width)+'px';ghost.style.left='0px';ghost.style.top='0px';drag.g={x:sr.left+sr.width/2,y:sr.top+sr.height/2,ox:sr.left+sr.width/2,oy:sr.top+sr.height/2,tx:e.clientX,ty:e.clientY,tilt:0};drag.rubber=presentation.hosted&&!!drag.source.closest('.play-match-hand')&&!drag.combat&&drag.source.dataset.forgeRole!=='playable';if(drag.rubber)ghost.classList.add('forge-rubber');ghost.style.translate=`${drag.g.x}px ${drag.g.y}px`;root.append(ghost);drag.source.classList.add('forge-drag-source');root.classList.add('forge-dragging');
    // An attacker or blocker rides above the finger (below it at the top edge), so the player or creature under it stays in view.
    drag.lift=drag.combat?Math.round((ghost.offsetHeight||60)/2+(e.pointerType==='mouse'?14:36)):0;
    // Like Arena, a card dragged out of the hand leaves no hole: its slot closes and the fan slides together.
