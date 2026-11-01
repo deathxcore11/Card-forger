@@ -540,7 +540,38 @@ def _():
     # A big pull gathers itself before it turns: a rising shimmer over a soft swell.
     return verb(mix((cym_swell(.7), 0, .35), (shimmer(74, 98, .65, CELESTA, 44), 0, .45), (inst(SLOWSTR, [(0, .75, 62, 40), (0, .75, 69, 36)]), 0, .35)), .35, 1.4, 5000)
 
-QUIET = {'PACK-003': -8, 'PACK-004': -6, 'PACK-005': -8, 'PACK-006': -6, 'PACK-007': -6, 'PACK-008': -5, 'PACK-009': -4, 'PACK-011': -8, 'COL-005': -5, 'PACK-014': -6, 'PACK-015': -6, 'PACK-016': -5, 'PACK-017': -4, 'PACK-018': -3, 'PACK-019': -6, 'PACK-020': -9}
+# ---------------------------------------------------------------------------- Play rewards (4.3.64)
+# Claiming a quest or an achievement: a bright little jingle, then each coin, seal, pack and bit of XP lands in the
+# purse with its own small sound. Same warm D-major palette as the pack tiers.
+@cue('RWD-001')
+def _():
+    # Quest claimed: a quick celesta-and-harp flourish up to a bright fifth.
+    return verb(mix((gliss(HARP, 69, 86, .22, 58, (0, 2, 4, 7, 9)), 0, .45), (inst(CELESTA, [(.16, .35, 81, 64), (.25, .35, 86, 64), (.34, .7, 93, 66)]), 0, .7),
+                    (inst(GLOCK, [(.34, .6, 93, 44)]), 0, .25), (sparkle(5, .4, 4000, 9000), .3, .18)), .3, 1.4, 6000)
+@cue('RWD-002')
+def _():
+    # A coin drops into the purse: one small, round clink.
+    return verb(mix((coin(rng.uniform(2600, 3000)), 0, .7), (glass(mf(98), .18), .005, .12)), .12, .7, 7000)
+@cue('RWD-003')
+def _():
+    # A seal lands: a soft wax press with a glassy ping on top.
+    return verb(mix((thump(160, 90, .1, .02, .1), 0, .7), (paper(.03, 2500), 0, .4), (glass(mf(93), .35), .03, .3)), .2, .9, 5000)
+@cue('RWD-004')
+def _():
+    # A pack lands in the purse: a padded paper thump and a short shimmer.
+    return verb(mix((thump(140, 70, .14, .03, .15), 0, .7), (lp(paper(.05, 3000), 6000), 0, .5), (shimmer(86, 98, .2, CELESTA, 40), .04, .3)), .2, 1.0, 5000)
+@cue('RWD-005')
+def _():
+    # XP: a soft rising sparkle.
+    return verb(mix((shimmer(81, 100, .35, CELESTA, 44), 0, .5), (sparkle(4, .3, 5000, 9500), .1, .2)), .3, 1.2, 6500)
+@cue('RWD-006')
+def _():
+    # An achievement (or the weekly bonus): a harp sweep into a warm string and choir chord, bells ringing down.
+    return verb(mix((gliss(HARP, 62, 93, .45, 62, (0, 2, 4, 7, 9)), 0, .55), (inst(SLOWSTR, [(.4, 1.4, p, 52) for p in (50, 57, 62, 66)]), 0, .5),
+                    (inst(CHOIR, [(.4, 1.3, p, 42) for p in (66, 69, 74)]), 0, .4), (inst(GLOCK, [(.42 + i * .08, .6, p, 54) for i, p in enumerate((93, 90, 86, 81))]), 0, .3),
+                    (inst(TIMP, [(.38, 1.0, 38, 62)]), 0, .3), (sparkle(8, .9, 3500, 9000), .45, .2)), .4, 1.9, 5000)
+
+QUIET = {'PACK-003': -8, 'PACK-004': -6, 'PACK-005': -8, 'PACK-006': -6, 'PACK-007': -6, 'PACK-008': -5, 'PACK-009': -4, 'PACK-011': -8, 'COL-005': -5, 'PACK-014': -6, 'PACK-015': -6, 'PACK-016': -5, 'PACK-017': -4, 'PACK-018': -3, 'PACK-019': -6, 'PACK-020': -9, 'RWD-001': -6, 'RWD-002': -12, 'RWD-003': -10, 'RWD-004': -10, 'RWD-005': -12, 'RWD-006': -4}
 # Lengths for cues the brief does not list (seconds).
-LENGTH = {'PACK-014': .8, 'PACK-015': 1.1, 'PACK-016': 1.6, 'PACK-017': 2.3, 'PACK-018': 3.0, 'PACK-019': .7, 'PACK-020': .8}
+LENGTH = {'PACK-014': .8, 'PACK-015': 1.1, 'PACK-016': 1.6, 'PACK-017': 2.3, 'PACK-018': 3.0, 'PACK-019': .7, 'PACK-020': .8, 'RWD-001': 1.1, 'RWD-002': .35, 'RWD-003': .5, 'RWD-004': .55, 'RWD-005': .6, 'RWD-006': 2.2}
 PUBLIC = sorted(k for k in CUES if not k.startswith('_'))
