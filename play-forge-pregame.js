@@ -42,17 +42,23 @@ export function mountForgeMatchIntro({root,setup,lookup=()=>null,onCancel=()=>{}
  const heading=node('h1','A new match awaits');heading.tabIndex=-1;
  header.append(format,heading);
  const versus=node('div',undefined,'forge-intro-versus'),seats=[];
- for(const [own,deck]of [[true,setup.selected],[false,setup.opponent]]){
+ // A Commander pod shows every CPU: you on one side, CPU 2-4 stacked on the other.
+ const extra=Array.isArray(setup.extraOpponents)?setup.extraOpponents.filter(o=>o?.deck).map(o=>o.deck):[],pod=extra.length>0;
+ let cpuColumn=null;
+ if(pod)versus.classList.add('forge-intro-versus--pod');
+ for(const [index,[own,deck]]of [[true,setup.selected],[false,setup.opponent],...extra.map(d=>[false,d])].entries()){
   const seat=node('section',undefined,'forge-intro-seat '+(own?'forge-intro-you':'forge-intro-cpu'));
+  const cpuName=pod?'CPU '+(index+1):rival;
   const artwork=node('div',undefined,'forge-intro-art'),identity=node('div',undefined,'forge-intro-identity'),avatar=node('span',undefined,'forge-intro-avatar');
   artwork.setAttribute('aria-hidden','true');
   if(own)avatar.innerHTML=profileAvatar(profile.avatarArt,{display_name:profile.displayName,username:profile.username,avatar_url:profile.avatarUrl});
   else{const crest=node('span',setup.friend?rival.slice(0,1).toUpperCase():'CPU','forge-cpu-crest');crest.setAttribute('aria-hidden','true');avatar.append(crest);}
-  const name=node('div',undefined,'forge-intro-name');name.append(node('small',own?'YOU':'YOUR OPPONENT'),node('h2',own?(profile.displayName||profile.username||'You'):rival));
+  const name=node('div',undefined,'forge-intro-name');if(own||!pod)name.append(node('small',own?'YOU':'YOUR OPPONENT'));name.append(node('h2',own?(profile.displayName||profile.username||'You'):cpuName));
   if(own&&profile.username)name.append(node('span','@'+profile.username.replace(/^@/,'')));
   identity.append(avatar,name);
   const deckInfo=node('div',undefined,'forge-intro-deck');deckInfo.append(node('span','DECK'),node('h3',!own&&setup.friend?'Hidden until played':deck?.name||'Selected deck'));
-  seat.append(artwork,identity,deckInfo);seats.push({deck,artwork});versus.append(seat);
+  seat.append(artwork,identity,deckInfo);seats.push({deck,artwork});
+  if(own||!pod)versus.append(seat);else{if(!cpuColumn){cpuColumn=node('div',undefined,'forge-intro-pod');versus.append(cpuColumn);}cpuColumn.append(seat);}
   if(own){const vs=node('span','VS','forge-intro-vs');vs.setAttribute('aria-hidden','true');versus.append(vs);}
  }
  const footer=node('footer',undefined,'forge-intro-footer'),steps=node('ol',undefined,'forge-intro-steps');

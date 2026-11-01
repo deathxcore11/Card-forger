@@ -1252,8 +1252,7 @@ body[data-actnum="2"] .screen{--pw-bg-screen:var(--pw-x-zen-map)}
 @keyframes pw-loyal-pulse{0%,100%{filter:drop-shadow(0 2px 3px #000) drop-shadow(0 0 0 #e8b95b00)}50%{filter:drop-shadow(0 2px 3px #000) drop-shadow(0 0 8px #ffd98a)}}
 @media (prefers-reduced-motion:no-preference){#app .battle:not(.pw-abil-open):has(.controls [data-act=plus]:not(:disabled)) .unit.hero .loyal{animation:pw-loyal-pulse 1.8s ease-in-out infinite}}
 #app .battle.pw-abil-open .unit.hero .loyal{background:linear-gradient(180deg,#fff6d8,#ffd98a 55%,#e8b95b)!important}
-/* Formation button only shows while arranging (drag an ally onto your front ally instead) */
-#app .battle .controls [data-act=arrange]:not(.chosen){display:none!important}
+/* Formation: always reachable with 2+ allies (bug audit 1 Nov, BUG-001: hiding it left no way to set a guard); dragging an ally onto the front one still works */
 /* coach card */
 .pw-coach{position:fixed;left:50%;top:50%;translate:-50% -50%;z-index:9998;width:min(340px,86vw);padding:16px 18px 12px;border-radius:16px;background:linear-gradient(180deg,#221d16f2,#110e0bf5);border:1px solid #6b5a33;box-shadow:inset 0 1px 0 #ffffff14,0 0 0 1px #000,0 24px 60px #000e;color:#efe6d2;font:500 .86rem/1.4 var(--body,system-ui)}
 .pw-coach b{display:block;font:700 1rem var(--display,serif);color:#f3d48a;letter-spacing:.06em;margin-bottom:8px}

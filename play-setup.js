@@ -15,6 +15,12 @@ export function createPlaySetup({readAccount,readDecks,parseImport,resolveNames,
  let match={format:'Commander',mode:'cpu',difficulty:savedCpuLevel(),startingPlayer:'random',podSize:'2',cpu3Level:'Medium',cpu4Level:'Medium'},browse={query:'',source:'yours'};
  // Commander pods (Practice only): the extra CPUs' random decks, picked when the match starts.
  let extraOpponents=[];
+ // Decks you chose for the pod's extra seats (CPU 3, CPU 4). An empty seat gets a random Commander deck at Play.
+ let podPicks={cpu3:null,cpu4:null},podSources={cpu3:null,cpu4:null};
+ const POD_SEATS=['cpu3','cpu4'];
+ // Seats you can fill: you, CPU 2, and the pod seats the chosen player count actually has.
+ const seatOpen=seat=>seat==='player'||seat==='opponent'||(seat==='cpu3'&&pod())||(seat==='cpu4'&&pod()&&Number(match.podSize)>=4);
+ function putCpu(seat,deck,source){if(seat==='opponent'){opponent=deck;opponentSource=source;}else{podPicks[seat]=deck;podSources[seat]=deck?source:null;}}
  const text=(v,max)=>typeof v==='string'&&v.length<=max?v:'';
  const identity=v=>(typeof v==='string'||typeof v==='number')&&String(v).length>0&&String(v).length<=160?String(v):null;
  function clone(value){
@@ -30,7 +36,7 @@ export function createPlaySetup({readAccount,readDecks,parseImport,resolveNames,
   }
   check(result);if(new TextEncoder().encode(JSON.stringify(result)).length>MAX_DECK_BYTES)throw Error('Deck data exceeds the setup review limit.');return result;
  }
- function reset(){operation++;playStyle='practice';quickMatch=null;selectedId=null;selectedImport=null;candidate=null;opponent=null;inspectedSeat='player';selectedKind=null;opponentSource=null;draft={name:'',text:'',format:''};match={format:'Commander',mode:'cpu',difficulty:savedCpuLevel(),startingPlayer:'random'};browse={query:'',source:'yours'};importStatus='idle';error=null;warnings=[];importErrors=[];unresolved=[];busy=false;}
+ function reset(){operation++;playStyle='practice';quickMatch=null;selectedId=null;selectedImport=null;candidate=null;opponent=null;inspectedSeat='player';selectedKind=null;opponentSource=null;draft={name:'',text:'',format:''};match={format:'Commander',mode:'cpu',difficulty:savedCpuLevel(),startingPlayer:'random',podSize:'2',cpu3Level:'Medium',cpu4Level:'Medium'};podPicks={cpu3:null,cpu4:null};podSources={cpu3:null,cpu4:null};browse={query:'',source:'yours'};importStatus='idle';error=null;warnings=[];importErrors=[];unresolved=[];busy=false;}
  function sync(){
   let next;try{next=readAccount()||{};}catch{next={};}
   const nextOwner=identity(next.user?.id),nextLocked=Boolean(next.switching||next.locked||getLocked?.(next));
@@ -75,7 +81,7 @@ export function createPlaySetup({readAccount,readDecks,parseImport,resolveNames,
   if(selectedId!==null){const source=saved.find(d=>identity(d?.id)===selectedId);if(source)selected=inspectDeck(source).deck;}
   else if(selectedImport)selected=clone(selectedImport);
   if(quickMatch&&JSON.stringify(selected)!==quickPlayerKey){opponent=null;opponentSource=null;quickMatch=null;}
-  return {profile:profile(),decks,selected,opponent:opponent?clone(opponent):null,inspectedSeat,playStyle,quickMatch:quickMatch?clone(quickMatch):null,match:{...match},extraOpponents:pod()?extraOpponents.map(x=>({deck:clone(x.deck),difficulty:x.difficulty})):[],browse:{...browse},importCandidate:candidate?clone(candidate):null,reviewDeck:candidate?clone(candidate):null,selectedSource:selectedId!==null?'saved':selectedImport?(selectedKind||'import'):null,opponentSource,importStatus,error,warnings:[...warnings],importErrors:[...importErrors],unresolved:[...unresolved],busy,draft:{...draft},readiness:{ready:false,code:'engine-verification-pending',reason:'Matches are unavailable while the rules engine, CPU and recovery checks are being verified.'}};
+  return {profile:profile(),decks,selected,opponent:opponent?clone(opponent):null,inspectedSeat,playStyle,quickMatch:quickMatch?clone(quickMatch):null,match:{...match},extraOpponents:pod()?extraOpponents.map(x=>({deck:clone(x.deck),difficulty:x.difficulty})):[],podDecks:Object.fromEntries(POD_SEATS.map(k=>[k,seatOpen(k)&&podPicks[k]?clone(podPicks[k]):null])),podSources:Object.fromEntries(POD_SEATS.map(k=>[k,seatOpen(k)?podSources[k]:null])),browse:{...browse},importCandidate:candidate?clone(candidate):null,reviewDeck:candidate?clone(candidate):null,selectedSource:selectedId!==null?'saved':selectedImport?(selectedKind||'import'):null,opponentSource,importStatus,error,warnings:[...warnings],importErrors:[...importErrors],unresolved:[...unresolved],busy,draft:{...draft},readiness:{ready:false,code:'engine-verification-pending',reason:'Matches are unavailable while the rules engine, CPU and recovery checks are being verified.'}};
  }
  function snapshot(){sync();return value();}
  const pod=()=>match.format==='Commander'&&playStyle==='practice'&&match.mode==='cpu'&&Number(match.podSize)>2;
@@ -92,15 +98,15 @@ export function createPlaySetup({readAccount,readDecks,parseImport,resolveNames,
   if(!source){error='That deck is not available in this account.';notify();return value();}
   if(source.format!==match.format){error='Choose a '+match.format+' deck. Other formats remain available in Decks.';notify();return value();}
   const inspected=inspectDeck(source);if(!inspected.deck){error=inspected.issues.join(' ');notify();return value();}
-  if(!['player','opponent'].includes(seat))throw Error('Unknown seat.');
-  operation++;busy=false;candidate=null;importStatus='idle';if(seat==='opponent'){opponent=clone(inspected.deck);opponentSource='saved';}else{retireQuick();selectedId=lookup;selectedImport=null;selectedKind=null;}inspectedSeat=seat;error=null;warnings=[...inspected.issues];importErrors=[];unresolved=[];notify();return value();
+  if(!seatOpen(seat))throw Error('Unknown seat.');
+  operation++;busy=false;candidate=null;importStatus='idle';if(seat!=='player'){putCpu(seat,clone(inspected.deck),'saved');}else{retireQuick();selectedId=lookup;selectedImport=null;selectedKind=null;}inspectedSeat=seat;error=null;warnings=[...inspected.issues];importErrors=[];unresolved=[];notify();return value();
  }
  function configure(partial){
   sync();
   const allowed={format:['Standard','Commander','Modern','Pioneer','Legacy','Vintage','Pauper','Standard Brawl'],mode:['cpu','friends'],difficulty:['Easy','Medium','Hard'],startingPlayer:['random','first','second'],podSize:['2','3','4'],cpu3Level:['Easy','Medium','Hard'],cpu4Level:['Easy','Medium','Hard']};
   if(!partial||Array.isArray(partial)||typeof partial!=='object'||Object.entries(partial).some(([k,v])=>!Object.hasOwn(allowed,k)||!allowed[k].includes(v))){error='Choose an available format, opponent and starting player.';return value();}
   if(partial.format&&partial.format!==match.format){
-   operation++;selectedId=null;selectedImport=null;candidate=null;opponent=null;inspectedSeat='player';selectedKind=null;opponentSource=null;busy=false;importStatus='idle';warnings=[];importErrors=[];unresolved=[];
+   operation++;selectedId=null;selectedImport=null;candidate=null;opponent=null;podPicks={cpu3:null,cpu4:null};podSources={cpu3:null,cpu4:null};inspectedSeat='player';selectedKind=null;opponentSource=null;busy=false;importStatus='idle';warnings=[];importErrors=[];unresolved=[];
    draft={...draft,format:partial.format};
   }
   if(partial.mode==='friends')inspectedSeat='player';
@@ -108,11 +114,11 @@ export function createPlaySetup({readAccount,readDecks,parseImport,resolveNames,
   if(partial.difficulty&&partial.difficulty!==match.difficulty){retireQuick();try{globalThis.localStorage?.setItem(CPU_LEVEL_KEY,partial.difficulty);}catch{/* this device only */}}
   quickMatch=partial.format?null:quickMatch;match={...match,...partial,...(playStyle==='quick'?{startingPlayer:'random'}:{})};
   // Pods are Commander and Practice only.
-  if(match.format!=='Commander'||playStyle==='quick'||match.mode!=='cpu')match.podSize='2';error=null;notify();return value();
+  if(match.format!=='Commander'||playStyle==='quick'||match.mode!=='cpu')match.podSize='2';if(!seatOpen(inspectedSeat))inspectedSeat='player';error=null;notify();return value();
  }
  function searchDecks(query){sync();if(typeof query==='string'&&query.length<=160)browse={...browse,query};return value();}
  function setSource(source){sync();if(!['yours','precons','community','meta','random'].includes(source))throw Error('Unknown deck source.');browse={source,query:''};notify();return value();}
- function chooseTemporary(source,{seat=inspectedSeat,sourceKind='import'}={}){sync();if(!requireAccount())throw Error('Sign in before choosing a deck.');if(!['player','opponent'].includes(seat)||!['precons','community','meta','random','import','starter'].includes(sourceKind))throw Error('Unknown deck selection.');const x=inspectDeck(source);if(x.issues.length||x.deck?.format!==match.format)throw Error('Choose a complete list for the current format.');operation++;busy=false;if(seat==='opponent'){opponent=clone(x.deck);opponentSource=sourceKind;}else{retireQuick();selectedId=null;selectedImport=clone(x.deck);selectedKind=sourceKind;}inspectedSeat=seat;error=null;notify();return value();}
+ function chooseTemporary(source,{seat=inspectedSeat,sourceKind='import'}={}){sync();if(!requireAccount())throw Error('Sign in before choosing a deck.');if(!seatOpen(seat)||!['precons','community','meta','random','import','starter'].includes(sourceKind))throw Error('Unknown deck selection.');const x=inspectDeck(source);if(x.issues.length||x.deck?.format!==match.format)throw Error('Choose a complete list for the current format.');operation++;busy=false;if(seat!=='player'){putCpu(seat,clone(x.deck),sourceKind);}else{retireQuick();selectedId=null;selectedImport=clone(x.deck);selectedKind=sourceKind;}inspectedSeat=seat;error=null;notify();return value();}
  function updateDraft(partial,{notify:shouldNotify=false}={}){
   sync();if(!requireAccount())return value();
   if(!partial||typeof partial!=='object'||Array.isArray(partial)||Object.keys(partial).some(k=>!['name','text','format'].includes(k))){error='Draft fields are malformed.';return value();}
@@ -165,12 +171,12 @@ export function createPlaySetup({readAccount,readDecks,parseImport,resolveNames,
    if(!current())return value();busy=false;candidate=null;importStatus='error';error=cause instanceof Error&&cause.message.startsWith('The pasted list contains errors:')?cause.message:'The pasted deck could not be reviewed. Check its rows, quantities and format.';notify();return value();
   }
  }
- function reviewImport(seat='player'){sync();if(!requireAccount()){notify();return value();}if(busy||!candidate||importStatus!=='review'){error='Finish reviewing a valid pasted list before selecting it.';notify();return value();}if(!['player','opponent'].includes(seat))throw Error('Unknown seat.');inspectedSeat=seat;if(seat==='opponent'){opponent=clone(candidate);opponentSource='import';}else{retireQuick();selectedImport=clone(candidate);selectedId=null;selectedKind='import';}candidate=null;importStatus='selected';error=null;notify();return value();}
+ function reviewImport(seat='player'){sync();if(!requireAccount()){notify();return value();}if(busy||!candidate||importStatus!=='review'){error='Finish reviewing a valid pasted list before selecting it.';notify();return value();}if(!seatOpen(seat))throw Error('Unknown seat.');inspectedSeat=seat;if(seat!=='player'){putCpu(seat,clone(candidate),'import');}else{retireQuick();selectedImport=clone(candidate);selectedId=null;selectedKind='import';}candidate=null;importStatus='selected';error=null;notify();return value();}
  function clearImport(){sync();operation++;candidate=null;busy=false;importStatus='idle';error=null;warnings=[];importErrors=[];unresolved=[];notify();return value();}
- function clearSelection(seat='player'){sync();if(seat==='opponent'){opponent=null;opponentSource=null;quickMatch=null;}else{retireQuick();selectedId=null;selectedImport=null;selectedKind=null;}error=null;notify();return value();}
+ function clearSelection(seat='player'){sync();if(POD_SEATS.includes(seat)){putCpu(seat,null,null);}else if(seat==='opponent'){opponent=null;opponentSource=null;quickMatch=null;}else{retireQuick();selectedId=null;selectedImport=null;selectedKind=null;}error=null;notify();return value();}
  function chooseOpponent(source){sync();if(!requireAccount())throw Error("Sign in before choosing an opponent.");const x=inspectDeck(source);if(x.issues.length||x.deck?.format!==match.format)throw Error("Choose a complete opponent list for the current format.");opponent=clone(x.deck);opponentSource=source.practiceBuild?'random':'import';inspectedSeat='opponent';notify();return value();}
  function setPlayStyle(style){sync();if(!['quick','practice'].includes(style))throw Error('Unknown play style.');playStyle=style;quickMatch=null;inspectedSeat='player';if(style==='quick'){opponent=null;opponentSource=null;match={...match,startingPlayer:'random'};}notify();return value();}
  function setQuickOpponent(result){sync();if(!requireAccount()||match.mode!=='cpu'||playStyle!=='quick'||result?.difficulty!==match.difficulty)throw Error('The matchup changed. Find a CPU deck again.');chooseOpponent(result.deck);opponentSource='quick';inspectedSeat='player';quickPlayerKey=JSON.stringify(value().selected);quickMatch={reason:String(result.reason||''),candidateCount:result.candidateCount,estimated:result.estimated,difficulty:result.difficulty};notify();return value();}
- function inspectSeat(seat){sync();if(!['player','opponent'].includes(seat))throw Error('Unknown seat.');inspectedSeat=seat;return value();}
+ function inspectSeat(seat){sync();if(!seatOpen(seat))throw Error('Unknown seat.');inspectedSeat=seat;return value();}
  return {snapshot,setExtraOpponents,reconcile,refresh:reconcile,selectDeck,chooseTemporary,chooseOpponent,setPlayStyle,setQuickOpponent,inspectSeat,configure,searchDecks,setSource,updateDraft,importPaste,importDraft:()=>{sync();return importPaste(draft.text,{name:draft.name,format:draft.format});},reviewImport,clearImport,clearSelection};
 }

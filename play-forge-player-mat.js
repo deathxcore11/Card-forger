@@ -3,7 +3,7 @@
 import {APP_VERSION} from './config.js';
 import {capturePracticeArtwork} from './play-card-surface.js';
 import {forgeCpuPolicy,forgeMatchDifficulty} from './play-forge-cpu-policy.js';
-import {createForgeHostClient,exactForgeInput,forgeAccountKey,forgeWarmedAt} from './play-forge-host-client.js';
+import {createForgeHostClient,exactForgeInput,forgeAccountKey} from './play-forge-host-client.js';
 import {createForgePresentationSession} from './experiments/forge-proof/forge-session.mjs';
 import {mountForgeTable} from './experiments/forge-proof/forge-table.mjs';
 import {nativePromptUnanswerable} from './experiments/forge-proof/native-panel.mjs';
@@ -143,6 +143,8 @@ export function createForgePlayerMat({root,readAccount,readSetup,getAccessToken,
   if(diagnostic){const details=node('details');details.append(node('summary','Technical details'),node('code',diagnostic));panel.append(details);}
   if(close){const b=node('button','Return to Play setup');b.type='button';b.className='btn';b.addEventListener('click',requestExit);panel.append(b);}root.append(panel);heading.focus();
  }
+ // The result waits for the blow that won the game to land on the board (at most two seconds), as in Arena.
+ async function lethalBlow(){if(conceding||disposed)return;let ms=0;try{ms=table?.finale?.()||0;}catch{ms=0;}if(ms>0)await wait(Math.min(ms,2000));}
  function finish(result,terminalViewer=null){
   if(disposed)return;
   if(matchAccount!==forgeAccountKey(readAccount())){client?.detach();stopped({code:'ACCOUNT_CHANGED'});return;}
@@ -248,7 +250,8 @@ export function createForgePlayerMat({root,readAccount,readSetup,getAccessToken,
   // saying it can take a minute (then why, after 25 s). It all stops when the table opens
   // or the start ends.
   // A warm engine started loading while the player picked decks (the host keeps it 3 minutes).
-  const tick=()=>{if(requestedAt===null||!intro)return;const seconds=Math.max(0,Math.floor((now()-requestedAt)/1000)),warm=forgeWarmedAt(),head=warm!==null&&warm<=requestedAt&&requestedAt-warm<180000?Math.floor((requestedAt-warm)/1000):null;intro.elapsed?.(`${seconds} s`);if(progress){intro.note?.(stepsLine(progress));return;}intro.note?.(seconds>=25?'Still setting up. The first match after an update takes longer.':head!==null?`The engine started loading ${head} s before you pressed Start.`:'Setting up a table can take up to a minute. Keep this page open.');};
+  const tick=()=>{if(requestedAt===null||!intro)return;const seconds=Math.max(0,Math.floor((now()-requestedAt)/1000));intro.elapsed?.(`${seconds} s`);if(progress?.ms?.ready!==undefined){intro.note?.(seconds>=25?'Still shuffling. The first match after an update takes longer.':'Shuffling up and dealing…');return;}intro.note?.(seconds>=25?'Still setting up. The first match after an update takes longer.':'Setting up a table can take up to a minute. Keep this page open.');};
+  // The host's step times (warm or fresh engine, container, engine) stay in the console for diagnosis; the player sees plain words.
   // Where a slow start spends its time, from the host's own step times: a warm engine or
   // a fresh one, then the container and the engine. Shown while it starts, and briefly
   // once the table opens.
@@ -296,7 +299,7 @@ export function createForgePlayerMat({root,readAccount,readSetup,getAccessToken,
     if(!current()||startingPlayer===null)throw Object.assign(Error('SELECTION_CHANGED'),{code:'SELECTION_CHANGED'});
     request(startingPlayer);
    }
-   intro.status('Starting the rules engine…');
+   intro.status('Setting up the table…');
    await created;
    warn(true);if(!current()){await client.close();throw Error('SELECTION_CHANGED');}
    let state,deadline=Date.now()+125000,allocationRetries=0;
@@ -324,7 +327,7 @@ export function createForgePlayerMat({root,readAccount,readSetup,getAccessToken,
    if(!forgeStartingPlayer(state.snapshot))throw Object.assign(Error('STARTING_PLAYER_UNCONFIRMED'),{code:'STARTING_PLAYER_UNCONFIRMED'});
    session=createForgePresentationSession({lookupArtwork:artwork,pollMs,allowControlMode:true,transportStatus:()=>client.status(),request:async(path,body)=>{
     if(body)return client.submit(body);
-    try{const next=await client.read();if(next.status==='finished'){finish(next.result,next.viewerId);return null;}if(next.status!=='running')throw Error('HOST_SESSION_NOT_RUNNING');return next.snapshot;}
+    try{const next=await client.read();if(next.status==='finished'){await lethalBlow();finish(next.result,next.viewerId);return null;}if(next.status!=='running')throw Error('HOST_SESSION_NOT_RUNNING');return next.snapshot;}
     catch(e){if(e.status===410||e.status===401||e.code==='ACCOUNT_CHANGED')stopped(e);throw e;}
    }});
    await intro?.reveal(state.snapshot);if(!current()){await client.close();throw Error('SELECTION_CHANGED');}intro?.destroy();intro=null;

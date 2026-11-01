@@ -784,6 +784,7 @@ function openSheet(html, ctx = null, scrollTop = 0) {
   $("#sheetBody").innerHTML = html;
   reuseLoadedArt($("#sheetBody"),keptArt,keepSheetNodes($("#sheetBody"),stable,keptArt));
   restoreSheetMotion($("#sheetBody"),motion);
+  settleSheetArt($("#sheetBody"));
   syncDeckViewers();
   $("#sheetBody").dataset.detailIdentity = detailContextIdentity(ctx);
   if (lastSheetStep && lastSheetStep !== stepKey) {
@@ -902,6 +903,7 @@ function refreshSheet() {
     body.innerHTML = ctx.type === "card" ? V.cardSheet(c,ctx) : ctx.type === "tcard" ? T.tcgCardSheet(c,ctx) : V.buySheet(ctx);
     reuseLoadedArt(body,keptArt,keepSheetNodes(body,stable,keptArt));
     restoreSheetMotion(body,motion);
+    settleSheetArt(body);
     body.dataset.detailIdentity = detailContextIdentity(ctx);
     wireSheetBack();
     (body.querySelectorAll?.('.cd-zoom')||[]).forEach((el,i)=>{const img=el.querySelector('img');if(!artHeights[i]||!img||img.complete)return;el.style.minHeight=artHeights[i]+'px';const free=()=>{el.style.minHeight='';};img.addEventListener('load',free,{once:true});img.addEventListener('error',free,{once:true});});
@@ -1304,7 +1306,7 @@ function keepSheetNodes(root,old,keptArt){
   }));
   return kept;
 }
-const SHEET_MOTION=['.cs-hero','.cs-banner .cs-art','.cd-img'];
+const SHEET_MOTION=['.cs-hero','.cs-banner .cs-art','.cd-img','.cs-bleed'];
 function captureSheetMotion(root){
   if(!root?.querySelectorAll)return null;
   return SHEET_MOTION.map(sel=>[...root.querySelectorAll(sel)].map(el=>({
@@ -1321,6 +1323,26 @@ function restoreSheetMotion(root,saved){
     if(was.shining){el.classList.add('shine-once');const run=was.runs.find(r=>r.name==='card-catch');setTimeout(()=>el.classList.remove('shine-once'),Math.max(0,1300-(run?.t||0)));}
     for(const a of el.getAnimations?.({subtree:true})||[]){const run=was.runs.find(r=>r.name===a.animationName&&r.pseudo===(a.effect?.pseudoElement||null));if(!run)continue;if(run.start!=null)a.startTime=run.start;else a.currentTime=run.t;}
   }));
+}
+// On a card page's first showing, the header art with the glass that carries it down the sheet, and the
+// big card, each wait for their picture and then come in once. Shown before it, the blurred glass
+// arrived first, the sharp art landed on it a moment later and the big card flashed an empty frame.
+// A picture already loaded shows at once; a new printing's picture waits the same way.
+const SHEET_SETTLE=[['art','.cs-bleed img, .cs-banner > .cs-hero img'],['card','.cd-img .cd-zoom img']];
+function settleSheetArt(root){
+  if(!root?.querySelectorAll||!root.dataset)return;
+  const mark=(part,on)=>{const list=new Set((root.dataset.settling||'').split(' ').filter(Boolean));if(on)list.add(part);else list.delete(part);if(list.size)root.dataset.settling=[...list].join(' ');else delete root.dataset.settling;};
+  root.settleState||={};
+  for(const [part,sel] of SHEET_SETTLE){
+    const pics=[...root.querySelectorAll(sel)],key=pics.map(im=>im.getAttribute('src')).join(' ');
+    if(root.settleState[part]?.key===key)continue;
+    const state={key};root.settleState[part]=state;
+    if(pics.every(im=>im.complete)){mark(part,false);continue;}
+    mark(part,true);
+    const done=()=>{if(root.settleState[part]===state)mark(part,false);};
+    Promise.all(pics.map(im=>im.decode?.().catch(()=>{}))).then(()=>(globalThis.requestAnimationFrame||setTimeout)(done));
+    setTimeout(done,2500);
+  }
 }
 const navigationStamp = () => ({ revision:navigation.revision, workspace:workspaceVisitRevision, game:T.game(), hash:location.hash });
 const navigationCurrent = stamp => stamp.revision === navigation.revision && stamp.workspace === workspaceVisitRevision && stamp.game === T.game() && stamp.hash === location.hash;
@@ -1580,10 +1602,14 @@ const playSetup = createPlaySetup({
   parseImport:text=>parsePlayDeckImport(text,{parseDeckImport}),
   resolveNames:async names=>{const owner=cloudInfo().user?.id,generation=accountGeneration,current=()=>!accountLocked&&generation===accountGeneration&&owner===cloudInfo().user?.id;await resolveNames(names,()=>{},false,current);return {failed:current()?names.filter(name=>!meta(name)):[]};}
 });
-const playBuilders=Object.fromEntries(['player','opponent'].map(seat=>[seat,createPracticeOpponentBuilder({pipeline:deckPipeline,pickSeed:randomBuildSeed,
+const playBuilders=Object.fromEntries(['player','opponent','cpu3','cpu4'].map(seat=>[seat,createPracticeOpponentBuilder({pipeline:deckPipeline,pickSeed:randomBuildSeed,
  readScope:()=>[cloudInfo().user?.id,accountGeneration,accountLocked,playSetup.snapshot().match.format],
  onSelect:deck=>playSetup.chooseTemporary(deck,{seat,sourceKind:'random'}),onChange:()=>refreshPlayMenu()})]));
 const practiceOpponentBuilder=playBuilders.opponent;
+// The deck and source in any seat: you, CPU 2, or a pod seat (CPU 3, CPU 4).
+const playSeatDeck=(state,seat)=>seat==='player'?state.selected:seat==='opponent'?state.opponent:state.podDecks?.[seat]||null;
+const playSeatSource=(state,seat)=>seat==='player'?state.selectedSource:seat==='opponent'?state.opponentSource:state.podSources?.[seat]||null;
+const playBrowseSeat=state=>state.playStyle==='quick'?'player':state.inspectedSeat;
 let playSources={scope:null,community:[],statuses:{}};
 function currentPlaySources(){const scope=JSON.stringify([cloudInfo().user?.id||null,accountGeneration,accountLocked]);if(playSources.scope!==scope)playSources={scope,community:[],statuses:{}};return playSources;}
 function readPlaySources(){const state=playSetup.snapshot(),cache=currentPlaySources(),format=state.match.format;return playSourceEntries({format,precons:S.ui.finder.precons,metaData:metaState('mtg:'+(format==='Commander'?'EDH':format)).data,community:state.profile.signedIn?cache.community:[],references:state.profile.signedIn?S.state.references:[]});}
@@ -1697,12 +1723,16 @@ A.playFindOpponent=async()=>{
 // Names the engine would refuse, said plainly; the first one is named.
 const engineMissingText=(label,names)=>label+' has '+(names.length===1?'a card the rules engine can’t load yet: ':names.length+' cards the rules engine can’t load yet, including ')+names[0]+'.';
 async function pickPodDecks(state,count){
+ // Seats you filled keep your deck; only empty seats draw a random Commander deck.
+ const chosen=['cpu3','cpu4'].slice(0,count).map(seat=>state.podDecks?.[seat]||null);
+ if(chosen.every(Boolean))return playSetup.setExtraOpponents(chosen);
  try{if(!metaState('mtg:EDH').data)await Promise.race([loadMetaData('mtg:EDH').catch(()=>{}),new Promise(resolve=>setTimeout(resolve,4000))]);}catch{}
  const names=FORGE_PLAY_TEST_ENABLED?await loadEngineCardNames():null;
  const cardsOf=deck=>JSON.stringify([deck.commander||'',(deck.cards||[]).map(r=>String(r?.name||'').toLowerCase()).sort()]);
- const taken=new Set([state.selected,state.opponent].map(cardsOf)),picks=[];
+ const taken=new Set([state.selected,state.opponent,...chosen.filter(Boolean)].map(cardsOf)),picks=[];
  let pool=[...S.state.decks,...Object.values(readPlaySources()).flat().map(x=>x.deck)].filter(deck=>deck?.format==='Commander'&&(!FORGE_PLAY_TEST_ENABLED||forgeCpuDeckComplete(deck)&&!engineUnknownCards(deck,names).length));
  for(let i=0;i<count;i++){
+  if(chosen[i]){picks.push(chosen[i]);continue;}
   const candidates=pool.filter(deck=>!taken.has(cardsOf(deck)));
   const result=chooseQuickOpponent({player:state.selected,candidates,difficulty:'Medium',...(FORGE_PLAY_TEST_ENABLED?{candidateEligible:deck=>deck===state.selected||forgeDeckSupport(deck).status==='native-pending',nativeValidationPending:true}:{candidateEligible:()=>true})});
   if(taken.has(cardsOf(result.deck)))throw Error('Four-player games need more Commander decks. Load Precons or Meta in Practice, then try again.');
@@ -1710,7 +1740,7 @@ async function pickPodDecks(state,count){
  }
  playSetup.setExtraOpponents(picks);
 }
-A.playSaveDeck=async()=>{const state=playSetup.snapshot(),deck=state.inspectedSeat==='opponent'?state.opponent:state.selected;if(!deck)return;try{const job=savePlayDeck(deck);refreshPlayMenu();await job;}catch(e){toast(e.message);}finally{refreshPlayMenu();}};
+A.playSaveDeck=async()=>{const state=playSetup.snapshot(),deck=playSeatDeck(state,state.inspectedSeat);if(!deck)return;try{const job=savePlayDeck(deck);refreshPlayMenu();await job;}catch(e){toast(e.message);}finally{refreshPlayMenu();}};
 A.playDeckSource=async t=>{playSetup.setSource(t.dataset.playSource);refreshPlayMenu();const source=t.dataset.playSource;if(['precons','community','meta'].includes(source)&&!(readPlaySources()[source]||[]).length)await A.playLoadSource();};
 A.playLoadSource=async()=>{
  const state=playSetup.snapshot(),source=state.browse.source,cache=currentPlaySources(),format=state.match.format,key=source+':'+format;
@@ -1764,7 +1794,7 @@ A.playStartCandidate=async()=>{
  if(initial.playStyle==='quick'&&initial.match.mode==='cpu'&&!initial.quickMatch){if(!await A.playFindOpponent())return;}
  if(T.game()!=='mtg'||S.ui.view!=='play'||!syncDesktopPlayEntries('mtg').eligible)return;
  const source=playSetup.snapshot();if(!source.selected||!source.opponent||source.match.mode!=='cpu')return toast('Choose both Practice decks first.');
- // A Commander pod: the extra CPUs get random Commander decks (not yours, not CPU 2's, not each other's).
+ // A Commander pod: CPU 3 and CPU 4 play the decks you chose; an empty seat gets a random Commander deck (not yours, not CPU 2's, not each other's).
  if(source.playStyle==='practice'&&source.match.format==='Commander'&&Number(source.match.podSize)>2){
   const size=Number(source.match.podSize),levels=[source.match.difficulty,source.match.cpu3Level,source.match.cpu4Level].slice(0,size-1);
   if(globalThis.matchMedia?.('(pointer:coarse) and (max-width:900px)')?.matches&&levels.filter(l=>l==='Hard').length>1)return toast('Phones run one Hard CPU per game. Set the others to Easy or Normal.');
@@ -1899,10 +1929,10 @@ function renderPlayPage() {
   const device=syncDesktopPlayEntries('mtg');
   if(!device.eligible){const gate=playDeviceGate(device);return '<section class="empty play-device-guard"><span class="play-device-guard-icon" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><rect x="2.5" y="4" width="9" height="16" rx="1.6"/><path d="M13.5 5.4 20.2 3.6a.8.8 0 0 1 1 .8v15.2a.8.8 0 0 1-1 .8l-6.7-1.8z"/><path d="M5.5 12h3m-1.3-1.5L8.7 12l-1.5 1.5"/></svg></span><h1>'+esc(gate.title)+'</h1><p>'+esc(gate.line)+'</p><a class="btn" href="#decks">Open Decks</a><a class="btn ghost" href="#home">Home</a></section>';}
   const state=playSetup.snapshot(),p=state.profile,tiles=new Map();state.opponentBuild=practiceOpponentBuilder.snapshot();state.deckBuild=playBuilders[state.playStyle==='quick'?'player':state.inspectedSeat].snapshot();const sources=readPlaySources(),sourceArt=new Map();for(const entries of Object.values(sources))for(const entry of entries)sourceArt.set(entry.key,V.deckArtwork(entry.deck));
-  for(const summary of state.decks){const deck=deckById(summary.id);if(summary.valid&&deck)tiles.set(summary.id,V.deckTile(deck,false,{playSelection:(state.playStyle!=='quick'&&state.inspectedSeat==='opponent'?state.opponentSource==='saved'&&state.opponent?.id===deck.id:state.selectedSource==='saved'&&state.selected?.id===deck.id)}));}
-  const inspected=state.playStyle!=='quick'&&state.match.mode==='cpu'&&state.inspectedSeat==='opponent'?state.opponent:state.selected;
+  for(const summary of state.decks){const deck=deckById(summary.id);if(summary.valid&&deck)tiles.set(summary.id,V.deckTile(deck,false,{playSelection:playSeatSource(state,playBrowseSeat(state))==='saved'&&playSeatDeck(state,playBrowseSeat(state))?.id===deck.id}));}
+  const inspected=state.playStyle!=='quick'&&state.match.mode==='cpu'?playSeatDeck(state,state.inspectedSeat):state.selected;
   if(state.match.mode==='cpu')warmForgeEngine(state);
-  return playMenuMarkup(state,{friendRoom:friendRoomView(),canShare:typeof navigator.share==='function',view:playView,inspectOpen:playInspectOpen,engine:FORGE_PLAY_TEST_ENABLED?'forge':'phase',sourceEntries:sources,sourceArt,cpuDifficulties:readCpuOptions({engine:FORGE_PLAY_TEST_ENABLED?'forge':'phase'}),quickStatus,sourceStatus:currentPlaySources().statuses[state.browse.source+':'+state.match.format]||{},savedCopy:savedPlayCopy(inspected),savePending:playSaver.isSaving(inspected),matchReleaseReady:PLAY_MATCH_RELEASE_READY,avatarMarkup:profileAvatar(p.avatarArt,{display_name:p.displayName,username:p.username,avatar_url:p.avatarUrl}),deckTiles:tiles,deckPreview:playDeckPreview(inspected),importPreview:playDeckPreview(state.reviewDeck),selectedArt:V.deckArtwork(inspected),matchupArt:{player:V.deckArtwork(state.selected),opponent:V.deckArtwork(state.opponent)}});
+  return playMenuMarkup(state,{friendRoom:friendRoomView(),canShare:typeof navigator.share==='function',view:playView,inspectOpen:playInspectOpen,engine:FORGE_PLAY_TEST_ENABLED?'forge':'phase',sourceEntries:sources,sourceArt,cpuDifficulties:readCpuOptions({engine:FORGE_PLAY_TEST_ENABLED?'forge':'phase'}),quickStatus,sourceStatus:currentPlaySources().statuses[state.browse.source+':'+state.match.format]||{},savedCopy:savedPlayCopy(inspected),savePending:playSaver.isSaving(inspected),matchReleaseReady:PLAY_MATCH_RELEASE_READY,avatarMarkup:profileAvatar(p.avatarArt,{display_name:p.displayName,username:p.username,avatar_url:p.avatarUrl}),deckTiles:tiles,deckPreview:playDeckPreview(inspected),importPreview:playDeckPreview(state.reviewDeck),selectedArt:V.deckArtwork(inspected),matchupArt:{player:V.deckArtwork(state.selected),opponent:V.deckArtwork(state.opponent),cpu3:state.podDecks?.cpu3?V.deckArtwork(state.podDecks.cpu3):'',cpu4:state.podDecks?.cpu4?V.deckArtwork(state.podDecks.cpu4):''}});
 }
 const refreshPlayMenu=()=>{if(S.ui.view==='play'&&T.game()==='mtg'){
   const scrolls=[...document.querySelectorAll('[data-play-scroll]')].map(n=>[n.dataset.playScroll,n.scrollTop]);
@@ -1916,7 +1946,7 @@ function focusNextPlaySelection(){const state=playSetup.snapshot();const target=
  // On a phone the sticky Play bar would cover the CPU seat that is up next, so bring it to the middle.
  if(target?.dataset.playSeat==='opponent'&&matchMedia('(max-width:700px)').matches)target.closest('.pl-seat')?.scrollIntoView({block:'center',behavior:matchMedia('(prefers-reduced-motion: reduce)').matches?'auto':'smooth'});}
 // In Practice, once your deck is in, the next pick goes to the CPU's seat (it used to replace yours).
-A.playSelectDeck=t=>{cancelPlayBuilds();const before=playSetup.snapshot(),seat=before.playStyle==='quick'?'player':before.inspectedSeat;playSetup.selectDeck(t.dataset.playDeck,seat);const after=playSetup.snapshot();if(after.playStyle!=='quick'&&after.match.mode==='cpu'&&seat!=='opponent'&&after.selected&&!after.opponent)playSetup.inspectSeat('opponent');refreshPlayMenu();focusNextPlaySelection();};
+A.playSelectDeck=t=>{cancelPlayBuilds();const before=playSetup.snapshot(),seat=before.playStyle==='quick'?'player':before.inspectedSeat;playSetup.selectDeck(t.dataset.playDeck,seat);const after=playSetup.snapshot();if(after.playStyle!=='quick'&&after.match.mode==='cpu'&&seat==='player'&&after.selected&&!after.opponent)playSetup.inspectSeat('opponent');refreshPlayMenu();focusNextPlaySelection();};
 A.playInspectSeat=t=>{playSetup.inspectSeat(t.dataset.playSeat);refreshPlayMenu();};
 A.playClearSelection=()=>{cancelPlayBuilds();playSetup.clearSelection(playSetup.snapshot().inspectedSeat);refreshPlayMenu();};
 // Play vs CPU from a deck page: Quick Play with this saved deck in its own format.

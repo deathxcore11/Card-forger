@@ -27,6 +27,11 @@ export function nativeZoneSearch(snapshot){
  if(!choices.every(c=>SEARCH_ZONES.has(c.zone))||!choices.some(c=>c.visible))return null;
  return {kind:'selection',choices,zones:[...new Set(choices.map(c=>c.zone))],min:n.selection?.min,max:n.selection?.max};
 }
+// The spell or ability doing the search: the top of the stack while it resolves, else the latest cast or trigger.
+function searchSource(n){const top=n?.stack?.[0]?.source?.name;if(top)return top;const items=n?.events?.items||[];for(let i=items.length-1;i>=0;i--){const e=items[i];if(/^(cast|ability|trigger|resolve)$/.test(e?.type||'')&&e.source?.name)return e.source.name;}return '';}
+// "Choose 1 card from your library", "Choose up to 2 cards", "Choose 1 to 3 cards".
+function searchAsk(z){const min=Number.isSafeInteger(z?.min)?z.min:null,max=Number.isSafeInteger(z?.max)?z.max:null;if(max===null||max<1)return '';
+ const n=max===1?'1 card':`${max} cards`,count=min===max?n:!min?`up to ${n}`:`${min} to ${n}`,from=z.zones.length===1?{Library:' from your library',Graveyard:' from a graveyard',Exile:' from exile'}[z.zones[0]]||'':'';return `Choose ${count}${from}`;}
 function searchImage(card){
  if(card?.known!==true)return null;
  const art=card.printing?.playArtwork?.card,face=art?.card_faces?.find(f=>f.name===card.name)||art?.card_faces?.[0];
@@ -39,9 +44,28 @@ const costName=value=>String(optionLabel(value)).match(/^[A-Za-z][A-Za-z' -]*?(?
 export const isDescribedOption=value=>typeof value==='string'||typeof value==='number'||typeof value==='boolean'||!!(value&&value.hidden!==true&&value.card?.hidden!==true&&(value.name||value.description||value.text));
 // True when the open prompt leaves the player no reply: the panel below shows a diagnostic
 // instead of controls (unadapted method, unordered order, or too few presentable options).
+// Combat damage and divided amounts: Forge sends the total, one row per option and the limits.
+export const AMOUNT_METHODS=new Set(['assignCombatDamage','assignGenericAmount']);
+const amountSpec=p=>{const a=p?.assign,size=(p?.options||[]).length;if(!AMOUNT_METHODS.has(p?.method)||!a||!Number.isSafeInteger(a.amount)||a.amount<0||!size)return null;
+ if(p.method==='assignCombatDamage'){const lethal=Array.isArray(a.lethal)?a.lethal:[];if(lethal.length!==size)return null;return {combat:true,amount:a.amount,lethal,defender:Number.isSafeInteger(a.defenderIndex)?a.defenderIndex:null,free:a.freeDivision===true,maySkip:a.maySkip===true};}
+ const maxima=Array.isArray(a.maxima)?a.maxima.map(Number):[];if(maxima.length!==size||maxima.some(m=>!Number.isFinite(m)))return null;return {combat:false,amount:a.amount,maxima,atLeastOne:a.atLeastOne===true,label:String(a.label||'')};};
+// The same checks the engine makes: the total, the per-target limits and, in combat, every blocker
+// has lethal damage before any reaches the player or planeswalker (unless the attacker divides freely).
+export function amountsLegal(p,amounts){const spec=amountSpec(p);if(!spec||!Array.isArray(amounts)||amounts.length!==p.options.length||amounts.some(x=>!Number.isSafeInteger(x)||x<0))return false;
+ if(amounts.reduce((t,x)=>t+x,0)!==spec.amount)return false;
+ if(spec.combat){if(spec.defender!==null&&amounts[spec.defender]>0&&!spec.free)return amounts.every((x,i)=>i===spec.defender||x>=(spec.lethal[i]??0));return true;}
+ return amounts.every((x,i)=>x<=spec.maxima[i]&&(!spec.atLeastOne||x>=1));}
+// Arena's starting split: lethal to each blocker in turn, the rest to the player if it can go there,
+// otherwise to the last blocker. Divided amounts start at the minimum each, the rest in order.
+export function amountsDefault(p){const spec=amountSpec(p);if(!spec)return null;const n=p.options.length,out=new Array(n).fill(0);let left=spec.amount;
+ if(spec.combat){for(let i=0;i<n&&left>0;i++){if(i===spec.defender)continue;const take=Math.min(left,Math.max(0,spec.lethal[i]??0));out[i]=take;left-=take;}
+  if(left>0){const to=spec.defender!==null?spec.defender:[...out.keys()].filter(i=>i!==spec.defender).at(-1);out[to]+=left;}return out;}
+ if(spec.atLeastOne)for(let i=0;i<n&&left>0;i++){out[i]=1;left--;}
+ for(let i=0;i<n&&left>0;i++){const room=Math.max(0,spec.maxima[i]-out[i]),take=Math.min(room,left);out[i]+=take;left-=take;}return out;}
 export function nativePromptUnanswerable(p){
  if(!p)return false;
  if(p.supported!==true||p.method==='order'&&p.ordered!==true)return true;
+ if(AMOUNT_METHODS.has(p.method)){const start=amountsDefault(p);return !(start&&amountsLegal(p,start)||amountSpec(p)?.maySkip);}
  if(['confirm','showConfirmDialog','showInputDialog'].includes(p.method)||p.acknowledgeOnly===true&&p.method==='getChoices')return false;
  if(OPTION_METHODS.has(p.method))return (p.options||[]).filter(o=>isDescribedOption(o.value)).length<(p.min||0);
  return true;
@@ -114,10 +138,10 @@ export function nativeActionLabel(n,op,raw){
  if(input==='InputSelectTargets'&&op==='ok')return 'Confirm targets';
  return label;
 }
-const revealAuto={key:null,timer:0},errSeen={text:null,revision:0};let stackOpen=false;
+const amountDraft={key:null,amounts:null},revealAuto={key:null,timer:0},errSeen={text:null,revision:0};let stackOpen=false;
 // Forge names the AI as "Forge AI — <deck> · <commander>"; the hosted table calls it the CPU.
 // Forge names the human seat "CardStashy" and the CPU "Forge AI — <deck>"; players read "you" and "the CPU".
-export const seatWords=msg=>String(msg??'').replace(/\bCardStashy, you are going (first|second)!?/i,(m,w)=>`You're going ${w.toLowerCase()}.`).replace(/\s*Do you want to keep your hand\??/i,'').replace(/\bCardStashy's\b/g,'your').replace(/\bCardStashy\b/g,'You').replace(/Forge AI\s+\u2014\s+[^\n]*?'s\s+(library|hand|graveyard|deck)\b/g,'the CPU\u2019s $1').trim();
+export const seatWords=msg=>String(msg??'').replace(/\b(?:CardStashy|You|[^,\n]{1,40}), you are going (first|second|1st|2nd)[!.]?/i,(m,w)=>`You’re going ${{'1st':'first','2nd':'second'}[w.toLowerCase()]||w.toLowerCase()}.`).replace(/\s*Do you want to keep your hand\??/i,'').replace(/\bCardStashy's\b/g,'your').replace(/\bCardStashy\b/g,'You').replace(/Forge AI\s+\u2014\s+[^\n]*?'s\s+(library|hand|graveyard|deck)\b/g,'the CPU\u2019s $1').trim();
 const cpuName=msg=>String(seatWords(msg)).replace(/Forge AI\b.*?\s(?=(?:revealed|reveals|picked|picks|chose|chooses|named|names|casts?|plays?|looked|looks)\b)/,'CPU ').replace(/Forge AI(?:\s+—[^·\n]*·?)?/,'CPU');
 export function mountNativePanel(container,{session,snapshot,onLocalError=()=>{},presentation={}}){
  const doc=container.ownerDocument,s=snapshot,n=s.native;if(!n)return;
@@ -221,6 +245,10 @@ export function mountNativePanel(container,{session,snapshot,onLocalError=()=>{}
   const wasOpen=!!container.querySelector?.('.forge-zone-search-dialog');keepStripLeft=wasOpen?container.querySelector('.forge-zone-search-cards')?.scrollLeft||0:0;
   const overlay=node('div',undefined,'forge-zone-search'),dialog=node('section',undefined,'forge-zone-search-dialog');
   dialog.setAttribute('role','dialog');dialog.setAttribute('aria-modal','true');dialog.setAttribute('aria-label',`${zoneSearch.zones.join(' / ')} card selection`);
+  // Forge's own words for a search are often bare ("Choose card(s)"). Name the spell doing it and how many to take.
+  const source=presentation.hosted?searchSource(n):'',ask=presentation.hosted?searchAsk(zoneSearch):'',bare=line=>/^(choose|select)\s+(an?\s+)?(card|cards|card\(s\))\.?$/i.test(line||'');
+  if(presentation.hosted&&(bare(lines[0])||!lines[0])){lines.splice(0,lines[0]?1:0,...[source,ask].filter(Boolean));if(!lines.length)lines.push(`Choose from ${zoneSearch.zones.join(' / ')}`);}
+  else if(presentation.hosted&&ask&&!lines.some(l=>/\b(up to\s+)?\d+\b|\b(a|an|one|two|three)\s+cards?\b/i.test(l)))lines.push(ask);
   const heading=node('h2',presentation.hosted&&lines[0]?cpuName(lines[0]):lines[0]||`Choose from ${zoneSearch.zones.join(' / ')}`);heading.title=heading.textContent;heading.tabIndex=-1;heading.dataset.nativeKey='zone-search-title';dialog.append(heading);
   if(lines.length>1)dialog.append(node('p',presentation.hosted?lines.slice(1).map(cpuName).join('\n'):lines.slice(1).join('\n'),'forge-zone-search-instruction'));
   dialog.append(node('p',`Choose from the ${zoneSearch.choices.length} card${zoneSearch.choices.length===1?'':'s'} offered by this effect.`,'forge-zone-search-hint'));
@@ -251,7 +279,7 @@ export function mountNativePanel(container,{session,snapshot,onLocalError=()=>{}
   }
   if(n.notification?.message){const notice=noticeNode(n.notification);dialog.append(notice);}
   if(n.lastActionError){const refused=node('p',`Forge did not accept that: ${n.lastActionError}`,'forge-diagnostic');refused.setAttribute('role','alert');dialog.append(refused);}
-  if(s.busy)dialog.append(node('p','Forge is updating the choice…','forge-zone-search-hint'));
+  if(s.busy)dialog.append(node('p',presentation.hosted?'One moment…':'Forge is updating the choice…','forge-zone-search-hint'));
   dialog.append(actions);overlay.append(dialog);panel.append(overlay);
   // Keep keyboard navigation inside the choice. Escape only moves focus to the decline
   // button (a second, explicit press answers); the backdrop never invents a cancellation.
@@ -273,6 +301,31 @@ export function mountNativePanel(container,{session,snapshot,onLocalError=()=>{}
     choices.append(button(indexes.length?'Cast':'Cast without extras',()=>session.confirmPrompt(),indexes.length<p.min||indexes.length>p.max,'confirm-prompt'));
    }
    panel.append(choices);
+  }
+  else if(AMOUNT_METHODS.has(p.method)&&amountSpec(p)){
+   // Arena's damage split: the cards themselves, a number on each, tap a card (or +) to add, − to take back.
+   const spec=amountSpec(p),key=`${n.revision}:${p.id}`;if(amountDraft.key!==key){amountDraft.key=key;amountDraft.amounts=amountsDefault(p);}
+   const cards=s.status?.surface?.cards||[],players=s.status?.surface?.players||[],box=node('div',undefined,'forge-assign');panel.append(box);
+   const render=()=>{const amounts=amountDraft.amounts,left=spec.amount-amounts.reduce((t,x)=>t+x,0);
+    const grid=node('div',undefined,'forge-order-cards forge-assign-cards');grid.dataset.left=String(left);
+    const bump=(i,d)=>()=>{const next=[...amounts];next[i]=Math.max(0,next[i]+d);if(next.reduce((t,x)=>t+x,0)>spec.amount)return;amountDraft.amounts=next;render();};
+    p.options.forEach((o,i)=>{
+     const id=optionCardId(o.value),card=id!==null?cards.find(c=>c.id===id):null,isPlayer=spec.combat&&i===spec.defender||o.value?.kind==='player';
+     const who=isPlayer?(players.find(x=>x.nativeId===o.value?.id)?.seat===s.status?.surface?.seat?'You':'CPU'):null;
+     const tile=node('div',undefined,'forge-order-card forge-assign-card');tile.dataset.optionIndex=String(i);
+     const lethal=spec.combat&&!isPlayer?spec.lethal[i]??null:null;if(lethal!==null&&lethal>0&&amounts[i]>=lethal)tile.dataset.lethal='true';
+     const url=searchImage(card),art=url?node('img'):node('span',who||(card?.known?card.name:plainText(optionLabel(o.value))),'forge-order-noart');if(url){art.src=url;art.alt='';art.decoding='async';art.referrerPolicy='no-referrer';}
+     art.addEventListener('click',()=>{if(left>0&&!s.busy&&(spec.combat||amounts[i]<spec.maxima[i]))bump(i,1)();});
+     const count=node('span',String(amounts[i]),'forge-order-num forge-assign-num');count.setAttribute('aria-label',`${amounts[i]} to ${who||card?.name||'this'}`);
+     const steps=node('div',undefined,'forge-assign-steps');
+     const less=button('−',bump(i,-1),amounts[i]<=0,`less-${i}`),more=button('+',bump(i,1),left<=0||!spec.combat&&amounts[i]>=spec.maxima[i],`more-${i}`);less.setAttribute('aria-label','Less');more.setAttribute('aria-label','More');
+     steps.append(less,more);tile.append(count,art,...(url?[node('span',card.name,'forge-order-cap')]:[]),steps);grid.append(tile);});
+    const actions=node('div',undefined,'forge-order-actions');
+    actions.append(button('Reset',()=>{amountDraft.amounts=amountsDefault(p);render();},false,'clear-prompt'));
+    if(spec.combat&&spec.maySkip)actions.append(button('As though unblocked',()=>session.replyAmounts(null),false,'skip-amounts'));
+    actions.append(button('Done',()=>session.replyAmounts([...amounts]),!amountsLegal(p,amounts),'confirm-prompt'));
+    box.replaceChildren(grid,actions);};
+   render();
   }
   else if(['confirm','showConfirmDialog'].includes(p.method)){
    const options=p.options||[],named=presentation.hosted?session.promptNamedCard?.(n.revision):null,url=searchImage(named);
