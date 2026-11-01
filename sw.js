@@ -1,4 +1,4 @@
-const CACHE = "cardforge-shell-pack-flip-4350-v412";
+const CACHE = "cardforge-shell-grid-skins-4350-v413";
 const ASSETS = [
   "./assets/fonts/fonts.css",
   "./play-forge-feature.js",
