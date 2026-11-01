@@ -1774,10 +1774,9 @@ body[data-actnum="3"] #app .screen.blessing{--pw-bg:url(./planeswalk-art/blessin
 #app .screen.blessing:has(>.pw-deckpick)>.pw-patron{display:none}
 #app .screen.blessing>.choices.pw-deckpick{grid-column:1/-1;grid-row:1/4;grid-template-columns:repeat(auto-fill,minmax(150px,1fr))}
 /* ===== Spark levels (meta item 2, rulings #1): picker under a hero once level 1 is open, star + number on the HUD ===== */
-#app .screen.heroes .choices:not(:has(.pw-spk)) .pw-hcol{display:contents}
 #app .screen.heroes .pw-hcol{display:flex;flex-direction:column;gap:6px;min-width:0;flex:1 1 0}
 #app .screen.heroes .pw-hcol>.hero-pick{flex:1 1 auto;width:100%!important}
-#app .screen.heroes .pw-hcol:not(:has(>.pw-spk))::after{content:"";height:44px;flex:none}
+#app .screen.heroes .choices:has(.pw-spk) .pw-hcol:not(:has(>.pw-spk))::after{content:"";height:44px;flex:none}
 #app .pw-spk{display:flex;align-items:center;justify-content:center;gap:10px}
 #app .pw-spk .pw-spk-b{min-width:44px;min-height:44px;padding:0!important;display:grid;place-items:center}
 #app .pw-spk .pw-spk-b svg{width:18px;height:18px;fill:currentColor}
@@ -1786,3 +1785,24 @@ body[data-actnum="3"] #app .screen.blessing{--pw-bg:url(./planeswalk-art/blessin
 #app .pw-spk-n,#app .pw-spk-hud{display:inline-flex;align-items:center;gap:4px;font:800 1rem/1 var(--display,serif);color:#ffd98a;text-shadow:0 1px 3px #000}
 #app .pw-spk-n svg,#app .pw-spk-hud svg{width:20px;height:20px;fill:#ffcf6a;filter:drop-shadow(0 0 5px #ffb84a88)}
 #app .top .pw-spk-hud{margin-inline:6px;font-size:.9rem}
+/* ===== Hero unlocks (rulings #8): a locked hero is its own art, greyed and tinted toward its color, with a thin outline and a lock; a tap shows its goals */
+#app .screen.heroes .hero-pick.pw-locked{filter:grayscale(1) brightness(.62) contrast(1.05);box-shadow:0 0 0 1px color-mix(in srgb,var(--hc) 55%,transparent) inset!important;border-color:color-mix(in srgb,var(--hc) 45%,transparent)!important}
+#app .screen.heroes .hero-pick.pw-locked::after{content:"";position:absolute;inset:0;border-radius:inherit;background:var(--hc);mix-blend-mode:color;opacity:.38;pointer-events:none}
+#app .screen.heroes .hero-pick.pw-locked>:is(.muted,.pw-kit){display:none!important}
+#app .screen.heroes .hero-pick.pw-locked::before{display:none}
+#app .pw-lock{position:absolute;top:10px;right:10px;width:44px;height:44px;border-radius:50%;display:grid;place-items:center;background:#0b0d12cc;box-shadow:0 0 0 1.5px color-mix(in srgb,var(--hc) 70%,#000);z-index:2}
+#app .pw-lock svg{width:22px;height:22px;fill:var(--hc)}
+#app .hero-pick .pw-goals{display:none;position:relative;z-index:2;align-items:center;gap:10px;flex-wrap:wrap;margin-top:6px}
+#app .hero-pick.open .pw-goals{display:flex}
+#app .pw-goal{display:inline-flex;align-items:center;gap:6px;min-height:36px;padding:4px 12px;border-radius:99px;background:#0b0d12d9;box-shadow:0 0 0 1px #ffffff2a;font:800 .9rem/1 var(--display,serif);color:#f3e6c4}
+#app .pw-goal svg{width:20px;height:20px;fill:var(--hc)}
+#app .pw-or{width:6px;height:6px;border-radius:50%;background:#ffffff55}
+/* End of run: what this run opened (a new hero's portrait, a step's real cards and tokens) */
+#app .pw-unlocks{display:flex;flex-wrap:wrap;justify-content:center;align-items:flex-end;gap:10px;margin:8px auto 0;max-width:min(640px,100%)}
+#app .pw-unlocks>*{animation:pw-unlock-in .5s 1.1s cubic-bezier(.2,.9,.3,1.25) both}
+#app .pw-unlocks>.card{width:96px;flex:none;pointer-events:none}
+#app .pw-unlocks>.pw-utok{width:52px;height:52px;border-radius:50%;background-image:var(--img),radial-gradient(120% 120% at 50% 0%,#3a332b,#16130f 70%);background-size:86%,cover;background-position:center;background-repeat:no-repeat;box-shadow:0 0 0 1.5px #e8b45a,0 0 14px #e8b45a55}
+#app .pw-uhero{width:120px;aspect-ratio:3/4;border-radius:14px;background:linear-gradient(transparent 55%,#0b0b0ee6),var(--img) center 22%/cover no-repeat;box-shadow:0 0 0 1.5px #ffe7b0,0 0 22px #ffe7b077;display:flex;align-items:flex-end;justify-content:center;padding-bottom:8px;box-sizing:border-box}
+#app .pw-uhero b{font:700 .95rem/1 var(--display,serif);color:#ffe7b0;text-shadow:0 1px 3px #000}
+@keyframes pw-unlock-in{from{opacity:0;transform:translateY(10px) scale(.85)}}
+@media (prefers-reduced-motion:reduce){#app .pw-unlocks>*{animation:none}}
