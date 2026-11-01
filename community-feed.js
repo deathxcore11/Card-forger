@@ -2,7 +2,7 @@ import { editionStories, expiredEditionStory } from './community-edition.js';
 import { curatedMetaDecks } from './meta-curation.js';
 import { metaState as readMetaState } from './meta.js';
 import { communityDeckArtwork, safeCommunityImage } from './community-art.js';
-import { NEWS_SOURCES, newsSource, safeNewsArticle, safeNewsSourceUrl } from './community-sources.js';
+import { NEWS_SOURCES, newsSource, safeNewsArticle, safeNewsSourceUrl, safeNewsCardArt } from './community-sources.js';
 import { pulseState } from './news-pulse.js';
 
 // Home is a view of the existing tournament cache, not a second deck provider.
@@ -57,7 +57,7 @@ function validItems(items, game, now) {
     if (!url || !title || !fetchedAt || seen.has(x.sourceId === 'serebii' ? url + ':' + title : url) || now - Date.parse(fetchedAt) > retention || Date.parse(fetchedAt) > now + 60000) return null;
     if (x.kind === 'news' ? !publishedAt || Date.parse(publishedAt) > now || now - Date.parse(publishedAt) > retention : !startsAt || !endsAt || startsAt > endsAt || Date.parse(endsAt) + COMMUNITY_TTL <= now || Date.parse(startsAt) > now + 90 * COMMUNITY_TTL) return null;
     seen.add(x.sourceId === 'serebii' ? url + ':' + title : url);
-    return { id: x.sourceId === 'serebii' ? `${url}#${encodeURIComponent(title)}` : url, sourceId: x.sourceId, scope: text(x.scope, 80), game, kind: x.kind, title, summary: text(x.summary), whyItMatters: text(x.whyItMatters, 180), category: ['Release','Rules','Tournament','Cards','Community'].includes(x.category) ? x.category : '', editorial: x.editorial === 'ai-assisted' ? 'ai-assisted' : 'source-ranked', url, source: source.name, sourceUrl: source.url, publishedAt, startsAt, endsAt, dateLabel: x.kind === 'news' ? 'Published' : 'Event dates', fetchedAt, cadence: weekly ? 'weekly' : 'daily', stale: !!x.stale || now - Date.parse(fetchedAt) >= (weekly ? 7 : 1) * COMMUNITY_TTL || weekly && x.kind === 'news' && now - Date.parse(publishedAt) > 7 * COMMUNITY_TTL, image: safeCommunityImage(x.image, game, x.sourceId, url, x.kind), important: !!x.important };
+    return { id: x.sourceId === 'serebii' ? `${url}#${encodeURIComponent(title)}` : url, sourceId: x.sourceId, scope: text(x.scope, 80), game, kind: x.kind, title, summary: text(x.summary), whyItMatters: text(x.whyItMatters, 180), category: ['Release','Rules','Tournament','Cards','Community'].includes(x.category) ? x.category : '', editorial: x.editorial === 'ai-assisted' ? 'ai-assisted' : 'source-ranked', url, source: source.name, sourceUrl: source.url, publishedAt, startsAt, endsAt, dateLabel: x.kind === 'news' ? 'Published' : 'Event dates', fetchedAt, cadence: weekly ? 'weekly' : 'daily', stale: !!x.stale || now - Date.parse(fetchedAt) >= (weekly ? 7 : 1) * COMMUNITY_TTL || weekly && x.kind === 'news' && now - Date.parse(publishedAt) > 7 * COMMUNITY_TTL, image: safeCommunityImage(x.image, game, x.sourceId, url, x.kind), cardArt: x.kind === 'news' ? safeNewsCardArt(x.cardArt, game) : null, important: !!x.important };
   }).filter(Boolean).slice(0, 18);
 }
 export function communityState(game) {

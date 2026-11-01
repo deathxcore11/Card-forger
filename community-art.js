@@ -4,7 +4,7 @@ import { editionArtwork } from './community-edition.js';
 import { pokemonDeckCover } from './artwork.js';
 import { GAMES, GAME_ICON } from './games.js';
 import { esc } from './ui.js';
-import { safeNewsImage, safeNewsArticle } from './community-sources.js';
+import { safeNewsImage, safeNewsArticle, safeNewsCardArt } from './community-sources.js';
 
 const SOURCE_HOSTS = {
   mtg: ['magic.wizards.com', 'www.magic.wizards.com', 'www.mtgo.com', 'mtgo.com', 'www.mtgtop8.com', 'mtgtop8.com', 'topdeck.gg', 'magic.gg', 'www.magic.gg', 'locator.wizards.com'],
@@ -73,12 +73,14 @@ export function communityArtwork(game, slide = {}, { compact = false } = {}) {
   const illustrated = !deckContext && !!verifiedStory && ['news', 'event', 'link'].includes(slide.kind), illustration = illustrated ? COMMUNITY_ILLUSTRATIONS[game] : null;
   if (!deckContext && !publisherImage && !illustration) return '';
   const storyArt = editionArtwork(game, slide);
-  const src = deckImage || storyArt || publisherImage || illustration?.url || '', kind = deckImage ? 'card' : storyArt ? 'ai-illustration' : publisherImage ? 'publisher' : illustration ? 'illustrative' : 'theme';
+  // A story with no picture of its own shows the card its headline names before any generic illustration.
+  const named = slide.kind === 'news' && !deckImage && !storyArt ? safeNewsCardArt(slide.cardArt, game) : null, namedArt = named && !publisherImage ? named.url : '';
+  const src = deckImage || storyArt || publisherImage || namedArt || illustration?.url || '', kind = deckImage ? 'card' : storyArt ? 'ai-illustration' : publisherImage ? 'publisher' : namedArt ? 'card' : illustration ? 'illustrative' : 'theme';
   const fallback = compact ? 'Game theme' : deckContext ? 'Game theme · deck art unavailable' : 'Illustrative game theme';
-  const credit = deckImage ? (cleanName(slide.artwork.name) ? `Featured card: ${slide.artwork.name}` : 'Deck artwork') : storyArt ? 'AI illustration · not official artwork' : publisherImage ? 'Source image' : illustration?.label || 'Game theme';
+  const credit = deckImage ? (cleanName(slide.artwork.name) ? `Featured card: ${slide.artwork.name}` : 'Deck artwork') : storyArt ? 'AI illustration · not official artwork' : publisherImage ? 'Source image' : namedArt ? `Card in the story: ${named.name}` : illustration?.label || 'Game theme';
   const image = src ? `<img class="community-art-image" data-community-image src="${esc(src)}" alt="" loading="lazy" decoding="async" referrerpolicy="no-referrer">` : '';
-  const visual = (deckImage || kind === 'illustrative') && game === 'ptcg' ? `<span class="community-art-scan"><span class="community-art-window">${image}</span></span>` : image;
-  return `<span class="community-art${compact ? ' community-art-compact' : ''}" data-community-art data-art-game="${game}" data-art-kind="${kind}" data-art-state="${src ? 'pending' : 'missing'}"${illustration ? ` data-art-fallback="${esc(illustration.url)}" data-art-fallback-label="${esc(illustration.label)}"` : ''}${deckImage ? ` data-art-card="${esc(slide.artwork.cardId)}" data-art-deck="${esc(slide.deckKey)}"` : ''}${deckImage || storyArt || publisherImage ? ` data-art-source="${esc(slide.url)}"` : ''} aria-hidden="true">${deckContext || illustrated ? `<span class="community-art-theme"><span class="community-art-orbit"></span><span class="community-art-emblem">${GAME_ICON[game]}</span><span class="community-art-lines"></span></span>` : ''}${visual}<span class="community-art-shade"></span><span class="community-art-caption community-art-fallback">${fallback}</span>${src ? `<span class="community-art-caption community-art-credit">${esc(credit)}</span>` : ''}</span>`;
+  const visual = (deckImage || namedArt || kind === 'illustrative') && game === 'ptcg' ? `<span class="community-art-scan"><span class="community-art-window">${image}</span></span>` : image;
+  return `<span class="community-art${compact ? ' community-art-compact' : ''}" data-community-art data-art-game="${game}" data-art-kind="${kind}" data-art-state="${src ? 'pending' : 'missing'}"${publisherImage && named ? ` data-art-fallback="${esc(named.url)}" data-art-fallback-label="${esc(`Card in the story: ${named.name}`)}"` : illustration ? ` data-art-fallback="${esc(illustration.url)}" data-art-fallback-label="${esc(illustration.label)}"` : ''}${deckImage ? ` data-art-card="${esc(slide.artwork.cardId)}" data-art-deck="${esc(slide.deckKey)}"` : ''}${deckImage || storyArt || publisherImage ? ` data-art-source="${esc(slide.url)}"` : ''} aria-hidden="true">${deckContext || illustrated ? `<span class="community-art-theme"><span class="community-art-orbit"></span><span class="community-art-emblem">${GAME_ICON[game]}</span><span class="community-art-lines"></span></span>` : ''}${visual}<span class="community-art-shade"></span><span class="community-art-caption community-art-fallback">${fallback}</span>${src ? `<span class="community-art-caption community-art-credit">${esc(credit)}</span>` : ''}</span>`;
 }
 
 // One request per exact image. Publisher failure gets one fixed illustration,
@@ -90,7 +92,7 @@ export function handleCommunityArtwork(event) {
   if (!wrapper || wrapper.dataset.artState === 'missing') return;
   if (event.type === 'load' && image.naturalWidth > 0) wrapper.dataset.artState = 'ready';
   else if (event.type === 'error' || event.type === 'load') {
-    if (wrapper.dataset.artKind === 'publisher' && wrapper.dataset.artFallback) {
+    if (['publisher', 'card'].includes(wrapper.dataset.artKind) && wrapper.dataset.artFallback && image.getAttribute?.('src') !== wrapper.dataset.artFallback) {
       wrapper.dataset.artKind = 'illustrative'; wrapper.dataset.artState = 'pending'; delete wrapper.dataset.artSource;
       const credit = wrapper.querySelector?.('.community-art-credit'); if (credit) credit.textContent = wrapper.dataset.artFallbackLabel || 'Illustrative card art';
       image.src = wrapper.dataset.artFallback; image.hidden = false; return;
