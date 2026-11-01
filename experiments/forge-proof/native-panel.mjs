@@ -139,12 +139,26 @@ export function nativeActionLabel(n,op,raw){
  return label;
 }
 const amountDraft={key:null,amounts:null},revealAuto={key:null,timer:0},errSeen={text:null,revision:0};let stackOpen=false;
+// Backing out of a spell's mode choice (Randall, 1 Nov). Forge has no way to answer "none" to a required mode, but a
+// cast is undone by Cancel at its target step, which puts the card back in hand. So Cancel on a mode choice picks the
+// first mode, then cancels at the targets. It is offered only for a spell cast from your hand whose every mode targets,
+// so a target step always follows; anything else (the spell resolving, your next decision) ends the back-out.
+const backOut={until:0,key:''};
+export function modeBackOutOffered(p,cards=[]){
+ if(p?.method!=='getChoices'||p.acknowledgeOnly===true||(p.min??0)<1||p.max!==1||(p.options||[]).length<2)return false;
+ return p.options.every(o=>{const v=o.value;if(v?.kind!=='ability'||!/\btarget/i.test(String(v.description||'')))return false;const id=v.card?.id;return v.card?.zone==='Hand'||Number.isSafeInteger(id)&&cards.some(c=>c.id===id&&c.zone==='Hand');});
+}
 // Forge names the AI as "Forge AI — <deck> · <commander>"; the hosted table calls it the CPU.
 // Forge names the human seat "CardStashy" and the CPU "Forge AI — <deck>"; players read "you" and "the CPU".
 export const seatWords=msg=>String(msg??'').replace(/\b(?:CardStashy|You|[^,\n]{1,40}), you are going (first|second|1st|2nd)[!.]?/i,(m,w)=>`You’re going ${{'1st':'first','2nd':'second'}[w.toLowerCase()]||w.toLowerCase()}.`).replace(/\s*Do you want to keep your hand\??/i,'').replace(/\bCardStashy's\b/g,'your').replace(/\bCardStashy\b/g,'You').replace(/Forge AI\s+\u2014\s+[^\n]*?'s\s+(library|hand|graveyard|deck)\b/g,'the CPU\u2019s $1').trim();
 const cpuName=msg=>String(seatWords(msg)).replace(/Forge AI\b.*?\s(?=(?:revealed|reveals|picked|picks|chose|chooses|named|names|casts?|plays?|looked|looks)\b)/,'CPU ').replace(/Forge AI(?:\s+—[^·\n]*·?)?/,'CPU');
 export function mountNativePanel(container,{session,snapshot,onLocalError=()=>{},presentation={}}){
  const doc=container.ownerDocument,s=snapshot,n=s.native;if(!n)return;
+ if(backOut.until>Date.now()&&presentation.hosted&&!s.busy){const p=n.prompt,key=`${n.revision}:${p?.id??n.inputType}`;
+  if(backOut.key!==key){backOut.key=key;const later=fn=>setTimeout(()=>{try{const out=fn();out?.catch?.(()=>{});}catch{}},0);
+   if(p&&p.method==='getChoices'&&(p.min??0)>=1&&p.max===1&&p.options?.[0])later(()=>{session.clearPrompt();session.selectPrompt(p.options[0].index);return session.confirmPrompt();});
+   else if(!p&&(n.inputType==='InputSelectTargets'||String(n.inputType||'').startsWith('InputPayMana'))&&n.buttons?.cancelEnabled===true){backOut.until=0;later(()=>session.nativeButton('cancel',n.revision));}
+   else backOut.until=0;}}
  // On phones the dock is transformed, so a fixed ask line inside it can't float above the hand; this body-level line does.
  const askLine=text=>{if(!doc.body)return;let line=doc.body.querySelector(':scope>.forge-ask-line');if(!line){line=doc.createElement('div');line.className='forge-ask-line';line.setAttribute('role','status');line.setAttribute('aria-live','polite');doc.body.append(line);}line.textContent=text;line.title=text;line.hidden=!text;};askLine('');
  const copy=(player,proof)=>presentation.hosted?player:proof;
@@ -377,6 +391,7 @@ export function mountNativePanel(container,{session,snapshot,onLocalError=()=>{}
     actions.append(button('Reset',()=>session.clearPrompt(),!indexes.length,'clear-prompt'),button('Auto order',auto,!fillable,'auto-order'),button('Done',()=>session.confirmPrompt(),indexes.length<p.min||indexes.length>p.max,'confirm-prompt'));panel.append(actions);}else{
    const summary=node('p',indexes.length?`Selected: ${indexes.map(index=>optionLabel(options.find(o=>o.index===index)?.value)).join(' · ')}`:'Nothing selected');summary.className='forge-native-draft';panel.append(summary);
    panel.append(button(indexes.length===0&&p.min===0?(p.cancelable?copy('Cancel','Cancel native dialog'):copy('Choose none','Submit no selections')):copy('Confirm choice','Confirm native choice'),()=>session.confirmPrompt(),indexes.length<p.min||indexes.length>p.max,'confirm-prompt'),button(copy('Clear selection','Clear draft'),()=>session.clearPrompt(),false,'clear-prompt'));
+   if(presentation.hosted&&modeBackOutOffered(p,s.status?.surface?.cards||[]))panel.append(button('Cancel',()=>{backOut.until=Date.now()+8000;backOut.key=`${n.revision}:${p.id}`;session.clearPrompt();session.selectPrompt(p.options[0].index);return session.confirmPrompt();},false,'cancel-mode'));
    }
   }else panel.append(node('p',`Unsupported native dialog: ${p.method}. No reply sent.`,'forge-diagnostic'));
  }else{
