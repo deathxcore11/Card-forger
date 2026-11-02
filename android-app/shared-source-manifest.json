@@ -1,8 +1,8 @@
 {
   "schema": 1,
-  "version": "4.3.68",
-  "commit": "9dce4ef5211269c3a9eceab782c3922908c42f38",
-  "tree": "97f2c6cc6b7743edd228d506e401da16febd0829",
+  "version": "4.3.69",
+  "commit": "753f9d0143b2e2f6296a2965854b7edab0622e2b",
+  "tree": "e464090c1110d739206072c3bf27e4142f3aea51",
   "repository": "https://github.com/deathxcore11/Card-forger",
   "scope": "Explicit frontend build dependencies plus optional artwork input files. Not full backend repository.",
   "files": [
@@ -138,8 +138,8 @@
     },
     {
       "path": "app.js",
-      "bytes": 542801,
-      "sha256": "09c12d10a9111704d5a368fc3f9aa67249e6f1adf5aa493c498bb3ef936045a0"
+      "bytes": 542791,
+      "sha256": "13e4261ce36b67c43dd008ae72077a1ee694bfd99e543ac5aaa7308025e07fe6"
     },
     {
       "path": "artwork.js",
@@ -3559,7 +3559,7 @@
     {
       "path": "config.js",
       "bytes": 601,
-      "sha256": "e77363ae50193037400c6266155eb172943b71b17c6a7a06013d36d4c2900c81"
+      "sha256": "6e566353b3ee799c51b1971faf27ec9b2abd923fb86598cd6f876b947ce6922b"
     },
     {
       "path": "core.js",
@@ -4458,8 +4458,8 @@
     },
     {
       "path": "data/story/act-1.json",
-      "bytes": 56262,
-      "sha256": "190a6c13af7ceb94461b97c0a084eb0b6225f4a3aa9270e7584a7bd2f559a526"
+      "bytes": 67912,
+      "sha256": "abe2a76838e4106b6e59849703864fb8121388a84ccbda10857e15f5d5f78990"
     },
     {
       "path": "data/story/act-10.json",
@@ -5409,7 +5409,7 @@
     {
       "path": "package.json",
       "bytes": 12318,
-      "sha256": "22c4707a4dfb023597e2038a63137c626d775bf710aee8a018f7675c40940fa5"
+      "sha256": "01282d0762bd30dbb486cf94772e8355c2296c4880f78d14714b880953962a96"
     },
     {
       "path": "pairing.js",
@@ -7753,8 +7753,8 @@
     },
     {
       "path": "play-achievements.js",
-      "bytes": 14252,
-      "sha256": "3cdfd64eff602f50c89debd60268d5891fcfd5ccfb7498f909ab8cc89e6a432d"
+      "bytes": 14434,
+      "sha256": "b0c2313d37bb8f4fe7e8f75ce3505fe29561305d516d78c4a3626938b43dc50b"
     },
     {
       "path": "play-board-badges.js",
@@ -7833,8 +7833,8 @@
     },
     {
       "path": "play-econ-route.js",
-      "bytes": 22914,
-      "sha256": "feaf64ae324e88845ed4ed9ab7a79dabf81471f984c23fc75046d0285d04099a"
+      "bytes": 23308,
+      "sha256": "6972f678771aac0a9a7bf11a00bf8746d83cca5b19313de8fe2777205177f6d3"
     },
     {
       "path": "play-econ-rules.js",
@@ -8148,8 +8148,8 @@
     },
     {
       "path": "release-record.js",
-      "bytes": 8171,
-      "sha256": "1d01f4efbc950f56820343c471efbd57d66930343e7b2dd6e28fff6c52731056"
+      "bytes": 8293,
+      "sha256": "3114ab9c80044eb6bc96c99edcb8b42c29e082a9bfc7219682360ee07e56578f"
     },
     {
       "path": "release-status.js",
@@ -8433,8 +8433,8 @@
     },
     {
       "path": "scripts/story/acts-src/act-1.mjs",
-      "bytes": 16082,
-      "sha256": "4f05a34b98fc2bb134bfe9b0ddf5d46132f695c2625c713ba82c4a0ffe24cb40"
+      "bytes": 19202,
+      "sha256": "1efb0412ee4f212c0072518054d095d87e509dafa5845e5b0e2f9f42e2e18218"
     },
     {
       "path": "scripts/story/acts-src/act-10.mjs",
@@ -8483,8 +8483,8 @@
     },
     {
       "path": "scripts/story/build-act.mjs",
-      "bytes": 5428,
-      "sha256": "f1d906f199345ac0ea1d12062c9e802a60b6cba7db42b67bf9f3795e3d828031"
+      "bytes": 5569,
+      "sha256": "fd1ab5d1c5b63823094d6d67662e789326bc418331241282ec9f516f1738fd17"
     },
     {
       "path": "scripts/story/check-pack-art.mjs",
@@ -8628,23 +8628,23 @@
     },
     {
       "path": "story-client.js",
-      "bytes": 7058,
-      "sha256": "fb529fa44392540c50bc8cc977165af9fbff520dca12cdda1d4d96cb0a1c427b"
+      "bytes": 7289,
+      "sha256": "49141150f7d12bc14577b026f0203c356e84512f9a1f5353b8aa7dec7056bf5c"
     },
     {
       "path": "story-deeds.js",
-      "bytes": 7232,
-      "sha256": "477e5f21a5c6d193b7f96c45f956c8f46d87d0dfc1f2d771fe96d25b1cb1f0a1"
+      "bytes": 7654,
+      "sha256": "75059a59e304a7066eba37ac74d0a0e451111e3fb868a8f77795840328358f9e"
     },
     {
       "path": "story-mode.css",
-      "bytes": 18310,
-      "sha256": "8f0c30333f9c5fec2e3fa2fa621688274cee78ce57d3f1776891bed8b992e98c"
+      "bytes": 18602,
+      "sha256": "bf4c631c757393d57802f9cc9bc8abd139059a954f750ec4363ecb45eda0fa2d"
     },
     {
       "path": "story-ui.js",
-      "bytes": 30989,
-      "sha256": "f5f4cd9647103060e37f869a8fea8c9096e59c34bcb4030209a881d0c58cf1af"
+      "bytes": 31275,
+      "sha256": "bbcaf1e02ee4e18cdf632bcd10ff1c50583f3b082606f7b20b1ecb2e2d0546d9"
     },
     {
       "path": "strategy-risk.js",
@@ -8698,8 +8698,8 @@
     },
     {
       "path": "sw.js",
-      "bytes": 16973,
-      "sha256": "591013b1ff036367243f2ee12b3ff5e0cde3796352d59f96bc5150903ec19beb"
+      "bytes": 16972,
+      "sha256": "4981caa6afbb43cfa55e6000e67a6f71a140a08a3eae4f53b23752048400feaa"
     },
     {
       "path": "sync-merge.js",

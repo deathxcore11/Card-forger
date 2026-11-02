@@ -1,7 +1,7 @@
 {
   "source": "https://github.com/deathxcore11/Card-forger",
-  "commit": "9dce4ef5211269c3a9eceab782c3922908c42f38",
-  "sourceVersion": "4.3.68",
+  "commit": "753f9d0143b2e2f6296a2965854b7edab0622e2b",
+  "sourceVersion": "4.3.69",
   "appId": "com.cardstashy.app",
   "releaseReady": false,
   "network": "enabled-exact-hosts",
@@ -1524,8 +1524,8 @@
     },
     {
       "path": "app.js",
-      "bytes": 548429,
-      "sha256": "d226f4449fdcf0968203fce3378673282dad24d86b8bd34a4941dfa128623fe8"
+      "bytes": 548419,
+      "sha256": "affc98200d1ee40d1d61054be18a9ac177d629227d3b0a81bb165637a78ad1d6"
     },
     {
       "path": "artwork.js",
@@ -3445,7 +3445,7 @@
     {
       "path": "config.js",
       "bytes": 629,
-      "sha256": "18656b20b18648dc50e81b05ac282d20ab5a8cc96235fdaf59eac66088250528"
+      "sha256": "941e277a9efeaae3c1d95697b23d1e797298e2e430b97b74646333cbee982082"
     },
     {
       "path": "core.js",
@@ -4339,8 +4339,8 @@
     },
     {
       "path": "data/story/act-1.json",
-      "bytes": 56262,
-      "sha256": "190a6c13af7ceb94461b97c0a084eb0b6225f4a3aa9270e7584a7bd2f559a526"
+      "bytes": 67912,
+      "sha256": "abe2a76838e4106b6e59849703864fb8121388a84ccbda10857e15f5d5f78990"
     },
     {
       "path": "data/story/act-10.json",
@@ -7479,8 +7479,8 @@
     },
     {
       "path": "play-achievements.js",
-      "bytes": 14252,
-      "sha256": "3cdfd64eff602f50c89debd60268d5891fcfd5ccfb7498f909ab8cc89e6a432d"
+      "bytes": 14434,
+      "sha256": "b0c2313d37bb8f4fe7e8f75ce3505fe29561305d516d78c4a3626938b43dc50b"
     },
     {
       "path": "play-board-badges.js",
@@ -7869,8 +7869,8 @@
     },
     {
       "path": "release-record.js",
-      "bytes": 8171,
-      "sha256": "1d01f4efbc950f56820343c471efbd57d66930343e7b2dd6e28fff6c52731056"
+      "bytes": 8293,
+      "sha256": "3114ab9c80044eb6bc96c99edcb8b42c29e082a9bfc7219682360ee07e56578f"
     },
     {
       "path": "release-status.js",
@@ -8184,23 +8184,23 @@
     },
     {
       "path": "story-client.js",
-      "bytes": 7058,
-      "sha256": "fb529fa44392540c50bc8cc977165af9fbff520dca12cdda1d4d96cb0a1c427b"
+      "bytes": 7289,
+      "sha256": "49141150f7d12bc14577b026f0203c356e84512f9a1f5353b8aa7dec7056bf5c"
     },
     {
       "path": "story-deeds.js",
-      "bytes": 7232,
-      "sha256": "477e5f21a5c6d193b7f96c45f956c8f46d87d0dfc1f2d771fe96d25b1cb1f0a1"
+      "bytes": 7654,
+      "sha256": "75059a59e304a7066eba37ac74d0a0e451111e3fb868a8f77795840328358f9e"
     },
     {
       "path": "story-mode.css",
-      "bytes": 19494,
-      "sha256": "3e7481f32eb2845ec83fe2040344518f6c0826266fc2b5bdc81da98a6a15f84d"
+      "bytes": 19945,
+      "sha256": "2be87293d439b209f2d970ec95d52ae2864e2dc1399f7fd82da32d0102307e8f"
     },
     {
       "path": "story-ui.js",
-      "bytes": 30989,
-      "sha256": "f5f4cd9647103060e37f869a8fea8c9096e59c34bcb4030209a881d0c58cf1af"
+      "bytes": 31275,
+      "sha256": "bbcaf1e02ee4e18cdf632bcd10ff1c50583f3b082606f7b20b1ecb2e2d0546d9"
     },
     {
       "path": "strategy-risk.js",
