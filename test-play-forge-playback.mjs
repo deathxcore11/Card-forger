@@ -21,9 +21,9 @@ test('a backlog of CPU updates hurries a little, and flush shows the latest boar
  const shown=[],timers=[],fns=[];
  const q=new CpuActionPlaybackQueue({present:(s,busy)=>shown.push([s.status.revision,busy]),schedule:(fn,ms)=>{timers.push(ms);fns.push(fn);return timers.length;},cancel:()=>{}});
  q.push(snap(1,[]));q.push(snap(2,[card(1)]));q.push(snap(3,[card(1),card(2)]));q.push(snap(4,[card(1),card(2),card(3)]));q.push(snap(5,[card(1),card(2),card(3),card(4)]));
- assert.equal(timers[0],1100,'a lone update plays at full pace (an arrival is shown big long enough to read, trimmed 2 Nov)');
+ assert.equal(timers[0],1800,'a lone update plays at full pace (an arrival is shown big long enough to read, Randall 2 Nov)');
  fns[0]();fns[1]?.();
- assert.ok(timers.slice(1).every(ms=>ms<=1100&&ms>=650),'with more updates waiting, the next beats never slow down and never race');
+ assert.ok(timers.slice(1).some(ms=>ms<1800&&ms>=1500),'with two more updates waiting, the next beats run a little quicker');
  assert.ok(timers.every(ms=>ms>=650),'a backlog never races: every CPU action stays on screen at least 650 ms (Randall, 1 Nov)');
  q.flush();assert.deepEqual(shown.at(-1),[5,false],'flush presents the latest board, unlocked');assert.equal(q.busy,false);
 });

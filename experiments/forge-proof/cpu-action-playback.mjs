@@ -176,7 +176,7 @@ function podPaced(beats){
 // Hotfix (2 Nov): a spell, ability or attack is shown big with its glass panel long enough to read it
 // (SPOT, about 2.4 s; never under SPOT_MIN even in a long turn). A tap moves on to the next action.
 // Trimmed 2 Nov (Randall: the phone match felt much slower): 2.4 s per spell read as a stall; 1.7 s still reads it.
-const MIN_BEAT=650,SPOT=1700,SPOT_MIN=1100;
+const MIN_BEAT=650,SPOT=2400,SPOT_MIN=1500;
 const spotlit=x=>x.kind==='spell'||x.kind==='arrival'&&!!x.card||x.tone==='attack';
 function paced(beats,budget=16000,pace=1){
  const total=beats.reduce((t,x)=>t+x.duration*pace,0),scale=pace*(total>budget?budget/total:1);
