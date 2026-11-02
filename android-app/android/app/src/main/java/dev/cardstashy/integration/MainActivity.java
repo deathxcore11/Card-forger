@@ -18,6 +18,7 @@ public class MainActivity extends BridgeActivity {
         long started = SystemClock.uptimeMillis();
         SplashScreen.installSplashScreen(this).setKeepOnScreenCondition(() -> !CardStashyDisplay.ready && SystemClock.uptimeMillis() - started < SPLASH_MAX_MS);
         registerPlugin(CardStashyPlatform.class);
+        registerPlugin(CardStashyUpdater.class);
         registerPlugin(CardStashyArtwork.class);
         registerPlugin(CardStashyAuth.class);
         registerPlugin(CardStashyHaptics.class);

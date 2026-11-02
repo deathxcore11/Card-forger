@@ -72,7 +72,7 @@ const ASSETS = [
   "./deck-viewer.css",
   "./deck-mechanic-plan.js", "./mtg-land-requirements.js", "./mtg-commander-conditions.js", "./mtg-primary-inputs.js", "./mtg-ability-endpoints.js", "./mtg-final-support.js", "./mtg-reference-construction.js", "./mtg-mana-sources.js", "./mtg-wiki-knowledge.js", "./mtg-wiki-client.js", "./mtg-wiki-ui.js", "./wiki-sources.js", "./game-wiki-knowledge.js", "./game-glossary-data.js", "./game-wiki-article.js", "./wiki-card-handoff.js", "./wiki-deck-handoff.js",
   "./community-edition.js", "./img/news/2026-10-19-magic-delay.webp", "./img/news/2026-10-22-pokemon-rules.webp", "./img/news/2026-10-19-ygo-list.webp",
-  "./release-record.js", "./release-status.js",
+  "./release-record.js", "./release-status.js", "./app-update.js",
   "./card-discovery.js", "./rule-extra.js", "./mtg-keyword-reference.js", "./mtg-vocabulary.js", "./deck-preferences.js", "./deck-construction.js", "./deck-pipeline.js", "./deck-experience.js", "./deck-seeds.js",
   "./deck-strategy-plan.js", "./mtg-combo-packages.js",
   "./ai-auth.js",

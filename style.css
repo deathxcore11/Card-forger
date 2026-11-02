@@ -1786,6 +1786,23 @@ body.glass .topbar { background: rgba(12, 14, 19, 0.58); }
 .install-nudge p { margin: 4px 0 8px; color: var(--muted); font-size: 0.92rem; }
 .install-nudge .ico { width: 16px; height: 16px; vertical-align: -3px; }
 .install-nudge .actions { display: flex; gap: 12px; align-items: center; }
+/* Android app: Get the app (Android browsers) and Update ready (in the app). Home card + Settings panel. */
+.app-update-banner { display: grid; grid-template-columns: 44px minmax(0, 1fr); gap: 12px; align-items: start; margin: 12px 0; padding: 14px 16px; border-radius: 18px; border: 1px solid color-mix(in srgb, #d8b25a 45%, var(--line)); background: linear-gradient(160deg, color-mix(in srgb, #d8b25a 12%, var(--surface)), var(--surface)); -webkit-backdrop-filter: blur(16px); backdrop-filter: blur(16px); box-shadow: 0 10px 30px rgb(0 0 0 / .18); position: relative; z-index: 2; isolation: isolate; }
+.app-update-banner img { border-radius: 11px; }
+.app-update-banner h2 { margin: 2px 0 4px; font-size: 1.05rem; }
+.app-update-banner .eyebrow { margin: 0; }
+.app-update-banner p { margin: 0 0 8px; overflow-wrap: anywhere; }
+.app-update-banner .actions, .app-update-panel .actions { display: flex; flex-wrap: wrap; gap: 8px 14px; align-items: center; }
+.app-update-banner .actions :is(.btn, .link), .app-update-panel .actions :is(.btn, .link) { min-height: 44px; min-width: 44px; }
+.app-update-notes { margin: 0 0 10px; }
+.app-update-notes summary { min-height: 44px; display: flex; align-items: center; cursor: pointer; font-size: 0.92rem; }
+.app-update-notes ul { margin: 4px 0 0; padding-left: 18px; color: var(--muted); font-size: 0.9rem; }
+.app-update-panel { margin: 8px 0 12px; }
+.app-update-title { margin: 0 0 6px; }
+.app-update-status { margin: 6px 0 8px; color: var(--muted); }
+.app-update-progress { height: 8px; border-radius: 999px; background: color-mix(in srgb, var(--line) 70%, transparent); overflow: hidden; margin-top: 4px; }
+.app-update-progress > span { display: block; height: 100%; border-radius: inherit; background: linear-gradient(90deg, #b8893a, #f1d488); transition: width .25s ease-out; }
+@media (prefers-reduced-motion: reduce) { .app-update-progress > span { transition: none; } }
 .cmp-art { padding: 0; border: 0; background: none; cursor: pointer; }
 .cmp-facts { display: grid; gap: 2px; margin: 4px 0; font-size: 13px; }
 .cmp-facts div { display: flex; justify-content: space-between; gap: 6px; padding: 3px 0; border-bottom: 1px solid var(--line); }
@@ -1936,7 +1953,7 @@ nav [data-nav] { position: relative; }
 @media (min-width: 680px) and (min-height: 560px) and (min-aspect-ratio: 3/4), (min-width: 800px) and (min-height: 560px) {
   body[data-view="home"] #content { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); column-gap: 18px; align-items: start; }
   body[data-view="home"] #content > * { grid-column: auto; min-width: 0; margin-top: 0; }
-  body[data-view="home"] #content > :is(.home-hero, .game-switch, .game-choice-list, .install-nudge, .note, .kpis, .page-head, details, p, .route-back) { grid-column: 1 / -1; }
+  body[data-view="home"] #content > :is(.home-hero, .game-switch, .game-choice-list, .install-nudge, .app-update-banner, .note, .kpis, .page-head, details, p, .route-back) { grid-column: 1 / -1; }
   body[data-view="home"] #content > .game-choice-list { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 12px; }
   body[data-view="home"] #content > .quick { display: grid; grid-template-columns: 1fr; gap: 10px; }
   body[data-view="home"] #content > .quick > * { width: auto; max-width: none; }

@@ -1,6 +1,7 @@
 import './app-motion.js';
 import {cardDiscoverySpec} from './card-discovery.js';
 import {checkRelease,acknowledgeRelease,onReleaseChange,releaseDot,releaseState} from './release-status.js';
+import {appUpdateBanner,paintAppUpdate,onAppUpdate,startAppUpdate,installAppUpdate,cancelAppUpdate,dismissAppBanner,justUpdated} from './app-update.js';
 import {createDeckPipeline} from './deck-pipeline.js';
 import {createDeckExperience,deckWorkspaceSignature} from './deck-experience.js';
 import {createMtgWikiPageController} from './mtg-wiki-ui.js';
@@ -1196,7 +1197,7 @@ function render() {
   if(guideKey)content.insertAdjacentHTML?.("afterbegin",guidePrompt(guideKey));
   if(introPending)setTimeout(safeIntro,100);
   restoreSectionTabRail(content,priorSectionRail);
-  if (ui.view === "home") refreshHomeCommunity(g, content).catch(() => {});
+  if (ui.view === "home") { const appBanner=appUpdateBanner(); if(appBanner) content.insertAdjacentHTML("afterbegin",appBanner); refreshHomeCommunity(g, content).catch(() => {}); }
   if(!cloudInfo().user){restoreAuthFields(document,authFields);for(const field of document.querySelectorAll('#signupPassword,#resetPassword'))syncPasswordRules(field,document);}
   for(const {id,value} of profileFields){const field=$("#"+id);if(field)field.value=value;}
   const displayArea=["deck","tdeck"].includes(ui.view)?"deck":ui.view === "search"?"search":ui.view === "set"?"set":ui.view === "collection" && (g === "mtg" ? ui.collTab === "wishlist" : T.ui(g).coll.tab === "wishlist")?"wishlist":ui.view === "collection" && (g === "mtg" ? ui.collTab === "cards" : !T.ui(g).coll.tab || T.ui(g).coll.tab === "cards")?"collection":null;
@@ -7720,5 +7721,10 @@ A.randomDeck=()=>{deckExperience.open({game:'mtg',format:'Commander',commanderLo
 
 A.checkRelease=async()=>{await checkRelease();settingsPopup.refresh();};
 document.addEventListener('toggle',e=>{if(e.target.matches?.('details[data-release-item]')&&e.target.open){acknowledgeRelease(e.target.dataset.releaseItem);e.target.querySelectorAll('.release-dot').forEach(n=>n.remove());}},true);
+// Android app: Update downloads in the app and opens Android's installer; browsers on Android phones are offered the app.
+const paintUpdate=()=>paintAppUpdate(document,{home:S.ui.view==='home'});
+A.appUpdate=()=>startAppUpdate();A.appUpdateInstall=()=>installAppUpdate();A.appUpdateCancel=()=>cancelAppUpdate();A.appUpdateLater=()=>dismissAppBanner();
+onAppUpdate(paintUpdate);onReleaseChange(paintUpdate);
+{const updated=justUpdated();if(updated)setTimeout(()=>toast(`CardStashy updated to ${updated}. What’s new is in Settings.`),1200);}
 onReleaseChange(()=>{refreshProfileAvatar();document.querySelectorAll('.release-dot,[data-release-unread]').forEach(n=>{if(!releaseState().unread)n.remove();});});
 void checkRelease();

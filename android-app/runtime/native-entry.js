@@ -32,6 +32,14 @@ const authPlugin = globalThis.Capacitor.registerPlugin('CardStashyAuth');
 // System haptics for the shared app's semantic events (feel.js prefers this over web vibration, never both).
 const hapticsPlugin = globalThis.Capacitor.registerPlugin('CardStashyHaptics');
 Object.defineProperty(globalThis, 'CARDSTASHY_HAPTICS', { value: Object.freeze({ perform: effect => { hapticsPlugin.perform({ effect: String(effect) }).catch(() => {}); }, cancel: () => { hapticsPlugin.cancel().catch(() => {}); } }), writable: false });
+// In-app updates (app-update.js): download the published APK, verify it, open Android's installer.
+const updaterPlugin = globalThis.Capacitor.registerPlugin('CardStashyUpdater');
+const installed = await Promise.race([updaterPlugin.info().catch(() => null), new Promise(resolve => setTimeout(() => resolve(null), 1500))]);
+Object.defineProperty(globalThis, 'CARDSTASHY_UPDATER', { value: Object.freeze({
+  versionName: installed?.versionName || null, versionCode: Number.isSafeInteger(installed?.versionCode) ? installed.versionCode : null, package: installed?.package || null,
+  info: () => updaterPlugin.info(), download: options => updaterPlugin.download(options), install: options => updaterPlugin.install(options), cancel: () => updaterPlugin.cancel(),
+  onProgress: fn => updaterPlugin.addListener('progress', fn),
+}), writable: false });
 // The address an <img> actually loads, so shared code comparing image URLs sees the same value.
 Object.defineProperty(globalThis, 'CARDSTASHY_IMAGE_URL', { value: value => { try { return resolveNativeImage(String(value), { enabled: true }) || String(value); } catch { return String(value); } }, writable: false });
 installNativeTransport({ enabled: true, openExternal: options => authPlugin.openExternal(options), onError: report });

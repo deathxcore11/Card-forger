@@ -12,6 +12,9 @@
     <!-- Short pack-opening and button haptics (normal permission, no prompt). -->
     <uses-permission android:name="android.permission.VIBRATE" />
 
+    <!-- In-app updates: the app downloads its own verified update and opens Android's installer (the person taps Update). -->
+    <uses-permission android:name="android.permission.REQUEST_INSTALL_PACKAGES" />
+
     <application
         android:allowBackup="false"
         android:largeHeap="${largeHeap}"
