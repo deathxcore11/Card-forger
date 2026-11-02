@@ -797,7 +797,7 @@ const name=String(card.name);if(Math.max(...name.split(/\s+/).map(word=>word.len
  function closeLaneTray(){const tray=root.querySelector(':scope>.forge-lane-tray');if(!tray)return;doc.removeEventListener('pointerdown',tray._away,true);tray.remove();queueArrows();}
  const growLimit=()=>Math.min(win.innerWidth,win.innerHeight)<600&&win.matchMedia?.('(pointer:coarse)').matches?1.4:1;
  // Board scales move in fixed steps and are held between fits, so the table keeps one view as cards arrive.
- const SCALE_STEP=.025,step=k=>Math.round(k/SCALE_STEP)*SCALE_STEP;let boardHold=null,holdSize='',shrinkAt=0;
+ const SCALE_STEP=.025,step=k=>Math.round(k/SCALE_STEP)*SCALE_STEP;let boardHold=null,holdSize='',shrinkAt=0;let motionWait=false;
  // The largest step that fits wins on a first fit, or when the held scale no longer fits. Otherwise the held scale
  // stays, and grows only once the board would fit four steps (10%) up, stopping one step short of the best fit.
  function zoneScale(fitsAt){const lim=growLimit(),size=`${win.innerWidth}x${win.innerHeight}`;if(size!==holdSize){holdSize=size;boardHold=null;}
@@ -806,6 +806,11 @@ const name=String(card.name);if(Math.max(...name.split(/\s+/).map(word=>word.len
   // A held scale that no longer fits steps down from where it is (never jumps up to a wider layout that happens to fit).
   if(!fitsAt(held)){for(let t=step(held-SCALE_STEP);t>.4;t=step(t-SCALE_STEP))if(fitsAt(t))return t;return best();}
   const b=best();return b>=step(held+4*SCALE_STEP)?step(b-SCALE_STEP):held;}
+ // Only the turn buttons' own row reserves room under your side (Randall, 2 Nov, Fold: the board shrank and grew
+ // every time the panel above them came and went). The stack list, the cast card and the ask that ride above the
+ // buttons in that panel float over the board's lower corner instead, so the board keeps one steady size.
+ const dockRect=panel=>{const r=panel.getBoundingClientRect(),row=panel.querySelector('.forge-native-actions');if(!row||!row.getClientRects().length)return r;
+  const a=row.getBoundingClientRect(),top=Math.max(r.top,a.top);return {top,bottom:r.bottom,left:r.left,right:r.right,width:r.width,height:r.bottom-top};};
  // Tall touch screens lift the turn buttons above a full-width hand (play-forge-table.css), into your side's lower edge.
  const raisedDock=()=>!!win.matchMedia?.('(hover:none) and (pointer:coarse) and (min-width:600px) and (min-height:480px)').matches;
  // A side that changes size after the fit (fonts landing, a chip appearing, 130% text) fits again.
@@ -837,7 +842,7 @@ const name=String(card.name);if(Math.max(...name.split(/\s+/).map(word=>word.len
    // On a portrait screen the stack strip and the hand slider float over your side, so it stops above them too;
    // a sideways phone's hand button and control emblems sit just over the hand, and a tall screen's turn buttons
    // ride above it, so it stops above those as well.
-   const box=area.getBoundingClientRect(),own=area.dataset.seat!=='cpu',edges=(own?[...rest,...[...root.querySelectorAll('.forge-native-stack,:scope>.forge-hand-slider')].filter(n=>getComputedStyle(n).position==='fixed').map(n=>n.getBoundingClientRect()),...[...root.querySelectorAll('.forge-hand-expand,.forge-control-emblem')].map(n=>n.getBoundingClientRect()),...[...(raisedDock()?root.querySelectorAll('.play-match-decisions:not(:has(.forge-order-cards,.forge-zone-search))'):[])].map(n=>n.getBoundingClientRect()).filter(r=>r.height&&r.top>box.top+40)]:[...root.querySelectorAll('.play-match-opponent-fan,.play-pod-rail')].map(n=>n.getBoundingClientRect())).filter(r=>r.width&&r.right>box.left&&r.left<box.right);
+   const box=area.getBoundingClientRect(),own=area.dataset.seat!=='cpu',edges=(own?[...rest,...[...root.querySelectorAll('.forge-native-stack,:scope>.forge-hand-slider')].filter(n=>getComputedStyle(n).position==='fixed').map(n=>n.getBoundingClientRect()),...[...root.querySelectorAll('.forge-hand-expand,.forge-control-emblem')].map(n=>n.getBoundingClientRect()),...[...(raisedDock()?root.querySelectorAll('.play-match-decisions:not(:has(.forge-order-cards,.forge-zone-search))'):[])].map(dockRect).filter(r=>r.height&&r.top>box.top+40)]:[...root.querySelectorAll('.play-match-opponent-fan,.play-pod-rail')].map(n=>n.getBoundingClientRect())).filter(r=>r.width&&r.right>box.left&&r.left<box.right);
    const top=own?box.top:Math.max(box.top,...edges.map(r=>r.bottom+8)),bottom=own?Math.min(box.bottom,...edges.map(r=>r.top-4)):box.bottom;
    const W=columns?Math.floor(zone.getBoundingClientRect().width):area.clientWidth,H=Math.min(area.clientHeight,Math.round(bottom-top))-(columns?22:0);if(!W||H<=0)continue;
    // Side-by-side lanes (a grid) have fixed boxes: a row that spills out of its lane shrinks inside it.
@@ -877,7 +882,12 @@ const name=String(card.name);if(Math.max(...name.split(/\s+/).map(word=>word.len
   for(let pass=0;pass<8;pass++){if(!applyAt(k)||k<=.4)break;k=Math.max(.4,step(k-SCALE_STEP));}
   // A shrink must still be needed a moment later before it shows (Randall, 1 Nov: the board pulsed in and out as
   // cards landed, while art and fonts settled). Until then the held scale stays and the board is checked again.
-  if(before!==null&&fits.length&&k>.401&&k<before-.001){const now=Date.now();if(!shrinkAt){shrinkAt=now;setTimeout(queueBoard,320);}
+  // A card in motion on the board (landing, lunging, a CPU action held up big) spills past its side while it moves,
+  // which reads as "nothing fits" and dropped the board to its smallest size until it settled (Randall, 2 Nov, Fold
+  // recording). Any shrink waits until the board's own motion has finished, then the board is checked again.
+  const moving=before!==null&&k<before-.001?(root.querySelector('.play-match-battlefields')?.getAnimations?.({subtree:true})||[]).filter(a=>a.playState==='running'&&a.effect?.getTiming?.().iterations!==Infinity):[];
+  if(moving.length){k=before;applyAt(k);shrinkAt=0;if(!motionWait){motionWait=true;const done=()=>{motionWait=false;queueBoard();};Promise.allSettled(moving.map(a=>a.finished)).then(done);}}
+  else if(before!==null&&fits.length&&k>.401&&k<before-.001){const now=Date.now();if(!shrinkAt){shrinkAt=now;setTimeout(queueBoard,320);}
    if(now-shrinkAt<300){k=before;applyAt(k);}else shrinkAt=0;}else shrinkAt=0;
   // The scale holds from fit to fit (Randall, 1 Nov): a new card never nudges it; it steps down only when a side
   // no longer fits, and back up only when there is clearly room. A step glides instead of jumping.
