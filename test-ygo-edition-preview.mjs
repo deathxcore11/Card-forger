@@ -35,7 +35,9 @@ assert.deepEqual(ygoPricePreview(withQuotes([]),{...ctx,...initial,ygoEditionExp
 assert.equal(ygoPricePreview(withQuotes([{edition:'Unlimited',market:1},{edition:'Limited',market:2}]),ctx).priceYgoEdition,undefined,'No global preference between other supported editions');
 for(const quotes of [[],[{edition:'1st Edition',market:null}],[{edition:'1st Edition',market:0}],[{edition:'1st Edition',market:2},{edition:'1st Edition',market:3}]])assert.equal(ygoPricePreview(withQuotes(quotes),ctx).priceYgoEdition,undefined);
 const second={...printing,rarity:'Ultra Rare',productId:900102,quotes:[{edition:'1st Edition',market:20}]},multiple={...card,sets:[printing,second]},projected=setContextCard('ygo',multiple,release,[release]);
-assert.deepEqual(ygoPricePreview(projected,ctx),{},'Never choose the cheapest or first rarity');
+assert.deepEqual(ygoPricePreview(projected,ctx),{priceEdition:'FXP-EN001::Super Rare',priceYgoEdition:'1st-edition',ygoPriceDefault:'1st-edition'},'A multi-rarity release defaults to its most common rarity, not a blank printing');
+assert.deepEqual(ygoPricePreview(setContextCard('ygo',{...card,sets:[second,printing]},release,[release]),ctx).priceEdition,'FXP-EN001::Super Rare','Default follows rarity, not list order or price');
+assert.deepEqual(ygoPricePreview(projected,{...ctx,ygoPrintingExplicit:true}),{},'An explicit "Choose a printing" stays blank');
 let summary=compactPriceSummary('ygo',projected,ctx);assert.match(summary,/\$1\.00–\$20\.00/);assert.match(summary,/release reference, not your copy/);assert.doesNotMatch(summary,/\$999|Near Mint/);
 assert.equal(presentationQuote('ygo',projected).value,null,'Range does not become exact or condition price');
 assert.doesNotMatch(compactPriceSummary('ygo',projected,{...ctx,priceEdition:'WRONG::Rare'}),/\$1\.00|\$20\.00/);

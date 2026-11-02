@@ -33,7 +33,7 @@ const reused=normalizeYgoSets([{set_name:'Repeated',set_code:'REP',tcg_date:'200
 assert.equal(tcgRarityAttrs(setContextCard('ygo',{...card,sets:[{name:'Repeated',code:'REP-001',rarity:'Ultra Rare',price:100}]},reused[0],reused)),'','unverified release never gets rarity decoration');
 
 cache.ygo[card.id]=card;Object.assign(ui('ygo').set,{id:release.id,info:release,cards:[card],contents:{completeness:'complete',expectedUniqueCards:1},busy:false,error:'',candidates:[],q:'',filter:'all',sort:'number',finish:'',rarity:'',limit:80});
-let html=tcgSet();assert.doesNotMatch(html,/data-printing=|data-rarity-flair=|\$999|\$888/);
+let html=tcgSet();assert.match(html,/data-printing="VASM-EN001::Super Rare"/,'Unfiltered tile shows the most common printing');assert.match(html,/data-rarity-flair="yr2"/);assert.doesNotMatch(html,/\$999|\$888/);
 ui('ygo').set.rarity='Super Rare';html=tcgSet();assert.match(html,/data-printing="VASM-EN001::Super Rare"/);assert.match(html,/data-rarity-flair="yr2"/);assert.match(html,/data-tier="tn"/);
 ui('ygo').set.rarity='Ultra Rare';html=tcgSet();assert.doesNotMatch(html,/data-printing=|data-rarity-flair=/);
 ui('ygo').set.rarity='';

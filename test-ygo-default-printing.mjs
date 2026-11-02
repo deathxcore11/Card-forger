@@ -1,0 +1,21 @@
+// Public synthetic fixture (LED7 Ra shape): one release, two rarities, no common printing.
+import assert from 'node:assert/strict';
+import {normalizeYgoSets} from './ygo.js';
+import {setContextCard,tcgSet,tcgCardSheet,ui,cache} from './tcg.js';
+import {S,blank} from './store.js';
+const [release]=normalizeYgoSets([{set_name:'Synthetic Rage',set_code:'SYR',tcg_date:'2020-09-24'}]);
+const base={name:release.name,code:'SYR-EN000',productId:1,priceSource:'TCGplayer via TCGCSV',checkedAt:new Date().toISOString()};
+const ghost={...base,rarity:'Ghost Rare',productId:2,quotes:[{edition:'1st Edition',market:157.73},{edition:'Unlimited',market:139.89}]};
+const ultra={...base,rarity:'Ultra Rare',quotes:[{edition:'1st Edition',market:19.73},{edition:'Unlimited',market:17.5}]};
+const card={game:'ygo',id:'10000010',name:'Synthetic Sun Dragon',category:'Monster',stats:[],typeLine:'Effect Monster',sets:[ghost,ultra],prices:{usd:999},fetchedAt:new Date().toISOString()};
+S.state=blank();S.state.settings.game='ygo';ui('ygo').sets.list=[release];cache.ygo[card.id]=card;
+Object.assign(ui('ygo').set,{info:release,id:release.id,cards:[card],contents:{completeness:'complete'},q:'',filter:'all',rarity:'',edition:'',sort:'number',limit:120});
+let html=tcgSet();
+assert.match(html,/data-printing="SYR-EN000::Ultra Rare"/,'Tile carries the default printing into the detail');
+assert.match(html,/\$19\.73/,'Tile shows the default printing at 1st Edition');
+assert.doesNotMatch(html,/\$157\.73|\$139\.89|\$17\.50|–\$/,'No range across rarities or editions');
+ui('ygo').set.edition='unlimited';html=tcgSet();assert.match(html,/\$17\.50/);assert.doesNotMatch(html,/\$19\.73/,'Edition filter still wins');
+ui('ygo').set.edition='';ui('ygo').set.rarity='Ghost Rare';html=tcgSet();assert.match(html,/\$157\.73/,'Rarity filter still wins');
+const sheet=tcgCardSheet(setContextCard('ygo',card,release,[release]),{type:'tcard',game:'ygo',id:card.id,setId:release.id,tab:'overview'});
+assert.match(sheet,/SYR-EN000/);assert.match(sheet,/Ultra Rare/);assert.doesNotMatch(sheet,/choose a printing; edition unspecified/,'Detail opens on a real printing');
+console.log('PASS: multi-rarity YGO release defaults to its most common printing in tile and detail; filters still override.');

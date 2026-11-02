@@ -1,5 +1,5 @@
 import {referenceQuote} from './price-reference.js';
-import {ygoRarity} from './ygo-identity.js';
+import {ygoRarity,YGO_RARITIES} from './ygo-identity.js';
 
 export const YGO_EDITION_NAMES={'1st-edition':'1st Edition',unlimited:'Unlimited',limited:'Limited'};
 const norm=value=>String(value||'').toLowerCase().replace(/[^a-z0-9]/g,'');
@@ -11,9 +11,22 @@ export function supportedYgoEditions(printing){
  }).map(([key])=>key);
 }
 
+// When a release prints a card in more than one rarity (LED7 Ra: Ultra + Ghost),
+// browsing shows a real printing instead of a blank "Choose a printing": the
+// most common rarity, first listed on ties. Display only; never saved.
+const rarityRank=p=>{const i=YGO_RARITIES.indexOf(ygoRarity(p?.rarity));return i<0?YGO_RARITIES.length:i;};
+export function ygoDefaultPrinting(rows=[]){
+ const usable=rows.filter(p=>p&&!p.releasePriceAmbiguous&&rows.filter(r=>r.code+'::'+r.rarity===p.code+'::'+p.rarity).length===1);
+ return usable.reduce((best,p)=>!best||rarityRank(p)<rarityRank(best)?p:best,null);
+}
+export function ygoDefaultEdition(printing){
+ const supported=supportedYgoEditions(printing);
+ return supported.includes('1st-edition')?'1st-edition':supported.length===1?supported[0]:'';
+}
+
 // A browsing convenience, never evidence of the user's physical edition or
 // condition. Keep explicit choices (including “not specified”) and saved lots.
-// Do not choose between rarities or releases, even if one is much cheaper.
+// Never choose between releases; within one release, default to ygoDefaultPrinting.
 export function ygoPricePreview(card,ctx={}){
  if(card?.game!=='ygo'||ctx.game&&ctx.game!=='ygo'||ctx.id&&String(ctx.id)!==String(card.id)||ctx.entryId||ctx.entry||ctx.setReleaseUnverified)return {};
  const context=card.setContext;
@@ -22,12 +35,12 @@ export function ygoPricePreview(card,ctx={}){
  const automatic=!!ctx.ygoPriceDefault&&ctx.ygoPriceDefault===ctx.priceYgoEdition&&!ctx.ygoEditionExplicit,
   reset=automatic?{priceYgoEdition:'',ygoPriceDefault:''}:{},
   rows=context?.printings||card.sets||[],wanted=ctx.priceEdition||'',
-  matches=wanted?rows.filter(p=>p.code+'::'+p.rarity===wanted):context&&!ctx.ygoPrintingExplicit&&rows.length===1?rows:[],
+  matches=wanted?rows.filter(p=>p.code+'::'+p.rarity===wanted):context&&!ctx.ygoPrintingExplicit?(rows.length===1?rows:[ygoDefaultPrinting(rows)].filter(Boolean)):[],
   printing=matches.length===1&&!matches[0].releasePriceAmbiguous?matches[0]:null;
  if(!printing)return reset;
  const patch={...reset,...(wanted?{}:{priceEdition:printing.code+'::'+printing.rarity})};
  if(ctx.priceYgoEdition&&!automatic||ctx.ygoEditionExplicit)return patch;
- const supported=supportedYgoEditions(printing),edition=supported.includes('1st-edition')?'1st-edition':supported.length===1?supported[0]:'';
+ const edition=ygoDefaultEdition(printing);
  if(edition)Object.assign(patch,{priceYgoEdition:edition,ygoPriceDefault:edition});
  return patch;
 }
