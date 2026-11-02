@@ -62,3 +62,19 @@
   #content > p.muted.center.pad:only-child { animation:cs-load-breathe 1.4s ease-in-out infinite; }
 }
 @keyframes cs-load-breathe { 50% { opacity:.45 } }
+
+/* Smooth scrolling on phones (2 Nov): while a finger is on the screen or the page is scrolling, the
+   decorative loops (logo shuffle, Ask and search shimmer, Play seams, value-tier strips) hold still,
+   so every frame goes to the scroll. They carry on from where they stopped once the page settles.
+   Foil and holo finishes are not in this list and never pause. app-motion.js sets the class. */
+html.cs-hands-on :is(.stashy-logo.brand-breathing, .stashy-logo.brand-breathing *, .ask-launch, .home-ai-submit),
+html.cs-hands-on :is(.home-search-pill, .pl-seam)::before,
+html.cs-hands-on :is(.home-search-pill, .pl-seam)::after,
+html.cs-hands-on :is(.display-list > .lot[data-tier], .card-grid > .grid-card[data-tier])::before,
+html.cs-hands-on .display-list > .lot[data-tier] .lot-art:not([class*=finish]),
+html.cs-hands-on .card-grid > .grid-card[data-tier] > img.card-img:not([class*=finish]) { animation-play-state: paused !important; }
+/* Long lists: tiles scrolled well off screen skip style, layout and paint until they come near again;
+   each remembers its own height, so the scrollbar and the page never jump. The clip margin lets the
+   value-tier glow spill past the tile exactly as before. */
+.display-list > .lot, .card-grid > .grid-card { content-visibility: auto; contain-intrinsic-size: auto 120px; overflow-clip-margin: 40px; }
+.view-gallery .display-list > .lot, .card-grid > .grid-card { contain-intrinsic-size: auto 420px; }

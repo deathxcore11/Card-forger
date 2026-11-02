@@ -75,3 +75,13 @@ function scanMatch(){
 let matchQueued=0,watched=null;const matObs=new MutationObserver(()=>{if(!matchQueued)matchQueued=requestAnimationFrame(()=>{matchQueued=0;scanMatch();});});
 const attach=()=>{const mat=document.getElementById('practicePlayerMat');if(mat===watched)return;matObs.disconnect();watched=mat;if(mat){matObs.observe(mat,{childList:true,subtree:true,attributes:true,attributeFilter:['class']});scanMatch();}};
 new MutationObserver(attach).observe(document.body,{childList:true});attach();
+
+// Smooth scrolling (2 Nov): the decorative loops hold still while a finger is down or the page moves
+// (brand-motion.css lists them; foil never pauses), then carry on 400 ms after it settles.
+{const root=document.documentElement;let rest=0,down=false;
+ const settle=()=>{clearTimeout(rest);rest=setTimeout(()=>{if(!down)root.classList.remove('cs-hands-on');},400);};
+ const busy=()=>{if(!root.classList.contains('cs-hands-on'))root.classList.add('cs-hands-on');settle();};
+ const opt={capture:true,passive:true};
+ addEventListener('touchstart',()=>{down=true;busy();},opt);
+ addEventListener('touchend',()=>{down=false;settle();},opt);addEventListener('touchcancel',()=>{down=false;settle();},opt);
+ addEventListener('scroll',busy,opt);addEventListener('wheel',busy,opt);}

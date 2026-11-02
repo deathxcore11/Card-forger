@@ -425,18 +425,30 @@ export function installGamepad({ plugin, page = 'app', win = globalThis, doc = g
   // ---------- touch and the outside world ----------
   // A tap moves the focus to what was tapped (hidden until the next controller press); the glyphs stay.
   doc.addEventListener('pointerdown', e => {
-    if (!e.isTrusted || e.pointerType === 'mouse') return;
+    // No controller: a tap costs nothing here (no layout read on every touch).
+    if (!connected || !e.isTrusted || e.pointerType === 'mouse') return;
     const el = e.target.closest?.(FOCUSABLE);
     if (el) { cur = el; curSig = signature(el); lastRect = el.getBoundingClientRect(); }
-    ringShown = false; ring.classList.remove('on'); hide('A'); hide('Y');
+    ringShown = false; ring.classList.remove('on'); hide('A'); hide('Y'); usedAt = 0; settled();
     if (ptr.on) { ptr.on = false; cursor.classList.remove('on'); }
   }, true);
   let glyphTimer = 0;
   let followUntil = 0;
   const wake = () => { followUntil = performance.now() + 700; kick(); };
-  const watch = () => { clearInterval(glyphTimer); glyphTimer = connected ? setInterval(() => { placeRing(false); refreshGlyphs(); }, 400) : 0; };
-  win.addEventListener('resize', () => { lastPos = ''; refreshGlyphs(); });
-  win.addEventListener('scroll', () => { lastPos = ''; if (ringShown) wake(); }, true);
+  // The ring and glyphs follow re-renders by re-measuring every 400 ms, but only while the controller is
+  // in use: 6 s after its last press (or at once on a tap) the check rests, so a handheld played by touch
+  // or a pad lying on the table never re-measures the page in the background. Any press wakes it again.
+  let usedAt = 0, settleTimer = 0;
+  const watch = () => {
+    clearInterval(glyphTimer); glyphTimer = 0;
+    if (!connected || performance.now() - usedAt > 6000) return;
+    glyphTimer = setInterval(() => { if (performance.now() - usedAt > 6000) { clearInterval(glyphTimer); glyphTimer = 0; return; } placeRing(false); refreshGlyphs(); }, 400);
+  };
+  const used = () => { usedAt = performance.now(); if (!glyphTimer) watch(); };
+  // At rest, the glyphs are re-placed once after the page settles from a scroll or a turn.
+  const settled = () => { clearTimeout(settleTimer); settleTimer = setTimeout(() => { if (connected) { lastPos = ''; placeRing(false); refreshGlyphs(); } }, 180); };
+  win.addEventListener('resize', () => { lastPos = ''; if (connected) settled(); });
+  win.addEventListener('scroll', () => { if (!connected) return; lastPos = ''; if (ringShown) wake(); else settled(); }, { capture: true, passive: true });
 
   function setConnected(on) {
     connected = !!on;
@@ -448,12 +460,13 @@ export function installGamepad({ plugin, page = 'app', win = globalThis, doc = g
 
   const onButton = ({ button, down, repeat: r }) => {
     if (r) return;
+    used();
     if (!connected) setConnected(true);
     if (down) held.add(button); else held.delete(button);
     if (DIRS[button] || button === 'LT' || button === 'RT') { combined(); return; }
     if (down) { wake(); act(button); }
   };
-  const onAxes = a => { if (!connected) setConnected(true); axes = { ...axes, ...a }; stick(); combined(); kick(); };
+  const onAxes = a => { used(); if (!connected) setConnected(true); axes = { ...axes, ...a }; stick(); combined(); kick(); };
 
   plugin.addListener('button', onButton);
   plugin.addListener('axes', onAxes);
