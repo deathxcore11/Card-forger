@@ -38,14 +38,14 @@ public class CardStashyPlatform extends Plugin implements ComponentCallbacks2 {
             String encoded = call.getString("data", "");
             if (encoded.length() > 90000) throw new IOException("Document chunk too large");
             byte[] bytes = Base64.decode(encoded, Base64.NO_WRAP);
-            long length = exports.append(call.getString("handle"), call.getLong("offset", -1L), bytes);
+            long length = exports.append(call.getString("handle"), call.getData().optLong("offset", -1L), bytes);
             call.resolve(new JSObject().put("bytes", length));
         });
     }
     @PluginMethod public void discardSave(PluginCall call) { work(call, () -> { exports.discard(call.getString("handle")); call.resolve(); }); }
     @PluginMethod public void saveDocument(PluginCall call) {
         work(call, () -> {
-            exports.seal(call.getString("handle"), call.getLong("bytes", -1L));
+            exports.seal(call.getString("handle"), call.getData().optLong("bytes", -1L));
             getActivity().runOnUiThread(() -> {
                 if (pickerBusy) { call.reject("Another file picker is open", "PICKER_BUSY"); return; }
                 pickerBusy = true;
@@ -104,7 +104,7 @@ public class CardStashyPlatform extends Plugin implements ComponentCallbacks2 {
             } catch (Exception error) { try { imports.discard(handle); } catch (IOException ignored) {} throw error; }
         });
     }
-    @PluginMethod public void readDocumentChunk(PluginCall call) { work(call, () -> { long offset = call.getLong("offset", -1L); byte[] bytes = imports.read(call.getString("handle"), offset); call.resolve(new JSObject().put("data", Base64.encodeToString(bytes, Base64.NO_WRAP)).put("offset", offset).put("bytes", bytes.length).put("totalBytes", imports.length(call.getString("handle")))); }); }
+    @PluginMethod public void readDocumentChunk(PluginCall call) { work(call, () -> { long offset = call.getData().optLong("offset", -1L); byte[] bytes = imports.read(call.getString("handle"), offset); call.resolve(new JSObject().put("data", Base64.encodeToString(bytes, Base64.NO_WRAP)).put("offset", offset).put("bytes", bytes.length).put("totalBytes", imports.length(call.getString("handle")))); }); }
     @PluginMethod public void releaseDocument(PluginCall call) { work(call, () -> { imports.discard(call.getString("handle")); call.resolve(); }); }
     private void lifecycle(String state) { notifyListeners("lifecycle", new JSObject().put("state", state), true); }
     @Override protected void handleOnPause() { lifecycle("background"); }

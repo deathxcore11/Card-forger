@@ -177,7 +177,7 @@ public class CardStashyUpdater extends Plugin {
     // Opens Android's installer on the verified file. The first time, Android needs "Install unknown apps"
     // allowed for CardStashy: its settings switch opens, and coming back with it on goes straight on.
     @PluginMethod public void install(PluginCall call) {
-        long versionCode = call.getLong("versionCode", -1L);
+        long versionCode = call.getData().optLong("versionCode", -1L);
         if (!apk(versionCode).isFile()) { call.reject("Download the update first.", "NOT_DOWNLOADED"); return; }
         if (canInstall()) { launch(call, versionCode); return; }
         Intent intent = new Intent(Settings.ACTION_MANAGE_UNKNOWN_APP_SOURCES, Uri.parse("package:" + getContext().getPackageName()));
@@ -186,7 +186,7 @@ public class CardStashyUpdater extends Plugin {
     }
     @ActivityCallback private void installPermission(PluginCall call, ActivityResult result) {
         if (call == null) return;
-        if (canInstall()) launch(call, call.getLong("versionCode", -1L));
+        if (canInstall()) launch(call, call.getData().optLong("versionCode", -1L));
         else call.resolve(new JSObject().put("status", "permission-needed"));
     }
     private void launch(PluginCall call, long versionCode) {

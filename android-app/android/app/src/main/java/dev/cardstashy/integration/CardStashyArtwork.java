@@ -25,16 +25,16 @@ public class CardStashyArtwork extends Plugin {
         .put("evictableBytes", store.bytes("evictable")).put("pinnedBytes", store.bytes("pinned"))
         .put("pendingBytes", store.bytes("pending")).put("availableBytes", store.availableBytes())
         .put("location", "app-private-phone-storage").put("survivesUninstall", false))); }
-    @PluginMethod public void begin(PluginCall call) { work(call, () -> call.resolve(new JSObject().put("handle", store.begin(call.getString("namespace"), call.getString("sha256"), call.getLong("bytes", -1L))))); }
+    @PluginMethod public void begin(PluginCall call) { work(call, () -> call.resolve(new JSObject().put("handle", store.begin(call.getString("namespace"), call.getString("sha256"), call.getData().optLong("bytes", -1L))))); }
     @PluginMethod public void append(PluginCall call) { work(call, () -> {
         String data = call.getString("data", ""); if (data.length() > 90000) throw new IOException("Artwork chunk too large");
-        call.resolve(new JSObject().put("bytes", store.append(call.getString("handle"), call.getLong("offset", -1L), Base64.decode(data, Base64.NO_WRAP))));
+        call.resolve(new JSObject().put("bytes", store.append(call.getString("handle"), call.getData().optLong("offset", -1L), Base64.decode(data, Base64.NO_WRAP))));
     }); }
     @PluginMethod public void commit(PluginCall call) { work(call, () -> call.resolve(new JSObject().put("bytes", store.commit(call.getString("handle"))).put("status", "stored"))); }
     @PluginMethod public void abort(PluginCall call) { work(call, () -> { store.abort(call.getString("handle")); call.resolve(); }); }
     @PluginMethod public void stat(PluginCall call) { work(call, () -> { long bytes = store.length(call.getString("namespace"), call.getString("sha256")); call.resolve(new JSObject().put("exists", bytes >= 0).put("bytes", Math.max(0, bytes))); }); }
     @PluginMethod public void read(PluginCall call) { work(call, () -> {
-        String ns = call.getString("namespace"), hash = call.getString("sha256"); long offset = call.getLong("offset", -1L);
+        String ns = call.getString("namespace"), hash = call.getString("sha256"); long offset = call.getData().optLong("offset", -1L);
         byte[] bytes = store.read(ns, hash, offset);
         call.resolve(new JSObject().put("offset", offset).put("bytes", bytes.length).put("totalBytes", store.length(ns, hash)).put("data", Base64.encodeToString(bytes, Base64.NO_WRAP)));
     }); }
