@@ -31,6 +31,11 @@
             android:launchMode="singleTask"
             android:exported="true">
 
+            <!-- Android 16 ignores an app's orientation on big screens unless it opts out. CardStashy turns
+                 itself like a handheld game (portrait on phones, landscape unfolded and on tablets and
+                 handhelds, every match landscape), so it keeps its own orientation there. -->
+            <property android:name="android.window.PROPERTY_COMPAT_ALLOW_RESTRICTED_RESIZABILITY" android:value="true" />
+
             <intent-filter>
                 <action android:name="android.intent.action.MAIN" />
                 <category android:name="android.intent.category.LAUNCHER" />

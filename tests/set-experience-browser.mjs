@@ -25,7 +25,7 @@ try{
    const packSize={ygo:9,ptcg:11,mtg:12}[game];
    await page.locator('[data-pack="open"]').click();assert.equal(await page.locator('.pack-card').count(),packSize);
    await page.locator('.pack-card').first().click();assert.equal(await page.locator('.pack-card.revealed').count(),1);
-   assert.equal(await page.locator('[data-pack="copy"]').isDisabled(),true);
+   assert.equal(await page.locator('[data-pack="wish"]').isDisabled(),true);assert.equal(await page.locator('[data-pack="copy"]').count(),0,'the pack has no Copy list');
    await page.locator('[data-pack="reveal-all"]').click();assert.equal(await page.locator('.pack-card.revealed').count(),packSize);
    const overflow=await page.locator('.pack-dialog').evaluate(n=>({scroll:n.scrollWidth,client:n.clientWidth,outside:[...n.querySelectorAll('button')].filter(b=>{const r=b.getBoundingClientRect(),p=n.getBoundingClientRect();return r.width>0&&r.height>0&&(r.left<p.left-2||r.right>p.right+2);}).map(b=>b.textContent)}));assert(overflow.scroll<=overflow.client+2,JSON.stringify(overflow));assert.deepEqual(overflow.outside,[]);
    assert.equal(await page.evaluate(async()=>{const {S}=await import('/store.js');return JSON.stringify([S.state.collection,S.state.decks,S.state.tcg])===window.__packBefore;}),true,'preview cannot change inventory');
