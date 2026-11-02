@@ -1,0 +1,10 @@
+/* Planeswalk on older Android System WebViews (Chromium before 111, e.g. the AYN Odin 2 Portal ships 109).
+   Inside @supports not (color-mix), so a current WebView (Galaxy Fold, recent phones) never reads it and
+   keeps exactly the look it has today. Colour and mask fallbacks come from scripts/transform-native-compat-css.mjs. */
+@supports not (color: color-mix(in srgb, red, red)) {
+  /* Older WebViews' built-in stylesheet gives every <button> align-items: flex-start, so a button laid
+     out as a flex or grid box never stretches its children: Planeswalk's card art window collapsed to
+     0px (plain red cards) and Play's mode tiles pushed their buttons left. Current engines use normal;
+     this restores it at zero specificity, so any align-items the app sets still wins. */
+  :where(button, input[type=button], input[type=submit], input[type=reset]) { align-items: normal; }
+}
