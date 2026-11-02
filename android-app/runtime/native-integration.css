@@ -30,3 +30,12 @@ html .tabletop-dialog:modal { max-height: min(94dvh, calc(var(--app-safe-height)
   html .ai-review-dialog:modal { max-height: min(88dvh, calc(100dvh - var(--app-safe-top) - max(12px, var(--app-safe-bottom)) - 8px)); }
   html .ask-dialog:modal { height: min(92dvh, calc(100dvh - var(--app-safe-top) - max(8px, var(--app-safe-bottom)) - 8px)); }
 }
+
+/* Older Android System WebViews (Chromium before 111). Current ones never read this block. */
+@supports not (color: color-mix(in srgb, red, red)) {
+  /* Older WebViews' built-in stylesheet gives every <button> align-items: flex-start, so a button laid
+     out as a flex or grid box never stretches its children: Planeswalk's card art window collapsed to
+     0px (plain red cards) and Play's mode tiles pushed their buttons left. Current engines use normal;
+     this restores it at zero specificity, so any align-items the app sets still wins. */
+  :where(button, input[type=button], input[type=submit], input[type=reset]) { align-items: normal; }
+}

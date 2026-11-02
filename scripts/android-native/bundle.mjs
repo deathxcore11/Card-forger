@@ -8,6 +8,7 @@ import { transformNativeStorageApp, transformNativeStorageViews } from './transf
 import { transformNativeExports, transformNativeTcgExports } from './transform-native-exports.mjs';
 import { transformNativeFoil } from './transform-native-foil.mjs';
 import { transformNativePlaneswalk } from './transform-native-planeswalk.mjs';
+import { compatColorMix } from './transform-native-compat-css.mjs';
 
 const once = (text, from, to, what) => {
   if (text.split(from).length !== 2) throw Error(`Unexpected ${what} shape; review the native adapter.`);
@@ -18,7 +19,8 @@ const insets = css => css.replace(/env\(safe-area-inset-(top|right|bottom|left)\
 
 export const NATIVE_ADAPTED = ['app.js', 'tcg.js', 'cloud.js', 'artwork.js', 'finish-preview.js', 'foil-gl.js', 'views.js', 'scancam.js', 'planeswalk.html'];
 export function nativeBundleFile(path, text) {
-  if (path.endsWith('.css')) return insets(text);
+  // Safe-area insets, then color-mix() fallbacks for older WebViews (same order as build-web.mjs).
+  if (path.endsWith('.css')) return compatColorMix(insets(text));
   switch (path) {
     case 'app.js': return transformNativeStorageApp(transformNativeExports(once(text, 'if ("serviceWorker" in navigator) {', 'if (!globalThis.CARDSTASHY_NATIVE && "serviceWorker" in navigator) {', 'service worker registration')));
     case 'tcg.js': return transformNativeTcgExports(text);

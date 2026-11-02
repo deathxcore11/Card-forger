@@ -4,6 +4,7 @@ import { transformNativeStorageApp, transformNativeStorageViews } from './transf
 import { transformNativeExports, transformNativeTcgExports } from './transform-native-exports.mjs';
 import { transformNativeFoil } from './transform-native-foil.mjs';
 import { transformNativePlaneswalk } from './transform-native-planeswalk.mjs';
+import { compatColorMix } from './transform-native-compat-css.mjs';
 import { readFile, writeFile, mkdir, rm, copyFile, readdir, stat, rename } from 'node:fs/promises';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
@@ -159,7 +160,8 @@ await writeFile(planeswalkNative, (await readFile(planeswalkNative, 'utf8')).rep
 let insetRewrites = 0;
 for (const file of new Set([...allowed, ...await readdir(path.join(root, 'runtime'))].filter(f => f.endsWith('.css')))) {
   const css = await readFile(path.join(output, file), 'utf8');
-  const next = css.replace(/env\(safe-area-inset-(top|right|bottom|left)\)/g, (_, side) => { insetRewrites++; return `max(env(safe-area-inset-${side}), var(--safe-area-inset-${side}, 0px))`; });
+  // Then color-mix() fallbacks for older WebViews (transform-native-compat-css.mjs); current ones never read them.
+  const next = compatColorMix(css.replace(/env\(safe-area-inset-(top|right|bottom|left)\)/g, (_, side) => { insetRewrites++; return `max(env(safe-area-inset-${side}), var(--safe-area-inset-${side}, 0px))`; }));
   if (next !== css) await writeFile(path.join(output, file), next);
 }
 if (insetRewrites < 40) throw Error(`Expected the website's safe-area insets, found ${insetRewrites}.`);
