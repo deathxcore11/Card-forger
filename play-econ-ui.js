@@ -153,7 +153,8 @@ export const holoSplit = cards => cards.flatMap(c => { const h = Math.min(c.h | 
 export function playCardTile(c, facts, i = 0) {
   // The main collection's own row tile (.lot): art with finish and tile chrome, name with emblem and
   // set badge, mana cost and set line. Play shows copies owned instead of price, condition and stepper.
-  const base = facts?.card?.(c.o)?.card || {name: c.n, rarity: c.r, set: c.p?.set || c.s?.[0] || ''}, n = Math.min(c.c | 0, 4);
+  // Before Scryfall facts arrive, the Trunk's own printing (c.p) is enough for the finish, so holo shines at once.
+  const base = facts?.card?.(c.o)?.card || {name: c.n, rarity: c.r, set: c.p?.set || c.s?.[0] || '', ...(c.p?.id ? {id: c.p.id, finishes: ['nonfoil']} : {})}, n = Math.min(c.c | 0, 4);
   // Holo copies sit on their own tile with the app's foil finish.
   const card = c.holo ? {...base, finishes: [...new Set([...(base.finishes || ['nonfoil']), 'foil'])]} : base;
   const set = card.set || c.p?.set || c.s?.[0] || '', number = card.collector_number || c.p?.number || '';
