@@ -1,7 +1,7 @@
 {
   "source": "https://github.com/deathxcore11/Card-forger",
-  "commit": "753f9d0143b2e2f6296a2965854b7edab0622e2b",
-  "sourceVersion": "4.3.69",
+  "commit": "dd6736d87a64bbf34638c97472cc71a31f513ab7",
+  "sourceVersion": "4.3.70",
   "appId": "com.cardstashy.app",
   "releaseReady": false,
   "network": "enabled-exact-hosts",
@@ -3445,7 +3445,7 @@
     {
       "path": "config.js",
       "bytes": 629,
-      "sha256": "941e277a9efeaae3c1d95697b23d1e797298e2e430b97b74646333cbee982082"
+      "sha256": "4fd749617d061fa1c629db9b6882039a14f0a787dcdea6acb014e60fa5eb1985"
     },
     {
       "path": "core.js",
@@ -7869,8 +7869,8 @@
     },
     {
       "path": "release-record.js",
-      "bytes": 8293,
-      "sha256": "3114ab9c80044eb6bc96c99edcb8b42c29e082a9bfc7219682360ee07e56578f"
+      "bytes": 8428,
+      "sha256": "b4f01f5227f96d05f3b30da52f2e575d3147951fea3cc4c43189fe4b2510c481"
     },
     {
       "path": "release-status.js",
