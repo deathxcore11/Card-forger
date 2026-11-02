@@ -103,7 +103,7 @@ export default {
 3 Holy Strength
 24 Plains`}},
       villain: {who: 'blackKnight', deck: {label: 'tribute', name: 'The Dark Lance', colors: 'B', list: `
-4 Black Knight
+2 Black Knight
 2 Raise Dead
 4 Erg Raiders
 2 Hasran Ogress
@@ -117,7 +117,7 @@ export default {
 2 Drain Life
 3 Unholy Strength
 4 Drudge Skeletons
-24 Swamp`}},
+26 Swamp`}},
       scene: [{who: 'blackKnight', line: 'Every morning, you. Every evening, you.'}, {who: 'whiteKnight', line: 'Every morning, you lose.'}, {who: 'blackKnight', line: 'Not today. Today I brought a witness.', aside: 'He looks at you.'}, {who: 'whiteKnight', line: "Then let them see how it's done. Watch the first blow. It's the only one that matters."}],
       villainScene: [{who: 'blackKnight', line: "Years at this ford. Every morning, the same white armour."}, {who: 'blackKnight', line: "Today it ends. No prayers, no tricks. Just steel."}],
       cues: {hero: cue('Steady.', 'There. First, and last.', "I've held this ford through worse.", 'Same time tomorrow.', 'Go on, cross. Just this once.'),
