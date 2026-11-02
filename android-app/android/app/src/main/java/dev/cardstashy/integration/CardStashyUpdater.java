@@ -82,7 +82,8 @@ public class CardStashyUpdater extends Plugin {
 
     @PluginMethod public void download(PluginCall call) {
         String url = call.getString("url", ""), sha256 = call.getString("sha256", "").toLowerCase();
-        long bytes = call.getLong("bytes", -1L), versionCode = call.getLong("versionCode", -1L);
+        // PluginCall.getLong only accepts a boxed Long; JSON numbers that fit an int arrive as Integer, so read through optLong.
+        long bytes = call.getData().optLong("bytes", -1L), versionCode = call.getData().optLong("versionCode", -1L);
         String expectedPackage = call.getString("package", "");
         if (!RELEASE_URL.matcher(url).matches() || !sha256.matches("^[a-f0-9]{64}$") || bytes <= 0 || bytes > MAX_BYTES || versionCode <= 0) { call.reject("This update could not be verified.", "INVALID_RELEASE"); return; }
         if (!getContext().getPackageName().equals(expectedPackage)) { call.reject("This build updates from its own channel.", "OTHER_PACKAGE"); return; }
