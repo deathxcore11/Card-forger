@@ -111,7 +111,7 @@ export function mountForgeTable(root,{session,onExit=()=>{},profile={displayName
 // (or floats back to the hand if the play didn't happen). Never more than DROP_HOLD ms.
 let heldDrop=null;const DROP_HOLD=2500;
  const peek=doc.createElement('div');let peekFor=null,peekPinned=false,peekTimer=0,pressTimer=0,pressAt=null,pressShown=false,peekKey='',lastPointerType='mouse';
- const failedArt=new Set(),castShow=doc.createElement('div');castShow.className='forge-cast';castShow.setAttribute('role','status');castShow.setAttribute('aria-live','polite');castShow.dataset.open='false';doc.body.append(castShow);
+ const failedArt=new Set(),castShow=doc.createElement('div');castShow.className='forge-cast forge-cpu-show';castShow.setAttribute('role','status');castShow.setAttribute('aria-live','polite');castShow.dataset.open='false';doc.body.append(castShow);
  // Your own spell while you choose its targets or pay for it. Forge has already moved it to the stack but lists it
  // there only once it is cast, so until then it is shown here, large, the way Arena lifts the card you are casting.
  const ownCast=doc.createElement('div');ownCast.className='forge-cast forge-own-cast';ownCast.dataset.open='false';ownCast.dataset.kind='own';ownCast.setAttribute('aria-hidden','true');doc.body.append(ownCast);
@@ -632,23 +632,63 @@ const name=String(card.name);if(Math.max(...name.split(/\s+/).map(word=>word.len
   // A land has no spotlight: it drops into its row (the staged board moves it) and the line says so.
   // A turn change is shown by the staged board's own turn banner; a second one would repeat it.
   if(beat.kind==='land'||beat.tone==='turn'){queueArrows();updateActivity();return;}
-  // An attack is told by the swing and its arrow, as on Arena, and its damage by the falling life total;
-  // a banner there would cover the attackers or the CPU's front row.
-  if(beat.tone==='attack'||beat.tone==='damage'&&beat.combat){queueArrows();updateActivity();return;}
-  if(beat.kind==='phase'){
+  // Combat damage is told by the falling life total and the hits on the board.
+  if(beat.tone==='damage'&&beat.combat){queueArrows();updateActivity();return;}
+  // Hotfix (Randall, 2 Nov): whatever the CPU does from its hand or its board is shown big, with a glass
+  // panel beside it that says plainly what it is doing and to whom, long enough to read. An attack shows
+  // its lead attacker at the side, so the swing and its arrows stay in view.
+  const lead=beat.tone==='attack'?beat.attackers?.[0]:beat.card;
+  if(beat.kind==='phase'&&!(beat.tone==='attack'&&lead)){
    const banner=doc.createElement('div');banner.className='forge-playback-status';banner.setAttribute('role','status');banner.textContent=beat.label;if(beat.tone)banner.dataset.tone=beat.tone;mat?.append(banner);
-  }else if(beat.card){
-   const c=beat.card,art=resolvePracticeArtwork(c);
-   castShow.innerHTML=`<figure>${art?.imageUrl?`<img src="${esc(art.imageUrl)}" alt="" referrerpolicy="no-referrer" decoding="async">`:''}</figure><p><span>${esc(beat.label)}</span><strong>${esc(c.name)}</strong></p>${beat.text?`<div class="forge-cast-text">${symbolText(beat.text)}</div>`:''}`;
+  }else if(lead){
+   castShow.innerHTML=cpuShowHtml(beat,lead);
    // Drawn art sits under the photo, so a slow image never leaves the spotlight blank for its beat.
-   castShow.querySelector('figure').prepend(drawnArtwork(doc,c,surfaceColors(c)));
-   castShow.dataset.open='true';castShow.dataset.kind=beat.kind;doc.body.dataset.forgeSpotlight='true';
+   castShow.querySelector('figure')?.prepend(drawnArtwork(doc,lead,surfaceColors(lead)));
+   castShow.style.setProperty('--beat-ms',`${Math.max(400,Math.round((beat.duration||1500)*(cpuSpeed==='fast'?.5:1)))}ms`);
+   castShow.dataset.open='true';castShow.dataset.kind=beat.tone==='attack'?'attack':beat.kind;doc.body.dataset.forgeSpotlight='true';
+   // Restart the read timer for each action.
+   const bar=castShow.querySelector('.forge-cpu-timer');if(bar){bar.style.animation='none';void bar.offsetWidth;bar.style.removeProperty('animation');}
   }
   queueArrows();updateActivity();
  }
+ // Who or what an action is aimed at, from the viewer's side: "you", "your Grizzly Bears", "its own Hill Giant".
+ function aimedAt(ref){
+  const surface=playback?.target?.status?.surface||displayed?.status?.surface;if(!surface||!ref)return '';
+  if(ref.kind==='player'){if(surface.players.find(p=>p.nativeId===ref.id)?.seat===surface.seat)return 'you';const p=surface.players.find(p=>p.nativeId===ref.id);return p?.label||'the CPU';}
+  const c=surface.cards.find(x=>x.id===ref.id)||displayed?.status?.surface?.cards.find(x=>x.id===ref.id);if(!c?.known)return '';
+  return `${c.controller===surface.seat?'your':'its own'} ${c.name}`;
+ }
+ function cpuShowHtml(beat,c){
+  const art=resolvePracticeArtwork(c),[actor,verb='']=beat.tone==='attack'?[beat.actor||'CPU','attacks']:String(beat.label||'').split(' · ');
+  const list=xs=>xs.length<3?xs.join(' and '):`${xs.slice(0,-1).join(', ')} and ${xs.at(-1)}`;
+  const creature=/Creature/.test(c.type||'')&&c.power!=null&&c.toughness!=null;
+  const pt=x=>/Creature/.test(x?.type||'')&&x.power!=null?` ${x.power}/${x.toughness}`:'';
+  let intent='';
+  if(beat.tone==='attack'){
+   const atk=beat.attackers||[],power=atk.reduce((t,x)=>t+(Number(x.power)||0),0),who=beat.hit?.length?list(beat.hit):'you';
+   intent=`Attacking <b>${esc(who)}</b> with ${esc(list(atk.map(x=>x.name+pt(x))))}${power>0?`<span class="forge-cpu-stakes">${power} damage if it isn’t blocked</span>`:''}`;
+  }else{
+   const aims=(beat.targets||[]).map(aimedAt).filter(Boolean);
+   const what={CASTS:creature?'Casting a creature':/Instant|Sorcery/.test(c.type||'')?'Casting a spell':`Casting ${/^[aeiou]/i.test(c.type||'')?'an':'a'} ${(String(c.type||'').split(/\s+[—-]\s+/)[0]||'permanent').toLowerCase()}`,ACTIVATES:`Using ${esc(c.name)}’s ability`,TRIGGER:`${esc(c.name)}’s ability triggers`,RESOLVES:'It resolves',['NO LEGAL TARGETS']:'Its targets are gone, so it does nothing','ENTERED BATTLEFIELD':'Enters the battlefield'}[verb]||'';
+   intent=[what,aims.length?`Targeting <b>${esc(list(aims))}</b>`:''].filter(Boolean).join(' · ');
+  }
+  const text=beat.tone==='attack'?'':String(beat.text||c.text||'').trim();
+  const rules=text?`<div class="forge-cpu-rules">${text.split(/\n+/).map(l=>l.trim()).filter(Boolean).slice(0,6).map(l=>`<p>${symbolText(l).replace(/\(([^)]*)\)/g,'<i>($1)</i>')}</p>`).join('')}</div>`:'';
+  const kw=beat.tone==='attack'?[]:[...new Set(currentKeywords(c).map(k=>k.text))].slice(0,3),ref=keywordReference&&typeof keywordReference.then!=='function'?keywordReference:null;
+  const keywords=kw.length?`<ul class="forge-cpu-keywords">${kw.map(k=>{const hint=keywordHint(k,ref);return `<li><b>${symbolText(k.replace(/([a-z])([A-Z])/g,'$1 $2').replace(/:/g,' '))}</b>${hint?` ${symbolText(hint)}`:''}</li>`;}).join('')}</ul>`:'';
+  return `<figure>${art?.imageUrl?`<img src="${esc(art.imageUrl)}" alt="" referrerpolicy="no-referrer" decoding="async">`:''}</figure>
+<section class="forge-cpu-info">
+ <p class="forge-cpu-kicker"><span>${esc(actor||'CPU')}</span>${esc(verb.toLowerCase())}</p>
+ <header><h3>${esc(c.name)}</h3>${c.manaCost?manaCost({mana_cost:c.manaCost}):''}</header>
+ ${c.type?`<p class="forge-cpu-type">${esc(c.type)}${creature?`<span class="forge-cpu-pt">${esc(String(c.power))}/${esc(String(c.toughness))}</span>`:''}</p>`:''}
+ ${intent?`<p class="forge-cpu-intent">${intent}</p>`:''}
+ ${rules}${keywords}
+ <i class="forge-cpu-timer" aria-hidden="true"></i>
+</section>`;
+ }
  // The spotlight's photo starts loading when the story is queued, not when its beat opens.
  const preloaded=new Set();
- function preloadBeatArt(beats){for(const b of beats){if(!b.card||b.kind==='land')continue;const url=resolvePracticeArtwork(b.card)?.imageUrl;if(!url||preloaded.has(url))continue;if(preloaded.size>200)preloaded.clear();preloaded.add(url);const img=new win.Image();img.referrerPolicy='no-referrer';img.decoding='async';img.src=url;}}
+ function preloadBeatArt(beats){void loadKeywordReference();for(const b of beats){if(!b.card||b.kind==='land')continue;const url=resolvePracticeArtwork(b.card)?.imageUrl;if(!url||preloaded.has(url))continue;if(preloaded.size>200)preloaded.clear();preloaded.add(url);const img=new win.Image();img.referrerPolicy='no-referrer';img.decoding='async';img.src=url;}}
  function clearPlaybackBeat(){activeBeat=null;castShow.dataset.open='false';delete doc.body.dataset.forgeSpotlight;root.querySelector('.forge-playback-status')?.remove();queueArrows();updateActivity();}
  let activityKey='';
  // Like Snap and Master Duel, CPU turns can play at Normal or Fast; the choice stays on this device.
@@ -1095,7 +1135,9 @@ const name=String(card.name);if(Math.max(...name.split(/\s+/).map(word=>word.len
  playback=new CpuActionPlaybackQueue({present:presentBoard,beat:showPlaybackBeat,clear:clearPlaybackBeat,preload:preloadBeatArt,reducedMotion,speed:()=>cpuSpeed==='fast'?.5:1});
  // A tap skips held playback. Playback over a decision never holds the board, so a tap there
  // only clears the spotlight and goes on to whatever was tapped.
- const skipPlayback=e=>{if(!playback.running||e.button>0)return;if(playback.overlay){playback.stop();return;}suppressUntil=Date.now()+400;playback.flush();};
+ // Hotfix (2 Nov): a tap moves on to the CPU's next action instead of jumping past its whole turn, so
+ // touching the table to look at something never hides what the CPU did.
+ const skipPlayback=e=>{if(!playback.running||e.button>0)return;if(playback.overlay){playback.stop();return;}suppressUntil=Date.now()+400;playback.next();};
  root.addEventListener('pointerdown',skipPlayback,true);
  const unsub=authority.subscribe(s=>{if(presentation.hosted)playback.push(s);else renderAccepted(s);});
 
@@ -1133,18 +1175,20 @@ const name=String(card.name);if(Math.max(...name.split(/\s+/).map(word=>word.len
   // from it now (an ability gained in play, a token, a card with no image), and never a
   // line that only lists keywords explained above.
   const plain=t=>String(t||'').replace(/\([^)]*\)/g,'').replace(/[^a-z0-9]+/gi,' ').trim().toLowerCase(),printedSame=!!art?.imageUrl&&plain(c.text)===plain(art.oracleText);
-  const lines=printedSame?[]:String(c.text||'').split(/\n+/).map(x=>x.trim()).filter(Boolean).filter(line=>!line.replace(/\([^)]*\)/g,'').trim().split(/,\s*|\s+and\s+/).every(part=>explained.has(keywordKey(part.replace(/\.$/,'')))));
+  // Hotfix (Randall, 2 Nov): the glass always says what the card does in readable type, even when the
+  // printed card shows it too (a foil or a small screen makes the printed text hard to read).
+  void printedSame;const lines=String(c.text||'').split(/\n+/).map(x=>x.trim()).filter(Boolean).filter(line=>!line.replace(/\([^)]*\)/g,'').trim().split(/,\s*|\s+and\s+/).every(part=>explained.has(keywordKey(part.replace(/\.$/,'')))));
   const rule=line=>symbolText(line).replace(/\(([^)]*)\)/g,'<i>($1)</i>');
   const image=art?.imageUrl?`<img src="${esc(art.imageUrl)}" alt="" referrerpolicy="no-referrer" decoding="async">`:'';
   // Over the printed card its own power and toughness only repeat what it shows; a changed one still says so.
-  const showPT=creature&&c.power!==null&&c.power!==undefined&&(!image||String(c.power)!==String(face?.power)||String(c.toughness)!==String(face?.toughness));
+  const showPT=creature&&c.power!==null&&c.power!==undefined;
   return `<figure class="forge-peek-card" data-art="${image?'image':'drawn'}">${image}</figure>
 <section class="forge-peek-info">
  <header><h3>${esc(c.name)}</h3>${c.manaCost?manaCost({mana_cost:c.manaCost}):''}</header>
  ${c.type?`<p class="forge-peek-type">${esc(c.type)}</p>`:''}
  ${showPT||chips.length?`<div class="forge-peek-state">${showPT?`<span class="forge-peek-pt">${stat(c.power,face.power)}<i>/</i>${stat(c.toughness,face.toughness)}</span>`:''}${chips.map(([k,t,icon])=>`<span class="forge-peek-chip" data-kind="${k}">${boardIcon(icon||chipIcon[k],'cs-icon forge-peek-icon')}${t}</span>`).join('')}</div>`:''}
- ${keywords.length?`<ul class="forge-peek-keywords">${keywords.map(k=>{const hint=keywordHint(k,reference);return `<li><b>${boardIcon(kwIcon.get(k),'cs-icon forge-peek-icon')}${symbolText(k.replace(/([a-z])([A-Z])/g,'$1 $2').replace(/:/g,' '))}</b>${hint?`<span>${symbolText(hint)}</span>`:''}</li>`;}).join('')}</ul>`:''}
  ${lines.length?`<div class="forge-peek-rules">${lines.map(l=>`<p>${rule(l)}</p>`).join('')}</div>`:''}
+ ${keywords.length?`<ul class="forge-peek-keywords">${keywords.map(k=>{const hint=keywordHint(k,reference);return `<li><b>${boardIcon(kwIcon.get(k),'cs-icon forge-peek-icon')}${symbolText(k.replace(/([a-z])([A-Z])/g,'$1 $2').replace(/:/g,' '))}</b>${hint?`<span>${symbolText(hint)}</span>`:''}</li>`;}).join('')}</ul>`:''}
  ${c.commander?commanderFacts(c):''}
  ${attached.length||withCards.length?`<p class="forge-peek-attached">${[...attached,withCards.length?`With ${withCards.join(', ')}`:''].filter(Boolean).join(' \u00b7 ')}</p>`:''}
 </section>`;
@@ -1154,7 +1198,8 @@ const name=String(card.name);if(Math.max(...name.split(/\s+/).map(word=>word.len
   // the dock, so it never covers the board; narrow screens keep it beside the card.
   const top=Math.max(...['.play-match-seat[data-seat=cpu]','.forge-zone-row[data-seat=cpu]'].map(q=>root.querySelector(q)?.getBoundingClientRect().bottom||0)),bottom=root.querySelector('.play-match-decisions')?.getBoundingClientRect().top||win.innerHeight;
   const solo=presentation.hosted&&!!handFocus&&handFocus.contains(anchor)&&!!handFocusRect;peek.dataset.solo=String(solo);
-  const docked=!solo&&presentation.hosted&&win.innerWidth>=1200&&win.innerWidth/win.innerHeight>=1.3&&bottom-top>=320;
+  // The card and its glass panel always sit side by side (Randall, 2 Nov), so the docked column is retired.
+  const docked=false;void top;void bottom;
   peek.dataset.docked=String(docked);if(docked)peek.style.setProperty('--peek-dock-h',`${Math.round(bottom-top-90)}px`);
   const r=anchor.getBoundingClientRect(),vw=win.innerWidth,vh=win.innerHeight,pw=peek.offsetWidth,ph=peek.offsetHeight,gap=14;
   // A focused hand card is already the big card: show only the glass info beside it (the side with room,

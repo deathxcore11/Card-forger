@@ -2503,3 +2503,88 @@ body.practice-table-open:has(.forge-order-cards,.forge-zone-search-dialog) .forg
 /* 4.3.54 A dropped spell rides upright to the stack spotlight while Forge confirms it. */
 :where(body.practice-table-open) .play-match-table[data-forge-native] .forge-drag-ghost[data-stacked=true],:where(body.practice-table-open) .forge-drag-ghost[data-stacked=true]{rotate:0deg;transform:translate(-50%,-50%);opacity:1;transition:none}
 :where(body.practice-table-open) .forge-drag-ghost{will-change:transform,translate}
+
+/* ===== Hotfix 2 Nov (Randall): card inspector and CPU action spotlight =====
+   Inspecting a card shows it big with a glass panel beside it that says plainly what it does: name and
+   cost, type, power/toughness, the rules text in readable type, and every keyword explained. The panel
+   scrolls when a card has a lot to say, so nothing is cut off on a short phone screen. */
+:where(body.practice-table-open) .forge-peek{--peek-w:clamp(170px,min(21vw,calc((100dvh - 32px) / 1.394)),320px);align-items:flex-start}
+:where(body.practice-table-open) .forge-peek .forge-peek-info,:where(body.practice-table-open) .forge-peek[data-docked] .forge-peek-info{display:block;width:clamp(232px,22vw,340px);max-width:calc(100vw - var(--peek-w) - 40px);max-height:calc(100dvh - 24px);overflow-y:auto;overscroll-behavior:contain;scrollbar-width:thin;padding:16px 18px 18px;border:1px solid #e9c98a5c;border-radius:18px;background:linear-gradient(160deg,#ffffff17,#ffffff04 45%),#0d1016c4;-webkit-backdrop-filter:blur(20px) saturate(1.4);backdrop-filter:blur(20px) saturate(1.4);box-shadow:inset 0 1px 0 #ffffff1f,0 26px 56px #000d;font-size:14px;line-height:1.5}
+:where(body.practice-table-open) .forge-peek .forge-peek-info :is(header,.forge-peek-type,.forge-peek-rules,.forge-peek-keywords){display:revert}
+:where(body.practice-table-open) .forge-peek .forge-peek-info header{display:flex}
+:where(body.practice-table-open) .forge-peek .forge-peek-keywords{display:grid;position:static;width:auto;margin:12px 0 0}
+:where(body.practice-table-open) .forge-peek .forge-peek-info h3{font-size:19px}
+:where(body.practice-table-open) .forge-peek .forge-peek-type{font-size:12.5px;color:#c9bfa9}
+:where(body.practice-table-open) .forge-peek .forge-peek-rules{margin-top:12px;padding:12px 0 0}
+:where(body.practice-table-open) .forge-peek .forge-peek-rules p{font-size:15px;line-height:1.5;color:#f6efe0;margin:0 0 9px}
+:where(body.practice-table-open) .forge-peek .forge-peek-rules i{color:#b3ab98}
+:where(body.practice-table-open) .forge-peek .forge-peek-rules img.ms{width:16px;height:16px;vertical-align:-3px}
+:where(body.practice-table-open) .forge-peek[data-solo=true] .forge-peek-info{width:var(--solo-max,260px);max-width:var(--solo-max,260px)}
+/* The focused hand card is the big card: its foil stays, quieter, so the printed words read through it. */
+:where(body.practice-table-open) .play-match-table[data-forge-native] .play-match-hand .play-match-card-wrap[data-hand-focus] :is(.finish-overlay,.finish-layer,.finish-pattern){opacity:.38;transition:opacity .2s}
+@media (max-width:640px){:where(body.practice-table-open) .forge-peek .forge-peek-info{max-width:min(92vw,340px)}}
+
+/* The CPU's action, Arena style: its card big in the middle of the table, a glass panel beside it with
+   what it is doing and to whom, and a thin gold line that runs down while it is on screen. The table
+   behind dims a little. An attack sits at the side so the swing and its arrows stay in view. */
+:where(body.practice-table-open) .forge-cast.forge-cpu-show{inset:50% auto auto 50%!important;width:auto!important;max-width:calc(100vw - 32px)!important;display:flex!important;flex-direction:row;align-items:center;gap:16px;padding:0!important;border:0!important;border-radius:20px;background:none!important;box-shadow:0 0 0 100vmax #04060a6b!important;transform:translate(-50%,-50%) scale(.94)!important;transition:opacity .22s ease,transform .3s cubic-bezier(.2,.9,.3,1.2),visibility 0s linear .3s}
+:where(body.practice-table-open) .forge-cast.forge-cpu-show[data-open=true]{transform:translate(-50%,-50%) scale(1)!important;transition:opacity .2s ease,transform .3s cubic-bezier(.2,.9,.3,1.2)}
+:where(body.practice-table-open) .forge-cast.forge-cpu-show[data-kind=attack]{inset:50% auto auto max(16px,env(safe-area-inset-left,0px))!important;transform:translate(0,-50%) scale(.94)!important;box-shadow:none!important}
+:where(body.practice-table-open) .forge-cast.forge-cpu-show[data-kind=attack][data-open=true]{transform:translate(0,-50%) scale(1)!important}
+:where(body.practice-table-open) .forge-cast.forge-cpu-show figure{flex:none;position:relative;width:clamp(150px,min(19vw,calc((100dvh - 64px) / 1.394)),300px)!important;max-height:none!important;aspect-ratio:488/680;margin:0;border-radius:4.8%/3.4%!important;overflow:hidden;box-shadow:0 0 0 1px #000a,0 0 0 3px #f0c27a80,0 0 50px #f0c27a55,0 30px 70px #000e!important}
+:where(body.practice-table-open) .forge-cast.forge-cpu-show[data-kind=attack] figure{box-shadow:0 0 0 1px #000a,0 0 0 3px #ff7a6b99,0 0 46px #ff6a5a55,0 30px 70px #000e!important;width:clamp(120px,min(15vw,calc((100dvh - 120px) / 1.394)),230px)!important}
+:where(body.practice-table-open) .forge-cpu-info{position:relative;width:clamp(220px,24vw,360px);max-height:calc(100dvh - 48px);overflow:hidden;padding:16px 18px 20px;border:1px solid #e9c98a66;border-radius:18px;background:linear-gradient(160deg,#ffffff17,#ffffff04 45%),#0d1016d6;-webkit-backdrop-filter:blur(20px) saturate(1.4);backdrop-filter:blur(20px) saturate(1.4);box-shadow:inset 0 1px 0 #ffffff1f,0 26px 56px #000d;color:#ece4d3;font:14px/1.5 'DM Sans',system-ui,sans-serif;text-align:left}
+:where(body.practice-table-open) .forge-cast.forge-cpu-show[data-kind=attack] .forge-cpu-info{border-color:#ff8a7a66}
+:where(body.practice-table-open) .forge-cpu-info .forge-cpu-kicker{display:flex!important;align-items:center;gap:8px;margin:0 0 6px!important;padding:0!important;border:0!important;background:none!important;box-shadow:none!important;font:800 12px/1.2 'DM Sans',system-ui,sans-serif!important;letter-spacing:.14em;text-transform:uppercase;color:#f0c27a!important}
+:where(body.practice-table-open) .forge-cpu-info .forge-cpu-kicker span{display:inline!important;padding:3px 8px;border-radius:999px;background:#f0c27a24;color:#f6dca6!important;font-size:11px!important;letter-spacing:.1em!important}
+:where(body.practice-table-open) .forge-cast.forge-cpu-show[data-kind=attack] .forge-cpu-kicker{color:#ff9f8f!important}
+:where(body.practice-table-open) .forge-cpu-info header{display:flex;align-items:flex-start;justify-content:space-between;gap:10px}
+:where(body.practice-table-open) .forge-cpu-info h3{margin:0;font:700 20px/1.2 Spectral,Georgia,serif;color:#fbf3df}
+:where(body.practice-table-open) .forge-cpu-info header .mana{display:flex;flex:none;gap:2px;padding-top:3px}
+:where(body.practice-table-open) .forge-cpu-info header .mana img{width:17px;height:17px}
+:where(body.practice-table-open) .forge-cpu-type{display:flex!important;align-items:center;justify-content:space-between;gap:8px;margin:3px 0 0!important;padding:0!important;border:0!important;background:none!important;box-shadow:none!important;font:500 12.5px/1.3 'DM Sans',system-ui,sans-serif!important;color:#c9bfa9!important}
+:where(body.practice-table-open) .forge-cpu-pt{flex:none;padding:2px 9px;border:1px solid #d6ad64b8;border-radius:8px;background:#0b0b0d;font:800 15px/1.2 'DM Sans',system-ui,sans-serif;color:#fff}
+:where(body.practice-table-open) .forge-cpu-intent{display:block!important;margin:12px 0 0!important;padding:9px 12px!important;border:1px solid #f0c27a40!important;border-radius:12px!important;background:#f0c27a14!important;box-shadow:none!important;font:600 15px/1.4 'DM Sans',system-ui,sans-serif!important;color:#fbf3df!important}
+:where(body.practice-table-open) .forge-cpu-intent b{color:#ffd99a}
+:where(body.practice-table-open) .forge-cast.forge-cpu-show[data-kind=attack] .forge-cpu-intent{border-color:#ff8a7a55!important;background:#ff6a5a17!important}
+:where(body.practice-table-open) .forge-cpu-stakes{display:block;margin-top:4px;font-size:13px;font-weight:700;color:#ffb3a8}
+:where(body.practice-table-open) .forge-cpu-rules{margin-top:12px;padding-top:11px;border-top:1px solid #ffffff17}
+:where(body.practice-table-open) .forge-cpu-rules p{display:block!important;margin:0 0 7px!important;padding:0!important;border:0!important;background:none!important;box-shadow:none!important;font:400 14.5px/1.5 'DM Sans',system-ui,sans-serif!important;color:#f3ecdc!important}
+:where(body.practice-table-open) .forge-cpu-rules i{color:#a9a18e}
+:where(body.practice-table-open) .forge-cpu-rules img.ms{width:15px;height:15px;vertical-align:-3px;margin:0 1px}
+:where(body.practice-table-open) .forge-cpu-keywords{margin:10px 0 0;padding:0;list-style:none;display:grid;gap:6px;font-size:13px;color:#d8d2c6}
+:where(body.practice-table-open) .forge-cpu-keywords b{color:#f2d496}
+:where(body.practice-table-open) .forge-cpu-timer{position:absolute;left:18px;right:18px;bottom:9px;height:3px;border-radius:2px;background:linear-gradient(90deg,#f0c27a,#fff2c2);transform-origin:left;animation:forge-cpu-timer var(--beat-ms,2400ms) linear both}
+:where(body.practice-table-open) .forge-cast.forge-cpu-show[data-kind=attack] .forge-cpu-timer{background:linear-gradient(90deg,#ff7a6b,#ffc2b8)}
+@keyframes forge-cpu-timer{from{transform:scaleX(1)}to{transform:scaleX(0)}}
+@media (prefers-reduced-motion:reduce){:where(body.practice-table-open) .forge-cpu-timer{animation:none;opacity:.5}}
+/* Short landscape phones: smaller type, the panel keeps to the room beside the card. */
+@media (max-height:520px){
+ :where(body.practice-table-open) .forge-cast.forge-cpu-show{gap:10px}
+ :where(body.practice-table-open) .forge-cpu-info{width:clamp(210px,40vw,320px);padding:11px 13px 15px;max-height:calc(100dvh - 24px)}
+ :where(body.practice-table-open) .forge-cpu-info h3{font-size:16px}
+ :where(body.practice-table-open) .forge-cpu-intent{margin-top:8px!important;padding:6px 9px!important;font-size:13px!important}
+ :where(body.practice-table-open) .forge-cpu-rules{margin-top:8px;padding-top:7px}
+ :where(body.practice-table-open) .forge-cpu-rules p{font-size:12.5px!important;line-height:1.4!important;margin-bottom:4px!important}
+ :where(body.practice-table-open) .forge-cpu-keywords{display:none}
+ :where(body.practice-table-open) .forge-peek .forge-peek-info{padding:11px 13px 13px;font-size:13px}
+ :where(body.practice-table-open) .forge-peek .forge-peek-info h3{font-size:16px}
+ :where(body.practice-table-open) .forge-peek .forge-peek-rules p{font-size:13px;line-height:1.42;margin-bottom:6px}
+}
+
+/* What the game is asking you, said plainly in the middle of the screen above your hand, on every size:
+   "Block the CPU's attack?", "Respond to Counterspell?", "Choose a target for Lightning Bolt". */
+:where(body.practice-table-open) .forge-native-panel .forge-native-actions[data-ask=true]::before{font-size:15px!important;padding:9px 18px!important;border-radius:999px!important;border:1px solid #f2d18eaa!important;background:linear-gradient(160deg,#ffffff14,#ffffff03 50%),#10131bf0!important;box-shadow:0 10px 30px #000b,0 0 22px #f2d18e40!important;text-align:center!important}
+@media (max-width:640px),(max-height:520px){:where(body.practice-table-open) .forge-ask-line{font-size:14px;padding:8px 16px;border-color:#f2d18eaa;background:linear-gradient(160deg,#ffffff14,#ffffff03 50%),#10131bf0;box-shadow:0 10px 30px #000b,0 0 22px #f2d18e40}}
+:where(body.practice-table-open) .forge-cast.forge-cpu-show .forge-cpu-intent>.forge-cpu-stakes{display:block!important;margin-top:4px;font:700 13px/1.35 'DM Sans',system-ui,sans-serif!important;letter-spacing:0!important;text-transform:none!important;color:#ffb3a8!important}
+:where(body.practice-table-open) .forge-cast.forge-cpu-show figure{width:clamp(150px,min(24vw,calc((100dvh - 64px) / 1.394)),300px)!important}
+/* An attack is shown at the right edge, clear of the "CPU playing" chip and its speed switch on the left. */
+:where(body.practice-table-open) .forge-cast.forge-cpu-show[data-kind=attack]{inset:50% max(16px,env(safe-area-inset-right,0px)) auto auto!important;flex-direction:row-reverse}
+/* The glass always carries the full story (Randall, 2 Nov): earlier rules that hid the name, type and
+   rules beside a printed card, or in the hand-focus view, step aside. */
+:where(body.practice-table-open) .forge-peek.forge-peek.forge-peek .forge-peek-info.forge-peek-info{display:block!important}
+:where(body.practice-table-open) .forge-peek.forge-peek.forge-peek .forge-peek-info.forge-peek-info>header:not(.cs-none){display:flex!important}
+:where(body.practice-table-open) .forge-peek.forge-peek.forge-peek .forge-peek-info.forge-peek-info>:is(.forge-peek-type,.forge-peek-rules){display:block!important}
+:where(body.practice-table-open) .forge-peek.forge-peek.forge-peek .forge-peek-info.forge-peek-info>.forge-peek-keywords{display:grid!important;position:static!important;width:auto!important}
+:where(body.practice-table-open) .forge-peek.forge-peek.forge-peek .forge-peek-info.forge-peek-info .forge-peek-pt{display:inline-flex!important}
+@media (max-height:520px){:where(body.practice-table-open) .forge-cast.forge-cpu-show:not([data-kind=attack]) figure{width:clamp(130px,calc((100dvh - 130px) / 1.394),260px)!important}:where(body.practice-table-open) .forge-cast.forge-cpu-show[data-kind=attack] figure{width:clamp(110px,calc((100dvh - 150px) / 1.394),220px)!important}:where(body.practice-table-open) .forge-cpu-info{max-height:calc(100dvh - 120px)}}

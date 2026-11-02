@@ -6,14 +6,14 @@ import {nativeZoneSearch} from './experiments/forge-proof/native-panel.mjs';
 const card=(id,o={})=>({id,known:true,controller:1,owner:1,zone:'Battlefield',name:'Card '+id,types:['Creature'],type:'Creature',text:'',...o});
 const snap=(revision,cards,o={})=>({status:{revision,surface:{seat:0,activeSeat:1,turn:4,phase:'Main1',players:[{seat:0},{seat:1}],cards,stack:[],...o}},native:{stack:[]}});
 
-test('the CPU playback skips tokens, shows at most three arrivals, and never runs past about 2.6 s',()=>{
+test('the CPU playback skips tokens, shows at most three arrivals, and never runs past about 9 s',()=>{
  const before=snap(1,[]);
  const goblins=Array.from({length:12},(_,i)=>card(100+i,{isToken:true,name:'Goblin'}));
  assert.deepEqual(cpuPlaybackBeats(before,snap(2,goblins)),[],'a token swarm arrives with the board');
  const lands=[card(1,{types:['Land'],type:'Land'}),card(2),card(3),card(4),card(5)];
  const beats=cpuPlaybackBeats(before,snap(2,lands));
  assert.equal(beats.length,3,'three arrivals at most');
- assert.ok(beats.reduce((t,b)=>t+b.duration,0)<=2600,'one update stays within the budget');
+ assert.ok(beats.reduce((t,b)=>t+b.duration,0)<=9000,'one update stays within the budget');
  assert.deepEqual(cpuPlaybackBeats(before,snap(2,[card(9,{controller:0})])),[],'your own permanents are not replayed');
 });
 
@@ -21,9 +21,9 @@ test('a backlog of CPU updates hurries a little, and flush shows the latest boar
  const shown=[],timers=[],fns=[];
  const q=new CpuActionPlaybackQueue({present:(s,busy)=>shown.push([s.status.revision,busy]),schedule:(fn,ms)=>{timers.push(ms);fns.push(fn);return timers.length;},cancel:()=>{}});
  q.push(snap(1,[]));q.push(snap(2,[card(1)]));q.push(snap(3,[card(1),card(2)]));q.push(snap(4,[card(1),card(2),card(3)]));q.push(snap(5,[card(1),card(2),card(3),card(4)]));
- assert.equal(timers[0],800,'a lone update plays at full pace');
+ assert.equal(timers[0],1800,'a lone update plays at full pace (an arrival is shown big long enough to read, Randall 2 Nov)');
  fns[0]();fns[1]?.();
- assert.ok(timers.slice(1).some(ms=>ms===650),'with two more updates waiting, the next beats run a little quicker');
+ assert.ok(timers.slice(1).some(ms=>ms<1800&&ms>=1500),'with two more updates waiting, the next beats run a little quicker');
  assert.ok(timers.every(ms=>ms>=650),'a backlog never races: every CPU action stays on screen at least 650 ms (Randall, 1 Nov)');
  q.flush();assert.deepEqual(shown.at(-1),[5,false],'flush presents the latest board, unlocked');assert.equal(q.busy,false);
 });
@@ -73,7 +73,7 @@ test('a token swarm is one arrival, combat damage one summary, and the whole upd
  const beats=eventPlaybackBeats(ev(1,9,[]),ev(2,23,[...goblins,...damage]));
  assert.deepEqual(beats.map(b=>b.label),['CPU · 12 GOBLIN TOKENS','COMBAT DAMAGE · YOU TAKE 4']);
  const many=Array.from({length:10},(_,i)=>e(30+i,'cast',{player:20,stackId:i,source:ref(200+i,'Bolt'),targets:[]}));
- const long=eventPlaybackBeats(ev(1,29,[]),ev(2,39,many));assert.ok(long.every(b=>b.duration>=650),'a long turn speeds up, but no action shows for less than 650 ms');assert.ok(long.reduce((t,b)=>t+b.duration,0)<=many.length*650+1);
+ const long=eventPlaybackBeats(ev(1,29,[]),ev(2,39,many));assert.ok(long.every(b=>b.duration>=650),'a long turn speeds up, but no action shows for less than 650 ms');assert.ok(long.every(b=>b.duration>=1500),'every spell the CPU casts stays big long enough to read (Randall, 2 Nov)');assert.ok(long.reduce((t,b)=>t+b.duration,0)<=16001,"a long CPU turn fits its budget");
 });
 
 const respondTo=()=>ev(2,5,[e(5,'cast',{player:20,stackId:9,source:ref(2,'Murder'),targets:[ref(3,'Ghalta')]})],[card(3,{controller:0,owner:0,name:'Ghalta'})],{awaitingHuman:true,prioritySeat:0,stack:[{id:9,source:2,controller:1}]},{busy:false,inputType:'InputPassPriority',stack:[{id:9,activatingPlayer:20}]});
