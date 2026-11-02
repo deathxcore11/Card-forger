@@ -1,8 +1,8 @@
 {
   "schema": 1,
-  "version": "4.3.72",
-  "commit": "4c0abd7c25f95cb8ccaebc7115d1b63bf61daf8f",
-  "tree": "fa8ee93d33a8d3c797032331e7ee1f1f86f5bbb2",
+  "version": "4.3.73",
+  "commit": "605f6807b6ed0bb56d4beeac3cf53d9438960e87",
+  "tree": "c5fcf54fdb71b6f2017c373c143feb426dbb4b58",
   "repository": "https://github.com/deathxcore11/Card-forger",
   "scope": "Explicit frontend build dependencies plus optional artwork input files. Not full backend repository.",
   "files": [
@@ -128,8 +128,8 @@
     },
     {
       "path": "app-motion.js",
-      "bytes": 7040,
-      "sha256": "8614284f4f5ad1f2491bc8cff6fad7cc32486bddde642152f7a9878a005a0717"
+      "bytes": 7816,
+      "sha256": "daf5ee1a12342f264f33105c9519e921e40ee56f917238a701823e2ea796b075"
     },
     {
       "path": "app-update.js",
@@ -3393,8 +3393,8 @@
     },
     {
       "path": "brand-motion.css",
-      "bytes": 4523,
-      "sha256": "9a7587b599db66acc52256937c573a62ff20f2a5d5af373ffa10ebc9c603c1e4"
+      "bytes": 5971,
+      "sha256": "1451f9e1eba3fac98b7c9454aa0fcbbb0ec5c517ddac976c643b857ae7223093"
     },
     {
       "path": "brand.js",
@@ -3559,7 +3559,7 @@
     {
       "path": "config.js",
       "bytes": 601,
-      "sha256": "e88990d0747178533b25749f7e5a6e1c1894d68cc363646ea56bf868b7df01c1"
+      "sha256": "a466423f911d17b9655793d517e10a66c071aec644f380396283cc2e6016a116"
     },
     {
       "path": "core.js",
@@ -5409,7 +5409,7 @@
     {
       "path": "package.json",
       "bytes": 12318,
-      "sha256": "40a47d3961a9680694fa7ee0c786a4632f95acefde0f63a73a284bfedb2c8869"
+      "sha256": "22fa376524cc7579259abd82cacfbd4a41be976eea1a6e3ff7b02dbfb66915db"
     },
     {
       "path": "pairing.js",
@@ -8148,8 +8148,8 @@
     },
     {
       "path": "release-record.js",
-      "bytes": 8921,
-      "sha256": "6e62fece6ef457155fa3ac421903e424ab0ad5c8724b7384771b49ca86357fde"
+      "bytes": 9270,
+      "sha256": "fa18ca9254cc09366ba23510adac12035ff3781a3f3bcf97716a5e5e5773d3f8"
     },
     {
       "path": "release-status.js",
@@ -8698,8 +8698,8 @@
     },
     {
       "path": "sw.js",
-      "bytes": 16970,
-      "sha256": "bec29842b2367175e2bb4cedfcca2093cfdb10aa8e9268f7f6bdcb0db2cfcd98"
+      "bytes": 16972,
+      "sha256": "6b2d5e67fcae141664cc3b13b2128b0e642c3b2a1b2ebcb3ffdab08cf2218487"
     },
     {
       "path": "sync-merge.js",

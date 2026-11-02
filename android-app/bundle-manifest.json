@@ -1,7 +1,7 @@
 {
   "source": "https://github.com/deathxcore11/Card-forger",
-  "commit": "4c0abd7c25f95cb8ccaebc7115d1b63bf61daf8f",
-  "sourceVersion": "4.3.72",
+  "commit": "605f6807b6ed0bb56d4beeac3cf53d9438960e87",
+  "sourceVersion": "4.3.73",
   "appId": "com.cardstashy.app",
   "releaseReady": false,
   "network": "enabled-exact-hosts",
@@ -1514,8 +1514,8 @@
     },
     {
       "path": "app-motion.js",
-      "bytes": 7040,
-      "sha256": "8614284f4f5ad1f2491bc8cff6fad7cc32486bddde642152f7a9878a005a0717"
+      "bytes": 7816,
+      "sha256": "daf5ee1a12342f264f33105c9519e921e40ee56f917238a701823e2ea796b075"
     },
     {
       "path": "app-update.js",
@@ -3279,8 +3279,8 @@
     },
     {
       "path": "brand-motion.css",
-      "bytes": 4523,
-      "sha256": "9a7587b599db66acc52256937c573a62ff20f2a5d5af373ffa10ebc9c603c1e4"
+      "bytes": 5971,
+      "sha256": "1451f9e1eba3fac98b7c9454aa0fcbbb0ec5c517ddac976c643b857ae7223093"
     },
     {
       "path": "brand.js",
@@ -3445,7 +3445,7 @@
     {
       "path": "config.js",
       "bytes": 629,
-      "sha256": "53545f879f71cfe944d6d5a28c6d6ebcc97b78b6b5831e3e4e7716b43a22674c"
+      "sha256": "3c614f5f3bbb90b411a77640a6173ded29322611b9d07f41f3bf0a5d36b5a643"
     },
     {
       "path": "core.js",
@@ -5234,8 +5234,8 @@
     },
     {
       "path": "native-gamepad.js",
-      "bytes": 30697,
-      "sha256": "f149ae856438cf6bdad16b6b919ea8b7904c31c289450a922f80ed9f3a258ede"
+      "bytes": 31771,
+      "sha256": "7d24246c876ccef87737a9870670063ffe8f230cf102ce47c08fc4b64b1b235e"
     },
     {
       "path": "native-integration.css",
@@ -7864,8 +7864,8 @@
     },
     {
       "path": "release-record.js",
-      "bytes": 8921,
-      "sha256": "6e62fece6ef457155fa3ac421903e424ab0ad5c8724b7384771b49ca86357fde"
+      "bytes": 9270,
+      "sha256": "fa18ca9254cc09366ba23510adac12035ff3781a3f3bcf97716a5e5e5773d3f8"
     },
     {
       "path": "release-status.js",
