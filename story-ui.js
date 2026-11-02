@@ -123,6 +123,26 @@ export const LESSONS = {
   'Punishing full hands': 'Black Vise deals 1 damage each turn for every card over four in your hand. Play cards fast, keep your hand small, and break the Vises.',
   'Playing under a lock': 'A lock stops cards from untapping or moving. Break it, or win with what\'s already in play.',
 };
+// Every Story deck says what it is (Randall, 2 Nov 2026): Historical Exact, Historical Tribute or
+// Experimental. A deck with a documented original lists every change from it, with the reason.
+export const DECK_LABELS = {exact: 'Historical Exact', tribute: 'Historical Tribute', experimental: 'Experimental'};
+const LABEL_LINE = {exact: 'The original list, card for card.', tribute: 'Built from this era\'s cards for the story.', experimental: 'A deck made for this fight.'};
+export function deckDossierMarkup(deck) {
+  if (!deck || !DECK_LABELS[deck.label]) return '';
+  const changes = deck.changes || [];
+  const line = deck.rules || deck.note || LABEL_LINE[deck.label];
+  return `<section class="st-dossier" aria-label="About this deck"><span class="st-dossier-label st-dossier-label--${esc(deck.label)}">${esc(DECK_LABELS[deck.label])}</span><p>${esc(line)}</p>
+    ${changes.length ? `<h3>Changed from the ${esc(deck.original?.source || 'original')}</h3><ul class="st-changes">${changes.map(c => `<li><span class="st-change-cards"><s>${esc(c.from)}</s><b>${esc(c.to)}</b></span><span class="st-change-why">${esc(c.why)}</span></li>`).join('')}</ul>` : ''}
+  </section>`;
+}
+// The archive record a secret boss opens with: what the deck was, why it won, how to beat it, what came after.
+export function archiveRecordMarkup(a) {
+  if (!a) return '';
+  const row = (k, v) => v ? `<div><dt>${esc(k)}</dt><dd>${esc(v)}</dd></div>` : '';
+  return `<aside class="st-learn st-archive" aria-label="Archive record"><span class="st-learn-tag">Archive record · ${esc(a.when)}</span>
+    <p class="st-archive-what">${esc(a.what)}</p>
+    <dl>${row('Format', a.format)}${row('Why it won', a.why)}${row('How to beat it', a.beat)}${row('What came next', a.after)}</dl></aside>`;
+}
 // What a battle pays, in words: era packs for your side, the villain's signature card for theirs.
 export const rewardText = (rw = {}, set = '') => rw.card ? `${esc(rw.card.name)}${rw.coins ? ` and ${rw.coins} coins` : ''}`
   : `${rw.packs || 1} ${esc(SET_NAMES[set] || set.toUpperCase())} ${(rw.packs || 1) > 1 ? 'packs' : 'pack'}${rw.coins ? ` and ${rw.coins} coins` : ''}`;
@@ -152,11 +172,14 @@ export function storyBattleMarkup({act, data, battle: b, progress, econ, ui = {}
   // Their list stays secret until you've beaten them; after that you can play their side too.
   const listSide = villainOpen && ui.listSide === 'theirs' ? 'theirs' : 'mine';
   const learn = (b.teaches || []).filter(t => LESSONS[t]);
+  // The deck whose list is open: theirs, the Story loaner on your side, or none for your own deck.
+  const listDeck = listSide === 'theirs' ? theirs.deck : (ui.deck || 'loaner') === 'loaner' ? mine.deck : null;
   return `<section class="play-menu st-screen st-duel" aria-labelledby="playTitle">${head(b.title, econ, `Act ${act} · ${b.slot === 8 ? 'Boss' : b.kind}`, 'storyOpenAct', 'Back to the act')}
     <div class="st-duel-stage" style="--st-bg:url(${esc(person('villain').portrait?.crop || '')})">
       <section class="pl-arena st-arena" aria-label="This battle">${sideCard(seat, true)}<span class="pl-vs" aria-hidden="true"><b><span>VS</span></b></span>${sideCard(seat === 'hero' ? 'villain' : 'hero', false)}</section>
       <p class="st-duel-blurb">${esc(b.blurb)}</p>
     </div>
+    ${archiveRecordMarkup(b.archive)}
     ${learn.length ? `<aside class="st-learn" aria-label="New in this battle"><span class="st-learn-tag">New in this battle</span>${learn.map(t => `<p><b>${esc(t)}</b> ${esc(LESSONS[t])}</p>`).join('')}</aside>` : ''}
     <div class="home-personal-grid st-deck-grid" role="group" aria-label="Your deck">${picks}</div>
     <div class="st-duel-bar">
@@ -168,6 +191,7 @@ export function storyBattleMarkup({act, data, battle: b, progress, econ, ui = {}
     ${listOpen ? `<section class="st-decks" id="stDeckList" aria-label="Decklist">
       <div class="st-lists">
         ${villainOpen ? `<div class="st-seg" role="group" aria-label="Decklist"><button data-act="storyListSide" data-story-list="mine" aria-pressed="${listSide === 'mine'}">Your deck</button><button data-act="storyListSide" data-story-list="theirs" aria-pressed="${listSide === 'theirs'}">Their deck</button></div>` : ''}
+        ${deckDossierMarkup(listDeck)}
         ${listHtml}
       </div>
     </section>` : ''}

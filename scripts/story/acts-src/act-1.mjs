@@ -3,13 +3,17 @@
 // Rule B3: Act 1 opponents stay at Easy and Normal; there is no Hard opponent before the Act 3 boss.
 const cue = (start, big, low, win, loss) => ({start, big, low, win, loss});
 export default {
+  // The era's own rules (Forge's archived "Constructed (ATQ)" list, 4 Mar 1994): the deck checker warns
+  // where a Story deck would have broken them. Story matches themselves run on Forge's Vintage rules.
+  era: '1994-03-04',
   intro: [{who: 'narrator', line: 'Dominaria, before the long winter. Two brothers are building a war.'}],
   finale: [
     {who: 'urza', line: 'The Sylex. It ends the war.'},
     {who: 'tawnos', line: 'Master, the whole continent...'},
     {who: 'urza', line: 'It ends the war.'},
     {who: 'stage', line: 'A white flash. Then snow.'},
-    {who: 'mishra', line: 'It was never just me, brother. Someone else was listening.', whisper: true}],
+    {who: 'mishra', line: 'It was never just me, brother. Someone else was listening.', whisper: true},
+    {who: 'narrator', line: 'Recorded: the war ends at Argoth. The blast begins an ice age. And on Phyrexia, someone has learned the name Dominaria.'}],
   cast: {
     you: {name: 'You', title: 'Planeswalker', card: 'Prodigal Sorcerer'},
     archers: {name: 'Elvish Archer', title: 'Llanowar', card: 'Elvish Archers', focus: '50% 25%'},
@@ -29,7 +33,7 @@ export default {
   battles: [
     {slot: 1, kind: 'Arrival', title: 'The First Summons', difficulty: 'Easy', rewardSet: 'lea', teaches: ['Land drops and mana', 'Casting creatures', 'Attacking and blocking'],
       blurb: 'You wake in a forest that has never seen a planeswalker. Its archers have their bows up already.',
-      hero: {who: 'you', deck: {name: 'Knights of the Dawn', colors: 'W', list: `
+      hero: {who: 'you', deck: {label: 'tribute', name: 'Knights of the Dawn', colors: 'W', list: `
 4 Savannah Lions
 4 Benalish Hero
 4 Pearled Unicorn
@@ -41,7 +45,7 @@ export default {
 3 Holy Strength
 3 Healing Salve
 24 Plains`}},
-      villain: {who: 'archers', deck: {name: 'Bows of Llanowar', colors: 'G', list: `
+      villain: {who: 'archers', deck: {label: 'tribute', name: 'Bows of Llanowar', colors: 'G', list: `
 4 Llanowar Elves
 4 Timber Wolves
 4 Grizzly Bears
@@ -58,7 +62,7 @@ export default {
       cues: {villain: cue('Bows up.', 'The forest answers us, not you.', 'Fall back to the trees!', 'Go back to wherever you fell from.', 'Fine. The forest will remember you.')}},
     {slot: 2, kind: 'Lesson', title: "The Goblin King's Toll", difficulty: 'Easy', rewardSet: 'lea', teaches: ['Flying'],
       blurb: 'A mountain pass with a toll and a king who collects it. His army is big, loud and stuck on the ground.',
-      hero: {who: 'you', deck: {name: 'Wings of the Dawn', colors: 'W', list: `
+      hero: {who: 'you', deck: {label: 'tribute', name: 'Wings of the Dawn', colors: 'W', list: `
 4 Mesa Pegasus
 4 Pearled Unicorn
 4 Serra Angel
@@ -70,7 +74,7 @@ export default {
 2 Healing Salve
 4 Moorish Cavalry
 24 Plains`}},
-      villain: {who: 'goblinKing', deck: {name: "The King's Rabble", colors: 'R', list: `
+      villain: {who: 'goblinKing', deck: {label: 'tribute', name: "The King's Rabble", colors: 'R', list: `
 4 Goblin King
 4 Mons's Goblin Raiders
 4 Goblin Balloon Brigade
@@ -86,7 +90,7 @@ export default {
       cues: {villain: cue('Charge! No, the OTHER way!', "Look at THAT one. That one's mine.", 'Who let the sky in?!', "Toll's paid! Hah!", 'Next time, nets. Lots of nets.')}},
     {slot: 3, kind: 'Lesson', title: 'Knights at the Ford', difficulty: 'Normal', rewardSet: 'lea', teaches: ['First strike', 'Protection from a colour'],
       blurb: 'Two knights have held the same river crossing for years. Today one of them finally wants it settled.',
-      hero: {who: 'whiteKnight', deck: {name: 'The Order of the Ford', colors: 'W', list: `
+      hero: {who: 'whiteKnight', deck: {label: 'tribute', name: 'The Order of the Ford', colors: 'W', list: `
 4 White Knight
 4 Savannah Lions
 4 Benalish Hero
@@ -98,14 +102,13 @@ export default {
 3 Blessing
 3 Holy Strength
 24 Plains`}},
-      villain: {who: 'blackKnight', deck: {name: 'The Dark Lance', colors: 'B', list: `
-2 Black Knight
+      villain: {who: 'blackKnight', deck: {label: 'tribute', name: 'The Dark Lance', colors: 'B', list: `
+4 Black Knight
 2 Raise Dead
 4 Erg Raiders
 2 Hasran Ogress
 4 Scathe Zombies
 2 Bog Wraith
-2 Deathgrip
 1 Sengir Vampire
 2 Frozen Shade
 2 Dark Ritual
@@ -121,7 +124,7 @@ export default {
         villain: cue('No mercy at the ford.', 'Feel that, paladin?', "The river's getting deeper...", 'At last!', 'Tomorrow, then.')}},
     {slot: 4, kind: 'Rival', title: 'The Djinn of the Bottle', difficulty: 'Normal', rewardSet: 'arn', teaches: ['Instants on the opponent\'s turn', 'Bounce'],
       blurb: 'A rift drops you into Rabiah, the world of the Thousand and One Nights, at the feet of a djinn who is bored of granting wishes.',
-      hero: {who: 'you', deck: {name: 'Rift-Walker\'s Court', colors: 'WU', list: `
+      hero: {who: 'you', deck: {label: 'tribute', name: 'Rift-Walker\'s Court', colors: 'WU', list: `
 4 Serendib Efreet
 4 Mesa Pegasus
 4 Moorish Cavalry
@@ -135,25 +138,24 @@ export default {
 12 Plains
 10 Island
 4 Flying Men`}},
-      villain: {who: 'erhnam', deck: {name: 'The Djinn\'s Menagerie', colors: 'G', list: `
+      villain: {who: 'erhnam', deck: {label: 'tribute', name: 'The Djinn\'s Menagerie', colors: 'G', list: `
 4 Erhnam Djinn
 4 Ghazbán Ogre
 4 Llanowar Elves
-4 Kird Ape
+4 Scryb Sprites
 4 Ifh-Bíff Efreet
 4 Giant Spider
 3 Craw Wurm
 4 Giant Growth
 3 Sandstorm
 2 Desert Twister
-20 Forest
-4 Taiga`}},
+24 Forest`}},
       scene: [{who: 'erhnam', line: "A new face! Do you know how long it's been since I had a new face?"}, {who: 'erhnam', line: 'Every visitor wishes. Gold, wives, kingdoms. Tiresome.'}, {who: 'erhnam', line: "You will not wish. You will duel. Win, and I'll show you the way home."}, {who: 'erhnam', line: 'Lose, and you stay. I collect people.'}],
       villainScene: [{who: 'erhnam', line: "A rift-walker. I've collected kings, but never one of those."}, {who: 'erhnam', line: "Make it a long duel. I want to savour this one."}],
       cues: {villain: cue('Entertain me.', 'Behold the gift of the djinn.', 'Ah. That stung. How novel.', 'Another for my collection.', 'Go, then! The rift is that way. Visit.')}},
     {slot: 5, kind: 'Lesson', title: 'Argoth Burns', difficulty: 'Normal', rewardSet: 'atq', teaches: ['Artifacts', 'Answering artifacts'],
       blurb: 'The rift spits you out on Argoth, a forest island. Two brothers are cutting it down to build their war.',
-      hero: {who: 'titania', deck: {name: 'The Argoth Grove', colors: 'G', list: `
+      hero: {who: 'titania', deck: {label: 'tribute', name: 'The Argoth Grove', colors: 'G', list: `
 2 Argothian Pixies
 2 Citanul Druid
 2 Ironroot Treefolk
@@ -168,7 +170,7 @@ export default {
 3 Giant Growth
 2 Wyluli Wolf
 24 Forest`}},
-      villain: {who: 'urza', deck: {name: 'The Mining Crews', colors: 'W', list: `
+      villain: {who: 'urza', deck: {label: 'tribute', name: 'The Mining Crews', colors: 'W', list: `
 4 Su-Chi
 4 Yotian Soldier
 4 Clay Statue
@@ -190,7 +192,7 @@ export default {
         villain: cue('Proceed.', 'Note the efficiency.', 'Recalculating.', 'Clear it.', 'A delay. Nothing more.')}},
     {slot: 6, kind: 'Meta', title: 'The Efreet of Serendib', difficulty: 'Normal', rewardSet: 'arn', teaches: ['Tempo', 'Counterspells'],
       blurb: 'The rift flickers back to Rabiah. Sindbad needs a crew, and the island of Serendib has its own guardian.',
-      hero: {who: 'sindbad', deck: {name: "Sindbad's Crew", colors: 'U', list: `
+      hero: {who: 'sindbad', deck: {label: 'tribute', name: "Sindbad's Crew", colors: 'U', list: `
 4 Sindbad
 4 Merfolk of the Pearl Trident
 4 Lord of Atlantis
@@ -202,7 +204,7 @@ export default {
 3 Counterspell
 2 Psionic Blast
 24 Island`}},
-      villain: {who: 'efreet', deck: {name: 'Fires of Serendib', colors: 'UR', archetype: 'Blue-red tempo', list: `
+      villain: {who: 'efreet', deck: {label: 'tribute', name: 'Fires of Serendib', colors: 'UR', archetype: 'Blue-red tempo', list: `
 4 Serendib Efreet
 4 Kird Ape
 4 Dragon Whelp
@@ -222,7 +224,7 @@ export default {
         villain: cue('Turn back.', 'Burn, little boats.', 'Even fire tires.', 'Serendib keeps its own.', 'Go. Take nothing.')}},
     {slot: 7, kind: 'Meta', title: 'Factories at Kroog', difficulty: 'Normal', rewardCard: "Ashnod's Altar", rewardSet: 'atq', teaches: ['Artifact creatures', 'Sacrifice'],
       blurb: "The war comes to Kroog, Urza's capital. His apprentice holds the walls against Mishra's cruellest engineer.",
-      hero: {who: 'tawnos', deck: {name: 'The Walls of Kroog', colors: 'W', list: `
+      hero: {who: 'tawnos', deck: {label: 'tribute', name: 'The Walls of Kroog', colors: 'W', list: `
 4 Yotian Soldier
 4 Su-Chi
 4 Juggernaut
@@ -235,7 +237,7 @@ export default {
 4 Savannah Lions
 20 Plains
 4 Mishra's Factory`}},
-      villain: {who: 'ashnod', deck: {name: "Ashnod's Engines", colors: 'B', list: `
+      villain: {who: 'ashnod', deck: {label: 'tribute', name: "Ashnod's Engines", colors: 'B', list: `
 4 Hasran Ogress
 4 Black Knight
 4 Su-Chi
@@ -255,29 +257,27 @@ export default {
         villain: cue("Let's see what's inside.", "Isn't she beautiful?", "That's... rude.", 'Mishra will be so pleased.', "Next time I'm bringing the big altar.")}},
     {slot: 8, kind: 'Boss', title: "Mishra's War Machine", difficulty: 'Normal', rewardSet: 'atq', teaches: ['Everything so far'],
       blurb: 'Thirty years of war, two halves of one stone, and two brothers meeting on the same battlefield at last.',
-      hero: {who: 'urza', deck: {name: "Urza's Engines", colors: 'W', list: `
-4 Urza's Mine
-4 Urza's Power Plant
-4 Urza's Tower
-12 Plains
+      hero: {who: 'urza', deck: {label: 'tribute', name: "Urza's Engines", colors: 'W', list: `
+4 Ornithopter
 4 Yotian Soldier
+4 Pearled Unicorn
+3 Benalish Hero
+3 Mesa Pegasus
+2 Wall of Swords
+2 Onulet
 2 Su-Chi
-1 Pearled Unicorn
-1 Benalish Hero
 1 Juggernaut
-2 Healing Salve
 2 Triskelion
 2 Colossus of Sardia
 2 Swords to Plowshares
 1 Disenchant
-2 Wall of Swords
-4 Ornithopter
-3 Pearled Unicorn
-3 Mesa Pegasus
-2 Onulet
 2 Holy Strength
-2 Benalish Hero`}},
-      villain: {who: 'mishra', deck: {name: "Mishra's Army", colors: 'R', archetype: 'Artifact aggression', list: `
+2 Healing Salve
+4 Urza's Mine
+4 Urza's Power Plant
+4 Urza's Tower
+12 Plains`}},
+      villain: {who: 'mishra', deck: {label: 'tribute', name: "Mishra's Army", colors: 'R', archetype: 'Artifact aggression', list: `
 4 Mishra's Factory
 18 Mountain
 4 Su-Chi
@@ -302,10 +302,18 @@ export default {
     // the Story decks. Forge runs Story on Vintage rules, which cap the Power at one copy each and four of
     // anything else, so this is the same machine at legal counts: four Vises, Howling Mines standing in for
     // the extra Wheels, Wheel and Timetwister, counters and Red Elemental Blasts, Winter Orb. Hard CPU, on the host.
+    // Archive challenge (Randall, 2 Nov 2026): the record you read before the duel, and the era it comes from
+    // (Forge's archived "Pre-format (ARN)", 17 Dec 1993: nothing restricted yet). Win it and the deck is yours to pilot.
     {slot: 9, kind: 'Secret Boss', secret: true, title: 'How Do You Stop This Deck?', difficulty: 'Hard', rewardSet: 'lea', rewardCard: 'Black Vise', mood: 'boss',
+      era: '1993-12-17',
       teaches: ['Punishing full hands'],
+      archive: {deck: 'The Usenet Deck', when: 'December 1993', format: 'No format yet. Any cards, any number of copies.',
+        what: 'A list posted to a Usenet newsgroup with one question: how do you stop this deck? Black Vises, a stack of Wheels of Fortune and Timetwisters, Ancestral Recalls and Moxen.',
+        why: 'Every Wheel and Twister refilled both hands to seven, and every Vise burned you for the cards you could not play. It won before most decks had cast a spell.',
+        beat: 'Keep your hand at four or fewer, break the Vises with Disenchant, and hit hard while it spends its turns drawing.',
+        after: 'In January 1994 the first restricted list arrived: one copy each of Ancestral Recall, Timetwister, Black Lotus, Sol Ring, Time Walk and every Mox. Black Vise and Wheel of Fortune stayed legal at four.'},
       blurb: 'Under the snow, a deck from before anything was forbidden. It draws you cards until they kill you.',
-      hero: {who: 'you', deck: {name: '1993 Power', colors: 'WR', archetype: 'Power and pressure', list: `
+      hero: {who: 'you', deck: {label: 'experimental', rules: 'Built for this fight: every Power card at one copy, as Vintage allows, behind a fast white-red army.', name: '1993 Power', colors: 'WR', archetype: 'Power and pressure', list: `
 1 Black Lotus
 1 Mox Pearl
 1 Mox Ruby
@@ -332,7 +340,19 @@ export default {
 2 Volcanic Island
 4 Plains
 2 Mountain`}},
-      villain: {who: 'usenet', deck: {name: 'The Usenet Deck', colors: 'UR', archetype: 'Black Vise draw-seven', list: `
+      villain: {who: 'usenet', deck: {label: 'tribute', name: 'The Usenet Deck', note: 'The same machine at the counts Story\'s Vintage rules allow.',
+        // Only the counts we can source are written here; the full post still needs transcribing.
+        original: {source: 'Usenet post, December 1993', partial: true, list: `
+5 Black Vise
+5 Wheel of Fortune
+4 Timetwister
+5 Ancestral Recall`},
+        changes: [
+          {from: '5 Black Vise', to: '4 Black Vise', why: 'Story decks play four copies of a card at most.'},
+          {from: '5 Wheel of Fortune', to: '1 Wheel of Fortune and 4 Howling Mine', why: 'Story matches run on Vintage rules, where Wheel is restricted. Howling Mine keeps both hands full the same way.'},
+          {from: '4 Timetwister', to: '1 Timetwister', why: 'Restricted in Vintage.'},
+          {from: '5 Ancestral Recall', to: '1 Ancestral Recall', why: 'Restricted in Vintage.'},
+          {from: 'Moxen in multiples', to: '1 Mox Sapphire, 1 Mox Ruby, 1 Mox Pearl', why: 'Restricted in Vintage.'}], colors: 'UR', archetype: 'Black Vise draw-seven', list: `
 4 Black Vise
 4 Howling Mine
 1 Wheel of Fortune
@@ -369,7 +389,7 @@ export default {
       after: [
         {who: 'stage', line: 'Re: How do you stop this deck?'},
         {who: 'you', line: 'Break the Vises. Keep your hand small. Hit hard.'},
-        {who: 'narrator', line: 'A week later, the first cards were restricted.', whisper: true}],
+        {who: 'narrator', line: 'In January 1994 came the first restricted list. Most of this deck was on it.', whisper: true}],
       cues: {hero: cue('Find the Vises. Break them.', 'Power answers power.', 'Too many cards. Too much pain.', 'Stopped.', 'Nobody stops this deck.'),
         villain: cue('Draw seven.', 'Wheel. Again.', "That wasn't in the thread.", "How do you stop this deck? You don't.", 'Posted. Answered.')}},
   ],
