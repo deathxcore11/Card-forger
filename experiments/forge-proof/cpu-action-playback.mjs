@@ -175,7 +175,8 @@ function podPaced(beats){
 // Randall's pacing rule (1 Nov): every CPU action stays on screen at least about 650 ms, however long the turn.
 // Hotfix (2 Nov): a spell, ability or attack is shown big with its glass panel long enough to read it
 // (SPOT, about 2.4 s; never under SPOT_MIN even in a long turn). A tap moves on to the next action.
-const MIN_BEAT=650,SPOT=2400,SPOT_MIN=1500;
+// Trimmed 2 Nov (Randall: the phone match felt much slower): 2.4 s per spell read as a stall; 1.7 s still reads it.
+const MIN_BEAT=650,SPOT=1700,SPOT_MIN=1100;
 const spotlit=x=>x.kind==='spell'||x.kind==='arrival'&&!!x.card||x.tone==='attack';
 function paced(beats,budget=16000,pace=1){
  const total=beats.reduce((t,x)=>t+x.duration*pace,0),scale=pace*(total>budget?budget/total:1);
@@ -284,7 +285,8 @@ export function answered(s){
  const surface=s.status.surface;if(s.native.inputType!=='InputConfirmMulligan'&&Number(surface.turn)>0)return s;
  return {...s,status:{...s.status,surface:{...surface,awaitingHuman:false}},native:{...s.native,prompt:null,inputType:null,selection:null,buttons:null}};
 }
-const KEEP_BEAT=1000;
+// After the keep, the hand lands and the table settles before the CPU's first turn starts (Randall, 2 Nov).
+const KEEP_BEAT=1600;
 export class CpuActionPlaybackQueue {
  constructor({present,beat=()=>{},clear=()=>{},preload=()=>{},reducedMotion=()=>false,speed=()=>1,schedule=(fn,ms)=>setTimeout(fn,ms),cancel=id=>clearTimeout(id)}={}){Object.assign(this,{present,beat,clear,preload,reducedMotion,speed,schedule,cancel});this.current=null;this.latest=null;this.pending=[];this.timer=null;this.running=false;this.overlay=false;this.closed=false;this.recent=[];this.seenSeq=-1;this.loggedSeq=-1;this.target=null;}
  // Overlay playback runs over a board that already asks the player something; it never blocks.
@@ -303,8 +305,10 @@ export class CpuActionPlaybackQueue {
   // Nothing from turn one shows until the keep is confirmed, and then only after a short beat (Randall, 1 Nov):
   // the opening hand settles first, then the game starts. Boards that arrive meanwhile wait for it.
   if(this.gate){this.gate=snapshot;return;}
-  if(this.current.native?.inputType==='InputConfirmMulligan'&&Number(snapshot.status.surface?.turn)>0&&snapshot.native?.inputType!=='InputConfirmMulligan'){
-   this.keptAt=Date.now();try{console.info('[pace] keep confirmed',this.keptAt);}catch{}
+  // Any opening decision counts (keep or mulligan, or putting cards on the bottom after one): the gate is the step
+  // from the pregame (turn 0) to turn one, so a CPU that goes first never plays behind the mulligan screen.
+  if(!this.opened&&(this.current.native?.inputType==='InputConfirmMulligan'||Number(this.current.status?.surface?.turn)===0)&&Number(snapshot.status.surface?.turn)>0&&snapshot.native?.inputType!=='InputConfirmMulligan'){
+   this.opened=true;this.keptAt=Date.now();try{console.info('[pace] keep confirmed',this.keptAt);}catch{}
    this.current=answered(this.current);this.present(this.current,true);
    if(!this.reducedMotion()){this.gate=snapshot;this.timer=this.schedule(()=>{const next=this.gate;this.gate=null;this.timer=null;if(next&&!this.closed)this.push(next);},KEEP_BEAT);return;}
   }
