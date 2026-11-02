@@ -1,9 +1,9 @@
 {
   ".dockerignore": "22050b43f43a2d9f93d5b863f49b10b3e45c70dfce806512a9a3a9aca1246cd9",
-  "Dockerfile": "bbb6e5bfe6cf312e7a4f7372ad9066688fdf7d857f168f2c580fece731ac8254",
+  "Dockerfile": "440ce7285405dae474499b156a7fdaf7255f06dcee0a2f1b35bf6a7adadd3bfb",
   "hosting/assemble.sh": "4a631468cef0b41772b24ee82b9a34d0b05601de0faa0103608bc69936243d43",
   "hosting/bootstrap.py": "f527cdd5ba61faab856690aa72fd01a0535be9ff904efdb435eced4258d9859d",
-  "hosting/checkpoint-files.json": "77735f5bf02c8d9497247fb9386b46a31abbf286bec81481bab5dcce838fc0a5",
+  "hosting/checkpoint-files.json": "f73261515cb84aaa8e8ca1b19b81b91c1b5264b9c49de3e24770ef5a5e1c9b51",
   "hosting/gateway.py": "e796deec7aaf397fac3b118530baa8af06671c4f279aa2e4b450fa6edf69135e",
   "native/BASE-CANDIDATE.json": "8efcc09d4f3260904034aa1f2e1e9f9b8d66f1ad8aa3668c404a020b55d0dbbf",
   "native/CONTRACT.md": "3206da2ab12c8a826ff3ca7ce7852a32e82a90cfee232c7e1fe0d21c2e964462",
@@ -51,6 +51,6 @@
   "native/human/src/forge/ai/HumanActionAffordability.java": "b851c3e64696289079c51109f51c925ce141c53ddab651fcdfb9050d695373ac",
   "native/human/src/forge/gamemodes/match/input/InputPayMana.java": "b780a4f005b28099aace1ff9c8f811c0ddea464cc0cdec27ce7991c1f5be3365",
   "native/rules-data/current/cards.json": "4b3baeb06d878590ae256751fbafe96ea48f238b8d8f54a5acd31a24e4ed1caf",
-  "native/rules-data/current/manifest.json": "552a8898cd563f7478b572283e006fda1d44a5da6bc0fb53fc78ffb53b1f01dd",
-  "native/rules-data/current/official-format-facts.json": "f50602ff44f6cf037af8576cfdcd5379e58b811376435b518f129c57bbf27df1"
+  "native/rules-data/current/manifest.json": "439a491106727033ad39b069d165e93dfcdb2e2c5551b18cd3fde115afc9e6f7",
+  "native/rules-data/current/official-format-facts.json": "66c6e847f6806626fffc2c00c94815317aa3dd1444b216bb9dad4a0e540373e7"
 }

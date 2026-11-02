@@ -1,7 +1,7 @@
 {
-  "checkpoint": "native-starting-player-manifest:62639e632e51c1d6cb272823f78daa594d3434140c6ce9ef34a6997eb68492f6",
+  "checkpoint": "native-starting-player-manifest:1100551eb011aa7af38237fb7adf963dce5deaa6dc28f0b973eb34b4a483d2aa",
   "forgeRevision": "e5a0f8156da70ffc7866f923bed371c0111707cd",
-  "nativeManifestSha256": "62639e632e51c1d6cb272823f78daa594d3434140c6ce9ef34a6997eb68492f6",
+  "nativeManifestSha256": "1100551eb011aa7af38237fb7adf963dce5deaa6dc28f0b973eb34b4a483d2aa",
   "adapterCapabilities": [
     "cardstashy.match-input.v1",
     "cardstashy.formats-three.v1",
@@ -58,8 +58,8 @@
     "experiments/forge-proof/native/human/src/forge/ai/HumanActionAffordability.java": "b851c3e64696289079c51109f51c925ce141c53ddab651fcdfb9050d695373ac",
     "experiments/forge-proof/native/human/src/forge/gamemodes/match/input/InputPayMana.java": "b780a4f005b28099aace1ff9c8f811c0ddea464cc0cdec27ce7991c1f5be3365",
     "experiments/forge-proof/native/rules-data/current/cards.json": "4b3baeb06d878590ae256751fbafe96ea48f238b8d8f54a5acd31a24e4ed1caf",
-    "experiments/forge-proof/native/rules-data/current/manifest.json": "552a8898cd563f7478b572283e006fda1d44a5da6bc0fb53fc78ffb53b1f01dd",
-    "experiments/forge-proof/native/rules-data/current/official-format-facts.json": "f50602ff44f6cf037af8576cfdcd5379e58b811376435b518f129c57bbf27df1"
+    "experiments/forge-proof/native/rules-data/current/manifest.json": "439a491106727033ad39b069d165e93dfcdb2e2c5551b18cd3fde115afc9e6f7",
+    "experiments/forge-proof/native/rules-data/current/official-format-facts.json": "66c6e847f6806626fffc2c00c94815317aa3dd1444b216bb9dad4a0e540373e7"
   },
   "gatewaySha256": "e796deec7aaf397fac3b118530baa8af06671c4f279aa2e4b450fa6edf69135e",
   "bootstrapSha256": "f527cdd5ba61faab856690aa72fd01a0535be9ff904efdb435eced4258d9859d",

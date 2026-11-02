@@ -2,7 +2,7 @@
 import assert from 'node:assert/strict';import {lstat,readFile} from 'node:fs/promises';import path from 'node:path';import {pathToFileURL} from 'node:url';
 import {command} from './image-stages/command.mjs';
 import {readImageOwnershipLedger,assertImageOwnership} from './image-stages/image-ownership.mjs';
-const SOURCE='e83fa32c5695bdcce3367fc531346daecedcb796f3bc33ef58837d797490a0cb',MANIFEST='62639e632e51c1d6cb272823f78daa594d3434140c6ce9ef34a6997eb68492f6';
+const SOURCE='e83fa32c5695bdcce3367fc531346daecedcb796f3bc33ef58837d797490a0cb',MANIFEST='1100551eb011aa7af38237fb7adf963dce5deaa6dc28f0b973eb34b4a483d2aa';
 export async function cleanupImage(root,{run=command}={}){
  const deadline=Date.now()+12000,signal=AbortSignal.timeout(12000);
  const boundedRun=(args,maxOutputBytes)=>{const left=deadline-Date.now();assert(left>0,'Image cleanup deadline');return run('docker',args,{timeoutMs:Math.min(3500,left),signal,maxOutputBytes});};
