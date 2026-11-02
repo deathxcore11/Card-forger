@@ -1,8 +1,8 @@
 {
   "schema": 1,
-  "version": "4.3.67",
-  "commit": "a93220004bb872d3bf6b13020d257be0f289ee00",
-  "tree": "97f084446a60116ac5698b68614b983739065330",
+  "version": "4.3.68",
+  "commit": "9dce4ef5211269c3a9eceab782c3922908c42f38",
+  "tree": "97f2c6cc6b7743edd228d506e401da16febd0829",
   "repository": "https://github.com/deathxcore11/Card-forger",
   "scope": "Explicit frontend build dependencies plus optional artwork input files. Not full backend repository.",
   "files": [
@@ -132,9 +132,14 @@
       "sha256": "8614284f4f5ad1f2491bc8cff6fad7cc32486bddde642152f7a9878a005a0717"
     },
     {
+      "path": "app-update.js",
+      "bytes": 9317,
+      "sha256": "1d67db7f07d610211992936860c283b56d63cccaf534fc00821dcf3eb2835915"
+    },
+    {
       "path": "app.js",
-      "bytes": 540527,
-      "sha256": "d20e89dc0b5251503d937990339120147a16d0fd5bcdda0fa557efe80b3ec051"
+      "bytes": 542801,
+      "sha256": "09c12d10a9111704d5a368fc3f9aa67249e6f1adf5aa493c498bb3ef936045a0"
     },
     {
       "path": "artwork.js",
@@ -3554,7 +3559,7 @@
     {
       "path": "config.js",
       "bytes": 601,
-      "sha256": "89ce97fda74d2f0469c373c14b92ff7198f0fc5f6350f798591270afa2285e56"
+      "sha256": "e77363ae50193037400c6266155eb172943b71b17c6a7a06013d36d4c2900c81"
     },
     {
       "path": "core.js",
@@ -4698,8 +4703,8 @@
     },
     {
       "path": "experiments/forge-proof/forge-table.mjs",
-      "bytes": 223208,
-      "sha256": "4baf4d7edf3b2e132bf009dd58614316158009a3595b81f76a133b1e6b65f106"
+      "bytes": 223646,
+      "sha256": "95275936834ee4fa277dd3102259eb94667aca3dedc24982257bf086bf6d8338"
     },
     {
       "path": "experiments/forge-proof/motion-kit.mjs",
@@ -5188,8 +5193,8 @@
     },
     {
       "path": "index.html",
-      "bytes": 21914,
-      "sha256": "581e49fb13067e78ba2fbf4b558681d27a2706073c245f198a8b48acf594344a"
+      "bytes": 21962,
+      "sha256": "83cc21b1d56194ae531a160f523ca25940d9df27ccd90d767483787d4d560dcd"
     },
     {
       "path": "insights.js",
@@ -5198,8 +5203,8 @@
     },
     {
       "path": "install.js",
-      "bytes": 7856,
-      "sha256": "1eeec9eeb93832db62bbadb3c137a1e3a2308437ce573a0ea889815d1b442e46"
+      "bytes": 8045,
+      "sha256": "c4a9f3b40e841dc4277435ed604b82daa157643e1b05e3f2806409c00b799f3d"
     },
     {
       "path": "magic-card-color.js",
@@ -5398,13 +5403,13 @@
     },
     {
       "path": "pack-preview.js",
-      "bytes": 62654,
-      "sha256": "fe4bdebff6f49e8c9796a408febafd6af7b33c1d1d8457f47b50505b8552ff23"
+      "bytes": 61989,
+      "sha256": "ce6892de48a78645503e5fc15b01124b226c6c4be889551eff4f1652179e9d5f"
     },
     {
       "path": "package.json",
       "bytes": 12318,
-      "sha256": "4feda0ae25434ee33937ed00e04cd917308ef144fb4afdbf4ee224e6ac2aae34"
+      "sha256": "22c4707a4dfb023597e2038a63137c626d775bf710aee8a018f7675c40940fa5"
     },
     {
       "path": "pairing.js",
@@ -8143,13 +8148,13 @@
     },
     {
       "path": "release-record.js",
-      "bytes": 7442,
-      "sha256": "05ce5c41564263613111ac3c2a37dd798f564c9fdd49e08ec7d28457c2fcd352"
+      "bytes": 8171,
+      "sha256": "1d01f4efbc950f56820343c471efbd57d66930343e7b2dd6e28fff6c52731056"
     },
     {
       "path": "release-status.js",
-      "bytes": 4034,
-      "sha256": "11f99960f1aa37c4d6eccb7e1df57220fcc01aec694771d2a54c65cf19fc878b"
+      "bytes": 4405,
+      "sha256": "c78345a7e6c2fc96fd66415f8b30b021e5f38c0b4d39a078e2bc792f90dd92de"
     },
     {
       "path": "reward-flight.js",
@@ -8362,6 +8367,21 @@
       "sha256": "51d95c80bd65fa3cb8ddc8df812cb098a1a4e1e9edeb912d045a5fb31e8c6aa1"
     },
     {
+      "path": "scripts/android-native/bundle.mjs",
+      "bytes": 3609,
+      "sha256": "542a77e20a4704e7d805150a4f2adff07ae5f7eb05fe6d0eb470e7fbfb622527"
+    },
+    {
+      "path": "scripts/android-native/transform-native-compat-css.mjs",
+      "bytes": 6816,
+      "sha256": "d94f5c5655fdf326cba1ae513d540a0c27019b08972d387771c3bac9907727ec"
+    },
+    {
+      "path": "scripts/android-native/transform-native-planeswalk.mjs",
+      "bytes": 886,
+      "sha256": "fcf3d821c69d2828ce8398411de2976d936b799863c61476cba17ab458021b04"
+    },
+    {
       "path": "scripts/music/bosses.py",
       "bytes": 12487,
       "sha256": "202edb877eb4f0c17af6c973cf3b8720e5fad87a63f352b0f28fbb29bed866ad"
@@ -8543,8 +8563,8 @@
     },
     {
       "path": "sets-ui.css",
-      "bytes": 39990,
-      "sha256": "245a81430cf82eb04277639ac5c65470b7f8999b35b60410e28a1ba6dd663628"
+      "bytes": 41819,
+      "sha256": "e5bbd044c9567bd35f1409e5080628d7d642bd49e4974cfb1ac5972cdc506769"
     },
     {
       "path": "settings-dialog.js",
@@ -8638,8 +8658,8 @@
     },
     {
       "path": "style.css",
-      "bytes": 579600,
-      "sha256": "6bd2a64545ee7199b0cce5ff69f6488f6ad427a970d44628feb08fc122fd8f38"
+      "bytes": 581536,
+      "sha256": "a0f27ebeb3ac854343dc49be6a9a172d939b7beb2f8f2783ffaff8ce27a2c10a"
     },
     {
       "path": "suggest.js",
@@ -8678,8 +8698,8 @@
     },
     {
       "path": "sw.js",
-      "bytes": 16302,
-      "sha256": "80e32c8f8fec4735f61d9a44444737ec6ae83a58e49d178d93f6100f8133c982"
+      "bytes": 16973,
+      "sha256": "591013b1ff036367243f2ee12b3ff5e0cde3796352d59f96bc5150903ec19beb"
     },
     {
       "path": "sync-merge.js",
@@ -10470,6 +10490,11 @@
       "path": "tests/pricing-browser.mjs",
       "bytes": 7932,
       "sha256": "7540b80bf2b1f796ed0818b0f23a55caae6e2fc89c0b21d23ed90ca4c00d1c38"
+    },
+    {
+      "path": "tests/set-experience-browser.mjs",
+      "bytes": 8242,
+      "sha256": "401ea3362e41e8ae4588252c5e79f167bb77106fe2c4d51f87d916a605c87162"
     },
     {
       "path": "theme-init.js",

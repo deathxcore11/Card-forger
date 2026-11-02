@@ -1,7 +1,7 @@
 {
   "source": "https://github.com/deathxcore11/Card-forger",
-  "commit": "a93220004bb872d3bf6b13020d257be0f289ee00",
-  "sourceVersion": "4.3.67",
+  "commit": "9dce4ef5211269c3a9eceab782c3922908c42f38",
+  "sourceVersion": "4.3.68",
   "appId": "com.cardstashy.app",
   "releaseReady": false,
   "network": "enabled-exact-hosts",
@@ -33,6 +33,7 @@
     "app-errors.js",
     "app-info.js",
     "app-motion.js",
+    "app-update.js",
     "app.js",
     "artwork.js",
     "ask-navigation.js",
@@ -1517,9 +1518,14 @@
       "sha256": "8614284f4f5ad1f2491bc8cff6fad7cc32486bddde642152f7a9878a005a0717"
     },
     {
+      "path": "app-update.js",
+      "bytes": 9317,
+      "sha256": "1d67db7f07d610211992936860c283b56d63cccaf534fc00821dcf3eb2835915"
+    },
+    {
       "path": "app.js",
-      "bytes": 546155,
-      "sha256": "bb8b71d530487c1375738834a32fc55a7dea48df7425587395693bd34d5531ac"
+      "bytes": 548429,
+      "sha256": "d226f4449fdcf0968203fce3378673282dad24d86b8bd34a4941dfa128623fe8"
     },
     {
       "path": "artwork.js",
@@ -3338,8 +3344,8 @@
     },
     {
       "path": "collection-display.css",
-      "bytes": 6601,
-      "sha256": "000552528d864ef9f99dee5718724a76302dafd9bb5191a1d537c76c818b356e"
+      "bytes": 6729,
+      "sha256": "aa651738d986aef2cfe2389d8f7d7cb58aec22ca0f7ab1d092691daff9a69682"
     },
     {
       "path": "collection-locations.js",
@@ -3439,7 +3445,7 @@
     {
       "path": "config.js",
       "bytes": 629,
-      "sha256": "69ab85bd02e6aa4c36b7a85a2f25ddf51e8f3ba765c95a715365fd8945a32efd"
+      "sha256": "18656b20b18648dc50e81b05ac282d20ab5a8cc96235fdaf59eac66088250528"
     },
     {
       "path": "core.js",
@@ -4498,8 +4504,8 @@
     },
     {
       "path": "deck-viewer.css",
-      "bytes": 30400,
-      "sha256": "79b8eaf8b204963289cc5f4b51de2fb54a118e16dead20e9674cd231c37306e8"
+      "bytes": 31590,
+      "sha256": "df8c9943ce17ee69e6703eabc4c47f4fc474c0ca796bf985216d7c44f32b079d"
     },
     {
       "path": "deck-viewer.js",
@@ -4548,8 +4554,8 @@
     },
     {
       "path": "experiments/forge-proof/forge-table.mjs",
-      "bytes": 223208,
-      "sha256": "4baf4d7edf3b2e132bf009dd58614316158009a3595b81f76a133b1e6b65f106"
+      "bytes": 223646,
+      "sha256": "95275936834ee4fa277dd3102259eb94667aca3dedc24982257bf086bf6d8338"
     },
     {
       "path": "experiments/forge-proof/motion-kit.mjs",
@@ -4678,8 +4684,8 @@
     },
     {
       "path": "experiments/phase-engine/match-table.css",
-      "bytes": 42834,
-      "sha256": "2d4552b3db2b89e0ce02ee35ae229352dba8b4425619577eff36a8f58f793473"
+      "bytes": 43128,
+      "sha256": "9ee1966639c50366c6868a2db98970cd1701ab0cfe22fc5a08b8c765f2cf319d"
     },
     {
       "path": "experiments/phase-engine/match-table.mjs",
@@ -4813,8 +4819,8 @@
     },
     {
       "path": "finish-effects.css",
-      "bytes": 20468,
-      "sha256": "ff2f0f4b01674d5156560add265c84abddb161e317329c6d8abce3b12fe6b400"
+      "bytes": 22265,
+      "sha256": "d310da38e3b2a08aba86580e1d2dc27626712263351e68bda4b27934cdb53785"
     },
     {
       "path": "finish-effects.js",
@@ -4833,8 +4839,8 @@
     },
     {
       "path": "foil-fx.css",
-      "bytes": 12922,
-      "sha256": "9e2fe20099682a54300709d216f60c845a993f593688083c53122f3e0e2c7b85"
+      "bytes": 13643,
+      "sha256": "def42fd55ce212b888d5eb9402ffa22f42b21f1494836f83a64d6432321d8eef"
     },
     {
       "path": "foil-fx.js",
@@ -4943,8 +4949,8 @@
     },
     {
       "path": "home-overview.css",
-      "bytes": 14183,
-      "sha256": "61fe6f0f970d550f187576de0f037c99a31f6aaf7a677c1610492d15d309acf4"
+      "bytes": 14591,
+      "sha256": "85245df5aa058812bd867f6f2c0cef9f86911e22b3b93334695489b3c077e250"
     },
     {
       "path": "home-search.js",
@@ -5013,8 +5019,8 @@
     },
     {
       "path": "index.html",
-      "bytes": 21806,
-      "sha256": "b168eb12ca4a11f05a873af2eba725f8969b8ec3332938c5f1211616646d06a7"
+      "bytes": 21854,
+      "sha256": "d59f0c0b6c5edfc15662b3f76879bb4e5340d56abf07fefb3d884c7cd7ec7e21"
     },
     {
       "path": "insights.js",
@@ -5023,8 +5029,8 @@
     },
     {
       "path": "install.js",
-      "bytes": 7856,
-      "sha256": "1eeec9eeb93832db62bbadb3c137a1e3a2308437ce573a0ea889815d1b442e46"
+      "bytes": 8045,
+      "sha256": "c4a9f3b40e841dc4277435ed604b82daa157643e1b05e3f2806409c00b799f3d"
     },
     {
       "path": "magic-card-color.js",
@@ -5213,8 +5219,8 @@
     },
     {
       "path": "native-display.js",
-      "bytes": 960,
-      "sha256": "896fedca11cd19feb6baa956d80203aa93157cea85bd265006bf982bdeab9d18"
+      "bytes": 1313,
+      "sha256": "cd7804e8898cf1de06e1370b76fa48f328b5f5e54b3e234477d29e332c1dc21e"
     },
     {
       "path": "native-documents.js",
@@ -5223,18 +5229,33 @@
     },
     {
       "path": "native-entry.js",
-      "bytes": 5446,
-      "sha256": "26ece5519f50da983bb4a5895b850fa5ad98aa9f4f67adb01f31cbfba8b69c20"
+      "bytes": 6572,
+      "sha256": "f04aa543c671cebd29acc2c68c73559bf28de3518b4679b10cf16fb8fd8c5c09"
+    },
+    {
+      "path": "native-fold-prompt.js",
+      "bytes": 3379,
+      "sha256": "bc2b9599086fe1594f5b763d3a8b97407b1f0b9ccdbd35f496a97a15c88ff656"
+    },
+    {
+      "path": "native-gamepad.js",
+      "bytes": 30697,
+      "sha256": "f149ae856438cf6bdad16b6b919ea8b7904c31c289450a922f80ed9f3a258ede"
     },
     {
       "path": "native-integration.css",
-      "bytes": 3010,
-      "sha256": "865a2acf3f7ad99b0ee1b449889016014b02b3f9382611db8bdf3e533556fb32"
+      "bytes": 3664,
+      "sha256": "43de74f182eb752e517f055334d54c730f4a35b469e6aaf90a59ddd2b394fa51"
+    },
+    {
+      "path": "native-planeswalk-compat.css",
+      "bytes": 892,
+      "sha256": "cad61d1e3d46cba282adade57ec8cc013e860a8b00fba93a061e1df6662138b8"
     },
     {
       "path": "native-planeswalk.js",
-      "bytes": 2079,
-      "sha256": "6ce0e9bc8082e27522dba471eb88b9e3d296369dd3fbb08f28aa5645e9d884df"
+      "bytes": 2541,
+      "sha256": "5784d69f56cd5411bfe0d29b8cce7809aabbc7e89f886a40b3137266a1a0710f"
     },
     {
       "path": "native-service-policy.js",
@@ -5258,8 +5279,8 @@
     },
     {
       "path": "pack-preview.js",
-      "bytes": 62654,
-      "sha256": "fe4bdebff6f49e8c9796a408febafd6af7b33c1d1d8457f47b50505b8552ff23"
+      "bytes": 61989,
+      "sha256": "ce6892de48a78645503e5fc15b01124b226c6c4be889551eff4f1652179e9d5f"
     },
     {
       "path": "pairing.js",
@@ -7448,8 +7469,8 @@
     },
     {
       "path": "planeswalk.html",
-      "bytes": 6955291,
-      "sha256": "0b535805ecf79a66d88feb2e79df0ba518235360414b347f768c3d423e5aad66"
+      "bytes": 6958490,
+      "sha256": "9c8bc8b8ee8c69172f01688e815cc063ab837853cd4104209be8d8efa6f57155"
     },
     {
       "path": "planner.js",
@@ -7598,8 +7619,8 @@
     },
     {
       "path": "play-forge-table.css",
-      "bytes": 428346,
-      "sha256": "aac0df2784478d5a4d67a91c80cb379d450d8fd22a5524641fb0eef07f7a2d91"
+      "bytes": 430791,
+      "sha256": "7328d29162fc66338a48af6c32cf998e4d14c87ffc7d967d61d77fc7a39efe86"
     },
     {
       "path": "play-home.js",
@@ -7613,8 +7634,8 @@
     },
     {
       "path": "play-menu.css",
-      "bytes": 152171,
-      "sha256": "577f41b2e849a2fa10dcd40249ff50ef9fcb0d630dc22ee11aff03c138cea283"
+      "bytes": 158368,
+      "sha256": "9640648a710f6d1df86c6b652d1d2fbf09e6fd6391571b1dc780f90e501861cd"
     },
     {
       "path": "play-menu.js",
@@ -7753,8 +7774,8 @@
     },
     {
       "path": "polish.css",
-      "bytes": 69135,
-      "sha256": "4da929d6bd80d95195671e8a9d3f250dc437440c98bbb29da3cb2c2ad3c366dd"
+      "bytes": 74253,
+      "sha256": "e755130211194514ac34f8d429c63aeb5305bd15f11b7effa1d77f37b569b2ec"
     },
     {
       "path": "power.js",
@@ -7848,13 +7869,13 @@
     },
     {
       "path": "release-record.js",
-      "bytes": 7442,
-      "sha256": "05ce5c41564263613111ac3c2a37dd798f564c9fdd49e08ec7d28457c2fcd352"
+      "bytes": 8171,
+      "sha256": "1d01f4efbc950f56820343c471efbd57d66930343e7b2dd6e28fff6c52731056"
     },
     {
       "path": "release-status.js",
-      "bytes": 4034,
-      "sha256": "11f99960f1aa37c4d6eccb7e1df57220fcc01aec694771d2a54c65cf19fc878b"
+      "bytes": 4405,
+      "sha256": "c78345a7e6c2fc96fd66415f8b30b021e5f38c0b4d39a078e2bc792f90dd92de"
     },
     {
       "path": "reward-flight.js",
@@ -8098,8 +8119,8 @@
     },
     {
       "path": "sets-ui.css",
-      "bytes": 39990,
-      "sha256": "245a81430cf82eb04277639ac5c65470b7f8999b35b60410e28a1ba6dd663628"
+      "bytes": 44092,
+      "sha256": "3e3e7244ac3fb95c83eda42d341e19d86887f13cbac82bc58c2d7685c8d51999"
     },
     {
       "path": "settings-dialog.js",
@@ -8113,8 +8134,8 @@
     },
     {
       "path": "settings-theme.css",
-      "bytes": 29856,
-      "sha256": "4cc9b66185a81eb9f622dad73aa245b43af0b9cbd14a0fb608a7eb9d537a03e6"
+      "bytes": 31976,
+      "sha256": "466cf5f8598e522204de385bc451b46fff48743994383b84c329e188892c49f9"
     },
     {
       "path": "settings-theme.js",
@@ -8173,8 +8194,8 @@
     },
     {
       "path": "story-mode.css",
-      "bytes": 18628,
-      "sha256": "8e91283141a0ff94be6aa9c0ea3535be8c3c0fdd8946e3d7bf9cde6549d16142"
+      "bytes": 19494,
+      "sha256": "3e7481f32eb2845ec83fe2040344518f6c0826266fc2b5bdc81da98a6a15f84d"
     },
     {
       "path": "story-ui.js",
@@ -8193,8 +8214,8 @@
     },
     {
       "path": "style.css",
-      "bytes": 582089,
-      "sha256": "a518df4e554b526d2f634b5055a4ee4ab30f758994779d6286ba12222591d326"
+      "bytes": 613547,
+      "sha256": "fb597131bc78895541faf0ef555f198163f5c422fb1af2f3d767229b0bbfb06a"
     },
     {
       "path": "suggest.js",
