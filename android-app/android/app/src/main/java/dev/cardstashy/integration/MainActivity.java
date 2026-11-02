@@ -2,6 +2,8 @@ package dev.cardstashy.integration;
 
 import android.os.Bundle;
 import android.os.SystemClock;
+import android.view.KeyEvent;
+import android.view.MotionEvent;
 import android.webkit.WebView;
 import androidx.activity.OnBackPressedCallback;
 import androidx.core.splashscreen.SplashScreen;
@@ -22,6 +24,7 @@ public class MainActivity extends BridgeActivity {
         registerPlugin(CardStashyAuth.class);
         registerPlugin(CardStashyHaptics.class);
         registerPlugin(CardStashyDisplay.class);
+        registerPlugin(CardStashyGamepad.class);
         // Builds that include the Forge engine (forge-engine/build-engine.sh) play CPU matches on the phone.
         try { registerPlugin(Class.forName("dev.cardstashy.integration.CardStashyForge").asSubclass(com.getcapacitor.Plugin.class)); }
         catch (ClassNotFoundException regularBuild) { /* matches run on the Forge server */ }
@@ -42,6 +45,16 @@ public class MainActivity extends BridgeActivity {
                 });
             }
         });
+    }
+
+    // Controller buttons and sticks go to the page's controller layer while it listens (CardStashyGamepad);
+    // touch, the system Back gesture and every other key take their usual path.
+    @Override public boolean dispatchKeyEvent(KeyEvent event) {
+        return CardStashyGamepad.key(event) || super.dispatchKeyEvent(event);
+    }
+
+    @Override public boolean dispatchGenericMotionEvent(MotionEvent event) {
+        return CardStashyGamepad.motion(event) || super.dispatchGenericMotionEvent(event);
     }
 
     private void systemBack(OnBackPressedCallback callback) {
