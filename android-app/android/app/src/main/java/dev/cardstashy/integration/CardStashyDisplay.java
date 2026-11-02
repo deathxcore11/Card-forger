@@ -85,7 +85,9 @@ public class CardStashyDisplay extends Plugin {
             bars.hide(WindowInsetsCompat.Type.systemBars());
         } else bars.show(WindowInsetsCompat.Type.systemBars());
         WindowManager.LayoutParams lp = window.getAttributes();
-        int modeId = play ? fastestMode(activity) : 0;
+        // The whole app asks for the screen's fastest refresh rate (120 Hz on the Fold), not only matches,
+        // so scrolling the collection feels as smooth as the table (Randall, 2 Nov).
+        int modeId = fastestMode(activity);
         if (lp.preferredDisplayModeId != modeId) { lp.preferredDisplayModeId = modeId; window.setAttributes(lp); }
     }
 
