@@ -71,7 +71,10 @@ public class CardStashyDisplay extends Plugin {
         Activity activity = getActivity();
         if (activity == null) return;
         boolean play = "play".equals(mode);
-        int requested = "landscape".equals(orientation) || wideScreen(activity) ? ActivityInfo.SCREEN_ORIENTATION_SENSOR_LANDSCAPE : ActivityInfo.SCREEN_ORIENTATION_SENSOR_PORTRAIT;
+        // A foldable is never forced either way, folded or open, in the app or in a game (Randall, 2 Nov):
+        // it turns with the device (respecting the system's rotation lock) and the layout adapts.
+        int requested = foldable(activity) ? ActivityInfo.SCREEN_ORIENTATION_FULL_USER
+            : "landscape".equals(orientation) || wideScreen(activity) ? ActivityInfo.SCREEN_ORIENTATION_SENSOR_LANDSCAPE : ActivityInfo.SCREEN_ORIENTATION_SENSOR_PORTRAIT;
         if (activity.getRequestedOrientation() != requested) activity.setRequestedOrientation(requested);
         Window window = activity.getWindow();
         if (play) window.addFlags(WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON);

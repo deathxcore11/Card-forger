@@ -5,8 +5,11 @@
 // asks for full screen first; where that is refused, the table shows its "turn sideways" notice instead.
 let enteredFullscreen=false;
 const touchDevice=view=>{try{return (view.navigator?.maxTouchPoints||0)>0||!!view.matchMedia?.('(any-pointer:coarse)')?.matches;}catch{return false;}};
+// A big screen (an unfolded foldable, a tablet) is never turned: it plays however it is held (Randall, 2 Nov).
+const bigScreen=view=>{try{return Math.min(Number(view.screen?.width)||0,Number(view.screen?.height)||0)>=600;}catch{return false;}};
 export async function lockPlayLandscape(view=globalThis){
  const native=view.PWNative;
+ if(!native&&bigScreen(view))return 'unsupported';
  if(typeof native?.setOrientation==='function'){try{await native.setOrientation('landscape');return 'native';}catch{return 'refused';}}
  const orientation=view.screen?.orientation,doc=view.document;
  if(!touchDevice(view)||typeof orientation?.lock!=='function')return 'unsupported';

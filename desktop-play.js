@@ -24,11 +24,14 @@ export function playScreenFits(width, height, {screenMin=0, typing=false}={}) {
 const NOT_TEXT=new Set(['button','checkbox','radio','range','submit','reset','file','color','image','hidden']);
 export const playTyping=el=>!!el&&(el.isContentEditable===true||el.tagName==='TEXTAREA'||el.tagName==='INPUT'&&!NOT_TEXT.has(String(el.type||'text').toLowerCase()));
 const screenMinOf=view=>{try{return Math.min(Number(view.screen?.width)||0,Number(view.screen?.height)||0);}catch{return 0;}};
-// An open match is sideways only (Randall, 30 Oct): an upright phone or tablet waits under the
-// "turn sideways" notice. Setup screens still follow however the device is held.
+// An open match on a phone is sideways only (Randall, 30 Oct): an upright phone waits under the
+// "turn sideways" notice. An unfolded foldable (or a tablet) is never forced (Randall, 2 Nov): held
+// upright, its nearly square screen gets the table's own upright layout. Setup screens follow the device.
+export const PLAY_UPRIGHT_MAX_RATIO=1.45;
 export function playTableFits(width,height,options={}) {
   const fits=playScreenFits(width,height,options);
-  return fits===true&&height>width?false:fits;
+  if(fits!==true||height<=width)return fits;
+  return Math.min(width,height)>=PLAY_TOUCH_MIN_EDGE&&height<=width*PLAY_UPRIGHT_MAX_RATIO;
 }
 export function readPlayScreen(view=globalThis,root=view.document,{table=false}={}) {
   const width=root?.documentElement?.clientWidth||view.innerWidth||0,height=root?.documentElement?.clientHeight||view.innerHeight||0,options={screenMin:screenMinOf(view),typing:playTyping(root?.activeElement)};

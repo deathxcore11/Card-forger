@@ -81,20 +81,20 @@ export function eventPlaybackBeats(before,after){
    const targets=refs(e.targets),named=targets.map(nameOf).filter(Boolean),item=after.native?.stack?.find(s=>s.id===e.stackId);
    const verb=e.type==='cast'?'cast':`activated`;
    push(e,{kind:'spell',label:`${CPU(e.player)} · ${e.type==='cast'?'CASTS':'ACTIVATES'}`,card,stackId:e.stackId,targets,reveal:[card.id],mana:e.player,...(e.type==='cast'?{hand:e.player}:{}),
-    text:e.type==='cast'?card.text||'':item?.text||'',line:`${cpuName(e.player)} ${verb} ${card.name}${e.type==='ability'?'’s ability':''}${named.length?` targeting ${list(named)}`:''}.`,duration:named.length?1000:900});
+    text:e.type==='cast'?card.text||'':item?.text||'',line:`${cpuName(e.player)} ${verb} ${card.name}${e.type==='ability'?'’s ability':''}${named.length?` targeting ${list(named)}`:''}.`,duration:named.length?SPOT+400:SPOT});
    continue;
   }
   if(e.type==='trigger'&&isCpu(e.player)){
    const all=run(x=>x.type==='trigger'&&x.player===e.player),names=[...new Set(all.map(x=>cardFor(x.source)?.name).filter(Boolean))];
    if(!names.length)continue;for(const x of all){const c=cardFor(x.source);if(c)cpuSources.add(c.id);}
    const card=all.length===1?cardFor(e.source):null,targets=all.length===1?refs(e.targets):[];
-   push(e,card?{kind:'spell',label:`${CPU(e.player)} · TRIGGER`,card,targets,text:after.native?.stack?.find(s=>s.id===e.stackId)?.text||'',line:`${card.name} triggered.`,duration:800}
-    :{kind:'phase',tone:'trigger',label:`${count(all.length,CPU(e.player)+' TRIGGER')}`.toUpperCase(),line:`${list(names)} triggered.`,duration:700});
+   push(e,card?{kind:'spell',label:`${CPU(e.player)} · TRIGGER`,card,targets,text:after.native?.stack?.find(s=>s.id===e.stackId)?.text||'',line:`${card.name} triggered.`,duration:SPOT-600}
+    :{kind:'phase',tone:'trigger',label:`${count(all.length,CPU(e.player)+' TRIGGER')}`.toUpperCase(),line:`${list(names)} triggered.`,duration:1200});
    continue;
   }
   if(e.type==='resolve'){
    const card=cardFor(e.source);if(!card||!cpuSources.has(card.id))continue;
-   push(e,{kind:'resolve',label:`${pod?'':'CPU · '}${e.fizzled?'NO LEGAL TARGETS':'RESOLVES'}`,card,text:'',reveal:[card.id],line:e.fizzled?`${card.name} had no legal targets left, so it didn't resolve.`:`${card.name} resolved.`,duration:e.fizzled?800:600});
+   push(e,{kind:'resolve',label:`${pod?'':'CPU · '}${e.fizzled?'NO LEGAL TARGETS':'RESOLVES'}`,card,text:'',reveal:[card.id],line:e.fizzled?`${card.name} had no legal targets left, so it didn't resolve.`:`${card.name} resolved.`,duration:e.fizzled?1400:700});
    continue;
   }
   if(e.type==='attack'&&isCpu(e.player)){
@@ -102,13 +102,13 @@ export function eventPlaybackBeats(before,after){
    const names=attackers.map(a=>cardFor(a)?.name).filter(Boolean);
    // In a pod, say whom: "KRENKO ATTACKS YOU" / "Krenko attacked Giada with Goblin Guide".
    const hit=pod?[...new Set(attackers.map(a=>a.target?.kind==='player'?nameOf(a.target):null).filter(Boolean))]:[];
-   push(e,{kind:'phase',tone:'attack',patch:Object.fromEntries(attackers.map(a=>[a.id,{attacking:true,tapped:now.get(a.id)?.tapped??true,...(a.target?{attackTarget:a.target}:{})}])),label:hit.length===1?`${CPU(e.player)} ATTACKS ${hit[0].toUpperCase()}`:`${CPU(e.player)} ATTACKS WITH ${count(attackers.length,'CREATURE')}`.toUpperCase(),line:`${cpuName(e.player)} attacked${hit.length?' '+list(hit):''} with ${list(names.length?names:[count(attackers.length,'creature')])}.`,duration:800});
+   push(e,{kind:'phase',tone:'attack',attackers:attackers.map(a=>cardFor({kind:'card',id:a.id})).filter(Boolean),hit,patch:Object.fromEntries(attackers.map(a=>[a.id,{attacking:true,tapped:now.get(a.id)?.tapped??true,...(a.target?{attackTarget:a.target}:{})}])),label:hit.length===1?`${CPU(e.player)} ATTACKS ${hit[0].toUpperCase()}`:`${CPU(e.player)} ATTACKS WITH ${count(attackers.length,'CREATURE')}`.toUpperCase(),line:`${cpuName(e.player)} attacked${hit.length?' '+list(hit):''} with ${list(names.length?names:[count(attackers.length,'creature')])}.`,duration:SPOT-200});
    continue;
   }
   if(e.type==='block'&&isCpu(e.player)){
    const blockers=(Array.isArray(e.blockers)?e.blockers:[]).filter(x=>Number.isSafeInteger(x?.id));if(!blockers.length)continue;
    const pairs=blockers.map(x=>{const a=cardFor({kind:'card',id:x.blocking}),c=cardFor(x);return c&&a?`${c.name} blocks ${a.name}`:null;}).filter(Boolean);
-   push(e,{kind:'phase',tone:'block',patch:Object.fromEntries(blockers.filter(x=>now.has(x.id)).map(x=>[x.id,{blockingIds:now.get(x.id).blockingIds||[x.blocking]}])),label:`${CPU(e.player)} BLOCKS WITH ${count(blockers.length,'CREATURE')}`.toUpperCase(),line:pairs.length?list(pairs)+'.':`${cpuName(e.player)} blocked with ${count(blockers.length,'creature')}.`,duration:800});
+   push(e,{kind:'phase',tone:'block',patch:Object.fromEntries(blockers.filter(x=>now.has(x.id)).map(x=>[x.id,{blockingIds:now.get(x.id).blockingIds||[x.blocking]}])),label:`${CPU(e.player)} BLOCKS WITH ${count(blockers.length,'CREATURE')}`.toUpperCase(),line:pairs.length?list(pairs)+'.':`${cpuName(e.player)} blocked with ${count(blockers.length,'creature')}.`,duration:1500});
    continue;
   }
   if(e.type==='damage'){
@@ -141,7 +141,7 @@ export function eventPlaybackBeats(before,after){
   // A permanent put onto the battlefield some other way (not cast, not a token) gets a short beat.
   if(e.type==='zone'&&e.to==='Battlefield'&&e.from!=='Stack'&&isCpu(e.player)){
    const card=cardFor(e.card);if(!card||shown.has(card.id)||card.isToken)continue;
-   shown.add(card.id);push(e,{kind:'arrival',label:`${CPU(e.player)} · ENTERED BATTLEFIELD`,card,reveal:[card.id],text:card.text||'',line:`${card.name} entered the battlefield under ${pod?cpuName(e.player)+'\'s':'the CPU\'s'} control.`,duration:800});
+   shown.add(card.id);push(e,{kind:'arrival',label:`${CPU(e.player)} · ENTERED BATTLEFIELD`,card,reveal:[card.id],text:card.text||'',line:`${card.name} entered the battlefield under ${pod?cpuName(e.player)+'\'s':'the CPU\'s'} control.`,duration:SPOT-600});
   }
  }
  settleReveals(beats,b,before?.status?.surface);
@@ -153,13 +153,13 @@ export function eventPlaybackBeats(before,after){
  const kept=beats.filter((x,i)=>(x.tone!=='turn'||i===lastTurn)&&!(i===beats.length-1&&i>0&&x.tone==='turn'&&x.label==='YOUR TURN'));
  const shownBeats=kept.filter(x=>x.kind!=='log');
  // Three CPUs take turns between yours, so a pod's playback runs quicker and shorter.
- return paced(shownBeats.length===1&&shownBeats[0].label==='YOUR TURN'?kept.filter(x=>x.kind==='log'):kept.slice(pod?-8:-12),pod?2600:5200,pod?.7:1);
+ return paced(shownBeats.length===1&&shownBeats[0].label==='YOUR TURN'?kept.filter(x=>x.kind==='log'):kept.slice(pod?-8:-12),pod?7000:16000,pod?.8:1);
 }
 // A Commander pod tells each CPU's turn on its own: the turn passes to that CPU (its seat lights up
 // on the table and its board comes into view), a short hold so you can see whose turn it is, then
 // what it did at a readable pace. Turns are never merged or dropped, so three CPUs never blur into
 // one burst; only a very long backlog keeps the latest turns.
-const POD_HANDOFF=1100,POD_TURN_BUDGET=3600;
+const POD_HANDOFF=1100,POD_TURN_BUDGET=7000;
 function podPaced(beats){
  const turns=[];let cur=[];
  for(const x of beats){if(x.tone==='turn'&&cur.length){turns.push(cur);cur=[];}cur.push(x);}
@@ -173,10 +173,13 @@ function podPaced(beats){
 // A whole CPU turn (land, spell, resolve, attack, damage) fits in one update at its natural pace;
 // only a longer run (about 5 s of beats) speeds up evenly.
 // Randall's pacing rule (1 Nov): every CPU action stays on screen at least about 650 ms, however long the turn.
-const MIN_BEAT=650;
-function paced(beats,budget=5200,pace=1){
+// Hotfix (2 Nov): a spell, ability or attack is shown big with its glass panel long enough to read it
+// (SPOT, about 2.4 s; never under SPOT_MIN even in a long turn). A tap moves on to the next action.
+const MIN_BEAT=650,SPOT=2400,SPOT_MIN=1500;
+const spotlit=x=>x.kind==='spell'||x.kind==='arrival'&&!!x.card||x.tone==='attack';
+function paced(beats,budget=16000,pace=1){
  const total=beats.reduce((t,x)=>t+x.duration*pace,0),scale=pace*(total>budget?budget/total:1);
- return scale<1?beats.map(x=>x.kind==='log'?x:{...x,duration:Math.max(MIN_BEAT,Math.round(x.duration*scale))}):beats;
+ return scale<1?beats.map(x=>x.kind==='log'?x:{...x,duration:Math.max(spotlit(x)?SPOT_MIN:MIN_BEAT,Math.round(x.duration*scale))}):beats;
 }
 const onScreen=beats=>beats.filter(b=>b.kind!=='log');
 // Which beat puts each card in its final state on the table. A card named by several beats (a creature
@@ -236,7 +239,7 @@ export function cpuPlaybackBeats(before, after) {
   if(!isCpu(item.controller)||oldStack.has(item.id))continue;
   const card=b.cards.find(c=>c.id===item.source&&c.known);if(!card)continue;
   const nativeItem=after.native?.stack?.find(s=>s.id===item.id);
-  beats.push({kind:'spell',label:`${cpuName(item.controller).toUpperCase()} · SPELL / ABILITY`,actor:cpuName(item.controller),card,stackId:item.id,reveal:[card.id],text:item.text||card.text||'',targets:(nativeItem?.targets||[]).filter(t=>t&&['card','player'].includes(t.kind)&&Number.isSafeInteger(t.id)),line:`${cpuName(item.controller)} put ${card.name} on the stack.`,duration:900});shown.add(card.id);
+  beats.push({kind:'spell',label:`${cpuName(item.controller).toUpperCase()} · SPELL / ABILITY`,actor:cpuName(item.controller),card,stackId:item.id,reveal:[card.id],text:item.text||card.text||'',targets:(nativeItem?.targets||[]).filter(t=>t&&['card','player'].includes(t.kind)&&Number.isSafeInteger(t.id)),line:`${cpuName(item.controller)} put ${card.name} on the stack.`,duration:SPOT});shown.add(card.id);
  }
  // Lands and new permanents get a beat each, but tokens arrive with the board, and at most
  // three arrivals are shown: a token swarm never holds the table.
@@ -246,10 +249,10 @@ export function cpuPlaybackBeats(before, after) {
   // A source that was on the preceding stack has already had its spotlight.
   if(a.stack.some(s=>s.source===card.id))continue;
   const land=card.types?.includes('Land')||/\bLand\b/.test(card.type||'');
-  arrivals++;beats.push({kind:land?'land':'arrival',label:`${cpuName(card.controller).toUpperCase()} · ${land?'LAND PLAYED':'ENTERED BATTLEFIELD'}`,actor:cpuName(card.controller),card,reveal:[card.id],text:card.text||'',targets:[],line:`${card.name} is now on ${pod?cpuName(card.controller)+'\'s':'the CPU\'s'} battlefield.`,duration:land?600:800});
+  arrivals++;beats.push({kind:land?'land':'arrival',label:`${cpuName(card.controller).toUpperCase()} · ${land?'LAND PLAYED':'ENTERED BATTLEFIELD'}`,actor:cpuName(card.controller),card,reveal:[card.id],text:card.text||'',targets:[],line:`${card.name} is now on ${pod?cpuName(card.controller)+'\'s':'the CPU\'s'} battlefield.`,duration:land?600:SPOT-600});
  }
  if(banner&&b.activeSeat===b.seat)beats.push(banner);
- return paced(beats,pod?1800:2600,pod?.7:1);
+ return paced(beats,pod?5000:9000,pod?.8:1);
 }
 
 // What the table is doing right now, in words a player can trust. Only the accepted state and
@@ -357,10 +360,12 @@ export class CpuActionPlaybackQueue {
    const spent=Date.now()-start;
    // A backlog of two or more updates hurries a little; the table never races through a turn.
    if(beat.actor&&!this.firstCpuShown){this.firstCpuShown=true;try{console.info('[pace] first CPU action shown',Date.now(),this.keptAt?`${Date.now()-this.keptAt} ms after the keep`:'');}catch{}}
-   this.timer=this.schedule(step,this.reducedMotion()?250:Math.max(MIN_BEAT,Math.round((this.pending.length>1?beat.duration*.8:beat.duration)*this.speed())-(spent>=10?spent:0)));
-  };step();
+   this.timer=this.schedule(step,this.reducedMotion()?250:Math.max(spotlit(beat)?Math.min(SPOT_MIN,beat.duration):MIN_BEAT,Math.round((this.pending.length>1?beat.duration*.85:beat.duration)*this.speed())-(spent>=10?spent:0)));
+  };this.step=step;step();
  }
- stop(){this.cancel(this.timer);this.timer=null;this.running=false;this.overlay=false;this.clear();if(this.gate){const g=this.gate;this.gate=null;this.latest=g;}}
+ // A tap moves straight on to the next action (Arena's click-to-continue), never past the whole turn.
+ next(){if(!this.running||typeof this.step!=='function')return false;this.cancel(this.timer);this.timer=null;this.step();return true;}
+ stop(){this.cancel(this.timer);this.timer=null;this.step=null;this.running=false;this.overlay=false;this.clear();if(this.gate){const g=this.gate;this.gate=null;this.latest=g;}}
  flush(snapshot=this.latest){
   // Skipped beats still reach the activity log, so a skip never hides what happened.
   if(snapshot&&this.current&&snapshot!==this.current)this.remember(playbackBeats(this.current,snapshot));

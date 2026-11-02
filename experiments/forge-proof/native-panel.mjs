@@ -415,6 +415,10 @@ export function mountNativePanel(container,{session,snapshot,onLocalError=()=>{}
    actions.dataset.state=ask;actions.dataset.ask='true';askLine(ask);}
   // A payment your mana can't finish says so above the hand; Cancel is the way out.
   else if(presentation.hosted&&paying?.short){actions.dataset.state=`Not enough mana${paying.name?` for ${paying.name}`:''}`;actions.dataset.ask='true';askLine(actions.dataset.state);}
+  // Hotfix (Randall, 2 Nov): what the CPU's play asks of you is said in the middle of the screen, not only in the dock.
+  else if(presentation.hosted&&!n.prompt&&!discard){const top=n.stack?.[0],cpuTop=!!top&&top.activatingPlayer!==n.viewer,topName=String(top?.source?.name||String(top?.text||'').split(/\s+[\u2014-]\s+/)[0]||'').replace(/\s*\(\d+\)/g,'').trim();
+   const ask=input==='InputBlock'?'Block the CPU\u2019s attack?':input==='InputPassPriority'&&cpuTop&&topName&&n.priorityPlayer===n.viewer?`Respond to ${topName}?`:'';
+   if(ask){actions.dataset.state=ask;actions.dataset.ask='true';askLine(ask);}}
   for(const op of ['ok','cancel'])if(buttons[op]!==undefined){
    if(asking&&op==='ok'&&buttons.okEnabled!==true)continue;
    if(oneTarget&&op==='ok'){if(n.selection?.min===0&&buttons.okEnabled===true){const none=button('No target',()=>session.nativeButton('ok',n.revision),false,'ok');actions.append(none);}continue;}

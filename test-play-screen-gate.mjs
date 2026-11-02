@@ -73,6 +73,6 @@ assert.equal(playScreenPauseApplies({Capacitor:{isNativePlatform:()=>true},navig
 }
 assert.equal(PLAY_SMALL_SCREEN_LIMIT_MS,5*60*1000);
 // An open match is sideways only: upright phones and tablets wait, setup still admits them.
-assert.equal(playScreenFits(390,844),true);assert.equal(playTableFits(390,844),false);assert.equal(playTableFits(768,1024),false);
+assert.equal(playScreenFits(390,844),true);assert.equal(playTableFits(390,844),false);assert.equal(playTableFits(768,1024),true,'a tablet or unfolded foldable held upright plays upright (Randall, 2 Nov)');assert.equal(playTableFits(884,1104),true);assert.equal(playTableFits(600,1200),false,'a very tall split window still asks to turn');
 assert.equal(playTableFits(844,390),true);assert.equal(playTableFits(1024,768),true);assert.equal(playTableFits(0,0),null);
 console.log('PASS: open matches are sideways only;  tablets and unfolded foldables play in both orientations in every current browser, upright phones are asked to turn sideways and sideways phones play, desktops never pause, and the pause resumes, ticks and expires once.');

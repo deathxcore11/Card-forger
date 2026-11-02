@@ -11,13 +11,13 @@
     const display = cap.registerPlugin('CardStashyDisplay'), haptics = cap.registerPlugin('CardStashyHaptics');
     // Planeswalk is a game, so it holds landscape for the whole page, hero select included, like a
     // handheld game (never the phone's portrait view). The page may still ask for 'default'; it stays
-    // sideways, and leaving for the app hands the app's own orientation back.
+    // sideways, and leaving for the app hands the app's own orientation back. A foldable is never turned:
+    // the native side lets it follow however it is held (Randall, 2 Nov).
     const play = () => { display.setMode({ mode: 'play' }).catch(() => {}); display.setOrientation({ orientation: 'landscape' }).catch(() => {}); };
     globalThis.PWNative = Object.freeze({ native: true, setOrientation(next) {
       if (next !== 'landscape' && next !== 'default') return Promise.reject(new Error('Unknown orientation'));
       return display.setOrientation({ orientation: 'landscape' }).then(() => true);
     } });
-    import('./native-fold-prompt.js').then(({ installFoldPrompt }) => installFoldPrompt({ plugin: display, playing: () => true }).check()).catch(() => {});
     globalThis.dispatchEvent(new Event('pwnative-ready'));
     play();
     document.addEventListener('visibilitychange', () => { if (!document.hidden) play(); });
