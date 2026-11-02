@@ -2286,7 +2286,7 @@ A.storyHome=()=>{storyProgress.wake();for(const a of STORY_ACTS)storyNeedAct(a.a
 A.storyOpenAct=t=>{const n=Number(t?.dataset?.storyAct||storyUi.act);if(!STORY_ACTS.some(a=>a.act===n))return;storyUi.act=n;storyNeedAct(n);storyGo('storyAct');};
 A.storyOpenBattle=t=>{storyUi.battle=t.dataset.storyBattle;storyUi.seat='hero';storyUi.deck='loaner';storyUi.listSide='mine';storyUi.listOpen=false;storyGo('storyBattle');storyWantArt();storyWarm();
  // The boss runs on the host: start warming it while the player reads the setup (story-mode-acts.md A1).
- if(/b8$/.test(storyUi.battle))void import('./play-forge-host-client.js').then(m=>m.warmForgeHost({getAccessToken:cloudAccessToken})).catch(()=>{});};
+ if(storyBattle()?.host)void import('./play-forge-host-client.js').then(m=>m.warmForgeHost({getAccessToken:cloudAccessToken})).catch(()=>{});};
 A.storySeat=t=>{storyUi.seat=t.dataset.storySeat==='villain'?'villain':'hero';storyUi.deck='loaner';storyUi.listOpen=false;storyUi.listSide='mine';refreshPlayMenu();};
 A.storyDeckPick=t=>{const id=t.dataset.storyDeck||'loaner';storyUi.listOpen=storyUi.deck===id?!storyUi.listOpen:true;storyUi.deck=id;storyUi.listSide='mine';if(storyUi.listOpen)storyWantArt();refreshPlayMenu();};
 A.storyListSide=t=>{storyUi.listSide=t.dataset.storyList==='theirs'?'theirs':'mine';storyWantArt();refreshPlayMenu();};
@@ -2337,7 +2337,7 @@ A.storyPlay=async({skipScene=false}={})=>{
   const owner=cloudInfo().user?.id,generation=accountGeneration,current=()=>!accountLocked&&generation===accountGeneration&&owner===cloudInfo().user?.id;
   let createForgePlayerMat,localClient;
   try{({createForgePlayerMat}=await import('./play-forge-player-mat.js'));
-   if(b.slot!==8){const local=await import('./play-forge-local-client.js');if(local.localForgeAvailable()&&await local.localForgeCurrent())localClient=local.createForgeLocalClient;}}
+   if(!b.host){const local=await import('./play-forge-local-client.js');if(local.localForgeAvailable()&&await local.localForgeCurrent())localClient=local.createForgeLocalClient;}}
   catch(e){if(playerMatRoot)playModuleFailed(e);return;}
   if(!current()||!playerMatRoot)return;
   const root=playerMatRoot;

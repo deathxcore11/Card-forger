@@ -75,6 +75,8 @@
 .st-battle--here{border-color:#d6ad64aa;box-shadow:0 0 0 1px #d6ad6430,0 10px 30px #d6ad6414}
 .st-battle--boss{background:linear-gradient(115deg,#a8402a1f,transparent 60%),color-mix(in srgb,var(--surface) 86%,transparent)}
 .st-battle--boss .st-battle-face{width:72px;height:72px;border-color:#e8b95b;box-shadow:0 0 0 3px #e8b95b22,0 6px 18px #000a}
+.st-battle--secret{background:linear-gradient(115deg,#3b5bdb26,#a8402a14 55%,transparent 80%),color-mix(in srgb,var(--surface) 86%,transparent);border-color:#8fa6ff55}
+.st-battle--secret .st-battle-face{border-color:#c9d4ff;box-shadow:0 0 0 3px #8fa6ff2e,0 0 22px #5c7cfa55,0 6px 18px #000a}
 .st-battle--tease{cursor:default;opacity:.55;grid-template-columns:72px minmax(0,1fr)}
 .st-battle--tease .st-battle-face{filter:blur(4px) grayscale(.6)}
 

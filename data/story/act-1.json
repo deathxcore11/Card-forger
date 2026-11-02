@@ -39,6 +39,8 @@
    "whisper": true
   }
  ],
+ "villainFinale": null,
+ "vibe": null,
  "cast": {
   "you": {
    "name": "You",
@@ -196,6 +198,19 @@
     "focus": "50% 25%"
    }
   },
+  "usenet": {
+   "name": "The Usenet Deck",
+   "title": "December 1993",
+   "portrait": {
+    "card": "Black Vise",
+    "set": "lea",
+    "number": "233",
+    "id": "76ac72f8-5b1e-4d67-a796-ef69cde27424",
+    "crop": "https://cards.scryfall.io/art_crop/front/7/6/76ac72f8-5b1e-4d67-a796-ef69cde27424.jpg?1783948669",
+    "artist": "Richard Thomas",
+    "focus": "50% 40%"
+   }
+  },
   "mishra": {
    "name": "Mishra",
    "title": "The Brother",
@@ -215,6 +230,7 @@
    "id": "a1b1",
    "slot": 1,
    "kind": "Arrival",
+   "mood": "tension",
    "title": "The First Summons",
    "difficulty": "Easy",
    "teaches": [
@@ -440,6 +456,7 @@
      "line": "Eyes on it. If it calls one beast, we call ten."
     }
    ],
+   "after": null,
    "cues": {
     "villain": {
      "start": "Bows up.",
@@ -456,6 +473,7 @@
    "id": "a1b2",
    "slot": 2,
    "kind": "Lesson",
+   "mood": "tension",
    "title": "The Goblin King's Toll",
    "difficulty": "Easy",
    "teaches": [
@@ -676,6 +694,7 @@
      "line": "If it flies, throw rocks at it. Rocks fly too. Sort of."
     }
    ],
+   "after": null,
    "cues": {
     "villain": {
      "start": "Charge! No, the OTHER way!",
@@ -692,6 +711,7 @@
    "id": "a1b3",
    "slot": 3,
    "kind": "Lesson",
+   "mood": "tension",
    "title": "Knights at the Ford",
    "difficulty": "Normal",
    "teaches": [
@@ -956,6 +976,7 @@
      "line": "Today it ends. No prayers, no tricks. Just steel."
     }
    ],
+   "after": null,
    "cues": {
     "hero": {
      "start": "Steady.",
@@ -979,6 +1000,7 @@
    "id": "a1b4",
    "slot": 4,
    "kind": "Rival",
+   "mood": "tension",
    "title": "The Djinn of the Bottle",
    "difficulty": "Normal",
    "teaches": [
@@ -1228,6 +1250,7 @@
      "line": "Make it a long duel. I want to savour this one."
     }
    ],
+   "after": null,
    "cues": {
     "villain": {
      "start": "Entertain me.",
@@ -1244,6 +1267,7 @@
    "id": "a1b5",
    "slot": 5,
    "kind": "Lesson",
+   "mood": "tension",
    "title": "Argoth Burns",
    "difficulty": "Normal",
    "teaches": [
@@ -1525,6 +1549,7 @@
      "line": "I think they're fuel. And I am out of fuel."
     }
    ],
+   "after": null,
    "cues": {
     "hero": {
      "start": "The forest stands.",
@@ -1548,6 +1573,7 @@
    "id": "a1b6",
    "slot": 6,
    "kind": "Meta",
+   "mood": "tension",
    "title": "The Efreet of Serendib",
    "difficulty": "Normal",
    "teaches": [
@@ -1790,6 +1816,7 @@
      "line": "Serendib has outlasted a thousand ships. It can outlast one more."
     }
    ],
+   "after": null,
    "cues": {
     "hero": {
      "start": "Hoist!",
@@ -1813,6 +1840,7 @@
    "id": "a1b7",
    "slot": 7,
    "kind": "Meta",
+   "mood": "tension",
    "title": "Factories at Kroog",
    "difficulty": "Normal",
    "teaches": [
@@ -2067,6 +2095,7 @@
      "line": "Mishra wants the factories. I want to see how everything works inside."
     }
    ],
+   "after": null,
    "cues": {
     "hero": {
      "start": "Seal the gates.",
@@ -2090,6 +2119,7 @@
    "id": "a1b8",
    "slot": 8,
    "kind": "Boss",
+   "mood": "boss",
    "title": "Mishra's War Machine",
    "difficulty": "Normal",
    "teaches": [
@@ -2394,6 +2424,7 @@
      "line": "They told me I'd finally be better than you."
     }
    ],
+   "after": null,
    "cues": {
     "hero": {
      "start": "Begin.",
@@ -2408,6 +2439,481 @@
      "low": "You always win. Why do you always win?",
      "win": "Finally. FINALLY.",
      "loss": "Then let it all burn."
+    }
+   },
+   "bigPlays": [],
+   "sim": null
+  },
+  {
+   "id": "a1b9",
+   "slot": 9,
+   "kind": "Secret Boss",
+   "secret": true,
+   "mood": "boss",
+   "title": "How Do You Stop This Deck?",
+   "difficulty": "Hard",
+   "teaches": [
+    "Punishing full hands"
+   ],
+   "blurb": "Under the snow, a deck from before anything was forbidden. It draws you cards until they kill you.",
+   "rewardSet": "lea",
+   "host": true,
+   "hero": {
+    "who": "you",
+    "deck": {
+     "name": "1993 Power",
+     "colors": "WR",
+     "archetype": "Power and pressure",
+     "cards": [
+      {
+       "qty": 1,
+       "name": "Black Lotus",
+       "set": "lea",
+       "number": "232",
+       "id": "b0faa7f2-b547-42c4-a810-839da50dadfe"
+      },
+      {
+       "qty": 1,
+       "name": "Mox Pearl",
+       "set": "lea",
+       "number": "263",
+       "id": "8ebe4be7-e12a-4596-a899-fbd5b152e879"
+      },
+      {
+       "qty": 1,
+       "name": "Mox Ruby",
+       "set": "lea",
+       "number": "264",
+       "id": "8945585f-4773-493d-a0fe-d707db910b38"
+      },
+      {
+       "qty": 1,
+       "name": "Mox Sapphire",
+       "set": "lea",
+       "number": "265",
+       "id": "82da0972-b17b-4600-9efd-e9430a0db04b"
+      },
+      {
+       "qty": 1,
+       "name": "Mox Jet",
+       "set": "lea",
+       "number": "262",
+       "id": "92bcd1ce-19b1-4d78-8b09-95242ca08d76"
+      },
+      {
+       "qty": 1,
+       "name": "Mox Emerald",
+       "set": "lea",
+       "number": "261",
+       "id": "b0e1427c-05cd-465b-be59-97ed6e39f7ba"
+      },
+      {
+       "qty": 1,
+       "name": "Sol Ring",
+       "set": "lea",
+       "number": "269",
+       "id": "c4300d24-1cae-4dd5-be7e-38cc677cf5bd"
+      },
+      {
+       "qty": 1,
+       "name": "Time Walk",
+       "set": "lea",
+       "number": "83",
+       "id": "e0139f60-d48e-46fb-9f5a-1e3d7558c834"
+      },
+      {
+       "qty": 1,
+       "name": "Ancestral Recall",
+       "set": "lea",
+       "number": "47",
+       "id": "70e7ddf2-5604-41e7-bb9d-ddd03d3e9d0b"
+      },
+      {
+       "qty": 1,
+       "name": "Balance",
+       "set": "lea",
+       "number": "3",
+       "id": "6f9ea46a-411f-40ce-a873-a905180093f4"
+      },
+      {
+       "qty": 4,
+       "name": "Savannah Lions",
+       "set": "lea",
+       "number": "38",
+       "id": "d05b92bd-797e-413f-a8b0-32e0937a1ee0"
+      },
+      {
+       "qty": 4,
+       "name": "White Knight",
+       "set": "lea",
+       "number": "43",
+       "id": "50abfba8-c9f9-4ebf-965a-4b425fe83129"
+      },
+      {
+       "qty": 3,
+       "name": "Mesa Pegasus",
+       "set": "lea",
+       "number": "28",
+       "id": "eaac88da-d19e-4771-944c-3709963d04e7"
+      },
+      {
+       "qty": 2,
+       "name": "Juggernaut",
+       "set": "lea",
+       "number": "255",
+       "id": "dcd6a291-5282-4f49-8203-d9b416083c48"
+      },
+      {
+       "qty": 4,
+       "name": "Serra Angel",
+       "set": "lea",
+       "number": "39",
+       "id": "f8ac5006-91bd-4803-93da-f87cf196dd2f"
+      },
+      {
+       "qty": 2,
+       "name": "Shivan Dragon",
+       "set": "lea",
+       "number": "174",
+       "id": "fefbf149-f988-4f8b-9f53-56f5878116a6"
+      },
+      {
+       "qty": 4,
+       "name": "Lightning Bolt",
+       "set": "lea",
+       "number": "161",
+       "id": "d573ef03-4730-45aa-93dd-e45ac1dbaf4a"
+      },
+      {
+       "qty": 1,
+       "name": "Fireball",
+       "set": "lea",
+       "number": "149",
+       "id": "b7623c00-144b-4a8f-9c6c-f5e9e4f65ece"
+      },
+      {
+       "qty": 4,
+       "name": "Swords to Plowshares",
+       "set": "lea",
+       "number": "40",
+       "id": "386ea9eb-abc1-4862-aa2d-8fb808d79490"
+      },
+      {
+       "qty": 4,
+       "name": "Disenchant",
+       "set": "lea",
+       "number": "18",
+       "id": "2722d7e2-61c6-4934-9c21-875ee78fd06c"
+      },
+      {
+       "qty": 4,
+       "name": "Mishra's Factory",
+       "set": "atq",
+       "number": "80a",
+       "id": "a696c5b6-f216-454d-8029-74e84bbd1428"
+      },
+      {
+       "qty": 4,
+       "name": "Plateau",
+       "set": "lea",
+       "number": "279",
+       "id": "6eafa00b-c628-40f6-86eb-88e1361fc7a0"
+      },
+      {
+       "qty": 2,
+       "name": "Tundra",
+       "set": "lea",
+       "number": "284",
+       "id": "a03e8c5b-f4ed-4fd7-ba05-db813ccc05eb"
+      },
+      {
+       "qty": 2,
+       "name": "Volcanic Island",
+       "set": "leb",
+       "number": "287",
+       "id": "0324641d-af55-4c53-b4dc-c8262e967da5"
+      },
+      {
+       "qty": 4,
+       "name": "Plains",
+       "set": "lea",
+       "number": "286",
+       "id": "b1623d57-4729-4796-b3f7-f1837a05c6ed"
+      },
+      {
+       "qty": 2,
+       "name": "Mountain",
+       "set": "lea",
+       "number": "292",
+       "id": "eace2c85-976c-425e-9800-5a6ccbd91b56"
+      }
+     ]
+    }
+   },
+   "villain": {
+    "who": "usenet",
+    "deck": {
+     "name": "The Usenet Deck",
+     "colors": "UR",
+     "archetype": "Black Vise draw-seven",
+     "cards": [
+      {
+       "qty": 4,
+       "name": "Black Vise",
+       "set": "lea",
+       "number": "233",
+       "id": "76ac72f8-5b1e-4d67-a796-ef69cde27424"
+      },
+      {
+       "qty": 4,
+       "name": "Howling Mine",
+       "set": "lea",
+       "number": "247",
+       "id": "51f8f6e1-a451-4262-90d3-5107caf54175"
+      },
+      {
+       "qty": 1,
+       "name": "Wheel of Fortune",
+       "set": "lea",
+       "number": "183",
+       "id": "67b369c4-faa8-45c8-a1b9-98f228b69682"
+      },
+      {
+       "qty": 1,
+       "name": "Timetwister",
+       "set": "lea",
+       "number": "84",
+       "id": "9a49dc44-616e-4bdd-8220-0bb71eccc512"
+      },
+      {
+       "qty": 1,
+       "name": "Ancestral Recall",
+       "set": "lea",
+       "number": "47",
+       "id": "70e7ddf2-5604-41e7-bb9d-ddd03d3e9d0b"
+      },
+      {
+       "qty": 1,
+       "name": "Time Walk",
+       "set": "lea",
+       "number": "83",
+       "id": "e0139f60-d48e-46fb-9f5a-1e3d7558c834"
+      },
+      {
+       "qty": 1,
+       "name": "Fireball",
+       "set": "lea",
+       "number": "149",
+       "id": "b7623c00-144b-4a8f-9c6c-f5e9e4f65ece"
+      },
+      {
+       "qty": 1,
+       "name": "Disintegrate",
+       "set": "lea",
+       "number": "140",
+       "id": "8712c49e-f171-4669-bed9-87575a37af11"
+      },
+      {
+       "qty": 4,
+       "name": "Lightning Bolt",
+       "set": "lea",
+       "number": "161",
+       "id": "d573ef03-4730-45aa-93dd-e45ac1dbaf4a"
+      },
+      {
+       "qty": 2,
+       "name": "Psionic Blast",
+       "set": "lea",
+       "number": "74",
+       "id": "a6a86e6e-bfff-46af-9d36-c912901fea92"
+      },
+      {
+       "qty": 4,
+       "name": "Red Elemental Blast",
+       "set": "lea",
+       "number": "169",
+       "id": "776ad9be-3309-4f1d-9f27-6219d9477662"
+      },
+      {
+       "qty": 4,
+       "name": "Counterspell",
+       "set": "lea",
+       "number": "54",
+       "id": "0df55e3f-14de-46ef-b6b1-616618724d9e"
+      },
+      {
+       "qty": 2,
+       "name": "Power Sink",
+       "set": "lea",
+       "number": "72",
+       "id": "1b342dd3-09b9-4108-bf12-a65d4cef4eb9"
+      },
+      {
+       "qty": 3,
+       "name": "Disenchant",
+       "set": "lea",
+       "number": "18",
+       "id": "2722d7e2-61c6-4934-9c21-875ee78fd06c"
+      },
+      {
+       "qty": 1,
+       "name": "Mox Sapphire",
+       "set": "lea",
+       "number": "265",
+       "id": "82da0972-b17b-4600-9efd-e9430a0db04b"
+      },
+      {
+       "qty": 1,
+       "name": "Mox Ruby",
+       "set": "lea",
+       "number": "264",
+       "id": "8945585f-4773-493d-a0fe-d707db910b38"
+      },
+      {
+       "qty": 1,
+       "name": "Mox Pearl",
+       "set": "lea",
+       "number": "263",
+       "id": "8ebe4be7-e12a-4596-a899-fbd5b152e879"
+      },
+      {
+       "qty": 1,
+       "name": "Sol Ring",
+       "set": "lea",
+       "number": "269",
+       "id": "c4300d24-1cae-4dd5-be7e-38cc677cf5bd"
+      },
+      {
+       "qty": 1,
+       "name": "Winter Orb",
+       "set": "lea",
+       "number": "275",
+       "id": "9359f60c-9a27-4e53-b35b-964a121a6fba"
+      },
+      {
+       "qty": 7,
+       "name": "Island",
+       "set": "lea",
+       "number": "288",
+       "id": "90a57c0e-fa61-45ef-955d-d296403967d5"
+      },
+      {
+       "qty": 4,
+       "name": "Mountain",
+       "set": "lea",
+       "number": "292",
+       "id": "eace2c85-976c-425e-9800-5a6ccbd91b56"
+      },
+      {
+       "qty": 4,
+       "name": "Volcanic Island",
+       "set": "leb",
+       "number": "287",
+       "id": "0324641d-af55-4c53-b4dc-c8262e967da5"
+      },
+      {
+       "qty": 3,
+       "name": "Tundra",
+       "set": "lea",
+       "number": "284",
+       "id": "a03e8c5b-f4ed-4fd7-ba05-db813ccc05eb"
+      },
+      {
+       "qty": 3,
+       "name": "Plateau",
+       "set": "lea",
+       "number": "279",
+       "id": "6eafa00b-c628-40f6-86eb-88e1361fc7a0"
+      },
+      {
+       "qty": 1,
+       "name": "Plains",
+       "set": "lea",
+       "number": "286",
+       "id": "b1623d57-4729-4796-b3f7-f1837a05c6ed"
+      }
+     ]
+    }
+   },
+   "reward": {
+    "hero": {
+     "packs": 2,
+     "coins": 200
+    },
+    "villain": {
+     "card": {
+      "oracle_id": "de7839fb-7040-48ab-a6d4-d1952972943d",
+      "name": "Black Vise",
+      "rarity": "uncommon",
+      "set": "lea",
+      "id": "76ac72f8-5b1e-4d67-a796-ef69cde27424",
+      "image": "https://cards.scryfall.io/normal/front/7/6/76ac72f8-5b1e-4d67-a796-ef69cde27424.jpg"
+     },
+     "coins": 200
+    }
+   },
+   "scene": [
+    {
+     "who": "narrator",
+     "line": "After the Sylex, the snow. Under the snow, something older than the war."
+    },
+    {
+     "who": "stage",
+     "line": "Subject: How do you stop this deck?"
+    },
+    {
+     "who": "usenet",
+     "line": "Take seven cards. Take seven more. Every one of them hurts."
+    },
+    {
+     "who": "you",
+     "line": "Nothing on Dominaria plays like that."
+    },
+    {
+     "who": "usenet",
+     "line": "Nothing on Dominaria was ever told no."
+    },
+    {
+     "who": "usenet",
+     "line": "By your second turn the damage is bad enough. Ask anyone who answered the thread.",
+     "whisper": true
+    }
+   ],
+   "villainScene": [
+    {
+     "who": "usenet",
+     "line": "They asked how to stop me. Nobody had an answer."
+    }
+   ],
+   "after": [
+    {
+     "who": "stage",
+     "line": "Re: How do you stop this deck?"
+    },
+    {
+     "who": "you",
+     "line": "Break the Vises. Keep your hand small. Hit hard."
+    },
+    {
+     "who": "narrator",
+     "line": "A week later, the first cards were restricted.",
+     "whisper": true
+    }
+   ],
+   "cues": {
+    "hero": {
+     "start": "Find the Vises. Break them.",
+     "big": "Power answers power.",
+     "low": "Too many cards. Too much pain.",
+     "win": "Stopped.",
+     "loss": "Nobody stops this deck."
+    },
+    "villain": {
+     "start": "Draw seven.",
+     "big": "Wheel. Again.",
+     "low": "That wasn't in the thread.",
+     "win": "How do you stop this deck? You don't.",
+     "loss": "Posted. Answered."
     }
    },
    "bigPlays": [],

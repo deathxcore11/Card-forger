@@ -215,7 +215,7 @@ export async function progressRoute(request, env, {verifyBearer, fetcher = fetch
       // Story deeds the app saw in a won Story battle (story-deeds.js). A battle deed needs that battle
       // won with the Story deck from its seat; an act deed is re-checked here from Story progress. Each pays once.
       const battle = String(body.battle || ''), ids = Array.isArray(body.deeds) ? body.deeds.slice(0, 8).map(String) : [];
-      if (!/^a\d{1,2}b[1-8]$/.test(battle)) return fail('bad_battle');
+      if (!/^a\d{1,2}b[1-9]$/.test(battle)) return fail('bad_battle');
       const refs = await storyRefs();
       if (!Array.isArray(refs)) return fail('not_ready', 503);
       const has = new Set(refs), actOk = new Set(storyDeedsEarned(battle, {own: true}, refs)), counted = [];
@@ -267,11 +267,17 @@ export async function progressRoute(request, env, {verifyBearer, fetcher = fetch
       // side: your side the battle's era packs (more for harder battles), the villain's side that villain's
       // signature card. Your own deck clears the battle and earns XP only, so nobody is gatekept and the
       // precon rewards stay there to come back for. A replay pays nothing.
-      const id = String(body.battle || ''), m = id.match(/^a(\d{1,2})b([1-8])$/);
+      const id = String(body.battle || ''), m = id.match(/^a(\d{1,2})b([1-9])$/);
       if (!m) return fail('bad_battle');
       const act = await asset(env, request, `/data/story/act-${Number(m[1])}.json`, fetcher);
       const battle = act?.battles?.find(b => b.id === id);
       if (!battle) return fail('bad_battle', 404);
+      // A secret boss (slot 9) only pays once every battle of its act is won with the Story decks.
+      if (battle.secret) {
+        const refs = await storyRefs();
+        if (!Array.isArray(refs)) return fail('not_ready', 503);
+        if (!Array.from({length: 8}, (_, i) => `story:a${Number(m[1])}b${i + 1}:loaner`).every(r => refs.includes(r))) return fail('secret_locked', 403);
+      }
       const cfg = (await state()).config?.story || {}, set = battle.rewardSet, pack = n => Array.from({length: n}, () => ({set, source: 'story'}));
       const reward = battle.reward || {hero: {packs: cfg.firstWinPacks ?? 1, coins: 0}, villain: {card: null, coins: cfg.starCoins ?? 100}};
       const villain = body.seat === 'villain', own = body.deck === 'own', xp = cfg.firstWinXp ?? 150;

@@ -4,12 +4,15 @@
 // seat, own deck or Story deck, on the play, turns, lowest life, and the cards each side put on the battlefield.
 // Act-wide deeds read Story progress: the Chronicler clears all 8 battles with the Story decks,
 // the Two-Faced wins every battle from both seats.
-const deed = (id, act, battle, title, lore, art, test, seat = 'hero') => ({id, act, battle, title, lore, art, test, seat});
+const deed = (id, act, battle, title, lore, art, test, seat = 'hero', extra = {}) => ({id, act, battle, title, lore, art, test, seat, ...extra});
 const sawTheirs = (s, name) => s.theirCards?.includes(name), sawMine = (s, name) => s.myCards?.includes(name);
 export const STORY_DEEDS = Object.freeze([
   // Act 1: The Dawn of Dominaria
   deed('a1-toll-unpaid', 1, 'a1b2', 'Toll Unpaid', "Cross the Goblin King's pass by turn 8. He never saw the sky coming.", 'Goblin King', s => s.turns <= 8),
   deed('a1-no-efreet', 1, 'a1b6', 'Fair Winds', 'Reach Serendib before its Efreet ever takes the field.', 'Serendib Efreet', s => !sawTheirs(s, 'Serendib Efreet')),
+  // The secret boss: a gold achievement (a Collector pack when claimed), hidden behind a riddle until it's done.
+  deed('a1-usenet', 1, 'a1b9', 'How Do You Stop This Deck?', 'Beat the Usenet Deck from December 1993 with the 1993 Power deck.', 'Black Vise', () => true, 'hero',
+    {gold: true, riddle: 'Someone else was listening. Win every battle of Act 1 with its own decks, then answer them.'}),
   deed('a1-unbroken', 1, 'a1b8', 'Unbroken', 'Beat Mishra without your life ever dropping below 10. The brothers were never this even.', "Mishra's War Machine", s => s.minLife >= 10),
   // Act 2: Legends and the Dark
   deed('a2-quick-deck', 2, 'a2b6', 'Faster Than The Deck', 'Beat Arcades Sabboth\'s control deck by turn 12, before it takes over.', 'Mirror Universe', s => s.turns <= 12),

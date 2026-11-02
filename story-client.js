@@ -42,6 +42,8 @@ export function progressFromRefs(refs = []) {
 export const battleCleared = (p, id) => !!p?.battles?.[id]?.clear || STAR_KEYS.some(k => p?.battles?.[id]?.[k]);
 export const actCleared = (p, n) => !!p?.acts?.[n] || battleCleared(p, `a${n}b8`);
 export const actStars = (p, n) => Array.from({length: 8}, (_, i) => battleStars(p?.battles?.[`a${n}b${i + 1}`])).reduce((a, b) => a + b, 0);
+// An act's secret boss (slot 9, battle.secret) opens once all 8 battles are won with the Story decks.
+export const secretOpen = (p, n) => Array.from({length: 8}, (_, i) => !!p?.battles?.[`a${n}b${i + 1}`]?.loaner).every(Boolean);
 // The battle you're on: the first one in order that isn't cleared. Battles open one at a time.
 export const currentBattle = (p, n) => { for (let i = 1; i <= 8; i++) if (!battleCleared(p, `a${n}b${i}`)) return i; return 9; };
 // The act you're on. Act n opens when act n-1's boss falls.

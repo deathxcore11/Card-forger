@@ -35,7 +35,9 @@ export const ACHIEVEMENTS = Object.freeze([
   {id: 'pack-rat', tab: 'collector', title: 'Pack Rat', lore: 'Packs opened, from every source.', art: 'Pack Rat', source: 'packs', steps: [10, 50, 200, 500, 1000]},
   {id: 'by-a-thread', tab: 'hidden', title: 'By a Thread', lore: 'Win with exactly 1 life left.', riddle: 'One breath stands between you and the grave.', art: 'Near-Death Experience', source: 'wins_thread', steps: [1], feat: true, hidden: true},
   // Story deeds: one feat each, woven into the acts (story-deeds.js).
-  ...[...STORY_DEEDS, ...STORY_ACT_DEEDS].map(d => ({id: d.id, tab: 'story', title: d.title, lore: d.lore, art: storyDeedArt(d), source: 'sd:' + d.id, steps: [1], feat: true})),
+  // A gold deed (a secret boss) is a one-step gold achievement instead of a feat: it pays the gold tier and a Collector pack.
+  ...[...STORY_DEEDS, ...STORY_ACT_DEEDS].map(d => ({id: d.id, tab: 'story', title: d.title, lore: d.lore, art: storyDeedArt(d), source: 'sd:' + d.id, steps: [1],
+    ...(d.gold ? {hidden: true, riddle: d.riddle} : {feat: true})})),
   {id: 'marathon', tab: 'hidden', title: 'Marathon', lore: 'Win a match that reaches turn 30.', riddle: 'The sun rose and set and still you fought.', art: 'Approach of the Second Sun', source: 'wins_marathon', steps: [1], feat: true, hidden: true},
 ]);
 

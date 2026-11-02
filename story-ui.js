@@ -4,7 +4,7 @@
 // The road reveals itself: cleared acts, the current act, one blurred tease, and nothing after it.
 import {STORY_ACTS, SET_NAMES, setSymbolUrl} from './story-acts.js';
 import {purseMarkup} from './play-econ-ui.js';
-import {battleStars, battleCleared, actCleared, actStars, currentBattle, currentAct, STAR_VALUE} from './story-client.js';
+import {battleStars, battleCleared, actCleared, actStars, currentBattle, currentAct, secretOpen, STAR_VALUE} from './story-client.js';
 const esc = v => String(v ?? '').replace(/[&<>"']/g, c => ({'&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;'}[c]));
 const back = (act, label) => `<button class="pl-back" data-act="${act}" aria-label="${label}"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="m15 5-7 7 7 7"/></svg></button>`;
 const head = (title, econ, eyebrow, backAct = 'playHome', backLabel = 'Back to Play') => `<header class="pl-head pe-head st-head">${back(backAct, backLabel)}<div class="pl-head-title"><p class="eyebrow">${esc(eyebrow)}</p><h1 id="playTitle" tabindex="-1">${esc(title)}</h1></div>${purseMarkup(econ)}</header>`;
@@ -39,13 +39,13 @@ export function storyHomeMarkup({progress, econ, actsData = {}}) {
 
 // One act: its banner and the battles you've reached. Cleared ones, the current one, then one tease.
 export function storyActMarkup({act, data, progress, econ}) {
-  const meta = STORY_ACTS.find(a => a.act === act), now = currentBattle(progress, act);
-  const cleared = data.battles.filter(b => battleCleared(progress, b.id)).length;
+  const meta = STORY_ACTS.find(a => a.act === act), now = currentBattle(progress, act), boss = b => b.slot >= 8;
+  const cleared = data.battles.filter(b => !b.secret && battleCleared(progress, b.id)).length;
   const villainFace = b => data.cast[b.villain.who]?.portrait;
   const row = b => {
     const rec = progress.battles?.[b.id], done = battleCleared(progress, b.id), here = b.slot === now, tease = b.slot === now + 1;
     if (tease) return `<li class="st-battle st-battle--tease" aria-hidden="true"><span class="st-battle-face" style="${faceStyle(villainFace(b))}"></span><span class="st-battle-copy"><span class="st-battle-kind">${esc(b.kind)}</span><span class="st-battle-title">${esc(b.title)}</span></span></li>`;
-    return `<li><button class="st-battle${here ? ' st-battle--here' : ''}${b.slot === 8 ? ' st-battle--boss' : ''}" data-act="storyOpenBattle" data-story-battle="${esc(b.id)}" aria-label="${esc(b.kind)}: ${esc(b.title)}. ${done ? battleStars(rec) + ' of 5 stars' : 'Not won yet'}">
+    return `<li><button class="st-battle${here ? ' st-battle--here' : ''}${boss(b) ? ' st-battle--boss' : ''}${b.secret ? ' st-battle--secret' : ''}" data-act="storyOpenBattle" data-story-battle="${esc(b.id)}" aria-label="${esc(b.kind)}: ${esc(b.title)}. ${done ? battleStars(rec) + ' of 5 stars' : 'Not won yet'}">
       <span class="st-battle-face" style="${faceStyle(villainFace(b))}" aria-hidden="true"></span>
       <span class="st-battle-copy"><span class="st-battle-kind">${b.slot === 8 ? 'Boss' : esc(b.kind)} <i>${esc(b.difficulty)}</i></span><span class="st-battle-title">${esc(b.title)}</span><span class="st-battle-blurb">${esc(b.blurb)}</span></span>
       <span class="st-battle-side">${starsRow(rec)}<span class="pl-mode-cta">${done ? 'Replay' : 'Duel'}</span></span></button></li>`;
@@ -53,7 +53,7 @@ export function storyActMarkup({act, data, progress, econ}) {
   return `<section class="play-menu st-screen st-act" aria-labelledby="playTitle">${head(meta.title, econ, 'Story · Act ' + act, 'storyHome', 'Back to Story')}
     <header class="st-banner"><span class="st-banner-art" style="background-image:url(${esc(meta.art.crop)})" aria-hidden="true"></span>
       <span class="st-banner-copy">${symbols(meta)}<span class="st-banner-years">${esc(meta.years)}</span></span>${ring(cleared, 8, cleared + ' of 8 battles won')}</header>
-    <ol class="st-battles">${data.battles.filter(b => b.slot <= now + 1).map(row).join('')}</ol>
+    <ol class="st-battles">${data.battles.filter(b => b.secret ? secretOpen(progress, act) : b.slot <= now + 1).map(row).join('')}</ol>
   </section>`;
 }
 
@@ -120,6 +120,7 @@ export const LESSONS = {
   'Morph': 'Morph: cast a creature face down as a 2/2 for three mana, then pay its morph cost any time to turn it face up. Watch for face-down cards.',
   'Tribes': 'Tribal cards care about creature types. Elves pump elves, goblins pump goblins. Play the tribe together.',
   'Alternate wins': 'Some cards win the game a different way. If Phage deals combat damage to a player, that player loses. Block her or kill her.',
+  'Punishing full hands': 'Black Vise deals 1 damage each turn for every card over four in your hand. Play cards fast, keep your hand small, and break the Vises.',
   'Playing under a lock': 'A lock stops cards from untapping or moving. Break it, or win with what\'s already in play.',
 };
 // What a battle pays, in words: era packs for your side, the villain's signature card for theirs.
@@ -134,7 +135,7 @@ export function storyBattleMarkup({act, data, battle: b, progress, econ, ui = {}
   // Each side pays once: say what this win pays, or point at the other side's reward once yours is claimed.
   const rw = b.reward || {}, mineDone = seat === 'villain' ? !!rec.villain : !!rec.loaner, ownPick = (ui.deck || 'loaner') !== 'loaner';
   // A boss pays a Collector pack (every card holo) on the first hero-side win, with any deck.
-  const collector = b.slot === 8 && seat === 'hero' && !villainOpen ? ' + a Collector pack' : '';
+  const collector = b.slot >= 8 && seat === 'hero' && !villainOpen ? ' + a Collector pack' : '';
   const prize = ownPick ? (collector ? `<small>Your deck</small> XP${collector}` : '<small>Your deck</small> XP only') : !mineDone ? `<small>Win</small> ${rewardText(rw[seat], b.rewardSet)}${collector}`
     : seat === 'hero' && !rec.villain && rw.villain?.card ? `<small>Their side</small> ${rewardText(rw.villain, b.rewardSet)}` : '<small>Reward claimed</small>';
   const deckChoice = ui.deck && ui.deck !== 'loaner' ? ownDecks.find(d => d.id === ui.deck) : null;

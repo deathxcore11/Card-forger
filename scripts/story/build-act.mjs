@@ -48,12 +48,13 @@ const signature = (b, villainDeck) => {
   const c = best.c;
   return {oracle_id: c.oracle_id, name: c.name, rarity: c.rarity, set: c.set, id: c.id, image: `https://cards.scryfall.io/normal/front/${c.id[0]}/${c.id[1]}/${c.id}.jpg`};
 };
-const tier = b => b.slot === 8 ? 'boss' : b.difficulty === 'Easy' ? 'easy' : 'normal';
+const tier = b => b.slot >= 8 ? 'boss' : b.difficulty === 'Easy' ? 'easy' : 'normal';
 const REWARD = {easy: {packs: 1, coins: 0, vCoins: 50}, normal: {packs: 1, coins: 100, vCoins: 100}, boss: {packs: 2, coins: 200, vCoins: 200}};
 for (const b of src.battles) {
   const vDeck = deck(b.villain.deck), t = REWARD[tier(b)];
-  out.battles.push({id: `a${n}b${b.slot}`, slot: b.slot, kind: b.kind, mood: b.mood || (b.slot === 8 ? 'boss' : 'tension'), title: b.title, difficulty: b.difficulty, teaches: b.teaches, blurb: b.blurb,
-    rewardSet: b.rewardSet, host: b.slot === 8,
+  // Slot 9 is an act's secret boss (secret: true): hidden until every battle is won with the Story decks.
+  out.battles.push({id: `a${n}b${b.slot}`, slot: b.slot, kind: b.kind, ...(b.secret ? {secret: true} : {}), mood: b.mood || (b.slot >= 8 ? 'boss' : 'tension'), title: b.title, difficulty: b.difficulty, teaches: b.teaches, blurb: b.blurb,
+    rewardSet: b.rewardSet, host: b.slot >= 8,
     hero: {who: b.hero.who, deck: deck(b.hero.deck)}, villain: {who: b.villain.who, deck: vDeck},
     reward: {hero: {packs: t.packs, coins: t.coins}, villain: {card: signature(b, vDeck), coins: t.vCoins}},
     scene: b.scene, villainScene: b.villainScene || null, after: b.after || null, cues: b.cues, bigPlays: b.bigPlays || [], sim: b.sim || null});

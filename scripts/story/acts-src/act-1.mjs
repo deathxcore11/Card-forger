@@ -23,6 +23,7 @@ export default {
     efreet: {name: 'Serendib Efreet', title: 'Guardian of Serendib', card: 'Serendib Efreet', focus: '50% 30%'},
     tawnos: {name: 'Tawnos', title: "Urza's Apprentice", fixed: {card: "Tawnos, Urza's Apprentice", set: 'c18', number: '45', id: 'a031a6c1-d7d1-4980-ac8e-30440ff4408f', crop: 'https://cards.scryfall.io/art_crop/front/a/0/a031a6c1-d7d1-4980-ac8e-30440ff4408f.jpg', artist: 'Matt Stewart'}, focus: '50% 25%'},
     ashnod: {name: 'Ashnod', title: "Mishra's Lieutenant", fixed: {card: 'Ashnod, Flesh Mechanist', set: 'bro', number: '84', id: '5eb43c15-50a9-488f-b0be-84a5e0a6d10b', crop: 'https://cards.scryfall.io/art_crop/front/5/e/5eb43c15-50a9-488f-b0be-84a5e0a6d10b.jpg', artist: 'Howard Lyon'}, focus: '50% 25%'},
+    usenet: {name: 'The Usenet Deck', title: 'December 1993', card: 'Black Vise', focus: '50% 40%'},
     mishra: {name: 'Mishra', title: 'The Brother', fixed: {card: 'Mishra, Excavation Prodigy', set: 'bro', number: '140', id: 'f5d02416-8578-40a5-bf31-d1ef9b8764f1', crop: 'https://cards.scryfall.io/art_crop/front/f/5/f5d02416-8578-40a5-bf31-d1ef9b8764f1.jpg', artist: 'Donato Giancola'}, focus: '50% 25%'},
   },
   battles: [
@@ -295,5 +296,81 @@ export default {
       villainScene: [{who: 'mishra', line: "They told me I'd finally be better than you."}],
       cues: {hero: cue('Begin.', 'Exactly as designed.', '...Mishra.', "It's over. Give it to me.", 'I will build something greater.'),
         villain: cue('Just like when we were boys.', 'Look what I made without you!', 'You always win. Why do you always win?', 'Finally. FINALLY.', 'Then let it all burn.')}},
+
+    // The secret boss (Randall, 2 Nov 2026): the "How do you stop this deck?" list posted to Usenet in
+    // December 1993, before anything was restricted. It opens only after all 8 Act 1 battles are won with
+    // the Story decks. Forge runs Story on Vintage rules, which cap the Power at one copy each and four of
+    // anything else, so this is the same machine at legal counts: four Vises, Howling Mines standing in for
+    // the extra Wheels, Wheel and Timetwister, counters and Red Elemental Blasts, Winter Orb. Hard CPU, on the host.
+    {slot: 9, kind: 'Secret Boss', secret: true, title: 'How Do You Stop This Deck?', difficulty: 'Hard', rewardSet: 'lea', rewardCard: 'Black Vise', mood: 'boss',
+      teaches: ['Punishing full hands'],
+      blurb: 'Under the snow, a deck from before anything was forbidden. It draws you cards until they kill you.',
+      hero: {who: 'you', deck: {name: '1993 Power', colors: 'WR', archetype: 'Power and pressure', list: `
+1 Black Lotus
+1 Mox Pearl
+1 Mox Ruby
+1 Mox Sapphire
+1 Mox Jet
+1 Mox Emerald
+1 Sol Ring
+1 Time Walk
+1 Ancestral Recall
+1 Balance
+4 Savannah Lions
+4 White Knight
+3 Mesa Pegasus
+2 Juggernaut
+4 Serra Angel
+2 Shivan Dragon
+4 Lightning Bolt
+1 Fireball
+4 Swords to Plowshares
+4 Disenchant
+4 Mishra's Factory
+4 Plateau
+2 Tundra
+2 Volcanic Island
+4 Plains
+2 Mountain`}},
+      villain: {who: 'usenet', deck: {name: 'The Usenet Deck', colors: 'UR', archetype: 'Black Vise draw-seven', list: `
+4 Black Vise
+4 Howling Mine
+1 Wheel of Fortune
+1 Timetwister
+1 Ancestral Recall
+1 Time Walk
+1 Fireball
+1 Disintegrate
+4 Lightning Bolt
+2 Psionic Blast
+4 Red Elemental Blast
+4 Counterspell
+2 Power Sink
+3 Disenchant
+1 Mox Sapphire
+1 Mox Ruby
+1 Mox Pearl
+1 Sol Ring
+1 Winter Orb
+7 Island
+4 Mountain
+4 Volcanic Island
+3 Tundra
+3 Plateau
+1 Plains`}},
+      scene: [
+        {who: 'narrator', line: 'After the Sylex, the snow. Under the snow, something older than the war.'},
+        {who: 'stage', line: 'Subject: How do you stop this deck?'},
+        {who: 'usenet', line: 'Take seven cards. Take seven more. Every one of them hurts.'},
+        {who: 'you', line: 'Nothing on Dominaria plays like that.'},
+        {who: 'usenet', line: 'Nothing on Dominaria was ever told no.'},
+        {who: 'usenet', line: 'By your second turn the damage is bad enough. Ask anyone who answered the thread.', whisper: true}],
+      villainScene: [{who: 'usenet', line: 'They asked how to stop me. Nobody had an answer.'}],
+      after: [
+        {who: 'stage', line: 'Re: How do you stop this deck?'},
+        {who: 'you', line: 'Break the Vises. Keep your hand small. Hit hard.'},
+        {who: 'narrator', line: 'A week later, the first cards were restricted.', whisper: true}],
+      cues: {hero: cue('Find the Vises. Break them.', 'Power answers power.', 'Too many cards. Too much pain.', 'Stopped.', 'Nobody stops this deck.'),
+        villain: cue('Draw seven.', 'Wheel. Again.', "That wasn't in the thread.", "How do you stop this deck? You don't.", 'Posted. Answered.')}},
   ],
 };
