@@ -1717,11 +1717,17 @@ A.playChangeDeck=t=>{playView='lobby';playInspectOpen=false;A.playStyle(t);scrol
 A.playHome=()=>{playView='home';playInspectOpen=false;refreshPlayMenu();scrollTo({top:0});};
 // Play progression (play-progression.md): the Play collection, coins, seals and packs. The server
 // grants everything; this only asks it and shows the answer. Nothing here touches the real collection.
-const playEcon=createPlayEcon({getAccessToken:cloudAccessToken,onChange:()=>{syncPlayChrome();if(S.ui.view==='play')refreshPlayMenu();else if(S.ui.lens==='play'&&S.ui.view==='set')render();}});
+// Wallet and card-fact changes that land together (busy, result, done) share one Play repaint instead of a full
+// render each; it runs before the awaiting button handler continues, so handlers still see the new screen.
+let playPaint=false,storyPaint=0;
+const playRepaint=()=>{if(playPaint)return;playPaint=true;queueMicrotask(()=>{playPaint=false;refreshPlayMenu();});};
+// Story acts arrive one by one from the network: they share one repaint per frame.
+const storyRepaint=()=>{if(!storyPaint)storyPaint=(globalThis.requestAnimationFrame||(f=>setTimeout(f,16)))(()=>{storyPaint=0;refreshPlayMenu();});};
+const playEcon=createPlayEcon({getAccessToken:cloudAccessToken,onChange:()=>{syncPlayChrome();if(S.ui.view==='play')playRepaint();else if(S.ui.lens==='play'&&S.ui.view==='set')render();}});
 // The Trunk sort sticks until the player picks another (default: Recently added).
 function savedEconSort(){try{return localStorage.getItem('cardstashy-play-sort')||'';}catch{return '';}}
 let econUi={query:'',cardQuery:'',rarity:'',press:null,check:null,sort:savedEconSort()},econSeen=null;
-const econFacts=createCardFacts({onChange:()=>{if(S.ui.view==='play'&&ECON_VIEWS.has(playView))refreshPlayMenu();}});
+const econFacts=createCardFacts({onChange:()=>{if(S.ui.view==='play'&&ECON_VIEWS.has(playView))playRepaint();}});
 // Read the wallet once per signed-in account per visit to Play; a new account starts clean.
 const econWake=()=>{const id=cloudInfo()?.user?.id||null;if(id===econSeen)return;if(econSeen!==null)playEcon.clear();econSeen=id;econUi={query:'',cardQuery:'',rarity:'',press:null,check:null,sort:savedEconSort()};playView=ECON_VIEWS.has(playView)?'home':playView;if(id)setTimeout(()=>playEcon.refresh().then(()=>playEcon.login()).then(l=>{if(l?.fresh)toast(`Day ${l.stamp} stamped on your log-in calendar.`);}),0);};
 const econFocus=()=>requestAnimationFrame(()=>document.getElementById('playTitle')?.focus?.({preventScroll:true}));
@@ -2267,9 +2273,15 @@ const STORY_VIEWS=new Set(['story','storyAct','storyBattle']);
 const STORY_LEVEL={Easy:'Easy',Normal:'Medium',Hard:'Hard'};
 const storyAvatar=()=>{const p=playSetup.snapshot().profile||{};return /^https?:/.test(p.avatarUrl||'')?p.avatarUrl:'';};
 const storyBattle=()=>storyUi.data[storyUi.act]?.battles.find(b=>b.id===storyUi.battle)||null;
-function storyNeedAct(n){if(storyUi.data[n])return;loadAct(n).then(d=>{storyUi.data[n]=d;refreshPlayMenu();}).catch(()=>toast('Story could not load. Check your connection.'));loadActPool(n).then(p=>{storyUi.pools[n]=p;refreshPlayMenu();});}
+// Story home reads every act at once: their arrivals share one Play repaint per frame, one offline notice
+// covers them all, and an act's own-deck card pool loads only when that act is opened.
+let storyFailNote=0;
+function storyNeedAct(n,pool=true){
+ if(!storyUi.data[n])loadAct(n).then(d=>{storyUi.data[n]=d;storyRepaint();}).catch(()=>{if(Date.now()-storyFailNote>4000){storyFailNote=Date.now();toast('Story could not load. Check your connection.');}});
+ if(pool&&!storyUi.pools[n])loadActPool(n).then(p=>{if(!p)return;storyUi.pools[n]=p;storyRepaint();});
+}
 const storyGo=view=>{playView=view;playInspectOpen=false;refreshPlayMenu();scrollTo({top:0});requestAnimationFrame(()=>document.getElementById('playTitle')?.focus?.({preventScroll:true}));};
-A.storyHome=()=>{storyProgress.wake();for(const a of STORY_ACTS)storyNeedAct(a.act);storyGo('story');};
+A.storyHome=()=>{storyProgress.wake();for(const a of STORY_ACTS)storyNeedAct(a.act,false);storyGo('story');};
 A.storyOpenAct=t=>{const n=Number(t?.dataset?.storyAct||storyUi.act);if(!STORY_ACTS.some(a=>a.act===n))return;storyUi.act=n;storyNeedAct(n);storyGo('storyAct');};
 A.storyOpenBattle=t=>{storyUi.battle=t.dataset.storyBattle;storyUi.seat='hero';storyUi.deck='loaner';storyUi.listSide='mine';storyUi.listOpen=false;storyGo('storyBattle');storyWantArt();storyWarm();
  // The boss runs on the host: start warming it while the player reads the setup (story-mode-acts.md A1).
@@ -2412,9 +2424,14 @@ async function saveDeckArtOffline(){
  if(!names.length)return;
  try{await resolveNames(names,()=>{},false,()=>!accountLocked);}catch{}
  const urls=[...new Set(names.flatMap(name=>{const c=meta(name),faces=c?.card_faces||[];return [c?.image_uris?.normal,c?.image_uris?.art_crop,...faces.flatMap(f=>[f.image_uris?.normal,f.image_uris?.art_crop])];}).filter(url=>typeof url==='string'&&url.startsWith('https://cards.scryfall.io/')))].slice(0,3000);
+ // The same deck art was saved on an earlier launch this week: don't walk (and decode) thousands of images again.
+ let sig=urls.length+':';for(let i=0,h=0;i<urls.length;i++){for(const ch of urls[i])h=(h*31+ch.charCodeAt(0))|0;if(i===urls.length-1)sig+=h>>>0;}
+ const SAVED_ART='cardstashy-offline-deck-art',week=7*864e5;
+ try{const was=JSON.parse(localStorage.getItem(SAVED_ART)||'null');if(was?.sig===sig&&Date.now()-was.at<week)return;}catch{}
  let next=0;
  const load=url=>new Promise(done=>{const img=new Image();img.onload=img.onerror=()=>done();img.src=url;});
  await Promise.all(Array.from({length:3},async()=>{while(next<urls.length&&!accountLocked){if(document.hidden||playStarting||playerMatHost){await new Promise(r=>setTimeout(r,5000));continue;}await load(urls[next++]);}}));
+ if(next>=urls.length&&!accountLocked)try{localStorage.setItem(SAVED_ART,JSON.stringify({sig,at:Date.now()}));}catch{}
 }
 function renderPlayPage() {
   if(T.game()!=='mtg')return '<section class="empty"><h1>Play</h1><p>Choose Magic in the game selector to prepare a CPU match.</p><a class="btn" href="#home">Return Home</a></section>';

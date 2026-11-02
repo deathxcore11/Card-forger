@@ -317,9 +317,14 @@ const SHELL = new Set(ASSETS.filter((a) => !a.endsWith(".css")).map((a) => new U
 // A new release takes over at once; the page picks it up on its next open.
 self.addEventListener("install", (e) => {
   self.skipWaiting?.();
-  // Fetch past the browser's HTTP cache so a release never saves an older copy of a file.
-  e.waitUntil(caches.open(CACHE).then((c) => c.addAll(ASSETS.map((a) => new Request(a, { cache: "reload" })))));
+  // Every file is checked with the server so a release never saves an older copy, but a file the
+  // page has just downloaded (or that this release did not change) comes back as a bodiless "not
+  // modified" instead of being downloaded a second time.
+  e.waitUntil(caches.open(CACHE).then((c) => c.addAll(ASSETS.map((a) => new Request(a, { cache: "no-cache" })))));
 });
+// A saved script is re-checked in the background once its copy is older than this.
+const RECHECK_MS = 6 * 3600 * 1000;
+const savedLongAgo = (r) => { const at = Date.parse(r.headers.get("date") || ""); return !(at > 0) || Date.now() - at > RECHECK_MS; };
 let trimming = null;
 const trimArt = () => trimming ||= caches.open(ART).then(async (c) => {
   const keys = await c.keys();
@@ -381,19 +386,21 @@ self.addEventListener("fetch", (e) => {
     return;
   }
   // The app's own scripts are versioned with this worker: they open from the saved copy at once (no
-  // network round trip per module) and refresh in the background in case of a same-version fix.
+  // network round trip per module). The start page refreshes in the background on every open; a
+  // script does only once its saved copy is a few hours old (in case of a same-version fix), so
+  // opening the app doesn't send hundreds of checks that compete with cards and prices.
   const appPage = e.request.mode === "navigate" && PAGES.has(url.pathname);
   if (appPage || (e.request.mode !== "navigate" && SHELL.has(url.pathname))) {
     const key = appPage ? "./index.html" : url.pathname;
     e.respondWith(
       caches.open(CACHE).then(async (c) => {
         const hit = await c.match(key),
-          fresh = fetch(e.request).then((r) => {
+          fresh = () => fetch(e.request).then((r) => {
             if (r.ok && r.type === "basic" && !r.redirected) c.put(key, r.clone());
             return r;
           });
-        if (hit) { e.waitUntil(fresh.catch(() => {})); return hit; }
-        return fresh.catch(() => Response.error());
+        if (hit) { if (appPage || savedLongAgo(hit)) e.waitUntil(fresh().catch(() => {})); return hit; }
+        return fresh().catch(() => Response.error());
       }),
     );
     return;
