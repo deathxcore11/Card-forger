@@ -2,7 +2,7 @@
 
 This folder is the Android (Capacitor) project for `com.cardstashy.app`: the native Java
 (`android/app/src/main/java/dev/cardstashy/integration/`, including the Back button bridge in
-`MainActivity.java` and pack haptics in `CardStashyHaptics.java`), the native runtime that wraps the
+`MainActivity.java`, pack haptics in `CardStashyHaptics.java` and controller input in `CardStashyGamepad.java`, which feeds `runtime/native-gamepad.js`), the native runtime that wraps the
 website (`runtime/`), and the build scripts. The README.txt beside this file is the original
 hand-off and describes the design; this file is the current release procedure.
 

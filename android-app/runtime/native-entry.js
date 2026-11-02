@@ -4,6 +4,7 @@ import { createNativeArtworkStore } from './native-art-storage.js';
 import { createNativeDocuments, installFileInputAdapter } from './native-documents.js';
 import { OFFLINE_ART } from './offline-art-manifest.js';
 import { installNativeDisplay } from './native-display.js';
+import { installGamepad } from './native-gamepad.js';
 
 if (location.origin !== 'https://android-integration.cardstashy.invalid') throw Error('This integration build must run in its own Android origin.');
 Object.defineProperty(globalThis, 'CARDSTASHY_NATIVE', { value: Object.freeze({ platform: 'android', networkIntegrated: true }), writable: false });
@@ -61,6 +62,8 @@ globalThis.PWNative = Object.freeze({ native: true, setOrientation(next) {
   return displayPlugin.setOrientation({ orientation: next }).then(() => true);
 } });
 globalThis.dispatchEvent(new Event('pwnative-ready'));
+// Controllers (the handheld's own buttons or a Bluetooth pad): focus ring, right-stick cursor, button glyphs.
+try { installGamepad({ plugin: globalThis.Capacitor.registerPlugin('CardStashyGamepad'), page: 'app' }); } catch {}
 // The launch splash stays up until the first screen has painted (Android lets it go after 5 s regardless).
 try { await import('./app.js'); }
 finally { requestAnimationFrame(() => requestAnimationFrame(() => { displayPlugin.ready().catch(() => {}); })); }

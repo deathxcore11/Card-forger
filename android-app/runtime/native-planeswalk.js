@@ -24,6 +24,8 @@
     const effect = pattern => { const ms = Array.isArray(pattern) ? pattern.reduce((a, b) => a + (+b || 0), 0) : +pattern || 0; return ms >= 60 ? 'warn' : ms >= 25 ? 'success' : 'tap'; };
     try { Object.defineProperty(navigator, 'vibrate', { configurable: true, value: pattern => { if (pattern) haptics.perform({ effect: effect(pattern) }).catch(() => {}); return true; } }); } catch {}
     globalThis.cardstashyBack = () => { location.href = '/#play'; return true; };
+    // The same controller scheme as the app (native-gamepad.js), tuned to the run's screens.
+    import('./native-gamepad.js').then(m => m.installGamepad({ plugin: cap.registerPlugin('CardStashyGamepad'), page: 'planeswalk' })).catch(() => {});
   };
   document.head.append(core);
 })();
