@@ -1,8 +1,8 @@
 {
   "schema": 1,
-  "version": "4.3.70",
-  "commit": "dd6736d87a64bbf34638c97472cc71a31f513ab7",
-  "tree": "5e50c779667f7cf7d26a02c874318e5f1e857d79",
+  "version": "4.3.71",
+  "commit": "7ece945d4e15309386c18524b4ccb2c7b29bb319",
+  "tree": "003ca6475a762b67cee95c3abb5e7fab82ce4963",
   "repository": "https://github.com/deathxcore11/Card-forger",
   "scope": "Explicit frontend build dependencies plus optional artwork input files. Not full backend repository.",
   "files": [
@@ -3559,7 +3559,7 @@
     {
       "path": "config.js",
       "bytes": 601,
-      "sha256": "09e1ab08acd1575fabb9830b390b8ff01cf445681cc9b3e6fbf566da09ee1614"
+      "sha256": "0f24730e512d5f3931df13f29934d2af52aad0233dcfb5287adab8bc1cc766b3"
     },
     {
       "path": "core.js",
@@ -4653,8 +4653,8 @@
     },
     {
       "path": "desktop-play.js",
-      "bytes": 11207,
-      "sha256": "64ea81c07605a111a3034d09edba08291d56290865b7eba587ae153028882fbe"
+      "bytes": 11466,
+      "sha256": "fa51d8bb1277ff586b35193dd8126f78566ae12407aa1717169086349357a66f"
     },
     {
       "path": "dialog.js",
@@ -4688,8 +4688,8 @@
     },
     {
       "path": "experiments/forge-proof/cpu-action-playback.mjs",
-      "bytes": 34244,
-      "sha256": "73470b2cdf0acc78ba213fa183a925a2357f45ea133ad4800a90c624d64c15fa"
+      "bytes": 35002,
+      "sha256": "946de1b5d3455c4d0da0fd5648044c34580c77c9dd6f3c4562b926f446f9b4eb"
     },
     {
       "path": "experiments/forge-proof/fixture-cards.json",
@@ -4703,8 +4703,8 @@
     },
     {
       "path": "experiments/forge-proof/forge-table.mjs",
-      "bytes": 223646,
-      "sha256": "95275936834ee4fa277dd3102259eb94667aca3dedc24982257bf086bf6d8338"
+      "bytes": 227767,
+      "sha256": "4cf44f3d25156580f270592a14e12caf1786ee68ca14525bb192a8f29a5b68b9"
     },
     {
       "path": "experiments/forge-proof/motion-kit.mjs",
@@ -4713,8 +4713,8 @@
     },
     {
       "path": "experiments/forge-proof/native-panel.mjs",
-      "bytes": 67926,
-      "sha256": "f09f4dc7caef0b6642380ba490e072419fcf6e6082e825131453a7c476cdb7d0"
+      "bytes": 68539,
+      "sha256": "ba586b2bd1bfdf1e2018b2fcdc9e8b634c7e61726d86fe4edbcb4407684f8247"
     },
     {
       "path": "experiments/forge-proof/pregame-fixture.html",
@@ -5409,7 +5409,7 @@
     {
       "path": "package.json",
       "bytes": 12318,
-      "sha256": "3ed6a311a7cf1a4e88bab7380bcf8130eb275409729041ad670d4df5b1980cb4"
+      "sha256": "cdae407421804490deeafb7756f536357a2e04e4ce1ace28b0cf636f86bef7ca"
     },
     {
       "path": "pairing.js",
@@ -7898,8 +7898,8 @@
     },
     {
       "path": "play-forge-table.css",
-      "bytes": 427681,
-      "sha256": "d38665dd8ae0d57bd4d0562af0c1597d0ea7bfae44b757b16ef704ec161b94e6"
+      "bytes": 440780,
+      "sha256": "12062666e6b53fefa3d868fdef1fe7eb63719ff80a95a9008d88ddede784d883"
     },
     {
       "path": "play-home.js",
@@ -7928,8 +7928,8 @@
     },
     {
       "path": "play-orientation.js",
-      "bytes": 1737,
-      "sha256": "e9fa3a171b7d5f89b229d6f8086d53922954d0fd8dd6dfc2830ac7de7b5642b4"
+      "bytes": 2034,
+      "sha256": "087a63690a176043721d80e3298471bbb2f87c1ea46f29dcd551000a3feb53c9"
     },
     {
       "path": "play-player-mat.js",
@@ -8148,8 +8148,8 @@
     },
     {
       "path": "release-record.js",
-      "bytes": 8428,
-      "sha256": "b4f01f5227f96d05f3b30da52f2e575d3147951fea3cc4c43189fe4b2510c481"
+      "bytes": 8693,
+      "sha256": "6b9ec88146cad00f921f9e0256733768aa52d69de791a55cb872602ae052ac23"
     },
     {
       "path": "release-status.js",
@@ -8698,8 +8698,8 @@
     },
     {
       "path": "sw.js",
-      "bytes": 16973,
-      "sha256": "9afdeba427ab88411e85dc41edb8262e4dfbf6a78a7e7b793bb398d0a004e7b9"
+      "bytes": 16971,
+      "sha256": "2a62a8ece5c7a7b66c98302dd399de6e8d208468a0a1c40cf7aa39a70e946e40"
     },
     {
       "path": "sync-merge.js",
@@ -8913,8 +8913,8 @@
     },
     {
       "path": "test-play-forge-playback.mjs",
-      "bytes": 13498,
-      "sha256": "83228518f254b0682aef13f3700b78212951c51f5b7ab68fc76ade95aef6618b"
+      "bytes": 13707,
+      "sha256": "7372ad71d0ea8421a6d6c3b6bcd91d9518cd49c1cd4d18b4dedf29a187bd3ed4"
     },
     {
       "path": "test-play-forge-pregame.mjs",
@@ -8943,8 +8943,8 @@
     },
     {
       "path": "test-play-screen-gate.mjs",
-      "bytes": 9501,
-      "sha256": "072d04c9de54947acaa1dc7ec15ebf73c7e51b499766d72cf0c2f0967a05bf51"
+      "bytes": 9709,
+      "sha256": "70623f49fdbab37537a4dd0ec95d18844cae9ddfc2fda96a30171bdbf5105794"
     },
     {
       "path": "test-play-update-gate.mjs",
@@ -10413,8 +10413,8 @@
     },
     {
       "path": "tests/forge-table-cpu-pacing-browser.mjs",
-      "bytes": 5740,
-      "sha256": "8e07e16f1c1d483ff0c3e2af058a17897bf45d5048ee5df2dfc13c7df3c0f06b"
+      "bytes": 5883,
+      "sha256": "cbf25f74442ea53fc9b6dfb8fe596ef75a47d8cb44c2a03114f02b8438c1424a"
     },
     {
       "path": "tests/frame-art/dp1-31.webp",

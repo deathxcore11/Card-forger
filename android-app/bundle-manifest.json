@@ -1,7 +1,7 @@
 {
   "source": "https://github.com/deathxcore11/Card-forger",
-  "commit": "dd6736d87a64bbf34638c97472cc71a31f513ab7",
-  "sourceVersion": "4.3.70",
+  "commit": "7ece945d4e15309386c18524b4ccb2c7b29bb319",
+  "sourceVersion": "4.3.71",
   "appId": "com.cardstashy.app",
   "releaseReady": false,
   "network": "enabled-exact-hosts",
@@ -3445,7 +3445,7 @@
     {
       "path": "config.js",
       "bytes": 629,
-      "sha256": "4fd749617d061fa1c629db9b6882039a14f0a787dcdea6acb014e60fa5eb1985"
+      "sha256": "c1b93a0dd384d123e37494bf27dc9e3e13ceccb7e73198ec56b519934c46e4da"
     },
     {
       "path": "core.js",
@@ -4524,8 +4524,8 @@
     },
     {
       "path": "desktop-play.js",
-      "bytes": 11207,
-      "sha256": "64ea81c07605a111a3034d09edba08291d56290865b7eba587ae153028882fbe"
+      "bytes": 11466,
+      "sha256": "fa51d8bb1277ff586b35193dd8126f78566ae12407aa1717169086349357a66f"
     },
     {
       "path": "dialog.js",
@@ -4544,8 +4544,8 @@
     },
     {
       "path": "experiments/forge-proof/cpu-action-playback.mjs",
-      "bytes": 34244,
-      "sha256": "73470b2cdf0acc78ba213fa183a925a2357f45ea133ad4800a90c624d64c15fa"
+      "bytes": 35002,
+      "sha256": "946de1b5d3455c4d0da0fd5648044c34580c77c9dd6f3c4562b926f446f9b4eb"
     },
     {
       "path": "experiments/forge-proof/forge-session.mjs",
@@ -4554,8 +4554,8 @@
     },
     {
       "path": "experiments/forge-proof/forge-table.mjs",
-      "bytes": 223646,
-      "sha256": "95275936834ee4fa277dd3102259eb94667aca3dedc24982257bf086bf6d8338"
+      "bytes": 227767,
+      "sha256": "4cf44f3d25156580f270592a14e12caf1786ee68ca14525bb192a8f29a5b68b9"
     },
     {
       "path": "experiments/forge-proof/motion-kit.mjs",
@@ -4564,8 +4564,8 @@
     },
     {
       "path": "experiments/forge-proof/native-panel.mjs",
-      "bytes": 67926,
-      "sha256": "f09f4dc7caef0b6642380ba490e072419fcf6e6082e825131453a7c476cdb7d0"
+      "bytes": 68539,
+      "sha256": "ba586b2bd1bfdf1e2018b2fcdc9e8b634c7e61726d86fe4edbcb4407684f8247"
     },
     {
       "path": "experiments/forge-proof/table-emotes.mjs",
@@ -5219,8 +5219,8 @@
     },
     {
       "path": "native-display.js",
-      "bytes": 1313,
-      "sha256": "cd7804e8898cf1de06e1370b76fa48f328b5f5e54b3e234477d29e332c1dc21e"
+      "bytes": 1204,
+      "sha256": "947dfabe40aac114408d4a3309253714c7ccaa12a4dcf12ae36ccbebc4590538"
     },
     {
       "path": "native-documents.js",
@@ -5231,11 +5231,6 @@
       "path": "native-entry.js",
       "bytes": 6572,
       "sha256": "f04aa543c671cebd29acc2c68c73559bf28de3518b4679b10cf16fb8fd8c5c09"
-    },
-    {
-      "path": "native-fold-prompt.js",
-      "bytes": 3379,
-      "sha256": "bc2b9599086fe1594f5b763d3a8b97407b1f0b9ccdbd35f496a97a15c88ff656"
     },
     {
       "path": "native-gamepad.js",
@@ -5254,8 +5249,8 @@
     },
     {
       "path": "native-planeswalk.js",
-      "bytes": 2541,
-      "sha256": "5784d69f56cd5411bfe0d29b8cce7809aabbc7e89f886a40b3137266a1a0710f"
+      "bytes": 2488,
+      "sha256": "14ad97b530332fb4c3b7d4895054f7638410d43f30086d0de295fec708a400e3"
     },
     {
       "path": "native-service-policy.js",
@@ -7619,8 +7614,8 @@
     },
     {
       "path": "play-forge-table.css",
-      "bytes": 430791,
-      "sha256": "7328d29162fc66338a48af6c32cf998e4d14c87ffc7d967d61d77fc7a39efe86"
+      "bytes": 443890,
+      "sha256": "486c918c99964cf5026ef32308e6452faf3430de076237ddf32940483029db69"
     },
     {
       "path": "play-home.js",
@@ -7649,8 +7644,8 @@
     },
     {
       "path": "play-orientation.js",
-      "bytes": 1737,
-      "sha256": "e9fa3a171b7d5f89b229d6f8086d53922954d0fd8dd6dfc2830ac7de7b5642b4"
+      "bytes": 2034,
+      "sha256": "087a63690a176043721d80e3298471bbb2f87c1ea46f29dcd551000a3feb53c9"
     },
     {
       "path": "play-player-mat.js",
@@ -7869,8 +7864,8 @@
     },
     {
       "path": "release-record.js",
-      "bytes": 8428,
-      "sha256": "b4f01f5227f96d05f3b30da52f2e575d3147951fea3cc4c43189fe4b2510c481"
+      "bytes": 8693,
+      "sha256": "6b9ec88146cad00f921f9e0256733768aa52d69de791a55cb872602ae052ac23"
     },
     {
       "path": "release-status.js",
