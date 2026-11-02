@@ -433,11 +433,17 @@ public final class ForgeHttpBridge implements IRemote {
     final Object eventLock=new Object();
     final ArrayDeque<Map<String,Object>> eventLog=new ArrayDeque<>();
     long eventSeq=0;
-    void logEvent(String type,Object... values){
+    void logEvent(String type,Object... values){logEvent(type,obj(values));}
+    /** Optional fields are added only when Forge gave a value, so older events keep their exact shape. */
+    static Map<String,Object> with(Map<String,Object> m,Object... optional){
+        for(int i=0;i<optional.length;i+=2)if(optional[i+1]!=null)m.put((String)optional[i],optional[i+1]);
+        return m;
+    }
+    void logEvent(String type,Map<String,Object> values){
         if(viewer==null||game==null||failure!=null||concessionRequested)return;
         var ph=game.getPhaseHandler();
         Map<String,Object> e=obj("seq",0L,"type",type,"turn",ph.getTurn(),"phase",ph.getPhase()==null?null:ph.getPhase().name());
-        e.putAll(obj(values));
+        e.putAll(values);
         synchronized(eventLock){e.put("seq",++eventSeq);eventLog.addLast(e);while(eventLog.size()>EVENT_LOG_SIZE)eventLog.removeFirst();}
     }
     Map<String,Object> eventsView(boolean withItems){
@@ -463,8 +469,11 @@ public final class ForgeHttpBridge implements IRemote {
     @com.google.common.eventbus.Subscribe public void logTurn(forge.game.event.GameEventTurnBegan e){logEvent("turn","player",id(e.turnOwner()),"number",e.turnNumber());}
     @com.google.common.eventbus.Subscribe public void logZone(forge.game.event.GameEventCardChangeZone e){
         if(e.card()==null)return;
-        logEvent("zone","card",cardRef(e.card()),"from",e.from()==null?null:e.from().zoneType().name(),"to",e.to()==null?null:e.to().zoneType().name(),
-            "player",e.to()!=null?id(e.to().player()):e.from()!=null?id(e.from().player()):null,"token",e.card().isToken());
+        ZoneType from=e.from()==null?null:e.from().zoneType(),to=e.to()==null?null:e.to().zoneType();
+        String cause=zoneCause(e.card(),from,to);
+        logEvent("zone",with(obj("card",cardRef(e.card()),"from",from==null?null:from.name(),"to",to==null?null:to.name(),
+            "player",e.to()!=null?id(e.to().player()):e.from()!=null?id(e.from().player()):null,"token",e.card().isToken()),
+            "cause",cause,"by",cause==null?null:resolvingSource()));
     }
     @com.google.common.eventbus.Subscribe public void logLand(forge.game.event.GameEventLandPlayed e){logEvent("land","player",id(e.player()),"card",cardRef(e.land()));}
     @com.google.common.eventbus.Subscribe public void logCast(forge.game.event.GameEventSpellAbilityCast e){
@@ -490,16 +499,23 @@ public final class ForgeHttpBridge implements IRemote {
         if(!blocks.isEmpty())logEvent("block","player",id(e.defendingPlayer()),"blockers",blocks);
     }
     @com.google.common.eventbus.Subscribe public void logCardDamage(forge.game.event.GameEventCardDamaged e){
+        noteDamageForLife(-1,e.source(),e.amount());
         var target=cardRef(e.card());if(target==null)return;
-        logEvent("damage","target",target,"source",cardRef(e.source()),"amount",e.amount(),"kind",e.type()==null?null:e.type().name());
+        logEvent("damage",with(obj("target",target,"source",cardRef(e.source()),"amount",e.amount(),"kind",e.type()==null?null:e.type().name()),"lifelink",lifelink(e.source())?true:null));
     }
     @com.google.common.eventbus.Subscribe public void logPlayerDamage(forge.game.event.GameEventPlayerDamaged e){
-        logEvent("damage","target",entityRef(e.target()),"source",cardRef(e.source()),"amount",e.amount(),"combat",e.combat(),"infect",e.infect());
+        logEvent("damage",with(obj("target",entityRef(e.target()),"source",cardRef(e.source()),"amount",e.amount(),"combat",e.combat(),"infect",e.infect()),"lifelink",lifelink(e.source())?true:null));
+        if(e.target()!=null&&!e.infect())noteDamageForLife(e.target().getId(),e.source(),e.amount());
+        else if(e.target()!=null)noteDamageForLife(-1,e.source(),e.amount());
     }
-    @com.google.common.eventbus.Subscribe public void logLife(forge.game.event.GameEventPlayerLivesChanged e){logEvent("life","player",id(e.player()),"from",e.oldLives(),"to",e.newLives());}
+    @com.google.common.eventbus.Subscribe public void logLife(forge.game.event.GameEventPlayerLivesChanged e){
+        Map<String,Object> m=obj("player",id(e.player()),"from",e.oldLives(),"to",e.newLives());
+        if(e.player()!=null)lifeCause(m,e.player().getId(),e.newLives()-e.oldLives());
+        logEvent("life",m);
+    }
     @com.google.common.eventbus.Subscribe public void logCounters(forge.game.event.GameEventCardCounters e){
         var c=cardRef(e.card());if(c==null||e.type()==null)return;
-        logEvent("counters","card",c,"counter",e.type().toString(),"from",e.oldValue(),"to",e.newValue());
+        logEvent("counters",with(obj("card",c,"counter",e.type().toString(),"from",e.oldValue(),"to",e.newValue()),"source",resolvingSource()));
     }
     @com.google.common.eventbus.Subscribe public void logAttach(forge.game.event.GameEventCardAttachment e){
         var c=cardRef(e.equipment());if(c==null)return;
@@ -507,6 +523,78 @@ public final class ForgeHttpBridge implements IRemote {
     }
     @com.google.common.eventbus.Subscribe public void logMulligan(forge.game.event.GameEventMulligan e){logEvent("mulligan","player",id(e.player()));}
     @com.google.common.eventbus.Subscribe public void logShuffle(forge.game.event.GameEventShuffle e){logEvent("shuffle","player",id(e.player()));}
+    // Typed details for the table's effects. Additive: each is an extra field on an event above
+    // or a new event type, so a table that doesn't know them ignores them. Only what Forge
+    // reported is said: a field is left out when Forge gave nothing to tie it to.
+    //  zone.cause  destroy | sacrifice | countered | token, zone.by: the card whose spell or
+    //              ability was resolving at the time (Forge fires destroy/sacrifice just before the move)
+    //  life.cause  damage | lifelink | effect, with life.sources (damage, lifelink) or life.source
+    //  counters.source, damage.lifelink, and the event types countered and transform.
+    boolean destroyPending;
+    final Set<Integer> sacrificePending=new HashSet<>(),counteredPending=new HashSet<>();
+    // Player damage and lifelink not yet matched to a life change: {playerId, amount, sourceRef}.
+    final List<Object[]> lifeDamage=new ArrayList<>(),lifeGain=new ArrayList<>();
+    SpellAbility resolvingAbility(){
+        try{var st=game==null?null:game.getStack();return st==null||!st.isResolving()?null:st.peekAbility();}catch(RuntimeException e){return null;}
+    }
+    Map<String,Object> resolvingSource(){
+        var sa=resolvingAbility();
+        return sa==null||sa.getHostCard()==null?null:cardRef(sa.getHostCard().getView());
+    }
+    static boolean lifelink(CardView c){
+        return c!=null&&c.getCurrentState()!=null&&c.getCurrentState().hasKeyword(forge.game.keyword.Keyword.LIFELINK);
+    }
+    String zoneCause(CardView c,ZoneType from,ZoneType to){
+        boolean destroyed=destroyPending;destroyPending=false;
+        if(from==ZoneType.Battlefield){
+            if(sacrificePending.remove(c.getId()))return "sacrifice";
+            if(destroyed)return "destroy";
+        }
+        if(from==ZoneType.Stack&&counteredPending.remove(c.getId()))return "countered";
+        if(c.isToken()&&to==ZoneType.Battlefield&&(from==null||from==ZoneType.None))return "token";
+        return null;
+    }
+    void noteDamageForLife(int playerId,CardView source,int amount){
+        if(amount<=0||source==null)return;
+        if(playerId>=0)lifeDamage.add(new Object[]{playerId,amount,cardRef(source)});
+        if(lifelink(source)&&source.getController()!=null)lifeGain.add(new Object[]{source.getController().getId(),amount,cardRef(source)});
+    }
+    /** Ties a life change to the damage or lifelink Forge reported just before it, by exact amount. */
+    void lifeCause(Map<String,Object> m,int playerId,int delta){
+        if(delta==0)return;
+        List<Object[]> pool=delta<0?lifeDamage:lifeGain;int want=Math.abs(delta);
+        List<Object[]> mine=new ArrayList<>();for(Object[] d:pool)if((Integer)d[0]==playerId)mine.add(d);
+        List<Object[]> used=null;
+        for(Object[] d:mine)if((Integer)d[1]==want){used=Collections.singletonList(d);break;}
+        if(used==null&&!mine.isEmpty()&&mine.stream().mapToInt(d->(Integer)d[1]).sum()==want)used=mine;
+        if(used!=null){
+            pool.removeAll(used);
+            List<Object> sources=new ArrayList<>();for(Object[] d:used)if(d[2]!=null&&!sources.contains(d[2]))sources.add(d[2]);
+            with(m,"cause",delta<0?"damage":"lifelink","sources",sources);
+            return;
+        }
+        var by=resolvingSource();if(by!=null)with(m,"cause","effect","source",by);
+    }
+    @com.google.common.eventbus.Subscribe public void noteDestroy(forge.game.event.GameEventCardDestroyed e){destroyPending=true;}
+    @com.google.common.eventbus.Subscribe public void noteSacrifice(forge.game.event.GameEventCardSacrificed e){if(e.card()!=null)sacrificePending.add(e.card().getId());}
+    // A step boundary: anything not matched by now never will be.
+    @com.google.common.eventbus.Subscribe public void clearPendingCauses(forge.game.event.GameEventTurnPhase e){
+        destroyPending=false;sacrificePending.clear();counteredPending.clear();lifeDamage.clear();lifeGain.clear();
+    }
+    @com.google.common.eventbus.Subscribe public void logCountered(forge.game.event.GameEventSpellRemovedFromStack e){
+        var resolving=resolvingAbility();
+        if(e.sa()==null||resolving==null||game.isGameOver()||e.sa().getId()==resolving.getView().getId())return;
+        boolean counter=false;
+        for(SpellAbility s=resolving;s!=null;s=s.getSubAbility())if(s.getApi()==forge.game.ability.ApiType.Counter){counter=true;break;}
+        if(!counter)return;
+        CardView host=e.sa().getHostCard();
+        if(host!=null&&e.sa().isSpell())counteredPending.add(host.getId());
+        logEvent("countered","source",cardRef(host),"spell",e.sa().isSpell(),"by",resolvingSource());
+    }
+    @com.google.common.eventbus.Subscribe public void logTransform(forge.game.event.GameEventCardStatsChanged e){
+        if(!e.transform()||e.cards()==null)return;
+        for(CardView c:e.cards()){var r=cardRef(c);if(r!=null)logEvent("transform","card",r);}
+    }
     @com.google.common.eventbus.Subscribe public void logDayNight(forge.game.event.GameEventDayTimeChanged e){logEvent("dayNight","value",e.daytime()?"day":"night");}
     void applyControlMode(){
         if(failure!=null){effectiveAutoPass=false;clearSmartIntent();autoPayAttemptInput=null;return;}
@@ -1119,6 +1207,7 @@ public final class ForgeHttpBridge implements IRemote {
         // Smart mode skips a priority stop when nothing can be cast or activated. Conservative:
         // any actionable card counts, including ones whose cost is only "unknown".
         if(publishedInput instanceof forge.gamemodes.match.input.InputPassPriority)snapshot.put("canRespond",!selection.actionable().isEmpty());
+        snapshot.put("priority",priorityView(input));
         if(exactAdmission!=null&&exactAdmission.opponent()!=null&&!humanOpponent){
             Object warnings=exactAdmission.opponent().report().get("cpuWarnings");
             int count=warnings instanceof Collection<?> values?values.size():0;
@@ -1127,6 +1216,36 @@ public final class ForgeHttpBridge implements IRemote {
         snapshot.putAll(obj("revision",publicationRevision,"status",failure!=null?"failed":(finished||Boolean.TRUE.equals(board.get("gameOver"))?"finished":exactAdmission!=null&&(!Boolean.TRUE.equals(exactAdmission.receipt().get("nativeRosterVerified"))||startingPlayer!=null&&pregame.isEmpty())?"initializing":"running"),"failure",failure,"message",message,"buttons",buttons,"inputType",input,"selection",select,"prompt",concessionRequested||pending==null?null:pending.dto,"busy",!(finished||Boolean.TRUE.equals(board.get("gameOver")))&&(concessionRequested||(pending!=null?pending.answer.isDone():(busy||commandInFlight||nativePaymentPending()||publishedInput==null||publishedInput instanceof forge.gamemodes.match.input.InputLockUI))),"lastActionError",lastActionError,"notification",notification,"controlMode",controlMode,"autoPay",autoPay(),"phaseStops",Map.copyOf(phaseStops),"autoPassNoActions",effectiveAutoPass,"nativeAutoPayments",nativeAutoPayments,"canConcede",failure==null&&!finished&&!concessionRequested&&!Boolean.TRUE.equals(board.get("gameOver")),"concession",obj("requested",concessionRequested,"nativeConfirmed",nativeOutcomeConfirmed,"applied",concessionApplied)));
         published.set(snapshot);
     }}
+    /** Who holds priority and, when the table is waiting on you, why it stopped. Additive and
+     *  read from this publication's own data (board, input, settings), never the live game.
+     *  stop: mulligan | choice | payment | declare_attackers | declare_blockers | stack (something
+     *  to answer) | main (your main phase) | phase_stop (a stop you set) | full_control | combat |
+     *  priority; null while Forge is working or someone else is deciding. */
+    Map<String,Object> priorityView(String input){
+        Object holder=board.get("priorityPlayer");
+        boolean decide=pending!=null||input!=null&&!input.equals("InputLockUI");
+        String stop=null;
+        if(pending!=null)stop="choice";
+        else if(input!=null)stop=switch(input){
+            case "InputLockUI" -> null;
+            case "InputConfirmMulligan","InputLondonMulligan","InputChooseStartingHand" -> "mulligan";
+            case "InputAttack" -> "declare_attackers";
+            case "InputBlock" -> "declare_blockers";
+            case "InputPayMana","InputPayManaOfCostPayment" -> "payment";
+            case "InputPassPriority" -> {
+                Object phase=board.get("phase");boolean own=Objects.equals(board.get("activePlayer"),viewer.getId());
+                String key=phase==null?null:(own?"you":"opponent")+":"+phase;
+                if(board.get("stack") instanceof List<?> s&&!s.isEmpty())yield "stack";
+                if(own&&("MAIN1".equals(phase)||"MAIN2".equals(phase)))yield "main";
+                if(key!=null&&phaseStops.containsKey(key))yield "phase_stop";
+                if(controlMode.equals("full"))yield "full_control";
+                if(phase!=null&&phase.toString().startsWith("COMBAT_"))yield "combat";
+                yield "priority";
+            }
+            default -> "choice";
+        };
+        return obj("holder",holder,"viewerHolds",holder!=null&&holder.equals(viewer.getId()),"waitingOnViewer",decide,"stop",stop);
+    }
     // Commander damage this player has taken from each opponent's commander (CR 903.10a), 0 included.
     List<Object> commanderDamage(GameView v,PlayerView p){
         List<Object> out=new ArrayList<>();
