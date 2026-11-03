@@ -12,7 +12,7 @@ import {tileChrome} from './tiles.js';
 import {deckShell} from './deck-viewer.js';
 import {purse} from './play-econ-client.js';
 import {deedsScreenMarkup} from './play-deeds-ui.js';
-import {secretLairImage} from './play-secret-lair.js';
+import {secretLairImage, secretLairOfferPrice} from './play-secret-lair.js';
 const esc = v => String(v ?? '').replace(/[&<>"']/g, c => ({'&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;'}[c]));
 const n = v => Number(v || 0).toLocaleString('en-US');
 const ART = 'https://cards.scryfall.io/art_crop/front/';
@@ -119,6 +119,25 @@ export function secretLairShelf(snapshot) {
     <div class="pe-sl-foot">${btn}</div></section>`;
 }
 
+// The Secret Lair store row (Arena's card-style store): ten cards a week, some on sale, a refresh timer.
+const SEAL_WORD = {c: 'common', u: 'uncommon', r: 'rare', m: 'mythic'};
+export function secretLairStore(snapshot) {
+  const s = snapshot.state, st = s?.secretLairStore; if (!st?.offers?.length) return '';
+  const coins = s.wallet?.coins | 0, have = new Set((s.styles || []).map(x => x.id));
+  const ms = Math.max(0, Date.parse(st.ends) - Date.now()), d = Math.floor(ms / 864e5), h = Math.floor(ms % 864e5 / 36e5);
+  const left = d ? `${d} day${d === 1 ? '' : 's'} ${h} h` : `${h} hour${h === 1 ? '' : 's'}`;
+  const tile = (c, i) => { const p = secretLairOfferPrice(c, s.config), owned = have.has(c.id), seals = s.wallet?.['seal_' + p.seal] | 0;
+    return `<li class="pe-slo${c.off ? ' pe-slo--sale' : ''}${owned ? ' is-owned' : ''}" style="--i:${i}">
+      <button class="pe-slo-art" data-act="card" data-name="${esc(c.n)}" data-play-card="1" aria-label="Open ${esc(c.n)}"><img src="${esc(secretLairImage(c.id))}" alt="" loading="lazy" decoding="async" referrerpolicy="no-referrer">${c.off ? `<span class="pe-slo-ribbon" aria-hidden="true">${c.off}% off</span>` : ''}</button>
+      <p class="pe-slo-name">${esc(c.n)}</p>
+      ${owned ? '<span class="pe-sl-done">Yours</span>' : `<div class="pe-slo-pay">
+        ${c.off ? `<s class="pe-slo-was" aria-label="Was ${n(p.was)} coins">${n(p.was)}</s>` : ''}
+        <button class="pe-buy" data-act="playEconSlOffer" data-econ-card="${esc(c.id)}" data-econ-pay="coins" ${coins < p.coins || snapshot.busy ? 'disabled' : ''} aria-label="Buy ${esc(c.n)} for ${n(p.coins)} coins${c.off ? `, ${c.off}% off` : ''}">${coinIcon('pe-coin--sm')}<b>${n(p.coins)}</b></button>
+        <button class="pe-buy pe-buy--seal" data-act="playEconSlOffer" data-econ-card="${esc(c.id)}" data-econ-pay="seal" ${seals < 1 || snapshot.busy ? 'disabled' : ''} aria-label="Buy ${esc(c.n)} for 1 ${SEAL_WORD[p.seal]} seal">${sealIcon(p.seal)}<b>1</b></button></div>`}</li>`; };
+  return `<section class="pe-shelf pe-slo-shelf" aria-labelledby="peSloTitle"><div class="pe-sl-head"><h2 id="peSloTitle">Secret Lair cards</h2><span class="pe-sl-left">New cards in ${esc(left)}</span></div>
+    <ul class="pe-slo-row" data-audit-scroll>${st.offers.map(tile).join('')}</ul></section>`;
+}
+
 export function shopMarkup(snapshot, {query = '', press = null, facts = null, shopFocus = ''} = {}) {
   const s = snapshot.state, price = s.config?.packPrice || 500, coins = s.wallet?.coins | 0, shop = s.shop || [], reward = s.rewardSet;
   const q = query.trim().toLowerCase(), list = (q ? shop.filter(x => x.name.toLowerCase().includes(q) || x.code === q) : shop).slice(0, q ? 60 : 24);
@@ -128,6 +147,7 @@ export function shopMarkup(snapshot, {query = '', press = null, facts = null, sh
   return `<section class="play-menu pe-screen pe-shop" aria-labelledby="playTitle">${head('Merchant', snapshot)}
     <div class="pe-table">
       ${secretLairShelf(snapshot)}
+      ${secretLairStore(snapshot)}
       <section class="pe-shelf" aria-labelledby="peShelfTitle"><h2 id="peShelfTitle">Packs</h2>
         ${reward ? `<div class="pe-feature">${buy(reward, true)}</div>` : ''}
         <label class="pe-search"><span>Any set, any year</span><input type="search" data-input="playEconSetSearch" value="${esc(query)}" maxlength="60" placeholder="Search sets"></label>

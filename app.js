@@ -1737,6 +1737,7 @@ A.playEconView=t=>{const v=t.dataset.econView;if(!ECON_VIEWS.has(v))return;playV
 // Secret Lair (play-secret-lair.js): this week's bundle, and the rare art styles rewards unlock.
 const slToast=style=>{if(!style?.id)return;playEcon.noteStyle(style);setTimeout(()=>{toast(`Secret Lair art unlocked: ${style.n}.${style.card?' The card came with it.':''} Pick it in the card view.`);haptic('tick');},900);};
 A.playEconReroll=async t=>{const weekly=t.dataset.econLevel==='weekly';try{await playEcon.reroll(t.dataset.econLevel,t.dataset.econId);toast(weekly?'Weekly quest swapped. One swap a week.':'Quest swapped. One swap a day.');haptic('tick');}catch{}};
+A.playEconSlOffer=async t=>{const st=playEcon.snapshot().state?.secretLairStore;try{await playEcon.secretLairCard(t.dataset.econCard,t.dataset.econPay==='seal'?'seal':'coins',st?.week);const c=st?.offers?.find(x=>x.id===t.dataset.econCard);toast(`${c?.n||'The card'} is yours, in its Secret Lair art.`);haptic('tick');}catch{}};
 A.playEconSecretLair=async t=>{try{const out=await playEcon.secretLair(t.dataset.econWeek);toast(`${out.secretLair?.title||'Secret Lair'} is yours. Every card is in your Trunk, in its Secret Lair art.`);haptic('tick');}catch{}};
 A.playCardStyle=async t=>{try{await playEcon.style(t.dataset.oracle,t.dataset.print||null);refreshSheet?.();}catch{}};
 A.playEconBuy=async t=>{try{await playEcon.buy(t.dataset.econSet);toast('Pack bought. It is waiting in Packs.');}catch{}};

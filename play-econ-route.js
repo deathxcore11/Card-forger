@@ -8,7 +8,7 @@ import {loadMtgBooster, mtgBoosterCards, drawMtgBooster, mtgGodPackPicks} from '
 import {rewardSet, setFormats} from './play-econ-sets.js';
 import {starterGrant, sealTrackBonus, packContentsRow, cardDelta, RARITY_SEAL, FORGE_STEPS, forgeRatio, holoCost, preconPrice, mtgjsonCardDelta, mtgjsonDeckRows, deckShortfall, ownedByName, isCollectorPack, collectorOdds, collectorPicks, collectorSource, godPackOdds} from './play-econ-rules.js';
 import {PRACTICE_STARTER_ROWS} from './play-starter-deck.js';
-import {weeklySecretLair, secretLairPrice, secretLairLabel, secretLairRef, secretLairCardDelta, secretLairStyle, pickSecretLairStyle} from './play-secret-lair.js';
+import {weeklySecretLairOffers, secretLairOfferPrice, weeklySecretLair, secretLairPrice, secretLairLabel, secretLairRef, secretLairCardDelta, secretLairStyle, pickSecretLairStyle} from './play-secret-lair.js';
 import {STORY_DEEDS, STORY_ACT_DEEDS, storyDeedsEarned} from './story-deeds.js';
 import {rerollUsed, weeklyRerollUsed, ACHIEVEMENTS, achievementRows, achievementReward, achievementRef, questRows, questReward, loginStamp, rewardDelta, matchCounters, playDay, playWeek, achievementsPayload} from './play-achievements.js';
 
@@ -48,6 +48,15 @@ export function secretLairOffer(drops, config = {}, now = new Date()) {
   const end = new Date(Date.UTC(now.getUTCFullYear(), now.getUTCMonth(), now.getUTCDate() + ((8 - (now.getUTCDay() || 7)) % 7 || 7)));
   return {week, ref: secretLairRef(week), id: drop.id, ...secretLairLabel(drop), price: secretLairPrice(drop, config), ends: end.toISOString(),
     cards: drop.cards.map(c => ({id: c.id, o: c.o, n: c.n, r: c.r, f: c.f}))};
+}
+
+// This Play week's Secret Lair store: ten single cards beside the bundle, four on sale (Arena's style store).
+export function secretLairStoreOffer(drops, now = new Date()) {
+  const today = now.toISOString().slice(0, 10), week = playWeek(today), bundle = weeklySecretLair(drops, week, today);
+  const offers = weeklySecretLairOffers(drops, week, today, bundle?.id || '');
+  if (!offers.length) return null;
+  const end = new Date(Date.UTC(now.getUTCFullYear(), now.getUTCMonth(), now.getUTCDate() + ((8 - (now.getUTCDay() || 7)) % 7 || 7)));
+  return {week, ends: end.toISOString(), offers: offers.map(c => ({id: c.id, o: c.o, n: c.n, r: c.r, f: c.f, off: c.off}))};
 }
 
 let setsCache = null;
@@ -137,8 +146,9 @@ export async function progressRoute(request, env, {verifyBearer, fetcher = fetch
       const [s, sets, c, claimed, story] = await Promise.all([state(), shopSets(env, request, fetcher), counters.read(), counters.claims(), storyRefs()]);
       const [l, drops] = await Promise.all([looks(), secretLairDrops(env, request, fetcher)]);
       const sl = l ? secretLairOffer(drops, s.config) : null;
+      const store = l ? secretLairStoreOffer(drops) : null;
       return json({...s, rewardSet: sets.reward, shop: sets.shop, counters: c || {}, claimed: claimed || [], story: Array.isArray(story) ? story : [],
-        styles: l?.styles || [], secretLair: sl ? {...sl, bought: (l.bundles || []).includes(sl.ref)} : null});
+        styles: l?.styles || [], secretLair: sl ? {...sl, bought: (l.bundles || []).includes(sl.ref)} : null, secretLairStore: store});
     }
     if (path === 'achievements' && request.method === 'GET') {
       // Every achievement, quest and log-in reward, worked out for this player (play-achievements.js).
@@ -359,6 +369,26 @@ export async function progressRoute(request, env, {verifyBearer, fetcher = fetch
       await tally(offer.ref, {buys: 1, coins_spent: offer.price}, body.tz);
       const after = await looks();
       return json({counters: await counters.read(), state: await state(), styles: after?.styles || [], secretLair: {...offer, bought: true}});
+    }
+    if (path === 'sloffer') {
+      // One card from this week's Secret Lair store, for coins (less its sale) or one seal of its rarity.
+      // Once per card: owning its Secret Lair style means it's bought.
+      const [s, l, drops] = await Promise.all([state(), looks(), secretLairDrops(env, request, fetcher)]);
+      if (!l) return fail('not_ready', 503);
+      const store = secretLairStoreOffer(drops);
+      if (!store || (body.week && body.week !== store.week)) return fail('bundle_gone', 409);
+      const card = store.offers.find(c => c.id === body.id), full = card && drops.flatMap(d => d.cards).find(c => c.id === card.id);
+      if (!card || !full) return fail('no_offer', 404);
+      if ((l.styles || []).some(x => x.id === card.id)) return fail('bought', 409);
+      const price = secretLairOfferPrice(card, s.config), seal = body.pay === 'seal';
+      if (seal ? (s.wallet?.['seal_' + price.seal] || 0) < 1 : (s.wallet?.coins || 0) < price.coins) return fail(seal ? 'no_seal' : 'short_coins', 409);
+      const ref = `slo:${store.week}:${card.id}`;
+      const paid = await apply(ref, 'secretlair', {...(seal ? {seals: {[price.seal]: -1}} : {coins: -price.coins}), cards: [secretLairCardDelta(full)]});
+      if (paid?.duplicate) return fail('bought', 409);
+      await rpc(env, 'play_add_styles', {p_user: uid, p_ref: ref + ':style', p_styles: [secretLairStyle(full)]}, fetcher);
+      await tally(ref, {buys: 1, ...(seal ? {} : {coins_spent: price.coins})}, body.tz);
+      const after = await looks();
+      return json({counters: await counters.read(), state: await state(), styles: after?.styles || [], secretLairStore: store});
     }
     if (path === 'style') {
       // Shows an unlocked Secret Lair style on your copy of the card, or its own art again (print: null).

@@ -19,7 +19,7 @@ export function createPlayEcon({getAccessToken, fetchImpl = globalThis.fetch?.bi
     return out;
   }
   // Server answers carry the wallet; the shop, reward set, quest counters and claims ride along.
-  const keep = (next, extra = {}) => ({...next, rewardSet: state?.rewardSet, shop: state?.shop, counters: state?.counters || {}, claimed: state?.claimed || [], login: state?.login || null, story: state?.story || [], styles: state?.styles || [], secretLair: state?.secretLair || null, ...extra});
+  const keep = (next, extra = {}) => ({...next, rewardSet: state?.rewardSet, shop: state?.shop, counters: state?.counters || {}, claimed: state?.claimed || [], login: state?.login || null, story: state?.story || [], styles: state?.styles || [], secretLair: state?.secretLair || null, secretLairStore: state?.secretLairStore || null, ...extra});
   // Answers to Merchant and pack actions carry the counters they moved (pack, stamp and forge deeds).
   const fresh = out => out?.counters ? {counters: out.counters} : {};
   const tz = () => -new Date().getTimezoneOffset();
@@ -51,6 +51,8 @@ export function createPlayEcon({getAccessToken, fetchImpl = globalThis.fetch?.bi
     reroll: (level, id) => run('reroll', async () => { const out = await call('reroll', level === 'weekly' ? {scope: 'weekly', id, tz: tz()} : {level, tz: tz()}); set({...state, counters: out.counters || state?.counters}); return out; }),
     // This week's Secret Lair bundle (play-secret-lair.js); the answer carries the new styles.
     secretLair: week => run('secretlair', async () => { const out = await call('secretlair', {week, tz: tz()}); set(keep(out.state, {...fresh(out), styles: out.styles, secretLair: out.secretLair})); return out; }),
+    // One card from this week's Secret Lair store, paid in coins or one seal of its rarity.
+    secretLairCard: (id, pay = 'coins', week) => run('sloffer', async () => { const out = await call('sloffer', {id, pay, week, tz: tz()}); set(keep(out.state, {...fresh(out), styles: out.styles, secretLairStore: out.secretLairStore})); return out; }),
     // Shows a Secret Lair style on your copy (print), or the card's own art (null).
     style: (oracle, print = null) => run('style', async () => { const out = await call('style', {oracle, print}); set({...state, styles: out.styles || []}); return out; }),
     // A reward answer that unlocked a style (god pack, Story boss, gold achievement): add it locally.
@@ -78,7 +80,8 @@ const MESSAGES = {
   rerolled: 'You already used that swap. Dailies get one a day, weeklies one a week.',
   quest_done: 'That quest is already done.',
   bad_reroll: 'That quest cannot be swapped.',
-  bought: 'You already have this week\'s Secret Lair.',
+  bought: 'That Secret Lair is already yours.',
+  no_offer: 'That card has left the Secret Lair store.',
   bundle_gone: 'That Secret Lair has left the Merchant. A new one is in.',
   no_bundle: 'No Secret Lair at the Merchant right now.',
   style_locked: 'Unlock that Secret Lair style first.',
