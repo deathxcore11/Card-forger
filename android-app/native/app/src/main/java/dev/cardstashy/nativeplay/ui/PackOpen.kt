@@ -543,7 +543,7 @@ private fun PillButton(label: String, ghost: Boolean, wide: Boolean = false, onC
     }
 }
 
-/** The big card: face down until tapped, then the pull in its tier frame, its backlight behind it like a TV's light strip. */
+/** The big card: face down until tapped, then the pull with no frame, its tier shown only by the backlight behind it like a TV's light strip. */
 @Composable
 private fun Focus(pack: PackResult, focus: Int, open: Boolean, charging: Boolean, moment: Int, momentLevel: Int, flipping: Int, slide: Int, flung: Pair<Pull, Int>?,
                   tiltOn: Boolean, rise: Float, awaiting: Boolean, onTap: () -> Unit, onHold: () -> Unit, onSwipe: (Int) -> Unit, onFlungDone: () -> Unit) = BoxWithConstraints(Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
@@ -615,11 +615,11 @@ private fun Focus(pack: PackResult, focus: Int, open: Boolean, charging: Boolean
             val backAlpha = when { charging -> .35f + .65f * charge.value; tease -> teaseGlow * .8f; open -> .48f; else -> 0f }
             if (backColor != null) Box(Modifier.width(cardW).height(cardH).graphicsLayer { val s = if (charging) .9f + .22f * charge.value else 1f; scaleX = s; scaleY = s }
                 .glow(backColor, backAlpha, .16f, .14f, .22f, 42.dp))
-            // Ring: a frame of the tier colour that grows and fades from the card (a second, slower one for a grail).
+            // Ring: a halo of the tier colour (glow only, no frame) that grows and fades from the card (a second, slower one for a grail).
             for ((a, big) in listOf(ring to false, ring2 to true)) if (a.value < 1f && L >= 1) Box(Modifier.width(cardW).height(cardH).graphicsLayer {
                 val k = if (big) .95f + 1.25f * a.value else .92f + (.43f + L * .12f) * a.value
                 scaleX = k; scaleY = k; alpha = (if (big) .8f else .95f) * (1f - a.value)
-            }.glow(TIER_COLORS[L], .6f, .02f, .02f, .06f, 14.dp).border(3.dp, TIER_COLORS[L], RoundedCornerShape(6)))
+            }.glow(TIER_COLORS[L], .6f, .02f, .02f, .06f, 14.dp))
             // The card leaving on a swipe flicks off the stack with a tilt.
             flung?.let { (fp, step) -> FlungCard(fp, step, cardW, cardH, onFlungDone) }
             Box(Modifier.width(cardW).height(cardH)
@@ -645,15 +645,11 @@ private fun Focus(pack: PackResult, focus: Int, open: Boolean, charging: Boolean
                 Box(Modifier.fillMaxSize().graphicsLayer { cameraDistance = 14f * density; rotationY = flip; alpha = if (flip < 90f) 1f else 0f }) {
                     Box(Modifier.fillMaxSize().clip(RoundedCornerShape(4.6f.dp))) { MagicBack(Modifier.fillMaxSize()) }
                     val edge = if (charging) TIER_COLORS[min(5, p.level)] else Color(0xFFF0C75E)
-                    if (tease || charging) Box(Modifier.fillMaxSize().border(3.dp, edge.copy(alpha = .6f), RoundedCornerShape(4.6f.dp)).background(Brush.radialGradient(listOf(Color.Transparent, edge.copy(alpha = .22f)), radius = with(LocalDensity.current) { cardW.toPx() } * .8f), RoundedCornerShape(4.6f.dp)))
+                    if (tease || charging) Box(Modifier.fillMaxSize().background(Brush.radialGradient(listOf(Color.Transparent, edge.copy(alpha = .22f)), radius = with(LocalDensity.current) { cardW.toPx() } * .8f), RoundedCornerShape(4.6f.dp)))
                 }
                 Box(Modifier.fillMaxSize().graphicsLayer { cameraDistance = 14f * density; rotationY = flip - 180f; alpha = if (flip >= 90f) 1f else 0f }) {
-                    // The collection's tier frame (3 % of the card's width), then the card, its foil and the light catch.
-                    Box(Modifier.fillMaxSize().drawBehind {
-                        val e = size.width * .03f
-                        drawRoundRect(Brush.verticalGradient(listOf(tier.copy(alpha = .95f), tier.copy(alpha = .75f))), Offset(-e, -e), Size(size.width + 2 * e, size.height + 2 * e), CornerRadius(size.width * .076f))
-                        drawRoundRect(Color(0x55FFFFFF), Offset(-e, -e), Size(size.width + 2 * e, size.height + 2 * e), CornerRadius(size.width * .076f), style = Stroke(1.dp.toPx()))
-                    }.clip(RoundedCornerShape(cardW * .046f)).background(Color(0xFF0B0C10))) {
+                    // No frame (Randall, 3 Nov 15:46Z: Play has nothing to do with real-world value): the tier shows as the glow underneath only.
+                    Box(Modifier.fillMaxSize().clip(RoundedCornerShape(cardW * .046f)).background(Color(0xFF0B0C10))) {
                         PullFace(p, Modifier.fillMaxSize(), lx, ly)
                         if (catch.value < 1f) Box(Modifier.fillMaxSize().drawWithContent {
                             // fx-catch: a band of white light crossing the card once, skewed.
@@ -797,7 +793,7 @@ private fun Hand(pack: PackResult, revealed: List<Int>, focus: Int, handW: Dp, h
                     .semantics { contentDescription = if (open) "${p.name} · revealed" else "Card ${i + 1}, face down" }) {
                     Box(Modifier.fillMaxSize().graphicsLayer { cameraDistance = 10f * density.density; rotationY = turn; alpha = if (turn < 90f) 1f else 0f }.clip(RoundedCornerShape(6.dp))) { MagicBack(Modifier.fillMaxSize()) }
                     Box(Modifier.fillMaxSize().graphicsLayer { cameraDistance = 10f * density.density; rotationY = turn - 180f; alpha = if (turn >= 90f) 1f else 0f }
-                        .border(2.dp, p.tier.copy(alpha = glowIn), RoundedCornerShape(6.dp)).clip(RoundedCornerShape(6.dp)).background(Color(0xFF0B0C10))) {
+                        .clip(RoundedCornerShape(6.dp)).background(Color(0xFF0B0C10))) {
                         PullFace(p, Modifier.fillMaxSize())
                     }
                 }

@@ -217,6 +217,61 @@ class ShotTest {
         m.cycle = .5f; m.light = .7f; m.breathe = .5f
     }
 
+
+    // ---- Trunk and card view, on real Scryfall printings (trunk-cards.json) as Play cards.
+    private val trunkCards by lazy { JsonParser.parseString(javaClass.classLoader!!.getResource("trunk-cards.json")!!.readText()).asJsonArray.map { it.asJsonObject } }
+    private val trunkState by lazy {
+        val counts = mapOf("Ragavan, Nimble Pilferer" to (3 to 1), "Sol Ring" to (4 to 2), "Sheoldred, the Apocalypse" to (1 to 1), "Strip Mine" to (1 to 1), "Temple of Mystery" to (2 to 1),
+            "Delver of Secrets // Insectile Aberration" to (4 to 0), "Llanowar Elves" to (2 to 1), "Shivan Dragon" to (1 to 0), "Swords to Plowshares" to (3 to 0), "Island" to (4 to 0))
+        val cards = com.google.gson.JsonArray()
+        trunkCards.forEachIndexed { i, c -> val (n, h) = counts[c["name"].asString] ?: (1 to 0)
+            val img = c.getAsJsonObject("image_uris")?.get("normal")?.asString ?: c.getAsJsonArray("card_faces")[0].asJsonObject.getAsJsonObject("image_uris")["normal"].asString
+            cards.add(JsonParser.parseString("""{"o":"${c["oracle_id"]?.asString ?: c.getAsJsonArray("card_faces")[0].asJsonObject["oracle_id"].asString}","n":${com.google.gson.JsonPrimitive(c["name"].asString)},"r":"${c["rarity"].asString}","c":$n,"h":$h,"s":["${c["set"].asString}"],
+                "p":{"id":"${c["id"].asString}","set":"${c["set"].asString}","image":"$img","number":"${c["collector_number"].asString}"},"a":"2026-11-0${1 + i % 3}T0$i:00:00Z"}""")) }
+        JsonParser.parseString("""{"wallet":{"coins":1250,"xp":2750,"seal_c":6,"seal_u":3,"seal_r":2,"seal_m":1},"packs":[],"config":{"holoSeals":2},
+            "decks":[{"id":"d1","name":"Izzet Tempo","format":"Modern","cards":[{"name":"Ragavan, Nimble Pilferer","qty":2}]},{"id":"d2","name":"Elves","format":"Pioneer","cards":[]}],
+            "shop":[{"code":"mh2","name":"Modern Horizons 2","released":"2021-06-18","format":"modern"},{"code":"dmu","name":"Dominaria United","released":"2022-09-09","format":"standard"},{"code":"fdn","name":"Foundations","released":"2024-11-15","format":"standard"}]}""").asJsonObject.apply { add("cards", cards) }
+    }
+
+    private fun trunkSetup() {
+        dev.cardstashy.nativeplay.ui.Motion.still = true
+        dev.cardstashy.nativeplay.ui.homeArt = ::homeArt
+        dev.cardstashy.nativeplay.play.CardFacts.seed(trunkCards)
+        home.resolve("facts.json").takeIf { it.exists() }?.let { f ->
+            dev.cardstashy.nativeplay.play.SetFacts.seed(JsonParser.parseString(f.readText()).asJsonObject.entrySet().associate { (k, v) -> val o = v.asJsonObject
+                k to dev.cardstashy.nativeplay.play.SetFacts.Set(o["name"].asString, o["icon"].asString, o["released"].asString, o["total"]?.asInt, o["art"].asString) })
+        }
+    }
+
+    @Test fun trunk() {
+        trunkSetup()
+        for ((w, h) in listOf(390 to 844, 884 to 1104)) {
+            RuntimeEnvironment.setQualifiers("w${w}dp-h${h * 3}dp-xxhdpi")
+            captureRoboImage(File(System.getProperty("shotsDir"), "trunk-cards-${w}x$h.png").path) {
+                dev.cardstashy.nativeplay.ui.TrunkScreen(trunkState, {}, {}, {}) { PlayNav(PlayTab.TRUNK, {}) }
+            }
+        }
+        home.mkdirs(); home.resolve("missing.txt").writeText(missing.joinToString("\n"))
+    }
+
+    @Test fun cardSheet() {
+        trunkSetup()
+        fun pick(name: String, finish: String) = trunkCards.first { it["name"].asString == name }.let { dev.cardstashy.nativeplay.ui.CardPick(name, it["oracle_id"]?.asString ?: "", it["id"].asString, finish) }
+        val cases = listOf(Triple("1-overview-holo", pick("Ragavan, Nimble Pilferer", "foil"), "overview"), Triple("2-overview-nonfoil", pick("Ragavan, Nimble Pilferer", "nonfoil"), "overview"),
+            Triple("3-get", pick("Sheoldred, the Apocalypse", "foil"), "get"), Triple("4-guide", pick("Delver of Secrets // Insectile Aberration", "nonfoil"), "guide"),
+            Triple("5-galaxy", pick("Strip Mine", "foil"), "overview"))
+        for ((w, h) in listOf(390 to 844, 884 to 1104)) for ((name, p, tab) in cases) {
+            if (w > 390 && name != "1-overview-holo") continue
+            RuntimeEnvironment.setQualifiers("w${w}dp-h${if (tab == "overview") h * 2 else h}dp-xxhdpi")
+            captureRoboImage(File(System.getProperty("shotsDir"), "card-sheet-$name-${w}x$h.png").path) {
+                androidx.compose.foundation.layout.Box(Modifier.background(Site.Bg)) {
+                    dev.cardstashy.nativeplay.ui.CardSheet(p, trunkState, dev.cardstashy.nativeplay.ui.CardSheetActions(), {}, startTab = tab)
+                }
+            }
+        }
+        home.mkdirs(); home.resolve("missing.txt").writeText(missing.joinToString("\n"))
+    }
+
     private val sizes = listOf(360 to 780, 412 to 915, 600 to 960, 840 to 1000)
 
     @Test fun playSkin() { dev.cardstashy.nativeplay.ui.Motion.still = true; for ((w, h) in sizes) for (s in listOf(1f, 1.3f)) shot("skin-play-placeholder-rows", w, h, s) { PlaySkin() } }

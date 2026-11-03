@@ -1,0 +1,109 @@
+package dev.cardstashy.nativeplay.ui
+
+import androidx.compose.foundation.Image
+import androidx.compose.foundation.background
+import androidx.compose.foundation.border
+import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.shape.CircleShape
+import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.material3.Text
+import androidx.compose.runtime.Composable
+import androidx.compose.runtime.State
+import androidx.compose.ui.Alignment
+import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.clip
+import androidx.compose.ui.draw.drawBehind
+import androidx.compose.ui.draw.drawWithContent
+import androidx.compose.ui.graphics.graphicsLayer
+import androidx.compose.ui.geometry.Offset
+import androidx.compose.ui.graphics.BlendMode
+import androidx.compose.ui.graphics.Brush
+import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.ColorFilter
+import androidx.compose.ui.graphics.Shape
+import androidx.compose.ui.layout.ContentScale
+import androidx.compose.ui.text.TextStyle
+import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.unit.Dp
+import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.em
+import androidx.compose.ui.unit.sp
+
+/** Mana and other card symbols, Scryfall's own SVGs as the site's symbolUrl: {W/U} → WU.svg. */
+fun symbolUrl(sym: String) = "https://svgs.scryfall.io/card-symbols/" + sym.replace("/", "").uppercase() + ".svg"
+
+@Composable
+fun Symbol(sym: String, size: Dp, modifier: Modifier = Modifier) {
+    val p = heroPainter(symbolUrl(sym).let(homeArt))
+    if (p != null) Image(p, sym, modifier.size(size)) else Box(modifier.size(size).clip(CircleShape).background(Color(0xFFCAC5C0)))
+}
+
+/** manaCost(): each {X} symbol in a row. */
+@Composable
+fun ManaCost(cost: String, size: Dp = 16.dp, modifier: Modifier = Modifier) {
+    val syms = Regex("\\{([^}]+)\\}").findAll(cost).map { it.groupValues[1] }.toList()
+    if (syms.isEmpty()) return
+    Row(modifier, horizontalArrangement = Arrangement.spacedBy(2.dp), verticalAlignment = Alignment.CenterVertically) { syms.forEach { Symbol(it, size) } }
+}
+
+/** .pe-pips: four 10 dp dots, gold when owned; holo copies wear the rainbow. */
+@Composable
+fun Pips(n: Int, holo: Boolean = false, modifier: Modifier = Modifier) = Row(modifier, horizontalArrangement = Arrangement.spacedBy(5.dp)) {
+    for (i in 1..4) {
+        val on = i <= n
+        Box(Modifier.size(10.dp).clip(CircleShape)
+            .then(if (on && holo) Modifier.background(HOLO_PIP) else if (on) Modifier.background(Site.Gold) else Modifier)
+            .border(1.dp, if (on && holo) Color(0x88FFFFFF) else if (on) Site.Gold else Color(0x88D6AD64), CircleShape))
+    }
+}
+private val HOLO_PIP = Brush.linearGradient(listOf(Color(0xFFFF9AD5), Color(0xFFFFE48A), Color(0xFF8AFFC8), Color(0xFF8AD0FF)))
+/** .pe-holo-tag: 11 sp, 800, tracked, rainbow text. */
+@Composable
+fun HoloTag() = Text("HOLO", style = TextStyle(fontFamily = Site.Manrope, fontWeight = FontWeight.ExtraBold, fontSize = 11.sp, letterSpacing = .08.em,
+    brush = Brush.linearGradient(listOf(Color(0xFFFF9AD5), Color(0xFFFFE48A), Color(0xFF8AFFC8), Color(0xFF8AD0FF), Color(0xFFC79AFF)))))
+
+/** Rarity colours of the set symbol (.set-badge.r-* .set-icon). */
+fun rarityBrush(rarity: String): Brush = when (rarity) {
+    "uncommon" -> Brush.linearGradient(listOf(Color(0xFF8A9AA8), Color(0xFFE6EEF4), Color(0xFF7D8B96)))
+    "rare" -> Brush.linearGradient(listOf(Color(0xFF8D6D2B), Color(0xFFF5D78A), Color(0xFF9B7A33)))
+    "mythic" -> Brush.linearGradient(listOf(Color(0xFFB4421C), Color(0xFFFFB15E), Color(0xFFC2471B)))
+    else -> Brush.linearGradient(listOf(Color(0xFFD9DCE2), Color(0xFFD9DCE2)))
+}
+
+/** The set icon filled with the rarity colours (the site masks the SVG with them). */
+@Composable
+fun RaritySetIcon(code: String, rarity: String, size: Dp, modifier: Modifier = Modifier) {
+    val p = heroPainter(dev.cardstashy.nativeplay.play.SetFacts.icon(code).let(homeArt)) ?: return
+    val brush = rarityBrush(rarity)
+    Box(modifier.size(size)) {
+        Image(p, null, Modifier.fillMaxSize().graphicsLayerOffscreen().drawWithBrush(brush), colorFilter = ColorFilter.tint(Color.White, BlendMode.SrcIn))
+    }
+}
+
+/** .set-badge: icon in rarity colours + the code, 5 dp corners, dark green-grey plate. */
+@Composable
+fun SetBadge(code: String, rarity: String) = Row(Modifier.clip(RoundedCornerShape(5.dp)).background(Color(0xFF252B25)).border(1.dp, Color(0xFF394034), RoundedCornerShape(5.dp))
+    .padding(horizontal = 5.dp, vertical = 2.dp), verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(4.dp)) {
+    RaritySetIcon(code, rarity, 12.dp)
+    Text(code.uppercase(), style = TextStyle(fontFamily = Site.Manrope, fontWeight = FontWeight.Bold, fontSize = 11.sp, color = Color(0xFFD9D3BC)))
+}
+
+/** A card picture with its finish: the site's foil (or holo stamp) drawn over the image. */
+@Composable
+fun CardPicture(url: String?, look: Foil.Look?, tilt: State<Offset>?, modifier: Modifier = Modifier, shape: Shape = RoundedCornerShape(10.dp), contentScale: ContentScale = ContentScale.Fit) {
+    val p = heroPainter(url?.let(homeArt))
+    Box(modifier.clip(shape).background(Color(0xFF1F232B))) {
+        if (p != null) {
+            val m = if (look != null && tilt != null) Modifier.fillMaxSize().foil(look, tilt) else Modifier.fillMaxSize()
+            Image(p, null, m, contentScale = contentScale)
+        }
+    }
+}
+
+private fun Modifier.graphicsLayerOffscreen() = this.graphicsLayer { compositingStrategy = androidx.compose.ui.graphics.CompositingStrategy.Offscreen }
+private fun Modifier.drawWithBrush(brush: Brush) = this.drawWithContent { drawContent(); drawRect(brush, blendMode = BlendMode.SrcIn) }
