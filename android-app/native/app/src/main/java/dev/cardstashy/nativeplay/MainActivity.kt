@@ -86,7 +86,7 @@ class MainActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         // First, so a stall anywhere in start-up is caught too (the 0.3.2 freeze hit 2 s after launch).
-        FreezeReport.init(this); FreezeReport.watchFrames(this)
+        FreezeReport.init(this); FreezeReport.watchFrames(this); dev.cardstashy.nativeplay.ui.HomeTest.init(this)
         enableEdgeToEdge()
         // The card database starts loading as the app opens, so it is ready before Quick Play is.
         ForgeService.prepare(this)

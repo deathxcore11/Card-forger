@@ -148,6 +148,7 @@ var homeArt: (String) -> Any? = { it }
 
 @Composable
 private fun Art(url: String?, modifier: Modifier, align: Alignment = Alignment.Center, scale: ContentScale = ContentScale.Crop, filter: ColorFilter = artFilter) {
+    if (HomeTest.noPictures) { Box(modifier.background(Color(0xFF121318))); return }
     val p: Painter? = heroPainter(url?.let(homeArt))
     if (p != null) androidx.compose.foundation.Image(p, null, modifier, alignment = align, contentScale = scale, colorFilter = filter)
     else Box(modifier.background(Color(0xFF121318)))
@@ -161,7 +162,7 @@ fun PlayHome(d: PlayHomeData, top: @Composable () -> Unit, act: PlayHomeActions 
     val purse = PlayMath.purse(s) ?: return
     val level = PlayMath.mastery(s, purse.xp)
     Box(Modifier.fillMaxSize().background(Site.Bg)) {
-        Ambient(d.ambient)
+        if (!HomeTest.noPictures) Ambient(d.ambient)
         Column(Modifier.fillMaxSize()) {
             BoxWithConstraints(Modifier.weight(1f).fillMaxWidth()) {
                 val wide = maxWidth >= 600.dp; val duo = maxWidth >= 1000.dp
@@ -174,14 +175,16 @@ fun PlayHome(d: PlayHomeData, top: @Composable () -> Unit, act: PlayHomeActions 
                                 LevelRing(level, framed = true)
                             }
                             PurseRow(purse, onCoins = { act.view("shop") }, onSeals = { act.view("shop") }, onPacks = { act.view("packs") })
+                            HomeTestBar()
                         }
                     }
                     item("modes") { Probe("modes") { Modes(wide, act) } }
                     item("story") { Probe("story") { StoryCard(d, wide, act) } }
-                    item("today") { Duo(duo, { Probe("today") { Today(d, act) } }, { Probe("deeds") { Deeds(d, act) } }) }
-                    item("packs") { Duo(duo, { Probe("packs") { Packs(s, act) } }, { Probe("forge") { Forge(s, act) } }) }
-                    item("decks") { Duo(duo, { Probe("decks") { Decks(s, wide, act) } }, { Probe("collection") { Collection(s, act) } }) }
-                    if ((s.getAsJsonArray("shop")?.size() ?: 0) > 0) item("shop") { Probe("shop") { Merchant(s, act) } }
+                    val g = HomeTest.groups
+                    if (g >= 1) item("today") { Duo(duo, { Probe("today") { Today(d, act) } }, { Probe("deeds") { Deeds(d, act) } }) }
+                    if (g >= 2) item("packs") { Duo(duo, { Probe("packs") { Packs(s, act) } }, { Probe("forge") { Forge(s, act) } }) }
+                    if (g >= 3) item("decks") { Duo(duo, { Probe("decks") { Decks(s, wide, act) } }, { Probe("collection") { Collection(s, act) } }) }
+                    if (g >= 4 && (s.getAsJsonArray("shop")?.size() ?: 0) > 0) item("shop") { Probe("shop") { Merchant(s, act) } }
                 }
                 // The site's sticky glass top bar.
                 Box(Modifier.fillMaxWidth().background(Color(0xD90C0E13)).drawBehind {
@@ -192,6 +195,10 @@ fun PlayHome(d: PlayHomeData, top: @Composable () -> Unit, act: PlayHomeActions 
         }
     }
 }
+
+/** Test variant B draws no shadows either. */
+private fun Modifier.testShadow(elevation: Dp, shape: androidx.compose.ui.graphics.Shape, clip: Boolean = elevation > 0.dp, ambientColor: Color = androidx.compose.ui.graphics.DefaultShadowColor, spotColor: Color = androidx.compose.ui.graphics.DefaultShadowColor): Modifier =
+    if (HomeTest.noPictures) this else shadow(elevation, shape, clip, ambientColor, spotColor)
 
 /** Counts each section's compositions, layouts and draws for the freeze report, so a stuck or looping section names itself. */
 @Composable
@@ -272,7 +279,7 @@ private fun Duo(two: Boolean, a: @Composable () -> Unit, b: @Composable () -> Un
 
 @Composable
 internal fun PurseRow(p: PlayMath.Purse, onCoins: () -> Unit, onSeals: () -> Unit, onPacks: () -> Unit) {
-    Row(Modifier.fillMaxWidth().shadow(10.dp, CircleShape).clip(CircleShape).background(Color(0xB80D0F14))
+    Row(Modifier.fillMaxWidth().testShadow(10.dp, CircleShape).clip(CircleShape).background(Color(0xB80D0F14))
         .border(1.dp, Color(0xFF6A5838), CircleShape).padding(4.dp), verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.SpaceEvenly) {
         PurseCell(onCoins, "${p.coins} coins") { Icon(SiteIcons.Coin, 18.dp); Num(p.coins) }
         PurseCell(onSeals, "Seals") {
@@ -296,7 +303,7 @@ fun GoldCta(label: String, modifier: Modifier = Modifier, enabled: Boolean = tru
     val pressed by press.collectIsPressedAsState()
     val k by animateFloatAsState(if (pressed) .96f else 1f, Site.spring(), label = "cta")
     val shape = RoundedCornerShape(radius)
-    Row(modifier.scale(k).heightIn(min = 44.dp).shadow(if (enabled) 10.dp else 0.dp, shape, spotColor = P.CtaBottom).clip(shape)
+    Row(modifier.scale(k).heightIn(min = 44.dp).testShadow(if (enabled) 10.dp else 0.dp, shape, spotColor = P.CtaBottom).clip(shape)
         .background(if (enabled) Brush.verticalGradient(listOf(P.CtaTop, P.CtaBottom)) else if (muted) Brush.verticalGradient(listOf(Color(0xFFB3A88F), Color(0xFF8C8370))) else Brush.verticalGradient(listOf(Color(0xFF2A2620), Color(0xFF1C1A16))))
         .border(1.dp, if (enabled) P.CtaEdge else if (muted) Color(0x55FFFFFF) else Color(0x33D6AD64), shape)
         .let { if (enabled) it.clickable(press, null, onClick = onClick) else it }.padding(horizontal = 22.dp),
@@ -313,7 +320,7 @@ fun GoldPlate(label: String, modifier: Modifier = Modifier, onClick: () -> Unit)
     val pressed by press.collectIsPressedAsState()
     val k by animateFloatAsState(if (pressed) .96f else 1f, Site.spring(), label = "plate")
     val shape = RoundedCornerShape(10.dp)
-    Box(modifier.scale(k).height(56.dp).shadow(14.dp, shape, spotColor = Color(0xFF8A6A2A)).clip(shape)
+    Box(modifier.scale(k).height(56.dp).testShadow(14.dp, shape, spotColor = Color(0xFF8A6A2A)).clip(shape)
         .background(Brush.verticalGradient(listOf(Color(0xFFF4DA9C), Color(0xFFE2BC6C), Color(0xFFC9973F))))
         .clickable(press, null, onClick = onClick).drawBehind {
             val i = 4.dp.toPx()
@@ -351,7 +358,7 @@ private fun ModeCard(key: String, name: String, copy: String, cta: String, wide:
     val press = remember { MutableInteractionSource() }
     val pressed by press.collectIsPressedAsState()
     val k by animateFloatAsState(if (pressed) .98f else 1f, Site.spring(), label = "mode")
-    Box(modifier.scale(k).heightIn(min = if (wide) 300.dp else 200.dp).shadow(22.dp, shape).clip(shape).background(Color(0xFF121318))
+    Box(modifier.scale(k).heightIn(min = if (wide) 300.dp else 200.dp).testShadow(22.dp, shape).clip(shape).background(Color(0xFF121318))
         .clickable(press, null, onClick = onClick).semantics { contentDescription = name }) {
         // Planeswalk's old scan is zoomed to trim its black frame (pl-mode-art--trim).
         Art(MODE_ART[key], Modifier.matchParentSize().let { if (key == "planeswalk") it.scale(1.16f) else it }, MODE_FOCUS[key] ?: Alignment.Center)
@@ -374,7 +381,7 @@ private fun ModeCard(key: String, name: String, copy: String, cta: String, wide:
 private fun StoryCard(d: PlayHomeData, wide: Boolean, act: PlayHomeActions) {
     val a = d.rules.acts.firstOrNull { it.act == d.story.act } ?: d.rules.acts.first()
     val shape = RoundedCornerShape(22.dp)
-    Box(Modifier.fillMaxWidth().heightIn(min = if (wide) 360.dp else 320.dp).shadow(24.dp, shape).clip(shape).background(Color(0xFF101218)).border(1.dp, P.CardLine, shape)) {
+    Box(Modifier.fillMaxWidth().heightIn(min = if (wide) 360.dp else 320.dp).testShadow(24.dp, shape).clip(shape).background(Color(0xFF101218)).border(1.dp, P.CardLine, shape)) {
         Art(a.art, Modifier.matchParentSize(), BiasAlignment(0f, -.4f))
         Box(Modifier.matchParentSize().background(Brush.horizontalGradient(0f to Color(0xF2090B10), .38f to Color(0xC0090B10), .7f to Color(0x30090B10))))
         Box(Modifier.matchParentSize().background(Brush.verticalGradient(.45f to Color.Transparent, 1f to Color(0xD0090B10))))
@@ -413,13 +420,13 @@ fun Booster(code: String, name: String?, modifier: Modifier = Modifier, mini: Bo
     val facts: Map<String, SetFacts.Set> = SetFacts.sets.collectAsState().value
     val f = facts[code]
     val label = name?.ifBlank { null } ?: f?.name ?: code.uppercase()
-    wrapperFor(code)?.let { (asset, wrap) ->
+    if (!HomeTest.noPictures) wrapperFor(code)?.let { (asset, wrap) ->
         val ctx = LocalContext.current
         val img = produceState(AssetImages.cached("$asset@600"), asset) { value = AssetImages.load(ctx, asset, maxWidth = 600) }.value
         if (img != null) { WrappedBooster(code, label, wrap, img, modifier, mini); return }
     }
     val shape = RoundedCornerShape(6.dp)
-    Box(modifier.aspectRatio(5f / 8.2f).shadow(18.dp, shape).clip(shape)
+    Box(modifier.aspectRatio(5f / 8.2f).testShadow(18.dp, shape).clip(shape)
         .background(Brush.linearGradient(listOf(Color(0xFF2A2F3A), Color(0xFF14171D), Color(0xFF262B35))))) {
         // Art window: from the crimp to 30 % above the bottom.
         BoxWithConstraints(Modifier.fillMaxSize()) {
@@ -531,6 +538,7 @@ private fun StarEmblem(modifier: Modifier) = androidx.compose.foundation.Canvas(
 /** The set's icon in the wrapper gold (masked like the web's pe-booster-icon). */
 @Composable
 fun SetIcon(code: String, modifier: Modifier, tint: Color = Color(0xFFE9C878)) {
+    if (HomeTest.noPictures) return
     val p = heroPainter(SetFacts.icon(code).let(homeArt))
     if (p != null) Image(p, null, modifier, colorFilter = ColorFilter.tint(tint, BlendMode.SrcIn))
 }
@@ -705,7 +713,7 @@ private fun Forge(s: JsonObject, act: PlayHomeActions) {
     fun have(k: String) = w.get("seal_$k")?.asInt ?: 0
     fun ratio(to: String) = s.getAsJsonObject("config")?.getAsJsonObject("forge")?.get(to)?.takeIf { it.isJsonPrimitive }?.asInt ?: 3
     val shape = RoundedCornerShape(22.dp)
-    Box(Modifier.fillMaxWidth().shadow(24.dp, shape).clip(shape).background(Brush.verticalGradient(listOf(Color(0xFF1B1611), Color(0xFF120E0B), Color(0xFF2A1A10)))).border(1.dp, Color(0x55D6AD64), shape)) {
+    Box(Modifier.fillMaxWidth().testShadow(24.dp, shape).clip(shape).background(Brush.verticalGradient(listOf(Color(0xFF1B1611), Color(0xFF120E0B), Color(0xFF2A1A10)))).border(1.dp, Color(0x55D6AD64), shape)) {
         Art("https://api.scryfall.com/cards/named?format=image&version=art_crop&exact=Great+Furnace", Modifier.matchParentSize().let { it }, Alignment.Center)
         Box(Modifier.matchParentSize().background(Color(0xE6140F0B)))
         Box(Modifier.matchParentSize().background(Brush.verticalGradient(.6f to Color.Transparent, 1f to Color(0x55B4501E))))
@@ -779,7 +787,7 @@ private fun Decks(s: JsonObject, wide: Boolean, act: PlayHomeActions) {
 @Composable
 private fun DeckTile(art: String?, name: String, meta: String, modifier: Modifier, cinzel: Boolean = false, onClick: () -> Unit) {
     val shape = RoundedCornerShape(16.dp)
-    Box(modifier.height(136.dp).shadow(14.dp, shape).clip(shape).background(Color(0xFF15171C)).border(1.dp, Color(0x1FFFFFFF), shape).clickable(onClick = onClick)) {
+    Box(modifier.height(136.dp).testShadow(14.dp, shape).clip(shape).background(Color(0xFF15171C)).border(1.dp, Color(0x1FFFFFFF), shape).clickable(onClick = onClick)) {
         Art(art, Modifier.matchParentSize(), BiasAlignment(0f, -.4f))
         Box(Modifier.matchParentSize().background(Brush.verticalGradient(.35f to Color.Transparent, 1f to Color(0xE60B0C10))))
         Column(Modifier.align(Alignment.BottomStart).padding(16.dp)) {
