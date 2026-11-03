@@ -52,6 +52,7 @@ class RealMatchTest {
             if (st.status == "failed") { end = "FAILED ${st.failure} ${st.errors}"; break }
             if (st.revision != lastRev) {
                 parsed++; lastRev = st.revision
+                if (System.getenv("TRACE") != null && parsed < 60) println("TRACE rev=${st.revision} turn=${st.turn} phase=${st.phase} active=${st.activePlayer} input=${st.inputType} busy=${st.busy} prompt=${st.prompt?.method} btn=${st.buttons.ok}/${st.buttons.cancel} cpuField=${st.cpu.battlefield.map { it.name }} ev=${st.events.takeLast(3).map { it.type + ':' + it.player }}")
                 val fresh = st.events.filter { it.seq > lastSeq }
                 if (fresh.isNotEmpty()) lastSeq = fresh.maxOf { it.seq }
                 if (!kept && fresh.any { it.turn >= 1 && it.player != null && it.player != st.viewer && it.type in setOf("land", "cast") }) cpuBeforeKeep++

@@ -113,7 +113,8 @@ fun TableScreen(controller: MatchController, onHome: () -> Unit, onRematch: () -
     LifecycleEventEffect(Lifecycle.Event.ON_STOP) { audio.muted = true; controller.setPaused(true) }
     LifecycleEventEffect(Lifecycle.Event.ON_START) { audio.muted = false; controller.setPaused(false) }
     var previous by remember { mutableStateOf<MatchState?>(null) }
-    LaunchedEffect(shown?.revision) { shown?.let { audio.update(previous, it); previous = it } }
+    // Keyed on the shown state itself: the board can advance within one revision (one CPU action at a time).
+    LaunchedEffect(shown) { shown?.let { audio.update(previous, it); previous = it } }
     var inspect by remember { mutableStateOf<Card?>(null) }
     var selectedHand by remember { mutableStateOf<Int?>(null) }
     var menu by remember { mutableStateOf(false) }
@@ -498,6 +499,8 @@ private fun PhaseDots(st: MatchState) {
 @Composable
 private fun Actions(st: MatchState, c: MatchController, live: Boolean, selectedHand: Int?) {
     if (st.prompt != null) return
+    // Forge leaves its last buttons (Keep / Mulligan) on while the CPU plays; only show them when they're yours to press.
+    if (!st.waitingOnMe) return
     val myField = st.me.battlefield
     val selectedCard = selectedHand?.let { st.card(it) }
     val okLabel = when {

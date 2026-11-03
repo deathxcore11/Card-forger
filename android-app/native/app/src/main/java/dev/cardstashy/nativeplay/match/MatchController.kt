@@ -115,6 +115,10 @@ class MatchController(private val scope: CoroutineScope, private val input: Stri
         skip = null
     }
 
+    private fun masked(st: MatchState, hidden: Set<Int>): MatchState = if (hidden.isEmpty()) st else st.copy(
+        players = st.players.map { p -> p.copy(battlefield = p.battlefield.filter { it.id !in hidden }) },
+        stack = st.stack.filter { it.source?.id !in hidden })
+
     private fun show(st: MatchState) {
         _shown.value = st
         val l = latest
@@ -159,12 +163,20 @@ class MatchController(private val scope: CoroutineScope, private val input: Stri
             if (fresh.isNotEmpty()) lastSeq = fresh.maxOf { it.seq }
             val beats = Pacing.beatsFor(st, fresh)
             if (beats.isEmpty()) { show(st) } else {
-                show(st)
+                // The board advances one CPU action at a time: a CPU card that a beat is about to
+                // announce stays off the table (and off the stack) until that beat starts.
+                val before = _shown.value?.players?.flatMap { p -> p.battlefield.map { it.id } }?.toSet() ?: emptySet()
+                val announced = beats.mapNotNull { (it as? Pacing.BeatStep)?.beat?.cardId }.toSet()
+                val hidden = st.cpu.battlefield.map { it.id }.filter { it !in before && it in announced }.toMutableSet()
+                hidden += st.stack.mapNotNull { it.source?.id }.filter { it in announced && st.card(it)?.controller != st.viewer }
+                show(masked(st, hidden))
                 for (b in beats) {
                     if (b is Pacing.BannerStep) { _banner.value = b.banner; hold(BANNER_MS); _banner.value = null; continue }
-                    beat((b as Pacing.BeatStep).beat)
+                    val beat = (b as Pacing.BeatStep).beat
+                    if (beat.cardId != null && hidden.remove(beat.cardId)) show(masked(st, hidden))
+                    beat(beat)
                 }
-                _shown.value?.let { show(it) }
+                show(st)
             }
             if (st.finished) { _stage.value = Stage.FINISHED; show(st) }
         }
