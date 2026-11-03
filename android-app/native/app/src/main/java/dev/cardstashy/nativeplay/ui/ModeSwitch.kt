@@ -53,7 +53,7 @@ enum class Mode(val asset: String) { PLAY("play/play-emblem.webp"), COLLECTION("
 fun Emblem(mode: Mode, size: Dp, onClick: () -> Unit, modifier: Modifier = Modifier) {
     val context = LocalContext.current
     // Unit while loading, then the bitmap or null when the piece isn't in the app yet.
-    val art by produceState<Any?>(Unit, mode) { value = AssetImages.load(context, mode.asset, maxWidth = 256) }
+    val art by produceState<Any?>(AssetImages.cached("${mode.asset}@256") ?: Unit, mode) { value = AssetImages.load(context, mode.asset, maxWidth = 256) }
     val press = remember { MutableInteractionSource() }
     val pressed by press.collectIsPressedAsState()
     Box(modifier.size(size).scale(if (pressed) .92f else 1f).clickable(press, null, onClick = onClick), contentAlignment = Alignment.Center) {
