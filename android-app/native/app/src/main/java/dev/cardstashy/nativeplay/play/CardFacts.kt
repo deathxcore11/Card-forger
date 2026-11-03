@@ -76,6 +76,33 @@ object CardFacts {
         }
     }
 
+    /** Cards known only by name (a pasted list, the All cards pool): Scryfall's collection by name, once a visit. */
+    suspend fun wantNames(names: List<String>) = withContext(Dispatchers.IO) {
+        lock.withLock {
+            val known = cards.value.values.flatMap { val n = it.card.get("name")?.asString ?: ""; listOf(n, n.split(" // ")[0]) }.toHashSet()
+            val need = names.distinct().filter { it.isNotBlank() && it !in known && tried.add("name:$it") }
+            for (chunk in need.chunked(75)) {
+                val ids = JsonArray().apply { chunk.forEach { n -> add(JsonObject().apply { addProperty("name", n) }) } }
+                val body = runCatching { Http.call("POST", "$SCRYFALL/cards/collection", mapOf("Accept" to "application/json", "Content-Type" to "application/json"),
+                    JsonObject().apply { add("identifiers", ids) }.toString(), 15_000) as? JsonObject }.getOrNull() ?: continue
+                add(body.getAsJsonArray("data")?.mapNotNull { it as? JsonObject } ?: emptyList())
+            }
+            if (need.isNotEmpty()) save()
+        }
+    }
+
+    /** Scryfall card search (the editor's All cards pool and Fill empty slots): one page, or null when it failed. */
+    suspend fun search(q: String, order: String, page: Int): Pair<List<JsonObject>, Boolean>? = withContext(Dispatchers.IO) {
+        val url = "$SCRYFALL/cards/search?q=" + java.net.URLEncoder.encode(q, "UTF-8") + "&order=$order&unique=cards&page=$page"
+        val out = runCatching { Http.call("GET", url, mapOf("Accept" to "application/json"), null, 15_000) as? JsonObject }
+        val body = out.getOrNull()
+        when {
+            body?.getAsJsonArray("data") != null -> { val list = body.getAsJsonArray("data").mapNotNull { it as? JsonObject }; add(list); list to (body.get("has_more")?.asBoolean == true) }
+            (out.exceptionOrNull() as? Http.Failure)?.status == 404 -> emptyList<JsonObject>() to false
+            else -> null
+        }
+    }
+
     /** One exact printing (the card sheet's), fetched by id when it is not known yet. */
     suspend fun wantPrint(id: String): JsonObject? = prints.value[id] ?: withContext(Dispatchers.IO) {
         runCatching { Http.call("GET", "$SCRYFALL/cards/$id", mapOf("Accept" to "application/json"), null, 12_000) as? JsonObject }.getOrNull()?.let { add(listOf(it)); save(); prints.value[id] }

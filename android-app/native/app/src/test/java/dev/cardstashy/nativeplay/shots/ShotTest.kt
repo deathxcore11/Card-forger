@@ -283,6 +283,20 @@ class ShotTest {
         home.mkdirs(); home.resolve("missing.txt").writeText(missing.joinToString("\n"))
     }
 
+    @Test fun deckEditor() {
+        trunkSetup()
+        val deck = JsonParser.parseString("""{"id":"d1","name":"Izzet Tempo","format":"Modern","cards":[{"name":"Ragavan, Nimble Pilferer","qty":4},{"name":"Delver of Secrets // Insectile Aberration","qty":4},
+            {"name":"Swords to Plowshares","qty":4},{"name":"Sheoldred, the Apocalypse","qty":2},{"name":"Strip Mine","qty":2},{"name":"Temple of Mystery","qty":2},{"name":"Island","qty":18},{"name":"Shivan Dragon","qty":2,"board":"side"}]}""").asJsonObject
+        for ((w, h) in listOf(412 to 915, 840 to 1000)) {
+            RuntimeEnvironment.setQualifiers("w${w}dp-h${if (w < 600) h * 4 else h * 2}dp-xxhdpi")
+            val ui = dev.cardstashy.nativeplay.ui.EditorUi().apply { edit = dev.cardstashy.nativeplay.play.DeckEdit.open(deck) }
+            captureRoboImage(File(System.getProperty("shotsDir"), "deck-editor-${w}x$h.png").path) {
+                dev.cardstashy.nativeplay.ui.DeckEditor(trunkState, ui, {}, {}, {}, {}) { PlayNav(PlayTab.DECKS, {}) }
+            }
+        }
+        home.mkdirs(); home.resolve("missing.txt").writeText(missing.joinToString("\n"))
+    }
+
     @Test fun cardSheet() {
         trunkSetup()
         fun pick(name: String, finish: String) = trunkCards.first { it["name"].asString == name }.let { dev.cardstashy.nativeplay.ui.CardPick(name, it["oracle_id"]?.asString ?: "", it["id"].asString, finish) }

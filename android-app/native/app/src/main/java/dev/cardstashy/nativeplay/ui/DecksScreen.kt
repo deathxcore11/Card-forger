@@ -2,6 +2,8 @@
 
 package dev.cardstashy.nativeplay.ui
 
+import androidx.activity.compose.BackHandler
+
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
@@ -68,7 +70,7 @@ import kotlinx.coroutines.withContext
 private val Ink = Site.Text
 private fun t(size: Float, weight: FontWeight = FontWeight.Medium, color: Color = Ink, line: Float = size * 1.4f) =
     TextStyle(fontFamily = Site.Manrope, fontWeight = weight, fontSize = size.sp, lineHeight = line.sp, color = color)
-private const val DECKS_ART = "https://cards.scryfall.io/art_crop/front/f/d/fd99bce1-ce39-464b-8e61-2631eb3ed6f6.jpg" // Tolarian Academy (TILE_ART.decks)
+internal const val DECKS_ART = "https://cards.scryfall.io/art_crop/front/f/d/fd99bce1-ce39-464b-8e61-2631eb3ed6f6.jpg" // Tolarian Academy (TILE_ART.decks)
 private fun JsonObject?.s(k: String) = this?.get(k)?.takeIf { it.isJsonPrimitive }?.asString ?: ""
 
 /** What the precon shelf holds (app.js preconUi): the index, the search, how many show, the open deck. */
@@ -178,10 +180,10 @@ private fun Stat(em: String, rest: String) = Text(androidx.compose.ui.text.build
 // ---------------------------------------------------------------- precons
 
 /** Soft glass (Randall 3 Nov): big radius, a lit rim that fades down instead of a hard line, a soft drop shadow. */
-private val SoftRim = Brush.verticalGradient(listOf(Color(0x38FFFFFF), Color(0x0FFFFFFF), Color(0x05FFFFFF)))
-private fun Modifier.softTile(radius: androidx.compose.ui.unit.Dp = 22.dp, fill: Color = Site.Surface2): Modifier { val shape = RoundedCornerShape(radius)
+internal val SoftRim = Brush.verticalGradient(listOf(Color(0x38FFFFFF), Color(0x0FFFFFFF), Color(0x05FFFFFF)))
+internal fun Modifier.softTile(radius: androidx.compose.ui.unit.Dp = 22.dp, fill: Color = Site.Surface2): Modifier { val shape = RoundedCornerShape(radius)
     return shadow(14.dp, shape, ambientColor = Color(0x99000000), spotColor = Color(0x99000000)).clip(shape).background(fill).border(1.dp, SoftRim, shape) }
-private fun Modifier.softPill(shape: androidx.compose.ui.graphics.Shape): Modifier = clip(shape).background(Color(0x990C0E13)).border(1.dp, SoftRim, shape)
+internal fun Modifier.softPill(shape: androidx.compose.ui.graphics.Shape): Modifier = clip(shape).background(Color(0x990C0E13)).border(1.dp, SoftRim, shape)
 
 /** The precon list is kept on disk for a day and opened precons for the visit (the web gets this from the browser cache). */
 var preconCacheDir: java.io.File? = null
@@ -312,7 +314,7 @@ private fun PreconCards(rows: List<Decks.Row>, owned: Map<String, Int>) {
 // ---------------------------------------------------------------- Paste a list
 
 @Composable
-private fun Field(value: String, hint: String, lines: Int = 1, onChange: (String) -> Unit) {
+internal fun Field(value: String, hint: String, lines: Int = 1, onChange: (String) -> Unit) {
     Box(Modifier.fillMaxWidth().heightIn(min = if (lines > 1) (lines * 22 + 24).dp else 44.dp).clip(RoundedCornerShape(16.dp)).background(Color(0xB30D0F14)).border(1.dp, SoftRim, RoundedCornerShape(16.dp))
         .padding(horizontal = 14.dp, vertical = 12.dp)) {
         if (value.isEmpty()) Text(hint, style = t(15f, color = Site.Muted))
@@ -379,6 +381,25 @@ fun DecksRoute(onBack: () -> Unit, onWeb: (String) -> Unit, onNav: (PlayTab) -> 
     LaunchedEffect(Unit) { dev.cardstashy.nativeplay.play.Progress.loadCached(); dev.cardstashy.nativeplay.play.Progress.refresh() }
     val s = state ?: run { Box(Modifier.fillMaxSize().background(Site.Bg), contentAlignment = Alignment.Center) { Text("Opening your decks…", style = Site.Body) }; return }
     val toast = { m: String -> android.widget.Toast.makeText(context, m, android.widget.Toast.LENGTH_SHORT).show() }
-    DecksScreen(s, onBack, onDeck = { onWeb("https://cardstashy.com/#play") }, onFinder = { onWeb("https://cardstashy.com/#play") }, toast = toast,
-        nav = { PlayNav(PlayTab.DECKS, onNav) })
+    var editor by remember { mutableStateOf<EditorUi?>(null) }
+    var card by remember { mutableStateOf<CardPick?>(null) }
+    val ed = editor
+    Box(Modifier.fillMaxSize()) {
+        if (ed != null) {
+            BackHandler { editor = null }
+            DeckEditor(s, ed, onBack = { editor = null }, onCard = { card = it }, onPack = { onWeb("https://cardstashy.com/#set/$it/play") }, toast = toast,
+                nav = { PlayNav(PlayTab.DECKS, onNav) })
+        } else DecksScreen(s, onBack,
+            onDeck = { id -> editor = EditorUi().apply { edit = dev.cardstashy.nativeplay.play.DeckEdit.open(s.getAsJsonArray("decks")?.mapNotNull { it as? JsonObject }?.firstOrNull { it.get("id")?.asString == id }) } },
+            // Until the finder (0.4.2): the finder's Start empty, straight into the editor.
+            onFinder = { editor = EditorUi() }, toast = toast, nav = { PlayNav(PlayTab.DECKS, onNav) })
+        card?.let { pick ->
+            CardSheet(pick, s, CardSheetActions(
+                merchant = { _, _ -> card = null; onWeb("https://cardstashy.com/#play") },
+                set = { code -> card = null; onWeb("https://cardstashy.com/#set/$code/play") },
+                precon = { _, _ -> card = null },
+                newDeck = { name -> card = null; editor = EditorUi().apply { edit = dev.cardstashy.nativeplay.play.DeckEdit.Edit(null, "", "Standard", listOf(dev.cardstashy.nativeplay.play.DeckEdit.Line(name, 1))) } },
+                toast = toast), onClose = { card = null })
+        }
+    }
 }

@@ -4,6 +4,8 @@ import {pathToFileURL} from 'node:url';
 import {join} from 'node:path';
 const [root, out] = process.argv.slice(2);
 const R = await import(pathToFileURL(join(root, 'play-econ-rules.js')).href);
+const U = await import(pathToFileURL(join(root, 'play-econ-ui.js')).href);
+const C = await import(pathToFileURL(join(root, 'play-econ-cards.js')).href);
 const owned = new Map([['Lightning Bolt', 4], ['Counterspell', 1], ['Delver of Secrets', 2], ['Brainstorm', 0]]);
 const rarity = new Map([['Lightning Bolt', 'common'], ['Counterspell', 'uncommon'], ['Snapcaster Mage', 'rare'], ['Ragavan, Nimble Pilferer', 'mythic'], ['Delver of Secrets', 'special']]);
 const decks = [
@@ -26,5 +28,14 @@ const g = {
   rules: R.PLAY_FORMATS.concat(['Casual', '']).map(f => [f, R.deckRules(f)]),
   basics: ['Plains', 'snow-covered island', 'Wastes', 'Snow-Covered Wastes', ' Forest ', 'Island // x'].map(n => [n, R.isBasicLand(n)]),
 };
+// Editor: craftPlan over wallets, stepDeckCard as playEconStep calls it (owned forced to 4), cardGroup.
+const wallets = [{}, {seal_c: 2, seal_u: 1, seal_r: 5, seal_m: 0}, {seal_c: 99, seal_u: 99, seal_r: 99, seal_m: 99}];
+g.craft = decks.flatMap(d => wallets.map(w => ({deck: d.filter(c => !c.board), wallet: w, out: U.craftPlan(d.filter(c => !c.board), owned, n => rarity.get(n) || '', w)})));
+const base = [{name: 'Lightning Bolt', qty: 3}, {name: 'Island', qty: 4}, {name: 'Sol Ring', qty: 1}];
+g.step = [];
+for (const f of ['Standard', 'Commander']) for (const [n, s] of [['Lightning Bolt', 1], ['Lightning Bolt', -1], ['Island', 1], ['Sol Ring', 1], ['Sol Ring', -1], ['New Card', 1], ['Missing', -1]]) {
+  let rows = base; for (let i = 0; i < 2; i++) rows = R.stepDeckCard(rows, n, s, new Map([[n, 4]]), f);
+  g.step.push({format: f, name: n, step: s, out: rows}); }
+g.groups = ['Legendary Creature — Elf', 'Artifact Creature — Golem', 'Land — Forest', 'Instant', 'Sorcery', 'Legendary Planeswalker — Jace', 'Artifact', 'Enchantment — Aura', 'Battle — Siege', 'Kindred Instant — Elf', 'Creature — Human // Land', '', 'Tribal Enchantment'].map(t => [t, C.cardGroup({t})]);
 writeFileSync(out, JSON.stringify(g));
 console.log('deck golden written');

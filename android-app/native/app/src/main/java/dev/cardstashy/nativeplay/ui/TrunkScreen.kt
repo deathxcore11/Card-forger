@@ -172,7 +172,7 @@ fun Select(label: String, options: List<Pair<String, String>>, on: String, modif
 }
 
 @Composable
-private fun FilterBar(f: Trunk.Filter, sort: String, sets: List<Trunk.SetRow>, onFilter: (Trunk.Filter) -> Unit, onSort: (String) -> Unit) {
+internal fun FilterBar(f: Trunk.Filter, sort: String, sets: List<Trunk.SetRow>, onFilter: (Trunk.Filter) -> Unit, onSort: (String) -> Unit) {
     Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
         SearchField(f.query, "Card name") { onFilter(f.copy(query = it)) }
         FlowRow(horizontalArrangement = Arrangement.spacedBy(8.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
