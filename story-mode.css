@@ -121,6 +121,27 @@
 .st-learn-tag{font:800 11px/1 'DM Sans',system-ui,sans-serif;letter-spacing:.2em;text-transform:uppercase;color:var(--gold)}
 .st-learn p{margin:0;font-size:14px;line-height:1.5;color:#e4e7ea;text-wrap:pretty}
 .st-learn b{color:#f6eedb;margin-right:4px}
+/* Archive record (secret bosses): what the deck was, why it won, how to beat it, what came after. */
+.st-archive{gap:10px}
+.st-archive .st-archive-what{font-size:15px;color:#f1ead8}
+.st-archive dl{display:grid;gap:10px;margin:0}
+.st-archive dl>div{display:grid;gap:2px;align-content:start}
+.st-archive dt{font:700 12px/1.3 'DM Sans',system-ui,sans-serif;letter-spacing:.06em;color:#d9bf86}
+.st-archive dd{margin:0;font-size:14px;line-height:1.5;color:#e4e7ea;text-wrap:pretty}
+@media (min-width:900px){.st-archive dl{grid-template-columns:1fr 1fr;column-gap:22px}}
+/* Deck dossier: the label every Story deck carries, and each change from a documented original. */
+.st-dossier{display:grid;gap:8px;padding:14px 16px;border:1px solid #ffffff14;border-radius:16px;background:color-mix(in srgb,var(--surface) 88%,transparent)}
+.st-dossier p{margin:0;font-size:14px;line-height:1.5;color:#dfe2e6;text-wrap:pretty}
+.st-dossier h3{margin:4px 0 0;font:700 12px/1.3 'DM Sans',system-ui,sans-serif;letter-spacing:.06em;color:#d9bf86}
+.st-dossier-label{justify-self:start;padding:5px 10px;border-radius:999px;font:800 11px/1 'DM Sans',system-ui,sans-serif;letter-spacing:.14em;text-transform:uppercase;border:1px solid #d6ad6466;color:var(--gold);background:#d6ad6414}
+.st-dossier-label--exact{border-color:#e9d39a;color:#1a1408;background:linear-gradient(115deg,#f3dfa6,#c99b4a)}
+.st-dossier-label--experimental{border-color:#9db7e066;color:#bcd0ef;background:#8fb0e014}
+.st-changes{display:grid;gap:8px;margin:0;padding:0;list-style:none}
+.st-changes li{display:grid;gap:2px;padding-top:8px;border-top:1px solid #ffffff10}
+.st-change-cards{display:flex;flex-wrap:wrap;gap:4px 10px;font-size:14px}
+.st-change-cards s{color:#9aa1a8}
+.st-change-cards b{color:#f6eedb}
+.st-change-why{font-size:13px;line-height:1.45;color:#c3c8ce}
 .st-lists{display:grid;gap:12px;min-width:0}
 .st-lists>.st-seg{justify-self:start;max-width:100%;flex-wrap:wrap}
 .st-lists :is(.art-price,.grid-meta>span:last-child,.group>summary>.muted.small){display:none}

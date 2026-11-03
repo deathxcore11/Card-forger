@@ -1,5 +1,6 @@
 {
  "act": 1,
+ "era": "1994-03-04",
  "title": "The Dawn of Dominaria",
  "years": "1993 to 1994",
  "sets": [
@@ -37,6 +38,10 @@
    "who": "mishra",
    "line": "It was never just me, brother. Someone else was listening.",
    "whisper": true
+  },
+  {
+   "who": "narrator",
+   "line": "Recorded: the war ends at Argoth. The blast begins an ice age. And on Phyrexia, someone has learned the name Dominaria."
   }
  ],
  "villainFinale": null,
@@ -247,6 +252,7 @@
      "name": "Knights of the Dawn",
      "colors": "W",
      "archetype": null,
+     "label": "tribute",
      "cards": [
       {
        "qty": 4,
@@ -334,6 +340,7 @@
      "name": "Bows of Llanowar",
      "colors": "G",
      "archetype": null,
+     "label": "tribute",
      "cards": [
       {
        "qty": 4,
@@ -488,6 +495,7 @@
      "name": "Wings of the Dawn",
      "colors": "W",
      "archetype": null,
+     "label": "tribute",
      "cards": [
       {
        "qty": 4,
@@ -575,6 +583,7 @@
      "name": "The King's Rabble",
      "colors": "R",
      "archetype": null,
+     "label": "tribute",
      "cards": [
       {
        "qty": 4,
@@ -727,6 +736,7 @@
      "name": "The Order of the Ford",
      "colors": "W",
      "archetype": null,
+     "label": "tribute",
      "cards": [
       {
        "qty": 4,
@@ -814,6 +824,7 @@
      "name": "The Dark Lance",
      "colors": "B",
      "archetype": null,
+     "label": "tribute",
      "cards": [
       {
        "qty": 2,
@@ -856,13 +867,6 @@
        "set": "lea",
        "number": "95",
        "id": "6701874e-986e-4b81-9268-90b6171e6187"
-      },
-      {
-       "qty": 2,
-       "name": "Deathgrip",
-       "set": "lea",
-       "number": "100",
-       "id": "2371c126-f19a-472a-ba5f-3b1366274ea0"
       },
       {
        "qty": 1,
@@ -921,7 +925,7 @@
        "id": "23614289-0d73-4747-a849-5cb67cc97d6a"
       },
       {
-       "qty": 24,
+       "qty": 26,
        "name": "Swamp",
        "set": "lea",
        "number": "290",
@@ -1016,6 +1020,7 @@
      "name": "Rift-Walker's Court",
      "colors": "WU",
      "archetype": null,
+     "label": "tribute",
      "cards": [
       {
        "qty": 4,
@@ -1117,6 +1122,7 @@
      "name": "The Djinn's Menagerie",
      "colors": "G",
      "archetype": null,
+     "label": "tribute",
      "cards": [
       {
        "qty": 4,
@@ -1141,10 +1147,10 @@
       },
       {
        "qty": 4,
-       "name": "Kird Ape",
-       "set": "arn",
-       "number": "40",
-       "id": "ebe8845e-df1c-481c-949c-aab84af99a05"
+       "name": "Scryb Sprites",
+       "set": "lea",
+       "number": "215",
+       "id": "6d929c38-91e6-457c-937a-d1884f4bba44"
       },
       {
        "qty": 4,
@@ -1189,18 +1195,11 @@
        "id": "0d77c149-cca2-45c7-bc83-5ba1872ad5e0"
       },
       {
-       "qty": 20,
+       "qty": 24,
        "name": "Forest",
        "set": "lea",
        "number": "294",
        "id": "6f1c8cb0-38eb-408b-94e8-16db83999b3b"
-      },
-      {
-       "qty": 4,
-       "name": "Taiga",
-       "set": "lea",
-       "number": "282",
-       "id": "60df6592-0b3b-4b87-aeb2-8fa94b4fb7be"
       }
      ]
     }
@@ -1283,6 +1282,7 @@
      "name": "The Argoth Grove",
      "colors": "G",
      "archetype": null,
+     "label": "tribute",
      "cards": [
       {
        "qty": 2,
@@ -1391,6 +1391,7 @@
      "name": "The Mining Crews",
      "colors": "W",
      "archetype": null,
+     "label": "tribute",
      "cards": [
       {
        "qty": 4,
@@ -1589,6 +1590,7 @@
      "name": "Sindbad's Crew",
      "colors": "U",
      "archetype": null,
+     "label": "tribute",
      "cards": [
       {
        "qty": 4,
@@ -1676,6 +1678,7 @@
      "name": "Fires of Serendib",
      "colors": "UR",
      "archetype": "Blue-red tempo",
+     "label": "tribute",
      "cards": [
       {
        "qty": 4,
@@ -1856,6 +1859,7 @@
      "name": "The Walls of Kroog",
      "colors": "W",
      "archetype": null,
+     "label": "tribute",
      "cards": [
       {
        "qty": 4,
@@ -1950,6 +1954,7 @@
      "name": "Ashnod's Engines",
      "colors": "B",
      "archetype": null,
+     "label": "tribute",
      "cards": [
       {
        "qty": 4,
@@ -2134,34 +2139,14 @@
      "name": "Urza's Engines",
      "colors": "W",
      "archetype": null,
+     "label": "tribute",
      "cards": [
       {
        "qty": 4,
-       "name": "Urza's Mine",
+       "name": "Ornithopter",
        "set": "atq",
-       "number": "83a",
-       "id": "ddf85792-470b-4b42-99ac-9cb43a575523"
-      },
-      {
-       "qty": 4,
-       "name": "Urza's Power Plant",
-       "set": "atq",
-       "number": "84a",
-       "id": "94896e0b-859c-47e4-bf27-35ed37b841e0"
-      },
-      {
-       "qty": 4,
-       "name": "Urza's Tower",
-       "set": "atq",
-       "number": "85a",
-       "id": "8ed85655-fc59-4a57-bcf9-75e1899dff78"
-      },
-      {
-       "qty": 12,
-       "name": "Plains",
-       "set": "lea",
-       "number": "286",
-       "id": "b1623d57-4729-4796-b3f7-f1837a05c6ed"
+       "number": "60",
+       "id": "59cc9bdb-7cf2-4795-bac7-ffff605c9eb0"
       },
       {
        "qty": 4,
@@ -2169,13 +2154,6 @@
        "set": "atq",
        "number": "79",
        "id": "27cf53e3-76f6-4831-800e-1259394d779d"
-      },
-      {
-       "qty": 2,
-       "name": "Su-Chi",
-       "set": "atq",
-       "number": "66",
-       "id": "a64d4f93-0c04-4078-aec0-7e9de92f260f"
       },
       {
        "qty": 4,
@@ -2192,18 +2170,39 @@
        "id": "11600105-56c6-4073-a4a6-8469030b39c9"
       },
       {
+       "qty": 3,
+       "name": "Mesa Pegasus",
+       "set": "lea",
+       "number": "28",
+       "id": "eaac88da-d19e-4771-944c-3709963d04e7"
+      },
+      {
+       "qty": 2,
+       "name": "Wall of Swords",
+       "set": "lea",
+       "number": "42",
+       "id": "99ec4723-b36c-4015-b361-736a6523e8f5"
+      },
+      {
+       "qty": 2,
+       "name": "Onulet",
+       "set": "atq",
+       "number": "59",
+       "id": "d77fe8e2-8438-473e-ace5-01baddd2c4ed"
+      },
+      {
+       "qty": 2,
+       "name": "Su-Chi",
+       "set": "atq",
+       "number": "66",
+       "id": "a64d4f93-0c04-4078-aec0-7e9de92f260f"
+      },
+      {
        "qty": 1,
        "name": "Juggernaut",
        "set": "lea",
        "number": "255",
        "id": "dcd6a291-5282-4f49-8203-d9b416083c48"
-      },
-      {
-       "qty": 2,
-       "name": "Healing Salve",
-       "set": "lea",
-       "number": "22",
-       "id": "e28de37e-84d5-4dc7-b36c-e14da5924729"
       },
       {
        "qty": 2,
@@ -2235,38 +2234,45 @@
       },
       {
        "qty": 2,
-       "name": "Wall of Swords",
-       "set": "lea",
-       "number": "42",
-       "id": "99ec4723-b36c-4015-b361-736a6523e8f5"
-      },
-      {
-       "qty": 4,
-       "name": "Ornithopter",
-       "set": "atq",
-       "number": "60",
-       "id": "59cc9bdb-7cf2-4795-bac7-ffff605c9eb0"
-      },
-      {
-       "qty": 3,
-       "name": "Mesa Pegasus",
-       "set": "lea",
-       "number": "28",
-       "id": "eaac88da-d19e-4771-944c-3709963d04e7"
-      },
-      {
-       "qty": 2,
-       "name": "Onulet",
-       "set": "atq",
-       "number": "59",
-       "id": "d77fe8e2-8438-473e-ace5-01baddd2c4ed"
-      },
-      {
-       "qty": 2,
        "name": "Holy Strength",
        "set": "lea",
        "number": "24",
        "id": "e945a4cd-0eb1-4f54-898d-169ce2748a03"
+      },
+      {
+       "qty": 2,
+       "name": "Healing Salve",
+       "set": "lea",
+       "number": "22",
+       "id": "e28de37e-84d5-4dc7-b36c-e14da5924729"
+      },
+      {
+       "qty": 4,
+       "name": "Urza's Mine",
+       "set": "atq",
+       "number": "83a",
+       "id": "ddf85792-470b-4b42-99ac-9cb43a575523"
+      },
+      {
+       "qty": 4,
+       "name": "Urza's Power Plant",
+       "set": "atq",
+       "number": "84a",
+       "id": "94896e0b-859c-47e4-bf27-35ed37b841e0"
+      },
+      {
+       "qty": 4,
+       "name": "Urza's Tower",
+       "set": "atq",
+       "number": "85a",
+       "id": "8ed85655-fc59-4a57-bcf9-75e1899dff78"
+      },
+      {
+       "qty": 12,
+       "name": "Plains",
+       "set": "lea",
+       "number": "286",
+       "id": "b1623d57-4729-4796-b3f7-f1837a05c6ed"
       }
      ]
     }
@@ -2277,6 +2283,7 @@
      "name": "Mishra's Army",
      "colors": "R",
      "archetype": "Artifact aggression",
+     "label": "tribute",
      "cards": [
       {
        "qty": 4,
@@ -2314,7 +2321,7 @@
        "id": "07793a71-1106-4303-b620-e403bd378020"
       },
       {
-       "qty": 3,
+       "qty": 4,
        "name": "Mishra's War Machine",
        "set": "atq",
        "number": "57",
@@ -2335,14 +2342,7 @@
        "id": "a79c99e1-722a-44b6-8fa3-2be3f0c193d8"
       },
       {
-       "qty": 2,
-       "name": "Hurloon Minotaur",
-       "set": "lea",
-       "number": "158",
-       "id": "78a9088f-8755-47cb-aa93-51d992ccab90"
-      },
-      {
-       "qty": 2,
+       "qty": 4,
        "name": "Shatter",
        "set": "lea",
        "number": "173",
@@ -2364,17 +2364,17 @@
       },
       {
        "qty": 2,
-       "name": "Atog",
-       "set": "atq",
-       "number": "23",
-       "id": "2249fc40-4412-48fd-800a-7ea3678aee3f"
+       "name": "Shivan Dragon",
+       "set": "lea",
+       "number": "174",
+       "id": "fefbf149-f988-4f8b-9f53-56f5878116a6"
       },
       {
-       "qty": 4,
-       "name": "Dwarven Weaponsmith",
-       "set": "atq",
-       "number": "25",
-       "id": "0848d94a-2704-460f-986b-b192dd6d26b7"
+       "qty": 3,
+       "name": "Orcish Artillery",
+       "set": "lea",
+       "number": "165",
+       "id": "a97208b1-a91b-4129-8a00-2f97b418accc"
       }
      ]
     }
@@ -2458,12 +2458,24 @@
    "blurb": "Under the snow, a deck from before anything was forbidden. It draws you cards until they kill you.",
    "rewardSet": "lea",
    "host": true,
+   "era": "1993-12-17",
+   "archive": {
+    "deck": "The Usenet Deck",
+    "when": "December 1993",
+    "format": "No format yet. Any cards, any number of copies.",
+    "what": "A list posted to a Usenet newsgroup with one question: how do you stop this deck? Black Vises, a stack of Wheels of Fortune and Timetwisters, Ancestral Recalls and Moxen.",
+    "why": "Every Wheel and Twister refilled both hands to seven, and every Vise burned you for the cards you could not play. It won before most decks had cast a spell.",
+    "beat": "Keep your hand at four or fewer, break the Vises with Disenchant, and hit hard while it spends its turns drawing.",
+    "after": "In January 1994 the first restricted list arrived: one copy each of Ancestral Recall, Timetwister, Black Lotus, Sol Ring, Time Walk and every Mox. Black Vise and Wheel of Fortune stayed legal at four."
+   },
    "hero": {
     "who": "you",
     "deck": {
      "name": "1993 Power",
      "colors": "WR",
      "archetype": "Power and pressure",
+     "label": "experimental",
+     "rules": "Built for this fight: every Power card at one copy, as Vintage allows, behind a fast white-red army.",
      "cards": [
       {
        "qty": 1,
@@ -2564,7 +2576,7 @@
        "id": "dcd6a291-5282-4f49-8203-d9b416083c48"
       },
       {
-       "qty": 4,
+       "qty": 2,
        "name": "Serra Angel",
        "set": "lea",
        "number": "39",
@@ -2599,11 +2611,18 @@
        "id": "386ea9eb-abc1-4862-aa2d-8fb808d79490"
       },
       {
-       "qty": 4,
+       "qty": 2,
        "name": "Disenchant",
        "set": "lea",
        "number": "18",
        "id": "2722d7e2-61c6-4934-9c21-875ee78fd06c"
+      },
+      {
+       "qty": 2,
+       "name": "Pearled Unicorn",
+       "set": "lea",
+       "number": "30",
+       "id": "6daf1aab-1e58-4a5a-bc66-cb3f7c86e0e8"
       },
       {
        "qty": 4,
@@ -2634,7 +2653,7 @@
        "id": "0324641d-af55-4c53-b4dc-c8262e967da5"
       },
       {
-       "qty": 4,
+       "qty": 6,
        "name": "Plains",
        "set": "lea",
        "number": "286",
@@ -2656,6 +2675,40 @@
      "name": "The Usenet Deck",
      "colors": "UR",
      "archetype": "Black Vise draw-seven",
+     "label": "tribute",
+     "note": "The same machine at the counts Story's Vintage rules allow.",
+     "original": {
+      "source": "Usenet post, December 1993",
+      "partial": true,
+      "list": "\n5 Black Vise\n5 Wheel of Fortune\n4 Timetwister\n5 Ancestral Recall"
+     },
+     "changes": [
+      {
+       "from": "5 Black Vise",
+       "to": "4 Black Vise",
+       "why": "Story decks play four copies of a card at most."
+      },
+      {
+       "from": "5 Wheel of Fortune",
+       "to": "1 Wheel of Fortune and 4 Howling Mine",
+       "why": "Story matches run on Vintage rules, where Wheel is restricted. Howling Mine keeps both hands full the same way."
+      },
+      {
+       "from": "4 Timetwister",
+       "to": "1 Timetwister",
+       "why": "Restricted in Vintage."
+      },
+      {
+       "from": "5 Ancestral Recall",
+       "to": "1 Ancestral Recall",
+       "why": "Restricted in Vintage."
+      },
+      {
+       "from": "Moxen in multiples",
+       "to": "1 Mox Sapphire, 1 Mox Ruby, 1 Mox Pearl",
+       "why": "Restricted in Vintage."
+      }
+     ],
      "cards": [
       {
        "qty": 4,
@@ -2700,14 +2753,14 @@
        "id": "e0139f60-d48e-46fb-9f5a-1e3d7558c834"
       },
       {
-       "qty": 1,
+       "qty": 4,
        "name": "Fireball",
        "set": "lea",
        "number": "149",
        "id": "b7623c00-144b-4a8f-9c6c-f5e9e4f65ece"
       },
       {
-       "qty": 1,
+       "qty": 2,
        "name": "Disintegrate",
        "set": "lea",
        "number": "140",
@@ -2726,13 +2779,6 @@
        "set": "lea",
        "number": "74",
        "id": "a6a86e6e-bfff-46af-9d36-c912901fea92"
-      },
-      {
-       "qty": 4,
-       "name": "Red Elemental Blast",
-       "set": "lea",
-       "number": "169",
-       "id": "776ad9be-3309-4f1d-9f27-6219d9477662"
       },
       {
        "qty": 4,
@@ -2896,7 +2942,7 @@
     },
     {
      "who": "narrator",
-     "line": "A week later, the first cards were restricted.",
+     "line": "In January 1994 came the first restricted list. Most of this deck was on it.",
      "whisper": true
     }
    ],

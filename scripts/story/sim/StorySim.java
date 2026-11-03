@@ -15,7 +15,9 @@ import java.util.concurrent.*;
 
 /** Story mode deck check + Forge self-play (story-mode-acts.md D1 steps 4-5).
  *  java StorySim <forgeRoot> <games> <deckA.txt> <deckB.txt> [<deckA> <deckB> ...]
- *  Deck file lines: "qty|Card Name|SET". Prints one JSON line per pair. */
+ *  Deck file lines: "qty|Card Name|SET". Prints one JSON line per pair.
+ *  Seeded: -Dstory.seed=<n> (default 1) makes game g of every pair shuffle from seed n*1_000_003+g, so a
+ *  rerun with the same decks and seed plays the same games. winAPlay counts A's wins when A went first. */
 public final class StorySim {
   static Deck load(Path p, List<String> problems, List<String> aiWarn) throws Exception {
     Deck d = new Deck(p.getFileName().toString());
@@ -49,8 +51,10 @@ public final class StorySim {
     for (int i = 2; i + 1 < a.length; i += 2) {
       List<String> pa = new ArrayList<>(), pb = new ArrayList<>(), wa = new ArrayList<>(), wb = new ArrayList<>();
       Deck da = load(Paths.get(a[i]), pa, wa), db = load(Paths.get(a[i + 1]), pb, wb);
-      int winA = 0, winB = 0, draw = 0, timeouts = 0, turns = 0;
+      int winA = 0, winB = 0, draw = 0, timeouts = 0, turns = 0, winAPlay = 0;
+      long seed = Long.getLong("story.seed", 1L);
       if (pa.isEmpty() && pb.isEmpty()) for (int g = 0; g < games; g++) {
+        forge.util.MyRandom.setRandom(new Random(seed * 1_000_003L + g));
         GameRules rules = new GameRules(GameType.Constructed); rules.setGamesPerMatch(1);
         LobbyPlayer A = GamePlayerUtil.createAiPlayer("A", 0), B = GamePlayerUtil.createAiPlayer("B", 1);
         List<RegisteredPlayer> ps = new ArrayList<>();
@@ -63,12 +67,12 @@ public final class StorySim {
         try { fut.get(90, TimeUnit.SECONDS); } catch (TimeoutException t) { fut.cancel(true); timeouts++; game.setGameOver(GameEndReason.Draw); ex.shutdownNow(); ex = Executors.newSingleThreadExecutor(r -> { Thread th = new Thread(r); th.setDaemon(true); return th; }); continue; }
         GameOutcome o = game.getOutcome();
         if (o == null || o.isDraw()) draw++;
-        else if (o.getWinningLobbyPlayer() == A) winA++; else winB++;
+        else if (o.getWinningLobbyPlayer() == A) { winA++; if (g % 2 == 0) winAPlay++; } else winB++;
         if (o != null) turns += o.getLastTurnNumber();
       }
       int played = winA + winB + draw;
       System.out.println("RESULT {\"a\":" + q(a[i]) + ",\"b\":" + q(a[i + 1]) + ",\"problemsA\":" + arr(pa) + ",\"problemsB\":" + arr(pb) + ",\"aiA\":" + arr(wa) + ",\"aiB\":" + arr(wb)
-        + ",\"games\":" + played + ",\"winA\":" + winA + ",\"winB\":" + winB + ",\"draw\":" + draw + ",\"timeouts\":" + timeouts + ",\"avgTurns\":" + (played > 0 ? Math.round(turns * 10.0 / played) / 10.0 : 0) + "}");
+        + ",\"games\":" + played + ",\"winA\":" + winA + ",\"winB\":" + winB + ",\"winAPlay\":" + winAPlay + ",\"seed\":" + seed + ",\"draw\":" + draw + ",\"timeouts\":" + timeouts + ",\"avgTurns\":" + (played > 0 ? Math.round(turns * 10.0 / played) / 10.0 : 0) + "}");
     }
     System.exit(0);
   }

@@ -29,11 +29,14 @@ const deck = (d) => {
     const same = cards.find(x => x.id === c.id);
     if (same) same.qty += +m[1]; else cards.push({qty: +m[1], name: c.name, set: c.set, number: c.number, id: c.id});
   }
-  return {name: d.name, colors: d.colors, archetype: d.archetype || null, cards};
+  // The label travels with the deck so the player can see it (Historical Exact / Tribute / Experimental),
+  // with the documented original and every change from it. No change is ever silent.
+  return {name: d.name, colors: d.colors, archetype: d.archetype || null, label: d.label || null,
+    ...(d.rules ? {rules: d.rules} : {}), ...(d.note ? {note: d.note} : {}), ...(d.original ? {original: d.original} : {}), ...(d.changes ? {changes: d.changes} : {}), cards};
 };
 // A character's face may come from a later card that paints them (Urza, Prince of Kroog): `fixed` names that exact printing.
 const face = (p) => { if (p.fixed) return {...p.fixed, focus: p.focus || '50% 30%'}; const c = p.number ? pool.find(x => x.name === p.card && x.number === p.number && (!p.set || x.set === p.set)) || pick(p.card, p.prefer || []) : pick(p.card, p.prefer || []); return c ? {card: c.name, set: c.set, number: c.number, id: c.id, crop: c.art, artist: c.artist, focus: p.focus || '50% 30%'} : null; };
-const out = {act: n, title: act.title, years: act.years, sets: act.sets, landSet: act.landSet, intro: src.intro, finale: src.finale, villainFinale: src.villainFinale || null, vibe: src.vibe || null, cast: {}, battles: []};
+const out = {act: n, era: src.era || null, title: act.title, years: act.years, sets: act.sets, landSet: act.landSet, intro: src.intro, finale: src.finale, villainFinale: src.villainFinale || null, vibe: src.vibe || null, cast: {}, battles: []};
 for (const [k, p] of Object.entries(src.cast)) out.cast[k] = {name: p.name, title: p.title || '', portrait: face(p)};
 // Rewards (Randall, 1 Nov 21:11Z): two one-time rewards per battle, both in context. Your side pays
 // the battle's era packs; the villain's side pays that villain's signature card from their own deck.
@@ -54,7 +57,7 @@ for (const b of src.battles) {
   const vDeck = deck(b.villain.deck), t = REWARD[tier(b)];
   // Slot 9 is an act's secret boss (secret: true): hidden until every battle is won with the Story decks.
   out.battles.push({id: `a${n}b${b.slot}`, slot: b.slot, kind: b.kind, ...(b.secret ? {secret: true} : {}), mood: b.mood || (b.slot >= 8 ? 'boss' : 'tension'), title: b.title, difficulty: b.difficulty, teaches: b.teaches, blurb: b.blurb,
-    rewardSet: b.rewardSet, host: b.slot >= 8,
+    rewardSet: b.rewardSet, host: b.slot >= 8, ...(b.era ? {era: b.era} : {}), ...(b.archive ? {archive: b.archive} : {}),
     hero: {who: b.hero.who, deck: deck(b.hero.deck)}, villain: {who: b.villain.who, deck: vDeck},
     reward: {hero: {packs: t.packs, coins: t.coins}, villain: {card: signature(b, vDeck), coins: t.vCoins}},
     scene: b.scene, villainScene: b.villainScene || null, after: b.after || null, cues: b.cues, bigPlays: b.bigPlays || [], sim: b.sim || null});
