@@ -37,6 +37,12 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.ImageBitmap
+import androidx.compose.ui.unit.IntSize
+import androidx.compose.foundation.Canvas
+import androidx.compose.foundation.layout.requiredSize
+import androidx.compose.animation.core.LinearEasing
+import androidx.compose.runtime.produceState
 import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.layout.Layout
@@ -72,10 +78,20 @@ fun CardFace(
     val shape = RoundedCornerShape(w * .06f)
     val turn by animateFloatAsState(if (card.tapped) 20f else 0f, tween(140, easing = androidx.compose.animation.core.FastOutSlowInEasing), label = "tap")
     val lift by animateFloatAsState(nudge.value, tween(150, easing = FastOutSlowInEasing), label = "nudge")
-    // Damage: a white hit flash, 40 % to nothing in 90 ms, on the frame the damage lands.
+    // Damage: Randall's impact burst (piece 02, 8 frames in 333 ms) centred on the card; without it, a
+    // white hit flash, 40 % to nothing in 90 ms. Both start on the frame the damage lands.
+    val context = LocalContext.current
     val flash = remember { Animatable(0f) }
+    val burstAt = remember { Animatable(1f) } // 0..1 through the burst; 1 = not playing
+    val burst by produceState<List<ImageBitmap>?>(null) { value = Effects.burst(context) }
     var lastDamage by remember { mutableStateOf(card.damage) }
-    LaunchedEffect(card.damage) { if (card.damage > lastDamage) { flash.snapTo(.4f); flash.animateTo(0f, tween(90)) }; lastDamage = card.damage }
+    LaunchedEffect(card.damage) {
+        if (card.damage > lastDamage) {
+            if (burst != null) { burstAt.snapTo(0f); burstAt.animateTo(1f, tween(Effects.BURST_MS, easing = LinearEasing)) }
+            else { flash.snapTo(.4f); flash.animateTo(0f, tween(90)) }
+        }
+        lastDamage = card.damage
+    }
     val anchors = LocalAnchors.current
     val pulse = if (mark == Mark.PICKABLE) rememberInfiniteTransition(label = "pick").animateFloat(.55f, 1f, infiniteRepeatable(tween(700), RepeatMode.Reverse), label = "a").value else 1f
     val edge = when {
@@ -102,6 +118,15 @@ fun CardFace(
             Badge("${card.power}/${(card.toughness ?: 0) - card.damage}", Color(0xEE1B1B1F), Modifier.align(Alignment.BottomEnd).offset(3.dp, 3.dp))
         else if (plus > 0) Badge("+$plus", Color(0xEE2F6B3A), Modifier.align(Alignment.BottomEnd).offset(3.dp, 3.dp))
         if (count > 1) Badge("×$count", Color(0xEE1B1B1F), Modifier.align(Alignment.TopStart).offset((-3).dp, (-3).dp))
+        burst?.let { frames ->
+            // Read in draw only, so a burst redraws one layer and never recomposes the card.
+            Canvas(Modifier.align(Alignment.Center).requiredSize(w * 1.6f)) {
+                val t = burstAt.value
+                if (t >= 1f) return@Canvas
+                val f = frames[(t * frames.size).toInt().coerceIn(0, frames.size - 1)]
+                drawImage(f, dstSize = IntSize(size.width.toInt(), size.height.toInt()))
+            }
+        }
     }
 }
 
