@@ -35,7 +35,7 @@ class PackFlyTest {
         val dir = System.getProperty("shotsDir")
         var run by androidx.compose.runtime.mutableIntStateOf(0)
         rule.setContent { androidx.compose.runtime.key(run) { dev.cardstashy.nativeplay.ui.PackOpening(pack, onNext = null, onClose = {}) } }
-        for ((name, at) in listOf("tear-120" to 120L, "tear-300" to 300L, "deal-120" to 560L, "deal-260" to 700L, "deal-420" to 860L, "deal-650" to 1090L, "deal-900" to 1340L)) {
+        for ((name, at) in listOf("tear-120" to 120L, "tear-300" to 300L, "deal-120" to 560L, "deal-260" to 700L, "deal-420" to 860L, "deal-650" to 1090L, "deal-900" to 1340L, "landed" to 3200L)) {
             rule.mainClock.autoAdvance = false; run++
             rule.mainClock.advanceTimeBy(500)
             rule.onRoot().performTouchInput { click(androidx.compose.ui.geometry.Offset(width / 2f, height / 2f)) }

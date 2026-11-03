@@ -49,6 +49,7 @@ import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableFloatStateOf
 import androidx.compose.runtime.mutableIntStateOf
@@ -491,8 +492,13 @@ private fun Dealt(pack: PackResult, stage: PackStage, revealed: List<Int>, focus
         if (stage != PackStage.DEALING) return@LaunchedEffect
         launch { for (i in 0 until n) { delay((if (i == 0) fly - 40 else gap).toLong()); if (deal.value < 1f) { onDealt(i, i in best); landedAt += i } } }
         deal.animateTo(1f, tween(total, easing = LinearEasing))
-        onLanded(); rise.animateTo(1f, tween(460, easing = LinearEasing))
+        // The rise runs in the screen's scope: onLanded() moves the stage to DEALT, which ends this effect,
+        // and a rise started here was cancelled with it, leaving the big card invisible (Randall 3 Nov 23:16Z).
+        scope.launch { rise.animateTo(1f, tween(460, easing = LinearEasing)) }
+        onLanded()
     }
+    // Never leave the big card down once the hand has landed (a rise cut short by anything else).
+    LaunchedEffect(pack, stage) { if (stage == PackStage.DEALT && rise.value < 1f && !rise.isRunning) rise.animateTo(1f, tween(460, easing = LinearEasing)) }
     val t = deal.value * total
     fun cardT(i: Int) = if (stage == PackStage.DEALT) 1f else ((t - i * gap) / fly).coerceIn(0f, 1f)
     var handOrigin by remember { mutableStateOf(Offset.Zero) }
@@ -726,14 +732,17 @@ private fun FlungCard(p: Pull, step: Int, w: Dp, h: Dp, onDone: () -> Unit) {
 @Composable
 fun PullFace(p: Pull, modifier: Modifier, lx: Float = .5f, ly: Float = .4f) = Box(modifier) {
     val painter = heroPainter(p.image.ifBlank { null }?.let(homeArt))
-    if (painter != null) Image(painter, p.name, Modifier.fillMaxSize(), contentScale = ContentScale.Fit)
-    if (p.foil) Box(Modifier.fillMaxSize().graphicsLayer { compositingStrategy = CompositingStrategy.Offscreen }.drawWithContent {
-        val w = size.width; val h = size.height
-        val shift = (lx - .5f) * w * 1.4f
-        drawRect(Brush.linearGradient(listOf(Color(0x00FF7AB8), Color(0x55FF9A7A), Color(0x55FFE680), Color(0x557DFFC4), Color(0x558AB8FF), Color(0x55C08CFF), Color(0x00FF7AB8)),
-            Offset(shift - w * .3f, 0f), Offset(shift + w * 1.3f, h)), blendMode = BlendMode.Overlay)
-        drawRect(Brush.radialGradient(listOf(Color(0x59FFFFFF), Color.Transparent), Offset(w * lx, h * ly), w * .55f), blendMode = BlendMode.Screen)
-    })
+    // A foil pull wears the card's real finish (finish-preview.js surface 'pack' → mountMtgFoil, the same AGSL foil as
+    // the card view), lit from where the light is. The old wash drawn on an empty layer greyed the card (Randall 3 Nov 23:17Z).
+    val look = if (p.foil) {
+        val context = androidx.compose.ui.platform.LocalContext.current
+        val data = dev.cardstashy.nativeplay.play.CardData.ready.collectAsState().value.also { if (it == null) dev.cardstashy.nativeplay.play.CardData.warm(context) }
+        val prints by dev.cardstashy.nativeplay.play.CardFacts.prints.collectAsState()
+        LaunchedEffect(p.id) { if (p.id.isNotBlank()) dev.cardstashy.nativeplay.play.CardFacts.wantPrint(p.id) }
+        data?.let { Foil.look(it, prints[p.id], "foil") }
+    } else null
+    val light = androidx.compose.runtime.rememberUpdatedState(Offset((lx - .5f) * 2f, (ly - .5f) * 2f))
+    if (painter != null) Image(painter, p.name, Modifier.fillMaxSize().then(if (look != null) Modifier.foil(look, light) else Modifier), contentScale = ContentScale.Fit)
 }
 
 /** rarityEmblem('mtg'): the faceted gem in the set-symbol colour, with the finish before the rarity. */
