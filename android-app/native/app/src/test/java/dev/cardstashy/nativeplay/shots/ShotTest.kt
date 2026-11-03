@@ -67,7 +67,7 @@ class ShotTest {
         val purse = PlayMath.purse(state)!!
         val top = @Composable { TopBarItems(Mode.PLAY, null, "Randall", unread = true, onSwitch = {}, onProfile = {}) }
         HeroPage(top = top, nav = { PlayNav(PlayTab.DECKS, {}) }, hero = {
-            Hero(listOf(HeroSlide(art("act1.jpg"), "Story · Act 1", "The Dawn of Dominaria", "0 of 8 battles", "Begin")), 0, {}, top) { a, size, pillTop ->
+            Hero(listOf(HeroSlide(art("act1.jpg"), "Story · Act 1", "The Dawn of Dominaria", "1993 to 1994. Urza and Mishra, and the first spells ever cast.", "Begin", battles = 8)), 0, {}, top) { a, size, pillTop ->
                 PursePill(purse, PlayMath.mastery(state, purse.xp), a, size, pillTop)
             }
         }) {
@@ -99,6 +99,6 @@ class ShotTest {
 
     private val sizes = listOf(360 to 780, 412 to 915, 600 to 960, 840 to 1000)
 
-    @Test fun playSkin() { for ((w, h) in sizes) for (s in listOf(1f, 1.3f)) shot("skin-play", w, h, s) { PlaySkin() } }
-    @Test fun collectionSkin() { for ((w, h) in listOf(412 to 915, 840 to 1000)) shot("skin-collection", w, h, 1f) { CollectionSkin() } }
+    @Test fun playSkin() { for ((w, h) in sizes) for (s in listOf(1f, 1.3f)) shot("skin-play-placeholder-rows", w, h, s) { PlaySkin() } }
+    @Test fun collectionSkin() { for ((w, h) in listOf(412 to 915, 840 to 1000)) shot("skin-collection-placeholder-rows", w, h, 1f) { CollectionSkin() } }
 }

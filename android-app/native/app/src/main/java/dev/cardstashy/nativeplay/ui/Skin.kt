@@ -1,6 +1,10 @@
 package dev.cardstashy.nativeplay.ui
 
 import android.os.Build
+import androidx.compose.foundation.layout.fillMaxHeight
+import androidx.compose.ui.layout.Layout
+import androidx.compose.ui.graphics.ColorFilter
+import androidx.compose.ui.graphics.ColorMatrix
 import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.lazy.LazyColumn
@@ -105,7 +109,8 @@ object Site {
     val Surface2 = Color(0xFF1F232B)      // --surface-2
     val Line = Color(0xFF2A2F39)          // --line
     val GlassLine = Color(0x17FFFFFF)     // --glass-line rgba(255,255,255,.09)
-    val GlassHi = Color(0x14FFFFFF)       // --glass-hi, the 1 px top highlight
+    val GlassHi = Color(0x12FFFFFF)       // --glass-hi: inset 0 1px 0 rgba(255,255,255,.07)
+    val GlassRing = Color(0x06FFFFFF)     // --glass-hi second ring: inset 0 0 0 1px rgba(255,255,255,.025)
     val Text = Color(0xFFEEF0F4)          // --text
     val Muted = Color(0xFF9AA2B1)         // --muted
     val Gold = Color(0xFFE8B95B)          // --gold: one primary per screen, the nav pill, earned things
@@ -196,9 +201,11 @@ fun GlassOverArt(art: Painter?, heroSize: IntSize, panelOffset: IntOffset, shape
         if (art != null && heroSize.width > 0) Image(art, null, Modifier.matchParentSize().wrapContentSize(Alignment.TopStart, unbounded = true)
             .offset { IntOffset(-panelOffset.x, -panelOffset.y) }
             .size(with(d) { heroSize.width.toDp() }, with(d) { heroSize.height.toDp() })
-            .let { if (blurs) it.blur(24.dp, BlurredEdgeTreatment.Unbounded) else it }, contentScale = ContentScale.Crop)
+            .let { if (blurs) it.blur(24.dp, BlurredEdgeTreatment.Unbounded) else it }, contentScale = ContentScale.Crop,
+            // Only the light comes through, never the art's hue: a glass control is neutral.
+            colorFilter = ColorFilter.colorMatrix(ColorMatrix().apply { setToSaturation(.12f) }))
         Box(Modifier.matchParentSize().background(Site.Surface.copy(alpha = if (blurs) .46f else .82f)))
-        Box(Modifier.matchParentSize().border(1.dp, Site.GlassLine, shape).drawBehind {
+        Box(Modifier.matchParentSize().border(1.dp, Site.GlassLine, shape).padding(1.dp).border(1.dp, Site.GlassRing, shape).drawBehind {
             drawLine(Site.GlassHi, Offset(size.height / 2, 1f), Offset(size.width - size.height / 2, 1f), 1.dp.toPx())
         })
         content()
@@ -232,7 +239,9 @@ fun TopBarItems(mode: Mode, avatarUrl: String?, name: String?, unread: Boolean, 
 // ---------------------------------------------------------------- 0a.1 hero header
 
 /** What the hero shows: Play = the Story act you are in (or your last deck), Collection = Card of the Day. */
-data class HeroSlide(val art: Any?, val eyebrow: String, val title: String, val meta: String?, val action: String?, val onAction: () -> Unit = {})
+data class HeroSlide(val art: Any?, val eyebrow: String, val title: String, val meta: String?, val action: String?, val onAction: () -> Unit = {},
+                     /** Story: the act's battles as pips (storyHeader), [won] filled, the last one the boss. */
+                     val battles: Int = 0, val won: Int = 0)
 
 /**
  * The hero: art bleeds edge to edge under the status bar (220 dp plus the inset) with a bottom-up
@@ -248,23 +257,34 @@ fun Hero(slides: List<HeroSlide>, page: Int, onPage: (Int) -> Unit, top: @Compos
     val inset = WindowInsets.statusBars.asPaddingValues().calculateTopPadding()
     val d = LocalDensity.current
     Column(Modifier.fillMaxWidth()) {
-        Box(Modifier.fillMaxWidth().height(220.dp + inset).onSizeChanged { heroSize = it }) {
-            if (art != null) Image(art, null, Modifier.fillMaxSize(), contentScale = ContentScale.Crop) else Box(Modifier.fillMaxSize().background(Site.Surface))
-            Box(Modifier.align(Alignment.BottomCenter).fillMaxWidth().height(160.dp).background(Brush.verticalGradient(0f to Color.Transparent, .45f to Color.Black.copy(alpha = .5f), 1f to Color.Black.copy(alpha = .72f))))
+        // 220 dp plus the inset, growing with big text so the words never run under the emblem or get cut.
+        Box(Modifier.fillMaxWidth().heightIn(min = 220.dp + inset).onSizeChanged { heroSize = it }) {
+            if (art != null) Image(art, null, Modifier.matchParentSize(), contentScale = ContentScale.Crop) else Box(Modifier.matchParentSize().background(Site.Surface))
+            Box(Modifier.align(Alignment.BottomCenter).fillMaxWidth().fillMaxHeight(.8f).heightIn(min = 160.dp).background(Brush.verticalGradient(0f to Color.Transparent, .45f to Color.Black.copy(alpha = .5f), 1f to Color.Black.copy(alpha = .72f))))
+            // Text protection under the title column, always on: 55 % black at the left edge fading out.
+            Box(Modifier.align(Alignment.BottomStart).fillMaxWidth(.75f).fillMaxHeight(.8f).heightIn(min = 160.dp).background(Brush.horizontalGradient(listOf(Color.Black.copy(alpha = .55f), Color.Transparent))))
             // Status bar legibility: a short top scrim, not a bar.
             Box(Modifier.fillMaxWidth().height(inset + 56.dp).background(Brush.verticalGradient(listOf(Color.Black.copy(alpha = .45f), Color.Transparent))))
             Box(Modifier.padding(top = inset)) { top() }
-            Column(Modifier.align(Alignment.BottomCenter).pageColumn().padding(bottom = if (under != null) 32.dp else 16.dp)) {
-                Text(slide.eyebrow.uppercase(), style = Site.Eyebrow, maxLines = 1)
+            Column(Modifier.align(Alignment.BottomCenter).padding(top = inset + 56.dp + 8.dp).pageColumn().padding(bottom = if (under != null) 32.dp else 16.dp)) {
+                Text(slide.eyebrow.uppercase(), style = Site.Eyebrow)
                 Spacer(Modifier.height(4.dp))
                 Row(verticalAlignment = Alignment.Bottom) {
                     Column(Modifier.weight(1f)) {
-                        Text(slide.title, style = Site.Title, maxLines = 2, overflow = TextOverflow.Ellipsis)
-                        if (slide.meta != null) Text(slide.meta, style = Site.Meta.copy(color = Site.Text.copy(alpha = .78f)), maxLines = 1, overflow = TextOverflow.Ellipsis)
+                        Text(slide.title, style = Site.Title)
+                        if (slide.meta != null) Text(slide.meta, style = Site.Meta.copy(color = Site.Text.copy(alpha = .78f)))
+                        if (slide.battles > 0) Row(Modifier.padding(top = 8.dp), horizontalArrangement = Arrangement.spacedBy(4.dp), verticalAlignment = Alignment.CenterVertically) {
+                            for (b in 0 until slide.battles) {
+                                val boss = b == slide.battles - 1; val done = b < slide.won
+                                Box(Modifier.size(if (boss) 22.dp else 16.dp, 6.dp).clip(CircleShape)
+                                    .background(if (done) Site.Gold else Site.Text.copy(alpha = .22f))
+                                    .then(if (boss) Modifier.border(1.dp, Site.Text.copy(alpha = .5f), CircleShape) else Modifier))
+                            }
+                        }
                     }
                     if (slide.action != null) {
                         Spacer(Modifier.width(12.dp))
-                        GlassButton(slide.action, art, heroSize, slide.onAction)
+                        GoldButton(slide.action, slide.onAction)
                     }
                 }
                 if (slides.size > 1) Row(Modifier.padding(top = 8.dp).height(16.dp), horizontalArrangement = Arrangement.spacedBy(6.dp), verticalAlignment = Alignment.CenterVertically) {
@@ -286,20 +306,16 @@ fun Hero(slides: List<HeroSlide>, page: Int, onPage: (Int) -> Unit, top: @Compos
 private val LocalPillLeft = androidx.compose.runtime.staticCompositionLocalOf { 0 }
 private fun heroWidthDp(size: IntSize, d: androidx.compose.ui.unit.Density) = with(d) { size.width.toDp() }
 
-/** The hero's one button: white text on glass over the art (rule 3: secondary actions are not gold). */
+/** The screen's one gold primary (0a rule 3): gold like metal, ink text, press = scale. */
 @Composable
-private fun GlassButton(label: String, art: Painter?, heroSize: IntSize, onClick: () -> Unit) {
-    var pos by remember { mutableStateOf(IntOffset.Zero) }
+fun GoldButton(label: String, onClick: () -> Unit, modifier: Modifier = Modifier) {
     val press = remember { MutableInteractionSource() }
     val pressed by press.collectIsPressedAsState()
     val k by animateFloatAsState(if (pressed) .96f else 1f, Site.spring(), label = "press")
-    GlassOverArt(art, heroSize, pos, CircleShape, Modifier.scale(k).onPlaced { c ->
-        var o = c.positionInParent(); var p = c.parentLayoutCoordinates
-        // Position within the hero box: walk up to the hero (the art's frame).
-        while (p != null && p.size != heroSize) { o += p.positionInParent(); p = p.parentLayoutCoordinates }
-        pos = IntOffset(o.x.toInt(), o.y.toInt())
-    }.height(44.dp).clickable(press, null, onClick = onClick)) {
-        Text(label, style = Site.Button, modifier = Modifier.align(Alignment.Center).padding(horizontal = 20.dp), maxLines = 1)
+    Box(modifier.scale(k).height(44.dp).clip(CircleShape)
+        .background(Brush.verticalGradient(listOf(Color(0xFFF2CF7E), Site.Gold, Color(0xFFC9963A))))
+        .clickable(press, null, onClick = onClick).padding(horizontal = 20.dp), contentAlignment = Alignment.Center) {
+        Text(label, style = Site.Button.copy(color = Site.GoldInk), maxLines = 1, softWrap = false)
     }
 }
 
@@ -315,7 +331,7 @@ fun PageHeader(title: String, eyebrow: String? = null, onBack: (() -> Unit)? = n
         }
         Column(Modifier.weight(1f)) {
             if (eyebrow != null) Text(eyebrow.uppercase(), style = Site.Eyebrow, maxLines = 1)
-            Text(title, style = Site.Title, maxLines = 2, overflow = TextOverflow.Ellipsis)
+            Text(title, style = Site.Title)
         }
         trailing()
     }
@@ -441,13 +457,22 @@ fun SectionCard(title: String? = null, action: String? = null, onAction: () -> U
     }
 }
 
-/** A section heading (TODAY, ACHIEVEMENTS): the Cinzel eyebrow with a white link on the right. */
+/** A section heading (TODAY, ACHIEVEMENTS): the Cinzel eyebrow, the link at the right on the same line when both fit, otherwise under it. Nothing truncates. */
 @Composable
 fun SectionTitle(title: String, action: String? = null, onAction: () -> Unit = {}) {
-    Row(Modifier.fillMaxWidth().heightIn(min = 44.dp), verticalAlignment = Alignment.CenterVertically) {
-        Text(title.uppercase(), style = Site.Eyebrow, modifier = Modifier.weight(1f), maxLines = 1, overflow = TextOverflow.Ellipsis)
-        if (action != null) Box(Modifier.height(44.dp).widthIn(min = 44.dp).clickable(onClick = onAction), contentAlignment = Alignment.CenterEnd) {
-            Text(action, style = Site.Meta.copy(color = Site.Text, fontWeight = FontWeight.SemiBold), maxLines = 1)
+    val eyebrow = @Composable { Box(Modifier.heightIn(min = 44.dp), contentAlignment = Alignment.CenterStart) { Text(title.uppercase(), style = Site.Eyebrow) } }
+    if (action == null) { eyebrow(); return }
+    val link = @Composable { Box(Modifier.height(44.dp).widthIn(min = 44.dp).clickable(onClick = onAction), contentAlignment = Alignment.CenterEnd) {
+        Text(action, style = Site.Meta.copy(color = Site.Text, fontWeight = FontWeight.SemiBold)) } }
+    Layout(contents = listOf(eyebrow, link), modifier = Modifier.fillMaxWidth()) { (e, l), c ->
+        val gap = 16.dp.roundToPx()
+        val lp = l.first().measure(c.copy(minWidth = 0))
+        val oneLine = e.first().maxIntrinsicWidth(c.maxHeight) + gap + lp.width <= c.maxWidth
+        val ep = e.first().measure(c.copy(minWidth = 0, maxWidth = if (oneLine) c.maxWidth - lp.width - gap else c.maxWidth))
+        val h = if (oneLine) maxOf(ep.height, lp.height) else ep.height + lp.height
+        layout(c.maxWidth, h) {
+            ep.place(0, if (oneLine) (h - ep.height) / 2 else 0)
+            if (oneLine) lp.place(c.maxWidth - lp.width, (h - lp.height) / 2) else lp.place(0, ep.height)
         }
     }
 }
