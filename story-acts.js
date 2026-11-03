@@ -41,6 +41,9 @@ export const STORY_ACTS = [
   {act: 13, age: 'The Ravnica Years', title: 'The Guildpact', years: '2005 to 2006',
     sets: ['rav', 'gpt', 'dis', '9ed'], landSet: 'rav', packSets: ['rav', 'gpt', 'dis'],
     art: {set: 'rav', number: '234', name: 'Szadek, Lord of Secrets', crop: 'https://cards.scryfall.io/art_crop/front/2/8/2882793e-5d7d-47f0-9308-652a5e036c2c.jpg'}},
+  {act: 14, age: 'The Time Spiral Years', title: 'The Time Rifts', years: '2006 to 2007',
+    sets: ['csp', 'tsp', 'tsb', 'plc', 'fut', '10e'], landSet: 'tsp', packSets: ['csp', 'tsp', 'plc', 'fut'],
+    art: {set: 'tsb', number: '98', name: 'Nicol Bolas', crop: 'https://cards.scryfall.io/art_crop/front/7/8/78407de3-b97e-4e30-beea-ef268dda3042.jpg'}},
 ];
 export const SET_NAMES = {lea: 'Limited Edition Alpha', leb: 'Limited Edition Beta', '2ed': 'Unlimited Edition', arn: 'Arabian Nights', atq: 'Antiquities',
   '3ed': 'Revised Edition', leg: 'Legends', drk: 'The Dark', fem: 'Fallen Empires', ice: 'Ice Age', hml: 'Homelands', all: 'Alliances', '4ed': 'Fourth Edition',
@@ -53,6 +56,7 @@ export const SET_NAMES = {lea: 'Limited Edition Alpha', leb: 'Limited Edition Be
   ons: 'Onslaught', lgn: 'Legions', scg: 'Scourge', '8ed': 'Eighth Edition',
   mrd: 'Mirrodin', dst: 'Darksteel', '5dn': 'Fifth Dawn',
   chk: 'Champions of Kamigawa', bok: 'Betrayers of Kamigawa', sok: 'Saviors of Kamigawa', '9ed': 'Ninth Edition',
-  rav: 'Ravnica: City of Guilds', gpt: 'Guildpact', dis: 'Dissension'};
+  rav: 'Ravnica: City of Guilds', gpt: 'Guildpact', dis: 'Dissension',
+  csp: 'Coldsnap', tsp: 'Time Spiral', tsb: 'Time Spiral Timeshifted', plc: 'Planar Chaos', fut: 'Future Sight', '10e': 'Tenth Edition'};
 export const storyAct = n => STORY_ACTS.find(a => a.act === Number(n)) || null;
 export const setSymbolUrl = code => `https://svgs.scryfall.io/sets/${encodeURIComponent(code)}.svg`;
