@@ -55,3 +55,19 @@ const make = createRandomDeckProducer({ pipeline: { build: async r => { seen = r
 await make({ format: 'Commander' });
 assert.equal(seen.forge.power, 'casual'); assert.equal(seen.forge.variation, 'varied'); assert.match(seen.forge.seed, /^[A-Z0-9]{6}$/);
 console.log('play random queue: instant hand-over, no duplicate builds, refill, paused in matches, account-scoped');
+
+// Random decks exist for every Play format (Randall 3 Nov): Modern, Pioneer, Legacy, Vintage, Pauper, Standard Brawl too.
+{
+  const {createRandomDeckProducer, RANDOM_DECK_FORMATS} = await import('./play-opponent-build.js');
+  const asked = [];
+  const produce = createRandomDeckProducer({forgeSeed: () => 'ABC234', pickSeed: async r => ({name: 'Seed ' + r.format}),
+    pipeline: {build: async req => { asked.push(req.format); return {ok: true, deck: {format: req.format, name: 'x', cards: []}, request: req}; }, recheck: () => true}});
+  for (const f of ['Standard', 'Commander', 'Modern', 'Pioneer', 'Legacy', 'Vintage', 'Pauper', 'Standard Brawl']) {
+    if (!RANDOM_DECK_FORMATS.includes(f)) throw Error('missing random format ' + f);
+    const d = await produce({format: f});
+    if (d.format !== f) throw Error('wrong format for ' + f);
+  }
+  let refused = false; try { await produce({format: 'Oathbreaker'}); } catch { refused = true; }
+  if (!refused || asked.length !== 8) throw Error('only supported formats build');
+  console.log('random decks for every format ok');
+}

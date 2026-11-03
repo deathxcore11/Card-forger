@@ -1,13 +1,15 @@
 // Random opponents use the shared checked builder. This module selects a deck;
 // engine admission and CPU piloting remain independent match-start gates.
 import {normalizeCommanderTarget} from './commander-evidence.js';
+// Every format Play supports gets random decks (Quick Play, Practice, CPU seats).
+export const RANDOM_DECK_FORMATS=Object.freeze(['Standard','Commander','Modern','Pioneer','Legacy','Vintage','Pauper','Standard Brawl']);
 // Build one checked random deck without selecting it. The Play deck queue
 // calls this in the background; the builder below calls it on demand.
 export function createRandomDeckProducer({pipeline,pickSeed,random=()=>crypto.getRandomValues(new Uint32Array(1))[0],forgeSeed=null}={}){
  if(typeof pipeline?.build!=='function'||typeof pipeline?.recheck!=='function'||typeof pickSeed!=='function')throw Error('OPPONENT_BUILDER_REQUIRED');
  const seedCode=forgeSeed||(()=>{const n=random();return Array.from({length:6},(_,i)=>'23456789ABCDEFGHJKLMNPQRSTUVWXYZ'[(Math.floor(n/Math.pow(32,i))+i*7)%32]).join('');});
  return async function produce({format,targetBracket=null,deckStyle='classic'}={},{current=()=>true,onStatus=()=>{}}={}){
-  if(!['Standard','Commander'].includes(format)||!['classic','infinite-mana'].includes(deckStyle))throw Error('INVALID_OPPONENT_OPTIONS');
+  if(!RANDOM_DECK_FORMATS.includes(format)||!['classic','infinite-mana'].includes(deckStyle))throw Error('INVALID_OPPONENT_OPTIONS');
   const bracket=normalizeCommanderTarget(targetBracket);if(format!=='Commander'&&bracket!==null)throw Error('COMMANDER_BRACKET_ONLY');
   // Random decks are Casual by default, with Varied picks and a seed (Deck Forge, spec 12).
   const request={game:'mtg',format,targetBracket:bracket,deckStyle,budget:'',budgetBasis:'total',budgetMode:'cap',preferOwned:false,ownedOnly:false,randomSeed:random(),forge:{power:bracket&&bracket>=3?'strong':'casual',variation:'varied',seed:seedCode()}};
@@ -27,7 +29,7 @@ export function createPracticeOpponentBuilder({pipeline,pickSeed,readScope,onSel
  const key=()=>JSON.stringify(readScope());
  return {snapshot,cancel(){sequence++;state={...state,busy:false,status:'Build cancelled.',error:null};publish();},
   async build({format,targetBracket=null,deckStyle='classic'}={}){
-   if(!['Standard','Commander'].includes(format)||!['classic','infinite-mana'].includes(deckStyle))throw Error('INVALID_OPPONENT_OPTIONS');
+   if(!RANDOM_DECK_FORMATS.includes(format)||!['classic','infinite-mana'].includes(deckStyle))throw Error('INVALID_OPPONENT_OPTIONS');
    const bracket=normalizeCommanderTarget(targetBracket);if(format!=='Commander'&&bracket!==null)throw Error('COMMANDER_BRACKET_ONLY');
    const ticket=++sequence,scope=key(),current=()=>ticket===sequence&&scope===key(),ask={format,targetBracket:bracket,deckStyle};
    activeScope=scope;state={...state,request:ask,busy:true,status:'Choosing a build-around…',error:null};publish();

@@ -21,7 +21,7 @@ import {parsePlayDeckImport} from './play-deck-import.js';
 import {playMenuMarkup} from './play-menu.js';
 import {setPlaymatChoice,mountPlaymatScene,nextPlaymat,unmountPlaymatScene} from './play-playmats.js';
 import {lockPlayLandscape,releasePlayOrientation} from './play-orientation.js';
-import {createPracticeOpponentBuilder,createRandomDeckProducer} from './play-opponent-build.js';
+import {createPracticeOpponentBuilder,createRandomDeckProducer,RANDOM_DECK_FORMATS} from './play-opponent-build.js';
 import {createRandomDeckQueue} from './play-random-queue.js';
 import {forgeOptions,newForgeSeed,commanderHooks,forgeFit} from './deck-forge.js';
 import {createPlayerMat} from './play-player-mat.js';
@@ -1687,7 +1687,7 @@ const playSetup = createPlaySetup({
 const playRandomProducer=createRandomDeckProducer({pipeline:deckPipeline,pickSeed:randomBuildSeed});
 const playRandomQueue=createRandomDeckQueue({produce:playRandomProducer,readScope:()=>[cloudInfo().user?.id,accountGeneration,accountLocked],idle:()=>!document.hidden&&!playStarting&&!playerMatHost&&!playerMatRoot&&!practicePregame});
 let playRandomWarmAt=0;
-const warmPlayRandom=()=>{if(!cloudInfo().user?.id||accountLocked||Date.now()-playRandomWarmAt<30000)return;playRandomWarmAt=Date.now();const f=playSetup.snapshot().match.format;playRandomQueue.warm([...new Set([f,'Commander','Standard'])].filter(x=>['Commander','Standard'].includes(x)).map(format=>({format,targetBracket:null,deckStyle:'classic'})));};
+const warmPlayRandom=()=>{if(!cloudInfo().user?.id||accountLocked||Date.now()-playRandomWarmAt<30000)return;playRandomWarmAt=Date.now();const f=playSetup.snapshot().match.format;playRandomQueue.warm([...new Set([f,'Commander','Standard'])].filter(x=>RANDOM_DECK_FORMATS.includes(x)).map(format=>({format,targetBracket:null,deckStyle:'classic'})));};
 const playBuilders=Object.fromEntries(['player','opponent','cpu3','cpu4'].map(seat=>[seat,createPracticeOpponentBuilder({pipeline:deckPipeline,pickSeed:randomBuildSeed,queue:playRandomQueue,produce:playRandomProducer,
  readScope:()=>[cloudInfo().user?.id,accountGeneration,accountLocked,playSetup.snapshot().match.format],
  onSelect:deck=>playSetup.chooseTemporary(deck,{seat,sourceKind:'random'}),onChange:()=>refreshPlayMenu()})]));
