@@ -1376,3 +1376,30 @@ button.pd-near-row{cursor:pointer}
 .play-nav button{min-height:44px;cursor:pointer;white-space:nowrap;letter-spacing:0}
 .play-nav button span .ico{width:23px;height:23px}
 .play-nav button[data-play-nav="switch"] span{color:var(--gold)}
+/* This week's Secret Lair (play-secret-lair.js): a row of real Secret Lair printings for coins. */
+.pe-sl{display:grid;gap:12px;border-color:color-mix(in srgb,#b48cff 40%,var(--line));background:radial-gradient(120% 90% at 0 0,#b48cff1f,transparent 60%),var(--surface,#ffffff06)}
+.pe-sl-head{display:flex;flex-wrap:wrap;align-items:baseline;justify-content:space-between;gap:4px 12px}
+.pe-sl-head h2{margin:0}
+.pe-sl-left{font-size:13px;color:#d9c6ff}
+.pe-sl-sub{margin:0;font-size:14px;line-height:1.45;color:var(--muted,#c9c2b2)}
+.pe-sl-cards{list-style:none;margin:0;padding:4px 2px 8px;display:grid;grid-auto-flow:column;grid-auto-columns:minmax(112px,150px);gap:12px;overflow-x:auto;overscroll-behavior-x:contain;scroll-snap-type:x proximity}
+.pe-sl-cards li{position:relative;scroll-snap-align:start;animation:pd-rise .4s ease both;animation-delay:calc(var(--i)*60ms)}
+.pe-sl-card{display:block;width:100%;padding:0;border:0;background:none;border-radius:5%/3.6%;overflow:hidden;cursor:pointer;box-shadow:0 8px 22px #0007;transition:transform .2s ease}
+.pe-sl-card:hover,.pe-sl-card:focus-visible{transform:translateY(-4px)}
+.pe-sl-card:focus-visible{outline:2px solid var(--gold);outline-offset:3px}
+.pe-sl-card img{display:block;width:100%;aspect-ratio:488/680;object-fit:cover}
+.pe-sl-have{position:absolute;left:6px;bottom:14px;padding:2px 8px;border-radius:999px;font-size:11px;font-weight:700;background:#0b0a12d9;color:#e9d6a7}
+.pe-sl-foot{display:flex;justify-content:flex-end}
+.pe-sl-done{font-weight:700;color:#e9d6a7}
+@keyframes pd-rise{from{opacity:0;transform:translateY(8px)}to{opacity:1;transform:none}}
+@media (prefers-reduced-motion:reduce){.pe-sl-cards li{animation:none}.pe-sl-card{transition:none}}
+/* Secret Lair art you unlocked for a card, in the Play card view. */
+.play-styles{display:grid;gap:8px;margin:4px 0 0}
+.play-styles h3{margin:0;font:700 13px/1.2 Cinzel,Georgia,serif;letter-spacing:.06em;color:#e9d6a7}
+.play-style-row{display:flex;gap:10px;overflow-x:auto;padding:2px 2px 6px}
+.play-style{flex:0 0 auto;width:72px;min-height:44px;aspect-ratio:488/680;padding:0;border:2px solid transparent;border-radius:8px;overflow:hidden;background:#ffffff0d;cursor:pointer;display:grid;place-items:center}
+.play-style img{width:100%;height:100%;object-fit:cover;display:block}
+.play-style.on{border-color:var(--gold);box-shadow:0 0 0 2px #f2d18e55}
+.play-style:focus-visible{outline:2px solid var(--gold);outline-offset:2px}
+.play-style-own{font-size:12px;font-weight:700;color:#e9d6a7;text-align:center;padding:4px}
+.pe-table>.pe-sl{grid-column:1/-1}

@@ -12,6 +12,7 @@ import {tileChrome} from './tiles.js';
 import {deckShell} from './deck-viewer.js';
 import {purse} from './play-econ-client.js';
 import {deedsScreenMarkup} from './play-deeds-ui.js';
+import {secretLairImage} from './play-secret-lair.js';
 const esc = v => String(v ?? '').replace(/[&<>"']/g, c => ({'&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;'}[c]));
 const n = v => Number(v || 0).toLocaleString('en-US');
 const ART = 'https://cards.scryfall.io/art_crop/front/';
@@ -105,6 +106,19 @@ export function forgeMarkup(snapshot, {compact = false} = {}) {
     <div class="pe-forge-rows">${row('u')}${row('r')}${row('m')}</div></section>`;
 }
 
+// This week's Secret Lair bundle (play-secret-lair.js): real Secret Lair printings for coins, gone on Monday.
+export function secretLairShelf(snapshot) {
+  const s = snapshot.state, sl = s?.secretLair; if (!sl?.cards?.length) return '';
+  const coins = s.wallet?.coins | 0, owned = new Set((s.cards || []).map(c => c.o));
+  const days = Math.max(1, Math.ceil((Date.parse(sl.ends) - Date.now()) / 864e5)), left = days === 1 ? 'Leaves tomorrow' : `Leaves in ${days} days`;
+  const btn = sl.bought ? '<span class="pe-sl-done">In your Trunk</span>'
+    : `<button class="pe-buy" data-act="playEconSecretLair" data-econ-week="${esc(sl.week)}" ${coins < sl.price || snapshot.busy ? 'disabled' : ''} aria-label="Buy this Secret Lair for ${n(sl.price)} coins">${coinIcon('pe-coin--sm')}<b>${n(sl.price)}</b></button>`;
+  return `<section class="pe-shelf pe-sl" aria-labelledby="peSlTitle"><div class="pe-sl-head"><h2 id="peSlTitle">This week's Secret Lair</h2><span class="pe-sl-left">${esc(left)}</span></div>
+    <p class="pe-sl-sub"><b>${esc(sl.title)}</b>${sl.by ? ` · ${esc(sl.by)}` : ''}. Each card comes into your Trunk and unlocks its Secret Lair art for your copies.</p>
+    <ul class="pe-sl-cards" data-audit-scroll>${sl.cards.map((c, i) => `<li style="--i:${i}"><button class="pe-sl-card" data-act="card" data-name="${esc(c.n)}" data-play-card="1" aria-label="Open ${esc(c.n)}${owned.has(c.o) ? ', in your Trunk' : ''}"><img src="${esc(secretLairImage(c.id))}" alt="" loading="lazy" decoding="async" referrerpolicy="no-referrer"></button>${owned.has(c.o) ? '<span class="pe-sl-have" aria-hidden="true">Owned</span>' : ''}</li>`).join('')}</ul>
+    <div class="pe-sl-foot">${btn}</div></section>`;
+}
+
 export function shopMarkup(snapshot, {query = '', press = null, facts = null, shopFocus = ''} = {}) {
   const s = snapshot.state, price = s.config?.packPrice || 500, coins = s.wallet?.coins | 0, shop = s.shop || [], reward = s.rewardSet;
   const q = query.trim().toLowerCase(), list = (q ? shop.filter(x => x.name.toLowerCase().includes(q) || x.code === q) : shop).slice(0, q ? 60 : 24);
@@ -113,6 +127,7 @@ export function shopMarkup(snapshot, {query = '', press = null, facts = null, sh
     return `<div class="pe-press-result"><img src="${esc(c.image_uris?.normal || c.card_faces?.[0]?.image_uris?.normal || cardImageByName(c.name))}" alt="${esc(c.name)}" loading="lazy" referrerpolicy="no-referrer"><div class="pe-press-copy"><strong>${esc(c.name)}</strong><span>${have} of 4 owned</span><button class="pe-stamp" data-act="playEconCraft" data-econ-card="${esc(c.id)}" ${have >= 4 || seals < 1 || snapshot.busy ? 'disabled' : ''}>${sealIcon(key)}<b>${have >= 4 ? 'All 4 owned' : 'Stamp it'}</b></button></div></div>`; })() : press?.error ? `<p class="pe-press-empty">${esc(press.error)}</p>` : '';
   return `<section class="play-menu pe-screen pe-shop" aria-labelledby="playTitle">${head('Merchant', snapshot)}
     <div class="pe-table">
+      ${secretLairShelf(snapshot)}
       <section class="pe-shelf" aria-labelledby="peShelfTitle"><h2 id="peShelfTitle">Packs</h2>
         ${reward ? `<div class="pe-feature">${buy(reward, true)}</div>` : ''}
         <label class="pe-search"><span>Any set, any year</span><input type="search" data-input="playEconSetSearch" value="${esc(query)}" maxlength="60" placeholder="Search sets"></label>
@@ -141,7 +156,10 @@ const COLORS = [['W', 'White'], ['U', 'Blue'], ['B', 'Black'], ['R', 'Red'], ['G
 const TYPES = ['Creatures', 'Planeswalkers', 'Instants', 'Sorceries', 'Artifacts', 'Enchantments', 'Lands'];
 const pips = c => `<span class="pe-pips${c.holo ? ' pe-pips--holo' : ''}" aria-label="${c.holo ? `${c.c} holo` : `${c.c} of 4`}">${[1, 2, 3, 4].map(i => `<i class="${i <= c.c ? 'on' : ''}"></i>`).join('')}</span>`;
 // The printing you pulled, else the card's own art, else Scryfall's image by name.
-const cardImage = (c, facts) => c.p?.image || facts?.card?.(c.o)?.i || cardImageByName(c.n);
+// Secret Lair styles in use (oracle -> image): the Trunk shows your copy in its chosen Secret Lair art.
+let styleArt = new Map();
+export function setPlayStyles(styles = []) { styleArt = new Map(styles.filter(x => x.on && x.i).map(x => [x.o, x.i])); }
+const cardImage = (c, facts) => styleArt.get(c.o) || c.p?.image || facts?.card?.(c.o)?.i || cardImageByName(c.n);
 
 // The app's own card tile (foil, holo stamp, colour and set emblems, hover and tilt), with copies
 // owned in Play where the app shows a price. Tapping opens the app's card sheet in Play mode.

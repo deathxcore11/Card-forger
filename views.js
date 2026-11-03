@@ -383,11 +383,18 @@ function playOwnLine(play, name, shown) {
   const n = Math.min(play.owned(name, shown), 4);
   return `<p class="play-card-own"><span class="pe-pips" aria-hidden="true">${[1, 2, 3, 4].map(i => `<i class="${i <= n ? "on" : ""}"></i>`).join("")}</span><b>${n ? `${n} of 4 in your Play collection` : "Not in your Play collection yet"}</b></p>`;
 }
+// Secret Lair art styles you unlocked for this card: pick one for your copies, or the card's own art.
+function playStyleRow(play, name, shown) {
+  const st = play.styles?.(name, shown); if (!st) return "";
+  const pick = (print, label, img, on) => `<button class="play-style${on ? " on" : ""}" data-act="playCardStyle" data-oracle="${esc(st.oracle)}" data-print="${esc(print)}" aria-pressed="${on}" aria-label="${esc(label)}">${img ? `<img src="${esc(img)}" alt="" loading="lazy" decoding="async" referrerpolicy="no-referrer">` : `<span class="play-style-own">Own art</span>`}</button>`;
+  return `<div class="play-styles" role="group" aria-label="Secret Lair art for your copies"><h3>Secret Lair art</h3><div class="play-style-row">${pick("", "Show the card's own art", "", !st.on)}${st.list.map((x, i) => pick(x.id, `Show Secret Lair art ${i + 1}${x.on ? ", in use" : ""}`, x.i, x.on)).join("")}</div></div>`;
+}
 function playCardActions(play, name, shown) {
   playShown = shown || null;
   const n = Math.min(play.owned(name, shown), 4), decks = play.decks || [];
   return `<section class="card-secondary-actions play-card-actions" aria-label="Play collection and deck actions">
     ${playOwnLine(play, name, shown)}
+    ${playStyleRow(play, name, shown)}
     ${playEditActions(play, name, shown, false)}
     <div class="card-actions"><div class="ca-main">
       ${n < 4 ? `<button class="btn" data-act="cardTab" data-tab="get">${n ? "Get more copies" : "Get it"}</button>` : ""}

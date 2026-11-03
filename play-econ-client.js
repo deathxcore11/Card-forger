@@ -19,7 +19,7 @@ export function createPlayEcon({getAccessToken, fetchImpl = globalThis.fetch?.bi
     return out;
   }
   // Server answers carry the wallet; the shop, reward set, quest counters and claims ride along.
-  const keep = (next, extra = {}) => ({...next, rewardSet: state?.rewardSet, shop: state?.shop, counters: state?.counters || {}, claimed: state?.claimed || [], login: state?.login || null, story: state?.story || [], ...extra});
+  const keep = (next, extra = {}) => ({...next, rewardSet: state?.rewardSet, shop: state?.shop, counters: state?.counters || {}, claimed: state?.claimed || [], login: state?.login || null, story: state?.story || [], styles: state?.styles || [], secretLair: state?.secretLair || null, ...extra});
   // Answers to Merchant and pack actions carry the counters they moved (pack, stamp and forge deeds).
   const fresh = out => out?.counters ? {counters: out.counters} : {};
   const tz = () => -new Date().getTimezoneOffset();
@@ -47,6 +47,12 @@ export function createPlayEcon({getAccessToken, fetchImpl = globalThis.fetch?.bi
     claim: (kind, id, step) => run('claim:' + kind + ':' + id + ':' + (step ?? ''), async () => { const out = await call('claim', {kind, id, step, tz: tz()}); set(keep(out.state, {claimed: out.claimed})); return out; }),
     holo: oracle => run('holo', async () => { const out = await call('holo', {oracle, tz: tz()}); set(keep(out.state, fresh(out))); return out; }),
     craft: (cardId, holo = false) => run('craft', async () => { const out = await call('craft', {id: cardId, holo, tz: tz()}); set(keep(out.state, fresh(out))); return out; }),
+    // This week's Secret Lair bundle (play-secret-lair.js); the answer carries the new styles.
+    secretLair: week => run('secretlair', async () => { const out = await call('secretlair', {week, tz: tz()}); set(keep(out.state, {...fresh(out), styles: out.styles, secretLair: out.secretLair})); return out; }),
+    // Shows a Secret Lair style on your copy (print), or the card's own art (null).
+    style: (oracle, print = null) => run('style', async () => { const out = await call('style', {oracle, print}); set({...state, styles: out.styles || []}); return out; }),
+    // A reward answer that unlocked a style (god pack, Story boss, gold achievement): add it locally.
+    noteStyle(style) { if (style?.id && state && !(state.styles || []).some(x => x.id === style.id)) set({...state, styles: [{...style, on: false}, ...(state.styles || [])]}); },
     saveDeck: deck => run('deck', async () => { const out = await call('deck', deck); await api.refresh(); return out.deck; }),
     clear() { state = null; try { storage?.removeItem(privateKey(CACHE)); } catch {} onChange(); },
   };
@@ -67,6 +73,11 @@ const MESSAGES = {
   bad_forge: 'That seal cannot be forged.',
   bad_precon: 'That precon could not be opened.',
   not_earned: 'That reward is not ready yet.',
+  bought: 'You already have this week\'s Secret Lair.',
+  bundle_gone: 'That Secret Lair has left the Merchant. A new one is in.',
+  no_bundle: 'No Secret Lair at the Merchant right now.',
+  style_locked: 'Unlock that Secret Lair style first.',
+  bad_style: 'That style could not be used.',
   all_holo: 'Every copy you own is already holo.',
   no_foil: 'This printing has no foil version.',
   claimed: 'You already claimed that reward.',
