@@ -391,7 +391,7 @@ fun DecksRoute(onBack: () -> Unit, onWeb: (String) -> Unit, onNav: (PlayTab) -> 
         if (ed == null && fu != null) {
             BackHandler { finder = null }
             FinderScreen(s, fu, onBack = { finder = null }, onUse = { e, complete -> editor = EditorUi().apply { edit = e; mode = if (complete || e.cards.isEmpty()) "mine" else "all" } },
-                onCard = { name -> card = CardPick(name, "", null, "nonfoil") }, nav = { PlayNav(PlayTab.DECKS, onNav) })
+                onCard = { name -> card = CardPick(name, "", null, "nonfoil") }, toast = toast, onPack = { finder = null; onTrunkSet(it) }, nav = { PlayNav(PlayTab.DECKS, onNav) })
         } else if (ed != null) {
             BackHandler { editor = null }
             DeckEditor(s, ed, onBack = { editor = null }, onCard = { card = it }, onPack = { editor = null; onTrunkSet(it) }, toast = toast,

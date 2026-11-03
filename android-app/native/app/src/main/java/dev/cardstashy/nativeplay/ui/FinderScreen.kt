@@ -58,6 +58,8 @@ class FinderUi {
     var loadedFor = ""
     /** The list open in the deck view (See the cards). */
     var open by mutableStateOf<Finder.MetaList?>(null)
+    var crafting by mutableStateOf(false)
+    var armed by mutableStateOf(false)
     val seen = HashSet<String>()
 }
 
@@ -69,7 +71,8 @@ private fun t(size: Float, weight: FontWeight = FontWeight.Medium, color: Color 
 private val BASIC_COLOR = mapOf("Plains" to "W", "Island" to "U", "Swamp" to "B", "Mountain" to "R", "Forest" to "G", "Wastes" to "C")
 
 @Composable
-fun FinderScreen(state: JsonObject, ui: FinderUi, onBack: () -> Unit, onUse: (DeckEdit.Edit, Boolean) -> Unit, onCard: (String) -> Unit, nav: @Composable () -> Unit) {
+fun FinderScreen(state: JsonObject, ui: FinderUi, onBack: () -> Unit, onUse: (DeckEdit.Edit, Boolean) -> Unit, onCard: (String) -> Unit,
+                 toast: (String) -> Unit = {}, onPack: (String) -> Unit = {}, nav: @Composable () -> Unit) {
     val scope = rememberCoroutineScope()
     val trunk = remember(state) { Trunk.cards(state) }
     val owned = remember(trunk) { Finder.ownedByName(trunk) }
@@ -117,7 +120,30 @@ fun FinderScreen(state: JsonObject, ui: FinderUi, onBack: () -> Unit, onUse: (De
         androidx.activity.compose.BackHandler { ui.open = null }
         val row = remember(l, owned, facts, low, seals) { Finder.finderRow(l, owned, ::cardOf, seals) { CraftRarity.rarity(it) } }
         LaunchedEffect(l.key) { CardFacts.wantNames(l.cards.map { it.name }) }
-        DeckView(row, ::cardOf, onBack = { ui.open = null }, onUse = { use(l, row.complete) }, onCard = onCard, nav = nav)
+        val arch = remember(l, clusters) { clusters.of(l.key)?.name?.takeIf { it.isNotEmpty() } }
+        val missing = row.shortfall.missing.sumOf { it.need }
+        val clipboard = androidx.compose.ui.platform.LocalClipboardManager.current
+        val sets by dev.cardstashy.nativeplay.play.SetFacts.sets.collectAsState()
+        val goals = remember(row, sets) {
+            val plan = DeckEdit.craftPlan(l.cards.groupBy { it.name }.map { (n, r) -> DeckEdit.Line(n, r.sumOf { maxOf(1, it.qty) }) }, owned, rarityOf, state.getAsJsonObject("wallet"))
+            DeckEdit.packGoals(plan) { n -> cardOf(n)?.let { c -> val code = c.get("set")?.asString ?: ""; code to (sets[code]?.name ?: c.get("set_name")?.asString ?: code.uppercase()) } }
+        }
+        val actions = listOfNotNull(
+            DeckAction(if (row.complete) "Use deck" else "Build it") { use(l, row.complete) },
+            // Craft all from the deck page: one tap arms it (5 s), the second spends seals at each card's cheapest rarity.
+            if (missing > 0 && row.status == "craftable") DeckAction(if (ui.crafting) "Crafting…" else if (ui.armed) "Craft $missing now" else "Craft all $missing", enabled = !ui.crafting) {
+                if (!ui.armed) { ui.armed = true; scope.launch { delay(5000); ui.armed = false } }
+                else { ui.armed = false; ui.crafting = true
+                    scope.launch { var made = 0
+                        try { for (m in row.shortfall.missing) { val id = CraftRarity.id(m.name).ifEmpty { cardOf(m.name)?.get("id")?.asString ?: "" }
+                            if (id.isNotEmpty()) repeat(m.need) { if (runCatching { dev.cardstashy.nativeplay.play.Progress.craft(id) }.isSuccess) made++ } } }
+                        finally { ui.crafting = false }
+                        toast(if (made > 0) "$made card${if (made > 1) "s" else ""} crafted into your Trunk." else "Not enough seals for these cards yet.") } }
+            } else null,
+            DeckAction("Copy list") { val rows = LinkedHashMap<String, Int>(); for (r in l.cards) rows[r.name] = (rows[r.name] ?: 0) + maxOf(1, r.qty)
+                clipboard.setText(androidx.compose.ui.text.AnnotatedString(rows.entries.joinToString("\n") { "${it.value} ${it.key}" })); toast("List copied.") })
+        DeckView(row, arch ?: row.name, ::cardOf, onBack = { ui.open = null }, actions = actions, onCard = onCard,
+            goals = { if (goals.isNotEmpty()) PackGoals(goals, onPack) }, nav = nav)
         return
     }
     Box(Modifier.fillMaxSize().background(Site.Bg)) {

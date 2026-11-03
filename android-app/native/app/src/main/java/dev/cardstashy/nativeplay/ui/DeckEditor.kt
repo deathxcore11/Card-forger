@@ -295,7 +295,7 @@ private fun CraftAllBar(plan: DeckEdit.Plan, ui: EditorUi, onCraft: () -> Unit) 
 }
 
 @Composable
-private fun PackGoals(goals: List<DeckEdit.Goal>, onPack: (String) -> Unit) = Row(Modifier.horizontalScroll(rememberScrollState()), horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+internal fun PackGoals(goals: List<DeckEdit.Goal>, onPack: (String) -> Unit) = Row(Modifier.horizontalScroll(rememberScrollState()), horizontalArrangement = Arrangement.spacedBy(8.dp)) {
     for (g in goals) Row(Modifier.height(44.dp).softPill(RoundedCornerShape(22.dp)).clickable { onPack(g.code) }.padding(horizontal = 14.dp), verticalAlignment = Alignment.CenterVertically,
         horizontalArrangement = Arrangement.spacedBy(8.dp)) {
         SetIcon(g.code, Modifier.size(20.dp)); Text(g.name, style = t(13.5f, FontWeight.SemiBold), softWrap = false)
