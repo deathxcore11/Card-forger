@@ -47,6 +47,8 @@ export function createPlayEcon({getAccessToken, fetchImpl = globalThis.fetch?.bi
     claim: (kind, id, step) => run('claim:' + kind + ':' + id + ':' + (step ?? ''), async () => { const out = await call('claim', {kind, id, step, tz: tz()}); set(keep(out.state, {claimed: out.claimed})); return out; }),
     holo: oracle => run('holo', async () => { const out = await call('holo', {oracle, tz: tz()}); set(keep(out.state, fresh(out))); return out; }),
     craft: (cardId, holo = false) => run('craft', async () => { const out = await call('craft', {id: cardId, holo, tz: tz()}); set(keep(out.state, fresh(out))); return out; }),
+    // The day's one free quest swap (easy or hard daily); the answer carries the counters.
+    reroll: level => run('reroll', async () => { const out = await call('reroll', {level, tz: tz()}); set({...state, counters: out.counters || state?.counters}); return out; }),
     // This week's Secret Lair bundle (play-secret-lair.js); the answer carries the new styles.
     secretLair: week => run('secretlair', async () => { const out = await call('secretlair', {week, tz: tz()}); set(keep(out.state, {...fresh(out), styles: out.styles, secretLair: out.secretLair})); return out; }),
     // Shows a Secret Lair style on your copy (print), or the card's own art (null).
@@ -73,6 +75,9 @@ const MESSAGES = {
   bad_forge: 'That seal cannot be forged.',
   bad_precon: 'That precon could not be opened.',
   not_earned: 'That reward is not ready yet.',
+  rerolled: 'You already swapped a quest today.',
+  quest_done: 'That quest is already done.',
+  bad_reroll: 'That quest cannot be swapped.',
   bought: 'You already have this week\'s Secret Lair.',
   bundle_gone: 'That Secret Lair has left the Merchant. A new one is in.',
   no_bundle: 'No Secret Lair at the Merchant right now.',

@@ -29,7 +29,8 @@ const fmtNeed = (a, v) => a.unit === 'h' ? `${n(v / 60)} h` : n(v);
 
 function questLine(q, config, busy) {
   const label = 'Claim';
-  return `<li class="pd-quest${q.done ? ' is-done' : ''}${q.claimed ? ' is-claimed' : ''}"><div class="pd-quest-copy"><span class="pd-quest-name">${esc(q.label)}</span>${q.done ? '' : `${bar(q.have / q.need, 'thin')}<span class="pd-quest-count">${n(q.have)} / ${n(q.need)}</span>`}</div>
+  return `<li class="pd-quest${q.done ? ' is-done' : ''}${q.claimed ? ' is-claimed' : ''}"><div class="pd-quest-copy"><span class="pd-quest-name"><span>${esc(q.label)}</span>${q.canSwap ? `<button class="pd-swap" data-act="playEconReroll" data-econ-level="${esc(q.level)}" ${busy ? 'disabled' : ''} aria-label="Swap ${esc(q.label)} for another quest (once a day)" title="Swap (once a day)"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 9h12l-3-3M20 15H8l3 3" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg></button>` : ''}</span>${q.done ? '' : `${bar(q.have / q.need, 'thin')}<span class="pd-quest-count">${n(q.have)} / ${n(q.need)}</span>`}</div>
+
     ${q.claimed ? '<span class="pd-done">Claimed</span>' : q.done ? `<button class="btn pd-claim" data-act="playEconClaim" data-econ-kind="${q.weekly ? 'weekly' : 'daily'}" data-econ-id="${esc(q.id)}" ${busy ? 'disabled' : ''} aria-label="Claim: ${esc(q.label)}">${label}</button>` : rewardIcons(questReward(q, config))}</li>`;
 }
 

@@ -1484,3 +1484,11 @@ button.pd-near-row{cursor:pointer}
 .play-style:focus-visible{outline:2px solid var(--gold);outline-offset:2px}
 .play-style-own{font-size:12px;font-weight:700;color:#e9d6a7;text-align:center;padding:4px}
 .pe-table>.pe-sl{grid-column:1/-1}
+.play-get>.play-card-own{margin-top:10px}
+/* The day's one free quest swap: a round icon after the quest's name. */
+.pd-quest-name{display:flex;align-items:center;gap:6px;min-width:0}
+.pd-swap{flex:none;display:inline-grid;place-items:center;width:44px;height:44px;margin:-10px -8px -10px 0;padding:0;border:0;border-radius:50%;background:none;color:#e9d6a7;cursor:pointer}
+.pd-swap svg{width:20px;height:20px;padding:6px;border-radius:50%;border:1px solid #e9d6a755;background:#ffffff08;box-sizing:content-box}
+.pd-swap:hover svg,.pd-swap:focus-visible svg{border-color:var(--gold);background:#f2d18e1a}
+.pd-swap:focus-visible{outline:2px solid var(--gold);outline-offset:-4px}
+.pd-swap:disabled{opacity:.5;cursor:default}

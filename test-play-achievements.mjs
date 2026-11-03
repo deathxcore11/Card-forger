@@ -113,5 +113,20 @@ assert.ok(achievementRows({state: {wallet: {packs_opened: 12}}}).find(r => r.id 
   const [c1, paid] = await post('claim', {kind: 'ach', id: 'first-spark', step: 0});
   assert.equal(c1, 200); assert.equal(paid.ref, 'ach:first-spark:0');
   assert.equal((await post('claim', {kind: 'ach', id: 'first-spark', step: 0}))[0], 409, 'paid once');
+  // The day's one free quest swap: easy or hard, never twice a day, never a done quest.
+  const day = playDay(0), before = questRows({counters, claimed: [], day}).daily;
+  assert.ok(before.find(q => q.level === 'easy').canSwap && !before.find(q => q.level === 'first').canSwap, 'easy and hard can swap, the first-match quest cannot');
+  assert.equal((await post('reroll', {level: 'first', tz: 0}))[0], 400);
+  const [r1, sw] = await post('reroll', {level: 'hard', tz: 0});
+  assert.equal(r1, 200);
+  const after = questRows({counters: sw.counters, claimed: [], day}).daily;
+  assert.notEqual(after.find(q => q.level === 'hard').id, before.find(q => q.level === 'hard').id, 'a different quest');
+  assert.equal(after.find(q => q.level === 'easy').id, before.find(q => q.level === 'easy').id, 'the other one stays');
+  assert.ok(after.every(q => !q.canSwap), 'one swap a day');
+  assert.equal((await post('reroll', {level: 'easy', tz: 0}))[0], 409, 'no second swap today');
+}
+for (const day of ['2026-11-05', '2026-11-20', '2026-12-31']) for (const level of ['easy', 'hard']) {
+  const a = dailyQuests(day).find(q => q.level === level), b = dailyQuests(day, '', {[`d:${day}:reroll_${level}`]: 1}).find(q => q.level === level);
+  assert.notEqual(a.id, b.id, `${day} ${level}: the swap is a different quest`); assert.equal(b.level, level);
 }
 console.log('play achievements ok');
