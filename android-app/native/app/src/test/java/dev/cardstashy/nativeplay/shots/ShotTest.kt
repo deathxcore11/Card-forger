@@ -142,10 +142,31 @@ class ShotTest {
         RuntimeEnvironment.setQualifiers("w${w}dp-h${if (w < 600) h * 7 else h * 4}dp-xxhdpi")
         kotlinx.coroutines.runBlocking { for (m in Mode.entries) AssetImages.load(RuntimeEnvironment.getApplication(), m.asset, maxWidth = 256)
             AssetImages.load(RuntimeEnvironment.getApplication(), "play/avatar-default.webp", maxWidth = 256)
-            for (c in listOf("left", "center", "right")) AssetImages.load(RuntimeEnvironment.getApplication(), "play/brand-$c.webp", maxWidth = 384) }
+            for (c in listOf("left", "center", "right")) AssetImages.load(RuntimeEnvironment.getApplication(), "play/brand-$c.webp", maxWidth = 384)
+            for (c in dev.cardstashy.nativeplay.ui.WRAPPERS.keys) AssetImages.load(RuntimeEnvironment.getApplication(), "play/pack-$c.webp", maxWidth = 600) }
         captureRoboImage(File(System.getProperty("shotsDir"), "$name-${w}x$h-${(scale * 100).toInt()}.png").path) {
             val d = LocalDensity.current
             CompositionLocalProvider(LocalDensity provides Density(d.density, scale)) { content() }
+        }
+    }
+
+    /** Pack tiles: Randall's wrappers (hob, fra) beside the drawn fallback (dsk), full and mini. */
+    @Test fun packWrappers() {
+        dev.cardstashy.nativeplay.ui.Motion.still = true
+        dev.cardstashy.nativeplay.ui.homeArt = ::homeArt
+        home.resolve("facts.json").takeIf { it.exists() }?.let { f ->
+            dev.cardstashy.nativeplay.play.SetFacts.seed(JsonParser.parseString(f.readText()).asJsonObject.entrySet().associate { (k, v) -> val o = v.asJsonObject
+                k to dev.cardstashy.nativeplay.play.SetFacts.Set(o["name"].asString, o["icon"].asString, o["released"].asString, o["total"]?.asInt, o["art"].asString) })
+        }
+        for (sc in listOf(1f, 1.3f)) tall("packs", 390, 120, sc) {
+            Column(Modifier.background(Site.Bg).padding(16.dp), verticalArrangement = Arrangement.spacedBy(20.dp)) {
+                Row(horizontalArrangement = Arrangement.spacedBy(12.dp)) {
+                    for (c in listOf("hob", "fra", "dsk")) dev.cardstashy.nativeplay.ui.Booster(c, null, Modifier.weight(1f))
+                }
+                Row(horizontalArrangement = Arrangement.spacedBy(10.dp)) {
+                    for (c in listOf("hob", "fra", "dsk")) dev.cardstashy.nativeplay.ui.Booster(c, null, Modifier.size(width = 64.dp, height = 105.dp), mini = true)
+                }
+            }
         }
     }
 

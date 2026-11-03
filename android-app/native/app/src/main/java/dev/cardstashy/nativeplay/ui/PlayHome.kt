@@ -44,6 +44,10 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.draw.blur
 import androidx.compose.ui.graphics.graphicsLayer
+import androidx.compose.ui.graphics.ImageBitmap
+import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.platform.LocalDensity
+import androidx.compose.runtime.produceState
 import androidx.compose.ui.draw.drawBehind
 import androidx.compose.ui.draw.drawWithContent
 import androidx.compose.ui.draw.rotate
@@ -358,12 +362,19 @@ fun Booster(code: String, name: String?, modifier: Modifier = Modifier, mini: Bo
     val facts: Map<String, SetFacts.Set> = SetFacts.sets.collectAsState().value
     val f = facts[code]
     val label = name?.ifBlank { null } ?: f?.name ?: code.uppercase()
+    WRAPPERS[code.lowercase()]?.let { wrap ->
+        val ctx = LocalContext.current
+        val img = produceState(AssetImages.cached("play/pack-${code.lowercase()}.webp@600")) { value = AssetImages.load(ctx, "play/pack-${code.lowercase()}.webp", maxWidth = 600) }.value
+        if (img != null) { WrappedBooster(code, label, wrap, img, modifier, mini); return }
+    }
     val shape = RoundedCornerShape(6.dp)
     Box(modifier.aspectRatio(5f / 8.2f).shadow(18.dp, shape).clip(shape)
         .background(Brush.linearGradient(listOf(Color(0xFF2A2F3A), Color(0xFF14171D), Color(0xFF262B35))))) {
         // Art window: from the crimp to 30 % above the bottom.
         BoxWithConstraints(Modifier.fillMaxSize()) {
             val h = maxHeight; val w = maxWidth
+            val dens = LocalDensity.current; val px = with(dens) { w.toPx() }
+            val sp = { f: Float -> with(dens) { (px * f).toSp() } }
             Box(Modifier.padding(top = h * .055f, bottom = h * .30f).fillMaxSize()) {
                 if (f?.art?.isNotBlank() == true) Art(f.art, Modifier.matchParentSize(), BiasAlignment(0f, -.4f))
                 else Box(Modifier.matchParentSize().background(Brush.radialGradient(listOf(Color(0xFF3B4152), Color(0xFF15181F)))))
@@ -375,8 +386,8 @@ fun Booster(code: String, name: String?, modifier: Modifier = Modifier, mini: Bo
                 .padding(horizontal = 8.dp, vertical = 6.dp), horizontalAlignment = Alignment.CenterHorizontally, verticalArrangement = Arrangement.spacedBy(2.dp, Alignment.CenterVertically)) {
                 SetIcon(code, Modifier.size(minOf(w * .22f, 30.dp)))
                 if (!mini) {
-                    Text(label.uppercase(), style = TextStyle(fontFamily = Type.Cinzel, fontWeight = FontWeight.Bold, fontSize = 12.sp, lineHeight = 15.sp, letterSpacing = .02.em, color = P.Ink, textAlign = TextAlign.Center), maxLines = 2)
-                    Text("PLAY BOOSTER", style = TextStyle(fontFamily = P.Sans, fontWeight = FontWeight.Bold, fontSize = 10.sp, letterSpacing = .14.em, color = Color(0xFFD6AD64)), maxLines = 1)
+                    Text(label.uppercase(), style = TextStyle(fontFamily = Type.Cinzel, fontWeight = FontWeight.Bold, fontSize = sp(.07f), lineHeight = sp(.082f), letterSpacing = .02.em, color = P.Ink, textAlign = TextAlign.Center), maxLines = 2)
+                    Text("PLAY BOOSTER", style = TextStyle(fontFamily = P.Sans, fontWeight = FontWeight.Bold, fontSize = sp(.05f), letterSpacing = .14.em, color = Color(0xFFD6AD64)), maxLines = 1)
                 }
             }
             // Crimped foil edges top and bottom.
@@ -386,6 +397,62 @@ fun Booster(code: String, name: String?, modifier: Modifier = Modifier, mini: Bo
         // Sheen.
         Box(Modifier.matchParentSize().background(Brush.linearGradient(.3f to Color.Transparent, .45f to Color(0x26FFFFFF), .6f to Color.Transparent)))
         Box(Modifier.matchParentSize().border(1.dp, Color(0x1FFFFFFF), shape))
+    }
+}
+
+/** Randall's pack wrappers (art piece 16): where each wrapper's black band sits, as fractions of its height. */
+class Wrap(val aspect: Float, val notch: Float, val top: Float, val bottom: Float)
+val WRAPPERS = mapOf(
+    "hob" to Wrap(600f / 1029f, notch = .636f, top = .672f, bottom = .868f),
+    "fra" to Wrap(600f / 918f, notch = .641f, top = .676f, bottom = .892f),
+)
+
+/**
+ * A wrapper pack: the painted foil wrapper, and on its black band the gold star emblem in the notch,
+ * the set symbol in gold, the set name in Cinzel and PLAY BOOSTER, all moving as one with the sheen.
+ */
+@Composable
+private fun WrappedBooster(code: String, label: String, wrap: Wrap, img: ImageBitmap, modifier: Modifier, mini: Boolean) {
+    Box(modifier.aspectRatio(5f / 8.2f), contentAlignment = Alignment.BottomCenter) {
+        BoxWithConstraints(Modifier.fillMaxWidth().aspectRatio(wrap.aspect, matchHeightConstraintsFirst = true)
+            .graphicsLayer { shadowElevation = 14.dp.toPx(); shape = RoundedCornerShape(4.dp); clip = false }) {
+            val w = maxWidth; val h = maxHeight
+            Image(img, null, Modifier.fillMaxSize(), contentScale = ContentScale.FillBounds)
+            // The star emblem, centred in the band's notch.
+            StarEmblem(Modifier.align(Alignment.TopCenter).offset(y = h * wrap.notch - w * .045f).size(w * .09f))
+            // Printed on the wrapper, so it sizes with the pack, not with the font setting.
+            val dens = LocalDensity.current
+            val px = with(dens) { w.toPx() }
+            val sp = { f: Float -> with(dens) { (px * f).toSp() } }
+            Column(Modifier.align(Alignment.TopCenter).offset(y = h * wrap.top).fillMaxWidth().height(h * (wrap.bottom - wrap.top)).padding(horizontal = w * .1f),
+                horizontalAlignment = Alignment.CenterHorizontally, verticalArrangement = Arrangement.spacedBy(w * .018f, Alignment.CenterVertically)) {
+                SetIcon(code, Modifier.size(w * (if (mini) .2f else .1f)))
+                if (!mini) {
+                    Text(label.uppercase(), style = TextStyle(fontFamily = Type.Cinzel, fontWeight = FontWeight.Bold, fontSize = sp(.062f), lineHeight = sp(.072f), letterSpacing = .02.em, color = P.Ink, textAlign = TextAlign.Center), maxLines = 2)
+                    Text("PLAY BOOSTER", style = TextStyle(fontFamily = P.Sans, fontWeight = FontWeight.Bold, fontSize = sp(.046f), letterSpacing = .14.em, color = Color(0xFFD6AD64)), maxLines = 1)
+                }
+            }
+            // Sheen across wrapper and lettering alike.
+            Box(Modifier.matchParentSize().background(Brush.linearGradient(.32f to Color.Transparent, .45f to Color(0x1AFFFFFF), .58f to Color.Transparent)))
+        }
+    }
+}
+
+/** The six-pointed star in a ring that every wrapper carries at the top of its band. */
+@Composable
+private fun StarEmblem(modifier: Modifier) = androidx.compose.foundation.Canvas(modifier) {
+    val gold = Brush.linearGradient(listOf(Color(0xFFFFF0B8), Color(0xFFE0AC48), Color(0xFFFFF4CF), Color(0xFFC58A2C)), Offset.Zero, Offset(size.width, size.height))
+    val c = center; val r = size.minDimension / 2f
+    drawCircle(Color(0xFF0C0E13), r)
+    drawCircle(gold, r * .9f, style = androidx.compose.ui.graphics.drawscope.Stroke(r * .1f))
+    for (k in 0..1) {
+        val path = androidx.compose.ui.graphics.Path()
+        for (i in 0..2) {
+            val a = Math.toRadians(-90.0 + k * 60 + i * 120)
+            val x = c.x + r * .62f * kotlin.math.cos(a).toFloat(); val y = c.y + r * .62f * kotlin.math.sin(a).toFloat()
+            if (i == 0) path.moveTo(x, y) else path.lineTo(x, y)
+        }
+        path.close(); drawPath(path, gold)
     }
 }
 
