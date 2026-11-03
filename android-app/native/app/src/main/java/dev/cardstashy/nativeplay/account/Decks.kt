@@ -76,5 +76,33 @@ object Decks {
         }
     }
 
+    /**
+     * The web's revision-checked save (cloud.js): read the whole account copy fresh, change only its
+     * Magic decks, and write it back only if nobody saved in between (revision = what we read). On a
+     * clash the fresh copy is read again and the change re-applied once; a second clash gives up with
+     * no write. Never inserts a first copy (the web owns that) and never touches anything but data.decks.
+     */
+    suspend fun update(context: Context, change: (JsonArray) -> JsonArray): String? = withContext(Dispatchers.IO) {
+        val s = Account.session.value ?: return@withContext "Sign in to save decks."
+        repeat(2) {
+            val token = Account.token() ?: return@withContext "Sign in again to save decks."
+            val auth = mapOf("apikey" to Account.KEY, "Authorization" to "Bearer $token")
+            val row = Http.call("GET", "${Account.URL}/rest/v1/workspaces?select=data,revision&user_id=eq.${s.userId}", auth)?.asJsonArray?.firstOrNull()?.asJsonObject
+                ?: return@withContext "Your account copy isn’t set up yet. Open CardStashy on the web once, then try again."
+            val revision = row.get("revision").asLong
+            val data = row.getAsJsonObject("data") ?: JsonObject()
+            data.add("decks", change(data.getAsJsonArray("decks")?.deepCopy() ?: JsonArray()))
+            val body = JsonObject().apply { add("data", data); addProperty("revision", revision + 1); addProperty("device", ("Android · " + java.text.DateFormat.getDateInstance(java.text.DateFormat.SHORT).format(java.util.Date())).take(120)) }
+            val out = Http.call("PATCH", "${Account.URL}/rest/v1/workspaces?user_id=eq.${s.userId}&revision=eq.$revision&select=revision",
+                auth + ("Prefer" to "return=representation"), body.toString())?.asJsonArray
+            if (out != null && out.size() > 0) {
+                _decks.value = parse(data)
+                try { cacheFile(context, s.userId).writeText(JsonObject().apply { add("decks", data.getAsJsonArray("decks")) }.toString()) } catch (_: Exception) {}
+                return@withContext null
+            }
+        }
+        "Your decks changed on another device. Reload and try again."
+    }
+
     fun clear() { _decks.value = null; _error.value = null }
 }
