@@ -40,6 +40,8 @@ import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.key
+import androidx.compose.animation.core.animateFloat
 import androidx.compose.runtime.mutableStateListOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
@@ -108,7 +110,7 @@ fun TableScreen(controller: MatchController, onHome: () -> Unit, onRematch: () -
             val st = shown
             when {
                 st == null || stage == Stage.STARTING -> Loading()
-                stage == Stage.MULLIGAN -> Mulligan(st, controller, live, sizes, onHold = { inspect = it })
+                stage == Stage.MULLIGAN -> Mulligan(st, controller, live, sizes, audio, onHold = { inspect = it })
                 else -> Row(Modifier.fillMaxSize()) {
                     Board(st, controller, live, sizes, selectedHand, Modifier.weight(1f).fillMaxHeight(),
                         onSelectHand = { selectedHand = it }, onInspect = { inspect = it }, onMenu = { menu = true })
@@ -126,30 +128,26 @@ fun TableScreen(controller: MatchController, onHome: () -> Unit, onRematch: () -
 
 @Composable
 private fun Loading() {
-    Box(Modifier.fillMaxSize(), contentAlignment = Alignment.Center) { Text("Shuffling…", style = Type.Title) }
+    // The library waiting to be dealt; no words.
+    val breathe = androidx.compose.animation.core.rememberInfiniteTransition(label = "deck").animateFloat(.55f, 1f,
+        androidx.compose.animation.core.infiniteRepeatable(tween(700), androidx.compose.animation.core.RepeatMode.Reverse), label = "a")
+    Box(Modifier.fillMaxSize(), contentAlignment = Alignment.Center) { CardBack(Modifier.size(64.dp, 90.dp).alpha(breathe.value).clip(RoundedCornerShape(5.dp))) }
 }
 
 // ---- The opening hand: nothing else is drawn before the keep ----
 
 @Composable
-private fun Mulligan(st: MatchState, c: MatchController, live: Boolean, sizes: Sizes, onHold: (Card) -> Unit) {
-    BoxWithConstraints(Modifier.fillMaxSize().padding(16.dp)) {
-        val cardW = minOf((maxWidth - 32.dp) / 7.6f, maxHeight * .5f / 1.4f)
-        Column(Modifier.fillMaxSize(), horizontalAlignment = Alignment.CenterHorizontally, verticalArrangement = Arrangement.spacedBy(14.dp, Alignment.CenterVertically)) {
-            Text("Opening hand", style = Type.Title)
-            if (st.prompt == null && st.inputType != "InputConfirmMulligan" && st.message.isNotBlank()) Text(shortMessage(st), style = Type.Body.copy(color = Palette.Ink), textAlign = TextAlign.Center)
-            CardRow(cardW, 8.dp, Modifier.fillMaxWidth()) {
-                st.me.hand.forEach { card ->
-                    val pick = live && card.id in st.selection.cards
-                    CardFace(card, cardW, cardW * 1.4f, mark = if (card.id in st.selection.chosenCards) Mark.PICKED else if (pick) Mark.PICKABLE else Mark.NONE,
-                        onTap = if (pick) ({ c.card(card.id) }) else null, onHold = { onHold(card) })
-                }
-            }
-            st.prompt?.let { PromptPanel(it, st, c, live, Modifier.width(360.dp)) } ?: Row(horizontalArrangement = Arrangement.spacedBy(12.dp)) {
-                st.buttons.cancel?.let { GoldButton(it, live && st.buttons.cancelEnabled, primary = false, modifier = Modifier.width(150.dp)) { c.cancel() } }
-                st.buttons.ok?.let { GoldButton(it, live && st.buttons.okEnabled, modifier = Modifier.width(150.dp)) { c.ok() } }
-            }
+private fun Mulligan(st: MatchState, c: MatchController, live: Boolean, sizes: Sizes, audio: TableAudio, onHold: (Card) -> Unit) {
+    // The same hand as the table, dealt in over the dimmed mat; Keep and Mulligan sit in the sidebar.
+    Row(Modifier.fillMaxSize()) {
+        BoxWithConstraints(Modifier.weight(1f).fillMaxHeight().background(Color(0x66000000)).padding(horizontal = 16.dp), contentAlignment = Alignment.Center) {
+            val cardW = minOf((maxWidth - 32.dp) / 5.2f, maxHeight * .55f / 1.4f)
+            HandFan(st.me.hand, cardW, Modifier.fillMaxWidth(), angleDeg = 2.5f, dealIn = true,
+                markOf = { card -> if (card.id in st.selection.chosenCards) Mark.PICKED else if (live && card.id in st.selection.cards) Mark.PICKABLE else Mark.NONE },
+                onTap = { card -> if (live && card.id in st.selection.cards) c.card(card.id) else onHold(card) },
+                onHold = onHold, onDeal = { audio.play("QP-012", .55f) }, pop = 1.2f)
         }
+        Sidebar(st, c, null, live, sizes, null, Modifier.width(sizes.sidebar).fillMaxHeight(), onInspect = onHold)
     }
 }
 
@@ -177,7 +175,7 @@ private fun Board(st: MatchState, c: MatchController, live: Boolean, sizes: Size
                 Text("≡", style = Type.Title.copy(fontSize = 22.sp, color = Palette.Gold))
             }
             CardRow(sizes.back, 3.dp, Modifier.weight(1f)) { repeat(cpu.handCount) { CardBack(Modifier.size(sizes.back, sizes.h(sizes.back)).clip(RoundedCornerShape(3.dp))) } }
-            Text("${cpu.libraryCount} · ${cpu.graveyard.size}", style = Type.Body.copy(fontSize = 11.sp), modifier = Modifier.padding(end = 4.dp))
+            Piles(cpu.libraryCount, cpu.graveyard.lastOrNull(), cpu.graveyard.size, Modifier.padding(end = 4.dp), onInspect)
         }
         // CPU half: lands at the back, creatures in front.
         Column(Modifier.weight(1f).fillMaxWidth(), verticalArrangement = Arrangement.SpaceEvenly) {
@@ -192,8 +190,8 @@ private fun Board(st: MatchState, c: MatchController, live: Boolean, sizes: Size
         }
         // Your seat and hand.
         Row(Modifier.fillMaxWidth().height(sizes.h(sizes.hand) + 8.dp), verticalAlignment = Alignment.Bottom) {
-            Seat(me.life, "You", me.libraryCount, me.graveyard.size, pickable = live && st.viewer in st.selection.players, picked = st.viewer in st.selection.chosenPlayers) { c.player(st.viewer) }
-            Hand(st, c, live, sizes, selectedHand, Modifier.weight(1f), onSelectHand, onInspect)
+            Seat(me.life, me.libraryCount, me.graveyard.lastOrNull(), me.graveyard.size, onInspect, pickable = live && st.viewer in st.selection.players, picked = st.viewer in st.selection.chosenPlayers) { c.player(st.viewer) }
+            Hand(st, c, live, sizes, selectedHand, Modifier.weight(1f), onSelectHand, onInspect, onDeal = {})
         }
     }
 }
@@ -208,17 +206,38 @@ private fun Permanents(cards: List<Card>, w: Dp, markOf: (Card) -> Mark, tapOf: 
     CardRow(w, 6.dp, Modifier.fillMaxWidth().height(w * 1.4f + 8.dp)) {
         piles.forEach { pile ->
             val card = pile.first()
-            CardFace(card, w, w * 1.4f, mark = markOf(card), count = pile.size, onTap = tapOf(card), onHold = { onInspect(card) },
-                nudge = if (card.attacking) nudge else 0.dp)
+            key(card.id) {
+                // Arrivals: 180 ms fade and rise.
+                val arrive = remember { Animatable(0f) }
+                LaunchedEffect(Unit) { arrive.animateTo(1f, tween(180, easing = androidx.compose.animation.core.FastOutSlowInEasing)) }
+                CardFace(card, w, w * 1.4f, mark = markOf(card), count = pile.size, onTap = tapOf(card), onHold = { onInspect(card) },
+                    nudge = if (card.attacking) nudge else 0.dp,
+                    modifier = Modifier.graphicsLayer { alpha = arrive.value; translationY = (1f - arrive.value) * 10.dp.toPx() })
+            }
         }
     }
 }
 
 @Composable
-private fun Seat(life: Int, who: String, library: Int, grave: Int, pickable: Boolean, picked: Boolean, onPick: () -> Unit) {
-    Column(Modifier.padding(end = 6.dp, bottom = 4.dp).width(64.dp), horizontalAlignment = Alignment.CenterHorizontally) {
+private fun Seat(life: Int, library: Int, top: Card?, grave: Int, onInspect: (Card) -> Unit, pickable: Boolean, picked: Boolean, onPick: () -> Unit) {
+    Column(Modifier.padding(end = 6.dp, bottom = 4.dp).width(64.dp), horizontalAlignment = Alignment.CenterHorizontally, verticalArrangement = Arrangement.spacedBy(4.dp)) {
         LifeOrb(life, pickable, picked, onPick)
-        Text("$library · $grave", style = Type.Body.copy(fontSize = 11.sp))
+        Piles(library, top, grave, Modifier, onInspect)
+    }
+}
+
+/** Library and graveyard as small piles (a back with its count; the top card of the graveyard), not words. */
+@Composable
+private fun Piles(library: Int, top: Card?, grave: Int, modifier: Modifier, onInspect: (Card) -> Unit) {
+    Row(modifier, horizontalArrangement = Arrangement.spacedBy(4.dp), verticalAlignment = Alignment.CenterVertically) {
+        Box(Modifier.size(18.dp, 25.dp), contentAlignment = Alignment.Center) {
+            CardBack(Modifier.fillMaxSize().clip(RoundedCornerShape(3.dp)))
+            Text("$library", style = Type.Label.copy(fontSize = 10.sp, color = Color.White), modifier = Modifier.background(Color(0xAA000000), RoundedCornerShape(3.dp)).padding(horizontal = 2.dp))
+        }
+        if (top != null) Box(Modifier.size(18.dp, 25.dp).alpha(.85f), contentAlignment = Alignment.Center) {
+            CardFace(top, 18.dp, 25.dp, onHold = { onInspect(top) }, onTap = { onInspect(top) })
+            if (grave > 1) Text("$grave", style = Type.Label.copy(fontSize = 10.sp, color = Color.White), modifier = Modifier.background(Color(0xAA000000), RoundedCornerShape(3.dp)).padding(horizontal = 2.dp))
+        }
     }
 }
 
@@ -236,40 +255,26 @@ private fun LifeOrb(life: Int, pickable: Boolean, picked: Boolean, onPick: () ->
     }
 }
 
-/** The hand fan: never wraps, never rescales. Tap a playable card to lift it (tap again to inspect); play it with the gold button or by dragging it up. */
+/** The hand: the shared fan. Tap a playable card to lift it (tap again to open it); play it with the gold button or by sliding it up. */
 @Composable
 private fun Hand(st: MatchState, c: MatchController, live: Boolean, sizes: Sizes, selected: Int?, modifier: Modifier,
-                 onSelect: (Int?) -> Unit, onInspect: (Card) -> Unit) {
+                 onSelect: (Int?) -> Unit, onInspect: (Card) -> Unit, onDeal: () -> Unit) {
     val cards = st.me.hand.sortedWith(compareBy({ if (it.isLand) 0 else 1 }, { manaValue(it.manaCost) }))
-    val density = LocalDensity.current
-    CardRow(sizes.hand, 4.dp, modifier.fillMaxHeight()) {
-        cards.forEachIndexed { i, card ->
-            val playable = live && card.id in st.selection.actionable
-            val pickable = live && card.id in st.selection.cards
-            var drag by remember(card.id) { mutableStateOf(Offset.Zero) }
-            val mid = (cards.size - 1) / 2f
-            val lifted = selected == card.id
-            Box(Modifier.zIndex(if (drag != Offset.Zero || lifted) 2f else 0f)
-                .graphicsLayer {
-                    translationX = drag.x; translationY = drag.y + (if (lifted) -18.dp.toPx() else 0f)
-                    rotationZ = if (drag == Offset.Zero && !lifted) (i - mid) * 2.5f else 0f
-                    val s = if (lifted || drag != Offset.Zero) 1.12f else 1f; scaleX = s; scaleY = s
+    Box(modifier, contentAlignment = Alignment.BottomCenter) {
+        HandFan(cards, sizes.hand, Modifier.fillMaxWidth(), raised = selected, angleDeg = 3.5f,
+            markOf = { card -> if (live && card.id in st.selection.cards) Mark.PICKABLE else if (live && card.id in st.selection.actionable) Mark.PLAYABLE else Mark.NONE },
+            canPlay = { card -> live && card.id in st.selection.actionable },
+            onTap = { card ->
+                val playable = live && card.id in st.selection.actionable
+                when {
+                    live && card.id in st.selection.cards -> c.card(card.id)
+                    playable && selected == card.id -> onInspect(card)
+                    playable -> onSelect(card.id)
+                    else -> onInspect(card)
                 }
-                .pointerInput(card.id, playable) {
-                    if (playable) detectDragGestures(
-                        onDragEnd = { if (drag.y < -with(density) { 70.dp.toPx() }) c.card(card.id); drag = Offset.Zero },
-                        onDragCancel = { drag = Offset.Zero },
-                    ) { change, amount -> change.consume(); drag += amount }
-                }) {
-                CardFace(card, sizes.hand, sizes.h(sizes.hand), mark = if (pickable) Mark.PICKABLE else if (playable) Mark.PLAYABLE else Mark.NONE,
-                    onTap = when {
-                        pickable -> ({ c.card(card.id) })
-                        playable && lifted -> ({ onInspect(card) })
-                        playable -> ({ onSelect(card.id) })
-                        else -> ({ onInspect(card) })
-                    }, onHold = { onInspect(card) })
-            }
-        }
+            },
+            onPlay = { card -> onSelect(null); c.card(card.id) },
+            onHold = onInspect, onDeal = onDeal)
     }
 }
 
@@ -284,10 +289,7 @@ private fun Sidebar(st: MatchState, c: MatchController, beat: Beat?, live: Boole
     Column(modifier.padding(6.dp).glass(14.dp).padding(8.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
         Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(8.dp)) {
             LifeOrb(st.cpu.life, pickable = live && st.cpu.id in st.selection.players, picked = st.cpu.id in st.selection.chosenPlayers) { c.player(st.cpu.id) }
-            Column {
-                Text("CPU", style = Type.Title.copy(fontSize = 15.sp))
-                Text("${st.cpu.libraryCount} library · ${st.cpu.graveyard.size} grave", style = Type.Body.copy(fontSize = 11.sp))
-            }
+            Text("CPU", style = Type.Title.copy(fontSize = 15.sp))
         }
         Box(Modifier.weight(1f).fillMaxWidth()) {
             when {
@@ -321,7 +323,7 @@ private fun BeatView(b: Beat, st: MatchState, modifier: Modifier, onTap: () -> U
         } else Spacer(Modifier.weight(1f))
         b.detail?.let { Text(it, style = Type.Body.copy(color = if (red) Color(0xFFFFB4A8) else Palette.InkSoft), textAlign = TextAlign.Center) }
         if (b.lifeFrom != null && b.lifeTo != null) Text("${b.lifeFrom} → ${b.lifeTo}", style = Type.Title.copy(fontSize = 18.sp, color = Color(0xFFFFB4A8)))
-        Box(Modifier.fillMaxWidth().height(3.dp).clip(RoundedCornerShape(2.dp)).background(Color(0x22FFFFFF))) {
+        if (b.kind != Beat.Kind.LAND) Box(Modifier.fillMaxWidth().height(3.dp).clip(RoundedCornerShape(2.dp)).background(Color(0x22FFFFFF))) {
             Box(Modifier.fillMaxWidth(timer.value).height(3.dp).background(if (red) Palette.Red else Palette.Gold))
         }
     }

@@ -48,7 +48,7 @@ fun CardFace(
 ) {
     val decks = DemoDecks.load(LocalContext.current)
     val shape = RoundedCornerShape(w * .06f)
-    val turn by animateFloatAsState(if (card.tapped) 20f else 0f, tween(220), label = "tap")
+    val turn by animateFloatAsState(if (card.tapped) 20f else 0f, tween(140, easing = androidx.compose.animation.core.FastOutSlowInEasing), label = "tap")
     val lift by animateFloatAsState(nudge.value, tween(220), label = "nudge")
     val pulse = if (mark == Mark.PICKABLE) rememberInfiniteTransition(label = "pick").animateFloat(.55f, 1f, infiniteRepeatable(tween(700), RepeatMode.Reverse), label = "a").value else 1f
     val edge = when {
@@ -61,7 +61,7 @@ fun CardFace(
     }
     val edgeW = if (mark != Mark.NONE || card.attacking || card.blocking) 2.dp else 1.dp
     Box(modifier.size(w, h).graphicsLayer { rotationZ = turn; translationY = lift * density }
-        .pointerInput(card.id, onTap, onHold) { detectTapGestures(onTap = { onTap?.invoke() }, onLongPress = { onHold?.invoke() }) }) {
+        .then(if (onTap == null && onHold == null) Modifier else Modifier.pointerInput(card.id, onTap, onHold) { detectTapGestures(onTap = { onTap?.invoke() }, onLongPress = { onHold?.invoke() }) })) {
         Box(Modifier.fillMaxSize().clip(shape).background(Color(0xFF15151A))) {
             val img = decks.image(card.name)
             if (img != null && !card.hidden) AssetImage(img, Modifier.fillMaxSize(), maxWidth = 488)

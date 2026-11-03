@@ -40,7 +40,7 @@ class TableAudio(context: Context) {
         val was = HashMap<Int, dev.cardstashy.nativeplay.engine.Card>()
         for (p in a.players) for (c in p.hand + p.battlefield + p.graveyard + p.exile) was[c.id] = c
         val handIn = b.me.hand.count { was[it.id]?.zone != "Hand" }
-        if (handIn >= 5) play("QP-012", .8f) else if (handIn > 0) play("CARD-001")
+        if (handIn in 1..4) play("CARD-001") // a whole new hand is dealt by the fan, one QP-012 per card
         if (b.cpu.handCount > a.cpu.handCount && b.turn > 0) play("CARD-002", .5f)
         val field = b.players.flatMap { it.battlefield }
         if (field.any { it.tapped && it.isLand && was[it.id]?.zone == "Battlefield" && was[it.id]?.tapped == false && !it.attacking }) play("CARD-006", .7f)
