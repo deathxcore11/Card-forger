@@ -42,6 +42,8 @@ import androidx.compose.foundation.layout.statusBars
 import androidx.compose.foundation.layout.asPaddingValues
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.draw.blur
+import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.draw.drawBehind
 import androidx.compose.ui.draw.drawWithContent
 import androidx.compose.ui.draw.rotate
@@ -86,6 +88,10 @@ data class PlayHomeData(
     val story: PlayMath.StoryHome,
     val day: String,
     val user: String = "",
+    /** The site's glass ambient: the Collection home's hero art (today's card), blurred behind every page. */
+    val ambient: String? = null,
+    /** GET /api/progress/achievements when it has answered; the golden-tested PlayMath until then. */
+    val deeds: JsonObject? = null,
 )
 
 class PlayHomeActions(
@@ -93,6 +99,7 @@ class PlayHomeActions(
     val story: () -> Unit = {},
     val view: (String) -> Unit = {},          // deeds / packs / decks / collection / shop / finder
     val claim: (kind: String, id: String) -> Unit = { _, _ -> },
+    val claimDeed: (id: String, step: Int) -> Unit = { _, _ -> },
     val forge: (to: String, times: Int) -> Unit = { _, _ -> },
     val openPack: (id: String) -> Unit = {},
     val buy: (code: String) -> Unit = {},
@@ -129,19 +136,21 @@ const val FORGE_ART_NAME = "Great Furnace"
 var homeArt: (String) -> Any? = { it }
 
 @Composable
-private fun Art(url: String?, modifier: Modifier, align: Alignment = Alignment.Center, scale: ContentScale = ContentScale.Crop) {
+private fun Art(url: String?, modifier: Modifier, align: Alignment = Alignment.Center, scale: ContentScale = ContentScale.Crop, filter: ColorFilter = artFilter) {
     val p: Painter? = heroPainter(url?.let(homeArt))
-    if (p != null) androidx.compose.foundation.Image(p, null, modifier, alignment = align, contentScale = scale,
-        colorFilter = ColorFilter.colorMatrix(ColorMatrix().apply { setToSaturation(1.12f) }))
+    if (p != null) androidx.compose.foundation.Image(p, null, modifier, alignment = align, contentScale = scale, colorFilter = filter)
     else Box(modifier.background(Color(0xFF121318)))
 }
+
+private val artFilter = ColorFilter.colorMatrix(ColorMatrix().apply { setToSaturation(1.12f) })
 
 @Composable
 fun PlayHome(d: PlayHomeData, top: @Composable () -> Unit, act: PlayHomeActions = PlayHomeActions(), nav: @Composable () -> Unit) {
     val s = d.state
     val purse = PlayMath.purse(s) ?: return
     val level = PlayMath.mastery(s, purse.xp)
-    Box(Modifier.fillMaxSize().playBackdrop()) {
+    Box(Modifier.fillMaxSize().background(Site.Bg)) {
+        Ambient(d.ambient)
         Column(Modifier.fillMaxSize()) {
             BoxWithConstraints(Modifier.weight(1f).fillMaxWidth()) {
                 val wide = maxWidth >= 600.dp; val duo = maxWidth >= 1000.dp
@@ -175,12 +184,28 @@ fun PlayHome(d: PlayHomeData, top: @Composable () -> Unit, act: PlayHomeActions 
 
 @Composable private fun statusTop(): Dp = WindowInsets.statusBars.asPaddingValues().calculateTopPadding()
 
-/** The Play page's backdrop: dark warm stone with the gold glow at the top (body[data-mode=play]). */
-fun Modifier.playBackdrop() = this.background(Color(0xFF16161A)).drawBehind {
-    drawRect(Brush.verticalGradient(listOf(Color(0xFF1A1917), Color(0xFF2B2926), Color(0xFF232220), Color(0xFF1A1A1C))))
-    drawRect(Brush.radialGradient(listOf(Color(0x33E8B95B), Color.Transparent), center = Offset(size.width * .45f, 0f), radius = size.width * .9f))
-    drawRect(Brush.radialGradient(listOf(Color(0x14FFFFFF), Color.Transparent), center = Offset(size.width * .7f, size.height * .35f), radius = size.width))
+/**
+ * body.glass #ambient (style.css): the hero art blurred 42 px, saturate 1.35, brightness .5, at 85 %,
+ * under the game-colour glows and the dark wash. One layer for the whole page.
+ */
+@Composable
+fun Ambient(art: String?) {
+    Box(Modifier.fillMaxSize()) {
+        if (art != null) Art(art, Modifier.fillMaxSize().scale(1.08f).androidx_blur(42.dp).graphicsLayer { alpha = .85f }, BiasAlignment(0f, -.4f), filter = ambientFilter)
+        Box(Modifier.fillMaxSize().drawBehind {
+            val game = Color(0xFFF08A5D)
+            drawRect(Brush.radialGradient(listOf(game.copy(alpha = .26f), Color.Transparent), center = Offset(size.width * .85f, 0f), radius = size.width * .8f))
+            drawRect(Brush.radialGradient(listOf(game.copy(alpha = .16f), Color.Transparent), center = Offset(0f, size.height), radius = size.width * .7f))
+            drawRect(Brush.verticalGradient(0f to Color(0x590A0C10), .6f to Color(0xC70A0C10), 1f to Color(0xEB0A0C10)))
+        })
+    }
 }
+
+private val ambientFilter = ColorFilter.colorMatrix(ColorMatrix().apply { setToSaturation(1.35f); timesAssign(ColorMatrix(floatArrayOf(.5f,0f,0f,0f,0f, 0f,.5f,0f,0f,0f, 0f,0f,.5f,0f,0f, 0f,0f,0f,1f,0f))) })
+private fun Modifier.androidx_blur(r: Dp) = this.blur(r, androidx.compose.ui.draw.BlurredEdgeTreatment.Rectangle)
+
+/** The Play page's backdrop without art (signed out, loading): --bg. */
+fun Modifier.playBackdrop() = this.background(Site.Bg)
 
 @Composable
 private fun Duo(two: Boolean, a: @Composable () -> Unit, b: @Composable () -> Unit) {
@@ -458,9 +483,28 @@ private fun QuestRow(r: PlayMath.QuestRow, reward: PlayRules.Reward, claim: () -
 
 // ---------------------------------------------------------------- Achievements (pd-deeds-home)
 
+/** One "almost there" row, from the server's payload or PlayMath. */
+private data class Near(val title: String, val art: String?, val trim: Boolean, val value: Int, val need: Int, val hours: Boolean)
+
+private fun nearFromServer(p: JsonObject): Triple<PlayMath.Totals, List<Near>, Unit> {
+    val t = p.getAsJsonObject("totals")
+    val totals = PlayMath.Totals(t?.get("total")?.asInt ?: 0, t?.get("earned")?.asInt ?: 0, t?.get("ready")?.asInt ?: 0)
+    val near = p.getAsJsonArray("achievements")?.mapNotNull { it as? JsonObject }
+        ?.filter { it.get("complete")?.asBoolean != true && it.get("secret")?.asBoolean != true && it.get("hidden")?.asBoolean != true && it.get("kind")?.asString != "honour" }
+        ?.mapNotNull { a -> val next = a.getAsJsonArray("steps")?.mapNotNull { it as? JsonObject }?.firstOrNull { it.get("done")?.asBoolean != true } ?: return@mapNotNull null
+            val art = a.getAsJsonObject("art")
+            Near(a.get("title")?.asString ?: "", art?.get("url")?.asString, art?.get("trim")?.asBoolean == true, a.get("value")?.asInt ?: 0, next.get("need")?.asInt ?: 1, a.get("unit")?.asString == "h") }
+        ?.sortedByDescending { it.value.toDouble() / it.need }?.take(2) ?: emptyList()
+    return Triple(totals, near, Unit)
+}
+
 @Composable
 private fun Deeds(d: PlayHomeData, act: PlayHomeActions) {
-    val rows = PlayMath.achievements(d.rules, d.state); val t = PlayMath.totals(rows); val near = PlayMath.almostThere(rows, 2)
+    val (t, near) = d.deeds?.let { nearFromServer(it) }?.let { it.first to it.second } ?: run {
+        val rows = PlayMath.achievements(d.rules, d.state)
+        PlayMath.totals(rows) to PlayMath.almostThere(rows, 2).mapNotNull { r -> r.next?.let { Near(r.a.title,
+            "https://api.scryfall.com/cards/named?format=image&version=art_crop&exact=" + java.net.URLEncoder.encode(r.a.art, "UTF-8"), false, r.value, it.need, r.a.unit == "h") } }
+    }
     Shelf("Achievements", if (t.ready > 0) "${t.ready} to claim" else "All achievements", { act.view("deeds") }) {
         Row(verticalAlignment = Alignment.Bottom, horizontalArrangement = Arrangement.spacedBy(8.dp), modifier = Modifier.padding(top = 6.dp)) {
             Text("${t.earned}", style = TextStyle(fontFamily = Type.Cinzel, fontWeight = FontWeight.Bold, fontSize = 30.sp, color = Color(0xFFF3E3BD)))
@@ -468,15 +512,17 @@ private fun Deeds(d: PlayHomeData, act: PlayHomeActions) {
         }
         Bar(if (t.total > 0) t.earned.toFloat() / t.total else 0f, modifier = Modifier.padding(vertical = 6.dp))
         Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
-            near.forEach { r -> val next = r.next ?: return@forEach
+            near.forEach { r ->
                 Row(Modifier.fillMaxWidth().rowGlass().clickable { act.view("deeds") }.padding(start = 6.dp, end = 12.dp, top = 6.dp, bottom = 6.dp),
                     verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(14.dp)) {
-                    Art(r.a.art.takeIf { it.startsWith("http") } ?: "https://api.scryfall.com/cards/named?format=image&version=art_crop&exact=" + java.net.URLEncoder.encode(r.a.art, "UTF-8"),
-                        Modifier.size(72.dp, 50.dp).clip(RoundedCornerShape(10.dp)))
+                    // trim: zoom about 116 % around (50 %, 45 %) so no frame line or corner shows; never letterbox.
+                    Box(Modifier.size(72.dp, 50.dp).clip(RoundedCornerShape(10.dp))) {
+                        Art(r.art, Modifier.matchParentSize().let { if (r.trim) it.scale(1.16f) else it }, BiasAlignment(0f, -.1f))
+                    }
                     Column(Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(4.dp)) {
-                        Text(r.a.title, style = TextStyle(fontFamily = P.Sans, fontWeight = FontWeight.Bold, fontSize = 16.sp, color = P.Ink))
-                        Bar(r.value.toFloat() / next.need, thin = true)
-                        Text(if (r.a.unit == "h") "${r.value / 60} / ${next.need / 60} h" else "${"%,d".format(r.value)} / ${"%,d".format(next.need)}",
+                        Text(r.title, style = TextStyle(fontFamily = P.Sans, fontWeight = FontWeight.Bold, fontSize = 16.sp, color = P.Ink))
+                        Bar(r.value.toFloat() / r.need, thin = true)
+                        Text(if (r.hours) "${r.value / 60} / ${r.need / 60} h" else "${"%,d".format(r.value)} / ${"%,d".format(r.need)}",
                             style = TextStyle(fontFamily = P.Sans, fontSize = 13.sp, color = P.Muted, fontFeatureSettings = "tnum"))
                     }
                 }

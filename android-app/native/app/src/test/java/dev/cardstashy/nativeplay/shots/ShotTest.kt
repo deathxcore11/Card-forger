@@ -6,6 +6,9 @@ import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.background
+import androidx.compose.ui.unit.dp
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.CompositionLocalProvider
@@ -114,11 +117,14 @@ class ShotTest {
         val state = JsonParser.parseString(fixture.readText()).asJsonObject
         val rules = dev.cardstashy.nativeplay.play.PlayRules(JsonParser.parseString(javaClass.classLoader!!.getResource("play-rules.json")!!.readText()).asJsonObject)
         val top = @Composable { TopBarItems(Mode.PLAY, null, "Randall", unread = true, onSwitch = {}, onProfile = {}) }
-        dev.cardstashy.nativeplay.ui.PlayHome(dev.cardstashy.nativeplay.ui.PlayHomeData(state, rules, dev.cardstashy.nativeplay.play.PlayMath.StoryHome(1, 0, false), "2026-11-03"),
+        dev.cardstashy.nativeplay.ui.PlayHome(dev.cardstashy.nativeplay.ui.PlayHomeData(state, rules, dev.cardstashy.nativeplay.play.PlayMath.StoryHome(1, 0, false), "2026-11-03", ambient = AMBIENT),
             top = top, nav = { PlayNav(null, {}) })
     }
 
+    private val AMBIENT = "https://cards.scryfall.io/art_crop/front/a/6/a6d2d79b-bef8-440f-a262-34349cf9fe5c.jpg?1783904262"
+
     @Test fun playHome() {
+        dev.cardstashy.nativeplay.ui.Motion.still = true
         dev.cardstashy.nativeplay.ui.homeArt = ::homeArt
         home.resolve("facts.json").takeIf { it.exists() }?.let { f ->
             dev.cardstashy.nativeplay.play.SetFacts.seed(JsonParser.parseString(f.readText()).asJsonObject.entrySet().associate { (k, v) -> val o = v.asJsonObject
@@ -135,15 +141,33 @@ class ShotTest {
     private fun tall(name: String, w: Int, h: Int, scale: Float, content: @Composable () -> Unit) {
         RuntimeEnvironment.setQualifiers("w${w}dp-h${if (w < 600) h * 7 else h * 4}dp-xxhdpi")
         kotlinx.coroutines.runBlocking { for (m in Mode.entries) AssetImages.load(RuntimeEnvironment.getApplication(), m.asset, maxWidth = 256)
-            AssetImages.load(RuntimeEnvironment.getApplication(), "play/avatar-default.webp", maxWidth = 256) }
+            AssetImages.load(RuntimeEnvironment.getApplication(), "play/avatar-default.webp", maxWidth = 256)
+            for (c in listOf("left", "center", "right")) AssetImages.load(RuntimeEnvironment.getApplication(), "play/brand-$c.webp", maxWidth = 384) }
         captureRoboImage(File(System.getProperty("shotsDir"), "$name-${w}x$h-${(scale * 100).toInt()}.png").path) {
             val d = LocalDensity.current
             CompositionLocalProvider(LocalDensity provides Density(d.density, scale)) { content() }
         }
     }
 
+    /** The animated mark, frame by frame across one 6 s shuffle with the foil light moving. */
+    @Test fun brandFrames() {
+        val m = dev.cardstashy.nativeplay.ui.Motion
+        m.still = true
+        kotlinx.coroutines.runBlocking { for (c in listOf("left", "center", "right")) AssetImages.load(RuntimeEnvironment.getApplication(), "play/brand-$c.webp", maxWidth = 384) }
+        RuntimeEnvironment.setQualifiers("w200dp-h200dp-xxhdpi")
+        for (i in 0 until 12) {
+            m.cycle = i / 12f; m.light = (i / 12f) * 2f * Math.PI.toFloat(); m.breathe = (kotlin.math.sin(i / 12f * 2.5f * Math.PI) * .5 + .5).toFloat()
+            captureRoboImage(File(System.getProperty("shotsDir"), "brand-%02d.png".format(i)).path) {
+                androidx.compose.foundation.layout.Box(Modifier.size(200.dp).background(Site.Bg), contentAlignment = androidx.compose.ui.Alignment.Center) {
+                    dev.cardstashy.nativeplay.ui.BrandMark(160.dp)
+                }
+            }
+        }
+        m.cycle = .5f; m.light = 1.2f; m.breathe = .5f
+    }
+
     private val sizes = listOf(360 to 780, 412 to 915, 600 to 960, 840 to 1000)
 
-    @Test fun playSkin() { for ((w, h) in sizes) for (s in listOf(1f, 1.3f)) shot("skin-play-placeholder-rows", w, h, s) { PlaySkin() } }
-    @Test fun collectionSkin() { for ((w, h) in listOf(412 to 915, 840 to 1000)) shot("skin-collection-placeholder-rows", w, h, 1f) { CollectionSkin() } }
+    @Test fun playSkin() { dev.cardstashy.nativeplay.ui.Motion.still = true; for ((w, h) in sizes) for (s in listOf(1f, 1.3f)) shot("skin-play-placeholder-rows", w, h, s) { PlaySkin() } }
+    @Test fun collectionSkin() { dev.cardstashy.nativeplay.ui.Motion.still = true; for ((w, h) in listOf(412 to 915, 840 to 1000)) shot("skin-collection-placeholder-rows", w, h, 1f) { CollectionSkin() } }
 }

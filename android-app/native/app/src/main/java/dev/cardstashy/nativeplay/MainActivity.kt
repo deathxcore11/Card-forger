@@ -65,6 +65,8 @@ private sealed interface Screen {
     data object Decks : Screen
     data object SignIn : Screen
     data object Collection : Screen
+    /** A Play page not yet native: the site's own, in the web view (Planeswalk stays here for good). */
+    data class Web(val url: String) : Screen
     data class Match(val pick: Pick) : Screen
 }
 
@@ -75,6 +77,7 @@ class MainActivity : ComponentActivity() {
         // The card database starts loading as the app opens, so it is ready before Quick Play is.
         ForgeService.prepare(this)
         Account.init(this); CardArt.init(this); Speed.init(this)
+        dev.cardstashy.nativeplay.play.Progress.init(this); dev.cardstashy.nativeplay.play.SetFacts.init(this)
         setContent { App(this) }
     }
 
@@ -95,10 +98,12 @@ private fun App(activity: MainActivity) {
     when (val s = screen) {
         Screen.Home -> {
             LaunchedEffect(Unit) { activity.inGame(false) }
-            HomeScreen(onQuickPlay = { screen = Screen.Decks }, onCollection = { screen = Screen.Collection },
-                onSignIn = { afterSignIn = Screen.Home; screen = Screen.SignIn })
+            dev.cardstashy.nativeplay.ui.PlayHomeRoute(
+                onQuickPlay = { screen = Screen.Decks }, onCollection = { screen = Screen.Collection },
+                onSignIn = { afterSignIn = Screen.Home; screen = Screen.SignIn }, onWeb = { screen = Screen.Web(it) })
         }
         Screen.Collection -> { LaunchedEffect(Unit) { activity.inGame(false) }; CollectionScreen(onPlay = { screen = Screen.Home }) }
+        is Screen.Web -> { LaunchedEffect(Unit) { activity.inGame(false) }; CollectionScreen(onPlay = { screen = Screen.Home }, url = s.url) }
         Screen.SignIn -> {
             LaunchedEffect(Unit) { activity.inGame(false) }
             BackHandler { screen = afterSignIn }

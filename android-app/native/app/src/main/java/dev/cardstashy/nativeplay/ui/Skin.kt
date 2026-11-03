@@ -230,7 +230,11 @@ fun heroPainter(art: Any?): Painter? = when (art) {
 fun TopBarItems(mode: Mode, avatarUrl: String?, name: String?, unread: Boolean, onSwitch: () -> Unit, onProfile: () -> Unit, modifier: Modifier = Modifier) {
     Row(modifier.fillMaxWidth().height(56.dp).padding(horizontal = 12.dp), verticalAlignment = Alignment.CenterVertically) {
         val other = if (mode == Mode.PLAY) Mode.COLLECTION else Mode.PLAY
-        Emblem(other, 44.dp, onClick = onSwitch, modifier = Modifier.semantics { contentDescription = if (other == Mode.PLAY) "Play" else "Collection" })
+        // The site's brand mark (icon.svg) in its rounded glass tile, alive; tapping it goes to the other mode like the site's Home.
+        Box(Modifier.size(48.dp).clip(RoundedCornerShape(14.dp)).background(Color(0x99171A20)).border(1.dp, Site.GlassLine, RoundedCornerShape(14.dp)),
+            contentAlignment = Alignment.Center) {
+            BrandMark(40.dp, onClick = onSwitch, modifier = Modifier.semantics { contentDescription = if (other == Mode.PLAY) "Play" else "Collection" })
+        }
         Spacer(Modifier.weight(1f))
         Box(Modifier.size(44.dp).clickable(onClick = onProfile).semantics { contentDescription = "Account" }) {
             Avatar(avatarUrl, name, 44.dp)

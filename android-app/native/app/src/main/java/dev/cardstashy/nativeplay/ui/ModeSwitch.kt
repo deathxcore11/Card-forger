@@ -100,7 +100,7 @@ private fun DrawScope.drawEmblem(mode: Mode) {
  */
 @SuppressLint("SetJavaScriptEnabled")
 @Composable
-fun CollectionScreen(onPlay: () -> Unit) {
+fun CollectionScreen(onPlay: () -> Unit, url: String = "https://cardstashy.com/") {
     val web = remember { mutableStateOf<WebView?>(null) }
     BackHandler { web.value?.takeIf { it.canGoBack() }?.goBack() ?: onPlay() }
     Box(Modifier.fillMaxSize().background(Palette.Night)) {
@@ -116,7 +116,7 @@ fun CollectionScreen(onPlay: () -> Unit) {
                         return true
                     }
                 }
-                loadUrl("https://cardstashy.com/")
+                loadUrl(url)
                 web.value = this
             }
         }, modifier = Modifier.fillMaxSize().windowInsetsPadding(WindowInsets.safeDrawing), onRelease = { it.destroy() })

@@ -33,6 +33,10 @@ object Progress {
     private val _state = MutableStateFlow<JsonObject?>(null); val state: StateFlow<JsonObject?> = _state
     private val _error = MutableStateFlow<Failure?>(null); val error: StateFlow<Failure?> = _error
     private val _busy = MutableStateFlow(""); val busy: StateFlow<String> = _busy
+    private val _deeds = MutableStateFlow<JsonObject?>(null)
+    /** GET /api/progress/achievements: every achievement worked out by the server (web 4.3.79). Null until it answers; the home falls back to PlayMath. */
+    val deeds: StateFlow<JsonObject?> = _deeds
+    suspend fun refreshDeeds() { try { _deeds.value = call("achievements?tz=$tz") } catch (_: Failure) {} }
     private val _story = MutableStateFlow<List<String>?>(null); val storyRefs: StateFlow<List<String>?> = _story
     private val lock = Mutex()
     private var cacheDir: File? = null
@@ -115,9 +119,9 @@ object Progress {
         } catch (e: Failure) { _error.value = e; throw e } finally { _busy.value = "" }
     }
 
-    suspend fun open(id: String) = run("open:$id", "open", JsonObject().apply { addProperty("id", id) })
-    suspend fun buy(set: String) = run("buy", "buy", JsonObject().apply { addProperty("set", set) })
-    suspend fun forge(to: String, times: Int = 1) = run("forge", "forge", JsonObject().apply { addProperty("to", to); addProperty("times", times) })
+    suspend fun open(id: String) = run("open:$id", "open", JsonObject().apply { addProperty("id", id); addProperty("tz", tz) })
+    suspend fun buy(set: String) = run("buy", "buy", JsonObject().apply { addProperty("set", set); addProperty("tz", tz) })
+    suspend fun forge(to: String, times: Int = 1) = run("forge", "forge", JsonObject().apply { addProperty("to", to); addProperty("times", times); addProperty("tz", tz) })
     suspend fun precon(file: String, format: String) = run("precon", "precon", JsonObject().apply { addProperty("file", file); addProperty("format", format) })
     suspend fun holo(oracle: String) = run("holo", "holo", JsonObject().apply { addProperty("oracle", oracle) })
     suspend fun craft(id: String, holo: Boolean = false) = run("craft", "craft", JsonObject().apply { addProperty("id", id); addProperty("holo", holo) })
@@ -127,7 +131,7 @@ object Progress {
     /** Saves a Play deck on the server, then reloads the state (the web's saveDeck). */
     suspend fun saveDeck(deck: JsonObject): JsonElement? { val out = run("deck", "deck", deck); refresh(); return out.get("deck") }
 
-    fun clear() { _state.value = null; _story.value = null; _error.value = null }
+    fun clear() { _deeds.value = null; _state.value = null; _story.value = null; _error.value = null }
 
     val MESSAGES = mapOf(
         "sign_in" to "Sign in to use your Play collection.",
