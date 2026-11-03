@@ -97,6 +97,51 @@ class ShotTest {
         }
     }
 
+    // ---- Play home, from the parity keeper's /api/progress/state fixture (the same one the web board renders).
+    private val home = File(System.getProperty("shotsDir")!!).parentFile.resolve("app/build/shot-art/home")
+    private val missing = java.util.TreeSet<String>()
+    private fun key(url: String) = java.security.MessageDigest.getInstance("SHA-1").digest(url.toByteArray()).joinToString("") { "%02x".format(it) }
+    private fun homeArt(url: String): Any? {
+        val f = home.resolve(key(url) + ".png").takeIf { it.exists() } ?: home.resolve(key(url) + ".jpg").takeIf { it.exists() }
+        if (f == null) { missing += url; return null }
+        return BitmapFactory.decodeFile(f.path)?.asImageBitmap()
+    }
+
+    @Composable private fun Home() {
+        val ctx = RuntimeEnvironment.getApplication()
+        val fixture = File("/mnt/project-files/design/native/parity/fixtures/progress-state.json").takeIf { it.exists() }
+            ?: home.resolve("progress-state.json")
+        val state = JsonParser.parseString(fixture.readText()).asJsonObject
+        val rules = dev.cardstashy.nativeplay.play.PlayRules(JsonParser.parseString(javaClass.classLoader!!.getResource("play-rules.json")!!.readText()).asJsonObject)
+        val top = @Composable { TopBarItems(Mode.PLAY, null, "Randall", unread = true, onSwitch = {}, onProfile = {}) }
+        dev.cardstashy.nativeplay.ui.PlayHome(dev.cardstashy.nativeplay.ui.PlayHomeData(state, rules, dev.cardstashy.nativeplay.play.PlayMath.StoryHome(1, 0, false), "2026-11-03"),
+            top = top, nav = { PlayNav(null, {}) })
+    }
+
+    @Test fun playHome() {
+        dev.cardstashy.nativeplay.ui.homeArt = ::homeArt
+        home.resolve("facts.json").takeIf { it.exists() }?.let { f ->
+            dev.cardstashy.nativeplay.play.SetFacts.seed(JsonParser.parseString(f.readText()).asJsonObject.entrySet().associate { (k, v) -> val o = v.asJsonObject
+                k to dev.cardstashy.nativeplay.play.SetFacts.Set(o["name"].asString, o["icon"].asString, o["released"].asString, o["total"]?.asInt, o["art"].asString) })
+        }
+        for ((w, h) in listOf(390 to 844, 884 to 1104)) for (s in listOf(1f, 1.3f)) {
+            if (w > 390 && s > 1f) continue
+            tall("play-home", w, h, s) { Home() }
+        }
+        home.mkdirs(); home.resolve("missing.txt").writeText(missing.joinToString("\n"))
+    }
+
+    /** A long page: rendered at 4x the screen height so the whole scroll shows in one image. */
+    private fun tall(name: String, w: Int, h: Int, scale: Float, content: @Composable () -> Unit) {
+        RuntimeEnvironment.setQualifiers("w${w}dp-h${if (w < 600) h * 7 else h * 4}dp-xxhdpi")
+        kotlinx.coroutines.runBlocking { for (m in Mode.entries) AssetImages.load(RuntimeEnvironment.getApplication(), m.asset, maxWidth = 256)
+            AssetImages.load(RuntimeEnvironment.getApplication(), "play/avatar-default.webp", maxWidth = 256) }
+        captureRoboImage(File(System.getProperty("shotsDir"), "$name-${w}x$h-${(scale * 100).toInt()}.png").path) {
+            val d = LocalDensity.current
+            CompositionLocalProvider(LocalDensity provides Density(d.density, scale)) { content() }
+        }
+    }
+
     private val sizes = listOf(360 to 780, 412 to 915, 600 to 960, 840 to 1000)
 
     @Test fun playSkin() { for ((w, h) in sizes) for (s in listOf(1f, 1.3f)) shot("skin-play-placeholder-rows", w, h, s) { PlaySkin() } }

@@ -241,6 +241,19 @@ object PlayMath {
         }
     }
 
+    /** questReward: the reward a quest pays, from the server's config with the web's defaults. */
+    fun questReward(q: PlayRules.Quest, config: JsonObject?): PlayRules.Reward {
+        val d = config?.getAsJsonObject("daily"); val w = config?.getAsJsonObject("weekly")
+        fun JsonObject?.n(a: String, k: String, def: Int) = this?.getAsJsonObject(a)?.get(k)?.takeIf { it.isJsonPrimitive }?.asInt ?: def
+        fun JsonObject?.m(k: String, def: Int) = this?.get(k)?.takeIf { it.isJsonPrimitive }?.asInt ?: def
+        return when (q.level) {
+            "first" -> PlayRules.Reward(coins = d.n("firstMatch", "coins", 100))
+            "easy" -> PlayRules.Reward(coins = d.n("easy", "coins", 250), xp = d.n("easy", "xp", 50))
+            "hard" -> PlayRules.Reward(coins = d.n("hard", "coins", 500), xp = d.n("hard", "xp", 100))
+            else -> PlayRules.Reward(packs = w.m("pack", 1), xp = w.m("xp", 250))
+        }
+    }
+
     fun totals(rows: List<AchRow>) = Totals(rows.sumOf { it.steps.size }, rows.sumOf { it.earned }, rows.count { it.ready })
 
     /** The unfinished achievements closest to their next step ("Almost there"). */

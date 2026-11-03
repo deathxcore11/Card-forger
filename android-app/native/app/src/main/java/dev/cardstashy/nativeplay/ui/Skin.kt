@@ -127,6 +127,9 @@ object Site {
     private val tnum = "tnum"
 
     // 0a.4: Cinzel at two sizes only (28 title, 12 tracked eyebrow); Manrope at four (20 / 16 / 14 / 12). No italic, shadow or outline.
+    /** .pl-home-head h1: Cinzel 700, the light-to-gold fill. */
+    val Display = TextStyle(fontFamily = Type.Cinzel, fontWeight = FontWeight.Bold, fontSize = 34.sp, letterSpacing = .04.em,
+        brush = Brush.verticalGradient(0.3f to Color(0xFFF8F0DC), 1f to Color(0xFFD6AD64)))
     val Title = TextStyle(fontFamily = Type.Cinzel, fontWeight = FontWeight.Bold, fontSize = 28.sp, lineHeight = 32.sp, letterSpacing = .02.em, color = Text)
     val Eyebrow = TextStyle(fontFamily = Type.Cinzel, fontWeight = FontWeight.Bold, fontSize = 12.sp, lineHeight = 16.sp, letterSpacing = .2.em, color = Text.copy(alpha = .82f))
     val CardTitle = TextStyle(fontFamily = Manrope, fontWeight = FontWeight.SemiBold, fontSize = 20.sp, lineHeight = 26.sp, color = Text)
@@ -339,9 +342,10 @@ fun PageHeader(title: String, eyebrow: String? = null, onBack: (() -> Unit)? = n
 
 /** .pe-level: the mastery ring, 3 dp track, gold fill from 12 o'clock (earned), level in the middle; fills on the spring. */
 @Composable
-fun LevelRing(level: PlayMath.Level, modifier: Modifier = Modifier) {
+fun LevelRing(level: PlayMath.Level, modifier: Modifier = Modifier, framed: Boolean = false) {
     val pct by animateFloatAsState(level.into.toFloat() / level.need.coerceAtLeast(1), Site.spring(), label = "ring")
-    Box(modifier.size(44.dp).semantics { contentDescription = "Mastery level ${level.level}, ${level.into} of ${level.need} XP" }, contentAlignment = Alignment.Center) {
+    Box(modifier.size(44.dp).then(if (framed) Modifier.shadow(8.dp, CircleShape).clip(CircleShape).background(Color(0xB80D0F14)).border(1.dp, Color(0xFF6A5838), CircleShape) else Modifier)
+        .semantics { contentDescription = "Mastery level ${level.level}, ${level.into} of ${level.need} XP" }, contentAlignment = Alignment.Center) {
         Canvas(Modifier.size(34.dp)) {
             val w = 3.dp.toPx()
             drawCircle(Color(0x24FFFFFF), radius = size.minDimension / 2 - w / 2, style = Stroke(w))
