@@ -2,8 +2,11 @@
 // earlier APK here, so a page cached before an update never offers a file that is gone.
 import {RELEASE} from './release-record.js';
 export const ANDROID_BETA = RELEASE.android;
-// The native Quick Play test build (separate package, not the app). Not an update: nothing offers it.
-export const ANDROID_NATIVE_TEST = { href: '/downloads/cardstashy-native-test-0.4.0.apk', bytes: 48913232 };
+// The native Play test build (separate package, installs beside the app). Each new native APK only changes
+// href and bytes here; Settings and /downloads read its version from the file name, so they follow on their own.
+export const ANDROID_NATIVE_TEST = { href: '/downloads/cardstashy-native-test-0.4.1.apk', bytes: 49589711 };
+export const nativeTestInfo = (record = ANDROID_NATIVE_TEST) => ({ href: record.href, bytes: record.bytes,
+  version: (record.href.match(/cardstashy-native-test-(\d+\.\d+\.\d+)\.apk$/) || [])[1] || '' });
 export const ANDROID_BETA_OLD_APK = /^\/downloads\/cardstashy-android-beta-\d+\.\d+\.\d+\.apk$/;
 
 // Cloudflare serves a static file only up to 25 MiB, so a larger APK is committed in parts next to its

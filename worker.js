@@ -5,7 +5,7 @@ import { progressRoute } from './play-econ-route.js';
 import { checkNativeBackendRequest, withNativeResponseHeaders, createSupabaseBearerVerifier, isNativeAdmitted, releaseNativeAdmission } from './native-backend-contract.js';
 import { NATIVE_ORIGIN } from './native-service-policy.js';
 import { SUPABASE } from './config.js';
-import { ANDROID_BETA, ANDROID_BETA_OLD_APK, ANDROID_NATIVE_TEST, androidBetaDownload } from './android-beta.js';
+import { ANDROID_BETA, ANDROID_BETA_OLD_APK, ANDROID_NATIVE_TEST, androidBetaDownload, nativeTestInfo } from './android-beta.js';
 import {aiMatchupRoute} from './ai-matchup-route.js';
 export {DailyCards} from './daily-card-route.js';
 import {dailyCardRoute} from './daily-card-route.js';
@@ -378,7 +378,7 @@ export default {
   ...handlers,
   async fetch(request, env, ctx) {
     const url = new URL(request.url);
-    if(url.pathname==='/api/releases/current'&&['GET','HEAD'].includes(request.method))return new Response(request.method==='HEAD'?null:JSON.stringify(RELEASE),{headers:{'Content-Type':'application/json','Cache-Control':'no-store','Access-Control-Allow-Origin':'*'}});
+    if(url.pathname==='/api/releases/current'&&['GET','HEAD'].includes(request.method))return new Response(request.method==='HEAD'?null:JSON.stringify({...RELEASE,nativeTest:nativeTestInfo()}),{headers:{'Content-Type':'application/json','Cache-Control':'no-store','Access-Control-Allow-Origin':'*'}});
 
     const callback = androidCallbackLanding(request, url);
     if (callback) return callback;
