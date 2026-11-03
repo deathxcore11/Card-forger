@@ -10,23 +10,50 @@ data class DemoDeck(val id: String, val name: String, val colour: String, val fa
     val count get() = cards.sumOf { it.second }
 }
 
+/** Forge's CPU levels (play-forge-cpu-policy.js): Medium keeps its admitted v1 identity, shown as Normal. */
+val CPU_POLICIES = mapOf("Easy" to "forge-heuristic-easy-beta-v2", "Medium" to "forge-heuristic-medium-beta-v1", "Hard" to "forge-heuristic-hard-beta-v2")
+
+/** The web's podDeck: a pod seat travels as the rows Forge reads, so four full decks stay under the size limit. */
+private val POD_ROW = listOf("name", "qty", "set", "setCode", "collectorNumber", "collector_number", "foil", "finish")
+fun podDeck(deck: JsonObject): JsonObject = JsonObject().apply {
+    deck.get("format")?.let { add("format", it) }
+    for (k in listOf("name", "commander", "companion")) deck.get(k)?.takeIf { !it.isJsonNull }?.let { add(k, it) }
+    fun rows(a: JsonArray) = JsonArray().apply { a.forEach { r -> add(if (r is JsonObject) JsonObject().also { o -> POD_ROW.forEach { k -> r.get(k)?.takeIf { !it.isJsonNull }?.let { o.add(k, it) } } } else r) } }
+    add("cards", rows(deck.getAsJsonArray("cards") ?: JsonArray()))
+    for (k in listOf("side", "commanders")) deck.getAsJsonArray(k)?.takeIf { it.size() > 0 }?.let { add(k, rows(it)) }
+    deck.getAsJsonArray("errors")?.takeIf { it.size() > 0 }?.let { add("errors", it) }
+}
+
 /**
- * The same input the web's exactForgeInput builds for Quick Play: Normal CPU, random first player,
- * both decks whole with every name in Forge's spelling and the match format on each seat.
+ * The web's exactForgeInput: both decks whole with every name in Forge's spelling and the match format on
+ * each seat ("Standard Brawl" is Forge's "Brawl"). Quick Play is always Normal with a random first player;
+ * Practice picks the level, who goes first ("first" / "second" / "random") and, in Commander, up to two more
+ * CPU seats with their own decks and levels. The seats reach Forge as "You" and "CPU" (CPU 2, CPU 3 in a
+ * pod): deck names stay on the versus plate and never reach Forge's lines.
  */
-fun quickInput(format: String, you: JsonObject, cpu: JsonObject): String {
-    fun seat(d: JsonObject) = EngineNames.deck(d).apply { addProperty("format", format) }
+fun forgeInput(format: String, you: JsonObject, cpu: JsonObject, level: String = "Medium", startingPlayer: String = "random",
+               quick: Boolean = true, extras: List<Pair<JsonObject, String>> = emptyList()): String {
+    require(level in CPU_POLICIES) { "Choose Easy, Normal or Hard." }
+    require(startingPlayer in setOf("random", "first", "second"))
+    require(extras.isEmpty() || (format == "Commander" && !quick && extras.size <= 2)) { "A pod is Commander Practice with up to 3 CPUs." }
+    val f = if (format == "Standard Brawl") "Brawl" else format
+    fun seat(d: JsonObject, name: String) = EngineNames.deck(d).apply { addProperty("format", f); addProperty("name", name) }
+    val pod = extras.isNotEmpty()
     val input = JsonObject().apply {
-        addProperty("format", format)
-        // The seats reach Forge as "You" and "CPU": deck names stay on the versus plate and never reach
-        // Forge's lines (a deck can share a card's name, so names are never swapped after the fact).
-        add("humanDeck", seat(you).apply { addProperty("name", "You") })
-        add("opponentDeck", seat(cpu).apply { addProperty("name", "CPU") })
-        addProperty("difficultyPolicyVersion", "forge-heuristic-medium-beta-v1")
-        addProperty("startingPlayer", "random"); addProperty("playStyle", "quick")
+        addProperty("format", f)
+        add("humanDeck", seat(you, "You").let { if (pod) podDeck(it) else it })
+        add("opponentDeck", seat(cpu, "CPU").let { if (pod) podDeck(it) else it })
+        addProperty("difficultyPolicyVersion", CPU_POLICIES.getValue(if (quick) "Medium" else level))
+        addProperty("startingPlayer", if (quick) "random" else startingPlayer); addProperty("playStyle", if (quick) "quick" else "practice")
+        if (pod) add("extraOpponents", JsonArray().apply { extras.forEachIndexed { i, (d, lv) ->
+            add(JsonObject().apply { add("deck", podDeck(seat(d, "CPU ${i + 2}"))); addProperty("difficultyPolicyVersion", CPU_POLICIES[lv] ?: CPU_POLICIES.getValue("Medium")) })
+        } })
     }
     return JsonObject().apply { add("input", input) }.toString()
 }
+
+/** Quick Play: Normal CPU, random first player. */
+fun quickInput(format: String, you: JsonObject, cpu: JsonObject): String = forgeInput(format, you, cpu)
 
 class DemoDecks(val format: String, val decks: List<DemoDeck>, val homeArt: List<String>, private val art: Map<String, String>) {
     /** Asset path of a card image: the full card, or its art crop. */
