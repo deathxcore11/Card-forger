@@ -6,6 +6,7 @@ import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
+import androidx.compose.foundation.combinedClickable
 import androidx.compose.foundation.horizontalScroll
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
@@ -62,6 +63,8 @@ import dev.cardstashy.nativeplay.play.Trunk
 
 /** What a Trunk tile opens: that card, its own printing, foil for a holo copy (app.js:3401). */
 data class CardPick(val name: String, val oracle: String, val printId: String?, val finish: String)
+/** A held Trunk card: what the Play hold menu needs (the printing's picture and set). */
+data class CardHold(val pick: CardPick, val image: String, val set: String, val holo: Boolean)
 
 private val Ink = Site.Text
 private val small = TextStyle(fontFamily = Site.Manrope, fontWeight = FontWeight.Medium, fontSize = 13.sp, color = Site.Muted)
@@ -72,7 +75,7 @@ private val small = TextStyle(fontFamily = Site.Manrope, fontWeight = FontWeight
  * on wide screens) with the card's finish, name, set badge, mana cost, set and number, and pips or Holo.
  */
 @Composable
-fun TrunkScreen(state: JsonObject, onBack: () -> Unit, onCard: (CardPick) -> Unit, onSet: (String) -> Unit, startSet: String? = null, nav: @Composable () -> Unit) {
+fun TrunkScreen(state: JsonObject, onBack: () -> Unit, onCard: (CardPick) -> Unit, onSet: (String) -> Unit, startSet: String? = null, onHold: (CardHold) -> Unit = {}, nav: @Composable () -> Unit) {
     val context = LocalContext.current
     val prefs = remember { context.getSharedPreferences("play", android.content.Context.MODE_PRIVATE) }
     var tab by rememberSaveable { mutableStateOf(if (startSet != null) "sets" else "cards") }
@@ -113,7 +116,7 @@ fun TrunkScreen(state: JsonObject, onBack: () -> Unit, onCard: (CardPick) -> Uni
                     }
                     items(shown, key = { it.o + if (it.holo) ":h" else "" }) { c ->
                         val print = c.pid?.let { prints[it] } ?: facts[c.o]?.card
-                        Tile(c, print, facts[c.o], data) { onCard(CardPick(c.n, c.o, c.pid ?: print?.get("id")?.asString, if (c.holo) "foil" else "nonfoil")) }
+                        Tile(c, print, facts[c.o], data, onHold = { img, set -> onHold(CardHold(CardPick(c.n, c.o, c.pid ?: print?.get("id")?.asString, if (c.holo) "foil" else "nonfoil"), img, set, c.holo)) }) { onCard(CardPick(c.n, c.o, c.pid ?: print?.get("id")?.asString, if (c.holo) "foil" else "nonfoil")) }
                     }
                 } else {
                     item(span = { GridItemSpan(maxLineSpan) }) { SetsTab(state, setQuery, setFormat, { setQuery = it }, { setFormat = it }, onSet) }
@@ -206,7 +209,7 @@ fun Chip(label: String, on: Boolean, onClick: () -> Unit) = Box(Modifier.height(
 
 /** playCardTile in the gallery view: .lot with 10 dp padding, 16 dp corners; art 63:88 with the finish. */
 @Composable
-private fun Tile(c: Trunk.Card, print: JsonObject?, fact: CardFacts.Fact?, data: CardData?, onClick: () -> Unit) {
+private fun Tile(c: Trunk.Card, print: JsonObject?, fact: CardFacts.Fact?, data: CardData?, onHold: (image: String, set: String) -> Unit = { _, _ -> }, onClick: () -> Unit) {
     val rarity = print?.get("rarity")?.asString ?: c.r
     val set = print?.get("set")?.asString ?: c.pset ?: c.s.firstOrNull() ?: ""
     val number = print?.get("collector_number")?.asString ?: c.pnumber ?: ""
@@ -215,7 +218,7 @@ private fun Tile(c: Trunk.Card, print: JsonObject?, fact: CardFacts.Fact?, data:
     val look = data?.let { Foil.look(it, print, if (c.holo) "foil" else "nonfoil") }
     // Holo copies shimmer on their own; the stamp only catches the light when tilted.
     val tilt = rememberFoilTilt(live = c.holo, phase = (c.o.hashCode() and 0xff) / 255f)
-    Column(Modifier.clip(RoundedCornerShape(16.dp)).background(Site.Surface).border(1.dp, Site.Line, RoundedCornerShape(16.dp)).clickable(onClick = onClick).padding(10.dp),
+    Column(Modifier.clip(RoundedCornerShape(16.dp)).background(Site.Surface).border(1.dp, Site.Line, RoundedCornerShape(16.dp)).combinedClickable(onLongClick = { onHold(image, set) }, onClick = onClick).padding(10.dp),
         verticalArrangement = Arrangement.spacedBy(10.dp)) {
         CardPicture(image, look?.takeIf { it.shines }, tilt, Modifier.fillMaxWidth().aspectRatio(63f / 88f))
         Column(verticalArrangement = Arrangement.spacedBy(2.dp)) {
@@ -296,14 +299,20 @@ fun TrunkRoute(onBack: () -> Unit, onWeb: (String) -> Unit, onNav: (PlayTab) -> 
     val state by dev.cardstashy.nativeplay.play.Progress.state.collectAsState()
     val context = LocalContext.current
     var open by remember { mutableStateOf<CardPick?>(null) }
+    var openTab by remember { mutableStateOf("overview") }
+    var hold by remember { mutableStateOf<CardHold?>(null) }
+    var artFor by remember { mutableStateOf<ArtPick.Card?>(null) }
     LaunchedEffect(Unit) { dev.cardstashy.nativeplay.play.Progress.loadCached(); dev.cardstashy.nativeplay.play.Progress.refresh() }
     val s = state ?: run { Box(Modifier.fillMaxSize().background(Site.Bg), contentAlignment = Alignment.Center) { Text("Opening your binder…", style = Site.Body) }; return }
     LaunchedEffect(s) { dev.cardstashy.nativeplay.play.SetFacts.ensure(Trunk.allSets(s).map { it.code }) }
     val toast = { m: String -> android.widget.Toast.makeText(context, m, android.widget.Toast.LENGTH_SHORT).show() }
     Box(Modifier.fillMaxSize()) {
-        TrunkScreen(s, onBack, { open = it }, { onWeb("https://cardstashy.com/#set/$it/play") }, startSet) { PlayNav(PlayTab.TRUNK, onNav) }
+        TrunkScreen(s, onBack, { openTab = "overview"; open = it }, { onWeb("https://cardstashy.com/#set/$it/play") }, startSet, onHold = { hold = it }) { PlayNav(PlayTab.TRUNK, onNav) }
+        hold?.let { h -> PlayCardHold(h, onOpen = { tab -> hold = null; openTab = tab; open = h.pick }, onSet = { hold = null; onWeb("https://cardstashy.com/#set/${h.set}/play") },
+            onMerchant = { hold = null; onWeb("https://cardstashy.com/#play") }, onArt = { hold = null; artFor = it }, onClose = { hold = null }) }
+        artFor?.let { c -> UseArtworkAs(c) { artFor = null } }
         open?.let { pick ->
-            CardSheet(pick, s, CardSheetActions(
+            CardSheet(pick, s, startTab = openTab, act = CardSheetActions(
                 merchant = { _, _ -> open = null; onWeb("https://cardstashy.com/#play") },
                 set = { code -> open = null; onWeb("https://cardstashy.com/#set/$code/play") },
                 precon = { _, _ -> open = null; onWeb("https://cardstashy.com/#play") },
@@ -311,4 +320,20 @@ fun TrunkRoute(onBack: () -> Unit, onWeb: (String) -> Unit, onNav: (PlayTab) -> 
                 toast = toast), onClose = { open = null })
         }
     }
+}
+
+/**
+ * Hold a card in Play: the Play side's own actions (Play decks, seals, packs, set), never the Collection's
+ * (no prices, wishlist or binders). Each is a shortcut into the card view, which has them all.
+ */
+@Composable
+fun PlayCardHold(h: CardHold, onOpen: (tab: String) -> Unit, onSet: () -> Unit, onMerchant: () -> Unit, onArt: (ArtPick.Card) -> Unit, onClose: () -> Unit) {
+    val art = h.image.replace("/normal/", "/art_crop/").replace("version=normal", "version=art_crop")
+    ContextSheet("Card actions", h.pick.name, listOfNotNull(h.set.uppercase().ifBlank { null }, if (h.holo) "Holo" else null).joinToString(" · "), h.image, listOf(
+        listOf(ContextAction(SiteIcons.CardStack, "Open card", "Rules, play guide and printings") { onOpen("overview") },
+            ContextAction(SiteIcons.Decks, "Add to deck", "One of your Play decks") { onOpen("overview") },
+            ContextAction(SiteIcons.Trunk, "Get it", "Stamp a copy or make it holo with seals") { onOpen("get") }),
+        listOfNotNull(if (h.set.isNotBlank()) ContextAction(SiteIcons.PackIcon, "Its pack at the Merchant") { onMerchant() } else null,
+            if (h.set.isNotBlank()) ContextAction(SiteIcons.ViewGallery, "See the whole set") { onSet() } else null),
+        listOf(ContextAction(SiteIcons.Paint, "Use artwork as…") { onArt(ArtPick.Card("mtg", h.pick.printId ?: h.pick.oracle, h.pick.name, h.set.uppercase(), art, art)) })), onClose)
 }

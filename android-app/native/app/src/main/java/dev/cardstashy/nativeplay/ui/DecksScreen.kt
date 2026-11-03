@@ -8,6 +8,7 @@ import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
+import androidx.compose.foundation.combinedClickable
 import androidx.compose.foundation.layout.BoxScope
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
@@ -92,6 +93,8 @@ fun DecksScreen(state: JsonObject, onBack: () -> Unit, onDeck: (String) -> Unit,
     val scope = rememberCoroutineScope()
     var check by remember { mutableStateOf(initialCheck) }
     var deleting by remember { mutableStateOf<JsonObject?>(null) }
+    var holding by remember { mutableStateOf<JsonObject?>(null) }
+    val clip = androidx.compose.ui.platform.LocalClipboardManager.current
     val owned = remember(state) { Decks.ownedByName(state) }
     val decks = state.getAsJsonArray("decks")?.mapNotNull { it as? JsonObject } ?: emptyList()
     Box(Modifier.fillMaxSize().background(Site.Bg)) {
@@ -101,7 +104,7 @@ fun DecksScreen(state: JsonObject, onBack: () -> Unit, onDeck: (String) -> Unit,
             BoxWithConstraints(Modifier.fillMaxWidth()) {
                 val cols = when { maxWidth >= 1000.dp -> 3; maxWidth >= 640.dp -> 2; else -> 1 }
                 val tiles: List<@Composable (Modifier) -> Unit> = listOf<@Composable (Modifier) -> Unit>({ m -> NewDeckTile(m, onFinder) }) +
-                    decks.map { d -> @Composable { m: Modifier -> PlayDeckTile(d, owned, m, { onDeck(d.s("id")) }) { deleting = d } } }
+                    decks.map { d -> @Composable { m: Modifier -> PlayDeckTile(d, owned, m, { onDeck(d.s("id")) }, onHold = { holding = d }) { deleting = d } } }
                 Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
                     tiles.chunked(cols).forEach { row -> Row(horizontalArrangement = Arrangement.spacedBy(12.dp)) {
                         row.forEach { it(Modifier.weight(1f)) }; repeat(cols - row.size) { Spacer(Modifier.weight(1f)) } } }
@@ -113,6 +116,21 @@ fun DecksScreen(state: JsonObject, onBack: () -> Unit, onDeck: (String) -> Unit,
                     .onSuccess { check = Check(); toast("Saved to your Play decks.") }.onFailure { toast(it.message ?: "Could not save the deck.") } } } }
         }
         Box(Modifier.align(Alignment.BottomCenter)) { nav() }
+    }
+    // Hold a Play deck: its Play actions (deckMenu's layout; the Collection's share, prices and proxies stay there).
+    holding?.let { d ->
+        val n = Decks.tile(d, owned); val name = d.s("name").ifBlank { "Untitled deck" }
+        val close = { holding = null }
+        ContextSheet("Play deck", name, "${d.s("format").ifBlank { "Casual" }} · ${n.main}/${n.size} cards", Decks.cover(d)?.let(homeArt) as? String, listOf(
+            listOf(ContextAction(SiteIcons.CardStack, "Open deck", "Cards, stamps and the editor") { close(); onDeck(d.s("id")) },
+                ContextAction(SiteIcons.Trunk, if (n.missing > 0) "Stamp missing cards" else "All cards in your Trunk", if (n.missing > 0) "${n.missing} to stamp with seals" else null) { close(); onDeck(d.s("id")) }),
+            listOf(ContextAction(SiteIcons.Copy, "Copy decklist") {
+                close(); clip.setText(androidx.compose.ui.text.AnnotatedString((d.getAsJsonArray("cards") ?: JsonArray()).mapNotNull { it as? JsonObject }
+                    .joinToString("\n") { r -> "${r.get("qty")?.takeIf { it.isJsonPrimitive }?.asInt ?: 1} ${r.s("name")}" })); toast("Decklist copied.") },
+                ContextAction(SiteIcons.Decks, "Duplicate deck") {
+                    close(); scope.launch { runCatching { Progress.saveDeck(JsonObject().apply { addProperty("name", "$name copy"); addProperty("format", d.s("format").ifBlank { "Standard" })
+                        add("cards", d.getAsJsonArray("cards") ?: JsonArray()) }) }.onSuccess { toast("Duplicated.") }.onFailure { toast(it.message ?: "Could not save the deck.") } } }),
+            listOf(ContextAction(SiteIcons.Close, "Delete deck", danger = true) { close(); deleting = d })), close)
     }
     deleting?.let { d ->
         AlertDialog(onDismissRequest = { deleting = null }, containerColor = Site.Surface2,
@@ -138,9 +156,9 @@ private fun Panel(title: String, sub: String?, content: @Composable () -> Unit) 
 // ---------------------------------------------------------------- deck tiles (.deck-tile, 190 dp)
 
 @Composable
-private fun TileFrame(art: String?, modifier: Modifier, artAlpha: Float = 1f, onClick: () -> Unit, content: @Composable BoxScope.() -> Unit) {
+private fun TileFrame(art: String?, modifier: Modifier, artAlpha: Float = 1f, onHold: (() -> Unit)? = null, onClick: () -> Unit, content: @Composable BoxScope.() -> Unit) {
     val p = heroPainter(art?.let(homeArt))
-    Box(modifier.height(190.dp).softTile().clickable(onClick = onClick)) {
+    Box(modifier.height(190.dp).softTile().combinedClickable(onLongClick = onHold, onClick = onClick)) {
         if (p != null) Image(p, null, Modifier.fillMaxSize().alpha(artAlpha), contentScale = ContentScale.Crop)
         Box(Modifier.fillMaxSize().background(Brush.verticalGradient(0f to Color(0x40000000), .3f to Color.Transparent, .72f to Color(0xEB08090C), 1f to Color(0xEB08090C))))
         content()
@@ -148,16 +166,16 @@ private fun TileFrame(art: String?, modifier: Modifier, artAlpha: Float = 1f, on
 }
 
 @Composable
-private fun NewDeckTile(modifier: Modifier, onClick: () -> Unit) = TileFrame(DECKS_ART, modifier, .75f, onClick) {
+private fun NewDeckTile(modifier: Modifier, onClick: () -> Unit) = TileFrame(DECKS_ART, modifier, .75f, onClick = onClick) {
     Column(Modifier.fillMaxSize().padding(horizontal = 12.dp, vertical = 10.dp), verticalArrangement = Arrangement.Bottom) {
         Text("Build a deck", style = t(18f, FontWeight.ExtraBold, Color.White)); Text("From the cards in your Trunk", style = t(12.5f, color = Color(0xFFD5D9E0)))
     }
 }
 
 @Composable
-private fun PlayDeckTile(d: JsonObject, owned: Map<String, Int>, modifier: Modifier, onOpen: () -> Unit, onDelete: () -> Unit) {
+private fun PlayDeckTile(d: JsonObject, owned: Map<String, Int>, modifier: Modifier, onOpen: () -> Unit, onHold: () -> Unit = {}, onDelete: () -> Unit) {
     val n = Decks.tile(d, owned); val name = d.s("name").ifBlank { "Untitled deck" }
-    TileFrame(Decks.cover(d), modifier, onClick = onOpen) {
+    TileFrame(Decks.cover(d), modifier, onHold = onHold, onClick = onOpen) {
         Text(d.s("format").ifBlank { "Casual" }, style = t(12f, FontWeight.Bold, Color(0xFFE6E8EC)), modifier = Modifier.padding(10.dp)
             .softPill(RoundedCornerShape(999.dp)).padding(horizontal = 10.dp, vertical = 4.dp))
         Box(Modifier.align(Alignment.TopEnd).padding(10.dp).size(44.dp).softPill(CircleShape)

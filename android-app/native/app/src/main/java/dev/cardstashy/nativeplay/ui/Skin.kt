@@ -174,6 +174,10 @@ object SiteIcons {
     val Friends = line(circle(9f, 8f, 3f), "M3.5 20v-2a5.5 5.5 0 0 1 10-3M19 12v8M15 16h8")
     val Chevron = line("m7.5 10 4.5 4.5 4.5-4.5")
     val Close = line("m6.5 6.5 11 11M17.5 6.5l-11 11")
+    val CardStack = line("M5 16H4a1 1 0 0 1-1-1V4a1 1 0 0 1 1-1h10a1 1 0 0 1 1 1v1", rrect(7f, 7f, 14f, 14f, 2f), "M11 12h6M11 16h4")
+    val Copy = line(rrect(8f, 8f, 11.5f, 12f, 1.8f), "M15.5 8V5.8A1.8 1.8 0 0 0 13.7 4H6.3a1.8 1.8 0 0 0-1.8 1.8v8.4A1.8 1.8 0 0 0 6.3 16H8")
+    val PackIcon = line("M6 3.5h12v17H6zM6 7h12M6 17h12", "M10 3.5v1M14 3.5v1M10 19.5v1M14 19.5v1")
+    val Sword = line("m4 4 9.5 9.5M20 4l-9.5 9.5", "m6.5 14.5 3 3M17.5 14.5l-3 3M4.5 19.5l3-3M19.5 19.5l-3-3")
 
     // icons.js deck view switch: Stacks, Art grid, Names only, Detailed list.
     val ViewStacks = line("M4 7V4.5A1.5 1.5 0 0 1 5.5 3h10M6.5 10V7.5A1.5 1.5 0 0 1 8 6h10", rrect(9f, 9f, 11f, 12f, 1.5f), "M12 12h5")

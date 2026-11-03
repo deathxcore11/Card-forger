@@ -53,6 +53,12 @@ class SettingsShotTest {
         rule.onNodeWithText("Help").performClick(); rule.waitForIdle(); shot("help")
     }
 
+    @Test fun holdMenus() {
+        val img = "https://cards.scryfall.io/normal/front/a/9/a9738cda-adb1-47fb-9f4c-ecd930228c4d.jpg"
+        rule.setContent { dev.cardstashy.nativeplay.ui.PlayCardHold(dev.cardstashy.nativeplay.ui.CardHold(dev.cardstashy.nativeplay.ui.CardPick("Ragavan, Nimble Pilferer", "o", "p", "foil"), img, "mh2", true), {}, {}, {}, {}, {}) }
+        settle(); shot("hold-play-card")
+    }
+
     @Test fun picker() {
         signedIn()
         rule.setContent { ProfileArtPickerHost() }
