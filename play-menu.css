@@ -1403,3 +1403,4 @@ button.pd-near-row{cursor:pointer}
 .play-style:focus-visible{outline:2px solid var(--gold);outline-offset:2px}
 .play-style-own{font-size:12px;font-weight:700;color:#e9d6a7;text-align:center;padding:4px}
 .pe-table>.pe-sl{grid-column:1/-1}
+.play-get>.play-card-own{margin-top:10px}
