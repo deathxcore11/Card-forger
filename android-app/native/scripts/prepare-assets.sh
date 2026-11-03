@@ -25,5 +25,7 @@ for id in CARD-001 CARD-002 CARD-005 CARD-006 CARD-008 CARD-010 CARD-014 CARD-01
 done
 python3 "$HERE/scripts/fetch-art.py" "$HERE/decks/demo-decks.json" "$A/cards"
 cp "$HERE/decks/demo-decks.json" "$A/"
+# Randall's painted art pieces (each replaces its code-drawn version; a missing piece keeps the code one).
+for f in "$HERE"/art/*.webp; do [ -e "$f" ] && cp "$f" "$A/play/"; done
 rm -rf "$T"
 echo "assets ready: $(du -sh "$A" | cut -f1), libs $(ls "$HERE/engine-libs" | wc -l) jars, pack $(cat "$A/forge-engine/pack.version")"

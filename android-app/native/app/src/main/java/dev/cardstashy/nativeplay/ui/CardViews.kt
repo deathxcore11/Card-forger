@@ -126,8 +126,10 @@ private fun TokenFace(card: Card) {
 /** The card back of the web table (.play-match-card-back): navy, gold ring and hairline. */
 @Composable
 fun CardBack(modifier: Modifier) {
+    // Randall's painted back (art piece 10) when the app carries it; the code-drawn back otherwise.
     Box(modifier.background(Brush.linearGradient(listOf(Color(0xFF22346A), Color(0xFF101A38), Color(0xFF22113D)))).border(1.5.dp, Color(0xFFC9A75A), RoundedCornerShape(3.dp)), contentAlignment = Alignment.Center) {
         Box(Modifier.size(10.dp).clip(CircleShape).background(Brush.radialGradient(listOf(Color(0xFFF1D891), Color(0xFF9A7A35)))))
+        AssetImage("play/card-back.webp", Modifier.fillMaxSize(), maxWidth = 372)
     }
 }
 
