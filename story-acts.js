@@ -38,6 +38,9 @@ export const STORY_ACTS = [
   {act: 12, age: 'The Kamigawa Years', title: 'The Kami War', years: '2004 to 2005',
     sets: ['chk', 'bok', 'sok', '9ed'], landSet: 'chk', packSets: ['chk', 'bok', 'sok'],
     art: {set: 'chk', number: '30', name: 'Konda, Lord of Eiganjo', crop: 'https://cards.scryfall.io/art_crop/front/5/e/5edab171-94b9-4e5e-ab61-bd8c6c8cfc38.jpg'}},
+  {act: 13, age: 'The Ravnica Years', title: 'The Guildpact', years: '2005 to 2006',
+    sets: ['rav', 'gpt', 'dis', '9ed'], landSet: 'rav', packSets: ['rav', 'gpt', 'dis'],
+    art: {set: 'rav', number: '234', name: 'Szadek, Lord of Secrets', crop: 'https://cards.scryfall.io/art_crop/front/2/8/2882793e-5d7d-47f0-9308-652a5e036c2c.jpg'}},
 ];
 export const SET_NAMES = {lea: 'Limited Edition Alpha', leb: 'Limited Edition Beta', '2ed': 'Unlimited Edition', arn: 'Arabian Nights', atq: 'Antiquities',
   '3ed': 'Revised Edition', leg: 'Legends', drk: 'The Dark', fem: 'Fallen Empires', ice: 'Ice Age', hml: 'Homelands', all: 'Alliances', '4ed': 'Fourth Edition',
@@ -49,6 +52,7 @@ export const SET_NAMES = {lea: 'Limited Edition Alpha', leb: 'Limited Edition Be
   ody: 'Odyssey', tor: 'Torment', jud: 'Judgment',
   ons: 'Onslaught', lgn: 'Legions', scg: 'Scourge', '8ed': 'Eighth Edition',
   mrd: 'Mirrodin', dst: 'Darksteel', '5dn': 'Fifth Dawn',
-  chk: 'Champions of Kamigawa', bok: 'Betrayers of Kamigawa', sok: 'Saviors of Kamigawa', '9ed': 'Ninth Edition'};
+  chk: 'Champions of Kamigawa', bok: 'Betrayers of Kamigawa', sok: 'Saviors of Kamigawa', '9ed': 'Ninth Edition',
+  rav: 'Ravnica: City of Guilds', gpt: 'Guildpact', dis: 'Dissension'};
 export const storyAct = n => STORY_ACTS.find(a => a.act === Number(n)) || null;
 export const setSymbolUrl = code => `https://svgs.scryfall.io/sets/${encodeURIComponent(code)}.svg`;
