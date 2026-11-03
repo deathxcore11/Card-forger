@@ -98,9 +98,7 @@ data class MatchState(
             val b = o.obj("buttons")
             val init = o.obj("initialization")
             val pv = o.obj("priority")
-            // Players are "You" and "CPU" in every line the table shows: Forge's own names
-            // ("Forge AI", deck names) never reach the screen.
-            val tidy = names(players, viewer)
+            // Players are "You" and "CPU" in every line the table shows; "Forge AI" never reaches the screen.
             return MatchState(
                 revision = o.get("revision")?.takeIf { !it.isJsonNull }?.asLong ?: 0, status = status, failure = o.str("failure"),
                 errors = init?.arr("errors")?.mapNotNull { it.takeIf { e -> e.isJsonPrimitive }?.asString } ?: emptyList(),
@@ -116,14 +114,15 @@ data class MatchState(
             )
         }
 
-        /** Replaces Forge's player names with "You" and "CPU" (longest first, so "Forge AI — deck" goes whole). */
-        fun names(players: List<Player>, viewer: Int) = namesFor(players.associate { it.id to it.name }, viewer)
-        fun namesFor(players: Map<Int, String>, viewer: Int): (String) -> String {
-            val swaps = players.filter { it.value.isNotBlank() }.map { (id, name) -> name to if (id == viewer) "You" else "CPU" }
-                .plus(listOf("Forge AI" to "CPU")).sortedByDescending { it.first.length }
-            return { text -> var t = text; for ((from, to) in swaps) t = t.replace(from, to)
-                t.replace(Regex("CPU\\s*[—–-]\\s*CPU"), "CPU").replace(Regex("(?<![Tt]he )CPU's"), "the CPU's").replace("in You's", "in your").replace("You is", "You are").replace("You's", "Your") }
-        }
+        /**
+         * Forge's lines with plain seat names: both seats reach Forge named "You" and "CPU" (quickInput),
+         * so only Forge's own "Forge AI" label and the grammar around the two names need fixing. Card
+         * names are never touched (a deck may share a card's name).
+         */
+        fun tidy(text: String): String = text
+            .replace(Regex("Forge AI(\\s*[—–-]\\s*CPU)?"), "CPU")
+            .replace(Regex("(?<![Tt]he )\\bCPU's"), "the CPU's")
+            .replace(Regex("\\bin You's\\b"), "in your").replace(Regex("\\bYou's\\b"), "Your").replace(Regex("\\bYou is\\b"), "You are")
 
         private fun parsePlayer(p: JsonObject): Player {
             val z = p.obj("zones")

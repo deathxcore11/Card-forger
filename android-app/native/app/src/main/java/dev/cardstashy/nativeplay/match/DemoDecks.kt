@@ -17,8 +17,10 @@ data class DemoDeck(val id: String, val name: String, val colour: String, val fa
 fun quickInput(format: String, you: JsonObject, cpu: JsonObject): String {
     fun seat(d: JsonObject) = EngineNames.deck(d).apply { addProperty("format", format) }
     val input = JsonObject().apply {
-        addProperty("format", format); add("humanDeck", seat(you))
-        // The CPU plays as "CPU": its list's name stays on the versus plate and never reaches Forge's lines.
+        addProperty("format", format)
+        // The seats reach Forge as "You" and "CPU": deck names stay on the versus plate and never reach
+        // Forge's lines (a deck can share a card's name, so names are never swapped after the fact).
+        add("humanDeck", seat(you).apply { addProperty("name", "You") })
         add("opponentDeck", seat(cpu).apply { addProperty("name", "CPU") })
         addProperty("difficultyPolicyVersion", "forge-heuristic-medium-beta-v1")
         addProperty("startingPlayer", "random"); addProperty("playStyle", "quick")

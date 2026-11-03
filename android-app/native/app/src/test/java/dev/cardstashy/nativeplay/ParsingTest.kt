@@ -74,12 +74,18 @@ class ParsingTest {
     }
 
     @Test fun forgeNamesNeverShow() {
-        val tidy = dev.cardstashy.nativeplay.engine.MatchState.namesFor(mapOf(1 to "Randall", 2 to "Forge AI — Karn, the Great Creator · Expedition Map"), viewer = 1)
-        assertEquals("Looking at cards in the CPU's hand", tidy("Looking at cards in Forge AI — Karn, the Great Creator · Expedition Map's hand"))
-        assertEquals("CPU is going first.", tidy("Forge AI — Karn, the Great Creator · Expedition Map is going first."))
-        assertEquals("You are going first.", tidy("Randall is going first."))
-        assertEquals("Looking at cards in your library", tidy("Looking at cards in Randall's library"))
+        val tidy = dev.cardstashy.nativeplay.engine.MatchState.Companion::tidy
+        assertEquals("Looking at cards in the CPU's hand", tidy("Looking at cards in Forge AI's hand"))
+        assertEquals("CPU is going first.", tidy("Forge AI — CPU is going first."))
+        assertEquals("You are going first.", tidy("You is going first."))
+        assertEquals("Looking at cards in your library", tidy("Looking at cards in You's library"))
         assertEquals("CPU attacks", tidy("Forge AI attacks"))
+        // A deck named like a card ("Bitter Triumph") never touches card names: seats reach Forge as You and CPU.
+        assertEquals("Bitter Triumph targets Goblin Guide", tidy("Bitter Triumph targets Goblin Guide"))
+        val input = obj(quickInput("Modern", obj("""{"name":"Bitter Triumph","cards":[{"name":"Bitter Triumph","qty":4}]}"""), obj("""{"name":"Karn · Map","cards":[]}"""))).getAsJsonObject("input")
+        assertEquals("You", input.getAsJsonObject("humanDeck").get("name").asString)
+        assertEquals("CPU", input.getAsJsonObject("opponentDeck").get("name").asString)
+        assertEquals("Bitter Triumph", input.getAsJsonObject("humanDeck").getAsJsonArray("cards")[0].asJsonObject.get("name").asString)
     }
 
     @Test fun authErrors() {

@@ -247,6 +247,7 @@ class MatchController(private val scope: CoroutineScope, private val input: Stri
         val p = st.prompt ?: return false
         return p.min == 0 && (p.method.contains("reveal", true) || p.message.startsWith("Looking at cards", true) || p.message.contains(" reveals", true))
     }
+    private fun known(st: MatchState, id: Int) = st.players.any { pl -> (pl.hand + pl.battlefield + pl.graveyard + pl.exile).any { it.id == id } } || st.stack.any { it.source?.id == id }
     private fun mine(st: MatchState, id: Int?) = id != null && st.me.let { (it.hand + it.battlefield + it.graveyard + it.exile).any { c -> c.id == id } }
 
     private fun scheduleAutoPass(st: MatchState) {
@@ -254,7 +255,8 @@ class MatchController(private val scope: CoroutineScope, private val input: Stri
         // The CPU showing you its cards (an opening-hand reveal, a tutor): shown as its own beat, then
         // acknowledged for you. Its choice stays its own; nothing about it waits on a button.
         val p = st.prompt
-        if (p != null && isReveal(st) && p.options.none { mine(st, it.cardId) } && !p.message.contains("in your", true)) {
+        if (p != null && isReveal(st) && p.options.none { mine(st, it.cardId) } && p.options.all { o -> o.cardId == null || known(st, o.cardId) } && !p.message.contains("in your", true)) {
+            Log.i(TAG, "reveal acknowledged for you: ${p.method} \"${p.message.take(160)}\" options=${p.options.map { it.label }}")
             autoJob = scope.launch(Dispatchers.Main) {
                 val first = p.options.firstOrNull()
                 _beat.value = Beat(Beat.Kind.ACTION, "CPU reveals", first?.cardId, first?.label, p.options.drop(1).joinToString(", ") { it.label }.ifBlank { null }, durationMs = ACTION_MS)

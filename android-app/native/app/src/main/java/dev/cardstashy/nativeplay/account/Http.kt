@@ -15,7 +15,7 @@ object Http {
         val c = URL(url).openConnection() as HttpURLConnection
         c.requestMethod = method; c.connectTimeout = timeoutMs; c.readTimeout = timeoutMs
         c.setRequestProperty("Accept", "application/json"); c.setRequestProperty("Accept-Encoding", "gzip")
-        c.setRequestProperty("User-Agent", "CardStashyNative/0.3 (+https://cardstashy.com)")
+        c.setRequestProperty("User-Agent", dev.cardstashy.nativeplay.art.CardArt.UA)
         headers.forEach { (k, v) -> c.setRequestProperty(k, v) }
         try {
             if (body != null) { c.doOutput = true; c.setRequestProperty("Content-Type", "application/json"); c.outputStream.use { it.write(body.toByteArray()) } }

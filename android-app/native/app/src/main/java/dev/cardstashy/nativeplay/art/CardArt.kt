@@ -35,7 +35,7 @@ object CardArt {
     /** Table size: every card face decodes once at this size and is reused everywhere. */
     val FACE = Size(488, 680)
     val CROP = Size(626, 457)
-    const val UA = "CardStashyNative/0.2 (+https://cardstashy.com)"
+    const val UA = "CardStashyNative/1.0 (+https://cardstashy.com)"
 
     lateinit var loader: ImageLoader; private set
 
