@@ -211,11 +211,19 @@ export function playWeek(day) {
   return `${d.getUTCFullYear()}-W${String(week).padStart(2, '0')}`;
 }
 const hash = s => { let h = 2166136261; for (const ch of String(s)) { h ^= ch.charCodeAt(0); h = Math.imul(h, 16777619); } return h >>> 0; };
-export function dailyQuests(day, user = '') {
+// counters: a swapped quest (the day's one free reroll, d:<day>:reroll_easy or _hard) is replaced by
+// another from the same pool, never the one it replaced.
+export function dailyQuests(day, user = '', counters = {}) {
   const h = hash(day + ':' + user), old = day < QUEST_POOL_FROM;
   const easy = old ? DAILY_EASY.slice(0, FIRST_POOL.easy) : DAILY_EASY, hard = old ? DAILY_HARD.slice(0, FIRST_POOL.hard) : DAILY_HARD;
-  return [{...easy[h % easy.length], level: 'easy'}, {...hard[(h >>> 8) % hard.length], level: 'hard'}, {...FIRST_MATCH, level: 'first'}];
+  const pick = (pool, i, level) => { const swap = Number(counters?.[`d:${day}:reroll_${level}`]) > 0 && pool.length > 1;
+    const at = swap ? (i + 1 + (h >>> 16) % (pool.length - 1)) % pool.length : i;
+    return {...pool[at], level, ...(swap ? {swapped: true} : {})}; };
+  return [pick(easy, h % easy.length, 'easy'), pick(hard, (h >>> 8) % hard.length, 'hard'), {...FIRST_MATCH, level: 'first'}];
 }
+// One free quest swap a day (play-progression.md: "Quest reroll: free, once a day"), for an easy or
+// hard daily that isn't done yet.
+export const rerollUsed = (counters = {}, day) => ['easy', 'hard'].some(l => Number(counters[`d:${day}:reroll_${l}`]) > 0);
 // Three weeklies, picked from the pool by the week and the player (the first week keeps the first three).
 export function weeklyQuests(week, user = '') {
   if (week < WEEKLY_POOL_FROM) return WEEKLY.slice(0, FIRST_POOL.weekly);
@@ -227,9 +235,10 @@ export function weeklyQuests(week, user = '') {
 export function questRows({counters = {}, claimed = [], day, user = ''} = {}) {
   const got = new Set(claimed), week = playWeek(day);
   const row = (q, scope, ref) => { const have = Number(counters[`${scope}:${q.key}`]) || 0; return {...q, have: Math.min(have, q.need), done: have >= q.need, claimed: got.has(ref), ref}; };
-  const daily = dailyQuests(day, user).map(q => row(q, 'd:' + day, `daily:${day}:${q.id}`));
+  const used = rerollUsed(counters, day);
+  const daily = dailyQuests(day, user, counters).map(q => { const r = row(q, 'd:' + day, `daily:${day}:${q.id}`); return {...r, canSwap: !used && q.level !== 'first' && !r.done && !r.claimed}; });
   const weekly = weeklyQuests(week, user).map(q => row(q, 'w:' + week, `weekly:${week}:${q.id}`));
-  return {day, week, daily, weekly, weeklyAll: {done: weekly.every(q => q.done), claimed: got.has(`weekly:${week}:all`), ref: `weekly:${week}:all`}};
+  return {day, week, daily, weekly, rerollUsed: used, weeklyAll: {done: weekly.every(q => q.done), claimed: got.has(`weekly:${week}:all`), ref: `weekly:${week}:all`}};
 }
 export function questReward(q, config = {}) {
   const d = config?.daily || {}, w = config?.weekly || {};

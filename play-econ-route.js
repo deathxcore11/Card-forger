@@ -10,7 +10,7 @@ import {starterGrant, sealTrackBonus, packContentsRow, cardDelta, RARITY_SEAL, F
 import {PRACTICE_STARTER_ROWS} from './play-starter-deck.js';
 import {weeklySecretLair, secretLairPrice, secretLairLabel, secretLairRef, secretLairCardDelta, secretLairStyle, pickSecretLairStyle} from './play-secret-lair.js';
 import {STORY_DEEDS, STORY_ACT_DEEDS, storyDeedsEarned} from './story-deeds.js';
-import {ACHIEVEMENTS, achievementRows, achievementReward, achievementRef, questRows, questReward, loginStamp, rewardDelta, matchCounters, playDay, playWeek, achievementsPayload} from './play-achievements.js';
+import {rerollUsed, ACHIEVEMENTS, achievementRows, achievementReward, achievementRef, questRows, questReward, loginStamp, rewardDelta, matchCounters, playDay, playWeek, achievementsPayload} from './play-achievements.js';
 
 const json = (body, status = 200) => new Response(JSON.stringify(body), {status, headers: {'Content-Type': 'application/json', 'Cache-Control': 'no-store'}});
 const fail = (error, status = 400) => json({error}, status);
@@ -316,6 +316,19 @@ export async function progressRoute(request, env, {verifyBearer, fetcher = fetch
       const tier = body.kind === 'ach' ? achievementRows({counters: c, state: s, claimed}).find(r => r.id === body.id)?.steps[Number(body.step)]?.tier : '';
       const style = tier === 'gold' || tier === 'mythic' ? await grantStyle('slstyle:' + ref) : null;
       return json({ref, delta, ...(style ? {style} : {}), state: await state(), claimed: [...claimed, ref]});
+    }
+    if (path === 'reroll') {
+      // The day's one free quest swap: an easy or hard daily that isn't done is replaced by another.
+      const level = body.level === 'hard' ? 'hard' : body.level === 'easy' ? 'easy' : '';
+      if (!level) return fail('bad_reroll');
+      const day = playDay(body.tz), [c, claimed] = await Promise.all([counters.read(), counters.claims()]);
+      if (!c || !claimed) return fail('not_ready', 503);
+      if (rerollUsed(c, day)) return fail('rerolled', 409);
+      const row = questRows({counters: c, claimed, day}).daily.find(q => q.level === level);
+      if (!row?.canSwap) return fail('quest_done', 409);
+      const out = await counters.bump('reroll:' + day, 'reroll', {[`d:${day}:reroll_${level}`]: 1});
+      if (!out || out.duplicate) return fail('rerolled', 409);
+      return json({counters: out.counters});
     }
     if (path === 'secretlair') {
       // This week's Secret Lair bundle: coins for real Secret Lair printings, each card into the Trunk with
