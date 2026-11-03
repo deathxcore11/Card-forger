@@ -228,12 +228,16 @@ private fun Stacks(entries: List<Entry>, inner: Dp, wide: Boolean, onCard: (Stri
     }
 }
 
+/** Arena-style: a card you don't own shows in black and white (the set view does the same). */
+private val missingGray = androidx.compose.ui.graphics.ColorFilter.colorMatrix(androidx.compose.ui.graphics.ColorMatrix().apply { setToSaturation(0f) })
+
 /** A full card: the printing's image, qty badge top right; a missing card greyed with the seal that crafts it. */
 @Composable
 private fun CardTile(e: Entry, modifier: Modifier, showRoles: Boolean = false, onClick: () -> Unit) {
     val p = heroPainter(e.image.let(homeArt))
     Box(modifier.aspectRatio(63f / 88f).clip(RoundedCornerShape(11.dp)).background(Color(0xFF111318)).clickable(onClick = onClick)) {
-        if (p != null) Image(p, e.name, Modifier.fillMaxSize().alpha(if (e.missing) .45f else 1f), contentScale = ContentScale.Crop)
+        if (p != null) Image(p, e.name, Modifier.fillMaxSize().alpha(if (e.missing) .72f else 1f), contentScale = ContentScale.Crop,
+            colorFilter = if (e.missing) missingGray else null)
         else Text(e.name, style = t(13f, FontWeight.Bold), modifier = Modifier.padding(10.dp))
         Text("${e.qty}×", style = t(13f, FontWeight.ExtraBold), modifier = Modifier.align(Alignment.TopEnd).padding(6.dp)
             .clip(RoundedCornerShape(10.dp)).background(Color(0xD90B0D11)).border(1.dp, Color(0x40FFFFFF), RoundedCornerShape(10.dp)).padding(horizontal = 8.dp, vertical = 2.dp))

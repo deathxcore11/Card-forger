@@ -783,7 +783,7 @@ private val SEAL_NAME = mapOf("c" to "Common", "u" to "Uncommon", "r" to "Rare",
 private val FORGE_FROM = mapOf("u" to "c", "r" to "u", "m" to "r")
 
 @Composable
-private fun Forge(s: JsonObject, act: PlayHomeActions) {
+internal fun Forge(s: JsonObject, act: PlayHomeActions) {
     val w = s.getAsJsonObject("wallet") ?: JsonObject()
     fun have(k: String) = w.get("seal_$k").int() ?: 0
     fun ratio(to: String) = s.getAsJsonObject("config")?.getAsJsonObject("forge")?.get(to)?.takeIf { it.isJsonPrimitive }?.asInt ?: 3

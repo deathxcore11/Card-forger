@@ -101,7 +101,7 @@ fun TrunkScreen(state: JsonObject, onBack: () -> Unit, onCard: (CardPick) -> Uni
                 item(span = { GridItemSpan(maxLineSpan) }) {
                     Column(Modifier.windowInsetsPadding(WindowInsets.statusBars).padding(top = 12.dp), verticalArrangement = Arrangement.spacedBy(12.dp)) {
                         PageHeader("Collection", "Play", onBack = onBack)
-                        Segmented(listOf("cards" to "Cards", "sets" to "Sets"), tab) { tab = it }
+                        // Sets moved to the Shop (Randall 3 Nov 20:00Z): the Trunk is your cards only.
                     }
                 }
                 if (tab == "cards") {
@@ -149,7 +149,7 @@ private fun Empty(title: String, text: String) = Column(Modifier.fillMaxWidth().
 }
 
 @Composable
-private fun SearchField(value: String, hint: String, onChange: (String) -> Unit) {
+internal fun SearchField(value: String, hint: String, onChange: (String) -> Unit) {
     Box(Modifier.fillMaxWidth().height(44.dp).clip(RoundedCornerShape(12.dp)).background(Site.Surface).border(1.dp, Site.Line, RoundedCornerShape(12.dp)).padding(horizontal = 14.dp),
         contentAlignment = Alignment.CenterStart) {
         if (value.isEmpty()) Text(hint, style = small.copy(fontSize = 15.sp))
@@ -295,7 +295,7 @@ fun ProgressBar(frac: Float, modifier: Modifier = Modifier) = Box(modifier.fillM
  * card sheet over the grid, and the Back order of the site (sheet first, then the screen).
  */
 @Composable
-fun TrunkRoute(onBack: () -> Unit, onWeb: (String) -> Unit, onNav: (PlayTab) -> Unit, startSet: String? = null) {
+fun TrunkRoute(onBack: () -> Unit, onWeb: (String) -> Unit, onNav: (PlayTab) -> Unit, startSet: String? = null, onSet: (String) -> Unit = {}, onShop: () -> Unit = {}) {
     val state by dev.cardstashy.nativeplay.play.Progress.state.collectAsState()
     val context = LocalContext.current
     var open by remember { mutableStateOf<CardPick?>(null) }
@@ -307,14 +307,14 @@ fun TrunkRoute(onBack: () -> Unit, onWeb: (String) -> Unit, onNav: (PlayTab) -> 
     LaunchedEffect(s) { dev.cardstashy.nativeplay.play.SetFacts.ensure(Trunk.allSets(s).map { it.code }) }
     val toast = { m: String -> android.widget.Toast.makeText(context, m, android.widget.Toast.LENGTH_SHORT).show() }
     Box(Modifier.fillMaxSize()) {
-        TrunkScreen(s, onBack, { openTab = "overview"; open = it }, { onWeb("https://cardstashy.com/#set/$it/play") }, startSet, onHold = { hold = it }) { PlayNav(PlayTab.TRUNK, onNav) }
-        hold?.let { h -> PlayCardHold(h, onOpen = { tab -> hold = null; openTab = tab; open = h.pick }, onSet = { hold = null; onWeb("https://cardstashy.com/#set/${h.set}/play") },
-            onMerchant = { hold = null; onWeb("https://cardstashy.com/#play") }, onArt = { hold = null; artFor = it }, onClose = { hold = null }) }
+        TrunkScreen(s, onBack, { openTab = "overview"; open = it }, onSet, null, onHold = { hold = it }) { PlayNav(PlayTab.TRUNK, onNav) }
+        hold?.let { h -> PlayCardHold(h, onOpen = { tab -> hold = null; openTab = tab; open = h.pick }, onSet = { hold = null; onSet(h.set) },
+            onMerchant = { hold = null; onSet(h.set) }, onArt = { hold = null; artFor = it }, onClose = { hold = null }) }
         artFor?.let { c -> UseArtworkAs(c) { artFor = null } }
         open?.let { pick ->
             CardSheet(pick, s, startTab = openTab, act = CardSheetActions(
-                merchant = { _, _ -> open = null; onWeb("https://cardstashy.com/#play") },
-                set = { code -> open = null; onWeb("https://cardstashy.com/#set/$code/play") },
+                merchant = { code, _ -> open = null; onSet(code) },
+                set = { code -> open = null; onSet(code) },
                 precon = { _, _ -> open = null; onWeb("https://cardstashy.com/#play") },
                 newDeck = { open = null; onWeb("https://cardstashy.com/#play") },
                 toast = toast), onClose = { open = null })

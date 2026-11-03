@@ -82,7 +82,7 @@ object Progress {
     /** Server answers carry the wallet; the shop, reward set, counters and claims ride along (keep()). */
     private fun keep(next: JsonObject, extra: JsonObject? = null): JsonObject = next.deepCopy().apply {
         val s = _state.value
-        for (k in listOf("rewardSet", "shop")) s?.get(k)?.let { add(k, it) }
+        for (k in listOf("rewardSet", "shop", "styles", "secretLair")) if (!has(k)) s?.get(k)?.let { add(k, it) }
         add("counters", s?.get("counters") ?: JsonObject()); add("claimed", s?.get("claimed") ?: JsonArray())
         add("login", s?.get("login") ?: com.google.gson.JsonNull.INSTANCE)
         extra?.entrySet()?.forEach { (k, v) -> add(k, v) }
@@ -136,6 +136,9 @@ object Progress {
     suspend fun open(id: String) = run("open:$id", "open", JsonObject().apply { addProperty("id", id); addProperty("tz", tz) })
     suspend fun buy(set: String) = run("buy", "buy", JsonObject().apply { addProperty("set", set); addProperty("tz", tz) })
     suspend fun forge(to: String, times: Int = 1) = run("forge", "forge", JsonObject().apply { addProperty("to", to); addProperty("times", times); addProperty("tz", tz) })
+    /** This week's Secret Lair bundle for coins (play-econ-client secretLair): the cards land in the Trunk in their Secret Lair art. */
+    suspend fun secretLair(week: String) = run("secretlair", "secretlair", JsonObject().apply { addProperty("week", week); addProperty("tz", tz) }) { out ->
+        JsonObject().apply { out.get("styles")?.let { add("styles", it) }; out.get("secretLair")?.let { add("secretLair", it) } } }
     suspend fun precon(file: String, format: String) = run("precon", "precon", JsonObject().apply { addProperty("file", file); addProperty("format", format) })
     suspend fun holo(oracle: String) = run("holo", "holo", JsonObject().apply { addProperty("oracle", oracle) })
     suspend fun craft(id: String, holo: Boolean = false) = run("craft", "craft", JsonObject().apply { addProperty("id", id); addProperty("holo", holo) })
