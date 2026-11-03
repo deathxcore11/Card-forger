@@ -897,7 +897,7 @@ const name=String(card.name);if(Math.max(...name.split(/\s+/).map(word=>word.len
   // (the full name stays in its title, label and peek), so a cut-off name never pokes out over the pile.
   for(const n of root.querySelectorAll('.play-match-battlefields .play-match-card-wrap[data-pile-top=true] .play-match-card-name')){const cut=n.scrollWidth>n.clientWidth+1;if(n.hasAttribute('data-cut')!==cut)n.toggleAttribute('data-cut',cut);}
   // Target rings and aim lines follow the cards to wherever this fit (or a later resize refit) put them.
-  queueArrows();
+  queueArrows();placeCombatLine();
  }
  const queueBoard=()=>{if(!boardFrame)boardFrame=win.requestAnimationFrame(fitBoard);};
  win.addEventListener('resize',queueBoard);
@@ -959,7 +959,12 @@ const name=String(card.name);if(Math.max(...name.split(/\s+/).map(word=>word.len
   const mine=surface.cards.filter(c=>c.zone==='Battlefield'&&c.controller===surface.seat),k=mode==='attack'?mine.filter(c=>c.attacking).length:mine.filter(c=>c.blockingIds?.length||c.blocking).length;
   const key=`${mode}|${k}`;if(!line){line=combatLine=doc.createElement('div');line.className='forge-combat-line';line.setAttribute('aria-hidden','true');}const mat=root.querySelector('.play-match-mat');if(mat&&line.parentElement!==mat){if(line.parentElement||line.dataset.key)line.dataset.settled='';mat.append(line);}
   if(line.dataset.key!==key){line.dataset.key=key;line.dataset.mode=mode;line.innerHTML=k?`<i></i><span><b>${k}</b><small>${mode==='attack'?'attacking':'blocking'}</small></span>`:'<i></i><i></i>';}
-  // Measured on your side's box, not the zone: the zone is laid out wider and scaled down, so its box changes mid-fit.
+  placeCombatLine();
+ }
+ // Measured on your side's box, not the zone: the zone is laid out wider and scaled down, so its box changes mid-fit.
+ // Every board fit measures it again, so fonts, art or a resize landing after the first draw never leave it behind.
+ function placeCombatLine(){
+  const line=combatLine,zone=line&&root.querySelector('.play-match-battlefields .play-match-zone[data-owner=you]');if(!zone)return;
   const r=(zone.closest('.play-match-seat-area')||zone).getBoundingClientRect(),v=`${Math.round(r.left)}|${Math.round(r.top)}|${Math.round(r.width)}`;if(line.dataset.at!==v){line.dataset.at=v;line.style.left=Math.round(r.left)+'px';line.style.top=Math.round(r.top)+'px';line.style.width=Math.round(r.width)+'px';}
  }
  let manaOpen=false;
