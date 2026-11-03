@@ -1,5 +1,16 @@
 package dev.cardstashy.nativeplay.ui
 
+import dev.cardstashy.nativeplay.engine.StackItem
+import kotlin.math.sign
+import kotlinx.coroutines.launch
+import androidx.compose.ui.layout.boundsInRoot
+import androidx.compose.ui.layout.onGloballyPositioned
+import androidx.compose.animation.core.FastOutSlowInEasing
+import androidx.compose.animation.core.animateFloatAsState
+import androidx.compose.ui.graphics.StrokeCap
+import androidx.compose.foundation.Canvas
+import androidx.compose.runtime.CompositionLocalProvider
+import androidx.compose.runtime.mutableStateMapOf
 import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.animation.core.Animatable
 import androidx.compose.animation.core.LinearEasing
@@ -41,6 +52,8 @@ import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.key
+import androidx.compose.runtime.SideEffect
+import kotlinx.coroutines.delay
 import androidx.compose.animation.core.animateFloat
 import androidx.compose.runtime.mutableStateListOf
 import androidx.compose.runtime.mutableStateOf
@@ -86,7 +99,11 @@ fun TableScreen(controller: MatchController, onHome: () -> Unit, onRematch: () -
     val decks = DemoDecks.load(context)
     val shown by controller.shown.collectAsState()
     val beat by controller.beat.collectAsState()
+    // The CPU's last action stays in the feed, quieter, until the next turn's banner.
+    var lastBeat by remember { mutableStateOf<Beat?>(null) }
+    LaunchedEffect(beat) { beat?.let { lastBeat = it } }
     val banner by controller.banner.collectAsState()
+    LaunchedEffect(banner) { if (banner != null) lastBeat = null }
     val stage by controller.stage.collectAsState()
     val live by controller.live.collectAsState()
     val failure by controller.failure.collectAsState()
@@ -101,7 +118,9 @@ fun TableScreen(controller: MatchController, onHome: () -> Unit, onRematch: () -
     var menu by remember { mutableStateOf(false) }
     LaunchedEffect(shown?.revision) { if (shown?.selection?.actionable?.contains(selectedHand) != true) selectedHand = null }
 
+    val anchors = remember { mutableStateMapOf<String, Offset>() }
     Box(Modifier.fillMaxSize().background(Palette.Night)) {
+      CompositionLocalProvider(LocalAnchors provides anchors) {
         AssetImage("play/playmat-charcoal-table.webp", Modifier.fillMaxSize(), maxWidth = 1600)
         Box(Modifier.fillMaxSize().background(Color(0x55000000)))
         BoxWithConstraints(Modifier.fillMaxSize().windowInsetsPadding(WindowInsets.safeDrawing)) {
@@ -114,14 +133,16 @@ fun TableScreen(controller: MatchController, onHome: () -> Unit, onRematch: () -
                 else -> Row(Modifier.fillMaxSize()) {
                     Board(st, controller, live, sizes, selectedHand, Modifier.weight(1f).fillMaxHeight(),
                         onSelectHand = { selectedHand = it }, onInspect = { inspect = it }, onMenu = { menu = true })
-                    Sidebar(st, controller, beat, live, sizes, selectedHand, Modifier.width(sizes.sidebar).fillMaxHeight(), onInspect = { inspect = it })
+                    Sidebar(st, controller, beat, live, sizes, selectedHand, Modifier.width(sizes.sidebar).fillMaxHeight(), onInspect = { inspect = it }, lastBeat = lastBeat)
                 }
             }
             banner?.let { b -> BannerView(b.text, b.yours, Modifier.align(Alignment.Center)) }
         }
+        if (stage == Stage.PLAYING || stage == Stage.INTRO) shown?.let { CombatLines(it, anchors) }
+      }
         inspect?.let { c -> Inspect(c) { inspect = null } }
         if (menu) Menu(onConcede = { menu = false; controller.concede() }, onLeave = { menu = false; onHome() }, onClose = { menu = false })
-        if (stage == Stage.FINISHED) shown?.let { Result(it, onHome, onRematch) }
+        if (stage == Stage.FINISHED) shown?.let { Result(it, audio, onHome, onRematch) }
         if (stage == Stage.FAILED) Failed(failure ?: "The match stopped.", onHome)
     }
 }
@@ -168,7 +189,12 @@ private fun Board(st: MatchState, c: MatchController, live: Boolean, sizes: Size
     fun tapOf(card: Card): (() -> Unit)? = if (live && (card.id in st.selection.cards || card.id in st.selection.actionable || card.id in st.selection.chosenCards ||
         ((st.inputType == "InputAttack" || st.inputType == "InputBlock") && card.controller == st.viewer && (card.attacking || card.blocking)))) ({ c.card(card.id) }) else null
 
-    Column(modifier.padding(start = 6.dp, end = 6.dp, top = 4.dp)) {
+    val yours = st.activePlayer == st.viewer
+    BoxWithConstraints(modifier) {
+    val edgeY by androidx.compose.animation.core.animateDpAsState(if (yours) maxHeight - sizes.h(sizes.hand) - 12.dp else sizes.h(sizes.back) + 8.dp, tween(300, easing = FastOutSlowInEasing), label = "edge")
+    Box(Modifier.fillMaxWidth().height(2.dp).graphicsLayer { translationY = edgeY.toPx() }
+        .background(Brush.horizontalGradient(listOf(Color.Transparent, Palette.Gold.copy(alpha = .75f), Color.Transparent))))
+    Column(Modifier.fillMaxSize().padding(start = 6.dp, end = 6.dp, top = 4.dp)) {
         // CPU strip: menu, CPU hand backs, library and graveyard.
         Row(Modifier.fillMaxWidth().height(sizes.h(sizes.back) + 6.dp), verticalAlignment = Alignment.CenterVertically) {
             Box(Modifier.size(44.dp).clip(CircleShape).clickable(onClick = onMenu), contentAlignment = Alignment.Center) {
@@ -190,68 +216,135 @@ private fun Board(st: MatchState, c: MatchController, live: Boolean, sizes: Size
         }
         // Your seat and hand.
         Row(Modifier.fillMaxWidth().height(sizes.h(sizes.hand) + 8.dp), verticalAlignment = Alignment.Bottom) {
-            Seat(me.life, me.libraryCount, me.graveyard.lastOrNull(), me.graveyard.size, onInspect, pickable = live && st.viewer in st.selection.players, picked = st.viewer in st.selection.chosenPlayers) { c.player(st.viewer) }
+            Seat(me.life, "orb${me.id}", me.libraryCount, me.graveyard.lastOrNull(), me.graveyard.size, onInspect, pickable = live && st.viewer in st.selection.players, picked = st.viewer in st.selection.chosenPlayers) { c.player(st.viewer) }
             Hand(st, c, live, sizes, selectedHand, Modifier.weight(1f), onSelectHand, onInspect, onDeal = {})
         }
+    }
     }
 }
 
 private fun lands(cards: List<Card>) = cards.filter { it.isLand && !it.isCreature && it.attachedTo == null }
 private fun others(cards: List<Card>) = cards.filter { !(it.isLand && !it.isCreature) && it.attachedTo == null }
 
-/** Lands and identical untouched permanents pile as ×N; everything else stands alone. */
+/** Lands and identical untouched permanents pile as ×N; everything else stands alone. Arrivals fade and rise in 180 ms; leaves fade out in 160 ms. */
 @Composable
 private fun Permanents(cards: List<Card>, w: Dp, markOf: (Card) -> Mark, tapOf: (Card) -> (() -> Unit)?, onInspect: (Card) -> Unit, nudge: Dp = 0.dp) {
     val piles = cards.groupBy { if (it.isLand && markOf(it) == Mark.NONE && tapOf(it) == null) "${it.name}|${it.tapped}" else "id${it.id}" }.values.toList()
+    // Piles that just left stay in their old place for one short fade.
+    val ghosts = remember { mutableStateListOf<Pair<Int, List<Card>>>() }
+    var before by remember { mutableStateOf(piles) }
+    val ids = piles.map { it.first().id }
+    val present = cards.map { it.id }.toSet()
+    // Only cards that were already here skip the arrival; a pile regrouping (a land tapping) never fades.
+    val known = remember { HashSet<Int>() }
+    val firstFrame = remember { mutableStateOf(true) }
+    LaunchedEffect(Unit) { firstFrame.value = false }
+    LaunchedEffect(ids) {
+        val gone = before.withIndex().filter { (_, p) -> p.none { it.id in present } && ghosts.none { it.second.first().id == p.first().id } }
+        before = piles
+        if (gone.isEmpty()) return@LaunchedEffect
+        gone.forEach { (i, p) -> ghosts.add(i to p) }
+        delay(160)
+        ghosts.removeAll { g -> gone.any { it.value.first().id == g.second.first().id } }
+    }
+    val shown = piles.map { it to false }.toMutableList()
+    ghosts.sortedBy { it.first }.forEach { (i, p) -> if (p.none { it.id in present }) shown.add(i.coerceAtMost(shown.size), p to true) }
     CardRow(w, 6.dp, Modifier.fillMaxWidth().height(w * 1.4f + 8.dp)) {
-        piles.forEach { pile ->
+        shown.forEach { (pile, leaving) ->
             val card = pile.first()
-            key(card.id) {
-                // Arrivals: 180 ms fade and rise.
-                val arrive = remember { Animatable(0f) }
-                LaunchedEffect(Unit) { arrive.animateTo(1f, tween(180, easing = androidx.compose.animation.core.FastOutSlowInEasing)) }
-                CardFace(card, w, w * 1.4f, mark = markOf(card), count = pile.size, onTap = tapOf(card), onHold = { onInspect(card) },
+            key(card.id, leaving) {
+                val fresh = !leaving && pile.none { it.id in known }
+                SideEffect { pile.forEach { known.add(it.id) } }
+                val arrive = remember { Animatable(if (leaving || !fresh) 1f else 0f) }
+                LaunchedEffect(Unit) {
+                    // A dying creature holds for a 60 ms hit-stop before it fades.
+                    if (leaving) { if (card.isCreature) delay(60); arrive.animateTo(0f, tween(160)) } else arrive.animateTo(1f, tween(180, easing = androidx.compose.animation.core.FastOutSlowInEasing))
+                }
+                // A blocker leans 8 degrees toward its attacker over 120 ms.
+                val anchors = LocalAnchors.current
+                val leanTarget = if (!leaving && card.blocking && anchors != null) card.blockingIds.firstOrNull()?.let { at ->
+                    val me = anchors["c${card.id}"]; val them = anchors["c$at"]
+                    if (me != null && them != null) 8f * sign(them.x - me.x) * (if (them.y < me.y) 1f else -1f) else null } ?: 0f else 0f
+                val lean = animateFloatAsState(leanTarget, tween(120), label = "lean")
+                CardFace(card, w, w * 1.4f, mark = if (leaving) Mark.NONE else markOf(card), count = pile.size,
+                    onTap = if (leaving) null else tapOf(card), onHold = if (leaving) null else ({ onInspect(card) }),
                     nudge = if (card.attacking) nudge else 0.dp,
-                    modifier = Modifier.graphicsLayer { alpha = arrive.value; translationY = (1f - arrive.value) * 10.dp.toPx() })
+                    modifier = Modifier.graphicsLayer {
+                        alpha = arrive.value
+                        translationY = (1f - arrive.value) * (if (leaving) 6.dp.toPx() else 10.dp.toPx())
+                        rotationZ = lean.value
+                    })
             }
         }
     }
 }
 
 @Composable
-private fun Seat(life: Int, library: Int, top: Card?, grave: Int, onInspect: (Card) -> Unit, pickable: Boolean, picked: Boolean, onPick: () -> Unit) {
+private fun Seat(life: Int, anchor: String, library: Int, top: Card?, grave: Int, onInspect: (Card) -> Unit, pickable: Boolean, picked: Boolean, onPick: () -> Unit) {
     Column(Modifier.padding(end = 6.dp, bottom = 4.dp).width(64.dp), horizontalAlignment = Alignment.CenterHorizontally, verticalArrangement = Arrangement.spacedBy(4.dp)) {
-        LifeOrb(life, pickable, picked, onPick)
+        LifeOrb(life, pickable, picked, anchor, onPick)
         Piles(library, top, grave, Modifier, onInspect)
     }
 }
 
 /** Library and graveyard as small piles (a back with its count; the top card of the graveyard), not words. */
 @Composable
-private fun Piles(library: Int, top: Card?, grave: Int, modifier: Modifier, onInspect: (Card) -> Unit) {
+private fun Piles(library: Int, topNow: Card?, graveNow: Int, modifier: Modifier, onInspect: (Card) -> Unit) {
+    // The graveyard takes its new card on the last frame of the leave fade; each count ticks.
+    var top by remember { mutableStateOf(topNow) }; var grave by remember { mutableStateOf(graveNow) }
+    val graveTick = remember { Animatable(1f) }; val libTick = remember { Animatable(1f) }
+    LaunchedEffect(graveNow, topNow?.id) { if (graveNow > grave) delay(220); val up = graveNow != grave; top = topNow; grave = graveNow; if (up) { graveTick.snapTo(1.3f); graveTick.animateTo(1f, tween(220)) } }
+    var lastLib by remember { mutableStateOf(library) }
+    LaunchedEffect(library) { if (library != lastLib) { lastLib = library; libTick.snapTo(1.3f); libTick.animateTo(1f, tween(220)) } }
     Row(modifier, horizontalArrangement = Arrangement.spacedBy(4.dp), verticalAlignment = Alignment.CenterVertically) {
         Box(Modifier.size(18.dp, 25.dp), contentAlignment = Alignment.Center) {
             CardBack(Modifier.fillMaxSize().clip(RoundedCornerShape(3.dp)))
-            Text("$library", style = Type.Label.copy(fontSize = 10.sp, color = Color.White), modifier = Modifier.background(Color(0xAA000000), RoundedCornerShape(3.dp)).padding(horizontal = 2.dp))
+            Text("$library", style = Type.Label.copy(fontSize = 10.sp, color = Color.White), modifier = Modifier.graphicsLayer { scaleX = libTick.value; scaleY = libTick.value }.background(Color(0xAA000000), RoundedCornerShape(3.dp)).padding(horizontal = 2.dp))
         }
-        if (top != null) Box(Modifier.size(18.dp, 25.dp).alpha(.85f), contentAlignment = Alignment.Center) {
-            CardFace(top, 18.dp, 25.dp, onHold = { onInspect(top) }, onTap = { onInspect(top) })
+        top?.let { t -> Box(Modifier.size(18.dp, 25.dp).alpha(.85f).graphicsLayer { scaleX = graveTick.value; scaleY = graveTick.value }, contentAlignment = Alignment.Center) {
+            CardFace(t, 18.dp, 25.dp, onHold = { onInspect(t) }, onTap = { onInspect(t) })
             if (grave > 1) Text("$grave", style = Type.Label.copy(fontSize = 10.sp, color = Color.White), modifier = Modifier.background(Color(0xAA000000), RoundedCornerShape(3.dp)).padding(horizontal = 2.dp))
-        }
+        } }
     }
 }
 
 @Composable
-private fun LifeOrb(life: Int, pickable: Boolean, picked: Boolean, onPick: () -> Unit) {
+private fun LifeOrb(life: Int, pickable: Boolean, picked: Boolean, anchor: String? = null, onPick: () -> Unit) {
     val flash = remember { Animatable(0f) }
+    val drop = remember { Animatable(1f) } // the new number drops in from above, 240 ms
     var last by remember { mutableStateOf(life) }
-    LaunchedEffect(life) { if (life < last) { flash.snapTo(1f); flash.animateTo(0f, tween(900)) }; last = life }
-    Box(Modifier.size(52.dp).clip(CircleShape)
+    LaunchedEffect(life) {
+        if (life != last) { if (life < last) launch { flash.snapTo(1f); flash.animateTo(0f, tween(900)) }; drop.snapTo(0f); last = life; drop.animateTo(1f, tween(240, easing = FastOutSlowInEasing)) }
+    }
+    val anchors = LocalAnchors.current
+    Box(Modifier.size(52.dp).then(if (anchor != null && anchors != null) Modifier.onGloballyPositioned { anchors[anchor] = it.boundsInRoot().center } else Modifier).clip(CircleShape)
         .background(Brush.radialGradient(listOf(Color(0xFF2A2A31).copy(alpha = 1f), Color(0xFF111114))))
         .background(Palette.Red.copy(alpha = .55f * flash.value))
         .border(if (pickable || picked) 2.5.dp else 1.5.dp, if (pickable || picked) Palette.GoldBright else Palette.Gold, CircleShape)
         .clickable(enabled = pickable, onClick = onPick), contentAlignment = Alignment.Center) {
-        Text("$life", style = Type.Title.copy(fontSize = 22.sp))
+        Text("$life", style = Type.Title.copy(fontSize = 22.sp), modifier = Modifier.graphicsLayer { translationY = (drop.value - 1f) * 14.dp.toPx(); alpha = .3f + .7f * drop.value })
+    }
+}
+
+/** Attack lines (attacker to the player it attacks) and block lines (blocker to its attacker): 1.5 dp gold, drawn in after the nudge. */
+@Composable
+private fun CombatLines(st: MatchState, anchors: Map<String, Offset>) {
+    val field = st.players.flatMap { it.battlefield }
+    val pairs = buildList {
+        field.filter { it.attacking }.forEach { a -> val defender = st.players.firstOrNull { it.id != a.controller } ?: return@forEach; add("c${a.id}" to "orb${defender.id}") }
+        field.filter { it.blocking }.forEach { b -> b.blockingIds.forEach { add("c${b.id}" to "c$it") } }
+    }
+    val grow = remember { Animatable(0f) }
+    LaunchedEffect(pairs) { if (pairs.isEmpty()) grow.snapTo(0f) else { grow.snapTo(0f); delay(150); grow.animateTo(1f, tween(200, easing = FastOutSlowInEasing)) } }
+    if (pairs.isEmpty()) return
+    Canvas(Modifier.fillMaxSize()) {
+        for ((from, to) in pairs) {
+            val a = anchors[from] ?: continue; val b = anchors[to] ?: continue
+            val end = a + (b - a) * grow.value
+            drawLine(Color(0x55000000), a, end, strokeWidth = 4.dp.toPx(), cap = StrokeCap.Round)
+            drawLine(Palette.GoldBright, a, end, strokeWidth = 1.5.dp.toPx(), cap = StrokeCap.Round)
+            if (grow.value >= 1f) drawCircle(Palette.GoldBright, 3.dp.toPx(), b)
+        }
     }
 }
 
@@ -285,11 +378,21 @@ private fun manaValue(cost: String): Int = Regex("\\{([^}]+)\\}").findAll(cost).
 // ---- Sidebar: CPU seat, the feed, phase dots, the gold action ----
 
 @Composable
-private fun Sidebar(st: MatchState, c: MatchController, beat: Beat?, live: Boolean, sizes: Sizes, selectedHand: Int?, modifier: Modifier, onInspect: (Card) -> Unit) {
+private fun Sidebar(st: MatchState, c: MatchController, beat: Beat?, live: Boolean, sizes: Sizes, selectedHand: Int?, modifier: Modifier, onInspect: (Card) -> Unit, lastBeat: Beat? = null) {
     Column(modifier.padding(6.dp).glass(14.dp).padding(8.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
         Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-            LifeOrb(st.cpu.life, pickable = live && st.cpu.id in st.selection.players, picked = st.cpu.id in st.selection.chosenPlayers) { c.player(st.cpu.id) }
+            LifeOrb(st.cpu.life, pickable = live && st.cpu.id in st.selection.players, picked = st.cpu.id in st.selection.chosenPlayers, anchor = "orb${st.cpu.id}") { c.player(st.cpu.id) }
             Text("CPU", style = Type.Title.copy(fontSize = 15.sp))
+        }
+        // Resolve: the item that just left the stack slides down and fades over 140 ms above whatever comes next.
+        val topNow = st.stack.firstOrNull()
+        var lastTop by remember { mutableStateOf<StackItem?>(null) }
+        var resolving by remember { mutableStateOf<StackItem?>(null) }
+        val out = remember { Animatable(0f) }
+        LaunchedEffect(topNow?.id) {
+            val gone = lastTop?.takeIf { g -> st.stack.none { it.id == g.id } }
+            lastTop = topNow
+            if (gone != null) { resolving = gone; out.snapTo(0f); out.animateTo(1f, tween(140)); resolving = null }
         }
         Box(Modifier.weight(1f).fillMaxWidth()) {
             when {
@@ -297,8 +400,10 @@ private fun Sidebar(st: MatchState, c: MatchController, beat: Beat?, live: Boole
                 live && st.prompt != null -> PromptPanel(st.prompt, st, c, live, Modifier.fillMaxSize())
                 selectedHand != null -> st.card(selectedHand)?.let { FeedCard(it, null, Modifier.fillMaxSize(), onInspect) }
                 st.stack.isNotEmpty() -> StackView(st, Modifier.fillMaxSize(), onInspect)
+                lastBeat != null && decisionText(st, live).let { it.isEmpty() || it == "CPU's turn" } -> BeatView(lastBeat, st, Modifier.fillMaxSize().alpha(.6f), settled = true) {}
                 else -> Text(decisionText(st, live), style = Type.Body.copy(color = Palette.Ink), modifier = Modifier.align(Alignment.Center), textAlign = TextAlign.Center)
             }
+            resolving?.source?.let { src -> FeedCard(src, null, Modifier.fillMaxSize().graphicsLayer { alpha = 1f - out.value; translationY = out.value * 24.dp.toPx() }, onInspect) }
         }
         PhaseDots(st)
         Actions(st, c, live && beat == null, selectedHand)
@@ -306,10 +411,10 @@ private fun Sidebar(st: MatchState, c: MatchController, beat: Beat?, live: Boole
 }
 
 @Composable
-private fun BeatView(b: Beat, st: MatchState, modifier: Modifier, onTap: () -> Unit) {
+private fun BeatView(b: Beat, st: MatchState, modifier: Modifier, settled: Boolean = false, onTap: () -> Unit) {
     val decks = DemoDecks.load(LocalContext.current)
     val timer = remember(b) { Animatable(1f) }
-    LaunchedEffect(b) { timer.animateTo(0f, tween(b.durationMs.toInt(), easing = LinearEasing)) }
+    LaunchedEffect(b) { if (!settled) timer.animateTo(0f, tween(b.durationMs.toInt(), easing = LinearEasing)) }
     val red = b.kind == Beat.Kind.AFFECTS_YOU
     Column(modifier.clip(RoundedCornerShape(10.dp)).border(if (red) 2.dp else 1.dp, if (red) Palette.Red else Palette.Hairline, RoundedCornerShape(10.dp))
         .background(if (red) Color(0x33E0533F) else Color(0x22000000)).clickable(onClick = onTap).padding(6.dp),
@@ -323,7 +428,7 @@ private fun BeatView(b: Beat, st: MatchState, modifier: Modifier, onTap: () -> U
         } else Spacer(Modifier.weight(1f))
         b.detail?.let { Text(it, style = Type.Body.copy(color = if (red) Color(0xFFFFB4A8) else Palette.InkSoft), textAlign = TextAlign.Center) }
         if (b.lifeFrom != null && b.lifeTo != null) Text("${b.lifeFrom} → ${b.lifeTo}", style = Type.Title.copy(fontSize = 18.sp, color = Color(0xFFFFB4A8)))
-        if (b.kind != Beat.Kind.LAND) Box(Modifier.fillMaxWidth().height(3.dp).clip(RoundedCornerShape(2.dp)).background(Color(0x22FFFFFF))) {
+        if (b.kind != Beat.Kind.LAND && !settled) Box(Modifier.fillMaxWidth().height(3.dp).clip(RoundedCornerShape(2.dp)).background(Color(0x22FFFFFF))) {
             Box(Modifier.fillMaxWidth(timer.value).height(3.dp).background(if (red) Palette.Red else Palette.Gold))
         }
     }
@@ -343,7 +448,9 @@ private fun FeedCard(card: Card, caption: String?, modifier: Modifier, onInspect
 @Composable
 private fun StackView(st: MatchState, modifier: Modifier, onInspect: (Card) -> Unit) {
     val top = st.stack.first()
-    Column(modifier, verticalArrangement = Arrangement.spacedBy(4.dp)) {
+    val rise = remember(top.id) { Animatable(0f) }
+    LaunchedEffect(top.id) { rise.animateTo(1f, tween(120, easing = FastOutSlowInEasing)) }
+    Column(modifier.graphicsLayer { alpha = rise.value; translationY = (1f - rise.value) * 12.dp.toPx() }, verticalArrangement = Arrangement.spacedBy(4.dp)) {
         val who = if (top.controller == st.viewer) "Your" else "CPU's"
         top.source?.let { FeedCard(it, "$who ${it.name}", Modifier.weight(1f).fillMaxWidth(), onInspect) }
             ?: Text(top.text, style = Type.Body.copy(color = Palette.Ink), modifier = Modifier.weight(1f))
@@ -375,7 +482,8 @@ private fun PhaseDots(st: MatchState) {
     Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceEvenly, verticalAlignment = Alignment.CenterVertically) {
         steps.forEach { (_, phases) ->
             val on = st.phase in phases
-            Box(Modifier.size(if (on) 10.dp else 7.dp).clip(CircleShape).background(if (on) (if (yours) Palette.GoldBright else Color(0xFF8FB3E8)) else Color(0x44FFFFFF)))
+            val d by androidx.compose.animation.core.animateDpAsState(if (on) 10.dp else 7.dp, tween(140), label = "dot")
+            Box(Modifier.size(d).clip(CircleShape).background(if (on) (if (yours) Palette.GoldBright else Color(0xFF8FB3E8)) else Color(0x44FFFFFF)))
         }
     }
 }
@@ -504,11 +612,13 @@ private fun Menu(onConcede: () -> Unit, onLeave: () -> Unit, onClose: () -> Unit
 }
 
 @Composable
-private fun Result(st: MatchState, onHome: () -> Unit, onRematch: () -> Unit) {
+private fun Result(st: MatchState, audio: TableAudio, onHome: () -> Unit, onRematch: () -> Unit) {
     val won = !st.draw && st.winnerPlayerId == st.viewer
     val draw = st.draw || st.winnerPlayerId == null
-    Box(Modifier.fillMaxSize().background(Color(0xAA000000)), contentAlignment = Alignment.Center) {
-        Column(Modifier.width(380.dp).glass(16.dp).padding(18.dp), horizontalAlignment = Alignment.CenterHorizontally, verticalArrangement = Arrangement.spacedBy(12.dp)) {
+    val rise = remember { Animatable(0f) }
+    LaunchedEffect(Unit) { delay(300); audio.play(if (draw) "QP-019" else if (won) "QP-017" else "QP-018"); rise.animateTo(1f, tween(400, easing = FastOutSlowInEasing)) }
+    Box(Modifier.fillMaxSize().background(Color(0xAA000000).copy(alpha = .67f * rise.value)), contentAlignment = Alignment.Center) {
+        Column(Modifier.graphicsLayer { alpha = rise.value; translationY = (1f - rise.value) * 40.dp.toPx() }.width(380.dp).glass(16.dp).padding(18.dp), horizontalAlignment = Alignment.CenterHorizontally, verticalArrangement = Arrangement.spacedBy(12.dp)) {
             Box(Modifier.fillMaxWidth().aspectRatio(5f), contentAlignment = Alignment.Center) {
                 AssetImage(if (draw) "play/result-draw.webp" else if (won) "play/result-win.webp" else "play/result-loss.webp", Modifier.fillMaxSize(), contentScale = ContentScale.Fit)
                 Text(if (draw) "Draw" else if (won) "Victory" else "Defeat", style = Type.Title.copy(fontSize = 26.sp))

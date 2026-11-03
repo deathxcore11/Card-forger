@@ -30,6 +30,5 @@ Next patch (architect review, 3 Nov):
 - The Assign button splits combat damage lethal-first automatically; let the player adjust the split by hand
   before confirming.
 
-## Stage 2 open items (0.1.2)
-- Board leaves: the 160 ms fade when a card leaves the battlefield is not in yet; removed cards still vanish at once.
+## Open items (0.1.3)
 - Frame time: the p99 < 8 ms check during a 7-card swipe needs a real phone (Randall's Fold); there is no emulator in the cloud.

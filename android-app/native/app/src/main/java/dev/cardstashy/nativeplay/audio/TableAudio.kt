@@ -31,7 +31,7 @@ class TableAudio(context: Context) {
     /** The same triggers as play-table-audio.js update(), from the previous shown board to the next. */
     fun update(a: MatchState?, b: MatchState) {
         if (b.finished) {
-            if (!ended) { ended = true; play(if (b.draw || b.winnerPlayerId == null) "QP-019" else if (b.winnerPlayerId == b.viewer) "QP-017" else "QP-018") }
+            ended = true // the result plate plays QP-017/018/019 as it rises
             return
         }
         if (a == null) return

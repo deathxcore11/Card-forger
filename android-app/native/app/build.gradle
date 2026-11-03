@@ -14,8 +14,8 @@ android {
         applicationId 'com.cardstashy.app.nativetest'
         minSdk 26 // Forge's own Android minimum (java.nio.file)
         targetSdk 36
-        versionCode 3
-        versionName '0.1.2-native-test'
+        versionCode 4
+        versionName '0.1.3-native-test'
     }
     buildTypes {
         release {
