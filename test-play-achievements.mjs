@@ -1,7 +1,7 @@
 // Play quests, achievements and the log-in calendar (play-achievements.js + play-econ-route.js).
 import assert from 'node:assert/strict';
 import {readFileSync} from 'node:fs';
-import {matchCounters, questRows, loginStamp, rewardDelta, achievementRows, achievementReward, achievementsPayload, deckColours, dailyQuests, weeklyQuests, playDay, playWeek, ACHIEVEMENTS, DEED_TABS} from './play-achievements.js';
+import {weeklyRerollUsed, matchCounters, questRows, loginStamp, rewardDelta, achievementRows, achievementReward, achievementsPayload, deckColours, dailyQuests, weeklyQuests, playDay, playWeek, ACHIEVEMENTS, DEED_TABS} from './play-achievements.js';
 import {ACHIEVEMENT_ART, achievementArt} from './play-achievement-art.js';
 import {progressRoute} from './play-econ-route.js';
 import {resolveServiceURL} from './native-service-policy.js';
@@ -66,6 +66,21 @@ assert.deepEqual(weeklyQuests('2026-W45').map(q => q.id), ['w-wins', 'w-matches'
 const weeks = Array.from({length: 12}, (_, i) => weeklyQuests(`2026-W${46 + i}`));
 for (const w of weeks) assert.equal(new Set(w.map(q => q.id)).size, 3, 'three different weeklies');
 assert.ok(new Set(weeks.flat().map(q => q.id)).size > 3, 'weeklies rotate');
+// One weekly swap a week: only an unfinished, unclaimed weekly; the new one is not already on the list.
+{
+  const base = weeklyQuests('2026-W47'), first = base[0].id;
+  const wq = questRows({counters: {}, claimed: [], day: '2026-11-18'});
+  assert.ok(wq.weekly.every(x => x.canSwap && x.level === 'weekly')); assert.equal(wq.weeklyRerollUsed, false);
+  const swapped = weeklyQuests('2026-W47', '', {[`w:2026-W47:reroll_${first}`]: 1});
+  assert.notEqual(swapped[0].id, first); assert.equal(swapped[0].swapped, true);
+  assert.equal(new Set(swapped.map(x => x.id)).size, 3); assert.deepEqual(swapped.slice(1), base.slice(1));
+  const after = questRows({counters: {[`w:2026-W47:reroll_${first}`]: 1}, claimed: [], day: '2026-11-18'});
+  assert.ok(after.weeklyRerollUsed && after.weekly.every(x => !x.canSwap), 'one swap a week');
+  const done = questRows({counters: {[`w:2026-W47:${base[1].key}`]: 999}, claimed: [], day: '2026-11-18'});
+  assert.equal(done.weekly[1].canSwap, false, 'a finished weekly cannot be swapped');
+  const pq = achievementsPayload({counters: {}, claimed: [], state: {}, day: '2026-11-18'}, {}).quests;
+  assert.equal(pq.rerollUsed, false); assert.equal(pq.weeklyRerollUsed, false); assert.ok(pq.weekly.every(x => x.canSwap === true));
+}
 // The payload the native app reads: hidden deeds stay riddles, every shown deed carries its art and rewards.
 const pay = achievementsPayload({counters: {}, claimed: [], state: {}, day: '2026-11-05'}, {});
 assert.equal(pay.achievements.length, ACHIEVEMENTS.length);
@@ -106,6 +121,10 @@ assert.ok(achievementRows({state: {wallet: {packs_opened: 12}}}).find(r => r.id 
   assert.equal((await post('match', {id: 'match-0001', mode: 'quick', outcome: 'win', tz: 0}))[1].counted, false, 'a match counts once');
   const [, pm] = await post('match', {id: 'match-0002', mode: 'practice', outcome: 'win', tz: 0});
   assert.equal(pm.counters.practice_matches, 1); assert.equal(pm.counters.wins, 1, 'Practice never moves wins or quests');
+  const wk = questRows({counters, claimed: [], day: playDay(0)}).weekly[0].id;
+  const [ws1] = await post('reroll', {scope: 'weekly', id: wk, tz: 0}), [ws2] = await post('reroll', {scope: 'weekly', id: questRows({counters, claimed: [], day: playDay(0)}).weekly[1].id, tz: 0});
+  assert.equal(ws1, 200); assert.equal(ws2, 409, 'one weekly swap a week');
+  assert.ok(weeklyRerollUsed(counters, playWeek(playDay(0))));
   const r = await progressRoute(new Request('https://cardstashy.com/api/progress/achievements?tz=0', {headers: {Authorization: 'Bearer ok'}}), env, {verifyBearer, fetcher});
   const got = await r.json();
   assert.equal(r.status, 200); assert.equal(got.version, 2); assert.ok(got.achievements.find(a => a.id === 'first-spark').ready);

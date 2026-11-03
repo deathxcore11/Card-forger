@@ -10,7 +10,7 @@ import {starterGrant, sealTrackBonus, packContentsRow, cardDelta, RARITY_SEAL, F
 import {PRACTICE_STARTER_ROWS} from './play-starter-deck.js';
 import {weeklySecretLair, secretLairPrice, secretLairLabel, secretLairRef, secretLairCardDelta, secretLairStyle, pickSecretLairStyle} from './play-secret-lair.js';
 import {STORY_DEEDS, STORY_ACT_DEEDS, storyDeedsEarned} from './story-deeds.js';
-import {rerollUsed, ACHIEVEMENTS, achievementRows, achievementReward, achievementRef, questRows, questReward, loginStamp, rewardDelta, matchCounters, playDay, playWeek, achievementsPayload} from './play-achievements.js';
+import {rerollUsed, weeklyRerollUsed, ACHIEVEMENTS, achievementRows, achievementReward, achievementRef, questRows, questReward, loginStamp, rewardDelta, matchCounters, playDay, playWeek, achievementsPayload} from './play-achievements.js';
 
 const json = (body, status = 200) => new Response(JSON.stringify(body), {status, headers: {'Content-Type': 'application/json', 'Cache-Control': 'no-store'}});
 const fail = (error, status = 400) => json({error}, status);
@@ -318,6 +318,18 @@ export async function progressRoute(request, env, {verifyBearer, fetcher = fetch
       return json({ref, delta, ...(style ? {style} : {}), state: await state(), claimed: [...claimed, ref]});
     }
     if (path === 'reroll') {
+      // One weekly swap a week: {scope:'weekly', id} for an unfinished, unclaimed weekly on this week's list.
+      if (body.scope === 'weekly') {
+        const day = playDay(body.tz), week = playWeek(day), id = String(body.id || ''), [c, claimed] = await Promise.all([counters.read(), counters.claims()]);
+        if (!c || !claimed) return fail('not_ready', 503);
+        if (weeklyRerollUsed(c, week)) return fail('rerolled', 409);
+        const row = questRows({counters: c, claimed, day}).weekly.find(q => q.id === id);
+        if (!row) return fail('bad_reroll');
+        if (!row.canSwap) return fail('quest_done', 409);
+        const out = await counters.bump('wreroll:' + week, 'reroll', {[`w:${week}:reroll_${id}`]: 1});
+        if (!out || out.duplicate) return fail('rerolled', 409);
+        return json({counters: out.counters});
+      }
       // The day's one free quest swap: an easy or hard daily that isn't done is replaced by another.
       const level = body.level === 'hard' ? 'hard' : body.level === 'easy' ? 'easy' : '';
       if (!level) return fail('bad_reroll');

@@ -224,21 +224,30 @@ export function dailyQuests(day, user = '', counters = {}) {
 // One free quest swap a day (play-progression.md: "Quest reroll: free, once a day"), for an easy or
 // hard daily that isn't done yet.
 export const rerollUsed = (counters = {}, day) => ['easy', 'hard'].some(l => Number(counters[`d:${day}:reroll_${l}`]) > 0);
+// One weekly swap a week (Randall 3 Nov 2026): an unfinished, unclaimed weekly is swapped for another
+// from the pool, counted as w:<week>:reroll_<id of the weekly it replaced>.
+export const weeklyRerollUsed = (counters = {}, week) => Object.keys(counters).some(k => k.startsWith(`w:${week}:reroll_`) && Number(counters[k]) > 0);
 // Three weeklies, picked from the pool by the week and the player (the first week keeps the first three).
-export function weeklyQuests(week, user = '') {
-  if (week < WEEKLY_POOL_FROM) return WEEKLY.slice(0, FIRST_POOL.weekly);
-  const pool = [...WEEKLY], out = [];
-  let h = hash(week + ':w:' + user);
-  while (out.length < 3) { out.push(pool.splice(h % pool.length, 1)[0]); h = Math.imul(h ^ (h >>> 13), 2654435761) >>> 0; }
-  return out;
+// A swapped one is replaced by a pool weekly not already on the list, in its own slot.
+export function weeklyQuests(week, user = '', counters = {}) {
+  let out;
+  if (week < WEEKLY_POOL_FROM) out = WEEKLY.slice(0, FIRST_POOL.weekly);
+  else {
+    const pool = [...WEEKLY]; out = [];
+    let h = hash(week + ':w:' + user);
+    while (out.length < 3) { out.push(pool.splice(h % pool.length, 1)[0]); h = Math.imul(h ^ (h >>> 13), 2654435761) >>> 0; }
+  }
+  const spare = WEEKLY.filter(q => !out.includes(q)), h2 = hash(week + ':swap:' + user);
+  return out.map(q => Number(counters?.[`w:${week}:reroll_${q.id}`]) > 0 && spare.length ? {...spare[h2 % spare.length], swapped: true, swappedFrom: q.id} : q);
 }
 export function questRows({counters = {}, claimed = [], day, user = ''} = {}) {
   const got = new Set(claimed), week = playWeek(day);
   const row = (q, scope, ref) => { const have = Number(counters[`${scope}:${q.key}`]) || 0; return {...q, have: Math.min(have, q.need), done: have >= q.need, claimed: got.has(ref), ref}; };
   const used = rerollUsed(counters, day);
   const daily = dailyQuests(day, user, counters).map(q => { const r = row(q, 'd:' + day, `daily:${day}:${q.id}`); return {...r, canSwap: !used && q.level !== 'first' && !r.done && !r.claimed}; });
-  const weekly = weeklyQuests(week, user).map(q => row(q, 'w:' + week, `weekly:${week}:${q.id}`));
-  return {day, week, daily, weekly, rerollUsed: used, weeklyAll: {done: weekly.every(q => q.done), claimed: got.has(`weekly:${week}:all`), ref: `weekly:${week}:all`}};
+  const wUsed = weeklyRerollUsed(counters, week);
+  const weekly = weeklyQuests(week, user, counters).map(q => { const r = row(q, 'w:' + week, `weekly:${week}:${q.id}`); return {...r, level: 'weekly', canSwap: !wUsed && !r.done && !r.claimed}; });
+  return {day, week, daily, weekly, rerollUsed: used, weeklyRerollUsed: wUsed, weeklyAll: {done: weekly.every(q => q.done), claimed: got.has(`weekly:${week}:all`), ref: `weekly:${week}:all`}};
 }
 export function questReward(q, config = {}) {
   const d = config?.daily || {}, w = config?.weekly || {};
@@ -347,9 +356,10 @@ export function achievementsPayload(ctx = {}, config = {}) {
       value: r.value, earned: r.earned, ready: r.ready, complete: r.complete,
       steps: r.steps.map((x, i) => ({...x, reward: achievementReward(r, i, config)}))};
   });
-  const quest = x => ({id: x.id, label: x.label, level: x.level || 'weekly', need: x.need, have: x.have, done: x.done, claimed: x.claimed, ref: x.ref, reward: questReward(x, config)});
+  const quest = x => ({id: x.id, label: x.label, level: x.level || 'weekly', need: x.need, have: x.have, done: x.done, claimed: x.claimed, ref: x.ref,
+    canSwap: !!x.canSwap, swapped: !!x.swapped, reward: questReward(x, config)});
   return {version: ACHIEVEMENTS_VERSION, tabs: DEED_TABS.map(([id, label]) => ({id, label})), totals: deedTotals(rows), achievements,
-    quests: {day: q.day, week: q.week, daily: q.daily.map(quest), weekly: q.weekly.map(quest),
+    quests: {day: q.day, week: q.week, rerollUsed: !!q.rerollUsed, weeklyRerollUsed: !!q.weeklyRerollUsed, daily: q.daily.map(quest), weekly: q.weekly.map(quest),
       weeklyAll: {...q.weeklyAll, reward: {seals: config?.weekly?.allDoneSeals || {r: 1}}}},
     login: {week: LOGIN_WEEK, month: LOGIN_MONTH}};
 }
