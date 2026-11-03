@@ -12,9 +12,9 @@ const entry = join(app, 'build', 'deck-engine-entry.mjs');
 writeFileSync(entry, readFileSync(join(here, 'deck-engine-entry.mjs'), 'utf8').replaceAll("'WEB/", `'${resolve(web)}/`));
 const sha = process.env.WEB_SHA || (() => { try { return execFileSync('git', ['-C', web, 'rev-parse', 'HEAD']).toString().trim(); } catch { return 'unknown'; } })();
 execFileSync(esbuild, [entry, '--bundle', '--format=iife', '--platform=neutral', '--target=es2020', `--inject:${join(here, 'deck-engine-prelude.js')}`,
-  '--define:import.meta.url="https://cardstashy.com/"', `--banner:js=/* CardStashy Deck Forge bundle, web ${sha} */`, `--outfile=${join(app, 'app/src/main/assets/deck-engine.js')}`, '--log-level=error']);
+  '--define:import.meta.url="https://cardstashy.com/"', `--banner:js=/* CardStashy Deck Forge bundle, web ${sha} */`, `--outfile=${join(app, 'deck-engine/deck-engine.js')}`, '--log-level=error']);
 // Fixtures: the bundle in a bare context (no browser globals), as QuickJS sees it.
-const ctx = vm.createContext({}); vm.runInContext(readFileSync(join(app, 'app/src/main/assets/deck-engine.js'), 'utf8'), ctx);
+const ctx = vm.createContext({}); vm.runInContext(readFileSync(join(app, 'deck-engine/deck-engine.js'), 'utf8'), ctx);
 const cards = JSON.parse(readFileSync(trunkFile, 'utf8'));
 const facts = {}, ownedCards = [];
 cards.forEach((c, i) => { const o = c.oracle_id || c.card_faces?.[0]?.oracle_id; facts[o] = c; ownedCards.push({o, c: 1 + (i % 4)}); });

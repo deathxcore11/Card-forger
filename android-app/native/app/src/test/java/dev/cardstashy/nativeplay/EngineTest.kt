@@ -13,7 +13,7 @@ class EngineTest {
         val golden = JsonParser.parseString(javaClass.classLoader!!.getResource("engine-golden.json")!!.readText()).asJsonArray.map { it.asJsonObject }
         val qjs = QuickJs.create()
         try {
-            qjs.evaluate(File("src/main/assets/deck-engine.js").readText(), "deck-engine.js")
+            qjs.evaluate(File("../deck-engine/deck-engine.js").readText(), "deck-engine.js")
             for (g in golden) assertEquals(g["format"].asString, g["out"].asString, qjs.evaluate("CardStashyEngine.forgeTrunk(" + JsonPrimitive(g["input"].asString) + ")"))
         } finally { qjs.close() }
     }
