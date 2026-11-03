@@ -2,6 +2,7 @@ package dev.cardstashy.nativeplay
 
 import androidx.compose.ui.test.junit4.createComposeRule
 import androidx.compose.ui.test.onNodeWithTag
+import androidx.compose.ui.test.onNodeWithText
 import androidx.compose.ui.test.performScrollToIndex
 import androidx.compose.ui.test.performTouchInput
 import androidx.compose.ui.test.swipeUp
@@ -25,12 +26,30 @@ import java.io.File
 @Config(sdk = [35])
 class HomeScrollTest {
     @get:Rule val rule = createComposeRule()
+    init { dev.cardstashy.nativeplay.ui.HomeTest.allForTests = true }
 
     @Test @Config(qualifiers = "w868dp-h964dp-xxhdpi") fun inner() = run("inner")
     @Test @Config(qualifiers = "w390dp-h860dp-xxhdpi") fun cover() = run("cover")
     @Test(timeout = 120000) @Config(qualifiers = "w300dp-h860dp-xxhdpi") fun narrow() = run("narrow")
     @Test(timeout = 120000) @Config(qualifiers = "w411dp-h960dp-xxhdpi") fun fold() = run("fold")
     @Test(timeout = 120000) @Config(qualifiers = "w673dp-h749dp-xhdpi") fun innerPortrait() = run("innerP")
+
+    /** The server's /api/progress/achievements payload (play-achievements.js achievementsPayload, 106 of 107 with unit null). */
+    @Test(timeout = 120000) @Config(qualifiers = "w411dp-h960dp-xxhdpi") fun deedsFromServer() {
+        dev.cardstashy.nativeplay.art.CardArt.init(RuntimeEnvironment.getApplication())
+        val state = JsonParser.parseString(File("/mnt/project-files/design/native/parity/fixtures/progress-state.json").readText()).asJsonObject
+        val rules = PlayRules(JsonParser.parseString(javaClass.classLoader!!.getResource("play-rules.json")!!.readText()).asJsonObject)
+        val deeds = JsonParser.parseString(javaClass.classLoader!!.getResource("deeds-payload.json")!!.readText()).asJsonObject
+        rule.setContent { PlayHome(PlayHomeData(state, rules, PlayMath.StoryHome(1, 0, false), "2026-11-03", "", null, deeds), top = {}, nav = {}) }
+        rule.waitForIdle()
+        rule.onNodeWithTag("playHome").performScrollToIndex(4); rule.waitForIdle()
+        repeat(30) { rule.mainClock.advanceTimeByFrame() }; rule.waitForIdle()
+        rule.onNodeWithText("earned", substring = true).assertExists()
+        val (t, near) = dev.cardstashy.nativeplay.ui.nearFromServerForTest(deeds)
+        println("[deeds] totals $t near ${near.map { it.title }}")
+        assert(t.total > 0 && near.size == 2)
+        println("[deeds] sections: " + dev.cardstashy.nativeplay.FreezeReport.sectionLine())
+    }
 
     /** Randall's shape: thousands of cards across many sets, a pile of sealed packs, a full Merchant, many decks. */
     private fun inflate(state: com.google.gson.JsonObject) {

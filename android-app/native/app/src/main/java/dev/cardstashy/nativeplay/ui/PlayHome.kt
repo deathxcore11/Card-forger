@@ -677,16 +677,28 @@ private fun QuestRow(r: PlayMath.QuestRow, reward: PlayRules.Reward, claim: () -
 // ---------------------------------------------------------------- Achievements (pd-deeds-home)
 
 /** One "almost there" row, from the server's payload or PlayMath. */
-private data class Near(val title: String, val art: String?, val trim: Boolean, val value: Int, val need: Int, val hours: Boolean)
+internal data class Near(val title: String, val art: String?, val trim: Boolean, val value: Int, val need: Int, val hours: Boolean)
 
-private fun nearFromServer(p: JsonObject): Triple<PlayMath.Totals, List<Near>, Unit> {
-    val t = p.getAsJsonObject("totals")
-    val totals = PlayMath.Totals(t?.get("total")?.asInt ?: 0, t?.get("earned")?.asInt ?: 0, t?.get("ready")?.asInt ?: 0)
-    val near = p.getAsJsonArray("achievements")?.mapNotNull { it as? JsonObject }
-        ?.filter { it.get("complete")?.asBoolean != true && it.get("secret")?.asBoolean != true && it.get("hidden")?.asBoolean != true && it.get("kind")?.asString != "honour" }
-        ?.mapNotNull { a -> val next = a.getAsJsonArray("steps")?.mapNotNull { it as? JsonObject }?.firstOrNull { it.get("done")?.asBoolean != true } ?: return@mapNotNull null
-            val art = a.getAsJsonObject("art")
-            Near(a.get("title")?.asString ?: "", art?.get("url")?.asString, art?.get("trim")?.asBoolean == true, a.get("value")?.asInt ?: 0, next.get("need")?.asInt ?: 1, a.get("unit")?.asString == "h") }
+// The server sends JSON null for empty fields (unit, art, title on secrets): Gson's JsonNull is not Kotlin null and
+// throws on asString/asInt. 0.3.x read "unit" with ?.asString, so 106 of 107 achievements threw, the Play home
+// effect died and the screen stopped drawing (Randall's Fold freeze, isolated 3 Nov by the D4 test). Every read goes
+// through these.
+private fun com.google.gson.JsonElement?.str(): String? = this?.takeIf { it.isJsonPrimitive }?.asString
+private fun com.google.gson.JsonElement?.int(): Int? = this?.takeIf { it.isJsonPrimitive && it.asJsonPrimitive.isNumber }?.asDouble?.toInt()
+private fun com.google.gson.JsonElement?.bool(): Boolean = this?.takeIf { it.isJsonPrimitive && it.asJsonPrimitive.isBoolean }?.asBoolean == true
+private fun com.google.gson.JsonElement?.obj(): JsonObject? = this as? JsonObject
+
+internal fun nearFromServerForTest(p: JsonObject) = nearFromServer(p)
+
+internal fun nearFromServer(p: JsonObject): Triple<PlayMath.Totals, List<Near>, Unit> {
+    val t = p.get("totals").obj()
+    val totals = PlayMath.Totals(t?.get("total").int() ?: 0, t?.get("earned").int() ?: 0, t?.get("ready").int() ?: 0)
+    val near = (p.get("achievements") as? com.google.gson.JsonArray)?.mapNotNull { it.obj() }
+        ?.filter { !it.get("complete").bool() && !it.get("secret").bool() && !it.get("hidden").bool() && it.get("kind").str() != "honour" }
+        ?.mapNotNull { a -> val next = (a.get("steps") as? com.google.gson.JsonArray)?.mapNotNull { it.obj() }?.firstOrNull { !it.get("done").bool() } ?: return@mapNotNull null
+            val art = a.get("art").obj()
+            Near(a.get("title").str() ?: return@mapNotNull null, art?.get("url").str(), art?.get("trim").bool(), a.get("value").int() ?: 0,
+                (next.get("need").int() ?: 1).coerceAtLeast(1), a.get("unit").str() == "h") }
         ?.sortedByDescending { it.value.toDouble() / it.need }?.take(2) ?: emptyList()
     return Triple(totals, near, Unit)
 }
@@ -695,7 +707,8 @@ private fun nearFromServer(p: JsonObject): Triple<PlayMath.Totals, List<Near>, U
 private fun Deeds(d: PlayHomeData, act: PlayHomeActions) {
     // Off the main thread: the fallback walks every card once per achievement.
     val (t, near) = produceState(PlayMath.Totals(0, 0, 0) to emptyList<Near>(), d.deeds, d.state, d.rules) { value = kotlinx.coroutines.withContext(kotlinx.coroutines.Dispatchers.Default) {
-        d.deeds?.let { nearFromServer(it) }?.let { it.first to it.second } ?: run {
+        // A payload this code can't read falls back to the golden-tested PlayMath, never takes the page down.
+        d.deeds?.let { runCatching { nearFromServer(it) }.getOrNull() }?.let { it.first to it.second } ?: run {
         val rows = PlayMath.achievements(d.rules, d.state)
         PlayMath.totals(rows) to PlayMath.almostThere(rows, 2).mapNotNull { r -> r.next?.let { Near(r.a.title,
             "https://api.scryfall.com/cards/named?format=image&version=art_crop&exact=" + java.net.URLEncoder.encode(r.a.art, "UTF-8"), false, r.value, it.need, r.a.unit == "h") } }
