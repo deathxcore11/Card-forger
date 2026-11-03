@@ -178,7 +178,9 @@ fun HandFan(
                         val gap = abs(i - lift)
                         if (gap in 1..3) shift = popW * shares[gap - 1] * (if (i > lift) 1f else -1f)
                     }
-                    val x = (start + step * i + shift).coerceIn(0.dp, (width - cardW).coerceAtLeast(0.dp))
+                    // A popped card keeps its whole scaled rect inside the fan (never over the sidebar).
+                    val edge = if (isLift) popW / 2 else 0.dp
+                    val x = (start + step * i + shift).coerceIn(edge, (width - cardW - edge).coerceAtLeast(edge))
                     val y = if (isLift) -rise else 2.dp * (t * t)
                     val newIndex = arriving.indexOf(card.id)
                     val delayMs = if (newIndex >= 0) (dealOrder++) * 70L else 0L
