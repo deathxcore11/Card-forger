@@ -1,4 +1,4 @@
-const CACHE = "cardforge-shell-deck-finder-sl-4381-v453";
+const CACHE = "cardforge-shell-table-quests-4382-v454";
 const ASSETS = [
   "./assets/fonts/fonts.css",
   "./play-forge-feature.js",
