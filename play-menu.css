@@ -1513,3 +1513,7 @@ button.pd-near-row{cursor:pointer}
 .pe-slo .pe-buy{margin-top:0}.pe-slo .pe-buy--seal{background:#ffffff0d;border-color:#ffffff26;color:var(--text,#f3ead6)}
 .pe-slo{min-width:0}.pe-slo-art{width:100%}.pe-slo-ribbon{left:0;right:0}
 .pe-slo{grid-template-columns:minmax(0,1fr)}.pe-slo-pay{grid-template-columns:minmax(0,1fr) auto}.pe-slo .pe-buy{padding:0 10px;min-width:0}.pe-slo .pe-buy--seal{padding:0 10px}
+/* Quick Play: a deck missing cards from the Trunk shows greyed, like an unowned card (Randall 3 Nov 23:06Z). */
+.play-deck-choice.is-locked{position:relative}
+.play-deck-choice.is-locked>.deck-tile,.play-deck-choice.is-locked>button{filter:grayscale(1) brightness(.7);opacity:.6}
+.play-deck-lock{position:absolute;left:8px;bottom:8px;padding:2px 8px;border-radius:999px;background:rgba(0,0,0,.66);color:#f3e6c4;font-size:12px;font-weight:600;pointer-events:none}
