@@ -156,7 +156,7 @@ private fun ShopHub(s: JsonObject, tab: String, busy: Boolean, onTab: (String) -
         item(span = { GridItemSpan(maxLineSpan) }) {
             Column(Modifier.windowInsetsPadding(WindowInsets.statusBars).padding(top = 12.dp), verticalArrangement = Arrangement.spacedBy(12.dp)) {
                 PageHeader("Shop", "Play", onBack = onBack)
-                dev.cardstashy.nativeplay.play.PlayMath.purse(s)?.let { PurseRow(it, { onTab("sets") }, { onTab("forge") }, { onTab("packs") }) }
+                dev.cardstashy.nativeplay.play.PlayMath.purse(s)?.let { PurseRow(it, { onTab("sets") }, { onTab("forge") }, { onTab("packs") }, level = dev.cardstashy.nativeplay.play.PlayMath.mastery(s, it.xp)) }
                 Segmented(listOf("sets" to "Sets & packs", "packs" to if (packs.isEmpty()) "Your packs" else "Your packs · ${packs.size}", "forge" to "Forge"), tab, pick = onTab)
             }
         }

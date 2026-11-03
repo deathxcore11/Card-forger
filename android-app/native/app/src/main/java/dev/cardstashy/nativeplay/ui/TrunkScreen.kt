@@ -46,6 +46,11 @@ import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.toArgb
+import androidx.compose.ui.graphics.nativeCanvas
+import androidx.compose.ui.graphics.drawscope.drawIntoCanvas
+import androidx.compose.ui.draw.drawWithContent
+import androidx.compose.ui.draw.drawBehind
 import androidx.compose.ui.draw.alpha
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
@@ -95,12 +100,14 @@ fun TrunkScreen(state: JsonObject, onBack: () -> Unit, onCard: (CardPick) -> Uni
     Box(Modifier.fillMaxSize().background(Site.Bg)) {
         BoxWithConstraints(Modifier.fillMaxSize()) {
             val cols = if (maxWidth < 600.dp) GridCells.Fixed(2) else GridCells.Adaptive(170.dp)
-            val gap = if (maxWidth < 700.dp) 10.dp else 16.dp
+            // .pe-coll-list: 18 px between rows, 14 px between columns.
             LazyVerticalGrid(cols, Modifier.fillMaxSize(), contentPadding = androidx.compose.foundation.layout.PaddingValues(start = 16.dp, end = 16.dp, bottom = 120.dp),
-                horizontalArrangement = Arrangement.spacedBy(gap), verticalArrangement = Arrangement.spacedBy(gap)) {
+                horizontalArrangement = Arrangement.spacedBy(14.dp), verticalArrangement = Arrangement.spacedBy(18.dp)) {
                 item(span = { GridItemSpan(maxLineSpan) }) {
                     Column(Modifier.windowInsetsPadding(WindowInsets.statusBars).padding(top = 12.dp), verticalArrangement = Arrangement.spacedBy(12.dp)) {
                         PageHeader("Collection", "Play", onBack = onBack)
+                        // head('Collection', snapshot): the purse sits under the title, as on every Play screen.
+                        dev.cardstashy.nativeplay.play.PlayMath.purse(state)?.let { PurseRow(it, {}, {}, {}, level = dev.cardstashy.nativeplay.play.PlayMath.mastery(state, it.xp)) }
                         // Sets moved to the Shop (Randall 3 Nov 20:00Z): the Trunk is your cards only.
                     }
                 }
@@ -179,19 +186,26 @@ internal fun FilterBar(f: Trunk.Filter, sort: String, sets: List<Trunk.SetRow>, 
     Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
         SearchField(f.query, "Card name") { onFilter(f.copy(query = it)) }
         FlowRow(horizontalArrangement = Arrangement.spacedBy(8.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
+            // .pe-color-tabs: 44 px round buttons, 6 px apart.
             Row(horizontalArrangement = Arrangement.spacedBy(6.dp)) {
                 Trunk.COLORS.forEach { (k, _) ->
                     val on = f.color == k
-                    Box(Modifier.size(36.dp).clip(CircleShape).background(if (on) Color(0x26E8B95B) else Site.Surface)
+                    Box(Modifier.size(44.dp).clip(CircleShape).background(if (on) Color(0x26E8B95B) else Color.Transparent)
                         .border(1.dp, if (on) Site.Gold else Site.Line, CircleShape).clickable { onFilter(f.copy(color = if (on) "" else k)) }, contentAlignment = Alignment.Center) {
-                        Symbol(k, 20.dp, Modifier.alpha(if (f.color.isEmpty() || on) 1f else .55f))
+                        Symbol(k, 24.dp, Modifier.alpha(if (f.color.isEmpty() || on) 1f else .55f))
                     }
                 }
             }
             Select("All types", listOf("" to "All types") + Trunk.TYPES.map { it to it }, f.type) { onFilter(f.copy(type = it)) }
         }
-        Row(Modifier.horizontalScroll(rememberScrollState()), horizontalArrangement = Arrangement.spacedBy(6.dp)) {
-            Trunk.RARITIES.forEach { (k, l) -> Chip(l, f.rarity == k) { onFilter(f.copy(rarity = k)) } }
+        // .pe-rarity-tabs: wraps; 44 px pills, 14 px sides, DM Sans 700 13 px; the chosen one gold.
+        FlowRow(horizontalArrangement = Arrangement.spacedBy(6.dp), verticalArrangement = Arrangement.spacedBy(6.dp)) {
+            Trunk.RARITIES.forEach { (k, l) -> val on = f.rarity == k
+                Box(Modifier.height(44.dp).clip(CircleShape).background(if (on) Color(0x29E8B95B) else Color.Transparent).border(1.dp, if (on) Site.Gold else Site.Line, CircleShape)
+                    .clickable { onFilter(f.copy(rarity = k)) }.padding(horizontal = 14.dp), contentAlignment = Alignment.Center) {
+                    Text(l, style = TextStyle(fontFamily = Site.Manrope, fontWeight = FontWeight.Bold, fontSize = 13.sp, color = if (on) Color(0xFFF6E4BB) else Site.Text))
+                }
+            }
         }
         Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
             Select("Sort", Trunk.SORTS, sort) { onSort(it) }
@@ -218,20 +232,26 @@ private fun Tile(c: Trunk.Card, print: JsonObject?, fact: CardFacts.Fact?, data:
     val look = data?.let { Foil.look(it, print, if (c.holo) "foil" else "nonfoil") }
     // Holo copies shimmer on their own; the stamp only catches the light when tilted.
     val tilt = rememberFoilTilt(live = c.holo, phase = (c.o.hashCode() and 0xff) / 255f)
-    Column(Modifier.clip(RoundedCornerShape(16.dp)).background(Site.Surface).border(1.dp, Site.Line, RoundedCornerShape(16.dp)).combinedClickable(onLongClick = { onHold(image, set) }, onClick = onClick).padding(10.dp),
-        verticalArrangement = Arrangement.spacedBy(10.dp)) {
-        CardPicture(image, look?.takeIf { it.shines }, tilt, Modifier.fillMaxWidth().aspectRatio(63f / 88f))
-        Column(verticalArrangement = Arrangement.spacedBy(2.dp)) {
-            FlowRow(verticalArrangement = Arrangement.Center, horizontalArrangement = Arrangement.spacedBy(5.dp)) {
-                Text(c.n, style = TextStyle(fontFamily = Site.Manrope, fontWeight = FontWeight.Bold, fontSize = 14.5.sp, color = Ink, lineHeight = 19.sp))
-                if (set.isNotBlank()) Box(Modifier.align(Alignment.CenterVertically)) { SetBadge(set, rarity) }
+    // .pe-lot in the Trunk: no plate; the art (corners 4.6 % / 3.3 %, a 1.5 px #9aa3ad ring at 70 %, a soft drop shadow),
+    // then the name (DM Sans 600 15 px) with its set badge, then Holo and the copy pips. The mana and set line is hidden (.lot-sub display none).
+    Column(Modifier.combinedClickable(onLongClick = { onHold(image, set) }, onClick = onClick), verticalArrangement = Arrangement.spacedBy(8.dp)) {
+        CardPicture(image, look?.takeIf { it.shines }, tilt, Modifier.fillMaxWidth().aspectRatio(63f / 88f)
+            .drawBehind {
+                // box-shadow 0 10px 24px -14px #000c: a soft shadow tucked under the bottom edge.
+                drawIntoCanvas { cv -> val sp = 14.dp.toPx(); val pt = androidx.compose.ui.graphics.Paint().asFrameworkPaint().apply { isAntiAlias = true; color = Color(0xCC000000).toArgb()
+                    maskFilter = android.graphics.BlurMaskFilter(12.dp.toPx(), android.graphics.BlurMaskFilter.Blur.NORMAL) }
+                    cv.nativeCanvas.drawRect(sp, sp + 10.dp.toPx(), size.width - sp, size.height - sp + 10.dp.toPx(), pt) }
             }
-            FlowRow(horizontalArrangement = Arrangement.spacedBy(6.dp), verticalArrangement = Arrangement.Center) {
-                ManaCost(fact?.mc ?: "", 14.dp, Modifier.align(Alignment.CenterVertically))
-                Text(set.uppercase() + if (number.isNotBlank()) " #$number" else "", style = small.copy(fontSize = 11.sp, lineHeight = 16.sp), maxLines = 1, overflow = TextOverflow.Ellipsis)
-            }
+            .drawWithContent { drawContent(); val w = 1.5.dp.toPx()
+                // box-shadow 0 0 0 1.5px #9aa3adb3: a thin grey ring just outside the corners.
+                drawRoundRect(Color(0xB39AA3AD), topLeft = androidx.compose.ui.geometry.Offset(-w / 2, -w / 2), size = androidx.compose.ui.geometry.Size(size.width + w, size.height + w),
+                    cornerRadius = androidx.compose.ui.geometry.CornerRadius(size.width * .046f + w / 2, size.height * .033f + w / 2), style = androidx.compose.ui.graphics.drawscope.Stroke(w)) },
+            shape = CardCorner)
+        FlowRow(Modifier.padding(horizontal = 2.dp), verticalArrangement = Arrangement.Center, horizontalArrangement = Arrangement.spacedBy(5.dp)) {
+            Text(c.n, style = TextStyle(fontFamily = Site.Manrope, fontWeight = FontWeight.SemiBold, fontSize = 15.sp, color = Ink, lineHeight = 18.75.sp))
+            if (set.isNotBlank()) Box(Modifier.align(Alignment.CenterVertically)) { SetBadge(set, rarity) }
         }
-        Row(Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.SpaceBetween) {
+        Row(Modifier.fillMaxWidth().padding(horizontal = 2.dp), verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.SpaceBetween) {
             if (c.holo) HoloTag() else Spacer(Modifier.width(1.dp))
             Pips(minOf(c.c, 4), c.holo)
         }

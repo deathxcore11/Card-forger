@@ -291,7 +291,7 @@ private fun Duo(two: Boolean, a: @Composable () -> Unit, b: @Composable () -> Un
 // ---------------------------------------------------------------- purse (pe-purse, full width on phones)
 
 @Composable
-internal fun PurseRow(p: PlayMath.Purse, onCoins: () -> Unit, onSeals: () -> Unit, onPacks: () -> Unit) {
+internal fun PurseRow(p: PlayMath.Purse, onCoins: () -> Unit, onSeals: () -> Unit, onPacks: () -> Unit, level: PlayMath.Level? = null) {
     BoxWithConstraints(Modifier.fillMaxWidth()) {
         // One line always (the site's pill never wraps): measure what the numbers need at full size and,
         // on a narrow screen or with large text, tighten the whole pill evenly instead of squeezing one cell.
@@ -299,7 +299,7 @@ internal fun PurseRow(p: PlayMath.Purse, onCoins: () -> Unit, onSeals: () -> Uni
         fun digits(n: Int) = "%,d".format(n).length
         val sealDigits = listOf("c", "u", "r", "m").sumOf { digits(p.seals[it] ?: 0) }
         val text = (digits(p.coins) + sealDigits + digits(p.packs)) * 9.4f * fs
-        val need = 8f + 3 * 16f + (18 + 6) + 4 * (18 + 4) + 3 * 6f + (18 + 6) + text
+        val need = 8f + 3 * 16f + (18 + 6) + 4 * (18 + 4) + 3 * 6f + (18 + 6) + text + (if (level != null) 50f else 0f)
         val k = (maxWidth.value / need).coerceIn(.6f, 1f)
         val icon = 18.dp * k; val gap = 6.dp * k; val pad = 8.dp * k; val num = 14f * maxOf(k, .8f)
         Row(Modifier.fillMaxWidth().testShadow(10.dp, CircleShape).clip(CircleShape).background(Color(0xB80D0F14))
@@ -309,6 +309,8 @@ internal fun PurseRow(p: PlayMath.Purse, onCoins: () -> Unit, onSeals: () -> Uni
                 for (k2 in listOf("c", "u", "r", "m")) Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(gap * .66f)) { Icon(SiteIcons.Seals.getValue(k2), icon); Num(p.seals[k2] ?: 0, num) }
             }
             PurseCell(onPacks, "${p.packs} packs", pad, gap) { Icon(SiteIcons.Pack, icon); Num(p.packs, num) }
+            // purseMarkup's levelMarkup: on head() screens the mastery ring closes the pill.
+            if (level != null) LevelRing(level)
         }
     }
 }
@@ -490,7 +492,7 @@ val WRAPPERS: Map<String, Wrap> = run {
     // Randall 3 Nov 21:37Z: one painted template for every set (1024×1536, silver crimps, gold art window, black band).
     // Measured on the files: notch peak 59.6 %, band 63.2 % to 85.9 %. hob, msh and mh2 are redrawn on it; fra keeps its own.
     val template = Wrap(1024f / 1536f, notch = .596f, top = .632f, bottom = .859f)
-    listOf("acr", "aer", "afr", "akh", "blb", "bro", "dft", "dmu", "dom", "dsk", "ecl", "eld", "emn", "eoe", "fdn", "fin", "frf", "grn", "hob", "hou", "iko", "khm", "kld", "ktk", "lci", "m19", "m20", "m21", "mat", "mh1", "mh2", "mh3", "mid", "mkm", "mom", "msh", "neo", "ogw", "one", "otj", "rix", "rna", "snc", "soi", "sos", "spm", "stx", "tdm", "thb", "tla", "tmt", "vow", "war", "woe", "xln", "znr").associateWith { template } +
+    listOf("acr", "aer", "afr", "akh", "blb", "bng", "bro", "dft", "dmu", "dom", "dsk", "ecl", "eld", "emn", "eoe", "fdn", "fin", "frf", "grn", "hob", "hou", "iko", "jou", "khm", "kld", "ktk", "lci", "m15", "m19", "m20", "m21", "mat", "mh1", "mh2", "mh3", "mid", "mkm", "mom", "msh", "neo", "ogw", "one", "otj", "rix", "rna", "snc", "soi", "sos", "spm", "stx", "tdm", "thb", "tla", "tmt", "vow", "war", "woe", "xln", "znr").associateWith { template } +
         ("fra" to Wrap(600f / 918f, notch = .641f, top = .676f, bottom = .892f))
 }
 

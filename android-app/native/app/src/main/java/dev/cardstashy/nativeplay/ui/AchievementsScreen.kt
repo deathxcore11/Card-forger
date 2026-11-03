@@ -160,7 +160,7 @@ fun AchievementsRoute(onBack: () -> Unit, startTab: String? = null, nav: @Compos
             item("head") {
                 Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
                     PageHeader("Achievements", "Play", onBack = onBack)
-                    PlayMath.purse(state)?.let { PurseRow(it, {}, {}, {}) }
+                    PlayMath.purse(state)?.let { PurseRow(it, {}, {}, {}, level = PlayMath.mastery(state, it.xp)) }
                 }
             }
             item("sum") {
