@@ -165,7 +165,7 @@ fun PlayHome(d: PlayHomeData, top: @Composable () -> Unit, act: PlayHomeActions 
         if (!HomeTest.noPictures) Ambient(d.ambient)
         Column(Modifier.fillMaxSize()) {
             BoxWithConstraints(Modifier.weight(1f).fillMaxWidth()) {
-                val wide = maxWidth >= 600.dp; val duo = maxWidth >= 1000.dp
+                val wide = maxWidth >= 600.dp; val duo = maxWidth >= 840.dp // pe-home-duo pairs at 960 css px; the Fold's inner screen (884 dp) pairs too, as on the site
                 LazyColumn(Modifier.fillMaxSize().testTag("playHome"), contentPadding = PaddingValues(top = 72.dp + statusTop(), bottom = 28.dp, start = 16.dp, end = 16.dp),
                     verticalArrangement = Arrangement.spacedBy(26.dp)) {
                     item("head") {
@@ -276,7 +276,7 @@ fun Modifier.playBackdrop() = this.background(Site.Bg)
 
 @Composable
 private fun Duo(two: Boolean, a: @Composable () -> Unit, b: @Composable () -> Unit) {
-    if (two) Row(horizontalArrangement = Arrangement.spacedBy(22.dp)) { Box(Modifier.weight(1f)) { a() }; Box(Modifier.weight(1f)) { b() } }
+    if (two) Row(horizontalArrangement = Arrangement.spacedBy(24.dp), verticalAlignment = Alignment.Top) { Box(Modifier.weight(1f)) { a() }; Box(Modifier.weight(1f)) { b() } }
     else Column(verticalArrangement = Arrangement.spacedBy(26.dp)) { a(); b() }
 }
 
@@ -284,21 +284,33 @@ private fun Duo(two: Boolean, a: @Composable () -> Unit, b: @Composable () -> Un
 
 @Composable
 internal fun PurseRow(p: PlayMath.Purse, onCoins: () -> Unit, onSeals: () -> Unit, onPacks: () -> Unit) {
-    Row(Modifier.fillMaxWidth().testShadow(10.dp, CircleShape).clip(CircleShape).background(Color(0xB80D0F14))
-        .border(1.dp, Color(0xFF6A5838), CircleShape).padding(4.dp), verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.SpaceEvenly) {
-        PurseCell(onCoins, "${p.coins} coins") { Icon(SiteIcons.Coin, 18.dp); Num(p.coins) }
-        PurseCell(onSeals, "Seals") {
-            for (k in listOf("c", "u", "r", "m")) Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(4.dp)) { Icon(SiteIcons.Seals.getValue(k), 18.dp); Num(p.seals[k] ?: 0) }
+    BoxWithConstraints(Modifier.fillMaxWidth()) {
+        // One line always (the site's pill never wraps): measure what the numbers need at full size and,
+        // on a narrow screen or with large text, tighten the whole pill evenly instead of squeezing one cell.
+        val fs = androidx.compose.ui.platform.LocalDensity.current.fontScale
+        fun digits(n: Int) = "%,d".format(n).length
+        val sealDigits = listOf("c", "u", "r", "m").sumOf { digits(p.seals[it] ?: 0) }
+        val text = (digits(p.coins) + sealDigits + digits(p.packs)) * 9.4f * fs
+        val need = 8f + 3 * 16f + (18 + 6) + 4 * (18 + 4) + 3 * 6f + (18 + 6) + text
+        val k = (maxWidth.value / need).coerceIn(.6f, 1f)
+        val icon = 18.dp * k; val gap = 6.dp * k; val pad = 8.dp * k; val num = 14f * maxOf(k, .8f)
+        Row(Modifier.fillMaxWidth().testShadow(10.dp, CircleShape).clip(CircleShape).background(Color(0xB80D0F14))
+            .border(1.dp, Color(0xFF6A5838), CircleShape).padding(4.dp), verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.SpaceEvenly) {
+            PurseCell(onCoins, "${p.coins} coins", pad, gap) { Icon(SiteIcons.Coin, icon); Num(p.coins, num) }
+            PurseCell(onSeals, "Seals", pad, gap) {
+                for (k2 in listOf("c", "u", "r", "m")) Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(gap * .66f)) { Icon(SiteIcons.Seals.getValue(k2), icon); Num(p.seals[k2] ?: 0, num) }
+            }
+            PurseCell(onPacks, "${p.packs} packs", pad, gap) { Icon(SiteIcons.Pack, icon); Num(p.packs, num) }
         }
-        PurseCell(onPacks, "${p.packs} packs") { Icon(SiteIcons.Pack, 18.dp); Num(p.packs) }
     }
 }
 
-@Composable private fun PurseCell(onClick: () -> Unit, label: String, content: @Composable () -> Unit) =
-    Row(Modifier.height(44.dp).clip(CircleShape).clickable(onClick = onClick).semantics { contentDescription = label }.padding(horizontal = 8.dp),
-        verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(6.dp)) { content() }
+@Composable private fun PurseCell(onClick: () -> Unit, label: String, pad: Dp, gap: Dp, content: @Composable () -> Unit) =
+    Row(Modifier.height(44.dp).clip(CircleShape).clickable(onClick = onClick).semantics { contentDescription = label }.padding(horizontal = pad),
+        verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(gap)) { content() }
 
-@Composable private fun Num(n: Int, size: Int = 14) = Text("%,d".format(n), style = TextStyle(fontFamily = P.Sans, fontWeight = FontWeight.ExtraBold, fontSize = size.sp, color = P.Ink, fontFeatureSettings = "tnum"), maxLines = 1, softWrap = false)
+@Composable private fun Num(n: Int, size: Int) = Num(n, size.toFloat())
+@Composable private fun Num(n: Int, size: Float = 14f) = Text("%,d".format(n), style = TextStyle(fontFamily = P.Sans, fontWeight = FontWeight.ExtraBold, fontSize = size.sp, color = P.Ink, fontFeatureSettings = "tnum"), maxLines = 1, softWrap = false)
 
 // ---------------------------------------------------------------- gold CTA (pl-mode-cta / pe-buy / pd-claim)
 
@@ -588,7 +600,7 @@ private fun Rewards(r: PlayRules.Reward, column: Boolean = false) {
 
 @Composable
 private fun Today(d: PlayHomeData, act: PlayHomeActions) {
-    Shelf("Today", "Quests", { act.view("deeds") }) {
+    Shelf("Today", "Quests", { act.view("quests") }) {
         Calendar(d)
         Quests(d, act)
     }

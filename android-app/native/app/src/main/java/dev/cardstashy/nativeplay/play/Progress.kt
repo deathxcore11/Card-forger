@@ -127,6 +127,12 @@ object Progress {
         } catch (e: Failure) { _error.value = e; throw e } finally { _busy.value = "" }
     }
 
+    /** The day's one free quest swap (route reroll): an unfinished easy or hard daily is replaced. Answers {counters}. [scope]/[id] are for the weekly swap once the server has it. */
+    suspend fun reroll(level: String, scope: String? = null, id: String? = null) {
+        val out = run("reroll", "reroll", JsonObject().apply { if (scope == null) addProperty("level", level); scope?.let { addProperty("scope", it) }; id?.let { addProperty("id", it) }; addProperty("tz", tz) })
+        out.get("counters")?.let { c -> val base = _state.value?.deepCopy() ?: JsonObject(); base.add("counters", c); set(base) }
+    }
+
     suspend fun open(id: String) = run("open:$id", "open", JsonObject().apply { addProperty("id", id); addProperty("tz", tz) })
     suspend fun buy(set: String) = run("buy", "buy", JsonObject().apply { addProperty("set", set); addProperty("tz", tz) })
     suspend fun forge(to: String, times: Int = 1) = run("forge", "forge", JsonObject().apply { addProperty("to", to); addProperty("times", times); addProperty("tz", tz) })
@@ -139,6 +145,7 @@ object Progress {
     /** Saves a Play deck on the server, then reloads the state (the web's saveDeck). */
     suspend fun saveDeck(deck: JsonObject): JsonElement? { val out = run("deck", "deck", deck); refresh(); return out.get("deck") }
 
+    internal fun setForTest(state: JsonObject?, deeds: JsonObject?) { _state.value = state; _deeds.value = deeds }
     fun clear() { _deeds.value = null; _state.value = null; _story.value = null; _error.value = null }
 
     val MESSAGES = mapOf(

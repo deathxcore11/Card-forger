@@ -80,6 +80,8 @@ private sealed interface Screen {
     /** A Play page not yet native: the site's own, in the web view (Planeswalk stays here for good). */
     data class Web(val url: String) : Screen
     data class Match(val pick: Pick) : Screen
+    /** Achievements with the daily and weekly quests (one page, like the site's Trophies). */
+    data class Achievements(val tab: String? = null) : Screen
 }
 
 class MainActivity : ComponentActivity() {
@@ -141,22 +143,22 @@ private fun App(activity: MainActivity) {
             LaunchedEffect(Unit) { activity.inGame(false) }
             dev.cardstashy.nativeplay.ui.PlayHomeRoute(
                 onQuickPlay = { go(Screen.Decks) }, onCollection = { go(Screen.Collection) },
-                onSignIn = { go(Screen.SignIn) }, onWeb = { go(Screen.Web(it)) }, onTrunk = { go(Screen.Trunk) }, onDecks = { go(Screen.PlayDecks) })
+                onSignIn = { go(Screen.SignIn) }, onWeb = { go(Screen.Web(it)) }, onTrunk = { go(Screen.Trunk) }, onDecks = { go(Screen.PlayDecks) }, onAchievements = { go(Screen.Achievements(it)) })
         }
         Screen.Trunk -> {
             LaunchedEffect(Unit) { activity.inGame(false) }
             dev.cardstashy.nativeplay.ui.TrunkRoute(onBack = { back() }, onWeb = { go(Screen.Web(it)) }, onNav = { t ->
-                when (t) { dev.cardstashy.nativeplay.ui.PlayTab.SWITCH -> go(Screen.Collection); dev.cardstashy.nativeplay.ui.PlayTab.TRUNK -> {}; dev.cardstashy.nativeplay.ui.PlayTab.DECKS -> go(Screen.PlayDecks); else -> go(Screen.Web("https://cardstashy.com/#play")) } })
+                when (t) { dev.cardstashy.nativeplay.ui.PlayTab.SWITCH -> go(Screen.Collection); dev.cardstashy.nativeplay.ui.PlayTab.TRUNK -> {}; dev.cardstashy.nativeplay.ui.PlayTab.DECKS -> go(Screen.PlayDecks); dev.cardstashy.nativeplay.ui.PlayTab.TROPHIES -> go(Screen.Achievements()); else -> go(Screen.Web("https://cardstashy.com/#play")) } })
         }
         Screen.PlayDecks -> {
             LaunchedEffect(Unit) { activity.inGame(false) }
             dev.cardstashy.nativeplay.ui.DecksRoute(onBack = { back() }, onWeb = { go(Screen.Web(it)) }, onTrunkSet = { go(Screen.TrunkSet(it)) }, onNav = { t ->
-                when (t) { dev.cardstashy.nativeplay.ui.PlayTab.SWITCH -> go(Screen.Collection); dev.cardstashy.nativeplay.ui.PlayTab.TRUNK -> go(Screen.Trunk); dev.cardstashy.nativeplay.ui.PlayTab.DECKS -> {}; else -> go(Screen.Web("https://cardstashy.com/#play")) } })
+                when (t) { dev.cardstashy.nativeplay.ui.PlayTab.SWITCH -> go(Screen.Collection); dev.cardstashy.nativeplay.ui.PlayTab.TRUNK -> go(Screen.Trunk); dev.cardstashy.nativeplay.ui.PlayTab.DECKS -> {}; dev.cardstashy.nativeplay.ui.PlayTab.TROPHIES -> go(Screen.Achievements()); else -> go(Screen.Web("https://cardstashy.com/#play")) } })
         }
         is Screen.TrunkSet -> {
             LaunchedEffect(Unit) { activity.inGame(false) }
             dev.cardstashy.nativeplay.ui.TrunkRoute(onBack = { back() }, onWeb = { go(Screen.Web(it)) }, startSet = s.code, onNav = { t ->
-                when (t) { dev.cardstashy.nativeplay.ui.PlayTab.SWITCH -> go(Screen.Collection); dev.cardstashy.nativeplay.ui.PlayTab.TRUNK -> go(Screen.Trunk); dev.cardstashy.nativeplay.ui.PlayTab.DECKS -> go(Screen.PlayDecks); else -> go(Screen.Web("https://cardstashy.com/#play")) } })
+                when (t) { dev.cardstashy.nativeplay.ui.PlayTab.SWITCH -> go(Screen.Collection); dev.cardstashy.nativeplay.ui.PlayTab.TRUNK -> go(Screen.Trunk); dev.cardstashy.nativeplay.ui.PlayTab.DECKS -> go(Screen.PlayDecks); dev.cardstashy.nativeplay.ui.PlayTab.TROPHIES -> go(Screen.Achievements()); else -> go(Screen.Web("https://cardstashy.com/#play")) } })
         }
         Screen.Collection -> { LaunchedEffect(Unit) { activity.inGame(false) }; CollectionScreen(onPlay = { if (trail.size > 1) back() else go(Screen.Home) }) }
         is Screen.Web -> { LaunchedEffect(Unit) { activity.inGame(false) }; CollectionScreen(onPlay = { back() }, url = s.url) }
@@ -169,6 +171,13 @@ private fun App(activity: MainActivity) {
             LaunchedEffect(Unit) { activity.inGame(false) }
             DeckPickScreen(onPick = { go(Screen.Match(it)) }, onBack = { back() },
                 onSignIn = { go(Screen.SignIn) })
+        }
+        is Screen.Achievements -> {
+            LaunchedEffect(Unit) { activity.inGame(false) }
+            dev.cardstashy.nativeplay.ui.AchievementsRoute(onBack = { back() }, startTab = s.tab, nav = {
+                dev.cardstashy.nativeplay.ui.PlayNav(dev.cardstashy.nativeplay.ui.PlayTab.TROPHIES, { t ->
+                    when (t) { dev.cardstashy.nativeplay.ui.PlayTab.SWITCH -> go(Screen.Collection); dev.cardstashy.nativeplay.ui.PlayTab.TRUNK -> go(Screen.Trunk); dev.cardstashy.nativeplay.ui.PlayTab.DECKS -> go(Screen.PlayDecks); dev.cardstashy.nativeplay.ui.PlayTab.TROPHIES -> {}; else -> go(Screen.Web("https://cardstashy.com/#play")) } })
+            })
         }
         is Screen.Match -> MatchFlow(activity, s.pick, onHome = { go(Screen.Home) }, onDecks = { back() })
     }
