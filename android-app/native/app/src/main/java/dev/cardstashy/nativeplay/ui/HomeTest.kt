@@ -38,7 +38,7 @@ object HomeTest {
     private var prefs: android.content.SharedPreferences? = null
     fun init(context: Context) {
         prefs = context.getSharedPreferences("home-test", Context.MODE_PRIVATE)
-        variant = prefs?.getString("v", null)?.takeIf { it in variants } ?: "C2"
+        variant = "C2" // 0.3.8: proven on the Fold 19:22Z; the bar is gone
     }
     fun pick(v: String) { variant = v; prefs?.edit()?.putString("v", v)?.commit() }
     val noPictures get() = variant == "B"

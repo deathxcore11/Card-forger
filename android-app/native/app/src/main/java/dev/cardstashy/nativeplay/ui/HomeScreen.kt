@@ -161,7 +161,7 @@ private fun ProfilePanel(onSignIn: () -> Unit) {
     val name = profile?.name?.takeIf { it.isNotBlank() } ?: session?.email?.substringBefore('@')
     Row(Modifier.fillMaxWidth().glass().let { if (session == null) it.clickable(onClick = onSignIn) else it }.padding(14.dp),
         verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(12.dp)) {
-        Avatar(profile?.avatarUrl, name, 48.dp)
+        ProfileAvatar(profile, 48.dp)
         Column(Modifier.weight(1f)) {
             Text(name ?: "Sign in", style = Type.Title.copy(fontSize = 17.sp))
             Text(if (session == null) "Use your CardStashy account to play your decks." else session!!.email, style = Type.Body)

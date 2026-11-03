@@ -1,0 +1,555 @@
+package dev.cardstashy.nativeplay.ui
+
+import android.widget.Toast
+import androidx.activity.compose.BackHandler
+import androidx.compose.animation.animateContentSize
+import androidx.compose.foundation.Image
+import androidx.compose.foundation.background
+import androidx.compose.foundation.border
+import androidx.compose.foundation.clickable
+import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.BoxWithConstraints
+import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.ColumnScope
+import androidx.compose.foundation.layout.FlowRow
+import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.WindowInsets
+import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.heightIn
+import androidx.compose.foundation.layout.imePadding
+import androidx.compose.foundation.layout.offset
+import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.requiredSize
+import androidx.compose.foundation.layout.safeDrawing
+import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.layout.width
+import androidx.compose.foundation.layout.widthIn
+import androidx.compose.foundation.layout.windowInsetsPadding
+import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.shape.CircleShape
+import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.foundation.text.KeyboardActions
+import androidx.compose.foundation.text.KeyboardOptions
+import androidx.compose.foundation.verticalScroll
+import androidx.compose.material3.AlertDialog
+import androidx.compose.material3.Checkbox
+import androidx.compose.material3.CheckboxDefaults
+import androidx.compose.material3.OutlinedTextField
+import androidx.compose.material3.OutlinedTextFieldDefaults
+import androidx.compose.material3.Text
+import androidx.compose.material3.TextButton
+import androidx.compose.runtime.Composable
+import androidx.compose.runtime.collectAsState
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.rememberCoroutineScope
+import androidx.compose.runtime.saveable.rememberSaveable
+import androidx.compose.runtime.setValue
+import androidx.compose.ui.Alignment
+import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.clip
+import androidx.compose.ui.draw.drawWithContent
+import androidx.compose.ui.graphics.Brush
+import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.layout.ContentScale
+import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.text.TextStyle
+import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.input.ImeAction
+import androidx.compose.ui.text.input.KeyboardType
+import androidx.compose.ui.text.input.PasswordVisualTransformation
+import androidx.compose.ui.text.input.VisualTransformation
+import androidx.compose.ui.text.style.TextOverflow
+import androidx.compose.ui.unit.Dp
+import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.sp
+import dev.cardstashy.nativeplay.account.Account
+import dev.cardstashy.nativeplay.account.Decks
+import dev.cardstashy.nativeplay.art.CardArt
+import kotlinx.coroutines.launch
+
+/*
+ * Settings, ported from the site: views.js settings() 1949 (tabs, panes), accountPanel 1889, signedOutAccount 1861,
+ * settings-theme.js SETTINGS_TABS, app-info.js infoPanel, profile-art.js profileAvatar / profilePhotoControl.
+ * Native differences (deviation list): no Backup tab (it holds the device's Collection workspace, which this Play app
+ * doesn't keep; app updates live in Help), no colour mode or card-grid size (native Play is the dark theme; grids are
+ * Collection), no Google button or email link yet (both need the browser round trip), Friends / View profile /
+ * Blocked accounts open the site.
+ */
+
+private val Bad = Color(0xFFF08A7E)       // --bad
+private val Faint = Color(0xFF8B93A3)     // --faint
+private val Ok = Color(0xFF7BD88F)
+
+private object S {
+    val H1 = TextStyle(fontFamily = Site.Manrope, fontWeight = FontWeight.Bold, fontSize = 20.sp, lineHeight = 26.sp, color = Site.Text, letterSpacing = (-.02).sp)
+    val H2 = TextStyle(fontFamily = Site.Manrope, fontWeight = FontWeight.Bold, fontSize = 18.sp, lineHeight = 24.sp, color = Site.Text)
+    val Eyebrow = TextStyle(fontFamily = Site.Manrope, fontWeight = FontWeight.Bold, fontSize = 11.sp, letterSpacing = 1.3.sp, color = Site.Muted)
+    val Body = TextStyle(fontFamily = Site.Manrope, fontWeight = FontWeight.Medium, fontSize = 14.sp, lineHeight = 20.sp, color = Site.Text)
+    val Small = TextStyle(fontFamily = Site.Manrope, fontWeight = FontWeight.Medium, fontSize = 13.sp, lineHeight = 18.sp, color = Site.Muted)
+    val Foot = TextStyle(fontFamily = Site.Manrope, fontWeight = FontWeight.Medium, fontSize = 12.sp, lineHeight = 17.sp, color = Faint)
+    val Btn = TextStyle(fontFamily = Site.Manrope, fontWeight = FontWeight.Bold, fontSize = 14.sp, color = Site.Text)
+}
+
+private enum class Tab(val label: String) { ACCOUNT("Profile & account"), APP("Appearance"), INFO("Help") }
+
+@Composable
+fun SettingsScreen(onBack: () -> Unit, onWeb: (String) -> Unit, startTab: String = "account") {
+    BackHandler(onBack = onBack)
+    var tab by rememberSaveable { mutableStateOf(if (startTab == "info") Tab.INFO else if (startTab == "app") Tab.APP else Tab.ACCOUNT) }
+    Box(Modifier.fillMaxSize().background(Site.Bg)) {
+        Column(Modifier.fillMaxSize().windowInsetsPadding(WindowInsets.safeDrawing).imePadding()) {
+            // The dialog head: brand mark, "CARDSTASHY · ALL GAMES", Settings, close.
+            Row(Modifier.fillMaxWidth().padding(start = 16.dp, end = 12.dp, top = 10.dp, bottom = 10.dp), verticalAlignment = Alignment.CenterVertically) {
+                BrandMark(34.dp)
+                Spacer(Modifier.width(12.dp))
+                Column(Modifier.weight(1f)) {
+                    Text("CARDSTASHY · ALL GAMES", style = S.Eyebrow.copy(fontSize = 10.sp))
+                    Text("Settings", style = S.H1)
+                }
+                Box(Modifier.size(44.dp).clip(RoundedCornerShape(12.dp)).background(Site.Surface2).border(1.dp, Site.Line, RoundedCornerShape(12.dp)).clickable(onClick = onBack),
+                    contentAlignment = Alignment.Center) { Icon(SiteIcons.Close, 18.dp, Site.Text) }
+            }
+            Box(Modifier.fillMaxWidth().height(1.dp).background(Site.Line))
+            Column(Modifier.weight(1f).fillMaxWidth().verticalScroll(rememberScrollState())) {
+                Column(Modifier.widthIn(max = 760.dp).fillMaxWidth().align(Alignment.CenterHorizontally).padding(16.dp), verticalArrangement = Arrangement.spacedBy(14.dp)) {
+                    Tabs(tab) { tab = it }
+                    when (tab) {
+                        Tab.ACCOUNT -> AccountPane(onWeb, onPick = { ArtPick.open(it) })
+                        Tab.APP -> AppPane()
+                        Tab.INFO -> InfoPane(onWeb)
+                    }
+                }
+            }
+        }
+    }
+}
+
+@Composable
+private fun Tabs(tab: Tab, onTab: (Tab) -> Unit) {
+    Row(Modifier.fillMaxWidth().clip(RoundedCornerShape(14.dp)).background(Site.Surface2).border(1.dp, Site.Line, RoundedCornerShape(14.dp)).padding(4.dp),
+        horizontalArrangement = Arrangement.spacedBy(4.dp)) {
+        Tab.entries.forEach { t ->
+            val on = t == tab; val sh = RoundedCornerShape(11.dp)
+            Row(Modifier.weight(1f).heightIn(min = 46.dp).clip(sh).then(if (on) Modifier.background(Site.Surface).border(1.dp, Site.Gold.copy(alpha = .45f), sh) else Modifier)
+                .clickable { onTab(t) }.padding(horizontal = 6.dp, vertical = 8.dp), horizontalArrangement = Arrangement.Center, verticalAlignment = Alignment.CenterVertically) {
+                Icon(when (t) { Tab.ACCOUNT -> SiteIcons.Profile; Tab.APP -> SiteIcons.Appearance; Tab.INFO -> SiteIcons.Help }, 15.dp, if (on) Site.Text else Site.Muted)
+                Spacer(Modifier.width(6.dp))
+                Text(t.label, style = S.Btn.copy(fontSize = 12.sp, color = if (on) Site.Text else Site.Muted), maxLines = 2)
+            }
+        }
+    }
+}
+
+// ---------------------------------------------------------------- shared pieces (the site's .panel, .btn, .field, .check)
+
+@Composable
+private fun Panel(modifier: Modifier = Modifier, padding: Dp = 18.dp, content: @Composable ColumnScope.() -> Unit) =
+    Column(modifier.fillMaxWidth().clip(RoundedCornerShape(18.dp)).background(Site.Surface).border(1.dp, Site.Line, RoundedCornerShape(18.dp)).padding(padding),
+        verticalArrangement = Arrangement.spacedBy(10.dp), content = content)
+
+@Composable
+private fun CardHeading(eyebrow: String, title: String) = Column { Text(eyebrow, style = S.Eyebrow); Text(title, style = S.H2) }
+
+@Composable
+fun SiteButton(label: String, modifier: Modifier = Modifier, ghost: Boolean = false, danger: Boolean = false, small: Boolean = false, enabled: Boolean = true, onClick: () -> Unit) {
+    val sh = RoundedCornerShape(12.dp)
+    Box(modifier.heightIn(min = if (small) 40.dp else 46.dp).clip(sh)
+        .background(if (ghost) Brush.verticalGradient(listOf(Site.Surface2, Site.Surface2)) else goldButtonBrush(enabled))
+        .then(if (ghost) Modifier.border(1.dp, if (danger) Bad.copy(alpha = .5f) else Site.Line, sh) else Modifier)
+        .clickable(enabled = enabled, onClick = onClick).padding(horizontal = 14.dp, vertical = 8.dp), contentAlignment = Alignment.Center) {
+        Text(label, style = S.Btn.copy(fontSize = if (small) 13.sp else 14.sp, color = when { danger -> Bad; ghost -> Site.Text; else -> Site.GoldInk }))
+    }
+}
+
+@Composable
+private fun LinkText(label: String, small: Boolean = false, color: Color = Site.Gold, onClick: () -> Unit) =
+    Text(label, style = S.Btn.copy(fontSize = if (small) 13.sp else 14.sp, color = color), modifier = Modifier.clip(RoundedCornerShape(8.dp)).clickable(onClick = onClick).padding(vertical = 6.dp))
+
+@Composable
+private fun Field(label: String, value: String, onValue: (String) -> Unit, placeholder: String = "", hint: String? = null, password: Boolean = false,
+                  keyboard: KeyboardType = KeyboardType.Text, ime: ImeAction = ImeAction.Next, onGo: () -> Unit = {}, lines: Int = 1) {
+    var shown by remember { mutableStateOf(false) }
+    Column(verticalArrangement = Arrangement.spacedBy(4.dp)) {
+        if (label.isNotEmpty()) Text(androidx.compose.ui.text.buildAnnotatedString {
+            append(label); hint?.let { pushStyle(S.Foot.toSpanStyle()); append("  $it"); pop() } }, style = S.Body.copy(fontSize = 13.sp, fontWeight = FontWeight.SemiBold))
+        OutlinedTextField(value, onValue, Modifier.fillMaxWidth(), singleLine = lines == 1, minLines = lines,
+            placeholder = { Text(placeholder, style = S.Body.copy(color = Faint)) }, textStyle = S.Body,
+            shape = RoundedCornerShape(12.dp),
+            colors = OutlinedTextFieldDefaults.colors(focusedTextColor = Site.Text, unfocusedTextColor = Site.Text, focusedBorderColor = Site.Gold, unfocusedBorderColor = Site.Line,
+                focusedContainerColor = Site.Surface2, unfocusedContainerColor = Site.Surface2, cursorColor = Site.Gold),
+            visualTransformation = if (password && !shown) PasswordVisualTransformation() else VisualTransformation.None,
+            trailingIcon = if (password) ({ Text(if (shown) "Hide" else "Show", style = S.Btn.copy(fontSize = 12.sp, color = Site.Muted), modifier = Modifier.clip(RoundedCornerShape(8.dp)).clickable { shown = !shown }.padding(8.dp)) }) else null,
+            keyboardOptions = KeyboardOptions(keyboardType = keyboard, imeAction = ime), keyboardActions = KeyboardActions(onGo = { onGo() }, onDone = { onGo() }))
+    }
+}
+
+/** auth-form.js passwordRules: each rule turns gold as it is met. */
+@Composable
+private fun PasswordRules(p: String) = Column(verticalArrangement = Arrangement.spacedBy(2.dp)) {
+    Account.passwordRules.forEach { (label, ok) ->
+        val met = ok(p)
+        Row(verticalAlignment = Alignment.CenterVertically) {
+            Box(Modifier.size(8.dp).clip(CircleShape).background(if (met) Site.Gold else Site.Line))
+            Spacer(Modifier.width(8.dp)); Text(label, style = S.Small.copy(color = if (met) Site.Gold else Site.Muted))
+        }
+    }
+}
+
+@Composable
+private fun Disclosure(summary: String, danger: Boolean = false, bold: Boolean = false, content: @Composable ColumnScope.() -> Unit) {
+    var open by remember { mutableStateOf(false) }
+    Column(Modifier.fillMaxWidth().animateContentSize()) {
+        Row(Modifier.clip(RoundedCornerShape(10.dp)).clickable { open = !open }.padding(vertical = 8.dp), verticalAlignment = Alignment.CenterVertically) {
+            Text(if (open) "▾" else "▸", style = S.Small.copy(color = if (danger) Bad else Site.Text)); Spacer(Modifier.width(6.dp))
+            Text(summary, style = S.Small.copy(color = if (danger) Bad else Site.Text, fontWeight = if (bold) FontWeight.Bold else FontWeight.Medium))
+        }
+        if (open) Column(Modifier.padding(top = 4.dp), verticalArrangement = Arrangement.spacedBy(8.dp), content = content)
+    }
+}
+
+@Composable
+private fun Notice(text: String, tone: Color) =
+    Text(text, style = S.Small.copy(color = tone), modifier = Modifier.fillMaxWidth().clip(RoundedCornerShape(12.dp)).background(tone.copy(alpha = .1f)).border(1.dp, tone.copy(alpha = .35f), RoundedCornerShape(12.dp)).padding(12.dp))
+
+// ---------------------------------------------------------------- avatar (profile-art.js profileAvatar)
+
+/** profileAvatar: the initial (or person mark), covered by the card art in its saved circle crop, else the photo. */
+@Composable
+fun ProfileAvatar(profile: Account.Profile?, size: Dp, ring: Boolean = true) {
+    val initial = (profile?.username ?: profile?.name)?.trim()?.firstOrNull()?.uppercase()
+    Box(Modifier.size(size).clip(CircleShape).background(Brush.radialGradient(listOf(Color(0xFF2B2F38), Color(0xFF171A20))))
+        .then(if (ring) Modifier.border(1.5.dp, Site.Gold.copy(alpha = .7f), CircleShape) else Modifier), contentAlignment = Alignment.Center) {
+        if (initial != null) Text(initial, style = S.H1.copy(fontSize = (size.value * .42f).sp, color = Site.Text)) else Icon(SiteIcons.Profile, size * .55f, Site.Muted)
+        val art = profile?.avatar
+        if (art != null) ArtFrame(art, 1f, Modifier.fillMaxSize(), CircleShape)
+        else if (!profile?.avatarUrl.isNullOrBlank()) coil3.compose.AsyncImage(profile?.avatarUrl, null, imageLoader = CardArt.loader, modifier = Modifier.fillMaxSize(), contentScale = ContentScale.Crop)
+    }
+}
+
+// ---------------------------------------------------------------- Profile & account
+
+@Composable
+private fun AccountPane(onWeb: (String) -> Unit, onPick: (String) -> Unit) {
+    val session by Account.session.collectAsState()
+    if (session == null) SignedOut() else SignedIn(onWeb, onPick)
+}
+
+/** views.js signedOutAccount: tabs Log in / Create account, the reset pane, the privacy line and email help. */
+@Composable
+fun SignedOut(onSignedIn: () -> Unit = {}) {
+    val context = LocalContext.current
+    val scope = rememberCoroutineScope()
+    var mode by rememberSaveable { mutableStateOf("login") }
+    var email by rememberSaveable { mutableStateOf("") }
+    var password by remember { mutableStateOf("") }
+    var confirm by remember { mutableStateOf("") }
+    var busy by remember { mutableStateOf(false) }
+    var feedback by remember { mutableStateOf<Pair<String, Boolean>?>(null) } // message, ok
+    fun run(block: suspend () -> Unit) { if (busy) return; busy = true; feedback = null; scope.launch { try { block() } finally { busy = false } } }
+    Panel {
+        Row(verticalAlignment = Alignment.CenterVertically) {
+            BrandMark(40.dp); Spacer(Modifier.width(12.dp)); CardHeading("CARDSTASHY ACCOUNT", "Your account")
+        }
+        Text("Keep your collection and decks with you across devices.", style = S.Small)
+        if (mode != "reset") Row(Modifier.fillMaxWidth().clip(RoundedCornerShape(14.dp)).background(Site.Surface2).border(1.dp, Site.Line, RoundedCornerShape(14.dp)).padding(4.dp),
+            horizontalArrangement = Arrangement.spacedBy(4.dp)) {
+            listOf("login" to "Log in", "signup" to "Create account").forEach { (id, label) ->
+                val on = mode == id; val sh = RoundedCornerShape(11.dp)
+                Box(Modifier.weight(1f).heightIn(min = 42.dp).clip(sh).then(if (on) Modifier.background(Site.Surface).border(1.dp, Site.Gold.copy(alpha = .45f), sh) else Modifier)
+                    .clickable { mode = id; feedback = null }, contentAlignment = Alignment.Center) { Text(label, style = S.Btn.copy(fontSize = 13.sp, color = if (on) Site.Text else Site.Muted)) }
+            }
+        }
+        feedback?.let { (m, ok) -> Notice(m, if (ok) Ok else Bad) }
+        when (mode) {
+            "login" -> {
+                fun go() = run {
+                    val e = Account.signIn(email, password)
+                    if (e != null) feedback = e to false else { password = ""; Decks.clear(); Decks.load(context); dev.cardstashy.nativeplay.play.Progress.clear(); onSignedIn() }
+                }
+                Field("Email address", email, { email = it }, "you@example.com", keyboard = KeyboardType.Email)
+                Field("Password", password, { password = it }, "Your password", password = true, keyboard = KeyboardType.Password, ime = ImeAction.Go, onGo = { go() })
+                SiteButton(if (busy) "Logging in…" else "Log in", Modifier.fillMaxWidth(), enabled = !busy) { go() }
+                LinkText("Forgot password?", small = true) { mode = "reset"; feedback = null }
+            }
+            "signup" -> {
+                fun go() = run {
+                    val (e, signedIn) = Account.signUp(email, password, confirm)
+                    when { e != null -> feedback = e to false; signedIn -> { password = ""; confirm = ""; Decks.clear(); Decks.load(context); onSignedIn() }
+                        else -> { password = ""; confirm = ""; feedback = "Check your email to finish creating your account." to true } }
+                }
+                Field("Email address", email, { email = it }, "you@example.com", keyboard = KeyboardType.Email)
+                Field("Password", password, { password = it }, "Create a password", password = true, keyboard = KeyboardType.Password)
+                PasswordRules(password)
+                Field("Confirm password", confirm, { confirm = it }, "Enter it again", password = true, keyboard = KeyboardType.Password, ime = ImeAction.Go, onGo = { go() })
+                SiteButton(if (busy) "Creating…" else "Create account", Modifier.fillMaxWidth(), enabled = !busy) { go() }
+                Text("Check your email to finish creating your account.", style = S.Foot)
+                LinkText("Didn’t get the email? Resend confirmation email", small = true) {
+                    run { val e = Account.resendConfirm(email); feedback = (e ?: "Confirmation email sent. Check your inbox and spam folder.") to (e == null) }
+                }
+            }
+            else -> {
+                Text("Reset your password", style = S.H2)
+                Text("Enter your account email to request a reset link.", style = S.Small)
+                fun go() = run { val e = Account.sendReset(email); feedback = (e ?: "Check your email for a password-reset link.") to (e == null) }
+                Field("Email address", email, { email = it }, "you@example.com", keyboard = KeyboardType.Email, ime = ImeAction.Go, onGo = { go() })
+                SiteButton(if (busy) "Sending…" else "Send reset link", Modifier.fillMaxWidth(), enabled = !busy) { go() }
+                LinkText("Back to log in", small = true) { mode = "login"; feedback = null }
+            }
+        }
+        Row(verticalAlignment = Alignment.CenterVertically) {
+            Icon(SiteIcons.Sync, 14.dp, Site.Muted); Spacer(Modifier.width(8.dp))
+            Text("Your collection stays private. Device saving works without an account.", style = S.Foot)
+        }
+        Disclosure("Help with email links") { Text("Check spam and open the newest link in the browser where you requested it. If a link has expired, request a new one.", style = S.Foot) }
+    }
+}
+
+/** views.js accountPanel, signed in: the account hub, Edit profile, the account actions and Delete account. */
+@Composable
+private fun SignedIn(onWeb: (String) -> Unit, onPick: (String) -> Unit) {
+    val context = LocalContext.current
+    val scope = rememberCoroutineScope()
+    val session by Account.session.collectAsState()
+    val profile by Account.profile.collectAsState()
+    androidx.compose.runtime.LaunchedEffect(session?.userId) { Account.refreshProfile() }
+    var confirmOut by remember { mutableStateOf(false) }
+    var confirmDelete by remember { mutableStateOf(false) }
+    var busy by remember { mutableStateOf<String?>(null) }
+    fun toast(m: String) = Toast.makeText(context, m, Toast.LENGTH_LONG).show()
+    Panel(padding = 0.dp) {
+        // account-hub: the header art (or the avatar's art) as a 96 dp banner fading into the panel, the 72 dp avatar overlapping it.
+        Box(Modifier.fillMaxWidth()) {
+            val header = profile?.header ?: profile?.avatar
+            Box(Modifier.fillMaxWidth().height(96.dp).background(Brush.radialGradient(listOf(Site.Gold.copy(alpha = .26f), Color.Transparent), radius = 600f)).background(Site.Surface2)
+                .drawWithContent { drawContent(); drawRect(Brush.verticalGradient(.35f to Color.Transparent, 1f to Site.Surface)) }) {
+                // The header keeps its own framing (picked in the same drag-and-zoom editor); the avatar fallback fills the banner.
+                profile?.header?.let { h -> BoxWithConstraints(Modifier.fillMaxSize()) { ArtFrame(h, maxWidth / maxHeight, Modifier.fillMaxSize()) } }
+                    ?: header?.let { coil3.compose.AsyncImage(it.image, null, imageLoader = CardArt.loader, modifier = Modifier.fillMaxSize(), contentScale = ContentScale.Crop,
+                        alignment = androidx.compose.ui.BiasAlignment(0f, -.44f)) }
+            }
+            Row(Modifier.padding(start = 20.dp, end = 20.dp, top = 60.dp), verticalAlignment = Alignment.Bottom) {
+                Box(Modifier.clip(CircleShape).background(Site.Surface).padding(3.dp)) { ProfileAvatar(profile, 72.dp) }
+                Spacer(Modifier.width(14.dp))
+                Column(Modifier.weight(1f).padding(bottom = 4.dp)) {
+                    Text(profile?.username ?: profile?.name ?: "Collector", style = S.H1, maxLines = 2)
+                    Text(session?.email ?: "", style = S.Foot.copy(color = Site.Muted), maxLines = 1, overflow = TextOverflow.Ellipsis)
+                    FlowRow(Modifier.padding(top = 4.dp), horizontalArrangement = Arrangement.spacedBy(12.dp), verticalArrangement = Arrangement.Center) {
+                        Text("Visible to friends only", style = S.Foot.copy(fontSize = 10.5.sp, fontWeight = FontWeight.Bold, color = Site.Gold),
+                            modifier = Modifier.align(Alignment.CenterVertically).clip(RoundedCornerShape(999.dp)).background(Site.Gold.copy(alpha = .12f)).border(1.dp, Site.Gold.copy(alpha = .3f), RoundedCornerShape(999.dp)).padding(horizontal = 9.dp, vertical = 2.dp))
+                        LinkText("View profile", small = true) { onWeb("https://cardstashy.com/#community") }
+                    }
+                }
+            }
+        }
+        // Friends row (account-hub-friends).
+        Row(Modifier.padding(horizontal = 20.dp).fillMaxWidth().heightIn(min = 60.dp).clip(RoundedCornerShape(16.dp)).background(Site.Surface2.copy(alpha = .55f))
+            .border(1.dp, Site.Line, RoundedCornerShape(16.dp)).clickable { onWeb("https://cardstashy.com/#community") }.padding(horizontal = 16.dp, vertical = 12.dp),
+            verticalAlignment = Alignment.CenterVertically) {
+            Box(Modifier.size(38.dp).clip(RoundedCornerShape(11.dp)).background(Site.Gold.copy(alpha = .14f)), contentAlignment = Alignment.Center) { Icon(SiteIcons.Friends, 20.dp, Site.Gold) }
+            Spacer(Modifier.width(14.dp))
+            Column(Modifier.weight(1f)) { Text("Friends", style = S.Btn); Text("Your circle · add by username or email", style = S.Foot.copy(color = Site.Muted)) }
+            Text("›", style = S.H1.copy(color = Site.Gold, fontSize = 22.sp))
+        }
+        Box(Modifier.fillMaxWidth().height(1.dp).background(Site.Line))
+        Column(Modifier.padding(start = 20.dp, end = 20.dp, bottom = 20.dp), verticalArrangement = Arrangement.spacedBy(10.dp)) {
+            Disclosure("Edit profile", bold = true) { EditProfile(profile, onPick) }
+            Text("Your collection and decks are private. Saved here first, then synced to your account.", style = S.Foot)
+            FlowRow(horizontalArrangement = Arrangement.spacedBy(8.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                SiteButton("Blocked accounts", ghost = true, small = true) { onWeb("https://cardstashy.com/#community") }
+                SiteButton(if (busy == "reset") "Sending…" else "Reset password", ghost = true, small = true, enabled = busy == null) {
+                    busy = "reset"; scope.launch { val e = Account.sendReset(session?.email ?: ""); busy = null; toast(e ?: "Check your email for a password-reset link.") }
+                }
+                SiteButton("Sign out", ghost = true, small = true) { confirmOut = true }
+            }
+            Text("Signing out hides this account’s cards and profile on this device.", style = S.Foot)
+            Disclosure("Delete account", danger = true) {
+                Text("Permanently deletes your CardStashy account and the collection, decks and profile synced to it.", style = S.Foot)
+                LinkText("How account deletion works", small = true) { onWeb("https://cardstashy.com/delete-account.html") }
+                SiteButton(if (busy == "delete") "Deleting…" else "Delete my account", ghost = true, danger = true, enabled = busy == null) { confirmDelete = true }
+            }
+        }
+    }
+    if (confirmOut) AlertDialog(onDismissRequest = { confirmOut = false }, containerColor = Site.Surface,
+        text = { Text("Sign out? Your account’s cards and profile will be hidden. They’ll be here when you sign back in.", style = S.Body) },
+        confirmButton = { TextButton({ confirmOut = false; scope.launch { Account.signOut(); Decks.clear(); dev.cardstashy.nativeplay.play.Progress.clear(); toast("Signed out. Your account data is saved.") } }) { Text("Sign out", style = S.Btn.copy(color = Site.Gold)) } },
+        dismissButton = { TextButton({ confirmOut = false }) { Text("Cancel", style = S.Btn.copy(color = Site.Muted)) } })
+    if (confirmDelete) {
+        var typed by remember { mutableStateOf("") }
+        AlertDialog(onDismissRequest = { confirmDelete = false }, containerColor = Site.Surface, title = { Text("Delete account", style = S.H2) },
+            text = { Column(verticalArrangement = Arrangement.spacedBy(10.dp)) {
+                Text("This permanently deletes ${session?.email ?: "your account"} and the collection, decks and profile synced to it. It can't be undone. Type DELETE to confirm.", style = S.Body)
+                Field("", typed, { typed = it }, ime = ImeAction.Done) } },
+            confirmButton = { TextButton({
+                confirmDelete = false
+                if (typed.trim() != "DELETE") { toast("Account not deleted. Type DELETE in capitals to confirm."); return@TextButton }
+                busy = "delete"; scope.launch { val e = Account.deleteAccount(); busy = null; if (e == null) { Decks.clear(); dev.cardstashy.nativeplay.play.Progress.clear() }; toast(e ?: "Your account and its synced data were deleted.") }
+            }) { Text("Delete account", style = S.Btn.copy(color = Bad)) } },
+            dismissButton = { TextButton({ confirmDelete = false }) { Text("Cancel", style = S.Btn.copy(color = Site.Muted)) } })
+    }
+}
+
+@Composable
+private fun EditProfile(profile: Account.Profile?, onPick: (String) -> Unit) {
+    val context = LocalContext.current
+    val scope = rememberCoroutineScope()
+    var user by remember(profile?.username) { mutableStateOf(profile?.username ?: "") }
+    var bio by remember(profile?.bio) { mutableStateOf(profile?.bio ?: "") }
+    var busy by remember { mutableStateOf(false) }
+    // profilePhotoControl(editAvatar): the avatar and "Change profile picture" with the art's name and a brush.
+    Row(verticalAlignment = Alignment.CenterVertically) {
+        Box(Modifier.clip(CircleShape).clickable { onPick("avatar") }) { ProfileAvatar(profile, 56.dp) }
+        Spacer(Modifier.width(12.dp))
+        Row(Modifier.weight(1f).clip(RoundedCornerShape(14.dp)).background(Site.Surface2).border(1.dp, Site.Line, RoundedCornerShape(14.dp)).clickable { onPick("avatar") }
+            .padding(horizontal = 14.dp, vertical = 10.dp), verticalAlignment = Alignment.CenterVertically) {
+            Column(Modifier.weight(1f)) { Text("Change profile picture", style = S.Btn); Text(profile?.avatar?.name ?: "Choose card art from any game", style = S.Foot.copy(color = Site.Muted), maxLines = 1, overflow = TextOverflow.Ellipsis) }
+            Icon(SiteIcons.Paint, 18.dp, Site.Gold)
+        }
+    }
+    SiteButton("Choose profile header", ghost = true, small = true) { onPick("header") }
+    Field("Username", user, { user = it }, "letters, numbers, _", hint = "Your displayed player name. Friends can search for it.")
+    Field("Bio", bio, { bio = it.take(500) }, lines = 2, ime = ImeAction.Default)
+    SiteButton(if (busy) "Saving…" else "Save profile", small = true, enabled = !busy) {
+        busy = true; scope.launch { val e = Account.saveProfile(user, bio); busy = false; Toast.makeText(context, e ?: "Profile saved.", Toast.LENGTH_SHORT).show() }
+    }
+}
+
+// ---------------------------------------------------------------- Appearance
+
+/** views.js settings app pane, "Glass, motion & feel" (ST-02): the exact labels and foot notes, each live (ST-04). */
+@Composable
+private fun AppPane() {
+    Panel {
+        CardHeading("DISPLAY & FEEDBACK", "Glass, motion & feel")
+        Check("Frosted glass", AppSettings.glass, "Turn it off for plain solid panels (a little lighter on older phones).") { AppSettings.set("glass", it) }
+        Check("Card lighting & foil effects", AppSettings.finish, "Soft light follows your tilt in card details. Foil cards shimmer automatically in the gallery.") { AppSettings.set("finishEffects", it) }
+        Check("Phone tilt in card views", AppSettings.tilt, "Move your phone to move the card and light. Turn off to use touch controls. Follows Reduce motion.") { AppSettings.set("motionTilt", it) }
+        Check("Tap vibration", AppSettings.haptics, "Animations follow your phone’s “Reduce motion” setting.") { AppSettings.set("haptics", it) }
+        Check("Sound & music", AppSettings.sound) { AppSettings.set("packSound", it) }
+        Check("Soft sounds in the app", AppSettings.appSounds, "Music plays only in matches and Planeswalk. Elsewhere you hear only a few soft sounds, like opening a pack or adding a card, if “Soft sounds in the app” is on. Music streams the first time, then stays on this device. Sound starts after your first tap.") { AppSettings.set("appSounds", it) }
+    }
+}
+
+@Composable
+private fun Check(label: String, on: Boolean, foot: String? = null, onChange: (Boolean) -> Unit) = Column {
+    Row(Modifier.fillMaxWidth().clip(RoundedCornerShape(10.dp)).clickable { onChange(!on) }.padding(vertical = 2.dp), verticalAlignment = Alignment.CenterVertically) {
+        Checkbox(on, onChange, colors = CheckboxDefaults.colors(checkedColor = Site.Gold, uncheckedColor = Site.Muted, checkmarkColor = Site.GoldInk))
+        Text(label, style = S.Body)
+    }
+    foot?.let { Text(it, style = S.Foot, modifier = Modifier.padding(start = 12.dp)) }
+}
+
+// ---------------------------------------------------------------- Help (app-info.js infoPanel + views.js sources/about/legal)
+
+private data class Topic(val id: String, val category: String, val title: String, val summary: String, val route: String, val action: String, val details: List<String>)
+
+@Composable
+private fun InfoPane(onWeb: (String) -> Unit) {
+    val context = LocalContext.current
+    val version = remember { runCatching { context.packageManager.getPackageInfo(context.packageName, 0).versionName }.getOrNull() ?: "" }
+    Row(verticalAlignment = Alignment.CenterVertically) {
+        Column(Modifier.weight(1f)) { Text("App $version", style = S.Foot); Text("Updates", style = S.Btn.copy(fontSize = 16.sp)) }
+        LinkText("Check for updates", small = true) { onWeb("https://cardstashy.com/downloads") }
+    }
+    Box(Modifier.fillMaxWidth().height(1.dp).background(Site.Line))
+    Column(verticalArrangement = Arrangement.spacedBy(4.dp)) {
+        Text("MAKE IT YOURS", style = S.Eyebrow)
+        Text("A little guidance. A lot to explore.", style = S.H1.copy(fontSize = 24.sp, lineHeight = 30.sp))
+        Text("Find an answer or watch the action happen.", style = S.Small)
+    }
+    var q by rememberSaveable { mutableStateOf("") }
+    Field("Search help", q, { q = it }, "Conditions, scanning, formats…", ime = ImeAction.Search)
+    // findInfo: words over two letters; title hits score 4, any other hit 1; no words = all topics in order.
+    val words = q.lowercase().split(Regex("\\W+")).filter { it.length > 2 }
+    val shown = if (words.isEmpty()) TOPICS else TOPICS.map { t -> t to words.sumOf { w -> when { w in t.title.lowercase() -> 4; "${t.category} ${t.title} ${t.summary} ${t.details.joinToString(" ")}".lowercase().contains(w) -> 1; else -> 0 }.toInt() } }
+        .filter { it.second > 0 }.sortedByDescending { it.second }.map { it.first }
+    Text("${shown.size} topics", style = S.Foot)
+    if (shown.isEmpty()) Text("No topic matches. Try a shorter word, or ask the Home assistant.", style = S.Small)
+    shown.forEach { t -> TopicCard(t, onWeb) }
+    Panel(padding = 14.dp) {
+        Disclosure("Card databases & prices") {
+            listOf("Magic:" to "Scryfall card data, images and reference prices; MTGJSON precon lists.", "Pokémon:" to "TCGdex card data and images, with supplied TCGplayer and Cardmarket prices.",
+                "Yu-Gi-Oh!:" to "YGOPRODeck card data, alternate art, printings and reference prices.", "Imports:" to "Supported text and CSV exports from deck and collection tools.").forEach { (b, t) ->
+                Text(androidx.compose.ui.text.buildAnnotatedString { pushStyle(androidx.compose.ui.text.SpanStyle(fontWeight = FontWeight.Bold, color = Site.Text)); append(b); pop(); append(" $t") }, style = S.Small)
+            }
+            Text("Prices are estimates; check edition, condition and shipping with the seller.", style = S.Foot)
+        }
+    }
+    Panel(padding = 14.dp) {
+        Disclosure("About CardStashy") {
+            Text("Scores and test games are estimates, not win rates. CardStashy is an independent fan app, not affiliated with or endorsed by the publishers. Magic: The Gathering is a trademark of Wizards of the Coast; Yu-Gi-Oh! of Konami; Pokémon of Nintendo, Creatures and GAME FREAK. Cards and art belong to their owners.", style = S.Foot)
+            Text("Version $version", style = S.Foot)
+        }
+    }
+    Text("CardStashy is unofficial Fan Content permitted under the Fan Content Policy. Not approved/endorsed by Wizards. Portions of the materials used are property of Wizards of the Coast. ©Wizards of the Coast LLC.", style = S.Foot)
+}
+
+@Composable
+private fun TopicCard(t: Topic, onWeb: (String) -> Unit) {
+    var open by remember { mutableStateOf(false) }
+    Panel(Modifier.animateContentSize().clickable { open = !open }, padding = 16.dp) {
+        Row(verticalAlignment = Alignment.Top) {
+            Column(Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(4.dp)) {
+                Text(t.category.uppercase(), style = S.Eyebrow); Text(t.title, style = S.H2.copy(fontSize = 16.sp)); Text(t.summary, style = S.Small)
+            }
+            Text(if (open) "−" else "+", style = S.H2.copy(color = Site.Gold))
+        }
+        if (open) {
+            t.details.forEach { Text(it, style = S.Small.copy(color = Site.Text)) }
+            SiteButton(t.action, ghost = true, small = true) { onWeb("https://cardstashy.com/${t.route}") }
+        }
+    }
+}
+
+// app-info.js INFO_TOPICS, word for word.
+private val TOPICS = listOf(
+    Topic("start", "Start here", "Find your way around", "One workspace, with a separate collection and decks for each game.", "#home", "Open Home", listOf(
+        "Choose Magic, Pokémon or Yu-Gi-Oh! at the top. Home also supports a horizontal swipe. Search, Collection, Decks and Scan stay within the selected game.",
+        "The Home search finds real cards as you type. Choose a result to inspect that printing. Submit a question to ask the assistant; typing alone does not start an AI conversation.",
+        "Open Settings without leaving your current page. Closing it returns to the same game and task.",
+        "Use as profile photo in a card view or enlarged artwork opens the circle editor directly. Drag or pinch to frame it, then Save photo. This does not add the card to your collection.")),
+    Topic("collection", "Your cards", "Copies, conditions & binders", "Record what you own, including each copy’s condition and printing.", "#collection", "Open Collection", listOf(
+        "Open a card, choose Add to collection, then check the quantity, condition and version. Copies in different conditions or printings belong in separate saved lots.",
+        "Hold a card to open its actions. Owned cards have minus and plus controls; if several saved lots exist, choose the lot you mean. Wishlist stays separate from ownership.",
+        "Binders and locations organize saved copies. A card in a deck is a deck requirement, not proof that you own it. Check the owned and missing counts.",
+        "A save receipt confirms the local change. Use Undo when offered. Cloud sync has its own status in Account; a local save alone does not confirm a cloud upload.")),
+    Topic("scan", "Your cards", "Scan, review, save", "Get a clear card image, then confirm the exact match.", "#scan", "Open Scan", listOf(
+        "Keep the entire card visible and the camera steady. You do not need perfect alignment. Sharp printing numbers and a readable name help distinguish versions; glare and motion blur can hide them.",
+        "Review the game, name, set number, edition and finish. A name match alone cannot prove a printing. Use the version selector or search if the match is ambiguous.",
+        "Choose condition and quantity before saving. The receipt uses that saved condition’s available quote, labeled estimate or manual value where applicable. Unavailable prices stay unavailable.",
+        "The optional catalogue download helps local matching. Recognition and current data may still need internet. Replaying a demo never starts the camera or purchases a price lookup.")),
+    Topic("decks", "Play & build", "What can I play?", "Pick a format, compare what you own, and inspect missing copies.", "#decks/inspiration", "Explore deck ideas", listOf(
+        "Choose the game and format before building. Explore ideas, import a list or open a tournament list. Saving a deck creates a list; it does not add those cards to your collection.",
+        "Owned counts compare quantities, not just names. Different legal printings can represent the same game piece. Copies are compared independently per deck; the app does not physically reserve them across simultaneous decks.",
+        "Check missing copies, resources and deck review before playing. Incomplete budget builds are drafts. A cheaper suggestion is useful only if it still supports a playable plan and the chosen format.",
+        "Missing prices are not free cards. A covered subtotal is not a guaranteed purchase total; shipping and seller availability can differ. Review the actual list before saving or buying.")),
+    Topic("prices", "Your cards", "Understand a price", "Printing, condition, source and coverage matter more than a single number.", "#collection", "Open Collection value", listOf(
+        "Catalogue prices are reference quotes. They may describe a specific finish or an aggregate market, not every physical condition. TCGplayer asking listings and a market-price feed are different kinds of evidence.",
+        "Saved copies use their exact printing, finish and condition when a matching provider quote exists. Manual values and estimates are labeled. A price for Near Mint must not silently stand in for Lightly Played or Damaged.",
+        "Quotes are cached and refreshed through the app’s pricing services, subject to availability and provider limits. Opening a screen does not guarantee a new quote. Look at the displayed source, date and coverage.",
+        "Collection value and its history describe priced saved copies. Unpriced copies are counted separately. Additions, removals and manual changes can affect the graph as well as market movement.",
+        "To set your own value, hold a price or use Set your price in card details. A personal value is private and is not a verified sale or a promise of sale proceeds.")),
+    Topic("news", "Discover", "News & tournament lists", "Keep the source, date and format attached to the result.", "#home", "Open Home", listOf(
+        "Home news uses supported publisher feeds, cached by the app and checked daily. It shows a bounded selection of recent stories with manual paging; it is not a guaranteed seven-day rotation.",
+        "Each story keeps its publication date, source and applicable region. Japanese OCG news does not establish TCG release dates or legality.",
+        "Meta lists come from supported tournament sources. Cached results can be older than today. Check the event date and format before treating a list as current.",
+        "Loading and an unavailable source are different from an empty result. You can inspect an available list, then explicitly save a copy to your decks.")),
+    Topic("ai", "Play & build", "Assistant, Coach & Judge", "Use the right evidence for the question you are asking.", "#decks", "Open Decks", listOf(
+        "The Home assistant can retrieve card data, collection summaries, saved decks, tournament lists and these Info topics. It can prepare a builder or offer a destination; a recommendation is not a saved change.",
+        "Coach works from the selected deck and available analysis. Scores and simulations are estimates, not measured tournament win rates. Review proposed changes before applying them.",
+        "Use Ask rules for a ruling. Supply the exact cards, format, relevant text and the situation. The Judge can request missing details and cite the supporting rules; it cannot infer an entire board from a card name or life counter.",
+        "AI requests use the app’s server and configured provider. The assistant only receives the app data needed by its tools, not automatic access to every private record. It can be wrong or lack current data.")),
+    Topic("tabletop", "Play & build", "Tabletop tools", "Local counters with player-specific history and Undo.", "#tabletop", "Open Tabletop", listOf(
+        "Choose the game and players. Magic tracks life, poison and commander damage by source and recipient. Pokémon tracks damage and status on each Active or Bench position. Yu-Gi-Oh! has life-point adjustments.",
+        "Each player has their own Undo. A new session needs confirmation. Session counters stay on this device through a reload; they never change a collection or a deck.",
+        "Coin flips, dice and counters work locally. Keep awake is optional where your browser supports it. The Judge is separate and needs card and situation details. Check an event’s policy before using any electronic aid.")),
+    Topic("privacy", "Your workspace", "Account, backup & sharing", "Your account copy and a deliberately shared deck are different things.", "#settings", "Open Account", listOf(
+        "Cards and decks are saved on this device first. Signing in adds a private account copy; check Account for sync progress or errors.",
+        "Download a backup before changing devices or clearing storage. Restoring a backup changes saved data; checking one only inspects it. Reset onboarding clears guide history only.",
+        "A shared deck requires an explicit sharing action. Public profiles, comments, voting and live collaboration are future work; private collections are not automatically public.")),
+)

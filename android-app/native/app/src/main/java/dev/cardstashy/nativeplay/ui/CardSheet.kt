@@ -252,6 +252,11 @@ private fun Overview(name: String, shown: JsonObject, faces: List<JsonObject>, i
         }
         if (imgFaces.size > 1) GhostButton("↻ Flip to ${imgFaces[if (face == 0) 1 else 0].s("name")}", Modifier.fillMaxWidth(), onClick = onFlip)
         FinishRail(shown, finish, data, onFinish)
+        // card detail "Use as profile photo" (profile-art.js): opens the circle editor on this printing's art; never adds the card anywhere.
+        val artCrop = (if (imgFaces.size > 1) imgFaces.getOrNull(face) else null)?.getAsJsonObject("image_uris")?.s("art_crop")?.ifBlank { null }
+            ?: shown.getAsJsonObject("image_uris")?.s("art_crop")?.ifBlank { null } ?: faces.firstOrNull()?.getAsJsonObject("image_uris")?.s("art_crop")?.ifBlank { null }
+        if (artCrop != null && dev.cardstashy.nativeplay.account.Account.session.collectAsState().value != null)
+            GhostButton("Use as profile photo", Modifier.fillMaxWidth()) { ArtPick.open("avatar", ArtPick.Card("mtg", shown.s("id"), name, shown.s("set_name"), artCrop, artCrop)) }
         faces.forEachIndexed { i, f -> RulesBox(f, shown, faces.size > 1, i, data, onRule) }
         val inDecks = Trunk.decks(state).filter { d -> d.getAsJsonArray("cards")?.any { (it as? JsonObject)?.s("name") == name } == true }
         if (inDecks.isNotEmpty()) Text("In " + inDecks.joinToString(", ") { it.s("name") }, style = t(13f, color = Site.Muted))

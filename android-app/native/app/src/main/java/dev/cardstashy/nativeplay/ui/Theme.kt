@@ -59,6 +59,8 @@ object Type {
 /** A glass panel: dark gradient, gold hairline, soft shadow. No live blur behind moving cards. */
 fun Modifier.glass(radius: Dp = 14.dp, edge: Color = Palette.Hairline): Modifier {
     val shape = RoundedCornerShape(radius)
+    // "Frosted glass" off: plain solid panels (the web's cardstashy-glass "off").
+    if (!AppSettings.glass) return this.clip(shape).background(Palette.PanelBottom).border(1.dp, edge, shape)
     return this.shadow(18.dp, shape, ambientColor = Color.Black, spotColor = Color.Black)
         .clip(shape)
         .background(Brush.verticalGradient(listOf(Palette.PanelTop, Palette.PanelBottom)))

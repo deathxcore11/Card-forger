@@ -189,7 +189,9 @@ fun Modifier.foil(look: Foil.Look, tilt: State<Offset>): Modifier = if (!look.sh
 @Composable
 fun rememberFoilTilt(live: Boolean = true, phase: Float = 0f, touch: State<Offset?>? = null): State<Offset> {
     val context = LocalContext.current
-    val tiltOn = remember { context.getSharedPreferences("play", android.content.Context.MODE_PRIVATE).getBoolean("motionTilt", true) }
+    val tiltOn = AppSettings.tilt
+    // "Card lighting & foil effects" off: the light holds still (finish-preview.js setFinishEffects).
+    @Suppress("NAME_SHADOWING") val live = live && AppSettings.finish
     val phone = if (live && tiltOn) rememberTilt() else null
     val clock = if (live && !Motion.still) androidx.compose.animation.core.rememberInfiniteTransition(label = "foil")
         .animateFloat(0f, 1f, androidx.compose.animation.core.infiniteRepeatable(androidx.compose.animation.core.tween(9000, easing = androidx.compose.animation.core.LinearEasing)), label = "drift") else null

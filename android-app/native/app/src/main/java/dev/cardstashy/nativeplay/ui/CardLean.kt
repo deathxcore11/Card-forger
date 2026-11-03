@@ -71,7 +71,7 @@ private val easeOut = CubicBezierEasing(0f, 0f, .58f, 1f)
 fun rememberCardLean(): CardLean {
     val lean = remember { CardLean() }
     val context = LocalContext.current
-    val tiltOn = remember { context.getSharedPreferences("play", Context.MODE_PRIVATE).getBoolean("motionTilt", true) }
+    val tiltOn = AppSettings.tilt
     if (tiltOn && !Motion.still) DisposableEffect(lean) {
         val sm = context.getSystemService(Context.SENSOR_SERVICE) as? SensorManager
         val sensor = sm?.getDefaultSensor(Sensor.TYPE_GAME_ROTATION_VECTOR)

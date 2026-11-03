@@ -89,7 +89,7 @@ class ParsingTest {
     }
 
     @Test fun authErrors() {
-        assertEquals("Email or password is incorrect. Try again or use Forgot password on the website.",
+        assertEquals("Email or password is incorrect. Try again or use Forgot password.",
             Account.authError("""{"code":400,"error_code":"invalid_credentials","msg":"Invalid login credentials"}"""))
         assertEquals("Confirm your email before logging in. Check your inbox and spam folder.", Account.authError("""{"error_code":"email_not_confirmed","msg":"Email not confirmed"}"""))
         assertEquals("Too many requests. Wait before trying again.", Account.authError("""{"error_code":"over_request_rate_limit","msg":"x"}"""))

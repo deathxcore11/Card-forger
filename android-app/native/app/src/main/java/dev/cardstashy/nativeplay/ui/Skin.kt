@@ -20,6 +20,7 @@ import androidx.compose.foundation.layout.navigationBarsPadding
 import androidx.compose.foundation.layout.statusBars
 import androidx.compose.foundation.layout.wrapContentSize
 import androidx.compose.foundation.layout.wrapContentWidth
+import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.draw.BlurredEdgeTreatment
@@ -165,6 +166,14 @@ object SiteIcons {
     val Bag = line("M5.5 8h13l-1 12h-11z", "M9 10V7a3 3 0 0 1 6 0v3")
     val Trophy = line("M8 4h8v5.5a4 4 0 0 1-8 0z", "M8 6H5.2a.7.7 0 0 0-.7.8A4 4 0 0 0 8 10.3M16 6h2.8a.7.7 0 0 1 .7.8 4 4 0 0 1-3.5 3.5", "M12 13.5V17M8.5 20h7l-.8-3H9.3z")
     val Back = line("m15 5-7 7 7 7")
+    // icons.js actionIcon, path for path (Settings tabs and account rows).
+    val Profile = line(circle(12f, 8f, 3.5f), "M5.5 20v-1.5a6.5 6.5 0 0 1 13 0V20")
+    val Appearance = line("M12 3.5a8.5 8.5 0 1 0 0 17h1a2 2 0 0 0 1.4-3.4 1.5 1.5 0 0 1 1.1-2.6H17a3.5 3.5 0 0 0 3.5-3.5 8 8 0 0 0-8.5-7.5Z", circle(7.5f, 10f, .7f), circle(11f, 7f, .7f), circle(15.5f, 8f, .7f))
+    val Help = line(circle(12f, 12f, 8.5f), "M9.5 9a2.5 2.5 0 1 1 4 2c-1 .7-1.5 1.2-1.5 2.5", "M12 17h.01")
+    val Paint = line("m13 11 6.5-6.5a1.4 1.4 0 0 1 2 2L15 13", "M12 12c-2.6 0-4.5 1.8-4.5 4.2 0 1.4-1 2.8-2.5 3.3 4.5 1 9.5-.5 9.5-4 0-1.4-1-3.5-2.5-3.5Z")
+    val Friends = line(circle(9f, 8f, 3f), "M3.5 20v-2a5.5 5.5 0 0 1 10-3M19 12v8M15 16h8")
+    val Chevron = line("m7.5 10 4.5 4.5 4.5-4.5")
+    val Close = line("m6.5 6.5 11 11M17.5 6.5l-11 11")
 
     // icons.js deck view switch: Stacks, Art grid, Names only, Detailed list.
     val ViewStacks = line("M4 7V4.5A1.5 1.5 0 0 1 5.5 3h10M6.5 10V7.5A1.5 1.5 0 0 1 8 6h10", rrect(9f, 9f, 11f, 12f, 1.5f), "M12 12h5")
@@ -243,7 +252,8 @@ fun TopBarItems(mode: Mode, avatarUrl: String?, name: String?, unread: Boolean, 
         }
         Spacer(Modifier.weight(1f))
         Box(Modifier.size(44.dp).clickable(onClick = onProfile).semantics { contentDescription = "Account" }) {
-            Avatar(avatarUrl, name, 44.dp)
+            val p by dev.cardstashy.nativeplay.account.Account.profile.collectAsState()
+            ProfileAvatar(p ?: dev.cardstashy.nativeplay.account.Account.Profile(name, avatarUrl), 44.dp)
             if (unread) Box(Modifier.align(Alignment.TopEnd).size(11.dp).clip(CircleShape).background(Site.Unread).border(1.5.dp, Site.Bg, CircleShape))
         }
     }

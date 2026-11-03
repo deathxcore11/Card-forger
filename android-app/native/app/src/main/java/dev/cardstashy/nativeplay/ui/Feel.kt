@@ -69,6 +69,7 @@ object Feel {
     }
 
     fun perform(view: View, kind: String) {
+        if (!AppSettings.haptics) return
         try {
             val v = vibrator(view.context)
             val effect = if (v != null && v.hasVibrator()) effectFor(kind, v) else null

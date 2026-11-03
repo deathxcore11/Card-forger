@@ -175,7 +175,6 @@ fun PlayHome(d: PlayHomeData, top: @Composable () -> Unit, act: PlayHomeActions 
                                 LevelRing(level, framed = true)
                             }
                             PurseRow(purse, onCoins = { act.view("shop") }, onSeals = { act.view("shop") }, onPacks = { act.view("packs") })
-                            HomeTestBar()
                         }
                     }
                     item("modes") { Probe("modes") { Modes(wide, act) } }
