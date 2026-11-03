@@ -1,0 +1,64 @@
+package dev.cardstashy.nativeplay.audio
+
+import android.content.Context
+import android.media.AudioAttributes
+import android.media.SoundPool
+import dev.cardstashy.nativeplay.engine.MatchState
+
+/** The table sounds of play-table-audio.js, played from the same files on board changes. No music yet. */
+class TableAudio(context: Context) {
+    private val pool = SoundPool.Builder().setMaxStreams(6)
+        .setAudioAttributes(AudioAttributes.Builder().setUsage(AudioAttributes.USAGE_GAME).setContentType(AudioAttributes.CONTENT_TYPE_SONIFICATION).build()).build()
+    private val ids = HashMap<String, Int>()
+    private var lowSeen = false
+    private var ended = false
+
+    init {
+        for (name in context.assets.list("sfx").orEmpty()) {
+            if (!name.endsWith(".ogg")) continue
+            context.assets.openFd("sfx/$name").use { ids[name.removeSuffix(".ogg")] = pool.load(it, 1) }
+        }
+    }
+
+    fun play(id: String, volume: Float = 1f) { ids[id]?.let { pool.play(it, volume, volume, 1, 0, 1f) } }
+
+    fun release() = pool.release()
+
+    /** The same triggers as play-table-audio.js update(), from the previous shown board to the next. */
+    fun update(a: MatchState?, b: MatchState) {
+        if (b.finished) {
+            if (!ended) { ended = true; play(if (b.draw || b.winnerPlayerId == null) "QP-019" else if (b.winnerPlayerId == b.viewer) "QP-017" else "QP-018") }
+            return
+        }
+        if (a == null) return
+        if (b.activePlayer != a.activePlayer && b.turn > 0) play(if (b.activePlayer == b.viewer) "TT-001" else "TT-002")
+        else if (b.phase != a.phase && b.turn > 0) play("TT-003", .35f)
+        val was = HashMap<Int, dev.cardstashy.nativeplay.engine.Card>()
+        for (p in a.players) for (c in p.hand + p.battlefield + p.graveyard + p.exile) was[c.id] = c
+        val handIn = b.me.hand.count { was[it.id]?.zone != "Hand" }
+        if (handIn >= 5) play("QP-012", .8f) else if (handIn > 0) play("CARD-001")
+        if (b.cpu.handCount > a.cpu.handCount && b.turn > 0) play("CARD-002", .5f)
+        val field = b.players.flatMap { it.battlefield }
+        if (field.any { it.tapped && it.isLand && was[it.id]?.zone == "Battlefield" && was[it.id]?.tapped == false && !it.attacking }) play("CARD-006", .7f)
+        val old = a.stack.map { it.id }.toSet()
+        val fresh = b.stack.filter { it.id !in old }
+        if (fresh.isNotEmpty()) play(if (fresh.any { s -> s.source?.let { was[it.id]?.zone == "Hand" } == true }) "CARD-008" else "CARD-014")
+        val arrived = field.filter { was[it.id]?.zone != "Battlefield" }
+        if (arrived.any { it.isLand }) play("CARD-005")
+        if (arrived.any { !it.isLand && !was.containsKey(it.id) }) play("CARD-025") else if (arrived.any { !it.isLand }) play("CARD-010")
+        if (field.any { it.attacking && was[it.id]?.attacking == false }) play("CMB-002")
+        if (field.any { it.blockingIds.size > (was[it.id]?.blockingIds?.size ?: 0) }) play("CMB-003")
+        if (field.any { it.damage > (was[it.id]?.damage ?: 0) }) play("CMB-004")
+        val combat = b.phase?.contains("DAMAGE") == true || a.phase?.contains("DAMAGE") == true
+        for (p in b.players) { val q = a.players.firstOrNull { it.id == p.id } ?: continue
+            if (p.life < q.life) play(if (combat) "CMB-005" else "CMB-018", if (q.life - p.life >= 5) 1f else .8f) else if (p.life > q.life) play("CMB-007") }
+        val now = HashMap<Int, dev.cardstashy.nativeplay.engine.Card>()
+        for (p in b.players) for (c in p.hand + p.battlefield + p.graveyard + p.exile) now[c.id] = c
+        val left = a.players.flatMap { it.battlefield }.filter { now[it.id]?.zone != "Battlefield" }
+        if (left.any { it.isCreature && (now[it.id] == null || now[it.id]?.zone == "Graveyard") }) play("CMB-009")
+        else if (left.any { now[it.id]?.zone == "Graveyard" }) play("CARD-018")
+        if (left.any { now[it.id]?.zone == "Exile" }) play("CARD-019")
+        if (left.any { now[it.id]?.zone == "Hand" }) play("CARD-020")
+        if (!lowSeen && b.players.any { it.life in 1..5 }) { lowSeen = true; play("CMB-019") }
+    }
+}

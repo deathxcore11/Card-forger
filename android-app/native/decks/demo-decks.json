@@ -1,0 +1,112 @@
+{
+ "format": "Legacy",
+ "decks": [
+  {
+   "id": "demo-red",
+   "name": "Ember Rush",
+   "colour": "R",
+   "face": "Goblin Guide",
+   "cards": [
+    {
+     "name": "Mountain",
+     "qty": 22
+    },
+    {
+     "name": "Goblin Guide",
+     "qty": 4
+    },
+    {
+     "name": "Monastery Swiftspear",
+     "qty": 4
+    },
+    {
+     "name": "Raging Goblin",
+     "qty": 4
+    },
+    {
+     "name": "Goblin Piker",
+     "qty": 4
+    },
+    {
+     "name": "Ember Hauler",
+     "qty": 4
+    },
+    {
+     "name": "Hill Giant",
+     "qty": 4
+    },
+    {
+     "name": "Lightning Bolt",
+     "qty": 4
+    },
+    {
+     "name": "Shock",
+     "qty": 4
+    },
+    {
+     "name": "Searing Spear",
+     "qty": 4
+    },
+    {
+     "name": "Lava Axe",
+     "qty": 2
+    }
+   ]
+  },
+  {
+   "id": "demo-green",
+   "name": "Wild Growth",
+   "colour": "G",
+   "face": "Ghalta, Primal Hunger",
+   "cards": [
+    {
+     "name": "Forest",
+     "qty": 24
+    },
+    {
+     "name": "Llanowar Elves",
+     "qty": 4
+    },
+    {
+     "name": "Bear Cub",
+     "qty": 4
+    },
+    {
+     "name": "Ordinary Bear",
+     "qty": 4
+    },
+    {
+     "name": "Ghalta, Primal Hunger",
+     "qty": 4
+    },
+    {
+     "name": "Lashwhip Predator",
+     "qty": 4
+    },
+    {
+     "name": "Tarmogoyf",
+     "qty": 4
+    },
+    {
+     "name": "Tapestry Warden",
+     "qty": 4
+    },
+    {
+     "name": "Virulent Emissary",
+     "qty": 4
+    },
+    {
+     "name": "Scarecrow Guide",
+     "qty": 4
+    }
+   ]
+  }
+ ],
+ "homeArt": [
+  "Ajani's Pridemate",
+  "Lightning Bolt",
+  "Tarmogoyf",
+  "Chandra, Torch of Defiance",
+  "Urza, Lord High Artificer"
+ ]
+}

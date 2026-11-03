@@ -1,0 +1,52 @@
+plugins {
+    id 'com.android.application'
+    id 'org.jetbrains.kotlin.android'
+    id 'org.jetbrains.kotlin.plugin.compose'
+}
+
+// The native test app: Home > Quick Play > a real CPU match on the Forge engine inside the app.
+// It has its own package, so it installs beside the live CardStashy app and never touches it.
+// scripts/prepare-assets.sh fills engine-libs/ and src/main/assets/ (engine, card art, sounds, mats).
+android {
+    namespace = 'dev.cardstashy.nativeplay'
+    compileSdk = 36
+    defaultConfig {
+        applicationId 'com.cardstashy.app.nativetest'
+        minSdk 26 // Forge's own Android minimum (java.nio.file)
+        targetSdk 36
+        versionCode 1
+        versionName '0.1.0-native-test'
+    }
+    buildTypes {
+        release {
+            // Forge looks up many classes by name, so nothing is shrunk. Signing happens after the
+            // build with the release key, which never enters this repository.
+            minifyEnabled false
+        }
+    }
+    compileOptions {
+        sourceCompatibility JavaVersion.VERSION_17
+        targetCompatibility JavaVersion.VERSION_17
+    }
+    kotlin { jvmToolchain(21) }
+    kotlinOptions { jvmTarget = '17' }
+    buildFeatures { compose true }
+    androidResources { noCompress += ['zip', 'ogg', 'jpg', 'webp'] }
+    packaging.resources.excludes += ['META-INF/LICENSE*', 'META-INF/NOTICE*', 'META-INF/DEPENDENCIES', 'META-INF/*.kotlin_module', 'META-INF/versions/**', 'module-info.class']
+    packaging.resources.merges += ['META-INF/services/**']
+}
+
+// Forge brings full Guava, which already holds AndroidX's ListenableFuture.
+configurations.configureEach { exclude group: 'com.google.guava', module: 'listenablefuture' }
+
+dependencies {
+    implementation fileTree(include: ['*.jar'], dir: '../engine-libs')
+    implementation platform('androidx.compose:compose-bom:2025.06.00')
+    implementation 'androidx.compose.ui:ui'
+    implementation 'androidx.compose.foundation:foundation'
+    implementation 'androidx.compose.material3:material3'
+    implementation 'androidx.activity:activity-compose:1.10.1'
+    implementation 'androidx.core:core-ktx:1.16.0'
+    implementation 'androidx.lifecycle:lifecycle-runtime-compose:2.9.1'
+    implementation 'org.jetbrains.kotlinx:kotlinx-coroutines-android:1.10.2'
+}
