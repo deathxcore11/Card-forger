@@ -1,16 +1,27 @@
 import {ygoRarity} from './ygo-identity.js';
 // One free, cached TCGCSV set response; never one paid condition request per tile.
-import {rarityKey} from './ygo-prices.js';
+import {rarityKey,ygoArtVariant,preferStandardArt} from './ygo-prices.js';
 import {referenceQuote} from './price-reference.js';
 const norm=s=>String(s||'').normalize('NFKC').toLowerCase().replace(/[^a-z0-9]/g,'');
 const aliases={'2025 Mega-Pack Tin':'2025 Mega-Pack'};
 const pending=new Map(),sourcePending=new Map();
-const productNameMatches=(product,card,rarity,printing)=>{
- if(norm(product)===norm(card))return true;
- const m=String(product||'').match(/^(.*?)\s*\(([^()]+)\)$/);if(!m||norm(m[1])!==norm(card))return false;
- const suffix={CR:"Collector's Rare",QCR:'Quarter Century Secret Rare',UR:'Ultra Rare',SR:'Super Rare',StR:'Starlight Rare',GMR:'Grand Master Rare'}[m[2]]||m[2];
+const RARITY_SUFFIX={CR:"Collector's Rare",QCR:'Quarter Century Secret Rare',UR:'Ultra Rare',SR:'Super Rare',StR:'Starlight Rare',GMR:'Grand Master Rare'};
+// "Name", "Name (Rarity)", and either followed by an art tag: "Name (Starlight Rare)  (Extended Art)".
+const splitName=product=>{let rest=String(product||'').trim(),tag;const tags=[];while((tag=rest.match(/^(.*?)\s*\(([^()]+)\)$/))){tags.unshift(tag[2]);rest=tag[1];}return {base:rest,tags};};
+const tagsFit=(tags,rarity,printing)=>{
+ const art=tags.filter(t=>ygoArtVariant('('+t+')')),named=tags.filter(t=>!ygoArtVariant('('+t+')'));
+ if(named.length>1||art.length>1)return false;if(!named.length)return true;
+ const suffix=RARITY_SUFFIX[named[0]]||named[0];
  return !!rarityKey(suffix,printing)&&rarityKey(suffix,printing)===rarityKey(rarity,printing);
 };
+const productNameMatches=(product,card,rarity,printing)=>{
+ if(norm(product)===norm(card))return true;
+ const {base,tags}=splitName(product);
+ return tags.length>0&&norm(base)===norm(card)&&tagsFit(tags,rarity,printing);
+};
+// A close provider spelling: every word of its name appears in the card's, and they share most words.
+const words=v=>String(v||'').normalize('NFKC').toLowerCase().split(/[^a-z0-9]+/).filter(Boolean);
+const nameClose=(product,card,rarity,printing)=>{const {base,tags}=splitName(product),a=words(base),b=new Set(words(card));return a.length>=2&&a.every(w=>b.has(w))&&a.length/b.size>=.7&&tagsFit(tags,rarity,printing);};
 export async function ygoSetPriceRoute(url,ctx,fetchImpl=fetch){
  const name=url.searchParams.get('name')||'',code=url.searchParams.get('code')||'';
  if(!name.trim()||name.length>160||! /^[A-Z0-9-]{1,24}$/.test(code))return Response.json({error:'Invalid release'},{status:400});
@@ -56,7 +67,10 @@ export function applyYgoSetPrices(card,release,body){
  const sets=(card.sets||[]).map(p=>{
   if(p.name!==release.name||p.releasePriceAmbiguous)return p;
   const known=ygoRarity(p.rarity);
-  const matches=body.products.filter(x=>x.code===p.code&&rarityKey(x.rarity,p)&&(!known||rarityKey(x.rarity,p)===rarityKey(known,p))&&productNameMatches(x.name,card.name,known||x.rarity,p));
+  const same=body.products.filter(x=>x.code===p.code&&rarityKey(x.rarity,p)&&(!known||rarityKey(x.rarity,p)===rarityKey(known,p))),named=same.filter(x=>productNameMatches(x.name,card.name,known||x.rarity,p));
+  // Number + rarity inside one verified release is the identity; the name only breaks ties,
+  // so a close provider spelling ("Four Heavenly Dragons" vs "of the Four…") does not drop the price.
+  const matches=preferStandardArt(named.length?named:same.filter(x=>nameClose(x.name,card.name,known||x.rarity,p)));
   if(matches.length!==1)return p;const row=matches[0];
   if(!Number.isSafeInteger(row.productId)||row.productId<1||!Array.isArray(row.quotes))return p;
   const quotes=row.quotes.filter(q=>['1st Edition','Unlimited','Limited'].includes(q.edition)&&referenceQuote(q));

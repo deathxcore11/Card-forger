@@ -3,6 +3,8 @@ import assert from 'node:assert/strict';
 import {normalizeYgoSets} from './ygo.js';
 import {setContextCard,tcgSet,tcgCardSheet,ui,cache} from './tcg.js';
 import {S,blank} from './store.js';
+import {applyYgoSetPrices} from './ygo-set-prices.js';
+import {ygoProductMatches} from './ygo-prices.js';
 const [release]=normalizeYgoSets([{set_name:'Synthetic Rage',set_code:'SYR',tcg_date:'2020-09-24'}]);
 const base={name:release.name,code:'SYR-EN000',productId:1,priceSource:'TCGplayer via TCGCSV',checkedAt:new Date().toISOString()};
 const ghost={...base,rarity:'Ghost Rare',productId:2,quotes:[{edition:'1st Edition',market:157.73},{edition:'Unlimited',market:139.89}]};
@@ -37,4 +39,24 @@ const two={game:'ygo',id:'10000011',name:'Synthetic Primoria',category:'Monster'
 cache.ygo[two.id]=two;ui('ygo').sets.list=[release,other];
 const doom=tcgCardSheet(setContextCard('ygo',two,other,[release,other]),{type:'tcard',game:'ygo',id:two.id,setId:other.id,tab:'overview'});
 assert.match(doom,/class="card-printing-mini"[^>]*data-set-id="[^"]+"[^>]*data-printing="SYR-EN066::Ultra Rare"/,'Printings in other releases are listed, not only the open release');
+// TCGplayer naming seen in Magnificent Monsters (3 Nov 2026): Starlight only as "(Starlight Rare)  (Extended Art)",
+// Ultra Rare twice (standard + Extended Art), GMR as "(GMR)", and a slightly different provider name.
+{
+ const q=m=>[{edition:'1st Edition',market:m}];
+ const prod=(name,code,rarity,productId,m)=>({name,code,rarity,productId,quotes:q(m)});
+ const sc={game:'ygo',id:'20000001',name:'Synthetic Servant of the Sun',sets:['Ultra Rare','Starlight Rare','Grand Master Rare','New'].map(r=>({name:release.name,code:'SYR-EN001',rarity:r}))};
+ const body={name:release.name,code:release.code,status:'ready',source:'TCGplayer via TCGCSV',updatedAt:new Date().toISOString(),products:[
+  prod('Synthetic Servant of the Sun','SYR-EN001','Ultra Rare',11,2.88),prod('Synthetic Servant of the Sun (Extended Art)','SYR-EN001','Ultra Rare',12,130.25),
+  prod('Synthetic Servant of the Sun (Starlight Rare)  (Extended Art)','SYR-EN001','Starlight Rare',13,1132.84),prod('Synthetic Servant of the Sun (GMR)','SYR-EN001','Grand Master Rare',14,5000)]};
+ const priced=applyYgoSetPrices(sc,release,body).sets,by=r=>priced.find(x=>x.rarity===r);
+ assert.equal(by('Ultra Rare').productId,11,'Standard art wins over the Extended Art duplicate');
+ assert.equal(by('Starlight Rare').productId,13,'Rarity tag followed by an art tag still matches');
+ assert.equal(by('Grand Master Rare').productId,14,'GMR is priced');
+ assert.equal(by('New').productId,undefined,'Placeholder rarity is never priced');
+ const close={...sc,name:'Synthetic Dragon of the Four Heavenly Suns',sets:[{name:release.name,code:'SYR-EN013',rarity:'Ultra Rare'}]};
+ assert.equal(applyYgoSetPrices(close,release,{...body,products:[prod('Synthetic Dragon, Four Heavenly Suns','SYR-EN013','Ultra Rare',15,1)]}).sets[0].productId,15,'A close provider spelling keeps its price');
+ assert.equal(applyYgoSetPrices(close,release,{...body,products:[prod('Another Card Entirely','SYR-EN013','Ultra Rare',16,1)]}).sets[0].productId,undefined,'A different card name is still refused');
+ const ext=(n,r)=>[{name:'Number',value:'SYR-EN001'},{name:'Rarity',value:r}];
+ assert.deepEqual(ygoProductMatches({code:'SYR-EN001',rarity:'Ultra Rare'},[{productId:11,name:'X',extendedData:ext(0,'Ultra Rare')},{productId:12,name:'X (Extended Art)',extendedData:ext(0,'Ultra Rare')}]).map(p=>p.productId),[11],'Card-page join prefers the standard art too');
+}
 console.log('PASS: one YGO tile per card at its most common rarity; detail uses rarity chips, edition picker, other-printing tiles; filters still override.');
