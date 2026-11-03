@@ -254,6 +254,33 @@ class ShotTest {
         home.mkdirs(); home.resolve("missing.txt").writeText(missing.joinToString("\n"))
     }
 
+    @Test fun decks() {
+        trunkSetup()
+        fun row(name: String, qty: Int, board: String? = null) = trunkCards.first { it["name"].asString == name }.let {
+            dev.cardstashy.nativeplay.play.Decks.Row(name, qty, board, it["set"].asString, it["collector_number"].asString, it["id"].asString, it["rarity"].asString) }
+        val state = trunkState.deepCopy().apply {
+            add("decks", JsonParser.parseString("""[
+                {"id":"d1","name":"Izzet Tempo","format":"Modern","cards":[{"name":"Ragavan, Nimble Pilferer","qty":4,"id":"${row("Ragavan, Nimble Pilferer", 1).id}"},{"name":"Delver of Secrets // Insectile Aberration","qty":4},{"name":"Island","qty":20},{"name":"Swords to Plowshares","qty":4,"board":"side"}]},
+                {"id":"d2","name":"Elves","format":"Pioneer","cards":[{"name":"Llanowar Elves","qty":4,"id":"${row("Llanowar Elves", 1).id}"},{"name":"Forest","qty":56}]},
+                {"id":"d3","name":"Big Red","format":"","cards":[{"name":"Shivan Dragon","qty":2,"id":"${row("Shivan Dragon", 1).id}"},{"name":"Mountain","qty":58}]}]""").asJsonArray) }
+        val index = listOf(dev.cardstashy.nativeplay.play.Decks.PreconEntry("Dimir Rogues", "CC1", "Challenger Deck", "2021-02-26", "DimirRogues_CC1.json"),
+            dev.cardstashy.nativeplay.play.Decks.PreconEntry("Elves vs. Goblins: Elves", "EVG", "Duel Deck", "2007-11-16", "Elves_EVG.json"),
+            dev.cardstashy.nativeplay.play.Decks.PreconEntry("Arena Starter Kit", "ANA", "Arena Starter Kit", "2018-07-14", "ArenaStarterKit_ANA.json"))
+        val rows = listOf(row("Ragavan, Nimble Pilferer", 4), row("Sheoldred, the Apocalypse", 2), row("Strip Mine", 4), row("Swords to Plowshares", 4), row("Island", 22), row("Shivan Dragon", 2, "side"))
+        val pasted = dev.cardstashy.nativeplay.ui.Check(text = "4 Ragavan, Nimble Pilferer\n4 Swords to Plowshares\n52 Island", name = "Pasted deck",
+            rows = listOf(row("Ragavan, Nimble Pilferer", 4), row("Swords to Plowshares", 4), dev.cardstashy.nativeplay.play.Decks.Row("Island", 52)),
+            rarity = mapOf("Ragavan, Nimble Pilferer" to "mythic", "Swords to Plowshares" to "uncommon"), formats = listOf("Legacy", "Vintage"), format = "Legacy")
+        for ((w, h) in listOf(412 to 915, 840 to 1000)) for (open in listOf(false, true)) {
+            RuntimeEnvironment.setQualifiers("w${w}dp-h${h * 3}dp-xxhdpi")
+            val pc = dev.cardstashy.nativeplay.ui.PreconUi().apply { this.index = index
+                if (open) this.open = dev.cardstashy.nativeplay.ui.OpenPrecon("DimirRogues_CC1.json", "Dimir Rogues", "Challenger Deck", "2021-02-26", listOf("Legacy", "Vintage"), rows) }
+            captureRoboImage(File(System.getProperty("shotsDir"), "decks-${if (open) "precon-paste" else "list"}-${w}x$h.png").path) {
+                dev.cardstashy.nativeplay.ui.DecksScreen(state, {}, {}, {}, {}, { PlayNav(PlayTab.DECKS, {}) }, pc, if (open) pasted else dev.cardstashy.nativeplay.ui.Check())
+            }
+        }
+        home.mkdirs(); home.resolve("missing.txt").writeText(missing.joinToString("\n"))
+    }
+
     @Test fun cardSheet() {
         trunkSetup()
         fun pick(name: String, finish: String) = trunkCards.first { it["name"].asString == name }.let { dev.cardstashy.nativeplay.ui.CardPick(name, it["oracle_id"]?.asString ?: "", it["id"].asString, finish) }

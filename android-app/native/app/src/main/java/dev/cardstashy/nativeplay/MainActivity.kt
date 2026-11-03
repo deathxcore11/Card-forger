@@ -67,6 +67,8 @@ private sealed interface Screen {
     data object Collection : Screen
     /** Play's own collection (the Trunk) with its card view. */
     data object Trunk : Screen
+    /** Play decks: the list, precons and Paste a list. */
+    data object PlayDecks : Screen
     /** A Play page not yet native: the site's own, in the web view (Planeswalk stays here for good). */
     data class Web(val url: String) : Screen
     data class Match(val pick: Pick) : Screen
@@ -107,12 +109,17 @@ private fun App(activity: MainActivity) {
             LaunchedEffect(Unit) { activity.inGame(false) }
             dev.cardstashy.nativeplay.ui.PlayHomeRoute(
                 onQuickPlay = { go(Screen.Decks) }, onCollection = { go(Screen.Collection) },
-                onSignIn = { go(Screen.SignIn) }, onWeb = { go(Screen.Web(it)) }, onTrunk = { go(Screen.Trunk) })
+                onSignIn = { go(Screen.SignIn) }, onWeb = { go(Screen.Web(it)) }, onTrunk = { go(Screen.Trunk) }, onDecks = { go(Screen.PlayDecks) })
         }
         Screen.Trunk -> {
             LaunchedEffect(Unit) { activity.inGame(false) }
             dev.cardstashy.nativeplay.ui.TrunkRoute(onBack = { back() }, onWeb = { go(Screen.Web(it)) }, onNav = { t ->
-                when (t) { dev.cardstashy.nativeplay.ui.PlayTab.SWITCH -> go(Screen.Collection); dev.cardstashy.nativeplay.ui.PlayTab.TRUNK -> {}; else -> go(Screen.Web("https://cardstashy.com/#play")) } })
+                when (t) { dev.cardstashy.nativeplay.ui.PlayTab.SWITCH -> go(Screen.Collection); dev.cardstashy.nativeplay.ui.PlayTab.TRUNK -> {}; dev.cardstashy.nativeplay.ui.PlayTab.DECKS -> go(Screen.PlayDecks); else -> go(Screen.Web("https://cardstashy.com/#play")) } })
+        }
+        Screen.PlayDecks -> {
+            LaunchedEffect(Unit) { activity.inGame(false) }
+            dev.cardstashy.nativeplay.ui.DecksRoute(onBack = { back() }, onWeb = { go(Screen.Web(it)) }, onNav = { t ->
+                when (t) { dev.cardstashy.nativeplay.ui.PlayTab.SWITCH -> go(Screen.Collection); dev.cardstashy.nativeplay.ui.PlayTab.TRUNK -> go(Screen.Trunk); dev.cardstashy.nativeplay.ui.PlayTab.DECKS -> {}; else -> go(Screen.Web("https://cardstashy.com/#play")) } })
         }
         Screen.Collection -> { LaunchedEffect(Unit) { activity.inGame(false) }; CollectionScreen(onPlay = { if (trail.size > 1) back() else go(Screen.Home) }) }
         is Screen.Web -> { LaunchedEffect(Unit) { activity.inGame(false) }; CollectionScreen(onPlay = { back() }, url = s.url) }

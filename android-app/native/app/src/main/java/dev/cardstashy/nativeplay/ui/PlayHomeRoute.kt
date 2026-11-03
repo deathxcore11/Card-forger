@@ -28,7 +28,7 @@ private const val SITE_PLAY = "https://cardstashy.com/#play"
  * them. Signed out, the old home with its sign-in panel. Pages not ported yet open the site's own.
  */
 @Composable
-fun PlayHomeRoute(onQuickPlay: () -> Unit, onCollection: () -> Unit, onSignIn: () -> Unit, onWeb: (String) -> Unit, onTrunk: () -> Unit = {}) {
+fun PlayHomeRoute(onQuickPlay: () -> Unit, onCollection: () -> Unit, onSignIn: () -> Unit, onWeb: (String) -> Unit, onTrunk: () -> Unit = {}, onDecks: () -> Unit = {}) {
     val session by Account.session.collectAsState()
     val profile by Account.profile.collectAsState()
     val state by Progress.state.collectAsState()
@@ -77,7 +77,7 @@ fun PlayHomeRoute(onQuickPlay: () -> Unit, onCollection: () -> Unit, onSignIn: (
     val act = PlayHomeActions(
         mode = { when (it) { "quick", "practice" -> onQuickPlay(); "planeswalk" -> onWeb("https://cardstashy.com/planeswalk.html"); else -> onWeb(SITE_PLAY) } },
         story = { onWeb(SITE_PLAY) },
-        view = { if (it == "collection") onTrunk() else onWeb(SITE_PLAY) },
+        view = { when (it) { "collection" -> onTrunk(); "decks" -> onDecks(); else -> onWeb(SITE_PLAY) } },
         claim = { kind, id -> run { Progress.claim(kind, id, null) } },
         claimDeed = { id, step -> run { Progress.claim("ach", id, step) } },
         forge = { to, times -> run { Progress.forge(to, times) } },
@@ -90,7 +90,7 @@ fun PlayHomeRoute(onQuickPlay: () -> Unit, onCollection: () -> Unit, onSignIn: (
     PlayHome(PlayHomeData(s, rules, story, PlayMath.playDay(tz), session?.userId ?: "", ambient, deeds),
         top = { TopBarItems(Mode.PLAY, profile?.avatarUrl, profile?.name, unread = false, onSwitch = onCollection, onProfile = onSignIn) },
         act = act,
-        nav = { PlayNav(null, { t -> when (t) { PlayTab.SWITCH -> onCollection(); PlayTab.TRUNK -> onTrunk(); else -> onWeb(SITE_PLAY) } }) })
+        nav = { PlayNav(null, { t -> when (t) { PlayTab.SWITCH -> onCollection(); PlayTab.TRUNK -> onTrunk(); PlayTab.DECKS -> onDecks(); else -> onWeb(SITE_PLAY) } }) })
     opener?.let { first ->
         val close = { opener = null; scope.launch { Progress.refresh(); Progress.refreshDeeds() }; Unit }
         androidx.activity.compose.BackHandler(onBack = close)
