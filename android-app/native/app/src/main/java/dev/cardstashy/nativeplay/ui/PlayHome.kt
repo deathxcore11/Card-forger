@@ -405,6 +405,7 @@ class Wrap(val aspect: Float, val notch: Float, val top: Float, val bottom: Floa
 val WRAPPERS = mapOf(
     "hob" to Wrap(600f / 1029f, notch = .636f, top = .672f, bottom = .868f),
     "fra" to Wrap(600f / 918f, notch = .641f, top = .676f, bottom = .892f),
+    "msh" to Wrap(600f / 967f, notch = .599f, top = .632f, bottom = .867f),  // Randall 3 Nov: Galactus, the Silver Surfer and the Fantastic Four
 )
 
 /**

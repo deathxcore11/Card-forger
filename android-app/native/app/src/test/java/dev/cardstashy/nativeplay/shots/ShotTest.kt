@@ -158,7 +158,7 @@ class ShotTest {
             dev.cardstashy.nativeplay.play.SetFacts.seed(JsonParser.parseString(f.readText()).asJsonObject.entrySet().associate { (k, v) -> val o = v.asJsonObject
                 k to dev.cardstashy.nativeplay.play.SetFacts.Set(o["name"].asString, o["icon"].asString, o["released"].asString, o["total"]?.asInt, o["art"].asString) })
         }
-        val codes = listOf("hob", "fra", "isd", "arn", "khm", "ltr", "fdn", "mh2", "dmu")
+        val codes = listOf("hob", "fra", "msh", "isd", "khm", "ltr", "fdn", "mh2", "dmu")
         kotlinx.coroutines.runBlocking { for (c in codes) dev.cardstashy.nativeplay.ui.wrapperFor(c)?.let { AssetImages.load(RuntimeEnvironment.getApplication(), it.first, maxWidth = 600) } }
         for (sc in listOf(1f, 1.3f)) tall("packs", 390, 120, sc) {
             Column(Modifier.background(Site.Bg).padding(16.dp), verticalArrangement = Arrangement.spacedBy(20.dp)) {
