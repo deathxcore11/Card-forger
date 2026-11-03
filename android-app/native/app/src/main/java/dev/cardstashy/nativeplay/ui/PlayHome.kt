@@ -477,11 +477,13 @@ fun Booster(code: String, name: String?, modifier: Modifier = Modifier, mini: Bo
 
 /** Randall's pack wrappers (art piece 16): where each wrapper's black band sits, as fractions of its height. */
 class Wrap(val aspect: Float, val notch: Float, val top: Float, val bottom: Float, val iconInNotch: Boolean = false)
-val WRAPPERS = mapOf(
-    "hob" to Wrap(600f / 1029f, notch = .636f, top = .672f, bottom = .868f),
-    "fra" to Wrap(600f / 918f, notch = .641f, top = .676f, bottom = .892f),
-    "msh" to Wrap(600f / 967f, notch = .599f, top = .632f, bottom = .867f),  // Randall 3 Nov: Galactus, the Silver Surfer and the Fantastic Four
-)
+val WRAPPERS: Map<String, Wrap> = run {
+    // Randall 3 Nov 21:37Z: one painted template for every set (1024×1536, silver crimps, gold art window, black band).
+    // Measured on the files: notch peak 59.6 %, band 63.2 % to 85.9 %. hob and msh are redrawn on it.
+    val template = Wrap(1024f / 1536f, notch = .596f, top = .632f, bottom = .859f)
+    listOf("dft", "ecl", "eoe", "fin", "hob", "msh", "sos", "spm", "tdm", "tla", "tmt").associateWith { template } +
+        ("fra" to Wrap(600f / 918f, notch = .641f, top = .676f, bottom = .892f))
+}
 
 /**
  * Randall's seven theme wrappers (3 Nov, "by set theme"): one painted template, notch emblem at 70 %,
@@ -515,7 +517,7 @@ private fun WrappedBooster(code: String, label: String, wrap: Wrap, img: ImageBi
             val dens = LocalDensity.current
             val px = with(dens) { w.toPx() }
             val sp = { f: Float -> with(dens) { (px * f).toSp() } }
-            Column(Modifier.align(Alignment.TopCenter).offset(y = h * wrap.top).fillMaxWidth().height(h * (wrap.bottom - wrap.top)).padding(horizontal = w * .1f),
+            Column(Modifier.align(Alignment.TopCenter).offset(y = h * wrap.top).fillMaxWidth().height(h * (wrap.bottom - wrap.top)).padding(horizontal = w * .135f),
                 horizontalAlignment = Alignment.CenterHorizontally, verticalArrangement = Arrangement.spacedBy(w * .018f, Alignment.CenterVertically)) {
                 if (!wrap.iconInNotch) SetIcon(code, Modifier.size(w * (if (mini) .2f else .1f)))
                 if (!mini) {

@@ -153,6 +153,27 @@ class ShotTest {
     }
 
     /** Pack tiles: Randall's wrappers (hob, fra) beside the drawn fallback (dsk), full and mini. */
+    /** Randall 3 Nov 21:37Z: the eleven painted wrappers on one template, at shelf size and at mini size, with their set names. */
+    @Test fun newWrappers() {
+        dev.cardstashy.nativeplay.ui.Motion.still = true
+        dev.cardstashy.nativeplay.ui.homeArt = ::homeArt
+        dev.cardstashy.nativeplay.art.CardArt.init(RuntimeEnvironment.getApplication())
+        val sets = listOf("dft" to "Aetherdrift", "ecl" to "Lorwyn Eclipsed", "eoe" to "Edge of Eternities", "fin" to "Final Fantasy", "hob" to "The Hobbit",
+            "msh" to "Marvel Super Heroes", "sos" to "Secrets of Strixhaven", "spm" to "Marvel's Spider-Man", "tdm" to "Tarkir: Dragonstorm",
+            "tla" to "Avatar: The Last Airbender", "tmt" to "Teenage Mutant Ninja Turtles", "fra" to "Reality Fracture")
+        kotlinx.coroutines.runBlocking { for ((c, _) in sets) dev.cardstashy.nativeplay.ui.wrapperFor(c)?.let { AssetImages.load(RuntimeEnvironment.getApplication(), it.first, maxWidth = 600) } }
+        tall("wrappers-new", 390, 120, 1f) {
+            Column(Modifier.background(Site.Bg).padding(16.dp), verticalArrangement = Arrangement.spacedBy(20.dp)) {
+                for (row in sets.chunked(3)) Row(horizontalArrangement = Arrangement.spacedBy(12.dp)) {
+                    for ((c, n) in row) dev.cardstashy.nativeplay.ui.Booster(c, n, Modifier.weight(1f))
+                }
+                Row(horizontalArrangement = Arrangement.spacedBy(10.dp)) {
+                    for ((c, n) in sets.take(5)) dev.cardstashy.nativeplay.ui.Booster(c, n, Modifier.size(width = 64.dp, height = 105.dp), mini = true)
+                }
+            }
+        }
+    }
+
     @Test fun packWrappers() {
         dev.cardstashy.nativeplay.ui.Motion.still = true
         dev.cardstashy.nativeplay.ui.homeArt = ::homeArt
