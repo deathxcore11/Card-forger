@@ -65,6 +65,9 @@ dependencies {
     implementation 'io.coil-kt.coil3:coil-compose:3.2.0'
     implementation 'io.coil-kt.coil3:coil-network-okhttp:3.2.0'
     implementation 'io.coil-kt.coil3:coil-svg:3.2.0'
+    // QuickJS for the web's Deck Forge bundle (assets/deck-engine.js): the same builder as the site, never a Kotlin rewrite.
+    implementation files('../qjs-libs/zipline-android-1.24.0.aar')
+    testImplementation files('../qjs-libs/zipline-jvm-1.24.0.jar')
     // JUnit from the local Gradle install when present (Maven Central rate-limits the cloud builder).
     // Screens rendered on the JVM (Robolectric native graphics) for Randall's screenshots; no emulator needed.
     testImplementation 'org.robolectric:robolectric:4.14.1'
