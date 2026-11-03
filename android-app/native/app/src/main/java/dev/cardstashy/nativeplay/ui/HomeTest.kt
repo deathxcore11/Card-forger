@@ -28,11 +28,12 @@ import androidx.compose.ui.unit.sp
  *  A  the normal page.
  *  B  the same sections with no pictures at all: no art, no pack wrappers, no set icons, no ambient
  *     background, no shadows.
- *  C1..C5  pictures on, sections added one group at a time below Story: C1 stops at Story, C2 adds
- *     Today and Achievements, C3 adds Packs and the Forge, C4 adds decks and collection, C5 adds the Merchant.
+ *  C1  stops at Story (safe on Randall's Fold, 3 Nov 18:56Z; C2 to C5 and B froze).
+ *  D1..D4  Story plus one piece of Today/Achievements: D1 the 7-day calendar as it is, D2 the calendar
+ *     rebuilt without intrinsic sizing or FlowRow, D3 the daily quests, D4 Achievements.
  */
 object HomeTest {
-    val variants = listOf("A", "B", "C1", "C2", "C3", "C4", "C5")
+    val variants = listOf("A", "C1", "D1", "D2", "D3", "D4")
     var variant by mutableStateOf("A"); private set
     private var prefs: android.content.SharedPreferences? = null
     fun init(context: Context) {
@@ -41,8 +42,10 @@ object HomeTest {
     }
     fun pick(v: String) { variant = v; prefs?.edit()?.putString("v", v)?.commit() }
     val noPictures get() = variant == "B"
-    /** How many groups below Story show: 0 = none (C1) … 4 = all (C5, A, B). */
-    val groups get() = when (variant) { "C1" -> 0; "C2" -> 1; "C3" -> 2; "C4" -> 3; else -> 4 }
+    /** How many groups below Story show: 0 = none (C1, D1-D4 show only their one piece) … 4 = all. */
+    val groups get() = when (variant) { "C1", "D1", "D2", "D3", "D4" -> 0; "C2" -> 1; "C3" -> 2; "C4" -> 3; else -> 4 }
+    /** D1 the 7-day calendar as it is, D2 the calendar in plain rows, D3 the daily quests only, D4 Achievements only. */
+    val piece get() = variant.takeIf { it.startsWith("D") }
 }
 
 @Composable

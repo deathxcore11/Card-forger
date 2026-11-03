@@ -181,6 +181,12 @@ fun PlayHome(d: PlayHomeData, top: @Composable () -> Unit, act: PlayHomeActions 
                     item("modes") { Probe("modes") { Modes(wide, act) } }
                     item("story") { Probe("story") { StoryCard(d, wide, act) } }
                     val g = HomeTest.groups
+                    when (HomeTest.piece) {
+                        "D1" -> item("t-cal") { Probe("today") { Shelf("Today", "Quests", { act.view("deeds") }) { Calendar(d) } } }
+                        "D2" -> item("t-cal2") { Probe("today") { Shelf("Today", "Quests", { act.view("deeds") }) { PlainCalendar(d) } } }
+                        "D3" -> item("t-quests") { Probe("today") { Shelf("Today", "Quests", { act.view("deeds") }) { Quests(d, act) } } }
+                        "D4" -> item("t-deeds") { Probe("deeds") { Deeds(d, act) } }
+                    }
                     if (g >= 1) item("today") { Duo(duo, { Probe("today") { Today(d, act) } }, { Probe("deeds") { Deeds(d, act) } }) }
                     if (g >= 2) item("packs") { Duo(duo, { Probe("packs") { Packs(s, act) } }, { Probe("forge") { Forge(s, act) } }) }
                     if (g >= 3) item("decks") { Duo(duo, { Probe("decks") { Decks(s, wide, act) } }, { Probe("collection") { Collection(s, act) } }) }
@@ -583,10 +589,59 @@ private fun Rewards(r: PlayRules.Reward, column: Boolean = false) {
 
 @Composable
 private fun Today(d: PlayHomeData, act: PlayHomeActions) {
+    Shelf("Today", "Quests", { act.view("deeds") }) {
+        Calendar(d)
+        Quests(d, act)
+    }
+}
+
+@Composable
+private fun Quests(d: PlayHomeData, act: PlayHomeActions) {
     val s = d.state
     val q = remember(d.rules, s, d.day, d.user) { PlayMath.quests(d.rules, s, d.day, d.user) }
-    val stamp = s.getAsJsonObject("login")?.get("stamp")?.asInt ?: 0
-    Shelf("Today", "Quests", { act.view("deeds") }) {
+    Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
+        q.daily.forEach { r -> QuestRow(r, PlayMath.questReward(r.quest, s.getAsJsonObject("config"))) { act.claim("daily", r.quest.id) } }
+    }
+    Text("This week: ${q.weekly.count { it.done }} of ${q.weekly.size} weekly quests done", style = TextStyle(fontFamily = P.Sans, fontSize = 14.sp, color = P.Muted), modifier = Modifier.padding(top = 10.dp))
+}
+
+/** Test D2: the same 7-day calendar without IntrinsicSize or FlowRow: every cell one fixed height, rewards in rows of [perRow]. */
+@Composable
+private fun PlainCalendar(d: PlayHomeData) {
+    val stamp = d.state.getAsJsonObject("login")?.get("stamp")?.asInt ?: 0
+    fun items(r: PlayRules.Reward) = buildList<@Composable () -> Unit> {
+        if (r.coins > 0) add { Icon(SiteIcons.Coin, 16.dp); Num(r.coins, 13) }
+        r.seals.filter { it.value > 0 }.forEach { (k, v) -> add { Icon(SiteIcons.Seals.getValue(k), 16.dp); Num(v, 13) } }
+        if (r.packs > 0) add { Icon(SiteIcons.Pack, 16.dp); Num(r.packs, 13) }
+    }
+    BoxWithConstraints(Modifier.fillMaxWidth().padding(vertical = 8.dp)) {
+        val cellW = (maxWidth - 36.dp) / 7
+        val perRow = maxOf(1, ((cellW - 4.dp) / 30.dp).toInt())
+        val lines = d.rules.loginWeek.maxOf { r -> (items(r).size + perRow - 1) / perRow }.coerceAtLeast(1)
+        val h = 8.dp + 15.dp + 6.dp + 36.dp * lines + 4.dp * (lines - 1) + 8.dp
+        Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(6.dp)) {
+            d.rules.loginWeek.forEachIndexed { i, r ->
+                val on = i < stamp; val sh = RoundedCornerShape(12.dp)
+                Column(Modifier.weight(1f).height(maxOf(h, 72.dp)).clip(sh)
+                    .background(if (on) Brush.verticalGradient(listOf(Color(0xFF2A2116), Color(0xFF17120D))) else Brush.verticalGradient(listOf(Color(0x05FFFFFF), Color(0x05FFFFFF))))
+                    .border(1.dp, if (on) Color(0x66D6AD64) else Color(0x12FFFFFF), sh).padding(vertical = 8.dp, horizontal = 2.dp),
+                    horizontalAlignment = Alignment.CenterHorizontally, verticalArrangement = Arrangement.spacedBy(6.dp)) {
+                    Text("${i + 1}", style = TextStyle(fontFamily = P.Sans, fontWeight = FontWeight.ExtraBold, fontSize = 11.sp, letterSpacing = .04.em, color = if (on) Color(0xFFF3DFB4) else P.Muted))
+                    Column(verticalArrangement = Arrangement.spacedBy(4.dp), horizontalAlignment = Alignment.CenterHorizontally) {
+                        items(r).chunked(perRow).forEach { row -> Row(horizontalArrangement = Arrangement.spacedBy(3.dp)) {
+                            row.forEach { Column(horizontalAlignment = Alignment.CenterHorizontally, verticalArrangement = Arrangement.spacedBy(2.dp)) { it() } } } }
+                    }
+                }
+            }
+        }
+    }
+}
+
+/** The 7-day log-in calendar as shipped (equal-height cells via IntrinsicSize.Max, rewards in a FlowRow). */
+@Composable
+private fun Calendar(d: PlayHomeData) {
+    val stamp = d.state.getAsJsonObject("login")?.get("stamp")?.asInt ?: 0
+    run {
         Row(Modifier.fillMaxWidth().padding(vertical = 8.dp).height(androidx.compose.foundation.layout.IntrinsicSize.Max), horizontalArrangement = Arrangement.spacedBy(6.dp)) {
             d.rules.loginWeek.forEachIndexed { i, r ->
                 val on = i < stamp; val sh = RoundedCornerShape(12.dp)
@@ -599,10 +654,6 @@ private fun Today(d: PlayHomeData, act: PlayHomeActions) {
                 }
             }
         }
-        Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
-            q.daily.forEach { r -> QuestRow(r, PlayMath.questReward(r.quest, s.getAsJsonObject("config"))) { act.claim("daily", r.quest.id) } }
-        }
-        Text("This week: ${q.weekly.count { it.done }} of ${q.weekly.size} weekly quests done", style = TextStyle(fontFamily = P.Sans, fontSize = 14.sp, color = P.Muted), modifier = Modifier.padding(top = 10.dp))
     }
 }
 
