@@ -1,5 +1,6 @@
 {
  "act": 4,
+ "era": null,
  "title": "The Jamuraan War",
  "years": "1996 to 1997",
  "sets": [
@@ -124,6 +125,7 @@
    "line": "Far away, something enormous turns to look at Dominaria. It doesn't care who won."
   }
  ],
+ "vibe": "west-african-desert-jungle",
  "cast": {
   "you": {
    "name": "You",
@@ -313,6 +315,7 @@
    "id": "a4b1",
    "slot": 1,
    "kind": "Arrival",
+   "mood": "march",
    "title": "The Lancers of Suq'Ata",
    "difficulty": "Easy",
    "teaches": [
@@ -327,6 +330,7 @@
      "name": "Jabari's Knights",
      "colors": "W",
      "archetype": null,
+     "label": null,
      "cards": [
       {
        "qty": 4,
@@ -421,9 +425,10 @@
      "name": "Telim'Tor's Lances",
      "colors": "R",
      "archetype": null,
+     "label": null,
      "cards": [
       {
-       "qty": 2,
+       "qty": 1,
        "name": "Telim'Tor",
        "set": "mir",
        "number": "197",
@@ -479,21 +484,14 @@
        "id": "d217942b-1253-4d4b-b0d2-09fc4e15cc62"
       },
       {
-       "qty": 2,
-       "name": "Barreling Attack",
-       "set": "mir",
-       "number": "157",
-       "id": "a3a2955e-e714-419e-9e3d-7ae3d7fae041"
-      },
-      {
-       "qty": 2,
+       "qty": 3,
        "name": "Goblin Hero",
        "set": "5ed",
        "number": "235",
        "id": "1d21c8c9-6e16-4eb2-b2f5-3998f0f958ae"
       },
       {
-       "qty": 2,
+       "qty": 4,
        "name": "Mons's Goblin Raiders",
        "set": "5ed",
        "number": "251",
@@ -596,6 +594,7 @@
    "id": "a4b2",
    "slot": 2,
    "kind": "Lesson",
+   "mood": "comic",
    "title": "Teferi's Isle",
    "difficulty": "Easy",
    "teaches": [
@@ -610,6 +609,7 @@
      "name": "Out of Time",
      "colors": "U",
      "archetype": null,
+     "label": null,
      "cards": [
       {
        "qty": 4,
@@ -704,6 +704,7 @@
      "name": "Teferi's Tricks",
      "colors": "U",
      "archetype": null,
+     "label": null,
      "cards": [
       {
        "qty": 4,
@@ -877,6 +878,7 @@
    "id": "a4b3",
    "slot": 3,
    "kind": "Lesson",
+   "mood": "tension",
    "title": "The Song of Blood",
    "difficulty": "Easy",
    "teaches": [
@@ -891,6 +893,7 @@
      "name": "Scalebane's Watch",
      "colors": "RW",
      "archetype": null,
+     "label": null,
      "cards": [
       {
        "qty": 3,
@@ -999,6 +1002,7 @@
      "name": "The Night Stalkers",
      "colors": "B",
      "archetype": null,
+     "label": null,
      "cards": [
       {
        "qty": 2,
@@ -1188,6 +1192,7 @@
    "id": "a4b4",
    "slot": 4,
    "kind": "Rival",
+   "mood": "tension",
    "title": "The Amber Prison",
    "difficulty": "Normal",
    "teaches": [
@@ -1202,6 +1207,7 @@
      "name": "Asmira's Faithful",
      "colors": "GW",
      "archetype": null,
+     "label": null,
      "cards": [
       {
        "qty": 2,
@@ -1317,6 +1323,7 @@
      "name": "Children of the Mwonvuli",
      "colors": "G",
      "archetype": null,
+     "label": null,
      "cards": [
       {
        "qty": 4,
@@ -1354,7 +1361,7 @@
        "id": "31588ea3-31d2-4118-9b9f-4ce820c16a15"
       },
       {
-       "qty": 4,
+       "qty": 2,
        "name": "Stalking Tiger",
        "set": "mir",
        "number": "243",
@@ -1368,21 +1375,14 @@
        "id": "38149d49-8661-427c-9338-93c11a2a8093"
       },
       {
-       "qty": 2,
+       "qty": 4,
        "name": "Grizzly Bears",
        "set": "5ed",
        "number": "301",
        "id": "68d8ad43-adea-47e8-9d9e-e14c2ad41489"
       },
       {
-       "qty": 2,
-       "name": "Crash of Rhinos",
-       "set": "mir",
-       "number": "210",
-       "id": "d74e0337-d9ac-4bf2-b2b5-aadc97433030"
-      },
-      {
-       "qty": 2,
+       "qty": 4,
        "name": "Llanowar Elves",
        "set": "5ed",
        "number": "313",
@@ -1426,12 +1426,12 @@
     },
     "villain": {
      "card": {
-      "oracle_id": "b2d7251e-2848-4b85-8d99-7c43be163dfb",
-      "name": "Crash of Rhinos",
+      "oracle_id": "4ed04ece-64d2-41a4-bf36-b993cbbf2aac",
+      "name": "Bull Elephant",
       "rarity": "common",
-      "set": "mir",
-      "id": "d74e0337-d9ac-4bf2-b2b5-aadc97433030",
-      "image": "https://cards.scryfall.io/normal/front/d/7/d74e0337-d9ac-4bf2-b2b5-aadc97433030.jpg"
+      "set": "vis",
+      "id": "fa7f5f41-ed30-412b-b51e-37d26e9e6455",
+      "image": "https://cards.scryfall.io/normal/front/f/a/fa7f5f41-ed30-412b-b51e-37d26e9e6455.jpg"
      },
      "coins": 100
     }
@@ -1521,6 +1521,7 @@
    "id": "a4b5",
    "slot": 5,
    "kind": "Lesson",
+   "mood": "tension",
    "title": "The Last Library",
    "difficulty": "Normal",
    "teaches": [
@@ -1535,6 +1536,7 @@
      "name": "The Loreweaver",
      "colors": "U",
      "archetype": null,
+     "label": null,
      "cards": [
       {
        "qty": 2,
@@ -1622,6 +1624,7 @@
      "name": "Shauku's Pen",
      "colors": "B",
      "archetype": null,
+     "label": null,
      "cards": [
       {
        "qty": 2,
@@ -1801,6 +1804,7 @@
    "id": "a4b6",
    "slot": 6,
    "kind": "Meta",
+   "mood": "comic",
    "title": "Prosperity",
    "difficulty": "Normal",
    "teaches": [
@@ -1815,6 +1819,7 @@
      "name": "Thirsty Traveller",
      "colors": "WU",
      "archetype": null,
+     "label": null,
      "cards": [
       {
        "qty": 4,
@@ -1916,9 +1921,10 @@
      "name": "Everybody Draws",
      "colors": "UR",
      "archetype": "Prosperity",
+     "label": null,
      "cards": [
       {
-       "qty": 4,
+       "qty": 2,
        "name": "Howling Mine",
        "set": "5ed",
        "number": "377",
@@ -1953,7 +1959,7 @@
        "id": "911787db-9023-46f8-9501-3ad26b6ca51d"
       },
       {
-       "qty": 3,
+       "qty": 4,
        "name": "Fireball",
        "set": "5ed",
        "number": "227",
@@ -1981,7 +1987,7 @@
        "id": "9d710a97-062f-4773-b6c6-8aeddeb3b6e8"
       },
       {
-       "qty": 3,
+       "qty": 4,
        "name": "Incinerate",
        "set": "mir",
        "number": "184",
@@ -2104,6 +2110,7 @@
    "id": "a4b7",
    "slot": 7,
    "kind": "Meta",
+   "mood": "march",
    "title": "Fireblast",
    "difficulty": "Normal",
    "teaches": [
@@ -2118,6 +2125,7 @@
      "name": "The Vanguard of Zhalfir",
      "colors": "W",
      "archetype": null,
+     "label": null,
      "cards": [
       {
        "qty": 4,
@@ -2205,6 +2213,7 @@
      "name": "Sligh",
      "colors": "R",
      "archetype": "Sligh",
+     "label": null,
      "cards": [
       {
        "qty": 4,
@@ -2383,6 +2392,7 @@
    "id": "a4b8",
    "slot": 8,
    "kind": "Boss",
+   "mood": "boss",
    "title": "Kaervek's Torch",
    "difficulty": "Hard",
    "teaches": [
@@ -2397,6 +2407,7 @@
      "name": "The Reeds of a Basket",
      "colors": "GWR",
      "archetype": null,
+     "label": null,
      "cards": [
       {
        "qty": 2,
@@ -2526,6 +2537,7 @@
      "name": "Kaervek's War",
      "colors": "BR",
      "archetype": null,
+     "label": null,
      "cards": [
       {
        "qty": 4,

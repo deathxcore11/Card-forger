@@ -255,7 +255,7 @@ export default {
         s('greven', 'But this minotaur? This one I get to break myself.')],
       cues: {hero: cue('Hold your position! Leave doubt for the dying!', 'You want to know your enemy? Look at your feet while you trample him.', 'Where I come from, stone stays on the ground.', 'Off my ship.', "Torahn's horns..."),
         villain: cue('Moggs! Over the rail!', 'Fear rules those weak enough to accept it.', 'Vhati! VHATI!', 'Chain him. The evincar has plans for horns.', 'Retreat. And someone find me Vhati.')}},
-    {slot: 7, mood: 'tension', kind: 'Meta', title: 'The Laboratory', difficulty: 'Hard', rewardSet: 'exo', teaches: ['Playing against reanimation'],
+    {slot: 7, mood: 'tension', kind: 'Meta', title: 'The Laboratory', difficulty: 'Normal', rewardSet: 'exo', teaches: ['Playing against reanimation'],
       blurb: 'Inside the Stronghold, the crew finds Volrath\'s laboratory, where the dead are works in progress. Something in there is wearing Gerrard\'s face. Survival and Recurring Nightmare, the engine of 1998.',
       hero: {who: 'orim', deck: {name: 'The Samite Way', colors: 'W', list: `
 2 Orim, Samite Healer

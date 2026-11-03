@@ -2278,7 +2278,11 @@
     },
     {
      "who": "stage",
-     "line": "Crovax dies in the stronghold he stole. Nobody mourns him except, perhaps, a memory of an angel."
+     "line": "Tahngarth breaks him. Gerrard finishes it, in the stronghold Crovax stole."
+    },
+    {
+     "who": "gerrard",
+     "line": "For Mirri. For Selenia. Rest, Crovax. You were one of us once."
     }
    ],
    "cues": {

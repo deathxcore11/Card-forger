@@ -67,7 +67,7 @@ export default {
 2 Warrior's Honor
 24 Plains`}},
       villain: {who: 'telimtor', deck: {name: "Telim'Tor's Lances", colors: 'R', list: `
-2 Telim'Tor
+1 Telim'Tor
 4 Suq'Ata Lancer
 4 Talruum Minotaur
 4 Viashino Warrior
@@ -75,9 +75,8 @@ export default {
 4 Mountain Goat
 4 Hill Giant
 4 Dwarven Warriors
-2 Barreling Attack
-2 Goblin Hero
-2 Mons's Goblin Raiders
+3 Goblin Hero
+4 Mons's Goblin Raiders
 24 Mountain`}},
       scene: [{who: 'jabari', line: 'You. Out of the sky. Can you ride?'}, {who: 'jabari', line: "Doesn't matter. Hold on."},
         {who: 'telimtor', line: 'Jabari! Forty lances on my left. Sixty on my right. How many have you?'}, {who: 'jabari', line: 'Enough to be remembered.'},
@@ -189,11 +188,10 @@ export default {
 2 Gibbering Hyenas
 2 Ley Druid
 4 Jolrael's Centaur
-4 Stalking Tiger
+2 Stalking Tiger
 2 King Cheetah
-2 Grizzly Bears
-2 Crash of Rhinos
-2 Llanowar Elves
+4 Grizzly Bears
+4 Llanowar Elves
 4 Rampant Growth
 2 Giant Growth
 2 Fog
@@ -265,16 +263,16 @@ export default {
 10 Plains
 10 Island`}},
       villain: {who: 'pashad', deck: {name: 'Everybody Draws', colors: 'UR', archetype: 'Prosperity', list: `
-4 Howling Mine
+2 Howling Mine
 4 Prosperity
 4 Inspiration
 4 Kaervek's Torch
 4 Volcanic Geyser
-3 Fireball
+4 Fireball
 4 Memory Lapse
 4 Counterspell
 2 Impulse
-3 Incinerate
+4 Incinerate
 12 Island
 12 Mountain`}},
       scene: [{who: 'pashad', line: 'Friend! Stranger! Friend-stranger! You look thirsty. And rich.'}, {who: 'pashad', line: 'Water, one coin. Water that heals, two coins.'},

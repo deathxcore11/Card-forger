@@ -712,7 +712,7 @@
    "slot": 3,
    "kind": "Lesson",
    "title": "The Black Book",
-   "difficulty": "Normal",
+   "difficulty": "Easy",
    "teaches": [
     "Card advantage",
     "Paying life"
@@ -918,7 +918,7 @@
    "reward": {
     "hero": {
      "packs": 1,
-     "coins": 100
+     "coins": 0
     },
     "villain": {
      "card": {
@@ -929,7 +929,7 @@
       "id": "54d7a0c1-efb4-4a8d-ad92-a96d43835052",
       "image": "https://cards.scryfall.io/normal/front/5/4/54d7a0c1-efb4-4a8d-ad92-a96d43835052.jpg"
      },
-     "coins": 100
+     "coins": 50
     }
    },
    "scene": [

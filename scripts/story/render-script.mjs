@@ -5,7 +5,7 @@ const n = Number(process.argv[2]), act = storyAct(n), src = (await import(`./act
 const name = who => who === 'stage' || who === 'narrator' ? '' : (src.cast[who]?.name || who);
 const line = l => name(l.who) ? `- ${name(l.who)}: ${l.line}${l.quote ? ' [card]' : ''}` : `- (${l.line})`;
 const face = p => p.fixed ? `${p.fixed.card} (${p.fixed.set} #${p.fixed.number}, face only)` : `${p.card}${p.number ? ' #' + p.number : ''}`;
-const cues = c => c && c.start ? `START "${c.start}" / BIG PLAY "${c.big}" / LOW LIFE "${c.low}" / WIN "${c.win}" / LOSS "${c.loss}"${c.half ? ` / HALF LIFE (${name(c.half.who)}) "${c.half.line}"` : ''}` : 'none (you never speak)';
+const cues = c => c && c.start ? `START "${c.start}" / BIG PLAY "${c.big}" / LOW LIFE "${c.low}" / WIN "${c.win}" / LOSS "${c.loss}"${c.half ? (typeof c.half === 'string' ? ` / HALF LIFE "${c.half}"` : ` / HALF LIFE (${name(c.half.who)}) "${c.half.line}"`) : ''}` : 'none (you never speak)';
 const out = [`# STORY SCRIPT: ACT ${n}, ${act.title.toUpperCase()}`, '', `Sets: ${act.sets.join(' ')}. Land set: ${act.landSet}. Music vibe: ${src.vibe || '-'}.`,
   'Lines marked [card] are real flavor text from the era, said by the person the card credits. Generated from the act file, so this is exactly what ships.', '',
   '## Cast', ...Object.entries(src.cast).filter(([k]) => k !== 'you').map(([, p]) => `- ${p.name}, ${p.title}. Portrait: ${face(p)}.`), '', '## Intro', ...src.intro.map(line)];
