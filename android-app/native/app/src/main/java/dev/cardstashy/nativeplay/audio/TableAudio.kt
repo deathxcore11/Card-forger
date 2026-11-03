@@ -20,7 +20,11 @@ class TableAudio(context: Context) {
         }
     }
 
-    fun play(id: String, volume: Float = 1f) { ids[id]?.let { pool.play(it, volume, volume, 1, 0, 1f) } }
+    /** Silent while the app is in the background; any sound still ringing stops at once. */
+    var muted = false
+        set(on) { field = on; if (on) pool.autoPause() else pool.autoResume() }
+
+    fun play(id: String, volume: Float = 1f) { if (muted) return; ids[id]?.let { pool.play(it, volume, volume, 1, 0, 1f) } }
 
     fun release() = pool.release()
 

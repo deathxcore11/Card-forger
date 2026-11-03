@@ -63,6 +63,8 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.compose.ui.zIndex
 import dev.cardstashy.nativeplay.audio.TableAudio
+import androidx.lifecycle.Lifecycle
+import androidx.lifecycle.compose.LifecycleEventEffect
 import dev.cardstashy.nativeplay.engine.Card
 import dev.cardstashy.nativeplay.engine.MatchState
 import dev.cardstashy.nativeplay.engine.Prompt
@@ -88,6 +90,8 @@ fun TableScreen(controller: MatchController, onHome: () -> Unit, onRematch: () -
     val failure by controller.failure.collectAsState()
     val audio = remember { TableAudio(context) }
     DisposableEffect(Unit) { onDispose { audio.release() } }
+    LifecycleEventEffect(Lifecycle.Event.ON_STOP) { audio.muted = true; controller.setPaused(true) }
+    LifecycleEventEffect(Lifecycle.Event.ON_START) { audio.muted = false; controller.setPaused(false) }
     var previous by remember { mutableStateOf<MatchState?>(null) }
     LaunchedEffect(shown?.revision) { shown?.let { audio.update(previous, it); previous = it } }
     var inspect by remember { mutableStateOf<Card?>(null) }

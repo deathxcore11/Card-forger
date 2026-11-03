@@ -16,6 +16,7 @@ import kotlinx.coroutines.channels.Channel
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
+import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.isActive
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
@@ -103,7 +104,12 @@ class MatchController(private val scope: CoroutineScope, private val input: Stri
     /** Tap on the feed: the current action ends now (only that one, never the whole turn). */
     fun next() { skip?.complete(Unit) }
 
+    /** While the app is in the background the CPU's beats wait, so nothing plays out unseen. */
+    private val paused = MutableStateFlow(false)
+    fun setPaused(on: Boolean) { paused.value = on }
+
     private suspend fun hold(ms: Long) {
+        paused.first { !it }
         val d = CompletableDeferred<Unit>(); skip = d
         withTimeoutOrNull(ms) { d.await() }
         skip = null
