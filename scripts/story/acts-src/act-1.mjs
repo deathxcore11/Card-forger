@@ -88,7 +88,7 @@ export default {
       scene: [{who: 'goblinKing', line: 'Halt! This pass belongs to the king.'}, {who: 'goblinKing', line: 'I am the king.'}, {who: 'goblinKing', line: "Toll is everything you've got. Pay or get stomped."}, {who: 'goblinKing', line: '...Why is your stuff flying? Nobody said flying was allowed.'}],
       villainScene: [{who: 'goblinKing', line: "Big toll today, boys. Biggest ever."}, {who: 'goblinKing', line: "If it flies, throw rocks at it. Rocks fly too. Sort of."}],
       cues: {villain: cue('Charge! No, the OTHER way!', "Look at THAT one. That one's mine.", 'Who let the sky in?!', "Toll's paid! Hah!", 'Next time, nets. Lots of nets.')}},
-    {slot: 3, kind: 'Lesson', title: 'Knights at the Ford', difficulty: 'Normal', rewardSet: 'lea', teaches: ['First strike', 'Protection from a colour'],
+    {slot: 3, kind: 'Lesson', title: 'Knights at the Ford', difficulty: 'Easy', rewardSet: 'lea', teaches: ['First strike', 'Protection from a colour'],
       blurb: 'Two knights have held the same river crossing for years. Today one of them finally wants it settled.',
       hero: {who: 'whiteKnight', deck: {label: 'tribute', name: 'The Order of the Ford', colors: 'W', list: `
 4 White Knight

@@ -1,0 +1,3158 @@
+{
+ "act": 11,
+ "era": "2004-06-20",
+ "title": "The Metal World",
+ "years": "2003 to 2004",
+ "sets": [
+  "mrd",
+  "dst",
+  "5dn"
+ ],
+ "landSet": "mrd",
+ "intro": [
+  {
+   "who": "stage",
+   "line": "Far from Dominaria, a plane made entirely of metal. Karn built it, called it Argentum, and left."
+  },
+  {
+   "who": "stage",
+   "line": "He left a keeper behind: a golem named Memnarch. Memnarch kept the plane for a very long time, alone."
+  },
+  {
+   "who": "stage",
+   "line": "In the blur between metal and flesh, Memnarch found madness.",
+   "quote": true
+  },
+  {
+   "who": "stage",
+   "line": "Now the plane is called Mirrodin. Four suns cross its sky. Elves, leonin, goblins and men live on it, and none of them know how they got here."
+  },
+  {
+   "who": "glissa",
+   "line": "There's a secret at the heart of this world, and I will unlock it.",
+   "quote": true
+  }
+ ],
+ "finale": [
+  {
+   "who": "stage",
+   "line": "In the Panopticon, Memnarch falls. The keeper of Mirrodin goes still among his myr."
+  },
+  {
+   "who": "glissa",
+   "line": "He was going to cut the spark out of me. Whatever a spark is."
+  },
+  {
+   "who": "slobad",
+   "line": "Something old. Something he wanted to be. Slobad thinks he copied it from somebody."
+  },
+  {
+   "who": "stage",
+   "line": "The ur-golem etchings begin by celebrating Mirrodin's creator, a golem of almost limitless power. They end by cursing its protector, a being called Memnarch.",
+   "quote": true
+  },
+  {
+   "who": "stage",
+   "line": "The levelers stop. The myr stop watching. Five suns cross the sky now, and the Tangle grows toward the green one."
+  },
+  {
+   "who": "stage",
+   "line": "Deep in the core, where nobody looks, a drop of black oil that was never part of Karn's design begins, very slowly, to spread."
+  }
+ ],
+ "villainFinale": [
+  {
+   "who": "stage",
+   "line": "The elf lies still on the floor of the Panopticon. Memnarch bends over her, listening for the spark."
+  },
+  {
+   "who": "memnarch",
+   "line": "I was built to keep his world. He never came back to see it."
+  },
+  {
+   "who": "memnarch",
+   "line": "So I kept it. I made the myr and the levelers. Everything he made, I made again."
+  },
+  {
+   "who": "memnarch",
+   "line": "And now I will take the one thing he had that I did not. Then I will leave, as he did."
+  },
+  {
+   "who": "stage",
+   "line": "Deep in the core, a drop of black oil moves. Memnarch does not notice. He never did."
+  }
+ ],
+ "vibe": "steel-plane-five-suns",
+ "cast": {
+  "you": {
+   "name": "You",
+   "title": "Planeswalker",
+   "portrait": {
+    "card": "Fold into Aether",
+    "set": "5dn",
+    "number": "31",
+    "id": "615157d6-0160-417b-b06c-0e253b306c37",
+    "crop": "https://cards.scryfall.io/art_crop/front/6/1/615157d6-0160-417b-b06c-0e253b306c37.jpg?1783944404",
+    "artist": "Anthony S. Waters & Cara Mitten",
+    "focus": "50% 30%"
+   }
+  },
+  "glissa": {
+   "name": "Glissa",
+   "title": "Sunseeker",
+   "portrait": {
+    "card": "Glissa Sunseeker",
+    "set": "mrd",
+    "number": "120",
+    "id": "670c3106-71fc-464e-8c94-81bf7fafc3e6",
+    "crop": "https://cards.scryfall.io/art_crop/front/6/7/670c3106-71fc-464e-8c94-81bf7fafc3e6.jpg?1783944533",
+    "artist": "Brom",
+    "focus": "50% 25%"
+   }
+  },
+  "slobad": {
+   "name": "Slobad",
+   "title": "Goblin Tinkerer",
+   "portrait": {
+    "card": "Slobad, Goblin Tinkerer",
+    "set": "dst",
+    "number": "69",
+    "id": "df14aa0e-6d34-48ca-aee0-3563bbfb3b15",
+    "crop": "https://cards.scryfall.io/art_crop/front/d/f/df14aa0e-6d34-48ca-aee0-3563bbfb3b15.jpg?1783944437",
+    "artist": "Kev Walker",
+    "focus": "50% 25%"
+   }
+  },
+  "bosh": {
+   "name": "Bosh",
+   "title": "Iron Golem",
+   "portrait": {
+    "card": "Bosh, Iron Golem",
+    "set": "mrd",
+    "number": "147",
+    "id": "9bfe325c-8d3d-4543-9fcd-214525d4ab2a",
+    "crop": "https://cards.scryfall.io/art_crop/front/9/b/9bfe325c-8d3d-4543-9fcd-214525d4ab2a.jpg?1783944527",
+    "artist": "Brom",
+    "focus": "50% 25%"
+   }
+  },
+  "memnarch": {
+   "name": "Memnarch",
+   "title": "Keeper of Mirrodin",
+   "portrait": {
+    "card": "Memnarch",
+    "set": "dst",
+    "number": "129",
+    "id": "57ae2417-b859-4254-a3a5-6bff159447ca",
+    "crop": "https://cards.scryfall.io/art_crop/front/5/7/57ae2417-b859-4254-a3a5-6bff159447ca.jpg?1783944422",
+    "artist": "Carl Critchlow",
+    "focus": "50% 25%"
+   }
+  },
+  "leveler": {
+   "name": "The Levelers",
+   "title": "Memnarch's Harvest",
+   "portrait": {
+    "card": "Leveler",
+    "set": "mrd",
+    "number": "195",
+    "id": "03ffa3c3-dd29-47eb-abf2-7951fadb5c37",
+    "crop": "https://cards.scryfall.io/art_crop/front/0/3/03ffa3c3-dd29-47eb-abf2-7951fadb5c37.jpg?1783944515",
+    "artist": "Carl Critchlow",
+    "focus": "50% 35%"
+   }
+  },
+  "hoverguard": {
+   "name": "The Hoverguards",
+   "title": "Eyes of the Synod",
+   "portrait": {
+    "card": "Somber Hoverguard",
+    "set": "mrd",
+    "number": "51",
+    "id": "83a46ac2-d96d-4d5a-94fc-a9fc83a9ea1d",
+    "crop": "https://cards.scryfall.io/art_crop/front/8/3/83a46ac2-d96d-4d5a-94fc-a9fc83a9ea1d.jpg?1783944550",
+    "artist": "Adam Rex",
+    "focus": "50% 30%"
+   }
+  },
+  "pontifex": {
+   "name": "Pontifex",
+   "title": "Elder Researcher",
+   "portrait": {
+    "card": "Vedalken Mastermind",
+    "set": "5dn",
+    "number": "40",
+    "id": "c4d8c7ed-62ce-4865-8f9e-5fcc8b23cff5",
+    "crop": "https://cards.scryfall.io/art_crop/front/c/4/c4d8c7ed-62ce-4865-8f9e-5fcc8b23cff5.jpg?1783944402",
+    "artist": "Darrell Riche",
+    "focus": "50% 25%"
+   }
+  },
+  "ravager": {
+   "name": "The Arcbound",
+   "title": "Darksteel Crew",
+   "portrait": {
+    "card": "Arcbound Ravager",
+    "set": "dst",
+    "number": "100",
+    "id": "72c1a731-7854-42b1-8719-ac3c2a269c1f",
+    "crop": "https://cards.scryfall.io/art_crop/front/7/2/72c1a731-7854-42b1-8719-ac3c2a269c1f.jpg?1783944429",
+    "artist": "Carl Critchlow",
+    "focus": "50% 30%"
+   }
+  },
+  "raksha": {
+   "name": "Raksha",
+   "title": "Golden Cub, Leonin Kha",
+   "portrait": {
+    "card": "Raksha Golden Cub",
+    "set": "5dn",
+    "number": "12",
+    "id": "45501767-2ba8-443f-af9b-c86ead0aa30d",
+    "crop": "https://cards.scryfall.io/art_crop/front/4/5/45501767-2ba8-443f-af9b-c86ead0aa30d.jpg?1783944409",
+    "artist": "Pete Venters",
+    "focus": "50% 25%"
+   }
+  },
+  "geth": {
+   "name": "Geth",
+   "title": "Keeper of the Vault",
+   "portrait": {
+    "card": "Geth, Lord of the Vault",
+    "set": "som",
+    "number": "64",
+    "id": "fed31f2f-370d-4bbe-aa57-82249ed1b4d4",
+    "artist": "Whit Brachna",
+    "crop": "https://cards.scryfall.io/art_crop/front/f/e/fed31f2f-370d-4bbe-aa57-82249ed1b4d4.jpg",
+    "focus": "50% 25%"
+   }
+  },
+  "krark": {
+   "name": "The Krark Clan",
+   "title": "Goblins of the Furnace",
+   "portrait": {
+    "card": "Krark-Clan Grunt",
+    "set": "mrd",
+    "number": "97",
+    "id": "ffd9e422-206e-4c25-9964-ed6592c16e12",
+    "crop": "https://cards.scryfall.io/art_crop/front/f/f/ffd9e422-206e-4c25-9964-ed6592c16e12.jpg?1783944539",
+    "artist": "Thomas M. Baxa",
+    "focus": "50% 30%"
+   }
+  },
+  "sylvok": {
+   "name": "The Sylvok",
+   "title": "Druids of the Tangle",
+   "portrait": {
+    "card": "Sylvok Explorer",
+    "set": "5dn",
+    "number": "93",
+    "id": "3ed328af-bc0d-4a9d-a9ee-bc0196a2afaf",
+    "crop": "https://cards.scryfall.io/art_crop/front/3/e/3ed328af-bc0d-4a9d-a9ee-bc0196a2afaf.jpg?1783944388",
+    "artist": "Wayne England",
+    "focus": "50% 30%"
+   }
+  },
+  "janus": {
+   "name": "Janus",
+   "title": "Speaker of the Synod",
+   "portrait": {
+    "card": "Vedalken Archmage",
+    "set": "mrd",
+    "number": "55",
+    "id": "8b38da97-5141-4de6-bd7f-3fcbf46cfd96",
+    "crop": "https://cards.scryfall.io/art_crop/front/8/b/8b38da97-5141-4de6-bd7f-3fcbf46cfd96.jpg?1783944550",
+    "artist": "Kev Walker",
+    "focus": "50% 25%"
+   }
+  },
+  "clamp": {
+   "name": "The Clamp Deck",
+   "title": "Spring 2004",
+   "portrait": {
+    "card": "Skullclamp",
+    "set": "dst",
+    "number": "140",
+    "id": "55318397-de3c-47ea-a088-72a24df5c8fa",
+    "crop": "https://cards.scryfall.io/art_crop/front/5/5/55318397-de3c-47ea-a088-72a24df5c8fa.jpg?1783944419",
+    "artist": "Luca Zontini",
+    "focus": "50% 40%"
+   }
+  }
+ },
+ "battles": [
+  {
+   "id": "a11b1",
+   "slot": 1,
+   "kind": "Arrival",
+   "mood": "tension",
+   "title": "Glissa's Hunt",
+   "difficulty": "Easy",
+   "teaches": [
+    "Equipment"
+   ],
+   "blurb": "The levelers came through the Tangle and killed Glissa's family. Every elf says they come once a century, from nowhere, for no reason. Glissa does not believe in no reason.",
+   "rewardSet": "mrd",
+   "host": false,
+   "hero": {
+    "who": "glissa",
+    "deck": {
+     "name": "Sunseeker's Hunt",
+     "colors": "GW",
+     "archetype": null,
+     "label": "tribute",
+     "cards": [
+      {
+       "qty": 4,
+       "name": "Tel-Jilad Chosen",
+       "set": "mrd",
+       "number": "132",
+       "id": "eefea84f-d657-491d-b60d-63e6a61e9eb2"
+      },
+      {
+       "qty": 4,
+       "name": "Leonin Skyhunter",
+       "set": "mrd",
+       "number": "11",
+       "id": "275a47e1-816c-44f9-bd05-b8b56410436f"
+      },
+      {
+       "qty": 4,
+       "name": "Viridian Zealot",
+       "set": "dst",
+       "number": "90",
+       "id": "ca1ecdd4-9dbc-4635-a0ef-0aae6f8ffcdb"
+      },
+      {
+       "qty": 4,
+       "name": "Troll Ascetic",
+       "set": "mrd",
+       "number": "135",
+       "id": "f01233c2-6df0-4f0e-8668-3855868731ea"
+      },
+      {
+       "qty": 4,
+       "name": "Fangren Hunter",
+       "set": "mrd",
+       "number": "119",
+       "id": "2dbc8eef-f032-490a-b487-da1af71b7ff2"
+      },
+      {
+       "qty": 2,
+       "name": "Tel-Jilad Archers",
+       "set": "mrd",
+       "number": "131",
+       "id": "3a1fde33-e86a-4146-9c90-4616a5fc0868"
+      },
+      {
+       "qty": 4,
+       "name": "Bonesplitter",
+       "set": "mrd",
+       "number": "146",
+       "id": "465a7990-c9f9-4716-a833-fd41458b9cee"
+      },
+      {
+       "qty": 2,
+       "name": "Leonin Scimitar",
+       "set": "mrd",
+       "number": "193",
+       "id": "8abf4bbe-5b1c-4f6f-be32-5f61c66e1830"
+      },
+      {
+       "qty": 2,
+       "name": "Loxodon Warhammer",
+       "set": "mrd",
+       "number": "201",
+       "id": "a1a6e375-5c47-4447-9453-adf0038693e3"
+      },
+      {
+       "qty": 3,
+       "name": "Oxidize",
+       "set": "dst",
+       "number": "79",
+       "id": "1349969e-1cbe-4541-b3ed-154f5a39f1f0"
+      },
+      {
+       "qty": 3,
+       "name": "Viridian Shaman",
+       "set": "mrd",
+       "number": "139",
+       "id": "932bf583-efd3-42e9-8a7b-7b3fe07fbcf0"
+      },
+      {
+       "qty": 13,
+       "name": "Forest",
+       "set": "mrd",
+       "number": "303",
+       "id": "77aec0b2-30f2-4f35-a9a3-24d87795d177"
+      },
+      {
+       "qty": 11,
+       "name": "Plains",
+       "set": "mrd",
+       "number": "287",
+       "id": "5bac2d0d-43db-41f7-99dd-9ff55a4f2b3b"
+      }
+     ]
+    }
+   },
+   "villain": {
+    "who": "leveler",
+    "deck": {
+     "name": "The Levelers",
+     "colors": "R",
+     "archetype": null,
+     "label": "tribute",
+     "cards": [
+      {
+       "qty": 4,
+       "name": "Ornithopter",
+       "set": "mrd",
+       "number": "224",
+       "id": "969ebd20-de69-44ba-a0c2-9e2a89480370"
+      },
+      {
+       "qty": 4,
+       "name": "Frogmite",
+       "set": "mrd",
+       "number": "172",
+       "id": "ff504dcb-2eb8-4b3c-a8b9-29697739b649"
+      },
+      {
+       "qty": 4,
+       "name": "Myr Enforcer",
+       "set": "mrd",
+       "number": "211",
+       "id": "eeeef899-a8b5-4416-a208-3bd5a0c7177b"
+      },
+      {
+       "qty": 4,
+       "name": "Clockwork Condor",
+       "set": "mrd",
+       "number": "154",
+       "id": "02a7e1a6-347e-47bc-8a14-e584a45941e1"
+      },
+      {
+       "qty": 4,
+       "name": "Clockwork Beetle",
+       "set": "mrd",
+       "number": "153",
+       "id": "bc3c8db7-cf58-4571-b4ad-2b68d73495b2"
+      },
+      {
+       "qty": 4,
+       "name": "Atog",
+       "set": "mrd",
+       "number": "86",
+       "id": "a15397bc-c400-4f8d-b206-08a4d65e76ff"
+      },
+      {
+       "qty": 4,
+       "name": "Shrapnel Blast",
+       "set": "mrd",
+       "number": "106",
+       "id": "056affab-4e2a-4b68-b864-d879becd3c45"
+      },
+      {
+       "qty": 4,
+       "name": "Electrostatic Bolt",
+       "set": "mrd",
+       "number": "89",
+       "id": "c455c8d4-6f20-4dcb-8e82-c2bb70d6bc3e"
+      },
+      {
+       "qty": 4,
+       "name": "Bonesplitter",
+       "set": "mrd",
+       "number": "146",
+       "id": "465a7990-c9f9-4716-a833-fd41458b9cee"
+      },
+      {
+       "qty": 4,
+       "name": "Great Furnace",
+       "set": "mrd",
+       "number": "282",
+       "id": "2877281d-c85d-4f32-b40d-828b93c4ee8e"
+      },
+      {
+       "qty": 4,
+       "name": "Darksteel Citadel",
+       "set": "dst",
+       "number": "164",
+       "id": "c5d0e808-d67b-4ea3-9c04-d20269fe692c"
+      },
+      {
+       "qty": 16,
+       "name": "Mountain",
+       "set": "mrd",
+       "number": "299",
+       "id": "b082f22f-6c01-4e8c-80ad-6fdae5c3f22f"
+      }
+     ]
+    }
+   },
+   "reward": {
+    "hero": {
+     "packs": 1,
+     "coins": 0
+    },
+    "villain": {
+     "card": {
+      "oracle_id": "3095f2cf-05c3-4381-929f-c526b6fc30a7",
+      "name": "Atog",
+      "rarity": "uncommon",
+      "set": "mrd",
+      "id": "a15397bc-c400-4f8d-b206-08a4d65e76ff",
+      "image": "https://cards.scryfall.io/normal/front/a/1/a15397bc-c400-4f8d-b206-08a4d65e76ff.jpg"
+     },
+     "coins": 50
+    }
+   },
+   "scene": [
+    {
+     "who": "stage",
+     "line": "Once a century, the levelers rip through every corner of Mirrodin, obeying the commands of an unseen master.",
+     "quote": true
+    },
+    {
+     "who": "stage",
+     "line": "When the levelers come again, we shall be ready for them.",
+     "quote": true
+    },
+    {
+     "who": "glissa",
+     "line": "Equipment: pay once to make it, then pay its equip cost to strap it to a creature. If the creature dies, the blade stays. Pick it up again."
+    },
+    {
+     "who": "glissa",
+     "line": "They are machines. Machines have makers. I want to know who."
+    }
+   ],
+   "villainScene": [
+    {
+     "who": "stage",
+     "line": "The levelers do not speak. Somewhere above the Tangle, something is counting."
+    },
+    {
+     "who": "stage",
+     "line": "Memnarch created the myr with three qualities in mind: dependability, controllability, and disposability.",
+     "quote": true
+    }
+   ],
+   "after": [
+    {
+     "who": "glissa",
+     "line": "This one carried a mark. Not elf work. Not goblin. Someone built these on purpose."
+    },
+    {
+     "who": "stage",
+     "line": "A goblin is picking through the wreck before the smoke clears."
+    }
+   ],
+   "cues": {
+    "hero": {
+     "start": "For my mother. For my father.",
+     "big": "Cut it down.",
+     "low": "There are too many of them...",
+     "win": "Machines have makers. I will find yours.",
+     "loss": "The Tangle... will remember...",
+     "half": "Strap it on. Again."
+    },
+    "villain": {
+     "start": "[grinding gears]",
+     "big": "[the blades spin faster]",
+     "low": "[a gear slips]",
+     "win": "[the harvest continues]",
+     "loss": "[silence]"
+    }
+   },
+   "bigPlays": [],
+   "sim": null
+  },
+  {
+   "id": "a11b2",
+   "slot": 2,
+   "kind": "Lesson",
+   "mood": "march",
+   "title": "Junk into Engines",
+   "difficulty": "Easy",
+   "teaches": [
+    "Affinity",
+    "Artifact lands"
+   ],
+   "blurb": "Slobad was thrown out of the Krark Clan for being too clever. He knows artifacts better than anyone in the Tangle, and he has just been caught by vedalken hoverguards taking one apart.",
+   "rewardSet": "mrd",
+   "host": false,
+   "hero": {
+    "who": "slobad",
+    "deck": {
+     "name": "Slobad's Workshop",
+     "colors": "R",
+     "archetype": null,
+     "label": "tribute",
+     "cards": [
+      {
+       "qty": 4,
+       "name": "Ornithopter",
+       "set": "mrd",
+       "number": "224",
+       "id": "969ebd20-de69-44ba-a0c2-9e2a89480370"
+      },
+      {
+       "qty": 4,
+       "name": "Frogmite",
+       "set": "mrd",
+       "number": "172",
+       "id": "ff504dcb-2eb8-4b3c-a8b9-29697739b649"
+      },
+      {
+       "qty": 4,
+       "name": "Myr Enforcer",
+       "set": "mrd",
+       "number": "211",
+       "id": "eeeef899-a8b5-4416-a208-3bd5a0c7177b"
+      },
+      {
+       "qty": 4,
+       "name": "Arcbound Worker",
+       "set": "dst",
+       "number": "104",
+       "id": "75561093-8892-4b51-813a-c933a06d8cbd"
+      },
+      {
+       "qty": 4,
+       "name": "Krark-Clan Grunt",
+       "set": "mrd",
+       "number": "97",
+       "id": "ffd9e422-206e-4c25-9964-ed6592c16e12"
+      },
+      {
+       "qty": 4,
+       "name": "Goblin Striker",
+       "set": "mrd",
+       "number": "94",
+       "id": "f7654d8a-7013-4311-b29e-b55aaa1bf502"
+      },
+      {
+       "qty": 4,
+       "name": "Pyrite Spellbomb",
+       "set": "mrd",
+       "number": "232",
+       "id": "97b9bab9-12ee-4da5-9d53-d0b82d9279cd"
+      },
+      {
+       "qty": 4,
+       "name": "Shrapnel Blast",
+       "set": "mrd",
+       "number": "106",
+       "id": "056affab-4e2a-4b68-b864-d879becd3c45"
+      },
+      {
+       "qty": 2,
+       "name": "Cranial Plating",
+       "set": "5dn",
+       "number": "113",
+       "id": "90ea95d0-9f95-462b-a080-22a5da7b2e97"
+      },
+      {
+       "qty": 2,
+       "name": "Furnace Dragon",
+       "set": "dst",
+       "number": "62",
+       "id": "62f5c675-b629-45ec-907c-36594f5fe54a"
+      },
+      {
+       "qty": 4,
+       "name": "Great Furnace",
+       "set": "mrd",
+       "number": "282",
+       "id": "2877281d-c85d-4f32-b40d-828b93c4ee8e"
+      },
+      {
+       "qty": 4,
+       "name": "Darksteel Citadel",
+       "set": "dst",
+       "number": "164",
+       "id": "c5d0e808-d67b-4ea3-9c04-d20269fe692c"
+      },
+      {
+       "qty": 16,
+       "name": "Mountain",
+       "set": "mrd",
+       "number": "299",
+       "id": "b082f22f-6c01-4e8c-80ad-6fdae5c3f22f"
+      }
+     ]
+    }
+   },
+   "villain": {
+    "who": "hoverguard",
+    "deck": {
+     "name": "Synod Hoverguards",
+     "colors": "U",
+     "archetype": null,
+     "label": "tribute",
+     "cards": [
+      {
+       "qty": 4,
+       "name": "Neurok Spy",
+       "set": "mrd",
+       "number": "44",
+       "id": "47b86a02-d40a-4615-8402-bd5700cb5101"
+      },
+      {
+       "qty": 4,
+       "name": "Neurok Familiar",
+       "set": "mrd",
+       "number": "43",
+       "id": "52fd15b0-4ada-41c7-81e0-4f8956798685"
+      },
+      {
+       "qty": 4,
+       "name": "Somber Hoverguard",
+       "set": "mrd",
+       "number": "51",
+       "id": "83a46ac2-d96d-4d5a-94fc-a9fc83a9ea1d"
+      },
+      {
+       "qty": 4,
+       "name": "Hoverguard Observer",
+       "set": "dst",
+       "number": "22",
+       "id": "c7ab80bf-d115-4155-82e1-9a3a70b1b67d"
+      },
+      {
+       "qty": 4,
+       "name": "Advanced Hoverguard",
+       "set": "5dn",
+       "number": "22",
+       "id": "7384d50a-5801-47ed-ab9f-5c7e4f1f20dd"
+      },
+      {
+       "qty": 2,
+       "name": "Looming Hoverguard",
+       "set": "mrd",
+       "number": "38",
+       "id": "29de2f4c-81a6-42c7-94d1-f9109c3331ff"
+      },
+      {
+       "qty": 2,
+       "name": "Trinket Mage",
+       "set": "5dn",
+       "number": "39",
+       "id": "4c5a41ab-1840-4abb-a8bb-f0b1e7d1b450"
+      },
+      {
+       "qty": 4,
+       "name": "Thirst for Knowledge",
+       "set": "mrd",
+       "number": "53",
+       "id": "0ff1f608-203e-4413-8753-37fc49731c87"
+      },
+      {
+       "qty": 3,
+       "name": "Condescend",
+       "set": "5dn",
+       "number": "27",
+       "id": "e8303b80-e29a-46b8-90b0-c0cfe551b435"
+      },
+      {
+       "qty": 3,
+       "name": "Echoing Truth",
+       "set": "dst",
+       "number": "21",
+       "id": "4aefedd7-1bf5-4148-9084-d7d8f1138140"
+      },
+      {
+       "qty": 2,
+       "name": "Annul",
+       "set": "mrd",
+       "number": "29",
+       "id": "8ba18ec8-e82f-41be-9ed8-b1a4ae9b7426"
+      },
+      {
+       "qty": 4,
+       "name": "Seat of the Synod",
+       "set": "mrd",
+       "number": "283",
+       "id": "5da5587d-6b6c-4645-8cc9-2866d1e6911b"
+      },
+      {
+       "qty": 20,
+       "name": "Island",
+       "set": "mrd",
+       "number": "291",
+       "id": "9a5235cd-5d25-498d-8e36-7a7c0791f212"
+      }
+     ]
+    }
+   },
+   "reward": {
+    "hero": {
+     "packs": 1,
+     "coins": 0
+    },
+    "villain": {
+     "card": {
+      "oracle_id": "3c88108e-d983-427a-9b85-b9cdd2d5083b",
+      "name": "Somber Hoverguard",
+      "rarity": "common",
+      "set": "mrd",
+      "id": "83a46ac2-d96d-4d5a-94fc-a9fc83a9ea1d",
+      "image": "https://cards.scryfall.io/normal/front/8/3/83a46ac2-d96d-4d5a-94fc-a9fc83a9ea1d.jpg"
+     },
+     "coins": 50
+    }
+   },
+   "scene": [
+    {
+     "who": "stage",
+     "line": "The vedalken interrogate all intruders, once the hoverguards are done with them.",
+     "quote": true
+    },
+    {
+     "who": "slobad",
+     "line": "Is it the stomping kind or the munching kind?",
+     "quote": true
+    },
+    {
+     "who": "slobad",
+     "line": "Affinity: every artifact you have makes affinity spells cost one less. Artifact lands count too. Pile up junk, and the big ones cost nothing."
+    },
+    {
+     "who": "glissa",
+     "line": "Can you fight?"
+    },
+    {
+     "who": "slobad",
+     "line": "No. But the junk can."
+    }
+   ],
+   "villainScene": [
+    {
+     "who": "stage",
+     "line": "It could be made to run silently, but its low hum reminds the Neurok that they are always watched.",
+     "quote": true
+    },
+    {
+     "who": "stage",
+     "line": "Vedalken eyes don't see the beauty in things. They see only what those things can teach.",
+     "quote": true
+    },
+    {
+     "who": "hoverguard",
+     "line": "Goblin. Elf. Both off their maps. Report to the Synod."
+    }
+   ],
+   "after": [
+    {
+     "who": "glissa",
+     "line": "I used to joke that he had been exiled for being too smart. Now I know why he never laughed.",
+     "quote": true
+    }
+   ],
+   "cues": {
+    "hero": {
+     "start": "Slobad builds! Slobad builds fast!",
+     "big": "Free! It was free!",
+     "low": "Slobad's junk is running out...",
+     "win": "Junk wins. Junk always wins.",
+     "loss": "Slobad should have stayed in the Furnace...",
+     "half": "Every scrap counts."
+    },
+    "villain": {
+     "start": "Intruders logged.",
+     "big": "Observe.",
+     "low": "Hoverguard damaged...",
+     "win": "Report filed.",
+     "loss": "Signal lost."
+    }
+   },
+   "bigPlays": [],
+   "sim": null
+  },
+  {
+   "id": "a11b3",
+   "slot": 3,
+   "kind": "Lesson",
+   "mood": "comic",
+   "title": "Stored in the Machine",
+   "difficulty": "Easy",
+   "teaches": [
+    "Imprint"
+   ],
+   "blurb": "In the vedalken city of Lumengrid, the researcher Pontifex keeps a vault of machines that remember. An iron golem has walked in looking for his own past. Pontifex would like to keep him.",
+   "rewardSet": "mrd",
+   "host": false,
+   "hero": {
+    "who": "bosh",
+    "deck": {
+     "name": "The Iron Golem",
+     "colors": "R",
+     "archetype": null,
+     "label": "tribute",
+     "cards": [
+      {
+       "qty": 4,
+       "name": "Vulshok Berserker",
+       "set": "mrd",
+       "number": "111",
+       "id": "23510414-974e-4510-9742-884ecd572ad8"
+      },
+      {
+       "qty": 4,
+       "name": "Spikeshot Goblin",
+       "set": "mrd",
+       "number": "108",
+       "id": "147c826a-b664-4afa-ae7f-284ddce80861"
+      },
+      {
+       "qty": 4,
+       "name": "Goblin Brawler",
+       "set": "5dn",
+       "number": "66",
+       "id": "f6586c04-f92d-4c3f-8b03-59e5ef158ed4"
+      },
+      {
+       "qty": 3,
+       "name": "Arc-Slogger",
+       "set": "mrd",
+       "number": "85",
+       "id": "d3dd67e0-72b4-4c55-b49b-c69950feccb1"
+      },
+      {
+       "qty": 2,
+       "name": "Solemn Simulacrum",
+       "set": "mrd",
+       "number": "245",
+       "id": "00f9955f-a522-47bf-b064-92dd21a76b18"
+      },
+      {
+       "qty": 4,
+       "name": "Myr Enforcer",
+       "set": "mrd",
+       "number": "211",
+       "id": "eeeef899-a8b5-4416-a208-3bd5a0c7177b"
+      },
+      {
+       "qty": 4,
+       "name": "Frogmite",
+       "set": "mrd",
+       "number": "172",
+       "id": "ff504dcb-2eb8-4b3c-a8b9-29697739b649"
+      },
+      {
+       "qty": 4,
+       "name": "Magma Jet",
+       "set": "5dn",
+       "number": "73",
+       "id": "51ea1728-08aa-4553-90b2-919c70712ed5"
+      },
+      {
+       "qty": 4,
+       "name": "Electrostatic Bolt",
+       "set": "mrd",
+       "number": "89",
+       "id": "c455c8d4-6f20-4dcb-8e82-c2bb70d6bc3e"
+      },
+      {
+       "qty": 3,
+       "name": "Fireball",
+       "set": "dst",
+       "number": "60",
+       "id": "967465c4-619a-4407-bffc-ffadb89726cd"
+      },
+      {
+       "qty": 4,
+       "name": "Pyrite Spellbomb",
+       "set": "mrd",
+       "number": "232",
+       "id": "97b9bab9-12ee-4da5-9d53-d0b82d9279cd"
+      },
+      {
+       "qty": 4,
+       "name": "Great Furnace",
+       "set": "mrd",
+       "number": "282",
+       "id": "2877281d-c85d-4f32-b40d-828b93c4ee8e"
+      },
+      {
+       "qty": 16,
+       "name": "Mountain",
+       "set": "mrd",
+       "number": "299",
+       "id": "b082f22f-6c01-4e8c-80ad-6fdae5c3f22f"
+      }
+     ]
+    }
+   },
+   "villain": {
+    "who": "pontifex",
+    "deck": {
+     "name": "The Vedalken Archive",
+     "colors": "U",
+     "archetype": null,
+     "label": "tribute",
+     "cards": [
+      {
+       "qty": 3,
+       "name": "Duplicant",
+       "set": "mrd",
+       "number": "165",
+       "id": "d48a96f2-738f-433f-bfae-fbf378832a3b"
+      },
+      {
+       "qty": 3,
+       "name": "Mirror Golem",
+       "set": "mrd",
+       "number": "208",
+       "id": "d9467839-b2a2-4cfe-a60e-12766e2ba983"
+      },
+      {
+       "qty": 2,
+       "name": "Soul Foundry",
+       "set": "mrd",
+       "number": "246",
+       "id": "11b4983a-2a95-4322-a315-27b4bd430d39"
+      },
+      {
+       "qty": 1,
+       "name": "Chrome Mox",
+       "set": "mrd",
+       "number": "152",
+       "id": "6a058e68-70af-4a64-859c-c881e5578368"
+      },
+      {
+       "qty": 3,
+       "name": "Silver Myr",
+       "set": "mrd",
+       "number": "241",
+       "id": "b83a73a2-fedb-40bd-8e29-82a7abd6f211"
+      },
+      {
+       "qty": 4,
+       "name": "Trinket Mage",
+       "set": "5dn",
+       "number": "39",
+       "id": "4c5a41ab-1840-4abb-a8bb-f0b1e7d1b450"
+      },
+      {
+       "qty": 4,
+       "name": "Neurok Familiar",
+       "set": "mrd",
+       "number": "43",
+       "id": "52fd15b0-4ada-41c7-81e0-4f8956798685"
+      },
+      {
+       "qty": 4,
+       "name": "Psychic Membrane",
+       "set": "mrd",
+       "number": "46",
+       "id": "4ffd5a69-05b6-4fc4-8186-503a2e204330"
+      },
+      {
+       "qty": 3,
+       "name": "Hoverguard Sweepers",
+       "set": "5dn",
+       "number": "32",
+       "id": "55773fd5-86a2-4fd4-9849-a2f0d4c8298f"
+      },
+      {
+       "qty": 4,
+       "name": "Thirst for Knowledge",
+       "set": "mrd",
+       "number": "53",
+       "id": "0ff1f608-203e-4413-8753-37fc49731c87"
+      },
+      {
+       "qty": 4,
+       "name": "Condescend",
+       "set": "5dn",
+       "number": "27",
+       "id": "e8303b80-e29a-46b8-90b0-c0cfe551b435"
+      },
+      {
+       "qty": 3,
+       "name": "Echoing Truth",
+       "set": "dst",
+       "number": "21",
+       "id": "4aefedd7-1bf5-4148-9084-d7d8f1138140"
+      },
+      {
+       "qty": 2,
+       "name": "Last Word",
+       "set": "dst",
+       "number": "23",
+       "id": "139d2ece-f656-4cac-8d77-b0f083f76c70"
+      },
+      {
+       "qty": 4,
+       "name": "Seat of the Synod",
+       "set": "mrd",
+       "number": "283",
+       "id": "5da5587d-6b6c-4645-8cc9-2866d1e6911b"
+      },
+      {
+       "qty": 16,
+       "name": "Island",
+       "set": "mrd",
+       "number": "291",
+       "id": "9a5235cd-5d25-498d-8e36-7a7c0791f212"
+      }
+     ]
+    }
+   },
+   "reward": {
+    "hero": {
+     "packs": 1,
+     "coins": 0
+    },
+    "villain": {
+     "card": {
+      "oracle_id": "853ef032-a2f7-4e6b-a210-03e96855d062",
+      "name": "Hoverguard Sweepers",
+      "rarity": "rare",
+      "set": "5dn",
+      "id": "55773fd5-86a2-4fd4-9849-a2f0d4c8298f",
+      "image": "https://cards.scryfall.io/normal/front/5/5/55773fd5-86a2-4fd4-9849-a2f0d4c8298f.jpg"
+     },
+     "coins": 50
+    }
+   },
+   "scene": [
+    {
+     "who": "stage",
+     "line": "As Glissa searches for the truth about Memnarch, Bosh searches to unearth the secrets of his past.",
+     "quote": true
+    },
+    {
+     "who": "bosh",
+     "line": "This machine. It has my face inside it."
+    },
+    {
+     "who": "pontifex",
+     "line": "Imprint: some machines exile a card when they arrive, and keep it. Duplicant becomes the creature it ate. Mirror Golem guards against everything it holds."
+    },
+    {
+     "who": "slobad",
+     "line": "So if it eats Bosh, it becomes Bosh?"
+    },
+    {
+     "who": "pontifex",
+     "line": "Precisely. Isn't it wonderful?"
+    }
+   ],
+   "villainScene": [
+    {
+     "who": "pontifex",
+     "line": "Did it have this shape upon Mirrodin's creation, or did some inconceivable force shape the unshapable?",
+     "quote": true
+    },
+    {
+     "who": "pontifex",
+     "line": "A golem that thinks. I must have him for the archive."
+    }
+   ],
+   "after": [
+    {
+     "who": "bosh",
+     "line": "The machine showed me a forge. Older than this world. And a maker, walking away."
+    },
+    {
+     "who": "glissa",
+     "line": "Then we find the maker."
+    }
+   ],
+   "cues": {
+    "hero": {
+     "start": "BOSH. REMEMBERS. NOTHING. YET.",
+     "big": "BOSH. BURNS.",
+     "low": "Bosh is... cooling...",
+     "win": "Bosh is not for keeping.",
+     "loss": "Bosh... forgets...",
+     "half": "Burn the archive."
+    },
+    "villain": {
+     "start": "Begin the recording.",
+     "big": "Fascinating.",
+     "low": "The archive is failing...",
+     "win": "Catalogued.",
+     "loss": "Data... lost..."
+    }
+   },
+   "bigPlays": [],
+   "sim": null
+  },
+  {
+   "id": "a11b4",
+   "slot": 4,
+   "kind": "Rival",
+   "mood": "tension",
+   "title": "Darksteel",
+   "difficulty": "Normal",
+   "teaches": [
+    "Modular",
+    "Indestructible"
+   ],
+   "blurb": "Under the plane's surface, Memnarch's Arcbound crews guard the way to his tower. They take each other apart to grow, and the darksteel they stand on cannot be broken.",
+   "rewardSet": "dst",
+   "host": false,
+   "hero": {
+    "who": "glissa",
+    "deck": {
+     "name": "Tangle and Furnace",
+     "colors": "GR",
+     "archetype": null,
+     "label": "tribute",
+     "cards": [
+      {
+       "qty": 4,
+       "name": "Tel-Jilad Chosen",
+       "set": "mrd",
+       "number": "132",
+       "id": "eefea84f-d657-491d-b60d-63e6a61e9eb2"
+      },
+      {
+       "qty": 4,
+       "name": "Troll Ascetic",
+       "set": "mrd",
+       "number": "135",
+       "id": "f01233c2-6df0-4f0e-8668-3855868731ea"
+      },
+      {
+       "qty": 4,
+       "name": "Viridian Shaman",
+       "set": "mrd",
+       "number": "139",
+       "id": "932bf583-efd3-42e9-8a7b-7b3fe07fbcf0"
+      },
+      {
+       "qty": 4,
+       "name": "Fangren Firstborn",
+       "set": "dst",
+       "number": "75",
+       "id": "97d5fc3c-7f6b-42a5-a482-d789a2a421c7"
+      },
+      {
+       "qty": 3,
+       "name": "Viridian Zealot",
+       "set": "dst",
+       "number": "90",
+       "id": "ca1ecdd4-9dbc-4635-a0ef-0aae6f8ffcdb"
+      },
+      {
+       "qty": 3,
+       "name": "Vulshok Berserker",
+       "set": "mrd",
+       "number": "111",
+       "id": "23510414-974e-4510-9742-884ecd572ad8"
+      },
+      {
+       "qty": 4,
+       "name": "Magma Jet",
+       "set": "5dn",
+       "number": "73",
+       "id": "51ea1728-08aa-4553-90b2-919c70712ed5"
+      },
+      {
+       "qty": 3,
+       "name": "Oxidize",
+       "set": "dst",
+       "number": "79",
+       "id": "1349969e-1cbe-4541-b3ed-154f5a39f1f0"
+      },
+      {
+       "qty": 3,
+       "name": "Electrostatic Bolt",
+       "set": "mrd",
+       "number": "89",
+       "id": "c455c8d4-6f20-4dcb-8e82-c2bb70d6bc3e"
+      },
+      {
+       "qty": 4,
+       "name": "Bonesplitter",
+       "set": "mrd",
+       "number": "146",
+       "id": "465a7990-c9f9-4716-a833-fd41458b9cee"
+      },
+      {
+       "qty": 11,
+       "name": "Forest",
+       "set": "mrd",
+       "number": "303",
+       "id": "77aec0b2-30f2-4f35-a9a3-24d87795d177"
+      },
+      {
+       "qty": 9,
+       "name": "Mountain",
+       "set": "mrd",
+       "number": "299",
+       "id": "b082f22f-6c01-4e8c-80ad-6fdae5c3f22f"
+      },
+      {
+       "qty": 2,
+       "name": "Tree of Tales",
+       "set": "mrd",
+       "number": "285",
+       "id": "94db07aa-43d3-41b5-924e-60f1756b9c69"
+      },
+      {
+       "qty": 2,
+       "name": "Great Furnace",
+       "set": "mrd",
+       "number": "282",
+       "id": "2877281d-c85d-4f32-b40d-828b93c4ee8e"
+      }
+     ]
+    }
+   },
+   "villain": {
+    "who": "ravager",
+    "deck": {
+     "name": "The Arcbound Crew",
+     "colors": "C",
+     "archetype": null,
+     "label": "tribute",
+     "cards": [
+      {
+       "qty": 4,
+       "name": "Arcbound Ravager",
+       "set": "dst",
+       "number": "100",
+       "id": "72c1a731-7854-42b1-8719-ac3c2a269c1f"
+      },
+      {
+       "qty": 4,
+       "name": "Arcbound Worker",
+       "set": "dst",
+       "number": "104",
+       "id": "75561093-8892-4b51-813a-c933a06d8cbd"
+      },
+      {
+       "qty": 4,
+       "name": "Arcbound Stinger",
+       "set": "dst",
+       "number": "103",
+       "id": "c397ea22-93cd-498a-a493-9af841d09bf5"
+      },
+      {
+       "qty": 4,
+       "name": "Arcbound Slith",
+       "set": "dst",
+       "number": "102",
+       "id": "7c2f544a-4a42-43ee-9796-5bf6b396b245"
+      },
+      {
+       "qty": 4,
+       "name": "Arcbound Lancer",
+       "set": "dst",
+       "number": "98",
+       "id": "7ff3241b-49ba-4243-b8fc-fef600836c8c"
+      },
+      {
+       "qty": 3,
+       "name": "Arcbound Crusher",
+       "set": "dst",
+       "number": "95",
+       "id": "748448bb-a1b2-4e84-b09a-5ecc4322f3c6"
+      },
+      {
+       "qty": 3,
+       "name": "Cranial Plating",
+       "set": "5dn",
+       "number": "113",
+       "id": "90ea95d0-9f95-462b-a080-22a5da7b2e97"
+      },
+      {
+       "qty": 1,
+       "name": "Arcbound Bruiser",
+       "set": "dst",
+       "number": "94",
+       "id": "a4672ba6-cd82-4208-bc08-764986899999"
+      },
+      {
+       "qty": 1,
+       "name": "Myr Enforcer",
+       "set": "mrd",
+       "number": "211",
+       "id": "eeeef899-a8b5-4416-a208-3bd5a0c7177b"
+      },
+      {
+       "qty": 4,
+       "name": "Welding Jar",
+       "set": "mrd",
+       "number": "274",
+       "id": "42b7b73b-4800-4fc7-9a5c-93e00ea88498"
+      },
+      {
+       "qty": 4,
+       "name": "Ornithopter",
+       "set": "mrd",
+       "number": "224",
+       "id": "969ebd20-de69-44ba-a0c2-9e2a89480370"
+      },
+      {
+       "qty": 4,
+       "name": "Frogmite",
+       "set": "mrd",
+       "number": "172",
+       "id": "ff504dcb-2eb8-4b3c-a8b9-29697739b649"
+      },
+      {
+       "qty": 4,
+       "name": "Darksteel Citadel",
+       "set": "dst",
+       "number": "164",
+       "id": "c5d0e808-d67b-4ea3-9c04-d20269fe692c"
+      },
+      {
+       "qty": 4,
+       "name": "Blinkmoth Nexus",
+       "set": "dst",
+       "number": "163",
+       "id": "bf51c665-7823-4d6a-b1da-8c2d93dae10b"
+      },
+      {
+       "qty": 4,
+       "name": "Mirrodin's Core",
+       "set": "dst",
+       "number": "165",
+       "id": "cf0e60c9-1548-4981-ada1-6656804a772e"
+      },
+      {
+       "qty": 4,
+       "name": "Seat of the Synod",
+       "set": "mrd",
+       "number": "283",
+       "id": "5da5587d-6b6c-4645-8cc9-2866d1e6911b"
+      },
+      {
+       "qty": 4,
+       "name": "Great Furnace",
+       "set": "mrd",
+       "number": "282",
+       "id": "2877281d-c85d-4f32-b40d-828b93c4ee8e"
+      }
+     ]
+    }
+   },
+   "reward": {
+    "hero": {
+     "packs": 1,
+     "coins": 100
+    },
+    "villain": {
+     "card": {
+      "oracle_id": "62e7e7b1-9887-4d15-b0e5-a8ddc711bd88",
+      "name": "Arcbound Ravager",
+      "rarity": "rare",
+      "set": "dst",
+      "id": "72c1a731-7854-42b1-8719-ac3c2a269c1f",
+      "image": "https://cards.scryfall.io/normal/front/7/2/72c1a731-7854-42b1-8719-ac3c2a269c1f.jpg"
+     },
+     "coins": 100
+    }
+   },
+   "scene": [
+    {
+     "who": "stage",
+     "line": "Panopticon, forge of the Darksteel Eye, home of Mirrodin's keeper.",
+     "quote": true
+    },
+    {
+     "who": "slobad",
+     "line": "Darksteel. Nothing breaks it. Slobad tried for a whole year."
+    },
+    {
+     "who": "glissa",
+     "line": "Modular: when an Arcbound dies, its counters jump to another artifact creature. Kill the Ravager first, or every death feeds it."
+    },
+    {
+     "who": "stage",
+     "line": "The parts are as strong as the whole.",
+     "quote": true
+    }
+   ],
+   "villainScene": [
+    {
+     "who": "stage",
+     "line": "Break in case of emergency.",
+     "quote": true
+    },
+    {
+     "who": "ravager",
+     "line": "[the crew locks together, plate to plate]"
+    }
+   ],
+   "after": [
+    {
+     "who": "stage",
+     "line": "At the bottom of the shaft, a tower of darksteel. On it, an eye that never closes."
+    }
+   ],
+   "cues": {
+    "hero": {
+     "start": "Into the dark, Slobad.",
+     "big": "Tear it apart!",
+     "low": "They keep getting bigger...",
+     "win": "Pieces. Only pieces.",
+     "loss": "They are... rebuilding...",
+     "half": "Kill the Ravager first."
+    },
+    "villain": {
+     "start": "[plates lock]",
+     "big": "[the crew feeds]",
+     "low": "[a joint cracks]",
+     "win": "[reassembled]",
+     "loss": "[scattered parts]"
+    }
+   },
+   "bigPlays": [],
+   "sim": null
+  },
+  {
+   "id": "a11b5",
+   "slot": 5,
+   "kind": "Lesson",
+   "mood": "tension",
+   "title": "The Fifth Dawn",
+   "difficulty": "Normal",
+   "teaches": [
+    "Sunburst"
+   ],
+   "blurb": "A fifth sun is rising out of Mirrodin's core. Raksha, the young leonin kha, takes it as a sign. So does Geth, keeper of the Vault, and his nim come out of the Mephidross to meet it.",
+   "rewardSet": "5dn",
+   "host": false,
+   "hero": {
+    "who": "raksha",
+    "deck": {
+     "name": "Taj-Nar Pride",
+     "colors": "GWU",
+     "archetype": null,
+     "label": "tribute",
+     "cards": [
+      {
+       "qty": 4,
+       "name": "Joiner Adept",
+       "set": "5dn",
+       "number": "89",
+       "id": "7acf1a5f-1dbd-4481-b58d-b84e32d2b6b3"
+      },
+      {
+       "qty": 4,
+       "name": "Sylvok Explorer",
+       "set": "5dn",
+       "number": "93",
+       "id": "3ed328af-bc0d-4a9d-a9ee-bc0196a2afaf"
+      },
+      {
+       "qty": 4,
+       "name": "Pentad Prism",
+       "set": "5dn",
+       "number": "143",
+       "id": "672b9b16-daef-44e6-9a3a-cfd9f3c78bc7"
+      },
+      {
+       "qty": 4,
+       "name": "Skyreach Manta",
+       "set": "5dn",
+       "number": "152",
+       "id": "f6b11e69-09ec-4e26-a64d-c129c45574b1"
+      },
+      {
+       "qty": 4,
+       "name": "Solarion",
+       "set": "5dn",
+       "number": "153",
+       "id": "9070dd3e-7600-493e-84b9-931ac92f44bc"
+      },
+      {
+       "qty": 3,
+       "name": "Sawtooth Thresher",
+       "set": "5dn",
+       "number": "149",
+       "id": "3c36de4a-807d-471d-ba59-0462d7bb028a"
+      },
+      {
+       "qty": 4,
+       "name": "Leonin Skyhunter",
+       "set": "mrd",
+       "number": "11",
+       "id": "275a47e1-816c-44f9-bd05-b8b56410436f"
+      },
+      {
+       "qty": 3,
+       "name": "Skyhunter Patrol",
+       "set": "mrd",
+       "number": "22",
+       "id": "c162594c-31f4-4d07-87ee-2d6ee7704980"
+      },
+      {
+       "qty": 3,
+       "name": "Clearwater Goblet",
+       "set": "5dn",
+       "number": "109",
+       "id": "5458c041-dde0-4df7-82bb-ada36a482c53"
+      },
+      {
+       "qty": 3,
+       "name": "Opaline Bracers",
+       "set": "5dn",
+       "number": "141",
+       "id": "3ae84edd-1294-4722-89d1-84d9f336871c"
+      },
+      {
+       "qty": 4,
+       "name": "Eternal Witness",
+       "set": "5dn",
+       "number": "86",
+       "id": "c7e10ca7-1e5d-4224-82cf-798a4d436d72"
+      },
+      {
+       "qty": 4,
+       "name": "Tree of Tales",
+       "set": "mrd",
+       "number": "285",
+       "id": "94db07aa-43d3-41b5-924e-60f1756b9c69"
+      },
+      {
+       "qty": 2,
+       "name": "Ancient Den",
+       "set": "mrd",
+       "number": "278",
+       "id": "cc857fbd-8e0f-4bff-8f14-561c9925c484"
+      },
+      {
+       "qty": 2,
+       "name": "Seat of the Synod",
+       "set": "mrd",
+       "number": "283",
+       "id": "5da5587d-6b6c-4645-8cc9-2866d1e6911b"
+      },
+      {
+       "qty": 8,
+       "name": "Forest",
+       "set": "mrd",
+       "number": "303",
+       "id": "77aec0b2-30f2-4f35-a9a3-24d87795d177"
+      },
+      {
+       "qty": 4,
+       "name": "Plains",
+       "set": "mrd",
+       "number": "287",
+       "id": "5bac2d0d-43db-41f7-99dd-9ff55a4f2b3b"
+      }
+     ]
+    }
+   },
+   "villain": {
+    "who": "geth",
+    "deck": {
+     "name": "Mephidross Nim",
+     "colors": "B",
+     "archetype": null,
+     "label": "tribute",
+     "cards": [
+      {
+       "qty": 4,
+       "name": "Moriok Rigger",
+       "set": "5dn",
+       "number": "54",
+       "id": "47ffdeb8-52d2-4059-b9c6-0ad71b96516a"
+      },
+      {
+       "qty": 4,
+       "name": "Disciple of the Vault",
+       "set": "mrd",
+       "number": "62",
+       "id": "644359dc-3c4c-4291-876d-7390dc466877"
+      },
+      {
+       "qty": 4,
+       "name": "Nim Abomination",
+       "set": "dst",
+       "number": "49",
+       "id": "1072fef6-3a58-41bb-8d34-0aaedf827aa5"
+      },
+      {
+       "qty": 4,
+       "name": "Dross Prowler",
+       "set": "mrd",
+       "number": "64",
+       "id": "1fff470a-3574-42be-8f0b-ac5e7a70f61a"
+      },
+      {
+       "qty": 4,
+       "name": "Woebearer",
+       "set": "mrd",
+       "number": "83",
+       "id": "c5a6e960-169d-431a-9ebd-c4413aa67377"
+      },
+      {
+       "qty": 4,
+       "name": "Chittering Rats",
+       "set": "dst",
+       "number": "39",
+       "id": "980135d5-dfaa-4beb-b4b3-1e256bb46e61"
+      },
+      {
+       "qty": 3,
+       "name": "Mephitic Ooze",
+       "set": "dst",
+       "number": "47",
+       "id": "5465de95-1249-4f14-a2e3-2b2861dfe058"
+      },
+      {
+       "qty": 3,
+       "name": "Mephidross Vampire",
+       "set": "5dn",
+       "number": "53",
+       "id": "754f202f-4f08-4c39-9219-1114d8508788"
+      },
+      {
+       "qty": 4,
+       "name": "Myr Enforcer",
+       "set": "mrd",
+       "number": "211",
+       "id": "eeeef899-a8b5-4416-a208-3bd5a0c7177b"
+      },
+      {
+       "qty": 4,
+       "name": "Frogmite",
+       "set": "mrd",
+       "number": "172",
+       "id": "ff504dcb-2eb8-4b3c-a8b9-29697739b649"
+      },
+      {
+       "qty": 4,
+       "name": "Vault of Whispers",
+       "set": "mrd",
+       "number": "286",
+       "id": "73866487-33f4-4f64-b100-2c4ddadcd74e"
+      },
+      {
+       "qty": 16,
+       "name": "Swamp",
+       "set": "mrd",
+       "number": "295",
+       "id": "6bae27d4-9de5-4f95-8c56-79afc6cbeb0c"
+      },
+      {
+       "qty": 2,
+       "name": "Night's Whisper",
+       "set": "5dn",
+       "number": "55",
+       "id": "61f0c6f6-b90d-4eb1-a5db-86e0a3997501"
+      }
+     ]
+    }
+   },
+   "reward": {
+    "hero": {
+     "packs": 1,
+     "coins": 100
+    },
+    "villain": {
+     "card": {
+      "oracle_id": "a6763205-47c7-4d7f-be8c-2f69e8321048",
+      "name": "Mephidross Vampire",
+      "rarity": "rare",
+      "set": "5dn",
+      "id": "754f202f-4f08-4c39-9219-1114d8508788",
+      "image": "https://cards.scryfall.io/normal/front/7/5/754f202f-4f08-4c39-9219-1114d8508788.jpg"
+     },
+     "coins": 100
+    }
+   },
+   "scene": [
+    {
+     "who": "stage",
+     "line": "To some the birth of the fifth sun was a sign of doom. To others it was a sign of salvation. But to all it was a sign.",
+     "quote": true
+    },
+    {
+     "who": "raksha",
+     "line": "I may be kha, but without my soldiers, my people, I am nothing.",
+     "quote": true
+    },
+    {
+     "who": "raksha",
+     "line": "Sunburst: these machines take a counter for each colour of mana spent on them. Pay with every colour you have."
+    },
+    {
+     "who": "stage",
+     "line": "A chorus of life heralds the arrival of Mirrodin's final sun.",
+     "quote": true
+    }
+   ],
+   "villainScene": [
+    {
+     "who": "geth",
+     "line": "Feel the burn of the mists. Master them. They will devour your enemies.",
+     "quote": true
+    },
+    {
+     "who": "stage",
+     "line": "In the swirling mists, you could walk right up to one and not know until its teeth are in your throat.",
+     "quote": true
+    },
+    {
+     "who": "geth",
+     "line": "The one who dies with the most toys is still dead.",
+     "quote": true
+    }
+   ],
+   "after": [
+    {
+     "who": "stage",
+     "line": "The fifth sun clears the horizon. It is green. In the Tangle, every tree turns toward it."
+    }
+   ],
+   "cues": {
+    "hero": {
+     "start": "For the pride!",
+     "big": "Five suns!",
+     "low": "The mists are thick...",
+     "win": "The nim go back to the Dross.",
+     "loss": "Taj-Nar... forgive me...",
+     "half": "Every colour."
+    },
+    "villain": {
+     "start": "Rise, my nim.",
+     "big": "Devour them.",
+     "low": "The mists thin...",
+     "win": "More toys for the Vault.",
+     "loss": "The Vault... will wait..."
+    }
+   },
+   "bigPlays": [],
+   "sim": null
+  },
+  {
+   "id": "a11b6",
+   "slot": 6,
+   "kind": "Meta",
+   "mood": "march",
+   "title": "Ravager Affinity",
+   "difficulty": "Normal",
+   "teaches": [
+    "Sacrifice"
+   ],
+   "blurb": "Around the real world in 2004, one deck was everywhere: Arcbound Ravager and a pile of artifact lands. On Mirrodin, the Krark Clan built the same thing out of scrap. You get the original.",
+   "rewardSet": "dst",
+   "host": false,
+   "hero": {
+    "who": "you",
+    "deck": {
+     "name": "Ravager Affinity",
+     "colors": "UB",
+     "archetype": "Affinity",
+     "label": "tribute",
+     "cards": [
+      {
+       "qty": 4,
+       "name": "Arcbound Ravager",
+       "set": "dst",
+       "number": "100",
+       "id": "72c1a731-7854-42b1-8719-ac3c2a269c1f"
+      },
+      {
+       "qty": 4,
+       "name": "Disciple of the Vault",
+       "set": "mrd",
+       "number": "62",
+       "id": "644359dc-3c4c-4291-876d-7390dc466877"
+      },
+      {
+       "qty": 4,
+       "name": "Frogmite",
+       "set": "mrd",
+       "number": "172",
+       "id": "ff504dcb-2eb8-4b3c-a8b9-29697739b649"
+      },
+      {
+       "qty": 4,
+       "name": "Myr Enforcer",
+       "set": "mrd",
+       "number": "211",
+       "id": "eeeef899-a8b5-4416-a208-3bd5a0c7177b"
+      },
+      {
+       "qty": 4,
+       "name": "Ornithopter",
+       "set": "mrd",
+       "number": "224",
+       "id": "969ebd20-de69-44ba-a0c2-9e2a89480370"
+      },
+      {
+       "qty": 4,
+       "name": "Somber Hoverguard",
+       "set": "mrd",
+       "number": "51",
+       "id": "83a46ac2-d96d-4d5a-94fc-a9fc83a9ea1d"
+      },
+      {
+       "qty": 4,
+       "name": "Thoughtcast",
+       "set": "mrd",
+       "number": "54",
+       "id": "efb965a7-877a-4302-b507-25b0a9e32d9b"
+      },
+      {
+       "qty": 4,
+       "name": "Cranial Plating",
+       "set": "5dn",
+       "number": "113",
+       "id": "90ea95d0-9f95-462b-a080-22a5da7b2e97"
+      },
+      {
+       "qty": 2,
+       "name": "Welding Jar",
+       "set": "mrd",
+       "number": "274",
+       "id": "42b7b73b-4800-4fc7-9a5c-93e00ea88498"
+      },
+      {
+       "qty": 2,
+       "name": "Talisman of Dominance",
+       "set": "mrd",
+       "number": "253",
+       "id": "991037a2-fea2-49f5-8ace-ebbf9f678cff"
+      },
+      {
+       "qty": 4,
+       "name": "Seat of the Synod",
+       "set": "mrd",
+       "number": "283",
+       "id": "5da5587d-6b6c-4645-8cc9-2866d1e6911b"
+      },
+      {
+       "qty": 4,
+       "name": "Vault of Whispers",
+       "set": "mrd",
+       "number": "286",
+       "id": "73866487-33f4-4f64-b100-2c4ddadcd74e"
+      },
+      {
+       "qty": 4,
+       "name": "Darksteel Citadel",
+       "set": "dst",
+       "number": "164",
+       "id": "c5d0e808-d67b-4ea3-9c04-d20269fe692c"
+      },
+      {
+       "qty": 4,
+       "name": "Blinkmoth Nexus",
+       "set": "dst",
+       "number": "163",
+       "id": "bf51c665-7823-4d6a-b1da-8c2d93dae10b"
+      },
+      {
+       "qty": 4,
+       "name": "Island",
+       "set": "mrd",
+       "number": "291",
+       "id": "9a5235cd-5d25-498d-8e36-7a7c0791f212"
+      },
+      {
+       "qty": 4,
+       "name": "Swamp",
+       "set": "mrd",
+       "number": "295",
+       "id": "6bae27d4-9de5-4f95-8c56-79afc6cbeb0c"
+      }
+     ]
+    }
+   },
+   "villain": {
+    "who": "krark",
+    "deck": {
+     "name": "Krark-Clan Affinity",
+     "colors": "R",
+     "archetype": "Affinity",
+     "label": "tribute",
+     "cards": [
+      {
+       "qty": 4,
+       "name": "Arcbound Ravager",
+       "set": "dst",
+       "number": "100",
+       "id": "72c1a731-7854-42b1-8719-ac3c2a269c1f"
+      },
+      {
+       "qty": 4,
+       "name": "Frogmite",
+       "set": "mrd",
+       "number": "172",
+       "id": "ff504dcb-2eb8-4b3c-a8b9-29697739b649"
+      },
+      {
+       "qty": 4,
+       "name": "Myr Enforcer",
+       "set": "mrd",
+       "number": "211",
+       "id": "eeeef899-a8b5-4416-a208-3bd5a0c7177b"
+      },
+      {
+       "qty": 4,
+       "name": "Ornithopter",
+       "set": "mrd",
+       "number": "224",
+       "id": "969ebd20-de69-44ba-a0c2-9e2a89480370"
+      },
+      {
+       "qty": 4,
+       "name": "Atog",
+       "set": "mrd",
+       "number": "86",
+       "id": "a15397bc-c400-4f8d-b206-08a4d65e76ff"
+      },
+      {
+       "qty": 4,
+       "name": "Disciple of the Vault",
+       "set": "mrd",
+       "number": "62",
+       "id": "644359dc-3c4c-4291-876d-7390dc466877"
+      },
+      {
+       "qty": 4,
+       "name": "Shrapnel Blast",
+       "set": "mrd",
+       "number": "106",
+       "id": "056affab-4e2a-4b68-b864-d879becd3c45"
+      },
+      {
+       "qty": 4,
+       "name": "Cranial Plating",
+       "set": "5dn",
+       "number": "113",
+       "id": "90ea95d0-9f95-462b-a080-22a5da7b2e97"
+      },
+      {
+       "qty": 4,
+       "name": "Welding Jar",
+       "set": "mrd",
+       "number": "274",
+       "id": "42b7b73b-4800-4fc7-9a5c-93e00ea88498"
+      },
+      {
+       "qty": 2,
+       "name": "Talisman of Indulgence",
+       "set": "mrd",
+       "number": "255",
+       "id": "e14011b3-56ce-4b93-833f-d8403809159c"
+      },
+      {
+       "qty": 4,
+       "name": "Great Furnace",
+       "set": "mrd",
+       "number": "282",
+       "id": "2877281d-c85d-4f32-b40d-828b93c4ee8e"
+      },
+      {
+       "qty": 4,
+       "name": "Vault of Whispers",
+       "set": "mrd",
+       "number": "286",
+       "id": "73866487-33f4-4f64-b100-2c4ddadcd74e"
+      },
+      {
+       "qty": 4,
+       "name": "Darksteel Citadel",
+       "set": "dst",
+       "number": "164",
+       "id": "c5d0e808-d67b-4ea3-9c04-d20269fe692c"
+      },
+      {
+       "qty": 4,
+       "name": "Blinkmoth Nexus",
+       "set": "dst",
+       "number": "163",
+       "id": "bf51c665-7823-4d6a-b1da-8c2d93dae10b"
+      },
+      {
+       "qty": 3,
+       "name": "Mountain",
+       "set": "mrd",
+       "number": "299",
+       "id": "b082f22f-6c01-4e8c-80ad-6fdae5c3f22f"
+      },
+      {
+       "qty": 3,
+       "name": "Swamp",
+       "set": "mrd",
+       "number": "295",
+       "id": "6bae27d4-9de5-4f95-8c56-79afc6cbeb0c"
+      }
+     ]
+    }
+   },
+   "reward": {
+    "hero": {
+     "packs": 1,
+     "coins": 100
+    },
+    "villain": {
+     "card": {
+      "oracle_id": "62e7e7b1-9887-4d15-b0e5-a8ddc711bd88",
+      "name": "Arcbound Ravager",
+      "rarity": "rare",
+      "set": "dst",
+      "id": "72c1a731-7854-42b1-8719-ac3c2a269c1f",
+      "image": "https://cards.scryfall.io/normal/front/7/2/72c1a731-7854-42b1-8719-ac3c2a269c1f.jpg"
+     },
+     "coins": 100
+    }
+   },
+   "scene": [
+    {
+     "who": "stage",
+     "line": "All the junk, refuse, and offal of the Krark Clan is diligently collected, melted down, and made into more junk, refuse, and offal.",
+     "quote": true
+    },
+    {
+     "who": "you",
+     "line": "A mirror. Same engine, different paint."
+    },
+    {
+     "who": "slobad",
+     "line": "Feed the Ravager what is about to die anyway. Never feed it a land you still need."
+    },
+    {
+     "who": "stage",
+     "line": "From trinket to trauma.",
+     "quote": true
+    }
+   ],
+   "villainScene": [
+    {
+     "who": "krark",
+     "line": "What do you mean, we're out of stuff to melt down? Give me your leg.",
+     "quote": true
+    },
+    {
+     "who": "krark",
+     "line": "Well, I jammed the whatsit into the whackdoodle, but I think I broke the thingamajigger.",
+     "quote": true
+    }
+   ],
+   "after": null,
+   "cues": {
+    "hero": {
+     "start": "Same engine. Better driver.",
+     "big": "Feed it.",
+     "low": "Out of fuel...",
+     "win": "Scrap.",
+     "loss": "They melted me down...",
+     "half": "Count the artifacts."
+    },
+    "villain": {
+     "start": "MELT IT!",
+     "big": "Thingamajigger!",
+     "low": "Out of stuff...",
+     "win": "Melt the loser!",
+     "loss": "Who broke it? Who?"
+    }
+   },
+   "bigPlays": [],
+   "sim": null
+  },
+  {
+   "id": "a11b7",
+   "slot": 7,
+   "kind": "Meta",
+   "mood": "tension",
+   "title": "Tooth and Nail",
+   "difficulty": "Normal",
+   "teaches": [
+    "Entwine"
+   ],
+   "blurb": "The Sylvok druids grow mana out of the Tangle until they can call anything. Janus of the vedalken Synod holds the shackles that let him take anything. Two ways to win a long game.",
+   "rewardSet": "mrd",
+   "host": false,
+   "hero": {
+    "who": "sylvok",
+    "deck": {
+     "name": "Tooth and Nail",
+     "colors": "G",
+     "archetype": "Ramp",
+     "label": "tribute",
+     "cards": [
+      {
+       "qty": 4,
+       "name": "Tooth and Nail",
+       "set": "mrd",
+       "number": "134",
+       "id": "02f0067c-2d38-46bd-b52e-070c2ce424f0"
+      },
+      {
+       "qty": 4,
+       "name": "Sylvan Scrying",
+       "set": "mrd",
+       "number": "130",
+       "id": "b4ff07b6-be9f-498f-9f36-cbd64f1b10cc"
+      },
+      {
+       "qty": 2,
+       "name": "Reap and Sow",
+       "set": "dst",
+       "number": "81",
+       "id": "ff6c4ae7-8509-47a2-bc28-d131b1e6676c"
+      },
+      {
+       "qty": 3,
+       "name": "Tel-Jilad Archers",
+       "set": "mrd",
+       "number": "131",
+       "id": "3a1fde33-e86a-4146-9c90-4616a5fc0868"
+      },
+      {
+       "qty": 4,
+       "name": "Wayfarer's Bauble",
+       "set": "5dn",
+       "number": "165",
+       "id": "3db8fc1d-69fa-4a88-8f12-11fd614aac01"
+      },
+      {
+       "qty": 4,
+       "name": "Viridian Joiner",
+       "set": "mrd",
+       "number": "138",
+       "id": "b50679df-bf82-4bb2-9fe3-8ebd7a9decde"
+      },
+      {
+       "qty": 4,
+       "name": "Eternal Witness",
+       "set": "5dn",
+       "number": "86",
+       "id": "c7e10ca7-1e5d-4224-82cf-798a4d436d72"
+      },
+      {
+       "qty": 3,
+       "name": "Solemn Simulacrum",
+       "set": "mrd",
+       "number": "245",
+       "id": "00f9955f-a522-47bf-b064-92dd21a76b18"
+      },
+      {
+       "qty": 1,
+       "name": "Darksteel Colossus",
+       "set": "dst",
+       "number": "109",
+       "id": "cbc27b24-f085-48b0-8757-cd11fbf25b91"
+      },
+      {
+       "qty": 2,
+       "name": "Platinum Angel",
+       "set": "mrd",
+       "number": "228",
+       "id": "59bb5aee-b334-4c24-875b-56751d4add02"
+      },
+      {
+       "qty": 2,
+       "name": "Duplicant",
+       "set": "mrd",
+       "number": "165",
+       "id": "d48a96f2-738f-433f-bfae-fbf378832a3b"
+      },
+      {
+       "qty": 2,
+       "name": "Plated Slagwurm",
+       "set": "mrd",
+       "number": "127",
+       "id": "24fc3c5e-025d-4b21-af86-9c861658d32e"
+      },
+      {
+       "qty": 1,
+       "name": "Tornado Elemental",
+       "set": "5dn",
+       "number": "97",
+       "id": "a09751cf-6aa9-4d64-a1db-4f1826774f00"
+      },
+      {
+       "qty": 4,
+       "name": "Mirrodin's Core",
+       "set": "dst",
+       "number": "165",
+       "id": "cf0e60c9-1548-4981-ada1-6656804a772e"
+      },
+      {
+       "qty": 20,
+       "name": "Forest",
+       "set": "mrd",
+       "number": "303",
+       "id": "77aec0b2-30f2-4f35-a9a3-24d87795d177"
+      }
+     ]
+    }
+   },
+   "villain": {
+    "who": "janus",
+    "deck": {
+     "name": "The Synod's Shackles",
+     "colors": "U",
+     "archetype": "Control",
+     "label": "tribute",
+     "cards": [
+      {
+       "qty": 3,
+       "name": "Vedalken Shackles",
+       "set": "5dn",
+       "number": "164",
+       "id": "cef06f56-a7a8-4c0f-8755-56b46d2aa82c"
+      },
+      {
+       "qty": 4,
+       "name": "Thirst for Knowledge",
+       "set": "mrd",
+       "number": "53",
+       "id": "0ff1f608-203e-4413-8753-37fc49731c87"
+      },
+      {
+       "qty": 4,
+       "name": "Condescend",
+       "set": "5dn",
+       "number": "27",
+       "id": "e8303b80-e29a-46b8-90b0-c0cfe551b435"
+      },
+      {
+       "qty": 4,
+       "name": "Override",
+       "set": "mrd",
+       "number": "45",
+       "id": "35964fa6-800d-41d6-9f82-fb9c87deee56"
+      },
+      {
+       "qty": 4,
+       "name": "Last Word",
+       "set": "dst",
+       "number": "23",
+       "id": "139d2ece-f656-4cac-8d77-b0f083f76c70"
+      },
+      {
+       "qty": 3,
+       "name": "Echoing Truth",
+       "set": "dst",
+       "number": "21",
+       "id": "4aefedd7-1bf5-4148-9084-d7d8f1138140"
+      },
+      {
+       "qty": 4,
+       "name": "Trinket Mage",
+       "set": "5dn",
+       "number": "39",
+       "id": "4c5a41ab-1840-4abb-a8bb-f0b1e7d1b450"
+      },
+      {
+       "qty": 3,
+       "name": "Hoverguard Sweepers",
+       "set": "5dn",
+       "number": "32",
+       "id": "55773fd5-86a2-4fd4-9849-a2f0d4c8298f"
+      },
+      {
+       "qty": 3,
+       "name": "Qumulox",
+       "set": "5dn",
+       "number": "35",
+       "id": "54102e68-dded-440c-b9b1-28771c8033d4"
+      },
+      {
+       "qty": 3,
+       "name": "Duplicant",
+       "set": "mrd",
+       "number": "165",
+       "id": "d48a96f2-738f-433f-bfae-fbf378832a3b"
+      },
+      {
+       "qty": 1,
+       "name": "Fold into Aether",
+       "set": "5dn",
+       "number": "31",
+       "id": "615157d6-0160-417b-b06c-0e253b306c37"
+      },
+      {
+       "qty": 24,
+       "name": "Island",
+       "set": "mrd",
+       "number": "291",
+       "id": "9a5235cd-5d25-498d-8e36-7a7c0791f212"
+      }
+     ]
+    }
+   },
+   "reward": {
+    "hero": {
+     "packs": 1,
+     "coins": 100
+    },
+    "villain": {
+     "card": {
+      "oracle_id": "853ef032-a2f7-4e6b-a210-03e96855d062",
+      "name": "Hoverguard Sweepers",
+      "rarity": "rare",
+      "set": "5dn",
+      "id": "55773fd5-86a2-4fd4-9849-a2f0d4c8298f",
+      "image": "https://cards.scryfall.io/normal/front/5/5/55773fd5-86a2-4fd4-9849-a2f0d4c8298f.jpg"
+     },
+     "coins": 100
+    }
+   },
+   "scene": [
+    {
+     "who": "stage",
+     "line": "Any creature on a druid's shoulder is his family, any land under his feet his home.",
+     "quote": true
+    },
+    {
+     "who": "stage",
+     "line": "He watches from above. He watches from below. He watches from within.",
+     "quote": true
+    },
+    {
+     "who": "sylvok",
+     "line": "Entwine: a spell with two modes. Pay the entwine cost and you get both. Tooth and Nail with nine mana finds two creatures and puts them into play."
+    }
+   ],
+   "villainScene": [
+    {
+     "who": "janus",
+     "line": "The Knowledge Pool knows. Memnarch understands.",
+     "quote": true
+    },
+    {
+     "who": "stage",
+     "line": "Memnarch shared a touch of his power with the vedalken in return for their service. It is a debt he intends to collect.",
+     "quote": true
+    }
+   ],
+   "after": null,
+   "cues": {
+    "hero": {
+     "start": "The Tangle provides.",
+     "big": "Tooth AND nail!",
+     "low": "He took my giant...",
+     "win": "Grown, not built.",
+     "loss": "The roots... were not deep enough...",
+     "half": "Nine mana. Then anything."
+    },
+    "villain": {
+     "start": "The Synod is in session.",
+     "big": "Yours is mine.",
+     "low": "The Pool is clouded...",
+     "win": "Memnarch understands.",
+     "loss": "Unacceptable."
+    }
+   },
+   "bigPlays": [],
+   "sim": null
+  },
+  {
+   "id": "a11b8",
+   "slot": 8,
+   "kind": "Boss",
+   "mood": "boss",
+   "title": "Memnarch",
+   "difficulty": "Hard",
+   "teaches": [
+    "Answering artifacts"
+   ],
+   "blurb": "Memnarch made the levelers and the myr, all to pull one elf to his tower. Glissa has a spark, and he wants it. Glissa, Slobad and Bosh go to the Panopticon to end it.",
+   "rewardSet": "5dn",
+   "host": true,
+   "hero": {
+    "who": "glissa",
+    "deck": {
+     "name": "Glissa, Slobad and Bosh",
+     "colors": "GR",
+     "archetype": null,
+     "label": "tribute",
+     "cards": [
+      {
+       "qty": 4,
+       "name": "Troll Ascetic",
+       "set": "mrd",
+       "number": "135",
+       "id": "f01233c2-6df0-4f0e-8668-3855868731ea"
+      },
+      {
+       "qty": 4,
+       "name": "Viridian Shaman",
+       "set": "mrd",
+       "number": "139",
+       "id": "932bf583-efd3-42e9-8a7b-7b3fe07fbcf0"
+      },
+      {
+       "qty": 2,
+       "name": "Fangren Firstborn",
+       "set": "dst",
+       "number": "75",
+       "id": "97d5fc3c-7f6b-42a5-a482-d789a2a421c7"
+      },
+      {
+       "qty": 2,
+       "name": "Viridian Zealot",
+       "set": "dst",
+       "number": "90",
+       "id": "ca1ecdd4-9dbc-4635-a0ef-0aae6f8ffcdb"
+      },
+      {
+       "qty": 4,
+       "name": "Tel-Jilad Chosen",
+       "set": "mrd",
+       "number": "132",
+       "id": "eefea84f-d657-491d-b60d-63e6a61e9eb2"
+      },
+      {
+       "qty": 3,
+       "name": "Eternal Witness",
+       "set": "5dn",
+       "number": "86",
+       "id": "c7e10ca7-1e5d-4224-82cf-798a4d436d72"
+      },
+      {
+       "qty": 3,
+       "name": "Arc-Slogger",
+       "set": "mrd",
+       "number": "85",
+       "id": "d3dd67e0-72b4-4c55-b49b-c69950feccb1"
+      },
+      {
+       "qty": 4,
+       "name": "Magma Jet",
+       "set": "5dn",
+       "number": "73",
+       "id": "51ea1728-08aa-4553-90b2-919c70712ed5"
+      },
+      {
+       "qty": 1,
+       "name": "Oxidize",
+       "set": "dst",
+       "number": "79",
+       "id": "1349969e-1cbe-4541-b3ed-154f5a39f1f0"
+      },
+      {
+       "qty": 1,
+       "name": "Tel-Jilad Exile",
+       "set": "mrd",
+       "number": "133",
+       "id": "e3529277-8409-45fe-9f29-64354597e918"
+      },
+      {
+       "qty": 3,
+       "name": "Fangren Hunter",
+       "set": "mrd",
+       "number": "119",
+       "id": "2dbc8eef-f032-490a-b487-da1af71b7ff2"
+      },
+      {
+       "qty": 2,
+       "name": "Electrostatic Bolt",
+       "set": "mrd",
+       "number": "89",
+       "id": "c455c8d4-6f20-4dcb-8e82-c2bb70d6bc3e"
+      },
+      {
+       "qty": 1,
+       "name": "Tel-Jilad Archers",
+       "set": "mrd",
+       "number": "131",
+       "id": "3a1fde33-e86a-4146-9c90-4616a5fc0868"
+      },
+      {
+       "qty": 2,
+       "name": "Leonin Scimitar",
+       "set": "mrd",
+       "number": "193",
+       "id": "8abf4bbe-5b1c-4f6f-be32-5f61c66e1830"
+      },
+      {
+       "qty": 2,
+       "name": "Bonesplitter",
+       "set": "mrd",
+       "number": "146",
+       "id": "465a7990-c9f9-4716-a833-fd41458b9cee"
+      },
+      {
+       "qty": 11,
+       "name": "Forest",
+       "set": "mrd",
+       "number": "303",
+       "id": "77aec0b2-30f2-4f35-a9a3-24d87795d177"
+      },
+      {
+       "qty": 9,
+       "name": "Mountain",
+       "set": "mrd",
+       "number": "299",
+       "id": "b082f22f-6c01-4e8c-80ad-6fdae5c3f22f"
+      },
+      {
+       "qty": 2,
+       "name": "Tree of Tales",
+       "set": "mrd",
+       "number": "285",
+       "id": "94db07aa-43d3-41b5-924e-60f1756b9c69"
+      }
+     ]
+    }
+   },
+   "villain": {
+    "who": "memnarch",
+    "deck": {
+     "name": "Keeper of Mirrodin",
+     "colors": "UB",
+     "archetype": "Artifact control",
+     "label": "tribute",
+     "cards": [
+      {
+       "qty": 2,
+       "name": "Memnarch",
+       "set": "dst",
+       "number": "129",
+       "id": "57ae2417-b859-4254-a3a5-6bff159447ca"
+      },
+      {
+       "qty": 2,
+       "name": "Vedalken Shackles",
+       "set": "5dn",
+       "number": "164",
+       "id": "cef06f56-a7a8-4c0f-8755-56b46d2aa82c"
+      },
+      {
+       "qty": 4,
+       "name": "Somber Hoverguard",
+       "set": "mrd",
+       "number": "51",
+       "id": "83a46ac2-d96d-4d5a-94fc-a9fc83a9ea1d"
+      },
+      {
+       "qty": 4,
+       "name": "Myr Enforcer",
+       "set": "mrd",
+       "number": "211",
+       "id": "eeeef899-a8b5-4416-a208-3bd5a0c7177b"
+      },
+      {
+       "qty": 4,
+       "name": "Frogmite",
+       "set": "mrd",
+       "number": "172",
+       "id": "ff504dcb-2eb8-4b3c-a8b9-29697739b649"
+      },
+      {
+       "qty": 4,
+       "name": "Disciple of the Vault",
+       "set": "mrd",
+       "number": "62",
+       "id": "644359dc-3c4c-4291-876d-7390dc466877"
+      },
+      {
+       "qty": 4,
+       "name": "Thoughtcast",
+       "set": "mrd",
+       "number": "54",
+       "id": "efb965a7-877a-4302-b507-25b0a9e32d9b"
+      },
+      {
+       "qty": 2,
+       "name": "Qumulox",
+       "set": "5dn",
+       "number": "35",
+       "id": "54102e68-dded-440c-b9b1-28771c8033d4"
+      },
+      {
+       "qty": 1,
+       "name": "Platinum Angel",
+       "set": "mrd",
+       "number": "228",
+       "id": "59bb5aee-b334-4c24-875b-56751d4add02"
+      },
+      {
+       "qty": 3,
+       "name": "Duplicant",
+       "set": "mrd",
+       "number": "165",
+       "id": "d48a96f2-738f-433f-bfae-fbf378832a3b"
+      },
+      {
+       "qty": 2,
+       "name": "Arcbound Ravager",
+       "set": "dst",
+       "number": "100",
+       "id": "72c1a731-7854-42b1-8719-ac3c2a269c1f"
+      },
+      {
+       "qty": 4,
+       "name": "Cranial Plating",
+       "set": "5dn",
+       "number": "113",
+       "id": "90ea95d0-9f95-462b-a080-22a5da7b2e97"
+      },
+      {
+       "qty": 2,
+       "name": "Ornithopter",
+       "set": "mrd",
+       "number": "224",
+       "id": "969ebd20-de69-44ba-a0c2-9e2a89480370"
+      },
+      {
+       "qty": 4,
+       "name": "Seat of the Synod",
+       "set": "mrd",
+       "number": "283",
+       "id": "5da5587d-6b6c-4645-8cc9-2866d1e6911b"
+      },
+      {
+       "qty": 4,
+       "name": "Vault of Whispers",
+       "set": "mrd",
+       "number": "286",
+       "id": "73866487-33f4-4f64-b100-2c4ddadcd74e"
+      },
+      {
+       "qty": 4,
+       "name": "Darksteel Citadel",
+       "set": "dst",
+       "number": "164",
+       "id": "c5d0e808-d67b-4ea3-9c04-d20269fe692c"
+      },
+      {
+       "qty": 5,
+       "name": "Island",
+       "set": "mrd",
+       "number": "291",
+       "id": "9a5235cd-5d25-498d-8e36-7a7c0791f212"
+      },
+      {
+       "qty": 5,
+       "name": "Swamp",
+       "set": "mrd",
+       "number": "295",
+       "id": "6bae27d4-9de5-4f95-8c56-79afc6cbeb0c"
+      }
+     ]
+    }
+   },
+   "reward": {
+    "hero": {
+     "packs": 2,
+     "coins": 200
+    },
+    "villain": {
+     "card": {
+      "oracle_id": "52d8e70b-7e94-4e17-811f-70afe39ff9bd",
+      "name": "Memnarch",
+      "rarity": "rare",
+      "set": "dst",
+      "id": "57ae2417-b859-4254-a3a5-6bff159447ca",
+      "image": "https://cards.scryfall.io/normal/front/5/7/57ae2417-b859-4254-a3a5-6bff159447ca.jpg"
+     },
+     "coins": 200
+    }
+   },
+   "scene": [
+    {
+     "who": "memnarch",
+     "line": "It is all in my grasp. Every petty dream, every grand scheme, every soul, every fear. It all flows through me and from me.",
+     "quote": true
+    },
+    {
+     "who": "glissa",
+     "line": "You killed my family to bring me here."
+    },
+    {
+     "who": "memnarch",
+     "line": "If only the living were so easily salvaged.",
+     "quote": true
+    },
+    {
+     "who": "slobad",
+     "line": "He takes things. Shackles take your creatures, Memnarch takes your machines. Keep your best one back until his tricks are spent."
+    }
+   ],
+   "villainScene": [
+    {
+     "who": "memnarch",
+     "line": "Secrets are meant to remain secret.",
+     "quote": true
+    },
+    {
+     "who": "memnarch",
+     "line": "The elf carries a spark. My maker had one. With it, he left. With it, I will follow."
+    },
+    {
+     "who": "memnarch",
+     "line": "Perhaps I should take Mirrodin apart and begin again.",
+     "quote": true
+    }
+   ],
+   "after": null,
+   "cues": {
+    "hero": {
+     "start": "For the Tangle. For everyone you harvested.",
+     "big": "Bosh, now!",
+     "low": "He has everything...",
+     "win": "Mirrodin is ours now.",
+     "loss": "The spark... he is taking it...",
+     "half": "Keep one back."
+    },
+    "villain": {
+     "start": "Welcome to the Panopticon.",
+     "big": "Everything flows through me.",
+     "low": "My myr... my suns...",
+     "win": "The spark is mine.",
+     "loss": "I only wanted... to leave...",
+     "half": {
+      "who": "slobad",
+      "line": "He copied everything his maker did. Slobad thinks he never knew how to be anything else."
+     }
+    }
+   },
+   "bigPlays": [],
+   "sim": null
+  },
+  {
+   "id": "a11b9",
+   "slot": 9,
+   "kind": "Secret Boss",
+   "secret": true,
+   "mood": "boss",
+   "title": "Clamped",
+   "difficulty": "Hard",
+   "teaches": [
+    "Card advantage"
+   ],
+   "blurb": "Deep in the Vault, a deck that broke a whole season. Every creature you kill draws it two cards.",
+   "rewardSet": "dst",
+   "host": true,
+   "era": "2004-02-20",
+   "archive": {
+    "deck": "Skullclamp Affinity",
+    "when": "Spring 2004",
+    "format": "Standard: Onslaught block, Eighth Edition, Mirrodin and Darksteel.",
+    "what": "Ravager Affinity with Skullclamp, the one-mana equipment from Darksteel. Put it on a 1-toughness creature, the creature dies, you draw two cards.",
+    "why": "Every cheap artifact creature turned into two cards, and Arcbound Ravager and Disciple of the Vault turned every death into damage. It ran out of cards almost never.",
+    "beat": "Kill the Skullclamp, not the creatures. Without it they are only small machines. Hit the artifact lands and the deck slows to a crawl.",
+    "after": "Skullclamp was banned in Standard from 20 June 2004. The rest of the deck kept winning until March 2005, when Arcbound Ravager, Disciple of the Vault and every artifact land were banned too."
+   },
+   "hero": {
+    "who": "you",
+    "deck": {
+     "name": "Cleansing Fire",
+     "colors": "GR",
+     "archetype": "Artifact hate",
+     "label": "tribute",
+     "cards": [
+      {
+       "qty": 4,
+       "name": "Tel-Jilad Chosen",
+       "set": "mrd",
+       "number": "132",
+       "id": "eefea84f-d657-491d-b60d-63e6a61e9eb2"
+      },
+      {
+       "qty": 4,
+       "name": "Vulshok Berserker",
+       "set": "mrd",
+       "number": "111",
+       "id": "23510414-974e-4510-9742-884ecd572ad8"
+      },
+      {
+       "qty": 3,
+       "name": "Viridian Shaman",
+       "set": "mrd",
+       "number": "139",
+       "id": "932bf583-efd3-42e9-8a7b-7b3fe07fbcf0"
+      },
+      {
+       "qty": 1,
+       "name": "Tel-Jilad Wolf",
+       "set": "dst",
+       "number": "88",
+       "id": "ac40a1c6-88df-4f01-aa59-4ef3c6b57e75"
+      },
+      {
+       "qty": 4,
+       "name": "Viridian Zealot",
+       "set": "dst",
+       "number": "90",
+       "id": "ca1ecdd4-9dbc-4635-a0ef-0aae6f8ffcdb"
+      },
+      {
+       "qty": 4,
+       "name": "Troll Ascetic",
+       "set": "mrd",
+       "number": "135",
+       "id": "f01233c2-6df0-4f0e-8668-3855868731ea"
+      },
+      {
+       "qty": 4,
+       "name": "Fangren Hunter",
+       "set": "mrd",
+       "number": "119",
+       "id": "2dbc8eef-f032-490a-b487-da1af71b7ff2"
+      },
+      {
+       "qty": 1,
+       "name": "Tel-Jilad Archers",
+       "set": "mrd",
+       "number": "131",
+       "id": "3a1fde33-e86a-4146-9c90-4616a5fc0868"
+      },
+      {
+       "qty": 2,
+       "name": "Furnace Dragon",
+       "set": "dst",
+       "number": "62",
+       "id": "62f5c675-b629-45ec-907c-36594f5fe54a"
+      },
+      {
+       "qty": 2,
+       "name": "Oxidize",
+       "set": "dst",
+       "number": "79",
+       "id": "1349969e-1cbe-4541-b3ed-154f5a39f1f0"
+      },
+      {
+       "qty": 2,
+       "name": "Electrostatic Bolt",
+       "set": "mrd",
+       "number": "89",
+       "id": "c455c8d4-6f20-4dcb-8e82-c2bb70d6bc3e"
+      },
+      {
+       "qty": 2,
+       "name": "Tel-Jilad Exile",
+       "set": "mrd",
+       "number": "133",
+       "id": "e3529277-8409-45fe-9f29-64354597e918"
+      },
+      {
+       "qty": 3,
+       "name": "Magma Jet",
+       "set": "5dn",
+       "number": "73",
+       "id": "51ea1728-08aa-4553-90b2-919c70712ed5"
+      },
+      {
+       "qty": 2,
+       "name": "Creeping Mold",
+       "set": "mrd",
+       "number": "117",
+       "id": "d6b50bda-f19f-4991-977b-de794f11103d"
+      },
+      {
+       "qty": 12,
+       "name": "Forest",
+       "set": "mrd",
+       "number": "303",
+       "id": "77aec0b2-30f2-4f35-a9a3-24d87795d177"
+      },
+      {
+       "qty": 10,
+       "name": "Mountain",
+       "set": "mrd",
+       "number": "299",
+       "id": "b082f22f-6c01-4e8c-80ad-6fdae5c3f22f"
+      }
+     ]
+    }
+   },
+   "villain": {
+    "who": "clamp",
+    "deck": {
+     "name": "Skullclamp Affinity",
+     "colors": "UB",
+     "archetype": "Affinity",
+     "label": "tribute",
+     "note": "Built from the spring 2004 Ravager Affinity lists, with Skullclamp before its ban. No single tournament list is copied.",
+     "cards": [
+      {
+       "qty": 4,
+       "name": "Skullclamp",
+       "set": "dst",
+       "number": "140",
+       "id": "55318397-de3c-47ea-a088-72a24df5c8fa"
+      },
+      {
+       "qty": 4,
+       "name": "Arcbound Ravager",
+       "set": "dst",
+       "number": "100",
+       "id": "72c1a731-7854-42b1-8719-ac3c2a269c1f"
+      },
+      {
+       "qty": 4,
+       "name": "Disciple of the Vault",
+       "set": "mrd",
+       "number": "62",
+       "id": "644359dc-3c4c-4291-876d-7390dc466877"
+      },
+      {
+       "qty": 4,
+       "name": "Frogmite",
+       "set": "mrd",
+       "number": "172",
+       "id": "ff504dcb-2eb8-4b3c-a8b9-29697739b649"
+      },
+      {
+       "qty": 4,
+       "name": "Myr Enforcer",
+       "set": "mrd",
+       "number": "211",
+       "id": "eeeef899-a8b5-4416-a208-3bd5a0c7177b"
+      },
+      {
+       "qty": 4,
+       "name": "Ornithopter",
+       "set": "mrd",
+       "number": "224",
+       "id": "969ebd20-de69-44ba-a0c2-9e2a89480370"
+      },
+      {
+       "qty": 4,
+       "name": "Somber Hoverguard",
+       "set": "mrd",
+       "number": "51",
+       "id": "83a46ac2-d96d-4d5a-94fc-a9fc83a9ea1d"
+      },
+      {
+       "qty": 4,
+       "name": "Thoughtcast",
+       "set": "mrd",
+       "number": "54",
+       "id": "efb965a7-877a-4302-b507-25b0a9e32d9b"
+      },
+      {
+       "qty": 3,
+       "name": "Welding Jar",
+       "set": "mrd",
+       "number": "274",
+       "id": "42b7b73b-4800-4fc7-9a5c-93e00ea88498"
+      },
+      {
+       "qty": 4,
+       "name": "Talisman of Dominance",
+       "set": "mrd",
+       "number": "253",
+       "id": "991037a2-fea2-49f5-8ace-ebbf9f678cff"
+      },
+      {
+       "qty": 2,
+       "name": "Arcbound Worker",
+       "set": "dst",
+       "number": "104",
+       "id": "75561093-8892-4b51-813a-c933a06d8cbd"
+      },
+      {
+       "qty": 4,
+       "name": "Seat of the Synod",
+       "set": "mrd",
+       "number": "283",
+       "id": "5da5587d-6b6c-4645-8cc9-2866d1e6911b"
+      },
+      {
+       "qty": 4,
+       "name": "Vault of Whispers",
+       "set": "mrd",
+       "number": "286",
+       "id": "73866487-33f4-4f64-b100-2c4ddadcd74e"
+      },
+      {
+       "qty": 4,
+       "name": "Darksteel Citadel",
+       "set": "dst",
+       "number": "164",
+       "id": "c5d0e808-d67b-4ea3-9c04-d20269fe692c"
+      },
+      {
+       "qty": 3,
+       "name": "Blinkmoth Nexus",
+       "set": "dst",
+       "number": "163",
+       "id": "bf51c665-7823-4d6a-b1da-8c2d93dae10b"
+      },
+      {
+       "qty": 2,
+       "name": "Island",
+       "set": "mrd",
+       "number": "291",
+       "id": "9a5235cd-5d25-498d-8e36-7a7c0791f212"
+      },
+      {
+       "qty": 2,
+       "name": "Swamp",
+       "set": "mrd",
+       "number": "295",
+       "id": "6bae27d4-9de5-4f95-8c56-79afc6cbeb0c"
+      }
+     ]
+    }
+   },
+   "reward": {
+    "hero": {
+     "packs": 2,
+     "coins": 200
+    },
+    "villain": {
+     "card": {
+      "oracle_id": "65986c1b-8e51-4604-b685-d82fa7d1263a",
+      "name": "Skullclamp",
+      "rarity": "uncommon",
+      "set": "dst",
+      "id": "55318397-de3c-47ea-a088-72a24df5c8fa",
+      "image": "https://cards.scryfall.io/normal/front/5/5/55318397-de3c-47ea-a088-72a24df5c8fa.jpg"
+     },
+     "coins": 200
+    }
+   },
+   "scene": [
+    {
+     "who": "stage",
+     "line": "The archive opens on a deck from a single season. Its first card is a small black bone clamp."
+    },
+    {
+     "who": "you",
+     "line": "Every death draws it two cards. Then I stop killing the creatures."
+    },
+    {
+     "who": "slobad",
+     "line": "Slobad would break the clamp. Then everything else."
+    }
+   ],
+   "villainScene": [
+    {
+     "who": "stage",
+     "line": "The deck does not speak. It draws."
+    }
+   ],
+   "after": [
+    {
+     "who": "stage",
+     "line": "Recorded: banned 20 June 2004. One of the shortest lives a common equipment ever had."
+    }
+   ],
+   "cues": {
+    "hero": {
+     "start": "Break the clamp.",
+     "big": "Burn the engine!",
+     "low": "It keeps drawing...",
+     "win": "Banned for a reason.",
+     "loss": "Two more cards. Always two more.",
+     "half": "Not the creature. The clamp."
+    },
+    "villain": {
+     "start": "[draw two]",
+     "big": "[draw two]",
+     "low": "[the hand is empty]",
+     "win": "[draw two]",
+     "loss": "[clamp destroyed]"
+    }
+   },
+   "bigPlays": [],
+   "sim": null
+  }
+ ]
+}

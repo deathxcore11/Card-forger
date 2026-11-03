@@ -722,7 +722,7 @@
    "kind": "Lesson",
    "mood": "tension",
    "title": "Knights at the Ford",
-   "difficulty": "Normal",
+   "difficulty": "Easy",
    "teaches": [
     "First strike",
     "Protection from a colour"
@@ -937,7 +937,7 @@
    "reward": {
     "hero": {
      "packs": 1,
-     "coins": 100
+     "coins": 0
     },
     "villain": {
      "card": {
@@ -948,7 +948,7 @@
       "id": "c1662949-0d69-49a3-8c69-daf10717ed4e",
       "image": "https://cards.scryfall.io/normal/front/c/1/c1662949-0d69-49a3-8c69-daf10717ed4e.jpg"
      },
-     "coins": 100
+     "coins": 50
     }
    },
    "scene": [

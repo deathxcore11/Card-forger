@@ -90,7 +90,7 @@ export default {
       villainScene: [{who: 'johan', line: "Hazezon talks about his people as if they were walls."}, {who: 'johan', line: "Walls fall. Bring the army forward."}],
       cues: {hero: cue("Bazaar's closed.", 'Every sand-warrior answers.', 'Not my people.', 'Go home, warlord.', 'Save who you can.'),
         villain: cue('March.', 'Kneel or be legend.', 'Hold, damn you!', 'Mine.', "This isn't finished.")}},
-    {slot: 3, kind: 'Lesson', title: 'The Thallid Grove', difficulty: 'Normal', rewardSet: 'fem', teaches: ['Tokens', 'Counters'],
+    {slot: 3, kind: 'Lesson', title: 'The Thallid Grove', difficulty: 'Easy', rewardSet: 'fem', teaches: ['Tokens', 'Counters'],
       blurb: 'Sarpadia is starving. The elves grow fungus soldiers to survive; the Ebon Hand wants the grove for its thrull pits.',
       hero: {who: 'kolevi', deck: {name: 'Havenwood Spores', colors: 'G', list: `
 4 Thallid
@@ -271,7 +271,7 @@ export default {
       scene: [{who: 'choir', line: 'Tourach... Tourach...', aside: 'singing, low'}, {who: 'hazezon', line: "Cover your ears. Don't think about what you're holding."}, {who: 'choir', line: 'The eerie, wailing Hymn caused insanity even in hardened warriors.', quote: true}],
       villainScene: [{who: 'choir', line: "Sing louder, sisters. The warriors are listening."}, {who: 'choir', line: "Tourach... Tourach... let them forget what they hold."}],
       cues: {villain: cue('Sing.', 'Forget. Forget.', 'The Hymn falters!', 'Silence.', 'Tourach... hears...')}},
-    {slot: 8, kind: 'Boss', title: 'The Last Elder Dragon', difficulty: 'Normal', rewardSet: 'leg', teaches: ['Everything so far'],
+    {slot: 8, kind: 'Boss', title: 'The Last Elder Dragon', difficulty: 'Hard', rewardSet: 'leg', teaches: ['Everything so far'],
       blurb: 'Under the Wastes, the thing Tetsuo has hunted his whole life opens one eye.',
       hero: {who: 'tetsuo', deck: {name: 'The Umezawa Arts', colors: 'UBR', list: `
 4 Tetsuo Umezawa

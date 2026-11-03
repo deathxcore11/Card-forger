@@ -748,7 +748,7 @@
    "slot": 3,
    "kind": "Lesson",
    "title": "The Thallid Grove",
-   "difficulty": "Normal",
+   "difficulty": "Easy",
    "teaches": [
     "Tokens",
     "Counters"
@@ -954,7 +954,7 @@
    "reward": {
     "hero": {
      "packs": 1,
-     "coins": 100
+     "coins": 0
     },
     "villain": {
      "card": {
@@ -965,7 +965,7 @@
       "id": "9eb2b79f-f09a-49dc-8e0f-7d711ba78981",
       "image": "https://cards.scryfall.io/normal/front/9/e/9eb2b79f-f09a-49dc-8e0f-7d711ba78981.jpg"
      },
-     "coins": 100
+     "coins": 50
     }
    },
    "scene": [
@@ -2190,7 +2190,7 @@
    "slot": 8,
    "kind": "Boss",
    "title": "The Last Elder Dragon",
-   "difficulty": "Normal",
+   "difficulty": "Hard",
    "teaches": [
     "Everything so far"
    ],

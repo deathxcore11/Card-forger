@@ -316,7 +316,8 @@ export default {
       cues: {hero: cue('Remember me?', "They're ugly, and they're in my way.", 'Not again. Not his cell again...', 'That was for Mirri.', 'Get the others out. I will hold him.', 'Burn, Crovax. Burn.'),
         villain: cue('Kneel, cow.', 'Feast.', 'Selenia... I am so hungry...', 'Back in the cell.', 'This is not the end of my ascension.')},
       after: [q('stage', 'The decay of Crovax\'s ancestral home matched the state of his soul.'),
-        s('stage', 'Crovax dies in the stronghold he stole. Nobody mourns him except, perhaps, a memory of an angel.')]},
+        s('stage', 'Tahngarth breaks him. Gerrard finishes it, in the stronghold Crovax stole.'),
+        s('gerrard', 'For Mirri. For Selenia. Rest, Crovax. You were one of us once.')]},
     {slot: 8, mood: 'boss', kind: 'Boss', title: "Yawgmoth's Agenda", difficulty: 'Hard', rewardCard: 'Phyrexian Arena', rewardSet: 'apc', teaches: ['Everything so far'],
       blurb: "The Dark Lord of Phyrexia has come to Dominaria himself. He was a Thran healer once. Now he is a god of machines, and he knows every hero's grief by name.",
       hero: {who: 'gerrard', deck: {name: 'The Legacy', colors: 'GW', list: `

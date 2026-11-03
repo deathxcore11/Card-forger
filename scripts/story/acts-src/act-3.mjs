@@ -84,7 +84,7 @@ export default {
       villainScene: [{who: 'varchild', line: "A mage who lectures. My favourite kind of target."}, {who: 'varchild', line: "Paid by the head. Let's earn a fortune."}],
       cues: {hero: cue('Mind the cost.', 'Within moments, victory was mine.', 'Not yet.', "Know a thing's nature.", 'I paid too much...'),
         villain: cue('Ride!', 'Pay me in blood.', "This wasn't the contract!", 'Collect the bounty.', 'Somebody owes me.')}},
-    {slot: 3, kind: 'Lesson', title: 'The Black Book', difficulty: 'Normal', rewardSet: 'ice', teaches: ['Card advantage', 'Paying life'],
+    {slot: 3, kind: 'Lesson', title: 'The Black Book', difficulty: 'Easy', rewardSet: 'ice', teaches: ['Card advantage', 'Paying life'],
       blurb: 'In the dark of the forest, a planeswalker offers you a book. Every page is a card. Every card costs life.',
       hero: {who: 'laina', deck: {name: 'Fyndhorn Council', colors: 'G', list: `
 4 Fyndhorn Elves
