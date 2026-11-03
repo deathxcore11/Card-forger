@@ -158,10 +158,12 @@ class ShotTest {
             dev.cardstashy.nativeplay.play.SetFacts.seed(JsonParser.parseString(f.readText()).asJsonObject.entrySet().associate { (k, v) -> val o = v.asJsonObject
                 k to dev.cardstashy.nativeplay.play.SetFacts.Set(o["name"].asString, o["icon"].asString, o["released"].asString, o["total"]?.asInt, o["art"].asString) })
         }
+        val codes = listOf("hob", "fra", "isd", "arn", "khm", "ltr", "fdn", "mh2", "dmu")
+        kotlinx.coroutines.runBlocking { for (c in codes) AssetImages.load(RuntimeEnvironment.getApplication(), dev.cardstashy.nativeplay.ui.wrapperFor(c).first, maxWidth = 600) }
         for (sc in listOf(1f, 1.3f)) tall("packs", 390, 120, sc) {
             Column(Modifier.background(Site.Bg).padding(16.dp), verticalArrangement = Arrangement.spacedBy(20.dp)) {
-                Row(horizontalArrangement = Arrangement.spacedBy(12.dp)) {
-                    for (c in listOf("hob", "fra", "dsk")) dev.cardstashy.nativeplay.ui.Booster(c, null, Modifier.weight(1f))
+                for (row in codes.chunked(3)) Row(horizontalArrangement = Arrangement.spacedBy(12.dp)) {
+                    for (c in row) dev.cardstashy.nativeplay.ui.Booster(c, null, Modifier.weight(1f))
                 }
                 Row(horizontalArrangement = Arrangement.spacedBy(10.dp)) {
                     for (c in listOf("hob", "fra", "dsk")) dev.cardstashy.nativeplay.ui.Booster(c, null, Modifier.size(width = 64.dp, height = 105.dp), mini = true)

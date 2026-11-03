@@ -362,9 +362,9 @@ fun Booster(code: String, name: String?, modifier: Modifier = Modifier, mini: Bo
     val facts: Map<String, SetFacts.Set> = SetFacts.sets.collectAsState().value
     val f = facts[code]
     val label = name?.ifBlank { null } ?: f?.name ?: code.uppercase()
-    WRAPPERS[code.lowercase()]?.let { wrap ->
+    wrapperFor(code).let { (asset, wrap) ->
         val ctx = LocalContext.current
-        val img = produceState(AssetImages.cached("play/pack-${code.lowercase()}.webp@600")) { value = AssetImages.load(ctx, "play/pack-${code.lowercase()}.webp", maxWidth = 600) }.value
+        val img = produceState(AssetImages.cached("$asset@600"), asset) { value = AssetImages.load(ctx, asset, maxWidth = 600) }.value
         if (img != null) { WrappedBooster(code, label, wrap, img, modifier, mini); return }
     }
     val shape = RoundedCornerShape(6.dp)
@@ -401,11 +401,33 @@ fun Booster(code: String, name: String?, modifier: Modifier = Modifier, mini: Bo
 }
 
 /** Randall's pack wrappers (art piece 16): where each wrapper's black band sits, as fractions of its height. */
-class Wrap(val aspect: Float, val notch: Float, val top: Float, val bottom: Float)
+class Wrap(val aspect: Float, val notch: Float, val top: Float, val bottom: Float, val iconInNotch: Boolean = false)
 val WRAPPERS = mapOf(
     "hob" to Wrap(600f / 1029f, notch = .636f, top = .672f, bottom = .868f),
     "fra" to Wrap(600f / 918f, notch = .641f, top = .676f, bottom = .892f),
 )
+
+/**
+ * Randall's seven theme wrappers (3 Nov, "by set theme"): one painted template, notch emblem at 70 %,
+ * name band 76 to 87 %. A set whose world fits a theme wears it; every other set takes one in turn
+ * (stable per set code), so no pack is ever bare.
+ */
+private val THEME_WRAP = Wrap(320f / 497f, notch = .70f, top = .752f, bottom = .871f, iconInNotch = true)
+val THEMES = listOf("desert-ruins", "dragon-hoard", "vampire-castle", "elf-forest", "shire-hill", "ghost-ship-swamp", "dwarf-forge")
+val SET_THEME: Map<String, String> = buildMap {
+    fun theme(theme: String, vararg codes: String) { codes.forEach { put(it, theme) } }
+    theme("vampire-castle", "isd", "dka", "avr", "soi", "emn", "mid", "vow", "inr", "dsk", "sis")
+    theme("shire-hill", "ltr", "ltc")
+    theme("elf-forest", "lrw", "mor", "shm", "eve", "eld", "woe", "ecl", "ema")
+    theme("dwarf-forge", "khm", "kld", "aer", "afr", "clb", "bro")
+    theme("dragon-hoard", "ktk", "frf", "dtk", "tdm", "m19", "m20", "cmm", "dgm")
+    theme("ghost-ship-swamp", "xln", "rix", "lci", "mkm", "thb")
+    theme("desert-ruins", "arn", "akh", "hou", "zen", "wwk", "roe", "bfz", "ogw", "znr", "otj", "big", "atq")
+}
+fun themeFor(code: String): String = SET_THEME[code.lowercase()] ?: THEMES[Math.floorMod(code.lowercase().fold(7) { h, c -> h * 31 + c.code }, THEMES.size)]
+/** The wrapper a set wears: its own painted pack when there is one, else its theme wrapper. */
+fun wrapperFor(code: String): Pair<String, Wrap> = WRAPPERS[code.lowercase()]?.let { "play/pack-${code.lowercase()}.webp" to it }
+    ?: ("play/wrap-${themeFor(code)}.webp" to THEME_WRAP)
 
 /**
  * A wrapper pack: the painted foil wrapper, and on its black band the gold star emblem in the notch,
@@ -419,14 +441,15 @@ private fun WrappedBooster(code: String, label: String, wrap: Wrap, img: ImageBi
             val w = maxWidth; val h = maxHeight
             Image(img, null, Modifier.fillMaxSize(), contentScale = ContentScale.FillBounds)
             // The star emblem, centred in the band's notch.
-            StarEmblem(Modifier.align(Alignment.TopCenter).offset(y = h * wrap.notch - w * .045f).size(w * .09f))
+            if (wrap.iconInNotch) SetIcon(code, Modifier.align(Alignment.TopCenter).offset(y = h * wrap.notch - w * .05f).size(w * .1f))
+            else StarEmblem(Modifier.align(Alignment.TopCenter).offset(y = h * wrap.notch - w * .045f).size(w * .09f))
             // Printed on the wrapper, so it sizes with the pack, not with the font setting.
             val dens = LocalDensity.current
             val px = with(dens) { w.toPx() }
             val sp = { f: Float -> with(dens) { (px * f).toSp() } }
             Column(Modifier.align(Alignment.TopCenter).offset(y = h * wrap.top).fillMaxWidth().height(h * (wrap.bottom - wrap.top)).padding(horizontal = w * .1f),
                 horizontalAlignment = Alignment.CenterHorizontally, verticalArrangement = Arrangement.spacedBy(w * .018f, Alignment.CenterVertically)) {
-                SetIcon(code, Modifier.size(w * (if (mini) .2f else .1f)))
+                if (!wrap.iconInNotch) SetIcon(code, Modifier.size(w * (if (mini) .2f else .1f)))
                 if (!mini) {
                     Text(label.uppercase(), style = TextStyle(fontFamily = Type.Cinzel, fontWeight = FontWeight.Bold, fontSize = sp(.062f), lineHeight = sp(.072f), letterSpacing = .02.em, color = P.Ink, textAlign = TextAlign.Center), maxLines = 2)
                     Text("PLAY BOOSTER", style = TextStyle(fontFamily = P.Sans, fontWeight = FontWeight.Bold, fontSize = sp(.046f), letterSpacing = .14.em, color = Color(0xFFD6AD64)), maxLines = 1)
