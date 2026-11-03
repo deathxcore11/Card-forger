@@ -31,10 +31,21 @@ android {
     kotlin { jvmToolchain(21) }
     kotlinOptions { jvmTarget = '17' }
     buildFeatures { compose true }
-    testOptions { unitTests.returnDefaultValues = true; unitTests.all { it.systemProperty 'engineRoot', System.getenv('ENGINE_ROOT') ?: ''; it.systemProperty 'repoRoot', rootProject.projectDir.parentFile.parentFile.absolutePath; it.maxHeapSize = '2g'; it.testLogging { showStandardStreams = true } } }
+    testOptions { unitTests.returnDefaultValues = true; unitTests.includeAndroidResources = true; unitTests.all { it.systemProperty 'roborazzi.test.record', 'true'; it.systemProperty 'shotsDir', rootProject.file('shots').absolutePath; it.systemProperty 'engineRoot', System.getenv('ENGINE_ROOT') ?: ''; it.systemProperty 'repoRoot', rootProject.projectDir.parentFile.parentFile.absolutePath; it.maxHeapSize = '2g'; it.testLogging { showStandardStreams = true } } }
     androidResources { noCompress += ['zip', 'ogg', 'jpg', 'webp'] }
     packaging.resources.excludes += ['META-INF/LICENSE*', 'META-INF/NOTICE*', 'META-INF/DEPENDENCIES', 'META-INF/*.kotlin_module', 'META-INF/versions/**', 'module-info.class']
     packaging.resources.merges += ['META-INF/services/**']
+}
+
+// Robolectric's own downloader ignores the build proxy, so Gradle fetches its Android jar and the
+// tests run it offline from build/robolectric.
+configurations { robolectricSdk }
+def robolectricDir = layout.buildDirectory.dir('robolectric')
+tasks.register('robolectricJars', Copy) { from configurations.robolectricSdk; into robolectricDir }
+tasks.withType(Test).configureEach {
+    dependsOn 'robolectricJars'
+    systemProperty 'robolectric.offline', 'true'
+    systemProperty 'robolectric.dependency.dir', robolectricDir.get().asFile.absolutePath
 }
 
 // Forge brings full Guava, which already holds AndroidX's ListenableFuture.
@@ -54,6 +65,13 @@ dependencies {
     implementation 'io.coil-kt.coil3:coil-compose:3.2.0'
     implementation 'io.coil-kt.coil3:coil-network-okhttp:3.2.0'
     // JUnit from the local Gradle install when present (Maven Central rate-limits the cloud builder).
+    // Screens rendered on the JVM (Robolectric native graphics) for Randall's screenshots; no emulator needed.
+    testImplementation 'org.robolectric:robolectric:4.14.1'
+    robolectricSdk 'org.robolectric:android-all-instrumented:15-robolectric-12650502-i7'
+    testImplementation 'io.github.takahirom.roborazzi:roborazzi:1.43.0'
+    testImplementation 'io.github.takahirom.roborazzi:roborazzi-compose:1.43.0'
+    testImplementation 'androidx.compose.ui:ui-test-junit4'
+    testImplementation 'androidx.compose.ui:ui-test-manifest'
     def gradleJunit = file("${gradle.gradleHomeDir}/lib/junit-4.13.2.jar")
     if (gradleJunit.exists()) testImplementation files(gradleJunit, "${gradle.gradleHomeDir}/lib/hamcrest-core-1.3.jar")
     else testImplementation 'junit:junit:4.13.2'

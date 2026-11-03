@@ -5,3 +5,4 @@ local.properties
 # Built by scripts/prepare-assets.sh: engine, card art, sounds, mats.
 app/src/main/assets/
 engine-libs/
+shots/
