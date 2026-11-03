@@ -20,7 +20,7 @@ cp "$REPO"/forge-rules/current/{manifest.json,cards.json,official-format-facts.j
 for f in playmat-charcoal-table.webp playmat-charcoal-table-glow.webp turn-you.webp turn-cpu.webp result-win.webp result-loss.webp result-draw.webp; do cp "$REPO/assets/play/$f" "$A/play/"; done
 cp "$REPO/art-packs/planeswalk-codex/Existing_Project_Art/chandra.jpg" "$A/play/planeswalk-tile.jpg" 2>/dev/null || cp "$REPO/assets/planeswalk-tile.jpg" "$A/play/planeswalk-tile.jpg"
 # The sound ids play-table-audio.js uses at the table.
-for id in CARD-001 CARD-002 CARD-005 CARD-006 CARD-008 CARD-010 CARD-014 CARD-018 CARD-019 CARD-020 CARD-025 CARD-027 CMB-002 CMB-003 CMB-004 CMB-005 CMB-007 CMB-009 CMB-018 CMB-019 TT-001 TT-002 TT-003 QP-012 QP-017 QP-018 QP-019; do
+for id in CARD-001 CARD-002 CARD-005 CARD-006 CARD-008 CARD-010 CARD-014 CARD-018 CARD-019 CARD-020 CARD-025 CARD-027 CMB-002 CMB-003 CMB-004 CMB-005 CMB-007 CMB-009 CMB-018 CMB-019 TT-001 TT-002 TT-003 QP-012 QP-017 QP-018 QP-019 PACK-003 PACK-004 PACK-005 PACK-006 PACK-014 PACK-015 PACK-016 PACK-017 PACK-018 PACK-019 PACK-020; do
   cp "$REPO/assets/audio/sfx/$id.ogg" "$A/sfx/"
 done
 python3 "$HERE/scripts/fetch-art.py" "$HERE/decks/demo-decks.json" "$A/cards"

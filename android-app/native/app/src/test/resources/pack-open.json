@@ -1,0 +1,133 @@
+{
+ "pack": {
+  "id": "p1",
+  "set": "hob",
+  "contents": [
+   {
+    "id": "d1a1e520-1fe2-4529-8afb-c187bb80da3c",
+    "oracle_id": "6f83da19-fd89-44ec-88f3-0c3fddfbd1b2",
+    "name": "Long-Bodied Grey Dog",
+    "rarity": "common",
+    "set": "hob",
+    "number": "1",
+    "image": "https://cards.scryfall.io/normal/front/d/1/d1a1e520-1fe2-4529-8afb-c187bb80da3c.jpg?1785639260",
+    "art": "https://cards.scryfall.io/art_crop/front/d/1/d1a1e520-1fe2-4529-8afb-c187bb80da3c.jpg?1785639260"
+   },
+   {
+    "id": "3ad02b56-13ec-46ef-92bd-ae078b8bb517",
+    "oracle_id": "c8259b0e-131f-44f0-86d4-7c4d711b328d",
+    "name": "Old Thrush",
+    "rarity": "common",
+    "set": "hob",
+    "number": "2",
+    "image": "https://cards.scryfall.io/normal/front/3/a/3ad02b56-13ec-46ef-92bd-ae078b8bb517.jpg?1785639558",
+    "art": "https://cards.scryfall.io/art_crop/front/3/a/3ad02b56-13ec-46ef-92bd-ae078b8bb517.jpg?1785639558"
+   },
+   {
+    "id": "1f9a61a1-454e-4d5b-a6dd-1a79fe9dedf3",
+    "oracle_id": "8fcab221-8737-4357-b8ee-bad9421739a3",
+    "name": "Dwarven Provisioner",
+    "rarity": "common",
+    "set": "hob",
+    "number": "9",
+    "image": "https://cards.scryfall.io/normal/front/1/f/1f9a61a1-454e-4d5b-a6dd-1a79fe9dedf3.jpg?1785496922",
+    "art": "https://cards.scryfall.io/art_crop/front/1/f/1f9a61a1-454e-4d5b-a6dd-1a79fe9dedf3.jpg?1785496922"
+   },
+   {
+    "id": "f2341cf3-4d2c-4a4f-9aea-8834104a8910",
+    "oracle_id": "9cc52afb-9788-46f6-9f9b-347513f8a64f",
+    "name": "Dwarven Shortsword",
+    "rarity": "common",
+    "set": "hob",
+    "number": "10",
+    "image": "https://cards.scryfall.io/normal/front/f/2/f2341cf3-4d2c-4a4f-9aea-8834104a8910.jpg?1785496931",
+    "art": "https://cards.scryfall.io/art_crop/front/f/2/f2341cf3-4d2c-4a4f-9aea-8834104a8910.jpg?1785496931"
+   },
+   {
+    "id": "573f67b0-6ce8-4857-a703-4a5728640736",
+    "oracle_id": "84597236-2cfc-4654-b126-a8ee252f4d14",
+    "name": "Esgaroth Garrison",
+    "rarity": "common",
+    "set": "hob",
+    "number": "13",
+    "image": "https://cards.scryfall.io/normal/front/5/7/573f67b0-6ce8-4857-a703-4a5728640736.jpg?1785496934",
+    "art": "https://cards.scryfall.io/art_crop/front/5/7/573f67b0-6ce8-4857-a703-4a5728640736.jpg?1785496934"
+   },
+   {
+    "id": "178c4cf6-6b11-40e4-9673-c560d6818a6b",
+    "oracle_id": "cf765efe-884c-48e2-9edb-9d45cf2756dd",
+    "name": "Lake-town Lookout",
+    "rarity": "common",
+    "set": "hob",
+    "number": "18",
+    "image": "https://cards.scryfall.io/normal/front/1/7/178c4cf6-6b11-40e4-9673-c560d6818a6b.jpg?1785496946",
+    "art": "https://cards.scryfall.io/art_crop/front/1/7/178c4cf6-6b11-40e4-9673-c560d6818a6b.jpg?1785496946"
+   },
+   {
+    "id": "0b4b1c59-bcec-4779-9e27-0e6f9feb4e11",
+    "oracle_id": "bb52b3c3-09f0-4506-b7c0-250ab0b91866",
+    "name": "Troop of Ponies",
+    "rarity": "uncommon",
+    "set": "hob",
+    "number": "3",
+    "image": "https://cards.scryfall.io/normal/front/0/b/0b4b1c59-bcec-4779-9e27-0e6f9feb4e11.jpg?1785639568",
+    "art": "https://cards.scryfall.io/art_crop/front/0/b/0b4b1c59-bcec-4779-9e27-0e6f9feb4e11.jpg?1785639568"
+   },
+   {
+    "id": "6b8e6435-7de4-41d5-bc7d-8e24c11897d0",
+    "oracle_id": "8a0e35ac-6c03-4922-b3b4-e419419fe3d7",
+    "name": "Bofur, Reliable Guardian // Concerted Care",
+    "rarity": "uncommon",
+    "set": "hob",
+    "number": "6",
+    "image": "https://cards.scryfall.io/normal/front/6/b/6b8e6435-7de4-41d5-bc7d-8e24c11897d0.jpg?1785496981",
+    "art": "https://cards.scryfall.io/art_crop/front/6/b/6b8e6435-7de4-41d5-bc7d-8e24c11897d0.jpg?1785496981"
+   },
+   {
+    "id": "42fbd61d-e1a6-465d-b1a3-f5ee0869d3af",
+    "oracle_id": "d51136fa-3c13-48a5-83fd-51fe00010a4b",
+    "name": "Celebrate the Mountain-king",
+    "rarity": "uncommon",
+    "set": "hob",
+    "number": "7",
+    "image": "https://cards.scryfall.io/normal/front/4/2/42fbd61d-e1a6-465d-b1a3-f5ee0869d3af.jpg?1785496910",
+    "art": "https://cards.scryfall.io/art_crop/front/4/2/42fbd61d-e1a6-465d-b1a3-f5ee0869d3af.jpg?1785496910"
+   },
+   {
+    "id": "430c8916-1167-400b-9cad-d301f59d5e5d",
+    "oracle_id": "82bdf9cb-61fe-4eaf-8762-c32002403d96",
+    "name": "Magnificent End",
+    "rarity": "common",
+    "set": "hob",
+    "number": "20",
+    "image": "https://cards.scryfall.io/normal/front/4/3/430c8916-1167-400b-9cad-d301f59d5e5d.jpg?1785497008",
+    "art": "https://cards.scryfall.io/art_crop/front/4/3/430c8916-1167-400b-9cad-d301f59d5e5d.jpg?1785497008",
+    "foil": true
+   },
+   {
+    "id": "88f0c189-c9ed-4ea3-ae62-3d8ac6c7fecf",
+    "oracle_id": "011da9c5-aa8a-4fa0-b1f2-62b9f3760476",
+    "name": "Belladonna Took",
+    "rarity": "rare",
+    "set": "hob",
+    "number": "4",
+    "image": "https://cards.scryfall.io/normal/front/8/8/88f0c189-c9ed-4ea3-ae62-3d8ac6c7fecf.jpg?1784894804",
+    "art": "https://cards.scryfall.io/art_crop/front/8/8/88f0c189-c9ed-4ea3-ae62-3d8ac6c7fecf.jpg?1784894804"
+   },
+   {
+    "id": "3b087bd4-bbb7-4963-bdb6-0a700ff19a04",
+    "oracle_id": "c01aeaa5-1d3b-4493-9575-30175dcd780d",
+    "name": "Gleaming Splendor",
+    "rarity": "mythic",
+    "set": "hob",
+    "number": "15",
+    "image": "https://cards.scryfall.io/normal/front/3/b/3b087bd4-bbb7-4963-bdb6-0a700ff19a04.jpg?1785496942",
+    "art": "https://cards.scryfall.io/art_crop/front/3/b/3b087bd4-bbb7-4963-bdb6-0a700ff19a04.jpg?1785496942"
+   }
+  ]
+ },
+ "sealBonus": {
+  "u": 1
+ },
+ "duplicateCoins": 0
+}

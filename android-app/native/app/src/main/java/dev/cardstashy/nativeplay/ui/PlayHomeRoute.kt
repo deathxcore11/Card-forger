@@ -7,6 +7,7 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.setValue
 import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -59,6 +60,7 @@ fun PlayHomeRoute(onQuickPlay: () -> Unit, onCollection: () -> Unit, onSignIn: (
                 ?.getAsJsonObject("card")?.get("art")?.asString }.getOrNull()
         }
     }
+    var opener by androidx.compose.runtime.remember { androidx.compose.runtime.mutableStateOf<PackResult?>(null) }
     val s = state
     if (s == null) {
         Box(Modifier.fillMaxSize().playBackdrop(), contentAlignment = Alignment.Center) { Text("Opening your binder…", style = Type.Body) }
@@ -66,6 +68,11 @@ fun PlayHomeRoute(onQuickPlay: () -> Unit, onCollection: () -> Unit, onSignIn: (
     }
     val tz = java.util.TimeZone.getDefault().getOffset(System.currentTimeMillis()) / 60000
     val story = PlayMath.storyHome(refs ?: emptyList(), rules.acts.size)
+    fun setName(code: String) = s.getAsJsonArray("shop")?.firstNotNullOfOrNull { (it as? JsonObject)?.takeIf { o -> o["code"]?.asString == code }?.get("name")?.asString }
+        ?: SetFacts.set(code)?.name ?: code.uppercase()
+    // Opening: the server rolls the pack, then the opener plays it (app.js playEconOpen).
+    suspend fun openOne(id: String): PackResult? = runCatching { Progress.open(id) }.getOrNull()?.let { out ->
+        packResult(out, setName(out.getAsJsonObject("pack")?.get("set")?.asString ?: "")) }
     fun run(block: suspend () -> Unit) { scope.launch { block(); Progress.refresh(); Progress.refreshDeeds() } }
     val act = PlayHomeActions(
         mode = { when (it) { "quick", "practice" -> onQuickPlay(); "planeswalk" -> onWeb("https://cardstashy.com/planeswalk.html"); else -> onWeb(SITE_PLAY) } },
@@ -74,13 +81,24 @@ fun PlayHomeRoute(onQuickPlay: () -> Unit, onCollection: () -> Unit, onSignIn: (
         claim = { kind, id -> run { Progress.claim(kind, id, null) } },
         claimDeed = { id, step -> run { Progress.claim("ach", id, step) } },
         forge = { to, times -> run { Progress.forge(to, times) } },
-        openPack = { id -> run { Progress.open(id) } },
+        openPack = { id -> scope.launch { opener = openOne(id) } },
         buy = { code -> run { Progress.buy(code) } },
         deck = { onWeb(SITE_PLAY) },
         set = { onWeb(SITE_PLAY) },
     )
+    androidx.compose.foundation.layout.Box(Modifier.fillMaxSize()) {
     PlayHome(PlayHomeData(s, rules, story, PlayMath.playDay(tz), session?.userId ?: "", ambient, deeds),
         top = { TopBarItems(Mode.PLAY, profile?.avatarUrl, profile?.name, unread = false, onSwitch = onCollection, onProfile = onSignIn) },
         act = act,
         nav = { PlayNav(null, { t -> if (t == PlayTab.SWITCH) onCollection() else onWeb(SITE_PLAY) }) })
+    opener?.let { first ->
+        val close = { opener = null; scope.launch { Progress.refresh(); Progress.refreshDeeds() }; Unit }
+        androidx.activity.compose.BackHandler(onBack = close)
+        PackOpening(first, onNext = {
+            val left = Progress.state.value?.getAsJsonArray("packs")?.mapNotNull { it as? JsonObject }.orEmpty()
+            val nx = left.firstOrNull { it["set"]?.asString == first.set } ?: left.firstOrNull()
+            nx?.get("id")?.asString?.let { openOne(it) }
+        }, onClose = close)
+    }
+    }
 }

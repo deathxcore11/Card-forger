@@ -170,6 +170,36 @@ class ShotTest {
         }
     }
 
+    /** Pack opening (pack-preview.js variant 'play'): sealed, dealt face down, a mythic up, all revealed. */
+    @Test fun packOpen() {
+        dev.cardstashy.nativeplay.ui.Motion.still = true
+        dev.cardstashy.nativeplay.ui.homeArt = ::homeArt
+        home.resolve("facts.json").takeIf { it.exists() }?.let { f ->
+            dev.cardstashy.nativeplay.play.SetFacts.seed(JsonParser.parseString(f.readText()).asJsonObject.entrySet().associate { (k, v) -> val o = v.asJsonObject
+                k to dev.cardstashy.nativeplay.play.SetFacts.Set(o["name"].asString, o["icon"].asString, o["released"].asString, o["total"]?.asInt, o["art"].asString) })
+        }
+        val out = JsonParser.parseString(javaClass.classLoader!!.getResource("pack-open.json")!!.readText()).asJsonObject
+        val pack = dev.cardstashy.nativeplay.ui.packResult(out, "The Hobbit")
+        val n = pack.pulls.size
+
+        val states = listOf(
+            Triple("1-sealed", dev.cardstashy.nativeplay.ui.PackStage.SEALED, Pair(emptySet<Int>(), 0)),
+            Triple("2-dealt", dev.cardstashy.nativeplay.ui.PackStage.DEALT, Pair(setOf(0, 1, 2), 10)),
+            Triple("3-mythic", dev.cardstashy.nativeplay.ui.PackStage.DEALT, Pair((0 until n - 1).toSet() + (n - 1), n - 1)),
+            Triple("4-foil", dev.cardstashy.nativeplay.ui.PackStage.DEALT, Pair((0 until n).toSet(), 9)),
+        )
+        for ((w, h) in listOf(390 to 844, 884 to 1104)) for ((name, stage, rv) in states) {
+            if (w > 390 && name != "3-mythic") continue
+            kotlinx.coroutines.runBlocking { AssetImages.load(RuntimeEnvironment.getApplication(), "play/card-back.webp", maxWidth = 372)
+                for (c in dev.cardstashy.nativeplay.ui.WRAPPERS.keys) AssetImages.load(RuntimeEnvironment.getApplication(), "play/pack-$c.webp", maxWidth = 600) }
+            RuntimeEnvironment.setQualifiers("w${w}dp-h${h}dp-xxhdpi")
+            captureRoboImage(File(System.getProperty("shotsDir"), "pack-open-$name-${w}x$h.png").path) {
+                dev.cardstashy.nativeplay.ui.PackOpening(pack, onNext = { null }, onClose = {}, initial = stage, revealedAtStart = rv.first, focusAtStart = rv.second)
+            }
+        }
+        home.mkdirs(); home.resolve("missing.txt").writeText(missing.joinToString("\n"))
+    }
+
     /** The animated mark, frame by frame across one 6 s shuffle with the foil light moving. */
     @Test fun brandFrames() {
         val m = dev.cardstashy.nativeplay.ui.Motion
