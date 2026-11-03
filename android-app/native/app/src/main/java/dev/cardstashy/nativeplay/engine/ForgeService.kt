@@ -64,6 +64,8 @@ object ForgeService {
         System.setProperty("user.home", home.absolutePath)
         System.setProperty("java.io.tmpdir", app.cacheDir.absolutePath)
         loading = engine.submit {
+            // Loading 30,000 cards must never compete with the screen: background priority until it is done.
+            android.os.Process.setThreadPriority(android.os.Process.THREAD_PRIORITY_BACKGROUND)
             try {
                 _status.value = Status.Loading("Unpacking the engine")
                 val t0 = System.currentTimeMillis()
@@ -86,7 +88,7 @@ object ForgeService {
             } catch (t: Throwable) {
                 Log.e(TAG, "engine load failed", t)
                 _status.value = Status.Failed(t.javaClass.simpleName + ": " + t.message)
-            }
+            } finally { android.os.Process.setThreadPriority(android.os.Process.THREAD_PRIORITY_DEFAULT) }
         }
     }
 

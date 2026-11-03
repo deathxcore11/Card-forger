@@ -41,6 +41,7 @@ import androidx.compose.runtime.collectAsState
 import androidx.compose.foundation.layout.statusBars
 import androidx.compose.foundation.layout.asPaddingValues
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.draw.blur
 import androidx.compose.ui.graphics.graphicsLayer
@@ -158,7 +159,7 @@ fun PlayHome(d: PlayHomeData, top: @Composable () -> Unit, act: PlayHomeActions 
         Column(Modifier.fillMaxSize()) {
             BoxWithConstraints(Modifier.weight(1f).fillMaxWidth()) {
                 val wide = maxWidth >= 600.dp; val duo = maxWidth >= 1000.dp
-                LazyColumn(Modifier.fillMaxSize(), contentPadding = PaddingValues(top = 72.dp + statusTop(), bottom = 28.dp, start = 16.dp, end = 16.dp),
+                LazyColumn(Modifier.fillMaxSize().testTag("playHome"), contentPadding = PaddingValues(top = 72.dp + statusTop(), bottom = 28.dp, start = 16.dp, end = 16.dp),
                     verticalArrangement = Arrangement.spacedBy(26.dp)) {
                     item("head") {
                         Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
@@ -583,11 +584,13 @@ private fun nearFromServer(p: JsonObject): Triple<PlayMath.Totals, List<Near>, U
 
 @Composable
 private fun Deeds(d: PlayHomeData, act: PlayHomeActions) {
-    val (t, near) = remember(d.deeds, d.state, d.rules) { d.deeds?.let { nearFromServer(it) }?.let { it.first to it.second } ?: run {
+    // Off the main thread: the fallback walks every card once per achievement.
+    val (t, near) = produceState(PlayMath.Totals(0, 0, 0) to emptyList<Near>(), d.deeds, d.state, d.rules) { value = kotlinx.coroutines.withContext(kotlinx.coroutines.Dispatchers.Default) {
+        d.deeds?.let { nearFromServer(it) }?.let { it.first to it.second } ?: run {
         val rows = PlayMath.achievements(d.rules, d.state)
         PlayMath.totals(rows) to PlayMath.almostThere(rows, 2).mapNotNull { r -> r.next?.let { Near(r.a.title,
             "https://api.scryfall.com/cards/named?format=image&version=art_crop&exact=" + java.net.URLEncoder.encode(r.a.art, "UTF-8"), false, r.value, it.need, r.a.unit == "h") } }
-    } }
+    } } }.value
     Shelf("Achievements", if (t.ready > 0) "${t.ready} to claim" else "All achievements", { act.view("deeds") }) {
         Row(verticalAlignment = Alignment.Bottom, horizontalArrangement = Arrangement.spacedBy(8.dp), modifier = Modifier.padding(top = 6.dp)) {
             Text("${t.earned}", style = TextStyle(fontFamily = Type.Cinzel, fontWeight = FontWeight.Bold, fontSize = 30.sp, color = Color(0xFFF3E3BD)))
@@ -618,9 +621,9 @@ private fun Deeds(d: PlayHomeData, act: PlayHomeActions) {
 
 @Composable
 private fun Packs(s: JsonObject, act: PlayHomeActions) {
-    val groups = s.getAsJsonArray("packs")?.mapNotNull { it as? JsonObject }?.groupBy { it.get("set")?.asString ?: "" } ?: emptyMap()
-    val names = buildMap { s.getAsJsonArray("shop")?.forEach { o -> (o as? JsonObject)?.let { put(it["code"].asString, it["name"].asString) } }
-        s.getAsJsonObject("rewardSet")?.let { put(it["code"].asString, it["name"].asString) } }
+    val groups = remember(s) { s.getAsJsonArray("packs")?.mapNotNull { it as? JsonObject }?.groupBy { it.get("set")?.asString ?: "" } ?: emptyMap() }
+    val names = remember(s) { buildMap { s.getAsJsonArray("shop")?.forEach { o -> (o as? JsonObject)?.let { put(it["code"].asString, it["name"].asString) } }
+        s.getAsJsonObject("rewardSet")?.let { put(it["code"].asString, it["name"].asString) } } }
     Shelf("Your packs", "All packs", { act.view("packs") }) {
         if (groups.isEmpty()) Text("Every pack is open. Story battles, Planeswalk bosses and the Merchant give more.", style = TextStyle(fontFamily = P.Sans, fontSize = 15.sp, lineHeight = 22.sp, color = Color(0xFFB9BFC9)), modifier = Modifier.padding(top = 8.dp))
         else PackGrid(groups.entries.take(6).toList()) { (code, list) ->
@@ -739,9 +742,9 @@ private fun DeckTile(art: String?, name: String, meta: String, modifier: Modifie
 @Composable
 private fun Collection(s: JsonObject, act: PlayHomeActions) {
     val facts: Map<String, SetFacts.Set> = SetFacts.sets.collectAsState().value
-    val owned = LinkedHashMap<String, Int>()
-    s.getAsJsonArray("cards")?.forEach { c -> (c as? JsonObject)?.getAsJsonArray("s")?.forEach { owned[it.asString] = (owned[it.asString] ?: 0) + 1 } }
-    s.getAsJsonObject("rewardSet")?.get("code")?.asString?.let { owned.putIfAbsent(it, 0) }
+    val owned = produceState(emptyMap<String, Int>(), s) { value = kotlinx.coroutines.withContext(kotlinx.coroutines.Dispatchers.Default) { LinkedHashMap<String, Int>().also { owned ->
+        s.getAsJsonArray("cards")?.forEach { c -> (c as? JsonObject)?.getAsJsonArray("s")?.forEach { owned[it.asString] = (owned[it.asString] ?: 0) + 1 } }
+        s.getAsJsonObject("rewardSet")?.get("code")?.asString?.let { owned.putIfAbsent(it, 0) } } } }.value
     val rows = owned.map { (code, have) -> val f = facts[code]; Triple(code, f, have) }
         .sortedWith(compareByDescending<Triple<String, SetFacts.Set?, Int>> { it.second?.released ?: "" }.thenBy { it.second?.name ?: it.first }).take(4)
     val total = s.getAsJsonArray("cards")?.size() ?: 0

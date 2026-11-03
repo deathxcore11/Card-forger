@@ -38,6 +38,12 @@ import androidx.compose.material3.Text
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
+import androidx.compose.runtime.collectAsState
+import androidx.compose.foundation.background
+import androidx.compose.foundation.border
+import androidx.compose.ui.draw.clip
+import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.navigationBarsPadding
 import androidx.compose.ui.unit.sp
 import dev.cardstashy.nativeplay.account.Account
 import dev.cardstashy.nativeplay.art.CardArt
@@ -84,7 +90,8 @@ class MainActivity : ComponentActivity() {
         ForgeService.prepare(this)
         Account.init(this); CardArt.init(this); Speed.init(this)
         dev.cardstashy.nativeplay.play.Progress.init(this); dev.cardstashy.nativeplay.play.SetFacts.init(this); dev.cardstashy.nativeplay.play.CardFacts.init(this); dev.cardstashy.nativeplay.play.DeckEngine.init(this); dev.cardstashy.nativeplay.play.CraftRarity.init(this)
-        setContent { App(this) }
+        FreezeReport.init(this)
+        setContent { androidx.compose.foundation.layout.Box(androidx.compose.ui.Modifier.fillMaxSize()) { App(this@MainActivity); FreezeBanner() } }
     }
 
     /** Games lock landscape like a video game; menus turn freely (standing rule, 2 Nov). */
@@ -94,6 +101,24 @@ class MainActivity : ComponentActivity() {
         if (on) { c.systemBarsBehavior = WindowInsetsControllerCompat.BEHAVIOR_SHOW_TRANSIENT_BARS_BY_SWIPE; c.hide(WindowInsetsCompat.Type.systemBars()) }
         else c.show(WindowInsetsCompat.Type.systemBars())
         if (on) window.addFlags(android.view.WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON) else window.clearFlags(android.view.WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON)
+    }
+}
+
+/** After a freeze: one glass strip that sends the phone's own report of the stuck line (share sheet), or goes away. */
+@Composable
+private fun FreezeBanner() {
+    val report by FreezeReport.text.collectAsState()
+    if (report == null) return
+    val ctx = androidx.compose.ui.platform.LocalContext.current
+    androidx.compose.foundation.layout.Box(androidx.compose.ui.Modifier.fillMaxSize().navigationBarsPadding().padding(16.dp), contentAlignment = androidx.compose.ui.Alignment.BottomCenter) {
+        androidx.compose.foundation.layout.Row(androidx.compose.ui.Modifier.widthIn(max = 560.dp).fillMaxWidth()
+            .clip(androidx.compose.foundation.shape.RoundedCornerShape(16.dp)).background(androidx.compose.ui.graphics.Color(0xF0171A20))
+            .border(1.dp, androidx.compose.ui.graphics.Color(0x55D6AD64), androidx.compose.foundation.shape.RoundedCornerShape(16.dp)).padding(start = 16.dp, end = 8.dp, top = 8.dp, bottom = 8.dp),
+            verticalAlignment = androidx.compose.ui.Alignment.CenterVertically) {
+            androidx.compose.material3.Text("The app froze. Send the report so the exact cause gets fixed.", style = dev.cardstashy.nativeplay.ui.Type.Body, modifier = androidx.compose.ui.Modifier.weight(1f))
+            androidx.compose.material3.TextButton(onClick = { FreezeReport.dismiss() }) { androidx.compose.material3.Text("Later", color = androidx.compose.ui.graphics.Color(0xFF9AA2B1)) }
+            androidx.compose.material3.TextButton(onClick = { FreezeReport.share(ctx) }) { androidx.compose.material3.Text("Send", color = androidx.compose.ui.graphics.Color(0xFFD6AD64)) }
+        }
     }
 }
 

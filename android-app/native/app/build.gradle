@@ -14,8 +14,8 @@ android {
         applicationId 'com.cardstashy.app.nativetest'
         minSdk 26 // Forge's own Android minimum (java.nio.file)
         targetSdk 36
-        versionCode 10
-        versionName '0.3.1-native-test'
+        versionCode 11
+        versionName '0.3.2-native-test'
     }
     buildTypes {
         release {
@@ -76,6 +76,7 @@ dependencies {
     testImplementation 'io.github.takahirom.roborazzi:roborazzi-compose:1.43.0'
     testImplementation 'androidx.compose.ui:ui-test-junit4'
     testImplementation 'androidx.compose.ui:ui-test-manifest'
+    debugImplementation 'androidx.compose.ui:ui-test-manifest'
     def gradleJunit = file("${gradle.gradleHomeDir}/lib/junit-4.13.2.jar")
     if (gradleJunit.exists()) testImplementation files(gradleJunit, "${gradle.gradleHomeDir}/lib/hamcrest-core-1.3.jar")
     else testImplementation 'junit:junit:4.13.2'
