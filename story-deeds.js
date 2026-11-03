@@ -59,16 +59,20 @@ export const STORY_DEEDS = Object.freeze([
   deed('a13-first-blow', 13, 'a13b4', 'The First Blow', 'Beat the Dimir agents by turn 10.', 'Agrus Kos, Wojek Veteran', s => s.turns <= 10),
   deed('a13-light', 13, 'a13b8', 'Into the Light', 'Beat Szadek before he ever reaches the table.', 'Szadek, Lord of Secrets', s => !sawTheirs(s, 'Szadek, Lord of Secrets')),
   deed('a13-no-angel', 13, 'a13b9', 'No Angel Rises', 'Beat Solar Flare without ever facing Angel of Despair.', 'Angel of Despair', s => !sawTheirs(s, 'Angel of Despair')),
+  // Act 14: The Time Rifts
+  deed('a14-keld', 14, 'a14b4', 'Faster Than the Dead', 'Beat Lim-Dûl by turn 9.', 'Radha, Heir to Keld', s => s.turns <= 9),
+  deed('a14-mended', 14, 'a14b8', 'The Mending', 'Beat Nicol Bolas with 10 life or more.', 'Venser, Shaper Savant', s => s.endLife >= 10),
+  deed('a14-unpickled', 14, 'a14b9', 'Never Locked', 'Beat Pickles without ever facing Brine Elemental.', 'Brine Elemental', s => !sawTheirs(s, 'Brine Elemental')),
 ]);
 // Two act-wide deeds per act, from Story progress.
-export const STORY_ACT_DEEDS = Object.freeze([1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13].flatMap(act => [
+export const STORY_ACT_DEEDS = Object.freeze([1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14].flatMap(act => [
   {id: `a${act}-chronicler`, act, kind: 'loaner', title: `Chronicler of Act ${act}`, lore: `Win all 8 battles of Act ${act} with the Story decks.`},
   {id: `a${act}-two-faced`, act, kind: 'both', title: `Both Sides of Act ${act}`, lore: `Win all 8 battles of Act ${act} from both seats. Understand the villains too.`},
 ]));
 // Each act deed has its own art (no art repeats across achievements): the Chronicler shows the act's
 // heroes or home ground, Both Sides shows the act's villain.
-const CHRONICLER_ART = {1: 'Shivan Dragon', 2: 'Tetsuo Umezawa', 3: 'Kjeldoran Royal Guard', 4: "Teferi's Isle", 5: "Volrath's Stronghold", 6: "Serra's Sanctum", 7: 'Rishadan Port', 8: "Urza's Rage", 9: 'Cabal Coffers', 10: 'Akroma, Angel of Wrath', 11: 'Tree of Tales', 12: 'Eiganjo Castle', 13: 'Pillar of the Paruns'};
-const BOTH_SIDES_ART = {1: 'Mishra, Artificer Prodigy', 2: 'Hymn to Tourach', 3: "Lim-Dûl's High Guard", 4: "Suq'Ata Lancer", 5: 'Crovax the Cursed', 6: 'Phyrexian Negator', 7: 'Ascendant Evincar', 8: "Yawgmoth's Agenda", 9: 'Chainer, Dementia Master', 10: 'Riptide Laboratory', 11: 'Darksteel Citadel', 12: 'Toshiro Umezawa', 13: 'Guardian of the Guildpact'};
+const CHRONICLER_ART = {1: 'Shivan Dragon', 2: 'Tetsuo Umezawa', 3: 'Kjeldoran Royal Guard', 4: "Teferi's Isle", 5: "Volrath's Stronghold", 6: "Serra's Sanctum", 7: 'Rishadan Port', 8: "Urza's Rage", 9: 'Cabal Coffers', 10: 'Akroma, Angel of Wrath', 11: 'Tree of Tales', 12: 'Eiganjo Castle', 13: 'Pillar of the Paruns', 14: 'Lotus Bloom'};
+const BOTH_SIDES_ART = {1: 'Mishra, Artificer Prodigy', 2: 'Hymn to Tourach', 3: "Lim-Dûl's High Guard", 4: "Suq'Ata Lancer", 5: 'Crovax the Cursed', 6: 'Phyrexian Negator', 7: 'Ascendant Evincar', 8: "Yawgmoth's Agenda", 9: 'Chainer, Dementia Master', 10: 'Riptide Laboratory', 11: 'Darksteel Citadel', 12: 'Toshiro Umezawa', 13: 'Guardian of the Guildpact', 14: 'Temporal Eddy'};
 export const STORY_DEED_IDS = new Set([...STORY_DEEDS, ...STORY_ACT_DEEDS].map(d => d.id));
 export const storyDeedArt = d => d.art || (d.kind === 'both' ? BOTH_SIDES_ART : CHRONICLER_ART)[d.act];
 

@@ -16,10 +16,12 @@ function pick(name, prefer = []) {
   // Flip cards (Kamigawa) are listed by their front face; the deck keeps the full Scryfall name.
   const hits = all.length ? all : pool.filter(c => c.name === name || c.name.split(' // ')[0] === name);
   if (!hits.length) { missing.push(name); return null; }
-  const order = BASIC.test(name) ? [act.landSet] : [...prefer, ...act.sets];
+  // Snow-covered basics come from whichever act set printed them (Coldsnap in Act 14); plain basics use the land set.
+  const snow = /^Snow-Covered /.test(name);
+  const order = BASIC.test(name) && !snow ? [act.landSet] : [...prefer, ...act.sets];
   hits.sort((a, b) => (order.indexOf(a.set) + 1 || 99) - (order.indexOf(b.set) + 1 || 99) || parseInt(a.number) - parseInt(b.number));
   const h = hits[0];
-  if (BASIC.test(name) && h.set !== act.landSet) missing.push(name + ' (no ' + act.landSet + ' printing)');
+  if (BASIC.test(name) && !snow && h.set !== act.landSet) missing.push(name + ' (no ' + act.landSet + ' printing)');
   return h;
 }
 const deck = (d) => {
