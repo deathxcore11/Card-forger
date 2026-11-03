@@ -2321,7 +2321,7 @@
        "id": "07793a71-1106-4303-b620-e403bd378020"
       },
       {
-       "qty": 3,
+       "qty": 4,
        "name": "Mishra's War Machine",
        "set": "atq",
        "number": "57",
@@ -2342,14 +2342,7 @@
        "id": "a79c99e1-722a-44b6-8fa3-2be3f0c193d8"
       },
       {
-       "qty": 2,
-       "name": "Hurloon Minotaur",
-       "set": "lea",
-       "number": "158",
-       "id": "78a9088f-8755-47cb-aa93-51d992ccab90"
-      },
-      {
-       "qty": 2,
+       "qty": 4,
        "name": "Shatter",
        "set": "lea",
        "number": "173",
@@ -2371,17 +2364,17 @@
       },
       {
        "qty": 2,
-       "name": "Atog",
-       "set": "atq",
-       "number": "23",
-       "id": "2249fc40-4412-48fd-800a-7ea3678aee3f"
+       "name": "Shivan Dragon",
+       "set": "lea",
+       "number": "174",
+       "id": "fefbf149-f988-4f8b-9f53-56f5878116a6"
       },
       {
-       "qty": 4,
-       "name": "Dwarven Weaponsmith",
-       "set": "atq",
-       "number": "25",
-       "id": "0848d94a-2704-460f-986b-b192dd6d26b7"
+       "qty": 3,
+       "name": "Orcish Artillery",
+       "set": "lea",
+       "number": "165",
+       "id": "a97208b1-a91b-4129-8a00-2f97b418accc"
       }
      ]
     }
@@ -2583,7 +2576,7 @@
        "id": "dcd6a291-5282-4f49-8203-d9b416083c48"
       },
       {
-       "qty": 4,
+       "qty": 2,
        "name": "Serra Angel",
        "set": "lea",
        "number": "39",
@@ -2618,11 +2611,18 @@
        "id": "386ea9eb-abc1-4862-aa2d-8fb808d79490"
       },
       {
-       "qty": 4,
+       "qty": 2,
        "name": "Disenchant",
        "set": "lea",
        "number": "18",
        "id": "2722d7e2-61c6-4934-9c21-875ee78fd06c"
+      },
+      {
+       "qty": 2,
+       "name": "Pearled Unicorn",
+       "set": "lea",
+       "number": "30",
+       "id": "6daf1aab-1e58-4a5a-bc66-cb3f7c86e0e8"
       },
       {
        "qty": 4,
@@ -2653,7 +2653,7 @@
        "id": "0324641d-af55-4c53-b4dc-c8262e967da5"
       },
       {
-       "qty": 4,
+       "qty": 6,
        "name": "Plains",
        "set": "lea",
        "number": "286",
@@ -2753,14 +2753,14 @@
        "id": "e0139f60-d48e-46fb-9f5a-1e3d7558c834"
       },
       {
-       "qty": 1,
+       "qty": 4,
        "name": "Fireball",
        "set": "lea",
        "number": "149",
        "id": "b7623c00-144b-4a8f-9c6c-f5e9e4f65ece"
       },
       {
-       "qty": 1,
+       "qty": 2,
        "name": "Disintegrate",
        "set": "lea",
        "number": "140",
@@ -2779,13 +2779,6 @@
        "set": "lea",
        "number": "74",
        "id": "a6a86e6e-bfff-46af-9d36-c912901fea92"
-      },
-      {
-       "qty": 4,
-       "name": "Red Elemental Blast",
-       "set": "lea",
-       "number": "169",
-       "id": "776ad9be-3309-4f1d-9f27-6219d9477662"
       },
       {
        "qty": 4,

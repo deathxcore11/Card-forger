@@ -283,15 +283,14 @@ export default {
 4 Su-Chi
 4 Juggernaut
 4 Dragon Engine
-3 Mishra's War Machine
+4 Mishra's War Machine
 4 Clay Statue
 2 Triskelion
-2 Hurloon Minotaur
-2 Shatter
+4 Shatter
 4 Lightning Bolt
 3 Fireball
-2 Atog
-4 Dwarven Weaponsmith`}},
+2 Shivan Dragon
+3 Orcish Artillery`}},
       scene: [{who: 'mishra', line: 'Brother. You look old.'}, {who: 'urza', line: "You look like you've made friends you shouldn't have."}, {who: 'mishra', line: "Friends? They listen. That's more than you ever did."}, {who: 'urza', line: 'Give me the Mightstone, Mishra.'}, {who: 'mishra', line: 'Come and take it. You always do.'}],
       villainScene: [{who: 'mishra', line: "They told me I'd finally be better than you."}],
       cues: {hero: cue('Begin.', 'Exactly as designed.', '...Mishra.', "It's over. Give it to me.", 'I will build something greater.'),
@@ -328,17 +327,18 @@ export default {
 4 White Knight
 3 Mesa Pegasus
 2 Juggernaut
-4 Serra Angel
+2 Serra Angel
 2 Shivan Dragon
 4 Lightning Bolt
 1 Fireball
 4 Swords to Plowshares
-4 Disenchant
+2 Disenchant
+2 Pearled Unicorn
 4 Mishra's Factory
 4 Plateau
 2 Tundra
 2 Volcanic Island
-4 Plains
+6 Plains
 2 Mountain`}},
       villain: {who: 'usenet', deck: {label: 'tribute', name: 'The Usenet Deck', note: 'The same machine at the counts Story\'s Vintage rules allow.',
         // Only the counts we can source are written here; the full post still needs transcribing.
@@ -359,11 +359,10 @@ export default {
 1 Timetwister
 1 Ancestral Recall
 1 Time Walk
-1 Fireball
-1 Disintegrate
+4 Fireball
+2 Disintegrate
 4 Lightning Bolt
 2 Psionic Blast
-4 Red Elemental Blast
 4 Counterspell
 2 Power Sink
 3 Disenchant
