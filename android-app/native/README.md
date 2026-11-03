@@ -30,5 +30,11 @@ Next patch (architect review, 3 Nov):
 - The Assign button splits combat damage lethal-first automatically; let the player adjust the split by hand
   before confirming.
 
+## Open items (0.2.0)
+
+- Collection mode is a WebView of cardstashy.com with its own session: you sign in there separately until a token hand-off exists. It also lacks the beta's native parts (scanner camera, haptics, file store) until step 3.
+- Tokens are in app-private SharedPreferences; move to EncryptedSharedPreferences later.
+- Pass-bar timings (sign-in to decks, known deck under 3 s, new deck under 6 s) come from a phone; the Quick Play screen shows the last of each.
+
 ## Open items (0.1.3)
 - Frame time: the p99 < 8 ms check during a 7-card swipe needs a real phone (Randall's Fold); there is no emulator in the cloud.
