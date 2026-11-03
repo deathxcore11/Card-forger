@@ -3,7 +3,7 @@
 import {RELEASE} from './release-record.js';
 export const ANDROID_BETA = RELEASE.android;
 // The native Quick Play test build (separate package, not the app). Not an update: nothing offers it.
-export const ANDROID_NATIVE_TEST = { href: '/downloads/cardstashy-native-test-0.3.3.apk', bytes: 48425740 };
+export const ANDROID_NATIVE_TEST = { href: '/downloads/cardstashy-native-test-0.3.4.apk', bytes: 48716624 };
 export const ANDROID_BETA_OLD_APK = /^\/downloads\/cardstashy-android-beta-\d+\.\d+\.\d+\.apk$/;
 
 // Cloudflare serves a static file only up to 25 MiB, so a larger APK is committed in parts next to its
