@@ -282,15 +282,16 @@ private fun Meta(ui: EditorUi) = Row(Modifier.fillMaxWidth().padding(top = 4.dp)
 /** Craft all: the seals the missing cards need (short ones in amber), then the web's four button states. */
 @Composable
 private fun CraftAllBar(plan: DeckEdit.Plan, ui: EditorUi, onCraft: () -> Unit) {
-    Row(Modifier.fillMaxWidth().softTile(18.dp, Color(0xCC0D0F14)).padding(horizontal = 14.dp, vertical = 10.dp), verticalAlignment = Alignment.CenterVertically,
-        horizontalArrangement = Arrangement.spacedBy(10.dp)) {
-        Row(Modifier.weight(1f), horizontalArrangement = Arrangement.spacedBy(10.dp), verticalAlignment = Alignment.CenterVertically) {
+    // Two lines on a phone: the seals the deck needs, then the button full width, so no count is ever cut by it (Randall 3 Nov 20:51Z).
+    Column(Modifier.fillMaxWidth().softTile(18.dp, Color(0xCC0D0F14)).padding(horizontal = 14.dp, vertical = 12.dp), verticalArrangement = Arrangement.spacedBy(10.dp)) {
+        Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(14.dp), verticalAlignment = Alignment.CenterVertically) {
+            Text("Seals needed", style = t(13f, FontWeight.SemiBold, Site.Muted), modifier = Modifier.weight(1f), maxLines = 1)
             for (k in listOf("c", "u", "r", "m")) { val need = plan.need[k] ?: 0; if (need == 0) continue
                 Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(4.dp)) { SealMini(k, 20.dp)
-                    Text("$need", style = t(14f, FontWeight.Bold, if (need > (plan.have[k] ?: 0)) Warn else Ink)) } }
+                    Text("$need", style = t(14f, FontWeight.Bold, if (need > (plan.have[k] ?: 0)) Warn else Ink), maxLines = 1, softWrap = false) } }
         }
         GoldCta(if (ui.crafting) "Crafting…" else if (ui.armed) "Craft ${plan.craftable} now" else if (plan.craftable < plan.missing) "Craft ${plan.craftable} of ${plan.missing}" else "Craft all",
-            enabled = plan.craftable > 0 && !ui.crafting, onClick = onCraft)
+            Modifier.fillMaxWidth(), enabled = plan.craftable > 0 && !ui.crafting, onClick = onCraft)
     }
 }
 

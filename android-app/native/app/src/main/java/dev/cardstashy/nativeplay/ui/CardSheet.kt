@@ -143,6 +143,7 @@ fun CardSheet(pick: CardPick, state: JsonObject?, act: CardSheetActions, onClose
 
     BoxWithConstraints(Modifier.fillMaxSize()) {
         val h = constraints.maxHeight.toFloat()
+        var zoomed: (@Composable () -> Unit)? = null
         Box(Modifier.fillMaxSize().graphicsLayer { alpha = 1f - y.value }.background(Color(0x99000000))
             .pointerInput(Unit) { detectTapGestures { close() } })
         Column(Modifier.align(Alignment.BottomCenter).widthIn(max = 720.dp).fillMaxWidth().fillMaxHeight(.94f)
@@ -176,8 +177,15 @@ fun CardSheet(pick: CardPick, state: JsonObject?, act: CardSheetActions, onClose
                 }
                 item { Spacer(Modifier.navigationBarsPadding().height(40.dp)) }
             }
-            if (zoom && image != null) Zoom(image, data?.let { Foil.look(it, shown, finish) }) { zoom = false }
+            // views.js:461 .cd-zoom: data-src = the normal image, data-hi = this face's png, data-art = the hero art crop.
+            val hi = (if (imgFaces.size > 1) imgFaces.getOrNull(face) else null)?.getAsJsonObject("image_uris")?.s("png")?.ifBlank { null }
+                ?: shown.getAsJsonObject("image_uris")?.s("png")?.ifBlank { null }
+            val look = data?.let { Foil.look(it, shown, finish) }
+            zoomed = if (zoom && image != null) ({ CardZoom(image, hi, heroArt, look) { zoom = false } }) else null
         }
+        // Over the whole screen, not inside the sheet's column: there the list took all the height, so the enlarged
+        // card was pushed below the sheet and stayed half drawn over every tab (Randall 3 Nov 20:51Z).
+        zoomed?.invoke()
         rule?.let { RuleCard(it) { rule = null } }
     }
 }
@@ -549,15 +557,3 @@ private fun RuleCard(r: CardData.Rule, onClose: () -> Unit) {
     }
 }
 
-/** Tap the card: it fills the screen in its finish; drag to move the light, tap or Back to put it down. */
-@Composable
-private fun Zoom(image: String, look: Foil.Look?, onClose: () -> Unit) {
-    BackHandler(onBack = onClose)
-    val touch = remember { mutableStateOf<Offset?>(null) }
-    val tilt = rememberFoilTilt(live = look?.recipe != null, touch = touch)
-    Box(Modifier.fillMaxSize().background(Color(0xE6000000)).pointerInput(Unit) { detectTapGestures { onClose() } }, contentAlignment = Alignment.Center) {
-        CardPicture(image, look?.takeIf { it.shines }, tilt, Modifier.padding(20.dp).widthIn(max = 520.dp).fillMaxWidth().aspectRatio(63f / 88f)
-            .pointerInput(Unit) { detectDragGestures(onDragEnd = { touch.value = null }) { ch, _ -> touch.value = Offset((ch.position.x / size.width - .5f) * 2f, (ch.position.y / size.height - .5f) * 2f) } },
-            shape = RoundedCornerShape(22.dp))
-    }
-}

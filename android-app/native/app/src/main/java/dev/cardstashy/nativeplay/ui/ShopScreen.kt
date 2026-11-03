@@ -316,18 +316,31 @@ private data class LensCard(val id: String, val oracle: String, val name: String
 private val gray = ColorFilter.colorMatrix(ColorMatrix().apply { setToSaturation(0f) })
 private val setCache = HashMap<String, List<LensCard>>()
 
+/** One search page; Scryfall's 429 (too many requests), a 5xx or a dropped connection is tried again with a growing wait. */
+private suspend fun page(url: String): JsonObject? {
+    var wait = 400L
+    repeat(4) { n ->
+        try { return Http.call("GET", url, timeoutMs = 20_000) as? JsonObject }
+        catch (e: Http.Failure) { if (e.status == 404) return null; if (e.status != 429 && e.status < 500) throw e; if (n == 3) throw e }
+        catch (e: java.io.IOException) { if (n == 3) throw e }
+        kotlinx.coroutines.delay(wait); wait *= 2
+    }
+    return null
+}
+
 /** Every printing of the set in set order, from Scryfall (the site's set page reads the same search). */
 private suspend fun setCards(code: String): List<LensCard> = setCache[code] ?: withContext(Dispatchers.IO) {
     val out = ArrayList<LensCard>()
     var url: String? = "https://api.scryfall.com/cards/search?order=set&unique=prints&q=" + java.net.URLEncoder.encode("e:$code game:paper", "UTF-8")
     while (url != null) {
-        val page = Http.call("GET", url, timeoutMs = 20_000) as? JsonObject ?: break
+        val page = page(url) ?: break
         page.objs("data").forEach { c ->
             val img = (c.get("image_uris") as? JsonObject)?.get("normal").s() ?: (c.objs("card_faces").firstOrNull()?.get("image_uris") as? JsonObject)?.get("normal").s() ?: ""
             out += LensCard(c.get("id").s() ?: "", c.get("oracle_id").s() ?: c.objs("card_faces").firstOrNull()?.get("oracle_id").s() ?: "", c.get("name").s() ?: "",
                 c.get("collector_number").s() ?: "", c.get("rarity").s() ?: "", img)
         }
         url = if (page.get("has_more").b()) page.get("next_page").s() else null
+        if (url != null) kotlinx.coroutines.delay(100) // Scryfall asks for 50-100 ms between requests
     }
     out.also { if (it.isNotEmpty()) setCache[code] = it }
 }
@@ -337,13 +350,15 @@ private fun SetLens(s: JsonObject, code: String, busy: Boolean, onBack: () -> Un
     val row = remember(s, code) { Trunk.allSets(s).firstOrNull { it.code == code } }
     val name = row?.name ?: SetFacts.set(code)?.name ?: code.uppercase()
     val owned = remember(s) { s.objs("cards").associate { (it.get("o").s() ?: "") to it.get("c").i() } }
-    val cards = produceState<List<LensCard>?>(null, code) { value = runCatching { setCards(code) }.getOrDefault(emptyList()) }.value
+    var attempt by remember(code) { mutableStateOf(0) }
+    val cards = produceState<List<LensCard>?>(null, code, attempt) { value = null; value = runCatching { setCards(code) }.getOrDefault(emptyList()) }.value
     val waiting = s.objs("packs").filter { it.get("set").s() == code }
     val sold = s.objs("shop").any { it.get("code").s() == code } || (s.get("rewardSet") as? JsonObject)?.get("code").s() == code
     var query by rememberSaveable(code) { mutableStateOf("") }
     var filter by rememberSaveable(code) { mutableStateOf("all") }
     var rarity by rememberSaveable(code) { mutableStateOf("") }
-    val distinct = cards?.map { it.oracle }?.toSet()
+    // Until the list arrives (or if it can't), the numbers come from the set row, never "0 of 0".
+    val distinct = cards?.takeIf { it.isNotEmpty() }?.map { it.oracle }?.toSet()
     val have = distinct?.count { (owned[it] ?: 0) > 0 } ?: (row?.owned ?: 0)
     val total = distinct?.size ?: row?.total ?: 0
     val pct = if (total > 0) have.toFloat() / total else 0f
@@ -382,7 +397,10 @@ private fun SetLens(s: JsonObject, code: String, busy: Boolean, onBack: () -> Un
                 }
             }
             if (cards != null && shown.isEmpty()) item(span = { GridItemSpan(maxLineSpan) }) {
-                Text(if (cards.isEmpty()) "Could not load this set right now." else "No cards match. Change the filters above.", style = small.copy(fontSize = 15.sp), modifier = Modifier.padding(vertical = 24.dp))
+                if (cards.isEmpty()) Column(Modifier.padding(vertical = 24.dp), verticalArrangement = Arrangement.spacedBy(12.dp)) {
+                    Text("The set's cards didn't come through. Check your connection and try again.", style = small.copy(fontSize = 15.sp))
+                    GoldCta("Try again", Modifier.fillMaxWidth(), muted = true) { attempt++ }
+                } else Text("No cards match. Change the filters above.", style = small.copy(fontSize = 15.sp), modifier = Modifier.padding(vertical = 24.dp))
             }
             items(shown, key = { it.id }) { c ->
                 val n = owned[c.oracle] ?: 0
