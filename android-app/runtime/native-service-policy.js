@@ -25,7 +25,7 @@ const playMethods = path => path === '/api/play/warm' || path === '/api/play/mat
   : path === '/api/play/rooms' ? ['GET', 'POST'] : path === '/api/play/rooms/join' ? ['POST']
   : new RegExp(`^/api/play/rooms/${PLAY_MATCH}$`, 'i').test(path) ? ['GET', 'DELETE'] : null;
 // Play progression (play-econ-route.js): the wallet read, and the server-side grants and spends.
-const progressMethods = path => path === '/api/progress/state' ? ['GET']
+const progressMethods = path => path === '/api/progress/state' || path === '/api/progress/achievements' ? ['GET']
   : path === '/api/progress/story' ? ['GET', 'POST']
   : /^\/api\/progress\/(?:starter|open|craft|forge|precon|buy|deck|login|match|claim|holo|deeds)$/.test(path) ? ['POST'] : null;
 const imagePath = path => /^\/img\/(?:pack|back)\/(?:mtg|ptcg|ygo)\.jpg$/.test(path)
@@ -63,7 +63,9 @@ export function resolveServiceURL(input) {
   const canonicalPath = pokemon ? `/img/ptcg/${pokemon[1]}/${encodeURIComponent(pokemon[2])}.jpg` : pathname;
   if (url.pathname !== canonicalPath) fail('Noncanonical service path');
   const image = imagePath(pathname), ai = AI.has(pathname), publicReference = PUBLIC_REFERENCE_POST.has(pathname), play = playMethods(pathname), progress = progressMethods(pathname);
-  if ((play || progress) && url.search) fail('Play routes take no query');
+  // The one exception: the achievements read takes the device's UTC offset in minutes (?tz=-300), nothing else.
+  const tzOnly = pathname === '/api/progress/achievements' && /^(?:\?tz=-?\d{1,4})?$/.test(url.search);
+  if ((play || progress) && url.search && !tzOnly) fail('Play routes take no query');
   if (!(image || ai || publicReference || play || progress || READ.has(pathname) || ['/api/lens', '/api/prices/watch'].includes(pathname))) fail('Unknown service route');
   if (publicReference && url.search) fail('Public reference topics belong in the JSON body');
   for (const key of url.searchParams.keys()) if (/^(?:access_token|refresh_token|authorization|apikey|api_key|token)$/i.test(key)) fail('Credentials in query are forbidden');

@@ -4,6 +4,10 @@ import {readFileSync} from 'node:fs';
 import {matchCounters, questRows, loginStamp, rewardDelta, achievementRows, achievementReward, achievementsPayload, deckColours, dailyQuests, weeklyQuests, playDay, playWeek, ACHIEVEMENTS, DEED_TABS} from './play-achievements.js';
 import {ACHIEVEMENT_ART, achievementArt} from './play-achievement-art.js';
 import {progressRoute} from './play-econ-route.js';
+import {resolveServiceURL} from './native-service-policy.js';
+// The native app's route inventory admits the achievements read with only ?tz=.
+assert.deepEqual([...resolveServiceURL('https://cardstashy.com/api/progress/achievements?tz=-300').methods], ['GET']);
+assert.throws(() => resolveServiceURL('https://cardstashy.com/api/progress/achievements?tz=1&x=2'));
 
 // Practice only feeds its own honour counters, never quests; friend wins count as played only; minutes cap at 90.
 const practice = matchCounters({outcome: 'win', mode: 'practice', difficulty: 'Hard', format: 'Modern'}, '2026-11-05');
