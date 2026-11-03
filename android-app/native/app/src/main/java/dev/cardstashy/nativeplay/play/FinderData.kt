@@ -105,9 +105,9 @@ object CraftRarity {
 
     fun init(context: Context) {
         if (file != null) return
-        file = File(context.filesDir, "craft-rarity.json")
-        runCatching { JsonParser.parseString(file!!.readText()).asJsonObject.entrySet().associate { (k, v) -> val o = v.asJsonObject
-            k to Entry(o["r"].asString, o["id"].asString, o["set"]?.asString ?: "", o["at"].asLong) } }.getOrNull()?.let { low.value = it }
+        val f0 = File(context.filesDir, "craft-rarity.json"); file = f0
+        Thread({ runCatching { JsonParser.parseString(f0.readText()).asJsonObject.entrySet().associate { (k, v) -> val o = v.asJsonObject
+            k to Entry(o["r"].asString, o["id"].asString, o["set"]?.asString ?: "", o["at"].asLong) } }.getOrNull()?.let { synchronized(this) { low.value = it + low.value } } }, "craft-rarity").start()
     }
     private fun fresh(e: Entry?) = e != null && System.currentTimeMillis() - e.at < DAYS * 86_400_000L
     fun entry(name: String): Entry? = (low.value[name] ?: low.value[front(name)]).takeIf { fresh(it) }

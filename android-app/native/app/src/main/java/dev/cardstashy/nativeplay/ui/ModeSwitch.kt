@@ -96,7 +96,7 @@ private fun DrawScope.drawEmblem(mode: Mode) {
 
 /**
  * Collection mode: the CardStashy app as it is on the web, until each tab goes native (big
- * picture, step 3). The Play emblem in the corner switches back to Play.
+ * picture, step 3). Back returns to Play (Randall 3 Nov: no floating Play button for now).
  */
 @SuppressLint("SetJavaScriptEnabled")
 @Composable
@@ -120,6 +120,5 @@ fun CollectionScreen(onPlay: () -> Unit, url: String = "https://cardstashy.com/"
                 web.value = this
             }
         }, modifier = Modifier.fillMaxSize().windowInsetsPadding(WindowInsets.safeDrawing), onRelease = { it.destroy() })
-        Emblem(Mode.PLAY, 64.dp, onPlay, Modifier.align(Alignment.BottomEnd).windowInsetsPadding(WindowInsets.safeDrawing).padding(16.dp))
     }
 }

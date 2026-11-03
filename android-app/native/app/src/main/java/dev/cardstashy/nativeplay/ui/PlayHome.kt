@@ -362,7 +362,7 @@ fun Booster(code: String, name: String?, modifier: Modifier = Modifier, mini: Bo
     val facts: Map<String, SetFacts.Set> = SetFacts.sets.collectAsState().value
     val f = facts[code]
     val label = name?.ifBlank { null } ?: f?.name ?: code.uppercase()
-    wrapperFor(code).let { (asset, wrap) ->
+    wrapperFor(code)?.let { (asset, wrap) ->
         val ctx = LocalContext.current
         val img = produceState(AssetImages.cached("$asset@600"), asset) { value = AssetImages.load(ctx, asset, maxWidth = 600) }.value
         if (img != null) { WrappedBooster(code, label, wrap, img, modifier, mini); return }
@@ -414,20 +414,12 @@ val WRAPPERS = mapOf(
  */
 private val THEME_WRAP = Wrap(320f / 497f, notch = .70f, top = .752f, bottom = .871f, iconInNotch = true)
 val THEMES = listOf("desert-ruins", "dragon-hoard", "vampire-castle", "elf-forest", "shire-hill", "ghost-ship-swamp", "dwarf-forge")
-val SET_THEME: Map<String, String> = buildMap {
-    fun theme(theme: String, vararg codes: String) { codes.forEach { put(it, theme) } }
-    theme("vampire-castle", "isd", "dka", "avr", "soi", "emn", "mid", "vow", "inr", "dsk", "sis")
-    theme("shire-hill", "ltr", "ltc")
-    theme("elf-forest", "lrw", "mor", "shm", "eve", "eld", "woe", "ecl", "ema")
-    theme("dwarf-forge", "khm", "kld", "aer", "afr", "clb", "bro")
-    theme("dragon-hoard", "ktk", "frf", "dtk", "tdm", "m19", "m20", "cmm", "dgm")
-    theme("ghost-ship-swamp", "xln", "rix", "lci", "mkm", "thb")
-    theme("desert-ruins", "arn", "akh", "hou", "zen", "wwk", "roe", "bfz", "ogw", "znr", "otj", "big", "atq")
-}
-fun themeFor(code: String): String = SET_THEME[code.lowercase()] ?: THEMES[Math.floorMod(code.lowercase().fold(7) { h, c -> h * 31 + c.code }, THEMES.size)]
-/** The wrapper a set wears: its own painted pack when there is one, else its theme wrapper. */
-fun wrapperFor(code: String): Pair<String, Wrap> = WRAPPERS[code.lowercase()]?.let { "play/pack-${code.lowercase()}.webp" to it }
-    ?: ("play/wrap-${themeFor(code)}.webp" to THEME_WRAP)
+/** Randall 3 Nov: each theme wrapper belongs to one set only. Every other set keeps its foil pack with its own art. */
+val SET_THEME: Map<String, String> = mapOf("hob" to "shire-hill", "mh2" to "dwarf-forge")
+fun themeFor(code: String): String? = SET_THEME[code.lowercase()]
+/** The wrapper a set wears: its own painted pack, else its theme wrapper, else none (the foil pack with the set's art). */
+fun wrapperFor(code: String): Pair<String, Wrap>? = WRAPPERS[code.lowercase()]?.let { "play/pack-${code.lowercase()}.webp" to it }
+    ?: themeFor(code)?.let { "play/wrap-$it.webp" to THEME_WRAP }
 
 /**
  * A wrapper pack: the painted foil wrapper, and on its black band the gold star emblem in the notch,
@@ -532,7 +524,7 @@ private fun Rewards(r: PlayRules.Reward, column: Boolean = false) {
 @Composable
 private fun Today(d: PlayHomeData, act: PlayHomeActions) {
     val s = d.state
-    val q = PlayMath.quests(d.rules, s, d.day, d.user)
+    val q = remember(d.rules, s, d.day, d.user) { PlayMath.quests(d.rules, s, d.day, d.user) }
     val stamp = s.getAsJsonObject("login")?.get("stamp")?.asInt ?: 0
     Shelf("Today", "Quests", { act.view("deeds") }) {
         Row(Modifier.fillMaxWidth().padding(vertical = 8.dp).height(androidx.compose.foundation.layout.IntrinsicSize.Max), horizontalArrangement = Arrangement.spacedBy(6.dp)) {
@@ -590,11 +582,11 @@ private fun nearFromServer(p: JsonObject): Triple<PlayMath.Totals, List<Near>, U
 
 @Composable
 private fun Deeds(d: PlayHomeData, act: PlayHomeActions) {
-    val (t, near) = d.deeds?.let { nearFromServer(it) }?.let { it.first to it.second } ?: run {
+    val (t, near) = remember(d.deeds, d.state, d.rules) { d.deeds?.let { nearFromServer(it) }?.let { it.first to it.second } ?: run {
         val rows = PlayMath.achievements(d.rules, d.state)
         PlayMath.totals(rows) to PlayMath.almostThere(rows, 2).mapNotNull { r -> r.next?.let { Near(r.a.title,
             "https://api.scryfall.com/cards/named?format=image&version=art_crop&exact=" + java.net.URLEncoder.encode(r.a.art, "UTF-8"), false, r.value, it.need, r.a.unit == "h") } }
-    }
+    } }
     Shelf("Achievements", if (t.ready > 0) "${t.ready} to claim" else "All achievements", { act.view("deeds") }) {
         Row(verticalAlignment = Alignment.Bottom, horizontalArrangement = Arrangement.spacedBy(8.dp), modifier = Modifier.padding(top = 6.dp)) {
             Text("${t.earned}", style = TextStyle(fontFamily = Type.Cinzel, fontWeight = FontWeight.Bold, fontSize = 30.sp, color = Color(0xFFF3E3BD)))

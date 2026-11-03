@@ -377,6 +377,7 @@ private fun SaveRow(c: Check, onChange: (Check) -> Unit, onSave: (Check) -> Unit
 fun DecksRoute(onBack: () -> Unit, onWeb: (String) -> Unit, onNav: (PlayTab) -> Unit, onTrunkSet: (String) -> Unit = {}) {
     val state by dev.cardstashy.nativeplay.play.Progress.state.collectAsState()
     val context = androidx.compose.ui.platform.LocalContext.current
+    val finderLive = (context.applicationInfo.flags and android.content.pm.ApplicationInfo.FLAG_DEBUGGABLE) != 0
     preconCacheDir = context.cacheDir
     LaunchedEffect(Unit) { dev.cardstashy.nativeplay.play.Progress.loadCached(); dev.cardstashy.nativeplay.play.Progress.refresh() }
     val s = state ?: run { Box(Modifier.fillMaxSize().background(Site.Bg), contentAlignment = Alignment.Center) { Text("Opening your decks…", style = Site.Body) }; return }
@@ -397,7 +398,9 @@ fun DecksRoute(onBack: () -> Unit, onWeb: (String) -> Unit, onNav: (PlayTab) -> 
                 nav = { PlayNav(PlayTab.DECKS, onNav) })
         } else DecksScreen(s, onBack,
             onDeck = { id -> editor = EditorUi().apply { edit = dev.cardstashy.nativeplay.play.DeckEdit.open(s.getAsJsonArray("decks")?.mapNotNull { it as? JsonObject }?.firstOrNull { it.get("id")?.asString == id }) } },
-            onFinder = { finder = finder ?: FinderUi() }, toast = toast, nav = { PlayNav(PlayTab.DECKS, onNav) })
+            // The finder ships in a signed build only once its web twin (PR #105) is live: native never leads the web.
+            onFinder = { if (finderLive) finder = finder ?: FinderUi() else editor = EditorUi().apply { edit = dev.cardstashy.nativeplay.play.DeckEdit.Edit(null, "", "Standard", emptyList()) } },
+            toast = toast, nav = { PlayNav(PlayTab.DECKS, onNav) })
         card?.let { pick ->
             CardSheet(pick, s, CardSheetActions(
                 merchant = { code, _ -> card = null; toast("Merchant comes with the next build"); onTrunkSet(code) },

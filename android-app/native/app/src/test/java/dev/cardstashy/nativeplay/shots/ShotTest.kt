@@ -159,7 +159,7 @@ class ShotTest {
                 k to dev.cardstashy.nativeplay.play.SetFacts.Set(o["name"].asString, o["icon"].asString, o["released"].asString, o["total"]?.asInt, o["art"].asString) })
         }
         val codes = listOf("hob", "fra", "isd", "arn", "khm", "ltr", "fdn", "mh2", "dmu")
-        kotlinx.coroutines.runBlocking { for (c in codes) AssetImages.load(RuntimeEnvironment.getApplication(), dev.cardstashy.nativeplay.ui.wrapperFor(c).first, maxWidth = 600) }
+        kotlinx.coroutines.runBlocking { for (c in codes) dev.cardstashy.nativeplay.ui.wrapperFor(c)?.let { AssetImages.load(RuntimeEnvironment.getApplication(), it.first, maxWidth = 600) } }
         for (sc in listOf(1f, 1.3f)) tall("packs", 390, 120, sc) {
             Column(Modifier.background(Site.Bg).padding(16.dp), verticalArrangement = Arrangement.spacedBy(20.dp)) {
                 for (row in codes.chunked(3)) Row(horizontalArrangement = Arrangement.spacedBy(12.dp)) {
@@ -310,6 +310,24 @@ class ShotTest {
                 dev.cardstashy.nativeplay.play.MetaLists.load("Modern")!! }
             val ui = dev.cardstashy.nativeplay.ui.FinderUi().apply { format = "Modern"; this.lists = lists; loadedFor = "Modern" }
             captureRoboImage(File(System.getProperty("shotsDir"), "deck-finder-${w}x$h.png").path) {
+                dev.cardstashy.nativeplay.ui.FinderScreen(trunkState, ui, {}, { _, _ -> }, {}) { PlayNav(PlayTab.DECKS, {}) }
+            }
+        }
+        home.mkdirs(); home.resolve("missing.txt").writeText(missing.joinToString("\n"))
+    }
+
+    @Test fun deckView() {
+        trunkSetup()
+        val art = File(System.getProperty("shotsDir")!!).parentFile.resolve("app/build/shot-art")
+        dev.cardstashy.nativeplay.play.CardFacts.seed(JsonParser.parseString(art.resolve("finder-cards.json").readText()).asJsonArray.map { it.asJsonObject })
+        dev.cardstashy.nativeplay.play.MetaLists.seed("Modern", JsonParser.parseString(art.resolve("meta-Modern.json").readText()).asJsonObject)
+        val lists = kotlinx.coroutines.runBlocking { dev.cardstashy.nativeplay.play.MetaLists.load("Modern")!! }
+        val pick = lists.first { "Broodscale" in it.name }
+        for ((w, h) in listOf(412 to 915, 840 to 1000)) for (mode in listOf("gallery", "stacks", "symbols", "compact")) {
+            RuntimeEnvironment.setQualifiers("w${w}dp-h${h * 2}dp-xxhdpi")
+            dev.cardstashy.nativeplay.ui.DeckViewPref.mode = mode
+            val ui = dev.cardstashy.nativeplay.ui.FinderUi().apply { format = "Modern"; this.lists = lists; loadedFor = "Modern"; open = pick }
+            captureRoboImage(File(System.getProperty("shotsDir"), "deck-view-$mode-${w}x$h.png").path) {
                 dev.cardstashy.nativeplay.ui.FinderScreen(trunkState, ui, {}, { _, _ -> }, {}) { PlayNav(PlayTab.DECKS, {}) }
             }
         }

@@ -42,15 +42,14 @@ fun PlayHomeRoute(onQuickPlay: () -> Unit, onCollection: () -> Unit, onSignIn: (
         Progress.refresh(); Progress.login(); Progress.refreshStory(); Progress.refreshDeeds()
     }
     val rules = PlayRules.load(context)
-    // Wrapper art and set names for every set the page shows (the web's facts.ensure).
+    // Wrapper art and set names for the sets this page shows (the web's facts.ensure); the Trunk asks for its own.
     LaunchedEffect(state) {
         val s = state ?: return@LaunchedEffect
-        val codes = buildList {
+        val codes = kotlinx.coroutines.withContext(kotlinx.coroutines.Dispatchers.Default) { buildList {
             s.getAsJsonArray("packs")?.forEach { (it as? JsonObject)?.get("set")?.asString?.let(::add) }
             s.getAsJsonArray("shop")?.take(12)?.forEach { (it as? JsonObject)?.get("code")?.asString?.let(::add) }
-            s.getAsJsonArray("cards")?.forEach { c -> (c as? JsonObject)?.getAsJsonArray("s")?.forEach { add(it.asString) } }
             rules.acts.forEach { a -> a.sets.forEach { add(it.first) } }
-        }
+        }.distinct() }
         SetFacts.ensure(codes)
     }
     // The site's glass ambient: today's card (the Collection home's hero), blurred behind Play.

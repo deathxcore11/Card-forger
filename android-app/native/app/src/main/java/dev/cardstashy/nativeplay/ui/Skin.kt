@@ -166,6 +166,12 @@ object SiteIcons {
     val Trophy = line("M8 4h8v5.5a4 4 0 0 1-8 0z", "M8 6H5.2a.7.7 0 0 0-.7.8A4 4 0 0 0 8 10.3M16 6h2.8a.7.7 0 0 1 .7.8 4 4 0 0 1-3.5 3.5", "M12 13.5V17M8.5 20h7l-.8-3H9.3z")
     val Back = line("m15 5-7 7 7 7")
 
+    // icons.js deck view switch: Stacks, Art grid, Names only, Detailed list.
+    val ViewStacks = line("M4 7V4.5A1.5 1.5 0 0 1 5.5 3h10M6.5 10V7.5A1.5 1.5 0 0 1 8 6h10", rrect(9f, 9f, 11f, 12f, 1.5f), "M12 12h5")
+    val ViewGallery = line(rrect(4f, 3.5f, 6f, 8f, 1f), rrect(14f, 3.5f, 6f, 8f, 1f), rrect(4f, 14.5f, 6f, 6f, 1f), rrect(14f, 14.5f, 6f, 6f, 1f))
+    val ViewSymbols = line(circle(5f, 6f, 1.4f), circle(5f, 12f, 1.4f), circle(5f, 18f, 1.4f), "M9 6h11.5M9 12h11.5M9 18h11.5")
+    val ViewCompact = line(rrect(3.5f, 4f, 5f, 6f, 1f), rrect(3.5f, 14f, 5f, 6f, 1f), "M12 5.5h8M12 8.5h5M12 15.5h8M12 18.5h5")
+
     // play-econ-ui.js: the stamped gold (#peGold radial), coin, seals and pack.
     private val peGold = Brush.radialGradient(0f to Color(0xFFFFF3C9), .45f to Color(0xFFF0C66D), 1f to Color(0xFFA8761F), center = Offset(11.2f, 9.6f), radius = 24f)
     val Coin = svg(32f,

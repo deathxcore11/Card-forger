@@ -29,11 +29,14 @@ object SetFacts {
 
     fun init(context: Context) {
         if (file != null) return
-        file = File(context.filesDir, "set-facts.json")
-        try {
-            sets.value = JsonParser.parseString(file!!.readText()).asJsonObject.entrySet().associate { (k, v) -> val o = v.asJsonObject
-                k to Set(o.s("name"), o.s("icon"), o.s("released"), o.get("total")?.takeIf { it.isJsonPrimitive }?.asInt, o.s("art")) }
-        } catch (_: Exception) {}
+        val f0 = File(context.filesDir, "set-facts.json"); file = f0
+        Thread({
+            try {
+                val loaded = JsonParser.parseString(f0.readText()).asJsonObject.entrySet().associate { (k, v) -> val o = v.asJsonObject
+                    k to Set(o.s("name"), o.s("icon"), o.s("released"), o.get("total")?.takeIf { it.isJsonPrimitive }?.asInt, o.s("art")) }
+                synchronized(this) { sets.value = loaded + sets.value }
+            } catch (_: Exception) {}
+        }, "set-facts").start()
     }
 
     fun set(code: String): Set? = sets.value[code]

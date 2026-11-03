@@ -56,6 +56,8 @@ class FinderUi {
     var lists by mutableStateOf<List<Finder.MetaList>?>(null)
     /** The format [lists] belong to: coming back from the editor keeps them instead of loading again. */
     var loadedFor = ""
+    /** The list open in the deck view (See the cards). */
+    var open by mutableStateOf<Finder.MetaList?>(null)
     val seen = HashSet<String>()
 }
 
@@ -111,6 +113,13 @@ fun FinderScreen(state: JsonObject, ui: FinderUi, onBack: () -> Unit, onUse: (De
         onUse(DeckEdit.Edit(null, l.name.take(80), l.format, merged.map { DeckEdit.Line(it.key, it.value) }, dirty = true), complete)
     }
 
+    ui.open?.let { l ->
+        androidx.activity.compose.BackHandler { ui.open = null }
+        val row = remember(l, owned, facts, low, seals) { Finder.finderRow(l, owned, ::cardOf, seals) { CraftRarity.rarity(it) } }
+        LaunchedEffect(l.key) { CardFacts.wantNames(l.cards.map { it.name }) }
+        DeckView(row, ::cardOf, onBack = { ui.open = null }, onUse = { use(l, row.complete) }, onCard = onCard, nav = nav)
+        return
+    }
     Box(Modifier.fillMaxSize().background(Site.Bg)) {
         LazyColumn(Modifier.fillMaxSize(), contentPadding = PaddingValues(start = 16.dp, end = 16.dp, top = 12.dp, bottom = 120.dp), verticalArrangement = Arrangement.spacedBy(14.dp)) {
             item {
@@ -139,7 +148,7 @@ fun FinderScreen(state: JsonObject, ui: FinderUi, onBack: () -> Unit, onUse: (De
             }
             itemsIndexed(rows, key = { _, x -> x.second.key }) { i, (a, row) ->
                 val enter = remember { ui.seen.add(row.key) }
-                FinderRow(row, a, i, enter, onCard, onUse = { use(row.list, row.complete) }) { v -> use(v.list, v.s.complete) }
+                FinderRow(row, a, i, enter, onOpen = { ui.open = row.list }, onUse = { use(row.list, row.complete) }) { v -> use(v.list, v.s.complete) }
             }
             if (archs.size > ui.limit) item { GhostButton("More decks", Modifier.fillMaxWidth()) { ui.limit += 8 } }
         }
@@ -162,7 +171,7 @@ private fun FilterChip(key: String, label: String, count: Int?, on: Boolean, bus
 
 /** statusMarkup: Buildable ✓, Craftable with its seal costs, N slots to fill, the costs short in amber, or counting. */
 @Composable
-private fun Status(status: String, cost: Map<String, Int>, short: Map<String, Int>, slots: Int, mini: Boolean = false) {
+internal fun Status(status: String, cost: Map<String, Int>, short: Map<String, Int>, slots: Int, mini: Boolean = false) {
     val shape = RoundedCornerShape(16.dp)
     when (status) {
         "buildable" -> Row(Modifier.clip(shape).background(Color(0x1F8FD19E)).border(1.dp, Color(0x598FD19E), shape).padding(horizontal = 12.dp, vertical = 6.dp),
@@ -187,16 +196,15 @@ private fun Meter(share: Double, modifier: Modifier = Modifier, animate: Boolean
 
 /** finderRowMarkup: the archetype led by its best list, art behind, cards by group, the other lists folded below. */
 @Composable
-private fun FinderRow(row: Finder.Row, arch: Finder.Archetype, index: Int, enter: Boolean, onCard: (String) -> Unit, onUse: () -> Unit, onVariant: (Finder.Ranked) -> Unit) {
+private fun FinderRow(row: Finder.Row, arch: Finder.Archetype, index: Int, enter: Boolean, onOpen: () -> Unit, onUse: () -> Unit, onVariant: (Finder.Ranked) -> Unit) {
     val title = arch.name.ifEmpty { row.name }
     val sub = listOf(if (title != row.name) row.name else "", if (row.source == "Meta") "" else row.source, row.detail).filter { it.isNotEmpty() }.joinToString(" · ")
     val rise = remember { Animatable(if (enter && !Motion.still) 1f else 0f) }
     LaunchedEffect(Unit) { if (rise.value > 0f) { delay(40L * index); rise.animateTo(0f, Site.spring()) } }
-    var open by remember { mutableStateOf(false) }
     val p = heroPainter(row.cover.ifEmpty { null }?.let(homeArt))
     Box(Modifier.fillMaxWidth().graphicsLayer { translationY = rise.value * 40.dp.toPx(); alpha = 1f - rise.value }.softTile(24.dp).animateContentSize(Site.spring())) {
-        if (p != null) Image(p, null, Modifier.matchParentSize().alpha(.38f), contentScale = ContentScale.Crop)
-        Box(Modifier.matchParentSize().background(Brush.verticalGradient(0f to Color(0x660D0F14), .25f to Color(0xB80D0F14), 1f to Color(0xF20D0F14))))
+        if (p != null) Image(p, null, Modifier.matchParentSize().alpha(.62f), contentScale = ContentScale.Crop)
+        Box(Modifier.matchParentSize().background(Brush.verticalGradient(0f to Color(0x330D0F14), .35f to Color(0x990D0F14), 1f to Color(0xF20D0F14))))
         Column(Modifier.fillMaxWidth().padding(16.dp), verticalArrangement = Arrangement.spacedBy(12.dp)) {
             Row(verticalAlignment = Alignment.Top) {
                 Column(Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(6.dp)) {
@@ -214,12 +222,7 @@ private fun FinderRow(row: Finder.Row, arch: Finder.Archetype, index: Int, enter
             }
             Status(row.status, row.shortfall.seals, row.short, row.open)
             GoldCta(if (row.complete) "Use deck" else "Build it", Modifier.fillMaxWidth(), onClick = onUse)
-            if (!open) GhostButton("See the cards", Modifier.fillMaxWidth()) { open = true }
-            if (open) for (g in row.groups) Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
-                Row(verticalAlignment = Alignment.Bottom, horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                    Text(g.label, style = TextStyle(fontFamily = Type.Cinzel, fontWeight = FontWeight.Bold, fontSize = 15.sp, color = Color(0xFFF3E3BD))); Text("${g.count}", style = t(13f, FontWeight.Bold, Site.Muted)) }
-                FlowRow(horizontalArrangement = Arrangement.spacedBy(8.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) { g.cards.forEach { CardChipView(it) { onCard(it.name) } } }
-            }
+            GhostButton("See the cards", Modifier.fillMaxWidth(), onClick = onOpen)
             if (arch.variants.isNotEmpty()) {
                 var more by remember { mutableStateOf(false) }
                 Row(Modifier.fillMaxWidth().clip(RoundedCornerShape(12.dp)).clickable { more = !more }.padding(vertical = 8.dp), verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(8.dp)) {

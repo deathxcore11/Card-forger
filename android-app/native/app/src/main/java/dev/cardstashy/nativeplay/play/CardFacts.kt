@@ -34,13 +34,15 @@ object CardFacts {
 
     fun init(context: Context) {
         if (file != null) return
-        file = File(context.filesDir, "card-facts.json")
-        try {
-            val o = JsonParser.parseString(file!!.readText()).asJsonObject
-            val list = o.getAsJsonArray("cards").mapNotNull { it as? JsonObject }
-            cards.value = list.associate { val f = fact(it); f.o to f }
-            prints.value = list.associate { it.s("id") to it }
-        } catch (_: Exception) {}
+        val f0 = File(context.filesDir, "card-facts.json"); file = f0
+        // Parsed on a background thread so the first frame never waits; anything fetched meanwhile wins.
+        Thread({
+            try {
+                val list = JsonParser.parseString(f0.readText()).asJsonObject.getAsJsonArray("cards").mapNotNull { it as? JsonObject }
+                val c = list.associate { val f = fact(it); f.o to f }; val p = list.associate { it.s("id") to it }
+                synchronized(this) { cards.value = c + cards.value; prints.value = p + prints.value }
+            } catch (_: Exception) {}
+        }, "card-facts").start()
     }
 
     fun card(oracle: String?): Fact? = oracle?.let { cards.value[it] }
@@ -110,8 +112,8 @@ object CardFacts {
 
     fun add(list: List<JsonObject>) {
         val slim = list.map { slim(it) }
-        cards.value = cards.value + slim.map { fact(it) }.filter { it.o.isNotBlank() }.associateBy { it.o }
-        prints.value = prints.value + slim.filter { it.s("id").isNotBlank() }.associateBy { it.s("id") }
+        val c = slim.map { fact(it) }.filter { it.o.isNotBlank() }.associateBy { it.o }; val p = slim.filter { it.s("id").isNotBlank() }.associateBy { it.s("id") }
+        synchronized(this) { cards.value = cards.value + c; prints.value = prints.value + p }
     }
 
     private fun save() {

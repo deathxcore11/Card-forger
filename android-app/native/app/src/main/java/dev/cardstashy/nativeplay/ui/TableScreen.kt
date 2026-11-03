@@ -310,7 +310,7 @@ private fun Piles(library: Int, topNow: Card?, graveNow: Int, modifier: Modifier
             Text("$library", style = Type.Label.copy(fontSize = 10.sp, color = Color.White), modifier = Modifier.graphicsLayer { scaleX = libTick.value; scaleY = libTick.value }.background(Color(0xAA000000), RoundedCornerShape(3.dp)).padding(horizontal = 2.dp))
         }
         top?.let { t -> Box(Modifier.size(18.dp, 25.dp).alpha(.85f).graphicsLayer { scaleX = graveTick.value; scaleY = graveTick.value }, contentAlignment = Alignment.Center) {
-            CardFace(t, 18.dp, 25.dp, onHold = { onInspect(t) }, onTap = { onInspect(t) })
+            CardImage(t.name, Modifier.fillMaxSize().clickable { onInspect(t) }, contentScale = ContentScale.Crop, shape = RoundedCornerShape(3.dp)) { CardBack(Modifier.fillMaxSize()) }
             if (grave > 1) Text("$grave", style = Type.Label.copy(fontSize = 10.sp, color = Color.White), modifier = Modifier.background(Color(0xAA000000), RoundedCornerShape(3.dp)).padding(horizontal = 2.dp))
         } }
     }
@@ -436,7 +436,7 @@ private fun BeatView(b: Beat, st: MatchState, modifier: Modifier, settled: Boole
         horizontalAlignment = Alignment.CenterHorizontally, verticalArrangement = Arrangement.spacedBy(4.dp)) {
         Text(b.title, style = Type.Label.copy(fontSize = 12.sp), textAlign = TextAlign.Center, maxLines = 3)
         if (b.kind != Beat.Kind.LAND && b.cardName != null) {
-            Box(Modifier.weight(1f).aspectRatio(.716f, matchHeightConstraintsFirst = true)) {
+            FitCard(Modifier.weight(1f).fillMaxWidth()) {
                 CardImage(b.cardName, Modifier.fillMaxSize(), contentScale = ContentScale.Fit, shape = RoundedCornerShape(6.dp))
             }
         } else Spacer(Modifier.weight(1f))
@@ -453,7 +453,7 @@ private fun FeedCard(card: Card, caption: String?, modifier: Modifier, onInspect
     val decks = DemoDecks.load(LocalContext.current)
     Column(modifier, horizontalAlignment = Alignment.CenterHorizontally, verticalArrangement = Arrangement.spacedBy(4.dp)) {
         caption?.let { Text(it, style = Type.Label, textAlign = TextAlign.Center) }
-        Box(Modifier.weight(1f).aspectRatio(.716f, matchHeightConstraintsFirst = true).pointerInput(card.id) { detectTapGestures(onLongPress = { onInspect(card) }) }) {
+        FitCard(Modifier.weight(1f).fillMaxWidth(), Modifier.pointerInput(card.id) { detectTapGestures(onLongPress = { onInspect(card) }) }) {
             CardImage(card.name, Modifier.fillMaxSize(), contentScale = ContentScale.Fit, shape = RoundedCornerShape(6.dp))
         }
     }
@@ -656,5 +656,14 @@ private fun Failed(reason: String, onHome: () -> Unit) {
             Text(reason.take(600), style = Type.Body.copy(color = Palette.Ink))
             GoldButton("Home", true, Modifier.fillMaxWidth(), onClick = onHome)
         }
+    }
+}
+
+/** A whole card (63:88) as large as fits the space both ways, centred: never wider than the sidebar, never cropped. */
+@Composable
+private fun FitCard(modifier: Modifier, inner: Modifier = Modifier, content: @Composable androidx.compose.foundation.layout.BoxScope.() -> Unit) {
+    BoxWithConstraints(modifier, contentAlignment = Alignment.Center) {
+        val w = minOf(maxWidth, maxHeight * .716f)
+        Box(inner.size(w, w / .716f), content = content)
     }
 }

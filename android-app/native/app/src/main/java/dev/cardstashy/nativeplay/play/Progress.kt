@@ -8,6 +8,7 @@ import com.google.gson.JsonParser
 import dev.cardstashy.nativeplay.account.Account
 import dev.cardstashy.nativeplay.account.Http
 import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.launch
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.sync.Mutex
@@ -25,6 +26,7 @@ import java.time.ZoneOffset
  * claim, log-in stamp) is the server's call. The last state is kept on this device per account only
  * so the screen paints at once; the server copy always wins. Never a reward decided here.
  */
+@OptIn(kotlinx.coroutines.ExperimentalCoroutinesApi::class)
 object Progress {
     private const val SITE = "https://cardstashy.com"
 
@@ -46,15 +48,21 @@ object Progress {
     private fun file(user: String) = cacheDir?.let { File(it, "progress-$user.json") }
 
     /** The device copy for this account, shown before the server answers. */
-    fun loadCached() {
+    suspend fun loadCached() {
         val u = Account.session.value?.userId ?: return
         if (_state.value != null) return
-        try { file(u)?.takeIf { it.isFile }?.let { _state.value = JsonParser.parseString(it.readText()).asJsonObject } } catch (_: Exception) {}
+        // Read and parse off the main thread: the state carries the whole Trunk.
+        val cached = withContext(Dispatchers.IO) { try { file(u)?.takeIf { it.isFile }?.let { JsonParser.parseString(it.readText()).asJsonObject } } catch (_: Exception) { null } }
+        if (_state.value == null && cached != null) _state.value = cached
     }
+
+    /** The device copy is written on one background thread, newest state only. */
+    private val writer = kotlinx.coroutines.CoroutineScope(kotlinx.coroutines.SupervisorJob() + Dispatchers.IO.limitedParallelism(1))
+    private var pending: kotlinx.coroutines.Job? = null
 
     private fun set(next: JsonObject) {
         _state.value = next
-        Account.session.value?.userId?.let { u -> try { file(u)?.writeText(next.toString()) } catch (_: Exception) {} }
+        Account.session.value?.userId?.let { u -> pending?.cancel(); pending = writer.launch { try { file(u)?.writeText(next.toString()) } catch (_: Exception) {} } }
     }
 
     private suspend fun call(path: String, body: JsonObject? = null): JsonObject = withContext(Dispatchers.IO) {
