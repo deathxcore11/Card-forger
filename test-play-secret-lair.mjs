@@ -1,12 +1,34 @@
 // Secret Lair in Play (play-secret-lair.js, /api/progress/secretlair and /style, rare style drops).
 import assert from 'node:assert/strict';
-import {groupSecretLairDrops, weeklySecretLair, secretLairPrice, secretLairLabel, secretLairCardDelta, pickSecretLairStyle, secretLairImage, slimSecretLairCard} from './play-secret-lair.js';
-import {progressRoute, secretLairOffer} from './play-econ-route.js';
-import {secretLairShelf, setPlayStyles, playCardTile} from './play-econ-ui.js';
+import {weeklySecretLairOffers, secretLairOfferPrice, SECRET_LAIR_OFFERS, groupSecretLairDrops, weeklySecretLair, secretLairPrice, secretLairLabel, secretLairCardDelta, pickSecretLairStyle, secretLairImage, slimSecretLairCard} from './play-secret-lair.js';
+import {progressRoute, secretLairOffer, secretLairStoreOffer} from './play-econ-route.js';
+import {secretLairShelf, secretLairStore, setPlayStyles, playCardTile} from './play-econ-ui.js';
 
 const id = n => n.toString(16).padStart(8, '0') + '-aaaa-bbbb-cccc-dddddddddddd';
 const ora = n => n.toString(16).padStart(8, '0') + '-0000-0000-0000-000000000000';
 const sc = (n, num, artist, released = '2024-04-01', extra = {}) => ({id: id(n), oracle_id: ora(n), name: 'Card ' + n, rarity: 'rare', collector_number: String(num), artist, released_at: released, finishes: ['nonfoil', 'foil'], layout: 'normal', ...extra});
+
+// --- The store: ten single cards a week, distinct, no basics, never the bundle's, four on sale.
+{
+  const big = Array.from({length: 30}, (_, d) => ({id: 'sld-' + d, released: '2024-01-0' + (1 + d % 9), artists: ['A'],
+    cards: Array.from({length: 4}, (_, k) => ({id: id(d * 10 + k), o: ora(d * 10 + (k % 3)), n: k === 3 ? 'Island' : 'Card ' + (d * 10 + k), r: ['common', 'uncommon', 'rare', 'mythic'][k], num: String(k), f: ['nonfoil'], a: 'A'}))}));
+  const offers = weeklySecretLairOffers(big, '2026-W45', '2026-11-03', 'sld-0');
+  assert.equal(offers.length, SECRET_LAIR_OFFERS, 'ten a week');
+  assert.equal(new Set(offers.map(c => c.o)).size, 10, 'ten different cards');
+  assert.ok(offers.every(c => c.n !== 'Island'), 'no basic lands');
+  assert.ok(offers.every(c => !c.id.startsWith('00000000') && !['00000001', '00000002'].includes(c.id.slice(0, 8))), 'never the bundle\'s cards');
+  assert.deepEqual(offers.filter(c => c.off).map(c => c.off).sort((a, b) => a - b), [25, 40, 50, 60], 'four on sale');
+  assert.deepEqual(weeklySecretLairOffers(big, '2026-W45', '2026-11-03', 'sld-0'), offers, 'the same for everyone all week');
+  assert.notDeepEqual(weeklySecretLairOffers(big, '2026-W46', '2026-11-10', 'sld-0').map(c => c.id), offers.map(c => c.id), 'new cards next week');
+  assert.equal(weeklySecretLairOffers(big, '2026-W45', '2020-01-01').length, 0, 'unreleased drops are never sold');
+  assert.deepEqual(secretLairOfferPrice({r: 'mythic'}), {was: 500, coins: 500, seal: 'm'});
+  assert.deepEqual(secretLairOfferPrice({r: 'common', off: 25}), {was: 200, coins: 150, seal: 'c'}, 'sale, rounded to 10');
+  assert.equal(secretLairOfferPrice({r: 'rare', off: 60}).coins, 120);
+  assert.equal(secretLairOfferPrice({r: 'rare'}, {secretLair: {offerCoins: {rare: 400}}}).coins, 400, 'config retunes it');
+  const so = secretLairStoreOffer(big, new Date('2026-11-04T12:00:00Z'));
+  assert.equal(so.week, '2026-W45'); assert.equal(so.ends, '2026-11-09T00:00:00.000Z'); assert.equal(so.offers.length, 10);
+  assert.ok(!JSON.stringify(so).includes('usd'), 'no prices, ever');
+}
 
 // --- Grouping: one artist's run is a drop; lone cards of a multi-artist run stay together; lettered series group.
 {
@@ -92,6 +114,31 @@ const sc = (n, num, artist, released = '2024-04-01', extra = {}) => ({id: id(n),
   assert.equal((await call('style', {oracle: sid.o, print: null})).body.styles.some(s => s.on), false, 'and comes off');
   assert.equal((await call('style', {oracle: sid.o, print: id(99)})).status, 403, 'locked styles cannot be used');
   assert.equal((await call('style', {oracle: 'x', print: null})).status, 400, 'bad ids refused');
+
+  // --- Store route: coins or one seal, once per card, this week only.
+  {
+    wallet = {coins: 1000, seal_r: 1, seal_m: 0, seal_c: 0, seal_u: 0, starter_at: '2026-11-01'}; styles = []; calls.length = 0;
+    const st2 = await call('state');
+    const so = st2.body.secretLairStore;
+    assert.ok(so?.offers?.length >= 1, 'the store comes with the state');
+    const card = so.offers[0], price = secretLairOfferPrice(card);
+    assert.equal((await call('sloffer', {id: card.id, week: '1999-W01'})).status, 409, 'last week\'s store is gone');
+    assert.equal((await call('sloffer', {id: id(999)})).status, 404, 'only cards on offer');
+    const got = await call('sloffer', {id: card.id, pay: 'coins', week: so.week});
+    assert.equal(got.status, 200);
+    assert.equal(wallet.coins, 1000 - price.coins, 'paid in coins, less the sale');
+    const g = calls.find(c => c[0] === 'play_apply' && c[1].p_ref === `slo:${so.week}:${card.id}`)[1].p_delta;
+    assert.equal(g.cards[0].set, 'sld', 'the real Secret Lair printing comes into the Trunk');
+    assert.ok(styles.some(x => x.id === card.id), 'with its Secret Lair art unlocked');
+    assert.equal((await call('sloffer', {id: card.id, pay: 'coins'})).body.error, 'bought', 'once per card');
+    const other = so.offers.find(c => c.id !== card.id && c.r !== 'rare');
+    if (other) assert.equal((await call('sloffer', {id: other.id, pay: 'seal'})).status, 409, 'no seal of its rarity: refused');
+    wallet.coins = 0;
+    const third = so.offers.find(c => c.id !== card.id);
+    if (third) assert.equal((await call('sloffer', {id: third.id, pay: 'coins'})).body.error, 'short_coins', 'short coins: refused');
+    const html = secretLairStore({state: {wallet: {coins: 0, seal_r: 1}, secretLairStore: so}});
+    assert.ok(html.includes('playEconSlOffer') && html.includes(card.n), 'the store row shows each card');
+  }
 
   // --- UI: the Merchant shelf and the Trunk art.
   const shelf = secretLairShelf({state: {wallet: {coins: 0}, cards: cardsOwned, secretLair: {...st.body.secretLair, bought: false}}});
