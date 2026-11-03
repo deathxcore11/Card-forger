@@ -37,9 +37,13 @@ fun PlayHomeRoute(onQuickPlay: () -> Unit, onCollection: () -> Unit, onSignIn: (
     val context = LocalContext.current
     val scope = rememberCoroutineScope()
     if (session == null) { HomeScreen(onQuickPlay = onQuickPlay, onCollection = onCollection, onSignIn = onSignIn); return }
+    // The day's log-in reward shows once, as a pop-up, on the first visit of the day (fresh from the server).
+    var daily by androidx.compose.runtime.remember { androidx.compose.runtime.mutableStateOf<JsonObject?>(null) }
     LaunchedEffect(session?.userId) {
         Progress.loadCached()
-        Progress.refresh(); Progress.login(); Progress.refreshStory(); Progress.refreshDeeds()
+        Progress.refresh()
+        Progress.login()?.takeIf { it.get("fresh")?.let { f -> f.isJsonPrimitive && f.asBoolean } == true }?.let { daily = it }
+        Progress.refreshStory(); Progress.refreshDeeds()
     }
     val rules = PlayRules.load(context)
     // Wrapper art and set names for the sets this page shows (the web's facts.ensure); the Trunk asks for its own.
@@ -90,6 +94,7 @@ fun PlayHomeRoute(onQuickPlay: () -> Unit, onCollection: () -> Unit, onSignIn: (
         top = { TopBarItems(Mode.PLAY, profile?.avatarUrl, profile?.name, unread = false, onSwitch = onCollection, onProfile = onSignIn) },
         act = act,
         nav = { PlayNav(null, { t -> when (t) { PlayTab.SWITCH -> onCollection(); PlayTab.TRUNK -> onTrunk(); PlayTab.DECKS -> onDecks(); PlayTab.TROPHIES -> onAchievements(null); else -> onWeb(SITE_PLAY) } }) })
+    daily?.let { LoginRewardPopup(it) { daily = null } }
     opener?.let { first ->
         val close = { opener = null; scope.launch { Progress.refresh(); Progress.refreshDeeds() }; Unit }
         androidx.activity.compose.BackHandler(onBack = close)

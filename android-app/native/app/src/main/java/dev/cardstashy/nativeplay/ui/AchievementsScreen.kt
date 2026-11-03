@@ -87,7 +87,7 @@ fun rewardWords(r: JsonObject?): String {
 }
 
 @Composable
-private fun RewardIcons(r: JsonObject?) {
+internal fun RewardIcons(r: JsonObject?) {
     r ?: return
     Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(8.dp)) {
         @Composable fun cell(icon: androidx.compose.ui.graphics.vector.ImageVector, n: Int) = Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(4.dp)) {

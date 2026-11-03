@@ -600,8 +600,8 @@ private fun Rewards(r: PlayRules.Reward, column: Boolean = false) {
 
 @Composable
 private fun Today(d: PlayHomeData, act: PlayHomeActions) {
+    // The log-in calendar left the home page (Randall 3 Nov 20:21Z): the day's reward is a one-time pop-up now.
     Shelf("Today", "Quests", { act.view("quests") }) {
-        Calendar(d)
         Quests(d, act)
     }
 }

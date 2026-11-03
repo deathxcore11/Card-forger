@@ -70,3 +70,17 @@ class PurseShotTest {
         }
     }
 }
+
+/** The day's log-in reward pop-up (day 4: coins and a pack). */
+@RunWith(RobolectricTestRunner::class)
+@GraphicsMode(GraphicsMode.Mode.NATIVE)
+@Config(sdk = [35], qualifiers = "w390dp-h844dp-xxhdpi")
+class LoginRewardShotTest {
+    @get:Rule val rule = createComposeRule()
+    @Test fun popup() {
+        val login = JsonParser.parseString("""{"day":"2026-11-03","stamp":4,"month":4,"reward":{"coins":300,"packs":1},"monthReward":null,"fresh":true}""").asJsonObject
+        rule.setContent { androidx.compose.foundation.layout.Box(Modifier.background(androidx.compose.ui.graphics.Color(0xFF0C0E13))) { dev.cardstashy.nativeplay.ui.LoginRewardPopup(login) {} } }
+        repeat(10) { rule.mainClock.advanceTimeBy(100); rule.waitForIdle() }
+        rule.onRoot().captureRoboImage(File(System.getProperty("shotsDir"), "login-reward-390.png").path)
+    }
+}
