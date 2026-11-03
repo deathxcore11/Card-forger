@@ -8,7 +8,7 @@ const pending=new Map(),sourcePending=new Map();
 const productNameMatches=(product,card,rarity,printing)=>{
  if(norm(product)===norm(card))return true;
  const m=String(product||'').match(/^(.*?)\s*\(([^()]+)\)$/);if(!m||norm(m[1])!==norm(card))return false;
- const suffix={CR:"Collector's Rare",QCR:'Quarter Century Secret Rare',UR:'Ultra Rare',SR:'Super Rare',StR:'Starlight Rare'}[m[2]]||m[2];
+ const suffix={CR:"Collector's Rare",QCR:'Quarter Century Secret Rare',UR:'Ultra Rare',SR:'Super Rare',StR:'Starlight Rare',GMR:'Grand Master Rare'}[m[2]]||m[2];
  return !!rarityKey(suffix,printing)&&rarityKey(suffix,printing)===rarityKey(rarity,printing);
 };
 export async function ygoSetPriceRoute(url,ctx,fetchImpl=fetch){

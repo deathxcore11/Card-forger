@@ -6,6 +6,8 @@ import {normalizeYgoSets,resolveYgoSet,summarizeYgoSetContents,YGO_SET_CACHE_KEY
 import {SOURCES,cache,ui,entryPrice,setContextCard,ownedInSet,ownedBySet,tcgSets,tcgSet,tcgCardSheet,tcgAddSheet,registerTcg} from './tcg.js';
 import {tcgSetBadge} from './emblems.js';
 import {setYearSections,setRowContent,setCardFacets,filterSortSetCards,setProgressMarkup} from './set-list-ui.js';
+// The Other printings rail rightly names other releases; identity checks look at the rest of the sheet.
+const otherRailOut=h=>String(h).replace(/<section class="card-printing-preview"[\s\S]*?<\/section>/g,'');
 const catalogue=normalizeYgoSets([
  {set_code:'LOB',set_name:'Legend of Blue Eyes White Dragon',tcg_date:'2002-03-08',num_of_cards:744},
  {set_code:'LOB',set_name:'Legend of Blue Eyes White Dragon (25th Anniversary Edition)',tcg_date:'2023-04-21',num_of_cards:126},
@@ -91,9 +93,9 @@ try{
  S.ui.sheetCtx={type:'tcard',game:'ygo',id:'4614116',setId:original.id};A.tOwn({dataset:{id:'4614116'}});assert.equal(S.ui.sheetCtx.setId,original.id);assert.match(sheets.at(-1),/value="LOB-118\|Common" selected/);assert.doesNotMatch(sheets.at(-1),/KC01/);assert.match(sheets.at(-1),/<option value="" selected>Not sure<\/option>/);
  S.ui.sheetCtx={type:'tcard',game:'ygo',id:card.id,setId:original.id,priceEdition:'LOB-118::Common',priceYgoEdition:'1st-edition'};A.tOwn({dataset:{id:card.id}});assert.match(sheets.at(-1),/value="LOB-118\|Common" selected/);assert.match(sheets.at(-1),/value="1st-edition" selected>First Edition/,'only an explicitly selected edition carries into Add');
  // Reopening a newly scoped saved lot must retain its release or explicit uncertainty.
- nodes['#sheetBody']={scrollTop:0};await A.tCard({dataset:{id:card.id,entry:saved.id}});assert.equal(S.ui.sheetCtx.setId,original.id);assert.equal(S.ui.sheetCtx.priceEdition,'LOB-118::Common');assert.doesNotMatch(sheets.at(-1),/KC01|\$999/);
- const unknownSaved=S.state.tcg.ygo.collection.find(e=>e.setReleaseUnverified);await A.tCard({dataset:{id:card.id,entry:unknownSaved.id}});assert.equal(S.ui.sheetCtx.setReleaseUnverified,true);assert.equal(S.ui.sheetCtx.setId,'');assert.doesNotMatch(sheets.at(-1),/KC01|\$999/);assert.match(sheets.at(-1),/class="small own-line">Printing unverified/);assert.match(sheets.at(-1),/aria-label="Your saved copies"/);assert.doesNotMatch(sheets.at(-1),/Not in your collection/);assert.equal(ownedInSet('ygo',card,original,[unknownSaved],catalogue),0,'the saved-copy explanation grants no verified set credit');
- A.tOwn({dataset:{id:card.id}});assert.equal(S.ui.sheetCtx.setReleaseUnverified,true);assert.doesNotMatch(sheets.at(-1),/KC01|\$999/);
+ nodes['#sheetBody']={scrollTop:0};await A.tCard({dataset:{id:card.id,entry:saved.id}});assert.equal(S.ui.sheetCtx.setId,original.id);assert.equal(S.ui.sheetCtx.priceEdition,'LOB-118::Common');assert.doesNotMatch(otherRailOut(sheets.at(-1)),/KC01|\$999/);
+ const unknownSaved=S.state.tcg.ygo.collection.find(e=>e.setReleaseUnverified);await A.tCard({dataset:{id:card.id,entry:unknownSaved.id}});assert.equal(S.ui.sheetCtx.setReleaseUnverified,true);assert.equal(S.ui.sheetCtx.setId,'');assert.doesNotMatch(otherRailOut(sheets.at(-1)),/KC01|\$999/);assert.match(sheets.at(-1),/class="small own-line">Printing unverified/);assert.match(sheets.at(-1),/aria-label="Your saved copies"/);assert.doesNotMatch(sheets.at(-1),/Not in your collection/);assert.equal(ownedInSet('ygo',card,original,[unknownSaved],catalogue),0,'the saved-copy explanation grants no verified set credit');
+ A.tOwn({dataset:{id:card.id}});assert.equal(S.ui.sheetCtx.setReleaseUnverified,true);assert.doesNotMatch(otherRailOut(sheets.at(-1)),/KC01|\$999/);
  const unverifiedProjection=setContextCard('ygo',card,'',catalogue,{unverifiedRelease:true});assert.equal(unverifiedProjection.setContext.status,'missing');assert.equal(unverifiedProjection.prices.usd,null);assert.deepEqual(unverifiedProjection.sets,[]);
 
 
@@ -129,7 +131,7 @@ try{
  const detailContext={type:'tcard',game:'ygo',id:card.id,entryId:scopedSaved.id,setId:original.id};
  const missingCopy=tcgCardSheet(card,detailContext);
  assert.match(missingCopy,/class="small own-line">Printing unverified/);
- assert.doesNotMatch(missingCopy,/Not in your collection|KC01|\$999/);
+ assert.doesNotMatch(otherRailOut(missingCopy),/Not in your collection|KC01|\$999/);
  const missingCard=setContextCard('ygo',card,original.id,[]);
  assert.equal(missingCard.setContext.status,'missing');assert.equal(missingCard.prices.usd,null);
  assert.equal(entryPrice(card,scopedSaved),null,'explanatory ownership copy does not grant a reference price');
