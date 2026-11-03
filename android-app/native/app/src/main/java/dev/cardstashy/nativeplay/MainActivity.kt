@@ -69,6 +69,8 @@ private sealed interface Screen {
     data object Trunk : Screen
     /** Play decks: the list, precons and Paste a list. */
     data object PlayDecks : Screen
+    /** The Trunk opened on its Sets tab at one set (pack goals; the Merchant until it is native). */
+    data class TrunkSet(val code: String) : Screen
     /** A Play page not yet native: the site's own, in the web view (Planeswalk stays here for good). */
     data class Web(val url: String) : Screen
     data class Match(val pick: Pick) : Screen
@@ -118,8 +120,13 @@ private fun App(activity: MainActivity) {
         }
         Screen.PlayDecks -> {
             LaunchedEffect(Unit) { activity.inGame(false) }
-            dev.cardstashy.nativeplay.ui.DecksRoute(onBack = { back() }, onWeb = { go(Screen.Web(it)) }, onNav = { t ->
+            dev.cardstashy.nativeplay.ui.DecksRoute(onBack = { back() }, onWeb = { go(Screen.Web(it)) }, onTrunkSet = { go(Screen.TrunkSet(it)) }, onNav = { t ->
                 when (t) { dev.cardstashy.nativeplay.ui.PlayTab.SWITCH -> go(Screen.Collection); dev.cardstashy.nativeplay.ui.PlayTab.TRUNK -> go(Screen.Trunk); dev.cardstashy.nativeplay.ui.PlayTab.DECKS -> {}; else -> go(Screen.Web("https://cardstashy.com/#play")) } })
+        }
+        is Screen.TrunkSet -> {
+            LaunchedEffect(Unit) { activity.inGame(false) }
+            dev.cardstashy.nativeplay.ui.TrunkRoute(onBack = { back() }, onWeb = { go(Screen.Web(it)) }, startSet = s.code, onNav = { t ->
+                when (t) { dev.cardstashy.nativeplay.ui.PlayTab.SWITCH -> go(Screen.Collection); dev.cardstashy.nativeplay.ui.PlayTab.TRUNK -> go(Screen.Trunk); dev.cardstashy.nativeplay.ui.PlayTab.DECKS -> go(Screen.PlayDecks); else -> go(Screen.Web("https://cardstashy.com/#play")) } })
         }
         Screen.Collection -> { LaunchedEffect(Unit) { activity.inGame(false) }; CollectionScreen(onPlay = { if (trail.size > 1) back() else go(Screen.Home) }) }
         is Screen.Web -> { LaunchedEffect(Unit) { activity.inGame(false) }; CollectionScreen(onPlay = { back() }, url = s.url) }

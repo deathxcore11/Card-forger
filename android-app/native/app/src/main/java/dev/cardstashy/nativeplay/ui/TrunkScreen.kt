@@ -72,13 +72,13 @@ private val small = TextStyle(fontFamily = Site.Manrope, fontWeight = FontWeight
  * on wide screens) with the card's finish, name, set badge, mana cost, set and number, and pips or Holo.
  */
 @Composable
-fun TrunkScreen(state: JsonObject, onBack: () -> Unit, onCard: (CardPick) -> Unit, onSet: (String) -> Unit, nav: @Composable () -> Unit) {
+fun TrunkScreen(state: JsonObject, onBack: () -> Unit, onCard: (CardPick) -> Unit, onSet: (String) -> Unit, startSet: String? = null, nav: @Composable () -> Unit) {
     val context = LocalContext.current
     val prefs = remember { context.getSharedPreferences("play", android.content.Context.MODE_PRIVATE) }
-    var tab by rememberSaveable { mutableStateOf("cards") }
+    var tab by rememberSaveable { mutableStateOf(if (startSet != null) "sets" else "cards") }
     var filter by remember { mutableStateOf(Trunk.Filter()) }
     var sort by remember { mutableStateOf(prefs.getString("trunkSort", "") ?: "") }
-    var setQuery by rememberSaveable { mutableStateOf("") }
+    var setQuery by rememberSaveable { mutableStateOf(startSet ?: "") }
     var setFormat by rememberSaveable { mutableStateOf("") }
     val facts by CardFacts.cards.collectAsState()
     val prints by CardFacts.prints.collectAsState()
@@ -292,7 +292,7 @@ fun ProgressBar(frac: Float, modifier: Modifier = Modifier) = Box(modifier.fillM
  * card sheet over the grid, and the Back order of the site (sheet first, then the screen).
  */
 @Composable
-fun TrunkRoute(onBack: () -> Unit, onWeb: (String) -> Unit, onNav: (PlayTab) -> Unit) {
+fun TrunkRoute(onBack: () -> Unit, onWeb: (String) -> Unit, onNav: (PlayTab) -> Unit, startSet: String? = null) {
     val state by dev.cardstashy.nativeplay.play.Progress.state.collectAsState()
     val context = LocalContext.current
     var open by remember { mutableStateOf<CardPick?>(null) }
@@ -301,7 +301,7 @@ fun TrunkRoute(onBack: () -> Unit, onWeb: (String) -> Unit, onNav: (PlayTab) -> 
     LaunchedEffect(s) { dev.cardstashy.nativeplay.play.SetFacts.ensure(Trunk.allSets(s).map { it.code }) }
     val toast = { m: String -> android.widget.Toast.makeText(context, m, android.widget.Toast.LENGTH_SHORT).show() }
     Box(Modifier.fillMaxSize()) {
-        TrunkScreen(s, onBack, { open = it }, { onWeb("https://cardstashy.com/#set/$it/play") }) { PlayNav(PlayTab.TRUNK, onNav) }
+        TrunkScreen(s, onBack, { open = it }, { onWeb("https://cardstashy.com/#set/$it/play") }, startSet) { PlayNav(PlayTab.TRUNK, onNav) }
         open?.let { pick ->
             CardSheet(pick, s, CardSheetActions(
                 merchant = { _, _ -> open = null; onWeb("https://cardstashy.com/#play") },

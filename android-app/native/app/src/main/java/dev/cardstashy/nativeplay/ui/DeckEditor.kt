@@ -298,7 +298,7 @@ private fun CraftAllBar(plan: DeckEdit.Plan, ui: EditorUi, onCraft: () -> Unit) 
 private fun PackGoals(goals: List<DeckEdit.Goal>, onPack: (String) -> Unit) = Row(Modifier.horizontalScroll(rememberScrollState()), horizontalArrangement = Arrangement.spacedBy(8.dp)) {
     for (g in goals) Row(Modifier.height(44.dp).softPill(RoundedCornerShape(22.dp)).clickable { onPack(g.code) }.padding(horizontal = 14.dp), verticalAlignment = Alignment.CenterVertically,
         horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-        SetIcon(g.code, Modifier.size(20.dp)); Text(g.name, style = t(13.5f, FontWeight.SemiBold), maxLines = 1)
+        SetIcon(g.code, Modifier.size(20.dp)); Text(g.name, style = t(13.5f, FontWeight.SemiBold), softWrap = false)
         Text("${g.miss}", style = t(13.5f, FontWeight.ExtraBold, Site.Gold))
     }
 }
@@ -307,20 +307,23 @@ private fun PackGoals(goals: List<DeckEdit.Goal>, onPack: (String) -> Unit) = Ro
 @Composable
 private fun DeckRow(c: DeckEdit.Line, p: DeckEdit.PlanRow?, f: CardFacts.Fact?, have: Map<String, Int>, room: Int, busy: Boolean, a: Actions) {
     val miss = p?.miss ?: 0
-    Row(Modifier.fillMaxWidth().height(52.dp).clip(RoundedCornerShape(14.dp)).background(Color(0x0AFFFFFF)).border(1.dp, SoftRim, RoundedCornerShape(14.dp)),
+    Row(Modifier.fillMaxWidth().heightIn(min = 56.dp).clip(RoundedCornerShape(14.dp)).background(Color(0x0AFFFFFF)).border(1.dp, SoftRim, RoundedCornerShape(14.dp)),
         verticalAlignment = Alignment.CenterVertically) {
-        Row(Modifier.weight(1f).fillMaxHeight().clickable { a.open(c.name) }.padding(start = 6.dp, end = 4.dp).alpha(if (miss > 0) .6f else 1f),
+        Row(Modifier.weight(1f).heightIn(min = 56.dp).clickable { a.open(c.name) }.padding(start = 6.dp, end = 4.dp).alpha(if (miss > 0) .6f else 1f),
             verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(10.dp)) {
             val pt = heroPainter((f?.a?.ifBlank { null } ?: named(c.name, "art_crop")).let(homeArt))
             Box(Modifier.size(width = 52.dp, height = 40.dp).clip(RoundedCornerShape(10.dp)).background(Site.Surface2)) {
                 if (pt != null) Image(pt, null, Modifier.fillMaxSize(), contentScale = ContentScale.Crop) }
-            Text(c.name, style = t(14.5f, FontWeight.SemiBold), maxLines = 1, overflow = TextOverflow.Ellipsis, modifier = Modifier.weight(1f))
-            if (!f?.mc.isNullOrBlank()) ManaCost(f!!.mc, 15.dp)
+            // Nothing truncates: the name wraps to two lines, its cost on the first line's right.
+            Row(Modifier.weight(1f), verticalAlignment = Alignment.Top, horizontalArrangement = Arrangement.spacedBy(6.dp)) {
+                Text(c.name, style = t(14f, FontWeight.SemiBold, line = 17f), maxLines = 2, modifier = Modifier.weight(1f))
+                if (!f?.mc.isNullOrBlank()) ManaCost(f!!.mc, 15.dp, Modifier.padding(top = 1.dp))
+            }
         }
         if (miss > 0 && p != null) CraftMenu(c.name, miss, p.seal, have[p.seal] ?: 0, f?.card?.get("set")?.asString, busy, a)
-        Row(verticalAlignment = Alignment.CenterVertically) {
+        Row(Modifier.width(110.dp), verticalAlignment = Alignment.CenterVertically) {
             StepButton("−", true) { a.step(c.name, -1) }
-            Text("${c.qty}", style = t(15f, FontWeight.ExtraBold), modifier = Modifier.widthIn(min = 22.dp), textAlign = androidx.compose.ui.text.style.TextAlign.Center)
+            Text("${c.qty}", style = t(15f, FontWeight.ExtraBold), modifier = Modifier.width(22.dp), textAlign = androidx.compose.ui.text.style.TextAlign.Center)
             StepButton("+", room >= 1) { a.step(c.name, 1) }
         }
     }

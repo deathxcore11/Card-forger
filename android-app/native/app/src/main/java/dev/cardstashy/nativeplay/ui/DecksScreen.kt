@@ -374,7 +374,7 @@ private fun SaveRow(c: Check, onChange: (Check) -> Unit, onSave: (Check) -> Unit
 
 /** The Decks page with live Play state; the editor and finder open on the web until 0.4.1 and 0.4.2. */
 @Composable
-fun DecksRoute(onBack: () -> Unit, onWeb: (String) -> Unit, onNav: (PlayTab) -> Unit) {
+fun DecksRoute(onBack: () -> Unit, onWeb: (String) -> Unit, onNav: (PlayTab) -> Unit, onTrunkSet: (String) -> Unit = {}) {
     val state by dev.cardstashy.nativeplay.play.Progress.state.collectAsState()
     val context = androidx.compose.ui.platform.LocalContext.current
     preconCacheDir = context.cacheDir
@@ -387,7 +387,7 @@ fun DecksRoute(onBack: () -> Unit, onWeb: (String) -> Unit, onNav: (PlayTab) -> 
     Box(Modifier.fillMaxSize()) {
         if (ed != null) {
             BackHandler { editor = null }
-            DeckEditor(s, ed, onBack = { editor = null }, onCard = { card = it }, onPack = { onWeb("https://cardstashy.com/#set/$it/play") }, toast = toast,
+            DeckEditor(s, ed, onBack = { editor = null }, onCard = { card = it }, onPack = { editor = null; onTrunkSet(it) }, toast = toast,
                 nav = { PlayNav(PlayTab.DECKS, onNav) })
         } else DecksScreen(s, onBack,
             onDeck = { id -> editor = EditorUi().apply { edit = dev.cardstashy.nativeplay.play.DeckEdit.open(s.getAsJsonArray("decks")?.mapNotNull { it as? JsonObject }?.firstOrNull { it.get("id")?.asString == id }) } },
@@ -395,8 +395,8 @@ fun DecksRoute(onBack: () -> Unit, onWeb: (String) -> Unit, onNav: (PlayTab) -> 
             onFinder = { editor = EditorUi() }, toast = toast, nav = { PlayNav(PlayTab.DECKS, onNav) })
         card?.let { pick ->
             CardSheet(pick, s, CardSheetActions(
-                merchant = { _, _ -> card = null; onWeb("https://cardstashy.com/#play") },
-                set = { code -> card = null; onWeb("https://cardstashy.com/#set/$code/play") },
+                merchant = { code, _ -> card = null; toast("Merchant comes with the next build"); onTrunkSet(code) },
+                set = { code -> card = null; onTrunkSet(code) },
                 precon = { _, _ -> card = null },
                 newDeck = { name -> card = null; editor = EditorUi().apply { edit = dev.cardstashy.nativeplay.play.DeckEdit.Edit(null, "", "Standard", listOf(dev.cardstashy.nativeplay.play.DeckEdit.Line(name, 1))) } },
                 toast = toast), onClose = { card = null })
