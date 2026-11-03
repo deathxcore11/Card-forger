@@ -27,3 +27,5 @@ acts before the keep.
 Next patch (architect review, 3 Nov):
 - A snapshot that carries several CPU actions is drawn whole before its beats play; the spec wants board and feed
   to advance per action.
+- The Assign button splits combat damage lethal-first automatically; let the player adjust the split by hand
+  before confirming.
