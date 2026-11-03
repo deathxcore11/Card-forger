@@ -40,4 +40,10 @@ class DecksTest {
         val rows = Decks.parsePaste("Deck\n4 Lightning Bolt\n2x Counterspell (MH2) 267\n\nSideboard\n3 Pyroblast\nnot a card\n300 Island")
         assertEquals(listOf(Decks.Row("Lightning Bolt", 4), Decks.Row("Counterspell", 2), Decks.Row("Pyroblast", 3, "side"), Decks.Row("Island", 250, "side")), rows)
     }
+
+    /** Save deck from a paste posts the web's body: {name, qty} rows, board:"side" only on sideboard rows. */
+    @Test fun pasteSaveBody() {
+        val body = dev.cardstashy.nativeplay.ui.rowsJson(Decks.parsePaste("4 Lightning Bolt\nSideboard\n2 Pyroblast"))
+        assertEquals("""[{"name":"Lightning Bolt","qty":4},{"name":"Pyroblast","qty":2,"board":"side"}]""", body.toString())
+    }
 }

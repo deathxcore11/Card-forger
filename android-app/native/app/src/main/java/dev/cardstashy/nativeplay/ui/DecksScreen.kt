@@ -45,6 +45,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.alpha
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.draw.shadow
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.SolidColor
@@ -124,8 +125,8 @@ fun rowsJson(rows: List<Decks.Row>) = JsonArray().apply { rows.forEach { r -> ad
 /** .pe-shelf / .pe-import: 22 dp glass with a gold-tinted line, Cinzel 20 title. */
 @Composable
 private fun Panel(title: String, sub: String?, content: @Composable () -> Unit) {
-    Column(Modifier.fillMaxWidth().clip(RoundedCornerShape(22.dp)).background(Brush.verticalGradient(listOf(Color(0x08FFFFFF), Color(0x02FFFFFF)))).background(Color(0xCC0D0F14))
-        .border(1.dp, Color(0xFF433B2E), RoundedCornerShape(22.dp)).padding(20.dp), verticalArrangement = Arrangement.spacedBy(14.dp)) {
+    Column(Modifier.fillMaxWidth().clip(RoundedCornerShape(26.dp)).background(Brush.verticalGradient(listOf(Color(0x08FFFFFF), Color(0x02FFFFFF)))).background(Color(0xCC0D0F14))
+        .border(1.dp, Brush.verticalGradient(listOf(Color(0x40E9C27A), Color(0x0FE9C27A), Color(0x05FFFFFF))), RoundedCornerShape(26.dp)).padding(20.dp), verticalArrangement = Arrangement.spacedBy(14.dp)) {
         Text(title, style = TextStyle(fontFamily = Type.Cinzel, fontWeight = FontWeight.Bold, fontSize = 20.sp, letterSpacing = .04.em, color = Color(0xFFF3E3BD)))
         if (sub != null) Text(sub, style = t(14f, color = Site.Muted))
         content()
@@ -137,7 +138,7 @@ private fun Panel(title: String, sub: String?, content: @Composable () -> Unit) 
 @Composable
 private fun TileFrame(art: String?, modifier: Modifier, artAlpha: Float = 1f, onClick: () -> Unit, content: @Composable BoxScope.() -> Unit) {
     val p = heroPainter(art?.let(homeArt))
-    Box(modifier.height(190.dp).clip(RoundedCornerShape(16.dp)).background(Site.Surface2).border(1.dp, Site.Line, RoundedCornerShape(16.dp)).clickable(onClick = onClick)) {
+    Box(modifier.height(190.dp).softTile().clickable(onClick = onClick)) {
         if (p != null) Image(p, null, Modifier.fillMaxSize().alpha(artAlpha), contentScale = ContentScale.Crop)
         Box(Modifier.fillMaxSize().background(Brush.verticalGradient(0f to Color(0x40000000), .3f to Color.Transparent, .72f to Color(0xEB08090C), 1f to Color(0xEB08090C))))
         content()
@@ -155,9 +156,9 @@ private fun NewDeckTile(modifier: Modifier, onClick: () -> Unit) = TileFrame(DEC
 private fun PlayDeckTile(d: JsonObject, owned: Map<String, Int>, modifier: Modifier, onOpen: () -> Unit, onDelete: () -> Unit) {
     val n = Decks.tile(d, owned); val name = d.s("name").ifBlank { "Untitled deck" }
     TileFrame(Decks.cover(d), modifier, onClick = onOpen) {
-        Text(d.s("format").ifBlank { "Casual" }, style = t(12f, FontWeight.Bold, Color(0xFFE6E8EC)), modifier = Modifier.padding(10.dp).clip(RoundedCornerShape(999.dp))
-            .background(Color(0xB30C0E13)).border(1.dp, Color(0x22FFFFFF), RoundedCornerShape(999.dp)).padding(horizontal = 10.dp, vertical = 4.dp))
-        Box(Modifier.align(Alignment.TopEnd).padding(10.dp).size(44.dp).clip(CircleShape).background(Color(0xB30C0E13)).border(1.dp, Color(0x22FFFFFF), CircleShape)
+        Text(d.s("format").ifBlank { "Casual" }, style = t(12f, FontWeight.Bold, Color(0xFFE6E8EC)), modifier = Modifier.padding(10.dp)
+            .softPill(RoundedCornerShape(999.dp)).padding(horizontal = 10.dp, vertical = 4.dp))
+        Box(Modifier.align(Alignment.TopEnd).padding(10.dp).size(44.dp).softPill(CircleShape)
             .clickable(onClick = onDelete), contentAlignment = Alignment.Center) { Text("✕", style = t(16f, FontWeight.Bold, Color(0xFFF6EEDB))) }
         Column(Modifier.align(Alignment.BottomStart).padding(horizontal = 12.dp, vertical = 10.dp), verticalArrangement = Arrangement.spacedBy(1.dp)) {
             Text(name, style = t(18f, FontWeight.ExtraBold, Color.White), maxLines = 1, overflow = TextOverflow.Ellipsis)
@@ -176,13 +177,31 @@ private fun Stat(em: String, rest: String) = Text(androidx.compose.ui.text.build
 
 // ---------------------------------------------------------------- precons
 
-private suspend fun fetchJson(url: String): JsonObject? = withContext(Dispatchers.IO) { runCatching { Http.call("GET", url, mapOf("Accept" to "application/json"), null, 30_000) as? JsonObject }.getOrNull() }
+/** Soft glass (Randall 3 Nov): big radius, a lit rim that fades down instead of a hard line, a soft drop shadow. */
+private val SoftRim = Brush.verticalGradient(listOf(Color(0x38FFFFFF), Color(0x0FFFFFFF), Color(0x05FFFFFF)))
+private fun Modifier.softTile(radius: androidx.compose.ui.unit.Dp = 22.dp, fill: Color = Site.Surface2): Modifier { val shape = RoundedCornerShape(radius)
+    return shadow(14.dp, shape, ambientColor = Color(0x99000000), spotColor = Color(0x99000000)).clip(shape).background(fill).border(1.dp, SoftRim, shape) }
+private fun Modifier.softPill(shape: androidx.compose.ui.graphics.Shape): Modifier = clip(shape).background(Color(0x990C0E13)).border(1.dp, SoftRim, shape)
+
+/** The precon list is kept on disk for a day and opened precons for the visit (the web gets this from the browser cache). */
+var preconCacheDir: java.io.File? = null
+private val preconSession = java.util.concurrent.ConcurrentHashMap<String, JsonObject>()
+private suspend fun fetchJson(url: String, dayCache: Boolean = false): JsonObject? = withContext(Dispatchers.IO) {
+    preconSession[url]?.let { return@withContext it }
+    val file = if (dayCache) preconCacheDir?.resolve("mtgjson-" + url.substringAfterLast('/')) else null
+    if (file != null && file.exists() && System.currentTimeMillis() - file.lastModified() < 24 * 3600_000L)
+        runCatching { com.google.gson.JsonParser.parseString(file.readText()).asJsonObject }.getOrNull()?.let { preconSession[url] = it; return@withContext it }
+    val out = runCatching { Http.call("GET", url, mapOf("Accept" to "application/json"), null, 30_000) as? JsonObject }.getOrNull()
+    if (out != null) { preconSession[url] = out; if (file != null) runCatching { file.writeText(out.toString()) } }
+    out
+}
 
 @Composable
 private fun PreconShelf(state: JsonObject, pc: PreconUi, owned: Map<String, Int>, toast: (String) -> Unit) {
     val scope = rememberCoroutineScope()
     fun load() { if (pc.index != null || pc.busy) return; pc.busy = true; pc.error = ""
-        scope.launch { val j = fetchJson("https://mtgjson.com/api/v5/DeckList.json"); if (j != null) pc.index = Decks.preconIndex(j) else pc.error = "Could not load the precon list right now."; pc.busy = false } }
+        scope.launch { val j = fetchJson("https://mtgjson.com/api/v5/DeckList.json", dayCache = true); if (j != null) pc.index = Decks.preconIndex(j) else pc.error = "Could not load the precon list right now."; pc.busy = false } }
+    LaunchedEffect(Unit) { load() }
     val o = pc.open
     if (o != null) { OpenPreconView(state, o, owned, pc, toast); return }
     when {
@@ -193,6 +212,7 @@ private fun PreconShelf(state: JsonObject, pc: PreconUi, owned: Map<String, Int>
             val q = pc.query.trim().lowercase()
             val list = pc.index!!.filter { q.isEmpty() || it.name.lowercase().contains(q) || it.code.lowercase() == q || it.type.lowercase().contains(q) }
             val shown = list.take(pc.limit)
+            LaunchedEffect(shown.map { it.code }) { dev.cardstashy.nativeplay.play.SetFacts.ensure(shown.map { it.code.lowercase() }) }
             Field(pc.query, "Precon or set name") { pc.query = it; pc.limit = 12 }
             if (pc.busy) Text("Opening the deck box…", style = t(13f, color = Site.Muted))
             if (shown.isEmpty()) Text("No precons match.", style = t(13f, color = Site.Muted))
@@ -217,10 +237,19 @@ private fun openPrecon(scope: kotlinx.coroutines.CoroutineScope, pc: PreconUi, e
 
 @Composable
 private fun PreconButton(d: Decks.PreconEntry, modifier: Modifier, onClick: () -> Unit) {
-    Row(modifier.heightIn(min = 64.dp).clip(RoundedCornerShape(14.dp)).background(Color(0x06FFFFFF)).border(1.dp, Color(0x14FFFFFF), RoundedCornerShape(14.dp))
-        .clickable(onClick = onClick).padding(horizontal = 14.dp, vertical = 10.dp), verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(12.dp)) {
-        SetIcon(d.code.lowercase(), Modifier.size(28.dp), Color(0xFFE6E8EC))
-        Column { Text(d.name, style = t(15f, FontWeight.Bold, line = 19f)); Text("${d.type} · ${d.releaseDate.take(4)}", style = t(13f, color = Site.Muted)) }
+    // Signature art tile: the set's lead art behind a glass shade, set emblem, name, product and year.
+    val sets by dev.cardstashy.nativeplay.play.SetFacts.sets.collectAsState()
+    val code = d.code.lowercase(); val p = heroPainter((sets[code]?.art?.ifBlank { null } ?: DECKS_ART).let(homeArt))
+    Box(modifier.height(140.dp).softTile().clickable(onClick = onClick)) {
+        if (p != null) Image(p, null, Modifier.fillMaxSize(), contentScale = ContentScale.Crop)
+        else Box(Modifier.fillMaxSize().background(Brush.linearGradient(listOf(Color(0xFF1B1F29), Color(0xFF0F1117)))))
+        Box(Modifier.fillMaxSize().background(Brush.verticalGradient(0f to Color(0x33000000), .35f to Color(0x10000000), .75f to Color(0xE608090C), 1f to Color(0xF208090C))))
+        Box(Modifier.padding(10.dp).size(34.dp).softPill(CircleShape), contentAlignment = Alignment.Center) {
+            SetIcon(code, Modifier.size(20.dp), Color(0xFFF3E3BD)) }
+        Column(Modifier.align(Alignment.BottomStart).padding(horizontal = 12.dp, vertical = 10.dp)) {
+            Text(d.name, style = t(16f, FontWeight.ExtraBold, Color.White, line = 20f), maxLines = 2, overflow = TextOverflow.Ellipsis)
+            Text("${d.type} · ${d.releaseDate.take(4)}", style = t(12.5f, color = Color(0xFFD5D9E0)))
+        }
     }
 }
 
@@ -231,12 +260,20 @@ private fun OpenPreconView(state: JsonObject, o: OpenPrecon, owned: Map<String, 
     val missing = sh.total; val price = Decks.preconPrice(missing, state.getAsJsonObject("config")); val coins = state.getAsJsonObject("wallet")?.get("coins")?.asInt ?: 0
     var busy by remember { mutableStateOf(false) }
     Column(verticalArrangement = Arrangement.spacedBy(14.dp)) {
-        FlowRow(horizontalArrangement = Arrangement.spacedBy(18.dp), verticalArrangement = Arrangement.spacedBy(12.dp)) {
-            GhostButton("All precons") { pc.open = null }
-            Column(Modifier.widthInMin(240.dp)) {
-                Text(o.name, style = TextStyle(fontFamily = Type.Cinzel, fontWeight = FontWeight.Bold, fontSize = 19.sp, lineHeight = 23.sp, color = Color(0xFFF3E3BD)))
-                Text("${o.product.ifBlank { "Precon" }} · ${o.released.take(4)}" + if (o.formats.isNotEmpty()) " · " + o.formats.joinToString(", ") else " · Casual", style = t(14f, color = Site.Muted))
+        // The deck's face: its lead card's exact art, the same art-bleed hero as a Play deck.
+        val lead = o.rows.firstOrNull { it.board != "side" && !Decks.isBasicLand(it.name) } ?: o.rows.firstOrNull()
+        val heroArt = lead?.id?.let { Decks.scryfallImage(it).replace("/normal/", "/art_crop/") }?.ifBlank { null }
+        val hp = heroPainter(heroArt?.let(homeArt))
+        Box(Modifier.fillMaxWidth().height(180.dp).softTile()) {
+            if (hp != null) Image(hp, null, Modifier.fillMaxSize(), contentScale = ContentScale.Crop)
+            Box(Modifier.fillMaxSize().background(Brush.verticalGradient(0f to Color(0x33000000), .4f to Color.Transparent, .8f to Color(0xE608090C), 1f to Color(0xF208090C))))
+            Column(Modifier.align(Alignment.BottomStart).padding(horizontal = 14.dp, vertical = 12.dp)) {
+                Text(o.name, style = TextStyle(fontFamily = Type.Cinzel, fontWeight = FontWeight.Bold, fontSize = 21.sp, lineHeight = 25.sp, color = Color(0xFFF3E3BD)))
+                Text("${o.product.ifBlank { "Precon" }} · ${o.released.take(4)}" + if (o.formats.isNotEmpty()) " · " + o.formats.joinToString(", ") else " · Casual", style = t(13.5f, color = Color(0xFFD5D9E0)))
             }
+        }
+        FlowRow(horizontalArrangement = Arrangement.spacedBy(18.dp), verticalArrangement = Arrangement.spacedBy(12.dp), itemVerticalAlignment = Alignment.CenterVertically) {
+            GhostButton("All precons") { pc.open = null }
             Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
                 Text(if (missing > 0) "$missing card${if (missing == 1) "" else "s"} to add · ${"%,d".format(price)} coins" else "You own every card", style = t(14f))
                 GoldCta(if (price > coins) "Not enough coins" else if (missing > 0) "Buy deck" else "Add to my decks", enabled = !busy && price <= coins) {
@@ -276,7 +313,7 @@ private fun PreconCards(rows: List<Decks.Row>, owned: Map<String, Int>) {
 
 @Composable
 private fun Field(value: String, hint: String, lines: Int = 1, onChange: (String) -> Unit) {
-    Box(Modifier.fillMaxWidth().heightIn(min = if (lines > 1) (lines * 22 + 24).dp else 44.dp).clip(RoundedCornerShape(12.dp)).background(Color(0xB30D0F14)).border(1.dp, Site.Line, RoundedCornerShape(12.dp))
+    Box(Modifier.fillMaxWidth().heightIn(min = if (lines > 1) (lines * 22 + 24).dp else 44.dp).clip(RoundedCornerShape(16.dp)).background(Color(0xB30D0F14)).border(1.dp, SoftRim, RoundedCornerShape(16.dp))
         .padding(horizontal = 14.dp, vertical = 12.dp)) {
         if (value.isEmpty()) Text(hint, style = t(15f, color = Site.Muted))
         BasicTextField(value, onChange, singleLine = lines == 1, minLines = lines, textStyle = t(15f), cursorBrush = SolidColor(Site.Gold), modifier = Modifier.fillMaxWidth())
@@ -338,6 +375,7 @@ private fun SaveRow(c: Check, onChange: (Check) -> Unit, onSave: (Check) -> Unit
 fun DecksRoute(onBack: () -> Unit, onWeb: (String) -> Unit, onNav: (PlayTab) -> Unit) {
     val state by dev.cardstashy.nativeplay.play.Progress.state.collectAsState()
     val context = androidx.compose.ui.platform.LocalContext.current
+    preconCacheDir = context.cacheDir
     LaunchedEffect(Unit) { dev.cardstashy.nativeplay.play.Progress.loadCached(); dev.cardstashy.nativeplay.play.Progress.refresh() }
     val s = state ?: run { Box(Modifier.fillMaxSize().background(Site.Bg), contentAlignment = Alignment.Center) { Text("Opening your decks…", style = Site.Body) }; return }
     val toast = { m: String -> android.widget.Toast.makeText(context, m, android.widget.Toast.LENGTH_SHORT).show() }
