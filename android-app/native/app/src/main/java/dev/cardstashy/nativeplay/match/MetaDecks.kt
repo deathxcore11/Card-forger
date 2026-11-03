@@ -30,7 +30,9 @@ object MetaDecks {
         if (main.size() == 0) return@mapNotNull null
         JsonObject().apply {
             addProperty("schema", 1); addProperty("id", "play-meta:$key"); addProperty("name", d.get("name")?.asString ?: "Tournament list")
-            addProperty("format", format)
+            addProperty("format", format); addProperty("key", key)
+            // The lobby's detail line (play-deck-sources.js): place · event · date.
+            for (k in listOf("place", "event", "date", "player")) d.get(k)?.takeIf { it.isJsonPrimitive }?.let { add(k, it) }
             commanders.firstOrNull()?.let { c -> (c as? JsonObject)?.get("name")?.asString?.let { addProperty("commander", it) } }
             add("cards", JsonArray().apply { commanders.forEach { add(it) }; main.forEach { add(it) } })
             add("side", d.getAsJsonArray("side") ?: JsonArray())
@@ -46,6 +48,12 @@ object MetaDecks {
             if (body != null && body.has("decks")) { f.writeText(body.toString()); parse(body, format) } else fromDisk()
         } catch (_: Exception) { fromDisk() }
     }
+
+    /** The Meta source's status line, as A.playLoadSource: the list's source and when it was fetched. */
+    fun sourceLine(context: Context, format: String): String = try {
+        val b = JsonParser.parseString(file(context, format).readText()).asJsonObject
+        listOf(b.get("source"), b.get("fetchedAt")).mapNotNull { it?.takeIf { e -> e.isJsonPrimitive }?.asString }.filter { it.isNotBlank() }.joinToString(" · ")
+    } catch (_: Exception) { "" }
 
     /** A random list that is not your own card list; null when the format has none. */
     fun pick(lists: List<JsonObject>, yours: JsonObject): JsonObject? {

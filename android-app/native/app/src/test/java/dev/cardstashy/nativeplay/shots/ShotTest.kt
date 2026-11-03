@@ -216,6 +216,11 @@ class ShotTest {
         for ((name, stage, rv) in states) captureRoboImage(File(System.getProperty("shotsDir"), "fra-open-$name.png").path) {
             dev.cardstashy.nativeplay.ui.PackOpening(pack, onNext = null, onClose = {}, initial = stage, revealedAtStart = rv.first, focusAtStart = rv.second)
         }
+        // A tap on a revealed card opens the Play card view over the pack (pack-preview.js inspect → onDetails).
+        dev.cardstashy.nativeplay.ui.homeArt = ::homeArt
+        captureRoboImage(File(System.getProperty("shotsDir"), "fra-open-6-card-view.png").path) {
+            dev.cardstashy.nativeplay.ui.PackOpening(pack, onNext = null, onClose = {}, initial = dev.cardstashy.nativeplay.ui.PackStage.DEALT, revealedAtStart = (0 until n).toSet(), focusAtStart = n - 1, inspectAtStart = n - 1)
+        }
     }
 
     @Test fun packOpen() {

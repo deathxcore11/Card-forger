@@ -22,7 +22,7 @@ import dev.cardstashy.nativeplay.play.Progress
 import dev.cardstashy.nativeplay.play.SetFacts
 import kotlinx.coroutines.launch
 
-private const val SITE_PLAY = "https://cardstashy.com/#play"
+internal const val SITE_PLAY = "https://cardstashy.com/#play"
 
 /**
  * Play mode's root: the native Play home on the account's /api/progress state (the device copy
@@ -30,7 +30,7 @@ private const val SITE_PLAY = "https://cardstashy.com/#play"
  * them. Signed out, the old home with its sign-in panel. Pages not ported yet open the site's own.
  */
 @Composable
-fun PlayHomeRoute(onQuickPlay: () -> Unit, onCollection: () -> Unit, onSignIn: () -> Unit, onWeb: (String) -> Unit, onTrunk: () -> Unit = {}, onDecks: () -> Unit = {}, onAchievements: (String?) -> Unit = {}, onShop: (tab: String, set: String?) -> Unit = { _, _ -> }) {
+fun PlayHomeRoute(onQuickPlay: () -> Unit, onLobby: (String) -> Unit = { onQuickPlay() }, onCollection: () -> Unit, onSignIn: () -> Unit, onWeb: (String) -> Unit, onTrunk: () -> Unit = {}, onDecks: () -> Unit = {}, onAchievements: (String?) -> Unit = {}, onShop: (tab: String, set: String?) -> Unit = { _, _ -> }) {
     val session by Account.session.collectAsState()
     val profile by Account.profile.collectAsState()
     val state by Progress.state.collectAsState()
@@ -80,7 +80,7 @@ fun PlayHomeRoute(onQuickPlay: () -> Unit, onCollection: () -> Unit, onSignIn: (
         packResult(out, setName(out.getAsJsonObject("pack")?.get("set")?.asString ?: "")) }
     fun run(block: suspend () -> Unit) { scope.launch { block(); Progress.refresh(); Progress.refreshDeeds() } }
     val act = PlayHomeActions(
-        mode = { when (it) { "quick", "practice" -> onQuickPlay(); "planeswalk" -> onWeb("https://cardstashy.com/planeswalk.html"); else -> onWeb(SITE_PLAY) } },
+        mode = { when (it) { "quick", "practice" -> onLobby(it); "planeswalk" -> onWeb("https://cardstashy.com/planeswalk.html"); else -> onWeb(SITE_PLAY) } },
         story = { onWeb(SITE_PLAY) },
         view = { when (it) { "collection" -> onTrunk(); "decks" -> onDecks(); "deeds" -> onAchievements(null); "quests" -> onAchievements("quests"); "shop" -> onShop("sets", null); "packs" -> onShop("packs", null); else -> onWeb(SITE_PLAY) } },
         claim = { kind, id -> run { Progress.claim(kind, id, null) } },

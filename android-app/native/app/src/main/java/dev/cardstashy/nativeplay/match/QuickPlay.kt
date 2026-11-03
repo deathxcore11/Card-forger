@@ -25,6 +25,11 @@ sealed interface Pick {
         override val id get() = deck.id; override val name get() = deck.name; override val format get() = decks.format
         override val face get() = deck.face; override val raw get() = decks.seat(deck)
     }
+    /** A lobby pick (Quick Play or Practice): both decks chosen, the CPU's level, and whether it is Quick Play. */
+    data class Table(val you: JsonObject, override val name: String, override val format: String, override val face: String?, val cpu: JsonObject,
+                     val level: String, val quick: Boolean) : Pick {
+        override val id get() = you.get("id")?.takeIf { it.isJsonPrimitive }?.asString ?: name; override val raw get() = you
+    }
     data class Mine(val deck: UserDeck) : Pick {
         override val id get() = deck.id; override val name get() = deck.name; override val format get() = QuickPlay.formatOf(deck)
         override val face get() = deck.face?.let(EngineNames::name); override val raw get() = deck.raw
@@ -79,15 +84,19 @@ object QuickPlay {
         val unknown = ForgeService.unknownNames(EngineNames.names(EngineNames.deck(you)))
         if (unknown.isNotEmpty()) return@withContext Setup.Unknown(unknown.sorted())
         val format = pick.format
-        val lists = MetaDecks.lists(context, format)
-        var cpu = MetaDecks.pick(lists.filter { ForgeService.unknownNames(EngineNames.names(EngineNames.deck(it))).isEmpty() }, you)
-        if (cpu == null && format == demos.format) cpu = demos.decks.firstOrNull { it.id != pick.id }?.let(demos::seat)
-        cpu ?: return@withContext Setup.Failed("Couldn’t load a $format opponent. Check your connection and try again.")
-        val youRows = rows(you); val cpuRows = rows(cpu)
+        var cpu: JsonObject? = (pick as? Pick.Table)?.cpu
+        if (cpu != null) { val u = ForgeService.unknownNames(EngineNames.names(EngineNames.deck(cpu))); if (u.isNotEmpty()) return@withContext Setup.Unknown(u.sorted()) }
+        if (cpu == null) {
+            val lists = MetaDecks.lists(context, format)
+            cpu = MetaDecks.pick(lists.filter { ForgeService.unknownNames(EngineNames.names(EngineNames.deck(it))).isEmpty() }, you)
+            if (cpu == null && format == demos.format) cpu = demos.decks.firstOrNull { it.id != pick.id }?.let(demos::seat)
+        }
+        val cpuDeck: JsonObject = cpu ?: return@withContext Setup.Failed("Couldn’t load a $format opponent. Check your connection and try again.")
+        val youRows = rows(you); val cpuRows = rows(cpuDeck)
         // Meta lists are named by their key cards ("Karn, the Great Creator · Expedition Map"): the plate shows the first.
-        val cpuName = cpu.get("name")?.asString?.substringBefore(" · ")?.trim()?.ifBlank { null } ?: "Tournament list"
-        val faces = listOfNotNull(pick.face, faceOf(cpu))
-        Setup.Ready(quickInput(format, you, cpu), Plate(pick.name, "You", pick.face), Plate(cpuName, "CPU · $format", faceOf(cpu)),
+        val cpuName = cpuDeck.get("name")?.asString?.substringBefore(" · ")?.trim()?.ifBlank { null } ?: "Tournament list"
+        val faces = listOfNotNull(pick.face, faceOf(cpuDeck))
+        Setup.Ready((pick as? Pick.Table)?.let { forgeInput(format, you, cpuDeck, it.level, quick = it.quick) } ?: quickInput(format, you, cpuDeck), Plate(pick.name, "You", pick.face), Plate(cpuName, "CPU · $format", faceOf(cpuDeck)),
             youRows + cpuRows, faces, CardArt.knows(youRows.map { it.first }))
     }
 

@@ -66,9 +66,14 @@ import dev.cardstashy.nativeplay.ui.TableScreen
 import dev.cardstashy.nativeplay.ui.VersusScreen
 import kotlinx.coroutines.delay
 
+/** The new Quick Play / Practice lobby ships once every part of the site's lobby is ported (Randall's no-gaps rule). */
+private const val LOBBY_LIVE = false
+
 private sealed interface Screen {
     data object Home : Screen
     data object Decks : Screen
+    /** The Quick Play or Practice lobby (style "quick" or "practice"). */
+    data class Lobby(val style: String) : Screen
     data object SignIn : Screen
     data object Collection : Screen
     /** Play's own collection (the Trunk) with its card view. */
@@ -136,6 +141,7 @@ private fun App(activity: MainActivity) {
     // One Back for the whole app, like the site's appBack(): the topmost layer closes first (a pack, a card,
     // each screen's own handler), then screens return along the app's own trail; Home is the root, where Back leaves.
     val trail = remember { androidx.compose.runtime.mutableStateListOf<Screen>(Screen.Home) }
+    val lobbies = remember { HashMap<String, dev.cardstashy.nativeplay.ui.LobbyModel>() }
     val screen = trail.last()
     fun go(s: Screen) { if (s == Screen.Home) { trail.clear(); trail += Screen.Home } else if (trail.last() != s) trail += s }
     fun back() { if (trail.size > 1) trail.removeAt(trail.lastIndex) }
@@ -149,7 +155,7 @@ private fun App(activity: MainActivity) {
         Screen.Home -> {
             LaunchedEffect(Unit) { activity.inGame(false) }
             dev.cardstashy.nativeplay.ui.PlayHomeRoute(
-                onQuickPlay = { go(Screen.Decks) }, onCollection = { go(Screen.Collection) },
+                onQuickPlay = { go(Screen.Decks) }, onLobby = { if (LOBBY_LIVE) go(Screen.Lobby(it)) else go(Screen.Decks) }, onCollection = { go(Screen.Collection) },
                 onSignIn = { go(Screen.SignIn) }, onWeb = { go(Screen.Web(it)) }, onTrunk = { go(Screen.Trunk) }, onDecks = { go(Screen.PlayDecks) }, onAchievements = { go(Screen.Achievements(it)) }, onShop = { t, set -> go(Screen.Shop(t, set)) })
         }
         Screen.Trunk -> {
@@ -177,6 +183,12 @@ private fun App(activity: MainActivity) {
             LaunchedEffect(Unit) { activity.inGame(false) }
             // The profile orb and every "Sign in" open the site's Settings: signed out it is the account card (Log in / Create account), signed in the account hub.
             dev.cardstashy.nativeplay.ui.SettingsScreen(onBack = { back() }, onWeb = { go(Screen.Web(it)) })
+        }
+        is Screen.Lobby -> {
+            LaunchedEffect(Unit) { activity.inGame(false) }
+            val model = lobbies.getOrPut(s.style) { dev.cardstashy.nativeplay.ui.LobbyModel(s.style) }
+            dev.cardstashy.nativeplay.ui.LobbyScreen(model, onBack = { back() }, onStart = { go(Screen.Match(it)) }, onOpenDecks = { go(Screen.PlayDecks) },
+                onSignIn = { go(Screen.SignIn) }, onFriends = { go(Screen.Web(dev.cardstashy.nativeplay.ui.SITE_PLAY)) })
         }
         Screen.Decks -> {
             LaunchedEffect(Unit) { activity.inGame(false) }

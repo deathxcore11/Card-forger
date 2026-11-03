@@ -105,4 +105,5 @@ object Decks {
     }
 
     fun clear() { _decks.value = null; _error.value = null }
+    internal fun setForTest(list: List<UserDeck>?) { _decks.value = list }
 }

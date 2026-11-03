@@ -215,7 +215,7 @@ private fun Color.rich(): Color { val hsv = FloatArray(3); android.graphics.Colo
  */
 @Composable
 fun PackOpening(first: PackResult, onNext: (suspend () -> PackResult?)?, onClose: () -> Unit,
-                initial: PackStage = PackStage.SEALED, revealedAtStart: Set<Int> = emptySet(), focusAtStart: Int = 0) {
+                initial: PackStage = PackStage.SEALED, revealedAtStart: Set<Int> = emptySet(), focusAtStart: Int = 0, inspectAtStart: Int? = null) {
     val context = LocalContext.current
     val view = LocalView.current
     remember { PackSfx.warm(context); 0 }
@@ -235,7 +235,7 @@ fun PackOpening(first: PackResult, onNext: (suspend () -> PackResult?)?, onClose
     var sound by remember { mutableStateOf(PackSfx.on) }
     var tiltOn by remember { mutableStateOf(PackSfx.tilt) }
     var tiltHint by remember { mutableStateOf(false) }
-    var inspecting by remember { mutableStateOf<Pull?>(null) }
+    var inspecting by remember { mutableStateOf<Pull?>(inspectAtStart?.let { first.pulls.getOrNull(it) }) }
     var backPull by remember { mutableFloatStateOf(0f) }
     val n = pack.pulls.size
     val allOpen = n > 0 && revealed.size == n
@@ -356,7 +356,12 @@ fun PackOpening(first: PackResult, onNext: (suspend () -> PackResult?)?, onClose
             }
             Text(status, Modifier.fillMaxWidth().heightIn(min = 16.dp).padding(top = 2.dp), style = TextStyle(fontFamily = Site.Body.fontFamily, fontSize = 11.5.sp, lineHeight = 17.sp, color = Site.Gold, textAlign = TextAlign.Center))
         }
-        inspecting?.let { Inspect(it, tiltOn) { inspecting = null } }
+        // pack-preview.js inspect(): a revealed card opens the Play card view over the pack (onDetails); closing it brings the pack back.
+        inspecting?.let { p ->
+            val playState by dev.cardstashy.nativeplay.play.Progress.state.collectAsState()
+            CardSheet(CardPick(p.name, "", p.id.ifBlank { null }, if (p.foil) "foil" else "nonfoil"), playState,
+                CardSheetActions(toast = { m -> android.widget.Toast.makeText(context, m, android.widget.Toast.LENGTH_SHORT).show() }), onClose = { inspecting = null })
+        }
     }
 }
 
@@ -843,28 +848,6 @@ private fun Hand(pack: PackResult, revealed: List<Int>, focus: Int, handW: Dp, h
     }
 
 /** Inspecting a pulled card: it comes up big above the pack (which waits, untouched, underneath); Back or a tap puts it down. */
-@Composable
-private fun Inspect(p: Pull, tiltOn: Boolean, onClose: () -> Unit) {
-    val a = remember(p) { Animatable(0f) }
-    LaunchedEffect(p) { a.animateTo(1f, spring(dampingRatio = .8f, stiffness = 600f)) }
-    val tilt by rememberTilt()
-    val live = tiltOn && tilt.live
-    BoxWithConstraints(Modifier.fillMaxSize().zIndex(100f).background(Color.Black.copy(alpha = .78f * a.value))
-        .clickable(remember { MutableInteractionSource() }, null, onClick = onClose).statusBarsPadding().navigationBarsPadding().padding(16.dp), contentAlignment = Alignment.Center) {
-        val w = minOf(maxWidth, (maxHeight - 70.dp) * (63f / 88f), 520.dp)
-        Column(horizontalAlignment = Alignment.CenterHorizontally, verticalArrangement = Arrangement.spacedBy(10.dp)) {
-            Box(Modifier.width(w).height(w * (88f / 63f)).graphicsLayer {
-                val s = .85f + .15f * a.value; scaleX = s; scaleY = s; alpha = a.value; cameraDistance = 14f * density
-                rotationX = if (live) -tilt.y * 8f else 0f; rotationY = if (live) tilt.x * 8f else 0f
-            }.glow(p.tier.rich(), .5f, .14f, .12f, .2f, 42.dp).clip(RoundedCornerShape(w * .046f))) {
-                PullFace(p, Modifier.fillMaxSize(), if (live) .5f + tilt.x * .4f else .5f, if (live) .5f + tilt.y * .4f else .4f)
-            }
-            Text(p.name, style = TextStyle(fontFamily = Site.Body.fontFamily, fontWeight = FontWeight.Bold, fontSize = 16.sp, color = Site.Text))
-            RarityPill(p.rarity, if (p.foil) "Foil" else "")
-        }
-    }
-}
-
 /** Face-down pack cards wear Magic's own card back, as the site's /img/back/mtg.jpg does (Randall's copy, bundled so a flip never waits). */
 @Composable
 fun MagicBack(modifier: Modifier) = Box(modifier.drawBehind {

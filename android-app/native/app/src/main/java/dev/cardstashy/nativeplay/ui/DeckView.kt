@@ -119,6 +119,37 @@ fun DeckView(row: Finder.Row, title: String, cardOf: (String) -> JsonObject?, on
     }
 }
 
+/**
+ * The deck viewer alone (app.js playDeckPreview: deckViewer over V.deckList, read-only), for the lobby's inspector:
+ * the same Deck view switch, type groups (Commander first) sorted by mana value then name, and the same card tiles.
+ */
+@Composable
+fun DeckViewerBody(rows: List<Pair<String, Int>>, commander: String, cardOf: (String) -> JsonObject?, width: androidx.compose.ui.unit.Dp, onCard: (String) -> Unit) {
+    val groups = remember(rows, commander) {
+        val all = rows.map { (n, q) -> val card = cardOf(n); val basic = dev.cardstashy.nativeplay.play.Decks.isBasicLand(n)
+            Entry(n, q, q, basic, "", card?.get("rarity")?.asString ?: "", card, if (commander.isNotEmpty() && n == commander) "Commander" else if (basic) "Lands" else Roles.category(card)) }
+        all.groupBy { it.cat }.toList().sortedBy { Roles.ORDER.indexOf(it.first).let { i -> if (i < 0) 99 else i } }
+            .map { (g, l) -> g to l.sortedWith(compareBy<Entry> { it.cmc }.thenBy { it.name }) }
+    }
+    val entries = remember(groups) { groups.flatMap { it.second } }
+    val mode = DeckViewPref.mode
+    val wide = width >= 600.dp
+    Column(verticalArrangement = Arrangement.spacedBy(14.dp)) {
+        Toolbar(mode) { DeckViewPref.mode = it }
+        if (mode == "stacks") { RoleSummary(entries); Stacks(entries, width, wide, onCard) }
+        else groups.forEach { (g, list) ->
+            GroupHead(g, list.sumOf { it.qty })
+            when (mode) {
+                "gallery" -> { val cols = maxOf(2, (width / (if (wide) 190.dp else 150.dp)).toInt())
+                    list.chunked(cols).forEach { line -> Row(horizontalArrangement = Arrangement.spacedBy(12.dp)) {
+                        line.forEach { e -> GalleryCard(e, Modifier.weight(1f)) { onCard(e.name) } }; repeat(cols - line.size) { Spacer(Modifier.weight(1f)) } } } }
+                "symbols" -> list.forEach { e -> NameRow(e) { onCard(e.name) } }
+                else -> list.forEach { e -> DetailRow(e) { onCard(e.name) } }
+            }
+        }
+    }
+}
+
 @Composable
 private fun GroupHead(label: String, n: Int) = Row(Modifier.padding(top = 6.dp), verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(9.dp)) {
     Text(label, style = t(16f, FontWeight.ExtraBold))
