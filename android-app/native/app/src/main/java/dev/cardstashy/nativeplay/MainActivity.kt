@@ -85,15 +85,18 @@ private sealed interface Screen {
 class MainActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
+        // First, so a stall anywhere in start-up is caught too (the 0.3.2 freeze hit 2 s after launch).
+        FreezeReport.init(this); FreezeReport.watchFrames(this)
         enableEdgeToEdge()
         // The card database starts loading as the app opens, so it is ready before Quick Play is.
         ForgeService.prepare(this)
         Account.init(this); CardArt.init(this); Speed.init(this)
         dev.cardstashy.nativeplay.play.Progress.init(this); dev.cardstashy.nativeplay.play.SetFacts.init(this); dev.cardstashy.nativeplay.play.CardFacts.init(this); dev.cardstashy.nativeplay.play.DeckEngine.init(this); dev.cardstashy.nativeplay.play.CraftRarity.init(this)
         dev.cardstashy.nativeplay.play.CardData.warm(this); dev.cardstashy.nativeplay.ui.PackSfx.warm(this)
-        FreezeReport.init(this)
         setContent { androidx.compose.foundation.layout.Box(androidx.compose.ui.Modifier.fillMaxSize()) { App(this@MainActivity); FreezeBanner() } }
     }
+
+    override fun dispatchTouchEvent(ev: android.view.MotionEvent): Boolean { FreezeReport.touched(ev); return super.dispatchTouchEvent(ev) }
 
     /** Games lock landscape like a video game; menus turn freely (standing rule, 2 Nov). */
     fun inGame(on: Boolean) {

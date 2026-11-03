@@ -73,14 +73,23 @@ object FreezeReport {
     internal fun compact(all: String): String {
         val parts = all.split(Regex("(?m)^(?=== )")).filter { it.isNotBlank() }
         val stalls = parts.filter { it.startsWith("== Stall") }.takeLast(3).reversed()
-        val anrs = parts.filter { it.startsWith("== Android") }.takeLast(2).reversed().map { it.take(3500) }
-        return (stalls + anrs).joinToString("\n").take(7000)
+        val blank = parts.filter { it.startsWith("== No frames") }.takeLast(2).reversed()
+        val slow = parts.filter { it.startsWith("== Slow frame") }.takeLast(2).reversed().map { it.take(900) }
+        val anrs = parts.filter { it.startsWith("== Android") }.takeLast(2).reversed().map { trimTrace(it).take(3500) }
+        return (stalls + blank + anrs + slow).joinToString("\n").take(7000)
+    }
+
+    /** A section saved by 0.3.2 holds the whole thread dump; keep its heading lines and cut the dump to the main thread. */
+    internal fun trimTrace(section: String): String {
+        val at = section.indexOf("DALVIK THREADS").takeIf { it >= 0 } ?: return section
+        val head = section.substring(0, at).lineSequence().take(14).joinToString("\n")
+        return head + "\n" + mainThread(section.substring(at))
     }
 
     /** Each section not sent yet goes to the site's error log, quietly; a failure keeps it for the next launch. */
     private fun upload(all: String) {
         val done = prefs.getStringSet("sent", emptySet())!!.toMutableSet()
-        for (part in all.split(Regex("(?m)^(?=== )")).filter { it.isNotBlank() }) {
+        for (part in all.split(Regex("(?m)^(?=== )")).filter { it.isNotBlank() }.map { trimTrace(it) }) {
             val id = part.hashCode().toString(); if (id in done) continue
             val body = com.google.gson.JsonObject().apply {
                 addProperty("app", "native"); addProperty("version", version); addProperty("platform", "android"); addProperty("screen", "")
@@ -108,6 +117,66 @@ object FreezeReport {
         return (listOf(main) + held + gc).joinToString("\n\n").take(20_000)
     }
 
+    @Volatile private var lastTouch = 0L
+    @Volatile private var lastFrame = 0L
+    private val touches = java.util.ArrayDeque<String>()
+    private var slowLogged = 0
+
+    /** Called from MainActivity.dispatchTouchEvent: when the finger went down or up, kept to tell "no frames after a touch". */
+    fun touched(ev: android.view.MotionEvent) {
+        val a = ev.actionMasked; val now = SystemClock.uptimeMillis()
+        // A drag moves something on every screen here (scroll, card lean), so a move with no frame after it is a stuck screen.
+        if (a == android.view.MotionEvent.ACTION_MOVE) { lastTouch = now; return }
+        if (a != android.view.MotionEvent.ACTION_DOWN && a != android.view.MotionEvent.ACTION_UP) return
+        synchronized(touches) { touches.addLast("${if (a == 0) "down" else "up"}@$now"); while (touches.size > 6) touches.removeFirst() }
+    }
+
+    private fun memory(): String = try {
+        val mi = android.os.Debug.MemoryInfo(); android.os.Debug.getMemoryInfo(mi)
+        "memory: total ${mi.totalPss / 1024} MB, graphics ${mi.getMemoryStat("summary.graphics")?.toIntOrNull()?.div(1024)} MB, " +
+            "java ${mi.getMemoryStat("summary.java-heap")?.toIntOrNull()?.div(1024)} MB, native ${mi.getMemoryStat("summary.native-heap")?.toIntOrNull()?.div(1024)} MB"
+    } catch (_: Throwable) { "memory: ?" }
+
+    /**
+     * Every frame's timings arrive on a background thread (FrameMetrics). A frame over 700 ms is kept with where its time went
+     * (input, layout, draw, sync, GPU commands, swap, GPU). A second check catches the frozen case where no frame comes at all:
+     * a touch more than 3 s old with no frame drawn since, while the main thread still answers. It keeps every thread's
+     * stack and the memory split, and sends it right away, since the network still works while the screen is stuck.
+     */
+    fun watchFrames(activity: android.app.Activity) {
+        if (Build.VERSION.SDK_INT < 26) return
+        val ht = android.os.HandlerThread("frame-metrics", android.os.Process.THREAD_PRIORITY_BACKGROUND).apply { start() }
+        val h = Handler(ht.looper)
+        activity.window.addOnFrameMetricsAvailableListener({ _, m, _ ->
+            lastFrame = SystemClock.uptimeMillis()
+            val total = m.getMetric(android.view.FrameMetrics.TOTAL_DURATION) / 1_000_000
+            if (total < 700 || slowLogged >= 12) return@addOnFrameMetricsAvailableListener
+            slowLogged++
+            fun ms(id: Int) = m.getMetric(id) / 1_000_000
+            val gpu = if (Build.VERSION.SDK_INT >= 31) ", gpu ${ms(android.view.FrameMetrics.GPU_DURATION)}" else ""
+            append("== Slow frame: $total ms ==\n" + header() +
+                "input ${ms(android.view.FrameMetrics.INPUT_HANDLING_DURATION)}, animation ${ms(android.view.FrameMetrics.ANIMATION_DURATION)}, " +
+                "layout ${ms(android.view.FrameMetrics.LAYOUT_MEASURE_DURATION)}, draw ${ms(android.view.FrameMetrics.DRAW_DURATION)}, " +
+                "sync ${ms(android.view.FrameMetrics.SYNC_DURATION)}, commands ${ms(android.view.FrameMetrics.COMMAND_ISSUE_DURATION)}, " +
+                "swap ${ms(android.view.FrameMetrics.SWAP_BUFFERS_DURATION)}$gpu, unknown delay ${ms(android.view.FrameMetrics.UNKNOWN_DELAY_DURATION)}\n" + memory() + "\n\n")
+        }, h)
+        Thread({
+            var reported = 0L
+            while (true) {
+                Thread.sleep(500)
+                val now = SystemClock.uptimeMillis(); val t = lastTouch
+                if (t == 0L || t == reported || lastFrame >= t || now - t < 3000 || !activity.hasWindowFocus()) continue
+                reported = t
+                val stacks = Thread.getAllStackTraces().entries.filter { it.value.isNotEmpty() }.sortedBy { if (it.key.name == "main") 0 else 1 }.take(14)
+                    .joinToString("\n") { (th, st) -> "\"${th.name}\" ${th.state}\n" + st.take(if (th.name == "main") 30 else 8).joinToString("\n") { "    at $it" } }
+                val tr = synchronized(touches) { touches.joinToString(" ") }
+                append("== No frames: ${now - t} ms since the last drag, last frame ${if (lastFrame == 0L) "never" else "${now - lastFrame} ms ago"} ==\n" + header() +
+                    "touches $tr, now $now\n" + memory() + "\n" + stacks + "\n\n")
+                try { if (::prefs.isInitialized) upload(file.readText()) } catch (_: Throwable) {}
+            }
+        }, "frame-watch").apply { isDaemon = true; priority = Thread.MIN_PRIORITY }.start()
+    }
+
     /** Pings the main thread every 500 ms; while a ping goes unanswered past 1.5 s, the main stack is sampled every 1.5 s (up to 4 per stall). */
     private fun watchdog() {
         val main = Handler(Looper.getMainLooper())
@@ -126,6 +195,7 @@ object FreezeReport {
                         append("== Stall sample $samples: main busy $busy ms ==\n" + header() + st + "\n\n")
                     }
                 }
+                if (samples > 0) Thread { try { if (::prefs.isInitialized) upload(file.readText()) } catch (_: Throwable) {} }.start()
                 if (samples > 0) _text.value = try { compact(file.readText()) } catch (_: Throwable) { null }
                 Thread.sleep(500)
             }

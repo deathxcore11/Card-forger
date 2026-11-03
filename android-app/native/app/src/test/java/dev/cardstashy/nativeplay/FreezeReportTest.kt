@@ -17,4 +17,11 @@ class FreezeReportTest {
         val m = FreezeReport.mainThread(t)
         assertTrue(m, m.contains("Foo.bar") && !m.contains("x.Y"))
     }
+    @Test fun oldFullDumpIsCutToMainThread() {
+        val daemons = (1..40).joinToString("") { "\"Daemon$it\" daemon prio=5 tid=${it + 5} Waiting\n  at java.lang.Object.wait(Native method)\n\n" }
+        val sec = "== Android froze report (x) ==\nCardStashy 0.3.2 · samsung\nInput dispatching timed out\n----- pid 1 -----\nDALVIK THREADS (45):\n" + daemons +
+            "\"main\" prio=5 tid=1 Runnable\n  at dev.cardstashy.nativeplay.ui.PlayHomeKt.Today(PlayHome.kt:9)\n\n\"Other\" tid=99\n  at q\n"
+        val c = FreezeReport.compact(sec)
+        assertTrue(c, c.contains("PlayHome.kt:9") && !c.contains("Daemon3\"") && c.contains("Input dispatching"))
+    }
 }
