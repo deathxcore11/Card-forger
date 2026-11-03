@@ -17,7 +17,9 @@ data class DemoDeck(val id: String, val name: String, val colour: String, val fa
 fun quickInput(format: String, you: JsonObject, cpu: JsonObject): String {
     fun seat(d: JsonObject) = EngineNames.deck(d).apply { addProperty("format", format) }
     val input = JsonObject().apply {
-        addProperty("format", format); add("humanDeck", seat(you)); add("opponentDeck", seat(cpu))
+        addProperty("format", format); add("humanDeck", seat(you))
+        // The CPU plays as "CPU": its list's name stays on the versus plate and never reaches Forge's lines.
+        add("opponentDeck", seat(cpu).apply { addProperty("name", "CPU") })
         addProperty("difficultyPolicyVersion", "forge-heuristic-medium-beta-v1")
         addProperty("startingPlayer", "random"); addProperty("playStyle", "quick")
     }

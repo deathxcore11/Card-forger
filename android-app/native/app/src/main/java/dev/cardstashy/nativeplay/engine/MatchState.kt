@@ -98,19 +98,31 @@ data class MatchState(
             val b = o.obj("buttons")
             val init = o.obj("initialization")
             val pv = o.obj("priority")
+            // Players are "You" and "CPU" in every line the table shows: Forge's own names
+            // ("Forge AI", deck names) never reach the screen.
+            val tidy = names(players, viewer)
             return MatchState(
                 revision = o.get("revision")?.takeIf { !it.isJsonNull }?.asLong ?: 0, status = status, failure = o.str("failure"),
                 errors = init?.arr("errors")?.mapNotNull { it.takeIf { e -> e.isJsonPrimitive }?.asString } ?: emptyList(),
                 viewer = viewer, turn = o.int("turn") ?: 0, phase = o.str("phase"), activePlayer = o.int("activePlayer"), priorityPlayer = o.int("priorityPlayer"),
                 players = players,
-                stack = o.arr("stack").map { e -> val s = e.asJsonObject; StackItem(s.int("id") ?: 0, (s.str("text") ?: "").replace(Regex("\\s*\\[Phase: [^\\]]*\\]"), "").trim(), s.obj("source")?.let { parseCard(it) }, s.int("activatingPlayer") ?: -1) },
+                stack = o.arr("stack").map { e -> val s = e.asJsonObject; StackItem(s.int("id") ?: 0, tidy((s.str("text") ?: "").replace(Regex("\\s*\\[Phase: [^\\]]*\\]"), "").trim()), s.obj("source")?.let { parseCard(it) }, s.int("activatingPlayer") ?: -1) },
                 buttons = Buttons(b?.str("ok"), b?.str("cancel"), b?.bool("okEnabled") == true, b?.bool("cancelEnabled") == true),
-                inputType = o.str("inputType"), selection = selection, prompt = o.obj("prompt")?.let { parsePrompt(it) },
-                busy = o.bool("busy") == true, message = o.str("message") ?: "",
+                inputType = o.str("inputType"), selection = selection, prompt = o.obj("prompt")?.let { parsePrompt(it) }?.let { p -> p.copy(message = tidy(p.message), options = p.options.map { it.copy(label = tidy(it.label)) }) },
+                busy = o.bool("busy") == true, message = tidy(o.str("message") ?: ""),
                 events = o.obj("events")?.arr("items")?.map { parseEvent(it.asJsonObject) } ?: emptyList(),
                 winnerPlayerId = o.int("winnerPlayerId"), draw = o.bool("draw") == true,
                 priorityStop = pv?.str("stop"), hasPriorityView = pv != null, lastActionError = o.str("lastActionError"), controlMode = o.str("controlMode"),
             )
+        }
+
+        /** Replaces Forge's player names with "You" and "CPU" (longest first, so "Forge AI — deck" goes whole). */
+        fun names(players: List<Player>, viewer: Int) = namesFor(players.associate { it.id to it.name }, viewer)
+        fun namesFor(players: Map<Int, String>, viewer: Int): (String) -> String {
+            val swaps = players.filter { it.value.isNotBlank() }.map { (id, name) -> name to if (id == viewer) "You" else "CPU" }
+                .plus(listOf("Forge AI" to "CPU")).sortedByDescending { it.first.length }
+            return { text -> var t = text; for ((from, to) in swaps) t = t.replace(from, to)
+                t.replace(Regex("CPU\\s*[—–-]\\s*CPU"), "CPU").replace(Regex("(?<![Tt]he )CPU's"), "the CPU's").replace("in You's", "in your").replace("You is", "You are").replace("You's", "Your") }
         }
 
         private fun parsePlayer(p: JsonObject): Player {

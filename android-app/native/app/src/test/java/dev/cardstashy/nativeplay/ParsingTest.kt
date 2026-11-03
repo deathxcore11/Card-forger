@@ -73,6 +73,15 @@ class ParsingTest {
         assertEquals("forge-heuristic-medium-beta-v1", input.get("difficultyPolicyVersion").asString)
     }
 
+    @Test fun forgeNamesNeverShow() {
+        val tidy = dev.cardstashy.nativeplay.engine.MatchState.namesFor(mapOf(1 to "Randall", 2 to "Forge AI — Karn, the Great Creator · Expedition Map"), viewer = 1)
+        assertEquals("Looking at cards in the CPU's hand", tidy("Looking at cards in Forge AI — Karn, the Great Creator · Expedition Map's hand"))
+        assertEquals("CPU is going first.", tidy("Forge AI — Karn, the Great Creator · Expedition Map is going first."))
+        assertEquals("You are going first.", tidy("Randall is going first."))
+        assertEquals("Looking at cards in your library", tidy("Looking at cards in Randall's library"))
+        assertEquals("CPU attacks", tidy("Forge AI attacks"))
+    }
+
     @Test fun authErrors() {
         assertEquals("Email or password is incorrect. Try again or use Forgot password on the website.",
             Account.authError("""{"code":400,"error_code":"invalid_credentials","msg":"Invalid login credentials"}"""))

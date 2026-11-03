@@ -12,6 +12,9 @@ import androidx.compose.ui.graphics.Shape
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalContext
 import coil3.compose.AsyncImage
+import coil3.compose.AsyncImagePainter
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.setValue
 import dev.cardstashy.nativeplay.match.DemoDecks
 import dev.cardstashy.nativeplay.ui.AssetImage
 
@@ -31,5 +34,12 @@ fun CardImage(name: String?, modifier: Modifier = Modifier, crop: Boolean = fals
     val url = remember(name, crop, v) { CardArt.url(name, crop) }
     if (url == null) { Box(modifier) { fallback() }; return }
     val request = remember(url, crop) { CardArt.request(context, url, crop) }
-    AsyncImage(model = request, contentDescription = null, imageLoader = CardArt.loader, modifier = (if (shape != null) modifier.clip(shape) else modifier), contentScale = contentScale)
+    // A picture that fails to load shows the card's name plate, never an empty face.
+    var failed by remember(url) { mutableStateOf(false) }
+    val m = if (shape != null) modifier.clip(shape) else modifier
+    Box(m) {
+        if (failed) fallback()
+        AsyncImage(model = request, contentDescription = null, imageLoader = CardArt.loader, modifier = Modifier.fillMaxSize(), contentScale = contentScale,
+            onState = { failed = it is AsyncImagePainter.State.Error })
+    }
 }

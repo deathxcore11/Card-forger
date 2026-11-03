@@ -577,7 +577,7 @@ private fun PromptPanel(p: Prompt, st: MatchState, c: MatchController, live: Boo
                             }.padding(8.dp)) { Text(o.label, style = Type.Body.copy(color = Palette.Ink), maxLines = 2) }
                     }
                 }
-                if (p.max > 1 || p.min == 0) GoldButton(if (picked.isEmpty() && p.min == 0) "None" else "Confirm", live && picked.size >= p.min, Modifier.fillMaxWidth()) {
+                if (p.max > 1 || p.min == 0) GoldButton(if (picked.isEmpty() && p.min == 0) (if (p.max == 0 || p.message.startsWith("Looking at cards", true)) "OK" else "None") else "Confirm", live && picked.size >= p.min, Modifier.fillMaxWidth()) {
                     c.reply(p.id, indexes = picked.toList())
                 }
             }

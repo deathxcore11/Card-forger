@@ -84,7 +84,8 @@ object QuickPlay {
         if (cpu == null && format == demos.format) cpu = demos.decks.firstOrNull { it.id != pick.id }?.let(demos::seat)
         cpu ?: return@withContext Setup.Failed("Couldn’t load a $format opponent. Check your connection and try again.")
         val youRows = rows(you); val cpuRows = rows(cpu)
-        val cpuName = cpu.get("name")?.asString ?: "Tournament list"
+        // Meta lists are named by their key cards ("Karn, the Great Creator · Expedition Map"): the plate shows the first.
+        val cpuName = cpu.get("name")?.asString?.substringBefore(" · ")?.trim()?.ifBlank { null } ?: "Tournament list"
         val faces = listOfNotNull(pick.face, faceOf(cpu))
         Setup.Ready(quickInput(format, you, cpu), Plate(pick.name, "You", pick.face), Plate(cpuName, "CPU · $format", faceOf(cpu)),
             youRows + cpuRows, faces, CardArt.knows(youRows.map { it.first }))

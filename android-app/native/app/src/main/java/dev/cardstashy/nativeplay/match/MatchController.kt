@@ -242,8 +242,27 @@ class MatchController(private val scope: CoroutineScope, private val input: Stri
 
     // Smart, the way the web table plays (forge-table.mjs): your own spell on top of the stack
     // passes for you, and priority with nothing you could play passes after a short beat.
+    /** A look at cards that asks nothing of you ("Looking at cards in …", a reveal). */
+    private fun isReveal(st: MatchState): Boolean {
+        val p = st.prompt ?: return false
+        return p.min == 0 && (p.method.contains("reveal", true) || p.message.startsWith("Looking at cards", true) || p.message.contains(" reveals", true))
+    }
+    private fun mine(st: MatchState, id: Int?) = id != null && st.me.let { (it.hand + it.battlefield + it.graveyard + it.exile).any { c -> c.id == id } }
+
     private fun scheduleAutoPass(st: MatchState) {
         autoJob?.cancel()
+        // The CPU showing you its cards (an opening-hand reveal, a tutor): shown as its own beat, then
+        // acknowledged for you. Its choice stays its own; nothing about it waits on a button.
+        val p = st.prompt
+        if (p != null && isReveal(st) && p.options.none { mine(st, it.cardId) } && !p.message.contains("in your", true)) {
+            autoJob = scope.launch(Dispatchers.Main) {
+                val first = p.options.firstOrNull()
+                _beat.value = Beat(Beat.Kind.ACTION, "CPU reveals", first?.cardId, first?.label, p.options.drop(1).joinToString(", ") { it.label }.ifBlank { null }, durationMs = ACTION_MS)
+                hold(ACTION_MS)
+                if (latest?.prompt?.id == p.id) reply(p.id, indexes = emptyList())
+            }
+            return
+        }
         if (st.prompt != null || st.inputType != "InputPassPriority" || st.priorityPlayer != st.viewer || !st.buttons.okEnabled || st.controlMode == "full") return
         val ownTop = st.stack.firstOrNull()?.controller == st.viewer
         val nothing = st.selection.actionable.isEmpty()

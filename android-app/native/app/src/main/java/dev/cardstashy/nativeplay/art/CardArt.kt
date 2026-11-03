@@ -21,6 +21,7 @@ import kotlinx.coroutines.sync.Semaphore
 import kotlinx.coroutines.sync.withPermit
 import kotlinx.coroutines.withContext
 import kotlinx.coroutines.withTimeoutOrNull
+import okhttp3.OkHttpClient
 import okio.Path.Companion.toOkioPath
 import java.io.File
 
@@ -34,9 +35,19 @@ object CardArt {
     /** Table size: every card face decodes once at this size and is reused everywhere. */
     val FACE = Size(488, 680)
     val CROP = Size(626, 457)
-    private const val UA = "CardStashyNative/0.2 (+https://cardstashy.com)"
+    const val UA = "CardStashyNative/0.2 (+https://cardstashy.com)"
 
     lateinit var loader: ImageLoader; private set
+
+    /**
+     * Scryfall refuses a library's default User-Agent ("okhttp/x", 400 generic_user_agent), images
+     * included, so every request names the app. 0.2.0 shipped without this and no card loaded.
+     */
+    val client: OkHttpClient by lazy {
+        OkHttpClient.Builder().addNetworkInterceptor { chain ->
+            chain.proceed(chain.request().newBuilder().header("User-Agent", UA).header("Accept", "image/avif,image/webp,image/*,*/*;q=0.8").build())
+        }.build()
+    }
     private lateinit var indexFile: File
     // Forge-spelled name (lower case) -> [full card image URL, art crop URL].
     private val index = HashMap<String, Pair<String, String?>>()
@@ -47,7 +58,7 @@ object CardArt {
         if (::loader.isInitialized) return
         val app = context.applicationContext
         loader = ImageLoader.Builder(app)
-            .components { add(OkHttpNetworkFetcherFactory()) }
+            .components { add(OkHttpNetworkFetcherFactory(callFactory = { client })) }
             .memoryCache { MemoryCache.Builder().maxSizePercent(app, .25).build() }
             .diskCache { DiskCache.Builder().directory(File(app.filesDir, "art-cache").toOkioPath()).maxSizeBytes(2L shl 30).build() }
             .build()
@@ -59,6 +70,9 @@ object CardArt {
         } catch (_: Exception) {}
     }
 
+    /** Unit tests: the name index without an image loader. */
+    internal fun initIndexOnly(dir: File) { indexFile = File(dir, "art-index.json") }
+
     fun url(name: String, crop: Boolean = false): String? = synchronized(index) { index[name.lowercase()] }?.let { if (crop) it.second ?: it.first else it.first }
 
     private fun save() = synchronized(index) {
@@ -69,6 +83,9 @@ object CardArt {
     private fun str(o: JsonObject, vararg keys: String) = keys.firstNotNullOfOrNull { k -> o.get(k)?.takeIf { it.isJsonPrimitive }?.asString?.takeIf { it.isNotBlank() } }
     private val UUID = Regex("^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$", RegexOption.IGNORE_CASE)
 
+    /** Scryfall finds a split or double-faced card by its front face ("Wear", not "Wear // Tear"). */
+    private fun lookupName(name: String) = name.substringBefore(" // ").trim()
+
     /** The Scryfall identifier for a deck row: its exact printing when the row names one, else its name. */
     fun identifier(row: JsonObject, engineName: String): JsonObject = JsonObject().apply {
         val id = str(row, "printingId", "scryfallId")?.takeIf { UUID.matches(it) }
@@ -76,7 +93,7 @@ object CardArt {
         when {
             id != null -> addProperty("id", id)
             set != null && num != null -> { addProperty("set", set); addProperty("collector_number", num) }
-            else -> addProperty("name", engineName)
+            else -> addProperty("name", lookupName(engineName))
         }
     }
 
@@ -119,7 +136,7 @@ object CardArt {
         // A printing that Scryfall could not match by id or number falls back to its name once.
         val still = missing.filter { (n, _) -> url(n) == null }
         if (still.isNotEmpty()) for (chunk in still.chunked(75)) {
-            val body = JsonObject().apply { add("identifiers", JsonArray().apply { chunk.forEach { (n, _) -> add(JsonObject().apply { addProperty("name", n) }) } }) }.toString()
+            val body = JsonObject().apply { add("identifiers", JsonArray().apply { chunk.forEach { (n, _) -> add(JsonObject().apply { addProperty("name", lookupName(n)) }) } }) }.toString()
             val cards = try { Http.call("POST", "https://api.scryfall.com/cards/collection", mapOf("User-Agent" to UA), body, timeoutMs = 10000)?.asJsonObject?.getAsJsonArray("data") } catch (_: Exception) { null } ?: continue
             synchronized(index) {
                 cards.mapNotNull { it as? JsonObject }.forEach { c -> images(c)?.let { img -> names(c).forEach { n -> index.putIfAbsent(n.lowercase(), img) }; added = true } }
