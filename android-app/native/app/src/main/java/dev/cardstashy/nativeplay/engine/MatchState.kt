@@ -34,11 +34,28 @@ data class Prompt(
     val id: Int, val method: String, val message: String, val min: Int, val max: Int,
     val options: List<PromptOption>, val supported: Boolean, val ordered: Boolean, val destinationIndexes: List<Int>,
     val assignAmount: Int?, val assignMaxima: List<Int>, val maySkip: Boolean,
-)
+    val assignLethal: List<Int?>, val defenderIndex: Int?,
+) {
+    /** Forge's damage split done the plain way: lethal to each blocker in order, the rest to the
+     *  defender (trample) or the last blocker; a generic split fills each target up to its maximum. */
+    fun autoAssign(): List<Int> {
+        var left = assignAmount ?: 0
+        val out = MutableList(options.size) { 0 }
+        if (assignLethal.isNotEmpty()) {
+            for (i in out.indices) { if (i == defenderIndex) continue; val l = assignLethal.getOrNull(i) ?: 0; val take = minOf(left, l); out[i] = take; left -= take }
+            val sink = defenderIndex ?: out.indices.lastOrNull { it != defenderIndex } ?: return out
+            out[sink] += left
+        } else {
+            for (i in out.indices) { val take = minOf(left, assignMaxima.getOrElse(i) { left }); out[i] = take; left -= take }
+            if (left > 0 && out.isNotEmpty()) out[out.lastIndex] += left
+        }
+        return out
+    }
+}
 data class Ref(val kind: String, val id: Int, val name: String?)
 data class GameEvent(
     val seq: Long, val type: String, val turn: Int, val phase: String?, val player: Int?,
-    val card: Ref?, val source: Ref?, val target: Ref?, val targets: List<Ref>, val attackers: List<Pair<Ref, Ref?>>,
+    val card: Ref?, val source: Ref?, val target: Ref?, val targets: List<Ref>, val attackers: List<Pair<Ref, Ref?>>, val blockers: List<Pair<Ref, Int?>>,
     val from: String?, val to: String?, val amount: Int?, val lifeFrom: Int?, val lifeTo: Int?, val cause: String?,
 )
 
@@ -127,6 +144,8 @@ data class MatchState(
                 destinationIndexes = p.arr("destinationIndexes").map { it.asInt },
                 assignAmount = assign?.int("amount"), assignMaxima = assign?.arr("maxima")?.map { if (it.isJsonPrimitive) it.asInt else 0 } ?: emptyList(),
                 maySkip = assign?.bool("maySkip") == true,
+                assignLethal = assign?.arr("lethal")?.map { if (it.isJsonPrimitive) it.asInt else null } ?: emptyList(),
+                defenderIndex = assign?.int("defenderIndex"),
             )
         }
 
@@ -151,6 +170,7 @@ data class MatchState(
             card = ref(e.get("card")), source = ref(e.get("source")), target = ref(e.get("target")),
             targets = e.arr("targets").mapNotNull { ref(it) },
             attackers = e.arr("attackers").mapNotNull { a -> ref(a)?.let { it to ref(a.asJsonObject.get("target")) } },
+            blockers = e.arr("blockers").mapNotNull { b -> ref(b)?.let { it to b.asJsonObject.int("blocking") } },
             from = e.str("from"), to = e.str("to"), amount = e.int("amount"),
             lifeFrom = if (e.str("type") == "life") e.int("from") else null, lifeTo = if (e.str("type") == "life") e.int("to") else null,
             cause = e.str("cause"),

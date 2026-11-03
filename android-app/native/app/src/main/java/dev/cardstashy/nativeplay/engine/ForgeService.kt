@@ -9,7 +9,6 @@ import kotlinx.coroutines.flow.StateFlow
 import java.io.BufferedInputStream
 import java.io.ByteArrayOutputStream
 import java.io.File
-import java.io.FileInputStream
 import java.io.FileOutputStream
 import java.io.IOException
 import java.io.InputStream
@@ -75,10 +74,15 @@ object ForgeService {
                 _status.value = Status.Loading("Updating rules")
                 seedRules()
                 pickDownloadedRules()
-                try { downloadRules() } catch (t: Throwable) { Log.i(TAG, "rules update skipped: ${t.message}") }
+                // Only a bundle about to expire is worth waiting for; otherwise cards load first and
+                // the check runs afterwards off the engine thread (a slow network never delays a match).
+                val soon = LocalDate.now(ZoneOffset.UTC).plusDays(2).toString()
+                val expiring = rulesValidUntil == null || rulesValidUntil!! <= soon
+                if (expiring) try { downloadRules() } catch (t: Throwable) { Log.i(TAG, "rules update skipped: ${t.message}") }
                 _status.value = Status.Loading("Loading cards")
                 val loadMs = LocalEngine.init(root.absolutePath)
                 _status.value = Status.Ready(unpackMs, loadMs, rulesValidUntil)
+                if (!expiring) Thread({ try { downloadRules() } catch (t: Throwable) { Log.i(TAG, "rules update skipped: ${t.message}") } }, "forge-rules-update").start()
             } catch (t: Throwable) {
                 Log.e(TAG, "engine load failed", t)
                 _status.value = Status.Failed(t.javaClass.simpleName + ": " + t.message)

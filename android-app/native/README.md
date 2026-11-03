@@ -19,3 +19,11 @@ never enters this repository.
 - `engine/MatchState.kt` — the bridge snapshot fields the table reads.
 - `match/MatchController.kt` — polling, the keep gate and the CPU pacing tiers (0.9 / 2.4 / 3.6 s).
 - `ui/` — Home, deck pick, versus beat, table, sidebar, overlays.
+
+Checks: `ENGINE_ROOT=<unpacked pack.zip> gradle :app:testDebugUnitTest --rerun` plays a full CPU match on the real
+engine (desktop JVM) through `MatchState.parse` and `Pacing`, as either deck (`SWAP=1`), and fails if the CPU
+acts before the keep.
+
+Next patch (architect review, 3 Nov):
+- A snapshot that carries several CPU actions is drawn whole before its beats play; the spec wants board and feed
+  to advance per action.

@@ -118,6 +118,7 @@ class MatchController(private val scope: CoroutineScope, private val input: Stri
 
     private suspend fun play() {
         var gatePassed = false
+        var mulliganSeen = false
         var cpuHandAtKeep = 0
         for (st in snapshots) {
             queued--
@@ -125,6 +126,9 @@ class MatchController(private val scope: CoroutineScope, private val input: Stri
                 _failure.value = (listOf(st.failure ?: "native_failed") + st.errors).joinToString("\n"); _stage.value = Stage.FAILED; show(st); continue
             }
             // 1. Before the keep: only the mulligan screen. The CPU's own mulligan is silent.
+            // The board stays closed until Forge has actually asked for the keep at least once.
+            if (!gatePassed && st.isMulligan && !st.busy && (st.prompt != null || st.inputType != null)) mulliganSeen = true
+            if (!gatePassed && !mulliganSeen) continue
             if (!gatePassed && st.isMulligan) {
                 _stage.value = Stage.MULLIGAN; lastSeq = st.events.maxOfOrNull { it.seq } ?: lastSeq
                 cpuHandAtKeep = st.cpu.handCount
@@ -147,12 +151,12 @@ class MatchController(private val scope: CoroutineScope, private val input: Stri
             // 3. Each new event in order: turn banners and CPU actions, one at a time.
             val fresh = st.events.filter { it.seq > lastSeq }
             if (fresh.isNotEmpty()) lastSeq = fresh.maxOf { it.seq }
-            val beats = beatsFor(st, fresh)
+            val beats = Pacing.beatsFor(st, fresh)
             if (beats.isEmpty()) { show(st) } else {
                 show(st)
                 for (b in beats) {
-                    if (b is BannerStep) { _banner.value = b.banner; hold(BANNER_MS); _banner.value = null; continue }
-                    beat((b as BeatStep).beat)
+                    if (b is Pacing.BannerStep) { _banner.value = b.banner; hold(BANNER_MS); _banner.value = null; continue }
+                    beat((b as Pacing.BeatStep).beat)
                 }
                 _shown.value?.let { show(it) }
             }
@@ -172,59 +176,6 @@ class MatchController(private val scope: CoroutineScope, private val input: Stri
         hold(ms)
         _beat.value = null
         delay(GAP_MS)
-    }
-
-    private sealed interface Step
-    private data class BannerStep(val banner: Banner) : Step
-    private data class BeatStep(val beat: Beat) : Step
-
-    /** CPU actions from Forge's events, sorted into the three tiers. Your own actions need no replay. */
-    private fun beatsFor(st: MatchState, events: List<GameEvent>): List<Step> {
-        val me = st.viewer
-        val mine = (st.me.battlefield + st.me.hand).map { it.id }.toSet()
-        fun touchesMe(refs: List<dev.cardstashy.nativeplay.engine.Ref>) = refs.any { (it.kind == "player" && it.id == me) || (it.kind == "card" && it.id in mine) }
-        fun controllerOf(id: Int?) = id?.let { st.card(it)?.controller }
-        val out = mutableListOf<Step>()
-        var explainedLife = false
-        for (e in events) {
-            when (e.type) {
-                "turn" -> if (e.turn > 1) out += BannerStep(Banner("Turn ${e.turn} · " + if (e.player == me) "Your turn" else "CPU's turn", e.player == me))
-                "land" -> if (e.player != null && e.player != me) out += BeatStep(Beat(Beat.Kind.LAND, "CPU plays ${e.card?.name ?: "a land"}", e.card?.id, e.card?.name, null))
-                "cast" -> if (e.player != null && e.player != me) {
-                    val hits = touchesMe(e.targets)
-                    val life = if (hits) lifeChange(st, events) else null
-                    if (life != null) explainedLife = true
-                    out += BeatStep(Beat(if (hits) Beat.Kind.AFFECTS_YOU else Beat.Kind.ACTION, "CPU casts ${e.source?.name ?: "a spell"}", e.source?.id, e.source?.name,
-                        if (hits) targetText(st, e.targets) else null, life?.first, life?.second))
-                }
-                "trigger" -> if (controllerOf(e.source?.id)?.let { it != me } == true) {
-                    val hits = touchesMe(e.targets)
-                    out += BeatStep(Beat(if (hits) Beat.Kind.AFFECTS_YOU else Beat.Kind.ACTION, "${e.source?.name ?: "A CPU card"} triggers", e.source?.id, e.source?.name, if (hits) targetText(st, e.targets) else null))
-                }
-                "attack" -> if (e.player != null && e.player != me && e.attackers.isNotEmpty()) {
-                    val names = e.attackers.map { it.first.name ?: "a creature" }
-                    out += BeatStep(Beat(Beat.Kind.AFFECTS_YOU, "CPU attacks with " + names.joinToString(", "), e.attackers.first().first.id, e.attackers.first().first.name,
-                        "${names.size} attacker" + if (names.size == 1) "" else "s"))
-                }
-                "block" -> if (e.player != null && e.player != me) out += BeatStep(Beat(Beat.Kind.ACTION, "CPU blocks", e.card?.id ?: e.source?.id, e.card?.name ?: e.source?.name, null))
-            }
-        }
-        // Damage or drain to you that no cast above explains (combat, a trigger resolving): one red beat.
-        if (!explainedLife) lifeChange(st, events)?.let { (from, to) ->
-            out += BeatStep(Beat(Beat.Kind.AFFECTS_YOU, if (to < from) "You lose ${from - to} life" else "You gain ${to - from} life", null, null, null, from, to))
-        }
-        return out
-    }
-
-    private fun lifeChange(st: MatchState, events: List<GameEvent>): Pair<Int, Int>? {
-        val mine = events.filter { it.type == "life" && it.player == st.viewer && it.lifeFrom != null && it.lifeTo != null }
-        if (mine.isEmpty()) return null
-        val from = mine.first().lifeFrom!!; val to = mine.last().lifeTo!!
-        return if (to < from) from to to else null
-    }
-
-    private fun targetText(st: MatchState, refs: List<dev.cardstashy.nativeplay.engine.Ref>) = refs.joinToString(", ") {
-        if (it.kind == "player") (if (it.id == st.viewer) "Targets you" else "Targets CPU") else "Targets ${it.name ?: "a card"}"
     }
 
     // ---- Your actions ----
@@ -249,7 +200,15 @@ class MatchController(private val scope: CoroutineScope, private val input: Stri
         scope.launch(Dispatchers.IO) {
             val body = JsonObject().apply { addProperty("revision", st.revision); addProperty("op", op); fill() }
             try {
-                val r = session?.call("POST", "/action", body.toString())
+                var r = session?.call("POST", "/action", body.toString())
+                // The board moved on under the tap: if it is still the same decision, send it once more on the new revision.
+                if (r != null && r.status() == 409 && r.body().contains("stale_revision")) {
+                    val now = session?.call("GET", "/state", null)?.body()?.let { MatchState.parse(it) }
+                    if (now != null && now.inputType == st.inputType && now.prompt?.id == st.prompt?.id && !now.busy) {
+                        body.addProperty("revision", now.revision)
+                        r = session?.call("POST", "/action", body.toString())
+                    }
+                }
                 if (r != null && r.status() != 202) Log.i(TAG, "action $op -> ${r.status()} ${r.body()}")
             } catch (t: Throwable) { Log.w(TAG, "action", t) }
             // Wait for Forge to move on (a newer revision or a finished command), never forever.

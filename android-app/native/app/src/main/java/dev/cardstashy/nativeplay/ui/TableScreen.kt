@@ -100,7 +100,7 @@ fun TableScreen(controller: MatchController, onHome: () -> Unit, onRematch: () -
         Box(Modifier.fillMaxSize().background(Color(0x55000000)))
         BoxWithConstraints(Modifier.fillMaxSize().windowInsetsPadding(WindowInsets.safeDrawing)) {
             val k = if (maxHeight >= 600.dp) 1.45f else if (maxHeight >= 480.dp) 1.2f else 1f
-            val sizes = Sizes(sidebar = if (maxWidth >= 1000.dp) 280.dp else 176.dp, field = 46.dp * k, land = 36.dp * k, hand = 60.dp * k, back = 20.dp * k)
+            val sizes = Sizes(sidebar = if (maxWidth >= 1000.dp) 280.dp else 168.dp, field = 46.dp * k, land = 36.dp * k, hand = 60.dp * k, back = 20.dp * k)
             val st = shown
             when {
                 st == null || stage == Stage.STARTING -> Loading()
@@ -232,7 +232,7 @@ private fun LifeOrb(life: Int, pickable: Boolean, picked: Boolean, onPick: () ->
     }
 }
 
-/** The hand fan: never wraps, never rescales. Tap a playable card to lift it, tap again (or drag it up) to play it. */
+/** The hand fan: never wraps, never rescales. Tap a playable card to lift it (tap again to inspect); play it with the gold button or by dragging it up. */
 @Composable
 private fun Hand(st: MatchState, c: MatchController, live: Boolean, sizes: Sizes, selected: Int?, modifier: Modifier,
                  onSelect: (Int?) -> Unit, onInspect: (Card) -> Unit) {
@@ -260,7 +260,7 @@ private fun Hand(st: MatchState, c: MatchController, live: Boolean, sizes: Sizes
                 CardFace(card, sizes.hand, sizes.h(sizes.hand), mark = if (pickable) Mark.PICKABLE else if (playable) Mark.PLAYABLE else Mark.NONE,
                     onTap = when {
                         pickable -> ({ c.card(card.id) })
-                        playable && lifted -> ({ onSelect(null); c.card(card.id) })
+                        playable && lifted -> ({ onInspect(card) })
                         playable -> ({ onSelect(card.id) })
                         else -> ({ onInspect(card) })
                     }, onHold = { onInspect(card) })
@@ -432,7 +432,7 @@ private fun PromptPanel(p: Prompt, st: MatchState, c: MatchController, live: Boo
                 GoldButton(labels[0], live, Modifier.fillMaxWidth()) { c.reply(p.id, value = true) }
                 GoldButton(labels[1], live, Modifier.fillMaxWidth(), primary = false) { c.reply(p.id, value = false) }
             }
-            p.assignAmount != null -> GoldButton("Assign", live, Modifier.fillMaxWidth()) { c.reply(p.id, amounts = autoAssign(p)) }
+            p.assignAmount != null -> GoldButton("Assign", live, Modifier.fillMaxWidth()) { c.reply(p.id, amounts = p.autoAssign()) }
             p.ordered -> GoldButton("Keep this order", live, Modifier.fillMaxWidth()) { c.reply(p.id, indexes = p.destinationIndexes.ifEmpty { p.options.indices.toList() }) }
             p.method == "showInputDialog" && p.options.isEmpty() -> GoldButton("OK", live, Modifier.fillMaxWidth()) { c.reply(p.id) }
             else -> {
@@ -453,14 +453,6 @@ private fun PromptPanel(p: Prompt, st: MatchState, c: MatchController, live: Boo
             }
         }
     }
-}
-
-private fun autoAssign(p: Prompt): List<Int> {
-    var left = p.assignAmount ?: 0
-    val out = MutableList(p.options.size) { 0 }
-    for (i in out.indices) { val take = if (i == out.lastIndex) left else minOf(left, p.assignMaxima.getOrElse(i) { left }); out[i] = take; left -= take }
-    if (left > 0 && out.isNotEmpty()) out[out.lastIndex] += left
-    return out
 }
 
 // ---- Overlays ----
