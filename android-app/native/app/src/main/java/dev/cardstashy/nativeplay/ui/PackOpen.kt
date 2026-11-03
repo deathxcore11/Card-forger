@@ -419,7 +419,7 @@ private fun Focus(pack: PackResult, focus: Int, open: Boolean, charging: Boolean
                 }) {
                 // Back and face turn about the card's middle; each hides once past edge-on.
                 Box(Modifier.fillMaxSize().graphicsLayer { cameraDistance = 14f * density; rotationY = flip; alpha = if (flip < 90f) 1f else 0f }.clip(RoundedCornerShape(4.6f.dp))) {
-                    CardBack(Modifier.fillMaxSize())
+                    MagicBack(Modifier.fillMaxSize())
                     if (tease || charging) Box(Modifier.fillMaxSize().border(3.dp, (if (charging) TIER_COLORS[min(5, p.level)] else Color(0xFFF0C75E)).copy(alpha = .6f), RoundedCornerShape(4.6f.dp)))
                 }
                 Box(Modifier.fillMaxSize().graphicsLayer { cameraDistance = 14f * density; rotationY = flip - 180f; alpha = if (flip >= 90f) 1f else 0f }) {
@@ -536,7 +536,7 @@ private fun Hand(pack: PackResult, revealed: List<Int>, focus: Int, handW: Dp, h
                     }
                     .clickable(remember { MutableInteractionSource() }, null) { onTap(i) }
                     .semantics { contentDescription = if (open) "${p.name} · revealed" else "Card ${i + 1}, face down" }) {
-                    Box(Modifier.fillMaxSize().graphicsLayer { cameraDistance = 10f * density.density; rotationY = turn; alpha = if (turn < 90f) 1f else 0f }.clip(RoundedCornerShape(6.dp))) { CardBack(Modifier.fillMaxSize()) }
+                    Box(Modifier.fillMaxSize().graphicsLayer { cameraDistance = 10f * density.density; rotationY = turn; alpha = if (turn < 90f) 1f else 0f }.clip(RoundedCornerShape(6.dp))) { MagicBack(Modifier.fillMaxSize()) }
                     Box(Modifier.fillMaxSize().graphicsLayer { cameraDistance = 10f * density.density; rotationY = turn - 180f; alpha = if (turn >= 90f) 1f else 0f }
                         .border(1.5.dp, p.tier.copy(alpha = .85f), RoundedCornerShape(6.dp)).clip(RoundedCornerShape(6.dp)).background(Color(0xFF0B0C10))) {
                         PullFace(p, Modifier.fillMaxSize())
@@ -545,3 +545,9 @@ private fun Hand(pack: PackResult, revealed: List<Int>, focus: Int, handW: Dp, h
             }
         }
     }
+
+/** Face-down pack cards wear Magic's own card back, as the site's /img/back/mtg.jpg does (Randall's copy, bundled so a flip never waits). */
+@Composable
+fun MagicBack(modifier: Modifier) = Box(modifier.background(Color(0xFF121014))) {
+    AssetImage("play/mtg-back.webp", Modifier.fillMaxSize(), maxWidth = 400)
+}

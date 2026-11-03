@@ -190,7 +190,7 @@ class ShotTest {
         )
         for ((w, h) in listOf(390 to 844, 884 to 1104)) for ((name, stage, rv) in states) {
             if (w > 390 && name != "3-mythic") continue
-            kotlinx.coroutines.runBlocking { AssetImages.load(RuntimeEnvironment.getApplication(), "play/card-back.webp", maxWidth = 372)
+            kotlinx.coroutines.runBlocking { AssetImages.load(RuntimeEnvironment.getApplication(), "play/mtg-back.webp", maxWidth = 400)
                 for (c in dev.cardstashy.nativeplay.ui.WRAPPERS.keys) AssetImages.load(RuntimeEnvironment.getApplication(), "play/pack-$c.webp", maxWidth = 600) }
             RuntimeEnvironment.setQualifiers("w${w}dp-h${h}dp-xxhdpi")
             captureRoboImage(File(System.getProperty("shotsDir"), "pack-open-$name-${w}x$h.png").path) {
