@@ -23,6 +23,7 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.composed
 import androidx.compose.ui.draw.drawWithContent
+import androidx.compose.ui.graphics.drawscope.withTransform
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.graphics.BlendMode
@@ -47,8 +48,9 @@ import kotlinx.coroutines.launch
  *    angle drifts 2 % per frame toward how the phone is held; rotateY x·9°, rotateX −y·9°, light 50 + x·45 %;
  *    no scale, 180 ms ease-out (style.css:2818). Honours "Phone tilt in card views" (motionTilt).
  *  - shine-once (style.css:2820-2823): the first time 60 % of the card is on screen it catches the light,
- *    rotateY −9° → 5° → 0 and rotateX 3° → −1° → 0 over 1.1 s after .15 s, with a soft-light sweep.
- *  - the soft-light spot at the light while tilting (style.css:5006), hidden when the card has a foil layer.
+ *    rotateY −9° → 5° → 0 and rotateX 3° → −1° → 0 over 1.1 s after .15 s; its lamp plays finish-catch.
+ *  - the lamp is finish-effects.css .finish-spotlight (the ::before/::after spots are hidden on live, fx:34).
+ *    Checked with the card detail thread against live 574ef07.
  * Light ([mx], [my]) is 0..1, for the foil to follow.
  */
 class CardLean {
@@ -56,13 +58,14 @@ class CardLean {
     var mx by mutableFloatStateOf(.5f); var my by mutableFloatStateOf(.5f)
     var pressed by mutableStateOf(false); var gyro by mutableStateOf(false)
     internal var catchDone = false
+    /** A phone tilt sensor is live: on phones the site's .tilting.gyro rule wins, so a finger gets no 1.035 lift and eases at .18 s. */
+    var sensor = false
     /** The light as the foil's -1..1 offset, or null when nothing leans the card. */
     val light: Offset? get() = if (pressed || gyro) Offset((mx - .5f) * 2f, (my - .5f) * 2f) else null
 }
 
 private val settle = CubicBezierEasing(.2f, .8f, .2f, 1f)
 private val easeOut = CubicBezierEasing(0f, 0f, .58f, 1f)
-private val sweep = CubicBezierEasing(.3f, .6f, .3f, 1f)
 
 @Composable
 fun rememberCardLean(): CardLean {
@@ -74,6 +77,8 @@ fun rememberCardLean(): CardLean {
         val sensor = sm?.getDefaultSensor(Sensor.TYPE_GAME_ROTATION_VECTOR)
         val rot = FloatArray(9); val ori = FloatArray(3)
         var baseB = Float.NaN; var baseG = 0f
+        @Suppress("DEPRECATION") val angle = { ((context.getSystemService(Context.WINDOW_SERVICE) as? android.view.WindowManager)?.defaultDisplay?.rotation ?: 0) * 90 }
+        lean.sensor = sensor != null
         val l = object : SensorEventListener {
             override fun onSensorChanged(e: SensorEvent) {
                 SensorManager.getRotationMatrixFromVector(rot, e.values); SensorManager.getOrientation(rot, ori)
@@ -82,7 +87,10 @@ fun rememberCardLean(): CardLean {
                 if (lean.pressed) return
                 if (baseB.isNaN()) { baseB = b; baseG = g }
                 baseB += (b - baseB) * .02f; baseG += (g - baseG) * .02f
-                val x = ((g - baseG) / 18f).coerceIn(-1f, 1f); val y = ((b - baseB) / 18f).coerceIn(-1f, 1f)
+                val x0 = ((g - baseG) / 18f).coerceIn(-1f, 1f); val y0 = ((b - baseB) / 18f).coerceIn(-1f, 1f)
+                // mobile-tilt.js tiltCoordinates: the axes turn with the screen, so landscape leans the right way.
+                val r = Math.toRadians(angle().toDouble()); val c = Math.cos(r).toFloat(); val sn = Math.sin(r).toFloat()
+                val x = x0 * c + y0 * sn; val y = y0 * c - x0 * sn
                 lean.catchDone = true
                 lean.gyro = true; lean.tx = x * 9f; lean.ty = -y * 9f; lean.mx = .5f + x * .45f; lean.my = .5f + y * .45f
             }
@@ -98,12 +106,12 @@ fun rememberCardLean(): CardLean {
 fun Modifier.cardLean(lean: CardLean, foil: Boolean, shape: androidx.compose.ui.graphics.Shape = androidx.compose.foundation.shape.RoundedCornerShape(16f)): Modifier = composed {
     val still = Motion.still
     val view = LocalView.current
-    val spec = when { lean.pressed -> tween<Float>(80, easing = LinearEasing); lean.gyro -> tween(180, easing = easeOut); else -> tween(350, easing = settle) }
+    val spec = when { lean.pressed && !lean.sensor -> tween<Float>(80, easing = LinearEasing); lean.gyro || lean.sensor -> tween(180, easing = easeOut); else -> tween(350, easing = settle) }
     val leaning = lean.pressed || lean.gyro
     val rx by animateFloatAsState(if (leaning && !still) lean.ty else 0f, spec, label = "rx")
     val ry by animateFloatAsState(if (leaning && !still) lean.tx else 0f, spec, label = "ry")
-    val sc by animateFloatAsState(if (lean.pressed && !still) 1.035f else 1f, spec, label = "sc")
-    // shine-once: rotateY −9 → 5 (55 %) → 0, rotateX 3 → −1 → 0; the sweep from 120 % to −30 %.
+    val sc by animateFloatAsState(if (lean.pressed && !lean.sensor && !still) 1.035f else 1f, spec, label = "sc")
+    // shine-once: rotateY −9 → 5 (55 %) → 0, rotateX 3 → −1 → 0.
     val shine = remember { Animatable(0f) }
     var seen by remember { mutableStateOf(false) }
     LaunchedEffect(seen) {
@@ -152,15 +160,18 @@ fun Modifier.cardLean(lean: CardLean, foil: Boolean, shape: androidx.compose.ui.
         .clip(shape)
         .drawWithContent {
             drawContent()
-            if (!foil && leaning && !still) drawRect(Brush.radialGradient(listOf(Color.White.copy(alpha = .6f * .5f), Color.Transparent),
-                center = Offset(lean.mx * size.width, lean.my * size.height), radius = size.maxDimension * .45f), blendMode = BlendMode.Softlight)
+            if (still) return@drawWithContent
+            // finish-effects.css .finish-spotlight: a neutral lamp at the light on every enlarged card, screen blend, .65;
+            // shine-once plays finish-catch on it (opacity 0 → .9 → .65, translateX −35 % → 0, 1.1 s ease-out).
             val p = shine.value
-            if (!foil && p > 0f && p < 1f) {
-                // background-size 250 %, position 120 % → −30 %: the band's centre crosses from right to left.
-                val k = sweep.transform(p); val bandW = size.width * 2.5f
-                val left = (size.width - bandW) * (1.2f - 1.5f * k)
-                drawRect(Brush.linearGradient(.35f to Color.Transparent, .5f to Color.White.copy(alpha = .55f), .65f to Color.Transparent,
-                    start = Offset(left, size.height * .2f), end = Offset(left + bandW, size.height * .8f)), blendMode = BlendMode.Softlight)
+            val (alpha, dx) = if (p > 0f && p < 1f) { val k = easeOut.transform(p)
+                (if (k < .55f) .9f * (k / .55f) else .9f - .25f * ((k - .55f) / .45f)) to (-.35f * (1f - k)) } else .65f to 0f
+            val cx = lean.mx * size.width + dx * size.width; val cy = lean.my * size.height
+            // radial-gradient(ellipse at x y): farthest-corner ellipse, radii √2 × the farthest side on each axis.
+            val rx = maxOf(cx, size.width - cx) * 1.4142f; val ry = maxOf(cy, size.height - cy) * 1.4142f
+            withTransform({ scale(1f, ry / rx, Offset(cx, cy)) }) {
+                drawCircle(Brush.radialGradient(0f to Color(1f, 1f, 1f, .46f), .18f to Color(245 / 255f, 249 / 255f, 1f, .18f), .55f to Color.Transparent,
+                    center = Offset(cx, cy), radius = rx), radius = rx, center = Offset(cx, cy), alpha = alpha, blendMode = BlendMode.Screen)
             }
         }
 }
