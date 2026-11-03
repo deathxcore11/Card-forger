@@ -7,6 +7,7 @@ import {slimCard} from './play-econ-cards.js';
 import {deckShortfall, deckStatus, copyCap, deckRules, isSingleton, isBasicLand, SEALS, RARITY_SEAL, PLAY_FORMATS} from './play-econ-rules.js';
 import {symbolUrl, img} from './ui.js';
 import {sealIcon} from './play-econ-ui.js';
+import {deckShell, deckViewer, deckCardAttrs, deckCardCategory} from './deck-viewer.js';
 
 const esc = v => String(v ?? '').replace(/[&<>"']/g, c => ({'&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;'}[c]));
 const SCRYFALL = 'https://api.scryfall.com';
@@ -244,6 +245,7 @@ const sealLabel = k => SEALS.find(s => s.key === k)?.rarity || '';
 const costChips = (cost = {}, short = {}) => SEALS.filter(s => cost[s.key]).map(s => `<span class="pf-seal${short[s.key] ? ' pf-seal--short' : ''}" data-seal="${s.key}" title="${esc(`${cost[s.key]} ${s.rarity} seal${cost[s.key] > 1 ? 's' : ''}${short[s.key] ? `, ${short[s.key]} more than you have` : ''}`)}">${sealIcon(s.key)}<b>${cost[s.key]}</b></span>`).join('');
 // Buildable / Craftable / the seals still needed. pop = the status just changed (pending → known).
 export function statusMarkup({status, cost = {}, short = {}, slots = 0} = {}, {pop = false, mini = false} = {}) {
+  status = status || 'pending';
   const cls = `pf-status pf-status--${status || 'pending'}${pop ? ' pf-status--pop' : ''}${mini ? ' pf-status--mini' : ''}`;
   if (status === 'buildable') return `<span class="${cls}">${CHECK}<b>Buildable</b></span>`;
   if (status === 'craftable') return `<span class="${cls}" title="Your seals cover every missing card">${costChips(cost)}<b>Craftable</b></span>`;
@@ -257,9 +259,9 @@ export function statusMarkup({status, cost = {}, short = {}, slots = 0} = {}, {p
 export function finderRowMarkup(row, {arch = null, enter = false, pop = false, index = 0} = {}) {
   const title = arch?.name || row.name, sub = [title !== row.name ? row.name : '', row.source === 'Meta' ? '' : row.source, row.detail].filter(Boolean).join(' · ');
   const variants = arch?.variants || [];
-  const variantRow = x => `<li class="pf-variant"><span class="pf-variant-name"><b>${esc(x.list.name || 'Deck')}</b>${x.list.detail ? `<small>${esc(x.list.detail)}</small>` : ''}</span><span class="pf-variant-own" title="${x.have} of ${x.size} cards owned"><b>${x.have}/${x.size}</b><i class="pf-meter" aria-hidden="true"><i style="width:${Math.round(x.share * 100)}%"></i></i></span>${statusMarkup(x, {mini: true})}<button class="btn ghost pf-variant-use" data-act="playFinderUse" data-finder-key="${esc(x.list.key)}" aria-label="Build ${esc(x.list.name || 'this list')}">Build</button></li>`;
+  const variantRow = x => `<li class="pf-variant"><span class="pf-variant-name"><button class="pf-open" data-act="playFinderOpen" data-finder-key="${esc(x.list.key)}"><b>${esc(x.list.name || 'Deck')}</b></button>${x.list.detail ? `<small>${esc(x.list.detail)}</small>` : ''}</span><span class="pf-variant-own" title="${x.have} of ${x.size} cards owned"><b>${x.have}/${x.size}</b><i class="pf-meter" aria-hidden="true"><i style="width:${Math.round(x.share * 100)}%"></i></i></span>${statusMarkup(x, {mini: true})}<button class="btn ghost pf-variant-use" data-act="playFinderUse" data-finder-key="${esc(x.list.key)}" aria-label="Build ${esc(x.list.name || 'this list')}">Build</button></li>`;
   return `<article class="pf-row${enter ? ' pf-row--enter' : ''}" data-status="${esc(row.status)}" style="--pf-art:url('${esc(row.cover)}');--pf-i:${index}">
-    <header class="pf-head"><div class="pf-title">${pips(row.colors)}<h3>${esc(title)}</h3>${arch?.size > 1 ? `<span class="pf-arch-count" title="${arch.size} tournament lists in this archetype">${arch.size}</span>` : ''}<small>${esc(sub)}</small></div>
+    <header class="pf-head"><div class="pf-title">${pips(row.colors)}<h3><button class="pf-open" data-act="playFinderOpen" data-finder-key="${esc(row.key)}">${esc(title)}</button></h3>${arch?.size > 1 ? `<span class="pf-arch-count" title="${arch.size} tournament lists in this archetype">${arch.size}</span>` : ''}<small>${esc(sub)}</small></div>
       <div class="pf-own" title="${row.cardsHave} of ${row.size} cards ready${row.open ? `, ${row.open} slots to fill` : ''}"><b>${row.cardsHave}/${row.size}</b><span>owned</span><i class="pf-meter" aria-hidden="true"><i style="width:${Math.round(row.share * 100)}%"></i></i></div>
       <div class="pf-state">${statusMarkup({status: row.status, cost: row.shortfall.seals, short: row.short, slots: row.open}, {pop})}</div>
       <button class="btn pf-use" data-act="playFinderUse" data-finder-key="${esc(row.key)}">${row.complete ? 'Use deck' : 'Build it'}</button></header>
@@ -283,4 +285,43 @@ export function finderMarkup({headHtml = '', format = 'Standard', rows = [], ite
     <div class="pf-list" aria-busy="${busy}">${list.map((x, i) => finderRowMarkup(x.row, {arch: x.arch, enter: x.enter, pop: x.pop, index: i})).join('') || (busy ? '<div class="pf-skeleton" aria-hidden="true"></div><div class="pf-skeleton" aria-hidden="true"></div>' : `<p class="pf-note">${empty}</p>`)}</div>
     ${(more ?? (total ?? (items || rows).length) > limit) ? `<button class="btn ghost pf-more" data-act="playFinderMore">More decks</button>` : ''}
   </section>`;
+}
+
+// The deck page, the app's own (deckShell hero + deck viewer with its four views): every card with
+// Play ownership, greyed when missing with the seal that crafts it, never a price. Card taps open
+// the Play card view. cardOf(name) → slim card; plan rows come from finderRow.
+const ORDER = ['Commander', 'Creatures', 'Planeswalkers', 'Instants', 'Sorceries', 'Artifacts', 'Enchantments', 'Battles', 'Lands', 'Unresolved'];
+export function finderDeckMarkup(row, {arch = null, cardOf = () => null, packGoals = '', crafting = false, armed = false} = {}) {
+  const title = arch?.name || row.name, list = row.list, lead = list.commander || '';
+  const missing = row.shortfall.missing.reduce((t, m) => t + m.need, 0);
+  const sub = [title !== row.name ? row.name : '', row.source === 'Meta' ? '' : row.source, row.detail].filter(Boolean).join(' · ');
+  const cards = row.groups.flatMap(g => g.cards), groups = new Map();
+  for (const c of cards) {
+    const card = cardOf(c.name), cat = lead && c.name === lead ? 'Commander' : c.basic ? 'Lands' : deckCardCategory(card);
+    if (!groups.has(cat)) groups.set(cat, []);
+    groups.get(cat).push({...c, card, cat});
+  }
+  const own = c => c.basic ? '' : c.have >= c.qty ? '<span class="own yes">In your Trunk</span>' : `<span class="own no">${c.have ? `${c.have}/${c.qty} · ` : ''}${sealIcon(c.seal, 'pf-mini')} ${c.qty - c.have} to craft</span>`;
+  const cardRow = c => `<div class="lot deck-row pf-deck-row${!c.basic && c.have < c.qty ? ' pf-deck-row--missing' : ''}" ${deckCardAttrs(c.name, c.qty, 'main', c.card, c.cat)}>
+    <button class="lot-art" data-act="card" data-name="${esc(c.name)}" data-play-card="1" aria-label="Open ${esc(c.name)}">${c.image || c.card ? img(c.image || c.card?.image_uris?.normal || c.card?.card_faces?.[0]?.image_uris?.normal || '', c.name) : ''}</button>
+    <div class="lot-info"><button class="lot-name" data-act="card" data-name="${esc(c.name)}" data-play-card="1">${esc(c.name)}</button>${c.card?.mana_cost ? `<span class="lot-sub">${esc(c.card.mana_cost.replace(/[{}]/g, ''))}</span>` : ''}${own(c)}</div>
+    <div class="lot-side"><span class="chip">${c.qty}×${c.cat === 'Commander' ? ' · Commander' : ''}</span></div></div>`;
+  const body = ORDER.concat([...groups.keys()].filter(g => !ORDER.includes(g))).filter(g => groups.has(g)).map(g => {
+    const rows = groups.get(g).sort((a, b) => (a.card?.cmc ?? 99) - (b.card?.cmc ?? 99) || a.name.localeCompare(b.name));
+    return `<details class="group" open><summary><span>${esc(g)} <em>${rows.reduce((t, r) => t + r.qty, 0)}</em></span></summary><div class="list display-list" data-deck-list>${rows.map(cardRow).join('')}</div></details>`;
+  }).join('');
+  const sealStats = SEALS.filter(sl => row.shortfall.seals[sl.key]).map(sl => ({value: `${sealIcon(sl.key, 'pf-stat-seal')}${row.shortfall.seals[sl.key]}`, label: `${sl.rarity} seal${row.shortfall.seals[sl.key] > 1 ? 's' : ''}`, tone: row.short?.[sl.key] ? 'warn' : ''}));
+  const canCraft = missing && row.status === 'craftable';
+  return `<div class="ds-page pf-deck-page">${deckShell({game: 'mtg', source: 'play', art: row.cover, title,
+    back: '<button class="icon light" data-act="playFinderBack" aria-label="Back to Build a deck">←</button>',
+    badge: list.trunk ? 'Deck Forge' : 'Meta', format: `<span class="chip dark">${esc(row.format)}</span>`, line: esc(sub),
+    stats: [{value: `${row.cardsHave}/${row.size}`, label: 'owned'}, ...sealStats], owned: row.share,
+    // The hero already lists the seals; the pill only names the state.
+    lead: ['buildable', 'craftable', 'open'].includes(row.status) ? statusMarkup({status: row.status, slots: row.open}) : '',
+    actions: [{label: row.complete ? 'Use deck' : 'Build it', primary: true, attrs: `data-act="playFinderUse" data-finder-key="${esc(row.key)}"`},
+      canCraft ? {label: crafting ? 'Crafting…' : armed ? `Craft ${missing} now` : `Craft all ${missing}`, attrs: `data-act="playFinderCraftAll" data-finder-key="${esc(row.key)}"${armed ? ' data-armed="1"' : ''}`, disabled: crafting} : null,
+      {label: 'Copy list', attrs: `data-act="playFinderCopy" data-finder-key="${esc(row.key)}"`}]}).replace('<h1>', '<h1 id="playFinderDeckTitle" tabindex="-1">')}
+    ${packGoals}
+    ${deckViewer('mtg', body)}
+  </div>`;
 }

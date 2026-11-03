@@ -164,9 +164,9 @@ import { startSearchHints } from "./search-hints.js";
 import { openZoom, zoomCardOptions } from "./zoom.js";
 import {createPlayEcon,purse} from "./play-econ-client.js";
 import {matchCounters,questRows,playDay} from "./play-achievements.js";
-import {econScreenMarkup,ECON_VIEWS,purseMarkup,cardImageByName,head as econHead,craftPlan} from "./play-econ-ui.js";
+import {econScreenMarkup,ECON_VIEWS,purseMarkup,cardImageByName,head as econHead,craftPlan,packGoals} from "./play-econ-ui.js";
 import {rewardFlight} from "./reward-flight.js";
-import {createNameFacts,createCraftRarity,clusterArchetypes,finderArchetypes,rankFinderLists,finderRow,trunkDeck,finderMarkup,FINDER_FORMATS,FINDER_SORTS,FINDER_FILTERS} from "./play-deck-finder.js";
+import {createNameFacts,createCraftRarity,clusterArchetypes,finderArchetypes,rankFinderLists,finderRow,trunkDeck,finderMarkup,finderDeckMarkup,FINDER_FORMATS,FINDER_SORTS,FINDER_FILTERS} from "./play-deck-finder.js";
 import {createCardFacts,slimCard} from "./play-econ-cards.js";
 import {stepDeckCard,ownedByName,deckShortfall,legalFormats,mtgjsonDeckRows,PLAY_FORMATS,deckRules,copyCap} from "./play-econ-rules.js";
 import {STORY_ACTS} from "./story-acts.js";
@@ -1860,11 +1860,11 @@ A.playCardStamp=async t=>{const holo=t.dataset.holo==='1';try{const out=await pl
 A.playEconEditDeck=t=>{const d=(playEcon.snapshot().state?.decks||[]).find(x=>x.id===t.dataset.econDeck);econUi.edit=d?{id:d.id,name:d.name,format:d.format||'Standard',cards:(d.cards||[]).filter(c=>!c.board).map(c=>({...c,qty:c.qty|0})),side:(d.cards||[]).filter(c=>c.board)}:{id:null,name:'',format:'Standard',cards:[]};playView='deck';refreshPlayMenu();scrollTo({top:0});requestAnimationFrame(()=>document.getElementById('playDeckTitle')?.focus?.({preventScroll:true}));};
 // Play "Build a deck" (Untapped-style finder): the Trunk build plus meta lists,
 // ranked by how much the player owns; missing cards greyed with seal costs.
-const finderFacts=createNameFacts({onChange:()=>{if(S.ui.view!=='play')return;if(playView==='finder')finderRefresh();else if(playView==='deck')refreshPlayMenu();}});
+const finderFacts=createNameFacts({onChange:()=>{if(S.ui.view!=='play')return;if(playView==='finder')finderRefresh();else if(playView==='deck'||playView==='finderDeck')refreshPlayMenu();}});
 // Cheapest craftable rarity per card name (Untapped's lowest-rarity billing): the finder, the deck
 // builder's craft bar and Craft all all bill and stamp that printing. Kept on this device.
 let craftRarityTimer=0;
-const craftRarity=createCraftRarity({onChange:()=>{if(S.ui.view!=='play')return;clearTimeout(craftRarityTimer);craftRarityTimer=setTimeout(()=>{if(playView==='finder')finderRefresh();else if(playView==='deck')refreshPlayMenu();},200);}});
+const craftRarity=createCraftRarity({onChange:()=>{if(S.ui.view!=='play')return;clearTimeout(craftRarityTimer);craftRarityTimer=setTimeout(()=>{if(playView==='finder')finderRefresh();else if(playView==='deck'||playView==='finderDeck')refreshPlayMenu();},200);}});
 const billRarity=n=>craftRarity.rarity(n)||finderFacts.get(n)?.rarity||(playEcon.snapshot().state?.cards||[]).find(c=>c.n===n)?.r||'';
 // Arena-style builder: cards not in the Trunk get their facts by name (rarity, art, the id that
 // crafting stamps); "All cards" looks through every card legal in the deck's format (no prices).
@@ -1950,6 +1950,26 @@ function finderView(snap){if(!finderUi.rows&&!finderUi.busy)queueMicrotask(loadF
  return finderMarkup({headHtml:econHead('Build a deck',snap),format:finderUi.format,items:items||[],busy:finderUi.busy,error:finderUi.error,limit:finderUi.limit,total:finderUi.total,more:finderUi.more,sort:finderUi.sort,filter:finderUi.filter,counts:finderUi.counts,rarityBusy:craftRarity.busy,query:finderUi.query});}
 A.playFinderFormat=t=>{const f=t.dataset.finderFormat;if(!FINDER_FORMATS.includes(f)||f===finderUi.format)return;finderUi.format=f;finderUi.limit=8;loadFinder();};
 A.playFinderMore=()=>{finderUi.limit+=8;finderRefresh();};
+// A finder deck opens as the app's own deck page (deckShell + deck viewer), Play data only.
+// The row is built fresh on every paint, so crafting, facts and rarities land live.
+function finderRowFor(key,s=playEcon.snapshot().state){const list=finderUi.lists.get(key)||(finderUi.trunk?.list?.key===key?finderUi.trunk.list:null);if(!list)return null;
+ const owned=ownedByName(s?.cards||[]),ownedFact=new Map((s?.cards||[]).map(c=>{const f=econFacts.card(c.o)?.card;return f?[f.name,f]:null;}).filter(Boolean)),cardOf=n=>finderFacts.get(n)||ownedFact.get(n)||ownedFact.get(String(n).split(' // ')[0])||null;
+ return {row:finderRow(list,{owned,cardOf,seals:finderSeals(s),rarityOf:n=>craftRarity.rarity(n)}),cardOf,owned};}
+function finderDeckView(snap){const key=finderUi.open,hit=key&&finderRowFor(key,snap.state);if(!hit){queueMicrotask(()=>{playView='finder';refreshPlayMenu();});return '';}
+ const {row,cardOf}=hit,names=row.list.cards.map(r=>r.name);finderFacts.want(names);craftRarity.want(names.filter(n=>!hit.owned.get(n)));
+ const plan={rows:row.shortfall.missing.map(m=>({name:m.name,miss:m.need}))},goals=packGoals(plan,n=>cardOf(n),econFacts);
+ return `<section class="play-menu pe-screen pf-deck-screen" aria-labelledby="playFinderDeckTitle">${finderDeckMarkup(row,{arch:finderUi.clusters?.of(key)?{name:finderUi.clusters.of(key).name}:null,cardOf,packGoals:goals,crafting:!!finderUi.crafting,armed:!!finderUi.craftArmed})}</section>`;}
+A.playFinderOpen=t=>{const key=t.dataset.finderKey;if(!finderRowFor(key))return;finderUi.open=key;finderUi.craftArmed=false;finderUi.returnY=scrollY;playView='finderDeck';refreshPlayMenu();scrollTo({top:0});requestAnimationFrame(()=>document.getElementById('playFinderDeckTitle')?.focus?.({preventScroll:true}));};
+A.playFinderBack=()=>{playView='finder';finderUi.open='';refreshPlayMenu();const y=finderUi.returnY||0;requestAnimationFrame(()=>scrollTo({top:y}));};
+A.playFinderCopy=async t=>{const hit=finderRowFor(t.dataset.finderKey);if(!hit)return;const rows=new Map();for(const r of hit.row.list.cards)rows.set(r.name,(rows.get(r.name)||0)+(r.qty|0||1));
+ try{await navigator.clipboard.writeText([...rows].map(([n,q])=>q+' '+n).join('\n'));toast('List copied.');}catch{toast('Copying is blocked here.');}};
+// Craft all from the deck page: one tap arms it (5 s), the second spends seals at each card's cheapest rarity.
+A.playFinderCraftAll=async t=>{const key=t.dataset.finderKey,hit=finderRowFor(key);if(!hit||finderUi.crafting)return;
+ if(!finderUi.craftArmed){finderUi.craftArmed=true;refreshPlayMenu();setTimeout(()=>{if(finderUi.craftArmed){finderUi.craftArmed=false;refreshPlayMenu();}},5000);return;}
+ finderUi.craftArmed=false;finderUi.crafting=true;refreshPlayMenu();let made=0;
+ try{for(const m of hit.row.shortfall.missing){const id=craftIdOf(m.name);if(id)made+=await craftCopies(id,m.need,m.name);}}finally{finderUi.crafting=false;refreshPlayMenu();}
+ if(made){haptic('success');document.querySelectorAll('.pf-deck-row').forEach(el=>{if(econUi.justCrafted?.has(el.dataset.deckName))el.classList.add('pe-build-row--crafted');});}
+ toast(made?`${made} card${made>1?'s':''} crafted into your Trunk.`:'Not enough seals for these cards yet.');};
 C.playFinderSort=t=>{finderUi.sort=FINDER_SORTS.some(([k])=>k===t.value)?t.value:'owned';finderUi.limit=8;finderRefresh();};
 A.playFinderFilter=t=>{const f=t.dataset.finderFilter;if(!FINDER_FILTERS.some(([k])=>k===f)||f===finderUi.filter)return;finderUi.filter=f;finderUi.limit=8;finderRefresh();};
 let finderQueryTimer=0;I.playFinderQuery=t=>{finderUi.query=t.value;clearTimeout(finderQueryTimer);finderQueryTimer=setTimeout(()=>{finderUi.limit=8;finderRefresh();const f=document.querySelector('[data-input="playFinderQuery"]');f?.focus({preventScroll:true});try{f.setSelectionRange(f.value.length,f.value.length);}catch{}},250);};
@@ -2485,6 +2505,7 @@ function renderPlayPage() {
    if(playView==='packs')econFacts.wantSets((snap.state?.packs||[]).map(p=>p.set));
    if(playView==='shop'){const q=(econUi.query||'').trim().toLowerCase(),shop=snap.state?.shop||[];econFacts.wantSets([snap.state?.rewardSet?.code,...(q?shop.filter(x=>x.name.toLowerCase().includes(q)||x.code===q):shop).slice(0,q?60:24).map(x=>x.code)].filter(Boolean));}
    if(playView==='finder')return finderView(snap);
+   if(playView==='finderDeck')return finderDeckView(snap);
    if(playView==='deck')builderWants(snap);
    return econScreenMarkup(playView,snap,{...econUi,query:econUi.query,facts:econFacts,nameFact:n=>finderFacts.get(n),craftRarity:n=>craftRarity.rarity(n),craftId:n=>craftRarity.id(n)});}
   const state=playSetup.snapshot(),p=state.profile,tiles=new Map();state.opponentBuild=practiceOpponentBuilder.snapshot();state.deckBuild=playBuilders[state.playStyle==='quick'?'player':state.inspectedSeat].snapshot();const sources=readPlaySources(),sourceArt=new Map();for(const entries of Object.values(sources))for(const entry of entries)sourceArt.set(entry.key,V.deckArtwork(entry.deck));

@@ -1441,3 +1441,19 @@ button.pd-near-row{cursor:pointer}
 .pe-build-row--crafted::after{content:'';position:absolute;inset:0;border-radius:inherit;pointer-events:none;background:linear-gradient(100deg,transparent 25%,#f2d18e55 50%,transparent 75%) -150% 0/250% 100% no-repeat;animation:pf-glint .9s ease-out both}
 @keyframes pe-crafted{0%{transform:scale(.96);box-shadow:0 0 0 #f2d18e00}45%{transform:scale(1.015);box-shadow:0 0 22px #f2d18e55}100%{transform:none;box-shadow:0 0 0 #f2d18e00}}
 @media(prefers-reduced-motion:reduce){.pe-build-row--crafted,.pe-build-row--crafted::after{animation:none}}
+/* Finder → deck page: titles open the app's own deck page; missing cards grey like Arena. */
+.pf-open{display:inline-flex;align-items:center;min-height:44px;padding:0;border:0;background:none;color:inherit;font:inherit;letter-spacing:inherit;text-align:left;text-shadow:inherit;cursor:pointer;overflow-wrap:anywhere}
+.pf-open:hover{color:#f6e4bb}
+.pf-open:focus-visible{outline:2px solid var(--gold);outline-offset:3px;border-radius:6px}
+.pf-variant-name .pf-open{min-height:44px;display:grid;justify-items:start}
+.pf-deck-screen .ds-page{animation:pf-rise .4s cubic-bezier(.2,.8,.2,1) both}
+.pf-stat-seal{width:18px;height:18px;vertical-align:-3px;margin-right:3px}
+.pf-deck-row--missing .lot-art img{filter:grayscale(.9) brightness(.55)}
+.pf-deck-row--missing{border-color:#f2d18e33}
+.pf-deck-row .own.no{display:inline-flex;align-items:center;gap:4px;color:#f2d18e}
+.pf-deck-row .own.yes{color:#bfe3b0}
+.pf-deck-page .pe-pack-goals{margin:12px 0}
+.pf-deck-page .ds-lead{display:flex;flex-wrap:wrap;gap:8px}
+.pf-deck-page .ds-lead .pf-status{margin:4px 0;flex:0 0 auto}
+@media(prefers-reduced-motion:reduce){.pf-deck-screen .ds-page{animation:none}}
+.pf-deck-page details.group>summary{min-height:44px;display:flex;align-items:center}

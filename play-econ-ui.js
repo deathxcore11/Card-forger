@@ -336,7 +336,7 @@ export function deckBuilderMarkup(snapshot, ui = {}) {
 }
 // Pack goals: the sets your missing cards come from, most missing first. Each opens that set's
 // Play page (its cards, greyed where missing, and Buy a pack); Story acts and quests drop them too.
-function packGoals(plan, slimOf, facts) {
+export function packGoals(plan, slimOf, facts) {
   const by = new Map();
   for (const r of plan.rows) { const c = slimOf(r.name); if (!c?.set) continue; const g = by.get(c.set) || {code: c.set, name: facts?.set?.(c.set)?.name || c.set_name || c.set.toUpperCase(), miss: 0}; g.miss += r.miss; by.set(c.set, g); }
   const sets = [...by.values()].sort((a, b) => b.miss - a.miss).slice(0, 4);
@@ -421,4 +421,4 @@ export function econScreenMarkup(view, snapshot, ui = {}) {
   if (view === 'deeds') return deedsScreenMarkup(snapshot, ui);
   return '';
 }
-export const ECON_VIEWS = new Set(['shop', 'packs', 'collection', 'decks', 'deck', 'deeds', 'finder']);
+export const ECON_VIEWS = new Set(['shop', 'packs', 'collection', 'decks', 'deck', 'deeds', 'finder', 'finderDeck']);

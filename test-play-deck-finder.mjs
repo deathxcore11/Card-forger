@@ -1,6 +1,6 @@
 // Play "Build a deck" finder: ownership share, seal costs, ranking, Trunk build, and the price wall.
 import assert from 'node:assert/strict';
-import {finderRow, rankFinderRows, rankFinderLists, ownedShare, trunkDeck, finderMarkup, createNameFacts, createCraftRarity, clusterArchetypes, finderArchetypes, finderRowMarkup, FINDER_FORMATS} from './play-deck-finder.js';
+import {finderDeckMarkup, finderRow, rankFinderRows, rankFinderLists, ownedShare, trunkDeck, finderMarkup, createNameFacts, createCraftRarity, clusterArchetypes, finderArchetypes, finderRowMarkup, FINDER_FORMATS} from './play-deck-finder.js';
 import {deckShortfall, deckStatus, copyCap, deckRules, ownedByName, PLAY_FORMATS} from './play-econ-rules.js';
 import {craftPlan} from './play-econ-ui.js';
 
@@ -161,9 +161,21 @@ assert.equal(arch[0].variants.length, 1);
 const archHtml = finderRowMarkup(finderRow(v2, {owned: new Map([['Swap', 4]])}), {arch: {...arch[0], name: 'Izzet Prowess', size: 2}, enter: true});
 assert.match(archHtml, /pf-row--enter/);
 assert.match(archHtml, /1 more list</);
-assert.match(archHtml, /<h3>Izzet Prowess<\/h3>/);
+assert.match(archHtml, /data-act="playFinderOpen" data-finder-key="b">Izzet Prowess</, 'the title opens the deck page');
 assert.match(archHtml, /data-finder-key="a"/, 'a variant opens in the builder too');
 assert.doesNotMatch(archHtml, /\$|usd|price/i);
+// The deck page is the app's own: deckShell hero + deck viewer, Play ownership, seals, no prices.
+const full = {...list, cards: [...list.cards, {name: 'Mountain', qty: 30}]};
+const page = finderDeckMarkup(finderRow(full, {owned, cardOf, seals: {r: 5, m: 2}}), {cardOf, packGoals: '<div class="pe-pack-goals"></div>'});
+assert.match(page, /ds-hero/);
+assert.match(page, /data-deck-view=/);
+assert.match(page, /data-deck-category="Creatures"/);
+assert.match(page, /pf-deck-row--missing/);
+assert.match(page, /data-act="playFinderCraftAll"/, 'seals cover it: Craft all is offered');
+assert.match(page, /Craft all 5/);
+assert.match(page, /data-play-card="1"/);
+assert.doesNotMatch(page, /\$|usd|price/i);
+assert.doesNotMatch(finderDeckMarkup(finderRow(full, {owned, cardOf, seals: {}}), {cardOf}), /playFinderCraftAll/, 'short of seals: no Craft all');
 // Craft plan respects the caps (no billing past four, or past one in singleton).
 assert.equal(craftPlan([{name: 'Goblin Guide', qty: 7}], new Map(), () => 'rare', {}, () => 4).missing, 4);
 console.log('play deck finder ok');
