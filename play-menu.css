@@ -1201,11 +1201,8 @@ button.pd-near-row{cursor:pointer}
 .pf-own b{font:800 18px/1 'DM Sans',system-ui,sans-serif;font-variant-numeric:tabular-nums}
 .pf-own span{font-size:11px;color:#c9cfd6;letter-spacing:.06em}
 .pf-state{display:flex;flex-wrap:wrap;align-items:center;justify-content:flex-end;gap:4px 10px;font-size:13px}
-.pf-ready{display:grid;place-items:center;width:32px;height:32px;border-radius:50%;border:1px solid #bfe3b088;background:#bfe3b01a}.pf-ready svg{width:18px;height:18px;fill:none;stroke:#bfe3b0;stroke-width:2.4;stroke-linecap:round;stroke-linejoin:round}
-.pf-cost{display:inline-flex;flex-wrap:wrap;gap:8px}
 .pf-seal{display:inline-flex;align-items:center;gap:3px;font:800 14px/1 'DM Sans',system-ui,sans-serif}
 .pf-seal .pe-seal{width:20px;height:20px}
-.pf-cost--covered{padding:4px 10px;border-radius:999px;border:1px solid #f2d18e88;background:#f2d18e1a;box-shadow:0 0 14px #f2d18e26}
 .pf-mini{width:14px;height:14px}
 .pf-card.pf-card--slim{display:inline-flex;align-items:center;gap:6px;width:auto;padding:0 10px;background:#ffffff0d;border:1px solid #ffffff1a;box-shadow:none;color:#f6eedb;font:600 13px/1.2 'DM Sans',system-ui,sans-serif}
 .pf-card--slim b{font-variant-numeric:tabular-nums;color:#e9d6a7}
@@ -1376,3 +1373,71 @@ button.pd-near-row{cursor:pointer}
 .play-nav button{min-height:44px;cursor:pointer;white-space:nowrap;letter-spacing:0}
 .play-nav button span .ico{width:23px;height:23px}
 .play-nav button[data-play-nav="switch"] span{color:var(--gold)}
+
+/* Untapped-style finder (3 Nov): filters with live counts, Buildable / Craftable states, archetype
+   variants, and motion: rows rise in once, meters fill, a status that resolves pops with a glint. */
+.pf-filter{display:inline-flex;align-items:center;gap:7px}
+.pf-filter>svg:not(.pe-seal){width:16px;height:16px;fill:none;stroke:currentColor;stroke-width:2.4;stroke-linecap:round;stroke-linejoin:round}
+.pf-filter .pf-filter-seal{width:18px;height:18px}
+.pf-filter b{min-width:22px;padding:2px 7px;border-radius:999px;background:#ffffff14;font:800 12px/1.2 'DM Sans',system-ui,sans-serif;font-variant-numeric:tabular-nums;text-align:center;transition:background .25s ease}
+.pf-filter.on b{background:color-mix(in srgb,var(--gold) 30%,transparent)}
+.pf-filter--busy b{background:linear-gradient(100deg,#ffffff10 30%,#f2d18e40 50%,#ffffff10 70%) 0 0/300% 100%;animation:pf-shine 1.4s linear infinite}
+.pf-sort.pe-sort{flex:0 0 auto;width:auto;max-width:100%;min-height:44px;padding:0 36px 0 14px;border-radius:999px;border:1px solid var(--line);background-color:color-mix(in srgb,#0d0f14 70%,transparent);color:var(--text);font:700 13px/1 'DM Sans',system-ui,sans-serif}
+.pf-filter-row{flex:1 1 auto}
+.pf-status{display:inline-flex;align-items:center;gap:8px;min-height:32px;padding:4px 12px;border-radius:999px;font:800 13px/1 'DM Sans',system-ui,sans-serif;letter-spacing:.02em;white-space:nowrap;backdrop-filter:blur(6px)}
+.pf-status svg:not(.pe-seal){width:16px;height:16px;fill:none;stroke:currentColor;stroke-width:2.6;stroke-linecap:round;stroke-linejoin:round}
+.pf-status--buildable{color:#cdeec0;border:1px solid #bfe3b077;background:linear-gradient(180deg,#bfe3b024,#bfe3b00c);box-shadow:0 0 18px #9fdc8a22,inset 0 1px 0 #ffffff14}
+.pf-status--craftable{color:#f6e4bb;border:1px solid #f2d18e88;background:linear-gradient(180deg,#f2d18e26,#f2d18e0a);box-shadow:0 0 18px #f2d18e2e,inset 0 1px 0 #ffffff1a}
+.pf-status--short{padding:4px 2px;gap:10px}
+.pf-status--open{color:#e9d6a7;border:1px solid #ffffff22;background:#ffffff0c}
+.pf-seal--short{color:#ffb4a0}
+.pf-seal--short .pe-seal{filter:saturate(.55) brightness(.8)}
+.pf-status--pending{gap:5px;padding:4px 10px}
+.pf-status--pending i{width:6px;height:6px;border-radius:50%;background:#f2d18e;opacity:.3;animation:pf-dot 1s ease-in-out infinite}
+.pf-status--pending i:nth-child(2){animation-delay:.15s}.pf-status--pending i:nth-child(3){animation-delay:.3s}
+@keyframes pf-dot{50%{opacity:1;transform:translateY(-2px)}}
+.pf-status--pop{position:relative;overflow:hidden;animation:pf-pop .55s cubic-bezier(.2,1.4,.4,1) both}
+.pf-status--pop::after{content:'';position:absolute;inset:0;border-radius:inherit;background:linear-gradient(110deg,transparent 30%,#fff6 50%,transparent 70%) -120% 0/250% 100% no-repeat;animation:pf-glint .9s .15s ease-out both;pointer-events:none}
+@keyframes pf-pop{0%{transform:scale(.82);opacity:.4}100%{transform:none;opacity:1}}
+@keyframes pf-glint{to{background-position:120% 0}}
+.pf-status--mini{min-height:28px;font-size:12px;padding:3px 10px}
+.pf-status--mini.pf-status--short{padding:3px 2px}
+.pf-status--mini .pe-seal{width:16px;height:16px}
+.pf-arch-count{display:inline-grid;place-items:center;min-width:24px;height:22px;padding:0 7px;border-radius:999px;border:1px solid #f2d18e55;background:#0c0d11b3;color:#e9d6a7;font:800 11px/1 'DM Sans',system-ui,sans-serif;font-variant-numeric:tabular-nums}
+.pf-row[data-status=buildable]{border-color:#bfe3b055}
+.pf-row[data-status=craftable]{border-color:#f2d18e66;box-shadow:0 18px 40px #0006,0 0 0 1px #f2d18e14,inset 0 1px 0 #ffffff12}
+.pf-row--enter{animation:pf-rise .5s cubic-bezier(.2,.8,.2,1) both;animation-delay:calc(min(var(--pf-i,0),6) * 55ms)}
+.pf-row--enter .pf-meter>i{animation:pf-fill .9s cubic-bezier(.2,.8,.2,1) both;animation-delay:calc(min(var(--pf-i,0),6) * 55ms + .2s)}
+.pf-row--enter .pf-card{animation:pf-rise .4s ease both;animation-delay:calc(min(var(--pf-i,0),6) * 55ms + .12s)}
+@keyframes pf-rise{from{opacity:0;transform:translateY(14px) scale(.985)}to{opacity:1;transform:none}}
+@keyframes pf-fill{from{width:0}}
+.pf-variants{border-top:1px solid #ffffff14;padding-top:4px}
+.pf-variants summary{display:flex;align-items:center;gap:8px;min-height:44px;cursor:pointer;list-style:none;font:700 13px/1.2 'DM Sans',system-ui,sans-serif;color:#e9d6a7}
+.pf-variants summary::-webkit-details-marker{display:none}
+.pf-variants summary svg{width:18px;height:18px;fill:none;stroke:currentColor;stroke-width:2.2;stroke-linecap:round;stroke-linejoin:round;transition:transform .25s ease}
+.pf-variants[open] summary svg{transform:rotate(180deg)}
+.pf-variants summary:focus-visible{outline:2px solid var(--gold);outline-offset:2px;border-radius:8px}
+.pf-variants ul{display:grid;gap:6px;margin:4px 0 0;padding:0;list-style:none}
+.pf-variants[open] ul{animation:pf-open .3s ease both}
+.pf-variants[open] li{animation:pf-rise .35s ease both}
+.pf-variants[open] li:nth-child(2){animation-delay:.04s}.pf-variants[open] li:nth-child(3){animation-delay:.08s}.pf-variants[open] li:nth-child(n+4){animation-delay:.12s}
+@keyframes pf-open{from{opacity:0;transform:translateY(-6px)}}
+.pf-variant{display:grid;grid-template-columns:minmax(0,1fr) auto auto auto;align-items:center;gap:8px 14px;padding:6px 6px 6px 12px;border-radius:14px;background:#0c0d11a6;border:1px solid #ffffff12}
+.pf-variant-name{display:grid;min-width:0}
+.pf-variant-name b{font:700 14px/1.25 'DM Sans',system-ui,sans-serif;overflow-wrap:anywhere}
+.pf-variant-name small{font-size:12px;color:#c9cfd6;overflow-wrap:anywhere}
+.pf-variant-own{display:grid;justify-items:end;font:800 13px/1 'DM Sans',system-ui,sans-serif;font-variant-numeric:tabular-nums}
+.pf-variant-own .pf-meter{width:56px}
+.pf-variant-use{min-height:44px;min-width:64px}
+@media(max-width:700px){
+ .pf-variant{grid-template-columns:minmax(0,1fr) auto;padding:8px 8px 8px 12px}
+ .pf-variant .pf-status{grid-column:1/2;justify-self:start}
+ .pf-variant-use{grid-column:2/3;grid-row:2/3}
+ .pf-sort.pe-sort{flex:1 1 100%;width:100%}
+}
+@media(prefers-reduced-motion:reduce){.pf-row--enter,.pf-row--enter .pf-card,.pf-row--enter .pf-meter>i,.pf-status--pop,.pf-status--pop::after,.pf-variants[open] ul,.pf-variants[open] li,.pf-status--pending i,.pf-filter--busy b{animation:none}.pf-variants summary svg{transition:none}}
+/* A crafted card stamps into the decklist: a gold sweep and a soft press, once. */
+.pe-build-row--crafted{position:relative;animation:pe-crafted .7s cubic-bezier(.2,1.3,.4,1) both}
+.pe-build-row--crafted::after{content:'';position:absolute;inset:0;border-radius:inherit;pointer-events:none;background:linear-gradient(100deg,transparent 25%,#f2d18e55 50%,transparent 75%) -150% 0/250% 100% no-repeat;animation:pf-glint .9s ease-out both}
+@keyframes pe-crafted{0%{transform:scale(.96);box-shadow:0 0 0 #f2d18e00}45%{transform:scale(1.015);box-shadow:0 0 22px #f2d18e55}100%{transform:none;box-shadow:0 0 0 #f2d18e00}}
+@media(prefers-reduced-motion:reduce){.pe-build-row--crafted,.pe-build-row--crafted::after{animation:none}}

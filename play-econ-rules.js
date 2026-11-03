@@ -59,12 +59,15 @@ export function masteryLevel(config = {}, xp = 0) {
 
 // A deck against the Play collection: which cards are missing and how many seals of each rarity
 // fill the gap. deck: [{name,qty}]. owned: Map name→count. rarity: Map name→rarity.
+// maxCopies: a number, or name → copies (Vintage's restricted cards count one). Copies past the
+// cap never bill (eight owned across two old sets still only cover the four a deck may play), and
+// rarity is the cheapest printing the card can be crafted at, when the caller knows it.
 export function deckShortfall(deck = [], owned = new Map(), rarity = new Map(), maxCopies = 4) {
-  const want = new Map();
+  const want = new Map(), cap = typeof maxCopies === 'function' ? maxCopies : () => maxCopies;
   for (const row of deck) if (row?.name && !isBasicLand(row.name)) want.set(row.name, (want.get(row.name) || 0) + Math.max(1, row.qty | 0));
   const missing = [], seals = {c: 0, u: 0, r: 0, m: 0};
   for (const [name, qty] of want) {
-    const need = Math.min(qty, maxCopies) - (owned.get(name) || 0);
+    const need = Math.min(qty, cap(name) ?? 4) - (owned.get(name) || 0);
     if (need <= 0) continue;
     const r = rarityOf(rarity.get(name)), seal = RARITY_SEAL[r];
     missing.push({name, need, rarity: r, seal});
@@ -72,19 +75,41 @@ export function deckShortfall(deck = [], owned = new Map(), rarity = new Map(), 
   }
   return {missing, seals, complete: missing.length === 0};
 }
+// Untapped's four-bucket check: Buildable when nothing is missing, Craftable when the seals cover
+// every rarity bucket, otherwise short (with how many seals of each rarity are still needed).
+export function deckStatus(shortfall, seals = {}) {
+  if (shortfall?.complete) return {status: 'buildable', short: {c: 0, u: 0, r: 0, m: 0}};
+  const short = {};
+  for (const s of SEALS) short[s.key] = Math.max(0, (shortfall?.seals?.[s.key] || 0) - (seals?.[s.key] | 0));
+  return {status: SEALS.some(s => short[s.key]) ? 'short' : 'craftable', short};
+}
 
 // Copies owned by card name. Two-faced cards answer to their full name and their front face,
 // since deck lists often name only the front ("Graveyard Trespasser").
 export function ownedByName(cards = []) {
   const out = new Map();
-  for (const c of cards) { out.set(c.n, c.c); const front = String(c.n || '').split(' // ')[0]; if (front !== c.n && !out.has(front)) out.set(front, c.c); }
+  // Copies pool across printings: rows that share a name add up (Untapped's cross-set pooling).
+  const fronts = new Map();
+  for (const c of cards) { if (!c?.n) continue; out.set(c.n, (out.get(c.n) || 0) + (c.c | 0)); const front = String(c.n).split(' // ')[0]; if (front !== c.n) fronts.set(front, (fronts.get(front) || 0) + (c.c | 0)); }
+  for (const [front, n] of fronts) if (!out.has(front)) out.set(front, n);
   return out;
 }
 
 // Deck building rules for Play decks: size and copies by format. Basic lands are free and unlimited.
-export const PLAY_FORMATS = ['Standard', 'Pioneer', 'Modern', 'Legacy', 'Vintage', 'Pauper', 'Commander'];
+// Every format the Play table deals (play-setup.js). Singleton formats lead with a commander.
+export const PLAY_FORMATS = ['Standard', 'Pioneer', 'Modern', 'Legacy', 'Vintage', 'Pauper', 'Commander', 'Standard Brawl'];
+const SINGLETON = {Commander: {size: 100, legality: 'commander'}, 'Standard Brawl': {size: 60, legality: 'standardbrawl'}};
+export const isSingleton = format => !!SINGLETON[format];
 export function deckRules(format = '') {
-  return format === 'Commander' ? {size: 100, copies: 1, exact: true} : {size: 60, copies: 4, exact: false};
+  const one = SINGLETON[format];
+  return one ? {size: one.size, copies: 1, exact: true, commander: true, legality: one.legality} : {size: 60, copies: 4, exact: false, commander: false, legality: String(format || 'standard').toLowerCase()};
+}
+// Copies of one card a deck may play: basics unlimited, singleton 1, Vintage's restricted list 1.
+// legalities: the card's Scryfall legalities when known.
+export function copyCap(name, format = '', legalities = null) {
+  if (isBasicLand(name)) return Infinity;
+  const rules = deckRules(format);
+  return legalities?.[rules.legality] === 'restricted' ? 1 : rules.copies;
 }
 // How many more copies of a card this deck may take, from the Play collection and the format.
 export function copiesLeft(name, deck = [], owned = new Map(), format = '') {

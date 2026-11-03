@@ -2,7 +2,7 @@
 // Play homepage, the Merchant, Packs, Collection and Decks. Legacy of the Duelist style menus
 // on real card art, in the app's glass and gold. Markup only; app.js wires the actions.
 // The wall: no prices anywhere in Play. Cards show art, name, rarity and copies owned (of 4).
-import {SEALS, FORGE_STEPS, forgeRatio, masteryLevel, deckShortfall, deckRules, copiesLeft, isBasicLand, PLAY_FORMATS, ownedByName, preconPrice, scryfallImage, isCollectorPack} from './play-econ-rules.js';
+import {SEALS, FORGE_STEPS, forgeRatio, masteryLevel, deckShortfall, deckRules, copyCap, copiesLeft, isBasicLand, PLAY_FORMATS, ownedByName, preconPrice, scryfallImage, isCollectorPack} from './play-econ-rules.js';
 import {cardGroup, cardFact} from './play-econ-cards.js';
 import {setRowContent, setYearSections} from './set-list-ui.js';
 import {segmented, setIconUrl, img, manaCost, symbolUrl, bar} from './ui.js';
@@ -265,9 +265,10 @@ export function collectionMarkup(snapshot, ui = {}) {
 // view (add, remove, craft); drag it onto the decklist; + adds one. Cards you don't own yet can go
 // in: they sit greyed in the list with their seal, and Craft (1 to 4 copies) or Craft all spends seals.
 // ui.nameFact(name) → slim Scryfall card for cards not in the Trunk; ui.pool = {mode, cards, busy, error}.
-export function craftPlan(deck = [], owned = new Map(), rarityOf = () => '', wallet = {}) {
+// capOf(name): copies the format lets the deck play (copyCap), so extra copies never bill.
+export function craftPlan(deck = [], owned = new Map(), rarityOf = () => '', wallet = {}, capOf = () => Infinity) {
   const rows = [], need = {c: 0, u: 0, r: 0, m: 0};
-  for (const c of deck) { if (isBasicLand(c.name)) continue; const miss = Math.max(0, (c.qty | 0) - (owned.get(c.name) || 0)); if (!miss) continue;
+  for (const c of deck) { if (isBasicLand(c.name)) continue; const miss = Math.max(0, Math.min(c.qty | 0, capOf(c.name) ?? Infinity) - (owned.get(c.name) || 0)); if (!miss) continue;
     const seal = {common: 'c', uncommon: 'u', rare: 'r', mythic: 'm', special: 'r', bonus: 'm'}[rarityOf(c.name)] || ''; rows.push({name: c.name, miss, seal}); if (seal) need[seal] += miss; }
   const have = {c: wallet.seal_c | 0, u: wallet.seal_u | 0, r: wallet.seal_r | 0, m: wallet.seal_m | 0}, left = {...have};
   let craftable = 0; for (const r of rows) if (r.seal) { const k = Math.min(r.miss, left[r.seal]); left[r.seal] -= k; r.now = k; craftable += k; }
@@ -287,12 +288,14 @@ export function deckBuilderMarkup(snapshot, ui = {}) {
   const mvCount = spells.reduce((t, c) => t + c.qty, 0), avg = mvCount ? (spells.reduce((t, c) => t + c.qty * factOf(c.name).m, 0) / mvCount).toFixed(1) : '—';
   const lead = deck.find(c => !isBasicLand(c.name)), art = lead ? (factOf(lead.name)?.a || cardImageByName(lead.name, 'art_crop')) : ART + 'f/d/fd99bce1-ce39-464b-8e61-2631eb3ed6f6.jpg';
   const ok = rules.exact ? count === rules.size : count >= rules.size;
-  const plan = craftPlan(deck, owned, name => slimOf(name)?.rarity || byName.get(name)?.r || '', state.wallet || {}), planOf = new Map(plan.rows.map(r => [r.name, r]));
+  // Missing copies bill at the cheapest rarity the card was printed at (ui.craftRarity), and Craft
+  // stamps that printing (ui.craftId), so the seal on the button is the seal the server takes.
+  const plan = craftPlan(deck, owned, name => ui.craftRarity?.(name) || slimOf(name)?.rarity || byName.get(name)?.r || '', state.wallet || {}, name => copyCap(name, edit.format, slimOf(name)?.legalities)), planOf = new Map(plan.rows.map(r => [r.name, r]));
   const inDeck = name => deck.filter(c => c.name === name).reduce((t, c) => t + c.qty, 0);
   const room = name => isBasicLand(name) ? Infinity : Math.max(0, rules.copies - inDeck(name));
   const craftMenu = (name, miss, seal, id) => `<details class="pe-craft"><summary aria-label="Craft ${esc(name)}: ${miss} missing" title="Craft with seals">${sealIcon(seal || 'c')}<b>${miss}</b></summary><div class="pe-craft-pop" role="group" aria-label="Craft copies of ${esc(name)}">${slimOf(name)?.set ? `<button class="pe-craft-set" data-act="playLensSet" data-code="${esc(slimOf(name).set)}" aria-label="Open ${esc(slimOf(name).set_name || slimOf(name).set.toUpperCase())} to get packs" title="Get packs"><span class="set-icon" style="--icon:url('${esc(setIconUrl(slimOf(name).set))}')" aria-hidden="true"></span></button>` : ''}${Array.from({length: miss}, (_, i) => i + 1).map(k => `<button class="pe-craft-n" data-act="playCraftCopies" data-name="${esc(name)}" data-card-id="${esc(id || '')}" data-n="${k}" ${!id || !seal || k > plan.have[seal] || snapshot.busy ? 'disabled' : ''} aria-label="Craft ${k} for ${k} ${SEALS.find(s => s.key === seal)?.label || 'seal'}${k > 1 ? 's' : ''}">${sealIcon(seal || 'c')}<b>${k}</b></button>`).join('')}</div></details>`;
   const row = c => { const miss = planOf.get(c.name)?.miss || 0, have = c.qty - miss, slim = slimOf(c.name);
-    return `<li class="pe-build-row${miss ? ' pe-build-row--missing' : ''}" data-drag-card="${esc(c.name)}"><button class="pe-build-open" data-act="card" data-name="${esc(c.name)}" data-play-card="1"${byName.get(c.name) ? ` data-oracle="${esc(byName.get(c.name).o)}"` : ''} aria-label="Open ${esc(c.name)}${miss ? `, ${have} of ${c.qty} owned` : ''}"><span class="pe-build-thumb" style="background-image:url(${esc(factOf(c.name)?.a || cardImageByName(c.name, 'art_crop'))})" aria-hidden="true"></span><span class="pe-build-name">${esc(c.name)}</span>${factOf(c.name)?.mc ? `<span class="pe-build-cost">${esc(factOf(c.name).mc.replace(/[{}]/g, ''))}</span>` : ''}</button>${miss ? craftMenu(c.name, miss, planOf.get(c.name).seal, slim?.id) : ''}<span class="pe-step"><button data-act="playEconStep" data-econ-card="${esc(c.name)}" data-econ-step="-1" aria-label="Remove one ${esc(c.name)}">−</button><b>${c.qty}</b><button data-act="playEconStep" data-econ-card="${esc(c.name)}" data-econ-step="1" ${room(c.name) < 1 ? 'disabled' : ''} aria-label="Add one ${esc(c.name)}">+</button></span></li>`; };
+    return `<li class="pe-build-row${miss ? ' pe-build-row--missing' : ''}${ui.justCrafted?.has(c.name) ? ' pe-build-row--crafted' : ''}" data-drag-card="${esc(c.name)}"><button class="pe-build-open" data-act="card" data-name="${esc(c.name)}" data-play-card="1"${byName.get(c.name) ? ` data-oracle="${esc(byName.get(c.name).o)}"` : ''} aria-label="Open ${esc(c.name)}${miss ? `, ${have} of ${c.qty} owned` : ''}"><span class="pe-build-thumb" style="background-image:url(${esc(factOf(c.name)?.a || cardImageByName(c.name, 'art_crop'))})" aria-hidden="true"></span><span class="pe-build-name">${esc(c.name)}</span>${factOf(c.name)?.mc ? `<span class="pe-build-cost">${esc(factOf(c.name).mc.replace(/[{}]/g, ''))}</span>` : ''}</button>${miss ? craftMenu(c.name, miss, planOf.get(c.name).seal, ui.craftId?.(c.name) || slim?.id) : ''}<span class="pe-step"><button data-act="playEconStep" data-econ-card="${esc(c.name)}" data-econ-step="-1" aria-label="Remove one ${esc(c.name)}">−</button><b>${c.qty}</b><button data-act="playEconStep" data-econ-card="${esc(c.name)}" data-econ-step="1" ${room(c.name) < 1 ? 'disabled' : ''} aria-label="Add one ${esc(c.name)}">+</button></span></li>`; };
   const mode = ui.pool?.mode === 'all' ? 'all' : 'mine';
   const minePool = filterPlayCards(ownedCards.slice().sort((a, b) => a.n.localeCompare(b.n)), facts, {query: ui.cardQuery, rarity: ui.rarity, color: ui.color, type: ui.type, set: ui.set});
   const tiles = mode === 'all' ? (ui.pool?.cards || []).map(c => ({name: c.name, image: c.image_uris?.normal || c.card_faces?.[0]?.image_uris?.normal || cardImageByName(c.name), rarity: c.rarity, have: owned.get(c.name) || owned.get(c.name.split(' // ')[0]) || 0, oracle: ''}))
