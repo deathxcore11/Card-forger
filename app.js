@@ -163,6 +163,7 @@ import { startTabGlide } from "./tab-glide.js";
 import { startSearchHints } from "./search-hints.js";
 import { openZoom, zoomCardOptions } from "./zoom.js";
 import {createPlayEcon,purse} from "./play-econ-client.js";
+import {matchCounters,questRows,playDay} from "./play-achievements.js";
 import {econScreenMarkup,ECON_VIEWS,purseMarkup,cardImageByName,head as econHead,craftPlan} from "./play-econ-ui.js";
 import {rewardFlight} from "./reward-flight.js";
 import {createNameFacts,rankFinderLists,finderRow,trunkDeck,finderMarkup,FINDER_FORMATS,FINDER_SORTS} from "./play-deck-finder.js";
@@ -1744,10 +1745,21 @@ A.playCardHolo=async t=>{try{const out=await playEcon.holo(t.dataset.oracle);hap
 A.playEconDeedTab=t=>{econUi.deedTab=t.dataset.value||'journey';refreshPlayMenu();};
 // A claim lands like a reward: a jingle and haptic at the button, then the coins, seals and packs fly into the purse (reward-flight.js).
 A.playEconClaim=async t=>{const {econKind:kind,econId:id,econStep:step}=t.dataset;const from=t.getBoundingClientRect(),before=purse(playEcon.snapshot().state);try{const out=await playEcon.claim(kind,id,step===undefined?undefined:Number(step));t.closest('.pd-card,.pd-quest')?.classList.add('struck');rewardFlight({from,delta:out.delta||{},before,big:kind==='ach'||kind==='weekly-all'});const d=out.delta||{},bits=[d.coins&&d.coins+' coins',d.packs?.length&&d.packs.length+(d.packs.length===1?' pack':' packs'),...Object.entries(d.seals||{}).map(([k,v])=>v+' '+({c:'common',u:'uncommon',r:'rare',m:'mythic'})[k]+(v===1?' seal':' seals')),d.xp&&d.xp+' XP'].filter(Boolean);toast(bits.length?'Claimed: '+bits.join(', ')+'.':'Claimed.');}catch{}};
-// Finished matches move Play quests and achievements (Practice never counts; friend matches count as played).
-addEventListener('play:match-recorded',e=>{const m=e.detail||{};if(!cloudInfo()?.user?.id)return;const mode=m.story?'story':m.friend?'friend':m.playStyle==='practice'?'practice':'quick';if(mode==='practice')return;
+// The result banner's goals are the account's own server quests, with this match already counted:
+// today's two quests and the weekly closest to done. Practice moves no quest, so it shows none.
+function resultGoals(m){
+ const s=playEcon.snapshot().state;if(!m||!cloudInfo()?.user?.id||!s?.wallet)return null;
+ const mode=m.story?'story':m.friend?'friend':m.playStyle==='practice'?'practice':'quick';if(mode==='practice')return [];
+ const day=playDay(-new Date().getTimezoneOffset()),before=s.counters||{},after={...before};
+ for(const [k,v] of Object.entries(matchCounters({...m,mode},day,{friendsToday:before[`d:${day}:friend_matches`]||0})||{}))after[k]=(after[k]||0)+v;
+ const was=questRows({counters:before,claimed:s.claimed||[],day}),now=questRows({counters:after,claimed:s.claimed||[],day}),old=new Map([...was.daily,...was.weekly].map(q=>[q.ref,q]));
+ const week=[...now.weekly].sort((a,b)=>Number(a.done)-Number(b.done)||b.have/b.need-a.have/a.need)[0];
+ return [...now.daily.filter(q=>q.level!=='first'),week].filter(Boolean).map(q=>({id:q.id,label:q.label,need:q.need,have:q.have,done:q.done,justDone:q.done&&!old.get(q.ref)?.done}));
+}
+// Finished matches move Play quests and achievements (Practice only its own honour deeds; friend matches count as played).
+addEventListener('play:match-recorded',e=>{const m=e.detail||{};if(!cloudInfo()?.user?.id)return;const mode=m.story?'story':m.friend?'friend':m.playStyle==='practice'?'practice':'quick';
  const id=(crypto.randomUUID?.()||String(Date.now())+Math.random().toString(36).slice(2)).replace(/[^A-Za-z0-9_-]/g,'');
- playEcon.reportMatch({id,mode,outcome:m.outcome,format:m.format,turns:m.turns,life:m.life,onPlay:m.onPlay,durationMs:m.durationMs});});
+ playEcon.reportMatch({id,mode,outcome:m.outcome,format:m.format,turns:m.turns,life:m.life,opponentLife:m.opponentLife,onPlay:m.onPlay,durationMs:m.durationMs,colors:m.colors,seats:m.seats,difficulty:m.difficulty});});
 A.playEconRarity=t=>{econUi.rarity=t.dataset.econRarity||'';refreshPlayMenu();};
 I.playEconSetQuery=t=>{econUi.setQuery=t.value;refreshPlayMenu();const f=document.querySelector('[data-input="playEconSetQuery"]');f?.focus({preventScroll:true});try{f.setSelectionRange(t.value.length,t.value.length);}catch{}};
 A.playEconSetFormat=t=>{econUi.setFormat=t.dataset.value||'';refreshPlayMenu();};
@@ -2221,7 +2233,7 @@ A.playStartCandidate=async()=>{
    const cards=createForgeArtworkPreparation({selectionKey:key,isCurrent:current,
     resolveNames:(names,{isCurrent})=>resolveNames(names,()=>{},false,isCurrent),
     lookup:(name,id)=>id?S.state.printings?.[id]||storyPrints.get(id)||null:meta(name),fetchPrinting:id=>api('/cards/'+encodeURIComponent(id))});
-   playerMatHost=createForgePlayerMat({root:playerMatRoot,readAccount:readPlayAccount,readSetup:()=>playSetup.snapshot(),getAccessToken:cloudAccessToken,createClient:localClient,
+   playerMatHost=createForgePlayerMat({root:playerMatRoot,readAccount:readPlayAccount,readGoals:resultGoals,readSetup:()=>playSetup.snapshot(),getAccessToken:cloudAccessToken,createClient:localClient,
     prepareArtwork:cards.prepare,lookup:cards.lookup,onClose:closePlayerMat,onHome:()=>{closePlayerMat();go('#home');},onRematch:()=>{closePlayerMat();A.playStartCandidate();},
     // A finished match frees its engine after cleanup; warm the next one for a rematch.
     onFinished:()=>setTimeout(()=>warmForgeEngine(playSetup.snapshot(),{afterMatch:true}),4000)});
@@ -2259,7 +2271,7 @@ A.playFriendLaunch=async matchId=>{
   const cards=createForgeArtworkPreparation({selectionKey:key,isCurrent:current,
    resolveNames:(names,{isCurrent})=>resolveNames(names,()=>{},false,isCurrent),
    lookup:(name,id)=>id?S.state.printings?.[id]||null:meta(name),fetchPrinting:id=>api('/cards/'+encodeURIComponent(id))});
-  playerMatHost=createForgePlayerMat({root:playerMatRoot,readAccount:readPlayAccount,readSetup:()=>setup,getAccessToken:cloudAccessToken,
+  playerMatHost=createForgePlayerMat({root:playerMatRoot,readAccount:readPlayAccount,readGoals:resultGoals,readSetup:()=>setup,getAccessToken:cloudAccessToken,
    prepareArtwork:cards.prepare,lookup:cards.lookup,resolveLate:name=>{late.add(name);clearTimeout(lateTimer);lateTimer=setTimeout(()=>{const names=[...late];late.clear();if(current())void resolveNames(names,()=>{},false,current);},250);},
    onClose:()=>{friendRoom=null;closePlayerMat();},onHome:()=>{friendRoom=null;closePlayerMat();go('#home');}});
   try{await playerMatHost.start();}catch{/* The match screen presents the error and recovery action. */}
@@ -2360,7 +2372,7 @@ A.storyPlay=async({skipScene=false}={})=>{
    const ending=b.slot===8?(seat==='hero'?data.finale:data.villainFinale):b.after;
    if(ending?.length)setTimeout(()=>void playScene({lines:ending,cast:data.cast,leftWho:b.hero.who,rightWho:b.villain.who,avatarUrl:storyAvatar(),title:b.slot===8?'Act '+data.act+' finale':b.title}),2600);};
   const back=()=>{removeEventListener('play:match-recorded',onRec);bubbles?.destroy();bubbles=null;closePlayerMat();playView='storyAct';refreshPlayMenu();scrollTo({top:0});};
-  playerMatHost=createForgePlayerMat({root,readAccount:readPlayAccount,readSetup:()=>setup,getAccessToken:cloudAccessToken,createClient:localClient,
+  playerMatHost=createForgePlayerMat({root,readAccount:readPlayAccount,readGoals:resultGoals,readSetup:()=>setup,getAccessToken:cloudAccessToken,createClient:localClient,
    prepareArtwork:cards.prepare,lookup:cards.lookup,onClose:back,onHome:back,onRematch:()=>{back();void A.storyPlay({skipScene:true});},
    onChange:state=>{bubbles?.update(state);if(state?.phase==='finished'&&state.outcome)void finished(state.outcome);},
    onFinished:()=>{}});

@@ -9,7 +9,7 @@ import {rewardSet, setFormats} from './play-econ-sets.js';
 import {starterGrant, sealTrackBonus, packContentsRow, cardDelta, RARITY_SEAL, FORGE_STEPS, forgeRatio, holoCost, preconPrice, mtgjsonCardDelta, mtgjsonDeckRows, deckShortfall, ownedByName, isCollectorPack, collectorOdds, collectorPicks, collectorSource, godPackOdds} from './play-econ-rules.js';
 import {PRACTICE_STARTER_ROWS} from './play-starter-deck.js';
 import {STORY_DEEDS, STORY_ACT_DEEDS, storyDeedsEarned} from './story-deeds.js';
-import {ACHIEVEMENTS, achievementRows, achievementReward, achievementRef, questRows, questReward, loginStamp, rewardDelta, matchCounters, playDay} from './play-achievements.js';
+import {ACHIEVEMENTS, achievementRows, achievementReward, achievementRef, questRows, questReward, loginStamp, rewardDelta, matchCounters, playDay, playWeek, achievementsPayload} from './play-achievements.js';
 
 const json = (body, status = 200) => new Response(JSON.stringify(body), {status, headers: {'Content-Type': 'application/json', 'Cache-Control': 'no-store'}});
 const fail = (error, status = 400) => json({error}, status);
@@ -92,10 +92,25 @@ export async function progressRoute(request, env, {verifyBearer, fetcher = fetch
     read: () => rpc(env, 'play_counters', {p_user: uid}, fetcher).catch(() => null),
     claims: () => rpc(env, 'play_claims', {p_user: uid}, fetcher).catch(() => null),
   };
+  // Merchant, pack and Trunk deeds count what the server itself did, once per action (cnt:* refs).
+  // Day and week copies feed the quests that count packs and stamps.
+  const tally = (ref, c, tz) => {
+    const day = playDay(tz), week = playWeek(day), out = {};
+    for (const [k, v] of Object.entries(c)) { if (!v) continue; out[k] = v; if (!/:/.test(k)) { out[`d:${day}:${k}`] = v; out[`w:${week}:${k}`] = v; } }
+    return Object.keys(out).length ? counters.bump('cnt:' + ref, 'tally', out) : Promise.resolve(null);
+  };
+  // State for the app: the wallet plus the counters, claims and Story refs that achievements read.
   try {
     if (path === 'state' && request.method === 'GET') {
-      const [s, sets, c, claimed] = await Promise.all([state(), shopSets(env, request, fetcher), counters.read(), counters.claims()]);
-      return json({...s, rewardSet: sets.reward, shop: sets.shop, counters: c || {}, claimed: claimed || []});
+      const [s, sets, c, claimed, story] = await Promise.all([state(), shopSets(env, request, fetcher), counters.read(), counters.claims(), storyRefs()]);
+      return json({...s, rewardSet: sets.reward, shop: sets.shop, counters: c || {}, claimed: claimed || [], story: Array.isArray(story) ? story : []});
+    }
+    if (path === 'achievements' && request.method === 'GET') {
+      // Every achievement, quest and log-in reward, worked out for this player (play-achievements.js).
+      // The native app renders this as-is; ?tz= is the device's offset in minutes for the quest day.
+      const [s, c, claimed, story] = await Promise.all([state(), counters.read(), counters.claims(), storyRefs()]);
+      const ctx = {counters: c || {}, claimed: claimed || [], state: {...s, story: Array.isArray(story) ? story : []}, day: playDay(url.searchParams.get('tz'))};
+      return json({...achievementsPayload(ctx, s.config || {}), ready: !!(c && claimed)});
     }
     if (path === 'story' && request.method === 'GET') return json({refs: await storyRefs()});
     if (request.method !== 'POST') return fail('method', 405);
@@ -128,7 +143,9 @@ export async function progressRoute(request, env, {verifyBearer, fetcher = fetch
       if (contents.length < Math.min(5, picks.length || 5)) return fail('cards_unavailable', 503);
       const bonus = sealTrackBonus(s.config, (s.wallet?.packs_opened || 0) + 1);
       const result = await apply('open:' + pack.id, 'open', {open: {id: pack.id, contents}, cards: contents.filter(c => c.oracle_id).map(cardDelta), seals: bonus});
-      return json({pack: {...pack, contents, ...(earned || surprise ? {collector: true} : {}), ...(surprise ? {surprise: true} : {}), ...(god ? {god: true, collector: true} : {})}, sealBonus: bonus, duplicateCoins: result.duplicate_coins || 0, converted: result.converted || [], state: await state()});
+      await tally('open:' + pack.id, {packs_opened: 1, packs_collector: kind === 'collector' || god ? 1 : 0, packs_god: god ? 1 : 0,
+        pulls_mythic: contents.filter(c => c.rarity === 'mythic').length, ...(/^[a-z0-9]{2,8}$/.test(pack.set) ? {['po:' + pack.set]: 1} : {})}, body.tz);
+      return json({counters: await counters.read(), pack: {...pack, contents, ...(earned || surprise ? {collector: true} : {}), ...(surprise ? {surprise: true} : {}), ...(god ? {god: true, collector: true} : {})}, sealBonus: bonus, duplicateCoins: result.duplicate_coins || 0, converted: result.converted || [], state: await state()});
     }
     if (path === 'craft') {
       const id = String(body.id || '');
@@ -142,8 +159,10 @@ export async function progressRoute(request, env, {verifyBearer, fetcher = fetch
       const holo = body.holo === true, cost = 1 + (holo ? holoCost(s.config) : 0);
       if (holo && !(card.finishes || []).includes('foil')) return fail('no_foil', 409);
       if ((s.wallet?.['seal_' + seal] || 0) < cost) return fail('no_seal', 409);
-      await apply('craft:' + crypto.randomUUID(), 'craft', {seals: {[seal]: -cost}, cards: [{...cardDelta(card), ...(holo ? {foil: true} : {})}]});
-      return json({card: {id: card.id, oracle_id: card.oracle_id, name: card.name, rarity: card.rarity, holo}, state: await state()});
+      const craftRef = 'craft:' + crypto.randomUUID();
+      await apply(craftRef, 'craft', {seals: {[seal]: -cost}, cards: [{...cardDelta(card), ...(holo ? {foil: true} : {})}]});
+      await tally(craftRef, {crafts: 1, holos_made: holo ? 1 : 0}, body.tz);
+      return json({counters: await counters.read(), card: {id: card.id, oracle_id: card.oracle_id, name: card.name, rarity: card.rarity, holo}, state: await state()});
     }
     if (path === 'forge') {
       // Seals step up one rarity: ratio x the lower seal for 1 of the next, up to 10 at once.
@@ -151,8 +170,10 @@ export async function progressRoute(request, env, {verifyBearer, fetcher = fetch
       if (!from || times < 1 || times > 10) return fail('bad_forge');
       const s = await state(), cost = forgeRatio(s.config, to) * times;
       if ((s.wallet?.['seal_' + from] || 0) < cost) return fail('no_seal', 409);
-      await apply('forge:' + crypto.randomUUID(), 'forge', {seals: {[from]: -cost, [to]: times}});
-      return json({forged: {to, from, times, cost}, state: await state()});
+      const forgeRef = 'forge:' + crypto.randomUUID();
+      await apply(forgeRef, 'forge', {seals: {[from]: -cost, [to]: times}});
+      await tally(forgeRef, {forges: times}, body.tz);
+      return json({counters: await counters.read(), forged: {to, from, times, cost}, state: await state()});
     }
     if (path === 'holo') {
       // The Forge turns one copy you own holo for 2 seals of its rarity. Never more holos than copies.
@@ -162,8 +183,10 @@ export async function progressRoute(request, env, {verifyBearer, fetcher = fetch
       if (!card || !seal) return fail('bad_card', 404);
       if ((card.h | 0) >= (card.c | 0)) return fail('all_holo', 409);
       if ((s.wallet?.['seal_' + seal] || 0) < cost) return fail('no_seal', 409);
-      await apply('holo:' + crypto.randomUUID(), 'holo', {seals: {[seal]: -cost}, holo: [o]});
-      return json({holo: {oracle: o, name: card.n, seal, cost}, state: await state()});
+      const holoRef = 'holo:' + crypto.randomUUID();
+      await apply(holoRef, 'holo', {seals: {[seal]: -cost}, holo: [o]});
+      await tally(holoRef, {holos_made: 1}, body.tz);
+      return json({counters: await counters.read(), holo: {oracle: o, name: card.n, seal, cost}, state: await state()});
     }
     if (path === 'precon') {
       // A published 60-card precon from MTGJSON: pay 25 coins per card you don't own (250 to 1,500,
@@ -179,10 +202,12 @@ export async function progressRoute(request, env, {verifyBearer, fetcher = fetch
       const missing = short.missing.reduce((t, m) => t + m.need, 0), price = preconPrice(missing, s.config);
       if ((s.wallet?.coins || 0) < price) return fail('short_coins', 409);
       const cards = short.missing.flatMap(m => Array.from({length: m.need}, () => mtgjsonCardDelta(byName.get(m.name)))).filter(c => c.oracle_id);
-      await apply('precon:' + crypto.randomUUID(), 'precon', {coins: -price, cards});
+      const preconRef = 'precon:' + crypto.randomUUID();
+      await apply(preconRef, 'precon', {coins: -price, cards});
+      await tally(preconRef, {precons: 1, coins_spent: price}, body.tz);
       const deck = await rpc(env, 'play_save_deck', {p_user: uid, p_id: null, p_name: String(d.name || 'Precon').slice(0, 80), p_format: String(body.format || '').slice(0, 40),
         p_cards: rows.map(({name, qty, board, set, number}) => ({name, qty, ...(board ? {board} : {}), set, number})), p_delete: false}, fetcher);
-      return json({deck, price, granted: cards.length, state: await state()});
+      return json({deck, price, granted: cards.length, counters: await counters.read(), state: await state()});
     }
     if (path === 'login') {
       // The first visit of the day stamps the log-in calendar (counted days, never a streak). The day
@@ -204,8 +229,8 @@ export async function progressRoute(request, env, {verifyBearer, fetcher = fetch
       if (!/^[A-Za-z0-9_-]{8,64}$/.test(id)) return fail('bad_match');
       const day = playDay(body.tz), now = await counters.read();
       if (!now) return fail('not_ready', 503);
-      if ((now[`d:${day}:matches`] || 0) >= 40) return json({counted: false, counters: now});
-      const c = matchCounters(body, day, {friendsToday: now[`d:${day}:friend_matches`] || 0});
+      if (body.mode !== 'practice' && (now[`d:${day}:matches`] || 0) >= 40) return json({counted: false, counters: now});
+      const c = matchCounters(body, day, {friendsToday: now[`d:${day}:friend_matches`] || 0, practiceToday: now[`d:${day}:practice_matches`] || 0});
       if (!c) return fail('bad_match');
       if (!Object.keys(c).length) return json({counted: false, counters: now});
       const out = await counters.bump('match:' + id, 'match', c);
@@ -230,8 +255,9 @@ export async function progressRoute(request, env, {verifyBearer, fetcher = fetch
     }
     if (path === 'claim') {
       // Pays one finished achievement step, daily or weekly quest. The server re-checks the progress.
-      const [s, c, claimed, reward] = await Promise.all([state(), counters.read(), counters.claims(), currentRewardSet(env, request, fetcher)]);
+      const [s0, c, claimed, reward, story] = await Promise.all([state(), counters.read(), counters.claims(), currentRewardSet(env, request, fetcher), storyRefs()]);
       if (!c || !claimed) return fail('not_ready', 503);
+      const s = {...s0, story: Array.isArray(story) ? story : []};
       const set = reward?.code || '';
       let ref = '', delta = null;
       if (body.kind === 'ach') {
@@ -259,8 +285,10 @@ export async function progressRoute(request, env, {verifyBearer, fetcher = fetch
       if (!index?.sets?.[set]) return fail('no_booster', 404);
       const s = await state(), price = s.config?.packPrice || 500;
       if ((s.wallet?.coins || 0) < price) return fail('short_coins', 409);
-      await apply('buy:' + crypto.randomUUID(), 'buy', {coins: -price, packs: [{set, source: 'shop'}]});
-      return json({state: await state()});
+      const buyRef = 'buy:' + crypto.randomUUID();
+      await apply(buyRef, 'buy', {coins: -price, packs: [{set, source: 'shop'}]});
+      await tally(buyRef, {buys: 1, coins_spent: price}, body.tz);
+      return json({counters: await counters.read(), state: await state()});
     }
     if (path === 'story') {
       // A won Story battle (Randall, 1 Nov 21:11-21:13Z). The Story precon pays the real rewards, once per

@@ -19,7 +19,9 @@ export function createPlayEcon({getAccessToken, fetchImpl = globalThis.fetch?.bi
     return out;
   }
   // Server answers carry the wallet; the shop, reward set, quest counters and claims ride along.
-  const keep = (next, extra = {}) => ({...next, rewardSet: state?.rewardSet, shop: state?.shop, counters: state?.counters || {}, claimed: state?.claimed || [], login: state?.login || null, ...extra});
+  const keep = (next, extra = {}) => ({...next, rewardSet: state?.rewardSet, shop: state?.shop, counters: state?.counters || {}, claimed: state?.claimed || [], login: state?.login || null, story: state?.story || [], ...extra});
+  // Answers to Merchant and pack actions carry the counters they moved (pack, stamp and forge deeds).
+  const fresh = out => out?.counters ? {counters: out.counters} : {};
   const tz = () => -new Date().getTimezoneOffset();
   const run = async (label, job) => { busy = label; error = ''; errorCode = ''; onChange(); try { return await job(); } catch (e) { error = e.message; errorCode = e.code || 'failed'; throw e; } finally { busy = ''; onChange(); } };
   const api = {
@@ -33,18 +35,18 @@ export function createPlayEcon({getAccessToken, fetchImpl = globalThis.fetch?.bi
       return loading;
     },
     // Opens one banked pack on the server; returns {pack, sealBonus, duplicateCoins}.
-    open: id => run('open:' + id, async () => { const out = await call('open', {id}); set(keep(out.state)); return out; }),
-    buy: setCode => run('buy', async () => { const out = await call('buy', {set: setCode}); set(keep(out.state)); return out; }),
-    forge: (to, times = 1) => run('forge', async () => { const out = await call('forge', {to, times}); set(keep(out.state)); return out; }),
-    precon: (file, format) => run('precon', async () => { const out = await call('precon', {file, format}); set(keep(out.state)); return out; }),
+    open: id => run('open:' + id, async () => { const out = await call('open', {id, tz: tz()}); set(keep(out.state, fresh(out))); return out; }),
+    buy: setCode => run('buy', async () => { const out = await call('buy', {set: setCode, tz: tz()}); set(keep(out.state, fresh(out))); return out; }),
+    forge: (to, times = 1) => run('forge', async () => { const out = await call('forge', {to, times, tz: tz()}); set(keep(out.state, fresh(out))); return out; }),
+    precon: (file, format) => run('precon', async () => { const out = await call('precon', {file, format, tz: tz()}); set(keep(out.state, fresh(out))); return out; }),
     // The day's log-in stamp; returns {day, stamp, reward, monthReward, fresh} or null.
     async login() { try { const out = await call('login', {tz: tz()}); if (!out.login) return null; set(out.state ? keep(out.state, {counters: out.counters, login: out.login}) : {...state, counters: out.counters || state?.counters, login: out.login}); return out.login; } catch { return null; } },
-    // A finished match (never Practice) moves quests and achievements; quiet on failure.
+    // A finished match moves quests and achievements (Practice only its own honour deeds); quiet on failure.
     async reportMatch(m) { try { const out = await call('match', {...m, tz: tz()}); if (out.counters && state) set({...state, counters: out.counters}); return out; } catch { return null; } },
     async reportDeeds(battle, deeds) { if (!deeds?.length) return null; try { const out = await call('deeds', {battle, deeds}); if (out.counters && state) set({...state, counters: out.counters}); return out; } catch { return null; } },
     claim: (kind, id, step) => run('claim:' + kind + ':' + id + ':' + (step ?? ''), async () => { const out = await call('claim', {kind, id, step, tz: tz()}); set(keep(out.state, {claimed: out.claimed})); return out; }),
-    holo: oracle => run('holo', async () => { const out = await call('holo', {oracle}); set(keep(out.state)); return out; }),
-    craft: (cardId, holo = false) => run('craft', async () => { const out = await call('craft', {id: cardId, holo}); set(keep(out.state)); return out; }),
+    holo: oracle => run('holo', async () => { const out = await call('holo', {oracle, tz: tz()}); set(keep(out.state, fresh(out))); return out; }),
+    craft: (cardId, holo = false) => run('craft', async () => { const out = await call('craft', {id: cardId, holo, tz: tz()}); set(keep(out.state, fresh(out))); return out; }),
     saveDeck: deck => run('deck', async () => { const out = await call('deck', deck); await api.refresh(); return out.deck; }),
     clear() { state = null; try { storage?.removeItem(privateKey(CACHE)); } catch {} onChange(); },
   };

@@ -1,4 +1,4 @@
-const CACHE = "cardforge-shell-ygoprices-4378-v450";
+const CACHE = "cardforge-shell-achievements-4379-v451";
 const ASSETS = [
   "./assets/fonts/fonts.css",
   "./play-forge-feature.js",
@@ -24,6 +24,7 @@ const ASSETS = [
   "./play-deeds-ui.js",
   "./reward-flight.js",
   "./play-achievements.js",
+  "./play-achievement-art.js",
   "./play-econ-rules.js",
   "./play-econ-sets.js", "./story-acts.js", "./story-client.js", "./story-ui.js", "./story-deeds.js", "./story-mode.css",
   "./play-daily-goals.js",

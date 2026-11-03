@@ -1,13 +1,16 @@
 // Play quests and achievements (play-achievements.md): the home's "Today" and "Achievements" panels
 // and the Achievements screen. Markup only; app.js wires the actions and play-econ-route.js pays.
 // Play's wall: no prices, and nothing here reads the real collection.
-import {achievementRows, deedTotals, almostThere, achievementReward, questRows, questReward, LOGIN_WEEK, DEED_TABS, playDay} from './play-achievements.js';
-import {coinIcon, sealIcon, packIcon, head, cardImageByName} from './play-econ-ui.js';
+import {achievementRows, deedTotals, almostThere, achievementReward, questRows, questReward, LOGIN_WEEK, DEED_TABS, playDay, achievementArt} from './play-achievements.js';
+import {coinIcon, sealIcon, packIcon, head} from './play-econ-ui.js';
 import {bar} from './ui.js';
 
 const esc = v => String(v ?? '').replace(/[&<>"']/g, c => ({'&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;'}[c]));
 const n = v => Number(v || 0).toLocaleString('en-US');
 const today = () => playDay(-new Date().getTimezoneOffset());
+// One pinned art crop per achievement (play-achievement-art.js); crops with a frame line or rounded
+// corners are drawn as a background zoomed past the edge (inside the box, so nothing overflows).
+const artImg = name => { const a = achievementArt(name); return a.trim ? `<i class="pd-trim" style="background-image:url('${esc(a.url)}')"></i>` : `<img src="${esc(a.url)}" alt="" loading="lazy" decoding="async" referrerpolicy="no-referrer">`; };
 
 // A reward as icons: coins, seals, packs, XP.
 export function rewardIcons(r = {}) {
@@ -48,18 +51,18 @@ export function deedsPanel(econ, user = '') {
   const rows = achievementRows(ctxOf(s, user)), t = deedTotals(rows), near = almostThere(rows, 2);
   return `<section class="pe-shelf-row pd-deeds-home" aria-labelledby="pdDeedsTitle"><div class="home-shelf-heading"><h2 id="pdDeedsTitle">Achievements</h2><button class="link small" data-act="playEconView" data-econ-view="deeds">${t.ready ? `${t.ready} to claim` : 'All achievements'}</button></div>
     <div class="pd-total"><span class="pd-total-num"><b>${n(t.earned)}</b><span>of ${n(t.total)} earned</span></span>${bar(t.total ? t.earned / t.total : 0)}</div>
-    <ul class="pd-near">${near.map(r => `<li><button class="pd-near-row" data-act="playEconView" data-econ-view="deeds" data-econ-tab="${esc(r.tab)}"><span class="pd-near-art" aria-hidden="true"><img src="${esc(cardImageByName(r.art, 'art_crop'))}" alt="" loading="lazy" decoding="async" referrerpolicy="no-referrer"></span><span class="pd-near-copy"><b>${esc(r.title)}</b>${bar(r.value / r.next.need, 'thin')}<small>${n(fmtValue(r, r.value))} / ${fmtNeed(r, r.next.need)}</small></span></button></li>`).join('')}</ul></section>`;
+    <ul class="pd-near">${near.map(r => `<li><button class="pd-near-row" data-act="playEconView" data-econ-view="deeds" data-econ-tab="${esc(r.tab)}"><span class="pd-near-art" aria-hidden="true">${artImg(r.art)}</span><span class="pd-near-copy"><b>${esc(r.title)}</b>${bar(r.value / r.next.need, 'thin')}<small>${n(fmtValue(r, r.value))} / ${fmtNeed(r, r.next.need)}</small></span></button></li>`).join('')}</ul></section>`;
 }
 
 function deedCard(r, config, busy) {
   if (r.hidden && !r.earned) return `<article class="pd-card pd-card--hidden"><span class="pd-card-back" aria-hidden="true"></span><div class="pd-card-body"><h3>Hidden</h3><p>${esc(r.riddle)}</p></div></article>`;
-  const ready = r.steps.findIndex(x => x.done && !x.claimed), step = r.next || r.steps.at(-1), shown = ready >= 0 ? ready : r.steps.indexOf(step);
+  const ready = r.honour ? -1 : r.steps.findIndex(x => x.done && !x.claimed), step = r.next || r.steps.at(-1), shown = ready >= 0 ? ready : r.steps.indexOf(step);
   return `<article class="pd-card${r.complete ? ' is-complete' : ''}${ready >= 0 ? ' is-ready' : ''}">
-    <span class="pd-card-art" aria-hidden="true"><img src="${esc(cardImageByName(r.art, 'art_crop'))}" alt="" loading="lazy" decoding="async" referrerpolicy="no-referrer"></span>
+    <span class="pd-card-art" aria-hidden="true">${artImg(r.art)}</span>
     <div class="pd-card-body"><h3>${esc(r.title)}</h3><p>${esc(r.lore)}</p>
       ${r.steps.length > 1 ? `<span class="pd-pips" role="img" aria-label="${r.earned} of ${r.steps.length} tiers">${r.steps.map(x => `<i class="pd-pip pd-pip--${x.tier}${x.done ? ' on' : ''}"></i>`).join('')}</span>` : ''}
       ${bar(Math.min(1, r.value / step.need), 'thin')}<span class="pd-card-count">${n(fmtValue(r, Math.min(r.value, step.need)))} / ${fmtNeed(r, step.need)}</span>
-      <div class="pd-card-foot">${rewardIcons(achievementReward(r, shown, config))}${ready >= 0 ? `<button class="btn pd-claim" data-act="playEconClaim" data-econ-kind="ach" data-econ-id="${esc(r.id)}" data-econ-step="${ready}" ${busy ? 'disabled' : ''} aria-label="Claim ${esc(r.title)}">Claim</button>` : r.complete ? '<span class="pd-done">Earned</span>' : ''}</div></div></article>`;
+      <div class="pd-card-foot">${r.honour ? `<span class="pd-honour">${r.complete ? 'Earned with honour' : 'Honour only'}</span>` : rewardIcons(achievementReward(r, shown, config))}${ready >= 0 ? `<button class="btn pd-claim" data-act="playEconClaim" data-econ-kind="ach" data-econ-id="${esc(r.id)}" data-econ-step="${ready}" ${busy ? 'disabled' : ''} aria-label="Claim ${esc(r.title)}">Claim</button>` : r.complete && !r.honour ? '<span class="pd-done">Earned</span>' : ''}</div></div></article>`;
 }
 
 // The Achievements screen: totals and the closest ones, today's quests, then one tab of deeds.
@@ -71,7 +74,7 @@ export function deedsScreenMarkup(snapshot, ui = {}, user = '') {
   return `<section class="play-menu pe-screen pd-screen" aria-labelledby="playTitle">${head('Achievements', snapshot)}
     <div class="pd-top">
       <section class="pe-import pd-summary" aria-labelledby="pdSumTitle"><h2 id="pdSumTitle">Hall of Deeds</h2><div class="pd-total"><span class="pd-total-num"><b>${n(t.earned)}</b> / ${n(t.total)} earned</span>${bar(t.total ? t.earned / t.total : 0)}</div>
-        <p class="pd-week">${t.ready ? `${t.ready} ready to claim. Look for the gold edge.` : 'Every count comes from real matches, log-ins and your Trunk. Practice never counts.'}</p></section>
+        <p class="pd-week">${t.ready ? `${t.ready} ready to claim. Look for the gold edge.` : 'Every count comes from real matches, log-ins, packs, the Merchant and your Trunk. Practice deeds are for honour only.'}</p></section>
       <section class="pe-import pd-questbook" aria-labelledby="pdQuestTitle"><h2 id="pdQuestTitle">Quests</h2><h3 class="pd-sub">Today</h3><ul class="pd-quests">${q.daily.map(x => questLine(x, s.config, busy)).join('')}</ul>
         <h3 class="pd-sub">This week</h3><ul class="pd-quests">${q.weekly.map(x => questLine({...x, weekly: true}, s.config, busy)).join('')}</ul>${weekAll}</section>
     </div>

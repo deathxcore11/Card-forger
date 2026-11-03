@@ -1165,6 +1165,9 @@ button.pd-near-row{cursor:pointer}
 .pd-card-count{font:700 12px/1 'DM Sans',system-ui,sans-serif;color:var(--muted)}
 .pd-card-foot{display:flex;flex-wrap:wrap;align-items:center;justify-content:space-between;gap:8px;margin-top:4px;min-height:44px}
 .pd-done{font:700 12px/1 'DM Sans',system-ui,sans-serif;color:var(--gold);letter-spacing:.06em;text-transform:uppercase}
+.pd-honour{font:600 12px/1.2 'DM Sans',system-ui,sans-serif;color:#cdbf9f;letter-spacing:.04em}
+/* Achievement crops with a frame line or rounded black corners: zoom past the edge, never letterbox. */
+.pd-trim{display:block;width:100%;height:100%;background:#0c0e13 50% 45%/116% auto no-repeat}
 .pd-pips{display:flex;gap:5px}
 .pd-pip{width:12px;height:12px;border-radius:50%;border:1px solid #ffffff30;background:#ffffff08}
 .pd-pip.on.pd-pip--bronze{background:#b0703c;border-color:#e0a46c}

@@ -88,7 +88,7 @@ export function forgeMatchError(error){
  })[code]||'The game could not open this match. Review any card or format details below, then return to setup.';
 }
 
-export function createForgePlayerMat({root,readAccount,readSetup,getAccessToken,lookup,prepareArtwork=async()=>{},onChange=()=>{},onClose=()=>{},onHome=null,onRematch=null,onFinished=()=>{},createClient=createForgeHostClient,resolveLate=null,mountTable=mountForgeTable,mountIntro=mountForgeMatchIntro,pollMs=500,startupPollMs=250,wait=ms=>new Promise(r=>setTimeout(r,ms)),now=()=>Date.now()}={}){
+export function createForgePlayerMat({root,readAccount,readSetup,getAccessToken,lookup,prepareArtwork=async()=>{},onChange=()=>{},onClose=()=>{},onHome=null,onRematch=null,onFinished=()=>{},readGoals=null,createClient=createForgeHostClient,resolveLate=null,mountTable=mountForgeTable,mountIntro=mountForgeMatchIntro,pollMs=500,startupPollMs=250,wait=ms=>new Promise(r=>setTimeout(r,ms)),now=()=>Date.now()}={}){
  if(!root||[readAccount,readSetup,getAccessToken,lookup].some(f=>typeof f!=='function'))throw Error('FORGE_PLAYER_MAT_READERS_REQUIRED');
  const doc=root.ownerDocument,view=doc.defaultView;
  let generation=0,opening=false,startupMs=null,client=null,session=null,table=null,last=null,warning=false,viewer=null,matchup=null,matchPolicy=null,matchAccount=null,intro=null,exitDialog=null,exitConfirm=null,exitSubmitting=false,disposed=false,playedFrom=null,ownFirst=null,lastSurface=null,conceding=false,recorded=false;
@@ -159,12 +159,13 @@ export function createForgePlayerMat({root,readAccount,readSetup,getAccessToken,
   // A match is recorded once, even if Forge reports its end on more than one read.
   const saved=matchup&&outcome&&!recorded?recordMatch(matchRow(outcome)):null;if(saved)recorded=true;
   // Play quests and achievements hear about every recorded match; the app decides what counts (never Practice).
-  if(saved)try{globalThis.dispatchEvent?.(new CustomEvent('play:match-recorded',{detail:{...saved,story:!!matchup.story,friend:!!matchup.friendMatch}}));}catch{/* quests are best effort */}
+  const detail=saved?{...saved,story:!!matchup.story,friend:!!matchup.friendMatch,colors:basicColours(matchup.selected?.cards),seats:(lastSurface?.players||[]).length||null,difficulty:last?.matchContext?.difficulty||matchup.match?.difficulty||null}:null;
+  if(detail)try{globalThis.dispatchEvent?.(new CustomEvent('play:match-recorded',{detail}));}catch{/* quests are best effort */}
   const title=outcome==='draw'?'Draw':outcome==='win'?'Victory':outcome==='loss'?'Defeat':'Your result is not yet identified';
   publish({phase:'finished',result:structuredClone(result),viewerId:viewer,outcome,endingReason:'unclassified-engine-terminal',deckDigests:client?.status().allocation?.deckDigests||null});message('Match finished',[title,...(outcome===null?[`Forge reported winner player ${result.winnerPlayerId}, but this receipt does not identify your seat. No win or loss has been assigned.`]:[]),...(board?[]:['This match has ended. Return to setup whenever you are ready for another game.',saved?'Saved to this device’s match record.':'Results are not yet saved to your account.'])],{close:!board});
   root.classList.add('play-mat-result');const panel=root.querySelector('section');panel.classList.add('play-match-result');panel.setAttribute('data-outcome',outcome||'unknown');
   // Like Arena, the result lands as a banner over the final board, with Rematch first.
-  if(saved)panel.append(recap(saved));
+  if(saved)panel.append(recap(saved,detail));
   const actions=node('div');actions.className='play-result-actions';panel.append(actions);
   if(onRematch){const b=node('button','Rematch');b.type='button';b.className='btn play-result-rematch';b.addEventListener('click',()=>{if(selectionKey(readSetup())!==selectionKey(matchup)){message('Match setup changed',['Your deck selection changed after this match opened. Review the current setup before starting another match.']);return;}onRematch();});actions.append(b);}
   if(board){const b=node('button','Inspect board');b.type='button';b.className='btn ghost';b.addEventListener('click',()=>inspectBoard(board));actions.append(b);
@@ -176,13 +177,15 @@ export function createForgePlayerMat({root,readAccount,readSetup,getAccessToken,
    panel.append(decks);
   }
  }
+ // A deck's colours for the colour deeds, read from its basic lands (WUBRG), as play-achievements.js deckColours does.
+ function basicColours(cards){const map={plains:'W',island:'U',swamp:'B',mountain:'R',forest:'G'},got=new Set();for(const c of Array.isArray(cards)?cards:[]){const k=String(c?.name||'').toLowerCase().replace(/^snow-covered /,'');if(map[k]&&c?.board!=='side')got.add(map[k]);}return 'WUBRG'.split('').filter(x=>got.has(x)).join('');}
  // What the result banner and the deck record keep: only what the viewer saw during the match.
  function matchRow(outcome){
   const players=lastSurface?.players||[],me=players.find(p=>p.seat===lastSurface?.seat),them=players.find(p=>p.seat!==lastSurface?.seat);
   return {outcome,deck:matchup.selected,opponent:matchup.opponent,format:matchup.match?.format,playStyle:matchup.playStyle,onPlay:ownFirst,turns:lastSurface?.turn||null,life:me?.life??null,opponentLife:them?.life??null,durationMs:playedFrom===null?null:Math.round(now()-playedFrom),conceded:conceding&&outcome==='loss'};
  }
  // Like Snap and Hearthstone, the banner recaps the game and the deck's record so far.
- function recap(row){
+ function recap(row,detail=row){
   // The saved row keeps only the deck's record key and name, so the record is read from the deck itself.
   const r=deckRecord(matchup?.selected||row.deck),box=node('div');box.className='play-result-recap';
   const mins=row.durationMs===null?null:Math.max(1,Math.round(row.durationMs/60000));
@@ -194,7 +197,8 @@ export function createForgePlayerMat({root,readAccount,readSetup,getAccessToken,
   if(r.onPlay.games&&r.onDraw.games)deck.append(node('small',`On the play ${r.onPlay.wins}/${r.onPlay.games} · On the draw ${r.onDraw.wins}/${r.onDraw.games}`));
   box.append(list,deck);if(row.conceded)box.append(node('p','You conceded.'));
   const goals=node('ul');goals.className='play-result-goals';goals.setAttribute('aria-label','Goals');
-  for(const g of goalProgress()){const li=node('li');li.setAttribute('data-done',String(g.done));if(g.justDone)li.setAttribute('data-just','true');if(g.done)li.append(node('span','✓'));li.append(node('b',g.justDone?`${g.label} · done!`:g.done?g.label:`${g.label} · ${g.have}/${g.need}`));goals.append(li);}
+  let shown=null;try{shown=readGoals?.(detail)??null;}catch{shown=null;}
+  for(const g of shown||goalProgress()){const li=node('li');li.setAttribute('data-done',String(g.done));if(g.justDone)li.setAttribute('data-just','true');if(g.done)li.append(node('span','✓'));li.append(node('b',g.justDone?`${g.label} · done!`:g.done?g.label:`${g.label} · ${g.have}/${g.need}`));goals.append(li);}
   box.append(goals);return box;
  }
  // A still copy of the final table, wrapped in an element that carries the table's own class and attributes.
