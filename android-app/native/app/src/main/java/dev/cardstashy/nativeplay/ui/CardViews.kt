@@ -9,7 +9,7 @@ import androidx.compose.animation.core.Animatable
 import androidx.compose.ui.layout.boundsInRoot
 import androidx.compose.ui.layout.onGloballyPositioned
 import androidx.compose.ui.geometry.Offset
-import androidx.compose.runtime.snapshots.SnapshotStateMap
+import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.staticCompositionLocalOf
 import androidx.compose.animation.core.RepeatMode
 import androidx.compose.animation.core.animateFloat
@@ -52,7 +52,14 @@ import dev.cardstashy.nativeplay.match.DemoDecks
 enum class Mark { NONE, PLAYABLE, PICKABLE, PICKED }
 
 /** Where each card and life orb sits on screen (root coordinates), for the attack and block lines. */
-val LocalAnchors = staticCompositionLocalOf<SnapshotStateMap<String, Offset>?> { null }
+class Anchors {
+    /** Plain map: written during layout, read only in draw lambdas and effects, never in composition. */
+    val map = HashMap<String, Offset>()
+    /** Bumped when an anchor really moves (more than 0.5 px), so draw-time readers redraw. */
+    val version = mutableIntStateOf(0)
+    fun put(key: String, at: Offset) { val old = map[key]; if (old == null || (old - at).getDistance() > .5f) { map[key] = at; version.intValue++ } }
+}
+val LocalAnchors = staticCompositionLocalOf<Anchors?> { null }
 
 /** One card on the table: the printed card image, turned 20° when tapped (standing tap angle). */
 @Composable
@@ -79,7 +86,7 @@ fun CardFace(
         else -> Color(0x99000000)
     }
     val edgeW = if (mark != Mark.NONE || card.attacking || card.blocking) 2.dp else 1.dp
-    Box(modifier.size(w, h).then(if (anchors != null && card.zone == "Battlefield") Modifier.onGloballyPositioned { anchors["c${card.id}"] = it.boundsInRoot().center } else Modifier).graphicsLayer { rotationZ = turn; translationY = lift * density }
+    Box(modifier.size(w, h).then(if (anchors != null && card.zone == "Battlefield") Modifier.onGloballyPositioned { anchors.put("c${card.id}", it.boundsInRoot().center) } else Modifier).graphicsLayer { rotationZ = turn; translationY = lift * density }
         .then(if (onTap == null && onHold == null) Modifier else Modifier.pointerInput(card.id, onTap, onHold) { detectTapGestures(onTap = { onTap?.invoke() }, onLongPress = { onHold?.invoke() }) })) {
         Box(Modifier.fillMaxSize().clip(shape).background(Color(0xFF15151A))) {
             val img = decks.image(card.name)

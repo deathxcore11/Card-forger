@@ -52,6 +52,7 @@ import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.key
+import androidx.compose.runtime.withFrameNanos
 import androidx.compose.runtime.SideEffect
 import kotlinx.coroutines.delay
 import androidx.compose.animation.core.animateFloat
@@ -118,7 +119,7 @@ fun TableScreen(controller: MatchController, onHome: () -> Unit, onRematch: () -
     var menu by remember { mutableStateOf(false) }
     LaunchedEffect(shown?.revision) { if (shown?.selection?.actionable?.contains(selectedHand) != true) selectedHand = null }
 
-    val anchors = remember { mutableStateMapOf<String, Offset>() }
+    val anchors = remember { Anchors() }
     Box(Modifier.fillMaxSize().background(Palette.Night)) {
       CompositionLocalProvider(LocalAnchors provides anchors) {
         AssetImage("play/playmat-charcoal-table.webp", Modifier.fillMaxSize(), maxWidth = 1600)
@@ -262,10 +263,14 @@ private fun Permanents(cards: List<Card>, w: Dp, markOf: (Card) -> Mark, tapOf: 
                 }
                 // A blocker leans 8 degrees toward its attacker over 120 ms.
                 val anchors = LocalAnchors.current
-                val leanTarget = if (!leaving && card.blocking && anchors != null) card.blockingIds.firstOrNull()?.let { at ->
-                    val me = anchors["c${card.id}"]; val them = anchors["c$at"]
-                    if (me != null && them != null) 8f * sign(them.x - me.x) * (if (them.y < me.y) 1f else -1f) else null } ?: 0f else 0f
-                val lean = animateFloatAsState(leanTarget, tween(120), label = "lean")
+                val lean = remember { Animatable(0f) }
+                LaunchedEffect(leaving, card.blocking, card.blockingIds) {
+                    withFrameNanos { } // positions from this frame's layout
+                    val at = card.blockingIds.firstOrNull()
+                    val me = anchors?.map?.get("c${card.id}"); val them = at?.let { anchors?.map?.get("c$it") }
+                    val target = if (!leaving && card.blocking && me != null && them != null) 8f * sign(them.x - me.x) * (if (them.y < me.y) 1f else -1f) else 0f
+                    lean.animateTo(target, tween(120))
+                }
                 CardFace(card, w, w * 1.4f, mark = if (leaving) Mark.NONE else markOf(card), count = pile.size,
                     onTap = if (leaving) null else tapOf(card), onHold = if (leaving) null else ({ onInspect(card) }),
                     nudge = if (card.attacking) nudge else 0.dp,
@@ -317,7 +322,7 @@ private fun LifeOrb(life: Int, pickable: Boolean, picked: Boolean, anchor: Strin
         if (life != last) { if (life < last) launch { flash.snapTo(1f); flash.animateTo(0f, tween(900)) }; drop.snapTo(0f); last = life; drop.animateTo(1f, tween(240, easing = FastOutSlowInEasing)) }
     }
     val anchors = LocalAnchors.current
-    Box(Modifier.size(52.dp).then(if (anchor != null && anchors != null) Modifier.onGloballyPositioned { anchors[anchor] = it.boundsInRoot().center } else Modifier).clip(CircleShape)
+    Box(Modifier.size(52.dp).then(if (anchor != null && anchors != null) Modifier.onGloballyPositioned { anchors.put(anchor, it.boundsInRoot().center) } else Modifier).clip(CircleShape)
         .background(Brush.radialGradient(listOf(Color(0xFF2A2A31).copy(alpha = 1f), Color(0xFF111114))))
         .background(Palette.Red.copy(alpha = .55f * flash.value))
         .border(if (pickable || picked) 2.5.dp else 1.5.dp, if (pickable || picked) Palette.GoldBright else Palette.Gold, CircleShape)
@@ -328,7 +333,7 @@ private fun LifeOrb(life: Int, pickable: Boolean, picked: Boolean, anchor: Strin
 
 /** Attack lines (attacker to the player it attacks) and block lines (blocker to its attacker): 1.5 dp gold, drawn in after the nudge. */
 @Composable
-private fun CombatLines(st: MatchState, anchors: Map<String, Offset>) {
+private fun CombatLines(st: MatchState, anchors: Anchors) {
     val field = st.players.flatMap { it.battlefield }
     val pairs = buildList {
         field.filter { it.attacking }.forEach { a -> val defender = st.players.firstOrNull { it.id != a.controller } ?: return@forEach; add("c${a.id}" to "orb${defender.id}") }
@@ -338,8 +343,9 @@ private fun CombatLines(st: MatchState, anchors: Map<String, Offset>) {
     LaunchedEffect(pairs) { if (pairs.isEmpty()) grow.snapTo(0f) else { grow.snapTo(0f); delay(150); grow.animateTo(1f, tween(200, easing = FastOutSlowInEasing)) } }
     if (pairs.isEmpty()) return
     Canvas(Modifier.fillMaxSize()) {
+        anchors.version.intValue // redraw when an anchor moves
         for ((from, to) in pairs) {
-            val a = anchors[from] ?: continue; val b = anchors[to] ?: continue
+            val a = anchors.map[from] ?: continue; val b = anchors.map[to] ?: continue
             val end = a + (b - a) * grow.value
             drawLine(Color(0x55000000), a, end, strokeWidth = 4.dp.toPx(), cap = StrokeCap.Round)
             drawLine(Palette.GoldBright, a, end, strokeWidth = 1.5.dp.toPx(), cap = StrokeCap.Round)
