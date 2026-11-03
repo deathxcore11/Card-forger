@@ -93,29 +93,32 @@ class MainActivity : ComponentActivity() {
 
 @Composable
 private fun App(activity: MainActivity) {
-    var screen by remember { mutableStateOf<Screen>(Screen.Home) }
-    var afterSignIn by remember { mutableStateOf<Screen>(Screen.Home) }
+    // One Back for the whole app, like the site's appBack(): the topmost layer closes first (a pack, a card,
+    // each screen's own handler), then screens return along the app's own trail; Home is the root, where Back leaves.
+    val trail = remember { androidx.compose.runtime.mutableStateListOf<Screen>(Screen.Home) }
+    val screen = trail.last()
+    fun go(s: Screen) { if (s == Screen.Home) { trail.clear(); trail += Screen.Home } else if (trail.last() != s) trail += s }
+    fun back() { if (trail.size > 1) trail.removeAt(trail.lastIndex) }
+    BackHandler(enabled = trail.size > 1) { back() }
     when (val s = screen) {
         Screen.Home -> {
             LaunchedEffect(Unit) { activity.inGame(false) }
             dev.cardstashy.nativeplay.ui.PlayHomeRoute(
-                onQuickPlay = { screen = Screen.Decks }, onCollection = { screen = Screen.Collection },
-                onSignIn = { afterSignIn = Screen.Home; screen = Screen.SignIn }, onWeb = { screen = Screen.Web(it) })
+                onQuickPlay = { go(Screen.Decks) }, onCollection = { go(Screen.Collection) },
+                onSignIn = { go(Screen.SignIn) }, onWeb = { go(Screen.Web(it)) })
         }
-        Screen.Collection -> { LaunchedEffect(Unit) { activity.inGame(false) }; CollectionScreen(onPlay = { screen = Screen.Home }) }
-        is Screen.Web -> { LaunchedEffect(Unit) { activity.inGame(false) }; CollectionScreen(onPlay = { screen = Screen.Home }, url = s.url) }
+        Screen.Collection -> { LaunchedEffect(Unit) { activity.inGame(false) }; CollectionScreen(onPlay = { if (trail.size > 1) back() else go(Screen.Home) }) }
+        is Screen.Web -> { LaunchedEffect(Unit) { activity.inGame(false) }; CollectionScreen(onPlay = { back() }, url = s.url) }
         Screen.SignIn -> {
             LaunchedEffect(Unit) { activity.inGame(false) }
-            BackHandler { screen = afterSignIn }
-            SignInScreen(onDone = { screen = afterSignIn }, onBack = { screen = afterSignIn })
+            SignInScreen(onDone = { back() }, onBack = { back() })
         }
         Screen.Decks -> {
             LaunchedEffect(Unit) { activity.inGame(false) }
-            BackHandler { screen = Screen.Home }
-            DeckPickScreen(onPick = { screen = Screen.Match(it) }, onBack = { screen = Screen.Home },
-                onSignIn = { afterSignIn = Screen.Decks; screen = Screen.SignIn })
+            DeckPickScreen(onPick = { go(Screen.Match(it)) }, onBack = { back() },
+                onSignIn = { go(Screen.SignIn) })
         }
-        is Screen.Match -> MatchFlow(activity, s.pick, onHome = { screen = Screen.Home }, onDecks = { screen = Screen.Decks })
+        is Screen.Match -> MatchFlow(activity, s.pick, onHome = { go(Screen.Home) }, onDecks = { back() })
     }
 }
 
