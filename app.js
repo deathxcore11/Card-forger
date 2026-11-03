@@ -164,7 +164,7 @@ import { startSearchHints } from "./search-hints.js";
 import { openZoom, zoomCardOptions } from "./zoom.js";
 import {createPlayEcon,purse} from "./play-econ-client.js";
 import {matchCounters,questRows,playDay} from "./play-achievements.js";
-import {econScreenMarkup,ECON_VIEWS,purseMarkup,cardImageByName,head as econHead,craftPlan,packGoals} from "./play-econ-ui.js";
+import {econScreenMarkup,ECON_VIEWS,purseMarkup,cardImageByName,head as econHead,craftPlan,packGoals,setPlayStyles} from "./play-econ-ui.js";
 import {rewardFlight} from "./reward-flight.js";
 import {createNameFacts,createCraftRarity,clusterArchetypes,finderArchetypes,rankFinderLists,finderRow,trunkDeck,finderMarkup,finderDeckMarkup,FINDER_FORMATS,FINDER_SORTS,FINDER_FILTERS} from "./play-deck-finder.js";
 import {createCardFacts,slimCard} from "./play-econ-cards.js";
@@ -1725,7 +1725,7 @@ let playPaint=false,storyPaint=0;
 const playRepaint=()=>{if(playPaint)return;playPaint=true;queueMicrotask(()=>{playPaint=false;refreshPlayMenu();});};
 // Story acts arrive one by one from the network: they share one repaint per frame.
 const storyRepaint=()=>{if(!storyPaint)storyPaint=(globalThis.requestAnimationFrame||(f=>setTimeout(f,16)))(()=>{storyPaint=0;refreshPlayMenu();});};
-const playEcon=createPlayEcon({getAccessToken:cloudAccessToken,onChange:()=>{syncPlayChrome();if(S.ui.view==='play')playRepaint();else if(S.ui.lens==='play'&&S.ui.view==='set')render();}});
+const playEcon=createPlayEcon({getAccessToken:cloudAccessToken,onChange:()=>{setPlayStyles(playEcon.snapshot().state?.styles||[]);syncPlayChrome();if(S.ui.view==='play')playRepaint();else if(S.ui.lens==='play'&&S.ui.view==='set')render();}});
 // The Trunk sort sticks until the player picks another (default: Recently added).
 function savedEconSort(){try{return localStorage.getItem('cardstashy-play-sort')||'';}catch{return '';}}
 let econUi={query:'',cardQuery:'',rarity:'',press:null,check:null,sort:savedEconSort()},econSeen=null;
@@ -1734,6 +1734,10 @@ const econFacts=createCardFacts({onChange:()=>{if(S.ui.view==='play'&&ECON_VIEWS
 const econWake=()=>{const id=cloudInfo()?.user?.id||null;if(id===econSeen)return;if(econSeen!==null)playEcon.clear();econSeen=id;econUi={query:'',cardQuery:'',rarity:'',press:null,check:null,sort:savedEconSort()};playView=ECON_VIEWS.has(playView)?'home':playView;if(id)setTimeout(()=>playEcon.refresh().then(()=>playEcon.login()).then(l=>{if(l?.fresh)toast(`Day ${l.stamp} stamped on your log-in calendar.`);}),0);};
 const econFocus=()=>requestAnimationFrame(()=>document.getElementById('playTitle')?.focus?.({preventScroll:true}));
 A.playEconView=t=>{const v=t.dataset.econView;if(!ECON_VIEWS.has(v))return;playView=v;if(t.dataset.econTab)econUi.deedTab=t.dataset.econTab;if(v==='decks')loadPreconIndex();playInspectOpen=false;refreshPlayMenu();scrollTo({top:0});if(v==='shop'&&t.dataset.econFocus==='press')requestAnimationFrame(()=>document.querySelector('.pe-forge')?.scrollIntoView({block:'center',behavior:'smooth'}));else econFocus();};
+// Secret Lair (play-secret-lair.js): this week's bundle, and the rare art styles rewards unlock.
+const slToast=style=>{if(!style?.id)return;playEcon.noteStyle(style);setTimeout(()=>{toast(`Secret Lair art unlocked: ${style.n}.${style.card?' The card came with it.':''} Pick it in the card view.`);haptic('tick');},900);};
+A.playEconSecretLair=async t=>{try{const out=await playEcon.secretLair(t.dataset.econWeek);toast(`${out.secretLair?.title||'Secret Lair'} is yours. Every card is in your Trunk, in its Secret Lair art.`);haptic('tick');}catch{}};
+A.playCardStyle=async t=>{try{await playEcon.style(t.dataset.oracle,t.dataset.print||null);refreshSheet?.();}catch{}};
 A.playEconBuy=async t=>{try{await playEcon.buy(t.dataset.econSet);toast('Pack bought. It is waiting in Packs.');}catch{}};
 // The Forge: strike lower seals into the next rarity; the new seal flares where it lands.
 A.playEconForge=async t=>{const to=t.dataset.econTo,times=Number(t.dataset.econTimes)||1;try{const out=await playEcon.forge(to,times);haptic('success');appSound('PACK-005',{volume:.5,gap:0});
@@ -1744,7 +1748,7 @@ A.playEconRetry=()=>{playEcon.refresh();};
 A.playCardHolo=async t=>{try{const out=await playEcon.holo(t.dataset.oracle);haptic('success');toast(`${out.holo.name} is now holo. It has its own tile in your Trunk.`);refreshSheet?.();}catch{}};
 A.playEconDeedTab=t=>{econUi.deedTab=t.dataset.value||'journey';refreshPlayMenu();};
 // A claim lands like a reward: a jingle and haptic at the button, then the coins, seals and packs fly into the purse (reward-flight.js).
-A.playEconClaim=async t=>{const {econKind:kind,econId:id,econStep:step}=t.dataset;const from=t.getBoundingClientRect(),before=purse(playEcon.snapshot().state);try{const out=await playEcon.claim(kind,id,step===undefined?undefined:Number(step));t.closest('.pd-card,.pd-quest')?.classList.add('struck');rewardFlight({from,delta:out.delta||{},before,big:kind==='ach'||kind==='weekly-all'});const d=out.delta||{},bits=[d.coins&&d.coins+' coins',d.packs?.length&&d.packs.length+(d.packs.length===1?' pack':' packs'),...Object.entries(d.seals||{}).map(([k,v])=>v+' '+({c:'common',u:'uncommon',r:'rare',m:'mythic'})[k]+(v===1?' seal':' seals')),d.xp&&d.xp+' XP'].filter(Boolean);toast(bits.length?'Claimed: '+bits.join(', ')+'.':'Claimed.');}catch{}};
+A.playEconClaim=async t=>{const {econKind:kind,econId:id,econStep:step}=t.dataset;const from=t.getBoundingClientRect(),before=purse(playEcon.snapshot().state);try{const out=await playEcon.claim(kind,id,step===undefined?undefined:Number(step));slToast(out.style);t.closest('.pd-card,.pd-quest')?.classList.add('struck');rewardFlight({from,delta:out.delta||{},before,big:kind==='ach'||kind==='weekly-all'});const d=out.delta||{},bits=[d.coins&&d.coins+' coins',d.packs?.length&&d.packs.length+(d.packs.length===1?' pack':' packs'),...Object.entries(d.seals||{}).map(([k,v])=>v+' '+({c:'common',u:'uncommon',r:'rare',m:'mythic'})[k]+(v===1?' seal':' seals')),d.xp&&d.xp+' XP'].filter(Boolean);toast(bits.length?'Claimed: '+bits.join(', ')+'.':'Claimed.');}catch{}};
 // The result banner's goals are the account's own server quests, with this match already counted:
 // today's two quests and the weekly closest to done. Practice moves no quest, so it shows none.
 function resultGoals(m){
@@ -1776,7 +1780,7 @@ const econOpened=out=>{const bits=[];const sb=out.sealBonus||{};for(const [k,lab
 const econLand=list=>list.slice(0,15).forEach((f,i)=>setTimeout(()=>{flyToCollection(f);haptic('tick');},i*85));
 // The server rolls the pack before anything can show, so the pack shakes and glows right away while it does.
 A.playEconOpen=async t=>{let out;const btn=t.closest?.('.pe-pack')||t;btn.classList.add('pe-pack--opening');btn.setAttribute('aria-busy','true');haptic('tap');
- try{out=await playEcon.open(t.dataset.econPack);}catch{return;}finally{btn.classList.remove('pe-pack--opening');btn.removeAttribute('aria-busy');}
+ try{out=await playEcon.open(t.dataset.econPack);slToast(out.style);}catch{return;}finally{btn.classList.remove('pe-pack--opening');btn.removeAttribute('aria-busy');}
  const name=c=>(playEcon.snapshot().state?.shop||[]).find(x=>x.code===c)?.name||c.toUpperCase();
  try{openPackPreview({game:'mtg',set:{code:out.pack.set,name:name(out.pack.set)},cards:[],variant:'play',drawn:econPicks(out),note:[econCollector(out),'Added to your Play collection.',econOpened(out)].filter(Boolean).join(' '),onCopy:copyPlain,isCurrent:()=>true,onLand:econLand,
   onNext:async()=>{const left=playEcon.snapshot().state?.packs||[],next=left.find(p=>p.set===out.pack.set)||left[0];if(!next)return null;out=await playEcon.open(next.id);return {picks:econPicks(out),set:{code:out.pack.set,name:name(out.pack.set)}};}});}catch(e){toast(e.message||'Could not show this pack.');}};
@@ -1833,6 +1837,8 @@ V.setPlayLensSource(()=>{const st=playEcon.snapshot().state||{};
   get edit(){const e=playView==='deck'&&econUi.edit;if(!e)return null;const copies=e.format==='Commander'?1:4;return {name:e.name||'this deck',qty:n=>(e.cards||[]).filter(c=>c.name===n).reduce((t,c)=>t+c.qty,0),copies};},
   // Craft with seals: one seal of the card's rarity per copy, up to 4 copies in the Trunk.
   craft:(name,card)=>{const seal={common:'c',uncommon:'u',rare:'r',mythic:'m',special:'r',bonus:'m'}[card?.rarity];const have=(card?.oracle_id&&byOracle.get(card.oracle_id))||byName.get(name)||0;if(!seal||!card?.id)return null;return {id:card.id,seal,room:Math.max(0,4-have),seals:st.wallet?.['seal_'+seal]|0,label:{c:'common',u:'uncommon',r:'rare',m:'mythic'}[seal]};},
+  // Secret Lair styles unlocked for this card, and the one in use.
+  styles:(name,card)=>{const c=(st.cards||[]).find(x=>x.o===card?.oracle_id)||(st.cards||[]).find(x=>x.n===name);const o=c?.o||card?.oracle_id||'';const list=(st.styles||[]).filter(x=>x.o===o);return list.length?{oracle:o,list,on:list.find(x=>x.on)||null}:null;},
   meta:name=>cardMetaStats(name),
   setProgress:code=>{const have=(st.cards||[]).filter(c=>(c.s||[]).includes(code)).length,total=econFacts.set(code)?.total||null;return {key:'play:'+code,owned:have,total,loaded:total||0,known:total||0,complete:true};}};});
 A.playLensBack=()=>{playView='collection';econUi.tab='sets';go('#play');};
@@ -2408,7 +2414,7 @@ A.storyPlay=async({skipScene=false}={})=>{
   const onRec=e=>{if(e.detail?.story)rec=e.detail;};addEventListener('play:match-recorded',onRec);
   const finished=async outcome=>{bubbles?.finish(outcome);removeEventListener('play:match-recorded',onRec);if(outcome!=='win'||paid)return;paid=true;
    const seenStats=bubbles?.stats?.()||{};
-   const out=await storyProgress.claim({battle:b.id,seat,deck:own?'own':'loaner'});if(out?.state)playEcon.refresh();
+   const out=await storyProgress.claim({battle:b.id,seat,deck:own?'own':'loaner'});if(out?.state)playEcon.refresh();slToast(out?.style);
    // Story deeds: what this win earned (story-deeds.js); the server re-checks and pays each once.
    const deeds=storyDeedsEarned(b.id,{...seenStats,seat,own:!!own,onPlay:typeof rec?.onPlay==='boolean'?rec.onPlay:null,turns:rec?.turns||seenStats.turns,endLife:rec?.life??seenStats.endLife},out?.refs||[]);
    if(deeds.length)void playEcon.reportDeeds(b.id,deeds).then(r=>{for(const id of r?.counted||[]){const d=[...STORY_DEEDS,...STORY_ACT_DEEDS].find(x=>x.id===id);if(d)toast(`Deed done: ${d.title}. Claim it in Achievements.`);}});

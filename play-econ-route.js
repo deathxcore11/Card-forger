@@ -8,6 +8,7 @@ import {loadMtgBooster, mtgBoosterCards, drawMtgBooster, mtgGodPackPicks} from '
 import {rewardSet, setFormats} from './play-econ-sets.js';
 import {starterGrant, sealTrackBonus, packContentsRow, cardDelta, RARITY_SEAL, FORGE_STEPS, forgeRatio, holoCost, preconPrice, mtgjsonCardDelta, mtgjsonDeckRows, deckShortfall, ownedByName, isCollectorPack, collectorOdds, collectorPicks, collectorSource, godPackOdds} from './play-econ-rules.js';
 import {PRACTICE_STARTER_ROWS} from './play-starter-deck.js';
+import {weeklySecretLair, secretLairPrice, secretLairLabel, secretLairRef, secretLairCardDelta, secretLairStyle, pickSecretLairStyle} from './play-secret-lair.js';
 import {STORY_DEEDS, STORY_ACT_DEEDS, storyDeedsEarned} from './story-deeds.js';
 import {ACHIEVEMENTS, achievementRows, achievementReward, achievementRef, questRows, questReward, loginStamp, rewardDelta, matchCounters, playDay, playWeek, achievementsPayload} from './play-achievements.js';
 
@@ -32,6 +33,21 @@ export function cryptoRandom() { const a = new Uint32Array(2); crypto.getRandomV
 function asset(env, request, path, fetcher) {
   const url = new URL(path, request.url).toString();
   return (env.ASSETS ? env.ASSETS.fetch(new Request(url)) : fetcher(url)).then(r => r.ok ? r.json() : null).catch(() => null);
+}
+
+// Secret Lair drops (scripts/bake-secret-lair.mjs), read once per isolate.
+let slCache = null;
+async function secretLairDrops(env, request, fetcher) {
+  if (!slCache) slCache = asset(env, request, '/data/secret-lair/drops.json', fetcher).then(d => (Array.isArray(d?.drops) ? d.drops : null)).then(d => { if (!d) slCache = null; return d || []; });
+  return slCache;
+}
+// This Play week's bundle (UTC weeks, Monday to Sunday), as the Merchant shows it.
+export function secretLairOffer(drops, config = {}, now = new Date()) {
+  const today = now.toISOString().slice(0, 10), week = playWeek(today), drop = weeklySecretLair(drops, week, today);
+  if (!drop) return null;
+  const end = new Date(Date.UTC(now.getUTCFullYear(), now.getUTCMonth(), now.getUTCDate() + ((8 - (now.getUTCDay() || 7)) % 7 || 7)));
+  return {week, ref: secretLairRef(week), id: drop.id, ...secretLairLabel(drop), price: secretLairPrice(drop, config), ends: end.toISOString(),
+    cards: drop.cards.map(c => ({id: c.id, o: c.o, n: c.n, r: c.r, f: c.f}))};
 }
 
 let setsCache = null;
@@ -82,6 +98,22 @@ export async function progressRoute(request, env, {verifyBearer, fetcher = fetch
   if (!user?.id) return fail('sign_in', 401);
   const uid = user.id, apply = (ref, kind, delta) => rpc(env, 'play_apply', {p_user: uid, p_ref: ref, p_kind: kind, p_delta: delta}, fetcher);
   const state = () => rpc(env, 'play_state', {p_user: uid}, fetcher);
+  // Secret Lair styles and bought bundles (supabase/migrations/20261103170000_play_secret_lair.sql).
+  // Until that SQL runs this answers null and the Merchant hides the bundle.
+  const looks = () => rpc(env, 'play_styles', {p_user: uid}, fetcher).catch(() => null);
+  // A rare Secret Lair style, once per ref: the art of a card the player owns, or the card with it.
+  const grantStyle = async (ref, s0) => {
+    try {
+      const [drops, l, s] = await Promise.all([secretLairDrops(env, request, fetcher), looks(), s0 || state()]);
+      if (!l || !drops.length) return null;
+      const pick = pickSecretLairStyle(drops, new Set((s.cards || []).map(c => c.o)), new Set((l.styles || []).map(x => x.id)), cryptoRandom);
+      if (!pick) return null;
+      const out = await rpc(env, 'play_add_styles', {p_user: uid, p_ref: ref, p_styles: [secretLairStyle(pick.card)]}, fetcher);
+      if (out?.duplicate) return null;
+      if (!pick.owned) await apply(ref + ':card', 'style', {cards: [secretLairCardDelta(pick.card)]});
+      return {...secretLairStyle(pick.card), card: !pick.owned};
+    } catch { return null; }
+  };
   // Story progress is the player's own story:* ledger refs (supabase/migrations/20261101190000_play_story.sql).
   // Before that function exists this answers null and the app keeps its device copy.
   const storyRefs = () => rpc(env, 'play_story_refs', {p_user: uid}, fetcher).catch(() => null);
@@ -103,7 +135,10 @@ export async function progressRoute(request, env, {verifyBearer, fetcher = fetch
   try {
     if (path === 'state' && request.method === 'GET') {
       const [s, sets, c, claimed, story] = await Promise.all([state(), shopSets(env, request, fetcher), counters.read(), counters.claims(), storyRefs()]);
-      return json({...s, rewardSet: sets.reward, shop: sets.shop, counters: c || {}, claimed: claimed || [], story: Array.isArray(story) ? story : []});
+      const [l, drops] = await Promise.all([looks(), secretLairDrops(env, request, fetcher)]);
+      const sl = l ? secretLairOffer(drops, s.config) : null;
+      return json({...s, rewardSet: sets.reward, shop: sets.shop, counters: c || {}, claimed: claimed || [], story: Array.isArray(story) ? story : [],
+        styles: l?.styles || [], secretLair: sl ? {...sl, bought: (l.bundles || []).includes(sl.ref)} : null});
     }
     if (path === 'achievements' && request.method === 'GET') {
       // Every achievement, quest and log-in reward, worked out for this player (play-achievements.js).
@@ -145,7 +180,8 @@ export async function progressRoute(request, env, {verifyBearer, fetcher = fetch
       const result = await apply('open:' + pack.id, 'open', {open: {id: pack.id, contents}, cards: contents.filter(c => c.oracle_id).map(cardDelta), seals: bonus});
       await tally('open:' + pack.id, {packs_opened: 1, packs_collector: kind === 'collector' || god ? 1 : 0, packs_god: god ? 1 : 0,
         pulls_mythic: contents.filter(c => c.rarity === 'mythic').length, ...(/^[a-z0-9]{2,8}$/.test(pack.set) ? {['po:' + pack.set]: 1} : {})}, body.tz);
-      return json({counters: await counters.read(), pack: {...pack, contents, ...(earned || surprise ? {collector: true} : {}), ...(surprise ? {surprise: true} : {}), ...(god ? {god: true, collector: true} : {})}, sealBonus: bonus, duplicateCoins: result.duplicate_coins || 0, converted: result.converted || [], state: await state()});
+      const style = god ? await grantStyle('slstyle:open:' + pack.id) : null;
+      return json({counters: await counters.read(), ...(style ? {style} : {}), pack: {...pack, contents, ...(earned || surprise ? {collector: true} : {}), ...(surprise ? {surprise: true} : {}), ...(god ? {god: true, collector: true} : {})}, sealBonus: bonus, duplicateCoins: result.duplicate_coins || 0, converted: result.converted || [], state: await state()});
     }
     if (path === 'craft') {
       const id = String(body.id || '');
@@ -276,7 +312,36 @@ export async function progressRoute(request, env, {verifyBearer, fetcher = fetch
       if (claimed.includes(ref)) return fail('claimed', 409);
       const paid = await apply(ref, body.kind === 'ach' ? 'achievement' : 'quest', delta);
       if (paid?.duplicate) return fail('claimed', 409);
-      return json({ref, delta, state: await state(), claimed: [...claimed, ref]});
+      // Gold and mythic achievement steps also bring a rare Secret Lair style.
+      const tier = body.kind === 'ach' ? achievementRows({counters: c, state: s, claimed}).find(r => r.id === body.id)?.steps[Number(body.step)]?.tier : '';
+      const style = tier === 'gold' || tier === 'mythic' ? await grantStyle('slstyle:' + ref) : null;
+      return json({ref, delta, ...(style ? {style} : {}), state: await state(), claimed: [...claimed, ref]});
+    }
+    if (path === 'secretlair') {
+      // This week's Secret Lair bundle: coins for real Secret Lair printings, each card into the Trunk with
+      // its Secret Lair art unlocked as a style. Once per week (the sl:<week> ref).
+      const [s, l, drops] = await Promise.all([state(), looks(), secretLairDrops(env, request, fetcher)]);
+      if (!l) return fail('not_ready', 503);
+      const offer = secretLairOffer(drops, s.config);
+      if (!offer) return fail('no_bundle', 404);
+      if (body.week && body.week !== offer.week) return fail('bundle_gone', 409);
+      if ((l.bundles || []).includes(offer.ref)) return fail('bought', 409);
+      if ((s.wallet?.coins || 0) < offer.price) return fail('short_coins', 409);
+      const drop = drops.find(d => d.id === offer.id);
+      const paid = await apply(offer.ref, 'secretlair', {coins: -offer.price, cards: drop.cards.map(secretLairCardDelta)});
+      if (paid?.duplicate) return fail('bought', 409);
+      await rpc(env, 'play_add_styles', {p_user: uid, p_ref: offer.ref + ':styles', p_styles: drop.cards.map(secretLairStyle)}, fetcher);
+      await tally(offer.ref, {buys: 1, coins_spent: offer.price}, body.tz);
+      const after = await looks();
+      return json({counters: await counters.read(), state: await state(), styles: after?.styles || [], secretLair: {...offer, bought: true}});
+    }
+    if (path === 'style') {
+      // Shows an unlocked Secret Lair style on your copy of the card, or its own art again (print: null).
+      const oracle = String(body.oracle || ''), print = body.print == null ? null : String(body.print);
+      if (!/^[0-9a-f-]{36}$/.test(oracle) || (print !== null && !/^[0-9a-f-]{36}$/.test(print))) return fail('bad_style');
+      const out = await rpc(env, 'play_pick_style', {p_user: uid, p_oracle: oracle, p_print: print}, fetcher).catch(e => ({error: e.code}));
+      if (out?.error) return fail(/style_locked/.test(out.error) ? 'style_locked' : 'not_ready', /style_locked/.test(out.error) ? 403 : 503);
+      return json({styles: out.styles || []});
     }
     if (path === 'buy') {
       const set = String(body.set || '').toLowerCase();
@@ -309,6 +374,7 @@ export async function progressRoute(request, env, {verifyBearer, fetcher = fetch
       const cfg = (await state()).config?.story || {}, set = battle.rewardSet, pack = n => Array.from({length: n}, () => ({set, source: 'story'}));
       const reward = battle.reward || {hero: {packs: cfg.firstWinPacks ?? 1, coins: 0}, villain: {card: null, coins: cfg.starCoins ?? 100}};
       const villain = body.seat === 'villain', own = body.deck === 'own', xp = cfg.firstWinXp ?? 150;
+      let style = null;
       const paid = [], pay = async (ref, delta) => { const out = await apply(ref, 'story', delta); if (!out?.duplicate) paid.push(ref); return !out?.duplicate; };
       if (villain) {
         const refs = await storyRefs();
@@ -318,7 +384,8 @@ export async function progressRoute(request, env, {verifyBearer, fetcher = fetch
       } else {
         await pay(`story:${id}:clear`, {xp});
         // Every act's boss always gives a Collector pack of its era on the first hero-side win.
-        if (battle.slot === 8 || /boss/i.test(battle.kind || '')) await pay(`story:${id}:collector`, {packs: [{set, source: collectorSource('story')}]});
+        // Bosses also bring a rare Secret Lair style, on that same first win.
+        if (battle.slot === 8 || /boss/i.test(battle.kind || '')) { if (await pay(`story:${id}:collector`, {packs: [{set, source: collectorSource('story')}]})) style = await grantStyle(`slstyle:story:${id}`); }
         if (own) await pay(`story:${id}:own`, {});
         else {
           const h = reward.hero || {};
@@ -326,7 +393,7 @@ export async function progressRoute(request, env, {verifyBearer, fetcher = fetch
           if (battle.slot === 8) await pay(`story:act${Number(m[1])}:era`, {seals: cfg.eraClearSeals || {m: 1}});
         }
       }
-      return json({paid, rewardSet: set, refs: await storyRefs(), state: await state()});
+      return json({paid, rewardSet: set, ...(style ? {style} : {}), refs: await storyRefs(), state: await state()});
     }
     if (path === 'deck') {
       const cards = Array.isArray(body.cards) ? body.cards.slice(0, 250).map(c => ({name: String(c?.name || '').slice(0, 160), qty: Math.max(1, Math.min(250, Number(c?.qty) || 1)), ...(c?.board === 'side' ? {board: 'side'} : {})})).filter(c => c.name) : [];
