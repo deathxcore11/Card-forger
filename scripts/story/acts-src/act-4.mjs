@@ -61,15 +61,14 @@ export default {
 4 Infantry Veteran
 4 Ekundu Griffin
 2 Sidar Jabari
-2 Pearl Dragon
+4 Pearl Dragon
 4 Pacifism
-2 Healing Salve
 2 Warrior's Honor
 24 Plains`}},
       villain: {who: 'telimtor', deck: {name: "Telim'Tor's Lances", colors: 'R', list: `
 1 Telim'Tor
 4 Suq'Ata Lancer
-4 Talruum Minotaur
+4 Goblin Digging Team
 4 Viashino Warrior
 4 Goblin Elite Infantry
 4 Mountain Goat
@@ -184,8 +183,8 @@ export default {
 10 Forest`}},
       villain: {who: 'jolrael', deck: {name: 'Children of the Mwonvuli', colors: 'G', list: `
 4 Mtenda Lion
-4 Bull Elephant
-2 Gibbering Hyenas
+2 Bull Elephant
+4 Gibbering Hyenas
 2 Ley Druid
 4 Jolrael's Centaur
 2 Stalking Tiger
@@ -255,16 +254,17 @@ export default {
 4 Femeref Knight
 4 Harmattan Efreet
 2 Counterspell
-2 Unsummon
+4 Unsummon
 4 Memory Lapse
-4 Healing Salve
+2 Healing Salve
 4 Pacifism
 4 Flood Plain
 10 Plains
 10 Island`}},
       villain: {who: 'pashad', deck: {name: 'Everybody Draws', colors: 'UR', archetype: 'Prosperity', list: `
-2 Howling Mine
-4 Prosperity
+2 Prosperity
+2 Harmattan Efreet
+2 Viashino Sandstalker
 4 Inspiration
 4 Kaervek's Torch
 4 Volcanic Geyser
