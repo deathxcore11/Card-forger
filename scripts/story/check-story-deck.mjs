@@ -14,6 +14,8 @@ const pool = JSON.parse(readFileSync(opt('--pool') || `/tmp/story/pool-${act.act
 const data = JSON.parse(readFileSync(new URL(`../../data/story/act-${act.act}.json`, import.meta.url), 'utf8'));
 const forgeRoot = opt('--forge-root') || (existsSync('/tmp/fe/root') ? '/tmp/fe/root' : null);
 const byKey = new Map(pool.map(c => [c.set + '#' + c.number, c]));
+// Desktop Forge knows Kamigawa flip cards by their front face only (the app's engine takes either).
+const simName = (x) => /^(chk|bok|sok)$/.test(x.set) ? x.name.split(' // ')[0] : x.name;
 const simDir = opt('--sim-dir'); if (simDir) mkdirSync(simDir, {recursive: true});
 let failures = 0, warnings = 0;
 for (const b of data.battles) {
@@ -24,7 +26,7 @@ for (const b of data.battles) {
     warnings += r.warn.length;
     console.log(`${r.fail.length ? 'FAIL' : 'PASS'} ${b.id} ${seat.padEnd(7)} ${deck?.name} [${LABELS[deck?.label] || 'no label'}] (${r.lands} lands)`
       + r.fail.map(x => '\n   FAIL ' + x).join('') + r.warn.map(x => '\n   warn ' + x).join(''));
-    if (simDir && deck) writeFileSync(`${simDir}/${b.id}-${seat}.txt`, deck.cards.map(x => `${x.qty}|${x.name}|${x.set.toUpperCase()}`).join('\n') + '\n');
+    if (simDir && deck) writeFileSync(`${simDir}/${b.id}-${seat}.txt`, deck.cards.map(x => `${x.qty}|${simName(x)}|${x.set.toUpperCase()}`).join('\n') + '\n');
   }
 }
 console.log(failures ? `${failures} deck(s) FAILED` : `all ${data.battles.length * 2} decks pass (${warnings} warnings)`);

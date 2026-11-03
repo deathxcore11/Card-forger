@@ -35,6 +35,9 @@ export const STORY_ACTS = [
   {act: 11, age: 'The Mirrodin Years', title: 'The Metal World', years: '2003 to 2004',
     sets: ['mrd', 'dst', '5dn'], landSet: 'mrd', packSets: ['mrd', 'dst', '5dn'],
     art: {set: 'dst', number: '129', name: 'Memnarch', crop: 'https://cards.scryfall.io/art_crop/front/5/7/57ae2417-b859-4254-a3a5-6bff159447ca.jpg'}},
+  {act: 12, age: 'The Kamigawa Years', title: 'The Kami War', years: '2004 to 2005',
+    sets: ['chk', 'bok', 'sok', '9ed'], landSet: 'chk', packSets: ['chk', 'bok', 'sok'],
+    art: {set: 'chk', number: '30', name: 'Konda, Lord of Eiganjo', crop: 'https://cards.scryfall.io/art_crop/front/5/e/5edab171-94b9-4e5e-ab61-bd8c6c8cfc38.jpg'}},
 ];
 export const SET_NAMES = {lea: 'Limited Edition Alpha', leb: 'Limited Edition Beta', '2ed': 'Unlimited Edition', arn: 'Arabian Nights', atq: 'Antiquities',
   '3ed': 'Revised Edition', leg: 'Legends', drk: 'The Dark', fem: 'Fallen Empires', ice: 'Ice Age', hml: 'Homelands', all: 'Alliances', '4ed': 'Fourth Edition',
@@ -45,6 +48,7 @@ export const SET_NAMES = {lea: 'Limited Edition Alpha', leb: 'Limited Edition Be
   inv: 'Invasion', pls: 'Planeshift', '7ed': 'Seventh Edition', apc: 'Apocalypse',
   ody: 'Odyssey', tor: 'Torment', jud: 'Judgment',
   ons: 'Onslaught', lgn: 'Legions', scg: 'Scourge', '8ed': 'Eighth Edition',
-  mrd: 'Mirrodin', dst: 'Darksteel', '5dn': 'Fifth Dawn'};
+  mrd: 'Mirrodin', dst: 'Darksteel', '5dn': 'Fifth Dawn',
+  chk: 'Champions of Kamigawa', bok: 'Betrayers of Kamigawa', sok: 'Saviors of Kamigawa', '9ed': 'Ninth Edition'};
 export const storyAct = n => STORY_ACTS.find(a => a.act === Number(n)) || null;
 export const setSymbolUrl = code => `https://svgs.scryfall.io/sets/${encodeURIComponent(code)}.svg`;

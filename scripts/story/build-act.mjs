@@ -13,7 +13,8 @@ const missing = [];
 // The first printing of a card in the act's sets wins unless the deck asks otherwise.
 function pick(name, prefer = []) {
   const all = pool.filter(c => c.name === name && !/[a-z]$/.test(c.number) || c.name === name && /^\d+a$/.test(c.number));
-  const hits = all.length ? all : pool.filter(c => c.name === name);
+  // Flip cards (Kamigawa) are listed by their front face; the deck keeps the full Scryfall name.
+  const hits = all.length ? all : pool.filter(c => c.name === name || c.name.split(' // ')[0] === name);
   if (!hits.length) { missing.push(name); return null; }
   const order = BASIC.test(name) ? [act.landSet] : [...prefer, ...act.sets];
   hits.sort((a, b) => (order.indexOf(a.set) + 1 || 99) - (order.indexOf(b.set) + 1 || 99) || parseInt(a.number) - parseInt(b.number));
