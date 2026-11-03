@@ -156,14 +156,14 @@ class ShotTest {
         kotlinx.coroutines.runBlocking { for (c in listOf("left", "center", "right")) AssetImages.load(RuntimeEnvironment.getApplication(), "play/brand-$c.webp", maxWidth = 384) }
         RuntimeEnvironment.setQualifiers("w200dp-h200dp-xxhdpi")
         for (i in 0 until 12) {
-            m.cycle = i / 12f; m.light = (i / 12f) * 2f * Math.PI.toFloat(); m.breathe = (kotlin.math.sin(i / 12f * 2.5f * Math.PI) * .5 + .5).toFloat()
+            m.cycle = i / 12f; m.light = .5f + i * .035f; m.breathe = (kotlin.math.sin(i / 12f * 2.5f * Math.PI) * .5 + .5).toFloat()
             captureRoboImage(File(System.getProperty("shotsDir"), "brand-%02d.png".format(i)).path) {
                 androidx.compose.foundation.layout.Box(Modifier.size(200.dp).background(Site.Bg), contentAlignment = androidx.compose.ui.Alignment.Center) {
                     dev.cardstashy.nativeplay.ui.BrandMark(160.dp)
                 }
             }
         }
-        m.cycle = .5f; m.light = 1.2f; m.breathe = .5f
+        m.cycle = .5f; m.light = .7f; m.breathe = .5f
     }
 
     private val sizes = listOf(360 to 780, 412 to 915, 600 to 960, 840 to 1000)
