@@ -90,6 +90,7 @@ class MainActivity : ComponentActivity() {
         ForgeService.prepare(this)
         Account.init(this); CardArt.init(this); Speed.init(this)
         dev.cardstashy.nativeplay.play.Progress.init(this); dev.cardstashy.nativeplay.play.SetFacts.init(this); dev.cardstashy.nativeplay.play.CardFacts.init(this); dev.cardstashy.nativeplay.play.DeckEngine.init(this); dev.cardstashy.nativeplay.play.CraftRarity.init(this)
+        dev.cardstashy.nativeplay.play.CardData.warm(this); dev.cardstashy.nativeplay.ui.PackSfx.warm(this)
         FreezeReport.init(this)
         setContent { androidx.compose.foundation.layout.Box(androidx.compose.ui.Modifier.fillMaxSize()) { App(this@MainActivity); FreezeBanner() } }
     }

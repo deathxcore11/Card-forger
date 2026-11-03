@@ -123,7 +123,7 @@ private fun JsonObject?.s(k: String) = this?.get(k)?.takeIf { it.isJsonPrimitive
 @Composable
 fun CardSheet(pick: CardPick, state: JsonObject?, act: CardSheetActions, onClose: () -> Unit, startTab: String = "overview") {
     val context = LocalContext.current
-    val data = remember { runCatching { CardData.load(context) }.getOrNull() }
+    val data = CardData.ready.collectAsState().value.also { if (it == null) CardData.warm(context) }
     val prints by CardFacts.prints.collectAsState()
     val facts by CardFacts.cards.collectAsState()
     LaunchedEffect(pick) { pick.printId?.let { CardFacts.wantPrint(it) } ?: CardFacts.want(listOf(pick.oracle to null)) }
@@ -240,15 +240,15 @@ private fun Overview(name: String, shown: JsonObject, faces: List<JsonObject>, i
         SetLine(shown, state, act)
         // The card: drag across it to move the light (the phone's tilt moves it too); tap to enlarge.
         val look = data?.let { Foil.look(it, shown, finish) }
-        val touch = remember { mutableStateOf<Offset?>(null) }
+        // feel.js attachTilt + attachMotionTilt: the card leans to the finger or the phone, and its light (and foil) follows.
+        val lean = rememberCardLean()
+        val touch = remember(lean) { androidx.compose.runtime.derivedStateOf { lean.light } }
+        val shines = look?.takeIf { it.shines }
         val tilt = rememberFoilTilt(live = look?.recipe != null, touch = touch)
         BoxWithConstraints(Modifier.fillMaxWidth(), contentAlignment = Alignment.Center) {
             val w = minOf(maxWidth, 340.dp)
-            CardPicture(image, look?.takeIf { it.shines }, tilt, Modifier.size(w, w * 88f / 63f)
-                .pointerInput(Unit) {
-                    detectDragGestures(onDragEnd = { touch.value = null }, onDragCancel = { touch.value = null }) { ch, _ ->
-                        touch.value = Offset((ch.position.x / size.width - .5f) * 2f, (ch.position.y / size.height - .5f) * 2f) }
-                }.pointerInput(Unit) { detectTapGestures { onZoom() } }, shape = RoundedCornerShape(16.dp))
+            CardPicture(image, shines, tilt, Modifier.size(w, w * 88f / 63f).cardLean(lean, foil = shines != null, shape = RoundedCornerShape(16.dp))
+                .pointerInput(Unit) { detectTapGestures { onZoom() } }, shape = RoundedCornerShape(16.dp))
         }
         if (imgFaces.size > 1) GhostButton("↻ Flip to ${imgFaces[if (face == 0) 1 else 0].s("name")}", Modifier.fillMaxWidth(), onClick = onFlip)
         FinishRail(shown, finish, data, onFinish)

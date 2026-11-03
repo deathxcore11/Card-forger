@@ -1,5 +1,6 @@
 package dev.cardstashy.nativeplay.ui
 
+import androidx.compose.foundation.lazy.itemsIndexed
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
@@ -101,15 +102,15 @@ fun DeckView(row: Finder.Row, title: String, cardOf: (String) -> JsonObject?, on
                     when (mode) {
                         "gallery" -> {
                             val cols = maxOf(2, (inner / (if (wide) 190.dp else 150.dp)).toInt())
-                            items(list.chunked(cols)) { line ->
+                            itemsIndexed(list.chunked(cols), key = { i, l -> "g-$g-$i-" + l.first().name }) { _, line ->
                                 Row(horizontalArrangement = Arrangement.spacedBy(12.dp)) {
                                     line.forEach { e -> GalleryCard(e, Modifier.weight(1f)) { onCard(e.name) } }
                                     repeat(cols - line.size) { Spacer(Modifier.weight(1f)) }
                                 }
                             }
                         }
-                        "symbols" -> items(list) { e -> NameRow(e) { onCard(e.name) } }
-                        else -> items(list) { e -> DetailRow(e) { onCard(e.name) } }
+                        "symbols" -> itemsIndexed(list, key = { i, e -> "s-$g-$i-" + e.name }) { _, e -> NameRow(e) { onCard(e.name) } }
+                        else -> itemsIndexed(list, key = { i, e -> "d-$g-$i-" + e.name }) { _, e -> DetailRow(e) { onCard(e.name) } }
                     }
                 }
             }

@@ -166,7 +166,9 @@ object PackSfx {
     private val ids = HashMap<String, Int>()
     var on = true
     var tilt = true
-    fun init(context: Context) {
+    /** Prefs and the sound pool, read on a background thread at app start (assets list + SoundPool loads are disk work). */
+    fun warm(context: Context) { val app = context.applicationContext; Thread({ runCatching { init(app) } }, "pack-sfx").apply { isDaemon = true }.start() }
+    @Synchronized fun init(context: Context) {
         val prefs = context.getSharedPreferences("play", Context.MODE_PRIVATE)
         on = prefs.getBoolean("packSound", true); tilt = prefs.getBoolean("motionTilt", true)
         if (pool != null) return
@@ -211,7 +213,7 @@ fun PackOpening(first: PackResult, onNext: (suspend () -> PackResult?)?, onClose
                 initial: PackStage = PackStage.SEALED, revealedAtStart: Set<Int> = emptySet(), focusAtStart: Int = 0) {
     val context = LocalContext.current
     val view = LocalView.current
-    remember { PackSfx.init(context); 0 }
+    remember { PackSfx.warm(context); 0 }
     val scope = rememberCoroutineScope()
     var pack by remember { mutableStateOf(first) }
     var stage by remember { mutableStateOf(initial) }

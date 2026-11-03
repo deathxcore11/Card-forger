@@ -87,7 +87,7 @@ fun TrunkScreen(state: JsonObject, onBack: () -> Unit, onCard: (CardPick) -> Uni
     val sets = remember(state, SetFacts_version()) { Trunk.setRows(state) }
     val matched = remember(all, facts, filter, sort, sets) { Trunk.sort(Trunk.filter(all, { facts[it] }, filter), { facts[it] }, sort, sets) }
     val shown = remember(matched) { Trunk.holoSplit(matched).take(300) }
-    val data = remember { runCatching { CardData.load(context) }.getOrNull() }
+    val data = CardData.ready.collectAsState().value.also { if (it == null) CardData.warm(context) }
 
     Box(Modifier.fillMaxSize().background(Site.Bg)) {
         BoxWithConstraints(Modifier.fillMaxSize()) {

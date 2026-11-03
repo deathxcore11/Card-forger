@@ -46,6 +46,10 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.draw.blur
 import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.graphics.ImageBitmap
+import androidx.compose.ui.graphics.asAndroidBitmap
+import androidx.compose.ui.graphics.asImageBitmap
+import coil3.toBitmap
+import coil3.request.allowHardware
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.runtime.produceState
@@ -196,7 +200,11 @@ fun PlayHome(d: PlayHomeData, top: @Composable () -> Unit, act: PlayHomeActions 
 @Composable
 fun Ambient(art: String?) {
     Box(Modifier.fillMaxSize()) {
-        if (art != null) Art(art, Modifier.fillMaxSize().scale(1.08f).androidx_blur(42.dp).graphicsLayer { alpha = .85f }, BiasAlignment(0f, -.4f), filter = ambientFilter)
+        val ctx = LocalContext.current
+        // Blurred once, small, off the main thread; a full-screen live blur cost every scroll frame at Fold size.
+        val soft = produceState<ImageBitmap?>(null, art) { value = art?.let { softArt(ctx, it) } }.value
+        if (soft != null) androidx.compose.foundation.Image(soft, null, Modifier.fillMaxSize().graphicsLayer { alpha = .85f }, alignment = BiasAlignment(0f, -.4f),
+            contentScale = ContentScale.Crop, colorFilter = ambientFilter, filterQuality = androidx.compose.ui.graphics.FilterQuality.High)
         Box(Modifier.fillMaxSize().drawBehind {
             val game = Color(0xFFF08A5D)
             drawRect(Brush.radialGradient(listOf(game.copy(alpha = .26f), Color.Transparent), center = Offset(size.width * .85f, 0f), radius = size.width * .8f))
@@ -207,7 +215,39 @@ fun Ambient(art: String?) {
 }
 
 private val ambientFilter = ColorFilter.colorMatrix(ColorMatrix().apply { setToSaturation(1.35f); timesAssign(ColorMatrix(floatArrayOf(.5f,0f,0f,0f,0f, 0f,.5f,0f,0f,0f, 0f,0f,.5f,0f,0f, 0f,0f,0f,1f,0f))) })
-private fun Modifier.androidx_blur(r: Dp) = this.blur(r, androidx.compose.ui.draw.BlurredEdgeTreatment.Rectangle)
+/**
+ * The ambient art at 96 px wide, box-blurred three times (close to a Gaussian): the site's 42 px blur on a
+ * ~400 px viewport is about a tenth of the width, so radius 5 at 96 px matches it. Scaled up it reads the same.
+ */
+private suspend fun softArt(ctx: android.content.Context, art: String): ImageBitmap? = kotlinx.coroutines.withContext(kotlinx.coroutines.Dispatchers.Default) {
+    val src: android.graphics.Bitmap = when (val a = homeArt(art)) {
+        is ImageBitmap -> a.asAndroidBitmap()
+        null -> return@withContext null
+        else -> {
+            val req = coil3.request.ImageRequest.Builder(ctx).data(a).size(96, 96).precision(coil3.size.Precision.INEXACT)
+                .allowHardware(false).build()
+            (dev.cardstashy.nativeplay.art.CardArt.loader.execute(req) as? coil3.request.SuccessResult)?.image?.toBitmap() ?: return@withContext null
+        }
+    }
+    val w = 96; val h = maxOf(1, (src.height * w / maxOf(1, src.width)))
+    val small = android.graphics.Bitmap.createScaledBitmap(src.copy(android.graphics.Bitmap.Config.ARGB_8888, false), w, h, true)
+    val px = IntArray(w * h); small.getPixels(px, 0, w, 0, 0, w, h)
+    repeat(3) { boxBlur(px, w, h, 5) }
+    android.graphics.Bitmap.createBitmap(px, w, h, android.graphics.Bitmap.Config.ARGB_8888).asImageBitmap()
+}
+
+private fun boxBlur(px: IntArray, w: Int, h: Int, r: Int) {
+    val tmp = IntArray(px.size)
+    fun pass(from: IntArray, to: IntArray, len: Int, lines: Int, at: (Int, Int) -> Int) {
+        for (l in 0 until lines) for (i in 0 until len) {
+            var a = 0; var rr = 0; var g = 0; var b = 0; var n = 0
+            for (k in maxOf(0, i - r)..minOf(len - 1, i + r)) { val c = from[at(l, k)]; a += c ushr 24; rr += (c shr 16) and 255; g += (c shr 8) and 255; b += c and 255; n++ }
+            to[at(l, i)] = ((a / n) shl 24) or ((rr / n) shl 16) or ((g / n) shl 8) or (b / n)
+        }
+    }
+    pass(px, tmp, w, h) { y, x -> y * w + x }
+    pass(tmp, px, h, w) { x, y -> y * w + x }
+}
 
 /** The Play page's backdrop without art (signed out, loading): --bg. */
 fun Modifier.playBackdrop() = this.background(Site.Bg)

@@ -7,6 +7,8 @@ import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.layout.fillMaxSize
+import dev.cardstashy.nativeplay.ui.cardLean
 import androidx.compose.foundation.background
 import androidx.compose.ui.unit.dp
 import androidx.compose.material3.Text
@@ -335,7 +337,7 @@ class ShotTest {
     }
 
     @Test fun cardSheet() {
-        trunkSetup()
+        trunkSetup(); dev.cardstashy.nativeplay.play.CardData.load(RuntimeEnvironment.getApplication())
         fun pick(name: String, finish: String) = trunkCards.first { it["name"].asString == name }.let { dev.cardstashy.nativeplay.ui.CardPick(name, it["oracle_id"]?.asString ?: "", it["id"].asString, finish) }
         val cases = listOf(Triple("1-overview-holo", pick("Ragavan, Nimble Pilferer", "foil"), "overview"), Triple("2-overview-nonfoil", pick("Ragavan, Nimble Pilferer", "nonfoil"), "overview"),
             Triple("3-get", pick("Sheoldred, the Apocalypse", "foil"), "get"), Triple("4-guide", pick("Delver of Secrets // Insectile Aberration", "nonfoil"), "guide"),
@@ -350,6 +352,30 @@ class ShotTest {
             }
         }
         home.mkdirs(); home.resolve("missing.txt").writeText(missing.joinToString("\n"))
+    }
+
+    /** CP-11/12/14: the card at rest, under a finger at its top right (±8°, scale 1.035, light spot), and leaned by the phone (x .6, y −.4). */
+    @Test fun cardLean() {
+        trunkSetup(); dev.cardstashy.nativeplay.ui.Motion.still = false
+        val card = trunkCards.first { it["name"].asString == "Ragavan, Nimble Pilferer" }
+        val url = card.getAsJsonObject("image_uris")?.get("normal")?.asString ?: card.getAsJsonArray("card_faces")[0].asJsonObject.getAsJsonObject("image_uris")["normal"].asString
+        RuntimeEnvironment.setQualifiers("w390dp-h600dp-xxhdpi")
+        for (state in listOf("rest", "finger-top-right", "gyro-right-down")) {
+            captureRoboImage(File(System.getProperty("shotsDir"), "card-lean-$state.png").path) {
+                val lean = dev.cardstashy.nativeplay.ui.rememberCardLean()
+                androidx.compose.runtime.LaunchedEffect(Unit) {
+                    lean.catchDone = true
+                    when (state) {
+                        "finger-top-right" -> { lean.pressed = true; lean.tx = (.85f - .5f) * 16f; lean.ty = (.5f - .15f) * 16f; lean.mx = .85f; lean.my = .15f }
+                        "gyro-right-down" -> { lean.gyro = true; lean.tx = .6f * 9f; lean.ty = .4f * 9f; lean.mx = .5f + .6f * .45f; lean.my = .5f - .4f * .45f }
+                    }
+                }
+                androidx.compose.foundation.layout.Box(Modifier.background(Site.Bg).fillMaxSize(), contentAlignment = androidx.compose.ui.Alignment.Center) {
+                    dev.cardstashy.nativeplay.ui.CardPicture(url, null, null, Modifier.size(300.dp, 300.dp * 88f / 63f).cardLean(lean, foil = false, shape = androidx.compose.foundation.shape.RoundedCornerShape(16.dp)),
+                        shape = androidx.compose.foundation.shape.RoundedCornerShape(16.dp))
+                }
+            }
+        }
     }
 
     private val sizes = listOf(360 to 780, 412 to 915, 600 to 960, 840 to 1000)

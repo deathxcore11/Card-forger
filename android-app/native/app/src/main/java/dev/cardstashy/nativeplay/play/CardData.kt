@@ -68,8 +68,14 @@ class CardData(json: JsonObject) {
 
         @Volatile private var loaded: CardData? = null
         fun load(context: Context): CardData = loaded ?: synchronized(this) {
-            loaded ?: CardData(JsonParser.parseString(context.assets.open("card-data.json").bufferedReader().readText()).asJsonObject).also { loaded = it }
+            loaded ?: CardData(JsonParser.parseString(context.assets.open("card-data.json").bufferedReader().readText()).asJsonObject).also { loaded = it; _ready.value = it }
         }
+        private val _ready = kotlinx.coroutines.flow.MutableStateFlow<CardData?>(null)
+        /** The data once parsed; screens read this instead of parsing on the main thread. */
+        val ready: kotlinx.coroutines.flow.StateFlow<CardData?> = _ready
+        /** Parses card-data.json on a background thread (app start). */
+        fun warm(context: Context) { if (loaded != null) return; val app = context.applicationContext
+            Thread({ runCatching { load(app) } }, "card-data").apply { isDaemon = true }.start() }
         fun of(json: String) = CardData(JsonParser.parseString(json).asJsonObject)
 
         private fun JsonObject?.s(k: String) = this?.get(k)?.takeIf { it.isJsonPrimitive }?.asString ?: ""
