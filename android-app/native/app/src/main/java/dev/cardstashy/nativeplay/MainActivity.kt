@@ -83,7 +83,7 @@ class MainActivity : ComponentActivity() {
         // The card database starts loading as the app opens, so it is ready before Quick Play is.
         ForgeService.prepare(this)
         Account.init(this); CardArt.init(this); Speed.init(this)
-        dev.cardstashy.nativeplay.play.Progress.init(this); dev.cardstashy.nativeplay.play.SetFacts.init(this); dev.cardstashy.nativeplay.play.CardFacts.init(this)
+        dev.cardstashy.nativeplay.play.Progress.init(this); dev.cardstashy.nativeplay.play.SetFacts.init(this); dev.cardstashy.nativeplay.play.CardFacts.init(this); dev.cardstashy.nativeplay.play.DeckEngine.init(this); dev.cardstashy.nativeplay.play.CraftRarity.init(this)
         setContent { App(this) }
     }
 

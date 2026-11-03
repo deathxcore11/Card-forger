@@ -297,6 +297,25 @@ class ShotTest {
         home.mkdirs(); home.resolve("missing.txt").writeText(missing.joinToString("\n"))
     }
 
+    @Test fun finder() {
+        trunkSetup()
+        val art = File(System.getProperty("shotsDir")!!).parentFile.resolve("app/build/shot-art")
+        dev.cardstashy.nativeplay.play.CardFacts.seed(JsonParser.parseString(art.resolve("finder-cards.json").readText()).asJsonArray.map { it.asJsonObject })
+        dev.cardstashy.nativeplay.play.MetaLists.seed("Modern", JsonParser.parseString(art.resolve("meta-Modern.json").readText()).asJsonObject)
+        dev.cardstashy.nativeplay.play.DeckEngine.initFrom(File("../deck-engine/deck-engine.js"))
+        for ((w, h) in listOf(412 to 915, 840 to 1000)) {
+            RuntimeEnvironment.setQualifiers("w${w}dp-h${if (w < 600) h * 4 else h * 3}dp-xxhdpi")
+            val trunk = dev.cardstashy.nativeplay.play.Trunk.cards(trunkState)
+            val lists = kotlinx.coroutines.runBlocking { listOfNotNull(dev.cardstashy.nativeplay.play.DeckEngine.forgeTrunk("Modern", trunk, dev.cardstashy.nativeplay.play.CardFacts.cards.value)) +
+                dev.cardstashy.nativeplay.play.MetaLists.load("Modern")!! }
+            val ui = dev.cardstashy.nativeplay.ui.FinderUi().apply { format = "Modern"; this.lists = lists; loadedFor = "Modern" }
+            captureRoboImage(File(System.getProperty("shotsDir"), "deck-finder-${w}x$h.png").path) {
+                dev.cardstashy.nativeplay.ui.FinderScreen(trunkState, ui, {}, { _, _ -> }, {}) { PlayNav(PlayTab.DECKS, {}) }
+            }
+        }
+        home.mkdirs(); home.resolve("missing.txt").writeText(missing.joinToString("\n"))
+    }
+
     @Test fun cardSheet() {
         trunkSetup()
         fun pick(name: String, finish: String) = trunkCards.first { it["name"].asString == name }.let { dev.cardstashy.nativeplay.ui.CardPick(name, it["oracle_id"]?.asString ?: "", it["id"].asString, finish) }

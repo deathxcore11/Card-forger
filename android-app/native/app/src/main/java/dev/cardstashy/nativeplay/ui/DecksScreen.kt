@@ -382,17 +382,22 @@ fun DecksRoute(onBack: () -> Unit, onWeb: (String) -> Unit, onNav: (PlayTab) -> 
     val s = state ?: run { Box(Modifier.fillMaxSize().background(Site.Bg), contentAlignment = Alignment.Center) { Text("Opening your decks…", style = Site.Body) }; return }
     val toast = { m: String -> android.widget.Toast.makeText(context, m, android.widget.Toast.LENGTH_SHORT).show() }
     var editor by remember { mutableStateOf<EditorUi?>(null) }
+    var finder by remember { mutableStateOf<FinderUi?>(null) }
     var card by remember { mutableStateOf<CardPick?>(null) }
     val ed = editor
     Box(Modifier.fillMaxSize()) {
-        if (ed != null) {
+        val fu = finder
+        if (ed == null && fu != null) {
+            BackHandler { finder = null }
+            FinderScreen(s, fu, onBack = { finder = null }, onUse = { e, complete -> editor = EditorUi().apply { edit = e; mode = if (complete || e.cards.isEmpty()) "mine" else "all" } },
+                onCard = { name -> card = CardPick(name, "", null, "nonfoil") }, nav = { PlayNav(PlayTab.DECKS, onNav) })
+        } else if (ed != null) {
             BackHandler { editor = null }
             DeckEditor(s, ed, onBack = { editor = null }, onCard = { card = it }, onPack = { editor = null; onTrunkSet(it) }, toast = toast,
                 nav = { PlayNav(PlayTab.DECKS, onNav) })
         } else DecksScreen(s, onBack,
             onDeck = { id -> editor = EditorUi().apply { edit = dev.cardstashy.nativeplay.play.DeckEdit.open(s.getAsJsonArray("decks")?.mapNotNull { it as? JsonObject }?.firstOrNull { it.get("id")?.asString == id }) } },
-            // Until the finder (0.4.2): the finder's Start empty, straight into the editor.
-            onFinder = { editor = EditorUi() }, toast = toast, nav = { PlayNav(PlayTab.DECKS, onNav) })
+            onFinder = { finder = finder ?: FinderUi() }, toast = toast, nav = { PlayNav(PlayTab.DECKS, onNav) })
         card?.let { pick ->
             CardSheet(pick, s, CardSheetActions(
                 merchant = { code, _ -> card = null; toast("Merchant comes with the next build"); onTrunkSet(code) },

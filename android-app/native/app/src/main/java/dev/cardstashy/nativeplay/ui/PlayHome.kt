@@ -220,7 +220,7 @@ private fun Duo(two: Boolean, a: @Composable () -> Unit, b: @Composable () -> Un
 // ---------------------------------------------------------------- purse (pe-purse, full width on phones)
 
 @Composable
-private fun PurseRow(p: PlayMath.Purse, onCoins: () -> Unit, onSeals: () -> Unit, onPacks: () -> Unit) {
+internal fun PurseRow(p: PlayMath.Purse, onCoins: () -> Unit, onSeals: () -> Unit, onPacks: () -> Unit) {
     Row(Modifier.fillMaxWidth().shadow(10.dp, CircleShape).clip(CircleShape).background(Color(0xB80D0F14))
         .border(1.dp, Color(0xFF6A5838), CircleShape).padding(4.dp), verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.SpaceEvenly) {
         PurseCell(onCoins, "${p.coins} coins") { Icon(SiteIcons.Coin, 18.dp); Num(p.coins) }
