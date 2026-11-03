@@ -61,22 +61,38 @@ object FreezeReport {
         if (Build.VERSION.SDK_INT < 30) return
         val am = app.getSystemService(ActivityManager::class.java) ?: return
         val seen = prefs.getLong("seen", 0L)
-        val anrs = am.getHistoricalProcessExitReasons(app.packageName, 0, 10).filter { it.reason == ApplicationExitInfo.REASON_ANR && it.timestamp > seen }
+        val all = am.getHistoricalProcessExitReasons(app.packageName, 0, 10).filter { it.timestamp > seen }
+        if (all.isEmpty()) return
+        prefs.edit().putLong("seen", all.maxOf { it.timestamp }).apply()
+        // How each earlier run ended: a freeze that ends with Android killing the app for memory, or with a swipe away, shows here, not as an ANR.
+        all.filter { it.reason != ApplicationExitInfo.REASON_ANR }.sortedBy { it.timestamp }.forEach { e ->
+            append("== App ended (${java.util.Date(e.timestamp)}): ${exitName(e.reason)} ==\n" + header() +
+                "${e.description ?: ""}\nmemory at the end: pss ${e.pss / 1024} MB, rss ${e.rss / 1024} MB, importance ${e.importance}, status ${e.status}\n\n")
+        }
+        val anrs = all.filter { it.reason == ApplicationExitInfo.REASON_ANR }
         if (anrs.isEmpty()) return
-        prefs.edit().putLong("seen", anrs.maxOf { it.timestamp }).apply()
         val a = anrs.maxBy { it.timestamp }
         val trace = try { a.traceInputStream?.bufferedReader()?.use { it.readText() } } catch (_: Throwable) { null } ?: return
         append("== Android froze report (${java.util.Date(a.timestamp)}) ==\n" + header() + (a.description ?: "") + "\n" + mainThread(trace) + "\n")
+    }
+
+    private fun exitName(r: Int) = when (r) {
+        ApplicationExitInfo.REASON_LOW_MEMORY -> "killed for low memory"; ApplicationExitInfo.REASON_USER_REQUESTED -> "closed by the user"
+        ApplicationExitInfo.REASON_CRASH -> "crash"; ApplicationExitInfo.REASON_CRASH_NATIVE -> "native crash"; ApplicationExitInfo.REASON_SIGNALED -> "killed by a signal"
+        ApplicationExitInfo.REASON_EXCESSIVE_RESOURCE_USAGE -> "too much CPU or memory"; ApplicationExitInfo.REASON_USER_STOPPED -> "force stopped"
+        ApplicationExitInfo.REASON_EXIT_SELF -> "exited"; ApplicationExitInfo.REASON_OTHER -> "other"; ApplicationExitInfo.REASON_FREEZER -> "frozen by the system"
+        else -> "reason $r"
     }
 
     /** The report's sections ("== … ==" headings), newest stall samples first, each Android report cut to its main thread; under 7,000 characters to paste anywhere. */
     internal fun compact(all: String): String {
         val parts = all.split(Regex("(?m)^(?=== )")).filter { it.isNotBlank() }
         val stalls = parts.filter { it.startsWith("== Stall") }.takeLast(3).reversed()
+        val ended = parts.filter { it.startsWith("== App ended") && !it.contains(": exited ==") }.takeLast(2).reversed()
         val blank = parts.filter { it.startsWith("== No frames") }.takeLast(2).reversed()
         val slow = parts.filter { it.startsWith("== Slow frame") }.takeLast(2).reversed().map { it.take(900) }
         val anrs = parts.filter { it.startsWith("== Android") }.takeLast(2).reversed().map { trimTrace(it).take(3500) }
-        return (stalls + blank + anrs + slow).joinToString("\n").take(7000)
+        return (stalls + blank + anrs + ended + slow).joinToString("\n").take(7000)
     }
 
     /** A section saved by 0.3.2 holds the whole thread dump; keep its heading lines and cut the dump to the main thread. */
