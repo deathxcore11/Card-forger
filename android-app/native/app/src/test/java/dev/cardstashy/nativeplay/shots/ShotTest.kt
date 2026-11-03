@@ -196,6 +196,28 @@ class ShotTest {
     }
 
     /** Pack opening (pack-preview.js variant 'play'): sealed, dealt face down, a mythic up, all revealed. */
+    /** The site-parity states for the preview: the same ten Reality Fracture cards the site harness opens (scratchpad site/packs.mjs). */
+    @Test fun packOpenFra() {
+        dev.cardstashy.nativeplay.ui.Motion.still = true
+        dev.cardstashy.nativeplay.ui.homeArt = ::homeArt
+        dev.cardstashy.nativeplay.art.CardArt.init(RuntimeEnvironment.getApplication())
+        val out = JsonParser.parseString(javaClass.classLoader!!.getResource("pack-open-fra.json")!!.readText()).asJsonObject
+        val pack = dev.cardstashy.nativeplay.ui.packResult(out, "Reality Fracture")
+        val n = pack.pulls.size
+        val states = listOf(
+            Triple("1-sealed", dev.cardstashy.nativeplay.ui.PackStage.SEALED, Pair(emptySet<Int>(), 0)),
+            Triple("3-dealt", dev.cardstashy.nativeplay.ui.PackStage.DEALT, Pair(emptySet<Int>(), 0)),
+            Triple("4-first-card", dev.cardstashy.nativeplay.ui.PackStage.DEALT, Pair(setOf(0), 0)),
+            Triple("5-all", dev.cardstashy.nativeplay.ui.PackStage.DEALT, Pair((0 until n).toSet(), n - 1)),
+        )
+        kotlinx.coroutines.runBlocking { AssetImages.load(RuntimeEnvironment.getApplication(), "play/mtg-back.webp", maxWidth = 400)
+            AssetImages.load(RuntimeEnvironment.getApplication(), "play/pack-fra.webp", maxWidth = 600) }
+        RuntimeEnvironment.setQualifiers("w390dp-h844dp-xxhdpi")
+        for ((name, stage, rv) in states) captureRoboImage(File(System.getProperty("shotsDir"), "fra-open-$name.png").path) {
+            dev.cardstashy.nativeplay.ui.PackOpening(pack, onNext = null, onClose = {}, initial = stage, revealedAtStart = rv.first, focusAtStart = rv.second)
+        }
+    }
+
     @Test fun packOpen() {
         dev.cardstashy.nativeplay.ui.Motion.still = true
         dev.cardstashy.nativeplay.ui.homeArt = ::homeArt

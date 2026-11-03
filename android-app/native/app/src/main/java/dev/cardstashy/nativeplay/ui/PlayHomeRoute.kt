@@ -11,6 +11,8 @@ import androidx.compose.runtime.setValue
 import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.blur
+import androidx.compose.ui.unit.dp
 import androidx.compose.ui.platform.LocalContext
 import com.google.gson.JsonObject
 import dev.cardstashy.nativeplay.account.Account
@@ -90,10 +92,13 @@ fun PlayHomeRoute(onQuickPlay: () -> Unit, onCollection: () -> Unit, onSignIn: (
         set = { onShop("sets", it) },
     )
     androidx.compose.foundation.layout.Box(Modifier.fillMaxSize()) {
+    // .pack-dialog::backdrop: #05060be6 over a 16 px blur of the page.
+    androidx.compose.foundation.layout.Box(Modifier.fillMaxSize().then(if (opener != null) Modifier.blur(16.dp) else Modifier)) {
     PlayHome(PlayHomeData(s, rules, story, PlayMath.playDay(tz), session?.userId ?: "", ambient, deeds),
         top = { TopBarItems(Mode.PLAY, profile?.avatarUrl, profile?.name, unread = false, onSwitch = onCollection, onProfile = onSignIn) },
         act = act,
         nav = { PlayNav(null, { t -> when (t) { PlayTab.SWITCH -> onCollection(); PlayTab.TRUNK -> onTrunk(); PlayTab.DECKS -> onDecks(); PlayTab.TROPHIES -> onAchievements(null); PlayTab.SHOP -> onShop("sets", null) } }) })
+    }
     daily?.let { LoginRewardPopup(it) { daily = null } }
     opener?.let { first ->
         val close = { opener = null; scope.launch { Progress.refresh(); Progress.refreshDeeds() }; Unit }

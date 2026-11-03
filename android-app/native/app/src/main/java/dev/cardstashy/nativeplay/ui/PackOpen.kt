@@ -60,6 +60,10 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.layout.layout
+import androidx.compose.ui.text.style.TextOverflow
+import androidx.compose.ui.graphics.drawscope.scale
+import androidx.compose.ui.graphics.lerp
 import androidx.compose.ui.draw.drawBehind
 import androidx.compose.ui.draw.drawWithContent
 import androidx.compose.ui.geometry.CornerRadius
@@ -225,7 +229,7 @@ fun PackOpening(first: PackResult, onNext: (suspend () -> PackResult?)?, onClose
     var flipping by remember { mutableIntStateOf(0) }
     var slide by remember { mutableIntStateOf(0) }         // +1 / -1 per swipe, for the slide-in
     var flung by remember { mutableStateOf<Pair<Pull, Int>?>(null) }
-    var status by remember { mutableStateOf(if (revealedAtStart.size == first.pulls.size && first.pulls.isNotEmpty()) first.done.ifBlank { "${first.pulls.size} of ${first.pulls.size} revealed" } else "") }
+    var status by remember { mutableStateOf(if (revealedAtStart.size == first.pulls.size && first.pulls.isNotEmpty()) first.done.ifBlank { "${first.pulls.size} of ${first.pulls.size} revealed" } else if (revealedAtStart.isNotEmpty()) "${revealedAtStart.size} of ${first.pulls.size} revealed" else "") }
     var busy by remember { mutableStateOf(false) }
     var sound by remember { mutableStateOf(PackSfx.on) }
     var tiltOn by remember { mutableStateOf(PackSfx.tilt) }
@@ -303,14 +307,28 @@ fun PackOpening(first: PackResult, onNext: (suspend () -> PackResult?)?, onClose
 
     Box(Modifier.fillMaxSize().graphicsLayer { val k = 1f - .1f * backPull; scaleX = k; scaleY = k; alpha = 1f - .35f * backPull; shape = RoundedCornerShape((26 * backPull).dp); clip = backPull > 0f }
         .background(Color(0xE605060B)).clickable(remember { MutableInteractionSource() }, null) {}) {
-        Column(Modifier.fillMaxSize().background(Brush.radialGradient(listOf(Color(0xFF1D1A15), Site.Bg), center = Offset(540f, 0f), radius = 1600f))
-            .statusBarsPadding().navigationBarsPadding().padding(horizontal = 12.dp, vertical = 10.dp)) {
-            // Header: the set's symbol and name, the pack's line, then sound, tilt and close.
-            Row(verticalAlignment = Alignment.Top, horizontalArrangement = Arrangement.spacedBy(10.dp), modifier = Modifier.zIndex(3f)) {
-                SetIcon(pack.set, Modifier.padding(top = 4.dp).size(30.dp), tint = Color(0xFFE9E3D6))
-                Column(Modifier.weight(1f)) {
-                    Text(pack.name, style = TextStyle(fontFamily = Type.Cinzel, fontWeight = FontWeight.Bold, fontSize = 20.sp, lineHeight = 24.sp, color = Site.Text))
-                    Text(pack.note, style = TextStyle(fontFamily = Site.Body.fontFamily, fontSize = 11.sp, lineHeight = 15.sp, color = Site.Muted.copy(alpha = .8f)))
+        // .pack-dialog on a phone: width 100 % - 20 px, max-height 100dvh - 16 px, radius 20, border var(--line),
+        // radial-gradient(120% 70% at 50% 0%, gold 9 % into the background, background 60 %), padding 14 12 16.
+        val panel = RoundedCornerShape(20.dp)
+        Column(Modifier.fillMaxSize().statusBarsPadding().navigationBarsPadding().padding(horizontal = 10.dp, vertical = 8.dp)
+            .clip(panel).background(Site.Bg).drawBehind {
+                val mix = lerp(Site.Bg, Site.Gold, .09f)
+                scale(1f, (size.height * .7f) / (size.width * 1.2f), pivot = Offset(size.width / 2, 0f)) {
+                    drawRect(Brush.radialGradient(0f to mix, .6f to Site.Bg, center = Offset(size.width / 2, 0f), radius = size.width * 1.2f),
+                        topLeft = Offset(0f, 0f), size = Size(size.width, size.height * (size.width * 1.2f) / (size.height * .7f)))
+                }
+            }.border(1.dp, Site.Line, panel).padding(start = 12.dp, end = 12.dp, top = 14.dp, bottom = 16.dp)) {
+            // .pack-header: the set's emblem (30 px, inverted to white for Magic) and its name as a plain bold h2 on one line,
+            // then sound, tilt and close. The explanation line (.pack-explanation) is visually hidden on the site.
+            Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(12.dp), modifier = Modifier.zIndex(3f).layout { m, c ->
+                // margin: -6px -10px 0 0 — it reaches 10 px further right and sits 6 px higher.
+                val r = 10.dp.roundToPx(); val up = 6.dp.roundToPx()
+                val pl = m.measure(c.copy(minWidth = c.minWidth + r, maxWidth = c.maxWidth + r))
+                layout(c.maxWidth, (pl.height - up).coerceAtLeast(0)) { pl.place(0, -up) } }) {
+                Row(Modifier.weight(1f), verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(10.dp)) {
+                    SetIcon(pack.set, Modifier.size(30.dp), tint = Color.White)
+                    Text(pack.name, Modifier.weight(1f).semantics { contentDescription = "${pack.name}. ${pack.note}" }, maxLines = 1, overflow = TextOverflow.Ellipsis,
+                        style = TextStyle(fontFamily = Site.Manrope, fontWeight = FontWeight.ExtraBold, fontSize = 17.sp, lineHeight = 20.sp, letterSpacing = .01.em, color = Site.Text))
                 }
                 RoundTool(if (sound) "Mute pack sounds" else "Turn pack sounds on", pressed = !sound, onClick = { PackSfx.toggle(context); sound = PackSfx.on; if (sound) PackSfx.play("PACK-014", .5f) }) { SoundGlyph(sound) }
                 RoundTool(if (tiltOn) "Tilt on" else "Tilt off", pressed = tiltOn, hint = tiltHint && !tiltOn, onClick = { PackSfx.toggleTilt(context); tiltOn = PackSfx.tilt; tiltHint = false }) { TiltGlyph(tiltOn) }
@@ -381,51 +399,63 @@ private val GlyphInk = Color(0xFFD9DDE6)
 /** The wrapper's size in the pack's body (.pack-wrapper: min(56vw, 250 px) wide at 400:734, never taller than the room). */
 private fun packHeight(w: Dp, h: Dp) = minOf(w * .56f * (734f / 400f), 250.dp * (734f / 400f), h - 40.dp)
 
+/** The pack as drawn: the site's wrapper width, at the painted wrapper's own shape, so the seam, the strip and the torn ghost all sit on the picture. */
+private fun packSize(set: String, w: Dp, h: Dp): Pair<Dp, Dp> {
+    val pw = packHeight(w, h) * (400f / 734f); val aspect = wrapperFor(set)?.second?.aspect ?: (5f / 8.2f)
+    return pw to pw / aspect
+}
+
 @Composable
 private fun Sealed(pack: PackResult, tearing: Boolean, onTear: () -> Unit) = BoxWithConstraints(Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
-    val h = packHeight(maxWidth, maxHeight); val w = h * (400f / 734f)
-    val float = if (Motion.still) 0f else rememberInfiniteTransition(label = "float").animateFloat(0f, 1f, infiniteRepeatable(tween(2250, easing = FastOutSlowInEasing), RepeatMode.Reverse), label = "f").value
-    val rip = remember { Animatable(0f) }; val slice = remember { Animatable(0f) }; val flash = remember { Animatable(0f) }; val strip = remember { Animatable(0f) }
+    val (w, h) = packSize(pack.set, maxWidth, maxHeight)
+    val floatAnim = if (Motion.still) 0f else rememberInfiniteTransition(label = "float").animateFloat(0f, 1f, infiniteRepeatable(tween(2250, easing = FastOutSlowInEasing), RepeatMode.Reverse), label = "f").value
+    // .tearing .pack-body swaps pack-float for pack-rip-jolt, so the float stops where it starts.
+    val float = if (tearing) 0f else floatAnim
+    val jolt = remember { Animatable(0f) }; val slice = remember { Animatable(0f) }; val flash = remember { Animatable(0f) }; val strip = remember { Animatable(0f) }
     LaunchedEffect(tearing) {
         if (!tearing || Motion.still) return@LaunchedEffect
-        // pack-slice .34 s, pack-strip .5 s, pack-flash .5 s from .3 s, pack-rip .62 s.
+        // foil-fx.css (it overrides sets-ui.css): pack-slice .34 s; pack-flash .5 s from .3 s; the top crimp's
+        // pack-strip .42 s from .3 s; pack-rip-jolt .44 s. The pack stays put; the cards fly out of its top after.
         launch { slice.animateTo(1f, tween(340, easing = CubicBezierEasing(.6f, 0f, .4f, 1f))) }
-        launch { strip.animateTo(1f, tween(500, easing = CubicBezierEasing(.42f, 0f, 1f, 1f))) }
-        launch { delay(300); flash.animateTo(1f, tween(500, easing = LinearEasing)) }
-        rip.animateTo(1f, tween(620, easing = CubicBezierEasing(.4f, 0f, .2f, 1f)))
+        launch { delay(300); strip.animateTo(1f, tween(420, easing = CubicBezierEasing(.3f, .6f, .4f, 1f))) }
+        launch { delay(300); flash.animateTo(1f, tween(500, easing = CubicBezierEasing(0f, 0f, .58f, 1f))) }
+        jolt.animateTo(1f, tween(440, easing = CubicBezierEasing(.4f, 0f, .2f, 1f)))
     }
-    val r = rip.value
+    // pack-rip-jolt: still to 62 %, up 7 px and 1.035 at 78 %, back by 100 %.
+    val j = jolt.value.let { if (it <= .62f) 0f else if (it <= .78f) (it - .62f) / .16f else 1f - (it - .78f) / .22f }
     Box(Modifier.width(w).height(h).graphicsLayer {
-        // pack-float: up 8 px with a little turn; pack-rip: up and bigger at 30 %, then down 55 % and away.
+        // pack-float: up 8 px with a little turn.
         cameraDistance = 12f * density
-        val up = if (r < .3f) r / .3f else 1f - (r - .3f) / .7f
-        translationY = -8.dp.toPx() * float + (-6.dp.toPx() * up) + (if (r > .3f) size.height * .55f * ((r - .3f) / .7f) else 0f)
-        rotationY = -6f * float; rotationX = 3f * float; rotationZ = -2f * up
-        val k = if (r < .3f) 1f + .03f * up else 1.03f - .18f * ((r - .3f) / .7f)
-        scaleX = k; scaleY = k; alpha = if (r > .3f) 1f - (r - .3f) / .7f else 1f
+        translationY = -8.dp.toPx() * float - 7.dp.toPx() * j
+        rotationY = -6f * float; rotationX = 3f * float
+        val k = 1f + .035f * j; scaleX = k; scaleY = k
     }.glow(Color.Black, .6f, .02f, .03f, .04f, 30.dp)
         .clickable(remember { MutableInteractionSource() }, null, onClick = onTear).semantics { contentDescription = "Open the ${pack.name} pack" }) {
-        // Body below the cut, and the top strip that tears off and flies (pack-strip).
-        Box(Modifier.fillMaxSize().drawWithContent { clipRect(top = size.height * .085f * strip.value.coerceAtMost(1f).let { if (it > 0f) 1f else 0f }) { this@drawWithContent.drawContent() } }) {
-            Booster(pack.set, pack.name, Modifier.fillMaxSize())
-            if (!Motion.still) {
-                // pack-sheen: a soft rainbow band sweeping across every 3.2 s.
-                val sweep = rememberInfiniteTransition(label = "sheen").animateFloat(1.2f, -.2f, infiniteRepeatable(tween(3200, easing = FastOutSlowInEasing)), label = "s").value
-                Box(Modifier.fillMaxSize().drawWithContent {
-                    val cx = size.width * sweep; val half = size.width * .5f
-                    drawRect(Brush.linearGradient(listOf(Color.Transparent, Color(0x40FFFFFF), Color(0x339FE3FF), Color(0x33FFD0F2), Color.Transparent), Offset(cx - half, 0f), Offset(cx + half, size.height * .2f)), blendMode = BlendMode.Screen)
-                })
-            }
+        Booster(pack.set, pack.name, Modifier.fillMaxSize(), fill = true)
+        if (!Motion.still && !tearing) {
+            // pack-sheen-move: a soft rainbow band sweeping across every 3.2 s.
+            val sweep = rememberInfiniteTransition(label = "sheen").animateFloat(1.2f, -.2f, infiniteRepeatable(tween(3200, easing = FastOutSlowInEasing)), label = "s").value
+            Box(Modifier.fillMaxSize().drawWithContent {
+                val cx = size.width * sweep; val half = size.width * .5f
+                drawRect(Brush.linearGradient(listOf(Color.Transparent, Color(0x40FFFFFF), Color(0x339FE3FF), Color(0x33FFD0F2), Color.Transparent), Offset(cx - half, 0f), Offset(cx + half, size.height * .2f)), blendMode = BlendMode.Screen)
+            })
         }
-        if (strip.value > 0f) Box(Modifier.fillMaxWidth().height(h * .085f).graphicsLayer {
-            val s = strip.value; translationX = size.width * .3f * s; translationY = -size.height * 1.8f * s * 2.2f; rotationZ = -14f * s; alpha = 1f - s
-        }.drawWithContent { clipRect(bottom = size.height) { this@drawWithContent.drawContent() } }) {
-            Box(Modifier.width(w).height(h)) { Booster(pack.set, pack.name, Modifier.fillMaxSize()) }
+        // .pack-crimp.top: the 9 % crimp band (fine white ribs), which tears off: translate(30 %, -180 %) rotate(-14°) and fades.
+        if (tearing) Canvas(Modifier.fillMaxWidth().height(h * .09f).graphicsLayer {
+            val s = strip.value; translationX = size.width * .3f * s; translationY = -size.height * 1.8f * s; rotationZ = -14f * s; alpha = 1f - s
+        }) {
+            val step = 5.dp.toPx(); val rib = 2.dp.toPx(); var x = 0f
+            while (x < size.width) { drawRect(Color(0x1FFFFFFF), Offset(x, 0f), Size(rib, size.height), blendMode = BlendMode.Overlay); x += step }
         }
-        // The cut: a bright line racing across under the crimp.
-        if (slice.value in .001f..0.999f || (tearing && slice.value >= 1f && r < .5f)) Canvas(Modifier.fillMaxWidth().height(h * .085f + 2.dp)) {
-            val y = size.height - 1.dp.toPx(); val half = size.width * slice.value / 2
-            drawLine(Brush.horizontalGradient(listOf(Color.Transparent, Color.White, Color(0xFFFFF1C8), Color.White, Color.Transparent), size.width / 2 - half, size.width / 2 + half), Offset(size.width / 2 - half, y), Offset(size.width / 2 + half, y), 2.5.dp.toPx())
+        // .pack-slice: a glowing pink-white-cyan seam at 8.5 %, growing from the left, held once across.
+        if (tearing && slice.value > 0f) Canvas(Modifier.fillMaxSize()) {
+            val y = size.height * .085f; val t = 3.dp.toPx(); val wv = size.width * slice.value
+            val seam = Brush.horizontalGradient(0f to Color(0xFFFF5FD2), .55f to Color.White, 1f to Color(0xFF9FF0FF), startX = 0f, endX = size.width)
+            // box-shadow 0 0 10px 2px #ff7ad9, 0 0 22px 6px #ffffff88 (blur radius r ≈ sigma 2·r/2, as glow() does).
+            drawIntoCanvas { c -> for ((col, blur, spread) in listOf(Triple(Color(0x88FFFFFF), 22.dp.toPx(), 6.dp.toPx()), Triple(Color(0xFFFF7AD9), 10.dp.toPx(), 2.dp.toPx()))) {
+                val pt = Paint().asFrameworkPaint().apply { isAntiAlias = true; color = col.toArgb(); maskFilter = BlurMaskFilter(blur / 2f, BlurMaskFilter.Blur.NORMAL) }
+                c.nativeCanvas.drawRoundRect(-spread, y - spread, wv + spread, y + t + spread, t + spread, t + spread, pt) } }
+            drawRoundRect(seam, Offset(0f, y), Size(wv, t), CornerRadius(t))
         }
         // pack-flash: light bursts out of the opened top (radial at 50 % 20 %, 30 % past every edge).
         val f = flash.value
@@ -488,9 +518,9 @@ private fun Dealt(pack: PackResult, stage: PackStage, revealed: List<Int>, focus
     }
     // The flight, above everything: the torn pack (cards under it until they clear its top), then the cards.
     if (stage == PackStage.DEALING && deal.value < 1f) with(density) {
-        val ph = packHeight(bodyW, bodyH); val pw = ph * (400f / 734f)
-        val focusH = bodyH - handH - actionsH.toDp()
-        val packTop = (focusH - ph) / 2; val packLeft = (bodyW - pw) / 2
+        // The ghost takes the sealed pack's exact place (from = w.getBoundingClientRect()): centred in the whole body.
+        val (pw, ph) = packSize(pack.set, bodyW, bodyH)
+        val packTop = (bodyH - ph) / 2; val packLeft = (bodyW - pw) / 2
         // Ghost: holds while the cards leave, then sinks 36 % and fades; light glows in its open mouth.
         val ghostHold = min(.8f, (n * gap).toFloat() / (total + 260))
         val g = (t / (total + 260)).coerceIn(0f, 1f)
@@ -499,7 +529,7 @@ private fun Dealt(pack: PackResult, stage: PackStage, revealed: List<Int>, focus
             val e = CubicBezierEasing(.45f, 0f, .55f, 1f).transform(sink)
             translationY = size.height * .36f * e; scaleX = 1f - .1f * e; scaleY = scaleX; alpha = 1f - e
         }) {
-            Box(Modifier.fillMaxSize().drawWithContent { clipRect(top = size.height * .085f) { this@drawWithContent.drawContent() } }) { Booster(pack.set, pack.name, Modifier.fillMaxSize()) }
+            Box(Modifier.fillMaxSize().drawWithContent { clipRect(top = size.height * .085f) { this@drawWithContent.drawContent() } }) { Booster(pack.set, pack.name, Modifier.fillMaxSize(), fill = true) }
             val m = (t / 900f).coerceIn(0f, 1f)
             val ma = if (m < .35f) m / .35f else 1f - (m - .35f) / .65f
             Canvas(Modifier.fillMaxWidth().height(ph * .2f).offset(y = ph * .0f).graphicsLayer { scaleX = if (m < .35f) .4f + .6f * (m / .35f) else 1f; alpha = ma }) {
@@ -645,13 +675,13 @@ private fun Focus(pack: PackResult, focus: Int, open: Boolean, charging: Boolean
                 }) {
                 // Back and face turn about the card's middle; each hides once past edge-on.
                 Box(Modifier.fillMaxSize().graphicsLayer { cameraDistance = 14f * density; rotationY = flip; alpha = if (flip < 90f) 1f else 0f }) {
-                    Box(Modifier.fillMaxSize().clip(RoundedCornerShape(4.6f.dp))) { MagicBack(Modifier.fillMaxSize()) }
+                    Box(Modifier.fillMaxSize().clip(CardCorner)) { MagicBack(Modifier.fillMaxSize()) }
                     val edge = if (charging) TIER_COLORS[min(5, p.level)] else Color(0xFFF0C75E)
-                    if (tease || charging) Box(Modifier.fillMaxSize().background(Brush.radialGradient(listOf(Color.Transparent, edge.copy(alpha = .22f)), radius = with(LocalDensity.current) { cardW.toPx() } * .8f), RoundedCornerShape(4.6f.dp)))
+                    if (tease || charging) Box(Modifier.fillMaxSize().background(Brush.radialGradient(listOf(Color.Transparent, edge.copy(alpha = .22f)), radius = with(LocalDensity.current) { cardW.toPx() } * .8f), CardCorner))
                 }
                 Box(Modifier.fillMaxSize().graphicsLayer { cameraDistance = 14f * density; rotationY = flip - 180f; alpha = if (flip >= 90f) 1f else 0f }) {
                     // No frame (Randall, 3 Nov 15:46Z: Play has nothing to do with real-world value): the tier shows as the glow underneath only.
-                    Box(Modifier.fillMaxSize().clip(RoundedCornerShape(cardW * .046f)).background(Color(0xFF0B0C10))) {
+                    Box(Modifier.fillMaxSize().clip(CardCorner).background(Color(0xFF0B0C10))) {
                         PullFace(p, Modifier.fillMaxSize(), lx, ly)
                         if (catch.value < 1f) Box(Modifier.fillMaxSize().drawWithContent {
                             // fx-catch: a band of white light crossing the card once, skewed.
@@ -828,6 +858,17 @@ private fun Inspect(p: Pull, tiltOn: Boolean, onClose: () -> Unit) {
 
 /** Face-down pack cards wear Magic's own card back, as the site's /img/back/mtg.jpg does (Randall's copy, bundled so a flip never waits). */
 @Composable
-fun MagicBack(modifier: Modifier) = Box(modifier.background(Color(0xFF121014))) {
+fun MagicBack(modifier: Modifier) = Box(modifier.drawBehind {
+    // .pack-card-back: radial-gradient(ellipse at 50% 30%, #4a4256, #16161e 72%); inset 0 0 0 3px #b39ae655, inset 0 0 0 7px #0006.
+    // The back picture covers it (object-fit: cover, clipped to the card's own corners by the caller).
+    val c = Offset(size.width / 2, size.height * .3f)
+    drawRect(Brush.radialGradient(0f to Color(0xFF4A4256), .72f to Color(0xFF16161E), center = c, radius = Offset(size.width, size.height).getDistance() * .75f))
+    drawRect(Color(0x66000000), style = Stroke(7.dp.toPx() * 2)); drawRect(Color(0x55B39AE6), style = Stroke(3.dp.toPx() * 2))
+}) {
     AssetImage("play/mtg-back.webp", Modifier.fillMaxSize(), maxWidth = 400)
+}
+
+/** .pack-focus-card border-radius 4.6% / 3.3%: elliptical corners, 4.6 % of the width across and 3.3 % of the height down. */
+val CardCorner = androidx.compose.foundation.shape.GenericShape { sz, _ ->
+    addRoundRect(androidx.compose.ui.geometry.RoundRect(0f, 0f, sz.width, sz.height, CornerRadius(sz.width * .046f, sz.height * .033f)))
 }

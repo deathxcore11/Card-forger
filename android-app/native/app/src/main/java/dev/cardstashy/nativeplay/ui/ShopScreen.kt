@@ -44,6 +44,7 @@ import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.blur
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
@@ -121,11 +122,14 @@ fun ShopRoute(onBack: () -> Unit, nav: @Composable () -> Unit, startTab: String 
     BackHandler(enabled = set == null && open == null && opener == null, onBack = onBack)
     Box(Modifier.fillMaxSize().background(Site.Bg)) {
         val code = set
+        // .pack-dialog::backdrop: #05060be6 over a 16 px blur of the page.
+        Box(Modifier.fillMaxSize().then(if (opener != null) Modifier.blur(16.dp) else Modifier)) {
         if (code != null) SetLens(s, code, busy.isNotEmpty(), onBack = { set = null }, onBuy = { buy(code) }, onOpen = openPack, onCard = { open = it })
         else ShopHub(s, tab, busy.isNotEmpty(), onTab = { tab = it }, onBack = onBack, onSet = { set = it }, onBuy = buy, onOpen = openPack, actions = actions,
             onSecretLair = { week, title -> act("secretlair", "$title is yours. Every card is in your Trunk, in its Secret Lair art.") { Progress.secretLair(week) } },
             onStamp = { id, name -> act("craft", "$name added to your Play collection.") { Progress.craft(id) } }, onCard = { open = it })
         Box(Modifier.align(Alignment.BottomCenter)) { nav() }
+        }
         open?.let { pick ->
             CardSheet(pick, s, act = CardSheetActions(merchant = { c, _ -> open = null; set = c }, set = { c -> open = null; set = c }, toast = toast), onClose = { open = null })
         }
@@ -171,11 +175,8 @@ private fun ShopHub(s: JsonObject, tab: String, busy: Boolean, onTab: (String) -
                 items(groups, key = { it.first }) { (key, list) ->
                     val code = list.first().get("set").s() ?: ""
                     Box(Modifier.clickable(enabled = !busy) { onOpen(list.first().get("id").s() ?: "") }) {
-                        Booster(code, null)
-                        // Collector packs (every card holo) keep the set's wrapper and wear a ribbon.
-                        if (key.startsWith("*")) Text("COLLECTOR", style = TextStyle(fontFamily = Site.Manrope, fontWeight = FontWeight.ExtraBold, fontSize = 11.sp, letterSpacing = 1.sp, color = Color(0xFF1A1206)),
-                            modifier = Modifier.align(Alignment.TopStart).padding(8.dp).clip(RoundedCornerShape(8.dp))
-                                .background(Brush.horizontalGradient(listOf(Color(0xFFF6B3D4), Color(0xFFB8E7F5), Color(0xFFF3E19A)))).padding(horizontal = 8.dp, vertical = 3.dp))
+                        // Collector packs (every card holo): the band says Collector booster and a rainbow sheen runs across (boosterMarkup collector).
+                        Booster(code, null, collector = key.startsWith("*"))
                         Box(Modifier.align(Alignment.TopEnd).offset(6.dp, (-6).dp).size(30.dp).clip(CircleShape).background(Site.Gold), contentAlignment = Alignment.Center) {
                             Text("${list.size}", style = TextStyle(fontFamily = Site.Manrope, fontWeight = FontWeight.ExtraBold, fontSize = 13.sp, color = Color(0xFF2A1C06))) }
                     }

@@ -82,6 +82,14 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.em
 import androidx.compose.ui.unit.sp
 import androidx.compose.animation.core.animateFloatAsState
+import androidx.compose.animation.core.LinearEasing
+import androidx.compose.animation.core.animateFloat
+import androidx.compose.animation.core.rememberInfiniteTransition
+import androidx.compose.animation.core.infiniteRepeatable
+import androidx.compose.animation.core.tween
+import androidx.compose.ui.graphics.drawscope.drawIntoCanvas
+import androidx.compose.ui.graphics.nativeCanvas
+import androidx.compose.ui.graphics.toArgb
 import com.google.gson.JsonObject
 import dev.cardstashy.nativeplay.play.PlayMath
 import dev.cardstashy.nativeplay.play.PlayRules
@@ -433,14 +441,14 @@ private fun StoryCard(d: PlayHomeData, wide: Boolean, act: PlayHomeActions) {
 // ---------------------------------------------------------------- booster wrapper (pe-booster)
 
 @Composable
-fun Booster(code: String, name: String?, modifier: Modifier = Modifier, mini: Boolean = false) {
+fun Booster(code: String, name: String?, modifier: Modifier = Modifier, mini: Boolean = false, collector: Boolean = false, fill: Boolean = false) {
     val facts: Map<String, SetFacts.Set> = SetFacts.sets.collectAsState().value
     val f = facts[code]
     val label = name?.ifBlank { null } ?: f?.name ?: code.uppercase()
     if (!HomeTest.noPictures) wrapperFor(code)?.let { (asset, wrap) ->
         val ctx = LocalContext.current
         val img = produceState(AssetImages.cached("$asset@600"), asset) { value = AssetImages.load(ctx, asset, maxWidth = 600) }.value
-        if (img != null) { WrappedBooster(code, label, wrap, img, modifier, mini); return }
+        if (img != null) { WrappedBooster(code, label, wrap, img, modifier, mini, collector, fill); return }
     }
     val shape = RoundedCornerShape(6.dp)
     Box(modifier.aspectRatio(5f / 8.2f).testShadow(18.dp, shape).clip(shape)
@@ -462,7 +470,7 @@ fun Booster(code: String, name: String?, modifier: Modifier = Modifier, mini: Bo
                 SetIcon(code, Modifier.size(minOf(w * .22f, 30.dp)))
                 if (!mini) {
                     Text(label.uppercase(), style = TextStyle(fontFamily = Type.Cinzel, fontWeight = FontWeight.Bold, fontSize = sp(.07f), lineHeight = sp(.082f), letterSpacing = .02.em, color = P.Ink, textAlign = TextAlign.Center), maxLines = 2)
-                    Text("PLAY BOOSTER", style = TextStyle(fontFamily = P.Sans, fontWeight = FontWeight.Bold, fontSize = sp(.05f), letterSpacing = .14.em, color = Color(0xFFD6AD64)), maxLines = 1)
+                    Text(if (collector) "COLLECTOR BOOSTER" else "PLAY BOOSTER", style = TextStyle(fontFamily = P.Sans, fontWeight = FontWeight.Bold, fontSize = sp(.05f), letterSpacing = .14.em, color = if (collector) Color(0xFFF3D58C) else Color(0xFFD6AD64)), maxLines = 1)
                 }
             }
             // Crimped foil edges top and bottom.
@@ -470,8 +478,9 @@ fun Booster(code: String, name: String?, modifier: Modifier = Modifier, mini: Bo
             Crimp(Modifier.align(Alignment.BottomCenter).fillMaxWidth().height(h * .055f))
         }
         // Sheen.
-        Box(Modifier.matchParentSize().background(Brush.linearGradient(.3f to Color.Transparent, .45f to Color(0x26FFFFFF), .6f to Color.Transparent)))
-        Box(Modifier.matchParentSize().border(1.dp, Color(0x1FFFFFFF), shape))
+        if (collector) CollectorSheen(Modifier.matchParentSize())
+        else Box(Modifier.matchParentSize().background(Brush.linearGradient(.3f to Color.Transparent, .45f to Color(0x26FFFFFF), .6f to Color.Transparent)))
+        Box(Modifier.matchParentSize().border(1.dp, if (collector) Color(0xCCE9C77A) else Color(0x1FFFFFFF), shape))
     }
 }
 
@@ -479,9 +488,9 @@ fun Booster(code: String, name: String?, modifier: Modifier = Modifier, mini: Bo
 class Wrap(val aspect: Float, val notch: Float, val top: Float, val bottom: Float, val iconInNotch: Boolean = false)
 val WRAPPERS: Map<String, Wrap> = run {
     // Randall 3 Nov 21:37Z: one painted template for every set (1024×1536, silver crimps, gold art window, black band).
-    // Measured on the files: notch peak 59.6 %, band 63.2 % to 85.9 %. hob and msh are redrawn on it.
+    // Measured on the files: notch peak 59.6 %, band 63.2 % to 85.9 %. hob, msh and mh2 are redrawn on it; fra keeps its own.
     val template = Wrap(1024f / 1536f, notch = .596f, top = .632f, bottom = .859f)
-    listOf("dft", "ecl", "eoe", "fin", "hob", "msh", "sos", "spm", "tdm", "tla", "tmt").associateWith { template } +
+    listOf("acr", "aer", "afr", "akh", "blb", "bro", "dft", "dmu", "dom", "dsk", "ecl", "eld", "emn", "eoe", "fdn", "fin", "frf", "grn", "hob", "hou", "iko", "khm", "kld", "ktk", "lci", "m19", "m20", "m21", "mat", "mh1", "mh2", "mh3", "mid", "mkm", "mom", "msh", "neo", "ogw", "one", "otj", "rix", "rna", "snc", "soi", "sos", "spm", "stx", "tdm", "thb", "tla", "tmt", "vow", "war", "woe", "xln", "znr").associateWith { template } +
         ("fra" to Wrap(600f / 918f, notch = .641f, top = .676f, bottom = .892f))
 }
 
@@ -504,9 +513,11 @@ fun wrapperFor(code: String): Pair<String, Wrap>? = WRAPPERS[code.lowercase()]?.
  * the set symbol in gold, the set name in Cinzel and PLAY BOOSTER, all moving as one with the sheen.
  */
 @Composable
-private fun WrappedBooster(code: String, label: String, wrap: Wrap, img: ImageBitmap, modifier: Modifier, mini: Boolean) {
-    Box(modifier.aspectRatio(5f / 8.2f), contentAlignment = Alignment.BottomCenter) {
-        BoxWithConstraints(Modifier.fillMaxWidth().aspectRatio(wrap.aspect, matchHeightConstraintsFirst = true)
+private fun WrappedBooster(code: String, label: String, wrap: Wrap, img: ImageBitmap, modifier: Modifier, mini: Boolean, collector: Boolean = false, fill: Boolean = false) {
+    // fill: the caller already sized the box to the wrapper (the pack opener), so the picture takes all of it.
+    Box(if (fill) modifier else modifier.aspectRatio(5f / 8.2f), contentAlignment = Alignment.BottomCenter) {
+        BoxWithConstraints((if (fill) Modifier.fillMaxSize() else Modifier.fillMaxWidth().aspectRatio(wrap.aspect, matchHeightConstraintsFirst = true))
+            .then(if (collector) Modifier.collectorGlow() else Modifier)
             .graphicsLayer { shadowElevation = 14.dp.toPx(); shape = RoundedCornerShape(4.dp); clip = false }) {
             val w = maxWidth; val h = maxHeight
             Image(img, null, Modifier.fillMaxSize(), contentScale = ContentScale.FillBounds)
@@ -522,13 +533,42 @@ private fun WrappedBooster(code: String, label: String, wrap: Wrap, img: ImageBi
                 if (!wrap.iconInNotch) SetIcon(code, Modifier.size(w * (if (mini) .2f else .1f)))
                 if (!mini) {
                     Text(label.uppercase(), style = TextStyle(fontFamily = Type.Cinzel, fontWeight = FontWeight.Bold, fontSize = sp(.062f), lineHeight = sp(.072f), letterSpacing = .02.em, color = P.Ink, textAlign = TextAlign.Center), maxLines = 2)
-                    Text("PLAY BOOSTER", style = TextStyle(fontFamily = P.Sans, fontWeight = FontWeight.Bold, fontSize = sp(.046f), letterSpacing = .14.em, color = Color(0xFFD6AD64)), maxLines = 1)
+                    Text(if (collector) "COLLECTOR BOOSTER" else "PLAY BOOSTER", style = TextStyle(fontFamily = P.Sans, fontWeight = FontWeight.Bold, fontSize = sp(.046f), letterSpacing = .14.em, color = if (collector) Color(0xFFF3D58C) else Color(0xFFD6AD64)), maxLines = 1)
                 }
             }
             // Sheen across wrapper and lettering alike.
-            Box(Modifier.matchParentSize().background(Brush.linearGradient(.32f to Color.Transparent, .45f to Color(0x1AFFFFFF), .58f to Color.Transparent)))
+            if (collector) { CollectorSheen(Modifier.matchParentSize()); Box(Modifier.matchParentSize().border(1.dp, Color(0xCCE9C77A), RoundedCornerShape(4.dp))) }
+            else Box(Modifier.matchParentSize().background(Brush.linearGradient(.32f to Color.Transparent, .45f to Color(0x1AFFFFFF), .58f to Color.Transparent)))
         }
     }
+}
+
+/** .pe-booster--collector's glow: 0 0 22px #c9a4ff40 around the pack. */
+private fun Modifier.collectorGlow() = drawBehind {
+    drawIntoCanvas { c ->
+        val p = androidx.compose.ui.graphics.Paint().asFrameworkPaint().apply { isAntiAlias = true; color = Color(0x40C9A4FF).toArgb(); maskFilter = android.graphics.BlurMaskFilter(11.dp.toPx(), android.graphics.BlurMaskFilter.Blur.NORMAL) }
+        c.nativeCanvas.drawRoundRect(0f, 0f, size.width, size.height, 4.dp.toPx(), 4.dp.toPx(), p)
+    }
+}
+
+/**
+ * .pe-booster--collector .pe-booster-sheen: linear-gradient(115deg, pink 32 %, cyan 44 %, lime 56 %, yellow 68 % at 25 % alpha, clear at 20 / 80 %),
+ * background-size 250 %, sliding from 100 % to -150 % over 4.5 s, linear, in color-dodge.
+ */
+@Composable
+private fun CollectorSheen(modifier: Modifier) {
+    val t = if (Motion.still) .5f else rememberInfiniteTransition(label = "collector").animateFloat(0f, 1f, infiniteRepeatable(tween(4500, easing = LinearEasing)), label = "c").value
+    Box(modifier.drawWithContent {
+        // background-position p% of a 250 % image: its left edge sits at p · (W − 2.5 W) = −1.5 W · p.
+        val bw = size.width * 2.5f; val pos = 1f + (-1.5f - 1f) * t
+        val left = -1.5f * size.width * pos
+        val a = Math.toRadians(115.0 - 90.0); val dx = kotlin.math.cos(a).toFloat(); val dy = kotlin.math.sin(a).toFloat()
+        val half = (bw * kotlin.math.abs(dx) + size.height * kotlin.math.abs(dy)) / 2f
+        val c = Offset(left + bw / 2f, size.height / 2f)
+        val brush = Brush.linearGradient(.2f to Color(0x00FF6AD5), .32f to Color(0x40FF6AD5), .44f to Color(0x406AD8FF), .56f to Color(0x40B6FF6A), .68f to Color(0x40FFE56A), .8f to Color(0x00FF6AD5),
+            start = Offset(c.x - dx * half, c.y - dy * half), end = Offset(c.x + dx * half, c.y + dy * half), tileMode = androidx.compose.ui.graphics.TileMode.Repeated)
+        drawRect(brush, blendMode = BlendMode.ColorDodge)
+    })
 }
 
 /** The six-pointed star in a ring that every wrapper carries at the top of its band. */
