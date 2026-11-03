@@ -1,5 +1,7 @@
 package dev.cardstashy.nativeplay.ui
 
+import androidx.compose.ui.layout.onPlaced
+
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
@@ -174,12 +176,12 @@ fun PlayHome(d: PlayHomeData, top: @Composable () -> Unit, act: PlayHomeActions 
                             PurseRow(purse, onCoins = { act.view("shop") }, onSeals = { act.view("shop") }, onPacks = { act.view("packs") })
                         }
                     }
-                    item("modes") { Modes(wide, act) }
-                    item("story") { StoryCard(d, wide, act) }
-                    item("today") { Duo(duo, { Today(d, act) }, { Deeds(d, act) }) }
-                    item("packs") { Duo(duo, { Packs(s, act) }, { Forge(s, act) }) }
-                    item("decks") { Duo(duo, { Decks(s, wide, act) }, { Collection(s, act) }) }
-                    if ((s.getAsJsonArray("shop")?.size() ?: 0) > 0) item("shop") { Merchant(s, act) }
+                    item("modes") { Probe("modes") { Modes(wide, act) } }
+                    item("story") { Probe("story") { StoryCard(d, wide, act) } }
+                    item("today") { Duo(duo, { Probe("today") { Today(d, act) } }, { Probe("deeds") { Deeds(d, act) } }) }
+                    item("packs") { Duo(duo, { Probe("packs") { Packs(s, act) } }, { Probe("forge") { Forge(s, act) } }) }
+                    item("decks") { Duo(duo, { Probe("decks") { Decks(s, wide, act) } }, { Probe("collection") { Collection(s, act) } }) }
+                    if ((s.getAsJsonArray("shop")?.size() ?: 0) > 0) item("shop") { Probe("shop") { Merchant(s, act) } }
                 }
                 // The site's sticky glass top bar.
                 Box(Modifier.fillMaxWidth().background(Color(0xD90C0E13)).drawBehind {
@@ -189,6 +191,14 @@ fun PlayHome(d: PlayHomeData, top: @Composable () -> Unit, act: PlayHomeActions 
             nav()
         }
     }
+}
+
+/** Counts each section's compositions, layouts and draws for the freeze report, so a stuck or looping section names itself. */
+@Composable
+private fun Probe(name: String, content: @Composable () -> Unit) {
+    dev.cardstashy.nativeplay.FreezeReport.section(name, 0)
+    androidx.compose.runtime.SideEffect { dev.cardstashy.nativeplay.FreezeReport.section(name, 1) }
+    Box(Modifier.onPlaced { dev.cardstashy.nativeplay.FreezeReport.section(name, 2) }.drawBehind { dev.cardstashy.nativeplay.FreezeReport.section(name, 3) }) { content() }
 }
 
 @Composable private fun statusTop(): Dp = WindowInsets.statusBars.asPaddingValues().calculateTopPadding()

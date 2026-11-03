@@ -28,6 +28,9 @@ class HomeScrollTest {
 
     @Test @Config(qualifiers = "w868dp-h964dp-xxhdpi") fun inner() = run("inner")
     @Test @Config(qualifiers = "w390dp-h860dp-xxhdpi") fun cover() = run("cover")
+    @Test(timeout = 120000) @Config(qualifiers = "w300dp-h860dp-xxhdpi") fun narrow() = run("narrow")
+    @Test(timeout = 120000) @Config(qualifiers = "w411dp-h960dp-xxhdpi") fun fold() = run("fold")
+    @Test(timeout = 120000) @Config(qualifiers = "w673dp-h749dp-xhdpi") fun innerPortrait() = run("innerP")
 
     /** Randall's shape: thousands of cards across many sets, a pile of sealed packs, a full Merchant, many decks. */
     private fun inflate(state: com.google.gson.JsonObject) {
@@ -66,5 +69,9 @@ class HomeScrollTest {
             rule.onNodeWithTag("playHome").performTouchInput { swipeUp() }; rule.waitForIdle()
             println("[$label] swipe $k: ${(System.nanoTime() - t) / 1_000_000} ms")
         }
+        println("[$label] sections: " + dev.cardstashy.nativeplay.FreezeReport.sectionLine())
+        val before = dev.cardstashy.nativeplay.FreezeReport.sectionLine()
+        repeat(20) { rule.mainClock.advanceTimeByFrame() }; rule.waitForIdle()
+        println("[$label] after 20 idle frames: " + dev.cardstashy.nativeplay.FreezeReport.sectionLine())
     }
 }

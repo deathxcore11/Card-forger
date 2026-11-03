@@ -61,6 +61,10 @@ object CardArt {
             .components { add(OkHttpNetworkFetcherFactory(callFactory = { client })); add(coil3.svg.SvgDecoder.Factory()) }
             .memoryCache { MemoryCache.Builder().maxSizePercent(app, .25).build() }
             .diskCache { DiskCache.Builder().directory(File(app.filesDir, "art-cache").toOkioPath()).maxSizeBytes(2L shl 30).build() }
+            .eventListener(object : coil3.EventListener() {
+                override fun onSuccess(request: coil3.request.ImageRequest, result: coil3.request.SuccessResult) =
+                    dev.cardstashy.nativeplay.FreezeReport.image(request.data.toString(), result.image.width, result.image.height, result.image.size)
+            })
             .build()
         indexFile = File(app.filesDir, "art-index.json")
         try {

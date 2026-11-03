@@ -89,10 +89,11 @@ object FreezeReport {
         val parts = all.split(Regex("(?m)^(?=== )")).filter { it.isNotBlank() }
         val stalls = parts.filter { it.startsWith("== Stall") }.takeLast(3).reversed()
         val ended = parts.filter { it.startsWith("== App ended") && !it.contains(": exited ==") }.takeLast(2).reversed()
+        val secs = parts.filter { it.startsWith("== Section") }.takeLast(3).reversed().map { it.take(2500) }
         val blank = parts.filter { it.startsWith("== No frames") }.takeLast(2).reversed()
         val slow = parts.filter { it.startsWith("== Slow frame") }.takeLast(2).reversed().map { it.take(900) }
         val anrs = parts.filter { it.startsWith("== Android") }.takeLast(2).reversed().map { trimTrace(it).take(3500) }
-        return (stalls + blank + anrs + ended + slow).joinToString("\n").take(7000)
+        return (secs + stalls + blank + anrs + ended + slow).joinToString("\n").take(7000)
     }
 
     /** A section saved by 0.3.2 holds the whole thread dump; keep its heading lines and cut the dump to the main thread. */
@@ -133,6 +134,43 @@ object FreezeReport {
         return (listOf(main) + held + gc).joinToString("\n\n").take(20_000)
     }
 
+    /** Per Play home section: [composing, composed, placed, drawn] counts and when it first started composing. */
+    private class Sec { val n = IntArray(4); var first = 0L; var placedAt = 0L; var reported = false; var lastSeen = IntArray(4) }
+    private val sections = java.util.concurrent.ConcurrentHashMap<String, Sec>()
+    fun section(name: String, what: Int) {
+        val s = sections.getOrPut(name) { Sec() }
+        if (s.first == 0L) s.first = SystemClock.uptimeMillis()
+        if (what == 2 && s.placedAt == 0L) s.placedAt = SystemClock.uptimeMillis()
+        s.n[what]++
+    }
+    internal fun sectionLine() = sections.entries.joinToString("; ") { (k, v) -> "$k composing ${v.n[0]} composed ${v.n[1]} placed ${v.n[2]} drawn ${v.n[3]}" }
+
+    /** Every 2 s: a section composing over 40 times since the last check is looping; one placed on screen over 3 s ago that never drew is stuck. */
+    private fun checkSections() {
+        val now = SystemClock.uptimeMillis()
+        for ((k, v) in sections) {
+            if (v.reported) continue
+            val d = IntArray(4) { v.n[it] - v.lastSeen[it] }; v.lastSeen = v.n.copyOf()
+            val loop = d[0] > 40
+            val stuck = v.placedAt > 0 && now - v.placedAt > 3000 && v.n[3] == 0
+            if (!loop && !stuck) continue
+            v.reported = true
+            val main = Looper.getMainLooper().thread.stackTrace.take(40).joinToString("\n") { "    at $it" }
+            append("== Section ${if (loop) "looping" else "never drawn"}: $k ==\n" + header() +
+                "in the last 2 s: composing ${d[0]} composed ${d[1]} placed ${d[2]} drawn ${d[3]}; started ${now - v.first} ms ago\nall: ${sectionLine()}\n" + memory() + "\nmain now:\n" + main + "\n\n")
+            try { if (::prefs.isInitialized) upload(file.readText()) } catch (_: Throwable) {}
+        }
+    }
+
+    /** Every picture decoded (Coil): the biggest ones and the running total, to see if one image is what fills memory. */
+    private val images = java.util.concurrent.ConcurrentHashMap<String, Long>()
+    @Volatile private var imageCount = 0
+    fun image(url: String, w: Int, h: Int, bytes: Long) { imageCount++; images["${w}x$h ${url.takeLast(90)}"] = bytes }
+    private fun imageLine(): String {
+        val top = images.entries.sortedByDescending { it.value }.take(6).joinToString("; ") { "${it.value / 1024} KB ${it.key}" }
+        return "images decoded $imageCount, distinct ${images.size}, ${images.values.sum() / (1024 * 1024)} MB; biggest: $top"
+    }
+
     @Volatile private var lastTouch = 0L
     @Volatile private var lastFrame = 0L
     private val touches = java.util.ArrayDeque<String>()
@@ -147,11 +185,11 @@ object FreezeReport {
         synchronized(touches) { touches.addLast("${if (a == 0) "down" else "up"}@$now"); while (touches.size > 6) touches.removeFirst() }
     }
 
-    private fun memory(): String = try {
+    private fun memory(): String = (try {
         val mi = android.os.Debug.MemoryInfo(); android.os.Debug.getMemoryInfo(mi)
         "memory: total ${mi.totalPss / 1024} MB, graphics ${mi.getMemoryStat("summary.graphics")?.toIntOrNull()?.div(1024)} MB, " +
             "java ${mi.getMemoryStat("summary.java-heap")?.toIntOrNull()?.div(1024)} MB, native ${mi.getMemoryStat("summary.native-heap")?.toIntOrNull()?.div(1024)} MB"
-    } catch (_: Throwable) { "memory: ?" }
+    } catch (_: Throwable) { "memory: ?" }) + "\n" + imageLine()
 
     /**
      * Every frame's timings arrive on a background thread (FrameMetrics). A frame over 700 ms is kept with where its time went
@@ -177,9 +215,10 @@ object FreezeReport {
                 "swap ${ms(android.view.FrameMetrics.SWAP_BUFFERS_DURATION)}$gpu, unknown delay ${ms(android.view.FrameMetrics.UNKNOWN_DELAY_DURATION)}\n" + memory() + "\n\n")
         }, h)
         Thread({
-            var reported = 0L
+            var reported = 0L; var tick = 0
             while (true) {
                 Thread.sleep(500)
+                if (++tick % 4 == 0) try { checkSections() } catch (_: Throwable) {}
                 val now = SystemClock.uptimeMillis(); val t = lastTouch
                 if (t == 0L || t == reported || lastFrame >= t || now - t < 3000 || !activity.hasWindowFocus()) continue
                 reported = t
@@ -187,7 +226,7 @@ object FreezeReport {
                     .joinToString("\n") { (th, st) -> "\"${th.name}\" ${th.state}\n" + st.take(if (th.name == "main") 30 else 8).joinToString("\n") { "    at $it" } }
                 val tr = synchronized(touches) { touches.joinToString(" ") }
                 append("== No frames: ${now - t} ms since the last drag, last frame ${if (lastFrame == 0L) "never" else "${now - lastFrame} ms ago"} ==\n" + header() +
-                    "touches $tr, now $now\n" + memory() + "\n" + stacks + "\n\n")
+                    "touches $tr, now $now\nsections: ${sectionLine()}\n" + memory() + "\n" + stacks + "\n\n")
                 try { if (::prefs.isInitialized) upload(file.readText()) } catch (_: Throwable) {}
             }
         }, "frame-watch").apply { isDaemon = true; priority = Thread.MIN_PRIORITY }.start()
@@ -208,7 +247,7 @@ object FreezeReport {
                     if (busy >= 1500L * (samples + 1) && samples < 4) {
                         samples++
                         val st = Looper.getMainLooper().thread.stackTrace.take(45).joinToString("\n") { "    at $it" }
-                        append("== Stall sample $samples: main busy $busy ms ==\n" + header() + st + "\n\n")
+                        append("== Stall sample $samples: main busy $busy ms ==\n" + header() + "sections: ${sectionLine()}\n" + st + "\n\n")
                     }
                 }
                 if (samples > 0) Thread { try { if (::prefs.isInitialized) upload(file.readText()) } catch (_: Throwable) {} }.start()
