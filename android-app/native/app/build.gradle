@@ -14,8 +14,8 @@ android {
         applicationId 'com.cardstashy.app.nativetest'
         minSdk 26 // Forge's own Android minimum (java.nio.file)
         targetSdk 36
-        versionCode 5
-        versionName '0.1.4-native-test'
+        versionCode 6
+        versionName '0.2.0-native-test'
     }
     buildTypes {
         release {
@@ -50,6 +50,9 @@ dependencies {
     implementation 'androidx.core:core-ktx:1.16.0'
     implementation 'androidx.lifecycle:lifecycle-runtime-compose:2.9.1'
     implementation 'org.jetbrains.kotlinx:kotlinx-coroutines-android:1.10.2'
+    // Card art streamed like the web (Scryfall CDN), cached on disk and in memory (step 1, online only).
+    implementation 'io.coil-kt.coil3:coil-compose:3.2.0'
+    implementation 'io.coil-kt.coil3:coil-network-okhttp:3.2.0'
     // JUnit from the local Gradle install when present (Maven Central rate-limits the cloud builder).
     def gradleJunit = file("${gradle.gradleHomeDir}/lib/junit-4.13.2.jar")
     if (gradleJunit.exists()) testImplementation files(gradleJunit, "${gradle.gradleHomeDir}/lib/hamcrest-core-1.3.jar")

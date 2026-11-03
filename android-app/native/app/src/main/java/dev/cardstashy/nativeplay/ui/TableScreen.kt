@@ -1,5 +1,6 @@
 package dev.cardstashy.nativeplay.ui
 
+import dev.cardstashy.nativeplay.art.CardImage
 import dev.cardstashy.nativeplay.engine.StackItem
 import kotlin.math.sign
 import kotlinx.coroutines.launch
@@ -288,7 +289,8 @@ private fun Permanents(cards: List<Card>, w: Dp, markOf: (Card) -> Mark, tapOf: 
 @Composable
 private fun Seat(life: Int, anchor: String, library: Int, top: Card?, grave: Int, onInspect: (Card) -> Unit, pickable: Boolean, picked: Boolean, onPick: () -> Unit) {
     Column(Modifier.padding(end = 6.dp, bottom = 4.dp).width(64.dp), horizontalAlignment = Alignment.CenterHorizontally, verticalArrangement = Arrangement.spacedBy(4.dp)) {
-        LifeOrb(life, pickable, picked, anchor, onPick)
+        val profile by dev.cardstashy.nativeplay.account.Account.profile.collectAsState()
+        LifeOrb(life, pickable, picked, anchor, picture = profile?.avatarUrl, fallback = "play/avatar-default.webp", onPick = onPick)
         Piles(library, top, grave, Modifier, onInspect)
     }
 }
@@ -315,7 +317,7 @@ private fun Piles(library: Int, topNow: Card?, graveNow: Int, modifier: Modifier
 }
 
 @Composable
-private fun LifeOrb(life: Int, pickable: Boolean, picked: Boolean, anchor: String? = null, onPick: () -> Unit) {
+private fun LifeOrb(life: Int, pickable: Boolean, picked: Boolean, anchor: String? = null, picture: String? = null, fallback: String? = null, onPick: () -> Unit) {
     val flash = remember { Animatable(0f) }
     val drop = remember { Animatable(1f) } // the new number drops in from above, 240 ms
     var last by remember { mutableStateOf(life) }
@@ -328,6 +330,12 @@ private fun LifeOrb(life: Int, pickable: Boolean, picked: Boolean, anchor: Strin
         .background(Palette.Red.copy(alpha = .55f * flash.value))
         .border(if (pickable || picked) 2.5.dp else 1.5.dp, if (pickable || picked) Palette.GoldBright else Palette.Gold, CircleShape)
         .clickable(enabled = pickable, onClick = onPick), contentAlignment = Alignment.Center) {
+        // The player's picture under the number (your profile picture; the CPU's art), dimmed so the life total reads first.
+        Box(Modifier.fillMaxSize().graphicsLayer { alpha = .5f }) {
+            if (fallback != null) AssetImage(fallback, Modifier.fillMaxSize(), maxWidth = 160)
+            if (!picture.isNullOrBlank()) coil3.compose.AsyncImage(model = picture, contentDescription = null, imageLoader = dev.cardstashy.nativeplay.art.CardArt.loader,
+                modifier = Modifier.fillMaxSize(), contentScale = androidx.compose.ui.layout.ContentScale.Crop)
+        }
         Text("$life", style = Type.Title.copy(fontSize = 22.sp), modifier = Modifier.graphicsLayer { translationY = (drop.value - 1f) * 14.dp.toPx(); alpha = .3f + .7f * drop.value })
     }
 }
@@ -388,7 +396,7 @@ private fun manaValue(cost: String): Int = Regex("\\{([^}]+)\\}").findAll(cost).
 private fun Sidebar(st: MatchState, c: MatchController, beat: Beat?, live: Boolean, sizes: Sizes, selectedHand: Int?, modifier: Modifier, onInspect: (Card) -> Unit, lastBeat: Beat? = null) {
     Column(modifier.padding(6.dp).glass(14.dp).padding(8.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
         Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-            LifeOrb(st.cpu.life, pickable = live && st.cpu.id in st.selection.players, picked = st.cpu.id in st.selection.chosenPlayers, anchor = "orb${st.cpu.id}") { c.player(st.cpu.id) }
+            LifeOrb(st.cpu.life, pickable = live && st.cpu.id in st.selection.players, picked = st.cpu.id in st.selection.chosenPlayers, anchor = "orb${st.cpu.id}", fallback = "play/avatar-cpu.webp") { c.player(st.cpu.id) }
             Text("CPU", style = Type.Title.copy(fontSize = 15.sp))
         }
         // Resolve: the item that just left the stack slides down and fades over 140 ms above whatever comes next.
@@ -428,9 +436,8 @@ private fun BeatView(b: Beat, st: MatchState, modifier: Modifier, settled: Boole
         horizontalAlignment = Alignment.CenterHorizontally, verticalArrangement = Arrangement.spacedBy(4.dp)) {
         Text(b.title, style = Type.Label.copy(fontSize = 12.sp), textAlign = TextAlign.Center, maxLines = 3)
         if (b.kind != Beat.Kind.LAND && b.cardName != null) {
-            val img = decks.image(b.cardName)
             Box(Modifier.weight(1f).aspectRatio(.716f, matchHeightConstraintsFirst = true)) {
-                if (img != null) AssetImage(img, Modifier.fillMaxSize(), maxWidth = 488, contentScale = ContentScale.Fit, shape = RoundedCornerShape(6.dp))
+                CardImage(b.cardName, Modifier.fillMaxSize(), contentScale = ContentScale.Fit, shape = RoundedCornerShape(6.dp))
             }
         } else Spacer(Modifier.weight(1f))
         b.detail?.let { Text(it, style = Type.Body.copy(color = if (red) Color(0xFFFFB4A8) else Palette.InkSoft), textAlign = TextAlign.Center) }
@@ -447,7 +454,7 @@ private fun FeedCard(card: Card, caption: String?, modifier: Modifier, onInspect
     Column(modifier, horizontalAlignment = Alignment.CenterHorizontally, verticalArrangement = Arrangement.spacedBy(4.dp)) {
         caption?.let { Text(it, style = Type.Label, textAlign = TextAlign.Center) }
         Box(Modifier.weight(1f).aspectRatio(.716f, matchHeightConstraintsFirst = true).pointerInput(card.id) { detectTapGestures(onLongPress = { onInspect(card) }) }) {
-            decks.image(card.name)?.let { AssetImage(it, Modifier.fillMaxSize(), maxWidth = 488, contentScale = ContentScale.Fit, shape = RoundedCornerShape(6.dp)) }
+            CardImage(card.name, Modifier.fillMaxSize(), contentScale = ContentScale.Fit, shape = RoundedCornerShape(6.dp))
         }
     }
 }
@@ -596,7 +603,7 @@ private fun Inspect(card: Card, onClose: () -> Unit) {
     Box(Modifier.fillMaxSize().background(Color(0xCC000000)).clickable(onClick = onClose).windowInsetsPadding(WindowInsets.safeDrawing).padding(20.dp), contentAlignment = Alignment.Center) {
         Row(horizontalArrangement = Arrangement.spacedBy(18.dp), verticalAlignment = Alignment.CenterVertically) {
             Box(Modifier.fillMaxHeight(.92f).aspectRatio(.716f)) {
-                if (!card.hidden) decks.image(card.name)?.let { AssetImage(it, Modifier.fillMaxSize(), contentScale = ContentScale.Fit, shape = RoundedCornerShape(12.dp)) }
+                if (!card.hidden) CardImage(card.name, Modifier.fillMaxSize(), contentScale = ContentScale.Fit, shape = RoundedCornerShape(12.dp))
             }
             Column(Modifier.width(260.dp).glass().padding(14.dp), verticalArrangement = Arrangement.spacedBy(6.dp)) {
                 Text(card.name, style = Type.Title.copy(fontSize = 18.sp))

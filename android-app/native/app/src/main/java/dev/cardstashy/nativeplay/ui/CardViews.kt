@@ -1,5 +1,6 @@
 package dev.cardstashy.nativeplay.ui
 
+import dev.cardstashy.nativeplay.art.CardImage
 import androidx.compose.runtime.setValue
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.mutableStateOf
@@ -89,10 +90,8 @@ fun CardFace(
     Box(modifier.size(w, h).then(if (anchors != null && card.zone == "Battlefield") Modifier.onGloballyPositioned { anchors.put("c${card.id}", it.boundsInRoot().center) } else Modifier).graphicsLayer { rotationZ = turn; translationY = lift * density }
         .then(if (onTap == null && onHold == null) Modifier else Modifier.pointerInput(card.id, onTap, onHold) { detectTapGestures(onTap = { onTap?.invoke() }, onLongPress = { onHold?.invoke() }) })) {
         Box(Modifier.fillMaxSize().clip(shape).background(Color(0xFF15151A))) {
-            val img = decks.image(card.name)
-            if (img != null && !card.hidden) AssetImage(img, Modifier.fillMaxSize(), maxWidth = 488)
-            else if (card.hidden) CardBack(Modifier.fillMaxSize())
-            else TokenFace(card)
+            if (card.hidden) CardBack(Modifier.fillMaxSize())
+            else CardImage(card.name, Modifier.fillMaxSize()) { TokenFace(card) }
             if (mark == Mark.PICKED) Box(Modifier.fillMaxSize().background(Palette.GoldBright.copy(alpha = .22f)))
             if (flash.value > 0f) Box(Modifier.fillMaxSize().background(Color.White.copy(alpha = flash.value)))
         }

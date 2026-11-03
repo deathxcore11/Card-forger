@@ -38,69 +38,112 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
-import dev.cardstashy.nativeplay.match.DemoDeck
+import dev.cardstashy.nativeplay.Speed
+import dev.cardstashy.nativeplay.account.Account
+import dev.cardstashy.nativeplay.account.Decks
+import dev.cardstashy.nativeplay.art.CardImage
 import dev.cardstashy.nativeplay.match.DemoDecks
+import dev.cardstashy.nativeplay.match.EngineNames
+import dev.cardstashy.nativeplay.match.Pick
+import dev.cardstashy.nativeplay.match.Plate
+import dev.cardstashy.nativeplay.match.QuickPlay
+import androidx.compose.foundation.lazy.grid.GridCells
+import androidx.compose.foundation.lazy.grid.GridItemSpan
+import androidx.compose.foundation.lazy.grid.LazyVerticalGrid
+import androidx.compose.foundation.lazy.grid.items
+import androidx.compose.runtime.collectAsState
 
-/** Quick Play: two demo decks side by side. The CPU always plays the other one. */
+/**
+ * Quick Play: your decks from your account, grouped by the format they play in, then the demo
+ * decks. The CPU plays a random tournament list of the same format.
+ */
 @Composable
-fun DeckPickScreen(onPick: (DemoDeck) -> Unit, onBack: () -> Unit) {
-    val decks = DemoDecks.load(LocalContext.current)
+fun DeckPickScreen(onPick: (Pick) -> Unit, onBack: () -> Unit, onSignIn: () -> Unit) {
+    val context = LocalContext.current
+    val demos = DemoDecks.load(context)
+    val session by Account.session.collectAsState()
+    val mine by Decks.decks.collectAsState()
+    val error by Decks.error.collectAsState()
+    val speed by Speed.last.collectAsState()
+    LaunchedEffect(session?.userId) { if (session != null) Decks.load(context) }
+    LaunchedEffect(mine) { mine?.takeIf { it.isNotEmpty() }?.let { QuickPlay.warmInBackground(context, it) } }
     Backdrop("play/playmat-charcoal-table.webp", dim = .5f) {
-        BoxWithConstraints(Modifier.fillMaxSize().windowInsetsPadding(WindowInsets.safeDrawing).padding(16.dp)) {
-            val wide = maxWidth > maxHeight
-            Column(Modifier.fillMaxSize(), verticalArrangement = Arrangement.spacedBy(12.dp)) {
-                Row(verticalAlignment = Alignment.CenterVertically) {
-                    Box(Modifier.size(44.dp).clip(CircleShape).clickable(onClick = onBack), contentAlignment = Alignment.Center) { Text("‹", style = Type.Title.copy(fontSize = 28.sp)) }
-                    Text("Quick Play", style = Type.Title.copy(fontSize = 22.sp))
+        Column(Modifier.fillMaxSize().windowInsetsPadding(WindowInsets.safeDrawing).padding(horizontal = 16.dp, vertical = 12.dp), verticalArrangement = Arrangement.spacedBy(10.dp)) {
+            Row(verticalAlignment = Alignment.CenterVertically) {
+                Box(Modifier.size(44.dp).clip(CircleShape).clickable(onClick = onBack), contentAlignment = Alignment.Center) { Text("‹", style = Type.Title.copy(fontSize = 28.sp)) }
+                Text("Quick Play", style = Type.Title.copy(fontSize = 22.sp), modifier = Modifier.weight(1f))
+                if (session == null) Text("Sign in", style = Type.Label.copy(color = Palette.Gold), modifier = Modifier.clip(RoundedCornerShape(16.dp)).clickable(onClick = onSignIn).padding(horizontal = 12.dp, vertical = 8.dp))
+            }
+            LazyVerticalGrid(GridCells.Adaptive(190.dp), Modifier.weight(1f).fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(12.dp), verticalArrangement = Arrangement.spacedBy(12.dp)) {
+                fun header(text: String) = item(span = { GridItemSpan(maxLineSpan) }) { Text(text, style = Type.Title.copy(fontSize = 15.sp, color = Palette.Gold), modifier = Modifier.padding(top = 6.dp)) }
+                when {
+                    session == null -> item(span = { GridItemSpan(maxLineSpan) }) {
+                        Row(Modifier.fillMaxWidth().glass().clickable(onClick = onSignIn).padding(16.dp), verticalAlignment = Alignment.CenterVertically) {
+                            Column(Modifier.weight(1f)) { Text("Play your own decks", style = Type.Title.copy(fontSize = 17.sp)); Text("Sign in with your CardStashy account and every deck you saved shows up here.", style = Type.Body) }
+                            Text("Sign in", style = Type.Label.copy(color = Palette.Gold))
+                        }
+                    }
+                    mine == null -> item(span = { GridItemSpan(maxLineSpan) }) { Text(error ?: "Loading your decks…", style = Type.Body) }
+                    mine!!.isEmpty() -> item(span = { GridItemSpan(maxLineSpan) }) { Text("No saved Magic decks yet. Build one on cardstashy.com and it shows up here.", style = Type.Body) }
+                    else -> mine!!.groupBy { QuickPlay.formatOf(it) }.toSortedMap(compareBy { QuickPlay.ForgeFormats.indexOf(it) }).forEach { (format, list) ->
+                        header(format)
+                        items(list, key = { it.id }) { d ->
+                            val note = if (!d.format.equals(format, true) && !(format == "Commander" && d.format.equals("edh", true))) " · plays as $format" else ""
+                            DeckTile(d.name, "${d.count} cards$note", d.face?.let(EngineNames::name)) { onPick(Pick.Mine(d)) }
+                        }
+                    }
                 }
-                val content: @Composable (Modifier) -> Unit = { m ->
-                    decks.decks.forEach { d -> DeckCard(d, decks, m) { onPick(d) } }
-                }
-                if (wide) Row(Modifier.weight(1f).fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(16.dp)) { content(Modifier.weight(1f).fillMaxHeight()) }
-                else Column(Modifier.weight(1f).fillMaxWidth(), verticalArrangement = Arrangement.spacedBy(16.dp)) { content(Modifier.weight(1f).fillMaxWidth()) }
+                header("Demo decks · ${demos.format}")
+                items(demos.decks, key = { "demo:" + it.id }) { d -> DeckTile(d.name, "${d.count} cards", d.face) { onPick(Pick.Demo(d, demos)) } }
+                if (speed.isNotEmpty()) item(span = { GridItemSpan(maxLineSpan) }) { Text(Speed.line(), style = Type.Body.copy(fontSize = 11.sp), modifier = Modifier.padding(top = 8.dp)) }
             }
         }
     }
 }
 
 @Composable
-private fun DeckCard(d: DemoDeck, decks: DemoDecks, modifier: Modifier, onClick: () -> Unit) {
-    val shape = RoundedCornerShape(16.dp)
-    Box(modifier.clip(shape).border(1.5.dp, Palette.Gold, shape).clickable(onClick = onClick)) {
-        AssetImage(decks.image(d.face, crop = true), Modifier.fillMaxSize(), maxWidth = 900)
-        Box(Modifier.fillMaxSize().background(Brush.verticalGradient(0f to Color.Transparent, .5f to Color(0x22000000), 1f to Color(0xF00A0A0C))))
-        Column(Modifier.align(Alignment.BottomStart).padding(16.dp)) {
-            Text(d.name, style = Type.Title.copy(fontSize = 22.sp))
-            Text("${d.count} cards · ${if (d.colour == "R") "Red" else "Green"}", style = Type.Label.copy(color = Palette.Gold))
+private fun DeckTile(name: String, line: String, face: String?, onClick: () -> Unit) {
+    val shape = RoundedCornerShape(14.dp)
+    Box(Modifier.aspectRatio(1.4f).clip(shape).border(1.dp, Palette.Gold.copy(alpha = .8f), shape).background(Palette.PanelBottom).clickable(onClick = onClick)) {
+        CardImage(face, Modifier.fillMaxSize(), crop = true)
+        Box(Modifier.fillMaxSize().background(Brush.verticalGradient(0f to Color.Transparent, .45f to Color(0x22000000), 1f to Color(0xF00A0A0C))))
+        Column(Modifier.align(Alignment.BottomStart).padding(12.dp)) {
+            Text(name, style = Type.Title.copy(fontSize = 16.sp), maxLines = 2)
+            Text(line, style = Type.Label.copy(color = Palette.Gold, fontSize = 12.sp))
         }
     }
 }
 
-/** The versus beat: your deck against the CPU's while the engine opens the match. */
+/** The versus beat: your deck against the CPU's while the engine opens the match and both decks' pictures load. */
 @Composable
-fun VersusScreen(you: DemoDeck, cpu: DemoDeck) {
-    val decks = DemoDecks.load(LocalContext.current)
-    val a = remember { Animatable(0f) }
+fun VersusScreen(you: Plate, cpu: Plate?, intro: Boolean = true) {
+    // intro = false when the beat is already on screen (the CPU's plate arrives into it).
+    val a = remember { Animatable(if (intro) 0f else 1f) }
     LaunchedEffect(Unit) { a.animateTo(1f, tween(700)) }
+    val b = remember { Animatable(0f) }
+    LaunchedEffect(cpu != null) { if (cpu != null) b.animateTo(1f, tween(400)) }
     Backdrop("play/playmat-charcoal-table.webp", dim = .55f) {
         Row(Modifier.fillMaxSize().windowInsetsPadding(WindowInsets.safeDrawing).padding(24.dp), verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(20.dp)) {
-            Plate(you.name, "You", decks.image(you.face, true), Modifier.weight(1f).alpha(a.value))
+            PlateView(you, Modifier.weight(1f).alpha(a.value))
             Box(Modifier.size(72.dp).scale(.6f + .4f * a.value).clip(CircleShape).background(Brush.radialGradient(listOf(Palette.GoldBright, Palette.GoldDeep))).border(2.dp, Color(0xFF3A2A10), CircleShape), contentAlignment = Alignment.Center) {
                 Text("VS", style = Type.Title.copy(color = Color(0xFF1B140A), fontSize = 24.sp))
             }
-            Plate(cpu.name, "CPU", decks.image(cpu.face, true), Modifier.weight(1f).alpha(a.value))
+            if (cpu != null) PlateView(cpu, Modifier.weight(1f).alpha(a.value * b.value))
+            else Box(Modifier.weight(1f).aspectRatio(1.35f).clip(RoundedCornerShape(16.dp)).border(1.5.dp, Palette.Hairline, RoundedCornerShape(16.dp)).alpha(a.value), contentAlignment = Alignment.Center) {
+                Text("Finding an opponent…", style = Type.Label.copy(color = Palette.InkSoft))
+            }
         }
     }
 }
 
 @Composable
-private fun Plate(name: String, who: String, art: String?, modifier: Modifier) {
+private fun PlateView(p: Plate, modifier: Modifier) {
     val shape = RoundedCornerShape(16.dp)
-    Box(modifier.aspectRatio(1.35f).clip(shape).border(1.5.dp, Palette.Gold, shape)) {
-        AssetImage(art, Modifier.fillMaxSize(), maxWidth = 900)
+    Box(modifier.aspectRatio(1.35f).clip(shape).border(1.5.dp, Palette.Gold, shape).background(Palette.PanelBottom)) {
+        CardImage(p.face, Modifier.fillMaxSize(), crop = true)
         Box(Modifier.fillMaxSize().background(Brush.verticalGradient(0f to Color.Transparent, 1f to Color(0xEE0A0A0C))))
         Column(Modifier.align(Alignment.BottomStart).padding(14.dp)) {
-            Text(who, style = Type.Label.copy(color = Palette.Gold)); Text(name, style = Type.Title)
+            Text(p.who, style = Type.Label.copy(color = Palette.Gold)); Text(p.name, style = Type.Title, maxLines = 2)
         }
     }
 }

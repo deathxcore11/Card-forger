@@ -10,24 +10,32 @@ data class DemoDeck(val id: String, val name: String, val colour: String, val fa
     val count get() = cards.sumOf { it.second }
 }
 
+/**
+ * The same input the web's exactForgeInput builds for Quick Play: Normal CPU, random first player,
+ * both decks whole with every name in Forge's spelling and the match format on each seat.
+ */
+fun quickInput(format: String, you: JsonObject, cpu: JsonObject): String {
+    fun seat(d: JsonObject) = EngineNames.deck(d).apply { addProperty("format", format) }
+    val input = JsonObject().apply {
+        addProperty("format", format); add("humanDeck", seat(you)); add("opponentDeck", seat(cpu))
+        addProperty("difficultyPolicyVersion", "forge-heuristic-medium-beta-v1")
+        addProperty("startingPlayer", "random"); addProperty("playStyle", "quick")
+    }
+    return JsonObject().apply { add("input", input) }.toString()
+}
+
 class DemoDecks(val format: String, val decks: List<DemoDeck>, val homeArt: List<String>, private val art: Map<String, String>) {
     /** Asset path of a card image: the full card, or its art crop. */
     fun image(name: String, crop: Boolean = false): String? = art[name]?.let { "cards/$it" + if (crop) ".art.jpg" else ".jpg" }
 
-    /** The same input the web's exactForgeInput builds for Quick Play: Normal CPU, random first player. */
-    fun matchInput(you: DemoDeck, cpu: DemoDeck): String {
-        fun seat(d: DemoDeck) = JsonObject().apply {
-            addProperty("schema", 1); addProperty("id", d.id); addProperty("name", d.name); addProperty("format", format)
-            add("cards", JsonArray().apply { d.cards.forEach { (n, q) -> add(JsonObject().apply { addProperty("name", n); addProperty("qty", q) }) } })
-            add("side", JsonArray())
-        }
-        val input = JsonObject().apply {
-            addProperty("format", format); add("humanDeck", seat(you)); add("opponentDeck", seat(cpu))
-            addProperty("difficultyPolicyVersion", "forge-heuristic-medium-beta-v1")
-            addProperty("startingPlayer", "random"); addProperty("playStyle", "quick")
-        }
-        return JsonObject().apply { add("input", input) }.toString()
+    /** A demo deck as a saved-deck object (the shape the web sends Forge). */
+    fun seat(d: DemoDeck): JsonObject = JsonObject().apply {
+        addProperty("schema", 1); addProperty("id", d.id); addProperty("name", d.name); addProperty("format", format)
+        add("cards", JsonArray().apply { d.cards.forEach { (n, q) -> add(JsonObject().apply { addProperty("name", n); addProperty("qty", q) }) } })
+        add("side", JsonArray())
     }
+
+    fun matchInput(you: DemoDeck, cpu: DemoDeck): String = quickInput(format, seat(you), seat(cpu))
 
     companion object {
         @Volatile private var cached: DemoDecks? = null

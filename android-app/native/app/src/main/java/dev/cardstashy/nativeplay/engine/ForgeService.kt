@@ -97,6 +97,16 @@ object ForgeService {
         return engine.submit(Callable { LocalEngine.start(inputJson, SecureRandom().nextLong() and Long.MAX_VALUE) }).get()
     }
 
+    /** Names the loaded card database does not know (Forge would refuse the match). Engine thread, after loading. */
+    fun unknownNames(names: Collection<String>): List<String> {
+        loading?.get()
+        if (status.value !is Status.Ready) return emptyList()
+        return engine.submit(Callable {
+            val db = forge.StaticData.instance().commonCards
+            names.filter { n -> !db.contains(n) && !(n.contains(" // ") && db.contains(n.substringBefore(" // "))) }
+        }).get()
+    }
+
     fun close(session: LocalEngine.Session?) {
         if (session == null) return
         engine.submit { try { session.close() } catch (t: Throwable) { Log.w(TAG, "close", t) } }

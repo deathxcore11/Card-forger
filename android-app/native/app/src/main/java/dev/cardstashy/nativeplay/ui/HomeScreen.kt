@@ -38,6 +38,12 @@ import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import dev.cardstashy.nativeplay.engine.ForgeService
+import dev.cardstashy.nativeplay.account.Account
+import dev.cardstashy.nativeplay.account.Decks
+import dev.cardstashy.nativeplay.art.CardArt
+import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.rememberCoroutineScope
+import kotlinx.coroutines.launch
 import dev.cardstashy.nativeplay.match.DemoDecks
 
 /**
@@ -45,7 +51,7 @@ import dev.cardstashy.nativeplay.match.DemoDecks
  * right column. Only Quick Play works in this test build; the rest are dimmed static panels.
  */
 @Composable
-fun HomeScreen(onQuickPlay: () -> Unit) {
+fun HomeScreen(onQuickPlay: () -> Unit, onCollection: () -> Unit, onSignIn: () -> Unit) {
     val context = LocalContext.current
     val decks = DemoDecks.load(context)
     val engine by ForgeService.status.collectAsState()
@@ -54,17 +60,17 @@ fun HomeScreen(onQuickPlay: () -> Unit) {
         BoxWithConstraints(Modifier.fillMaxSize().windowInsetsPadding(WindowInsets.safeDrawing).padding(16.dp)) {
             val wide = maxWidth > 700.dp
             Column(Modifier.fillMaxSize().verticalScroll(rememberScrollState()), verticalArrangement = Arrangement.spacedBy(14.dp)) {
-                TopBar()
+                TopBar(onCollection)
                 if (wide) Row(horizontalArrangement = Arrangement.spacedBy(14.dp)) {
                     Column(Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(14.dp)) {
                         ModeTiles(decks, ready, engine, onQuickPlay, columns = 4)
                         ShortcutRow(columns = 4)
                     }
-                    Column(Modifier.width(300.dp), verticalArrangement = Arrangement.spacedBy(14.dp)) { ProfilePanel(); TrunkPanel() }
+                    Column(Modifier.width(300.dp), verticalArrangement = Arrangement.spacedBy(14.dp)) { ProfilePanel(onSignIn); TrunkPanel() }
                 } else {
                     ModeTiles(decks, ready, engine, onQuickPlay, columns = 2)
                     ShortcutRow(columns = 2)
-                    ProfilePanel(); TrunkPanel()
+                    ProfilePanel(onSignIn); TrunkPanel()
                 }
             }
         }
@@ -72,10 +78,12 @@ fun HomeScreen(onQuickPlay: () -> Unit) {
 }
 
 @Composable
-private fun TopBar() {
+private fun TopBar(onCollection: () -> Unit) {
     Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(12.dp)) {
+        // The switch to the other half of the app: Collection's emblem (Play's shows over Collection).
+        Emblem(Mode.COLLECTION, 52.dp, onCollection)
         Column {
-            Text("Collection", style = Type.Title.copy(fontSize = 24.sp))
+            Text("Play", style = Type.Title.copy(fontSize = 24.sp))
             Text("CardStashy", style = Type.Label.copy(color = Palette.Gold))
         }
         Spacer(Modifier.weight(1f))
@@ -145,15 +153,31 @@ private fun ShortcutRow(columns: Int) {
 }
 
 @Composable
-private fun ProfilePanel() {
-    Row(Modifier.fillMaxWidth().glass().padding(14.dp), verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(12.dp)) {
-        Box(Modifier.size(48.dp).clip(CircleShape).background(Brush.radialGradient(listOf(Color(0xFF6B2A2A), Color(0xFF1B1B1F)))).border(1.5.dp, Palette.Gold, CircleShape), contentAlignment = Alignment.Center) {
-            Text("R", style = Type.Title)
-        }
+private fun ProfilePanel(onSignIn: () -> Unit) {
+    val session by Account.session.collectAsState()
+    val profile by Account.profile.collectAsState()
+    val scope = rememberCoroutineScope()
+    LaunchedEffect(session?.userId) { if (session != null) Account.refreshProfile() }
+    val name = profile?.name?.takeIf { it.isNotBlank() } ?: session?.email?.substringBefore('@')
+    Row(Modifier.fillMaxWidth().glass().let { if (session == null) it.clickable(onClick = onSignIn) else it }.padding(14.dp),
+        verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(12.dp)) {
+        Avatar(profile?.avatarUrl, name, 48.dp)
         Column(Modifier.weight(1f)) {
-            Text("Randall", style = Type.Title.copy(fontSize = 17.sp))
-            Text("Native test build", style = Type.Body)
+            Text(name ?: "Sign in", style = Type.Title.copy(fontSize = 17.sp))
+            Text(if (session == null) "Use your CardStashy account to play your decks." else session!!.email, style = Type.Body)
         }
+        if (session != null) Text("Sign out", style = Type.Label.copy(color = Palette.Gold), modifier = Modifier.clip(RoundedCornerShape(12.dp))
+            .clickable { scope.launch { Account.signOut(); Decks.clear() } }.padding(8.dp))
+    }
+}
+
+/** Your player card picture (the account's profile picture); the default art or your initial until there is one. */
+@Composable
+fun Avatar(url: String?, name: String?, size: androidx.compose.ui.unit.Dp) {
+    Box(Modifier.size(size).clip(CircleShape).background(Brush.radialGradient(listOf(Color(0xFF6B2A2A), Color(0xFF1B1B1F)))).border(1.5.dp, Palette.Gold, CircleShape), contentAlignment = Alignment.Center) {
+        Text((name?.firstOrNull() ?: '?').uppercase(), style = Type.Title)
+        AssetImage("play/avatar-default.webp", Modifier.fillMaxSize(), maxWidth = 256)
+        if (!url.isNullOrBlank()) coil3.compose.AsyncImage(model = url, contentDescription = null, imageLoader = CardArt.loader, modifier = Modifier.fillMaxSize(), contentScale = androidx.compose.ui.layout.ContentScale.Crop)
     }
 }
 
