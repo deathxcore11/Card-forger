@@ -234,6 +234,7 @@ class ShotTest {
         val pack = dev.cardstashy.nativeplay.ui.packResult(out, "Reality Fracture")
         val n = pack.pulls.size
         val states = listOf(
+            Triple("0-loading", dev.cardstashy.nativeplay.ui.PackStage.SEALED, Pair(emptySet<Int>(), 0)),
             Triple("1-sealed", dev.cardstashy.nativeplay.ui.PackStage.SEALED, Pair(emptySet<Int>(), 0)),
             Triple("3-dealt", dev.cardstashy.nativeplay.ui.PackStage.DEALT, Pair(emptySet<Int>(), 0)),
             Triple("4-first-card", dev.cardstashy.nativeplay.ui.PackStage.DEALT, Pair(setOf(0), 0)),
@@ -264,18 +265,19 @@ class ShotTest {
         val n = pack.pulls.size
 
         val states = listOf(
+            Triple("0-loading", dev.cardstashy.nativeplay.ui.PackStage.SEALED, Pair(emptySet<Int>(), 0)),
             Triple("1-sealed", dev.cardstashy.nativeplay.ui.PackStage.SEALED, Pair(emptySet<Int>(), 0)),
             Triple("2-dealt", dev.cardstashy.nativeplay.ui.PackStage.DEALT, Pair(setOf(0, 1, 2), 10)),
             Triple("3-mythic", dev.cardstashy.nativeplay.ui.PackStage.DEALT, Pair((0 until n - 1).toSet() + (n - 1), n - 1)),
             Triple("4-foil", dev.cardstashy.nativeplay.ui.PackStage.DEALT, Pair((0 until n).toSet(), 9)),
         )
         for ((w, h) in listOf(390 to 844, 884 to 1104)) for ((name, stage, rv) in states) {
-            if (w > 390 && name != "3-mythic") continue
+            if (w > 390 && name != "3-mythic" && name != "0-loading") continue
             kotlinx.coroutines.runBlocking { AssetImages.load(RuntimeEnvironment.getApplication(), "play/mtg-back.webp", maxWidth = 400)
                 for (c in dev.cardstashy.nativeplay.ui.WRAPPERS.keys) AssetImages.load(RuntimeEnvironment.getApplication(), "play/pack-$c.webp", maxWidth = 600) }
             RuntimeEnvironment.setQualifiers("w${w}dp-h${h}dp-xxhdpi")
             captureRoboImage(File(System.getProperty("shotsDir"), "pack-open-$name-${w}x$h.png").path) {
-                dev.cardstashy.nativeplay.ui.PackOpening(pack, onNext = { null }, onClose = {}, initial = stage, revealedAtStart = rv.first, focusAtStart = rv.second)
+                dev.cardstashy.nativeplay.ui.PackOpening(if (name == "0-loading") dev.cardstashy.nativeplay.ui.loadingPack(pack.set, pack.name) else pack, onNext = { null }, onClose = {}, initial = stage, revealedAtStart = rv.first, focusAtStart = rv.second)
             }
         }
         home.mkdirs(); home.resolve("missing.txt").writeText(missing.joinToString("\n"))

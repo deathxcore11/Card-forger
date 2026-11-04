@@ -145,6 +145,9 @@ class Pull(val id: String, val name: String, val rarity: String, val image: Stri
 val TIER_COLORS = listOf(0xFF9AA3AD, 0xFF4FD18B, 0xFF4AA3FF, 0xFFB46CFF, 0xFFFFC93C, 0xFFFF7A1A).map { Color(it) }
 
 class PackResult(val set: String, val name: String, val pulls: List<Pull>, val note: String, val done: String)
+/** The pack shown while the server rolls it (no cards yet). */
+const val LOADING = "\u0000loading"
+fun loadingPack(set: String, name: String) = PackResult(set, name, emptyList(), LOADING, "")
 
 /** The open route's answer, read the way app.js econPicks / econCollector / econOpened read it. */
 fun packResult(out: JsonObject, name: String): PackResult {
@@ -237,6 +240,10 @@ fun PackOpening(first: PackResult, onNext: (suspend () -> PackResult?)?, onClose
     var tiltHint by remember { mutableStateOf(false) }
     var inspecting by remember { mutableStateOf<Pull?>(inspectAtStart?.let { first.pulls.getOrNull(it) }) }
     var backPull by remember { mutableFloatStateOf(0f) }
+    // Randall 4 Nov 17:52Z: the pack is on screen the moment it is tapped and gathers power while the server rolls it;
+    // a tap while it is still sealed by the wait tears it the instant the cards arrive.
+    var tearQueued by remember { mutableStateOf(false) }
+    LaunchedEffect(first) { if (pack.note == LOADING && first.note != LOADING) pack = first }
     val n = pack.pulls.size
     val allOpen = n > 0 && revealed.size == n
     fun feel(kind: String) = Feel.perform(view, kind)
@@ -274,10 +281,14 @@ fun PackOpening(first: PackResult, onNext: (suspend () -> PackResult?)?, onClose
 
     fun tear() {
         if (stage != PackStage.SEALED) return
+        if (pack.note == LOADING) { if (!tearQueued) { tearQueued = true; feel("pack-charge"); PackSfx.play("PACK-020", .5f) }; return }
         feel("pack-tear"); PackSfx.play("PACK-004")
         stage = PackStage.TEARING
         scope.launch { delay(if (Motion.still) 0 else 440); if (stage == PackStage.TEARING) stage = PackStage.DEALING }
     }
+
+    // The cards landed: a pack tapped during the wait tears now, with no second tap.
+    LaunchedEffect(pack.note, tearQueued) { if (pack.note != LOADING && tearQueued) { tearQueued = false; tear() } }
 
     fun swipe(step: Int) {
         val nx = focus + step
@@ -328,7 +339,7 @@ fun PackOpening(first: PackResult, onNext: (suspend () -> PackResult?)?, onClose
                 layout(c.maxWidth, (pl.height - up).coerceAtLeast(0)) { pl.place(0, -up) } }) {
                 Row(Modifier.weight(1f), verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(10.dp)) {
                     SetIcon(pack.set, Modifier.size(30.dp), tint = Color.White)
-                    Text(pack.name, Modifier.weight(1f).semantics { contentDescription = "${pack.name}. ${pack.note}" }, maxLines = 1, overflow = TextOverflow.Ellipsis,
+                    Text(pack.name, Modifier.weight(1f).semantics { contentDescription = if (pack.note == LOADING) "${pack.name}. Opening…" else "${pack.name}. ${pack.note}" }, maxLines = 1, overflow = TextOverflow.Ellipsis,
                         style = TextStyle(fontFamily = Site.Manrope, fontWeight = FontWeight.ExtraBold, fontSize = 17.sp, lineHeight = 20.sp, letterSpacing = .01.em, color = Site.Text))
                 }
                 RoundTool(if (sound) "Mute pack sounds" else "Turn pack sounds on", pressed = !sound, onClick = { PackSfx.toggle(context); sound = PackSfx.on; if (sound) PackSfx.play("PACK-014", .5f) }) { SoundGlyph(sound) }
@@ -336,7 +347,7 @@ fun PackOpening(first: PackResult, onNext: (suspend () -> PackResult?)?, onClose
                 RoundTool("Close pack", onClick = { Feel.cancel(context); onClose() }) { CloseGlyph() }
             }
             Box(Modifier.weight(1f).fillMaxWidth()) {
-                if (stage == PackStage.SEALED || stage == PackStage.TEARING) Sealed(pack, stage == PackStage.TEARING, ::tear)
+                if (stage == PackStage.SEALED || stage == PackStage.TEARING) Sealed(pack, stage == PackStage.TEARING, ::tear, loading = pack.note == LOADING, eager = tearQueued)
                 else Dealt(pack, stage, revealed, focus, charging, moment, momentLevel, flipping, slide, flung, allOpen, tiltOn && inspecting == null,
                     onLanded = { if (stage == PackStage.DEALING) stage = PackStage.DEALT },
                     onDealt = { i, best -> if (best) { feel("pack-rumble"); PackSfx.play("PACK-019", .7f); PackSfx.play("PACK-005", .55f, .94f) } else { PackSfx.play("PACK-005", .55f, 1f + i * .02f); feel("pack-deal") } },
@@ -412,8 +423,57 @@ private fun packSize(set: String, w: Dp, h: Dp): Pair<Dp, Dp> {
 }
 
 @Composable
-private fun Sealed(pack: PackResult, tearing: Boolean, onTear: () -> Unit) = BoxWithConstraints(Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
+private fun Sealed(pack: PackResult, tearing: Boolean, onTear: () -> Unit, loading: Boolean = false, eager: Boolean = false) = BoxWithConstraints(Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
     val (w, h) = packSize(pack.set, maxWidth, maxHeight)
+    // While the server rolls the pack: a gold aura breathes around it, embers rise and it trembles, harder once tapped.
+    val power = if (!loading) 0f else if (Motion.still) .6f else rememberInfiniteTransition(label = "power").animateFloat(0f, 1f, infiniteRepeatable(tween(if (eager) 420 else 900, easing = FastOutSlowInEasing), RepeatMode.Reverse), label = "p").value
+    val ember = if (!loading) 0f else if (Motion.still) .35f else rememberInfiniteTransition(label = "ember").animateFloat(0f, 1f, infiniteRepeatable(tween(1600, easing = LinearEasing)), label = "e").value
+    val spin = if (!loading || Motion.still) .1f else rememberInfiniteTransition(label = "spin").animateFloat(0f, 1f, infiniteRepeatable(tween(9000, easing = LinearEasing)), label = "r").value
+    val ring = if (!loading || Motion.still) .45f else rememberInfiniteTransition(label = "ring").animateFloat(0f, 1f, infiniteRepeatable(tween(if (eager) 520 else 1100, easing = LinearEasing)), label = "w").value
+    // Lightning re-strikes every 70 ms, so the arcs crackle instead of sliding.
+    var strike by remember { mutableIntStateOf(7) }
+    if (loading && !Motion.still) LaunchedEffect(Unit) { while (true) { delay(70); strike++ } }
+    if (loading) Canvas(Modifier.fillMaxSize()) {
+        val c = center; val pw = w.toPx(); val ph = h.toPx(); val reach = max(size.width, size.height) * .75f
+        val gold = Color(0xFFFFD27A); val hot = Color(0xFFFFF4D6)
+        val surge = power * (if (eager) 1.4f else 1f)
+        // God rays: sixteen gold wedges turning slowly behind the pack.
+        rotate(spin * 360f, c) {
+            for (i in 0 until 16) {
+                val a = (i / 16f) * 2f * PI.toFloat(); val wdg = .07f + .03f * (i % 3)
+                val path = Path().apply {
+                    moveTo(c.x, c.y)
+                    lineTo(c.x + reach * cos(a - wdg), c.y + reach * sin(a - wdg))
+                    lineTo(c.x + reach * cos(a + wdg), c.y + reach * sin(a + wdg)); close()
+                }
+                drawPath(path, Brush.radialGradient(listOf(gold.copy(alpha = .08f + .13f * surge), Color.Transparent), c, reach))
+            }
+        }
+        // Shockwave: a gold ring bursting out of the pack, again and again.
+        val rr = ph * .55f + reach * .6f * ring
+        drawCircle(gold.copy(alpha = (1f - ring) * (.35f + .3f * surge)), rr, c, style = Stroke((6f - 4f * ring) * density))
+        // Embers spiral in from the edges: the pack is drawing the light into itself.
+        for (i in 0 until 28) {
+            val p = 1f - ((ember + i / 28f) % 1f)
+            val a = i * 2.39996f + p * 2.2f; val d = (pw * .62f) + reach * .5f * p
+            val r = (1.6f + (i % 3)) * density * (.5f + p)
+            drawCircle(gold.copy(alpha = (1f - p) * .9f + .1f), r, Offset(c.x + d * cos(a), c.y + d * sin(a)))
+        }
+        // Lightning: jagged gold-white arcs leaping off the pack's edges.
+        val rnd = java.util.Random(strike * 7919L)
+        repeat(if (eager) 5 else 3) {
+            val side = rnd.nextInt(4); val f = rnd.nextFloat()
+            val start = when (side) { 0 -> Offset(c.x - pw / 2 + pw * f, c.y - ph / 2); 1 -> Offset(c.x + pw / 2, c.y - ph / 2 + ph * f)
+                2 -> Offset(c.x - pw / 2 + pw * f, c.y + ph / 2); else -> Offset(c.x - pw / 2, c.y - ph / 2 + ph * f) }
+            val out = when (side) { 0 -> Offset(0f, -1f); 1 -> Offset(1f, 0f); 2 -> Offset(0f, 1f); else -> Offset(-1f, 0f) }
+            val len = (40f + rnd.nextFloat() * 70f) * density * (.8f + .5f * surge)
+            val bolt = Path().apply { moveTo(start.x, start.y)
+                for (k in 1..7) { val s2 = len * k / 7f; val j2 = (rnd.nextFloat() - .5f) * 26f * density
+                    lineTo(start.x + out.x * s2 + out.y * j2, start.y + out.y * s2 + out.x * j2) } }
+            drawPath(bolt, gold.copy(alpha = .45f), style = Stroke(6f * density, cap = StrokeCap.Round))
+            drawPath(bolt, hot, style = Stroke(1.6f * density, cap = StrokeCap.Round))
+        }
+    }
     val floatAnim = if (Motion.still) 0f else rememberInfiniteTransition(label = "float").animateFloat(0f, 1f, infiniteRepeatable(tween(2250, easing = FastOutSlowInEasing), RepeatMode.Reverse), label = "f").value
     // .tearing .pack-body swaps pack-float for pack-rip-jolt, so the float stops where it starts.
     val float = if (tearing) 0f else floatAnim
@@ -434,8 +494,10 @@ private fun Sealed(pack: PackResult, tearing: Boolean, onTear: () -> Unit) = Box
         cameraDistance = 12f * density
         translationY = -8.dp.toPx() * float - 7.dp.toPx() * j
         rotationY = -6f * float; rotationX = 3f * float
-        val k = 1f + .035f * j; scaleX = k; scaleY = k
-    }.glow(Color.Black, .6f, .02f, .03f, .04f, 30.dp)
+        val k = 1f + .035f * j + .02f * power * (if (eager) 1.5f else 1f); scaleX = k; scaleY = k
+        if (loading && !Motion.still) rotationZ = (if (eager) 1.6f else .7f) * kotlin.math.sin(power * 6.283f * 3f)
+    }.glow(Color(0xFFE8B95B), if (loading) .25f + .4f * power * (if (eager) 1.4f else 1f) else 0f, .08f + .05f * power, .06f + .04f * power, .08f, 36.dp)
+        .glow(Color.Black, .6f, .02f, .03f, .04f, 30.dp)
         .clickable(remember { MutableInteractionSource() }, null, onClick = onTear).semantics { contentDescription = "Open the ${pack.name} pack" }) {
         Booster(pack.set, pack.name, Modifier.fillMaxSize(), fill = true)
         if (!Motion.still && !tearing) {

@@ -38,6 +38,7 @@ import androidx.compose.runtime.getValue
 import androidx.compose.runtime.setValue
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.mutableStateOf
 import androidx.compose.ui.Alignment
 import androidx.compose.foundation.layout.FlowRow
 import androidx.compose.ui.BiasAlignment
@@ -180,10 +181,13 @@ fun PlayHome(d: PlayHomeData, top: @Composable () -> Unit, act: PlayHomeActions 
     Box(Modifier.fillMaxSize().background(Site.Bg)) {
         if (!HomeTest.noPictures) { if (AppSettings.glass || AppSettings.theme == "aura") Ambient(d.ambient); LaunchedEffect(d.ambient) { Aura.remember(d.ambient) } }
         Column(Modifier.fillMaxSize()) {
+            var dash by remember { mutableStateOf(false) }
             BoxWithConstraints(Modifier.weight(1f).fillMaxWidth()) {
-                val wide = maxWidth >= 600.dp; val duo = maxWidth >= 840.dp
-                // A regular phone held sideways (Randall 4 Nov 17:36Z: all of Play is landscape there): one row of modes, shorter cards.
-                val short = HomeTest.forceShort ?: (wide && maxHeight < 500.dp) // pe-home-duo pairs at 960 css px; the Fold's inner screen (884 dp) pairs too, as on the site
+                val wide = maxWidth >= 600.dp; val duo = maxWidth >= 840.dp // pe-home-duo pairs at 960 css px; the Fold's inner screen (884 dp) pairs too, as on the site
+                // Held sideways (a phone or a handheld): the game dashboard.
+                val short = HomeTest.forceShort ?: (wide && maxHeight < 500.dp)
+                androidx.compose.runtime.SideEffect { dash = short }
+                if (short) Dashboard(d, act, purse, level, 64.dp + statusTop(), maxHeight) else
                 LazyColumn(Modifier.fillMaxSize().testTag("playHome"), contentPadding = PaddingValues(top = (if (short) 64.dp else 72.dp) + statusTop(), bottom = 28.dp, start = 16.dp, end = 16.dp),
                     verticalArrangement = Arrangement.spacedBy(if (short) 18.dp else 26.dp)) {
                     if (short) item("head") {
@@ -218,9 +222,13 @@ fun PlayHome(d: PlayHomeData, top: @Composable () -> Unit, act: PlayHomeActions 
                 // The site's sticky glass top bar.
                 Box(Modifier.fillMaxWidth().background(if (AppSettings.theme == "light") Color(0xF0F6F9FD) else Color(0xD90C0E13)).drawBehind { // light: settings-theme.css .topbar
                     drawLine(Brush.horizontalGradient(listOf(Color.Transparent, Color(0x80D6AD64), Color.Transparent)), Offset(0f, size.height), Offset(size.width, size.height), 1.dp.toPx())
-                }.statusBarsPadding()) { top() }
+                }.statusBarsPadding()) {
+                    top()
+                    // The dashboard's purse rides in the bar between the brand and the avatar.
+                    if (dash) Box(Modifier.align(Alignment.Center).padding(horizontal = 76.dp).widthIn(max = 560.dp).fillMaxWidth()) { PurseRow(purse, onCoins = { act.view("shop") }, onSeals = { act.view("shop") }, onPacks = { act.view("packs") }) }
+                }
             }
-            nav()
+            if (!dash) nav()
         }
     }
 }
@@ -454,10 +462,9 @@ private fun ModeCard(key: String, name: String, copy: String, cta: String, wide:
         Box(Modifier.matchParentSize().background(Brush.verticalGradient(0f to Color(0x000C0C0E), .34f to Color(0x000C0C0E), .66f to Color(0xB80C0C0E), 1f to Color(0xF20C0C0E))))
         Box(Modifier.matchParentSize().background(Brush.radialGradient(.55f to Color.Transparent, 1f to Color(0x8C0C0C0E))))
         Box(Modifier.matchParentSize().border(if (key == "quick") 1.5.dp else 1.dp, if (key == "quick") Brush.linearGradient(listOf(Color(0x40E8B95B), P.Gold, Color(0xFFFFF3D0), P.Gold, Color(0x40E8B95B))) else Brush.linearGradient(listOf(P.CardLine, P.CardLine)), shape))
-        if (short != null) Column(Modifier.align(Alignment.BottomStart).fillMaxWidth().padding(14.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
-            Text(name, style = TextStyle(fontFamily = Type.Cinzel, fontWeight = FontWeight.Bold, fontSize = 19.sp, letterSpacing = .03.em, color = P.Ink, shadow = P.shadow), maxLines = 1)
-            Text(copy, style = TextStyle(fontFamily = P.Sans, fontSize = 12.sp, lineHeight = 16.sp, color = P.Copy), maxLines = 2)
-            GoldCta(cta, onClick = onClick)
+        if (short != null) Column(Modifier.align(Alignment.BottomStart).fillMaxWidth().padding(12.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
+            Text(name, style = TextStyle(fontFamily = Type.Cinzel, fontWeight = FontWeight.Bold, fontSize = 14.sp, letterSpacing = 0.em, color = P.Ink, shadow = P.shadow), maxLines = 1, softWrap = false)
+            GoldCta(cta, Modifier.fillMaxWidth(), radius = 11.dp, onClick = onClick)
         } else Column(Modifier.align(Alignment.BottomStart).fillMaxWidth().padding(start = if (wide) 22.dp else 16.dp, end = if (wide) 22.dp else 16.dp, bottom = if (wide) 22.dp else 16.dp), verticalArrangement = Arrangement.spacedBy(6.dp)) {
             Text(name, style = TextStyle(fontFamily = Type.Cinzel, fontWeight = FontWeight.Bold, fontSize = if (wide) 28.sp else 24.sp, letterSpacing = .03.em, color = P.Ink, shadow = P.shadow))
             Row(verticalAlignment = Alignment.Bottom) {
@@ -1053,6 +1060,116 @@ private fun Merchant(s: JsonObject, act: PlayHomeActions) {
             Column(horizontalAlignment = Alignment.CenterHorizontally, verticalArrangement = Arrangement.spacedBy(6.dp)) {
                 Booster(o["code"].str() ?: "", o["name"].str() ?: "")
                 GoldCta("%,d".format(price), Modifier.fillMaxWidth(), enabled = coins >= price, muted = true, radius = 12.dp, leading = { Icon(SiteIcons.Coin, 16.dp) }) { act.buy(o["code"].str() ?: "") }
+            }
+        }
+    }
+}
+
+// ---------------------------------------------------------------- Sideways dashboard (phones and gaming handhelds)
+
+/**
+ * Held sideways on a phone or a handheld like the AYN Thor (Randall 4 Nov 17:48Z: "feels like a real game", borrowing from his
+ * dashboard mockup): the Story banner, the four modes in one row and quick tiles in place of the bottom bar on the left; a
+ * glass side column with the mastery level, the Trunk and a featured pack on the right. Same data and actions as the tall page.
+ */
+@Composable
+private fun Dashboard(d: PlayHomeData, act: PlayHomeActions, purse: PlayMath.Purse, level: PlayMath.Level, top: Dp, height: Dp) {
+    val s = d.state
+    Row(Modifier.fillMaxSize().padding(horizontal = 16.dp), horizontalArrangement = Arrangement.spacedBy(16.dp)) {
+        LazyColumn(Modifier.weight(1f).fillMaxHeight().testTag("playHome"), contentPadding = PaddingValues(top = top, bottom = 24.dp), verticalArrangement = Arrangement.spacedBy(14.dp)) {
+            item("story") { Probe("story") { StoryBanner(d, act) } }
+            item("modes") { Probe("modes") { Modes(true, act, (height - top - 160.dp).coerceIn(150.dp, 220.dp)) } }
+            item("tiles") { QuickTiles(act) }
+            item("today") { Probe("today") { Today(d, act) } }
+            item("deeds") { Probe("deeds") { Deeds(d, act) } }
+            item("packs") { Duo(false, { Probe("packs") { Packs(s, act) } }, { Probe("forge") { Forge(s, act) } }) }
+            item("decks") { Probe("decks") { Decks(s, true, act) } }
+        }
+        LazyColumn(Modifier.width(248.dp).fillMaxHeight(), contentPadding = PaddingValues(top = top, bottom = 24.dp), verticalArrangement = Arrangement.spacedBy(14.dp)) {
+            item("me") { LevelCard(level) }
+            item("featured") { s.getAsJsonArray("shop")?.firstOrNull()?.obj()?.let { FeaturedPack(s, it, act) } }
+            item("collection") { Probe("collection") { Collection(s, act) } }
+        }
+    }
+}
+
+private val glassShape = RoundedCornerShape(20.dp)
+/** The dashboard's glass: a dark pane with a soft gold edge over the ambient art. */
+private fun Modifier.dashGlass() = this.clip(glassShape).background(Brush.verticalGradient(listOf(Color(0xCC171A22), Color(0xE00D0F14))))
+    .border(1.dp, Brush.linearGradient(listOf(Color(0x66D6AD64), Color(0x22D6AD64), Color(0x55D6AD64))), glassShape)
+
+/** pe-story in one band: the act's art, title, progress and button, its three era packs at the right. */
+@Composable
+private fun StoryBanner(d: PlayHomeData, act: PlayHomeActions) {
+    val a = d.rules.acts.firstOrNull { it.act == d.story.act } ?: d.rules.acts.first()
+    val shape = RoundedCornerShape(22.dp)
+    Box(Modifier.fillMaxWidth().height(140.dp).testShadow(18.dp, shape).clip(shape).background(Color(0xFF101218)).border(1.dp, P.CardLine, shape).clickable(onClick = act.story)) {
+        Art(a.art, Modifier.matchParentSize(), BiasAlignment(0f, -.4f))
+        Box(Modifier.matchParentSize().background(Brush.horizontalGradient(0f to Color(0xF2090B10), .45f to Color(0xB0090B10), .8f to Color(0x30090B10))))
+        Row(Modifier.matchParentSize().padding(horizontal = 22.dp, vertical = 16.dp), verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(16.dp)) {
+            Column(Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(6.dp)) {
+                Text("STORY · ACT ${a.act}", style = TextStyle(fontFamily = P.Sans, fontWeight = FontWeight.Bold, fontSize = 11.sp, letterSpacing = .16.em, color = P.GoldSoft))
+                Text(a.name, style = TextStyle(fontFamily = Type.Cinzel, fontWeight = FontWeight.Bold, fontSize = 22.sp, lineHeight = 25.sp, color = Color(0xFFFBF3DF), shadow = P.shadow), maxLines = 1)
+                Text(a.years, style = TextStyle(fontFamily = P.Sans, fontSize = 13.sp, lineHeight = 18.sp, color = Color(0xFFDFE3EA)), maxLines = 1)
+                Row(Modifier.padding(top = 2.dp), verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(14.dp)) {
+                    GoldCta(if (d.story.done) "Replay" else if (d.story.won > 0) "Continue" else "Begin", onClick = act.story)
+                    Row(horizontalArrangement = Arrangement.spacedBy(5.dp)) {
+                        for (i in 0 until a.battles) { val boss = i == a.battles - 1; val on = i < d.story.won
+                            Box(Modifier.size(if (boss) 22.dp else 14.dp, 6.dp).clip(CircleShape).background(if (on) P.Gold else Color(0x26FFFFFF))) }
+                    }
+                }
+            }
+            Row(horizontalArrangement = Arrangement.spacedBy(10.dp), verticalAlignment = Alignment.Bottom) {
+                a.packs.take(3).forEachIndexed { i, (code, name) -> Booster(code, name, Modifier.width(if (i == 1) 56.dp else 48.dp).rotate(listOf(-4f, 0f, 4f).getOrElse(i) { 0f }), mini = true) }
+            }
+        }
+    }
+}
+
+/** The bottom bar's five places as glass tiles (the bar itself is hidden on the dashboard, so nothing shows twice). */
+@Composable
+private fun QuickTiles(act: PlayHomeActions) {
+    val tiles = listOf(Triple(SiteIcons.Sync, "Collection", "switch"), Triple(SiteIcons.Trunk, "Trunk", "collection"), Triple(SiteIcons.Decks, "Decks", "decks"),
+        Triple(SiteIcons.Bag, "Shop", "shop"), Triple(SiteIcons.Trophy, "Trophies", "deeds"))
+    Row(horizontalArrangement = Arrangement.spacedBy(10.dp)) {
+        tiles.forEach { (icon, label, to) ->
+            Column(Modifier.weight(1f).height(64.dp).dashGlass().clickable { act.view(to) }, horizontalAlignment = Alignment.CenterHorizontally, verticalArrangement = Arrangement.spacedBy(5.dp, Alignment.CenterVertically)) {
+                Icon(icon, 22.dp, P.Gold)
+                Text(label, style = TextStyle(fontFamily = P.Sans, fontWeight = FontWeight.Bold, fontSize = 12.sp, color = P.Ink), maxLines = 1)
+            }
+        }
+    }
+}
+
+/** Mastery level, its ring and the XP still to go (the purse's level ring, made big). */
+@Composable
+private fun LevelCard(level: PlayMath.Level) {
+    Column(Modifier.fillMaxWidth().dashGlass().padding(18.dp), verticalArrangement = Arrangement.spacedBy(10.dp)) {
+        Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(12.dp)) {
+            LevelRing(level, framed = true)
+            Column {
+                Text("MASTERY", style = TextStyle(fontFamily = P.Sans, fontWeight = FontWeight.Bold, fontSize = 11.sp, letterSpacing = .16.em, color = P.GoldSoft))
+                Text("Level ${level.level}", style = TextStyle(fontFamily = Type.Cinzel, fontWeight = FontWeight.Bold, fontSize = 22.sp, color = P.Ink))
+            }
+        }
+        Bar(level.into.toFloat() / level.need.coerceAtLeast(1))
+        Text("%,d / %,d XP".format(level.into, level.need), style = TextStyle(fontFamily = P.Sans, fontSize = 12.sp, color = P.Muted))
+    }
+}
+
+/** The Merchant's newest set, as one pack you can buy from the side column. */
+@Composable
+private fun FeaturedPack(s: JsonObject, o: JsonObject, act: PlayHomeActions) {
+    val price = s.getAsJsonObject("config")?.get("packPrice").int() ?: 500
+    val coins = s.getAsJsonObject("wallet")?.get("coins").int() ?: 0
+    val code = o["code"].str() ?: return
+    Column(Modifier.fillMaxWidth().dashGlass().padding(18.dp), verticalArrangement = Arrangement.spacedBy(12.dp)) {
+        Text("FEATURED PACK", style = TextStyle(fontFamily = P.Sans, fontWeight = FontWeight.Bold, fontSize = 11.sp, letterSpacing = .16.em, color = P.GoldSoft))
+        Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(14.dp)) {
+            Booster(code, o["name"].str() ?: "", Modifier.width(78.dp), mini = true)
+            Column(Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(10.dp)) {
+                Text(o["name"].str() ?: code.uppercase(), style = TextStyle(fontFamily = Type.Cinzel, fontWeight = FontWeight.Bold, fontSize = 16.sp, lineHeight = 20.sp, color = P.Ink), maxLines = 3)
+                GoldCta("%,d".format(price), enabled = coins >= price, radius = 12.dp, leading = { Icon(SiteIcons.Coin, 16.dp) }) { act.buy(code) }
             }
         }
     }

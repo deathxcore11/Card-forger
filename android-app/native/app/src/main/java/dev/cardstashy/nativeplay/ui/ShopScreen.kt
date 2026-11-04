@@ -116,7 +116,13 @@ fun ShopRoute(onBack: () -> Unit, nav: @Composable () -> Unit, startTab: String 
         scope.launch { runCatching { block() }.onSuccess { done?.let(toast); Feel.perform(view, "success") }.onFailure { toast(it.message ?: "Try again in a moment.") }; Progress.refreshDeeds() }
     }
     val buy = { code: String -> act("buy", "Pack bought. It is waiting in Packs.") { Progress.buy(code) } }
-    val openPack = { id: String -> if (busy.isEmpty()) scope.launch { opener = openOne(id) }; Unit }
+    // The pack is on screen the instant it is tapped and gathers power while the server rolls it.
+    val openPack = { id: String ->
+        if (busy.isEmpty() && opener == null) {
+            val code = s.getAsJsonArray("packs")?.firstNotNullOfOrNull { (it as? JsonObject)?.takeIf { o -> o["id"].s() == id }?.get("set").s() } ?: ""
+            opener = loadingPack(code, setName(code))
+            scope.launch { val r = openOne(id); if (opener?.note == LOADING) { opener = r; if (r == null) toast("That pack didn't open. Try again in a moment.") } }
+        }; Unit }
     val actions = PlayHomeActions(forge = { to, times -> act("forge", "Forged $times ${mapOf("u" to "uncommon", "r" to "rare", "m" to "mythic")[to]} seal${if (times > 1) "s" else ""}.") { Progress.forge(to, times) } })
 
     BackHandler(enabled = set != null && open == null && opener == null) { set = null }

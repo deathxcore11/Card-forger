@@ -85,11 +85,17 @@ fun PlayHomeRoute(onQuickPlay: () -> Unit, onLobby: (String) -> Unit = { onQuick
     val act = PlayHomeActions(
         mode = { when (it) { "quick", "practice", "social" -> onLobby(it); "planeswalk" -> onWeb("https://cardstashy.com/planeswalk.html"); else -> onWeb(SITE_PLAY) } },
         story = { onStory() },
-        view = { when (it) { "collection" -> onTrunk(); "decks" -> onDecks(); "deeds" -> onAchievements(null); "quests" -> onAchievements("quests"); "shop" -> onShop("sets", null); "packs" -> onShop("packs", null); else -> onWeb(SITE_PLAY) } },
+        view = { when (it) { "switch" -> onCollection(); "collection" -> onTrunk(); "decks" -> onDecks(); "deeds" -> onAchievements(null); "quests" -> onAchievements("quests"); "shop" -> onShop("sets", null); "packs" -> onShop("packs", null); else -> onWeb(SITE_PLAY) } },
         claim = { kind, id -> run { Progress.claim(kind, id, null) } },
         claimDeed = { id, step -> run { Progress.claim("ach", id, step) } },
         forge = { to, times -> run { Progress.forge(to, times) } },
-        openPack = { id -> scope.launch { opener = openOne(id) } },
+        openPack = { id ->
+            // The pack is on screen the instant it is tapped and gathers power while the server rolls it.
+            if (opener == null) {
+                val code = s.getAsJsonArray("packs")?.firstNotNullOfOrNull { (it as? JsonObject)?.takeIf { o -> o["id"]?.asString == id }?.get("set")?.asString } ?: ""
+                opener = loadingPack(code, setName(code))
+                scope.launch { val r = openOne(id); if (opener?.note == LOADING) { opener = r; if (r == null) android.widget.Toast.makeText(context, "That pack didn't open. Try again in a moment.", android.widget.Toast.LENGTH_SHORT).show() } }
+            } },
         buy = { code -> run { Progress.buy(code) } },
         deck = { onWeb(SITE_PLAY) },
         set = { onShop("sets", it) },
