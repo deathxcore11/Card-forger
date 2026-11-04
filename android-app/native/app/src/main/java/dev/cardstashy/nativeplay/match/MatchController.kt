@@ -42,7 +42,7 @@ enum class Stage { STARTING, MULLIGAN, INTRO, PLAYING, FINISHED, FAILED }
  * 0.25 s apart. A decision for you waits with no timer. Skipping or delaying never changes the game:
  * the queue only decides when a snapshot is shown, and every action goes against Forge's latest revision.
  */
-class MatchController(private val scope: CoroutineScope, val input: String) {
+class MatchController(private val scope: CoroutineScope, val input: String, private val remote: (() -> EngineSession)? = null) {
     companion object {
         const val LAND_MS = 900L; const val ACTION_MS = 2400L; const val AFFECTS_MS = 3600L
         const val ACTION_FLOOR_MS = 1500L; const val AFFECTS_FLOOR_MS = 2400L
@@ -118,7 +118,7 @@ class MatchController(private val scope: CoroutineScope, val input: String) {
     @Volatile private var recorded = false
     var onFinished: ((MatchState, MatchFacts, Long?) -> Unit)? = null
 
-    @Volatile private var session: LocalEngine.Session? = null
+    @Volatile private var session: EngineSession? = null
     @Volatile private var latest: MatchState? = null
     /** You have answered the opening hand (keep, or the cards to bottom). Until then no later snapshot is shown, in every mode. */
     @Volatile private var answeredMulligan = false
@@ -133,7 +133,7 @@ class MatchController(private val scope: CoroutineScope, val input: String) {
     fun start() {
         poller = scope.launch(Dispatchers.IO) {
             val t0 = SystemClock.elapsedRealtime()
-            val s = try { ForgeService.start(input) } catch (t: Throwable) {
+            val s: EngineSession = try { remote?.invoke() ?: LocalSession(ForgeService.start(input)) } catch (t: Throwable) {
                 Log.e(TAG, "start failed", t); _failure.value = t.message ?: "engine_start_failed"; _stage.value = Stage.FAILED; return@launch
             }
             session = s
@@ -164,7 +164,7 @@ class MatchController(private val scope: CoroutineScope, val input: String) {
 
     fun close() {
         poller?.cancel(); player?.cancel(); autoJob?.cancel()
-        ForgeService.close(session); session = null
+        session?.close(); session = null
     }
 
     /** Tap on the feed: the current action ends now (only that one, never the whole turn). */
