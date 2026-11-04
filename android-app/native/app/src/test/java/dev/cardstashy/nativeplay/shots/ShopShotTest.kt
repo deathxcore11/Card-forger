@@ -65,6 +65,13 @@ class ShopShotTest {
         rule.onNodeWithText("Forge").performClick(); settle(10); shot("forge")
     }
 
+    /** Randall 4 Nov 17:36Z: on a regular phone all of Play is sideways (the screen, not a tall scroll). */
+    @Test @Config(qualifiers = "w844dp-h390dp-xxhdpi") fun landscapePhone() {
+        Progress.setForTest(state(), null)
+        rule.setContent { ShopRoute(onBack = {}, nav = { PlayNav(PlayTab.SHOP, {}) }) }
+        settle(); shot("land-sets")
+    }
+
     @Test fun hubLight() {
         Progress.setForTest(state(), null); dev.cardstashy.nativeplay.ui.AppSettings.applyTheme("light")
         try {

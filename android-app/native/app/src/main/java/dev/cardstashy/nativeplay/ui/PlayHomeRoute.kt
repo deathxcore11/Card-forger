@@ -54,7 +54,7 @@ fun PlayHomeRoute(onQuickPlay: () -> Unit, onLobby: (String) -> Unit = { onQuick
         val codes = kotlinx.coroutines.withContext(kotlinx.coroutines.Dispatchers.Default) { buildList {
             // The Story card's packs first: they are the first thing on the page.
             val now = PlayMath.storyHome(refs ?: emptyList(), rules.acts.size).act
-            rules.acts.firstOrNull { it.act == now }?.sets?.forEach { add(it.first) }
+            rules.acts.firstOrNull { it.act == now }?.packs?.forEach { add(it.first) }
             s.getAsJsonArray("packs")?.forEach { (it as? JsonObject)?.get("set")?.asString?.let(::add) }
             s.getAsJsonArray("shop")?.take(12)?.forEach { (it as? JsonObject)?.get("code")?.asString?.let(::add) }
             rules.acts.forEach { a -> a.sets.forEach { add(it.first) } }

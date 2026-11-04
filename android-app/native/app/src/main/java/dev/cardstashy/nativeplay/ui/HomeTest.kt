@@ -31,6 +31,8 @@ import androidx.compose.ui.unit.sp
  * The D pieces from the 0.3.6 bisect stay in code for reuse but are no longer on the bar.
  */
 object HomeTest {
+    /** Screenshots only: draw the short (sideways phone) layout on a tall test page so the whole scroll shows. */
+    var forceShort: Boolean? = null
     val variants = listOf("C1", "C2")
     /** Highest group allowed in this build; raise by one per proven step. */
     private const val PROVEN = 1

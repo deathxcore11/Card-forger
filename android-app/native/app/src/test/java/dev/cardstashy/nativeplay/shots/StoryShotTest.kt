@@ -33,6 +33,19 @@ class StoryShotTest {
     private fun shot(name: String) = rule.onRoot().captureRoboImage(File(System.getProperty("shotsDir"), "story-$name.png").path)
     private fun refs(vararg r: String) = StoryLogic.fromRefs(r.toList())
 
+    /** Randall 4 Nov 17:36Z: on a regular phone all of Play is sideways. */
+    @Test @Config(qualifiers = "w844dp-h390dp-xxhdpi") fun landscapePhone() {
+        StoryTest.art = { url -> art.resolve(java.security.MessageDigest.getInstance("SHA-1").digest(url.toByteArray()).joinToString("") { "%02x".format(it) } + ".jpg").takeIf { it.exists() }?.let { BitmapFactory.decodeFile(it.path)?.asImageBitmap() } }
+        val rules = PlayRules.load(org.robolectric.RuntimeEnvironment.getApplication())
+        val data = JsonParser.parseString(javaClass.classLoader!!.getResource("story/act-1.json")!!.readText()).asJsonObject
+        val mid = refs("story:a1b1:loaner", "story:a1b1:own", "story:a1b2:loaner", "story:a1b3:own")
+        val pageState = androidx.compose.runtime.mutableStateOf<@androidx.compose.runtime.Composable () -> Unit>({})
+        rule.setContent { pageState.value() }
+        fun show(name: String, c: @androidx.compose.runtime.Composable () -> Unit) { pageState.value = c; rule.waitForIdle(); shot(name) }
+        show("land-road") { StoryRoad(rules.acts, rules.ages[1] ?: "", mid, {}, {}) }
+        show("land-act") { StoryActPage(rules.acts[0], data, mid, {}, {}) }
+    }
+
     @Test fun pages() {
         StoryTest.art = { url -> art.resolve(java.security.MessageDigest.getInstance("SHA-1").digest(url.toByteArray()).joinToString("") { "%02x".format(it) } + ".jpg").takeIf { it.exists() }?.let { BitmapFactory.decodeFile(it.path)?.asImageBitmap() } }
         val rules = PlayRules.load(org.robolectric.RuntimeEnvironment.getApplication())

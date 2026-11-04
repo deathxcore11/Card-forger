@@ -126,14 +126,26 @@ class MainActivity : ComponentActivity() {
 
     override fun dispatchTouchEvent(ev: android.view.MotionEvent): Boolean { FreezeReport.touched(ev); return super.dispatchTouchEvent(ev) }
 
-    /** Games lock landscape like a video game; menus turn freely (standing rule, 2 Nov). */
-    fun inGame(on: Boolean) {
+    /**
+     * Games lock landscape like a video game; menus turn freely, portrait or sideways (Randall 4 Nov 17:40Z: keep portrait on
+     * phones, and a strong sideways layout for handhelds). Planeswalk is the one web page that turns sideways on a regular phone.
+     */
+    private var lastGame = false; private var lastPlay = true
+    fun inGame(on: Boolean, play: Boolean = false) {
+        lastGame = on; lastPlay = play
         dev.cardstashy.nativeplay.art.ThumbStore.paused = on // the table gets the network and CPU
-        requestedOrientation = if (on) ActivityInfo.SCREEN_ORIENTATION_SENSOR_LANDSCAPE else ActivityInfo.SCREEN_ORIENTATION_FULL_USER
+        val sideways = on || (play && resources.configuration.smallestScreenWidthDp < 600)  // play = Planeswalk on a phone
+        requestedOrientation = if (sideways) ActivityInfo.SCREEN_ORIENTATION_SENSOR_LANDSCAPE else ActivityInfo.SCREEN_ORIENTATION_FULL_USER
         val c = WindowCompat.getInsetsController(window, window.decorView)
-        if (on) { c.systemBarsBehavior = WindowInsetsControllerCompat.BEHAVIOR_SHOW_TRANSIENT_BARS_BY_SWIPE; c.hide(WindowInsetsCompat.Type.systemBars()) }
+        if (sideways) { c.systemBarsBehavior = WindowInsetsControllerCompat.BEHAVIOR_SHOW_TRANSIENT_BARS_BY_SWIPE; c.hide(WindowInsetsCompat.Type.systemBars()) }
         else c.show(WindowInsetsCompat.Type.systemBars())
         if (on) window.addFlags(android.view.WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON) else window.clearFlags(android.view.WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON)
+    }
+
+    /** Folding or unfolding changes the smallest width: the phone rule is applied again for the screen on show. */
+    override fun onConfigurationChanged(newConfig: android.content.res.Configuration) {
+        super.onConfigurationChanged(newConfig)
+        inGame(lastGame, lastPlay)
     }
 }
 
@@ -197,7 +209,7 @@ private fun App(activity: MainActivity) {
             dev.cardstashy.nativeplay.ui.ShopRoute(onBack = { back() }, startTab = s.tab, startSet = s.set, nav = { dev.cardstashy.nativeplay.ui.PlayNav(dev.cardstashy.nativeplay.ui.PlayTab.SHOP, { t -> tabTo(t) }) })
         }
         Screen.Collection -> { LaunchedEffect(Unit) { activity.inGame(false) }; CollectionScreen(onPlay = { if (trail.size > 1) back() else go(Screen.Home) }) }
-        is Screen.Web -> { LaunchedEffect(Unit) { activity.inGame(false) }; CollectionScreen(onPlay = { back() }, url = s.url) }
+        is Screen.Web -> { LaunchedEffect(s.url) { activity.inGame(false, play = s.url.contains("planeswalk")) }; CollectionScreen(onPlay = { back() }, url = s.url) }
         Screen.SignIn -> {
             LaunchedEffect(Unit) { activity.inGame(false) }
             // The profile orb and every "Sign in" open the site's Settings: signed out it is the account card (Log in / Create account), signed in the account hub.

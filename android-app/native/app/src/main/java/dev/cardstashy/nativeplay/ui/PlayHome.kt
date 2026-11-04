@@ -181,10 +181,18 @@ fun PlayHome(d: PlayHomeData, top: @Composable () -> Unit, act: PlayHomeActions 
         if (!HomeTest.noPictures) { if (AppSettings.glass || AppSettings.theme == "aura") Ambient(d.ambient); LaunchedEffect(d.ambient) { Aura.remember(d.ambient) } }
         Column(Modifier.fillMaxSize()) {
             BoxWithConstraints(Modifier.weight(1f).fillMaxWidth()) {
-                val wide = maxWidth >= 600.dp; val duo = maxWidth >= 840.dp // pe-home-duo pairs at 960 css px; the Fold's inner screen (884 dp) pairs too, as on the site
-                LazyColumn(Modifier.fillMaxSize().testTag("playHome"), contentPadding = PaddingValues(top = 72.dp + statusTop(), bottom = 28.dp, start = 16.dp, end = 16.dp),
-                    verticalArrangement = Arrangement.spacedBy(26.dp)) {
-                    item("head") {
+                val wide = maxWidth >= 600.dp; val duo = maxWidth >= 840.dp
+                // A regular phone held sideways (Randall 4 Nov 17:36Z: all of Play is landscape there): one row of modes, shorter cards.
+                val short = HomeTest.forceShort ?: (wide && maxHeight < 500.dp) // pe-home-duo pairs at 960 css px; the Fold's inner screen (884 dp) pairs too, as on the site
+                LazyColumn(Modifier.fillMaxSize().testTag("playHome"), contentPadding = PaddingValues(top = (if (short) 64.dp else 72.dp) + statusTop(), bottom = 28.dp, start = 16.dp, end = 16.dp),
+                    verticalArrangement = Arrangement.spacedBy(if (short) 18.dp else 26.dp)) {
+                    if (short) item("head") {
+                        Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(16.dp)) {
+                            Text("Play", style = Site.Display.copy(fontSize = 28.sp, letterSpacing = .04.em))
+                            Box(Modifier.weight(1f)) { PurseRow(purse, onCoins = { act.view("shop") }, onSeals = { act.view("shop") }, onPacks = { act.view("packs") }) }
+                            LevelRing(level, framed = true)
+                        }
+                    } else item("head") {
                         Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
                             Row(verticalAlignment = Alignment.CenterVertically) {
                                 Text("Play", style = Site.Display.copy(fontSize = 34.sp, letterSpacing = .04.em), modifier = Modifier.weight(1f))
@@ -193,8 +201,8 @@ fun PlayHome(d: PlayHomeData, top: @Composable () -> Unit, act: PlayHomeActions 
                             PurseRow(purse, onCoins = { act.view("shop") }, onSeals = { act.view("shop") }, onPacks = { act.view("packs") })
                         }
                     }
-                    item("modes") { Probe("modes") { Modes(wide, act) } }
-                    item("story") { Probe("story") { StoryCard(d, wide, act) } }
+                    item("modes") { Probe("modes") { Modes(wide, act, if (short) (maxHeight - 120.dp).coerceIn(170.dp, 240.dp) else null) } }
+                    item("story") { Probe("story") { StoryCard(d, wide, act, short) } }
                     val g = HomeTest.groups
                     when (HomeTest.piece) {
                         "D1" -> item("t-cal") { Probe("today") { Shelf("Today", "Quests", { act.view("deeds") }) { Calendar(d) } } }
@@ -419,34 +427,38 @@ fun GoldPlate(label: String, modifier: Modifier = Modifier, onClick: () -> Unit)
 // ---------------------------------------------------------------- mode cards (pl-modes)
 
 @Composable
-private fun Modes(wide: Boolean, act: PlayHomeActions) {
+private fun Modes(wide: Boolean, act: PlayHomeActions, row: Dp? = null) {
     val modes = listOf(
         Triple("social", "Multiplayer", "Your deck against a friend's.") to "Invite",
         Triple("quick", "Quick Play", "Your deck against a matched CPU.") to "Play",
         Triple("practice", "Practice", "Any two decks, head to head.") to "Set up",
         Triple("planeswalk", "Planeswalk", "Climb Innistrad. Take down Sorin.") to "Open")
-    val rows = if (wide) modes.chunked(2) else modes.map { listOf(it) }
+    val rows = if (row != null) listOf(modes) else if (wide) modes.chunked(2) else modes.map { listOf(it) }
     Column(verticalArrangement = Arrangement.spacedBy(if (wide) 18.dp else 12.dp)) {
         rows.forEach { r -> Row(horizontalArrangement = Arrangement.spacedBy(18.dp)) {
-            r.forEach { (m, cta) -> ModeCard(m.first, m.second, m.third, cta, wide, Modifier.weight(1f)) { act.mode(m.first) } }
+            r.forEach { (m, cta) -> ModeCard(m.first, m.second, m.third, cta, wide, Modifier.weight(1f), row) { act.mode(m.first) } }
         } }
     }
 }
 
 @Composable
-private fun ModeCard(key: String, name: String, copy: String, cta: String, wide: Boolean, modifier: Modifier, onClick: () -> Unit) {
+private fun ModeCard(key: String, name: String, copy: String, cta: String, wide: Boolean, modifier: Modifier, short: Dp? = null, onClick: () -> Unit) {
     val shape = RoundedCornerShape(if (wide) 22.dp else 18.dp)
     val press = remember { MutableInteractionSource() }
     val pressed by press.collectIsPressedAsState()
     val k by animateFloatAsState(if (pressed) .98f else 1f, Site.spring(), label = "mode")
-    Box(modifier.scale(k).heightIn(min = if (wide) 300.dp else 200.dp).testShadow(22.dp, shape).clip(shape).background(Color(0xFF121318))
+    Box(modifier.scale(k).then(if (short != null) Modifier.height(short) else Modifier.heightIn(min = if (wide) 300.dp else 200.dp)).testShadow(22.dp, shape).clip(shape).background(Color(0xFF121318))
         .clickable(press, null, onClick = onClick).semantics { contentDescription = name }) {
         // Planeswalk's old scan is zoomed to trim its black frame (pl-mode-art--trim).
         Art(MODE_ART[key], Modifier.matchParentSize().let { if (key == "planeswalk") it.scale(1.16f) else it }, MODE_FOCUS[key] ?: Alignment.Center)
         Box(Modifier.matchParentSize().background(Brush.verticalGradient(0f to Color(0x000C0C0E), .34f to Color(0x000C0C0E), .66f to Color(0xB80C0C0E), 1f to Color(0xF20C0C0E))))
         Box(Modifier.matchParentSize().background(Brush.radialGradient(.55f to Color.Transparent, 1f to Color(0x8C0C0C0E))))
         Box(Modifier.matchParentSize().border(if (key == "quick") 1.5.dp else 1.dp, if (key == "quick") Brush.linearGradient(listOf(Color(0x40E8B95B), P.Gold, Color(0xFFFFF3D0), P.Gold, Color(0x40E8B95B))) else Brush.linearGradient(listOf(P.CardLine, P.CardLine)), shape))
-        Column(Modifier.align(Alignment.BottomStart).fillMaxWidth().padding(start = if (wide) 22.dp else 16.dp, end = if (wide) 22.dp else 16.dp, bottom = if (wide) 22.dp else 16.dp), verticalArrangement = Arrangement.spacedBy(6.dp)) {
+        if (short != null) Column(Modifier.align(Alignment.BottomStart).fillMaxWidth().padding(14.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
+            Text(name, style = TextStyle(fontFamily = Type.Cinzel, fontWeight = FontWeight.Bold, fontSize = 19.sp, letterSpacing = .03.em, color = P.Ink, shadow = P.shadow), maxLines = 1)
+            Text(copy, style = TextStyle(fontFamily = P.Sans, fontSize = 12.sp, lineHeight = 16.sp, color = P.Copy), maxLines = 2)
+            GoldCta(cta, onClick = onClick)
+        } else Column(Modifier.align(Alignment.BottomStart).fillMaxWidth().padding(start = if (wide) 22.dp else 16.dp, end = if (wide) 22.dp else 16.dp, bottom = if (wide) 22.dp else 16.dp), verticalArrangement = Arrangement.spacedBy(6.dp)) {
             Text(name, style = TextStyle(fontFamily = Type.Cinzel, fontWeight = FontWeight.Bold, fontSize = if (wide) 28.sp else 24.sp, letterSpacing = .03.em, color = P.Ink, shadow = P.shadow))
             Row(verticalAlignment = Alignment.Bottom) {
                 Text(copy, style = TextStyle(fontFamily = P.Sans, fontSize = 14.sp, lineHeight = 21.sp, color = P.Copy), modifier = Modifier.weight(1f).padding(end = 12.dp, bottom = if (wide) 0.dp else 2.dp))
@@ -459,17 +471,17 @@ private fun ModeCard(key: String, name: String, copy: String, cta: String, wide:
 // ---------------------------------------------------------------- Story (pe-story)
 
 @Composable
-private fun StoryCard(d: PlayHomeData, wide: Boolean, act: PlayHomeActions) {
+private fun StoryCard(d: PlayHomeData, wide: Boolean, act: PlayHomeActions, short: Boolean = false) {
     val a = d.rules.acts.firstOrNull { it.act == d.story.act } ?: d.rules.acts.first()
     val shape = RoundedCornerShape(22.dp)
-    Box(Modifier.fillMaxWidth().heightIn(min = if (wide) 360.dp else 320.dp).testShadow(24.dp, shape).clip(shape).background(Color(0xFF101218)).border(1.dp, P.CardLine, shape)) {
+    Box(Modifier.fillMaxWidth().heightIn(min = if (short) 250.dp else if (wide) 360.dp else 320.dp).testShadow(24.dp, shape).clip(shape).background(Color(0xFF101218)).border(1.dp, P.CardLine, shape)) {
         Art(a.art, Modifier.matchParentSize(), BiasAlignment(0f, -.4f))
         Box(Modifier.matchParentSize().background(Brush.horizontalGradient(0f to Color(0xF2090B10), .38f to Color(0xC0090B10), .7f to Color(0x30090B10))))
         Box(Modifier.matchParentSize().background(Brush.verticalGradient(.45f to Color.Transparent, 1f to Color(0xD0090B10))))
         val copy = @Composable { m: Modifier ->
             Column(m, verticalArrangement = Arrangement.spacedBy(10.dp)) {
                 Text("STORY · ACT ${a.act}", style = TextStyle(fontFamily = P.Sans, fontWeight = FontWeight.Bold, fontSize = 12.sp, letterSpacing = .16.em, color = P.GoldSoft))
-                Text(a.name, style = TextStyle(fontFamily = Type.Cinzel, fontWeight = FontWeight.Bold, fontSize = if (wide) 36.sp else 30.sp, lineHeight = if (wide) 40.sp else 33.sp, color = Color(0xFFFBF3DF), shadow = P.shadow))
+                Text(a.name, style = TextStyle(fontFamily = Type.Cinzel, fontWeight = FontWeight.Bold, fontSize = if (short) 26.sp else if (wide) 36.sp else 30.sp, lineHeight = if (short) 30.sp else if (wide) 40.sp else 33.sp, color = Color(0xFFFBF3DF), shadow = P.shadow))
                 Text("${a.years}. ${a.line}", style = TextStyle(fontFamily = P.Sans, fontSize = 15.sp, lineHeight = 22.sp, color = Color(0xFFDFE3EA)))
                 Row(Modifier.padding(vertical = 4.dp), horizontalArrangement = Arrangement.spacedBy(6.dp)) {
                     for (i in 0 until a.battles) { val boss = i == a.battles - 1; val on = i < d.story.won
@@ -481,17 +493,18 @@ private fun StoryCard(d: PlayHomeData, wide: Boolean, act: PlayHomeActions) {
         }
         val packs = @Composable { m: Modifier, w: Dp ->
             Row(m, horizontalArrangement = Arrangement.spacedBy(if (wide) 24.dp else 14.dp), verticalAlignment = Alignment.Bottom) {
-                a.sets.take(3).forEachIndexed { i, (code, name) ->
+                a.packs.take(3).forEachIndexed { i, (code, name) ->
                     Booster(code, name, Modifier.width(if (i == 1) w * 1.18f else w).rotate(listOf(-4f, 0f, 4f).getOrElse(i) { 0f }), mini = true)
                 }
             }
         }
         // The copy keeps its width (at least 300 dp beside the packs); the packs shrink to the space left, and below 680 dp they go on top.
-        if (wide) BoxWithConstraints(Modifier.matchParentSize().padding(32.dp)) {
+        // The card grows with its copy (the Fold put the button below a fixed 360 dp card and cut it off).
+        if (wide) BoxWithConstraints(Modifier.fillMaxWidth().heightIn(min = if (short) 250.dp else 360.dp).padding(if (short) 24.dp else 32.dp)) {
             val room = maxWidth - 24.dp - 300.dp
-            val w = ((room - 48.dp) / 3.18f).coerceIn(56.dp, 100.dp)
-            if (maxWidth < 680.dp) Column(Modifier.fillMaxSize(), verticalArrangement = Arrangement.spacedBy(18.dp, Alignment.Bottom)) { packs(Modifier.align(Alignment.CenterHorizontally), 84.dp); copy(Modifier) }
-            else Row(Modifier.fillMaxSize(), verticalAlignment = Alignment.Bottom, horizontalArrangement = Arrangement.spacedBy(24.dp)) {
+            val w = ((room - 48.dp) / 3.18f).coerceIn(56.dp, if (short) 76.dp else 100.dp)
+            if (maxWidth < 680.dp) Column(Modifier.fillMaxWidth(), verticalArrangement = Arrangement.spacedBy(18.dp, Alignment.Bottom)) { packs(Modifier.align(Alignment.CenterHorizontally), 84.dp); copy(Modifier) }
+            else Row(Modifier.fillMaxWidth().heightIn(min = if (short) 202.dp else 296.dp), verticalAlignment = Alignment.Bottom, horizontalArrangement = Arrangement.spacedBy(24.dp)) {
                 copy(Modifier.weight(1f).widthIn(min = 300.dp, max = 560.dp)); packs(Modifier, w)
             }
         } else Column(Modifier.fillMaxWidth().padding(20.dp), verticalArrangement = Arrangement.spacedBy(22.dp)) {

@@ -60,7 +60,8 @@ class ShotTest {
     private fun shot(name: String, w: Int, h: Int, scale: Float, content: @Composable () -> Unit) {
         // Bundled art decodes off the main thread in the app; load it first so the frame is complete.
         kotlinx.coroutines.runBlocking { for (m in Mode.entries) AssetImages.load(RuntimeEnvironment.getApplication(), m.asset, maxWidth = 256)
-            AssetImages.load(RuntimeEnvironment.getApplication(), "play/avatar-default.webp", maxWidth = 256) }
+            AssetImages.load(RuntimeEnvironment.getApplication(), "play/avatar-default.webp", maxWidth = 256)
+            for (c in dev.cardstashy.nativeplay.ui.WRAPPERS.keys) AssetImages.load(RuntimeEnvironment.getApplication(), "play/pack-$c.webp", maxWidth = 600) }
         RuntimeEnvironment.setQualifiers("w${w}dp-h${h}dp-xxhdpi")
         captureRoboImage(File(System.getProperty("shotsDir"), "$name-${w}x$h-${(scale * 100).toInt()}.png").path) {
             val d = LocalDensity.current
@@ -136,6 +137,10 @@ class ShotTest {
             if (w > 390 && s > 1f) continue
             tall("play-home", w, h, s) { Home() }
         }
+        // Sideways phone or handheld: the screen as held, then the whole page in that layout.
+        dev.cardstashy.nativeplay.ui.HomeTest.forceShort = true
+        try { shot("play-home-844x390-screen", 844, 390, 1f) { Home() }; tall("play-home", 844, 390, 1f) { Home() } }
+        finally { dev.cardstashy.nativeplay.ui.HomeTest.forceShort = null }
         home.mkdirs(); home.resolve("missing.txt").writeText(missing.joinToString("\n"))
     }
 
@@ -321,7 +326,7 @@ class ShotTest {
 
     @Test fun trunk() {
         trunkSetup()
-        for ((w, h) in listOf(390 to 844, 884 to 1104)) {
+        for ((w, h) in listOf(390 to 844, 884 to 1104, 844 to 390)) {
             RuntimeEnvironment.setQualifiers("w${w}dp-h${h * 3}dp-xxhdpi")
             captureRoboImage(File(System.getProperty("shotsDir"), "trunk-cards-${w}x$h.png").path) {
                 dev.cardstashy.nativeplay.ui.TrunkScreen(trunkState, {}, {}, {}) { PlayNav(PlayTab.TRUNK, {}) }
