@@ -151,16 +151,19 @@ object YgoFoil {
     class Maps(val w: Int, val h: Int, val mask: ByteArray, val relief: ByteArray, val glyphW: Int, val glyphH: Int, val glyph: ByteArray, val spellTrap: Boolean)
 
     /** [argb] is the card picture (Android ARGB ints), [layout] its frame. Pure and deterministic; run it off the main thread. */
-    fun analyze(argb: IntArray, W: Int, H: Int, layout: Layout = Layout.STANDARD): Maps {
+    fun analyze(argb: IntArray, W: Int, H: Int, layout: Layout = Layout.STANDARD): Maps = analyze(argb, W, H, layout.art, layout == Layout.STANDARD, true)
+
+    /** The same measuring over any art window [box] (Pokémon holo windows use it, as the site does): [spellTrapRule] is the
+     *  Yu-Gi-Oh! standard-frame Spell/Trap check, [names] measures the name-bar letters. */
+    fun analyze(argb: IntArray, W: Int, H: Int, box: FloatArray, spellTrapRule: Boolean, names: Boolean): Maps {
         val N = W * H
         val r = FloatArray(N); val g = FloatArray(N); val b = FloatArray(N); val lum = FloatArray(N)
         for (i in 0 until N) { val c = argb[i]; r[i] = (c shr 16 and 255) / 255f; g[i] = (c shr 8 and 255) / 255f; b[i] = (c and 255) / 255f; lum[i] = .2126f * r[i] + .7152f * g[i] + .0722f * b[i] }
-        val box = layout.art
         val ax0 = (box[0] * W).roundToInt() + 1; val ay0 = (box[1] * H).roundToInt() + 1; val ax1 = (box[2] * W).roundToInt() - 1; val ay1 = (box[3] * H).roundToInt() - 1
         val aw = ax1 - ax0; val ah = ay1 - ay0; val AN = aw * ah
         fun at(i: Int, j: Int) = (ay0 + j) * W + ax0 + i
         val mask = ByteArray(N * 4); val relief = ByteArray(N * 4)
-        val (glyph, gw, gh) = glyphs(r, g, b, W, H)
+        val (glyph, gw, gh) = if (names) glyphs(r, g, b, W, H) else Triple(ByteArray(0), 0, 0)
         if (aw < 16 || ah < 16) return Maps(W, H, mask, relief, gw, gh, glyph, false)
         // Colour outlines inside the art.
         val edge0 = FloatArray(AN)
@@ -238,7 +241,7 @@ object YgoFoil {
         var fr = 0f; var fg = 0f; var fb = 0f; var fn = 0
         for (j in (.3f * H).roundToInt() until (.7f * H).roundToInt() step 2) for (i in (.03f * W).roundToInt() until (.06f * W).roundToInt()) { val k = j * W + i; fr += r[k]; fg += g[k]; fb += b[k]; fn++ }
         fr /= fn; fg /= fn; fb /= fn
-        val spellTrap = layout == Layout.STANDARD && ((fg > fr + .3f && fb > fr + .25f) || (fr > fg + .25f && fr > fb + .08f))
+        val spellTrap = spellTrapRule && ((fg > fr + .3f && fb > fr + .25f) || (fr > fg + .25f && fr > fb + .08f))
         if (spellTrap) for (j in 0 until ah) for (i in 0 until aw) { val k = at(i, j); pass[k] = max(pass[k], .55f * (1 - (1 - ss(.06f, .2f, lum[k])) * .85f)) }
         val passS = boxBlur(pass, W, H, 1, 1)
         // Level stars and the attribute orb.

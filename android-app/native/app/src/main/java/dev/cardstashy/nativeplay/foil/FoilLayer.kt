@@ -45,7 +45,21 @@ sealed interface CardFinish {
     data class Ygo(val effect: String, val image: String, val layout: YgoFoil.Layout = YgoFoil.Layout.STANDARD, val stars: Float = 0f) : CardFinish {
         val recipe get() = YgoFoil.RECIPES[effect]
     }
+    /** Pokémon: [treatment] a PtcgFoil.RECIPES key, [mask] the measured coverage shape, [clip] a printed-mark clear mask over the whole face (anniversary stamps),
+     *  [window] when the mask was measured on this exact picture (foil-through everywhere in it), [image] the card picture's address. */
+    data class Ptcg(val treatment: String, val mask: String, val image: String, val clip: String? = null, val window: Boolean = false) : CardFinish {
+        val recipe get() = PtcgFoil.RECIPES[treatment]
+    }
     companion object {
+        /** A Pokémon printing's finish from the site's resolver (PtcgFoil.resolve): null for plain, unknown or unmodelled sheets. */
+        fun ptcg(card: PtcgFoil.Card, variant: PtcgFoil.Variant, image: String, masks: PtcgFoil.Masks): Ptcg? {
+            val p = PtcgFoil.resolve(card, variant, masks)
+            val t = p.treatment ?: return null; var mask = p.mask ?: return null
+            val stamp = PtcgFoil.stampFor(card, image, masks)
+            stamp?.artMask?.let { mask = it }
+            if (masks.shape(mask) == null) return null
+            return Ptcg(t, mask, image, stamp?.mask?.takeIf { masks.shape(it) != null }, stamp != null)
+        }
         /** A Yu-Gi-Oh! printing's finish from its catalogue rarity, set code (OP16-EN001 or OP16), print date and frame/type text.
          *  Null for Common and anything without a recipe (Rush Duel stays plain). */
         fun ygo(rarity: String, setCode: String, date: String, frameText: String, image: String): Ygo? {
@@ -85,6 +99,27 @@ object FoilMaps {
         }
     }
 
+    fun ptcg(context: android.content.Context, f: CardFinish.Ptcg): StateFlow<Ready?> = synchronized(flows) {
+        val key = "ptcg|${f.image}|${f.treatment}|${f.mask}|${f.clip}|${f.window}"
+        flows[key] ?: MutableStateFlow<Ready?>(null).also { fl ->
+            flows[key] = fl
+            scope.launch {
+                gate.withPermit {
+                    val recipe = f.recipe ?: return@withPermit
+                    val masks = PtcgFoil.Masks.load(context)
+                    val shape = masks.shape(f.mask) ?: return@withPermit
+                    val req = ImageRequest.Builder(context).data(f.image).allowHardware(false).build()
+                    val src = (CardArt.loader.execute(req) as? SuccessResult)?.image?.toBitmap() ?: return@withPermit
+                    val (w, h) = PtcgFoil.analysisSize(src.width, src.height)
+                    val bmp = Bitmap.createScaledBitmap(if (src.config == Bitmap.Config.ARGB_8888) src else src.copy(Bitmap.Config.ARGB_8888, false), w, h, true)
+                    val px = IntArray(w * h); bmp.getPixels(px, 0, w, 0, 0, w, h)
+                    val m = PtcgFoil.analyze(px, w, h, recipe, shape, shape, f.clip?.let { masks.shape(it) }, f.window)
+                    fl.value = Ready(rgba(m.mask, w, h), rgba(m.relief, w, h), null)
+                }
+            }
+        }
+    }
+
     private fun rgba(b: ByteArray, w: Int, h: Int): Bitmap {
         val px = IntArray(w * h) { i -> val k = i * 4; (255 shl 24) or ((b[k].toInt() and 255) shl 16) or ((b[k + 1].toInt() and 255) shl 8) or (b[k + 2].toInt() and 255) }
         return Bitmap.createBitmap(px, w, h, Bitmap.Config.ARGB_8888)
@@ -104,6 +139,7 @@ fun Modifier.finish(finish: CardFinish?, tilt: State<Offset>?): Modifier = when 
     finish == null || tilt == null -> this
     finish is CardFinish.Magic -> this.foil(finish.look, tilt)
     finish is CardFinish.Ygo -> if (Build.VERSION.SDK_INT < 33 || Foil.testFallback || finish.recipe == null) this else ygoFoil(finish, tilt)
+    finish is CardFinish.Ptcg -> if (Build.VERSION.SDK_INT < 33 || Foil.testFallback || finish.recipe == null) this else ptcgFoil(finish, tilt)
     else -> this
 }
 
@@ -134,6 +170,32 @@ private fun Modifier.ygoFoil(f: CardFinish.Ygo, tilt: State<Offset>): Modifier =
             shader.setFloatUniform("u_stars", if (f.stars > 0f) f.stars else if (r.stars) 1f else 0f)
             shader.setFloatUniform("u_metal", if (m.glyph != null) r.name.code else 0f)
             shader.setFloatUniform("u_maps", 1f)
+            renderEffect = RenderEffect.createRuntimeShaderEffect(shader, "u_card").asComposeRenderEffect()
+        }
+    }
+}
+
+@RequiresApi(33)
+private fun Modifier.ptcgFoil(f: CardFinish.Ptcg, tilt: State<Offset>): Modifier = composed {
+    val context = LocalContext.current
+    val maps by remember(f) { FoilMaps.ptcg(context.applicationContext, f) }.collectAsState()
+    val m = maps ?: return@composed this
+    val r = f.recipe ?: return@composed this
+    val shader = remember { runCatching { RuntimeShader(PtcgFoil.AGSL) }.getOrNull() } ?: return@composed this
+    val inputs = remember(m) {
+        fun s(b: Bitmap) = BitmapShader(b, Shader.TileMode.CLAMP, Shader.TileMode.CLAMP).apply { filterMode = BitmapShader.FILTER_MODE_LINEAR }
+        s(m.mask) to s(m.relief)
+    }
+    this.graphicsLayer {
+        val t by tilt
+        val w = size.width; val h = size.height
+        if (w > 0f && h > 0f) {
+            shader.setInputShader("u_mask", inputs.first); shader.setInputShader("u_relief", inputs.second)
+            shader.setFloatUniform("u_size", w, h); shader.setFloatUniform("u_px", w, h)
+            shader.setFloatUniform("u_map", m.mask.width.toFloat(), m.mask.height.toFloat())
+            shader.setFloatUniform("u_tilt", t.x, t.y); shader.setFloatUniform("u_aspect", h / w)
+            shader.setFloatUniform("u_r1", r.pat.toFloat(), r.tint.toFloat(), r.underbase.toFloat(), r.relief)
+            shader.setFloatUniform("u_r2", r.sparkle, r.soft.toFloat(), r.strength, r.coat.toFloat())
             renderEffect = RenderEffect.createRuntimeShaderEffect(shader, "u_card").asComposeRenderEffect()
         }
     }
