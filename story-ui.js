@@ -245,6 +245,9 @@ export const LESSONS = {
   'Dungeons': 'Dungeons: venture into the dungeon to move to a room and get its effect. Each new venture goes deeper, and the last room is the best.',
   'Day and night': 'Day and night: it starts as neither. It becomes day or night after a player casts no spells on their own turn, and returns to day if a player casts two or more spells in a turn. Werewolves transform with it.',
   'Disturb': 'Disturb: cast the back face of this spirit card from your graveyard. A creature that dies can come back as an aura or a spirit.',
+  'Reconfigure': 'Reconfigure: an Equipment creature can pay to attach to another creature, and pay again to become a creature once more.',
+  'Shield counters': 'A shield counter protects a permanent: the next time it would be destroyed or take damage, remove the counter instead.',
+  'Connive': 'Connive: draw a card, then discard one. If you discarded a nonland card, the creature gets a +1/+1 counter.',
   'Playing under a lock': 'A lock stops cards from untapping or moving. Break it, or win with what\'s already in play.',
 };
 // Every Story deck says what it is (Randall, 2 Nov 2026): Historical Exact, Historical Tribute or
