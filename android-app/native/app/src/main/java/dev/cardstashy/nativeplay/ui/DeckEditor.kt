@@ -201,7 +201,7 @@ fun DeckEditor(state: JsonObject, ui: EditorUi, onBack: () -> Unit, onCard: (Car
         for ((g, rows) in DeckEdit.groups(e.cards) { fact(it) }) {
             item(span = { GridItemSpan(maxLineSpan) }) {
                 Row(Modifier.padding(top = 10.dp), verticalAlignment = Alignment.Bottom, horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                    Text(g, style = TextStyle(fontFamily = Type.Cinzel, fontWeight = FontWeight.Bold, fontSize = 16.sp, color = Color(0xFFF3E3BD)))
+                    Text(g, style = TextStyle(fontFamily = Type.Cinzel, fontWeight = FontWeight.Bold, fontSize = 16.sp, color = if (AppSettings.theme == "light") Site.Text else Color(0xFFF3E3BD)))
                     Text("${rows.sumOf { it.qty }}", style = t(13f, FontWeight.Bold, Site.Muted))
                 }
             }
@@ -333,7 +333,7 @@ private fun Meta(ui: EditorUi) = Row(Modifier.fillMaxWidth().padding(top = 4.dp)
 @Composable
 private fun CraftAllBar(plan: DeckEdit.Plan, ui: EditorUi, onCraft: () -> Unit) {
     // Two lines on a phone: the seals the deck needs, then the button full width, so no count is ever cut by it (Randall 3 Nov 20:51Z).
-    Column(Modifier.fillMaxWidth().softTile(18.dp, Color(0xCC0D0F14)).padding(horizontal = 14.dp, vertical = 12.dp), verticalArrangement = Arrangement.spacedBy(10.dp)) {
+    Column(Modifier.fillMaxWidth().softTile(18.dp, if (AppSettings.theme == "light") Color(0xF2FFFFFF) else Color(0xCC0D0F14)).padding(horizontal = 14.dp, vertical = 12.dp), verticalArrangement = Arrangement.spacedBy(10.dp)) {
         Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(14.dp), verticalAlignment = Alignment.CenterVertically) {
             Text("Seals needed", style = t(13f, FontWeight.SemiBold, Site.Muted), modifier = Modifier.weight(1f), maxLines = 1)
             for (k in listOf("c", "u", "r", "m")) { val need = plan.need[k] ?: 0; if (need == 0) continue

@@ -374,6 +374,10 @@ class ShotTest {
             captureRoboImage(File(System.getProperty("shotsDir"), "deck-editor-${w}x$h.png").path) {
                 dev.cardstashy.nativeplay.ui.DeckEditor(trunkState, ui, {}, {}, {}, {}) { PlayNav(PlayTab.DECKS, {}) }
             }
+            if (w == 412) try { dev.cardstashy.nativeplay.ui.AppSettings.applyTheme("light")
+                captureRoboImage(File(System.getProperty("shotsDir"), "theme-light-deck-editor.png").path) {
+                    dev.cardstashy.nativeplay.ui.DeckEditor(trunkState, ui, {}, {}, {}, {}) { PlayNav(PlayTab.DECKS, {}) }
+                } } finally { dev.cardstashy.nativeplay.ui.AppSettings.applyTheme("dark") }
         }
         // Hold a deck row (PR #110 playHoldMenu): Play's card actions with Deck cover; then the deck wearing the picked art.
         RuntimeEnvironment.setQualifiers("w412dp-h915dp-xxhdpi")
