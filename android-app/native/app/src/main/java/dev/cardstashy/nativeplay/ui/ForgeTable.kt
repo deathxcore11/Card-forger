@@ -647,6 +647,7 @@ internal fun Medallion(p: Player, mine: Boolean, pickable: Boolean, picked: Bool
     val tick = remember { Animatable(1f) }
     var last by remember { mutableStateOf(p.life) }
     var shown by remember { mutableIntStateOf(p.life) }
+    val cue = LocalTableCue.current
     // A hit to the face (spec 3): the portrait recoils 14 dp and flares bright at contact, then the life ticks down one by one,
     // each step popping coral at 1.5x. Gains and reduced motion just show the new number.
     LaunchedEffect(p.life) {
@@ -656,7 +657,8 @@ internal fun Medallion(p: Player, mine: Boolean, pickable: Boolean, picked: Bool
         launch { flash.snapTo(1f); flash.animateTo(0f, tween(900)) }
         launch { recoil.snapTo(1f); recoil.animateTo(0f, androidx.compose.animation.core.spring(dampingRatio = .45f, stiffness = 380f)) }
         delay(260)
-        while (shown > p.life) { shown--; tick.snapTo(1.5f); launch { tick.animateTo(1f, tween(140)) }; delay(if (from - p.life > 8) 60 else 110) }
+        var n = 0
+        while (shown > p.life) { shown--; cue?.invoke("CMB-024", .7f, (1f - .03f * n++).coerceAtLeast(.6f)); tick.snapTo(1.5f); launch { tick.animateTo(1f, tween(140)) }; delay(if (from - p.life > 8) 60 else 110) }
         shown = p.life
     }
     val anchors = LocalAnchors.current

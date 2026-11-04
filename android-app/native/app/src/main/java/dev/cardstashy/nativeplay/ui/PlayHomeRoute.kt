@@ -38,7 +38,10 @@ fun PlayHomeRoute(onQuickPlay: () -> Unit, onLobby: (String) -> Unit = { onQuick
     val deeds by Progress.deeds.collectAsState()
     val context = LocalContext.current
     val scope = rememberCoroutineScope()
-    if (session == null) { HomeScreen(onQuickPlay = onQuickPlay, onCollection = onCollection, onSignIn = onSignIn); return }
+    if (session == null) {
+        SignedOutHome(PlayRules.load(context), top = { TopBarItems(Mode.PLAY, null, null, unread = false, onSwitch = onCollection, onProfile = onSignIn) }, onQuickPlay = onQuickPlay, onSignIn = onSignIn)
+        return
+    }
     // The day's log-in reward shows once, as a pop-up, on the first visit of the day (fresh from the server).
     var daily by androidx.compose.runtime.remember { androidx.compose.runtime.mutableStateOf<JsonObject?>(null) }
     LaunchedEffect(session?.userId) {

@@ -7,7 +7,7 @@ import dev.cardstashy.nativeplay.engine.MatchState
 
 /** The table sounds of play-table-audio.js, played from the same files on board changes. No music yet. */
 class TableAudio(context: Context) {
-    private val pool = SoundPool.Builder().setMaxStreams(6)
+    private val pool = SoundPool.Builder().setMaxStreams(8)
         .setAudioAttributes(AudioAttributes.Builder().setUsage(AudioAttributes.USAGE_GAME).setContentType(AudioAttributes.CONTENT_TYPE_SONIFICATION).build()).build()
     private val ids = HashMap<String, Int>()
     private var lowSeen = false
@@ -24,7 +24,10 @@ class TableAudio(context: Context) {
     var muted = false
         set(on) { field = on; if (on) pool.autoPause() else pool.autoResume() }
 
-    fun play(id: String, volume: Float = 1f) { if (muted || !dev.cardstashy.nativeplay.ui.AppSettings.sound) return; ids[id]?.let { pool.play(it, volume, volume, 1, 0, 1f) } }
+    fun play(id: String, volume: Float = 1f, rate: Float = 1f) { if (muted || !dev.cardstashy.nativeplay.ui.AppSettings.sound) return; ids[id]?.let { pool.play(it, volume, volume, 1, 0, rate.coerceIn(.5f, 2f)) } }
+
+    /** While the board's effects run, they play block, clash and face-hit cues on their own frames (Battlefield.cues). */
+    var fxCues = false
 
     fun release() = pool.release()
 
@@ -51,11 +54,11 @@ class TableAudio(context: Context) {
         if (arrived.any { it.isLand }) play("CARD-005")
         if (arrived.any { !it.isLand && !was.containsKey(it.id) }) play("CARD-025") else if (arrived.any { !it.isLand }) play("CARD-010")
         if (field.any { it.attacking && was[it.id]?.attacking == false }) play("CMB-002")
-        if (field.any { it.blockingIds.size > (was[it.id]?.blockingIds?.size ?: 0) }) play("CMB-003")
-        if (field.any { it.damage > (was[it.id]?.damage ?: 0) }) play("CMB-004")
         val combat = b.phase?.contains("DAMAGE") == true || a.phase?.contains("DAMAGE") == true
+        if (!fxCues && field.any { it.blockingIds.size > (was[it.id]?.blockingIds?.size ?: 0) }) play("CMB-003")
+        if (!(fxCues && combat) && field.any { it.damage > (was[it.id]?.damage ?: 0) }) play("CMB-004")
         for (p in b.players) { val q = a.players.firstOrNull { it.id == p.id } ?: continue
-            if (p.life < q.life) play(if (combat) "CMB-005" else "CMB-018", if (q.life - p.life >= 5) 1f else .8f) else if (p.life > q.life) play("CMB-007") }
+            if (p.life < q.life) { if (!(fxCues && combat)) play(if (combat) "CMB-005" else "CMB-018", if (q.life - p.life >= 5) 1f else .8f) } else if (p.life > q.life) play("CMB-007") }
         val now = HashMap<Int, dev.cardstashy.nativeplay.engine.Card>()
         for (p in b.players) for (c in p.hand + p.battlefield + p.graveyard + p.exile) now[c.id] = c
         val left = a.players.flatMap { it.battlefield }.filter { now[it.id]?.zone != "Battlefield" }

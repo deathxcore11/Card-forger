@@ -1174,3 +1174,70 @@ private fun FeaturedPack(s: JsonObject, o: JsonObject, act: PlayHomeActions) {
         }
     }
 }
+
+/**
+ * Play before sign-in, in the dashboard's own look (Randall 4 Nov, Portal 2: "old ugly place holder"): the act 1 band,
+ * the four modes and a glass sign-in card. Quick Play runs the demo decks; everything else asks for the account.
+ * No purse, no level and no made-up numbers: those belong to an account.
+ */
+@Composable
+fun SignedOutHome(rules: PlayRules, top: @Composable () -> Unit, onQuickPlay: () -> Unit, onSignIn: () -> Unit) {
+    val a1 = rules.acts.first()
+    val act = PlayHomeActions(mode = { if (it == "quick") onQuickPlay() else onSignIn() }, story = onSignIn, view = { onSignIn() })
+    Box(Modifier.fillMaxSize().background(Site.Bg)) {
+        if (!HomeTest.noPictures && (AppSettings.glass || AppSettings.theme == "aura")) Ambient(a1.art)
+        BoxWithConstraints(Modifier.fillMaxSize()) {
+            val short = HomeTest.forceShort ?: (maxWidth >= 600.dp && maxHeight < 500.dp)
+            val wide = maxWidth >= 600.dp
+            val topPad = (if (short) 64.dp else 72.dp) + statusTop()
+            val modeH = (maxHeight - topPad - 160.dp).coerceIn(150.dp, 220.dp)
+            if (short) Row(Modifier.fillMaxSize().padding(horizontal = 16.dp), horizontalArrangement = Arrangement.spacedBy(16.dp)) {
+                LazyColumn(Modifier.weight(1f).fillMaxHeight().testTag("playHome"), contentPadding = PaddingValues(top = topPad, bottom = 24.dp), verticalArrangement = Arrangement.spacedBy(14.dp)) {
+                    item("story") { WelcomeBanner(a1, onSignIn) }
+                    item("modes") { Modes(true, act, modeH) }
+                }
+                Column(Modifier.width(248.dp).fillMaxHeight().padding(top = topPad, bottom = 24.dp)) { SignInCard(onSignIn) }
+            } else LazyColumn(Modifier.fillMaxSize().testTag("playHome"), contentPadding = PaddingValues(top = topPad, bottom = 28.dp, start = 16.dp, end = 16.dp), verticalArrangement = Arrangement.spacedBy(22.dp)) {
+                item("story") { WelcomeBanner(a1, onSignIn) }
+                item("me") { SignInCard(onSignIn) }
+                item("modes") { Modes(wide, act) }
+            }
+            Box(Modifier.fillMaxWidth().background(if (AppSettings.theme == "light") Color(0xF0F6F9FD) else Color(0xD90C0E13)).drawBehind {
+                drawLine(Brush.horizontalGradient(listOf(Color.Transparent, Color(0x80D6AD64), Color.Transparent)), Offset(0f, size.height), Offset(size.width, size.height), 1.dp.toPx())
+            }.statusBarsPadding()) { top() }
+        }
+    }
+}
+
+/** The Story band for someone who has not started: act 1's art, its name and years, and the way in. */
+@Composable
+private fun WelcomeBanner(a: PlayRules.Act, onSignIn: () -> Unit) {
+    val shape = RoundedCornerShape(22.dp)
+    Box(Modifier.fillMaxWidth().height(140.dp).testShadow(18.dp, shape).clip(shape).background(Color(0xFF101218)).border(1.dp, P.CardLine, shape).clickable(onClick = onSignIn)) {
+        Art(a.art, Modifier.matchParentSize(), BiasAlignment(0f, -.4f))
+        Box(Modifier.matchParentSize().background(Brush.horizontalGradient(0f to Color(0xF2090B10), .45f to Color(0xB0090B10), .8f to Color(0x30090B10))))
+        Column(Modifier.matchParentSize().padding(horizontal = 22.dp, vertical = 16.dp), verticalArrangement = Arrangement.spacedBy(6.dp, Alignment.CenterVertically)) {
+            Text("STORY · ACT ${a.act}", style = TextStyle(fontFamily = P.Sans, fontWeight = FontWeight.Bold, fontSize = 11.sp, letterSpacing = .16.em, color = P.GoldSoft))
+            Text(a.name, style = TextStyle(fontFamily = Type.Cinzel, fontWeight = FontWeight.Bold, fontSize = 22.sp, lineHeight = 25.sp, color = Color(0xFFFBF3DF), shadow = P.shadow), maxLines = 1)
+            Text(a.years, style = TextStyle(fontFamily = P.Sans, fontSize = 13.sp, lineHeight = 18.sp, color = Color(0xFFDFE3EA)), maxLines = 1)
+            GoldCta("Sign in to begin", Modifier.padding(top = 2.dp), onClick = onSignIn)
+        }
+    }
+}
+
+/** Where the level card sits once signed in: the brand, one line on what the account keeps, and the gold Sign in. */
+@Composable
+private fun SignInCard(onSignIn: () -> Unit) {
+    Column(Modifier.fillMaxWidth().dashGlass().padding(18.dp), verticalArrangement = Arrangement.spacedBy(12.dp)) {
+        Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(12.dp)) {
+            BrandMark(44.dp)
+            Column {
+                Text("WELCOME", style = TextStyle(fontFamily = P.Sans, fontWeight = FontWeight.Bold, fontSize = 11.sp, letterSpacing = .16.em, color = P.GoldSoft))
+                Text("CardStashy", style = TextStyle(fontFamily = Type.Cinzel, fontWeight = FontWeight.Bold, fontSize = 20.sp, color = P.Ink))
+            }
+        }
+        Text("Sign in to play your own decks, open packs, climb the Story and earn trophies. Quick Play works now with the starter decks.",
+            style = TextStyle(fontFamily = P.Sans, fontSize = 13.sp, lineHeight = 18.sp, color = P.Muted))
+        GoldCta("Sign in", Modifier.fillMaxWidth(), radius = 12.dp, onClick = onSignIn)
+    }
+}

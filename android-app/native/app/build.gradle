@@ -27,6 +27,9 @@ android {
     compileOptions {
         sourceCompatibility JavaVersion.VERSION_17
         targetCompatibility JavaVersion.VERSION_17
+        // Forge is built for desktop Java 17+ and calls APIs Android only has from 14 (Stream.toList and others):
+        // library desugaring backports them, so Android 8 to 13 handhelds (Portal 2) can play.
+        coreLibraryDesugaringEnabled true
     }
     kotlin { jvmToolchain(21) }
     kotlinOptions { jvmTarget = '17' }
@@ -52,6 +55,7 @@ tasks.withType(Test).configureEach {
 configurations.configureEach { exclude group: 'com.google.guava', module: 'listenablefuture' }
 
 dependencies {
+    coreLibraryDesugaring 'com.android.tools:desugar_jdk_libs_nio:2.1.5'
     implementation fileTree(include: ['*.jar'], dir: '../engine-libs')
     implementation platform('androidx.compose:compose-bom:2025.06.00')
     implementation 'androidx.compose.ui:ui'

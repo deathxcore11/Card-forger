@@ -123,6 +123,25 @@ fun TableScreen(controller: MatchController, onHome: () -> Unit, onRematch: () -
     var previous by remember { mutableStateOf<MatchState?>(null) }
     // Keyed on the shown state itself: the board can advance within one revision (one CPU action at a time).
     LaunchedEffect(shown) { shown?.let { audio.update(previous, it); music.update(it); previous = it } }
+    audio.fxCues = !Motion.still
+    val cue = remember(audio) { { id: String, vol: Float, rate: Float -> audio.play(id, vol, rate) } }
+    // The turn clock (cue map): a quiet TT-006 as a fresh prompt window opens, TT-007 each second of the last 10, TT-008 at zero. Yours only.
+    val clockNow by controller.clock.collectAsState()
+    LaunchedEffect(clockNow) {
+        val c = clockNow ?: return@LaunchedEffect
+        if (!c.own || c.frozenLeft != null) return@LaunchedEffect
+        var left = c.endsAt - android.os.SystemClock.elapsedRealtime()
+        if (left <= 0) return@LaunchedEffect
+        if (c.totalMs <= 30_000 && c.totalMs - left < 500) audio.play("TT-006", .4f)
+        var said = ((left + 999) / 1000).toInt()
+        while (true) {
+            left = c.endsAt - android.os.SystemClock.elapsedRealtime()
+            if (left <= 0) { audio.play("TT-008", .8f); break }
+            val s = ((left + 999) / 1000).toInt()
+            if (s < said) { said = s; if (s <= 10) audio.play("TT-007", .7f) }
+            delay(minOf(200L, left))
+        }
+    }
     var inspect by remember { mutableStateOf<Card?>(null) }
     var selectedHand by remember { mutableStateOf<Int?>(null) }
     var menu by remember { mutableStateOf(false) }
@@ -135,7 +154,7 @@ fun TableScreen(controller: MatchController, onHome: () -> Unit, onRematch: () -
     val anchors = remember { Anchors() }
     // Any touch of the table says you are here (the clock's missed-turn count clears); the touch still reaches the table.
     Box(Modifier.fillMaxSize().background(Palette.Night).pointerInput(Unit) { awaitPointerEventScope { while (true) { val e = awaitPointerEvent(androidx.compose.ui.input.pointer.PointerEventPass.Initial); if (e.type == androidx.compose.ui.input.pointer.PointerEventType.Press) controller.poke() } } }) {
-      CompositionLocalProvider(LocalAnchors provides anchors) {
+      CompositionLocalProvider(LocalAnchors provides anchors, LocalTableCue provides cue) {
         if (mat != null) PlaymatScene(mat, Modifier.fillMaxSize()) else PlaymatScene(Modifier.fillMaxSize()) // a Story battle's own act mat, else play-playmats.js: this match's mat (nextPlaymat), its own shade, the table root see-through
         BoxWithConstraints(Modifier.fillMaxSize().windowInsetsPadding(WindowInsets.safeDrawing)) {
             val k = if (maxHeight >= 600.dp) 1.45f else if (maxHeight >= 480.dp) 1.2f else 1f
@@ -193,6 +212,9 @@ internal fun Mulligan(st: MatchState, live: Boolean, clock: MatchController.Cloc
     val yours = live && st.waitingOnMe
     val youFirst = Regex("(?i)\\byou (are|go|will go)( going)? first").containsMatchIn(st.message) ||
         !Regex("(?i)going first|goes first").containsMatchIn(st.message) && st.activePlayer == st.viewer
+    // Cue map: the coin lands as the pill comes in (QP-010 you / QP-011 CPU), Keep QP-013, Mulligan QP-014, a card to the bottom QP-015.
+    val cue = LocalTableCue.current
+    LaunchedEffect(youFirst) { cue?.invoke(if (youFirst) "QP-010" else "QP-011", .8f, 1f) }
     BoxWithConstraints(Modifier.fillMaxSize().background(Color(0x59000000))) {
         val W = maxWidth; val H = maxHeight
         val d = Du(chromeU(W, H))
@@ -213,7 +235,7 @@ internal fun Mulligan(st: MatchState, live: Boolean, clock: MatchController.Cloc
             Box(Modifier.fillMaxSize().padding(horizontal = 24.dp), contentAlignment = Alignment.Center) {
                 HandFan(st.me.hand, cardW, Modifier.fillMaxWidth().offset(y = (-8).du), angleDeg = 2.5f, dealIn = true,
                     markOf = { card -> if (card.id in st.selection.chosenCards) Mark.PICKED else if (live && card.id in st.selection.cards) Mark.PICKABLE else Mark.NONE },
-                    onTap = { card -> if (live && card.id in st.selection.cards) onCard(card.id) else onHold(card) },
+                    onTap = { card -> if (live && card.id in st.selection.cards) { if (choosing) cue?.invoke("QP-015", .8f, 1f); onCard(card.id) } else onHold(card) },
                     onHold = onHold, onDeal = onDeal, pop = 1.2f)
             }
             // Three pips (7, 6, 5) and the caption; while putting cards on the bottom, Forge's own line instead.
@@ -228,12 +250,12 @@ internal fun Mulligan(st: MatchState, live: Boolean, clock: MatchController.Cloc
             if (yours) Row(Modifier.align(Alignment.BottomEnd).padding(end = 28.du, bottom = 18.du), horizontalArrangement = Arrangement.spacedBy(14.du), verticalAlignment = Alignment.CenterVertically) {
                 if (!choosing) st.buttons.cancel?.takeIf { st.buttons.cancelEnabled }?.let { label ->
                     Box(Modifier.height(48.du).widthIn(min = 128.du).clip(RoundedCornerShape(999.dp)).background(Color(0xE60C0D12)).border(1.dp, Color(0x26FFFFFF), RoundedCornerShape(999.dp))
-                        .clickable { mulls++; onCancel() }.padding(horizontal = 22.du), contentAlignment = Alignment.Center) {
+                        .clickable { mulls++; cue?.invoke("QP-014", 1f, 1f); onCancel() }.padding(horizontal = 22.du), contentAlignment = Alignment.Center) {
                         Text(label, style = sans(sp(16f), FontWeight.Bold, Color(0xFFF3E9D2)), maxLines = 1)
                     }
                 }
                 Box(contentAlignment = Alignment.Center) {
-                    GoldPill(st.buttons.ok ?: "Keep", st.buttons.okEnabled, Modifier.height(48.du), d) { onOk() }
+                    GoldPill(st.buttons.ok ?: "Keep", st.buttons.okEnabled, Modifier.height(48.du), d) { if (!choosing) cue?.invoke("QP-013", 1f, 1f); onOk() }
                     KeepClock(clock, Modifier.matchParentSize())
                 }
             }

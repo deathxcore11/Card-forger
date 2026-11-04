@@ -153,7 +153,36 @@ class Battlefield {
             } ?: continue
             felt += it; feel(kind)
         } }
-        if (items.any { it.done(ms) }) { items.removeAll { it.done(ms) }; felt.retainAll(items.toSet()); reindex() }
+        onCue?.let { cue -> cues(ms, cue) }
+        if (items.any { it.done(ms) }) { items.removeAll { it.done(ms) }; felt.retainAll(items.toSet()); heard.keys.retainAll(items.toSet()); reindex() }
+    }
+
+    /** Sounds on the beats themselves (sounds thread cue map, 4 Nov): set by FxDriver from LocalTableCue. */
+    internal var onCue: ((String, Float, Float) -> Unit)? = null
+    private val heard = HashMap<FxItem, Int>()
+
+    /** Each cue once per effect, at its frame; one of each id per frame, so six attackers lift with one creak. */
+    private fun cues(ms: Long, cue: (String, Float, Float) -> Unit) {
+        val now = LinkedHashMap<String, Pair<Float, Float>>()
+        for (it in items) {
+            val p = it.p(ms); if (p < 0f) continue
+            fun once(bit: Int, at: Float, id: String, vol: Float, rate: Float = 1f) {
+                val got = heard[it] ?: 0
+                if (got and bit == 0 && p >= at) { heard[it] = got or bit; if (id !in now) now[id] = vol to rate }
+            }
+            when (it.kind) {
+                Fx.ATTACK -> once(1, 0f, "CMB-001", .9f)
+                // At the stamp's slam, the shield ring 40 ms behind it.
+                Fx.BLOCK -> { once(1, .24f, "CMB-021", 1f); once(2, .24f + 40f / it.dur, "CMB-016", .5f) }
+                // The contact frame: CMB-022 carries its own 110 ms hit-stop gap, matching the visual freeze.
+                Fx.LUNGE -> if (it.toKey?.startsWith("orb") == true) { once(1, LUNGE_HIT, "CMB-023", 1f); once(2, LUNGE_HIT, "CMB-010", .8f) }
+                    else once(1, LUNGE_HIT, "CMB-022", 1f)
+                // Lower for bigger numbers.
+                Fx.DAMAGE -> { val n = it.label.filter(Char::isDigit).toIntOrNull() ?: 1; once(1, 0f, "CMB-006", .6f, (1.04f - .04f * n).coerceIn(.75f, 1f)) }
+                else -> {}
+            }
+        }
+        for ((id, v) in now) cue(id, v.first, v.second)
     }
 
     /** A touch on the board: every effect jumps to its end state (spec: "tap = next action"). */
@@ -301,6 +330,13 @@ class Battlefield {
                 counters += FxItem(Fx.COUNTER, 1, 300, card = id, label = label)
             }
         }
+        // A creature that dies in the clash is gone from the new board, so its number comes from what struck it (the power
+        // of the creatures it fought); its last picture stays put until the shatter (Ghost), and its old box is still anchored.
+        if (lunged) for ((id, o) in bfA) if (id !in bfB && o.isCreature && (o.attacking || o.blocking)) {
+            val foes = if (o.attacking) bfA.values.filter { it.blocking && id in it.blockingIds } else bfA.values.filter { it.attacking && it.id in o.blockingIds }
+            val n = foes.sumOf { (it.power ?: 0).coerceAtLeast(0) }
+            if (n > 0) hits += FxItem(Fx.DAMAGE, 2, 1100, card = id, tone = Color(0xFFFF5A4A), label = "−$n", delay = lag, side = if (o.attacking) -1 else 1)
+        }
         for (p in b.players) {
             val q = a.players.firstOrNull { it.id == p.id } ?: continue
             if (p.life != q.life) hits += FxItem(Fx.LIFE, if (p.life < q.life) 3 else 1, if (p.life < q.life) 950 else 700, player = p.id, toKey = "orb${p.id}", delay = if (p.life < q.life) lag else 0L, power = ((q.life - p.life) / 6f).coerceIn(.35f, 1f), tone = if (p.life < q.life) Color(0xFFFF5A4A) else Color(0xFF7BE08A))
@@ -395,6 +431,8 @@ class Battlefield {
 }
 
 val LocalBattlefield = staticCompositionLocalOf<Battlefield?> { null }
+/** The table's sound player (id, volume, playback rate); none outside a match and in tests. */
+val LocalTableCue = staticCompositionLocalOf<((String, Float, Float) -> Unit)?> { null }
 
 private val MANA_GLOW = mapOf('W' to Color(0xFFFFF1C2), 'U' to Color(0xFF5AB4FF), 'B' to Color(0xFFB08BD8), 'R' to Color(0xFFFF7A4A), 'G' to Color(0xFF6BE08A))
 
@@ -408,6 +446,8 @@ internal fun FxDriver(fx: Battlefield, st: MatchState) {
     val anchors = LocalAnchors.current
     val view = androidx.compose.ui.platform.LocalView.current
     SideEffect { fx.onImpact = { kind -> if (AppSettings.haptics) Feel.perform(view, when (kind) { "light" -> "pack-deal"; "heavy" -> "pack-rumble"; else -> "pack-reveal" }) } }
+    val cue = LocalTableCue.current
+    SideEffect { fx.onCue = cue }
     SideEffect { fx.take(st, anchors) }
     LaunchedEffect(fx) { if (!Motion.still) while (true) withFrameMillis { fx.tick(it) } }
 }

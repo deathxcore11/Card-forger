@@ -144,6 +144,18 @@ class ShotTest {
         home.mkdirs(); home.resolve("missing.txt").writeText(missing.joinToString("\n"))
     }
 
+    /** Play before sign-in (Portal 2 report, 4 Nov): held sideways, and upright on a phone. */
+    @Test fun signedOutHome() {
+        dev.cardstashy.nativeplay.ui.Motion.still = true
+        dev.cardstashy.nativeplay.ui.homeArt = ::homeArt
+        val rules = dev.cardstashy.nativeplay.play.PlayRules(JsonParser.parseString(javaClass.classLoader!!.getResource("play-rules.json")!!.readText()).asJsonObject)
+        val page = @Composable { dev.cardstashy.nativeplay.ui.SignedOutHome(rules, top = { TopBarItems(Mode.PLAY, null, null, unread = false, onSwitch = {}, onProfile = {}) }, onQuickPlay = {}, onSignIn = {}) }
+        shot("play-signed-out-390x844", 390, 844, 1f) { page() }
+        dev.cardstashy.nativeplay.ui.HomeTest.forceShort = true
+        try { shot("play-signed-out-844x390", 844, 390, 1f) { page() }; shot("play-signed-out-960x540", 960, 540, 1f) { page() } }
+        finally { dev.cardstashy.nativeplay.ui.HomeTest.forceShort = null }
+    }
+
     /** A controller on a handheld: the gold focus ring on Quick Play and the A/B hint (Pad connected). */
     @Test fun padFocus() {
         dev.cardstashy.nativeplay.ui.Motion.still = true
