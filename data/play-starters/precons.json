@@ -4,10 +4,7 @@
  "swaps": {
   "Summon: Kujata": "Inferno Titan",
   "Papalymo Totolymo": "Archmage of Runes",
-  "Afterlife from the Loam": "Dread Return",
-  "Domri, Anarch of Bolas": "Garruk Wildspeaker",
-  "Grothama, All-Devouring": "Craterhoof Behemoth",
-  "Colfenor's Urn": "Overgrown Battlement"
+  "Afterlife from the Loam": "Dread Return"
  },
  "decks": [
   {
@@ -1904,734 +1901,1046 @@
    ]
   },
   {
-   "key": "blc-bello",
-   "name": "Animated Army",
-   "product": "Bloomburrow Commander",
+   "key": "msc-wakanda",
+   "name": "Wakanda Forever",
+   "product": "Marvel Super Heroes Commander",
    "format": "Commander",
-   "face": "Bello, Bard of the Brambles",
-   "plan": "Artifacts and enchantments come alive",
-   "released": "2024-08-02",
+   "face": "T'Challa, the Black Panther",
+   "plan": "Ramp into big artifacts",
+   "released": "2026-06-26",
    "rows": [
     {
-     "name": "Bello, Bard of the Brambles",
+     "name": "T'Challa, the Black Panther",
      "qty": 1,
      "commander": true,
-     "set": "blc",
-     "number": "1"
+     "set": "msc",
+     "number": "7"
     },
     {
-     "name": "Wildsear, Scouring Maw",
+     "name": "Dora Milaje Elite",
      "qty": 1,
-     "set": "blc",
-     "number": "8"
+     "set": "msc",
+     "number": "12"
     },
     {
-     "name": "Garruk Wildspeaker",
-     "qty": 1
-    },
-    {
-     "name": "Etali, Primal Storm",
-     "qty": 1
-    },
-    {
-     "name": "Prosperous Bandit",
+     "name": "Everett K. Ross, Hapless Attaché",
      "qty": 1,
-     "set": "blc",
+     "set": "msc",
+     "number": "13"
+    },
+    {
+     "name": "Hatut Zeraze Strike Force",
+     "qty": 1,
+     "set": "msc",
+     "number": "15"
+    },
+    {
+     "name": "King Solomon's Frogs",
+     "qty": 1,
+     "set": "msc",
+     "number": "20"
+    },
+    {
+     "name": "Midnight Angel Armor",
+     "qty": 1,
+     "set": "msc",
+     "number": "22"
+    },
+    {
+     "name": "Queen Mother Ramonda",
+     "qty": 1,
+     "set": "msc",
+     "number": "23"
+    },
+    {
+     "name": "Royal Talon Fighter Jet",
+     "qty": 1,
+     "set": "msc",
+     "number": "24"
+    },
+    {
+     "name": "The Spear of Bashenga",
+     "qty": 1,
+     "set": "msc",
      "number": "25"
     },
     {
-     "name": "Pyreswipe Hawk",
+     "name": "Ancestral Communion",
      "qty": 1,
-     "set": "blc",
-     "number": "26"
+     "set": "msc",
+     "number": "64"
     },
     {
-     "name": "Alchemist's Talent",
-     "qty": 1
-    },
-    {
-     "name": "Berserkers' Onslaught",
-     "qty": 1
-    },
-    {
-     "name": "Outpost Siege",
-     "qty": 1
-    },
-    {
-     "name": "Rain of Riches",
-     "qty": 1
-    },
-    {
-     "name": "Chaos Warp",
-     "qty": 1
-    },
-    {
-     "name": "Sunbird's Invocation",
-     "qty": 1
-    },
-    {
-     "name": "Gratuitous Violence",
-     "qty": 1
-    },
-    {
-     "name": "Warstorm Surge",
-     "qty": 1
-    },
-    {
-     "name": "Starstorm",
-     "qty": 1
-    },
-    {
-     "name": "Lotus Cobra",
-     "qty": 1
-    },
-    {
-     "name": "Evercoat Ursine",
+     "name": "Fight for the Throne",
      "qty": 1,
-     "set": "blc",
-     "number": "30"
+     "set": "msc",
+     "number": "65"
     },
     {
-     "name": "Brightcap Badger",
+     "name": "M'Baku, Jabari Chieftain",
      "qty": 1,
-     "set": "blc",
-     "number": "28a"
+     "set": "msc",
+     "number": "67"
     },
     {
-     "name": "Trailtracker Scout",
+     "name": "Nakia, Wakandan Operative",
      "qty": 1,
-     "set": "blc",
-     "number": "35"
+     "set": "msc",
+     "number": "69"
     },
     {
-     "name": "Thickest in the Thicket",
+     "name": "W'Kabi, Shield of the Nation",
      "qty": 1,
-     "set": "blc",
-     "number": "34"
+     "set": "msc",
+     "number": "70"
     },
     {
-     "name": "Ghalta, Primal Hunger",
-     "qty": 1
+     "name": "Wakanda Forever!",
+     "qty": 1,
+     "set": "msc",
+     "number": "71"
     },
     {
-     "name": "Esika's Chariot",
-     "qty": 1
+     "name": "Zuri, Warrior of Wakanda",
+     "qty": 1,
+     "set": "msc",
+     "number": "72"
     },
     {
-     "name": "Unnatural Growth",
-     "qty": 1
+     "name": "Bast, Panther Goddess",
+     "qty": 1,
+     "set": "msc",
+     "number": "75"
+    },
+    {
+     "name": "Okoye, Mighty and Adored",
+     "qty": 1,
+     "set": "msc",
+     "number": "89"
+    },
+    {
+     "name": "Shuri, the Black Panther",
+     "qty": 1,
+     "set": "msc",
+     "number": "95"
+    },
+    {
+     "name": "Storm, Queen of Wakanda",
+     "qty": 1,
+     "set": "msc",
+     "number": "97"
+    },
+    {
+     "name": "T'Chaka, Venerable King",
+     "qty": 1,
+     "set": "msc",
+     "number": "98"
+    },
+    {
+     "name": "Heart-Shaped Herb",
+     "qty": 1,
+     "set": "msc",
+     "number": "105"
+    },
+    {
+     "name": "Kimoyo Beads",
+     "qty": 1,
+     "set": "msc",
+     "number": "109"
+    },
+    {
+     "name": "N'Yami-Class Mother Ship",
+     "qty": 1,
+     "set": "msc",
+     "number": "110"
+    },
+    {
+     "name": "Panther Habit",
+     "qty": 1,
+     "set": "msc",
+     "number": "112"
+    },
+    {
+     "name": "Panther Robot",
+     "qty": 1,
+     "set": "msc",
+     "number": "113"
+    },
+    {
+     "name": "Shuri's Fabricator",
+     "qty": 1,
+     "set": "msc",
+     "number": "114"
+    },
+    {
+     "name": "Vibranium Mining Mech",
+     "qty": 1,
+     "set": "msc",
+     "number": "117"
+    },
+    {
+     "name": "Vibranium Strike Gauntlets",
+     "qty": 1,
+     "set": "msc",
+     "number": "118"
+    },
+    {
+     "name": "The Great Mound",
+     "qty": 1,
+     "set": "msc",
+     "number": "120"
+    },
+    {
+     "name": "Divine Visitation",
+     "qty": 1,
+     "set": "msc",
+     "number": "131"
+    },
+    {
+     "name": "Loyal Retainers",
+     "qty": 1,
+     "set": "msc",
+     "number": "136"
+    },
+    {
+     "name": "Martial Coup",
+     "qty": 1,
+     "set": "msc",
+     "number": "138"
+    },
+    {
+     "name": "Vanquish the Horde",
+     "qty": 1,
+     "set": "msc",
+     "number": "146"
+    },
+    {
+     "name": "Birds of Paradise",
+     "qty": 1,
+     "set": "msc",
+     "number": "170"
+    },
+    {
+     "name": "Conduit of Worlds",
+     "qty": 1,
+     "set": "msc",
+     "number": "171"
     },
     {
      "name": "Greater Good",
-     "qty": 1
+     "qty": 1,
+     "set": "msc",
+     "number": "174"
     },
     {
-     "name": "Kodama of the East Tree",
-     "qty": 1
+     "name": "Nature's Lore",
+     "qty": 1,
+     "set": "msc",
+     "number": "177"
     },
     {
-     "name": "Craterhoof Behemoth",
-     "qty": 1
+     "name": "Overwhelming Stampede",
+     "qty": 1,
+     "set": "msc",
+     "number": "178"
     },
     {
-     "name": "Rampaging Baloths",
-     "qty": 1
-    },
-    {
-     "name": "Bootleggers' Stash",
-     "qty": 1
-    },
-    {
-     "name": "Primeval Bounty",
-     "qty": 1
+     "name": "Coveted Jewel",
+     "qty": 1,
+     "set": "msc",
+     "number": "196"
     },
     {
      "name": "Gilded Lotus",
-     "qty": 1
-    },
-    {
-     "name": "Spine of Ish Sah",
-     "qty": 1
-    },
-    {
-     "name": "Temple of Abandon",
-     "qty": 1
-    },
-    {
-     "name": "Karplusan Forest",
-     "qty": 1
-    },
-    {
-     "name": "Exotic Orchard",
-     "qty": 1
-    },
-    {
-     "name": "Sheltered Thicket",
-     "qty": 1
-    },
-    {
-     "name": "Game Trail",
-     "qty": 1
-    },
-    {
-     "name": "Raging Ravine",
-     "qty": 1
-    },
-    {
-     "name": "Copperline Gorge",
-     "qty": 1
-    },
-    {
-     "name": "Mossfire Valley",
-     "qty": 1
-    },
-    {
-     "name": "Cinder Glade",
-     "qty": 1
-    },
-    {
-     "name": "Rootbound Crag",
-     "qty": 1
-    },
-    {
-     "name": "Mosswort Bridge",
-     "qty": 1
-    },
-    {
-     "name": "Blasphemous Act",
-     "qty": 1
-    },
-    {
-     "name": "Llanowar Loamspeaker",
-     "qty": 1
-    },
-    {
-     "name": "Tendershoot Dryad",
-     "qty": 1
-    },
-    {
-     "name": "Goreclaw, Terror of Qal Sisma",
-     "qty": 1
-    },
-    {
-     "name": "Path of Discovery",
-     "qty": 1
-    },
-    {
-     "name": "Decimate",
-     "qty": 1
-    },
-    {
-     "name": "Rolling Hamsphere",
      "qty": 1,
-     "set": "blc",
-     "number": "39"
+     "set": "msc",
+     "number": "199"
     },
     {
-     "name": "Teapot Slinger",
-     "qty": 1
-    },
-    {
-     "name": "Explore",
-     "qty": 1
-    },
-    {
-     "name": "Farseek",
-     "qty": 1
-    },
-    {
-     "name": "Cultivate",
-     "qty": 1
-    },
-    {
-     "name": "Grumgully, the Generous",
-     "qty": 1
-    },
-    {
-     "name": "Wandertale Mentor",
-     "qty": 1
-    },
-    {
-     "name": "Thought Vessel",
-     "qty": 1
-    },
-    {
-     "name": "Arcane Signet",
-     "qty": 1
-    },
-    {
-     "name": "Wooded Ridgeline",
-     "qty": 1
-    },
-    {
-     "name": "Big Score",
-     "qty": 1
-    },
-    {
-     "name": "Abrade",
-     "qty": 1
-    },
-    {
-     "name": "Rampant Growth",
-     "qty": 1
-    },
-    {
-     "name": "Sakura-Tribe Elder",
-     "qty": 1
-    },
-    {
-     "name": "Beast Within",
-     "qty": 1
-    },
-    {
-     "name": "Garruk's Packleader",
-     "qty": 1
-    },
-    {
-     "name": "Harmonize",
-     "qty": 1
-    },
-    {
-     "name": "Garruk's Uprising",
-     "qty": 1
-    },
-    {
-     "name": "Gruul Signet",
-     "qty": 1
-    },
-    {
-     "name": "Burnished Hart",
-     "qty": 1
-    },
-    {
-     "name": "Hedron Archive",
-     "qty": 1
-    },
-    {
-     "name": "Fellwar Stone",
-     "qty": 1
-    },
-    {
-     "name": "Thran Dynamo",
-     "qty": 1
-    },
-    {
-     "name": "Sol Ring",
-     "qty": 1
-    },
-    {
-     "name": "Mind Stone",
-     "qty": 1
-    },
-    {
-     "name": "Talisman of Impulse",
-     "qty": 1
-    },
-    {
-     "name": "Terramorphic Expanse",
-     "qty": 1
-    },
-    {
-     "name": "Path of Ancestry",
-     "qty": 1
-    },
-    {
-     "name": "Gruul Turf",
-     "qty": 1
-    },
-    {
-     "name": "Evolving Wilds",
-     "qty": 1
-    },
-    {
-     "name": "Forgotten Cave",
-     "qty": 1
-    },
-    {
-     "name": "Tranquil Thicket",
-     "qty": 1
-    },
-    {
-     "name": "Command Tower",
-     "qty": 1
-    },
-    {
-     "name": "Reliquary Tower",
-     "qty": 1
-    },
-    {
-     "name": "Mountain",
-     "qty": 8,
-     "set": "blb",
-     "number": "*"
-    },
-    {
-     "name": "Forest",
-     "qty": 10,
-     "set": "blb",
-     "number": "*"
-    }
-   ]
-  },
-  {
-   "key": "tdc-abzan",
-   "name": "Abzan Armor",
-   "product": "Tarkir: Dragonstorm Commander",
-   "format": "Commander",
-   "face": "Felothar the Steadfast",
-   "plan": "Big toughness, walls attack",
-   "released": "",
-   "rows": [
-    {
-     "name": "Felothar the Steadfast",
+     "name": "Helm of the Host",
      "qty": 1,
-     "commander": true,
-     "set": "tdc",
-     "number": "4"
+     "set": "msc",
+     "number": "200"
     },
     {
-     "name": "Betor, Ancestor's Voice",
+     "name": "Metalwork Colossus",
      "qty": 1,
-     "set": "tdc",
-     "number": "1"
+     "set": "msc",
+     "number": "204"
     },
     {
-     "name": "Protector of the Wastes",
-     "qty": 1
+     "name": "Solemn Simulacrum",
+     "qty": 1,
+     "set": "msc",
+     "number": "215"
     },
     {
-     "name": "Reunion of the House",
-     "qty": 1
+     "name": "Trading Post",
+     "qty": 1,
+     "set": "msc",
+     "number": "224"
     },
     {
-     "name": "Jaws of Defeat",
-     "qty": 1
-    },
-    {
-     "name": "Tip the Scales",
-     "qty": 1
-    },
-    {
-     "name": "Will of the Abzan",
-     "qty": 1
-    },
-    {
-     "name": "Arbor Adherent",
-     "qty": 1
-    },
-    {
-     "name": "Canopy Gargantuan",
-     "qty": 1
-    },
-    {
-     "name": "Rampart Architect",
-     "qty": 1
-    },
-    {
-     "name": "Tree of Redemption",
-     "qty": 1
-    },
-    {
-     "name": "Ikra Shidiqi, the Usurper",
-     "qty": 1
-    },
-    {
-     "name": "Baldin, Century Herdmaster",
-     "qty": 1
-    },
-    {
-     "name": "Expel the Interlopers",
-     "qty": 1
-    },
-    {
-     "name": "Indomitable Ancients",
-     "qty": 1
-    },
-    {
-     "name": "Rhox Faithmender",
-     "qty": 1
-    },
-    {
-     "name": "Shalai, Voice of Plenty",
-     "qty": 1
-    },
-    {
-     "name": "Wakestone Gargoyle",
-     "qty": 1
-    },
-    {
-     "name": "Wall of Reverence",
-     "qty": 1
-    },
-    {
-     "name": "Welcoming Vampire",
-     "qty": 1
-    },
-    {
-     "name": "Zetalpa, Primal Dawn",
-     "qty": 1
-    },
-    {
-     "name": "Arasta of the Endless Web",
-     "qty": 1
-    },
-    {
-     "name": "Assault Formation",
-     "qty": 1
-    },
-    {
-     "name": "Hornet Nest",
-     "qty": 1
-    },
-    {
-     "name": "Seedborn Muse",
-     "qty": 1
-    },
-    {
-     "name": "Sylvan Caryatid",
-     "qty": 1
-    },
-    {
-     "name": "Towering Titan",
-     "qty": 1
-    },
-    {
-     "name": "Anguished Unmaking",
-     "qty": 1
-    },
-    {
-     "name": "Dragonlord Dromoka",
-     "qty": 1
-    },
-    {
-     "name": "Faeburrow Elder",
-     "qty": 1
-    },
-    {
-     "name": "Shadrix Silverquill",
-     "qty": 1
-    },
-    {
-     "name": "Sidar Kondo of Jamuraa",
-     "qty": 1
-    },
-    {
-     "name": "Overgrown Battlement",
-     "qty": 1
-    },
-    {
-     "name": "Staff of Compleation",
-     "qty": 1
-    },
-    {
-     "name": "Weathered Sentinels",
-     "qty": 1
+     "name": "Bountiful Promenade",
+     "qty": 1,
+     "set": "msc",
+     "number": "226"
     },
     {
      "name": "Canopy Vista",
-     "qty": 1
-    },
-    {
-     "name": "Exotic Orchard",
-     "qty": 1
+     "qty": 1,
+     "set": "msc",
+     "number": "227"
     },
     {
      "name": "Fortified Village",
-     "qty": 1
+     "qty": 1,
+     "set": "msc",
+     "number": "245"
     },
     {
-     "name": "Isolated Chapel",
-     "qty": 1
+     "name": "Razorverge Thicket",
+     "qty": 1,
+     "set": "msc",
+     "number": "259"
     },
     {
-     "name": "Overgrown Farmland",
-     "qty": 1
+     "name": "Scattered Groves",
+     "qty": 1,
+     "set": "msc",
+     "number": "262"
+    },
+    {
+     "name": "Scavenger Grounds",
+     "qty": 1,
+     "set": "msc",
+     "number": "263"
     },
     {
      "name": "Sungrass Prairie",
-     "qty": 1
+     "qty": 1,
+     "set": "msc",
+     "number": "270"
     },
     {
      "name": "Sunpetal Grove",
-     "qty": 1
+     "qty": 1,
+     "set": "msc",
+     "number": "272"
     },
     {
-     "name": "Temple of Malady",
-     "qty": 1
+     "name": "Throne of the High City",
+     "qty": 1,
+     "set": "msc",
+     "number": "274"
     },
     {
-     "name": "Temple of Plenty",
-     "qty": 1
+     "name": "Scourglass",
+     "qty": 1,
+     "set": "msc",
+     "number": "276"
     },
     {
-     "name": "Temple of Silence",
-     "qty": 1
+     "name": "Fleecemane Lion",
+     "qty": 1,
+     "set": "msc",
+     "number": "282"
     },
     {
-     "name": "Twilight Mire",
-     "qty": 1
+     "name": "Hammer of Nazahn",
+     "qty": 1,
+     "set": "msc",
+     "number": "286"
     },
     {
-     "name": "Woodland Cemetery",
-     "qty": 1
+     "name": "Mind's Eye",
+     "qty": 1,
+     "set": "msc",
+     "number": "288"
+    },
+    {
+     "name": "Sword of the Animist",
+     "qty": 1,
+     "set": "msc",
+     "number": "289"
+    },
+    {
+     "name": "Thran Dynamo",
+     "qty": 1,
+     "set": "msc",
+     "number": "290"
+    },
+    {
+     "name": "Dispatch",
+     "qty": 1,
+     "set": "msc",
+     "number": "130"
+    },
+    {
+     "name": "Generous Gift",
+     "qty": 1,
+     "set": "msc",
+     "number": "133"
+    },
+    {
+     "name": "Ingenious Smith",
+     "qty": 1,
+     "set": "msc",
+     "number": "135"
+    },
+    {
+     "name": "Palace Jailer",
+     "qty": 1,
+     "set": "msc",
+     "number": "140"
+    },
+    {
+     "name": "Valorous Stance",
+     "qty": 1,
+     "set": "msc",
+     "number": "145"
+    },
+    {
+     "name": "Beast Within",
+     "qty": 1,
+     "set": "msc",
+     "number": "169"
+    },
+    {
+     "name": "Harmonize",
+     "qty": 1,
+     "set": "msc",
+     "number": "175"
+    },
+    {
+     "name": "Loyal Guardian",
+     "qty": 1,
+     "set": "msc",
+     "number": "176"
     },
     {
      "name": "Arcane Signet",
-     "qty": 1
+     "qty": 1,
+     "set": "msc",
+     "number": "194"
+    },
+    {
+     "name": "Meteor Golem",
+     "qty": 1,
+     "set": "msc",
+     "number": "205"
     },
     {
      "name": "Sol Ring",
-     "qty": 1
+     "qty": 1,
+     "set": "msc",
+     "number": "214"
+    },
+    {
+     "name": "Whispersilk Cloak",
+     "qty": 1,
+     "set": "msc",
+     "number": "225"
     },
     {
      "name": "Command Tower",
-     "qty": 1
-    },
-    {
-     "name": "Nyx-Fleece Ram",
-     "qty": 1
-    },
-    {
-     "name": "Slaughter the Strong",
-     "qty": 1
-    },
-    {
-     "name": "Swords to Plowshares",
-     "qty": 1
-    },
-    {
-     "name": "Wall of Omens",
-     "qty": 1
-    },
-    {
-     "name": "Wingmantle Chaplain",
-     "qty": 1
-    },
-    {
-     "name": "Behind the Scenes",
-     "qty": 1
-    },
-    {
-     "name": "Blight Pile",
-     "qty": 1
-    },
-    {
-     "name": "Feed the Swarm",
-     "qty": 1
-    },
-    {
-     "name": "Infernal Grasp",
-     "qty": 1
-    },
-    {
-     "name": "Wall of Limbs",
-     "qty": 1
-    },
-    {
-     "name": "Arboreal Grazer",
-     "qty": 1
-    },
-    {
-     "name": "Axebane Guardian",
-     "qty": 1
-    },
-    {
-     "name": "Carven Caryatid",
-     "qty": 1
+     "qty": 1,
+     "set": "msc",
+     "number": "236"
     },
     {
      "name": "Evolving Wilds",
-     "qty": 1
-    },
-    {
-     "name": "Jaddi Offshoot",
-     "qty": 1
-    },
-    {
-     "name": "Overgrown Battlement",
-     "qty": 1
-    },
-    {
-     "name": "Sandsteppe Citadel",
-     "qty": 1
-    },
-    {
-     "name": "Tower Defense",
-     "qty": 1
-    },
-    {
-     "name": "Wall of Blossoms",
-     "qty": 1
-    },
-    {
-     "name": "Wall of Roots",
-     "qty": 1
-    },
-    {
-     "name": "Despark",
-     "qty": 1
-    },
-    {
-     "name": "Indulging Patrician",
-     "qty": 1
-    },
-    {
-     "name": "Crashing Drawbridge",
-     "qty": 1
-    },
-    {
-     "name": "Orzhov Signet",
-     "qty": 1
-    },
-    {
-     "name": "Selesnya Signet",
-     "qty": 1
-    },
-    {
-     "name": "Swiftfoot Boots",
-     "qty": 1
-    },
-    {
-     "name": "Walking Bulwark",
-     "qty": 1
-    },
-    {
-     "name": "Access Tunnel",
-     "qty": 1
-    },
-    {
-     "name": "Bojuka Bog",
-     "qty": 1
-    },
-    {
-     "name": "Deceptive Landscape",
-     "qty": 1
+     "qty": 1,
+     "set": "msc",
+     "number": "240"
     },
     {
      "name": "Path of Ancestry",
-     "qty": 1
+     "qty": 1,
+     "set": "msc",
+     "number": "254"
     },
     {
-     "name": "Radiant Grove",
-     "qty": 1
+     "name": "Terramorphic Expanse",
+     "qty": 1,
+     "set": "msc",
+     "number": "273"
     },
     {
      "name": "Plains",
      "qty": 6,
-     "set": "tdm",
-     "number": "*"
+     "set": "msh",
+     "number": "287"
     },
     {
-     "name": "Swamp",
-     "qty": 5,
-     "set": "tdm",
-     "number": "*"
+     "name": "Plains",
+     "qty": 6,
+     "set": "msh",
+     "number": "288"
     },
     {
      "name": "Forest",
-     "qty": 7,
-     "set": "tdm",
-     "number": "*"
+     "qty": 6,
+     "set": "msh",
+     "number": "295"
+    },
+    {
+     "name": "Forest",
+     "qty": 6,
+     "set": "msh",
+     "number": "296"
+    }
+   ]
+  },
+  {
+   "key": "msc-avengers",
+   "name": "Avengers Assemble",
+   "product": "Marvel Super Heroes Commander",
+   "format": "Commander",
+   "face": "Captain America, Team Leader",
+   "plan": "Go wide with heroes",
+   "released": "2026-06-26",
+   "rows": [
+    {
+     "name": "Captain America, Team Leader",
+     "qty": 1,
+     "commander": true,
+     "set": "msc",
+     "number": "5"
+    },
+    {
+     "name": "Avenge",
+     "qty": 1,
+     "set": "msc",
+     "number": "11"
+    },
+    {
+     "name": "Falcon and Redwing",
+     "qty": 1,
+     "set": "msc",
+     "number": "14"
+    },
+    {
+     "name": "Hercules, Olympian Hero",
+     "qty": 1,
+     "set": "msc",
+     "number": "16"
+    },
+    {
+     "name": "Heroic Return",
+     "qty": 1,
+     "set": "msc",
+     "number": "17"
+    },
+    {
+     "name": "Heroic Sacrifice",
+     "qty": 1,
+     "set": "msc",
+     "number": "18"
+    },
+    {
+     "name": "Methods of the Mighty",
+     "qty": 1,
+     "set": "msc",
+     "number": "21"
+    },
+    {
+     "name": "Winter Soldier, Reborn Avenger",
+     "qty": 1,
+     "set": "msc",
+     "number": "27"
+    },
+    {
+     "name": "Iron Man, Armored Avenger",
+     "qty": 1,
+     "set": "msc",
+     "number": "33"
+    },
+    {
+     "name": "Jarvis, Earth's Mightiest Butler",
+     "qty": 1,
+     "set": "msc",
+     "number": "34"
+    },
+    {
+     "name": "Professor Hulk",
+     "qty": 1,
+     "set": "msc",
+     "number": "37"
+    },
+    {
+     "name": "The Wasp, Winsome Avenger",
+     "qty": 1,
+     "set": "msc",
+     "number": "39"
+    },
+    {
+     "name": "West Coast Expansion",
+     "qty": 1,
+     "set": "msc",
+     "number": "40"
+    },
+    {
+     "name": "Firebird, Blazing Ranger",
+     "qty": 1,
+     "set": "msc",
+     "number": "50"
+    },
+    {
+     "name": "Photon, Mighty Marvel",
+     "qty": 1,
+     "set": "msc",
+     "number": "58"
+    },
+    {
+     "name": "She-Hulk, Wallbreaker",
+     "qty": 1,
+     "set": "msc",
+     "number": "60"
+    },
+    {
+     "name": "War Machine, Avenging Arsenal",
+     "qty": 1,
+     "set": "msc",
+     "number": "63"
+    },
+    {
+     "name": "Ant-Man, Elusive Avenger",
+     "qty": 1,
+     "set": "msc",
+     "number": "73"
+    },
+    {
+     "name": "Black Widow, Agile Avenger",
+     "qty": 1,
+     "set": "msc",
+     "number": "77"
+    },
+    {
+     "name": "Captain Marvel, Apex Avenger",
+     "qty": 1,
+     "set": "msc",
+     "number": "78"
+    },
+    {
+     "name": "Director Nick Fury",
+     "qty": 1,
+     "set": "msc",
+     "number": "81"
+    },
+    {
+     "name": "Hawkeye, Avenging Archer",
+     "qty": 1,
+     "set": "msc",
+     "number": "84"
+    },
+    {
+     "name": "Love on the Battlefield",
+     "qty": 1,
+     "set": "msc",
+     "number": "87"
+    },
+    {
+     "name": "Quicksilver, Speedster",
+     "qty": 1,
+     "set": "msc",
+     "number": "91"
+    },
+    {
+     "name": "Scarlet Witch, Chaotic Avenger",
+     "qty": 1,
+     "set": "msc",
+     "number": "93"
+    },
+    {
+     "name": "Shang-Chi and the Ten Rings",
+     "qty": 1,
+     "set": "msc",
+     "number": "94"
+    },
+    {
+     "name": "Avengers Quinjet",
+     "qty": 1,
+     "set": "msc",
+     "number": "102"
+    },
+    {
+     "name": "Hulkbuster Armor",
+     "qty": 1,
+     "set": "msc",
+     "number": "107"
+    },
+    {
+     "name": "Jocasta, Automaton Avenger",
+     "qty": 1,
+     "set": "msc",
+     "number": "108"
+    },
+    {
+     "name": "Vision, Synthezoid Avenger",
+     "qty": 1,
+     "set": "msc",
+     "number": "119"
+    },
+    {
+     "name": "Austere Command",
+     "qty": 1,
+     "set": "msc",
+     "number": "121"
+    },
+    {
+     "name": "Bastion Protector",
+     "qty": 1,
+     "set": "msc",
+     "number": "122"
+    },
+    {
+     "name": "Dismantling Wave",
+     "qty": 1,
+     "set": "msc",
+     "number": "129"
+    },
+    {
+     "name": "Folk Hero",
+     "qty": 1,
+     "set": "msc",
+     "number": "132"
+    },
+    {
+     "name": "Gift of Immortality",
+     "qty": 1,
+     "set": "msc",
+     "number": "134"
+    },
+    {
+     "name": "Kindred Discovery",
+     "qty": 1,
+     "set": "msc",
+     "number": "150"
+    },
+    {
+     "name": "Door of Destinies",
+     "qty": 1,
+     "set": "msc",
+     "number": "198"
+    },
+    {
+     "name": "Metallic Mimic",
+     "qty": 1,
+     "set": "msc",
+     "number": "203"
+    },
+    {
+     "name": "Tome of Legends",
+     "qty": 1,
+     "set": "msc",
+     "number": "223"
+    },
+    {
+     "name": "Clifftop Retreat",
+     "qty": 1,
+     "set": "msc",
+     "number": "231"
+    },
+    {
+     "name": "Coastal Peak",
+     "qty": 1,
+     "set": "msc",
+     "number": "232"
+    },
+    {
+     "name": "Exotic Orchard",
+     "qty": 1,
+     "set": "msc",
+     "number": "241"
+    },
+    {
+     "name": "Frostboil Snarl",
+     "qty": 1,
+     "set": "msc",
+     "number": "246"
+    },
+    {
+     "name": "Furycalm Snarl",
+     "qty": 1,
+     "set": "msc",
+     "number": "247"
+    },
+    {
+     "name": "Glacial Fortress",
+     "qty": 1,
+     "set": "msc",
+     "number": "248"
+    },
+    {
+     "name": "Glittering Massif",
+     "qty": 1,
+     "set": "msc",
+     "number": "249"
+    },
+    {
+     "name": "Irrigated Farmland",
+     "qty": 1,
+     "set": "msc",
+     "number": "251"
+    },
+    {
+     "name": "Plaza of Heroes",
+     "qty": 1,
+     "set": "msc",
+     "number": "255"
+    },
+    {
+     "name": "Port Town",
+     "qty": 1,
+     "set": "msc",
+     "number": "256"
+    },
+    {
+     "name": "Prairie Stream",
+     "qty": 1,
+     "set": "msc",
+     "number": "257"
+    },
+    {
+     "name": "Radiant Summit",
+     "qty": 1,
+     "set": "msc",
+     "number": "258"
+    },
+    {
+     "name": "Scavenger Grounds",
+     "qty": 1,
+     "set": "msc",
+     "number": "263"
+    },
+    {
+     "name": "Scorched Geyser",
+     "qty": 1,
+     "set": "msc",
+     "number": "264"
+    },
+    {
+     "name": "Spectator Seating",
+     "qty": 1,
+     "set": "msc",
+     "number": "268"
+    },
+    {
+     "name": "Sulfur Falls",
+     "qty": 1,
+     "set": "msc",
+     "number": "269"
+    },
+    {
+     "name": "Raise the Palisade",
+     "qty": 1,
+     "set": "msc",
+     "number": "278"
+    },
+    {
+     "name": "Thor, Asgard's Avenger",
+     "qty": 1,
+     "set": "msc",
+     "number": "756"
+    },
+    {
+     "name": "Captain Mar-Vell, Space-Born",
+     "qty": 1,
+     "set": "msh",
+     "number": "12"
+    },
+    {
+     "name": "Patriot, Shield Wielder",
+     "qty": 1,
+     "set": "msh",
+     "number": "30"
+    },
+    {
+     "name": "Speed, Young Avenger",
+     "qty": 1,
+     "set": "msh",
+     "number": "152"
+    },
+    {
+     "name": "Captain America, Living Legend",
+     "qty": 1,
+     "set": "msh",
+     "number": "210"
+    },
+    {
+     "name": "Avengers Tower",
+     "qty": 1,
+     "set": "msh",
+     "number": "260"
+    },
+    {
+     "name": "Destroy Evil",
+     "qty": 1,
+     "set": "msc",
+     "number": "128"
+    },
+    {
+     "name": "Make Your Move",
+     "qty": 1,
+     "set": "msc",
+     "number": "137"
+    },
+    {
+     "name": "Swords to Plowshares",
+     "qty": 1,
+     "set": "msc",
+     "number": "143"
+    },
+    {
+     "name": "Arcane Denial",
+     "qty": 1,
+     "set": "msc",
+     "number": "147"
+    },
+    {
+     "name": "Reconnaissance Mission",
+     "qty": 1,
+     "set": "msc",
+     "number": "153"
+    },
+    {
+     "name": "Rip Apart",
+     "qty": 1,
+     "set": "msc",
+     "number": "187"
+    },
+    {
+     "name": "Arcane Signet",
+     "qty": 1,
+     "set": "msc",
+     "number": "191"
+    },
+    {
+     "name": "Hero's Blade",
+     "qty": 1,
+     "set": "msc",
+     "number": "201"
+    },
+    {
+     "name": "Relic of Legends",
+     "qty": 1,
+     "set": "msc",
+     "number": "209"
+    },
+    {
+     "name": "Sol Ring",
+     "qty": 1,
+     "set": "msc",
+     "number": "211"
+    },
+    {
+     "name": "Talisman of Conviction",
+     "qty": 1,
+     "set": "msc",
+     "number": "217"
+    },
+    {
+     "name": "Talisman of Creativity",
+     "qty": 1,
+     "set": "msc",
+     "number": "218"
+    },
+    {
+     "name": "Talisman of Progress",
+     "qty": 1,
+     "set": "msc",
+     "number": "221"
+    },
+    {
+     "name": "Thought Vessel",
+     "qty": 1,
+     "set": "msc",
+     "number": "222"
+    },
+    {
+     "name": "Command Tower",
+     "qty": 1,
+     "set": "msc",
+     "number": "233"
+    },
+    {
+     "name": "Mystic Monastery",
+     "qty": 1,
+     "set": "msc",
+     "number": "253"
+    },
+    {
+     "name": "Path of Ancestry",
+     "qty": 1,
+     "set": "msc",
+     "number": "254"
+    },
+    {
+     "name": "Secluded Courtyard",
+     "qty": 1,
+     "set": "msc",
+     "number": "265"
+    },
+    {
+     "name": "Unclaimed Territory",
+     "qty": 1,
+     "set": "msc",
+     "number": "275"
+    },
+    {
+     "name": "Fellwar Stone",
+     "qty": 1,
+     "set": "msc",
+     "number": "285"
+    },
+    {
+     "name": "Herald's Horn",
+     "qty": 1,
+     "set": "msc",
+     "number": "287"
+    },
+    {
+     "name": "Rescue, Pepper Potts",
+     "qty": 1,
+     "set": "msc",
+     "number": "755"
+    },
+    {
+     "name": "Plains",
+     "qty": 3,
+     "set": "msh",
+     "number": "287"
+    },
+    {
+     "name": "Plains",
+     "qty": 3,
+     "set": "msh",
+     "number": "288"
+    },
+    {
+     "name": "Island",
+     "qty": 3,
+     "set": "msh",
+     "number": "289"
+    },
+    {
+     "name": "Island",
+     "qty": 2,
+     "set": "msh",
+     "number": "290"
+    },
+    {
+     "name": "Mountain",
+     "qty": 3,
+     "set": "msh",
+     "number": "293"
+    },
+    {
+     "name": "Mountain",
+     "qty": 2,
+     "set": "msh",
+     "number": "294"
     }
    ]
   }
