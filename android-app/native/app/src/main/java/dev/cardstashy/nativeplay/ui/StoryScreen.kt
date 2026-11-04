@@ -219,7 +219,9 @@ fun StoryActPage(a: PlayRules.Act, data: JsonObject?, p: StoryLogic.Progress, on
     val battles = data?.getAsJsonArray("battles")?.map { it.asJsonObject }.orEmpty()
     val cast = data?.getAsJsonObject("cast")
     val won = battles.count { it["secret"]?.asBoolean != true && StoryLogic.battleCleared(p, it["id"].asString) }
-    val open = battles.filter { b -> if (b["secret"]?.asBoolean == true) StoryLogic.secretOpen(p, a.act) else b["slot"].asInt <= now + 1 }
+    val counters = StoryLogic.counters(dev.cardstashy.nativeplay.play.Progress.state.collectAsState().value)
+    val open = battles.filter { b -> if (b["secret"]?.asBoolean == true) StoryLogic.secretOpen(p, a.act, counters) else b["slot"].asInt <= now + 1 }
+    val tease = StoryLogic.secretTease(battles.any { it["secret"]?.asBoolean == true }, p, a.act, counters)
     val banner = @Composable { m: Modifier ->
             val shape = RoundedCornerShape(24.dp)
             Box(m.clip(shape).border(1.dp, Color(0x38D6AD64), shape)) {
@@ -242,6 +244,7 @@ fun StoryActPage(a: PlayRules.Act, data: JsonObject?, p: StoryLogic.Progress, on
             item("purse") { purse() }
             if (data == null) item("loading") { Text("Opening the act…", style = Site.Body, modifier = Modifier.fillMaxWidth().padding(vertical = 40.dp)) }
             open.forEach { b -> item(b["id"].asString) { BattleRow(b, cast, p, now) { onBattle(b["id"].asString) } } }
+            tease?.let { item("tease") { SecretTease(it) } }
         }
     } else
     LazyColumn(Modifier.fillMaxSize(), contentPadding = PaddingValues(start = 16.dp, end = 16.dp, top = top + 12.dp, bottom = 120.dp), verticalArrangement = Arrangement.spacedBy(12.dp)) {
@@ -251,8 +254,17 @@ fun StoryActPage(a: PlayRules.Act, data: JsonObject?, p: StoryLogic.Progress, on
         open.forEach { b ->
             item(b["id"].asString) { BattleRow(b, cast, p, now) { onBattle(b["id"].asString) } }
         }
+        tease?.let { item("tease") { SecretTease(it) } }
     }
     }
+}
+
+/** .st-secret-tease: a dashed gold note under the battles, muted 13 px. */
+@Composable
+private fun SecretTease(text: String) {
+    Text(text, style = storyText(13f, FontWeight.Normal, Site.Muted).copy(lineHeight = 19.sp),
+        modifier = Modifier.fillMaxWidth().padding(top = 12.dp).drawBehind { drawRoundRect(Color(0x55D6AD64), cornerRadius = androidx.compose.ui.geometry.CornerRadius(14.dp.toPx()), style = androidx.compose.ui.graphics.drawscope.Stroke(1.dp.toPx(), pathEffect = androidx.compose.ui.graphics.PathEffect.dashPathEffect(floatArrayOf(5.dp.toPx(), 4.dp.toPx())))) }.padding(horizontal = 14.dp, vertical = 12.dp)
+            .semantics { contentDescription = text })
 }
 
 @Composable

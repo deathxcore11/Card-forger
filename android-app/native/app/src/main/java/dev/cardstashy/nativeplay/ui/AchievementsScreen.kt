@@ -51,6 +51,9 @@ import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalView
 import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.unit.em
+import androidx.compose.ui.semantics.semantics
+import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.google.gson.JsonElement
@@ -267,6 +270,12 @@ private fun QuestLine(q: JsonObject, busy: Boolean, onSwap: (() -> Unit)? = null
     }
 }
 
+/** .pd-key: a small gold "Key" pill by the title of a deed that opens its act's secret battle. */
+@Composable
+private fun KeyPill() = Text("KEY", style = t(11f, FontWeight.Bold, Color(0xFFF3DFB4)).copy(letterSpacing = .08.em),
+    modifier = Modifier.padding(start = 8.dp).clip(RoundedCornerShape(999.dp)).background(Color(0x26D6AD64)).padding(horizontal = 8.dp, vertical = 2.dp)
+        .semantics { contentDescription = "Key feat: earn this to open the act's secret battle" })
+
 /** deedCard: art 16:7 (trim zooms 116 %), Cinzel title, lore, tier pips, bar and count, reward or Claim / Earned. Hidden: the back and the riddle. */
 @Composable
 private fun DeedCard(r: JsonObject, busy: Boolean, modifier: Modifier, onClaim: (Int) -> Unit) {
@@ -280,7 +289,8 @@ private fun DeedCard(r: JsonObject, busy: Boolean, modifier: Modifier, onClaim: 
         if (hidden && earnedSteps == 0) {
             Box(Modifier.fillMaxWidth().aspectRatio(16f / 7f).background(Brush.radialGradient(listOf(Color(0xFF3A2A14), Color(0xFF120D08)))))
             Column(Modifier.padding(start = 14.dp, end = 14.dp, top = 12.dp, bottom = 14.dp), verticalArrangement = Arrangement.spacedBy(6.dp)) {
-                Text("Hidden", style = cinzel.copy(color = Site.Muted)); Text(r.get("riddle").str() ?: "", style = t(13f, color = Site.Muted))
+                Row(verticalAlignment = Alignment.CenterVertically) { Text("Hidden", style = cinzel.copy(color = Site.Muted)); if (r.get("key").bool()) KeyPill() }
+                Text(r.get("riddle").str() ?: "", style = t(13f, color = Site.Muted))
             }
             return@Column
         }
@@ -290,7 +300,7 @@ private fun DeedCard(r: JsonObject, busy: Boolean, modifier: Modifier, onClaim: 
                 modifier = Modifier.fillMaxSize().let { if (art?.get("trim").bool()) it.scale(1.16f) else it }) }
         }
         Column(Modifier.padding(start = 14.dp, end = 14.dp, top = 12.dp, bottom = 14.dp), verticalArrangement = Arrangement.spacedBy(6.dp)) {
-            Text(r.get("title").str() ?: "", style = cinzel)
+            Row(verticalAlignment = Alignment.CenterVertically) { Text(r.get("title").str() ?: "", style = cinzel, modifier = Modifier.weight(1f, fill = false)); if (r.get("key").bool()) KeyPill() }
             r.get("lore").str()?.let { Text(it, style = t(13f, color = Site.Muted)) }
             if (steps.size > 1) Row(horizontalArrangement = Arrangement.spacedBy(5.dp)) {
                 steps.forEach { s ->
