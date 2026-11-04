@@ -264,6 +264,10 @@ export const LESSONS = {
   'Offspring': 'Offspring: pay extra as you cast the creature and you also get a 1/1 token copy of it.',
   'Rooms': 'A Room is an enchantment with two doors. Cast one half, then pay to unlock the other later.',
   'Survival': 'Survival: at the start of your second main phase, if the creature is tapped, its survival ability triggers.',
+  'Max speed': 'Speed starts at 1 and rises when you hurt an opponent. At speed 4 you reach Max speed and your cards get stronger.',
+  'Exhaust': 'Exhaust abilities may be used only once per permanent. Choose the moment well.',
+  'Mobilize': 'Mobilize makes tapped, attacking Warrior tokens when the creature attacks. They are sacrificed at end of turn.',
+  'Harmonize': 'Harmonize lets you cast a spell from your graveyard, paying less by tapping one of your creatures. Then it is exiled.',
   'Playing under a lock': 'A lock stops cards from untapping or moving. Break it, or win with what\'s already in play.',
 };
 // Every Story deck says what it is (Randall, 2 Nov 2026): Historical Exact, Historical Tribute or

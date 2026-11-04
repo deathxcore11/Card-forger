@@ -113,8 +113,11 @@ export const STORY_ACTS = [
   {act: 37, age: 'The Gatewatch Years', title: 'The Heist, the Mice and the House', years: '2024',
     sets: ['otj', 'big', 'blb', 'dsk', 'fdn'], landSet: 'blb', packSets: ['otj', 'big', 'blb', 'dsk', 'fdn'],
     art: {set: 'dsk', number: '120', name: 'Valgavoth, Terror Eater', crop: 'https://cards.scryfall.io/art_crop/front/7/7/7740ff55-67bb-409e-90f7-2c2c8b8c770a.jpg?1783909475'}},
+  {act: 38, age: 'The Gatewatch Years', title: 'The Great Race', years: '2025',
+    sets: ['dft', 'tdm'], landSet: 'dft', packSets: ['dft', 'tdm'],
+    art: {set: 'tdm', number: '118', name: 'Sarkhan, Dragon Ascendant', crop: 'https://cards.scryfall.io/art_crop/front/c/2/c2200646-7b7c-489d-bbae-16b03e1d7fb2.jpg?1783907353'}},
 ];
-export const SET_NAMES = {lea: 'Limited Edition Alpha', leb: 'Limited Edition Beta', '2ed': 'Unlimited Edition', arn: 'Arabian Nights', atq: 'Antiquities',
+export const SET_NAMES = {dft: 'Aetherdrift', tdm: 'Tarkir: Dragonstorm', lea: 'Limited Edition Alpha', leb: 'Limited Edition Beta', '2ed': 'Unlimited Edition', arn: 'Arabian Nights', atq: 'Antiquities',
   '3ed': 'Revised Edition', leg: 'Legends', drk: 'The Dark', fem: 'Fallen Empires', ice: 'Ice Age', hml: 'Homelands', all: 'Alliances', '4ed': 'Fourth Edition',
   mir: 'Mirage', vis: 'Visions', '5ed': 'Fifth Edition',
   wth: 'Weatherlight', tmp: 'Tempest', sth: 'Stronghold', exo: 'Exodus',

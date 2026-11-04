@@ -1,0 +1,2749 @@
+{
+ "act": 38,
+ "era": "2025-02-14",
+ "title": "The Great Race",
+ "years": "2025",
+ "sets": [
+  "dft",
+  "tdm"
+ ],
+ "landSet": "dft",
+ "intro": [
+  {
+   "who": "stage",
+   "line": "Stage 1: The winding streets of Ghirapur.",
+   "quote": true
+  },
+  {
+   "who": "stage",
+   "line": "A race across the Multiverse. Then, after the finish line, Tarkir's dragonstorms come back."
+  }
+ ],
+ "finale": [
+  {
+   "who": "stage",
+   "line": "With a swift motion Narset struck Sarkhan down. She would not let his fevered dreams of draconic dominance come to fruition. Not after all she had done to free Tarkir.",
+   "quote": true
+  },
+  {
+   "who": "stage",
+   "line": "The storms calm. Sarkhan is free, and he is still dangerous."
+  },
+  {
+   "who": "stage",
+   "line": "Recorded: the race is over. The planes are still where they were."
+  }
+ ],
+ "villainFinale": [
+  {
+   "who": "stage",
+   "line": "With Taigam whispering encouragement in his ear, Sarkhan threw aside his misgivings. The ritual would return him to his former glory. All he needed was a dragon's heart.",
+   "quote": true
+  },
+  {
+   "who": "stage",
+   "line": "In this version, Sarkhan feeds the storms until Tarkir is all dragons."
+  }
+ ],
+ "vibe": "great-race-dragonstorm",
+ "cast": {
+  "you": {
+   "name": "You",
+   "title": "Planeswalker",
+   "portrait": {
+    "card": "Ticket Tortoise",
+    "set": "dft",
+    "number": "245",
+    "id": "fa178ed7-8f3a-45f0-817d-5fbc7993b04a",
+    "crop": "https://cards.scryfall.io/art_crop/front/f/a/fa178ed7-8f3a-45f0-817d-5fbc7993b04a.jpg?1783907846",
+    "artist": "Brian Valeza",
+    "focus": "50% 30%"
+   }
+  },
+  "chandra": {
+   "name": "Chandra",
+   "title": "Racer of Ghirapur",
+   "portrait": {
+    "card": "Chandra, Spark Hunter",
+    "set": "dft",
+    "number": "116",
+    "id": "11f9b98e-48a1-491e-bdab-6e94e4ec747a",
+    "crop": "https://cards.scryfall.io/art_crop/front/1/1/11f9b98e-48a1-491e-bdab-6e94e4ec747a.jpg?1783907885",
+    "artist": "Devin Elle Kurtz",
+    "focus": "50% 25%"
+   }
+  },
+  "racers": {
+   "name": "The Aetherdrift Racers",
+   "title": "Of the Grand Prix",
+   "portrait": {
+    "card": "Gas Guzzler",
+    "set": "dft",
+    "number": "85",
+    "id": "4db3a28c-e4b4-4b18-8d56-e3842184d105",
+    "crop": "https://cards.scryfall.io/art_crop/front/4/d/4db3a28c-e4b4-4b18-8d56-e3842184d105.jpg?1783907896",
+    "artist": "Yohann Schepacz",
+    "focus": "50% 30%"
+   }
+  },
+  "demons": {
+   "name": "The Speed Demons",
+   "title": "Of the Race",
+   "portrait": {
+    "card": "The Speed Demon",
+    "set": "dft",
+    "number": "105",
+    "id": "62242a80-0444-4a0e-a868-97eabcc77648",
+    "crop": "https://cards.scryfall.io/art_crop/front/6/2/62242a80-0444-4a0e-a868-97eabcc77648.jpg?1783907890",
+    "artist": "Helge C. Balzer",
+    "focus": "50% 25%"
+   }
+  },
+  "ketramose": {
+   "name": "Ketramose",
+   "title": "The New Dawn",
+   "portrait": {
+    "card": "Ketramose, the New Dawn",
+    "set": "dft",
+    "number": "209",
+    "id": "cffae8d0-7b4e-42ed-8124-24a86b38f490",
+    "crop": "https://cards.scryfall.io/art_crop/front/c/f/cffae8d0-7b4e-42ed-8124-24a86b38f490.jpg?1783907856",
+    "artist": "Maaz Ali Khan",
+    "focus": "50% 25%"
+   }
+  },
+  "elspeth": {
+   "name": "Elspeth",
+   "title": "Storm Slayer",
+   "portrait": {
+    "card": "Elspeth, Storm Slayer",
+    "set": "tdm",
+    "number": "11",
+    "id": "73a065e3-b530-4e62-ab3c-4f6f908184ec",
+    "crop": "https://cards.scryfall.io/art_crop/front/7/3/73a065e3-b530-4e62-ab3c-4f6f908184ec.jpg?1783907414",
+    "artist": "Ekaterina Burmak",
+    "focus": "50% 25%"
+   }
+  },
+  "pit": {
+   "name": "The Amonkhet Pit Crew",
+   "title": "Of the Race",
+   "portrait": {
+    "card": "Zahur, Glory's Past",
+    "set": "dft",
+    "number": "229",
+    "id": "31944ea5-045d-481d-9aff-3c7ed663813a",
+    "crop": "https://cards.scryfall.io/art_crop/front/3/1/31944ea5-045d-481d-9aff-3c7ed663813a.jpg?1783907851",
+    "artist": "Leroy Steinmann",
+    "focus": "50% 30%"
+   }
+  },
+  "skies": {
+   "name": "The Skyfarers",
+   "title": "Of Tarkir",
+   "portrait": {
+    "card": "Mu Yanling, Wind Rider",
+    "set": "dft",
+    "number": "52",
+    "id": "76423446-d62f-4cc5-a23a-3175be88bd73",
+    "crop": "https://cards.scryfall.io/art_crop/front/7/6/76423446-d62f-4cc5-a23a-3175be88bd73.jpg?1783907905",
+    "artist": "Justyna Dura",
+    "focus": "50% 25%"
+   }
+  },
+  "storms": {
+   "name": "The Dragonstorms",
+   "title": "Of Tarkir",
+   "portrait": {
+    "card": "Boulderborn Dragon",
+    "set": "tdm",
+    "number": "239",
+    "id": "50c6e815-bfe7-4599-9227-d36504a3640f",
+    "crop": "https://cards.scryfall.io/art_crop/front/5/0/50c6e815-bfe7-4599-9227-d36504a3640f.jpg?1783907289",
+    "artist": "Alexander Ostrowski",
+    "focus": "50% 25%"
+   }
+  },
+  "narset": {
+   "name": "Narset",
+   "title": "Jeskai Waymaster",
+   "portrait": {
+    "card": "Narset, Jeskai Waymaster",
+    "set": "tdm",
+    "number": "209",
+    "id": "6b77cbc1-dbc8-44d9-aa29-15cbb19afecd",
+    "crop": "https://cards.scryfall.io/art_crop/front/6/b/6b77cbc1-dbc8-44d9-aa29-15cbb19afecd.jpg?1783907303",
+    "artist": "Randy Vargas",
+    "focus": "50% 25%"
+   }
+  },
+  "clans": {
+   "name": "Sarkhan's Clans",
+   "title": "Of Tarkir",
+   "portrait": {
+    "card": "Surrak, Elusive Hunter",
+    "set": "tdm",
+    "number": "161",
+    "id": "e4775a26-0b66-40e9-8f64-41d9308ca032",
+    "crop": "https://cards.scryfall.io/art_crop/front/e/4/e4775a26-0b66-40e9-8f64-41d9308ca032.jpg?1783907332",
+    "artist": "Dan Murayama Scott",
+    "focus": "50% 25%"
+   }
+  },
+  "red": {
+   "name": "Mono-Red Aggro",
+   "title": "Spring 2025",
+   "portrait": {
+    "card": "Cori-Steel Cutter",
+    "set": "tdm",
+    "number": "103",
+    "id": "490eb213-9ae2-4b45-abec-6f1dfc83792a",
+    "crop": "https://cards.scryfall.io/art_crop/front/4/9/490eb213-9ae2-4b45-abec-6f1dfc83792a.jpg?1783907363",
+    "artist": "Xabi Gaztelua",
+    "focus": "50% 30%"
+   }
+  },
+  "domain": {
+   "name": "Domain Ramp",
+   "title": "Spring 2025",
+   "portrait": {
+    "card": "Terrian, World Tyrant",
+    "set": "dft",
+    "number": "182",
+    "id": "b44255cf-5264-4ead-9de0-20cc0f7cac6f",
+    "crop": "https://cards.scryfall.io/art_crop/front/b/4/b44255cf-5264-4ead-9de0-20cc0f7cac6f.jpg?1783907865",
+    "artist": "Nicholas Gregory",
+    "focus": "50% 25%"
+   }
+  },
+  "izzet": {
+   "name": "Izzet Prowess",
+   "title": "Spring 2025",
+   "portrait": {
+    "card": "Shocking Sharpshooter",
+    "set": "tdm",
+    "number": "121",
+    "id": "4a10342d-ca04-4d1e-bca9-79f531951a16",
+    "crop": "https://cards.scryfall.io/art_crop/front/4/a/4a10342d-ca04-4d1e-bca9-79f531951a16.jpg?1783907353",
+    "artist": "Warren Mahy",
+    "focus": "50% 30%"
+   }
+  },
+  "dimir": {
+   "name": "Dimir Midrange",
+   "title": "Spring 2025",
+   "portrait": {
+    "card": "Gonti, Night Minister",
+    "set": "dft",
+    "number": "87",
+    "id": "d79ca40a-e5c0-4956-8df0-ecbd2a25656f",
+    "crop": "https://cards.scryfall.io/art_crop/front/d/7/d79ca40a-e5c0-4956-8df0-ecbd2a25656f.jpg?1783907895",
+    "artist": "Scott M. Fischer",
+    "focus": "50% 25%"
+   }
+  },
+  "allies": {
+   "name": "The Racers and the Clans",
+   "title": "United",
+   "portrait": {
+    "card": "Ugin, Eye of the Storms",
+    "set": "tdm",
+    "number": "1",
+    "id": "64a5d494-efa1-446b-bebe-2ad36e154376",
+    "crop": "https://cards.scryfall.io/art_crop/front/6/4/64a5d494-efa1-446b-bebe-2ad36e154376.jpg?1783907421",
+    "artist": "Joshua Raphael",
+    "focus": "50% 25%"
+   }
+  },
+  "sarkhan": {
+   "name": "Sarkhan",
+   "title": "Dragon Ascendant",
+   "portrait": {
+    "card": "Sarkhan, Dragon Ascendant",
+    "set": "tdm",
+    "number": "118",
+    "id": "c2200646-7b7c-489d-bbae-16b03e1d7fb2",
+    "crop": "https://cards.scryfall.io/art_crop/front/c/2/c2200646-7b7c-489d-bbae-16b03e1d7fb2.jpg?1783907353",
+    "artist": "Billy Christian",
+    "focus": "50% 25%"
+   }
+  }
+ },
+ "battles": [
+  {
+   "id": "a38b1",
+   "slot": 1,
+   "kind": "Arrival",
+   "mood": "tension",
+   "title": "Start Your Engines",
+   "difficulty": "Easy",
+   "teaches": [
+    "Max speed"
+   ],
+   "blurb": "Chandra races through Ghirapur. The other drivers are not here to be friends.",
+   "rewardSet": "dft",
+   "host": false,
+   "hero": {
+    "who": "chandra",
+    "deck": {
+     "name": "Chandra's Racers",
+     "colors": "R",
+     "archetype": null,
+     "label": "tribute",
+     "cards": [
+      {
+       "qty": 4,
+       "name": "Greasewrench Goblin",
+       "set": "dft",
+       "number": "132",
+       "id": "c8f0b123-fdb0-4f3e-ba78-fa155c227e20"
+      },
+      {
+       "qty": 4,
+       "name": "Dynamite Diver",
+       "set": "dft",
+       "number": "123",
+       "id": "5a4f96f6-dd91-4357-ae19-1c35db2c2bcb"
+      },
+      {
+       "qty": 4,
+       "name": "Burnout Bashtronaut",
+       "set": "dft",
+       "number": "115",
+       "id": "4db66e7b-cb7a-4d86-a563-d570946aeb0d"
+      },
+      {
+       "qty": 4,
+       "name": "Draconautics Engineer",
+       "set": "dft",
+       "number": "121",
+       "id": "c44440be-e611-4e70-9919-b08e2354b7ad"
+      },
+      {
+       "qty": 4,
+       "name": "Prowcatcher Specialist",
+       "set": "dft",
+       "number": "142",
+       "id": "affbc8db-4ff7-4a86-954a-910493e5a2ef"
+      },
+      {
+       "qty": 4,
+       "name": "Adrenaline Jockey",
+       "set": "dft",
+       "number": "112",
+       "id": "c8655373-320d-440d-b700-d03413f743fd"
+      },
+      {
+       "qty": 3,
+       "name": "Chandra, Spark Hunter",
+       "set": "dft",
+       "number": "116",
+       "id": "11f9b98e-48a1-491e-bdab-6e94e4ec747a"
+      },
+      {
+       "qty": 3,
+       "name": "Gastal Thrillroller",
+       "set": "dft",
+       "number": "129",
+       "id": "d8b1762b-ff03-4312-afcc-cb6b5f280ade"
+      },
+      {
+       "qty": 4,
+       "name": "Lightning Strike",
+       "set": "dft",
+       "number": "136",
+       "id": "30077b49-b825-4dbb-a0c7-f3992f647df0"
+      },
+      {
+       "qty": 2,
+       "name": "Fuel the Flames",
+       "set": "dft",
+       "number": "126",
+       "id": "624335fb-8a0b-4fa9-aefb-60ac641a7934"
+      },
+      {
+       "qty": 24,
+       "name": "Mountain",
+       "set": "dft",
+       "number": "275",
+       "id": "50748a4c-43a0-4274-9a84-046d76027166"
+      }
+     ]
+    }
+   },
+   "villain": {
+    "who": "racers",
+    "deck": {
+     "name": "The Aetherdrift Racers",
+     "colors": "UB",
+     "archetype": null,
+     "label": "tribute",
+     "cards": [
+      {
+       "qty": 4,
+       "name": "Engine Rat",
+       "set": "dft",
+       "number": "84",
+       "id": "949d6137-98d3-4f46-ab1e-08d7492af307"
+      },
+      {
+       "qty": 4,
+       "name": "Gas Guzzler",
+       "set": "dft",
+       "number": "85",
+       "id": "4db3a28c-e4b4-4b18-8d56-e3842184d105"
+      },
+      {
+       "qty": 4,
+       "name": "Deathless Pilot",
+       "set": "dft",
+       "number": "82",
+       "id": "e704fb95-17b7-432a-831c-18abe7d9cc73"
+      },
+      {
+       "qty": 4,
+       "name": "Skystreak Engineer",
+       "set": "dft",
+       "number": "61",
+       "id": "5bc9c501-098d-4560-9826-329b05689e0f"
+      },
+      {
+       "qty": 4,
+       "name": "Midnight Mangler",
+       "set": "dft",
+       "number": "50",
+       "id": "237568e3-7331-4bbb-a091-a766723134fc"
+      },
+      {
+       "qty": 4,
+       "name": "Keen Buccaneer",
+       "set": "dft",
+       "number": "48",
+       "id": "0ed90a63-5aca-470a-8e1e-518d8aeb6d91"
+      },
+      {
+       "qty": 3,
+       "name": "Gastal Raider",
+       "set": "dft",
+       "number": "86",
+       "id": "6e4877b5-4ce5-466a-810f-6501f2a0f217"
+      },
+      {
+       "qty": 3,
+       "name": "Haunted Hellride",
+       "set": "dft",
+       "number": "208",
+       "id": "e2ce0d37-d5d7-49dd-885e-9998bb8abede"
+      },
+      {
+       "qty": 3,
+       "name": "Spin Out",
+       "set": "dft",
+       "number": "106",
+       "id": "be722ac5-e8c4-4180-aed0-7c28895afc0d"
+      },
+      {
+       "qty": 3,
+       "name": "Roadside Blowout",
+       "set": "dft",
+       "number": "58",
+       "id": "d6153a76-56f7-46ee-bba5-b62c0143388a"
+      },
+      {
+       "qty": 4,
+       "name": "Dismal Backwater",
+       "set": "dft",
+       "number": "254",
+       "id": "f20aef3f-79f6-4357-8631-1d141f437def"
+      },
+      {
+       "qty": 10,
+       "name": "Island",
+       "set": "dft",
+       "number": "273",
+       "id": "f53ed206-8ec4-46a6-8603-c819682e1433"
+      },
+      {
+       "qty": 10,
+       "name": "Swamp",
+       "set": "dft",
+       "number": "274",
+       "id": "e969e168-e74c-4608-9fa0-a5660bf7fa02"
+      }
+     ]
+    }
+   },
+   "reward": {
+    "hero": {
+     "packs": 1,
+     "coins": 0
+    },
+    "villain": {
+     "card": {
+      "oracle_id": "7c98626b-ba97-4d1e-9be7-291480ae8d22",
+      "name": "Gas Guzzler",
+      "rarity": "rare",
+      "set": "dft",
+      "id": "4db3a28c-e4b4-4b18-8d56-e3842184d105",
+      "image": "https://cards.scryfall.io/normal/front/4/d/4db3a28c-e4b4-4b18-8d56-e3842184d105.jpg"
+     },
+     "coins": 50
+    }
+   },
+   "scene": [
+    {
+     "who": "stage",
+     "line": "Racers! Start! Your! Engiiiiiines!",
+     "quote": true
+    },
+    {
+     "who": "stage",
+     "line": "Loot is free to go where he wants, so let's make sure the kid gets there in one piece.",
+     "quote": true
+    },
+    {
+     "who": "chandra",
+     "line": "Start your engines: your speed starts at 1 and rises when opponents lose life. At max speed, your cards get their best effects."
+    }
+   ],
+   "villainScene": [
+    {
+     "who": "stage",
+     "line": "Caution is for those who falter.",
+     "quote": true
+    },
+    {
+     "who": "stage",
+     "line": "Amonkhet champions become markedly more reckless after dying.",
+     "quote": true
+    }
+   ],
+   "after": null,
+   "cues": {
+    "hero": {
+     "start": "Engines on.",
+     "big": "Max speed!",
+     "low": "They are ahead...",
+     "win": "Pole position.",
+     "loss": "Out of the race...",
+     "half": "Make them lose life to raise your speed."
+    },
+    "villain": {
+     "start": "Floor it.",
+     "big": "Overtake!",
+     "low": "Spun out...",
+     "win": "First place.",
+     "loss": "Wrecked..."
+    }
+   },
+   "bigPlays": [],
+   "sim": null
+  },
+  {
+   "id": "a38b2",
+   "slot": 2,
+   "kind": "Lesson",
+   "mood": "march",
+   "title": "One-Shot Powers",
+   "difficulty": "Easy",
+   "teaches": [
+    "Exhaust"
+   ],
+   "blurb": "The Speed Demons race against Ketramose's team of Amonkhet champions.",
+   "rewardSet": "dft",
+   "host": false,
+   "hero": {
+    "who": "demons",
+    "deck": {
+     "name": "The Speed Demons",
+     "colors": "BR",
+     "archetype": null,
+     "label": "tribute",
+     "cards": [
+      {
+       "qty": 3,
+       "name": "The Speed Demon",
+       "set": "dft",
+       "number": "105",
+       "id": "62242a80-0444-4a0e-a868-97eabcc77648"
+      },
+      {
+       "qty": 3,
+       "name": "Apocalypse Runner",
+       "set": "dft",
+       "number": "188",
+       "id": "971286f5-77ea-4824-91de-f0ac88c46238"
+      },
+      {
+       "qty": 2,
+       "name": "Coalstoke Gearhulk",
+       "set": "dft",
+       "number": "198",
+       "id": "73431628-b9b0-41e6-8e9b-8a090939b0c1"
+      },
+      {
+       "qty": 4,
+       "name": "Gastal Thrillseeker",
+       "set": "dft",
+       "number": "205",
+       "id": "a8e5205d-d734-4292-a3c8-70cf5f131289"
+      },
+      {
+       "qty": 4,
+       "name": "Wild Ride",
+       "set": "tdm",
+       "number": "132",
+       "id": "abc8c6f5-6135-428e-8476-1751f82623f9"
+      },
+      {
+       "qty": 4,
+       "name": "Hellish Sideswipe",
+       "set": "dft",
+       "number": "90",
+       "id": "7a9db650-47f9-46d7-ac17-8d19fef6d6b0"
+      },
+      {
+       "qty": 4,
+       "name": "Maximum Overdrive",
+       "set": "dft",
+       "number": "96",
+       "id": "5f6e5bb2-cfe9-48e5-86f9-e21f3d328327"
+      },
+      {
+       "qty": 4,
+       "name": "Momentum Breaker",
+       "set": "dft",
+       "number": "97",
+       "id": "38513b53-384f-45e7-9905-80dd2c3c4918"
+      },
+      {
+       "qty": 4,
+       "name": "Skycrash",
+       "set": "dft",
+       "number": "146",
+       "id": "87e82be6-d2b4-4c95-8466-477e8c6832e9"
+      },
+      {
+       "qty": 4,
+       "name": "Howlsquad Heavy",
+       "set": "dft",
+       "number": "134",
+       "id": "df582f80-7b9a-4f71-95a9-70548ec7d2d7"
+      },
+      {
+       "qty": 4,
+       "name": "Bloodfell Caves",
+       "set": "dft",
+       "number": "251",
+       "id": "49195d90-de0c-4290-aa1c-9f4d948b5521"
+      },
+      {
+       "qty": 10,
+       "name": "Swamp",
+       "set": "dft",
+       "number": "274",
+       "id": "e969e168-e74c-4608-9fa0-a5660bf7fa02"
+      },
+      {
+       "qty": 10,
+       "name": "Mountain",
+       "set": "dft",
+       "number": "275",
+       "id": "50748a4c-43a0-4274-9a84-046d76027166"
+      }
+     ]
+    }
+   },
+   "villain": {
+    "who": "ketramose",
+    "deck": {
+     "name": "Ketramose's Champions",
+     "colors": "WB",
+     "archetype": null,
+     "label": "tribute",
+     "cards": [
+      {
+       "qty": 4,
+       "name": "Dune Drifter",
+       "set": "dft",
+       "number": "200",
+       "id": "36185de4-55c2-4e5d-9bcc-ea12b7052728"
+      },
+      {
+       "qty": 4,
+       "name": "Zahur, Glory's Past",
+       "set": "dft",
+       "number": "229",
+       "id": "31944ea5-045d-481d-9aff-3c7ed663813a"
+      },
+      {
+       "qty": 3,
+       "name": "Ketramose, the New Dawn",
+       "set": "dft",
+       "number": "209",
+       "id": "cffae8d0-7b4e-42ed-8124-24a86b38f490"
+      },
+      {
+       "qty": 4,
+       "name": "Embalmed Ascendant",
+       "set": "dft",
+       "number": "201",
+       "id": "5cf181ae-daa7-42f9-b667-5e679d80cf34"
+      },
+      {
+       "qty": 4,
+       "name": "Hardened Tactician",
+       "set": "tdm",
+       "number": "191",
+       "id": "86b225cb-5c45-4da1-a64e-b04091e483e8"
+      },
+      {
+       "qty": 4,
+       "name": "Wreckage Wickerfolk",
+       "set": "dft",
+       "number": "110",
+       "id": "aeff3db7-81ac-4c51-9954-bc1dbcb8c4e3"
+      },
+      {
+       "qty": 4,
+       "name": "Interface Ace",
+       "set": "dft",
+       "number": "17",
+       "id": "fcfd487a-a9e6-44e3-80af-bc384316106f"
+      },
+      {
+       "qty": 4,
+       "name": "Spotcycle Scouter",
+       "set": "dft",
+       "number": "30",
+       "id": "f0489108-75b7-441c-888d-12987c0c1080"
+      },
+      {
+       "qty": 3,
+       "name": "Roadside Assistance",
+       "set": "dft",
+       "number": "26",
+       "id": "8f2a9154-7b43-4b8d-9d81-d11cfda5d597"
+      },
+      {
+       "qty": 2,
+       "name": "Collision Course",
+       "set": "dft",
+       "number": "10",
+       "id": "6b60da34-b622-42de-a249-79545bcbf30d"
+      },
+      {
+       "qty": 4,
+       "name": "Scoured Barrens",
+       "set": "dft",
+       "number": "263",
+       "id": "ac52be0c-49f4-4956-820e-bdd7d2744d2f"
+      },
+      {
+       "qty": 10,
+       "name": "Plains",
+       "set": "dft",
+       "number": "272",
+       "id": "2d2da8b9-797f-46e8-a15d-a86c7c56dc84"
+      },
+      {
+       "qty": 10,
+       "name": "Swamp",
+       "set": "dft",
+       "number": "274",
+       "id": "e969e168-e74c-4608-9fa0-a5660bf7fa02"
+      }
+     ]
+    }
+   },
+   "reward": {
+    "hero": {
+     "packs": 1,
+     "coins": 0
+    },
+    "villain": {
+     "card": {
+      "oracle_id": "de41ad94-b9d7-4c2b-bfa6-394d18737228",
+      "name": "Ketramose, the New Dawn",
+      "rarity": "mythic",
+      "set": "dft",
+      "id": "cffae8d0-7b4e-42ed-8124-24a86b38f490",
+      "image": "https://cards.scryfall.io/normal/front/c/f/cffae8d0-7b4e-42ed-8124-24a86b38f490.jpg"
+     },
+     "coins": 50
+    }
+   },
+   "scene": [
+    {
+     "who": "stage",
+     "line": "Good sportsmanship wins the crowd. Bad sportsmanship wins the race.",
+     "quote": true
+    },
+    {
+     "who": "stage",
+     "line": "Many brought weapons to the race. This crew built theirs as they went.",
+     "quote": true
+    },
+    {
+     "who": "demons",
+     "line": "Exhaust: an ability that can be used once and then is gone. Save it for the turn that matters."
+    }
+   ],
+   "villainScene": [
+    {
+     "who": "stage",
+     "line": "Let the past die so the future might live.",
+     "quote": true
+    },
+    {
+     "who": "stage",
+     "line": "They too deserve to witness Amonkhet's rebirth.",
+     "quote": true
+    }
+   ],
+   "after": null,
+   "cues": {
+    "hero": {
+     "start": "Fastest wins.",
+     "big": "Exhaust!",
+     "low": "Their champions are strong...",
+     "win": "The demon wins.",
+     "loss": "Slowed...",
+     "half": "Use your exhaust ability on the key turn."
+    },
+    "villain": {
+     "start": "A new dawn.",
+     "big": "Rise!",
+     "low": "The champions stall...",
+     "win": "Amonkhet lives.",
+     "loss": "The dawn fades..."
+    }
+   },
+   "bigPlays": [],
+   "sim": null
+  },
+  {
+   "id": "a38b3",
+   "slot": 3,
+   "kind": "Lesson",
+   "mood": "comic",
+   "title": "The Mardu Charge",
+   "difficulty": "Easy",
+   "teaches": [
+    "Mobilize"
+   ],
+   "blurb": "Elspeth's warriors charge past Ketramose's pit crew.",
+   "rewardSet": "tdm",
+   "host": false,
+   "hero": {
+    "who": "elspeth",
+    "deck": {
+     "name": "Elspeth's Warriors",
+     "colors": "W",
+     "archetype": null,
+     "label": "tribute",
+     "cards": [
+      {
+       "qty": 4,
+       "name": "Descendant of Storms",
+       "set": "tdm",
+       "number": "8",
+       "id": "f632be90-9e7f-41f8-a52e-a2952354d730"
+      },
+      {
+       "qty": 3,
+       "name": "Mardu Devotee",
+       "set": "tdm",
+       "number": "16",
+       "id": "da45e9b0-a4f6-413b-9e62-666c511eb5b0"
+      },
+      {
+       "qty": 4,
+       "name": "Bearer of Glory",
+       "set": "tdm",
+       "number": "4",
+       "id": "d6d91e42-43db-428d-a4dd-ef9d40306314"
+      },
+      {
+       "qty": 4,
+       "name": "Furious Forebear",
+       "set": "tdm",
+       "number": "13",
+       "id": "a4f247b6-8212-4e78-a452-d2d3be228d8e"
+      },
+      {
+       "qty": 4,
+       "name": "Voice of Victory",
+       "set": "tdm",
+       "number": "33",
+       "id": "ec3de5f4-bb55-4ab9-995f-f3e0dc22c1bb"
+      },
+      {
+       "qty": 4,
+       "name": "Fortress Kin-Guard",
+       "set": "tdm",
+       "number": "12",
+       "id": "b647a018-1d70-43a1-a265-928bcd863689"
+      },
+      {
+       "qty": 1,
+       "name": "Elspeth, Storm Slayer",
+       "set": "tdm",
+       "number": "11",
+       "id": "73a065e3-b530-4e62-ab3c-4f6f908184ec"
+      },
+      {
+       "qty": 4,
+       "name": "Clarion Conqueror",
+       "set": "tdm",
+       "number": "5",
+       "id": "f892d156-371c-4391-8ae6-25513c5032b0"
+      },
+      {
+       "qty": 4,
+       "name": "Sage of the Skies",
+       "set": "tdm",
+       "number": "22",
+       "id": "6ade6918-6d1d-448d-ab56-93996051e9a9"
+      },
+      {
+       "qty": 4,
+       "name": "Coordinated Maneuver",
+       "set": "tdm",
+       "number": "6",
+       "id": "c6569487-53c5-4b91-877d-e4e31bfa90c0"
+      },
+      {
+       "qty": 24,
+       "name": "Plains",
+       "set": "dft",
+       "number": "272",
+       "id": "2d2da8b9-797f-46e8-a15d-a86c7c56dc84"
+      }
+     ]
+    }
+   },
+   "villain": {
+    "who": "pit",
+    "deck": {
+     "name": "The Amonkhet Pit Crew",
+     "colors": "WB",
+     "archetype": null,
+     "label": "tribute",
+     "cards": [
+      {
+       "qty": 4,
+       "name": "Gas Guzzler",
+       "set": "dft",
+       "number": "85",
+       "id": "4db3a28c-e4b4-4b18-8d56-e3842184d105"
+      },
+      {
+       "qty": 4,
+       "name": "Engine Rat",
+       "set": "dft",
+       "number": "84",
+       "id": "949d6137-98d3-4f46-ab1e-08d7492af307"
+      },
+      {
+       "qty": 4,
+       "name": "Wreckage Wickerfolk",
+       "set": "dft",
+       "number": "110",
+       "id": "aeff3db7-81ac-4c51-9954-bc1dbcb8c4e3"
+      },
+      {
+       "qty": 4,
+       "name": "Mutant Surveyor",
+       "set": "dft",
+       "number": "98",
+       "id": "7cec5105-3907-40d2-8e46-95acfaaaa0cc"
+      },
+      {
+       "qty": 4,
+       "name": "Gastal Raider",
+       "set": "dft",
+       "number": "86",
+       "id": "6e4877b5-4ce5-466a-810f-6501f2a0f217"
+      },
+      {
+       "qty": 4,
+       "name": "Pactdoll Terror",
+       "set": "dft",
+       "number": "99",
+       "id": "70226354-47b7-4f9d-a5a8-559d17f07720"
+      },
+      {
+       "qty": 2,
+       "name": "Streaking Oilgorger",
+       "set": "dft",
+       "number": "107",
+       "id": "6ff120a2-e2bb-42a2-bcb7-a48eb7a6d9b2"
+      },
+      {
+       "qty": 3,
+       "name": "Risen Necroregent",
+       "set": "dft",
+       "number": "102",
+       "id": "5a68482a-401d-48e7-854e-46e3db07ff35"
+      },
+      {
+       "qty": 3,
+       "name": "Quag Feast",
+       "set": "dft",
+       "number": "100",
+       "id": "dd8b6033-63e6-484e-8efb-a4eb9ca59fbf"
+      },
+      {
+       "qty": 4,
+       "name": "Zahur, Glory's Past",
+       "set": "dft",
+       "number": "229",
+       "id": "31944ea5-045d-481d-9aff-3c7ed663813a"
+      },
+      {
+       "qty": 4,
+       "name": "Scoured Barrens",
+       "set": "dft",
+       "number": "263",
+       "id": "ac52be0c-49f4-4956-820e-bdd7d2744d2f"
+      },
+      {
+       "qty": 10,
+       "name": "Plains",
+       "set": "dft",
+       "number": "272",
+       "id": "2d2da8b9-797f-46e8-a15d-a86c7c56dc84"
+      },
+      {
+       "qty": 10,
+       "name": "Swamp",
+       "set": "dft",
+       "number": "274",
+       "id": "e969e168-e74c-4608-9fa0-a5660bf7fa02"
+      }
+     ]
+    }
+   },
+   "reward": {
+    "hero": {
+     "packs": 1,
+     "coins": 0
+    },
+    "villain": {
+     "card": {
+      "oracle_id": "fb82cd81-0e71-43ab-88f9-b1fa158f5138",
+      "name": "Zahur, Glory's Past",
+      "rarity": "rare",
+      "set": "dft",
+      "id": "31944ea5-045d-481d-9aff-3c7ed663813a",
+      "image": "https://cards.scryfall.io/normal/front/3/1/31944ea5-045d-481d-9aff-3c7ed663813a.jpg"
+     },
+     "coins": 50
+    }
+   },
+   "scene": [
+    {
+     "who": "stage",
+     "line": "We follow the dragonstorms, and we take down any threats that emerge from them!",
+     "quote": true
+    },
+    {
+     "who": "stage",
+     "line": "Mardu lightning rods disperse the energy of dragonstorms—or whatever happens to be touching the rods.",
+     "quote": true
+    },
+    {
+     "who": "elspeth",
+     "line": "Mobilize: when the creature attacks, make tapped, attacking warrior tokens. A wide swing from one card."
+    }
+   ],
+   "villainScene": [
+    {
+     "who": "stage",
+     "line": "Wherever the racers go, help follows.",
+     "quote": true
+    },
+    {
+     "who": "stage",
+     "line": "To keep up with the Grand Prix, reporters trained just as hard as the racers themselves.",
+     "quote": true
+    }
+   ],
+   "after": null,
+   "cues": {
+    "hero": {
+     "start": "Charge!",
+     "big": "Mobilize!",
+     "low": "The pit crew holds...",
+     "win": "The Mardu win.",
+     "loss": "Overrun...",
+     "half": "Attack with a mobilize creature for extra bodies."
+    },
+    "villain": {
+     "start": "Pit stop!",
+     "big": "Go!",
+     "low": "The crew stalls...",
+     "win": "Quick work.",
+     "loss": "Out of time..."
+    }
+   },
+   "bigPlays": [],
+   "sim": null
+  },
+  {
+   "id": "a38b4",
+   "slot": 4,
+   "kind": "Rival",
+   "mood": "tension",
+   "title": "The Speed Demon",
+   "difficulty": "Normal",
+   "teaches": [
+    "Counterspells"
+   ],
+   "blurb": "The race's devil takes the wheel. The skyfarers have the speed to meet it in the air.",
+   "rewardSet": "dft",
+   "host": false,
+   "hero": {
+    "who": "skies",
+    "deck": {
+     "name": "The Skyfarers",
+     "colors": "WU",
+     "archetype": null,
+     "label": "tribute",
+     "cards": [
+      {
+       "qty": 4,
+       "name": "Scrounging Skyray",
+       "set": "dft",
+       "number": "60",
+       "id": "d60bece3-6f63-4d9e-bca0-cef2d38f1472"
+      },
+      {
+       "qty": 4,
+       "name": "Rangers' Refueler",
+       "set": "dft",
+       "number": "55",
+       "id": "67d2d713-8acb-4e3d-bd1d-0416fe9b9ef6"
+      },
+      {
+       "qty": 4,
+       "name": "Mindspring Merfolk",
+       "set": "dft",
+       "number": "51",
+       "id": "b6250b8b-1943-445f-ada9-30b41eb6d29b"
+      },
+      {
+       "qty": 4,
+       "name": "Transit Mage",
+       "set": "dft",
+       "number": "70",
+       "id": "6727169f-c33a-4ca5-889d-a63bcfc5a3f0"
+      },
+      {
+       "qty": 3,
+       "name": "Glitch Ghost Surveyor",
+       "set": "dft",
+       "number": "44",
+       "id": "b9bb89b9-50dd-4b36-aa10-aba585e50246"
+      },
+      {
+       "qty": 4,
+       "name": "Skyseer's Chariot",
+       "set": "dft",
+       "number": "28",
+       "id": "96ed5b66-8e74-4a90-ad4e-c39d15993994"
+      },
+      {
+       "qty": 4,
+       "name": "Cloudspire Captain",
+       "set": "dft",
+       "number": "9",
+       "id": "3380d87a-c460-409c-8d47-9b2fc5ddd2ea"
+      },
+      {
+       "qty": 3,
+       "name": "Mu Yanling, Wind Rider",
+       "set": "dft",
+       "number": "52",
+       "id": "76423446-d62f-4cc5-a23a-3175be88bd73"
+      },
+      {
+       "qty": 3,
+       "name": "Spell Pierce",
+       "set": "dft",
+       "number": "64",
+       "id": "8dd4374f-0301-4b2e-bc99-2cd19568cb3b"
+      },
+      {
+       "qty": 3,
+       "name": "Spectral Denial",
+       "set": "tdm",
+       "number": "58",
+       "id": "ee4e732a-1ffd-463d-92c2-26187659cfc3"
+      },
+      {
+       "qty": 4,
+       "name": "Tranquil Cove",
+       "set": "dft",
+       "number": "267",
+       "id": "70688800-7675-4e75-bb3c-9e05b95a685c"
+      },
+      {
+       "qty": 10,
+       "name": "Plains",
+       "set": "dft",
+       "number": "272",
+       "id": "2d2da8b9-797f-46e8-a15d-a86c7c56dc84"
+      },
+      {
+       "qty": 10,
+       "name": "Island",
+       "set": "dft",
+       "number": "273",
+       "id": "f53ed206-8ec4-46a6-8603-c819682e1433"
+      }
+     ]
+    }
+   },
+   "villain": {
+    "who": "demons",
+    "deck": {
+     "name": "The Speed Demon's Pack",
+     "colors": "BR",
+     "archetype": null,
+     "label": "tribute",
+     "cards": [
+      {
+       "qty": 4,
+       "name": "Engine Rat",
+       "set": "dft",
+       "number": "84",
+       "id": "949d6137-98d3-4f46-ab1e-08d7492af307"
+      },
+      {
+       "qty": 4,
+       "name": "Gas Guzzler",
+       "set": "dft",
+       "number": "85",
+       "id": "4db3a28c-e4b4-4b18-8d56-e3842184d105"
+      },
+      {
+       "qty": 4,
+       "name": "Bloodghast",
+       "set": "dft",
+       "number": "77",
+       "id": "fdceefe6-f083-4955-b53a-8e6f8aeb2083"
+      },
+      {
+       "qty": 3,
+       "name": "The Speed Demon",
+       "set": "dft",
+       "number": "105",
+       "id": "62242a80-0444-4a0e-a868-97eabcc77648"
+      },
+      {
+       "qty": 3,
+       "name": "Apocalypse Runner",
+       "set": "dft",
+       "number": "188",
+       "id": "971286f5-77ea-4824-91de-f0ac88c46238"
+      },
+      {
+       "qty": 4,
+       "name": "Gastal Thrillseeker",
+       "set": "dft",
+       "number": "205",
+       "id": "a8e5205d-d734-4292-a3c8-70cf5f131289"
+      },
+      {
+       "qty": 4,
+       "name": "Hellish Sideswipe",
+       "set": "dft",
+       "number": "90",
+       "id": "7a9db650-47f9-46d7-ac17-8d19fef6d6b0"
+      },
+      {
+       "qty": 4,
+       "name": "Lightning Strike",
+       "set": "dft",
+       "number": "136",
+       "id": "30077b49-b825-4dbb-a0c7-f3992f647df0"
+      },
+      {
+       "qty": 3,
+       "name": "Crash and Burn",
+       "set": "dft",
+       "number": "119",
+       "id": "339a41a1-b36f-4b81-b74c-220d279c0e26"
+      },
+      {
+       "qty": 3,
+       "name": "Intimidation Tactics",
+       "set": "dft",
+       "number": "92",
+       "id": "9b4e6022-44d2-4dfe-8f7a-51581e298f23"
+      },
+      {
+       "qty": 4,
+       "name": "Bloodfell Caves",
+       "set": "dft",
+       "number": "251",
+       "id": "49195d90-de0c-4290-aa1c-9f4d948b5521"
+      },
+      {
+       "qty": 10,
+       "name": "Swamp",
+       "set": "dft",
+       "number": "274",
+       "id": "e969e168-e74c-4608-9fa0-a5660bf7fa02"
+      },
+      {
+       "qty": 10,
+       "name": "Mountain",
+       "set": "dft",
+       "number": "275",
+       "id": "50748a4c-43a0-4274-9a84-046d76027166"
+      }
+     ]
+    }
+   },
+   "reward": {
+    "hero": {
+     "packs": 1,
+     "coins": 100
+    },
+    "villain": {
+     "card": {
+      "oracle_id": "c9fb22b4-dc22-4291-91f2-89c07cee7569",
+      "name": "The Speed Demon",
+      "rarity": "mythic",
+      "set": "dft",
+      "id": "62242a80-0444-4a0e-a868-97eabcc77648",
+      "image": "https://cards.scryfall.io/normal/front/6/2/62242a80-0444-4a0e-a868-97eabcc77648.jpg"
+     },
+     "coins": 100
+    }
+   },
+   "scene": [
+    {
+     "who": "stage",
+     "line": "Each step we take is a decision that changes the course of our futures. We must be careful where we tread.",
+     "quote": true
+    },
+    {
+     "who": "stage",
+     "line": "This can't be right. I should cross-reference with the archives immediately.",
+     "quote": true
+    },
+    {
+     "who": "skies",
+     "line": "Hold your counterspells for the Speed Demon itself. Let the smaller cars through."
+    }
+   ],
+   "villainScene": [
+    {
+     "who": "stage",
+     "line": "The doomed souls of the Speed Demons race in uneasy unity, each one hoping to escape their own fate.",
+     "quote": true
+    },
+    {
+     "who": "stage",
+     "line": "Speedbrood racers are gregarious while not racing, but everyone must eat.",
+     "quote": true
+    }
+   ],
+   "after": null,
+   "cues": {
+    "hero": {
+     "start": "Careful now.",
+     "big": "Denied!",
+     "low": "The demon is fast...",
+     "win": "The demon is stopped.",
+     "loss": "Run over...",
+     "half": "Hold counters for the big car."
+    },
+    "villain": {
+     "start": "Floor it.",
+     "big": "Burn rubber!",
+     "low": "The engine stalls...",
+     "win": "The devil wins.",
+     "loss": "Spun out..."
+    }
+   },
+   "bigPlays": [],
+   "sim": null
+  },
+  {
+   "id": "a38b5",
+   "slot": 5,
+   "kind": "Lesson",
+   "mood": "tension",
+   "title": "Spells from the Grave",
+   "difficulty": "Normal",
+   "teaches": [
+    "Harmonize"
+   ],
+   "blurb": "Narset's school fights Sarkhan's clans across the dragonstorm plains.",
+   "rewardSet": "tdm",
+   "host": false,
+   "hero": {
+    "who": "narset",
+    "deck": {
+     "name": "Narset's School",
+     "colors": "UR",
+     "archetype": null,
+     "label": "tribute",
+     "note": "Jeskai is three colours; the white is dropped for our land pool.",
+     "cards": [
+      {
+       "qty": 4,
+       "name": "Shocking Sharpshooter",
+       "set": "tdm",
+       "number": "121",
+       "id": "4a10342d-ca04-4d1e-bca9-79f531951a16"
+      },
+      {
+       "qty": 4,
+       "name": "Cori-Steel Cutter",
+       "set": "tdm",
+       "number": "103",
+       "id": "490eb213-9ae2-4b45-abec-6f1dfc83792a"
+      },
+      {
+       "qty": 4,
+       "name": "Jeskai Devotee",
+       "set": "tdm",
+       "number": "110",
+       "id": "27f31f9c-7149-4608-9b18-b3530a2efd4a"
+      },
+      {
+       "qty": 3,
+       "name": "Fearless Swashbuckler",
+       "set": "dft",
+       "number": "204",
+       "id": "0d86d66b-481f-44ec-86d8-6fc91b52ef38"
+      },
+      {
+       "qty": 2,
+       "name": "Captain Howler, Sea Scourge",
+       "set": "dft",
+       "number": "194",
+       "id": "0957c90f-e10d-40f8-a4be-9e9ef623dd43"
+      },
+      {
+       "qty": 4,
+       "name": "Dragonologist",
+       "set": "tdm",
+       "number": "42",
+       "id": "8810ebb4-9e51-46f0-a54a-a0b4d77b762a"
+      },
+      {
+       "qty": 3,
+       "name": "Magmatic Hellkite",
+       "set": "tdm",
+       "number": "111",
+       "id": "b3b3aec8-d931-4c7f-86b5-1e7dfb717b59"
+      },
+      {
+       "qty": 4,
+       "name": "Ureni's Rebuff",
+       "set": "tdm",
+       "number": "63",
+       "id": "722716df-9cea-40a7-924b-c28497e227e6"
+      },
+      {
+       "qty": 4,
+       "name": "Twin Bolt",
+       "set": "tdm",
+       "number": "128",
+       "id": "688d8e93-d071-4089-9ef9-565ac4ae9ae0"
+      },
+      {
+       "qty": 4,
+       "name": "Fire-Rim Form",
+       "set": "tdm",
+       "number": "107",
+       "id": "32dc1bf4-a135-449f-848f-361a5360fae1"
+      },
+      {
+       "qty": 4,
+       "name": "Swiftwater Cliffs",
+       "set": "dft",
+       "number": "265",
+       "id": "949bf6bb-1e97-48a3-8547-0a780664c275"
+      },
+      {
+       "qty": 10,
+       "name": "Island",
+       "set": "dft",
+       "number": "273",
+       "id": "f53ed206-8ec4-46a6-8603-c819682e1433"
+      },
+      {
+       "qty": 10,
+       "name": "Mountain",
+       "set": "dft",
+       "number": "275",
+       "id": "50748a4c-43a0-4274-9a84-046d76027166"
+      }
+     ]
+    }
+   },
+   "villain": {
+    "who": "clans",
+    "deck": {
+     "name": "Sarkhan's Clans",
+     "colors": "RG",
+     "archetype": null,
+     "label": "tribute",
+     "cards": [
+      {
+       "qty": 4,
+       "name": "Beastrider Vanguard",
+       "set": "dft",
+       "number": "154",
+       "id": "f4b99a61-49f1-46a2-9eb7-b6c88c236215"
+      },
+      {
+       "qty": 4,
+       "name": "Ainok Wayfarer",
+       "set": "tdm",
+       "number": "134",
+       "id": "57695a9b-8f72-4ccc-a946-5d5037b09b8f"
+      },
+      {
+       "qty": 4,
+       "name": "Undergrowth Leopard",
+       "set": "tdm",
+       "number": "165",
+       "id": "67ab8f9a-b17c-452f-b4ef-a3f91909e3de"
+      },
+      {
+       "qty": 4,
+       "name": "Zurgo's Vanguard",
+       "set": "tdm",
+       "number": "133",
+       "id": "a1aa3501-5738-4063-a7f4-51d2600b0041"
+      },
+      {
+       "qty": 4,
+       "name": "Krotiq Nestguard",
+       "set": "tdm",
+       "number": "148",
+       "id": "a5d0a9fb-1068-478d-a78c-6fd77cc313f0"
+      },
+      {
+       "qty": 3,
+       "name": "Surrak, Elusive Hunter",
+       "set": "tdm",
+       "number": "161",
+       "id": "e4775a26-0b66-40e9-8f64-41d9308ca032"
+      },
+      {
+       "qty": 3,
+       "name": "Devoted Duelist",
+       "set": "tdm",
+       "number": "104",
+       "id": "bbf9c673-37b4-48ed-a9ea-13f8e3e6c47b"
+      },
+      {
+       "qty": 3,
+       "name": "Shock Brigade",
+       "set": "tdm",
+       "number": "120",
+       "id": "66940466-8e9d-4a85-bfb0-e92189b7a121"
+      },
+      {
+       "qty": 4,
+       "name": "Lightning Strike",
+       "set": "dft",
+       "number": "136",
+       "id": "30077b49-b825-4dbb-a0c7-f3992f647df0"
+      },
+      {
+       "qty": 3,
+       "name": "Piercing Exhale",
+       "set": "tdm",
+       "number": "151",
+       "id": "b2a0deb9-5bc3-42d5-9e1e-5f463d176aef"
+      },
+      {
+       "qty": 4,
+       "name": "Rugged Highlands",
+       "set": "dft",
+       "number": "262",
+       "id": "73b7484f-923c-46c5-95bf-c2c6706c0d48"
+      },
+      {
+       "qty": 10,
+       "name": "Mountain",
+       "set": "dft",
+       "number": "275",
+       "id": "50748a4c-43a0-4274-9a84-046d76027166"
+      },
+      {
+       "qty": 10,
+       "name": "Forest",
+       "set": "dft",
+       "number": "276",
+       "id": "777e868d-cb88-4b8e-99d1-12ff67f5eae2"
+      }
+     ]
+    }
+   },
+   "reward": {
+    "hero": {
+     "packs": 1,
+     "coins": 100
+    },
+    "villain": {
+     "card": {
+      "oracle_id": "7a0fe73f-6e08-4c9a-80e1-c2ead6cebe06",
+      "name": "Surrak, Elusive Hunter",
+      "rarity": "rare",
+      "set": "tdm",
+      "id": "e4775a26-0b66-40e9-8f64-41d9308ca032",
+      "image": "https://cards.scryfall.io/normal/front/e/4/e4775a26-0b66-40e9-8f64-41d9308ca032.jpg"
+     },
+     "coins": 100
+    }
+   },
+   "scene": [
+    {
+     "who": "stage",
+     "line": "Beware dragonstorms that strike from the sea. Their size always disguises their force.",
+     "quote": true
+    },
+    {
+     "who": "stage",
+     "line": "No one of us could have built all this alone. A clan, a school, hope for the future. Thank you all.",
+     "quote": true
+    },
+    {
+     "who": "narset",
+     "line": "Harmonize: cast a spell from your graveyard by paying its harmonize cost. Your old spells are not gone."
+    }
+   ],
+   "villainScene": [
+    {
+     "who": "stage",
+     "line": "The best way to protect the citizens is to defend Arashin, not hunt dragonstorms across Tarkir.",
+     "quote": true
+    },
+    {
+     "who": "stage",
+     "line": "So, these dragons intend to also manifest through a sandstorm? I take some offense to that.",
+     "quote": true
+    }
+   ],
+   "after": null,
+   "cues": {
+    "hero": {
+     "start": "Study the storm.",
+     "big": "Harmonize!",
+     "low": "The clans hit hard...",
+     "win": "The school wins.",
+     "loss": "Scattered...",
+     "half": "Recast a spell from the graveyard."
+    },
+    "villain": {
+     "start": "For the clan!",
+     "big": "Charge!",
+     "low": "The clan breaks...",
+     "win": "The clans stand.",
+     "loss": "Scattered..."
+    }
+   },
+   "bigPlays": [],
+   "sim": null
+  },
+  {
+   "id": "a38b6",
+   "slot": 6,
+   "kind": "Meta",
+   "mood": "march",
+   "title": "Mono-Red vs Domain",
+   "difficulty": "Normal",
+   "teaches": [
+    "Racing"
+   ],
+   "blurb": "Spring 2025: mono-red aggro against a big green ramp deck.",
+   "rewardSet": "dft",
+   "host": false,
+   "hero": {
+    "who": "red",
+    "deck": {
+     "name": "Mono-Red Aggro",
+     "colors": "R",
+     "archetype": "Aggro",
+     "label": "tribute",
+     "cards": [
+      {
+       "qty": 4,
+       "name": "Greasewrench Goblin",
+       "set": "dft",
+       "number": "132",
+       "id": "c8f0b123-fdb0-4f3e-ba78-fa155c227e20"
+      },
+      {
+       "qty": 4,
+       "name": "Dynamite Diver",
+       "set": "dft",
+       "number": "123",
+       "id": "5a4f96f6-dd91-4357-ae19-1c35db2c2bcb"
+      },
+      {
+       "qty": 4,
+       "name": "Burnout Bashtronaut",
+       "set": "dft",
+       "number": "115",
+       "id": "4db66e7b-cb7a-4d86-a563-d570946aeb0d"
+      },
+      {
+       "qty": 4,
+       "name": "Draconautics Engineer",
+       "set": "dft",
+       "number": "121",
+       "id": "c44440be-e611-4e70-9919-b08e2354b7ad"
+      },
+      {
+       "qty": 4,
+       "name": "Prowcatcher Specialist",
+       "set": "dft",
+       "number": "142",
+       "id": "affbc8db-4ff7-4a86-954a-910493e5a2ef"
+      },
+      {
+       "qty": 4,
+       "name": "Adrenaline Jockey",
+       "set": "dft",
+       "number": "112",
+       "id": "c8655373-320d-440d-b700-d03413f743fd"
+      },
+      {
+       "qty": 3,
+       "name": "Chandra, Spark Hunter",
+       "set": "dft",
+       "number": "116",
+       "id": "11f9b98e-48a1-491e-bdab-6e94e4ec747a"
+      },
+      {
+       "qty": 3,
+       "name": "Gastal Thrillroller",
+       "set": "dft",
+       "number": "129",
+       "id": "d8b1762b-ff03-4312-afcc-cb6b5f280ade"
+      },
+      {
+       "qty": 4,
+       "name": "Lightning Strike",
+       "set": "dft",
+       "number": "136",
+       "id": "30077b49-b825-4dbb-a0c7-f3992f647df0"
+      },
+      {
+       "qty": 2,
+       "name": "Fuel the Flames",
+       "set": "dft",
+       "number": "126",
+       "id": "624335fb-8a0b-4fa9-aefb-60ac641a7934"
+      },
+      {
+       "qty": 24,
+       "name": "Mountain",
+       "set": "dft",
+       "number": "275",
+       "id": "50748a4c-43a0-4274-9a84-046d76027166"
+      }
+     ]
+    }
+   },
+   "villain": {
+    "who": "domain",
+    "deck": {
+     "name": "Domain Ramp",
+     "colors": "G",
+     "archetype": "Ramp",
+     "label": "tribute",
+     "note": "Domain Ramp is five colours; here the green ramp core is kept for our land pool.",
+     "cards": [
+      {
+       "qty": 4,
+       "name": "Stampeding Scurryfoot",
+       "set": "dft",
+       "number": "181",
+       "id": "7fc713d7-4a7e-4f1f-b461-e89bb1457d7d"
+      },
+      {
+       "qty": 4,
+       "name": "Molt Tender",
+       "set": "dft",
+       "number": "171",
+       "id": "f800bf4e-4bfb-45b6-950b-c76952f52bb1"
+      },
+      {
+       "qty": 4,
+       "name": "Jibbirik Omnivore",
+       "set": "dft",
+       "number": "166",
+       "id": "68a0569b-65c8-49ce-91ac-e639b8faf939"
+      },
+      {
+       "qty": 4,
+       "name": "Greenbelt Guardian",
+       "set": "dft",
+       "number": "164",
+       "id": "2f6b0000-5fd3-483b-bac5-f9b888d8755b"
+      },
+      {
+       "qty": 4,
+       "name": "Regal Imperiosaur",
+       "set": "dft",
+       "number": "177",
+       "id": "36f569cc-ed09-4c27-b753-18b22ad7f425"
+      },
+      {
+       "qty": 3,
+       "name": "Terrian, World Tyrant",
+       "set": "dft",
+       "number": "182",
+       "id": "b44255cf-5264-4ead-9de0-20cc0f7cac6f"
+      },
+      {
+       "qty": 3,
+       "name": "Autarch Mammoth",
+       "set": "dft",
+       "number": "153",
+       "id": "4d313ea7-2456-48f3-8b12-97d8e8c2a5b3"
+      },
+      {
+       "qty": 3,
+       "name": "Migrating Ketradon",
+       "set": "dft",
+       "number": "170",
+       "id": "a9ba2219-8184-4141-8708-845cb0957299"
+      },
+      {
+       "qty": 4,
+       "name": "Run Over",
+       "set": "dft",
+       "number": "179",
+       "id": "642f8fdd-6c58-49a3-904c-27f717cae980"
+      },
+      {
+       "qty": 3,
+       "name": "Point the Way",
+       "set": "dft",
+       "number": "175",
+       "id": "8fd4c73d-0e9a-4ffe-8062-f2f4d0e601fe"
+      },
+      {
+       "qty": 24,
+       "name": "Forest",
+       "set": "dft",
+       "number": "276",
+       "id": "777e868d-cb88-4b8e-99d1-12ff67f5eae2"
+      }
+     ]
+    }
+   },
+   "reward": {
+    "hero": {
+     "packs": 1,
+     "coins": 100
+    },
+    "villain": {
+     "card": {
+      "oracle_id": "856245a6-c697-4f03-90be-77d8eb2d274e",
+      "name": "Terrian, World Tyrant",
+      "rarity": "uncommon",
+      "set": "dft",
+      "id": "b44255cf-5264-4ead-9de0-20cc0f7cac6f",
+      "image": "https://cards.scryfall.io/normal/front/b/4/b44255cf-5264-4ead-9de0-20cc0f7cac6f.jpg"
+     },
+     "coins": 100
+    }
+   },
+   "scene": [
+    {
+     "who": "stage",
+     "line": "You wanted a fight. Now you've got two.",
+     "quote": true
+    },
+    {
+     "who": "stage",
+     "line": "They feed on OIL? Where were they during the Phyrexian Invasion?!",
+     "quote": true
+    },
+    {
+     "who": "red",
+     "line": "Race them. Their big creatures arrive late. Burn them out first."
+    }
+   ],
+   "villainScene": [
+    {
+     "who": "stage",
+     "line": "The draconic power that flowed out from the dragonstorms imbued the landscape with draconic features—scales, claws, and appetites.",
+     "quote": true
+    },
+    {
+     "who": "stage",
+     "line": "The power of the dragonstorms transformed not only the land but many of the creatures within it.",
+     "quote": true
+    }
+   ],
+   "after": null,
+   "cues": {
+    "hero": {
+     "start": "Fast and hot.",
+     "big": "Burn!",
+     "low": "Their big ones landed...",
+     "win": "Burned out.",
+     "loss": "Too slow...",
+     "half": "Go face before the ramp deck lands anything."
+    },
+    "villain": {
+     "start": "Grow.",
+     "big": "Stomp!",
+     "low": "Out of mana...",
+     "win": "The ramp wins.",
+     "loss": "Stomped on..."
+    }
+   },
+   "bigPlays": [],
+   "sim": null
+  },
+  {
+   "id": "a38b7",
+   "slot": 7,
+   "kind": "Meta",
+   "mood": "tension",
+   "title": "Izzet vs Dimir",
+   "difficulty": "Normal",
+   "teaches": [
+    "Tempo"
+   ],
+   "blurb": "Spring 2025: Izzet prowess against a Dimir midrange deck.",
+   "rewardSet": "tdm",
+   "host": false,
+   "hero": {
+    "who": "izzet",
+    "deck": {
+     "name": "Izzet Prowess",
+     "colors": "UR",
+     "archetype": "Aggro",
+     "label": "tribute",
+     "cards": [
+      {
+       "qty": 4,
+       "name": "Shocking Sharpshooter",
+       "set": "tdm",
+       "number": "121",
+       "id": "4a10342d-ca04-4d1e-bca9-79f531951a16"
+      },
+      {
+       "qty": 4,
+       "name": "Cori-Steel Cutter",
+       "set": "tdm",
+       "number": "103",
+       "id": "490eb213-9ae2-4b45-abec-6f1dfc83792a"
+      },
+      {
+       "qty": 4,
+       "name": "Jeskai Devotee",
+       "set": "tdm",
+       "number": "110",
+       "id": "27f31f9c-7149-4608-9b18-b3530a2efd4a"
+      },
+      {
+       "qty": 4,
+       "name": "Roiling Dragonstorm",
+       "set": "tdm",
+       "number": "55",
+       "id": "455f4c96-684b-4b14-bd21-6799da2e1fa7"
+      },
+      {
+       "qty": 4,
+       "name": "Ureni's Rebuff",
+       "set": "tdm",
+       "number": "63",
+       "id": "722716df-9cea-40a7-924b-c28497e227e6"
+      },
+      {
+       "qty": 4,
+       "name": "Dispelling Exhale",
+       "set": "tdm",
+       "number": "41",
+       "id": "1c9af3f1-711e-42ae-803a-1100eba3fb13"
+      },
+      {
+       "qty": 4,
+       "name": "Twin Bolt",
+       "set": "tdm",
+       "number": "128",
+       "id": "688d8e93-d071-4089-9ef9-565ac4ae9ae0"
+      },
+      {
+       "qty": 4,
+       "name": "Fire-Rim Form",
+       "set": "tdm",
+       "number": "107",
+       "id": "32dc1bf4-a135-449f-848f-361a5360fae1"
+      },
+      {
+       "qty": 4,
+       "name": "Dragonologist",
+       "set": "tdm",
+       "number": "42",
+       "id": "8810ebb4-9e51-46f0-a54a-a0b4d77b762a"
+      },
+      {
+       "qty": 4,
+       "name": "Swiftwater Cliffs",
+       "set": "dft",
+       "number": "265",
+       "id": "949bf6bb-1e97-48a3-8547-0a780664c275"
+      },
+      {
+       "qty": 10,
+       "name": "Island",
+       "set": "dft",
+       "number": "273",
+       "id": "f53ed206-8ec4-46a6-8603-c819682e1433"
+      },
+      {
+       "qty": 10,
+       "name": "Mountain",
+       "set": "dft",
+       "number": "275",
+       "id": "50748a4c-43a0-4274-9a84-046d76027166"
+      }
+     ]
+    }
+   },
+   "villain": {
+    "who": "dimir",
+    "deck": {
+     "name": "Dimir Midrange",
+     "colors": "UB",
+     "archetype": "Midrange",
+     "label": "tribute",
+     "cards": [
+      {
+       "qty": 4,
+       "name": "Bloodghast",
+       "set": "dft",
+       "number": "77",
+       "id": "fdceefe6-f083-4955-b53a-8e6f8aeb2083"
+      },
+      {
+       "qty": 4,
+       "name": "Gastal Raider",
+       "set": "dft",
+       "number": "86",
+       "id": "6e4877b5-4ce5-466a-810f-6501f2a0f217"
+      },
+      {
+       "qty": 4,
+       "name": "Gonti, Night Minister",
+       "set": "dft",
+       "number": "87",
+       "id": "d79ca40a-e5c0-4956-8df0-ecbd2a25656f"
+      },
+      {
+       "qty": 3,
+       "name": "Haunted Hellride",
+       "set": "dft",
+       "number": "208",
+       "id": "e2ce0d37-d5d7-49dd-885e-9998bb8abede"
+      },
+      {
+       "qty": 3,
+       "name": "Haunt the Network",
+       "set": "dft",
+       "number": "207",
+       "id": "478d236c-9778-435a-ac21-bd0017a17d5b"
+      },
+      {
+       "qty": 4,
+       "name": "Mutant Surveyor",
+       "set": "dft",
+       "number": "98",
+       "id": "7cec5105-3907-40d2-8e46-95acfaaaa0cc"
+      },
+      {
+       "qty": 4,
+       "name": "Spell Pierce",
+       "set": "dft",
+       "number": "64",
+       "id": "8dd4374f-0301-4b2e-bc99-2cd19568cb3b"
+      },
+      {
+       "qty": 3,
+       "name": "Spin Out",
+       "set": "dft",
+       "number": "106",
+       "id": "be722ac5-e8c4-4180-aed0-7c28895afc0d"
+      },
+      {
+       "qty": 4,
+       "name": "Aether Syphon",
+       "set": "dft",
+       "number": "38",
+       "id": "d7033739-4cd8-4727-b9b5-099fb597006b"
+      },
+      {
+       "qty": 3,
+       "name": "Quag Feast",
+       "set": "dft",
+       "number": "100",
+       "id": "dd8b6033-63e6-484e-8efb-a4eb9ca59fbf"
+      },
+      {
+       "qty": 4,
+       "name": "Dismal Backwater",
+       "set": "dft",
+       "number": "254",
+       "id": "f20aef3f-79f6-4357-8631-1d141f437def"
+      },
+      {
+       "qty": 10,
+       "name": "Island",
+       "set": "dft",
+       "number": "273",
+       "id": "f53ed206-8ec4-46a6-8603-c819682e1433"
+      },
+      {
+       "qty": 10,
+       "name": "Swamp",
+       "set": "dft",
+       "number": "274",
+       "id": "e969e168-e74c-4608-9fa0-a5660bf7fa02"
+      }
+     ]
+    }
+   },
+   "reward": {
+    "hero": {
+     "packs": 1,
+     "coins": 100
+    },
+    "villain": {
+     "card": {
+      "oracle_id": "e16f79c1-ffbb-4893-b62a-d4e9d15e2b16",
+      "name": "Gonti, Night Minister",
+      "rarity": "rare",
+      "set": "dft",
+      "id": "d79ca40a-e5c0-4956-8df0-ecbd2a25656f",
+      "image": "https://cards.scryfall.io/normal/front/d/7/d79ca40a-e5c0-4956-8df0-ecbd2a25656f.jpg"
+     },
+     "coins": 100
+    }
+   },
+   "scene": [
+    {
+     "who": "stage",
+     "line": "Excellent form, Jun! Just keep your weight on that back foot, and you'll master this in no time.",
+     "quote": true
+    },
+    {
+     "who": "stage",
+     "line": "Elegance. Precision. Grace. Qualities that must be practiced in writing as well as combat.",
+     "quote": true
+    },
+    {
+     "who": "izzet",
+     "line": "Cast cheap spells to pump your creatures, and hit before their removal lines up."
+    }
+   ],
+   "villainScene": [
+    {
+     "who": "stage",
+     "line": "Their race ended much the same way it began, walking through a sandstorm on a world that ended long ago.",
+     "quote": true
+    },
+    {
+     "who": "stage",
+     "line": "At the Tombs Before Time, the living of Amonkhet made vital alliances with the honored dead.",
+     "quote": true
+    }
+   ],
+   "after": null,
+   "cues": {
+    "hero": {
+     "start": "Quick hands.",
+     "big": "Prowess!",
+     "low": "Their removal is good...",
+     "win": "Quick win.",
+     "loss": "Outlasted...",
+     "half": "Cast cheap spells to pump your creatures."
+    },
+    "villain": {
+     "start": "Patience.",
+     "big": "Drain!",
+     "low": "The tempo is gone...",
+     "win": "Dimir wins.",
+     "loss": "Outraced..."
+    }
+   },
+   "bigPlays": [],
+   "sim": null
+  },
+  {
+   "id": "a38b8",
+   "slot": 8,
+   "kind": "Boss",
+   "mood": "boss",
+   "title": "Sarkhan, Dragon Ascendant",
+   "difficulty": "Hard",
+   "teaches": [
+    "Racing"
+   ],
+   "blurb": "Sarkhan feeds the dragonstorms because he believes he is saving the dragons. The racers and the clans have to stop him.",
+   "rewardSet": "tdm",
+   "host": true,
+   "hero": {
+    "who": "allies",
+    "deck": {
+     "name": "The Racers and the Clans",
+     "colors": "RG",
+     "archetype": null,
+     "label": "tribute",
+     "cards": [
+      {
+       "qty": 4,
+       "name": "Beastrider Vanguard",
+       "set": "dft",
+       "number": "154",
+       "id": "f4b99a61-49f1-46a2-9eb7-b6c88c236215"
+      },
+      {
+       "qty": 4,
+       "name": "Ainok Wayfarer",
+       "set": "tdm",
+       "number": "134",
+       "id": "57695a9b-8f72-4ccc-a946-5d5037b09b8f"
+      },
+      {
+       "qty": 4,
+       "name": "Undergrowth Leopard",
+       "set": "tdm",
+       "number": "165",
+       "id": "67ab8f9a-b17c-452f-b4ef-a3f91909e3de"
+      },
+      {
+       "qty": 4,
+       "name": "Zurgo's Vanguard",
+       "set": "tdm",
+       "number": "133",
+       "id": "a1aa3501-5738-4063-a7f4-51d2600b0041"
+      },
+      {
+       "qty": 4,
+       "name": "Krotiq Nestguard",
+       "set": "tdm",
+       "number": "148",
+       "id": "a5d0a9fb-1068-478d-a78c-6fd77cc313f0"
+      },
+      {
+       "qty": 3,
+       "name": "Surrak, Elusive Hunter",
+       "set": "tdm",
+       "number": "161",
+       "id": "e4775a26-0b66-40e9-8f64-41d9308ca032"
+      },
+      {
+       "qty": 3,
+       "name": "Sagu Pummeler",
+       "set": "tdm",
+       "number": "156",
+       "id": "def9cb5b-4062-481e-b682-3a30443c2e56"
+      },
+      {
+       "qty": 3,
+       "name": "Magmatic Hellkite",
+       "set": "tdm",
+       "number": "111",
+       "id": "b3b3aec8-d931-4c7f-86b5-1e7dfb717b59"
+      },
+      {
+       "qty": 4,
+       "name": "Lightning Strike",
+       "set": "dft",
+       "number": "136",
+       "id": "30077b49-b825-4dbb-a0c7-f3992f647df0"
+      },
+      {
+       "qty": 3,
+       "name": "Piercing Exhale",
+       "set": "tdm",
+       "number": "151",
+       "id": "b2a0deb9-5bc3-42d5-9e1e-5f463d176aef"
+      },
+      {
+       "qty": 4,
+       "name": "Rugged Highlands",
+       "set": "dft",
+       "number": "262",
+       "id": "73b7484f-923c-46c5-95bf-c2c6706c0d48"
+      },
+      {
+       "qty": 10,
+       "name": "Mountain",
+       "set": "dft",
+       "number": "275",
+       "id": "50748a4c-43a0-4274-9a84-046d76027166"
+      },
+      {
+       "qty": 10,
+       "name": "Forest",
+       "set": "dft",
+       "number": "276",
+       "id": "777e868d-cb88-4b8e-99d1-12ff67f5eae2"
+      }
+     ]
+    }
+   },
+   "villain": {
+    "who": "sarkhan",
+    "deck": {
+     "name": "Sarkhan's Dragons",
+     "colors": "R",
+     "archetype": null,
+     "label": "tribute",
+     "cards": [
+      {
+       "qty": 3,
+       "name": "Sarkhan, Dragon Ascendant",
+       "set": "tdm",
+       "number": "118",
+       "id": "c2200646-7b7c-489d-bbae-16b03e1d7fb2"
+      },
+      {
+       "qty": 4,
+       "name": "Magmatic Hellkite",
+       "set": "tdm",
+       "number": "111",
+       "id": "b3b3aec8-d931-4c7f-86b5-1e7dfb717b59"
+      },
+      {
+       "qty": 3,
+       "name": "Stormscale Scion",
+       "set": "tdm",
+       "number": "123",
+       "id": "0ac43386-bd32-425c-8776-cec00b064cbc"
+      },
+      {
+       "qty": 4,
+       "name": "Runescale Stormbrood // Chilling Screech",
+       "set": "tdm",
+       "number": "221",
+       "id": "317744d1-ed78-4b53-a4d8-8c7ecfd9c4ae"
+      },
+      {
+       "qty": 4,
+       "name": "Breaching Dragonstorm",
+       "set": "tdm",
+       "number": "101",
+       "id": "e2c2a069-7553-4879-abfb-b2aa3349e4b8"
+      },
+      {
+       "qty": 4,
+       "name": "Molten Exhale",
+       "set": "tdm",
+       "number": "113",
+       "id": "0ab95aab-a4bf-4131-83a0-2c138b6f20c3"
+      },
+      {
+       "qty": 4,
+       "name": "Twin Bolt",
+       "set": "tdm",
+       "number": "128",
+       "id": "688d8e93-d071-4089-9ef9-565ac4ae9ae0"
+      },
+      {
+       "qty": 4,
+       "name": "Lightning Strike",
+       "set": "dft",
+       "number": "136",
+       "id": "30077b49-b825-4dbb-a0c7-f3992f647df0"
+      },
+      {
+       "qty": 3,
+       "name": "Fire-Rim Form",
+       "set": "tdm",
+       "number": "107",
+       "id": "32dc1bf4-a135-449f-848f-361a5360fae1"
+      },
+      {
+       "qty": 3,
+       "name": "Channeled Dragonfire",
+       "set": "tdm",
+       "number": "102",
+       "id": "24204881-690c-4043-8771-20cb93385072"
+      },
+      {
+       "qty": 24,
+       "name": "Mountain",
+       "set": "dft",
+       "number": "275",
+       "id": "50748a4c-43a0-4274-9a84-046d76027166"
+      }
+     ]
+    }
+   },
+   "reward": {
+    "hero": {
+     "packs": 2,
+     "coins": 200
+    },
+    "villain": {
+     "card": {
+      "oracle_id": "71cb48e2-2328-471c-a04a-7b6461f378f4",
+      "name": "Sarkhan, Dragon Ascendant",
+      "rarity": "rare",
+      "set": "tdm",
+      "id": "c2200646-7b7c-489d-bbae-16b03e1d7fb2",
+      "image": "https://cards.scryfall.io/normal/front/c/2/c2200646-7b7c-489d-bbae-16b03e1d7fb2.jpg"
+     },
+     "coins": 200
+    }
+   },
+   "scene": [
+    {
+     "who": "stage",
+     "line": "Elspeth saw their capture as an inconvenience, costing them precious time. Narset saw it as an opportunity to recruit allies to their cause.",
+     "quote": true
+    },
+    {
+     "who": "stage",
+     "line": "The Abzan forces rallied to the call, driving back Sarkhan's feral dragon horde.",
+     "quote": true
+    },
+    {
+     "who": "allies",
+     "line": "Kill his dragons the turn they land. He feeds the storm only as long as they live."
+    }
+   ],
+   "villainScene": [
+    {
+     "who": "stage",
+     "line": "Let the dragonstorms rage. Let what seeks sustenance feed. Let Tarkir be what it was always meant to be.",
+     "quote": true
+    },
+    {
+     "who": "stage",
+     "line": "Rage. Greed. Arrogance. People only accuse dragons of what they fear in themselves.",
+     "quote": true
+    }
+   ],
+   "after": null,
+   "cues": {
+    "hero": {
+     "start": "For Tarkir!",
+     "big": "Together!",
+     "low": "The storm is too big...",
+     "win": "The storm calms.",
+     "loss": "Swallowed...",
+     "half": "Kill his dragons the turn they land."
+    },
+    "villain": {
+     "start": "Rage.",
+     "big": "[a dragon roars]",
+     "low": "[the roar breaks]",
+     "win": "Tarkir is what it was meant to be.",
+     "loss": "[the storm goes quiet]",
+     "half": {
+      "who": "narset",
+      "line": "You are not saving them, Sarkhan. You are feeding on them."
+     }
+    }
+   },
+   "bigPlays": [],
+   "sim": null
+  },
+  {
+   "id": "a38b9",
+   "slot": 9,
+   "kind": "Secret Boss",
+   "secret": true,
+   "mood": "boss",
+   "title": "Izzet Prowess at Full Power",
+   "difficulty": "Hard",
+   "teaches": [
+    "Tempo"
+   ],
+   "blurb": "Deep in the archive, a deck that wins with spells cast and creatures attacking.",
+   "rewardSet": "tdm",
+   "host": true,
+   "archive": {
+    "deck": "Izzet Prowess",
+    "when": "Spring 2025",
+    "format": "Standard.",
+    "what": "A blue-red deck of cheap creatures and cheap spells built around Cori-Steel Cutter.",
+    "why": "It was fast, hard to disrupt, and punished slow hands.",
+    "beat": "Kill the first two creatures. Keep your life above burn range.",
+    "after": "Later sets gave the format more removal and slowed it down."
+   },
+   "hero": {
+    "who": "you",
+    "deck": {
+     "name": "Ketramose's Champions",
+     "colors": "WB",
+     "archetype": null,
+     "label": "tribute",
+     "cards": [
+      {
+       "qty": 4,
+       "name": "Dune Drifter",
+       "set": "dft",
+       "number": "200",
+       "id": "36185de4-55c2-4e5d-9bcc-ea12b7052728"
+      },
+      {
+       "qty": 4,
+       "name": "Zahur, Glory's Past",
+       "set": "dft",
+       "number": "229",
+       "id": "31944ea5-045d-481d-9aff-3c7ed663813a"
+      },
+      {
+       "qty": 3,
+       "name": "Ketramose, the New Dawn",
+       "set": "dft",
+       "number": "209",
+       "id": "cffae8d0-7b4e-42ed-8124-24a86b38f490"
+      },
+      {
+       "qty": 4,
+       "name": "Embalmed Ascendant",
+       "set": "dft",
+       "number": "201",
+       "id": "5cf181ae-daa7-42f9-b667-5e679d80cf34"
+      },
+      {
+       "qty": 4,
+       "name": "Hardened Tactician",
+       "set": "tdm",
+       "number": "191",
+       "id": "86b225cb-5c45-4da1-a64e-b04091e483e8"
+      },
+      {
+       "qty": 4,
+       "name": "Wreckage Wickerfolk",
+       "set": "dft",
+       "number": "110",
+       "id": "aeff3db7-81ac-4c51-9954-bc1dbcb8c4e3"
+      },
+      {
+       "qty": 4,
+       "name": "Interface Ace",
+       "set": "dft",
+       "number": "17",
+       "id": "fcfd487a-a9e6-44e3-80af-bc384316106f"
+      },
+      {
+       "qty": 4,
+       "name": "Spotcycle Scouter",
+       "set": "dft",
+       "number": "30",
+       "id": "f0489108-75b7-441c-888d-12987c0c1080"
+      },
+      {
+       "qty": 3,
+       "name": "Roadside Assistance",
+       "set": "dft",
+       "number": "26",
+       "id": "8f2a9154-7b43-4b8d-9d81-d11cfda5d597"
+      },
+      {
+       "qty": 2,
+       "name": "Collision Course",
+       "set": "dft",
+       "number": "10",
+       "id": "6b60da34-b622-42de-a249-79545bcbf30d"
+      },
+      {
+       "qty": 4,
+       "name": "Scoured Barrens",
+       "set": "dft",
+       "number": "263",
+       "id": "ac52be0c-49f4-4956-820e-bdd7d2744d2f"
+      },
+      {
+       "qty": 10,
+       "name": "Plains",
+       "set": "dft",
+       "number": "272",
+       "id": "2d2da8b9-797f-46e8-a15d-a86c7c56dc84"
+      },
+      {
+       "qty": 10,
+       "name": "Swamp",
+       "set": "dft",
+       "number": "274",
+       "id": "e969e168-e74c-4608-9fa0-a5660bf7fa02"
+      }
+     ]
+    }
+   },
+   "villain": {
+    "who": "izzet",
+    "deck": {
+     "name": "Izzet Prowess",
+     "colors": "UR",
+     "archetype": "Aggro",
+     "label": "tribute",
+     "note": "Built from cards in this act's sets only. No single tournament list is copied.",
+     "cards": [
+      {
+       "qty": 4,
+       "name": "Shocking Sharpshooter",
+       "set": "tdm",
+       "number": "121",
+       "id": "4a10342d-ca04-4d1e-bca9-79f531951a16"
+      },
+      {
+       "qty": 4,
+       "name": "Cori-Steel Cutter",
+       "set": "tdm",
+       "number": "103",
+       "id": "490eb213-9ae2-4b45-abec-6f1dfc83792a"
+      },
+      {
+       "qty": 4,
+       "name": "Jeskai Devotee",
+       "set": "tdm",
+       "number": "110",
+       "id": "27f31f9c-7149-4608-9b18-b3530a2efd4a"
+      },
+      {
+       "qty": 4,
+       "name": "Roiling Dragonstorm",
+       "set": "tdm",
+       "number": "55",
+       "id": "455f4c96-684b-4b14-bd21-6799da2e1fa7"
+      },
+      {
+       "qty": 4,
+       "name": "Ureni's Rebuff",
+       "set": "tdm",
+       "number": "63",
+       "id": "722716df-9cea-40a7-924b-c28497e227e6"
+      },
+      {
+       "qty": 4,
+       "name": "Dispelling Exhale",
+       "set": "tdm",
+       "number": "41",
+       "id": "1c9af3f1-711e-42ae-803a-1100eba3fb13"
+      },
+      {
+       "qty": 4,
+       "name": "Twin Bolt",
+       "set": "tdm",
+       "number": "128",
+       "id": "688d8e93-d071-4089-9ef9-565ac4ae9ae0"
+      },
+      {
+       "qty": 4,
+       "name": "Fire-Rim Form",
+       "set": "tdm",
+       "number": "107",
+       "id": "32dc1bf4-a135-449f-848f-361a5360fae1"
+      },
+      {
+       "qty": 4,
+       "name": "Dragonologist",
+       "set": "tdm",
+       "number": "42",
+       "id": "8810ebb4-9e51-46f0-a54a-a0b4d77b762a"
+      },
+      {
+       "qty": 4,
+       "name": "Swiftwater Cliffs",
+       "set": "dft",
+       "number": "265",
+       "id": "949bf6bb-1e97-48a3-8547-0a780664c275"
+      },
+      {
+       "qty": 10,
+       "name": "Island",
+       "set": "dft",
+       "number": "273",
+       "id": "f53ed206-8ec4-46a6-8603-c819682e1433"
+      },
+      {
+       "qty": 10,
+       "name": "Mountain",
+       "set": "dft",
+       "number": "275",
+       "id": "50748a4c-43a0-4274-9a84-046d76027166"
+      }
+     ]
+    }
+   },
+   "reward": {
+    "hero": {
+     "packs": 2,
+     "coins": 200
+    },
+    "villain": {
+     "card": {
+      "oracle_id": "46b1a169-bc32-47bf-b379-fa0c3d13878f",
+      "name": "Cori-Steel Cutter",
+      "rarity": "rare",
+      "set": "tdm",
+      "id": "490eb213-9ae2-4b45-abec-6f1dfc83792a",
+      "image": "https://cards.scryfall.io/normal/front/4/9/490eb213-9ae2-4b45-abec-6f1dfc83792a.jpg"
+     },
+     "coins": 200
+    }
+   },
+   "scene": [
+    {
+     "who": "stage",
+     "line": "Jeskai scholars fashioned devices to forecast the behavior of the dragonstorms.",
+     "quote": true
+    },
+    {
+     "who": "you",
+     "line": "Kill the first two creatures and keep your life high."
+    }
+   ],
+   "villainScene": [
+    {
+     "who": "stage",
+     "line": "Dragonstorm chasers are not deterred by danger—they claim there is nothing like witnessing the land embracing the power of a storm.",
+     "quote": true
+    }
+   ],
+   "after": [
+    {
+     "who": "stage",
+     "line": "Recorded: later sets gave the format more removal and slowed it down."
+    }
+   ],
+   "cues": {
+    "hero": {
+     "start": "Hold the line.",
+     "big": "Strike back!",
+     "low": "They are fast...",
+     "win": "The prowess fades.",
+     "loss": "Overrun...",
+     "half": "Kill the first two creatures."
+    },
+    "villain": {
+     "start": "[a flash of lightning]",
+     "big": "[the spells stack]",
+     "low": "[a pause]",
+     "win": "[prowess]",
+     "loss": "[the spells fizzle]"
+    }
+   },
+   "bigPlays": [],
+   "sim": null
+  }
+ ]
+}
