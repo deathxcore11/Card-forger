@@ -85,7 +85,8 @@ class LobbyShotTest {
             "practiceboth" to { m -> m.player = seat("starter:u"); m.opponent = seat("starter:b") },
             "inspect" to { m -> m.player = seat("starter:r"); m.inspectOpen = true },
             "paste" to { m -> m.updateDraft(name = "Pasted burn", text = PASTE); kotlinx.coroutines.runBlocking { dev.cardstashy.nativeplay.ui.importPasteInto(m, online = false) } },
-            "pasteused" to { m -> m.updateDraft(name = "Pasted burn", text = PASTE); kotlinx.coroutines.runBlocking { dev.cardstashy.nativeplay.ui.importPasteInto(m, online = false) }; m.candidate?.let { c -> m.inspected = "player"; m.put("player", SeatDeck(c, "import")); m.candidate = null; m.importStatus = "selected" } })
+            "pasteused" to { m -> m.updateDraft(name = "Pasted burn", text = PASTE); kotlinx.coroutines.runBlocking { dev.cardstashy.nativeplay.ui.importPasteInto(m, online = false) }; m.candidate?.let { c -> m.inspected = "player"; m.put("player", SeatDeck(c, "import")); m.candidate = null; m.importStatus = "selected" } },
+            "inspectpasted" to { m -> m.updateDraft(name = "Pasted burn", text = PASTE); kotlinx.coroutines.runBlocking { dev.cardstashy.nativeplay.ui.importPasteInto(m, online = false) }; m.candidate?.let { c -> m.put("player", SeatDeck(c, "import")) }; m.inspectOpen = true })
         RuntimeEnvironment.setQualifiers("w390dp-h2532dp-xxhdpi")
         for ((name, set) in states) {
             val m = LobbyModel(if (name.startsWith("quick") || name == "inspect") "quick" else "practice").apply { format = "Standard" }

@@ -188,7 +188,8 @@ private fun App(activity: MainActivity) {
             LaunchedEffect(Unit) { activity.inGame(false) }
             val model = lobbies.getOrPut(s.style) { dev.cardstashy.nativeplay.ui.LobbyModel(s.style) }
             dev.cardstashy.nativeplay.ui.LobbyScreen(model, onBack = { back() }, onStart = { go(Screen.Match(it)) }, onOpenDecks = { go(Screen.PlayDecks) },
-                onSignIn = { go(Screen.SignIn) }, onFriends = { go(Screen.Web(dev.cardstashy.nativeplay.ui.SITE_PLAY)) })
+                onSignIn = { go(Screen.SignIn) }, onFriends = { go(Screen.Web(dev.cardstashy.nativeplay.ui.SITE_PLAY)) },
+                onOpenSaved = { go(Screen.Web("https://cardstashy.com/#deck/" + android.net.Uri.encode(it) + "/cards")) })
         }
         Screen.Decks -> {
             LaunchedEffect(Unit) { activity.inGame(false) }

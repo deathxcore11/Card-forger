@@ -96,6 +96,7 @@ import dev.cardstashy.nativeplay.play.Progress
 import dev.cardstashy.nativeplay.play.RandomBuild
 import dev.cardstashy.nativeplay.play.TableDecks
 import dev.cardstashy.nativeplay.play.PlayDeckImport
+import dev.cardstashy.nativeplay.play.PlayDeckSaver
 import dev.cardstashy.nativeplay.play.Trunk
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withTimeoutOrNull
@@ -208,7 +209,8 @@ private fun coverOf(raw: JsonObject): String? {
 
 @OptIn(ExperimentalLayoutApi::class)
 @Composable
-fun LobbyScreen(model: LobbyModel, onBack: () -> Unit, onStart: (Pick) -> Unit, onOpenDecks: () -> Unit, onSignIn: () -> Unit, onFriends: () -> Unit, online: Boolean = true) {
+fun LobbyScreen(model: LobbyModel, onBack: () -> Unit, onStart: (Pick) -> Unit, onOpenDecks: () -> Unit, onSignIn: () -> Unit, onFriends: () -> Unit, online: Boolean = true,
+                onOpenSaved: (String) -> Unit = {}) {
     val context = LocalContext.current
     val scope = rememberCoroutineScope()
     val session by Account.session.collectAsState()
@@ -346,7 +348,9 @@ fun LobbyScreen(model: LobbyModel, onBack: () -> Unit, onStart: (Pick) -> Unit, 
             }
         }
         if (m.formatOpen) FormatSheet(m)
-        if (m.inspectOpen) Inspector(m, onRemove = { m.put(m.inspected, null); m.inspectOpen = false }, onCard = { cardPick = CardPick(it, "", null, "nonfoil") })
+        if (m.inspectOpen) Inspector(m, onRemove = { m.put(m.inspected, null); m.inspectOpen = false },
+            onSave = { d -> scope.launch { try { PlayDeckSaver.save(context, d); toast("Deck saved to Your decks.") } catch (e: Exception) { toast(e.message ?: "Couldn’t save the deck.") } } },
+            onOpenSaved = { id -> onOpenSaved(id) }, onCard = { cardPick = CardPick(it, "", null, "nonfoil") })
         cardPick?.let { pick -> BackHandler { cardPick = null }; CardSheet(pick, state, CardSheetActions(toast = toast), onClose = { cardPick = null }) }
     }
 }
@@ -878,7 +882,7 @@ private fun Notices(items: List<String>, title: String) {
 // ---------------------------------------------------------------- inspector sheet
 
 @Composable
-private fun Inspector(m: LobbyModel, onRemove: () -> Unit, onCard: (String) -> Unit) {
+private fun Inspector(m: LobbyModel, onRemove: () -> Unit, onSave: (JsonObject) -> Unit, onOpenSaved: (String) -> Unit, onCard: (String) -> Unit) {
     val deck = m.seat(m.inspected)
     val seatName = if (m.inspected == "player") "Your deck" else "CPU deck"
     Box(Modifier.fillMaxSize().background(Color(0x99000000)).tap { m.inspectOpen = false }, contentAlignment = Alignment.BottomCenter) {
@@ -910,8 +914,20 @@ private fun Inspector(m: LobbyModel, onRemove: () -> Unit, onCard: (String) -> U
                     Text(if (ok) "Checked when you play" else "List needs review", style = sans(14f, FontWeight.Bold))
                     Text(if (ok) "Your exact cards will be checked for format legality and game support before the match begins." else "Choose a complete deck with valid card names, quantities and format.", style = sans(13f, color = Muted))
                 }
-                if (deck.source != "saved") Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(10.dp)) {
-                    Text("Temporary for this match", style = sans(12.5f, color = Muted))
+                if (deck.source != "saved") {
+                    PlayDeckSaver.version.collectAsState().value; Workspace.decks.collectAsState().value
+                    val savedCopy = PlayDeckSaver.savedId(deck.raw); val pending = PlayDeckSaver.isSaving(deck.raw)
+                    Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(10.dp)) {
+                        if (savedCopy != null) {
+                            Text("Saved to Your decks", style = sans(12.5f, color = Muted))
+                            Box(Modifier.height(44.dp).clip(RoundedCornerShape(11.dp)).background(Site.Surface2).border(1.dp, Line, RoundedCornerShape(11.dp)).clickable { onOpenSaved(savedCopy) }.padding(horizontal = 12.dp), contentAlignment = Alignment.Center) {
+                                Text("Open saved deck", style = sans(13.5f, FontWeight.Bold)) }
+                        } else {
+                            Box(Modifier.height(44.dp).alpha(if (pending) .55f else 1f).clip(RoundedCornerShape(11.dp)).background(Site.Surface2).border(1.dp, Line, RoundedCornerShape(11.dp)).clickable(enabled = !pending) { onSave(deck.raw) }.padding(horizontal = 16.dp), contentAlignment = Alignment.Center) {
+                                Text(if (pending) "Saving deck…" else "Save deck", style = sans(15f, FontWeight.Bold)) }
+                            Text("Temporary for this match", style = sans(12.5f, color = Muted))
+                        }
+                    }
                 }
                 val rows = deck.raw.getAsJsonArray("cards")?.mapNotNull { r -> (r as? JsonObject)?.let { (it.get("name")?.asString ?: "") to (it.get("qty")?.asDouble?.toInt() ?: 0) } } ?: emptyList()
                 androidx.compose.foundation.layout.BoxWithConstraints { DeckViewerBody(rows, deck.commander, { n -> factByName(n)?.card }, maxWidth, onCard) }
