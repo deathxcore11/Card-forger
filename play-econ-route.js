@@ -9,7 +9,7 @@ import {rewardSet, setFormats} from './play-econ-sets.js';
 import {isBasicLand, starterGrant, sealTrackBonus, packContentsRow, cardDelta, RARITY_SEAL, FORGE_STEPS, forgeRatio, holoCost, preconPrice, mtgjsonCardDelta, mtgjsonDeckRows, deckShortfall, ownedByName, isCollectorPack, collectorOdds, collectorPicks, collectorSource, godPackOdds} from './play-econ-rules.js';
 import {RETIRED_STARTER_NAMES} from './play-starter-deck.js';
 import {weeklySecretLairOffers, secretLairOfferPrice, weeklySecretLair, secretLairPrice, secretLairLabel, secretLairRef, secretLairCardDelta, secretLairStyle, pickSecretLairStyle} from './play-secret-lair.js';
-import {STORY_DEEDS, STORY_ACT_DEEDS, storyDeedsEarned} from './story-deeds.js';
+import {STORY_DEEDS, STORY_ACT_DEEDS, storyDeedsEarned, keyFeatsMissing} from './story-deeds.js';
 import {rerollUsed, weeklyRerollUsed, ACHIEVEMENTS, achievementRows, achievementReward, achievementRef, questRows, questReward, loginStamp, rewardDelta, matchCounters, playDay, playWeek, achievementsPayload} from './play-achievements.js';
 
 const json = (body, status = 200) => new Response(JSON.stringify(body), {status, headers: {'Content-Type': 'application/json', 'Cache-Control': 'no-store'}});
@@ -464,11 +464,17 @@ export async function progressRoute(request, env, {verifyBearer, fetcher = fetch
       const act = await asset(env, request, `/data/story/act-${Number(m[1])}.json`, fetcher);
       const battle = act?.battles?.find(b => b.id === id);
       if (!battle) return fail('bad_battle', 404);
-      // A secret boss (slot 9) only pays once every battle of its act is won with the Story decks.
+      // A secret boss (slot 9) only pays once every battle of its act is won with the Story decks and its key feats are earned.
       if (battle.secret) {
         const refs = await storyRefs();
         if (!Array.isArray(refs)) return fail('not_ready', 503);
-        if (!Array.from({length: 8}, (_, i) => `story:a${Number(m[1])}b${i + 1}:loaner`).every(r => refs.includes(r))) return fail('secret_locked', 403);
+        // Open once all 8 battles are won with the Story decks and the act's key feats are earned (story-deeds.js
+        // KEY_FEATS). Whoever already cleared the secret boss keeps it open.
+        if (!refs.includes(`story:${id}:clear`)) {
+          if (!Array.from({length: 8}, (_, i) => `story:a${Number(m[1])}b${i + 1}:loaner`).every(r => refs.includes(r))) return fail('secret_locked', 403);
+          const missing = keyFeatsMissing(Number(m[1]), await counters.read());
+          if (missing.length) return json({error: 'secret_locked', keys: missing}, 403);
+        }
       }
       const cfg = (await state()).config?.story || {}, set = battle.rewardSet, pack = n => Array.from({length: n}, () => ({set, source: 'story'}));
       const reward = battle.reward || {hero: {packs: cfg.firstWinPacks ?? 1, coins: 0}, villain: {card: null, coins: cfg.starCoins ?? 100}};

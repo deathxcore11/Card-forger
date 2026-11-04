@@ -1607,3 +1607,5 @@ body.practice-table-open .ach-toast{top:calc(env(safe-area-inset-top,0px) + 12px
 /* The record line sits under the tile, so the Selected and Missing cards pills stay on the tile. */
 .play-deck-choice.has-record .play-deck-selection{bottom:calc(14px + 2.9em)}
 .play-deck-choice.has-record .play-deck-lock{bottom:calc(8px + 2.9em)}
+.pd-key{display:inline-block;margin-left:8px;padding:2px 8px;border-radius:999px;vertical-align:middle;font:700 11px/1.4 'DM Sans',system-ui,sans-serif;letter-spacing:.08em;text-transform:uppercase;background:#d6ad6426;color:#f3dfb4}
+.st-secret-tease{margin:12px 0 0;padding:12px 14px;border-radius:14px;border:1px dashed #d6ad6455;color:var(--muted);font-size:13px;line-height:1.45}

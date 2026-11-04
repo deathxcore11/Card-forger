@@ -11,7 +11,7 @@ import { configureAiAuth, invalidateAiAuth } from './ai-auth.js';
 import {openPackPreview,ptcgSetRarities,trimPackArt} from './pack-preview.js';
 import {loadMtgBooster,mtgBoosterCards} from './mtg-boosters.js';
 // Booster pack photos trim to the pack itself wherever they appear.
-document.addEventListener('load',e=>{if(e.target?.matches?.('img[data-pack-art]')&&!e.target.closest?.('.pack-generic'))trimPackArt(e.target);},true);
+document.addEventListener('load',e=>{if(e.target?.matches?.('img[data-pack-art]')&&!e.target.closest?.('.pack-generic,.pack-custom'))trimPackArt(e.target);},true);
 import {dailyDetails,todaySetMarkup,todayPackMarkup} from './home-today.js';
 import {syncDesktopPlayEntries,playDeviceGate,watchPlayDeviceEligibility} from './desktop-play.js';
 import {createPlaySetup} from './play-setup.js';
@@ -61,6 +61,8 @@ import {addScannedEntry} from './collection-stack.js';
 import {profileAvatar,profileArt,createProfileArtPicker} from './profile-art.js';
 import {openTabletop} from './tabletop.js';
 import {validCode as validTableCode} from './table-share.js';
+import {openPlayByHand} from './play-by-hand.js';
+import {openWarChest,chestResume,rollDice} from './war-chest.js';
 import {createTableArtResolver} from './tabletop-themes.js';
 import {INFO_TOPICS,findInfo} from './app-info.js';
 import {attachHomeSearch,homeIntent,rankHomeCards,homeQueries,placeGlobalSearch,searchEmblem} from './home-search.js';
@@ -179,7 +181,7 @@ import {STORY_ACTS} from "./story-acts.js";
 import {createStoryProgress,loadAct,loadActPool,ownDeckFits,battleCleared,currentAct,currentBattle,actCleared} from "./story-client.js";
 import {storyHomeMarkup,storyActMarkup,storyBattleMarkup,playScene,createStoryBubbles,starsRow,rewardText} from "./story-ui.js";
 import {storyDeedsEarned} from "./story-deeds.js";
-import { initCloud, pauseLocalConflict, communityRequest, presenceRequest, cloudAccessToken, cloudInfo, realtimeClient, isEmptyWorkspace, statusLabel, scheduleSync, signInGoogle, signInEmail, signInPassword, createAccount, requestPasswordReset, finishPasswordReset, signOut, detachDeviceSync, saveProfile, resolvePending, syncNow, resendConfirmation, deleteAccount } from "./cloud.js";
+import { initCloud, pauseLocalConflict, communityRequest, presenceRequest, tableInviteRequest, cloudAccessToken, cloudInfo, realtimeClient, isEmptyWorkspace, statusLabel, scheduleSync, signInGoogle, signInEmail, signInPassword, createAccount, requestPasswordReset, finishPasswordReset, signOut, detachDeviceSync, saveProfile, resolvePending, syncNow, resendConfirmation, deleteAccount } from "./cloud.js";
 import { withSnapshot, collectionValue, recordValuePoint, cardSig, engineProfile, swapImpact, lotPrice } from "./insights.js";
 
 /* =========================================================
@@ -3851,10 +3853,48 @@ A.replayTour = (t) => openTour({...tourArt(),lesson:t?.dataset?.lesson||'',choos
  if(key==='tabletop')A.tabletop();else go(({find:'#home',save:'#collection',scan:'#scan',build:'#decks/inspiration'})[key]||'#home');
 }});
 const tableArtFor=createTableArtResolver(T.SOURCES);
-const tableCloud={client:()=>realtimeClient(),signedIn:()=>!!cloudInfo().user};
+const tableCloud={client:()=>realtimeClient(),signedIn:()=>!!cloudInfo().user,
+ friends:async()=>cloudInfo().user?[...(await friendPeople()).values()].map(p=>({id:p.id,name:p.display_name||p.username})):[],
+ invite:(to,code)=>tableInviteRequest('send',{to,code}),
+ me:()=>{const p=cloudInfo().profile;return p?{name:p.display_name||p.username||''}:null;},
+ // Seat art: cards from your own Collection, one per name.
+ cards:game=>{const seen=new Set(),out=[];
+  if(game==='mtg'){for(const e of S.state.collection||[]){const n=e?.name;if(!n||seen.has(n))continue;seen.add(n);out.push({name:n,url:'https://api.scryfall.com/cards/named?exact='+encodeURIComponent(n)+'&format=image&version=art_crop'});}}
+  else for(const e of T.gs(game).collection||[]){const c=T.cardOf(game,e.cardId);if(!c?.name||seen.has(c.name))continue;const url=c.artDirect||c.art||c.image;if(url){seen.add(c.name);out.push({name:c.name,url});}}
+  return out.sort((a,b)=>a.name.localeCompare(b.name));}};
+// A friend's Game Night invite: checked every 30 s while signed in and out of a match; one question, then it is cleared.
+const seenTableInvites=new Set();
+async function checkTableInvites(){
+ try{
+  if(cloudInfo().user&&!accountLocked&&document.visibilityState!=='hidden'&&!inMatch()&&!document.querySelector('.tabletop-dialog')){
+   const list=await tableInviteRequest('mine');
+   for(const i of Array.isArray(list)?list:[]){
+    if(!validTableCode(i.code)||seenTableInvites.has(i.code))continue;seenTableInvites.add(i.code);
+    const yes=await ask(String(i.name||'A friend').slice(0,60)+' invites you to their Game Night table. Join?');
+    tableInviteRequest('clear',{from:i.from});if(yes){A.joinTable(i.code);break;}
+   }
+  }
+ }catch{/* checked again shortly */}
+ setTimeout(checkTableInvites,30000);
+}
+setTimeout(checkTableInvites,8000);
 A.tabletop=()=>openTabletop({game:T.game(),confirm:ask,judge:game=>A.askRules({dataset:{game}}),artFor:tableArtFor,cloud:tableCloud});
 // Game Night: the same table, opened from a deck so its journal stays with that deck.
-A.gameNight=()=>{const d=currentDeck();openTabletop({game:T.game(),confirm:ask,judge:game=>A.askRules({dataset:{game}}),artFor:tableArtFor,cloud:tableCloud,deck:d?{id:d.id,name:d.name}:null});};
+A.playByHand=t=>openPlayByHand(t.dataset.hand);
+// Game Night opened from a deck page keeps that deck's journal; from the Decks header it opens without one.
+A.gameNight=(panel='')=>{const inDeck=S.ui.view==='deck'||S.ui.view==='tdeck',d=!inDeck?null:T.game()==='mtg'?currentDeck():T.gs(T.game()).decks.find(x=>x.id===S.ui.tdeckId);openTabletop({game:T.game(),confirm:ask,judge:game=>A.askRules({dataset:{game}}),artFor:tableArtFor,cloud:tableCloud,deck:d?{id:d.id,name:d.name}:null,panel:typeof panel==='string'?panel:''});};
+// The War Chest (war-chest.js): the deck page's tab and the Decks header both send their tools here.
+const chestTool=tool=>{
+ if(tool==='gameNight')return A.gameNight();
+ if(tool==='share'||tool==='spirit'||tool==='journal')return A.gameNight(tool);
+ if(tool==='dice'){const n=document.querySelector('[data-chest-result]');if(n)n.textContent=rollDice();return;}
+ if(tool==='judge')return A.askRules({dataset:{game:T.game()}});
+ if(tool==='lookup')return go('#search');
+ if(tool==='draw')return document.getElementById('chestDraw')?.scrollIntoView({behavior:'smooth',block:'start'});
+ if(tool==='goldfish')return T.game()==='mtg'?A.deckTab({dataset:{id:'engine'}}):A.tDeckTab({dataset:{deck:S.ui.tdeckId,id:'insights'}});
+};
+A.chestTool=t=>chestTool(t.dataset.tool);
+A.warChest=()=>openWarChest({resume:chestResume(T.game()),onTool:chestTool});
 A.joinTable=code=>{history.replaceState(null,'',location.pathname+location.search+'#home');openTabletop({game:T.game(),confirm:ask,artFor:tableArtFor,cloud:tableCloud,joinCode:code});};
 A.dismissGuide=t=>{markGuide(t.dataset.id);markGuide('*');document.querySelectorAll('.context-guide[data-guide]').forEach(g=>g.remove());};
 A.resetOnboarding=async()=>{

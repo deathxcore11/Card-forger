@@ -1,3 +1,4 @@
+import {warChestMarkup,chestResume,CHEST_ICON} from './war-chest.js';
 import {discoverCardMarkup,artistCredit} from './card-discovery.js';
 import {setAtmosphere,packButton} from './set-experience.js';
 import {setYgoReleaseLookup} from './ygo-foil-recipes.js';
@@ -1086,7 +1087,7 @@ export function tcgDecks() {
   const g = game(),
     st = gs(g),
     tab = ["ideas", "inspiration"].includes(S.ui.decksTab) ? S.ui.decksTab : "mine";
-  return `<div class="page-head"><h1>Decks</h1><div class="row"><button class="btn small" data-act="tImport">↥ Import</button><button class="btn ghost small" data-act="tNewDeck">＋ New</button></div></div>
+  return `<div class="page-head"><h1>Decks</h1><div class="row"><button class="btn small ghost wc-open" data-act="warChest">${CHEST_ICON}War Chest</button><button class="btn small" data-act="tImport">↥ Import</button><button class="btn ghost small" data-act="tNewDeck">＋ New</button></div></div>
   ${segmented("decksTab", tab, [["mine", "My decks", "decks"], ["ideas", "Ideas", "ideas"], ["inspiration", "Meta decks", "trophy"]])}
   <div class="random-tools"><button class="btn ghost small" data-act="randomDeckOptions" data-home="1">🎲 Random deck</button></div>
   ${tab === "ideas" ? ideasView(g) : tab === "inspiration" ? metaView(g) : st.decks.length ? `<div class="deck-grid">${st.decks.slice().reverse().map((d) => deckTile(g, d)).join("")}</div>` : empty("No decks yet", `Pick a format and start adding cards, build from cards you own in Ideas, or copy a tournament deck from Meta decks.`, `<button class="btn" data-act="decksTab" data-id="ideas">✧ Ideas from my cards</button><button class="btn ghost" data-act="decksTab" data-id="inspiration">🏆 Meta decks</button>`)}`;
@@ -1443,11 +1444,11 @@ export function tcgDeck(id) {
       ...(s.total ? [{value:shown ?? "—",label:shown == null ? "power unavailable" : "power",attrs:`data-act="tDeckTab" data-deck="${esc(d.id)}" data-id="insights"`}] : [])],
     owned:s.total ? s.owned / s.total : 0,
     actions:[
-      {label:"Playtest",primary:true,attrs:`data-act="tDeckTab" data-deck="${esc(d.id)}" data-id="playtest"`},
-      {label:`Export ${SOURCES[g].exportExt === "ydk" ? ".ydk" : "list"}`,attrs:`data-act="tDeckExport" data-id="${esc(d.id)}"`}],
+      {label:"War Chest",primary:true,attrs:`data-act="tDeckTab" data-deck="${esc(d.id)}" data-id="playtest"`},
+      {label:`Export ${SOURCES[g].exportExt === "ydk" ? ".ydk" : "list"}`,attrs:`data-act="tDeckExport" data-id="${esc(d.id)}"`},{label:"Game Night",attrs:`data-act="gameNight"`}],
     status:`${buildCheck && (!buildCheck.ready || !buildCheck.purchaseEstimateVerified || buildCheck.summoningReview.length) ? `<p class="small warn-text ds-status">${buildCheck.open ? `Incomplete draft: ${buildCheck.open} slots remain. ` : !buildCheck.legalChecked ? "Draft: deck checks still need review. " : buildCheck.missingRequiredSeeds.length ? `Draft: required build-around card missing: ${esc(buildCheck.missingRequiredSeeds.map(s => s.name).join(", "))}. ` : buildCheck.missingEnergy ? `Draft: ${buildCheck.missingEnergy} intended Energy copies are still missing. ` : !buildCheck.ready ? "Draft: the requested purchase budget is not verified. " : ""}${buildCheck.summoningReview.length ? `${buildCheck.coreRouteUnverified ? `${buildCheck.ready ? "Complete list" : "Draft"}, core route unverified` : `${buildCheck.ready ? "Complete list" : "Draft"} · Extra Deck summoning needs review`}. ${esc(buildCheck.summoningReview.map(x => x.explanation).join(" "))} ` : ""}${buildCheck.unpricedPurchaseCopies ? `Known purchase subtotal only; ${buildCheck.unpricedPurchaseCopies} missing copies are unpriced. Total purchase cost is unverified, not free.` : ""}</p>` : ""}`})}
-  <nav class="tabs" role="tablist">${[["cards", "Cards", "cardStack"], ["rules", "Rules", "book"], ["insights", "Power", "trophy"], ["matchups", "Matchups", "sword"], ["upgrade", "Upgrade lab", "build"], ["playtest", "Playtest", "random"]].map(([id, l, icon]) => `<button role="tab" aria-selected="${tab === id}" class="${tab === id ? "on" : ""}" data-act="tDeckTab" data-deck="${esc(d.id)}" data-id="${id}">${labelIcon(icon)}${l}</button>`).join("")}</nav>
-  <div class="deck-body">${tab === "rules" ? interactiveRules(g, {format:d.format}) : tab === "insights" ? deckInsights(g, d, f, s) : tab === "matchups" ? deckMatchupsT(g, d, f) : tab === "upgrade" ? deckUpgradeTab(g, d, f, s) : tab === "playtest" ? deckPlaytest(g, d, f) : tab === "versions" ? deckVersions(g, d) : deckCardsTab(g, d, f, s, issues)}</div>`;
+  <nav class="tabs" role="tablist">${[["cards", "Cards", "cardStack"], ["rules", "Rules", "book"], ["insights", "Power", "trophy"], ["matchups", "Matchups", "sword"], ["upgrade", "Upgrade lab", "build"], ["playtest", "War Chest", "random"]].map(([id, l, icon]) => `<button role="tab" aria-selected="${tab === id}" class="${tab === id ? "on" : ""}" data-act="tDeckTab" data-deck="${esc(d.id)}" data-id="${id}">${labelIcon(icon)}${l}</button>`).join("")}</nav>
+  <div class="deck-body">${tab === "rules" ? interactiveRules(g, {format:d.format}) : tab === "insights" ? deckInsights(g, d, f, s) : tab === "matchups" ? deckMatchupsT(g, d, f) : tab === "upgrade" ? deckUpgradeTab(g, d, f, s) : tab === "playtest" ? warChestMarkup({deck:{id:d.id,name:d.name},resume:chestResume(g)}) + `<section class="wc-draw" id="chestDraw"><h3>Draw a hand</h3>${deckPlaytest(g, d, f)}</section>` : tab === "versions" ? deckVersions(g, d) : deckCardsTab(g, d, f, s, issues)}</div>`;
 }
 
 // Meta / staple tally for the deck, and owned staples that could replace no-emblem cards.

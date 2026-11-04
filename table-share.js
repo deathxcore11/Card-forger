@@ -3,9 +3,9 @@
 // Realtime channels the website already connects to, so there is no new service. The channel name is a
 // long random code (the link). Whoever has the link can watch; tapping needs a signed-in account.
 // Nothing here carries a deck, a collection or a price: only the counters you already see.
-import {changeCounter,undoPlayer,loadTable} from './tabletop.js';
+import {changeCounter,undoPlayer,loadTable,safeArt} from './tabletop.js';
 import {endTurn,undoTurn,cleanNight} from './game-night.js';
-const CODE=/^[A-Za-z0-9_-]{43}$/,HEARTBEAT_MS=15000,AWAY_MS=45000,OPS=['delta','undo','turn','turnUndo'];
+const CODE=/^[A-Za-z0-9_-]{43}$/,HEARTBEAT_MS=15000,AWAY_MS=45000,OPS=['delta','undo','turn','turnUndo','claim'];
 export const newShareCode=()=>{const a=new Uint8Array(32);crypto.getRandomValues(a);return btoa(String.fromCharCode(...a)).replace(/\+/g,'-').replace(/\//g,'_').replace(/=+$/,'');};
 export const shareLink=code=>'https://cardstashy.com/#table/'+code;
 export const shareCodeFromHash=hash=>{const m=/^#table\/([A-Za-z0-9_-]{43})$/.exec(hash||'');return m?m[1]:null;};
@@ -20,6 +20,8 @@ export function applyOp(s,op,now=Date.now()){
  const seat=op.seat;
  if(op.t==='delta')return typeof op.field==='string'&&Number.isInteger(seat)&&changeCounter(s,seat,op.field,op.delta);
  if(op.t==='undo')return Number.isInteger(seat)&&undoPlayer(s,seat);
+ // Taking a seat from the join screen: the seat shows that player's name (and their card art, if any).
+ if(op.t==='claim'){const p=s.players[seat],name=String(op.name||'').replace(/[\u0000-\u001f<>]/g,' ').trim().slice(0,40);if(!Number.isInteger(seat)||!p)return false;if(name)p.name=name;const art=safeArt(op.art);if(art)p.art=art;return !!(name||art);}
  if(op.t==='turn'){endTurn(s,now);return true;}
  return undoTurn(s,now);
 }

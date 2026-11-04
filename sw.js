@@ -1,4 +1,4 @@
-const CACHE = "cardforge-shell-act1-afk-4399-v471";
+const CACHE = "cardforge-shell-warchest-43104-v476";
 const ASSETS = [
   "./assets/fonts/fonts.css",
   "./play-forge-feature.js",
@@ -105,7 +105,7 @@ const ASSETS = [
   "./magic-matchups.css",
   "./settings-theme.js",
   "./settings-storage.js",
-  "./mobile-tilt.js", "./set-experience.js", "./pack-preview.js", "./mtg-boosters.js", "./rarity-emblem.js", "./data-loading.js", "./collector-search.js",
+  "./mobile-tilt.js", "./set-experience.js", "./pack-preview.js", "./pack-wrappers.js", "./mtg-boosters.js", "./rarity-emblem.js", "./data-loading.js", "./collector-search.js",
   "./sync-merge.js",
   "./recovery-store.js",
   "./magic-card-color.js",
@@ -259,7 +259,7 @@ const ASSETS = [
   "./universal-search.js",
   "./search-fan.js",
   "./app-info.js",
-  "./tabletop.js", "./tabletop-themes.js", "./game-night.js", "./table-share.js",
+  "./tabletop.js", "./tabletop-themes.js", "./game-night.js", "./table-share.js", "./play-by-hand.js", "./war-chest.js",
   "./tour-scenes.js",
   "./trade.js",
   "./tier.js",
