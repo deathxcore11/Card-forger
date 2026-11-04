@@ -3,6 +3,7 @@ import {deckBoxMarkup} from './deck-box.js';
 import {esc} from './ui.js';
 import {profileArt,profileAvatar} from './profile-art.js';
 import {GAMES} from './games.js';
+import {presenceLine,PRESENCE_TIMING} from './play-presence.js';
 
 const label=p=>p?.username||p?.display_name||'Collector';
 const safeImage=value=>typeof value==='string'&&/^(https:\/\/|img\/)/.test(value)?value:'';
@@ -44,19 +45,21 @@ export function repairOwnShowcase(item,choices){
 }
 export function sharedBinderRows(item){return item.cards.map((c,index)=>({index,entry:{id:'shared-'+index,cardId:c.id,name:c.name,qty:c.qty},game:item.game,image:c.image,version:c.version,card:{id:c.id,game:item.game,name:c.name,image:c.image,imageLarge:c.image,image_uris:item.game==='mtg'?{normal:c.image}:undefined}}));}
 export const showcaseSections=(items,owner)=>['binder','deck'].map(kind=>{const group=items.filter(i=>i.kind===kind);return `<section class="community-kind-section" aria-label="${kind==='binder'?'Binders':'Decks'}"><div class="community-section-heading"><h2>${kind==='binder'?'Binders':'Decks'} <span>${group.length}</span></h2>${owner?`<button class="btn ghost small" data-community-share="${kind}">Choose ${kind==='binder'?'binders':'decks'}</button>`:''}</div>${group.length?`<div class="community-showcase-grid">${group.map(i=>itemTile(i,owner)).join('')}</div>`:`<p class="community-empty small">${owner?'Choose what to share with accepted friends.':'Nothing shared here yet.'}</p>`}</section>`;}).join('');
-const personPill=(p,controls='')=>`<div class="community-person">${profileAvatar(p.avatar,p)}<span><b>${esc(label(p))}</b></span>${controls}</div>`;
+// live: presenceLine() for an accepted friend (play-presence.js): a dot and what they are doing, or when last seen.
+const presenceText=live=>live?.text?`<small class="community-presence${live.inMatch?' is-match':live.online?' is-online':''}">${esc(live.text)}</small>`:'';
+const personPill=(p,controls='',live=null)=>`<div class="community-person">${profileAvatar(p.avatar,p)}<span><b>${esc(label(p))}</b>${presenceText(live)}</span>${controls}</div>`;
 const profileHTML=(p,items,owner=false)=>{
  const avatar=profileArt(p.avatar),header=profileArt(p.header)||avatar;
  return `<section class="community-profile-card"><div class="community-profile-header${header&&header.ratio<.9?' community-profile-header--card':''}">${header?`<img src="${esc(header.image)}" alt="" onerror="this.hidden=true">`:''}${owner?'<button class="btn ghost small" data-community-header>Edit header</button>':''}</div><div class="community-profile-body"><div class="community-profile-identity"><button class="community-avatar-open" data-community-avatar aria-label="View profile artwork">${profileAvatar(avatar,p)}</button><div><h1>${esc(label(p))}</h1><span class="community-privacy">Accepted friends only</span></div>${owner?'<button class="btn ghost small" data-community-edit>Edit profile</button>':''}</div>${p.bio?`<p class="community-bio">${esc(p.bio)}</p>`:owner?'<p class="muted small">Add a short bio to make this space yours.</p>':''}${showcaseSections(items,owner)}</div></section>`;
 };
 export function communityPage({account,data,busy=false,error,localArt={}}){
  const p={...(account.profile||{}),avatar:data?.art?.avatar||localArt.avatar,header:data?.art?.header||localArt.header},people=data?.people||[],friends=people.filter(p=>p.relationship==='accepted');
- return `<main class="community-page">${!account.user?`<section class="community-signin panel"><h1>Your collection has a story.</h1><p class="muted">Sign in to make your profile and connect with friends.</p><button class="btn" data-community-signin>Sign in</button></section>`:`${error?`<p class="note warn" role="alert">${esc(error)} <button class="link" data-community-retry>Retry</button></p>`:''}<div class="community-layout" aria-busy="${busy}">${profileHTML(p,data?.items||[],true)}<aside class="community-friends panel"><div class="community-section-heading"><h2>Friends${data?` <span>${friends.length}</span>`:""}</h2><button class="btn ghost small" data-community-panel="friends">Open friends</button></div>${busy&&!data?'<p class="muted" role="status">Loading your circle…</p>':''}${friends.map(p=>`<button class="community-friend-link" data-community-person="${esc(p.id)}">${personPill(p)}</button>`).join('')}${data&&!busy&&!error&&!friends.length?'<p class="muted small">Add someone by their username or email. They’ll appear here after accepting.</p>':''}<button class="link small" data-community-requests>Requests${incomingRequestCount(data)?` (${incomingRequestCount(data)})`:""}</button></aside></div>`}</main>`;
+ return `<main class="community-page">${!account.user?`<section class="community-signin panel"><h1>Your collection has a story.</h1><p class="muted">Sign in to make your profile and connect with friends.</p><button class="btn" data-community-signin>Sign in</button></section>`:`${error?`<p class="note warn" role="alert">${esc(error)} <button class="link" data-community-retry>Retry</button></p>`:''}<div class="community-layout" aria-busy="${busy}">${profileHTML(p,data?.items||[],true)}<aside class="community-friends panel"><div class="community-section-heading"><h2>Friends${data?` <span>${friends.length}</span>`:""}</h2><button class="btn ghost small" data-community-panel="friends">Open friends</button></div>${busy&&!data?'<p class="muted" role="status">Loading your circle…</p>':''}${friends.map(p=>`<button class="community-friend-link" data-community-person="${esc(p.id)}">${personPill(p,'',presenceLine(data?.presence?.[p.id]))}</button>`).join('')}${data&&!busy&&!error&&!friends.length?'<p class="muted small">Add someone by their username or email. They’ll appear here after accepting.</p>':''}<button class="link small" data-community-requests>Requests${incomingRequestCount(data)?` (${incomingRequestCount(data)})`:""}</button></aside></div>`}</main>`;
 }
 
 // Crossed swords: challenge a friend to a match.
 const SWORDS='<svg viewBox="0 0 24 24" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M14.5 17.5 3 6V3h3l11.5 11.5"/><path d="m13 19 6-6"/><path d="m16 16 4 4"/><path d="m19 21 2-2"/><path d="M14.5 6.5 18 3h3v3l-3.5 3.5"/><path d="m5 14 4 4"/><path d="m7 17-3 3"/><path d="m3 19 2 2"/></svg>';
-export function createCommunity({account,request,rerender,active,localArt,chooseArt,editProfile,signIn,openArt,openShared,showcaseChoices,editItem,copyDeck,onChange=()=>{},toast,challenge=null}){
+export function createCommunity({account,request,rerender,active,localArt,chooseArt,editProfile,signIn,openArt,openShared,showcaseChoices,editItem,copyDeck,onChange=()=>{},toast,challenge=null,presence=null}){
  let flight=null,returnPanel=null,panelKind='',data=null,busy=false,error='',owner='',generation=0,dialog=null,dialogVersion=0,dialogOwner='',currentPerson=null,preview=null,working=false,shareKind='binder',shareQuery='',viewedItem=null;
  const identity=()=>account().user?.id||'';
  const close=()=>{returnPanel=null;panelKind='';dialogVersion++;dialog?.close();dialog?.remove();dialog=null;currentPerson=null;preview=null;viewedItem=null;};
@@ -67,8 +70,8 @@ export function createCommunity({account,request,rerender,active,localArt,choose
   syncOwner();if(!owner)return Promise.resolve();if(flight)return flight;
   const token=++generation,who=owner;busy=true;error='';redraw();
   const job=(async()=>{try{
-   const next=await Promise.resolve().then(()=>request('overview'));if(token!==generation||who!==identity())return;
-   data=next;
+   const [next,live]=await Promise.all([Promise.resolve().then(()=>request('overview')),presence?Promise.resolve().then(presence).catch(()=>null):null]);if(token!==generation||who!==identity())return;
+   data=next;if(live)data.presence=live;
    for(const [i,item] of (data.items||[]).entries()){
     const repaired=repairOwnShowcase(item,showcaseChoices());
     if(repaired!==item){await request('share',{item:repaired});if(token!==generation||who!==identity())return;data.items[i]=repaired;}
@@ -104,7 +107,7 @@ export function createCommunity({account,request,rerender,active,localArt,choose
   const people=kind==='blocks'?(data?.blocked||[]):(data?.people||[]).filter(p=>p.relationship===(kind==='requests'?'pending':'accepted'));
   const warning=error?`<p class="note warn" role="status">Showing previously loaded information. ${esc(error)} <button class="link" data-community-panel="${kind}">Retry</button></p>`:'';
   if(!data)return '<p role="status">Loading your friends…</p>';
-  return warning+(people.length?people.map(p=>kind==='friends'?`<div class="community-friend-row"><button class="community-friend-link" data-community-person="${esc(p.id)}">${personPill(p)}</button>${challenge?`<button class="community-challenge" data-community-challenge="${esc(p.id)}" aria-label="Challenge ${esc(label(p))} to a match" title="Challenge to a match">${SWORDS}</button>`:''}</div>`:personPill(p,kind==='blocks'?`<button class="btn ghost small" data-community-action="unblock" data-target="${esc(p.id)}">Unblock</button>`:relationshipControls(p)+(p.incoming?'':`<button class="link" data-community-action="decline" data-target="${esc(p.id)}">Cancel</button>`))).join(''):`<p class="muted">${kind==='blocks'?'No blocked accounts.':kind==='requests'?'No pending requests.':'Your accepted friends will appear here. Add a friend to start your circle.'}</p>`);
+  return warning+(people.length?people.map(p=>kind==='friends'?`<div class="community-friend-row"><button class="community-friend-link" data-community-person="${esc(p.id)}">${personPill(p,'',presenceLine(data?.presence?.[p.id]))}</button>${challenge?`<button class="community-challenge" data-community-challenge="${esc(p.id)}" aria-label="Challenge ${esc(label(p))} to a match" title="Challenge to a match">${SWORDS}</button>`:''}</div>`:personPill(p,kind==='blocks'?`<button class="btn ghost small" data-community-action="unblock" data-target="${esc(p.id)}">Unblock</button>`:relationshipControls(p)+(p.incoming?'':`<button class="link" data-community-action="decline" data-target="${esc(p.id)}">Cancel</button>`))).join(''):`<p class="muted">${kind==='blocks'?'No blocked accounts.':kind==='requests'?'No pending requests.':'Your accepted friends will appear here. Add a friend to start your circle.'}</p>`);
  };
  async function openPanel(kind='friends'){
   syncOwner();if(!owner)return signIn();if(kind==='add')return add();
@@ -112,6 +115,11 @@ export function createCommunity({account,request,rerender,active,localArt,choose
   panelKind=kind;
   await refresh();if(dialog!==root||token!==dialogVersion||dialogOwner!==identity())return;
   root.querySelector('.community-dialog-body').innerHTML=(kind==='blocks'?'':friendsNav(kind))+`<div data-friends-content role="region" aria-live="polite">${panelRows(kind)}</div>`;
+
+  // Friends' presence stays fresh while the list is open (every 30s), without reloading the profiles.
+  if(kind==='friends'&&presence){const tick=setInterval(async()=>{if(dialog!==root||token!==dialogVersion||panelKind!=='friends'){clearInterval(tick);return;}
+   const live=await Promise.resolve().then(presence).catch(()=>null);if(!live||!data||dialog!==root||token!==dialogVersion)return;data.presence=live;
+   const box=root.querySelector('[data-friends-content]');if(box)box.innerHTML=panelRows('friends');},PRESENCE_TIMING.friendsMs);}
  }
  const requests=()=>openPanel('requests');
 

@@ -1517,3 +1517,26 @@ button.pd-near-row{cursor:pointer}
 .play-deck-choice.is-locked{position:relative}
 .play-deck-choice.is-locked>.deck-tile,.play-deck-choice.is-locked>button{filter:grayscale(1) brightness(.7);opacity:.6}
 .play-deck-lock{position:absolute;left:8px;bottom:8px;padding:2px 8px;border-radius:999px;background:rgba(0,0,0,.66);color:#f3e6c4;font-size:12px;font-weight:600;pointer-events:none}
+/* Live achievement toasts (play-achievement-toasts.js): a glass pill under the status bar. The art ring glows in the
+   tier's colour (the Hall of Deeds pips); never a gold frame. Above every table and dialog. */
+.ach-toast{--tc:#e0a46c;position:fixed;left:50%;top:calc(env(safe-area-inset-top,0px) + 74px);z-index:2147483000;width:min(358px,calc(100vw - 32px));min-height:68px;display:flex;align-items:center;gap:12px;padding:8px 18px 8px 10px;border-radius:34px;border:1px solid #ffffff17;background:#101218d6;-webkit-backdrop-filter:blur(14px);backdrop-filter:blur(14px);box-shadow:0 12px 32px #000a;color:#eceae4;font:inherit;text-align:left;cursor:pointer;transform:translate(-50%,-140%);opacity:0;touch-action:none;transition:transform .42s cubic-bezier(.2,.8,.25,1.1),opacity .42s}
+.ach-toast.is-in{transform:translate(-50%,0);opacity:1}
+/* Under the app's top row, so it never covers Home or the profile; over a match table (no top row) it sits 12px under the status bar. */
+body.practice-table-open .ach-toast{top:calc(env(safe-area-inset-top,0px) + 12px)}
+@media (min-width:900px){.ach-toast{top:88px}}
+.ach-toast.is-out{transform:translate(-50%,-140%);opacity:0;transition:transform .32s ease-in,opacity .32s ease-in}
+.ach-toast--silver{--tc:#e3e9f0}.ach-toast--gold,.ach-toast--feat{--tc:#f3dfb4}.ach-toast--mythic,.ach-toast--hidden{--tc:#ff9a6a}.ach-toast--honour{--tc:#a9b3c0}
+.ach-toast-art{position:relative;flex:0 0 48px;width:48px;height:48px;border-radius:50%;overflow:hidden;background:#000;box-shadow:0 0 0 2px var(--tc),0 0 18px var(--tc)}
+.ach-toast-art img{display:block;width:100%;height:100%;object-fit:cover}
+.ach-toast-art i{position:absolute;inset:0;background:center/auto 125% no-repeat}
+.ach-toast.is-in .ach-toast-art{animation:achPop .5s .18s cubic-bezier(.3,1.6,.5,1) both,achGlow 1.4s .5s ease-out 1}
+.ach-toast-copy{min-width:0;display:grid;gap:1px}
+.ach-toast-eyebrow{font-size:11px;letter-spacing:.12em;text-transform:uppercase;color:var(--tc)}
+.ach-toast-title{font-weight:700;font-size:16px;line-height:1.2;overflow-wrap:anywhere;display:-webkit-box;-webkit-box-orient:vertical;-webkit-line-clamp:2;overflow:hidden}
+.ach-toast-line{font-size:12px;line-height:1.3;color:#a3a7ae;overflow-wrap:anywhere;display:-webkit-box;-webkit-box-orient:vertical;-webkit-line-clamp:2;overflow:hidden}
+.ach-toast-reward{margin-left:auto;flex:0 0 auto;font-size:12px;font-weight:600;line-height:1.25;text-align:right;color:var(--tc)}
+.ach-toast-more{position:absolute;right:14px;bottom:-9px;font-size:11px;line-height:18px;padding:0 7px;border-radius:9px;background:#232831;border:1px solid #ffffff17}
+.ach-toast:focus-visible{outline:2px solid var(--tc);outline-offset:2px}
+@keyframes achPop{from{transform:scale(.4)}to{transform:scale(1)}}
+@keyframes achGlow{0%{box-shadow:0 0 0 2px var(--tc),0 0 0 0 var(--tc)}40%{box-shadow:0 0 0 2px var(--tc),0 0 30px 8px var(--tc)}100%{box-shadow:0 0 0 2px var(--tc),0 0 18px var(--tc)}}
+@media (prefers-reduced-motion:reduce){.ach-toast,.ach-toast.is-out{transform:translate(-50%,0);transition:opacity .2s}.ach-toast.is-in .ach-toast-art{animation:none}}

@@ -357,6 +357,14 @@ export async function communityRequest(action,payload={}) {
  return data;
 }
 
+// Rich presence (play-presence.js, supabase/migrations/20261104013000_community_presence.sql): beats, the
+// share switch and accepted friends' status. Quiet on failure: presence is never worth an error on screen.
+export async function presenceRequest(action,payload={}) {
+ if(!client?.rpc||!user||!accountReady)return null;
+ const owner=user.id,epoch=syncEpoch;
+ try{const {data,error}=await client.rpc('community_presence',{action,payload});if(error||user?.id!==owner||syncEpoch!==epoch)return null;return data;}catch{return null;}
+}
+
 async function fetchCloud() {
   const { data, error } = await client.from("workspaces").select("data, revision, device, updated_at").eq("user_id", user.id).maybeSingle();
   if (error) throw error;
