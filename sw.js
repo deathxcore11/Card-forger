@@ -258,7 +258,7 @@ const ASSETS = [
   "./universal-search.js",
   "./search-fan.js",
   "./app-info.js",
-  "./tabletop.js", "./tabletop-themes.js",
+  "./tabletop.js", "./tabletop-themes.js", "./game-night.js", "./table-share.js",
   "./tour-scenes.js",
   "./trade.js",
   "./tier.js",

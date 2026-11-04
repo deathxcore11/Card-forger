@@ -146,7 +146,7 @@ export function mtgGoldfish(rows, { size = 60, commander = null, plan = "Midrang
     r = rng(seed),
     kills = [], cmdrTurn = [], spent4 = [], curveOuts = [], dmg6 = [], topEnd = [], flood = [], screw = [],
     dealtBy = new Map(), unmodeledAuras = new Map(),
-    samples = [];
+    samples = [], opens = [];
   if (deck.length < 20) return null;
   const hasTop = deck.some((c) => c.cmc >= 5), hasAura=deck.some(c=>c.aura.aura),
     unmodeledMana=[...new Map(deck.filter(c=>c.land||c.dork||c.rock).filter(c=>c.manaSource.conditional.length||c.manaSource.unknown).map(c=>[c.name,{name:c.name,...c.manaSource}])).values()],
@@ -155,7 +155,7 @@ export function mtgGoldfish(rows, { size = 60, commander = null, plan = "Midrang
   for(const c of deck)if(c.aura.status==="unmodeled")unmodeledAuras.set(c.name,{name:c.name,reason:c.aura.reason});
   for (let run = 0; run < runs; run++) {
     const lib = shuffle(deck.slice(), r),
-      hand = lib.splice(0, 7),
+      hand = lib.splice(0, 7), openNames = hand.map((c) => c.name), openLands = hand.filter((c) => c.land).length,
       log = run < 400 ? [] : null;
     let lands = 0, extra = 0, nextExtra = 0, board = [], damage = 0, kill = null, cmdrCast = null, spent = 0, avail = 0, castEach = 0, bigCast = false;
     const landMana=[],extraMana=[],nextMana=[],permanents=[];
@@ -242,6 +242,7 @@ export function mtgGoldfish(rows, { size = 60, commander = null, plan = "Midrang
       if (kill == null && damage >= life) kill = t;
     }
     kills.push(kill);
+    opens.push({ cards: openNames, lands: openLands, kill, totalLands: lands });
     if (cmdr) cmdrTurn.push(cmdrCast);
     spent4.push(avail ? spent / avail : 0);
     curveOuts.push(castEach === 3);
@@ -258,10 +259,14 @@ export function mtgGoldfish(rows, { size = 60, commander = null, plan = "Midrang
   const pick = (want) => samples.find((s) => s.kill === want) || samples[0],
     typical = pick(killT),
     worst = samples.filter((s) => s.kill == null || s.kill > (killT ?? 99)).sort((a, b) => (b.kill ?? 99) - (a.kill ?? 99))[0];
+  // The three worst opening hands this run met, for "play it out by hand". Slowest kill first, then the
+  // most extreme land count; the same seven cards are shown only once.
+  const seen = new Set(), worstHands = opens.map((o, i) => ({ ...o, i })).sort((a, b) => (b.kill ?? 99) - (a.kill ?? 99) || Math.abs(b.lands - 3.5) - Math.abs(a.lands - 3.5) || a.i - b.i).filter((o) => { const k = [...o.cards].sort().join("|"); if (seen.has(k)) return false; seen.add(k); return true; }).slice(0, 3).map((o) => ({ cards: o.cards, lands: o.lands, kill: o.kill, reason: o.lands <= 1 ? "Almost no lands" : o.lands >= 6 ? "Almost all lands" : o.kill == null ? "No 20 damage by turn 10" : "Slowest of the " + runs + " games" }));
   const target = cmdr ? null : { Aggro: 5, Midrange: 6, Control: 8, Ramp: 6 }[String(plan).split(" ")[0]] ?? 6;
   return {
     game: "mtg",
     runs,
+    worstHands,
     ...(unmodeledMana.length?{manaSources:{status:'partial',excluded:unmodeledMana,limitations:manaLimits},limitations:manaLimits}:{}),
     ...(hasAura?{auraCasting:{status:unmodeledAuras.size?"partial":"bounded",unmodeled:[...unmodeledAuras.values()],limitations:auraLimits},...(!boundedConstructed?{limitations:[...manaLimits,...auraLimits]}:{})}:{}),
     ...(boundedConstructed ? {limitations:[...manaLimits,"Simplified printed-power combat and recognized direct damage against no blockers, not a measured win rate.", "Does not execute cycling/channel, activated abilities, conditional token production, copy triggers, combat support, or full attack restrictions.", "Same-name legendary bodies do not stack; recast ETBs still resolve. Other state-based rules are not fully simulated.",...(hasAura?auraLimits:[])], modeledDraw:rows.filter(r => r.c && !/\bLand\b/.test(r.c.type_line || "")).map(r => ({name:r.c.name, qty:r.qty, castDraw:mtgCastDraw(r.c)}))} : {}),
