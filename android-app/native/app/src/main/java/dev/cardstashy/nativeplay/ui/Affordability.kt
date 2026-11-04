@@ -14,8 +14,14 @@ object Affordability {
     private val WUBRGC = "WUBRGC".map { it.toString() }
     private fun Card.has(t: String) = Regex("\\b$t\\b").containsMatchIn(type)
 
-    /** COST_BENDERS: a card whose cost can bend stays lit (forge-sure false). */
-    fun costBends(c: Card) = COST_BENDERS.containsMatchIn(c.text)
+    /**
+     * Lines that bend OTHER spells' costs ("Equipment and Vehicle spells you cast cost {1} less") work only from the battlefield,
+     * so they never make the card itself cheaper in hand. Without this, Cid, Freeflier Pilot glowed on turn 1 with one land.
+     */
+    private val OTHERS_COST = Regex("[^.\\n]*\\bspells\\b[^.\\n]*\\bcosts?\\b[^.\\n]*\\b(?:less|more)\\b[^.\\n]*\\.?", RegexOption.IGNORE_CASE)
+
+    /** COST_BENDERS: a card whose own cost can bend stays lit (forge-sure false). */
+    fun costBends(c: Card) = COST_BENDERS.containsMatchIn(c.text.replace(OTHERS_COST, ""))
 
     /** manaSources(): each option is a list of tokens, each token the colours it may be; null when this reader can't follow the card. */
     private fun manaSources(card: Card, tapped: Boolean): List<List<List<String>>>? {
@@ -60,7 +66,7 @@ object Affordability {
 
     /** provenUnaffordable(): true only when no way of tapping your sources (plus floating mana) can pay the card's printed cost. */
     fun provenUnaffordable(card: Card, st: MatchState, pool: Map<String, Int>): Boolean {
-        if (card.hidden || card.zone != "Hand" || card.has("Land") || COST_BENDERS.containsMatchIn(card.text)) return false
+        if (card.hidden || card.zone != "Hand" || card.has("Land") || costBends(card)) return false
         val symbols = Regex("\\{[^}]+\\}").findAll(card.manaCost).map { it.value.drop(1).dropLast(1) }.toList()
         if (symbols.isEmpty() || !symbols.all { MANA_SYMBOL.matches(it) }) return false
         val generic = symbols.filter { Regex("\\d").containsMatchIn(it) }.sumOf { it.toInt() }; val colored = symbols.filter { !Regex("\\d").containsMatchIn(it) }
@@ -122,5 +128,19 @@ class ShortCasts {
             if (a == "unavailable" || id in short || a != "available" && Affordability.provenUnaffordable(card, st, st.me.mana)) out[id] = "Not enough mana"
         }
         return out
+    }
+
+    /**
+     * The glow means "you can do this now" (Randall 4 Nov: Cid glowed on turn 1 with one land). Forge lists every card with a
+     * usable ability as actionable, mana or not; its own pay check (HumanActionAffordability, per card as "affordability")
+     * says "available" only when the cost can really be paid now. A card Forge checked and could not prove stays dark here,
+     * but it can still be tapped and tried (X spells, odd alternative costs). Lands that only tap for mana stay dark too.
+     * When the check ran out of time (no answer for a card), the "Not enough mana" reader above decides as before.
+     */
+    fun quiet(st: MatchState, blocked: Map<Int, String>): Set<Int> {
+        if (st.prompt != null) return emptySet()
+        return st.selection.actionable.filterTo(HashSet()) { id ->
+            id !in blocked && st.selection.affordability[id].let { it != null && it != "available" } && (st.card(id) ?: st.players.flatMap { it.command }.firstOrNull { it.id == id })?.controller == st.viewer
+        }
     }
 }

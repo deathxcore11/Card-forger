@@ -156,6 +156,26 @@ class ShotTest {
         finally { dev.cardstashy.nativeplay.ui.HomeTest.forceShort = null }
     }
 
+    /** The app's update prompt (Randall 4 Nov), over Play home: each step, upright and held sideways. */
+    @Test fun updatePrompt() {
+        dev.cardstashy.nativeplay.ui.Motion.still = true
+        dev.cardstashy.nativeplay.ui.homeArt = ::homeArt
+        val notes = listOf("Story" to "Acts 29 to 31 are playable.", "Combat" to "New block, clash and face-hit effects and sounds.",
+            "Handhelds" to "Matches run on Android 8 to 13 devices like the Portal 2.", "Fix" to "Your spell\u2019s card closes once it resolves.")
+        val steps = listOf(
+            "offer" to dev.cardstashy.nativeplay.ui.UpdateUi.Offer("0.4.10", 74_063_483, notes),
+            "downloading" to dev.cardstashy.nativeplay.ui.UpdateUi.Downloading("0.4.10", 39_800_000, 74_063_483),
+            "allow" to dev.cardstashy.nativeplay.ui.UpdateUi.Allow("0.4.10"),
+            "ready" to dev.cardstashy.nativeplay.ui.UpdateUi.Ready("0.4.10"),
+            "failed" to dev.cardstashy.nativeplay.ui.UpdateUi.Failed("0.4.10", "Check your connection and try again. What you already downloaded is kept."))
+        val page = @Composable { ui: dev.cardstashy.nativeplay.ui.UpdateUi -> androidx.compose.foundation.layout.Box(Modifier.fillMaxSize()) {
+            Home(); dev.cardstashy.nativeplay.ui.UpdatePrompt(ui, {}, {}, {}, {}, {}, {}) } }
+        for ((n, ui) in steps) shot("update-$n", 390, 844, 1f) { page(ui) }
+        dev.cardstashy.nativeplay.ui.HomeTest.forceShort = true
+        try { for ((n, ui) in steps.filter { it.first in setOf("offer", "allow") }) shot("update-$n", 844, 390, 1f) { page(ui) } }
+        finally { dev.cardstashy.nativeplay.ui.HomeTest.forceShort = null }
+    }
+
     /** A controller on a handheld: the gold focus ring on Quick Play and the A/B hint (Pad connected). */
     @Test fun padFocus() {
         dev.cardstashy.nativeplay.ui.Motion.still = true

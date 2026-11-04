@@ -124,10 +124,14 @@ class MainActivity : ComponentActivity() {
                     }
                 }
                 dev.cardstashy.nativeplay.ui.AchievementToastHost(page)
+                UpdateHost(this@MainActivity)
                 PadHintHost()
             }
         }
+        Updater.check(this)
     }
+
+    override fun onResume() { super.onResume(); Updater.resumed(this) }
 
     override fun dispatchTouchEvent(ev: android.view.MotionEvent): Boolean { FreezeReport.touched(ev); return super.dispatchTouchEvent(ev) }
 
@@ -174,7 +178,7 @@ class MainActivity : ComponentActivity() {
      */
     private var lastGame = false; private var lastPlay = true
     fun inGame(on: Boolean, play: Boolean = false) {
-        lastGame = on; lastPlay = play
+        lastGame = on; lastPlay = play; Updater.inGame = on
         dev.cardstashy.nativeplay.art.ThumbStore.paused = on // the table gets the network and CPU
         val sideways = on || (play && resources.configuration.smallestScreenWidthDp < 600)  // play = Planeswalk on a phone
         requestedOrientation = if (sideways) ActivityInfo.SCREEN_ORIENTATION_SENSOR_LANDSCAPE else ActivityInfo.SCREEN_ORIENTATION_FULL_USER
@@ -189,6 +193,15 @@ class MainActivity : ComponentActivity() {
         super.onConfigurationChanged(newConfig)
         inGame(lastGame, lastPlay)
     }
+}
+
+/** The update prompt over the menus; at the table it waits until the match is over. */
+@Composable
+private fun UpdateHost(activity: MainActivity) {
+    val ui = Updater.ui ?: return
+    if (Updater.inGame) return
+    dev.cardstashy.nativeplay.ui.UpdatePrompt(ui, onUpdate = { Updater.start(activity) }, onAllow = { Updater.allow(activity) }, onInstall = { Updater.install(activity) },
+        onRetry = { Updater.retry(activity) }, onCancel = { Updater.cancel() }, onLater = { Updater.later(activity) })
 }
 
 /** After a freeze: one glass strip that sends the phone's own report of the stuck line (share sheet), or goes away. */

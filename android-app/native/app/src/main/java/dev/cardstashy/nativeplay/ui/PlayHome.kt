@@ -50,6 +50,7 @@ import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.draw.blur
 import androidx.compose.ui.graphics.graphicsLayer
+import androidx.compose.ui.zIndex
 import androidx.compose.ui.graphics.ImageBitmap
 import androidx.compose.ui.graphics.asAndroidBitmap
 import androidx.compose.ui.graphics.asImageBitmap
@@ -495,13 +496,26 @@ private fun StoryCard(d: PlayHomeData, wide: Boolean, act: PlayHomeActions, shor
                         Box(Modifier.size(if (boss) 30.dp else 22.dp, 8.dp).clip(CircleShape).background(if (on) P.Gold else Color(0x26FFFFFF))
                             .border(1.dp, if (on) P.Gold else if (boss) Color(0x88D6AD64) else Color(0x22FFFFFF), CircleShape)) }
                 }
+                // The dots alone read as decoration (Randall 4 Nov): say it in words too.
+                Text(if (d.story.done) "All ${a.battles} battles won" else "${d.story.won} of ${a.battles} battles won",
+                    style = TextStyle(fontFamily = P.Sans, fontWeight = FontWeight.SemiBold, fontSize = 12.sp, color = Color(0xFFB9AE9C)))
                 GoldPlate(if (d.story.done) "Replay" else if (d.story.won > 0) "Continue" else "Begin", onClick = act.story)
             }
         }
-        val packs = @Composable { m: Modifier, w: Dp ->
-            Row(m, horizontalArrangement = Arrangement.spacedBy(if (wide) 24.dp else 14.dp), verticalAlignment = Alignment.Bottom) {
-                a.packs.take(3).forEachIndexed { i, (code, name) ->
-                    Booster(code, name, Modifier.width(if (i == 1) w * 1.18f else w).rotate(listOf(-4f, 0f, 4f).getOrElse(i) { 0f }), mini = true)
+        // A balanced fan: the middle pack a little bigger and in front, the outer two tilted out by the same amount.
+        // Upright on a phone the three always fit the card (Randall 4 Nov: the third pack was squeezed against the edge).
+        val packs = @Composable { m: Modifier, cap: Dp ->
+            BoxWithConstraints(m.fillMaxWidth(), contentAlignment = Alignment.Center) {
+                val gap = if (wide) 24.dp else 12.dp
+                val w = ((maxWidth - gap * 2) / 3.18f).coerceAtMost(cap)
+                val list = a.packs.take(3)
+                Row(horizontalArrangement = Arrangement.spacedBy(gap), verticalAlignment = Alignment.Bottom) {
+                    list.forEachIndexed { i, (code, name) ->
+                        val middle = list.size == 3 && i == 1
+                        val tilt = if (list.size == 3) listOf(-5f, 0f, 5f)[i] else 0f
+                        Booster(code, name, Modifier.width(if (middle) w * 1.18f else w).zIndex(if (middle) 1f else 0f)
+                            .graphicsLayer { rotationZ = tilt; transformOrigin = androidx.compose.ui.graphics.TransformOrigin(.5f, 1f) }, mini = true)
+                    }
                 }
             }
         }
@@ -510,12 +524,12 @@ private fun StoryCard(d: PlayHomeData, wide: Boolean, act: PlayHomeActions, shor
         if (wide) BoxWithConstraints(Modifier.fillMaxWidth().heightIn(min = if (short) 250.dp else 360.dp).padding(if (short) 24.dp else 32.dp)) {
             val room = maxWidth - 24.dp - 300.dp
             val w = ((room - 48.dp) / 3.18f).coerceIn(56.dp, if (short) 76.dp else 100.dp)
-            if (maxWidth < 680.dp) Column(Modifier.fillMaxWidth(), verticalArrangement = Arrangement.spacedBy(18.dp, Alignment.Bottom)) { packs(Modifier.align(Alignment.CenterHorizontally), 84.dp); copy(Modifier) }
+            if (maxWidth < 680.dp) Column(Modifier.fillMaxWidth(), verticalArrangement = Arrangement.spacedBy(18.dp, Alignment.Bottom)) { packs(Modifier, 84.dp); copy(Modifier) }
             else Row(Modifier.fillMaxWidth().heightIn(min = if (short) 202.dp else 296.dp), verticalAlignment = Alignment.Bottom, horizontalArrangement = Arrangement.spacedBy(24.dp)) {
-                copy(Modifier.weight(1f).widthIn(min = 300.dp, max = 560.dp)); packs(Modifier, w)
+                copy(Modifier.weight(1f).widthIn(min = 300.dp, max = 560.dp)); packs(Modifier.width(w * 3.18f + 48.dp), w)
             }
         } else Column(Modifier.fillMaxWidth().padding(20.dp), verticalArrangement = Arrangement.spacedBy(22.dp)) {
-            packs(Modifier.align(Alignment.CenterHorizontally), 96.dp); copy(Modifier)
+            packs(Modifier, 96.dp); copy(Modifier)
         }
     }
 }

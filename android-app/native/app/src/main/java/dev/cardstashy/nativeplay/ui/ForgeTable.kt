@@ -259,13 +259,14 @@ fun ForgeBoard(
             // forge-table.mjs: a card you can't pay for leaves the playable set and says why ("Not enough mana").
             val shortCasts = remember { ShortCasts() }
             val blocked = remember(st) { shortCasts.blocked(st) }
+            val quiet = remember(st, blocked) { shortCasts.quiet(st, blocked) }
             fun markOf(card: Card): Mark = when {
                 !live -> Mark.NONE
                 card.id in blocked -> Mark.NONE
                 card.id in st.selection.chosenCards -> Mark.PICKED
                 card.id in st.selection.targetCards -> Mark.TARGET
                 card.id in st.selection.cards -> if (discarding) Mark.DISCARD else Mark.PICKABLE
-                card.id in st.selection.actionable -> Mark.PLAYABLE
+                card.id in st.selection.actionable -> if (card.id in quiet) Mark.NONE else Mark.PLAYABLE
                 else -> Mark.NONE
             }
             fun tapOf(card: Card): (() -> Unit)? = if (live && (card.id in st.selection.cards || card.id in st.selection.targetCards || (card.id in st.selection.actionable && card.id !in blocked) || card.id in st.selection.chosenCards ||
@@ -369,7 +370,7 @@ fun ForgeBoard(
                 .then(if (handAnchors != null) Modifier.onGloballyPositioned { handAnchors.putRect("hand", it.boundsInRoot()) } else Modifier)) {
                 HandFan(hand, handW, Modifier.fillMaxWidth(), raised = selectedHand, angleDeg = 1.2f,
                     markOf = ::markOf,
-                    canPlay = { card -> live && card.id in st.selection.actionable && card.id !in blocked },
+                    canPlay = { card -> live && card.id in st.selection.actionable && card.id !in blocked && card.id !in quiet },
                     blockedOf = { card -> if (live) blocked[card.id] else null },
                     onTap = { card ->
                         val playable = live && card.id in st.selection.actionable && card.id !in blocked

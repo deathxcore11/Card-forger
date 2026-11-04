@@ -555,6 +555,8 @@ private fun Check(label: String, on: Boolean, foot: String? = null, onChange: (B
 /** This build's notes: short, plain, what a player would notice. */
 private val WHATS_NEW = listOf(
     "Story" to "Acts 29 to 31 are playable.",
+    "Updates" to "The app finds new versions and installs them for you.",
+    "Fix" to "Cards only glow when you can pay for them.",
     "Combat" to "New block, clash and face-hit effects and sounds.",
     "Handhelds" to "Matches run on Android 8 to 13 devices like the Portal 2.",
     "Fix" to "Your spell\u2019s card closes once it resolves.",
@@ -573,7 +575,11 @@ private fun InfoPane(onWeb: (String) -> Unit) {
             Text("Updates", style = S.Btn.copy(fontSize = 16.sp))
             Text("Version $number" + if (test) " \u00B7 test build" else "", style = S.Foot)
         }
-        LinkText("Get the latest", small = true) { onWeb("https://cardstashy.com/downloads") }
+        // The same update prompt as on launch: "Update to X" when the site has a newer build, otherwise a fresh check.
+        val ctx = androidx.compose.ui.platform.LocalContext.current
+        val waiting = dev.cardstashy.nativeplay.Updater.available
+        if (waiting == null && dev.cardstashy.nativeplay.Updater.upToDate) Text("Up to date", style = S.Foot)
+        else LinkText(waiting?.let { "Update to ${it.version}" } ?: "Check for updates", small = true) { dev.cardstashy.nativeplay.Updater.reopen(ctx) }
     }
     Column(verticalArrangement = Arrangement.spacedBy(4.dp)) {
         Text("WHAT\u2019S NEW", style = S.Eyebrow)
