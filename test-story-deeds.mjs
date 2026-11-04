@@ -32,7 +32,7 @@ assert.ok(!factsMeet({}, {minLife: ['>=', 0]}), 'a fact the match never reported
 
 // --- Every deed reads cards that are really in its battle -------------------------------------------
 const acts = {};
-for (let a = 1; a <= 21; a++) acts[a] = JSON.parse(readFileSync(new URL(`./data/story/act-${a}.json`, import.meta.url), 'utf8'));
+for (let a = 1; a <= 23; a++) acts[a] = JSON.parse(readFileSync(new URL(`./data/story/act-${a}.json`, import.meta.url), 'utf8'));
 const deckNames = side => side.deck.cards.flatMap(c => [c.name, c.name.split(' // ')[0]]);
 const ids = new Set(), arts = new Set();
 for (const d of [...STORY_DEEDS, ...STORY_ACT_DEEDS]) {
