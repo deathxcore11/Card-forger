@@ -55,23 +55,24 @@ export default {
 4 Lantern Scout
 4 Ondu Greathorn
 4 Kor Castigator
-3 Gideon's Reproach
-3 Shoulder to Shoulder
 4 Felidar Cub
-24 Plains`}},
+24 Plains
+3 Kor Scythemaster
+3 Topan Freeblade`}},
       villain: {who: 'drones', deck: {label: 'tribute', name: 'Ulamog\'s Brood', colors: 'UB', list: `
 4 Mist Intruder
 4 Benthic Infiltrator
 4 Culling Drone
 4 Salvage Drone
 4 Dominator Drone
-3 Ulamog's Reclaimer
-4 Eldrazi Skyspawner
+1 Ulamog's Reclaimer
+3 Eldrazi Skyspawner
 3 Murk Strider
-3 Ulamog's Nullifier
 3 Sludge Crawler
 12 Island
-12 Swamp`}},
+12 Swamp
+4 Incubator Drone
+2 Deathless Behemoth`}},
       scene: [q('stage', 'Though Gideon arrived at Sea Gate too late to prevent the massacre, he still had enough time to lead its survivors to relative safety.'),
         q('gideon', 'For the lands you have lost and the beauty that remains, for freedom and the future, we must hold nothing back!'),
         s('gideon', 'Ingest: when an ingest creature deals combat damage to you, you exile the top card of your library. Processors then use those exiled cards. Block the small ones.')],
@@ -87,26 +88,26 @@ export default {
 4 Snapping Gnarlid
 4 Undergrowth Champion
 4 Scythe Leopard
-3 Oran-Rief Hydra
+4 Oran-Rief Hydra
 4 Territorial Baloth
-4 Earthen Arms
-3 Retreat to Kazandu
 4 Lifespring Druid
 4 Tajuru Stalwart
-24 Forest`}},
+24 Forest
+4 Broodhunter Wurm
+2 Nissa's Pilgrimage`}},
       villain: {who: 'lineage', deck: {label: 'tribute', name: 'The Brood Lineage', colors: 'BG', list: `
-3 Brood Butcher
-4 Catacomb Sifter
+2 Brood Butcher
 3 Brood Monitor
 4 Blisterpod
 4 Eyeless Watcher
 4 Carrier Thrall
 4 Culling Drone
 3 Call the Scions
-3 Grasp of Darkness
 4 Vile Redeemer
 12 Swamp
-12 Forest`}},
+12 Forest
+4 Skitterskin
+4 Kozilek's Shrieker`}},
       scene: [q('nissa', 'I was wrong. Zendikar isn\'t after me. It isn\'t after any of us. It\'s not evil or vengeful. It\'s magnificent . . . but it\'s in pain.'),
         q('nissa', 'The land will not wait for the enemy to arrive.'),
         s('nissa', 'Awaken: cast the spell for its awaken cost and one of your lands also becomes a 0/0 Elemental creature with that many +1/+1 counters. It is still a land.')],
@@ -132,8 +133,7 @@ export default {
 24 Island`}},
       villain: {who: 'alhammarret', deck: {label: 'tribute', name: 'The High Arbiter', colors: 'WU', list: `
 2 Alhammarret, High Arbiter
-2 Hixus, Prison Warden
-4 Vryn Wingmare
+2 Vryn Wingmare
 4 Ringwarden Owl
 4 Claustrophobia
 4 Send to Sleep
@@ -142,7 +142,9 @@ export default {
 4 Cleric of the Forward Order
 4 Charging Griffin
 12 Island
-12 Plains`}},
+12 Plains
+2 Celestial Flare
+2 Dreadwaters`}},
       scene: [s('jace', 'He taught me everything. I am starting to wonder what else he took.'),
         s('jace', 'Spell mastery: some spells get a bonus if there are two or more instants or sorceries in your graveyard. Use cheap spells early, then cash in.')],
       villainScene: [q('alhammarret', 'As long as each side thinks it can win, the balance holds, and the mage-rings stand.')],
@@ -170,13 +172,13 @@ export default {
 4 Ruinous Path
 2 Demon's Grasp
 2 Remorseless Punishment
-4 Altar's Reap
+2 Altar's Reap
 2 Kothophed, Soul Hoarder
 4 Despoiler of Souls
-2 Erebos's Titan
+4 Erebos's Titan
 4 Priest of the Blood Rite
-4 Fleshbag Marauder
-2 Dread Defiler
+2 Fleshbag Marauder
+4 Dread Defiler
 24 Swamp`}},
       scene: [q('chandra', 'I hope to meet Jaya Ballard someday. I think we\'d get along.'),
         s('chandra', 'Devoid: these cards have colour in their cost but no colour. Anything that cares about colour, like protection from black, does not see them.')],
@@ -206,9 +208,8 @@ export default {
       villain: {who: 'surge', deck: {label: 'tribute', name: 'Kozilek\'s Brood', colors: 'UR', list: `
 4 Herald of Kozilek
 4 Stormchaser Mage
-4 Containment Membrane
+3 Containment Membrane
 4 Comparative Analysis
-2 Fall of the Titans
 4 Reckless Bushwhacker
 4 Maw of Kozilek
 3 Jori En, Ruin Diver
@@ -216,7 +217,9 @@ export default {
 10 Island
 10 Mountain
 4 Wandering Fumarole
-3 Brutal Expulsion`}},
+2 Brutal Expulsion
+2 Vile Aggregate
+2 Kozilek's Sentinel`}},
       scene: [q('kiora', 'The seas are no less imperiled than the dry lands. This fight is mine as much as it is yours.'),
         q('kiora', 'Nissa is not the only one with a deep connection to Zendikar\'s primal elements.'),
         s('kiora', 'Surge: if you or a teammate cast another spell this turn, surge cards cost less. They chain cheap spells together.')],
@@ -244,17 +247,18 @@ export default {
 4 Blighted Woodland`}},
       villain: {who: 'allies', deck: {label: 'tribute', name: 'Allies', colors: 'GW', archetype: 'Aggro', list: `
 4 Expedition Envoy
-4 Kor Bladewhirl
 3 Tajuru Warcaller
 4 Joraga Auxiliary
 4 Makindi Patrol
-4 Lantern Scout
-3 Veteran Warleader
+2 Lantern Scout
 4 Ondu Greathorn
-2 General Tazri
-4 Undergrowth Champion
+1 General Tazri
+2 Undergrowth Champion
 12 Plains
-12 Forest`}},
+12 Forest
+4 Kor Scythemaster
+4 Tajuru Beastmaster
+4 Broodhunter Wurm`}},
       scene: [q('stage', 'The last hedron slotted into place, locking Ulamog in an infinite loop of binding energy.'),
         s('you', 'Survive to ten mana. Then everything they built goes away.')],
       villainScene: [q('stage', 'Everyone who could still lift a weapon had a part in retaking Sea Gate.')],
@@ -265,15 +269,15 @@ export default {
       blurb: 'The Archive remembers 2015: blue-red thopter decks built around Pia and Kiran Nalaar and Thopter Spy Network, against Drana\'s Kalastria vampires.',
       hero: {who: 'thopters', deck: {label: 'tribute', name: 'Thopters', colors: 'UR', archetype: 'Midrange', list: `
 2 Pia and Kiran Nalaar
-3 Thopter Spy Network
+4 Thopter Spy Network
 4 Whirler Rogue
-4 Hangarback Walker
+2 Hangarback Walker
 4 Thopter Engineer
 4 Ghirapur Gearcrafter
 4 Fiery Impulse
 3 Exquisite Firecraft
 4 Chief of the Foundry
-2 Artificer's Epiphany
+3 Artificer's Epiphany
 2 Jace, Vryn's Prodigy
 10 Island
 10 Mountain
@@ -304,17 +308,19 @@ export default {
 2 Nissa, Voice of Zendikar
 1 Oath of Gideon
 1 Oath of Nissa
-4 Undergrowth Champion
-4 Sylvan Advocate
-3 Felidar Cub
+2 Undergrowth Champion
+2 Sylvan Advocate
+1 Felidar Cub
 3 Ondu Greathorn
-2 Kor Bladewhirl
+4 Kor Bladewhirl
 4 Expedition Envoy
 11 Plains
 13 Forest
-4 Stasis Snare
 3 Gideon's Reproach
-3 Oran-Rief Hydra`}},
+3 Oran-Rief Hydra
+4 Makindi Patrol
+2 Lantern Scout
+2 Shadow Glider`}},
       villain: {who: 'titans', deck: {label: 'tribute', name: 'The Titans', colors: 'C', list: `
 2 Ulamog, the Ceaseless Hunger
 2 Kozilek, the Great Distortion

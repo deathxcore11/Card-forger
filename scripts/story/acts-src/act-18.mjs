@@ -261,16 +261,14 @@ export default {
 10 Island
 4 Plague Myr`}},
       villain: {who: 'crusaders', deck: {label: 'tribute', name: 'Mirran Crusaders', colors: 'W', archetype: 'Aggro', list: `
-2 Mirran Crusader
-2 Hero of Bladehold
 4 Accorder Paladin
 4 Leonin Skyhunter
 2 Timely Reinforcements
 2 Arrest
-2 Kemba's Skyguard
+4 Kemba's Skyguard
 24 Plains
 4 Elite Vanguard
-2 Glint Hawk
+4 Glint Hawk
 4 Siege Mastodon
 4 Griffin Sentinel
 4 Peregrine Griffin`}},

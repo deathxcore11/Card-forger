@@ -390,20 +390,6 @@
        "id": "f4db2f0e-d7d4-417b-9b94-5ade727907e9"
       },
       {
-       "qty": 3,
-       "name": "Gideon's Reproach",
-       "set": "bfz",
-       "number": "30",
-       "id": "453d8ec3-15ae-4851-9efb-161ca2ee6019"
-      },
-      {
-       "qty": 3,
-       "name": "Shoulder to Shoulder",
-       "set": "ogw",
-       "number": "34",
-       "id": "49d11865-a1ea-4f2e-b7da-31630c6d0272"
-      },
-      {
        "qty": 4,
        "name": "Felidar Cub",
        "set": "bfz",
@@ -416,6 +402,20 @@
        "set": "bfz",
        "number": "250",
        "id": "58a735c9-08a1-4950-bf8c-ed1cfba76765"
+      },
+      {
+       "qty": 3,
+       "name": "Kor Scythemaster",
+       "set": "ogw",
+       "number": "23",
+       "id": "5ce587ba-f23a-4548-a5b8-fca54984d4b4"
+      },
+      {
+       "qty": 3,
+       "name": "Topan Freeblade",
+       "set": "ori",
+       "number": "36",
+       "id": "b9ef727b-3e67-46d2-80f9-b1d483977b05"
       }
      ]
     }
@@ -464,14 +464,14 @@
        "id": "12e7e2b5-3141-4a19-aa49-91ab7e5c211c"
       },
       {
-       "qty": 3,
+       "qty": 1,
        "name": "Ulamog's Reclaimer",
        "set": "bfz",
        "number": "68",
        "id": "29a237a6-0e72-47ce-b28d-a0260963f406"
       },
       {
-       "qty": 4,
+       "qty": 3,
        "name": "Eldrazi Skyspawner",
        "set": "bfz",
        "number": "58",
@@ -483,13 +483,6 @@
        "set": "bfz",
        "number": "62",
        "id": "130849ba-3893-490d-bfb0-51c76e53cf62"
-      },
-      {
-       "qty": 3,
-       "name": "Ulamog's Nullifier",
-       "set": "bfz",
-       "number": "207",
-       "id": "acd482ad-ca4a-470f-8a76-14ec7b58316a"
       },
       {
        "qty": 3,
@@ -511,6 +504,20 @@
        "set": "bfz",
        "number": "260",
        "id": "132155ae-f7a4-4957-91cb-e51ff52716f9"
+      },
+      {
+       "qty": 4,
+       "name": "Incubator Drone",
+       "set": "bfz",
+       "number": "60",
+       "id": "e0855762-7068-4111-a6bf-fe6d5b092c74"
+      },
+      {
+       "qty": 2,
+       "name": "Deathless Behemoth",
+       "set": "bfz",
+       "number": "5",
+       "id": "0d98f1df-f99a-43c5-81cd-9d333226857a"
       }
      ]
     }
@@ -522,12 +529,12 @@
     },
     "villain": {
      "card": {
-      "oracle_id": "137de343-e3d0-4ccb-b8fc-680024387367",
-      "name": "Ulamog's Reclaimer",
+      "oracle_id": "78ee8cd8-de12-440f-8890-a78ab40b6be4",
+      "name": "Deathless Behemoth",
       "rarity": "uncommon",
       "set": "bfz",
-      "id": "29a237a6-0e72-47ce-b28d-a0260963f406",
-      "image": "https://cards.scryfall.io/normal/front/2/9/29a237a6-0e72-47ce-b28d-a0260963f406.jpg"
+      "id": "0d98f1df-f99a-43c5-81cd-9d333226857a",
+      "image": "https://cards.scryfall.io/normal/front/0/d/0d98f1df-f99a-43c5-81cd-9d333226857a.jpg"
      },
      "coins": 50
     }
@@ -636,7 +643,7 @@
        "id": "89ef0054-a290-4c41-846d-12f8119c52ae"
       },
       {
-       "qty": 3,
+       "qty": 4,
        "name": "Oran-Rief Hydra",
        "set": "bfz",
        "number": "181",
@@ -648,20 +655,6 @@
        "set": "bfz",
        "number": "196",
        "id": "0c3d4afc-5bb7-4159-9a11-f9c989dd9043"
-      },
-      {
-       "qty": 4,
-       "name": "Earthen Arms",
-       "set": "bfz",
-       "number": "172",
-       "id": "dadc77d8-ef1c-431d-8716-9583f4fad33f"
-      },
-      {
-       "qty": 3,
-       "name": "Retreat to Kazandu",
-       "set": "bfz",
-       "number": "186",
-       "id": "53884f2a-6749-4d85-be64-82919eb30e39"
       },
       {
        "qty": 4,
@@ -683,6 +676,20 @@
        "set": "bfz",
        "number": "270",
        "id": "642102a2-abde-4e76-a6d6-08f7befe1196"
+      },
+      {
+       "qty": 4,
+       "name": "Broodhunter Wurm",
+       "set": "bfz",
+       "number": "171",
+       "id": "c11c852d-9c7c-4d9b-8e79-70ea5ac865df"
+      },
+      {
+       "qty": 2,
+       "name": "Nissa's Pilgrimage",
+       "set": "ori",
+       "number": "190",
+       "id": "800cef89-e90c-4f84-a7a0-3cd203532169"
       }
      ]
     }
@@ -696,18 +703,11 @@
      "label": "tribute",
      "cards": [
       {
-       "qty": 3,
+       "qty": 2,
        "name": "Brood Butcher",
        "set": "bfz",
        "number": "199",
        "id": "2f60fdd6-bc18-4c04-83d8-c204f2b35ff1"
-      },
-      {
-       "qty": 4,
-       "name": "Catacomb Sifter",
-       "set": "bfz",
-       "number": "201",
-       "id": "6c3b220b-e699-45b0-8ec1-1022c1f50329"
       },
       {
        "qty": 3,
@@ -752,13 +752,6 @@
        "id": "5d248ed0-c2b4-4558-9a09-ace8fd4b0599"
       },
       {
-       "qty": 3,
-       "name": "Grasp of Darkness",
-       "set": "ogw",
-       "number": "85",
-       "id": "7d692236-92e5-460f-a8fc-8f6c73eba30c"
-      },
-      {
        "qty": 4,
        "name": "Vile Redeemer",
        "set": "ogw",
@@ -778,6 +771,20 @@
        "set": "bfz",
        "number": "270",
        "id": "642102a2-abde-4e76-a6d6-08f7befe1196"
+      },
+      {
+       "qty": 4,
+       "name": "Skitterskin",
+       "set": "bfz",
+       "number": "97",
+       "id": "e3cbecdc-bc30-4797-bf6f-a7a61db05b48"
+      },
+      {
+       "qty": 4,
+       "name": "Kozilek's Shrieker",
+       "set": "ogw",
+       "number": "73",
+       "id": "a384cd5b-2c6c-4969-bb62-a017e2fc9794"
       }
      ]
     }
@@ -979,13 +986,6 @@
       },
       {
        "qty": 2,
-       "name": "Hixus, Prison Warden",
-       "set": "ori",
-       "number": "19",
-       "id": "d0c21a35-4b70-4de4-93ff-c0ccabdc39e0"
-      },
-      {
-       "qty": 4,
        "name": "Vryn Wingmare",
        "set": "ori",
        "number": "40",
@@ -1053,6 +1053,20 @@
        "set": "bfz",
        "number": "250",
        "id": "58a735c9-08a1-4950-bf8c-ed1cfba76765"
+      },
+      {
+       "qty": 2,
+       "name": "Celestial Flare",
+       "set": "ori",
+       "number": "8",
+       "id": "89bb3b06-b33b-4897-882e-75b75790ea02"
+      },
+      {
+       "qty": 2,
+       "name": "Dreadwaters",
+       "set": "ori",
+       "number": "56",
+       "id": "c4c1434a-4832-4008-a091-e0703dedd0a2"
       }
      ]
     }
@@ -1269,7 +1283,7 @@
        "id": "1dde9379-b335-400f-9748-a7ca3e293ee0"
       },
       {
-       "qty": 4,
+       "qty": 2,
        "name": "Altar's Reap",
        "set": "bfz",
        "number": "103",
@@ -1290,7 +1304,7 @@
        "id": "04a09fe4-d7a0-4065-968d-0837c3eafda0"
       },
       {
-       "qty": 2,
+       "qty": 4,
        "name": "Erebos's Titan",
        "set": "ori",
        "number": "94",
@@ -1304,14 +1318,14 @@
        "id": "118ba6f2-a2f0-4554-ad87-a932c951cdd4"
       },
       {
-       "qty": 4,
+       "qty": 2,
        "name": "Fleshbag Marauder",
        "set": "ori",
        "number": "98",
        "id": "9eb8ea7b-dfac-47bf-b608-efd54e4fe0f1"
       },
       {
-       "qty": 2,
+       "qty": 4,
        "name": "Dread Defiler",
        "set": "ogw",
        "number": "68",
@@ -1544,7 +1558,7 @@
        "id": "7bba1b45-d8ae-42fd-b30f-c904640ab173"
       },
       {
-       "qty": 4,
+       "qty": 3,
        "name": "Containment Membrane",
        "set": "ogw",
        "number": "52",
@@ -1556,13 +1570,6 @@
        "set": "ogw",
        "number": "51",
        "id": "dd83129b-7e8c-4cc5-a7b3-e0ae221d7ad4"
-      },
-      {
-       "qty": 2,
-       "name": "Fall of the Titans",
-       "set": "ogw",
-       "number": "109",
-       "id": "8c21da73-0dad-4b2b-8cc6-61861bed9410"
       },
       {
        "qty": 4,
@@ -1614,11 +1621,25 @@
        "id": "dd0ee251-6c79-499b-8366-c281c989b061"
       },
       {
-       "qty": 3,
+       "qty": 2,
        "name": "Brutal Expulsion",
        "set": "bfz",
        "number": "200",
        "id": "8b0eb64b-a463-4f25-9278-340051139f0e"
+      },
+      {
+       "qty": 2,
+       "name": "Vile Aggregate",
+       "set": "bfz",
+       "number": "137",
+       "id": "1ec66525-a7e9-450f-83df-03d9957837d5"
+      },
+      {
+       "qty": 2,
+       "name": "Kozilek's Sentinel",
+       "set": "bfz",
+       "number": "129",
+       "id": "786c6a0f-3f75-45ff-aae9-5c866be279d0"
       }
      ]
     }
@@ -1832,13 +1853,6 @@
        "id": "41193ef1-1619-4448-9905-26b05079c79a"
       },
       {
-       "qty": 4,
-       "name": "Kor Bladewhirl",
-       "set": "bfz",
-       "number": "34",
-       "id": "e31b12c7-df11-4450-95e1-b9a5aa97af0e"
-      },
-      {
        "qty": 3,
        "name": "Tajuru Warcaller",
        "set": "bfz",
@@ -1860,18 +1874,11 @@
        "id": "ae03f018-3062-4b1c-99b8-13fcffd70b49"
       },
       {
-       "qty": 4,
+       "qty": 2,
        "name": "Lantern Scout",
        "set": "bfz",
        "number": "37",
        "id": "fea3b271-226d-4223-8be8-51b5b2b7cae8"
-      },
-      {
-       "qty": 3,
-       "name": "Veteran Warleader",
-       "set": "bfz",
-       "number": "221",
-       "id": "46c7f3e0-b23a-4786-b452-583d905113e2"
       },
       {
        "qty": 4,
@@ -1881,14 +1888,14 @@
        "id": "95d9668e-05dc-41c4-9326-ef4c0e15dd80"
       },
       {
-       "qty": 2,
+       "qty": 1,
        "name": "General Tazri",
        "set": "ogw",
        "number": "19",
        "id": "34e9aa86-1a31-4c0f-928d-923f066286b6"
       },
       {
-       "qty": 4,
+       "qty": 2,
        "name": "Undergrowth Champion",
        "set": "bfz",
        "number": "197",
@@ -1907,6 +1914,27 @@
        "set": "bfz",
        "number": "270",
        "id": "642102a2-abde-4e76-a6d6-08f7befe1196"
+      },
+      {
+       "qty": 4,
+       "name": "Kor Scythemaster",
+       "set": "ogw",
+       "number": "23",
+       "id": "5ce587ba-f23a-4548-a5b8-fca54984d4b4"
+      },
+      {
+       "qty": 4,
+       "name": "Tajuru Beastmaster",
+       "set": "bfz",
+       "number": "193",
+       "id": "3447b4af-2eb2-48ae-a12e-2fdf83d4cb70"
+      },
+      {
+       "qty": 4,
+       "name": "Broodhunter Wurm",
+       "set": "bfz",
+       "number": "171",
+       "id": "c11c852d-9c7c-4d9b-8e79-70ea5ac865df"
       }
      ]
     }
@@ -2001,7 +2029,7 @@
        "id": "0dcafa9e-3637-42ca-bdb2-45a2b5da7294"
       },
       {
-       "qty": 3,
+       "qty": 4,
        "name": "Thopter Spy Network",
        "set": "ori",
        "number": "79",
@@ -2015,7 +2043,7 @@
        "id": "0feb66d2-c50f-4296-af2f-b374c57443b0"
       },
       {
-       "qty": 4,
+       "qty": 2,
        "name": "Hangarback Walker",
        "set": "ori",
        "number": "229",
@@ -2057,7 +2085,7 @@
        "id": "f2c65947-bc1d-4f47-b60b-2f76ab5ebde9"
       },
       {
-       "qty": 2,
+       "qty": 3,
        "name": "Artificer's Epiphany",
        "set": "ori",
        "number": "45",
@@ -2298,21 +2326,21 @@
        "id": "613513ea-55dd-4ae8-93b2-247e468112a6"
       },
       {
-       "qty": 4,
+       "qty": 2,
        "name": "Undergrowth Champion",
        "set": "bfz",
        "number": "197",
        "id": "d53104d8-5b9a-45b6-a2f9-b2c5d231a03d"
       },
       {
-       "qty": 4,
+       "qty": 2,
        "name": "Sylvan Advocate",
        "set": "ogw",
        "number": "144",
        "id": "4ad1ff9b-306d-47c3-9334-371e4482370b"
       },
       {
-       "qty": 3,
+       "qty": 1,
        "name": "Felidar Cub",
        "set": "bfz",
        "number": "25",
@@ -2326,7 +2354,7 @@
        "id": "95d9668e-05dc-41c4-9326-ef4c0e15dd80"
       },
       {
-       "qty": 2,
+       "qty": 4,
        "name": "Kor Bladewhirl",
        "set": "bfz",
        "number": "34",
@@ -2354,13 +2382,6 @@
        "id": "642102a2-abde-4e76-a6d6-08f7befe1196"
       },
       {
-       "qty": 4,
-       "name": "Stasis Snare",
-       "set": "bfz",
-       "number": "50",
-       "id": "ff820544-f4a3-40c4-a48e-84b5e2d06caa"
-      },
-      {
        "qty": 3,
        "name": "Gideon's Reproach",
        "set": "bfz",
@@ -2373,6 +2394,27 @@
        "set": "bfz",
        "number": "181",
        "id": "74c3276b-2cbc-4266-b16a-bf72c044d95b"
+      },
+      {
+       "qty": 4,
+       "name": "Makindi Patrol",
+       "set": "bfz",
+       "number": "39",
+       "id": "ae03f018-3062-4b1c-99b8-13fcffd70b49"
+      },
+      {
+       "qty": 2,
+       "name": "Lantern Scout",
+       "set": "bfz",
+       "number": "37",
+       "id": "fea3b271-226d-4223-8be8-51b5b2b7cae8"
+      },
+      {
+       "qty": 2,
+       "name": "Shadow Glider",
+       "set": "bfz",
+       "number": "47",
+       "id": "b4ffaf62-2e12-4b1d-a590-f63aacb4a30b"
       }
      ]
     }

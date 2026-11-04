@@ -69,12 +69,11 @@ export default {
 4 Ainok Bond-Kin
 4 Abzan Falconer
 4 Tuskguard Captain
-2 Siege Rhino
 4 Abzan Charm
 2 Armament Corps
 4 Disowned Ancestor
 4 Kin-Tree Warden
-2 Herald of Anafenza
+4 Herald of Anafenza
 7 Plains
 5 Swamp
 6 Forest
@@ -142,22 +141,22 @@ export default {
 4 Wild Slash
 4 Bathe in Dragonfire
 3 Battlefront Krushok
-4 Fierce Invocation
-2 Shaman of the Great Hunt
 2 Whisperwood Elemental
 9 Forest
 7 Mountain
 4 Island
 2 Rugged Highlands
-2 Frontier Bivouac`}},
+2 Frontier Bivouac
+4 Savage Knuckleblade
+2 Alpine Grizzly`}},
       villain: {who: 'tasigur', deck: {label: 'tribute', name: 'The Golden Fang', colors: 'BGU', list: `
-2 Tasigur, the Golden Fang
-4 Gurmag Angler
+1 Tasigur, the Golden Fang
+2 Gurmag Angler
 4 Sibsig Host
 4 Sultai Emissary
-3 Sibsig Muckdraggers
+4 Sibsig Muckdraggers
 4 Douse in Gloom
-3 Reach of Shadows
+2 Reach of Shadows
 4 Write into Being
 4 Hooded Assassin
 10 Swamp
@@ -165,7 +164,8 @@ export default {
 4 Island
 2 Opulent Palace
 2 Jungle Hollow
-4 Typhoid Rats`}},
+4 Typhoid Rats
+3 Kheru Bloodsucker`}},
       scene: [q('stage', 'All at once Sarkhan\'s mind fell silent.'),
         q('yasova', 'As the clans carved out their territories, we saw allies where the Mardu saw only obstacles.'),
         s('yasova', 'Delve: their big creatures exile cards from their graveyard to pay for themselves. An empty graveyard makes them expensive again.')],
@@ -199,9 +199,8 @@ export default {
 4 War-Name Aspirant
 4 Hordeling Outburst
 2 Mardu Charm
-2 Ride Down
 4 Mardu Skullhunter
-2 Butcher of the Horde
+4 Butcher of the Horde
 4 Crackling Doom
 6 Mountain
 6 Plains
@@ -220,32 +219,33 @@ export default {
       blurb: 'Sarkhan reaches the place where Ugin fell after his battle with Nicol Bolas. Ugin is dying. Dragons are circling, and Sarkhan has to hold them off long enough to seal Ugin into a hedron.',
       hero: {who: 'ugin', deck: {label: 'tribute', name: 'The Spirit Dragon\'s Guard', colors: 'GW', list: `
 2 Ugin's Construct
-4 Whisperwood Elemental
 4 Formless Nurturing
-3 Mastery of the Unseen
 4 Soul Summons
 4 Abzan Beastmaster
 4 Sandsteppe Outcast
 4 Map the Wastes
-4 Dragonscale General
-3 Valorous Stance
+2 Dragonscale General
 10 Forest
 10 Plains
-4 Blossoming Sands`}},
+4 Blossoming Sands
+4 Aven Skirmisher
+4 Sandsteppe Mastodon
+2 Abzan Advantage
+2 Valorous Stance`}},
       villain: {who: 'kolaghan', deck: {label: 'tribute', name: 'Kolaghan\'s Brood', colors: 'BR', list: `
 2 Kolaghan, the Storm's Fury
 4 Goblin Heelcutter
 4 Mardu Shadowspear
 4 Mardu Strike Leader
 4 Alesha's Vanguard
-3 Shockmaw Dragon
+4 Shockmaw Dragon
 4 Wild Slash
 4 Douse in Gloom
-3 Flamerush Rider
-4 Battle Brawler
+4 Flamerush Rider
 10 Mountain
 10 Swamp
-4 Bloodfell Caves`}},
+4 Bloodfell Caves
+2 Mardu Heart-Piercer`}},
       scene: [q('stage', 'Ugin\'s whispered summons led Sarkhan Vol to the moment that would echo down the centuries and seal Tarkir\'s fate: the primal battle between Ugin and Nicol Bolas.'),
         q('sarkhan', 'Every choice alters the path of fate.'),
         s('sarkhan', 'Manifest: put the top card of your library onto the battlefield face down as a 2/2. If it is a creature, you can turn it face up for its mana cost.')],
@@ -314,23 +314,22 @@ export default {
 4 Wooded Foothills
 2 Rugged Highlands`}},
       villain: {who: 'esper', deck: {label: 'tribute', name: 'Esper Dragons', colors: 'WUB', archetype: 'Control', list: `
-2 Dragonlord Ojutai
+3 Dragonlord Ojutai
 4 Silumgar's Scorn
 4 Ojutai's Command
 4 Icefall Regent
-2 Silumgar's Command
+4 Silumgar's Command
 1 Dig Through Time
 4 Ultimate Price
-3 Foul-Tongue Invocation
-2 Crux of Fate
-4 Anticipate
-4 Stratus Dancer
+4 Foul-Tongue Invocation
+3 Crux of Fate
+2 Anticipate
+3 Stratus Dancer
 8 Island
 4 Plains
 4 Swamp
 4 Dismal Backwater
-4 Tranquil Cove
-2 Negate`}},
+4 Tranquil Cove`}},
       scene: [q('stage', 'Atarka serving-goblins coat themselves with grease imbued with noxious herbs, hoping to discourage their ravenous masters from adding them to the meal.'),
         s('you', 'Go wide, then pump everything at once. Do not give the dragons time to land.')],
       villainScene: [q('stage', 'Attracting a dragon\'s attention may be the last mistake you make.')],
@@ -342,20 +341,22 @@ export default {
       hero: {who: 'sarkhan', deck: {label: 'tribute', name: 'Sarkhan and Narset', colors: 'URW', list: `
 2 Narset Transcendent
 2 Sarkhan, the Dragonspeaker
-4 Thunderbreak Regent
-3 Stormwing Dragon
+2 Thunderbreak Regent
+1 Stormwing Dragon
 4 Seeker of the Way
 4 Jeskai Windscout
-4 Arc Lightning
+2 Arc Lightning
 3 Ojutai's Command
 4 Draconic Roar
-4 Mantis Rider
 2 Icefall Regent
 7 Mountain
 5 Island
 5 Plains
 4 Mystic Monastery
-3 Swiftwater Cliffs`}},
+3 Swiftwater Cliffs
+4 Jeskai Student
+4 Monastery Flock
+2 Mistfire Weaver`}},
       villain: {who: 'silumgar', deck: {label: 'tribute', name: 'The Silumgar', colors: 'UB', list: `
 2 Dragonlord Silumgar
 2 Silumgar, the Drifting Death
@@ -363,16 +364,15 @@ export default {
 2 Silumgar's Command
 4 Ultimate Price
 3 Foul-Tongue Invocation
-3 Necromaster Dragon
-2 Deathbringer Regent
+4 Necromaster Dragon
+4 Deathbringer Regent
 4 Hand of Silumgar
-3 Gurmag Angler
+4 Gurmag Angler
 2 Crux of Fate
 1 Dig Through Time
 12 Swamp
 8 Island
-4 Dismal Backwater
-4 Silumgar Assassin`}},
+4 Dismal Backwater`}},
       scene: [q('sarkhan', 'In the Tarkir I once knew, the Abzan revered their ancestor trees. Now, as Dromoka, they cut their finest groves to make weapons.'),
         q('narset', 'Abzan, Jeskai, Sultai, Mardu, Temur—names lost to history, yet worthy of further study.'),
         s('narset', 'He takes what you have and keeps it. Make him spend his cards, then spend yours.')],
@@ -391,17 +391,16 @@ export default {
         after: 'Treasure Cruise and Dig Through Time were banned in Modern in January 2015. This tribute follows the Vintage list, so it plays one of each.'},
       blurb: 'Deep in the archive, the card that made a cruise ship cost one blue mana.',
       hero: {who: 'you', deck: {label: 'tribute', name: 'Dragons', colors: 'R', archetype: 'Midrange', list: `
-4 Thunderbreak Regent
 3 Stormwing Dragon
-2 Shockmaw Dragon
-4 Draconic Roar
-4 Dragon Whisperer
-4 Lightning Berserker
-4 Wild Slash
-4 Arc Lightning
+4 Shockmaw Dragon
+2 Dragon Whisperer
 4 Dragon Fodder
-3 Sarkhan's Rage
-24 Mountain`}},
+29 Mountain
+4 Kolaghan Aspirant
+2 Twin Bolt
+4 Sabertooth Outrider
+4 Mardu Scout
+4 Hardened Berserker`}},
       villain: {who: 'cruise', deck: {label: 'tribute', name: 'Treasure Cruise Tempo', note: 'Built from cards in this act\'s sets only. No single tournament list is copied.', colors: 'UR', archetype: 'Tempo', list: `
 4 Monastery Swiftspear
 1 Treasure Cruise
@@ -411,13 +410,12 @@ export default {
 4 Arc Lightning
 4 Wild Slash
 4 Bloodfire Expert
-2 Stratus Dancer
-2 Disdainful Stroke
-2 Mindswipe
+4 Stratus Dancer
 10 Island
 10 Mountain
 4 Swiftwater Cliffs
-4 Jeskai Elder`}},
+4 Jeskai Elder
+2 Mystic of the Hidden Way`}},
       scene: [q('stage', 'Countless delights drift on the surface while dark schemes run below.'),
         s('you', 'Kill the Swiftspears. Make them pay full price.')],
       villainScene: [q('stage', 'The calligraphy of combat is written with strokes of sudden blood.')],

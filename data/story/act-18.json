@@ -1956,20 +1956,6 @@
      "label": "tribute",
      "cards": [
       {
-       "qty": 2,
-       "name": "Mirran Crusader",
-       "set": "mbs",
-       "number": "14",
-       "id": "aaf7a821-3587-4aad-8411-fca5c96ab5c4"
-      },
-      {
-       "qty": 2,
-       "name": "Hero of Bladehold",
-       "set": "mbs",
-       "number": "8",
-       "id": "8a3853ec-e307-46e0-96d7-0706b5c45c5e"
-      },
-      {
        "qty": 4,
        "name": "Accorder Paladin",
        "set": "mbs",
@@ -1998,7 +1984,7 @@
        "id": "f52d6cf9-1d92-4d3b-8631-0db19a073b44"
       },
       {
-       "qty": 2,
+       "qty": 4,
        "name": "Kemba's Skyguard",
        "set": "som",
        "number": "13",
@@ -2019,7 +2005,7 @@
        "id": "f03487e9-f584-4bbd-8335-4dd001a88b52"
       },
       {
-       "qty": 2,
+       "qty": 4,
        "name": "Glint Hawk",
        "set": "som",
        "number": "10",
@@ -2056,12 +2042,12 @@
     },
     "villain": {
      "card": {
-      "oracle_id": "fe69d9bd-2a60-4b33-a0d8-1ca18c2b6705",
-      "name": "Mirran Crusader",
-      "rarity": "rare",
-      "set": "mbs",
-      "id": "aaf7a821-3587-4aad-8411-fca5c96ab5c4",
-      "image": "https://cards.scryfall.io/normal/front/a/a/aaf7a821-3587-4aad-8411-fca5c96ab5c4.jpg"
+      "oracle_id": "64f4f0ed-e924-459e-86a4-8202fae6ef3e",
+      "name": "Timely Reinforcements",
+      "rarity": "uncommon",
+      "set": "m12",
+      "id": "6ae4669c-e526-4c24-9c25-38cb5c5ef59b",
+      "image": "https://cards.scryfall.io/normal/front/6/a/6ae4669c-e526-4c24-9c25-38cb5c5ef59b.jpg"
      },
      "coins": 100
     }

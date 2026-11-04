@@ -781,7 +781,7 @@
      "label": "tribute",
      "cards": [
       {
-       "qty": 2,
+       "qty": 3,
        "name": "Burning-Tree Emissary",
        "set": "gtc",
        "number": "216",
@@ -816,7 +816,7 @@
        "id": "964c88d3-3141-44ab-8856-44a3f08331ea"
       },
       {
-       "qty": 3,
+       "qty": 4,
        "name": "Skinbrand Goblin",
        "set": "gtc",
        "number": "105",
@@ -844,7 +844,7 @@
        "id": "2b2dcafd-eb72-4f3a-9c1c-ba17fe30bf0f"
       },
       {
-       "qty": 4,
+       "qty": 2,
        "name": "Gruul Ragebeast",
        "set": "gtc",
        "number": "170",
@@ -2324,7 +2324,7 @@
      "label": "tribute",
      "cards": [
       {
-       "qty": 4,
+       "qty": 2,
        "name": "Burning Earth",
        "set": "m14",
        "number": "130",
@@ -2366,27 +2366,6 @@
        "id": "a8c468cd-1255-4257-9a69-c6b40a27c427"
       },
       {
-       "qty": 2,
-       "name": "Shock",
-       "set": "m14",
-       "number": "155",
-       "id": "2fbec2ea-7b60-4c51-9782-52ccdd96c4b7"
-      },
-      {
-       "qty": 2,
-       "name": "Annihilating Fire",
-       "set": "rtr",
-       "number": "85",
-       "id": "ae12fd10-c13e-4777-a233-96204ec75ac1"
-      },
-      {
-       "qty": 2,
-       "name": "Electrickery",
-       "set": "rtr",
-       "number": "93",
-       "id": "5ed81ee8-d5e4-4127-876e-9bff81f9c726"
-      },
-      {
        "qty": 4,
        "name": "Ripscale Predator",
        "set": "gtc",
@@ -2401,11 +2380,25 @@
        "id": "3b4a196f-de7e-4100-ad65-56cf8b0a8b23"
       },
       {
-       "qty": 2,
+       "qty": 4,
        "name": "Splatter Thug",
        "set": "rtr",
        "number": "105",
        "id": "7c511805-3392-4033-8679-811711a0aaca"
+      },
+      {
+       "qty": 4,
+       "name": "Viashino Racketeer",
+       "set": "rtr",
+       "number": "112",
+       "id": "bf4c2d22-9c36-42cc-854d-f96410bb5cf1"
+      },
+      {
+       "qty": 2,
+       "name": "Bomber Corps",
+       "set": "gtc",
+       "number": "86",
+       "id": "9b1675f2-e950-4f3c-9dd3-29ead615ff23"
       }
      ]
     }
@@ -2960,7 +2953,7 @@
        "id": "471a5b1d-e2e5-4d90-b72a-ffae81ad6602"
       },
       {
-       "qty": 3,
+       "qty": 2,
        "name": "Ubul Sar Gatekeepers",
        "set": "dgm",
        "number": "30",
@@ -2972,13 +2965,6 @@
        "set": "m14",
        "number": "78",
        "id": "d4000b46-7843-4c07-8332-a10f207e2cdc"
-      },
-      {
-       "qty": 2,
-       "name": "Urban Evolution",
-       "set": "gtc",
-       "number": "204",
-       "id": "9fcd6fac-2cde-4a89-b484-b910be2dcecf"
       },
       {
        "qty": 4,
@@ -2995,7 +2981,7 @@
        "id": "4e9648f9-7a67-4717-bca1-861d1f7fed43"
       },
       {
-       "qty": 3,
+       "qty": 4,
        "name": "Sphinx's Revelation",
        "set": "rtr",
        "number": "200",
@@ -3093,7 +3079,7 @@
        "id": "78f35064-c662-48ff-a2a9-d26f594500f5"
       },
       {
-       "qty": 2,
+       "qty": 4,
        "name": "Detention Sphere",
        "set": "rtr",
        "number": "155",
