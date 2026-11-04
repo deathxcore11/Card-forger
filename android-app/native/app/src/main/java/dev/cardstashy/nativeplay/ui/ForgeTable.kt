@@ -239,7 +239,7 @@ fun ForgeBoard(
     val fx = remember { Battlefield() }
     FxDriver(fx, st)
     androidx.compose.runtime.CompositionLocalProvider(LocalBattlefield provides fx) {
-    BoxWithConstraints(modifier.fillMaxSize().fxSkip(fx)) {
+    BoxWithConstraints(modifier.fillMaxSize().fxSkip(fx).graphicsLayer { fx.shake(this) }) {
         val d = Du(chromeU(maxWidth, maxHeight))
         with(d) {
             val W = maxWidth; val H = maxHeight
