@@ -16,12 +16,12 @@ const PICKS = [
   {key: 'fic-cloud', file: 'cmd/fic/Limit Break (FINAL FANTASY VII).txt', name: 'Limit Break', product: 'Final Fantasy Commander', format: 'Commander', face: 'Cloud, Ex-SOLDIER', plan: 'Voltron: suit up one hero'},
   {key: 'fic-yshtola', file: 'cmd/fic/Scions & Spellcraft (FINAL FANTASY XIV).txt', name: 'Scions & Spellcraft', product: 'Final Fantasy Commander', format: 'Commander', face: "Y'shtola, Night's Blessed", plan: 'Spellslinger'},
   {key: 'tdc-sultai', file: 'cmd/tdc/Sultai Arisen.txt', name: 'Sultai Arisen', product: 'Tarkir: Dragonstorm Commander', format: 'Commander', face: 'Teval, the Balanced Scale', plan: 'Graveyard and lands'},
-  {key: 'blc-bello', file: 'cmd/blc/Animated Army.txt', name: 'Animated Army', product: 'Bloomburrow Commander', format: 'Commander', face: 'Bello, Bard of the Brambles', plan: 'Artifacts and enchantments come alive'},
-  {key: 'tdc-abzan', file: 'cmd/tdc/Abzan Armor.txt', name: 'Abzan Armor', product: 'Tarkir: Dragonstorm Commander', format: 'Commander', face: 'Felothar the Steadfast', plan: 'Big toughness, walls attack'},
+  // Marvel's two beginner Tier 1 picks (Randall 4 Nov 02:10Z) replace Animated Army and Abzan Armor.
+  {key: 'msc-wakanda', file: 'cmd/msc/Wakanda Forever.txt', name: 'Wakanda Forever', product: 'Marvel Super Heroes Commander', format: 'Commander', face: "T'Challa, the Black Panther", plan: 'Ramp into big artifacts'},
+  {key: 'msc-avengers', file: 'cmd/msc/Avengers Assemble.txt', name: 'Avengers Assemble', product: 'Marvel Super Heroes Commander', format: 'Commander', face: 'Captain America, Team Leader', plan: 'Go wide with heroes'},
 ];
 // Same colours and job, with rules in the web engine (play-card-support.js).
-const SWAPS = {'Summon: Kujata': 'Inferno Titan', 'Papalymo Totolymo': 'Archmage of Runes', 'Afterlife from the Loam': 'Dread Return',
-  'Domri, Anarch of Bolas': 'Garruk Wildspeaker', 'Grothama, All-Devouring': 'Craterhoof Behemoth', "Colfenor's Urn": 'Overgrown Battlement'};
+const SWAPS = {'Summon: Kujata': 'Inferno Titan', 'Papalymo Totolymo': 'Archmage of Runes', 'Afterlife from the Loam': 'Dread Return'};
 
 const root = process.argv[2], out = process.argv[3] || new URL('../data/play-starters/precons.json', import.meta.url).pathname;
 if (!root) throw Error('Pass the data folder of a magic-preconstructed-decks clone.');
@@ -32,7 +32,7 @@ for (const p of PICKS) {
   for (const line of text.split('\n')) {
     const date = line.match(/^\/\/ DATE: (\d{4}-\d\d-\d\d)/); if (date) released = date[1];
     if (/^\/\/ ?Sideboard|^Sideboard/i.test(line)) { side = true; continue; }
-    if (side || line.startsWith('//') || !line.trim()) continue;
+    if (side || line.startsWith('//') || !line.trim() || /\[token\]/i.test(line)) continue;
     const m = line.match(/^(COMMANDER: )?(\d+) (.+?)((?: \[[^\]]*\])*)$/);
     if (!m) continue;
     const print = (m[4].match(/\[([A-Za-z0-9]+):([^\]]+)\]/) || []), name = SWAPS[m[3].trim()] || m[3].trim();
