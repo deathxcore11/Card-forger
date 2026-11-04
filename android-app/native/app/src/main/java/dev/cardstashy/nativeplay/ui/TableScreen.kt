@@ -402,7 +402,7 @@ private fun TableSide(st: MatchState, c: MatchController, beat: Beat?, live: Boo
         }
         // native-panel.mjs dock: Forge's own questions (triggers order, costs, damage split, search, choices). Called every frame: the
         // spell-mode back-out acts on the step after a prompt.
-        if (beat == null) BoxWithConstraints(Modifier.fillMaxSize()) { DecisionDock(st, live, c.intents, onInspect, minOf(maxWidth.value / 844f, maxHeight.value / 390f), replies = c.dockReplies) }
+        if (beat == null) BoxWithConstraints(Modifier.fillMaxSize()) { DecisionDock(st, live, c.intents, onInspect, chromeU(maxWidth, maxHeight), replies = c.dockReplies) }
     }
 }
 

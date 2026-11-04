@@ -328,7 +328,7 @@ private class DockCtx(val st: MatchState, val p: Prompt, val live: Boolean, val 
     val hu get() = H.value / d.u
 }
 
-private val Spectral = FontFamily(Font(R.font.spectral_bold, FontWeight.Bold))
+internal val Spectral = FontFamily(Font(R.font.spectral_bold, FontWeight.Bold))
 private val TRIM = LineHeightStyle(LineHeightStyle.Alignment.Center, LineHeightStyle.Trim.None)
 private fun DockU.ts(size: Float, line: Float, weight: FontWeight = FontWeight.Normal, color: Color = Color(0xFFEDF0E8), family: FontFamily = Type.Sans, spacing: Float = 0f) =
     TextStyle(fontFamily = family, fontWeight = weight, fontSize = sp(size), lineHeight = sp(line), color = color, letterSpacing = sp(spacing), lineHeightStyle = TRIM)

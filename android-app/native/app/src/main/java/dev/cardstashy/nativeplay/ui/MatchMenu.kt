@@ -112,12 +112,12 @@ private const val LANDS_ICON = "M3 20l6-10 4 6 3-4 5 8z"
 
 /** .forge-menu-panel: under the menu button (top: 100% + 8px, left 0), min-width 220, padding 8, gap 4, radius 16, #11141bf2, #ffffff1a hairline. */
 @Composable
-internal fun MenuPanel(menu: MatchMenu, stackCount: Int, d: Du) = with(d) {
+internal fun MenuPanel(menu: MatchMenu, stackCount: Int, d: Du, x: Dp, y: Dp) = with(d) {
     // A tap anywhere else closes the menu.
     Box(Modifier.fillMaxSize().zIndex(39f).clickable(remember { MutableInteractionSource() }, null) { menu.open = false })
     val pop = remember { Animatable(0f) }
     LaunchedEffect(Unit) { pop.animateTo(1f, tween(if (Motion.still) 0 else 180)) }
-    Column(Modifier.offset(x = 8.du, y = (34 + 44 + 8).du).zIndex(40f).graphicsLayer { alpha = pop.value; translationY = (1 - pop.value) * -6 * u * density }
+    Column(Modifier.offset(x = x, y = y).zIndex(40f).graphicsLayer { alpha = pop.value; translationY = (1 - pop.value) * -6 * u * density }
         .widthIn(min = 220.du).clip(RoundedCornerShape(16.du)).background(Color(0xF211141B)).border(1.dp, Color(0x1AFFFFFF), RoundedCornerShape(16.du))
         .padding(8.du), verticalArrangement = Arrangement.spacedBy(4.du)) {
         @Composable fun item(label: String, on: Boolean = false, icon: String? = null, onClick: () -> Unit) =
@@ -135,7 +135,7 @@ internal fun MenuPanel(menu: MatchMenu, stackCount: Int, d: Du) = with(d) {
 
 /** .forge-tracker: 210 px (coarse pointer), left 8 (measured), the no-blur fill (#0f1218ee, the site's low-power fallback: Compose has no backdrop blur), top header bottom + 10, down to 12 px above your seat. Library / Opponent tabs and a close. */
 @Composable
-internal fun DeckTracker(st: MatchState, menu: MatchMenu, H: Dp, d: Du) = with(d) {
+internal fun DeckTracker(st: MatchState, menu: MatchMenu, H: Dp, d: Du, x: Dp, top: Dp) = with(d) {
     val side = menu.tracker ?: return@with
     menu.see(st)
     val me = st.me; val lib = me.libraryCount.coerceAtLeast(0)
@@ -153,9 +153,9 @@ internal fun DeckTracker(st: MatchState, menu: MatchMenu, H: Dp, d: Du) = with(d
 
     val pop = remember { Animatable(0f) }
     LaunchedEffect(Unit) { pop.animateTo(1f, tween(if (Motion.still) 0 else 180)) }
-    val top = 88.du; val maxH = maxOf(160.du, H - 98.du - top)
+    val maxH = maxOf(160.du, H - 98.du - top)
     val shape = RoundedCornerShape(16.du)
-    Column(Modifier.offset(x = 8.du, y = top).zIndex(25f).graphicsLayer { alpha = pop.value; translationY = (1 - pop.value) * -6 * u * density; val s = .98f + .02f * pop.value; scaleX = s; scaleY = s }
+    Column(Modifier.offset(x = x, y = top).zIndex(25f).graphicsLayer { alpha = pop.value; translationY = (1 - pop.value) * -6 * u * density; val s = .98f + .02f * pop.value; scaleX = s; scaleY = s }
         .width(210.du).heightIn(max = maxH).clip(shape)
         .background(Color(0xEE0F1218)).background(Brush.linearGradient(listOf(Color(0x12FFFFFF), Color(0x02FFFFFF), Color.Transparent)))
         .border(1.dp, Color(0x1FFFFFFF), shape)) {
