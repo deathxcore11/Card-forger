@@ -2827,7 +2827,7 @@
     "deck": "Snow Stompy",
     "when": "Spring 2021",
     "format": "Standard.",
-    "what": "A green deck that used snow lands to power Icehide Troll, Sculptor of Winter and Blizzard Brawl.",
+    "what": "A green deck that used snow basics to power Icehide Troll, Sculptor of Winter and Blizzard Brawl.",
     "why": "Cheap, efficient snow creatures and a one-mana fight spell made it a fast, consistent attacker.",
     "beat": "Kill the early snow creatures before they grow, and chump block the troll until you can remove it.",
     "after": "Strixhaven and then Adventures in the Forgotten Realms arrived in Standard in 2021."
@@ -2934,7 +2934,7 @@
      "colors": "G",
      "archetype": "Aggro",
      "label": "tribute",
-     "note": "Built from cards in this act's sets only. The real deck used snow lands, which are not in our basic land pool here.",
+     "note": "Built from cards in this act's sets only.",
      "cards": [
       {
        "qty": 4,
@@ -3015,10 +3015,10 @@
       },
       {
        "qty": 24,
-       "name": "Forest",
-       "set": "znr",
-       "number": "278",
-       "id": "d949485e-5188-49f4-9d30-5e135532d445"
+       "name": "Snow-Covered Forest",
+       "set": "khm",
+       "number": "284",
+       "id": "ca17acea-f079-4e53-8176-a2f5c5c408a1"
       }
      ]
     }
