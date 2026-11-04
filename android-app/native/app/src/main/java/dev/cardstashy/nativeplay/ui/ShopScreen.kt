@@ -334,18 +334,25 @@ private suspend fun page(url: String): JsonObject? {
 /** Every printing of the set in set order, from Scryfall (the site's set page reads the same search). */
 private suspend fun setCards(code: String): List<LensCard> = setCache[code] ?: withContext(Dispatchers.IO) {
     val out = ArrayList<LensCard>()
-    var url: String? = "https://api.scryfall.com/cards/search?order=set&unique=prints&q=" + java.net.URLEncoder.encode("e:$code game:paper", "UTF-8")
+    val start = "https://api.scryfall.com/cards/search?order=set&unique=prints&q=" + java.net.URLEncoder.encode("e:$code game:paper", "UTF-8")
+    // Offline, a set this phone already saved (art/ThumbStore) still opens, from its saved printings.
+    val first = page(start) ?: return@withContext dev.cardstashy.nativeplay.art.ThumbStore.savedSet(code).map { lens(it) }.also { if (it.isNotEmpty()) setCache[code] = it }
+    var next: JsonObject? = first
+    var url: String? = start
     while (url != null) {
-        val page = page(url) ?: break
-        page.objs("data").forEach { c ->
-            val img = (c.get("image_uris") as? JsonObject)?.get("normal").s() ?: (c.objs("card_faces").firstOrNull()?.get("image_uris") as? JsonObject)?.get("normal").s() ?: ""
-            out += LensCard(c.get("id").s() ?: "", c.get("oracle_id").s() ?: c.objs("card_faces").firstOrNull()?.get("oracle_id").s() ?: "", c.get("name").s() ?: "",
-                c.get("collector_number").s() ?: "", c.get("rarity").s() ?: "", img)
-        }
+        val page = next ?: page(url) ?: break
+        next = null
+        page.objs("data").forEach { c -> out += lens(c) }
         url = if (page.get("has_more").b()) page.get("next_page").s() else null
         if (url != null) kotlinx.coroutines.delay(100) // Scryfall asks for 50-100 ms between requests
     }
     out.also { if (it.isNotEmpty()) setCache[code] = it }
+}
+
+private fun lens(c: JsonObject): LensCard {
+    val img = (c.get("image_uris") as? JsonObject)?.get("normal").s() ?: (c.objs("card_faces").firstOrNull()?.get("image_uris") as? JsonObject)?.get("normal").s() ?: ""
+    return LensCard(c.get("id").s() ?: "", c.get("oracle_id").s() ?: c.objs("card_faces").firstOrNull()?.get("oracle_id").s() ?: "", c.get("name").s() ?: "",
+        c.get("collector_number").s() ?: "", c.get("rarity").s() ?: "", img)
 }
 
 @Composable
@@ -355,6 +362,8 @@ private fun SetLens(s: JsonObject, code: String, busy: Boolean, onBack: () -> Un
     val owned = remember(s) { s.objs("cards").associate { (it.get("o").s() ?: "") to it.get("c").i() } }
     var attempt by remember(code) { mutableStateOf(0) }
     val cards = produceState<List<LensCard>?>(null, code, attempt) { value = null; value = runCatching { setCards(code) }.getOrDefault(emptyList()) }.value
+    // Offline art plan: the first visit saves the whole set's thumbnails quietly, so the grid is instant from then on.
+    LaunchedEffect(code) { dev.cardstashy.nativeplay.art.ThumbStore.ensureSet(code) }
     val waiting = s.objs("packs").filter { it.get("set").s() == code }
     val sold = s.objs("shop").any { it.get("code").s() == code } || (s.get("rewardSet") as? JsonObject)?.get("code").s() == code
     var query by rememberSaveable(code) { mutableStateOf("") }

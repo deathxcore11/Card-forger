@@ -124,6 +124,7 @@ class MainActivity : ComponentActivity() {
 
     /** Games lock landscape like a video game; menus turn freely (standing rule, 2 Nov). */
     fun inGame(on: Boolean) {
+        dev.cardstashy.nativeplay.art.ThumbStore.paused = on // the table gets the network and CPU
         requestedOrientation = if (on) ActivityInfo.SCREEN_ORIENTATION_SENSOR_LANDSCAPE else ActivityInfo.SCREEN_ORIENTATION_FULL_USER
         val c = WindowCompat.getInsetsController(window, window.decorView)
         if (on) { c.systemBarsBehavior = WindowInsetsControllerCompat.BEHAVIOR_SHOW_TRANSIENT_BARS_BY_SWIPE; c.hide(WindowInsetsCompat.Type.systemBars()) }
