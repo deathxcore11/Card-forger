@@ -61,6 +61,7 @@ import {addScannedEntry} from './collection-stack.js';
 import {profileAvatar,profileArt,createProfileArtPicker} from './profile-art.js';
 import {openTabletop} from './tabletop.js';
 import {validCode as validTableCode} from './table-share.js';
+import {openPlayByHand} from './play-by-hand.js';
 import {createTableArtResolver} from './tabletop-themes.js';
 import {INFO_TOPICS,findInfo} from './app-info.js';
 import {attachHomeSearch,homeIntent,rankHomeCards,homeQueries,placeGlobalSearch,searchEmblem} from './home-search.js';
@@ -179,7 +180,7 @@ import {STORY_ACTS} from "./story-acts.js";
 import {createStoryProgress,loadAct,loadActPool,ownDeckFits,battleCleared,currentAct,currentBattle,actCleared} from "./story-client.js";
 import {storyHomeMarkup,storyActMarkup,storyBattleMarkup,playScene,createStoryBubbles,starsRow,rewardText} from "./story-ui.js";
 import {storyDeedsEarned} from "./story-deeds.js";
-import { initCloud, pauseLocalConflict, communityRequest, presenceRequest, cloudAccessToken, cloudInfo, realtimeClient, isEmptyWorkspace, statusLabel, scheduleSync, signInGoogle, signInEmail, signInPassword, createAccount, requestPasswordReset, finishPasswordReset, signOut, detachDeviceSync, saveProfile, resolvePending, syncNow, resendConfirmation, deleteAccount } from "./cloud.js";
+import { initCloud, pauseLocalConflict, communityRequest, presenceRequest, tableInviteRequest, cloudAccessToken, cloudInfo, realtimeClient, isEmptyWorkspace, statusLabel, scheduleSync, signInGoogle, signInEmail, signInPassword, createAccount, requestPasswordReset, finishPasswordReset, signOut, detachDeviceSync, saveProfile, resolvePending, syncNow, resendConfirmation, deleteAccount } from "./cloud.js";
 import { withSnapshot, collectionValue, recordValuePoint, cardSig, engineProfile, swapImpact, lotPrice } from "./insights.js";
 
 /* =========================================================
@@ -3847,9 +3848,28 @@ A.replayTour = (t) => openTour({...tourArt(),lesson:t?.dataset?.lesson||'',choos
  if(key==='tabletop')A.tabletop();else go(({find:'#home',save:'#collection',scan:'#scan',build:'#decks/inspiration'})[key]||'#home');
 }});
 const tableArtFor=createTableArtResolver(T.SOURCES);
-const tableCloud={client:()=>realtimeClient(),signedIn:()=>!!cloudInfo().user};
+const tableCloud={client:()=>realtimeClient(),signedIn:()=>!!cloudInfo().user,
+ friends:async()=>cloudInfo().user?[...(await friendPeople()).values()].map(p=>({id:p.id,name:p.display_name||p.username})):[],
+ invite:(to,code)=>tableInviteRequest('send',{to,code})};
+// A friend's Game Night invite: checked every 30 s while signed in and out of a match; one question, then it is cleared.
+const seenTableInvites=new Set();
+async function checkTableInvites(){
+ try{
+  if(cloudInfo().user&&!accountLocked&&document.visibilityState!=='hidden'&&!inMatch()&&!document.querySelector('.tabletop-dialog')){
+   const list=await tableInviteRequest('mine');
+   for(const i of Array.isArray(list)?list:[]){
+    if(!validTableCode(i.code)||seenTableInvites.has(i.code))continue;seenTableInvites.add(i.code);
+    const yes=await ask(String(i.name||'A friend').slice(0,60)+' invites you to their Game Night table. Join?');
+    tableInviteRequest('clear',{from:i.from});if(yes){A.joinTable(i.code);break;}
+   }
+  }
+ }catch{/* checked again shortly */}
+ setTimeout(checkTableInvites,30000);
+}
+setTimeout(checkTableInvites,8000);
 A.tabletop=()=>openTabletop({game:T.game(),confirm:ask,judge:game=>A.askRules({dataset:{game}}),artFor:tableArtFor,cloud:tableCloud});
 // Game Night: the same table, opened from a deck so its journal stays with that deck.
+A.playByHand=t=>openPlayByHand(t.dataset.hand);
 A.gameNight=()=>{const d=currentDeck();openTabletop({game:T.game(),confirm:ask,judge:game=>A.askRules({dataset:{game}}),artFor:tableArtFor,cloud:tableCloud,deck:d?{id:d.id,name:d.name}:null});};
 A.joinTable=code=>{history.replaceState(null,'',location.pathname+location.search+'#home');openTabletop({game:T.game(),confirm:ask,artFor:tableArtFor,cloud:tableCloud,joinCode:code});};
 A.dismissGuide=t=>{markGuide(t.dataset.id);markGuide('*');document.querySelectorAll('.context-guide[data-guide]').forEach(g=>g.remove());};

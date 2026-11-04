@@ -74,3 +74,12 @@ changeCounter(hostTable,1,'poison',2);host.publish();assert.equal(seen.players[1
 assert.ok(host.tap({t:'turn'}));assert.equal(seen.turn,1);
 assert.throws(()=>sh.openShare({client:fakeClient('x'),code:'bad',host:false,getState(){},setState(){}}),/not valid/);
 console.log('game night: ok');
+// Play it out by hand
+const pbh=await import('./play-by-hand.js');
+assert.equal(pbh.cleanHand({hand:[1],library:[]}),null);assert.equal(pbh.cleanHand('{bad'),null);
+const h=pbh.startHand({hand:['A','B','C'],library:['D','E']});
+assert.ok(pbh.move(h,'hand',0,'field'));assert.deepEqual([h.hand,h.field],[['B','C'],['A']]);
+assert.equal(pbh.move(h,'hand',9,'field'),false);assert.equal(pbh.move(h,'hand',0,'hand'),false);
+pbh.nextTurn(h);assert.deepEqual([h.turn,h.hand,h.library],[2,['B','C','D'],['E']]);
+assert.ok(pbh.move(h,'field',0,'yard'));pbh.draw(h);assert.equal(pbh.draw(h),false,'library runs out');
+console.log('play by hand: ok');
