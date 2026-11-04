@@ -1,0 +1,3185 @@
+{
+ "act": 30,
+ "era": "2019-10-04",
+ "title": "Three Fairy Tales",
+ "years": "2019 to 2020",
+ "sets": [
+  "eld",
+  "thb",
+  "iko",
+  "m21"
+ ],
+ "landSet": "eld",
+ "intro": [
+  {
+   "who": "stage",
+   "line": "Three stories now, each in its own plane. Eldraine first: castles, knights, and a king who is not what he seems."
+  },
+  {
+   "who": "stage",
+   "line": "Not every tale ends in glory.",
+   "quote": true
+  },
+  {
+   "who": "stage",
+   "line": "Every card in Eldraine has a story, and some of them are lies."
+  }
+ ],
+ "finale": [
+  {
+   "who": "stage",
+   "line": "Just tell us how many you want and get out of the way.",
+   "quote": true
+  },
+  {
+   "who": "stage",
+   "line": "Oko's stories are over. The realm is still its own, and Eldraine goes back to knights and quests."
+  },
+  {
+   "who": "stage",
+   "line": "Recorded: Eldraine, Theros and Ikoria all got their ending. Another war is not far off."
+  }
+ ],
+ "villainFinale": [
+  {
+   "who": "stage",
+   "line": "My advisors recommend I let them eat you.",
+   "quote": true
+  },
+  {
+   "who": "stage",
+   "line": "In this version, the trickster stays on the throne, and the tale is his to tell."
+  }
+ ],
+ "vibe": "three-fairy-tales",
+ "cast": {
+  "you": {
+   "name": "You",
+   "title": "Planeswalker",
+   "portrait": {
+    "card": "Opt",
+    "set": "eld",
+    "number": "59",
+    "id": "c3669391-8f64-4904-b432-0f0582f30449",
+    "crop": "https://cards.scryfall.io/art_crop/front/c/3/c3669391-8f64-4904-b432-0f0582f30449.jpg?1783932651",
+    "artist": "Dan Murayama Scott",
+    "focus": "50% 30%"
+   }
+  },
+  "rowan": {
+   "name": "Rowan and Will",
+   "title": "Kenrith Twins",
+   "portrait": {
+    "card": "Rowan, Fearless Sparkmage",
+    "set": "eld",
+    "number": "304",
+    "id": "030f4058-54e5-4333-bd6c-2789c334bf12",
+    "crop": "https://cards.scryfall.io/art_crop/front/0/3/030f4058-54e5-4333-bd6c-2789c334bf12.jpg?1783932556",
+    "artist": "Zack Stella",
+    "focus": "50% 25%"
+   }
+  },
+  "cult": {
+   "name": "Oko's Court",
+   "title": "Fae and Beasts",
+   "portrait": {
+    "card": "Oko's Accomplices",
+    "set": "eld",
+    "number": "310",
+    "id": "71c52b50-35aa-4858-8c8e-c81dcb29a7fc",
+    "crop": "https://cards.scryfall.io/art_crop/front/7/1/71c52b50-35aa-4858-8c8e-c81dcb29a7fc.jpg?1783932554",
+    "artist": "Zezhou Chen",
+    "focus": "50% 30%"
+   }
+  },
+  "beast": {
+   "name": "The Questing Beast",
+   "title": "Of the Wilds",
+   "portrait": {
+    "card": "Questing Beast",
+    "set": "eld",
+    "number": "171",
+    "id": "e41cf82d-3213-47ce-a015-6e51a8b07e4f",
+    "crop": "https://cards.scryfall.io/art_crop/front/e/4/e41cf82d-3213-47ce-a015-6e51a8b07e4f.jpg?1783932604",
+    "artist": "Igor Kieryluk",
+    "focus": "50% 30%"
+   }
+  },
+  "theros": {
+   "name": "The Faithful",
+   "title": "Of Heliod",
+   "portrait": {
+    "card": "Sunlit Hoplite",
+    "set": "thb",
+    "number": "273",
+    "id": "2f89cf0f-f682-44f8-879c-ed1e22f849b0",
+    "crop": "https://cards.scryfall.io/art_crop/front/2/f/2f89cf0f-f682-44f8-879c-ed1e22f849b0.jpg?1783931500",
+    "artist": "Tomasz Jedruszek",
+    "focus": "50% 30%"
+   }
+  },
+  "elspeth": {
+   "name": "Elspeth",
+   "title": "Hero of Theros",
+   "portrait": {
+    "card": "Elspeth, Sun's Nemesis",
+    "set": "thb",
+    "number": "14",
+    "id": "81aec42f-abb7-42f9-96f5-f1ee2f94db52",
+    "crop": "https://cards.scryfall.io/art_crop/front/8/1/81aec42f-abb7-42f9-96f5-f1ee2f94db52.jpg?1783931598",
+    "artist": "Livia Prima",
+    "focus": "50% 25%"
+   }
+  },
+  "under": {
+   "name": "The Underworld",
+   "title": "Of Erebos",
+   "portrait": {
+    "card": "Woe Strider",
+    "set": "thb",
+    "number": "123",
+    "id": "3457b558-b35b-49fd-b499-b1ec755f86ce",
+    "crop": "https://cards.scryfall.io/art_crop/front/3/4/3457b558-b35b-49fd-b499-b1ec755f86ce.jpg?1783931556",
+    "artist": "John Thacker",
+    "focus": "50% 30%"
+   }
+  },
+  "ashiok": {
+   "name": "Ashiok",
+   "title": "Nightmare Muse",
+   "portrait": {
+    "card": "Ashiok, Nightmare Muse",
+    "set": "thb",
+    "number": "208",
+    "id": "112eb5ce-4fe5-45b3-b810-79fef74b07f9",
+    "crop": "https://cards.scryfall.io/art_crop/front/1/1/112eb5ce-4fe5-45b3-b810-79fef74b07f9.jpg?1783931525",
+    "artist": "Raymond Swanland",
+    "focus": "50% 25%"
+   }
+  },
+  "vivien": {
+   "name": "Vivien",
+   "title": "Monsters' Advocate",
+   "portrait": {
+    "card": "Vivien, Monsters' Advocate",
+    "set": "iko",
+    "number": "175",
+    "id": "504ebb84-7e7b-4119-a128-a9c183c5d9de",
+    "crop": "https://cards.scryfall.io/art_crop/front/5/0/504ebb84-7e7b-4119-a128-a9c183c5d9de.jpg?1783931029",
+    "artist": "Lius Lasahido",
+    "focus": "50% 25%"
+   }
+  },
+  "lukka": {
+   "name": "Lukka",
+   "title": "Coppercoat Outcast",
+   "portrait": {
+    "card": "Lukka, Coppercoat Outcast",
+    "set": "iko",
+    "number": "125",
+    "id": "5798fdf0-d178-43d9-b821-8f3f654654b4",
+    "crop": "https://cards.scryfall.io/art_crop/front/5/7/5798fdf0-d178-43d9-b821-8f3f654654b4.jpg?1783931048",
+    "artist": "Chris Rallis",
+    "focus": "50% 25%"
+   }
+  },
+  "food": {
+   "name": "Simic Food",
+   "title": "Autumn 2019",
+   "portrait": {
+    "card": "Gilded Goose",
+    "set": "eld",
+    "number": "160",
+    "id": "30377bf0-d9b1-4c14-8dde-f74b1e02d604",
+    "crop": "https://cards.scryfall.io/art_crop/front/3/0/30377bf0-d9b1-4c14-8dde-f74b1e02d604.jpg?1783932611",
+    "artist": "Lindsey Look",
+    "focus": "50% 30%"
+   }
+  },
+  "adventures": {
+   "name": "Adventures",
+   "title": "Autumn 2019",
+   "portrait": {
+    "card": "Bonecrusher Giant // Stomp",
+    "set": "eld",
+    "number": "115",
+    "id": "09fd2d9c-1793-4beb-a3fb-7a869f660cd4",
+    "crop": "https://cards.scryfall.io/art_crop/front/0/9/09fd2d9c-1793-4beb-a3fb-7a869f660cd4.jpg?1783932628",
+    "artist": "Victor Adame Minguez",
+    "focus": "50% 30%"
+   }
+  },
+  "mutate": {
+   "name": "Temur Mutate",
+   "title": "Spring 2020",
+   "portrait": {
+    "card": "Illuna, Apex of Wishes",
+    "set": "iko",
+    "number": "190",
+    "id": "9fc99c81-d112-4811-9bba-77a14d904692",
+    "crop": "https://cards.scryfall.io/art_crop/front/9/f/9fc99c81-d112-4811-9bba-77a14d904692.jpg?1783931024",
+    "artist": "Chris Rahn",
+    "focus": "50% 25%"
+   }
+  },
+  "ramp": {
+   "name": "Gruul Ramp",
+   "title": "Spring 2020",
+   "portrait": {
+    "card": "Terror of the Peaks",
+    "set": "m21",
+    "number": "164",
+    "id": "432ecd5f-966f-4403-a973-51e175a524a0",
+    "crop": "https://cards.scryfall.io/art_crop/front/4/3/432ecd5f-966f-4403-a973-51e175a524a0.jpg?1783930684",
+    "artist": "Andrey Kuzinskiy",
+    "focus": "50% 30%"
+   }
+  },
+  "allies": {
+   "name": "Elspeth and the Kenriths",
+   "title": "Three Stories",
+   "portrait": {
+    "card": "Elspeth, Undaunted Hero",
+    "set": "thb",
+    "number": "270",
+    "id": "bf9867e5-9d69-400c-a84f-3b085a4fd510",
+    "crop": "https://cards.scryfall.io/art_crop/front/b/f/bf9867e5-9d69-400c-a84f-3b085a4fd510.jpg?1783931499",
+    "artist": "Steven Belledin",
+    "focus": "50% 25%"
+   }
+  },
+  "oko": {
+   "name": "Oko",
+   "title": "Thief of Crowns",
+   "portrait": {
+    "card": "Oko, Thief of Crowns",
+    "set": "eld",
+    "number": "197",
+    "id": "3462a3d0-5552-49fa-9eb7-100960c55891",
+    "crop": "https://cards.scryfall.io/art_crop/front/3/4/3462a3d0-5552-49fa-9eb7-100960c55891.jpg?1791803810",
+    "artist": "Yongjae Choi",
+    "focus": "50% 25%"
+   }
+  },
+  "fires": {
+   "name": "Fires of Invention",
+   "title": "Autumn 2019",
+   "portrait": {
+    "card": "Syr Carah, the Bold",
+    "set": "eld",
+    "number": "145",
+    "id": "080a249a-df47-4769-bb63-0d8ab3f2467c",
+    "crop": "https://cards.scryfall.io/art_crop/front/0/8/080a249a-df47-4769-bb63-0d8ab3f2467c.jpg?1783932615",
+    "artist": "Wisnu Tan",
+    "focus": "50% 30%"
+   }
+  }
+ },
+ "battles": [
+  {
+   "id": "a30b1",
+   "slot": 1,
+   "kind": "Arrival",
+   "mood": "tension",
+   "title": "Every Card Has a Story",
+   "difficulty": "Easy",
+   "teaches": [
+    "Adventures"
+   ],
+   "blurb": "Rowan Kenrith and her brother come home to Eldraine. Oko's court is already in the castle.",
+   "rewardSet": "eld",
+   "host": false,
+   "hero": {
+    "who": "rowan",
+    "deck": {
+     "name": "The Kenrith Twins",
+     "colors": "UR",
+     "archetype": null,
+     "label": "tribute",
+     "cards": [
+      {
+       "qty": 4,
+       "name": "Rimrock Knight // Boulder Rush",
+       "set": "eld",
+       "number": "137",
+       "id": "a3d13d84-01e4-4429-93db-e5afff811527"
+      },
+      {
+       "qty": 4,
+       "name": "Bonecrusher Giant // Stomp",
+       "set": "eld",
+       "number": "115",
+       "id": "09fd2d9c-1793-4beb-a3fb-7a869f660cd4"
+      },
+      {
+       "qty": 3,
+       "name": "Brazen Borrower // Petty Theft",
+       "set": "eld",
+       "number": "39",
+       "id": "c2089ec9-0665-448f-bfe9-d181de127814"
+      },
+      {
+       "qty": 3,
+       "name": "Merchant of the Vale // Haggle",
+       "set": "eld",
+       "number": "131",
+       "id": "0b4399b6-e67f-40d8-8676-f5db7e04a6c9"
+      },
+      {
+       "qty": 3,
+       "name": "Embereth Shieldbreaker // Battle Display",
+       "set": "eld",
+       "number": "122",
+       "id": "6cc73d16-5ed7-4104-91f6-0997a2080e2e"
+      },
+      {
+       "qty": 3,
+       "name": "Opportunistic Dragon",
+       "set": "eld",
+       "number": "133",
+       "id": "3fa16922-3583-4f5b-8805-509b95a8da49"
+      },
+      {
+       "qty": 2,
+       "name": "Redcap Raiders",
+       "set": "eld",
+       "number": "136",
+       "id": "686cf5c4-6ba3-4fa0-9732-0a350c637c7a"
+      },
+      {
+       "qty": 2,
+       "name": "Rowan, Fearless Sparkmage",
+       "set": "eld",
+       "number": "304",
+       "id": "030f4058-54e5-4333-bd6c-2789c334bf12"
+      },
+      {
+       "qty": 3,
+       "name": "Scorching Dragonfire",
+       "set": "eld",
+       "number": "139",
+       "id": "3b74a806-ed74-458e-8903-d3d084e9f507"
+      },
+      {
+       "qty": 3,
+       "name": "Slaying Fire",
+       "set": "eld",
+       "number": "143",
+       "id": "83b5b110-c430-4ffe-9fc1-8e6987f52d1e"
+      },
+      {
+       "qty": 2,
+       "name": "Thrill of Possibility",
+       "set": "eld",
+       "number": "146",
+       "id": "c9021f85-7ab4-4a78-a398-1611fe09cd14"
+      },
+      {
+       "qty": 2,
+       "name": "Searing Barrage",
+       "set": "eld",
+       "number": "140",
+       "id": "d2f11135-e9ce-4e4c-bea7-72a46d326e40"
+      },
+      {
+       "qty": 2,
+       "name": "Opt",
+       "set": "eld",
+       "number": "59",
+       "id": "c3669391-8f64-4904-b432-0f0582f30449"
+      },
+      {
+       "qty": 4,
+       "name": "Temple of Epiphany",
+       "set": "m21",
+       "number": "252",
+       "id": "1652bb3c-c365-4046-b07e-3d861fa324c6"
+      },
+      {
+       "qty": 4,
+       "name": "Swiftwater Cliffs",
+       "set": "iko",
+       "number": "255",
+       "id": "7108c071-5f1c-4cf5-90c6-530cee3f7685"
+      },
+      {
+       "qty": 8,
+       "name": "Island",
+       "set": "eld",
+       "number": "254",
+       "id": "4134cd82-6e48-4fc0-bcb4-1e3af369ef82"
+      },
+      {
+       "qty": 8,
+       "name": "Mountain",
+       "set": "eld",
+       "number": "262",
+       "id": "32982ed2-96e4-4cc5-8562-744b06bca239"
+      }
+     ]
+    }
+   },
+   "villain": {
+    "who": "cult",
+    "deck": {
+     "name": "Oko's Court",
+     "colors": "GU",
+     "archetype": null,
+     "label": "tribute",
+     "cards": [
+      {
+       "qty": 4,
+       "name": "Garenbrig Carver // Shield's Might",
+       "set": "eld",
+       "number": "156",
+       "id": "194b7a1c-291a-470e-9a40-61b72a46793b"
+      },
+      {
+       "qty": 4,
+       "name": "Rosethorn Acolyte // Seasonal Ritual",
+       "set": "eld",
+       "number": "174",
+       "id": "2a0d430f-da84-4752-940c-8457c525aac9"
+      },
+      {
+       "qty": 3,
+       "name": "Fierce Witchstalker",
+       "set": "eld",
+       "number": "154",
+       "id": "d63a6be2-ae9a-4758-9d5c-0297ef9af57c"
+      },
+      {
+       "qty": 3,
+       "name": "Oko's Accomplices",
+       "set": "eld",
+       "number": "310",
+       "id": "71c52b50-35aa-4858-8c8e-c81dcb29a7fc"
+      },
+      {
+       "qty": 3,
+       "name": "Faerie Vandal",
+       "set": "eld",
+       "number": "45",
+       "id": "789c5c2b-3e51-4f6c-ac76-d276facf716f"
+      },
+      {
+       "qty": 3,
+       "name": "Wicked Wolf",
+       "set": "eld",
+       "number": "181",
+       "id": "09476eac-55d2-4955-8951-ae4ce117c98b"
+      },
+      {
+       "qty": 3,
+       "name": "Oakhame Adversary",
+       "set": "eld",
+       "number": "167",
+       "id": "9fb4e77f-e189-4ad3-9fca-8da04289e396"
+      },
+      {
+       "qty": 3,
+       "name": "Maraleaf Pixie",
+       "set": "eld",
+       "number": "196",
+       "id": "e6d7f9c9-dd83-4684-a949-1c22f316138a"
+      },
+      {
+       "qty": 3,
+       "name": "Fell the Pheasant",
+       "set": "eld",
+       "number": "153",
+       "id": "33d3cc84-7cb6-4de2-9018-4695a3b1e099"
+      },
+      {
+       "qty": 3,
+       "name": "Essence Scatter",
+       "set": "iko",
+       "number": "49",
+       "id": "5f79c8a0-291e-4e13-b765-4cf8c726cf30"
+      },
+      {
+       "qty": 2,
+       "name": "Charmed Sleep",
+       "set": "eld",
+       "number": "40",
+       "id": "f1f97d9e-650b-4b69-8733-d80c8e0f723f"
+      },
+      {
+       "qty": 2,
+       "name": "Opt",
+       "set": "eld",
+       "number": "59",
+       "id": "c3669391-8f64-4904-b432-0f0582f30449"
+      },
+      {
+       "qty": 4,
+       "name": "Thornwood Falls",
+       "set": "eld",
+       "number": "313",
+       "id": "f5159db6-a87f-40eb-8c5c-821dfb67ff6d"
+      },
+      {
+       "qty": 4,
+       "name": "Temple of Mystery",
+       "set": "m21",
+       "number": "254",
+       "id": "81634185-eb67-4d13-8b82-a662b8c9a7f0"
+      },
+      {
+       "qty": 8,
+       "name": "Forest",
+       "set": "eld",
+       "number": "266",
+       "id": "f8f03bb2-313e-4688-945f-052eed678174"
+      },
+      {
+       "qty": 8,
+       "name": "Island",
+       "set": "eld",
+       "number": "254",
+       "id": "4134cd82-6e48-4fc0-bcb4-1e3af369ef82"
+      }
+     ]
+    }
+   },
+   "reward": {
+    "hero": {
+     "packs": 1,
+     "coins": 0
+    },
+    "villain": {
+     "card": {
+      "oracle_id": "93cd12da-a7d5-4d01-a3bc-77e441cb0947",
+      "name": "Oko's Accomplices",
+      "rarity": "common",
+      "set": "eld",
+      "id": "71c52b50-35aa-4858-8c8e-c81dcb29a7fc",
+      "image": "https://cards.scryfall.io/normal/front/7/1/71c52b50-35aa-4858-8c8e-c81dcb29a7fc.jpg"
+     },
+     "coins": 50
+    }
+   },
+   "scene": [
+    {
+     "who": "stage",
+     "line": "Not every tale ends in glory.",
+     "quote": true
+    },
+    {
+     "who": "stage",
+     "line": "Buying old, worn-out junk. Selling marvels of real value.",
+     "quote": true
+    },
+    {
+     "who": "rowan",
+     "line": "Adventures: cast the Adventure half first, it goes to exile, and later you can cast the creature from exile."
+    }
+   ],
+   "villainScene": [
+    {
+     "who": "stage",
+     "line": "They function as everything from assassins to jesters in the name of their fae king.",
+     "quote": true
+    },
+    {
+     "who": "stage",
+     "line": "While the realm has laws, in the wilds there are other ways of balancing power.",
+     "quote": true
+    }
+   ],
+   "after": null,
+   "cues": {
+    "hero": {
+     "start": "Home at last.",
+     "big": "The giant wakes!",
+     "low": "The court is too many...",
+     "win": "The first tale ends.",
+     "loss": "Lost in the story...",
+     "half": "Cast the Adventure first, creature later."
+    },
+    "villain": {
+     "start": "Your Majesty.",
+     "big": "Long live the king!",
+     "low": "The court wobbles...",
+     "win": "The king provides.",
+     "loss": "No court..."
+    }
+   },
+   "bigPlays": [],
+   "sim": null
+  },
+  {
+   "id": "a30b2",
+   "slot": 2,
+   "kind": "Lesson",
+   "mood": "march",
+   "title": "The Questing Beast",
+   "difficulty": "Easy",
+   "teaches": [
+    "Food"
+   ],
+   "blurb": "The Questing Beast gathers the wild against Elspeth's faithful. Both sides are hungry.",
+   "rewardSet": "eld",
+   "host": false,
+   "hero": {
+    "who": "beast",
+    "deck": {
+     "name": "The Wilds of Garenbrig",
+     "colors": "BG",
+     "archetype": null,
+     "label": "tribute",
+     "cards": [
+      {
+       "qty": 4,
+       "name": "Gilded Goose",
+       "set": "eld",
+       "number": "160",
+       "id": "30377bf0-d9b1-4c14-8dde-f74b1e02d604"
+      },
+      {
+       "qty": 3,
+       "name": "Edgewall Innkeeper",
+       "set": "eld",
+       "number": "151",
+       "id": "7c5d0560-f9e6-4c70-8cce-cae61e4e74bc"
+      },
+      {
+       "qty": 4,
+       "name": "Garenbrig Carver // Shield's Might",
+       "set": "eld",
+       "number": "156",
+       "id": "194b7a1c-291a-470e-9a40-61b72a46793b"
+      },
+      {
+       "qty": 4,
+       "name": "Wicked Wolf",
+       "set": "eld",
+       "number": "181",
+       "id": "09476eac-55d2-4955-8951-ae4ce117c98b"
+      },
+      {
+       "qty": 3,
+       "name": "Questing Beast",
+       "set": "eld",
+       "number": "171",
+       "id": "e41cf82d-3213-47ce-a015-6e51a8b07e4f"
+      },
+      {
+       "qty": 3,
+       "name": "Savvy Hunter",
+       "set": "eld",
+       "number": "200",
+       "id": "15c98441-2b31-4e48-a399-f36dffcfa41d"
+      },
+      {
+       "qty": 4,
+       "name": "Gluttonous Troll",
+       "set": "eld",
+       "number": "327",
+       "id": "867e245b-6153-479c-9e09-682afb017ff3"
+      },
+      {
+       "qty": 2,
+       "name": "Feasting Troll King",
+       "set": "eld",
+       "number": "152",
+       "id": "9a6bb435-1205-416a-a5a0-ca6d37b4dcb2"
+      },
+      {
+       "qty": 4,
+       "name": "Bake into a Pie",
+       "set": "eld",
+       "number": "76",
+       "id": "42a4d090-1bb7-4334-ab22-e2527391e79b"
+      },
+      {
+       "qty": 2,
+       "name": "Reave Soul",
+       "set": "eld",
+       "number": "103",
+       "id": "ce7ff657-aa44-4336-895a-87518159cef6"
+      },
+      {
+       "qty": 3,
+       "name": "Fell the Pheasant",
+       "set": "eld",
+       "number": "153",
+       "id": "33d3cc84-7cb6-4de2-9018-4695a3b1e099"
+      },
+      {
+       "qty": 4,
+       "name": "Temple of Malady",
+       "set": "m21",
+       "number": "253",
+       "id": "c97929f8-ae80-4b4a-9d9b-2f3c7605edc8"
+      },
+      {
+       "qty": 4,
+       "name": "Jungle Hollow",
+       "set": "iko",
+       "number": "249",
+       "id": "01926862-bf2d-4a2b-af94-1ea5e4dd7444"
+      },
+      {
+       "qty": 8,
+       "name": "Forest",
+       "set": "eld",
+       "number": "266",
+       "id": "f8f03bb2-313e-4688-945f-052eed678174"
+      },
+      {
+       "qty": 8,
+       "name": "Swamp",
+       "set": "eld",
+       "number": "258",
+       "id": "e4f184c5-4f3c-4aea-afa1-f0903d3cc71a"
+      }
+     ]
+    }
+   },
+   "villain": {
+    "who": "theros",
+    "deck": {
+     "name": "The Faithful of Heliod",
+     "colors": "W",
+     "archetype": null,
+     "label": "tribute",
+     "cards": [
+      {
+       "qty": 4,
+       "name": "Sunlit Hoplite",
+       "set": "thb",
+       "number": "273",
+       "id": "2f89cf0f-f682-44f8-879c-ed1e22f849b0"
+      },
+      {
+       "qty": 4,
+       "name": "Pious Wayfarer",
+       "set": "thb",
+       "number": "32",
+       "id": "10b1a2b5-5be2-43a2-bc35-95df6eb0984f"
+      },
+      {
+       "qty": 4,
+       "name": "Hero of the Winds",
+       "set": "thb",
+       "number": "23",
+       "id": "7da95097-dbe7-416a-8571-6ab6d88a531a"
+      },
+      {
+       "qty": 3,
+       "name": "Glory Bearers",
+       "set": "thb",
+       "number": "17",
+       "id": "8a70e1be-f04a-43c1-8fca-205a24e3db38"
+      },
+      {
+       "qty": 3,
+       "name": "Reverent Hoplite",
+       "set": "thb",
+       "number": "33",
+       "id": "54153b9c-483e-4e5c-a1ab-b1c8a7a657d4"
+      },
+      {
+       "qty": 3,
+       "name": "Lagonna-Band Storyteller",
+       "set": "thb",
+       "number": "27",
+       "id": "c3a87498-2c2c-411a-aa71-d594b2c6cb26"
+      },
+      {
+       "qty": 3,
+       "name": "Elspeth's Devotee",
+       "set": "thb",
+       "number": "272",
+       "id": "0f82064c-b335-454c-9be6-9fbcb21aa8e5"
+      },
+      {
+       "qty": 2,
+       "name": "Elspeth Conquers Death",
+       "set": "thb",
+       "number": "13",
+       "id": "ea20208b-1939-4c69-8cfd-c0a42f9dc427"
+      },
+      {
+       "qty": 3,
+       "name": "Banishing Light",
+       "set": "thb",
+       "number": "4",
+       "id": "a1ddd113-140f-49c9-b45c-cf1b0d1dffd8"
+      },
+      {
+       "qty": 2,
+       "name": "Elspeth, Sun's Nemesis",
+       "set": "thb",
+       "number": "14",
+       "id": "81aec42f-abb7-42f9-96f5-f1ee2f94db52"
+      },
+      {
+       "qty": 2,
+       "name": "Omen of the Sun",
+       "set": "thb",
+       "number": "30",
+       "id": "86586fe3-1a6e-4648-b3ff-b0d9340e66ff"
+      },
+      {
+       "qty": 3,
+       "name": "Phalanx Tactics",
+       "set": "thb",
+       "number": "31",
+       "id": "5f114a10-0b00-4f3a-bd73-d4c791fbf4d5"
+      },
+      {
+       "qty": 24,
+       "name": "Plains",
+       "set": "eld",
+       "number": "250",
+       "id": "7ded4b2a-ba56-43da-8ea7-392b77fc2926"
+      }
+     ]
+    }
+   },
+   "reward": {
+    "hero": {
+     "packs": 1,
+     "coins": 0
+    },
+    "villain": {
+     "card": {
+      "oracle_id": "e99c58bd-b405-4474-bd32-1a993c9f2979",
+      "name": "Sunlit Hoplite",
+      "rarity": "common",
+      "set": "thb",
+      "id": "2f89cf0f-f682-44f8-879c-ed1e22f849b0",
+      "image": "https://cards.scryfall.io/normal/front/2/f/2f89cf0f-f682-44f8-879c-ed1e22f849b0.jpg"
+     },
+     "coins": 50
+    }
+   },
+   "scene": [
+    {
+     "who": "stage",
+     "line": "His mind chose solitude, but his heart disagreed.",
+     "quote": true
+    },
+    {
+     "who": "stage",
+     "line": "Countless knights of Garenbrig owe their lives to his peerless craftsmanship.",
+     "quote": true
+    },
+    {
+     "who": "beast",
+     "line": "Food: a Food token, an artifact you can sacrifice for 2 mana to gain 3 life. Many cards want food on the table."
+    }
+   ],
+   "villainScene": [
+    {
+     "who": "stage",
+     "line": "Even in her absence, the light Elspeth kindled in our hearts never faltered.",
+     "quote": true
+    },
+    {
+     "who": "stage",
+     "line": "Every footstep is a prayer, every road a temple.",
+     "quote": true
+    }
+   ],
+   "after": null,
+   "cues": {
+    "hero": {
+     "start": "The wild is hungry.",
+     "big": "Feast!",
+     "low": "They are too bright...",
+     "win": "The wilds win.",
+     "loss": "Starved...",
+     "half": "Use Food for life when the race is close."
+    },
+    "villain": {
+     "start": "The light holds.",
+     "big": "Dawn!",
+     "low": "The dark creeps in...",
+     "win": "Heliod's light.",
+     "loss": "The light goes out..."
+    }
+   },
+   "bigPlays": [],
+   "sim": null
+  },
+  {
+   "id": "a30b3",
+   "slot": 3,
+   "kind": "Lesson",
+   "mood": "comic",
+   "title": "Back from the Underworld",
+   "difficulty": "Easy",
+   "teaches": [
+    "Escape"
+   ],
+   "blurb": "Elspeth walks out of the underworld the hard way. Its dead are happy to follow.",
+   "rewardSet": "thb",
+   "host": false,
+   "hero": {
+    "who": "elspeth",
+    "deck": {
+     "name": "The Sun's Nemesis",
+     "colors": "W",
+     "archetype": null,
+     "label": "tribute",
+     "cards": [
+      {
+       "qty": 4,
+       "name": "Transcendent Envoy",
+       "set": "thb",
+       "number": "40",
+       "id": "a9241289-28d2-4827-970e-81bdecbb5c16"
+      },
+      {
+       "qty": 4,
+       "name": "Heliod's Pilgrim",
+       "set": "thb",
+       "number": "20",
+       "id": "cafce2f5-f4f4-465b-96dc-bcdd29d4e4bb"
+      },
+      {
+       "qty": 4,
+       "name": "Leonin of the Lost Pride",
+       "set": "thb",
+       "number": "28",
+       "id": "e1be3729-7970-45df-8c26-4fe09e56629d"
+      },
+      {
+       "qty": 3,
+       "name": "Hero of the Pride",
+       "set": "thb",
+       "number": "22",
+       "id": "81b56863-a52a-4559-a662-f6d9145d5804"
+      },
+      {
+       "qty": 3,
+       "name": "Daxos, Blessed by the Sun",
+       "set": "thb",
+       "number": "9",
+       "id": "0fd2adb3-a6f4-448e-af2a-15ca92b1de63"
+      },
+      {
+       "qty": 3,
+       "name": "Archon of Sun's Grace",
+       "set": "thb",
+       "number": "3",
+       "id": "235e5999-e8e5-4093-adff-9d47aec70d10"
+      },
+      {
+       "qty": 2,
+       "name": "Elspeth, Undaunted Hero",
+       "set": "thb",
+       "number": "270",
+       "id": "bf9867e5-9d69-400c-a84f-3b085a4fd510"
+      },
+      {
+       "qty": 2,
+       "name": "Elspeth, Sun's Nemesis",
+       "set": "thb",
+       "number": "14",
+       "id": "81aec42f-abb7-42f9-96f5-f1ee2f94db52"
+      },
+      {
+       "qty": 3,
+       "name": "Elspeth Conquers Death",
+       "set": "thb",
+       "number": "13",
+       "id": "ea20208b-1939-4c69-8cfd-c0a42f9dc427"
+      },
+      {
+       "qty": 4,
+       "name": "Banishing Light",
+       "set": "thb",
+       "number": "4",
+       "id": "a1ddd113-140f-49c9-b45c-cf1b0d1dffd8"
+      },
+      {
+       "qty": 2,
+       "name": "Heliod's Intervention",
+       "set": "thb",
+       "number": "19",
+       "id": "8f1c16dd-38e9-4974-b570-8678c114a549"
+      },
+      {
+       "qty": 2,
+       "name": "Shatter the Sky",
+       "set": "thb",
+       "number": "37",
+       "id": "b706977b-db8e-4810-882d-ed3745404489"
+      },
+      {
+       "qty": 24,
+       "name": "Plains",
+       "set": "eld",
+       "number": "250",
+       "id": "7ded4b2a-ba56-43da-8ea7-392b77fc2926"
+      }
+     ]
+    }
+   },
+   "villain": {
+    "who": "under",
+    "deck": {
+     "name": "The Underworld",
+     "colors": "B",
+     "archetype": null,
+     "label": "tribute",
+     "cards": [
+      {
+       "qty": 4,
+       "name": "Woe Strider",
+       "set": "thb",
+       "number": "123",
+       "id": "3457b558-b35b-49fd-b499-b1ec755f86ce"
+      },
+      {
+       "qty": 4,
+       "name": "Mire Triton",
+       "set": "thb",
+       "number": "105",
+       "id": "3f8427d3-4d9e-48c9-838b-239fd1357d95"
+      },
+      {
+       "qty": 3,
+       "name": "Gravebreaker Lamia",
+       "set": "thb",
+       "number": "98",
+       "id": "408a2073-d068-44bc-b596-5a3a3a446ee1"
+      },
+      {
+       "qty": 3,
+       "name": "Gray Merchant of Asphodel",
+       "set": "thb",
+       "number": "99",
+       "id": "7c1a7dd8-8034-4f59-a351-33666b26ff5a"
+      },
+      {
+       "qty": 3,
+       "name": "Nightmare Shepherd",
+       "set": "thb",
+       "number": "108",
+       "id": "4a46eec7-bb79-441c-959f-eea599e5c341"
+      },
+      {
+       "qty": 3,
+       "name": "Underworld Charger",
+       "set": "thb",
+       "number": "120",
+       "id": "f2dd847f-0db2-4f6a-bdfb-5c88ce7802f9"
+      },
+      {
+       "qty": 3,
+       "name": "Erebos, Bleak-Hearted",
+       "set": "thb",
+       "number": "93",
+       "id": "e340df19-b89a-403f-9736-4bd30b65de74"
+      },
+      {
+       "qty": 3,
+       "name": "Scavenging Harpy",
+       "set": "thb",
+       "number": "114",
+       "id": "b0e237c5-45b4-49df-adb9-62b9f3b62986"
+      },
+      {
+       "qty": 4,
+       "name": "Drag to the Underworld",
+       "set": "thb",
+       "number": "89",
+       "id": "91852444-9361-4588-a44f-fb90ba1b30e5"
+      },
+      {
+       "qty": 3,
+       "name": "Final Death",
+       "set": "thb",
+       "number": "95",
+       "id": "8e5b8580-9198-4735-83c1-289400c1d814"
+      },
+      {
+       "qty": 3,
+       "name": "Funeral Rites",
+       "set": "thb",
+       "number": "97",
+       "id": "30aa6796-0cb6-426b-9e3f-4d7e4959a6a4"
+      },
+      {
+       "qty": 24,
+       "name": "Swamp",
+       "set": "eld",
+       "number": "258",
+       "id": "e4f184c5-4f3c-4aea-afa1-f0903d3cc71a"
+      }
+     ]
+    }
+   },
+   "reward": {
+    "hero": {
+     "packs": 1,
+     "coins": 0
+    },
+    "villain": {
+     "card": {
+      "oracle_id": "3adbd963-e85d-4569-963a-4472594f06f9",
+      "name": "Woe Strider",
+      "rarity": "rare",
+      "set": "thb",
+      "id": "3457b558-b35b-49fd-b499-b1ec755f86ce",
+      "image": "https://cards.scryfall.io/normal/front/3/4/3457b558-b35b-49fd-b499-b1ec755f86ce.jpg"
+     },
+     "coins": 50
+    }
+   },
+   "scene": [
+    {
+     "who": "stage",
+     "line": "For her, I would gladly die again.",
+     "quote": true
+    },
+    {
+     "who": "stage",
+     "line": "I bring a dawn that no night can follow.",
+     "quote": true
+    },
+    {
+     "who": "elspeth",
+     "line": "Escape: cast it from the graveyard by paying its escape cost and exiling other cards from your graveyard. The graveyard is a second hand."
+    }
+   ],
+   "villainScene": [
+    {
+     "who": "stage",
+     "line": "The more you struggle against death, the tighter its grip becomes.",
+     "quote": true
+    },
+    {
+     "who": "stage",
+     "line": "Caught between life and death, between land and sea, between thought and oblivion.",
+     "quote": true
+    }
+   ],
+   "after": null,
+   "cues": {
+    "hero": {
+     "start": "Into the light.",
+     "big": "Escape!",
+     "low": "The dead keep coming...",
+     "win": "Out of the dark.",
+     "loss": "Pulled under...",
+     "half": "Fill your graveyard to pay for escape."
+    },
+    "villain": {
+     "start": "Rest.",
+     "big": "Rise again!",
+     "low": "It slips away...",
+     "win": "The dead stay.",
+     "loss": "Banished..."
+    }
+   },
+   "bigPlays": [],
+   "sim": null
+  },
+  {
+   "id": "a30b4",
+   "slot": 4,
+   "kind": "Rival",
+   "mood": "tension",
+   "title": "The Nightmare Muse",
+   "difficulty": "Normal",
+   "teaches": [
+    "Planeswalkers"
+   ],
+   "blurb": "The twins meet Ashiok, whose dreams go all the way to Eldraine's doors.",
+   "rewardSet": "thb",
+   "host": false,
+   "hero": {
+    "who": "rowan",
+    "deck": {
+     "name": "The Kenrith Twins",
+     "colors": "UR",
+     "archetype": null,
+     "label": "tribute",
+     "cards": [
+      {
+       "qty": 4,
+       "name": "Bonecrusher Giant // Stomp",
+       "set": "eld",
+       "number": "115",
+       "id": "09fd2d9c-1793-4beb-a3fb-7a869f660cd4"
+      },
+      {
+       "qty": 4,
+       "name": "Rimrock Knight // Boulder Rush",
+       "set": "eld",
+       "number": "137",
+       "id": "a3d13d84-01e4-4429-93db-e5afff811527"
+      },
+      {
+       "qty": 3,
+       "name": "Opportunistic Dragon",
+       "set": "eld",
+       "number": "133",
+       "id": "3fa16922-3583-4f5b-8805-509b95a8da49"
+      },
+      {
+       "qty": 3,
+       "name": "Brazen Borrower // Petty Theft",
+       "set": "eld",
+       "number": "39",
+       "id": "c2089ec9-0665-448f-bfe9-d181de127814"
+      },
+      {
+       "qty": 2,
+       "name": "Rowan, Fearless Sparkmage",
+       "set": "eld",
+       "number": "304",
+       "id": "030f4058-54e5-4333-bd6c-2789c334bf12"
+      },
+      {
+       "qty": 2,
+       "name": "Redcap Raiders",
+       "set": "eld",
+       "number": "136",
+       "id": "686cf5c4-6ba3-4fa0-9732-0a350c637c7a"
+      },
+      {
+       "qty": 4,
+       "name": "Embereth Shieldbreaker // Battle Display",
+       "set": "eld",
+       "number": "122",
+       "id": "6cc73d16-5ed7-4104-91f6-0997a2080e2e"
+      },
+      {
+       "qty": 2,
+       "name": "Scorching Dragonfire",
+       "set": "eld",
+       "number": "139",
+       "id": "3b74a806-ed74-458e-8903-d3d084e9f507"
+      },
+      {
+       "qty": 3,
+       "name": "Slaying Fire",
+       "set": "eld",
+       "number": "143",
+       "id": "83b5b110-c430-4ffe-9fc1-8e6987f52d1e"
+      },
+      {
+       "qty": 4,
+       "name": "Thrill of Possibility",
+       "set": "eld",
+       "number": "146",
+       "id": "c9021f85-7ab4-4a78-a398-1611fe09cd14"
+      },
+      {
+       "qty": 2,
+       "name": "Searing Barrage",
+       "set": "eld",
+       "number": "140",
+       "id": "d2f11135-e9ce-4e4c-bea7-72a46d326e40"
+      },
+      {
+       "qty": 3,
+       "name": "Opt",
+       "set": "eld",
+       "number": "59",
+       "id": "c3669391-8f64-4904-b432-0f0582f30449"
+      },
+      {
+       "qty": 4,
+       "name": "Temple of Epiphany",
+       "set": "m21",
+       "number": "252",
+       "id": "1652bb3c-c365-4046-b07e-3d861fa324c6"
+      },
+      {
+       "qty": 4,
+       "name": "Swiftwater Cliffs",
+       "set": "iko",
+       "number": "255",
+       "id": "7108c071-5f1c-4cf5-90c6-530cee3f7685"
+      },
+      {
+       "qty": 8,
+       "name": "Island",
+       "set": "eld",
+       "number": "254",
+       "id": "4134cd82-6e48-4fc0-bcb4-1e3af369ef82"
+      },
+      {
+       "qty": 8,
+       "name": "Mountain",
+       "set": "eld",
+       "number": "262",
+       "id": "32982ed2-96e4-4cc5-8562-744b06bca239"
+      }
+     ]
+    }
+   },
+   "villain": {
+    "who": "ashiok",
+    "deck": {
+     "name": "Ashiok's Dreams",
+     "colors": "UB",
+     "archetype": null,
+     "label": "tribute",
+     "cards": [
+      {
+       "qty": 4,
+       "name": "Thassa's Oracle",
+       "set": "thb",
+       "number": "73",
+       "id": "726e8b29-13e9-4138-b6a9-d2a0d8188d1c"
+      },
+      {
+       "qty": 4,
+       "name": "Threnody Singer",
+       "set": "thb",
+       "number": "75",
+       "id": "242cdffb-5037-4d49-b194-4b60274a8758"
+      },
+      {
+       "qty": 4,
+       "name": "Mire Triton",
+       "set": "thb",
+       "number": "105",
+       "id": "3f8427d3-4d9e-48c9-838b-239fd1357d95"
+      },
+      {
+       "qty": 3,
+       "name": "Nadir Kraken",
+       "set": "thb",
+       "number": "55",
+       "id": "7817e039-e509-4b6f-b5a3-deb3769bbdc8"
+      },
+      {
+       "qty": 3,
+       "name": "Swimmer in Nightmares",
+       "set": "thb",
+       "number": "275",
+       "id": "ebc6b5ee-e764-444e-8b27-26e00f4b2074"
+      },
+      {
+       "qty": 3,
+       "name": "Sphinx Mindbreaker",
+       "set": "thb",
+       "number": "290",
+       "id": "d70c50ce-48f0-49a6-9653-42b8ccb9a647"
+      },
+      {
+       "qty": 3,
+       "name": "Ashiok, Nightmare Muse",
+       "set": "thb",
+       "number": "208",
+       "id": "112eb5ce-4fe5-45b3-b810-79fef74b07f9"
+      },
+      {
+       "qty": 2,
+       "name": "Ashiok, Sculptor of Fears",
+       "set": "thb",
+       "number": "274",
+       "id": "36a5fc37-e7bd-41a9-88ac-74a3f14fea8b"
+      },
+      {
+       "qty": 3,
+       "name": "Drag to the Underworld",
+       "set": "thb",
+       "number": "89",
+       "id": "91852444-9361-4588-a44f-fb90ba1b30e5"
+      },
+      {
+       "qty": 3,
+       "name": "Memory Drain",
+       "set": "thb",
+       "number": "54",
+       "id": "aadc1809-d6bb-455c-b6ce-dd11521808b6"
+      },
+      {
+       "qty": 2,
+       "name": "Eat to Extinction",
+       "set": "thb",
+       "number": "90",
+       "id": "a0fae55a-6edd-42ea-b909-ccc39a64a0ed"
+      },
+      {
+       "qty": 2,
+       "name": "Sleep of the Dead",
+       "set": "thb",
+       "number": "66",
+       "id": "4007572b-a6c8-4a56-b1a7-ff099189c9c0"
+      },
+      {
+       "qty": 4,
+       "name": "Dismal Backwater",
+       "set": "iko",
+       "number": "246",
+       "id": "9de0981e-54fc-4919-96a4-a9608a5452fc"
+      },
+      {
+       "qty": 4,
+       "name": "Temple of Deceit",
+       "set": "thb",
+       "number": "245",
+       "id": "e3d4fd29-dab5-481f-94c9-eeb70f3c29dd"
+      },
+      {
+       "qty": 8,
+       "name": "Island",
+       "set": "eld",
+       "number": "254",
+       "id": "4134cd82-6e48-4fc0-bcb4-1e3af369ef82"
+      },
+      {
+       "qty": 8,
+       "name": "Swamp",
+       "set": "eld",
+       "number": "258",
+       "id": "e4f184c5-4f3c-4aea-afa1-f0903d3cc71a"
+      }
+     ]
+    }
+   },
+   "reward": {
+    "hero": {
+     "packs": 1,
+     "coins": 100
+    },
+    "villain": {
+     "card": {
+      "oracle_id": "ebc9ff52-c914-4c48-9d35-0e4cd07741cb",
+      "name": "Ashiok, Nightmare Muse",
+      "rarity": "mythic",
+      "set": "thb",
+      "id": "112eb5ce-4fe5-45b3-b810-79fef74b07f9",
+      "image": "https://cards.scryfall.io/normal/front/1/1/112eb5ce-4fe5-45b3-b810-79fef74b07f9.jpg"
+     },
+     "coins": 100
+    }
+   },
+   "scene": [
+    {
+     "who": "stage",
+     "line": "This sword is Sunrise. The other is Dawn. They mark the beginning of my days but the end of yours.",
+     "quote": true
+    },
+    {
+     "who": "stage",
+     "line": "Every dream is a doorway.",
+     "quote": true
+    },
+    {
+     "who": "rowan",
+     "line": "Planeswalkers: attack them directly. A walker you ignore will bury you in card advantage."
+    }
+   ],
+   "villainScene": [
+    {
+     "who": "stage",
+     "line": "I bring a flood that nothing can withstand.",
+     "quote": true
+    },
+    {
+     "who": "stage",
+     "line": "The Underworld erodes memory, identity, and eventually the physical form, leaving only crumbling statues called misera—hollow monuments to mortal futility.",
+     "quote": true
+    }
+   ],
+   "after": null,
+   "cues": {
+    "hero": {
+     "start": "Wake up!",
+     "big": "Fire first!",
+     "low": "The dreams are heavy...",
+     "win": "Morning comes.",
+     "loss": "Asleep...",
+     "half": "Attack the walker before it takes over."
+    },
+    "villain": {
+     "start": "[a quiet dream]",
+     "big": "[the muse smiles]",
+     "low": "[a nightmare slips]",
+     "win": "[sleep]",
+     "loss": "[awake]"
+    }
+   },
+   "bigPlays": [],
+   "sim": null
+  },
+  {
+   "id": "a30b5",
+   "slot": 5,
+   "kind": "Lesson",
+   "mood": "tension",
+   "title": "Monsters of Ikoria",
+   "difficulty": "Normal",
+   "teaches": [
+    "Mutate"
+   ],
+   "blurb": "Vivien stands up for Ikoria's monsters. Lukka bonds with them and is not asking permission.",
+   "rewardSet": "iko",
+   "host": false,
+   "hero": {
+    "who": "vivien",
+    "deck": {
+     "name": "The Monsters' Advocate",
+     "colors": "GU",
+     "archetype": null,
+     "label": "tribute",
+     "cards": [
+      {
+       "qty": 4,
+       "name": "Humble Naturalist",
+       "set": "iko",
+       "number": "160",
+       "id": "8f56705d-eb64-4cef-b716-edbeac60bf79"
+      },
+      {
+       "qty": 4,
+       "name": "Sea-Dasher Octopus",
+       "set": "iko",
+       "number": "66",
+       "id": "a6f59d9e-6c1b-437a-934c-7c776c8dd1d5"
+      },
+      {
+       "qty": 4,
+       "name": "Gemrazer",
+       "set": "iko",
+       "number": "155",
+       "id": "0095245c-a30e-4e2a-88c9-632c678e9f03"
+      },
+      {
+       "qty": 2,
+       "name": "Archipelagore",
+       "set": "iko",
+       "number": "41",
+       "id": "f24b1030-64d5-4c94-a04c-1d9520bfddab"
+      },
+      {
+       "qty": 4,
+       "name": "Migratory Greathorn",
+       "set": "iko",
+       "number": "165",
+       "id": "6a2a287b-b83f-444f-84f7-e388beb616c2"
+      },
+      {
+       "qty": 3,
+       "name": "Trumpeting Gnarr",
+       "set": "iko",
+       "number": "213",
+       "id": "063a95ee-3fda-436f-9ff8-de80cc874dde"
+      },
+      {
+       "qty": 3,
+       "name": "Parcelbeast",
+       "set": "iko",
+       "number": "199",
+       "id": "610bb98c-d66a-44cc-92e2-a80d700b59e4"
+      },
+      {
+       "qty": 2,
+       "name": "Vivien, Monsters' Advocate",
+       "set": "iko",
+       "number": "175",
+       "id": "504ebb84-7e7b-4119-a128-a9c183c5d9de"
+      },
+      {
+       "qty": 3,
+       "name": "Ram Through",
+       "set": "iko",
+       "number": "170",
+       "id": "ac0b24e7-14e7-45ee-b5d8-bdb8674b669c"
+      },
+      {
+       "qty": 3,
+       "name": "Essence Scatter",
+       "set": "iko",
+       "number": "49",
+       "id": "5f79c8a0-291e-4e13-b765-4cf8c726cf30"
+      },
+      {
+       "qty": 3,
+       "name": "Wilt",
+       "set": "iko",
+       "number": "176",
+       "id": "55987bab-c24f-4261-b97e-f0ad4474b0a0"
+      },
+      {
+       "qty": 4,
+       "name": "Thornwood Falls",
+       "set": "eld",
+       "number": "313",
+       "id": "f5159db6-a87f-40eb-8c5c-821dfb67ff6d"
+      },
+      {
+       "qty": 4,
+       "name": "Temple of Mystery",
+       "set": "m21",
+       "number": "254",
+       "id": "81634185-eb67-4d13-8b82-a662b8c9a7f0"
+      },
+      {
+       "qty": 8,
+       "name": "Forest",
+       "set": "eld",
+       "number": "266",
+       "id": "f8f03bb2-313e-4688-945f-052eed678174"
+      },
+      {
+       "qty": 8,
+       "name": "Island",
+       "set": "eld",
+       "number": "254",
+       "id": "4134cd82-6e48-4fc0-bcb4-1e3af369ef82"
+      },
+      {
+       "qty": 1,
+       "name": "Kogla, the Titan Ape",
+       "set": "iko",
+       "number": "162",
+       "id": "3c35ca79-eb72-427a-a8ed-404b2214389a"
+      }
+     ]
+    }
+   },
+   "villain": {
+    "who": "lukka",
+    "deck": {
+     "name": "Lukka's Hunt",
+     "colors": "RG",
+     "archetype": null,
+     "label": "tribute",
+     "cards": [
+      {
+       "qty": 4,
+       "name": "Pridemalkin",
+       "set": "m21",
+       "number": "196",
+       "id": "df520254-0c72-496b-9222-263ca9d3c5d5"
+      },
+      {
+       "qty": 4,
+       "name": "Prickly Marmoset",
+       "set": "iko",
+       "number": "129",
+       "id": "bad8512f-31b9-48ba-bb10-1497303dcfba"
+      },
+      {
+       "qty": 4,
+       "name": "Porcuparrot",
+       "set": "iko",
+       "number": "128",
+       "id": "856892c8-ba47-46d0-aec2-0416b55b9e88"
+      },
+      {
+       "qty": 4,
+       "name": "Frenzied Raptor",
+       "set": "iko",
+       "number": "120",
+       "id": "5fb22ac0-3863-4165-8c93-f2ec1775474f"
+      },
+      {
+       "qty": 3,
+       "name": "Ferocious Tigorilla",
+       "set": "iko",
+       "number": "115",
+       "id": "5976e8d8-5122-4423-b3eb-61170390ad7a"
+      },
+      {
+       "qty": 3,
+       "name": "Pyroceratops",
+       "set": "iko",
+       "number": "130",
+       "id": "f6599645-dbb5-4174-bd26-8556af6d89c3"
+      },
+      {
+       "qty": 3,
+       "name": "Rooting Moloch",
+       "set": "iko",
+       "number": "133",
+       "id": "cc2fd581-5cf8-4154-90dd-922afddcd556"
+      },
+      {
+       "qty": 2,
+       "name": "Yidaro, Wandering Monster",
+       "set": "iko",
+       "number": "141",
+       "id": "b540c7c6-5b9e-4606-ac84-e583a62a3647"
+      },
+      {
+       "qty": 3,
+       "name": "Lukka, Coppercoat Outcast",
+       "set": "iko",
+       "number": "125",
+       "id": "5798fdf0-d178-43d9-b821-8f3f654654b4"
+      },
+      {
+       "qty": 3,
+       "name": "Fire Prophecy",
+       "set": "iko",
+       "number": "116",
+       "id": "4c2029e5-cf7d-461f-b7b9-bf96399d8f49"
+      },
+      {
+       "qty": 3,
+       "name": "Ram Through",
+       "set": "iko",
+       "number": "170",
+       "id": "ac0b24e7-14e7-45ee-b5d8-bdb8674b669c"
+      },
+      {
+       "qty": 4,
+       "name": "Rugged Highlands",
+       "set": "iko",
+       "number": "252",
+       "id": "9a69fa8f-1c2b-453d-8d54-2748890ce925"
+      },
+      {
+       "qty": 4,
+       "name": "Temple of Abandon",
+       "set": "thb",
+       "number": "244",
+       "id": "7d5f8481-47f7-4531-9dad-686cdfb5d2ad"
+      },
+      {
+       "qty": 8,
+       "name": "Mountain",
+       "set": "eld",
+       "number": "262",
+       "id": "32982ed2-96e4-4cc5-8562-744b06bca239"
+      },
+      {
+       "qty": 8,
+       "name": "Forest",
+       "set": "eld",
+       "number": "266",
+       "id": "f8f03bb2-313e-4688-945f-052eed678174"
+      }
+     ]
+    }
+   },
+   "reward": {
+    "hero": {
+     "packs": 1,
+     "coins": 100
+    },
+    "villain": {
+     "card": {
+      "oracle_id": "1ca97394-4e8c-4698-bea1-554f9b10927b",
+      "name": "Lukka, Coppercoat Outcast",
+      "rarity": "mythic",
+      "set": "iko",
+      "id": "5798fdf0-d178-43d9-b821-8f3f654654b4",
+      "image": "https://cards.scryfall.io/normal/front/5/7/5798fdf0-d178-43d9-b821-8f3f654654b4.jpg"
+     },
+     "coins": 100
+    }
+   },
+   "scene": [
+    {
+     "who": "stage",
+     "line": "All seeds share a common bond, calling to each other across infinity.",
+     "quote": true
+    },
+    {
+     "who": "stage",
+     "line": "Size of a pixie, rage of a hellkite.",
+     "quote": true
+    },
+    {
+     "who": "vivien",
+     "line": "Mutate: cast a mutating creature onto a non-Human creature you own. The two become one, with all the abilities and the new top creature's stats."
+    }
+   ],
+   "villainScene": [
+    {
+     "who": "stage",
+     "line": "The forge of Purphoros burns in the heart of Mount Velus, attracting dragons with its blistering heat.",
+     "quote": true
+    }
+   ],
+   "after": null,
+   "cues": {
+    "hero": {
+     "start": "Come, friend.",
+     "big": "Mutate!",
+     "low": "The hunt closes in...",
+     "win": "The herd is safe.",
+     "loss": "The herd is scattered...",
+     "half": "Mutate onto a creature that already attacks well."
+    },
+    "villain": {
+     "start": "Track them.",
+     "big": "Bonded!",
+     "low": "The trail goes cold...",
+     "win": "The hunt ends.",
+     "loss": "The prey escapes..."
+    }
+   },
+   "bigPlays": [],
+   "sim": null
+  },
+  {
+   "id": "a30b6",
+   "slot": 6,
+   "kind": "Meta",
+   "mood": "march",
+   "title": "Oko Food",
+   "difficulty": "Normal",
+   "teaches": [
+    "Cycling matters"
+   ],
+   "blurb": "Autumn 2019: the green-blue Food deck that everyone built, against knights with big plans.",
+   "rewardSet": "m21",
+   "host": false,
+   "hero": {
+    "who": "food",
+    "deck": {
+     "name": "Simic Food",
+     "colors": "GU",
+     "archetype": "Midrange",
+     "label": "tribute",
+     "cards": [
+      {
+       "qty": 4,
+       "name": "Gilded Goose",
+       "set": "eld",
+       "number": "160",
+       "id": "30377bf0-d9b1-4c14-8dde-f74b1e02d604"
+      },
+      {
+       "qty": 4,
+       "name": "Lovestruck Beast // Heart's Desire",
+       "set": "eld",
+       "number": "165",
+       "id": "4ccdef9c-1e85-4358-8059-8972479f7556"
+      },
+      {
+       "qty": 2,
+       "name": "Wicked Wolf",
+       "set": "eld",
+       "number": "181",
+       "id": "09476eac-55d2-4955-8951-ae4ce117c98b"
+      },
+      {
+       "qty": 3,
+       "name": "Garenbrig Carver // Shield's Might",
+       "set": "eld",
+       "number": "156",
+       "id": "194b7a1c-291a-470e-9a40-61b72a46793b"
+      },
+      {
+       "qty": 3,
+       "name": "Edgewall Innkeeper",
+       "set": "eld",
+       "number": "151",
+       "id": "7c5d0560-f9e6-4c70-8cce-cae61e4e74bc"
+      },
+      {
+       "qty": 3,
+       "name": "Thunderous Snapper",
+       "set": "eld",
+       "number": "215",
+       "id": "9576d4f1-47bb-45e0-803c-93fa2cdacbe5"
+      },
+      {
+       "qty": 2,
+       "name": "Oko, Thief of Crowns",
+       "set": "eld",
+       "number": "197",
+       "id": "3462a3d0-5552-49fa-9eb7-100960c55891"
+      },
+      {
+       "qty": 1,
+       "name": "The Great Henge",
+       "set": "eld",
+       "number": "161",
+       "id": "af915ed2-1f34-43f6-85f5-2430325b720f"
+      },
+      {
+       "qty": 3,
+       "name": "Once Upon a Time",
+       "set": "eld",
+       "number": "169",
+       "id": "4034e5ba-9974-43e3-bde7-8d9b4586c3a4"
+      },
+      {
+       "qty": 4,
+       "name": "Fell the Pheasant",
+       "set": "eld",
+       "number": "153",
+       "id": "33d3cc84-7cb6-4de2-9018-4695a3b1e099"
+      },
+      {
+       "qty": 1,
+       "name": "Return of the Wildspeaker",
+       "set": "eld",
+       "number": "172",
+       "id": "b88a4943-bd1b-4d10-9cd3-b2ab91b25c10"
+      },
+      {
+       "qty": 4,
+       "name": "Opt",
+       "set": "eld",
+       "number": "59",
+       "id": "c3669391-8f64-4904-b432-0f0582f30449"
+      },
+      {
+       "qty": 2,
+       "name": "Mystical Dispute",
+       "set": "eld",
+       "number": "58",
+       "id": "fbe04cb8-a8b9-4241-baae-b398a2509a3a"
+      },
+      {
+       "qty": 4,
+       "name": "Thornwood Falls",
+       "set": "eld",
+       "number": "313",
+       "id": "f5159db6-a87f-40eb-8c5c-821dfb67ff6d"
+      },
+      {
+       "qty": 4,
+       "name": "Temple of Mystery",
+       "set": "m21",
+       "number": "254",
+       "id": "81634185-eb67-4d13-8b82-a662b8c9a7f0"
+      },
+      {
+       "qty": 8,
+       "name": "Forest",
+       "set": "eld",
+       "number": "266",
+       "id": "f8f03bb2-313e-4688-945f-052eed678174"
+      },
+      {
+       "qty": 8,
+       "name": "Island",
+       "set": "eld",
+       "number": "254",
+       "id": "4134cd82-6e48-4fc0-bcb4-1e3af369ef82"
+      }
+     ]
+    }
+   },
+   "villain": {
+    "who": "adventures",
+    "deck": {
+     "name": "Knights and Adventures",
+     "colors": "RW",
+     "archetype": "Aggro",
+     "label": "tribute",
+     "cards": [
+      {
+       "qty": 4,
+       "name": "Bonecrusher Giant // Stomp",
+       "set": "eld",
+       "number": "115",
+       "id": "09fd2d9c-1793-4beb-a3fb-7a869f660cd4"
+      },
+      {
+       "qty": 4,
+       "name": "Rimrock Knight // Boulder Rush",
+       "set": "eld",
+       "number": "137",
+       "id": "a3d13d84-01e4-4429-93db-e5afff811527"
+      },
+      {
+       "qty": 4,
+       "name": "Embereth Shieldbreaker // Battle Display",
+       "set": "eld",
+       "number": "122",
+       "id": "6cc73d16-5ed7-4104-91f6-0997a2080e2e"
+      },
+      {
+       "qty": 4,
+       "name": "Merchant of the Vale // Haggle",
+       "set": "eld",
+       "number": "131",
+       "id": "0b4399b6-e67f-40d8-8676-f5db7e04a6c9"
+      },
+      {
+       "qty": 3,
+       "name": "Silverflame Squire // On Alert",
+       "set": "eld",
+       "number": "31",
+       "id": "7bd105f3-fa33-4490-aea9-b47ca121b664"
+      },
+      {
+       "qty": 3,
+       "name": "Giant Killer // Chop Down",
+       "set": "eld",
+       "number": "14",
+       "id": "75754468-2850-42e6-ab22-61ff7b9d1214"
+      },
+      {
+       "qty": 3,
+       "name": "Ardenvale Tactician // Dizzying Swoop",
+       "set": "eld",
+       "number": "5",
+       "id": "c7d5e394-8e41-442e-ae97-a478a61e1b9d"
+      },
+      {
+       "qty": 2,
+       "name": "Shepherd of the Flock // Usher to Safety",
+       "set": "eld",
+       "number": "28",
+       "id": "c0b4f0ce-0d18-4546-803d-94a2f4f30951"
+      },
+      {
+       "qty": 3,
+       "name": "Syr Carah, the Bold",
+       "set": "eld",
+       "number": "145",
+       "id": "080a249a-df47-4769-bb63-0d8ab3f2467c"
+      },
+      {
+       "qty": 3,
+       "name": "Scorching Dragonfire",
+       "set": "eld",
+       "number": "139",
+       "id": "3b74a806-ed74-458e-8903-d3d084e9f507"
+      },
+      {
+       "qty": 3,
+       "name": "Slaying Fire",
+       "set": "eld",
+       "number": "143",
+       "id": "83b5b110-c430-4ffe-9fc1-8e6987f52d1e"
+      },
+      {
+       "qty": 4,
+       "name": "Wind-Scarred Crag",
+       "set": "eld",
+       "number": "308",
+       "id": "75f5875e-487f-4586-95f3-3627050a6744"
+      },
+      {
+       "qty": 4,
+       "name": "Temple of Triumph",
+       "set": "m21",
+       "number": "256",
+       "id": "2366499c-9d07-46bb-8488-6cd60056fa16"
+      },
+      {
+       "qty": 8,
+       "name": "Mountain",
+       "set": "eld",
+       "number": "262",
+       "id": "32982ed2-96e4-4cc5-8562-744b06bca239"
+      },
+      {
+       "qty": 8,
+       "name": "Plains",
+       "set": "eld",
+       "number": "250",
+       "id": "7ded4b2a-ba56-43da-8ea7-392b77fc2926"
+      }
+     ]
+    }
+   },
+   "reward": {
+    "hero": {
+     "packs": 1,
+     "coins": 100
+    },
+    "villain": {
+     "card": {
+      "oracle_id": "d6d72f5f-8f5d-4180-b514-f22ff5482902",
+      "name": "Bonecrusher Giant // Stomp",
+      "rarity": "rare",
+      "set": "eld",
+      "id": "09fd2d9c-1793-4beb-a3fb-7a869f660cd4",
+      "image": "https://cards.scryfall.io/normal/front/0/9/09fd2d9c-1793-4beb-a3fb-7a869f660cd4.jpg"
+     },
+     "coins": 100
+    }
+   },
+   "scene": [
+    {
+     "who": "stage",
+     "line": "Find him a weapon as big as his dreams.",
+     "quote": true
+    },
+    {
+     "who": "stage",
+     "line": "His mind chose solitude, but his heart disagreed.",
+     "quote": true
+    },
+    {
+     "who": "food",
+     "line": "Food makes your Oko hit harder and your life total hard to burn through. Keep him alive."
+    }
+   ],
+   "villainScene": [
+    {
+     "who": "stage",
+     "line": "In a castle that prizes loyalty above all, the bond between knight and griffin is unmatched.",
+     "quote": true
+    },
+    {
+     "who": "stage",
+     "line": "What size advantage? They never even see me coming.",
+     "quote": true
+    }
+   ],
+   "after": null,
+   "cues": {
+    "hero": {
+     "start": "Dinner time.",
+     "big": "Everything is an elk!",
+     "low": "The knights are quick...",
+     "win": "The food was good.",
+     "loss": "Eaten...",
+     "half": "Protect Oko; food is not for burning."
+    },
+    "villain": {
+     "start": "For the realm!",
+     "big": "Charge!",
+     "low": "Out of adventures...",
+     "win": "The tale is told.",
+     "loss": "The tale ends..."
+    }
+   },
+   "bigPlays": [],
+   "sim": null
+  },
+  {
+   "id": "a30b7",
+   "slot": 7,
+   "kind": "Meta",
+   "mood": "tension",
+   "title": "Temur Mutate",
+   "difficulty": "Normal",
+   "teaches": [
+    "Racing"
+   ],
+   "blurb": "Spring 2020: a mutate deck against big green ramp.",
+   "rewardSet": "iko",
+   "host": false,
+   "hero": {
+    "who": "mutate",
+    "deck": {
+     "name": "Temur Mutate",
+     "colors": "GUR",
+     "archetype": "Midrange",
+     "label": "tribute",
+     "cards": [
+      {
+       "qty": 4,
+       "name": "Sea-Dasher Octopus",
+       "set": "iko",
+       "number": "66",
+       "id": "a6f59d9e-6c1b-437a-934c-7c776c8dd1d5"
+      },
+      {
+       "qty": 4,
+       "name": "Gemrazer",
+       "set": "iko",
+       "number": "155",
+       "id": "0095245c-a30e-4e2a-88c9-632c678e9f03"
+      },
+      {
+       "qty": 4,
+       "name": "Cloudpiercer",
+       "set": "iko",
+       "number": "112",
+       "id": "3ec5f005-d8fb-48b8-8ac5-74445cc83273"
+      },
+      {
+       "qty": 4,
+       "name": "Illuna, Apex of Wishes",
+       "set": "iko",
+       "number": "190",
+       "id": "9fc99c81-d112-4811-9bba-77a14d904692"
+      },
+      {
+       "qty": 3,
+       "name": "Sprite Dragon",
+       "set": "iko",
+       "number": "211",
+       "id": "281f6118-adb8-4a7d-9c77-5570f3399e6e"
+      },
+      {
+       "qty": 3,
+       "name": "Parcelbeast",
+       "set": "iko",
+       "number": "199",
+       "id": "610bb98c-d66a-44cc-92e2-a80d700b59e4"
+      },
+      {
+       "qty": 2,
+       "name": "Lore Drakkis",
+       "set": "iko",
+       "number": "194",
+       "id": "83e035ca-eccd-4b63-817c-f2c676b9c98d"
+      },
+      {
+       "qty": 2,
+       "name": "Fierce Empath",
+       "set": "m21",
+       "number": "181",
+       "id": "17bc2af0-5a1d-4319-a285-6a15cf86be83"
+      },
+      {
+       "qty": 3,
+       "name": "Fire Prophecy",
+       "set": "iko",
+       "number": "116",
+       "id": "4c2029e5-cf7d-461f-b7b9-bf96399d8f49"
+      },
+      {
+       "qty": 2,
+       "name": "Essence Scatter",
+       "set": "iko",
+       "number": "49",
+       "id": "5f79c8a0-291e-4e13-b765-4cf8c726cf30"
+      },
+      {
+       "qty": 4,
+       "name": "Ram Through",
+       "set": "iko",
+       "number": "170",
+       "id": "ac0b24e7-14e7-45ee-b5d8-bdb8674b669c"
+      },
+      {
+       "qty": 1,
+       "name": "Wilt",
+       "set": "iko",
+       "number": "176",
+       "id": "55987bab-c24f-4261-b97e-f0ad4474b0a0"
+      },
+      {
+       "qty": 3,
+       "name": "Ketria Triome",
+       "set": "iko",
+       "number": "250",
+       "id": "a249b1f4-2b22-4b67-a207-e0c4ae95d2e1"
+      },
+      {
+       "qty": 3,
+       "name": "Thornwood Falls",
+       "set": "eld",
+       "number": "313",
+       "id": "f5159db6-a87f-40eb-8c5c-821dfb67ff6d"
+      },
+      {
+       "qty": 3,
+       "name": "Swiftwater Cliffs",
+       "set": "iko",
+       "number": "255",
+       "id": "7108c071-5f1c-4cf5-90c6-530cee3f7685"
+      },
+      {
+       "qty": 2,
+       "name": "Rugged Highlands",
+       "set": "iko",
+       "number": "252",
+       "id": "9a69fa8f-1c2b-453d-8d54-2748890ce925"
+      },
+      {
+       "qty": 5,
+       "name": "Island",
+       "set": "eld",
+       "number": "254",
+       "id": "4134cd82-6e48-4fc0-bcb4-1e3af369ef82"
+      },
+      {
+       "qty": 4,
+       "name": "Mountain",
+       "set": "eld",
+       "number": "262",
+       "id": "32982ed2-96e4-4cc5-8562-744b06bca239"
+      },
+      {
+       "qty": 4,
+       "name": "Forest",
+       "set": "eld",
+       "number": "266",
+       "id": "f8f03bb2-313e-4688-945f-052eed678174"
+      }
+     ]
+    }
+   },
+   "villain": {
+    "who": "ramp",
+    "deck": {
+     "name": "Gruul Ramp",
+     "colors": "RG",
+     "archetype": "Ramp",
+     "label": "tribute",
+     "note": "Wilderness Reclamation is not in this act's sets, so this is a ramp deck of the same era.",
+     "cards": [
+      {
+       "qty": 4,
+       "name": "Llanowar Visionary",
+       "set": "m21",
+       "number": "193",
+       "id": "d6e23afa-7e08-4049-baf0-d4d0134ba2c8"
+      },
+      {
+       "qty": 4,
+       "name": "Humble Naturalist",
+       "set": "iko",
+       "number": "160",
+       "id": "8f56705d-eb64-4cef-b716-edbeac60bf79"
+      },
+      {
+       "qty": 4,
+       "name": "Cultivate",
+       "set": "m21",
+       "number": "177",
+       "id": "4a433310-3fe2-4156-864d-7a6b2638340b"
+      },
+      {
+       "qty": 1,
+       "name": "Elder Gargaroth",
+       "set": "m21",
+       "number": "179",
+       "id": "d51269cf-a333-4a64-94cd-245798d840d2"
+      },
+      {
+       "qty": 2,
+       "name": "Terror of the Peaks",
+       "set": "m21",
+       "number": "164",
+       "id": "432ecd5f-966f-4403-a973-51e175a524a0"
+      },
+      {
+       "qty": 1,
+       "name": "Kogla, the Titan Ape",
+       "set": "iko",
+       "number": "162",
+       "id": "3c35ca79-eb72-427a-a8ed-404b2214389a"
+      },
+      {
+       "qty": 1,
+       "name": "Titanoth Rex",
+       "set": "iko",
+       "number": "174",
+       "id": "9d02e1e8-b85b-4e26-8ab8-ca2f49d05b88"
+      },
+      {
+       "qty": 3,
+       "name": "Garruk, Unleashed",
+       "set": "m21",
+       "number": "183",
+       "id": "af2fdbec-bca2-4af5-9c2a-28b0b35b18a3"
+      },
+      {
+       "qty": 1,
+       "name": "Lukka, Coppercoat Outcast",
+       "set": "iko",
+       "number": "125",
+       "id": "5798fdf0-d178-43d9-b821-8f3f654654b4"
+      },
+      {
+       "qty": 3,
+       "name": "Ram Through",
+       "set": "iko",
+       "number": "170",
+       "id": "ac0b24e7-14e7-45ee-b5d8-bdb8674b669c"
+      },
+      {
+       "qty": 3,
+       "name": "Fire Prophecy",
+       "set": "iko",
+       "number": "116",
+       "id": "4c2029e5-cf7d-461f-b7b9-bf96399d8f49"
+      },
+      {
+       "qty": 4,
+       "name": "Shock",
+       "set": "m21",
+       "number": "159",
+       "id": "59fa8e8d-bcb8-47bf-b71a-df11c8d0f2c9"
+      },
+      {
+       "qty": 3,
+       "name": "Wilt",
+       "set": "iko",
+       "number": "176",
+       "id": "55987bab-c24f-4261-b97e-f0ad4474b0a0"
+      },
+      {
+       "qty": 4,
+       "name": "Rugged Highlands",
+       "set": "iko",
+       "number": "252",
+       "id": "9a69fa8f-1c2b-453d-8d54-2748890ce925"
+      },
+      {
+       "qty": 4,
+       "name": "Temple of Abandon",
+       "set": "thb",
+       "number": "244",
+       "id": "7d5f8481-47f7-4531-9dad-686cdfb5d2ad"
+      },
+      {
+       "qty": 8,
+       "name": "Forest",
+       "set": "eld",
+       "number": "266",
+       "id": "f8f03bb2-313e-4688-945f-052eed678174"
+      },
+      {
+       "qty": 8,
+       "name": "Mountain",
+       "set": "eld",
+       "number": "262",
+       "id": "32982ed2-96e4-4cc5-8562-744b06bca239"
+      },
+      {
+       "qty": 2,
+       "name": "Fierce Empath",
+       "set": "m21",
+       "number": "181",
+       "id": "17bc2af0-5a1d-4319-a285-6a15cf86be83"
+      }
+     ]
+    }
+   },
+   "reward": {
+    "hero": {
+     "packs": 1,
+     "coins": 100
+    },
+    "villain": {
+     "card": {
+      "oracle_id": "f8e17f4f-080d-4bba-bd05-ca27e94ccecc",
+      "name": "Terror of the Peaks",
+      "rarity": "mythic",
+      "set": "m21",
+      "id": "432ecd5f-966f-4403-a973-51e175a524a0",
+      "image": "https://cards.scryfall.io/normal/front/4/3/432ecd5f-966f-4403-a973-51e175a524a0.jpg"
+     },
+     "coins": 100
+    }
+   },
+   "scene": [
+    {
+     "who": "stage",
+     "line": "Size of a pixie, rage of a hellkite.",
+     "quote": true
+    },
+    {
+     "who": "stage",
+     "line": "All seeds share a common bond, calling to each other across infinity.",
+     "quote": true
+    },
+    {
+     "who": "mutate",
+     "line": "Mutate onto something that is already attacking. Keep your counters ready for their big finishers."
+    }
+   ],
+   "villainScene": [
+    {
+     "who": "stage",
+     "line": "The forge of Purphoros burns in the heart of Mount Velus, attracting dragons with its blistering heat.",
+     "quote": true
+    }
+   ],
+   "after": null,
+   "cues": {
+    "hero": {
+     "start": "Join up.",
+     "big": "Mutated!",
+     "low": "Their ramp is faster...",
+     "win": "The pair wins.",
+     "loss": "Outsized...",
+     "half": "Hold counters for their big plays."
+    },
+    "villain": {
+     "start": "Plant seeds.",
+     "big": "Roar!",
+     "low": "Stuck on lands...",
+     "win": "The monsters wake.",
+     "loss": "Smothered..."
+    }
+   },
+   "bigPlays": [],
+   "sim": null
+  },
+  {
+   "id": "a30b8",
+   "slot": 8,
+   "kind": "Boss",
+   "mood": "boss",
+   "title": "Oko, Thief of Crowns",
+   "difficulty": "Hard",
+   "teaches": [
+    "Planeswalkers"
+   ],
+   "blurb": "Oko took the crowns and turned a king into an elk. Elspeth and the Kenriths aim to get them back.",
+   "rewardSet": "eld",
+   "host": true,
+   "hero": {
+    "who": "allies",
+    "deck": {
+     "name": "Elspeth and the Kenriths",
+     "colors": "RW",
+     "archetype": null,
+     "label": "tribute",
+     "cards": [
+      {
+       "qty": 4,
+       "name": "Bonecrusher Giant // Stomp",
+       "set": "eld",
+       "number": "115",
+       "id": "09fd2d9c-1793-4beb-a3fb-7a869f660cd4"
+      },
+      {
+       "qty": 4,
+       "name": "Rimrock Knight // Boulder Rush",
+       "set": "eld",
+       "number": "137",
+       "id": "a3d13d84-01e4-4429-93db-e5afff811527"
+      },
+      {
+       "qty": 3,
+       "name": "Giant Killer // Chop Down",
+       "set": "eld",
+       "number": "14",
+       "id": "75754468-2850-42e6-ab22-61ff7b9d1214"
+      },
+      {
+       "qty": 3,
+       "name": "Ardenvale Tactician // Dizzying Swoop",
+       "set": "eld",
+       "number": "5",
+       "id": "c7d5e394-8e41-442e-ae97-a478a61e1b9d"
+      },
+      {
+       "qty": 3,
+       "name": "Embereth Shieldbreaker // Battle Display",
+       "set": "eld",
+       "number": "122",
+       "id": "6cc73d16-5ed7-4104-91f6-0997a2080e2e"
+      },
+      {
+       "qty": 2,
+       "name": "Syr Carah, the Bold",
+       "set": "eld",
+       "number": "145",
+       "id": "080a249a-df47-4769-bb63-0d8ab3f2467c"
+      },
+      {
+       "qty": 2,
+       "name": "Rowan, Fearless Sparkmage",
+       "set": "eld",
+       "number": "304",
+       "id": "030f4058-54e5-4333-bd6c-2789c334bf12"
+      },
+      {
+       "qty": 3,
+       "name": "Elspeth, Sun's Nemesis",
+       "set": "thb",
+       "number": "14",
+       "id": "81aec42f-abb7-42f9-96f5-f1ee2f94db52"
+      },
+      {
+       "qty": 2,
+       "name": "Elspeth, Undaunted Hero",
+       "set": "thb",
+       "number": "270",
+       "id": "bf9867e5-9d69-400c-a84f-3b085a4fd510"
+      },
+      {
+       "qty": 3,
+       "name": "Elspeth Conquers Death",
+       "set": "thb",
+       "number": "13",
+       "id": "ea20208b-1939-4c69-8cfd-c0a42f9dc427"
+      },
+      {
+       "qty": 2,
+       "name": "Banishing Light",
+       "set": "thb",
+       "number": "4",
+       "id": "a1ddd113-140f-49c9-b45c-cf1b0d1dffd8"
+      },
+      {
+       "qty": 3,
+       "name": "Scorching Dragonfire",
+       "set": "eld",
+       "number": "139",
+       "id": "3b74a806-ed74-458e-8903-d3d084e9f507"
+      },
+      {
+       "qty": 2,
+       "name": "Slaying Fire",
+       "set": "eld",
+       "number": "143",
+       "id": "83b5b110-c430-4ffe-9fc1-8e6987f52d1e"
+      },
+      {
+       "qty": 4,
+       "name": "Wind-Scarred Crag",
+       "set": "eld",
+       "number": "308",
+       "id": "75f5875e-487f-4586-95f3-3627050a6744"
+      },
+      {
+       "qty": 3,
+       "name": "Temple of Triumph",
+       "set": "m21",
+       "number": "256",
+       "id": "2366499c-9d07-46bb-8488-6cd60056fa16"
+      },
+      {
+       "qty": 9,
+       "name": "Plains",
+       "set": "eld",
+       "number": "250",
+       "id": "7ded4b2a-ba56-43da-8ea7-392b77fc2926"
+      },
+      {
+       "qty": 8,
+       "name": "Mountain",
+       "set": "eld",
+       "number": "262",
+       "id": "32982ed2-96e4-4cc5-8562-744b06bca239"
+      }
+     ]
+    }
+   },
+   "villain": {
+    "who": "oko",
+    "deck": {
+     "name": "Oko's Court",
+     "colors": "GU",
+     "archetype": null,
+     "label": "tribute",
+     "cards": [
+      {
+       "qty": 4,
+       "name": "Gilded Goose",
+       "set": "eld",
+       "number": "160",
+       "id": "30377bf0-d9b1-4c14-8dde-f74b1e02d604"
+      },
+      {
+       "qty": 4,
+       "name": "Oko, Thief of Crowns",
+       "set": "eld",
+       "number": "197",
+       "id": "3462a3d0-5552-49fa-9eb7-100960c55891"
+      },
+      {
+       "qty": 4,
+       "name": "Once Upon a Time",
+       "set": "eld",
+       "number": "169",
+       "id": "4034e5ba-9974-43e3-bde7-8d9b4586c3a4"
+      },
+      {
+       "qty": 4,
+       "name": "Lovestruck Beast // Heart's Desire",
+       "set": "eld",
+       "number": "165",
+       "id": "4ccdef9c-1e85-4358-8059-8972479f7556"
+      },
+      {
+       "qty": 2,
+       "name": "Questing Beast",
+       "set": "eld",
+       "number": "171",
+       "id": "e41cf82d-3213-47ce-a015-6e51a8b07e4f"
+      },
+      {
+       "qty": 3,
+       "name": "Wicked Wolf",
+       "set": "eld",
+       "number": "181",
+       "id": "09476eac-55d2-4955-8951-ae4ce117c98b"
+      },
+      {
+       "qty": 3,
+       "name": "Edgewall Innkeeper",
+       "set": "eld",
+       "number": "151",
+       "id": "7c5d0560-f9e6-4c70-8cce-cae61e4e74bc"
+      },
+      {
+       "qty": 3,
+       "name": "Thunderous Snapper",
+       "set": "eld",
+       "number": "215",
+       "id": "9576d4f1-47bb-45e0-803c-93fa2cdacbe5"
+      },
+      {
+       "qty": 2,
+       "name": "The Great Henge",
+       "set": "eld",
+       "number": "161",
+       "id": "af915ed2-1f34-43f6-85f5-2430325b720f"
+      },
+      {
+       "qty": 3,
+       "name": "Fell the Pheasant",
+       "set": "eld",
+       "number": "153",
+       "id": "33d3cc84-7cb6-4de2-9018-4695a3b1e099"
+      },
+      {
+       "qty": 2,
+       "name": "Mystical Dispute",
+       "set": "eld",
+       "number": "58",
+       "id": "fbe04cb8-a8b9-4241-baae-b398a2509a3a"
+      },
+      {
+       "qty": 2,
+       "name": "Opt",
+       "set": "eld",
+       "number": "59",
+       "id": "c3669391-8f64-4904-b432-0f0582f30449"
+      },
+      {
+       "qty": 4,
+       "name": "Thornwood Falls",
+       "set": "eld",
+       "number": "313",
+       "id": "f5159db6-a87f-40eb-8c5c-821dfb67ff6d"
+      },
+      {
+       "qty": 4,
+       "name": "Temple of Mystery",
+       "set": "m21",
+       "number": "254",
+       "id": "81634185-eb67-4d13-8b82-a662b8c9a7f0"
+      },
+      {
+       "qty": 8,
+       "name": "Forest",
+       "set": "eld",
+       "number": "266",
+       "id": "f8f03bb2-313e-4688-945f-052eed678174"
+      },
+      {
+       "qty": 8,
+       "name": "Island",
+       "set": "eld",
+       "number": "254",
+       "id": "4134cd82-6e48-4fc0-bcb4-1e3af369ef82"
+      }
+     ]
+    }
+   },
+   "reward": {
+    "hero": {
+     "packs": 2,
+     "coins": 200
+    },
+    "villain": {
+     "card": {
+      "oracle_id": "60c60923-ff1b-43f7-8768-731499fcffc9",
+      "name": "Oko, Thief of Crowns",
+      "rarity": "mythic",
+      "set": "eld",
+      "id": "3462a3d0-5552-49fa-9eb7-100960c55891",
+      "image": "https://cards.scryfall.io/normal/front/3/4/3462a3d0-5552-49fa-9eb7-100960c55891.jpg"
+     },
+     "coins": 200
+    }
+   },
+   "scene": [
+    {
+     "who": "stage",
+     "line": "Duty and honor are reasons enough, but beating you will also be a pleasure.",
+     "quote": true
+    },
+    {
+     "who": "stage",
+     "line": "Even when hope is but a small flame fighting the night, I will serve the absent king.",
+     "quote": true
+    },
+    {
+     "who": "allies",
+     "line": "Kill his Food, kill Oko, kill whatever he turns into an elk. Do not give him time."
+    }
+   ],
+   "villainScene": [
+    {
+     "who": "stage",
+     "line": "My advisors recommend I let them eat you.",
+     "quote": true
+    },
+    {
+     "who": "stage",
+     "line": "Just tell us how many you want and get out of the way.",
+     "quote": true
+    }
+   ],
+   "after": null,
+   "cues": {
+    "hero": {
+     "start": "For the crown!",
+     "big": "Together!",
+     "low": "He is turning us into elk...",
+     "win": "The tale is ours.",
+     "loss": "An elk again...",
+     "half": "Attack Oko the turn he lands."
+    },
+    "villain": {
+     "start": "Bow.",
+     "big": "[an elk bleats]",
+     "low": "[a trick fails]",
+     "win": "The crown is mine.",
+     "loss": "[the throne is empty]",
+     "half": {
+      "who": "cult",
+      "line": "The king will not be amused."
+     }
+    }
+   },
+   "bigPlays": [],
+   "sim": null
+  },
+  {
+   "id": "a30b9",
+   "slot": 9,
+   "kind": "Secret Boss",
+   "secret": true,
+   "mood": "boss",
+   "title": "Fires of Invention",
+   "difficulty": "Hard",
+   "teaches": [
+    "Racing"
+   ],
+   "blurb": "Deep in the archive, a red and white pile that casts two spells for the price of one.",
+   "rewardSet": "eld",
+   "host": true,
+   "archive": {
+    "deck": "Fires of Invention",
+    "when": "Autumn 2019",
+    "format": "Standard.",
+    "what": "A red and white deck that used Fires of Invention to cast two spells per turn on a limited mana budget.",
+    "why": "Cheap, efficient spells and a free-cast engine made it a fast, resilient attacker in a format with many Food and Adventure decks.",
+    "beat": "Kill the engine pieces early and race; the deck wants to untap with Fires on the table.",
+    "after": "Throne of Eldraine's Standard seat was taken over by Theros Beyond Death and then Ikoria later that year and in 2020."
+   },
+   "hero": {
+    "who": "you",
+    "deck": {
+     "name": "Gruul Ramp",
+     "colors": "RG",
+     "archetype": "Ramp",
+     "label": "tribute",
+     "cards": [
+      {
+       "qty": 4,
+       "name": "Llanowar Visionary",
+       "set": "m21",
+       "number": "193",
+       "id": "d6e23afa-7e08-4049-baf0-d4d0134ba2c8"
+      },
+      {
+       "qty": 4,
+       "name": "Humble Naturalist",
+       "set": "iko",
+       "number": "160",
+       "id": "8f56705d-eb64-4cef-b716-edbeac60bf79"
+      },
+      {
+       "qty": 4,
+       "name": "Cultivate",
+       "set": "m21",
+       "number": "177",
+       "id": "4a433310-3fe2-4156-864d-7a6b2638340b"
+      },
+      {
+       "qty": 3,
+       "name": "Elder Gargaroth",
+       "set": "m21",
+       "number": "179",
+       "id": "d51269cf-a333-4a64-94cd-245798d840d2"
+      },
+      {
+       "qty": 3,
+       "name": "Terror of the Peaks",
+       "set": "m21",
+       "number": "164",
+       "id": "432ecd5f-966f-4403-a973-51e175a524a0"
+      },
+      {
+       "qty": 2,
+       "name": "Kogla, the Titan Ape",
+       "set": "iko",
+       "number": "162",
+       "id": "3c35ca79-eb72-427a-a8ed-404b2214389a"
+      },
+      {
+       "qty": 2,
+       "name": "Titanoth Rex",
+       "set": "iko",
+       "number": "174",
+       "id": "9d02e1e8-b85b-4e26-8ab8-ca2f49d05b88"
+      },
+      {
+       "qty": 2,
+       "name": "Garruk, Unleashed",
+       "set": "m21",
+       "number": "183",
+       "id": "af2fdbec-bca2-4af5-9c2a-28b0b35b18a3"
+      },
+      {
+       "qty": 2,
+       "name": "Lukka, Coppercoat Outcast",
+       "set": "iko",
+       "number": "125",
+       "id": "5798fdf0-d178-43d9-b821-8f3f654654b4"
+      },
+      {
+       "qty": 3,
+       "name": "Ram Through",
+       "set": "iko",
+       "number": "170",
+       "id": "ac0b24e7-14e7-45ee-b5d8-bdb8674b669c"
+      },
+      {
+       "qty": 3,
+       "name": "Fire Prophecy",
+       "set": "iko",
+       "number": "116",
+       "id": "4c2029e5-cf7d-461f-b7b9-bf96399d8f49"
+      },
+      {
+       "qty": 2,
+       "name": "Shock",
+       "set": "m21",
+       "number": "159",
+       "id": "59fa8e8d-bcb8-47bf-b71a-df11c8d0f2c9"
+      },
+      {
+       "qty": 2,
+       "name": "Wilt",
+       "set": "iko",
+       "number": "176",
+       "id": "55987bab-c24f-4261-b97e-f0ad4474b0a0"
+      },
+      {
+       "qty": 4,
+       "name": "Rugged Highlands",
+       "set": "iko",
+       "number": "252",
+       "id": "9a69fa8f-1c2b-453d-8d54-2748890ce925"
+      },
+      {
+       "qty": 4,
+       "name": "Temple of Abandon",
+       "set": "thb",
+       "number": "244",
+       "id": "7d5f8481-47f7-4531-9dad-686cdfb5d2ad"
+      },
+      {
+       "qty": 8,
+       "name": "Forest",
+       "set": "eld",
+       "number": "266",
+       "id": "f8f03bb2-313e-4688-945f-052eed678174"
+      },
+      {
+       "qty": 8,
+       "name": "Mountain",
+       "set": "eld",
+       "number": "262",
+       "id": "32982ed2-96e4-4cc5-8562-744b06bca239"
+      }
+     ]
+    }
+   },
+   "villain": {
+    "who": "fires",
+    "deck": {
+     "name": "Fires of Invention",
+     "colors": "RW",
+     "archetype": "Aggro",
+     "label": "tribute",
+     "note": "Built from cards in this act's sets only. No single tournament list is copied.",
+     "cards": [
+      {
+       "qty": 4,
+       "name": "Fires of Invention",
+       "set": "eld",
+       "number": "125",
+       "id": "a12b16b0-f75f-42d8-9b24-947c1908e0f7"
+      },
+      {
+       "qty": 4,
+       "name": "Bonecrusher Giant // Stomp",
+       "set": "eld",
+       "number": "115",
+       "id": "09fd2d9c-1793-4beb-a3fb-7a869f660cd4"
+      },
+      {
+       "qty": 3,
+       "name": "Embereth Shieldbreaker // Battle Display",
+       "set": "eld",
+       "number": "122",
+       "id": "6cc73d16-5ed7-4104-91f6-0997a2080e2e"
+      },
+      {
+       "qty": 3,
+       "name": "Rimrock Knight // Boulder Rush",
+       "set": "eld",
+       "number": "137",
+       "id": "a3d13d84-01e4-4429-93db-e5afff811527"
+      },
+      {
+       "qty": 3,
+       "name": "Giant Killer // Chop Down",
+       "set": "eld",
+       "number": "14",
+       "id": "75754468-2850-42e6-ab22-61ff7b9d1214"
+      },
+      {
+       "qty": 2,
+       "name": "Torbran, Thane of Red Fell",
+       "set": "eld",
+       "number": "147",
+       "id": "79f591cd-d277-4ba5-b1bf-1c09cac9cb8a"
+      },
+      {
+       "qty": 2,
+       "name": "Syr Carah, the Bold",
+       "set": "eld",
+       "number": "145",
+       "id": "080a249a-df47-4769-bb63-0d8ab3f2467c"
+      },
+      {
+       "qty": 4,
+       "name": "Slaying Fire",
+       "set": "eld",
+       "number": "143",
+       "id": "83b5b110-c430-4ffe-9fc1-8e6987f52d1e"
+      },
+      {
+       "qty": 3,
+       "name": "Searing Barrage",
+       "set": "eld",
+       "number": "140",
+       "id": "d2f11135-e9ce-4e4c-bea7-72a46d326e40"
+      },
+      {
+       "qty": 2,
+       "name": "Elspeth Conquers Death",
+       "set": "thb",
+       "number": "13",
+       "id": "ea20208b-1939-4c69-8cfd-c0a42f9dc427"
+      },
+      {
+       "qty": 2,
+       "name": "Trapped in the Tower",
+       "set": "eld",
+       "number": "33",
+       "id": "974e84ce-5b51-4bd7-9a4d-b64d8f8f62d4"
+      },
+      {
+       "qty": 3,
+       "name": "Scorching Dragonfire",
+       "set": "eld",
+       "number": "139",
+       "id": "3b74a806-ed74-458e-8903-d3d084e9f507"
+      },
+      {
+       "qty": 1,
+       "name": "Sundering Stroke",
+       "set": "eld",
+       "number": "144",
+       "id": "24b7a774-ca49-4291-8a19-cb5e475b10d5"
+      },
+      {
+       "qty": 4,
+       "name": "Wind-Scarred Crag",
+       "set": "eld",
+       "number": "308",
+       "id": "75f5875e-487f-4586-95f3-3627050a6744"
+      },
+      {
+       "qty": 4,
+       "name": "Temple of Triumph",
+       "set": "m21",
+       "number": "256",
+       "id": "2366499c-9d07-46bb-8488-6cd60056fa16"
+      },
+      {
+       "qty": 8,
+       "name": "Mountain",
+       "set": "eld",
+       "number": "262",
+       "id": "32982ed2-96e4-4cc5-8562-744b06bca239"
+      },
+      {
+       "qty": 8,
+       "name": "Plains",
+       "set": "eld",
+       "number": "250",
+       "id": "7ded4b2a-ba56-43da-8ea7-392b77fc2926"
+      }
+     ]
+    }
+   },
+   "reward": {
+    "hero": {
+     "packs": 2,
+     "coins": 200
+    },
+    "villain": {
+     "card": {
+      "oracle_id": "27e27681-9221-4e64-8c78-e153a86bc6e0",
+      "name": "Fires of Invention",
+      "rarity": "rare",
+      "set": "eld",
+      "id": "a12b16b0-f75f-42d8-9b24-947c1908e0f7",
+      "image": "https://cards.scryfall.io/normal/front/a/1/a12b16b0-f75f-42d8-9b24-947c1908e0f7.jpg"
+     },
+     "coins": 200
+    }
+   },
+   "scene": [
+    {
+     "who": "stage",
+     "line": "Just tell us how many you want and get out of the way.",
+     "quote": true
+    },
+    {
+     "who": "you",
+     "line": "Kill the engine before it spends your turn for you."
+    }
+   ],
+   "villainScene": [
+    {
+     "who": "stage",
+     "line": "The purest virtue burns brighter than the sun and hotter than dragonfire.",
+     "quote": true
+    }
+   ],
+   "after": [
+    {
+     "who": "stage",
+     "line": "Recorded: Throne of Eldraine's Standard seat was taken over by Theros Beyond Death and then Ikoria later that year and in 2020."
+    }
+   ],
+   "cues": {
+    "hero": {
+     "start": "Break the engine.",
+     "big": "Smash it!",
+     "low": "Fires is online...",
+     "win": "Fires out.",
+     "loss": "Out-cast...",
+     "half": "Kill Fires of Invention."
+    },
+    "villain": {
+     "start": "[a quiet spell]",
+     "big": "[two at once]",
+     "low": "[a stall]",
+     "win": "[ashes]",
+     "loss": "[the fire goes out]"
+    }
+   },
+   "bigPlays": [],
+   "sim": null
+  }
+ ]
+}
