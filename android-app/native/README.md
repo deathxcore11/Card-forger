@@ -8,6 +8,7 @@ Build (JDK 21, Android SDK 36, build-tools 35):
 
 ```sh
 scripts/prepare-assets.sh          # engine jars + pack, current rules bundle, demo-deck art, mats, sounds
+scripts/prepare-playmats.sh        # the 128 playmat webps; run after prepare-assets.sh
 echo sdk.dir=$ANDROID_HOME > local.properties
 gradle :app:assembleRelease        # unsigned; Maven Central 429s → --max-workers=1
 ```
