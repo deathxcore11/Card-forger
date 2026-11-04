@@ -184,7 +184,7 @@ export const STORY_DEEDS = Object.freeze([
   // Act 9: The Mirari
   deed('a9-thirteen', 9, 'a9b1', 'Thirteen', 'Win the pit fight by your 8th turn. The house never saw it coming.', 'Kamahl, Pit Fighter', turnsBy(8)),
   deed('a9-champion', 9, 'a9b1', 'New Champion', 'Kill the Cabal Torturer.', 'Cabal Torturer', {killed: 'Cabal Torturer'}),
-  deed('a9-threshold', 9, 'a9b2', 'Threshold', 'Have a creature with 8 or more power.', 'Krosan Beast', power(8)),
+  deed('a9-threshold', 9, 'a9b2', 'Threshold', 'Have a creature with 7 or more power.', 'Krosan Beast', power(7)),
   deed('a9-keepers', 9, 'a9b2', "Krosa's Keepers", 'Beat the Cabal without dropping below 10 life.', 'Nimble Mongoose', lifeAtLeast(10)),
   deed('a9-squirrels', 9, 'a9b3', 'Keep an Eye Out', 'Have six creatures on the field at once in Krosa. The squirrels are watching.', 'Squirrel Nest', {maxCreatures: ['>=', 6]}),
   deed('a9-nuts', 9, 'a9b3', 'Nuts', 'Have five tokens on the field at once.', 'Chatter of the Squirrel', {maxTokens: ['>=', 5]}),
@@ -192,14 +192,14 @@ export const STORY_DEEDS = Object.freeze([
   deed('a9-sledge', 9, 'a9b4', "Kamahl's Sledge", 'Have a creature with 6 or more power.', "Kamahl's Sledge", power(6)),
   deed('a9-lavamancer', 9, 'a9b5', 'Lavamancer', 'Kill three of the Cephalid Court.', 'Grim Lavamancer', kills(3)),
   deed('a9-mongrel', 9, 'a9b5', 'Madness', 'Have a creature with 6 or more power.', 'Wild Mongrel', power(6)),
-  deed('a9-screech', 9, 'a9b6', 'Battle Screech', 'Have four flyers on the field at once.', 'Battle Screech', flyers(4)),
+  deed('a9-screech', 9, 'a9b6', 'Battle Screech', 'Have three flyers on the field at once.', 'Battle Screech', flyers(3)),
   deed('a9-braids', 9, 'a9b6', 'Braids Unbraided', 'Kill Braids, Cabal Minion.', 'Braids, Cabal Minion', {killed: 'Braids, Cabal Minion'}),
   deed('a9-wake', 9, 'a9b7', 'Wake Up', 'Beat Kamahl by your 8th turn, before the Wake plays itself.', 'Balthor the Stout', turnsBy(8)),
   deed('a9-sister', 9, 'a9b7', "A Sister's Patience", 'Kill four creatures.', 'Lava Dart', kills(4)),
   deed('a9-penance', 9, 'a9b8', 'Penance', 'Beat the Patriarch with 10 life or more. Pain teaches lessons, but not this time.', 'Mirari', endAtLeast(10)),
   deed('a9-patriarch', 9, 'a9b8', 'The Cabal Breaks', "Kill six of the Cabal's creatures.", 'Arrogant Wurm', kills(6)),
   deed('a9-pit-king', 9, 'a9b1', 'Pit King', 'Win with a Kamahl, Pit Fighter who never falls.', 'Halberdier', {survived: 'Kamahl, Pit Fighter'}, 'hero', hidden('The barbarian never bleeds in the pit.')),
-  deed('a9-v-mutilate', 9, 'a9b8', 'Mutilate', 'As the Patriarch, wipe out three or more creatures at once.', 'Mutilate', {oppWipes: ['>=', 1]}, 'villain'),
+  deed('a9-v-mutilate', 9, 'a9b8', 'Mutilate', 'As the Patriarch, kill four creatures.', 'Mutilate', kills(4), 'villain'),
 
   // Act 10: The False God
   deed('a10-faces', 10, 'a10b1', 'Every Face a Secret', 'Win the Coliseum bout with Ixidor on the field.', 'Ixidor, Reality Sculptor', {mine: 'Ixidor, Reality Sculptor'}),
@@ -233,7 +233,7 @@ export const STORY_DEEDS = Object.freeze([
   deed('a11-tangle', 11, 'a11b4', 'The Tangle Holds', 'Beat the Arcbound without dropping below 10 life.', 'Troll Ascetic', lifeAtLeast(10)),
   deed('a11-sunburst', 11, 'a11b5', 'Fifth Dawn', 'Have four +1/+1 counters on one creature.', 'Solarion', {maxCounters: ['>=', 4]}),
   deed('a11-geth', 11, 'a11b5', 'The Nim Return', 'Kill five nim.', 'Skyreach Manta', kills(5)),
-  deed('a11-modular', 11, 'a11b6', 'Modular', 'Have five +1/+1 counters on one creature.', 'Thoughtcast', {maxCounters: ['>=', 5]}),
+  deed('a11-modular', 11, 'a11b6', 'Modular', 'Have three +1/+1 counters on one creature.', 'Thoughtcast', {maxCounters: ['>=', 3]}),
   deed('a11-disciple', 11, 'a11b6', 'Disciple', 'Deal 8 or more damage in one turn.', 'Disciple of the Vault', bigTurn(8)),
   deed('a11-colossus', 11, 'a11b7', 'Darksteel Colossus', 'Win with Darksteel Colossus on the field.', 'Darksteel Colossus', {mine: 'Darksteel Colossus'}),
   deed('a11-shackles-free', 11, 'a11b7', 'Unshackled', 'Beat Janus without dropping below 10 life.', 'Sylvan Scrying', lifeAtLeast(10)),
@@ -257,7 +257,7 @@ export const STORY_DEEDS = Object.freeze([
   deed('a12-two-faces', 12, 'a12b5', 'Two Faces', 'Flip two creatures in one battle.', 'Kitsune Blademaster', {flipped: ['>=', 2]}, 'hero', hidden('Two faces turn over in one battle.')),
   deed('a12-dragon', 12, 'a12b6', 'Gifts Given', 'Win after a dragon spirit, Kokusho or Keiga, takes your side of the field.', 'Gifts Ungiven', {mineAny: ['Kokusho, the Evening Star', 'Keiga, the Tide Star']}),
   deed('a12-godo', 12, 'a12b6', 'Bandit Warlord', 'Kill Godo, Bandit Warlord.', 'Godo, Bandit Warlord', {killed: 'Godo, Bandit Warlord'}),
-  deed('a12-snakes', 12, 'a12b7', 'Snakes in the Swamp', 'Have five Snakes on the field at once.', "Sosuke's Summons", tribe('Snake', 5)),
+  deed('a12-snakes', 12, 'a12b7', 'Snakes in the Swamp', 'Have four Snakes on the field at once.', "Sosuke's Summons", tribe('Snake', 4)),
   deed('a12-kiku', 12, 'a12b7', 'Shadows Fade', 'Beat Kiku without dropping below 10 life.', 'Sachi, Daughter of Seshiro', lifeAtLeast(10)),
   deed('a12-taken', 12, 'a12b8', 'That Which Was Taken', 'Beat Konda before he ever reaches the table.', 'Konda, Lord of Eiganjo', {notTheirs: 'Konda, Lord of Eiganjo'}),
   deed('a12-oath', 12, 'a12b8', 'A Thief Keeps His Word', 'Win with a Toshiro who never falls.', 'Throat Slitter', {survived: 'Toshiro Umezawa'}),
@@ -266,7 +266,7 @@ export const STORY_DEEDS = Object.freeze([
   deed('a12-hanabi', 12, 'a12b9', 'Fireworks', 'Kill six creatures.', 'Hanabi Blast', kills(6)),
 
   // Act 13: The Guildpact
-  deed('a13-festival', 13, 'a13b1', 'Festival Crowd', 'Have four tokens on the field at once.', 'Scatter the Seeds', {maxTokens: ['>=', 4]}),
+  deed('a13-festival', 13, 'a13b1', 'Festival Crowd', 'Have three tokens on the field at once.', 'Scatter the Seeds', {maxTokens: ['>=', 3]}),
   deed('a13-cultists', 13, 'a13b1', 'Party Crashers', 'Kill five Rakdos cultists.', 'Selesnya Guildmage', kills(5)),
   deed('a13-rotwurm', 13, 'a13b2', 'Rot Farm', 'Have a creature with 5 or more power.', 'Golgari Rotwurm', power(5)),
   deed('a13-surveyors', 13, 'a13b2', 'Survey Cancelled', 'Kill four Izzet weirds.', 'Life from the Loam', kills(4)),
@@ -283,7 +283,7 @@ export const STORY_DEEDS = Object.freeze([
   deed('a13-firemind', 13, 'a13b7', 'Firemind Out', 'Kill Niv-Mizzet, the Firemind.', 'Niv-Mizzet, the Firemind', {killed: 'Niv-Mizzet, the Firemind'}),
   deed('a13-light', 13, 'a13b8', 'Into the Light', 'Beat Szadek before he ever reaches the table.', 'Szadek, Lord of Secrets', {notTheirs: 'Szadek, Lord of Secrets'}),
   deed('a13-dragged', 13, 'a13b8', 'Dragged Out', "Kill five of Szadek's creatures.", 'Mourning Thrull', kills(5)),
-  deed('a13-v-secrets', 13, 'a13b8', 'Lord of Secrets', 'As Szadek, have five +1/+1 counters on one creature.', 'Keening Banshee', {maxCounters: ['>=', 5]}, 'villain'),
+  deed('a13-v-secrets', 13, 'a13b8', 'Lord of Secrets', 'As Szadek, kill five creatures.', 'Keening Banshee', kills(5), 'villain'),
   deed('a13-no-angel', 13, 'a13b9', 'No Angel Rises', 'Beat Solar Flare without ever facing Angel of Despair.', 'Angel of Despair', {notTheirs: 'Angel of Despair'}),
   deed('a13-boros-wins', 13, 'a13b9', 'Boros Deck Wins', 'Beat Solar Flare by your 6th turn.', 'Flame-Kin Zealot', turnsBy(6)),
 
