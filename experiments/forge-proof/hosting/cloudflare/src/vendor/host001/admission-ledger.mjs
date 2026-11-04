@@ -9,12 +9,37 @@ const fail = code => { throw new TypeError(code); };
 const only = (value, allowed) => object(value) && Object.keys(value).every(key => allowed.includes(key));
 
 export function validateExactDeckInput(input) {
-  if (!only(input, ['format', 'humanDeck', 'opponentDeck', 'difficultyPolicyVersion'])
-      || !['Commander', 'Standard', 'Modern'].includes(input.format)
+  if (!only(input, ['format', 'humanDeck', 'opponentDeck', 'difficultyPolicyVersion', 'startingPlayer', 'playStyle', 'extraOpponents', 'opponentKind', 'setup'])
+      || !['Commander', 'Standard', 'Modern', 'Pioneer', 'Legacy', 'Vintage', 'Pauper', 'Brawl'].includes(input.format)
       || typeof input.difficultyPolicyVersion !== 'string'
       || !/^[A-Za-z0-9._-]{1,80}$/.test(input.difficultyPolicyVersion)) fail('invalid_match_input');
-  for (const role of ['humanDeck', 'opponentDeck']) {
-    const deck = input[role];
+  if (input.startingPlayer !== undefined || input.playStyle !== undefined) {
+    if (!['random', 'first', 'second'].includes(input.startingPlayer) || !['quick', 'practice'].includes(input.playStyle)
+        || input.playStyle === 'quick' && input.startingPlayer !== 'random'
+        && !(input.setup !== undefined && input.startingPlayer === 'first')) fail('invalid_starting_player_selection');
+  }
+  // A scripted lesson setup: CPU matches only; names are bounded, nothing else is accepted.
+  if (input.setup !== undefined) {
+    const s = input.setup, names = v => v === undefined || Array.isArray(v) && v.length <= 15
+      && v.every(n => typeof n === 'string' && n.length >= 1 && n.length <= 120);
+    if (!only(s, ['stack', 'noMulligan']) || s.noMulligan !== undefined && typeof s.noMulligan !== 'boolean'
+        || s.stack !== undefined && (!only(s.stack, ['hero', 'villain']) || !names(s.stack.hero) || !names(s.stack.villain))
+        || input.startingPlayer === undefined || input.opponentKind !== undefined || input.extraOpponents !== undefined) fail('invalid_match_setup');
+  }
+  // A friend match: the opponent seat is a second person and Forge's coin toss picks who starts.
+  if (input.opponentKind !== undefined && (input.opponentKind !== 'human' || input.extraOpponents !== undefined
+      || input.startingPlayer !== 'random')) fail('invalid_friend_match');
+  // A Commander pod: up to two more CPU seats, each with its own deck and level.
+  const decks = [input.humanDeck, input.opponentDeck];
+  if (input.extraOpponents !== undefined) {
+    if (input.format !== 'Commander' || !Array.isArray(input.extraOpponents) || input.extraOpponents.length < 1 || input.extraOpponents.length > 2) fail('invalid_extra_opponents');
+    for (const seat of input.extraOpponents) {
+      if (!only(seat, ['deck', 'difficultyPolicyVersion']) || typeof seat.difficultyPolicyVersion !== 'string'
+          || !/^[A-Za-z0-9._-]{1,80}$/.test(seat.difficultyPolicyVersion)) fail('invalid_extra_opponents');
+      decks.push(seat.deck);
+    }
+  }
+  for (const deck of decks) {
     // Accept the EXISTING CardStashy saved/imported snapshot. cards includes
     // declared commanders; commanders/commander designate those same copies.
     // Do not invent another deck model or split/remove/add those copies here.
@@ -116,11 +141,19 @@ export class AdmissionLedger {
   async pruneReceipts() {
     const receipts = await this.storage.list({ prefix: 'create:' });
     for (const [key, value] of receipts) {
-      if (value.retainUntil <= this.now()) await this.storage.delete(key);
+      if (value.retainUntil <= this.now()) await this.storage.transaction(async txn => {
+        const current = await txn.get(key);
+        if (current && current.retainUntil <= this.now()) await txn.delete(key);
+      });
     }
     const rates = await this.storage.list({ prefix: 'create-rate:' });
     for (const [key, values] of rates) {
-      if (values.every(time => time <= this.now() - 86400000)) await this.storage.delete(key);
+      if (values.every(time => time <= this.now() - 86400000)) await this.storage.transaction(async txn => {
+        // A reservation can update this key after list() produced its snapshot.
+        // Recheck and delete atomically so an alarm cannot erase fresh quotas.
+        const current = await txn.get(key);
+        if (current && current.every(time => time <= this.now() - 86400000)) await txn.delete(key);
+      });
     }
   }
 }

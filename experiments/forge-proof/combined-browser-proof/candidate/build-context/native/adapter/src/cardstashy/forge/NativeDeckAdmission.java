@@ -43,9 +43,11 @@ public final class NativeDeckAdmission {
   List<String> errors=new ArrayList<>();NativeDeckInput.Resolution human=null,opponent=null;List<NativeDeckInput.Resolution> extras=new ArrayList<>();List<BoundedHeuristicPolicy> extraPolicies=new ArrayList<>();List<Map<String,Object>> extraReceipts=new ArrayList<>();boolean extrasResolved=true;
   BoundedHeuristicPolicy selectedPolicy=null;Map<String,Object> cpuPolicy=null;String policyVersion=null;boolean policy=false,legal=false,nativeLegal=false,dataSupported=false;Map<String,Object> rulesData=null;String humanDigest=null,opponentDigest=null,requestDigest=null;
   try{
-   Set<String> keys=input==null?Set.of():new HashSet<>(input.keySet());boolean pod=keys.remove("extraOpponents"),friend=keys.remove("opponentKind");
+   Set<String> keys=input==null?Set.of():new HashSet<>(input.keySet());boolean pod=keys.remove("extraOpponents"),friend=keys.remove("opponentKind"),setup=keys.remove("setup");
    if(input==null||!(keys.equals(Set.of("format","humanDeck","opponentDeck","difficultyPolicyVersion"))||keys.equals(Set.of("format","humanDeck","opponentDeck","difficultyPolicyVersion","startingPlayer","playStyle"))))throw new IllegalArgumentException("invalid_match_input");
    NativeStartingPlayer.parse(input);
+   // A match setup is for scripted CPU lessons: never a friend match or a pod, and only with a starting player choice.
+   if(setup&&(friend||pod||!input.has("startingPlayer")))throw new IllegalArgumentException("invalid_match_setup");
    // A friend match: two people, two seats, and Forge's own coin toss picks who starts.
    if(friend&&(pod||!"human".equals(NativeDeckInput.string(input.get("opponentKind"),"opponentKind",16))||!input.has("startingPlayer")||!"random".equals(NativeDeckInput.string(input.get("startingPlayer"),"startingPlayer",16))))throw new IllegalArgumentException("friend_match_invalid");
    NativeDeckInput.bounded(input,0,new int[]{0});
