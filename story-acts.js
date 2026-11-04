@@ -50,6 +50,9 @@ export const STORY_ACTS = [
   {act: 16, age: 'The Alara Years', title: 'The Conflux', years: '2008 to 2009',
     sets: ['ala', 'con', 'arb', 'm10'], landSet: 'ala', packSets: ['ala', 'con', 'arb', 'm10'],
     art: {set: 'con', number: '120', name: 'Nicol Bolas, Planeswalker', crop: 'https://cards.scryfall.io/art_crop/front/4/8/48ee3939-bc12-4275-a446-9de36f0b4672.jpg'}},
+  {act: 17, age: 'The Zendikar Years', title: 'The Eldrazi Rise', years: '2009 to 2010',
+    sets: ['zen', 'wwk', 'roe', 'm11'], landSet: 'zen', packSets: ['zen', 'wwk', 'roe', 'm11'],
+    art: {set: 'roe', number: '4', name: 'Emrakul, the Aeons Torn', crop: 'https://cards.scryfall.io/art_crop/front/6/7/67600383-bbb8-411c-b8e6-2296650bc747.jpg?1783942013'}},
 ];
 export const SET_NAMES = {lea: 'Limited Edition Alpha', leb: 'Limited Edition Beta', '2ed': 'Unlimited Edition', arn: 'Arabian Nights', atq: 'Antiquities',
   '3ed': 'Revised Edition', leg: 'Legends', drk: 'The Dark', fem: 'Fallen Empires', ice: 'Ice Age', hml: 'Homelands', all: 'Alliances', '4ed': 'Fourth Edition',
@@ -65,6 +68,6 @@ export const SET_NAMES = {lea: 'Limited Edition Alpha', leb: 'Limited Edition Be
   rav: 'Ravnica: City of Guilds', gpt: 'Guildpact', dis: 'Dissension',
   csp: 'Coldsnap', tsp: 'Time Spiral', tsb: 'Time Spiral Timeshifted', plc: 'Planar Chaos', fut: 'Future Sight', '10e': 'Tenth Edition',
   lrw: 'Lorwyn', mor: 'Morningtide', shm: 'Shadowmoor', eve: 'Eventide',
-  ala: 'Shards of Alara', con: 'Conflux', arb: 'Alara Reborn', m10: 'Magic 2010'};
+  ala: 'Shards of Alara', con: 'Conflux', arb: 'Alara Reborn', m10: 'Magic 2010', zen: 'Zendikar', wwk: 'Worldwake', roe: 'Rise of the Eldrazi', m11: 'Magic 2011'};
 export const storyAct = n => STORY_ACTS.find(a => a.act === Number(n)) || null;
 export const setSymbolUrl = code => `https://svgs.scryfall.io/sets/${encodeURIComponent(code)}.svg`;
