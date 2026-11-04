@@ -18,11 +18,11 @@ const FEAT = {coins: 300, packs: 1, xp: 100};
 const HIDDEN_FEAT = {coins: 500, collector: 1, xp: 250, seals: {r: 1}};
 // One-step deeds pay by how hard they are (Randall, 4 Nov): some only XP, some a common or uncommon seal,
 // the big ones a pack, hidden ones a rare seal. `reward` on an achievement names one of these.
-const REWARDS = {xp: {xp: 100}, common: {coins: 100, xp: 100, seals: {c: 1}}, uncommon: {coins: 200, xp: 150, seals: {u: 1}}, feat: FEAT};
+const REWARDS = {xp: {xp: 100}, common: {coins: 100, xp: 100, seals: {c: 1}}, uncommon: {coins: 200, xp: 150, seals: {u: 1}}, feat: FEAT, glory: {coins: 500, xp: 250, seals: {r: 1}}};
 
 // Tabs, in order: one per Play mode or place (Quick Play, Practice, Story, Multiplayer, the Trunk,
 // packs and the Merchant), plus the lifetime ones and the hidden ones.
-export const DEED_TABS = [['journey', 'Journey'], ['duelist', 'Duelist'], ['quick', 'Quick Play'], ['formats', 'Formats'], ['colours', 'Colours'], ['story', 'Story'], ['friends', 'Multiplayer'], ['practice', 'Practice'], ['collector', 'Trunk'], ['packs', 'Packs'], ['merchant', 'Merchant'], ['hidden', 'Hidden']];
+export const DEED_TABS = [['glory', 'Glory'], ['journey', 'Journey'], ['duelist', 'Duelist'], ['quick', 'Quick Play'], ['formats', 'Formats'], ['colours', 'Colours'], ['story', 'Story'], ['friends', 'Multiplayer'], ['practice', 'Practice'], ['collector', 'Trunk'], ['packs', 'Packs'], ['merchant', 'Merchant'], ['hidden', 'Hidden']];
 
 // source: a play.counters key; '#<prefix>' counts the different keys that start with '<prefix>:'
 // (formats, colour pairs, sets opened); anything else is a collection, wallet or Story figure (sourceValue).
@@ -30,6 +30,16 @@ export const DEED_TABS = [['journey', 'Journey'], ['duelist', 'Duelist'], ['quic
 // ones pay mythic seals. honour: Practice deeds; Practice never pays (play-progression.md section 3),
 // so they are earned and shown, never claimed. Ids and steps are permanent: claims are ach:<id>:<step>.
 export const ACHIEVEMENTS = Object.freeze([
+  // Glory (World of Warcraft style, Randall 4 Nov): meta-achievements. Each counts other achievements; finishing
+  // one pays a Secret Lair card (play-econ-route.js), a rare seal and a title. glory.where picks achievements by
+  // tab, feat or hidden; glory.need fixes the goal (else every match). Steps are set from the matches in achievementRows.
+  {id: 'glory-duelist', tab: 'glory', title: 'Glory of the Duelist', lore: 'Earn every Duelist feat.', art: 'Gideon Jura', source: 'glory', glory: {where: {tab: ['duelist'], feat: true}}, steps: [1], feat: true, reward: 'glory', titleReward: 'the Duelist'},
+  {id: 'glory-table', tab: 'glory', title: 'Glory of the Table', lore: 'Every Quick Play and Multiplayer feat.', art: 'Karn Liberated', source: 'glory', glory: {where: {tab: ['quick', 'friends'], feat: true}}, steps: [1], feat: true, reward: 'glory', titleReward: 'Tablemaster'},
+  {id: 'glory-chronicle-1', tab: 'glory', title: 'Chronicler Glory: Acts 1-8', lore: 'Chronicler of every act from 1 to 8.', art: "Mishra's Workshop", source: 'glory', glory: {ids: [1, 2, 3, 4, 5, 6, 7, 8].map(n => `a${n}-chronicler`)}, steps: [1], feat: true, reward: 'glory', titleReward: 'the Chronicler'},
+  {id: 'glory-chronicle-2', tab: 'glory', title: 'Chronicler Glory: Acts 9-16', lore: 'Chronicler of every act from 9 to 16.', art: 'Survival of the Fittest', source: 'glory', glory: {ids: [9, 10, 11, 12, 13, 14, 15, 16].map(n => `a${n}-chronicler`)}, steps: [1], feat: true, reward: 'glory', titleReward: 'the Loremaster'},
+  {id: 'glory-chronicle-3', tab: 'glory', title: 'Chronicler Glory: Acts 17-26', lore: 'Chronicler of every act from 17 to 26.', art: 'Academy Ruins', source: 'glory', glory: {ids: [17, 18, 19, 20, 21, 22, 23, 24, 25, 26].map(n => `a${n}-chronicler`)}, steps: [1], feat: true, reward: 'glory', titleReward: 'the Archivist'},
+  {id: 'glory-riddles', tab: 'glory', title: 'Keeper of Riddles', lore: 'Solve 25 hidden riddles, anywhere in Play.', art: 'Sphinx of the Final Word', source: 'glory', glory: {where: {hidden: true}, need: 25}, steps: [1], feat: true, reward: 'glory', titleReward: 'the Riddle-Keeper'},
+  {id: 'glory-hunter', tab: 'glory', title: 'Achievement Hunter', lore: 'Achievement points earned. Glory achievements do not count toward it.', art: 'Nicol Bolas, Planeswalker', source: 'points', steps: [500, 1000, 2500, 5000], titleReward: 'the Hunter'},
   // Journey: the whole of Play.
   {id: 'first-spark', tab: 'journey', title: 'First Spark', lore: 'Every planeswalker remembers the first time the spark caught.', art: 'Chandra, Torch of Defiance', source: 'matches', steps: [1], feat: true, reward: 'xp'},
   {id: 'faithful', tab: 'journey', title: 'Faithful Planeswalker', lore: 'Days you came back to the Multiverse. Missed days never reset it.', art: 'Teferi, Hero of Dominaria', source: 'logins', steps: [7, 30, 100, 365], titleReward: 'Ever-Present'},
@@ -43,7 +53,7 @@ export const ACHIEVEMENTS = Object.freeze([
   {id: 'swift-justice', tab: 'duelist', title: 'Swift Justice', lore: 'Win by your 5th turn.', art: 'Lightning Bolt', source: 'wins_fast', steps: [1], feat: true, reward: 'uncommon'},
   {id: 'flawless', tab: 'duelist', title: 'Flawless', lore: 'Win with 20 life or more.', art: 'Serra Angel', source: 'wins_flawless', steps: [1], feat: true, reward: 'common'},
   {id: 'long-game', tab: 'duelist', title: 'The Long Game', lore: 'Win a match that lasts 15 of your turns.', art: 'Ugin, the Spirit Dragon', source: 'wins_long', steps: [1], feat: true, reward: 'common'},
-  {id: 'comeback', tab: 'duelist', title: 'Back From the Brink', lore: 'Win with 5 life or less. The table thought you were finished.', art: 'Worship', source: 'wins_low', steps: [1, 10, 50]},
+  {id: 'comeback', tab: 'duelist', title: 'Back From the Brink', lore: 'Win with 5 life or less. The table thought you were finished.', art: 'Worship', source: 'wins_low', steps: [1, 10, 50], titleReward: 'the Unbroken'},
   {id: 'executioner', tab: 'duelist', title: 'Executioner', lore: 'Opposing creatures you destroyed, in every mode but Practice.', art: 'Wrath of God', source: 'kills', steps: [25, 100, 500, 2000, 5000]},
   {id: 'one-big-turn', tab: 'duelist', title: 'One Big Turn', lore: 'Deal 15 or more damage to one opponent in a single turn.', art: 'Craterhoof Behemoth', source: 'f_big15', steps: [1], feat: true, reward: 'uncommon'},
   {id: 'alpha-strike', tab: 'duelist', title: 'Alpha Strike', lore: 'Attack with six or more creatures at once.', art: 'Overwhelming Stampede', source: 'f_alpha6', steps: [1], feat: true, reward: 'common'},
@@ -173,19 +183,38 @@ export function sourceValue(source, {counters = {}, state = {}} = {}) {
 }
 
 const claimedRef = (id, step) => `ach:${id}:${step}`;
-// One row per achievement: value, its steps with tier and claim state, and the next goal.
+// Achievement points (World of Warcraft style, Randall 4 Nov): only for bragging, never spent. One step of a
+// chain is 10 (5 in Practice, which pays nothing); a feat is worth what it pays: 5 XP only, 10 common seal,
+// 20 uncommon seal, 50 a pack or Glory; a hidden riddle 25.
+const FEAT_POINTS = {xp: 5, common: 10, uncommon: 20, feat: 50, glory: 50};
+const stepPoints = a => a.hidden ? 25 : a.feat ? FEAT_POINTS[a.reward] ?? 50 : a.honour ? 5 : 10;
+const glorySet = (g, plain) => g.ids ? g.ids.map(id => plain.get(id)).filter(Boolean)
+  : [...plain.values()].filter(r => (!g.where.tab || g.where.tab.includes(r.tab)) && (!g.where.feat || r.feat) && (!g.where.hidden || r.hidden));
+// One row per achievement: value, its steps with tier and claim state, and the next goal. A Glory row counts
+// finished achievements; the Achievement Hunter counts points (never its own tab's).
 export function achievementRows(ctx = {}) {
   const claimed = new Set(ctx.claimed || []);
+  const make = (a, value, needs = a.steps) => {
+    const names = achievementTiers(a), steps = needs.map((need, i) => ({need, tier: names[i] || names.at(-1), done: value >= need, claimed: claimed.has(claimedRef(a.id, i))}));
+    const next = steps.find(s => !s.done), earned = steps.filter(s => s.done).length, per = stepPoints(a);
+    return {...a, value, steps, earned, next, ready: !a.honour && steps.some(s => s.done && !s.claimed), complete: !next, points: {each: per, total: per * steps.length, earned: per * earned}};
+  };
+  const plain = new Map(ACHIEVEMENTS.filter(a => !a.glory && a.source !== 'points').map(a => [a.id, make(a, sourceValue(a.source, ctx))]));
+  const points = [...plain.values()].reduce((t, r) => t + r.points.earned, 0);
   return ACHIEVEMENTS.map(a => {
-    const value = sourceValue(a.source, ctx), names = achievementTiers(a);
-    const steps = a.steps.map((need, i) => ({need, tier: names[i], done: value >= need, claimed: claimed.has(claimedRef(a.id, i))}));
-    const next = steps.find(s => !s.done), earned = steps.filter(s => s.done).length;
-    return {...a, value, steps, earned, next, ready: !a.honour && steps.some(s => s.done && !s.claimed), complete: !next};
+    if (plain.has(a.id)) return plain.get(a.id);
+    if (a.source === 'points') return make(a, points);
+    const kids = glorySet(a.glory, plain), need = a.glory.need || kids.length, row = make(a, kids.filter(k => k.complete).length, [need]);
+    return a.glory.need ? row : {...row, children: kids.map(k => ({id: k.id, title: k.hidden && !k.earned ? 'Hidden riddle' : k.title, done: k.complete}))};
   });
 }
+// Titles a row gives once all of it is earned (Randall 4 Nov): [{id, text, from, earned}].
+export const achievementTitles = rows => rows.filter(r => r.titleReward).map(r => ({id: r.id, text: r.titleReward, from: r.title, earned: r.complete}));
+// A player's name with their chosen title: "Randall, the Duelist"; "of ..." titles join without a comma.
+export const titledName = (name, title) => !name || !title ? name || '' : /^of /.test(title) ? `${name} ${title}` : `${name}, ${title}`;
 export function deedTotals(rows) {
   const total = rows.reduce((t, r) => t + r.steps.length, 0), earned = rows.reduce((t, r) => t + r.earned, 0);
-  return {total, earned, ready: rows.filter(r => r.ready).length};
+  return {total, earned, ready: rows.filter(r => r.ready).length, points: {earned: rows.reduce((t, r) => t + r.points.earned, 0), total: rows.reduce((t, r) => t + r.points.total, 0)}};
 }
 // The 3 unfinished achievements closest to their next step ("Almost there").
 export const almostThere = (rows, n = 3) => rows.filter(r => r.next && !r.hidden).map(r => ({r, share: r.value / r.next.need})).sort((a, b) => b.share - a.share).slice(0, n).map(x => x.r);
@@ -438,7 +467,7 @@ export function achievementsPayload(ctx = {}, config = {}) {
   const achievements = rows.map(r => {
     const secret = r.hidden && !r.earned;
     return {id: r.id, tab: r.tab, act: r.act || null, title: secret ? null : r.title, lore: secret ? null : r.lore, riddle: r.riddle || null, hidden: !!r.hidden, secret,
-      kind: r.honour ? 'honour' : r.feat ? 'feat' : 'chain', unit: r.unit || null, art: secret ? null : achievementArt(r.art),
+      kind: r.honour ? 'honour' : r.feat ? 'feat' : 'chain', unit: r.unit || null, points: r.points, titleReward: r.titleReward || null, children: r.children || null, art: secret ? null : achievementArt(r.art),
       value: r.value, earned: r.earned, ready: r.ready, complete: r.complete,
       steps: r.steps.map((x, i) => ({...x, reward: achievementReward(r, i, config)}))};
   });

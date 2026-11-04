@@ -33,7 +33,7 @@ assert.equal(q.daily.length, 3); assert.equal(q.weekly.length, 3);
 assert.ok(q.daily.find(x => x.id === 'first').done);
 // Achievements: every source is something the server counts.
 // Match counters (matchCounters), server tallies (open, buy, craft, forge, holo, precon), and state figures.
-const SOURCES = new Set(['matches', 'logins', 'minutes', 'wins', 'wins_draw', 'wins_fast', 'wins_flawless', 'wins_long', 'wins_thread', 'wins_marathon', 'fmt', 'story_wins', 'friend_matches', 'cards', 'playsets', 'mythics', 'packs',
+const SOURCES = new Set(['glory', 'points', 'matches', 'logins', 'minutes', 'wins', 'wins_draw', 'wins_fast', 'wins_flawless', 'wins_long', 'wins_thread', 'wins_marathon', 'fmt', 'story_wins', 'friend_matches', 'cards', 'playsets', 'mythics', 'packs',
   'modes', 'level', 'wins_low', 'wins_overkill', 'wins_quick', 'quick_matches', 'wins_pod', 'fmt:Commander', 'fmt:Standard', 'fmt:Modern', 'fmt:Legacy', 'fmt:Pauper', 'fmt:Old School', '#gp', '#mc', '#tc',
   'story_acts', 'story_villain', 'story_own', '#ff', 'friend_long', 'practice_matches', 'practice_wins_hard', '#pf', 'rares', 'holos', 'trunk_sets', 'decks',
   'packs_collector', 'pulls_mythic', '#po', 'buys', 'crafts', 'forges', 'holos_made', 'precons', 'coins_spent', 'wins_t4', 'draws', 'wins_five', 'packs_god',

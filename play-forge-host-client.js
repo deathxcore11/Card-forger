@@ -104,7 +104,10 @@ const friendDeck=(format,deck)=>{const d=engineDeck(deck);return format===d.form
 // Your name and profile picture as the other player sees them in a friend match. Nothing else
 // about the account is sent; the server drops anything it does not expect.
 export function friendPlayerCard(profile={}){
- const name=String(profile.displayName||profile.username||'').replace(/[\u0000-\u001f\u007f]/g,'').trim().slice(0,40);
+ const base=String(profile.displayName||profile.username||'').replace(/[\u0000-\u001f\u007f]/g,'').trim().slice(0,40);
+ const title=String(profile.playTitle||'').replace(/[\u0000-\u001f\u007f]/g,'').trim().slice(0,24);
+ // "Randall, the Duelist" (Glory title; "of ..." titles join without a comma).
+ const name=(base&&title?(/^of /.test(title)?base+' '+title:base+', '+title):base).slice(0,64);
  const art=profile.avatarArt,https=v=>typeof v==='string'&&v.length<=512&&/^https:\/\//.test(v)?v:null;
  const image=https(art?.image)||https(profile.avatarUrl);
  const num=(v,lo,hi,f)=>Number.isFinite(Number(v))?Math.min(hi,Math.max(lo,Number(v))):f;

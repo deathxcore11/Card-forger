@@ -366,9 +366,9 @@ export async function progressRoute(request, env, {verifyBearer, fetcher = fetch
       if (claimed.includes(ref)) return fail('claimed', 409);
       const paid = await apply(ref, body.kind === 'ach' ? 'achievement' : 'quest', delta);
       if (paid?.duplicate) return fail('claimed', 409);
-      // Gold and mythic achievement steps also bring a rare Secret Lair style.
-      const tier = body.kind === 'ach' ? achievementRows({counters: c, state: s, claimed}).find(r => r.id === body.id)?.steps[Number(body.step)]?.tier : '';
-      const style = tier === 'gold' || tier === 'mythic' ? await grantStyle('slstyle:' + ref) : null;
+      // Gold and mythic achievement steps, and every Glory achievement, also bring a rare Secret Lair style.
+      const crow = body.kind === 'ach' ? achievementRows({counters: c, state: s, claimed}).find(r => r.id === body.id) : null, tier = crow?.steps[Number(body.step)]?.tier || '';
+      const style = crow?.glory || tier === 'gold' || tier === 'mythic' ? await grantStyle('slstyle:' + ref) : null;
       return json({ref, delta, ...(style ? {style} : {}), state: await state(), claimed: [...claimed, ref]});
     }
     if (path === 'reroll') {

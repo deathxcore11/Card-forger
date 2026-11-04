@@ -669,6 +669,14 @@ export const ACHIEVEMENT_ART = Object.freeze({
   "Sixth Sense": ["e564db6b-0b8b-4c67-9135-5da76d2225fe", "akh", "187"],
   "Angel of Sanctions": ["66b1cbf0-1273-406a-bc99-ce20ce53e5aa", "akh", "1"],
   "Hashep Oasis": ["3bba75d2-3f1b-4828-be11-2da695f7bde7", "hou", "177"],
+  // Glory achievements, 4 Nov 2026.
+  "Gideon Jura": ["e0440668-1b0e-437c-9e42-7166dd14dfe5", "roe", "21", 1],
+  "Karn Liberated": ["f9287151-95df-4f5a-b32a-4b0aea825452", "nph", "1", 1],
+  "Mishra's Workshop": ["135de5c7-6ac9-4b68-8f1a-97f120a4b125", "atq", "81", 1],
+  "Survival of the Fittest": ["c060c178-3c0e-493f-b6f0-ead5b1d6f191", "exo", "129", 1],
+  "Academy Ruins": ["af09af65-0a3b-42df-b0fd-372e2158beac", "tsp", "269"],
+  "Sphinx of the Final Word": ["866f92a3-2738-4e0f-adda-3ff9227dc17a", "ogw", "63"],
+  "Nicol Bolas, Planeswalker": ["48ee3939-bc12-4275-a446-9de36f0b4672", "con", "120", 1],
   "Hour of Devastation": ["d420cc12-cfd7-4007-a0c2-b16c8f63a754", "hou", "97"],
 });
 export const artCropUrl = id => `https://cards.scryfall.io/art_crop/front/${id[0]}/${id[1]}/${id}.jpg`;

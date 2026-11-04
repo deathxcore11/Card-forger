@@ -27,8 +27,8 @@ export function newlyEarned(before, after, config = {}) {
   for (const r of rows) r.steps.forEach((s, i) => {
     if (!s.done || before.has(`${r.id}:${i}`)) return;
     const tier = achievementTiers(r)[i];
-    out.push({id: r.id, step: i, tab: r.tab, title: r.title, art: r.art, tier: r.hidden ? 'hidden' : r.honour ? 'honour' : tier,
-      line: r.hidden ? r.riddle : r.steps.length > 1 ? `Tier ${i + 1} of ${r.steps.length} · ${r.unit === 'h' ? n(s.need / 60) + ' h' : n(s.need)}` : r.lore,
+    out.push({id: r.id, step: i, tab: r.tab, title: r.title, art: r.art, tier: r.hidden ? 'hidden' : r.honour ? 'honour' : r.glory ? 'glory' : tier, points: r.points?.each || 0,
+      line: r.hidden ? r.riddle : r.glory && r.titleReward ? `Title unlocked: ${r.titleReward}` : r.steps.length > 1 ? `Tier ${i + 1} of ${r.steps.length} · ${r.unit === 'h' ? n(s.need / 60) + ' h' : n(s.need)}` : r.lore,
       reward: r.honour ? {} : achievementReward(r, i, config)});
   });
   return out;
@@ -45,17 +45,17 @@ export function rewardLines(r = {}) {
   return lines.slice(0, 2);
 }
 
-const EYEBROW = {bronze: 'Achievement · Bronze', silver: 'Achievement · Silver', gold: 'Achievement · Gold', mythic: 'Achievement · Mythic', feat: 'Feat', hidden: 'Hidden feat', honour: 'Earned with honour'};
+const EYEBROW = {glory: 'Glory', bronze: 'Achievement · Bronze', silver: 'Achievement · Silver', gold: 'Achievement · Gold', mythic: 'Achievement · Mythic', feat: 'Feat', hidden: 'Hidden feat', honour: 'Earned with honour'};
 // Haptic kinds and sounds that already exist (feel.js PACK_PATTERNS, audio.js claim sounds).
 export const TOAST_FEEL = {
   bronze: {haptic: 'reward-claim', sound: 'RWD-001'}, silver: {haptic: 'reward-claim', sound: 'RWD-001'},
   gold: {haptic: 'reward-big', sound: 'RWD-006'}, mythic: {haptic: 'pack-tier-4', sound: 'RWD-006'},
-  feat: {haptic: 'reward-big', sound: 'RWD-006'}, hidden: {haptic: 'pack-tier-5', sound: 'RWD-006'}, honour: {haptic: 'reward-claim', sound: 'RWD-001'},
+  feat: {haptic: 'reward-big', sound: 'RWD-006'}, glory: {haptic: 'reward-big', sound: 'RWD-006'}, hidden: {haptic: 'pack-tier-5', sound: 'RWD-006'}, honour: {haptic: 'reward-claim', sound: 'RWD-001'},
 };
 export const TOAST_TIMING = {inMs: 420, holdMs: 4200, outMs: 320};
 
 export function toastMarkup(t, more = 0) {
-  const a = achievementArt(t.art), lines = rewardLines(t.reward);
+  const a = achievementArt(t.art), lines = [...(t.points ? [`+${n(t.points)} points`] : []), ...rewardLines(t.reward)].slice(0, 2);
   return `<span class="ach-toast-art" aria-hidden="true">${a.trim ? `<i style="background-image:url('${esc(a.url)}')"></i>` : `<img src="${esc(a.url)}" alt="" decoding="async" referrerpolicy="no-referrer">`}</span>`
     + `<span class="ach-toast-copy"><span class="ach-toast-eyebrow">${esc(EYEBROW[t.tier] || 'Achievement')}</span><span class="ach-toast-title">${esc(t.title)}</span><span class="ach-toast-line">${esc(t.line)}</span></span>`
     + (lines.length ? `<span class="ach-toast-reward">${lines.map(esc).join('<br>')}</span>` : '')
