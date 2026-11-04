@@ -120,6 +120,30 @@ object FoilMaps {
         }
     }
 
+    /** Magic: the printing's inks (MtgFoil.analyze) at the site's analysis size, half the scan's width. */
+    fun mtg(context: android.content.Context, image: String): StateFlow<Ready?> = synchronized(flows) {
+        val key = "mtg|$image"
+        flows[key] ?: MutableStateFlow<Ready?>(null).also { fl ->
+            flows[key] = fl
+            scope.launch {
+                gate.withPermit {
+                    val req = ImageRequest.Builder(context).data(image).allowHardware(false).build()
+                    val src = (CardArt.loader.execute(req) as? SuccessResult)?.image?.toBitmap() ?: return@withPermit
+                    val (w, h) = MtgFoil.analysisSize(src.width, src.height)
+                    val bmp = Bitmap.createScaledBitmap(if (src.config == Bitmap.Config.ARGB_8888) src else src.copy(Bitmap.Config.ARGB_8888, false), w, h, true)
+                    val px = IntArray(w * h); bmp.getPixels(px, 0, w, 0, 0, w, h)
+                    val m = MtgFoil.analyze(px, w, h)
+                    fl.value = Ready(rgba(m.mask, w, h), rgba(m.relief, w, h), null)
+                }
+            }
+        }
+    }
+
+    /** A measured map as a shader input: clamped at the edges, bilinear like the site's textures. */
+    fun input(b: Bitmap): Shader = BitmapShader(b, Shader.TileMode.CLAMP, Shader.TileMode.CLAMP).apply { filterMode = BitmapShader.FILTER_MODE_LINEAR }
+    /** Stand-in inputs before a card's maps land (the shader ignores them while u_maps is 0). */
+    val blank: Pair<Shader, Shader> by lazy { val b = Bitmap.createBitmap(intArrayOf(-16777216), 1, 1, Bitmap.Config.ARGB_8888); input(b) to input(b) }
+
     private fun rgba(b: ByteArray, w: Int, h: Int): Bitmap {
         val px = IntArray(w * h) { i -> val k = i * 4; (255 shl 24) or ((b[k].toInt() and 255) shl 16) or ((b[k + 1].toInt() and 255) shl 8) or (b[k + 2].toInt() and 255) }
         return Bitmap.createBitmap(px, w, h, Bitmap.Config.ARGB_8888)

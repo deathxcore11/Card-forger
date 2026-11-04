@@ -6,6 +6,7 @@ import android.os.Build
 import androidx.compose.animation.core.animateFloat
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.State
+import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.remember
 import androidx.compose.ui.Modifier
@@ -27,16 +28,16 @@ import dev.cardstashy.nativeplay.play.CardData
  * Magic foil, the site's own: MTG_FOIL_FRAGMENT (mtg-foil.js) ported line for line to AGSL and drawn
  * over the card image as a render effect, with the same recipe (pattern, tint, coverage, relief, film,
  * sparkle, stamp, keep) picked by mtgFoilProfile from the printing's Scryfall data, the same frame boxes
- * and the M15 oval holo stamp. The site measures each card's inks and relief from its image (a worker);
- * native has no such map yet, so ink-selective covers read as the whole card and relief stays flat.
+ * and the M15 oval holo stamp. Each card's inks and relief are measured from its own image like the site's worker
+ * (foil/MtgFoil.kt, analyzeMtgCard); until that lands (a fraction of a second, once per card) covers read as the whole card.
  * Below Android 13 a rainbow sheen stands in.
  */
 object Foil {
     // Comments trimmed; the structure and every constant follow mtg-foil.js. pow(x, 2.) is written x*x
     // (AGSL leaves pow undefined for negative bases), and texture reads become u_card.eval.
     const val AGSL = """
-uniform shader u_card;
-uniform float2 u_size;uniform float2 u_px;uniform float2 u_tilt;uniform float u_aspect;uniform float u_on;
+uniform shader u_card;uniform shader u_mask;uniform shader u_relief;
+uniform float2 u_size;uniform float2 u_px;uniform float2 u_tilt;uniform float u_aspect;uniform float u_on;uniform float2 u_map;uniform float u_maps;
 uniform float4 u_art;uniform float4 u_text;uniform float4 u_r1;uniform float4 u_r2;
 const float PI=3.14159265;
 float sq(float x){return x*x;}
@@ -106,20 +107,26 @@ half4 main(float2 fc){
  float2 lp=float2(.5,.45)+u_tilt*.6;float3 P=float3(uv.x,uv.y*u_aspect,0.);
  float3 L=normalize(float3(lp.x,lp.y*u_aspect,.85)-P),V=normalize(float3(.5,.5*u_aspect,2.2)-P),H=normalize(L+V);
  float2 dl=(uv-lp)*float2(1.,u_aspect);float spot=exp(-dot(dl,dl)/.3);
- float2 grad=float2(0.);float rel=u_r1.w*(1.-.7*text);float3 N=float3(0.,0.,1.);
+ float2 mp=uv*u_map;half4 mk=u_mask.eval(mp),rl=u_relief.eval(mp);
+ float hx=float(u_relief.eval(mp+float2(2.,0.)).r-u_relief.eval(mp-float2(2.,0.)).r),hy=float(u_relief.eval(mp+float2(0.,2.)).r-u_relief.eval(mp-float2(0.,2.)).r);
+ float2 grad=float2(hx,hy)*u_maps;float rel=u_r1.w*(1.-.7*text);float3 N=normalize(float3(-grad*rel*9.,1.));
  float pat=u_r1.x,tint=u_r1.y,mode=u_r1.z;
  float cov=1.;
- if(mode>.5&&mode<1.5)cov=1.-art;
+ if(mode>.5&&mode<1.5)cov=1.-art;else if(mode>1.5&&mode<2.5)cov=mix(1.,float(mk.r),u_maps);else if(mode>3.5&&mode<4.5)cov=mix(1.,float(mk.b),u_maps);else if(mode>4.5)cov=mix(1.,float(rl.g),u_maps);
  if(mode>1.5&&(mode<2.5||mode>3.5))cov*=1.-text;
  float patterned=step(4.5,pat)*(1.-step(6.5,pat)*step(pat,7.5))*(1.-step(16.5,pat));cov*=1.-.45*text*patterned;
  float3 outC=base;
- float3 F=foil(pat,tint,uv,L,V,N,spot,grad,0.);
+ float3 F=foil(pat,tint,uv,L,V,N,spot,grad,float(rl.r)*u_maps);
  if(u_on>.5){
-  if(u_r2.x>.5){float t=320.+120.*hash(floor(uv*u_px/3.));float3 f=film(dot(N,V),t);F=f*(.15+spot*(1.4*pow(max(dot(N,H),0.),16.)+.5));}
+  if(u_r2.x>.5){float t=320.+260.*float(rl.r)*u_maps+120.*hash(floor(uv*u_px/3.));float3 f=film(dot(N,V),t);F=f*(.15+spot*(1.4*pow(max(dot(N,H),0.),16.)+.5));}
   float keep=u_r2.w;outC=overInk(base,F,cov*.92*(1.-keep));
+  // Raised relief: glossy rims where the embossed height turns toward the light.
+  if(rel>0.){float rim=pow(max(dot(N,H),0.),24.)*(.35+.65*spot)*clamp(length(grad)*30.,0.,1.);outC+=(1.-outC)*float3(1.,.97,.92)*rim*rel*cov*.8;}
   if(u_r2.y>0.){float2 sq2=float2(uv.x,uv.y*u_aspect)*70.,sc=floor(sq2);float2 j=hash2(sc);float on=step(1.-.22*u_r2.y,j.x);
    float pt=1.-smoothstep(.0,.1+.12*j.y,length(fract(sq2)-.2-.6*hash2(sc*1.3)));
    float tw=pow(max(dot(normalize(float3((hash2(sc+5.)-.5)*.6,1.)),H),0.),30.);outC+=on*pt*(.25+tw*3.)*cov*(.4+.6*spot)*float3(1.,.97,.9);}
+  // Fluorescent ink glows under any light, on top of its foil.
+  if(mode>2.5&&mode<3.5)outC+=base*float(mk.g)*.45*(.6+.4*spot)*u_maps;
   if(u_r2.z>.5&&u_r2.z<1.5){float s=shootingStar(uv);outC=mix(outC,shoulder(F*1.6+float3(.15)),s*.9);}
  }
  if(u_r2.z>1.5){float2 o=(uv-float2(.5,.925))/float2(.03,.012);float ov=1.-smoothstep(.8,1.,length(o));float3 hs=grating(L,V,normalize(float2(.3,1.)),1500.)*1.5+float3(.75,.78,.82)*pow(max(dot(N,H),0.),30.)*spot;outC=mix(outC,shoulder(hs+float3(.2)),ov*.85);}
@@ -128,8 +135,10 @@ half4 main(float2 fc){
 """
 
     /** What one card face wears: the recipe for its finish (null = nonfoil), the frame boxes and the holo stamp. */
-    data class Look(val recipe: CardData.Recipe?, val frame: CardData.Frame, val stamp: Boolean, val label: String) {
+    data class Look(val recipe: CardData.Recipe?, val frame: CardData.Frame, val stamp: Boolean, val label: String, val image: String? = null) {
         val shines get() = recipe != null || stamp
+        /** The printing's scan to measure inks from, when this recipe reads them (gilded, neon, textured, raised, oil slick...). */
+        val measure: String? get() = image?.takeIf { recipe != null && dev.cardstashy.nativeplay.foil.MtgFoil.needsMaps(recipe.cover, recipe.relief, recipe.film, recipe.pat) }
     }
 
     fun look(data: CardData, card: JsonObject?, finish: String): Look {
@@ -137,7 +146,8 @@ half4 main(float2 fc){
         val recipe = data.recipes[p.treatment]
         val frame = data.frames[CardData.frameKey(card)] ?: data.frames.getValue("2015")
         val label = when { recipe == null -> "Nonfoil"; p.name.isNotBlank() -> "${p.name} · shown with ${recipe.label.lowercase()}"; else -> recipe.label }
-        return Look(recipe, frame, CardData.holoStamp(card), label)
+        val image = card?.let { c -> (c.get("image_uris") as? JsonObject ?: (c.getAsJsonArray("card_faces")?.firstOrNull() as? JsonObject)?.get("image_uris") as? JsonObject)?.get("normal")?.takeIf { it.isJsonPrimitive }?.asString }
+        return Look(recipe, frame, CardData.holoStamp(card), label, image)
     }
 
     val supported: Boolean get() = Build.VERSION.SDK_INT >= 33 && !testFallback
@@ -153,6 +163,11 @@ fun Modifier.foil(look: Foil.Look, tilt: State<Offset>): Modifier = if (!look.sh
     val dens = LocalDensity.current.density
     if (Foil.supported) {
         val shader = remember { runCatching { RuntimeShader(Foil.AGSL) }.getOrNull() }
+        // The printing's own inks, measured once off the main thread (MtgFoil); the foil draws at once and narrows to them when they land.
+        val context = LocalContext.current
+        val measured = look.measure
+        val maps by remember(measured) { if (measured != null) dev.cardstashy.nativeplay.foil.FoilMaps.mtg(context.applicationContext, measured) else kotlinx.coroutines.flow.MutableStateFlow(null) }.collectAsState()
+        val inputs = remember(maps) { maps?.let { dev.cardstashy.nativeplay.foil.FoilMaps.input(it.mask) to dev.cardstashy.nativeplay.foil.FoilMaps.input(it.relief) } ?: dev.cardstashy.nativeplay.foil.FoilMaps.blank }
         if (shader != null) return@composed this.graphicsLayer {
             val t by tilt
             val w = size.width; val h = size.height
@@ -163,6 +178,9 @@ fun Modifier.foil(look: Foil.Look, tilt: State<Offset>): Modifier = if (!look.sh
                 shader.setFloatUniform("u_art", look.frame.art); shader.setFloatUniform("u_text", look.frame.text)
                 shader.setFloatUniform("u_r1", r?.pat ?: 1f, r?.tint ?: 0f, r?.cover ?: 0f, r?.relief ?: 0f)
                 shader.setFloatUniform("u_r2", r?.film ?: 0f, r?.sparkle ?: 0f, (r?.stamp?.takeIf { it > 0f }) ?: if (look.stamp) 2f else 0f, r?.keep ?: 0f)
+                val m = maps
+                shader.setInputShader("u_mask", inputs.first); shader.setInputShader("u_relief", inputs.second)
+                shader.setFloatUniform("u_map", (m?.mask?.width ?: 1).toFloat(), (m?.mask?.height ?: 1).toFloat()); shader.setFloatUniform("u_maps", if (m != null) 1f else 0f)
                 renderEffect = RenderEffect.createRuntimeShaderEffect(shader, "u_card").asComposeRenderEffect()
             }
         }
