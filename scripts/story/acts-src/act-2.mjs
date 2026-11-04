@@ -256,17 +256,20 @@ export default {
       villain: {who: 'choir', deck: {label: 'tribute', name: 'The Hymn', colors: 'B', archetype: 'Black discard', list: `
 2 Hymn to Tourach
 4 Scathe Zombies
-2 Hypnotic Specter
 4 Bog Rats
 4 Dark Ritual
-4 Black Knight
-4 Order of the Ebon Hand
-4 Necrite
-3 Sengir Vampire
+2 Black Knight
+2 Order of the Ebon Hand
+2 Necrite
+1 Sengir Vampire
 2 Terror
 1 Drain Life
 1 Unholy Strength
 1 Pestilence
+4 Drudge Skeletons
+2 Scavenging Ghoul
+2 Frozen Shade
+2 Wall of Bone
 24 Swamp`}},
       scene: [{who: 'choir', line: 'Tourach... Tourach...', aside: 'singing, low'}, {who: 'hazezon', line: "Cover your ears. Don't think about what you're holding."}, {who: 'choir', line: 'The eerie, wailing Hymn caused insanity even in hardened warriors.', quote: true}],
       villainScene: [{who: 'choir', line: "Sing louder, sisters. The warriors are listening."}, {who: 'choir', line: "Tourach... Tourach... let them forget what they hold."}],

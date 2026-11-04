@@ -235,12 +235,14 @@ export default {
 4 Molt Tender
 4 Jibbirik Omnivore
 4 Greenbelt Guardian
-4 Regal Imperiosaur
+2 Regal Imperiosaur
 3 Terrian, World Tyrant
-3 Autarch Mammoth
+1 Autarch Mammoth
 3 Migrating Ketradon
 4 Run Over
 3 Point the Way
+2 Beastrider Vanguard
+2 Venomsac Lagac
 24 Forest`}},
       scene: [q('stage', 'You wanted a fight. Now you\'ve got two.'),
         q('stage', 'They feed on OIL? Where were they during the Phyrexian Invasion?!'),
@@ -256,8 +258,9 @@ export default {
 4 Cori-Steel Cutter
 4 Jeskai Devotee
 4 Roiling Dragonstorm
-4 Ureni's Rebuff
-4 Dispelling Exhale
+2 Captain Howler, Sea Scourge
+3 Magmatic Hellkite
+3 Fearless Swashbuckler
 4 Twin Bolt
 4 Fire-Rim Form
 4 Dragonologist
@@ -265,16 +268,19 @@ export default {
 10 Island
 10 Mountain`}},
       villain: {who: 'dimir', deck: {label: 'tribute', name: 'Dimir Midrange', colors: 'UB', archetype: 'Midrange', list: `
-4 Bloodghast
+1 Bloodghast
 4 Gastal Raider
-4 Gonti, Night Minister
-3 Haunted Hellride
+3 Gonti, Night Minister
+2 Haunted Hellride
 3 Haunt the Network
 4 Mutant Surveyor
 4 Spell Pierce
 3 Spin Out
-4 Aether Syphon
+2 Aether Syphon
 3 Quag Feast
+2 Wreckage Wickerfolk
+3 Deathless Pilot
+2 Engine Rat
 4 Dismal Backwater
 10 Island
 10 Swamp`}},

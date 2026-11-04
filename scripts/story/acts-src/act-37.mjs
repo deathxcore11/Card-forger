@@ -205,21 +205,24 @@ export default {
 10 Swamp
 10 Forest`}},
       villain: {who: 'ghosts', deck: {label: 'tribute', name: 'The Haunted Rooms', colors: 'WU', list: `
-4 Sheltered by Ghosts
+2 Sheltered by Ghosts
 4 Reluctant Role Model
 4 Optimistic Scavenger
 4 Acrobatic Cheerleader
-4 Silent Hallcreeper
-4 Stalked Researcher
+2 Silent Hallcreeper
+2 Stalked Researcher
 1 Fear of Surveillance
 1 Get Out
+1 Warren Elder
 1 Unwanted Remake
-3 Splitskin Doll
+4 Splitskin Doll
 4 Azorius Guildgate
 10 Plains
+2 Hardened Escort
+2 Possessed Goat
 10 Island
-3 Jump Scare
-3 Veteran Survivor`}},
+2 Jump Scare
+4 Veteran Survivor`}},
       scene: [q('stage', 'That\'s the one good thing about these cultists: sometimes they do your work for you.'),
         q('stage', 'Thanks, but no thanks. I\'m done with hope.'),
         s('winter', 'Survival: if your creature is tapped after attacking, it triggers at your second main phase. Attack, then enjoy the extra effect.')],
@@ -287,17 +290,16 @@ export default {
 4 Stormchaser's Talent
 4 Coruscation Mage
 4 Emberheart Challenger
-2 Tempest Angler
+4 Tempest Angler
 2 Stormcatch Mentor
-2 Burst Lightning
-4 Abrade
+2 Abrade
 4 Mockingbird
 4 Shoreline Looter
 4 Spirebluff Canal
 10 Island
 10 Mountain
 4 Thought Shucker
-2 Plumecreed Escort`}},
+4 Plumecreed Escort`}},
       scene: [q('stage', 'Kaito\'s blade brought the light of another plane into Duskmourn, and with it, a brief chance to escape.'),
         q('stage', 'It scours battlefields for corpses, consuming flesh and souls alike.'),
         s('dimir', 'Kill their early creatures and counter the tricks. You win the long game.')],

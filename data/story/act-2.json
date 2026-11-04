@@ -2084,13 +2084,6 @@
        "id": "6cbe576f-03d5-4d22-947a-187d9e20425d"
       },
       {
-       "qty": 2,
-       "name": "Hypnotic Specter",
-       "set": "3ed",
-       "number": "115",
-       "id": "2c8bd2bc-f48d-43c4-b2aa-5a0905656e90"
-      },
-      {
        "qty": 4,
        "name": "Bog Rats",
        "set": "drk",
@@ -2105,28 +2098,28 @@
        "id": "48cb9467-657e-453f-afc8-1bf7121570ad"
       },
       {
-       "qty": 4,
+       "qty": 2,
        "name": "Black Knight",
        "set": "3ed",
        "number": "95",
        "id": "eaa55b3c-acf4-4d2a-9f32-c7fce6672f3d"
       },
       {
-       "qty": 4,
+       "qty": 2,
        "name": "Order of the Ebon Hand",
        "set": "fem",
        "number": "42a",
        "id": "9e51f5d8-a7cc-4720-8af5-e002bcfd78a0"
       },
       {
-       "qty": 4,
+       "qty": 2,
        "name": "Necrite",
        "set": "fem",
        "number": "41a",
        "id": "311d752a-ce8a-44cb-8aeb-1ed66705eb09"
       },
       {
-       "qty": 3,
+       "qty": 1,
        "name": "Sengir Vampire",
        "set": "3ed",
        "number": "129",
@@ -2159,6 +2152,34 @@
        "set": "3ed",
        "number": "122",
        "id": "b6647e7d-b0ad-4170-8dce-ea4c89897c6a"
+      },
+      {
+       "qty": 4,
+       "name": "Drudge Skeletons",
+       "set": "3ed",
+       "number": "107",
+       "id": "59145073-2cfd-4153-a6d8-47ad42e739c3"
+      },
+      {
+       "qty": 2,
+       "name": "Scavenging Ghoul",
+       "set": "3ed",
+       "number": "128",
+       "id": "33a5daf6-ce4f-4d00-8458-b7d1a9e037bc"
+      },
+      {
+       "qty": 2,
+       "name": "Frozen Shade",
+       "set": "3ed",
+       "number": "112",
+       "id": "6cba931e-94b5-4fcc-8d5f-eb60664baf31"
+      },
+      {
+       "qty": 2,
+       "name": "Wall of Bone",
+       "set": "3ed",
+       "number": "134",
+       "id": "4f9d6c2b-3492-4360-90cf-649608d4910f"
       },
       {
        "qty": 24,

@@ -249,18 +249,17 @@ export default {
 10 Swamp
 10 Mountain`}},
       villain: {who: 'white', deck: {label: 'tribute', name: 'Mono-White', colors: 'W', archetype: 'Aggro', list: `
-2 Skrelv, Defector Mite
-3 Swooping Lookout
-2 Mandible Justiciar
-2 Swordsworn Cavalier
-1 Archangel Elspeth
-2 Ossification
-2 Planar Disruption
-2 Attentive Skywarden
+4 Skrelv, Defector Mite
+4 Swooping Lookout
+3 Mandible Justiciar
+4 Swordsworn Cavalier
+1 Planar Disruption
 24 Plains
 4 Kor Halberd
-4 Zealot's Conviction
-4 Progenitor Exarch
+2 Sinew Dancer
+2 Kithkin Billyrider
+2 Zealot's Conviction
+2 Progenitor Exarch
 4 Enduring Bondwarden
 4 Crawling Chorus`}},
       scene: [q('stage', 'There\'s a war brewing between Norn and Urabrask. Exploit the chaos, and we can take them both down for good.'),

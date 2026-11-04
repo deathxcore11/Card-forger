@@ -1797,7 +1797,7 @@
        "id": "2f6b0000-5fd3-483b-bac5-f9b888d8755b"
       },
       {
-       "qty": 4,
+       "qty": 2,
        "name": "Regal Imperiosaur",
        "set": "dft",
        "number": "177",
@@ -1811,7 +1811,7 @@
        "id": "b44255cf-5264-4ead-9de0-20cc0f7cac6f"
       },
       {
-       "qty": 3,
+       "qty": 1,
        "name": "Autarch Mammoth",
        "set": "dft",
        "number": "153",
@@ -1837,6 +1837,20 @@
        "set": "dft",
        "number": "175",
        "id": "8fd4c73d-0e9a-4ffe-8062-f2f4d0e601fe"
+      },
+      {
+       "qty": 2,
+       "name": "Beastrider Vanguard",
+       "set": "dft",
+       "number": "154",
+       "id": "f4b99a61-49f1-46a2-9eb7-b6c88c236215"
+      },
+      {
+       "qty": 2,
+       "name": "Venomsac Lagac",
+       "set": "dft",
+       "number": "185",
+       "id": "9142b1c9-09d7-42e4-8138-6c15d31f2470"
       },
       {
        "qty": 24,
@@ -1964,18 +1978,25 @@
        "id": "455f4c96-684b-4b14-bd21-6799da2e1fa7"
       },
       {
-       "qty": 4,
-       "name": "Ureni's Rebuff",
-       "set": "tdm",
-       "number": "63",
-       "id": "722716df-9cea-40a7-924b-c28497e227e6"
+       "qty": 2,
+       "name": "Captain Howler, Sea Scourge",
+       "set": "dft",
+       "number": "194",
+       "id": "0957c90f-e10d-40f8-a4be-9e9ef623dd43"
       },
       {
-       "qty": 4,
-       "name": "Dispelling Exhale",
+       "qty": 3,
+       "name": "Magmatic Hellkite",
        "set": "tdm",
-       "number": "41",
-       "id": "1c9af3f1-711e-42ae-803a-1100eba3fb13"
+       "number": "111",
+       "id": "b3b3aec8-d931-4c7f-86b5-1e7dfb717b59"
+      },
+      {
+       "qty": 3,
+       "name": "Fearless Swashbuckler",
+       "set": "dft",
+       "number": "204",
+       "id": "0d86d66b-481f-44ec-86d8-6fc91b52ef38"
       },
       {
        "qty": 4,
@@ -2031,7 +2052,7 @@
      "label": "tribute",
      "cards": [
       {
-       "qty": 4,
+       "qty": 1,
        "name": "Bloodghast",
        "set": "dft",
        "number": "77",
@@ -2045,14 +2066,14 @@
        "id": "6e4877b5-4ce5-466a-810f-6501f2a0f217"
       },
       {
-       "qty": 4,
+       "qty": 3,
        "name": "Gonti, Night Minister",
        "set": "dft",
        "number": "87",
        "id": "d79ca40a-e5c0-4956-8df0-ecbd2a25656f"
       },
       {
-       "qty": 3,
+       "qty": 2,
        "name": "Haunted Hellride",
        "set": "dft",
        "number": "208",
@@ -2087,7 +2108,7 @@
        "id": "be722ac5-e8c4-4180-aed0-7c28895afc0d"
       },
       {
-       "qty": 4,
+       "qty": 2,
        "name": "Aether Syphon",
        "set": "dft",
        "number": "38",
@@ -2099,6 +2120,27 @@
        "set": "dft",
        "number": "100",
        "id": "dd8b6033-63e6-484e-8efb-a4eb9ca59fbf"
+      },
+      {
+       "qty": 2,
+       "name": "Wreckage Wickerfolk",
+       "set": "dft",
+       "number": "110",
+       "id": "aeff3db7-81ac-4c51-9954-bc1dbcb8c4e3"
+      },
+      {
+       "qty": 3,
+       "name": "Deathless Pilot",
+       "set": "dft",
+       "number": "82",
+       "id": "e704fb95-17b7-432a-831c-18abe7d9cc73"
+      },
+      {
+       "qty": 2,
+       "name": "Engine Rat",
+       "set": "dft",
+       "number": "84",
+       "id": "949d6137-98d3-4f46-ab1e-08d7492af307"
       },
       {
        "qty": 4,
