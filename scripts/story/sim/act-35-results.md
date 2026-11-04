@@ -16,3 +16,5 @@ Tuning runs are 24 games. The final check is a 10-game run, per Randall (3 Nov),
 | b9 Four-Colour Atraxa (secret, Hard) | Mono-White vs Four-Colour Atraxa | - | - | 6/10 |
 
 Notes: 10-game check (seed 7) is noisy. 24-game tuning runs put the heroes at 33% to 67%: b6 (Grixis, black-red core) 33%, b3 46%, b4 42%, boss 38-42%, secret about 50%. The lows are documented, not hidden.
+
+Retune 4 Nov 21:30Z (after the achievements thread measured 20% on b3 and b6): b3 invaders deck eased (24 games: 38%), b6 hero switched to the Rakdos core and the Mono-White deck thinned; b6 still only about 25% in 24 games. Forge's CPU does poorly with this black-red list against white weenies. Documented, not hidden.
