@@ -1,5 +1,6 @@
 package dev.cardstashy.nativeplay.match
 
+import dev.cardstashy.nativeplay.play.MatchFacts
 import android.os.SystemClock
 import android.util.Log
 import cardstashy.forge.LocalEngine
@@ -60,6 +61,12 @@ class MatchController(private val scope: CoroutineScope, private val input: Stri
     private val _log = MutableStateFlow<List<String>>(emptyList()); val log: StateFlow<List<String>> = _log
     val timings = MutableStateFlow<Map<String, Long>>(emptyMap())
 
+    /** match-facts.js for this match, and the finished-match hook (play:match-recorded). */
+    val facts = MatchFacts()
+    @Volatile private var playedFrom: Long? = null
+    @Volatile private var recorded = false
+    var onFinished: ((MatchState, MatchFacts, Long?) -> Unit)? = null
+
     @Volatile private var session: LocalEngine.Session? = null
     @Volatile private var latest: MatchState? = null
     private val snapshots = Channel<MatchState>(Channel.UNLIMITED)
@@ -80,8 +87,13 @@ class MatchController(private val scope: CoroutineScope, private val input: Stri
             val started = SystemClock.elapsedRealtime() - t0
             var lastRev = -1L; var firstState = -1L
             while (isActive) {
-                val st = try { MatchState.parse(s.call("GET", "/state", null).body()) } catch (t: Throwable) { Log.w(TAG, "state", t); null }
+                var body: String? = null
+                val st = try { s.call("GET", "/state", null).body().also { body = it }.let { MatchState.parse(it) } } catch (t: Throwable) { Log.w(TAG, "state", t); null }
                 if (st != null) {
+                    // What the table showed (match-facts.js), fed every new snapshot; the match is recorded once when Forge ends it.
+                    if (st.revision != lastRev || st.finished) runCatching { facts.update(MatchFacts.surface(com.google.gson.JsonParser.parseString(body).asJsonObject)) }
+                    if (playedFrom == null && st.turn > 0) playedFrom = SystemClock.elapsedRealtime()
+                    if (st.finished && !recorded) { recorded = true; runCatching { onFinished?.invoke(st, facts, playedFrom?.let { SystemClock.elapsedRealtime() - it }) } }
                     if (firstState < 0) { firstState = SystemClock.elapsedRealtime() - t0; timings.value = mapOf("startMs" to started, "firstStateMs" to firstState) }
                     // A repeat revision still counts when Forge finished working without a new one.
                     val prev = latest

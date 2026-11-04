@@ -67,7 +67,7 @@ import dev.cardstashy.nativeplay.ui.VersusScreen
 import kotlinx.coroutines.delay
 
 /** The new Quick Play / Practice lobby ships once every part of the site's lobby is ported (Randall's no-gaps rule). */
-private const val LOBBY_LIVE = false
+private const val LOBBY_LIVE = true
 
 private sealed interface Screen {
     data object Home : Screen
@@ -228,17 +228,17 @@ private fun MatchFlow(activity: MainActivity, pick: Pick, onHome: () -> Unit, on
         is QuickPlay.Setup.Unknown -> { LaunchedEffect(Unit) { activity.inGame(false) }; Problem("Forge doesn’t know ${if (s.names.size == 1) "this card" else "these ${s.names.size} cards"} yet",
             s.names.joinToString("\n") + "\n\nThis deck can’t be played until they’re added to the rules. Pick another deck for now.", onDecks) }
         is QuickPlay.Setup.Failed -> { LaunchedEffect(Unit) { activity.inGame(false) }; Problem("Couldn’t start the match", s.reason, onDecks) }
-        is QuickPlay.Setup.Ready -> Table(activity, s, t0, onHome)
+        is QuickPlay.Setup.Ready -> Table(activity, s, t0, onHome, pick)
     }
 }
 
 @Composable
-private fun Table(activity: MainActivity, s: QuickPlay.Setup.Ready, t0: Long, onHome: () -> Unit) {
+private fun Table(activity: MainActivity, s: QuickPlay.Setup.Ready, t0: Long, onHome: () -> Unit, pick: Pick) {
     var round by remember { mutableIntStateOf(0) }
     key(round) {
         val context = LocalContext.current
         val scope = rememberCoroutineScope()
-        val controller = remember { MatchController(scope, s.input) }
+        val controller = remember { MatchController(scope, s.input).apply { onFinished = { st, f, ms -> reportMatch(pick, st, f, ms) } } }
         var versus by remember { mutableStateOf(round == 0) }
         DisposableEffect(Unit) { activity.inGame(true); controller.start(); onDispose { controller.close() } }
         if (round == 0) LaunchedEffect(Unit) {
@@ -253,6 +253,23 @@ private fun Table(activity: MainActivity, s: QuickPlay.Setup.Ready, t0: Long, on
         }
         BackHandler { /* the table's menu has Leave; Back never drops a match by accident */ }
         if (versus) VersusScreen(s.you, s.cpu, intro = false) else TableScreen(controller, onHome = onHome, onRematch = { round++ })
+    }
+}
+
+/** play-forge-player-mat.js matchRow + the play:match-recorded detail: one finished match for quests and achievements. */
+private fun reportMatch(pick: Pick, st: dev.cardstashy.nativeplay.engine.MatchState, f: dev.cardstashy.nativeplay.play.MatchFacts, durationMs: Long?) {
+    val outcome = when { st.draw -> "draw"; st.winnerPlayerId == null -> return; st.winnerPlayerId == st.viewer -> "win"; else -> "loss" }
+    val table = pick as? Pick.Table
+    val me = st.players.firstOrNull { it.id == st.viewer }; val them = st.players.firstOrNull { it.id != st.viewer }
+    // basicColours: the basic lands in your main deck.
+    val map = mapOf("plains" to "W", "island" to "U", "swamp" to "B", "mountain" to "R", "forest" to "G")
+    val got = (pick.raw.getAsJsonArray("cards") ?: com.google.gson.JsonArray()).mapNotNull { e -> val o = e as? com.google.gson.JsonObject ?: return@mapNotNull null
+        if (o.get("board")?.takeIf { it.isJsonPrimitive }?.asString == "side") null else map[(o.get("name")?.asString ?: "").lowercase().removePrefix("snow-covered ")] }.toSet()
+    val facts = f.snapshot(f.ownFirst)
+    kotlinx.coroutines.CoroutineScope(kotlinx.coroutines.Dispatchers.IO).launch {
+        dev.cardstashy.nativeplay.play.Progress.reportMatch(mode = if (table == null || table.quick) "quick" else "practice", outcome = outcome, format = pick.format,
+            turns = st.turn.takeIf { it > 0 }, life = me?.life, opponentLife = them?.life, onPlay = f.ownFirst, durationMs = durationMs,
+            colors = "WUBRG".filter { it.toString() in got }, seats = st.players.size.takeIf { it > 0 }, difficulty = table?.level ?: "Medium", facts = facts)
     }
 }
 

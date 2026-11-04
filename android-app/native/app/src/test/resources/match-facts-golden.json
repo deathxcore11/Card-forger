@@ -1,0 +1,700 @@
+{
+ "surfaces": [
+  {
+   "seat": 0,
+   "turn": 0,
+   "activeSeat": null,
+   "players": [
+    {
+     "seat": 0,
+     "life": 20,
+     "handCount": 7,
+     "libraryCount": 53,
+     "counters": {}
+    },
+    {
+     "seat": 1,
+     "life": 20,
+     "handCount": 7,
+     "libraryCount": 53,
+     "counters": {}
+    }
+   ],
+   "cards": []
+  },
+  {
+   "seat": 0,
+   "turn": 1,
+   "activeSeat": 0,
+   "players": [
+    {
+     "seat": 0,
+     "life": 20,
+     "handCount": 7,
+     "libraryCount": 52,
+     "counters": {}
+    },
+    {
+     "seat": 1,
+     "life": 20,
+     "handCount": 7,
+     "libraryCount": 53,
+     "counters": {}
+    }
+   ],
+   "cards": [
+    {
+     "id": 1,
+     "owner": 0,
+     "controller": 0,
+     "zone": "Battlefield",
+     "known": true,
+     "name": "Llanowar Elves",
+     "type": "Creature — Elf Druid",
+     "types": [
+      "Creature"
+     ],
+     "power": 1,
+     "attacking": false,
+     "isToken": false,
+     "counters": {},
+     "keywords": [],
+     "attachments": []
+    }
+   ]
+  },
+  {
+   "seat": 0,
+   "turn": 2,
+   "activeSeat": 1,
+   "players": [
+    {
+     "seat": 0,
+     "life": 20,
+     "handCount": 7,
+     "libraryCount": 52,
+     "counters": {}
+    },
+    {
+     "seat": 1,
+     "life": 20,
+     "handCount": 6,
+     "libraryCount": 52,
+     "counters": {}
+    }
+   ],
+   "cards": [
+    {
+     "id": 1,
+     "owner": 0,
+     "controller": 0,
+     "zone": "Battlefield",
+     "known": true,
+     "name": "Llanowar Elves",
+     "type": "Creature — Elf Druid",
+     "types": [
+      "Creature"
+     ],
+     "power": 1,
+     "attacking": false,
+     "isToken": false,
+     "counters": {},
+     "keywords": [],
+     "attachments": []
+    },
+    {
+     "id": 10,
+     "owner": 1,
+     "controller": 1,
+     "zone": "Battlefield",
+     "known": true,
+     "name": "Grizzly Bears",
+     "type": "Creature — Bear",
+     "types": [
+      "Creature"
+     ],
+     "power": 2,
+     "attacking": false,
+     "isToken": false,
+     "counters": {},
+     "keywords": [],
+     "attachments": []
+    },
+    {
+     "id": 11,
+     "owner": 1,
+     "controller": 1,
+     "zone": "Battlefield",
+     "known": true,
+     "name": "Grizzly Bears",
+     "type": "Creature — Bear",
+     "types": [
+      "Creature"
+     ],
+     "power": 2,
+     "attacking": false,
+     "isToken": false,
+     "counters": {},
+     "keywords": [],
+     "attachments": []
+    },
+    {
+     "id": 12,
+     "owner": 1,
+     "controller": 1,
+     "zone": "Battlefield",
+     "known": true,
+     "name": "Savannah Lions",
+     "type": "Creature — Cat",
+     "types": [
+      "Creature"
+     ],
+     "power": 2,
+     "attacking": false,
+     "isToken": false,
+     "counters": {},
+     "keywords": [],
+     "attachments": []
+    }
+   ]
+  },
+  {
+   "seat": 0,
+   "turn": 3,
+   "activeSeat": 0,
+   "players": [
+    {
+     "seat": 0,
+     "life": 23,
+     "handCount": 5,
+     "libraryCount": 51,
+     "counters": {}
+    },
+    {
+     "seat": 1,
+     "life": 20,
+     "handCount": 4,
+     "libraryCount": 52,
+     "counters": {}
+    }
+   ],
+   "cards": [
+    {
+     "id": 1,
+     "owner": 0,
+     "controller": 0,
+     "zone": "Battlefield",
+     "known": true,
+     "name": "Llanowar Elves",
+     "type": "Creature — Elf Druid",
+     "types": [
+      "Creature"
+     ],
+     "power": 1,
+     "attacking": false,
+     "isToken": false,
+     "counters": {
+      "P1P1": 2
+     },
+     "keywords": [],
+     "attachments": []
+    },
+    {
+     "id": 2,
+     "owner": 0,
+     "controller": 0,
+     "zone": "Battlefield",
+     "known": true,
+     "name": "Llanowar Elves",
+     "type": "Creature — Elf Druid",
+     "types": [
+      "Creature"
+     ],
+     "power": 1,
+     "attacking": true,
+     "isToken": false,
+     "counters": {},
+     "keywords": [],
+     "attachments": [
+      3
+     ]
+    },
+    {
+     "id": 3,
+     "owner": 0,
+     "controller": 0,
+     "zone": "Battlefield",
+     "known": true,
+     "name": "Bonesplitter",
+     "type": "Artifact — Equipment",
+     "types": [
+      "Artifact"
+     ],
+     "power": null,
+     "attacking": false,
+     "isToken": false,
+     "counters": {},
+     "keywords": [],
+     "attachments": []
+    },
+    {
+     "id": 4,
+     "owner": 0,
+     "controller": 0,
+     "zone": "Battlefield",
+     "known": true,
+     "name": "Bird",
+     "type": "Creature — Bird",
+     "types": [
+      "Creature"
+     ],
+     "power": 1,
+     "attacking": false,
+     "isToken": true,
+     "counters": {},
+     "keywords": [
+      "Flying"
+     ],
+     "attachments": []
+    },
+    {
+     "id": 5,
+     "owner": 0,
+     "controller": 0,
+     "zone": "Battlefield",
+     "known": false
+    },
+    {
+     "id": 10,
+     "owner": 1,
+     "controller": 1,
+     "zone": "Battlefield",
+     "known": true,
+     "name": "Grizzly Bears",
+     "type": "Creature — Bear",
+     "types": [
+      "Creature"
+     ],
+     "power": 2,
+     "attacking": false,
+     "isToken": false,
+     "counters": {},
+     "keywords": [],
+     "attachments": []
+    },
+    {
+     "id": 11,
+     "owner": 1,
+     "controller": 1,
+     "zone": "Battlefield",
+     "known": true,
+     "name": "Grizzly Bears",
+     "type": "Creature — Bear",
+     "types": [
+      "Creature"
+     ],
+     "power": 2,
+     "attacking": false,
+     "isToken": false,
+     "counters": {},
+     "keywords": [],
+     "attachments": []
+    },
+    {
+     "id": 12,
+     "owner": 1,
+     "controller": 1,
+     "zone": "Battlefield",
+     "known": true,
+     "name": "Savannah Lions",
+     "type": "Creature — Cat",
+     "types": [
+      "Creature"
+     ],
+     "power": 2,
+     "attacking": false,
+     "isToken": false,
+     "counters": {},
+     "keywords": [],
+     "attachments": []
+    },
+    {
+     "id": 20,
+     "owner": 0,
+     "controller": 0,
+     "zone": "Exile",
+     "known": true,
+     "name": "Rift Bolt",
+     "type": "Sorcery",
+     "types": [
+      "Sorcery"
+     ],
+     "power": null,
+     "attacking": false,
+     "isToken": false,
+     "counters": {
+      "TIME": 1
+     },
+     "keywords": [],
+     "attachments": []
+    }
+   ]
+  },
+  {
+   "seat": 0,
+   "turn": 3,
+   "activeSeat": 0,
+   "players": [
+    {
+     "seat": 0,
+     "life": 23,
+     "handCount": 5,
+     "libraryCount": 51,
+     "counters": {}
+    },
+    {
+     "seat": 1,
+     "life": 8,
+     "handCount": 4,
+     "libraryCount": 52,
+     "counters": {
+      "POISON": 2
+     }
+    }
+   ],
+   "cards": [
+    {
+     "id": 1,
+     "owner": 0,
+     "controller": 0,
+     "zone": "Battlefield",
+     "known": true,
+     "name": "Llanowar Elves",
+     "type": "Creature — Elf Druid",
+     "types": [
+      "Creature"
+     ],
+     "power": 1,
+     "attacking": false,
+     "isToken": false,
+     "counters": {
+      "P1P1": 2
+     },
+     "keywords": [],
+     "attachments": []
+    },
+    {
+     "id": 2,
+     "owner": 0,
+     "controller": 0,
+     "zone": "Battlefield",
+     "known": true,
+     "name": "Llanowar Elves",
+     "type": "Creature — Elf Druid",
+     "types": [
+      "Creature"
+     ],
+     "power": 1,
+     "attacking": false,
+     "isToken": false,
+     "counters": {},
+     "keywords": [],
+     "attachments": [
+      3
+     ]
+    },
+    {
+     "id": 3,
+     "owner": 0,
+     "controller": 0,
+     "zone": "Battlefield",
+     "known": true,
+     "name": "Bonesplitter",
+     "type": "Artifact — Equipment",
+     "types": [
+      "Artifact"
+     ],
+     "power": null,
+     "attacking": false,
+     "isToken": false,
+     "counters": {},
+     "keywords": [],
+     "attachments": []
+    },
+    {
+     "id": 5,
+     "owner": 0,
+     "controller": 0,
+     "zone": "Battlefield",
+     "known": true,
+     "name": "Hidden Stalker",
+     "type": "Creature — Elf Warrior",
+     "types": [
+      "Creature"
+     ],
+     "power": 4,
+     "attacking": false,
+     "isToken": false,
+     "counters": {},
+     "keywords": [],
+     "attachments": []
+    },
+    {
+     "id": 10,
+     "owner": 1,
+     "controller": 1,
+     "zone": "Graveyard",
+     "known": true,
+     "name": "Grizzly Bears",
+     "type": "Creature — Bear",
+     "types": [
+      "Creature"
+     ],
+     "power": null,
+     "attacking": false,
+     "isToken": false,
+     "counters": {},
+     "keywords": [],
+     "attachments": []
+    },
+    {
+     "id": 20,
+     "owner": 0,
+     "controller": 0,
+     "zone": "Exile",
+     "known": true,
+     "name": "Rift Bolt",
+     "type": "Sorcery",
+     "types": [
+      "Sorcery"
+     ],
+     "power": null,
+     "attacking": false,
+     "isToken": false,
+     "counters": {
+      "TIME": 1
+     },
+     "keywords": [],
+     "attachments": []
+    }
+   ]
+  },
+  {
+   "seat": 0,
+   "turn": 4,
+   "activeSeat": 1,
+   "players": [
+    {
+     "seat": 0,
+     "life": 17,
+     "handCount": 6,
+     "libraryCount": 51,
+     "counters": {}
+    },
+    {
+     "seat": 1,
+     "life": 8,
+     "handCount": 3,
+     "libraryCount": 51,
+     "counters": {
+      "POISON": 2
+     }
+    }
+   ],
+   "cards": [
+    {
+     "id": 1,
+     "owner": 0,
+     "controller": 0,
+     "zone": "Battlefield",
+     "known": true,
+     "name": "Llanowar Elves",
+     "type": "Creature — Elf Druid",
+     "types": [
+      "Creature"
+     ],
+     "power": 1,
+     "attacking": false,
+     "isToken": false,
+     "counters": {
+      "P1P1": 2
+     },
+     "keywords": [],
+     "attachments": []
+    },
+    {
+     "id": 5,
+     "owner": 0,
+     "controller": 0,
+     "zone": "Battlefield",
+     "known": true,
+     "name": "Hidden Stalker",
+     "type": "Creature — Elf Warrior",
+     "types": [
+      "Creature"
+     ],
+     "power": 4,
+     "attacking": false,
+     "isToken": false,
+     "counters": {},
+     "keywords": [],
+     "attachments": []
+    },
+    {
+     "id": 3,
+     "owner": 0,
+     "controller": 0,
+     "zone": "Battlefield",
+     "known": true,
+     "name": "Bonesplitter",
+     "type": "Artifact — Equipment",
+     "types": [
+      "Artifact"
+     ],
+     "power": null,
+     "attacking": false,
+     "isToken": false,
+     "counters": {},
+     "keywords": [],
+     "attachments": []
+    },
+    {
+     "id": 10,
+     "owner": 1,
+     "controller": 1,
+     "zone": "Graveyard",
+     "known": true,
+     "name": "Grizzly Bears",
+     "type": "Creature — Bear",
+     "types": [
+      "Creature"
+     ],
+     "power": null,
+     "attacking": false,
+     "isToken": false,
+     "counters": {},
+     "keywords": [],
+     "attachments": []
+    },
+    {
+     "id": 11,
+     "owner": 1,
+     "controller": 1,
+     "zone": "Graveyard",
+     "known": true,
+     "name": "Grizzly Bears",
+     "type": "Creature — Bear",
+     "types": [
+      "Creature"
+     ],
+     "power": null,
+     "attacking": false,
+     "isToken": false,
+     "counters": {},
+     "keywords": [],
+     "attachments": []
+    },
+    {
+     "id": 2,
+     "owner": 0,
+     "controller": 0,
+     "zone": "Graveyard",
+     "known": true,
+     "name": "Llanowar Elves",
+     "type": "Creature — Elf Druid",
+     "types": [
+      "Creature"
+     ],
+     "power": null,
+     "attacking": false,
+     "isToken": false,
+     "counters": {},
+     "keywords": [],
+     "attachments": []
+    },
+    {
+     "id": 30,
+     "owner": 0,
+     "controller": 0,
+     "zone": "Battlefield",
+     "known": true,
+     "name": "Forest",
+     "type": "Basic Land — Forest",
+     "types": [
+      "Land"
+     ],
+     "power": null,
+     "attacking": false,
+     "isToken": false,
+     "counters": {},
+     "keywords": [],
+     "attachments": []
+    }
+   ]
+  }
+ ],
+ "snapshot": {
+  "turns": 4,
+  "myTurns": 2,
+  "minLife": 17,
+  "endLife": 17,
+  "maxLife": 23,
+  "lifeGained": 3,
+  "startLife": 20,
+  "oppEndLife": 8,
+  "oppMinLife": 8,
+  "oppBigTurn": 12,
+  "oppPoison": 2,
+  "myPoison": 0,
+  "oppLibraryMin": 51,
+  "oppHandMin": 3,
+  "maxHand": 7,
+  "maxCreatures": 4,
+  "maxTokens": 1,
+  "maxLands": 1,
+  "maxArtifacts": 1,
+  "maxEnchantments": 0,
+  "maxPower": 4,
+  "maxBoardPower": 6,
+  "maxAttackers": 1,
+  "maxFlyers": 1,
+  "maxCounters": 2,
+  "maxSuspended": 1,
+  "maxFaceDown": 1,
+  "maxAttach": 1,
+  "maxSlivers": 0,
+  "tribes": {
+   "Elf": 3,
+   "Druid": 2,
+   "Bird": 1,
+   "Warrior": 1
+  },
+  "oppMaxCreatures": 3,
+  "oppWipes": 1,
+  "kills": 2,
+  "losses": 2,
+  "turnedUp": 1,
+  "flipped": 0,
+  "endCreatures": 2,
+  "oppEndCreatures": 0,
+  "myCards": [
+   "Bird",
+   "Bonesplitter",
+   "Forest",
+   "Hidden Stalker",
+   "Llanowar Elves"
+  ],
+  "theirCards": [
+   "Grizzly Bears",
+   "Savannah Lions"
+  ],
+  "killed": [
+   "Grizzly Bears"
+  ],
+  "myDead": [
+   "Bird",
+   "Llanowar Elves"
+  ],
+  "onPlay": true
+ }
+}

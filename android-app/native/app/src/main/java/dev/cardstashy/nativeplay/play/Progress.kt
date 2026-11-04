@@ -118,6 +118,35 @@ object Progress {
         login
     } catch (_: Failure) { null }
 
+    /**
+     * The app.js 'play:match-recorded' listener and play-econ-client reportMatch: one finished match to /api/progress/match
+     * (quests and achievements; the server decides what counts). Quiet on failure, like the web. Facts are the whitelisted
+     * numbers plus maxTribe, as the web sends them.
+     */
+    suspend fun reportMatch(mode: String, outcome: String, format: String, turns: Int?, life: Int?, opponentLife: Int?, onPlay: Boolean?, durationMs: Long?,
+                            colors: String, seats: Int?, difficulty: String?, facts: JsonObject?): JsonObject? = try {
+        if (Account.session.value == null) null else {
+            val id = java.util.UUID.randomUUID().toString().replace(Regex("[^A-Za-z0-9_-]"), "")
+            val f = JsonObject()
+            if (facts != null) {
+                for (k in REPORTED_FACTS) facts.get(k)?.takeIf { it.isJsonPrimitive && it.asJsonPrimitive.isNumber }?.let { f.add(k, it) }
+                facts.getAsJsonObject("tribes")?.let { t -> f.addProperty("maxTribe", maxOf(0, t.entrySet().maxOfOrNull { it.value.asInt } ?: 0)) }
+            }
+            val body = JsonObject().apply {
+                addProperty("id", id); addProperty("mode", mode); addProperty("outcome", outcome); addProperty("format", format)
+                turns?.let { addProperty("turns", it) }; facts?.get("myTurns")?.takeIf { it.isJsonPrimitive }?.let { add("myTurns", it) }
+                life?.let { addProperty("life", it) }; opponentLife?.let { addProperty("opponentLife", it) }; onPlay?.let { addProperty("onPlay", it) }
+                durationMs?.let { addProperty("durationMs", it) }; addProperty("colors", colors); seats?.let { addProperty("seats", it) }; difficulty?.let { addProperty("difficulty", it) }
+                if (facts != null) add("facts", f); addProperty("tz", tz)
+            }
+            val out = call("match", body)
+            out.get("counters")?.takeIf { it.isJsonObject }?.let { c -> _state.value?.deepCopy()?.let { st -> st.add("counters", c); set(st) } }
+            out
+        }
+    } catch (_: Failure) { null }
+    private val REPORTED_FACTS = listOf("myTurns", "minLife", "startLife", "maxLife", "lifeGained", "oppBigTurn", "oppPoison", "oppLibraryMin", "oppHandMin", "maxHand", "maxCreatures",
+        "maxTokens", "maxLands", "maxPower", "maxAttackers", "maxFlyers", "maxCounters", "maxAttach", "oppMaxCreatures", "oppWipes", "kills", "losses", "turnedUp")
+
     private suspend fun run(label: String, path: String, body: JsonObject, extra: (JsonObject) -> JsonObject? = { null }): JsonObject {
         _busy.value = label; _error.value = null
         try {
