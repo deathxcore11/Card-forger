@@ -2591,3 +2591,21 @@ body.practice-table-open:has(.forge-order-cards,.forge-zone-search-dialog) .forg
 :where(body.practice-table-open) .forge-peek.forge-peek.forge-peek .forge-peek-info.forge-peek-info>.forge-peek-keywords{display:grid!important;position:static!important;width:auto!important}
 :where(body.practice-table-open) .forge-peek.forge-peek.forge-peek .forge-peek-info.forge-peek-info .forge-peek-pt{display:inline-flex!important}
 @media (max-height:520px){:where(body.practice-table-open) .forge-cast.forge-cpu-show:not([data-kind=attack]) figure{width:clamp(130px,calc((100dvh - 130px) / 1.394),260px)!important}:where(body.practice-table-open) .forge-cast.forge-cpu-show[data-kind=attack] figure{width:clamp(110px,calc((100dvh - 150px) / 1.394),220px)!important}:where(body.practice-table-open) .forge-cpu-info{max-height:calc(100dvh - 120px)}}
+
+/* The turn clock (turn-timer.mjs): a ring drains clockwise around the main button, a line under the turn pill drains
+   with it, and in the last 10 s both turn coral, pulse, and a number sits beside the button. Colours and motion only. */
+@property --tt-left{syntax:'<number>';inherits:true;initial-value:1}
+:where(body.practice-table-open) .play-match-table[data-forge-native] .forge-turn-ring{position:fixed;z-index:59;border-radius:999px;padding:3px;pointer-events:none;--tt-col:#f2c46f;
+ background:conic-gradient(var(--tt-col) calc(var(--tt-left)*360deg),#ffffff24 0);-webkit-mask:linear-gradient(#000 0 0) content-box,linear-gradient(#000 0 0);-webkit-mask-composite:xor;mask:linear-gradient(#000 0 0) content-box exclude,linear-gradient(#000 0 0);mask-composite:exclude;
+ filter:drop-shadow(0 0 5px color-mix(in srgb,var(--tt-col) 65%,transparent));transition:--tt-left .26s linear}
+:where(body.practice-table-open) .play-match-table[data-forge-native][data-turn-warn=true] .forge-turn-ring{--tt-col:#ff6a4a;animation:forge-tt-pulse 1s ease-in-out infinite}
+:where(body.practice-table-open) .play-match-table[data-forge-native][data-turn-timer] .forge-phase-track::after{content:"";position:absolute;left:12px;right:12px;bottom:-4px;height:3px;border-radius:2px;pointer-events:none;
+ background:linear-gradient(90deg,var(--tt-line,#f2c46f) calc(var(--tt-left)*100%),#ffffff1f 0);box-shadow:0 0 6px color-mix(in srgb,var(--tt-line,#f2c46f) 60%,transparent);transition:--tt-left .26s linear}
+:where(body.practice-table-open) .play-match-table[data-forge-native][data-turn-timer=rival] .forge-phase-track{--tt-line:#9db4d8}
+:where(body.practice-table-open) .play-match-table[data-forge-native][data-turn-warn=true] .forge-phase-track{--tt-line:#ff6a4a}
+:where(body.practice-table-open) .play-match-table[data-forge-native] .forge-turn-count{position:fixed;z-index:60;width:32px;height:32px;border-radius:50%;display:grid;place-items:center;pointer-events:none;
+ font:800 16px/1 'DM Sans',system-ui,sans-serif;color:#ffd9cf;background:#120e08e6;border:2px solid #ff6a4a;box-shadow:0 0 14px #ff6a4a88;animation:forge-tt-pulse 1s ease-in-out infinite}
+:where(body.practice-table-open) .play-match-table[data-forge-native] .forge-afk-note{position:fixed;z-index:61;left:50%;top:calc(var(--forge-ask-top,60vh) - 56px);translate:-50% 0;max-width:min(92vw,420px);padding:8px 16px;border-radius:999px;pointer-events:none;
+ font:600 14px/1.3 'DM Sans',system-ui,sans-serif;color:#fff1cf;background:#120e08e6;border:1px solid #f2c46f88;-webkit-backdrop-filter:blur(12px);backdrop-filter:blur(12px);box-shadow:0 8px 20px #0008}
+@keyframes forge-tt-pulse{50%{opacity:.55}}
+@media (prefers-reduced-motion:reduce){:where(body.practice-table-open) .play-match-table[data-forge-native][data-turn-timer] .forge-turn-ring,:where(body.practice-table-open) .play-match-table[data-forge-native] .forge-turn-count{animation:none}}
