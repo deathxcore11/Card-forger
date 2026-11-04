@@ -454,6 +454,95 @@
      ]
     }
    },
+   "lessonDeck": {
+    "who": "archers",
+    "deck": {
+     "name": "Scouts of Llanowar",
+     "colors": "G",
+     "archetype": null,
+     "label": "tribute",
+     "note": "Softer scripted-lesson version for a first play, same lore and same cards family.",
+     "cards": [
+      {
+       "qty": 4,
+       "name": "Llanowar Elves",
+       "set": "lea",
+       "number": "210",
+       "id": "d4f1cc9e-4f99-4c26-ac1b-8ef069fa8ceb"
+      },
+      {
+       "qty": 4,
+       "name": "Grizzly Bears",
+       "set": "lea",
+       "number": "199",
+       "id": "ce2d603a-3231-4a8c-bf39-1617586ea870"
+      },
+      {
+       "qty": 4,
+       "name": "Elvish Archers",
+       "set": "lea",
+       "number": "191",
+       "id": "1cb9d405-f2b5-4e10-a405-feafd2a87d90"
+      },
+      {
+       "qty": 4,
+       "name": "Timber Wolves",
+       "set": "lea",
+       "number": "219",
+       "id": "bc2570a4-eef9-430d-b6c2-cd51d29b9d01"
+      },
+      {
+       "qty": 4,
+       "name": "Wyluli Wolf",
+       "set": "arn",
+       "number": "55",
+       "id": "15ccebe1-ef08-4805-a65f-a1c57abed9f2"
+      },
+      {
+       "qty": 4,
+       "name": "Scryb Sprites",
+       "set": "lea",
+       "number": "215",
+       "id": "6d929c38-91e6-457c-937a-d1884f4bba44"
+      },
+      {
+       "qty": 4,
+       "name": "Shanodin Dryads",
+       "set": "lea",
+       "number": "216",
+       "id": "814cf35c-f1ad-4bf4-8c10-a5592c3b1be8"
+      },
+      {
+       "qty": 2,
+       "name": "War Mammoth",
+       "set": "lea",
+       "number": "227",
+       "id": "c8d6081e-f686-4263-a0a2-21c0d9af5fdb"
+      },
+      {
+       "qty": 2,
+       "name": "Wall of Wood",
+       "set": "lea",
+       "number": "225",
+       "id": "8df80424-3bd9-4982-ad79-e55d9ba3b43d"
+      },
+      {
+       "qty": 4,
+       "name": "Birds of Paradise",
+       "set": "lea",
+       "number": "186",
+       "id": "55fe6449-1f23-43dc-adee-d144cd505b5c"
+      },
+      {
+       "qty": 24,
+       "name": "Forest",
+       "set": "lea",
+       "number": "294",
+       "id": "6f1c8cb0-38eb-408b-94e8-16db83999b3b"
+      }
+     ]
+    }
+   },
    "reward": {
     "hero": {
      "packs": 1,
@@ -644,6 +733,88 @@
        "set": "lea",
        "number": "153",
        "id": "5129b422-7a35-4bc5-b14b-c814012a0d8f"
+      },
+      {
+       "qty": 4,
+       "name": "Ironclaw Orcs",
+       "set": "lea",
+       "number": "159",
+       "id": "d56421a8-34ae-4033-943f-c59a7bf2b6f9"
+      },
+      {
+       "qty": 4,
+       "name": "Gray Ogre",
+       "set": "lea",
+       "number": "156",
+       "id": "73ae5276-b607-4f23-a9d2-e8cc7b8e3693"
+      },
+      {
+       "qty": 4,
+       "name": "Hurloon Minotaur",
+       "set": "lea",
+       "number": "158",
+       "id": "78a9088f-8755-47cb-aa93-51d992ccab90"
+      },
+      {
+       "qty": 4,
+       "name": "Hill Giant",
+       "set": "lea",
+       "number": "157",
+       "id": "0ddb98e8-13fe-4786-83f7-b72c56db135a"
+      },
+      {
+       "qty": 4,
+       "name": "Two-Headed Giant of Foriys",
+       "set": "lea",
+       "number": "179",
+       "id": "31c687dc-ee0c-4e54-a2b3-5d8e633b3245"
+      },
+      {
+       "qty": 4,
+       "name": "Uthden Troll",
+       "set": "lea",
+       "number": "180",
+       "id": "2ff21a6f-83a7-4bf3-a078-294e303232cc"
+      },
+      {
+       "qty": 24,
+       "name": "Mountain",
+       "set": "lea",
+       "number": "292",
+       "id": "eace2c85-976c-425e-9800-5a6ccbd91b56"
+      }
+     ]
+    }
+   },
+   "lessonDeck": {
+    "who": "goblinKing",
+    "deck": {
+     "name": "The King's Marchers",
+     "colors": "R",
+     "archetype": null,
+     "label": "tribute",
+     "note": "Softer scripted-lesson version for a first play, same lore and same cards family.",
+     "cards": [
+      {
+       "qty": 4,
+       "name": "Goblin King",
+       "set": "lea",
+       "number": "154",
+       "id": "5873672d-37ea-4c0f-97f3-12b74fde112d"
+      },
+      {
+       "qty": 4,
+       "name": "Mons's Goblin Raiders",
+       "set": "lea",
+       "number": "164",
+       "id": "b4eb3db3-6a7c-488a-9433-d5d1d3133816"
+      },
+      {
+       "qty": 4,
+       "name": "Dwarven Warriors",
+       "set": "lea",
+       "number": "143",
+       "id": "2d4d87a3-5f8b-4152-9a8b-538ab49d62e8"
       },
       {
        "qty": 4,
@@ -980,6 +1151,123 @@
      ]
     }
    },
+   "lessonDeck": {
+    "who": "blackKnight",
+    "deck": {
+     "name": "The Dark Lance (first duel)",
+     "colors": "B",
+     "archetype": null,
+     "label": "tribute",
+     "note": "Softer scripted-lesson version for a first play, same lore and same cards family.",
+     "cards": [
+      {
+       "qty": 2,
+       "name": "Black Knight",
+       "set": "lea",
+       "number": "94",
+       "id": "c1662949-0d69-49a3-8c69-daf10717ed4e"
+      },
+      {
+       "qty": 2,
+       "name": "Raise Dead",
+       "set": "lea",
+       "number": "122",
+       "id": "ce07bede-2219-427c-a61a-56518751de42"
+      },
+      {
+       "qty": 4,
+       "name": "Erg Raiders",
+       "set": "arn",
+       "number": "25",
+       "id": "35c73a97-531d-4dd5-8236-39b89c183c38"
+      },
+      {
+       "qty": 2,
+       "name": "Hasran Ogress",
+       "set": "arn",
+       "number": "27",
+       "id": "9f310cf5-0985-4826-9779-19a713089d6d"
+      },
+      {
+       "qty": 4,
+       "name": "Scathe Zombies",
+       "set": "lea",
+       "number": "125",
+       "id": "e9be6dcf-5e25-4b8c-9cd0-badf3771f81e"
+      },
+      {
+       "qty": 2,
+       "name": "Bog Wraith",
+       "set": "lea",
+       "number": "95",
+       "id": "6701874e-986e-4b81-9268-90b6171e6187"
+      },
+      {
+       "qty": 1,
+       "name": "Sengir Vampire",
+       "set": "lea",
+       "number": "127",
+       "id": "510840f4-7c0e-4b47-8ebf-23c20cac4bd9"
+      },
+      {
+       "qty": 2,
+       "name": "Frozen Shade",
+       "set": "lea",
+       "number": "109",
+       "id": "d0bd76c8-4cff-4c15-9686-7a299b589814"
+      },
+      {
+       "qty": 2,
+       "name": "Dark Ritual",
+       "set": "lea",
+       "number": "98",
+       "id": "ebb6664d-23ca-456e-9916-afcd6f26aa7f"
+      },
+      {
+       "qty": 2,
+       "name": "Fear",
+       "set": "lea",
+       "number": "108",
+       "id": "0cd927be-e63f-4371-a1d8-7a0489cb187e"
+      },
+      {
+       "qty": 2,
+       "name": "Plague Rats",
+       "set": "lea",
+       "number": "121",
+       "id": "b3724e40-0622-4aee-9334-6c9fff88bcd5"
+      },
+      {
+       "qty": 2,
+       "name": "Guardian Beast",
+       "set": "arn",
+       "number": "26",
+       "id": "9941f83b-2903-4eab-ac6d-5313e3978fa3"
+      },
+      {
+       "qty": 3,
+       "name": "Unholy Strength",
+       "set": "lea",
+       "number": "131",
+       "id": "90563f90-0127-4164-b43b-f0321dc63a1d"
+      },
+      {
+       "qty": 4,
+       "name": "Drudge Skeletons",
+       "set": "lea",
+       "number": "106",
+       "id": "23614289-0d73-4747-a849-5cb67cc97d6a"
+      },
+      {
+       "qty": 26,
+       "name": "Swamp",
+       "set": "lea",
+       "number": "290",
+       "id": "6176936d-72e2-4205-8871-4c5a4f1cb2d8"
+      }
+     ]
+    }
+   },
    "reward": {
     "hero": {
      "packs": 1,
@@ -1239,6 +1527,102 @@
        "set": "arn",
        "number": "46",
        "id": "0d77c149-cca2-45c7-bc83-5ba1872ad5e0"
+      },
+      {
+       "qty": 24,
+       "name": "Forest",
+       "set": "lea",
+       "number": "294",
+       "id": "6f1c8cb0-38eb-408b-94e8-16db83999b3b"
+      }
+     ]
+    }
+   },
+   "lessonDeck": {
+    "who": "erhnam",
+    "deck": {
+     "name": "The Djinn's Menagerie (first duel)",
+     "colors": "G",
+     "archetype": null,
+     "label": "tribute",
+     "note": "Softer scripted-lesson version for a first play, same lore and same cards family.",
+     "cards": [
+      {
+       "qty": 2,
+       "name": "Erhnam Djinn",
+       "set": "arn",
+       "number": "48",
+       "id": "42bc0c3f-0a52-4bdc-83da-6484bf3102f3"
+      },
+      {
+       "qty": 4,
+       "name": "Ghazbán Ogre",
+       "set": "arn",
+       "number": "49",
+       "id": "f9d613d5-36a2-4633-b5af-64511bb29cc2"
+      },
+      {
+       "qty": 4,
+       "name": "Llanowar Elves",
+       "set": "lea",
+       "number": "210",
+       "id": "d4f1cc9e-4f99-4c26-ac1b-8ef069fa8ceb"
+      },
+      {
+       "qty": 4,
+       "name": "Scryb Sprites",
+       "set": "lea",
+       "number": "215",
+       "id": "6d929c38-91e6-457c-937a-d1884f4bba44"
+      },
+      {
+       "qty": 4,
+       "name": "Grizzly Bears",
+       "set": "lea",
+       "number": "199",
+       "id": "ce2d603a-3231-4a8c-bf39-1617586ea870"
+      },
+      {
+       "qty": 2,
+       "name": "Giant Spider",
+       "set": "lea",
+       "number": "198",
+       "id": "77636b4c-faea-4bf5-b88c-dd5bb88dc930"
+      },
+      {
+       "qty": 3,
+       "name": "Craw Wurm",
+       "set": "lea",
+       "number": "190",
+       "id": "bfed1a95-bd67-4e16-a781-81866028af2f"
+      },
+      {
+       "qty": 4,
+       "name": "Giant Growth",
+       "set": "lea",
+       "number": "197",
+       "id": "367dbefe-3366-408e-9fcf-7dc00f8cc201"
+      },
+      {
+       "qty": 4,
+       "name": "Wyluli Wolf",
+       "set": "arn",
+       "number": "55",
+       "id": "15ccebe1-ef08-4805-a65f-a1c57abed9f2"
+      },
+      {
+       "qty": 3,
+       "name": "Timber Wolves",
+       "set": "lea",
+       "number": "219",
+       "id": "bc2570a4-eef9-430d-b6c2-cd51d29b9d01"
+      },
+      {
+       "qty": 2,
+       "name": "Wall of Wood",
+       "set": "lea",
+       "number": "225",
+       "id": "8df80424-3bd9-4982-ad79-e55d9ba3b43d"
       },
       {
        "qty": 24,

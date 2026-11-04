@@ -1,0 +1,389 @@
+{
+ "1": {
+  "sets": [],
+  "note": "all earlier sets (Type 1)"
+ },
+ "2": {
+  "sets": [
+   "lea",
+   "leb",
+   "2ed",
+   "arn",
+   "atq"
+  ],
+  "note": "all earlier sets (Type 1)"
+ },
+ "3": {
+  "sets": [
+   "lea",
+   "leb",
+   "2ed",
+   "arn",
+   "atq",
+   "3ed",
+   "leg",
+   "drk",
+   "fem"
+  ],
+  "note": "all earlier sets (Type 1)"
+ },
+ "4": {
+  "sets": [
+   "lea",
+   "leb",
+   "2ed",
+   "arn",
+   "atq",
+   "3ed",
+   "leg",
+   "drk",
+   "fem",
+   "ice",
+   "hml",
+   "all",
+   "4ed"
+  ],
+  "note": "all earlier sets (Type 1)"
+ },
+ "5": {
+  "sets": [
+   "mir",
+   "vis",
+   "5ed"
+  ],
+  "note": "Standard 1998-07-01 Standard (EXO)"
+ },
+ "6": {
+  "sets": [
+   "tmp",
+   "sth",
+   "exo"
+  ],
+  "note": "Standard 1999-06-01 Standard (6ED)"
+ },
+ "7": {
+  "sets": [
+   "usg",
+   "ulg",
+   "6ed",
+   "uds",
+   "nms"
+  ],
+  "note": "Standard 2000-07-01 Standard (PCY)"
+ },
+ "8": {
+  "sets": [
+   "mmq",
+   "nms",
+   "pcy"
+  ],
+  "note": "Standard 2001-07-01 Standard (APC)"
+ },
+ "9": {
+  "sets": [
+   "inv",
+   "pls",
+   "7ed",
+   "apc"
+  ],
+  "note": "Standard 2002-07-01 Standard (JUD)"
+ },
+ "10": {
+  "sets": [
+   "ody",
+   "tor",
+   "jud"
+  ],
+  "note": "Standard 2003-09-01 Standard (8ED)"
+ },
+ "11": {
+  "sets": [
+   "ons",
+   "lgn",
+   "scg",
+   "8ed"
+  ],
+  "note": "Standard 2004-06-20 Standard (5DN)"
+ },
+ "12": {
+  "sets": [
+   "mrd",
+   "dst",
+   "5dn"
+  ],
+  "note": "Standard 2005-08-20 Standard (9ED)"
+ },
+ "13": {
+  "sets": [
+   "mrd",
+   "dst",
+   "5dn",
+   "chk",
+   "bok",
+   "sok"
+  ],
+  "note": "Standard 2005-08-20 Standard (9ED)"
+ },
+ "14": {
+  "sets": [
+   "rav",
+   "gpt",
+   "dis"
+  ],
+  "note": "Standard 2007-07-20 Standard (10E)"
+ },
+ "15": {
+  "sets": [
+   "rav",
+   "gpt",
+   "dis",
+   "csp",
+   "tsp",
+   "tsb",
+   "plc",
+   "fut"
+  ],
+  "note": "Standard 2007-07-20 Standard (10E)"
+ },
+ "16": {
+  "sets": [
+   "lrw",
+   "mor",
+   "shm",
+   "eve",
+   "cfx"
+  ],
+  "note": "Standard 2009-07-17 Standard (M10)"
+ },
+ "17": {
+  "sets": [
+   "ala",
+   "cfx",
+   "arb",
+   "m10"
+  ],
+  "note": "Standard 2010-07-16 Standard (M11)"
+ },
+ "18": {
+  "sets": [
+   "zen",
+   "wwk",
+   "roe",
+   "m11"
+  ],
+  "note": "Standard 2011-07-15 Standard (M12)"
+ },
+ "19": {
+  "sets": [
+   "som",
+   "mbs",
+   "nph",
+   "m12"
+  ],
+  "note": "Standard 2012-07-13 Standard (M13)"
+ },
+ "20": {
+  "sets": [
+   "isd",
+   "dka",
+   "avr",
+   "m13"
+  ],
+  "note": "Standard 2013-07-19 Standard (M14)"
+ },
+ "21": {
+  "sets": [
+   "rtr",
+   "gtc",
+   "dgm",
+   "m14"
+  ],
+  "note": "Standard 2014-07-18 Standard (M15)"
+ },
+ "22": {
+  "sets": [
+   "ths",
+   "bng",
+   "jou",
+   "m15",
+   "ugf"
+  ],
+  "note": "Standard 2015-03-27 Standard (DTK)"
+ },
+ "23": {
+  "sets": [
+   "ktk",
+   "frf",
+   "ugf",
+   "dtk"
+  ],
+  "note": "Standard 2016-01-22 Standard (OGW)"
+ },
+ "24": {
+  "sets": [
+   "dtk",
+   "ori",
+   "bfz",
+   "ogw",
+   "w16"
+  ],
+  "note": "Standard 2016-07-22 Standard (EMN)"
+ },
+ "25": {
+  "sets": [
+   "bfz",
+   "ogw",
+   "soi",
+   "w16",
+   "emn"
+  ],
+  "note": "Standard 2017-01-20 Standard (AER)"
+ },
+ "26": {
+  "sets": [
+   "bfz",
+   "ogw",
+   "soi",
+   "w16",
+   "emn",
+   "kld",
+   "aer",
+   "w17"
+  ],
+  "note": "Standard 2017-07-14 Standard (HOU)"
+ },
+ "27": {
+  "sets": [
+   "kld",
+   "aer",
+   "akh",
+   "w17",
+   "hou"
+  ],
+  "note": "Standard 2018-01-19 Standard (RIX)"
+ },
+ "28": {
+  "sets": [
+   "kld",
+   "aer",
+   "akh",
+   "w17",
+   "hou",
+   "xln",
+   "rix"
+  ],
+  "note": "Standard 2018-07-13 Standard (M19)"
+ },
+ "29": {
+  "sets": [
+   "xln",
+   "rix",
+   "dom",
+   "m19",
+   "g18"
+  ],
+  "note": "Standard 2019-07-12 Standard (M20)"
+ },
+ "30": {
+  "sets": [
+   "grn",
+   "rna",
+   "war",
+   "m20"
+  ],
+  "note": "Standard 2020-07-03 Standard (M21)"
+ },
+ "31": {
+  "sets": [
+   "eld",
+   "thb",
+   "iko",
+   "m21"
+  ],
+  "note": "Standard 2021-04-23 Standard (STX)"
+ },
+ "32": {
+  "sets": [
+   "znr",
+   "khm",
+   "stx"
+  ],
+  "note": "Standard 2021-11-19 Standard (VOW)"
+ },
+ "33": {
+  "sets": [
+   "znr",
+   "khm",
+   "stx",
+   "afr",
+   "mid",
+   "vow"
+  ],
+  "note": "Standard 2022-04-29 Standard (SNC)"
+ },
+ "34": {
+  "sets": [
+   "mid",
+   "vow",
+   "neo",
+   "snc"
+  ],
+  "note": "Standard 2022-11-18 Standard (BRO)"
+ },
+ "35": {
+  "sets": [
+   "mid",
+   "vow",
+   "neo",
+   "snc",
+   "dmu",
+   "bro"
+  ],
+  "note": "Standard 2023-05-12 Standard (MAT)"
+ },
+ "36": {
+  "sets": [
+   "mid",
+   "vow",
+   "neo",
+   "snc",
+   "dmu",
+   "bro",
+   "one",
+   "mom",
+   "mat"
+  ],
+  "note": "Standard 2024-02-09 Standard (MKM)"
+ },
+ "37": {
+  "sets": [
+   "dmu",
+   "bro",
+   "one",
+   "mom",
+   "mat",
+   "woe",
+   "lci",
+   "mkm"
+  ],
+  "note": "Standard 2024-11-15 Standard (FDN)"
+ },
+ "38": {
+  "sets": [
+   "dmu",
+   "bro",
+   "one",
+   "mom",
+   "mat",
+   "woe",
+   "lci",
+   "mkm",
+   "otj",
+   "big",
+   "blb",
+   "dsk",
+   "fdn"
+  ],
+  "note": "Standard 2025-04-11 Standard (TDM)"
+ }
+}

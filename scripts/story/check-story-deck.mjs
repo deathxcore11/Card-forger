@@ -10,7 +10,8 @@ import {checkDeck, eraFormat, LABELS} from './deck-gates.mjs';
 const args = process.argv.slice(2), act = storyAct(args[0]);
 if (!act) throw Error('usage: check-story-deck.mjs <act>');
 const opt = k => { const i = args.indexOf(k); return i > 0 ? args[i + 1] : null; };
-const pool = JSON.parse(readFileSync(opt('--pool') || `/tmp/story/pool-${act.act}.json`, 'utf8')).cards;
+const poolFile = JSON.parse(readFileSync(opt('--pool') || `/tmp/story/pool-${act.act}.json`, 'utf8')), pool = poolFile.cards;
+act.eraSets = poolFile.eraSets || [];
 const data = JSON.parse(readFileSync(new URL(`../../data/story/act-${act.act}.json`, import.meta.url), 'utf8'));
 const forgeRoot = opt('--forge-root') || (existsSync('/tmp/fe/root') ? '/tmp/fe/root' : null);
 const byKey = new Map(pool.map(c => [c.set + '#' + c.number, c]));
@@ -22,7 +23,8 @@ const simDir = opt('--sim-dir'); if (simDir) mkdirSync(simDir, {recursive: true}
 let failures = 0, warnings = 0;
 for (const b of data.battles) {
   const era = eraFormat(forgeRoot, b.era || data.era);
-  for (const seat of ['hero', 'villain']) {
+  for (const seat of ['hero', 'villain', 'lessonDeck']) {
+    if (!b[seat]) continue;
     const deck = b[seat]?.deck, r = checkDeck(deck, {pool: byKey, act, forgeRoot, era});
     if (r.fail.length) failures++;
     warnings += r.warn.length;
