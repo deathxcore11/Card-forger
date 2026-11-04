@@ -252,6 +252,10 @@ export const LESSONS = {
   'Domain': 'Domain counts the basic land types among lands you control. Plains, Island, Swamp, Mountain and Forest each count once, so mixed lands make domain cards cheaper.',
   'Prototype': 'Prototype: you may cast this card for a smaller cost as a smaller creature, or for its full cost as the big one.',
   'Enlist': 'Enlist: as this creature attacks, you may tap a non-attacking creature you control. This creature gets +X/+0, where X is the tapped creature\'s power.',
+  'Toxic': 'Toxic: a creature with toxic gives the player poison counters when it deals combat damage to them. A player with ten poison counters loses the game.',
+  'Oil counters': 'Oil counters: Phyrexian permanents store them and spend them for effects. They are a resource, like charge, that can be used up or built up.',
+  'Battles': 'A battle is a permanent you attack. It has defense counters, and when the last is removed, the battle flips and its owner gets a reward.',
+  'Incubate': 'Incubate: create an Incubator token with counters on it. Pay to flip it into a Phyrexian creature that carries them.',
   'Playing under a lock': 'A lock stops cards from untapping or moving. Break it, or win with what\'s already in play.',
 };
 // Every Story deck says what it is (Randall, 2 Nov 2026): Historical Exact, Historical Tribute or
