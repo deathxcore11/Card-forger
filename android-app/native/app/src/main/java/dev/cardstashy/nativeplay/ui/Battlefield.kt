@@ -112,9 +112,9 @@ class Battlefield {
         now.longValue
         val h = items.firstOrNull { it.kind == Fx.LIFE && it.level == 3 && it.p(now.longValue) in 0f..1f } ?: return
         val p = h.p(now.longValue); val k = h.power
-        if (p > .35f) return
-        val q = p / .35f; val amp = (4f + 8f * k) * (1f - q)
-        with(scope) { translationX = amp * sin(q * 46f) * density; translationY = amp * .6f * cos(q * 39f) * density }
+        if (p > .5f) return
+        val q = p / .5f; val amp = (9f + 14f * k) * (1f - q) * (1f - q * .3f)
+        with(scope) { translationX = amp * sin(q * 52f) * density; translationY = amp * .7f * cos(q * 43f) * density }
     }
     private val byCard = HashMap<Int, MutableList<FxItem>>()
     private var prev: MatchState? = null
@@ -238,7 +238,7 @@ class Battlefield {
         }
 
         // Combat damage lands: every attacker wind-ups, lunges at what it hit (its blocker, else the player) and strikes (level 2, 640 ms).
-        val lungeMs = 640L; val impactAt = (lungeMs * .5f).toLong()
+        val lungeMs = 760L; val impactAt = (lungeMs * .45f).toLong()
         val lost = b.players.any { p -> a.players.firstOrNull { it.id == p.id }?.let { q -> p.life < q.life } == true }
         val dmgNow = bfB.values.any { c -> (bfA[c.id]?.damage ?: 0) < c.damage }
         var lunged = false
@@ -326,12 +326,13 @@ class Battlefield {
                             // Pull back, then strike to the target's edge, then settle home.
                             val reach = (dist - minOf(b.width, b.height) * .42f - minOf(a.width, a.height) * .3f).coerceAtLeast(0f)
                             val off = when {
-                                p < .3f -> -14.dp.toPx() * smooth(0f, .3f, p)
-                                p < .5f -> { val q = (p - .3f) / .2f; -14.dp.toPx() + (reach + 14.dp.toPx()) * q * q * q }
-                                else -> reach * (1f - smooth(.5f, 1f, p))
+                                p < .3f -> -26.dp.toPx() * smooth(0f, .3f, p)
+                                p < .45f -> { val q = (p - .3f) / .15f; -26.dp.toPx() + (reach + 26.dp.toPx()) * q * q * q }
+                                p < .55f -> reach
+                                else -> reach * (1f - smooth(.55f, 1f, p))
                             }
                             translationX = ux * off; translationY = uy * off
-                            val sc = when { p < .3f -> 1f + .12f * smooth(0f, .3f, p); p < .5f -> 1.12f; else -> 1.12f - .12f * smooth(.5f, .8f, p) }
+                            val sc = when { p < .3f -> 1f + .25f * smooth(0f, .3f, p); p < .55f -> 1.25f; else -> 1.25f - .25f * smooth(.55f, .85f, p) }
                             scaleX = sc; scaleY = sc; shadowElevation = 20f
                         }
                     }
@@ -649,17 +650,17 @@ private fun DrawScope.drawLunge(it: FxItem, p: Float, a: Rect?, b: Rect?) {
     if (a == null || b == null) return
     val col = it.tone
     if (p in .3f..0.62f) {
-        val q = (p - .3f) / .2f
+        val q = (p - .3f) / .15f
         val dir = b.center - a.center; val len = kotlin.math.hypot(dir.x, dir.y).coerceAtLeast(1f)
         val ux = dir.x / len; val uy = dir.y / len
-        val head = a.center; val n = 7
-        for (i in 0 until n) { val k = 1f - i / n.toFloat(); val at = head - Offset(ux, uy) * (i * 9f * density)
+        val head = a.center; val n = 11
+        for (i in 0 until n) { val k = 1f - i / n.toFloat(); val at = head - Offset(ux, uy) * (i * 12f * density)
             drawCircle(col.copy(alpha = .5f * k * (1f - smooth(.8f, 1f, q))), radius = (a.minDimension * .42f) * k, center = at) }
     }
     if (p >= .48f) {
         val q = ((p - .48f) / .4f).coerceIn(0f, 1f)
         val at = b.center
-        if (q < .25f) drawCircle(Color.White.copy(alpha = .85f * (1f - q / .25f)), radius = b.maxDimension * .5f, center = at)
+        if (q < .25f) drawCircle(Color.White.copy(alpha = .95f * (1f - q / .25f)), radius = b.maxDimension * .9f, center = at)
         for (j in 0..2) { val k = (q - j * .12f).coerceIn(0f, 1f); if (k > 0f) drawCircle(col.copy(alpha = .8f * (1f - k)), radius = b.maxDimension * (.3f + 1.1f * k), center = at, style = Stroke((5f - 4f * k) * density)) }
         val rnd = java.util.Random(it.card?.toLong() ?: 1L)
         for (i in 0 until 14) { val ang = rnd.nextFloat() * 6.283f; val sp = (30f + rnd.nextFloat() * 70f) * density * q
@@ -670,12 +671,19 @@ private fun DrawScope.drawLunge(it: FxItem, p: Float, a: Rect?, b: Rect?) {
 /** A hit to a face: a red flash across the board edge, a big shockwave from the orb, sparks, and the life number slamming in. */
 private fun DrawScope.faceHit(it: FxItem, p: Float, r: Rect) {
     val k = it.power
-    val vig = (if (p < .12f) p / .12f else 1f - smooth(.12f, .7f, p)) * (.35f + .3f * k)
+    val vig = (if (p < .12f) p / .12f else 1f - smooth(.12f, .7f, p)) * (.34f + .2f * k)
     drawRect(Brush.radialGradient(listOf(Color.Transparent, Color(0xFFE02A1A).copy(alpha = vig)), center = Offset(size.width / 2f, size.height / 2f), radius = size.maxDimension * .62f))
-    if (p < .1f) drawRect(Color.White.copy(alpha = .22f * (1f - p / .1f)))
+    if (p < .14f) drawRect(Color.White.copy(alpha = .55f * (1f - p / .14f)))
     for (j in 0..2) { val q = ((p - j * .08f) / .6f).coerceIn(0f, 1f); if (q > 0f)
         drawCircle(it.tone.copy(alpha = .85f * (1f - q)), radius = r.maxDimension * (.5f + (2.4f + 2f * k) * q), center = r.center, style = Stroke((7f - 6f * q) * density)) }
     drawCircle(Brush.radialGradient(listOf(Color.White.copy(alpha = .9f * (1f - smooth(0f, .3f, p))), it.tone.copy(alpha = .6f * (1f - smooth(0f, .5f, p))), Color.Transparent), center = r.center, radius = r.maxDimension * 1.4f), radius = r.maxDimension * 1.4f, center = r.center)
+    // Magic: gold and violet light rays fan out of the orb and arcane motes drift up the board.
+    val rays = 12; val rq = smooth(0f, .55f, p) * (1f - smooth(.55f, 1f, p))
+    for (i in 0 until rays) { val ang = i / rays.toFloat() * 6.283f + .3f; val l0 = r.maxDimension * .6f; val l1 = r.maxDimension * (1.4f + 3.2f * k) * rq
+        val a = Offset(cos(ang), sin(ang)); drawLine(Brush.linearGradient(listOf(Color(0xFFFFE9A8).copy(alpha = .8f * rq), Color(0xFFB58CFF).copy(alpha = 0f)), r.center + a * l0, r.center + a * (l0 + l1)), r.center + a * l0, r.center + a * (l0 + l1), strokeWidth = 3f * density) }
+    val mr = java.util.Random(5L)
+    for (i in 0 until 26) { val x = mr.nextFloat() * size.width; val y0 = size.height * (.3f + .6f * mr.nextFloat()); val t = smooth(.1f, 1f, p)
+        drawCircle((if (i % 2 == 0) Color(0xFFFFE9A8) else Color(0xFFC9A8FF)).copy(alpha = .8f * (1f - t) * smooth(0f, .2f, p)), radius = (1.6f + 1.6f * mr.nextFloat()) * density, center = Offset(x + 12f * density * sin(t * 6f + i), y0 - t * 90f * density)) }
     val rnd = java.util.Random(11L); val q = smooth(0f, .8f, p)
     for (i in 0 until (18 + 20 * k).toInt()) { val ang = rnd.nextFloat() * 6.283f; val sp = (40f + rnd.nextFloat() * 140f) * density * q
         drawCircle(Color(0xFFFFB070).copy(alpha = 1f - q), radius = 2.8f * density * (1f - q * .5f), center = r.center + Offset(cos(ang), sin(ang)) * sp) }
