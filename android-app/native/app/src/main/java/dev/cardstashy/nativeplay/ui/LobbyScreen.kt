@@ -397,6 +397,7 @@ fun LobbyScreen(model: LobbyModel, onBack: () -> Unit, onStart: (Pick) -> Unit, 
     val gridAt = remember { mutableStateOf(Offset.Zero) }
     val barAt = remember { mutableStateOf(Offset.Zero) }
     Box(Modifier.fillMaxSize().background(Site.Bg)) {
+        Backdrop() // #ambient: the shared art (glass on, or Aura)
         // .play-library is a panel (surface 84 %, 1 px line, radius 20) from its head to the last deck, its contents 19 px in;
         // the grid is laid out at the panel's inner edge and the panel is drawn behind those items.
         LazyVerticalGrid(GridCells.Fixed(2), state = grid, modifier = Modifier.fillMaxSize().windowInsetsPadding(WindowInsets.safeDrawing)

@@ -233,6 +233,7 @@ fun DeckEditor(state: JsonObject, ui: EditorUi, onBack: () -> Unit, onCard: (Car
     }
 
     Box(Modifier.fillMaxSize().background(Site.Bg)) {
+        Backdrop() // #ambient: the shared art (glass on, or Aura)
         BoxWithConstraints(Modifier.fillMaxSize()) {
             val wide = maxWidth >= 840.dp
             val pad = PaddingValues(start = 16.dp, end = 16.dp, top = 12.dp, bottom = 120.dp)

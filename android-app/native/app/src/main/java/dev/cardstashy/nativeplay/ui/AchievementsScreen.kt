@@ -151,6 +151,7 @@ fun AchievementsRoute(onBack: () -> Unit, startTab: String? = null, nav: @Compos
         }
     }
     Box(Modifier.fillMaxSize().background(Site.Bg)) {
+        Backdrop() // #ambient: the shared art (glass on, or Aura)
         val d = deeds
         val top = WindowInsets.statusBars.asPaddingValues().calculateTopPadding()
         if (d == null) { Text("Opening your Hall of Deeds…", style = Site.Body, modifier = Modifier.align(Alignment.Center)); return@Box }

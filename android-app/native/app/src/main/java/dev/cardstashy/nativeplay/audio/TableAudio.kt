@@ -24,7 +24,7 @@ class TableAudio(context: Context) {
     var muted = false
         set(on) { field = on; if (on) pool.autoPause() else pool.autoResume() }
 
-    fun play(id: String, volume: Float = 1f) { if (muted) return; ids[id]?.let { pool.play(it, volume, volume, 1, 0, 1f) } }
+    fun play(id: String, volume: Float = 1f) { if (muted || !dev.cardstashy.nativeplay.ui.AppSettings.sound) return; ids[id]?.let { pool.play(it, volume, volume, 1, 0, 1f) } }
 
     fun release() = pool.release()
 

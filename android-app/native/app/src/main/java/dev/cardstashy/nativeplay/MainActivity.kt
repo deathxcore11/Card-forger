@@ -105,7 +105,7 @@ class MainActivity : ComponentActivity() {
         enableEdgeToEdge()
         // The card database starts loading as the app opens, so it is ready before Quick Play is.
         ForgeService.prepare(this)
-        Account.init(this); dev.cardstashy.nativeplay.ui.AppSettings.init(this); dev.cardstashy.nativeplay.ui.TableEmotes.init(this); dev.cardstashy.nativeplay.ui.MatchMenu.init(this); Thread { dev.cardstashy.nativeplay.ui.BoardIcons.get(applicationContext, "tapped") }.start(); CardArt.init(this); Speed.init(this)
+        Account.init(this); dev.cardstashy.nativeplay.ui.AppSettings.init(this); dev.cardstashy.nativeplay.ui.Aura.init(this); dev.cardstashy.nativeplay.ui.TableEmotes.init(this); dev.cardstashy.nativeplay.ui.MatchMenu.init(this); Thread { dev.cardstashy.nativeplay.ui.BoardIcons.get(applicationContext, "tapped") }.start(); CardArt.init(this); Speed.init(this)
         dev.cardstashy.nativeplay.play.Progress.init(this); dev.cardstashy.nativeplay.play.SetFacts.init(this); dev.cardstashy.nativeplay.play.CardFacts.init(this); dev.cardstashy.nativeplay.play.DeckEngine.init(this); dev.cardstashy.nativeplay.play.CraftRarity.init(this)
         dev.cardstashy.nativeplay.play.CardData.warm(this); dev.cardstashy.nativeplay.ui.PackSfx.warm(this)
         setContent {
@@ -297,6 +297,7 @@ private fun Table(activity: MainActivity, s: QuickPlay.Setup.Ready, t0: Long, on
         if (bubbles != null && outcome != null) LaunchedEffect(Unit) { controller.shown.filterNotNull().collect { st -> bubbles.update(st).forEach { outcome.bubbles.add(it) } } }
         BackHandler { /* the table's menu has Leave; Back never drops a match by accident */ }
         if (versus || holdForScene) VersusScreen(s.you, s.cpu, intro = false) else TableScreen(controller, onHome = onHome, onRematch = { round++ }, resultNote = outcome?.note, cpuPlate = s.cpu,
+            mat = (pick as? Pick.Table)?.story?.let { c -> remember { dev.cardstashy.nativeplay.ui.StoryMats.forBattle(context, c.act, c.battle.get("slot")?.takeIf { it.isJsonPrimitive }?.asInt, c.battle.get("kind")?.takeIf { it.isJsonPrimitive }?.asString) } },
             storyMusic = (pick as? Pick.Table)?.story?.let { dev.cardstashy.nativeplay.audio.TableMusic.StoryMusic(it.act, it.battle.get("mood")?.takeIf { m -> m.isJsonPrimitive }?.asString, it.battle.get("kind")?.takeIf { m -> m.isJsonPrimitive }?.asString) })
     }
 }

@@ -530,6 +530,7 @@ fun HeroPage(top: @Composable () -> Unit, hero: @Composable () -> Unit, nav: (@C
     val collapsed by remember { derivedStateOf { list.firstVisibleItemIndex > 0 || list.firstVisibleItemScrollOffset > with(d) { (220.dp - 56.dp).roundToPx() } } }
     val barAlpha by animateFloatAsState(if (collapsed) 1f else 0f, Site.spring(), label = "bar")
     Box(Modifier.fillMaxSize().background(Site.Bg)) {
+        Backdrop() // #ambient: the shared art (glass on, or Aura)
         Column(Modifier.fillMaxSize()) {
             LazyColumn(Modifier.weight(1f).fillMaxWidth(), state = list, contentPadding = PaddingValues(bottom = 24.dp), verticalArrangement = Arrangement.spacedBy(Gutter.Gap)) {
                 item(key = "hero") { hero() }

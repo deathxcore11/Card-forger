@@ -122,6 +122,7 @@ fun ShopRoute(onBack: () -> Unit, nav: @Composable () -> Unit, startTab: String 
     BackHandler(enabled = set != null && open == null && opener == null) { set = null }
     BackHandler(enabled = set == null && open == null && opener == null, onBack = onBack)
     Box(Modifier.fillMaxSize().background(Site.Bg)) {
+        Backdrop() // #ambient: the shared art (glass on, or Aura)
         val code = set
         // .pack-dialog::backdrop: #05060be6 over a 16 px blur of the page.
         Box(Modifier.fillMaxSize().then(if (opener != null) Modifier.blur(16.dp) else Modifier)) {

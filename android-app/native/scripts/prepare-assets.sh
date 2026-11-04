@@ -36,6 +36,8 @@ node "$HERE/scripts/export-card-data.mjs" "$REPO" "$A/card-data.json"
 for f in "$HERE"/art/*.webp; do [ -e "$f" ] && cp "$f" "$A/play/"; done
 # The table playmats (all 128 files): without them the table is a flat black card, so this script now does it too.
 cp "$REPO"/assets/play/playmat-*.webp "$A/play/"
+# Story playmats (app first): their light maps; the art itself comes from art/ above (scripts/intake-story-mats.py).
+cp "$HERE/mats/story-light.json" "$A/play/story-light.json"
 cp "$HERE/deck-engine/deck-engine.js" "$A/deck-engine.js"  # the web's Deck Forge for QuickJS (scripts/export-deck-engine.mjs)
 rm -rf "$T"
 echo "assets ready: $(du -sh "$A" | cut -f1), libs $(ls "$HERE/engine-libs" | wc -l) jars, pack $(cat "$A/forge-engine/pack.version")"

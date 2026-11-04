@@ -103,6 +103,7 @@ fun SettingsScreen(onBack: () -> Unit, onWeb: (String) -> Unit, startTab: String
     BackHandler(onBack = onBack)
     var tab by rememberSaveable { mutableStateOf(if (startTab == "info") Tab.INFO else if (startTab == "app") Tab.APP else Tab.ACCOUNT) }
     Box(Modifier.fillMaxSize().background(Site.Bg)) {
+        Backdrop() // #ambient: the shared art (glass on, or Aura)
         Column(Modifier.fillMaxSize().windowInsetsPadding(WindowInsets.safeDrawing).imePadding()) {
             // The dialog head: brand mark, "CARDSTASHY · ALL GAMES", Settings, close.
             Row(Modifier.fillMaxWidth().padding(start = 16.dp, end = 12.dp, top = 10.dp, bottom = 10.dp), verticalAlignment = Alignment.CenterVertically) {
@@ -431,6 +432,14 @@ private fun AppPane() {
         Check("Frosted glass", AppSettings.glass, "Turn it off for plain solid panels (a little lighter on older phones).") { AppSettings.set("glass", it) }
         Check("Card lighting & foil effects", AppSettings.finish, "Soft light follows your tilt in card details. Foil cards shimmer automatically in the gallery.") { AppSettings.set("finishEffects", it) }
         Check("Phone tilt in card views", AppSettings.tilt, "Move your phone to move the card and light. Turn off to use touch controls. Follows Reduce motion.") { AppSettings.set("motionTilt", it) }
+        // Story playmat MOTION-SPEC: the table's living mat (light rays, leaves, smoke). Reduce motion and battery saver keep it still.
+        Text("Table effects", style = S.Body.copy(fontSize = 13.sp, fontWeight = FontWeight.SemiBold), modifier = Modifier.padding(top = 6.dp))
+        Segmented(AppSettings.EFFECTS, AppSettings.effects) { AppSettings.applyEffects(it) }
+        Text(when (AppSettings.effects) {
+            "cinematic" -> "Every light, mote, leaf and flyer on Story mats, plus boss moments."
+            "minimal" -> "A still painted mat with a soft glow. Lightest on battery."
+            else -> "Light rays, glints and glows, with fewer leaves. Follows Reduce motion and battery saver."
+        }, style = S.Foot)
         Check("Tap vibration", AppSettings.haptics, "Animations follow your phone’s “Reduce motion” setting.") { AppSettings.set("haptics", it) }
         // Signed in only (views.js setPresence); C.setPresence's toasts.
         val signedIn = dev.cardstashy.nativeplay.account.Account.session.collectAsState().value != null
@@ -496,20 +505,25 @@ private fun Swatch(id: String, modifier: Modifier) {
 private fun GridCard() = Panel {
     CardHeading("CARD GRIDS", "Room to browse")
     Text("Card size", style = S.Body.copy(fontSize = 13.sp, fontWeight = FontWeight.SemiBold), modifier = Modifier.padding(top = 4.dp))
+    Segmented(AppSettings.GRID_SIZES, AppSettings.gridSize) { AppSettings.applyGridSize(it) }
+    Text("Applies to card galleries in all three games. List views keep their current layout.", style = S.Foot)
+    Check("Pinch to resize card grids", AppSettings.gridPinch, "Spread two fingers for larger cards; pinch for smaller cards. Only card grids use this gesture when enabled. Turn it off to use browser pinch zoom there.") { AppSettings.applyGridPinch(it) }
+}
+
+/** grid-settings.js's three-way pill (Small / Medium / Large), shared with Table effects. */
+@Composable
+private fun Segmented(options: List<String>, selected: String, onPick: (String) -> Unit) =
     Row(Modifier.fillMaxWidth().clip(RoundedCornerShape(14.dp)).background(Site.Surface2).border(1.dp, Site.Line, RoundedCornerShape(14.dp)).padding(4.dp),
         horizontalArrangement = Arrangement.spacedBy(4.dp)) {
-        for (id in AppSettings.GRID_SIZES) {
-            val on = AppSettings.gridSize == id; val sh = RoundedCornerShape(10.dp)
+        for (id in options) {
+            val on = selected == id; val sh = RoundedCornerShape(10.dp)
             // input:checked+span: var(--glass) (white .58 light, surface .46 dark) and a soft drop.
-            Box(Modifier.weight(1f).heightIn(min = 44.dp).then(if (on) Modifier.shadow(2.dp, sh, ambientColor = Color(0x22000000), spotColor = Color(0x22000000)).clip(sh).background(if (AppSettings.theme == "light") Color(0x94FFFFFF) else Site.Surface.copy(alpha = .46f)) else Modifier.clip(sh)).clickable { AppSettings.applyGridSize(id) },
+            Box(Modifier.weight(1f).heightIn(min = 44.dp).then(if (on) Modifier.shadow(2.dp, sh, ambientColor = Color(0x22000000), spotColor = Color(0x22000000)).clip(sh).background(if (AppSettings.theme == "light") Color(0x94FFFFFF) else Site.Surface.copy(alpha = .46f)) else Modifier.clip(sh)).clickable { onPick(id) },
                 contentAlignment = Alignment.Center) {
                 Text(id.replaceFirstChar { it.uppercase() }, style = S.Body.copy(fontSize = 13.sp, fontWeight = FontWeight.SemiBold, color = if (on) Site.Text else Site.Muted))
             }
         }
     }
-    Text("Applies to card galleries in all three games. List views keep their current layout.", style = S.Foot)
-    Check("Pinch to resize card grids", AppSettings.gridPinch, "Spread two fingers for larger cards; pinch for smaller cards. Only card grids use this gesture when enabled. Turn it off to use browser pinch zoom there.") { AppSettings.applyGridPinch(it) }
-}
 
 @Composable
 private fun Check(label: String, on: Boolean, foot: String? = null, onChange: (Boolean) -> Unit) = Column {

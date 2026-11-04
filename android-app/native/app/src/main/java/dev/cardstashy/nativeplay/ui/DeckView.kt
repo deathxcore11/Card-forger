@@ -76,6 +76,7 @@ fun DeckView(row: Finder.Row, title: String, cardOf: (String) -> JsonObject?, on
     val mode = DeckViewPref.mode
     val sub = listOf(if (title != row.name) row.name else "", if (row.source == "Meta") "" else row.source, row.detail).filter { it.isNotEmpty() }.joinToString(" · ")
     BoxWithConstraints(Modifier.fillMaxSize().background(Site.Bg)) {
+        Backdrop() // #ambient: the shared art (glass on, or Aura)
         val wide = maxWidth >= 600.dp
         val inner = maxWidth - 32.dp
         LazyColumn(Modifier.fillMaxSize(), contentPadding = PaddingValues(start = 16.dp, end = 16.dp, top = 12.dp, bottom = 120.dp), verticalArrangement = Arrangement.spacedBy(14.dp)) {
@@ -172,6 +173,7 @@ private fun StatePill(status: String, slots: Int) {
 @Composable
 private fun Hero(row: Finder.Row, title: String, sub: String, wide: Boolean, onBack: () -> Unit) {
     val p = heroPainter(row.cover.ifBlank { DECKS_ART }.let(homeArt))
+    LaunchedEffect(row.cover) { Aura.focus = row.cover.ifBlank { null } } // aura.js pageArt(): the deck hero
     Box(Modifier.fillMaxWidth().heightIn(min = if (wide) 330.dp else 300.dp).softTile(26.dp)) {
         if (p != null) Image(p, null, Modifier.matchParentSize(), contentScale = ContentScale.Crop)
         Box(Modifier.matchParentSize().background(Brush.verticalGradient(0f to Color(0x40000000), .3f to Color(0x0A000000), .62f to Color(0xC008090C), 1f to Color(0xF508090C))))

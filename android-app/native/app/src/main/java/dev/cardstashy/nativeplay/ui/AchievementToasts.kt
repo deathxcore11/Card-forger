@@ -137,6 +137,7 @@ object AchievementToasts {
     private var pool: SoundPool? = null
     private val ids = HashMap<String, Int>()
     fun sound(context: Context, id: String) {
+        if (!AppSettings.sound) return
         val p = pool ?: SoundPool.Builder().setMaxStreams(2).setAudioAttributes(AudioAttributes.Builder().setUsage(AudioAttributes.USAGE_GAME).setContentType(AudioAttributes.CONTENT_TYPE_SONIFICATION).build()).build().also { pool = it }
         val loaded = ids[id]
         if (loaded != null) { p.play(loaded, 1f, 1f, 1, 0, 1f); return }

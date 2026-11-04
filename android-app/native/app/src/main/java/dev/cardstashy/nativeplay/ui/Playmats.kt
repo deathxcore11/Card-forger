@@ -127,16 +127,17 @@ object Playmats {
     fun offTall(x: Int, w: Int) = x + w < 571 || x > 1100
 
     /** Every bundled file a mat's scene draws, wide or upright. */
-    fun files(id: String, tall: Boolean): List<String> {
-        val t = if (tall) "-tall" else ""
+    fun files(id: String, tall: Boolean): List<String> = files(id, if (tall) "-tall" else "")
+    /** [t] is the crop suffix: "" wide, "-tall" upright, "-fold" (Story mats only) for an open Fold or tablet held upright. */
+    fun files(id: String, t: String): List<String> {
         return listOf("play/playmat-$id$t.webp", "play/playmat-$id-glow$t.webp", "play/playmat-$id-glow-b$t.webp") +
             HEDRONS[id].orEmpty().indices.map { "play/playmat-$id-hedron$it.webp" } +
             SPARKLES[id].orEmpty().indices.flatMap { i -> listOf("a", "b").map { "play/playmat-$id-tw$i$it.webp" } } +
             (if (CLOUDS[id] != null) listOf("play/playmat-fx-cloud.webp") else emptyList()) +
             listOfNotNull(LOOKS[id]?.motes?.let { "play/playmat-fx-$it.webp" })
     }
-    suspend fun preload(context: Context, id: String, tall: Boolean): Map<String, ImageBitmap> =
-        files(id, tall).mapNotNull { f -> AssetImages.load(context, f)?.let { f to it } }.toMap()
+    suspend fun preload(context: Context, id: String, crop: String): Map<String, ImageBitmap> =
+        files(id, crop).mapNotNull { f -> AssetImages.load(context, f)?.let { f to it } }.toMap()
 
     /** prefers-reduced-motion: Android's "Remove animations" (animator duration scale 0), which Chrome reports the same way. */
     fun reduced(context: Context): Boolean = try { Settings.Global.getFloat(context.contentResolver, Settings.Global.ANIMATOR_DURATION_SCALE, 1f) == 0f } catch (_: Exception) { false }
@@ -198,33 +199,41 @@ fun PlaymatScene(id: String, modifier: Modifier = Modifier) {
     val context = LocalContext.current
     BoxWithConstraints(modifier.background(Color(0xFF0C0C0E)).clipToBounds()) {
         val tall = maxHeight >= maxWidth // @media (orientation:portrait)
-        val images by produceState(Playmats.files(id, tall).mapNotNull { f -> AssetImages.cached("$f@0")?.let { f to it } }.toMap(), id, tall) {
-            value = Playmats.preload(context, id, tall)
+        val story = remember(id) { StoryMats.all(context)[id] }
+        // Story mats carry a third crop, about 1:1.25, for an open Fold or a tablet held upright (MOTION-SPEC "Crops and safe zones").
+        val fold = story != null && (maxWidth / maxHeight) in .68f..1f
+        val crop = if (fold) "-fold" else if (tall) "-tall" else ""
+        val images by produceState(Playmats.files(id, crop).mapNotNull { f -> AssetImages.cached("$f@0")?.let { f to it } }.toMap(), id, crop) {
+            value = Playmats.preload(context, id, crop)
         }
         val reduced = remember { Playmats.reduced(context) }
+        val level = StoryMats.level(context, reduced)
         val frozen = Playmats.frozenAt ?: if (Motion.still) 0f else null
         var time by remember { mutableFloatStateOf(frozen ?: 0f) }
         if (frozen == null && !reduced) LaunchedEffect(Unit) {
             val start = withFrameNanos { it }
             while (true) withFrameNanos { time = (it - start) / 1e9f }
         }
-        Canvas(Modifier.matchParentSize()) { drawScene(id, tall, images, if (reduced) null else (frozen ?: time)) }
+        Canvas(Modifier.matchParentSize()) { drawScene(id, crop, images, if (reduced) null else (frozen ?: time), story, level) }
     }
 }
 
 /** t == null is the reduced-motion look: every animation off, the glow at .7, no motes. */
-private fun DrawScope.drawScene(id: String, tall: Boolean, img: Map<String, ImageBitmap>, t: Float?) {
-    val look = Playmats.LOOKS[id] ?: return
+private fun DrawScope.drawScene(id: String, crop: String, img: Map<String, ImageBitmap>, t: Float?, story: StoryMats.Mat? = null, level: Int = 1) {
+    // Story mats have no glow halves or mote tile of their own; their light is the story layer at the end.
+    val look = Playmats.LOOKS[id] ?: story?.let { Playmats.Look("mat-shimmer", 5.5f, null) } ?: return
     val W = size.width; val H = size.height
+    val tall = crop == "-tall"; val fold = crop == "-fold"
     // .pm-stage: landscape max(100vw,177.7vh) x max(100vh,56.28vw); portrait max(100vw,56.25vh) x max(100vh,177.8vw); centred.
-    val sw = if (tall) max(W, .5625f * H) else max(W, 1.777f * H)
-    val sh = if (tall) max(H, 1.778f * W) else max(H, .5628f * W)
+    // The Fold crop (753 x 941, 1:1.25) covers the same way.
+    val sw = if (fold) max(W, .8002f * H) else if (tall) max(W, .5625f * H) else max(W, 1.777f * H)
+    val sh = if (fold) max(H, 1.2497f * W) else if (tall) max(H, 1.778f * W) else max(H, .5628f * W)
     val sx = (W - sw) / 2f; val sy = (H - sh) / 2f
-    val sfx = if (tall) "-tall" else ""
+    val sfx = crop
+    val (cropX, cropW) = if (fold) 460 to 753 else if (tall) 571 to 529 else 0 to 1672
     // pct(): left/width from the painting's 1672 px (or the upright crop's 529 px from x 571), top/height from 941 px.
-    fun box(x: Int, y: Int, w: Int, h: Int) = if (tall) Rect(Offset(sx + (x - 571) / 529f * sw, sy + y / 941f * sh), Size(w / 529f * sw, h / 941f * sh))
-        else Rect(Offset(sx + x / 1672f * sw, sy + y / 941f * sh), Size(w / 1672f * sw, h / 941f * sh))
-    fun shown(x: Int, w: Int) = !tall || !Playmats.offTall(x, w)
+    fun box(x: Int, y: Int, w: Int, h: Int) = Rect(Offset(sx + (x - cropX) / cropW.toFloat() * sw, sy + y / 941f * sh), Size(w / cropW.toFloat() * sw, h / 941f * sh))
+    fun shown(x: Int, w: Int) = x + w >= cropX && x <= cropX + cropW
     val stage = Rect(Offset(sx, sy), Size(sw, sh))
 
     // .pm-art
@@ -290,6 +299,8 @@ private fun DrawScope.drawScene(id: String, tall: Boolean, img: Map<String, Imag
             drawOval(Brush.radialGradient(0f to color, .68f to color.copy(alpha = 0f), center = b.center, radius = far), b.topLeft, b.size, alpha = alpha)
         }
     }
+    // Story mats: rays, motes, glints, leaves and glow pulses from their light map, gated by the Effects setting.
+    story?.let { drawStoryLight(it, MatStage(sx, sy, sw, sh, cropX, cropW), t, level, hinge = fold) }
     // .pm-motes: over the whole screen, the mote tile at full width repeated down 100% + 112.5vw, rising one tile per --mat-rise, swaying 3 px.
     if (t != null) look.motes?.let { m -> img["play/playmat-fx-$m.webp"]?.let { tile ->
         val th = W * tile.height / tile.width

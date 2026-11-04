@@ -183,7 +183,7 @@ object PackSfx {
     }
     fun toggle(context: Context) { on = !on; context.getSharedPreferences("play", Context.MODE_PRIVATE).edit().putBoolean("packSound", on).apply() }
     fun toggleTilt(context: Context) { tilt = !tilt; context.getSharedPreferences("play", Context.MODE_PRIVATE).edit().putBoolean("motionTilt", tilt).apply() }
-    fun play(id: String, volume: Float = 1f, rate: Float = 1f) { if (!on) return; val p = pool ?: return; ids[id]?.let { p.play(it, volume.coerceIn(0f, 1f), volume.coerceIn(0f, 1f), 1, 0, rate) } }
+    fun play(id: String, volume: Float = 1f, rate: Float = 1f) { if (!on || !AppSettings.appSounds) return; val p = pool ?: return; ids[id]?.let { p.play(it, volume.coerceIn(0f, 1f), volume.coerceIn(0f, 1f), 1, 0, rate) } }
 }
 
 /** FEELS and PACK_SOUND, by reveal level. */

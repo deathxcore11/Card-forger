@@ -4,6 +4,9 @@ import android.content.Context
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.setValue
+import androidx.compose.ui.input.pointer.pointerInput
+import androidx.compose.foundation.gestures.awaitEachGesture
+import androidx.compose.ui.unit.dp
 
 /**
  * The web's "Glass, motion & feel" switches (views.js settings app pane): per device, never synced (ST-06),
@@ -25,6 +28,9 @@ object AppSettings {
     var gridSize by mutableStateOf("medium"); private set
     var gridPinch by mutableStateOf(false); private set
     val GRID_SIZES = listOf("small", "medium", "large")
+    /** Table effects (Story playmat MOTION-SPEC): cinematic, balanced (default) or minimal. Reduce motion and battery saver act as minimal. */
+    var effects by mutableStateOf("balanced"); private set
+    val EFFECTS = listOf("cinematic", "balanced", "minimal")
 
     fun init(context: Context) {
         val p = context.applicationContext.getSharedPreferences("play", Context.MODE_PRIVATE); prefs = p
@@ -32,6 +38,7 @@ object AppSettings {
         haptics = p.getBoolean("haptics", true); sound = p.getBoolean("packSound", true); appSounds = p.getBoolean("appSounds", true); presence = p.getBoolean("presence", true)
         theme = normalizeTheme(p.getString("cardstashy-theme", null)); gridSize = normalizeGridSize(p.getString("cardstashy-grid-size", null))
         gridPinch = p.getString("cardstashy-grid-pinch", null) == "on"
+        effects = p.getString("cardstashy-effects", null).takeIf { it in EFFECTS } ?: "balanced"
     }
 
     fun set(key: String, on: Boolean) {
@@ -52,9 +59,50 @@ object AppSettings {
     fun applyGridSize(v: String) { gridSize = normalizeGridSize(v); prefs?.edit()?.putString("cardstashy-grid-size", gridSize)?.apply() }
     fun applyGridPinch(on: Boolean) { gridPinch = on; prefs?.edit()?.putString("cardstashy-grid-pinch", if (on) "on" else "off")?.apply() }
 
+    fun applyEffects(v: String) { effects = if (v in EFFECTS) v else "balanced"; prefs?.edit()?.putString("cardstashy-effects", effects)?.apply() }
+
     /** pinchGridSize(): spread past 1.22 goes a size up, pinch under .82 a size down. */
     fun pinchGridSize(size: String, ratio: Float): String {
         val i = GRID_SIZES.indexOf(normalizeGridSize(size))
         return GRID_SIZES[(i + if (ratio >= 1.22f) 1 else if (ratio <= .82f) -1 else 0).coerceIn(0, 2)]
     }
 }
+
+/**
+ * collection-display.css :root[data-grid-size]: card galleries follow Card size. Under 600 dp: 3 / 2 / 1 columns; wider:
+ * columns at least 110 / 160 / 250 dp (Large is one column up to 700 dp).
+ */
+fun cardGridColumns(width: androidx.compose.ui.unit.Dp, gap: androidx.compose.ui.unit.Dp = 14.dp): Int = when {
+    width < 600.dp -> when (AppSettings.gridSize) { "small" -> 3; "large" -> 1; else -> 2 }
+    AppSettings.gridSize == "large" && width <= 700.dp -> 1
+    else -> {
+        val min = when (AppSettings.gridSize) { "small" -> 110.dp; "large" -> 250.dp; else -> 160.dp }
+        maxOf(1, ((width + gap) / (min + gap)).toInt())
+    }
+}
+fun cardGridCells(width: androidx.compose.ui.unit.Dp, gap: androidx.compose.ui.unit.Dp = 14.dp) =
+    androidx.compose.foundation.lazy.grid.GridCells.Fixed(cardGridColumns(width, gap))
+
+/**
+ * grid-settings.js pinch (Pinch to resize card grids): two fingers spread past 1.22x go a size up, pinch under .82x a size
+ * down, once per gesture, with a tick. One finger still scrolls; nothing is consumed unless two fingers are down.
+ */
+fun androidx.compose.ui.Modifier.gridPinch(): androidx.compose.ui.Modifier = if (!AppSettings.gridPinch) this else this.then(
+    androidx.compose.ui.Modifier.pointerInput(Unit) {
+        awaitEachGesture {
+            var start = 0f; var done = false
+            do {
+                val e = awaitPointerEvent(androidx.compose.ui.input.pointer.PointerEventPass.Initial)
+                val down = e.changes.filter { it.pressed }
+                if (down.size >= 2) {
+                    val d = (down[0].position - down[1].position).getDistance()
+                    if (start == 0f) start = d
+                    else if (!done && start > 0f) {
+                        val next = AppSettings.pinchGridSize(AppSettings.gridSize, d / start)
+                        if (next != AppSettings.gridSize) { AppSettings.applyGridSize(next); done = true }
+                    }
+                    down.forEach { it.consume() }
+                } else start = 0f
+            } while (e.changes.any { it.pressed })
+        }
+    })

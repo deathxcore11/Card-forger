@@ -35,6 +35,8 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.setValue
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.foundation.layout.FlowRow
@@ -176,7 +178,7 @@ fun PlayHome(d: PlayHomeData, top: @Composable () -> Unit, act: PlayHomeActions 
     val purse = PlayMath.purse(s) ?: return
     val level = PlayMath.mastery(s, purse.xp)
     Box(Modifier.fillMaxSize().background(Site.Bg)) {
-        if (!HomeTest.noPictures) Ambient(d.ambient)
+        if (!HomeTest.noPictures) { if (AppSettings.glass || AppSettings.theme == "aura") Ambient(d.ambient); LaunchedEffect(d.ambient) { Aura.remember(d.ambient) } }
         Column(Modifier.fillMaxSize()) {
             BoxWithConstraints(Modifier.weight(1f).fillMaxWidth()) {
                 val wide = maxWidth >= 600.dp; val duo = maxWidth >= 840.dp // pe-home-duo pairs at 960 css px; the Fold's inner screen (884 dp) pairs too, as on the site
@@ -239,10 +241,19 @@ fun Ambient(art: String?) {
     // aura.css: #ambient on #272a33, the art at full strength (blur 38, saturate .62); light (settings-theme.css): saturate 1.15, brightness 1.08, at 80 %.
     Box(Modifier.fillMaxSize().then(if (theme == "aura") Modifier.background(Color(0xFF272A33)) else Modifier)) {
         val ctx = LocalContext.current
-        // Blurred once, small, off the main thread; a full-screen live blur cost every scroll frame at Fold size.
-        val soft = produceState<ImageBitmap?>(null, art) { value = art?.let { softArt(ctx, it) } }.value
-        if (soft != null) androidx.compose.foundation.Image(soft, null, Modifier.fillMaxSize().graphicsLayer { alpha = when (theme) { "light" -> .8f; "aura" -> 1f; else -> .85f } }, alignment = BiasAlignment(0f, -.4f),
+        // Blurred once, small, off the main thread, and kept per art; a full-screen live blur cost every scroll frame at Fold size.
+        val soft = produceState(Aura.cachedSoft(art), art) { value = art?.let { a -> Aura.cachedSoft(a) ?: softArt(ctx, a)?.also { Aura.keepSoft(a, it) } } }.value
+        // aura.css .aura-art: a new art fades in over 1 s; the layer drifts slowly (22 s, alternate) unless motion is reduced.
+        val still = Motion.still || remember { Playmats.reduced(ctx) }
+        val drift = if (theme == "aura" && !still) androidx.compose.animation.core.rememberInfiniteTransition(label = "aura").animateFloat(0f, 1f,
+            androidx.compose.animation.core.infiniteRepeatable(androidx.compose.animation.core.tween(22000, easing = androidx.compose.animation.core.FastOutSlowInEasing), androidx.compose.animation.core.RepeatMode.Reverse), label = "drift") else null
+        androidx.compose.animation.Crossfade(soft, androidx.compose.ui.Modifier.fillMaxSize(), animationSpec = androidx.compose.animation.core.tween(if (theme == "aura" && !still) 1000 else 0), label = "ambient") { bmp ->
+            if (bmp != null) androidx.compose.foundation.Image(bmp, null, Modifier.fillMaxSize().graphicsLayer {
+                alpha = when (theme) { "light" -> .8f; "aura" -> 1f; else -> .85f }
+                if (theme == "aura") { val p = drift?.value ?: .5f; translationX = size.width * (-.004f + .008f * p); translationY = size.height * (.003f - .006f * p); val k = 1.015f + .01f * p; scaleX = k * 1.24f; scaleY = k * 1.24f }
+            }, alignment = BiasAlignment(0f, -.4f),
             contentScale = ContentScale.Crop, colorFilter = when (theme) { "light" -> ambientLight; "aura" -> ambientAura; else -> ambientFilter }, filterQuality = androidx.compose.ui.graphics.FilterQuality.High)
+        }
         Box(Modifier.fillMaxSize().drawBehind {
             when (theme) {
                 // :root[data-theme="light"] body.glass #ambient::after
@@ -258,6 +269,31 @@ fun Ambient(art: String?) {
             }
         })
     }
+}
+
+/**
+ * The art behind every screen, as the site's #ambient: the game's daily hero art, remembered on this device so every screen
+ * shares it (app.js updateAmbient, AMBIENT_KEY). On Aura (aura.js) the card you open in the pop-up, or the deck you open,
+ * takes over until you change screens. Glass off hides it, except on Aura, which always shows its atmosphere.
+ */
+object Aura {
+    private const val KEY = "cardstashy-ambient-v1"
+    var home by androidx.compose.runtime.mutableStateOf<String?>(null); private set
+    var focus by androidx.compose.runtime.mutableStateOf<String?>(null)
+    val art: String? get() = (if (AppSettings.theme == "aura") focus else null) ?: home
+    private var prefs: android.content.SharedPreferences? = null
+    private val soft = object : LinkedHashMap<String, ImageBitmap>(8, .75f, true) { override fun removeEldestEntry(e: MutableMap.MutableEntry<String, ImageBitmap>) = size > 6 }
+    fun init(context: android.content.Context) { val p = context.applicationContext.getSharedPreferences("play", android.content.Context.MODE_PRIVATE); prefs = p; home = p.getString(KEY, null) }
+    fun remember(art: String?) { if (art.isNullOrBlank() || art == home) return; home = art; prefs?.edit()?.putString(KEY, art)?.apply() }
+    @Synchronized fun cachedSoft(art: String?): ImageBitmap? = art?.let { soft[it] }
+    @Synchronized fun keepSoft(art: String, bmp: ImageBitmap) { soft[art] = bmp }
+}
+
+/** #ambient behind a screen: --bg, then the shared art when glass is on (or always on Aura). A new screen drops Aura's pop-up pick. */
+@Composable
+fun Backdrop() {
+    LaunchedEffect(Unit) { Aura.focus = null }
+    if (!HomeTest.noPictures && (AppSettings.glass || AppSettings.theme == "aura")) Ambient(Aura.art)
 }
 
 private val ambientLight = ColorFilter.colorMatrix(ColorMatrix().apply { setToSaturation(1.15f); timesAssign(ColorMatrix(floatArrayOf(1.08f,0f,0f,0f,0f, 0f,1.08f,0f,0f,0f, 0f,0f,1.08f,0f,0f, 0f,0f,0f,1f,0f))) })

@@ -99,7 +99,7 @@ private data class Sizes(val sidebar: Dp, val field: Dp, val land: Dp, val hand:
 
 @Composable
 fun TableScreen(controller: MatchController, onHome: () -> Unit, onRematch: () -> Unit, resultNote: String? = null, cpuPlate: dev.cardstashy.nativeplay.match.Plate? = null,
-    storyMusic: dev.cardstashy.nativeplay.audio.TableMusic.StoryMusic? = null) {
+    storyMusic: dev.cardstashy.nativeplay.audio.TableMusic.StoryMusic? = null, mat: String? = null) {
     val context = LocalContext.current
     val decks = DemoDecks.load(context)
     val shown by controller.shown.collectAsState()
@@ -135,7 +135,7 @@ fun TableScreen(controller: MatchController, onHome: () -> Unit, onRematch: () -
     // Any touch of the table says you are here (the clock's missed-turn count clears); the touch still reaches the table.
     Box(Modifier.fillMaxSize().background(Palette.Night).pointerInput(Unit) { awaitPointerEventScope { while (true) { val e = awaitPointerEvent(androidx.compose.ui.input.pointer.PointerEventPass.Initial); if (e.type == androidx.compose.ui.input.pointer.PointerEventType.Press) controller.poke() } } }) {
       CompositionLocalProvider(LocalAnchors provides anchors) {
-        PlaymatScene(Modifier.fillMaxSize()) // play-playmats.js: this match's mat (nextPlaymat), its own shade, the table root see-through
+        if (mat != null) PlaymatScene(mat, Modifier.fillMaxSize()) else PlaymatScene(Modifier.fillMaxSize()) // a Story battle's own act mat, else play-playmats.js: this match's mat (nextPlaymat), its own shade, the table root see-through
         BoxWithConstraints(Modifier.fillMaxSize().windowInsetsPadding(WindowInsets.safeDrawing)) {
             val k = if (maxHeight >= 600.dp) 1.45f else if (maxHeight >= 480.dp) 1.2f else 1f
             val sizes = Sizes(sidebar = if (maxWidth >= 1000.dp) 280.dp else 168.dp, field = 46.dp * k, land = 36.dp * k, hand = 60.dp * k, back = 20.dp * k)

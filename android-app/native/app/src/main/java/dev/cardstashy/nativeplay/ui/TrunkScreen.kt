@@ -98,10 +98,11 @@ fun TrunkScreen(state: JsonObject, onBack: () -> Unit, onCard: (CardPick) -> Uni
     val data = CardData.ready.collectAsState().value.also { if (it == null) CardData.warm(context) }
 
     Box(Modifier.fillMaxSize().background(Site.Bg)) {
+        Backdrop() // #ambient: the shared art (glass on, or Aura)
         BoxWithConstraints(Modifier.fillMaxSize()) {
-            val cols = if (maxWidth < 600.dp) GridCells.Fixed(2) else GridCells.Adaptive(170.dp)
+            val cols = cardGridCells(maxWidth - 32.dp) // Settings > Card size
             // .pe-coll-list: 18 px between rows, 14 px between columns.
-            LazyVerticalGrid(cols, Modifier.fillMaxSize(), contentPadding = androidx.compose.foundation.layout.PaddingValues(start = 16.dp, end = 16.dp, bottom = 120.dp),
+            LazyVerticalGrid(cols, Modifier.fillMaxSize().gridPinch(), contentPadding = androidx.compose.foundation.layout.PaddingValues(start = 16.dp, end = 16.dp, bottom = 120.dp),
                 horizontalArrangement = Arrangement.spacedBy(14.dp), verticalArrangement = Arrangement.spacedBy(18.dp)) {
                 item(span = { GridItemSpan(maxLineSpan) }) {
                     Column(Modifier.windowInsetsPadding(WindowInsets.statusBars).padding(top = 12.dp), verticalArrangement = Arrangement.spacedBy(12.dp)) {

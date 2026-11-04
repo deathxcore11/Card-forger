@@ -34,7 +34,7 @@ class PlaymatSceneShotTest {
         val t = (System.getenv("MAT_T") ?: "1.3").toFloat()
         Playmats.frozenAt = t
         for ((id, _) in Playmats.list(app)) for ((w, h) in listOf(844 to 390, 390 to 844)) {
-            kotlinx.coroutines.runBlocking { Playmats.preload(app, id, h > w) }
+            kotlinx.coroutines.runBlocking { Playmats.preload(app, id, if (h > w) "-tall" else "") }
             RuntimeEnvironment.setQualifiers("w${w}dp-h${h}dp-xhdpi")
             captureRoboImage(File(dir, "app-scene-$id-${w}x$h.png").path) { PlaymatScene(id, Modifier.fillMaxSize()) }
         }

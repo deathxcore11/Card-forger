@@ -149,6 +149,8 @@ fun CardZoom(src: String, hi: String?, art: String?, look: Foil.Look?, onClose: 
 
     // One small tap when a foil opens in the zoom view, once per card.
     LaunchedEffect(Unit) { if (look?.shines == true) Feel.perform(hostView, "pack-value-2") }
+    // aura.js modalArt(): the opened card's art becomes the Aura atmosphere, and stays after closing until the screen changes.
+    LaunchedEffect(art, src) { Aura.focus = art ?: src }
 
     // Pictures: the one on screen at once, the png when it arrives.
     val base = heroPainter(homeArt(v.src)) ?: rememberAsyncImagePainter(v.src, imageLoader = dev.cardstashy.nativeplay.art.CardArt.loader)

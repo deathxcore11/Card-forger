@@ -102,6 +102,7 @@ fun DecksScreen(state: JsonObject, onBack: () -> Unit, onDeck: (String) -> Unit,
     // playDeckEmblemWants: every deck's names, and the open precon's, so the emblems can read their cards.
     LaunchedEffect(decks, precon.open) { dev.cardstashy.nativeplay.play.CardFacts.wantNames(decks.flatMap { Decks.rows(it).map { r -> r.name } } + precon.open?.rows.orEmpty().map { it.name }) }
     Box(Modifier.fillMaxSize().background(Site.Bg)) {
+        Backdrop() // #ambient: the shared art (glass on, or Aura)
         Column(Modifier.fillMaxSize().verticalScroll(rememberScrollState()).windowInsetsPadding(WindowInsets.statusBars).padding(start = 16.dp, end = 16.dp, top = 12.dp, bottom = 120.dp),
             verticalArrangement = Arrangement.spacedBy(18.dp)) {
             PageHeader("Decks", "Play", onBack = onBack)

@@ -1,0 +1,278 @@
+{
+ "story-a1-glade": {
+  "name": "Llanowar Glade at Dawn",
+  "act": 1,
+  "slot": "normal",
+  "rays": {
+   "color": "#FFC86E",
+   "alpha": 0.3,
+   "to": 470,
+   "slant": 260,
+   "list": [
+    [
+     220,
+     100
+    ],
+    [
+     320,
+     60
+    ],
+    [
+     95,
+     70
+    ]
+   ]
+  },
+  "motes": 14,
+  "glints": [
+   [
+    400,
+    130,
+    900,
+    60,
+    22
+   ]
+  ],
+  "leaves": {
+   "count": 5,
+   "sway": 14,
+   "edges": [
+    [
+     16,
+     180
+    ],
+    [
+     1450,
+     1650
+    ]
+   ]
+  },
+  "glows": [
+   {
+    "x": 150,
+    "y": 810,
+    "r": 55,
+    "color": "#6E2896",
+    "alpha": 0.3
+   }
+  ],
+  "secret": [
+   1530,
+   725
+  ],
+  "battles": [
+   1,
+   2,
+   3
+  ]
+ },
+ "story-a1-serendib": {
+  "name": "Serendib and the Bottle",
+  "act": 1,
+  "slot": "normal",
+  "rays": {
+   "color": "#FFB45A",
+   "alpha": 0.3,
+   "to": 470,
+   "slant": 300,
+   "list": [
+    [
+     105,
+     90
+    ],
+    [
+     250,
+     60
+    ]
+   ]
+  },
+  "motes": 14,
+  "glints": [
+   [
+    980,
+    15,
+    120,
+    90,
+    10
+   ],
+   [
+    300,
+    330,
+    500,
+    40,
+    10
+   ]
+  ],
+  "leaves": {
+   "count": 0,
+   "sway": 0,
+   "edges": []
+  },
+  "glows": [
+   {
+    "x": 1560,
+    "y": 265,
+    "r": 40,
+    "color": "#FF7828",
+    "alpha": 0.7,
+    "flicker": true
+   },
+   {
+    "x": 1545,
+    "y": 795,
+    "r": 22,
+    "color": "#FF9632",
+    "alpha": 0.6,
+    "flicker": true
+   },
+   {
+    "x": 100,
+    "y": 830,
+    "r": 40,
+    "color": "#966EE6",
+    "alpha": 0.5
+   }
+  ],
+  "secret": [
+   100,
+   830
+  ],
+  "battles": [
+   4,
+   6
+  ],
+  "smoke": [
+   {
+    "x": 1520,
+    "y": 230,
+    "color": "#D7B9D7",
+    "rise": 120
+   }
+  ],
+  "wisps": [
+   [
+    720,
+    20,
+    600,
+    80,
+    "#D7B9E6"
+   ]
+  ],
+  "motesBox": [
+   60,
+   200,
+   1000,
+   600
+  ]
+ },
+ "story-a1-kroog": {
+  "name": "Kroog's Factories (Brothers' War)",
+  "act": 1,
+  "slot": "boss",
+  "rays": {
+   "color": "#FFBE64",
+   "alpha": 0.3,
+   "to": 470,
+   "slant": 300,
+   "list": [
+    [
+     140,
+     80
+    ],
+    [
+     285,
+     50
+    ]
+   ]
+  },
+  "motes": 14,
+  "glints": [
+   [
+    1200,
+    790,
+    150,
+    22,
+    10
+   ]
+  ],
+  "leaves": {
+   "count": 5,
+   "sway": 14,
+   "edges": [
+    [
+     16,
+     180
+    ],
+    [
+     1450,
+     1650
+    ]
+   ]
+  },
+  "glows": [
+   {
+    "x": 1280,
+    "y": 860,
+    "r": 60,
+    "color": "#FF7828",
+    "alpha": 0.8,
+    "flicker": true
+   },
+   {
+    "x": 1010,
+    "y": 70,
+    "r": 30,
+    "color": "#FF8C3C",
+    "alpha": 0.4,
+    "flicker": true
+   },
+   {
+    "x": 150,
+    "y": 800,
+    "r": 50,
+    "color": "#963CAA",
+    "alpha": 0.3
+   }
+  ],
+  "secret": [
+   1280,
+   790
+  ],
+  "battles": [
+   5,
+   7,
+   8,
+   9
+  ],
+  "smoke": [
+   {
+    "x": 980,
+    "y": 45,
+    "color": "#787069",
+    "rise": 120
+   },
+   {
+    "x": 870,
+    "y": 55,
+    "color": "#787069",
+    "rise": 120
+   },
+   {
+    "x": 1040,
+    "y": 60,
+    "color": "#787069",
+    "rise": 120
+   }
+  ],
+  "flyers": {
+   "box": [
+    560,
+    30,
+    300,
+    80
+   ],
+   "count": 3,
+   "color": "#1E1A18"
+  }
+ }
+}
