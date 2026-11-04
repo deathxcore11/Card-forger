@@ -2046,9 +2046,10 @@ body.practice-table-open img{-webkit-user-drag:none}
 :where(body.practice-table-open) .play-match-table:is([data-stage=match],[data-stage=opening])[data-forge-native] [data-owner=cpu] .play-match-card[data-tapped=true][data-combat=attacking]{transform:translateY(12px) rotate(20deg) scale(.94)}
 :where(body.practice-table-open) .play-match-table:is([data-stage=match],[data-stage=opening])[data-forge-native] .play-match-battlefields .play-match-card[data-tapped=true] :is(.play-current-stats,.cs-counters){transform:rotate(-20deg);transform-origin:50% 50%}
 :where(body.practice-table-open) .play-match-table[data-stage=match][data-forge-native] .play-match-battlefields .play-match-card{transition:transform .28s cubic-bezier(.2,.9,.3,1.15),filter .28s}
-/* The glow tells the truth: a full blue halo only when the cost is plain and payable. A card whose cost depends
-   on choices (a reduction, an alternative cost) gets a quiet dotted rim instead: worth checking, not promised. */
-:where(body.practice-table-open) .play-match-table[data-stage=match][data-forge-native] .play-match-hand .play-match-card[data-forge-role=playable][data-forge-sure=false]{animation:none;border-color:#8fdcff99;border-style:dashed;box-shadow:0 0 0 1px #5cc8ff66,0 10px 24px #000a}
+/* The glow tells the truth: a halo only when the engine's own payment check says it can be paid. A card it can't prove
+   (an unusual cost, nothing proven) stays dark and sits at rest, but a tap still tries it. Mana-only lands never glow. */
+:where(body.practice-table-open) .play-match-table[data-stage=match][data-forge-native] :is(.play-match-hand,.play-match-battlefields) .play-match-card[data-forge-role=playable][data-forge-sure=false]{animation:none;translate:none;border-color:#000c;box-shadow:0 0 0 1px #000d,0 10px 22px #000b}
+:where(body.practice-table-open) .play-match-table[data-stage=match][data-forge-native] :is(.play-match-hand,.play-match-battlefields) .play-match-card[data-forge-role=playable][data-forge-sure=false]::after{content:none}
 /* Calmer motion: nothing on the table breathes or pulses while it waits; the playable rim is steady. */
 :where(body.practice-table-open) .play-match-table[data-stage=match][data-forge-native] .play-match-hand .play-match-card[data-forge-role=playable]{animation:none}
 :where(body.practice-table-open) .play-match-table[data-stage=match][data-forge-native] .play-match-decisions .forge-native-panel .forge-native-actions [data-native-key=ok]:not(:disabled)::before{animation:none;display:none}

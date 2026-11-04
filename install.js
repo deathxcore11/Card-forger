@@ -66,19 +66,16 @@ export function installHelpMarkup(guide = installGuide()) {
 export { ANDROID_BETA } from "./android-beta.js";
 import { ANDROID_BETA, nativeTestInfo } from "./android-beta.js";
 export const isAndroid = (ua = globalThis.navigator?.userAgent || "") => /Android/i.test(ua);
-// Settings > App install card. Android phones get the full app (APK) as the main action;
-// iPhone and computers keep the home-screen install, which is the only option there.
-// The native Play preview: its own row on every Settings install card, always the newest build.
 export function nativePreviewMarkup(info = nativeTestInfo()) {
   if (!info.version) return "";
-  return `<div class="native-preview"><p class="foot"><b>Native app ${esc(info.version)}</b> · ${(info.bytes / 1048576).toFixed(1)} MB. The new native CardStashy app, installed next to the classic one.</p><a class="btn small" href="https://cardstashy.com${esc(info.href)}" target="_blank" rel="noopener" download>Download native app ${esc(info.version)}</a></div>`;
+  return `<div class="native-preview"><a class="btn" href="https://cardstashy.com${esc(info.href)}" target="_blank" rel="noopener" download>Download for Android</a><p class="foot">Version ${esc(info.version)} · ${(info.bytes / 1048576).toFixed(1)} MB · test build</p></div>`;
 }
-export function installCardMarkup(mark = "", { ua = globalThis.navigator?.userAgent || "", nativeApp = !!globalThis.CARDSTASHY_NATIVE, beta = ANDROID_BETA } = {}) {
-  const heading = title => `<div class="settings-card-heading"><span class="settings-secondary-brand">${mark}</span><div><p class="eyebrow">TAKE IT WITH YOU</p><h2>${title}</h2></div></div>`;
-  if (nativeApp) return `<section class="panel settings-card">${heading("CardStashy for Android")}<p class="muted small">${runtimeVersions().nativeVersion?`Android ${esc(runtimeVersions().nativeVersion)}`:"Installed Android version unavailable"} · Interface ${esc(runtimeVersions().interfaceVersion)}</p>${releaseDetailsMarkup()}${nativePreviewMarkup()}</section>`;
-  if (!isAndroid(ua)) return `<section class="panel settings-card">${heading("Install CardStashy")}${releaseDetailsMarkup()}<p class="muted small">Open it from your home screen. Saved collections and decks work offline.</p><button class="btn" data-act="install">Install app</button><p class="foot">On an Android phone? Open <a class="link" href="https://cardstashy.com/downloads/" target="_blank" rel="noopener">cardstashy.com/downloads</a> there to get the full app.</p><details class="settings-disclosure"><summary>${esc(installGuide(ua).title)}</summary>${installHelpMarkup(installGuide(ua))}</details>${nativePreviewMarkup()}</section>`;
-  const size = (beta.bytes / 1048576).toFixed(1);
-  return `<section class="panel settings-card android-beta">${heading("Get the Android app")}${releaseDetailsMarkup()}<p class="muted small">The full CardStashy app for your phone: collection, decks, prices, scanning and your account.</p><a class="btn" href="https://cardstashy.com/downloads/" target="_blank" rel="noopener">Download the app (beta)</a><p class="foot">Version ${esc(beta.version)} · ${size} MB. Open the file when it finishes; the first time, Android asks you to allow installs from your browser.</p><p class="foot">The download page verifies the current app file before saving it.</p><details class="settings-disclosure"><summary>Prefer a home-screen shortcut?</summary><p class="foot">Adds the website to your home screen instead of installing the app.</p><button class="link small" data-act="install">Add shortcut</button></details>${nativePreviewMarkup()}</section>`;
+// Settings > Install or update: one download, the native Android app. No home-screen shortcut,
+// no browser install steps, no classic app (Randall 4 Nov 2026).
+export function installCardMarkup(mark = "", { nativeApp = !!globalThis.CARDSTASHY_NATIVE } = {}) {
+  const heading = title => `<div class="settings-card-heading"><span class="settings-secondary-brand">${mark}</span><div><h2>${title}</h2></div></div>`;
+  if (nativeApp) return `<section class="panel settings-card">${heading("CardStashy for Android")}<p class="muted small">${runtimeVersions().nativeVersion?`Version ${esc(runtimeVersions().nativeVersion)}`:"Version unavailable"}</p>${releaseDetailsMarkup()}</section>`;
+  return `<section class="panel settings-card">${heading("Get CardStashy")}${nativePreviewMarkup()}${releaseDetailsMarkup()}</section>`;
 }
 export const dismissInstall = () => write({ dismissedAt: Date.now() });
 

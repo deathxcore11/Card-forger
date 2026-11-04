@@ -1,4 +1,4 @@
-const CACHE = "cardforge-shell-act28-wrappers-43100-v472";
+const CACHE = "cardforge-shell-glow-43103-v475";
 const ASSETS = [
   "./assets/fonts/fonts.css",
   "./play-forge-feature.js",
@@ -259,7 +259,7 @@ const ASSETS = [
   "./universal-search.js",
   "./search-fan.js",
   "./app-info.js",
-  "./tabletop.js", "./tabletop-themes.js", "./game-night.js", "./table-share.js",
+  "./tabletop.js", "./tabletop-themes.js", "./game-night.js", "./table-share.js", "./play-by-hand.js",
   "./tour-scenes.js",
   "./trade.js",
   "./tier.js",

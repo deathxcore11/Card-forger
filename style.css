@@ -5607,3 +5607,10 @@ body[data-game="ygo"] .card-grid .tile-chrome { aspect-ratio: 59 / 86; }
 .tabletop-dialog input[type=checkbox]{appearance:none;-webkit-appearance:none;width:44px;height:44px;flex:none;border-radius:12px;border:1px solid #63718b88;background:#111927e8 no-repeat center/24px;cursor:pointer}
 .tabletop-dialog input[type=checkbox]:checked{border-color:var(--gold);background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%23e8ce87' stroke-width='3' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M5 12.5l4.5 4.5L19 7'/%3E%3C/svg%3E")}
 .tabletop-dialog label.check{display:flex;align-items:center;gap:12px;min-height:44px}
+.pbh-dialog .pbh-zone{margin:14px 0}
+.pbh-zone h4{margin:0 0 8px}
+.pbh-zone ul{list-style:none;margin:0;padding:0;display:grid;gap:8px}
+.pbh-zone li{display:flex;flex-wrap:wrap;align-items:center;gap:8px;padding:6px 8px 6px 14px;border-radius:14px;border:1px solid #63718b44;background:#0b111c99}
+.pbh-zone li>span{flex:1 1 140px;min-width:0;overflow-wrap:anywhere}
+.pbh-zone li.foot{padding:10px 14px}
+.pbh-dialog summary{min-height:44px;display:flex;align-items:center;font-weight:700;cursor:pointer}

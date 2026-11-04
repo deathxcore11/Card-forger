@@ -367,6 +367,13 @@ export async function presenceRequest(action,payload={}) {
  try{const {data,error}=await client.rpc('community_presence',{action,payload});if(error||user?.id!==owner||syncEpoch!==epoch)return null;return data;}catch{return null;}
 }
 
+// Game Night table invites (supabase/migrations/20261104190000_community_table_invites.sql): send, mine, clear.
+export async function tableInviteRequest(action,payload={}) {
+ if(!client?.rpc||!user||!accountReady)return null;
+ const owner=user.id,epoch=syncEpoch;
+ try{const {data,error}=await client.rpc('community_table_invite',{action,payload});if(error||user?.id!==owner||syncEpoch!==epoch)return null;return data;}catch{return null;}
+}
+
 async function fetchCloud() {
   const { data, error } = await client.from("workspaces").select("data, revision, device, updated_at").eq("user_id", user.id).maybeSingle();
   if (error) throw error;

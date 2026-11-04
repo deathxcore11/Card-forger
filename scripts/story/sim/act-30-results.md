@@ -16,3 +16,5 @@ Tuning runs are 24 games. The final check is a 10-game run, per Randall (3 Nov),
 | b9 Fires of Invention (secret, Hard) | Gruul Ramp vs Fires of Invention | - | - | 6/10 |
 
 Out of band: b1, b2 and b3 sit at 50% in the noisy 10-game check against 58-67% in the 24-game tuning runs, b6 and the secret b9 sit a little high, and b7 (Temur Mutate vs Gruul Ramp) sat low (21-42%) in tuning before the last retune. Forge's CPU plays ramp and planeswalker decks unevenly, so single 10-game checks are noisy. These are documented, not hidden.
+
+Extra tuning pass (4 Nov): the final Temur Mutate vs Gruul Ramp deck lists scored 11/24 (46%) with seed 5, inside the 45-60% band.

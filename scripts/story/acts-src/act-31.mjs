@@ -374,7 +374,7 @@ export default {
     {slot: 9, kind: 'Secret Boss', secret: true, title: 'Kaldheim Snow Stompy', difficulty: 'Hard', rewardSet: 'khm', rewardCard: 'Icehide Troll', mood: 'boss',
       teaches: ['Racing'],
       archive: {deck: 'Snow Stompy', when: 'Spring 2021', format: 'Standard.',
-        what: 'A green deck that used snow lands to power Icehide Troll, Sculptor of Winter and Blizzard Brawl.',
+        what: 'A green deck that used snow basics to power Icehide Troll, Sculptor of Winter and Blizzard Brawl.',
         why: 'Cheap, efficient snow creatures and a one-mana fight spell made it a fast, consistent attacker.',
         beat: 'Kill the early snow creatures before they grow, and chump block the troll until you can remove it.',
         after: 'Strixhaven and then Adventures in the Forgotten Realms arrived in Standard in 2021.'},
@@ -392,7 +392,7 @@ export default {
 3 Maul of the Skyclaves
 3 Iron Verdict
 24 Plains`}},
-      villain: {who: 'stompy', deck: {label: 'tribute', name: 'Kaldheim Stompy', note: 'Built from cards in this act\'s sets only. The real deck used snow lands, which are not in our basic land pool here.', colors: 'G', archetype: 'Aggro', list: `
+      villain: {who: 'stompy', deck: {label: 'tribute', name: 'Kaldheim Stompy', note: 'Built from cards in this act\'s sets only.', colors: 'G', archetype: 'Aggro', list: `
 4 Icehide Troll
 4 Sculptor of Winter
 4 Boreal Outrider
@@ -404,7 +404,7 @@ export default {
 4 Blizzard Brawl
 3 Spirit of the Aldergard
 3 Snakeskin Veil
-24 Forest`}},
+24 Snow-Covered Forest`}},
       scene: [q('stage', 'Wherever snow falls, I am home.'),
         s('you', 'Kill the early creatures. Do not let the troll grow.')],
       villainScene: [q('stage', 'A troll\'s greatest weapon is its ability to emerge unexpectedly from the landscape.')],

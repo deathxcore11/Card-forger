@@ -57,7 +57,7 @@ for (const game of ['mtg','ptcg','ygo']) for (const [tab] of SETTINGS_TABS) {
   S.state=blank();S.state.settings.game=game;S.ui.settingsTab=tab;const before=JSON.stringify(S.state),html=settings({popup:true});
   assert.equal(JSON.stringify(S.state),before,'rendering Settings cannot change a collection');
   assert.match(html,new RegExp(`id="settings-${tab}"[^>]+aria-labelledby="settingsTab-${tab}" >`));
-  for(const action of ['exportBackup','undoRestore','persist','reset','loadExample','install','replayTour','resetOnboarding','recoveryRefresh']) assert(html.includes(`data-act="${action}"`),action+' remains reachable');
+  for(const action of ['exportBackup','undoRestore','persist','reset','loadExample','replayTour','resetOnboarding','recoveryRefresh']) assert(html.includes(`data-act="${action}"`),action+' remains reachable');
   for(const change of ['restoreBackup','checkBackup','setGlass','setFinishEffects','setHaptics','setTheme'])assert(html.includes(`data-change="${change}"`),change+' remains reachable');
   assert.equal((html.match(/id="recoverySnapshots"/g)||[]).length,1);assert.match(html,/id="recoveryStatus"[^>]+role="status"/);
   assert.match(html,/id="settings-info"[\s\S]+Replay tutorials[\s\S]+Card databases & prices[\s\S]+About CardStashy/);
