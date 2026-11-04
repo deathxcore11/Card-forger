@@ -29,6 +29,14 @@ import androidx.compose.ui.platform.LocalHapticFeedback
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.zIndex
+import androidx.compose.foundation.background
+import androidx.compose.foundation.border
+import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.widthIn
+import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.ui.draw.clip
+import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.unit.sp
 import dev.cardstashy.nativeplay.engine.Card
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
@@ -63,6 +71,8 @@ fun HandFan(
     onDeal: () -> Unit = {},
     pop: Float? = null,
     onReorder: ((List<Int>) -> Unit)? = null,
+    /** forge-table.mjs data-forge-blocked: why a card can't be played, shown on it while lifted ("Not enough mana"). */
+    blockedOf: (Card) -> String? = { null },
 ) {
     val cardH = cardW * 1.4f
     val haptic = LocalHapticFeedback.current
@@ -224,6 +234,14 @@ fun HandFan(
                         alpha = if (isLeaving) 1f - f * f else 1f
                     }) {
                         CardFace(card, cardW, cardH, mark = markOf(card))
+                        // .play-match-card[data-forge-blocked]::after: bottom 8, #140d0be8, #ff9a7a77 hairline, #ffd4c6 700 11px.
+                        if (isLift) blockedOf(card)?.let { why ->
+                            androidx.compose.material3.Text(why, maxLines = 1, overflow = androidx.compose.ui.text.style.TextOverflow.Ellipsis,
+                                style = androidx.compose.ui.text.TextStyle(fontFamily = Type.Sans, fontWeight = androidx.compose.ui.text.font.FontWeight.Bold, fontSize = (cardW.value * 11f / 66f).sp, color = Color(0xFFFFD4C6)),
+                                modifier = Modifier.align(Alignment.BottomCenter).padding(bottom = cardW * (8f / 66f)).widthIn(max = cardW * .92f)
+                                    .clip(RoundedCornerShape(999.dp)).background(Color(0xE8140D0B)).border(1.dp, Color(0x77FF9A7A), RoundedCornerShape(999.dp))
+                                    .padding(horizontal = cardW * (8f / 66f), vertical = cardW * (3f / 66f)))
+                        }
                     }
                 }
             }

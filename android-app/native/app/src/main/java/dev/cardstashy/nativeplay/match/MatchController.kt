@@ -42,7 +42,7 @@ enum class Stage { STARTING, MULLIGAN, INTRO, PLAYING, FINISHED, FAILED }
  * 0.25 s apart. A decision for you waits with no timer. Skipping or delaying never changes the game:
  * the queue only decides when a snapshot is shown, and every action goes against Forge's latest revision.
  */
-class MatchController(private val scope: CoroutineScope, private val input: String) {
+class MatchController(private val scope: CoroutineScope, val input: String) {
     companion object {
         const val LAND_MS = 900L; const val ACTION_MS = 2400L; const val AFFECTS_MS = 3600L
         const val ACTION_FLOOR_MS = 1500L; const val AFFECTS_FLOOR_MS = 2400L
@@ -108,7 +108,7 @@ class MatchController(private val scope: CoroutineScope, private val input: Stri
         }
         return true
     }
-    val intents by lazy { dev.cardstashy.nativeplay.ui.TableIntents(card = { card(it) }, player = { player(it) }, ok = { ok() }, cancel = { cancel() }, reply = { id, v, i, a -> reply(id, v, i, a) },
+    val intents by lazy { dev.cardstashy.nativeplay.ui.TableIntents(card = { card(it) }, stack = { stackItem(it) }, player = { player(it) }, ok = { ok() }, cancel = { cancel() }, reply = { id, v, i, a -> reply(id, v, i, a) },
         stop = { toggleStop(it) }, attackAll = { attackAll(it) }, unblock = { b, a -> unblock(b, a) }, mode = { setMode(it) }, autoPay = { setAutoPay(it) }, yieldSource = { id, on -> yieldSource(id, on) }) }
     val timings = MutableStateFlow<Map<String, Long>>(emptyMap())
 
@@ -269,6 +269,7 @@ class MatchController(private val scope: CoroutineScope, private val input: Stri
     fun ok() = send("ok")
     fun cancel() = send("cancel")
     fun card(id: Int) = send("card") { addProperty("id", id) }
+    fun stackItem(id: Int) = send("stack") { addProperty("id", id) }
     fun player(id: Int) = send("player") { addProperty("id", id) }
     fun concede() = send("concede", force = true)
     fun reply(promptId: Int, value: Boolean? = null, indexes: List<Int>? = null, amounts: List<Int>? = null) = send("reply") {

@@ -66,6 +66,26 @@ class TableShotTest {
                 }
             }
         }
+        // The match menu open over the deck tracker (site-tracker-crowded), and the Opponent tab alone; the fixture's own tracker list.
+        RuntimeEnvironment.setQualifiers("w844dp-h390dp-land-xxhdpi")
+        val deck = listOf("Legion Warboss" to 2, "Goblin Guide" to 1, "Hill Giant" to 2, "Grizzly Bears" to 2, "Rancor" to 1, "Sol Ring" to 1, "Arcane Signet" to 1,
+            "Loyal Apprentice" to 1, "Rampant Growth" to 1, "Mountain" to 14, "Forest" to 12)
+        val input = "{\"input\":{\"humanDeck\":{\"cards\":[" + deck.joinToString(",") { (n, q) -> "{\"name\":\"$n\",\"qty\":$q}" } + "]}}}"
+        for ((name, side, open) in listOf(Triple("menu", "deck", true), Triple("opponent", "opponent", false))) {
+            val st = state("crowded")
+            val menu = dev.cardstashy.nativeplay.ui.MatchMenu(input, {}, {}).apply { showTracker(side); this.open = open }
+            dev.cardstashy.nativeplay.ui.TableEmotes.destroy()
+            captureRoboImage(File(System.getProperty("shotsDir"), "table/table-$name-844x390.png").path) {
+                val anchors = remember { Anchors() }
+                CompositionLocalProvider(LocalAnchors provides anchors) {
+                    Box(Modifier.fillMaxSize().background(Palette.Night)) {
+                        PlaymatScene(Modifier.fillMaxSize())
+                        ForgeBoard(st, live = true, intents = TableIntents(), selectedHand = null, onSelectHand = {}, onInspect = {}, onMenu = {},
+                            handOrder = emptyList(), onHandOrder = {}, menu = menu)
+                    }
+                }
+            }
+        }
         art.mkdirs(); art.resolve("missing.txt").writeText(missing.joinToString("\n"))
         CardImageTest.art = null
     }

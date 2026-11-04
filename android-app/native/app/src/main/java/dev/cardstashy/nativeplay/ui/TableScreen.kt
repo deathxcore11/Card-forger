@@ -119,6 +119,7 @@ fun TableScreen(controller: MatchController, onHome: () -> Unit, onRematch: () -
     var inspect by remember { mutableStateOf<Card?>(null) }
     var selectedHand by remember { mutableStateOf<Int?>(null) }
     var menu by remember { mutableStateOf(false) }
+    val matchMenu = remember { MatchMenu(controller.input, onConcede = { controller.concede() }, onLeave = onHome) }
     LaunchedEffect(shown?.revision) { if (shown?.selection?.actionable?.contains(selectedHand) != true) selectedHand = null }
 
     val anchors = remember { Anchors() }
@@ -138,7 +139,7 @@ fun TableScreen(controller: MatchController, onHome: () -> Unit, onRematch: () -
                     LaunchedEffect(Unit) { TableEmotes.start(this) }
                     DisposableEffect(Unit) { onDispose { TableEmotes.destroy() } }
                     ForgeBoard(st, live && beat == null, controller.intents, selectedHand, { selectedHand = it }, { inspect = it }, { menu = true },
-                        handOrder, { handOrder = it }) {
+                        handOrder, { handOrder = it }, menu = matchMenu) {
                         TableSide(st, controller, beat, live, lastBeat) { inspect = it }
                     }
                 }

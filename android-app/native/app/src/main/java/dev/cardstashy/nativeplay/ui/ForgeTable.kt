@@ -128,6 +128,8 @@ class TableIntents(
     val reply: (Int, Boolean?, List<Int>?, List<Int>?) -> Unit = { _, _, _, _ -> },
     val attackAll: (List<Int>) -> Unit = {}, val unblock: (Int, Int) -> Unit = { _, _ -> },
     val stop: (String) -> Unit = {}, val mode: (String) -> Unit = {}, val autoPay: (Boolean) -> Unit = {}, val yieldSource: (Int, Boolean) -> Unit = { _, _ -> },
+    /** nativeSelect('stack', id): a spell or ability on the stack picked as a target. */
+    val stack: (Int) -> Unit = {},
 )
 
 /** The engine phase each light sets a stop on (native-panel.mjs STOP_PHASES). */
@@ -163,7 +165,7 @@ internal fun okLabel(st: MatchState): String {
             st.activePlayer == st.viewer -> SHORT_STEP[st.phase] ?: "Pass priority"
             else -> "Pass"
         }
-        st.inputType == "InputAttack" -> mine.count { it.attacking }.let { if (it > 0) "Attack with $it" else "No attacks" }
+        st.inputType == "InputAttack" -> mine.count { Affordability.owesAttack(it) }.let { must -> if (must > 0) "$must must attack" else mine.count { it.attacking }.let { if (it > 0) "Attack with $it" else "No attacks" } }
         st.inputType == "InputBlock" -> mine.count { it.blocking }.let { if (it > 0) "Block with $it" else "No blocks" }
         st.inputType?.startsWith("InputPayMana") == true && raw.equals("auto", true) -> "Pay automatically"
         st.inputType == "InputSelectTargets" -> "Confirm targets"
@@ -206,11 +208,13 @@ private val Sky = Color(0xFF8FDCFF)
 private val CpuRed = Color(0xFFE0533F)
 private val StopOrange = Color(0xFFFF8A3D)
 
-private fun sans(size: TextUnit, weight: FontWeight = FontWeight.Bold, color: Color = Color(0xFFEEE6D4)) =
+internal fun sans(size: TextUnit, weight: FontWeight = FontWeight.Bold, color: Color = Color(0xFFEEE6D4)) =
     TextStyle(fontFamily = Type.Sans, fontWeight = weight, fontSize = size, color = color)
 
 /** One design unit as Dp: the site's CSS px at 844 × 390, scaled to fit. */
-private class Du(val u: Float) {
+internal val LocalAttackInput = androidx.compose.runtime.staticCompositionLocalOf { false }
+
+internal class Du(val u: Float) {
     val Int.du: Dp get() = (this * u).dp
     val Float.du: Dp get() = (this * u).dp
     fun sp(px: Float): TextUnit = (px * u).sp
@@ -224,7 +228,7 @@ private class Du(val u: Float) {
 fun ForgeBoard(
     st: MatchState, live: Boolean, intents: TableIntents, selectedHand: Int?, onSelectHand: (Int?) -> Unit, onInspect: (Card) -> Unit,
     onMenu: () -> Unit, handOrder: List<Int>, onHandOrder: (List<Int>) -> Unit,
-    modifier: Modifier = Modifier, overlay: @Composable (Dp.() -> Unit)? = null,
+    modifier: Modifier = Modifier, menu: MatchMenu? = null, overlay: @Composable (Dp.() -> Unit)? = null,
 ) {
     BoxWithConstraints(modifier.fillMaxSize()) {
         val d = Du(minOf(maxWidth.value / 844f, maxHeight.value / 390f))
@@ -233,15 +237,19 @@ fun ForgeBoard(
             val me = st.me; val cpu = st.cpu
             // forge-table.mjs role(): chosen, then a target, then a choice (discard while a discard asks), then playable.
             val discarding = st.prompt == null && st.selection.cards.isNotEmpty() && Regex("\\bdiscard\\b", RegexOption.IGNORE_CASE).containsMatchIn(st.message)
+            // forge-table.mjs: a card you can't pay for leaves the playable set and says why ("Not enough mana").
+            val shortCasts = remember { ShortCasts() }
+            val blocked = remember(st) { shortCasts.blocked(st) }
             fun markOf(card: Card): Mark = when {
                 !live -> Mark.NONE
+                card.id in blocked -> Mark.NONE
                 card.id in st.selection.chosenCards -> Mark.PICKED
                 card.id in st.selection.targetCards -> Mark.TARGET
                 card.id in st.selection.cards -> if (discarding) Mark.DISCARD else Mark.PICKABLE
                 card.id in st.selection.actionable -> Mark.PLAYABLE
                 else -> Mark.NONE
             }
-            fun tapOf(card: Card): (() -> Unit)? = if (live && (card.id in st.selection.cards || card.id in st.selection.targetCards || card.id in st.selection.actionable || card.id in st.selection.chosenCards ||
+            fun tapOf(card: Card): (() -> Unit)? = if (live && (card.id in st.selection.cards || card.id in st.selection.targetCards || (card.id in st.selection.actionable && card.id !in blocked) || card.id in st.selection.chosenCards ||
                 ((st.inputType == "InputAttack" || st.inputType == "InputBlock") && card.controller == st.viewer && (card.attacking || card.blocking)))) ({ intents.card(card.id) }) else null
 
             // The battlefield band (46 du from the top to 61 du from the bottom); the two halves meet at its middle.
@@ -254,10 +262,13 @@ fun ForgeBoard(
             Box(Modifier.offset(y = mid).fillMaxWidth().height(1.dp).background(Brush.horizontalGradient(listOf(Color.Transparent, Color(0x998A7BD8), Color(0x998A7BD8), Color.Transparent))))
 
             // CPU half: lands at the back, creatures at the front; yours mirrored.
-            PermanentRow(backRow(cpu.battlefield), true, lands(cpu.battlefield).size, centreX, mid - 77.5f.du * stretch, W - 180.du, d, ::markOf, ::tapOf, onInspect, lookup = { st.card(it) })
-            PermanentRow(others(cpu.battlefield), false, 0, centreX, mid - 34.du * stretch, W - 180.du, d, ::markOf, ::tapOf, onInspect, lookup = { st.card(it) })
-            PermanentRow(others(me.battlefield), false, 0, centreX, mid + 27.du * stretch, W - 180.du, d, ::markOf, ::tapOf, onInspect, mine = true, lookup = { st.card(it) })
-            PermanentRow(backRow(me.battlefield), true, lands(me.battlefield).size, centreX, mid + 71.5f.du * stretch, W - 300.du, d, ::markOf, ::tapOf, onInspect, mine = true, lookup = { st.card(it) })
+            // A creature Forge says must attack this combat wears a tag until it is in the attack.
+            androidx.compose.runtime.CompositionLocalProvider(LocalAttackInput provides (live && st.inputType == "InputAttack")) {
+                PermanentRow(backRow(cpu.battlefield), true, lands(cpu.battlefield).size, centreX, mid - 77.5f.du * stretch, W - 180.du, d, ::markOf, ::tapOf, onInspect, lookup = { st.card(it) })
+                PermanentRow(others(cpu.battlefield), false, 0, centreX, mid - 34.du * stretch, W - 180.du, d, ::markOf, ::tapOf, onInspect, lookup = { st.card(it) })
+                PermanentRow(others(me.battlefield), false, 0, centreX, mid + 27.du * stretch, W - 180.du, d, ::markOf, ::tapOf, onInspect, mine = true, lookup = { st.card(it) })
+                PermanentRow(backRow(me.battlefield), true, lands(me.battlefield).size, centreX, mid + 71.5f.du * stretch, W - 300.du, d, ::markOf, ::tapOf, onInspect, mine = true, lookup = { st.card(it) })
+            }
 
             // Piles: yours right of your back row, the CPU's left of its back row.
             Piles(me, mine = true, Modifier.offset(x = W - 120.du, y = mid + 46.du * stretch), d, onInspect)
@@ -278,25 +289,27 @@ fun ForgeBoard(
 
             // Menu and the phase track, top left.
             Box(Modifier.offset(x = 8.du, y = 34.du).size(44.du).clip(CircleShape).background(Color(0x6612141A)).border(1.dp, Color(0x24FFFFFF), CircleShape)
-                .clickable(onClick = onMenu), contentAlignment = Alignment.Center) { MenuGlyph(d) }
+                .clickable { if (menu != null) menu.open = !menu.open else onMenu() }, contentAlignment = Alignment.Center) { MenuGlyph(d) }
             // The menu carries the stack size as a badge (summary[data-count]::after: 18 px gold pill at -4, -4).
             if (st.stack.isNotEmpty()) Box(Modifier.offset(x = (8 + 44 - 18 + 4).du, y = (34 - 4).du).heightIn(min = 18.du).widthIn(min = 18.du).clip(RoundedCornerShape(9.du)).background(Color(0xFFE8B95B)).padding(horizontal = 5.du),
                 contentAlignment = Alignment.Center) { Text("${st.stack.size}", style = sans(sp(11f), FontWeight.ExtraBold, Color(0xFF1B1406))) }
             PhaseTrack(st, stopLights(st), intents.stop, Modifier.offset(x = 74.du, y = 42.du), d)
 
             // The stack, fanned on the right over its portal, with the arc to its source.
-            if (st.stack.isNotEmpty()) { StackFan(st, Modifier.offset(x = W - 214.du, y = mid - 110.du), d, onInspect, live, intents.yieldSource); StackArc(st, d) }
+            if (st.stack.isNotEmpty()) { StackFan(st, Modifier.offset(x = W - 214.du, y = mid - 110.du), d, onInspect, live, intents.yieldSource, intents.stack); StackArc(st, d) }
 
             // The hand: centred 44 du right of the middle (between your seat and the buttons), the middle card's top 67 du above the bottom.
             val hand = orderedHand(me.hand, handOrder)
             Box(Modifier.offset(x = centreX + 44.du - 222.du, y = H - 67.du).width(444.du).height(120.du)) {
                 HandFan(hand, 66.du, Modifier.fillMaxWidth(), raised = selectedHand, angleDeg = 1.2f,
                     markOf = ::markOf,
-                    canPlay = { card -> live && card.id in st.selection.actionable },
+                    canPlay = { card -> live && card.id in st.selection.actionable && card.id !in blocked },
+                    blockedOf = { card -> if (live) blocked[card.id] else null },
                     onTap = { card ->
-                        val playable = live && card.id in st.selection.actionable
+                        val playable = live && card.id in st.selection.actionable && card.id !in blocked
                         when {
                             live && card.id in st.selection.cards -> intents.card(card.id)
+                            live && card.id in blocked -> if (selectedHand == card.id) onInspect(card) else onSelectHand(card.id)
                             playable && selectedHand == card.id -> onInspect(card)
                             playable -> onSelectHand(card.id)
                             else -> onInspect(card)
@@ -308,21 +321,29 @@ fun ForgeBoard(
 
             // The buttons, bottom right: the gold step and the quiet second one above it (right edges 8 du in, as the site's dock).
             if (st.prompt == null && st.waitingOnMe) {
-                val selected = selectedHand?.let { st.card(it) }
+                val selected = selectedHand?.takeIf { it !in blocked }?.let { st.card(it) }
                 val ok = if (selected != null) (if (selected.isLand) "Play land" else "Cast") else okLabel(st)
                 val second = if (selected != null) null else cancelLabel(st)
+                // A declaration Forge would refuse (a must-attack creature left out) is not offered as a live button.
+                val mustLeft = st.inputType == "InputAttack" && st.me.battlefield.any { Affordability.owesAttack(it) }
+                val okOn = st.buttons.okEnabled && !mustLeft
+                // A payment your mana can't finish: Cancel is the main button, and Pay automatically steps aside.
+                val short = Affordability.paying(st)?.short == true
                 // native-panel.mjs "Attack all": every creature Forge offers joins, one tap each, in order.
                 val offered = if (st.inputType == "InputAttack") st.selection.cards.mapNotNull { st.card(it) }.filter { it.zone == "Battlefield" && it.controller == st.viewer && !it.attacking } else emptyList()
                 val attackAll = offered.isNotEmpty() && st.selection.cards.size >= 2
                 if (attackAll) {
-                    GoldPill(ok, live && st.buttons.okEnabled, Modifier.align(Alignment.TopEnd).offset(x = (-8).du, y = H - 94.du), d) { intents.ok() }
+                    GoldPill(ok, live && okOn, Modifier.align(Alignment.TopEnd).offset(x = (-8).du, y = H - 94.du), d) { intents.ok() }
                     GlassPill("Attack all", live, Modifier.align(Alignment.TopEnd).offset(x = (-8).du, y = H - 44.du), d, tone = Color(0xFFFFD9CF), edge = Color(0x88FF8A6A)) { intents.attackAll(offered.map { it.id }) }
                 } else if (oneTarget(st)) {
                     second?.let { GlassPill(it, live, Modifier.align(Alignment.TopEnd).offset(x = (-8).du, y = H - 94.du), d) { intents.cancel() } }
                     if (st.selection.min == 0 && st.buttons.okEnabled) GoldPill("No target", live, Modifier.align(Alignment.TopEnd).offset(x = (-8).du, y = H - 52.du), d) { intents.ok() }
+                } else if (short && second != null) {
+                    if (st.buttons.okEnabled) GlassPill(ok, live, Modifier.align(Alignment.TopEnd).offset(x = (-8).du, y = H - 94.du), d) { intents.ok() }
+                    GoldPill(second, live, Modifier.align(Alignment.TopEnd).offset(x = (-8).du, y = H - 52.du), d) { intents.cancel() }
                 } else {
                     second?.let { GlassPill(it, live, Modifier.align(Alignment.TopEnd).offset(x = (-8).du, y = H - 94.du), d) { intents.cancel() } }
-                    GoldPill(ok, live && (selected != null || st.buttons.okEnabled), Modifier.align(Alignment.TopEnd).offset(x = (-8).du, y = H - 52.du), d) {
+                    GoldPill(ok, live && (selected != null || okOn), Modifier.align(Alignment.TopEnd).offset(x = (-8).du, y = H - 52.du), d) {
                         if (selected != null) { onSelectHand(null); intents.card(selected.id) } else intents.ok()
                     }
                 }
@@ -335,6 +356,8 @@ fun ForgeBoard(
             OwnCast(st, d)
             overlay?.invoke(W)
             EmoteLayer(W, H, d)
+            // The deck tracker under the table controls on the left; the menu over everything.
+            if (menu != null) { DeckTracker(st, menu, H, d); if (menu.open) MenuPanel(menu, st.stack.size, d) }
         }
     }
 }
@@ -447,6 +470,17 @@ private fun Tile(card: Card, w: Dp, h: Dp, land: Boolean, mark: Mark, mineSide: 
                 Text("${card.power} / ", style = sans(fs, FontWeight.Bold, Color.White))
                 Text("${card.toughness ?: 0}", style = sans(fs, FontWeight.Bold, if (card.damage > 0) Color(0xFFFF8F84) else Color.White))
             }
+        }
+    }
+    // .forge-must-tag: bottom -8, centred, #9e2a1e with a #ff8a6a hairline, #fff1ec 800 10.5px uppercase; the card gets a 2px #ff6a4a outline 3px out.
+    if (LocalAttackInput.current && Affordability.owesAttack(card)) {
+        Box(modifier.size(w, h).zIndex(19f).drawBehind {
+            val o = 3.du.toPx(); val sw = 2.du.toPx()
+            drawRoundRect(Color(0xFFFF6A4A), topLeft = Offset(-o - sw / 2, -o - sw / 2), size = Size(size.width + 2 * o + sw, size.height + 2 * o + sw), cornerRadius = CornerRadius(10.du.toPx() + o), style = Stroke(sw))
+        }) {
+            Text("MUST ATTACK", maxLines = 1, softWrap = false, style = sans(sp(10.5f), FontWeight.ExtraBold, Color(0xFFFFF1EC)).copy(letterSpacing = .06.em),
+                modifier = Modifier.align(Alignment.BottomCenter).offset(y = 8.du).wrapContentWidth(unbounded = true).clip(RoundedCornerShape(999.dp)).background(Color(0xFF9E2A1E))
+                    .border(1.dp, Color(0xFFFF8A6A), RoundedCornerShape(999.dp)).padding(horizontal = 7.du, vertical = 2.du))
         }
     }
     // .play-match-pile-count: on the card's left edge (left -10px), hanging under the pile (bottom -12px, translate -50%); a tapped pile centres it
@@ -609,7 +643,8 @@ private fun PhaseTrack(st: MatchState, stops: Set<String>?, onStop: (String) -> 
 // ---- The stack (approved: fanned cards over a portal, gold rim yours / red rim the CPU's, an arc to the source) ----
 
 @Composable
-private fun StackFan(st: MatchState, modifier: Modifier, d: Du, onInspect: (Card) -> Unit, live: Boolean = false, onYield: (Int, Boolean) -> Unit = { _, _ -> }) = with(d) {
+private fun StackFan(st: MatchState, modifier: Modifier, d: Du, onInspect: (Card) -> Unit, live: Boolean = false, onYield: (Int, Boolean) -> Unit = { _, _ -> }, onPick: (Int) -> Unit = {}) = with(d) {
+    val pick: ((Int) -> Unit)? = if (live && st.selection.stackTargets.isNotEmpty()) onPick else null
     // Identical items in a row (the same trigger from the same controller) show once with ×N.
     val groups = mutableListOf<Pair<StackItem, Int>>()
     for (s in st.stack) { val last = groups.lastOrNull(); if (last != null && last.first.text == s.text && last.first.controller == s.controller && last.first.source?.name == s.source?.name) groups[groups.lastIndex] = last.first to last.second + 1 else groups += s to 1 }
@@ -625,10 +660,10 @@ private fun StackFan(st: MatchState, modifier: Modifier, d: Du, onInspect: (Card
         // Older items fan up and behind, dimmed, names readable.
         shown.drop(1).reversed().forEachIndexed { k, (s, _) ->
             val depth = shown.size - 1 - k
-            StackCard(st, s, 1, Modifier.offset(x = (44 - 16 * depth).du, y = (34 - 16 * depth).du).alpha(.6f), d, onInspect, small = true)
+            StackCard(st, s, 1, Modifier.offset(x = (44 - 16 * depth).du, y = (34 - 16 * depth).du).alpha(if (pick != null && s.id in st.selection.stackTargets) 1f else .6f), d, onInspect, small = true, pick = pick)
         }
         val (top, n) = shown.first()
-        StackCard(st, top, n, Modifier.offset(x = 44.du, y = 34.du).then(if (anchors != null) Modifier.onGloballyPositioned { val b = it.boundsInRoot(); anchors.put("stacktop", Offset(b.left, b.top + b.height * .3f)); anchors.putRect("stackcard", b) } else Modifier), d, onInspect)
+        StackCard(st, top, n, Modifier.offset(x = 44.du, y = 34.du).then(if (anchors != null) Modifier.onGloballyPositioned { val b = it.boundsInRoot(); anchors.put("stacktop", Offset(b.left, b.top + b.height * .3f)); anchors.putRect("stackcard", b) } else Modifier), d, onInspect, pick = pick)
         // native-panel.mjs withYield: an ability on top offers Forge's own yield (pass on it every time it is on top, until end of turn).
         if (top.ability) {
             val on = top.yielded
@@ -667,9 +702,11 @@ private fun StackArc(st: MatchState, d: Du) = with(d) {
 
 /** One stack item as a card: a spell shows its card; a triggered or activated ability shows the source's art, its kind and its text. */
 @Composable
-private fun StackCard(st: MatchState, s: StackItem, n: Int, modifier: Modifier, d: Du, onInspect: (Card) -> Unit, small: Boolean = false) = with(d) {
+private fun StackCard(st: MatchState, s: StackItem, n: Int, modifier: Modifier, d: Du, onInspect: (Card) -> Unit, small: Boolean = false, pick: ((Int) -> Unit)? = null) = with(d) {
     val mine = s.controller == st.viewer
-    val rim = if (mine) Gold else CpuRed
+    // A stack item Forge offers as a target wears the target role (#ff9d5c) and takes the tap.
+    val target = pick != null && s.id in st.selection.stackTargets
+    val rim = if (target) Color(0xFFFF9D5C) else if (mine) Gold else CpuRed
     val src = s.source
     val ability = s.ability || src == null || src.zone != "Stack"
     val w = 104.du; val h = 145.du
@@ -677,7 +714,7 @@ private fun StackCard(st: MatchState, s: StackItem, n: Int, modifier: Modifier, 
         Box(Modifier.fillMaxSize().drawBehind {
             drawRoundRect(rim.copy(alpha = .35f), topLeft = Offset(-6.du.toPx(), -6.du.toPx()), size = Size(size.width + 12.du.toPx(), size.height + 12.du.toPx()), cornerRadius = CornerRadius(12.du.toPx()))
         }.clip(RoundedCornerShape(7.du)).border(2.dp, rim, RoundedCornerShape(7.du)).background(Color(0xFF1A1714))
-            .clickable(enabled = src != null) { src?.let(onInspect) }) {
+            .clickable(enabled = target || src != null) { if (target) pick!!(s.id) else src?.let(onInspect) }) {
             if (!ability && src != null) CardImage(src.name, Modifier.fillMaxSize(), contentScale = ContentScale.Crop)
             else Column(Modifier.fillMaxSize().padding(4.du)) {
                 Text((src?.name ?: "Ability"), style = TextStyle(fontFamily = Type.Cinzel, fontWeight = FontWeight.Bold, fontSize = sp(9.5f), color = Color(0xFFF3E7C6)), maxLines = 1, overflow = TextOverflow.Ellipsis)
@@ -725,7 +762,7 @@ private val EMOTE_ICON = "M4 5h16v11H9l-5 4Z"
 
 /** A 24-unit SVG stroke icon (stroke 2, round caps and joins), drawn at [size]. */
 @Composable
-private fun StrokeIcon(path: String, color: Color, size: Dp, stroke: Float = 2f, circle: Boolean = false, dots: Boolean = false) {
+internal fun StrokeIcon(path: String, color: Color, size: Dp, stroke: Float = 2f, circle: Boolean = false, dots: Boolean = false) {
     val p = remember(path) { androidx.compose.ui.graphics.vector.PathParser().parsePathString(path).toPath() }
     Canvas(Modifier.size(size)) {
         val k = this.size.width / 24f
@@ -1004,14 +1041,22 @@ internal fun askLine(st: MatchState): String? {
     if (st.prompt != null) return null
     val input = st.inputType ?: ""
     val discard = st.selection.cards.isNotEmpty() && Regex("\\bdiscard\\b", RegexOption.IGNORE_CASE).containsMatchIn(st.message)
-    val picks = st.selection.cards.size + st.selection.targetCards.size + st.selection.players.size
+    val picks = st.selection.cards.size + st.selection.targetCards.size + st.selection.players.size + st.selection.stackTargets.size
     val asking = picks > 0 && input !in setOf("InputPassPriority", "InputAttack", "InputBlock", "InputConfirmMulligan", "InputLockUI") && !input.startsWith("InputPayMana") && !discard
     if (asking) {
         val first = st.message.lines().firstOrNull { !Regex("^(Priority|Turn|Phase|Stack):").containsMatchIn(it) } ?: ""
         var ask = first.replace(Regex("Forge AI(?:\\s+—[^·\\n]*·?)?"), "CPU").replace(Regex("\\s*\\[Phase: [^\\]]*\\]"), "").trim()
         if (Regex("legend(ary)? rule|same name|choose .* to keep|keep one", RegexOption.IGNORE_CASE).containsMatchIn(ask)) ask = "Two legendary permanents share a name. Choose the one to keep."
         val named = Regex("^(.{2,60}?) - (.+)$").find(ask)
+        // Forge picks stack items through two inputs; "Select target noncreature spell" becomes "Choose a noncreature spell on the stack".
+        val stackOnly = st.selection.stackTargets.isNotEmpty() && st.selection.targetCards.isEmpty() && st.selection.players.none { it in st.selection.targetPlayers }
         when {
+            (input == "InputSelectTargets" || input == "InputSelectStackItems") && stackOnly -> {
+                val src = named?.groupValues?.get(2) ?: ask
+                val what = Regex("\\btarget ([a-z -]{3,40}?(?:spell|ability)(?: or ability)?)\\b", RegexOption.IGNORE_CASE).find(src)?.groupValues?.get(1)
+                ask = if (Regex("\\bcounter target\\b", RegexOption.IGNORE_CASE).containsMatchIn(src)) "Choose a spell to counter"
+                    else if (what != null) "Choose a${if (Regex("^[aeiou]", RegexOption.IGNORE_CASE).containsMatchIn(what)) "n" else ""} ${what.lowercase()} on the stack" else "Choose a spell or ability on the stack"
+            }
             input == "InputSelectTargets" && named != null -> ask = "Choose a target for ${named.groupValues[1]}"
             named != null -> ask = named.groupValues[2]
         }
@@ -1019,6 +1064,8 @@ internal fun askLine(st: MatchState): String? {
         ask = if (oneTarget(st)) ask.replace(Regex("^(Select|Choose) (a )?targets? for", RegexOption.IGNORE_CASE), "Tap a target for") else ask.replace(Regex("^Select\\b"), "Choose")
         return ask
     }
+    // A payment your mana can't finish says so above the hand; Cancel is the way out.
+    Affordability.paying(st)?.takeIf { it.short }?.let { return "Not enough mana" + (it.name?.let { n -> " for $n" } ?: "") }
     if (discard) return null
     val top = st.stack.firstOrNull()
     val cpuTop = top != null && top.controller != st.viewer

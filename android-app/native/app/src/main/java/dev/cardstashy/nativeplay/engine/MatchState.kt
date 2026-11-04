@@ -17,6 +17,8 @@ data class Card(
     val attackTarget: Ref? = null,
     /** Forge sent its own keyword list (an empty list then means none); otherwise the rules text decides. */
     val keywordsKnown: Boolean = false, val attachments: List<Int> = emptyList(), val crew: Int? = null,
+    /** Forge says this creature attacks each combat if able (native-panel.mjs owesAttack). */
+    val mustAttack: Boolean = false,
 ) {
     val isLand get() = type.contains("Land")
     val isCreature get() = type.contains("Creature")
@@ -36,7 +38,13 @@ data class Selection(
     val actionable: Set<Int>, val blocked: Map<Int, String>, val min: Int, val max: Int,
     /** Cards Forge offers as targets for the spell or ability being cast (selection.targets). */
     val targetCards: Set<Int> = emptySet(),
+    /** selection.actionable[].affordability: available, unavailable, uncertain or unknown (Forge's own pay check). */
+    val affordability: Map<Int, String> = emptyMap(),
+    /** Stack items Forge offers as targets (selection.targets of kind stack), and the players among the targets. */
+    val stackTargets: Set<Int> = emptySet(), val targetPlayers: Set<Int> = emptySet(),
 )
+/** n.payment while Forge asks for mana: what is still owed, the card it is for, and the real cost for the chosen target. */
+data class Payment(val remaining: String?, val forCard: Int?, val forName: String?, val costNow: String?)
 data class PromptOption(val index: Int, val label: String, val cardId: Int?)
 data class Prompt(
     val id: Int, val method: String, val message: String, val min: Int, val max: Int,
@@ -77,6 +85,7 @@ data class MatchState(
     val hasPriorityView: Boolean, val lastActionError: String?, val controlMode: String?,
     /** Auto-pay mana (null on a bridge without it); phase stops "you:MAIN1" → pinned (true) or once (false), null when the bridge has none. */
     val autoPay: Boolean? = null, val phaseStops: Map<String, Boolean>? = null,
+    val payment: Payment? = null,
 ) {
     val me get() = players.first { it.id == viewer }
     val cpu get() = players.first { it.id != viewer }
@@ -105,6 +114,8 @@ data class MatchState(
                 actionable = refs("actionable", "card"),
                 blocked = sel?.arr("blocked")?.mapNotNull { e -> val x = e.asJsonObject; x.int("id")?.let { it to (x.str("reason") ?: "") } }?.toMap() ?: emptyMap(),
                 min = sel?.int("min") ?: 0, max = sel?.int("max") ?: 0, targetCards = refs("targets", "card"),
+                stackTargets = refs("targets", "stack"), targetPlayers = refs("targets", "player"),
+                affordability = sel?.arr("actionable")?.mapNotNull { e -> e.asJsonObject.takeIf { it.str("kind") == "card" }?.let { x -> val id = x.int("id"); val a = x.str("affordability"); if (id != null && a != null) id to a else null } }?.toMap() ?: emptyMap(),
             )
             val b = o.obj("buttons")
             val init = o.obj("initialization")
@@ -122,6 +133,8 @@ data class MatchState(
                 events = o.obj("events")?.arr("items")?.map { parseEvent(it.asJsonObject) } ?: emptyList(),
                 winnerPlayerId = o.int("winnerPlayerId"), draw = o.bool("draw") == true,
                 priorityStop = pv?.str("stop"), hasPriorityView = pv != null, lastActionError = o.str("lastActionError"), controlMode = o.str("controlMode"),
+                payment = o.obj("payment")?.let { pm -> val fc = pm.obj("forCard")?.takeIf { it.str("kind") == "card" }
+                    Payment(pm.get("remaining")?.takeIf { it.isJsonPrimitive }?.asString, fc?.int("id"), fc?.str("name"), pm.obj("costNow")?.get("mana")?.takeIf { it.isJsonPrimitive }?.asString) },
                 autoPay = o.bool("autoPay"), phaseStops = o.obj("phaseStops")?.entrySet()?.mapNotNull { (k, v) -> if (v.isJsonPrimitive && v.asJsonPrimitive.isBoolean) k to v.asBoolean else null }?.toMap(),
             )
         }
@@ -161,6 +174,7 @@ data class MatchState(
             attachments = c.arr("attachments").mapNotNull { if (it.isJsonPrimitive && it.asJsonPrimitive.isNumber) it.asInt else null }, crew = c.int("crew"),
             attachedTo = c.int("attachedTo"), blockingIds = c.arr("blockingIds").mapNotNull { if (it.isJsonPrimitive) it.asInt else null },
             commander = c.bool("commander") == true, setCode = c.str("setCode"), collectorNumber = c.str("collectorNumber"),
+            mustAttack = c.bool("mustAttack") == true,
             attackTarget = c.obj("attackTarget")?.let { t -> val k = t.str("kind"); val i = t.int("id"); if (k != null && i != null) Ref(k, i, null) else null },
         )
 
