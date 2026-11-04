@@ -64,6 +64,14 @@
    1,
    2,
    3
+  ],
+  "master": [
+   1672,
+   941
+  ],
+  "layers": [
+   "story-a1-glade-ray.png",
+   "story-a1-glade-firefly.png"
   ]
  },
  "story-a1-serendib": {
@@ -163,6 +171,14 @@
    200,
    1000,
    600
+  ],
+  "master": [
+   1672,
+   941
+  ],
+  "layers": [
+   "story-a1-serendib-smoke.png",
+   "story-a1-serendib-flame.png"
   ]
  },
  "story-a1-kroog": {
@@ -273,6 +289,291 @@
    ],
    "count": 3,
    "color": "#1E1A18"
-  }
+  },
+  "master": [
+   1672,
+   941
+  ],
+  "layers": [
+   "story-a1-kroog-steam.png",
+   "story-a1-kroog-forge-glow.png"
+  ]
+ },
+ "story-a2-sarpadia": {
+  "name": "Sarpadian Crossing",
+  "act": 2,
+  "slot": "normal",
+  "battles": [
+   1,
+   2,
+   3
+  ],
+  "master": [
+   1672,
+   941
+  ],
+  "rays": {
+   "color": "#FFC86E",
+   "alpha": 0.3,
+   "to": 470,
+   "slant": 200,
+   "list": []
+  },
+  "motes": 12,
+  "glints": [
+   [
+    300,
+    40,
+    700,
+    70,
+    6
+   ]
+  ],
+  "leaves": {
+   "count": 0,
+   "sway": 0,
+   "edges": []
+  },
+  "glows": [
+   {
+    "x": 1280,
+    "y": 52,
+    "r": 40,
+    "color": "#FF7828",
+    "alpha": 0.7,
+    "flicker": true
+   }
+  ],
+  "smoke": [
+   {
+    "x": 1285,
+    "y": 45,
+    "color": "#6E6464",
+    "rise": 120
+   }
+  ],
+  "wisps": [
+   [
+    200,
+    520,
+    1100,
+    220,
+    "#AFC0B8"
+   ]
+  ],
+  "motesBox": [
+   40,
+   300,
+   300,
+   500
+  ],
+  "layers": [
+   "story-a2-sarpadia-church-fire.png",
+   "story-a2-sarpadia-spore.png"
+  ],
+  "secret": [
+   72,
+   350
+  ]
+ },
+ "story-a2-court": {
+  "name": "Tetsuo's Court and the Thrull Pits (WIP)",
+  "act": 2,
+  "slot": "normal",
+  "battles": [
+   4,
+   5
+  ],
+  "master": [
+   1536,
+   1024
+  ],
+  "rays": {
+   "color": "#C8B48C",
+   "alpha": 0.2,
+   "to": 470,
+   "slant": 200,
+   "list": [
+    [
+     660,
+     200
+    ]
+   ]
+  },
+  "motes": 12,
+  "glints": [
+   [
+    450,
+    60,
+    500,
+    40,
+    3
+   ]
+  ],
+  "leaves": {
+   "count": 0,
+   "sway": 0,
+   "edges": []
+  },
+  "glows": [
+   {
+    "x": 204,
+    "y": 173,
+    "r": 42,
+    "color": "#FFAA46",
+    "alpha": 0.7,
+    "flicker": true
+   },
+   {
+    "x": 1345,
+    "y": 100,
+    "r": 24,
+    "color": "#FFAA46",
+    "alpha": 0.6,
+    "flicker": true
+   },
+   {
+    "x": 476,
+    "y": 95,
+    "r": 24,
+    "color": "#FFAA46",
+    "alpha": 0.6,
+    "flicker": true
+   }
+  ],
+  "motesBox": [
+   300,
+   200,
+   900,
+   500
+  ],
+  "layers": [
+   "story-a2-court-lantern-glow.png"
+  ],
+  "wip": "3:2 master, Thrulls/sword missing, stray marks at top"
+ },
+ "story-a2-deck": {
+  "name": "The Deck, Played Out (WIP)",
+  "act": 2,
+  "slot": "normal",
+  "battles": [
+   6,
+   7
+  ],
+  "master": [
+   1536,
+   1024
+  ],
+  "rays": {
+   "color": "#B4C8E6",
+   "alpha": 0.25,
+   "to": 470,
+   "slant": 200,
+   "list": [
+    [
+     195,
+     90
+    ]
+   ]
+  },
+  "motes": 12,
+  "glints": [
+   [
+    20,
+    150,
+    120,
+    60,
+    4
+   ]
+  ],
+  "leaves": {
+   "count": 0,
+   "sway": 0,
+   "edges": []
+  },
+  "glows": [
+   {
+    "x": 1306,
+    "y": 126,
+    "r": 26,
+    "color": "#FFAA46",
+    "alpha": 0.8,
+    "flicker": true
+   },
+   {
+    "x": 1361,
+    "y": 150,
+    "r": 22,
+    "color": "#FFAA46",
+    "alpha": 0.7,
+    "flicker": true
+   }
+  ],
+  "motesBox": [
+   40,
+   150,
+   900,
+   600
+  ],
+  "layers": [
+   "story-a2-deck-candle-flame.png"
+  ],
+  "wip": "3:2 master, dual lands and Power cards missing"
+ },
+ "story-a2-lair": {
+  "name": "The Last Elder Dragon's Lair (WIP)",
+  "act": 2,
+  "slot": "boss",
+  "battles": [
+   8
+  ],
+  "master": [
+   1536,
+   1024
+  ],
+  "rays": {
+   "color": "#FFC86E",
+   "alpha": 0.3,
+   "to": 470,
+   "slant": 200,
+   "list": []
+  },
+  "motes": 12,
+  "glints": [
+   [
+    0,
+    0,
+    1100,
+    110,
+    14
+   ]
+  ],
+  "leaves": {
+   "count": 0,
+   "sway": 0,
+   "edges": []
+  },
+  "glows": [
+   {
+    "x": 1305,
+    "y": 157,
+    "r": 50,
+    "color": "#FF9646",
+    "alpha": 0.6
+   },
+   {
+    "x": 1400,
+    "y": 860,
+    "r": 70,
+    "color": "#FF5A1E",
+    "alpha": 0.5,
+    "flicker": true
+   }
+  ],
+  "layers": [
+   "story-a2-lair-dragon-cloud.png",
+   "story-a2-lair-throne-ember.png"
+  ],
+  "wip": "3:2 master, five Elder Dragon cloud shapes not supplied (one generic silhouette), lore review needed"
  }
 }

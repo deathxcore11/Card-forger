@@ -15,7 +15,8 @@ for f in sorted(src.glob('story-a*-*.png')):
     if not re.fullmatch(r'story-a\d+-[a-z0-9-]+\.png', f.name): continue
     mid = f.stem
     im = Image.open(f).convert('RGB')
-    if im.size != (W, H): im = im.resize((W, H), Image.LANCZOS)
+    # A work-in-progress master in another shape (3:2) waits for its 16:9 re-export; stretching it would distort the painting.
+    if im.size != (W, H): print('skipped (not 1672x941, WIP)', mid); continue
     im.resize((1280, 720), Image.LANCZOS).save(out / f'playmat-{mid}.webp', quality=86, method=6)
     im.crop((TALL[0], 0, TALL[0] + TALL[1], H)).resize((540, 960), Image.LANCZOS).save(out / f'playmat-{mid}-tall.webp', quality=86, method=6)
     im.crop((FOLD[0], 0, FOLD[0] + FOLD[1], H)).resize((720, 900), Image.LANCZOS).save(out / f'playmat-{mid}-fold.webp', quality=86, method=6)

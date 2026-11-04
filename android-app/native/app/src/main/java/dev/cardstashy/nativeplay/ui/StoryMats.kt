@@ -55,7 +55,9 @@ object StoryMats {
         context.assets.open("play/story-light.json").bufferedReader().use { parse(JsonParser.parseReader(it).asJsonObject) }
     }.getOrDefault(emptyMap()).also { cache = it }
 
-    fun parse(root: JsonObject): Map<String, Mat> = root.entrySet().filter { !it.key.startsWith("_") && it.value.isJsonObject }.associate { (id, v) ->
+    // "wip" mats (a 3:2 draft awaiting its 16:9 re-export) and any light map not in 1672x941 master pixels do not ship yet.
+    private fun ships(o: JsonObject) = !o.has("wip") && (o.getAsJsonArray("master")?.let { it.size() == 2 && it[0].asInt == 1672 && it[1].asInt == 941 } ?: true)
+    fun parse(root: JsonObject): Map<String, Mat> = root.entrySet().filter { !it.key.startsWith("_") && it.value.isJsonObject && ships(it.value.asJsonObject) }.associate { (id, v) ->
         val o = v.asJsonObject
         fun ints(a: com.google.gson.JsonElement) = a.asJsonArray.map { it.asInt }.toIntArray()
         fun color(s: String) = Color(android.graphics.Color.parseColor(s))
@@ -139,7 +141,7 @@ internal fun DrawScope.drawStoryLight(mat: StoryMats.Mat, st: MatStage, t: Float
             }
         }
         // 2. MOTES: tiny dots drifting down-right inside a ray only (Cinematic), fading in and out.
-        if (level >= 2 && live) for (m in 0 until mat.motes) {
+        if (level >= 2 && live && mat.motesBox == null && rays.list.isNotEmpty()) for (m in 0 until mat.motes) {
             val (ox, w) = rays.list[m % rays.list.size]
             val p = (hash(m, 3) + time / (14f + hash(m, 5) * 8f)) % 1f
             val v = p * rays.to; val u = (hash(m, 11) - .5f) * w * .7f + 6f * sin(time * .6f + m)
