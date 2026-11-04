@@ -83,3 +83,14 @@ assert.equal(pbh.move(h,'hand',9,'field'),false);assert.equal(pbh.move(h,'hand',
 pbh.nextTurn(h);assert.deepEqual([h.turn,h.hand,h.library],[2,['B','C','D'],['E']]);
 assert.ok(pbh.move(h,'field',0,'yard'));pbh.draw(h);assert.equal(pbh.draw(h),false,'library runs out');
 console.log('play by hand: ok');
+// Taking a seat and safe seat art
+const {safeArt,seatMain}=await import('./tabletop.js');
+assert.equal(safeArt('https://evil.example/x.png'),'');assert.equal(safeArt('javascript:alert(1)'),'');
+assert.ok(safeArt('https://api.scryfall.com/cards/named?exact=Sol%20Ring&format=image&version=art_crop'));
+const c=newTable('mtg',{players:2});
+assert.ok(sh.applyOp(c,{t:'claim',seat:0,name:'Dana<b>',art:'https://cards.scryfall.io/art_crop/x.jpg'}));
+assert.equal(c.players[0].name,'Dana b');assert.ok(c.players[0].art);
+assert.equal(sh.applyOp(c,{t:'claim',seat:5,name:'X'}),false);
+saveTable(c,localStorage);assert.ok(loadTable('mtg',localStorage).players[0].art,'seat art survives a reload');
+assert.deepEqual([seatMain(c,c.players[0]).step,seatMain(newTable('ygo'),newTable('ygo').players[0]).step,seatMain(newTable('ptcg'),newTable('ptcg').players[0]).step],[1,100,10]);
+console.log('seats: ok');
