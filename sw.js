@@ -27,7 +27,7 @@ const ASSETS = [
   "./play-achievement-art.js",
   "./play-secret-lair.js",
   "./play-econ-rules.js",
-  "./play-econ-sets.js", "./story-acts.js", "./story-client.js", "./story-ui.js", "./story-deeds.js", "./story-mode.css",
+  "./play-econ-sets.js", "./story-acts.js", "./story-client.js", "./story-ui.js", "./story-deeds.js", "./match-facts.js", "./story-mode.css",
   "./play-daily-goals.js",
   "./experiments/forge-proof/table-emotes.mjs",
   "./play-forge-table.css",

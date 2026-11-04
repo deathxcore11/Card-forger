@@ -4,6 +4,7 @@
 import {achievementRows, deedTotals, almostThere, achievementReward, questRows, questReward, LOGIN_WEEK, DEED_TABS, playDay, achievementArt} from './play-achievements.js';
 import {coinIcon, sealIcon, packIcon, head} from './play-econ-ui.js';
 import {bar} from './ui.js';
+import {STORY_ACTS} from './story-acts.js';
 
 const esc = v => String(v ?? '').replace(/[&<>"']/g, c => ({'&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;'}[c]));
 const n = v => Number(v || 0).toLocaleString('en-US');
@@ -56,7 +57,7 @@ export function deedsPanel(econ, user = '') {
 }
 
 function deedCard(r, config, busy) {
-  if (r.hidden && !r.earned) return `<article class="pd-card pd-card--hidden"><span class="pd-card-back" aria-hidden="true"></span><div class="pd-card-body"><h3>Hidden</h3><p>${esc(r.riddle)}</p></div></article>`;
+  if (r.hidden && !r.earned) return `<article class="pd-card pd-card--hidden"><span class="pd-card-back" aria-hidden="true"></span><div class="pd-card-body"><h3>Hidden</h3><p>${esc(r.riddle)}</p><div class="pd-card-foot">${r.honour ? '<span class="pd-honour">Honour only</span>' : rewardIcons(achievementReward(r, 0, config))}</div></div></article>`;
   const ready = r.honour ? -1 : r.steps.findIndex(x => x.done && !x.claimed), step = r.next || r.steps.at(-1), shown = ready >= 0 ? ready : r.steps.indexOf(step);
   return `<article class="pd-card${r.complete ? ' is-complete' : ''}${ready >= 0 ? ' is-ready' : ''}">
     <span class="pd-card-art" aria-hidden="true">${artImg(r.art)}</span>
@@ -64,6 +65,18 @@ function deedCard(r, config, busy) {
       ${r.steps.length > 1 ? `<span class="pd-pips" role="img" aria-label="${r.earned} of ${r.steps.length} tiers">${r.steps.map(x => `<i class="pd-pip pd-pip--${x.tier}${x.done ? ' on' : ''}"></i>`).join('')}</span>` : ''}
       ${bar(Math.min(1, r.value / step.need), 'thin')}<span class="pd-card-count">${n(fmtValue(r, Math.min(r.value, step.need)))} / ${fmtNeed(r, step.need)}</span>
       <div class="pd-card-foot">${r.honour ? `<span class="pd-honour">${r.complete ? 'Earned with honour' : 'Honour only'}</span>` : rewardIcons(achievementReward(r, shown, config))}${ready >= 0 ? `<button class="btn pd-claim" data-act="playEconClaim" data-econ-kind="ach" data-econ-id="${esc(r.id)}" data-econ-step="${ready}" ${busy ? 'disabled' : ''} aria-label="Claim ${esc(r.title)}">Claim</button>` : r.complete && !r.honour ? '<span class="pd-done">Earned</span>' : ''}</div></div></article>`;
+}
+
+// One tab's deeds. The Story tab has hundreds (two or more per battle), so it groups them by act,
+// each act with its own count; the Story-wide chains come first.
+function tabGrid(rows, config, busy) {
+  const grid = list => `<div class="pd-grid">${list.map(r => deedCard(r, config, busy)).join('')}</div>`;
+  if (!rows.some(r => r.act)) return grid(rows);
+  const acts = [...new Set(rows.filter(r => r.act).map(r => r.act))].sort((a, b) => a - b);
+  return grid(rows.filter(r => !r.act)) + acts.map(act => {
+    const list = rows.filter(r => r.act === act), done = list.filter(r => r.complete).length, a = STORY_ACTS.find(x => x.act === act);
+    return `<section class="pd-act" aria-labelledby="pdAct${act}"><h3 class="pd-act-head" id="pdAct${act}"><span>Act ${act}${a ? ' · ' + esc(a.title) : ''}</span><span class="pd-act-count">${done} / ${list.length}</span></h3>${grid(list)}</section>`;
+  }).join('');
 }
 
 // The Achievements screen: totals and the closest ones, today's quests, then one tab of deeds.
@@ -80,6 +93,6 @@ export function deedsScreenMarkup(snapshot, ui = {}, user = '') {
         <h3 class="pd-sub">This week</h3><ul class="pd-quests">${q.weekly.map(x => questLine({...x, weekly: true}, s.config, busy)).join('')}</ul>${weekAll}</section>
     </div>
     <div class="set-browser-quick pd-tabs" role="group" aria-label="Achievement type" data-audit-scroll>${DEED_TABS.map(([k, l]) => `<button class="${tab === k ? 'on' : ''}" data-act="playEconDeedTab" data-value="${k}" aria-pressed="${tab === k}">${esc(l)}${counts.get(k) ? ` <span class="pd-dot" aria-label="${counts.get(k)} to claim">${counts.get(k)}</span>` : ''}</button>`).join('')}</div>
-    <div class="pd-grid">${rows.filter(r => r.tab === tab).map(r => deedCard(r, s.config, busy)).join('')}</div>
+    ${tabGrid(rows.filter(r => r.tab === tab), s.config, busy)}
     <p class="pe-status" role="status" aria-live="polite">${esc(snapshot.error || '')}</p></section>`;
 }
