@@ -207,6 +207,10 @@ export const LESSONS = {
   'Improvise': 'Improvise: your artifacts can tap to help pay for the spell, one generic mana each.',
   'Revolt': 'Revolt: the card gets better if a permanent you controlled left the battlefield this turn. Sacrifice a Clue or a Map first.',
   'Crew': 'Crew: tap creatures with total power equal to the crew number to turn a vehicle into a creature until end of turn.',
+  'Embalm': 'Embalm: pay the embalm cost and exile the card from your graveyard to make a token copy that is a white Zombie. Kill it twice.',
+  'Exert': 'Exert: when it attacks you may exert it, and it will not untap during your next untap step. Use it when the extra effect wins the game.',
+  'Aftermath': 'Aftermath: the second half of the split card can only be cast from your graveyard, and is then exiled. Cast the first half first.',
+  'Eternalize': 'Eternalize: pay the eternalize cost and exile the card from your graveyard to make a 4/4 black Zombie copy. Exile their graveyard.',
   'Playing under a lock': 'A lock stops cards from untapping or moving. Break it, or win with what\'s already in play.',
 };
 // Every Story deck says what it is (Randall, 2 Nov 2026): Historical Exact, Historical Tribute or
