@@ -1,0 +1,3082 @@
+{
+ "act": 32,
+ "era": "2021-07-23",
+ "title": "The Endless Night",
+ "years": "2021",
+ "sets": [
+  "afr",
+  "mid",
+  "vow"
+ ],
+ "landSet": "mid",
+ "intro": [
+  {
+   "who": "stage",
+   "line": "First a dungeon, with goblins, dragons and a lot of loot. Then Innistrad, where the night stops ending."
+  },
+  {
+   "who": "stage",
+   "line": "Knew I'd find ye in trouble if I came out an' looked for ye!",
+   "quote": true
+  },
+  {
+   "who": "stage",
+   "line": "The Forgotten Realms are a tabletop world. Innistrad is a gothic one. Both want you in their stories."
+  }
+ ],
+ "finale": [
+  {
+   "who": "stage",
+   "line": "Our kind has taken my gift for granted. It is time to correct that folly.",
+   "quote": true
+  },
+  {
+   "who": "stage",
+   "line": "The wedding does not finish, and the night ends. Olivia's plan falls apart at the altar."
+  },
+  {
+   "who": "stage",
+   "line": "Recorded: the sun rises on Innistrad. Far away, something is still counting."
+  }
+ ],
+ "villainFinale": [
+  {
+   "who": "stage",
+   "line": "Her grand wedding had one goal: to unite the vampire bloodlines under her rule.",
+   "quote": true
+  },
+  {
+   "who": "stage",
+   "line": "In this version, the wedding goes ahead, and the night does not end."
+  }
+ ],
+ "vibe": "endless-night-harvest",
+ "cast": {
+  "you": {
+   "name": "You",
+   "title": "Planeswalker",
+   "portrait": {
+    "card": "Dawnbringer Cleric",
+    "set": "afr",
+    "number": "9",
+    "id": "c00856f7-fef5-4ba5-9079-59a81d452c82",
+    "crop": "https://cards.scryfall.io/art_crop/front/c/0/c00856f7-fef5-4ba5-9079-59a81d452c82.jpg?1783926536",
+    "artist": "Lie Setiawan",
+    "focus": "50% 30%"
+   }
+  },
+  "party": {
+   "name": "The Adventuring Party",
+   "title": "Forgotten Realms",
+   "portrait": {
+    "card": "Bruenor Battlehammer",
+    "set": "afr",
+    "number": "219",
+    "id": "53e1eb00-412e-4c25-bc7b-6d074330fd97",
+    "crop": "https://cards.scryfall.io/art_crop/front/5/3/53e1eb00-412e-4c25-bc7b-6d074330fd97.jpg?1783926450",
+    "artist": "Wayne Reynolds",
+    "focus": "50% 25%"
+   }
+  },
+  "cult": {
+   "name": "The Cult of the Dragon",
+   "title": "Forgotten Realms",
+   "portrait": {
+    "card": "Hobgoblin Bandit Lord",
+    "set": "afr",
+    "number": "147",
+    "id": "09e9dc36-f2d8-4384-98cb-e44c00b02433",
+    "crop": "https://cards.scryfall.io/art_crop/front/0/9/09e9dc36-f2d8-4384-98cb-e44c00b02433.jpg?1783926478",
+    "artist": "Mark Zug",
+    "focus": "50% 30%"
+   }
+  },
+  "cathars": {
+   "name": "The Cathars",
+   "title": "Of Thraben",
+   "portrait": {
+    "card": "Lunarch Veteran // Luminous Phantom",
+    "set": "mid",
+    "number": "27",
+    "id": "d2704743-2e23-40b9-a367-c73d2db45afc",
+    "crop": "https://cards.scryfall.io/art_crop/front/d/2/d2704743-2e23-40b9-a367-c73d2db45afc.jpg?1783925662",
+    "artist": "Igor Kieryluk",
+    "focus": "50% 30%"
+   }
+  },
+  "wolves": {
+   "name": "The Werewolves",
+   "title": "Of the Ulvenwald",
+   "portrait": {
+    "card": "Tovolar's Huntmaster // Tovolar's Packleader",
+    "set": "mid",
+    "number": "204",
+    "id": "3983a304-5040-4b8d-945a-bf4ede3104a8",
+    "crop": "https://cards.scryfall.io/art_crop/front/3/9/3983a304-5040-4b8d-945a-bf4ede3104a8.jpg?1783925575",
+    "artist": "Cristi Balanescu",
+    "focus": "50% 30%"
+   }
+  },
+  "teferi": {
+   "name": "Teferi",
+   "title": "Who Slows the Sunset",
+   "portrait": {
+    "card": "Teferi, Who Slows the Sunset",
+    "set": "mid",
+    "number": "245",
+    "id": "ad2e18d4-986c-4a44-8f26-1b8689339cfb",
+    "crop": "https://cards.scryfall.io/art_crop/front/a/d/ad2e18d4-986c-4a44-8f26-1b8689339cfb.jpg?1783925552",
+    "artist": "Heonhwa",
+    "focus": "50% 25%"
+   }
+  },
+  "wedding": {
+   "name": "The Wedding Guests",
+   "title": "Voldaren",
+   "portrait": {
+    "card": "Voldaren Epicure",
+    "set": "vow",
+    "number": "182",
+    "id": "ae154e64-f626-45fb-bd52-840c1c27b2d3",
+    "crop": "https://cards.scryfall.io/art_crop/front/a/e/ae154e64-f626-45fb-bd52-840c1c27b2d3.jpg?1783924824",
+    "artist": "Martina Fačková",
+    "focus": "50% 30%"
+   }
+  },
+  "arlinn": {
+   "name": "Arlinn",
+   "title": "The Pack's Hope",
+   "portrait": {
+    "card": "Arlinn, the Pack's Hope // Arlinn, the Moon's Fury",
+    "set": "mid",
+    "number": "211",
+    "id": "50d4b0df-a1d8-494f-a019-70ce34161320",
+    "crop": "https://cards.scryfall.io/art_crop/front/5/0/50d4b0df-a1d8-494f-a019-70ce34161320.jpg?1783925572",
+    "artist": "Anna Steinbauer",
+    "focus": "50% 25%"
+   }
+  },
+  "dragons": {
+   "name": "Tiamat's Brood",
+   "title": "Dragons of the Realms",
+   "portrait": {
+    "card": "Red Dragon",
+    "set": "afr",
+    "number": "160",
+    "id": "7cf57369-b8e2-481c-89d4-c83c617499a3",
+    "crop": "https://cards.scryfall.io/art_crop/front/7/c/7cf57369-b8e2-481c-89d4-c83c617499a3.jpg?1783926472",
+    "artist": "Andrey Kuzinskiy",
+    "focus": "50% 30%"
+   }
+  },
+  "sorin": {
+   "name": "Sorin",
+   "title": "The Mirthless",
+   "portrait": {
+    "card": "Sorin the Mirthless",
+    "set": "vow",
+    "number": "131",
+    "id": "cc7ff5f4-a7cc-41a1-a22b-8cf67ad18707",
+    "crop": "https://cards.scryfall.io/art_crop/front/c/c/cc7ff5f4-a7cc-41a1-a22b-8cf67ad18707.jpg?1783924850",
+    "artist": "Martina Fačková",
+    "focus": "50% 25%"
+   }
+  },
+  "olivia": {
+   "name": "Olivia",
+   "title": "Crimson Bride",
+   "portrait": {
+    "card": "Olivia, Crimson Bride",
+    "set": "vow",
+    "number": "245",
+    "id": "301dacc9-ef92-4515-b907-a70d6c3fd73e",
+    "crop": "https://cards.scryfall.io/art_crop/front/3/0/301dacc9-ef92-4515-b907-a70d6c3fd73e.jpg?1783924788",
+    "artist": "Anna Steinbauer",
+    "focus": "50% 25%"
+   }
+  },
+  "izzet": {
+   "name": "Izzet Dragons",
+   "title": "Autumn 2021",
+   "portrait": {
+    "card": "Red Dragon",
+    "set": "afr",
+    "number": "160",
+    "id": "7cf57369-b8e2-481c-89d4-c83c617499a3",
+    "crop": "https://cards.scryfall.io/art_crop/front/7/c/7cf57369-b8e2-481c-89d4-c83c617499a3.jpg?1783926472",
+    "artist": "Andrey Kuzinskiy",
+    "focus": "50% 30%"
+   }
+  },
+  "greenwolves": {
+   "name": "Mono-Green Day/Night",
+   "title": "Autumn 2021",
+   "portrait": {
+    "card": "Werewolf Pack Leader",
+    "set": "afr",
+    "number": "211",
+    "id": "e88e6b39-bb4d-4d69-8007-d42f31bcbc29",
+    "crop": "https://cards.scryfall.io/art_crop/front/e/8/e88e6b39-bb4d-4d69-8007-d42f31bcbc29.jpg?1783926452",
+    "artist": "Miranda Meeks",
+    "focus": "50% 30%"
+   }
+  },
+  "grixis": {
+   "name": "Rakdos Vampires",
+   "title": "Autumn 2021",
+   "portrait": {
+    "card": "Bloodtithe Harvester",
+    "set": "vow",
+    "number": "232",
+    "id": "f0192cf7-3391-4720-b9c8-72dec5dde01e",
+    "crop": "https://cards.scryfall.io/art_crop/front/f/0/f0192cf7-3391-4720-b9c8-72dec5dde01e.jpg?1783924794",
+    "artist": "Lucas Graciano",
+    "focus": "50% 30%"
+   }
+  },
+  "clerics": {
+   "name": "Orzhov Clerics",
+   "title": "Autumn 2021",
+   "portrait": {
+    "card": "Dawnbringer Cleric",
+    "set": "afr",
+    "number": "9",
+    "id": "c00856f7-fef5-4ba5-9079-59a81d452c82",
+    "crop": "https://cards.scryfall.io/art_crop/front/c/0/c00856f7-fef5-4ba5-9079-59a81d452c82.jpg?1783926536",
+    "artist": "Lie Setiawan",
+    "focus": "50% 30%"
+   }
+  },
+  "heroes": {
+   "name": "The Wedding Crashers",
+   "title": "Teferi, Kaya, Chandra",
+   "portrait": {
+    "card": "Kaya, Geist Hunter",
+    "set": "vow",
+    "number": "240",
+    "id": "a98a208c-ee2b-4672-a43b-f4a708585b1a",
+    "crop": "https://cards.scryfall.io/art_crop/front/a/9/a98a208c-ee2b-4672-a43b-f4a708585b1a.jpg?1783924793",
+    "artist": "Ryan Pancoast",
+    "focus": "50% 25%"
+   }
+  },
+  "whiteagg": {
+   "name": "Mono-White Humans",
+   "title": "Autumn 2021",
+   "portrait": {
+    "card": "Adeline, Resplendent Cathar",
+    "set": "mid",
+    "number": "1",
+    "id": "18092f68-b96e-4084-9eba-b240d2195d81",
+    "crop": "https://cards.scryfall.io/art_crop/front/1/8/18092f68-b96e-4084-9eba-b240d2195d81.jpg?1783925668",
+    "artist": "Bryan Sola",
+    "focus": "50% 30%"
+   }
+  }
+ },
+ "battles": [
+  {
+   "id": "a32b1",
+   "slot": 1,
+   "kind": "Arrival",
+   "mood": "tension",
+   "title": "The Dungeon",
+   "difficulty": "Easy",
+   "teaches": [
+    "Dungeons"
+   ],
+   "blurb": "Bruenor and the party delve into a dungeon. The Cult of the Dragon is already down there.",
+   "rewardSet": "afr",
+   "host": false,
+   "hero": {
+    "who": "party",
+    "deck": {
+     "name": "The Adventuring Party",
+     "colors": "RW",
+     "archetype": null,
+     "label": "tribute",
+     "cards": [
+      {
+       "qty": 4,
+       "name": "Dwarfhold Champion",
+       "set": "afr",
+       "number": "14",
+       "id": "2404a028-05f5-469b-80e0-e820721ff266"
+      },
+      {
+       "qty": 4,
+       "name": "Steadfast Paladin",
+       "set": "afr",
+       "number": "38",
+       "id": "a2c06b6e-faf5-467d-bfe1-9ff00be9e2f5"
+      },
+      {
+       "qty": 4,
+       "name": "Armory Veteran",
+       "set": "afr",
+       "number": "130",
+       "id": "4177f57e-c239-47e8-ae50-5f593f6d54ec"
+      },
+      {
+       "qty": 3,
+       "name": "Hobgoblin Captain",
+       "set": "afr",
+       "number": "148",
+       "id": "f7c0aa86-fd3b-4e0f-9d37-ce1ea8922243"
+      },
+      {
+       "qty": 3,
+       "name": "Gloom Stalker",
+       "set": "afr",
+       "number": "16",
+       "id": "388722ad-dcc6-41b9-afd8-a93be91b30e0"
+      },
+      {
+       "qty": 3,
+       "name": "Veteran Dungeoneer",
+       "set": "afr",
+       "number": "40",
+       "id": "d8fe33b3-afaf-4a98-ae64-7d7e0eabe993"
+      },
+      {
+       "qty": 2,
+       "name": "Bruenor Battlehammer",
+       "set": "afr",
+       "number": "219",
+       "id": "53e1eb00-412e-4c25-bc7b-6d074330fd97"
+      },
+      {
+       "qty": 2,
+       "name": "Nadaar, Selfless Paladin",
+       "set": "afr",
+       "number": "27",
+       "id": "878a0d8c-11c1-4c65-9051-78e036ac496f"
+      },
+      {
+       "qty": 2,
+       "name": "Adult Gold Dragon",
+       "set": "afr",
+       "number": "216",
+       "id": "67a76010-d932-4727-8b5e-b8e2d14e1362"
+      },
+      {
+       "qty": 3,
+       "name": "Divine Smite",
+       "set": "afr",
+       "number": "12",
+       "id": "6b8d0852-4df3-4b29-830d-c6975265ef53"
+      },
+      {
+       "qty": 3,
+       "name": "Burning Hands",
+       "set": "afr",
+       "number": "135",
+       "id": "66e2d723-3fa0-4411-8f98-e4e6b3a5e6df"
+      },
+      {
+       "qty": 4,
+       "name": "Sundown Pass",
+       "set": "vow",
+       "number": "266",
+       "id": "8f3fddd7-ede4-41c7-a645-a6af298a3d35"
+      },
+      {
+       "qty": 10,
+       "name": "Plains",
+       "set": "mid",
+       "number": "268",
+       "id": "6ed1902d-0b09-4bbe-9059-a0779450ee05"
+      },
+      {
+       "qty": 10,
+       "name": "Mountain",
+       "set": "mid",
+       "number": "274",
+       "id": "3ba24a61-e529-4490-8536-6276ea77c511"
+      },
+      {
+       "qty": 3,
+       "name": "Dawnbringer Cleric",
+       "set": "afr",
+       "number": "9",
+       "id": "c00856f7-fef5-4ba5-9079-59a81d452c82"
+      }
+     ]
+    }
+   },
+   "villain": {
+    "who": "cult",
+    "deck": {
+     "name": "The Cult of the Dragon",
+     "colors": "BR",
+     "archetype": null,
+     "label": "tribute",
+     "cards": [
+      {
+       "qty": 4,
+       "name": "Dungeon Crawler",
+       "set": "afr",
+       "number": "99",
+       "id": "4138b66d-cf18-42a5-8522-241bd3969624"
+      },
+      {
+       "qty": 4,
+       "name": "Hoard Robber",
+       "set": "afr",
+       "number": "110",
+       "id": "b723d9cd-05f5-4894-9f2b-52a434a3019c"
+      },
+      {
+       "qty": 4,
+       "name": "Hired Hexblade",
+       "set": "afr",
+       "number": "109",
+       "id": "c23cbf01-90d0-4962-92d5-5e1566e8ef4b"
+      },
+      {
+       "qty": 4,
+       "name": "Battle Cry Goblin",
+       "set": "afr",
+       "number": "132",
+       "id": "9766a427-2bb3-4028-a502-d1194cdc93aa"
+      },
+      {
+       "qty": 3,
+       "name": "Hobgoblin Bandit Lord",
+       "set": "afr",
+       "number": "147",
+       "id": "09e9dc36-f2d8-4384-98cb-e44c00b02433"
+      },
+      {
+       "qty": 3,
+       "name": "Gelatinous Cube",
+       "set": "afr",
+       "number": "105",
+       "id": "1c472e70-300c-4881-86e7-c5ca690ab9b6"
+      },
+      {
+       "qty": 3,
+       "name": "Plundering Barbarian",
+       "set": "afr",
+       "number": "158",
+       "id": "d875881c-c285-47f1-8a37-e4a0239d47ec"
+      },
+      {
+       "qty": 3,
+       "name": "Burning Hands",
+       "set": "afr",
+       "number": "135",
+       "id": "66e2d723-3fa0-4411-8f98-e4e6b3a5e6df"
+      },
+      {
+       "qty": 2,
+       "name": "Power Word Kill",
+       "set": "afr",
+       "number": "114",
+       "id": "395b6ce4-143f-4eed-b565-98aa3d6208ef"
+      },
+      {
+       "qty": 2,
+       "name": "Dragon's Fire",
+       "set": "afr",
+       "number": "139",
+       "id": "9666987a-5267-46d3-9b00-31baa92a9cbc"
+      },
+      {
+       "qty": 4,
+       "name": "Haunted Ridge",
+       "set": "mid",
+       "number": "263",
+       "id": "b200e822-be36-4e59-bd0e-9d0188a68df8"
+      },
+      {
+       "qty": 10,
+       "name": "Swamp",
+       "set": "mid",
+       "number": "272",
+       "id": "77ba59d8-c13c-4966-845f-c090e9f061cb"
+      },
+      {
+       "qty": 10,
+       "name": "Mountain",
+       "set": "mid",
+       "number": "274",
+       "id": "3ba24a61-e529-4490-8536-6276ea77c511"
+      },
+      {
+       "qty": 2,
+       "name": "Vampire Spawn",
+       "set": "afr",
+       "number": "123",
+       "id": "b8975c72-b2ec-4c5f-86a4-4e1e3bb41c15"
+      },
+      {
+       "qty": 2,
+       "name": "Shambling Ghast",
+       "set": "afr",
+       "number": "119",
+       "id": "d96198a7-dd19-4940-bf8f-23135011fc84"
+      }
+     ]
+    }
+   },
+   "reward": {
+    "hero": {
+     "packs": 1,
+     "coins": 0
+    },
+    "villain": {
+     "card": {
+      "oracle_id": "43fea418-db6f-4953-89d1-6873b2ca41a8",
+      "name": "Hobgoblin Bandit Lord",
+      "rarity": "rare",
+      "set": "afr",
+      "id": "09e9dc36-f2d8-4384-98cb-e44c00b02433",
+      "image": "https://cards.scryfall.io/normal/front/0/9/09e9dc36-f2d8-4384-98cb-e44c00b02433.jpg"
+     },
+     "coins": 50
+    }
+   },
+   "scene": [
+    {
+     "who": "stage",
+     "line": "This one is for goblins, this one is for owlbears, this one is for toast, this one is for . . .",
+     "quote": true
+    },
+    {
+     "who": "stage",
+     "line": "Courage is neither a shield nor an axe, but the will to wield both in defense of the innocent.",
+     "quote": true
+    },
+    {
+     "who": "party",
+     "line": "Dungeons: venture into the dungeon, and each room you reach does something. A deeper dungeon pays off the most."
+    }
+   ],
+   "villainScene": [
+    {
+     "who": "stage",
+     "line": "Red dragons consider the world and every creature in it as theirs to command.",
+     "quote": true
+    },
+    {
+     "who": "stage",
+     "line": "In a hobgoblin's view of the world, the weak owe tribute and fealty to the strong.",
+     "quote": true
+    }
+   ],
+   "after": null,
+   "cues": {
+    "hero": {
+     "start": "Into the dark.",
+     "big": "Roll for it!",
+     "low": "Too many goblins...",
+     "win": "The loot is ours.",
+     "loss": "Eaten...",
+     "half": "Venture when you can; deeper rooms pay more."
+    },
+    "villain": {
+     "start": "Tribute!",
+     "big": "Dragonfire!",
+     "low": "The hoard slips...",
+     "win": "The Cult takes the hoard.",
+     "loss": "Slain..."
+    }
+   },
+   "bigPlays": [],
+   "sim": null
+  },
+  {
+   "id": "a32b2",
+   "slot": 2,
+   "kind": "Lesson",
+   "mood": "march",
+   "title": "The Wolves of the Ulvenwald",
+   "difficulty": "Easy",
+   "teaches": [
+    "Day and night"
+   ],
+   "blurb": "Innistrad's night grows longer, and the werewolves roam. The cathars stand watch.",
+   "rewardSet": "mid",
+   "host": false,
+   "hero": {
+    "who": "cathars",
+    "deck": {
+     "name": "The Cathars of Thraben",
+     "colors": "W",
+     "archetype": null,
+     "label": "tribute",
+     "cards": [
+      {
+       "qty": 4,
+       "name": "Lunarch Veteran // Luminous Phantom",
+       "set": "mid",
+       "number": "27",
+       "id": "d2704743-2e23-40b9-a367-c73d2db45afc"
+      },
+      {
+       "qty": 4,
+       "name": "Brutal Cathar // Moonrage Brute",
+       "set": "mid",
+       "number": "7",
+       "id": "0dbac7ce-a6fa-466e-b6ba-173cf2dec98e"
+      },
+      {
+       "qty": 4,
+       "name": "Cathar Commando",
+       "set": "mid",
+       "number": "10",
+       "id": "98cbc1c2-b76e-4da3-aa43-00e10b2ce532"
+      },
+      {
+       "qty": 3,
+       "name": "Gavony Dawnguard",
+       "set": "mid",
+       "number": "20",
+       "id": "58891dae-1c59-4f53-82ec-5b4c47133182"
+      },
+      {
+       "qty": 3,
+       "name": "Adeline, Resplendent Cathar",
+       "set": "mid",
+       "number": "1",
+       "id": "18092f68-b96e-4084-9eba-b240d2195d81"
+      },
+      {
+       "qty": 3,
+       "name": "Clarion Cathars",
+       "set": "mid",
+       "number": "14",
+       "id": "89f8ea28-7de1-4908-8e2d-b1aeff651015"
+      },
+      {
+       "qty": 3,
+       "name": "Sigardian Savior",
+       "set": "mid",
+       "number": "34",
+       "id": "b1a2b41a-34b0-428e-80ec-3ffd601093a2"
+      },
+      {
+       "qty": 3,
+       "name": "Dawnbringer Cleric",
+       "set": "afr",
+       "number": "9",
+       "id": "c00856f7-fef5-4ba5-9079-59a81d452c82"
+      },
+      {
+       "qty": 3,
+       "name": "Fateful Absence",
+       "set": "mid",
+       "number": "18",
+       "id": "eca8d6f8-c6f1-437c-99e2-4281eae14a6f"
+      },
+      {
+       "qty": 2,
+       "name": "Sungold Barrage",
+       "set": "mid",
+       "number": "36",
+       "id": "ee507688-9890-47c4-bb04-43c51eb48e22"
+      },
+      {
+       "qty": 2,
+       "name": "Thraben Exorcism",
+       "set": "mid",
+       "number": "39",
+       "id": "a0700298-30d2-45a6-bd64-4fd7fa4d7d30"
+      },
+      {
+       "qty": 2,
+       "name": "Ritual of Hope",
+       "set": "mid",
+       "number": "31",
+       "id": "d8293903-4604-4516-866e-27a306b6fd7c"
+      },
+      {
+       "qty": 24,
+       "name": "Plains",
+       "set": "mid",
+       "number": "268",
+       "id": "6ed1902d-0b09-4bbe-9059-a0779450ee05"
+      }
+     ]
+    }
+   },
+   "villain": {
+    "who": "wolves",
+    "deck": {
+     "name": "The Wolves of the Ulvenwald",
+     "colors": "G",
+     "archetype": null,
+     "label": "tribute",
+     "cards": [
+      {
+       "qty": 4,
+       "name": "Snarling Wolf",
+       "set": "mid",
+       "number": "199",
+       "id": "4b614b21-69ed-4788-97d7-ad502b634abb"
+      },
+      {
+       "qty": 4,
+       "name": "Bounding Wolf",
+       "set": "mid",
+       "number": "170",
+       "id": "74e22ed6-9d39-4feb-8c64-64cdd8313816"
+      },
+      {
+       "qty": 4,
+       "name": "Pestilent Wolf",
+       "set": "mid",
+       "number": "192",
+       "id": "e2686431-8d9c-4b9c-998f-38b5ae113d4a"
+      },
+      {
+       "qty": 3,
+       "name": "Werewolf Pack Leader",
+       "set": "afr",
+       "number": "211",
+       "id": "e88e6b39-bb4d-4d69-8007-d42f31bcbc29"
+      },
+      {
+       "qty": 3,
+       "name": "Dire Wolf Prowler",
+       "set": "afr",
+       "number": "179",
+       "id": "4ab4769d-31ba-40d3-9375-494b93f01183"
+      },
+      {
+       "qty": 3,
+       "name": "Hound Tamer // Untamed Pup",
+       "set": "mid",
+       "number": "187",
+       "id": "28e2119b-ed78-4b98-a956-f2b453d0b164"
+      },
+      {
+       "qty": 2,
+       "name": "Tovolar's Huntmaster // Tovolar's Packleader",
+       "set": "mid",
+       "number": "204",
+       "id": "3983a304-5040-4b8d-945a-bf4ede3104a8"
+      },
+      {
+       "qty": 3,
+       "name": "Oakshade Stalker // Moonlit Ambusher",
+       "set": "vow",
+       "number": "212",
+       "id": "8bcaa944-4e45-457c-be9c-07377b6ed08b"
+      },
+      {
+       "qty": 2,
+       "name": "Ulvenwald Oddity // Ulvenwald Behemoth",
+       "set": "vow",
+       "number": "225",
+       "id": "5fdf5fc4-69c8-4a59-9095-c2feefb64371"
+      },
+      {
+       "qty": 3,
+       "name": "Wolf Strike",
+       "set": "vow",
+       "number": "228",
+       "id": "02e9cd00-7ffd-44e1-aa0f-c94489ff4a0f"
+      },
+      {
+       "qty": 3,
+       "name": "Clear Shot",
+       "set": "mid",
+       "number": "176",
+       "id": "27476d9c-006d-4227-a5f2-49c7234b84a1"
+      },
+      {
+       "qty": 2,
+       "name": "Might of the Old Ways",
+       "set": "mid",
+       "number": "189",
+       "id": "6a853679-e9dd-4c05-8688-248de8f12760"
+      },
+      {
+       "qty": 24,
+       "name": "Forest",
+       "set": "mid",
+       "number": "276",
+       "id": "ad8ff40e-2d40-4557-8209-d2c84eb4ccf2"
+      }
+     ]
+    }
+   },
+   "reward": {
+    "hero": {
+     "packs": 1,
+     "coins": 0
+    },
+    "villain": {
+     "card": {
+      "oracle_id": "18563bc9-6090-4629-b304-89a67d93f635",
+      "name": "Tovolar's Huntmaster // Tovolar's Packleader",
+      "rarity": "rare",
+      "set": "mid",
+      "id": "3983a304-5040-4b8d-945a-bf4ede3104a8",
+      "image": "https://cards.scryfall.io/normal/front/3/9/3983a304-5040-4b8d-945a-bf4ede3104a8.jpg"
+     },
+     "coins": 50
+    }
+   },
+   "scene": [
+    {
+     "who": "stage",
+     "line": "Even in our darkest times, Avacyn's light still guides us.",
+     "quote": true
+    },
+    {
+     "who": "stage",
+     "line": "Begone, moon-cursed! These folk are no prey of yours.",
+     "quote": true
+    },
+    {
+     "who": "cathars",
+     "line": "Day and night: it becomes night if a player casts no spells on their own turn, and day returns if a player casts two or more. Werewolves change with it."
+    }
+   ],
+   "villainScene": [
+    {
+     "who": "stage",
+     "line": "Do you smell that, friends? Fear and despair.",
+     "quote": true
+    },
+    {
+     "who": "stage",
+     "line": "Oh, thank the angels. It's not a werewolf, just a regular wo—",
+     "quote": true
+    }
+   ],
+   "after": null,
+   "cues": {
+    "hero": {
+     "start": "Hold the line.",
+     "big": "Silver!",
+     "low": "The night is long...",
+     "win": "Dawn.",
+     "loss": "Moon-cursed...",
+     "half": "Cast two spells in a turn to bring the day back."
+    },
+    "villain": {
+     "start": "Fear and despair.",
+     "big": "Howl!",
+     "low": "The moon is low...",
+     "win": "The pack feasts.",
+     "loss": "Silver..."
+    }
+   },
+   "bigPlays": [],
+   "sim": null
+  },
+  {
+   "id": "a32b3",
+   "slot": 3,
+   "kind": "Lesson",
+   "mood": "comic",
+   "title": "Crashing the Rehearsal",
+   "difficulty": "Easy",
+   "teaches": [
+    "Disturb"
+   ],
+   "blurb": "Teferi slows the sunset to buy the town time. The wedding party has opinions about that.",
+   "rewardSet": "vow",
+   "host": false,
+   "hero": {
+    "who": "teferi",
+    "deck": {
+     "name": "Teferi's Geists",
+     "colors": "WU",
+     "archetype": null,
+     "label": "tribute",
+     "cards": [
+      {
+       "qty": 4,
+       "name": "Devoted Grafkeeper // Departed Soulkeeper",
+       "set": "mid",
+       "number": "218",
+       "id": "965e6bd5-dc32-406c-bc99-ceb15be4d3f2"
+      },
+      {
+       "qty": 4,
+       "name": "Brine Comber // Brinebound Gift",
+       "set": "vow",
+       "number": "233",
+       "id": "8d233bc5-8a08-4d38-abd4-21a112141afd"
+      },
+      {
+       "qty": 4,
+       "name": "Twinblade Geist // Twinblade Invocation",
+       "set": "vow",
+       "number": "40",
+       "id": "f1deb24b-3d8f-4251-a901-85eeb891f26f"
+      },
+      {
+       "qty": 3,
+       "name": "Kindly Ancestor // Ancestor's Embrace",
+       "set": "vow",
+       "number": "22",
+       "id": "25193485-7f41-4b05-9a69-4c112679f97c"
+      },
+      {
+       "qty": 3,
+       "name": "Dawnhart Geist",
+       "set": "vow",
+       "number": "8",
+       "id": "a1d27617-2d3d-44a1-b93f-0694253b6774"
+      },
+      {
+       "qty": 3,
+       "name": "Heron of Hope",
+       "set": "vow",
+       "number": "18",
+       "id": "fa7e6933-5c64-4fcd-bb7f-740767a149cb"
+      },
+      {
+       "qty": 3,
+       "name": "Wanderlight Spirit",
+       "set": "vow",
+       "number": "86",
+       "id": "7bb3ce5d-330d-427e-a053-8cc4eeb2941b"
+      },
+      {
+       "qty": 2,
+       "name": "Dennick, Pious Apprentice // Dennick, Pious Apparition",
+       "set": "mid",
+       "number": "217",
+       "id": "35cf2d72-931f-47b1-a1b4-916f0383551a"
+      },
+      {
+       "qty": 2,
+       "name": "Teferi, Who Slows the Sunset",
+       "set": "mid",
+       "number": "245",
+       "id": "ad2e18d4-986c-4a44-8f26-1b8689339cfb"
+      },
+      {
+       "qty": 3,
+       "name": "Faithful Mending",
+       "set": "mid",
+       "number": "221",
+       "id": "50752ca9-ea85-4c4b-9bf5-4f8759a7dcec"
+      },
+      {
+       "qty": 2,
+       "name": "Lantern Flare",
+       "set": "vow",
+       "number": "23",
+       "id": "dfd59300-7b5c-4263-a7fd-775c9fcb05ad"
+      },
+      {
+       "qty": 3,
+       "name": "Valorous Stance",
+       "set": "vow",
+       "number": "42",
+       "id": "0e6b9a3b-8a19-4094-8dbb-08a0a9ca04a0"
+      },
+      {
+       "qty": 4,
+       "name": "Deserted Beach",
+       "set": "mid",
+       "number": "260",
+       "id": "38367ee5-154b-44cb-8974-422038d039df"
+      },
+      {
+       "qty": 10,
+       "name": "Plains",
+       "set": "mid",
+       "number": "268",
+       "id": "6ed1902d-0b09-4bbe-9059-a0779450ee05"
+      },
+      {
+       "qty": 10,
+       "name": "Island",
+       "set": "mid",
+       "number": "270",
+       "id": "8dc3bd34-4d12-4728-a53a-b5ae434d74b0"
+      }
+     ]
+    }
+   },
+   "villain": {
+    "who": "wedding",
+    "deck": {
+     "name": "The Wedding Guests",
+     "colors": "BR",
+     "archetype": null,
+     "label": "tribute",
+     "cards": [
+      {
+       "qty": 4,
+       "name": "Vampire Interloper",
+       "set": "mid",
+       "number": "125",
+       "id": "c3e2ea59-36f1-4e95-bfe8-7008b085194f"
+      },
+      {
+       "qty": 4,
+       "name": "Vampire Socialite",
+       "set": "mid",
+       "number": "249",
+       "id": "f07cbf04-2864-4407-800e-4d55c10d3426"
+      },
+      {
+       "qty": 4,
+       "name": "Voldaren Epicure",
+       "set": "vow",
+       "number": "182",
+       "id": "ae154e64-f626-45fb-bd52-840c1c27b2d3"
+      },
+      {
+       "qty": 3,
+       "name": "Bloodcrazed Socialite",
+       "set": "vow",
+       "number": "96",
+       "id": "8b12c378-1103-4a50-88fa-cf5a2deef463"
+      },
+      {
+       "qty": 3,
+       "name": "Dominating Vampire",
+       "set": "vow",
+       "number": "154",
+       "id": "4b11d234-c6e4-45b2-a3c2-dcacc77cc084"
+      },
+      {
+       "qty": 3,
+       "name": "Falkenrath Forebear",
+       "set": "vow",
+       "number": "111",
+       "id": "451559d0-b62d-4757-8eb5-f6b0e240899c"
+      },
+      {
+       "qty": 3,
+       "name": "Voldaren Bloodcaster // Bloodbat Summoner",
+       "set": "vow",
+       "number": "137",
+       "id": "ca5297a5-bcaa-41fd-a397-e44dc4e00ba3"
+      },
+      {
+       "qty": 2,
+       "name": "Bloodvial Purveyor",
+       "set": "vow",
+       "number": "98",
+       "id": "4889c58b-8b84-42af-a56c-e886655aa997"
+      },
+      {
+       "qty": 2,
+       "name": "Olivia's Attendants",
+       "set": "vow",
+       "number": "172",
+       "id": "d9702fa3-9323-4e2f-92c9-6c31df198af2"
+      },
+      {
+       "qty": 3,
+       "name": "Flame-Blessed Bolt",
+       "set": "vow",
+       "number": "158",
+       "id": "b1771a8f-7bea-4bb0-9949-566ee6613b93"
+      },
+      {
+       "qty": 3,
+       "name": "Infernal Grasp",
+       "set": "mid",
+       "number": "107",
+       "id": "17824929-f131-4b8d-addb-66c25323155e"
+      },
+      {
+       "qty": 2,
+       "name": "Hungry for More",
+       "set": "mid",
+       "number": "228",
+       "id": "ce09c0df-d022-4ebf-8f7f-8a913249e75f"
+      },
+      {
+       "qty": 4,
+       "name": "Haunted Ridge",
+       "set": "mid",
+       "number": "263",
+       "id": "b200e822-be36-4e59-bd0e-9d0188a68df8"
+      },
+      {
+       "qty": 10,
+       "name": "Swamp",
+       "set": "mid",
+       "number": "272",
+       "id": "77ba59d8-c13c-4966-845f-c090e9f061cb"
+      },
+      {
+       "qty": 10,
+       "name": "Mountain",
+       "set": "mid",
+       "number": "274",
+       "id": "3ba24a61-e529-4490-8536-6276ea77c511"
+      }
+     ]
+    }
+   },
+   "reward": {
+    "hero": {
+     "packs": 1,
+     "coins": 0
+    },
+    "villain": {
+     "card": {
+      "oracle_id": "cef82674-1f61-407b-801b-a76a3803e598",
+      "name": "Voldaren Epicure",
+      "rarity": "common",
+      "set": "vow",
+      "id": "ae154e64-f626-45fb-bd52-840c1c27b2d3",
+      "image": "https://cards.scryfall.io/normal/front/a/e/ae154e64-f626-45fb-bd52-840c1c27b2d3.jpg"
+     },
+     "coins": 50
+    }
+   },
+   "scene": [
+    {
+     "who": "stage",
+     "line": "Here you go. Can't have you sleeping through your own wedding day.",
+     "quote": true
+    },
+    {
+     "who": "stage",
+     "line": "The towers and catwalks of the Voldaren fortress are lit by the lanterns of geists endlessly seeking a way out.",
+     "quote": true
+    },
+    {
+     "who": "teferi",
+     "line": "Disturb: a spirit card can be cast again from your graveyard as its back face. Dying is only the first half of the plan."
+    }
+   ],
+   "villainScene": [
+    {
+     "who": "stage",
+     "line": "If you're not refining your tastes, what's the point of living forever?",
+     "quote": true
+    },
+    {
+     "who": "stage",
+     "line": "Gotcha.",
+     "quote": true
+    }
+   ],
+   "after": null,
+   "cues": {
+    "hero": {
+     "start": "The sun can wait.",
+     "big": "Disturbed!",
+     "low": "The guests are many...",
+     "win": "Dawn delayed.",
+     "loss": "The guests win...",
+     "half": "Cast disturb cards from your graveyard."
+    },
+    "villain": {
+     "start": "Mind the guest list.",
+     "big": "Welcome!",
+     "low": "The toast fell flat...",
+     "win": "The wedding goes on.",
+     "loss": "Crashed..."
+    }
+   },
+   "bigPlays": [],
+   "sim": null
+  },
+  {
+   "id": "a32b4",
+   "slot": 4,
+   "kind": "Rival",
+   "mood": "tension",
+   "title": "The Brood of Tiamat",
+   "difficulty": "Normal",
+   "teaches": [
+    "Racing"
+   ],
+   "blurb": "Arlinn leads the pack against a dungeon full of dragons.",
+   "rewardSet": "afr",
+   "host": false,
+   "hero": {
+    "who": "arlinn",
+    "deck": {
+     "name": "The Pack's Hope",
+     "colors": "RG",
+     "archetype": null,
+     "label": "tribute",
+     "cards": [
+      {
+       "qty": 2,
+       "name": "Tovolar, Dire Overlord // Tovolar, the Midnight Scourge",
+       "set": "mid",
+       "number": "246",
+       "id": "f953fad3-0cd1-48aa-8ed9-d7d2e293e6e2"
+      },
+      {
+       "qty": 4,
+       "name": "Child of the Pack // Savage Packmate",
+       "set": "vow",
+       "number": "234",
+       "id": "cb168e3c-2c78-4e70-a39b-06aa6a47998c"
+      },
+      {
+       "qty": 4,
+       "name": "Kessig Naturalist // Lord of the Ulvenwald",
+       "set": "mid",
+       "number": "231",
+       "id": "8ab5f2e6-0e0a-4f7d-a959-3d07948ff317"
+      },
+      {
+       "qty": 2,
+       "name": "Halana and Alena, Partners",
+       "set": "vow",
+       "number": "239",
+       "id": "608fa232-f5fe-4c58-9efe-fb780f454b19"
+      },
+      {
+       "qty": 3,
+       "name": "Werewolf Pack Leader",
+       "set": "afr",
+       "number": "211",
+       "id": "e88e6b39-bb4d-4d69-8007-d42f31bcbc29"
+      },
+      {
+       "qty": 3,
+       "name": "Tovolar's Huntmaster // Tovolar's Packleader",
+       "set": "mid",
+       "number": "204",
+       "id": "3983a304-5040-4b8d-945a-bf4ede3104a8"
+      },
+      {
+       "qty": 3,
+       "name": "Dire Wolf Prowler",
+       "set": "afr",
+       "number": "179",
+       "id": "4ab4769d-31ba-40d3-9375-494b93f01183"
+      },
+      {
+       "qty": 3,
+       "name": "Bounding Wolf",
+       "set": "mid",
+       "number": "170",
+       "id": "74e22ed6-9d39-4feb-8c64-64cdd8313816"
+      },
+      {
+       "qty": 3,
+       "name": "Runebound Wolf",
+       "set": "vow",
+       "number": "176",
+       "id": "6f9615f0-376f-4ac0-b269-5f497f2b5223"
+      },
+      {
+       "qty": 3,
+       "name": "Kessig Flamebreather",
+       "set": "vow",
+       "number": "164",
+       "id": "303ad78a-b02a-44dc-afe6-7f95781a5062"
+      },
+      {
+       "qty": 3,
+       "name": "Arlinn, the Pack's Hope // Arlinn, the Moon's Fury",
+       "set": "mid",
+       "number": "211",
+       "id": "50d4b0df-a1d8-494f-a019-70ce34161320"
+      },
+      {
+       "qty": 3,
+       "name": "Wolf Strike",
+       "set": "vow",
+       "number": "228",
+       "id": "02e9cd00-7ffd-44e1-aa0f-c94489ff4a0f"
+      },
+      {
+       "qty": 4,
+       "name": "Rockfall Vale",
+       "set": "mid",
+       "number": "266",
+       "id": "eaff0a1e-b65a-422f-8f9f-65fac037047d"
+      },
+      {
+       "qty": 10,
+       "name": "Forest",
+       "set": "mid",
+       "number": "276",
+       "id": "ad8ff40e-2d40-4557-8209-d2c84eb4ccf2"
+      },
+      {
+       "qty": 10,
+       "name": "Mountain",
+       "set": "mid",
+       "number": "274",
+       "id": "3ba24a61-e529-4490-8536-6276ea77c511"
+      }
+     ]
+    }
+   },
+   "villain": {
+    "who": "dragons",
+    "deck": {
+     "name": "Tiamat's Brood",
+     "colors": "BR",
+     "archetype": null,
+     "label": "tribute",
+     "note": "Tiamat herself is five colours, which our lands cannot support; her cult's dragons stand in.",
+     "cards": [
+      {
+       "qty": 4,
+       "name": "Dungeon Crawler",
+       "set": "afr",
+       "number": "99",
+       "id": "4138b66d-cf18-42a5-8522-241bd3969624"
+      },
+      {
+       "qty": 4,
+       "name": "Hoard Robber",
+       "set": "afr",
+       "number": "110",
+       "id": "b723d9cd-05f5-4894-9f2b-52a434a3019c"
+      },
+      {
+       "qty": 4,
+       "name": "Hired Hexblade",
+       "set": "afr",
+       "number": "109",
+       "id": "c23cbf01-90d0-4962-92d5-5e1566e8ef4b"
+      },
+      {
+       "qty": 3,
+       "name": "Battle Cry Goblin",
+       "set": "afr",
+       "number": "132",
+       "id": "9766a427-2bb3-4028-a502-d1194cdc93aa"
+      },
+      {
+       "qty": 3,
+       "name": "Hobgoblin Bandit Lord",
+       "set": "afr",
+       "number": "147",
+       "id": "09e9dc36-f2d8-4384-98cb-e44c00b02433"
+      },
+      {
+       "qty": 3,
+       "name": "Gelatinous Cube",
+       "set": "afr",
+       "number": "105",
+       "id": "1c472e70-300c-4881-86e7-c5ca690ab9b6"
+      },
+      {
+       "qty": 3,
+       "name": "Red Dragon",
+       "set": "afr",
+       "number": "160",
+       "id": "7cf57369-b8e2-481c-89d4-c83c617499a3"
+      },
+      {
+       "qty": 3,
+       "name": "Black Dragon",
+       "set": "afr",
+       "number": "90",
+       "id": "aaca283a-39f1-4ae7-98fb-7821a927ef86"
+      },
+      {
+       "qty": 2,
+       "name": "Zalto, Fire Giant Duke",
+       "set": "afr",
+       "number": "171",
+       "id": "9c6da066-accb-4c09-9acb-4de263dadad3"
+      },
+      {
+       "qty": 2,
+       "name": "Inferno of the Star Mounts",
+       "set": "afr",
+       "number": "151",
+       "id": "c788c6a6-20d9-4a93-a898-330b085226c4"
+      },
+      {
+       "qty": 2,
+       "name": "Plundering Barbarian",
+       "set": "afr",
+       "number": "158",
+       "id": "d875881c-c285-47f1-8a37-e4a0239d47ec"
+      },
+      {
+       "qty": 3,
+       "name": "Power Word Kill",
+       "set": "afr",
+       "number": "114",
+       "id": "395b6ce4-143f-4eed-b565-98aa3d6208ef"
+      },
+      {
+       "qty": 4,
+       "name": "Haunted Ridge",
+       "set": "mid",
+       "number": "263",
+       "id": "b200e822-be36-4e59-bd0e-9d0188a68df8"
+      },
+      {
+       "qty": 10,
+       "name": "Swamp",
+       "set": "mid",
+       "number": "272",
+       "id": "77ba59d8-c13c-4966-845f-c090e9f061cb"
+      },
+      {
+       "qty": 10,
+       "name": "Mountain",
+       "set": "mid",
+       "number": "274",
+       "id": "3ba24a61-e529-4490-8536-6276ea77c511"
+      }
+     ]
+    }
+   },
+   "reward": {
+    "hero": {
+     "packs": 1,
+     "coins": 100
+    },
+    "villain": {
+     "card": {
+      "oracle_id": "ff6e4346-463c-445d-8f72-11cb35dd99ee",
+      "name": "Red Dragon",
+      "rarity": "uncommon",
+      "set": "afr",
+      "id": "7cf57369-b8e2-481c-89d4-c83c617499a3",
+      "image": "https://cards.scryfall.io/normal/front/7/c/7cf57369-b8e2-481c-89d4-c83c617499a3.jpg"
+     },
+     "coins": 100
+    }
+   },
+   "scene": [
+    {
+     "who": "stage",
+     "line": "The ancient dragon Imvaernarhro has earned his fiery nickname.",
+     "quote": true
+    },
+    {
+     "who": "stage",
+     "line": "Black dragons revel in the collapse of humanoid kingdoms.",
+     "quote": true
+    },
+    {
+     "who": "arlinn",
+     "line": "Dragons are bigger than you. Race, or take down their fliers."
+    }
+   ],
+   "villainScene": [
+    {
+     "who": "stage",
+     "line": "Fire giants love to fight on a large scale, and Duke Zalto is one of the greatest warmongers of his age.",
+     "quote": true
+    },
+    {
+     "who": "stage",
+     "line": "A simple fire spell that grows in intensity along with its caster.",
+     "quote": true
+    }
+   ],
+   "after": null,
+   "cues": {
+    "hero": {
+     "start": "Hunt them down.",
+     "big": "Pack attack!",
+     "low": "The dragons are huge...",
+     "win": "The pack wins.",
+     "loss": "Burned...",
+     "half": "Race, or remove the dragons."
+    },
+    "villain": {
+     "start": "Burn.",
+     "big": "Dragonfire!",
+     "low": "The hoard is thin...",
+     "win": "Ashes.",
+     "loss": "Slain..."
+    }
+   },
+   "bigPlays": [],
+   "sim": null
+  },
+  {
+   "id": "a32b5",
+   "slot": 5,
+   "kind": "Lesson",
+   "mood": "tension",
+   "title": "Sorin and the Bride",
+   "difficulty": "Normal",
+   "teaches": [
+    "Planeswalkers"
+   ],
+   "blurb": "Sorin goes to confront Olivia before the wedding. He is not the only one with a plan.",
+   "rewardSet": "vow",
+   "host": false,
+   "hero": {
+    "who": "sorin",
+    "deck": {
+     "name": "Sorin's Cathars",
+     "colors": "WB",
+     "archetype": null,
+     "label": "tribute",
+     "cards": [
+      {
+       "qty": 4,
+       "name": "Lunarch Veteran // Luminous Phantom",
+       "set": "mid",
+       "number": "27",
+       "id": "d2704743-2e23-40b9-a367-c73d2db45afc"
+      },
+      {
+       "qty": 3,
+       "name": "Gavony Dawnguard",
+       "set": "mid",
+       "number": "20",
+       "id": "58891dae-1c59-4f53-82ec-5b4c47133182"
+      },
+      {
+       "qty": 3,
+       "name": "Faithbound Judge // Sinner's Judgment",
+       "set": "vow",
+       "number": "12",
+       "id": "db791fb6-b0ff-4ded-bd3d-9447cf398312"
+      },
+      {
+       "qty": 3,
+       "name": "Mourning Patrol // Morning Apparition",
+       "set": "mid",
+       "number": "28",
+       "id": "2d3687e2-09e0-4753-aa02-88a19bde3330"
+      },
+      {
+       "qty": 3,
+       "name": "Bereaved Survivor // Dauntless Avenger",
+       "set": "mid",
+       "number": "4",
+       "id": "4adee830-62fd-4ab4-b1c6-a8bbe15331d1"
+      },
+      {
+       "qty": 3,
+       "name": "Voice of the Blessed",
+       "set": "vow",
+       "number": "44",
+       "id": "a16c0871-3f40-4d5a-9d21-e7f944b64a65"
+      },
+      {
+       "qty": 2,
+       "name": "Sigardian Savior",
+       "set": "mid",
+       "number": "34",
+       "id": "b1a2b41a-34b0-428e-80ec-3ffd601093a2"
+      },
+      {
+       "qty": 2,
+       "name": "Edgar, Charmed Groom // Edgar Markov's Coffin",
+       "set": "vow",
+       "number": "236",
+       "id": "63ba8eef-b834-4031-b0a1-0f8505d53813"
+      },
+      {
+       "qty": 2,
+       "name": "Kaya, Geist Hunter",
+       "set": "vow",
+       "number": "240",
+       "id": "a98a208c-ee2b-4672-a43b-f4a708585b1a"
+      },
+      {
+       "qty": 3,
+       "name": "Sorin the Mirthless",
+       "set": "vow",
+       "number": "131",
+       "id": "cc7ff5f4-a7cc-41a1-a22b-8cf67ad18707"
+      },
+      {
+       "qty": 3,
+       "name": "Markov Purifier",
+       "set": "vow",
+       "number": "241",
+       "id": "bb95d34a-0b13-4533-9efc-08381c81e6cd"
+      },
+      {
+       "qty": 2,
+       "name": "Fleshtaker",
+       "set": "mid",
+       "number": "222",
+       "id": "2ed8c0ef-2b53-49b5-bc2f-428628cb3975"
+      },
+      {
+       "qty": 3,
+       "name": "Fateful Absence",
+       "set": "mid",
+       "number": "18",
+       "id": "eca8d6f8-c6f1-437c-99e2-4281eae14a6f"
+      },
+      {
+       "qty": 4,
+       "name": "Shattered Sanctum",
+       "set": "vow",
+       "number": "264",
+       "id": "ad44c9aa-eb8f-4200-8dfe-2af728d80083"
+      },
+      {
+       "qty": 10,
+       "name": "Plains",
+       "set": "mid",
+       "number": "268",
+       "id": "6ed1902d-0b09-4bbe-9059-a0779450ee05"
+      },
+      {
+       "qty": 10,
+       "name": "Swamp",
+       "set": "mid",
+       "number": "272",
+       "id": "77ba59d8-c13c-4966-845f-c090e9f061cb"
+      }
+     ]
+    }
+   },
+   "villain": {
+    "who": "olivia",
+    "deck": {
+     "name": "Olivia's Court",
+     "colors": "BR",
+     "archetype": null,
+     "label": "tribute",
+     "cards": [
+      {
+       "qty": 4,
+       "name": "Vampire Interloper",
+       "set": "mid",
+       "number": "125",
+       "id": "c3e2ea59-36f1-4e95-bfe8-7008b085194f"
+      },
+      {
+       "qty": 4,
+       "name": "Vampire Socialite",
+       "set": "mid",
+       "number": "249",
+       "id": "f07cbf04-2864-4407-800e-4d55c10d3426"
+      },
+      {
+       "qty": 2,
+       "name": "Voldaren Epicure",
+       "set": "vow",
+       "number": "182",
+       "id": "ae154e64-f626-45fb-bd52-840c1c27b2d3"
+      },
+      {
+       "qty": 3,
+       "name": "Bloodcrazed Socialite",
+       "set": "vow",
+       "number": "96",
+       "id": "8b12c378-1103-4a50-88fa-cf5a2deef463"
+      },
+      {
+       "qty": 3,
+       "name": "Dominating Vampire",
+       "set": "vow",
+       "number": "154",
+       "id": "4b11d234-c6e4-45b2-a3c2-dcacc77cc084"
+      },
+      {
+       "qty": 3,
+       "name": "Falkenrath Forebear",
+       "set": "vow",
+       "number": "111",
+       "id": "451559d0-b62d-4757-8eb5-f6b0e240899c"
+      },
+      {
+       "qty": 3,
+       "name": "Voldaren Bloodcaster // Bloodbat Summoner",
+       "set": "vow",
+       "number": "137",
+       "id": "ca5297a5-bcaa-41fd-a397-e44dc4e00ba3"
+      },
+      {
+       "qty": 2,
+       "name": "Bloodvial Purveyor",
+       "set": "vow",
+       "number": "98",
+       "id": "4889c58b-8b84-42af-a56c-e886655aa997"
+      },
+      {
+       "qty": 2,
+       "name": "Olivia's Attendants",
+       "set": "vow",
+       "number": "172",
+       "id": "d9702fa3-9323-4e2f-92c9-6c31df198af2"
+      },
+      {
+       "qty": 3,
+       "name": "Flame-Blessed Bolt",
+       "set": "vow",
+       "number": "158",
+       "id": "b1771a8f-7bea-4bb0-9949-566ee6613b93"
+      },
+      {
+       "qty": 3,
+       "name": "Infernal Grasp",
+       "set": "mid",
+       "number": "107",
+       "id": "17824929-f131-4b8d-addb-66c25323155e"
+      },
+      {
+       "qty": 2,
+       "name": "Hungry for More",
+       "set": "mid",
+       "number": "228",
+       "id": "ce09c0df-d022-4ebf-8f7f-8a913249e75f"
+      },
+      {
+       "qty": 4,
+       "name": "Haunted Ridge",
+       "set": "mid",
+       "number": "263",
+       "id": "b200e822-be36-4e59-bd0e-9d0188a68df8"
+      },
+      {
+       "qty": 10,
+       "name": "Swamp",
+       "set": "mid",
+       "number": "272",
+       "id": "77ba59d8-c13c-4966-845f-c090e9f061cb"
+      },
+      {
+       "qty": 10,
+       "name": "Mountain",
+       "set": "mid",
+       "number": "274",
+       "id": "3ba24a61-e529-4490-8536-6276ea77c511"
+      },
+      {
+       "qty": 2,
+       "name": "Olivia, Crimson Bride",
+       "set": "vow",
+       "number": "245",
+       "id": "301dacc9-ef92-4515-b907-a70d6c3fd73e"
+      }
+     ]
+    }
+   },
+   "reward": {
+    "hero": {
+     "packs": 1,
+     "coins": 100
+    },
+    "villain": {
+     "card": {
+      "oracle_id": "8922a91e-3d15-4351-8d77-e0d6bc4de82e",
+      "name": "Olivia, Crimson Bride",
+      "rarity": "mythic",
+      "set": "vow",
+      "id": "301dacc9-ef92-4515-b907-a70d6c3fd73e",
+      "image": "https://cards.scryfall.io/normal/front/3/0/301dacc9-ef92-4515-b907-a70d6c3fd73e.jpg"
+     },
+     "coins": 100
+    }
+   },
+   "scene": [
+    {
+     "who": "stage",
+     "line": "Sensing a plot, Sorin raced to his grandfather's resting-crypt. But someone else had gotten there first.",
+     "quote": true
+    },
+    {
+     "who": "stage",
+     "line": "Our kind has taken my gift for granted. It is time to correct that folly.",
+     "quote": true
+    },
+    {
+     "who": "sorin",
+     "line": "Planeswalkers: protect them with blockers, and attack Olivia's court before they bury you in blood."
+    }
+   ],
+   "villainScene": [
+    {
+     "who": "stage",
+     "line": "Olivia was quick to make an example of any village that refused to pay her blood tithe.",
+     "quote": true
+    },
+    {
+     "who": "stage",
+     "line": "You can join me or feed me. Choose fast.",
+     "quote": true
+    }
+   ],
+   "after": null,
+   "cues": {
+    "hero": {
+     "start": "The grandson arrives.",
+     "big": "Sorin's oath!",
+     "low": "The court is too many...",
+     "win": "The crypt holds.",
+     "loss": "Buried...",
+     "half": "Guard Sorin and attack her board."
+    },
+    "villain": {
+     "start": "You are invited.",
+     "big": "Blood!",
+     "low": "The bride is pale...",
+     "win": "The court wins.",
+     "loss": "Dismissed..."
+    }
+   },
+   "bigPlays": [],
+   "sim": null
+  },
+  {
+   "id": "a32b6",
+   "slot": 6,
+   "kind": "Meta",
+   "mood": "march",
+   "title": "Izzet Dragons",
+   "difficulty": "Normal",
+   "teaches": [
+    "Cycling matters"
+   ],
+   "blurb": "Autumn 2021: Izzet dragons and a Delver against a green wolf pack.",
+   "rewardSet": "afr",
+   "host": false,
+   "hero": {
+    "who": "izzet",
+    "deck": {
+     "name": "Izzet Dragons",
+     "colors": "UR",
+     "archetype": "Midrange",
+     "label": "tribute",
+     "cards": [
+      {
+       "qty": 4,
+       "name": "Armory Veteran",
+       "set": "afr",
+       "number": "130",
+       "id": "4177f57e-c239-47e8-ae50-5f593f6d54ec"
+      },
+      {
+       "qty": 4,
+       "name": "Battle Cry Goblin",
+       "set": "afr",
+       "number": "132",
+       "id": "9766a427-2bb3-4028-a502-d1194cdc93aa"
+      },
+      {
+       "qty": 3,
+       "name": "Hobgoblin Bandit Lord",
+       "set": "afr",
+       "number": "147",
+       "id": "09e9dc36-f2d8-4384-98cb-e44c00b02433"
+      },
+      {
+       "qty": 3,
+       "name": "Flameskull",
+       "set": "afr",
+       "number": "143",
+       "id": "32d3f766-4098-4023-9a23-e9ff6722b66d"
+      },
+      {
+       "qty": 4,
+       "name": "Thermo-Alchemist",
+       "set": "mid",
+       "number": "164",
+       "id": "b4c68bad-c7ee-4dbc-ad06-8c4d9446884e"
+      },
+      {
+       "qty": 3,
+       "name": "Red Dragon",
+       "set": "afr",
+       "number": "160",
+       "id": "7cf57369-b8e2-481c-89d4-c83c617499a3"
+      },
+      {
+       "qty": 3,
+       "name": "Blue Dragon",
+       "set": "afr",
+       "number": "49",
+       "id": "98dea71b-2778-4374-8ea2-7fa82f0f6110"
+      },
+      {
+       "qty": 2,
+       "name": "Inferno of the Star Mounts",
+       "set": "afr",
+       "number": "151",
+       "id": "c788c6a6-20d9-4a93-a898-330b085226c4"
+      },
+      {
+       "qty": 2,
+       "name": "Zalto, Fire Giant Duke",
+       "set": "afr",
+       "number": "171",
+       "id": "9c6da066-accb-4c09-9acb-4de263dadad3"
+      },
+      {
+       "qty": 2,
+       "name": "Sunstreak Phoenix",
+       "set": "mid",
+       "number": "162",
+       "id": "97de6e92-e0e8-444e-baba-09c97510b1ab"
+      },
+      {
+       "qty": 2,
+       "name": "Dragon Turtle",
+       "set": "afr",
+       "number": "56",
+       "id": "d436ba80-386f-40ad-b0ca-a98cc50de964"
+      },
+      {
+       "qty": 2,
+       "name": "Magic Missile",
+       "set": "afr",
+       "number": "154",
+       "id": "c814ac58-8826-48cd-8209-4af6803866e3"
+      },
+      {
+       "qty": 2,
+       "name": "Shocking Grasp",
+       "set": "afr",
+       "number": "72",
+       "id": "ab95fe13-c09b-4eed-aeae-fb1c5b6eb476"
+      },
+      {
+       "qty": 4,
+       "name": "Stormcarved Coast",
+       "set": "vow",
+       "number": "265",
+       "id": "299f1dee-b3d7-472b-aa0b-2f9b46a96da5"
+      },
+      {
+       "qty": 10,
+       "name": "Island",
+       "set": "mid",
+       "number": "270",
+       "id": "8dc3bd34-4d12-4728-a53a-b5ae434d74b0"
+      },
+      {
+       "qty": 10,
+       "name": "Mountain",
+       "set": "mid",
+       "number": "274",
+       "id": "3ba24a61-e529-4490-8536-6276ea77c511"
+      }
+     ]
+    }
+   },
+   "villain": {
+    "who": "greenwolves",
+    "deck": {
+     "name": "Mono-Green Day/Night",
+     "colors": "G",
+     "archetype": "Aggro",
+     "label": "tribute",
+     "cards": [
+      {
+       "qty": 1,
+       "name": "Pestilent Wolf",
+       "set": "mid",
+       "number": "192",
+       "id": "e2686431-8d9c-4b9c-998f-38b5ae113d4a"
+      },
+      {
+       "qty": 3,
+       "name": "Dire Wolf Prowler",
+       "set": "afr",
+       "number": "179",
+       "id": "4ab4769d-31ba-40d3-9375-494b93f01183"
+      },
+      {
+       "qty": 3,
+       "name": "Tovolar's Huntmaster // Tovolar's Packleader",
+       "set": "mid",
+       "number": "204",
+       "id": "3983a304-5040-4b8d-945a-bf4ede3104a8"
+      },
+      {
+       "qty": 3,
+       "name": "Oakshade Stalker // Moonlit Ambusher",
+       "set": "vow",
+       "number": "212",
+       "id": "8bcaa944-4e45-457c-be9c-07377b6ed08b"
+      },
+      {
+       "qty": 3,
+       "name": "Ulvenwald Oddity // Ulvenwald Behemoth",
+       "set": "vow",
+       "number": "225",
+       "id": "5fdf5fc4-69c8-4a59-9095-c2feefb64371"
+      },
+      {
+       "qty": 2,
+       "name": "Hound Tamer // Untamed Pup",
+       "set": "mid",
+       "number": "187",
+       "id": "28e2119b-ed78-4b98-a956-f2b453d0b164"
+      },
+      {
+       "qty": 3,
+       "name": "Wolf Strike",
+       "set": "vow",
+       "number": "228",
+       "id": "02e9cd00-7ffd-44e1-aa0f-c94489ff4a0f"
+      },
+      {
+       "qty": 3,
+       "name": "Clear Shot",
+       "set": "mid",
+       "number": "176",
+       "id": "27476d9c-006d-4227-a5f2-49c7234b84a1"
+      },
+      {
+       "qty": 24,
+       "name": "Forest",
+       "set": "mid",
+       "number": "276",
+       "id": "ad8ff40e-2d40-4557-8209-d2c84eb4ccf2"
+      },
+      {
+       "qty": 4,
+       "name": "Gnoll Hunter",
+       "set": "afr",
+       "number": "185",
+       "id": "1d0634cb-e973-4f05-965e-d39b09fe57a9"
+      },
+      {
+       "qty": 4,
+       "name": "Scaled Herbalist",
+       "set": "afr",
+       "number": "204",
+       "id": "6cb05274-5a94-44e3-889a-667cba1da033"
+      },
+      {
+       "qty": 3,
+       "name": "Prosperous Innkeeper",
+       "set": "afr",
+       "number": "200",
+       "id": "096d3c0c-98e2-4cfc-a6e1-fddb0359c63f"
+      },
+      {
+       "qty": 4,
+       "name": "Intrepid Outlander",
+       "set": "afr",
+       "number": "191",
+       "id": "30b00777-d921-4264-9faf-5c048b656210"
+      }
+     ]
+    }
+   },
+   "reward": {
+    "hero": {
+     "packs": 1,
+     "coins": 100
+    },
+    "villain": {
+     "card": {
+      "oracle_id": "18563bc9-6090-4629-b304-89a67d93f635",
+      "name": "Tovolar's Huntmaster // Tovolar's Packleader",
+      "rarity": "rare",
+      "set": "mid",
+      "id": "3983a304-5040-4b8d-945a-bf4ede3104a8",
+      "image": "https://cards.scryfall.io/normal/front/3/9/3983a304-5040-4b8d-945a-bf4ede3104a8.jpg"
+     },
+     "coins": 100
+    }
+   },
+   "scene": [
+    {
+     "who": "stage",
+     "line": "Madness can't touch a mind ignited by genius.",
+     "quote": true
+    },
+    {
+     "who": "stage",
+     "line": "If my hypothesis is correct . . .",
+     "quote": true
+    },
+    {
+     "who": "izzet",
+     "line": "Burn their wolves early. Your dragons can wait until the board is yours."
+    }
+   ],
+   "villainScene": [
+    {
+     "who": "stage",
+     "line": "With their usual prey scared off by werewolves, the wolves of the Ulvenwald adopted inventive new hunting techniques.",
+     "quote": true
+    },
+    {
+     "who": "stage",
+     "line": "Wolves that feast on zombie flesh and survive carry the foul diseases of the dead wherever they roam.",
+     "quote": true
+    }
+   ],
+   "after": null,
+   "cues": {
+    "hero": {
+     "start": "A hypothesis.",
+     "big": "Dragon!",
+     "low": "The wolves are quick...",
+     "win": "Fire and ice.",
+     "loss": "Torn apart...",
+     "half": "Burn the wolves before they pile up."
+    },
+    "villain": {
+     "start": "Howl.",
+     "big": "Pack!",
+     "low": "The prey is gone...",
+     "win": "The pack feeds.",
+     "loss": "Scattered..."
+    }
+   },
+   "bigPlays": [],
+   "sim": null
+  },
+  {
+   "id": "a32b7",
+   "slot": 7,
+   "kind": "Meta",
+   "mood": "tension",
+   "title": "Rakdos Vampires",
+   "difficulty": "Normal",
+   "teaches": [
+    "Card advantage"
+   ],
+   "blurb": "Autumn 2021: Rakdos vampires against an Orzhov cleric deck.",
+   "rewardSet": "vow",
+   "host": false,
+   "hero": {
+    "who": "grixis",
+    "deck": {
+     "name": "Rakdos Vampires",
+     "colors": "BR",
+     "archetype": "Aggro",
+     "label": "tribute",
+     "cards": [
+      {
+       "qty": 4,
+       "name": "Voldaren Epicure",
+       "set": "vow",
+       "number": "182",
+       "id": "ae154e64-f626-45fb-bd52-840c1c27b2d3"
+      },
+      {
+       "qty": 4,
+       "name": "Vampire Socialite",
+       "set": "mid",
+       "number": "249",
+       "id": "f07cbf04-2864-4407-800e-4d55c10d3426"
+      },
+      {
+       "qty": 3,
+       "name": "Falkenrath Forebear",
+       "set": "vow",
+       "number": "111",
+       "id": "451559d0-b62d-4757-8eb5-f6b0e240899c"
+      },
+      {
+       "qty": 3,
+       "name": "Dominating Vampire",
+       "set": "vow",
+       "number": "154",
+       "id": "4b11d234-c6e4-45b2-a3c2-dcacc77cc084"
+      },
+      {
+       "qty": 2,
+       "name": "Florian, Voldaren Scion",
+       "set": "mid",
+       "number": "223",
+       "id": "53289e69-74da-46d2-91c2-a11378ba76ef"
+      },
+      {
+       "qty": 2,
+       "name": "Anje, Maid of Dishonor",
+       "set": "vow",
+       "number": "231",
+       "id": "1bfac4ab-97f1-448c-8554-42ed03eb5656"
+      },
+      {
+       "qty": 1,
+       "name": "Infernal Grasp",
+       "set": "mid",
+       "number": "107",
+       "id": "17824929-f131-4b8d-addb-66c25323155e"
+      },
+      {
+       "qty": 2,
+       "name": "Play with Fire",
+       "set": "mid",
+       "number": "154",
+       "id": "6f1a6c60-a8c4-44c2-b1ea-d3befbabdf43"
+      },
+      {
+       "qty": 4,
+       "name": "Haunted Ridge",
+       "set": "mid",
+       "number": "263",
+       "id": "b200e822-be36-4e59-bd0e-9d0188a68df8"
+      },
+      {
+       "qty": 10,
+       "name": "Swamp",
+       "set": "mid",
+       "number": "272",
+       "id": "77ba59d8-c13c-4966-845f-c090e9f061cb"
+      },
+      {
+       "qty": 10,
+       "name": "Mountain",
+       "set": "mid",
+       "number": "274",
+       "id": "3ba24a61-e529-4490-8536-6276ea77c511"
+      },
+      {
+       "qty": 3,
+       "name": "Falkenrath Pit Fighter",
+       "set": "mid",
+       "number": "137",
+       "id": "a743a3b6-3278-4644-a2d5-acf495c273ed"
+      },
+      {
+       "qty": 2,
+       "name": "Voldaren Stinger",
+       "set": "mid",
+       "number": "167",
+       "id": "f27a7c78-3a64-42fc-8808-15b1f41976a1"
+      },
+      {
+       "qty": 3,
+       "name": "Ragged Recluse // Odious Witch",
+       "set": "vow",
+       "number": "127",
+       "id": "7fb728de-0d6e-4b32-b0c4-edd7382d1391"
+      },
+      {
+       "qty": 4,
+       "name": "Doomed Dissenter",
+       "set": "vow",
+       "number": "106",
+       "id": "f7c0cf16-81ea-45e3-99cc-4424d59bb44b"
+      },
+      {
+       "qty": 3,
+       "name": "Undead Butler",
+       "set": "vow",
+       "number": "133",
+       "id": "2c9b8582-8887-4652-82e2-f9b11ee21545"
+      }
+     ]
+    }
+   },
+   "villain": {
+    "who": "clerics",
+    "deck": {
+     "name": "Orzhov Clerics",
+     "colors": "W",
+     "archetype": "Midrange",
+     "label": "tribute",
+     "cards": [
+      {
+       "qty": 4,
+       "name": "Lunarch Veteran // Luminous Phantom",
+       "set": "mid",
+       "number": "27",
+       "id": "d2704743-2e23-40b9-a367-c73d2db45afc"
+      },
+      {
+       "qty": 4,
+       "name": "Brutal Cathar // Moonrage Brute",
+       "set": "mid",
+       "number": "7",
+       "id": "0dbac7ce-a6fa-466e-b6ba-173cf2dec98e"
+      },
+      {
+       "qty": 4,
+       "name": "Cathar Commando",
+       "set": "mid",
+       "number": "10",
+       "id": "98cbc1c2-b76e-4da3-aa43-00e10b2ce532"
+      },
+      {
+       "qty": 3,
+       "name": "Gavony Dawnguard",
+       "set": "mid",
+       "number": "20",
+       "id": "58891dae-1c59-4f53-82ec-5b4c47133182"
+      },
+      {
+       "qty": 3,
+       "name": "Adeline, Resplendent Cathar",
+       "set": "mid",
+       "number": "1",
+       "id": "18092f68-b96e-4084-9eba-b240d2195d81"
+      },
+      {
+       "qty": 3,
+       "name": "Clarion Cathars",
+       "set": "mid",
+       "number": "14",
+       "id": "89f8ea28-7de1-4908-8e2d-b1aeff651015"
+      },
+      {
+       "qty": 3,
+       "name": "Sigardian Savior",
+       "set": "mid",
+       "number": "34",
+       "id": "b1a2b41a-34b0-428e-80ec-3ffd601093a2"
+      },
+      {
+       "qty": 3,
+       "name": "Dawnbringer Cleric",
+       "set": "afr",
+       "number": "9",
+       "id": "c00856f7-fef5-4ba5-9079-59a81d452c82"
+      },
+      {
+       "qty": 3,
+       "name": "Fateful Absence",
+       "set": "mid",
+       "number": "18",
+       "id": "eca8d6f8-c6f1-437c-99e2-4281eae14a6f"
+      },
+      {
+       "qty": 2,
+       "name": "Sungold Barrage",
+       "set": "mid",
+       "number": "36",
+       "id": "ee507688-9890-47c4-bb04-43c51eb48e22"
+      },
+      {
+       "qty": 2,
+       "name": "Thraben Exorcism",
+       "set": "mid",
+       "number": "39",
+       "id": "a0700298-30d2-45a6-bd64-4fd7fa4d7d30"
+      },
+      {
+       "qty": 2,
+       "name": "Ritual of Hope",
+       "set": "mid",
+       "number": "31",
+       "id": "d8293903-4604-4516-866e-27a306b6fd7c"
+      },
+      {
+       "qty": 24,
+       "name": "Plains",
+       "set": "mid",
+       "number": "268",
+       "id": "6ed1902d-0b09-4bbe-9059-a0779450ee05"
+      }
+     ]
+    }
+   },
+   "reward": {
+    "hero": {
+     "packs": 1,
+     "coins": 100
+    },
+    "villain": {
+     "card": {
+      "oracle_id": "0146f430-da82-48d3-a576-c2b05101797f",
+      "name": "Dawnbringer Cleric",
+      "rarity": "common",
+      "set": "afr",
+      "id": "c00856f7-fef5-4ba5-9079-59a81d452c82",
+      "image": "https://cards.scryfall.io/normal/front/c/0/c00856f7-fef5-4ba5-9079-59a81d452c82.jpg"
+     },
+     "coins": 100
+    }
+   },
+   "scene": [
+    {
+     "who": "stage",
+     "line": "If you're not refining your tastes, what's the point of living forever?",
+     "quote": true
+    },
+    {
+     "who": "stage",
+     "line": "A duel to first blood means something very different when a vampire is involved.",
+     "quote": true
+    },
+    {
+     "who": "grixis",
+     "line": "Trade early removal for their clerics. Sorin turns the late game your way."
+    }
+   ],
+   "villainScene": [
+    {
+     "who": "stage",
+     "line": "Selûne guides her devotees with majestic wisdom and grace.",
+     "quote": true
+    },
+    {
+     "who": "stage",
+     "line": "We are a product of our ancestors, the apotheosis of countless noble generations. Speak their names with reverence, and they will guide your path.",
+     "quote": true
+    }
+   ],
+   "after": null,
+   "cues": {
+    "hero": {
+     "start": "Refined.",
+     "big": "Feast!",
+     "low": "The clerics are stubborn...",
+     "win": "The night is ours.",
+     "loss": "Staked...",
+     "half": "Use removal on their best cleric."
+    },
+    "villain": {
+     "start": "Selûne guides us.",
+     "big": "Light!",
+     "low": "The faith wavers...",
+     "win": "The faith holds.",
+     "loss": "Fallen..."
+    }
+   },
+   "bigPlays": [],
+   "sim": null
+  },
+  {
+   "id": "a32b8",
+   "slot": 8,
+   "kind": "Boss",
+   "mood": "boss",
+   "title": "Olivia, Crimson Bride",
+   "difficulty": "Hard",
+   "teaches": [
+    "Racing"
+   ],
+   "blurb": "Olivia's wedding is the biggest night of the year. Kaya, Chandra and Teferi are going to crash it.",
+   "rewardSet": "vow",
+   "host": true,
+   "hero": {
+    "who": "heroes",
+    "deck": {
+     "name": "The Wedding Crashers",
+     "colors": "WBR",
+     "archetype": null,
+     "label": "tribute",
+     "cards": [
+      {
+       "qty": 3,
+       "name": "Kaya, Geist Hunter",
+       "set": "vow",
+       "number": "240",
+       "id": "a98a208c-ee2b-4672-a43b-f4a708585b1a"
+      },
+      {
+       "qty": 3,
+       "name": "Chandra, Dressed to Kill",
+       "set": "vow",
+       "number": "149",
+       "id": "681f7c73-92c6-47ba-af56-3ff032ac12da"
+      },
+      {
+       "qty": 2,
+       "name": "Sorin the Mirthless",
+       "set": "vow",
+       "number": "131",
+       "id": "cc7ff5f4-a7cc-41a1-a22b-8cf67ad18707"
+      },
+      {
+       "qty": 3,
+       "name": "Adeline, Resplendent Cathar",
+       "set": "mid",
+       "number": "1",
+       "id": "18092f68-b96e-4084-9eba-b240d2195d81"
+      },
+      {
+       "qty": 4,
+       "name": "Brutal Cathar // Moonrage Brute",
+       "set": "mid",
+       "number": "7",
+       "id": "0dbac7ce-a6fa-466e-b6ba-173cf2dec98e"
+      },
+      {
+       "qty": 4,
+       "name": "Cathar Commando",
+       "set": "mid",
+       "number": "10",
+       "id": "98cbc1c2-b76e-4da3-aa43-00e10b2ce532"
+      },
+      {
+       "qty": 2,
+       "name": "Edgar, Charmed Groom // Edgar Markov's Coffin",
+       "set": "vow",
+       "number": "236",
+       "id": "63ba8eef-b834-4031-b0a1-0f8505d53813"
+      },
+      {
+       "qty": 3,
+       "name": "Markov Waltzer",
+       "set": "vow",
+       "number": "242",
+       "id": "c2f45bc0-36ed-44ec-9bc8-31ea7c7fafdb"
+      },
+      {
+       "qty": 2,
+       "name": "Odric, Blood-Cursed",
+       "set": "vow",
+       "number": "243",
+       "id": "81a79f5f-a65a-4b43-b58c-cdfa09cc7855"
+      },
+      {
+       "qty": 3,
+       "name": "Bloodtithe Harvester",
+       "set": "vow",
+       "number": "232",
+       "id": "f0192cf7-3391-4720-b9c8-72dec5dde01e"
+      },
+      {
+       "qty": 1,
+       "name": "Markov Purifier",
+       "set": "vow",
+       "number": "241",
+       "id": "bb95d34a-0b13-4533-9efc-08381c81e6cd"
+      },
+      {
+       "qty": 3,
+       "name": "Fateful Absence",
+       "set": "mid",
+       "number": "18",
+       "id": "eca8d6f8-c6f1-437c-99e2-4281eae14a6f"
+      },
+      {
+       "qty": 3,
+       "name": "Infernal Grasp",
+       "set": "mid",
+       "number": "107",
+       "id": "17824929-f131-4b8d-addb-66c25323155e"
+      },
+      {
+       "qty": 3,
+       "name": "Sundown Pass",
+       "set": "vow",
+       "number": "266",
+       "id": "8f3fddd7-ede4-41c7-a645-a6af298a3d35"
+      },
+      {
+       "qty": 4,
+       "name": "Shattered Sanctum",
+       "set": "vow",
+       "number": "264",
+       "id": "ad44c9aa-eb8f-4200-8dfe-2af728d80083"
+      },
+      {
+       "qty": 3,
+       "name": "Haunted Ridge",
+       "set": "mid",
+       "number": "263",
+       "id": "b200e822-be36-4e59-bd0e-9d0188a68df8"
+      },
+      {
+       "qty": 6,
+       "name": "Plains",
+       "set": "mid",
+       "number": "268",
+       "id": "6ed1902d-0b09-4bbe-9059-a0779450ee05"
+      },
+      {
+       "qty": 4,
+       "name": "Swamp",
+       "set": "mid",
+       "number": "272",
+       "id": "77ba59d8-c13c-4966-845f-c090e9f061cb"
+      },
+      {
+       "qty": 4,
+       "name": "Mountain",
+       "set": "mid",
+       "number": "274",
+       "id": "3ba24a61-e529-4490-8536-6276ea77c511"
+      }
+     ]
+    }
+   },
+   "villain": {
+    "who": "olivia",
+    "deck": {
+     "name": "Olivia's Court",
+     "colors": "BR",
+     "archetype": null,
+     "label": "tribute",
+     "cards": [
+      {
+       "qty": 4,
+       "name": "Olivia, Crimson Bride",
+       "set": "vow",
+       "number": "245",
+       "id": "301dacc9-ef92-4515-b907-a70d6c3fd73e"
+      },
+      {
+       "qty": 4,
+       "name": "Bloodtithe Harvester",
+       "set": "vow",
+       "number": "232",
+       "id": "f0192cf7-3391-4720-b9c8-72dec5dde01e"
+      },
+      {
+       "qty": 4,
+       "name": "Vampire Socialite",
+       "set": "mid",
+       "number": "249",
+       "id": "f07cbf04-2864-4407-800e-4d55c10d3426"
+      },
+      {
+       "qty": 4,
+       "name": "Voldaren Epicure",
+       "set": "vow",
+       "number": "182",
+       "id": "ae154e64-f626-45fb-bd52-840c1c27b2d3"
+      },
+      {
+       "qty": 2,
+       "name": "Falkenrath Forebear",
+       "set": "vow",
+       "number": "111",
+       "id": "451559d0-b62d-4757-8eb5-f6b0e240899c"
+      },
+      {
+       "qty": 3,
+       "name": "Dominating Vampire",
+       "set": "vow",
+       "number": "154",
+       "id": "4b11d234-c6e4-45b2-a3c2-dcacc77cc084"
+      },
+      {
+       "qty": 2,
+       "name": "Florian, Voldaren Scion",
+       "set": "mid",
+       "number": "223",
+       "id": "53289e69-74da-46d2-91c2-a11378ba76ef"
+      },
+      {
+       "qty": 2,
+       "name": "Anje, Maid of Dishonor",
+       "set": "vow",
+       "number": "231",
+       "id": "1bfac4ab-97f1-448c-8554-42ed03eb5656"
+      },
+      {
+       "qty": 1,
+       "name": "Bloodvial Purveyor",
+       "set": "vow",
+       "number": "98",
+       "id": "4889c58b-8b84-42af-a56c-e886655aa997"
+      },
+      {
+       "qty": 3,
+       "name": "Hero's Downfall",
+       "set": "vow",
+       "number": "120",
+       "id": "c1b0751e-3a7e-4568-8c64-7429d6829687"
+      },
+      {
+       "qty": 3,
+       "name": "Infernal Grasp",
+       "set": "mid",
+       "number": "107",
+       "id": "17824929-f131-4b8d-addb-66c25323155e"
+      },
+      {
+       "qty": 3,
+       "name": "Flame-Blessed Bolt",
+       "set": "vow",
+       "number": "158",
+       "id": "b1771a8f-7bea-4bb0-9949-566ee6613b93"
+      },
+      {
+       "qty": 1,
+       "name": "Olivia's Midnight Ambush",
+       "set": "mid",
+       "number": "118",
+       "id": "9c1adede-22ad-4c1c-9501-ad731fbe1742"
+      },
+      {
+       "qty": 4,
+       "name": "Haunted Ridge",
+       "set": "mid",
+       "number": "263",
+       "id": "b200e822-be36-4e59-bd0e-9d0188a68df8"
+      },
+      {
+       "qty": 10,
+       "name": "Swamp",
+       "set": "mid",
+       "number": "272",
+       "id": "77ba59d8-c13c-4966-845f-c090e9f061cb"
+      },
+      {
+       "qty": 10,
+       "name": "Mountain",
+       "set": "mid",
+       "number": "274",
+       "id": "3ba24a61-e529-4490-8536-6276ea77c511"
+      }
+     ]
+    }
+   },
+   "reward": {
+    "hero": {
+     "packs": 2,
+     "coins": 200
+    },
+    "villain": {
+     "card": {
+      "oracle_id": "8922a91e-3d15-4351-8d77-e0d6bc4de82e",
+      "name": "Olivia, Crimson Bride",
+      "rarity": "mythic",
+      "set": "vow",
+      "id": "301dacc9-ef92-4515-b907-a70d6c3fd73e",
+      "image": "https://cards.scryfall.io/normal/front/3/0/301dacc9-ef92-4515-b907-a70d6c3fd73e.jpg"
+     },
+     "coins": 200
+    }
+   },
+   "scene": [
+    {
+     "who": "stage",
+     "line": "I'll lead.",
+     "quote": true
+    },
+    {
+     "who": "stage",
+     "line": "And you were almost finished with that ritual, weren't you, darling? How very rude of me. To make it up to you, I'll send you an invitation to my wedding.",
+     "quote": true
+    },
+    {
+     "who": "heroes",
+     "line": "Her court is bigger than yours. Hit Olivia first."
+    }
+   ],
+   "villainScene": [
+    {
+     "who": "stage",
+     "line": "Her grand wedding had one goal: to unite the vampire bloodlines under her rule.",
+     "quote": true
+    },
+    {
+     "who": "stage",
+     "line": "You can join me or feed me. Choose fast.",
+     "quote": true
+    }
+   ],
+   "after": null,
+   "cues": {
+    "hero": {
+     "start": "Crash it!",
+     "big": "Together!",
+     "low": "The court is too big...",
+     "win": "The night ends.",
+     "loss": "The wedding goes on...",
+     "half": "Hit Olivia before the court grows."
+    },
+    "villain": {
+     "start": "Welcome.",
+     "big": "[the organ roars]",
+     "low": "[a pale smile]",
+     "win": "I do.",
+     "loss": "[the bride falls silent]",
+     "half": {
+      "who": "sorin",
+      "line": "Not tonight."
+     }
+    }
+   },
+   "bigPlays": [],
+   "sim": null
+  },
+  {
+   "id": "a32b9",
+   "slot": 9,
+   "kind": "Secret Boss",
+   "secret": true,
+   "mood": "boss",
+   "title": "Mono-White Humans",
+   "difficulty": "Hard",
+   "teaches": [
+    "Racing"
+   ],
+   "blurb": "Deep in the archive, a white deck that is out of cards by turn six and does not care.",
+   "rewardSet": "mid",
+   "host": true,
+   "archive": {
+    "deck": "Mono-White Humans",
+    "when": "Autumn 2021",
+    "format": "Standard.",
+    "what": "A white aggro deck built around Adeline, Resplendent Cathar, Brutal Cathar, Thalia and a stream of cheap Humans.",
+    "why": "Cheap efficient creatures, a strong exile effect, and Adeline's growing token army made it the fastest deck in the format.",
+    "beat": "Kill Adeline early, keep creatures back to block, and use sweepers if you have them.",
+    "after": "Innistrad: Crimson Vow and then Kamigawa: Neon Dynasty arrived and shuffled the format again."
+   },
+   "hero": {
+    "who": "you",
+    "deck": {
+     "name": "Izzet Dragons",
+     "colors": "UR",
+     "archetype": "Midrange",
+     "label": "tribute",
+     "cards": [
+      {
+       "qty": 4,
+       "name": "Armory Veteran",
+       "set": "afr",
+       "number": "130",
+       "id": "4177f57e-c239-47e8-ae50-5f593f6d54ec"
+      },
+      {
+       "qty": 4,
+       "name": "Battle Cry Goblin",
+       "set": "afr",
+       "number": "132",
+       "id": "9766a427-2bb3-4028-a502-d1194cdc93aa"
+      },
+      {
+       "qty": 3,
+       "name": "Hobgoblin Bandit Lord",
+       "set": "afr",
+       "number": "147",
+       "id": "09e9dc36-f2d8-4384-98cb-e44c00b02433"
+      },
+      {
+       "qty": 3,
+       "name": "Flameskull",
+       "set": "afr",
+       "number": "143",
+       "id": "32d3f766-4098-4023-9a23-e9ff6722b66d"
+      },
+      {
+       "qty": 4,
+       "name": "Thermo-Alchemist",
+       "set": "mid",
+       "number": "164",
+       "id": "b4c68bad-c7ee-4dbc-ad06-8c4d9446884e"
+      },
+      {
+       "qty": 3,
+       "name": "Red Dragon",
+       "set": "afr",
+       "number": "160",
+       "id": "7cf57369-b8e2-481c-89d4-c83c617499a3"
+      },
+      {
+       "qty": 3,
+       "name": "Blue Dragon",
+       "set": "afr",
+       "number": "49",
+       "id": "98dea71b-2778-4374-8ea2-7fa82f0f6110"
+      },
+      {
+       "qty": 2,
+       "name": "Inferno of the Star Mounts",
+       "set": "afr",
+       "number": "151",
+       "id": "c788c6a6-20d9-4a93-a898-330b085226c4"
+      },
+      {
+       "qty": 2,
+       "name": "Zalto, Fire Giant Duke",
+       "set": "afr",
+       "number": "171",
+       "id": "9c6da066-accb-4c09-9acb-4de263dadad3"
+      },
+      {
+       "qty": 2,
+       "name": "Sunstreak Phoenix",
+       "set": "mid",
+       "number": "162",
+       "id": "97de6e92-e0e8-444e-baba-09c97510b1ab"
+      },
+      {
+       "qty": 2,
+       "name": "Dragon Turtle",
+       "set": "afr",
+       "number": "56",
+       "id": "d436ba80-386f-40ad-b0ca-a98cc50de964"
+      },
+      {
+       "qty": 2,
+       "name": "Magic Missile",
+       "set": "afr",
+       "number": "154",
+       "id": "c814ac58-8826-48cd-8209-4af6803866e3"
+      },
+      {
+       "qty": 2,
+       "name": "Shocking Grasp",
+       "set": "afr",
+       "number": "72",
+       "id": "ab95fe13-c09b-4eed-aeae-fb1c5b6eb476"
+      },
+      {
+       "qty": 4,
+       "name": "Stormcarved Coast",
+       "set": "vow",
+       "number": "265",
+       "id": "299f1dee-b3d7-472b-aa0b-2f9b46a96da5"
+      },
+      {
+       "qty": 10,
+       "name": "Island",
+       "set": "mid",
+       "number": "270",
+       "id": "8dc3bd34-4d12-4728-a53a-b5ae434d74b0"
+      },
+      {
+       "qty": 10,
+       "name": "Mountain",
+       "set": "mid",
+       "number": "274",
+       "id": "3ba24a61-e529-4490-8536-6276ea77c511"
+      }
+     ]
+    }
+   },
+   "villain": {
+    "who": "whiteagg",
+    "deck": {
+     "name": "Mono-White Humans",
+     "colors": "W",
+     "archetype": "Aggro",
+     "label": "tribute",
+     "note": "Built from cards in this act's sets only. No single tournament list is copied.",
+     "cards": [
+      {
+       "qty": 4,
+       "name": "Adeline, Resplendent Cathar",
+       "set": "mid",
+       "number": "1",
+       "id": "18092f68-b96e-4084-9eba-b240d2195d81"
+      },
+      {
+       "qty": 4,
+       "name": "Brutal Cathar // Moonrage Brute",
+       "set": "mid",
+       "number": "7",
+       "id": "0dbac7ce-a6fa-466e-b6ba-173cf2dec98e"
+      },
+      {
+       "qty": 4,
+       "name": "Thalia, Guardian of Thraben",
+       "set": "vow",
+       "number": "38",
+       "id": "c9f8b8fb-1cd8-450e-a1fe-892e7a323479"
+      },
+      {
+       "qty": 4,
+       "name": "Lunarch Veteran // Luminous Phantom",
+       "set": "mid",
+       "number": "27",
+       "id": "d2704743-2e23-40b9-a367-c73d2db45afc"
+      },
+      {
+       "qty": 4,
+       "name": "Cathar Commando",
+       "set": "mid",
+       "number": "10",
+       "id": "98cbc1c2-b76e-4da3-aa43-00e10b2ce532"
+      },
+      {
+       "qty": 3,
+       "name": "Clarion Cathars",
+       "set": "mid",
+       "number": "14",
+       "id": "89f8ea28-7de1-4908-8e2d-b1aeff651015"
+      },
+      {
+       "qty": 3,
+       "name": "Gavony Dawnguard",
+       "set": "mid",
+       "number": "20",
+       "id": "58891dae-1c59-4f53-82ec-5b4c47133182"
+      },
+      {
+       "qty": 2,
+       "name": "Sigardian Savior",
+       "set": "mid",
+       "number": "34",
+       "id": "b1a2b41a-34b0-428e-80ec-3ffd601093a2"
+      },
+      {
+       "qty": 2,
+       "name": "Voice of the Blessed",
+       "set": "vow",
+       "number": "44",
+       "id": "a16c0871-3f40-4d5a-9d21-e7f944b64a65"
+      },
+      {
+       "qty": 3,
+       "name": "Fateful Absence",
+       "set": "mid",
+       "number": "18",
+       "id": "eca8d6f8-c6f1-437c-99e2-4281eae14a6f"
+      },
+      {
+       "qty": 3,
+       "name": "Valorous Stance",
+       "set": "vow",
+       "number": "42",
+       "id": "0e6b9a3b-8a19-4094-8dbb-08a0a9ca04a0"
+      },
+      {
+       "qty": 24,
+       "name": "Plains",
+       "set": "mid",
+       "number": "268",
+       "id": "6ed1902d-0b09-4bbe-9059-a0779450ee05"
+      }
+     ]
+    }
+   },
+   "reward": {
+    "hero": {
+     "packs": 2,
+     "coins": 200
+    },
+    "villain": {
+     "card": {
+      "oracle_id": "1ed2d8e0-462b-468e-8fd3-1f3c6d99fb8a",
+      "name": "Brutal Cathar // Moonrage Brute",
+      "rarity": "rare",
+      "set": "mid",
+      "id": "0dbac7ce-a6fa-466e-b6ba-173cf2dec98e",
+      "image": "https://cards.scryfall.io/normal/front/0/d/0dbac7ce-a6fa-466e-b6ba-173cf2dec98e.jpg"
+     },
+     "coins": 200
+    }
+   },
+   "scene": [
+    {
+     "who": "stage",
+     "line": "Honorable tactics are for honorable foes. These werewolves are preying on innocent travelers. I'll stab them in the back while they sleep if I have to.",
+     "quote": true
+    },
+    {
+     "who": "you",
+     "line": "Kill Adeline the turn she lands, or they will run you over."
+    }
+   ],
+   "villainScene": [
+    {
+     "who": "stage",
+     "line": "Thraben belongs to the living. I will not rest until it is cleansed.",
+     "quote": true
+    }
+   ],
+   "after": [
+    {
+     "who": "stage",
+     "line": "Recorded: Innistrad: Crimson Vow and then Kamigawa: Neon Dynasty arrived and shuffled the format again."
+    }
+   ],
+   "cues": {
+    "hero": {
+     "start": "Hold the line.",
+     "big": "Burn her!",
+     "low": "They are too many...",
+     "win": "Cleansed.",
+     "loss": "Overrun...",
+     "half": "Kill Adeline on sight."
+    },
+    "villain": {
+     "start": "[a trumpet]",
+     "big": "[the token army]",
+     "low": "[a stall]",
+     "win": "[the dawn]",
+     "loss": "[the line breaks]"
+    }
+   },
+   "bigPlays": [],
+   "sim": null
+  }
+ ]
+}
