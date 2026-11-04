@@ -250,7 +250,7 @@ export default {
         q('stage', 'I\'ve never seen the firemane angels so anxious.')],
       cues: {hero: cue('Their debts are mine.', 'Slip away!', 'They are swarming...', 'The Syndicate holds.', 'Spark lost...', 'Guard your walker. Attack theirs.'),
         villain: cue('[silence]', '[an army wakes]', '[the stall]', '[the dead march]', '[the army breaks]')}},
-    {slot: 6, mood: 'march', kind: 'Meta', title: 'Esper Superfriends', difficulty: 'Normal', rewardSet: 'm20', teaches: ['Racing'],
+    {slot: 6, mood: 'march', kind: 'Meta', title: 'Esper Superfriends', difficulty: 'Normal', rewardSet: 'm20', teaches: ['Haste'],
       blurb: 'Spring 2019: a pile of planeswalkers against a pile of burn spells.',
       hero: {who: 'superfriends', deck: {label: 'tribute', name: 'Esper Superfriends', colors: 'WUB', archetype: 'Control', list: `
 3 Teferi, Time Raveler
@@ -400,7 +400,7 @@ export default {
         villain: {...cue('Kneel.', '[the sky darkens]', '[a flicker of doubt]', 'The city is mine.', '[the dragon is quiet]'),
           half: {who: 'liliana', line: 'He will not be my master.'}}}},
     {slot: 9, kind: 'Secret Boss', secret: true, title: 'Esper Hero', difficulty: 'Hard', rewardSet: 'rna', rewardCard: 'Hero of Precinct One', mood: 'boss',
-      teaches: ['Racing'],
+      teaches: ['Trample'],
       archive: {deck: 'Esper Hero', when: 'Spring 2019', format: 'Standard.',
         what: 'A white-based aggro-control deck that used Hero of Precinct One, cheap creatures, and Teferi, Time Raveler to protect its board.',
         why: 'Cheap threats, Teferi\'s protection, and a few flexible removal spells made it hard to play around in a field of midrange decks.',

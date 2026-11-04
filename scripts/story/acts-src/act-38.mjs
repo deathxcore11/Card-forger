@@ -216,7 +216,7 @@ export default {
         q('stage', 'So, these dragons intend to also manifest through a sandstorm? I take some offense to that.')],
       cues: {hero: cue('Study the storm.', 'Harmonize!', 'The clans hit hard...', 'The school wins.', 'Scattered...', 'Recast a spell from the graveyard.'),
         villain: cue('For the clan!', 'Charge!', 'The clan breaks...', 'The clans stand.', 'Scattered...')}},
-    {slot: 6, mood: 'march', kind: 'Meta', title: 'Mono-Red vs Domain', difficulty: 'Normal', rewardSet: 'dft', teaches: ['Racing'],
+    {slot: 6, mood: 'march', kind: 'Meta', title: 'Mono-Red vs Domain', difficulty: 'Normal', rewardSet: 'dft', teaches: ['Menace'],
       blurb: 'Spring 2025: mono-red aggro against a big green ramp deck.',
       hero: {who: 'red', deck: {label: 'tribute', name: 'Mono-Red Aggro', colors: 'R', archetype: 'Aggro', list: `
 4 Greasewrench Goblin
@@ -235,12 +235,14 @@ export default {
 4 Molt Tender
 4 Jibbirik Omnivore
 4 Greenbelt Guardian
-4 Regal Imperiosaur
+2 Regal Imperiosaur
 3 Terrian, World Tyrant
-3 Autarch Mammoth
+1 Autarch Mammoth
 3 Migrating Ketradon
 4 Run Over
 3 Point the Way
+2 Beastrider Vanguard
+2 Venomsac Lagac
 24 Forest`}},
       scene: [q('stage', 'You wanted a fight. Now you\'ve got two.'),
         q('stage', 'They feed on OIL? Where were they during the Phyrexian Invasion?!'),
@@ -256,8 +258,9 @@ export default {
 4 Cori-Steel Cutter
 4 Jeskai Devotee
 4 Roiling Dragonstorm
-4 Ureni's Rebuff
-4 Dispelling Exhale
+2 Captain Howler, Sea Scourge
+3 Magmatic Hellkite
+3 Fearless Swashbuckler
 4 Twin Bolt
 4 Fire-Rim Form
 4 Dragonologist
@@ -265,16 +268,19 @@ export default {
 10 Island
 10 Mountain`}},
       villain: {who: 'dimir', deck: {label: 'tribute', name: 'Dimir Midrange', colors: 'UB', archetype: 'Midrange', list: `
-4 Bloodghast
+1 Bloodghast
 4 Gastal Raider
-4 Gonti, Night Minister
-3 Haunted Hellride
+3 Gonti, Night Minister
+2 Haunted Hellride
 3 Haunt the Network
 4 Mutant Surveyor
 4 Spell Pierce
 3 Spin Out
-4 Aether Syphon
+2 Aether Syphon
 3 Quag Feast
+2 Wreckage Wickerfolk
+3 Deathless Pilot
+2 Engine Rat
 4 Dismal Backwater
 10 Island
 10 Swamp`}},
@@ -285,7 +291,7 @@ export default {
         q('stage', 'At the Tombs Before Time, the living of Amonkhet made vital alliances with the honored dead.')],
       cues: {hero: cue('Quick hands.', 'Prowess!', 'Their removal is good...', 'Quick win.', 'Outlasted...', 'Cast cheap spells to pump your creatures.'),
         villain: cue('Patience.', 'Drain!', 'The tempo is gone...', 'Dimir wins.', 'Outraced...')}},
-    {slot: 8, mood: 'boss', kind: 'Boss', title: 'Sarkhan, Dragon Ascendant', difficulty: 'Hard', rewardSet: 'tdm', teaches: ['Racing'],
+    {slot: 8, mood: 'boss', kind: 'Boss', title: 'Sarkhan, Dragon Ascendant', difficulty: 'Hard', rewardSet: 'tdm', teaches: ['Flying'],
       blurb: 'Sarkhan feeds the dragonstorms because he believes he is saving the dragons. The racers and the clans have to stop him.',
       hero: {who: 'allies', deck: {label: 'tribute', name: 'The Racers and the Clans', colors: 'RG', list: `
 4 Beastrider Vanguard

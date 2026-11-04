@@ -45,7 +45,7 @@ export default {
   battles: [
     {slot: 1, mood: 'tension', kind: 'Arrival', title: 'Faces in the Crowd', difficulty: 'Easy', rewardSet: 'ons', teaches: ['Morph'],
       blurb: "Ixidor and Nivea are illusionists who fight in the Grand Coliseum, and they are in love. They are also winning too much, and the Patriarch does not like surprises.",
-      hero: {who: 'ixidor', deck: {name: 'Reality Sculptor', colors: 'U', list: `
+      hero: {who: 'ixidor', deck: {label: 'tribute', name: 'Reality Sculptor', colors: 'U', list: `
 2 Ixidor, Reality Sculptor
 4 Echo Tracer
 4 Riptide Entrancer
@@ -57,7 +57,7 @@ export default {
 4 Ghosthelm Courier
 2 Arcanis the Omnipotent
 24 Island`}},
-      villain: {who: 'patriarch', deck: {name: 'Crowd Favorites', colors: 'B', list: `
+      villain: {who: 'patriarch', deck: {label: 'tribute', name: 'Crowd Favorites', colors: 'B', list: `
 4 Cabal Executioner
 4 Severed Legion
 4 Undead Gladiator
@@ -83,7 +83,7 @@ export default {
         s('stage', 'Exiled to the desert, alone, Ixidor begins to dream of an angel. A beautiful one, with a sword, who hates the Cabal as much as he does.')]},
     {slot: 2, mood: 'march', kind: 'Lesson', title: 'Kinship', difficulty: 'Easy', rewardSet: 'ons', teaches: ['Tribes'],
       blurb: "The Mirari's power is still bleeding out of Krosa, and the beasts it made are spilling into the Wirewood forest next door. The elves of Wirewood are few, but they fight together.",
-      hero: {who: 'hivemaster', deck: {name: 'Wirewood', colors: 'G', list: `
+      hero: {who: 'hivemaster', deck: {label: 'tribute', name: 'Wirewood', colors: 'G', list: `
 4 Wirewood Elf
 4 Elvish Warrior
 4 Elvish Vanguard
@@ -94,7 +94,7 @@ export default {
 4 Wirewood Herald
 4 Wirewood Pride
 24 Forest`}},
-      villain: {who: 'beast', deck: {name: 'Mutated Krosa', colors: 'G', list: `
+      villain: {who: 'beast', deck: {label: 'tribute', name: 'Mutated Krosa', colors: 'G', list: `
 4 Krosan Tusker
 4 Ravenous Baloth
 4 Snarling Undorak
@@ -118,7 +118,7 @@ export default {
       after: [q('stage', 'No matter your strength, the Krosan Forest is stronger. No matter your speed, the Wirewood Forest is faster.')]},
     {slot: 3, mood: 'comic', kind: 'Lesson', title: 'The Riptide Project', difficulty: 'Easy', rewardSet: 'lgn', teaches: ['Slivers'],
       blurb: "A school of wizards on an island tried to recreate the slivers in a lab. They did. Now the slivers own the island, and Pemmin is the last researcher who hasn't been eaten.",
-      hero: {who: 'pemmin', deck: {name: 'Riptide Survivors', colors: 'U', list: `
+      hero: {who: 'pemmin', deck: {label: 'tribute', name: 'Riptide Survivors', colors: 'U', list: `
 2 Information Dealer
 4 Riptide Biologist
 4 Disruptive Pitmage
@@ -130,7 +130,7 @@ export default {
 4 Fighting Drake
 4 Wind Drake
 4 Ascending Aven`}},
-      villain: {who: 'sliver', deck: {name: 'The Escapees', colors: 'RG', list: `
+      villain: {who: 'sliver', deck: {label: 'tribute', name: 'The Escapees', colors: 'RG', list: `
 2 Hunter Sliver
 4 Magma Sliver
 4 Quick Sliver
@@ -158,7 +158,7 @@ export default {
         s('pemmin', 'I am putting in for a transfer.')]},
     {slot: 4, mood: 'tension', kind: 'Rival', title: 'The Untouchable', difficulty: 'Normal', rewardSet: 'lgn', teaches: ['Alternate wins'],
       blurb: "Kamahl hears that the Cabal's champion has a face he knows. He leaves Krosa for the first time in years and walks into the Coliseum. Phage is waiting. She does not remember him.",
-      hero: {who: 'kamahl', deck: {name: 'Fist of Krosa', colors: 'G', list: `
+      hero: {who: 'kamahl', deck: {label: 'tribute', name: 'Fist of Krosa', colors: 'G', list: `
 2 Kamahl, Fist of Krosa
 4 Elvish Warrior
 4 Krosan Tusker
@@ -170,7 +170,7 @@ export default {
 4 Silklash Spider
 24 Forest
 4 Wirewood Elf`}},
-      villain: {who: 'phage', deck: {name: 'The Untouchable', colors: 'B', list: `
+      villain: {who: 'phage', deck: {label: 'tribute', name: 'The Untouchable', colors: 'B', list: `
 3 Phage the Untouchable
 3 Skinthinner
 4 Withered Wretch
@@ -196,7 +196,7 @@ export default {
         q('stage', 'Phage became both executioner and savior, helping others to the same rebirth she had found.')]},
     {slot: 5, mood: 'tension', kind: 'Lesson', title: 'The Angel of Wrath', difficulty: 'Normal', rewardSet: 'lgn', teaches: ['Cycling'],
       blurb: "Out in the desert, Ixidor's dream has opened its eyes. Akroma was made for one purpose: destroy Phage. She starts with the Cabal's Coliseum, and Braids is running it tonight.",
-      hero: {who: 'akroma', deck: {name: "Akroma's Wrath", colors: 'WR', list: `
+      hero: {who: 'akroma', deck: {label: 'tribute', name: "Akroma's Wrath", colors: 'WR', list: `
 2 Akroma, Angel of Wrath
 4 Exalted Angel
 4 Lightning Rift
@@ -211,7 +211,7 @@ export default {
 9 Mountain
 3 Secluded Steppe
 3 Forgotten Cave`}},
-      villain: {who: 'braids', deck: {name: "The Cabal's Coliseum", colors: 'B', list: `
+      villain: {who: 'braids', deck: {label: 'tribute', name: "The Cabal's Coliseum", colors: 'B', list: `
 4 Undead Gladiator
 4 Gluttonous Zombie
 4 Severed Legion
@@ -236,7 +236,7 @@ export default {
       after: [q('stage', 'Ixidor had only to imagine their ruin and Akroma made it so.')]},
     {slot: 6, mood: 'march', kind: 'Meta', title: 'Goblin Tides', difficulty: 'Normal', rewardSet: 'scg', teaches: ['Tokens'],
       blurb: "The Order's soldiers hold the Daru Plains against everything Otaria throws at them. This week it is goblins. A lot of goblins. They have a commander now, which is worse.",
-      hero: {who: 'daru', deck: {name: 'The Daru Line', colors: 'W', list: `
+      hero: {who: 'daru', deck: {label: 'tribute', name: 'The Daru Line', colors: 'W', list: `
 4 Daru Warchief
 4 Daru Lancer
 4 Daru Healer
@@ -247,7 +247,7 @@ export default {
 4 Gustcloak Skirmisher
 4 Daru Cavalier
 24 Plains`}},
-      villain: {who: 'goblin', deck: {name: 'Siege-Gang', colors: 'R', list: `
+      villain: {who: 'goblin', deck: {label: 'tribute', name: 'Siege-Gang', colors: 'R', list: `
 2 Siege-Gang Commander
 4 Goblin Piledriver
 4 Goblin Warchief
@@ -271,7 +271,7 @@ export default {
       after: [q('stage', 'Giant-sized body. Goblin-sized brain.'), s('daru', 'They will be back tomorrow. They are always back tomorrow.')]},
     {slot: 7, mood: 'tension', kind: 'Meta', title: 'Angel and Untouchable', difficulty: 'Normal', rewardSet: 'scg', teaches: ['Protection from a colour'],
       blurb: 'Akroma finally finds Phage. The angel made to kill her, and the girl made to kill everything. Both were made by someone else. Neither knows it.',
-      hero: {who: 'akroma', deck: {name: 'Angel of Wrath', colors: 'W', list: `
+      hero: {who: 'akroma', deck: {label: 'tribute', name: 'Angel of Wrath', colors: 'W', list: `
 2 Akroma, Angel of Wrath
 2 Exalted Angel
 4 Akroma's Devoted
@@ -283,7 +283,7 @@ export default {
 4 Renewed Faith
 2 Akroma's Vengeance
 26 Plains`}},
-      villain: {who: 'phage', deck: {name: 'The Cabal\'s Champion', colors: 'B', list: `
+      villain: {who: 'phage', deck: {label: 'tribute', name: 'The Cabal\'s Champion', colors: 'B', list: `
 3 Phage the Untouchable
 4 Skinthinner
 4 Withered Wretch
@@ -308,7 +308,7 @@ export default {
         s('stage', 'Angel and girl melt into one shape, crowned in light. Every eye in Otaria turns to look.')]},
     {slot: 8, mood: 'boss', kind: 'Boss', title: 'Karona, False God', difficulty: 'Hard', rewardCard: 'Exalted Angel', rewardSet: 'scg', teaches: ['Everything so far'],
       blurb: 'Akroma and Phage are gone. In their place stands Karona, a god made of an angel and a girl, worshipped by everyone who sees her. Kamahl and Ixidor, the two men who made her halves, go to end it.',
-      hero: {who: 'kamahl', deck: {name: 'Kamahl and Ixidor', colors: 'GU', list: `
+      hero: {who: 'kamahl', deck: {label: 'tribute', name: 'Kamahl and Ixidor', colors: 'GU', list: `
 2 Kamahl, Fist of Krosa
 2 Ixidor, Reality Sculptor
 4 Elvish Warrior
@@ -321,7 +321,7 @@ export default {
 4 Complicate
 12 Forest
 12 Island`}},
-      villain: {who: 'karona', deck: {name: 'The False God', colors: 'WB', list: `
+      villain: {who: 'karona', deck: {label: 'tribute', name: 'The False God', colors: 'WB', list: `
 2 Akroma, Angel of Wrath
 2 Phage the Untouchable
 4 Exalted Angel

@@ -358,7 +358,7 @@
      "name": "The Weatherlight Crew",
      "colors": "RW",
      "archetype": null,
-     "label": null,
+     "label": "tribute",
      "cards": [
       {
        "qty": 4,
@@ -446,7 +446,7 @@
      "name": "The Magistrate's Guard",
      "colors": "WU",
      "archetype": null,
-     "label": null,
+     "label": "tribute",
      "cards": [
       {
        "qty": 4,
@@ -644,7 +644,7 @@
      "name": "The Cho-Arrim",
      "colors": "W",
      "archetype": null,
-     "label": null,
+     "label": "tribute",
      "cards": [
       {
        "qty": 2,
@@ -732,7 +732,7 @@
      "name": "Gerrard's Irregulars",
      "colors": "RW",
      "archetype": null,
-     "label": null,
+     "label": "tribute",
      "cards": [
       {
        "qty": 4,
@@ -921,7 +921,7 @@
      "name": "The Kyren Host",
      "colors": "R",
      "archetype": null,
-     "label": null,
+     "label": "tribute",
      "cards": [
       {
        "qty": 2,
@@ -1009,7 +1009,7 @@
      "name": "Talruum Fury",
      "colors": "RG",
      "archetype": null,
-     "label": null,
+     "label": "tribute",
      "cards": [
       {
        "qty": 4,
@@ -1214,7 +1214,7 @@
      "name": "Heir of the Legacy",
      "colors": "RW",
      "archetype": null,
-     "label": null,
+     "label": "tribute",
      "cards": [
       {
        "qty": 4,
@@ -1302,7 +1302,7 @@
      "name": "A Borrowed Face",
      "colors": "UB",
      "archetype": null,
-     "label": null,
+     "label": "tribute",
      "cards": [
       {
        "qty": 2,
@@ -1497,7 +1497,7 @@
    "title": "What Is Mine",
    "difficulty": "Normal",
    "teaches": [
-    "Racing"
+    "Flying"
    ],
    "blurb": "Rath has a new evincar: Crovax, the cursed nobleman who murdered Mirri. Phyrexia's emissary Belbe chose him. Now Volrath has come home to take his throne back.",
    "rewardSet": "nem",
@@ -1508,7 +1508,7 @@
      "name": "The Cursed",
      "colors": "B",
      "archetype": null,
-     "label": null,
+     "label": "tribute",
      "cards": [
       {
        "qty": 4,
@@ -1596,7 +1596,7 @@
      "name": "The Fallen",
      "colors": "UB",
      "archetype": null,
-     "label": null,
+     "label": "tribute",
      "cards": [
       {
        "qty": 3,
@@ -1797,7 +1797,7 @@
      "name": "The Kipamu League",
      "colors": "WU",
      "archetype": null,
-     "label": null,
+     "label": "tribute",
      "cards": [
       {
        "qty": 4,
@@ -1885,7 +1885,7 @@
      "name": "The Keldon Host",
      "colors": "R",
      "archetype": null,
-     "label": null,
+     "label": "tribute",
      "cards": [
       {
        "qty": 4,
@@ -2071,7 +2071,7 @@
      "name": "Skyshroud",
      "colors": "G",
      "archetype": null,
-     "label": null,
+     "label": "tribute",
      "cards": [
       {
        "qty": 4,
@@ -2159,7 +2159,7 @@
      "name": "The Vec Defiant",
      "colors": "W",
      "archetype": null,
-     "label": null,
+     "label": "tribute",
      "cards": [
       {
        "qty": 2,
@@ -2352,7 +2352,7 @@
      "name": "The Rebellion",
      "colors": "GW",
      "archetype": null,
-     "label": null,
+     "label": "tribute",
      "cards": [
       {
        "qty": 2,
@@ -2447,7 +2447,7 @@
      "name": "The Evincar's Court",
      "colors": "B",
      "archetype": null,
-     "label": null,
+     "label": "tribute",
      "cards": [
       {
        "qty": 3,

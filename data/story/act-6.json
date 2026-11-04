@@ -359,7 +359,7 @@
      "name": "Serra's Host",
      "colors": "W",
      "archetype": null,
-     "label": null,
+     "label": "tribute",
      "cards": [
       {
        "qty": 4,
@@ -447,7 +447,7 @@
      "name": "The First Legion",
      "colors": "B",
      "archetype": null,
-     "label": null,
+     "label": "tribute",
      "cards": [
       {
        "qty": 4,
@@ -624,7 +624,7 @@
      "name": "The Ghitu",
      "colors": "R",
      "archetype": null,
-     "label": null,
+     "label": "tribute",
      "cards": [
       {
        "qty": 4,
@@ -719,7 +719,7 @@
      "name": "The Goblins of Shiv",
      "colors": "R",
      "archetype": null,
-     "label": null,
+     "label": "tribute",
      "cards": [
       {
        "qty": 4,
@@ -896,7 +896,7 @@
      "name": "Third-Level Mischief",
      "colors": "U",
      "archetype": null,
-     "label": null,
+     "label": "tribute",
      "cards": [
       {
        "qty": 4,
@@ -991,7 +991,7 @@
      "name": "The Master's Exam",
      "colors": "U",
      "archetype": null,
-     "label": null,
+     "label": "tribute",
      "cards": [
       {
        "qty": 4,
@@ -1163,7 +1163,7 @@
      "name": "The Outcast's Knives",
      "colors": "B",
      "archetype": null,
-     "label": null,
+     "label": "tribute",
      "cards": [
       {
        "qty": 4,
@@ -1244,7 +1244,7 @@
      "name": "Kerrick's Brood",
      "colors": "B",
      "archetype": null,
-     "label": null,
+     "label": "tribute",
      "cards": [
       {
        "qty": 4,
@@ -1419,7 +1419,7 @@
      "name": "The Emissary",
      "colors": "G",
      "archetype": null,
-     "label": null,
+     "label": "tribute",
      "cards": [
       {
        "qty": 2,
@@ -1514,7 +1514,7 @@
      "name": "Yavimaya Wakes",
      "colors": "G",
      "archetype": null,
-     "label": null,
+     "label": "tribute",
      "cards": [
       {
        "qty": 2,
@@ -1708,7 +1708,7 @@
      "name": "The Chancellor's Rule",
      "colors": "WU",
      "archetype": null,
-     "label": null,
+     "label": "tribute",
      "cards": [
       {
        "qty": 2,
@@ -1803,7 +1803,7 @@
      "name": "Academy",
      "colors": "U",
      "archetype": "Academy",
-     "label": null,
+     "label": "tribute",
      "cards": [
       {
        "qty": 1,
@@ -1869,14 +1869,14 @@
        "id": "ee0d3f5f-7790-4772-bead-5d7114a23e94"
       },
       {
-       "qty": 4,
+       "qty": 2,
        "name": "Opportunity",
        "set": "ulg",
        "number": "37",
        "id": "63a09767-a15d-42b0-aaa3-794a4e11037a"
       },
       {
-       "qty": 2,
+       "qty": 4,
        "name": "Sandbar Serpent",
        "set": "usg",
        "number": "95",
@@ -1996,7 +1996,7 @@
      "name": "The Artificer's War",
      "colors": "U",
      "archetype": null,
-     "label": null,
+     "label": "tribute",
      "cards": [
       {
        "qty": 4,
@@ -2077,7 +2077,7 @@
      "name": "Replenish",
      "colors": "WU",
      "archetype": "Replenish",
-     "label": null,
+     "label": "tribute",
      "cards": [
       {
        "qty": 2,
@@ -2270,7 +2270,7 @@
      "name": "Tolaria's Defenders",
      "colors": "WU",
      "archetype": null,
-     "label": null,
+     "label": "tribute",
      "cards": [
       {
        "qty": 4,
@@ -2365,7 +2365,7 @@
      "name": "The Praetor's Court",
      "colors": "B",
      "archetype": null,
-     "label": null,
+     "label": "tribute",
      "cards": [
       {
        "qty": 4,

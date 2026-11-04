@@ -278,7 +278,7 @@ export default {
       villainScene: [q('stage', 'The Cloud Nacatl sit and think, a bunch of soft paws. We are the Claws of Marisi, stalking, pouncing, drawing blood.')],
       cues: {hero: cue('Jund \'em out.', 'Cascade!', 'They\'re too fast...', 'Two for one, every time.', 'Out-traded...', 'Trade, and trade again.'),
         villain: cue('[a growl in the brush]', '[the pride pounces]', '[the pride scatters]', '[mauled]', '[the jungle goes quiet]')}},
-    {slot: 7, mood: 'tension', kind: 'Meta', title: 'Exalted Knights', difficulty: 'Normal', rewardSet: 'con', teaches: ['Racing'],
+    {slot: 7, mood: 'tension', kind: 'Meta', title: 'Exalted Knights', difficulty: 'Normal', rewardSet: 'con', teaches: ['Lifelink'],
       blurb: 'Summer 2009, the other side of the format. Bant knights with exalted and angels raced Esper artifact decks led by Master of Etherium, which grows with every artifact it sees.',
       hero: {who: 'you', deck: {label: 'tribute', name: 'Bant Aggro', colors: 'GWU', archetype: 'Aggro', list: `
 4 Noble Hierarch

@@ -153,7 +153,7 @@ export default {
         q('stage', 'Gotcha.')],
       cues: {hero: cue('The sun can wait.', 'Disturbed!', 'The guests are many...', 'Dawn delayed.', 'The guests win...', 'Cast disturb cards from your graveyard.'),
         villain: cue('Mind the guest list.', 'Welcome!', 'The toast fell flat...', 'The wedding goes on.', 'Crashed...')}},
-    {slot: 4, mood: 'tension', kind: 'Rival', title: 'The Brood of Tiamat', difficulty: 'Normal', rewardSet: 'afr', teaches: ['Racing'],
+    {slot: 4, mood: 'tension', kind: 'Rival', title: 'The Brood of Tiamat', difficulty: 'Normal', rewardSet: 'afr', teaches: ['Reach'],
       blurb: 'Arlinn leads the pack against a dungeon full of dragons.',
       hero: {who: 'arlinn', deck: {label: 'tribute', name: 'The Pack\'s Hope', colors: 'RG', list: `
 2 Tovolar, Dire Overlord
@@ -317,7 +317,7 @@ export default {
         q('stage', 'We are a product of our ancestors, the apotheosis of countless noble generations. Speak their names with reverence, and they will guide your path.')],
       cues: {hero: cue('Refined.', 'Feast!', 'The clerics are stubborn...', 'The night is ours.', 'Staked...', 'Use removal on their best cleric.'),
         villain: cue('Selûne guides us.', 'Light!', 'The faith wavers...', 'The faith holds.', 'Fallen...')}},
-    {slot: 8, mood: 'boss', kind: 'Boss', title: 'Olivia, Crimson Bride', difficulty: 'Hard', rewardSet: 'vow', teaches: ['Racing'],
+    {slot: 8, mood: 'boss', kind: 'Boss', title: 'Olivia, Crimson Bride', difficulty: 'Hard', rewardSet: 'vow', teaches: ['Menace'],
       blurb: 'Olivia\'s wedding is the biggest night of the year. Kaya, Chandra and Teferi are going to crash it.',
       hero: {who: 'heroes', deck: {label: 'tribute', name: 'The Wedding Crashers', colors: 'WBR', list: `
 3 Kaya, Geist Hunter
@@ -367,7 +367,7 @@ export default {
         villain: {...cue('Welcome.', '[the organ roars]', '[a pale smile]', 'I do.', '[the bride falls silent]'),
           half: {who: 'sorin', line: 'Not tonight.'}}}},
     {slot: 9, kind: 'Secret Boss', secret: true, title: 'Mono-White Humans', difficulty: 'Hard', rewardSet: 'mid', rewardCard: 'Brutal Cathar // Moonrage Brute', mood: 'boss',
-      teaches: ['Racing'],
+      teaches: ['Ward'],
       archive: {deck: 'Mono-White Humans', when: 'Autumn 2021', format: 'Standard.',
         what: 'A white aggro deck built around Adeline, Resplendent Cathar, Brutal Cathar, Thalia and a stream of cheap Humans.',
         why: 'Cheap efficient creatures, a strong exile effect, and Adeline\'s growing token army made it the fastest deck in the format.',

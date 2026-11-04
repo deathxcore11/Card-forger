@@ -151,7 +151,7 @@ export default {
         q('stage', 'When Glarb ordered the egg stolen, the Great Maha communicated its anger in a universal language.')],
       cues: {hero: cue('Open the door.', 'Unlock!', 'The beasts are huge...', 'A cosy win.', 'Lost in the rooms...', 'Cast one half now, unlock the other later.'),
         villain: cue('Roar.', 'Calamity!', 'The beast falters...', 'All is calamity.', 'Slain...')}},
-    {slot: 4, mood: 'tension', kind: 'Rival', title: 'The House Is Hungry', difficulty: 'Normal', rewardSet: 'dsk', teaches: ['Racing'],
+    {slot: 4, mood: 'tension', kind: 'Rival', title: 'The House Is Hungry', difficulty: 'Normal', rewardSet: 'dsk', teaches: ['Vigilance'],
       blurb: 'Tyvar has come to the House of Duskmourn. The House has come for Tyvar.',
       hero: {who: 'tyvar', deck: {label: 'tribute', name: 'Tyvar\'s Fists', colors: 'G', list: `
 4 Patchwork Beastie
@@ -205,21 +205,24 @@ export default {
 10 Swamp
 10 Forest`}},
       villain: {who: 'ghosts', deck: {label: 'tribute', name: 'The Haunted Rooms', colors: 'WU', list: `
-4 Sheltered by Ghosts
+2 Sheltered by Ghosts
 4 Reluctant Role Model
 4 Optimistic Scavenger
 4 Acrobatic Cheerleader
-4 Silent Hallcreeper
-4 Stalked Researcher
+2 Silent Hallcreeper
+2 Stalked Researcher
 1 Fear of Surveillance
 1 Get Out
+1 Warren Elder
 1 Unwanted Remake
-3 Splitskin Doll
+4 Splitskin Doll
 4 Azorius Guildgate
 10 Plains
+2 Hardened Escort
+2 Possessed Goat
 10 Island
-3 Jump Scare
-3 Veteran Survivor`}},
+2 Jump Scare
+4 Veteran Survivor`}},
       scene: [q('stage', 'That\'s the one good thing about these cultists: sometimes they do your work for you.'),
         q('stage', 'Thanks, but no thanks. I\'m done with hope.'),
         s('winter', 'Survival: if your creature is tapped after attacking, it triggers at your second main phase. Attack, then enjoy the extra effect.')],
@@ -287,17 +290,16 @@ export default {
 4 Stormchaser's Talent
 4 Coruscation Mage
 4 Emberheart Challenger
-2 Tempest Angler
+4 Tempest Angler
 2 Stormcatch Mentor
-2 Burst Lightning
-4 Abrade
+2 Abrade
 4 Mockingbird
 4 Shoreline Looter
 4 Spirebluff Canal
 10 Island
 10 Mountain
 4 Thought Shucker
-2 Plumecreed Escort`}},
+4 Plumecreed Escort`}},
       scene: [q('stage', 'Kaito\'s blade brought the light of another plane into Duskmourn, and with it, a brief chance to escape.'),
         q('stage', 'It scours battlefields for corpses, consuming flesh and souls alike.'),
         s('dimir', 'Kill their early creatures and counter the tricks. You win the long game.')],
@@ -305,7 +307,7 @@ export default {
         q('stage', 'Oh? Do I need to repeat myself?')],
       cues: {hero: cue('Cool head.', 'Denied!', 'Too many tricks...', 'Control wins.', 'Burnt out...', 'Kill the early creatures first.'),
         villain: cue('Fast!', 'Prowess!', 'Out of tricks...', 'Faster than you.', 'Fizzled...')}},
-    {slot: 8, mood: 'boss', kind: 'Boss', title: 'Valgavoth, Terror Eater', difficulty: 'Hard', rewardSet: 'dsk', teaches: ['Racing'],
+    {slot: 8, mood: 'boss', kind: 'Boss', title: 'Valgavoth, Terror Eater', difficulty: 'Hard', rewardSet: 'dsk', teaches: ['Ward'],
       blurb: 'The house is alive and it is hungry. The heist crew and the survivors have to leave it with fewer rooms than it started with.',
       hero: {who: 'survivors', deck: {label: 'tribute', name: 'The Crew and the Survivors', colors: 'GU', list: `
 4 Pond Prophet
@@ -347,7 +349,7 @@ export default {
         villain: {...cue('Fear.', '[the walls breathe]', '[the walls stop]', 'Delicious.', '[the house goes quiet]'),
           half: {who: 'winter', line: 'Keep moving. The door is this way.'}}}},
     {slot: 9, kind: 'Secret Boss', secret: true, title: 'Mono-Red Mice', difficulty: 'Hard', rewardSet: 'blb', rewardCard: 'Heartfire Hero', mood: 'boss',
-      teaches: ['Racing'],
+      teaches: ['Haste'],
       archive: {deck: 'Mono-Red Mice', when: 'Autumn 2024', format: 'Standard.',
         what: 'A mono-red deck of one- and two-mana mice and burn, built around Heartfire Hero.',
         why: 'It was the fastest deck in the format and punished any slow draw.',

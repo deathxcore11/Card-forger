@@ -297,7 +297,7 @@
      "name": "Reality Sculptor",
      "colors": "U",
      "archetype": null,
-     "label": null,
+     "label": "tribute",
      "cards": [
       {
        "qty": 2,
@@ -385,7 +385,7 @@
      "name": "Crowd Favorites",
      "colors": "B",
      "archetype": null,
-     "label": null,
+     "label": "tribute",
      "cards": [
       {
        "qty": 4,
@@ -571,7 +571,7 @@
      "name": "Wirewood",
      "colors": "G",
      "archetype": null,
-     "label": null,
+     "label": "tribute",
      "cards": [
       {
        "qty": 4,
@@ -652,7 +652,7 @@
      "name": "Mutated Krosa",
      "colors": "G",
      "archetype": null,
-     "label": null,
+     "label": "tribute",
      "cards": [
       {
        "qty": 4,
@@ -831,7 +831,7 @@
      "name": "Riptide Survivors",
      "colors": "U",
      "archetype": null,
-     "label": null,
+     "label": "tribute",
      "cards": [
       {
        "qty": 2,
@@ -919,7 +919,7 @@
      "name": "The Escapees",
      "colors": "RG",
      "archetype": null,
-     "label": null,
+     "label": "tribute",
      "cards": [
       {
        "qty": 2,
@@ -1133,7 +1133,7 @@
      "name": "Fist of Krosa",
      "colors": "G",
      "archetype": null,
-     "label": null,
+     "label": "tribute",
      "cards": [
       {
        "qty": 2,
@@ -1221,7 +1221,7 @@
      "name": "The Untouchable",
      "colors": "B",
      "archetype": null,
-     "label": null,
+     "label": "tribute",
      "cards": [
       {
        "qty": 3,
@@ -1413,7 +1413,7 @@
      "name": "Akroma's Wrath",
      "colors": "WR",
      "archetype": null,
-     "label": null,
+     "label": "tribute",
      "cards": [
       {
        "qty": 2,
@@ -1522,7 +1522,7 @@
      "name": "The Cabal's Coliseum",
      "colors": "B",
      "archetype": null,
-     "label": null,
+     "label": "tribute",
      "cards": [
       {
        "qty": 4,
@@ -1709,7 +1709,7 @@
      "name": "The Daru Line",
      "colors": "W",
      "archetype": null,
-     "label": null,
+     "label": "tribute",
      "cards": [
       {
        "qty": 4,
@@ -1790,7 +1790,7 @@
      "name": "Siege-Gang",
      "colors": "R",
      "archetype": null,
-     "label": null,
+     "label": "tribute",
      "cards": [
       {
        "qty": 2,
@@ -1983,7 +1983,7 @@
      "name": "Angel of Wrath",
      "colors": "W",
      "archetype": null,
-     "label": null,
+     "label": "tribute",
      "cards": [
       {
        "qty": 2,
@@ -2071,7 +2071,7 @@
      "name": "The Cabal's Champion",
      "colors": "B",
      "archetype": null,
-     "label": null,
+     "label": "tribute",
      "cards": [
       {
        "qty": 3,
@@ -2255,7 +2255,7 @@
      "name": "Kamahl and Ixidor",
      "colors": "GU",
      "archetype": null,
-     "label": null,
+     "label": "tribute",
      "cards": [
       {
        "qty": 2,
@@ -2350,7 +2350,7 @@
      "name": "The False God",
      "colors": "WB",
      "archetype": null,
-     "label": null,
+     "label": "tribute",
      "cards": [
       {
        "qty": 2,

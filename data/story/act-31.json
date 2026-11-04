@@ -1223,7 +1223,7 @@
    "title": "The Elves of Kaldheim",
    "difficulty": "Normal",
    "teaches": [
-    "Racing"
+    "Reach"
    ],
    "blurb": "Nahiri's expedition meets a much bigger monster in Kaldheim's forests.",
    "rewardSet": "khm",
@@ -2170,7 +2170,7 @@
    "title": "Izzet Dragons",
    "difficulty": "Normal",
    "teaches": [
-    "Racing"
+    "Flying"
    ],
    "blurb": "Spring 2021: Izzet Dragons against a Rakdos pile of berserkers.",
    "rewardSet": "stx",
@@ -2818,7 +2818,7 @@
    "title": "Kaldheim Snow Stompy",
    "difficulty": "Hard",
    "teaches": [
-    "Racing"
+    "Trample"
    ],
    "blurb": "Deep in the archive, a green deck that starts with one-drops and ends with a very big troll.",
    "rewardSet": "khm",

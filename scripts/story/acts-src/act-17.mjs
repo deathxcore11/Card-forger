@@ -251,7 +251,7 @@ export default {
       villainScene: [q('stage', 'Nothing quickens the predator\'s blood like the unfamiliar scents of new hunting grounds and the mewling cries of new prey.')],
       cues: {hero: cue('Brainstorm. Again.', 'Fetch the gear!', 'Too fast...', 'Out of gas, are we?', 'Burned out...', 'Survive, then take over.'),
         villain: cue('[a fetchland cracks]', '[landfall!]', '[out of burn]', '[burned through]', '[the hawks keep coming]')}},
-    {slot: 7, mood: 'tension', kind: 'Meta', title: 'Valakut', difficulty: 'Normal', rewardSet: 'm11', teaches: ['Racing'],
+    {slot: 7, mood: 'tension', kind: 'Meta', title: 'Valakut', difficulty: 'Normal', rewardSet: 'm11', teaches: ['Deathtouch'],
       blurb: 'Summer 2010. Magic 2011 brought Primeval Titan, and green-red decks used it to fetch Valakut, the Molten Pinnacle, a land that burns the opponent whenever a Mountain arrives. Vampire aggro decks tried to win before the Titan landed.',
       hero: {who: 'vampires', deck: {label: 'tribute', name: 'Vampire Aggro', colors: 'B', archetype: 'Aggro', list: `
 4 Bloodthrone Vampire

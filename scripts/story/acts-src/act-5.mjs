@@ -50,7 +50,7 @@ export default {
   battles: [
     {slot: 1, mood: 'tension', kind: 'Arrival', title: 'The Shadow Lands', difficulty: 'Easy', rewardSet: 'tmp', teaches: ['Shadow'],
       blurb: "The Weatherlight crashes through into Rath. Ertai goes ahead to scout the portal and finds he isn't alone. Half the people here are standing in another world.",
-      hero: {who: 'lyna', deck: {name: 'The Soltari', colors: 'W', list: `
+      hero: {who: 'lyna', deck: {label: 'tribute', name: 'The Soltari', colors: 'W', list: `
 4 Soltari Foot Soldier
 4 Soltari Lancer
 4 Soltari Monk
@@ -62,7 +62,7 @@ export default {
 4 Pacifism
 2 Gerrard's Battle Cry
 24 Plains`}},
-      villain: {who: 'dauthi', deck: {name: 'The Dauthi', colors: 'B', list: `
+      villain: {who: 'dauthi', deck: {label: 'tribute', name: 'The Dauthi', colors: 'B', list: `
 4 Dauthi Slayer
 4 Dauthi Horror
 4 Dauthi Marauder
@@ -84,7 +84,7 @@ export default {
         villain: cue('Knives out.', 'The Dauthi army grows by screams and bounds.', 'Ghosts bleed?', 'Paid in full.', 'Another night.')}},
     {slot: 2, mood: 'comic', kind: 'Lesson', title: "Ertai's Lecture", difficulty: 'Easy', rewardSet: 'tmp', teaches: ['Buyback'],
       blurb: "The Weatherlight needs fresh water. The only lake belongs to merfolk who don't like visitors. Ertai volunteers, mostly so he can explain spells to everyone.",
-      hero: {who: 'ertai', deck: {name: 'The Adept', colors: 'UR', list: `
+      hero: {who: 'ertai', deck: {label: 'tribute', name: 'The Adept', colors: 'UR', list: `
 2 Ertai, Wizard Adept
 4 Capsize
 4 Whispers of the Muse
@@ -98,7 +98,7 @@ export default {
 2 Shock
 16 Island
 8 Mountain`}},
-      villain: {who: 'rootwater', deck: {name: 'The Rootwater', colors: 'U', list: `
+      villain: {who: 'rootwater', deck: {label: 'tribute', name: 'The Rootwater', colors: 'U', list: `
 4 Rootwater Shaman
 4 Rootwater Hunter
 4 Rootwater Diver
@@ -117,7 +117,7 @@ export default {
         villain: cue('Into the deep.', 'The lake rises!', 'Dry... too dry...', 'Stay thirsty.', 'Take your water. Choke on it.')}},
     {slot: 3, mood: 'tension', kind: 'Lesson', title: 'The Hive', difficulty: 'Easy', rewardSet: 'tmp', teaches: ['Slivers'],
       blurb: 'Hunting for the Stronghold, the crew blunders into a sliver warren. Karn walks in alone and starts talking to the queen. Then Greven\'s hunters arrive, and the hive has to choose a side.',
-      hero: {who: 'you', deck: {name: 'The Hive', colors: 'RGW', list: `
+      hero: {who: 'you', deck: {label: 'tribute', name: 'The Hive', colors: 'RGW', list: `
 4 Muscle Sliver
 4 Metallic Sliver
 4 Talon Sliver
@@ -131,7 +131,7 @@ export default {
 8 Forest
 8 Mountain
 8 Plains`}},
-      villain: {who: 'vhati', deck: {name: 'The Hunting Party', colors: 'BRG', list: `
+      villain: {who: 'vhati', deck: {label: 'tribute', name: 'The Hunting Party', colors: 'BRG', list: `
 4 Vhati il-Dal
 4 Mogg Fanatic
 4 Mogg Conscripts
@@ -153,7 +153,7 @@ export default {
         villain: cue('For Greven! Mostly.', "He'll have to promote me now!", 'This is going on my record.', 'Bag the golem. Carefully!', "Don't tell Greven. Please don't tell Greven.")}},
     {slot: 4, mood: 'tension', kind: 'Rival', title: "Selenia's Shard", difficulty: 'Normal', rewardSet: 'sth', teaches: ['Gaining life'],
       blurb: 'Crovax came to Rath to save his angel. He found her serving Volrath, and his sword found her before his mind did. Now the curse is waking. Mirri is the only one who sees it.',
-      hero: {who: 'mirri', deck: {name: "Mirri's Watch", colors: 'GW', list: `
+      hero: {who: 'mirri', deck: {label: 'tribute', name: "Mirri's Watch", colors: 'GW', list: `
 2 Mirri, Cat Warrior
 4 Spike Feeder
 4 Soltari Priest
@@ -166,7 +166,7 @@ export default {
 2 Gallantry
 12 Forest
 12 Plains`}},
-      villain: {who: 'crovax', deck: {name: "Crovax's Hunger", colors: 'B', list: `
+      villain: {who: 'crovax', deck: {label: 'tribute', name: "Crovax's Hunger", colors: 'B', list: `
 4 Skyshroud Vampire
 4 Vampire Hounds
 4 Dauthi Horror
@@ -188,7 +188,7 @@ export default {
         villain: cue('Forgive me.', 'There are terrors lurking in the unseen corners of us all.', 'Selenia, help me...', "I'm sorry. I'm so hungry.", 'Memory is a burden that wears at the soul.')}},
     {slot: 5, mood: 'tension', kind: 'Lesson', title: "The Traitor's Daughter", difficulty: 'Normal', rewardSet: 'sth', teaches: ['The graveyard'],
       blurb: "The Skyshroud elves agree to guide the crew to the Stronghold. Their guide is Starke, who used to teach Volrath. He has a daughter in those cells, and he has already made a deal.",
-      hero: {who: 'eladamri', deck: {name: 'Skyshroud Rising', colors: 'GB', list: `
+      hero: {who: 'eladamri', deck: {label: 'tribute', name: 'Skyshroud Rising', colors: 'GB', list: `
 2 Eladamri, Lord of Leaves
 4 Skyshroud Elite
 4 Gravedigger
@@ -201,7 +201,7 @@ export default {
 4 Mulch
 12 Forest
 12 Swamp`}},
-      villain: {who: 'starke', deck: {name: "Starke's Bargain", colors: 'BR', list: `
+      villain: {who: 'starke', deck: {label: 'tribute', name: "Starke's Bargain", colors: 'BR', list: `
 4 Mogg Fanatic
 4 Bounty Hunter
 4 Kindle
@@ -224,7 +224,7 @@ export default {
         villain: cue('Nothing personal.', "Once they've marked you, the world is made of glass.", 'It is the nature of evil to turn you against yourself.', 'Hold on, Takara.', "Then I'll find another way. I always do.")}},
     {slot: 6, mood: 'comic', kind: 'Meta', title: 'Moggs Aboard', difficulty: 'Normal', rewardSet: 'exo', teaches: ['Racing'],
       blurb: 'The Predator rams the Weatherlight and a thousand moggs pour over the rail. Tahngarth has wanted this fight for weeks. Squee recognises some of them. The red deck of 1998.',
-      hero: {who: 'tahngarth', deck: {name: "Tahngarth's Charge", colors: 'RG', list: `
+      hero: {who: 'tahngarth', deck: {label: 'tribute', name: "Tahngarth's Charge", colors: 'RG', list: `
 4 Canyon Wildcat
 4 Trained Armodon
 4 Charging Rhino
@@ -237,7 +237,7 @@ export default {
 2 Overrun
 12 Forest
 12 Mountain`}},
-      villain: {who: 'greven', deck: {name: 'Sligh', colors: 'R', archetype: 'Sligh', list: `
+      villain: {who: 'greven', deck: {label: 'tribute', name: 'Sligh', colors: 'R', archetype: 'Sligh', list: `
 4 Jackal Pup
 4 Mogg Fanatic
 4 Mogg Flunkies
@@ -257,7 +257,7 @@ export default {
         villain: cue('Moggs! Over the rail!', 'Fear rules those weak enough to accept it.', 'Vhati! VHATI!', 'Chain him. The evincar has plans for horns.', 'Retreat. And someone find me Vhati.')}},
     {slot: 7, mood: 'tension', kind: 'Meta', title: 'The Laboratory', difficulty: 'Normal', rewardSet: 'exo', teaches: ['Playing against reanimation'],
       blurb: 'Inside the Stronghold, the crew finds Volrath\'s laboratory, where the dead are works in progress. Something in there is wearing Gerrard\'s face. Survival and Recurring Nightmare, the engine of 1998.',
-      hero: {who: 'orim', deck: {name: 'The Samite Way', colors: 'W', list: `
+      hero: {who: 'orim', deck: {label: 'tribute', name: 'The Samite Way', colors: 'W', list: `
 2 Orim, Samite Healer
 4 Soltari Priest
 4 Soltari Monk
@@ -270,7 +270,7 @@ export default {
 2 Disenchant
 2 Gerrard's Battle Cry
 24 Plains`}},
-      villain: {who: 'shifter', deck: {name: 'RecSur', colors: 'GBU', archetype: 'RecSur', list: `
+      villain: {who: 'shifter', deck: {label: 'tribute', name: 'RecSur', colors: 'GBU', archetype: 'RecSur', list: `
 4 Survival of the Fittest
 3 Recurring Nightmare
 4 Wall of Blossoms
@@ -278,14 +278,12 @@ export default {
 2 Spike Weaver
 4 Bottle Gnomes
 4 Gravedigger
-2 Volrath's Shapeshifter
-2 Rootbreaker Wurm
+4 Rootbreaker Wurm
 2 Spike Colony
 1 Reanimate
 4 Dark Banishing
-10 Forest
-8 Swamp
-6 Island`}},
+13 Forest
+11 Swamp`}},
       scene: [s('orim', 'Gerrard? You went ahead...'), s('shifter', "I did. Come in, Orim. It's quite safe."), s('orim', 'Gerrard never says "quite".'),
         s('shifter', 'Think of them not as failures but as works in progress.'), s('shifter', "My enemies' death yields threefold benefit: removal, reuse, and research."),
         q('orim', 'As usual, there will be time for prayer only after the worst happens.')],
@@ -295,22 +293,21 @@ export default {
       after: [q('gerrard', "Enjoy your deception, Vuel. I'll count this one as practice."), s('stage', "Volrath's features melt from the dead shapeshifter.")]},
     {slot: 8, mood: 'boss', kind: 'Boss', title: "Volrath's Stronghold", difficulty: 'Hard', rewardCard: 'Volrath\'s Shapeshifter', rewardSet: 'sth', teaches: ['Everything so far'],
       blurb: "The heart of the Stronghold. A globe of Dominaria with every city marked. And the brother Gerrard hasn't seen since they were boys.",
-      hero: {who: 'gerrard', deck: {name: 'The Weatherlight Crew', colors: 'RGW', list: `
+      hero: {who: 'gerrard', deck: {label: 'tribute', name: 'The Weatherlight Crew', colors: 'RGW', list: `
 2 Mirri, Cat Warrior
-2 Orim, Samite Healer
-4 Elite Javelineer
-4 Knight of Dawn
-4 Canyon Wildcat
 4 Trained Armodon
 4 Charging Rhino
-4 Shock
-4 Kindle
-2 Gerrard's Battle Cry
+4 Llanowar Elves
+4 Grizzly Bears
+4 Elite Javelineer
+4 Giant Spider
+4 Elvish Archers
+2 Aurochs
 2 Pacifism
-8 Plains
-8 Mountain
-8 Forest`}},
-      villain: {who: 'volrath', deck: {name: "The Evincar's Court", colors: 'UB', list: `
+2 Gerrard's Battle Cry
+14 Forest
+10 Plains`}},
+      villain: {who: 'volrath', deck: {label: 'tribute', name: "The Evincar's Court", colors: 'UB', list: `
 4 Dauthi Slayer
 4 Dauthi Horror
 2 Volrath's Shapeshifter

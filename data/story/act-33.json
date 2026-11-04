@@ -2169,7 +2169,7 @@
    "title": "Azorius Skies",
    "difficulty": "Normal",
    "teaches": [
-    "Racing"
+    "Double strike"
    ],
    "blurb": "Spring 2022: fliers and mech against Naya Runes.",
    "rewardSet": "neo",
@@ -2481,7 +2481,7 @@
    "title": "Jin-Gitaxias, Progress Tyrant",
    "difficulty": "Hard",
    "teaches": [
-    "Racing"
+    "Flying"
    ],
    "blurb": "The Praetor wants everything on Kamigawa, and Kaito and Tamiyo are the last ones in his way.",
    "rewardSet": "neo",
@@ -2783,7 +2783,7 @@
    "title": "Esper Raffine at Full Power",
    "difficulty": "Hard",
    "teaches": [
-    "Racing"
+    "Lifelink"
    ],
    "blurb": "Deep in the archive, a three-colour deck that is never out of answers.",
    "rewardSet": "snc",

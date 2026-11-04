@@ -310,7 +310,7 @@ export default {
         q('stage', 'She realized that she could not, in fact, handle the truth.')],
       cues: {hero: cue('Hold on.', 'Denied!', 'Too many attackers...', 'Control wins.', 'Overrun...', 'Remove the early attackers.'),
         villain: cue('Charge!', 'Convoke!', 'Out of fuel...', 'The Legion wins.', 'Stalled...')}},
-    {slot: 8, mood: 'boss', kind: 'Boss', title: 'Massacre Girl, Known Killer', difficulty: 'Hard', rewardSet: 'mkm', teaches: ['Racing'],
+    {slot: 8, mood: 'boss', kind: 'Boss', title: 'Massacre Girl, Known Killer', difficulty: 'Hard', rewardSet: 'mkm', teaches: ['Flying'],
       blurb: 'The killer from Karlov Manor, with a deck of removal. Keep your board small and your hand full.',
       hero: {who: 'agency', deck: {label: 'tribute', name: 'The Agency', colors: 'WU', list: `
 4 Novice Inspector
@@ -350,7 +350,7 @@ export default {
         villain: {...cue('Did I?', '[a music box plays]', '[the music slows]', 'Specifically?', '[the music box stops]'),
           half: {who: 'alquist', line: 'The evidence points one way. Come quietly.'}}}},
     {slot: 9, kind: 'Secret Boss', secret: true, title: 'Boros Convoke at Full Power', difficulty: 'Hard', rewardSet: 'mkm', rewardCard: 'Aurelia, the Law Above', mood: 'boss',
-      teaches: ['Racing'],
+      teaches: ['Trample'],
       archive: {deck: 'Boros Convoke', when: 'Winter 2024', format: 'Standard.',
         what: 'A red-white deck of cheap creatures that tap to help cast bigger ones.',
         why: 'It was one of the fastest decks in the format and punished slow hands.',

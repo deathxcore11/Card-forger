@@ -263,7 +263,7 @@
      "name": "The Royal Guard",
      "colors": "W",
      "archetype": null,
-     "label": null,
+     "label": "tribute",
      "cards": [
       {
        "qty": 4,
@@ -344,7 +344,7 @@
      "name": "Balduvian Raiders",
      "colors": "R",
      "archetype": null,
-     "label": null,
+     "label": "tribute",
      "cards": [
       {
        "qty": 4,
@@ -504,7 +504,7 @@
      "name": "The Royal Mage",
      "colors": "U",
      "archetype": null,
-     "label": null,
+     "label": "tribute",
      "cards": [
       {
        "qty": 4,
@@ -599,7 +599,7 @@
      "name": "Varchild's Company",
      "colors": "R",
      "archetype": null,
-     "label": null,
+     "label": "tribute",
      "cards": [
       {
        "qty": 4,
@@ -760,7 +760,7 @@
      "name": "Fyndhorn Council",
      "colors": "G",
      "archetype": null,
-     "label": null,
+     "label": "tribute",
      "cards": [
       {
        "qty": 4,
@@ -848,7 +848,7 @@
      "name": "Leshrac's Book",
      "colors": "B",
      "archetype": null,
-     "label": null,
+     "label": "tribute",
      "cards": [
       {
        "qty": 2,
@@ -1041,7 +1041,7 @@
      "name": "Reveka's Fire",
      "colors": "UR",
      "archetype": null,
-     "label": null,
+     "label": "tribute",
      "cards": [
       {
        "qty": 2,
@@ -1136,7 +1136,7 @@
      "name": "The Baron's Table",
      "colors": "B",
      "archetype": null,
-     "label": null,
+     "label": "tribute",
      "cards": [
       {
        "qty": 3,
@@ -1314,7 +1314,7 @@
      "name": "The Alliance",
      "colors": "WU",
      "archetype": null,
-     "label": null,
+     "label": "tribute",
      "cards": [
       {
        "qty": 2,
@@ -1451,7 +1451,7 @@
      "name": "Lim-Dûl's Vanguard",
      "colors": "B",
      "archetype": null,
-     "label": null,
+     "label": "tribute",
      "cards": [
       {
        "qty": 4,
@@ -1634,7 +1634,7 @@
      "name": "Knights of the Pass",
      "colors": "W",
      "archetype": null,
-     "label": null,
+     "label": "tribute",
      "cards": [
       {
        "qty": 4,
@@ -1722,7 +1722,7 @@
      "name": "Necropotence",
      "colors": "B",
      "archetype": "Necro (1996)",
-     "label": null,
+     "label": "tribute",
      "cards": [
       {
        "qty": 24,
@@ -1908,7 +1908,7 @@
      "name": "Reveka's Fire",
      "colors": "UR",
      "archetype": null,
-     "label": null,
+     "label": "tribute",
      "cards": [
       {
        "qty": 2,
@@ -2003,7 +2003,7 @@
      "name": "The Still House",
      "colors": "UB",
      "archetype": "Winter Orb lock",
-     "label": null,
+     "label": "tribute",
      "cards": [
       {
        "qty": 2,
@@ -2179,7 +2179,7 @@
      "name": "Freyalise's Chosen",
      "colors": "GW",
      "archetype": null,
-     "label": null,
+     "label": "tribute",
      "cards": [
       {
        "qty": 4,
@@ -2295,7 +2295,7 @@
      "name": "Lim-Dûl's Legion",
      "colors": "B",
      "archetype": "Necro, lore-shaped",
-     "label": null,
+     "label": "tribute",
      "cards": [
       {
        "qty": 4,

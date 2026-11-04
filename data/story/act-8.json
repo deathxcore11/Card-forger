@@ -372,7 +372,7 @@
      "name": "The Coalition Vanguard",
      "colors": "GW",
      "archetype": null,
-     "label": null,
+     "label": "tribute",
      "cards": [
       {
        "qty": 4,
@@ -467,7 +467,7 @@
      "name": "The First Wave",
      "colors": "B",
      "archetype": null,
-     "label": null,
+     "label": "tribute",
      "cards": [
       {
        "qty": 4,
@@ -653,7 +653,7 @@
      "name": "The Heart of Yavimaya",
      "colors": "G",
      "archetype": null,
-     "label": null,
+     "label": "tribute",
      "cards": [
       {
        "qty": 4,
@@ -741,7 +741,7 @@
      "name": "The Vanguard",
      "colors": "B",
      "archetype": null,
-     "label": null,
+     "label": "tribute",
      "cards": [
       {
        "qty": 4,
@@ -922,7 +922,7 @@
      "name": "Squee's Goblins",
      "colors": "R",
      "archetype": null,
-     "label": null,
+     "label": "tribute",
      "cards": [
       {
        "qty": 4,
@@ -1003,7 +1003,7 @@
      "name": "Dralnu's Crusade",
      "colors": "BR",
      "archetype": null,
-     "label": null,
+     "label": "tribute",
      "cards": [
       {
        "qty": 4,
@@ -1206,7 +1206,7 @@
      "name": "Llanowar",
      "colors": "GW",
      "archetype": null,
-     "label": null,
+     "label": "tribute",
      "cards": [
       {
        "qty": 4,
@@ -1301,7 +1301,7 @@
      "name": "Tsabo's Legion",
      "colors": "BR",
      "archetype": null,
-     "label": null,
+     "label": "tribute",
      "cards": [
       {
        "qty": 4,
@@ -1480,7 +1480,7 @@
      "name": "The Weatherlight",
      "colors": "WU",
      "archetype": null,
-     "label": null,
+     "label": "tribute",
      "cards": [
       {
        "qty": 2,
@@ -1575,7 +1575,7 @@
      "name": "The Corrupted",
      "colors": "UB",
      "archetype": null,
-     "label": null,
+     "label": "tribute",
      "cards": [
       {
        "qty": 4,
@@ -1777,7 +1777,7 @@
      "name": "Barrin's Spite",
      "colors": "UR",
      "archetype": null,
-     "label": null,
+     "label": "tribute",
      "cards": [
       {
        "qty": 4,
@@ -1865,7 +1865,7 @@
      "name": "The Tolarian Blight",
      "colors": "UB",
      "archetype": null,
-     "label": null,
+     "label": "tribute",
      "cards": [
       {
        "qty": 4,
@@ -2051,7 +2051,7 @@
    "title": "Remember Me?",
    "difficulty": "Normal",
    "teaches": [
-    "Racing"
+    "Haste"
    ],
    "blurb": "On Rath, Crovax had Tahngarth tortured and remade. Now the stronghold has fallen onto Dominaria, Tahngarth has broken free, and the Fires of Yavimaya burn in his blood.",
    "rewardSet": "pls",
@@ -2062,7 +2062,7 @@
      "name": "Fires of Yavimaya",
      "colors": "RG",
      "archetype": null,
-     "label": null,
+     "label": "tribute",
      "cards": [
       {
        "qty": 4,
@@ -2157,7 +2157,7 @@
      "name": "The Overlay",
      "colors": "B",
      "archetype": null,
-     "label": null,
+     "label": "tribute",
      "cards": [
       {
        "qty": 4,
@@ -2346,7 +2346,7 @@
      "name": "The Legacy",
      "colors": "GW",
      "archetype": null,
-     "label": null,
+     "label": "tribute",
      "cards": [
       {
        "qty": 2,
@@ -2441,7 +2441,7 @@
      "name": "Yawgmoth's Agenda",
      "colors": "B",
      "archetype": null,
-     "label": null,
+     "label": "tribute",
      "cards": [
       {
        "qty": 4,

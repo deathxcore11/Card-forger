@@ -285,7 +285,7 @@ export default {
         q('stage', 'In the assassination trade, no one lives to make more than one mistake.')],
       cues: {hero: cue('Patience.', 'Scheming!', 'The weenies are quick...', 'Quality wins.', 'Run over...', 'Do not take too much damage early.'),
         villain: cue('Together!', 'Charge!', 'Out of fliers...', 'A brighter city.', 'Shut out...')}},
-    {slot: 7, mood: 'tension', kind: 'Meta', title: 'Azorius Skies', difficulty: 'Normal', rewardSet: 'neo', teaches: ['Racing'],
+    {slot: 7, mood: 'tension', kind: 'Meta', title: 'Azorius Skies', difficulty: 'Normal', rewardSet: 'neo', teaches: ['Double strike'],
       blurb: 'Spring 2022: fliers and mech against Naya Runes.',
       hero: {who: 'skies', deck: {label: 'tribute', name: 'Azorius Skies', colors: 'WU', archetype: 'Tempo', list: `
 4 Mothrider Patrol
@@ -326,7 +326,7 @@ export default {
         q('stage', 'I fear I have run out of worthy opponents.')],
       cues: {hero: cue('Up we go.', 'Fliers!', 'Their ground game is huge...', 'The sky is ours.', 'Grounded...', 'Race in the air.'),
         villain: cue('The kami grant it.', 'Boon!', 'Out of runes...', 'The grove wins.', 'Pruned...')}},
-    {slot: 8, mood: 'boss', kind: 'Boss', title: 'Jin-Gitaxias, Progress Tyrant', difficulty: 'Hard', rewardSet: 'neo', teaches: ['Racing'],
+    {slot: 8, mood: 'boss', kind: 'Boss', title: 'Jin-Gitaxias, Progress Tyrant', difficulty: 'Hard', rewardSet: 'neo', teaches: ['Flying'],
       blurb: 'The Praetor wants everything on Kamigawa, and Kaito and Tamiyo are the last ones in his way.',
       hero: {who: 'kaitotamiyo', deck: {label: 'tribute', name: 'Kaito and Tamiyo', colors: 'UB', list: `
 2 Kaito Shizuki
@@ -367,7 +367,7 @@ export default {
         villain: {...cue('Progress.', '[a flicker of code]', '[a system error]', 'Exactly what I came for.', '[the code scrambles]'),
           half: {who: 'kami', line: 'The moon does not obey a machine.'}}}},
     {slot: 9, kind: 'Secret Boss', secret: true, title: 'Esper Raffine at Full Power', difficulty: 'Hard', rewardSet: 'snc', rewardCard: 'Raffine, Scheming Seer', mood: 'boss',
-      teaches: ['Racing'],
+      teaches: ['Lifelink'],
       archive: {deck: 'Esper Midrange', when: 'Spring 2022', format: 'Standard.',
         what: 'A three-colour deck built around Raffine, Scheming Seer, cheap interactive creatures, and clean removal.',
         why: 'It had the best mana in the format, with cards that were good at every stage of the game.',

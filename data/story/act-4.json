@@ -330,7 +330,7 @@
      "name": "Jabari's Knights",
      "colors": "W",
      "archetype": null,
-     "label": null,
+     "label": "tribute",
      "cards": [
       {
        "qty": 4,
@@ -418,7 +418,7 @@
      "name": "Telim'Tor's Lances",
      "colors": "R",
      "archetype": null,
-     "label": null,
+     "label": "tribute",
      "cards": [
       {
        "qty": 1,
@@ -602,7 +602,7 @@
      "name": "Out of Time",
      "colors": "U",
      "archetype": null,
-     "label": null,
+     "label": "tribute",
      "cards": [
       {
        "qty": 4,
@@ -697,7 +697,7 @@
      "name": "Teferi's Tricks",
      "colors": "U",
      "archetype": null,
-     "label": null,
+     "label": "tribute",
      "cards": [
       {
        "qty": 4,
@@ -886,7 +886,7 @@
      "name": "Scalebane's Watch",
      "colors": "RW",
      "archetype": null,
-     "label": null,
+     "label": "tribute",
      "cards": [
       {
        "qty": 3,
@@ -995,7 +995,7 @@
      "name": "The Night Stalkers",
      "colors": "B",
      "archetype": null,
-     "label": null,
+     "label": "tribute",
      "cards": [
       {
        "qty": 4,
@@ -1193,7 +1193,7 @@
      "name": "Asmira's Faithful",
      "colors": "GW",
      "archetype": null,
-     "label": null,
+     "label": "tribute",
      "cards": [
       {
        "qty": 2,
@@ -1309,7 +1309,7 @@
      "name": "Children of the Mwonvuli",
      "colors": "G",
      "archetype": null,
-     "label": null,
+     "label": "tribute",
      "cards": [
       {
        "qty": 4,
@@ -1522,7 +1522,7 @@
      "name": "The Loreweaver",
      "colors": "U",
      "archetype": null,
-     "label": null,
+     "label": "tribute",
      "cards": [
       {
        "qty": 2,
@@ -1610,7 +1610,7 @@
      "name": "Shauku's Pen",
      "colors": "B",
      "archetype": null,
-     "label": null,
+     "label": "tribute",
      "cards": [
       {
        "qty": 2,
@@ -1805,7 +1805,7 @@
      "name": "Thirsty Traveller",
      "colors": "WU",
      "archetype": null,
-     "label": null,
+     "label": "tribute",
      "cards": [
       {
        "qty": 4,
@@ -1907,7 +1907,7 @@
      "name": "Everybody Draws",
      "colors": "UR",
      "archetype": "Prosperity",
-     "label": null,
+     "label": "tribute",
      "cards": [
       {
        "qty": 2,
@@ -2118,7 +2118,7 @@
      "name": "The Vanguard of Zhalfir",
      "colors": "W",
      "archetype": null,
-     "label": null,
+     "label": "tribute",
      "cards": [
       {
        "qty": 4,
@@ -2213,7 +2213,7 @@
      "name": "Sligh",
      "colors": "R",
      "archetype": "Sligh",
-     "label": null,
+     "label": "tribute",
      "cards": [
       {
        "qty": 4,
@@ -2407,7 +2407,7 @@
      "name": "The Reeds of a Basket",
      "colors": "GWR",
      "archetype": null,
-     "label": null,
+     "label": "tribute",
      "cards": [
       {
        "qty": 2,
@@ -2537,7 +2537,7 @@
      "name": "Kaervek's War",
      "colors": "BR",
      "archetype": null,
-     "label": null,
+     "label": "tribute",
      "cards": [
       {
        "qty": 4,

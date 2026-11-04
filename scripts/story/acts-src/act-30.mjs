@@ -282,7 +282,7 @@ export default {
         q('stage', 'What size advantage? They never even see me coming.')],
       cues: {hero: cue('Dinner time.', 'Everything is an elk!', 'The knights are quick...', 'The food was good.', 'Eaten...', 'Protect Oko; food is not for burning.'),
         villain: cue('For the realm!', 'Charge!', 'Out of adventures...', 'The tale is told.', 'The tale ends...')}},
-    {slot: 7, mood: 'tension', kind: 'Meta', title: 'Temur Mutate', difficulty: 'Normal', rewardSet: 'iko', teaches: ['Racing'],
+    {slot: 7, mood: 'tension', kind: 'Meta', title: 'Temur Mutate', difficulty: 'Normal', rewardSet: 'iko', teaches: ['Reach'],
       blurb: 'Spring 2020: a mutate deck against big green ramp.',
       hero: {who: 'mutate', deck: {label: 'tribute', name: 'Temur Mutate', colors: 'GUR', archetype: 'Midrange', list: `
 4 Sea-Dasher Octopus
@@ -376,7 +376,7 @@ export default {
         villain: {...cue('Bow.', '[an elk bleats]', '[a trick fails]', 'The crown is mine.', '[the throne is empty]'),
           half: {who: 'cult', line: 'The king will not be amused.'}}}},
     {slot: 9, kind: 'Secret Boss', secret: true, title: 'Fires of Invention', difficulty: 'Hard', rewardSet: 'eld', rewardCard: 'Fires of Invention', mood: 'boss',
-      teaches: ['Racing'],
+      teaches: ['Trample'],
       archive: {deck: 'Fires of Invention', when: 'Autumn 2019', format: 'Standard.',
         what: 'A red and white deck that used Fires of Invention to cast two spells per turn on a limited mana budget.',
         why: 'Cheap, efficient spells and a free-cast engine made it a fast, resilient attacker in a format with many Food and Adventure decks.',

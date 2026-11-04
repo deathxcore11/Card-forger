@@ -2152,7 +2152,7 @@
    "title": "Temur Mutate",
    "difficulty": "Normal",
    "teaches": [
-    "Racing"
+    "Reach"
    ],
    "blurb": "Spring 2020: a mutate deck against big green ramp.",
    "rewardSet": "iko",
@@ -2845,7 +2845,7 @@
    "title": "Fires of Invention",
    "difficulty": "Hard",
    "teaches": [
-    "Racing"
+    "Trample"
    ],
    "blurb": "Deep in the archive, a red and white pile that casts two spells for the price of one.",
    "rewardSet": "eld",

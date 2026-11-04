@@ -1165,7 +1165,7 @@
    "title": "The House Is Hungry",
    "difficulty": "Normal",
    "teaches": [
-    "Racing"
+    "Vigilance"
    ],
    "blurb": "Tyvar has come to the House of Duskmourn. The House has come for Tyvar.",
    "rewardSet": "dsk",
@@ -1564,7 +1564,7 @@
      "label": "tribute",
      "cards": [
       {
-       "qty": 4,
+       "qty": 2,
        "name": "Sheltered by Ghosts",
        "set": "dsk",
        "number": "30",
@@ -1592,14 +1592,14 @@
        "id": "6f1a7590-3eee-4803-b192-d4fb771e6a86"
       },
       {
-       "qty": 4,
+       "qty": 2,
        "name": "Silent Hallcreeper",
        "set": "dsk",
        "number": "72",
        "id": "aac4f0cc-63be-4f08-956e-39839c9735ba"
       },
       {
-       "qty": 4,
+       "qty": 2,
        "name": "Stalked Researcher",
        "set": "dsk",
        "number": "73",
@@ -1621,13 +1621,20 @@
       },
       {
        "qty": 1,
+       "name": "Warren Elder",
+       "set": "blb",
+       "number": "37",
+       "id": "4bf20069-5a20-4f95-976b-6af2b69f3ad0"
+      },
+      {
+       "qty": 1,
        "name": "Unwanted Remake",
        "set": "dsk",
        "number": "39",
        "id": "7b54447f-1daf-4352-b5c3-3c0ec8b8f4d0"
       },
       {
-       "qty": 3,
+       "qty": 4,
        "name": "Splitskin Doll",
        "set": "dsk",
        "number": "33",
@@ -1648,6 +1655,20 @@
        "id": "3663ff0c-d02f-49ac-bb88-6f0dbd684337"
       },
       {
+       "qty": 2,
+       "name": "Hardened Escort",
+       "set": "dsk",
+       "number": "16",
+       "id": "12054e10-46d6-4581-a7e5-ff277cb0e229"
+      },
+      {
+       "qty": 2,
+       "name": "Possessed Goat",
+       "set": "dsk",
+       "number": "25",
+       "id": "cd02b8ff-ff65-4a38-b8fb-f8dd130edbf7"
+      },
+      {
        "qty": 10,
        "name": "Island",
        "set": "blb",
@@ -1655,14 +1676,14 @@
        "id": "106a5332-0104-4ec9-9e1f-806381ae4cad"
       },
       {
-       "qty": 3,
+       "qty": 2,
        "name": "Jump Scare",
        "set": "dsk",
        "number": "17",
        "id": "a2dd8903-31ca-470d-b2ff-280f6d40c794"
       },
       {
-       "qty": 3,
+       "qty": 4,
        "name": "Veteran Survivor",
        "set": "dsk",
        "number": "40",
@@ -2186,7 +2207,7 @@
        "id": "0035082e-bb86-4f95-be48-ffc87fe5286d"
       },
       {
-       "qty": 2,
+       "qty": 4,
        "name": "Tempest Angler",
        "set": "blb",
        "number": "235",
@@ -2201,13 +2222,6 @@
       },
       {
        "qty": 2,
-       "name": "Burst Lightning",
-       "set": "fdn",
-       "number": "192",
-       "id": "aec5d380-d354-4750-931a-6c91853e2edc"
-      },
-      {
-       "qty": 4,
        "name": "Abrade",
        "set": "fdn",
        "number": "188",
@@ -2256,7 +2270,7 @@
        "id": "44b0d83b-cc41-4f82-892c-ef6d3293228a"
       },
       {
-       "qty": 2,
+       "qty": 4,
        "name": "Plumecreed Escort",
        "set": "blb",
        "number": "65",
@@ -2339,7 +2353,7 @@
    "title": "Valgavoth, Terror Eater",
    "difficulty": "Hard",
    "teaches": [
-    "Racing"
+    "Ward"
    ],
    "blurb": "The house is alive and it is hungry. The heist crew and the survivors have to leave it with fewer rooms than it started with.",
    "rewardSet": "dsk",
@@ -2648,7 +2662,7 @@
    "title": "Mono-Red Mice",
    "difficulty": "Hard",
    "teaches": [
-    "Racing"
+    "Haste"
    ],
    "blurb": "Deep in the archive, a deck of tiny mice that wins on turn four.",
    "rewardSet": "blb",

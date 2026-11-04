@@ -29,7 +29,7 @@ export default {
   battles: [
     {slot: 1, kind: 'Arrival', title: "The Pretender's Inquisition", difficulty: 'Easy', mood: 'tension', rewardSet: 'drk', teaches: ['Two colours of mana'],
       blurb: 'After the Sylex, the sun is dim and the Church burns anyone who casts a spell. You cast spells.',
-      hero: {who: 'you', deck: {name: 'Hedge Witch', colors: 'WG', list: `
+      hero: {who: 'you', deck: {label: 'tribute', name: 'Hedge Witch', colors: 'WG', list: `
 4 Savannah Lions
 4 Llanowar Elves
 4 Grizzly Bears
@@ -42,7 +42,7 @@ export default {
 3 Craw Wurm
 12 Forest
 12 Plains`}},
-      villain: {who: 'inquisitor', deck: {name: 'The Burning Church', colors: 'B', list: `
+      villain: {who: 'inquisitor', deck: {label: 'tribute', name: 'The Burning Church', colors: 'B', list: `
 4 Bog Rats
 4 Drudge Skeletons
 4 Scathe Zombies
@@ -59,8 +59,8 @@ export default {
       cues: {hero: cue('I am no witch. Mostly.', 'Grow!', 'The fire is close...', 'The Church can burn something else.', 'Run...'), villain: cue('Burn the witch.', 'The Church sees all.', 'Send for more brothers!', 'Ashes are honest.', 'Heresy... walks free.')}},
     {slot: 2, kind: 'Lesson', title: "Johan's Crossing", difficulty: 'Easy', mood: 'march', rewardSet: 'leg', teaches: ['Legendary creatures', 'Three colours'],
       blurb: 'A merchant prince defends his desert city from a warlord who wants it. Only one of them leaves a legend.',
-      hero: {who: 'hazezon', deck: {name: 'The Bazaar Guard', colors: 'RGW', list: `
-4 Hazezon Tamar
+      hero: {who: 'hazezon', deck: {label: 'tribute', name: 'The Bazaar Guard', colors: 'RGW', list: `
+4 Pearled Unicorn
 2 Kei Takahashi
 1 Craw Wurm
 4 Savannah Lions
@@ -70,13 +70,11 @@ export default {
 3 Serra Angel
 4 Elven Riders
 4 Giant Growth
-2 Lightning Bolt
+2 Swords to Plowshares
 4 Savannah
-2 Plateau
-2 Taiga
-8 Plains
-8 Forest`}},
-      villain: {who: 'johan', deck: {name: "Johan's Host", colors: 'RG', list: `
+10 Plains
+10 Forest`}},
+      villain: {who: 'johan', deck: {label: 'tribute', name: "Johan's Host", colors: 'RG', list: `
 4 Stangg
 3 Elven Riders
 4 Brassclaw Orcs
@@ -97,7 +95,7 @@ export default {
         villain: cue('March.', 'Kneel or be legend.', 'Hold, damn you!', 'Mine.', "This isn't finished.")}},
     {slot: 3, kind: 'Lesson', title: 'The Thallid Grove', difficulty: 'Easy', mood: 'comic', rewardSet: 'fem', teaches: ['Tokens', 'Counters'],
       blurb: 'Sarpadia is starving. The elves grow fungus soldiers to survive; the Ebon Hand wants the grove for its thrull pits.',
-      hero: {who: 'kolevi', deck: {name: 'Havenwood Spores', colors: 'G', list: `
+      hero: {who: 'kolevi', deck: {label: 'tribute', name: 'Havenwood Spores', colors: 'G', list: `
 4 Thallid
 4 Thallid Devourer
 2 Ironroot Treefolk
@@ -110,7 +108,7 @@ export default {
 4 Giant Growth
 3 Craw Wurm
 24 Forest`}},
-      villain: {who: 'initiate', deck: {name: 'The Ebon Hand', colors: 'B', list: `
+      villain: {who: 'initiate', deck: {label: 'tribute', name: 'The Ebon Hand', colors: 'B', list: `
 4 Bog Rats
 2 Order of the Ebon Hand
 2 Swamp
@@ -132,7 +130,7 @@ export default {
         villain: cue('For the Hand.', 'Kneel to Tourach.', 'Bring the thrulls!', 'Harvest.', 'The Hand remembers.')}},
     {slot: 4, kind: 'Rival', title: "Tetsuo's Test", difficulty: 'Normal', mood: 'tension', rewardSet: 'leg', teaches: ['Counterspells', 'Multicolour gold cards'],
       blurb: "The last great Umezawa wizard has heard about the rift-walker. He wants to know if you're a weapon or a friend.",
-      hero: {who: 'you', deck: {name: 'Rift-Walker', colors: 'WG', list: `
+      hero: {who: 'you', deck: {label: 'tribute', name: 'Rift-Walker', colors: 'WG', list: `
 4 Savannah Lions
 4 White Knight
 4 Llanowar Elves
@@ -146,7 +144,7 @@ export default {
 4 Savannah
 10 Plains
 10 Forest`}},
-      villain: {who: 'tetsuo', deck: {name: 'The Umezawa Arts', colors: 'UBR', list: `
+      villain: {who: 'tetsuo', deck: {label: 'tribute', name: 'The Umezawa Arts', colors: 'UBR', list: `
 3 Tetsuo Umezawa
 2 Sol'kanar the Swamp King
 2 Hypnotic Specter
@@ -172,7 +170,7 @@ export default {
       cues: {hero: cue('Test me, then.', 'There. Did you see it coming?', 'He reads every move...', 'Friend, then?', 'Not yet ready...'), villain: cue('Show me.', 'Can you see it coming?', 'Good. Good.', 'Not yet ready.', 'Then we hunt together.')}},
     {slot: 5, kind: 'Lesson', title: 'The Thrull Rebellion', difficulty: 'Normal', mood: 'march', rewardSet: 'fem', teaches: ['Sacrifice'],
       blurb: 'The Ebon Hand made their thrulls smart enough to help with the sacrifices. That turned out to be a mistake.',
-      hero: {who: 'icatian', deck: {name: 'Valiant Icatia', colors: 'W', list: `
+      hero: {who: 'icatian', deck: {label: 'tribute', name: 'Valiant Icatia', colors: 'W', list: `
 4 Icatian Infantry
 4 Icatian Javelineers
 2 Order of Leitbur
@@ -187,7 +185,7 @@ export default {
 3 White Knight
 2 Spirit Link
 24 Plains`}},
-      villain: {who: 'thrullWizard', deck: {name: 'The Breeding Pits', colors: 'B', list: `
+      villain: {who: 'thrullWizard', deck: {label: 'tribute', name: 'The Breeding Pits', colors: 'B', list: `
 4 Thrull Champion
 4 Drudge Skeletons
 4 Necrite
@@ -204,7 +202,7 @@ export default {
       cues: {hero: cue('Icatia stands.', 'Javelins, loose!', 'The thrulls are breaking through...', 'Icatia holds another day.', 'Fall back to the walls...'), villain: cue('Feed the altar.', 'More thrulls, more power.', "The thrulls aren't listening!", 'Icatia falls.', 'The thrulls... turned...')}},
     {slot: 6, kind: 'Meta', title: 'The Deck', difficulty: 'Normal', mood: 'march', rewardSet: 'leg', teaches: ['Card advantage', 'Playing around counterspells'],
       blurb: 'An Elder Dragon who believes in order above everything. His deck agrees: counter it, answer it, win slowly. The era\'s legendary control deck.',
-      hero: {who: 'you', deck: {name: 'Kher Keep Fire', colors: 'R', list: `
+      hero: {who: 'you', deck: {label: 'tribute', name: 'Kher Keep Fire', colors: 'R', list: `
 4 Dwarven Soldier
 4 Brassclaw Orcs
 4 Ball Lightning
@@ -216,21 +214,20 @@ export default {
 3 Shivan Dragon
 2 Blood Moon
 24 Mountain`}},
-      villain: {who: 'arcades', deck: {name: 'The Deck', colors: 'WUG', archetype: 'The Deck (control)', list: `
-2 Arcades Sabboth
+      villain: {who: 'arcades', deck: {label: 'tribute', name: 'The Deck', colors: 'WUG', archetype: 'The Deck (control)', list: `
 4 Counterspell
 4 Mana Drain
 4 Swords to Plowshares
 3 Disenchant
-2 Moat
-3 Serra Angel
-2 Jayemdae Tome
-2 Control Magic
+1 Moat
+4 Serra Angel
+3 Jayemdae Tome
+3 Control Magic
 1 Balance
-2 Wrath of God
+1 Wrath of God
 2 Birds of Paradise
 2 Disrupting Scepter
-3 Mahamoti Djinn
+4 Mahamoti Djinn
 4 Tundra
 2 Tropical Island
 2 Savannah
@@ -242,43 +239,44 @@ export default {
       cues: {hero: cue('Burn first. Ask later.', 'Fireball!', 'Every spell answered...', 'Burned through.', 'Out of fire...'), villain: cue('Proceed.', 'Denied.', '...Irregular.', 'Order holds.', 'Impossible. Recount.')}},
     {slot: 7, kind: 'Meta', title: 'Hymn to Tourach', difficulty: 'Normal', mood: 'tension', rewardSet: 'fem', teaches: ['Discard'],
       blurb: "The Ebon Hand's choir sings a hymn that drives warriors mad. The era's discard deck.",
-      hero: {who: 'hazezon', deck: {name: 'The Bazaar Guard', colors: 'RGW', list: `
-3 Hazezon Tamar
+      hero: {who: 'hazezon', deck: {label: 'tribute', name: 'The Bazaar Guard', colors: 'RGW', list: `
+3 Pearled Unicorn
 4 White Knight
 4 Savannah Lions
 4 Llanowar Elves
 4 Knights of Thorn
-3 Serra Angel
+4 Serra Angel
 4 Elven Riders
 4 Giant Growth
-3 Lightning Bolt
-3 Swords to Plowshares
+1 Mesa Pegasus
+4 Swords to Plowshares
 4 Savannah
-2 Plateau
-2 Taiga
-8 Plains
-8 Forest`}},
-      villain: {who: 'choir', deck: {name: 'The Hymn', colors: 'B', archetype: 'Black discard', list: `
+10 Plains
+10 Forest`}},
+      villain: {who: 'choir', deck: {label: 'tribute', name: 'The Hymn', colors: 'B', archetype: 'Black discard', list: `
 2 Hymn to Tourach
-2 Scathe Zombies
-2 Hypnotic Specter
-2 Bog Rats
+4 Scathe Zombies
+4 Bog Rats
 4 Dark Ritual
-4 Black Knight
-4 Order of the Ebon Hand
-4 Necrite
-3 Sengir Vampire
-4 Terror
-3 Drain Life
+2 Black Knight
+2 Order of the Ebon Hand
+2 Necrite
+1 Sengir Vampire
+2 Terror
+1 Drain Life
 1 Unholy Strength
 1 Pestilence
+4 Drudge Skeletons
+2 Scavenging Ghoul
+2 Frozen Shade
+2 Wall of Bone
 24 Swamp`}},
       scene: [{who: 'choir', line: 'Tourach... Tourach...', aside: 'singing, low'}, {who: 'hazezon', line: "Cover your ears. Don't think about what you're holding."}, {who: 'choir', line: 'The eerie, wailing Hymn caused insanity even in hardened warriors.', quote: true}],
       villainScene: [{who: 'choir', line: "Sing louder, sisters. The warriors are listening."}, {who: 'choir', line: "Tourach... Tourach... let them forget what they hold."}],
       cues: {hero: cue('The bazaar does not close for hymns.', 'Every sand-warrior answers.', 'I cannot remember my own plan...', 'Sing somewhere else.', 'Save who you can.'), villain: cue('Sing.', 'Forget. Forget.', 'The Hymn falters!', 'Silence.', 'Tourach... hears...')}},
     {slot: 8, kind: 'Boss', title: 'The Last Elder Dragon', difficulty: 'Hard', mood: 'boss', rewardSet: 'leg', teaches: ['Everything so far'],
       blurb: 'Under the Wastes, the thing Tetsuo has hunted his whole life opens one eye.',
-      hero: {who: 'tetsuo', deck: {name: 'The Umezawa Arts', colors: 'UBR', list: `
+      hero: {who: 'tetsuo', deck: {label: 'tribute', name: 'The Umezawa Arts', colors: 'UBR', list: `
 4 Tetsuo Umezawa
 2 Hypnotic Specter
 2 Gray Ogre
@@ -298,7 +296,7 @@ export default {
 4 Island
 4 Swamp
 4 Mountain`}},
-      villain: {who: 'bolas', deck: {name: 'The Elder Dragon', colors: 'UBR', list: `
+      villain: {who: 'bolas', deck: {label: 'tribute', name: 'The Elder Dragon', colors: 'UBR', list: `
 3 Nicol Bolas
 2 Royal Assassin
 3 Hymn to Tourach
@@ -314,7 +312,8 @@ export default {
 3 Volcanic Island
 4 Badlands
 7 Swamp
-6 Mountain`}},
+5 Island
+1 Mountain`}},
       scene: [{who: 'bolas', line: 'An Umezawa. Your grandfather made that face too.'}, {who: 'tetsuo', line: "You're shorter than the legends said."}, {who: 'bolas', line: "The legends were written by survivors. There aren't many."}, {who: 'bolas', line: "And you. The little rift-walker. I've been waiting a long time to meet one of you.", aside: 'to you'}, {who: 'tetsuo', line: "Don't talk to him. Don't bargain. Just fight."}],
       villainScene: [{who: 'bolas', line: 'Every hero in this age will die. I simply want to watch how.'}],
       cues: {hero: cue('Now.', 'For every Umezawa.', 'Not like this...', 'Back into the dark.', 'Run. Remember his face.'),

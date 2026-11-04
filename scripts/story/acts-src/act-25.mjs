@@ -216,7 +216,7 @@ export default {
         q('dovin', 'Give me eight walkers, I\'ll give you the city.')],
       cues: {hero: cue('Let us see.', 'Revolt!', 'He has thought of everything...', 'Eureka.', 'Back to the notes...', 'Make something leave first.'),
         villain: cue('Proceed.', 'Flaw found.', 'Hm. Unexpected.', 'Case closed.', 'Fair enough.')}},
-    {slot: 6, mood: 'march', kind: 'Meta', title: 'Energy and Counters', difficulty: 'Normal', rewardSet: 'aer', teaches: ['Racing'],
+    {slot: 6, mood: 'march', kind: 'Meta', title: 'Energy and Counters', difficulty: 'Normal', rewardSet: 'aer', teaches: ['Deathtouch'],
       blurb: 'A tribute to Standard in early 2017: red-green Energy against black-green Winding Constrictor counters.',
       hero: {who: 'energy', deck: {label: 'tribute', name: 'RG Energy', colors: 'RG', archetype: 'Aggro', list: `
 4 Longtusk Cub
@@ -326,7 +326,7 @@ export default {
         villain: {...cue('This is bigger than you.', 'The machine is in motion.', 'An inconvenience.', 'It is finished.', 'Another time.'),
           half: {who: 'pia', line: 'The disruptor thopter is away! Keep him busy!'}}}},
     {slot: 9, kind: 'Secret Boss', secret: true, title: 'Copycat', difficulty: 'Hard', rewardSet: 'aer', rewardCard: 'Felidar Guardian', mood: 'boss',
-      teaches: ['Racing'],
+      teaches: ['Haste'],
       archive: {deck: 'Copycat', when: 'Early 2017', format: 'Standard.',
         what: 'Decks built around Saheeli Rai and Felidar Guardian. The Guardian blinks Saheeli, Saheeli copies the Guardian, and the copies repeat until there are endless hasty cats.',
         why: 'Any deck that let the two land together could lose on the spot. The combo pieces also fit neatly into Energy decks.',

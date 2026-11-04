@@ -232,7 +232,7 @@ export default {
         q('stage', 'Phyrexia may be ancient, but Gaea is eternal.')],
       cues: {hero: cue('Hold on, Ajani.', 'Enlist!', 'He knows every move...', 'Ajani is free.', 'Lost him...', 'Tap your small creatures to enlist.'),
         villain: cue('Do not move.', 'Compleat!', 'The friends hold...', 'All are compleated.', 'Freed...')}},
-    {slot: 6, mood: 'march', kind: 'Meta', title: 'Mono-Red vs Esper Legends', difficulty: 'Normal', rewardSet: 'dmu', teaches: ['Racing'],
+    {slot: 6, mood: 'march', kind: 'Meta', title: 'Mono-Red vs Esper Legends', difficulty: 'Normal', rewardSet: 'dmu', teaches: ['Ward'],
       blurb: 'Autumn 2022: a cheap burn deck against Esper legends. Hit them before the legends show up.',
       hero: {who: 'red', deck: {label: 'tribute', name: 'Mono-Red', colors: 'R', archetype: 'Aggro', list: `
 4 Monastery Swiftspear
