@@ -92,18 +92,16 @@ test('before a decision opens, the CPU play runs at its own pace, and one tap sk
  q.push(ev(1,4,[]));q.push(respondTo());q.flush();assert.deepEqual(shown.at(-1),[2,false],'a tap (flush) opens the decision at once');
 });
 
-test('with reduced motion a real decision is shown at once and unlocked, with the CPU play told over it',()=>{
+test('reduced motion keeps the pace: the CPU play is held and told first, then the decision opens (Randall, 4 Nov)',()=>{
  const shown=[],beats=[],timers=[];
  const q=new CpuActionPlaybackQueue({present:(s,busy)=>shown.push([s.status.revision,busy]),beat:b=>beats.push(b.label),reducedMotion:()=>true,schedule:fn=>{timers.push(fn);return timers.length;},cancel:()=>{}});
  q.push(ev(1,4,[]));
  const respond=respondTo();q.push(respond);
- assert.deepEqual(shown.at(-1),[2,false],'the response window is on screen immediately and commands are allowed');
- assert.equal(q.busy,false);assert.equal(q.overlay,true);assert.deepEqual(beats,['CPU · CASTS'],'the spell is still announced');
- let displayed=shown.at(-1)&&respond;const authority={snapshot:()=>respond,nativeButton:()=>'passed'};
- assert.equal(createPlaybackSession(authority,{displayed:()=>displayed,busy:()=>q.busy}).nativeButton('ok',2),'passed');
- // Passing lets the CPU go on: the overlay stops and the next update plays normally.
- q.push(ev(3,6,[e(6,'resolve',{source:ref(2,'Murder'),fizzled:false})]));
- assert.equal(q.overlay,false);assert.equal(q.running,true);assert.deepEqual(beats,['CPU · CASTS','CPU · RESOLVES']);
+ assert.deepEqual(shown.at(-1),[1,true],'the CPU spell is held on the old board first');
+ assert.equal(q.busy,true);assert.deepEqual(beats,['CPU · CASTS'],'the spell is announced');
+ for(let i=0;i<timers.length&&i<10;i++)timers[i]();
+ assert.deepEqual(shown.at(-1),[2,false],'then the response window opens and commands are allowed');
+ assert.equal(q.busy,false);
 });
 
 test('the board moves one beat at a time: land, then spell, then the attack and its damage',()=>{

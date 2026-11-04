@@ -797,7 +797,7 @@ const name=String(card.name);if(Math.max(...name.split(/\s+/).map(word=>word.len
  function closeLaneTray(){const tray=root.querySelector(':scope>.forge-lane-tray');if(!tray)return;doc.removeEventListener('pointerdown',tray._away,true);tray.remove();queueArrows();}
  const growLimit=()=>Math.min(win.innerWidth,win.innerHeight)<600&&win.matchMedia?.('(pointer:coarse)').matches?1.4:1;
  // Board scales move in fixed steps and are held between fits, so the table keeps one view as cards arrive.
- const SCALE_STEP=.025,step=k=>Math.round(k/SCALE_STEP)*SCALE_STEP;let boardHold=null,holdSize='',shrinkAt=0;let motionWait=false;
+ const SCALE_STEP=.025,step=k=>Math.round(k/SCALE_STEP)*SCALE_STEP;let boardHold=null,holdSize='',shrinkAt=0,tightRetries=0;let motionWait=false;
  // The largest step that fits wins on a first fit, or when the held scale no longer fits. Otherwise the held scale
  // stays, and grows only once the board would fit four steps (10%) up, stopping one step short of the best fit.
  function zoneScale(fitsAt){const lim=growLimit(),size=`${win.innerWidth}x${win.innerHeight}`;if(size!==holdSize){holdSize=size;boardHold=null;}
@@ -880,6 +880,9 @@ const name=String(card.name);if(Math.max(...name.split(/\s+/).map(word=>word.len
     zone.style.transform=`translateY(${lift.toFixed(1)}px) scale(${k.toFixed(3)})`;
    }return over;};
   for(let pass=0;pass<8;pass++){if(!applyAt(k)||k<=.4)break;k=Math.max(.4,step(k-SCALE_STEP));}
+  // A pass where nothing fits is a passing moment (the hand dealing in, a panel mid-change, art still landing), not the
+  // board's size (Randall, 4 Nov: his first land stayed tiny). The board keeps the scale it had and checks again shortly.
+  if(fits.length&&k<=.401){if(before!==null&&before>.401){k=before;applyAt(k);}if(tightRetries++<6)setTimeout(queueBoard,320);}else tightRetries=0;
   // A shrink must still be needed a moment later before it shows (Randall, 1 Nov: the board pulsed in and out as
   // cards landed, while art and fonts settled). Until then the held scale stays and the board is checked again.
   // A card in motion on the board (landing, lunging, a CPU action held up big) spills past its side while it moves,
