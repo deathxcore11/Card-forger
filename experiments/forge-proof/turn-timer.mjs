@@ -46,9 +46,22 @@ export function createTurnTimer({snapshot,paused=()=>false,act,concede=()=>{},on
   cur.left=3000;cur.since=null;acting=true;
   Promise.resolve().then(()=>act(w,s)).catch(()=>{}).finally(()=>{acting=false;});
  }
+ // The host's window, drawn as it stands: time left at receipt minus the time since, never the device's date.
+ let hostStrikes=0;
+ function hostTick(h){
+  if(!h){cur=null;emit();return;}
+  const kind=h.own?(h.reason==='turn'?'turn':h.reason==='response'?'response':'prompt'):'rival',remain=Math.max(0,(Number(h.remainingMs)||0)-(now()-(h.receivedAt??now())));
+  if(!cur||!cur.host||cur.kind!==kind||cur.total!==h.total)cur={id:'host',kind,total:h.total||TURN_MS,left:0,since:null,attempts:0,host:true};
+  cur.left=remain;cur.since=now();
+  if(h.own){const n=Number(h.strikes)||0;if(n>hostStrikes){try{onStrike(n,h.strikeLimit??STRIKE_LIMIT);}catch{/* a toast is optional */}}hostStrikes=n;}
+  emit();
+ }
  function tick(){
   if(stopped)return;
-  const s=snapshot(),w=waitingOn(s)||(mode==='friend'?rivalTurn(s):null);
+  const s=snapshot();
+  // A friend match whose host sends its own clock: draw that one and let the host act (it works when the app is closed too).
+  if(mode==='friend'&&s.hostClock!==undefined)return hostTick(s.status?.terminal||s.status?.failure?null:s.hostClock);
+  const w=waitingOn(s)||(mode==='friend'?rivalTurn(s):null);
   if(!w){if(cur){banks.set(cur.id,left());cur=null;}emit();return;}
   if(!cur||cur.id!==w.id){
    if(cur&&cur.kind==='turn')banks.set(cur.id,left());
@@ -66,7 +79,7 @@ export function createTurnTimer({snapshot,paused=()=>false,act,concede=()=>{},on
  return {
   tick,
   // Any touch of the table: you are here. The count of missed turns clears, and a prompt's window starts over.
-  poke(){strikes=0;lastStrikeTurn=null;if(cur&&cur.kind!=='turn'&&cur.kind!=='rival'&&cur.left!==Infinity){cur.left=cur.total;if(cur.since!==null)cur.since=now();emit();}},
+  poke(){strikes=0;lastStrikeTurn=null;if(cur&&!cur.host&&cur.kind!=='turn'&&cur.kind!=='rival'&&cur.left!==Infinity){cur.left=cur.total;if(cur.since!==null)cur.since=now();emit();}},
   strikes:()=>strikes,
   stop(){stopped=true;stopEvery(timer);cur=null;onChange(null);},
  };

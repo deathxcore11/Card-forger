@@ -35,4 +35,27 @@ try{
   console.log(`PASS ${viewport.width}x${viewport.height}: ring and line drain, the last 10 s warn with a number, a pop-up pauses it, zero passes the turn.`);
   await context.close();
  }
+
+ // A friend match: the host's clock is drawn, and the table never answers for itself.
+ for(const viewport of [{width:844,height:390},{width:1104,height:884}]){
+  const context=await browser.newContext({viewport,hasTouch:true,isMobile:true,deviceScaleFactor:2}),page=await context.newPage();
+  await page.clock.install({time:Date.now()});
+  await page.route(/^https?:\/\/(?!127\.0\.0\.1)/,r=>r.abort());
+  await page.goto(base+'/experiments/forge-proof/table-fixture.html?state=main&friend');await page.waitForFunction(()=>document.body.dataset.fixtureReady==='true');
+  await page.clock.runFor(1500);
+  await page.evaluate(()=>{window.calls=[];const s=window.fixture.session;s.nativeButton=(...a)=>{window.calls.push(['button',...a]);return Promise.resolve();};s.concede=()=>{window.calls.push(['concede']);return Promise.resolve();};});
+  const feed=(remainingMs,over={})=>page.evaluate(([ms,o])=>{const n=window.fixture.native;window.fixture.session.acceptState({...n,afk:{own:true,reason:'turn',total:90000,deadline:Date.now()+ms,serverNow:Date.now(),remainingMs:ms,strikes:0,strikeLimit:3,...o}});},[remainingMs,over]);
+  const read=()=>page.evaluate(()=>{const r=document.getElementById('practicePlayerMat');return {timer:r.dataset.turnTimer||null,warn:r.dataset.turnWarn||null,left:Number(r.style.getPropertyValue('--tt-left')||'NaN'),count:r.querySelector('.forge-turn-count')?.textContent||null,calls:window.calls.slice()};});
+  await feed(36000);await page.clock.runFor(600);let s=await read();
+  assert.equal(s.timer,'own');assert.ok(s.left>.35&&s.left<.42,`the ring starts from the host's 36 s of 90 (${s.left})`);
+  await page.clock.runFor(20000);s=await read();assert.ok(s.left>.14&&s.left<.2,`it counts down from there (${s.left})`);
+  await feed(7000,{strikes:2});await page.clock.runFor(600);s=await read();
+  assert.equal(s.warn,'true','the host last 10 s warn');assert.ok(s.count&&Number(s.count)<=7,`the count follows the host (${s.count})`);
+  assert.ok(await page.evaluate(()=>!!document.querySelector('.forge-afk-note')),'a second strike shows the concede warning');
+  if(shots)await page.screenshot({path:`${shots}/timer-host-${viewport.width}.png`});
+  await page.clock.runFor(30000);s=await read();assert.deepEqual(s.calls,[],'the host answers; the table does not');
+  await feed(50000,{own:false});await page.clock.runFor(600);s=await read();assert.equal(s.timer,'rival','the other seat window is a line only');
+  console.log(`PASS ${viewport.width}x${viewport.height} friend: the host's clock is drawn and the table never acts for itself.`);
+  await context.close();
+ }
 }finally{await browser.close();await new Promise(r=>server.close(r));}
