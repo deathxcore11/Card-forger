@@ -13,6 +13,8 @@ const TIER_NAMES = {1: ['gold'], 2: ['bronze', 'gold'], 3: ['bronze', 'silver', 
 export const tierNames = n => TIER_NAMES[n] || TIER_NAMES[5];
 const DEFAULT_TIER_REWARD = {bronze: {seals: {u: 1}, xp: 100}, silver: {seals: {r: 1}, xp: 250}, gold: {seals: {m: 1}, xp: 500}, mythic: {seals: {m: 1}, coins: 1000, xp: 1000}};
 const FEAT = {coins: 300, packs: 1, xp: 100};
+// A hidden feat (a riddle until earned) pays more: finding it is the point.
+const HIDDEN_FEAT = {coins: 500, packs: 1, xp: 250, seals: {r: 1}};
 
 // Tabs, in order: one per Play mode or place (Quick Play, Practice, Story, Multiplayer, the Trunk,
 // packs and the Merchant), plus the lifetime ones and the hidden ones.
@@ -34,14 +36,32 @@ export const ACHIEVEMENTS = Object.freeze([
   // Duelist: how you win.
   {id: 'victor', tab: 'duelist', title: 'Victor', lore: 'Wins against the CPU and in Story. Friend wins never count.', art: 'Elspeth, Sun\'s Champion', source: 'wins', steps: [10, 50, 250, 1000, 5000]},
   {id: 'on-the-draw', tab: 'duelist', title: 'On the Draw', lore: 'Wins when you went second.', art: 'Brainstorm', source: 'wins_draw', steps: [5, 25, 100]},
-  {id: 'swift-justice', tab: 'duelist', title: 'Swift Justice', lore: 'Win by turn 5.', art: 'Lightning Bolt', source: 'wins_fast', steps: [1], feat: true},
+  {id: 'swift-justice', tab: 'duelist', title: 'Swift Justice', lore: 'Win by your 5th turn.', art: 'Lightning Bolt', source: 'wins_fast', steps: [1], feat: true},
   {id: 'flawless', tab: 'duelist', title: 'Flawless', lore: 'Win with 20 life or more.', art: 'Serra Angel', source: 'wins_flawless', steps: [1], feat: true},
-  {id: 'long-game', tab: 'duelist', title: 'The Long Game', lore: 'Win a match that reaches turn 20.', art: 'Ugin, the Spirit Dragon', source: 'wins_long', steps: [1], feat: true},
+  {id: 'long-game', tab: 'duelist', title: 'The Long Game', lore: 'Win a match that lasts 15 of your turns.', art: 'Ugin, the Spirit Dragon', source: 'wins_long', steps: [1], feat: true},
   {id: 'comeback', tab: 'duelist', title: 'Back From the Brink', lore: 'Win with 5 life or less. The table thought you were finished.', art: 'Worship', source: 'wins_low', steps: [1, 10, 50]},
+  {id: 'executioner', tab: 'duelist', title: 'Executioner', lore: 'Opposing creatures you destroyed, in every mode but Practice.', art: 'Wrath of God', source: 'kills', steps: [25, 100, 500, 2000, 5000]},
+  {id: 'one-big-turn', tab: 'duelist', title: 'One Big Turn', lore: 'Deal 15 or more damage to one opponent in a single turn.', art: 'Craterhoof Behemoth', source: 'f_big15', steps: [1], feat: true},
+  {id: 'alpha-strike', tab: 'duelist', title: 'Alpha Strike', lore: 'Attack with six or more creatures at once.', art: 'Overwhelming Stampede', source: 'f_alpha6', steps: [1], feat: true},
+  {id: 'clean-slate', tab: 'duelist', title: 'Clean Slate', lore: 'Wipe out three or more opposing creatures at once.', art: 'Day of Judgment', source: 'wipes', steps: [1, 10, 50]},
+  {id: 'poison-pen', tab: 'duelist', title: 'Poison Pen', lore: 'Win with your opponent on 10 poison counters.', art: 'Glistener Elf', source: 'wins_poison', steps: [1, 10], tiers: ['bronze', 'silver']},
+  {id: 'read-to-end', tab: 'duelist', title: 'Read to the End', lore: 'Win with your opponent out of cards to draw.', art: 'Traumatize', source: 'wins_mill', steps: [1], feat: true},
+  {id: 'untouched', tab: 'duelist', title: 'Untouchable', lore: 'Win without ever losing a point of life.', art: "Teferi's Protection", source: 'wins_untouched', steps: [1, 10], tiers: ['bronze', 'silver']},
+  {id: 'from-ashes', tab: 'duelist', title: 'From the Ashes', lore: 'Win after your life fell to 3 or less at some point.', art: 'Rekindling Phoenix', source: 'wins_phoenix', steps: [1, 10, 25]},
   {id: 'overkill', tab: 'duelist', title: 'Overkill', lore: 'Win with your opponent at -5 life or lower.', art: 'Fireball', source: 'wins_overkill', steps: [1, 10], tiers: ['bronze', 'silver']},
   // Quick Play: matches against the CPU at Normal.
   {id: 'quick-draw', tab: 'quick', title: 'Quickest Draw', lore: 'Quick Play wins against the CPU.', art: 'Goblin Guide', source: 'wins_quick', steps: [5, 25, 100, 500]},
   {id: 'quick-regular', tab: 'quick', title: 'Regular at the Table', lore: 'Quick Play matches finished, win or lose.', art: 'Hellrider', source: 'quick_matches', steps: [10, 100, 500], tiers: ['bronze', 'silver', 'silver']},
+  {id: 'swarm', tab: 'quick', title: 'Swarm', lore: 'Have ten creatures on the field at once.', art: 'Hornet Queen', source: 'f_swarm10', steps: [1], feat: true},
+  {id: 'token-army', tab: 'quick', title: 'Token Army', lore: 'Have eight tokens on the field at once.', art: 'Secure the Wastes', source: 'f_tokens8', steps: [1], feat: true},
+  {id: 'colossal', tab: 'quick', title: 'Colossal', lore: 'Have a creature with 15 or more power.', art: 'Ghalta, Primal Hunger', source: 'f_power15', steps: [1], feat: true},
+  {id: 'air-superiority', tab: 'quick', title: 'Air Superiority', lore: 'Have five flyers on the field at once.', art: 'Favorable Winds', source: 'f_flyers5', steps: [1], feat: true},
+  {id: 'growth-spurt', tab: 'quick', title: 'Growth Spurt', lore: 'Put ten +1/+1 counters on one creature.', art: 'Hardened Scales', source: 'f_counters10', steps: [1], feat: true},
+  {id: 'armed', tab: 'quick', title: 'Armed to the Teeth', lore: 'Have three Auras or Equipment on one creature.', art: 'Puresteel Paladin', source: 'f_attach3', steps: [1], feat: true},
+  {id: 'chieftain', tab: 'quick', title: 'Chieftain', lore: 'Have six creatures of one creature type on the field at once.', art: "Vanquisher's Banner", source: 'f_tribe6', steps: [1], feat: true},
+  {id: 'many-faces', tab: 'quick', title: 'Many Faces', lore: 'Turn three face-down creatures face up in one match.', art: 'Ixidron', source: 'f_turnup3', steps: [1], feat: true},
+  {id: 'lifebloom', tab: 'quick', title: 'Lifebloom', lore: 'Gain 20 or more life in one match.', art: 'Aetherflux Reservoir', source: 'f_gain20', steps: [1], feat: true},
+  {id: 'quick-hunter', tab: 'quick', title: 'Big Game Hunter', lore: 'Opposing creatures destroyed in Quick Play.', art: 'Big Game Hunter', source: 'quick_kills', steps: [25, 250, 1000], tiers: ['bronze', 'silver', 'gold']},
   {id: 'pod-boss', tab: 'quick', title: 'Last One Standing', lore: 'Win a Commander pod against three CPU players.', art: 'Kenrith, the Returned King', source: 'wins_pod', steps: [1, 10, 50]},
   // Formats.
   {id: 'format-explorer', tab: 'formats', title: 'Format Explorer', lore: 'Win in different formats.', art: 'Jace, the Mind Sculptor', source: 'fmt', steps: [2, 4, 6]},
@@ -63,7 +83,14 @@ export const ACHIEVEMENTS = Object.freeze([
   // Multiplayer: friend matches count as played, never as won.
   {id: 'good-company', tab: 'friends', title: 'Good Company', lore: 'Friend matches finished. Three count each day.', art: 'Ajani, Mentor of Heroes', source: 'friend_matches', steps: [5, 25, 100, 500]},
   {id: 'friend-formats', tab: 'friends', title: 'House Rules', lore: 'Play friend matches in different formats.', art: 'Secret Rendezvous', source: '#ff', steps: [2, 4], tiers: ['bronze', 'silver']},
-  {id: 'friend-marathon', tab: 'friends', title: 'One More Turn', lore: 'Friend matches that reach turn 15.', art: 'Long Road Home', source: 'friend_long', steps: [1, 10], tiers: ['bronze', 'silver']},
+  {id: 'friend-marathon', tab: 'friends', title: 'One More Turn', lore: 'Friend matches that last 10 of your turns.', art: 'Long Road Home', source: 'friend_long', steps: [1, 10], tiers: ['bronze', 'silver']},
+  {id: 'around-table', tab: 'friends', title: 'Around the Table', lore: 'Commander pods finished, win or lose.', art: 'Kynaios and Tiro of Meletis', source: 'pod_matches', steps: [5, 25, 100], tiers: ['bronze', 'silver', 'gold']},
+  {id: 'pod-hunter', tab: 'friends', title: 'Table Politics', lore: 'Creatures destroyed in Commander pods.', art: 'Gisa and Geralf', source: 'pod_kills', steps: [25, 250], tiers: ['bronze', 'silver']},
+  {id: 'game-night', tab: 'friends', title: 'Game Night', lore: 'Different days you finished a friend match.', art: 'Brothers Yamazaki', source: '#fd', steps: [3, 10, 30]},
+  {id: 'show-off', tab: 'friends', title: 'Show-Off', lore: 'In a friend match, deal 10 or more damage in one turn.', art: 'Fling', source: 'f_friend_big10', steps: [1], feat: true},
+  {id: 'crowded-table', tab: 'friends', title: 'Crowded Table', lore: 'In a friend match, have eight creatures on the field at once.', art: 'Rally the Peasants', source: 'f_friend_swarm8', steps: [1], feat: true},
+  {id: 'down-to-wire', tab: 'friends', title: 'Down to the Wire', lore: 'Finish a friend match on 3 life or less.', art: "Angel's Grace", source: 'f_friend_wire', steps: [1], feat: true},
+  {id: 'friendly-fire', tab: 'friends', title: 'Friendly Fire', lore: "Your friends' creatures you destroyed.", art: 'Comet Storm', source: 'friend_kills', steps: [10, 50, 200], tiers: ['bronze', 'silver', 'gold']},
   // Practice: honour only.
   {id: 'drills', tab: 'practice', title: 'Drills', lore: 'Practice matches finished. Practice never pays, but it remembers.', art: 'Training Grounds', source: 'practice_matches', steps: [10, 50, 200], honour: true},
   {id: 'sparring', tab: 'practice', title: 'Sparring Partner', lore: 'Practice wins against the CPU on Hard.', art: 'Sparring Golem', source: 'practice_wins_hard', steps: [1, 10, 50], honour: true},
@@ -92,12 +119,24 @@ export const ACHIEVEMENTS = Object.freeze([
   {id: 'by-a-thread', tab: 'hidden', title: 'By a Thread', lore: 'Win with exactly 1 life left.', riddle: 'One breath stands between you and the grave.', art: 'Near-Death Experience', source: 'wins_thread', steps: [1], feat: true, hidden: true},
   // Story deeds: one feat each, woven into the acts (story-deeds.js).
   // A gold deed (a secret boss) is a one-step gold achievement instead of a feat: it pays the gold tier and a Collector pack.
-  ...[...STORY_DEEDS, ...STORY_ACT_DEEDS].map(d => ({id: d.id, tab: 'story', title: d.title, lore: d.lore, art: storyDeedArt(d), source: 'sd:' + d.id, steps: [1],
-    ...(d.gold ? {hidden: true, riddle: d.riddle} : {feat: true})})),
-  {id: 'marathon', tab: 'hidden', title: 'Marathon', lore: 'Win a match that reaches turn 30.', riddle: 'The sun rose and set and still you fought.', art: 'Approach of the Second Sun', source: 'wins_marathon', steps: [1], feat: true, hidden: true},
-  {id: 'turn-four', tab: 'hidden', title: 'Turn Four', lore: 'Win by turn 4.', riddle: 'They never got to see their fourth land.', art: 'Ball Lightning', source: 'wins_t4', steps: [1], feat: true, hidden: true},
+  ...[...STORY_DEEDS, ...STORY_ACT_DEEDS].map(d => ({id: d.id, tab: 'story', act: d.act, title: d.title, lore: d.lore, art: storyDeedArt(d), source: 'sd:' + d.id, steps: [1],
+    ...(d.gold ? {hidden: true, riddle: d.riddle} : d.hidden ? {feat: true, hidden: true, riddle: d.riddle} : {feat: true})})),
+  {id: 'marathon', tab: 'hidden', title: 'Marathon', lore: 'Win a match that lasts 20 of your turns.', riddle: 'The sun rose and set and still you fought.', art: 'Approach of the Second Sun', source: 'wins_marathon', steps: [1], feat: true, hidden: true},
+  {id: 'turn-four', tab: 'hidden', title: 'Turn Four', lore: 'Win by your 4th turn.', riddle: 'They never got to see their fourth land.', art: 'Ball Lightning', source: 'wins_t4', steps: [1], feat: true, hidden: true},
   {id: 'stalemate', tab: 'hidden', title: 'Stalemate', lore: 'Finish a match in a draw.', riddle: 'Nobody won, and nobody lost.', art: 'Divine Intervention', source: 'draws', steps: [1], feat: true, hidden: true},
   {id: 'pentachrome', tab: 'hidden', title: 'Every Colour at Once', lore: 'Win with a five-colour deck.', riddle: 'White, blue, black, red and green walked into a bar.', art: 'Child of Alara', source: 'wins_five', steps: [1], feat: true, hidden: true},
+  {id: 'pacifist', tab: 'hidden', title: 'Pacifist', lore: 'Win without ever attacking.', riddle: 'They fell, and you never raised a hand.', art: 'Pacifism', source: 'wins_pacifist', steps: [1], feat: true, hidden: true},
+  {id: 'exact-change', tab: 'hidden', title: 'Exact Change', lore: 'Win with your opponent on exactly 0 life.', riddle: 'Not one point more than needed.', art: 'Exquisite Firecraft', source: 'wins_exact', steps: [1], feat: true, hidden: true},
+  {id: 'lone-wolf', tab: 'hidden', title: 'Lone Wolf', lore: 'Win without ever having more than one creature on the field.', riddle: 'You only ever needed one.', art: 'Lone Wolf', source: 'wins_lone', steps: [1], feat: true, hidden: true},
+  {id: 'heaven', tab: 'hidden', title: 'Twice Alive', lore: 'Reach 40 life.', riddle: 'Twice as alive as anyone at the table.', art: 'Serra Ascendant', source: 'f_life40', steps: [1], feat: true, hidden: true},
+  {id: 'hellbent', tab: 'hidden', title: 'Empty Hands', lore: 'Win after your opponent ran out of cards in hand.', riddle: 'Their hands were empty. Yours were not.', art: 'Mind Twist', source: 'wins_hellbent', steps: [1], feat: true, hidden: true},
+  {id: 'turn-three', tab: 'hidden', title: 'Three Turns', lore: 'Win by your 3rd turn.', riddle: "Three turns. That's all it took.", art: 'Fireblast', source: 'wins_t3', steps: [1], feat: true, hidden: true},
+  {id: 'unlucky', tab: 'hidden', title: 'Unlucky for Some', lore: 'Win on exactly your 13th turn.', riddle: 'Thirteen turns, and luck had nothing to do with it.', art: 'Black Cat', source: 'wins_13', steps: [1], feat: true, hidden: true},
+  {id: 'body-count', tab: 'hidden', title: 'Body Count', lore: 'Destroy ten opposing creatures in one match.', riddle: 'Ten fell before you.', art: 'Massacre Wurm', source: 'f_kills10', steps: [1], feat: true, hidden: true},
+  {id: 'hoarder', tab: 'hidden', title: 'Hoarder', lore: 'Hold ten cards in your hand at once.', riddle: 'Ten cards in hand, and still hungry.', art: 'Reliquary Tower', source: 'f_hand10', steps: [1], feat: true, hidden: true},
+  {id: 'landlord', tab: 'hidden', title: 'Landlord', lore: 'Have twelve lands on the field.', riddle: 'A dozen lands to call your own.', art: 'Azusa, Lost but Seeking', source: 'f_lands12', steps: [1], feat: true, hidden: true},
+  {id: 'giant-killer', tab: 'hidden', title: 'Giant Killer', lore: 'Win while your opponent had twice as many creatures as your best board.', riddle: 'Outnumbered two to one, and still standing.', art: 'Giant Killer', source: 'wins_outnumbered', steps: [1], feat: true, hidden: true},
+  {id: 'no-losses', tab: 'hidden', title: 'Not One Lost', lore: 'Win a match lasting 8 or more of your turns without losing a creature.', riddle: 'Every soldier came home.', art: 'Brave the Elements', source: 'wins_nolosses', steps: [1], feat: true, hidden: true},
   {id: 'god-pack', tab: 'hidden', title: 'Touched by the Gods', lore: 'Open a god pack: every card a holo rare or mythic.', riddle: 'One pack in a thousand is blessed.', art: "God-Pharaoh's Gift", source: 'packs_god', steps: [1], feat: true, hidden: true},
 ]);
 
@@ -150,7 +189,7 @@ export const almostThere = (rows, n = 3) => rows.filter(r => r.next && !r.hidden
 export const achievementTiers = a => a.feat ? a.steps.map(() => 'feat') : a.tiers || tierNames(a.steps.length);
 export function achievementReward(a, step, config = {}) {
   if (a.honour) return {};
-  if (a.feat) return {...FEAT};
+  if (a.feat) return a.hidden ? JSON.parse(JSON.stringify(HIDDEN_FEAT)) : {...FEAT};
   const tier = achievementTiers(a)[step], cfg = config?.achievement?.[tier] || DEFAULT_TIER_REWARD[tier];
   const out = JSON.parse(JSON.stringify(cfg || DEFAULT_TIER_REWARD.bronze));
   // The hard steps (gold and mythic) also give a Collector pack (play-econ-rules.js), unless the config says otherwise.
@@ -175,14 +214,14 @@ export const DAILY_EASY = [
 export const DAILY_HARD = [
   {id: 'win3', label: 'Win 3 matches', key: 'wins', need: 3},
   {id: 'draw-win', label: 'Win on the draw', key: 'wins_draw', need: 1},
-  {id: 'fast-win', label: 'Win by turn 8', key: 'wins_t8', need: 1},
+  {id: 'fast-win', label: 'Win by your 8th turn', key: 'wins_t8', need: 1},
   {id: 'healthy-win', label: 'Win with 15 or more life', key: 'wins_healthy', need: 1},
   {id: 'comeback-win', label: 'Win with 5 or less life', key: 'wins_low', need: 1},
   {id: 'pair-win', label: 'Win with a two-colour deck', key: 'wins_2c', need: 1},
-  {id: 'long-win', label: 'Win a match that reaches turn 12', key: 'wins_t12', need: 1},
+  {id: 'long-win', label: 'Win a match that lasts 10 of your turns', key: 'wins_t12', need: 1},
   {id: 'quick-win2', label: 'Win 2 Quick Play matches', key: 'wins_quick', need: 2},
 ];
-export const FIRST_MATCH = {id: 'first', label: 'First match of the day (5+ turns)', key: 'matches5', need: 1};
+export const FIRST_MATCH = {id: 'first', label: 'First match of the day (3+ of your turns)', key: 'matches5', need: 1};
 export const WEEKLY = [
   {id: 'w-wins', label: 'Win 7 matches', key: 'wins', need: 7},
   {id: 'w-matches', label: 'Finish 15 matches', key: 'matches', need: 15},
@@ -291,12 +330,28 @@ export function deckColours(cards = []) {
 const cleanColours = v => 'WUBRG'.split('').filter(x => String(v || '').toUpperCase().includes(x)).join('');
 const cleanFormat = v => String(v || '').replace(/[^A-Za-z0-9 ]/g, '').slice(0, 30);
 
+// The numbers the app reports from match-facts.js, kept to small whole numbers. `known` marks a report
+// that carried facts at all, so a missing fact never reads as zero (no free Pacifist for an old app).
+const FACT_NUMBERS = ['myTurns', 'minLife', 'startLife', 'maxLife', 'lifeGained', 'oppBigTurn', 'oppPoison', 'oppLibraryMin', 'oppHandMin', 'maxHand', 'maxCreatures', 'maxTokens',
+  'maxLands', 'maxPower', 'maxAttackers', 'maxFlyers', 'maxCounters', 'maxAttach', 'maxTribe', 'oppMaxCreatures', 'oppWipes', 'kills', 'losses', 'turnedUp'];
+export function cleanFacts(raw) {
+  const out = {};
+  if (!raw || typeof raw !== 'object') return out;
+  for (const k of FACT_NUMBERS) { const v = raw[k]; if (Number.isSafeInteger(v) && v >= -999 && v <= 999) out[k] = v; }
+  if (!Number.isSafeInteger(out.maxTribe) && raw.tribes && typeof raw.tribes === 'object') out.maxTribe = Math.min(99, Math.max(0, ...Object.values(raw.tribes).filter(Number.isSafeInteger)));
+  if (Number.isSafeInteger(out.maxCreatures) && Number.isSafeInteger(out.maxAttackers)) out.known = true;
+  return out;
+}
+
 // One finished match (from the app's match record) becomes counter bumps. Practice only feeds its
 // own honour counters (never quests); friend matches count as played only.
 // m: {mode: quick|story|friend|practice, outcome, format, turns, life, opponentLife, onPlay, durationMs, colors, seats, difficulty}
 export function matchCounters(m = {}, day, {friendsToday = 0, friendCap = 3, practiceToday = 0, practiceCap = 30} = {}) {
   if (!['win', 'loss', 'draw'].includes(m.outcome)) return null;
-  const week = playWeek(day), friend = m.mode === 'friend', turns = Number.isSafeInteger(m.turns) ? m.turns : 0, life = Number.isSafeInteger(m.life) ? m.life : null;
+  // Turns are the player's own (match-facts.js myTurns); older apps only sent Forge's turn number,
+  // which counts both players' turns, so it is halved (rounded up) for them.
+  const f = cleanFacts(m.facts), own = Number.isSafeInteger(m.myTurns) && m.myTurns >= 0 ? m.myTurns : Number.isSafeInteger(f.myTurns) ? f.myTurns : Number.isSafeInteger(m.turns) ? Math.ceil(m.turns / Math.max(2, m.seats | 0)) : 0;
+  const week = playWeek(day), friend = m.mode === 'friend', turns = Math.min(own, 500), life = Number.isSafeInteger(m.life) ? m.life : null;
   const fmt = cleanFormat(m.format);
   if (m.mode === 'practice') {
     if (practiceToday >= practiceCap) return {};
@@ -308,28 +363,55 @@ export function matchCounters(m = {}, day, {friendsToday = 0, friendCap = 3, pra
   const minutes = Math.min(90, Math.max(0, Math.round((Number(m.durationMs) || 0) / 60000)));
   if (friend && friendsToday >= friendCap) return {};
   const c = {matches: 1, minutes}, once = {};
-  if (turns >= 5) c.matches5 = 1;
+  if (turns >= 3) c.matches5 = 1;
   if (m.mode === 'quick') c.quick_matches = 1;
   if (m.mode === 'story') c.story_matches = 1;
   if (m.outcome === 'draw') c.draws = 1;
-  if (friend) { c.friend_matches = 1; if (turns >= 15) c.friend_long = 1; if (fmt) once['ff:' + fmt] = 1; }
+  if (friend) { c.friend_matches = 1; if (turns >= 10) c.friend_long = 1; if (fmt) once['ff:' + fmt] = 1; once['fd:' + day] = 1; }
+  if (m.mode === 'quick' && (m.seats | 0) >= 3) c.pod_matches = 1;
+  // What the table showed (match-facts.js): creatures destroyed and the one-match feats, in every
+  // mode but Practice. Friend feats have their own achievements; wins never count for friends.
+  const k = Math.min(f.kills | 0, 60);
+  if (k) { c.kills = k; if (m.mode === 'quick') c.quick_kills = k; if (friend) c.friend_kills = k; if (m.mode === 'quick' && (m.seats | 0) >= 3) c.pod_kills = k; }
+  if (f.oppWipes) c.wipes = Math.min(f.oppWipes, 10);
+  const feat = (key, ok) => { if (ok) once[key] = 1; };
+  if (!friend) {
+    feat('f_big15', f.oppBigTurn >= 15); feat('f_alpha6', f.maxAttackers >= 6); feat('f_swarm10', f.maxCreatures >= 10); feat('f_tokens8', f.maxTokens >= 8);
+    feat('f_power15', f.maxPower >= 15); feat('f_flyers5', f.maxFlyers >= 5); feat('f_counters10', f.maxCounters >= 10); feat('f_attach3', f.maxAttach >= 3);
+    feat('f_tribe6', f.maxTribe >= 6); feat('f_turnup3', f.turnedUp >= 3); feat('f_gain20', f.lifeGained >= 20); feat('f_life40', f.maxLife >= 40);
+    feat('f_kills10', f.kills >= 10); feat('f_hand10', f.maxHand >= 10); feat('f_lands12', f.maxLands >= 12);
+  } else {
+    feat('f_friend_big10', f.oppBigTurn >= 10); feat('f_friend_swarm8', f.maxCreatures >= 8); feat('f_friend_wire', life !== null && life >= 1 && life <= 3);
+  }
   if (m.outcome === 'win' && !friend) {
     const opp = Number.isSafeInteger(m.opponentLife) ? m.opponentLife : null, colours = cleanColours(m.colors);
     c.wins = 1;
     if (m.mode === 'quick') c.wins_quick = 1;
     if (m.mode === 'quick' && (m.seats | 0) >= 3) c.wins_pod = 1;
     if (m.onPlay === false) c.wins_draw = 1;
+    if (turns && turns <= 3) c.wins_t3 = 1;
+    if (turns === 13) c.wins_13 = 1;
     if (turns && turns <= 4) c.wins_t4 = 1;
     if (turns && turns <= 5) c.wins_fast = 1;
     if (turns && turns <= 8) c.wins_t8 = 1;
-    if (turns >= 12) c.wins_t12 = 1;
-    if (turns >= 20) c.wins_long = 1;
-    if (turns >= 30) c.wins_marathon = 1;
+    if (turns >= 10) c.wins_t12 = 1;
+    if (turns >= 15) c.wins_long = 1;
+    if (turns >= 20) c.wins_marathon = 1;
     if (life !== null && life >= 20) c.wins_flawless = 1;
     if (life !== null && life >= 15) c.wins_healthy = 1;
     if (life !== null && life >= 1 && life <= 5) c.wins_low = 1;
     if (life === 1) c.wins_thread = 1;
     if (opp !== null && opp <= -5) c.wins_overkill = 1;
+    if (opp === 0) c.wins_exact = 1;
+    if (f.oppPoison >= 10) c.wins_poison = 1;
+    if (f.oppLibraryMin === 0 && opp !== null && opp > 0) c.wins_mill = 1;
+    if (Number.isSafeInteger(f.minLife) && Number.isSafeInteger(f.startLife) && f.minLife >= f.startLife) c.wins_untouched = 1;
+    if (Number.isSafeInteger(f.minLife) && f.minLife <= 3) c.wins_phoenix = 1;
+    if (f.known && f.maxAttackers === 0) c.wins_pacifist = 1;
+    if (f.known && f.maxCreatures <= 1) c.wins_lone = 1;
+    if (f.oppHandMin === 0) c.wins_hellbent = 1;
+    if (f.known && f.oppMaxCreatures >= 2 * Math.max(1, f.maxCreatures)) c.wins_outnumbered = 1;
+    if (f.known && turns >= 8 && f.losses === 0) c.wins_nolosses = 1;
     if (m.mode === 'story') c.story_wins = 1;
     if (colours.length === 1) once['mc:' + colours] = 1;
     if (colours.length === 2) { once['gp:' + colours] = 1; c.wins_2c = 1; }
@@ -351,7 +433,7 @@ export function achievementsPayload(ctx = {}, config = {}) {
   const rows = achievementRows(ctx), q = questRows(ctx);
   const achievements = rows.map(r => {
     const secret = r.hidden && !r.earned;
-    return {id: r.id, tab: r.tab, title: secret ? null : r.title, lore: secret ? null : r.lore, riddle: r.riddle || null, hidden: !!r.hidden, secret,
+    return {id: r.id, tab: r.tab, act: r.act || null, title: secret ? null : r.title, lore: secret ? null : r.lore, riddle: r.riddle || null, hidden: !!r.hidden, secret,
       kind: r.honour ? 'honour' : r.feat ? 'feat' : 'chain', unit: r.unit || null, art: secret ? null : achievementArt(r.art),
       value: r.value, earned: r.earned, ready: r.ready, complete: r.complete,
       steps: r.steps.map((x, i) => ({...x, reward: achievementReward(r, i, config)}))};

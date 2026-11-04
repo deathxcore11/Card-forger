@@ -9,6 +9,7 @@ import {mountForgeTable} from './experiments/forge-proof/forge-table.mjs';
 import {nativePromptUnanswerable} from './experiments/forge-proof/native-panel.mjs';
 import {mountForgeMatchIntro,forgeStartingPlayer} from './play-forge-pregame.js';
 import {deckRecord,recordLine,recordMatch} from './play-match-record.js';
+import {createMatchFacts} from './match-facts.js';
 import {goalProgress} from './play-daily-goals.js';
 import {createPlayScreenPause,playScreenPauseApplies,readPlayScreen,watchPlayScreen,PLAY_SMALL_SCREEN_LIMIT_MS} from './desktop-play.js';
 const selectionKey=s=>JSON.stringify([s?.profile?.ownerId,s?.selected,s?.opponent,s?.match]);
@@ -91,7 +92,7 @@ export function forgeMatchError(error){
 export function createForgePlayerMat({root,readAccount,readSetup,getAccessToken,lookup,prepareArtwork=async()=>{},onChange=()=>{},onClose=()=>{},onHome=null,onRematch=null,onFinished=()=>{},readGoals=null,createClient=createForgeHostClient,resolveLate=null,mountTable=mountForgeTable,mountIntro=mountForgeMatchIntro,pollMs=500,startupPollMs=250,wait=ms=>new Promise(r=>setTimeout(r,ms)),now=()=>Date.now()}={}){
  if(!root||[readAccount,readSetup,getAccessToken,lookup].some(f=>typeof f!=='function'))throw Error('FORGE_PLAYER_MAT_READERS_REQUIRED');
  const doc=root.ownerDocument,view=doc.defaultView;
- let generation=0,opening=false,startupMs=null,client=null,session=null,table=null,last=null,warning=false,viewer=null,matchup=null,matchPolicy=null,matchAccount=null,intro=null,exitDialog=null,exitConfirm=null,exitSubmitting=false,disposed=false,playedFrom=null,ownFirst=null,lastSurface=null,conceding=false,recorded=false;
+ let facts=null,generation=0,opening=false,startupMs=null,client=null,session=null,table=null,last=null,warning=false,viewer=null,matchup=null,matchPolicy=null,matchAccount=null,intro=null,exitDialog=null,exitConfirm=null,exitSubmitting=false,disposed=false,playedFrom=null,ownFirst=null,lastSurface=null,conceding=false,recorded=false;
  const node=(tag,text)=>{const n=doc.createElement(tag);if(text!==undefined)n.textContent=text;return n;};
  const beforeUnload=e=>{e.preventDefault();e.returnValue='';};
  const warn=enabled=>{if(enabled===warning)return;warning=enabled;view[enabled?'addEventListener':'removeEventListener']('beforeunload',beforeUnload);};
@@ -159,7 +160,10 @@ export function createForgePlayerMat({root,readAccount,readSetup,getAccessToken,
   // A match is recorded once, even if Forge reports its end on more than one read.
   const saved=matchup&&outcome&&!recorded?recordMatch(matchRow(outcome)):null;if(saved)recorded=true;
   // Play quests and achievements hear about every recorded match; the app decides what counts (never Practice).
-  const detail=saved?{...saved,story:!!matchup.story,friend:!!matchup.friendMatch,colors:basicColours(matchup.selected?.cards),seats:(lastSurface?.players||[]).length||null,difficulty:last?.matchContext?.difficulty||matchup.match?.difficulty||null}:null;
+  if(lastSurface)facts?.update(lastSurface);
+  // What the table showed this match (match-facts.js): achievements, quests and Story deeds read it.
+  const matchFacts=facts?.snapshot({onPlay:ownFirst})||null;
+  const detail=saved?{...saved,facts:matchFacts,myTurns:matchFacts?.myTurns??null,story:!!matchup.story,friend:!!matchup.friendMatch,colors:basicColours(matchup.selected?.cards),seats:(lastSurface?.players||[]).length||null,difficulty:last?.matchContext?.difficulty||matchup.match?.difficulty||null}:null;
   if(detail)try{globalThis.dispatchEvent?.(new CustomEvent('play:match-recorded',{detail}));}catch{/* quests are best effort */}
   const title=outcome==='draw'?'Draw':outcome==='win'?'Victory':outcome==='loss'?'Defeat':'Your result is not yet identified';
   publish({phase:'finished',result:structuredClone(result),viewerId:viewer,outcome,endingReason:'unclassified-engine-terminal',deckDigests:client?.status().allocation?.deckDigests||null});message('Match finished',[title,...(outcome===null?[`Forge reported winner player ${result.winnerPlayerId}, but this receipt does not identify your seat. No win or loss has been assigned.`]:[]),...(board?[]:['This match has ended. Return to setup whenever you are ready for another game.',saved?'Saved to this device’s match record.':'Results are not yet saved to your account.'])],{close:!board});
@@ -271,7 +275,7 @@ export function createForgePlayerMat({root,readAccount,readSetup,getAccessToken,
    if(totalMs!==null)parts.unshift('Ready in '+secs(totalMs));return parts.join(' · ');};
   const stopTicker=()=>{if(ticker!==null)view?.clearInterval?.(ticker);ticker=null;intro?.elapsed?.('');intro?.note?.('');};
   try{
-   matchup=structuredClone(setup);playedFrom=ownFirst=lastSurface=null;conceding=recorded=false;matchPolicy=forgeCpuPolicy(forgeMatchDifficulty(setup));
+   matchup=structuredClone(setup);playedFrom=ownFirst=lastSurface=null;conceding=recorded=false;facts=createMatchFacts();matchPolicy=forgeCpuPolicy(forgeMatchDifficulty(setup));
    if(!current()||setup.profile?.ownerId!==readAccount()?.user?.id)throw Object.assign(Error('ACCOUNT_CHANGED'),{code:'ACCOUNT_CHANGED'});
    intro=mountIntro({root,setup,lookup,onCancel:requestExit,wait,isCurrent:current});watchScreen();
    // Card art is needed only once the table opens, so it loads while the server starts
@@ -338,7 +342,7 @@ export function createForgePlayerMat({root,readAccount,readSetup,getAccessToken,
    }});
    await intro?.reveal(state.snapshot);if(!current()){await client.close();throw Error('SELECTION_CHANGED');}intro?.destroy();intro=null;
    playedFrom=now();ownFirst=forgeStartingPlayer(state.snapshot)?.ownFirst??null;
-   session.acceptState(state.snapshot);session.subscribe(s=>{lastSurface=s.status?.surface||lastSurface;updateExit();if(!disposed&&ticket===generation&&last?.phase!=='finished')publish({phase:'playing',game:s});});
+   session.acceptState(state.snapshot);session.subscribe(s=>{lastSurface=s.status?.surface||lastSurface;if(s.status?.surface)facts?.update(s.status.surface);updateExit();if(!disposed&&ticket===generation&&last?.phase!=='finished')publish({phase:'playing',game:s});});
    // The engine and website build stay identifiable on screen and in diagnostics.
    root.className='';root.dataset.engine='forge-hosted';root.dataset.build=APP_VERSION;table=mountTable(root,{session,profile:setup.profile,format:setup.match.format,title:`CardStashy · Magic · ${APP_VERSION}`,onExit:requestExit,presentation:{hosted:true,allowControlMode:true,tracker:trackerDeck(setup,artwork),...(setup.friend?{friend:setup.friend}:{})}});// Start timings stay out of the player's view (they read like a developer readout); the console keeps them.
    if(progress)view?.console?.info?.('[play] '+stepsLine(progress,startupMs));warn(true);await session.start({readInitial:false});return last;

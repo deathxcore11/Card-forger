@@ -1,0 +1,63 @@
+// Story deeds and the match facts they read (story-deeds.js, match-facts.js).
+import assert from 'node:assert/strict';
+import {readFileSync} from 'node:fs';
+import {createMatchFacts, factsMeet} from './match-facts.js';
+import {STORY_DEEDS, STORY_ACT_DEEDS, storyDeedsEarned, storyDeedArt} from './story-deeds.js';
+
+// --- The tracker reads a Forge surface the way the table shows it ---------------------------------
+const card = (id, controller, name, extra = {}) => ({id, zone: 'Battlefield', owner: controller, controller, known: true, name, types: ['Creature'], type: 'Creature - Goblin', power: 2, ...extra});
+const surface = (turn, activeSeat, cards, life = [20, 20], more = {}) => ({seat: 0, turn, activeSeat, players: [{seat: 0, life: life[0], handCount: 5, libraryCount: 40}, {seat: 1, life: life[1], handCount: 4, libraryCount: 40, ...more}], cards});
+const t = createMatchFacts();
+t.update(surface(1, 0, [card(1, 0, 'Goblin King', {attacking: true})]));
+// The turn number can tick before the active player does: the turn goes to whoever the table last showed.
+t.update(surface(2, 0, [card(1, 0, 'Goblin King'), card(9, 1, 'Serra Angel', {flying: true})]));
+t.update(surface(2, 1, [card(1, 0, 'Goblin King'), card(9, 1, 'Serra Angel', {flying: true})], [17, 20]));
+t.update(surface(3, 0, [card(1, 0, 'Goblin King', {attacking: true}), card(2, 0, 'Goblin Raider', {attacking: true, isToken: true}), {...card(9, 1, 'Serra Angel'), zone: 'Graveyard'}], [17, 14]));
+t.update(surface(3, 0, [card(1, 0, 'Goblin King'), {id: 7, zone: 'Battlefield', owner: 0, controller: 0, known: false}], [21, 9]));
+t.update(surface(4, 1, [card(1, 0, 'Goblin King'), card(7, 0, 'Echo Tracer', {type: 'Creature - Human Wizard'})], [21, 9]));
+const f = t.snapshot({onPlay: true});
+assert.equal(f.turns, 4); assert.equal(f.myTurns, 2, 'turns 1 and 3 were yours');
+assert.equal(f.minLife, 17); assert.equal(f.endLife, 21); assert.equal(f.lifeGained, 4);
+assert.equal(f.oppBigTurn, 11, 'turn 3 took the opponent from 20 to 9');
+assert.equal(f.maxAttackers, 2); assert.equal(f.maxTokens, 1); assert.equal(f.kills, 1); assert.deepEqual(f.killed, ['Serra Angel']);
+assert.equal(f.losses, 1, 'the Goblin Raider token vanished'); assert.equal(f.turnedUp, 1); assert.equal(f.maxFaceDown, 1);
+assert.equal(f.tribes.Goblin, 2); assert.ok(f.theirCards.includes('Serra Angel'));
+// Conditions are data.
+assert.ok(factsMeet(f, {myTurns: ['<=', 2], killed: 'Serra Angel', tribe: ['Goblin', '>=', 2], onPlay: true}));
+assert.ok(!factsMeet(f, {notTheirs: 'Serra Angel'}));
+assert.ok(!factsMeet(f, {survived: 'Goblin Raider'}), 'a creature that died never survived');
+assert.ok(factsMeet(f, {survived: 'Goblin King'}));
+assert.ok(!factsMeet({}, {minLife: ['>=', 0]}), 'a fact the match never reported fails');
+
+// --- Every deed reads cards that are really in its battle -------------------------------------------
+const acts = {};
+for (let a = 1; a <= 14; a++) acts[a] = JSON.parse(readFileSync(new URL(`./data/story/act-${a}.json`, import.meta.url), 'utf8'));
+const deckNames = side => side.deck.cards.flatMap(c => [c.name, c.name.split(' // ')[0]]);
+const ids = new Set(), arts = new Set();
+for (const d of [...STORY_DEEDS, ...STORY_ACT_DEEDS]) {
+  assert.ok(!ids.has(d.id), 'unique id ' + d.id); ids.add(d.id);
+  const art = storyDeedArt(d); assert.ok(art && !arts.has(art), 'unique art ' + d.id); arts.add(art);
+}
+const perBattle = {};
+for (const d of STORY_DEEDS) {
+  const b = acts[d.act].battles.find(x => x.id === d.battle);
+  assert.ok(b, d.id + ' names a real battle');
+  perBattle[d.battle] = (perBattle[d.battle] || 0) + 1;
+  const mine = deckNames(d.seat === 'hero' ? b.hero : b.villain), theirs = deckNames(d.seat === 'hero' ? b.villain : b.hero);
+  for (const k of ['mine', 'mineAny', 'survived']) for (const n of [].concat(d.when[k] || [])) assert.ok(mine.includes(n), `${d.id}: ${n} is in your deck`);
+  for (const k of ['killed', 'notTheirs']) for (const n of [].concat(d.when[k] || [])) assert.ok(theirs.includes(n), `${d.id}: ${n} is in their deck`);
+  if (d.hidden || d.gold) assert.ok(d.riddle, d.id + ' has a riddle');
+  assert.ok(['hero', 'villain'].includes(d.seat));
+}
+// At least two deeds a battle, and never more than the deeds route takes from one win (8).
+for (const a of Object.values(acts)) for (const b of a.battles) assert.ok(perBattle[b.id] >= 2, b.id + ' has two deeds');
+assert.ok(Math.max(...Object.values(perBattle)) + 2 <= 8);
+
+// --- Earning: Story decks only, from the deed's own seat ---------------------------------------------
+const won = {seat: 'hero', own: false, myTurns: 5, minLife: 12, endLife: 12, killed: ['Goblin King'], myCards: [], theirCards: ['Goblin King']};
+assert.deepEqual(storyDeedsEarned('a1b2', won), ['a1-toll-unpaid', 'a1-regicide']);
+assert.deepEqual(storyDeedsEarned('a1b2', {...won, own: true}), [], 'your own deck earns no battle deeds');
+assert.deepEqual(storyDeedsEarned('a1b8', {seat: 'villain', maxPower: 6}), ['a1-v-dragon-engine']);
+const refs = Array.from({length: 8}, (_, i) => `story:a3b${i + 1}:loaner`);
+assert.ok(storyDeedsEarned('a3b8', {seat: 'hero', own: true}, refs).includes('a3-chronicler'));
+console.log('story deeds ok');

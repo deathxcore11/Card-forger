@@ -1764,7 +1764,8 @@ function resultGoals(m){
 // Finished matches move Play quests and achievements (Practice only its own honour deeds; friend matches count as played).
 addEventListener('play:match-recorded',e=>{const m=e.detail||{};if(!cloudInfo()?.user?.id)return;const mode=m.story?'story':m.friend?'friend':m.playStyle==='practice'?'practice':'quick';
  const id=(crypto.randomUUID?.()||String(Date.now())+Math.random().toString(36).slice(2)).replace(/[^A-Za-z0-9_-]/g,'');
- playEcon.reportMatch({id,mode,outcome:m.outcome,format:m.format,turns:m.turns,life:m.life,opponentLife:m.opponentLife,onPlay:m.onPlay,durationMs:m.durationMs,colors:m.colors,seats:m.seats,difficulty:m.difficulty});});
+ const f=m.facts||{},facts={};for(const k of ['myTurns','minLife','startLife','maxLife','lifeGained','oppBigTurn','oppPoison','oppLibraryMin','oppHandMin','maxHand','maxCreatures','maxTokens','maxLands','maxPower','maxAttackers','maxFlyers','maxCounters','maxAttach','oppMaxCreatures','oppWipes','kills','losses','turnedUp'])if(Number.isSafeInteger(f[k]))facts[k]=f[k];if(f.tribes)facts.maxTribe=Math.max(0,...Object.values(f.tribes).filter(Number.isSafeInteger));
+ playEcon.reportMatch({id,mode,outcome:m.outcome,format:m.format,turns:m.turns,myTurns:m.myTurns,life:m.life,opponentLife:m.opponentLife,onPlay:m.onPlay,durationMs:m.durationMs,colors:m.colors,seats:m.seats,difficulty:m.difficulty,facts:m.facts?facts:undefined});});
 A.playEconRarity=t=>{econUi.rarity=t.dataset.econRarity||'';refreshPlayMenu();};
 I.playEconSetQuery=t=>{econUi.setQuery=t.value;refreshPlayMenu();const f=document.querySelector('[data-input="playEconSetQuery"]');f?.focus({preventScroll:true});try{f.setSelectionRange(t.value.length,t.value.length);}catch{}};
 A.playEconSetFormat=t=>{econUi.setFormat=t.dataset.value||'';refreshPlayMenu();};
@@ -2417,7 +2418,7 @@ A.storyPlay=async({skipScene=false}={})=>{
    const seenStats=bubbles?.stats?.()||{};
    const out=await storyProgress.claim({battle:b.id,seat,deck:own?'own':'loaner'});if(out?.state)playEcon.refresh();slToast(out?.style);
    // Story deeds: what this win earned (story-deeds.js); the server re-checks and pays each once.
-   const deeds=storyDeedsEarned(b.id,{...seenStats,seat,own:!!own,onPlay:typeof rec?.onPlay==='boolean'?rec.onPlay:null,turns:rec?.turns||seenStats.turns,endLife:rec?.life??seenStats.endLife},out?.refs||[]);
+   const deeds=storyDeedsEarned(b.id,{...seenStats,...(rec?.facts||{}),seat,own:!!own,onPlay:typeof rec?.onPlay==='boolean'?rec.onPlay:null,endLife:rec?.life??rec?.facts?.endLife??seenStats.endLife},out?.refs||[]);
    if(deeds.length)void playEcon.reportDeeds(b.id,deeds).then(r=>{for(const id of r?.counted||[]){const d=[...STORY_DEEDS,...STORY_ACT_DEEDS].find(x=>x.id===id);if(d)toast(`Deed done: ${d.title}. Claim it in Achievements.`);}});
    const panel=root.querySelector('.play-match-result');if(panel){const note=document.createElement('p');note.className='st-result-note';const got=out?.paid||[],won=!own&&got.includes(`story:${b.id}:${seat==='villain'?'villain':'loaner'}`),rw=b.reward?.[seat]||{},coll=got.includes(`story:${b.id}:collector`);
     note.innerHTML=`${starsRow(storyProgress.snapshot().progress.battles?.[b.id])}<span>${won?rewardText(rw,b.rewardSet)+(coll?' and a Collector pack':'')+' added':coll?'A Collector pack added':out?.error?esc(out.error):own?'Your own deck earns XP. Win with the Story deck for the reward.':'Reward already claimed'}</span>`;panel.querySelector('.play-result-actions')?.before(note);}

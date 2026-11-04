@@ -2,6 +2,7 @@
 // an act's battles, the duel setup, the talking-head scenes and the speech bubbles that come from a
 // seat's portrait during a match. Markup and two small DOM controllers; app.js wires the actions.
 // The road reveals itself: cleared acts, the current act, one blurred tease, and nothing after it.
+import {createMatchFacts} from './match-facts.js';
 import {STORY_ACTS, SET_NAMES, setSymbolUrl} from './story-acts.js';
 import {purseMarkup} from './play-econ-ui.js';
 import {battleStars, battleCleared, actCleared, actStars, currentBattle, currentAct, secretOpen, STAR_VALUE} from './story-client.js';
@@ -271,7 +272,7 @@ export function createStoryBubbles({root, battle, cast, playerSide, avatarUrl = 
   const said = new Set(), queue = [];
   let busy = false, mySeat = null, faced = false, disposed = false;
   // What the table showed this match, for Story deeds (story-deeds.js): only what the viewer saw.
-  const seen = {turns: 0, minLife: null, endLife: null, maxCreatures: 0, maxSlivers: 0, myCards: new Set(), theirCards: new Set()};
+  const seen = createMatchFacts();
   const sideOf = who => who === 'me' ? playerSide : cpuSide;
   const speaker = side => battle[side].who;
   const lineFor = (side, cue) => battle.cues?.[side]?.[cue] || null;
@@ -308,12 +309,7 @@ export function createStoryBubbles({root, battle, cast, playerSide, avatarUrl = 
       if (disposed || state?.phase !== 'playing') return;
       const s = state.game?.status?.surface; if (!s) return;
       mySeat = s.seat ?? mySeat; dressSeat();
-      seen.turns = Math.max(seen.turns, s.turn || 0);
-      const me = (s.players || []).find(p => p.seat === mySeat);
-      if (Number.isFinite(me?.life)) { seen.endLife = me.life; seen.minLife = seen.minLife === null ? me.life : Math.min(seen.minLife, me.life); }
-      const field = (s.cards || []).filter(c => c.zone === 'Battlefield'), mine = field.filter(c => c.controller === mySeat), mineC = mine.filter(c => c.types?.includes('Creature'));
-      seen.maxCreatures = Math.max(seen.maxCreatures, mineC.length); seen.maxSlivers = Math.max(seen.maxSlivers, mineC.filter(c => /Sliver/.test(c.name || '')).length);
-      for (const c of field) if (c.name) (c.controller === mySeat ? seen.myCards : seen.theirCards).add(c.name);
+      seen.update(s);
       if ((s.turn || 0) >= 1 && !said.has(cpuSide + ':start')) { say('cpu', 'start'); setTimeout(() => say('me', 'start'), 400); }
       for (const p of s.players || []) if (Number.isFinite(p.life) && p.life <= 5 && p.life > 0) say(p.seat === mySeat ? 'me' : 'cpu', 'low');
       for (const p of s.players || []) if (Number.isFinite(p.life) && p.life <= 10 && p.life > 5) say(p.seat === mySeat ? 'me' : 'cpu', 'half');
@@ -324,7 +320,7 @@ export function createStoryBubbles({root, battle, cast, playerSide, avatarUrl = 
       say('cpu', outcome === 'win' ? 'loss' : 'win'); say('me', outcome === 'win' ? 'win' : 'loss');
     },
     destroy() { disposed = true; queue.length = 0; root.querySelectorAll('.st-bubble,.st-seat-face').forEach(n => n.remove()); },
-    stats: () => ({turns: seen.turns, minLife: seen.minLife, endLife: seen.endLife, maxCreatures: seen.maxCreatures, maxSlivers: seen.maxSlivers, myCards: [...seen.myCards], theirCards: [...seen.theirCards]}),
+    stats: () => seen.snapshot(),
     _faced: () => faced,
   };
 }

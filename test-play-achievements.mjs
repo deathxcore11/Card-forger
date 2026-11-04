@@ -36,7 +36,11 @@ assert.ok(q.daily.find(x => x.id === 'first').done);
 const SOURCES = new Set(['matches', 'logins', 'minutes', 'wins', 'wins_draw', 'wins_fast', 'wins_flawless', 'wins_long', 'wins_thread', 'wins_marathon', 'fmt', 'story_wins', 'friend_matches', 'cards', 'playsets', 'mythics', 'packs',
   'modes', 'level', 'wins_low', 'wins_overkill', 'wins_quick', 'quick_matches', 'wins_pod', 'fmt:Commander', 'fmt:Standard', 'fmt:Modern', 'fmt:Legacy', 'fmt:Pauper', 'fmt:Old School', '#gp', '#mc', '#tc',
   'story_acts', 'story_villain', 'story_own', '#ff', 'friend_long', 'practice_matches', 'practice_wins_hard', '#pf', 'rares', 'holos', 'trunk_sets', 'decks',
-  'packs_collector', 'pulls_mythic', '#po', 'buys', 'crafts', 'forges', 'holos_made', 'precons', 'coins_spent', 'wins_t4', 'draws', 'wins_five', 'packs_god']);
+  'packs_collector', 'pulls_mythic', '#po', 'buys', 'crafts', 'forges', 'holos_made', 'precons', 'coins_spent', 'wins_t4', 'draws', 'wins_five', 'packs_god',
+  // From the match facts (match-facts.js), 4 Nov 2026.
+  'kills', 'quick_kills', 'friend_kills', 'pod_kills', 'pod_matches', 'wipes', '#fd', 'wins_poison', 'wins_mill', 'wins_untouched', 'wins_phoenix', 'wins_pacifist', 'wins_exact', 'wins_lone',
+  'wins_hellbent', 'wins_t3', 'wins_13', 'wins_outnumbered', 'wins_nolosses', 'f_big15', 'f_alpha6', 'f_swarm10', 'f_tokens8', 'f_power15', 'f_flyers5', 'f_counters10', 'f_attach3', 'f_tribe6',
+  'f_turnup3', 'f_gain20', 'f_life40', 'f_kills10', 'f_hand10', 'f_lands12', 'f_friend_big10', 'f_friend_swarm8', 'f_friend_wire']);
 // Story deeds count 'sd:<deed id>', bumped by the deeds route.
 for (const a of ACHIEVEMENTS) assert.ok(SOURCES.has(a.source) || /^sd:a\d+-/.test(a.source), a.id + ' counts something the server never sees');
 // Every tab has deeds, every id is unique, and no art repeats: one pinned illustration per achievement.
@@ -53,9 +57,24 @@ assert.equal(drills.earned, 1); assert.equal(drills.ready, false); assert.deepEq
 assert.deepEqual(achievementReward(ACHIEVEMENTS.find(a => a.id === 'overkill'), 1), {seals: {r: 1}, xp: 250});
 // Colours come from basic lands; the colour deeds count different pairs, monos and triples.
 assert.equal(deckColours([{name: 'Forest', qty: 8}, {name: 'Snow-Covered Island', qty: 8}, {name: 'Mountain', board: 'side'}]), 'UG');
-const pair = matchCounters({outcome: 'win', mode: 'quick', colors: 'GU', seats: 4, life: 3, opponentLife: -7, turns: 13}, '2026-11-05');
+const pair = matchCounters({outcome: 'win', mode: 'quick', colors: 'GU', seats: 4, life: 3, opponentLife: -7, turns: 52, myTurns: 13}, '2026-11-05');
 for (const k of ['gp:UG', 'wins_2c', 'wins_quick', 'wins_pod', 'wins_low', 'wins_overkill', 'wins_t12', 'quick_matches']) assert.equal(pair[k], 1, k);
 assert.equal(pair['d:2026-11-05:gp:UG'], undefined, 'distinct keys are lifetime only');
+// Turns are the player's own: an old app's Forge turn number (both players) is halved.
+assert.equal(matchCounters({outcome: 'win', mode: 'quick', turns: 8}, '2026-11-05').wins_t4, 1, 'Forge turn 8 is your 4th turn');
+assert.equal(matchCounters({outcome: 'win', mode: 'quick', turns: 9, myTurns: 5}, '2026-11-05').wins_t4, undefined);
+// Match facts feed the new feats, and a report without facts never earns a "never did X" feat.
+const fx = matchCounters({outcome: 'win', mode: 'quick', life: 20, opponentLife: 0, myTurns: 9, facts: {myTurns: 9, minLife: 20, startLife: 20, maxCreatures: 1, maxAttackers: 0, kills: 11, oppBigTurn: 16, losses: 0, oppMaxCreatures: 2, tribes: {Elf: 6}}}, '2026-11-05');
+for (const k of ['kills', 'quick_kills', 'f_big15', 'f_kills10', 'f_tribe6', 'wins_untouched', 'wins_pacifist', 'wins_lone', 'wins_exact', 'wins_outnumbered', 'wins_nolosses']) assert.ok(fx[k] >= 1, k);
+assert.equal(fx.kills, 11);
+const bare = matchCounters({outcome: 'win', mode: 'quick', life: 12, opponentLife: -1, myTurns: 9}, '2026-11-05');
+for (const k of ['wins_pacifist', 'wins_lone', 'wins_nolosses', 'wins_outnumbered', 'kills']) assert.equal(bare[k], undefined, k + ' needs facts');
+const pal = matchCounters({outcome: 'loss', mode: 'friend', life: 2, myTurns: 6, facts: {maxCreatures: 8, maxAttackers: 3, oppBigTurn: 12, kills: 3}}, '2026-11-05');
+for (const k of ['f_friend_big10', 'f_friend_swarm8', 'f_friend_wire', 'friend_kills', 'fd:2026-11-05']) assert.ok(pal[k] >= 1, k);
+assert.equal(pal.f_big15, undefined, 'friend matches only feed the friend feats');
+// Hidden feats pay more than plain feats; every achievement pays something unless it is Practice honour.
+assert.ok(achievementReward(ACHIEVEMENTS.find(a => a.id === 'pacifist'), 0).seals?.r === 1);
+for (const a of ACHIEVEMENTS.filter(x => !x.honour)) a.steps.forEach((_, i) => assert.ok(Object.keys(achievementReward(a, i)).length, a.id + ' pays'));
 // Story figures come from Story refs: an act counts once all 8 battles are cleared.
 const refs = [...Array.from({length: 8}, (_, i) => `story:a1b${i + 1}:clear`), 'story:a2b1:clear', 'story:a1b3:villain', 'story:a1b4:own'];
 const st = achievementRows({state: {story: refs}});
