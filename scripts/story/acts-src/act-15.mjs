@@ -41,7 +41,7 @@ export default {
   battles: [
     {slot: 1, mood: 'tension', kind: 'Arrival', title: 'An Arrow\'s Flight', difficulty: 'Easy', rewardSet: 'lrw', teaches: ['Tribes'],
       blurb: 'Rhys, an elf hunter of Lys Alana, chases a stranger into kithkin country. Kinsbaile does not let armed elves walk in, and its best archer is already on the wall.',
-      hero: {who: 'rhys', deck: {label: 'tribute', name: 'The Hunt of Lys Alana', colors: 'G', list: `
+      hero: {who: 'rhys', deck: {label: 'tribute', name: 'The Hunt of Lys Alana', colors: 'GB', list: `
 2 Rhys the Exiled
 4 Elvish Warrior
 4 Wren's Run Vanquisher
@@ -51,9 +51,9 @@ export default {
 4 Winnower Patrol
 4 Talara's Battalion
 4 Twinblade Slasher
-2 Nath's Elite
-22 Forest
-2 Swamp`}},
+20 Forest
+4 Swamp
+2 Nameless Inversion`}},
       villain: {who: 'brigid', deck: {label: 'tribute', name: 'Kinsbaile Watch', colors: 'W', list: `
 2 Brigid, Hero of Kinsbaile
 4 Goldmeadow Harrier
@@ -146,7 +146,7 @@ export default {
       after: [q('stage', 'After Auntie brushed the soot from her eyes, she discovered something wonderful: the fire had turned the goat into something that smelled delicious.')]},
     {slot: 4, mood: 'tension', kind: 'Rival', title: 'The Vendilion Clique', difficulty: 'Normal', rewardSet: 'mor', teaches: ['Flash'],
       blurb: 'Rhys is exiled from Lys Alana for losing his hunt. A strange elf woman named Maralen joins the party, and with her come the faeries, who steal dreams for their hidden queen. One of their pranks turns deadly.',
-      hero: {who: 'rhys', deck: {label: 'tribute', name: 'Rhys\'s Pack', colors: 'G', list: `
+      hero: {who: 'rhys', deck: {label: 'tribute', name: 'Rhys\'s Pack', colors: 'GB', list: `
 2 Rhys the Exiled
 2 Garruk Wildspeaker
 4 Llanowar Elves
@@ -220,8 +220,7 @@ export default {
     {slot: 6, mood: 'march', kind: 'Meta', title: 'Bitterblossom', difficulty: 'Normal', rewardSet: 'mor', teaches: ['Champion'],
       blurb: 'In the real winter of 2008, one tribe ruled Standard: Faeries, built on Bitterblossom, Spellstutter Sprite and Mistbind Clique. The deck it fought most was Merfolk, a school of lords that grows all at once.',
       hero: {who: 'you', deck: {label: 'tribute', name: 'Faeries', colors: 'UB', archetype: 'Tempo', list: `
-2 Bitterblossom
-2 Oona's Gatewarden
+4 Bitterblossom
 4 Spellstutter Sprite
 4 Pestermite
 4 Scion of Oona
@@ -295,24 +294,25 @@ export default {
 4 Wren's Run Vanquisher
 4 Murderous Redcap
 4 Boggart Ram-Gang
-4 Shriekmaw
 4 Tarfire
 4 Nameless Inversion
-4 Elvish Warrior
 4 Nath's Elite
 4 Llanowar Wastes
 4 Karplusan Forest
 4 Sulfurous Springs
 4 Forest
 4 Swamp
-4 Mountain`}},
+4 Mountain
+4 Eyeblight's Ending
+2 Rhys the Redeemed
+2 Maralen of the Mornsong`}},
       villain: {who: 'oona', deck: {label: 'tribute', name: 'The Queen\'s Court', colors: 'UB', archetype: 'Control', list: `
-2 Oona, Queen of the Fae
+3 Oona, Queen of the Fae
 4 Scion of Oona
 2 Mistbind Clique
 2 Spellstutter Sprite
 4 Pestermite
-2 Wydwen, the Biting Gale
+1 Wydwen, the Biting Gale
 4 Glen Elendra Liege
 4 Oona's Gatewarden
 4 Nameless Inversion

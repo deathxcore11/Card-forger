@@ -44,7 +44,32 @@
    "line": "Recorded: the war ends at Argoth. The blast begins an ice age. And on Phyrexia, someone has learned the name Dominaria."
   }
  ],
- "villainFinale": null,
+ "villainFinale": [
+  {
+   "who": "stage",
+   "line": "Argoth burns. Nobody sets off the Sylex."
+  },
+  {
+   "who": "mishra",
+   "line": "You built walls, brother. I built a door."
+  },
+  {
+   "who": "ashnod",
+   "line": "And the workers, my lord?"
+  },
+  {
+   "who": "mishra",
+   "line": "Feed them to the factories. We need more."
+  },
+  {
+   "who": "stage",
+   "line": "Far below the world, something answers Mishra's call."
+  },
+  {
+   "who": "narrator",
+   "line": "Recorded: Mishra wins the war. Phyrexia never has to find Dominaria. It was invited."
+  }
+ ],
  "vibe": null,
  "cast": {
   "you": {
@@ -465,6 +490,13 @@
    ],
    "after": null,
    "cues": {
+    "hero": {
+     "start": "I am here. Somehow.",
+     "big": "To me, knights!",
+     "low": "Too many arrows...",
+     "win": "The forest can keep its secrets.",
+     "loss": "Back through the rift..."
+    },
     "villain": {
      "start": "Bows up.",
      "big": "The forest answers us, not you.",
@@ -480,7 +512,7 @@
    "id": "a1b2",
    "slot": 2,
    "kind": "Lesson",
-   "mood": "tension",
+   "mood": "comic",
    "title": "The Goblin King's Toll",
    "difficulty": "Easy",
    "teaches": [
@@ -705,6 +737,13 @@
    ],
    "after": null,
    "cues": {
+    "hero": {
+     "start": "Up, into the sky.",
+     "big": "Wings!",
+     "low": "They are everywhere...",
+     "win": "Toll unpaid.",
+     "loss": "Grounded..."
+    },
     "villain": {
      "start": "Charge! No, the OTHER way!",
      "big": "Look at THAT one. That one's mine.",
@@ -720,7 +759,7 @@
    "id": "a1b3",
    "slot": 3,
    "kind": "Lesson",
-   "mood": "tension",
+   "mood": "march",
    "title": "Knights at the Ford",
    "difficulty": "Easy",
    "teaches": [
@@ -1004,7 +1043,7 @@
    "id": "a1b4",
    "slot": 4,
    "kind": "Rival",
-   "mood": "tension",
+   "mood": "comic",
    "title": "The Djinn of the Bottle",
    "difficulty": "Normal",
    "teaches": [
@@ -1251,6 +1290,13 @@
    ],
    "after": null,
    "cues": {
+    "hero": {
+     "start": "Let us bargain, djinn.",
+     "big": "Back in the bottle!",
+     "low": "He collects everything...",
+     "win": "Not one of your collection.",
+     "loss": "Collected..."
+    },
     "villain": {
      "start": "Entertain me.",
      "big": "Behold the gift of the djinn.",
@@ -1574,7 +1620,7 @@
    "id": "a1b6",
    "slot": 6,
    "kind": "Meta",
-   "mood": "tension",
+   "mood": "march",
    "title": "The Efreet of Serendib",
    "difficulty": "Normal",
    "teaches": [
@@ -1843,7 +1889,7 @@
    "id": "a1b7",
    "slot": 7,
    "kind": "Meta",
-   "mood": "tension",
+   "mood": "march",
    "title": "Factories at Kroog",
    "difficulty": "Normal",
    "teaches": [
@@ -2472,7 +2518,7 @@
     "who": "you",
     "deck": {
      "name": "1993 Power",
-     "colors": "WR",
+     "colors": "WUR",
      "archetype": "Power and pressure",
      "label": "experimental",
      "rules": "Built for this fight: every Power card at one copy, as Vintage allows, behind a fast white-red army.",
@@ -2673,7 +2719,7 @@
     "who": "usenet",
     "deck": {
      "name": "The Usenet Deck",
-     "colors": "UR",
+     "colors": "WUR",
      "archetype": "Black Vise draw-seven",
      "label": "tribute",
      "note": "The same machine at the counts Story's Vintage rules allow.",

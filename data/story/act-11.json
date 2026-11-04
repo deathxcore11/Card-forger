@@ -1037,14 +1037,14 @@
        "id": "4c5a41ab-1840-4abb-a8bb-f0b1e7d1b450"
       },
       {
-       "qty": 4,
+       "qty": 3,
        "name": "Neurok Familiar",
        "set": "mrd",
        "number": "43",
        "id": "52fd15b0-4ada-41c7-81e0-4f8956798685"
       },
       {
-       "qty": 4,
+       "qty": 2,
        "name": "Psychic Membrane",
        "set": "mrd",
        "number": "46",
@@ -1098,6 +1098,13 @@
        "set": "mrd",
        "number": "291",
        "id": "9a5235cd-5d25-498d-8e36-7a7c0791f212"
+      },
+      {
+       "qty": 3,
+       "name": "Vedalken Mastermind",
+       "set": "5dn",
+       "number": "40",
+       "id": "c4d8c7ed-62ce-4865-8f9e-5fcc8b23cff5"
       }
      ]
     }
@@ -1109,12 +1116,12 @@
     },
     "villain": {
      "card": {
-      "oracle_id": "853ef032-a2f7-4e6b-a210-03e96855d062",
-      "name": "Hoverguard Sweepers",
-      "rarity": "rare",
+      "oracle_id": "1ba85537-6dc2-459e-8850-619b41c0a881",
+      "name": "Vedalken Mastermind",
+      "rarity": "uncommon",
       "set": "5dn",
-      "id": "55773fd5-86a2-4fd4-9849-a2f0d4c8298f",
-      "image": "https://cards.scryfall.io/normal/front/5/5/55773fd5-86a2-4fd4-9849-a2f0d4c8298f.jpg"
+      "id": "c4d8c7ed-62ce-4865-8f9e-5fcc8b23cff5",
+      "image": "https://cards.scryfall.io/normal/front/c/4/c4d8c7ed-62ce-4865-8f9e-5fcc8b23cff5.jpg"
      },
      "coins": 50
     }
@@ -1581,25 +1588,18 @@
        "id": "275a47e1-816c-44f9-bd05-b8b56410436f"
       },
       {
-       "qty": 3,
+       "qty": 2,
        "name": "Skyhunter Patrol",
        "set": "mrd",
        "number": "22",
        "id": "c162594c-31f4-4d07-87ee-2d6ee7704980"
       },
       {
-       "qty": 3,
+       "qty": 2,
        "name": "Clearwater Goblet",
        "set": "5dn",
        "number": "109",
        "id": "5458c041-dde0-4df7-82bb-ada36a482c53"
-      },
-      {
-       "qty": 3,
-       "name": "Opaline Bracers",
-       "set": "5dn",
-       "number": "141",
-       "id": "3ae84edd-1294-4722-89d1-84d9f336871c"
       },
       {
        "qty": 4,
@@ -1630,7 +1630,7 @@
        "id": "5da5587d-6b6c-4645-8cc9-2866d1e6911b"
       },
       {
-       "qty": 8,
+       "qty": 10,
        "name": "Forest",
        "set": "mrd",
        "number": "303",
@@ -1642,6 +1642,20 @@
        "set": "mrd",
        "number": "287",
        "id": "5bac2d0d-43db-41f7-99dd-9ff55a4f2b3b"
+      },
+      {
+       "qty": 1,
+       "name": "Raksha Golden Cub",
+       "set": "5dn",
+       "number": "12",
+       "id": "45501767-2ba8-443f-af9b-c86ead0aa30d"
+      },
+      {
+       "qty": 2,
+       "name": "Island",
+       "set": "mrd",
+       "number": "291",
+       "id": "9a5235cd-5d25-498d-8e36-7a7c0791f212"
       }
      ]
     }
@@ -1969,7 +1983,7 @@
     "who": "krark",
     "deck": {
      "name": "Krark-Clan Affinity",
-     "colors": "R",
+     "colors": "BR",
      "archetype": "Affinity",
      "label": "tribute",
      "cards": [
@@ -1995,7 +2009,7 @@
        "id": "eeeef899-a8b5-4416-a208-3bd5a0c7177b"
       },
       {
-       "qty": 4,
+       "qty": 2,
        "name": "Ornithopter",
        "set": "mrd",
        "number": "224",
@@ -2030,7 +2044,7 @@
        "id": "90ea95d0-9f95-462b-a080-22a5da7b2e97"
       },
       {
-       "qty": 4,
+       "qty": 2,
        "name": "Welding Jar",
        "set": "mrd",
        "number": "274",
@@ -2084,6 +2098,13 @@
        "set": "mrd",
        "number": "295",
        "id": "6bae27d4-9de5-4f95-8c56-79afc6cbeb0c"
+      },
+      {
+       "qty": 4,
+       "name": "Krark-Clan Grunt",
+       "set": "mrd",
+       "number": "97",
+       "id": "ffd9e422-206e-4c25-9964-ed6592c16e12"
       }
      ]
     }
@@ -2095,12 +2116,12 @@
     },
     "villain": {
      "card": {
-      "oracle_id": "62e7e7b1-9887-4d15-b0e5-a8ddc711bd88",
-      "name": "Arcbound Ravager",
-      "rarity": "rare",
-      "set": "dst",
-      "id": "72c1a731-7854-42b1-8719-ac3c2a269c1f",
-      "image": "https://cards.scryfall.io/normal/front/7/2/72c1a731-7854-42b1-8719-ac3c2a269c1f.jpg"
+      "oracle_id": "e7be5ab3-a11f-4786-9b0b-1daa94f59440",
+      "name": "Krark-Clan Grunt",
+      "rarity": "common",
+      "set": "mrd",
+      "id": "ffd9e422-206e-4c25-9964-ed6592c16e12",
+      "image": "https://cards.scryfall.io/normal/front/f/f/ffd9e422-206e-4c25-9964-ed6592c16e12.jpg"
      },
      "coins": 100
     }
@@ -2194,7 +2215,7 @@
        "id": "b4ff07b6-be9f-498f-9f36-cbd64f1b10cc"
       },
       {
-       "qty": 2,
+       "qty": 1,
        "name": "Reap and Sow",
        "set": "dst",
        "number": "81",
@@ -2257,7 +2278,7 @@
        "id": "d48a96f2-738f-433f-bfae-fbf378832a3b"
       },
       {
-       "qty": 2,
+       "qty": 1,
        "name": "Plated Slagwurm",
        "set": "mrd",
        "number": "127",
@@ -2283,6 +2304,13 @@
        "set": "mrd",
        "number": "303",
        "id": "77aec0b2-30f2-4f35-a9a3-24d87795d177"
+      },
+      {
+       "qty": 2,
+       "name": "Sylvok Explorer",
+       "set": "5dn",
+       "number": "93",
+       "id": "3ed328af-bc0d-4a9d-a9ee-bc0196a2afaf"
       }
      ]
     }
@@ -2317,7 +2345,7 @@
        "id": "e8303b80-e29a-46b8-90b0-c0cfe551b435"
       },
       {
-       "qty": 4,
+       "qty": 2,
        "name": "Override",
        "set": "mrd",
        "number": "45",
@@ -2378,6 +2406,13 @@
        "set": "mrd",
        "number": "291",
        "id": "9a5235cd-5d25-498d-8e36-7a7c0791f212"
+      },
+      {
+       "qty": 2,
+       "name": "Vedalken Archmage",
+       "set": "mrd",
+       "number": "55",
+       "id": "8b38da97-5141-4de6-bd7f-3fcbf46cfd96"
       }
      ]
     }
@@ -2389,12 +2424,12 @@
     },
     "villain": {
      "card": {
-      "oracle_id": "853ef032-a2f7-4e6b-a210-03e96855d062",
-      "name": "Hoverguard Sweepers",
+      "oracle_id": "568cf486-0261-4634-ac36-a6507101b2d0",
+      "name": "Vedalken Archmage",
       "rarity": "rare",
-      "set": "5dn",
-      "id": "55773fd5-86a2-4fd4-9849-a2f0d4c8298f",
-      "image": "https://cards.scryfall.io/normal/front/5/5/55773fd5-86a2-4fd4-9849-a2f0d4c8298f.jpg"
+      "set": "mrd",
+      "id": "8b38da97-5141-4de6-bd7f-3fcbf46cfd96",
+      "image": "https://cards.scryfall.io/normal/front/8/b/8b38da97-5141-4de6-bd7f-3fcbf46cfd96.jpg"
      },
      "coins": 100
     }
@@ -2656,14 +2691,14 @@
        "id": "efb965a7-877a-4302-b507-25b0a9e32d9b"
       },
       {
-       "qty": 2,
+       "qty": 1,
        "name": "Qumulox",
        "set": "5dn",
        "number": "35",
        "id": "54102e68-dded-440c-b9b1-28771c8033d4"
       },
       {
-       "qty": 1,
+       "qty": 2,
        "name": "Platinum Angel",
        "set": "mrd",
        "number": "228",

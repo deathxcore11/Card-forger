@@ -1,5 +1,6 @@
 {
  "act": 8,
+ "era": null,
  "title": "The Invasion",
  "years": "2000 to 2001",
  "sets": [
@@ -371,6 +372,7 @@
      "name": "The Coalition Vanguard",
      "colors": "GW",
      "archetype": null,
+     "label": null,
      "cards": [
       {
        "qty": 4,
@@ -415,7 +417,7 @@
        "id": "3a38d40a-e745-4fee-b179-f8c27e9b2fbd"
       },
       {
-       "qty": 4,
+       "qty": 2,
        "name": "Quirion Sentinel",
        "set": "inv",
        "number": "204",
@@ -448,6 +450,13 @@
        "set": "inv",
        "number": "331",
        "id": "5ba9ef2e-d3ec-41f7-802e-e1414f14dd10"
+      },
+      {
+       "qty": 2,
+       "name": "Gerrard Capashen",
+       "set": "apc",
+       "number": "11",
+       "id": "ccca800f-e850-4bec-95d0-70280b51b7a7"
       }
      ]
     }
@@ -458,6 +467,7 @@
      "name": "The First Wave",
      "colors": "B",
      "archetype": null,
+     "label": null,
      "cards": [
       {
        "qty": 4,
@@ -643,6 +653,7 @@
      "name": "The Heart of Yavimaya",
      "colors": "G",
      "archetype": null,
+     "label": null,
      "cards": [
       {
        "qty": 4,
@@ -730,6 +741,7 @@
      "name": "The Vanguard",
      "colors": "B",
      "archetype": null,
+     "label": null,
      "cards": [
       {
        "qty": 4,
@@ -910,6 +922,7 @@
      "name": "Squee's Goblins",
      "colors": "R",
      "archetype": null,
+     "label": null,
      "cards": [
       {
        "qty": 4,
@@ -990,6 +1003,7 @@
      "name": "Dralnu's Crusade",
      "colors": "BR",
      "archetype": null,
+     "label": null,
      "cards": [
       {
        "qty": 4,
@@ -1041,7 +1055,7 @@
        "id": "3addf34c-ea54-42a3-bccd-b73453d964d2"
       },
       {
-       "qty": 4,
+       "qty": 2,
        "name": "Urborg Skeleton",
        "set": "inv",
        "number": "134",
@@ -1067,6 +1081,13 @@
        "set": "inv",
        "number": "343",
        "id": "ba6694bb-f3b7-48ff-9d93-cbed84fac210"
+      },
+      {
+       "qty": 2,
+       "name": "Lord of the Undead",
+       "set": "pls",
+       "number": "44",
+       "id": "0a7f50f4-37a0-476e-8655-edba228aafd6"
       }
      ]
     }
@@ -1078,12 +1099,12 @@
     },
     "villain": {
      "card": {
-      "oracle_id": "4c046368-5899-42ef-9972-3a3a6c8fe3fd",
-      "name": "Blazing Specter",
+      "oracle_id": "7714af0e-41d9-4609-967f-27233b46055f",
+      "name": "Lord of the Undead",
       "rarity": "rare",
-      "set": "inv",
-      "id": "3bd397be-0e61-4f41-b0cf-f0c9d2440da7",
-      "image": "https://cards.scryfall.io/normal/front/3/b/3bd397be-0e61-4f41-b0cf-f0c9d2440da7.jpg"
+      "set": "pls",
+      "id": "0a7f50f4-37a0-476e-8655-edba228aafd6",
+      "image": "https://cards.scryfall.io/normal/front/0/a/0a7f50f4-37a0-476e-8655-edba228aafd6.jpg"
      },
      "coins": 50
     }
@@ -1185,6 +1206,7 @@
      "name": "Llanowar",
      "colors": "GW",
      "archetype": null,
+     "label": null,
      "cards": [
       {
        "qty": 4,
@@ -1279,9 +1301,10 @@
      "name": "Tsabo's Legion",
      "colors": "BR",
      "archetype": null,
+     "label": null,
      "cards": [
       {
-       "qty": 2,
+       "qty": 4,
        "name": "Tsabo Tavoc",
        "set": "inv",
        "number": "281",
@@ -1328,13 +1351,6 @@
        "set": "inv",
        "number": "147",
        "id": "5464b80a-22fe-42c7-a839-31667712fb2d"
-      },
-      {
-       "qty": 2,
-       "name": "Plague Spitter",
-       "set": "inv",
-       "number": "119",
-       "id": "8845e6bd-40ee-45ca-a099-53f19ff20a8a"
       },
       {
        "qty": 4,
@@ -1464,6 +1480,7 @@
      "name": "The Weatherlight",
      "colors": "WU",
      "archetype": null,
+     "label": null,
      "cards": [
       {
        "qty": 2,
@@ -1558,6 +1575,7 @@
      "name": "The Corrupted",
      "colors": "UB",
      "archetype": null,
+     "label": null,
      "cards": [
       {
        "qty": 4,
@@ -1759,6 +1777,7 @@
      "name": "Barrin's Spite",
      "colors": "UR",
      "archetype": null,
+     "label": null,
      "cards": [
       {
        "qty": 4,
@@ -1768,7 +1787,7 @@
        "id": "f98f4538-5b5b-475d-b98f-49d01dae6f04"
       },
       {
-       "qty": 2,
+       "qty": 4,
        "name": "Prophetic Bolt",
        "set": "apc",
        "number": "116",
@@ -1801,13 +1820,6 @@
        "set": "inv",
        "number": "179",
        "id": "4a94aeb4-349c-4394-848d-c1c9133856e2"
-      },
-      {
-       "qty": 2,
-       "name": "Shivan Emissary",
-       "set": "inv",
-       "number": "166",
-       "id": "945c596e-492e-4cf5-857c-4ddbbdd78485"
       },
       {
        "qty": 4,
@@ -1853,6 +1865,7 @@
      "name": "The Tolarian Blight",
      "colors": "UB",
      "archetype": null,
+     "label": null,
      "cards": [
       {
        "qty": 4,
@@ -1877,20 +1890,6 @@
       },
       {
        "qty": 4,
-       "name": "Plague Spitter",
-       "set": "inv",
-       "number": "119",
-       "id": "8845e6bd-40ee-45ca-a099-53f19ff20a8a"
-      },
-      {
-       "qty": 4,
-       "name": "Stalking Assassin",
-       "set": "inv",
-       "number": "277",
-       "id": "ff8cc71f-3070-497f-908f-35aa13a8a857"
-      },
-      {
-       "qty": 4,
        "name": "Vodalian Zombie",
        "set": "inv",
        "number": "286",
@@ -1904,14 +1903,14 @@
        "id": "97d1327e-bf87-423f-8a04-8124e45b9ae0"
       },
       {
-       "qty": 4,
+       "qty": 2,
        "name": "Recoil",
        "set": "inv",
        "number": "264",
        "id": "b6a77be3-e3b0-40f5-a470-414bac49da60"
       },
       {
-       "qty": 4,
+       "qty": 2,
        "name": "Agonizing Demise",
        "set": "inv",
        "number": "92",
@@ -1925,11 +1924,32 @@
        "id": "8a3fc29c-f5cb-49b9-aabf-a5fef97e7a7e"
       },
       {
-       "qty": 12,
+       "qty": 14,
        "name": "Swamp",
        "set": "inv",
        "number": "339",
        "id": "2a7ce037-e04d-404a-afde-9122518e6a31"
+      },
+      {
+       "qty": 4,
+       "name": "Phyrexian Slayer",
+       "set": "inv",
+       "number": "118",
+       "id": "5fa8c604-343f-4c94-ac25-439ab1845c19"
+      },
+      {
+       "qty": 2,
+       "name": "Ravenous Rats",
+       "set": "inv",
+       "number": "120",
+       "id": "89e29069-add5-4099-b800-9f1e4402cc1a"
+      },
+      {
+       "qty": 4,
+       "name": "Phyrexian Battleflies",
+       "set": "inv",
+       "number": "114",
+       "id": "da27c489-c541-4b0d-a844-71aa65e55ceb"
       }
      ]
     }
@@ -1941,12 +1961,12 @@
     },
     "villain": {
      "card": {
-      "oracle_id": "f444a0f8-32d8-4748-af58-51a1a8ed72b4",
-      "name": "Phyrexian Infiltrator",
-      "rarity": "rare",
+      "oracle_id": "da74cb57-f6de-4d05-a339-6412beb8df25",
+      "name": "Phyrexian Slayer",
+      "rarity": "common",
       "set": "inv",
-      "id": "224b8254-553d-4d88-8163-1f15e1244bd2",
-      "image": "https://cards.scryfall.io/normal/front/2/2/224b8254-553d-4d88-8163-1f15e1244bd2.jpg"
+      "id": "5fa8c604-343f-4c94-ac25-439ab1845c19",
+      "image": "https://cards.scryfall.io/normal/front/5/f/5fa8c604-343f-4c94-ac25-439ab1845c19.jpg"
      },
      "coins": 100
     }
@@ -2042,6 +2062,7 @@
      "name": "Fires of Yavimaya",
      "colors": "RG",
      "archetype": null,
+     "label": null,
      "cards": [
       {
        "qty": 4,
@@ -2136,6 +2157,7 @@
      "name": "The Overlay",
      "colors": "B",
      "archetype": null,
+     "label": null,
      "cards": [
       {
        "qty": 4,
@@ -2324,6 +2346,7 @@
      "name": "The Legacy",
      "colors": "GW",
      "archetype": null,
+     "label": null,
      "cards": [
       {
        "qty": 2,
@@ -2418,6 +2441,7 @@
      "name": "Yawgmoth's Agenda",
      "colors": "B",
      "archetype": null,
+     "label": null,
      "cards": [
       {
        "qty": 4,

@@ -1,5 +1,6 @@
 {
  "act": 9,
+ "era": null,
  "title": "The Mirari",
  "years": "2001 to 2002",
  "sets": [
@@ -290,6 +291,7 @@
      "name": "The Pit Fighter",
      "colors": "R",
      "archetype": null,
+     "label": null,
      "cards": [
       {
        "qty": 2,
@@ -377,6 +379,7 @@
      "name": "The House Champion",
      "colors": "B",
      "archetype": null,
+     "label": null,
      "cards": [
       {
        "qty": 4,
@@ -560,6 +563,7 @@
      "name": "Seton's Grove",
      "colors": "G",
      "archetype": null,
+     "label": null,
      "cards": [
       {
        "qty": 4,
@@ -647,6 +651,7 @@
      "name": "The Cabal's Offer",
      "colors": "B",
      "archetype": null,
+     "label": null,
      "cards": [
       {
        "qty": 4,
@@ -823,6 +828,7 @@
      "name": "The Squirrels of Krosa",
      "colors": "G",
      "archetype": null,
+     "label": null,
      "cards": [
       {
        "qty": 4,
@@ -903,6 +909,7 @@
      "name": "Cabal Grave Robbers",
      "colors": "B",
      "archetype": null,
+     "label": null,
      "cards": [
       {
        "qty": 4,
@@ -1083,6 +1090,7 @@
      "name": "Kamahl's Fury",
      "colors": "RG",
      "archetype": null,
+     "label": null,
      "cards": [
       {
        "qty": 2,
@@ -1177,6 +1185,7 @@
      "name": "Chainer's Nightmares",
      "colors": "B",
      "archetype": null,
+     "label": null,
      "cards": [
       {
        "qty": 2,
@@ -1371,6 +1380,7 @@
      "name": "Temper of Steel",
      "colors": "RG",
      "archetype": null,
+     "label": null,
      "cards": [
       {
        "qty": 2,
@@ -1436,7 +1446,7 @@
        "id": "6c899f9b-ebce-4424-9cd9-861a50a5f7d2"
       },
       {
-       "qty": 4,
+       "qty": 2,
        "name": "Pardic Firecat",
        "set": "ody",
        "number": "211",
@@ -1455,6 +1465,13 @@
        "set": "ody",
        "number": "347",
        "id": "73029d4b-f073-4df0-a6cc-8014284a1ced"
+      },
+      {
+       "qty": 2,
+       "name": "Elephant Guide",
+       "set": "jud",
+       "number": "111",
+       "id": "7d3a7226-f574-430e-9b8f-4e531a21540f"
       }
      ]
     }
@@ -1465,6 +1482,7 @@
      "name": "The Cephalid Court",
      "colors": "U",
      "archetype": null,
+     "label": null,
      "cards": [
       {
        "qty": 2,
@@ -1655,6 +1673,7 @@
      "name": "The Order",
      "colors": "W",
      "archetype": null,
+     "label": null,
      "cards": [
       {
        "qty": 2,
@@ -1742,6 +1761,7 @@
      "name": "Mono-Black Control",
      "colors": "B",
      "archetype": null,
+     "label": null,
      "cards": [
       {
        "qty": 2,
@@ -1931,6 +1951,7 @@
      "name": "Balthor's Forge",
      "colors": "RW",
      "archetype": null,
+     "label": null,
      "cards": [
       {
        "qty": 2,
@@ -2025,6 +2046,7 @@
      "name": "Mirari's Wake",
      "colors": "GW",
      "archetype": null,
+     "label": null,
      "cards": [
       {
        "qty": 4,
@@ -2229,6 +2251,7 @@
      "name": "The Barbarian's Penance",
      "colors": "RG",
      "archetype": null,
+     "label": null,
      "cards": [
       {
        "qty": 2,
@@ -2323,6 +2346,7 @@
      "name": "The Cabal",
      "colors": "B",
      "archetype": null,
+     "label": null,
      "cards": [
       {
        "qty": 4,

@@ -9,6 +9,12 @@ export default {
     {who: 'stage', line: 'Green light. Freyalise casts the World Spell. The ice starts to melt.'},
     {who: 'leshrac', line: 'Pity. He was useful.', whisper: true},
     {who: 'laina', line: "The winter's over. After all this time, it's over."}],
+  villainFinale: [
+    {who: 'limdul', line: 'The winter keeps. So do the dead.'},
+    {who: 'stage', line: 'No World Spell. The sky stays grey.'},
+    {who: 'leshrac', line: 'Well done, necromancer. Now kneel.', whisper: true},
+    {who: 'limdul', line: '...Yes, master.'},
+    {who: 'narrator', line: "Recorded: the winter never ends. Lim-Dûl's legions march south across the ice."}],
   cast: {
     you: {name: 'You', title: 'Planeswalker', card: 'Brainstorm', number: '61'},
     kjeldor: {name: 'Kjeldoran Guard', title: 'Royal Guard of Kjeldor', card: 'Kjeldoran Royal Guard', number: '38', focus: '50% 25%'},
@@ -26,7 +32,7 @@ export default {
     limdul: {name: 'Lim-Dûl', title: 'The Necromancer', fixed: {card: 'Lim-Dûl the Necromancer', set: 'tsp', number: '114', id: 'b8a3cdfe-0289-474b-b9c4-07e8c6588ec5', crop: 'https://cards.scryfall.io/art_crop/front/b/8/b8a3cdfe-0289-474b-b9c4-07e8c6588ec5.jpg', artist: 'Matt Cavotta'}, focus: '50% 25%'},
   },
   battles: [
-    {slot: 1, kind: 'Arrival', title: 'The Pass at Kjeldor', difficulty: 'Easy', rewardSet: 'ice', teaches: ['Snow'],
+    {slot: 1, kind: 'Arrival', title: 'The Pass at Kjeldor', difficulty: 'Easy', mood: 'tension', rewardSet: 'ice', teaches: ['Snow'],
       blurb: 'Centuries after the Sylex, the snow never melts. Two nations fight over the last warm valleys.',
       hero: {who: 'kjeldor', deck: {name: 'The Royal Guard', colors: 'W', list: `
 4 Kjeldoran Royal Guard
@@ -54,7 +60,7 @@ export default {
       villainScene: [{who: 'balduvian', line: "Kjeldor sits in the warm valley while Balduvia freezes."}, {who: 'balduvian', line: "Not this winter. Raiders, to the pass!"}],
       cues: {hero: cue('Shields.', 'For Kjeld!', 'Hold the pass!', 'Go home before the snow takes you.', 'Fall back to the city...'),
         villain: cue('Burn the fences!', 'Balduvia rides!', 'The cold bites both ways!', 'The valley is ours.', "We'll be back when it's colder.")}},
-    {slot: 2, kind: 'Lesson', title: "The Royal Mage's Lesson", difficulty: 'Easy', rewardSet: 'ice', teaches: ['Cumulative upkeep'],
+    {slot: 2, kind: 'Lesson', title: "The Royal Mage's Lesson", difficulty: 'Easy', mood: 'march', rewardSet: 'ice', teaches: ['Cumulative upkeep'],
       blurb: "Kjeldor's royal mage teaches you a hard truth of the long winter: power that keeps you warm costs more every day you keep it.",
       hero: {who: 'gustha', deck: {name: 'The Royal Mage', colors: 'U', list: `
 4 Illusionary Forces
@@ -84,7 +90,7 @@ export default {
       villainScene: [{who: 'varchild', line: "A mage who lectures. My favourite kind of target."}, {who: 'varchild', line: "Paid by the head. Let's earn a fortune."}],
       cues: {hero: cue('Mind the cost.', 'Within moments, victory was mine.', 'Not yet.', "Know a thing's nature.", 'I paid too much...'),
         villain: cue('Ride!', 'Pay me in blood.', "This wasn't the contract!", 'Collect the bounty.', 'Somebody owes me.')}},
-    {slot: 3, kind: 'Lesson', title: 'The Black Book', difficulty: 'Easy', rewardSet: 'ice', teaches: ['Card advantage', 'Paying life'],
+    {slot: 3, kind: 'Lesson', title: 'The Black Book', difficulty: 'Easy', mood: 'tension', rewardSet: 'ice', teaches: ['Card advantage', 'Paying life'],
       blurb: 'In the dark of the forest, a planeswalker offers you a book. Every page is a card. Every card costs life.',
       hero: {who: 'laina', deck: {name: 'Fyndhorn Council', colors: 'G', list: `
 4 Fyndhorn Elves
@@ -106,26 +112,26 @@ export default {
 1 Unholy Strength
 2 Hypnotic Specter
 2 Scathe Zombies
-2 Drain Life
 2 Raise Dead
 1 Sengir Vampire
-3 Evil Presence
+1 Evil Presence
 1 Necropotence
 2 Drudge Skeletons
-2 Terror
 2 Scathe Zombies
 4 Ashen Ghoul
 1 Sengir Vampire
 2 Swamp
 1 Unholy Strength
-24 Swamp`}},
+24 Swamp
+2 Leshrac's Sigil
+4 Zombie Master`}},
       scene: [{who: 'leshrac', line: 'Take it. Read.'}, {who: 'laina', line: "Don't touch that. Freyalise warned us about his gifts."}, {who: 'leshrac', line: 'Freyalise warns. I give.'}, {who: 'laina', line: 'Our friends of the forest take many forms, yet all serve the will of Freyalise.', quote: true}, {who: 'leshrac', line: "Then let them serve. I'll wait."}],
       villainScene: [{who: 'leshrac', line: "Every planeswalker wants power. They just pretend they don't."}, {who: 'leshrac', line: "Give it the book. Let it pay, page by page."}],
       cues: {hero: cue('Freyalise, guide us.', 'The goddess is generous to her children.', "Don't read it...", 'Take your book and go.', "He's in the trees now."),
         villain: cue('Read.', 'More.', 'Pay.', 'Mine.', 'Later.')}},
-    {slot: 4, kind: 'Rival', title: "Baron Sengir's Feast", difficulty: 'Normal', rewardSet: 'hml', teaches: ['Direct damage', 'Growing creatures'],
+    {slot: 4, kind: 'Rival', title: "Baron Sengir's Feast", difficulty: 'Normal', mood: 'tension', rewardSet: 'hml', teaches: ['Direct damage', 'Growing creatures'],
       blurb: "A rift pulls you to Ulgrotha, a dying world ruled from a castle. The Baron is having guests for dinner. You're on the menu.",
-      hero: {who: 'reveka', deck: {name: "Reveka's Fire", colors: 'R', list: `
+      hero: {who: 'reveka', deck: {name: "Reveka's Fire", colors: 'UR', list: `
 2 Reveka, Wizard Savant
 4 Orcish Artillery
 4 Orcish Cannoneers
@@ -135,25 +141,27 @@ export default {
 4 Hurloon Minotaur
 4 Fire Elemental
 3 Shivan Dragon
-4 Stone Giant
-24 Mountain`}},
+14 Mountain
+10 Island
+4 Prodigal Sorcerer`}},
       villain: {who: 'baron', deck: {name: "The Baron's Table", colors: 'B', list: `
 3 Baron Sengir
 4 Sengir Bats
 4 Sengir Autocrat
 4 Sengir Vampire
-4 Black Knight
+2 Black Knight
 4 Dark Ritual
-4 Terror
+2 Terror
 3 Drain Life
-3 Royal Assassin
+1 Royal Assassin
 3 Abomination
-24 Swamp`}},
+26 Swamp
+4 Scathe Zombies`}},
       scene: [{who: 'baron', line: 'A visitor. How rare. How fresh.'}, {who: 'reveka', line: "Don't let him get you near the table, rift-walker."}, {who: 'baron', line: "Reveka, you wound me. I'm a host."}, {who: 'reveka', line: "You're a leech in a nice coat."}, {who: 'baron', line: 'Every guest grows stronger in my house. Well. I do.'}],
       villainScene: [{who: 'baron', line: "Fresh blood from another world. Set another place at the table."}, {who: 'baron', line: "Reveka will warn it. They always warn them. It never helps."}],
       cues: {hero: cue('Lights up.', 'Choke on that.', 'Not dinner. Not today.', 'Lock the castle behind us.', 'Run!'),
         villain: cue('Dinner is served.', 'Delicious.', 'Rude guests.', "You'll keep.", 'Come back hungrier.')}},
-    {slot: 5, kind: 'Lesson', title: 'The Dead at the Gate', difficulty: 'Normal', rewardSet: 'all', teaches: ['Alternate costs', 'Counterspells'],
+    {slot: 5, kind: 'Lesson', title: 'The Dead at the Gate', difficulty: 'Normal', mood: 'march', rewardSet: 'all', teaches: ['Alternate costs', 'Counterspells'],
       blurb: 'The dead are walking south. Kjeldor and Balduvia stop fighting each other long enough to form an Alliance.',
       hero: {who: 'kjeldor', deck: {name: 'The Alliance', colors: 'WU', list: `
 2 Force of Will
@@ -192,8 +200,8 @@ export default {
 12 Swamp`}},
       scene: [{who: 'limdul', line: 'Join me in the place of power, you risen dead.', quote: true, offstage: true}, {who: 'kjeldor', line: "That's the necromancer's voice. He's using our own fallen."}, {who: 'lucilde', line: 'I have seen the faces of my dead friends among that grim band, and I can bear no more.', quote: true}, {who: 'kjeldor', line: 'Then we end it. Together.'}],
       villainScene: [{who: 'cohort', line: "Rise. The master calls us south."}, {who: 'cohort', line: "We remember their names. They will not remember ours."}],
-      cues: {villain: cue('Rise.', 'Serve me, and live forever.', 'Rise again.', 'They shall kill those whom once they loved.', 'There are always more dead.')}},
-    {slot: 6, kind: 'Meta', title: 'Necro Summer', difficulty: 'Normal', rewardSet: 'ice', teaches: ['Racing a card-draw engine'],
+      cues: {hero: cue('Shields. Again.', 'For Kjeld!', 'The dead keep walking...', 'Back into the snow.', 'Fall back to the city...'), villain: cue('Rise.', 'Serve me, and live forever.', 'Rise again.', 'They shall kill those whom once they loved.', 'There are always more dead.')}},
+    {slot: 6, kind: 'Meta', title: 'Necro Summer', difficulty: 'Normal', mood: 'march', rewardSet: 'ice', teaches: ['Racing a card-draw engine'],
       blurb: 'A fallen knight of Ulgrotha has found the Black Book. He draws until he wins, or dies trying. The deck that ruled 1996.',
       hero: {who: 'you', deck: {name: 'Knights of the Pass', colors: 'W', list: `
 4 White Knight
@@ -226,10 +234,10 @@ export default {
 23 Swamp`}},
       scene: [{who: 'ihsan', line: 'I was a knight once. I had a name. I traded it.'}, {who: 'ihsan', line: 'Every card is a year of my life. I have so many left to spend.'}],
       villainScene: [{who: 'ihsan', line: "One more card. One more year. One more win."}, {who: 'ihsan', line: "I gave my name for this book. It owes me this victory."}],
-      cues: {villain: cue('Draw.', 'Was it worth it? Yes.', 'Just one more card.', 'Paid in full.', 'The book... is empty.')}},
-    {slot: 7, kind: 'Meta', title: 'Stasis', difficulty: 'Normal', rewardSet: 'hml', teaches: ['Playing under a lock'],
+      cues: {hero: cue('Hit before the book opens.', 'Charge!', 'They draw forever...', 'Faster than the book.', 'Paid in full...'), villain: cue('Draw.', 'Was it worth it? Yes.', 'Just one more card.', 'Paid in full.', 'The book... is empty.')}},
+    {slot: 7, kind: 'Meta', title: 'Stasis', difficulty: 'Normal', mood: 'comic', rewardSet: 'hml', teaches: ['Playing under a lock'],
       blurb: "The Baron's mother has a trick: nothing in her house moves unless she lets it.",
-      hero: {who: 'reveka', deck: {name: "Reveka's Fire", colors: 'R', list: `
+      hero: {who: 'reveka', deck: {name: "Reveka's Fire", colors: 'UR', list: `
 2 Reveka, Wizard Savant
 4 Orcish Artillery
 4 Orcish Cannoneers
@@ -239,8 +247,9 @@ export default {
 4 Hurloon Minotaur
 4 Fire Elemental
 3 Shivan Dragon
-4 Stone Giant
-24 Mountain`}},
+14 Mountain
+10 Island
+4 Prodigal Sorcerer`}},
       villain: {who: 'grandmother', deck: {name: 'The Still House', colors: 'UB', archetype: 'Winter Orb lock', list: `
 2 Grandmother Sengir
 4 Winter Orb
@@ -257,8 +266,8 @@ export default {
 12 Swamp`}},
       scene: [{who: 'grandmother', line: 'My son plays with his food. I simply keep it still.'}, {who: 'reveka', line: "She'll freeze the whole table. Make every turn count."}, {who: 'grandmother', line: 'Sit. Stay. Good.'}],
       villainScene: [{who: 'grandmother', line: "My son plays with his food. Messy boy."}, {who: 'grandmother', line: "Everything stays where I put it. Including you, dear."}],
-      cues: {villain: cue('Be still.', 'Nothing moves in my house.', 'Who untapped that?', 'There. Quiet.', 'Insolent.')}},
-    {slot: 8, kind: 'Boss', title: "Lim-Dûl's Legion", difficulty: 'Hard', rewardCard: "Pestilence", rewardSet: 'all', teaches: ['Everything so far'],
+      cues: {hero: cue('Lights up.', 'Burn the lock!', 'Nothing untaps...', 'The house is quiet now.', 'Frozen...'), villain: cue('Be still.', 'Nothing moves in my house.', 'Who untapped that?', 'There. Quiet.', 'Insolent.')}},
+    {slot: 8, kind: 'Boss', title: "Lim-Dûl's Legion", difficulty: 'Hard', mood: 'boss', rewardCard: "Pestilence", rewardSet: 'all', teaches: ['Everything so far'],
       blurb: 'The necromancer stands at the gates of Kjeldor with every dead soldier of the long winter behind him.',
       hero: {who: 'laina', deck: {name: "Freyalise's Chosen", colors: 'GW', list: `
 4 Fyndhorn Elves

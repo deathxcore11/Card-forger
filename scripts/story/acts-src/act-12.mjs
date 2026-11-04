@@ -37,7 +37,7 @@ export default {
     hidetsugu: {name: 'Hidetsugu', title: 'O-Bakemono of the Ogres', card: 'Heartless Hidetsugu', number: '107', focus: '50% 25%'},
     michiko: {name: 'Michiko', title: 'Konda, Truth Seeker', card: 'Michiko Konda, Truth Seeker', number: '19', focus: '50% 25%'},
     marrow: {name: 'Marrow-Gnawer', title: 'First Lord of the Nezumi', card: 'Marrow-Gnawer', number: '124', focus: '50% 25%'},
-    hisoka: {name: 'Hisoka', title: 'Minamo Sensei', card: 'Hisoka, Minamo Sensei', number: '66', focus: '50% 25%'},
+    azami: {name: 'Azami', title: 'Lady of Scrolls', card: 'Azami, Lady of Scrolls', focus: '50% 25%'},
     godo: {name: 'Godo', title: 'Bandit Warlord', card: 'Godo, Bandit Warlord', number: '169', focus: '50% 25%'},
     seshiro: {name: 'Seshiro', title: 'The Anointed', card: 'Seshiro the Anointed', number: '241', focus: '50% 25%'},
     kiku: {name: 'Kiku', title: 'Night\'s Flower', card: 'Kiku, Night\'s Flower', number: '121', focus: '50% 25%'},
@@ -87,16 +87,17 @@ export default {
 4 Kami of the Hunt
 4 Orochi Sustainer
 4 Kodama of the South Tree
-4 Humble Budoka
+2 Humble Budoka
 4 Venerable Kumo
-4 Matsu-Tribe Decoy
+2 Matsu-Tribe Decoy
 4 Order of the Sacred Bell
 4 Moss Kami
-4 Kami of the Palace Fields
+2 Kami of the Palace Fields
 2 Kodama's Might
 2 Strength of Cedars
-12 Forest
-8 Plains`}},
+14 Forest
+10 Plains
+2 Dosan the Falling Leaf`}},
       villain: {who: 'okiba', deck: {label: 'tribute', name: 'Shrine Robbers', colors: 'B', list: `
 4 Rag Dealer
 4 Thief of Hope
@@ -210,11 +211,12 @@ export default {
 4 Nezumi Cutthroat
 4 Nezumi Ronin
 4 Deathmask Nezumi
-4 Ashen-Skin Zubera
+2 Ashen-Skin Zubera
 4 Rend Flesh
 4 Villainous Ogre
 12 Swamp
-12 Mountain`}},
+12 Mountain
+2 Marrow-Gnawer`}},
       scene: [q('michiko', 'Watch over my father. Tell him I\'m safe, but I won\'t come home until I find out how to bring him back to his senses, and Kamigawa is again at peace.'),
         s('michiko', 'Flip cards: some creatures turn over when a condition is met and become something stronger. Bushi Tenderfoot becomes Kenzo the Hardhearted.'),
         q('stage', 'The sword is just a tool. It is the samurai\'s hand that brings it to life.')],
@@ -224,8 +226,8 @@ export default {
         villain: cue('A princess! What a price!', 'Bite!', 'Back to the sewers!', 'Pay up, Konda!', 'Not the tail!')},
       after: [s('michiko', 'The gangs knew more than my father\'s court. Father stole something from the spirit world, in the year I was born.')]},
     {slot: 6, mood: 'tension', kind: 'Meta', title: 'Gifts Ungiven', difficulty: 'Normal', rewardSet: 'chk', teaches: ['The graveyard'],
-      blurb: 'At the Minamo School, Sensei Hisoka searches the scrolls for anything that can end the war. Godo\'s bandits have come to burn them. In the real 2005, Gifts Ungiven fed graveyards across Standard.',
-      hero: {who: 'hisoka', deck: {label: 'tribute', name: 'Minamo Gifts', colors: 'BGU', archetype: 'Gifts', list: `
+      blurb: 'At the Minamo School, Lady Azami searches the scrolls for anything that can end the war, though her own sensei would rather she stopped looking. Godo\'s bandits have come to burn them. In the real 2005, Gifts Ungiven fed graveyards across Standard.',
+      hero: {who: 'azami', deck: {label: 'tribute', name: 'Minamo Gifts', colors: 'BGU', archetype: 'Gifts', list: `
 4 Gifts Ungiven
 4 Sakura-Tribe Elder
 4 Kodama's Reach
@@ -235,17 +237,17 @@ export default {
 3 Order of the Sacred Bell
 3 Kami of the Hunt
 4 Rend Flesh
-3 Moss Kami
-1 Venerable Kumo
+2 Moss Kami
 4 Kodama of the North Tree
 4 Yavimaya Coast
 4 Llanowar Wastes
 4 Underground River
 5 Forest
 4 Island
-3 Swamp`}},
+3 Swamp
+2 Azami, Lady of Scrolls`}},
       villain: {who: 'godo', deck: {label: 'tribute', name: 'Godo\'s Irregulars', colors: 'R', list: `
-2 Godo, Bandit Warlord
+3 Godo, Bandit Warlord
 2 Ronin Cliffrider
 4 Ronin Houndmaster
 4 Kami of Fire's Roar
@@ -253,18 +255,18 @@ export default {
 4 Battle-Mad Ronin
 4 Frost Ogre
 4 Torrent of Stone
-4 Yamabushi's Flame
-2 Akki Lavarunner
+2 Yamabushi's Flame
+3 Akki Lavarunner
 26 Mountain`}},
-      scene: [q('hisoka', 'By all rights we should have perished in the Kami War. Our perseverence is a tribute to mortal ingenuity. And perhaps a few forgotten secrets found in the nick of time.'),
-        s('hisoka', 'Gifts Ungiven: find four different cards. Your opponent puts two in your graveyard and you keep the others. Give them a choice where both answers help you.'),
+      scene: [q('azami', 'Though in years past speculation was not encouraged about the strange ways of kami, now we must understand their motivations, if such is even possible to the mortal mind.'),
+        s('azami', 'Gifts Ungiven: find four different cards. Your opponent puts two in your graveyard and you keep the others. Give them a choice where both answers help you.'),
         q('stage', 'As the rest of the mortal world waged war, Lady Azami and her students invaded tomes of knowledge. Their search yielded spells critical in the fight.')],
       villainScene: [q('stage', 'Godo trained their muscles and honed their skills, but he left their hearts wild and empty.'),
         s('godo', 'Scrolls burn. Burn them all and take what is left.')],
       cues: {hero: cue('Open the scrolls.', 'There it is.', 'The library burns...', 'The scrolls survive.', 'All that knowledge...', 'Two good choices.'),
         villain: cue('Burn the school!', 'Loot it!', 'Retreat to the hills!', 'Take everything!', 'Godo... falls back...')},
-      after: [q('hisoka', 'I advise against this war.'),
-        s('hisoka', 'Nobody listened then. Now the scrolls say the same thing Kumano would not: Konda stole a kami. We must take it back.')]},
+      after: [s('azami', 'Sensei Hisoka told us to stop asking questions. Now I know why. He helped Konda do it.'),
+        s('azami', 'The scrolls say the same thing Kumano would not: Konda stole a kami. We must take it back.')]},
     {slot: 7, mood: 'tension', kind: 'Rival', title: 'Snakes in the Swamp', difficulty: 'Normal', rewardSet: 'sok', teaches: ['Tribes'],
       blurb: 'Seshiro of the orochi snake-folk was the first to reach out to the human monks. Now his people move through Takenuma Swamp, where Kiku, the ogres\' assassin, makes shadows kill.',
       hero: {who: 'seshiro', deck: {label: 'tribute', name: 'Orochi Snakes', colors: 'GB', list: `
