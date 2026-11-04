@@ -1,5 +1,6 @@
 import {profileAvatar} from './profile-art.js';
 import {cardKey} from './core.js';
+import {matchupLine} from './power-tier.js';
 
 // The intro presents an already committed native outcome. It never rolls,
 // changes the player order or submits a game action.
@@ -57,6 +58,7 @@ export function mountForgeMatchIntro({root,setup,lookup=()=>null,onCancel=()=>{}
   else{const crest=node('span','CPU','forge-cpu-crest');crest.setAttribute('aria-hidden','true');avatar.append(crest);}
   const name=node('div',undefined,'forge-intro-name');if(own||!pod)name.append(node('small',own?'YOU':'YOUR OPPONENT'));name.append(node('h2',own?(profile.displayName||profile.username||'You'):cpuName));
   if(own&&profile.username)name.append(node('span','@'+profile.username.replace(/^@/,'')));
+  if(!own&&!pod&&setup.playStyle==='quick'&&matchupLine(setup.quickMatch))name.append(node('span',matchupLine(setup.quickMatch),'forge-intro-power'));
   identity.append(avatar,name);
   const deckInfo=node('div',undefined,'forge-intro-deck');deckInfo.append(node('span','DECK'),node('h3',!own&&setup.friend?'Hidden until played':deck?.name||'Selected deck'));
   seat.append(artwork,identity,deckInfo);seats.push({deck,artwork});

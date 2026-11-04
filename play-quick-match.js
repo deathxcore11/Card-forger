@@ -31,7 +31,9 @@ export function chooseQuickOpponent({player,candidates=[],difficulty='Medium',es
    const wild=random()<wildChance;
    const wide=wild?rated.filter(r=>r.pct<=target+(difficulty==='Easy'?25:40)):rated,band=wide.length?wide:rated;
    wildCard=wild;
-   const weights=wild?band.map(()=>1):band.map(r=>Math.exp(-((r.pct-target)**2)/(2*SIGMA*SIGMA))+0.02);
+   // Another archetype is more fun than a near-mirror of your own deck: same-archetype lists are rare picks.
+   const arch=d=>String(d?.archetype||d?.name||'').split(' · ')[0].trim().toLowerCase(),mineArch=arch(player),same=r=>mineArch&&arch(r.deck)===mineArch?0.15:1;
+   const weights=wild?band.map(same):band.map(r=>(Math.exp(-((r.pct-target)**2)/(2*SIGMA*SIGMA))+0.02)*same(r));
    let roll=Math.max(0,random())*weights.reduce((a,b)=>a+b,0),i=0;for(;i<band.length-1;i++){roll-=weights[i];if(roll<=0)break;}
    pick=rows.indexOf(band[i]);
   }
