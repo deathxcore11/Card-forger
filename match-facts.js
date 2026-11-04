@@ -8,10 +8,14 @@
 // the player's own turns, the way people count them, so `myTurns` counts the turns you started.
 const num = v => Number.isFinite(v) ? v : null;
 
-export function createMatchFacts() {
+export function createMatchFacts({now = Date.now} = {}) {
   let seat = null, lastTurn = 0, startLife = null, lastMyLife = null, lastOppLife = null, oppTurnStart = null, turnOfStart = -1;
   let lastPile = new Map();
   const pending = new Map();
+  // The Chronicle (play-match-record.js keeps it): when each turn began and ended, what the opponent lost in it,
+  // the strongest creature you showed, and the moments you flagged. Kept apart from the facts deeds read.
+  const turns = new Map(), moments = [];
+  let chTurn = 0, chStart = null, standout = null, lastBoard = [];
   const turnOwner = new Map(), field = new Map(), lastFace = new Map();
   const f = {
     turns: 0, myTurns: 0, minLife: null, endLife: null, maxLife: null, lifeGained: 0, startLife: null,
@@ -28,9 +32,14 @@ export function createMatchFacts() {
     const turn = s.turn || 0;
     if (turn > lastTurn) lastTurn = turn;
     f.turns = Math.max(f.turns, turn);
+    if (turn > 0 && turn !== chTurn) {
+      const t = now(); if (chStart === null) chStart = t;
+      const prev = turns.get(chTurn); if (prev && prev.end === null) prev.end = t;
+      chTurn = turn; if (!turns.has(turn)) turns.set(turn, {start: t, end: null, owner: null, oppLost: 0});
+    }
     // A turn belongs to the seat the table last showed as active in it (the turn number can tick a moment
     // before the active player does).
-    if (turn > 0 && Number.isInteger(s.activeSeat)) turnOwner.set(turn, s.activeSeat);
+    if (turn > 0 && Number.isInteger(s.activeSeat)) { turnOwner.set(turn, s.activeSeat); const tr = turns.get(turn); if (tr) tr.owner = s.activeSeat; }
     f.myTurns = [...turnOwner.values()].filter(x => x === seat).length;
     const me = s.players.find(p => p.seat === seat), opps = s.players.filter(p => p.seat !== seat), opp = opps.length === 1 ? opps[0] : null;
     if (num(me?.life) !== null) {
@@ -47,6 +56,7 @@ export function createMatchFacts() {
         // Most life the opponent lost inside one turn (yours or theirs): the big turn.
         if (oppTurnStart === null || turn !== turnOfStart) { turnOfStart = turn; oppTurnStart = lastOppLife ?? opp.life; }
         f.oppBigTurn = Math.max(f.oppBigTurn, oppTurnStart - opp.life);
+        { const tr = turns.get(turn); if (tr) tr.oppLost = Math.max(tr.oppLost, oppTurnStart - opp.life); }
         lastOppLife = opp.life; f.oppEndLife = opp.life; f.oppMinLife = f.oppMinLife === null ? opp.life : Math.min(f.oppMinLife, opp.life);
       }
       f.oppPoison = Math.max(f.oppPoison, opp.counters?.POISON | 0);
@@ -65,6 +75,8 @@ export function createMatchFacts() {
     f.maxPower = Math.max(f.maxPower, ...myC.map(c => num(c.power) ?? 0), 0);
     f.maxBoardPower = Math.max(f.maxBoardPower, myC.reduce((t, c) => t + Math.max(0, num(c.power) ?? 0), 0));
     f.maxAttackers = Math.max(f.maxAttackers, mine.filter(c => c.attacking).length);
+    for (const c of myC) { const p = num(c.power) ?? 0; if (c.name && p > 0 && (!standout || p > standout.power)) standout = {name: c.name, power: p}; }
+    lastBoard = [...myC].sort((a, b) => (num(b.power) ?? 0) - (num(a.power) ?? 0)).map(c => c.name).filter(Boolean).slice(0, 3);
     const flies = c => c.flying === true || (Array.isArray(c.keywords) && c.keywords.some(k => /^flying$/i.test(typeof k === 'string' ? k : k?.keyword || k?.text || '')));
     f.maxFlyers = Math.max(f.maxFlyers, myC.filter(flies).length);
     f.maxCounters = Math.max(f.maxCounters, ...mine.map(c => c.counters?.P1P1 | 0), 0);
@@ -115,7 +127,33 @@ export function createMatchFacts() {
     const list = s => [...s].sort();
     return {...f, myCards: list(f.myCards), theirCards: list(f.theirCards), killed: list(f.killed), myDead: list(f.myDead), tribes: {...f.tribes}, ...extra};
   }
-  return {update, snapshot};
+  // One page for the match. Turn numbers here are the player's own ("turn 3" is your third turn), as deeds count them.
+  function chronicle() {
+    const t = now(), seen = {}, rows = [];
+    for (const [n, tr] of [...turns].sort((a, b) => a[0] - b[0])) {
+      const who = tr.owner === null ? null : tr.owner === seat ? 'you' : 'opp';
+      if (who) seen[who] = (seen[who] || 0) + 1;
+      rows.push({n: who ? seen[who] : null, who, ms: Math.max(0, (tr.end ?? t) - tr.start), oppLost: tr.oppLost, raw: n});
+    }
+    const longest = rows.filter(r => r.who).sort((a, b) => b.ms - a.ms)[0];
+    const swing = rows.filter(r => r.oppLost > 0).sort((a, b) => b.oppLost - a.oppLost)[0];
+    return {
+      ms: chStart === null ? null : Math.max(0, t - chStart), turns: f.myTurns, kills: f.kills, losses: f.losses,
+      longest: longest ? {ms: longest.ms, who: longest.who, n: longest.n} : null,
+      swing: swing ? {dmg: swing.oppLost, who: swing.who, n: swing.n} : null,
+      standout: standout ? {...standout} : null,
+      moments: moments.map(m => ({...m, board: [...m.board]})),
+    };
+  }
+  // "Remember this moment": flags the turn being played (one flag a turn) with the life totals and your best creatures.
+  function mark() {
+    if (seat === null || lastMyLife === null) return null;
+    const m = {turn: Math.max(1, f.myTurns), at: chStart === null ? 0 : Math.max(0, now() - chStart), life: lastMyLife, oppLife: lastOppLife, board: [...lastBoard]};
+    const i = moments.findIndex(x => x.turn === m.turn);
+    if (i >= 0) moments[i] = m; else if (moments.length < 6) moments.push(m); else return null;
+    return {...m, board: [...m.board]};
+  }
+  return {update, snapshot, chronicle, mark};
 }
 
 // --- Conditions -------------------------------------------------------------------------------------
