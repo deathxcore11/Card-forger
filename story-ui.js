@@ -216,6 +216,9 @@ export const LESSONS = {
   'Enrage': 'Enrage: it triggers each time the creature is dealt damage. Blocking and fighting with it are good ways to set it off.',
   'Ascend': 'Ascend: control ten permanents and you get the city\'s blessing for the rest of the game. Lands and tokens count.',
   'Lifelink': 'Lifelink: damage dealt by the creature also gains its controller that much life. Race it carefully, or remove it.',
+  'Sagas': 'Sagas: an enchantment that gets a lore counter each turn and does a chapter ability for each one. When the last chapter is done, it is sacrificed.',
+  'Historic': 'Historic: artifacts, legendary cards and Sagas. Some cards get better when you cast one.',
+  'Legendary sorceries': 'Legendary sorceries can only be cast if you control a legendary creature or planeswalker. Keep a legend on the table first.',
   'Playing under a lock': 'A lock stops cards from untapping or moving. Break it, or win with what\'s already in play.',
 };
 // Every Story deck says what it is (Randall, 2 Nov 2026): Historical Exact, Historical Tribute or
