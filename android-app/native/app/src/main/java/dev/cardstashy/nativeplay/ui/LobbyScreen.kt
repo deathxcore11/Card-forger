@@ -95,6 +95,7 @@ import dev.cardstashy.nativeplay.play.Decks as PlayRules
 import dev.cardstashy.nativeplay.play.Progress
 import dev.cardstashy.nativeplay.play.RandomBuild
 import dev.cardstashy.nativeplay.play.TableDecks
+import dev.cardstashy.nativeplay.play.PlayDeckImport
 import dev.cardstashy.nativeplay.play.Trunk
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withTimeoutOrNull
@@ -133,12 +134,27 @@ class LobbyModel(style: String) {
     var quickError by mutableStateOf<String?>(null)
     var quickMatch by mutableStateOf<QuickOpponent.Result?>(null)
     var error by mutableStateOf<String?>(null)
+    // play-setup.js draft / import state (importPaste, reviewImport).
+    var pasteOpen by mutableStateOf(false)
+    var draftName by mutableStateOf("")
+    var draftText by mutableStateOf("")
+    var importStatus by mutableStateOf("idle")             // idle | parsing | resolving | review | selected | error
+    var importBusy by mutableStateOf(false)
+    var warnings by mutableStateOf<List<String>>(emptyList())
+    var unresolved by mutableStateOf<List<String>>(emptyList())
+    var candidate by mutableStateOf<JsonObject?>(null)
+    var importTicket = 0
+    val importReady get() = importStatus == "review" || importStatus == "ready"
     val quick get() = style == "quick"
+    /** updateDraft: any change retires the previous preview. */
+    fun updateDraft(name: String = draftName, text: String = draftText) {
+        if (name != draftName || text != draftText) { draftName = name; draftText = text; importTicket++; candidate = null; importBusy = false; importStatus = "idle"; error = null; warnings = emptyList(); unresolved = emptyList() }
+    }
     /** The seat the browser fills: always yours in Quick Play. */
     val browseSeat get() = if (quick) "player" else inspected
     fun seat(k: String) = if (k == "player") player else opponent
     fun put(k: String, d: SeatDeck?) { if (k == "player") { player = d; if (quick) { opponent = null; quickMatch = null } } else opponent = d }
-    fun configureFormat(f: String) { if (f != format) { player = null; opponent = null; inspected = "player"; quickMatch = null }; format = f; error = null; quickError = null }
+    fun configureFormat(f: String) { if (f != format) { player = null; opponent = null; inspected = "player"; quickMatch = null; importTicket++; candidate = null; importBusy = false; importStatus = "idle"; warnings = emptyList(); unresolved = emptyList() }; format = f; error = null; quickError = null }
 }
 
 /** The lobby's sources besides your decks (play-deck-sources.js PLAY_DECK_SOURCES). */
@@ -227,6 +243,7 @@ fun LobbyScreen(model: LobbyModel, onBack: () -> Unit, onStart: (Pick) -> Unit, 
         if (m.quick && d.id in locked) { toast(TableDecks.LOCKED_TOAST); return }
         val seat = m.browseSeat
         m.put(seat, SeatDeck(d.raw.deepCopy().apply { if (!has("id")) addProperty("id", d.id); addProperty("format", d.format) }, "saved"))
+        m.importTicket++; m.importBusy = false; m.candidate = null; m.importStatus = "idle"; m.warnings = emptyList(); m.unresolved = emptyList()
         m.error = null
         // In Practice, once your deck is in, the next pick goes to the CPU's seat.
         if (!m.quick && seat == "player" && m.player != null && m.opponent == null) m.inspected = "opponent"
@@ -235,6 +252,20 @@ fun LobbyScreen(model: LobbyModel, onBack: () -> Unit, onStart: (Pick) -> Unit, 
         RandomBuild.cancel()
         m.put(m.browseSeat, SeatDeck(e.deck.deepCopy(), e.kind))
         if (!m.quick && m.browseSeat == "player" && m.opponent == null) m.inspected = "opponent"
+    }
+    fun importPaste() {
+        if (!signedIn) { onSignIn(); return }
+        scope.launch { importPasteInto(m, online) }
+    }
+    /** reviewImport: the reviewed list goes to the seat being filled, temporary for this match. */
+    fun useImport() {
+        RandomBuild.cancel()
+        if (!signedIn) { onSignIn(); return }
+        val c = m.candidate
+        if (m.importBusy || c == null || m.importStatus != "review") { m.error = "Finish reviewing a valid pasted list before selecting it."; return }
+        val seat = if (m.quick) "player" else m.inspected
+        m.inspected = seat; m.put(seat, SeatDeck(c.deepCopy(), "import"))
+        m.candidate = null; m.importStatus = "selected"; m.error = null
     }
     // A finished random build lands in the seat it was built for.
     var buildSeat by remember { mutableStateOf("player") }
@@ -294,11 +325,12 @@ fun LobbyScreen(model: LobbyModel, onBack: () -> Unit, onStart: (Pick) -> Unit, 
             full { Box(Modifier.outset(19.dp)) { Arena(m, onFocusDecks = { scope.launch { grid.animateScrollToItem(LIB_HEAD) } }) } }
             full { Box(Modifier.outset(19.dp).padding(bottom = 18.dp)) { StartBar(m, signedIn, statusText(m)) { start() } } }
             full {
-                LibraryHead(m, source, onOpenDecks)
+                LibraryHead(m, source, signedIn, onOpenDecks)
             }
             when {
                 source == "yours" && !signedIn -> full { Empty("Your decks, ready for the table", "Sign in above to choose your saved lists.") }
                 source == "yours" -> {
+                    if (!quickOnly && pasteShown(m)) full { PasteImport(m, ::importPaste, ::useImport) { cardPick = CardPick(it, "", null, "nonfoil") } }
                     full { Text("${visible.size} of ${inFormat.size} ${m.format} decks", style = sans(13f, color = Muted), modifier = Modifier.padding(horizontal = 3.dp)) }
                     if (visible.isEmpty()) full { Empty(if (m.query.isNotBlank()) "No matching decks" else "No ${m.format} decks yet",
                         if (quickOnly) "Build a Play deck, or open packs and the Merchant for cards." else "Paste a list or explore the other sources above.") }
@@ -522,15 +554,32 @@ private fun StartBar(m: LobbyModel, signedIn: Boolean, status: String, onStart: 
 // ---------------------------------------------------------------- deck browser
 
 @Composable
-private fun LibraryHead(m: LobbyModel, source: String, onOpenDecks: () -> Unit) {
+private fun LibraryHead(m: LobbyModel, source: String, signedIn: Boolean, onOpenDecks: () -> Unit) {
     val seatName = when (m.browseSeat) { "player" -> "Your deck"; else -> "CPU deck" }
     Column(Modifier.fillMaxWidth().padding(top = 8.dp), verticalArrangement = Arrangement.spacedBy(10.dp)) {
         Row(verticalAlignment = Alignment.Bottom) {
             Text(seatName, style = TextStyle(fontFamily = Site.Manrope, fontWeight = FontWeight.ExtraBold, fontSize = 18.sp, letterSpacing = (-.36).sp, color = Site.Text))
             Text(" · ${m.format}", style = sans(13f, FontWeight.SemiBold, Muted))
         }
-        Box(Modifier.height(44.dp).pill(Site.Surface2, Line).clickable(onClick = onOpenDecks).padding(horizontal = 12.dp), contentAlignment = Alignment.Center) {
-            Text("Open Decks", style = sans(13.5f, FontWeight.Bold, Site.Text)) }
+        Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+            if (source == "yours" && signedIn && !m.quick) {
+                val open = pasteShown(m)
+                Row(Modifier.height(44.dp).pill(if (open) Gold.copy(alpha = .16f) else Site.Surface2, if (open) Gold else PasteEdge)
+                    .clickable { m.pasteOpen = !open }.padding(horizontal = 12.dp), verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(7.dp)) {
+                    Canvas(Modifier.size(15.dp)) { // play-menu.js clipboard icon, viewBox 24
+                        val k = size.width / 24f
+                        val path = androidx.compose.ui.graphics.Path().apply {
+                            moveTo(9 * k, 4 * k); lineTo(15 * k, 4 * k); lineTo(15 * k, 7 * k); lineTo(9 * k, 7 * k); close()
+                            moveTo(7 * k, 5.5f * k); lineTo(5.5f * k, 5.5f * k); lineTo(5.5f * k, 20.5f * k); lineTo(18.5f * k, 20.5f * k); lineTo(18.5f * k, 5.5f * k); lineTo(17 * k, 5.5f * k)
+                            moveTo(9 * k, 12 * k); lineTo(15 * k, 12 * k); moveTo(9 * k, 16 * k); lineTo(13 * k, 16 * k) }
+                        drawPath(path, Gold, style = Stroke(1.8f * k, cap = androidx.compose.ui.graphics.StrokeCap.Round, join = androidx.compose.ui.graphics.StrokeJoin.Round))
+                    }
+                    Text("Paste a deck list", style = sans(13.5f, FontWeight.Bold, Site.Text))
+                }
+            }
+            Box(Modifier.height(44.dp).pill(Site.Surface2, Line).clickable(onClick = onOpenDecks).padding(horizontal = 12.dp), contentAlignment = Alignment.Center) {
+                Text("Open Decks", style = sans(13.5f, FontWeight.Bold, Site.Text)) }
+        }
         if (m.quick) Text(TableDecks.QUICK_INTRO, style = sans(13f, color = Muted, line = 19.5f))
         else Row(Modifier.fillMaxWidth().clip(RoundedCornerShape(14.dp)).background(Color(0xA61F232B)).border(1.dp, Line, RoundedCornerShape(14.dp)).padding(3.dp)) {
             SOURCES.forEach { (k, label) -> val on = source == k
@@ -723,6 +772,106 @@ private fun RandomPanel(m: LobbyModel, build: RandomBuild.State, signedIn: Boole
         }
         Text(build.error ?: build.status.ifBlank { "Construction checks and play support are checked separately." }, style = sans(12.5f, color = Muted), textAlign = TextAlign.Center)
         if (!signedIn) Box(Modifier.height(44.dp).pill(Site.Surface2, Line).clickable(onClick = onSignIn).padding(horizontal = 12.dp), contentAlignment = Alignment.Center) { Text("Sign in to build", style = sans(13.5f, FontWeight.Bold)) }
+    }
+}
+
+// ---------------------------------------------------------------- paste a deck list (play-menu.js #playImportDisclosure)
+
+/** play-setup.js importPaste: parse, check, then match names (resolveNames: the names with no card data stay unmatched). */
+internal suspend fun importPasteInto(m: LobbyModel, online: Boolean) {
+    if (m.draftText.isBlank()) { m.error = "Paste a deck list to review."; return }
+    val ticket = ++m.importTicket; val name = m.draftName; val text = m.draftText; val format = m.format
+    m.candidate = null; m.importBusy = true; m.error = null; m.warnings = emptyList(); m.unresolved = emptyList(); m.importStatus = "parsing"
+    fun current() = m.importTicket == ticket
+    try {
+        val parsed = PlayDeckImport.parse(text)
+        fun note(p: PlayDeckImport.Problem) = "Line ${p.line}: ${p.reason}"
+        val importErrors = parsed.errors.map(::note)
+        val fatal = parsed.errors.filter { it.fatal }
+        if (fatal.isNotEmpty()) throw IllegalStateException(PASTE_ERRORS + fatal.joinToString(" ") { note(it) })
+        m.warnings = parsed.warnings.map(::note) + importErrors
+        m.unresolved = parsed.unresolved.map { it.name }
+        fun rows(l: List<PlayDeckImport.Card>) = JsonArray().apply { l.forEach { c -> add(JsonObject().apply { addProperty("name", c.name); addProperty("qty", c.qty) }) } }
+        val deck = JsonObject().apply {
+            addProperty("id", "play-import-$ticket"); addProperty("name", name.ifBlank { "Imported deck" }); addProperty("format", format)
+            addProperty("commander", parsed.commander); if (parsed.commanders.isNotEmpty()) add("commanders", rows(parsed.commanders))
+            add("cards", rows(parsed.cards)); add("side", rows(parsed.side)) }
+        if (parsed.cards.size > 2500 || parsed.side.size > 2500) throw IllegalStateException("Main deck exceeds the 2500-row review limit.")
+        m.importStatus = "resolving"
+        val names = (parsed.cards + parsed.side).map { it.name }.distinct()
+        if (online) runCatching { CardFacts.wantNames(names) }
+        if (!current()) return
+        val failed = names.filter { factByName(it) == null }
+        val attempted = names.map { PlayDeckImport.key(it) }.toSet()
+        m.unresolved = (m.unresolved.filter { PlayDeckImport.key(it) !in attempted } + failed).distinct()
+        m.candidate = deck; m.importBusy = false; m.importStatus = "review"; m.error = null
+    } catch (e: Exception) {
+        if (!current()) return
+        m.importBusy = false; m.candidate = null; m.importStatus = "error"
+        m.error = e.message?.takeIf { it.startsWith(PASTE_ERRORS) } ?: "The pasted deck could not be reviewed. Check its rows, quantities and format."
+    }
+}
+
+private const val PASTE_ERRORS = "The pasted list contains errors: "
+private val PasteEdge = Color(0xFF806D48)                  // gold 45 % into the line colour
+private val WarnFill = Color(0x1AF2C66D); private val WarnText = Color(0xFFF6DBA2)
+/** The disclosure is open while there is a draft, a review, work or an error, or when the pill opened it. */
+private fun pasteShown(m: LobbyModel) = m.pasteOpen || m.draftText.isNotEmpty() || m.importReady || m.importBusy || m.error != null
+
+@Composable
+private fun PasteImport(m: LobbyModel, onPreview: () -> Unit, onUse: () -> Unit, onCard: (String) -> Unit) {
+    val shape = RoundedCornerShape(16.dp)
+    Column(Modifier.fillMaxWidth().padding(bottom = 14.dp).clip(shape).background(Site.Surface2.copy(alpha = .58f)).border(1.dp, Color(0xFF635843), shape)
+        .padding(start = 14.dp, end = 14.dp, top = 4.dp, bottom = 14.dp)) {
+        Text("Import a deck list", style = TextStyle(fontFamily = Site.Manrope, fontWeight = FontWeight.Bold, fontSize = 15.sp, letterSpacing = (-.3).sp, color = Site.Text, lineHeight = 17.25.sp), modifier = Modifier.padding(bottom = 8.dp))
+        Text("Paste a list, review the cards, then choose Use this list. The original rows and printing details are kept for review.", style = sans(13f, color = Muted, line = 18.85f))
+        Field("Deck name", m.draftName, "Imported deck", 160, singleLine = true, size = 12.5f) { m.updateDraft(name = it) }
+        Field("Deck list", m.draftText, (if (m.format == "Commander") "Commander\n1 Your commander\n\n" else "") + "Deck\n1 Card name", 100000, singleLine = false, size = 13.5f) { m.updateDraft(text = it) }
+        Row(Modifier.padding(top = 10.dp), horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+            Box(Modifier.height(44.dp).clip(RoundedCornerShape(11.dp)).background(Gold.copy(alpha = if (m.importBusy) .55f else 1f)).clickable(enabled = !m.importBusy, onClick = onPreview).padding(horizontal = 16.dp), contentAlignment = Alignment.Center) {
+                Text(if (m.importBusy) "Matching cards…" else "Preview & match", style = sans(15f, FontWeight.Bold, Color(0xFF1B1406))) }
+            if (m.importReady) Box(Modifier.height(44.dp).clip(RoundedCornerShape(11.dp)).background(Site.Surface2).border(1.dp, Line, RoundedCornerShape(11.dp)).clickable(onClick = onUse).padding(horizontal = 16.dp), contentAlignment = Alignment.Center) {
+                Text("Use this list", style = sans(15f, FontWeight.Bold)) }
+        }
+        Text("Pasted lists stay here until you save a copy in Decks.", style = sans(13f, color = Muted, line = 18.85f), modifier = Modifier.padding(top = 6.dp))
+        val status = when { m.importBusy -> "Matching card names…"; m.importStatus == "selected" -> "List selected. Review it in Your deck."; m.importReady -> "Review the entries, then choose Use this list."; else -> null }
+        m.error?.let { Text(it, style = sans(13.5f, color = WarnText, line = 19.575f), modifier = Modifier.padding(top = 6.dp).fillMaxWidth().clip(RoundedCornerShape(12.dp)).background(WarnFill).padding(horizontal = 12.dp, vertical = 10.dp)) }
+        status?.let { Text(it, style = sans(15f, color = Muted, line = 21.75f), modifier = Modifier.padding(top = 6.dp)) }
+        Notices(m.warnings, "Import notes"); Notices(m.unresolved, "Unmatched cards")
+        val c = m.candidate
+        if (m.importReady && c != null) {
+            fun count(k: String) = c.getAsJsonArray(k)?.sumOf { (it as JsonObject).get("qty").asInt } ?: 0
+            Text("Review imported list", style = TextStyle(fontFamily = Site.Manrope, fontWeight = FontWeight.Bold, fontSize = 15.sp, letterSpacing = (-.3).sp, color = Site.Text, lineHeight = 17.25.sp), modifier = Modifier.padding(top = 10.dp, bottom = 8.dp))
+            Text("${count("cards")} cards" + if (count("side") > 0) " · ${count("side")} sideboard" else "", style = sans(13f, color = Muted, line = 18.85f))
+            val rows = c.getAsJsonArray("cards").map { r -> (r as JsonObject).let { it["name"].asString to it["qty"].asInt } }
+            androidx.compose.foundation.layout.BoxWithConstraints(Modifier.padding(top = 10.dp)) { DeckViewerBody(rows, c.get("commander")?.asString ?: "", { n -> factByName(n)?.card }, maxWidth, onCard) }
+        }
+    }
+}
+
+@Composable
+private fun Field(label: String, value: String, placeholder: String, max: Int, singleLine: Boolean, size: Float, onChange: (String) -> Unit) {
+    Column(Modifier.padding(top = 12.dp), verticalArrangement = Arrangement.spacedBy(0.dp)) {
+        Text(label, style = sans(12.5f, FontWeight.SemiBold, Muted, line = 18.125f))
+        val shape = RoundedCornerShape(11.dp)
+        Box(Modifier.fillMaxWidth().then(if (singleLine) Modifier.height(44.dp) else Modifier.height(137.dp)).clip(shape).background(Site.Surface).border(1.dp, Line, shape).padding(horizontal = 12.dp, vertical = 9.dp),
+            contentAlignment = if (singleLine) Alignment.CenterStart else Alignment.TopStart) {
+            val style = sans(size, FontWeight.SemiBold, Site.Text, line = size * 1.45f)
+            if (value.isEmpty()) Text(placeholder, style = style.copy(color = Muted.copy(alpha = .7f)))
+            BasicTextField(value, { if (it.length <= max) onChange(it) }, singleLine = singleLine, textStyle = style, cursorBrush = SolidColor(Gold),
+                modifier = Modifier.fillMaxWidth().then(if (singleLine) Modifier else Modifier.fillMaxHeight().verticalScroll(rememberScrollState())))
+        }
+    }
+}
+
+/** play-menu.js notices: a collapsed warn note "Title (n)" listing each entry. */
+@Composable
+private fun Notices(items: List<String>, title: String) {
+    if (items.isEmpty()) return
+    var open by remember { mutableStateOf(false) }
+    Column(Modifier.padding(top = 10.dp).fillMaxWidth().clip(RoundedCornerShape(12.dp)).background(WarnFill).clickable { open = !open }.padding(horizontal = 12.dp, vertical = 10.dp)) {
+        Box(Modifier.heightIn(min = 44.dp), contentAlignment = Alignment.CenterStart) { Text("$title (${items.size})", style = sans(13.5f, color = WarnText, line = 19.575f)) }
+        if (open) items.forEach { Text("•  $it", style = sans(13.5f, color = WarnText, line = 19.575f)) }
     }
 }
 

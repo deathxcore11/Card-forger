@@ -138,8 +138,8 @@ fun TrunkScreen(state: JsonObject, onBack: () -> Unit, onCard: (CardPick) -> Uni
 
 /** .seg: the app's two-way switch (12 dp plate, 9 dp pill on the chosen one). */
 @Composable
-fun Segmented(options: List<Pair<String, String>>, on: String, modifier: Modifier = Modifier, pick: (String) -> Unit) {
-    Row(modifier.fillMaxWidth().clip(RoundedCornerShape(12.dp)).background(Site.Surface).border(1.dp, Site.Line, RoundedCornerShape(12.dp)).padding(3.dp)) {
+fun Segmented(options: List<Pair<String, String>>, on: String, modifier: Modifier = Modifier, glass: Boolean = false, pick: (String) -> Unit) {
+    Row(modifier.fillMaxWidth().then(if (glass) Modifier.glass(RoundedCornerShape(12.dp)) else Modifier.clip(RoundedCornerShape(12.dp)).background(Site.Surface).border(1.dp, Site.Line, RoundedCornerShape(12.dp))).padding(3.dp)) {
         options.forEach { (k, label) ->
             val sel = k == on
             Box(Modifier.weight(1f).clip(RoundedCornerShape(9.dp)).background(if (sel) Color(0x14FFFFFF) else Color.Transparent).clickable { pick(k) }.padding(vertical = 9.dp),

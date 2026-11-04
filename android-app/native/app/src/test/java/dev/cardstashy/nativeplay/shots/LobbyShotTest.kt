@@ -73,6 +73,8 @@ class LobbyShotTest {
         return SeatDeck(JsonObject().apply { addProperty("id", id); addProperty("name", t.second); addProperty("format", "Standard"); addProperty("commander", ""); add("cards", rows(t.third, names)); add("side", JsonArray()) }, "saved")
     }
 
+    private val PASTE = "Deck\n24 Mountain\n4 Shock\n4 Lightning Strike\n4 Fanatical Firebrand\n4 Reckless Lackey\n4 Firebrand Archer\n4 Sunset Strikemaster\n4 Scytheclaw Raptor\n4 Spitfire Lagac\n4 Volley Veteran\nSideboard\n2 Shock\nMaybeboard\n1 Volley Veteran"
+
     @Test fun lobby() {
         setup()
         val states = listOf<Pair<String, (LobbyModel) -> Unit>>(
@@ -81,7 +83,9 @@ class LobbyShotTest {
             "practice" to { _ -> },
             "practicepicked" to { m -> m.player = seat("starter:u"); m.inspected = "opponent" },
             "practiceboth" to { m -> m.player = seat("starter:u"); m.opponent = seat("starter:b") },
-            "inspect" to { m -> m.player = seat("starter:r"); m.inspectOpen = true })
+            "inspect" to { m -> m.player = seat("starter:r"); m.inspectOpen = true },
+            "paste" to { m -> m.updateDraft(name = "Pasted burn", text = PASTE); kotlinx.coroutines.runBlocking { dev.cardstashy.nativeplay.ui.importPasteInto(m, online = false) } },
+            "pasteused" to { m -> m.updateDraft(name = "Pasted burn", text = PASTE); kotlinx.coroutines.runBlocking { dev.cardstashy.nativeplay.ui.importPasteInto(m, online = false) }; m.candidate?.let { c -> m.inspected = "player"; m.put("player", SeatDeck(c, "import")); m.candidate = null; m.importStatus = "selected" } })
         RuntimeEnvironment.setQualifiers("w390dp-h2532dp-xxhdpi")
         for ((name, set) in states) {
             val m = LobbyModel(if (name.startsWith("quick") || name == "inspect") "quick" else "practice").apply { format = "Standard" }

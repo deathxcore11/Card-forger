@@ -54,6 +54,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.alpha
 import androidx.compose.ui.draw.blur
+import androidx.compose.ui.draw.drawWithContent
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.graphics.Brush
@@ -161,6 +162,10 @@ fun CardSheet(pick: CardPick, state: JsonObject?, act: CardSheetActions, onClose
                 ?: shown.getAsJsonObject("image_uris")?.s("normal")?.ifBlank { null } ?: faces[0].getAsJsonObject("image_uris")?.s("normal")
             val owned = Trunk.owned(state, name, shown.s("oracle_id").ifBlank { null }).coerceAtMost(4)
             val list = rememberLazyListState()
+            // Native-plus (Randall 4 Nov 00:13Z): the art runs down the whole sheet, blurred and tinted, so every panel
+            // below the banner sits on it as tinted glass instead of a flat sheet.
+            Box(Modifier.fillMaxSize()) {
+            GlassBackdrop(heroArt)
             LazyColumn(state = list, modifier = Modifier.fillMaxSize()) {
                 item {
                     Header(name, f.s("type_line").ifBlank { shown.s("type_line") }, f.s("mana_cost").ifBlank { shown.s("mana_cost") }, owned, heroArt, list.firstVisibleItemScrollOffset,
@@ -177,6 +182,7 @@ fun CardSheet(pick: CardPick, state: JsonObject?, act: CardSheetActions, onClose
                 }
                 item { Spacer(Modifier.navigationBarsPadding().height(40.dp)) }
             }
+            }
             // views.js:461 .cd-zoom: data-src = the normal image, data-hi = this face's png, data-art = the hero art crop.
             val hi = (if (imgFaces.size > 1) imgFaces.getOrNull(face) else null)?.getAsJsonObject("image_uris")?.s("png")?.ifBlank { null }
                 ?: shown.getAsJsonObject("image_uris")?.s("png")?.ifBlank { null }
@@ -189,6 +195,20 @@ fun CardSheet(pick: CardPick, state: JsonObject?, act: CardSheetActions, onClose
         rule?.let { RuleCard(it) { rule = null } }
     }
 }
+
+/** The sheet's art backdrop: the art crop filling the sheet, blurred, under a dark tint that deepens downwards. */
+@Composable
+private fun GlassBackdrop(art: String?) {
+    val p = heroPainter(art?.let(homeArt)) ?: return
+    Image(p, null, Modifier.fillMaxSize().blur(22.dp), contentScale = ContentScale.Crop, alignment = Alignment.TopCenter)
+    Box(Modifier.fillMaxSize().background(Brush.verticalGradient(0f to Color(0x3312151B), .22f to Color(0x9912151B), .5f to Color(0xA612151B), 1f to Color(0xC712151B))))
+}
+
+/** Tinted glass: a dark smoked fill, a faint light sheen from the top, and a bright hairline edge. */
+internal fun Modifier.glass(shape: androidx.compose.ui.graphics.Shape) = clip(shape)
+    .background(Color(0x7310131A))
+    .background(Brush.verticalGradient(0f to Color(0x1FFFFFFF), .4f to Color(0x08FFFFFF), 1f to Color(0x00FFFFFF)))
+    .border(1.dp, Brush.verticalGradient(0f to Color(0x40FFFFFF), 1f to Color(0x14FFFFFF)), shape)
 
 @Composable
 private fun Loading(name: String, onClose: () -> Unit) = Column(Modifier.fillMaxSize().padding(24.dp), verticalArrangement = Arrangement.spacedBy(12.dp)) {
@@ -206,14 +226,14 @@ private fun Header(name: String, type: String, cost: String, owned: Int, art: St
     val p = heroPainter(art?.let(homeArt))
     Box(Modifier.fillMaxWidth().pointerInput(Unit) { detectVerticalDragGestures(onDragEnd = onDragEnd) { _, dy -> onDrag(dy) } }) {
         // The glassy bleed: the art blurred under the whole head, fading into the sheet (no hard edge).
-        if (p != null) {
-            Image(p, null, Modifier.matchParentSize().blur(40.dp).alpha(.5f), contentScale = ContentScale.Crop)
-            Box(Modifier.matchParentSize().background(Brush.verticalGradient(0f to Color.Transparent, .45f to Color.Transparent, 1f to Color(0xFF12151B))))
-        }
         Column {
             Box(Modifier.fillMaxWidth().height(210.dp).graphicsLayer { translationY = scrolled * .4f }) {
-                if (p != null) Image(p, null, Modifier.fillMaxSize(), contentScale = ContentScale.Crop)
-                Box(Modifier.fillMaxSize().background(Brush.verticalGradient(0f to Color(0x33000000), .55f to Color.Transparent, 1f to Color(0xF212151B))))
+                // The sharp art melts into the blurred backdrop: masked to nothing over its last third, no edge.
+                if (p != null) Image(p, null, Modifier.fillMaxSize()
+                    .graphicsLayer { compositingStrategy = androidx.compose.ui.graphics.CompositingStrategy.Offscreen }
+                    .drawWithContent { drawContent(); drawRect(Brush.verticalGradient(0f to Color.Black, .62f to Color.Black, 1f to Color.Transparent), blendMode = androidx.compose.ui.graphics.BlendMode.DstIn) },
+                    contentScale = ContentScale.Crop)
+                Box(Modifier.fillMaxSize().background(Brush.verticalGradient(0f to Color(0x33000000), .5f to Color.Transparent, 1f to Color(0x8012151B))))
                 Box(Modifier.align(Alignment.TopCenter).padding(top = 8.dp).size(40.dp, 4.dp).clip(CircleShape).background(Color(0x66FFFFFF)))
                 Box(Modifier.align(Alignment.TopEnd).padding(12.dp)) { CloseButton(onClose) }
             }
@@ -235,8 +255,8 @@ private fun Header(name: String, type: String, cost: String, owned: Int, art: St
 
 
 @Composable
-private fun Tabs(on: String, pick: (String) -> Unit) = Box(Modifier.fillMaxWidth().background(Color(0xF212151B)).padding(horizontal = 16.dp, vertical = 8.dp)) {
-    Segmented(listOf("overview" to "Overview", "guide" to "Play guide", "get" to "Get it"), on, pick = pick)
+private fun Tabs(on: String, pick: (String) -> Unit) = Box(Modifier.fillMaxWidth().background(Color(0x5912151B)).padding(horizontal = 16.dp, vertical = 8.dp)) {
+    Segmented(listOf("overview" to "Overview", "guide" to "Play guide", "get" to "Get it"), on, glass = true, pick = pick)
 }
 
 // ---------------------------------------------------------------- Overview
@@ -280,7 +300,7 @@ private fun SetLine(shown: JsonObject, state: JsonObject?, act: CardSheetActions
     val code = shown.s("set"); if (code.isBlank()) return
     SetFacts.sets.collectAsState().value
     val (have, total) = Trunk.setProgress(state, code)
-    Column(Modifier.fillMaxWidth().clip(RoundedCornerShape(14.dp)).background(Color(0x0DFFFFFF)).border(1.dp, Color(0x1AFFFFFF), RoundedCornerShape(14.dp))
+    Column(Modifier.fillMaxWidth().glass(RoundedCornerShape(14.dp))
         .clickable { act.set(code) }.padding(14.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
         Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(10.dp)) {
             RaritySetIcon(code, shown.s("rarity"), 24.dp)
@@ -317,7 +337,7 @@ private fun FinishRail(shown: JsonObject, on: String, data: CardData?, pick: (St
 /** .cd-text: "Spellcraft · Rules text", oracle lines with symbols and rule words, flavour, P/T or loyalty, artist. */
 @Composable
 private fun RulesBox(f: JsonObject, shown: JsonObject, multi: Boolean, i: Int, data: CardData?, onRule: (CardData.Rule) -> Unit) {
-    Column(Modifier.fillMaxWidth().clip(RoundedCornerShape(14.dp)).background(Site.Surface).border(1.dp, Site.Line, RoundedCornerShape(14.dp)).padding(16.dp),
+    Column(Modifier.fillMaxWidth().glass(RoundedCornerShape(14.dp)).padding(16.dp),
         verticalArrangement = Arrangement.spacedBy(10.dp)) {
         Text("SPELLCRAFT · RULES TEXT", style = Site.Eyebrow.copy(fontSize = 11.sp, color = Site.Gold.copy(alpha = .85f)))
         if (multi) Row(verticalAlignment = Alignment.CenterVertically) { Text(f.s("name"), style = t(15f, FontWeight.Bold), modifier = Modifier.weight(1f)); ManaCost(f.s("mana_cost"), 16.dp) }
@@ -409,7 +429,7 @@ private fun PlayActions(name: String, shown: JsonObject, state: JsonObject?, n: 
     val decks = Trunk.decks(state)
     var open by remember { mutableStateOf(false) }
     val scope = rememberCoroutineScope()
-    Column(Modifier.fillMaxWidth().clip(RoundedCornerShape(14.dp)).background(Color(0x0DFFFFFF)).border(1.dp, Color(0x1AFFFFFF), RoundedCornerShape(14.dp)).padding(14.dp),
+    Column(Modifier.fillMaxWidth().glass(RoundedCornerShape(14.dp)).padding(14.dp),
         verticalArrangement = Arrangement.spacedBy(12.dp)) {
         OwnLine(n)
         FlowRow(horizontalArrangement = Arrangement.spacedBy(8.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {

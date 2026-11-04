@@ -1,0 +1,368 @@
+[
+ {
+  "input": "Commander\n1 Atraxa, Praetors' Voice\n\nDeck\n1 Sol Ring\n1xArcane Signet\n4 Forest\n1 Swords to Plowshares (STA) 10 *F*\n2 Llanowar Elves [Ramp]",
+  "cards": [
+   {
+    "name": "Atraxa, Praetors' Voice",
+    "qty": 1
+   },
+   {
+    "name": "Sol Ring",
+    "qty": 1
+   },
+   {
+    "name": "Arcane Signet",
+    "qty": 1
+   },
+   {
+    "name": "Forest",
+    "qty": 4
+   },
+   {
+    "name": "Swords to Plowshares",
+    "qty": 1
+   },
+   {
+    "name": "Llanowar Elves",
+    "qty": 2
+   }
+  ],
+  "side": [],
+  "commanders": [
+   {
+    "name": "Atraxa, Praetors' Voice",
+    "qty": 1
+   }
+  ],
+  "commander": "Atraxa, Praetors' Voice",
+  "excludedCards": [],
+  "total": 10,
+  "sideTotal": 0,
+  "normalizedText": "Commander\n1 Atraxa, Praetors' Voice\n\nDeck\n1 Sol Ring\n1 Arcane Signet\n4 Forest\n1 Swords to Plowshares (STA) 10 *F*\n2 Llanowar Elves",
+  "source": "Play deck text",
+  "errors": [],
+  "warnings": []
+ },
+ {
+  "input": "4 Lightning Bolt\n4 Monastery Swiftspear\n20 Mountain\n4 Goblin Guide\n4 Eidolon of the Great Revel\n4 Lava Spike\n4 Rift Bolt\n4 Skewer the Critics\n\n2 Smash to Smithereens\n3 Path to Exile",
+  "cards": [
+   {
+    "name": "Lightning Bolt",
+    "qty": 4
+   },
+   {
+    "name": "Monastery Swiftspear",
+    "qty": 4
+   },
+   {
+    "name": "Mountain",
+    "qty": 20
+   },
+   {
+    "name": "Goblin Guide",
+    "qty": 4
+   },
+   {
+    "name": "Eidolon of the Great Revel",
+    "qty": 4
+   },
+   {
+    "name": "Lava Spike",
+    "qty": 4
+   },
+   {
+    "name": "Rift Bolt",
+    "qty": 4
+   },
+   {
+    "name": "Skewer the Critics",
+    "qty": 4
+   }
+  ],
+  "side": [
+   {
+    "name": "Smash to Smithereens",
+    "qty": 2
+   },
+   {
+    "name": "Path to Exile",
+    "qty": 3
+   }
+  ],
+  "commanders": [],
+  "commander": "",
+  "excludedCards": [],
+  "total": 48,
+  "sideTotal": 5,
+  "normalizedText": "4 Lightning Bolt\n4 Monastery Swiftspear\n20 Mountain\n4 Goblin Guide\n4 Eidolon of the Great Revel\n4 Lava Spike\n4 Rift Bolt\n4 Skewer the Critics\n\n2 Smash to Smithereens\n3 Path to Exile",
+  "source": "Play deck text",
+  "errors": [],
+  "warnings": []
+ },
+ {
+  "input": "Name: Burn\nhttps://example.com/deck\n// comment\nCreatures (8)\n4 Goblin Guide\n3 Monastery Swiftspear\nLands: 20\n20 Mountain\nSideboard\n2 Pyroblast\nSB: 1 Tormod's Crypt\nMaybeboard\n1 Fireblast",
+  "cards": [
+   {
+    "name": "Goblin Guide",
+    "qty": 4
+   },
+   {
+    "name": "Monastery Swiftspear",
+    "qty": 3
+   },
+   {
+    "name": "Mountain",
+    "qty": 20
+   }
+  ],
+  "side": [
+   {
+    "name": "Pyroblast",
+    "qty": 2
+   },
+   {
+    "name": "Tormod's Crypt",
+    "qty": 1
+   }
+  ],
+  "commanders": [],
+  "commander": "",
+  "excludedCards": [
+   {
+    "name": "Fireblast",
+    "qty": 1
+   }
+  ],
+  "total": 27,
+  "sideTotal": 3,
+  "normalizedText": "4 Goblin Guide\n3 Monastery Swiftspear\n20 Mountain\nSideboard\n2 Pyroblast\nSideboard\n1 Tormod's Crypt\nSideboard\nMaybeboard\n1 Fireblast",
+  "source": "Play deck text",
+  "errors": [],
+  "warnings": [
+   [
+    1,
+    "ignored_metadata",
+    "Ignored deck metadata or comment"
+   ],
+   [
+    2,
+    "ignored_metadata",
+    "Ignored deck metadata or comment"
+   ],
+   [
+    3,
+    "ignored_metadata",
+    "Ignored deck metadata or comment"
+   ],
+   [
+    4,
+    "category_count_mismatch",
+    "Creatures header says 8; imported 7"
+   ],
+   [
+    0,
+    "excluded_cards",
+    "1 maybeboard/considering copies were kept separate"
+   ]
+  ]
+ },
+ {
+  "input": "0 Bad\n1.5 Half\n4\nx Sol Ring\n1001 Too Many\n-1 Neg\n3 Good Card\n1 Good Card",
+  "cards": [
+   {
+    "name": "x Sol Ring",
+    "qty": 1
+   },
+   {
+    "name": "Good Card",
+    "qty": 4
+   }
+  ],
+  "side": [],
+  "commanders": [],
+  "commander": "",
+  "excludedCards": [],
+  "total": 5,
+  "sideTotal": 0,
+  "normalizedText": "1 x Sol Ring\n3 Good Card\n1 Good Card",
+  "source": "Play deck text",
+  "errors": [
+   [
+    1,
+    "invalid_card_row",
+    "Quantity must be between 1 and 1000"
+   ],
+   [
+    2,
+    "invalid_card_row",
+    "Quantity must be a positive whole number"
+   ],
+   [
+    3,
+    "invalid_card_row",
+    "Missing card name"
+   ],
+   [
+    5,
+    "invalid_card_row",
+    "Quantity must be between 1 and 1000"
+   ],
+   [
+    6,
+    "invalid_card_row",
+    "Quantity must be a positive whole number"
+   ]
+  ],
+  "warnings": []
+ },
+ {
+  "input": "Commander: Kenrith\nCommander: Thrasios, Triton Hero\n99 Island",
+  "cards": [
+   {
+    "name": "Kenrith",
+    "qty": 1
+   },
+   {
+    "name": "Thrasios, Triton Hero",
+    "qty": 1
+   },
+   {
+    "name": "Island",
+    "qty": 99
+   }
+  ],
+  "side": [],
+  "commanders": [
+   {
+    "name": "Kenrith",
+    "qty": 1
+   },
+   {
+    "name": "Thrasios, Triton Hero",
+    "qty": 1
+   }
+  ],
+  "commander": "Kenrith",
+  "excludedCards": [],
+  "total": 101,
+  "sideTotal": 0,
+  "normalizedText": "Commander\n1 Kenrith\nDeck\nCommander\n1 Thrasios, Triton Hero\nDeck\n99 Island",
+  "source": "Play deck text",
+  "errors": [],
+  "warnings": [
+   [
+    0,
+    "multiple_commanders",
+    "Multiple commanders were declared; verify their pairing and format before playing"
+   ]
+  ]
+ },
+ {
+  "input": "Name,Quantity,Board\nSol Ring,1,main\n\"Lim-Dûl's Vault\",2,sideboard\nIsland,abc,main\nForest,3,weird",
+  "cards": [
+   {
+    "name": "Sol Ring",
+    "qty": 1
+   },
+   {
+    "name": "Forest",
+    "qty": 3
+   }
+  ],
+  "side": [
+   {
+    "name": "Lim-Dûl's Vault",
+    "qty": 2
+   }
+  ],
+  "commanders": [],
+  "commander": "",
+  "excludedCards": [],
+  "total": 4,
+  "sideTotal": 2,
+  "normalizedText": "\"Name\",\"Quantity\",\"Board\"\n\"Sol Ring\",\"1\",\"main\"\n\"Lim-Dûl's Vault\",\"2\",\"sideboard\"\n\"Forest\",\"3\",\"weird\"",
+  "source": "Deck CSV",
+  "errors": [
+   [
+    4,
+    "invalid_card_row",
+    "Quantity must be a positive whole number"
+   ]
+  ],
+  "warnings": [
+   [
+    2,
+    "unknown_csv_section",
+    "Unrecognized CSV section main; retained in main deck for review"
+   ],
+   [
+    5,
+    "unknown_csv_section",
+    "Unrecognized CSV section weird; retained in main deck for review"
+   ]
+  ]
+ },
+ {
+  "input": "card,count\nShock,4",
+  "cards": [
+   {
+    "name": "Shock",
+    "qty": 4
+   }
+  ],
+  "side": [],
+  "commanders": [],
+  "commander": "",
+  "excludedCards": [],
+  "total": 4,
+  "sideTotal": 0,
+  "normalizedText": "\"Name\",\"count\"\n\"Shock\",\"4\"",
+  "source": "Deck CSV",
+  "errors": [],
+  "warnings": []
+ },
+ {
+  "input": "\n\n   \n",
+  "cards": [],
+  "side": [],
+  "commanders": [],
+  "commander": "",
+  "excludedCards": [],
+  "total": 0,
+  "sideTotal": 0,
+  "normalizedText": "",
+  "source": "Play deck text",
+  "errors": [
+   [
+    0,
+    "empty_deck",
+    "No card rows found"
+   ]
+  ],
+  "warnings": []
+ },
+ {
+  "input": "Deck\n4 Opt\nCompanion\n1 Lurrus of the Dream-Den",
+  "cards": [
+   {
+    "name": "Opt",
+    "qty": 4
+   }
+  ],
+  "side": [
+   {
+    "name": "Lurrus of the Dream-Den",
+    "qty": 1
+   }
+  ],
+  "commanders": [],
+  "commander": "",
+  "excludedCards": [],
+  "total": 4,
+  "sideTotal": 1,
+  "normalizedText": "Deck\n4 Opt\nSideboard\n1 Lurrus of the Dream-Den",
+  "source": "Play deck text",
+  "errors": [],
+  "warnings": []
+ }
+]
