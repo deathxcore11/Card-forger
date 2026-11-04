@@ -1,0 +1,3020 @@
+{
+ "act": 34,
+ "era": "2022-09-09",
+ "title": "The Sleeper Agents",
+ "years": "2022",
+ "sets": [
+  "dmu",
+  "bro"
+ ],
+ "landSet": "dmu",
+ "intro": [
+  {
+   "who": "stage",
+   "line": "After five thousand years, the nightmare returned.",
+   "quote": true
+  },
+  {
+   "who": "stage",
+   "line": "Dominaria is full of people who do not know what they are. The Coalition has to find them before they find out."
+  }
+ ],
+ "finale": [
+  {
+   "who": "stage",
+   "line": "Teferi's body couldn't travel through time far enough, but with Kaya's help, his spirit could.",
+   "quote": true
+  },
+  {
+   "who": "stage",
+   "line": "Teferi learns the history Mishra never told anyone. The sleepers are exposed. Phyrexia is ready."
+  },
+  {
+   "who": "stage",
+   "line": "Recorded: the Brothers' War, retold from the inside."
+  }
+ ],
+ "villainFinale": [
+  {
+   "who": "stage",
+   "line": "Mishra was gone—all that remained was a machine wearing his face.",
+   "quote": true
+  },
+  {
+   "who": "stage",
+   "line": "In this version, the praetor keeps her sleepers and Dominaria never learns who is who."
+  }
+ ],
+ "vibe": "sleeper-agents-brothers-war",
+ "cast": {
+  "you": {
+   "name": "You",
+   "title": "Planeswalker",
+   "portrait": {
+    "card": "Tower Worker",
+    "set": "bro",
+    "number": "255",
+    "id": "f31bd134-22c8-4031-8f85-ac0855914d11",
+    "crop": "https://cards.scryfall.io/art_crop/front/f/3/f31bd134-22c8-4031-8f85-ac0855914d11.jpg?1783920010",
+    "artist": "Gaboleps",
+    "focus": "50% 30%"
+   }
+  },
+  "teferi": {
+   "name": "Jodah and Teferi",
+   "title": "Of the Coalition",
+   "portrait": {
+    "card": "Teferi, Temporal Pilgrim",
+    "set": "bro",
+    "number": "66",
+    "id": "23a4f1ec-eadf-4f1e-8821-f22293ad2580",
+    "crop": "https://cards.scryfall.io/art_crop/front/2/3/23a4f1ec-eadf-4f1e-8821-f22293ad2580.jpg?1783920103",
+    "artist": "Magali Villeneuve",
+    "focus": "50% 25%"
+   }
+  },
+  "sleepers": {
+   "name": "The Sleeper Agents",
+   "title": "Of Phyrexia",
+   "portrait": {
+    "card": "Gixian Infiltrator",
+    "set": "bro",
+    "number": "98",
+    "id": "c94a3317-7d1f-4f29-8353-180f1ab48d18",
+    "crop": "https://cards.scryfall.io/art_crop/front/c/9/c94a3317-7d1f-4f29-8353-180f1ab48d18.jpg?1783920088",
+    "artist": "Peter Polach",
+    "focus": "50% 30%"
+   }
+  },
+  "urza": {
+   "name": "Urza",
+   "title": "Prince of Kroog",
+   "portrait": {
+    "card": "Urza, Lord Protector",
+    "set": "bro",
+    "number": "225",
+    "id": "8aefe8bd-216a-4ec1-9362-3f9dbf7fd083",
+    "crop": "https://cards.scryfall.io/art_crop/front/8/a/8aefe8bd-216a-4ec1-9362-3f9dbf7fd083.jpg?1783920024",
+    "artist": "Ryan Pancoast",
+    "focus": "50% 25%"
+   }
+  },
+  "mishra": {
+   "name": "Mishra",
+   "title": "Claimed by Gix",
+   "portrait": {
+    "card": "Mishra, Claimed by Gix",
+    "set": "bro",
+    "number": "216",
+    "id": "a469d7ec-42de-45de-9d8f-469bb979de58",
+    "crop": "https://cards.scryfall.io/art_crop/front/a/4/a469d7ec-42de-45de-9d8f-469bb979de58.jpg?1783920028",
+    "artist": "Chris Rahn",
+    "focus": "50% 25%"
+   }
+  },
+  "archaeologists": {
+   "name": "Karn's Archaeologists",
+   "title": "Of Argoth",
+   "portrait": {
+    "card": "Karn, Living Legacy",
+    "set": "dmu",
+    "number": "1",
+    "id": "e83b1b87-01d5-4624-8a2b-4b771e13e59c",
+    "crop": "https://cards.scryfall.io/art_crop/front/e/8/e83b1b87-01d5-4624-8a2b-4b771e13e59c.jpg?1783921372",
+    "artist": "Chris Rahn",
+    "focus": "50% 25%"
+   }
+  },
+  "dragons": {
+   "name": "The Dragon Engines",
+   "title": "Of Phyrexia",
+   "portrait": {
+    "card": "Phyrexian Dragon Engine",
+    "set": "bro",
+    "number": "163",
+    "id": "e2b826be-4256-4fd6-ad4d-6c80933ee940",
+    "crop": "https://cards.scryfall.io/art_crop/front/e/2/e2b826be-4256-4fd6-ad4d-6c80933ee940.jpg?1783920055",
+    "artist": "Chris Rahn",
+    "focus": "50% 30%"
+   }
+  },
+  "scout": {
+   "name": "Teferi",
+   "title": "The Temporal Pilgrim",
+   "portrait": {
+    "card": "Teferi, Temporal Pilgrim",
+    "set": "bro",
+    "number": "66",
+    "id": "23a4f1ec-eadf-4f1e-8821-f22293ad2580",
+    "crop": "https://cards.scryfall.io/art_crop/front/2/3/23a4f1ec-eadf-4f1e-8821-f22293ad2580.jpg?1783920103",
+    "artist": "Magali Villeneuve",
+    "focus": "50% 25%"
+   }
+  },
+  "gix": {
+   "name": "Gix",
+   "title": "Yawgmoth Praetor",
+   "portrait": {
+    "card": "Gix, Yawgmoth Praetor",
+    "set": "bro",
+    "number": "95",
+    "id": "2c76f7e0-37e7-4e87-93a3-a25ba0674645",
+    "crop": "https://cards.scryfall.io/art_crop/front/2/c/2c76f7e0-37e7-4e87-93a3-a25ba0674645.jpg?1783920090",
+    "artist": "Anna Podedworna",
+    "focus": "50% 25%"
+   }
+  },
+  "friends": {
+   "name": "Ajani's Friends",
+   "title": "Of the Coalition",
+   "portrait": {
+    "card": "Tori D'Avenant, Fury Rider",
+    "set": "dmu",
+    "number": "223",
+    "id": "9c873c5b-61f6-49b9-8993-2d5e9823de62",
+    "crop": "https://cards.scryfall.io/art_crop/front/9/c/9c873c5b-61f6-49b9-8993-2d5e9823de62.jpg?1783921274",
+    "artist": "Anna Podedworna",
+    "focus": "50% 25%"
+   }
+  },
+  "ajani": {
+   "name": "Ajani",
+   "title": "Sleeper Agent",
+   "portrait": {
+    "card": "Ajani, Sleeper Agent",
+    "set": "dmu",
+    "number": "192",
+    "id": "7641f4d9-4614-41c8-87f5-4845bd78e9b3",
+    "crop": "https://cards.scryfall.io/art_crop/front/7/6/7641f4d9-4614-41c8-87f5-4845bd78e9b3.jpg?1783921289",
+    "artist": "Matt Stewart",
+    "focus": "50% 25%"
+   }
+  },
+  "red": {
+   "name": "Mono-Red",
+   "title": "Autumn 2022",
+   "portrait": {
+    "card": "Monastery Swiftspear",
+    "set": "bro",
+    "number": "144",
+    "id": "d6bfa227-4309-40ed-952c-279595eab17e",
+    "crop": "https://cards.scryfall.io/art_crop/front/d/6/d6bfa227-4309-40ed-952c-279595eab17e.jpg?1783920066",
+    "artist": "Gabor Szikszai",
+    "focus": "50% 30%"
+   }
+  },
+  "legends": {
+   "name": "Esper Legends",
+   "title": "Autumn 2022",
+   "portrait": {
+    "card": "Zur, Eternal Schemer",
+    "set": "dmu",
+    "number": "228",
+    "id": "4d987435-2403-4e0f-b19d-693da923ba50",
+    "crop": "https://cards.scryfall.io/art_crop/front/4/d/4d987435-2403-4e0f-b19d-693da923ba50.jpg?1783921271",
+    "artist": "Jesper Ejsing",
+    "focus": "50% 25%"
+   }
+  },
+  "rakdos": {
+   "name": "Rakdos Midrange",
+   "title": "Autumn 2022",
+   "portrait": {
+    "card": "Liliana of the Veil",
+    "set": "dmu",
+    "number": "97",
+    "id": "d12c8c97-6491-452c-811d-943441a7ef9f",
+    "crop": "https://cards.scryfall.io/art_crop/front/d/1/d12c8c97-6491-452c-811d-943441a7ef9f.jpg?1783921329",
+    "artist": "Martina Fačková",
+    "focus": "50% 25%"
+   }
+  },
+  "blue": {
+   "name": "Mono-Blue",
+   "title": "Autumn 2022",
+   "portrait": {
+    "card": "Tolarian Terror",
+    "set": "dmu",
+    "number": "72",
+    "id": "42f01cba-43d4-46ad-b7a5-d7631b0e1347",
+    "crop": "https://cards.scryfall.io/art_crop/front/4/2/42f01cba-43d4-46ad-b7a5-d7631b0e1347.jpg?1783921342",
+    "artist": "Vincent Christiaens",
+    "focus": "50% 30%"
+   }
+  },
+  "coalition": {
+   "name": "The Coalition",
+   "title": "Of Dominaria",
+   "portrait": {
+    "card": "Radha, Coalition Warlord",
+    "set": "dmu",
+    "number": "211",
+    "id": "2cec235e-7ce0-4947-b221-a555b2c865bd",
+    "crop": "https://cards.scryfall.io/art_crop/front/2/c/2cec235e-7ce0-4947-b221-a555b2c865bd.jpg?1783921278",
+    "artist": "Randy Vargas",
+    "focus": "50% 25%"
+   }
+  },
+  "sheoldred": {
+   "name": "Sheoldred",
+   "title": "The Apocalypse",
+   "portrait": {
+    "card": "Sheoldred, the Apocalypse",
+    "set": "dmu",
+    "number": "107",
+    "id": "d67be074-cdd4-41d9-ac89-0a0456c4e4b2",
+    "crop": "https://cards.scryfall.io/art_crop/front/d/6/d67be074-cdd4-41d9-ac89-0a0456c4e4b2.jpg?1783921327",
+    "artist": "Chris Rahn",
+    "focus": "50% 25%"
+   }
+  }
+ },
+ "battles": [
+  {
+   "id": "a34b1",
+   "slot": 1,
+   "kind": "Arrival",
+   "mood": "tension",
+   "title": "Read Ahead",
+   "difficulty": "Easy",
+   "teaches": [
+    "Read ahead"
+   ],
+   "blurb": "Jodah and Teferi move on a village where half the neighbours do not know what they are.",
+   "rewardSet": "dmu",
+   "host": false,
+   "hero": {
+    "who": "teferi",
+    "deck": {
+     "name": "The Coalition Scouts",
+     "colors": "WU",
+     "archetype": null,
+     "label": "tribute",
+     "cards": [
+      {
+       "qty": 4,
+       "name": "Guardian of New Benalia",
+       "set": "dmu",
+       "number": "19",
+       "id": "43da76ee-fec3-4b2e-915d-10cf8d518d2c"
+      },
+      {
+       "qty": 3,
+       "name": "Valiant Veteran",
+       "set": "dmu",
+       "number": "38",
+       "id": "18b1a4ee-437f-4a08-b176-8342d526143f"
+      },
+      {
+       "qty": 3,
+       "name": "Knight of Dawn's Light",
+       "set": "dmu",
+       "number": "23",
+       "id": "b7c7a54e-4df6-4745-8bae-aeefda934d82"
+      },
+      {
+       "qty": 3,
+       "name": "Harbin, Vanguard Aviator",
+       "set": "bro",
+       "number": "212",
+       "id": "4b88be69-3201-4345-a193-cc21bd066d15"
+      },
+      {
+       "qty": 3,
+       "name": "Skystrike Officer",
+       "set": "bro",
+       "number": "62",
+       "id": "925fa343-d9c3-4ed9-bd1f-aaa31c0badd7"
+      },
+      {
+       "qty": 3,
+       "name": "Mesa Cavalier",
+       "set": "dmu",
+       "number": "26",
+       "id": "feeec740-7ffc-4f57-b52c-92209da91d69"
+      },
+      {
+       "qty": 3,
+       "name": "Wing Commando",
+       "set": "bro",
+       "number": "73",
+       "id": "43e640c3-02bb-453c-a609-05d8214e2e2e"
+      },
+      {
+       "qty": 4,
+       "name": "Coalition Skyknight",
+       "set": "dmu",
+       "number": "14",
+       "id": "8b12da45-aff4-406d-83a3-39ecaff6ff56"
+      },
+      {
+       "qty": 4,
+       "name": "Archangel of Wrath",
+       "set": "dmu",
+       "number": "3",
+       "id": "2d00bab2-e95d-4296-a805-2a05e7640efb"
+      },
+      {
+       "qty": 4,
+       "name": "Serra Paragon",
+       "set": "dmu",
+       "number": "32",
+       "id": "ce295f1e-fb31-4275-a5d3-8c6f29afff40"
+      },
+      {
+       "qty": 2,
+       "name": "Urza Assembles the Titans",
+       "set": "dmu",
+       "number": "37",
+       "id": "10a544d7-ead7-42fd-a35a-c1b672771d5b"
+      },
+      {
+       "qty": 4,
+       "name": "Adarkar Wastes",
+       "set": "dmu",
+       "number": "243",
+       "id": "08ae1037-6f70-41a9-b75e-98fa9a2152c8"
+      },
+      {
+       "qty": 10,
+       "name": "Plains",
+       "set": "dmu",
+       "number": "262",
+       "id": "5822b027-369d-46da-b6dd-c31207e2f449"
+      },
+      {
+       "qty": 10,
+       "name": "Island",
+       "set": "dmu",
+       "number": "265",
+       "id": "8bafc217-3d83-4551-b2e3-3494ec14b2f9"
+      }
+     ]
+    }
+   },
+   "villain": {
+    "who": "sleepers",
+    "deck": {
+     "name": "The Sleeper Agents",
+     "colors": "B",
+     "archetype": null,
+     "label": "tribute",
+     "cards": [
+      {
+       "qty": 4,
+       "name": "Gixian Infiltrator",
+       "set": "bro",
+       "number": "98",
+       "id": "c94a3317-7d1f-4f29-8353-180f1ab48d18"
+      },
+      {
+       "qty": 4,
+       "name": "Misery's Shadow",
+       "set": "bro",
+       "number": "107",
+       "id": "514c5e77-9ecc-41c9-b104-76343601fafb"
+      },
+      {
+       "qty": 4,
+       "name": "Phyrexian Rager",
+       "set": "dmu",
+       "number": "99",
+       "id": "6fd574e7-705f-4a65-aad0-68ff6d63bf0f"
+      },
+      {
+       "qty": 1,
+       "name": "Gixian Skullflayer",
+       "set": "bro",
+       "number": "100",
+       "id": "ebdcf02b-1876-44d7-8a22-679ea1272856"
+      },
+      {
+       "qty": 1,
+       "name": "Eerie Soultender",
+       "set": "dmu",
+       "number": "92",
+       "id": "335f3146-743c-4a25-86b5-c45e9c66eb15"
+      },
+      {
+       "qty": 4,
+       "name": "Cut Down",
+       "set": "dmu",
+       "number": "89",
+       "id": "753db072-5d6a-4f37-8f7d-255572ecd3bd"
+      },
+      {
+       "qty": 3,
+       "name": "Go for the Throat",
+       "set": "bro",
+       "number": "102",
+       "id": "94117b09-d852-4f2e-be8e-68ee0ee3c3d8"
+      },
+      {
+       "qty": 1,
+       "name": "Gixian Puppeteer",
+       "set": "bro",
+       "number": "99",
+       "id": "2cc86e18-ffbc-4c5f-a694-922332b146cc"
+      },
+      {
+       "qty": 3,
+       "name": "Disfigure",
+       "set": "bro",
+       "number": "91",
+       "id": "aaa9c6f1-3938-448b-bdc3-22420c5984d3"
+      },
+      {
+       "qty": 24,
+       "name": "Swamp",
+       "set": "dmu",
+       "number": "268",
+       "id": "5a846f00-ccb9-4ee2-8358-7c7722258601"
+      },
+      {
+       "qty": 4,
+       "name": "Gnawing Vermin",
+       "set": "bro",
+       "number": "101",
+       "id": "2fa2fa48-ddb7-45f0-b183-4186df98f7cc"
+      },
+      {
+       "qty": 4,
+       "name": "Cult Conscript",
+       "set": "dmu",
+       "number": "88",
+       "id": "fed77513-94ab-44e2-b9a1-30ba927cd6ee"
+      },
+      {
+       "qty": 3,
+       "name": "Battlefly Swarm",
+       "set": "dmu",
+       "number": "81",
+       "id": "3c6b4a2d-0bc0-4a54-9c78-712b48ad6be1"
+      }
+     ]
+    }
+   },
+   "reward": {
+    "hero": {
+     "packs": 1,
+     "coins": 0
+    },
+    "villain": {
+     "card": {
+      "oracle_id": "2497926c-b253-4400-b540-776ee2cd807c",
+      "name": "Gixian Infiltrator",
+      "rarity": "common",
+      "set": "bro",
+      "id": "c94a3317-7d1f-4f29-8353-180f1ab48d18",
+      "image": "https://cards.scryfall.io/normal/front/c/9/c94a3317-7d1f-4f29-8353-180f1ab48d18.jpg"
+     },
+     "coins": 50
+    }
+   },
+   "scene": [
+    {
+     "who": "stage",
+     "line": "Phyrexians destroyed my village, but they cannot break my hope.",
+     "quote": true
+    },
+    {
+     "who": "stage",
+     "line": "A single light can hold back endless darkness.",
+     "quote": true
+    },
+    {
+     "who": "teferi",
+     "line": "Read ahead: a saga lets you begin at any chapter. Pick the chapter you need and skip the rest."
+    }
+   ],
+   "villainScene": [
+    {
+     "who": "stage",
+     "line": "Even he didn't know what he was until he felt his skin shifting and splitting, his mind overtaken by a chaos of whispers.",
+     "quote": true
+    },
+    {
+     "who": "stage",
+     "line": "With every culling, we bring this world closer to *compleation*.",
+     "quote": true
+    }
+   ],
+   "after": null,
+   "cues": {
+    "hero": {
+     "start": "Stay together.",
+     "big": "Read ahead!",
+     "low": "They look like neighbours...",
+     "win": "The village is clear.",
+     "loss": "Overrun...",
+     "half": "Begin the saga at the chapter you need."
+    },
+    "villain": {
+     "start": "Wake up.",
+     "big": "Compleat!",
+     "low": "The whispers stop...",
+     "win": "Compleated.",
+     "loss": "Shut down..."
+    }
+   },
+   "bigPlays": [],
+   "sim": null
+  },
+  {
+   "id": "a34b2",
+   "slot": 2,
+   "kind": "Lesson",
+   "mood": "march",
+   "title": "Urza and Mishra",
+   "difficulty": "Easy",
+   "teaches": [
+    "Domain"
+   ],
+   "blurb": "Teferi's spirit lands in the desert. Urza and Mishra are still brothers, but not for long.",
+   "rewardSet": "bro",
+   "host": false,
+   "hero": {
+    "who": "urza",
+    "deck": {
+     "name": "Urza's Machines",
+     "colors": "WU",
+     "archetype": null,
+     "label": "tribute",
+     "cards": [
+      {
+       "qty": 4,
+       "name": "Powerstone Engineer",
+       "set": "bro",
+       "number": "20",
+       "id": "2901c5f6-5d83-437d-b434-d9beb115dd82"
+      },
+      {
+       "qty": 4,
+       "name": "Thopter Mechanic",
+       "set": "bro",
+       "number": "68",
+       "id": "7577b5c7-91ed-4201-bdfd-0919142124eb"
+      },
+      {
+       "qty": 3,
+       "name": "Urza, Lord Protector",
+       "set": "bro",
+       "number": "225",
+       "id": "8aefe8bd-216a-4ec1-9362-3f9dbf7fd083"
+      },
+      {
+       "qty": 2,
+       "name": "Urza, Prince of Kroog",
+       "set": "bro",
+       "number": "226",
+       "id": "5a7329cd-95af-4d71-984f-f5f28982520c"
+      },
+      {
+       "qty": 4,
+       "name": "Thran Spider",
+       "set": "bro",
+       "number": "254",
+       "id": "e72e0ddb-3dd4-4db3-aa05-dec8691432a0"
+      },
+      {
+       "qty": 3,
+       "name": "Liberator, Urza's Battlethopter",
+       "set": "bro",
+       "number": "237",
+       "id": "c31e6768-bcab-43c4-bfc1-76e961689ae9"
+      },
+      {
+       "qty": 3,
+       "name": "Reconstructed Thopter",
+       "set": "bro",
+       "number": "242",
+       "id": "bcc8a8d8-6d8e-44b3-a29b-5fa4a851a25b"
+      },
+      {
+       "qty": 3,
+       "name": "Mine Worker",
+       "set": "bro",
+       "number": "239",
+       "id": "5aa63321-aa28-449d-a31f-869a98c5a6be"
+      },
+      {
+       "qty": 3,
+       "name": "Leyline Binding",
+       "set": "dmu",
+       "number": "24",
+       "id": "3c3ac3dd-35db-447f-8674-37b4680a1ef7"
+      },
+      {
+       "qty": 3,
+       "name": "Swiftgear Drake",
+       "set": "bro",
+       "number": "251",
+       "id": "d5ae38a2-2f95-4750-9b59-53eb1771e5ab"
+      },
+      {
+       "qty": 2,
+       "name": "Defabricate",
+       "set": "bro",
+       "number": "45",
+       "id": "7dd32168-0b9c-4633-adec-d41cf125cc35"
+      },
+      {
+       "qty": 2,
+       "name": "Wing Commando",
+       "set": "bro",
+       "number": "73",
+       "id": "43e640c3-02bb-453c-a609-05d8214e2e2e"
+      },
+      {
+       "qty": 4,
+       "name": "Adarkar Wastes",
+       "set": "dmu",
+       "number": "243",
+       "id": "08ae1037-6f70-41a9-b75e-98fa9a2152c8"
+      },
+      {
+       "qty": 10,
+       "name": "Plains",
+       "set": "dmu",
+       "number": "262",
+       "id": "5822b027-369d-46da-b6dd-c31207e2f449"
+      },
+      {
+       "qty": 10,
+       "name": "Island",
+       "set": "dmu",
+       "number": "265",
+       "id": "8bafc217-3d83-4551-b2e3-3494ec14b2f9"
+      }
+     ]
+    }
+   },
+   "villain": {
+    "who": "mishra",
+    "deck": {
+     "name": "Mishra's Army",
+     "colors": "BR",
+     "archetype": null,
+     "label": "tribute",
+     "cards": [
+      {
+       "qty": 4,
+       "name": "Monastery Swiftspear",
+       "set": "bro",
+       "number": "144",
+       "id": "d6bfa227-4309-40ed-952c-279595eab17e"
+      },
+      {
+       "qty": 4,
+       "name": "Mishra, Excavation Prodigy",
+       "set": "bro",
+       "number": "140",
+       "id": "f5d02416-8578-40a5-bf31-d1ef9b8764f1"
+      },
+      {
+       "qty": 3,
+       "name": "Mishra, Claimed by Gix",
+       "set": "bro",
+       "number": "216",
+       "id": "a469d7ec-42de-45de-9d8f-469bb979de58"
+      },
+      {
+       "qty": 4,
+       "name": "Dwarven Forge-Chanter",
+       "set": "bro",
+       "number": "131",
+       "id": "bbd6a95a-11b9-43aa-b293-20a3102bae71"
+      },
+      {
+       "qty": 3,
+       "name": "Sardian Cliffstomper",
+       "set": "bro",
+       "number": "151",
+       "id": "c1c42d56-5b0e-4624-8831-77280f8d56cf"
+      },
+      {
+       "qty": 3,
+       "name": "Tomakul Scrapsmith",
+       "set": "bro",
+       "number": "153",
+       "id": "d462d30c-9060-46d6-b5b3-cac476ee2ce1"
+      },
+      {
+       "qty": 4,
+       "name": "Lightning Strike",
+       "set": "dmu",
+       "number": "137",
+       "id": "7d541125-bfb8-4f88-8bf3-ad7b6af7ad1d"
+      },
+      {
+       "qty": 3,
+       "name": "Brotherhood's End",
+       "set": "bro",
+       "number": "128",
+       "id": "50f7666d-0d60-4fe5-b144-286d4e47b704"
+      },
+      {
+       "qty": 3,
+       "name": "Obliterating Bolt",
+       "set": "bro",
+       "number": "145",
+       "id": "7f886411-8216-4fb7-9172-a408c39043ee"
+      },
+      {
+       "qty": 2,
+       "name": "Fallaji Chaindancer",
+       "set": "bro",
+       "number": "134",
+       "id": "4dc2da75-160d-47f9-b978-e153262ec1fc"
+      },
+      {
+       "qty": 3,
+       "name": "Blitz Automaton",
+       "set": "bro",
+       "number": "158",
+       "id": "e4e5529a-848b-486c-97fb-1def35df7837"
+      },
+      {
+       "qty": 4,
+       "name": "Sulfurous Springs",
+       "set": "dmu",
+       "number": "256",
+       "id": "dfd5450a-6490-417f-9aea-b6fca6f380d7"
+      },
+      {
+       "qty": 10,
+       "name": "Swamp",
+       "set": "dmu",
+       "number": "268",
+       "id": "5a846f00-ccb9-4ee2-8358-7c7722258601"
+      },
+      {
+       "qty": 10,
+       "name": "Mountain",
+       "set": "dmu",
+       "number": "271",
+       "id": "a82f782e-abc8-4b92-a193-17b2c383f765"
+      }
+     ]
+    }
+   },
+   "reward": {
+    "hero": {
+     "packs": 1,
+     "coins": 0
+    },
+    "villain": {
+     "card": {
+      "oracle_id": "26a623a1-60c9-47e3-af96-616e29551865",
+      "name": "Mishra, Claimed by Gix",
+      "rarity": "mythic",
+      "set": "bro",
+      "id": "a469d7ec-42de-45de-9d8f-469bb979de58",
+      "image": "https://cards.scryfall.io/normal/front/a/4/a469d7ec-42de-45de-9d8f-469bb979de58.jpg"
+     },
+     "coins": 50
+    }
+   },
+   "scene": [
+    {
+     "who": "stage",
+     "line": "Raw energy contains infinite possibility.",
+     "quote": true
+    },
+    {
+     "who": "stage",
+     "line": "As usual, my brother's maneuvers are brash and impulsive.",
+     "quote": true
+    },
+    {
+     "who": "urza",
+     "line": "Domain: count the basic land types you control. Leyline Binding gets cheaper with every type, so mix your lands."
+    }
+   ],
+   "villainScene": [
+    {
+     "who": "stage",
+     "line": "While Urza read books, Mishra learned to read the desert itself.",
+     "quote": true
+    },
+    {
+     "who": "stage",
+     "line": "Hah. Urza has underestimated my strength yet again.",
+     "quote": true
+    }
+   ],
+   "after": null,
+   "cues": {
+    "hero": {
+     "start": "Think it through.",
+     "big": "Machines, advance!",
+     "low": "Mishra is fast...",
+     "win": "The brothers stay even.",
+     "loss": "Outpaced...",
+     "half": "Count your land types, then bind."
+    },
+    "villain": {
+     "start": "Faster.",
+     "big": "Strike!",
+     "low": "Urza held...",
+     "win": "The desert is mine.",
+     "loss": "Beaten again..."
+    }
+   },
+   "bigPlays": [],
+   "sim": null
+  },
+  {
+   "id": "a34b3",
+   "slot": 3,
+   "kind": "Lesson",
+   "mood": "comic",
+   "title": "Small or Big",
+   "difficulty": "Easy",
+   "teaches": [
+    "Prototype"
+   ],
+   "blurb": "Karn's archaeologists dig up a Phyrexian machine. Each one can be cast small or big.",
+   "rewardSet": "bro",
+   "host": false,
+   "hero": {
+    "who": "archaeologists",
+    "deck": {
+     "name": "Karn's Archaeologists",
+     "colors": "GW",
+     "archetype": null,
+     "label": "tribute",
+     "cards": [
+      {
+       "qty": 4,
+       "name": "Yotian Dissident",
+       "set": "bro",
+       "number": "227",
+       "id": "1eb02f00-c188-4193-a049-d26f7643e5da"
+      },
+      {
+       "qty": 4,
+       "name": "Sarinth Steelseeker",
+       "set": "bro",
+       "number": "189",
+       "id": "d96761b2-eb9c-4963-a496-ba53a01f4b17"
+      },
+      {
+       "qty": 4,
+       "name": "Fauna Shaman",
+       "set": "bro",
+       "number": "179",
+       "id": "b8b906eb-3223-474c-9b74-eda2c280f9c5"
+      },
+      {
+       "qty": 3,
+       "name": "Gwenna, Eyes of Gaea",
+       "set": "bro",
+       "number": "185",
+       "id": "7ee387b7-18e4-41b7-aefe-f2b5954e3051"
+      },
+      {
+       "qty": 3,
+       "name": "Hexbane Tortoise",
+       "set": "dmu",
+       "number": "166",
+       "id": "acd5a635-bcf5-4a05-b00b-bf40322823fe"
+      },
+      {
+       "qty": 3,
+       "name": "Obstinate Baloth",
+       "set": "bro",
+       "number": "187",
+       "id": "e1b7809f-f3a3-439e-8bae-c083842de1bf"
+      },
+      {
+       "qty": 3,
+       "name": "Silverback Elder",
+       "set": "dmu",
+       "number": "177",
+       "id": "b987664f-0b74-4c0a-b306-14767a55559a"
+      },
+      {
+       "qty": 3,
+       "name": "Gaea's Courser",
+       "set": "bro",
+       "number": "181",
+       "id": "1a0b94e5-d270-4820-83b9-1d346d378ff8"
+      },
+      {
+       "qty": 3,
+       "name": "Karn, Living Legacy",
+       "set": "dmu",
+       "number": "1",
+       "id": "e83b1b87-01d5-4624-8a2b-4b771e13e59c"
+      },
+      {
+       "qty": 3,
+       "name": "Epic Confrontation",
+       "set": "bro",
+       "number": "176",
+       "id": "35ba6c05-a4c2-422b-a4cb-852b3aef77a5"
+      },
+      {
+       "qty": 3,
+       "name": "Phyrexian Fleshgorger",
+       "set": "bro",
+       "number": "121",
+       "id": "62d37423-3445-412a-9abd-0480da404637"
+      },
+      {
+       "qty": 4,
+       "name": "Brushland",
+       "set": "bro",
+       "number": "259",
+       "id": "18d236ce-3b78-403a-b5f9-4fb44123d85b"
+      },
+      {
+       "qty": 10,
+       "name": "Forest",
+       "set": "dmu",
+       "number": "274",
+       "id": "52097f6a-58d3-4176-b3bf-dc94f44adf30"
+      },
+      {
+       "qty": 10,
+       "name": "Plains",
+       "set": "dmu",
+       "number": "262",
+       "id": "5822b027-369d-46da-b6dd-c31207e2f449"
+      }
+     ]
+    }
+   },
+   "villain": {
+    "who": "dragons",
+    "deck": {
+     "name": "The Dragon Engines",
+     "colors": "BR",
+     "archetype": null,
+     "label": "tribute",
+     "cards": [
+      {
+       "qty": 4,
+       "name": "Phyrexian Dragon Engine",
+       "set": "bro",
+       "number": "163",
+       "id": "e2b826be-4256-4fd6-ad4d-6c80933ee940"
+      },
+      {
+       "qty": 4,
+       "name": "Scrapwork Rager",
+       "set": "bro",
+       "number": "123",
+       "id": "e28de770-7975-4aa9-b656-e7dbe6bff290"
+      },
+      {
+       "qty": 3,
+       "name": "Dragon Whelp",
+       "set": "dmu",
+       "number": "120",
+       "id": "d13d40b9-319b-4630-a5cd-228ff2f24367"
+      },
+      {
+       "qty": 3,
+       "name": "Tyrant of Kher Ridges",
+       "set": "bro",
+       "number": "154",
+       "id": "72a271b1-b757-4373-8e6d-e9698ae96bed"
+      },
+      {
+       "qty": 2,
+       "name": "Ragefire Hellkite",
+       "set": "dmu",
+       "number": "285",
+       "id": "23ccd68d-0162-4a4c-892e-1726b8b28612"
+      },
+      {
+       "qty": 4,
+       "name": "Cut Down",
+       "set": "dmu",
+       "number": "89",
+       "id": "753db072-5d6a-4f37-8f7d-255572ecd3bd"
+      },
+      {
+       "qty": 4,
+       "name": "Lightning Strike",
+       "set": "dmu",
+       "number": "137",
+       "id": "7d541125-bfb8-4f88-8bf3-ad7b6af7ad1d"
+      },
+      {
+       "qty": 3,
+       "name": "Go for the Throat",
+       "set": "bro",
+       "number": "102",
+       "id": "94117b09-d852-4f2e-be8e-68ee0ee3c3d8"
+      },
+      {
+       "qty": 4,
+       "name": "Monastery Swiftspear",
+       "set": "bro",
+       "number": "144",
+       "id": "d6bfa227-4309-40ed-952c-279595eab17e"
+      },
+      {
+       "qty": 2,
+       "name": "Sardian Cliffstomper",
+       "set": "bro",
+       "number": "151",
+       "id": "c1c42d56-5b0e-4624-8831-77280f8d56cf"
+      },
+      {
+       "qty": 3,
+       "name": "Obliterating Bolt",
+       "set": "bro",
+       "number": "145",
+       "id": "7f886411-8216-4fb7-9172-a408c39043ee"
+      },
+      {
+       "qty": 4,
+       "name": "Sulfurous Springs",
+       "set": "dmu",
+       "number": "256",
+       "id": "dfd5450a-6490-417f-9aea-b6fca6f380d7"
+      },
+      {
+       "qty": 10,
+       "name": "Swamp",
+       "set": "dmu",
+       "number": "268",
+       "id": "5a846f00-ccb9-4ee2-8358-7c7722258601"
+      },
+      {
+       "qty": 10,
+       "name": "Mountain",
+       "set": "dmu",
+       "number": "271",
+       "id": "a82f782e-abc8-4b92-a193-17b2c383f765"
+      }
+     ]
+    }
+   },
+   "reward": {
+    "hero": {
+     "packs": 1,
+     "coins": 0
+    },
+    "villain": {
+     "card": {
+      "oracle_id": "022b42a6-ee0f-4080-b973-c1b68938c3be",
+      "name": "Phyrexian Dragon Engine",
+      "rarity": "rare",
+      "set": "bro",
+      "id": "e2b826be-4256-4fd6-ad4d-6c80933ee940",
+      "image": "https://cards.scryfall.io/normal/front/e/2/e2b826be-4256-4fd6-ad4d-6c80933ee940.jpg"
+     },
+     "coins": 50
+    }
+   },
+   "scene": [
+    {
+     "who": "stage",
+     "line": "Remember, students, if it's glowing, humming, or whirring, don't touch it!",
+     "quote": true
+    },
+    {
+     "who": "stage",
+     "line": "This metal junk is ugly, but it's got its uses.",
+     "quote": true
+    },
+    {
+     "who": "archaeologists",
+     "line": "Prototype: cast the machine for its small cost and get a small body now, or pay full price and get the big one."
+    }
+   ],
+   "villainScene": [
+    {
+     "who": "stage",
+     "line": "Power radiated from the Weakstone, binding the dragon engine to Mishra's command.",
+     "quote": true
+    },
+    {
+     "who": "stage",
+     "line": "In war, dragons don't see sides, just side dishes.",
+     "quote": true
+    }
+   ],
+   "after": null,
+   "cues": {
+    "hero": {
+     "start": "Dig carefully.",
+     "big": "Prototype!",
+     "low": "The dragons are awake...",
+     "win": "Everything is catalogued.",
+     "loss": "Buried...",
+     "half": "Cast the small version when you are short of mana."
+    },
+    "villain": {
+     "start": "Roar.",
+     "big": "Fire!",
+     "low": "The engines stall...",
+     "win": "The dig site burns.",
+     "loss": "Scrap..."
+    }
+   },
+   "bigPlays": [],
+   "sim": null
+  },
+  {
+   "id": "a34b4",
+   "slot": 4,
+   "kind": "Rival",
+   "mood": "tension",
+   "title": "Gix, Yawgmoth Praetor",
+   "difficulty": "Normal",
+   "teaches": [
+    "Counterspells"
+   ],
+   "blurb": "Teferi finally meets the Act 6 villain in the flesh. He counters what he can and watches what he cannot.",
+   "rewardSet": "bro",
+   "host": false,
+   "hero": {
+    "who": "scout",
+    "deck": {
+     "name": "Teferi's Counterspells",
+     "colors": "U",
+     "archetype": null,
+     "label": "tribute",
+     "cards": [
+      {
+       "qty": 3,
+       "name": "Teferi, Temporal Pilgrim",
+       "set": "bro",
+       "number": "66",
+       "id": "23a4f1ec-eadf-4f1e-8821-f22293ad2580"
+      },
+      {
+       "qty": 3,
+       "name": "Essence Scatter",
+       "set": "dmu",
+       "number": "49",
+       "id": "b7ad4441-e300-4267-bedb-4ae6a64f59cd"
+      },
+      {
+       "qty": 3,
+       "name": "Negate",
+       "set": "dmu",
+       "number": "58",
+       "id": "4016c6f7-7cb4-46c2-af73-3bd6d682ea5e"
+      },
+      {
+       "qty": 4,
+       "name": "Air Marshal",
+       "set": "bro",
+       "number": "43",
+       "id": "991e1a6c-914b-45c8-9170-c09e72696117"
+      },
+      {
+       "qty": 4,
+       "name": "Soaring Drake",
+       "set": "dmu",
+       "number": "66",
+       "id": "0b0979f9-aae3-4fc7-beae-c8c6637ae596"
+      },
+      {
+       "qty": 4,
+       "name": "Zephyr Sentinel",
+       "set": "bro",
+       "number": "74",
+       "id": "f935adbb-d2e3-48d0-b38c-41f3b583fecb"
+      },
+      {
+       "qty": 4,
+       "name": "Skystrike Officer",
+       "set": "bro",
+       "number": "62",
+       "id": "925fa343-d9c3-4ed9-bd1f-aaa31c0badd7"
+      },
+      {
+       "qty": 4,
+       "name": "Haunting Figment",
+       "set": "dmu",
+       "number": "53",
+       "id": "d14b07ea-18e4-41fb-8136-759d5349e88a"
+      },
+      {
+       "qty": 3,
+       "name": "Sphinx of Clear Skies",
+       "set": "dmu",
+       "number": "67",
+       "id": "974c9e0c-07b2-4535-a3d0-bb827b651075"
+      },
+      {
+       "qty": 4,
+       "name": "Talas Lookout",
+       "set": "dmu",
+       "number": "68",
+       "id": "0a4b9afe-aeb7-4c56-8a22-96e19a7a938c"
+      },
+      {
+       "qty": 24,
+       "name": "Island",
+       "set": "dmu",
+       "number": "265",
+       "id": "8bafc217-3d83-4551-b2e3-3494ec14b2f9"
+      }
+     ]
+    }
+   },
+   "villain": {
+    "who": "gix",
+    "deck": {
+     "name": "The Brotherhood of Gix",
+     "colors": "BR",
+     "archetype": null,
+     "label": "tribute",
+     "cards": [
+      {
+       "qty": 1,
+       "name": "Gix, Yawgmoth Praetor",
+       "set": "bro",
+       "number": "95",
+       "id": "2c76f7e0-37e7-4e87-93a3-a25ba0674645"
+      },
+      {
+       "qty": 4,
+       "name": "Gixian Infiltrator",
+       "set": "bro",
+       "number": "98",
+       "id": "c94a3317-7d1f-4f29-8353-180f1ab48d18"
+      },
+      {
+       "qty": 2,
+       "name": "Misery's Shadow",
+       "set": "bro",
+       "number": "107",
+       "id": "514c5e77-9ecc-41c9-b104-76343601fafb"
+      },
+      {
+       "qty": 4,
+       "name": "Phyrexian Rager",
+       "set": "dmu",
+       "number": "99",
+       "id": "6fd574e7-705f-4a65-aad0-68ff6d63bf0f"
+      },
+      {
+       "qty": 1,
+       "name": "Mishra, Claimed by Gix",
+       "set": "bro",
+       "number": "216",
+       "id": "a469d7ec-42de-45de-9d8f-469bb979de58"
+      },
+      {
+       "qty": 1,
+       "name": "Lagomos, Hand of Hatred",
+       "set": "dmu",
+       "number": "205",
+       "id": "1a6bb0c2-1e3c-48cd-8f10-49f047e0514c"
+      },
+      {
+       "qty": 4,
+       "name": "Cut Down",
+       "set": "dmu",
+       "number": "89",
+       "id": "753db072-5d6a-4f37-8f7d-255572ecd3bd"
+      },
+      {
+       "qty": 3,
+       "name": "Lightning Strike",
+       "set": "dmu",
+       "number": "137",
+       "id": "7d541125-bfb8-4f88-8bf3-ad7b6af7ad1d"
+      },
+      {
+       "qty": 3,
+       "name": "Go for the Throat",
+       "set": "bro",
+       "number": "102",
+       "id": "94117b09-d852-4f2e-be8e-68ee0ee3c3d8"
+      },
+      {
+       "qty": 1,
+       "name": "Obliterating Bolt",
+       "set": "bro",
+       "number": "145",
+       "id": "7f886411-8216-4fb7-9172-a408c39043ee"
+      },
+      {
+       "qty": 4,
+       "name": "Sulfurous Springs",
+       "set": "dmu",
+       "number": "256",
+       "id": "dfd5450a-6490-417f-9aea-b6fca6f380d7"
+      },
+      {
+       "qty": 10,
+       "name": "Swamp",
+       "set": "dmu",
+       "number": "268",
+       "id": "5a846f00-ccb9-4ee2-8358-7c7722258601"
+      },
+      {
+       "qty": 10,
+       "name": "Mountain",
+       "set": "dmu",
+       "number": "271",
+       "id": "a82f782e-abc8-4b92-a193-17b2c383f765"
+      },
+      {
+       "qty": 4,
+       "name": "Cult Conscript",
+       "set": "dmu",
+       "number": "88",
+       "id": "fed77513-94ab-44e2-b9a1-30ba927cd6ee"
+      },
+      {
+       "qty": 4,
+       "name": "Gnawing Vermin",
+       "set": "bro",
+       "number": "101",
+       "id": "2fa2fa48-ddb7-45f0-b183-4186df98f7cc"
+      },
+      {
+       "qty": 4,
+       "name": "Splatter Goblin",
+       "set": "dmu",
+       "number": "109",
+       "id": "5045027d-0ff4-484c-b4cb-e0b61885d428"
+      }
+     ]
+    }
+   },
+   "reward": {
+    "hero": {
+     "packs": 1,
+     "coins": 100
+    },
+    "villain": {
+     "card": {
+      "oracle_id": "928d977e-cff0-4e0e-83bb-16d73a754f35",
+      "name": "Gix, Yawgmoth Praetor",
+      "rarity": "mythic",
+      "set": "bro",
+      "id": "2c76f7e0-37e7-4e87-93a3-a25ba0674645",
+      "image": "https://cards.scryfall.io/normal/front/2/c/2c76f7e0-37e7-4e87-93a3-a25ba0674645.jpg"
+     },
+     "coins": 100
+    }
+   },
+   "scene": [
+    {
+     "who": "stage",
+     "line": "Phyrexians pollute everything they touch, so the solution is simple: don't let them touch anything.",
+     "quote": true
+    },
+    {
+     "who": "stage",
+     "line": "I've always made snap decisions. I'm just better at making the right ones now that I'm older and wiser.",
+     "quote": true
+    },
+    {
+     "who": "scout",
+     "line": "Hold your mana on his turn. Counter the card that matters, and let the rest go."
+    }
+   ],
+   "villainScene": [
+    {
+     "who": "stage",
+     "line": "Gix pierced his disciples' minds and savored their experiences as he took in their knowledge.",
+     "quote": true
+    },
+    {
+     "who": "stage",
+     "line": "Machines feel no fear, no sorrow, no hunger—only glorious purpose, true and pure.",
+     "quote": true
+    }
+   ],
+   "after": null,
+   "cues": {
+    "hero": {
+     "start": "Patience.",
+     "big": "Denied!",
+     "low": "Too many threats...",
+     "win": "The praetor falls back.",
+     "loss": "Out of answers...",
+     "half": "Counter the card that matters most."
+    },
+    "villain": {
+     "start": "Show me.",
+     "big": "Feed!",
+     "low": "The brotherhood stalls...",
+     "win": "All knowledge is mine.",
+     "loss": "Unmade..."
+    }
+   },
+   "bigPlays": [],
+   "sim": null
+  },
+  {
+   "id": "a34b5",
+   "slot": 5,
+   "kind": "Lesson",
+   "mood": "tension",
+   "title": "Ajani's Betrayal",
+   "difficulty": "Normal",
+   "teaches": [
+    "Enlist"
+   ],
+   "blurb": "Ajani has been compleated, and his friends are the ones who have to stop him.",
+   "rewardSet": "dmu",
+   "host": false,
+   "hero": {
+    "who": "friends",
+    "deck": {
+     "name": "The Friends of Ajani",
+     "colors": "RW",
+     "archetype": null,
+     "label": "tribute",
+     "cards": [
+      {
+       "qty": 4,
+       "name": "Guardian of New Benalia",
+       "set": "dmu",
+       "number": "19",
+       "id": "43da76ee-fec3-4b2e-915d-10cf8d518d2c"
+      },
+      {
+       "qty": 3,
+       "name": "Baird, Argivian Recruiter",
+       "set": "dmu",
+       "number": "195",
+       "id": "1f643d78-d8d8-4645-9357-a68ebd0d3517"
+      },
+      {
+       "qty": 3,
+       "name": "Queen Kayla bin-Kroog",
+       "set": "bro",
+       "number": "218",
+       "id": "685c9767-eaa7-4e16-b245-816181e2fc36"
+      },
+      {
+       "qty": 3,
+       "name": "Tori D'Avenant, Fury Rider",
+       "set": "dmu",
+       "number": "223",
+       "id": "9c873c5b-61f6-49b9-8993-2d5e9823de62"
+      },
+      {
+       "qty": 3,
+       "name": "Astor, Bearer of Blades",
+       "set": "dmu",
+       "number": "194",
+       "id": "40f3a0ba-b917-488b-adbf-60a0d3c58a56"
+      },
+      {
+       "qty": 4,
+       "name": "Monastery Swiftspear",
+       "set": "bro",
+       "number": "144",
+       "id": "d6bfa227-4309-40ed-952c-279595eab17e"
+      },
+      {
+       "qty": 4,
+       "name": "Mesa Cavalier",
+       "set": "dmu",
+       "number": "26",
+       "id": "feeec740-7ffc-4f57-b52c-92209da91d69"
+      },
+      {
+       "qty": 2,
+       "name": "Danitha, Benalia's Hope",
+       "set": "dmu",
+       "number": "15",
+       "id": "845e5663-2959-44ae-b4c6-d6ea41f01d6e"
+      },
+      {
+       "qty": 4,
+       "name": "Lightning Strike",
+       "set": "dmu",
+       "number": "137",
+       "id": "7d541125-bfb8-4f88-8bf3-ad7b6af7ad1d"
+      },
+      {
+       "qty": 2,
+       "name": "Brotherhood's End",
+       "set": "bro",
+       "number": "128",
+       "id": "50f7666d-0d60-4fe5-b144-286d4e47b704"
+      },
+      {
+       "qty": 4,
+       "name": "Battlefield Forge",
+       "set": "bro",
+       "number": "257",
+       "id": "642584bb-7586-4796-9b94-f01ec5bd9e9f"
+      },
+      {
+       "qty": 10,
+       "name": "Mountain",
+       "set": "dmu",
+       "number": "271",
+       "id": "a82f782e-abc8-4b92-a193-17b2c383f765"
+      },
+      {
+       "qty": 10,
+       "name": "Plains",
+       "set": "dmu",
+       "number": "262",
+       "id": "5822b027-369d-46da-b6dd-c31207e2f449"
+      },
+      {
+       "qty": 2,
+       "name": "Archangel of Wrath",
+       "set": "dmu",
+       "number": "3",
+       "id": "2d00bab2-e95d-4296-a805-2a05e7640efb"
+      },
+      {
+       "qty": 2,
+       "name": "Coalition Skyknight",
+       "set": "dmu",
+       "number": "14",
+       "id": "8b12da45-aff4-406d-83a3-39ecaff6ff56"
+      }
+     ]
+    }
+   },
+   "villain": {
+    "who": "ajani",
+    "deck": {
+     "name": "Ajani, Sleeper Agent",
+     "colors": "GW",
+     "archetype": null,
+     "label": "tribute",
+     "cards": [
+      {
+       "qty": 2,
+       "name": "Ajani, Sleeper Agent",
+       "set": "dmu",
+       "number": "192",
+       "id": "7641f4d9-4614-41c8-87f5-4845bd78e9b3"
+      },
+      {
+       "qty": 4,
+       "name": "Yotian Dissident",
+       "set": "bro",
+       "number": "227",
+       "id": "1eb02f00-c188-4193-a049-d26f7643e5da"
+      },
+      {
+       "qty": 1,
+       "name": "King Darien XLVIII",
+       "set": "dmu",
+       "number": "204",
+       "id": "10eca3b1-f35a-4984-bfc0-818e619b1ece"
+      },
+      {
+       "qty": 2,
+       "name": "Queen Allenal of Ruadach",
+       "set": "dmu",
+       "number": "210",
+       "id": "b44b4e8b-7675-4c6a-a16a-92f8b6a0259f"
+      },
+      {
+       "qty": 4,
+       "name": "Quirion Beastcaller",
+       "set": "dmu",
+       "number": "175",
+       "id": "2a501319-59a7-45d4-a6ca-666276095f87"
+      },
+      {
+       "qty": 2,
+       "name": "Hexbane Tortoise",
+       "set": "dmu",
+       "number": "166",
+       "id": "acd5a635-bcf5-4a05-b00b-bf40322823fe"
+      },
+      {
+       "qty": 1,
+       "name": "Obstinate Baloth",
+       "set": "bro",
+       "number": "187",
+       "id": "e1b7809f-f3a3-439e-8bae-c083842de1bf"
+      },
+      {
+       "qty": 1,
+       "name": "Silverback Elder",
+       "set": "dmu",
+       "number": "177",
+       "id": "b987664f-0b74-4c0a-b306-14767a55559a"
+      },
+      {
+       "qty": 3,
+       "name": "Gaea's Courser",
+       "set": "bro",
+       "number": "181",
+       "id": "1a0b94e5-d270-4820-83b9-1d346d378ff8"
+      },
+      {
+       "qty": 4,
+       "name": "Giant Growth",
+       "set": "bro",
+       "number": "183",
+       "id": "aeece336-e5e8-4455-a297-c3739198d011"
+      },
+      {
+       "qty": 4,
+       "name": "Brushland",
+       "set": "bro",
+       "number": "259",
+       "id": "18d236ce-3b78-403a-b5f9-4fb44123d85b"
+      },
+      {
+       "qty": 10,
+       "name": "Forest",
+       "set": "dmu",
+       "number": "274",
+       "id": "52097f6a-58d3-4176-b3bf-dc94f44adf30"
+      },
+      {
+       "qty": 10,
+       "name": "Plains",
+       "set": "dmu",
+       "number": "262",
+       "id": "5822b027-369d-46da-b6dd-c31207e2f449"
+      },
+      {
+       "qty": 4,
+       "name": "Llanowar Stalker",
+       "set": "dmu",
+       "number": "171",
+       "id": "e2d714d8-0e9b-4761-a0ef-3429b4e2f5b7"
+      },
+      {
+       "qty": 4,
+       "name": "Sunbathing Rootwalla",
+       "set": "dmu",
+       "number": "181",
+       "id": "7ae6f015-2ad6-4b8e-8590-c2c2d01b6d98"
+      },
+      {
+       "qty": 4,
+       "name": "Snarespinner",
+       "set": "dmu",
+       "number": "179",
+       "id": "0b51c3b5-db70-4976-986d-ed3fc8584d1a"
+      }
+     ]
+    }
+   },
+   "reward": {
+    "hero": {
+     "packs": 1,
+     "coins": 100
+    },
+    "villain": {
+     "card": {
+      "oracle_id": "37714eb9-a39d-4534-a2d3-27908c418f8a",
+      "name": "Ajani, Sleeper Agent",
+      "rarity": "mythic",
+      "set": "dmu",
+      "id": "7641f4d9-4614-41c8-87f5-4845bd78e9b3",
+      "image": "https://cards.scryfall.io/normal/front/7/6/7641f4d9-4614-41c8-87f5-4845bd78e9b3.jpg"
+     },
+     "coins": 100
+    }
+   },
+   "scene": [
+    {
+     "who": "stage",
+     "line": "Fear doesn't make you a coward; giving in to it does. Now take up your sword and fight!",
+     "quote": true
+    },
+    {
+     "who": "stage",
+     "line": "Heroism is neither a strong arm nor a divine destiny. It is the choice to stand unbowed against impossible odds.",
+     "quote": true
+    },
+    {
+     "who": "friends",
+     "line": "Enlist: tap a creature that is not attacking and add its power to an attacker. Let the weak ones help the strong."
+    }
+   ],
+   "villainScene": [
+    {
+     "who": "stage",
+     "line": "He may look like my father, but the man I knew and loved is gone.",
+     "quote": true
+    },
+    {
+     "who": "stage",
+     "line": "Phyrexia may be ancient, but Gaea is eternal.",
+     "quote": true
+    }
+   ],
+   "after": null,
+   "cues": {
+    "hero": {
+     "start": "Hold on, Ajani.",
+     "big": "Enlist!",
+     "low": "He knows every move...",
+     "win": "Ajani is free.",
+     "loss": "Lost him...",
+     "half": "Tap your small creatures to enlist."
+    },
+    "villain": {
+     "start": "Do not move.",
+     "big": "Compleat!",
+     "low": "The friends hold...",
+     "win": "All are compleated.",
+     "loss": "Freed..."
+    }
+   },
+   "bigPlays": [],
+   "sim": null
+  },
+  {
+   "id": "a34b6",
+   "slot": 6,
+   "kind": "Meta",
+   "mood": "march",
+   "title": "Mono-Red vs Esper Legends",
+   "difficulty": "Normal",
+   "teaches": [
+    "Racing"
+   ],
+   "blurb": "Autumn 2022: a cheap burn deck against Esper legends. Hit them before the legends show up.",
+   "rewardSet": "dmu",
+   "host": false,
+   "hero": {
+    "who": "red",
+    "deck": {
+     "name": "Mono-Red",
+     "colors": "R",
+     "archetype": "Aggro",
+     "label": "tribute",
+     "cards": [
+      {
+       "qty": 4,
+       "name": "Monastery Swiftspear",
+       "set": "bro",
+       "number": "144",
+       "id": "d6bfa227-4309-40ed-952c-279595eab17e"
+      },
+      {
+       "qty": 4,
+       "name": "Phoenix Chick",
+       "set": "dmu",
+       "number": "140",
+       "id": "76bdc912-61da-428d-b0d7-3a38676a402a"
+      },
+      {
+       "qty": 4,
+       "name": "Dwarven Forge-Chanter",
+       "set": "bro",
+       "number": "131",
+       "id": "bbd6a95a-11b9-43aa-b293-20a3102bae71"
+      },
+      {
+       "qty": 4,
+       "name": "Keldon Strike Team",
+       "set": "dmu",
+       "number": "136",
+       "id": "4af4031e-b14e-4568-b047-b3d470d9b18e"
+      },
+      {
+       "qty": 3,
+       "name": "Squee, Dubious Monarch",
+       "set": "dmu",
+       "number": "146",
+       "id": "3cd907ed-9c68-4bd6-af92-6244909fdf8b"
+      },
+      {
+       "qty": 4,
+       "name": "Lightning Strike",
+       "set": "dmu",
+       "number": "137",
+       "id": "7d541125-bfb8-4f88-8bf3-ad7b6af7ad1d"
+      },
+      {
+       "qty": 3,
+       "name": "Obliterating Bolt",
+       "set": "bro",
+       "number": "145",
+       "id": "7f886411-8216-4fb7-9172-a408c39043ee"
+      },
+      {
+       "qty": 3,
+       "name": "Brotherhood's End",
+       "set": "bro",
+       "number": "128",
+       "id": "50f7666d-0d60-4fe5-b144-286d4e47b704"
+      },
+      {
+       "qty": 3,
+       "name": "Tyrant of Kher Ridges",
+       "set": "bro",
+       "number": "154",
+       "id": "72a271b1-b757-4373-8e6d-e9698ae96bed"
+      },
+      {
+       "qty": 3,
+       "name": "Ragefire Hellkite",
+       "set": "dmu",
+       "number": "285",
+       "id": "23ccd68d-0162-4a4c-892e-1726b8b28612"
+      },
+      {
+       "qty": 1,
+       "name": "Twinferno",
+       "set": "dmu",
+       "number": "149",
+       "id": "bc531409-26cb-4c58-ba69-f39dd8aee3d1"
+      },
+      {
+       "qty": 24,
+       "name": "Mountain",
+       "set": "dmu",
+       "number": "271",
+       "id": "a82f782e-abc8-4b92-a193-17b2c383f765"
+      }
+     ]
+    }
+   },
+   "villain": {
+    "who": "legends",
+    "deck": {
+     "name": "Esper Legends",
+     "colors": "WUB",
+     "archetype": "Midrange",
+     "label": "tribute",
+     "cards": [
+      {
+       "qty": 3,
+       "name": "Zur, Eternal Schemer",
+       "set": "dmu",
+       "number": "228",
+       "id": "4d987435-2403-4e0f-b19d-693da923ba50"
+      },
+      {
+       "qty": 3,
+       "name": "Urza, Lord Protector",
+       "set": "bro",
+       "number": "225",
+       "id": "8aefe8bd-216a-4ec1-9362-3f9dbf7fd083"
+      },
+      {
+       "qty": 3,
+       "name": "Urza, Prince of Kroog",
+       "set": "bro",
+       "number": "226",
+       "id": "5a7329cd-95af-4d71-984f-f5f28982520c"
+      },
+      {
+       "qty": 3,
+       "name": "Teferi, Temporal Pilgrim",
+       "set": "bro",
+       "number": "66",
+       "id": "23a4f1ec-eadf-4f1e-8821-f22293ad2580"
+      },
+      {
+       "qty": 2,
+       "name": "Ashnod, Flesh Mechanist",
+       "set": "bro",
+       "number": "84",
+       "id": "5eb43c15-50a9-488f-b0be-84a5e0a6d10b"
+      },
+      {
+       "qty": 2,
+       "name": "Braids, Arisen Nightmare",
+       "set": "dmu",
+       "number": "84",
+       "id": "4ff97c69-6a6b-401c-b0a1-55fa81045d19"
+      },
+      {
+       "qty": 3,
+       "name": "Liliana of the Veil",
+       "set": "dmu",
+       "number": "97",
+       "id": "d12c8c97-6491-452c-811d-943441a7ef9f"
+      },
+      {
+       "qty": 3,
+       "name": "Go for the Throat",
+       "set": "bro",
+       "number": "102",
+       "id": "94117b09-d852-4f2e-be8e-68ee0ee3c3d8"
+      },
+      {
+       "qty": 3,
+       "name": "Essence Scatter",
+       "set": "dmu",
+       "number": "49",
+       "id": "b7ad4441-e300-4267-bedb-4ae6a64f59cd"
+      },
+      {
+       "qty": 3,
+       "name": "Cut Down",
+       "set": "dmu",
+       "number": "89",
+       "id": "753db072-5d6a-4f37-8f7d-255572ecd3bd"
+      },
+      {
+       "qty": 3,
+       "name": "Serra Paragon",
+       "set": "dmu",
+       "number": "32",
+       "id": "ce295f1e-fb31-4275-a5d3-8c6f29afff40"
+      },
+      {
+       "qty": 3,
+       "name": "Archangel of Wrath",
+       "set": "dmu",
+       "number": "3",
+       "id": "2d00bab2-e95d-4296-a805-2a05e7640efb"
+      },
+      {
+       "qty": 2,
+       "name": "Negate",
+       "set": "dmu",
+       "number": "58",
+       "id": "4016c6f7-7cb4-46c2-af73-3bd6d682ea5e"
+      },
+      {
+       "qty": 4,
+       "name": "Caves of Koilos",
+       "set": "dmu",
+       "number": "244",
+       "id": "99264beb-2149-4cd4-9880-f0dc5c570c1b"
+      },
+      {
+       "qty": 4,
+       "name": "Adarkar Wastes",
+       "set": "dmu",
+       "number": "243",
+       "id": "08ae1037-6f70-41a9-b75e-98fa9a2152c8"
+      },
+      {
+       "qty": 4,
+       "name": "Underground River",
+       "set": "bro",
+       "number": "267",
+       "id": "eb52820c-8660-4c4a-bb64-5b2fc580b6a3"
+      },
+      {
+       "qty": 4,
+       "name": "Plains",
+       "set": "dmu",
+       "number": "262",
+       "id": "5822b027-369d-46da-b6dd-c31207e2f449"
+      },
+      {
+       "qty": 4,
+       "name": "Island",
+       "set": "dmu",
+       "number": "265",
+       "id": "8bafc217-3d83-4551-b2e3-3494ec14b2f9"
+      },
+      {
+       "qty": 4,
+       "name": "Swamp",
+       "set": "dmu",
+       "number": "268",
+       "id": "5a846f00-ccb9-4ee2-8358-7c7722258601"
+      }
+     ]
+    }
+   },
+   "reward": {
+    "hero": {
+     "packs": 1,
+     "coins": 100
+    },
+    "villain": {
+     "card": {
+      "oracle_id": "cfc5dc9c-6f26-460b-a624-3681b8584eb3",
+      "name": "Zur, Eternal Schemer",
+      "rarity": "mythic",
+      "set": "dmu",
+      "id": "4d987435-2403-4e0f-b19d-693da923ba50",
+      "image": "https://cards.scryfall.io/normal/front/4/d/4d987435-2403-4e0f-b19d-693da923ba50.jpg"
+     },
+     "coins": 100
+    }
+   },
+   "scene": [
+    {
+     "who": "stage",
+     "line": "She focused her mind on the volcano's fury, and hers erupted in kind.",
+     "quote": true
+    },
+    {
+     "who": "stage",
+     "line": "Jaya did not want to die, but of all the things to die for, Dominaria felt right.",
+     "quote": true
+    },
+    {
+     "who": "red",
+     "line": "Race them. Their legends are slow and expensive. Burn them out before they stabilise."
+    }
+   ],
+   "villainScene": [
+    {
+     "who": "stage",
+     "line": "Karn's creation allowed him to monitor events across Dominaria—and everything he saw worried him.",
+     "quote": true
+    },
+    {
+     "who": "stage",
+     "line": "All knowledge, past and future, is etched upon reality.",
+     "quote": true
+    }
+   ],
+   "after": null,
+   "cues": {
+    "hero": {
+     "start": "Fast and hot.",
+     "big": "Burn!",
+     "low": "Their legends landed...",
+     "win": "Burned out.",
+     "loss": "Too slow...",
+     "half": "Go face when they tap out."
+    },
+    "villain": {
+     "start": "A legend arrives.",
+     "big": "Legendary!",
+     "low": "They are too fast...",
+     "win": "The legends stand.",
+     "loss": "Outpaced..."
+    }
+   },
+   "bigPlays": [],
+   "sim": null
+  },
+  {
+   "id": "a34b7",
+   "slot": 7,
+   "kind": "Meta",
+   "mood": "tension",
+   "title": "Rakdos vs Mono-Blue",
+   "difficulty": "Normal",
+   "teaches": [
+    "Playing around counterspells"
+   ],
+   "blurb": "Autumn 2022: a Rakdos midrange pile against a mono-blue deck full of tricks.",
+   "rewardSet": "dmu",
+   "host": false,
+   "hero": {
+    "who": "rakdos",
+    "deck": {
+     "name": "Rakdos Midrange",
+     "colors": "BR",
+     "archetype": "Midrange",
+     "label": "tribute",
+     "cards": [
+      {
+       "qty": 3,
+       "name": "Cut Down",
+       "set": "dmu",
+       "number": "89",
+       "id": "753db072-5d6a-4f37-8f7d-255572ecd3bd"
+      },
+      {
+       "qty": 4,
+       "name": "Lightning Strike",
+       "set": "dmu",
+       "number": "137",
+       "id": "7d541125-bfb8-4f88-8bf3-ad7b6af7ad1d"
+      },
+      {
+       "qty": 3,
+       "name": "Go for the Throat",
+       "set": "bro",
+       "number": "102",
+       "id": "94117b09-d852-4f2e-be8e-68ee0ee3c3d8"
+      },
+      {
+       "qty": 3,
+       "name": "Obliterating Bolt",
+       "set": "bro",
+       "number": "145",
+       "id": "7f886411-8216-4fb7-9172-a408c39043ee"
+      },
+      {
+       "qty": 4,
+       "name": "Phyrexian Rager",
+       "set": "dmu",
+       "number": "99",
+       "id": "6fd574e7-705f-4a65-aad0-68ff6d63bf0f"
+      },
+      {
+       "qty": 3,
+       "name": "Mishra, Claimed by Gix",
+       "set": "bro",
+       "number": "216",
+       "id": "a469d7ec-42de-45de-9d8f-469bb979de58"
+      },
+      {
+       "qty": 3,
+       "name": "Gix, Yawgmoth Praetor",
+       "set": "bro",
+       "number": "95",
+       "id": "2c76f7e0-37e7-4e87-93a3-a25ba0674645"
+      },
+      {
+       "qty": 2,
+       "name": "Sardian Cliffstomper",
+       "set": "bro",
+       "number": "151",
+       "id": "c1c42d56-5b0e-4624-8831-77280f8d56cf"
+      },
+      {
+       "qty": 3,
+       "name": "Ragefire Hellkite",
+       "set": "dmu",
+       "number": "285",
+       "id": "23ccd68d-0162-4a4c-892e-1726b8b28612"
+      },
+      {
+       "qty": 3,
+       "name": "Tyrant of Kher Ridges",
+       "set": "bro",
+       "number": "154",
+       "id": "72a271b1-b757-4373-8e6d-e9698ae96bed"
+      },
+      {
+       "qty": 2,
+       "name": "Braids, Arisen Nightmare",
+       "set": "dmu",
+       "number": "84",
+       "id": "4ff97c69-6a6b-401c-b0a1-55fa81045d19"
+      },
+      {
+       "qty": 3,
+       "name": "Liliana of the Veil",
+       "set": "dmu",
+       "number": "97",
+       "id": "d12c8c97-6491-452c-811d-943441a7ef9f"
+      },
+      {
+       "qty": 4,
+       "name": "Sulfurous Springs",
+       "set": "dmu",
+       "number": "256",
+       "id": "dfd5450a-6490-417f-9aea-b6fca6f380d7"
+      },
+      {
+       "qty": 10,
+       "name": "Swamp",
+       "set": "dmu",
+       "number": "268",
+       "id": "5a846f00-ccb9-4ee2-8358-7c7722258601"
+      },
+      {
+       "qty": 10,
+       "name": "Mountain",
+       "set": "dmu",
+       "number": "271",
+       "id": "a82f782e-abc8-4b92-a193-17b2c383f765"
+      }
+     ]
+    }
+   },
+   "villain": {
+    "who": "blue",
+    "deck": {
+     "name": "Mono-Blue",
+     "colors": "U",
+     "archetype": "Tempo",
+     "label": "tribute",
+     "cards": [
+      {
+       "qty": 4,
+       "name": "Air Marshal",
+       "set": "bro",
+       "number": "43",
+       "id": "991e1a6c-914b-45c8-9170-c09e72696117"
+      },
+      {
+       "qty": 4,
+       "name": "Soaring Drake",
+       "set": "dmu",
+       "number": "66",
+       "id": "0b0979f9-aae3-4fc7-beae-c8c6637ae596"
+      },
+      {
+       "qty": 4,
+       "name": "Zephyr Sentinel",
+       "set": "bro",
+       "number": "74",
+       "id": "f935adbb-d2e3-48d0-b38c-41f3b583fecb"
+      },
+      {
+       "qty": 3,
+       "name": "Skystrike Officer",
+       "set": "bro",
+       "number": "62",
+       "id": "925fa343-d9c3-4ed9-bd1f-aaa31c0badd7"
+      },
+      {
+       "qty": 3,
+       "name": "Tolarian Terror",
+       "set": "dmu",
+       "number": "72",
+       "id": "42f01cba-43d4-46ad-b7a5-d7631b0e1347"
+      },
+      {
+       "qty": 4,
+       "name": "Essence Scatter",
+       "set": "dmu",
+       "number": "49",
+       "id": "b7ad4441-e300-4267-bedb-4ae6a64f59cd"
+      },
+      {
+       "qty": 4,
+       "name": "Negate",
+       "set": "dmu",
+       "number": "58",
+       "id": "4016c6f7-7cb4-46c2-af73-3bd6d682ea5e"
+      },
+      {
+       "qty": 3,
+       "name": "Impulse",
+       "set": "dmu",
+       "number": "55",
+       "id": "5aec2b2c-0764-4869-814d-aad921122af9"
+      },
+      {
+       "qty": 3,
+       "name": "Sphinx of Clear Skies",
+       "set": "dmu",
+       "number": "67",
+       "id": "974c9e0c-07b2-4535-a3d0-bb827b651075"
+      },
+      {
+       "qty": 4,
+       "name": "Haunting Figment",
+       "set": "dmu",
+       "number": "53",
+       "id": "d14b07ea-18e4-41fb-8136-759d5349e88a"
+      },
+      {
+       "qty": 24,
+       "name": "Island",
+       "set": "dmu",
+       "number": "265",
+       "id": "8bafc217-3d83-4551-b2e3-3494ec14b2f9"
+      }
+     ]
+    }
+   },
+   "reward": {
+    "hero": {
+     "packs": 1,
+     "coins": 100
+    },
+    "villain": {
+     "card": {
+      "oracle_id": "b9d0f2e1-62c2-44fd-ad38-471daf17bb0a",
+      "name": "Tolarian Terror",
+      "rarity": "common",
+      "set": "dmu",
+      "id": "42f01cba-43d4-46ad-b7a5-d7631b0e1347",
+      "image": "https://cards.scryfall.io/normal/front/4/2/42f01cba-43d4-46ad-b7a5-d7631b0e1347.jpg"
+     },
+     "coins": 100
+    }
+   },
+   "scene": [
+    {
+     "who": "stage",
+     "line": "There can be no mercy, no half measures. When facing Phyrexians, it's kill swiftly or die.",
+     "quote": true
+    },
+    {
+     "who": "stage",
+     "line": "There hasn't been an original thought on Vesuva in centuries.",
+     "quote": true
+    },
+    {
+     "who": "rakdos",
+     "line": "Cast your cheap spells first. Make them spend their counters on the small things."
+    }
+   ],
+   "villainScene": [
+    {
+     "who": "stage",
+     "line": "Afterward, a number of treatises on sea serpent morphology were swiftly revised.",
+     "quote": true
+    },
+    {
+     "who": "stage",
+     "line": "I adore your outfit. It's so . . . rustic.",
+     "quote": true
+    }
+   ],
+   "after": null,
+   "cues": {
+    "hero": {
+     "start": "Bait first.",
+     "big": "Burn it down!",
+     "low": "Too many counters...",
+     "win": "Dry the sea.",
+     "loss": "Drowned...",
+     "half": "Bait with cheap spells, then land the big one."
+    },
+    "villain": {
+     "start": "Not today.",
+     "big": "Denied!",
+     "low": "Out of tricks...",
+     "win": "The tide wins.",
+     "loss": "Dried up..."
+    }
+   },
+   "bigPlays": [],
+   "sim": null
+  },
+  {
+   "id": "a34b8",
+   "slot": 8,
+   "kind": "Boss",
+   "mood": "boss",
+   "title": "Sheoldred, the Apocalypse",
+   "difficulty": "Hard",
+   "teaches": [
+    "Racing a card-draw engine"
+   ],
+   "blurb": "The praetor who rules the sleepers. Every card you draw costs you life, and every card she draws costs you more.",
+   "rewardSet": "dmu",
+   "host": true,
+   "hero": {
+    "who": "coalition",
+    "deck": {
+     "name": "The Coalition",
+     "colors": "RG",
+     "archetype": null,
+     "label": "tribute",
+     "cards": [
+      {
+       "qty": 3,
+       "name": "Radha, Coalition Warlord",
+       "set": "dmu",
+       "number": "211",
+       "id": "2cec235e-7ce0-4947-b221-a555b2c865bd"
+      },
+      {
+       "qty": 3,
+       "name": "Meria, Scholar of Antiquity",
+       "set": "dmu",
+       "number": "206",
+       "id": "3eedd979-783d-4721-92de-965b77c20576"
+      },
+      {
+       "qty": 3,
+       "name": "Rulik Mons, Warren Chief",
+       "set": "dmu",
+       "number": "217",
+       "id": "3fa49711-473d-4774-99b8-2bfbabc6b735"
+      },
+      {
+       "qty": 3,
+       "name": "Hajar, Loyal Bodyguard",
+       "set": "bro",
+       "number": "211",
+       "id": "5a0a2f82-57d3-45d8-b1c8-357883c62728"
+      },
+      {
+       "qty": 4,
+       "name": "Quirion Beastcaller",
+       "set": "dmu",
+       "number": "175",
+       "id": "2a501319-59a7-45d4-a6ca-666276095f87"
+      },
+      {
+       "qty": 4,
+       "name": "Obstinate Baloth",
+       "set": "bro",
+       "number": "187",
+       "id": "e1b7809f-f3a3-439e-8bae-c083842de1bf"
+      },
+      {
+       "qty": 3,
+       "name": "Silverback Elder",
+       "set": "dmu",
+       "number": "177",
+       "id": "b987664f-0b74-4c0a-b306-14767a55559a"
+      },
+      {
+       "qty": 4,
+       "name": "Lightning Strike",
+       "set": "dmu",
+       "number": "137",
+       "id": "7d541125-bfb8-4f88-8bf3-ad7b6af7ad1d"
+      },
+      {
+       "qty": 3,
+       "name": "Brotherhood's End",
+       "set": "bro",
+       "number": "128",
+       "id": "50f7666d-0d60-4fe5-b144-286d4e47b704"
+      },
+      {
+       "qty": 3,
+       "name": "Sarinth Greatwurm",
+       "set": "bro",
+       "number": "220",
+       "id": "eaee6fcb-23de-4347-84b6-1e9849a537fc"
+      },
+      {
+       "qty": 3,
+       "name": "Epic Confrontation",
+       "set": "bro",
+       "number": "176",
+       "id": "35ba6c05-a4c2-422b-a4cb-852b3aef77a5"
+      },
+      {
+       "qty": 4,
+       "name": "Karplusan Forest",
+       "set": "dmu",
+       "number": "250",
+       "id": "b89b2c79-e3d3-4ef9-bfc8-f9c090975011"
+      },
+      {
+       "qty": 10,
+       "name": "Forest",
+       "set": "dmu",
+       "number": "274",
+       "id": "52097f6a-58d3-4176-b3bf-dc94f44adf30"
+      },
+      {
+       "qty": 10,
+       "name": "Mountain",
+       "set": "dmu",
+       "number": "271",
+       "id": "a82f782e-abc8-4b92-a193-17b2c383f765"
+      }
+     ]
+    }
+   },
+   "villain": {
+    "who": "sheoldred",
+    "deck": {
+     "name": "Sheoldred's Grixis Midrange",
+     "colors": "BUR",
+     "archetype": null,
+     "label": "tribute",
+     "cards": [
+      {
+       "qty": 3,
+       "name": "Sheoldred, the Apocalypse",
+       "set": "dmu",
+       "number": "107",
+       "id": "d67be074-cdd4-41d9-ac89-0a0456c4e4b2"
+      },
+      {
+       "qty": 4,
+       "name": "Cut Down",
+       "set": "dmu",
+       "number": "89",
+       "id": "753db072-5d6a-4f37-8f7d-255572ecd3bd"
+      },
+      {
+       "qty": 4,
+       "name": "Go for the Throat",
+       "set": "bro",
+       "number": "102",
+       "id": "94117b09-d852-4f2e-be8e-68ee0ee3c3d8"
+      },
+      {
+       "qty": 4,
+       "name": "Lightning Strike",
+       "set": "dmu",
+       "number": "137",
+       "id": "7d541125-bfb8-4f88-8bf3-ad7b6af7ad1d"
+      },
+      {
+       "qty": 3,
+       "name": "Obliterating Bolt",
+       "set": "bro",
+       "number": "145",
+       "id": "7f886411-8216-4fb7-9172-a408c39043ee"
+      },
+      {
+       "qty": 4,
+       "name": "Phyrexian Rager",
+       "set": "dmu",
+       "number": "99",
+       "id": "6fd574e7-705f-4a65-aad0-68ff6d63bf0f"
+      },
+      {
+       "qty": 3,
+       "name": "Liliana of the Veil",
+       "set": "dmu",
+       "number": "97",
+       "id": "d12c8c97-6491-452c-811d-943441a7ef9f"
+      },
+      {
+       "qty": 3,
+       "name": "Mishra, Claimed by Gix",
+       "set": "bro",
+       "number": "216",
+       "id": "a469d7ec-42de-45de-9d8f-469bb979de58"
+      },
+      {
+       "qty": 3,
+       "name": "Braids, Arisen Nightmare",
+       "set": "dmu",
+       "number": "84",
+       "id": "4ff97c69-6a6b-401c-b0a1-55fa81045d19"
+      },
+      {
+       "qty": 3,
+       "name": "Sol'Kanar the Tainted",
+       "set": "dmu",
+       "number": "219",
+       "id": "3027347d-5fd3-47cd-83d4-8c834e00794c"
+      },
+      {
+       "qty": 2,
+       "name": "Negate",
+       "set": "dmu",
+       "number": "58",
+       "id": "4016c6f7-7cb4-46c2-af73-3bd6d682ea5e"
+      },
+      {
+       "qty": 4,
+       "name": "Sulfurous Springs",
+       "set": "dmu",
+       "number": "256",
+       "id": "dfd5450a-6490-417f-9aea-b6fca6f380d7"
+      },
+      {
+       "qty": 4,
+       "name": "Underground River",
+       "set": "bro",
+       "number": "267",
+       "id": "eb52820c-8660-4c4a-bb64-5b2fc580b6a3"
+      },
+      {
+       "qty": 4,
+       "name": "Shivan Reef",
+       "set": "dmu",
+       "number": "255",
+       "id": "a338107b-0960-4496-a9a5-f7b672e7c043"
+      },
+      {
+       "qty": 4,
+       "name": "Swamp",
+       "set": "dmu",
+       "number": "268",
+       "id": "5a846f00-ccb9-4ee2-8358-7c7722258601"
+      },
+      {
+       "qty": 4,
+       "name": "Mountain",
+       "set": "dmu",
+       "number": "271",
+       "id": "a82f782e-abc8-4b92-a193-17b2c383f765"
+      },
+      {
+       "qty": 4,
+       "name": "Island",
+       "set": "dmu",
+       "number": "265",
+       "id": "8bafc217-3d83-4551-b2e3-3494ec14b2f9"
+      }
+     ]
+    }
+   },
+   "reward": {
+    "hero": {
+     "packs": 2,
+     "coins": 200
+    },
+    "villain": {
+     "card": {
+      "oracle_id": "34f34409-326d-4994-a0ea-1a69aa278f03",
+      "name": "Sheoldred, the Apocalypse",
+      "rarity": "mythic",
+      "set": "dmu",
+      "id": "d67be074-cdd4-41d9-ac89-0a0456c4e4b2",
+      "image": "https://cards.scryfall.io/normal/front/d/6/d67be074-cdd4-41d9-ac89-0a0456c4e4b2.jpg"
+     },
+     "coins": 200
+    }
+   },
+   "scene": [
+    {
+     "who": "stage",
+     "line": "Enough warm-up. I'm coming for you, Sheoldred!",
+     "quote": true
+    },
+    {
+     "who": "stage",
+     "line": "Root and wing, claw and sword; this will be a memorable stand, indeed.",
+     "quote": true
+    },
+    {
+     "who": "coalition",
+     "line": "Kill Sheoldred the turn she lands. Each turn she lives, you lose life and she gains it."
+    }
+   ],
+   "villainScene": [
+    {
+     "who": "stage",
+     "line": "Gix failed. I shall not.",
+     "quote": true
+    },
+    {
+     "who": "stage",
+     "line": "Resist if you must. It makes no difference. As with Mirrodin, your world will bow to Phyrexia.",
+     "quote": true
+    }
+   ],
+   "after": null,
+   "cues": {
+    "hero": {
+     "start": "For Dominaria!",
+     "big": "Together!",
+     "low": "Every draw hurts...",
+     "win": "Dominaria stands.",
+     "loss": "Compleated...",
+     "half": "Kill her at once or lose the race."
+    },
+    "villain": {
+     "start": "Gix failed.",
+     "big": "[a grinding waltz]",
+     "low": "[a bitter laugh]",
+     "win": "I shall not fail.",
+     "loss": "[the machinery stops]",
+     "half": {
+      "who": "friends",
+      "line": "Not while we are still standing."
+     }
+    }
+   },
+   "bigPlays": [],
+   "sim": null
+  },
+  {
+   "id": "a34b9",
+   "slot": 9,
+   "kind": "Secret Boss",
+   "secret": true,
+   "mood": "boss",
+   "title": "The Brothers' War, Retold",
+   "difficulty": "Hard",
+   "teaches": [
+    "Card advantage"
+   ],
+   "blurb": "In the archive, Mishra's army plays at its original speed.",
+   "rewardSet": "bro",
+   "host": true,
+   "archive": {
+    "deck": "Mishra's Red-Black Artifacts",
+    "when": "Autumn 2022",
+    "format": "Standard.",
+    "what": "A red-black deck of cheap burn and Mishra's artifact army, built around Mishra, Claimed by Gix.",
+    "why": "It had the most efficient burn in the format and a mana curve that few decks could match.",
+    "beat": "Block early and keep your life above burn range. Save a removal spell for the big Juggernaut.",
+    "after": "The Brothers' War ended in a sylex blast, and the format moved on."
+   },
+   "hero": {
+    "who": "you",
+    "deck": {
+     "name": "The Friends of Ajani",
+     "colors": "RW",
+     "archetype": null,
+     "label": "tribute",
+     "cards": [
+      {
+       "qty": 4,
+       "name": "Guardian of New Benalia",
+       "set": "dmu",
+       "number": "19",
+       "id": "43da76ee-fec3-4b2e-915d-10cf8d518d2c"
+      },
+      {
+       "qty": 3,
+       "name": "Baird, Argivian Recruiter",
+       "set": "dmu",
+       "number": "195",
+       "id": "1f643d78-d8d8-4645-9357-a68ebd0d3517"
+      },
+      {
+       "qty": 3,
+       "name": "Queen Kayla bin-Kroog",
+       "set": "bro",
+       "number": "218",
+       "id": "685c9767-eaa7-4e16-b245-816181e2fc36"
+      },
+      {
+       "qty": 3,
+       "name": "Tori D'Avenant, Fury Rider",
+       "set": "dmu",
+       "number": "223",
+       "id": "9c873c5b-61f6-49b9-8993-2d5e9823de62"
+      },
+      {
+       "qty": 3,
+       "name": "Astor, Bearer of Blades",
+       "set": "dmu",
+       "number": "194",
+       "id": "40f3a0ba-b917-488b-adbf-60a0d3c58a56"
+      },
+      {
+       "qty": 4,
+       "name": "Monastery Swiftspear",
+       "set": "bro",
+       "number": "144",
+       "id": "d6bfa227-4309-40ed-952c-279595eab17e"
+      },
+      {
+       "qty": 4,
+       "name": "Mesa Cavalier",
+       "set": "dmu",
+       "number": "26",
+       "id": "feeec740-7ffc-4f57-b52c-92209da91d69"
+      },
+      {
+       "qty": 2,
+       "name": "Danitha, Benalia's Hope",
+       "set": "dmu",
+       "number": "15",
+       "id": "845e5663-2959-44ae-b4c6-d6ea41f01d6e"
+      },
+      {
+       "qty": 4,
+       "name": "Lightning Strike",
+       "set": "dmu",
+       "number": "137",
+       "id": "7d541125-bfb8-4f88-8bf3-ad7b6af7ad1d"
+      },
+      {
+       "qty": 2,
+       "name": "Brotherhood's End",
+       "set": "bro",
+       "number": "128",
+       "id": "50f7666d-0d60-4fe5-b144-286d4e47b704"
+      },
+      {
+       "qty": 4,
+       "name": "Battlefield Forge",
+       "set": "bro",
+       "number": "257",
+       "id": "642584bb-7586-4796-9b94-f01ec5bd9e9f"
+      },
+      {
+       "qty": 10,
+       "name": "Mountain",
+       "set": "dmu",
+       "number": "271",
+       "id": "a82f782e-abc8-4b92-a193-17b2c383f765"
+      },
+      {
+       "qty": 10,
+       "name": "Plains",
+       "set": "dmu",
+       "number": "262",
+       "id": "5822b027-369d-46da-b6dd-c31207e2f449"
+      },
+      {
+       "qty": 2,
+       "name": "Archangel of Wrath",
+       "set": "dmu",
+       "number": "3",
+       "id": "2d00bab2-e95d-4296-a805-2a05e7640efb"
+      },
+      {
+       "qty": 2,
+       "name": "Coalition Skyknight",
+       "set": "dmu",
+       "number": "14",
+       "id": "8b12da45-aff4-406d-83a3-39ecaff6ff56"
+      }
+     ]
+    }
+   },
+   "villain": {
+    "who": "mishra",
+    "deck": {
+     "name": "Mishra's Red-Black Artifacts",
+     "colors": "BR",
+     "archetype": "Aggro",
+     "label": "tribute",
+     "note": "Built from cards in this act's sets only. No single tournament list is copied.",
+     "cards": [
+      {
+       "qty": 4,
+       "name": "Monastery Swiftspear",
+       "set": "bro",
+       "number": "144",
+       "id": "d6bfa227-4309-40ed-952c-279595eab17e"
+      },
+      {
+       "qty": 4,
+       "name": "Mishra, Excavation Prodigy",
+       "set": "bro",
+       "number": "140",
+       "id": "f5d02416-8578-40a5-bf31-d1ef9b8764f1"
+      },
+      {
+       "qty": 2,
+       "name": "Mishra, Claimed by Gix",
+       "set": "bro",
+       "number": "216",
+       "id": "a469d7ec-42de-45de-9d8f-469bb979de58"
+      },
+      {
+       "qty": 4,
+       "name": "Dwarven Forge-Chanter",
+       "set": "bro",
+       "number": "131",
+       "id": "bbd6a95a-11b9-43aa-b293-20a3102bae71"
+      },
+      {
+       "qty": 4,
+       "name": "Tomakul Scrapsmith",
+       "set": "bro",
+       "number": "153",
+       "id": "d462d30c-9060-46d6-b5b3-cac476ee2ce1"
+      },
+      {
+       "qty": 1,
+       "name": "Mishra's Juggernaut",
+       "set": "bro",
+       "number": "161",
+       "id": "b30457c3-57df-4720-8b45-962f16316d17"
+      },
+      {
+       "qty": 1,
+       "name": "Phyrexian Dragon Engine",
+       "set": "bro",
+       "number": "163",
+       "id": "e2b826be-4256-4fd6-ad4d-6c80933ee940"
+      },
+      {
+       "qty": 4,
+       "name": "Lightning Strike",
+       "set": "dmu",
+       "number": "137",
+       "id": "7d541125-bfb8-4f88-8bf3-ad7b6af7ad1d"
+      },
+      {
+       "qty": 3,
+       "name": "Obliterating Bolt",
+       "set": "bro",
+       "number": "145",
+       "id": "7f886411-8216-4fb7-9172-a408c39043ee"
+      },
+      {
+       "qty": 3,
+       "name": "Cut Down",
+       "set": "dmu",
+       "number": "89",
+       "id": "753db072-5d6a-4f37-8f7d-255572ecd3bd"
+      },
+      {
+       "qty": 1,
+       "name": "Brotherhood's End",
+       "set": "bro",
+       "number": "128",
+       "id": "50f7666d-0d60-4fe5-b144-286d4e47b704"
+      },
+      {
+       "qty": 4,
+       "name": "Sulfurous Springs",
+       "set": "dmu",
+       "number": "256",
+       "id": "dfd5450a-6490-417f-9aea-b6fca6f380d7"
+      },
+      {
+       "qty": 10,
+       "name": "Swamp",
+       "set": "dmu",
+       "number": "268",
+       "id": "5a846f00-ccb9-4ee2-8358-7c7722258601"
+      },
+      {
+       "qty": 10,
+       "name": "Mountain",
+       "set": "dmu",
+       "number": "271",
+       "id": "a82f782e-abc8-4b92-a193-17b2c383f765"
+      },
+      {
+       "qty": 4,
+       "name": "Cult Conscript",
+       "set": "dmu",
+       "number": "88",
+       "id": "fed77513-94ab-44e2-b9a1-30ba927cd6ee"
+      },
+      {
+       "qty": 1,
+       "name": "Gnawing Vermin",
+       "set": "bro",
+       "number": "101",
+       "id": "2fa2fa48-ddb7-45f0-b183-4186df98f7cc"
+      }
+     ]
+    }
+   },
+   "reward": {
+    "hero": {
+     "packs": 2,
+     "coins": 200
+    },
+    "villain": {
+     "card": {
+      "oracle_id": "26a623a1-60c9-47e3-af96-616e29551865",
+      "name": "Mishra, Claimed by Gix",
+      "rarity": "mythic",
+      "set": "bro",
+      "id": "a469d7ec-42de-45de-9d8f-469bb979de58",
+      "image": "https://cards.scryfall.io/normal/front/a/4/a469d7ec-42de-45de-9d8f-469bb979de58.jpg"
+     },
+     "coins": 200
+    }
+   },
+   "scene": [
+    {
+     "who": "stage",
+     "line": "The peace summit proved the grudge between Urza and Mishra could end only in blood.",
+     "quote": true
+    },
+    {
+     "who": "you",
+     "line": "Block early and hold your removal for the Juggernaut."
+    }
+   ],
+   "villainScene": [
+    {
+     "who": "stage",
+     "line": "While Urza's machines favored defense, Mishra built his to end the war quickly.",
+     "quote": true
+    }
+   ],
+   "after": [
+    {
+     "who": "stage",
+     "line": "Recorded: the Brothers' War ended in a sylex blast, and the format moved on."
+    }
+   ],
+   "cues": {
+    "hero": {
+     "start": "Hold the line.",
+     "big": "Strike back!",
+     "low": "He is too fast...",
+     "win": "The army falls.",
+     "loss": "Overrun...",
+     "half": "Block early."
+    },
+    "villain": {
+     "start": "[a hammer falls]",
+     "big": "[the engines roar]",
+     "low": "[a pause]",
+     "win": "[the brother wins]",
+     "loss": "[the engines stop]"
+    }
+   },
+   "bigPlays": [],
+   "sim": null
+  }
+ ]
+}

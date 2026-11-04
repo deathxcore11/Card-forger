@@ -33,6 +33,14 @@ export function recordMatch(entry,{storage=globalThis.localStorage,now=Date.now(
  try{storage.setItem(privateKey(KEY),JSON.stringify(rows));}catch{/* a full or blocked store keeps the match off the record */}
  return row;
 }
+// Quick Play form in one format, newest matches last: two or more straight wins (or losses) lean the next
+// CPU deck stronger (or weaker) by 5 rank points per extra result, capped at 15. A draw ends the run.
+export function quickStreak(format,{storage=globalThis.localStorage}={}){
+ const rows=read(storage).filter(r=>r.playStyle==='quick'&&r.format===format&&!r.conceded);
+ let run=0,kind=null;
+ for(let i=rows.length-1;i>=0;i--){const o=rows[i].outcome;if(o==='draw')break;if(kind===null)kind=o;if(o!==kind)break;run++;}
+ return run<2?0:Math.min(15,5*(run-1))*(kind==='win'?1:-1);
+}
 // Wins, losses and draws for one deck, split by going first or second.
 export function deckRecord(deck,{storage=globalThis.localStorage}={}){
  const key=deckRecordKey(deck),out={wins:0,losses:0,draws:0,onPlay:{wins:0,games:0},onDraw:{wins:0,games:0},streak:0,last:null};

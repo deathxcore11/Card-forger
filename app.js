@@ -53,6 +53,7 @@ import {createAccountWorkspaces} from './account-workspaces.js';
 import {mountFeedback} from './feedback-layer.js';
 import {playSourceEntries,createPlayDeckSaver} from './play-deck-sources.js';
 import {chooseQuickOpponent} from './play-quick-match.js';
+import {quickStreak} from './play-match-record.js';
 import {loadEngineCardNames,engineUnknownCards} from './play-engine-names.js';
 import {readCpuOptions} from './play-cpu-options.js';
 import {capturePracticeDeckContext} from './play-deck-context.js';
@@ -62,6 +63,7 @@ import {profileAvatar,profileArt,createProfileArtPicker} from './profile-art.js'
 import {openTabletop} from './tabletop.js';
 import {validCode as validTableCode} from './table-share.js';
 import {openPlayByHand} from './play-by-hand.js';
+import {openWarChest,chestResume,rollDice} from './war-chest.js';
 import {createTableArtResolver} from './tabletop-themes.js';
 import {INFO_TOPICS,findInfo} from './app-info.js';
 import {attachHomeSearch,homeIntent,rankHomeCards,homeQueries,placeGlobalSearch,searchEmblem} from './home-search.js';
@@ -1711,7 +1713,7 @@ const playSetup = createPlaySetup({
 const playRandomProducer=createRandomDeckProducer({pipeline:deckPipeline,pickSeed:randomBuildSeed});
 const playRandomQueue=createRandomDeckQueue({produce:playRandomProducer,readScope:()=>[cloudInfo().user?.id,accountGeneration,accountLocked],idle:()=>!document.hidden&&!playStarting&&!playerMatHost&&!playerMatRoot&&!practicePregame});
 let playRandomWarmAt=0;
-const warmPlayRandom=()=>{if(!cloudInfo().user?.id||accountLocked||Date.now()-playRandomWarmAt<30000)return;playRandomWarmAt=Date.now();const f=playSetup.snapshot().match.format;playRandomQueue.warm([...new Set([f,'Commander','Standard'])].filter(x=>RANDOM_DECK_FORMATS.includes(x)).map(format=>({format,targetBracket:null,deckStyle:'classic'})));};
+const warmPlayRandom=()=>{if(!cloudInfo().user?.id||accountLocked||Date.now()-playRandomWarmAt<30000)return;playRandomWarmAt=Date.now();const f=playSetup.snapshot().match.format;playRandomQueue.warm([...new Set([f,'Commander','Standard'])].filter(x=>RANDOM_DECK_FORMATS.includes(x)).flatMap(format=>[{format,targetBracket:null,deckStyle:'classic'},{format,targetBracket:null,deckStyle:'classic',power:'strong'}]));};
 const playBuilders=Object.fromEntries(['player','opponent','cpu3','cpu4'].map(seat=>[seat,createPracticeOpponentBuilder({pipeline:deckPipeline,pickSeed:randomBuildSeed,queue:playRandomQueue,produce:playRandomProducer,
  readScope:()=>[cloudInfo().user?.id,accountGeneration,accountLocked,playSetup.snapshot().match.format],
  onSelect:deck=>playSetup.chooseTemporary(deck,{seat,sourceKind:'random'}),onChange:()=>refreshPlayMenu()})]));
@@ -2221,15 +2223,19 @@ A.playFriendJoin=async()=>{
   setFriendRoom({busy:false,status:'started'});await A.playFriendLaunch(joined.matchId);
  }catch(e){setFriendRoom({busy:false,error:friendError(e)});}
 };
+// One Power and bracket read per deck per pick (the same estimates Collection shows).
+const quickContexts=new WeakMap(),quickContext=deck=>{if(!quickContexts.has(deck))quickContexts.set(deck,capturePracticeDeckContext(deck).practiceContext);return quickContexts.get(deck);};
 A.playFindOpponent=async()=>{
  const state=playSetup.snapshot();if(quickStatus.busy||!state.profile.signedIn||!state.selected)return false;
  const ticket=++quickSequence,scope=JSON.stringify([readPlayAccount(),state.selected,state.match]);quickStatus={busy:true,error:null};refreshPlayMenu();await new Promise(resolve=>requestAnimationFrame(resolve));
  // Random means every source: fetch the format's tournament lists too if this page has none yet (bounded wait).
- try{const metaKey='mtg:'+(state.match.format==='Commander'?'EDH':state.match.format);if(!metaState(metaKey).data)await Promise.race([loadMetaData(metaKey).catch(()=>{}),new Promise(resolve=>setTimeout(resolve,4000))]);
+ try{const metaKey='mtg:'+(state.match.format==='Commander'?'EDH':state.match.format),fmt=state.match.format;
+ // Every source the app has: tournament meta, precons, your Play and Collection decks, community lists, and Deck Forge builds (Casual and Strong).
+ await Promise.race([Promise.all([metaState(metaKey).data?null:loadMetaData(metaKey).catch(()=>{}),(readPlaySources().precons||[]).length?null:Promise.resolve(A.finderPrecons(fmt)).catch(()=>{})]),new Promise(resolve=>setTimeout(resolve,4000))]);
  // Only lists the engine can load are offered: a source that spells a card its own way, or a card newer than the engine, never reaches the table.
  const names=FORGE_PLAY_TEST_ENABLED?await loadEngineCardNames():null,unknown=engineUnknownCards(state.selected,names);if(unknown.length)throw Error(engineMissingText('Your deck',unknown));
- const sources=readPlaySources(),candidates=[...S.state.decks,...Object.values(sources).flat().map(x=>x.deck),...playRandomQueue.peek(state.match.format)].filter(deck=>!FORGE_PLAY_TEST_ENABLED||forgeCpuDeckComplete(deck)&&!engineUnknownCards(deck,names).length);
- const result=chooseQuickOpponent({player:state.selected,candidates,difficulty:state.match.difficulty,...(FORGE_PLAY_TEST_ENABLED?{candidateEligible:deck=>forgeDeckSupport(deck).status==='native-pending',nativeValidationPending:true}:{}),estimate:deck=>capturePracticeDeckContext(deck).practiceContext.power.value});
+ const sources=readPlaySources(),candidates=[...playTableDecks(),...Object.values(sources).flat().map(x=>x.deck),...playRandomQueue.peek(state.match.format)].filter(deck=>!FORGE_PLAY_TEST_ENABLED||forgeCpuDeckComplete(deck)&&!engineUnknownCards(deck,names).length);
+ const result=chooseQuickOpponent({player:state.selected,candidates,difficulty:state.match.difficulty,streak:quickStreak(state.match.format),...(FORGE_PLAY_TEST_ENABLED?{candidateEligible:deck=>forgeDeckSupport(deck).status==='native-pending',nativeValidationPending:true}:{}),estimate:deck=>quickContext(deck).power.value,bracketOf:deck=>quickContext(deck).bracket?.value??null});
  const now=playSetup.snapshot();if(ticket!==quickSequence||JSON.stringify([readPlayAccount(),now.selected,now.match])!==scope)return false;playSetup.setQuickOpponent(result);return true;
  }catch(e){if(ticket===quickSequence)quickStatus.error=e.message;}finally{if(ticket===quickSequence){quickStatus.busy=false;refreshPlayMenu();}}
 };
@@ -2247,7 +2253,7 @@ async function pickPodDecks(state,count){
  for(let i=0;i<count;i++){
   if(chosen[i]){picks.push(chosen[i]);continue;}
   const candidates=pool.filter(deck=>!taken.has(cardsOf(deck)));
-  const result=chooseQuickOpponent({player:state.selected,candidates,difficulty:'Medium',...(FORGE_PLAY_TEST_ENABLED?{candidateEligible:deck=>deck===state.selected||forgeDeckSupport(deck).status==='native-pending',nativeValidationPending:true}:{candidateEligible:()=>true})});
+  const result=chooseQuickOpponent({player:state.selected,candidates,difficulty:'Medium',estimate:deck=>quickContext(deck).power.value,bracketOf:deck=>quickContext(deck).bracket?.value??null,...(FORGE_PLAY_TEST_ENABLED?{candidateEligible:deck=>deck===state.selected||forgeDeckSupport(deck).status==='native-pending',nativeValidationPending:true}:{candidateEligible:()=>true})});
   if(taken.has(cardsOf(result.deck)))throw Error('Four-player games need more Commander decks. Load Precons or Meta in Practice, then try again.');
   taken.add(cardsOf(result.deck));picks.push(result.deck);
  }
@@ -3854,7 +3860,13 @@ A.replayTour = (t) => openTour({...tourArt(),lesson:t?.dataset?.lesson||'',choos
 const tableArtFor=createTableArtResolver(T.SOURCES);
 const tableCloud={client:()=>realtimeClient(),signedIn:()=>!!cloudInfo().user,
  friends:async()=>cloudInfo().user?[...(await friendPeople()).values()].map(p=>({id:p.id,name:p.display_name||p.username})):[],
- invite:(to,code)=>tableInviteRequest('send',{to,code})};
+ invite:(to,code)=>tableInviteRequest('send',{to,code}),
+ me:()=>{const p=cloudInfo().profile;return p?{name:p.display_name||p.username||''}:null;},
+ // Seat art: cards from your own Collection, one per name.
+ cards:game=>{const seen=new Set(),out=[];
+  if(game==='mtg'){for(const e of S.state.collection||[]){const n=e?.name;if(!n||seen.has(n))continue;seen.add(n);out.push({name:n,url:'https://api.scryfall.com/cards/named?exact='+encodeURIComponent(n)+'&format=image&version=art_crop'});}}
+  else for(const e of T.gs(game).collection||[]){const c=T.cardOf(game,e.cardId);if(!c?.name||seen.has(c.name))continue;const url=c.artDirect||c.art||c.image;if(url){seen.add(c.name);out.push({name:c.name,url});}}
+  return out.sort((a,b)=>a.name.localeCompare(b.name));}};
 // A friend's Game Night invite: checked every 30 s while signed in and out of a match; one question, then it is cleared.
 const seenTableInvites=new Set();
 async function checkTableInvites(){
@@ -3874,7 +3886,20 @@ setTimeout(checkTableInvites,8000);
 A.tabletop=()=>openTabletop({game:T.game(),confirm:ask,judge:game=>A.askRules({dataset:{game}}),artFor:tableArtFor,cloud:tableCloud});
 // Game Night: the same table, opened from a deck so its journal stays with that deck.
 A.playByHand=t=>openPlayByHand(t.dataset.hand);
-A.gameNight=()=>{const d=T.game()==='mtg'?currentDeck():T.gs(T.game()).decks.find(x=>x.id===S.ui.tdeckId);openTabletop({game:T.game(),confirm:ask,judge:game=>A.askRules({dataset:{game}}),artFor:tableArtFor,cloud:tableCloud,deck:d?{id:d.id,name:d.name}:null});};
+// Game Night opened from a deck page keeps that deck's journal; from the Decks header it opens without one.
+A.gameNight=(panel='')=>{const inDeck=S.ui.view==='deck'||S.ui.view==='tdeck',d=!inDeck?null:T.game()==='mtg'?currentDeck():T.gs(T.game()).decks.find(x=>x.id===S.ui.tdeckId);openTabletop({game:T.game(),confirm:ask,judge:game=>A.askRules({dataset:{game}}),artFor:tableArtFor,cloud:tableCloud,deck:d?{id:d.id,name:d.name}:null,panel:typeof panel==='string'?panel:''});};
+// The War Chest (war-chest.js): the deck page's tab and the Decks header both send their tools here.
+const chestTool=tool=>{
+ if(tool==='gameNight')return A.gameNight();
+ if(tool==='share'||tool==='spirit'||tool==='journal')return A.gameNight(tool);
+ if(tool==='dice'){const n=document.querySelector('[data-chest-result]');if(n)n.textContent=rollDice();return;}
+ if(tool==='judge')return A.askRules({dataset:{game:T.game()}});
+ if(tool==='lookup')return go('#search');
+ if(tool==='draw')return document.getElementById('chestDraw')?.scrollIntoView({behavior:'smooth',block:'start'});
+ if(tool==='goldfish')return T.game()==='mtg'?A.deckTab({dataset:{id:'engine'}}):A.tDeckTab({dataset:{deck:S.ui.tdeckId,id:'insights'}});
+};
+A.chestTool=t=>chestTool(t.dataset.tool);
+A.warChest=()=>openWarChest({resume:chestResume(T.game()),onTool:chestTool});
 A.joinTable=code=>{history.replaceState(null,'',location.pathname+location.search+'#home');openTabletop({game:T.game(),confirm:ask,artFor:tableArtFor,cloud:tableCloud,joinCode:code});};
 A.dismissGuide=t=>{markGuide(t.dataset.id);markGuide('*');document.querySelectorAll('.context-guide[data-guide]').forEach(g=>g.remove());};
 A.resetOnboarding=async()=>{

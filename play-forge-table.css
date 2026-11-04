@@ -33,6 +33,7 @@
 .forge-intro-cpu :is(.forge-intro-name small,.forge-intro-deck>span){color:var(--ob-cpu,#f0c27a)}
 .forge-intro-name h2{font:700 clamp(19px,1.8vw,24px)/1.15 'DM Sans',system-ui,sans-serif;margin:4px 0 2px;color:#fff;overflow-wrap:anywhere}
 .forge-intro-name>span{font-size:12px;color:#d9d0be;overflow-wrap:anywhere}
+.forge-intro-name>.forge-intro-power{display:block;margin-top:2px;font-size:12px;font-weight:700;letter-spacing:.04em;color:var(--ob-cpu,#f0c27a)}
 .forge-intro-deck{margin-top:48px;min-width:0}
 .forge-intro-deck h3{font:700 clamp(24px,2.5vw,38px)/1.12 Cinzel,Georgia,serif;letter-spacing:.01em;margin:8px 0 0;color:#f6eedb;overflow-wrap:anywhere;text-shadow:0 3px 18px #000}
 .forge-intro-vs{position:relative;isolation:isolate;display:grid;place-items:center;justify-self:center;width:clamp(56px,5.6vw,80px);aspect-ratio:1;color:var(--ob-gold-hi,#f2d496);font:700 clamp(18px,1.8vw,26px)/1 Cinzel,Georgia,serif;letter-spacing:.04em;text-shadow:0 0 18px #d6ad6488;animation:forge-vs-in .6s .35s cubic-bezier(.2,1.4,.4,1) both}

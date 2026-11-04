@@ -1,0 +1,3081 @@
+{
+ "act": 33,
+ "era": "2022-02-18",
+ "title": "Neon Dynasty, Capenna Nights",
+ "years": "2022",
+ "sets": [
+  "neo",
+  "snc"
+ ],
+ "landSet": "neo",
+ "intro": [
+  {
+   "who": "stage",
+   "line": "Kamigawa, three centuries on: neon, mechs, and spirits that have not gone anywhere."
+  },
+  {
+   "who": "stage",
+   "line": "To keep the Reality Chip out of Jin-Gitaxias's hands, the Wanderer entrusted it to Tamiyo.",
+   "quote": true
+  },
+  {
+   "who": "stage",
+   "line": "A ninja named Kaito has come to Towashi for a chip, and the Imperial guard is looking for him."
+  }
+ ],
+ "finale": [
+  {
+   "who": "stage",
+   "line": "For all their planning, Tamiyo and Kaito were unprepared to face the full power of a Phyrexian praetor.",
+   "quote": true
+  },
+  {
+   "who": "stage",
+   "line": "Jin-Gitaxias is stopped, for now. On New Capenna, the crime families are still sorting out who owns the city."
+  },
+  {
+   "who": "stage",
+   "line": "Recorded: Kamigawa and Capenna each have their endings. The Phyrexians know a lot more than they did."
+  }
+ ],
+ "villainFinale": [
+  {
+   "who": "stage",
+   "line": "Kaito grabbed the chip, hoping it held answers.",
+   "quote": true
+  },
+  {
+   "who": "stage",
+   "line": "In this version, the praetor gets what he came for, and the city belongs to the machines."
+  }
+ ],
+ "vibe": "neon-kami-crime",
+ "cast": {
+  "you": {
+   "name": "You",
+   "title": "Planeswalker",
+   "portrait": {
+    "card": "Network Terminal",
+    "set": "neo",
+    "number": "251",
+    "id": "d61e596f-97ef-4eb3-af42-ddfe50d07667",
+    "crop": "https://cards.scryfall.io/art_crop/front/d/6/d61e596f-97ef-4eb3-af42-ddfe50d07667.jpg?1783923824",
+    "artist": "Andreas Zafiratos",
+    "focus": "50% 30%"
+   }
+  },
+  "kaito": {
+   "name": "Kaito",
+   "title": "Ninja of Towashi",
+   "portrait": {
+    "card": "Kaito Shizuki",
+    "set": "neo",
+    "number": "226",
+    "id": "2d35a710-3008-4e27-8afd-6e83329f9917",
+    "crop": "https://cards.scryfall.io/art_crop/front/2/d/2d35a710-3008-4e27-8afd-6e83329f9917.jpg?1783923832",
+    "artist": "Yongjae Choi",
+    "focus": "50% 25%"
+   }
+  },
+  "imperial": {
+   "name": "The Imperial Guard",
+   "title": "Of Eiganjo",
+   "portrait": {
+    "card": "Eiganjo Exemplar",
+    "set": "neo",
+    "number": "10",
+    "id": "3b0a9cc0-bb6d-47f7-b0d5-3956c46a1b3a",
+    "crop": "https://cards.scryfall.io/art_crop/front/3/b/3b0a9cc0-bb6d-47f7-b0d5-3956c46a1b3a.jpg?1783923925",
+    "artist": "Ernanda Souza",
+    "focus": "50% 30%"
+   }
+  },
+  "kami": {
+   "name": "The Moon-Kami",
+   "title": "Of Kamigawa",
+   "portrait": {
+    "card": "Lion Sash",
+    "set": "neo",
+    "number": "26",
+    "id": "3e1766e9-2fa7-4446-a255-7beea1467ece",
+    "crop": "https://cards.scryfall.io/art_crop/front/3/e/3e1766e9-2fa7-4446-a255-7beea1467ece.jpg?1783923917",
+    "artist": "Yongjae Choi",
+    "focus": "50% 30%"
+   }
+  },
+  "jin": {
+   "name": "Jin-Gitaxias's Hackers",
+   "title": "Phyrexian Praetor",
+   "portrait": {
+    "card": "Network Disruptor",
+    "set": "neo",
+    "number": "71",
+    "id": "5a37719a-2a87-4870-8f25-12544ca2f2cf",
+    "crop": "https://cards.scryfall.io/art_crop/front/5/a/5a37719a-2a87-4870-8f25-12544ca2f2cf.jpg?1783923897",
+    "artist": "Viko Menezes",
+    "focus": "50% 30%"
+   }
+  },
+  "maestros": {
+   "name": "The Maestros",
+   "title": "Family of New Capenna",
+   "portrait": {
+    "card": "Maestros Diabolist",
+    "set": "snc",
+    "number": "200",
+    "id": "7206db10-e248-420d-bf92-4d57bc72da56",
+    "crop": "https://cards.scryfall.io/art_crop/front/7/2/7206db10-e248-420d-bf92-4d57bc72da56.jpg?1783923079",
+    "artist": "Bastien L. Deharme",
+    "focus": "50% 30%"
+   }
+  },
+  "brokers": {
+   "name": "The Brokers",
+   "title": "Family of New Capenna",
+   "portrait": {
+    "card": "Brokers Initiate",
+    "set": "snc",
+    "number": "5",
+    "id": "a7867f2d-e89d-429f-9ab8-5337b40b4d8d",
+    "crop": "https://cards.scryfall.io/art_crop/front/a/7/a7867f2d-e89d-429f-9ab8-5337b40b4d8d.jpg?1783923164",
+    "artist": "Viko Menezes",
+    "focus": "50% 30%"
+   }
+  },
+  "elspeth": {
+   "name": "Elspeth",
+   "title": "Seeker of the Halo",
+   "portrait": {
+    "card": "Elspeth Resplendent",
+    "set": "snc",
+    "number": "11",
+    "id": "7c606af0-f3d1-44a4-b24e-ee1263569b1f",
+    "crop": "https://cards.scryfall.io/art_crop/front/7/c/7c606af0-f3d1-44a4-b24e-ee1263569b1f.jpg?1783923158",
+    "artist": "Anna Steinbauer",
+    "focus": "50% 25%"
+   }
+  },
+  "ob": {
+   "name": "Ob Nixilis",
+   "title": "The Adversary",
+   "portrait": {
+    "card": "Ob Nixilis, the Adversary",
+    "set": "snc",
+    "number": "206",
+    "id": "80226520-6b0a-48ea-a868-a29eb3fbd403",
+    "crop": "https://cards.scryfall.io/art_crop/front/8/0/80226520-6b0a-48ea-a868-a29eb3fbd403.jpg?1783923077",
+    "artist": "Yongjae Choi",
+    "focus": "50% 25%"
+   }
+  },
+  "riveteers": {
+   "name": "The Riveteers",
+   "title": "Family of New Capenna",
+   "portrait": {
+    "card": "Riveteers Initiate",
+    "set": "snc",
+    "number": "120",
+    "id": "e2e65a50-d2bc-43a0-a9d4-0e846d170f78",
+    "crop": "https://cards.scryfall.io/art_crop/front/e/2/e2e65a50-d2bc-43a0-a9d4-0e846d170f78.jpg?1783923114",
+    "artist": "Svetlin Velinov",
+    "focus": "50% 30%"
+   }
+  },
+  "obscura": {
+   "name": "The Obscura",
+   "title": "Family of New Capenna",
+   "portrait": {
+    "card": "Obscura Initiate",
+    "set": "snc",
+    "number": "50",
+    "id": "67774a11-158b-437c-ac16-2d42fbb5c223",
+    "crop": "https://cards.scryfall.io/art_crop/front/6/7/67774a11-158b-437c-ac16-2d42fbb5c223.jpg?1783923142",
+    "artist": "Kim Sokol",
+    "focus": "50% 30%"
+   }
+  },
+  "raffine": {
+   "name": "Esper Raffine",
+   "title": "Spring 2022",
+   "portrait": {
+    "card": "Raffine, Scheming Seer",
+    "set": "snc",
+    "number": "213",
+    "id": "716a44b4-f6b0-4f14-a270-6442aed3251f",
+    "crop": "https://cards.scryfall.io/art_crop/front/7/1/716a44b4-f6b0-4f14-a270-6442aed3251f.jpg?1783923074",
+    "artist": "Johannes Voss",
+    "focus": "50% 25%"
+   }
+  },
+  "white": {
+   "name": "Mono-White",
+   "title": "Spring 2022",
+   "portrait": {
+    "card": "Inspiring Overseer",
+    "set": "snc",
+    "number": "18",
+    "id": "35d9da1d-8678-4252-b0f8-9960795642f0",
+    "crop": "https://cards.scryfall.io/art_crop/front/3/5/35d9da1d-8678-4252-b0f8-9960795642f0.jpg?1783923158",
+    "artist": "Irina Nordsol",
+    "focus": "50% 30%"
+   }
+  },
+  "skies": {
+   "name": "Azorius Skies",
+   "title": "Spring 2022",
+   "portrait": {
+    "card": "Mothrider Patrol",
+    "set": "neo",
+    "number": "30",
+    "id": "f657f2dc-adc8-4a66-b081-a71b3a127389",
+    "crop": "https://cards.scryfall.io/art_crop/front/f/6/f657f2dc-adc8-4a66-b081-a71b3a127389.jpg?1783923915",
+    "artist": "Ilse Gort",
+    "focus": "50% 30%"
+   }
+  },
+  "runes": {
+   "name": "Naya Runes",
+   "title": "Spring 2022",
+   "portrait": {
+    "card": "Heir of the Ancient Fang",
+    "set": "neo",
+    "number": "191",
+    "id": "d45daa56-6ad8-4df7-9d81-3193fd32e574",
+    "crop": "https://cards.scryfall.io/art_crop/front/d/4/d45daa56-6ad8-4df7-9d81-3193fd32e574.jpg?1783923848",
+    "artist": "Joseph Weston",
+    "focus": "50% 30%"
+   }
+  },
+  "kaitotamiyo": {
+   "name": "Kaito and Tamiyo",
+   "title": "Of Towashi",
+   "portrait": {
+    "card": "Kaito Shizuki",
+    "set": "neo",
+    "number": "226",
+    "id": "2d35a710-3008-4e27-8afd-6e83329f9917",
+    "crop": "https://cards.scryfall.io/art_crop/front/2/d/2d35a710-3008-4e27-8afd-6e83329f9917.jpg?1783923832",
+    "artist": "Yongjae Choi",
+    "focus": "50% 25%"
+   }
+  },
+  "jinboss": {
+   "name": "Jin-Gitaxias",
+   "title": "Progress Tyrant",
+   "portrait": {
+    "card": "Jin-Gitaxias, Progress Tyrant",
+    "set": "neo",
+    "number": "59",
+    "id": "c57b4876-5387-4f73-b8e2-8e7bdca8b0bc",
+    "crop": "https://cards.scryfall.io/art_crop/front/c/5/c57b4876-5387-4f73-b8e2-8e7bdca8b0bc.jpg?1783923901",
+    "artist": "Chase Stone",
+    "focus": "50% 25%"
+   }
+  }
+ },
+ "battles": [
+  {
+   "id": "a33b1",
+   "slot": 1,
+   "kind": "Arrival",
+   "mood": "tension",
+   "title": "The Chip",
+   "difficulty": "Easy",
+   "teaches": [
+    "Ninjutsu"
+   ],
+   "blurb": "Kaito is in Towashi after a chip that could end the Phyrexians. The Imperial guard wants him in a cell.",
+   "rewardSet": "neo",
+   "host": false,
+   "hero": {
+    "who": "kaito",
+    "deck": {
+     "name": "The Ninjas of Towashi",
+     "colors": "UB",
+     "archetype": null,
+     "label": "tribute",
+     "cards": [
+      {
+       "qty": 4,
+       "name": "Moon-Circuit Hacker",
+       "set": "neo",
+       "number": "67",
+       "id": "c6e466d1-943d-41e6-a47d-c9d951ca4262"
+      },
+      {
+       "qty": 4,
+       "name": "Dokuchi Silencer",
+       "set": "neo",
+       "number": "95",
+       "id": "a24d5664-e214-466d-bb53-4e8f6f75a009"
+      },
+      {
+       "qty": 3,
+       "name": "Silver-Fur Master",
+       "set": "neo",
+       "number": "236",
+       "id": "cacc36d9-4c4b-43b2-a8b4-d265deb1e6b2"
+      },
+      {
+       "qty": 3,
+       "name": "Biting-Palm Ninja",
+       "set": "neo",
+       "number": "88",
+       "id": "3017df51-67ae-4c3d-8210-086f83bc2040"
+      },
+      {
+       "qty": 4,
+       "name": "Thousand-Faced Shadow",
+       "set": "neo",
+       "number": "86",
+       "id": "89a698a5-f4ac-4b04-96dc-32e1eeef6ac7"
+      },
+      {
+       "qty": 2,
+       "name": "Satoru Umezawa",
+       "set": "neo",
+       "number": "234",
+       "id": "8887f26d-b097-4fbc-9c48-bdc656409a32"
+      },
+      {
+       "qty": 2,
+       "name": "Kotose, the Silent Spider",
+       "set": "neo",
+       "number": "228",
+       "id": "314e97b5-cd43-4f5e-acdd-a107208e061c"
+      },
+      {
+       "qty": 3,
+       "name": "Nezumi Prowler",
+       "set": "neo",
+       "number": "116",
+       "id": "ca911e9a-bd04-4531-a81e-3485e9cbe89e"
+      },
+      {
+       "qty": 3,
+       "name": "Kaito Shizuki",
+       "set": "neo",
+       "number": "226",
+       "id": "2d35a710-3008-4e27-8afd-6e83329f9917"
+      },
+      {
+       "qty": 3,
+       "name": "Lethal Exploit",
+       "set": "neo",
+       "number": "107",
+       "id": "8d8edf8f-c2bd-4fd1-8abf-d3162e068b17"
+      },
+      {
+       "qty": 3,
+       "name": "You Are Already Dead",
+       "set": "neo",
+       "number": "129",
+       "id": "768727ce-4f84-4527-8d69-3c9b7877b748"
+      },
+      {
+       "qty": 2,
+       "name": "Kaito's Pursuit",
+       "set": "neo",
+       "number": "103",
+       "id": "dd73fa5a-be0f-49a4-a921-afefbc8fa9c5"
+      },
+      {
+       "qty": 4,
+       "name": "Dismal Backwater",
+       "set": "neo",
+       "number": "267",
+       "id": "fab0660b-81f8-40ca-8098-5f8d51219a40"
+      },
+      {
+       "qty": 10,
+       "name": "Island",
+       "set": "neo",
+       "number": "285",
+       "id": "0f66d573-5da4-4b3c-ab06-bb330cff2c9a"
+      },
+      {
+       "qty": 10,
+       "name": "Swamp",
+       "set": "neo",
+       "number": "287",
+       "id": "48f7492c-67f2-4ba3-848b-7a6a8df7e88b"
+      }
+     ]
+    }
+   },
+   "villain": {
+    "who": "imperial",
+    "deck": {
+     "name": "The Imperial Guard",
+     "colors": "W",
+     "archetype": null,
+     "label": "tribute",
+     "cards": [
+      {
+       "qty": 4,
+       "name": "Selfless Samurai",
+       "set": "neo",
+       "number": "35",
+       "id": "76c27ec5-5a9b-4080-9a53-00630335a915"
+      },
+      {
+       "qty": 4,
+       "name": "Kitsune Ace",
+       "set": "neo",
+       "number": "22",
+       "id": "ef1d446a-8607-45b8-a01f-dad17bab76e7"
+      },
+      {
+       "qty": 4,
+       "name": "Blade-Blizzard Kitsune",
+       "set": "neo",
+       "number": "5",
+       "id": "d8419d27-8c6e-4f38-98b4-60dd9a910c43"
+      },
+      {
+       "qty": 4,
+       "name": "Imperial Subduer",
+       "set": "neo",
+       "number": "19",
+       "id": "13246172-7554-4edc-b6db-23dc91e4290a"
+      },
+      {
+       "qty": 4,
+       "name": "Seven-Tail Mentor",
+       "set": "neo",
+       "number": "36",
+       "id": "9d77d1e6-c804-46f7-ba00-6df6bca2ae08"
+      },
+      {
+       "qty": 2,
+       "name": "Eiganjo Exemplar",
+       "set": "neo",
+       "number": "10",
+       "id": "3b0a9cc0-bb6d-47f7-b0d5-3956c46a1b3a"
+      },
+      {
+       "qty": 3,
+       "name": "Mothrider Patrol",
+       "set": "neo",
+       "number": "30",
+       "id": "f657f2dc-adc8-4a66-b081-a71b3a127389"
+      },
+      {
+       "qty": 3,
+       "name": "Norika Yamazaki, the Poet",
+       "set": "neo",
+       "number": "31",
+       "id": "09cb553c-58c1-4cfd-b441-297b5f09b263"
+      },
+      {
+       "qty": 2,
+       "name": "Light-Paws, Emperor's Voice",
+       "set": "neo",
+       "number": "25",
+       "id": "39555a72-a57b-45ee-9222-ce3b9e8de126"
+      },
+      {
+       "qty": 4,
+       "name": "Light the Way",
+       "set": "neo",
+       "number": "24",
+       "id": "3a2fd960-c4ec-4dfa-a61d-f8577b9d3519"
+      },
+      {
+       "qty": 2,
+       "name": "Banishing Slash",
+       "set": "neo",
+       "number": "3",
+       "id": "e4b8946b-6604-49ca-98db-18a540b1b4e5"
+      },
+      {
+       "qty": 24,
+       "name": "Plains",
+       "set": "neo",
+       "number": "283",
+       "id": "5fc26aa1-58b9-41b5-95b4-7e9bf2309b54"
+      }
+     ]
+    }
+   },
+   "reward": {
+    "hero": {
+     "packs": 1,
+     "coins": 0
+    },
+    "villain": {
+     "card": {
+      "oracle_id": "8e0f4e22-0677-4246-a4c5-6fcc74cb54a3",
+      "name": "Eiganjo Exemplar",
+      "rarity": "common",
+      "set": "neo",
+      "id": "3b0a9cc0-bb6d-47f7-b0d5-3956c46a1b3a",
+      "image": "https://cards.scryfall.io/normal/front/3/b/3b0a9cc0-bb6d-47f7-b0d5-3956c46a1b3a.jpg"
+     },
+     "coins": 50
+    }
+   },
+   "scene": [
+    {
+     "who": "stage",
+     "line": "Kaito grabbed the chip, hoping it held answers.",
+     "quote": true
+    },
+    {
+     "who": "stage",
+     "line": "So swift and sharp was his blade that the ogre never even felt the cut.",
+     "quote": true
+    },
+    {
+     "who": "kaito",
+     "line": "Ninjutsu: return an unblocked attacker to your hand to put a ninja onto the battlefield, attacking. Hit them where they are not looking."
+    }
+   ],
+   "villainScene": [
+    {
+     "who": "stage",
+     "line": "Imperial samurai undergo strict training, honing their skills and purifying their spirits in the hope that they will prove worthy of a kami's blessing.",
+     "quote": true
+    },
+    {
+     "who": "stage",
+     "line": "Oh, sorry—were we racing?",
+     "quote": true
+    }
+   ],
+   "after": null,
+   "cues": {
+    "hero": {
+     "start": "Keep moving.",
+     "big": "Ninjutsu!",
+     "low": "They have me cornered...",
+     "win": "Out over the rooftops.",
+     "loss": "Caught...",
+     "half": "Attack unblocked, then swap in the ninja."
+    },
+    "villain": {
+     "start": "Halt!",
+     "big": "For the Emperor!",
+     "low": "He slipped away...",
+     "win": "Order restored.",
+     "loss": "Broken..."
+    }
+   },
+   "bigPlays": [],
+   "sim": null
+  },
+  {
+   "id": "a33b2",
+   "slot": 2,
+   "kind": "Lesson",
+   "mood": "march",
+   "title": "The Moon-Kami",
+   "difficulty": "Easy",
+   "teaches": [
+    "Reconfigure"
+   ],
+   "blurb": "Armoured kami and mech stand against Jin-Gitaxias's hackers on the Towashi roofs.",
+   "rewardSet": "neo",
+   "host": false,
+   "hero": {
+    "who": "kami",
+    "deck": {
+     "name": "The Moon-Kami",
+     "colors": "W",
+     "archetype": null,
+     "label": "tribute",
+     "cards": [
+      {
+       "qty": 4,
+       "name": "Lion Sash",
+       "set": "neo",
+       "number": "26",
+       "id": "3e1766e9-2fa7-4446-a255-7beea1467ece"
+      },
+      {
+       "qty": 3,
+       "name": "Cloudsteel Kirin",
+       "set": "neo",
+       "number": "8",
+       "id": "a13ddda7-da6e-415e-8886-295514f862d4"
+      },
+      {
+       "qty": 4,
+       "name": "Hotshot Mechanic",
+       "set": "neo",
+       "number": "16",
+       "id": "5a70e8fa-b71d-441e-b049-dacb09a9a7af"
+      },
+      {
+       "qty": 3,
+       "name": "Imperial Subduer",
+       "set": "neo",
+       "number": "19",
+       "id": "13246172-7554-4edc-b6db-23dc91e4290a"
+      },
+      {
+       "qty": 2,
+       "name": "Ancestral Katana",
+       "set": "neo",
+       "number": "1",
+       "id": "d9b1ed43-ee6c-43a2-ba94-5bf71c63e070"
+      },
+      {
+       "qty": 3,
+       "name": "Dragonfly Suit",
+       "set": "neo",
+       "number": "9",
+       "id": "4900862f-90f4-450b-a775-219da4ce67ef"
+      },
+      {
+       "qty": 4,
+       "name": "Mothrider Patrol",
+       "set": "neo",
+       "number": "30",
+       "id": "f657f2dc-adc8-4a66-b081-a71b3a127389"
+      },
+      {
+       "qty": 4,
+       "name": "Kitsune Ace",
+       "set": "neo",
+       "number": "22",
+       "id": "ef1d446a-8607-45b8-a01f-dad17bab76e7"
+      },
+      {
+       "qty": 3,
+       "name": "Selfless Samurai",
+       "set": "neo",
+       "number": "35",
+       "id": "76c27ec5-5a9b-4080-9a53-00630335a915"
+      },
+      {
+       "qty": 3,
+       "name": "Seven-Tail Mentor",
+       "set": "neo",
+       "number": "36",
+       "id": "9d77d1e6-c804-46f7-ba00-6df6bca2ae08"
+      },
+      {
+       "qty": 3,
+       "name": "Light the Way",
+       "set": "neo",
+       "number": "24",
+       "id": "3a2fd960-c4ec-4dfa-a61d-f8577b9d3519"
+      },
+      {
+       "qty": 24,
+       "name": "Plains",
+       "set": "neo",
+       "number": "283",
+       "id": "5fc26aa1-58b9-41b5-95b4-7e9bf2309b54"
+      }
+     ]
+    }
+   },
+   "villain": {
+    "who": "jin",
+    "deck": {
+     "name": "The Hackers of Jin-Gitaxias",
+     "colors": "U",
+     "archetype": null,
+     "label": "tribute",
+     "cards": [
+      {
+       "qty": 4,
+       "name": "Moon-Circuit Hacker",
+       "set": "neo",
+       "number": "67",
+       "id": "c6e466d1-943d-41e6-a47d-c9d951ca4262"
+      },
+      {
+       "qty": 4,
+       "name": "Network Disruptor",
+       "set": "neo",
+       "number": "71",
+       "id": "5a37719a-2a87-4870-8f25-12544ca2f2cf"
+      },
+      {
+       "qty": 4,
+       "name": "Futurist Operative",
+       "set": "neo",
+       "number": "53",
+       "id": "c5858176-9f85-403c-8338-48eb55db5c3d"
+      },
+      {
+       "qty": 3,
+       "name": "Mobilizer Mech",
+       "set": "neo",
+       "number": "65",
+       "id": "cf4bb9de-ba7c-4916-b8ed-e2e644c06b58"
+      },
+      {
+       "qty": 3,
+       "name": "Armguard Familiar",
+       "set": "neo",
+       "number": "46",
+       "id": "7497f147-146d-4a76-b670-bd84e07352b3"
+      },
+      {
+       "qty": 3,
+       "name": "Moonfolk Puzzlemaker",
+       "set": "neo",
+       "number": "68",
+       "id": "c9fa6d4c-78dc-4b40-9ce8-a0e593d4001f"
+      },
+      {
+       "qty": 3,
+       "name": "Replication Specialist",
+       "set": "neo",
+       "number": "76",
+       "id": "475bb3b5-b648-460c-b0ea-89ecfe0ff226"
+      },
+      {
+       "qty": 3,
+       "name": "Skyswimmer Koi",
+       "set": "neo",
+       "number": "79",
+       "id": "db50259b-8ca8-4fbe-8ae3-6b0312d70980"
+      },
+      {
+       "qty": 3,
+       "name": "Guardians of Oboro",
+       "set": "neo",
+       "number": "56",
+       "id": "e9c44d4e-742f-4e4f-9bf4-921075bc427c"
+      },
+      {
+       "qty": 3,
+       "name": "Covert Technician",
+       "set": "neo",
+       "number": "49",
+       "id": "dbae9991-43a2-4afb-a882-fff6b0d89d12"
+      },
+      {
+       "qty": 3,
+       "name": "Disruption Protocol",
+       "set": "neo",
+       "number": "51",
+       "id": "053ab598-06a4-43ae-b9fd-c291bd05642c"
+      },
+      {
+       "qty": 24,
+       "name": "Island",
+       "set": "neo",
+       "number": "285",
+       "id": "0f66d573-5da4-4b3c-ab06-bb330cff2c9a"
+      }
+     ]
+    }
+   },
+   "reward": {
+    "hero": {
+     "packs": 1,
+     "coins": 0
+    },
+    "villain": {
+     "card": {
+      "oracle_id": "0d64d150-1716-4da4-9cfe-ee7749b89918",
+      "name": "Network Disruptor",
+      "rarity": "common",
+      "set": "neo",
+      "id": "5a37719a-2a87-4870-8f25-12544ca2f2cf",
+      "image": "https://cards.scryfall.io/normal/front/5/a/5a37719a-2a87-4870-8f25-12544ca2f2cf.jpg"
+     },
+     "coins": 50
+    }
+   },
+   "scene": [
+    {
+     "who": "stage",
+     "line": "If your mech is factory standard, you might as well be walking.",
+     "quote": true
+    },
+    {
+     "who": "stage",
+     "line": "Be proud, young pup! You've earned your wings. Rise and become the western wind.",
+     "quote": true
+    },
+    {
+     "who": "kami",
+     "line": "Reconfigure: pay the cost and a creature attaches to another as equipment. Pay it again and it unattaches and fights again."
+    }
+   ],
+   "villainScene": [
+    {
+     "who": "stage",
+     "line": "Just as I suspected. They thought they'd hidden the terminal, so they got lazy with the encryption.",
+     "quote": true
+    },
+    {
+     "who": "stage",
+     "line": "Let's just turn that off, shall we?",
+     "quote": true
+    }
+   ],
+   "after": null,
+   "cues": {
+    "hero": {
+     "start": "Armour up.",
+     "big": "Reconfigure!",
+     "low": "The hackers see me...",
+     "win": "The roofs are safe.",
+     "loss": "Shut down...",
+     "half": "Attach when you need defense, detach to attack."
+    },
+    "villain": {
+     "start": "Access granted.",
+     "big": "Uploaded!",
+     "low": "Connection lost...",
+     "win": "Compleated.",
+     "loss": "Shut down..."
+    }
+   },
+   "bigPlays": [],
+   "sim": null
+  },
+  {
+   "id": "a33b3",
+   "slot": 3,
+   "kind": "Lesson",
+   "mood": "comic",
+   "title": "Families at the Table",
+   "difficulty": "Easy",
+   "teaches": [
+    "Shield counters"
+   ],
+   "blurb": "New Capenna: the Maestros and the Brokers meet over dinner. Everyone brought a knife.",
+   "rewardSet": "snc",
+   "host": false,
+   "hero": {
+    "who": "maestros",
+    "deck": {
+     "name": "The Maestros",
+     "colors": "UBR",
+     "archetype": null,
+     "label": "tribute",
+     "cards": [
+      {
+       "qty": 3,
+       "name": "Maestros Diabolist",
+       "set": "snc",
+       "number": "200",
+       "id": "7206db10-e248-420d-bf92-4d57bc72da56"
+      },
+      {
+       "qty": 4,
+       "name": "Maestros Initiate",
+       "set": "snc",
+       "number": "86",
+       "id": "db94f2a9-53be-449e-8240-77f013cdd7e3"
+      },
+      {
+       "qty": 2,
+       "name": "Cormela, Glamour Thief",
+       "set": "snc",
+       "number": "177",
+       "id": "221ac34a-94ed-4c49-afad-b19cac541731"
+      },
+      {
+       "qty": 2,
+       "name": "Lord Xander, the Collector",
+       "set": "snc",
+       "number": "197",
+       "id": "ee0a078d-045f-401b-a561-dcb1ad02bf62"
+      },
+      {
+       "qty": 3,
+       "name": "Corpse Appraiser",
+       "set": "snc",
+       "number": "178",
+       "id": "e0f254bb-ec77-4147-ab9c-559bc7fba8cd"
+      },
+      {
+       "qty": 3,
+       "name": "Glamorous Outlaw",
+       "set": "snc",
+       "number": "190",
+       "id": "452abab0-cf23-4b9d-831a-7b9fa1fd582a"
+      },
+      {
+       "qty": 3,
+       "name": "Syndicate Infiltrator",
+       "set": "snc",
+       "number": "226",
+       "id": "bf86c5f2-0caf-48ca-b7ad-a1cdcd014539"
+      },
+      {
+       "qty": 3,
+       "name": "Snooping Newsie",
+       "set": "snc",
+       "number": "222",
+       "id": "bed1e957-3df1-4640-9980-783817826602"
+      },
+      {
+       "qty": 3,
+       "name": "Midnight Assassin",
+       "set": "snc",
+       "number": "87",
+       "id": "02a4a5b3-0477-4709-8bce-3e01f54001b6"
+      },
+      {
+       "qty": 3,
+       "name": "Sanguine Spy",
+       "set": "snc",
+       "number": "93",
+       "id": "2d52ea1e-5b66-47c7-9a6d-95f5996565d8"
+      },
+      {
+       "qty": 3,
+       "name": "Murder",
+       "set": "snc",
+       "number": "88",
+       "id": "1c13ac76-7cd9-456f-9b89-92bfa07c64c5"
+      },
+      {
+       "qty": 2,
+       "name": "Hostile Takeover",
+       "set": "snc",
+       "number": "191",
+       "id": "bd7df727-50ea-4ea8-bdb9-d7ef16199d8a"
+      },
+      {
+       "qty": 2,
+       "name": "Maestros Charm",
+       "set": "snc",
+       "number": "199",
+       "id": "3dcdedb6-3c24-4a29-b9b9-27cc47d8ee56"
+      },
+      {
+       "qty": 4,
+       "name": "Maestros Theater",
+       "set": "snc",
+       "number": "251",
+       "id": "51eb4a44-a5c8-49ed-b440-2462626bb638"
+      },
+      {
+       "qty": 3,
+       "name": "Xander's Lounge",
+       "set": "snc",
+       "number": "260",
+       "id": "54f449ff-4025-465e-9ec5-a5cf42c4c9d3"
+      },
+      {
+       "qty": 2,
+       "name": "Dismal Backwater",
+       "set": "neo",
+       "number": "267",
+       "id": "fab0660b-81f8-40ca-8098-5f8d51219a40"
+      },
+      {
+       "qty": 5,
+       "name": "Island",
+       "set": "neo",
+       "number": "285",
+       "id": "0f66d573-5da4-4b3c-ab06-bb330cff2c9a"
+      },
+      {
+       "qty": 5,
+       "name": "Swamp",
+       "set": "neo",
+       "number": "287",
+       "id": "48f7492c-67f2-4ba3-848b-7a6a8df7e88b"
+      },
+      {
+       "qty": 5,
+       "name": "Mountain",
+       "set": "neo",
+       "number": "289",
+       "id": "2fe601b0-0398-47f0-9e4f-9f841ad79b9b"
+      }
+     ]
+    }
+   },
+   "villain": {
+    "who": "brokers",
+    "deck": {
+     "name": "The Brokers",
+     "colors": "GWU",
+     "archetype": null,
+     "label": "tribute",
+     "cards": [
+      {
+       "qty": 4,
+       "name": "Brokers Initiate",
+       "set": "snc",
+       "number": "5",
+       "id": "a7867f2d-e89d-429f-9ab8-5337b40b4d8d"
+      },
+      {
+       "qty": 4,
+       "name": "Brokers Veteran",
+       "set": "snc",
+       "number": "36",
+       "id": "9d4a54bd-5598-4313-b5e6-29fd38da016a"
+      },
+      {
+       "qty": 3,
+       "name": "Disciplined Duelist",
+       "set": "snc",
+       "number": "182",
+       "id": "e23cdb0a-e114-47f8-aceb-c54c4683bbc5"
+      },
+      {
+       "qty": 4,
+       "name": "Civil Servant",
+       "set": "snc",
+       "number": "176",
+       "id": "1cf5da68-a79b-40a3-93bc-785fb2352b05"
+      },
+      {
+       "qty": 3,
+       "name": "Darling of the Masses",
+       "set": "snc",
+       "number": "181",
+       "id": "52aa9815-6b47-4c80-87c7-4277166ea0df"
+      },
+      {
+       "qty": 3,
+       "name": "Celestial Regulator",
+       "set": "snc",
+       "number": "174",
+       "id": "25803f0b-4475-447e-abdf-dcd6a98dd654"
+      },
+      {
+       "qty": 3,
+       "name": "Scheming Fence",
+       "set": "snc",
+       "number": "219",
+       "id": "af7ef030-7bae-4820-b51a-8fad57a8ff2f"
+      },
+      {
+       "qty": 3,
+       "name": "Metropolis Angel",
+       "set": "snc",
+       "number": "203",
+       "id": "633c7e38-fdad-461c-9ecb-3e89d5b80f24"
+      },
+      {
+       "qty": 3,
+       "name": "Spara's Adjudicators",
+       "set": "snc",
+       "number": "224",
+       "id": "29eb0e40-d184-423f-8484-ee288fda00cd"
+      },
+      {
+       "qty": 2,
+       "name": "Brokers Charm",
+       "set": "snc",
+       "number": "171",
+       "id": "74c9c315-1cf4-468e-a74a-b5f3be4a63a1"
+      },
+      {
+       "qty": 2,
+       "name": "Exotic Pets",
+       "set": "snc",
+       "number": "185",
+       "id": "902f1ed8-5c10-45e4-8f2f-182e800faab4"
+      },
+      {
+       "qty": 2,
+       "name": "Endless Detour",
+       "set": "snc",
+       "number": "183",
+       "id": "13798c8c-1aa5-4f95-979b-b971e73d715f"
+      },
+      {
+       "qty": 4,
+       "name": "Brokers Hideout",
+       "set": "snc",
+       "number": "248",
+       "id": "989b299b-daa9-4bda-94e2-9a2f0e8f2bce"
+      },
+      {
+       "qty": 3,
+       "name": "Spara's Headquarters",
+       "set": "snc",
+       "number": "257",
+       "id": "7363f1fb-9af3-4212-921f-d59533faf0e5"
+      },
+      {
+       "qty": 2,
+       "name": "Tranquil Cove",
+       "set": "neo",
+       "number": "280",
+       "id": "68f822b7-efc5-42c8-93ea-7dd17b4c3e7a"
+      },
+      {
+       "qty": 5,
+       "name": "Plains",
+       "set": "neo",
+       "number": "283",
+       "id": "5fc26aa1-58b9-41b5-95b4-7e9bf2309b54"
+      },
+      {
+       "qty": 5,
+       "name": "Island",
+       "set": "neo",
+       "number": "285",
+       "id": "0f66d573-5da4-4b3c-ab06-bb330cff2c9a"
+      },
+      {
+       "qty": 5,
+       "name": "Forest",
+       "set": "neo",
+       "number": "291",
+       "id": "aea5c36b-c107-4daf-bedb-507b4cd64724"
+      }
+     ]
+    }
+   },
+   "reward": {
+    "hero": {
+     "packs": 1,
+     "coins": 0
+    },
+    "villain": {
+     "card": {
+      "oracle_id": "9bdf033e-87d4-4bc4-ba08-4b497cc1b559",
+      "name": "Brokers Initiate",
+      "rarity": "common",
+      "set": "snc",
+      "id": "a7867f2d-e89d-429f-9ab8-5337b40b4d8d",
+      "image": "https://cards.scryfall.io/normal/front/a/7/a7867f2d-e89d-429f-9ab8-5337b40b4d8d.jpg"
+     },
+     "coins": 50
+    }
+   },
+   "scene": [
+    {
+     "who": "stage",
+     "line": "How far are you willing to go for your family, cleanblade?",
+     "quote": true
+    },
+    {
+     "who": "stage",
+     "line": "Where did I find my horned friend? Now there's a story worth telling. . . .",
+     "quote": true
+    },
+    {
+     "who": "maestros",
+     "line": "Shield counters: a creature with one is protected once. If it would be damaged or destroyed, remove the counter instead."
+    }
+   ],
+   "villainScene": [
+    {
+     "who": "stage",
+     "line": "Regarding the relative might of pen and sword, the official position of the Brokers is \"Why choose?\"",
+     "quote": true
+    },
+    {
+     "who": "stage",
+     "line": "Saving a stranger's life is an excellent recruitment method. Luckily, peril is so easy to come by.",
+     "quote": true
+    }
+   ],
+   "after": null,
+   "cues": {
+    "hero": {
+     "start": "Family first.",
+     "big": "Encore!",
+     "low": "They shielded everything...",
+     "win": "The Maestros win.",
+     "loss": "Dinner is over...",
+     "half": "Break the shield counter before the real attack."
+    },
+    "villain": {
+     "start": "Why choose?",
+     "big": "A fine deal!",
+     "low": "The deal falls through...",
+     "win": "Sign here.",
+     "loss": "No deal..."
+    }
+   },
+   "bigPlays": [],
+   "sim": null
+  },
+  {
+   "id": "a33b4",
+   "slot": 4,
+   "kind": "Rival",
+   "mood": "tension",
+   "title": "The Demon Who Owns the City",
+   "difficulty": "Normal",
+   "teaches": [
+    "Planeswalkers"
+   ],
+   "blurb": "Elspeth is looking for the Halo. Ob Nixilis already owns half the city.",
+   "rewardSet": "snc",
+   "host": false,
+   "hero": {
+    "who": "elspeth",
+    "deck": {
+     "name": "Elspeth's Angels",
+     "colors": "W",
+     "archetype": null,
+     "label": "tribute",
+     "cards": [
+      {
+       "qty": 4,
+       "name": "Inspiring Overseer",
+       "set": "snc",
+       "number": "18",
+       "id": "35d9da1d-8678-4252-b0f8-9960795642f0"
+      },
+      {
+       "qty": 4,
+       "name": "Raffine's Informant",
+       "set": "snc",
+       "number": "26",
+       "id": "4e64ff87-2099-4360-94f6-164277b7b514"
+      },
+      {
+       "qty": 3,
+       "name": "Extraction Specialist",
+       "set": "snc",
+       "number": "12",
+       "id": "b404d6c7-0b65-4c6a-b141-9dffbeb120db"
+      },
+      {
+       "qty": 2,
+       "name": "Giada, Font of Hope",
+       "set": "snc",
+       "number": "14",
+       "id": "bae077bd-fc8d-44d7-8c75-8dc8699c168e"
+      },
+      {
+       "qty": 4,
+       "name": "Swooping Protector",
+       "set": "snc",
+       "number": "33",
+       "id": "8713498f-a467-4a11-9de2-53a1bbd0b18b"
+      },
+      {
+       "qty": 4,
+       "name": "Dapper Shieldmate",
+       "set": "snc",
+       "number": "9",
+       "id": "d6ce9c33-4ab3-43c9-b6bc-ee2d40d8f9b6"
+      },
+      {
+       "qty": 4,
+       "name": "Brokers Initiate",
+       "set": "snc",
+       "number": "5",
+       "id": "a7867f2d-e89d-429f-9ab8-5337b40b4d8d"
+      },
+      {
+       "qty": 4,
+       "name": "Celebrity Fencer",
+       "set": "snc",
+       "number": "7",
+       "id": "5afb5c5c-06e0-4b11-ad07-aef7be6e2cd4"
+      },
+      {
+       "qty": 1,
+       "name": "Elspeth Resplendent",
+       "set": "snc",
+       "number": "11",
+       "id": "7c606af0-f3d1-44a4-b24e-ee1263569b1f"
+      },
+      {
+       "qty": 2,
+       "name": "Kill Shot",
+       "set": "snc",
+       "number": "19",
+       "id": "61b0b9a3-8f50-4fba-9978-409f3369afa6"
+      },
+      {
+       "qty": 3,
+       "name": "Knockout Blow",
+       "set": "snc",
+       "number": "20",
+       "id": "9b00bbec-61d0-464c-bf82-4ecf5ddb3451"
+      },
+      {
+       "qty": 1,
+       "name": "Revelation of Power",
+       "set": "snc",
+       "number": "28",
+       "id": "7e010b11-8f3e-4792-afe4-0a376650b6c4"
+      },
+      {
+       "qty": 24,
+       "name": "Plains",
+       "set": "neo",
+       "number": "283",
+       "id": "5fc26aa1-58b9-41b5-95b4-7e9bf2309b54"
+      }
+     ]
+    }
+   },
+   "villain": {
+    "who": "ob",
+    "deck": {
+     "name": "Ob Nixilis's Syndicate",
+     "colors": "BR",
+     "archetype": null,
+     "label": "tribute",
+     "cards": [
+      {
+       "qty": 4,
+       "name": "Ob Nixilis, the Adversary",
+       "set": "snc",
+       "number": "206",
+       "id": "80226520-6b0a-48ea-a868-a29eb3fbd403"
+      },
+      {
+       "qty": 3,
+       "name": "Forge Boss",
+       "set": "snc",
+       "number": "189",
+       "id": "5052247d-ef72-47f0-973d-2be98bf754c1"
+      },
+      {
+       "qty": 4,
+       "name": "Body Dropper",
+       "set": "snc",
+       "number": "168",
+       "id": "0fcb6d47-dccb-4b69-aed4-7a6215857606"
+      },
+      {
+       "qty": 2,
+       "name": "Fatal Grudge",
+       "set": "snc",
+       "number": "187",
+       "id": "ec7de8d6-edad-4845-9868-781351480258"
+      },
+      {
+       "qty": 2,
+       "name": "Night Clubber",
+       "set": "snc",
+       "number": "89",
+       "id": "59fd3f8a-a13b-4a0a-bb27-b9246949ea7b"
+      },
+      {
+       "qty": 3,
+       "name": "Revel Ruiner",
+       "set": "snc",
+       "number": "91",
+       "id": "e3fbe7f0-8a91-4832-8953-54ab3669372c"
+      },
+      {
+       "qty": 2,
+       "name": "Girder Goons",
+       "set": "snc",
+       "number": "80",
+       "id": "4bfd6449-31a1-4572-8f9c-3f6f4670dc9d"
+      },
+      {
+       "qty": 2,
+       "name": "Angel of Suffering",
+       "set": "snc",
+       "number": "67",
+       "id": "cd4aee25-496d-453e-95b7-d773fe21cacc"
+      },
+      {
+       "qty": 3,
+       "name": "Shakedown Heavy",
+       "set": "snc",
+       "number": "95",
+       "id": "ce418184-a672-46bc-a17d-c559614defb5"
+      },
+      {
+       "qty": 3,
+       "name": "Strangle",
+       "set": "snc",
+       "number": "125",
+       "id": "4b91d727-c0ee-4bf0-8c7d-8475ecb88083"
+      },
+      {
+       "qty": 4,
+       "name": "Murder",
+       "set": "snc",
+       "number": "88",
+       "id": "1c13ac76-7cd9-456f-9b89-92bfa07c64c5"
+      },
+      {
+       "qty": 4,
+       "name": "Pyre-Sledge Arsonist",
+       "set": "snc",
+       "number": "118",
+       "id": "33c5fd3e-3799-4535-8c33-9c567f4f5709"
+      },
+      {
+       "qty": 4,
+       "name": "Bloodfell Caves",
+       "set": "neo",
+       "number": "264",
+       "id": "ba06fcda-7ab8-48d4-8656-2a911e73dc44"
+      },
+      {
+       "qty": 10,
+       "name": "Swamp",
+       "set": "neo",
+       "number": "287",
+       "id": "48f7492c-67f2-4ba3-848b-7a6a8df7e88b"
+      },
+      {
+       "qty": 10,
+       "name": "Mountain",
+       "set": "neo",
+       "number": "289",
+       "id": "2fe601b0-0398-47f0-9e4f-9f841ad79b9b"
+      }
+     ]
+    }
+   },
+   "reward": {
+    "hero": {
+     "packs": 1,
+     "coins": 100
+    },
+    "villain": {
+     "card": {
+      "oracle_id": "a6abb6af-7ea2-43f3-8718-2a077ad0c947",
+      "name": "Ob Nixilis, the Adversary",
+      "rarity": "mythic",
+      "set": "snc",
+      "id": "80226520-6b0a-48ea-a868-a29eb3fbd403",
+      "image": "https://cards.scryfall.io/normal/front/8/0/80226520-6b0a-48ea-a868-a29eb3fbd403.jpg"
+     },
+     "coins": 100
+    }
+   },
+   "scene": [
+    {
+     "who": "stage",
+     "line": "The source of the Cabaretti's Halo turned out to be a single teenage girl.",
+     "quote": true
+    },
+    {
+     "who": "stage",
+     "line": "Angels are living proof that power does not always lead to corruption.",
+     "quote": true
+    },
+    {
+     "who": "elspeth",
+     "line": "Planeswalkers: keep Elspeth alive and she wins the long game. Attack his walker the turn it appears."
+    }
+   ],
+   "villainScene": [
+    {
+     "who": "stage",
+     "line": "Ob Nixilis decided the fastest way to seize control of New Capenna would be to usurp the networks of power already hidden there. Xander's Maestros were the first to fall.",
+     "quote": true
+    },
+    {
+     "who": "stage",
+     "line": "Kill count? I lost track years ago.",
+     "quote": true
+    }
+   ],
+   "after": null,
+   "cues": {
+    "hero": {
+     "start": "For the Halo.",
+     "big": "Resplendent!",
+     "low": "He owns the city...",
+     "win": "The Halo is safe.",
+     "loss": "Lost in the dark...",
+     "half": "Guard Elspeth, attack his walker."
+    },
+    "villain": {
+     "start": "Mine.",
+     "big": "Casualty!",
+     "low": "The family slips...",
+     "win": "The city is mine.",
+     "loss": "Evicted..."
+    }
+   },
+   "bigPlays": [],
+   "sim": null
+  },
+  {
+   "id": "a33b5",
+   "slot": 5,
+   "kind": "Lesson",
+   "mood": "tension",
+   "title": "Connive",
+   "difficulty": "Normal",
+   "teaches": [
+    "Connive"
+   ],
+   "blurb": "The Riveteers hit the Obscura where it hurts: a vault full of secrets.",
+   "rewardSet": "snc",
+   "host": false,
+   "hero": {
+    "who": "riveteers",
+    "deck": {
+     "name": "The Riveteers",
+     "colors": "BRG",
+     "archetype": null,
+     "label": "tribute",
+     "cards": [
+      {
+       "qty": 4,
+       "name": "Riveteers Initiate",
+       "set": "snc",
+       "number": "120",
+       "id": "e2e65a50-d2bc-43a0-a9d4-0e846d170f78"
+      },
+      {
+       "qty": 4,
+       "name": "Riveteers Requisitioner",
+       "set": "snc",
+       "number": "121",
+       "id": "8ab5152d-767a-47d5-acfc-f439810aaeea"
+      },
+      {
+       "qty": 3,
+       "name": "Crew Captain",
+       "set": "snc",
+       "number": "180",
+       "id": "99806615-2f4a-4fe4-82f8-83445ae93a97"
+      },
+      {
+       "qty": 2,
+       "name": "Mr. Orfeo, the Boulder",
+       "set": "snc",
+       "number": "204",
+       "id": "97caaa92-2a7d-4f79-8d42-86733c902072"
+      },
+      {
+       "qty": 3,
+       "name": "Masked Bandits",
+       "set": "snc",
+       "number": "201",
+       "id": "03757415-6b58-42d3-9452-a862e90647ee"
+      },
+      {
+       "qty": 2,
+       "name": "Ziatora, the Incinerator",
+       "set": "snc",
+       "number": "231",
+       "id": "ba4fa4c8-f09f-4d97-a7d1-1b93caf7d4f9"
+      },
+      {
+       "qty": 4,
+       "name": "Ziatora's Envoy",
+       "set": "snc",
+       "number": "232",
+       "id": "ba39154c-aace-4d55-a3ad-7c9eb717ed2b"
+      },
+      {
+       "qty": 3,
+       "name": "Riveteers Decoy",
+       "set": "snc",
+       "number": "156",
+       "id": "2d21701b-6a99-4e1c-82b2-0219f170b09f"
+      },
+      {
+       "qty": 3,
+       "name": "Unleash the Inferno",
+       "set": "snc",
+       "number": "229",
+       "id": "1f892607-8672-4013-86e6-0779d0b726de"
+      },
+      {
+       "qty": 3,
+       "name": "Riveteers Charm",
+       "set": "snc",
+       "number": "217",
+       "id": "784a5915-bc42-49d6-8a1b-45da7749f03a"
+      },
+      {
+       "qty": 3,
+       "name": "Strangle",
+       "set": "snc",
+       "number": "125",
+       "id": "4b91d727-c0ee-4bf0-8c7d-8475ecb88083"
+      },
+      {
+       "qty": 2,
+       "name": "Murder",
+       "set": "snc",
+       "number": "88",
+       "id": "1c13ac76-7cd9-456f-9b89-92bfa07c64c5"
+      },
+      {
+       "qty": 4,
+       "name": "Riveteers Overlook",
+       "set": "snc",
+       "number": "255",
+       "id": "1d161f81-c01a-4c91-b025-52dcb1881638"
+      },
+      {
+       "qty": 3,
+       "name": "Ziatora's Proving Ground",
+       "set": "snc",
+       "number": "261",
+       "id": "75fdce80-e338-4a50-bdc6-786511feaeef"
+      },
+      {
+       "qty": 2,
+       "name": "Bloodfell Caves",
+       "set": "neo",
+       "number": "264",
+       "id": "ba06fcda-7ab8-48d4-8656-2a911e73dc44"
+      },
+      {
+       "qty": 5,
+       "name": "Swamp",
+       "set": "neo",
+       "number": "287",
+       "id": "48f7492c-67f2-4ba3-848b-7a6a8df7e88b"
+      },
+      {
+       "qty": 5,
+       "name": "Mountain",
+       "set": "neo",
+       "number": "289",
+       "id": "2fe601b0-0398-47f0-9e4f-9f841ad79b9b"
+      },
+      {
+       "qty": 5,
+       "name": "Forest",
+       "set": "neo",
+       "number": "291",
+       "id": "aea5c36b-c107-4daf-bedb-507b4cd64724"
+      }
+     ]
+    }
+   },
+   "villain": {
+    "who": "obscura",
+    "deck": {
+     "name": "The Obscura",
+     "colors": "WUB",
+     "archetype": null,
+     "label": "tribute",
+     "cards": [
+      {
+       "qty": 4,
+       "name": "Obscura Initiate",
+       "set": "snc",
+       "number": "50",
+       "id": "67774a11-158b-437c-ac16-2d42fbb5c223"
+      },
+      {
+       "qty": 3,
+       "name": "Obscura Interceptor",
+       "set": "snc",
+       "number": "209",
+       "id": "08886346-2405-47ee-997f-c0fb7776c783"
+      },
+      {
+       "qty": 3,
+       "name": "Nimble Larcenist",
+       "set": "snc",
+       "number": "205",
+       "id": "0150d4c7-2c90-4a71-b2d3-3d9a0079fea1"
+      },
+      {
+       "qty": 2,
+       "name": "Queza, Augur of Agonies",
+       "set": "snc",
+       "number": "212",
+       "id": "7edb7a26-82be-4efd-9a5c-a3816e1ee2d6"
+      },
+      {
+       "qty": 2,
+       "name": "Raffine, Scheming Seer",
+       "set": "snc",
+       "number": "213",
+       "id": "716a44b4-f6b0-4f14-a270-6442aed3251f"
+      },
+      {
+       "qty": 2,
+       "name": "Shattered Seraph",
+       "set": "snc",
+       "number": "221",
+       "id": "cc75ba0d-230e-4ca4-bb40-bd05af2a4457"
+      },
+      {
+       "qty": 3,
+       "name": "Aven Heartstabber",
+       "set": "snc",
+       "number": "166",
+       "id": "acef329c-61e6-41c1-8d89-ff2417949839"
+      },
+      {
+       "qty": 3,
+       "name": "Psionic Snoop",
+       "set": "snc",
+       "number": "53",
+       "id": "b1e04834-7335-4b25-bedf-b7739c5c3aad"
+      },
+      {
+       "qty": 3,
+       "name": "Wingshield Agent",
+       "set": "snc",
+       "number": "64",
+       "id": "b9ec36ec-1a9c-41db-b304-c23286a4d182"
+      },
+      {
+       "qty": 4,
+       "name": "Ledger Shredder",
+       "set": "snc",
+       "number": "46",
+       "id": "7ea4b5bc-18a4-45db-a56a-ab3f8bd2fb0d"
+      },
+      {
+       "qty": 3,
+       "name": "Undercover Operative",
+       "set": "snc",
+       "number": "63",
+       "id": "4ecec953-ab86-409b-b618-04bb07ff3eac"
+      },
+      {
+       "qty": 2,
+       "name": "Void Rend",
+       "set": "snc",
+       "number": "230",
+       "id": "2daab74d-d66b-4164-aa19-24e8d5536f7d"
+      },
+      {
+       "qty": 2,
+       "name": "Obscura Charm",
+       "set": "snc",
+       "number": "208",
+       "id": "9961562d-cad9-40e5-afae-3ebce77a2260"
+      },
+      {
+       "qty": 4,
+       "name": "Obscura Storefront",
+       "set": "snc",
+       "number": "252",
+       "id": "1016b884-9a4c-41de-bd65-14271f4f6f9a"
+      },
+      {
+       "qty": 3,
+       "name": "Raffine's Tower",
+       "set": "snc",
+       "number": "254",
+       "id": "a2c56479-4bee-4edb-80d7-4af010b7c793"
+      },
+      {
+       "qty": 2,
+       "name": "Dismal Backwater",
+       "set": "neo",
+       "number": "267",
+       "id": "fab0660b-81f8-40ca-8098-5f8d51219a40"
+      },
+      {
+       "qty": 5,
+       "name": "Plains",
+       "set": "neo",
+       "number": "283",
+       "id": "5fc26aa1-58b9-41b5-95b4-7e9bf2309b54"
+      },
+      {
+       "qty": 5,
+       "name": "Island",
+       "set": "neo",
+       "number": "285",
+       "id": "0f66d573-5da4-4b3c-ab06-bb330cff2c9a"
+      },
+      {
+       "qty": 5,
+       "name": "Swamp",
+       "set": "neo",
+       "number": "287",
+       "id": "48f7492c-67f2-4ba3-848b-7a6a8df7e88b"
+      }
+     ]
+    }
+   },
+   "reward": {
+    "hero": {
+     "packs": 1,
+     "coins": 100
+    },
+    "villain": {
+     "card": {
+      "oracle_id": "bdc3a563-86e0-4457-b00b-85c03e62a930",
+      "name": "Obscura Initiate",
+      "rarity": "common",
+      "set": "snc",
+      "id": "67774a11-158b-437c-ac16-2d42fbb5c223",
+      "image": "https://cards.scryfall.io/normal/front/6/7/67774a11-158b-437c-ac16-2d42fbb5c223.jpg"
+     },
+     "coins": 100
+    }
+   },
+   "scene": [
+    {
+     "who": "stage",
+     "line": "We are this city, down to its bones.",
+     "quote": true
+    },
+    {
+     "who": "stage",
+     "line": "I've analyzed the vault schematic. Do you want the fast way, the easy way, or the secret way in?",
+     "quote": true
+    },
+    {
+     "who": "riveteers",
+     "line": "Connive: draw a card, then discard a card. If it was a nonland card, put a +1/+1 counter on the creature."
+    }
+   ],
+   "villainScene": [
+    {
+     "who": "stage",
+     "line": "Obscura initiates are required to bring a gift of information. They are judged on both how useful it is and how hard it was to obtain.",
+     "quote": true
+    },
+    {
+     "who": "stage",
+     "line": "No evidence, no crime.",
+     "quote": true
+    }
+   ],
+   "after": null,
+   "cues": {
+    "hero": {
+     "start": "Break in.",
+     "big": "Smash it!",
+     "low": "The vault is shut...",
+     "win": "The vault is open.",
+     "loss": "Locked out...",
+     "half": "Connive a nonland card to grow the creature."
+    },
+    "villain": {
+     "start": "Information.",
+     "big": "Seen!",
+     "low": "A leak...",
+     "win": "The Obscura knows.",
+     "loss": "Exposed..."
+    }
+   },
+   "bigPlays": [],
+   "sim": null
+  },
+  {
+   "id": "a33b6",
+   "slot": 6,
+   "kind": "Meta",
+   "mood": "march",
+   "title": "Esper Raffine",
+   "difficulty": "Normal",
+   "teaches": [
+    "Card advantage"
+   ],
+   "blurb": "Spring 2022: a three-colour Obscura midrange deck against mono-white weenies.",
+   "rewardSet": "snc",
+   "host": false,
+   "hero": {
+    "who": "raffine",
+    "deck": {
+     "name": "Esper Midrange",
+     "colors": "WUB",
+     "archetype": "Midrange",
+     "label": "tribute",
+     "cards": [
+      {
+       "qty": 3,
+       "name": "Raffine, Scheming Seer",
+       "set": "snc",
+       "number": "213",
+       "id": "716a44b4-f6b0-4f14-a270-6442aed3251f"
+      },
+      {
+       "qty": 2,
+       "name": "Queza, Augur of Agonies",
+       "set": "snc",
+       "number": "212",
+       "id": "7edb7a26-82be-4efd-9a5c-a3816e1ee2d6"
+      },
+      {
+       "qty": 3,
+       "name": "Obscura Interceptor",
+       "set": "snc",
+       "number": "209",
+       "id": "08886346-2405-47ee-997f-c0fb7776c783"
+      },
+      {
+       "qty": 3,
+       "name": "Nimble Larcenist",
+       "set": "snc",
+       "number": "205",
+       "id": "0150d4c7-2c90-4a71-b2d3-3d9a0079fea1"
+      },
+      {
+       "qty": 4,
+       "name": "Raffine's Informant",
+       "set": "snc",
+       "number": "26",
+       "id": "4e64ff87-2099-4360-94f6-164277b7b514"
+      },
+      {
+       "qty": 3,
+       "name": "Obscura Initiate",
+       "set": "snc",
+       "number": "50",
+       "id": "67774a11-158b-437c-ac16-2d42fbb5c223"
+      },
+      {
+       "qty": 4,
+       "name": "Ledger Shredder",
+       "set": "snc",
+       "number": "46",
+       "id": "7ea4b5bc-18a4-45db-a56a-ab3f8bd2fb0d"
+      },
+      {
+       "qty": 2,
+       "name": "Shattered Seraph",
+       "set": "snc",
+       "number": "221",
+       "id": "cc75ba0d-230e-4ca4-bb40-bd05af2a4457"
+      },
+      {
+       "qty": 3,
+       "name": "Void Rend",
+       "set": "snc",
+       "number": "230",
+       "id": "2daab74d-d66b-4164-aa19-24e8d5536f7d"
+      },
+      {
+       "qty": 3,
+       "name": "Obscura Charm",
+       "set": "snc",
+       "number": "208",
+       "id": "9961562d-cad9-40e5-afae-3ebce77a2260"
+      },
+      {
+       "qty": 4,
+       "name": "Murder",
+       "set": "snc",
+       "number": "88",
+       "id": "1c13ac76-7cd9-456f-9b89-92bfa07c64c5"
+      },
+      {
+       "qty": 2,
+       "name": "Kill Shot",
+       "set": "snc",
+       "number": "19",
+       "id": "61b0b9a3-8f50-4fba-9978-409f3369afa6"
+      },
+      {
+       "qty": 4,
+       "name": "Obscura Storefront",
+       "set": "snc",
+       "number": "252",
+       "id": "1016b884-9a4c-41de-bd65-14271f4f6f9a"
+      },
+      {
+       "qty": 3,
+       "name": "Raffine's Tower",
+       "set": "snc",
+       "number": "254",
+       "id": "a2c56479-4bee-4edb-80d7-4af010b7c793"
+      },
+      {
+       "qty": 2,
+       "name": "Dismal Backwater",
+       "set": "neo",
+       "number": "267",
+       "id": "fab0660b-81f8-40ca-8098-5f8d51219a40"
+      },
+      {
+       "qty": 4,
+       "name": "Plains",
+       "set": "neo",
+       "number": "283",
+       "id": "5fc26aa1-58b9-41b5-95b4-7e9bf2309b54"
+      },
+      {
+       "qty": 5,
+       "name": "Island",
+       "set": "neo",
+       "number": "285",
+       "id": "0f66d573-5da4-4b3c-ab06-bb330cff2c9a"
+      },
+      {
+       "qty": 6,
+       "name": "Swamp",
+       "set": "neo",
+       "number": "287",
+       "id": "48f7492c-67f2-4ba3-848b-7a6a8df7e88b"
+      }
+     ]
+    }
+   },
+   "villain": {
+    "who": "white",
+    "deck": {
+     "name": "Mono-White",
+     "colors": "W",
+     "archetype": "Aggro",
+     "label": "tribute",
+     "cards": [
+      {
+       "qty": 4,
+       "name": "Brokers Initiate",
+       "set": "snc",
+       "number": "5",
+       "id": "a7867f2d-e89d-429f-9ab8-5337b40b4d8d"
+      },
+      {
+       "qty": 4,
+       "name": "Raffine's Informant",
+       "set": "snc",
+       "number": "26",
+       "id": "4e64ff87-2099-4360-94f6-164277b7b514"
+      },
+      {
+       "qty": 4,
+       "name": "Inspiring Overseer",
+       "set": "snc",
+       "number": "18",
+       "id": "35d9da1d-8678-4252-b0f8-9960795642f0"
+      },
+      {
+       "qty": 2,
+       "name": "Extraction Specialist",
+       "set": "snc",
+       "number": "12",
+       "id": "b404d6c7-0b65-4c6a-b141-9dffbeb120db"
+      },
+      {
+       "qty": 3,
+       "name": "Celebrity Fencer",
+       "set": "snc",
+       "number": "7",
+       "id": "5afb5c5c-06e0-4b11-ad07-aef7be6e2cd4"
+      },
+      {
+       "qty": 4,
+       "name": "Swooping Protector",
+       "set": "snc",
+       "number": "33",
+       "id": "8713498f-a467-4a11-9de2-53a1bbd0b18b"
+      },
+      {
+       "qty": 3,
+       "name": "Giada, Font of Hope",
+       "set": "snc",
+       "number": "14",
+       "id": "bae077bd-fc8d-44d7-8c75-8dc8699c168e"
+      },
+      {
+       "qty": 4,
+       "name": "Sky Crier",
+       "set": "snc",
+       "number": "31",
+       "id": "98e01fa9-9127-4250-94f1-39e71cc3c2bc"
+      },
+      {
+       "qty": 3,
+       "name": "Illuminator Virtuoso",
+       "set": "snc",
+       "number": "17",
+       "id": "52ba20d9-9423-4114-8734-1dac307483c8"
+      },
+      {
+       "qty": 1,
+       "name": "Kill Shot",
+       "set": "snc",
+       "number": "19",
+       "id": "61b0b9a3-8f50-4fba-9978-409f3369afa6"
+      },
+      {
+       "qty": 24,
+       "name": "Plains",
+       "set": "neo",
+       "number": "283",
+       "id": "5fc26aa1-58b9-41b5-95b4-7e9bf2309b54"
+      },
+      {
+       "qty": 4,
+       "name": "Dapper Shieldmate",
+       "set": "snc",
+       "number": "9",
+       "id": "d6ce9c33-4ab3-43c9-b6bc-ee2d40d8f9b6"
+      }
+     ]
+    }
+   },
+   "reward": {
+    "hero": {
+     "packs": 1,
+     "coins": 100
+    },
+    "villain": {
+     "card": {
+      "oracle_id": "d646e42b-5635-4798-b633-29c093b66a55",
+      "name": "Inspiring Overseer",
+      "rarity": "common",
+      "set": "snc",
+      "id": "35d9da1d-8678-4252-b0f8-9960795642f0",
+      "image": "https://cards.scryfall.io/normal/front/3/5/35d9da1d-8678-4252-b0f8-9960795642f0.jpg"
+     },
+     "coins": 100
+    }
+   },
+   "scene": [
+    {
+     "who": "stage",
+     "line": "In volatile times, a sense of certainty is in high demand.",
+     "quote": true
+    },
+    {
+     "who": "stage",
+     "line": "This city could certainly use a bit more divine intervention.",
+     "quote": true
+    },
+    {
+     "who": "raffine",
+     "line": "Trade your removal for their best creature and win with card quality."
+    }
+   ],
+   "villainScene": [
+    {
+     "who": "stage",
+     "line": "Together we can build a safer, brighter New Capenna!",
+     "quote": true
+    },
+    {
+     "who": "stage",
+     "line": "In the assassination trade, no one lives to make more than one mistake.",
+     "quote": true
+    }
+   ],
+   "after": null,
+   "cues": {
+    "hero": {
+     "start": "Patience.",
+     "big": "Scheming!",
+     "low": "The weenies are quick...",
+     "win": "Quality wins.",
+     "loss": "Run over...",
+     "half": "Do not take too much damage early."
+    },
+    "villain": {
+     "start": "Together!",
+     "big": "Charge!",
+     "low": "Out of fliers...",
+     "win": "A brighter city.",
+     "loss": "Shut out..."
+    }
+   },
+   "bigPlays": [],
+   "sim": null
+  },
+  {
+   "id": "a33b7",
+   "slot": 7,
+   "kind": "Meta",
+   "mood": "tension",
+   "title": "Azorius Skies",
+   "difficulty": "Normal",
+   "teaches": [
+    "Racing"
+   ],
+   "blurb": "Spring 2022: fliers and mech against Naya Runes.",
+   "rewardSet": "neo",
+   "host": false,
+   "hero": {
+    "who": "skies",
+    "deck": {
+     "name": "Azorius Skies",
+     "colors": "WU",
+     "archetype": "Tempo",
+     "label": "tribute",
+     "cards": [
+      {
+       "qty": 4,
+       "name": "Mothrider Patrol",
+       "set": "neo",
+       "number": "30",
+       "id": "f657f2dc-adc8-4a66-b081-a71b3a127389"
+      },
+      {
+       "qty": 4,
+       "name": "Kitsune Ace",
+       "set": "neo",
+       "number": "22",
+       "id": "ef1d446a-8607-45b8-a01f-dad17bab76e7"
+      },
+      {
+       "qty": 4,
+       "name": "Blade-Blizzard Kitsune",
+       "set": "neo",
+       "number": "5",
+       "id": "d8419d27-8c6e-4f38-98b4-60dd9a910c43"
+      },
+      {
+       "qty": 3,
+       "name": "Moonfolk Puzzlemaker",
+       "set": "neo",
+       "number": "68",
+       "id": "c9fa6d4c-78dc-4b40-9ce8-a0e593d4001f"
+      },
+      {
+       "qty": 3,
+       "name": "Skyswimmer Koi",
+       "set": "neo",
+       "number": "79",
+       "id": "db50259b-8ca8-4fbe-8ae3-6b0312d70980"
+      },
+      {
+       "qty": 3,
+       "name": "Futurist Operative",
+       "set": "neo",
+       "number": "53",
+       "id": "c5858176-9f85-403c-8338-48eb55db5c3d"
+      },
+      {
+       "qty": 3,
+       "name": "Imperial Subduer",
+       "set": "neo",
+       "number": "19",
+       "id": "13246172-7554-4edc-b6db-23dc91e4290a"
+      },
+      {
+       "qty": 3,
+       "name": "Metropolis Angel",
+       "set": "snc",
+       "number": "203",
+       "id": "633c7e38-fdad-461c-9ecb-3e89d5b80f24"
+      },
+      {
+       "qty": 2,
+       "name": "Prodigy's Prototype",
+       "set": "neo",
+       "number": "231",
+       "id": "be046e0a-6509-450b-b34f-29d5a5e3472e"
+      },
+      {
+       "qty": 3,
+       "name": "Seven-Tail Mentor",
+       "set": "neo",
+       "number": "36",
+       "id": "9d77d1e6-c804-46f7-ba00-6df6bca2ae08"
+      },
+      {
+       "qty": 2,
+       "name": "Spell Pierce",
+       "set": "neo",
+       "number": "80",
+       "id": "beb42273-935b-4bda-849e-c163606cf89e"
+      },
+      {
+       "qty": 2,
+       "name": "Light the Way",
+       "set": "neo",
+       "number": "24",
+       "id": "3a2fd960-c4ec-4dfa-a61d-f8577b9d3519"
+      },
+      {
+       "qty": 4,
+       "name": "Tranquil Cove",
+       "set": "neo",
+       "number": "280",
+       "id": "68f822b7-efc5-42c8-93ea-7dd17b4c3e7a"
+      },
+      {
+       "qty": 10,
+       "name": "Plains",
+       "set": "neo",
+       "number": "283",
+       "id": "5fc26aa1-58b9-41b5-95b4-7e9bf2309b54"
+      },
+      {
+       "qty": 10,
+       "name": "Island",
+       "set": "neo",
+       "number": "285",
+       "id": "0f66d573-5da4-4b3c-ab06-bb330cff2c9a"
+      }
+     ]
+    }
+   },
+   "villain": {
+    "who": "runes",
+    "deck": {
+     "name": "The Jukai Order",
+     "colors": "RG",
+     "archetype": "Aggro",
+     "label": "tribute",
+     "note": "Naya Runes is red, green and white; the white is dropped for our land pool.",
+     "cards": [
+      {
+       "qty": 4,
+       "name": "Jukai Preserver",
+       "set": "neo",
+       "number": "195",
+       "id": "e66120a5-95a3-4d15-873c-cfba221a2299"
+      },
+      {
+       "qty": 4,
+       "name": "Heir of the Ancient Fang",
+       "set": "neo",
+       "number": "191",
+       "id": "d45daa56-6ad8-4df7-9d81-3193fd32e574"
+      },
+      {
+       "qty": 4,
+       "name": "Jukai Trainee",
+       "set": "neo",
+       "number": "196",
+       "id": "8be526cd-1480-4661-a05b-e004d7b4656c"
+      },
+      {
+       "qty": 3,
+       "name": "Spring-Leaf Avenger",
+       "set": "neo",
+       "number": "208",
+       "id": "74b1ba9c-ee62-461f-8422-f791274e2f1c"
+      },
+      {
+       "qty": 3,
+       "name": "Blossom Prancer",
+       "set": "neo",
+       "number": "175",
+       "id": "d26abdf2-efd7-40e5-bfc6-d75fcadd26f8"
+      },
+      {
+       "qty": 3,
+       "name": "Kura, the Boundless Sky",
+       "set": "neo",
+       "number": "200",
+       "id": "06b25752-26be-4189-bc8b-828db6f0e612"
+      },
+      {
+       "qty": 4,
+       "name": "Kodama of the West Tree",
+       "set": "neo",
+       "number": "199",
+       "id": "ef1e1dff-b559-441d-8df3-b6a418066aca"
+      },
+      {
+       "qty": 2,
+       "name": "Peerless Samurai",
+       "set": "neo",
+       "number": "156",
+       "id": "e5b2176d-8925-4474-9d3e-1c97192715fb"
+      },
+      {
+       "qty": 2,
+       "name": "Thundering Raiju",
+       "set": "neo",
+       "number": "166",
+       "id": "ec1a2920-6d39-4276-921c-65cc16a45f17"
+      },
+      {
+       "qty": 3,
+       "name": "Sokenzan Smelter",
+       "set": "neo",
+       "number": "164",
+       "id": "758724f9-93c9-4178-ae40-3fefc75a010e"
+      },
+      {
+       "qty": 3,
+       "name": "Boon of Boseiju",
+       "set": "neo",
+       "number": "176",
+       "id": "06771591-0480-4232-bc67-216b2e0fe738"
+      },
+      {
+       "qty": 1,
+       "name": "Kindled Fury",
+       "set": "neo",
+       "number": "151",
+       "id": "58c8bdce-73a3-4266-b3d6-61dbf4534ea3"
+      },
+      {
+       "qty": 4,
+       "name": "Rugged Highlands",
+       "set": "neo",
+       "number": "273",
+       "id": "58d511be-60e0-4755-abec-18eebb530605"
+      },
+      {
+       "qty": 10,
+       "name": "Forest",
+       "set": "neo",
+       "number": "291",
+       "id": "aea5c36b-c107-4daf-bedb-507b4cd64724"
+      },
+      {
+       "qty": 10,
+       "name": "Mountain",
+       "set": "neo",
+       "number": "289",
+       "id": "2fe601b0-0398-47f0-9e4f-9f841ad79b9b"
+      }
+     ]
+    }
+   },
+   "reward": {
+    "hero": {
+     "packs": 1,
+     "coins": 100
+    },
+    "villain": {
+     "card": {
+      "oracle_id": "6bcdbded-46f0-44b9-86ad-edd6414e7ef6",
+      "name": "Heir of the Ancient Fang",
+      "rarity": "common",
+      "set": "neo",
+      "id": "d45daa56-6ad8-4df7-9d81-3193fd32e574",
+      "image": "https://cards.scryfall.io/normal/front/d/4/d45daa56-6ad8-4df7-9d81-3193fd32e574.jpg"
+     },
+     "coins": 100
+    }
+   },
+   "scene": [
+    {
+     "who": "stage",
+     "line": "Research is hardly the dry, serious pastime outsiders make it out to be.",
+     "quote": true
+    },
+    {
+     "who": "stage",
+     "line": "Once they swam alone among the clouds, but now the people of Kamigawa have built high enough to reach them.",
+     "quote": true
+    },
+    {
+     "who": "skies",
+     "line": "Get ahead in the air and race. Their big creatures cannot block fliers."
+    }
+   ],
+   "villainScene": [
+    {
+     "who": "stage",
+     "line": "The kami grant you this boon, not I.",
+     "quote": true
+    },
+    {
+     "who": "stage",
+     "line": "I fear I have run out of worthy opponents.",
+     "quote": true
+    }
+   ],
+   "after": null,
+   "cues": {
+    "hero": {
+     "start": "Up we go.",
+     "big": "Fliers!",
+     "low": "Their ground game is huge...",
+     "win": "The sky is ours.",
+     "loss": "Grounded...",
+     "half": "Race in the air."
+    },
+    "villain": {
+     "start": "The kami grant it.",
+     "big": "Boon!",
+     "low": "Out of runes...",
+     "win": "The grove wins.",
+     "loss": "Pruned..."
+    }
+   },
+   "bigPlays": [],
+   "sim": null
+  },
+  {
+   "id": "a33b8",
+   "slot": 8,
+   "kind": "Boss",
+   "mood": "boss",
+   "title": "Jin-Gitaxias, Progress Tyrant",
+   "difficulty": "Hard",
+   "teaches": [
+    "Racing"
+   ],
+   "blurb": "The Praetor wants everything on Kamigawa, and Kaito and Tamiyo are the last ones in his way.",
+   "rewardSet": "neo",
+   "host": true,
+   "hero": {
+    "who": "kaitotamiyo",
+    "deck": {
+     "name": "Kaito and Tamiyo",
+     "colors": "UB",
+     "archetype": null,
+     "label": "tribute",
+     "cards": [
+      {
+       "qty": 2,
+       "name": "Kaito Shizuki",
+       "set": "neo",
+       "number": "226",
+       "id": "2d35a710-3008-4e27-8afd-6e83329f9917"
+      },
+      {
+       "qty": 3,
+       "name": "Nezumi Prowler",
+       "set": "neo",
+       "number": "116",
+       "id": "ca911e9a-bd04-4531-a81e-3485e9cbe89e"
+      },
+      {
+       "qty": 2,
+       "name": "Satoru Umezawa",
+       "set": "neo",
+       "number": "234",
+       "id": "8887f26d-b097-4fbc-9c48-bdc656409a32"
+      },
+      {
+       "qty": 3,
+       "name": "Kotose, the Silent Spider",
+       "set": "neo",
+       "number": "228",
+       "id": "314e97b5-cd43-4f5e-acdd-a107208e061c"
+      },
+      {
+       "qty": 4,
+       "name": "Thousand-Faced Shadow",
+       "set": "neo",
+       "number": "86",
+       "id": "89a698a5-f4ac-4b04-96dc-32e1eeef6ac7"
+      },
+      {
+       "qty": 4,
+       "name": "Moon-Circuit Hacker",
+       "set": "neo",
+       "number": "67",
+       "id": "c6e466d1-943d-41e6-a47d-c9d951ca4262"
+      },
+      {
+       "qty": 4,
+       "name": "Dokuchi Silencer",
+       "set": "neo",
+       "number": "95",
+       "id": "a24d5664-e214-466d-bb53-4e8f6f75a009"
+      },
+      {
+       "qty": 3,
+       "name": "Silver-Fur Master",
+       "set": "neo",
+       "number": "236",
+       "id": "cacc36d9-4c4b-43b2-a8b4-d265deb1e6b2"
+      },
+      {
+       "qty": 3,
+       "name": "Biting-Palm Ninja",
+       "set": "neo",
+       "number": "88",
+       "id": "3017df51-67ae-4c3d-8210-086f83bc2040"
+      },
+      {
+       "qty": 3,
+       "name": "Lethal Exploit",
+       "set": "neo",
+       "number": "107",
+       "id": "8d8edf8f-c2bd-4fd1-8abf-d3162e068b17"
+      },
+      {
+       "qty": 3,
+       "name": "You Are Already Dead",
+       "set": "neo",
+       "number": "129",
+       "id": "768727ce-4f84-4527-8d69-3c9b7877b748"
+      },
+      {
+       "qty": 2,
+       "name": "Kaito's Pursuit",
+       "set": "neo",
+       "number": "103",
+       "id": "dd73fa5a-be0f-49a4-a921-afefbc8fa9c5"
+      },
+      {
+       "qty": 4,
+       "name": "Dismal Backwater",
+       "set": "neo",
+       "number": "267",
+       "id": "fab0660b-81f8-40ca-8098-5f8d51219a40"
+      },
+      {
+       "qty": 10,
+       "name": "Island",
+       "set": "neo",
+       "number": "285",
+       "id": "0f66d573-5da4-4b3c-ab06-bb330cff2c9a"
+      },
+      {
+       "qty": 10,
+       "name": "Swamp",
+       "set": "neo",
+       "number": "287",
+       "id": "48f7492c-67f2-4ba3-848b-7a6a8df7e88b"
+      }
+     ]
+    }
+   },
+   "villain": {
+    "who": "jinboss",
+    "deck": {
+     "name": "Jin-Gitaxias's Machines",
+     "colors": "U",
+     "archetype": null,
+     "label": "tribute",
+     "cards": [
+      {
+       "qty": 4,
+       "name": "Jin-Gitaxias, Progress Tyrant",
+       "set": "neo",
+       "number": "59",
+       "id": "c57b4876-5387-4f73-b8e2-8e7bdca8b0bc"
+      },
+      {
+       "qty": 4,
+       "name": "Moon-Circuit Hacker",
+       "set": "neo",
+       "number": "67",
+       "id": "c6e466d1-943d-41e6-a47d-c9d951ca4262"
+      },
+      {
+       "qty": 4,
+       "name": "Network Disruptor",
+       "set": "neo",
+       "number": "71",
+       "id": "5a37719a-2a87-4870-8f25-12544ca2f2cf"
+      },
+      {
+       "qty": 4,
+       "name": "Mobilizer Mech",
+       "set": "neo",
+       "number": "65",
+       "id": "cf4bb9de-ba7c-4916-b8ed-e2e644c06b58"
+      },
+      {
+       "qty": 2,
+       "name": "Armguard Familiar",
+       "set": "neo",
+       "number": "46",
+       "id": "7497f147-146d-4a76-b670-bd84e07352b3"
+      },
+      {
+       "qty": 4,
+       "name": "Futurist Operative",
+       "set": "neo",
+       "number": "53",
+       "id": "c5858176-9f85-403c-8338-48eb55db5c3d"
+      },
+      {
+       "qty": 4,
+       "name": "Replication Specialist",
+       "set": "neo",
+       "number": "76",
+       "id": "475bb3b5-b648-460c-b0ea-89ecfe0ff226"
+      },
+      {
+       "qty": 3,
+       "name": "Moonfolk Puzzlemaker",
+       "set": "neo",
+       "number": "68",
+       "id": "c9fa6d4c-78dc-4b40-9ce8-a0e593d4001f"
+      },
+      {
+       "qty": 2,
+       "name": "Reality Heist",
+       "set": "neo",
+       "number": "75",
+       "id": "5bc954d7-322a-45b8-9e25-6e9a97fbde61"
+      },
+      {
+       "qty": 2,
+       "name": "Disruption Protocol",
+       "set": "neo",
+       "number": "51",
+       "id": "053ab598-06a4-43ae-b9fd-c291bd05642c"
+      },
+      {
+       "qty": 1,
+       "name": "Spell Pierce",
+       "set": "neo",
+       "number": "80",
+       "id": "beb42273-935b-4bda-849e-c163606cf89e"
+      },
+      {
+       "qty": 2,
+       "name": "Tezzeret, Betrayer of Flesh",
+       "set": "neo",
+       "number": "84",
+       "id": "2174d16e-4a78-4d27-b220-1086c40db83e"
+      },
+      {
+       "qty": 24,
+       "name": "Island",
+       "set": "neo",
+       "number": "285",
+       "id": "0f66d573-5da4-4b3c-ab06-bb330cff2c9a"
+      }
+     ]
+    }
+   },
+   "reward": {
+    "hero": {
+     "packs": 2,
+     "coins": 200
+    },
+    "villain": {
+     "card": {
+      "oracle_id": "f5daadc1-98ff-480a-82bb-fe7bfaa7b60e",
+      "name": "Jin-Gitaxias, Progress Tyrant",
+      "rarity": "mythic",
+      "set": "neo",
+      "id": "c57b4876-5387-4f73-b8e2-8e7bdca8b0bc",
+      "image": "https://cards.scryfall.io/normal/front/c/5/c57b4876-5387-4f73-b8e2-8e7bdca8b0bc.jpg"
+     },
+     "coins": 200
+    }
+   },
+   "scene": [
+    {
+     "who": "stage",
+     "line": "To keep the Reality Chip out of Jin-Gitaxias's hands, the Wanderer entrusted it to Tamiyo.",
+     "quote": true
+    },
+    {
+     "who": "stage",
+     "line": "For all their planning, Tamiyo and Kaito were unprepared to face the full power of a Phyrexian praetor.",
+     "quote": true
+    },
+    {
+     "who": "kaitotamiyo",
+     "line": "He copies everything he sees. Pressure him early and counter his big plays."
+    }
+   ],
+   "villainScene": [
+    {
+     "who": "stage",
+     "line": "The Imperials can't arrest you for illegal tech if you never even existed.",
+     "quote": true
+    },
+    {
+     "who": "stage",
+     "line": "Just as I suspected. They thought they'd hidden the terminal, so they got lazy with the encryption.",
+     "quote": true
+    }
+   ],
+   "after": null,
+   "cues": {
+    "hero": {
+     "start": "For Kamigawa!",
+     "big": "Together!",
+     "low": "He knows every move...",
+     "win": "The chip is safe.",
+     "loss": "Compleated...",
+     "half": "Pressure him and counter the big plays."
+    },
+    "villain": {
+     "start": "Progress.",
+     "big": "[a flicker of code]",
+     "low": "[a system error]",
+     "win": "Exactly what I came for.",
+     "loss": "[the code scrambles]",
+     "half": {
+      "who": "kami",
+      "line": "The moon does not obey a machine."
+     }
+    }
+   },
+   "bigPlays": [],
+   "sim": null
+  },
+  {
+   "id": "a33b9",
+   "slot": 9,
+   "kind": "Secret Boss",
+   "secret": true,
+   "mood": "boss",
+   "title": "Esper Raffine at Full Power",
+   "difficulty": "Hard",
+   "teaches": [
+    "Racing"
+   ],
+   "blurb": "Deep in the archive, a three-colour deck that is never out of answers.",
+   "rewardSet": "snc",
+   "host": true,
+   "archive": {
+    "deck": "Esper Midrange",
+    "when": "Spring 2022",
+    "format": "Standard.",
+    "what": "A three-colour deck built around Raffine, Scheming Seer, cheap interactive creatures, and clean removal.",
+    "why": "It had the best mana in the format, with cards that were good at every stage of the game.",
+    "beat": "Kill Raffine early, and keep a Murder for their Ledger Shredder.",
+    "after": "Dominaria United arrived in autumn 2022 and the format changed again."
+   },
+   "hero": {
+    "who": "you",
+    "deck": {
+     "name": "Mono-White",
+     "colors": "W",
+     "archetype": "Aggro",
+     "label": "tribute",
+     "cards": [
+      {
+       "qty": 4,
+       "name": "Brokers Initiate",
+       "set": "snc",
+       "number": "5",
+       "id": "a7867f2d-e89d-429f-9ab8-5337b40b4d8d"
+      },
+      {
+       "qty": 4,
+       "name": "Raffine's Informant",
+       "set": "snc",
+       "number": "26",
+       "id": "4e64ff87-2099-4360-94f6-164277b7b514"
+      },
+      {
+       "qty": 4,
+       "name": "Inspiring Overseer",
+       "set": "snc",
+       "number": "18",
+       "id": "35d9da1d-8678-4252-b0f8-9960795642f0"
+      },
+      {
+       "qty": 4,
+       "name": "Extraction Specialist",
+       "set": "snc",
+       "number": "12",
+       "id": "b404d6c7-0b65-4c6a-b141-9dffbeb120db"
+      },
+      {
+       "qty": 4,
+       "name": "Celebrity Fencer",
+       "set": "snc",
+       "number": "7",
+       "id": "5afb5c5c-06e0-4b11-ad07-aef7be6e2cd4"
+      },
+      {
+       "qty": 4,
+       "name": "Swooping Protector",
+       "set": "snc",
+       "number": "33",
+       "id": "8713498f-a467-4a11-9de2-53a1bbd0b18b"
+      },
+      {
+       "qty": 3,
+       "name": "Giada, Font of Hope",
+       "set": "snc",
+       "number": "14",
+       "id": "bae077bd-fc8d-44d7-8c75-8dc8699c168e"
+      },
+      {
+       "qty": 3,
+       "name": "Sky Crier",
+       "set": "snc",
+       "number": "31",
+       "id": "98e01fa9-9127-4250-94f1-39e71cc3c2bc"
+      },
+      {
+       "qty": 3,
+       "name": "Illuminator Virtuoso",
+       "set": "snc",
+       "number": "17",
+       "id": "52ba20d9-9423-4114-8734-1dac307483c8"
+      },
+      {
+       "qty": 3,
+       "name": "Kill Shot",
+       "set": "snc",
+       "number": "19",
+       "id": "61b0b9a3-8f50-4fba-9978-409f3369afa6"
+      },
+      {
+       "qty": 24,
+       "name": "Plains",
+       "set": "neo",
+       "number": "283",
+       "id": "5fc26aa1-58b9-41b5-95b4-7e9bf2309b54"
+      }
+     ]
+    }
+   },
+   "villain": {
+    "who": "raffine",
+    "deck": {
+     "name": "Esper Midrange",
+     "colors": "WUB",
+     "archetype": "Midrange",
+     "label": "tribute",
+     "note": "Built from cards in this act's sets only. No single tournament list is copied.",
+     "cards": [
+      {
+       "qty": 4,
+       "name": "Raffine, Scheming Seer",
+       "set": "snc",
+       "number": "213",
+       "id": "716a44b4-f6b0-4f14-a270-6442aed3251f"
+      },
+      {
+       "qty": 3,
+       "name": "Queza, Augur of Agonies",
+       "set": "snc",
+       "number": "212",
+       "id": "7edb7a26-82be-4efd-9a5c-a3816e1ee2d6"
+      },
+      {
+       "qty": 4,
+       "name": "Obscura Interceptor",
+       "set": "snc",
+       "number": "209",
+       "id": "08886346-2405-47ee-997f-c0fb7776c783"
+      },
+      {
+       "qty": 4,
+       "name": "Ledger Shredder",
+       "set": "snc",
+       "number": "46",
+       "id": "7ea4b5bc-18a4-45db-a56a-ab3f8bd2fb0d"
+      },
+      {
+       "qty": 3,
+       "name": "Nimble Larcenist",
+       "set": "snc",
+       "number": "205",
+       "id": "0150d4c7-2c90-4a71-b2d3-3d9a0079fea1"
+      },
+      {
+       "qty": 3,
+       "name": "Obscura Initiate",
+       "set": "snc",
+       "number": "50",
+       "id": "67774a11-158b-437c-ac16-2d42fbb5c223"
+      },
+      {
+       "qty": 2,
+       "name": "Shattered Seraph",
+       "set": "snc",
+       "number": "221",
+       "id": "cc75ba0d-230e-4ca4-bb40-bd05af2a4457"
+      },
+      {
+       "qty": 4,
+       "name": "Void Rend",
+       "set": "snc",
+       "number": "230",
+       "id": "2daab74d-d66b-4164-aa19-24e8d5536f7d"
+      },
+      {
+       "qty": 3,
+       "name": "Obscura Charm",
+       "set": "snc",
+       "number": "208",
+       "id": "9961562d-cad9-40e5-afae-3ebce77a2260"
+      },
+      {
+       "qty": 3,
+       "name": "Murder",
+       "set": "snc",
+       "number": "88",
+       "id": "1c13ac76-7cd9-456f-9b89-92bfa07c64c5"
+      },
+      {
+       "qty": 3,
+       "name": "Kill Shot",
+       "set": "snc",
+       "number": "19",
+       "id": "61b0b9a3-8f50-4fba-9978-409f3369afa6"
+      },
+      {
+       "qty": 4,
+       "name": "Obscura Storefront",
+       "set": "snc",
+       "number": "252",
+       "id": "1016b884-9a4c-41de-bd65-14271f4f6f9a"
+      },
+      {
+       "qty": 3,
+       "name": "Raffine's Tower",
+       "set": "snc",
+       "number": "254",
+       "id": "a2c56479-4bee-4edb-80d7-4af010b7c793"
+      },
+      {
+       "qty": 2,
+       "name": "Dismal Backwater",
+       "set": "neo",
+       "number": "267",
+       "id": "fab0660b-81f8-40ca-8098-5f8d51219a40"
+      },
+      {
+       "qty": 5,
+       "name": "Plains",
+       "set": "neo",
+       "number": "283",
+       "id": "5fc26aa1-58b9-41b5-95b4-7e9bf2309b54"
+      },
+      {
+       "qty": 5,
+       "name": "Island",
+       "set": "neo",
+       "number": "285",
+       "id": "0f66d573-5da4-4b3c-ab06-bb330cff2c9a"
+      },
+      {
+       "qty": 5,
+       "name": "Swamp",
+       "set": "neo",
+       "number": "287",
+       "id": "48f7492c-67f2-4ba3-848b-7a6a8df7e88b"
+      }
+     ]
+    }
+   },
+   "reward": {
+    "hero": {
+     "packs": 2,
+     "coins": 200
+    },
+    "villain": {
+     "card": {
+      "oracle_id": "9307f7e9-bcd9-41f9-88f8-0fb9700a6b12",
+      "name": "Raffine, Scheming Seer",
+      "rarity": "mythic",
+      "set": "snc",
+      "id": "716a44b4-f6b0-4f14-a270-6442aed3251f",
+      "image": "https://cards.scryfall.io/normal/front/7/1/716a44b4-f6b0-4f14-a270-6442aed3251f.jpg"
+     },
+     "coins": 200
+    }
+   },
+   "scene": [
+    {
+     "who": "stage",
+     "line": "Some try to unravel the tangled skeins of fate. She reweaves them to her own deadly design.",
+     "quote": true
+    },
+    {
+     "who": "you",
+     "line": "Go under them. They have the better late game."
+    }
+   ],
+   "villainScene": [
+    {
+     "who": "stage",
+     "line": "The Obscura's Cloud Spire dominates the skyline, its eye a beacon of progress that sees all.",
+     "quote": true
+    }
+   ],
+   "after": [
+    {
+     "who": "stage",
+     "line": "Recorded: Dominaria United arrived in autumn 2022 and the format changed again."
+    }
+   ],
+   "cues": {
+    "hero": {
+     "start": "Hit first.",
+     "big": "Charge!",
+     "low": "They have answers...",
+     "win": "Raffine falls.",
+     "loss": "Out-valued...",
+     "half": "Aggro beats value."
+    },
+    "villain": {
+     "start": "[a quiet scheme]",
+     "big": "[the eye opens]",
+     "low": "[a counter]",
+     "win": "[the plan holds]",
+     "loss": "[the plan fails]"
+    }
+   },
+   "bigPlays": [],
+   "sim": null
+  }
+ ]
+}

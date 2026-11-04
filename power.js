@@ -1,3 +1,4 @@
+import { powerTier } from "./power-tier.js";
 import {engineMap,engineMapPanel} from './engine-map.js';
 import {strategicRisk,riskPanel} from "./strategy-risk.js";
 // Connects Deck Power (deckpower.js) to the app: picks the right lens for each game and
@@ -270,10 +271,10 @@ export function powerEligibility(p) {
  if(p?.strategic && p.strategic.score==null && competitiveScore(p)==null)return {eligible:false,reason:p.strategic.primaryRouteCoverage?.label || "Strategic route is not mapped by this model"};
  return {eligible:p?.score!=null,reason:p?.score==null?"Power estimate unavailable":""};
 }
-export const powerChip = (p) => {
+export const powerChip = (p, { tier = false } = {}) => {
  const eligibility=powerEligibility(p),c=competitiveScore(p),v=shownPower(p);
  if(!eligibility.eligible)return `<span class="power-chip p-mid" title="${esc(eligibility.reason)}"><em>—</em> ${p?.readiness?.incomplete?"incomplete":"unavailable"}</span>`;
- return `<span class="power-chip p-${v>=80?"hi":v>=60?"mid":"lo"}" title="${esc(c!=null?`Competitive reference ${c}/100`:`Power estimate ${v}/100 · ${p.strategic?.confidence||"heuristic"} evidence; not win odds`)}"><em>${v}</em> ${c!=null?"comp.":p.strategic?"estimate":"power"}</span>`;
+ return `<span class="power-chip p-${v>=80?"hi":v>=60?"mid":"lo"}" title="${esc(c!=null?`Competitive reference ${c}/100`:`Power estimate ${v}/100 · ${p.strategic?.confidence||"heuristic"} evidence; not win odds`)}"><em>${v}</em> ${tier?powerTier(v):c!=null?"comp.":p.strategic?"estimate":"power"}</span>`;
 };
 
 export function powerPanel(p, { loadAct = "", findAct = "", cardAct = () => "" } = {}) {

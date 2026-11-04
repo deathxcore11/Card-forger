@@ -39,3 +39,5 @@ html .tabletop-dialog:modal { max-height: min(94dvh, calc(var(--app-safe-height)
      this restores it at zero specificity, so any align-items the app sets still wins. */
   :where(button, input[type=button], input[type=submit], input[type=reset]) { align-items: normal; }
 }
+/* Game Night fills the screen edge to edge and pads itself by the safe area (style.css .tabletop-dialog.gn). */
+html .tabletop-dialog.gn:modal { top: 0; bottom: 0; max-height: none; }

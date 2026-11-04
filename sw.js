@@ -1,4 +1,4 @@
-const CACHE = "cardforge-shell-glow-43103-v475";
+const CACHE = "cardforge-shell-foil-act35-43105-v477";
 const ASSETS = [
   "./assets/fonts/fonts.css",
   "./play-forge-feature.js",
@@ -53,7 +53,7 @@ const ASSETS = [
   "./experiments/phase-engine/compiled-card-support.mjs",
   "./experiments/phase-engine/priority-flow.mjs",
   "./play-deck-sources.js",
-  "./play-quick-match.js",
+  "./play-quick-match.js", "./power-tier.js",
   "./play-engine-names.js",
   "./play-cpu-options.js",
   "./play-turn-controls.js",
@@ -259,7 +259,7 @@ const ASSETS = [
   "./universal-search.js",
   "./search-fan.js",
   "./app-info.js",
-  "./tabletop.js", "./tabletop-themes.js", "./game-night.js", "./table-share.js", "./play-by-hand.js",
+  "./tabletop.js", "./tabletop-themes.js", "./game-night.js", "./table-share.js", "./play-by-hand.js", "./war-chest.js",
   "./tour-scenes.js",
   "./trade.js",
   "./tier.js",

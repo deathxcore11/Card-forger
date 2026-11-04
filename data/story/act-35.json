@@ -1,0 +1,3035 @@
+{
+ "act": 35,
+ "era": "2023-02-03",
+ "title": "The March of the Machine",
+ "years": "2023",
+ "sets": [
+  "one",
+  "mom",
+  "mat"
+ ],
+ "landSet": "one",
+ "intro": [
+  {
+   "who": "stage",
+   "line": "The Invasion Tree broke through the Blind Eternities and sent Phyrexian perfection coursing across the Multiverse.",
+   "quote": true
+  },
+  {
+   "who": "stage",
+   "line": "Every plane, all at once. The Mirran resistance fights on New Phyrexia while the rest of the Multiverse is invaded."
+  }
+ ],
+ "finale": [
+  {
+   "who": "stage",
+   "line": "Faced with a blast that would level not only New Phyrexia, but also a dozen innocent worlds, Elspeth consigned it—and herself—to the nothingness in between.",
+   "quote": true
+  },
+  {
+   "who": "stage",
+   "line": "The invasion ends. The Omenpaths open across the Multiverse, and the planes can finally reach each other again."
+  },
+  {
+   "who": "stage",
+   "line": "Recorded: the Phyrexian arc ends here. What comes after belongs to the survivors."
+  }
+ ],
+ "villainFinale": [
+  {
+   "who": "stage",
+   "line": "All worlds will know perfection.",
+   "quote": true
+  },
+  {
+   "who": "stage",
+   "line": "In this version, Elesh Norn finishes the job, and there is no Multiverse left to argue about it."
+  }
+ ],
+ "vibe": "march-of-the-machine",
+ "cast": {
+  "you": {
+   "name": "You",
+   "title": "Planeswalker",
+   "portrait": {
+    "card": "Myr Custodian",
+    "set": "one",
+    "number": "235",
+    "id": "56bfdd21-4d46-4ec2-ba25-f16b6993f1a8",
+    "crop": "https://cards.scryfall.io/art_crop/front/5/6/56bfdd21-4d46-4ec2-ba25-f16b6993f1a8.jpg?1783917988",
+    "artist": "Mark Behm",
+    "focus": "50% 30%"
+   }
+  },
+  "raiders": {
+   "name": "Kaito's Raiders",
+   "title": "Of Mirrodin",
+   "portrait": {
+    "card": "Kaito, Dancing Shadow",
+    "set": "one",
+    "number": "204",
+    "id": "0d97f59a-07b8-47ef-aa88-d94f8c3feae4",
+    "crop": "https://cards.scryfall.io/art_crop/front/0/d/0d97f59a-07b8-47ef-aa88-d94f8c3feae4.jpg?1783918002",
+    "artist": "Daarken",
+    "focus": "50% 25%"
+   }
+  },
+  "vorinclex": {
+   "name": "Vorinclex's Beasts",
+   "title": "Of the Hunter Maze",
+   "portrait": {
+    "card": "Vorinclex // The Grand Evolution",
+    "set": "mom",
+    "number": "213",
+    "id": "e24b5289-d3b5-4b4d-bb37-69bf2c3b48bc",
+    "crop": "https://cards.scryfall.io/art_crop/front/e/2/e24b5289-d3b5-4b4d-bb37-69bf2c3b48bc.jpg?1783916965",
+    "artist": "Daarken",
+    "focus": "50% 25%"
+   }
+  },
+  "resistance": {
+   "name": "The Resistance",
+   "title": "Of New Phyrexia",
+   "portrait": {
+    "card": "Koth, Fire of Resistance",
+    "set": "one",
+    "number": "138",
+    "id": "6528e012-4091-4722-b706-c51772676167",
+    "crop": "https://cards.scryfall.io/art_crop/front/6/5/6528e012-4091-4722-b706-c51772676167.jpg?1783918027",
+    "artist": "Eric Wilkerson",
+    "focus": "50% 25%"
+   }
+  },
+  "jin": {
+   "name": "Jin-Gitaxias's Sectives",
+   "title": "Of the Surgical Bay",
+   "portrait": {
+    "card": "Jin-Gitaxias // The Great Synthesis",
+    "set": "mom",
+    "number": "65",
+    "id": "41c83142-b948-4ee5-a486-41306d2bb411",
+    "crop": "https://cards.scryfall.io/art_crop/front/4/1/41c83142-b948-4ee5-a486-41306d2bb411.jpg?1783917044",
+    "artist": "Ekaterina Burmak",
+    "focus": "50% 25%"
+   }
+  },
+  "planes": {
+   "name": "The Planes",
+   "title": "Defending Themselves",
+   "portrait": {
+    "card": "Wrenn and Realmbreaker",
+    "set": "mom",
+    "number": "217",
+    "id": "6f807d91-b157-44e8-a431-49782184f876",
+    "crop": "https://cards.scryfall.io/art_crop/front/6/f/6f807d91-b157-44e8-a431-49782184f876.jpg?1783916956",
+    "artist": "Cristi Balanescu",
+    "focus": "50% 25%"
+   }
+  },
+  "invaders": {
+   "name": "The Invaders",
+   "title": "Of Phyrexia",
+   "portrait": {
+    "card": "Furnace Gremlin",
+    "set": "mom",
+    "number": "139",
+    "id": "445b3315-6587-4d57-ab7e-faab1eec0241",
+    "crop": "https://cards.scryfall.io/art_crop/front/4/4/445b3315-6587-4d57-ab7e-faab1eec0241.jpg?1783916992",
+    "artist": "Tuan Duong Chu",
+    "focus": "50% 30%"
+   }
+  },
+  "mirran": {
+   "name": "The Mirran Remnants",
+   "title": "Of Mirrodin",
+   "portrait": {
+    "card": "Marshal of Zhalfir",
+    "set": "mom",
+    "number": "246",
+    "id": "c2418f5c-a85f-4249-8a53-c94b011b9714",
+    "crop": "https://cards.scryfall.io/art_crop/front/c/2/c2418f5c-a85f-4249-8a53-c94b011b9714.jpg?1783916943",
+    "artist": "Darren Tan",
+    "focus": "50% 30%"
+   }
+  },
+  "compleated": {
+   "name": "The Compleated",
+   "title": "Of Elesh Norn",
+   "portrait": {
+    "card": "Mandible Justiciar",
+    "set": "one",
+    "number": "21",
+    "id": "544a707d-4090-4a74-91aa-60fbd8a4ae96",
+    "crop": "https://cards.scryfall.io/art_crop/front/5/4/544a707d-4090-4a74-91aa-60fbd8a4ae96.jpg?1783918079",
+    "artist": "Mike Franchina",
+    "focus": "50% 30%"
+   }
+  },
+  "wrenn": {
+   "name": "Wrenn",
+   "title": "Of the Roots",
+   "portrait": {
+    "card": "Wrenn and Realmbreaker",
+    "set": "mom",
+    "number": "217",
+    "id": "6f807d91-b157-44e8-a431-49782184f876",
+    "crop": "https://cards.scryfall.io/art_crop/front/6/f/6f807d91-b157-44e8-a431-49782184f876.jpg?1783916956",
+    "artist": "Cristi Balanescu",
+    "focus": "50% 25%"
+   }
+  },
+  "roots": {
+   "name": "The Invasion Roots",
+   "title": "Of the Realmbreaker",
+   "portrait": {
+    "card": "Glissa Sunslayer",
+    "set": "one",
+    "number": "202",
+    "id": "b2bf633e-0470-4b87-99ed-5ad1683b0954",
+    "crop": "https://cards.scryfall.io/art_crop/front/b/2/b2bf633e-0470-4b87-99ed-5ad1683b0954.jpg?1783918001",
+    "artist": "Krharts",
+    "focus": "50% 25%"
+   }
+  },
+  "grixis": {
+   "name": "Grixis Midrange",
+   "title": "Spring 2023",
+   "portrait": {
+    "card": "Archfiend of the Dross",
+    "set": "one",
+    "number": "82",
+    "id": "86b0edaf-8cfd-4508-9554-6f0fddc2dfc4",
+    "crop": "https://cards.scryfall.io/art_crop/front/8/6/86b0edaf-8cfd-4508-9554-6f0fddc2dfc4.jpg?1783918050",
+    "artist": "Lie Setiawan",
+    "focus": "50% 25%"
+   }
+  },
+  "white": {
+   "name": "Mono-White",
+   "title": "Spring 2023",
+   "portrait": {
+    "card": "Porcelain Zealot",
+    "set": "one",
+    "number": "30",
+    "id": "0409bacf-b728-473d-bf9b-41fdf364e783",
+    "crop": "https://cards.scryfall.io/art_crop/front/0/4/0409bacf-b728-473d-bf9b-41fdf364e783.jpg?1783918074",
+    "artist": "Krharts",
+    "focus": "50% 30%"
+   }
+  },
+  "rakdos": {
+   "name": "Rakdos Midrange",
+   "title": "Spring 2023",
+   "portrait": {
+    "card": "Rankle and Torbran",
+    "set": "mom",
+    "number": "252",
+    "id": "d92c191e-329c-41f5-ae4f-1bb91fc001a0",
+    "crop": "https://cards.scryfall.io/art_crop/front/d/9/d92c191e-329c-41f5-ae4f-1bb91fc001a0.jpg?1783916938",
+    "artist": "Viko Menezes",
+    "focus": "50% 25%"
+   }
+  },
+  "legends": {
+   "name": "Esper Legends",
+   "title": "Spring 2023",
+   "portrait": {
+    "card": "Kemba, Kha Enduring",
+    "set": "one",
+    "number": "19",
+    "id": "945d283d-4592-485f-808a-6e5a721f3cf7",
+    "crop": "https://cards.scryfall.io/art_crop/front/9/4/945d283d-4592-485f-808a-6e5a721f3cf7.jpg?1783918078",
+    "artist": "Zoltan Boros",
+    "focus": "50% 25%"
+   }
+  },
+  "elspeth": {
+   "name": "Every Plane",
+   "title": "United",
+   "portrait": {
+    "card": "Archangel Elspeth",
+    "set": "mom",
+    "number": "6",
+    "id": "35ed6263-bdd7-4013-ac8c-9b652d71a0db",
+    "crop": "https://cards.scryfall.io/art_crop/front/3/5/35ed6263-bdd7-4013-ac8c-9b652d71a0db.jpg?1783917071",
+    "artist": "Cynthia Sheppard",
+    "focus": "50% 25%"
+   }
+  },
+  "norn": {
+   "name": "Elesh Norn",
+   "title": "Mother of Machines",
+   "portrait": {
+    "card": "Elesh Norn, Mother of Machines",
+    "set": "one",
+    "number": "10",
+    "id": "44dcab01-1d13-4dfc-ae2f-fbaa3dd35087",
+    "crop": "https://cards.scryfall.io/art_crop/front/4/4/44dcab01-1d13-4dfc-ae2f-fbaa3dd35087.jpg?1783918082",
+    "artist": "Martina Fačková",
+    "focus": "50% 25%"
+   }
+  },
+  "atraxa": {
+   "name": "Atraxa",
+   "title": "Grand Unifier",
+   "portrait": {
+    "card": "Atraxa, Grand Unifier",
+    "set": "one",
+    "number": "196",
+    "id": "4a1f905f-1d55-4d02-9d24-e58070793d3f",
+    "crop": "https://cards.scryfall.io/art_crop/front/4/a/4a1f905f-1d55-4d02-9d24-e58070793d3f.jpg?1783918003",
+    "artist": "Marta Nael",
+    "focus": "50% 25%"
+   }
+  }
+ },
+ "battles": [
+  {
+   "id": "a35b1",
+   "slot": 1,
+   "kind": "Arrival",
+   "mood": "tension",
+   "title": "For Mirrodin!",
+   "difficulty": "Easy",
+   "teaches": [
+    "Toxic"
+   ],
+   "blurb": "A strike team of raiders hits New Phyrexia. Vorinclex's poisonous beasts are waiting.",
+   "rewardSet": "one",
+   "host": false,
+   "hero": {
+    "who": "raiders",
+    "deck": {
+     "name": "Kaito's Raiders",
+     "colors": "RW",
+     "archetype": null,
+     "label": "tribute",
+     "cards": [
+      {
+       "qty": 4,
+       "name": "Enduring Bondwarden",
+       "set": "mom",
+       "number": "14",
+       "id": "eb0680eb-ceca-44d9-9654-78ea2ccfce17"
+      },
+      {
+       "qty": 4,
+       "name": "Swordsworn Cavalier",
+       "set": "mom",
+       "number": "42",
+       "id": "aa0461fc-4298-45b9-90a0-939093cf2544"
+      },
+      {
+       "qty": 4,
+       "name": "Coppercoat Vanguard",
+       "set": "mat",
+       "number": "1",
+       "id": "d786f05d-78a2-41b6-a185-111e8c1b216b"
+      },
+      {
+       "qty": 3,
+       "name": "Sigiled Sentinel",
+       "set": "mom",
+       "number": "37",
+       "id": "7f65b178-51d6-4dcb-a1cc-4b4dcb2237cd"
+      },
+      {
+       "qty": 3,
+       "name": "Kithkin Billyrider",
+       "set": "mom",
+       "number": "24",
+       "id": "0535b69f-247d-49c9-97e1-d988700578ab"
+      },
+      {
+       "qty": 1,
+       "name": "Monastery Mentor",
+       "set": "mom",
+       "number": "28",
+       "id": "75665c2f-a100-4e3f-be8e-b5cc3c9a090b"
+      },
+      {
+       "qty": 2,
+       "name": "Knight of the New Coalition",
+       "set": "mom",
+       "number": "25",
+       "id": "56a3108b-c33d-47c5-984b-01fa257fbd79"
+      },
+      {
+       "qty": 4,
+       "name": "Mirran Banesplitter",
+       "set": "mom",
+       "number": "154",
+       "id": "ee4d00b8-1373-47b2-9be5-2199e0b12540"
+      },
+      {
+       "qty": 3,
+       "name": "Bladehold War-Whip",
+       "set": "one",
+       "number": "197",
+       "id": "563e9ba5-e0ec-4fb3-8301-689aa145cc19"
+      },
+      {
+       "qty": 3,
+       "name": "Ossification",
+       "set": "one",
+       "number": "26",
+       "id": "0da03224-c1af-438f-96c2-b0e41e1070b7"
+      },
+      {
+       "qty": 3,
+       "name": "Volt Charge",
+       "set": "one",
+       "number": "155",
+       "id": "73d74045-cc9b-4b01-bc5f-0f2eb4b01580"
+      },
+      {
+       "qty": 4,
+       "name": "Wind-Scarred Crag",
+       "set": "mom",
+       "number": "276",
+       "id": "7f2642cd-e3cc-4aab-8c00-4987284509b3"
+      },
+      {
+       "qty": 10,
+       "name": "Mountain",
+       "set": "one",
+       "number": "265",
+       "id": "6d9e44c1-7b51-47cb-b564-608deb46cc44"
+      },
+      {
+       "qty": 10,
+       "name": "Plains",
+       "set": "one",
+       "number": "262",
+       "id": "50958c6e-9555-42ad-9bb3-2da9faa5cb52"
+      },
+      {
+       "qty": 2,
+       "name": "Skrelv, Defector Mite",
+       "set": "one",
+       "number": "33",
+       "id": "60b565da-a49b-479c-b0c4-8ff3dd20cc0b"
+      }
+     ]
+    }
+   },
+   "villain": {
+    "who": "vorinclex",
+    "deck": {
+     "name": "Vorinclex's Beasts",
+     "colors": "G",
+     "archetype": null,
+     "label": "tribute",
+     "cards": [
+      {
+       "qty": 4,
+       "name": "Venerated Rotpriest",
+       "set": "one",
+       "number": "192",
+       "id": "d1b032e3-14e3-48ba-ab8a-d2b4f8d31a7d"
+      },
+      {
+       "qty": 4,
+       "name": "Cankerbloom",
+       "set": "one",
+       "number": "161",
+       "id": "89b39293-6f57-4294-85fc-c718bdbb4d40"
+      },
+      {
+       "qty": 4,
+       "name": "Copper Longlegs",
+       "set": "one",
+       "number": "165",
+       "id": "f8855fbf-4f1e-4c44-9653-bbbfc3f2fafd"
+      },
+      {
+       "qty": 4,
+       "name": "Branchblight Stalker",
+       "set": "one",
+       "number": "160",
+       "id": "e5290a4c-1f98-4e97-a407-f951e386b8b0"
+      },
+      {
+       "qty": 3,
+       "name": "Ichorspit Basilisk",
+       "set": "one",
+       "number": "170",
+       "id": "0955b64f-6721-4fa6-b161-cae404cb5b9f"
+      },
+      {
+       "qty": 3,
+       "name": "Contagious Vorrac",
+       "set": "one",
+       "number": "164",
+       "id": "18af2c85-e58f-4043-99d3-e90121348aca"
+      },
+      {
+       "qty": 3,
+       "name": "Evolved Spinoderm",
+       "set": "one",
+       "number": "166",
+       "id": "dd4bcb42-f5cf-410d-8f20-1006b0f92abe"
+      },
+      {
+       "qty": 2,
+       "name": "Vorinclex // The Grand Evolution",
+       "set": "mom",
+       "number": "213",
+       "id": "e24b5289-d3b5-4b4d-bb37-69bf2c3b48bc"
+      },
+      {
+       "qty": 3,
+       "name": "Oil-Gorger Troll",
+       "set": "one",
+       "number": "177",
+       "id": "78493579-1fad-4664-96d7-195bf59ceef2"
+      },
+      {
+       "qty": 3,
+       "name": "Infectious Bite",
+       "set": "one",
+       "number": "172",
+       "id": "83dfb2a5-cd5c-46c6-9bb8-7c5d00f3e003"
+      },
+      {
+       "qty": 3,
+       "name": "Titanic Growth",
+       "set": "one",
+       "number": "187",
+       "id": "3583ea03-525f-4c70-9d7e-ccc6002ee9e1"
+      },
+      {
+       "qty": 24,
+       "name": "Forest",
+       "set": "one",
+       "number": "266",
+       "id": "4fce7045-4572-4e9e-8853-2a5dcfc989ac"
+      }
+     ]
+    }
+   },
+   "reward": {
+    "hero": {
+     "packs": 1,
+     "coins": 0
+    },
+    "villain": {
+     "card": {
+      "oracle_id": "166e5680-b8cf-47da-bcae-3591367c5fb4",
+      "name": "Vorinclex // The Grand Evolution",
+      "rarity": "mythic",
+      "set": "mom",
+      "id": "e24b5289-d3b5-4b4d-bb37-69bf2c3b48bc",
+      "image": "https://cards.scryfall.io/normal/front/e/2/e24b5289-d3b5-4b4d-bb37-69bf2c3b48bc.jpg"
+     },
+     "coins": 50
+    }
+   },
+   "scene": [
+    {
+     "who": "stage",
+     "line": "It's hard to tell with this glare, but those must be the skyhunter reinforcements! They have arrived at last!",
+     "quote": true
+    },
+    {
+     "who": "stage",
+     "line": "Our resistance is like the myr: small and easily overlooked, but loyal and resilient beyond measure.",
+     "quote": true
+    },
+    {
+     "who": "raiders",
+     "line": "Toxic: a creature with toxic gives poison counters as well as damage. Ten poison counters and the player loses."
+    }
+   ],
+   "villainScene": [
+    {
+     "who": "stage",
+     "line": "In Vorinclex's domain, only the mightiest survive, and all are prey in his endless hunt.",
+     "quote": true
+    },
+    {
+     "who": "stage",
+     "line": "The strategies and politics of the Vicious Swarm are as subtle as Vorinclex himself.",
+     "quote": true
+    }
+   ],
+   "after": null,
+   "cues": {
+    "hero": {
+     "start": "For Mirrodin!",
+     "big": "Strike!",
+     "low": "The beasts are fast...",
+     "win": "The raid succeeds.",
+     "loss": "Overrun...",
+     "half": "Race the poison counters."
+    },
+    "villain": {
+     "start": "Hunt.",
+     "big": "Devour!",
+     "low": "The prey escapes...",
+     "win": "All are prey.",
+     "loss": "The hunt ends..."
+    }
+   },
+   "bigPlays": [],
+   "sim": null
+  },
+  {
+   "id": "a35b2",
+   "slot": 2,
+   "kind": "Lesson",
+   "mood": "march",
+   "title": "The Oil Spreads",
+   "difficulty": "Easy",
+   "teaches": [
+    "Oil counters"
+   ],
+   "blurb": "The Resistance defends a safehouse from the sectives of Jin-Gitaxias.",
+   "rewardSet": "one",
+   "host": false,
+   "hero": {
+    "who": "resistance",
+    "deck": {
+     "name": "The Resistance",
+     "colors": "RG",
+     "archetype": null,
+     "label": "tribute",
+     "cards": [
+      {
+       "qty": 4,
+       "name": "Rustvine Cultivator",
+       "set": "one",
+       "number": "181",
+       "id": "6b71fd8f-e688-4210-bc5b-a3f19b5b3497"
+      },
+      {
+       "qty": 4,
+       "name": "Armored Scrapgorger",
+       "set": "one",
+       "number": "158",
+       "id": "61e220d0-38c9-4584-940b-8a9e983ecfe7"
+      },
+      {
+       "qty": 3,
+       "name": "Overgrown Pest",
+       "set": "mom",
+       "number": "197",
+       "id": "a1e04eed-9a6c-491b-8f1f-1c76ac40452d"
+      },
+      {
+       "qty": 3,
+       "name": "Oil-Gorger Troll",
+       "set": "one",
+       "number": "177",
+       "id": "78493579-1fad-4664-96d7-195bf59ceef2"
+      },
+      {
+       "qty": 3,
+       "name": "Tyrranax Atrocity",
+       "set": "one",
+       "number": "188",
+       "id": "157cf43c-f7f2-4362-bfc8-11682e94b747"
+      },
+      {
+       "qty": 3,
+       "name": "Koth, Fire of Resistance",
+       "set": "one",
+       "number": "138",
+       "id": "6528e012-4091-4722-b706-c51772676167"
+      },
+      {
+       "qty": 3,
+       "name": "Urabrask's Forge",
+       "set": "one",
+       "number": "153",
+       "id": "68f9f9d8-9ea0-4608-a79c-a09a87918186"
+      },
+      {
+       "qty": 4,
+       "name": "Shrapnel Slinger",
+       "set": "one",
+       "number": "148",
+       "id": "a6147bdc-4e02-48be-9ab9-c212f70d9194"
+      },
+      {
+       "qty": 4,
+       "name": "Volt Charge",
+       "set": "one",
+       "number": "155",
+       "id": "73d74045-cc9b-4b01-bc5f-0f2eb4b01580"
+      },
+      {
+       "qty": 3,
+       "name": "Furnace Punisher",
+       "set": "one",
+       "number": "132",
+       "id": "65e5fc08-7a04-4bba-81ba-990889cae96a"
+      },
+      {
+       "qty": 2,
+       "name": "Thrill of Possibility",
+       "set": "one",
+       "number": "151",
+       "id": "1efd4ae5-0076-46a0-a113-58cfff53144f"
+      },
+      {
+       "qty": 4,
+       "name": "Copperline Gorge",
+       "set": "one",
+       "number": "249",
+       "id": "78b0f36b-7d8c-4e77-adc2-a4dad93a81d5"
+      },
+      {
+       "qty": 10,
+       "name": "Forest",
+       "set": "one",
+       "number": "266",
+       "id": "4fce7045-4572-4e9e-8853-2a5dcfc989ac"
+      },
+      {
+       "qty": 10,
+       "name": "Mountain",
+       "set": "one",
+       "number": "265",
+       "id": "6d9e44c1-7b51-47cb-b564-608deb46cc44"
+      }
+     ]
+    }
+   },
+   "villain": {
+    "who": "jin",
+    "deck": {
+     "name": "The Sectives of Jin-Gitaxias",
+     "colors": "UB",
+     "archetype": null,
+     "label": "tribute",
+     "cards": [
+      {
+       "qty": 4,
+       "name": "Faerie Mastermind",
+       "set": "mom",
+       "number": "58",
+       "id": "52d3005f-a1c7-4ef5-911f-ccc0752f4181"
+      },
+      {
+       "qty": 4,
+       "name": "Ichor Synthesizer",
+       "set": "one",
+       "number": "55",
+       "id": "7f516ee6-8f7b-40b2-82e5-9c4ea3e0a355"
+      },
+      {
+       "qty": 4,
+       "name": "Chrome Prowler",
+       "set": "one",
+       "number": "45",
+       "id": "a94378a2-cbde-4adf-b889-43e90fc6ba28"
+      },
+      {
+       "qty": 3,
+       "name": "Jin-Gitaxias // The Great Synthesis",
+       "set": "mom",
+       "number": "65",
+       "id": "41c83142-b948-4ee5-a486-41306d2bb411"
+      },
+      {
+       "qty": 4,
+       "name": "Gitaxian Raptor",
+       "set": "one",
+       "number": "53",
+       "id": "4f5e95f8-c04d-405f-bba4-e83a8f6bf463"
+      },
+      {
+       "qty": 3,
+       "name": "Tenured Oilcaster",
+       "set": "mom",
+       "number": "126",
+       "id": "65721bc1-87fa-45b9-8b45-ee77c1aab6ac"
+      },
+      {
+       "qty": 4,
+       "name": "Negate",
+       "set": "mom",
+       "number": "68",
+       "id": "81752db1-374e-4723-b695-a2f4a634dfc6"
+      },
+      {
+       "qty": 3,
+       "name": "Drown in Ichor",
+       "set": "one",
+       "number": "91",
+       "id": "bf148ef4-0ed7-4fbe-8ab6-01dd3981c8d3"
+      },
+      {
+       "qty": 3,
+       "name": "Sheoldred's Edict",
+       "set": "one",
+       "number": "108",
+       "id": "a9225cc3-90f0-448f-a8d9-7c6c2796d077"
+      },
+      {
+       "qty": 1,
+       "name": "Gitaxian Anatomist",
+       "set": "one",
+       "number": "52",
+       "id": "63517062-77da-4b60-aa24-f91553a81bed"
+      },
+      {
+       "qty": 3,
+       "name": "Thrummingbird",
+       "set": "one",
+       "number": "72",
+       "id": "67f0a63e-0866-423e-b917-fc7c71063021"
+      },
+      {
+       "qty": 4,
+       "name": "Darkslick Shores",
+       "set": "one",
+       "number": "250",
+       "id": "bcbda15b-e49a-4445-a0e1-f221aa82c1e8"
+      },
+      {
+       "qty": 10,
+       "name": "Island",
+       "set": "one",
+       "number": "263",
+       "id": "5c6322d4-52bf-471a-a5b2-8329ef4be39a"
+      },
+      {
+       "qty": 10,
+       "name": "Swamp",
+       "set": "one",
+       "number": "264",
+       "id": "736a0484-e091-4178-92c5-c517b0e92f3d"
+      }
+     ]
+    }
+   },
+   "reward": {
+    "hero": {
+     "packs": 1,
+     "coins": 0
+    },
+    "villain": {
+     "card": {
+      "oracle_id": "b70c3adb-64ba-49ea-bcf6-6406a58cb453",
+      "name": "Jin-Gitaxias // The Great Synthesis",
+      "rarity": "mythic",
+      "set": "mom",
+      "id": "41c83142-b948-4ee5-a486-41306d2bb411",
+      "image": "https://cards.scryfall.io/normal/front/4/1/41c83142-b948-4ee5-a486-41306d2bb411.jpg"
+     },
+     "coins": 50
+    }
+   },
+   "scene": [
+    {
+     "who": "stage",
+     "line": "Melira helped me design it. Those who are infected by the oil cannot cross the threshold. We should be safe inside.",
+     "quote": true
+    },
+    {
+     "who": "stage",
+     "line": "The oil is all-knowing. The trick is to ask the right questions.",
+     "quote": true
+    },
+    {
+     "who": "resistance",
+     "line": "Oil counters: Phyrexian permanents store them as they work. When they have enough, they pay off. Pressure them before that happens."
+    }
+   ],
+   "villainScene": [
+    {
+     "who": "stage",
+     "line": "It is Jin-Gitaxias's deepest exasperation that any part of his domain still requires maintenance.",
+     "quote": true
+    },
+    {
+     "who": "stage",
+     "line": "Free will was an illusion so perfect it fooled even me. I know better now.",
+     "quote": true
+    }
+   ],
+   "after": null,
+   "cues": {
+    "hero": {
+     "start": "Hold the door.",
+     "big": "Burn it!",
+     "low": "The oil is spreading...",
+     "win": "The safehouse holds.",
+     "loss": "Compleated...",
+     "half": "Strike before their oil pays off."
+    },
+    "villain": {
+     "start": "Observe.",
+     "big": "Iterate!",
+     "low": "An inconsistency...",
+     "win": "Progress.",
+     "loss": "Experiment failed..."
+    }
+   },
+   "bigPlays": [],
+   "sim": null
+  },
+  {
+   "id": "a35b3",
+   "slot": 3,
+   "kind": "Lesson",
+   "mood": "comic",
+   "title": "Defend Each Plane",
+   "difficulty": "Easy",
+   "teaches": [
+    "Battles"
+   ],
+   "blurb": "March of the Machine: a plane becomes a battle, and the defender has to hold it.",
+   "rewardSet": "mom",
+   "host": false,
+   "hero": {
+    "who": "planes",
+    "deck": {
+     "name": "The Planes Defend",
+     "colors": "GW",
+     "archetype": null,
+     "label": "tribute",
+     "cards": [
+      {
+       "qty": 4,
+       "name": "Wary Thespian",
+       "set": "mom",
+       "number": "215",
+       "id": "675b29bf-0b64-410f-9a92-c88e5615c27f"
+      },
+      {
+       "qty": 4,
+       "name": "Kami of Whispered Hopes",
+       "set": "mom",
+       "number": "196",
+       "id": "5c644650-3861-4a78-9e39-a413b073ddac"
+      },
+      {
+       "qty": 4,
+       "name": "Zhalfirin Lancer",
+       "set": "mom",
+       "number": "45",
+       "id": "277e5b49-c53f-4bf7-aac0-950d8708b957"
+      },
+      {
+       "qty": 3,
+       "name": "Knight-Errant of Eos",
+       "set": "mom",
+       "number": "26",
+       "id": "ab2ad652-2406-491a-9f22-23e974f943d7"
+      },
+      {
+       "qty": 3,
+       "name": "Calix, Guided by Fate",
+       "set": "mat",
+       "number": "26",
+       "id": "0a707ab3-b9b5-422a-8b0f-e963d3ad6606"
+      },
+      {
+       "qty": 3,
+       "name": "Sigarda, Font of Blessings",
+       "set": "mat",
+       "number": "47",
+       "id": "cba71725-d6df-44d7-a93b-934573759711"
+      },
+      {
+       "qty": 3,
+       "name": "Titanic Growth",
+       "set": "one",
+       "number": "187",
+       "id": "3583ea03-525f-4c70-9d7e-ccc6002ee9e1"
+      },
+      {
+       "qty": 3,
+       "name": "Invasion of Zendikar // Awakened Skyclave",
+       "set": "mom",
+       "number": "194",
+       "id": "8fed056f-a8f5-41ec-a7d2-a80a238872d1"
+      },
+      {
+       "qty": 2,
+       "name": "Invasion of Belenon // Belenon War Anthem",
+       "set": "mom",
+       "number": "20",
+       "id": "4fb0eb2d-9cb7-4e72-a970-5009b046df2a"
+      },
+      {
+       "qty": 2,
+       "name": "Invasion of Dominaria // Serra Faithkeeper",
+       "set": "mom",
+       "number": "21",
+       "id": "7e784d3d-0c6d-4ce5-beb5-edd2adb32385"
+      },
+      {
+       "qty": 3,
+       "name": "Surge of Salvation",
+       "set": "mom",
+       "number": "41",
+       "id": "41d25ee5-0348-4206-bb6a-ccb0a599ac87"
+      },
+      {
+       "qty": 2,
+       "name": "Cut Short",
+       "set": "mom",
+       "number": "10",
+       "id": "b0a45d4d-d16a-43c6-843c-916d4629aae1"
+      },
+      {
+       "qty": 4,
+       "name": "Razorverge Thicket",
+       "set": "one",
+       "number": "257",
+       "id": "65b26f68-3a25-4c4e-bc76-a199ab479a50"
+      },
+      {
+       "qty": 10,
+       "name": "Forest",
+       "set": "one",
+       "number": "266",
+       "id": "4fce7045-4572-4e9e-8853-2a5dcfc989ac"
+      },
+      {
+       "qty": 10,
+       "name": "Plains",
+       "set": "one",
+       "number": "262",
+       "id": "50958c6e-9555-42ad-9bb3-2da9faa5cb52"
+      }
+     ]
+    }
+   },
+   "villain": {
+    "who": "invaders",
+    "deck": {
+     "name": "The Invaders",
+     "colors": "R",
+     "archetype": null,
+     "label": "tribute",
+     "cards": [
+      {
+       "qty": 4,
+       "name": "Furnace Gremlin",
+       "set": "mom",
+       "number": "139",
+       "id": "445b3315-6587-4d57-ab7e-faab1eec0241"
+      },
+      {
+       "qty": 1,
+       "name": "Beamtown Beatstick",
+       "set": "mom",
+       "number": "131",
+       "id": "2443cb94-b27e-4a96-93cb-ac7880149bcc"
+      },
+      {
+       "qty": 4,
+       "name": "Bloodfeather Phoenix",
+       "set": "mom",
+       "number": "132",
+       "id": "ed97bf6f-726c-40aa-bc1c-14fa801da96a"
+      },
+      {
+       "qty": 4,
+       "name": "Harried Artisan // Phyrexian Skyflayer",
+       "set": "mom",
+       "number": "143",
+       "id": "73e92389-4bd2-492e-b4d6-d7cb6baedc41"
+      },
+      {
+       "qty": 4,
+       "name": "Thrashing Frontliner",
+       "set": "mom",
+       "number": "167",
+       "id": "77fd9ccb-2cb0-4fe1-9eb0-ba929bb527be"
+      },
+      {
+       "qty": 2,
+       "name": "Volt Charge",
+       "set": "one",
+       "number": "155",
+       "id": "73d74045-cc9b-4b01-bc5f-0f2eb4b01580"
+      },
+      {
+       "qty": 2,
+       "name": "Scrappy Bruiser",
+       "set": "mom",
+       "number": "162",
+       "id": "ab6c877a-25f7-4ee7-8cf0-33728ef085fc"
+      },
+      {
+       "qty": 3,
+       "name": "Burning Sun's Fury",
+       "set": "mom",
+       "number": "133",
+       "id": "2731e181-f59c-446c-bb86-8f93bfbb10e9"
+      },
+      {
+       "qty": 1,
+       "name": "Stoke the Flames",
+       "set": "mom",
+       "number": "166",
+       "id": "04113b3c-cc8f-4b15-9091-f82ea3df2e7c"
+      },
+      {
+       "qty": 24,
+       "name": "Mountain",
+       "set": "one",
+       "number": "265",
+       "id": "6d9e44c1-7b51-47cb-b564-608deb46cc44"
+      },
+      {
+       "qty": 3,
+       "name": "Cacophony Scamp",
+       "set": "one",
+       "number": "124",
+       "id": "3553dcef-7b99-49d5-b071-06b894696952"
+      },
+      {
+       "qty": 2,
+       "name": "Sawblade Scamp",
+       "set": "one",
+       "number": "147",
+       "id": "7f04c2e5-9100-439a-9aa4-28d388518e4a"
+      },
+      {
+       "qty": 3,
+       "name": "Gleeful Demolition",
+       "set": "one",
+       "number": "134",
+       "id": "a3e4efa6-5783-4a51-99c6-116d1a8f01cf"
+      },
+      {
+       "qty": 3,
+       "name": "Exuberant Fuseling",
+       "set": "one",
+       "number": "129",
+       "id": "a6e8d7b9-ff5e-48ae-9e38-d2b6a45b119b"
+      }
+     ]
+    }
+   },
+   "reward": {
+    "hero": {
+     "packs": 1,
+     "coins": 0
+    },
+    "villain": {
+     "card": {
+      "oracle_id": "bcbef58b-0c16-40f2-9b5c-14dfcc00f5e5",
+      "name": "Furnace Gremlin",
+      "rarity": "uncommon",
+      "set": "mom",
+      "id": "445b3315-6587-4d57-ab7e-faab1eec0241",
+      "image": "https://cards.scryfall.io/normal/front/4/4/445b3315-6587-4d57-ab7e-faab1eec0241.jpg"
+     },
+     "coins": 50
+    }
+   },
+   "scene": [
+    {
+     "who": "stage",
+     "line": "Ixalan greeted Phyrexia with a defiant roar.",
+     "quote": true
+    },
+    {
+     "who": "stage",
+     "line": "Her warning raced through the roots and rivers of Ixalan: prepare for war.",
+     "quote": true
+    },
+    {
+     "who": "planes",
+     "line": "Battles: an invasion is a battle. Attack it and defeat it to flip it, or defend it and keep the invaders out."
+    }
+   ],
+   "villainScene": [
+    {
+     "who": "stage",
+     "line": "Walls built to withstand assaults even from Ikoria's apex monsters were quickly deemed tactically irrelevant by Vorinclex's forces.",
+     "quote": true
+    },
+    {
+     "who": "stage",
+     "line": "Popular wisdom says that Phyrexians don't feel fear.",
+     "quote": true
+    }
+   ],
+   "after": null,
+   "cues": {
+    "hero": {
+     "start": "Hold the plane.",
+     "big": "Defend!",
+     "low": "They are everywhere...",
+     "win": "The plane stands.",
+     "loss": "Overrun...",
+     "half": "Defeat the battle before it flips."
+    },
+    "villain": {
+     "start": "Invade.",
+     "big": "Charge!",
+     "low": "The plane resists...",
+     "win": "Another world falls.",
+     "loss": "Repelled..."
+    }
+   },
+   "bigPlays": [],
+   "sim": null
+  },
+  {
+   "id": "a35b4",
+   "slot": 4,
+   "kind": "Rival",
+   "mood": "tension",
+   "title": "The Compleated",
+   "difficulty": "Normal",
+   "teaches": [
+    "Proliferate"
+   ],
+   "blurb": "Elesh Norn's cathedral is full of the compleated. The Mirran remnants have to take it back.",
+   "rewardSet": "one",
+   "host": false,
+   "hero": {
+    "who": "mirran",
+    "deck": {
+     "name": "The Mirran Remnants",
+     "colors": "WU",
+     "archetype": null,
+     "label": "tribute",
+     "cards": [
+      {
+       "qty": 4,
+       "name": "Gold-Forged Thopteryx",
+       "set": "mat",
+       "number": "31",
+       "id": "6917d51b-eb61-4e7e-8336-8b4adf8d1e39"
+      },
+      {
+       "qty": 4,
+       "name": "Marshal of Zhalfir",
+       "set": "mom",
+       "number": "246",
+       "id": "c2418f5c-a85f-4249-8a53-c94b011b9714"
+      },
+      {
+       "qty": 4,
+       "name": "Malcator, Purity Overseer",
+       "set": "one",
+       "number": "208",
+       "id": "36bda977-e5d1-4813-a5f5-265023965142"
+      },
+      {
+       "qty": 3,
+       "name": "Cephalopod Sentry",
+       "set": "one",
+       "number": "198",
+       "id": "30c22eb9-5056-4c0b-a5d8-41e09161eb40"
+      },
+      {
+       "qty": 4,
+       "name": "Incisor Glider",
+       "set": "one",
+       "number": "15",
+       "id": "b3cf4c4f-bda6-454c-991d-429c0dca0e85"
+      },
+      {
+       "qty": 3,
+       "name": "Attentive Skywarden",
+       "set": "mom",
+       "number": "7",
+       "id": "83d89bd5-95cc-41fc-aea2-2dde52231919"
+      },
+      {
+       "qty": 3,
+       "name": "Archangel Elspeth",
+       "set": "mom",
+       "number": "6",
+       "id": "35ed6263-bdd7-4013-ac8c-9b652d71a0db"
+      },
+      {
+       "qty": 2,
+       "name": "Negate",
+       "set": "mom",
+       "number": "68",
+       "id": "81752db1-374e-4723-b695-a2f4a634dfc6"
+      },
+      {
+       "qty": 3,
+       "name": "Jace, the Perfected Mind",
+       "set": "one",
+       "number": "57",
+       "id": "64e6a8d1-ae75-45bd-af62-9a622620cb5c"
+      },
+      {
+       "qty": 2,
+       "name": "Stasis Field",
+       "set": "mom",
+       "number": "79",
+       "id": "38211d78-ebac-4150-ac11-7613a0e9e1bc"
+      },
+      {
+       "qty": 4,
+       "name": "Seachrome Coast",
+       "set": "one",
+       "number": "258",
+       "id": "9ed7441f-f624-49c8-8611-d9bba0e441ac"
+      },
+      {
+       "qty": 10,
+       "name": "Plains",
+       "set": "one",
+       "number": "262",
+       "id": "50958c6e-9555-42ad-9bb3-2da9faa5cb52"
+      },
+      {
+       "qty": 10,
+       "name": "Island",
+       "set": "one",
+       "number": "263",
+       "id": "5c6322d4-52bf-471a-a5b2-8329ef4be39a"
+      },
+      {
+       "qty": 4,
+       "name": "Porcelain Zealot",
+       "set": "one",
+       "number": "30",
+       "id": "0409bacf-b728-473d-bf9b-41fdf364e783"
+      }
+     ]
+    }
+   },
+   "villain": {
+    "who": "compleated",
+    "deck": {
+     "name": "The Compleated",
+     "colors": "WB",
+     "archetype": null,
+     "label": "tribute",
+     "cards": [
+      {
+       "qty": 4,
+       "name": "Infested Fleshcutter",
+       "set": "one",
+       "number": "17",
+       "id": "9f03d6bf-cbba-4ad7-8cec-065a47f03dbe"
+      },
+      {
+       "qty": 4,
+       "name": "Mandible Justiciar",
+       "set": "one",
+       "number": "21",
+       "id": "544a707d-4090-4a74-91aa-60fbd8a4ae96"
+      },
+      {
+       "qty": 4,
+       "name": "Orthodoxy Enforcer",
+       "set": "one",
+       "number": "25",
+       "id": "8c938a0f-531c-4293-a89c-c7440d5acc5d"
+      },
+      {
+       "qty": 4,
+       "name": "Ayara's Oathsworn",
+       "set": "mat",
+       "number": "11",
+       "id": "5330e6b7-eca3-46a4-8905-8f1de16f76af"
+      },
+      {
+       "qty": 1,
+       "name": "Compleated Huntmaster",
+       "set": "mom",
+       "number": "96",
+       "id": "4fc23af5-18dd-45f9-8d82-76b48aaf6d4d"
+      },
+      {
+       "qty": 1,
+       "name": "Phyrexian Obliterator",
+       "set": "one",
+       "number": "105",
+       "id": "67a9c38b-6b3a-4056-a87c-fc48446f854f"
+      },
+      {
+       "qty": 1,
+       "name": "Drana and Linvala",
+       "set": "mom",
+       "number": "222",
+       "id": "bbda000f-3cf7-48b6-96ff-c23a3a64eab5"
+      },
+      {
+       "qty": 2,
+       "name": "Sheoldred's Edict",
+       "set": "one",
+       "number": "108",
+       "id": "a9225cc3-90f0-448f-a8d9-7c6c2796d077"
+      },
+      {
+       "qty": 3,
+       "name": "Ossification",
+       "set": "one",
+       "number": "26",
+       "id": "0da03224-c1af-438f-96c2-b0e41e1070b7"
+      },
+      {
+       "qty": 3,
+       "name": "Vraska's Fall",
+       "set": "one",
+       "number": "116",
+       "id": "0173b7b4-2832-4943-ba45-8ba498d7a056"
+      },
+      {
+       "qty": 4,
+       "name": "Scoured Barrens",
+       "set": "mom",
+       "number": "272",
+       "id": "66aefbfc-3f67-443d-8ec4-cc9beafb64ee"
+      },
+      {
+       "qty": 10,
+       "name": "Plains",
+       "set": "one",
+       "number": "262",
+       "id": "50958c6e-9555-42ad-9bb3-2da9faa5cb52"
+      },
+      {
+       "qty": 10,
+       "name": "Swamp",
+       "set": "one",
+       "number": "264",
+       "id": "736a0484-e091-4178-92c5-c517b0e92f3d"
+      },
+      {
+       "qty": 4,
+       "name": "Skrelv, Defector Mite",
+       "set": "one",
+       "number": "33",
+       "id": "60b565da-a49b-479c-b0c4-8ff3dd20cc0b"
+      },
+      {
+       "qty": 3,
+       "name": "Swooping Lookout",
+       "set": "one",
+       "number": "35",
+       "id": "b62c740d-260d-4dfa-b6b3-9a1527538f89"
+      },
+      {
+       "qty": 2,
+       "name": "Kor Halberd",
+       "set": "mom",
+       "number": "27",
+       "id": "a4705327-ada6-4575-82fc-351e183d060e"
+      }
+     ]
+    }
+   },
+   "reward": {
+    "hero": {
+     "packs": 1,
+     "coins": 100
+    },
+    "villain": {
+     "card": {
+      "oracle_id": "ee8f3dbd-6e86-46c2-9393-7da6c3c4b46d",
+      "name": "Mandible Justiciar",
+      "rarity": "common",
+      "set": "one",
+      "id": "544a707d-4090-4a74-91aa-60fbd8a4ae96",
+      "image": "https://cards.scryfall.io/normal/front/5/4/544a707d-4090-4a74-91aa-60fbd8a4ae96.jpg"
+     },
+     "coins": 100
+    }
+   },
+   "scene": [
+    {
+     "who": "stage",
+     "line": "The Phyrexian's monuments of today will be nothing but dust tomorrow. With enough tomorrows, so will their rule.",
+     "quote": true
+    },
+    {
+     "who": "stage",
+     "line": "Silent observers swim through the air of Norn's Seedcore, watching the nascent Invasion Tree for any signs of interference.",
+     "quote": true
+    },
+    {
+     "who": "mirran",
+     "line": "Proliferate: add one more counter of each kind already on a permanent or player. Use it on your own growing things."
+    }
+   ],
+   "villainScene": [
+    {
+     "who": "stage",
+     "line": "Hear only harmony. See only glory. Speak only truth.",
+     "quote": true
+    },
+    {
+     "who": "stage",
+     "line": "Drown, so you may breathe again.",
+     "quote": true
+    }
+   ],
+   "after": null,
+   "cues": {
+    "hero": {
+     "start": "Take it back.",
+     "big": "Proliferate!",
+     "low": "The cathedral holds...",
+     "win": "The cathedral is ours.",
+     "loss": "Compleated...",
+     "half": "Add counters to what you already grow."
+    },
+    "villain": {
+     "start": "Harmony.",
+     "big": "Be one!",
+     "low": "The chorus falters...",
+     "win": "All are one.",
+     "loss": "Silence..."
+    }
+   },
+   "bigPlays": [],
+   "sim": null
+  },
+  {
+   "id": "a35b5",
+   "slot": 5,
+   "kind": "Lesson",
+   "mood": "tension",
+   "title": "Incubate",
+   "difficulty": "Normal",
+   "teaches": [
+    "Incubate"
+   ],
+   "blurb": "Wrenn and the roots of the Realmbreaker. The Phyrexian factories keep making new things.",
+   "rewardSet": "one",
+   "host": false,
+   "hero": {
+    "who": "wrenn",
+    "deck": {
+     "name": "Wrenn and the Roots",
+     "colors": "G",
+     "archetype": null,
+     "label": "tribute",
+     "cards": [
+      {
+       "qty": 4,
+       "name": "Wary Thespian",
+       "set": "mom",
+       "number": "215",
+       "id": "675b29bf-0b64-410f-9a92-c88e5615c27f"
+      },
+      {
+       "qty": 4,
+       "name": "Portent Tracker",
+       "set": "mom",
+       "number": "201",
+       "id": "bc6104d4-d0af-40da-8227-14243d778e96"
+      },
+      {
+       "qty": 4,
+       "name": "Streetwise Negotiator",
+       "set": "mom",
+       "number": "207",
+       "id": "e83f9565-4c04-449d-b337-0eff3fd0c295"
+      },
+      {
+       "qty": 3,
+       "name": "Wrenn and Realmbreaker",
+       "set": "mom",
+       "number": "217",
+       "id": "6f807d91-b157-44e8-a431-49782184f876"
+      },
+      {
+       "qty": 3,
+       "name": "Overgrown Pest",
+       "set": "mom",
+       "number": "197",
+       "id": "a1e04eed-9a6c-491b-8f1f-1c76ac40452d"
+      },
+      {
+       "qty": 4,
+       "name": "Serpent-Blade Assailant",
+       "set": "mom",
+       "number": "205",
+       "id": "6fabc49f-b665-4c56-b06e-03220f7918bb"
+      },
+      {
+       "qty": 4,
+       "name": "Tandem Takedown",
+       "set": "mom",
+       "number": "208",
+       "id": "0eb51be0-6a2e-464a-86d1-aa36179c8c18"
+      },
+      {
+       "qty": 3,
+       "name": "Timberland Ancient",
+       "set": "mom",
+       "number": "210",
+       "id": "5f73cd60-cd89-4c7a-85a6-e0ae34ca101b"
+      },
+      {
+       "qty": 3,
+       "name": "Titanic Growth",
+       "set": "one",
+       "number": "187",
+       "id": "3583ea03-525f-4c70-9d7e-ccc6002ee9e1"
+      },
+      {
+       "qty": 24,
+       "name": "Forest",
+       "set": "one",
+       "number": "266",
+       "id": "4fce7045-4572-4e9e-8853-2a5dcfc989ac"
+      },
+      {
+       "qty": 4,
+       "name": "Branchblight Stalker",
+       "set": "one",
+       "number": "160",
+       "id": "e5290a4c-1f98-4e97-a407-f951e386b8b0"
+      }
+     ]
+    }
+   },
+   "villain": {
+    "who": "roots",
+    "deck": {
+     "name": "The Invasion Roots",
+     "colors": "BG",
+     "archetype": null,
+     "label": "tribute",
+     "cards": [
+      {
+       "qty": 4,
+       "name": "Bilious Skulldweller",
+       "set": "one",
+       "number": "83",
+       "id": "dfb81cb1-ac56-4803-a962-359854a447df"
+      },
+      {
+       "qty": 4,
+       "name": "Pestilent Syphoner",
+       "set": "one",
+       "number": "103",
+       "id": "947a1e44-3485-4e24-a34d-6c318584743c"
+      },
+      {
+       "qty": 3,
+       "name": "Karumonix, the Rat King",
+       "set": "one",
+       "number": "98",
+       "id": "f16e282d-8941-46c7-a974-c05b6f73c964"
+      },
+      {
+       "qty": 4,
+       "name": "Cutthroat Centurion",
+       "set": "one",
+       "number": "89",
+       "id": "b3890961-d636-4ccc-9c42-2088a8531c9b"
+      },
+      {
+       "qty": 3,
+       "name": "Necrosquito",
+       "set": "one",
+       "number": "100",
+       "id": "72af72d2-5995-4cad-82f1-e2d0c465d6f1"
+      },
+      {
+       "qty": 3,
+       "name": "Ravenous Necrotitan",
+       "set": "one",
+       "number": "106",
+       "id": "ce7e1e9b-ad7f-4f4c-bdb5-2ccb6f147037"
+      },
+      {
+       "qty": 3,
+       "name": "Glissa Sunslayer",
+       "set": "one",
+       "number": "202",
+       "id": "b2bf633e-0470-4b87-99ed-5ad1683b0954"
+      },
+      {
+       "qty": 4,
+       "name": "Drown in Ichor",
+       "set": "one",
+       "number": "91",
+       "id": "bf148ef4-0ed7-4fbe-8ab6-01dd3981c8d3"
+      },
+      {
+       "qty": 3,
+       "name": "Vraska's Fall",
+       "set": "one",
+       "number": "116",
+       "id": "0173b7b4-2832-4943-ba45-8ba498d7a056"
+      },
+      {
+       "qty": 3,
+       "name": "Plague Nurse",
+       "set": "one",
+       "number": "179",
+       "id": "5e7eef9e-68ae-4743-ad89-64f6fafbe365"
+      },
+      {
+       "qty": 2,
+       "name": "Infectious Bite",
+       "set": "one",
+       "number": "172",
+       "id": "83dfb2a5-cd5c-46c6-9bb8-7c5d00f3e003"
+      },
+      {
+       "qty": 4,
+       "name": "Jungle Hollow",
+       "set": "mom",
+       "number": "270",
+       "id": "b6ed20a4-bc8a-44b1-b9b7-c82518c287b8"
+      },
+      {
+       "qty": 10,
+       "name": "Swamp",
+       "set": "one",
+       "number": "264",
+       "id": "736a0484-e091-4178-92c5-c517b0e92f3d"
+      },
+      {
+       "qty": 10,
+       "name": "Forest",
+       "set": "one",
+       "number": "266",
+       "id": "4fce7045-4572-4e9e-8853-2a5dcfc989ac"
+      }
+     ]
+    }
+   },
+   "reward": {
+    "hero": {
+     "packs": 1,
+     "coins": 100
+    },
+    "villain": {
+     "card": {
+      "oracle_id": "8859a692-d107-4de2-9110-4681fc2761c7",
+      "name": "Glissa Sunslayer",
+      "rarity": "rare",
+      "set": "one",
+      "id": "b2bf633e-0470-4b87-99ed-5ad1683b0954",
+      "image": "https://cards.scryfall.io/normal/front/b/2/b2bf633e-0470-4b87-99ed-5ad1683b0954.jpg"
+     },
+     "coins": 100
+    }
+   },
+   "scene": [
+    {
+     "who": "stage",
+     "line": "This was once a peaceful spring, but I wouldn't advise taking a sip.",
+     "quote": true
+    },
+    {
+     "who": "stage",
+     "line": "Best we move on. That gurgling means it's feeding time.",
+     "quote": true
+    },
+    {
+     "who": "wrenn",
+     "line": "Incubate: make an Incubator token with a number of counters, and pay later to turn it into a Phyrexian creature."
+    }
+   ],
+   "villainScene": [
+    {
+     "who": "stage",
+     "line": "This one needs a bit longer to ripen.",
+     "quote": true
+    },
+    {
+     "who": "stage",
+     "line": "Urabrask doesn't think big enough.",
+     "quote": true
+    }
+   ],
+   "after": null,
+   "cues": {
+    "hero": {
+     "start": "Roots hold.",
+     "big": "Grow!",
+     "low": "The factories are ahead...",
+     "win": "The roots are cut.",
+     "loss": "Overgrown...",
+     "half": "Spend the incubator before they overwhelm you."
+    },
+    "villain": {
+     "start": "Ripen.",
+     "big": "Emerge!",
+     "low": "The roots wither...",
+     "win": "The forest is ours.",
+     "loss": "Cut down..."
+    }
+   },
+   "bigPlays": [],
+   "sim": null
+  },
+  {
+   "id": "a35b6",
+   "slot": 6,
+   "kind": "Meta",
+   "mood": "march",
+   "title": "Grixis vs Mono-White",
+   "difficulty": "Normal",
+   "teaches": [
+    "Card advantage"
+   ],
+   "blurb": "Spring 2023: a three-colour removal deck against mono-white weenies.",
+   "rewardSet": "one",
+   "host": false,
+   "hero": {
+    "who": "grixis",
+    "deck": {
+     "name": "Grixis Midrange",
+     "colors": "BR",
+     "archetype": "Midrange",
+     "label": "tribute",
+     "note": "Blue is dropped for our land pool; this is the black-red core.",
+     "cards": [
+      {
+       "qty": 4,
+       "name": "Cutthroat Centurion",
+       "set": "one",
+       "number": "89",
+       "id": "b3890961-d636-4ccc-9c42-2088a8531c9b"
+      },
+      {
+       "qty": 4,
+       "name": "Blightbelly Rat",
+       "set": "one",
+       "number": "85",
+       "id": "9255cd01-a611-4fec-b9ec-b271687740ba"
+      },
+      {
+       "qty": 3,
+       "name": "Archfiend of the Dross",
+       "set": "one",
+       "number": "82",
+       "id": "86b0edaf-8cfd-4508-9554-6f0fddc2dfc4"
+      },
+      {
+       "qty": 1,
+       "name": "Phyrexian Obliterator",
+       "set": "one",
+       "number": "105",
+       "id": "67a9c38b-6b3a-4056-a87c-fc48446f854f"
+      },
+      {
+       "qty": 4,
+       "name": "Stormclaw Rager",
+       "set": "mom",
+       "number": "254",
+       "id": "3b00c6e1-dfda-4c47-b1d8-4c114a921477"
+      },
+      {
+       "qty": 3,
+       "name": "Charforger",
+       "set": "one",
+       "number": "199",
+       "id": "45db6b46-c4b4-4684-8a49-53a64ffc82f2"
+      },
+      {
+       "qty": 1,
+       "name": "Rankle and Torbran",
+       "set": "mom",
+       "number": "252",
+       "id": "d92c191e-329c-41f5-ae4f-1bb91fc001a0"
+      },
+      {
+       "qty": 4,
+       "name": "Kolaghan Warmonger",
+       "set": "mat",
+       "number": "17",
+       "id": "8361d9e2-b9fc-4d46-a1ba-a24139157f26"
+      },
+      {
+       "qty": 3,
+       "name": "Sheoldred // The True Scriptures",
+       "set": "mom",
+       "number": "125",
+       "id": "bf2249e6-af74-4b88-8eb7-144ce8fa7f6b"
+      },
+      {
+       "qty": 4,
+       "name": "Volt Charge",
+       "set": "one",
+       "number": "155",
+       "id": "73d74045-cc9b-4b01-bc5f-0f2eb4b01580"
+      },
+      {
+       "qty": 3,
+       "name": "Vraska's Fall",
+       "set": "one",
+       "number": "116",
+       "id": "0173b7b4-2832-4943-ba45-8ba498d7a056"
+      },
+      {
+       "qty": 2,
+       "name": "Sheoldred's Edict",
+       "set": "one",
+       "number": "108",
+       "id": "a9225cc3-90f0-448f-a8d9-7c6c2796d077"
+      },
+      {
+       "qty": 4,
+       "name": "Blackcleave Cliffs",
+       "set": "one",
+       "number": "248",
+       "id": "1441fba4-fe06-4b5f-a103-aa6cf59a3859"
+      },
+      {
+       "qty": 10,
+       "name": "Swamp",
+       "set": "one",
+       "number": "264",
+       "id": "736a0484-e091-4178-92c5-c517b0e92f3d"
+      },
+      {
+       "qty": 10,
+       "name": "Mountain",
+       "set": "one",
+       "number": "265",
+       "id": "6d9e44c1-7b51-47cb-b564-608deb46cc44"
+      }
+     ]
+    }
+   },
+   "villain": {
+    "who": "white",
+    "deck": {
+     "name": "Mono-White",
+     "colors": "W",
+     "archetype": "Aggro",
+     "label": "tribute",
+     "cards": [
+      {
+       "qty": 2,
+       "name": "Skrelv, Defector Mite",
+       "set": "one",
+       "number": "33",
+       "id": "60b565da-a49b-479c-b0c4-8ff3dd20cc0b"
+      },
+      {
+       "qty": 3,
+       "name": "Swooping Lookout",
+       "set": "one",
+       "number": "35",
+       "id": "b62c740d-260d-4dfa-b6b3-9a1527538f89"
+      },
+      {
+       "qty": 2,
+       "name": "Mandible Justiciar",
+       "set": "one",
+       "number": "21",
+       "id": "544a707d-4090-4a74-91aa-60fbd8a4ae96"
+      },
+      {
+       "qty": 2,
+       "name": "Swordsworn Cavalier",
+       "set": "mom",
+       "number": "42",
+       "id": "aa0461fc-4298-45b9-90a0-939093cf2544"
+      },
+      {
+       "qty": 1,
+       "name": "Archangel Elspeth",
+       "set": "mom",
+       "number": "6",
+       "id": "35ed6263-bdd7-4013-ac8c-9b652d71a0db"
+      },
+      {
+       "qty": 2,
+       "name": "Ossification",
+       "set": "one",
+       "number": "26",
+       "id": "0da03224-c1af-438f-96c2-b0e41e1070b7"
+      },
+      {
+       "qty": 2,
+       "name": "Planar Disruption",
+       "set": "one",
+       "number": "28",
+       "id": "8ee69a1f-aeed-4eb4-8987-fa720fc99715"
+      },
+      {
+       "qty": 2,
+       "name": "Attentive Skywarden",
+       "set": "mom",
+       "number": "7",
+       "id": "83d89bd5-95cc-41fc-aea2-2dde52231919"
+      },
+      {
+       "qty": 24,
+       "name": "Plains",
+       "set": "one",
+       "number": "262",
+       "id": "50958c6e-9555-42ad-9bb3-2da9faa5cb52"
+      },
+      {
+       "qty": 4,
+       "name": "Kor Halberd",
+       "set": "mom",
+       "number": "27",
+       "id": "a4705327-ada6-4575-82fc-351e183d060e"
+      },
+      {
+       "qty": 4,
+       "name": "Zealot's Conviction",
+       "set": "one",
+       "number": "39",
+       "id": "3a419ba1-7bd3-48e3-8f88-d9f833b25d6d"
+      },
+      {
+       "qty": 4,
+       "name": "Progenitor Exarch",
+       "set": "mom",
+       "number": "32",
+       "id": "f86f7d03-ce71-498d-9dc5-2bd853ac0eae"
+      },
+      {
+       "qty": 4,
+       "name": "Enduring Bondwarden",
+       "set": "mom",
+       "number": "14",
+       "id": "eb0680eb-ceca-44d9-9654-78ea2ccfce17"
+      },
+      {
+       "qty": 4,
+       "name": "Crawling Chorus",
+       "set": "one",
+       "number": "8",
+       "id": "aace4c44-7250-414b-aac4-df042a1e2e1d"
+      }
+     ]
+    }
+   },
+   "reward": {
+    "hero": {
+     "packs": 1,
+     "coins": 100
+    },
+    "villain": {
+     "card": {
+      "oracle_id": "0b2481d6-97a0-4f92-b7e5-3451863fd7fb",
+      "name": "Archangel Elspeth",
+      "rarity": "mythic",
+      "set": "mom",
+      "id": "35ed6263-bdd7-4013-ac8c-9b652d71a0db",
+      "image": "https://cards.scryfall.io/normal/front/3/5/35ed6263-bdd7-4013-ac8c-9b652d71a0db.jpg"
+     },
+     "coins": 100
+    }
+   },
+   "scene": [
+    {
+     "who": "stage",
+     "line": "There's a war brewing between Norn and Urabrask. Exploit the chaos, and we can take them both down for good.",
+     "quote": true
+    },
+    {
+     "who": "stage",
+     "line": "Congratulations. I am entertained.",
+     "quote": true
+    },
+    {
+     "who": "grixis",
+     "line": "Trade your removal for their best creatures. Draw extra cards with Phyrexian Arena and win the long game."
+    }
+   ],
+   "villainScene": [
+    {
+     "who": "stage",
+     "line": "There's never a need to change the watch, for the servants of Norn are sleepless.",
+     "quote": true
+    },
+    {
+     "who": "stage",
+     "line": "There is a single, glorious truth, etched in the hearts of the faithful. Join in unity, or be washed away.",
+     "quote": true
+    }
+   ],
+   "after": null,
+   "cues": {
+    "hero": {
+     "start": "Patience.",
+     "big": "Removal!",
+     "low": "The weenies are fast...",
+     "win": "Quality wins.",
+     "loss": "Run over...",
+     "half": "Do not take too much damage early."
+    },
+    "villain": {
+     "start": "Unity.",
+     "big": "Charge!",
+     "low": "They have answers...",
+     "win": "One truth.",
+     "loss": "Washed away..."
+    }
+   },
+   "bigPlays": [],
+   "sim": null
+  },
+  {
+   "id": "a35b7",
+   "slot": 7,
+   "kind": "Meta",
+   "mood": "tension",
+   "title": "Rakdos vs Esper Legends",
+   "difficulty": "Normal",
+   "teaches": [
+    "Racing"
+   ],
+   "blurb": "Spring 2023: Rakdos midrange against a deck full of legends.",
+   "rewardSet": "one",
+   "host": false,
+   "hero": {
+    "who": "rakdos",
+    "deck": {
+     "name": "Rakdos Midrange",
+     "colors": "BR",
+     "archetype": "Midrange",
+     "label": "tribute",
+     "cards": [
+      {
+       "qty": 4,
+       "name": "Cutthroat Centurion",
+       "set": "one",
+       "number": "89",
+       "id": "b3890961-d636-4ccc-9c42-2088a8531c9b"
+      },
+      {
+       "qty": 4,
+       "name": "Blightbelly Rat",
+       "set": "one",
+       "number": "85",
+       "id": "9255cd01-a611-4fec-b9ec-b271687740ba"
+      },
+      {
+       "qty": 3,
+       "name": "Archfiend of the Dross",
+       "set": "one",
+       "number": "82",
+       "id": "86b0edaf-8cfd-4508-9554-6f0fddc2dfc4"
+      },
+      {
+       "qty": 1,
+       "name": "Phyrexian Obliterator",
+       "set": "one",
+       "number": "105",
+       "id": "67a9c38b-6b3a-4056-a87c-fc48446f854f"
+      },
+      {
+       "qty": 4,
+       "name": "Stormclaw Rager",
+       "set": "mom",
+       "number": "254",
+       "id": "3b00c6e1-dfda-4c47-b1d8-4c114a921477"
+      },
+      {
+       "qty": 3,
+       "name": "Charforger",
+       "set": "one",
+       "number": "199",
+       "id": "45db6b46-c4b4-4684-8a49-53a64ffc82f2"
+      },
+      {
+       "qty": 1,
+       "name": "Rankle and Torbran",
+       "set": "mom",
+       "number": "252",
+       "id": "d92c191e-329c-41f5-ae4f-1bb91fc001a0"
+      },
+      {
+       "qty": 4,
+       "name": "Kolaghan Warmonger",
+       "set": "mat",
+       "number": "17",
+       "id": "8361d9e2-b9fc-4d46-a1ba-a24139157f26"
+      },
+      {
+       "qty": 3,
+       "name": "Sheoldred // The True Scriptures",
+       "set": "mom",
+       "number": "125",
+       "id": "bf2249e6-af74-4b88-8eb7-144ce8fa7f6b"
+      },
+      {
+       "qty": 4,
+       "name": "Volt Charge",
+       "set": "one",
+       "number": "155",
+       "id": "73d74045-cc9b-4b01-bc5f-0f2eb4b01580"
+      },
+      {
+       "qty": 3,
+       "name": "Vraska's Fall",
+       "set": "one",
+       "number": "116",
+       "id": "0173b7b4-2832-4943-ba45-8ba498d7a056"
+      },
+      {
+       "qty": 2,
+       "name": "Sheoldred's Edict",
+       "set": "one",
+       "number": "108",
+       "id": "a9225cc3-90f0-448f-a8d9-7c6c2796d077"
+      },
+      {
+       "qty": 4,
+       "name": "Blackcleave Cliffs",
+       "set": "one",
+       "number": "248",
+       "id": "1441fba4-fe06-4b5f-a103-aa6cf59a3859"
+      },
+      {
+       "qty": 10,
+       "name": "Swamp",
+       "set": "one",
+       "number": "264",
+       "id": "736a0484-e091-4178-92c5-c517b0e92f3d"
+      },
+      {
+       "qty": 10,
+       "name": "Mountain",
+       "set": "one",
+       "number": "265",
+       "id": "6d9e44c1-7b51-47cb-b564-608deb46cc44"
+      }
+     ]
+    }
+   },
+   "villain": {
+    "who": "legends",
+    "deck": {
+     "name": "Esper Legends",
+     "colors": "WUB",
+     "archetype": "Midrange",
+     "label": "tribute",
+     "cards": [
+      {
+       "qty": 3,
+       "name": "Kemba, Kha Enduring",
+       "set": "one",
+       "number": "19",
+       "id": "945d283d-4592-485f-808a-6e5a721f3cf7"
+      },
+      {
+       "qty": 3,
+       "name": "Errant and Giada",
+       "set": "mom",
+       "number": "224",
+       "id": "54aa2d03-7713-44d4-8fca-45c6f77b174b"
+      },
+      {
+       "qty": 3,
+       "name": "Jirina, Dauntless General",
+       "set": "mat",
+       "number": "32",
+       "id": "5c0c3860-1dab-4897-8f36-f9be263bba03"
+      },
+      {
+       "qty": 3,
+       "name": "Malcator, Purity Overseer",
+       "set": "one",
+       "number": "208",
+       "id": "36bda977-e5d1-4813-a5f5-265023965142"
+      },
+      {
+       "qty": 3,
+       "name": "Marshal of Zhalfir",
+       "set": "mom",
+       "number": "246",
+       "id": "c2418f5c-a85f-4249-8a53-c94b011b9714"
+      },
+      {
+       "qty": 3,
+       "name": "Drana and Linvala",
+       "set": "mom",
+       "number": "222",
+       "id": "bbda000f-3cf7-48b6-96ff-c23a3a64eab5"
+      },
+      {
+       "qty": 3,
+       "name": "Archangel Elspeth",
+       "set": "mom",
+       "number": "6",
+       "id": "35ed6263-bdd7-4013-ac8c-9b652d71a0db"
+      },
+      {
+       "qty": 3,
+       "name": "Jace, the Perfected Mind",
+       "set": "one",
+       "number": "57",
+       "id": "64e6a8d1-ae75-45bd-af62-9a622620cb5c"
+      },
+      {
+       "qty": 3,
+       "name": "Vraska's Fall",
+       "set": "one",
+       "number": "116",
+       "id": "0173b7b4-2832-4943-ba45-8ba498d7a056"
+      },
+      {
+       "qty": 3,
+       "name": "Sheoldred's Edict",
+       "set": "one",
+       "number": "108",
+       "id": "a9225cc3-90f0-448f-a8d9-7c6c2796d077"
+      },
+      {
+       "qty": 3,
+       "name": "Ossification",
+       "set": "one",
+       "number": "26",
+       "id": "0da03224-c1af-438f-96c2-b0e41e1070b7"
+      },
+      {
+       "qty": 4,
+       "name": "Scoured Barrens",
+       "set": "mom",
+       "number": "272",
+       "id": "66aefbfc-3f67-443d-8ec4-cc9beafb64ee"
+      },
+      {
+       "qty": 4,
+       "name": "Seachrome Coast",
+       "set": "one",
+       "number": "258",
+       "id": "9ed7441f-f624-49c8-8611-d9bba0e441ac"
+      },
+      {
+       "qty": 4,
+       "name": "Darkslick Shores",
+       "set": "one",
+       "number": "250",
+       "id": "bcbda15b-e49a-4445-a0e1-f221aa82c1e8"
+      },
+      {
+       "qty": 4,
+       "name": "Plains",
+       "set": "one",
+       "number": "262",
+       "id": "50958c6e-9555-42ad-9bb3-2da9faa5cb52"
+      },
+      {
+       "qty": 4,
+       "name": "Island",
+       "set": "one",
+       "number": "263",
+       "id": "5c6322d4-52bf-471a-a5b2-8329ef4be39a"
+      },
+      {
+       "qty": 4,
+       "name": "Swamp",
+       "set": "one",
+       "number": "264",
+       "id": "736a0484-e091-4178-92c5-c517b0e92f3d"
+      },
+      {
+       "qty": 3,
+       "name": "Norn's Inquisitor",
+       "set": "mom",
+       "number": "29",
+       "id": "d387b608-ba4e-49c8-bd81-37594290a352"
+      }
+     ]
+    }
+   },
+   "reward": {
+    "hero": {
+     "packs": 1,
+     "coins": 100
+    },
+    "villain": {
+     "card": {
+      "oracle_id": "93c97e1a-bd7e-4307-8ada-58f53a887cf8",
+      "name": "Kemba, Kha Enduring",
+      "rarity": "rare",
+      "set": "one",
+      "id": "945d283d-4592-485f-808a-6e5a721f3cf7",
+      "image": "https://cards.scryfall.io/normal/front/9/4/945d283d-4592-485f-808a-6e5a721f3cf7.jpg"
+     },
+     "coins": 100
+    }
+   },
+   "scene": [
+    {
+     "who": "stage",
+     "line": "We both serve the Demon Thane. Your parts would better serve with me.",
+     "quote": true
+    },
+    {
+     "who": "stage",
+     "line": "Live or die, you serve the Steel Thanes now.",
+     "quote": true
+    },
+    {
+     "who": "rakdos",
+     "line": "Pressure their legends with removal and attackers before they stack up."
+    }
+   ],
+   "villainScene": [
+    {
+     "who": "stage",
+     "line": "May you rejoice in the magnificence of Norn. May your flesh serve perfection.",
+     "quote": true
+    },
+    {
+     "who": "stage",
+     "line": "Behold your inevitable defeat.",
+     "quote": true
+    }
+   ],
+   "after": null,
+   "cues": {
+    "hero": {
+     "start": "Fast and sharp.",
+     "big": "Kill it!",
+     "low": "Too many legends...",
+     "win": "The legends fall.",
+     "loss": "Outclassed...",
+     "half": "Race them before the legends stack up."
+    },
+    "villain": {
+     "start": "A legend arrives.",
+     "big": "Legendary!",
+     "low": "Out of legends...",
+     "win": "The legends stand.",
+     "loss": "Toppled..."
+    }
+   },
+   "bigPlays": [],
+   "sim": null
+  },
+  {
+   "id": "a35b8",
+   "slot": 8,
+   "kind": "Boss",
+   "mood": "boss",
+   "title": "Elesh Norn, Mother of Machines",
+   "difficulty": "Hard",
+   "teaches": [
+    "Racing"
+   ],
+   "blurb": "Every plane stands against the Mother of Machines. Her creatures only have to be on the battlefield.",
+   "rewardSet": "mom",
+   "host": true,
+   "hero": {
+    "who": "elspeth",
+    "deck": {
+     "name": "Every Plane United",
+     "colors": "GW",
+     "archetype": null,
+     "label": "tribute",
+     "cards": [
+      {
+       "qty": 3,
+       "name": "Archangel Elspeth",
+       "set": "mom",
+       "number": "6",
+       "id": "35ed6263-bdd7-4013-ac8c-9b652d71a0db"
+      },
+      {
+       "qty": 3,
+       "name": "Calix, Guided by Fate",
+       "set": "mat",
+       "number": "26",
+       "id": "0a707ab3-b9b5-422a-8b0f-e963d3ad6606"
+      },
+      {
+       "qty": 3,
+       "name": "Danitha, New Benalia's Light",
+       "set": "mat",
+       "number": "29",
+       "id": "039e43f2-cf3b-4c60-ac55-d2aafb20eb34"
+      },
+      {
+       "qty": 3,
+       "name": "Sigarda, Font of Blessings",
+       "set": "mat",
+       "number": "47",
+       "id": "cba71725-d6df-44d7-a93b-934573759711"
+      },
+      {
+       "qty": 3,
+       "name": "Wrenn and Realmbreaker",
+       "set": "mom",
+       "number": "217",
+       "id": "6f807d91-b157-44e8-a431-49782184f876"
+      },
+      {
+       "qty": 4,
+       "name": "Wary Thespian",
+       "set": "mom",
+       "number": "215",
+       "id": "675b29bf-0b64-410f-9a92-c88e5615c27f"
+      },
+      {
+       "qty": 4,
+       "name": "Kami of Whispered Hopes",
+       "set": "mom",
+       "number": "196",
+       "id": "5c644650-3861-4a78-9e39-a413b073ddac"
+      },
+      {
+       "qty": 4,
+       "name": "Zhalfirin Lancer",
+       "set": "mom",
+       "number": "45",
+       "id": "277e5b49-c53f-4bf7-aac0-950d8708b957"
+      },
+      {
+       "qty": 3,
+       "name": "Knight-Errant of Eos",
+       "set": "mom",
+       "number": "26",
+       "id": "ab2ad652-2406-491a-9f22-23e974f943d7"
+      },
+      {
+       "qty": 3,
+       "name": "Sunfall",
+       "set": "mom",
+       "number": "40",
+       "id": "32e29c7d-ed4b-4eff-b3c2-d99e5b63ef8d"
+      },
+      {
+       "qty": 3,
+       "name": "Titanic Growth",
+       "set": "one",
+       "number": "187",
+       "id": "3583ea03-525f-4c70-9d7e-ccc6002ee9e1"
+      },
+      {
+       "qty": 4,
+       "name": "Razorverge Thicket",
+       "set": "one",
+       "number": "257",
+       "id": "65b26f68-3a25-4c4e-bc76-a199ab479a50"
+      },
+      {
+       "qty": 10,
+       "name": "Forest",
+       "set": "one",
+       "number": "266",
+       "id": "4fce7045-4572-4e9e-8853-2a5dcfc989ac"
+      },
+      {
+       "qty": 10,
+       "name": "Plains",
+       "set": "one",
+       "number": "262",
+       "id": "50958c6e-9555-42ad-9bb3-2da9faa5cb52"
+      }
+     ]
+    }
+   },
+   "villain": {
+    "who": "norn",
+    "deck": {
+     "name": "The Mother of Machines",
+     "colors": "WB",
+     "archetype": null,
+     "label": "tribute",
+     "cards": [
+      {
+       "qty": 3,
+       "name": "Elesh Norn, Mother of Machines",
+       "set": "one",
+       "number": "10",
+       "id": "44dcab01-1d13-4dfc-ae2f-fbaa3dd35087"
+      },
+      {
+       "qty": 4,
+       "name": "Mandible Justiciar",
+       "set": "one",
+       "number": "21",
+       "id": "544a707d-4090-4a74-91aa-60fbd8a4ae96"
+      },
+      {
+       "qty": 4,
+       "name": "Porcelain Zealot",
+       "set": "one",
+       "number": "30",
+       "id": "0409bacf-b728-473d-bf9b-41fdf364e783"
+      },
+      {
+       "qty": 4,
+       "name": "Infested Fleshcutter",
+       "set": "one",
+       "number": "17",
+       "id": "9f03d6bf-cbba-4ad7-8cec-065a47f03dbe"
+      },
+      {
+       "qty": 3,
+       "name": "Drana and Linvala",
+       "set": "mom",
+       "number": "222",
+       "id": "bbda000f-3cf7-48b6-96ff-c23a3a64eab5"
+      },
+      {
+       "qty": 3,
+       "name": "Archpriest of Shadows",
+       "set": "mom",
+       "number": "89",
+       "id": "f5931746-a55c-4528-9e4a-ee15edab3489"
+      },
+      {
+       "qty": 4,
+       "name": "Ossification",
+       "set": "one",
+       "number": "26",
+       "id": "0da03224-c1af-438f-96c2-b0e41e1070b7"
+      },
+      {
+       "qty": 3,
+       "name": "Sheoldred's Edict",
+       "set": "one",
+       "number": "108",
+       "id": "a9225cc3-90f0-448f-a8d9-7c6c2796d077"
+      },
+      {
+       "qty": 2,
+       "name": "Sunfall",
+       "set": "mom",
+       "number": "40",
+       "id": "32e29c7d-ed4b-4eff-b3c2-d99e5b63ef8d"
+      },
+      {
+       "qty": 3,
+       "name": "Vraska's Fall",
+       "set": "one",
+       "number": "116",
+       "id": "0173b7b4-2832-4943-ba45-8ba498d7a056"
+      },
+      {
+       "qty": 3,
+       "name": "Orthodoxy Enforcer",
+       "set": "one",
+       "number": "25",
+       "id": "8c938a0f-531c-4293-a89c-c7440d5acc5d"
+      },
+      {
+       "qty": 4,
+       "name": "Scoured Barrens",
+       "set": "mom",
+       "number": "272",
+       "id": "66aefbfc-3f67-443d-8ec4-cc9beafb64ee"
+      },
+      {
+       "qty": 10,
+       "name": "Plains",
+       "set": "one",
+       "number": "262",
+       "id": "50958c6e-9555-42ad-9bb3-2da9faa5cb52"
+      },
+      {
+       "qty": 10,
+       "name": "Swamp",
+       "set": "one",
+       "number": "264",
+       "id": "736a0484-e091-4178-92c5-c517b0e92f3d"
+      }
+     ]
+    }
+   },
+   "reward": {
+    "hero": {
+     "packs": 2,
+     "coins": 200
+    },
+    "villain": {
+     "card": {
+      "oracle_id": "5ade11c0-41dd-4b6a-9f5b-c5903a3a0d7f",
+      "name": "Elesh Norn, Mother of Machines",
+      "rarity": "mythic",
+      "set": "one",
+      "id": "44dcab01-1d13-4dfc-ae2f-fbaa3dd35087",
+      "image": "https://cards.scryfall.io/normal/front/4/4/44dcab01-1d13-4dfc-ae2f-fbaa3dd35087.jpg"
+     },
+     "coins": 200
+    }
+   },
+   "scene": [
+    {
+     "who": "stage",
+     "line": "Perhaps this will show the Orthodoxy what we think of their attempts at indoctrination.",
+     "quote": true
+    },
+    {
+     "who": "stage",
+     "line": "Elspeth shone like a sixth sun, inspiring hope in the Mirrans and terror in New Phyrexia.",
+     "quote": true
+    },
+    {
+     "who": "elspeth",
+     "line": "Her army comes cheap. Hold the line, then clear the board with Sunfall."
+    }
+   ],
+   "villainScene": [
+    {
+     "who": "stage",
+     "line": "Be not afraid of the holy chorus. Join in rapturous harmony.",
+     "quote": true
+    },
+    {
+     "who": "stage",
+     "line": "Only Elesh Norn's most loyal servants are granted the honor of becoming part of her throne.",
+     "quote": true
+    }
+   ],
+   "after": null,
+   "cues": {
+    "hero": {
+     "start": "For every plane!",
+     "big": "Together!",
+     "low": "Her chorus is loud...",
+     "win": "The Multiverse stands.",
+     "loss": "Compleated...",
+     "half": "Clear the board before she overwhelms you."
+    },
+    "villain": {
+     "start": "Unity.",
+     "big": "[a rising chorus]",
+     "low": "[a pause in the chorus]",
+     "win": "All worlds will know perfection.",
+     "loss": "[the chorus breaks]",
+     "half": {
+      "who": "resistance",
+      "line": "We are still standing, Norn."
+     }
+    }
+   },
+   "bigPlays": [],
+   "sim": null
+  },
+  {
+   "id": "a35b9",
+   "slot": 9,
+   "kind": "Secret Boss",
+   "secret": true,
+   "mood": "boss",
+   "title": "Four-Colour Atraxa",
+   "difficulty": "Hard",
+   "teaches": [
+    "Card advantage"
+   ],
+   "blurb": "Deep in the archive, a four-colour deck that wins on turn five or not at all.",
+   "rewardSet": "one",
+   "host": true,
+   "archive": {
+    "deck": "Four-Colour Atraxa",
+    "when": "Spring 2023",
+    "format": "Standard.",
+    "what": "A four-colour deck of mana rocks and mana creatures that lands Atraxa, Grand Unifier by turn five.",
+    "why": "Atraxa drew a pile of cards from nothing and the deck had answers to everything else.",
+    "beat": "Kill the mana creatures early and keep a removal spell ready for Atraxa herself.",
+    "after": "Rotation took the deck apart, but Atraxa kept turning up in other decks."
+   },
+   "hero": {
+    "who": "you",
+    "deck": {
+     "name": "Mono-White",
+     "colors": "W",
+     "archetype": "Aggro",
+     "label": "tribute",
+     "cards": [
+      {
+       "qty": 4,
+       "name": "Skrelv, Defector Mite",
+       "set": "one",
+       "number": "33",
+       "id": "60b565da-a49b-479c-b0c4-8ff3dd20cc0b"
+      },
+      {
+       "qty": 4,
+       "name": "Swooping Lookout",
+       "set": "one",
+       "number": "35",
+       "id": "b62c740d-260d-4dfa-b6b3-9a1527538f89"
+      },
+      {
+       "qty": 4,
+       "name": "Mandible Justiciar",
+       "set": "one",
+       "number": "21",
+       "id": "544a707d-4090-4a74-91aa-60fbd8a4ae96"
+      },
+      {
+       "qty": 4,
+       "name": "Swordsworn Cavalier",
+       "set": "mom",
+       "number": "42",
+       "id": "aa0461fc-4298-45b9-90a0-939093cf2544"
+      },
+      {
+       "qty": 4,
+       "name": "Porcelain Zealot",
+       "set": "one",
+       "number": "30",
+       "id": "0409bacf-b728-473d-bf9b-41fdf364e783"
+      },
+      {
+       "qty": 1,
+       "name": "Monastery Mentor",
+       "set": "mom",
+       "number": "28",
+       "id": "75665c2f-a100-4e3f-be8e-b5cc3c9a090b"
+      },
+      {
+       "qty": 3,
+       "name": "Archangel Elspeth",
+       "set": "mom",
+       "number": "6",
+       "id": "35ed6263-bdd7-4013-ac8c-9b652d71a0db"
+      },
+      {
+       "qty": 4,
+       "name": "Ossification",
+       "set": "one",
+       "number": "26",
+       "id": "0da03224-c1af-438f-96c2-b0e41e1070b7"
+      },
+      {
+       "qty": 4,
+       "name": "Planar Disruption",
+       "set": "one",
+       "number": "28",
+       "id": "8ee69a1f-aeed-4eb4-8987-fa720fc99715"
+      },
+      {
+       "qty": 4,
+       "name": "Attentive Skywarden",
+       "set": "mom",
+       "number": "7",
+       "id": "83d89bd5-95cc-41fc-aea2-2dde52231919"
+      },
+      {
+       "qty": 24,
+       "name": "Plains",
+       "set": "one",
+       "number": "262",
+       "id": "50958c6e-9555-42ad-9bb3-2da9faa5cb52"
+      }
+     ]
+    }
+   },
+   "villain": {
+    "who": "atraxa",
+    "deck": {
+     "name": "Four-Colour Atraxa",
+     "colors": "BGUW",
+     "archetype": "Ramp",
+     "label": "tribute",
+     "note": "Built from cards in this act's sets only. No single tournament list is copied.",
+     "cards": [
+      {
+       "qty": 3,
+       "name": "Atraxa, Grand Unifier",
+       "set": "one",
+       "number": "196",
+       "id": "4a1f905f-1d55-4d02-9d24-e58070793d3f"
+      },
+      {
+       "qty": 4,
+       "name": "Phyrexian Atlas",
+       "set": "one",
+       "number": "237",
+       "id": "b5adb509-6ad3-4838-925d-1cafa926b83a"
+      },
+      {
+       "qty": 4,
+       "name": "Deeproot Wayfinder",
+       "set": "mom",
+       "number": "184",
+       "id": "b4066d41-0eb5-4dfd-93ec-2f242c3a27a4"
+      },
+      {
+       "qty": 4,
+       "name": "Portent Tracker",
+       "set": "mom",
+       "number": "201",
+       "id": "bc6104d4-d0af-40da-8227-14243d778e96"
+      },
+      {
+       "qty": 3,
+       "name": "Wrenn and Realmbreaker",
+       "set": "mom",
+       "number": "217",
+       "id": "6f807d91-b157-44e8-a431-49782184f876"
+      },
+      {
+       "qty": 3,
+       "name": "Glissa Sunslayer",
+       "set": "one",
+       "number": "202",
+       "id": "b2bf633e-0470-4b87-99ed-5ad1683b0954"
+      },
+      {
+       "qty": 3,
+       "name": "Archangel Elspeth",
+       "set": "mom",
+       "number": "6",
+       "id": "35ed6263-bdd7-4013-ac8c-9b652d71a0db"
+      },
+      {
+       "qty": 3,
+       "name": "Vraska's Fall",
+       "set": "one",
+       "number": "116",
+       "id": "0173b7b4-2832-4943-ba45-8ba498d7a056"
+      },
+      {
+       "qty": 3,
+       "name": "Drown in Ichor",
+       "set": "one",
+       "number": "91",
+       "id": "bf148ef4-0ed7-4fbe-8ab6-01dd3981c8d3"
+      },
+      {
+       "qty": 2,
+       "name": "Sheoldred's Edict",
+       "set": "one",
+       "number": "108",
+       "id": "a9225cc3-90f0-448f-a8d9-7c6c2796d077"
+      },
+      {
+       "qty": 3,
+       "name": "Jungle Hollow",
+       "set": "mom",
+       "number": "270",
+       "id": "b6ed20a4-bc8a-44b1-b9b7-c82518c287b8"
+      },
+      {
+       "qty": 3,
+       "name": "Thornwood Falls",
+       "set": "mom",
+       "number": "274",
+       "id": "f1b753e2-6e53-4ed1-9be4-66f8eb005a11"
+      },
+      {
+       "qty": 3,
+       "name": "Dismal Backwater",
+       "set": "mom",
+       "number": "269",
+       "id": "33cd4f63-3484-4cee-8603-1f89cabee6c3"
+      },
+      {
+       "qty": 3,
+       "name": "Scoured Barrens",
+       "set": "mom",
+       "number": "272",
+       "id": "66aefbfc-3f67-443d-8ec4-cc9beafb64ee"
+      },
+      {
+       "qty": 3,
+       "name": "Blossoming Sands",
+       "set": "mom",
+       "number": "268",
+       "id": "e34684d6-2935-4776-9a86-b603ad8cf624"
+      },
+      {
+       "qty": 3,
+       "name": "Tranquil Cove",
+       "set": "mom",
+       "number": "275",
+       "id": "3799dcb2-7cd7-4d28-b9af-249e3ebe3d3b"
+      },
+      {
+       "qty": 2,
+       "name": "Swamp",
+       "set": "one",
+       "number": "264",
+       "id": "736a0484-e091-4178-92c5-c517b0e92f3d"
+      },
+      {
+       "qty": 2,
+       "name": "Forest",
+       "set": "one",
+       "number": "266",
+       "id": "4fce7045-4572-4e9e-8853-2a5dcfc989ac"
+      },
+      {
+       "qty": 1,
+       "name": "Island",
+       "set": "one",
+       "number": "263",
+       "id": "5c6322d4-52bf-471a-a5b2-8329ef4be39a"
+      },
+      {
+       "qty": 1,
+       "name": "Plains",
+       "set": "one",
+       "number": "262",
+       "id": "50958c6e-9555-42ad-9bb3-2da9faa5cb52"
+      },
+      {
+       "qty": 4,
+       "name": "Skittering Surveyor",
+       "set": "mom",
+       "number": "264",
+       "id": "8bae9f1d-e96d-444c-a0fd-5608243ee6c8"
+      }
+     ]
+    }
+   },
+   "reward": {
+    "hero": {
+     "packs": 2,
+     "coins": 200
+    },
+    "villain": {
+     "card": {
+      "oracle_id": "abbcb153-0763-44c6-964f-b4ff0eb64257",
+      "name": "Atraxa, Grand Unifier",
+      "rarity": "mythic",
+      "set": "one",
+      "id": "4a1f905f-1d55-4d02-9d24-e58070793d3f",
+      "image": "https://cards.scryfall.io/normal/front/4/a/4a1f905f-1d55-4d02-9d24-e58070793d3f.jpg"
+     },
+     "coins": 200
+    }
+   },
+   "scene": [
+    {
+     "who": "stage",
+     "line": "The five suns may have dimmed, but their light still guides us.",
+     "quote": true
+    },
+    {
+     "who": "you",
+     "line": "Go under them. Kill the mana creatures and hit before turn five."
+    }
+   ],
+   "villainScene": [
+    {
+     "who": "stage",
+     "line": "Fallen angels should stay fallen.",
+     "quote": true
+    }
+   ],
+   "after": [
+    {
+     "who": "stage",
+     "line": "Recorded: rotation took the deck apart, but Atraxa kept turning up in other decks."
+    }
+   ],
+   "cues": {
+    "hero": {
+     "start": "Hit first.",
+     "big": "Charge!",
+     "low": "Atraxa has landed...",
+     "win": "The angel falls.",
+     "loss": "Out-valued...",
+     "half": "Kill the mana creatures early."
+    },
+    "villain": {
+     "start": "[a chorus begins]",
+     "big": "[the angel lands]",
+     "low": "[a missed step]",
+     "win": "[perfection]",
+     "loss": "[the angel falls]"
+    }
+   },
+   "bigPlays": [],
+   "sim": null
+  }
+ ]
+}
