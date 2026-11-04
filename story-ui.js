@@ -233,6 +233,11 @@ export const LESSONS = {
   'Mentor': 'Mentor: when this creature attacks, put a +1/+1 counter on an attacking creature with lesser power. Attack with the small ones beside it.',
   'Afterlife': 'Afterlife: when the creature dies, you make that many 1/1 flying Spirit tokens. Trading it away still leaves something behind.',
   'Amass': 'Amass: put counters on your Army token, or make one first. Kill the Army and all of its counters go with it.',
+  'Adventures': 'Adventures: an Adventure card is a spell and a creature in one. Cast the Adventure first, the card goes to exile, and later you can cast the creature from there.',
+  'Food': 'Food: a Food token is an artifact. Pay 2, tap and sacrifice it to gain 3 life. Some cards get stronger when you control Food.',
+  'Escape': 'Escape: cast the card from your graveyard by paying its escape cost and exiling other cards from your graveyard. A full graveyard is a second hand.',
+  'Mutate': 'Mutate: cast a mutating creature on top of or under a non-Human creature you control. They become one creature with both sets of abilities.',
+  'Cycling matters': 'Cycling matters: a card that cycles is never dead in hand, and some decks reward you for doing it. Count your cycling cards when deciding what to keep.',
   'Playing under a lock': 'A lock stops cards from untapping or moving. Break it, or win with what\'s already in play.',
 };
 // Every Story deck says what it is (Randall, 2 Nov 2026): Historical Exact, Historical Tribute or
