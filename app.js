@@ -1713,7 +1713,7 @@ const playSetup = createPlaySetup({
 const playRandomProducer=createRandomDeckProducer({pipeline:deckPipeline,pickSeed:randomBuildSeed});
 const playRandomQueue=createRandomDeckQueue({produce:playRandomProducer,readScope:()=>[cloudInfo().user?.id,accountGeneration,accountLocked],idle:()=>!document.hidden&&!playStarting&&!playerMatHost&&!playerMatRoot&&!practicePregame});
 let playRandomWarmAt=0;
-const warmPlayRandom=()=>{if(!cloudInfo().user?.id||accountLocked||Date.now()-playRandomWarmAt<30000)return;playRandomWarmAt=Date.now();const f=playSetup.snapshot().match.format;playRandomQueue.warm([...new Set([f,'Commander','Standard'])].filter(x=>RANDOM_DECK_FORMATS.includes(x)).map(format=>({format,targetBracket:null,deckStyle:'classic'})));};
+const warmPlayRandom=()=>{if(!cloudInfo().user?.id||accountLocked||Date.now()-playRandomWarmAt<30000)return;playRandomWarmAt=Date.now();const f=playSetup.snapshot().match.format;playRandomQueue.warm([...new Set([f,'Commander','Standard'])].filter(x=>RANDOM_DECK_FORMATS.includes(x)).flatMap(format=>[{format,targetBracket:null,deckStyle:'classic'},{format,targetBracket:null,deckStyle:'classic',power:'strong'}]));};
 const playBuilders=Object.fromEntries(['player','opponent','cpu3','cpu4'].map(seat=>[seat,createPracticeOpponentBuilder({pipeline:deckPipeline,pickSeed:randomBuildSeed,queue:playRandomQueue,produce:playRandomProducer,
  readScope:()=>[cloudInfo().user?.id,accountGeneration,accountLocked,playSetup.snapshot().match.format],
  onSelect:deck=>playSetup.chooseTemporary(deck,{seat,sourceKind:'random'}),onChange:()=>refreshPlayMenu()})]));
@@ -2227,10 +2227,12 @@ A.playFindOpponent=async()=>{
  const state=playSetup.snapshot();if(quickStatus.busy||!state.profile.signedIn||!state.selected)return false;
  const ticket=++quickSequence,scope=JSON.stringify([readPlayAccount(),state.selected,state.match]);quickStatus={busy:true,error:null};refreshPlayMenu();await new Promise(resolve=>requestAnimationFrame(resolve));
  // Random means every source: fetch the format's tournament lists too if this page has none yet (bounded wait).
- try{const metaKey='mtg:'+(state.match.format==='Commander'?'EDH':state.match.format);if(!metaState(metaKey).data)await Promise.race([loadMetaData(metaKey).catch(()=>{}),new Promise(resolve=>setTimeout(resolve,4000))]);
+ try{const metaKey='mtg:'+(state.match.format==='Commander'?'EDH':state.match.format),fmt=state.match.format;
+ // Every source the app has: tournament meta, precons, your Play and Collection decks, community lists, and Deck Forge builds (Casual and Strong).
+ await Promise.race([Promise.all([metaState(metaKey).data?null:loadMetaData(metaKey).catch(()=>{}),(readPlaySources().precons||[]).length?null:Promise.resolve(A.finderPrecons(fmt)).catch(()=>{})]),new Promise(resolve=>setTimeout(resolve,4000))]);
  // Only lists the engine can load are offered: a source that spells a card its own way, or a card newer than the engine, never reaches the table.
  const names=FORGE_PLAY_TEST_ENABLED?await loadEngineCardNames():null,unknown=engineUnknownCards(state.selected,names);if(unknown.length)throw Error(engineMissingText('Your deck',unknown));
- const sources=readPlaySources(),candidates=[...S.state.decks,...Object.values(sources).flat().map(x=>x.deck),...playRandomQueue.peek(state.match.format)].filter(deck=>!FORGE_PLAY_TEST_ENABLED||forgeCpuDeckComplete(deck)&&!engineUnknownCards(deck,names).length);
+ const sources=readPlaySources(),candidates=[...playTableDecks(),...Object.values(sources).flat().map(x=>x.deck),...playRandomQueue.peek(state.match.format)].filter(deck=>!FORGE_PLAY_TEST_ENABLED||forgeCpuDeckComplete(deck)&&!engineUnknownCards(deck,names).length);
  const result=chooseQuickOpponent({player:state.selected,candidates,difficulty:state.match.difficulty,streak:quickStreak(state.match.format),...(FORGE_PLAY_TEST_ENABLED?{candidateEligible:deck=>forgeDeckSupport(deck).status==='native-pending',nativeValidationPending:true}:{}),estimate:deck=>capturePracticeDeckContext(deck).practiceContext.power.value});
  const now=playSetup.snapshot();if(ticket!==quickSequence||JSON.stringify([readPlayAccount(),now.selected,now.match])!==scope)return false;playSetup.setQuickOpponent(result);return true;
  }catch(e){if(ticket===quickSequence)quickStatus.error=e.message;}finally{if(ticket===quickSequence){quickStatus.busy=false;refreshPlayMenu();}}
