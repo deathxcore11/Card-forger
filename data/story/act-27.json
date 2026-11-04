@@ -725,7 +725,7 @@
      "label": "tribute",
      "cards": [
       {
-       "qty": 4,
+       "qty": 2,
        "name": "Mist-Cloaked Herald",
        "set": "rix",
        "number": "43",
@@ -760,7 +760,7 @@
        "id": "e355a98d-093d-4ab2-84f2-f560d08f1fca"
       },
       {
-       "qty": 4,
+       "qty": 2,
        "name": "Silvergill Adept",
        "set": "rix",
        "number": "53",
@@ -795,7 +795,7 @@
        "id": "740bb19c-0c91-4fc1-9b3c-be84425a3523"
       },
       {
-       "qty": 3,
+       "qty": 4,
        "name": "Sworn Guardian",
        "set": "rix",
        "number": "58",
@@ -814,6 +814,13 @@
        "set": "xln",
        "number": "75",
        "id": "02955471-5ffc-4c7b-83fe-a69816415ca1"
+      },
+      {
+       "qty": 3,
+       "name": "Sea Legs",
+       "set": "rix",
+       "number": "50",
+       "id": "ae48b747-b9ea-4af1-84c5-3f5835d1ba1f"
       }
      ]
     }
@@ -1521,7 +1528,7 @@
        "id": "14770537-209a-4260-88a4-30f4e2b5ede0"
       },
       {
-       "qty": 4,
+       "qty": 2,
        "name": "Silvergill Adept",
        "set": "rix",
        "number": "53",
@@ -1556,7 +1563,7 @@
        "id": "899ecd7a-bfd6-42a4-8cb2-18bac40b4401"
       },
       {
-       "qty": 4,
+       "qty": 2,
        "name": "Kumena's Speaker",
        "set": "xln",
        "number": "196",
@@ -1605,7 +1612,7 @@
        "id": "135d1145-8640-44e1-8079-45832fa2556d"
       },
       {
-       "qty": 1,
+       "qty": 3,
        "name": "Shaper Apprentice",
        "set": "xln",
        "number": "75",
@@ -1619,7 +1626,7 @@
        "id": "6452ba94-6bb0-409c-99f7-71e6457c3f2a"
       },
       {
-       "qty": 2,
+       "qty": 4,
        "name": "Siren Lookout",
        "set": "xln",
        "number": "78",
@@ -2245,14 +2252,14 @@
        "id": "be0e3547-d8cb-4b68-a396-8c8fbc3b2b1c"
       },
       {
-       "qty": 4,
+       "qty": 2,
        "name": "Kumena's Speaker",
        "set": "xln",
        "number": "196",
        "id": "52e96ddf-ac9e-4cc5-8c9a-afee421d99a6"
       },
       {
-       "qty": 4,
+       "qty": 2,
        "name": "Mist-Cloaked Herald",
        "set": "rix",
        "number": "43",
@@ -2308,14 +2315,14 @@
        "id": "740bb19c-0c91-4fc1-9b3c-be84425a3523"
       },
       {
-       "qty": 2,
+       "qty": 3,
        "name": "Shaper Apprentice",
        "set": "xln",
        "number": "75",
        "id": "02955471-5ffc-4c7b-83fe-a69816415ca1"
       },
       {
-       "qty": 3,
+       "qty": 4,
        "name": "Shore Keeper",
        "set": "xln",
        "number": "77",
@@ -2341,6 +2348,13 @@
        "set": "xln",
        "number": "73",
        "id": "67f15157-6017-4b05-8c74-b3f8728d764b"
+      },
+      {
+       "qty": 2,
+       "name": "Sea Legs",
+       "set": "rix",
+       "number": "50",
+       "id": "ae48b747-b9ea-4af1-84c5-3f5835d1ba1f"
       }
      ]
     }
@@ -2433,13 +2447,6 @@
      "label": "tribute",
      "cards": [
       {
-       "qty": 2,
-       "name": "Jace, Cunning Castaway",
-       "set": "xln",
-       "number": "60",
-       "id": "b75f56f2-88fd-44ba-ad02-56ea3391f173"
-      },
-      {
        "qty": 1,
        "name": "Hostage Taker",
        "set": "xln",
@@ -2461,7 +2468,7 @@
        "id": "bd7550dd-dfc5-43cd-a117-1244ee3086a8"
       },
       {
-       "qty": 4,
+       "qty": 2,
        "name": "Kitesail Corsair",
        "set": "rix",
        "number": "41",
@@ -2543,6 +2550,20 @@
        "set": "xln",
        "number": "78",
        "id": "0000cd57-91fe-411f-b798-646e965eec37"
+      },
+      {
+       "qty": 2,
+       "name": "Shore Keeper",
+       "set": "xln",
+       "number": "77",
+       "id": "135d1145-8640-44e1-8079-45832fa2556d"
+      },
+      {
+       "qty": 2,
+       "name": "Shaper Apprentice",
+       "set": "xln",
+       "number": "75",
+       "id": "02955471-5ffc-4c7b-83fe-a69816415ca1"
       }
      ]
     }

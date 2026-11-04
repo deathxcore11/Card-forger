@@ -98,19 +98,20 @@ export default {
 3 Ravenous Chupacabra
 1 Vraska's Contempt`}},
       villain: {who: 'heralds', deck: {label: 'tribute', name: 'The River Heralds', colors: 'UG', list: `
-4 Mist-Cloaked Herald
+2 Mist-Cloaked Herald
 4 Merfolk Mistbinder
 4 Kumena's Speaker
 4 Shapers of Nature
 3 River Heralds' Boon
-4 Silvergill Adept
+2 Silvergill Adept
 4 Wildgrowth Walker
 11 Forest
 11 Island
 2 Woodland Stream
-3 Sworn Guardian
+4 Sworn Guardian
 3 Shore Keeper
-3 Shaper Apprentice`}},
+3 Shaper Apprentice
+3 Sea Legs`}},
       scene: [q('beckett', 'You and your ship will make a fine addition to my fleet.'),
         q('stage', 'We sail. We plunder. Then we dance.'),
         s('beckett', 'Treasure: a token that sacrifices for one mana of any colour. Sail fast, spend it on the turn that matters.')],
@@ -202,21 +203,21 @@ export default {
       hero: {who: 'kumena', deck: {label: 'tribute', name: 'Shaper Kumena\'s Tide', colors: 'UG', list: `
 2 Mist-Cloaked Herald
 4 Timestream Navigator
-4 Silvergill Adept
+2 Silvergill Adept
 2 Merfolk Mistbinder
 2 Kumena, Tyrant of Orazca
 2 Spire Winder
 1 Secrets of the Golden City
-4 Kumena's Speaker
+2 Kumena's Speaker
 3 Shapers of Nature
 1 Waterknot
 11 Island
 11 Forest
 2 Woodland Stream
 4 Shore Keeper
-1 Shaper Apprentice
+3 Shaper Apprentice
 4 Sworn Guardian
-2 Siren Lookout`}},
+4 Siren Lookout`}},
       villain: {who: 'tishana', deck: {label: 'tribute', name: 'Tishana\'s Thunder', colors: 'UG', list: `
 4 Tishana's Wayfinder
 4 Shapers of Nature
@@ -298,8 +299,8 @@ export default {
 1 Vraska's Contempt`}},
       villain: {who: 'merfolk', deck: {label: 'tribute', name: 'Merfolk Explorers', colors: 'UG', archetype: 'Midrange', list: `
 4 Jungle Delver
-4 Kumena's Speaker
-4 Mist-Cloaked Herald
+2 Kumena's Speaker
+2 Mist-Cloaked Herald
 2 Silvergill Adept
 4 Shapers of Nature
 1 Waterknot
@@ -307,11 +308,12 @@ export default {
 11 Forest
 11 Island
 2 Woodland Stream
-2 Shaper Apprentice
-3 Shore Keeper
+3 Shaper Apprentice
+4 Shore Keeper
 3 Sworn Guardian
 4 Siren Lookout
-2 Sailor of Means`}},
+2 Sailor of Means
+2 Sea Legs`}},
       scene: [q('stage', 'The pirates of the Brazen Coalition are the descendants of those displaced by the Legion of Dusk, and they are eager for vengeance.'),
         q('stage', 'Without frequent raids, orcs sometimes get bored and plunder their own ships.'),
         s('you', 'Pirates are fast and fragile. Hit first and keep the pressure on.')],
@@ -322,11 +324,10 @@ export default {
     {slot: 8, mood: 'boss', kind: 'Boss', title: 'The Lawbringer', difficulty: 'Hard', rewardSet: 'rix', teaches: ['Racing'],
       blurb: 'Azor built the Immortal Sun and thinks he is keeping the plane safe. Jace and Vraska have to take it away from him.',
       hero: {who: 'vraska', deck: {label: 'tribute', name: 'Vraska and Jace', colors: 'UB', list: `
-2 Jace, Cunning Castaway
 1 Hostage Taker
 2 Ravenous Chupacabra
 4 Vraska's Contempt
-4 Kitesail Corsair
+2 Kitesail Corsair
 2 Deadeye Brawler
 1 Vraska, Scheming Gorgon
 4 Warkite Marauder
@@ -337,7 +338,9 @@ export default {
 2 Drowned Catacomb
 3 Deadeye Tormentor
 4 Sworn Guardian
-4 Siren Lookout`}},
+4 Siren Lookout
+2 Shore Keeper
+2 Shaper Apprentice`}},
       villain: {who: 'azor', deck: {label: 'tribute', name: 'The Keeper of the Sun', colors: 'WU', list: `
 4 Azor, the Lawbringer
 4 Settle the Wreckage
