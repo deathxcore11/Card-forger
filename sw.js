@@ -38,6 +38,7 @@ const ASSETS = [
   "./experiments/forge-proof/forge-session.mjs",
   "./experiments/forge-proof/forge-table.mjs",
   "./experiments/forge-proof/cpu-action-playback.mjs",
+  "./experiments/forge-proof/turn-timer.mjs",
   "./experiments/forge-proof/motion-kit.mjs",
   "./play-board-badges.js",
   "./play-board-icons.js",
