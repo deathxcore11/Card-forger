@@ -228,6 +228,10 @@ export const LESSONS = {
   'Escape': 'Escape: cast the card from your graveyard by paying its escape cost and exiling other cards from your graveyard. A full graveyard is a second hand.',
   'Mutate': 'Mutate: cast a mutating creature on top of or under a non-Human creature you control. They become one creature with both sets of abilities.',
   'Cycling matters': 'Cycling matters: a card that cycles is never dead in hand, and some decks reward you for doing it. Count your cycling cards when deciding what to keep.',
+  'Modal double-faced cards': 'Modal double-faced cards: one card with two faces. Cast either face from your hand; a land face can be played as a land, so it is never a dead draw.',
+  'Foretell': 'Foretell: pay 2 on your turn to set the card face down in exile. On a later turn, cast it for its foretell cost.',
+  'Learn': 'Learn: get a Lesson from outside the game, or discard a card to draw a card. Most of the time it is a way to find what you need.',
+  'Magecraft': 'Magecraft: triggers whenever you cast or copy an instant or sorcery spell. Keep the mage on the table, then cast spells.',
   'Playing under a lock': 'A lock stops cards from untapping or moving. Break it, or win with what\'s already in play.',
 };
 // Every Story deck says what it is (Randall, 2 Nov 2026): Historical Exact, Historical Tribute or

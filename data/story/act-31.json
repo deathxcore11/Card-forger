@@ -1,0 +1,3088 @@
+{
+ "act": 31,
+ "era": "2020-09-25",
+ "title": "Omens of Phyrexia",
+ "years": "2020 to 2021",
+ "sets": [
+  "znr",
+  "khm",
+  "stx"
+ ],
+ "landSet": "znr",
+ "intro": [
+  {
+   "who": "stage",
+   "line": "Zendikar, Kaldheim, Arcavios. Three worlds, eight fights, and one thin line of oil under all of them."
+  },
+  {
+   "who": "stage",
+   "line": "This is my world, Jace, down to its very bones.",
+   "quote": true
+  },
+  {
+   "who": "stage",
+   "line": "On Zendikar, a party sets out. They are a cleric, a rogue, a warrior and a wizard, and none of them is sure they are the hero."
+  }
+ ],
+ "finale": [
+  {
+   "who": "stage",
+   "line": "Join me for the dawn of a new age.",
+   "quote": true
+  },
+  {
+   "who": "stage",
+   "line": "The Oriq at Strixhaven are broken, the Doomskar has passed, and Zendikar is quiet again."
+  },
+  {
+   "who": "stage",
+   "line": "Recorded: three worlds, three endings. Something far away has been drawing maps."
+  }
+ ],
+ "villainFinale": [
+  {
+   "who": "stage",
+   "line": "With one lethal strike, Extus took control of the Oriq and took his first step towards vengeance.",
+   "quote": true
+  },
+  {
+   "who": "stage",
+   "line": "In this version, the Oriq win, and Strixhaven belongs to them."
+  }
+ ],
+ "vibe": "omens-of-phyrexia",
+ "cast": {
+  "you": {
+   "name": "You",
+   "title": "Planeswalker",
+   "portrait": {
+    "card": "Expedition Healer",
+    "set": "znr",
+    "number": "13",
+    "id": "11a00a88-de0e-4012-9ad8-ccb187dff7df",
+    "crop": "https://cards.scryfall.io/art_crop/front/1/1/11a00a88-de0e-4012-9ad8-ccb187dff7df.jpg?1783929419",
+    "artist": "Heonhwa",
+    "focus": "50% 30%"
+   }
+  },
+  "nahiri": {
+   "name": "Nahiri",
+   "title": "Lithomancer",
+   "portrait": {
+    "card": "Nahiri, Heir of the Ancients",
+    "set": "znr",
+    "number": "230",
+    "id": "408be425-b8a6-4c03-b2a6-7ff7bd6555e0",
+    "crop": "https://cards.scryfall.io/art_crop/front/4/0/408be425-b8a6-4c03-b2a6-7ff7bd6555e0.jpg?1783929322",
+    "artist": "Anna Steinbauer",
+    "focus": "50% 25%"
+   }
+  },
+  "vampires": {
+   "name": "The Vampires",
+   "title": "Of Malakir",
+   "portrait": {
+    "card": "Highborn Vampire",
+    "set": "znr",
+    "number": "107",
+    "id": "24c40082-516e-4381-a4cc-e61c5a9a6cac",
+    "crop": "https://cards.scryfall.io/art_crop/front/2/4/24c40082-516e-4381-a4cc-e61c5a9a6cac.jpg?1783929374",
+    "artist": "Denman Rooke",
+    "focus": "50% 30%"
+   }
+  },
+  "kaldheim": {
+   "name": "Starnheim Warriors",
+   "title": "Of Kaldheim",
+   "portrait": {
+    "card": "Starnheim Courser",
+    "set": "khm",
+    "number": "32",
+    "id": "5c5373dd-4aec-4e93-97fb-a639aa096764",
+    "crop": "https://cards.scryfall.io/art_crop/front/5/c/5c5373dd-4aec-4e93-97fb-a639aa096764.jpg?1783928276",
+    "artist": "Andrew Mar",
+    "focus": "50% 30%"
+   }
+  },
+  "tibalt": {
+   "name": "Tibalt's Raiders",
+   "title": "Of Kaldheim",
+   "portrait": {
+    "card": "Frenzied Raider",
+    "set": "khm",
+    "number": "137",
+    "id": "22c59e0b-5b78-4cf5-9c2a-92ccf833778f",
+    "crop": "https://cards.scryfall.io/art_crop/front/2/2/22c59e0b-5b78-4cf5-9c2a-92ccf833778f.jpg?1783928228",
+    "artist": "Lius Lasahido",
+    "focus": "50% 30%"
+   }
+  },
+  "witherbloom": {
+   "name": "Witherbloom",
+   "title": "College of Essence",
+   "portrait": {
+    "card": "Witherbloom Apprentice",
+    "set": "stx",
+    "number": "247",
+    "id": "7f80a11b-188b-464c-b00d-c9d1cfb8ddee",
+    "crop": "https://cards.scryfall.io/art_crop/front/7/f/7f80a11b-188b-464c-b00d-c9d1cfb8ddee.jpg?1783927284",
+    "artist": "Josh Hass",
+    "focus": "50% 30%"
+   }
+  },
+  "silverquill": {
+   "name": "Silverquill",
+   "title": "College of Eloquence",
+   "portrait": {
+    "card": "Silverquill Apprentice",
+    "set": "stx",
+    "number": "231",
+    "id": "42d0770e-9084-4aa7-b543-2b6ba18378dc",
+    "crop": "https://cards.scryfall.io/art_crop/front/4/2/42d0770e-9084-4aa7-b543-2b6ba18378dc.jpg?1783927292",
+    "artist": "Mike Bierek",
+    "focus": "50% 30%"
+   }
+  },
+  "elves": {
+   "name": "The Elves",
+   "title": "Of Kaldheim",
+   "portrait": {
+    "card": "Vorinclex, Monstrous Raider",
+    "set": "khm",
+    "number": "199",
+    "id": "92613468-205e-488b-930d-11908477e9f8",
+    "crop": "https://cards.scryfall.io/art_crop/front/9/2/92613468-205e-488b-930d-11908477e9f8.jpg?1783928202",
+    "artist": "Daarken",
+    "focus": "50% 25%"
+   }
+  },
+  "prismari": {
+   "name": "Prismari",
+   "title": "College of Elemental Arts",
+   "portrait": {
+    "card": "Prismari Apprentice",
+    "set": "stx",
+    "number": "213",
+    "id": "dca3aa59-c8ac-4930-abf7-0a74d657122a",
+    "crop": "https://cards.scryfall.io/art_crop/front/d/c/dca3aa59-c8ac-4930-abf7-0a74d657122a.jpg?1783927301",
+    "artist": "Igor Kieryluk",
+    "focus": "50% 30%"
+   }
+  },
+  "kaya": {
+   "name": "Kaya",
+   "title": "Ghost Assassin",
+   "portrait": {
+    "card": "Kaya the Inexorable",
+    "set": "khm",
+    "number": "218",
+    "id": "166c0bd1-b59d-4644-832f-888a4ca3a0aa",
+    "crop": "https://cards.scryfall.io/art_crop/front/1/6/166c0bd1-b59d-4644-832f-888a4ca3a0aa.jpg?1783928194",
+    "artist": "Tyler Jacobson",
+    "focus": "50% 25%"
+   }
+  },
+  "whiteagg": {
+   "name": "Mono-White Aggro",
+   "title": "Autumn 2020",
+   "portrait": {
+    "card": "Luminarch Aspirant",
+    "set": "znr",
+    "number": "24",
+    "id": "fe964e7e-e2c5-4263-889d-0a531eb51442",
+    "crop": "https://cards.scryfall.io/art_crop/front/f/e/fe964e7e-e2c5-4263-889d-0a531eb51442.jpg?1783929413",
+    "artist": "Mads Ahm",
+    "focus": "50% 30%"
+   }
+  },
+  "rogues": {
+   "name": "Dimir Rogues",
+   "title": "Autumn 2020",
+   "portrait": {
+    "card": "Soaring Thought-Thief",
+    "set": "znr",
+    "number": "236",
+    "id": "0d73c9c4-8955-499f-8f87-6500b35b4977",
+    "crop": "https://cards.scryfall.io/art_crop/front/0/d/0d73c9c4-8955-499f-8f87-6500b35b4977.jpg?1783929318",
+    "artist": "Lie Setiawan",
+    "focus": "50% 30%"
+   }
+  },
+  "dragons": {
+   "name": "Izzet Dragons",
+   "title": "Spring 2021",
+   "portrait": {
+    "card": "Goldspan Dragon",
+    "set": "khm",
+    "number": "139",
+    "id": "9d914868-9000-4df2-a818-0ef8a7f636ae",
+    "crop": "https://cards.scryfall.io/art_crop/front/9/d/9d914868-9000-4df2-a818-0ef8a7f636ae.jpg?1783928228",
+    "artist": "Andrew Mar",
+    "focus": "50% 30%"
+   }
+  },
+  "lessons": {
+   "name": "Rakdos Berserkers",
+   "title": "Spring 2021",
+   "portrait": {
+    "card": "Bloodsky Berserker",
+    "set": "khm",
+    "number": "80",
+    "id": "a6308a53-de07-4ed9-80a1-3579843466c2",
+    "crop": "https://cards.scryfall.io/art_crop/front/a/6/a6308a53-de07-4ed9-80a1-3579843466c2.jpg?1783928254",
+    "artist": "Gabor Szikszai",
+    "focus": "50% 30%"
+   }
+  },
+  "deans": {
+   "name": "Kaya and the Deans",
+   "title": "Of Strixhaven",
+   "portrait": {
+    "card": "Killian, Ink Duelist",
+    "set": "stx",
+    "number": "197",
+    "id": "23ef4f09-2aa1-4a03-b2e2-66d1522f1e46",
+    "crop": "https://cards.scryfall.io/art_crop/front/2/3/23ef4f09-2aa1-4a03-b2e2-66d1522f1e46.jpg?1783927314",
+    "artist": "Ryan Pancoast",
+    "focus": "50% 25%"
+   }
+  },
+  "extus": {
+   "name": "Extus",
+   "title": "Oriq Overlord",
+   "portrait": {
+    "card": "Extus, Oriq Overlord // Awaken the Blood Avatar",
+    "set": "stx",
+    "number": "149",
+    "id": "ba09360a-067e-48a5-bdc5-a19fd066a785",
+    "crop": "https://cards.scryfall.io/art_crop/front/b/a/ba09360a-067e-48a5-bdc5-a19fd066a785.jpg?1783927337",
+    "artist": "Chase Stone & Kekai Kotaki",
+    "focus": "50% 25%"
+   }
+  },
+  "stompy": {
+   "name": "Kaldheim Stompy",
+   "title": "Spring 2021",
+   "portrait": {
+    "card": "Icehide Troll",
+    "set": "khm",
+    "number": "176",
+    "id": "02f3aaed-a01f-4c6a-b9bb-cd70b0f6ceb1",
+    "crop": "https://cards.scryfall.io/art_crop/front/0/2/02f3aaed-a01f-4c6a-b9bb-cd70b0f6ceb1.jpg?1783928212",
+    "artist": "Andrey Kuzinskiy",
+    "focus": "50% 30%"
+   }
+  }
+ },
+ "battles": [
+  {
+   "id": "a31b1",
+   "slot": 1,
+   "kind": "Arrival",
+   "mood": "tension",
+   "title": "The Party",
+   "difficulty": "Easy",
+   "teaches": [
+    "Modal double-faced cards"
+   ],
+   "blurb": "Zendikar is waking after the Eldrazi, and the vampires of Malakir are not in a welcoming mood. Nahiri has a plan.",
+   "rewardSet": "znr",
+   "host": false,
+   "hero": {
+    "who": "nahiri",
+    "deck": {
+     "name": "The Kor Expedition",
+     "colors": "RW",
+     "archetype": null,
+     "label": "tribute",
+     "cards": [
+      {
+       "qty": 4,
+       "name": "Luminarch Aspirant",
+       "set": "znr",
+       "number": "24",
+       "id": "fe964e7e-e2c5-4263-889d-0a531eb51442"
+      },
+      {
+       "qty": 4,
+       "name": "Archpriest of Iona",
+       "set": "znr",
+       "number": "5",
+       "id": "f7dc61e4-46e3-473b-90f8-27e71e1088e8"
+      },
+      {
+       "qty": 4,
+       "name": "Kor Celebrant",
+       "set": "znr",
+       "number": "22",
+       "id": "87c37e46-a961-4739-8893-f783013e2be6"
+      },
+      {
+       "qty": 3,
+       "name": "Kabira Outrider",
+       "set": "znr",
+       "number": "18",
+       "id": "53c81719-f820-4674-9cfb-cd5eaf0c1f0d"
+      },
+      {
+       "qty": 3,
+       "name": "Skyclave Apparition",
+       "set": "znr",
+       "number": "39",
+       "id": "b83cfbaa-7890-4f6f-878b-4edb45677371"
+      },
+      {
+       "qty": 2,
+       "name": "Legion Angel",
+       "set": "znr",
+       "number": "23",
+       "id": "bda5609a-ab22-4f03-988b-8056c97fdc9e"
+      },
+      {
+       "qty": 2,
+       "name": "Nahiri, Heir of the Ancients",
+       "set": "znr",
+       "number": "230",
+       "id": "408be425-b8a6-4c03-b2a6-7ff7bd6555e0"
+      },
+      {
+       "qty": 3,
+       "name": "Kabira Takedown // Kabira Plateau",
+       "set": "znr",
+       "number": "19",
+       "id": "366e9845-019d-47cc-adb8-8fbbaad35b6d"
+      },
+      {
+       "qty": 2,
+       "name": "Smite the Monstrous",
+       "set": "znr",
+       "number": "42",
+       "id": "9c103163-31b7-4d25-aa2c-02ca082ee1bf"
+      },
+      {
+       "qty": 3,
+       "name": "Rip Apart",
+       "set": "stx",
+       "number": "225",
+       "id": "b3b5b510-fd5c-415d-98b0-386e7508f7af"
+      },
+      {
+       "qty": 2,
+       "name": "Sizzling Barrage",
+       "set": "znr",
+       "number": "162",
+       "id": "1bf5843a-a01f-4d1c-b8fe-c586d5160f6e"
+      },
+      {
+       "qty": 2,
+       "name": "Emeria Captain",
+       "set": "znr",
+       "number": "11",
+       "id": "6490370e-fff5-4f17-b715-74ff8df5bc7c"
+      },
+      {
+       "qty": 2,
+       "name": "Stonebound Mentor",
+       "set": "stx",
+       "number": "239",
+       "id": "9c64e954-adfc-40a2-a3b2-85f1b4626976"
+      },
+      {
+       "qty": 4,
+       "name": "Lorehold Campus",
+       "set": "stx",
+       "number": "268",
+       "id": "d35461cf-becf-4399-8329-64b4496b7fc2"
+      },
+      {
+       "qty": 4,
+       "name": "Furycalm Snarl",
+       "set": "stx",
+       "number": "266",
+       "id": "53e33f37-7fd1-4431-a032-cd61b644401c"
+      },
+      {
+       "qty": 8,
+       "name": "Plains",
+       "set": "znr",
+       "number": "266",
+       "id": "9591fd15-78d9-4089-a075-031ab2affd2d"
+      },
+      {
+       "qty": 8,
+       "name": "Mountain",
+       "set": "znr",
+       "number": "275",
+       "id": "96297bcc-8480-4b14-8612-1c395d481bce"
+      }
+     ]
+    }
+   },
+   "villain": {
+    "who": "vampires",
+    "deck": {
+     "name": "The Vampires of Malakir",
+     "colors": "B",
+     "archetype": null,
+     "label": "tribute",
+     "cards": [
+      {
+       "qty": 4,
+       "name": "Highborn Vampire",
+       "set": "znr",
+       "number": "107",
+       "id": "24c40082-516e-4381-a4cc-e61c5a9a6cac"
+      },
+      {
+       "qty": 4,
+       "name": "Malakir Blood-Priest",
+       "set": "znr",
+       "number": "110",
+       "id": "3d14ea81-d303-47db-90b4-7d10588f7ea6"
+      },
+      {
+       "qty": 4,
+       "name": "Skyclave Shade",
+       "set": "znr",
+       "number": "125",
+       "id": "50bbc0e7-48ce-41e2-a014-1f2eb0427550"
+      },
+      {
+       "qty": 3,
+       "name": "Nimana Skydancer",
+       "set": "znr",
+       "number": "117",
+       "id": "e72eaa0f-cbec-45a1-b390-cbbedf5a02f2"
+      },
+      {
+       "qty": 3,
+       "name": "Skyclave Shadowcat",
+       "set": "znr",
+       "number": "126",
+       "id": "b27fcfc5-a1a9-4b21-8240-2ed6346c64e1"
+      },
+      {
+       "qty": 3,
+       "name": "Shadow Stinger",
+       "set": "znr",
+       "number": "123",
+       "id": "093e0b1e-2cd9-4743-9c0e-b8f3fbc41798"
+      },
+      {
+       "qty": 3,
+       "name": "Nighthawk Scavenger",
+       "set": "znr",
+       "number": "115",
+       "id": "eb348f07-1d48-4877-8a56-60655d64a3f7"
+      },
+      {
+       "qty": 3,
+       "name": "Bloodchief's Thirst",
+       "set": "znr",
+       "number": "94",
+       "id": "059e8447-6b1c-4651-a734-a8fea2cbf7b2"
+      },
+      {
+       "qty": 2,
+       "name": "Vanquish the Weak",
+       "set": "znr",
+       "number": "131",
+       "id": "c15852d4-2c79-4841-bb65-6661d88fdfab"
+      },
+      {
+       "qty": 2,
+       "name": "Soul Shatter",
+       "set": "znr",
+       "number": "127",
+       "id": "2c2fb07b-0f70-403b-be8b-b5217f12e671"
+      },
+      {
+       "qty": 4,
+       "name": "Feed the Swarm",
+       "set": "znr",
+       "number": "102",
+       "id": "f6b2eba7-862a-4efd-9f65-065fb2070855"
+      },
+      {
+       "qty": 24,
+       "name": "Swamp",
+       "set": "znr",
+       "number": "272",
+       "id": "95a58ce4-e07f-4c9c-98ae-3173d6d63cc5"
+      },
+      {
+       "qty": 1,
+       "name": "Nimana Skitter-Sneak",
+       "set": "znr",
+       "number": "116",
+       "id": "ea080141-6262-4595-8058-b2969b3f016b"
+      }
+     ]
+    }
+   },
+   "reward": {
+    "hero": {
+     "packs": 1,
+     "coins": 0
+    },
+    "villain": {
+     "card": {
+      "oracle_id": "1adcf587-9035-4299-a2bd-62f805fdd897",
+      "name": "Highborn Vampire",
+      "rarity": "common",
+      "set": "znr",
+      "id": "24c40082-516e-4381-a4cc-e61c5a9a6cac",
+      "image": "https://cards.scryfall.io/normal/front/2/4/24c40082-516e-4381-a4cc-e61c5a9a6cac.jpg"
+     },
+     "coins": 50
+    }
+   },
+   "scene": [
+    {
+     "who": "stage",
+     "line": "Zendikar has suffered enough. It is time, at last, for my home to know peace.",
+     "quote": true
+    },
+    {
+     "who": "stage",
+     "line": "Rally to my light, and together we will drive out this darkness!",
+     "quote": true
+    },
+    {
+     "who": "nahiri",
+     "line": "Modal double-faced cards: a card with two faces. Play it as a spell or as a land, so it is never dead in your hand."
+    }
+   ],
+   "villainScene": [
+    {
+     "who": "stage",
+     "line": "With the bloodchiefs annihilated in the fight between the free and enthralled, the swamps around Malakir are full of dangerous, young vampires eager to make their marks.",
+     "quote": true
+    },
+    {
+     "who": "stage",
+     "line": "From your veins to mine.",
+     "quote": true
+    }
+   ],
+   "after": null,
+   "cues": {
+    "hero": {
+     "start": "Into the ruins.",
+     "big": "Rally!",
+     "low": "The swamp is thick with them...",
+     "win": "The expedition returns.",
+     "loss": "Lost in Malakir...",
+     "half": "A spell-land can be your land drop in a pinch."
+    },
+    "villain": {
+     "start": "From your veins.",
+     "big": "Feed!",
+     "low": "The blood runs thin...",
+     "win": "Malakir keeps its own.",
+     "loss": "Staked..."
+    }
+   },
+   "bigPlays": [],
+   "sim": null
+  },
+  {
+   "id": "a31b2",
+   "slot": 2,
+   "kind": "Lesson",
+   "mood": "march",
+   "title": "The Doomskar",
+   "difficulty": "Easy",
+   "teaches": [
+    "Foretell"
+   ],
+   "blurb": "Kaldheim's realms have crashed together. The warriors of Starnheim stand against Tibalt's raiders.",
+   "rewardSet": "khm",
+   "host": false,
+   "hero": {
+    "who": "kaldheim",
+    "deck": {
+     "name": "The Warriors of Starnheim",
+     "colors": "W",
+     "archetype": null,
+     "label": "tribute",
+     "cards": [
+      {
+       "qty": 4,
+       "name": "Usher of the Fallen",
+       "set": "khm",
+       "number": "35",
+       "id": "24e58478-c6a8-4f86-854a-a489c99bd777"
+      },
+      {
+       "qty": 3,
+       "name": "Beskir Shieldmate",
+       "set": "khm",
+       "number": "4",
+       "id": "dfc1df84-9c47-444b-9d58-d9c7bed51c66"
+      },
+      {
+       "qty": 4,
+       "name": "Starnheim Courser",
+       "set": "khm",
+       "number": "32",
+       "id": "5c5373dd-4aec-4e93-97fb-a639aa096764"
+      },
+      {
+       "qty": 3,
+       "name": "Goldmaw Champion",
+       "set": "khm",
+       "number": "14",
+       "id": "44d4cd64-8560-48f5-b0bc-f75286c1c91c"
+      },
+      {
+       "qty": 3,
+       "name": "Stalwart Valkyrie",
+       "set": "khm",
+       "number": "31",
+       "id": "89ecb530-e429-4b50-a24c-8437614cf224"
+      },
+      {
+       "qty": 3,
+       "name": "Righteous Valkyrie",
+       "set": "khm",
+       "number": "24",
+       "id": "02fb5f9f-8750-4eb5-a03a-6dacc60e0b90"
+      },
+      {
+       "qty": 3,
+       "name": "Halvar, God of Battle // Sword of the Realms",
+       "set": "khm",
+       "number": "15",
+       "id": "97502411-5c93-434c-b77b-ceb2c32feae7"
+      },
+      {
+       "qty": 3,
+       "name": "Resplendent Marshal",
+       "set": "khm",
+       "number": "22",
+       "id": "5e849bec-2ee6-4c83-83e6-bf9f5543e414"
+      },
+      {
+       "qty": 1,
+       "name": "Battershield Warrior",
+       "set": "khm",
+       "number": "2",
+       "id": "fb79dc85-f85a-4846-9ac3-c75c64ea9c0a"
+      },
+      {
+       "qty": 2,
+       "name": "Doomskar",
+       "set": "khm",
+       "number": "9",
+       "id": "130ee895-1e5e-4f82-bb66-e1275bac75dd"
+      },
+      {
+       "qty": 2,
+       "name": "Warhorn Blast",
+       "set": "khm",
+       "number": "38",
+       "id": "3fc98aff-edc0-4f78-ae4f-e08735c9e512"
+      },
+      {
+       "qty": 24,
+       "name": "Plains",
+       "set": "znr",
+       "number": "266",
+       "id": "9591fd15-78d9-4089-a075-031ab2affd2d"
+      },
+      {
+       "qty": 2,
+       "name": "Starnheim Aspirant",
+       "set": "khm",
+       "number": "380",
+       "id": "ea007a18-b31a-4881-92c4-86120dc5729b"
+      },
+      {
+       "qty": 3,
+       "name": "Starnheim Unleashed",
+       "set": "khm",
+       "number": "33",
+       "id": "ea660d42-a441-48d8-98c1-00933cde94a4"
+      }
+     ]
+    }
+   },
+   "villain": {
+    "who": "tibalt",
+    "deck": {
+     "name": "Tibalt's Raiders",
+     "colors": "R",
+     "archetype": null,
+     "label": "tribute",
+     "cards": [
+      {
+       "qty": 4,
+       "name": "Fearless Pup",
+       "set": "khm",
+       "number": "136",
+       "id": "0eba2250-0e9b-46fd-a4b5-23f30329e063"
+      },
+      {
+       "qty": 4,
+       "name": "Axgard Cavalry",
+       "set": "khm",
+       "number": "121",
+       "id": "2411c341-a470-4484-9248-7c1d3ca12978"
+      },
+      {
+       "qty": 4,
+       "name": "Frenzied Raider",
+       "set": "khm",
+       "number": "137",
+       "id": "22c59e0b-5b78-4cf5-9c2a-92ccf833778f"
+      },
+      {
+       "qty": 3,
+       "name": "Dragonkin Berserker",
+       "set": "khm",
+       "number": "131",
+       "id": "e7f22fe4-2390-4c3d-8b5e-0cf398d97f6a"
+      },
+      {
+       "qty": 3,
+       "name": "Tuskeri Firewalker",
+       "set": "khm",
+       "number": "157",
+       "id": "a54d0170-a375-4e65-b98d-3e94a3aeef90"
+      },
+      {
+       "qty": 3,
+       "name": "Craven Hulk",
+       "set": "khm",
+       "number": "127",
+       "id": "2be804ab-1024-4eee-b339-48ed8b84d363"
+      },
+      {
+       "qty": 3,
+       "name": "Basalt Ravager",
+       "set": "khm",
+       "number": "122",
+       "id": "b32aea04-04f7-48a8-a8ab-8b38fa53da3b"
+      },
+      {
+       "qty": 2,
+       "name": "Quakebringer",
+       "set": "khm",
+       "number": "145",
+       "id": "c5bbffb9-1f1c-40e5-97f4-29bf1fc68625"
+      },
+      {
+       "qty": 1,
+       "name": "Frost Bite",
+       "set": "khm",
+       "number": "138",
+       "id": "9423318a-c5a8-48d2-92f5-280d15a050a6"
+      },
+      {
+       "qty": 2,
+       "name": "Squash",
+       "set": "khm",
+       "number": "152",
+       "id": "e0b99299-bf84-4654-a331-e4406768b33c"
+      },
+      {
+       "qty": 2,
+       "name": "Run Amok",
+       "set": "khm",
+       "number": "147",
+       "id": "44c8136f-2826-476c-a103-7094670506a6"
+      },
+      {
+       "qty": 24,
+       "name": "Mountain",
+       "set": "znr",
+       "number": "275",
+       "id": "96297bcc-8480-4b14-8612-1c395d481bce"
+      },
+      {
+       "qty": 3,
+       "name": "Surtland Flinger",
+       "set": "khm",
+       "number": "377",
+       "id": "4a628052-8175-495f-bfab-eeb3a0388e4e"
+      },
+      {
+       "qty": 2,
+       "name": "Hagi Mob",
+       "set": "khm",
+       "number": "140",
+       "id": "d3b18cdb-bc17-42ae-bfb7-4eafce01cd39"
+      }
+     ]
+    }
+   },
+   "reward": {
+    "hero": {
+     "packs": 1,
+     "coins": 0
+    },
+    "villain": {
+     "card": {
+      "oracle_id": "1207881c-4c03-48e1-9ca7-a2330e8053d1",
+      "name": "Frenzied Raider",
+      "rarity": "uncommon",
+      "set": "khm",
+      "id": "22c59e0b-5b78-4cf5-9c2a-92ccf833778f",
+      "image": "https://cards.scryfall.io/normal/front/2/2/22c59e0b-5b78-4cf5-9c2a-92ccf833778f.jpg"
+     },
+     "coins": 50
+    }
+   },
+   "scene": [
+    {
+     "who": "stage",
+     "line": "The realms crashed together, with Bretagard at the center of the calamity.",
+     "quote": true
+    },
+    {
+     "who": "stage",
+     "line": "I have led ten thousand through these mists and never lost the way.",
+     "quote": true
+    },
+    {
+     "who": "kaldheim",
+     "line": "Foretell: pay 2 on an earlier turn to set a card face down in exile, then cast it later for its cheaper foretell cost."
+    }
+   ],
+   "villainScene": [
+    {
+     "who": "stage",
+     "line": "Arrogant maggot. You won't be so proud when I rip out your tongue and drink from your skull!",
+     "quote": true
+    },
+    {
+     "who": "stage",
+     "line": "Who's next?!",
+     "quote": true
+    }
+   ],
+   "after": null,
+   "cues": {
+    "hero": {
+     "start": "For Starnheim!",
+     "big": "The valkyries rise!",
+     "low": "The raiders are fast...",
+     "win": "The realm holds.",
+     "loss": "The mist takes us...",
+     "half": "Foretell early so later turns are free."
+    },
+    "villain": {
+     "start": "Who's next?!",
+     "big": "Ride the goat!",
+     "low": "They are stalling...",
+     "win": "Raiders take the field.",
+     "loss": "Cut down..."
+    }
+   },
+   "bigPlays": [],
+   "sim": null
+  },
+  {
+   "id": "a31b3",
+   "slot": 3,
+   "kind": "Lesson",
+   "mood": "comic",
+   "title": "Pop Quiz",
+   "difficulty": "Easy",
+   "teaches": [
+    "Learn"
+   ],
+   "blurb": "Strixhaven's colleges argue over everything. Witherbloom and Silverquill are arguing with spells.",
+   "rewardSet": "stx",
+   "host": false,
+   "hero": {
+    "who": "witherbloom",
+    "deck": {
+     "name": "Witherbloom Pests",
+     "colors": "BG",
+     "archetype": null,
+     "label": "tribute",
+     "cards": [
+      {
+       "qty": 4,
+       "name": "Witherbloom Apprentice",
+       "set": "stx",
+       "number": "247",
+       "id": "7f80a11b-188b-464c-b00d-c9d1cfb8ddee"
+      },
+      {
+       "qty": 4,
+       "name": "Eyetwitch",
+       "set": "stx",
+       "number": "70",
+       "id": "1f4d1bb6-cb8f-4d01-9879-0b3a0585cbf4"
+      },
+      {
+       "qty": 3,
+       "name": "Witherbloom Pledgemage",
+       "set": "stx",
+       "number": "249",
+       "id": "a6cc6914-2dcb-411d-90a5-01853ff2d5b8"
+      },
+      {
+       "qty": 3,
+       "name": "Blood Researcher",
+       "set": "stx",
+       "number": "166",
+       "id": "3e35e9ba-a10e-4926-a7a6-3a65efc2a730"
+      },
+      {
+       "qty": 3,
+       "name": "Moldering Karok",
+       "set": "stx",
+       "number": "206",
+       "id": "70c2ef30-0db5-4ef5-999c-7ffa48769421"
+      },
+      {
+       "qty": 3,
+       "name": "Daemogoth Woe-Eater",
+       "set": "stx",
+       "number": "175",
+       "id": "c965cbe3-50e5-41bb-bdb9-e65d97aab716"
+      },
+      {
+       "qty": 2,
+       "name": "Dina, Soul Steeper",
+       "set": "stx",
+       "number": "178",
+       "id": "9cd2b567-0cf7-4441-b3ce-e31141dd91c8"
+      },
+      {
+       "qty": 4,
+       "name": "Pest Summoning",
+       "set": "stx",
+       "number": "211",
+       "id": "6267e19a-a777-4767-8433-86b6624362b6"
+      },
+      {
+       "qty": 3,
+       "name": "Mortality Spear",
+       "set": "stx",
+       "number": "207",
+       "id": "f1f39fe7-dc12-49c9-80ac-4135dc1f8f08"
+      },
+      {
+       "qty": 3,
+       "name": "Witherbloom Command",
+       "set": "stx",
+       "number": "248",
+       "id": "87d5e94b-0b35-4efd-9158-1767dcaea38c"
+      },
+      {
+       "qty": 2,
+       "name": "Culling Ritual",
+       "set": "stx",
+       "number": "172",
+       "id": "8f6f91d3-cc07-4a42-99a0-5fb83b29cc25"
+      },
+      {
+       "qty": 2,
+       "name": "Tend the Pests",
+       "set": "stx",
+       "number": "242",
+       "id": "8f43ed93-008d-44db-8204-ef2cc3b7cf8a"
+      },
+      {
+       "qty": 4,
+       "name": "Witherbloom Campus",
+       "set": "stx",
+       "number": "275",
+       "id": "7346fb2e-754e-47de-b33d-eb089b357ee4"
+      },
+      {
+       "qty": 4,
+       "name": "Necroblossom Snarl",
+       "set": "stx",
+       "number": "269",
+       "id": "b0aed316-c28a-4c1a-a0a3-ab75ceba3ee7"
+      },
+      {
+       "qty": 8,
+       "name": "Swamp",
+       "set": "znr",
+       "number": "272",
+       "id": "95a58ce4-e07f-4c9c-98ae-3173d6d63cc5"
+      },
+      {
+       "qty": 8,
+       "name": "Forest",
+       "set": "znr",
+       "number": "278",
+       "id": "d949485e-5188-49f4-9d30-5e135532d445"
+      }
+     ]
+    }
+   },
+   "villain": {
+    "who": "silverquill",
+    "deck": {
+     "name": "Silverquill Debaters",
+     "colors": "WB",
+     "archetype": null,
+     "label": "tribute",
+     "cards": [
+      {
+       "qty": 4,
+       "name": "Silverquill Apprentice",
+       "set": "stx",
+       "number": "231",
+       "id": "42d0770e-9084-4aa7-b543-2b6ba18378dc"
+      },
+      {
+       "qty": 4,
+       "name": "Silverquill Pledgemage",
+       "set": "stx",
+       "number": "233",
+       "id": "a3f64ad2-4041-421d-baa2-206cedcecf0e"
+      },
+      {
+       "qty": 3,
+       "name": "Silverquill Silencer",
+       "set": "stx",
+       "number": "234",
+       "id": "8bb60dcc-cb4a-414d-850f-c98efd872894"
+      },
+      {
+       "qty": 3,
+       "name": "Star Pupil",
+       "set": "stx",
+       "number": "30",
+       "id": "99e9318f-2e17-4b6e-895f-c17cd5d0d282"
+      },
+      {
+       "qty": 3,
+       "name": "Eager First-Year",
+       "set": "stx",
+       "number": "16",
+       "id": "7a83543b-3b6f-4e28-96f9-007b814bcfd6"
+      },
+      {
+       "qty": 3,
+       "name": "Spiteful Squad",
+       "set": "stx",
+       "number": "237",
+       "id": "be88355e-c986-4b69-93b4-0abf04916e86"
+      },
+      {
+       "qty": 2,
+       "name": "Shadrix Silverquill",
+       "set": "stx",
+       "number": "230",
+       "id": "ab701909-83d6-4d39-9a84-e6a9b2cb38d6"
+      },
+      {
+       "qty": 3,
+       "name": "Owlin Shieldmage",
+       "set": "stx",
+       "number": "210",
+       "id": "d3350367-42bd-44af-be13-ad31c002f8ac"
+      },
+      {
+       "qty": 3,
+       "name": "Elite Spellbinder",
+       "set": "stx",
+       "number": "17",
+       "id": "9d3a7998-ccac-45ad-a4e9-3a2cb057f63b"
+      },
+      {
+       "qty": 3,
+       "name": "Vanishing Verse",
+       "set": "stx",
+       "number": "244",
+       "id": "e12573fe-aee3-49db-93e2-d00972cbb3b1"
+      },
+      {
+       "qty": 2,
+       "name": "Silverquill Command",
+       "set": "stx",
+       "number": "232",
+       "id": "5c55f533-9d31-4ad1-b336-927aba6e74d6"
+      },
+      {
+       "qty": 2,
+       "name": "Humiliate",
+       "set": "stx",
+       "number": "193",
+       "id": "dc3ae8cb-fbdb-45a8-83c2-cbf4aff01f90"
+      },
+      {
+       "qty": 1,
+       "name": "Closing Statement",
+       "set": "stx",
+       "number": "169",
+       "id": "785e6d07-fe40-4723-b963-02da0a0987c7"
+      },
+      {
+       "qty": 4,
+       "name": "Silverquill Campus",
+       "set": "stx",
+       "number": "273",
+       "id": "42583850-ba5c-4a71-8717-406b5c6d048f"
+      },
+      {
+       "qty": 4,
+       "name": "Shineshadow Snarl",
+       "set": "stx",
+       "number": "272",
+       "id": "84a46ebf-6938-4100-8f5f-0605ad2be4fc"
+      },
+      {
+       "qty": 8,
+       "name": "Plains",
+       "set": "znr",
+       "number": "266",
+       "id": "9591fd15-78d9-4089-a075-031ab2affd2d"
+      },
+      {
+       "qty": 8,
+       "name": "Swamp",
+       "set": "znr",
+       "number": "272",
+       "id": "95a58ce4-e07f-4c9c-98ae-3173d6d63cc5"
+      }
+     ]
+    }
+   },
+   "reward": {
+    "hero": {
+     "packs": 1,
+     "coins": 0
+    },
+    "villain": {
+     "card": {
+      "oracle_id": "5ab91144-5eb3-491b-a8be-7e1139d0d6c8",
+      "name": "Silverquill Apprentice",
+      "rarity": "uncommon",
+      "set": "stx",
+      "id": "42d0770e-9084-4aa7-b543-2b6ba18378dc",
+      "image": "https://cards.scryfall.io/normal/front/4/2/42d0770e-9084-4aa7-b543-2b6ba18378dc.jpg"
+     },
+     "coins": 50
+    }
+   },
+   "scene": [
+    {
+     "who": "stage",
+     "line": "Step 1: Put the pests in mud. Step 2: Wait.",
+     "quote": true
+    },
+    {
+     "who": "stage",
+     "line": "Death is really just a transfer of energy. Those pests I harvested have the honor of becoming pure magic. What could be more beautiful?",
+     "quote": true
+    },
+    {
+     "who": "witherbloom",
+     "line": "Learn: you may get a Lesson from outside the game, or discard a card to draw a card. It is a cantrip that sometimes finds exactly what you need."
+    }
+   ],
+   "villainScene": [
+    {
+     "who": "stage",
+     "line": "I avoid violence. It is the last resort of the witless. But if you insist, I'll make an exception for you.",
+     "quote": true
+    },
+    {
+     "who": "stage",
+     "line": "I am very much in the mood to start handing out expulsions.",
+     "quote": true
+    }
+   ],
+   "after": null,
+   "cues": {
+    "hero": {
+     "start": "Pass the pests.",
+     "big": "Transfer of energy!",
+     "low": "The debate is going their way...",
+     "win": "Class dismissed.",
+     "loss": "Expelled...",
+     "half": "Pests are useful when they die."
+    },
+    "villain": {
+     "start": "Order!",
+     "big": "Expelled!",
+     "low": "Out of arguments...",
+     "win": "Silence in class.",
+     "loss": "Overruled..."
+    }
+   },
+   "bigPlays": [],
+   "sim": null
+  },
+  {
+   "id": "a31b4",
+   "slot": 4,
+   "kind": "Rival",
+   "mood": "tension",
+   "title": "The Elves of Kaldheim",
+   "difficulty": "Normal",
+   "teaches": [
+    "Racing"
+   ],
+   "blurb": "Nahiri's expedition meets a much bigger monster in Kaldheim's forests.",
+   "rewardSet": "khm",
+   "host": false,
+   "hero": {
+    "who": "nahiri",
+    "deck": {
+     "name": "The Kor Expedition",
+     "colors": "RW",
+     "archetype": null,
+     "label": "tribute",
+     "cards": [
+      {
+       "qty": 4,
+       "name": "Luminarch Aspirant",
+       "set": "znr",
+       "number": "24",
+       "id": "fe964e7e-e2c5-4263-889d-0a531eb51442"
+      },
+      {
+       "qty": 4,
+       "name": "Archpriest of Iona",
+       "set": "znr",
+       "number": "5",
+       "id": "f7dc61e4-46e3-473b-90f8-27e71e1088e8"
+      },
+      {
+       "qty": 4,
+       "name": "Kor Celebrant",
+       "set": "znr",
+       "number": "22",
+       "id": "87c37e46-a961-4739-8893-f783013e2be6"
+      },
+      {
+       "qty": 3,
+       "name": "Kabira Outrider",
+       "set": "znr",
+       "number": "18",
+       "id": "53c81719-f820-4674-9cfb-cd5eaf0c1f0d"
+      },
+      {
+       "qty": 3,
+       "name": "Skyclave Apparition",
+       "set": "znr",
+       "number": "39",
+       "id": "b83cfbaa-7890-4f6f-878b-4edb45677371"
+      },
+      {
+       "qty": 3,
+       "name": "Legion Angel",
+       "set": "znr",
+       "number": "23",
+       "id": "bda5609a-ab22-4f03-988b-8056c97fdc9e"
+      },
+      {
+       "qty": 3,
+       "name": "Nahiri, Heir of the Ancients",
+       "set": "znr",
+       "number": "230",
+       "id": "408be425-b8a6-4c03-b2a6-7ff7bd6555e0"
+      },
+      {
+       "qty": 3,
+       "name": "Kabira Takedown // Kabira Plateau",
+       "set": "znr",
+       "number": "19",
+       "id": "366e9845-019d-47cc-adb8-8fbbaad35b6d"
+      },
+      {
+       "qty": 3,
+       "name": "Rip Apart",
+       "set": "stx",
+       "number": "225",
+       "id": "b3b5b510-fd5c-415d-98b0-386e7508f7af"
+      },
+      {
+       "qty": 2,
+       "name": "Smite the Monstrous",
+       "set": "znr",
+       "number": "42",
+       "id": "9c103163-31b7-4d25-aa2c-02ca082ee1bf"
+      },
+      {
+       "qty": 2,
+       "name": "Stonebound Mentor",
+       "set": "stx",
+       "number": "239",
+       "id": "9c64e954-adfc-40a2-a3b2-85f1b4626976"
+      },
+      {
+       "qty": 2,
+       "name": "Emeria Captain",
+       "set": "znr",
+       "number": "11",
+       "id": "6490370e-fff5-4f17-b715-74ff8df5bc7c"
+      },
+      {
+       "qty": 4,
+       "name": "Lorehold Campus",
+       "set": "stx",
+       "number": "268",
+       "id": "d35461cf-becf-4399-8329-64b4496b7fc2"
+      },
+      {
+       "qty": 4,
+       "name": "Furycalm Snarl",
+       "set": "stx",
+       "number": "266",
+       "id": "53e33f37-7fd1-4431-a032-cd61b644401c"
+      },
+      {
+       "qty": 8,
+       "name": "Plains",
+       "set": "znr",
+       "number": "266",
+       "id": "9591fd15-78d9-4089-a075-031ab2affd2d"
+      },
+      {
+       "qty": 8,
+       "name": "Mountain",
+       "set": "znr",
+       "number": "275",
+       "id": "96297bcc-8480-4b14-8612-1c395d481bce"
+      }
+     ]
+    }
+   },
+   "villain": {
+    "who": "elves",
+    "deck": {
+     "name": "The Elves of the World Tree",
+     "colors": "G",
+     "archetype": null,
+     "label": "tribute",
+     "cards": [
+      {
+       "qty": 4,
+       "name": "Jaspera Sentinel",
+       "set": "khm",
+       "number": "178",
+       "id": "1a68615d-9808-479d-aa80-50651246954e"
+      },
+      {
+       "qty": 4,
+       "name": "Sculptor of Winter",
+       "set": "khm",
+       "number": "193",
+       "id": "9dab2ca2-0039-4eac-a7dc-68756362737d"
+      },
+      {
+       "qty": 4,
+       "name": "Icehide Troll",
+       "set": "khm",
+       "number": "176",
+       "id": "02f3aaed-a01f-4c6a-b9bb-cd70b0f6ceb1"
+      },
+      {
+       "qty": 3,
+       "name": "Boreal Outrider",
+       "set": "khm",
+       "number": "163",
+       "id": "455ae615-20d7-4251-828d-72a3345d06f1"
+      },
+      {
+       "qty": 3,
+       "name": "Sarulf's Packmate",
+       "set": "khm",
+       "number": "192",
+       "id": "6061113e-7dd8-4739-b4dd-55bb7f9e39a2"
+      },
+      {
+       "qty": 3,
+       "name": "Vorinclex, Monstrous Raider",
+       "set": "khm",
+       "number": "199",
+       "id": "92613468-205e-488b-930d-11908477e9f8"
+      },
+      {
+       "qty": 3,
+       "name": "Ravenous Lindwurm",
+       "set": "khm",
+       "number": "187",
+       "id": "9961e3fc-167e-4043-8510-cc5cf08d473e"
+      },
+      {
+       "qty": 2,
+       "name": "Battle Mammoth",
+       "set": "khm",
+       "number": "160",
+       "id": "cb3377d9-eec3-49b9-a3a7-e540d2038f51"
+      },
+      {
+       "qty": 2,
+       "name": "Esika's Chariot",
+       "set": "khm",
+       "number": "169",
+       "id": "a87606cc-fbf0-4e2c-9798-f1c935d0573d"
+      },
+      {
+       "qty": 3,
+       "name": "Blizzard Brawl",
+       "set": "khm",
+       "number": "162",
+       "id": "6318918f-34e4-4bbf-9816-8e88f21ae324"
+      },
+      {
+       "qty": 2,
+       "name": "Struggle for Skemfar",
+       "set": "khm",
+       "number": "196",
+       "id": "a67747a9-3299-4b4a-a4e0-e8a269c4f927"
+      },
+      {
+       "qty": 3,
+       "name": "Snakeskin Veil",
+       "set": "khm",
+       "number": "194",
+       "id": "e692c208-c171-4964-9207-43c2cbc62845"
+      },
+      {
+       "qty": 24,
+       "name": "Forest",
+       "set": "znr",
+       "number": "278",
+       "id": "d949485e-5188-49f4-9d30-5e135532d445"
+      }
+     ]
+    }
+   },
+   "reward": {
+    "hero": {
+     "packs": 1,
+     "coins": 100
+    },
+    "villain": {
+     "card": {
+      "oracle_id": "5a3fdf5a-bff8-4896-b288-3f43f9a72d9b",
+      "name": "Vorinclex, Monstrous Raider",
+      "rarity": "mythic",
+      "set": "khm",
+      "id": "92613468-205e-488b-930d-11908477e9f8",
+      "image": "https://cards.scryfall.io/normal/front/9/2/92613468-205e-488b-930d-11908477e9f8.jpg"
+     },
+     "coins": 100
+    }
+   },
+   "scene": [
+    {
+     "who": "stage",
+     "line": "This is my world, Jace, down to its very bones.",
+     "quote": true
+    },
+    {
+     "who": "stage",
+     "line": "A troll's greatest weapon is its ability to emerge unexpectedly from the landscape.",
+     "quote": true
+    },
+    {
+     "who": "nahiri",
+     "line": "They have a bigger monster than you. Race, and remove the biggest threats first."
+    }
+   ],
+   "villainScene": [
+    {
+     "who": "stage",
+     "line": "The arrows of the elvish elite strike as true and deadly as the fangs of the Cosmos Serpent they revere.",
+     "quote": true
+    },
+    {
+     "who": "stage",
+     "line": "I'm no coward, but I'd sooner tangle with a rampaging Torga troll than a hungry lindwurm!",
+     "quote": true
+    }
+   ],
+   "after": null,
+   "cues": {
+    "hero": {
+     "start": "Hold the ridge!",
+     "big": "Burn it!",
+     "low": "The monsters are bigger...",
+     "win": "The ridge holds.",
+     "loss": "Crushed...",
+     "half": "Kill the biggest threat before it blocks."
+    },
+    "villain": {
+     "start": "Wherever snow falls.",
+     "big": "Stomp!",
+     "low": "They are fast...",
+     "win": "The forest wins.",
+     "loss": "Burned out..."
+    }
+   },
+   "bigPlays": [],
+   "sim": null
+  },
+  {
+   "id": "a31b5",
+   "slot": 5,
+   "kind": "Lesson",
+   "mood": "tension",
+   "title": "Magecraft",
+   "difficulty": "Normal",
+   "teaches": [
+    "Magecraft"
+   ],
+   "blurb": "Prismari students want to show off. Kaya has other plans for the campus.",
+   "rewardSet": "stx",
+   "host": false,
+   "hero": {
+    "who": "prismari",
+    "deck": {
+     "name": "Prismari Showcase",
+     "colors": "UR",
+     "archetype": null,
+     "label": "tribute",
+     "cards": [
+      {
+       "qty": 4,
+       "name": "Prismari Apprentice",
+       "set": "stx",
+       "number": "213",
+       "id": "dca3aa59-c8ac-4930-abf7-0a74d657122a"
+      },
+      {
+       "qty": 3,
+       "name": "Archmage Emeritus",
+       "set": "stx",
+       "number": "37",
+       "id": "761df6cd-0928-4167-8902-58fdb50181a0"
+      },
+      {
+       "qty": 4,
+       "name": "Spectacle Mage",
+       "set": "stx",
+       "number": "235",
+       "id": "f74223e1-b66b-42fa-aaac-001f5dab2aac"
+      },
+      {
+       "qty": 3,
+       "name": "Elemental Expressionist",
+       "set": "stx",
+       "number": "181",
+       "id": "7473db42-905b-4fda-af8c-fd24d906b642"
+      },
+      {
+       "qty": 2,
+       "name": "Rootha, Mercurial Artist",
+       "set": "stx",
+       "number": "227",
+       "id": "acb8f24d-8d1d-48aa-a534-238e969a474c"
+      },
+      {
+       "qty": 2,
+       "name": "Galazeth Prismari",
+       "set": "stx",
+       "number": "189",
+       "id": "06c9158c-064b-4d12-b860-d2c1450d1897"
+      },
+      {
+       "qty": 3,
+       "name": "Maelstrom Muse",
+       "set": "stx",
+       "number": "202",
+       "id": "5516e81e-16ea-411c-9df0-ed3b03670220"
+      },
+      {
+       "qty": 4,
+       "name": "Demon Bolt",
+       "set": "khm",
+       "number": "129",
+       "id": "5f856b0e-b413-49b0-9aa7-d935ad40ae53"
+      },
+      {
+       "qty": 4,
+       "name": "Prismari Campus",
+       "set": "stx",
+       "number": "270",
+       "id": "768120f5-9401-4e52-924e-3374bde65b3d"
+      },
+      {
+       "qty": 4,
+       "name": "Frostboil Snarl",
+       "set": "stx",
+       "number": "265",
+       "id": "c22ba565-da08-4957-93bb-8d266fe0b0d8"
+      },
+      {
+       "qty": 8,
+       "name": "Island",
+       "set": "znr",
+       "number": "269",
+       "id": "77ea783b-adaa-47be-9918-ca2f161c5d9e"
+      },
+      {
+       "qty": 8,
+       "name": "Mountain",
+       "set": "znr",
+       "number": "275",
+       "id": "96297bcc-8480-4b14-8612-1c395d481bce"
+      },
+      {
+       "qty": 4,
+       "name": "Prismari Pledgemage",
+       "set": "stx",
+       "number": "215",
+       "id": "404b4c7b-5d40-4ad1-bd40-3da1d08f5c78"
+      },
+      {
+       "qty": 3,
+       "name": "Umara Mystic",
+       "set": "znr",
+       "number": "238",
+       "id": "fb979cfc-3e5b-42c9-b78d-584c274ed912"
+      },
+      {
+       "qty": 2,
+       "name": "Storm-Kiln Artist",
+       "set": "stx",
+       "number": "115",
+       "id": "fa96b8dc-233a-4884-ab84-235cbc7df0b6"
+      },
+      {
+       "qty": 2,
+       "name": "Oggyar Battle-Seer",
+       "set": "stx",
+       "number": "209",
+       "id": "a38329f1-af6e-47b8-86e4-f2a39e1edbf8"
+      }
+     ]
+    }
+   },
+   "villain": {
+    "who": "kaya",
+    "deck": {
+     "name": "Kaya's Hunt",
+     "colors": "WB",
+     "archetype": null,
+     "label": "tribute",
+     "cards": [
+      {
+       "qty": 4,
+       "name": "Silverquill Apprentice",
+       "set": "stx",
+       "number": "231",
+       "id": "42d0770e-9084-4aa7-b543-2b6ba18378dc"
+      },
+      {
+       "qty": 4,
+       "name": "Silverquill Pledgemage",
+       "set": "stx",
+       "number": "233",
+       "id": "a3f64ad2-4041-421d-baa2-206cedcecf0e"
+      },
+      {
+       "qty": 3,
+       "name": "Silverquill Silencer",
+       "set": "stx",
+       "number": "234",
+       "id": "8bb60dcc-cb4a-414d-850f-c98efd872894"
+      },
+      {
+       "qty": 1,
+       "name": "Star Pupil",
+       "set": "stx",
+       "number": "30",
+       "id": "99e9318f-2e17-4b6e-895f-c17cd5d0d282"
+      },
+      {
+       "qty": 3,
+       "name": "Eager First-Year",
+       "set": "stx",
+       "number": "16",
+       "id": "7a83543b-3b6f-4e28-96f9-007b814bcfd6"
+      },
+      {
+       "qty": 3,
+       "name": "Spiteful Squad",
+       "set": "stx",
+       "number": "237",
+       "id": "be88355e-c986-4b69-93b4-0abf04916e86"
+      },
+      {
+       "qty": 2,
+       "name": "Shadrix Silverquill",
+       "set": "stx",
+       "number": "230",
+       "id": "ab701909-83d6-4d39-9a84-e6a9b2cb38d6"
+      },
+      {
+       "qty": 3,
+       "name": "Owlin Shieldmage",
+       "set": "stx",
+       "number": "210",
+       "id": "d3350367-42bd-44af-be13-ad31c002f8ac"
+      },
+      {
+       "qty": 3,
+       "name": "Elite Spellbinder",
+       "set": "stx",
+       "number": "17",
+       "id": "9d3a7998-ccac-45ad-a4e9-3a2cb057f63b"
+      },
+      {
+       "qty": 3,
+       "name": "Vanishing Verse",
+       "set": "stx",
+       "number": "244",
+       "id": "e12573fe-aee3-49db-93e2-d00972cbb3b1"
+      },
+      {
+       "qty": 2,
+       "name": "Silverquill Command",
+       "set": "stx",
+       "number": "232",
+       "id": "5c55f533-9d31-4ad1-b336-927aba6e74d6"
+      },
+      {
+       "qty": 2,
+       "name": "Humiliate",
+       "set": "stx",
+       "number": "193",
+       "id": "dc3ae8cb-fbdb-45a8-83c2-cbf4aff01f90"
+      },
+      {
+       "qty": 1,
+       "name": "Closing Statement",
+       "set": "stx",
+       "number": "169",
+       "id": "785e6d07-fe40-4723-b963-02da0a0987c7"
+      },
+      {
+       "qty": 4,
+       "name": "Silverquill Campus",
+       "set": "stx",
+       "number": "273",
+       "id": "42583850-ba5c-4a71-8717-406b5c6d048f"
+      },
+      {
+       "qty": 4,
+       "name": "Shineshadow Snarl",
+       "set": "stx",
+       "number": "272",
+       "id": "84a46ebf-6938-4100-8f5f-0605ad2be4fc"
+      },
+      {
+       "qty": 8,
+       "name": "Plains",
+       "set": "znr",
+       "number": "266",
+       "id": "9591fd15-78d9-4089-a075-031ab2affd2d"
+      },
+      {
+       "qty": 8,
+       "name": "Swamp",
+       "set": "znr",
+       "number": "272",
+       "id": "95a58ce4-e07f-4c9c-98ae-3173d6d63cc5"
+      },
+      {
+       "qty": 2,
+       "name": "Kaya the Inexorable",
+       "set": "khm",
+       "number": "218",
+       "id": "166c0bd1-b59d-4644-832f-888a4ca3a0aa"
+      }
+     ]
+    }
+   },
+   "reward": {
+    "hero": {
+     "packs": 1,
+     "coins": 100
+    },
+    "villain": {
+     "card": {
+      "oracle_id": "13a4f88b-6832-43a1-b4fa-c1ee60560bad",
+      "name": "Kaya the Inexorable",
+      "rarity": "mythic",
+      "set": "khm",
+      "id": "166c0bd1-b59d-4644-832f-888a4ca3a0aa",
+      "image": "https://cards.scryfall.io/normal/front/1/6/166c0bd1-b59d-4644-832f-888a4ca3a0aa.jpg"
+     },
+     "coins": 100
+    }
+   },
+   "scene": [
+    {
+     "who": "stage",
+     "line": "No one ever created great art by playing it safe!",
+     "quote": true
+    },
+    {
+     "who": "stage",
+     "line": "Prismari students dance in the tension between passion and perfection.",
+     "quote": true
+    },
+    {
+     "who": "prismari",
+     "line": "Magecraft: whenever you cast or copy an instant or sorcery, this triggers. Play cheap spells in the same turn as your mages."
+    }
+   ],
+   "villainScene": [
+    {
+     "who": "stage",
+     "line": "No gods. Only each other.",
+     "quote": true
+    },
+    {
+     "who": "stage",
+     "line": "The Skyclaves are our inheritance.",
+     "quote": true
+    }
+   ],
+   "after": null,
+   "cues": {
+    "hero": {
+     "start": "Show them!",
+     "big": "Encore!",
+     "low": "The audience is silent...",
+     "win": "Standing ovation.",
+     "loss": "Out of spells...",
+     "half": "Cast a spell while your mage is on the table."
+    },
+    "villain": {
+     "start": "Your trail ends here.",
+     "big": "Judgment!",
+     "low": "It slips away...",
+     "win": "Her judgment is final.",
+     "loss": "Not this time..."
+    }
+   },
+   "bigPlays": [],
+   "sim": null
+  },
+  {
+   "id": "a31b6",
+   "slot": 6,
+   "kind": "Meta",
+   "mood": "march",
+   "title": "Dimir Rogues",
+   "difficulty": "Normal",
+   "teaches": [
+    "Cycling matters"
+   ],
+   "blurb": "Autumn 2020: a white aggro deck against the Dimir Rogues, who steal your cards.",
+   "rewardSet": "znr",
+   "host": false,
+   "hero": {
+    "who": "whiteagg",
+    "deck": {
+     "name": "Mono-White Aggro",
+     "colors": "W",
+     "archetype": "Aggro",
+     "label": "tribute",
+     "cards": [
+      {
+       "qty": 4,
+       "name": "Luminarch Aspirant",
+       "set": "znr",
+       "number": "24",
+       "id": "fe964e7e-e2c5-4263-889d-0a531eb51442"
+      },
+      {
+       "qty": 4,
+       "name": "Usher of the Fallen",
+       "set": "khm",
+       "number": "35",
+       "id": "24e58478-c6a8-4f86-854a-a489c99bd777"
+      },
+      {
+       "qty": 4,
+       "name": "Fearless Fledgling",
+       "set": "znr",
+       "number": "15",
+       "id": "02d73eb7-4e76-48d4-90fa-fa972dc0fccb"
+      },
+      {
+       "qty": 3,
+       "name": "Kor Celebrant",
+       "set": "znr",
+       "number": "22",
+       "id": "87c37e46-a961-4739-8893-f783013e2be6"
+      },
+      {
+       "qty": 3,
+       "name": "Skyclave Cleric // Skyclave Basilica",
+       "set": "znr",
+       "number": "40",
+       "id": "014027c4-7f9d-4096-b308-ea4be574c0d4"
+      },
+      {
+       "qty": 4,
+       "name": "Resplendent Marshal",
+       "set": "khm",
+       "number": "22",
+       "id": "5e849bec-2ee6-4c83-83e6-bf9f5543e414"
+      },
+      {
+       "qty": 3,
+       "name": "Righteous Valkyrie",
+       "set": "khm",
+       "number": "24",
+       "id": "02fb5f9f-8750-4eb5-a03a-6dacc60e0b90"
+      },
+      {
+       "qty": 3,
+       "name": "Skyclave Apparition",
+       "set": "znr",
+       "number": "39",
+       "id": "b83cfbaa-7890-4f6f-878b-4edb45677371"
+      },
+      {
+       "qty": 2,
+       "name": "Halvar, God of Battle // Sword of the Realms",
+       "set": "khm",
+       "number": "15",
+       "id": "97502411-5c93-434c-b77b-ceb2c32feae7"
+      },
+      {
+       "qty": 3,
+       "name": "Iron Verdict",
+       "set": "khm",
+       "number": "17",
+       "id": "2fb38f5b-a2c2-4b06-8c9c-9615475a43e7"
+      },
+      {
+       "qty": 24,
+       "name": "Plains",
+       "set": "znr",
+       "number": "266",
+       "id": "9591fd15-78d9-4089-a075-031ab2affd2d"
+      },
+      {
+       "qty": 3,
+       "name": "Pressure Point",
+       "set": "znr",
+       "number": "33",
+       "id": "2fe82bbf-9b92-4684-a42d-fbc50c4c5903"
+      }
+     ]
+    }
+   },
+   "villain": {
+    "who": "rogues",
+    "deck": {
+     "name": "Dimir Rogues",
+     "colors": "UB",
+     "archetype": "Tempo",
+     "label": "tribute",
+     "cards": [
+      {
+       "qty": 4,
+       "name": "Soaring Thought-Thief",
+       "set": "znr",
+       "number": "236",
+       "id": "0d73c9c4-8955-499f-8f87-6500b35b4977"
+      },
+      {
+       "qty": 4,
+       "name": "Draugr Thought-Thief",
+       "set": "khm",
+       "number": "55",
+       "id": "31da60a2-d4d3-4954-be59-c7ff61fa2905"
+      },
+      {
+       "qty": 4,
+       "name": "Karfell Harbinger",
+       "set": "khm",
+       "number": "65",
+       "id": "4911016c-b92a-47cc-9553-b424d7be196a"
+      },
+      {
+       "qty": 3,
+       "name": "Augury Raven",
+       "set": "khm",
+       "number": "44",
+       "id": "a9947cfd-91d6-479e-a7f6-2a2050f020f3"
+      },
+      {
+       "qty": 2,
+       "name": "Zareth San, the Trickster",
+       "set": "znr",
+       "number": "242",
+       "id": "9cfe4fbe-277f-410c-9eee-f7617f4cb850"
+      },
+      {
+       "qty": 2,
+       "name": "Narfi, Betrayer King",
+       "set": "khm",
+       "number": "224",
+       "id": "421376e4-a4ad-427c-bc9c-d315308dcf68"
+      },
+      {
+       "qty": 3,
+       "name": "Frost Augur",
+       "set": "khm",
+       "number": "56",
+       "id": "a2ae592f-caf6-445a-970b-f8101998e657"
+      },
+      {
+       "qty": 3,
+       "name": "Brinebarrow Intruder",
+       "set": "khm",
+       "number": "49",
+       "id": "89960a74-9e17-4e30-874a-4286dd4c917d"
+      },
+      {
+       "qty": 1,
+       "name": "Mistwalker",
+       "set": "khm",
+       "number": "68",
+       "id": "92f64b49-327c-473b-a492-f020a322aed7"
+      },
+      {
+       "qty": 3,
+       "name": "Feed the Serpent",
+       "set": "khm",
+       "number": "95",
+       "id": "99a1a75b-20cf-4db9-a244-cc54411446c4"
+      },
+      {
+       "qty": 3,
+       "name": "Poison the Cup",
+       "set": "khm",
+       "number": "103",
+       "id": "7fb94456-5266-47db-b514-a0e17e34b771"
+      },
+      {
+       "qty": 2,
+       "name": "Saw It Coming",
+       "set": "khm",
+       "number": "76",
+       "id": "877a1bb9-5eae-453a-bec0-a9de20ea6815"
+      },
+      {
+       "qty": 2,
+       "name": "Depart the Realm",
+       "set": "khm",
+       "number": "53",
+       "id": "2ce0403d-76ed-4eb0-abdd-74ed28f96137"
+      },
+      {
+       "qty": 4,
+       "name": "Port of Karfell",
+       "set": "khm",
+       "number": "265",
+       "id": "bb9465a6-d009-4ecd-9fd1-d046547de902"
+      },
+      {
+       "qty": 4,
+       "name": "Ice Tunnel",
+       "set": "khm",
+       "number": "262",
+       "id": "8cff3ef0-4dfb-472e-aa1e-77613dd0f6d8"
+      },
+      {
+       "qty": 8,
+       "name": "Island",
+       "set": "znr",
+       "number": "269",
+       "id": "77ea783b-adaa-47be-9918-ca2f161c5d9e"
+      },
+      {
+       "qty": 8,
+       "name": "Swamp",
+       "set": "znr",
+       "number": "272",
+       "id": "95a58ce4-e07f-4c9c-98ae-3173d6d63cc5"
+      }
+     ]
+    }
+   },
+   "reward": {
+    "hero": {
+     "packs": 1,
+     "coins": 100
+    },
+    "villain": {
+     "card": {
+      "oracle_id": "5ed445c1-8a04-4fab-91ef-4d52db95c3b5",
+      "name": "Soaring Thought-Thief",
+      "rarity": "uncommon",
+      "set": "znr",
+      "id": "0d73c9c4-8955-499f-8f87-6500b35b4977",
+      "image": "https://cards.scryfall.io/normal/front/0/d/0d73c9c4-8955-499f-8f87-6500b35b4977.jpg"
+     },
+     "coins": 100
+    }
+   },
+   "scene": [
+    {
+     "who": "stage",
+     "line": "Rally to my light, and together we will drive out this darkness!",
+     "quote": true
+    },
+    {
+     "who": "stage",
+     "line": "The landbind ritual connects us to our sacred sites. More importantly, it binds us with every other kor who has visited here, through countless generations.",
+     "quote": true
+    },
+    {
+     "who": "whiteagg",
+     "line": "Beat them down before they steal your answers. Their rogues are fragile."
+    }
+   ],
+   "villainScene": [
+    {
+     "who": "stage",
+     "line": "The worst part is that you won't even remember how much he's taken from you.",
+     "quote": true
+    },
+    {
+     "who": "stage",
+     "line": "This is a realm of the living. King Narfi's legion is coming to change that.",
+     "quote": true
+    }
+   ],
+   "after": null,
+   "cues": {
+    "hero": {
+     "start": "Strike fast.",
+     "big": "Swords out!",
+     "low": "They are stealing our plans...",
+     "win": "Dawn.",
+     "loss": "Mugged...",
+     "half": "Attack every turn."
+    },
+    "villain": {
+     "start": "Quietly.",
+     "big": "Mill them!",
+     "low": "Out of tricks...",
+     "win": "They never saw it.",
+     "loss": "Caught..."
+    }
+   },
+   "bigPlays": [],
+   "sim": null
+  },
+  {
+   "id": "a31b7",
+   "slot": 7,
+   "kind": "Meta",
+   "mood": "tension",
+   "title": "Izzet Dragons",
+   "difficulty": "Normal",
+   "teaches": [
+    "Racing"
+   ],
+   "blurb": "Spring 2021: Izzet Dragons against a Rakdos pile of berserkers.",
+   "rewardSet": "stx",
+   "host": false,
+   "hero": {
+    "who": "dragons",
+    "deck": {
+     "name": "Izzet Dragons",
+     "colors": "UR",
+     "archetype": "Midrange",
+     "label": "tribute",
+     "cards": [
+      {
+       "qty": 4,
+       "name": "Elemental Expressionist",
+       "set": "stx",
+       "number": "181",
+       "id": "7473db42-905b-4fda-af8c-fd24d906b642"
+      },
+      {
+       "qty": 2,
+       "name": "Goldspan Dragon",
+       "set": "khm",
+       "number": "139",
+       "id": "9d914868-9000-4df2-a818-0ef8a7f636ae"
+      },
+      {
+       "qty": 3,
+       "name": "Galazeth Prismari",
+       "set": "stx",
+       "number": "189",
+       "id": "06c9158c-064b-4d12-b860-d2c1450d1897"
+      },
+      {
+       "qty": 2,
+       "name": "Kaza, Roil Chaser",
+       "set": "znr",
+       "number": "225",
+       "id": "af6bc333-79c0-4de8-9874-80f2254f9ad2"
+      },
+      {
+       "qty": 4,
+       "name": "Spectacle Mage",
+       "set": "stx",
+       "number": "235",
+       "id": "f74223e1-b66b-42fa-aaac-001f5dab2aac"
+      },
+      {
+       "qty": 3,
+       "name": "Maelstrom Muse",
+       "set": "stx",
+       "number": "202",
+       "id": "5516e81e-16ea-411c-9df0-ed3b03670220"
+      },
+      {
+       "qty": 1,
+       "name": "Magma Opus",
+       "set": "stx",
+       "number": "203",
+       "id": "27c914a3-2294-4feb-9450-c012cfd307a6"
+      },
+      {
+       "qty": 3,
+       "name": "Expressive Iteration",
+       "set": "stx",
+       "number": "186",
+       "id": "31b770cc-09e7-4c0b-b2a4-462ab4f7200d"
+      },
+      {
+       "qty": 3,
+       "name": "Demon Bolt",
+       "set": "khm",
+       "number": "129",
+       "id": "5f856b0e-b413-49b0-9aa7-d935ad40ae53"
+      },
+      {
+       "qty": 4,
+       "name": "Frost Bite",
+       "set": "khm",
+       "number": "138",
+       "id": "9423318a-c5a8-48d2-92f5-280d15a050a6"
+      },
+      {
+       "qty": 3,
+       "name": "Behold the Multiverse",
+       "set": "khm",
+       "number": "46",
+       "id": "27855a38-a682-4f97-ad22-ac625e86faec"
+      },
+      {
+       "qty": 4,
+       "name": "Saw It Coming",
+       "set": "khm",
+       "number": "76",
+       "id": "877a1bb9-5eae-453a-bec0-a9de20ea6815"
+      },
+      {
+       "qty": 4,
+       "name": "Frostboil Snarl",
+       "set": "stx",
+       "number": "265",
+       "id": "c22ba565-da08-4957-93bb-8d266fe0b0d8"
+      },
+      {
+       "qty": 4,
+       "name": "Prismari Campus",
+       "set": "stx",
+       "number": "270",
+       "id": "768120f5-9401-4e52-924e-3374bde65b3d"
+      },
+      {
+       "qty": 8,
+       "name": "Island",
+       "set": "znr",
+       "number": "269",
+       "id": "77ea783b-adaa-47be-9918-ca2f161c5d9e"
+      },
+      {
+       "qty": 8,
+       "name": "Mountain",
+       "set": "znr",
+       "number": "275",
+       "id": "96297bcc-8480-4b14-8612-1c395d481bce"
+      }
+     ]
+    }
+   },
+   "villain": {
+    "who": "lessons",
+    "deck": {
+     "name": "Rakdos Berserkers",
+     "colors": "BR",
+     "archetype": "Aggro",
+     "label": "tribute",
+     "cards": [
+      {
+       "qty": 4,
+       "name": "Bloodsky Berserker",
+       "set": "khm",
+       "number": "80",
+       "id": "a6308a53-de07-4ed9-80a1-3579843466c2"
+      },
+      {
+       "qty": 4,
+       "name": "Deathknell Berserker",
+       "set": "khm",
+       "number": "83",
+       "id": "f9f2029f-ffda-4374-9a78-79866ac23fca"
+      },
+      {
+       "qty": 4,
+       "name": "Immersturm Raider",
+       "set": "khm",
+       "number": "141",
+       "id": "77da4de2-4d34-40e5-8fc0-850aef05356b"
+      },
+      {
+       "qty": 3,
+       "name": "Dragonkin Berserker",
+       "set": "khm",
+       "number": "131",
+       "id": "e7f22fe4-2390-4c3d-8b5e-0cf398d97f6a"
+      },
+      {
+       "qty": 3,
+       "name": "Immersturm Predator",
+       "set": "khm",
+       "number": "214",
+       "id": "0d83d2d9-b9d0-47f5-989b-f2c726401ade"
+      },
+      {
+       "qty": 3,
+       "name": "Kardur, Doomscourge",
+       "set": "khm",
+       "number": "216",
+       "id": "9685e2a0-5573-41bc-a914-f40c3011459b"
+      },
+      {
+       "qty": 4,
+       "name": "Hagi Mob",
+       "set": "khm",
+       "number": "140",
+       "id": "d3b18cdb-bc17-42ae-bfb7-4eafce01cd39"
+      },
+      {
+       "qty": 3,
+       "name": "Demon Bolt",
+       "set": "khm",
+       "number": "129",
+       "id": "5f856b0e-b413-49b0-9aa7-d935ad40ae53"
+      },
+      {
+       "qty": 3,
+       "name": "Poison the Cup",
+       "set": "khm",
+       "number": "103",
+       "id": "7fb94456-5266-47db-b514-a0e17e34b771"
+      },
+      {
+       "qty": 3,
+       "name": "Feed the Serpent",
+       "set": "khm",
+       "number": "95",
+       "id": "99a1a75b-20cf-4db9-a244-cc54411446c4"
+      },
+      {
+       "qty": 2,
+       "name": "Tormenting Voice",
+       "set": "znr",
+       "number": "172",
+       "id": "6da46103-a14c-4aa2-92fc-fd758335caf4"
+      },
+      {
+       "qty": 4,
+       "name": "Immersturm Skullcairn",
+       "set": "khm",
+       "number": "263",
+       "id": "12ed97de-736d-43d8-977b-308ac54f88f4"
+      },
+      {
+       "qty": 4,
+       "name": "Sulfurous Mire",
+       "set": "khm",
+       "number": "270",
+       "id": "35ebe245-ebb5-493c-b9c1-56fbfda9bd66"
+      },
+      {
+       "qty": 8,
+       "name": "Mountain",
+       "set": "znr",
+       "number": "275",
+       "id": "96297bcc-8480-4b14-8612-1c395d481bce"
+      },
+      {
+       "qty": 8,
+       "name": "Swamp",
+       "set": "znr",
+       "number": "272",
+       "id": "95a58ce4-e07f-4c9c-98ae-3173d6d63cc5"
+      }
+     ]
+    }
+   },
+   "reward": {
+    "hero": {
+     "packs": 1,
+     "coins": 100
+    },
+    "villain": {
+     "card": {
+      "oracle_id": "ed04f170-a4d9-4151-b4ae-1200d523dc6b",
+      "name": "Bloodsky Berserker",
+      "rarity": "uncommon",
+      "set": "khm",
+      "id": "a6308a53-de07-4ed9-80a1-3579843466c2",
+      "image": "https://cards.scryfall.io/normal/front/a/6/a6308a53-de07-4ed9-80a1-3579843466c2.jpg"
+     },
+     "coins": 100
+    }
+   },
+   "scene": [
+    {
+     "who": "stage",
+     "line": "It would be a crime to withhold my light from the world.",
+     "quote": true
+    },
+    {
+     "who": "stage",
+     "line": "Burn them from the sky.",
+     "quote": true
+    },
+    {
+     "who": "dragons",
+     "line": "Hold the dragons until you can afford them. Trade cheap spells while you wait."
+    }
+   ],
+   "villainScene": [
+    {
+     "who": "stage",
+     "line": "Sven felled the elf with an arrow through the chest, but moments later, the corpse rose with a sneer to fight again.",
+     "quote": true
+    },
+    {
+     "who": "stage",
+     "line": "Graarg!",
+     "quote": true
+    }
+   ],
+   "after": null,
+   "cues": {
+    "hero": {
+     "start": "Wait for it.",
+     "big": "Dragon!",
+     "low": "The berserkers are fast...",
+     "win": "Fire and ice.",
+     "loss": "Overrun...",
+     "half": "Stabilise first, dragons second."
+    },
+    "villain": {
+     "start": "Who's next?!",
+     "big": "Charge!",
+     "low": "The fuel is gone...",
+     "win": "Berserk.",
+     "loss": "Cut down..."
+    }
+   },
+   "bigPlays": [],
+   "sim": null
+  },
+  {
+   "id": "a31b8",
+   "slot": 8,
+   "kind": "Boss",
+   "mood": "boss",
+   "title": "Extus, Oriq Overlord",
+   "difficulty": "Hard",
+   "teaches": [
+    "Magecraft"
+   ],
+   "blurb": "Extus has taken the Oriq and wants Strixhaven for himself. Kaya and the deans stand in the way.",
+   "rewardSet": "stx",
+   "host": true,
+   "hero": {
+    "who": "deans",
+    "deck": {
+     "name": "Kaya and the Deans",
+     "colors": "WB",
+     "archetype": null,
+     "label": "tribute",
+     "cards": [
+      {
+       "qty": 4,
+       "name": "Silverquill Apprentice",
+       "set": "stx",
+       "number": "231",
+       "id": "42d0770e-9084-4aa7-b543-2b6ba18378dc"
+      },
+      {
+       "qty": 4,
+       "name": "Elite Spellbinder",
+       "set": "stx",
+       "number": "17",
+       "id": "9d3a7998-ccac-45ad-a4e9-3a2cb057f63b"
+      },
+      {
+       "qty": 3,
+       "name": "Shadrix Silverquill",
+       "set": "stx",
+       "number": "230",
+       "id": "ab701909-83d6-4d39-9a84-e6a9b2cb38d6"
+      },
+      {
+       "qty": 3,
+       "name": "Kaya the Inexorable",
+       "set": "khm",
+       "number": "218",
+       "id": "166c0bd1-b59d-4644-832f-888a4ca3a0aa"
+      },
+      {
+       "qty": 3,
+       "name": "Killian, Ink Duelist",
+       "set": "stx",
+       "number": "197",
+       "id": "23ef4f09-2aa1-4a03-b2e2-66d1522f1e46"
+      },
+      {
+       "qty": 3,
+       "name": "Spiteful Squad",
+       "set": "stx",
+       "number": "237",
+       "id": "be88355e-c986-4b69-93b4-0abf04916e86"
+      },
+      {
+       "qty": 3,
+       "name": "Owlin Shieldmage",
+       "set": "stx",
+       "number": "210",
+       "id": "d3350367-42bd-44af-be13-ad31c002f8ac"
+      },
+      {
+       "qty": 2,
+       "name": "Firja, Judge of Valor",
+       "set": "khm",
+       "number": "209",
+       "id": "df87077c-85d8-499e-bce0-27697caada5a"
+      },
+      {
+       "qty": 3,
+       "name": "Vanishing Verse",
+       "set": "stx",
+       "number": "244",
+       "id": "e12573fe-aee3-49db-93e2-d00972cbb3b1"
+      },
+      {
+       "qty": 3,
+       "name": "Fracture",
+       "set": "stx",
+       "number": "188",
+       "id": "a11224f8-06ea-4ec3-85e6-d5c8d906840c"
+      },
+      {
+       "qty": 2,
+       "name": "Humiliate",
+       "set": "stx",
+       "number": "193",
+       "id": "dc3ae8cb-fbdb-45a8-83c2-cbf4aff01f90"
+      },
+      {
+       "qty": 1,
+       "name": "Silverquill Command",
+       "set": "stx",
+       "number": "232",
+       "id": "5c55f533-9d31-4ad1-b336-927aba6e74d6"
+      },
+      {
+       "qty": 4,
+       "name": "Silverquill Campus",
+       "set": "stx",
+       "number": "273",
+       "id": "42583850-ba5c-4a71-8717-406b5c6d048f"
+      },
+      {
+       "qty": 4,
+       "name": "Shineshadow Snarl",
+       "set": "stx",
+       "number": "272",
+       "id": "84a46ebf-6938-4100-8f5f-0605ad2be4fc"
+      },
+      {
+       "qty": 8,
+       "name": "Plains",
+       "set": "znr",
+       "number": "266",
+       "id": "9591fd15-78d9-4089-a075-031ab2affd2d"
+      },
+      {
+       "qty": 8,
+       "name": "Swamp",
+       "set": "znr",
+       "number": "272",
+       "id": "95a58ce4-e07f-4c9c-98ae-3173d6d63cc5"
+      },
+      {
+       "qty": 2,
+       "name": "Star Pupil",
+       "set": "stx",
+       "number": "30",
+       "id": "99e9318f-2e17-4b6e-895f-c17cd5d0d282"
+      }
+     ]
+    }
+   },
+   "villain": {
+    "who": "extus",
+    "deck": {
+     "name": "The Oriq",
+     "colors": "WB",
+     "archetype": null,
+     "label": "tribute",
+     "cards": [
+      {
+       "qty": 4,
+       "name": "Extus, Oriq Overlord // Awaken the Blood Avatar",
+       "set": "stx",
+       "number": "149",
+       "id": "ba09360a-067e-48a5-bdc5-a19fd066a785"
+      },
+      {
+       "qty": 3,
+       "name": "Rise of Extus",
+       "set": "stx",
+       "number": "226",
+       "id": "bbf97a71-485e-4d47-98de-bdf6f6dae0c2"
+      },
+      {
+       "qty": 2,
+       "name": "Blot Out the Sky",
+       "set": "stx",
+       "number": "167",
+       "id": "0141312f-4b68-4c56-b1dc-5b7e6afbb96c"
+      },
+      {
+       "qty": 3,
+       "name": "Owlin Shieldmage",
+       "set": "stx",
+       "number": "210",
+       "id": "d3350367-42bd-44af-be13-ad31c002f8ac"
+      },
+      {
+       "qty": 4,
+       "name": "Vanishing Verse",
+       "set": "stx",
+       "number": "244",
+       "id": "e12573fe-aee3-49db-93e2-d00972cbb3b1"
+      },
+      {
+       "qty": 4,
+       "name": "Spiteful Squad",
+       "set": "stx",
+       "number": "237",
+       "id": "be88355e-c986-4b69-93b4-0abf04916e86"
+      },
+      {
+       "qty": 4,
+       "name": "Cleric of Life's Bond",
+       "set": "znr",
+       "number": "222",
+       "id": "953db280-6999-4b91-bc40-c6e7f7dd13ef"
+      },
+      {
+       "qty": 4,
+       "name": "Elite Spellbinder",
+       "set": "stx",
+       "number": "17",
+       "id": "9d3a7998-ccac-45ad-a4e9-3a2cb057f63b"
+      },
+      {
+       "qty": 2,
+       "name": "Orah, Skyclave Hierophant",
+       "set": "znr",
+       "number": "233",
+       "id": "2336c8bf-fcad-41f9-9041-80b8aa3cd79a"
+      },
+      {
+       "qty": 3,
+       "name": "Firja, Judge of Valor",
+       "set": "khm",
+       "number": "209",
+       "id": "df87077c-85d8-499e-bce0-27697caada5a"
+      },
+      {
+       "qty": 3,
+       "name": "Skyclave Apparition",
+       "set": "znr",
+       "number": "39",
+       "id": "b83cfbaa-7890-4f6f-878b-4edb45677371"
+      },
+      {
+       "qty": 4,
+       "name": "Shineshadow Snarl",
+       "set": "stx",
+       "number": "272",
+       "id": "84a46ebf-6938-4100-8f5f-0605ad2be4fc"
+      },
+      {
+       "qty": 4,
+       "name": "Silverquill Campus",
+       "set": "stx",
+       "number": "273",
+       "id": "42583850-ba5c-4a71-8717-406b5c6d048f"
+      },
+      {
+       "qty": 8,
+       "name": "Plains",
+       "set": "znr",
+       "number": "266",
+       "id": "9591fd15-78d9-4089-a075-031ab2affd2d"
+      },
+      {
+       "qty": 8,
+       "name": "Swamp",
+       "set": "znr",
+       "number": "272",
+       "id": "95a58ce4-e07f-4c9c-98ae-3173d6d63cc5"
+      }
+     ]
+    }
+   },
+   "reward": {
+    "hero": {
+     "packs": 2,
+     "coins": 200
+    },
+    "villain": {
+     "card": {
+      "oracle_id": "0b299983-9f0f-404a-acd1-8f142572b1f1",
+      "name": "Extus, Oriq Overlord // Awaken the Blood Avatar",
+      "rarity": "mythic",
+      "set": "stx",
+      "id": "ba09360a-067e-48a5-bdc5-a19fd066a785",
+      "image": "https://cards.scryfall.io/normal/front/b/a/ba09360a-067e-48a5-bdc5-a19fd066a785.jpg"
+     },
+     "coins": 200
+    }
+   },
+   "scene": [
+    {
+     "who": "stage",
+     "line": "When your father is Dean Embrose, second best really isn't an option.",
+     "quote": true
+    },
+    {
+     "who": "stage",
+     "line": "Aim higher next time.",
+     "quote": true
+    },
+    {
+     "who": "deans",
+     "line": "Extus gets stronger with every spell. Stop him before the Blood Avatar arrives."
+    }
+   ],
+   "villainScene": [
+    {
+     "who": "stage",
+     "line": "Join me for the dawn of a new age.",
+     "quote": true
+    },
+    {
+     "who": "stage",
+     "line": "With one lethal strike, Extus took control of the Oriq and took his first step towards vengeance.",
+     "quote": true
+    }
+   ],
+   "after": null,
+   "cues": {
+    "hero": {
+     "start": "Class is in session.",
+     "big": "Together!",
+     "low": "The Oriq are many...",
+     "win": "The campus is safe.",
+     "loss": "Expelled...",
+     "half": "Kill Extus before the Blood Avatar."
+    },
+    "villain": {
+     "start": "A new age.",
+     "big": "[the avatar rises]",
+     "low": "[a hollow laugh]",
+     "win": "The campus is mine.",
+     "loss": "[the Oriq scatter]",
+     "half": {
+      "who": "silverquill",
+      "line": "Aim higher next time."
+     }
+    }
+   },
+   "bigPlays": [],
+   "sim": null
+  },
+  {
+   "id": "a31b9",
+   "slot": 9,
+   "kind": "Secret Boss",
+   "secret": true,
+   "mood": "boss",
+   "title": "Kaldheim Snow Stompy",
+   "difficulty": "Hard",
+   "teaches": [
+    "Racing"
+   ],
+   "blurb": "Deep in the archive, a green deck that starts with one-drops and ends with a very big troll.",
+   "rewardSet": "khm",
+   "host": true,
+   "archive": {
+    "deck": "Snow Stompy",
+    "when": "Spring 2021",
+    "format": "Standard.",
+    "what": "A green deck that used snow lands to power Icehide Troll, Sculptor of Winter and Blizzard Brawl.",
+    "why": "Cheap, efficient snow creatures and a one-mana fight spell made it a fast, consistent attacker.",
+    "beat": "Kill the early snow creatures before they grow, and chump block the troll until you can remove it.",
+    "after": "Strixhaven and then Adventures in the Forgotten Realms arrived in Standard in 2021."
+   },
+   "hero": {
+    "who": "you",
+    "deck": {
+     "name": "Mono-White Aggro",
+     "colors": "W",
+     "archetype": "Aggro",
+     "label": "tribute",
+     "cards": [
+      {
+       "qty": 4,
+       "name": "Luminarch Aspirant",
+       "set": "znr",
+       "number": "24",
+       "id": "fe964e7e-e2c5-4263-889d-0a531eb51442"
+      },
+      {
+       "qty": 4,
+       "name": "Usher of the Fallen",
+       "set": "khm",
+       "number": "35",
+       "id": "24e58478-c6a8-4f86-854a-a489c99bd777"
+      },
+      {
+       "qty": 4,
+       "name": "Fearless Fledgling",
+       "set": "znr",
+       "number": "15",
+       "id": "02d73eb7-4e76-48d4-90fa-fa972dc0fccb"
+      },
+      {
+       "qty": 3,
+       "name": "Kor Celebrant",
+       "set": "znr",
+       "number": "22",
+       "id": "87c37e46-a961-4739-8893-f783013e2be6"
+      },
+      {
+       "qty": 3,
+       "name": "Skyclave Cleric // Skyclave Basilica",
+       "set": "znr",
+       "number": "40",
+       "id": "014027c4-7f9d-4096-b308-ea4be574c0d4"
+      },
+      {
+       "qty": 4,
+       "name": "Resplendent Marshal",
+       "set": "khm",
+       "number": "22",
+       "id": "5e849bec-2ee6-4c83-83e6-bf9f5543e414"
+      },
+      {
+       "qty": 3,
+       "name": "Righteous Valkyrie",
+       "set": "khm",
+       "number": "24",
+       "id": "02fb5f9f-8750-4eb5-a03a-6dacc60e0b90"
+      },
+      {
+       "qty": 3,
+       "name": "Skyclave Apparition",
+       "set": "znr",
+       "number": "39",
+       "id": "b83cfbaa-7890-4f6f-878b-4edb45677371"
+      },
+      {
+       "qty": 2,
+       "name": "Halvar, God of Battle // Sword of the Realms",
+       "set": "khm",
+       "number": "15",
+       "id": "97502411-5c93-434c-b77b-ceb2c32feae7"
+      },
+      {
+       "qty": 3,
+       "name": "Maul of the Skyclaves",
+       "set": "znr",
+       "number": "27",
+       "id": "f18f2608-0d44-442c-97a1-12ac94b7abac"
+      },
+      {
+       "qty": 3,
+       "name": "Iron Verdict",
+       "set": "khm",
+       "number": "17",
+       "id": "2fb38f5b-a2c2-4b06-8c9c-9615475a43e7"
+      },
+      {
+       "qty": 24,
+       "name": "Plains",
+       "set": "znr",
+       "number": "266",
+       "id": "9591fd15-78d9-4089-a075-031ab2affd2d"
+      }
+     ]
+    }
+   },
+   "villain": {
+    "who": "stompy",
+    "deck": {
+     "name": "Kaldheim Stompy",
+     "colors": "G",
+     "archetype": "Aggro",
+     "label": "tribute",
+     "note": "Built from cards in this act's sets only. The real deck used snow lands, which are not in our basic land pool here.",
+     "cards": [
+      {
+       "qty": 4,
+       "name": "Icehide Troll",
+       "set": "khm",
+       "number": "176",
+       "id": "02f3aaed-a01f-4c6a-b9bb-cd70b0f6ceb1"
+      },
+      {
+       "qty": 4,
+       "name": "Sculptor of Winter",
+       "set": "khm",
+       "number": "193",
+       "id": "9dab2ca2-0039-4eac-a7dc-68756362737d"
+      },
+      {
+       "qty": 4,
+       "name": "Boreal Outrider",
+       "set": "khm",
+       "number": "163",
+       "id": "455ae615-20d7-4251-828d-72a3345d06f1"
+      },
+      {
+       "qty": 3,
+       "name": "Jaspera Sentinel",
+       "set": "khm",
+       "number": "178",
+       "id": "1a68615d-9808-479d-aa80-50651246954e"
+      },
+      {
+       "qty": 3,
+       "name": "Old-Growth Troll",
+       "set": "khm",
+       "number": "185",
+       "id": "b759b0f6-342c-4bba-89f1-8451835d8c45"
+      },
+      {
+       "qty": 3,
+       "name": "Ravenous Lindwurm",
+       "set": "khm",
+       "number": "187",
+       "id": "9961e3fc-167e-4043-8510-cc5cf08d473e"
+      },
+      {
+       "qty": 2,
+       "name": "Vorinclex, Monstrous Raider",
+       "set": "khm",
+       "number": "199",
+       "id": "92613468-205e-488b-930d-11908477e9f8"
+      },
+      {
+       "qty": 3,
+       "name": "Esika's Chariot",
+       "set": "khm",
+       "number": "169",
+       "id": "a87606cc-fbf0-4e2c-9798-f1c935d0573d"
+      },
+      {
+       "qty": 4,
+       "name": "Blizzard Brawl",
+       "set": "khm",
+       "number": "162",
+       "id": "6318918f-34e4-4bbf-9816-8e88f21ae324"
+      },
+      {
+       "qty": 3,
+       "name": "Spirit of the Aldergard",
+       "set": "khm",
+       "number": "195",
+       "id": "220df551-3820-4910-a206-14501ba02e69"
+      },
+      {
+       "qty": 3,
+       "name": "Snakeskin Veil",
+       "set": "khm",
+       "number": "194",
+       "id": "e692c208-c171-4964-9207-43c2cbc62845"
+      },
+      {
+       "qty": 24,
+       "name": "Forest",
+       "set": "znr",
+       "number": "278",
+       "id": "d949485e-5188-49f4-9d30-5e135532d445"
+      }
+     ]
+    }
+   },
+   "reward": {
+    "hero": {
+     "packs": 2,
+     "coins": 200
+    },
+    "villain": {
+     "card": {
+      "oracle_id": "ce55c9a8-25ba-404c-95b4-c14ba4763081",
+      "name": "Icehide Troll",
+      "rarity": "common",
+      "set": "khm",
+      "id": "02f3aaed-a01f-4c6a-b9bb-cd70b0f6ceb1",
+      "image": "https://cards.scryfall.io/normal/front/0/2/02f3aaed-a01f-4c6a-b9bb-cd70b0f6ceb1.jpg"
+     },
+     "coins": 200
+    }
+   },
+   "scene": [
+    {
+     "who": "stage",
+     "line": "Wherever snow falls, I am home.",
+     "quote": true
+    },
+    {
+     "who": "you",
+     "line": "Kill the early creatures. Do not let the troll grow."
+    }
+   ],
+   "villainScene": [
+    {
+     "who": "stage",
+     "line": "A troll's greatest weapon is its ability to emerge unexpectedly from the landscape.",
+     "quote": true
+    }
+   ],
+   "after": [
+    {
+     "who": "stage",
+     "line": "Recorded: Strixhaven and then Adventures in the Forgotten Realms arrived in Standard in 2021."
+    }
+   ],
+   "cues": {
+    "hero": {
+     "start": "Hold them off.",
+     "big": "Strike!",
+     "low": "The troll is huge...",
+     "win": "The snow melts.",
+     "loss": "Buried...",
+     "half": "Kill the early creatures first."
+    },
+    "villain": {
+     "start": "[a quiet frost]",
+     "big": "[the troll grows]",
+     "low": "[the thaw]",
+     "win": "[silence]",
+     "loss": "[the snow melts]"
+    }
+   },
+   "bigPlays": [],
+   "sim": null
+  }
+ ]
+}
