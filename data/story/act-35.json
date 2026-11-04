@@ -1016,7 +1016,7 @@
        "id": "445b3315-6587-4d57-ab7e-faab1eec0241"
       },
       {
-       "qty": 2,
+       "qty": 1,
        "name": "Beamtown Beatstick",
        "set": "mom",
        "number": "131",
@@ -1079,25 +1079,32 @@
        "id": "6d9e44c1-7b51-47cb-b564-608deb46cc44"
       },
       {
-       "qty": 4,
+       "qty": 3,
        "name": "Cacophony Scamp",
        "set": "one",
        "number": "124",
        "id": "3553dcef-7b99-49d5-b071-06b894696952"
       },
       {
-       "qty": 4,
+       "qty": 2,
        "name": "Sawblade Scamp",
        "set": "one",
        "number": "147",
        "id": "7f04c2e5-9100-439a-9aa4-28d388518e4a"
       },
       {
-       "qty": 2,
-       "name": "Akki Scrapchomper",
-       "set": "mom",
-       "number": "130",
-       "id": "b0e02737-0193-46e4-a506-cec86a44dc99"
+       "qty": 3,
+       "name": "Gleeful Demolition",
+       "set": "one",
+       "number": "134",
+       "id": "a3e4efa6-5783-4a51-99c6-116d1a8f01cf"
+      },
+      {
+       "qty": 3,
+       "name": "Exuberant Fuseling",
+       "set": "one",
+       "number": "129",
+       "id": "a6e8d7b9-ff5e-48ae-9e38-d2b6a45b119b"
       }
      ]
     }
@@ -1785,14 +1792,14 @@
        "id": "b3890961-d636-4ccc-9c42-2088a8531c9b"
       },
       {
-       "qty": 2,
+       "qty": 4,
        "name": "Blightbelly Rat",
        "set": "one",
        "number": "85",
        "id": "9255cd01-a611-4fec-b9ec-b271687740ba"
       },
       {
-       "qty": 4,
+       "qty": 3,
        "name": "Archfiend of the Dross",
        "set": "one",
        "number": "82",
@@ -1820,11 +1827,25 @@
        "id": "45db6b46-c4b4-4684-8a49-53a64ffc82f2"
       },
       {
-       "qty": 2,
+       "qty": 1,
+       "name": "Rankle and Torbran",
+       "set": "mom",
+       "number": "252",
+       "id": "d92c191e-329c-41f5-ae4f-1bb91fc001a0"
+      },
+      {
+       "qty": 4,
        "name": "Kolaghan Warmonger",
        "set": "mat",
        "number": "17",
        "id": "8361d9e2-b9fc-4d46-a1ba-a24139157f26"
+      },
+      {
+       "qty": 3,
+       "name": "Sheoldred // The True Scriptures",
+       "set": "mom",
+       "number": "125",
+       "id": "bf2249e6-af74-4b88-8eb7-144ce8fa7f6b"
       },
       {
        "qty": 4,
@@ -1834,13 +1855,6 @@
        "id": "73d74045-cc9b-4b01-bc5f-0f2eb4b01580"
       },
       {
-       "qty": 4,
-       "name": "Drown in Ichor",
-       "set": "one",
-       "number": "91",
-       "id": "bf148ef4-0ed7-4fbe-8ab6-01dd3981c8d3"
-      },
-      {
        "qty": 3,
        "name": "Vraska's Fall",
        "set": "one",
@@ -1848,18 +1862,11 @@
        "id": "0173b7b4-2832-4943-ba45-8ba498d7a056"
       },
       {
-       "qty": 3,
+       "qty": 2,
        "name": "Sheoldred's Edict",
        "set": "one",
        "number": "108",
        "id": "a9225cc3-90f0-448f-a8d9-7c6c2796d077"
-      },
-      {
-       "qty": 2,
-       "name": "Chandra, Hope's Beacon",
-       "set": "mom",
-       "number": "134",
-       "id": "a146ea07-ec1c-448d-b67a-dd9f9e27c2e0"
       },
       {
        "qty": 4,
@@ -1901,7 +1908,7 @@
        "id": "60b565da-a49b-479c-b0c4-8ff3dd20cc0b"
       },
       {
-       "qty": 4,
+       "qty": 3,
        "name": "Swooping Lookout",
        "set": "one",
        "number": "35",
@@ -1922,13 +1929,6 @@
        "id": "aa0461fc-4298-45b9-90a0-939093cf2544"
       },
       {
-       "qty": 2,
-       "name": "Porcelain Zealot",
-       "set": "one",
-       "number": "30",
-       "id": "0409bacf-b728-473d-bf9b-41fdf364e783"
-      },
-      {
        "qty": 1,
        "name": "Archangel Elspeth",
        "set": "mom",
@@ -1936,21 +1936,21 @@
        "id": "35ed6263-bdd7-4013-ac8c-9b652d71a0db"
       },
       {
-       "qty": 4,
+       "qty": 2,
        "name": "Ossification",
        "set": "one",
        "number": "26",
        "id": "0da03224-c1af-438f-96c2-b0e41e1070b7"
       },
       {
-       "qty": 4,
+       "qty": 2,
        "name": "Planar Disruption",
        "set": "one",
        "number": "28",
        "id": "8ee69a1f-aeed-4eb4-8987-fa720fc99715"
       },
       {
-       "qty": 4,
+       "qty": 2,
        "name": "Attentive Skywarden",
        "set": "mom",
        "number": "7",
@@ -1971,7 +1971,7 @@
        "id": "a4705327-ada6-4575-82fc-351e183d060e"
       },
       {
-       "qty": 3,
+       "qty": 4,
        "name": "Zealot's Conviction",
        "set": "one",
        "number": "39",
@@ -1983,6 +1983,20 @@
        "set": "mom",
        "number": "32",
        "id": "f86f7d03-ce71-498d-9dc5-2bd853ac0eae"
+      },
+      {
+       "qty": 4,
+       "name": "Enduring Bondwarden",
+       "set": "mom",
+       "number": "14",
+       "id": "eb0680eb-ceca-44d9-9654-78ea2ccfce17"
+      },
+      {
+       "qty": 4,
+       "name": "Crawling Chorus",
+       "set": "one",
+       "number": "8",
+       "id": "aace4c44-7250-414b-aac4-df042a1e2e1d"
       }
      ]
     }
@@ -1994,12 +2008,12 @@
     },
     "villain": {
      "card": {
-      "oracle_id": "4c11bda3-903f-4b7c-9e5e-f6c5c91977cf",
-      "name": "Porcelain Zealot",
-      "rarity": "uncommon",
-      "set": "one",
-      "id": "0409bacf-b728-473d-bf9b-41fdf364e783",
-      "image": "https://cards.scryfall.io/normal/front/0/4/0409bacf-b728-473d-bf9b-41fdf364e783.jpg"
+      "oracle_id": "0b2481d6-97a0-4f92-b7e5-3451863fd7fb",
+      "name": "Archangel Elspeth",
+      "rarity": "mythic",
+      "set": "mom",
+      "id": "35ed6263-bdd7-4013-ac8c-9b652d71a0db",
+      "image": "https://cards.scryfall.io/normal/front/3/5/35ed6263-bdd7-4013-ac8c-9b652d71a0db.jpg"
      },
      "coins": 100
     }
@@ -2718,7 +2732,7 @@
      "label": "tribute",
      "cards": [
       {
-       "qty": 2,
+       "qty": 4,
        "name": "Skrelv, Defector Mite",
        "set": "one",
        "number": "33",
@@ -2732,21 +2746,21 @@
        "id": "b62c740d-260d-4dfa-b6b3-9a1527538f89"
       },
       {
-       "qty": 2,
+       "qty": 4,
        "name": "Mandible Justiciar",
        "set": "one",
        "number": "21",
        "id": "544a707d-4090-4a74-91aa-60fbd8a4ae96"
       },
       {
-       "qty": 2,
+       "qty": 4,
        "name": "Swordsworn Cavalier",
        "set": "mom",
        "number": "42",
        "id": "aa0461fc-4298-45b9-90a0-939093cf2544"
       },
       {
-       "qty": 2,
+       "qty": 4,
        "name": "Porcelain Zealot",
        "set": "one",
        "number": "30",
@@ -2754,6 +2768,13 @@
       },
       {
        "qty": 1,
+       "name": "Monastery Mentor",
+       "set": "mom",
+       "number": "28",
+       "id": "75665c2f-a100-4e3f-be8e-b5cc3c9a090b"
+      },
+      {
+       "qty": 3,
        "name": "Archangel Elspeth",
        "set": "mom",
        "number": "6",
@@ -2786,27 +2807,6 @@
        "set": "one",
        "number": "262",
        "id": "50958c6e-9555-42ad-9bb3-2da9faa5cb52"
-      },
-      {
-       "qty": 4,
-       "name": "Kor Halberd",
-       "set": "mom",
-       "number": "27",
-       "id": "a4705327-ada6-4575-82fc-351e183d060e"
-      },
-      {
-       "qty": 3,
-       "name": "Zealot's Conviction",
-       "set": "one",
-       "number": "39",
-       "id": "3a419ba1-7bd3-48e3-8f88-d9f833b25d6d"
-      },
-      {
-       "qty": 4,
-       "name": "Progenitor Exarch",
-       "set": "mom",
-       "number": "32",
-       "id": "f86f7d03-ce71-498d-9dc5-2bd853ac0eae"
       }
      ]
     }

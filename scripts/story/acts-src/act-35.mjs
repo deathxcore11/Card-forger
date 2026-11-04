@@ -133,7 +133,7 @@ export default {
 10 Plains`}},
       villain: {who: 'invaders', deck: {label: 'tribute', name: 'The Invaders', colors: 'R', list: `
 4 Furnace Gremlin
-2 Beamtown Beatstick
+1 Beamtown Beatstick
 4 Bloodfeather Phoenix
 4 Harried Artisan // Phyrexian Skyflayer
 4 Thrashing Frontliner
@@ -142,9 +142,10 @@ export default {
 3 Burning Sun's Fury
 1 Stoke the Flames
 24 Mountain
-4 Cacophony Scamp
-4 Sawblade Scamp
-2 Akki Scrapchomper`}},
+3 Cacophony Scamp
+2 Sawblade Scamp
+3 Gleeful Demolition
+3 Exuberant Fuseling`}},
       scene: [q('stage', 'Ixalan greeted Phyrexia with a defiant roar.'),
         q('stage', 'Her warning raced through the roots and rivers of Ixalan: prepare for war.'),
         s('planes', 'Battles: an invasion is a battle. Attack it and defeat it to flip it, or defend it and keep the invaders out.')],
@@ -233,34 +234,35 @@ export default {
       blurb: 'Spring 2023: a three-colour removal deck against mono-white weenies.',
       hero: {who: 'grixis', deck: {label: 'tribute', name: 'Grixis Midrange', note: 'Blue is dropped for our land pool; this is the black-red core.', colors: 'BR', archetype: 'Midrange', list: `
 4 Cutthroat Centurion
-2 Blightbelly Rat
-4 Archfiend of the Dross
+4 Blightbelly Rat
+3 Archfiend of the Dross
 1 Phyrexian Obliterator
 4 Stormclaw Rager
 3 Charforger
-2 Kolaghan Warmonger
+1 Rankle and Torbran
+4 Kolaghan Warmonger
+3 Sheoldred // The True Scriptures
 4 Volt Charge
-4 Drown in Ichor
 3 Vraska's Fall
-3 Sheoldred's Edict
-2 Chandra, Hope's Beacon
+2 Sheoldred's Edict
 4 Blackcleave Cliffs
 10 Swamp
 10 Mountain`}},
       villain: {who: 'white', deck: {label: 'tribute', name: 'Mono-White', colors: 'W', archetype: 'Aggro', list: `
 2 Skrelv, Defector Mite
-4 Swooping Lookout
+3 Swooping Lookout
 2 Mandible Justiciar
 2 Swordsworn Cavalier
-2 Porcelain Zealot
 1 Archangel Elspeth
-4 Ossification
-4 Planar Disruption
-4 Attentive Skywarden
+2 Ossification
+2 Planar Disruption
+2 Attentive Skywarden
 24 Plains
 4 Kor Halberd
-3 Zealot's Conviction
-4 Progenitor Exarch`}},
+4 Zealot's Conviction
+4 Progenitor Exarch
+4 Enduring Bondwarden
+4 Crawling Chorus`}},
       scene: [q('stage', 'There\'s a war brewing between Norn and Urabrask. Exploit the chaos, and we can take them both down for good.'),
         q('stage', 'Congratulations. I am entertained.'),
         s('grixis', 'Trade your removal for their best creatures. Draw extra cards with Phyrexian Arena and win the long game.')],
@@ -361,19 +363,17 @@ export default {
         after: 'Rotation took the deck apart, but Atraxa kept turning up in other decks.'},
       blurb: 'Deep in the archive, a four-colour deck that wins on turn five or not at all.',
       hero: {who: 'you', deck: {label: 'tribute', name: 'Mono-White', colors: 'W', archetype: 'Aggro', list: `
-2 Skrelv, Defector Mite
+4 Skrelv, Defector Mite
 4 Swooping Lookout
-2 Mandible Justiciar
-2 Swordsworn Cavalier
-2 Porcelain Zealot
-1 Archangel Elspeth
+4 Mandible Justiciar
+4 Swordsworn Cavalier
+4 Porcelain Zealot
+1 Monastery Mentor
+3 Archangel Elspeth
 4 Ossification
 4 Planar Disruption
 4 Attentive Skywarden
-24 Plains
-4 Kor Halberd
-3 Zealot's Conviction
-4 Progenitor Exarch`}},
+24 Plains`}},
       villain: {who: 'atraxa', deck: {label: 'tribute', name: 'Four-Colour Atraxa', note: 'Built from cards in this act\'s sets only. No single tournament list is copied.', colors: 'BGUW', archetype: 'Ramp', list: `
 3 Atraxa, Grand Unifier
 4 Phyrexian Atlas
