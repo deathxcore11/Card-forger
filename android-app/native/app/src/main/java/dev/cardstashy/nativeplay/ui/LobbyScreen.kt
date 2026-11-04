@@ -42,6 +42,11 @@ import androidx.compose.foundation.lazy.grid.LazyVerticalGrid
 import androidx.compose.foundation.lazy.grid.items
 import androidx.compose.foundation.lazy.grid.rememberLazyGridState
 import androidx.compose.ui.layout.onSizeChanged
+import androidx.compose.ui.graphics.layer.drawLayer
+import androidx.compose.ui.graphics.drawscope.translate
+import androidx.compose.ui.layout.positionInRoot
+import androidx.compose.ui.layout.onGloballyPositioned
+import androidx.compose.ui.draw.drawWithContent
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
@@ -315,10 +320,18 @@ fun LobbyScreen(model: LobbyModel, onBack: () -> Unit, onStart: (Pick) -> Unit, 
     val grid = rememberLazyGridState()
     val density = androidx.compose.ui.platform.LocalDensity.current
     var barH by remember { mutableStateOf(0) }
+    val pageLayer = androidx.compose.ui.graphics.rememberGraphicsLayer()
+    val blurLayer = androidx.compose.ui.graphics.rememberGraphicsLayer()
+    val gridAt = remember { mutableStateOf(Offset.Zero) }
+    val barAt = remember { mutableStateOf(Offset.Zero) }
     Box(Modifier.fillMaxSize().background(Site.Bg)) {
         // .play-library is a panel (surface 84 %, 1 px line, radius 20) from its head to the last deck, its contents 19 px in;
         // the grid is laid out at the panel's inner edge and the panel is drawn behind those items.
-        LazyVerticalGrid(GridCells.Fixed(2), state = grid, modifier = Modifier.fillMaxSize().windowInsetsPadding(WindowInsets.safeDrawing).drawBehind {
+        LazyVerticalGrid(GridCells.Fixed(2), state = grid, modifier = Modifier.fillMaxSize().windowInsetsPadding(WindowInsets.safeDrawing)
+            // The page is recorded so the pinned Play bar can blur what scrolls under it (.pl-startbar backdrop-filter: blur(14px)).
+            .onGloballyPositioned { gridAt.value = it.positionInRoot() }
+            .drawWithContent { pageLayer.record { this@drawWithContent.drawContent() }; drawLayer(pageLayer) }
+            .drawBehind {
                 val info = grid.layoutInfo; val head = info.visibleItemsInfo.firstOrNull { it.index == LIB_HEAD }
                 val first = info.visibleItemsInfo.firstOrNull() ?: return@drawBehind
                 if (first.index > LIB_HEAD || head != null) {
@@ -360,18 +373,27 @@ fun LobbyScreen(model: LobbyModel, onBack: () -> Unit, onStart: (Pick) -> Unit, 
         }
         // position:sticky; bottom:0 — the bar sits at its slot, or at the bottom edge when the slot is further down.
         Box(Modifier.fillMaxSize().windowInsetsPadding(WindowInsets.safeDrawing)) {
-            val info = grid.layoutInfo
-            val slot = info.visibleItemsInfo.firstOrNull { it.key == "startbar" }
-            val restY = (slot?.let { it.offset.y - info.viewportStartOffset + with(density) { 8.dp.roundToPx() } } ?: Int.MAX_VALUE)
-            val y = minOf(restY, info.viewportSize.height - barH).coerceAtLeast(0)
-            Box(Modifier.offset { androidx.compose.ui.unit.IntOffset(0, y) }.padding(horizontal = 16.dp).fillMaxWidth()
+            // Read in the layout phase only: reading the grid's layout in composition would recompose it every frame.
+            val gap = with(density) { 8.dp.roundToPx() }
+            Box(Modifier.offset {
+                val info = grid.layoutInfo
+                val slot = info.visibleItemsInfo.firstOrNull { it.key == "startbar" }
+                val restY = slot?.let { it.offset.y - info.viewportStartOffset + gap } ?: Int.MAX_VALUE
+                androidx.compose.ui.unit.IntOffset(0, minOf(restY, info.viewportSize.height - barH).coerceAtLeast(0)) }.padding(horizontal = 16.dp).fillMaxWidth()
                 .then(Modifier.onSizeChanged { sz -> barH = sz.height })) {
                 // ::before: a short fade above the pinned bar so the panel reads as sliding under a dock.
                 Box(Modifier.matchParentSize().drawBehind {
                     val h = 28.dp.toPx(); val ext = 20.dp.toPx()
                     drawRect(Brush.verticalGradient(listOf(Color.Transparent, Site.Bg.copy(alpha = .92f)), startY = -h + 1f, endY = 1f), Offset(-ext, -h + 1f), Size(size.width + 2 * ext, h))
                 })
-                StartBar(m, signedIn, statusText(m)) { start() }
+                Box(Modifier.onGloballyPositioned { barAt.value = it.positionInRoot() }.clip(RoundedCornerShape(18.dp)).drawBehind {
+                    if (pageLayer.size.width > 0) {
+                        blurLayer.renderEffect = androidx.compose.ui.graphics.BlurEffect(14.dp.toPx(), 14.dp.toPx(), androidx.compose.ui.graphics.TileMode.Clamp)
+                        blurLayer.record(pageLayer.size) { drawLayer(pageLayer) }
+                        val d = gridAt.value - barAt.value
+                        translate(d.x, d.y) { drawLayer(blurLayer) }
+                    }
+                }) { StartBar(m, signedIn, statusText(m)) { start() } }
             }
         }
         if (m.formatOpen) FormatSheet(m)
