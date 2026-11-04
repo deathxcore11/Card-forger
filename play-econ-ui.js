@@ -324,7 +324,7 @@ export function deckBuilderMarkup(snapshot, ui = {}) {
   const lands = groups.get('Lands')?.reduce((t, c) => t + c.qty, 0) || 0, creatures = groups.get('Creatures')?.reduce((t, c) => t + c.qty, 0) || 0;
   const spells = deck.filter(c => !isBasicLand(c.name) && factOf(c.name) && cardGroup(factOf(c.name)) !== 'Lands');
   const mvCount = spells.reduce((t, c) => t + c.qty, 0), avg = mvCount ? (spells.reduce((t, c) => t + c.qty * factOf(c.name).m, 0) / mvCount).toFixed(1) : '—';
-  const lead = deck.find(c => !isBasicLand(c.name)), art = lead ? (factOf(lead.name)?.a || cardImageByName(lead.name, 'art_crop')) : ART + 'f/d/fd99bce1-ce39-464b-8e61-2631eb3ed6f6.jpg';
+  const lead = deck.find(c => !isBasicLand(c.name)), art = pickedCover(edit.id) || (lead ? (factOf(lead.name)?.a || cardImageByName(lead.name, 'art_crop')) : ART + 'f/d/fd99bce1-ce39-464b-8e61-2631eb3ed6f6.jpg');
   const ok = rules.exact ? count === rules.size : count >= rules.size;
   // Missing copies bill at the cheapest rarity the card was printed at (ui.craftRarity), and Craft
   // stamps that printing (ui.craftId), so the seal on the button is the seal the server takes.
@@ -387,6 +387,11 @@ const RARITY_KEY = {common: 'c', uncommon: 'u', rare: 'r', mythic: 'm', special:
 // then published precons (browse, see the exact printings, buy only what you're missing), then
 // "Paste a list", which finds the formats the list is legal in and asks when more than one fits.
 const artCrop = id => scryfallImage(id).replace('/normal/', '/art_crop/');
+// A cover the player picked (Use artwork as… → Deck cover) wins; else the first nonland main card.
+// app.js hands the picks in (settings.playDeckCovers), so Play code never reads collection storage.
+let coverPicks = () => null;
+export const setPlayDeckCovers = fn => { coverPicks = typeof fn === 'function' ? fn : () => null; };
+const pickedCover = id => { const c = id && coverPicks()?.[id]; return typeof c?.image === 'string' && /^https:\/\//.test(c.image) ? c.image : ''; };
 const deckCover = cards => { const lead = (cards || []).find(c => c.board !== 'side' && !isBasicLand(c.name)) || (cards || [])[0];
   return lead ? (lead.id ? artCrop(lead.id) : cardImageByName(lead.name, 'art_crop')) : ''; };
 function playDeckTile(d, owned) {
@@ -395,7 +400,7 @@ function playDeckTile(d, owned) {
   const sh = deckShortfall(d.cards || [], owned), want = (d.cards || []).filter(c => !isBasicLand(c.name)).reduce((t, c) => t + (c.qty | 0), 0);
   const missing = sh.missing.reduce((t, m) => t + m.need, 0), share = want ? (want - missing) / want : 1, name = d.name || 'Untitled deck';
   return `<div class="pe-deck-cell"><button class="deck-tile" data-act="playEconEditDeck" data-econ-deck="${esc(d.id)}" aria-label="Open ${esc(name)}">
-    <span class="tile-art">${img(deckCover(d.cards), name)}</span><span class="tile-shade"></span>
+    <span class="tile-art">${img(pickedCover(d.id) || deckCover(d.cards), name)}</span><span class="tile-shade"></span>
     <span class="tile-top"><span class="chip dark deck-format-emblem">${esc(d.format || 'Casual')}</span></span>
     <span class="tile-body"><b>${esc(name)}</b><small>${count(main)}/${size}${side.length ? ` · ${count(side)} sideboard` : ''}</small>
       <span class="tile-stats"><span class="tile-owned"><em>${Math.round(share * 100)}%</em> in your Trunk</span><span class="tile-find">${missing ? `<em>${missing}</em> to stamp` : 'Ready'}</span></span>${bar(share, 'thin')}</span></button>

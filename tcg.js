@@ -594,7 +594,7 @@ function tcgNext(g) {
   const s = deckStats(g, lead),
     f = formatOf(g, lead.format),
     issues = SOURCES[g].validate(lead, (id) => cardOf(g, id), f),
-    cover = cardOf(g, (lead.zones.main || [])[0]?.cardId),
+    cover = deckCoverCard(g, lead),
     missing = Math.max(0, s.total - s.owned);
   return nextCard({
     eyebrow: "Continue your deck",
@@ -635,11 +635,18 @@ function tcgStartPath(g) {
 export function tcgHome() {
   const g = game(), v = collectionValue(g), st = gs(g);
   return `<section class="home-intro" data-home-overview="${g}">${homeHero(g)}<div class="home-intro-content">${homeToday(g)}<div class="home-overview home-value-overview">${homeValue({ game: g, ...v, decks: st.decks.length, history: readTcgValueHistory(g) })}</div>
-  ${homeDeckShelf(g, deck => {const cover=cardOf(g,deck.zones?.main?.[0]?.cardId);return {format:formatOf(g,deck.format).name,artHTML:cover?(g==='ptcg'?pokemonArtCrop(cover,'home-personal-pokemon'):g==='ygo'?ygoCropArt(cover):imgTag(cover)):''};})}
+  ${homeDeckShelf(g, deck => {const cover=deckCoverCard(g,deck);return {format:formatOf(g,deck.format).name,artHTML:cover?(g==='ptcg'?pokemonArtCrop(cover,'home-personal-pokemon'):g==='ygo'?ygoCropArt(cover):imgTag(cover)):''};})}
   </div></section>${quickTiles(g)}
   ${homeEdition(g)}`;
 }
 
+// Deck cover: the card the player picked (Use artwork as… → Deck cover), else the first main card.
+// Tiles and headers show only its artwork, never the card frame.
+export function deckCoverCard(g, d) {
+  const pick = d?.coverCard;
+  if (pick?.id) return cardOf(g, pick.id) || { id: String(pick.id), game: g, name: pick.name || "", image: pick.image || "" };
+  return cardOf(g, (d?.zones?.main || [])[0]?.cardId);
+}
 // Yu-Gi-Oh! has true artwork crops (through the Worker's image cache, then the source).
 const ygoCropArt = (c) => {
   const urls = [`img/ygo/a/${encodeURIComponent(c.id)}.jpg`, `https://images.ygoprodeck.com/images/cards_cropped/${encodeURIComponent(c.id)}.jpg`, c.imageLarge || c.image].filter(Boolean);
@@ -648,7 +655,7 @@ const ygoCropArt = (c) => {
 function deckTile(g, d) {
   const s = deckStats(g, d),
     f = formatOf(g, d.format),
-    cover = cardOf(g, (d.zones.main || [])[0]?.cardId),
+    cover = deckCoverCard(g, d),
     issues = SOURCES[g].validate(d, (id) => cardOf(g, id), f),
     main = (d.zones.main || []).reduce((a, r) => a + r.qty, 0),
     owned = s.total ? s.owned / s.total : 0,
@@ -1419,7 +1426,7 @@ export function tcgDeck(id) {
     A = ui(g).deckAdd,
     zones = g === "ygo" ? [["main", "Main Deck", ygoZoneRange(f,"main")], ["extra", "Extra Deck", ygoZoneRange(f,"extra")], ["side", "Side Deck", ygoZoneRange(f,"side")]] : [["main", "Deck", "60"]],
     zoneCount = (z) => (d.zones[z] || []).reduce((a, r) => a + r.qty, 0),
-    cover = cardOf(g, (d.zones.main || [])[0]?.cardId),
+    cover = deckCoverCard(g, d),
     shown = shownPower(tcgPower(g, d, f, x => cardOf(g, x))),
     buildCheck = d.buildDiagnostics ? tcgBuildDiagnostics(g, { ...d, budget: d.buildDiagnostics.purchaseBudget }, f) : null;
   const tab = S.ui.tdeckTab?.[g+":"+d.id] || "cards";
