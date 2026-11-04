@@ -1520,3 +1520,8 @@ button.pd-near-row{cursor:pointer}
 .play-deck-choice.is-locked{position:relative}
 .play-deck-choice.is-locked>.deck-tile,.play-deck-choice.is-locked>button{filter:grayscale(1) brightness(.7);opacity:.6}
 .play-deck-lock{position:absolute;left:8px;bottom:8px;padding:2px 8px;border-radius:999px;background:rgba(0,0,0,.66);color:#f3e6c4;font-size:12px;font-weight:600;pointer-events:none}
+/* Deck emblems on Play deck tiles: mana pips and style inside the format plate, meta archetype in gold. */
+.pe-deck-pips{display:inline-flex;gap:2px;margin-right:2px}
+.pe-deck-pip{width:16px;height:16px;display:block;border-radius:50%;box-shadow:0 1px 2px rgba(0,0,0,.45)}
+.pe-deck-style{font-weight:600;opacity:.92}
+.pe-deck-meta{display:block;max-width:100%;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;color:var(--gold,#e3b85a);font-size:12.5px;font-weight:700;letter-spacing:.04em;text-transform:uppercase;text-shadow:0 1px 3px rgba(0,0,0,.7)}

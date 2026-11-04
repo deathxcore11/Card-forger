@@ -7,15 +7,23 @@ import {SUPABASE} from './config.js';
 import {loadMtgBooster, mtgBoosterCards, drawMtgBooster, mtgGodPackPicks} from './mtg-boosters.js';
 import {rewardSet, setFormats} from './play-econ-sets.js';
 import {isBasicLand, starterGrant, sealTrackBonus, packContentsRow, cardDelta, RARITY_SEAL, FORGE_STEPS, forgeRatio, holoCost, preconPrice, mtgjsonCardDelta, mtgjsonDeckRows, deckShortfall, ownedByName, isCollectorPack, collectorOdds, collectorPicks, collectorSource, godPackOdds} from './play-econ-rules.js';
-import {PRACTICE_STARTER_ROWS, STARTER_DECKS} from './play-starter-deck.js';
+import {RETIRED_STARTER_NAMES} from './play-starter-deck.js';
 import {weeklySecretLairOffers, secretLairOfferPrice, weeklySecretLair, secretLairPrice, secretLairLabel, secretLairRef, secretLairCardDelta, secretLairStyle, pickSecretLairStyle} from './play-secret-lair.js';
 import {STORY_DEEDS, STORY_ACT_DEEDS, storyDeedsEarned} from './story-deeds.js';
 import {rerollUsed, weeklyRerollUsed, ACHIEVEMENTS, achievementRows, achievementReward, achievementRef, questRows, questReward, loginStamp, rewardDelta, matchCounters, playDay, playWeek, achievementsPayload} from './play-achievements.js';
 
 const json = (body, status = 200) => new Response(JSON.stringify(body), {status, headers: {'Content-Type': 'application/json', 'Cache-Control': 'no-store'}});
 const fail = (error, status = 400) => json({error}, status);
-// Existing players get the four new starter decks on their next visit (Randall's call, 3 Nov).
+// Existing players get the free precons on their next visit (Randall's call, 3 Nov).
 export const STARTER_TOP_UP = true;
+export const STARTER_REF = 'starter:precons-2026-11';
+// The free Commander precons' cards stay out of the Trunk: they play only from the deck pickers (Randall 4 Nov).
+export const STARTER_COMMANDER_CARDS = false;
+let preconsCache = null;
+export async function freePrecons(env, request, fetcher) {
+  if (!preconsCache) preconsCache = asset(env, request, '/data/play-starters/precons.json', fetcher).then(d => (Array.isArray(d?.decks) ? d.decks : null)).then(d => { if (!d) preconsCache = null; return d || []; });
+  return preconsCache;
+}
 
 function rpc(env, name, args, fetcher) {
   const key = env.SUPABASE_SERVICE_KEY, headers = {apikey: key, 'Content-Type': 'application/json', Accept: 'application/json'};
@@ -142,20 +150,30 @@ export async function progressRoute(request, env, {verifyBearer, fetcher = fetch
     for (const [k, v] of Object.entries(c)) { if (!v) continue; out[k] = v; if (!/:/.test(k)) { out[`d:${day}:${k}`] = v; out[`w:${week}:${k}`] = v; } }
     return Object.keys(out).length ? counters.bump('cnt:' + ref, 'tally', out) : Promise.resolve(null);
   };
-  // The five starter decks (play-starter-deck.js): the other four colours' cards into the Trunk once
-  // (ref starter:colours; Green came with the first gift), then all five saved as Play decks, skipping
-  // names already there. Existing players get them on their next visit (STARTER_TOP_UP).
+  // The ten free precons (data/play-starters/precons.json, Randall 4 Nov 00:32Z): five 60-card and five
+  // Commander decks, once (ref STARTER_REF). The 60-card decks are saved as Play decks with their real
+  // printings and their cards go into the Trunk. The Commander decks live only in the Play deck pickers
+  // (app.js, Randall 4 Nov 00:40Z): never in Decks or the Trunk; their cards join the Trunk only if
+  // STARTER_COMMANDER_CARDS. The old homemade starter decks are taken back. Existing players get all
+  // this on their next visit (STARTER_TOP_UP).
   const grantStarterDecks = async () => {
-    const extra = STARTER_DECKS.filter(d => d.rows !== PRACTICE_STARTER_ROWS);
-    const names = [...new Set(extra.flatMap(d => d.rows.map(r => r.name)).filter(n => !isBasicLand(n)))];
-    const cards = await scryfallCollection(names.map(name => ({name})), fetcher);
-    if (cards.length < names.length) return false;
-    const delta = starterGrant({}, '', cards, extra.flatMap(d => d.rows));
-    const paid = await apply('starter:colours', 'starter', {cards: delta.cards});
-    await counters.bump('starter:colours', 'tally', {starter_decks: 1});
+    const decks = await freePrecons(env, request, fetcher);
+    if (decks.length < 10) return false;
+    const rows = decks.flatMap(d => d.rows), key = r => r.set ? r.set + ':' + r.number : 'n:' + r.name.toLowerCase();
+    const want = [...new Map(rows.map(r => [key(r), r])).values()];
+    const cards = await scryfallCollection(want.map(r => r.set ? {set: r.set, collector_number: r.number} : {name: r.name.split(' // ')[0]}), fetcher);
+    const byKey = new Map();
+    for (const c of cards) { byKey.set(c.set + ':' + c.collector_number, c); byKey.set('n:' + c.name.toLowerCase(), c); byKey.set('n:' + String(c.name).split(' // ')[0].toLowerCase(), c); }
+    const cardOf = r => byKey.get(key(r)) || byKey.get('n:' + r.name.toLowerCase());
+    if (want.some(r => !cardOf(r))) return false;
+    const trunk = decks.filter(d => d.format !== 'Commander' || STARTER_COMMANDER_CARDS).flatMap(d => d.rows).filter(r => !isBasicLand(r.name));
+    const paid = await apply(STARTER_REF, 'starter', {cards: trunk.flatMap(r => Array.from({length: Math.min(4, r.qty)}, () => cardDelta(cardOf(r))))});
+    await counters.bump(STARTER_REF, 'tally', {starter_precons: 1});
     if (paid?.duplicate) return false;
-    const have = new Set(((await state()).decks || []).map(d => d.name));
-    for (const d of STARTER_DECKS) if (!have.has(d.name)) await rpc(env, 'play_save_deck', {p_user: uid, p_id: null, p_name: d.name, p_format: d.format, p_cards: d.rows.map(r => ({name: r.name, qty: r.qty})), p_delete: false}, fetcher).catch(() => null);
+    const mine = (await state()).decks || [], have = new Set(mine.map(d => d.name));
+    for (const d of mine) if (RETIRED_STARTER_NAMES.includes(d.name)) await rpc(env, 'play_save_deck', {p_user: uid, p_id: d.id, p_name: d.name, p_format: d.format || '', p_cards: [], p_delete: true}, fetcher).catch(() => null);
+    for (const d of decks) if (d.format !== 'Commander' && !have.has(d.name)) await rpc(env, 'play_save_deck', {p_user: uid, p_id: null, p_name: d.name, p_format: d.format,
+      p_cards: d.rows.map(r => { const c = cardOf(r); return {name: r.name, qty: r.qty, set: c.set, number: c.collector_number}; }), p_delete: false}, fetcher).catch(() => null);
     return true;
   };
   // State for the app: the wallet plus the counters, claims and Story refs that achievements read.
@@ -182,8 +200,13 @@ export async function progressRoute(request, env, {verifyBearer, fetcher = fetch
       const [s, reward] = await Promise.all([state(), currentRewardSet(env, request, fetcher)]);
       if (s.wallet?.starter_at) return json({...s, rewardSet: reward});
       if (!reward) return fail('no_reward_set', 503);
-      const cards = await scryfallCollection(PRACTICE_STARTER_ROWS.filter(r => !/^(?:plains|island|swamp|mountain|forest)$/i.test(r.name)).map(r => ({name: r.name})), fetcher);
-      const delta = starterGrant(s.config, reward.code, cards, PRACTICE_STARTER_ROWS);
+      // The welcome gift: coins and seals from config, and 5 packs each of the 4 newest Merchant sets
+      // (Randall 4 Nov). An account that already holds packs or cards (the 4 Nov reset gave its own 20)
+      // gets no second set of packs.
+      const delta = starterGrant(s.config, reward.code, [], []), st = s.config?.starter || {};
+      const fresh = !(s.packs || []).length && !(s.cards || []).length;
+      const newest = fresh ? ((await shopSets(env, request, fetcher)).shop || []).slice(0, st.newestSets ?? 4) : [];
+      delta.packs = newest.flatMap(x => Array.from({length: st.packsPerSet ?? 5}, () => ({set: x.code, source: 'starter'})));
       await apply('starter', 'starter', delta);
       await grantStarterDecks().catch(() => false);
       return json({...await state(), rewardSet: reward});
@@ -281,8 +304,8 @@ export async function progressRoute(request, env, {verifyBearer, fetcher = fetch
       if (!s.wallet?.starter_at) return json({login: null});
       const bump = await counters.bump('login:' + day, 'login', {logins: 1});
       if (!bump) return json({login: null});
-      // Players from before the five starter decks get the four new ones once.
-      const topUp = STARTER_TOP_UP && !bump.counters?.starter_decks && await grantStarterDecks().catch(() => false);
+      // Players from before the free precons get them once (and the old homemade starters go).
+      const topUp = STARTER_TOP_UP && !bump.counters?.starter_precons && await grantStarterDecks().catch(() => false);
       const st = loginStamp(bump.counters?.logins);
       if (bump.duplicate) return json({login: {day, ...st, fresh: false}, counters: bump.counters, ...(topUp ? {state: await state()} : {})});
       const reward = await currentRewardSet(env, request, fetcher);
