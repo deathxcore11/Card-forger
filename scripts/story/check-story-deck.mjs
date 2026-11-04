@@ -23,7 +23,8 @@ const simDir = opt('--sim-dir'); if (simDir) mkdirSync(simDir, {recursive: true}
 let failures = 0, warnings = 0;
 for (const b of data.battles) {
   const era = eraFormat(forgeRoot, b.era || data.era);
-  for (const seat of ['hero', 'villain']) {
+  for (const seat of ['hero', 'villain', 'lessonDeck']) {
+    if (!b[seat]) continue;
     const deck = b[seat]?.deck, r = checkDeck(deck, {pool: byKey, act, forgeRoot, era});
     if (r.fail.length) failures++;
     warnings += r.warn.length;

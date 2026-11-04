@@ -65,6 +65,18 @@ export default {
 2 Giant Growth
 4 Shanodin Dryads
 24 Forest`}},
+      lessonDeck: {who: 'archers', deck: {label: 'tribute', name: 'Scouts of Llanowar', colors: 'G', note: 'Softer scripted-lesson version for a first play, same lore and same cards family.', list: `
+4 Llanowar Elves
+4 Grizzly Bears
+4 Elvish Archers
+4 Timber Wolves
+4 Wyluli Wolf
+4 Scryb Sprites
+4 Shanodin Dryads
+2 War Mammoth
+2 Wall of Wood
+4 Birds of Paradise
+24 Forest`}},
       scene: [{who: 'archers', line: 'Stop. You came out of the air.'}, {who: 'archers', line: "Things that come out of the air don't usually leave."}, {who: 'archers', line: 'Show us what you are. Call something.'}],
       villainScene: [{who: 'archers', line: "Something fell out of the sky into our forest."}, {who: 'archers', line: "Eyes on it. If it calls one beast, we call ten."}],
       cues: {hero: cue('I am here. Somehow.', 'To me, knights!', 'Too many arrows...', 'The forest can keep its secrets.', 'Back through the rift...'), villain: cue('Bows up.', 'The forest answers us, not you.', 'Fall back to the trees!', 'Go back to wherever you fell from.', 'Fine. The forest will remember you.')}},
@@ -86,6 +98,17 @@ export default {
 4 Goblin King
 4 Mons's Goblin Raiders
 4 Goblin Balloon Brigade
+4 Ironclaw Orcs
+4 Gray Ogre
+4 Hurloon Minotaur
+4 Hill Giant
+4 Two-Headed Giant of Foriys
+4 Uthden Troll
+24 Mountain`}},
+      lessonDeck: {who: 'goblinKing', deck: {label: 'tribute', name: "The King's Marchers", colors: 'R', note: 'Softer scripted-lesson version for a first play, same lore and same cards family.', list: `
+4 Goblin King
+4 Mons's Goblin Raiders
+4 Dwarven Warriors
 4 Ironclaw Orcs
 4 Gray Ogre
 4 Hurloon Minotaur
@@ -126,6 +149,22 @@ export default {
 3 Unholy Strength
 4 Drudge Skeletons
 26 Swamp`}},
+      lessonDeck: {who: 'blackKnight', deck: {label: 'tribute', name: 'The Dark Lance (first duel)', colors: 'B', note: 'Softer scripted-lesson version for a first play, same lore and same cards family.', list: `
+2 Black Knight
+2 Raise Dead
+4 Erg Raiders
+2 Hasran Ogress
+4 Scathe Zombies
+2 Bog Wraith
+1 Sengir Vampire
+2 Frozen Shade
+2 Dark Ritual
+2 Fear
+2 Plague Rats
+2 Guardian Beast
+3 Unholy Strength
+4 Drudge Skeletons
+26 Swamp`}},
       scene: [{who: 'blackKnight', line: 'Every morning, you. Every evening, you.'}, {who: 'whiteKnight', line: 'Every morning, you lose.'}, {who: 'blackKnight', line: 'Not today. Today I brought a witness.', aside: 'He looks at you.'}, {who: 'whiteKnight', line: "Then let them see how it's done. Watch the first blow. It's the only one that matters."}],
       villainScene: [{who: 'blackKnight', line: "Years at this ford. Every morning, the same white armour."}, {who: 'blackKnight', line: "Today it ends. No prayers, no tricks. Just steel."}],
       cues: {hero: cue('Steady.', 'There. First, and last.', "I've held this ford through worse.", 'Same time tomorrow.', 'Go on, cross. Just this once.'),
@@ -157,6 +196,19 @@ export default {
 4 Giant Growth
 3 Sandstorm
 2 Desert Twister
+24 Forest`}},
+      lessonDeck: {who: 'erhnam', deck: {label: 'tribute', name: "The Djinn's Menagerie (first duel)", colors: 'G', note: 'Softer scripted-lesson version for a first play, same lore and same cards family.', list: `
+2 Erhnam Djinn
+4 Ghazbán Ogre
+4 Llanowar Elves
+4 Scryb Sprites
+4 Grizzly Bears
+2 Giant Spider
+3 Craw Wurm
+4 Giant Growth
+4 Wyluli Wolf
+3 Timber Wolves
+2 Wall of Wood
 24 Forest`}},
       scene: [{who: 'erhnam', line: "A new face! Do you know how long it's been since I had a new face?"}, {who: 'erhnam', line: 'Every visitor wishes. Gold, wives, kingdoms. Tiresome.'}, {who: 'erhnam', line: "You will not wish. You will duel. Win, and I'll show you the way home."}, {who: 'erhnam', line: 'Lose, and you stay. I collect people.'}],
       villainScene: [{who: 'erhnam', line: "A rift-walker. I've collected kings, but never one of those."}, {who: 'erhnam', line: "Make it a long duel. I want to savour this one."}],

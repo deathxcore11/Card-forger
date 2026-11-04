@@ -62,7 +62,7 @@ for (const b of src.battles) {
   // Slot 9 is an act's secret boss (secret: true): hidden until every battle is won with the Story decks.
   out.battles.push({id: `a${n}b${b.slot}`, slot: b.slot, kind: b.kind, ...(b.secret ? {secret: true} : {}), mood: b.mood || (b.slot >= 8 ? 'boss' : 'tension'), title: b.title, difficulty: b.difficulty, teaches: b.teaches, blurb: b.blurb,
     rewardSet: b.rewardSet, host: b.slot >= 8, ...(b.era ? {era: b.era} : {}), ...(b.archive ? {archive: b.archive} : {}),
-    hero: {who: b.hero.who, deck: deck(b.hero.deck)}, villain: {who: b.villain.who, deck: vDeck},
+    hero: {who: b.hero.who, deck: deck(b.hero.deck)}, villain: {who: b.villain.who, deck: vDeck}, ...(b.lessonDeck ? {lessonDeck: {who: b.lessonDeck.who, deck: deck(b.lessonDeck.deck)}} : {}),
     reward: {hero: {packs: t.packs, coins: t.coins}, villain: {card: signature(b, vDeck), coins: t.vCoins}},
     scene: b.scene, villainScene: b.villainScene || null, after: b.after || null, cues: b.cues, bigPlays: b.bigPlays || [], sim: b.sim || null});
 }
