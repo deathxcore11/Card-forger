@@ -183,7 +183,7 @@ fun TableScreen(controller: MatchController, onHome: () -> Unit, onRematch: () -
         afk?.let { Text(it, style = Type.Label.copy(color = Color(0xFFFFB4A8), fontSize = 14.sp), modifier = Modifier.align(Alignment.TopCenter).padding(top = 96.dp)
             .clip(RoundedCornerShape(999.dp)).background(Color(0xD90C0C0E)).border(1.dp, Palette.Red, RoundedCornerShape(999.dp)).padding(horizontal = 16.dp, vertical = 8.dp)) }
       }
-        inspect?.let { c -> Inspect(c) { inspect = null } }
+        inspect?.let { c -> CardInspect(c, shown?.viewer) { inspect = null } }
         if (menu) Menu(onConcede = { menu = false; controller.concede() }, onLeave = { menu = false; onHome() }, onClose = { menu = false })
         if (stage == Stage.FINISHED) shown?.let { Result(it, audio, onHome, onRematch, resultNote) }
         if (stage == Stage.FAILED) Failed(failure ?: "The match stopped.", onHome)
@@ -503,19 +503,29 @@ private fun TableSide(st: MatchState, c: MatchController, beat: Beat?, live: Boo
         // Arena style: no window. A CPU cast, trigger or ability gets the spotlight (the card big at the right and our glass box
         // beside it, table-feel spec 2); other beats keep their one line of glass. Your own spell gets the same, in gold, as it lands on the stack.
         val spot = beat?.let { spotlightFor(st, it) }
-        var mine by remember { mutableStateOf<Spotlight?>(null) }
+        // Your own spell: up while it is on the stack, at most 1.6 s, and gone 0.7 s after it leaves the stack, on any new step or turn,
+        // or when a CPU beat takes the stage. Each clear runs on its own clock, so a stack change can't cancel it (Randall, test 3:
+        // the pop-up stayed through combat and the CPU's turn when the spell resolved inside the 1.6 s).
+        var mine by remember { mutableStateOf<Pair<Spotlight, Int>?>(null) }
         val top = st.stack.firstOrNull()
         val seen = remember { HashSet<Int>() }
         LaunchedEffect(top?.id) {
             val t = top ?: return@LaunchedEffect
             if (t.controller != st.viewer || t.ability || t.source == null || !seen.add(t.id)) return@LaunchedEffect
-            mine = Spotlight(t.source, "You", "casts", t.targets.map { r -> if (r.kind == "player") (if (r.id == st.viewer) "you" else "CPU") else r.name ?: "" }, 1600, yours = true)
-            delay(1600); mine = null
+            mine = Spotlight(t.source, "You", "cast", t.targets.map { r -> if (r.kind == "player") (if (r.id == st.viewer) "you" else "CPU") else r.name ?: "" }, 1600, yours = true) to t.id
         }
+        val shownMine = mine
+        LaunchedEffect(shownMine) { if (shownMine != null) { delay(1600); if (mine === shownMine) mine = null } }
+        val stillOn = shownMine != null && st.stack.any { it.id == shownMine.second }
+        LaunchedEffect(shownMine, stillOn) { if (shownMine != null && !stillOn) { delay(700); if (mine === shownMine) mine = null } }
+        val step = st.turn to st.phase
+        var lastStep by remember { mutableStateOf(step) }
+        if (step != lastStep) { lastStep = step; mine = null }
+        if (beat != null && mine != null) mine = null
         when {
             spot != null -> CastSpotlight(spot) { c.next() }
             beat != null -> BeatCaption(beat, Modifier.align(Alignment.TopCenter).padding(top = 58.dp)) { c.next() }
-            mine != null -> CastSpotlight(mine!!) { mine = null }
+            mine != null -> CastSpotlight(mine!!.first) { mine = null }
         }
         // native-panel.mjs dock: Forge's own questions (triggers order, costs, damage split, search, choices). Called every frame: the
         // spell-mode back-out acts on the step after a prompt.
@@ -757,25 +767,6 @@ private fun BannerView(text: String, yours: Boolean, modifier: Modifier) {
     Box(modifier.alpha(a.value).width(420.dp).aspectRatio(5f), contentAlignment = Alignment.Center) {
         AssetImage(if (yours) "play/turn-you.webp" else "play/turn-cpu.webp", Modifier.fillMaxSize(), maxWidth = 1120, contentScale = ContentScale.Fit)
         Text(text, style = Type.Title.copy(fontSize = 20.sp), textAlign = TextAlign.Center)
-    }
-}
-
-@Composable
-private fun Inspect(card: Card, onClose: () -> Unit) {
-    val decks = DemoDecks.load(LocalContext.current)
-    Box(Modifier.fillMaxSize().background(Color(0xCC000000)).clickable(onClick = onClose).windowInsetsPadding(WindowInsets.safeDrawing).padding(20.dp), contentAlignment = Alignment.Center) {
-        Row(horizontalArrangement = Arrangement.spacedBy(18.dp), verticalAlignment = Alignment.CenterVertically) {
-            Box(Modifier.fillMaxHeight(.92f).aspectRatio(.716f)) {
-                if (!card.hidden) CardImage(card.name, Modifier.fillMaxSize(), contentScale = ContentScale.Fit, shape = RoundedCornerShape(12.dp))
-            }
-            Column(Modifier.width(260.dp).glass().padding(14.dp), verticalArrangement = Arrangement.spacedBy(6.dp)) {
-                Text(card.name, style = Type.Title.copy(fontSize = 18.sp))
-                Text(card.type, style = Type.Label.copy(color = Palette.Gold))
-                if (card.text.isNotBlank()) Text(card.text, style = Type.Body.copy(color = Palette.Ink))
-                if (card.isCreature && card.power != null) Text("${card.power}/${card.toughness}" + if (card.damage > 0) " · ${card.damage} damage" else "", style = Type.Label)
-                card.counters.forEach { (k, v) -> Text("$v × $k counter", style = Type.Body) }
-            }
-        }
     }
 }
 

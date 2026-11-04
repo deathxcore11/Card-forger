@@ -648,14 +648,16 @@ internal fun Medallion(p: Player, mine: Boolean, pickable: Boolean, picked: Bool
     var last by remember { mutableStateOf(p.life) }
     var shown by remember { mutableIntStateOf(p.life) }
     val cue = LocalTableCue.current
+    val ctx = androidx.compose.ui.platform.LocalContext.current
+    val calm = remember { Playmats.reduced(ctx) } // reduce motion: the life still ticks down, the portrait stays put
     // A hit to the face (spec 3): the portrait recoils 14 dp and flares bright at contact, then the life ticks down one by one,
     // each step popping coral at 1.5x. Gains and reduced motion just show the new number.
     LaunchedEffect(p.life) {
         val from = last; last = p.life
         if (p.life >= from || Motion.still) { shown = p.life; return@LaunchedEffect }
-        delay(620) // the strike reaches the portrait
-        launch { flash.snapTo(1f); flash.animateTo(0f, tween(900)) }
-        launch { recoil.snapTo(1f); recoil.animateTo(0f, androidx.compose.animation.core.spring(dampingRatio = .45f, stiffness = 380f)) }
+        delay(730) // the strike reaches the portrait, then the 110 ms hit-stop
+        if (!calm) launch { flash.snapTo(1f); flash.animateTo(0f, tween(900)) }
+        if (!calm) launch { recoil.snapTo(1f); recoil.animateTo(0f, androidx.compose.animation.core.spring(dampingRatio = .45f, stiffness = 380f)) }
         delay(260)
         var n = 0
         while (shown > p.life) { shown--; cue?.invoke("CMB-024", .7f, (1f - .03f * n++).coerceAtLeast(.6f)); tick.snapTo(1.5f); launch { tick.animateTo(1f, tween(140)) }; delay(if (from - p.life > 8) 60 else 110) }

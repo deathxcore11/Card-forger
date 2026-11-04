@@ -1,5 +1,9 @@
 package dev.cardstashy.nativeplay.ui
 
+import androidx.compose.foundation.layout.WindowInsets
+import androidx.compose.foundation.layout.safeDrawing
+import androidx.compose.foundation.layout.windowInsetsPadding
+
 import android.graphics.BlurMaskFilter
 import androidx.compose.animation.core.Animatable
 import androidx.compose.animation.core.FastOutSlowInEasing
@@ -65,7 +69,9 @@ import dev.cardstashy.nativeplay.engine.Card
  * cpuShowHtml content: kicker (CPU / You + verb), name and cost, type line and P/T, the intent line, rules text with
  * symbols, up to three keyword hints and a thin countdown bar.
  */
-class Spotlight(val card: Card, val actor: String, val verb: String, val targets: List<String>, val durationMs: Long, val yours: Boolean)
+class Spotlight(val card: Card, val actor: String, val verb: String, val targets: List<String>, val durationMs: Long, val yours: Boolean,
+    /** The intent line's words when they are not a cast (a held card: tapped, damage, counters). */
+    val note: String = "")
 
 /** forge-table.mjs KEYWORD_HINTS, word for word. */
 private val KEYWORD_HINTS = mapOf(
@@ -85,14 +91,17 @@ private val KEYWORD_HINTS = mapOf(
     "toxic" to "Combat damage to a player also gives them that many poison counters.",
 )
 private fun keywordKey(k: String) = k.replace(Regex("([a-z])([A-Z])"), "$1 $2").replace(Regex("[:_]"), " ").replace(Regex("\\s+"), " ").trim().lowercase()
+/** Forge spells some keywords with the word twice ("Protection from from black"): say it once. */
+private fun keywordLabel(k: String) = keywordKey(k).replace(Regex("\\b(\\w+) \\1\\b"), "$1").replaceFirstChar { it.uppercase() }
 private fun hintFor(k: String): String? { val key = keywordKey(k); return KEYWORD_HINTS.entries.firstOrNull { key == it.key || key.startsWith(it.key + " ") }?.value }
 
 /** cpuShowHtml's intent: what the play is ("Casting a creature", "Using X's ability"), then who it aims at. */
 internal fun spotlightIntent(s: Spotlight): String {
+    if (s.note.isNotEmpty()) return s.note
     val c = s.card
     val creature = "Creature" in c.type && c.power != null
     val what = when (s.verb.uppercase()) {
-        "CASTS" -> when {
+        "CASTS", "CAST" -> when {
             creature -> "Casting a creature"
             Regex("Instant|Sorcery").containsMatchIn(c.type) -> "Casting a spell"
             else -> { val kind = c.type.split(Regex("\\s+[\u2014-]\\s+")).first().ifBlank { "permanent" }.lowercase(); "Casting ${if (kind.first() in "aeiou") "an" else "a"} $kind" }
@@ -190,7 +199,7 @@ private fun GlassBox(s: Spotlight, w: Dp, h: Dp, timer: Float) {
         val kws = c.keywords.map { it }.distinct().mapNotNull { k -> hintFor(k)?.let { k to it } }.take(3)
         kws.forEach { (k, hint) ->
             val inline = HashMap<String, InlineTextContent>()
-            Text(buildAnnotatedString { withStyle(SpanStyle(fontWeight = FontWeight.Bold, color = Color(0xFFF3E9D2))) { append(keywordKey(k).replaceFirstChar { it.uppercase() }) }; append(" "); symbols(hint, inline) },
+            Text(buildAnnotatedString { withStyle(SpanStyle(fontWeight = FontWeight.Bold, color = Color(0xFFF3E9D2))) { append(keywordLabel(k)) }; append(" "); symbols(hint, inline) },
                 style = sans(12.sp, FontWeight.Normal, Color(0xFFB9B2A4)), inlineContent = inline, maxLines = 2, overflow = TextOverflow.Ellipsis)
         }
         Spacer(Modifier.height(2.dp))
@@ -226,3 +235,45 @@ private fun AnnotatedString.Builder.symbols(s: String, inline: HashMap<String, I
     append(s.substring(last))
 }
 
+
+/**
+ * Table-feel spec 2: holding or inspecting a card shows it with the same glass box as a cast (no countdown).
+ * The kicker says whose it is and where; the intent line says its state on the table. Tap anywhere to close.
+ */
+@Composable
+fun CardInspect(card: Card, viewer: Int?, onClose: () -> Unit) {
+    val yours = viewer == null || card.controller == viewer
+    val where = when (card.zone) { "Battlefield" -> "On the battlefield"; "Hand" -> "In hand"; "Graveyard" -> "In the graveyard"; "Exile" -> "In exile"; "Stack" -> "On the stack"; "Command" -> "In the command zone"; else -> card.zone }
+    val state = buildList {
+        if (card.attacking) add("Attacking"); if (card.blocking) add("Blocking")
+        if (card.tapped && card.zone == "Battlefield") add("Tapped")
+        if (card.summoningSick && card.isCreature && card.zone == "Battlefield") add("Summoning sick")
+        if (card.damage > 0) add("${card.damage} damage")
+        card.counters.forEach { (k, v) -> if (v > 0) add("$v ${k.lowercase().replace('_', ' ').replace("p1p1", "+1/+1").replace("m1m1", "\u22121/\u22121")} counter" + if (v > 1) "s" else "") }
+    }.joinToString(" \u00B7 ")
+    val s = remember(card) { Spotlight(card, if (yours) "You" else "CPU", where, emptyList(), 0, yours, note = state) }
+    val enter = remember(card) { Animatable(if (Motion.still) 1f else 0f) }
+    LaunchedEffect(card) { enter.animateTo(1f, tween(200, easing = FastOutSlowInEasing)) }
+    BoxWithConstraints(Modifier.fillMaxSize().background(Color(0xB3000000)).clickable(remember { MutableInteractionSource() }, null, onClick = onClose)
+        .windowInsetsPadding(WindowInsets.safeDrawing).padding(16.dp)) {
+        val cardH = maxHeight * .92f; val cardW = cardH * .716f
+        val k = (maxHeight / 560.dp).coerceIn(.64f, 1f)
+        val boxW = (340.dp * k).coerceAtMost(maxWidth - cardW - 16.dp)
+        val glow = if (yours) GLOW_YOU else GLOW_CPU
+        Row(Modifier.align(Alignment.Center).graphicsLayer { alpha = enter.value; val z = .96f + .04f * enter.value; scaleX = z; scaleY = z }
+            .semantics { contentDescription = card.name }, horizontalArrangement = Arrangement.spacedBy(16.dp), verticalAlignment = Alignment.CenterVertically) {
+            if (boxW >= 200.dp) {
+                val dens = androidx.compose.ui.platform.LocalDensity.current
+                androidx.compose.runtime.CompositionLocalProvider(androidx.compose.ui.platform.LocalDensity provides androidx.compose.ui.unit.Density(dens.density * k, dens.fontScale)) {
+                    GlassBox(s, boxW / k, cardH / k, 0f)
+                }
+            }
+            Box(Modifier.size(cardW, cardH).drawBehind {
+                drawIntoCanvas { cv -> val p = Paint(); p.asFrameworkPaint().apply { maskFilter = BlurMaskFilter(26.dp.toPx(), BlurMaskFilter.Blur.NORMAL); color = glow.copy(alpha = .45f).toArgb() }
+                    cv.drawRoundRect(0f, 0f, size.width, size.height, 18.dp.toPx(), 18.dp.toPx(), p) }
+            }.clip(RoundedCornerShape(16.dp)).border(2.dp, glow.copy(alpha = .8f), RoundedCornerShape(16.dp)).background(Color(0xFF141418))) {
+                if (!card.hidden) CardImage(card.name, Modifier.fillMaxSize().padding(2.dp), contentScale = ContentScale.Fit, shape = RoundedCornerShape(13.dp))
+            }
+        }
+    }
+}

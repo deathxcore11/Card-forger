@@ -64,13 +64,13 @@ class CombatFilmstripTest {
         }
         // One still frame first, so every card's box is anchored (the dying blocker's last picture needs its box).
         frame(File(out, "warm.png"), st, Battlefield())
-        val hit = (1700 * .36f).toLong()
-        fun run(name: String, state: (Long) -> MatchState, items: () -> List<FxItem>) {
+        val hit = (1700 * .36f).toLong(); val stop = 110L
+        fun run(name: String, state: (Long) -> MatchState, reduced: Boolean = false, items: () -> List<FxItem>) {
             val dir = File(out, name).apply { mkdirs() }
             val list = items(); val end = list.maxOf { it.t0 + it.dur } + 120
             var t = 0L; var i = 0
             while (t <= end) {
-                val fx = Battlefield(); fx.items.addAll(list); fx.now.longValue = t
+                val fx = Battlefield(); fx.items.addAll(list); fx.now.longValue = t; fx.reduced = reduced
                 dev.cardstashy.nativeplay.ui.TableEmotes.destroy()
                 frame(File(dir, "%04d-%05dms.png".format(i++, t)), state(t), fx)
                 t += step
@@ -82,22 +82,40 @@ class CombatFilmstripTest {
         // The blocker dies: the new board no longer has it; its last picture (the ghost) holds until the shatter.
         val gone = st.copy(players = st.players.map { p -> if (p.id == st.viewer) p.copy(battlefield = p.battlefield.filter { it.id != mine.id }) else p })
         val box = anchors.rects["c${mine.id}"]!!
-        run("clash-dies", { gone }) {
+        // The board's order: contact, the 110 ms hit-stop, then the numbers, and the dying blocker breaks 120 ms later.
+        val clash = {
             listOf(
                 FxItem(Fx.LUNGE, 2, 1700, card = theirs.id, toKey = "c${mine.id}", tone = Color(0xFFFF6A4A), power = .8f).also { it.t0 = 0 },
-                FxItem(Fx.DAMAGE, 2, 1100, card = mine.id, tone = Color(0xFFFF5A4A), side = 1).also { it.label = "−3"; it.t0 = hit },
-                FxItem(Fx.DAMAGE, 2, 1100, card = theirs.id, tone = Color(0xFFFF5A4A), side = -1).also { it.label = "−2"; it.t0 = hit },
-                FxItem(Fx.DEATH, 2, 600, mine = true, from = box, toKey = "grave${mine.owner}", ghost = mine).also { it.t0 = hit + 1100 },
+                FxItem(Fx.DAMAGE, 2, 1100, card = mine.id, tone = Color(0xFFFF5A4A), side = 1).also { it.label = "−3"; it.t0 = hit + stop },
+                FxItem(Fx.DAMAGE, 2, 1100, card = theirs.id, tone = Color(0xFFFF5A4A), side = -1).also { it.label = "−2"; it.t0 = hit + stop },
+                FxItem(Fx.DEATH, 2, 600, mine = true, from = box, toKey = "grave${mine.owner}", ghost = mine).also { it.t0 = hit + stop + 120 },
             )
         }
+        run("clash-dies", { gone }, items = clash)
+        // Reduce motion: nothing moves or flashes; the numbers and the stamp stay.
+        run("clash-dies-reduced", { gone }, reduced = true, items = clash)
+        run("block-reduced", { st }, reduced = true) {
+            listOf(FxItem(Fx.BLOCK, 2, 1640, card = mine.id, fromKey = "c${mine.id}", toKey = "c${theirs.id}", tone = Color(0xFFFF5A4A)).also { it.t0 = 0 })
+        }
         val life = st.me.life
-        // Medallion: 620 ms to the portrait, 260 ms more, then one point every 110 ms.
-        fun lifeAt(t: Long) = life - (if (t < 880) 0 else minOf(4, ((t - 880) / 110 + 1).toInt()))
+        // Medallion: 730 ms to the portrait (contact and the hit-stop), 260 ms more, then one point every 110 ms.
+        fun lifeAt(t: Long) = life - (if (t < 990) 0 else minOf(4, ((t - 990) / 110 + 1).toInt()))
         run("face", { t -> st.copy(players = st.players.map { p -> if (p.id == st.viewer) p.copy(life = lifeAt(t)) else p }) }) {
             listOf(
                 FxItem(Fx.LUNGE, 2, 1700, card = theirs.id, toKey = "orb${st.viewer}", tone = Color(0xFFFF6A4A)).also { it.t0 = 0 },
-                FxItem(Fx.LIFE, 3, 950, toKey = "orb${st.viewer}", tone = Color(0xFFFF5A4A), player = st.viewer, power = .8f).also { it.label = "−4"; it.t0 = hit },
+                FxItem(Fx.LIFE, 3, 950, toKey = "orb${st.viewer}", tone = Color(0xFFFF5A4A), player = st.viewer, power = .8f).also { it.label = "−4"; it.t0 = hit + stop },
             )
+        }
+        // Hold on a battlefield card: the card with the glass box.
+        val held = st.cpu.battlefield.firstOrNull { it.isCreature && it.text.isNotBlank() } ?: theirs
+        captureRoboImage(File(out, "inspect.png").path) {
+            CompositionLocalProvider(LocalAnchors provides anchors, LocalBattlefield provides Battlefield()) {
+                Box(Modifier.fillMaxSize().background(Palette.Night)) {
+                    PlaymatScene(mat, Modifier.fillMaxSize())
+                    ForgeBoard(st, live = false, intents = TableIntents(), selectedHand = null, onSelectHand = {}, onInspect = {}, onMenu = {}, handOrder = emptyList(), onHandOrder = {})
+                    dev.cardstashy.nativeplay.ui.CardInspect(held, st.viewer) {}
+                }
+            }
         }
         CardImageTest.art = null
     }
