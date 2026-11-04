@@ -308,17 +308,39 @@ export const STORY_DEEDS = Object.freeze([
   deed('a14-v-rift', 14, 'a14b8', 'Through the Rift', 'As Nicol Bolas, win by your 7th turn.', 'Evil Eye of Urborg', turnsBy(7), 'villain'),
   deed('a14-unpickled', 14, 'a14b9', 'Never Locked', 'Beat Pickles without ever facing Brine Elemental.', 'Brine Elemental', {notTheirs: 'Brine Elemental'}),
   deed('a14-goyf-beats', 14, 'a14b9', 'Goyf Beatdown', 'Beat Pickles by your 7th turn.', 'Aven Mindcensor', turnsBy(7)),
+  // Act 15, The Great Aurora (Lorwyn and Shadowmoor).
+  deed('a15-arrow', 15, 'a15b1', "An Elf's Revenge", 'Have five Elves on the field at once.', 'Imperious Perfect', tribe('Elf', 5)),
+  deed('a15-brigid-falls', 15, 'a15b1', 'Kinsbaile Mourns', 'Kill Brigid, Hero of Kinsbaile. The arrow finds its archer.', 'Brigid, Hero of Kinsbaile', {killed: 'Brigid, Hero of Kinsbaile'}),
+  deed('a15-merrow-lanes', 15, 'a15b2', 'The Lanes Run Deep', 'Have four Merfolk on the field at once.', 'Merrow Reejerey', tribe('Merfolk', 4)),
+  deed('a15-cold-water', 15, 'a15b2', 'Cold Water', 'Beat the flamekin with 12 life or more. The river does not burn.', 'Silvergill Adept', endAtLeast(12)),
+  deed('a15-warren-cleared', 15, 'a15b3', 'Warren Cleared', 'Kill six boggarts. Auntie will hear of it.', 'Boggart Mob', kills(6)),
+  deed('a15-goldmane', 15, 'a15b3', "Goldmane's Blessing", 'Gain 4 or more life in one battle.', 'Ajani Goldmane', gained(4)),
+  deed('a15-overrun', 15, 'a15b4', 'Overrun', 'Deal 10 or more damage in one turn. The faeries cannot hide from a stampede.', 'Garruk Wildspeaker', bigTurn(10)),
+  deed('a15-clique-caught', 15, 'a15b4', 'Clique Caught', 'Kill Mistbind Clique.', 'Mistbind Clique', {killed: 'Mistbind Clique'}),
+  deed('a15-extinguished', 15, 'a15b5', 'The Extinguisher', 'Kill eight creatures. Persist only delays the end.', 'Ashling, the Extinguisher', kills(8)),
+  deed('a15-redcap', 15, 'a15b5', 'Red Cap, Red Blade', 'Win after Murderous Redcap has taken the field.', 'Murderous Redcap', {mine: 'Murderous Redcap'}),
+  deed('a15-bitterblossom', 15, 'a15b6', 'Bitter Bloom', 'Have four tokens on the field at once.', 'Bitterblossom', {maxTokens: ['>=', 4]}),
+  deed('a15-faerie-sky', 15, 'a15b6', 'A Sky of Wings', 'Have four flyers on the field at once.', 'Scion of Oona', flyers(4)),
+  deed('a15-endless-court', 15, 'a15b6', 'The Endless Court', 'Have seven tokens on the field at once.', 'Spellstutter Sprite', {maxTokens: ['>=', 7]}, 'hero', hidden('A blossom that bleeds you, and a court that never stops growing.')),
+  deed('a15-lark', 15, 'a15b7', 'The Lark Sings', 'Win after Reveillark has taken the field.', 'Reveillark', {mine: 'Reveillark'}),
+  deed('a15-plumeveil', 15, 'a15b7', 'Behind the Veil', 'Beat the kithkin losing two creatures or fewer.', 'Plumeveil', lost(2)),
+  deed('a15-archmage', 15, 'a15b7', 'Clean Sweep', 'Kill six creatures.', 'Glen Elendra Archmage', kills(6)),
+  deed('a15-queen-falls', 15, 'a15b8', 'The Queen Unmade', 'Kill Oona, Queen of the Fae.', 'Oona, Queen of the Fae', {killed: 'Oona, Queen of the Fae'}),
+  deed('a15-three-banners', 15, 'a15b8', 'Three Banners', 'Win after Rhys and Ashling have both taken the field.', 'Shriekmaw', {mine: ['Rhys the Exiled', 'Ashling, the Extinguisher']}),
+  deed('a15-v-glen', 15, 'a15b8', 'Glen Elendra Holds', 'As Oona, have four flyers on the field at once.', 'Wydwen, the Biting Gale', flyers(4), 'villain'),
+  deed('a15-tower-falls', 15, 'a15b9', 'The Tower Falls', 'Kill Doran, the Siege Tower.', 'Doran, the Siege Tower', {killed: 'Doran, the Siege Tower'}),
+  deed('a15-destiny', 15, 'a15b9', 'Destiny Fulfilled', 'Have a creature with 8 or more power.', 'Figure of Destiny', power(8)),
 ]);
 
 // Two act-wide deeds per act, from Story progress.
-export const STORY_ACT_DEEDS = Object.freeze([1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14].flatMap(act => [
+export const STORY_ACT_DEEDS = Object.freeze([1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15].flatMap(act => [
   {id: `a${act}-chronicler`, act, kind: 'loaner', title: `Chronicler of Act ${act}`, lore: `Win all 8 battles of Act ${act} with the Story decks.`},
   {id: `a${act}-two-faced`, act, kind: 'both', title: `Both Sides of Act ${act}`, lore: `Win all 8 battles of Act ${act} from both seats. Understand the villains too.`},
 ]));
 // Each act deed has its own art (no art repeats across achievements): the Chronicler shows the act's
 // heroes or home ground, Both Sides shows the act's villain.
-const CHRONICLER_ART = {1: 'Shivan Dragon', 2: 'Tetsuo Umezawa', 3: 'Kjeldoran Royal Guard', 4: "Teferi's Isle", 5: "Volrath's Stronghold", 6: "Serra's Sanctum", 7: 'Rishadan Port', 8: "Urza's Rage", 9: 'Cabal Coffers', 10: 'Akroma, Angel of Wrath', 11: 'Tree of Tales', 12: 'Eiganjo Castle', 13: 'Pillar of the Paruns', 14: 'Lotus Bloom'};
-const BOTH_SIDES_ART = {1: 'Mishra, Artificer Prodigy', 2: 'Hymn to Tourach', 3: "Lim-Dûl's High Guard", 4: "Suq'Ata Lancer", 5: 'Crovax the Cursed', 6: 'Phyrexian Negator', 7: 'Ascendant Evincar', 8: "Yawgmoth's Agenda", 9: 'Chainer, Dementia Master', 10: 'Riptide Laboratory', 11: 'Darksteel Citadel', 12: 'Toshiro Umezawa', 13: 'Guardian of the Guildpact', 14: 'Temporal Eddy'};
+const CHRONICLER_ART = {1: 'Shivan Dragon', 2: 'Tetsuo Umezawa', 3: 'Kjeldoran Royal Guard', 4: "Teferi's Isle", 5: "Volrath's Stronghold", 6: "Serra's Sanctum", 7: 'Rishadan Port', 8: "Urza's Rage", 9: 'Cabal Coffers', 10: 'Akroma, Angel of Wrath', 11: 'Tree of Tales', 12: 'Eiganjo Castle', 13: 'Pillar of the Paruns', 14: 'Lotus Bloom', 15: 'Gilt-Leaf Palace'};
+const BOTH_SIDES_ART = {1: 'Mishra, Artificer Prodigy', 2: 'Hymn to Tourach', 3: "Lim-Dûl's High Guard", 4: "Suq'Ata Lancer", 5: 'Crovax the Cursed', 6: 'Phyrexian Negator', 7: 'Ascendant Evincar', 8: "Yawgmoth's Agenda", 9: 'Chainer, Dementia Master', 10: 'Riptide Laboratory', 11: 'Darksteel Citadel', 12: 'Toshiro Umezawa', 13: 'Guardian of the Guildpact', 14: 'Temporal Eddy', 15: 'Maralen of the Mornsong'};
 export const STORY_DEED_IDS = new Set([...STORY_DEEDS, ...STORY_ACT_DEEDS].map(d => d.id));
 export const storyDeedArt = d => d.art || (d.kind === 'both' ? BOTH_SIDES_ART : CHRONICLER_ART)[d.act];
 
