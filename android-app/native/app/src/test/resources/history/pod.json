@@ -1,0 +1,20 @@
+{"schema":"cardstashy.forge-proof.v1","revision":3,"viewer":1,"status":"running","busy":false,"turn":5,"phase":"MAIN1","activePlayer":2,"priorityPlayer":1,
+ "players":[
+  {"id":1,"name":"You","isViewer":true,"life":40,"zones":{"Hand":{"count":0,"cards":[]},"Library":{"count":90,"cards":[]},"Battlefield":{"count":0,"cards":[]}}},
+  {"id":2,"name":"Forge AI","isViewer":false,"life":40,"zones":{"Hand":{"count":5,"cards":[]},"Library":{"count":90,"cards":[]},
+   "Command":{"count":1,"cards":[{"id":29,"zone":"Command","owner":2,"controller":2,"hidden":false,"name":"Krenko, Mob Boss","type":"Legendary Creature — Goblin Warrior","commander":true}]},
+   "Battlefield":{"count":2,"cards":[{"id":30,"zone":"Battlefield","owner":2,"controller":2,"hidden":false,"name":"Goblin Guide","type":"Creature — Goblin Scout"},{"id":31,"zone":"Battlefield","owner":2,"controller":2,"hidden":false,"name":"Goblin Piker","type":"Creature — Goblin Warrior"}]}}},
+  {"id":3,"name":"Forge AI(2)","isViewer":false,"life":40,"zones":{"Hand":{"count":5,"cards":[]},"Library":{"count":90,"cards":[]},
+   "Battlefield":{"count":1,"cards":[{"id":32,"zone":"Battlefield","owner":3,"controller":3,"hidden":false,"name":"Wear // Tear","type":"Instant"}]}}},
+  {"id":4,"name":"Forge AI(3)","isViewer":false,"life":38,"zones":{"Hand":{"count":5,"cards":[]},"Library":{"count":90,"cards":[]},
+   "Command":{"count":1,"cards":[{"id":33,"zone":"Command","owner":4,"controller":4,"hidden":false,"name":"Fire // Ice","type":"Instant","commander":true}]}}}
+ ],
+ "stack":[],"buttons":{},"selection":{},
+ "events":{"schema":"cardstashy.forge-events.v1","latest":6,"items":[
+  {"seq":1,"type":"turn","turn":5,"player":2,"number":5},
+  {"seq":2,"type":"attack","turn":5,"player":2,"attackers":[{"kind":"card","id":30,"target":{"kind":"player","id":1}},{"kind":"card","id":31,"target":{"kind":"player","id":3}}]},
+  {"seq":3,"type":"attack","turn":5,"player":2,"attackers":[{"kind":"card","id":30,"target":{"kind":"player","id":4}}]},
+  {"seq":4,"type":"damage","turn":5,"source":{"kind":"card","id":31},"target":{"kind":"player","id":3},"amount":2},
+  {"seq":5,"type":"turn","turn":5,"player":3,"number":5},
+  {"seq":6,"type":"life","turn":5,"player":4,"from":36,"to":38}
+ ]}}

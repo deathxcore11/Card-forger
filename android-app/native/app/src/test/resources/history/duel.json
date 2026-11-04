@@ -1,0 +1,43 @@
+{"schema":"cardstashy.forge-proof.v1","revision":7,"viewer":1,"status":"running","busy":false,"turn":4,"phase":"MAIN1","activePlayer":1,"priorityPlayer":1,
+ "players":[
+  {"id":1,"name":"You","isViewer":true,"life":23,"zones":{
+   "Hand":{"count":1,"cards":[{"id":10,"zone":"Hand","owner":1,"controller":1,"hidden":false,"name":"Biotech Specialist","type":"Creature — Human Scientist"}]},
+   "Library":{"count":30,"cards":[]},
+   "Battlefield":{"count":0,"cards":[]},
+   "Graveyard":{"count":1,"cards":[{"id":14,"zone":"Graveyard","owner":1,"controller":1,"hidden":false,"name":"Pacifism","type":"Enchantment — Aura"}]},
+   "Exile":{"count":0,"cards":[]}}},
+  {"id":2,"name":"Forge AI","isViewer":false,"life":17,"zones":{
+   "Hand":{"count":1,"cards":[{"id":16,"zone":"Hand","owner":2,"controller":2,"hidden":true}]},
+   "Library":{"count":28,"cards":[]},
+   "Battlefield":{"count":2,"cards":[{"id":12,"zone":"Battlefield","owner":2,"controller":2,"hidden":false,"name":"Mountain","type":"Basic Land — Mountain"},{"id":15,"zone":"Battlefield","owner":2,"controller":2,"hidden":false,"name":"Goblin Token","type":"Token Creature — Goblin","token":true}]},
+   "Graveyard":{"count":2,"cards":[{"id":11,"zone":"Graveyard","owner":2,"controller":2,"hidden":false,"name":"Burnished Hart","type":"Artifact Creature — Elk"},{"id":13,"zone":"Graveyard","owner":2,"controller":2,"hidden":false,"name":"Llanowar Elves","type":"Creature — Elf Druid"}]},
+   "Exile":{"count":1,"cards":[{"id":17,"zone":"Exile","owner":2,"controller":2,"hidden":false,"name":"Elvish Mystic","type":"Creature — Elf Druid"}]}}}
+ ],
+ "stack":[{"id":40,"text":"Biotech Specialist - deals 1 damage","activatingPlayer":1,"source":{"id":10,"zone":"Hand","owner":1,"controller":1,"hidden":false,"name":"Biotech Specialist","type":"Creature — Human Scientist"}},{"id":41,"text":"","activatingPlayer":2,"source":{"id":16,"zone":"Hand","owner":2,"controller":2,"hidden":true}}],
+ "buttons":{},"selection":{},
+ "events":{"schema":"cardstashy.forge-events.v1","latest":24,"items":[
+  {"seq":1,"type":"turn","turn":3,"player":2,"number":3},
+  {"seq":2,"type":"land","turn":3,"player":2,"card":{"kind":"card","id":12}},
+  {"seq":3,"type":"cast","turn":3,"player":2,"source":{"kind":"card","id":13},"targets":[{"kind":"player","id":1}]},
+  {"seq":4,"type":"ability","turn":3,"player":1,"source":{"kind":"card","id":10},"targets":[{"kind":"card","id":11},{"kind":"player","id":2},{"kind":"card","id":99,"name":"Shock"}]},
+  {"seq":5,"type":"trigger","turn":3,"player":2,"source":{"kind":"card","id":11}},
+  {"seq":6,"type":"resolve","turn":3,"source":{"kind":"card","id":13},"fizzled":true},
+  {"seq":7,"type":"resolve","turn":3,"source":{"kind":"card","id":10},"fizzled":false},
+  {"seq":8,"type":"attack","turn":3,"player":1,"attackers":[{"kind":"card","id":10,"target":{"kind":"player","id":2}}]},
+  {"seq":9,"type":"block","turn":3,"player":2,"blockers":[{"kind":"card","id":11,"blocking":10},{"kind":"card","id":15,"blocking":10}]},
+  {"seq":10,"type":"damage","turn":3,"source":{"kind":"card","id":10},"target":{"kind":"card","id":11},"amount":3},
+  {"seq":11,"type":"damage","turn":3,"source":{"kind":"card","id":11},"target":{"kind":"player","id":1},"amount":0},
+  {"seq":12,"type":"life","turn":3,"player":1,"from":20,"to":23},
+  {"seq":13,"type":"zone","turn":3,"player":2,"card":{"kind":"card","id":11},"from":"Battlefield","to":"Graveyard","token":false},
+  {"seq":14,"type":"zone","turn":3,"player":1,"card":{"kind":"card","id":14},"from":"Battlefield","to":"Graveyard","token":false},
+  {"seq":15,"type":"zone","turn":3,"player":2,"card":{"kind":"card","id":17},"from":"Graveyard","to":"Exile","token":false},
+  {"seq":16,"type":"zone","turn":3,"player":2,"card":{"kind":"card","id":15},"to":"Battlefield","token":true},
+  {"seq":17,"type":"zone","turn":3,"player":1,"card":{"kind":"card","id":18,"name":"Elemental"},"to":"Battlefield","token":true},
+  {"seq":18,"type":"zone","turn":3,"player":1,"card":{"kind":"card","id":10},"from":"Battlefield","to":"Hand","token":false},
+  {"seq":19,"type":"zone","turn":3,"player":2,"card":{"kind":"card","id":16},"from":"Battlefield","to":"Graveyard","token":false},
+  {"seq":20,"type":"draw","turn":3,"player":1},
+  {"seq":21,"type":"turn","turn":4,"player":1,"number":4},
+  {"seq":22,"type":"cast","turn":4,"player":2,"source":{"kind":"card","id":16}},
+  {"seq":23,"type":"zone","turn":4,"player":2,"card":{"kind":"card","id":20,"name":"Ornithopter"},"from":"Battlefield","to":"Graveyard","token":false},
+  {"seq":24,"type":"block","turn":4,"player":1,"blockers":[{"kind":"card","id":10,"blocking":11},{"kind":"card","id":17,"blocking":15}]}
+ ]}}
