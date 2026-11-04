@@ -1031,6 +1031,7 @@ const name=String(card.name);if(Math.max(...name.split(/\s+/).map(word=>word.len
  // History & stack tells the match in plain words (both sides) instead of the table's decision steps.
  // Lines are kept by event number, so the story outlives the engine's short event window.
  const story=new Map();
+ let remembered='',rememberedAt=0;
  function tellStory(){
   const list=root.querySelector('details[data-keep-open=game-progress]>ol');if(!presentation.hosted||!list)return;
   const snap=session.snapshot();for(const line of storyLines(snap.native?.events?.items,snap.status?.surface))if(!story.has(line.seq))story.set(line.seq,line);
@@ -1050,6 +1051,13 @@ const name=String(card.name);if(Math.max(...name.split(/\s+/).map(word=>word.len
   if(!panel){panel=doc.createElement('div');panel.className='forge-menu-panel';for(const el of [...menu.children])if(el.tagName!=='SUMMARY')panel.append(el);menu.append(panel);}
   const history=root.querySelector('.play-match-header>button[data-focus-key=table-details]'),bar=root.querySelector('.play-match-header>.forge-tracker-toggles');
   if(history)panel.prepend(history);if(bar)(history||panel.firstChild)?.after?.(bar)??panel.prepend(bar);
+  // "Remember this moment": one tap flags the turn for the match's Chronicle. The match page keeps the flags.
+  if(typeof presentation.onRemember==='function'){
+   let mark=panel.querySelector(':scope>.forge-remember');
+   if(!mark){mark=doc.createElement('button');mark.type='button';mark.className='forge-remember';mark.addEventListener('click',()=>{let m=null;try{m=presentation.onRemember();}catch{m=null;}remembered=m?`Remembered · turn ${m.turn}`:'Moments full';rememberedAt=Date.now();mark.textContent=remembered;mark.setAttribute('aria-live','polite');});(history||panel.firstChild)?.after?.(mark)??panel.prepend(mark);}
+   if(remembered&&Date.now()-rememberedAt>4000)remembered='';
+   mark.textContent=remembered||'Remember this moment';
+  }
   const summary=menu.querySelector(':scope>summary'),count=String(session.snapshot().native?.stack?.length||'');if(summary&&(summary.dataset.count||'')!==count){if(count)summary.dataset.count=count;else delete summary.dataset.count;}
  }
  // Commander presence (Randall, 28 Oct): each commander rides on the left of its player's profile
