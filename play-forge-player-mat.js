@@ -8,7 +8,8 @@ import {createForgePresentationSession} from './experiments/forge-proof/forge-se
 import {mountForgeTable} from './experiments/forge-proof/forge-table.mjs';
 import {nativePromptUnanswerable} from './experiments/forge-proof/native-panel.mjs';
 import {mountForgeMatchIntro,forgeStartingPlayer} from './play-forge-pregame.js';
-import {deckRecord,recordLine,recordMatch} from './play-match-record.js';
+import {deckChronicles,deckRecord,recordLine,recordMatch} from './play-match-record.js';
+import {chronicleBlock} from './play-chronicle-ui.js';
 import {createMatchFacts} from './match-facts.js';
 import {goalProgress} from './play-daily-goals.js';
 import {createPlayScreenPause,playScreenPauseApplies,readPlayScreen,watchPlayScreen,PLAY_SMALL_SCREEN_LIMIT_MS} from './desktop-play.js';
@@ -158,9 +159,9 @@ export function createForgePlayerMat({root,readAccount,readSetup,getAccessToken,
   if(Number.isSafeInteger(terminalViewer)&&terminalViewer>=0)viewer=terminalViewer;
   const outcome=result.draw?'draw':viewer===null?null:result.winnerPlayerId===viewer?'win':'loss';
   // A match is recorded once, even if Forge reports its end on more than one read.
+  if(lastSurface)facts?.update(lastSurface);
   const saved=matchup&&outcome&&!recorded?recordMatch(matchRow(outcome)):null;if(saved)recorded=true;
   // Play quests and achievements hear about every recorded match; the app decides what counts (never Practice).
-  if(lastSurface)facts?.update(lastSurface);
   // What the table showed this match (match-facts.js): achievements, quests and Story deeds read it.
   const matchFacts=facts?.snapshot({onPlay:ownFirst})||null;
   const detail=saved?{...saved,facts:matchFacts,myTurns:matchFacts?.myTurns??null,story:!!matchup.story,friend:!!matchup.friendMatch,colors:basicColours(matchup.selected?.cards),seats:(lastSurface?.players||[]).length||null,difficulty:last?.matchContext?.difficulty||matchup.match?.difficulty||null}:null;
@@ -186,7 +187,7 @@ export function createForgePlayerMat({root,readAccount,readSetup,getAccessToken,
  // What the result banner and the deck record keep: only what the viewer saw during the match.
  function matchRow(outcome){
   const players=lastSurface?.players||[],me=players.find(p=>p.seat===lastSurface?.seat),them=players.find(p=>p.seat!==lastSurface?.seat);
-  return {outcome,deck:matchup.selected,opponent:matchup.opponent,format:matchup.match?.format,playStyle:matchup.playStyle,onPlay:ownFirst,turns:lastSurface?.turn||null,life:me?.life??null,opponentLife:them?.life??null,durationMs:playedFrom===null?null:Math.round(now()-playedFrom),conceded:conceding&&outcome==='loss'};
+  return {outcome,deck:matchup.selected,opponent:matchup.opponent,format:matchup.match?.format,playStyle:matchup.playStyle,onPlay:ownFirst,turns:lastSurface?.turn||null,life:me?.life??null,opponentLife:them?.life??null,durationMs:playedFrom===null?null:Math.round(now()-playedFrom),conceded:conceding&&outcome==='loss',chronicle:facts?.chronicle()||null};
  }
  // Like Snap and Hearthstone, the banner recaps the game and the deck's record so far.
  function recap(row,detail=row){
@@ -200,6 +201,7 @@ export function createForgePlayerMat({root,readAccount,readSetup,getAccessToken,
   deck.append(node('b',row.deck.name||'This deck'),node('span',` ${recordLine(r)}${streak}`));
   if(r.onPlay.games&&r.onDraw.games)deck.append(node('small',`On the play ${r.onPlay.wins}/${r.onPlay.games} · On the draw ${r.onDraw.wins}/${r.onDraw.games}`));
   box.append(list,deck);if(row.conceded)box.append(node('p','You conceded.'));
+  const page=chronicleBlock({chronicle:row.chronicle,opponent:matchup?.friend?matchup.friend.name||'Friend':'CPU',past:deckChronicles(matchup?.selected,{limit:6}).slice(1,6),node});if(page)box.append(page);
   const goals=node('ul');goals.className='play-result-goals';goals.setAttribute('aria-label','Goals');
   let shown=null;try{shown=readGoals?.(detail)??null;}catch{shown=null;}
   for(const g of shown||goalProgress()){const li=node('li');li.setAttribute('data-done',String(g.done));if(g.justDone)li.setAttribute('data-just','true');if(g.done)li.append(node('span','✓'));li.append(node('b',g.justDone?`${g.label} · done!`:g.done?g.label:`${g.label} · ${g.have}/${g.need}`));goals.append(li);}
@@ -344,7 +346,7 @@ export function createForgePlayerMat({root,readAccount,readSetup,getAccessToken,
    playedFrom=now();ownFirst=forgeStartingPlayer(state.snapshot)?.ownFirst??null;
    session.acceptState(state.snapshot);session.subscribe(s=>{lastSurface=s.status?.surface||lastSurface;if(s.status?.surface)facts?.update(s.status.surface);updateExit();if(!disposed&&ticket===generation&&last?.phase!=='finished')publish({phase:'playing',game:s});});
    // The engine and website build stay identifiable on screen and in diagnostics.
-   root.className='';root.dataset.engine='forge-hosted';root.dataset.build=APP_VERSION;table=mountTable(root,{session,profile:setup.profile,format:setup.match.format,title:`CardStashy · Magic · ${APP_VERSION}`,onExit:requestExit,presentation:{hosted:true,allowControlMode:true,tracker:trackerDeck(setup,artwork),...(setup.friend?{friend:setup.friend}:{})}});// Start timings stay out of the player's view (they read like a developer readout); the console keeps them.
+   root.className='';root.dataset.engine='forge-hosted';root.dataset.build=APP_VERSION;table=mountTable(root,{session,profile:setup.profile,format:setup.match.format,title:`CardStashy · Magic · ${APP_VERSION}`,onExit:requestExit,presentation:{hosted:true,allowControlMode:true,onRemember:()=>facts?.mark()||null,tracker:trackerDeck(setup,artwork),...(setup.friend?{friend:setup.friend}:{})}});// Start timings stay out of the player's view (they read like a developer readout); the console keeps them.
    if(progress)view?.console?.info?.('[play] '+stepsLine(progress,startupMs));warn(true);await session.start({readInitial:false});return last;
   }catch(e){stopTicker();if(current()){session?.close();warn(false);message('Your match could not start',[forgeMatchError(e),'Your selected decks are unchanged.',...(e.details||[])],{diagnostic:forgeDiagnostic(e)+(requestedAt===null?'':` · ${Math.round((now()-requestedAt)/1000)}s after the table was requested`)});publish({phase:'session-ended',error:e.code||e.message});}throw e;}
   finally{stopTicker();opening=false;}

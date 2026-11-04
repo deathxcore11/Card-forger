@@ -3,7 +3,7 @@
 // from something the server counts: match reports (play.counters), log-ins, packs opened and the
 // Play collection. Practice never counts, and friend matches count as played, never as won.
 
-import {STORY_DEEDS, STORY_ACT_DEEDS, storyDeedArt, storyDeedReward} from './story-deeds.js';
+import {STORY_DEEDS, STORY_ACT_DEEDS, storyDeedArt, storyDeedReward, isKeyFeat} from './story-deeds.js';
 import {collectorSource} from './play-econ-rules.js';
 import {achievementArt} from './play-achievement-art.js';
 export {achievementArt};
@@ -133,7 +133,7 @@ export const ACHIEVEMENTS = Object.freeze([
   {id: 'by-a-thread', tab: 'hidden', title: 'By a Thread', lore: 'Win with exactly 1 life left.', riddle: 'One breath stands between you and the grave.', art: 'Near-Death Experience', source: 'wins_thread', steps: [1], feat: true, hidden: true},
   // Story deeds: one feat each, woven into the acts (story-deeds.js).
   // A gold deed (a secret boss) is a one-step gold achievement instead of a feat: it pays the gold tier and a Collector pack.
-  ...[...STORY_DEEDS, ...STORY_ACT_DEEDS].map(d => ({id: d.id, tab: 'story', act: d.act, title: d.title, lore: d.lore, art: storyDeedArt(d), source: 'sd:' + d.id, steps: [1],
+  ...[...STORY_DEEDS, ...STORY_ACT_DEEDS].map(d => ({id: d.id, tab: 'story', act: d.act, title: d.title, lore: d.lore, art: storyDeedArt(d), source: 'sd:' + d.id, steps: [1], ...(isKeyFeat(d.id) ? {key: true} : {}),
     ...(d.gold ? {hidden: true, riddle: d.riddle} : d.hidden ? {feat: true, hidden: true, riddle: d.riddle} : {feat: true, reward: storyDeedReward(d)})})),
   {id: 'marathon', tab: 'hidden', title: 'Marathon', lore: 'Win a match that lasts 20 of your turns.', riddle: 'The sun rose and set and still you fought.', art: 'Approach of the Second Sun', source: 'wins_marathon', steps: [1], feat: true, hidden: true},
   {id: 'turn-four', tab: 'hidden', title: 'Turn Four', lore: 'Win by your 4th turn.', riddle: 'They never got to see their fourth land.', art: 'Ball Lightning', source: 'wins_t4', steps: [1], feat: true, hidden: true},
@@ -467,7 +467,7 @@ export function achievementsPayload(ctx = {}, config = {}) {
   const achievements = rows.map(r => {
     const secret = r.hidden && !r.earned;
     return {id: r.id, tab: r.tab, act: r.act || null, title: secret ? null : r.title, lore: secret ? null : r.lore, riddle: r.riddle || null, hidden: !!r.hidden, secret,
-      kind: r.honour ? 'honour' : r.feat ? 'feat' : 'chain', unit: r.unit || null, points: r.points, titleReward: r.titleReward || null, children: r.children || null, art: secret ? null : achievementArt(r.art),
+      kind: r.honour ? 'honour' : r.feat ? 'feat' : 'chain', unit: r.unit || null, points: r.points, key: !!r.key, titleReward: r.titleReward || null, children: r.children || null, art: secret ? null : achievementArt(r.art),
       value: r.value, earned: r.earned, ready: r.ready, complete: r.complete,
       steps: r.steps.map((x, i) => ({...x, reward: achievementReward(r, i, config)}))};
   });

@@ -45,12 +45,12 @@ export default {
 4 Benalish Hero
 4 Pearled Unicorn
 4 White Knight
-4 War Elephant
-4 Moorish Cavalry
-3 Northern Paladin
-3 Serra Angel
-3 Holy Strength
-3 Healing Salve
+2 War Elephant
+4 Mesa Pegasus
+3 Moorish Cavalry
+4 Northern Paladin
+4 Serra Angel
+3 Swords to Plowshares
 24 Plains`}},
       villain: {who: 'archers', deck: {label: 'tribute', name: 'Bows of Llanowar', colors: 'G', list: `
 4 Llanowar Elves
@@ -58,9 +58,10 @@ export default {
 4 Grizzly Bears
 4 Elvish Archers
 4 Wyluli Wolf
-4 War Mammoth
-3 Ironroot Treefolk
-3 Craw Wurm
+3 War Mammoth
+1 Ironroot Treefolk
+4 Scryb Sprites
+2 Wall of Wood
 2 Giant Growth
 4 Shanodin Dryads
 24 Forest`}},

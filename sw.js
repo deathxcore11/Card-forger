@@ -1,4 +1,4 @@
-const CACHE = "cardforge-shell-daily-4397-v469";
+const CACHE = "cardforge-shell-native-dl-43102-v474";
 const ASSETS = [
   "./assets/fonts/fonts.css",
   "./play-forge-feature.js",
@@ -15,7 +15,7 @@ const ASSETS = [
   "./play-forge-artwork.js",
   "./play-forge-player-mat.js",
   "./play-forge-pregame.js",
-  "./play-match-record.js",
+  "./play-match-record.js", "./play-chronicle-ui.js",
   "./play-econ-client.js",
   "./play-econ-ui.js",
   "./play-deck-finder.js",
@@ -38,6 +38,7 @@ const ASSETS = [
   "./experiments/forge-proof/forge-session.mjs",
   "./experiments/forge-proof/forge-table.mjs",
   "./experiments/forge-proof/cpu-action-playback.mjs",
+  "./experiments/forge-proof/turn-timer.mjs",
   "./experiments/forge-proof/motion-kit.mjs",
   "./play-board-badges.js",
   "./play-board-icons.js",
@@ -104,7 +105,7 @@ const ASSETS = [
   "./magic-matchups.css",
   "./settings-theme.js",
   "./settings-storage.js",
-  "./mobile-tilt.js", "./set-experience.js", "./pack-preview.js", "./mtg-boosters.js", "./rarity-emblem.js", "./data-loading.js", "./collector-search.js",
+  "./mobile-tilt.js", "./set-experience.js", "./pack-preview.js", "./pack-wrappers.js", "./mtg-boosters.js", "./rarity-emblem.js", "./data-loading.js", "./collector-search.js",
   "./sync-merge.js",
   "./recovery-store.js",
   "./magic-card-color.js",

@@ -1,0 +1,3357 @@
+{
+ "act": 29,
+ "era": "2019-05-03",
+ "title": "The War of the Spark",
+ "years": "2018 to 2019",
+ "sets": [
+  "grn",
+  "rna",
+  "war",
+  "m20"
+ ],
+ "landSet": "grn",
+ "intro": [
+  {
+   "who": "stage",
+   "line": "Ravnica, the city that is a world. The guilds have kept it standing for ten thousand years."
+  },
+  {
+   "who": "stage",
+   "line": "Dovin ticked the Planeswalkers off on his fingers: himself, Domri, Kaya, Ral, Vraska . . . and Bolas made an even six.",
+   "quote": true
+  },
+  {
+   "who": "stage",
+   "line": "Nicol Bolas is bringing every planeswalker he can reach to Ravnica. None of them know why yet."
+  }
+ ],
+ "finale": [
+  {
+   "who": "stage",
+   "line": "To Liliana's surprise, the cost of betraying Bolas did not fall on her.",
+   "quote": true
+  },
+  {
+   "who": "stage",
+   "line": "His triumph came not from victory over his enemies, but from the salvation of those who survived.",
+   "quote": true
+  },
+  {
+   "who": "stage",
+   "line": "Gideon Jura is gone, Bolas is shut away in the Meditation Realm, and Ugin chose to imprison him rather than finish him."
+  },
+  {
+   "who": "stage",
+   "line": "Recorded: the war is over. The city is still standing."
+  }
+ ],
+ "villainFinale": [
+  {
+   "who": "stage",
+   "line": "When you rule by fear, your greatest weakness is one who's no longer afraid.",
+   "quote": true
+  },
+  {
+   "who": "stage",
+   "line": "Bolas keeps every spark he took, and the city belongs to him. The record says Ugin chose to imprison him instead."
+  }
+ ],
+ "vibe": "war-of-the-spark",
+ "cast": {
+  "you": {
+   "name": "You",
+   "title": "Planeswalker",
+   "portrait": {
+    "card": "Fblthp, the Lost",
+    "set": "war",
+    "number": "50",
+    "id": "52558748-6893-4c72-a9e2-e87d31796b59",
+    "crop": "https://cards.scryfall.io/art_crop/front/5/2/52558748-6893-4c72-a9e2-e87d31796b59.jpg?1783933465",
+    "artist": "Jesper Ejsing",
+    "focus": "50% 30%"
+   }
+  },
+  "ral": {
+   "name": "Ral Zarek",
+   "title": "Izzet Guildmaster",
+   "portrait": {
+    "card": "Ral, Storm Conduit",
+    "set": "war",
+    "number": "211",
+    "id": "678ce3bf-152d-45ca-87ae-ad46c921328b",
+    "crop": "https://cards.scryfall.io/art_crop/front/6/7/678ce3bf-152d-45ca-87ae-ad46c921328b.jpg?1783933390",
+    "artist": "Wesley Burt",
+    "focus": "50% 25%"
+   }
+  },
+  "golgari": {
+   "name": "The Golgari",
+   "title": "Of the Undercity",
+   "portrait": {
+    "card": "Erstwhile Trooper",
+    "set": "grn",
+    "number": "169",
+    "id": "351ee4ba-882d-48c1-837d-e9eccc5bc50d",
+    "crop": "https://cards.scryfall.io/art_crop/front/3/5/351ee4ba-882d-48c1-837d-e9eccc5bc50d.jpg?1783934137",
+    "artist": "Jason A. Engle",
+    "focus": "50% 30%"
+   }
+  },
+  "vraska": {
+   "name": "Vraska",
+   "title": "Golgari Queen",
+   "portrait": {
+    "card": "Vraska, Golgari Queen",
+    "set": "grn",
+    "number": "213",
+    "id": "a36d3ea7-0f18-4865-b47b-755673db065e",
+    "crop": "https://cards.scryfall.io/art_crop/front/a/3/a36d3ea7-0f18-4865-b47b-755673db065e.jpg?1783934118",
+    "artist": "Magali Villeneuve",
+    "focus": "50% 25%"
+   }
+  },
+  "boros": {
+   "name": "The Boros Legion",
+   "title": "Under Tajic",
+   "portrait": {
+    "card": "Tajic, Legion's Edge",
+    "set": "grn",
+    "number": "204",
+    "id": "5e669a01-84d3-4fcc-8396-9e987bd89b4f",
+    "crop": "https://cards.scryfall.io/art_crop/front/5/e/5e669a01-84d3-4fcc-8396-9e987bd89b4f.jpg?1783934121",
+    "artist": "Anthony Palumbo",
+    "focus": "50% 25%"
+   }
+  },
+  "lavinia": {
+   "name": "Lavinia",
+   "title": "Azorius Renegade",
+   "portrait": {
+    "card": "Lavinia, Azorius Renegade",
+    "set": "rna",
+    "number": "189",
+    "id": "c497d496-1232-4614-93b0-9864fa93c29f",
+    "crop": "https://cards.scryfall.io/art_crop/front/c/4/c497d496-1232-4614-93b0-9864fa93c29f.jpg?1783933643",
+    "artist": "Steven Belledin",
+    "focus": "50% 25%"
+   }
+  },
+  "rakdos": {
+   "name": "The Cult of Rakdos",
+   "title": "Showmen of Ravnica",
+   "portrait": {
+    "card": "Judith, the Scourge Diva",
+    "set": "rna",
+    "number": "185",
+    "id": "0a742125-730d-4082-bfd8-5feb7733def4",
+    "crop": "https://cards.scryfall.io/art_crop/front/0/a/0a742125-730d-4082-bfd8-5feb7733def4.jpg?1783933645",
+    "artist": "Wesley Burt",
+    "focus": "50% 25%"
+   }
+  },
+  "horde": {
+   "name": "The Dreadhorde",
+   "title": "Bolas's Army",
+   "portrait": {
+    "card": "Eternal Taskmaster",
+    "set": "war",
+    "number": "90",
+    "id": "7789188e-5caa-4500-b3e4-bb95f7657903",
+    "crop": "https://cards.scryfall.io/art_crop/front/7/7/7789188e-5caa-4500-b3e4-bb95f7657903.jpg?1783933446",
+    "artist": "Tomasz Jedruszek",
+    "focus": "50% 30%"
+   }
+  },
+  "kaya": {
+   "name": "Kaya",
+   "title": "Orzhov Guildmaster",
+   "portrait": {
+    "card": "Kaya, Orzhov Usurper",
+    "set": "rna",
+    "number": "186",
+    "id": "fdb4b2ef-5196-4f7f-88ff-64b2cdb36c6b",
+    "crop": "https://cards.scryfall.io/art_crop/front/f/d/fdb4b2ef-5196-4f7f-88ff-64b2cdb36c6b.jpg?1783933645",
+    "artist": "Yongjae Choi",
+    "focus": "50% 25%"
+   }
+  },
+  "eternals": {
+   "name": "The Eternals",
+   "title": "God-Eternals' Troops",
+   "portrait": {
+    "card": "Naga Eternal",
+    "set": "war",
+    "number": "60",
+    "id": "0f244233-f2e8-48f8-9106-e7cd186efd51",
+    "crop": "https://cards.scryfall.io/art_crop/front/0/f/0f244233-f2e8-48f8-9106-e7cd186efd51.jpg?1783933461",
+    "artist": "Johann Bodin",
+    "focus": "50% 30%"
+   }
+  },
+  "superfriends": {
+   "name": "Esper Superfriends",
+   "title": "Spring 2019",
+   "portrait": {
+    "card": "Teferi, Time Raveler",
+    "set": "war",
+    "number": "221",
+    "id": "5cb76266-ae50-4bbc-8f96-d98f309b02d3",
+    "crop": "https://cards.scryfall.io/art_crop/front/5/c/5cb76266-ae50-4bbc-8f96-d98f309b02d3.jpg?1783933384",
+    "artist": "Chris Rallis",
+    "focus": "50% 25%"
+   }
+  },
+  "red": {
+   "name": "Mono-Red",
+   "title": "Spring 2019",
+   "portrait": {
+    "card": "Krenko, Tin Street Kingpin",
+    "set": "war",
+    "number": "137",
+    "id": "37ed04d3-cfa1-4778-aea6-b4c2c29e6e0a",
+    "crop": "https://cards.scryfall.io/art_crop/front/3/7/37ed04d3-cfa1-4778-aea6-b4c2c29e6e0a.jpg?1783933423",
+    "artist": "Mark Behm",
+    "focus": "50% 25%"
+   }
+  },
+  "golgarimid": {
+   "name": "Golgari Midrange",
+   "title": "Spring 2019",
+   "portrait": {
+    "card": "Rotting Regisaur",
+    "set": "m20",
+    "number": "111",
+    "id": "d88c61cb-dbf9-46c3-8795-8896ba1208d5",
+    "crop": "https://cards.scryfall.io/art_crop/front/d/8/d88c61cb-dbf9-46c3-8795-8896ba1208d5.jpg?1783932989",
+    "artist": "Randy Vargas",
+    "focus": "50% 30%"
+   }
+  },
+  "gruul": {
+   "name": "The Gruul",
+   "title": "Clans of the Rubblebelt",
+   "portrait": {
+    "card": "Domri, Chaos Bringer",
+    "set": "rna",
+    "number": "166",
+    "id": "1f56bbf3-3884-495a-b9cd-6585d86f76f1",
+    "crop": "https://cards.scryfall.io/art_crop/front/1/f/1f56bbf3-3884-495a-b9cd-6585d86f76f1.jpg?1783933653",
+    "artist": "Zack Stella",
+    "focus": "50% 25%"
+   }
+  },
+  "gatewatch": {
+   "name": "The Gatewatch",
+   "title": "And the Guilds",
+   "portrait": {
+    "card": "Gideon Blackblade",
+    "set": "war",
+    "number": "13",
+    "id": "39d51c5e-26cb-4276-a676-fabfef866248",
+    "crop": "https://cards.scryfall.io/art_crop/front/3/9/39d51c5e-26cb-4276-a676-fabfef866248.jpg?1783933482",
+    "artist": "Viktor Titov",
+    "focus": "50% 25%"
+   }
+  },
+  "bolas": {
+   "name": "Nicol Bolas",
+   "title": "Dragon-God",
+   "portrait": {
+    "card": "Nicol Bolas, Dragon-God",
+    "set": "war",
+    "number": "207",
+    "id": "98b68dea-a7be-4f99-8a50-4c8cf0e0f7a9",
+    "crop": "https://cards.scryfall.io/art_crop/front/9/8/98b68dea-a7be-4f99-8a50-4c8cf0e0f7a9.jpg?1783933392",
+    "artist": "Raymond Swanland",
+    "focus": "50% 30%"
+   }
+  },
+  "liliana": {
+   "name": "Liliana",
+   "title": "Dreadhorde General",
+   "portrait": {
+    "card": "Liliana, Dreadhorde General",
+    "set": "war",
+    "number": "97",
+    "id": "d75ebba8-34ca-47a0-bf13-8318ad73b343",
+    "crop": "https://cards.scryfall.io/art_crop/front/d/7/d75ebba8-34ca-47a0-bf13-8318ad73b343.jpg?1783933442",
+    "artist": "Chris Rallis",
+    "focus": "50% 25%"
+   }
+  },
+  "esperhero": {
+   "name": "Esper Hero",
+   "title": "Spring 2019",
+   "portrait": {
+    "card": "Hero of Precinct One",
+    "set": "rna",
+    "number": "11",
+    "id": "87732718-1067-4e5f-a76d-409539c9ef3f",
+    "crop": "https://cards.scryfall.io/art_crop/front/8/7/87732718-1067-4e5f-a76d-409539c9ef3f.jpg?1783933723",
+    "artist": "Bram Sels",
+    "focus": "50% 30%"
+   }
+  }
+ },
+ "battles": [
+  {
+   "id": "a29b1",
+   "slot": 1,
+   "kind": "Arrival",
+   "mood": "tension",
+   "title": "The Beacon",
+   "difficulty": "Easy",
+   "teaches": [
+    "Surveil"
+   ],
+   "blurb": "Ral Zarek is in Ravnica when something goes wrong in the city. The Golgari in the tunnels are in no mood for company.",
+   "rewardSet": "grn",
+   "host": false,
+   "hero": {
+    "who": "ral",
+    "deck": {
+     "name": "The Izzet League",
+     "colors": "UR",
+     "archetype": null,
+     "label": "tribute",
+     "cards": [
+      {
+       "qty": 4,
+       "name": "Goblin Electromancer",
+       "set": "grn",
+       "number": "174",
+       "id": "0ae987da-e4b5-4b82-843c-6aaa87262fc8"
+      },
+      {
+       "qty": 4,
+       "name": "Wee Dragonauts",
+       "set": "grn",
+       "number": "214",
+       "id": "37ee17a1-76ce-4ae8-9109-ba32457cbeec"
+      },
+      {
+       "qty": 4,
+       "name": "Ral's Staticaster",
+       "set": "grn",
+       "number": "268",
+       "id": "adfa16dc-03b3-4533-884c-a23b992b8d86"
+      },
+      {
+       "qty": 3,
+       "name": "Crackling Drake",
+       "set": "grn",
+       "number": "163",
+       "id": "f00fa3a7-e3e2-4b23-a126-a076e75b5dbd"
+      },
+      {
+       "qty": 3,
+       "name": "Murmuring Mystic",
+       "set": "grn",
+       "number": "45",
+       "id": "5fc6adff-dcb3-456d-a8c2-0e77b784ff89"
+      },
+      {
+       "qty": 4,
+       "name": "Shock",
+       "set": "m20",
+       "number": "160",
+       "id": "3c866bdb-ff94-4f3f-8429-e72c2cbb94ef"
+      },
+      {
+       "qty": 2,
+       "name": "Lava Coil",
+       "set": "grn",
+       "number": "108",
+       "id": "f6135cf4-50c2-4e44-b9b0-96e1187a2200"
+      },
+      {
+       "qty": 3,
+       "name": "Beacon Bolt",
+       "set": "grn",
+       "number": "154",
+       "id": "39c9e4b5-364b-4c0b-bb47-266563a6abf2"
+      },
+      {
+       "qty": 2,
+       "name": "Ral, Izzet Viceroy",
+       "set": "grn",
+       "number": "195",
+       "id": "c52066b3-84dc-4198-8090-3336e7df8b5d"
+      },
+      {
+       "qty": 3,
+       "name": "Hypothesizzle",
+       "set": "grn",
+       "number": "178",
+       "id": "d5690329-feb8-49c0-8f59-ee13782e8d3b"
+      },
+      {
+       "qty": 3,
+       "name": "Sonic Assault",
+       "set": "grn",
+       "number": "199",
+       "id": "cc61a398-cf16-415b-b3cf-897217dc7cc9"
+      },
+      {
+       "qty": 4,
+       "name": "Izzet Guildgate",
+       "set": "grn",
+       "number": "251",
+       "id": "2055a83a-99c8-4808-90b9-1c2fdcda79b4"
+      },
+      {
+       "qty": 3,
+       "name": "Steam Vents",
+       "set": "grn",
+       "number": "257",
+       "id": "b8ebe3cf-7143-453a-b0ef-2f5bdaac3185"
+      },
+      {
+       "qty": 8,
+       "name": "Island",
+       "set": "grn",
+       "number": "261",
+       "id": "29bfbf3e-3a6c-40d4-8e1b-255f429de6cc"
+      },
+      {
+       "qty": 9,
+       "name": "Mountain",
+       "set": "grn",
+       "number": "263",
+       "id": "7f918a49-a046-4115-80b8-13490ed5cd0a"
+      },
+      {
+       "qty": 1,
+       "name": "Anticipate",
+       "set": "m20",
+       "number": "45",
+       "id": "2080556a-6c76-4819-9eb2-c4dd4c9dbd67"
+      }
+     ]
+    }
+   },
+   "villain": {
+    "who": "golgari",
+    "deck": {
+     "name": "The Golgari Swarm",
+     "colors": "BG",
+     "archetype": null,
+     "label": "tribute",
+     "cards": [
+      {
+       "qty": 4,
+       "name": "Pelt Collector",
+       "set": "grn",
+       "number": "141",
+       "id": "bee125cb-12b9-4f78-8e1d-6018d9c52275"
+      },
+      {
+       "qty": 4,
+       "name": "Erstwhile Trooper",
+       "set": "grn",
+       "number": "169",
+       "id": "351ee4ba-882d-48c1-837d-e9eccc5bc50d"
+      },
+      {
+       "qty": 4,
+       "name": "Glowspore Shaman",
+       "set": "grn",
+       "number": "173",
+       "id": "08fe260a-d204-4e75-b3e5-0cd9b4ca7084"
+      },
+      {
+       "qty": 3,
+       "name": "Plaguecrafter",
+       "set": "grn",
+       "number": "82",
+       "id": "8682fb87-df14-4277-aaa0-0d53d766c406"
+      },
+      {
+       "qty": 3,
+       "name": "Midnight Reaper",
+       "set": "grn",
+       "number": "77",
+       "id": "5e122fe0-51c5-404d-a7b9-3d161a426c35"
+      },
+      {
+       "qty": 3,
+       "name": "Hitchclaw Recluse",
+       "set": "grn",
+       "number": "133",
+       "id": "fe349432-8726-49cf-ad07-6f8add8f78c8"
+      },
+      {
+       "qty": 3,
+       "name": "Kraul Harpooner",
+       "set": "grn",
+       "number": "136",
+       "id": "f6d3c086-9ce4-41c3-8402-2818f1b27192"
+      },
+      {
+       "qty": 3,
+       "name": "Gravedigger",
+       "set": "m20",
+       "number": "103",
+       "id": "0fb714a0-e61b-4ccf-8de6-3a6bf87c8315"
+      },
+      {
+       "qty": 3,
+       "name": "Dead Weight",
+       "set": "grn",
+       "number": "67",
+       "id": "a1a81554-50d4-4fe0-bf0d-5304f215d19e"
+      },
+      {
+       "qty": 3,
+       "name": "Assassin's Trophy",
+       "set": "grn",
+       "number": "152",
+       "id": "906b6e99-128f-4c11-8daf-16099d35b0d4"
+      },
+      {
+       "qty": 2,
+       "name": "Find // Finality",
+       "set": "grn",
+       "number": "225",
+       "id": "1e4e9e35-6cbc-4997-beff-d1a22d87545e"
+      },
+      {
+       "qty": 4,
+       "name": "Golgari Guildgate",
+       "set": "grn",
+       "number": "248",
+       "id": "86706d8e-de08-4778-94ba-ae75ed522472"
+      },
+      {
+       "qty": 2,
+       "name": "Overgrown Tomb",
+       "set": "grn",
+       "number": "253",
+       "id": "eff1f52c-5c43-4260-aaa0-6920846a191c"
+      },
+      {
+       "qty": 9,
+       "name": "Swamp",
+       "set": "grn",
+       "number": "262",
+       "id": "bdd5a7f0-5ad3-44e8-a103-07739fd53630"
+      },
+      {
+       "qty": 9,
+       "name": "Forest",
+       "set": "grn",
+       "number": "264",
+       "id": "d85892ae-dacd-4a55-a557-9db3c16017c7"
+      },
+      {
+       "qty": 1,
+       "name": "Murder",
+       "set": "m20",
+       "number": "109",
+       "id": "6a2b22bc-e81b-4f27-a52b-9f3edad25439"
+      }
+     ]
+    }
+   },
+   "reward": {
+    "hero": {
+     "packs": 1,
+     "coins": 0
+    },
+    "villain": {
+     "card": {
+      "oracle_id": "a1640d9a-367f-4b90-bd4d-18f2c9244ccf",
+      "name": "Erstwhile Trooper",
+      "rarity": "common",
+      "set": "grn",
+      "id": "351ee4ba-882d-48c1-837d-e9eccc5bc50d",
+      "image": "https://cards.scryfall.io/normal/front/3/5/351ee4ba-882d-48c1-837d-e9eccc5bc50d.jpg"
+     },
+     "coins": 50
+    }
+   },
+   "scene": [
+    {
+     "who": "stage",
+     "line": "Dovin ticked the Planeswalkers off on his fingers: himself, Domri, Kaya, Ral, Vraska . . . and Bolas made an even six.",
+     "quote": true
+    },
+    {
+     "who": "stage",
+     "line": "Rumors float through the city like crows, alighting on citizens seemingly at random.",
+     "quote": true
+    },
+    {
+     "who": "ral",
+     "line": "Surveil: look at the top cards of your library, then keep each on top or put it in the graveyard. Use it to dig and to fuel your graveyard."
+    }
+   ],
+   "villainScene": [
+    {
+     "who": "stage",
+     "line": "The Erstwhile—rotten of body and outmoded in dress, but unfailing in loyalty.",
+     "quote": true
+    },
+    {
+     "who": "stage",
+     "line": "Nearly invisible strands of web reach far beyond its lair to alert it of the approach of prey.",
+     "quote": true
+    }
+   ],
+   "after": null,
+   "cues": {
+    "hero": {
+     "start": "Something is wrong.",
+     "big": "Storm conduit!",
+     "low": "The tunnels are closing in...",
+     "win": "Back to the surface.",
+     "loss": "Cut off...",
+     "half": "Surveil early. Bin what you do not need."
+    },
+    "villain": {
+     "start": "Rot and root.",
+     "big": "Rise!",
+     "low": "It slips away...",
+     "win": "The Swarm provides.",
+     "loss": "Cleared out..."
+    }
+   },
+   "bigPlays": [],
+   "sim": null
+  },
+  {
+   "id": "a29b2",
+   "slot": 2,
+   "kind": "Lesson",
+   "mood": "march",
+   "title": "The Queen of the Swarm",
+   "difficulty": "Easy",
+   "teaches": [
+    "Mentor"
+   ],
+   "blurb": "Vraska leads the Golgari. The Boros Legion has marched into the undercity and wants a say.",
+   "rewardSet": "grn",
+   "host": false,
+   "hero": {
+    "who": "vraska",
+    "deck": {
+     "name": "The Golgari Swarm",
+     "colors": "BG",
+     "archetype": null,
+     "label": "tribute",
+     "cards": [
+      {
+       "qty": 4,
+       "name": "Pelt Collector",
+       "set": "grn",
+       "number": "141",
+       "id": "bee125cb-12b9-4f78-8e1d-6018d9c52275"
+      },
+      {
+       "qty": 4,
+       "name": "Erstwhile Trooper",
+       "set": "grn",
+       "number": "169",
+       "id": "351ee4ba-882d-48c1-837d-e9eccc5bc50d"
+      },
+      {
+       "qty": 4,
+       "name": "Glowspore Shaman",
+       "set": "grn",
+       "number": "173",
+       "id": "08fe260a-d204-4e75-b3e5-0cd9b4ca7084"
+      },
+      {
+       "qty": 4,
+       "name": "Rotting Regisaur",
+       "set": "m20",
+       "number": "111",
+       "id": "d88c61cb-dbf9-46c3-8795-8896ba1208d5"
+      },
+      {
+       "qty": 3,
+       "name": "Midnight Reaper",
+       "set": "grn",
+       "number": "77",
+       "id": "5e122fe0-51c5-404d-a7b9-3d161a426c35"
+      },
+      {
+       "qty": 2,
+       "name": "Doom Whisperer",
+       "set": "grn",
+       "number": "69",
+       "id": "0a11ee0d-ff8d-4648-8b4e-29440c135c30"
+      },
+      {
+       "qty": 2,
+       "name": "Kraul Harpooner",
+       "set": "grn",
+       "number": "136",
+       "id": "f6d3c086-9ce4-41c3-8402-2818f1b27192"
+      },
+      {
+       "qty": 2,
+       "name": "Vraska, Golgari Queen",
+       "set": "grn",
+       "number": "213",
+       "id": "a36d3ea7-0f18-4865-b47b-755673db065e"
+      },
+      {
+       "qty": 4,
+       "name": "Assassin's Trophy",
+       "set": "grn",
+       "number": "152",
+       "id": "906b6e99-128f-4c11-8daf-16099d35b0d4"
+      },
+      {
+       "qty": 3,
+       "name": "Murder",
+       "set": "m20",
+       "number": "109",
+       "id": "6a2b22bc-e81b-4f27-a52b-9f3edad25439"
+      },
+      {
+       "qty": 2,
+       "name": "Find // Finality",
+       "set": "grn",
+       "number": "225",
+       "id": "1e4e9e35-6cbc-4997-beff-d1a22d87545e"
+      },
+      {
+       "qty": 2,
+       "name": "Gravedigger",
+       "set": "m20",
+       "number": "103",
+       "id": "0fb714a0-e61b-4ccf-8de6-3a6bf87c8315"
+      },
+      {
+       "qty": 4,
+       "name": "Golgari Guildgate",
+       "set": "grn",
+       "number": "248",
+       "id": "86706d8e-de08-4778-94ba-ae75ed522472"
+      },
+      {
+       "qty": 3,
+       "name": "Overgrown Tomb",
+       "set": "grn",
+       "number": "253",
+       "id": "eff1f52c-5c43-4260-aaa0-6920846a191c"
+      },
+      {
+       "qty": 8,
+       "name": "Swamp",
+       "set": "grn",
+       "number": "262",
+       "id": "bdd5a7f0-5ad3-44e8-a103-07739fd53630"
+      },
+      {
+       "qty": 9,
+       "name": "Forest",
+       "set": "grn",
+       "number": "264",
+       "id": "d85892ae-dacd-4a55-a557-9db3c16017c7"
+      }
+     ]
+    }
+   },
+   "villain": {
+    "who": "boros",
+    "deck": {
+     "name": "The Boros Legion",
+     "colors": "RW",
+     "archetype": null,
+     "label": "tribute",
+     "cards": [
+      {
+       "qty": 4,
+       "name": "Legion Warboss",
+       "set": "grn",
+       "number": "109",
+       "id": "5e84cb9c-9876-47a4-aea4-78574321bc36"
+      },
+      {
+       "qty": 4,
+       "name": "Goblin Banneret",
+       "set": "grn",
+       "number": "102",
+       "id": "90b3b56c-5236-4319-b17e-5f71143a7906"
+      },
+      {
+       "qty": 4,
+       "name": "Fearless Halberdier",
+       "set": "grn",
+       "number": "100",
+       "id": "30e04f16-89d0-4e75-a3cd-4dd64414050c"
+      },
+      {
+       "qty": 4,
+       "name": "Tenth District Guard",
+       "set": "grn",
+       "number": "29",
+       "id": "829f959e-91cd-42ea-8644-ce828a304d01"
+      },
+      {
+       "qty": 4,
+       "name": "Skyknight Legionnaire",
+       "set": "grn",
+       "number": "198",
+       "id": "3c27f2ce-702a-4ec2-a470-982171a9ec73"
+      },
+      {
+       "qty": 3,
+       "name": "Boros Challenger",
+       "set": "grn",
+       "number": "156",
+       "id": "545f3a30-7984-4046-8a14-51bc9cbc3fe0"
+      },
+      {
+       "qty": 3,
+       "name": "Swiftblade Vindicator",
+       "set": "grn",
+       "number": "203",
+       "id": "285c4d9e-0f22-49a8-b68c-150fd0d4b617"
+      },
+      {
+       "qty": 3,
+       "name": "Tajic, Legion's Edge",
+       "set": "grn",
+       "number": "204",
+       "id": "5e669a01-84d3-4fcc-8396-9e987bd89b4f"
+      },
+      {
+       "qty": 3,
+       "name": "Righteous Blow",
+       "set": "grn",
+       "number": "23",
+       "id": "b4501520-acf4-438f-9e96-4a649875ffdd"
+      },
+      {
+       "qty": 2,
+       "name": "Shock",
+       "set": "m20",
+       "number": "160",
+       "id": "3c866bdb-ff94-4f3f-8429-e72c2cbb94ef"
+      },
+      {
+       "qty": 2,
+       "name": "Justice Strike",
+       "set": "grn",
+       "number": "182",
+       "id": "27619ce9-59df-4f0e-a5db-2d32a530e547"
+      },
+      {
+       "qty": 4,
+       "name": "Boros Guildgate",
+       "set": "grn",
+       "number": "243",
+       "id": "c52ceefc-90d0-49d1-ae54-9a4eab819849"
+      },
+      {
+       "qty": 3,
+       "name": "Sacred Foundry",
+       "set": "grn",
+       "number": "254",
+       "id": "b7b598d0-535d-477d-a33d-d6a10ff5439a"
+      },
+      {
+       "qty": 9,
+       "name": "Mountain",
+       "set": "grn",
+       "number": "263",
+       "id": "7f918a49-a046-4115-80b8-13490ed5cd0a"
+      },
+      {
+       "qty": 8,
+       "name": "Plains",
+       "set": "grn",
+       "number": "260",
+       "id": "b983acda-68b6-468b-b0c1-aad8b53db49c"
+      }
+     ]
+    }
+   },
+   "reward": {
+    "hero": {
+     "packs": 1,
+     "coins": 0
+    },
+    "villain": {
+     "card": {
+      "oracle_id": "ae6f21a2-e6b6-4793-8343-e27310c0bea1",
+      "name": "Tajic, Legion's Edge",
+      "rarity": "rare",
+      "set": "grn",
+      "id": "5e669a01-84d3-4fcc-8396-9e987bd89b4f",
+      "image": "https://cards.scryfall.io/normal/front/5/e/5e669a01-84d3-4fcc-8396-9e987bd89b4f.jpg"
+     },
+     "coins": 50
+    }
+   },
+   "scene": [
+    {
+     "who": "stage",
+     "line": "A power vacuum for the Azorius. A keepsake for Vraska.",
+     "quote": true
+    },
+    {
+     "who": "stage",
+     "line": "From death she grows living grandeur.",
+     "quote": true
+    },
+    {
+     "who": "vraska",
+     "line": "Mentor: when this creature attacks, it puts a +1/+1 counter on a smaller attacker. Attack with the young ones beside it."
+    }
+   ],
+   "villainScene": [
+    {
+     "who": "stage",
+     "line": "The Boros banner stands tall even if its bearer doesn't.",
+     "quote": true
+    },
+    {
+     "who": "stage",
+     "line": "Squadrons of skyknights are available for deployment around the clock, capable of reaching any district in the city within minutes.",
+     "quote": true
+    }
+   ],
+   "after": null,
+   "cues": {
+    "hero": {
+     "start": "Stand with the Swarm.",
+     "big": "The queen walks!",
+     "low": "The Legion is fast...",
+     "win": "Hold the tunnels.",
+     "loss": "Routed...",
+     "half": "Attack with the small creatures beside the mentor."
+    },
+    "villain": {
+     "start": "Form up!",
+     "big": "Charge!",
+     "low": "Fall back...",
+     "win": "For the Legion.",
+     "loss": "Broken..."
+    }
+   },
+   "bigPlays": [],
+   "sim": null
+  },
+  {
+   "id": "a29b3",
+   "slot": 3,
+   "kind": "Lesson",
+   "mood": "comic",
+   "title": "Debts and Ghosts",
+   "difficulty": "Easy",
+   "teaches": [
+    "Afterlife"
+   ],
+   "blurb": "Lavinia is a hunter of rogues and the Rakdos cult is putting on a show at the worst possible time.",
+   "rewardSet": "rna",
+   "host": false,
+   "hero": {
+    "who": "lavinia",
+    "deck": {
+     "name": "The Azorius Senate",
+     "colors": "WU",
+     "archetype": null,
+     "label": "tribute",
+     "cards": [
+      {
+       "qty": 4,
+       "name": "Tithe Taker",
+       "set": "rna",
+       "number": "27",
+       "id": "bd26b7b1-992d-4b8c-bc33-51aab5abdf98"
+      },
+      {
+       "qty": 4,
+       "name": "Ministrant of Obligation",
+       "set": "rna",
+       "number": "16",
+       "id": "bf2a093a-25f0-4247-94dc-550865d86317"
+      },
+      {
+       "qty": 3,
+       "name": "Spirit of the Spires",
+       "set": "rna",
+       "number": "23",
+       "id": "dbd11910-58e2-4233-a18c-e97413126597"
+      },
+      {
+       "qty": 3,
+       "name": "Lavinia, Azorius Renegade",
+       "set": "rna",
+       "number": "189",
+       "id": "c497d496-1232-4614-93b0-9864fa93c29f"
+      },
+      {
+       "qty": 4,
+       "name": "Empyrean Eagle",
+       "set": "m20",
+       "number": "208",
+       "id": "ac555709-c7cc-4c64-8a6f-8fe2bc149fcd"
+      },
+      {
+       "qty": 3,
+       "name": "Deputy of Detention",
+       "set": "rna",
+       "number": "165",
+       "id": "7e362055-78a1-48fa-a4ef-6cf7e0b21b14"
+      },
+      {
+       "qty": 3,
+       "name": "Azorius Skyguard",
+       "set": "rna",
+       "number": "155",
+       "id": "c2fddecd-e660-43de-bccc-52f60a089052"
+      },
+      {
+       "qty": 2,
+       "name": "Sphinx of New Prahv",
+       "set": "rna",
+       "number": "208",
+       "id": "d9aec56e-50a3-491f-89c6-32907ea3161a"
+      },
+      {
+       "qty": 2,
+       "name": "Teferi, Time Raveler",
+       "set": "war",
+       "number": "221",
+       "id": "5cb76266-ae50-4bbc-8f96-d98f309b02d3"
+      },
+      {
+       "qty": 3,
+       "name": "Dovin's Dismissal",
+       "set": "rna",
+       "number": "267",
+       "id": "6328e6b5-9dfb-4fd4-99ee-a1ffc2c707da"
+      },
+      {
+       "qty": 3,
+       "name": "Pacifism",
+       "set": "m20",
+       "number": "32",
+       "id": "31279d7c-5246-40b2-a8c7-0be4a5f24a29"
+      },
+      {
+       "qty": 2,
+       "name": "Dovin, Grand Arbiter",
+       "set": "rna",
+       "number": "167",
+       "id": "e6784910-0204-4a39-bb38-50daa03e94c2"
+      },
+      {
+       "qty": 4,
+       "name": "Azorius Guildgate",
+       "set": "rna",
+       "number": "243",
+       "id": "93cf5412-c711-41b4-ab3b-7788a0a22228"
+      },
+      {
+       "qty": 3,
+       "name": "Hallowed Fountain",
+       "set": "rna",
+       "number": "251",
+       "id": "f97a6d34-03ab-49f1-b02e-405b733f8843"
+      },
+      {
+       "qty": 9,
+       "name": "Plains",
+       "set": "grn",
+       "number": "260",
+       "id": "b983acda-68b6-468b-b0c1-aad8b53db49c"
+      },
+      {
+       "qty": 8,
+       "name": "Island",
+       "set": "grn",
+       "number": "261",
+       "id": "29bfbf3e-3a6c-40d4-8e1b-255f429de6cc"
+      }
+     ]
+    }
+   },
+   "villain": {
+    "who": "rakdos",
+    "deck": {
+     "name": "The Cult of Rakdos",
+     "colors": "BR",
+     "archetype": null,
+     "label": "tribute",
+     "cards": [
+      {
+       "qty": 4,
+       "name": "Rakdos Roustabout",
+       "set": "rna",
+       "number": "198",
+       "id": "5ed534af-e16a-4d1d-8884-938fc7e13ca8"
+      },
+      {
+       "qty": 4,
+       "name": "Gutterbones",
+       "set": "rna",
+       "number": "76",
+       "id": "6a1c710b-bd67-4174-ab02-6ae98a7575ac"
+      },
+      {
+       "qty": 4,
+       "name": "Hackrobat",
+       "set": "rna",
+       "number": "181",
+       "id": "a41335c2-3d11-4f95-8d9f-66b04398c10b"
+      },
+      {
+       "qty": 3,
+       "name": "Mayhem Devil",
+       "set": "war",
+       "number": "204",
+       "id": "17416926-168b-49b3-9231-acbb8f8a1d13"
+      },
+      {
+       "qty": 3,
+       "name": "Dreadhorde Butcher",
+       "set": "war",
+       "number": "194",
+       "id": "457bc402-4c31-465c-95e1-694f686e257e"
+      },
+      {
+       "qty": 3,
+       "name": "Rafter Demon",
+       "set": "rna",
+       "number": "196",
+       "id": "bf8dad4d-bc4f-46fb-892c-dbf6481cdc46"
+      },
+      {
+       "qty": 2,
+       "name": "Judith, the Scourge Diva",
+       "set": "rna",
+       "number": "185",
+       "id": "0a742125-730d-4082-bfd8-5feb7733def4"
+      },
+      {
+       "qty": 3,
+       "name": "Rakdos Trumpeter",
+       "set": "rna",
+       "number": "84",
+       "id": "2822aff3-9985-424b-9f19-b49e987c25e4"
+      },
+      {
+       "qty": 4,
+       "name": "Shock",
+       "set": "m20",
+       "number": "160",
+       "id": "3c866bdb-ff94-4f3f-8429-e72c2cbb94ef"
+      },
+      {
+       "qty": 2,
+       "name": "Bedevil",
+       "set": "rna",
+       "number": "157",
+       "id": "81e2b96b-ecf2-4dd9-bc9d-3c46ee8c59e6"
+      },
+      {
+       "qty": 2,
+       "name": "Disfigure",
+       "set": "m20",
+       "number": "95",
+       "id": "18069340-a698-4f75-82cc-cc94fcf82184"
+      },
+      {
+       "qty": 2,
+       "name": "Murder",
+       "set": "m20",
+       "number": "109",
+       "id": "6a2b22bc-e81b-4f27-a52b-9f3edad25439"
+      },
+      {
+       "qty": 4,
+       "name": "Rakdos Guildgate",
+       "set": "rna",
+       "number": "255",
+       "id": "26f7e55d-d4c9-4755-ab87-a592ba3fb64f"
+      },
+      {
+       "qty": 3,
+       "name": "Blood Crypt",
+       "set": "rna",
+       "number": "245",
+       "id": "5faba6c8-3463-47c1-ba01-09eb87fcb2d5"
+      },
+      {
+       "qty": 9,
+       "name": "Swamp",
+       "set": "grn",
+       "number": "262",
+       "id": "bdd5a7f0-5ad3-44e8-a103-07739fd53630"
+      },
+      {
+       "qty": 8,
+       "name": "Mountain",
+       "set": "grn",
+       "number": "263",
+       "id": "7f918a49-a046-4115-80b8-13490ed5cd0a"
+      }
+     ]
+    }
+   },
+   "reward": {
+    "hero": {
+     "packs": 1,
+     "coins": 0
+    },
+    "villain": {
+     "card": {
+      "oracle_id": "c01516e0-eec3-4370-b935-7674982e8850",
+      "name": "Judith, the Scourge Diva",
+      "rarity": "rare",
+      "set": "rna",
+      "id": "0a742125-730d-4082-bfd8-5feb7733def4",
+      "image": "https://cards.scryfall.io/normal/front/0/a/0a742125-730d-4082-bfd8-5feb7733def4.jpg"
+     },
+     "coins": 50
+    }
+   },
+   "scene": [
+    {
+     "who": "lavinia",
+     "line": "I told Jace that Ravnica would fall apart if he didn't take his responsibilities seriously. I didn't want to be right.",
+     "quote": true
+    },
+    {
+     "who": "stage",
+     "line": "Down here, things don't stay dead.",
+     "quote": true
+    },
+    {
+     "who": "lavinia",
+     "line": "Afterlife: when it dies, you get Spirit tokens. Chump blocks and trades stay worth something."
+    }
+   ],
+   "villainScene": [
+    {
+     "who": "stage",
+     "line": "They all want to see me fall.",
+     "quote": true
+    },
+    {
+     "who": "stage",
+     "line": "Despite their stake in the city's survival, Rakdos cultists are loath to pass up any opportunity to sow chaos.",
+     "quote": true
+    }
+   ],
+   "after": null,
+   "cues": {
+    "hero": {
+     "start": "By the law.",
+     "big": "Spirits rise!",
+     "low": "Too much noise...",
+     "win": "Order restored.",
+     "loss": "The show wins...",
+     "half": "Let your afterlife creatures trade."
+    },
+    "villain": {
+     "start": "Entertain me!",
+     "big": "Encore!",
+     "low": "The crowd is leaving...",
+     "win": "Standing ovation.",
+     "loss": "Curtain..."
+    }
+   },
+   "bigPlays": [],
+   "sim": null
+  },
+  {
+   "id": "a29b4",
+   "slot": 4,
+   "kind": "Rival",
+   "mood": "tension",
+   "title": "The Dreadhorde Arrives",
+   "difficulty": "Normal",
+   "teaches": [
+    "Amass"
+   ],
+   "blurb": "Ral meets Bolas's army at the walls. The Eternals do not stop.",
+   "rewardSet": "war",
+   "host": false,
+   "hero": {
+    "who": "ral",
+    "deck": {
+     "name": "The Izzet Storm",
+     "colors": "UR",
+     "archetype": null,
+     "label": "tribute",
+     "cards": [
+      {
+       "qty": 4,
+       "name": "Goblin Electromancer",
+       "set": "grn",
+       "number": "174",
+       "id": "0ae987da-e4b5-4b82-843c-6aaa87262fc8"
+      },
+      {
+       "qty": 4,
+       "name": "Wee Dragonauts",
+       "set": "grn",
+       "number": "214",
+       "id": "37ee17a1-76ce-4ae8-9109-ba32457cbeec"
+      },
+      {
+       "qty": 3,
+       "name": "Arclight Phoenix",
+       "set": "grn",
+       "number": "91",
+       "id": "787de9ce-02c5-4a17-a88b-d38e83dbeb0b"
+      },
+      {
+       "qty": 3,
+       "name": "Crackling Drake",
+       "set": "grn",
+       "number": "163",
+       "id": "f00fa3a7-e3e2-4b23-a126-a076e75b5dbd"
+      },
+      {
+       "qty": 1,
+       "name": "Niv-Mizzet, Parun",
+       "set": "grn",
+       "number": "192",
+       "id": "6f3d2dc5-7b9d-4af6-9f3b-4de90fbf63c9"
+      },
+      {
+       "qty": 3,
+       "name": "Ral, Storm Conduit",
+       "set": "war",
+       "number": "211",
+       "id": "678ce3bf-152d-45ca-87ae-ad46c921328b"
+      },
+      {
+       "qty": 4,
+       "name": "Lightning Stormkin",
+       "set": "m20",
+       "number": "213",
+       "id": "43c6db4e-cc37-4473-b0f5-48d8a0b82f33"
+      },
+      {
+       "qty": 4,
+       "name": "Shock",
+       "set": "m20",
+       "number": "160",
+       "id": "3c866bdb-ff94-4f3f-8429-e72c2cbb94ef"
+      },
+      {
+       "qty": 3,
+       "name": "Lava Coil",
+       "set": "grn",
+       "number": "108",
+       "id": "f6135cf4-50c2-4e44-b9b0-96e1187a2200"
+      },
+      {
+       "qty": 3,
+       "name": "Beacon Bolt",
+       "set": "grn",
+       "number": "154",
+       "id": "39c9e4b5-364b-4c0b-bb47-266563a6abf2"
+      },
+      {
+       "qty": 3,
+       "name": "Ionize",
+       "set": "grn",
+       "number": "179",
+       "id": "f161f7d2-eaa1-4931-93f9-befa8b5df821"
+      },
+      {
+       "qty": 1,
+       "name": "Hypothesizzle",
+       "set": "grn",
+       "number": "178",
+       "id": "d5690329-feb8-49c0-8f59-ee13782e8d3b"
+      },
+      {
+       "qty": 4,
+       "name": "Izzet Guildgate",
+       "set": "grn",
+       "number": "251",
+       "id": "2055a83a-99c8-4808-90b9-1c2fdcda79b4"
+      },
+      {
+       "qty": 3,
+       "name": "Steam Vents",
+       "set": "grn",
+       "number": "257",
+       "id": "b8ebe3cf-7143-453a-b0ef-2f5bdaac3185"
+      },
+      {
+       "qty": 8,
+       "name": "Island",
+       "set": "grn",
+       "number": "261",
+       "id": "29bfbf3e-3a6c-40d4-8e1b-255f429de6cc"
+      },
+      {
+       "qty": 9,
+       "name": "Mountain",
+       "set": "grn",
+       "number": "263",
+       "id": "7f918a49-a046-4115-80b8-13490ed5cd0a"
+      }
+     ]
+    }
+   },
+   "villain": {
+    "who": "horde",
+    "deck": {
+     "name": "The Dreadhorde",
+     "colors": "B",
+     "archetype": null,
+     "label": "tribute",
+     "cards": [
+      {
+       "qty": 4,
+       "name": "Dreadhorde Invasion",
+       "set": "war",
+       "number": "86",
+       "id": "04c6e42d-991d-4e6b-a900-38480931f79e"
+      },
+      {
+       "qty": 4,
+       "name": "Eternal Taskmaster",
+       "set": "war",
+       "number": "90",
+       "id": "7789188e-5caa-4500-b3e4-bb95f7657903"
+      },
+      {
+       "qty": 4,
+       "name": "Lazotep Reaver",
+       "set": "war",
+       "number": "96",
+       "id": "594bbe43-a8aa-42aa-bc49-cb4f3bc05cad"
+      },
+      {
+       "qty": 4,
+       "name": "Herald of the Dreadhorde",
+       "set": "war",
+       "number": "93",
+       "id": "d7ae9cb7-a3af-4224-89a5-a72f4d09dacf"
+      },
+      {
+       "qty": 4,
+       "name": "Spark Reaper",
+       "set": "war",
+       "number": "106",
+       "id": "922537f0-4caf-481c-b431-826f0c44e5c5"
+      },
+      {
+       "qty": 3,
+       "name": "Dreadmalkin",
+       "set": "war",
+       "number": "87",
+       "id": "7327cfac-a4a4-445e-9d04-51c1ca142140"
+      },
+      {
+       "qty": 3,
+       "name": "Lazotep Behemoth",
+       "set": "war",
+       "number": "95",
+       "id": "b4be6f22-e9e8-462a-956b-e1c78bbadacc"
+      },
+      {
+       "qty": 2,
+       "name": "Liliana, Dreadhorde General",
+       "set": "war",
+       "number": "97",
+       "id": "d75ebba8-34ca-47a0-bf13-8318ad73b343"
+      },
+      {
+       "qty": 2,
+       "name": "Massacre Girl",
+       "set": "war",
+       "number": "99",
+       "id": "be8ec9e1-2c8e-496d-9111-4d453b75b578"
+      },
+      {
+       "qty": 3,
+       "name": "Spark Harvest",
+       "set": "war",
+       "number": "105",
+       "id": "2013a138-f8e2-4a67-91e8-759288d985a7"
+      },
+      {
+       "qty": 3,
+       "name": "Toll of the Invasion",
+       "set": "war",
+       "number": "108",
+       "id": "4471c2a5-aa2c-47e2-8238-1eb366c8adc9"
+      },
+      {
+       "qty": 24,
+       "name": "Swamp",
+       "set": "grn",
+       "number": "262",
+       "id": "bdd5a7f0-5ad3-44e8-a103-07739fd53630"
+      }
+     ]
+    }
+   },
+   "reward": {
+    "hero": {
+     "packs": 1,
+     "coins": 100
+    },
+    "villain": {
+     "card": {
+      "oracle_id": "a7c000a8-1864-4bb2-80fa-a61d74dbd966",
+      "name": "Eternal Taskmaster",
+      "rarity": "uncommon",
+      "set": "war",
+      "id": "7789188e-5caa-4500-b3e4-bb95f7657903",
+      "image": "https://cards.scryfall.io/normal/front/7/7/7789188e-5caa-4500-b3e4-bb95f7657903.jpg"
+     },
+     "coins": 100
+    }
+   },
+   "scene": [
+    {
+     "who": "stage",
+     "line": "Time to find the melting point of lazotep.",
+     "quote": true
+    },
+    {
+     "who": "stage",
+     "line": "Despite their many forms, the Eternals worked in chilling harmony, unburdened by instinct or emotion.",
+     "quote": true
+    },
+    {
+     "who": "ral",
+     "line": "Amass: a growing Army token and counters on it. Kill the Army, and every counter goes with it."
+    }
+   ],
+   "villainScene": [
+    {
+     "who": "stage",
+     "line": "Amonkhet's dead flowed into a new world in service to their God-Pharaoh.",
+     "quote": true
+    },
+    {
+     "who": "stage",
+     "line": "I know they're unstoppable fighters created to harvest souls—it's just they're so rude about it.",
+     "quote": true
+    }
+   ],
+   "after": null,
+   "cues": {
+    "hero": {
+     "start": "Hold the line!",
+     "big": "Lightning, now!",
+     "low": "There are too many...",
+     "win": "The wall holds.",
+     "loss": "Overrun...",
+     "half": "Kill the Army token before it grows."
+    },
+    "villain": {
+     "start": "[a slow march]",
+     "big": "[the Army grows]",
+     "low": "[a stall]",
+     "win": "[the dead advance]",
+     "loss": "[the dead fall still]"
+    }
+   },
+   "bigPlays": [],
+   "sim": null
+  },
+  {
+   "id": "a29b5",
+   "slot": 5,
+   "kind": "Lesson",
+   "mood": "tension",
+   "title": "The Kaya Gambit",
+   "difficulty": "Normal",
+   "teaches": [
+    "Planeswalkers"
+   ],
+   "blurb": "Kaya has more than one reason to fight. The Eternals pour over Ravnica in waves.",
+   "rewardSet": "war",
+   "host": false,
+   "hero": {
+    "who": "kaya",
+    "deck": {
+     "name": "The Orzhov Syndicate",
+     "colors": "WB",
+     "archetype": null,
+     "label": "tribute",
+     "cards": [
+      {
+       "qty": 4,
+       "name": "Tithe Taker",
+       "set": "rna",
+       "number": "27",
+       "id": "bd26b7b1-992d-4b8c-bc33-51aab5abdf98"
+      },
+      {
+       "qty": 4,
+       "name": "Ministrant of Obligation",
+       "set": "rna",
+       "number": "16",
+       "id": "bf2a093a-25f0-4247-94dc-550865d86317"
+      },
+      {
+       "qty": 3,
+       "name": "Imperious Oligarch",
+       "set": "rna",
+       "number": "184",
+       "id": "fd27ba9e-5b9c-468f-9a44-bf2e89138e72"
+      },
+      {
+       "qty": 2,
+       "name": "Teysa Karlov",
+       "set": "rna",
+       "number": "212",
+       "id": "bcfaa19e-995e-447d-a0a2-46e5d117d5ec"
+      },
+      {
+       "qty": 3,
+       "name": "Pitiless Pontiff",
+       "set": "rna",
+       "number": "194",
+       "id": "98f66c03-cf79-4de0-be55-b921cbdc5038"
+      },
+      {
+       "qty": 3,
+       "name": "Seraph of the Scales",
+       "set": "rna",
+       "number": "205",
+       "id": "d602e9e6-31ed-4d17-b39c-457b3b182943"
+      },
+      {
+       "qty": 2,
+       "name": "Kaya, Orzhov Usurper",
+       "set": "rna",
+       "number": "186",
+       "id": "fdb4b2ef-5196-4f7f-88ff-64b2cdb36c6b"
+      },
+      {
+       "qty": 1,
+       "name": "Kaya, Bane of the Dead",
+       "set": "war",
+       "number": "231",
+       "id": "a9b575d3-f3f9-4ff4-8e5c-da7c2ec69882"
+      },
+      {
+       "qty": 3,
+       "name": "Cruel Celebrant",
+       "set": "war",
+       "number": "188",
+       "id": "87ead6ac-b1c5-4852-8413-7fa43c6cfc57"
+      },
+      {
+       "qty": 4,
+       "name": "Mortify",
+       "set": "rna",
+       "number": "192",
+       "id": "ebf6c0dc-5c7b-4170-99bc-2637ea44e716"
+      },
+      {
+       "qty": 3,
+       "name": "Despark",
+       "set": "war",
+       "number": "190",
+       "id": "32b17dfc-b916-4134-ba77-501cff435e7e"
+      },
+      {
+       "qty": 2,
+       "name": "Final Payment",
+       "set": "rna",
+       "number": "171",
+       "id": "49a21a8f-9c7b-4ae8-8635-f2ee2151c8de"
+      },
+      {
+       "qty": 2,
+       "name": "Pacifism",
+       "set": "m20",
+       "number": "32",
+       "id": "31279d7c-5246-40b2-a8c7-0be4a5f24a29"
+      },
+      {
+       "qty": 4,
+       "name": "Orzhov Guildgate",
+       "set": "rna",
+       "number": "252",
+       "id": "cba5fb67-e161-4e89-be3e-c8021122ff19"
+      },
+      {
+       "qty": 3,
+       "name": "Godless Shrine",
+       "set": "rna",
+       "number": "248",
+       "id": "ced4c824-2dfc-42ae-84e6-09f8e3f51b5b"
+      },
+      {
+       "qty": 9,
+       "name": "Plains",
+       "set": "grn",
+       "number": "260",
+       "id": "b983acda-68b6-468b-b0c1-aad8b53db49c"
+      },
+      {
+       "qty": 8,
+       "name": "Swamp",
+       "set": "grn",
+       "number": "262",
+       "id": "bdd5a7f0-5ad3-44e8-a103-07739fd53630"
+      }
+     ]
+    }
+   },
+   "villain": {
+    "who": "eternals",
+    "deck": {
+     "name": "The Eternals",
+     "colors": "UB",
+     "archetype": null,
+     "label": "tribute",
+     "cards": [
+      {
+       "qty": 4,
+       "name": "Aven Eternal",
+       "set": "war",
+       "number": "42",
+       "id": "fe479484-a827-4d3c-8e35-e905e4f6664a"
+      },
+      {
+       "qty": 4,
+       "name": "Naga Eternal",
+       "set": "war",
+       "number": "60",
+       "id": "0f244233-f2e8-48f8-9106-e7cd186efd51"
+      },
+      {
+       "qty": 4,
+       "name": "Eternal Taskmaster",
+       "set": "war",
+       "number": "90",
+       "id": "7789188e-5caa-4500-b3e4-bb95f7657903"
+      },
+      {
+       "qty": 3,
+       "name": "Lazotep Reaver",
+       "set": "war",
+       "number": "96",
+       "id": "594bbe43-a8aa-42aa-bc49-cb4f3bc05cad"
+      },
+      {
+       "qty": 3,
+       "name": "Eternal Skylord",
+       "set": "war",
+       "number": "49",
+       "id": "f5aacfc9-1d45-4250-9abc-698d8941699f"
+      },
+      {
+       "qty": 4,
+       "name": "Lazotep Behemoth",
+       "set": "war",
+       "number": "95",
+       "id": "b4be6f22-e9e8-462a-956b-e1c78bbadacc"
+      },
+      {
+       "qty": 2,
+       "name": "God-Eternal Kefnet",
+       "set": "war",
+       "number": "53",
+       "id": "5e14060f-9167-4e28-a053-77689e066e30"
+      },
+      {
+       "qty": 3,
+       "name": "Dreadhorde Invasion",
+       "set": "war",
+       "number": "86",
+       "id": "04c6e42d-991d-4e6b-a900-38480931f79e"
+      },
+      {
+       "qty": 3,
+       "name": "Thought Erasure",
+       "set": "grn",
+       "number": "206",
+       "id": "7ce226ad-cb1d-47f5-90fc-27704e181884"
+      },
+      {
+       "qty": 3,
+       "name": "Tyrant's Scorn",
+       "set": "war",
+       "number": "225",
+       "id": "b7e2708c-2824-4925-b529-d625deb77924"
+      },
+      {
+       "qty": 3,
+       "name": "Murder",
+       "set": "m20",
+       "number": "109",
+       "id": "6a2b22bc-e81b-4f27-a52b-9f3edad25439"
+      },
+      {
+       "qty": 4,
+       "name": "Dimir Guildgate",
+       "set": "grn",
+       "number": "245",
+       "id": "b7129bdf-de02-4ed2-b5de-f774b8a7d302"
+      },
+      {
+       "qty": 3,
+       "name": "Watery Grave",
+       "set": "grn",
+       "number": "259",
+       "id": "7d4595f2-9297-40dc-b2dd-7144bbb401f7"
+      },
+      {
+       "qty": 9,
+       "name": "Swamp",
+       "set": "grn",
+       "number": "262",
+       "id": "bdd5a7f0-5ad3-44e8-a103-07739fd53630"
+      },
+      {
+       "qty": 8,
+       "name": "Island",
+       "set": "grn",
+       "number": "261",
+       "id": "29bfbf3e-3a6c-40d4-8e1b-255f429de6cc"
+      }
+     ]
+    }
+   },
+   "reward": {
+    "hero": {
+     "packs": 1,
+     "coins": 100
+    },
+    "villain": {
+     "card": {
+      "oracle_id": "9d6a10c6-5d39-49c6-b50d-8fc5b8ddcd77",
+      "name": "Naga Eternal",
+      "rarity": "common",
+      "set": "war",
+      "id": "0f244233-f2e8-48f8-9106-e7cd186efd51",
+      "image": "https://cards.scryfall.io/normal/front/0/f/0f244233-f2e8-48f8-9106-e7cd186efd51.jpg"
+     },
+     "coins": 100
+    }
+   },
+   "scene": [
+    {
+     "who": "stage",
+     "line": "Teysa convened the meeting of the Obzedat. Kaya ended it.",
+     "quote": true
+    },
+    {
+     "who": "stage",
+     "line": "The Eternals found some sparks to be quite slippery.",
+     "quote": true
+    },
+    {
+     "who": "kaya",
+     "line": "Planeswalkers: they win the game when they stay alive. Protect them with blockers, and attack theirs as soon as they land."
+    }
+   ],
+   "villainScene": [
+    {
+     "who": "stage",
+     "line": "I recognize that headdress. This one was feared even by her fellow initiates.",
+     "quote": true
+    },
+    {
+     "who": "stage",
+     "line": "I've never seen the firemane angels so anxious.",
+     "quote": true
+    }
+   ],
+   "after": null,
+   "cues": {
+    "hero": {
+     "start": "Their debts are mine.",
+     "big": "Slip away!",
+     "low": "They are swarming...",
+     "win": "The Syndicate holds.",
+     "loss": "Spark lost...",
+     "half": "Guard your walker. Attack theirs."
+    },
+    "villain": {
+     "start": "[silence]",
+     "big": "[an army wakes]",
+     "low": "[the stall]",
+     "win": "[the dead march]",
+     "loss": "[the army breaks]"
+    }
+   },
+   "bigPlays": [],
+   "sim": null
+  },
+  {
+   "id": "a29b6",
+   "slot": 6,
+   "kind": "Meta",
+   "mood": "march",
+   "title": "Esper Superfriends",
+   "difficulty": "Normal",
+   "teaches": [
+    "Racing"
+   ],
+   "blurb": "Spring 2019: a pile of planeswalkers against a pile of burn spells.",
+   "rewardSet": "m20",
+   "host": false,
+   "hero": {
+    "who": "superfriends",
+    "deck": {
+     "name": "Esper Superfriends",
+     "colors": "WUB",
+     "archetype": "Control",
+     "label": "tribute",
+     "cards": [
+      {
+       "qty": 3,
+       "name": "Teferi, Time Raveler",
+       "set": "war",
+       "number": "221",
+       "id": "5cb76266-ae50-4bbc-8f96-d98f309b02d3"
+      },
+      {
+       "qty": 1,
+       "name": "Narset, Parter of Veils",
+       "set": "war",
+       "number": "61",
+       "id": "8c39f9b4-02b9-4d44-b8d6-4fd02ebbb0c5"
+      },
+      {
+       "qty": 3,
+       "name": "Sorin, Vengeful Bloodlord",
+       "set": "war",
+       "number": "217",
+       "id": "354fe9bd-4ec8-409c-8ce5-b29393f3d169"
+      },
+      {
+       "qty": 2,
+       "name": "Kaya, Orzhov Usurper",
+       "set": "rna",
+       "number": "186",
+       "id": "fdb4b2ef-5196-4f7f-88ff-64b2cdb36c6b"
+      },
+      {
+       "qty": 2,
+       "name": "Dovin, Architect of Law",
+       "set": "rna",
+       "number": "265",
+       "id": "b0c7cffe-8751-4da7-8c1c-59f472ef3735"
+      },
+      {
+       "qty": 3,
+       "name": "Lavinia, Azorius Renegade",
+       "set": "rna",
+       "number": "189",
+       "id": "c497d496-1232-4614-93b0-9864fa93c29f"
+      },
+      {
+       "qty": 3,
+       "name": "Seraph of the Scales",
+       "set": "rna",
+       "number": "205",
+       "id": "d602e9e6-31ed-4d17-b39c-457b3b182943"
+      },
+      {
+       "qty": 4,
+       "name": "Pitiless Pontiff",
+       "set": "rna",
+       "number": "194",
+       "id": "98f66c03-cf79-4de0-be55-b921cbdc5038"
+      },
+      {
+       "qty": 4,
+       "name": "Tithe Taker",
+       "set": "rna",
+       "number": "27",
+       "id": "bd26b7b1-992d-4b8c-bc33-51aab5abdf98"
+      },
+      {
+       "qty": 4,
+       "name": "Mortify",
+       "set": "rna",
+       "number": "192",
+       "id": "ebf6c0dc-5c7b-4170-99bc-2637ea44e716"
+      },
+      {
+       "qty": 2,
+       "name": "Despark",
+       "set": "war",
+       "number": "190",
+       "id": "32b17dfc-b916-4134-ba77-501cff435e7e"
+      },
+      {
+       "qty": 2,
+       "name": "Absorb",
+       "set": "rna",
+       "number": "151",
+       "id": "1e8a43c1-42d1-45ef-8a63-4b87775a6e88"
+      },
+      {
+       "qty": 1,
+       "name": "Thought Erasure",
+       "set": "grn",
+       "number": "206",
+       "id": "7ce226ad-cb1d-47f5-90fc-27704e181884"
+      },
+      {
+       "qty": 2,
+       "name": "Kaya's Wrath",
+       "set": "rna",
+       "number": "187",
+       "id": "5ed140c1-752b-4539-88f2-1fa354049b17"
+      },
+      {
+       "qty": 3,
+       "name": "Godless Shrine",
+       "set": "rna",
+       "number": "248",
+       "id": "ced4c824-2dfc-42ae-84e6-09f8e3f51b5b"
+      },
+      {
+       "qty": 3,
+       "name": "Hallowed Fountain",
+       "set": "rna",
+       "number": "251",
+       "id": "f97a6d34-03ab-49f1-b02e-405b733f8843"
+      },
+      {
+       "qty": 3,
+       "name": "Watery Grave",
+       "set": "grn",
+       "number": "259",
+       "id": "7d4595f2-9297-40dc-b2dd-7144bbb401f7"
+      },
+      {
+       "qty": 2,
+       "name": "Orzhov Guildgate",
+       "set": "rna",
+       "number": "252",
+       "id": "cba5fb67-e161-4e89-be3e-c8021122ff19"
+      },
+      {
+       "qty": 2,
+       "name": "Azorius Guildgate",
+       "set": "rna",
+       "number": "243",
+       "id": "93cf5412-c711-41b4-ab3b-7788a0a22228"
+      },
+      {
+       "qty": 2,
+       "name": "Dimir Guildgate",
+       "set": "grn",
+       "number": "245",
+       "id": "b7129bdf-de02-4ed2-b5de-f774b8a7d302"
+      },
+      {
+       "qty": 3,
+       "name": "Plains",
+       "set": "grn",
+       "number": "260",
+       "id": "b983acda-68b6-468b-b0c1-aad8b53db49c"
+      },
+      {
+       "qty": 3,
+       "name": "Swamp",
+       "set": "grn",
+       "number": "262",
+       "id": "bdd5a7f0-5ad3-44e8-a103-07739fd53630"
+      },
+      {
+       "qty": 3,
+       "name": "Island",
+       "set": "grn",
+       "number": "261",
+       "id": "29bfbf3e-3a6c-40d4-8e1b-255f429de6cc"
+      }
+     ]
+    }
+   },
+   "villain": {
+    "who": "red",
+    "deck": {
+     "name": "Mono-Red",
+     "colors": "R",
+     "archetype": "Aggro",
+     "label": "tribute",
+     "cards": [
+      {
+       "qty": 4,
+       "name": "Runaway Steam-Kin",
+       "set": "grn",
+       "number": "115",
+       "id": "d8c9c111-fbc7-44e1-94bd-1ca164370623"
+      },
+      {
+       "qty": 4,
+       "name": "Legion Warboss",
+       "set": "grn",
+       "number": "109",
+       "id": "5e84cb9c-9876-47a4-aea4-78574321bc36"
+      },
+      {
+       "qty": 4,
+       "name": "Fearless Halberdier",
+       "set": "grn",
+       "number": "100",
+       "id": "30e04f16-89d0-4e75-a3cd-4dd64414050c"
+      },
+      {
+       "qty": 4,
+       "name": "Goblin Cratermaker",
+       "set": "grn",
+       "number": "103",
+       "id": "86ecaedc-08f1-4de7-aae8-056df57940e0"
+      },
+      {
+       "qty": 3,
+       "name": "Neheb, Dreadhorde Champion",
+       "set": "war",
+       "number": "140",
+       "id": "60c90d5d-7b3b-48d2-85f6-d6a2a452c0e9"
+      },
+      {
+       "qty": 4,
+       "name": "Torch Courier",
+       "set": "grn",
+       "number": "119",
+       "id": "d4c9fc8c-e68f-4636-84b8-877f6ec04b09"
+      },
+      {
+       "qty": 2,
+       "name": "Krenko, Tin Street Kingpin",
+       "set": "war",
+       "number": "137",
+       "id": "37ed04d3-cfa1-4778-aea6-b4c2c29e6e0a"
+      },
+      {
+       "qty": 4,
+       "name": "Shock",
+       "set": "m20",
+       "number": "160",
+       "id": "3c866bdb-ff94-4f3f-8429-e72c2cbb94ef"
+      },
+      {
+       "qty": 3,
+       "name": "Lava Coil",
+       "set": "grn",
+       "number": "108",
+       "id": "f6135cf4-50c2-4e44-b9b0-96e1187a2200"
+      },
+      {
+       "qty": 2,
+       "name": "Skewer the Critics",
+       "set": "rna",
+       "number": "115",
+       "id": "97295660-6bea-46ae-9a3b-0fc6abba407f"
+      },
+      {
+       "qty": 2,
+       "name": "Light Up the Stage",
+       "set": "rna",
+       "number": "107",
+       "id": "9287b848-2aeb-4c70-ac4a-acafb871b7a4"
+      },
+      {
+       "qty": 24,
+       "name": "Mountain",
+       "set": "grn",
+       "number": "263",
+       "id": "7f918a49-a046-4115-80b8-13490ed5cd0a"
+      }
+     ]
+    }
+   },
+   "reward": {
+    "hero": {
+     "packs": 1,
+     "coins": 100
+    },
+    "villain": {
+     "card": {
+      "oracle_id": "e8065e1d-e937-4b56-8011-78f0d07328a0",
+      "name": "Krenko, Tin Street Kingpin",
+      "rarity": "rare",
+      "set": "war",
+      "id": "37ed04d3-cfa1-4778-aea6-b4c2c29e6e0a",
+      "image": "https://cards.scryfall.io/normal/front/3/7/37ed04d3-cfa1-4778-aea6-b4c2c29e6e0a.jpg"
+     },
+     "coins": 100
+    }
+   },
+   "scene": [
+    {
+     "who": "stage",
+     "line": "The safest place for you is not now.",
+     "quote": true
+    },
+    {
+     "who": "stage",
+     "line": "By fate or by will, every reign must come to an end.",
+     "quote": true
+    },
+    {
+     "who": "superfriends",
+     "line": "You are the control deck. Keep your walkers alive and out-grind a pile of burn spells."
+    }
+   ],
+   "villainScene": [
+    {
+     "who": "stage",
+     "line": "After the people flee, but before the enemy arrives—that's grabbin' time.",
+     "quote": true
+    },
+    {
+     "who": "stage",
+     "line": "I love this thing! It's my best invention since the boulderfist gauntlet!",
+     "quote": true
+    }
+   ],
+   "after": null,
+   "cues": {
+    "hero": {
+     "start": "Consider the options.",
+     "big": "Ultimate!",
+     "low": "The burn keeps coming...",
+     "win": "Control.",
+     "loss": "Burned out...",
+     "half": "Do not take too much damage early."
+    },
+    "villain": {
+     "start": "Burn it down!",
+     "big": "Shock!",
+     "low": "Out of fuel...",
+     "win": "Ash.",
+     "loss": "Put out..."
+    }
+   },
+   "bigPlays": [],
+   "sim": null
+  },
+  {
+   "id": "a29b7",
+   "slot": 7,
+   "kind": "Meta",
+   "mood": "tension",
+   "title": "Golgari Midrange",
+   "difficulty": "Normal",
+   "teaches": [
+    "Card advantage"
+   ],
+   "blurb": "Spring 2019: Golgari midrange against a Gruul rush.",
+   "rewardSet": "m20",
+   "host": false,
+   "hero": {
+    "who": "golgarimid",
+    "deck": {
+     "name": "Golgari Midrange",
+     "colors": "BG",
+     "archetype": "Midrange",
+     "label": "tribute",
+     "cards": [
+      {
+       "qty": 4,
+       "name": "Pelt Collector",
+       "set": "grn",
+       "number": "141",
+       "id": "bee125cb-12b9-4f78-8e1d-6018d9c52275"
+      },
+      {
+       "qty": 4,
+       "name": "Rotting Regisaur",
+       "set": "m20",
+       "number": "111",
+       "id": "d88c61cb-dbf9-46c3-8795-8896ba1208d5"
+      },
+      {
+       "qty": 3,
+       "name": "Midnight Reaper",
+       "set": "grn",
+       "number": "77",
+       "id": "5e122fe0-51c5-404d-a7b9-3d161a426c35"
+      },
+      {
+       "qty": 3,
+       "name": "Kraul Harpooner",
+       "set": "grn",
+       "number": "136",
+       "id": "f6d3c086-9ce4-41c3-8402-2818f1b27192"
+      },
+      {
+       "qty": 3,
+       "name": "Doom Whisperer",
+       "set": "grn",
+       "number": "69",
+       "id": "0a11ee0d-ff8d-4648-8b4e-29440c135c30"
+      },
+      {
+       "qty": 2,
+       "name": "Izoni, Thousand-Eyed",
+       "set": "grn",
+       "number": "180",
+       "id": "75955b0e-12d6-40ba-aab5-b7b7e2bde121"
+      },
+      {
+       "qty": 2,
+       "name": "Storrev, Devkarin Lich",
+       "set": "war",
+       "number": "219",
+       "id": "59c906bd-f443-4f4b-b40b-9218e71f1196"
+      },
+      {
+       "qty": 2,
+       "name": "Vraska, Golgari Queen",
+       "set": "grn",
+       "number": "213",
+       "id": "a36d3ea7-0f18-4865-b47b-755673db065e"
+      },
+      {
+       "qty": 1,
+       "name": "Vraska, Swarm's Eminence",
+       "set": "war",
+       "number": "236",
+       "id": "59ee2974-07e9-4506-903c-457cb7327dd8"
+      },
+      {
+       "qty": 3,
+       "name": "Assassin's Trophy",
+       "set": "grn",
+       "number": "152",
+       "id": "906b6e99-128f-4c11-8daf-16099d35b0d4"
+      },
+      {
+       "qty": 2,
+       "name": "Murder",
+       "set": "m20",
+       "number": "109",
+       "id": "6a2b22bc-e81b-4f27-a52b-9f3edad25439"
+      },
+      {
+       "qty": 3,
+       "name": "Find // Finality",
+       "set": "grn",
+       "number": "225",
+       "id": "1e4e9e35-6cbc-4997-beff-d1a22d87545e"
+      },
+      {
+       "qty": 1,
+       "name": "Casualties of War",
+       "set": "war",
+       "number": "187",
+       "id": "08fc5e50-c6f7-41ec-815a-5667eefded78"
+      },
+      {
+       "qty": 4,
+       "name": "Golgari Guildgate",
+       "set": "grn",
+       "number": "248",
+       "id": "86706d8e-de08-4778-94ba-ae75ed522472"
+      },
+      {
+       "qty": 3,
+       "name": "Overgrown Tomb",
+       "set": "grn",
+       "number": "253",
+       "id": "eff1f52c-5c43-4260-aaa0-6920846a191c"
+      },
+      {
+       "qty": 2,
+       "name": "Temple of Malady",
+       "set": "m20",
+       "number": "254",
+       "id": "6e327d94-5540-49f0-b1a2-a3fb614c9651"
+      },
+      {
+       "qty": 7,
+       "name": "Swamp",
+       "set": "grn",
+       "number": "262",
+       "id": "bdd5a7f0-5ad3-44e8-a103-07739fd53630"
+      },
+      {
+       "qty": 8,
+       "name": "Forest",
+       "set": "grn",
+       "number": "264",
+       "id": "d85892ae-dacd-4a55-a557-9db3c16017c7"
+      },
+      {
+       "qty": 2,
+       "name": "Plaguecrafter",
+       "set": "grn",
+       "number": "82",
+       "id": "8682fb87-df14-4277-aaa0-0d53d766c406"
+      },
+      {
+       "qty": 1,
+       "name": "Dead Weight",
+       "set": "grn",
+       "number": "67",
+       "id": "a1a81554-50d4-4fe0-bf0d-5304f215d19e"
+      }
+     ]
+    }
+   },
+   "villain": {
+    "who": "gruul",
+    "deck": {
+     "name": "The Gruul Clans",
+     "colors": "RG",
+     "archetype": "Aggro",
+     "label": "tribute",
+     "cards": [
+      {
+       "qty": 4,
+       "name": "Zhur-Taa Goblin",
+       "set": "rna",
+       "number": "215",
+       "id": "13070db2-cf89-4552-8b6c-76426274321a"
+      },
+      {
+       "qty": 4,
+       "name": "Gruul Spellbreaker",
+       "set": "rna",
+       "number": "179",
+       "id": "326679a2-782d-45a0-9a06-b147ceff3979"
+      },
+      {
+       "qty": 4,
+       "name": "Rubblebelt Rioters",
+       "set": "war",
+       "number": "215",
+       "id": "9bf8df62-eca1-4a45-84af-fd7c88245a42"
+      },
+      {
+       "qty": 3,
+       "name": "Frenzied Arynx",
+       "set": "rna",
+       "number": "173",
+       "id": "bce2eef7-03a4-415f-8bb7-a29d50ce1b0f"
+      },
+      {
+       "qty": 3,
+       "name": "Domri's Nodorog",
+       "set": "rna",
+       "number": "272",
+       "id": "1abe58d8-67d1-4719-8e84-27747dea3506"
+      },
+      {
+       "qty": 3,
+       "name": "Ravager Wurm",
+       "set": "rna",
+       "number": "200",
+       "id": "6d5a6085-bb5d-412e-8831-757996bbc8fb"
+      },
+      {
+       "qty": 3,
+       "name": "Domri, Chaos Bringer",
+       "set": "rna",
+       "number": "166",
+       "id": "1f56bbf3-3884-495a-b9cd-6585d86f76f1"
+      },
+      {
+       "qty": 3,
+       "name": "Domri's Ambush",
+       "set": "war",
+       "number": "192",
+       "id": "b0dcae59-e9be-45a8-8ed8-5b47309bb716"
+      },
+      {
+       "qty": 3,
+       "name": "Savage Smash",
+       "set": "rna",
+       "number": "203",
+       "id": "4ca942d7-a3a3-429f-a159-fc2363d9bca6"
+      },
+      {
+       "qty": 3,
+       "name": "Thrash // Threat",
+       "set": "rna",
+       "number": "229",
+       "id": "2eefd8c1-96ce-4d7a-8aaf-29c35d634dda"
+      },
+      {
+       "qty": 3,
+       "name": "Shock",
+       "set": "m20",
+       "number": "160",
+       "id": "3c866bdb-ff94-4f3f-8429-e72c2cbb94ef"
+      },
+      {
+       "qty": 4,
+       "name": "Gruul Guildgate",
+       "set": "rna",
+       "number": "249",
+       "id": "33d10573-1695-4a73-b92d-d478572b85ec"
+      },
+      {
+       "qty": 3,
+       "name": "Stomping Ground",
+       "set": "rna",
+       "number": "259",
+       "id": "dcaa1ff6-304e-4660-9df3-36de8e89592e"
+      },
+      {
+       "qty": 8,
+       "name": "Mountain",
+       "set": "grn",
+       "number": "263",
+       "id": "7f918a49-a046-4115-80b8-13490ed5cd0a"
+      },
+      {
+       "qty": 9,
+       "name": "Forest",
+       "set": "grn",
+       "number": "264",
+       "id": "d85892ae-dacd-4a55-a557-9db3c16017c7"
+      }
+     ]
+    }
+   },
+   "reward": {
+    "hero": {
+     "packs": 1,
+     "coins": 100
+    },
+    "villain": {
+     "card": {
+      "oracle_id": "2a5408ed-8b47-4896-97e4-aa102a4b85c9",
+      "name": "Domri, Chaos Bringer",
+      "rarity": "mythic",
+      "set": "rna",
+      "id": "1f56bbf3-3884-495a-b9cd-6585d86f76f1",
+      "image": "https://cards.scryfall.io/normal/front/1/f/1f56bbf3-3884-495a-b9cd-6585d86f76f1.jpg"
+     },
+     "coins": 100
+    }
+   },
+   "scene": [
+    {
+     "who": "stage",
+     "line": "Now, *that's* a zombie!",
+     "quote": true
+    },
+    {
+     "who": "stage",
+     "line": "In times of war, only death flourishes.",
+     "quote": true
+    },
+    {
+     "who": "golgarimid",
+     "line": "Trade removal for their best creature every time, and win the long game with better cards."
+    }
+   ],
+   "villainScene": [
+    {
+     "who": "stage",
+     "line": "If the system is broken, break the system.",
+     "quote": true
+    },
+    {
+     "who": "stage",
+     "line": "A Gruul berserker is never unarmed.",
+     "quote": true
+    }
+   ],
+   "after": null,
+   "cues": {
+    "hero": {
+     "start": "Slow and steady.",
+     "big": "Rot!",
+     "low": "They are smashing everything...",
+     "win": "The deck outlasts them.",
+     "loss": "Smashed...",
+     "half": "Spend removal on their best creature."
+    },
+    "villain": {
+     "start": "Smash!",
+     "big": "Break it all!",
+     "low": "Out of rage...",
+     "win": "The Rubblebelt wins.",
+     "loss": "Broken..."
+    }
+   },
+   "bigPlays": [],
+   "sim": null
+  },
+  {
+   "id": "a29b8",
+   "slot": 8,
+   "kind": "Boss",
+   "mood": "boss",
+   "title": "The Dragon-God",
+   "difficulty": "Hard",
+   "teaches": [
+    "Racing"
+   ],
+   "blurb": "The Gatewatch and the guilds take on Nicol Bolas, who has taken their sparks and wants the city.",
+   "rewardSet": "war",
+   "host": true,
+   "hero": {
+    "who": "gatewatch",
+    "deck": {
+     "name": "The Gatewatch and the Guilds",
+     "colors": "RGW",
+     "archetype": null,
+     "label": "tribute",
+     "cards": [
+      {
+       "qty": 3,
+       "name": "Gideon Blackblade",
+       "set": "war",
+       "number": "13",
+       "id": "39d51c5e-26cb-4276-a676-fabfef866248"
+      },
+      {
+       "qty": 3,
+       "name": "Domri, Anarch of Bolas",
+       "set": "war",
+       "number": "191",
+       "id": "c1af9881-e35b-4be2-8716-ea7c6664e22c"
+      },
+      {
+       "qty": 2,
+       "name": "Nissa, Who Shakes the World",
+       "set": "war",
+       "number": "169",
+       "id": "f857bbe4-5619-4733-a0c7-69700f2ef4f3"
+      },
+      {
+       "qty": 2,
+       "name": "Chandra, Awakened Inferno",
+       "set": "m20",
+       "number": "127",
+       "id": "49d2a680-4f3b-4bfa-b77b-d2dfaced9f23"
+      },
+      {
+       "qty": 2,
+       "name": "Sarkhan the Masterless",
+       "set": "war",
+       "number": "143",
+       "id": "2bb96971-5bf1-4ae3-98f4-7cd7a614bf97"
+      },
+      {
+       "qty": 3,
+       "name": "Knight of Autumn",
+       "set": "grn",
+       "number": "183",
+       "id": "3028075c-5fc5-4942-a984-1ffcf7a8933d"
+      },
+      {
+       "qty": 3,
+       "name": "Boros Challenger",
+       "set": "grn",
+       "number": "156",
+       "id": "545f3a30-7984-4046-8a14-51bc9cbc3fe0"
+      },
+      {
+       "qty": 3,
+       "name": "Skyknight Legionnaire",
+       "set": "grn",
+       "number": "198",
+       "id": "3c27f2ce-702a-4ec2-a470-982171a9ec73"
+      },
+      {
+       "qty": 2,
+       "name": "Aurelia, Exemplar of Justice",
+       "set": "grn",
+       "number": "153",
+       "id": "a8e9f4d2-bba5-4061-8ae7-a68b912f2c11"
+      },
+      {
+       "qty": 2,
+       "name": "Tajic, Legion's Edge",
+       "set": "grn",
+       "number": "204",
+       "id": "5e669a01-84d3-4fcc-8396-9e987bd89b4f"
+      },
+      {
+       "qty": 1,
+       "name": "Huatli's Raptor",
+       "set": "war",
+       "number": "200",
+       "id": "ba680ad0-6134-46e0-8fcb-532b2052eca7"
+      },
+      {
+       "qty": 3,
+       "name": "Lava Coil",
+       "set": "grn",
+       "number": "108",
+       "id": "f6135cf4-50c2-4e44-b9b0-96e1187a2200"
+      },
+      {
+       "qty": 2,
+       "name": "Justice Strike",
+       "set": "grn",
+       "number": "182",
+       "id": "27619ce9-59df-4f0e-a5db-2d32a530e547"
+      },
+      {
+       "qty": 2,
+       "name": "Domri's Ambush",
+       "set": "war",
+       "number": "192",
+       "id": "b0dcae59-e9be-45a8-8ed8-5b47309bb716"
+      },
+      {
+       "qty": 3,
+       "name": "Chance for Glory",
+       "set": "grn",
+       "number": "159",
+       "id": "85edf6f9-b863-41e2-bb51-857ea2798090"
+      },
+      {
+       "qty": 3,
+       "name": "Sacred Foundry",
+       "set": "grn",
+       "number": "254",
+       "id": "b7b598d0-535d-477d-a33d-d6a10ff5439a"
+      },
+      {
+       "qty": 3,
+       "name": "Temple Garden",
+       "set": "grn",
+       "number": "258",
+       "id": "2b9b0195-beda-403e-bc27-7ae3be9f318c"
+      },
+      {
+       "qty": 3,
+       "name": "Stomping Ground",
+       "set": "rna",
+       "number": "259",
+       "id": "dcaa1ff6-304e-4660-9df3-36de8e89592e"
+      },
+      {
+       "qty": 2,
+       "name": "Boros Guildgate",
+       "set": "grn",
+       "number": "243",
+       "id": "c52ceefc-90d0-49d1-ae54-9a4eab819849"
+      },
+      {
+       "qty": 2,
+       "name": "Gruul Guildgate",
+       "set": "rna",
+       "number": "249",
+       "id": "33d10573-1695-4a73-b92d-d478572b85ec"
+      },
+      {
+       "qty": 2,
+       "name": "Selesnya Guildgate",
+       "set": "grn",
+       "number": "255",
+       "id": "6d5ee7a5-937a-4c2b-af8c-6e5734677c53"
+      },
+      {
+       "qty": 3,
+       "name": "Mountain",
+       "set": "grn",
+       "number": "263",
+       "id": "7f918a49-a046-4115-80b8-13490ed5cd0a"
+      },
+      {
+       "qty": 3,
+       "name": "Forest",
+       "set": "grn",
+       "number": "264",
+       "id": "d85892ae-dacd-4a55-a557-9db3c16017c7"
+      },
+      {
+       "qty": 3,
+       "name": "Plains",
+       "set": "grn",
+       "number": "260",
+       "id": "b983acda-68b6-468b-b0c1-aad8b53db49c"
+      }
+     ]
+    }
+   },
+   "villain": {
+    "who": "bolas",
+    "deck": {
+     "name": "Bolas's Dreadhorde",
+     "colors": "UBR",
+     "archetype": null,
+     "label": "tribute",
+     "cards": [
+      {
+       "qty": 4,
+       "name": "Nicol Bolas, Dragon-God",
+       "set": "war",
+       "number": "207",
+       "id": "98b68dea-a7be-4f99-8a50-4c8cf0e0f7a9"
+      },
+      {
+       "qty": 4,
+       "name": "Dreadhorde Invasion",
+       "set": "war",
+       "number": "86",
+       "id": "04c6e42d-991d-4e6b-a900-38480931f79e"
+      },
+      {
+       "qty": 4,
+       "name": "Eternal Taskmaster",
+       "set": "war",
+       "number": "90",
+       "id": "7789188e-5caa-4500-b3e4-bb95f7657903"
+      },
+      {
+       "qty": 3,
+       "name": "Lazotep Reaver",
+       "set": "war",
+       "number": "96",
+       "id": "594bbe43-a8aa-42aa-bc49-cb4f3bc05cad"
+      },
+      {
+       "qty": 2,
+       "name": "Aven Eternal",
+       "set": "war",
+       "number": "42",
+       "id": "fe479484-a827-4d3c-8e35-e905e4f6664a"
+      },
+      {
+       "qty": 3,
+       "name": "Spark Reaper",
+       "set": "war",
+       "number": "106",
+       "id": "922537f0-4caf-481c-b431-826f0c44e5c5"
+      },
+      {
+       "qty": 2,
+       "name": "Dreadmalkin",
+       "set": "war",
+       "number": "87",
+       "id": "7327cfac-a4a4-445e-9d04-51c1ca142140"
+      },
+      {
+       "qty": 2,
+       "name": "God-Eternal Kefnet",
+       "set": "war",
+       "number": "53",
+       "id": "5e14060f-9167-4e28-a053-77689e066e30"
+      },
+      {
+       "qty": 3,
+       "name": "Ob Nixilis, the Hate-Twisted",
+       "set": "war",
+       "number": "100",
+       "id": "14916e2d-73af-4747-a927-d2d4cb3e32db"
+      },
+      {
+       "qty": 2,
+       "name": "Liliana, Dreadhorde General",
+       "set": "war",
+       "number": "97",
+       "id": "d75ebba8-34ca-47a0-bf13-8318ad73b343"
+      },
+      {
+       "qty": 2,
+       "name": "Thought Erasure",
+       "set": "grn",
+       "number": "206",
+       "id": "7ce226ad-cb1d-47f5-90fc-27704e181884"
+      },
+      {
+       "qty": 4,
+       "name": "Murder",
+       "set": "m20",
+       "number": "109",
+       "id": "6a2b22bc-e81b-4f27-a52b-9f3edad25439"
+      },
+      {
+       "qty": 1,
+       "name": "Spark Harvest",
+       "set": "war",
+       "number": "105",
+       "id": "2013a138-f8e2-4a67-91e8-759288d985a7"
+      },
+      {
+       "qty": 3,
+       "name": "Dimir Guildgate",
+       "set": "grn",
+       "number": "245",
+       "id": "b7129bdf-de02-4ed2-b5de-f774b8a7d302"
+      },
+      {
+       "qty": 3,
+       "name": "Watery Grave",
+       "set": "grn",
+       "number": "259",
+       "id": "7d4595f2-9297-40dc-b2dd-7144bbb401f7"
+      },
+      {
+       "qty": 3,
+       "name": "Blood Crypt",
+       "set": "rna",
+       "number": "245",
+       "id": "5faba6c8-3463-47c1-ba01-09eb87fcb2d5"
+      },
+      {
+       "qty": 2,
+       "name": "Rakdos Guildgate",
+       "set": "rna",
+       "number": "255",
+       "id": "26f7e55d-d4c9-4755-ab87-a592ba3fb64f"
+      },
+      {
+       "qty": 5,
+       "name": "Swamp",
+       "set": "grn",
+       "number": "262",
+       "id": "bdd5a7f0-5ad3-44e8-a103-07739fd53630"
+      },
+      {
+       "qty": 6,
+       "name": "Island",
+       "set": "grn",
+       "number": "261",
+       "id": "29bfbf3e-3a6c-40d4-8e1b-255f429de6cc"
+      },
+      {
+       "qty": 2,
+       "name": "Mountain",
+       "set": "grn",
+       "number": "263",
+       "id": "7f918a49-a046-4115-80b8-13490ed5cd0a"
+      }
+     ]
+    }
+   },
+   "reward": {
+    "hero": {
+     "packs": 2,
+     "coins": 200
+    },
+    "villain": {
+     "card": {
+      "oracle_id": "581eedc4-efe4-4ae4-baf2-88071e7e6f6d",
+      "name": "Nicol Bolas, Dragon-God",
+      "rarity": "mythic",
+      "set": "war",
+      "id": "98b68dea-a7be-4f99-8a50-4c8cf0e0f7a9",
+      "image": "https://cards.scryfall.io/normal/front/9/8/98b68dea-a7be-4f99-8a50-4c8cf0e0f7a9.jpg"
+     },
+     "coins": 200
+    }
+   },
+   "scene": [
+    {
+     "who": "stage",
+     "line": "Break their formation! Thin their ranks! I'm right behind you!",
+     "quote": true
+    },
+    {
+     "who": "stage",
+     "line": "For the Legion! For Ravnica!",
+     "quote": true
+    },
+    {
+     "who": "stage",
+     "line": "You once brought havoc to my home and ruined my mind. I'm here to return the favor, Bolas.",
+     "quote": true
+    },
+    {
+     "who": "gatewatch",
+     "line": "Bolas has more power than any of you. Win together, or not at all."
+    }
+   ],
+   "villainScene": [
+    {
+     "who": "stage",
+     "line": "The sky boiled over the citadel, dire and dark. Then the angels brought the dawn.",
+     "quote": true
+    },
+    {
+     "who": "stage",
+     "line": "Ugin saw the gem that connected Bolas to his Meditation Realm as the key to his brother's downfall.",
+     "quote": true
+    }
+   ],
+   "after": null,
+   "cues": {
+    "hero": {
+     "start": "For Ravnica!",
+     "big": "Together!",
+     "low": "He is too strong...",
+     "win": "The war is won.",
+     "loss": "The city falls...",
+     "half": "Race Bolas before he steals another spark."
+    },
+    "villain": {
+     "start": "Kneel.",
+     "big": "[the sky darkens]",
+     "low": "[a flicker of doubt]",
+     "win": "The city is mine.",
+     "loss": "[the dragon is quiet]",
+     "half": {
+      "who": "liliana",
+      "line": "He will not be my master."
+     }
+    }
+   },
+   "bigPlays": [],
+   "sim": null
+  },
+  {
+   "id": "a29b9",
+   "slot": 9,
+   "kind": "Secret Boss",
+   "secret": true,
+   "mood": "boss",
+   "title": "Esper Hero",
+   "difficulty": "Hard",
+   "teaches": [
+    "Racing"
+   ],
+   "blurb": "Deep in the archive, a quiet pile of cheap threats and a planeswalker who will not be countered.",
+   "rewardSet": "rna",
+   "host": true,
+   "archive": {
+    "deck": "Esper Hero",
+    "when": "Spring 2019",
+    "format": "Standard.",
+    "what": "A white-based aggro-control deck that used Hero of Precinct One, cheap creatures, and Teferi, Time Raveler to protect its board.",
+    "why": "Cheap threats, Teferi's protection, and a few flexible removal spells made it hard to play around in a field of midrange decks.",
+    "beat": "Kill the cheap threats early, keep a planeswalker from sticking, and pressure it before its fliers arrive.",
+    "after": "Core Set 2020 and Throne of Eldraine followed later in 2019 and changed the format again."
+   },
+   "hero": {
+    "who": "you",
+    "deck": {
+     "name": "The Gruul Clans",
+     "colors": "RG",
+     "archetype": "Aggro",
+     "label": "tribute",
+     "cards": [
+      {
+       "qty": 4,
+       "name": "Zhur-Taa Goblin",
+       "set": "rna",
+       "number": "215",
+       "id": "13070db2-cf89-4552-8b6c-76426274321a"
+      },
+      {
+       "qty": 4,
+       "name": "Gruul Spellbreaker",
+       "set": "rna",
+       "number": "179",
+       "id": "326679a2-782d-45a0-9a06-b147ceff3979"
+      },
+      {
+       "qty": 4,
+       "name": "Rubblebelt Rioters",
+       "set": "war",
+       "number": "215",
+       "id": "9bf8df62-eca1-4a45-84af-fd7c88245a42"
+      },
+      {
+       "qty": 3,
+       "name": "Frenzied Arynx",
+       "set": "rna",
+       "number": "173",
+       "id": "bce2eef7-03a4-415f-8bb7-a29d50ce1b0f"
+      },
+      {
+       "qty": 3,
+       "name": "Domri's Nodorog",
+       "set": "rna",
+       "number": "272",
+       "id": "1abe58d8-67d1-4719-8e84-27747dea3506"
+      },
+      {
+       "qty": 3,
+       "name": "Ravager Wurm",
+       "set": "rna",
+       "number": "200",
+       "id": "6d5a6085-bb5d-412e-8831-757996bbc8fb"
+      },
+      {
+       "qty": 3,
+       "name": "Domri, Chaos Bringer",
+       "set": "rna",
+       "number": "166",
+       "id": "1f56bbf3-3884-495a-b9cd-6585d86f76f1"
+      },
+      {
+       "qty": 3,
+       "name": "Domri's Ambush",
+       "set": "war",
+       "number": "192",
+       "id": "b0dcae59-e9be-45a8-8ed8-5b47309bb716"
+      },
+      {
+       "qty": 3,
+       "name": "Savage Smash",
+       "set": "rna",
+       "number": "203",
+       "id": "4ca942d7-a3a3-429f-a159-fc2363d9bca6"
+      },
+      {
+       "qty": 3,
+       "name": "Thrash // Threat",
+       "set": "rna",
+       "number": "229",
+       "id": "2eefd8c1-96ce-4d7a-8aaf-29c35d634dda"
+      },
+      {
+       "qty": 3,
+       "name": "Shock",
+       "set": "m20",
+       "number": "160",
+       "id": "3c866bdb-ff94-4f3f-8429-e72c2cbb94ef"
+      },
+      {
+       "qty": 4,
+       "name": "Gruul Guildgate",
+       "set": "rna",
+       "number": "249",
+       "id": "33d10573-1695-4a73-b92d-d478572b85ec"
+      },
+      {
+       "qty": 3,
+       "name": "Stomping Ground",
+       "set": "rna",
+       "number": "259",
+       "id": "dcaa1ff6-304e-4660-9df3-36de8e89592e"
+      },
+      {
+       "qty": 8,
+       "name": "Mountain",
+       "set": "grn",
+       "number": "263",
+       "id": "7f918a49-a046-4115-80b8-13490ed5cd0a"
+      },
+      {
+       "qty": 9,
+       "name": "Forest",
+       "set": "grn",
+       "number": "264",
+       "id": "d85892ae-dacd-4a55-a557-9db3c16017c7"
+      }
+     ]
+    }
+   },
+   "villain": {
+    "who": "esperhero",
+    "deck": {
+     "name": "Esper Hero",
+     "colors": "WUB",
+     "archetype": "Aggro",
+     "label": "tribute",
+     "note": "Built from cards in this act's sets only. No single tournament list is copied.",
+     "cards": [
+      {
+       "qty": 4,
+       "name": "Hero of Precinct One",
+       "set": "rna",
+       "number": "11",
+       "id": "87732718-1067-4e5f-a76d-409539c9ef3f"
+      },
+      {
+       "qty": 4,
+       "name": "Tithe Taker",
+       "set": "rna",
+       "number": "27",
+       "id": "bd26b7b1-992d-4b8c-bc33-51aab5abdf98"
+      },
+      {
+       "qty": 3,
+       "name": "Lavinia, Azorius Renegade",
+       "set": "rna",
+       "number": "189",
+       "id": "c497d496-1232-4614-93b0-9864fa93c29f"
+      },
+      {
+       "qty": 3,
+       "name": "Deputy of Detention",
+       "set": "rna",
+       "number": "165",
+       "id": "7e362055-78a1-48fa-a4ef-6cf7e0b21b14"
+      },
+      {
+       "qty": 3,
+       "name": "Seraph of the Scales",
+       "set": "rna",
+       "number": "205",
+       "id": "d602e9e6-31ed-4d17-b39c-457b3b182943"
+      },
+      {
+       "qty": 2,
+       "name": "Etrata, the Silencer",
+       "set": "grn",
+       "number": "170",
+       "id": "fa36b142-e67e-49da-9080-c5994e275266"
+      },
+      {
+       "qty": 3,
+       "name": "Teferi, Time Raveler",
+       "set": "war",
+       "number": "221",
+       "id": "5cb76266-ae50-4bbc-8f96-d98f309b02d3"
+      },
+      {
+       "qty": 2,
+       "name": "Kaya, Orzhov Usurper",
+       "set": "rna",
+       "number": "186",
+       "id": "fdb4b2ef-5196-4f7f-88ff-64b2cdb36c6b"
+      },
+      {
+       "qty": 2,
+       "name": "Dovin, Architect of Law",
+       "set": "rna",
+       "number": "265",
+       "id": "b0c7cffe-8751-4da7-8c1c-59f472ef3735"
+      },
+      {
+       "qty": 4,
+       "name": "Mortify",
+       "set": "rna",
+       "number": "192",
+       "id": "ebf6c0dc-5c7b-4170-99bc-2637ea44e716"
+      },
+      {
+       "qty": 3,
+       "name": "Despark",
+       "set": "war",
+       "number": "190",
+       "id": "32b17dfc-b916-4134-ba77-501cff435e7e"
+      },
+      {
+       "qty": 3,
+       "name": "Dovin's Dismissal",
+       "set": "rna",
+       "number": "267",
+       "id": "6328e6b5-9dfb-4fd4-99ee-a1ffc2c707da"
+      },
+      {
+       "qty": 3,
+       "name": "Godless Shrine",
+       "set": "rna",
+       "number": "248",
+       "id": "ced4c824-2dfc-42ae-84e6-09f8e3f51b5b"
+      },
+      {
+       "qty": 3,
+       "name": "Hallowed Fountain",
+       "set": "rna",
+       "number": "251",
+       "id": "f97a6d34-03ab-49f1-b02e-405b733f8843"
+      },
+      {
+       "qty": 2,
+       "name": "Watery Grave",
+       "set": "grn",
+       "number": "259",
+       "id": "7d4595f2-9297-40dc-b2dd-7144bbb401f7"
+      },
+      {
+       "qty": 2,
+       "name": "Orzhov Guildgate",
+       "set": "rna",
+       "number": "252",
+       "id": "cba5fb67-e161-4e89-be3e-c8021122ff19"
+      },
+      {
+       "qty": 2,
+       "name": "Azorius Guildgate",
+       "set": "rna",
+       "number": "243",
+       "id": "93cf5412-c711-41b4-ab3b-7788a0a22228"
+      },
+      {
+       "qty": 1,
+       "name": "Dimir Guildgate",
+       "set": "grn",
+       "number": "245",
+       "id": "b7129bdf-de02-4ed2-b5de-f774b8a7d302"
+      },
+      {
+       "qty": 5,
+       "name": "Plains",
+       "set": "grn",
+       "number": "260",
+       "id": "b983acda-68b6-468b-b0c1-aad8b53db49c"
+      },
+      {
+       "qty": 3,
+       "name": "Swamp",
+       "set": "grn",
+       "number": "262",
+       "id": "bdd5a7f0-5ad3-44e8-a103-07739fd53630"
+      },
+      {
+       "qty": 3,
+       "name": "Island",
+       "set": "grn",
+       "number": "261",
+       "id": "29bfbf3e-3a6c-40d4-8e1b-255f429de6cc"
+      }
+     ]
+    }
+   },
+   "reward": {
+    "hero": {
+     "packs": 2,
+     "coins": 200
+    },
+    "villain": {
+     "card": {
+      "oracle_id": "5a66802a-76f9-4a31-a776-24110dcfca64",
+      "name": "Hero of Precinct One",
+      "rarity": "rare",
+      "set": "rna",
+      "id": "87732718-1067-4e5f-a76d-409539c9ef3f",
+      "image": "https://cards.scryfall.io/normal/front/8/7/87732718-1067-4e5f-a76d-409539c9ef3f.jpg"
+     },
+     "coins": 200
+    }
+   },
+   "scene": [
+    {
+     "who": "stage",
+     "line": "When the established order falters, what remains are ordinary people and their struggle to survive.",
+     "quote": true
+    },
+    {
+     "who": "you",
+     "line": "Burn their cheap creatures, then smash through before Teferi settles in."
+    }
+   ],
+   "villainScene": [
+    {
+     "who": "stage",
+     "line": "I keep reminding myself we do this because others can't, because we love this city. If we don't save it, no one will.",
+     "quote": true
+    }
+   ],
+   "after": [
+    {
+     "who": "stage",
+     "line": "Recorded: Core Set 2020 and Throne of Eldraine followed later in 2019 and changed the format again."
+    }
+   ],
+   "cues": {
+    "hero": {
+     "start": "Smash first.",
+     "big": "Break it!",
+     "low": "They are too clean...",
+     "win": "Hero down.",
+     "loss": "Out-built...",
+     "half": "Pressure before Teferi lands."
+    },
+    "villain": {
+     "start": "[a quiet spell]",
+     "big": "[a hero rises]",
+     "low": "[a counter fizzles]",
+     "win": "[stillness]",
+     "loss": "[the board clears]"
+    }
+   },
+   "bigPlays": [],
+   "sim": null
+  }
+ ]
+}

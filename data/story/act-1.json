@@ -308,7 +308,7 @@
        "id": "50abfba8-c9f9-4ebf-965a-4b425fe83129"
       },
       {
-       "qty": 4,
+       "qty": 2,
        "name": "War Elephant",
        "set": "arn",
        "number": "11",
@@ -316,20 +316,27 @@
       },
       {
        "qty": 4,
+       "name": "Mesa Pegasus",
+       "set": "lea",
+       "number": "28",
+       "id": "eaac88da-d19e-4771-944c-3709963d04e7"
+      },
+      {
+       "qty": 3,
        "name": "Moorish Cavalry",
        "set": "arn",
        "number": "7",
        "id": "f86f0781-7614-4779-a58d-f13ce96bdf33"
       },
       {
-       "qty": 3,
+       "qty": 4,
        "name": "Northern Paladin",
        "set": "lea",
        "number": "29",
        "id": "6303233b-35eb-49ca-b844-ba6b9fe1cbd2"
       },
       {
-       "qty": 3,
+       "qty": 4,
        "name": "Serra Angel",
        "set": "lea",
        "number": "39",
@@ -337,17 +344,10 @@
       },
       {
        "qty": 3,
-       "name": "Holy Strength",
+       "name": "Swords to Plowshares",
        "set": "lea",
-       "number": "24",
-       "id": "e945a4cd-0eb1-4f54-898d-169ce2748a03"
-      },
-      {
-       "qty": 3,
-       "name": "Healing Salve",
-       "set": "lea",
-       "number": "22",
-       "id": "e28de37e-84d5-4dc7-b36c-e14da5924729"
+       "number": "40",
+       "id": "386ea9eb-abc1-4862-aa2d-8fb808d79490"
       },
       {
        "qty": 24,
@@ -403,25 +403,32 @@
        "id": "15ccebe1-ef08-4805-a65f-a1c57abed9f2"
       },
       {
-       "qty": 4,
+       "qty": 3,
        "name": "War Mammoth",
        "set": "lea",
        "number": "227",
        "id": "c8d6081e-f686-4263-a0a2-21c0d9af5fdb"
       },
       {
-       "qty": 3,
+       "qty": 1,
        "name": "Ironroot Treefolk",
        "set": "lea",
        "number": "203",
        "id": "b93c5869-7777-44bb-967a-e9439b25ced4"
       },
       {
-       "qty": 3,
-       "name": "Craw Wurm",
+       "qty": 4,
+       "name": "Scryb Sprites",
        "set": "lea",
-       "number": "190",
-       "id": "bfed1a95-bd67-4e16-a781-81866028af2f"
+       "number": "215",
+       "id": "6d929c38-91e6-457c-937a-d1884f4bba44"
+      },
+      {
+       "qty": 2,
+       "name": "Wall of Wood",
+       "set": "lea",
+       "number": "225",
+       "id": "8df80424-3bd9-4982-ad79-e55d9ba3b43d"
       },
       {
        "qty": 2,

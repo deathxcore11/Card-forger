@@ -32,7 +32,7 @@ assert.ok(!factsMeet({}, {minLife: ['>=', 0]}), 'a fact the match never reported
 
 // --- Every deed reads cards that are really in its battle -------------------------------------------
 const acts = {};
-for (let a = 1; a <= 26; a++) acts[a] = JSON.parse(readFileSync(new URL(`./data/story/act-${a}.json`, import.meta.url), 'utf8'));
+for (let a = 1; a <= 32; a++) acts[a] = JSON.parse(readFileSync(new URL(`./data/story/act-${a}.json`, import.meta.url), 'utf8'));
 const deckNames = side => side.deck.cards.flatMap(c => [c.name, c.name.split(' // ')[0]]);
 const ids = new Set(), arts = new Set();
 for (const d of [...STORY_DEEDS, ...STORY_ACT_DEEDS]) {
@@ -72,3 +72,24 @@ assert.equal(pay(STORY_DEEDS.find(d => storyDeedReward(d) === 'uncommon').id).se
 assert.equal(pay('a15-endless-court').seals.r, 1); assert.equal(pay('a15-endless-court').collector, 1, 'hidden riddles pay a Collector pack');
 assert.equal(pay('a1-chronicler').packs, 1);
 console.log('story deeds ok');
+
+// Key feats gate each act's secret boss (Randall, 4 Nov 2026): 3 hero-side deeds per act, earned with the Story decks.
+{
+  const {KEY_FEATS, storyKeyFeats, keyFeatsMissing} = await import('./story-deeds.js');
+  const {secretOpen, secretStatus} = await import('./story-client.js');
+  for (let a = 1; a <= 32; a++) {
+    const ids = storyKeyFeats(a); assert.equal(ids.length, 3, `act ${a} has 3 key feats`);
+    assert.equal(new Set(ids.map(id => STORY_DEEDS.find(d => d.id === id)?.battle)).size, 3, `act ${a} keys come from 3 different battles`);
+    for (const id of ids) { const d = STORY_DEEDS.find(x => x.id === id); assert.ok(d && d.act === a && d.seat !== 'villain' && !d.gold && /b[1-8]$/.test(d.battle), `${id} is a hero-side deed of battles 1-8`); }
+  }
+  assert.deepEqual(Object.keys(KEY_FEATS).length, 32);
+  const won = n => ({battles: Object.fromEntries(Array.from({length: 8}, (_, i) => [`a${n}b${i + 1}`, {loaner: true}]))});
+  const keys = storyKeyFeats(1), earned = Object.fromEntries(keys.map(id => ['sd:' + id, 1]));
+  assert.equal(secretOpen(won(1), 1, {}), false, 'all 8 won but no key feats: locked');
+  assert.equal(secretOpen(won(1), 1, {['sd:' + keys[0]]: 1}), false, 'one key feat is not enough');
+  assert.equal(secretOpen(won(1), 1, earned), true, 'all 8 won and all keys: open');
+  assert.equal(secretOpen({battles: {a1b1: {loaner: true}}}, 1, earned), false, 'keys without the 8 wins: locked');
+  assert.equal(secretOpen({battles: {a1b9: {clear: true}}}, 1, {}), true, 'a cleared secret boss stays open');
+  assert.deepEqual(keyFeatsMissing(1, {['sd:' + keys[0]]: 1}), keys.slice(1));
+  assert.deepEqual(secretStatus(won(1), 1, {['sd:' + keys[0]]: 1}), {won: 8, keys: 1, keysNeeded: 3});
+}

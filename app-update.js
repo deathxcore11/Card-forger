@@ -4,6 +4,7 @@
 //   record, and opens Android's own "Update this app?" prompt. The first time, Android asks to allow
 //   installs from CardStashy; coming back with that switch on carries straight on.
 // - On an Android phone's browser: Home offers the app once in a while, linking to the download page.
+import {nativeTestInfo} from './android-beta.js';
 import {checkRelease,releaseState,useNativeUpdateAction} from './release-status.js';
 import {esc} from './ui.js';
 
@@ -99,8 +100,8 @@ export function appUpdateBanner({state=releaseState(),saved=read(),now=Date.now(
  }
  if(!isAndroidBrowser(ua))return '';
  if(saved.getAppLaterAt&&now-saved.getAppLaterAt<14*864e5)return '';
- const a=state.release.android;
- return `<section class="app-update-banner panel" data-app-update="banner" aria-label="Get the Android app"><img src="icon-192.png" alt="" width="44" height="44"><div><p class="eyebrow">ANDROID APP</p><h2>Get CardStashy for Android</h2><p class="muted small">Version ${esc(a.version)} · ${mb(a.bytes)} MB. Card art saved on your phone, the Forge engine built in, and updates from inside the app.</p><div class="actions"><a class="btn small" href="https://cardstashy.com/downloads/" target="_blank" rel="noopener">Get the app</a><button class="link small" data-act="appUpdateLater">Not now</button></div></div></section>`;
+ const a=nativeTestInfo();if(!a.version)return '';
+ return `<section class="app-update-banner panel" data-app-update="banner" aria-label="Get the Android app"><img src="icon-192.png" alt="" width="44" height="44"><div><p class="eyebrow">ANDROID APP</p><h2>Get CardStashy for Android</h2><p class="muted small">Version ${esc(a.version)} · ${mb(a.bytes)} MB · test build</p><div class="actions"><a class="btn small" href="https://cardstashy.com${esc(a.href)}" target="_blank" rel="noopener" download>Download</a><button class="link small" data-act="appUpdateLater">Not now</button></div></div></section>`;
 }
 
 // Repaints the Home card and the Settings panel in place, so progress never re-renders the page.

@@ -1,0 +1,2909 @@
+{
+ "act": 28,
+ "era": "2018-04-27",
+ "title": "Dominaria Reborn",
+ "years": "2018",
+ "sets": [
+  "dom",
+  "m19"
+ ],
+ "landSet": "dom",
+ "intro": [
+  {
+   "who": "stage",
+   "line": "Dominaria, long after the Brothers' War. The ice age is over, and old things are waking."
+  },
+  {
+   "who": "stage",
+   "line": "As she took the wheel of the Weatherlight for the first time in a millennium, Jhoira knew she'd been right to restore the ship. Anything was possible now.",
+   "quote": true
+  },
+  {
+   "who": "stage",
+   "line": "The crystal pulsed with the power of Teferi's planeswalker spark. Had Jhoira given him a blessing or a curse?",
+   "quote": true
+  },
+  {
+   "who": "stage",
+   "line": "In Urborg, the Cabal is gathering under a demon who says he has ruled every age."
+  }
+ ],
+ "finale": [
+  {
+   "who": "stage",
+   "line": "The Demonlord has ruled every age. Every ruin, myth, and nightmare proves his power.",
+   "quote": true
+  },
+  {
+   "who": "stage",
+   "line": "The Cabal's story is broken, and its demon with it. Teferi's spark is back, Jhoira has her ship, and Karn is walking Dominaria again."
+  },
+  {
+   "who": "stage",
+   "line": "Recorded: Dominaria is saved. Far from here, Nicol Bolas is waiting for the planeswalkers to gather."
+  }
+ ],
+ "villainFinale": [
+  {
+   "who": "stage",
+   "line": "All hail the Demonlord Belzenlok, Evincar of the Stronghold, Scion of Darkness, Doom of Fools, Lord of the Wastes, Master of the Ebon Hand, Eternal Patriarch of the Cabal . . .",
+   "quote": true
+  },
+  {
+   "who": "stage",
+   "line": "Nobody stops the Cabal. The Stronghold grows, and the Demonlord's story becomes the only story left."
+  }
+ ],
+ "vibe": "dominaria-legacy",
+ "cast": {
+  "you": {
+   "name": "You",
+   "title": "Planeswalker",
+   "portrait": {
+    "card": "Opt",
+    "set": "dom",
+    "number": "60",
+    "id": "25f2e4d0-effd-4e83-b7aa-1a0d8f120951",
+    "crop": "https://cards.scryfall.io/art_crop/front/2/5/25f2e4d0-effd-4e83-b7aa-1a0d8f120951.jpg?1783935024",
+    "artist": "Tyler Jacobson",
+    "focus": "50% 30%"
+   }
+  },
+  "teferi": {
+   "name": "Teferi",
+   "title": "Hero of Dominaria",
+   "portrait": {
+    "card": "Teferi, Hero of Dominaria",
+    "set": "dom",
+    "number": "207",
+    "id": "5d10b752-d9cb-419d-a5c4-d4ee1acb655e",
+    "crop": "https://cards.scryfall.io/art_crop/front/5/d/5d10b752-d9cb-419d-a5c4-d4ee1acb655e.jpg?1783934963",
+    "artist": "Chris Rallis",
+    "focus": "50% 25%"
+   }
+  },
+  "cabal": {
+   "name": "The Cabal",
+   "title": "Cultists of Urborg",
+   "portrait": {
+    "card": "Cabal Evangel",
+    "set": "dom",
+    "number": "78",
+    "id": "d218d2a2-bb5d-4ea8-a131-341c574410b2",
+    "crop": "https://cards.scryfall.io/art_crop/front/d/2/d218d2a2-bb5d-4ea8-a131-341c574410b2.jpg?1783935013",
+    "artist": "Lius Lasahido",
+    "focus": "50% 30%"
+   }
+  },
+  "jhoira": {
+   "name": "Jhoira",
+   "title": "Weatherlight Captain",
+   "portrait": {
+    "card": "Jhoira, Weatherlight Captain",
+    "set": "dom",
+    "number": "197",
+    "id": "73cf8c6b-1322-4bc5-a604-6e372607fae4",
+    "crop": "https://cards.scryfall.io/art_crop/front/7/3/73cf8c6b-1322-4bc5-a604-6e372607fae4.jpg?1783934967",
+    "artist": "Brad Rigney",
+    "focus": "50% 25%"
+   }
+  },
+  "demons": {
+   "name": "Belzenlok's Demons",
+   "title": "Of Urborg",
+   "portrait": {
+    "card": "Demon of Catastrophes",
+    "set": "m19",
+    "number": "91",
+    "id": "d50f9563-7bf8-4c3c-ac82-327221e56551",
+    "crop": "https://cards.scryfall.io/art_crop/front/d/5/d50f9563-7bf8-4c3c-ac82-327221e56551.jpg?1783934573",
+    "artist": "Sidharth Chaturvedi",
+    "focus": "50% 30%"
+   }
+  },
+  "shanna": {
+   "name": "Shanna",
+   "title": "Sisay's Legacy",
+   "portrait": {
+    "card": "Shanna, Sisay's Legacy",
+    "set": "dom",
+    "number": "204",
+    "id": "b90df81c-d738-46b3-8e96-9db0b3507ee0",
+    "crop": "https://cards.scryfall.io/art_crop/front/b/9/b90df81c-d738-46b3-8e96-9db0b3507ee0.jpg?1783934964",
+    "artist": "Magali Villeneuve",
+    "focus": "50% 25%"
+   }
+  },
+  "keldon": {
+   "name": "Keldon Raiders",
+   "title": "Warriors of the Flame",
+   "portrait": {
+    "card": "Keldon Raider",
+    "set": "dom",
+    "number": "135",
+    "id": "f1245212-d081-4e95-a508-e1d3a7496473",
+    "crop": "https://cards.scryfall.io/art_crop/front/f/1/f1245212-d081-4e95-a508-e1d3a7496473.jpg?1783934990",
+    "artist": "Chris Seaman",
+    "focus": "50% 30%"
+   }
+  },
+  "karn": {
+   "name": "Karn",
+   "title": "Scion of Urza",
+   "portrait": {
+    "card": "Karn, Scion of Urza",
+    "set": "dom",
+    "number": "1",
+    "id": "07a3d9e8-8597-498b-869c-cff79e0df516",
+    "crop": "https://cards.scryfall.io/art_crop/front/0/7/07a3d9e8-8597-498b-869c-cff79e0df516.jpg?1783935054",
+    "artist": "Chase Stone",
+    "focus": "50% 25%"
+   }
+  },
+  "priests": {
+   "name": "Belzenlok's Priests",
+   "title": "Of the Cabal",
+   "portrait": {
+    "card": "Cabal Paladin",
+    "set": "dom",
+    "number": "79",
+    "id": "2cff2cb9-f4e6-4fee-94ef-ad11e24525c1",
+    "crop": "https://cards.scryfall.io/art_crop/front/2/c/2cff2cb9-f4e6-4fee-94ef-ad11e24525c1.jpg?1783935012",
+    "artist": "Lius Lasahido",
+    "focus": "50% 30%"
+   }
+  },
+  "radha": {
+   "name": "Radha's Heirs",
+   "title": "Keldon and Llanowar",
+   "portrait": {
+    "card": "Grand Warlord Radha",
+    "set": "dom",
+    "number": "195",
+    "id": "986981fa-a744-45d8-81c7-68ef335c79e2",
+    "crop": "https://cards.scryfall.io/art_crop/front/9/8/986981fa-a744-45d8-81c7-68ef335c79e2.jpg?1783934967",
+    "artist": "Anna Steinbauer",
+    "focus": "50% 25%"
+   }
+  },
+  "yargle": {
+   "name": "Yargle",
+   "title": "Glutton of Urborg",
+   "portrait": {
+    "card": "Yargle, Glutton of Urborg",
+    "set": "dom",
+    "number": "113",
+    "id": "645cfc1b-76f2-4823-9fb0-03cb009f8b32",
+    "crop": "https://cards.scryfall.io/art_crop/front/6/4/645cfc1b-76f2-4823-9fb0-03cb009f8b32.jpg?1783934999",
+    "artist": "Jehan Choo",
+    "focus": "50% 30%"
+   }
+  },
+  "wizards": {
+   "name": "Mono-Red",
+   "title": "Spring 2018",
+   "portrait": {
+    "card": "Goblin Chainwhirler",
+    "set": "dom",
+    "number": "129",
+    "id": "8bdb2883-3cfd-4fb0-9f99-6a57277f7fe4",
+    "crop": "https://cards.scryfall.io/art_crop/front/8/b/8bdb2883-3cfd-4fb0-9f99-6a57277f7fe4.jpg?1783934992",
+    "artist": "Svetlin Velinov",
+    "focus": "50% 30%"
+   }
+  },
+  "esper": {
+   "name": "Esper Teferi",
+   "title": "Spring 2018",
+   "portrait": {
+    "card": "Teferi, Hero of Dominaria",
+    "set": "dom",
+    "number": "207",
+    "id": "5d10b752-d9cb-419d-a5c4-d4ee1acb655e",
+    "crop": "https://cards.scryfall.io/art_crop/front/5/d/5d10b752-d9cb-419d-a5c4-d4ee1acb655e.jpg?1783934963",
+    "artist": "Chris Rallis",
+    "focus": "50% 25%"
+   }
+  },
+  "stompy": {
+   "name": "Steel Leaf Stompy",
+   "title": "Spring 2018",
+   "portrait": {
+    "card": "Steel Leaf Champion",
+    "set": "dom",
+    "number": "182",
+    "id": "24d8a688-79d4-49b9-ab0c-c7f5c9b551f4",
+    "crop": "https://cards.scryfall.io/art_crop/front/2/4/24d8a688-79d4-49b9-ab0c-c7f5c9b551f4.jpg?1783934974",
+    "artist": "Chris Rahn",
+    "focus": "50% 30%"
+   }
+  },
+  "rb": {
+   "name": "RB Aggro",
+   "title": "Spring 2018",
+   "portrait": {
+    "card": "Knight of Malice",
+    "set": "dom",
+    "number": "97",
+    "id": "b45266f0-eb4f-4a06-bc64-8c2d774b4cc5",
+    "crop": "https://cards.scryfall.io/art_crop/front/b/4/b45266f0-eb4f-4a06-bc64-8c2d774b4cc5.jpg?1783935007",
+    "artist": "Sidharth Chaturvedi",
+    "focus": "50% 30%"
+   }
+  },
+  "weatherlight": {
+   "name": "The Weatherlight",
+   "title": "Teferi, Jhoira and Karn",
+   "portrait": {
+    "card": "Raff Capashen, Ship's Mage",
+    "set": "dom",
+    "number": "202",
+    "id": "674070e3-6efe-45e4-aff6-e4a49ec2106e",
+    "crop": "https://cards.scryfall.io/art_crop/front/6/7/674070e3-6efe-45e4-aff6-e4a49ec2106e.jpg?1783934965",
+    "artist": "John Stanko",
+    "focus": "50% 25%"
+   }
+  },
+  "belzenlok": {
+   "name": "Demonlord Belzenlok",
+   "title": "Of the Cabal",
+   "portrait": {
+    "card": "Demonlord Belzenlok",
+    "set": "dom",
+    "number": "86",
+    "id": "ffb4dbe8-15fa-467f-9366-66382b192113",
+    "crop": "https://cards.scryfall.io/art_crop/front/f/f/ffb4dbe8-15fa-467f-9366-66382b192113.jpg?1783935010",
+    "artist": "Tyler Jacobson",
+    "focus": "50% 25%"
+   }
+  },
+  "tiana": {
+   "name": "Tiana",
+   "title": "Ship's Caretaker",
+   "portrait": {
+    "card": "Tiana, Ship's Caretaker",
+    "set": "dom",
+    "number": "208",
+    "id": "9a8aea2f-1e1d-4e0d-8370-207b6cae76e3",
+    "crop": "https://cards.scryfall.io/art_crop/front/9/a/9a8aea2f-1e1d-4e0d-8370-207b6cae76e3.jpg?1783934963",
+    "artist": "Eric Deschamps",
+    "focus": "50% 25%"
+   }
+  }
+ },
+ "battles": [
+  {
+   "id": "a28b1",
+   "slot": 1,
+   "kind": "Arrival",
+   "mood": "tension",
+   "title": "A Story Unfolds",
+   "difficulty": "Easy",
+   "teaches": [
+    "Sagas"
+   ],
+   "blurb": "You arrive on Dominaria and meet Teferi, who has just come home. A band of the Cabal wants him gone.",
+   "rewardSet": "dom",
+   "host": false,
+   "hero": {
+    "who": "teferi",
+    "deck": {
+     "name": "The Returned",
+     "colors": "WU",
+     "archetype": null,
+     "label": "tribute",
+     "cards": [
+      {
+       "qty": 4,
+       "name": "History of Benalia",
+       "set": "dom",
+       "number": "21",
+       "id": "d134385d-b01c-41c7-bb2d-30722b44dc5a"
+      },
+      {
+       "qty": 3,
+       "name": "Time of Ice",
+       "set": "dom",
+       "number": "70",
+       "id": "edcd0674-68b9-41ca-ab46-a73dfcbe4149"
+      },
+      {
+       "qty": 2,
+       "name": "The Antiquities War",
+       "set": "dom",
+       "number": "42",
+       "id": "bbda670a-00a7-419c-b4b5-bfdb323f006d"
+      },
+      {
+       "qty": 4,
+       "name": "Knight of Grace",
+       "set": "dom",
+       "number": "23",
+       "id": "7bbbddc0-f8b3-4255-bd82-d50f829ca009"
+      },
+      {
+       "qty": 4,
+       "name": "Mesa Unicorn",
+       "set": "dom",
+       "number": "27",
+       "id": "cf6ed7b5-08ee-4d2c-9bf8-03a1b85b635a"
+      },
+      {
+       "qty": 3,
+       "name": "Serra Angel",
+       "set": "dom",
+       "number": "33",
+       "id": "b56b9131-4f7e-4912-ba47-63ed82f21d1b"
+      },
+      {
+       "qty": 4,
+       "name": "Pegasus Courser",
+       "set": "dom",
+       "number": "29",
+       "id": "35263639-f09d-429f-bd99-09cfdee668e8"
+      },
+      {
+       "qty": 3,
+       "name": "Academy Journeymage",
+       "set": "dom",
+       "number": "41",
+       "id": "a46a65e0-66a3-4896-8acc-0ad5e9927c40"
+      },
+      {
+       "qty": 3,
+       "name": "Cloudreader Sphinx",
+       "set": "dom",
+       "number": "47",
+       "id": "6c85a696-fa1a-4e05-b0aa-79b3381e849a"
+      },
+      {
+       "qty": 4,
+       "name": "Seal Away",
+       "set": "dom",
+       "number": "31",
+       "id": "8f8d6588-671d-4eb3-874f-f7139da2e05a"
+      },
+      {
+       "qty": 2,
+       "name": "Teferi, Hero of Dominaria",
+       "set": "dom",
+       "number": "207",
+       "id": "5d10b752-d9cb-419d-a5c4-d4ee1acb655e"
+      },
+      {
+       "qty": 12,
+       "name": "Plains",
+       "set": "dom",
+       "number": "250",
+       "id": "023d333b-14f2-40ad-bb76-8b9e38040f89"
+      },
+      {
+       "qty": 10,
+       "name": "Island",
+       "set": "dom",
+       "number": "254",
+       "id": "0ce67a27-aa80-46ac-955a-8fea336995d9"
+      },
+      {
+       "qty": 2,
+       "name": "Meandering River",
+       "set": "dom",
+       "number": "274",
+       "id": "d4585bcf-288b-4251-b57f-9d7e50dffc7e"
+      }
+     ]
+    }
+   },
+   "villain": {
+    "who": "cabal",
+    "deck": {
+     "name": "The Cabal Cultists",
+     "colors": "B",
+     "archetype": null,
+     "label": "tribute",
+     "cards": [
+      {
+       "qty": 4,
+       "name": "Cabal Evangel",
+       "set": "dom",
+       "number": "78",
+       "id": "d218d2a2-bb5d-4ea8-a131-341c574410b2"
+      },
+      {
+       "qty": 4,
+       "name": "Caligo Skin-Witch",
+       "set": "dom",
+       "number": "80",
+       "id": "2e23ee25-2005-4e81-a807-f52c0dbfb192"
+      },
+      {
+       "qty": 4,
+       "name": "Knight of Malice",
+       "set": "dom",
+       "number": "97",
+       "id": "b45266f0-eb4f-4a06-bc64-8c2d774b4cc5"
+      },
+      {
+       "qty": 4,
+       "name": "Deathbloom Thallid",
+       "set": "dom",
+       "number": "84",
+       "id": "236ead00-d43e-4079-b74d-09be9875fd2d"
+      },
+      {
+       "qty": 4,
+       "name": "Windgrace Acolyte",
+       "set": "dom",
+       "number": "112",
+       "id": "f835285e-96d9-4574-a497-3b612cae8e22"
+      },
+      {
+       "qty": 4,
+       "name": "Rite of Belzenlok",
+       "set": "dom",
+       "number": "102",
+       "id": "1ed7cca3-79be-44ca-bf10-2ae1c0835ed1"
+      },
+      {
+       "qty": 3,
+       "name": "Vicious Offering",
+       "set": "dom",
+       "number": "110",
+       "id": "aaed7828-57c1-4ad3-a91b-209c66f0876b"
+      },
+      {
+       "qty": 3,
+       "name": "Cast Down",
+       "set": "dom",
+       "number": "81",
+       "id": "116ce944-6871-4f51-a889-d9c4a5d7cff2"
+      },
+      {
+       "qty": 3,
+       "name": "Cabal Paladin",
+       "set": "dom",
+       "number": "79",
+       "id": "2cff2cb9-f4e6-4fee-94ef-ad11e24525c1"
+      },
+      {
+       "qty": 3,
+       "name": "Eviscerate",
+       "set": "dom",
+       "number": "91",
+       "id": "62ba90b8-3a30-4058-b8d3-72900b1f4fe0"
+      },
+      {
+       "qty": 24,
+       "name": "Swamp",
+       "set": "dom",
+       "number": "258",
+       "id": "09eeb6aa-45ac-4a0e-bab2-1a004aac841f"
+      }
+     ]
+    }
+   },
+   "reward": {
+    "hero": {
+     "packs": 1,
+     "coins": 0
+    },
+    "villain": {
+     "card": {
+      "oracle_id": "a4fed66f-ef3c-4547-8612-46e65d63ef1f",
+      "name": "Cabal Evangel",
+      "rarity": "common",
+      "set": "dom",
+      "id": "d218d2a2-bb5d-4ea8-a131-341c574410b2",
+      "image": "https://cards.scryfall.io/normal/front/d/2/d218d2a2-bb5d-4ea8-a131-341c574410b2.jpg"
+     },
+     "coins": 50
+    }
+   },
+   "scene": [
+    {
+     "who": "stage",
+     "line": "The crystal pulsed with the power of Teferi's planeswalker spark. Had Jhoira given him a blessing or a curse?",
+     "quote": true
+    },
+    {
+     "who": "stage",
+     "line": "An ancient nemesis rendered harmless long ago.",
+     "quote": true
+    },
+    {
+     "who": "teferi",
+     "line": "Sagas: each chapter happens in turn as lore counters are added, and the Saga leaves when the last chapter is done. Plan what is coming."
+    }
+   ],
+   "villainScene": [
+    {
+     "who": "stage",
+     "line": "All hail the Demonlord Belzenlok, Evincar of the Stronghold, Scion of Darkness, Doom of Fools, Lord of the Wastes, Master of the Ebon Hand, Eternal Patriarch of the Cabal . . .",
+     "quote": true
+    },
+    {
+     "who": "stage",
+     "line": "My heart is not mine, it is Belzenlok's. All hearts are his, and all blood.",
+     "quote": true
+    }
+   ],
+   "after": null,
+   "cues": {
+    "hero": {
+     "start": "I am home.",
+     "big": "Chapter three!",
+     "low": "The Cabal keeps coming...",
+     "win": "The story goes on.",
+     "loss": "Not this chapter...",
+     "half": "Sagas read themselves, one chapter a turn."
+    },
+    "villain": {
+     "start": "All hail.",
+     "big": "All blood is his!",
+     "low": "Hold the chant...",
+     "win": "The Demonlord provides.",
+     "loss": "Silence..."
+    }
+   },
+   "bigPlays": [],
+   "sim": null
+  },
+  {
+   "id": "a28b2",
+   "slot": 2,
+   "kind": "Lesson",
+   "mood": "march",
+   "title": "The Weatherlight Rises",
+   "difficulty": "Easy",
+   "teaches": [
+    "Historic"
+   ],
+   "blurb": "Jhoira has restored the Weatherlight. The Cabal's demons want it grounded.",
+   "rewardSet": "dom",
+   "host": false,
+   "hero": {
+    "who": "jhoira",
+    "deck": {
+     "name": "The Restored Weatherlight",
+     "colors": "UR",
+     "archetype": null,
+     "label": "tribute",
+     "cards": [
+      {
+       "qty": 2,
+       "name": "Jhoira, Weatherlight Captain",
+       "set": "dom",
+       "number": "197",
+       "id": "73cf8c6b-1322-4bc5-a604-6e372607fae4"
+      },
+      {
+       "qty": 2,
+       "name": "Weatherlight",
+       "set": "dom",
+       "number": "237",
+       "id": "d4581fc0-551c-4ee5-bde0-65c2b8cdf1b7"
+      },
+      {
+       "qty": 3,
+       "name": "Icy Manipulator",
+       "set": "dom",
+       "number": "219",
+       "id": "9fd9b205-817e-4ca4-8a29-3c2b6cbf7207"
+      },
+      {
+       "qty": 3,
+       "name": "Juggernaut",
+       "set": "dom",
+       "number": "222",
+       "id": "dfebeab7-44cf-4895-bdd5-04cbb2c700d7"
+      },
+      {
+       "qty": 3,
+       "name": "Pardic Wanderer",
+       "set": "dom",
+       "number": "226",
+       "id": "2fffe967-3a99-4f00-af46-f4e5567598df"
+      },
+      {
+       "qty": 4,
+       "name": "Sparring Construct",
+       "set": "dom",
+       "number": "232",
+       "id": "badc7db8-386e-4fb6-aefa-591e99747eb2"
+      },
+      {
+       "qty": 4,
+       "name": "Jhoira's Familiar",
+       "set": "dom",
+       "number": "220",
+       "id": "3718761f-feb1-46c4-aaa3-7e07a3fa72fa"
+      },
+      {
+       "qty": 2,
+       "name": "Short Sword",
+       "set": "dom",
+       "number": "229",
+       "id": "cb79a623-21c3-4310-bc76-310935511d45"
+      },
+      {
+       "qty": 4,
+       "name": "Ghitu Journeymage",
+       "set": "dom",
+       "number": "126",
+       "id": "e4360bc9-76f0-4e82-8968-4c6c62a35ed1"
+      },
+      {
+       "qty": 4,
+       "name": "Shivan Fire",
+       "set": "dom",
+       "number": "142",
+       "id": "21b9d339-99ed-4923-8f56-be37f29a0bfa"
+      },
+      {
+       "qty": 3,
+       "name": "Wizard's Lightning",
+       "set": "dom",
+       "number": "152",
+       "id": "59bf371a-164c-4db8-9207-197c2e7c3c10"
+      },
+      {
+       "qty": 2,
+       "name": "Skizzik",
+       "set": "dom",
+       "number": "145",
+       "id": "77af9d28-1639-47bd-b925-7f3d2eefd352"
+      },
+      {
+       "qty": 12,
+       "name": "Mountain",
+       "set": "dom",
+       "number": "262",
+       "id": "621aa8e1-aebf-4eea-beb5-7fb47700a87a"
+      },
+      {
+       "qty": 10,
+       "name": "Island",
+       "set": "dom",
+       "number": "254",
+       "id": "0ce67a27-aa80-46ac-955a-8fea336995d9"
+      },
+      {
+       "qty": 2,
+       "name": "Sulfur Falls",
+       "set": "dom",
+       "number": "247",
+       "id": "6bc412fc-e9d4-4283-bd4a-811384e79b5c"
+      }
+     ]
+    }
+   },
+   "villain": {
+    "who": "demons",
+    "deck": {
+     "name": "Belzenlok's Demons",
+     "colors": "B",
+     "archetype": null,
+     "label": "tribute",
+     "cards": [
+      {
+       "qty": 3,
+       "name": "Demon of Catastrophes",
+       "set": "m19",
+       "number": "91",
+       "id": "d50f9563-7bf8-4c3c-ac82-327221e56551"
+      },
+      {
+       "qty": 3,
+       "name": "Feral Abomination",
+       "set": "dom",
+       "number": "92",
+       "id": "3292e262-4409-4f31-9de2-a232817a0734"
+      },
+      {
+       "qty": 4,
+       "name": "Fell Specter",
+       "set": "m19",
+       "number": "96",
+       "id": "e8cb52a4-5fec-41a0-8030-503a61e3d33e"
+      },
+      {
+       "qty": 3,
+       "name": "Vampire Sovereign",
+       "set": "m19",
+       "number": "125",
+       "id": "ee338221-ead9-4b89-8b0c-12745c4ca13d"
+      },
+      {
+       "qty": 2,
+       "name": "Dread Shade",
+       "set": "dom",
+       "number": "88",
+       "id": "46b8b1d7-9d2b-4943-bb3b-238a6333ce93"
+      },
+      {
+       "qty": 3,
+       "name": "Plague Mare",
+       "set": "m19",
+       "number": "114",
+       "id": "995596a3-343d-4272-86bf-d76fd32ab78e"
+      },
+      {
+       "qty": 4,
+       "name": "Cast Down",
+       "set": "dom",
+       "number": "81",
+       "id": "116ce944-6871-4f51-a889-d9c4a5d7cff2"
+      },
+      {
+       "qty": 3,
+       "name": "Murder",
+       "set": "m19",
+       "number": "110",
+       "id": "45368bf3-d5e9-43e6-a67d-93c2e93acc72"
+      },
+      {
+       "qty": 3,
+       "name": "Eviscerate",
+       "set": "dom",
+       "number": "91",
+       "id": "62ba90b8-3a30-4058-b8d3-72900b1f4fe0"
+      },
+      {
+       "qty": 4,
+       "name": "Cabal Paladin",
+       "set": "dom",
+       "number": "79",
+       "id": "2cff2cb9-f4e6-4fee-94ef-ad11e24525c1"
+      },
+      {
+       "qty": 4,
+       "name": "Walking Corpse",
+       "set": "m19",
+       "number": "126",
+       "id": "344a26ab-524f-4daa-ae0a-9d94e34c96df"
+      },
+      {
+       "qty": 24,
+       "name": "Swamp",
+       "set": "dom",
+       "number": "258",
+       "id": "09eeb6aa-45ac-4a0e-bab2-1a004aac841f"
+      }
+     ]
+    }
+   },
+   "reward": {
+    "hero": {
+     "packs": 1,
+     "coins": 0
+    },
+    "villain": {
+     "card": {
+      "oracle_id": "2e0b838d-c858-4aa5-999e-c4ef9d29571b",
+      "name": "Demon of Catastrophes",
+      "rarity": "rare",
+      "set": "m19",
+      "id": "d50f9563-7bf8-4c3c-ac82-327221e56551",
+      "image": "https://cards.scryfall.io/normal/front/d/5/d50f9563-7bf8-4c3c-ac82-327221e56551.jpg"
+     },
+     "coins": 50
+    }
+   },
+   "scene": [
+    {
+     "who": "stage",
+     "line": "As she took the wheel of the Weatherlight for the first time in a millennium, Jhoira knew she'd been right to restore the ship. Anything was possible now.",
+     "quote": true
+    },
+    {
+     "who": "jhoira",
+     "line": "You could say it was my pet project.",
+     "quote": true
+    },
+    {
+     "who": "jhoira",
+     "line": "Historic: artifacts, legendary cards and Sagas all count. Some cards reward you for casting one."
+    }
+   ],
+   "villainScene": [
+    {
+     "who": "stage",
+     "line": "A pit yawned open, a column of oily smoke arose, and a towering form hissed, \"I accept this offering.\"",
+     "quote": true
+    },
+    {
+     "who": "stage",
+     "line": "Urborg used to be lovely—scenic volcanoes, respectable lich lords. Since the Cabal came with their nightmares and thrulls, it's all gone to the worms.",
+     "quote": true
+    }
+   ],
+   "after": null,
+   "cues": {
+    "hero": {
+     "start": "Anything is possible.",
+     "big": "Full sail!",
+     "low": "The hull is cracking...",
+     "win": "The ship flies.",
+     "loss": "Grounded...",
+     "half": "Cast your artifacts and legends."
+    },
+    "villain": {
+     "start": "An offering.",
+     "big": "The pit opens!",
+     "low": "It slips away...",
+     "win": "Accepted.",
+     "loss": "Banished..."
+    }
+   },
+   "bigPlays": [],
+   "sim": null
+  },
+  {
+   "id": "a28b3",
+   "slot": 3,
+   "kind": "Lesson",
+   "mood": "comic",
+   "title": "Sisay's Heir",
+   "difficulty": "Easy",
+   "teaches": [
+    "Kicker"
+   ],
+   "blurb": "Shanna Sisay's heir joins the crew. The Keldon raiders want everything on the ship and are ready to burn the rest.",
+   "rewardSet": "dom",
+   "host": false,
+   "hero": {
+    "who": "shanna",
+    "deck": {
+     "name": "Sisay's Legacy",
+     "colors": "GW",
+     "archetype": null,
+     "label": "tribute",
+     "cards": [
+      {
+       "qty": 2,
+       "name": "Shanna, Sisay's Legacy",
+       "set": "dom",
+       "number": "204",
+       "id": "b90df81c-d738-46b3-8e96-9db0b3507ee0"
+      },
+      {
+       "qty": 4,
+       "name": "Llanowar Elves",
+       "set": "dom",
+       "number": "168",
+       "id": "581b7327-3215-4a4f-b4ae-d9d4002ba882"
+      },
+      {
+       "qty": 4,
+       "name": "Saproling Migration",
+       "set": "dom",
+       "number": "178",
+       "id": "2578d25e-5f8d-42ff-90ce-4e7d100cbbb6"
+      },
+      {
+       "qty": 4,
+       "name": "Baloth Gorger",
+       "set": "dom",
+       "number": "156",
+       "id": "504090bb-d183-4833-aea5-d4193b5c57a1"
+      },
+      {
+       "qty": 4,
+       "name": "Knight of Grace",
+       "set": "dom",
+       "number": "23",
+       "id": "7bbbddc0-f8b3-4255-bd82-d50f829ca009"
+      },
+      {
+       "qty": 4,
+       "name": "Benalish Honor Guard",
+       "set": "dom",
+       "number": "5",
+       "id": "73a5ecf1-2063-4cb3-a4ab-a0601b28256a"
+      },
+      {
+       "qty": 3,
+       "name": "Sergeant-at-Arms",
+       "set": "dom",
+       "number": "32",
+       "id": "8f70b1ee-47b6-4904-850d-8ea8064bd27d"
+      },
+      {
+       "qty": 2,
+       "name": "Excavation Elephant",
+       "set": "dom",
+       "number": "17",
+       "id": "760ce08a-49d3-4cdf-bbe2-33dd8a6a7966"
+      },
+      {
+       "qty": 4,
+       "name": "Mesa Unicorn",
+       "set": "dom",
+       "number": "27",
+       "id": "cf6ed7b5-08ee-4d2c-9bf8-03a1b85b635a"
+      },
+      {
+       "qty": 2,
+       "name": "Territorial Allosaurus",
+       "set": "dom",
+       "number": "184",
+       "id": "3d8ac2b0-47ea-4aa3-bf24-c78227a0c913"
+      },
+      {
+       "qty": 3,
+       "name": "Untamed Kavu",
+       "set": "dom",
+       "number": "186",
+       "id": "3c4cf84a-2024-45bb-9e24-8a9a6d9ad247"
+      },
+      {
+       "qty": 12,
+       "name": "Forest",
+       "set": "dom",
+       "number": "266",
+       "id": "ae21165c-cc6d-45cc-b5c1-97b73e85dddd"
+      },
+      {
+       "qty": 12,
+       "name": "Plains",
+       "set": "dom",
+       "number": "250",
+       "id": "023d333b-14f2-40ad-bb76-8b9e38040f89"
+      }
+     ]
+    }
+   },
+   "villain": {
+    "who": "keldon",
+    "deck": {
+     "name": "Keldon Raiders",
+     "colors": "R",
+     "archetype": null,
+     "label": "tribute",
+     "cards": [
+      {
+       "qty": 4,
+       "name": "Keldon Raider",
+       "set": "dom",
+       "number": "135",
+       "id": "f1245212-d081-4e95-a508-e1d3a7496473"
+      },
+      {
+       "qty": 4,
+       "name": "Keldon Overseer",
+       "set": "dom",
+       "number": "134",
+       "id": "ec66b814-9c47-4d17-8c02-1d9be565c76c"
+      },
+      {
+       "qty": 4,
+       "name": "Keldon Warcaller",
+       "set": "dom",
+       "number": "136",
+       "id": "22d2e230-2d60-402d-98e4-0f33d2f27c56"
+      },
+      {
+       "qty": 4,
+       "name": "Bloodstone Goblin",
+       "set": "dom",
+       "number": "115",
+       "id": "31adbfd4-56aa-4137-aeba-8720233260be"
+      },
+      {
+       "qty": 3,
+       "name": "Goblin Warchief",
+       "set": "dom",
+       "number": "130",
+       "id": "5bac033c-dc4e-40a0-b103-4892e4b50249"
+      },
+      {
+       "qty": 2,
+       "name": "Goblin Chainwhirler",
+       "set": "dom",
+       "number": "129",
+       "id": "8bdb2883-3cfd-4fb0-9f99-6a57277f7fe4"
+      },
+      {
+       "qty": 4,
+       "name": "Shivan Fire",
+       "set": "dom",
+       "number": "142",
+       "id": "21b9d339-99ed-4923-8f56-be37f29a0bfa"
+      },
+      {
+       "qty": 3,
+       "name": "Wizard's Lightning",
+       "set": "dom",
+       "number": "152",
+       "id": "59bf371a-164c-4db8-9207-197c2e7c3c10"
+      },
+      {
+       "qty": 2,
+       "name": "Fight with Fire",
+       "set": "dom",
+       "number": "119",
+       "id": "72c94d7a-cad7-438f-bc96-e6a7158ab0e6"
+      },
+      {
+       "qty": 3,
+       "name": "Skizzik",
+       "set": "dom",
+       "number": "145",
+       "id": "77af9d28-1639-47bd-b925-7f3d2eefd352"
+      },
+      {
+       "qty": 3,
+       "name": "Orcish Vandal",
+       "set": "dom",
+       "number": "137",
+       "id": "6192b4ea-f781-4c56-89bc-530f5388b6b5"
+      },
+      {
+       "qty": 24,
+       "name": "Mountain",
+       "set": "dom",
+       "number": "262",
+       "id": "621aa8e1-aebf-4eea-beb5-7fb47700a87a"
+      }
+     ]
+    }
+   },
+   "reward": {
+    "hero": {
+     "packs": 1,
+     "coins": 0
+    },
+    "villain": {
+     "card": {
+      "oracle_id": "004f82f0-74cc-4bc7-ab22-ab1a5247bc29",
+      "name": "Keldon Raider",
+      "rarity": "common",
+      "set": "dom",
+      "id": "f1245212-d081-4e95-a508-e1d3a7496473",
+      "image": "https://cards.scryfall.io/normal/front/f/1/f1245212-d081-4e95-a508-e1d3a7496473.jpg"
+     },
+     "coins": 50
+    }
+   },
+   "scene": [
+    {
+     "who": "shanna",
+     "line": "I am heir to many treasures. None is as precious as knowing how my ancestor lived her life.",
+     "quote": true
+    },
+    {
+     "who": "stage",
+     "line": "Sometimes Shivan dragons toy with their food. Other times they just cook it.",
+     "quote": true
+    },
+    {
+     "who": "shanna",
+     "line": "Kicker: pay the extra cost and the spell does more. Hold a kicker card until you can afford the bigger version."
+    }
+   ],
+   "villainScene": [
+    {
+     "who": "stage",
+     "line": "Keldon raiders' spoils are limited to what their colos can carry. No matter the value, the rest goes up in smoke.",
+     "quote": true
+    },
+    {
+     "who": "stage",
+     "line": "The Mountain gave the Flame to Kradak to light the furnaces of his people's hearts. The wanderers became Keldons, and he the first warlord.",
+     "quote": true
+    }
+   ],
+   "after": null,
+   "cues": {
+    "hero": {
+     "start": "For my ancestor.",
+     "big": "Kicked!",
+     "low": "They are burning it all...",
+     "win": "The legacy holds.",
+     "loss": "Burned...",
+     "half": "Save kicker cards for later."
+    },
+    "villain": {
+     "start": "Burn the rest.",
+     "big": "To the Flame!",
+     "low": "Put it out...",
+     "win": "Smoke and spoils.",
+     "loss": "No spoils..."
+    }
+   },
+   "bigPlays": [],
+   "sim": null
+  },
+  {
+   "id": "a28b4",
+   "slot": 4,
+   "kind": "Rival",
+   "mood": "tension",
+   "title": "Karn Returns",
+   "difficulty": "Normal",
+   "teaches": [
+    "Planeswalkers"
+   ],
+   "blurb": "Karn, a silver golem built by Urza, faces the priests of the Cabal in their stronghold.",
+   "rewardSet": "dom",
+   "host": false,
+   "hero": {
+    "who": "karn",
+    "deck": {
+     "name": "Karn's Machines",
+     "colors": "U",
+     "archetype": null,
+     "label": "tribute",
+     "cards": [
+      {
+       "qty": 3,
+       "name": "Karn, Scion of Urza",
+       "set": "dom",
+       "number": "1",
+       "id": "07a3d9e8-8597-498b-869c-cff79e0df516"
+      },
+      {
+       "qty": 4,
+       "name": "Jhoira's Familiar",
+       "set": "dom",
+       "number": "220",
+       "id": "3718761f-feb1-46c4-aaa3-7e07a3fa72fa"
+      },
+      {
+       "qty": 3,
+       "name": "Icy Manipulator",
+       "set": "dom",
+       "number": "219",
+       "id": "9fd9b205-817e-4ca4-8a29-3c2b6cbf7207"
+      },
+      {
+       "qty": 3,
+       "name": "Juggernaut",
+       "set": "dom",
+       "number": "222",
+       "id": "dfebeab7-44cf-4895-bdd5-04cbb2c700d7"
+      },
+      {
+       "qty": 3,
+       "name": "Pardic Wanderer",
+       "set": "dom",
+       "number": "226",
+       "id": "2fffe967-3a99-4f00-af46-f4e5567598df"
+      },
+      {
+       "qty": 3,
+       "name": "Sparring Construct",
+       "set": "dom",
+       "number": "232",
+       "id": "badc7db8-386e-4fb6-aefa-591e99747eb2"
+      },
+      {
+       "qty": 3,
+       "name": "Voltaic Servant",
+       "set": "dom",
+       "number": "236",
+       "id": "28564ac6-8b9b-4b99-9630-8fb3158d354c"
+      },
+      {
+       "qty": 4,
+       "name": "Skittering Surveyor",
+       "set": "dom",
+       "number": "230",
+       "id": "90c7bea0-79c9-4856-8279-cef7cee82fc1"
+      },
+      {
+       "qty": 2,
+       "name": "Short Sword",
+       "set": "dom",
+       "number": "229",
+       "id": "cb79a623-21c3-4310-bc76-310935511d45"
+      },
+      {
+       "qty": 3,
+       "name": "Academy Drake",
+       "set": "dom",
+       "number": "40",
+       "id": "f8bacb12-da46-4b00-804f-9ff6bff452bc"
+      },
+      {
+       "qty": 3,
+       "name": "Cloudreader Sphinx",
+       "set": "dom",
+       "number": "47",
+       "id": "6c85a696-fa1a-4e05-b0aa-79b3381e849a"
+      },
+      {
+       "qty": 2,
+       "name": "Opt",
+       "set": "dom",
+       "number": "60",
+       "id": "25f2e4d0-effd-4e83-b7aa-1a0d8f120951"
+      },
+      {
+       "qty": 24,
+       "name": "Island",
+       "set": "dom",
+       "number": "254",
+       "id": "0ce67a27-aa80-46ac-955a-8fea336995d9"
+      }
+     ]
+    }
+   },
+   "villain": {
+    "who": "priests",
+    "deck": {
+     "name": "Belzenlok's Priests",
+     "colors": "B",
+     "archetype": null,
+     "label": "tribute",
+     "cards": [
+      {
+       "qty": 2,
+       "name": "Liliana, the Necromancer",
+       "set": "m19",
+       "number": "291",
+       "id": "4d2cbc2c-dbe3-4ecb-8fbe-785cb80b9e76"
+      },
+      {
+       "qty": 4,
+       "name": "Cabal Paladin",
+       "set": "dom",
+       "number": "79",
+       "id": "2cff2cb9-f4e6-4fee-94ef-ad11e24525c1"
+      },
+      {
+       "qty": 2,
+       "name": "Josu Vess, Lich Knight",
+       "set": "dom",
+       "number": "95",
+       "id": "6ed6d088-db82-4648-a109-0e3fa1421847"
+      },
+      {
+       "qty": 4,
+       "name": "Windgrace Acolyte",
+       "set": "dom",
+       "number": "112",
+       "id": "f835285e-96d9-4574-a497-3b612cae8e22"
+      },
+      {
+       "qty": 4,
+       "name": "Cabal Evangel",
+       "set": "dom",
+       "number": "78",
+       "id": "d218d2a2-bb5d-4ea8-a131-341c574410b2"
+      },
+      {
+       "qty": 4,
+       "name": "Stronghold Confessor",
+       "set": "dom",
+       "number": "105",
+       "id": "ab3fcc43-839b-48c1-91e3-7cc80d8c7f9a"
+      },
+      {
+       "qty": 3,
+       "name": "Vicious Offering",
+       "set": "dom",
+       "number": "110",
+       "id": "aaed7828-57c1-4ad3-a91b-209c66f0876b"
+      },
+      {
+       "qty": 3,
+       "name": "Eviscerate",
+       "set": "dom",
+       "number": "91",
+       "id": "62ba90b8-3a30-4058-b8d3-72900b1f4fe0"
+      },
+      {
+       "qty": 4,
+       "name": "Cast Down",
+       "set": "dom",
+       "number": "81",
+       "id": "116ce944-6871-4f51-a889-d9c4a5d7cff2"
+      },
+      {
+       "qty": 3,
+       "name": "Deathbloom Thallid",
+       "set": "dom",
+       "number": "84",
+       "id": "236ead00-d43e-4079-b74d-09be9875fd2d"
+      },
+      {
+       "qty": 3,
+       "name": "Knight of Malice",
+       "set": "dom",
+       "number": "97",
+       "id": "b45266f0-eb4f-4a06-bc64-8c2d774b4cc5"
+      },
+      {
+       "qty": 24,
+       "name": "Swamp",
+       "set": "dom",
+       "number": "258",
+       "id": "09eeb6aa-45ac-4a0e-bab2-1a004aac841f"
+      }
+     ]
+    }
+   },
+   "reward": {
+    "hero": {
+     "packs": 1,
+     "coins": 100
+    },
+    "villain": {
+     "card": {
+      "oracle_id": "1104a746-169c-450a-80ad-bea0493c0576",
+      "name": "Cabal Paladin",
+      "rarity": "common",
+      "set": "dom",
+      "id": "2cff2cb9-f4e6-4fee-94ef-ad11e24525c1",
+      "image": "https://cards.scryfall.io/normal/front/2/c/2cff2cb9-f4e6-4fee-94ef-ad11e24525c1.jpg"
+     },
+     "coins": 100
+    }
+   },
+   "scene": [
+    {
+     "who": "stage",
+     "line": "Urza's machines have a splendid habit of excavating themselves.",
+     "quote": true
+    },
+    {
+     "who": "stage",
+     "line": "Ice may thaw, but malice never does.",
+     "quote": true
+    },
+    {
+     "who": "karn",
+     "line": "Planeswalkers: add loyalty to use an ability, and they take attacks meant for you. Keep a creature home to protect them."
+    }
+   ],
+   "villainScene": [
+    {
+     "who": "stage",
+     "line": "The Demonlord has ruled every age. Every ruin, myth, and nightmare proves his power.",
+     "quote": true
+    },
+    {
+     "who": "stage",
+     "line": "The seat of Belzenlok's power, the Stronghold serves as the gathering place for the Cabal as their dark influence spreads from Urborg.",
+     "quote": true
+    }
+   ],
+   "after": null,
+   "cues": {
+    "hero": {
+     "start": "Karn is here.",
+     "big": "Loyalty rising!",
+     "low": "They are after me...",
+     "win": "Karn endures.",
+     "loss": "Karn falls...",
+     "half": "Guard your planeswalker."
+    },
+    "villain": {
+     "start": "Kneel.",
+     "big": "In the Demonlord's name!",
+     "low": "The Stronghold shakes...",
+     "win": "The Cabal grows.",
+     "loss": "The stone cracks..."
+    }
+   },
+   "bigPlays": [],
+   "sim": null
+  },
+  {
+   "id": "a28b5",
+   "slot": 5,
+   "kind": "Lesson",
+   "mood": "tension",
+   "title": "Radha's Heirs and Yargle",
+   "difficulty": "Normal",
+   "teaches": [
+    "Legendary sorceries"
+   ],
+   "blurb": "Radha's heirs ride out against Yargle, Urborg's famously terrible glutton. Their big spells need a legend first.",
+   "rewardSet": "dom",
+   "host": false,
+   "hero": {
+    "who": "radha",
+    "deck": {
+     "name": "Radha's Heirs",
+     "colors": "RG",
+     "archetype": null,
+     "label": "tribute",
+     "cards": [
+      {
+       "qty": 2,
+       "name": "Grand Warlord Radha",
+       "set": "dom",
+       "number": "195",
+       "id": "986981fa-a744-45d8-81c7-68ef335c79e2"
+      },
+      {
+       "qty": 2,
+       "name": "Hallar, the Firefletcher",
+       "set": "dom",
+       "number": "196",
+       "id": "c896643e-eeef-49a6-a1ca-2577b55af2b0"
+      },
+      {
+       "qty": 4,
+       "name": "Llanowar Elves",
+       "set": "dom",
+       "number": "168",
+       "id": "581b7327-3215-4a4f-b4ae-d9d4002ba882"
+      },
+      {
+       "qty": 3,
+       "name": "Keldon Raider",
+       "set": "dom",
+       "number": "135",
+       "id": "f1245212-d081-4e95-a508-e1d3a7496473"
+      },
+      {
+       "qty": 4,
+       "name": "Baloth Gorger",
+       "set": "dom",
+       "number": "156",
+       "id": "504090bb-d183-4833-aea5-d4193b5c57a1"
+      },
+      {
+       "qty": 3,
+       "name": "Territorial Allosaurus",
+       "set": "dom",
+       "number": "184",
+       "id": "3d8ac2b0-47ea-4aa3-bf24-c78227a0c913"
+      },
+      {
+       "qty": 2,
+       "name": "Jaya's Immolating Inferno",
+       "set": "dom",
+       "number": "133",
+       "id": "48268bb8-1326-451b-9fae-de6605eb6cfd"
+      },
+      {
+       "qty": 2,
+       "name": "Kamahl's Druidic Vow",
+       "set": "dom",
+       "number": "166",
+       "id": "bf95ef60-e67b-466d-a6cb-d487ffa88b72"
+      },
+      {
+       "qty": 3,
+       "name": "Wizard's Lightning",
+       "set": "dom",
+       "number": "152",
+       "id": "59bf371a-164c-4db8-9207-197c2e7c3c10"
+      },
+      {
+       "qty": 3,
+       "name": "Shivan Fire",
+       "set": "dom",
+       "number": "142",
+       "id": "21b9d339-99ed-4923-8f56-be37f29a0bfa"
+      },
+      {
+       "qty": 2,
+       "name": "Fight with Fire",
+       "set": "dom",
+       "number": "119",
+       "id": "72c94d7a-cad7-438f-bc96-e6a7158ab0e6"
+      },
+      {
+       "qty": 3,
+       "name": "Saproling Migration",
+       "set": "dom",
+       "number": "178",
+       "id": "2578d25e-5f8d-42ff-90ce-4e7d100cbbb6"
+      },
+      {
+       "qty": 3,
+       "name": "Skizzik",
+       "set": "dom",
+       "number": "145",
+       "id": "77af9d28-1639-47bd-b925-7f3d2eefd352"
+      },
+      {
+       "qty": 12,
+       "name": "Forest",
+       "set": "dom",
+       "number": "266",
+       "id": "ae21165c-cc6d-45cc-b5c1-97b73e85dddd"
+      },
+      {
+       "qty": 11,
+       "name": "Mountain",
+       "set": "dom",
+       "number": "262",
+       "id": "621aa8e1-aebf-4eea-beb5-7fb47700a87a"
+      },
+      {
+       "qty": 1,
+       "name": "Timber Gorge",
+       "set": "dom",
+       "number": "279",
+       "id": "7a10f979-63e0-4999-9047-fdbd914cedf4"
+      }
+     ]
+    }
+   },
+   "villain": {
+    "who": "yargle",
+    "deck": {
+     "name": "Yargle's Feast",
+     "colors": "B",
+     "archetype": null,
+     "label": "tribute",
+     "cards": [
+      {
+       "qty": 1,
+       "name": "Yargle, Glutton of Urborg",
+       "set": "dom",
+       "number": "113",
+       "id": "645cfc1b-76f2-4823-9fb0-03cb009f8b32"
+      },
+      {
+       "qty": 4,
+       "name": "Walking Corpse",
+       "set": "m19",
+       "number": "126",
+       "id": "344a26ab-524f-4daa-ae0a-9d94e34c96df"
+      },
+      {
+       "qty": 4,
+       "name": "Tattered Mummy",
+       "set": "m19",
+       "number": "295",
+       "id": "6a27ce41-69e7-4b86-9b9c-1a724d0728e9"
+      },
+      {
+       "qty": 4,
+       "name": "Rat Colony",
+       "set": "dom",
+       "number": "101",
+       "id": "4f618e07-f06f-45d2-8512-e6cef88c0434"
+      },
+      {
+       "qty": 3,
+       "name": "Reassembling Skeleton",
+       "set": "m19",
+       "number": "116",
+       "id": "a3d4ac21-2203-45f4-b5f2-dc186ccdbe69"
+      },
+      {
+       "qty": 4,
+       "name": "Doomed Dissenter",
+       "set": "m19",
+       "number": "93",
+       "id": "a1f70ee8-7e59-43d6-a7b2-29cb5cd1d8b3"
+      },
+      {
+       "qty": 4,
+       "name": "Vampire Neonate",
+       "set": "m19",
+       "number": "124",
+       "id": "167822a5-2ab5-42f5-afa4-562fe2d7501b"
+      },
+      {
+       "qty": 4,
+       "name": "Diregraf Ghoul",
+       "set": "m19",
+       "number": "92",
+       "id": "5cf2d355-404e-4c21-9bc2-973d09a845a5"
+      },
+      {
+       "qty": 3,
+       "name": "Skeleton Archer",
+       "set": "m19",
+       "number": "118",
+       "id": "8fee5cc4-a686-4ce6-aa6b-1b8a88e6dea3"
+      },
+      {
+       "qty": 3,
+       "name": "Two-Headed Zombie",
+       "set": "m19",
+       "number": "123",
+       "id": "2cc5760e-8b27-4d37-9772-c9eda90b1d95"
+      },
+      {
+       "qty": 2,
+       "name": "Ravenous Harpy",
+       "set": "m19",
+       "number": "115",
+       "id": "676ec702-75c4-4733-b500-eb15406778bb"
+      },
+      {
+       "qty": 24,
+       "name": "Swamp",
+       "set": "dom",
+       "number": "258",
+       "id": "09eeb6aa-45ac-4a0e-bab2-1a004aac841f"
+      }
+     ]
+    }
+   },
+   "reward": {
+    "hero": {
+     "packs": 1,
+     "coins": 100
+    },
+    "villain": {
+     "card": {
+      "oracle_id": "ed66cd31-958f-4b28-82a3-e04acc819afc",
+      "name": "Yargle, Glutton of Urborg",
+      "rarity": "uncommon",
+      "set": "dom",
+      "id": "645cfc1b-76f2-4823-9fb0-03cb009f8b32",
+      "image": "https://cards.scryfall.io/normal/front/6/4/645cfc1b-76f2-4823-9fb0-03cb009f8b32.jpg"
+     },
+     "coins": 100
+    }
+   },
+   "scene": [
+    {
+     "who": "stage",
+     "line": "The study of magic began when the first mage taught herself to throw lightning.",
+     "quote": true
+    },
+    {
+     "who": "stage",
+     "line": "Centuries ago, one man's vengeance plunged the world into ice and darkness.",
+     "quote": true
+    },
+    {
+     "who": "radha",
+     "line": "Legendary sorceries can only be cast while you control a legendary creature or planeswalker. Keep a legend on the table first."
+    }
+   ],
+   "villainScene": [
+    {
+     "who": "stage",
+     "line": "When Belzenlok's lieutenant Yar-Kul grew too ambitious, the Demonlord transformed him into a maggot. The frog that ate the maggot grew and grew, until a ravenous spirit burst from its body.",
+     "quote": true
+    },
+    {
+     "who": "stage",
+     "line": "They may show up with the wrong thigh bone or mandible, but they always show up.",
+     "quote": true
+    }
+   ],
+   "after": null,
+   "cues": {
+    "hero": {
+     "start": "Ride!",
+     "big": "Legends first!",
+     "low": "Where is my legend...",
+     "win": "Yargle is fed.",
+     "loss": "Eaten...",
+     "half": "Cast a legend before the sorcery."
+    },
+    "villain": {
+     "start": "Hungry.",
+     "big": "Feast!",
+     "low": "A frog, no...",
+     "win": "Delicious.",
+     "loss": "Burp..."
+    }
+   },
+   "bigPlays": [],
+   "sim": null
+  },
+  {
+   "id": "a28b6",
+   "slot": 6,
+   "kind": "Meta",
+   "mood": "march",
+   "title": "Mono-Red",
+   "difficulty": "Normal",
+   "teaches": [
+    "Racing"
+   ],
+   "blurb": "A tribute to Standard in spring 2018: Mono-Red against Esper Teferi, burn against a slow control deck.",
+   "rewardSet": "m19",
+   "host": false,
+   "hero": {
+    "who": "wizards",
+    "deck": {
+     "name": "Mono-Red",
+     "colors": "R",
+     "archetype": "Aggro",
+     "label": "tribute",
+     "cards": [
+      {
+       "qty": 4,
+       "name": "Goblin Chainwhirler",
+       "set": "dom",
+       "number": "129",
+       "id": "8bdb2883-3cfd-4fb0-9f99-6a57277f7fe4"
+      },
+      {
+       "qty": 4,
+       "name": "Ghitu Lavarunner",
+       "set": "dom",
+       "number": "127",
+       "id": "c448ba82-a502-459f-9ebc-fc9e85674e6c"
+      },
+      {
+       "qty": 4,
+       "name": "Ghitu Journeymage",
+       "set": "dom",
+       "number": "126",
+       "id": "e4360bc9-76f0-4e82-8968-4c6c62a35ed1"
+      },
+      {
+       "qty": 4,
+       "name": "Keldon Raider",
+       "set": "dom",
+       "number": "135",
+       "id": "f1245212-d081-4e95-a508-e1d3a7496473"
+      },
+      {
+       "qty": 3,
+       "name": "Skizzik",
+       "set": "dom",
+       "number": "145",
+       "id": "77af9d28-1639-47bd-b925-7f3d2eefd352"
+      },
+      {
+       "qty": 4,
+       "name": "Shivan Fire",
+       "set": "dom",
+       "number": "142",
+       "id": "21b9d339-99ed-4923-8f56-be37f29a0bfa"
+      },
+      {
+       "qty": 4,
+       "name": "Wizard's Lightning",
+       "set": "dom",
+       "number": "152",
+       "id": "59bf371a-164c-4db8-9207-197c2e7c3c10"
+      },
+      {
+       "qty": 2,
+       "name": "Fight with Fire",
+       "set": "dom",
+       "number": "119",
+       "id": "72c94d7a-cad7-438f-bc96-e6a7158ab0e6"
+      },
+      {
+       "qty": 3,
+       "name": "Lightning Strike",
+       "set": "m19",
+       "number": "152",
+       "id": "084b7337-c06f-4cbf-8fc0-0b20c221f1dc"
+      },
+      {
+       "qty": 4,
+       "name": "Goblin Warchief",
+       "set": "dom",
+       "number": "130",
+       "id": "5bac033c-dc4e-40a0-b103-4892e4b50249"
+      },
+      {
+       "qty": 24,
+       "name": "Mountain",
+       "set": "dom",
+       "number": "262",
+       "id": "621aa8e1-aebf-4eea-beb5-7fb47700a87a"
+      }
+     ]
+    }
+   },
+   "villain": {
+    "who": "esper",
+    "deck": {
+     "name": "Teferi Control",
+     "colors": "WU",
+     "archetype": "Control",
+     "label": "tribute",
+     "cards": [
+      {
+       "qty": 3,
+       "name": "Teferi, Hero of Dominaria",
+       "set": "dom",
+       "number": "207",
+       "id": "5d10b752-d9cb-419d-a5c4-d4ee1acb655e"
+      },
+      {
+       "qty": 4,
+       "name": "Seal Away",
+       "set": "dom",
+       "number": "31",
+       "id": "8f8d6588-671d-4eb3-874f-f7139da2e05a"
+      },
+      {
+       "qty": 3,
+       "name": "Blink of an Eye",
+       "set": "dom",
+       "number": "46",
+       "id": "ab830392-4d7e-4b45-93cf-35ed1e935228"
+      },
+      {
+       "qty": 4,
+       "name": "Opt",
+       "set": "dom",
+       "number": "60",
+       "id": "25f2e4d0-effd-4e83-b7aa-1a0d8f120951"
+      },
+      {
+       "qty": 3,
+       "name": "Academy Journeymage",
+       "set": "dom",
+       "number": "41",
+       "id": "a46a65e0-66a3-4896-8acc-0ad5e9927c40"
+      },
+      {
+       "qty": 3,
+       "name": "Cloudreader Sphinx",
+       "set": "dom",
+       "number": "47",
+       "id": "6c85a696-fa1a-4e05-b0aa-79b3381e849a"
+      },
+      {
+       "qty": 3,
+       "name": "Serra Angel",
+       "set": "dom",
+       "number": "33",
+       "id": "b56b9131-4f7e-4912-ba47-63ed82f21d1b"
+      },
+      {
+       "qty": 2,
+       "name": "Wizard's Retort",
+       "set": "dom",
+       "number": "75",
+       "id": "bae30b7d-9306-46ef-adea-c4057f59c9c1"
+      },
+      {
+       "qty": 2,
+       "name": "Time of Ice",
+       "set": "dom",
+       "number": "70",
+       "id": "edcd0674-68b9-41ca-ab46-a73dfcbe4149"
+      },
+      {
+       "qty": 3,
+       "name": "History of Benalia",
+       "set": "dom",
+       "number": "21",
+       "id": "d134385d-b01c-41c7-bb2d-30722b44dc5a"
+      },
+      {
+       "qty": 4,
+       "name": "Knight of Grace",
+       "set": "dom",
+       "number": "23",
+       "id": "7bbbddc0-f8b3-4255-bd82-d50f829ca009"
+      },
+      {
+       "qty": 2,
+       "name": "Syncopate",
+       "set": "dom",
+       "number": "67",
+       "id": "f81739a5-35a7-4812-a7af-e1951bf5579c"
+      },
+      {
+       "qty": 12,
+       "name": "Plains",
+       "set": "dom",
+       "number": "250",
+       "id": "023d333b-14f2-40ad-bb76-8b9e38040f89"
+      },
+      {
+       "qty": 10,
+       "name": "Island",
+       "set": "dom",
+       "number": "254",
+       "id": "0ce67a27-aa80-46ac-955a-8fea336995d9"
+      },
+      {
+       "qty": 2,
+       "name": "Meandering River",
+       "set": "dom",
+       "number": "274",
+       "id": "d4585bcf-288b-4251-b57f-9d7e50dffc7e"
+      }
+     ]
+    }
+   },
+   "reward": {
+    "hero": {
+     "packs": 1,
+     "coins": 100
+    },
+    "villain": {
+     "card": {
+      "oracle_id": "f2f165b6-ef0a-42ad-9352-ba68be8248b0",
+      "name": "Teferi, Hero of Dominaria",
+      "rarity": "mythic",
+      "set": "dom",
+      "id": "5d10b752-d9cb-419d-a5c4-d4ee1acb655e",
+      "image": "https://cards.scryfall.io/normal/front/5/d/5d10b752-d9cb-419d-a5c4-d4ee1acb655e.jpg"
+     },
+     "coins": 100
+    }
+   },
+   "scene": [
+    {
+     "who": "stage",
+     "line": "The trick is, once you get moving, don't stop!",
+     "quote": true
+    },
+    {
+     "who": "stage",
+     "line": "Tolarians teach the theory of pyromancy. The Ghitu prefer applied research.",
+     "quote": true
+    },
+    {
+     "who": "you",
+     "line": "Red wants to win before Teferi comes down. Keep attacking and burn their face."
+    }
+   ],
+   "villainScene": [
+    {
+     "who": "stage",
+     "line": "Long ago, I enchanted an army of statues to guard Zhalfir. My homeland is gone, but its protectors remain.",
+     "quote": true
+    },
+    {
+     "who": "stage",
+     "line": "We don't choose who comes here. We choose how long they stay.",
+     "quote": true
+    }
+   ],
+   "after": null,
+   "cues": {
+    "hero": {
+     "start": "Do not stop!",
+     "big": "Burn it all!",
+     "low": "Teferi is too slow...",
+     "win": "The fire wins.",
+     "loss": "Frozen out...",
+     "half": "Race before Teferi lands."
+    },
+    "villain": {
+     "start": "Think.",
+     "big": "Time bends.",
+     "low": "Out of answers...",
+     "win": "Control.",
+     "loss": "Too fast..."
+    }
+   },
+   "bigPlays": [],
+   "sim": null
+  },
+  {
+   "id": "a28b7",
+   "slot": 7,
+   "kind": "Meta",
+   "mood": "tension",
+   "title": "Steel Leaf Stompy",
+   "difficulty": "Normal",
+   "teaches": [
+    "Card advantage"
+   ],
+   "blurb": "A tribute to Standard in spring 2018: Steel Leaf Stompy, big elves and bigger beasts, against RB Aggro.",
+   "rewardSet": "m19",
+   "host": false,
+   "hero": {
+    "who": "stompy",
+    "deck": {
+     "name": "Steel Leaf Stompy",
+     "colors": "G",
+     "archetype": "Aggro",
+     "label": "tribute",
+     "cards": [
+      {
+       "qty": 4,
+       "name": "Llanowar Elves",
+       "set": "dom",
+       "number": "168",
+       "id": "581b7327-3215-4a4f-b4ae-d9d4002ba882"
+      },
+      {
+       "qty": 1,
+       "name": "Steel Leaf Champion",
+       "set": "dom",
+       "number": "182",
+       "id": "24d8a688-79d4-49b9-ab0c-c7f5c9b551f4"
+      },
+      {
+       "qty": 4,
+       "name": "Baloth Gorger",
+       "set": "dom",
+       "number": "156",
+       "id": "504090bb-d183-4833-aea5-d4193b5c57a1"
+      },
+      {
+       "qty": 3,
+       "name": "Territorial Allosaurus",
+       "set": "dom",
+       "number": "184",
+       "id": "3d8ac2b0-47ea-4aa3-bf24-c78227a0c913"
+      },
+      {
+       "qty": 3,
+       "name": "Marwyn, the Nurturer",
+       "set": "dom",
+       "number": "172",
+       "id": "251613c0-2e72-4bd1-b3b5-69602b07b6f9"
+      },
+      {
+       "qty": 3,
+       "name": "Llanowar Envoy",
+       "set": "dom",
+       "number": "169",
+       "id": "1a667bba-ecf0-4212-8ca3-75d4db6abce2"
+      },
+      {
+       "qty": 4,
+       "name": "Saproling Migration",
+       "set": "dom",
+       "number": "178",
+       "id": "2578d25e-5f8d-42ff-90ce-4e7d100cbbb6"
+      },
+      {
+       "qty": 3,
+       "name": "Mammoth Spider",
+       "set": "dom",
+       "number": "171",
+       "id": "db18bbcd-527d-4134-a6ae-6f4381419867"
+      },
+      {
+       "qty": 4,
+       "name": "Krosan Druid",
+       "set": "dom",
+       "number": "167",
+       "id": "c332dc82-7664-44d0-b92a-a3d867399884"
+      },
+      {
+       "qty": 4,
+       "name": "Rabid Bite",
+       "set": "m19",
+       "number": "195",
+       "id": "bbe53385-d63f-4d07-94ed-3ea5a48c79c8"
+      },
+      {
+       "qty": 3,
+       "name": "Wild Onslaught",
+       "set": "dom",
+       "number": "188",
+       "id": "eb75cf21-08be-4b92-bdf6-014a36090738"
+      },
+      {
+       "qty": 24,
+       "name": "Forest",
+       "set": "dom",
+       "number": "266",
+       "id": "ae21165c-cc6d-45cc-b5c1-97b73e85dddd"
+      }
+     ]
+    }
+   },
+   "villain": {
+    "who": "rb",
+    "deck": {
+     "name": "RB Aggro",
+     "colors": "BR",
+     "archetype": "Aggro",
+     "label": "tribute",
+     "cards": [
+      {
+       "qty": 4,
+       "name": "Knight of Malice",
+       "set": "dom",
+       "number": "97",
+       "id": "b45266f0-eb4f-4a06-bc64-8c2d774b4cc5"
+      },
+      {
+       "qty": 2,
+       "name": "Goblin Chainwhirler",
+       "set": "dom",
+       "number": "129",
+       "id": "8bdb2883-3cfd-4fb0-9f99-6a57277f7fe4"
+      },
+      {
+       "qty": 4,
+       "name": "Keldon Raider",
+       "set": "dom",
+       "number": "135",
+       "id": "f1245212-d081-4e95-a508-e1d3a7496473"
+      },
+      {
+       "qty": 3,
+       "name": "Skizzik",
+       "set": "dom",
+       "number": "145",
+       "id": "77af9d28-1639-47bd-b925-7f3d2eefd352"
+      },
+      {
+       "qty": 3,
+       "name": "Cast Down",
+       "set": "dom",
+       "number": "81",
+       "id": "116ce944-6871-4f51-a889-d9c4a5d7cff2"
+      },
+      {
+       "qty": 3,
+       "name": "Shivan Fire",
+       "set": "dom",
+       "number": "142",
+       "id": "21b9d339-99ed-4923-8f56-be37f29a0bfa"
+      },
+      {
+       "qty": 3,
+       "name": "Cabal Paladin",
+       "set": "dom",
+       "number": "79",
+       "id": "2cff2cb9-f4e6-4fee-94ef-ad11e24525c1"
+      },
+      {
+       "qty": 3,
+       "name": "Vicious Offering",
+       "set": "dom",
+       "number": "110",
+       "id": "aaed7828-57c1-4ad3-a91b-209c66f0876b"
+      },
+      {
+       "qty": 4,
+       "name": "Wizard's Lightning",
+       "set": "dom",
+       "number": "152",
+       "id": "59bf371a-164c-4db8-9207-197c2e7c3c10"
+      },
+      {
+       "qty": 2,
+       "name": "Fight with Fire",
+       "set": "dom",
+       "number": "119",
+       "id": "72c94d7a-cad7-438f-bc96-e6a7158ab0e6"
+      },
+      {
+       "qty": 2,
+       "name": "Brawl-Bash Ogre",
+       "set": "m19",
+       "number": "213",
+       "id": "38b9f9d7-a00d-4a90-9d7a-88ece10af328"
+      },
+      {
+       "qty": 2,
+       "name": "Garna, the Bloodflame",
+       "set": "dom",
+       "number": "194",
+       "id": "ae9c1471-ae6f-4b66-9842-46f1a74e93b5"
+      },
+      {
+       "qty": 1,
+       "name": "Goblin Warchief",
+       "set": "dom",
+       "number": "130",
+       "id": "5bac033c-dc4e-40a0-b103-4892e4b50249"
+      },
+      {
+       "qty": 12,
+       "name": "Mountain",
+       "set": "dom",
+       "number": "262",
+       "id": "621aa8e1-aebf-4eea-beb5-7fb47700a87a"
+      },
+      {
+       "qty": 10,
+       "name": "Swamp",
+       "set": "dom",
+       "number": "258",
+       "id": "09eeb6aa-45ac-4a0e-bab2-1a004aac841f"
+      },
+      {
+       "qty": 2,
+       "name": "Cinder Barrens",
+       "set": "m19",
+       "number": "248",
+       "id": "db41b554-2bb1-4f11-be29-233d36cc955a"
+      }
+     ]
+    }
+   },
+   "reward": {
+    "hero": {
+     "packs": 1,
+     "coins": 100
+    },
+    "villain": {
+     "card": {
+      "oracle_id": "b89d912a-65a0-4bc9-9e1d-ff8317458a72",
+      "name": "Knight of Malice",
+      "rarity": "uncommon",
+      "set": "dom",
+      "id": "b45266f0-eb4f-4a06-bc64-8c2d774b4cc5",
+      "image": "https://cards.scryfall.io/normal/front/b/4/b45266f0-eb4f-4a06-bc64-8c2d774b4cc5.jpg"
+     },
+     "coins": 100
+    }
+   },
+   "scene": [
+    {
+     "who": "stage",
+     "line": "One eye open to see the truth of the world. One eye covered to gaze at the goddess within.",
+     "quote": true
+    },
+    {
+     "who": "stage",
+     "line": "Druids endure disaster as seeds endure winter. Now Krosa blooms once more.",
+     "quote": true
+    },
+    {
+     "who": "you",
+     "line": "Your elves get you ahead on mana. Play your biggest creature each turn and let their burn run dry."
+    }
+   ],
+   "villainScene": [
+    {
+     "who": "stage",
+     "line": "A shadow to swallow the light.",
+     "quote": true
+    },
+    {
+     "who": "stage",
+     "line": "You should have seen the look on both their faces.",
+     "quote": true
+    }
+   ],
+   "after": null,
+   "cues": {
+    "hero": {
+     "start": "Elves up!",
+     "big": "Stomp!",
+     "low": "They are burning my elves...",
+     "win": "Krosa blooms.",
+     "loss": "Burned out...",
+     "half": "Play your biggest creature."
+    },
+    "villain": {
+     "start": "Shadows.",
+     "big": "Burn!",
+     "low": "Out of fuel...",
+     "win": "Ash.",
+     "loss": "Overgrown..."
+    }
+   },
+   "bigPlays": [],
+   "sim": null
+  },
+  {
+   "id": "a28b8",
+   "slot": 8,
+   "kind": "Boss",
+   "mood": "boss",
+   "title": "The Demonlord",
+   "difficulty": "Hard",
+   "teaches": [
+    "Racing"
+   ],
+   "blurb": "Belzenlok's story is all he has. Teferi, Jhoira and Karn have a ship, a spark and a lot of old Dominaria behind them.",
+   "rewardSet": "m19",
+   "host": true,
+   "hero": {
+    "who": "weatherlight",
+    "deck": {
+     "name": "The Weatherlight Crew",
+     "colors": "WU",
+     "archetype": null,
+     "label": "tribute",
+     "cards": [
+      {
+       "qty": 2,
+       "name": "Teferi, Hero of Dominaria",
+       "set": "dom",
+       "number": "207",
+       "id": "5d10b752-d9cb-419d-a5c4-d4ee1acb655e"
+      },
+      {
+       "qty": 3,
+       "name": "Raff Capashen, Ship's Mage",
+       "set": "dom",
+       "number": "202",
+       "id": "674070e3-6efe-45e4-aff6-e4a49ec2106e"
+      },
+      {
+       "qty": 3,
+       "name": "History of Benalia",
+       "set": "dom",
+       "number": "21",
+       "id": "d134385d-b01c-41c7-bb2d-30722b44dc5a"
+      },
+      {
+       "qty": 3,
+       "name": "Seal Away",
+       "set": "dom",
+       "number": "31",
+       "id": "8f8d6588-671d-4eb3-874f-f7139da2e05a"
+      },
+      {
+       "qty": 1,
+       "name": "Serra Angel",
+       "set": "dom",
+       "number": "33",
+       "id": "b56b9131-4f7e-4912-ba47-63ed82f21d1b"
+      },
+      {
+       "qty": 4,
+       "name": "Knight of Grace",
+       "set": "dom",
+       "number": "23",
+       "id": "7bbbddc0-f8b3-4255-bd82-d50f829ca009"
+      },
+      {
+       "qty": 3,
+       "name": "Cloudreader Sphinx",
+       "set": "dom",
+       "number": "47",
+       "id": "6c85a696-fa1a-4e05-b0aa-79b3381e849a"
+      },
+      {
+       "qty": 3,
+       "name": "Academy Journeymage",
+       "set": "dom",
+       "number": "41",
+       "id": "a46a65e0-66a3-4896-8acc-0ad5e9927c40"
+      },
+      {
+       "qty": 2,
+       "name": "Danitha Capashen, Paragon",
+       "set": "dom",
+       "number": "12",
+       "id": "b2a2b53c-0bf2-4d3d-91c2-57a484ae4f6b"
+      },
+      {
+       "qty": 3,
+       "name": "Blink of an Eye",
+       "set": "dom",
+       "number": "46",
+       "id": "ab830392-4d7e-4b45-93cf-35ed1e935228"
+      },
+      {
+       "qty": 4,
+       "name": "Opt",
+       "set": "dom",
+       "number": "60",
+       "id": "25f2e4d0-effd-4e83-b7aa-1a0d8f120951"
+      },
+      {
+       "qty": 2,
+       "name": "Wizard's Retort",
+       "set": "dom",
+       "number": "75",
+       "id": "bae30b7d-9306-46ef-adea-c4057f59c9c1"
+      },
+      {
+       "qty": 12,
+       "name": "Plains",
+       "set": "dom",
+       "number": "250",
+       "id": "023d333b-14f2-40ad-bb76-8b9e38040f89"
+      },
+      {
+       "qty": 10,
+       "name": "Island",
+       "set": "dom",
+       "number": "254",
+       "id": "0ce67a27-aa80-46ac-955a-8fea336995d9"
+      },
+      {
+       "qty": 2,
+       "name": "Meandering River",
+       "set": "dom",
+       "number": "274",
+       "id": "d4585bcf-288b-4251-b57f-9d7e50dffc7e"
+      },
+      {
+       "qty": 2,
+       "name": "Divination",
+       "set": "dom",
+       "number": "52",
+       "id": "c7f9daf0-dbfd-45b2-be35-9c2de9d1a56e"
+      },
+      {
+       "qty": 1,
+       "name": "Lyra Dawnbringer",
+       "set": "dom",
+       "number": "26",
+       "id": "93be6799-7b9d-44d4-84dc-2961692b5a85"
+      }
+     ]
+    }
+   },
+   "villain": {
+    "who": "belzenlok",
+    "deck": {
+     "name": "The Cabal",
+     "colors": "B",
+     "archetype": null,
+     "label": "tribute",
+     "cards": [
+      {
+       "qty": 4,
+       "name": "Demonlord Belzenlok",
+       "set": "dom",
+       "number": "86",
+       "id": "ffb4dbe8-15fa-467f-9366-66382b192113"
+      },
+      {
+       "qty": 2,
+       "name": "Josu Vess, Lich Knight",
+       "set": "dom",
+       "number": "95",
+       "id": "6ed6d088-db82-4648-a109-0e3fa1421847"
+      },
+      {
+       "qty": 4,
+       "name": "Cabal Paladin",
+       "set": "dom",
+       "number": "79",
+       "id": "2cff2cb9-f4e6-4fee-94ef-ad11e24525c1"
+      },
+      {
+       "qty": 2,
+       "name": "Rite of Belzenlok",
+       "set": "dom",
+       "number": "102",
+       "id": "1ed7cca3-79be-44ca-bf10-2ae1c0835ed1"
+      },
+      {
+       "qty": 3,
+       "name": "Vicious Offering",
+       "set": "dom",
+       "number": "110",
+       "id": "aaed7828-57c1-4ad3-a91b-209c66f0876b"
+      },
+      {
+       "qty": 4,
+       "name": "Cast Down",
+       "set": "dom",
+       "number": "81",
+       "id": "116ce944-6871-4f51-a889-d9c4a5d7cff2"
+      },
+      {
+       "qty": 3,
+       "name": "Eviscerate",
+       "set": "dom",
+       "number": "91",
+       "id": "62ba90b8-3a30-4058-b8d3-72900b1f4fe0"
+      },
+      {
+       "qty": 2,
+       "name": "Murder",
+       "set": "m19",
+       "number": "110",
+       "id": "45368bf3-d5e9-43e6-a67d-93c2e93acc72"
+      },
+      {
+       "qty": 2,
+       "name": "Liliana, the Necromancer",
+       "set": "m19",
+       "number": "291",
+       "id": "4d2cbc2c-dbe3-4ecb-8fbe-785cb80b9e76"
+      },
+      {
+       "qty": 3,
+       "name": "Demon of Catastrophes",
+       "set": "m19",
+       "number": "91",
+       "id": "d50f9563-7bf8-4c3c-ac82-327221e56551"
+      },
+      {
+       "qty": 2,
+       "name": "Feral Abomination",
+       "set": "dom",
+       "number": "92",
+       "id": "3292e262-4409-4f31-9de2-a232817a0734"
+      },
+      {
+       "qty": 24,
+       "name": "Swamp",
+       "set": "dom",
+       "number": "258",
+       "id": "09eeb6aa-45ac-4a0e-bab2-1a004aac841f"
+      },
+      {
+       "qty": 3,
+       "name": "Dread Shade",
+       "set": "dom",
+       "number": "88",
+       "id": "46b8b1d7-9d2b-4943-bb3b-238a6333ce93"
+      },
+      {
+       "qty": 2,
+       "name": "Vampire Sovereign",
+       "set": "m19",
+       "number": "125",
+       "id": "ee338221-ead9-4b89-8b0c-12745c4ca13d"
+      }
+     ]
+    }
+   },
+   "reward": {
+    "hero": {
+     "packs": 2,
+     "coins": 200
+    },
+    "villain": {
+     "card": {
+      "oracle_id": "667ece0e-a474-4e11-8ac4-6c8fc354457c",
+      "name": "Demonlord Belzenlok",
+      "rarity": "mythic",
+      "set": "dom",
+      "id": "ffb4dbe8-15fa-467f-9366-66382b192113",
+      "image": "https://cards.scryfall.io/normal/front/f/f/ffb4dbe8-15fa-467f-9366-66382b192113.jpg"
+     },
+     "coins": 200
+    }
+   },
+   "scene": [
+    {
+     "who": "stage",
+     "line": "You are not alone. You never were.",
+     "quote": true
+    },
+    {
+     "who": "stage",
+     "line": "I will protect the less fortunate. I will love bravely. I will face despair and fight on. As a Capashen, I can do no less.",
+     "quote": true
+    },
+    {
+     "who": "teferi",
+     "line": "He says he has ruled every age. He made that up. Break the story and the Cabal goes with it."
+    }
+   ],
+   "villainScene": [
+    {
+     "who": "stage",
+     "line": "The Demonlord has ruled every age. Every ruin, myth, and nightmare proves his power.",
+     "quote": true
+    },
+    {
+     "who": "stage",
+     "line": "Fear the dark if you must, but don't mistake sunlight for safety.",
+     "quote": true
+    }
+   ],
+   "after": null,
+   "cues": {
+    "hero": {
+     "start": "Weatherlight, to me.",
+     "big": "Together!",
+     "low": "The Demonlord is huge...",
+     "win": "The story ends here.",
+     "loss": "Ship down...",
+     "half": "Race him before the Rite finishes."
+    },
+    "villain": {
+     "start": "All hail.",
+     "big": "[the Stronghold roars]",
+     "low": "[a hollow chant]",
+     "win": "It was a story.",
+     "loss": "[the Stronghold falls silent]",
+     "half": {
+      "who": "tiana",
+      "line": "Nothing is too broken to mend."
+     }
+    }
+   },
+   "bigPlays": [],
+   "sim": null
+  },
+  {
+   "id": "a28b9",
+   "slot": 9,
+   "kind": "Secret Boss",
+   "secret": true,
+   "mood": "boss",
+   "title": "Teferi, Hero of Dominaria",
+   "difficulty": "Hard",
+   "teaches": [
+    "Racing"
+   ],
+   "blurb": "Deep in the archive, a planeswalker who will not let you finish your turn.",
+   "rewardSet": "dom",
+   "host": true,
+   "archive": {
+    "deck": "Esper Teferi",
+    "when": "Spring 2018",
+    "format": "Standard.",
+    "what": "White-blue control decks built around Teferi, Hero of Dominaria, which untaps lands, draws cards and tucks a permanent away every turn.",
+    "why": "Teferi was a planeswalker that protected itself and generated card advantage in a format full of aggro decks.",
+    "beat": "Pressure Teferi with attackers, or make them spend counters and removal before they land it.",
+    "after": "Dominaria and Core Set 2019 rotated out of Standard in autumn 2019."
+   },
+   "hero": {
+    "who": "you",
+    "deck": {
+     "name": "Steel Leaf Stompy",
+     "colors": "G",
+     "archetype": "Aggro",
+     "label": "tribute",
+     "cards": [
+      {
+       "qty": 4,
+       "name": "Llanowar Elves",
+       "set": "dom",
+       "number": "168",
+       "id": "581b7327-3215-4a4f-b4ae-d9d4002ba882"
+      },
+      {
+       "qty": 3,
+       "name": "Steel Leaf Champion",
+       "set": "dom",
+       "number": "182",
+       "id": "24d8a688-79d4-49b9-ab0c-c7f5c9b551f4"
+      },
+      {
+       "qty": 4,
+       "name": "Baloth Gorger",
+       "set": "dom",
+       "number": "156",
+       "id": "504090bb-d183-4833-aea5-d4193b5c57a1"
+      },
+      {
+       "qty": 3,
+       "name": "Territorial Allosaurus",
+       "set": "dom",
+       "number": "184",
+       "id": "3d8ac2b0-47ea-4aa3-bf24-c78227a0c913"
+      },
+      {
+       "qty": 3,
+       "name": "Marwyn, the Nurturer",
+       "set": "dom",
+       "number": "172",
+       "id": "251613c0-2e72-4bd1-b3b5-69602b07b6f9"
+      },
+      {
+       "qty": 3,
+       "name": "Llanowar Envoy",
+       "set": "dom",
+       "number": "169",
+       "id": "1a667bba-ecf0-4212-8ca3-75d4db6abce2"
+      },
+      {
+       "qty": 4,
+       "name": "Saproling Migration",
+       "set": "dom",
+       "number": "178",
+       "id": "2578d25e-5f8d-42ff-90ce-4e7d100cbbb6"
+      },
+      {
+       "qty": 3,
+       "name": "Mammoth Spider",
+       "set": "dom",
+       "number": "171",
+       "id": "db18bbcd-527d-4134-a6ae-6f4381419867"
+      },
+      {
+       "qty": 3,
+       "name": "Krosan Druid",
+       "set": "dom",
+       "number": "167",
+       "id": "c332dc82-7664-44d0-b92a-a3d867399884"
+      },
+      {
+       "qty": 3,
+       "name": "Rabid Bite",
+       "set": "m19",
+       "number": "195",
+       "id": "bbe53385-d63f-4d07-94ed-3ea5a48c79c8"
+      },
+      {
+       "qty": 3,
+       "name": "Wild Onslaught",
+       "set": "dom",
+       "number": "188",
+       "id": "eb75cf21-08be-4b92-bdf6-014a36090738"
+      },
+      {
+       "qty": 24,
+       "name": "Forest",
+       "set": "dom",
+       "number": "266",
+       "id": "ae21165c-cc6d-45cc-b5c1-97b73e85dddd"
+      }
+     ]
+    }
+   },
+   "villain": {
+    "who": "esper",
+    "deck": {
+     "name": "Teferi Control",
+     "colors": "WU",
+     "archetype": "Control",
+     "label": "tribute",
+     "note": "Built from cards in this act's sets only. No single tournament list is copied.",
+     "cards": [
+      {
+       "qty": 4,
+       "name": "Teferi, Hero of Dominaria",
+       "set": "dom",
+       "number": "207",
+       "id": "5d10b752-d9cb-419d-a5c4-d4ee1acb655e"
+      },
+      {
+       "qty": 4,
+       "name": "Seal Away",
+       "set": "dom",
+       "number": "31",
+       "id": "8f8d6588-671d-4eb3-874f-f7139da2e05a"
+      },
+      {
+       "qty": 3,
+       "name": "Syncopate",
+       "set": "dom",
+       "number": "67",
+       "id": "f81739a5-35a7-4812-a7af-e1951bf5579c"
+      },
+      {
+       "qty": 2,
+       "name": "Wizard's Retort",
+       "set": "dom",
+       "number": "75",
+       "id": "bae30b7d-9306-46ef-adea-c4057f59c9c1"
+      },
+      {
+       "qty": 3,
+       "name": "Opt",
+       "set": "dom",
+       "number": "60",
+       "id": "25f2e4d0-effd-4e83-b7aa-1a0d8f120951"
+      },
+      {
+       "qty": 3,
+       "name": "Blink of an Eye",
+       "set": "dom",
+       "number": "46",
+       "id": "ab830392-4d7e-4b45-93cf-35ed1e935228"
+      },
+      {
+       "qty": 4,
+       "name": "Cloudreader Sphinx",
+       "set": "dom",
+       "number": "47",
+       "id": "6c85a696-fa1a-4e05-b0aa-79b3381e849a"
+      },
+      {
+       "qty": 3,
+       "name": "Serra Angel",
+       "set": "dom",
+       "number": "33",
+       "id": "b56b9131-4f7e-4912-ba47-63ed82f21d1b"
+      },
+      {
+       "qty": 2,
+       "name": "Lyra Dawnbringer",
+       "set": "dom",
+       "number": "26",
+       "id": "93be6799-7b9d-44d4-84dc-2961692b5a85"
+      },
+      {
+       "qty": 4,
+       "name": "History of Benalia",
+       "set": "dom",
+       "number": "21",
+       "id": "d134385d-b01c-41c7-bb2d-30722b44dc5a"
+      },
+      {
+       "qty": 2,
+       "name": "Time of Ice",
+       "set": "dom",
+       "number": "70",
+       "id": "edcd0674-68b9-41ca-ab46-a73dfcbe4149"
+      },
+      {
+       "qty": 2,
+       "name": "Divination",
+       "set": "dom",
+       "number": "52",
+       "id": "c7f9daf0-dbfd-45b2-be35-9c2de9d1a56e"
+      },
+      {
+       "qty": 12,
+       "name": "Plains",
+       "set": "dom",
+       "number": "250",
+       "id": "023d333b-14f2-40ad-bb76-8b9e38040f89"
+      },
+      {
+       "qty": 10,
+       "name": "Island",
+       "set": "dom",
+       "number": "254",
+       "id": "0ce67a27-aa80-46ac-955a-8fea336995d9"
+      },
+      {
+       "qty": 2,
+       "name": "Meandering River",
+       "set": "dom",
+       "number": "274",
+       "id": "d4585bcf-288b-4251-b57f-9d7e50dffc7e"
+      }
+     ]
+    }
+   },
+   "reward": {
+    "hero": {
+     "packs": 2,
+     "coins": 200
+    },
+    "villain": {
+     "card": {
+      "oracle_id": "f2f165b6-ef0a-42ad-9352-ba68be8248b0",
+      "name": "Teferi, Hero of Dominaria",
+      "rarity": "mythic",
+      "set": "dom",
+      "id": "5d10b752-d9cb-419d-a5c4-d4ee1acb655e",
+      "image": "https://cards.scryfall.io/normal/front/5/d/5d10b752-d9cb-419d-a5c4-d4ee1acb655e.jpg"
+     },
+     "coins": 200
+    }
+   },
+   "scene": [
+    {
+     "who": "stage",
+     "line": "The crystal pulsed with the power of Teferi's planeswalker spark. Had Jhoira given him a blessing or a curse?",
+     "quote": true
+    },
+    {
+     "who": "you",
+     "line": "Attack Teferi the moment he lands. Do not let him untap."
+    }
+   ],
+   "villainScene": [
+    {
+     "who": "stage",
+     "line": "Long ago, I enchanted an army of statues to guard Zhalfir. My homeland is gone, but its protectors remain.",
+     "quote": true
+    }
+   ],
+   "after": [
+    {
+     "who": "stage",
+     "line": "Recorded: Dominaria and Core Set 2019 rotated out of Standard in autumn 2019."
+    }
+   ],
+   "cues": {
+    "hero": {
+     "start": "Attack him.",
+     "big": "Stomp!",
+     "low": "He untapped again...",
+     "win": "Teferi falls.",
+     "loss": "Frozen...",
+     "half": "Pressure the planeswalker."
+    },
+    "villain": {
+     "start": "[a quiet spell]",
+     "big": "[time turns]",
+     "low": "[a counter fizzles]",
+     "win": "[stillness]",
+     "loss": "[the lands untap]"
+    }
+   },
+   "bigPlays": [],
+   "sim": null
+  }
+ ]
+}

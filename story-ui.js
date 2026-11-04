@@ -5,7 +5,7 @@
 import {createMatchFacts} from './match-facts.js';
 import {STORY_ACTS, SET_NAMES, setSymbolUrl} from './story-acts.js';
 import {purseMarkup} from './play-econ-ui.js';
-import {battleStars, battleCleared, actCleared, actStars, currentBattle, currentAct, secretOpen, STAR_VALUE} from './story-client.js';
+import {battleStars, battleCleared, actCleared, actStars, currentBattle, currentAct, secretOpen, secretStatus, STAR_VALUE} from './story-client.js';
 const esc = v => String(v ?? '').replace(/[&<>"']/g, c => ({'&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;'}[c]));
 const back = (act, label) => `<button class="pl-back" data-act="${act}" aria-label="${label}"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="m15 5-7 7 7 7"/></svg></button>`;
 const head = (title, econ, eyebrow, backAct = 'playHome', backLabel = 'Back to Play') => `<header class="pl-head pe-head st-head">${back(backAct, backLabel)}<div class="pl-head-title"><p class="eyebrow">${esc(eyebrow)}</p><h1 id="playTitle" tabindex="-1">${esc(title)}</h1></div>${purseMarkup(econ)}</header>`;
@@ -39,7 +39,16 @@ export function storyHomeMarkup({progress, econ, actsData = {}}) {
 }
 
 // One act: its banner and the battles you've reached. Cleared ones, the current one, then one tease.
+// A closed secret boss shows once the act is far enough along: what it still needs (all 8 battles won with the Story
+// decks and the act's key feats). The key feats themselves are marked in Achievements, on the Story tab.
+const secretTease = (data, progress, act, counters) => {
+  if (!data.battles.some(b => b.secret) || secretOpen(progress, act, counters)) return '';
+  const st = secretStatus(progress, act, counters);
+  if (st.won < 4 && !st.keys) return '';
+  return `<p class="st-secret-tease" role="note">A secret battle waits in this act. Win all 8 battles with the Story decks (${st.won} of 8) and earn its ${st.keysNeeded} key feats (${st.keys} of ${st.keysNeeded}). Key feats are marked in Achievements.</p>`;
+};
 export function storyActMarkup({act, data, progress, econ}) {
+  const counters = econ?.state?.counters || {};
   const meta = STORY_ACTS.find(a => a.act === act), now = currentBattle(progress, act), boss = b => b.slot >= 8;
   const cleared = data.battles.filter(b => !b.secret && battleCleared(progress, b.id)).length;
   const villainFace = b => data.cast[b.villain.who]?.portrait;
@@ -54,7 +63,8 @@ export function storyActMarkup({act, data, progress, econ}) {
   return `<section class="play-menu st-screen st-act" aria-labelledby="playTitle">${head(meta.title, econ, 'Story · Act ' + act, 'storyHome', 'Back to Story')}
     <header class="st-banner"><span class="st-banner-art" style="background-image:url(${esc(meta.art.crop)})" aria-hidden="true"></span>
       <span class="st-banner-copy">${symbols(meta)}<span class="st-banner-years">${esc(meta.years)}</span></span>${ring(cleared, 8, cleared + ' of 8 battles won')}</header>
-    <ol class="st-battles">${data.battles.filter(b => b.secret ? secretOpen(progress, act) : b.slot <= now + 1).map(row).join('')}</ol>
+    <ol class="st-battles">${data.battles.filter(b => b.secret ? secretOpen(progress, act, counters) : b.slot <= now + 1).map(row).join('')}</ol>
+    ${secretTease(data, progress, act, counters)}
   </section>`;
 }
 
@@ -211,6 +221,30 @@ export const LESSONS = {
   'Exert': 'Exert: when it attacks you may exert it, and it will not untap during your next untap step. Use it when the extra effect wins the game.',
   'Aftermath': 'Aftermath: the second half of the split card can only be cast from your graveyard, and is then exiled. Cast the first half first.',
   'Eternalize': 'Eternalize: pay the eternalize cost and exile the card from your graveyard to make a 4/4 black Zombie copy. Exile their graveyard.',
+  'Explore': 'Explore: reveal the top card of your library. If it is a land it goes to your hand. If not, the creature gets a +1/+1 counter and you may put the card into your graveyard.',
+  'Treasure': 'Treasure: a token you can sacrifice for one mana of any colour. Save it for the turn you need the extra mana.',
+  'Enrage': 'Enrage: it triggers each time the creature is dealt damage. Blocking and fighting with it are good ways to set it off.',
+  'Ascend': 'Ascend: control ten permanents and you get the city\'s blessing for the rest of the game. Lands and tokens count.',
+  'Lifelink': 'Lifelink: damage dealt by the creature also gains its controller that much life. Race it carefully, or remove it.',
+  'Sagas': 'Sagas: an enchantment that gets a lore counter each turn and does a chapter ability for each one. When the last chapter is done, it is sacrificed.',
+  'Historic': 'Historic: artifacts, legendary cards and Sagas. Some cards get better when you cast one.',
+  'Legendary sorceries': 'Legendary sorceries can only be cast if you control a legendary creature or planeswalker. Keep a legend on the table first.',
+  'Surveil': 'Surveil: look at the top cards of your library, then put any of them into your graveyard and the rest back on top in any order. It digs and fuels graveyard cards.',
+  'Mentor': 'Mentor: when this creature attacks, put a +1/+1 counter on an attacking creature with lesser power. Attack with the small ones beside it.',
+  'Afterlife': 'Afterlife: when the creature dies, you make that many 1/1 flying Spirit tokens. Trading it away still leaves something behind.',
+  'Amass': 'Amass: put counters on your Army token, or make one first. Kill the Army and all of its counters go with it.',
+  'Adventures': 'Adventures: an Adventure card is a spell and a creature in one. Cast the Adventure first, the card goes to exile, and later you can cast the creature from there.',
+  'Food': 'Food: a Food token is an artifact. Pay 2, tap and sacrifice it to gain 3 life. Some cards get stronger when you control Food.',
+  'Escape': 'Escape: cast the card from your graveyard by paying its escape cost and exiling other cards from your graveyard. A full graveyard is a second hand.',
+  'Mutate': 'Mutate: cast a mutating creature on top of or under a non-Human creature you control. They become one creature with both sets of abilities.',
+  'Cycling matters': 'Cycling matters: a card that cycles is never dead in hand, and some decks reward you for doing it. Count your cycling cards when deciding what to keep.',
+  'Modal double-faced cards': 'Modal double-faced cards: one card with two faces. Cast either face from your hand; a land face can be played as a land, so it is never a dead draw.',
+  'Foretell': 'Foretell: pay 2 on your turn to set the card face down in exile. On a later turn, cast it for its foretell cost.',
+  'Learn': 'Learn: get a Lesson from outside the game, or discard a card to draw a card. Most of the time it is a way to find what you need.',
+  'Magecraft': 'Magecraft: triggers whenever you cast or copy an instant or sorcery spell. Keep the mage on the table, then cast spells.',
+  'Dungeons': 'Dungeons: venture into the dungeon to move to a room and get its effect. Each new venture goes deeper, and the last room is the best.',
+  'Day and night': 'Day and night: it starts as neither. It becomes day or night after a player casts no spells on their own turn, and returns to day if a player casts two or more spells in a turn. Werewolves transform with it.',
+  'Disturb': 'Disturb: cast the back face of this spirit card from your graveyard. A creature that dies can come back as an aura or a spirit.',
   'Playing under a lock': 'A lock stops cards from untapping or moving. Break it, or win with what\'s already in play.',
 };
 // Every Story deck says what it is (Randall, 2 Nov 2026): Historical Exact, Historical Tribute or
