@@ -3,7 +3,7 @@
 // from something the server counts: match reports (play.counters), log-ins, packs opened and the
 // Play collection. Practice never counts, and friend matches count as played, never as won.
 
-import {STORY_DEEDS, STORY_ACT_DEEDS, storyDeedArt} from './story-deeds.js';
+import {STORY_DEEDS, STORY_ACT_DEEDS, storyDeedArt, storyDeedReward} from './story-deeds.js';
 import {collectorSource} from './play-econ-rules.js';
 import {achievementArt} from './play-achievement-art.js';
 export {achievementArt};
@@ -15,6 +15,9 @@ const DEFAULT_TIER_REWARD = {bronze: {seals: {u: 1}, xp: 100}, silver: {seals: {
 const FEAT = {coins: 300, packs: 1, xp: 100};
 // A hidden feat (a riddle until earned) pays more: finding it is the point.
 const HIDDEN_FEAT = {coins: 500, packs: 1, xp: 250, seals: {r: 1}};
+// One-step deeds pay by how hard they are (Randall, 4 Nov): some only XP, some a common or uncommon seal,
+// the big ones a pack, hidden ones a rare seal. `reward` on an achievement names one of these.
+const REWARDS = {xp: {xp: 100}, common: {coins: 100, xp: 100, seals: {c: 1}}, uncommon: {coins: 200, xp: 150, seals: {u: 1}}, feat: FEAT};
 
 // Tabs, in order: one per Play mode or place (Quick Play, Practice, Story, Multiplayer, the Trunk,
 // packs and the Merchant), plus the lifetime ones and the hidden ones.
@@ -27,7 +30,7 @@ export const DEED_TABS = [['journey', 'Journey'], ['duelist', 'Duelist'], ['quic
 // so they are earned and shown, never claimed. Ids and steps are permanent: claims are ach:<id>:<step>.
 export const ACHIEVEMENTS = Object.freeze([
   // Journey: the whole of Play.
-  {id: 'first-spark', tab: 'journey', title: 'First Spark', lore: 'Every planeswalker remembers the first time the spark caught.', art: 'Chandra, Torch of Defiance', source: 'matches', steps: [1], feat: true},
+  {id: 'first-spark', tab: 'journey', title: 'First Spark', lore: 'Every planeswalker remembers the first time the spark caught.', art: 'Chandra, Torch of Defiance', source: 'matches', steps: [1], feat: true, reward: 'xp'},
   {id: 'faithful', tab: 'journey', title: 'Faithful Planeswalker', lore: 'Days you came back to the Multiverse. Missed days never reset it.', art: 'Teferi, Hero of Dominaria', source: 'logins', steps: [7, 30, 100, 365], titleReward: 'Ever-Present'},
   {id: 'table-time', tab: 'journey', title: 'Time at the Table', lore: 'Hours spent in real matches, never in menus.', art: 'Karn, Scion of Urza', source: 'minutes', steps: [60, 600, 3000, 9000, 30000], unit: 'h', titleReward: 'Grizzled Veteran'},
   {id: 'well-travelled', tab: 'journey', title: 'Well Travelled', lore: 'Matches finished in Story, Quick Play and Multiplayer.', art: 'Kiora, Behemoth Beckoner', source: 'matches', steps: [10, 50, 250, 1000]},
@@ -36,31 +39,31 @@ export const ACHIEVEMENTS = Object.freeze([
   // Duelist: how you win.
   {id: 'victor', tab: 'duelist', title: 'Victor', lore: 'Wins against the CPU and in Story. Friend wins never count.', art: 'Elspeth, Sun\'s Champion', source: 'wins', steps: [10, 50, 250, 1000, 5000]},
   {id: 'on-the-draw', tab: 'duelist', title: 'On the Draw', lore: 'Wins when you went second.', art: 'Brainstorm', source: 'wins_draw', steps: [5, 25, 100]},
-  {id: 'swift-justice', tab: 'duelist', title: 'Swift Justice', lore: 'Win by your 5th turn.', art: 'Lightning Bolt', source: 'wins_fast', steps: [1], feat: true},
-  {id: 'flawless', tab: 'duelist', title: 'Flawless', lore: 'Win with 20 life or more.', art: 'Serra Angel', source: 'wins_flawless', steps: [1], feat: true},
-  {id: 'long-game', tab: 'duelist', title: 'The Long Game', lore: 'Win a match that lasts 15 of your turns.', art: 'Ugin, the Spirit Dragon', source: 'wins_long', steps: [1], feat: true},
+  {id: 'swift-justice', tab: 'duelist', title: 'Swift Justice', lore: 'Win by your 5th turn.', art: 'Lightning Bolt', source: 'wins_fast', steps: [1], feat: true, reward: 'uncommon'},
+  {id: 'flawless', tab: 'duelist', title: 'Flawless', lore: 'Win with 20 life or more.', art: 'Serra Angel', source: 'wins_flawless', steps: [1], feat: true, reward: 'common'},
+  {id: 'long-game', tab: 'duelist', title: 'The Long Game', lore: 'Win a match that lasts 15 of your turns.', art: 'Ugin, the Spirit Dragon', source: 'wins_long', steps: [1], feat: true, reward: 'common'},
   {id: 'comeback', tab: 'duelist', title: 'Back From the Brink', lore: 'Win with 5 life or less. The table thought you were finished.', art: 'Worship', source: 'wins_low', steps: [1, 10, 50]},
   {id: 'executioner', tab: 'duelist', title: 'Executioner', lore: 'Opposing creatures you destroyed, in every mode but Practice.', art: 'Wrath of God', source: 'kills', steps: [25, 100, 500, 2000, 5000]},
-  {id: 'one-big-turn', tab: 'duelist', title: 'One Big Turn', lore: 'Deal 15 or more damage to one opponent in a single turn.', art: 'Craterhoof Behemoth', source: 'f_big15', steps: [1], feat: true},
-  {id: 'alpha-strike', tab: 'duelist', title: 'Alpha Strike', lore: 'Attack with six or more creatures at once.', art: 'Overwhelming Stampede', source: 'f_alpha6', steps: [1], feat: true},
+  {id: 'one-big-turn', tab: 'duelist', title: 'One Big Turn', lore: 'Deal 15 or more damage to one opponent in a single turn.', art: 'Craterhoof Behemoth', source: 'f_big15', steps: [1], feat: true, reward: 'uncommon'},
+  {id: 'alpha-strike', tab: 'duelist', title: 'Alpha Strike', lore: 'Attack with six or more creatures at once.', art: 'Overwhelming Stampede', source: 'f_alpha6', steps: [1], feat: true, reward: 'common'},
   {id: 'clean-slate', tab: 'duelist', title: 'Clean Slate', lore: 'Wipe out three or more opposing creatures at once.', art: 'Day of Judgment', source: 'wipes', steps: [1, 10, 50]},
   {id: 'poison-pen', tab: 'duelist', title: 'Poison Pen', lore: 'Win with your opponent on 10 poison counters.', art: 'Glistener Elf', source: 'wins_poison', steps: [1, 10], tiers: ['bronze', 'silver']},
-  {id: 'read-to-end', tab: 'duelist', title: 'Read to the End', lore: 'Win with your opponent out of cards to draw.', art: 'Traumatize', source: 'wins_mill', steps: [1], feat: true},
+  {id: 'read-to-end', tab: 'duelist', title: 'Read to the End', lore: 'Win with your opponent out of cards to draw.', art: 'Traumatize', source: 'wins_mill', steps: [1], feat: true, reward: 'uncommon'},
   {id: 'untouched', tab: 'duelist', title: 'Untouchable', lore: 'Win without ever losing a point of life.', art: "Teferi's Protection", source: 'wins_untouched', steps: [1, 10], tiers: ['bronze', 'silver']},
   {id: 'from-ashes', tab: 'duelist', title: 'From the Ashes', lore: 'Win after your life fell to 3 or less at some point.', art: 'Rekindling Phoenix', source: 'wins_phoenix', steps: [1, 10, 25]},
   {id: 'overkill', tab: 'duelist', title: 'Overkill', lore: 'Win with your opponent at -5 life or lower.', art: 'Fireball', source: 'wins_overkill', steps: [1, 10], tiers: ['bronze', 'silver']},
   // Quick Play: matches against the CPU at Normal.
   {id: 'quick-draw', tab: 'quick', title: 'Quickest Draw', lore: 'Quick Play wins against the CPU.', art: 'Goblin Guide', source: 'wins_quick', steps: [5, 25, 100, 500]},
   {id: 'quick-regular', tab: 'quick', title: 'Regular at the Table', lore: 'Quick Play matches finished, win or lose.', art: 'Hellrider', source: 'quick_matches', steps: [10, 100, 500], tiers: ['bronze', 'silver', 'silver']},
-  {id: 'swarm', tab: 'quick', title: 'Swarm', lore: 'Have ten creatures on the field at once.', art: 'Hornet Queen', source: 'f_swarm10', steps: [1], feat: true},
-  {id: 'token-army', tab: 'quick', title: 'Token Army', lore: 'Have eight tokens on the field at once.', art: 'Secure the Wastes', source: 'f_tokens8', steps: [1], feat: true},
-  {id: 'colossal', tab: 'quick', title: 'Colossal', lore: 'Have a creature with 15 or more power.', art: 'Ghalta, Primal Hunger', source: 'f_power15', steps: [1], feat: true},
-  {id: 'air-superiority', tab: 'quick', title: 'Air Superiority', lore: 'Have five flyers on the field at once.', art: 'Favorable Winds', source: 'f_flyers5', steps: [1], feat: true},
-  {id: 'growth-spurt', tab: 'quick', title: 'Growth Spurt', lore: 'Put ten +1/+1 counters on one creature.', art: 'Hardened Scales', source: 'f_counters10', steps: [1], feat: true},
-  {id: 'armed', tab: 'quick', title: 'Armed to the Teeth', lore: 'Have three Auras or Equipment on one creature.', art: 'Puresteel Paladin', source: 'f_attach3', steps: [1], feat: true},
-  {id: 'chieftain', tab: 'quick', title: 'Chieftain', lore: 'Have six creatures of one creature type on the field at once.', art: "Vanquisher's Banner", source: 'f_tribe6', steps: [1], feat: true},
-  {id: 'many-faces', tab: 'quick', title: 'Many Faces', lore: 'Turn three face-down creatures face up in one match.', art: 'Ixidron', source: 'f_turnup3', steps: [1], feat: true},
-  {id: 'lifebloom', tab: 'quick', title: 'Lifebloom', lore: 'Gain 20 or more life in one match.', art: 'Aetherflux Reservoir', source: 'f_gain20', steps: [1], feat: true},
+  {id: 'swarm', tab: 'quick', title: 'Swarm', lore: 'Have ten creatures on the field at once.', art: 'Hornet Queen', source: 'f_swarm10', steps: [1], feat: true, reward: 'uncommon'},
+  {id: 'token-army', tab: 'quick', title: 'Token Army', lore: 'Have eight tokens on the field at once.', art: 'Secure the Wastes', source: 'f_tokens8', steps: [1], feat: true, reward: 'common'},
+  {id: 'colossal', tab: 'quick', title: 'Colossal', lore: 'Have a creature with 15 or more power.', art: 'Ghalta, Primal Hunger', source: 'f_power15', steps: [1], feat: true, reward: 'uncommon'},
+  {id: 'air-superiority', tab: 'quick', title: 'Air Superiority', lore: 'Have five flyers on the field at once.', art: 'Favorable Winds', source: 'f_flyers5', steps: [1], feat: true, reward: 'common'},
+  {id: 'growth-spurt', tab: 'quick', title: 'Growth Spurt', lore: 'Put ten +1/+1 counters on one creature.', art: 'Hardened Scales', source: 'f_counters10', steps: [1], feat: true, reward: 'common'},
+  {id: 'armed', tab: 'quick', title: 'Armed to the Teeth', lore: 'Have three Auras or Equipment on one creature.', art: 'Puresteel Paladin', source: 'f_attach3', steps: [1], feat: true, reward: 'common'},
+  {id: 'chieftain', tab: 'quick', title: 'Chieftain', lore: 'Have six creatures of one creature type on the field at once.', art: "Vanquisher's Banner", source: 'f_tribe6', steps: [1], feat: true, reward: 'common'},
+  {id: 'many-faces', tab: 'quick', title: 'Many Faces', lore: 'Turn three face-down creatures face up in one match.', art: 'Ixidron', source: 'f_turnup3', steps: [1], feat: true, reward: 'uncommon'},
+  {id: 'lifebloom', tab: 'quick', title: 'Lifebloom', lore: 'Gain 20 or more life in one match.', art: 'Aetherflux Reservoir', source: 'f_gain20', steps: [1], feat: true, reward: 'common'},
   {id: 'quick-hunter', tab: 'quick', title: 'Big Game Hunter', lore: 'Opposing creatures destroyed in Quick Play.', art: 'Big Game Hunter', source: 'quick_kills', steps: [25, 250, 1000], tiers: ['bronze', 'silver', 'gold']},
   {id: 'pod-boss', tab: 'quick', title: 'Last One Standing', lore: 'Win a Commander pod against three CPU players.', art: 'Kenrith, the Returned King', source: 'wins_pod', steps: [1, 10, 50]},
   // Formats.
@@ -87,9 +90,9 @@ export const ACHIEVEMENTS = Object.freeze([
   {id: 'around-table', tab: 'friends', title: 'Around the Table', lore: 'Commander pods finished, win or lose.', art: 'Kynaios and Tiro of Meletis', source: 'pod_matches', steps: [5, 25, 100], tiers: ['bronze', 'silver', 'gold']},
   {id: 'pod-hunter', tab: 'friends', title: 'Table Politics', lore: 'Creatures destroyed in Commander pods.', art: 'Gisa and Geralf', source: 'pod_kills', steps: [25, 250], tiers: ['bronze', 'silver']},
   {id: 'game-night', tab: 'friends', title: 'Game Night', lore: 'Different days you finished a friend match.', art: 'Brothers Yamazaki', source: '#fd', steps: [3, 10, 30]},
-  {id: 'show-off', tab: 'friends', title: 'Show-Off', lore: 'In a friend match, deal 10 or more damage in one turn.', art: 'Fling', source: 'f_friend_big10', steps: [1], feat: true},
-  {id: 'crowded-table', tab: 'friends', title: 'Crowded Table', lore: 'In a friend match, have eight creatures on the field at once.', art: 'Rally the Peasants', source: 'f_friend_swarm8', steps: [1], feat: true},
-  {id: 'down-to-wire', tab: 'friends', title: 'Down to the Wire', lore: 'Finish a friend match on 3 life or less.', art: "Angel's Grace", source: 'f_friend_wire', steps: [1], feat: true},
+  {id: 'show-off', tab: 'friends', title: 'Show-Off', lore: 'In a friend match, deal 10 or more damage in one turn.', art: 'Fling', source: 'f_friend_big10', steps: [1], feat: true, reward: 'common'},
+  {id: 'crowded-table', tab: 'friends', title: 'Crowded Table', lore: 'In a friend match, have eight creatures on the field at once.', art: 'Rally the Peasants', source: 'f_friend_swarm8', steps: [1], feat: true, reward: 'common'},
+  {id: 'down-to-wire', tab: 'friends', title: 'Down to the Wire', lore: 'Finish a friend match on 3 life or less.', art: "Angel's Grace", source: 'f_friend_wire', steps: [1], feat: true, reward: 'xp'},
   {id: 'friendly-fire', tab: 'friends', title: 'Friendly Fire', lore: "Your friends' creatures you destroyed.", art: 'Comet Storm', source: 'friend_kills', steps: [10, 50, 200], tiers: ['bronze', 'silver', 'gold']},
   // Practice: honour only.
   {id: 'drills', tab: 'practice', title: 'Drills', lore: 'Practice matches finished. Practice never pays, but it remembers.', art: 'Training Grounds', source: 'practice_matches', steps: [10, 50, 200], honour: true},
@@ -120,7 +123,7 @@ export const ACHIEVEMENTS = Object.freeze([
   // Story deeds: one feat each, woven into the acts (story-deeds.js).
   // A gold deed (a secret boss) is a one-step gold achievement instead of a feat: it pays the gold tier and a Collector pack.
   ...[...STORY_DEEDS, ...STORY_ACT_DEEDS].map(d => ({id: d.id, tab: 'story', act: d.act, title: d.title, lore: d.lore, art: storyDeedArt(d), source: 'sd:' + d.id, steps: [1],
-    ...(d.gold ? {hidden: true, riddle: d.riddle} : d.hidden ? {feat: true, hidden: true, riddle: d.riddle} : {feat: true})})),
+    ...(d.gold ? {hidden: true, riddle: d.riddle} : d.hidden ? {feat: true, hidden: true, riddle: d.riddle} : {feat: true, reward: storyDeedReward(d)})})),
   {id: 'marathon', tab: 'hidden', title: 'Marathon', lore: 'Win a match that lasts 20 of your turns.', riddle: 'The sun rose and set and still you fought.', art: 'Approach of the Second Sun', source: 'wins_marathon', steps: [1], feat: true, hidden: true},
   {id: 'turn-four', tab: 'hidden', title: 'Turn Four', lore: 'Win by your 4th turn.', riddle: 'They never got to see their fourth land.', art: 'Ball Lightning', source: 'wins_t4', steps: [1], feat: true, hidden: true},
   {id: 'stalemate', tab: 'hidden', title: 'Stalemate', lore: 'Finish a match in a draw.', riddle: 'Nobody won, and nobody lost.', art: 'Divine Intervention', source: 'draws', steps: [1], feat: true, hidden: true},
@@ -189,7 +192,7 @@ export const almostThere = (rows, n = 3) => rows.filter(r => r.next && !r.hidden
 export const achievementTiers = a => a.feat ? a.steps.map(() => 'feat') : a.tiers || tierNames(a.steps.length);
 export function achievementReward(a, step, config = {}) {
   if (a.honour) return {};
-  if (a.feat) return a.hidden ? JSON.parse(JSON.stringify(HIDDEN_FEAT)) : {...FEAT};
+  if (a.feat) return JSON.parse(JSON.stringify(a.hidden ? HIDDEN_FEAT : REWARDS[a.reward] || FEAT));
   const tier = achievementTiers(a)[step], cfg = config?.achievement?.[tier] || DEFAULT_TIER_REWARD[tier];
   const out = JSON.parse(JSON.stringify(cfg || DEFAULT_TIER_REWARD.bronze));
   // The hard steps (gold and mythic) also give a Collector pack (play-econ-rules.js), unless the config says otherwise.
