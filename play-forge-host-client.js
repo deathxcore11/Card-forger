@@ -41,13 +41,16 @@ export function exactForgeInput(setup,{startingPlayer=setup?.match?.startingPlay
  const playStyle=setup.playStyle==='quick'?'quick':'practice';
  const {difficultyPolicyVersion}=forgeCpuPolicy(forgeMatchDifficulty(setup));
  if(!['random','first','second'].includes(startingPlayer))throw fail('FORGE_STARTING_PLAYER_INVALID');
- if(playStyle==='quick')startingPlayer='random';
+ // A scripted lesson (setup.lesson, CPU match only) goes first with its stacked draws; otherwise Quick Play stays random.
+ const lesson=setup.lesson&&playStyle==='quick'?setup.lesson:null;
+ if(playStyle==='quick')startingPlayer=lesson?'first':'random';
  // Preserve both exact snapshots. The host binds the opening preference and
  // Forge reports the actual starting player before the opening hand.
  // Forge calls 60-card Standard Brawl just Brawl; only the format label changes.
  // Every name is sent in Forge's spelling ("Wear/Tear" becomes "Wear // Tear"); see play-engine-names.js.
  const format=setup.match.format==='Standard Brawl'?'Brawl':setup.match.format,seat=d=>{const deck=engineDeck(d);return format===deck.format?deck:{...deck,format};};
  const input={format,humanDeck:seat(setup.selected),opponentDeck:seat(setup.opponent),difficultyPolicyVersion,startingPlayer,playStyle};
+ if(lesson&&!(Array.isArray(setup.extraOpponents)&&setup.extraOpponents.length)&&!setup.friendMatch)input.setup={stack:lesson.stack,noMulligan:lesson.noMulligan===true};
  // A Commander pod: one or two more CPU seats, each with its own deck and level. Four full
  // saved decks can pass the host's size limit, so pod decks travel as the rows Forge reads.
  const extra=Array.isArray(setup.extraOpponents)?setup.extraOpponents.filter(o=>o?.deck):[];
@@ -207,7 +210,7 @@ export function createForgeHostClient({readAccount,getAccessToken,fetchImpl=glob
    // metadata stripping, commander movement, substituted cards or alias fallback.
    const sent=JSON.parse(JSON.stringify(input));
    if(sent.startingPlayer!==undefined||sent.playStyle!==undefined){
-    if(!['random','first','second'].includes(sent.startingPlayer)||!['quick','practice'].includes(sent.playStyle)||sent.playStyle==='quick'&&sent.startingPlayer!=='random')throw fail('FORGE_STARTING_PLAYER_INVALID');
+    if(!['random','first','second'].includes(sent.startingPlayer)||!['quick','practice'].includes(sent.playStyle)||sent.playStyle==='quick'&&sent.startingPlayer!=='random'&&!(sent.startingPlayer==='first'&&sent.setup))throw fail('FORGE_STARTING_PLAYER_INVALID');
    }
    requestedPregame=sent.startingPlayer===undefined?null:{selection:sent.startingPlayer,playStyle:sent.playStyle};
    creating=true;

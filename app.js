@@ -180,7 +180,7 @@ import {deckEmblem} from "./play-deck-emblem.js";
 import {stepDeckCard,ownedByName,deckShortfall,legalFormats,mtgjsonDeckRows,PLAY_FORMATS,deckRules,copyCap} from "./play-econ-rules.js";
 import {STORY_ACTS} from "./story-acts.js";
 import {createStoryProgress,loadAct,loadActPool,ownDeckFits,battleCleared,currentAct,currentBattle,actCleared} from "./story-client.js";
-import {createLessonCoach,isLessonBattle,lessonsOff} from "./story-lessons.js";
+import {createLessonCoach,isLessonBattle,lessonsOff,lessonSetup} from "./story-lessons.js";
 import {storyHomeMarkup,storyActMarkup,storyBattleMarkup,playScene,createStoryBubbles,starsRow,rewardText} from "./story-ui.js";
 import {storyDeedsEarned} from "./story-deeds.js";
 import { initCloud, pauseLocalConflict, communityRequest, presenceRequest, tableInviteRequest, cloudAccessToken, cloudInfo, realtimeClient, isEmptyWorkspace, statusLabel, scheduleSync, signInGoogle, signInEmail, signInPassword, createAccount, requestPasswordReset, finishPasswordReset, signOut, detachDeviceSync, saveProfile, resolvePending, syncNow, resendConfirmation, deleteAccount } from "./cloud.js";
@@ -2375,7 +2375,7 @@ A.playFriendLaunch=async matchId=>{
   const base=playSetup.snapshot();if(!base.selected)return toast('Pick your deck first.');
   for(const [id,href] of [['practiceTableStyles','experiments/phase-engine/match-table.css'],['forgeHostedTableStyles','play-forge-table.css']])if(!document.getElementById(id)){const css=document.createElement('link');css.id=id;css.rel='stylesheet';css.href=href;document.head.append(css);}
   playerMatRoot=document.createElement('main');playerMatRoot.id='practicePlayerMat';playerMatRoot.setAttribute('data-playmat',nextPlaymat());playerMatRoot.setAttribute('aria-label','Friend match player mat');document.body.append(playerMatRoot);mountPlaymatScene(playerMatRoot);document.body.classList.add('practice-table-open');void lockPlayLandscape();const app=document.getElementById('app');if(app)app.inert=true;
-  const setup={...base,playStyle:'quick',opponent:{name:'Friend\'s deck',format:base.match.format,cards:[]},friend:friendShown(friendRoom?.opponent),friendMatch:{matchId}};
+  const setup={...base,playStyle:'quick',lesson:lessonRun?lessonSetup(b.id):null,opponent:{name:'Friend\'s deck',format:base.match.format,cards:[]},friend:friendShown(friendRoom?.opponent),friendMatch:{matchId}};
   const owner=cloudInfo().user?.id,generation=accountGeneration,current=()=>!accountLocked&&generation===accountGeneration&&owner===cloudInfo().user?.id;
   let createForgePlayerMat,lateTimer=0;const late=new Set();
   try{({createForgePlayerMat}=await import('./play-forge-player-mat.js'));}catch(e){if(playerMatRoot)playModuleFailed(e);return;}
