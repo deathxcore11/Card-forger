@@ -1,0 +1,3036 @@
+{
+ "act": 27,
+ "era": "2017-09-29",
+ "title": "The Immortal Sun",
+ "years": "2017 to 2018",
+ "sets": [
+  "xln",
+  "rix"
+ ],
+ "landSet": "xln",
+ "intro": [
+  {
+   "who": "stage",
+   "line": "Ixalan, a plane of jungle and sea. Four peoples are racing for a golden city, and the sun at its heart."
+  },
+  {
+   "who": "stage",
+   "line": "The Legion of Dusk sailed from Torrezon in search of glory, riches, and the Immortal Sun.",
+   "quote": true
+  },
+  {
+   "who": "stage",
+   "line": "The River Heralds would wreck a thousand ships to keep intruders from finding the golden city.",
+   "quote": true
+  },
+  {
+   "who": "stage",
+   "line": "Jace Beleren has lost his memory. He sails with a pirate captain named Vraska, who has not told him everything."
+  }
+ ],
+ "finale": [
+  {
+   "who": "azor",
+   "line": "Be still.",
+   "quote": true
+  },
+  {
+   "who": "stage",
+   "line": "As the struggle raged for control of the Immortal Sun, the world grew dark under a blood-red sky.",
+   "quote": true
+  },
+  {
+   "who": "stage",
+   "line": "Jace and Vraska trap Azor on a desert island, away from the Sun. Azor thought he was being kind."
+  },
+  {
+   "who": "stage",
+   "line": "Jace remembers who he is. Vraska remembers who she works for, and says nothing."
+  }
+ ],
+ "villainFinale": [
+  {
+   "who": "azor",
+   "line": "Be still.",
+   "quote": true
+  },
+  {
+   "who": "stage",
+   "line": "The Immortal Sun burns on, gold and hollow, and Azor keeps it."
+  }
+ ],
+ "vibe": "ixalan-sun-sea",
+ "cast": {
+  "you": {
+   "name": "You",
+   "title": "Planeswalker",
+   "portrait": {
+    "card": "Ixalan's Binding",
+    "set": "xln",
+    "number": "17",
+    "id": "5f3c8c31-ceb8-4a2c-beb6-0ff5f7b6ae07",
+    "crop": "https://cards.scryfall.io/art_crop/front/5/f/5f3c8c31-ceb8-4a2c-beb6-0ff5f7b6ae07.jpg?1783935799",
+    "artist": "Chase Stone",
+    "focus": "50% 30%"
+   }
+  },
+  "vraska": {
+   "name": "Vraska",
+   "title": "Captain of the Brazen Coalition",
+   "portrait": {
+    "card": "Vraska, Relic Seeker",
+    "set": "xln",
+    "number": "232",
+    "id": "967b7272-33a6-46e9-b0aa-4757aee54b3a",
+    "crop": "https://cards.scryfall.io/art_crop/front/9/6/967b7272-33a6-46e9-b0aa-4757aee54b3a.jpg?1783935707",
+    "artist": "Chris Rahn",
+    "focus": "50% 25%"
+   }
+  },
+  "legion": {
+   "name": "The Legion of Dusk",
+   "title": "Conquistadors",
+   "portrait": {
+    "card": "Legion Conquistador",
+    "set": "xln",
+    "number": "20",
+    "id": "f30590d7-59c7-4a1a-a8e5-3cc13f69bd41",
+    "crop": "https://cards.scryfall.io/art_crop/front/f/3/f30590d7-59c7-4a1a-a8e5-3cc13f69bd41.jpg?1783935799",
+    "artist": "Sidharth Chaturvedi",
+    "focus": "50% 30%"
+   }
+  },
+  "adanto": {
+   "name": "Adrian Adanto",
+   "title": "Of Lujio",
+   "portrait": {
+    "card": "Legion's Landing // Adanto, the First Fort",
+    "set": "xln",
+    "number": "22",
+    "id": "05e2a5e6-3aaa-4096-bdd0-fcc1afe5a36c",
+    "crop": "https://cards.scryfall.io/art_crop/front/0/5/05e2a5e6-3aaa-4096-bdd0-fcc1afe5a36c.jpg?1783935808",
+    "artist": "Svetlin Velinov",
+    "focus": "50% 30%"
+   }
+  },
+  "beckett": {
+   "name": "Admiral Beckett Brass",
+   "title": "Of the Brazen Coalition",
+   "portrait": {
+    "card": "Admiral Beckett Brass",
+    "set": "xln",
+    "number": "217",
+    "id": "9854c2ec-0e53-4ac7-b417-554a9331c5e0",
+    "crop": "https://cards.scryfall.io/art_crop/front/9/8/9854c2ec-0e53-4ac7-b417-554a9331c5e0.jpg?1783935715",
+    "artist": "Jason Rainville",
+    "focus": "50% 25%"
+   }
+  },
+  "heralds": {
+   "name": "The River Heralds",
+   "title": "Merfolk of the Great River",
+   "portrait": {
+    "card": "Mist-Cloaked Herald",
+    "set": "rix",
+    "number": "43",
+    "id": "18c1368e-114b-4618-922b-1d824ba0d1d5",
+    "crop": "https://cards.scryfall.io/art_crop/front/1/8/18c1368e-114b-4618-922b-1d824ba0d1d5.jpg?1783935323",
+    "artist": "Anthony Palumbo",
+    "focus": "50% 30%"
+   }
+  },
+  "huatli": {
+   "name": "Huatli",
+   "title": "Warrior Poet of the Sun Empire",
+   "portrait": {
+    "card": "Huatli, Dinosaur Knight",
+    "set": "xln",
+    "number": "285",
+    "id": "6a5a6f7b-149d-46d3-9814-d38a302db17c",
+    "crop": "https://cards.scryfall.io/art_crop/front/6/a/6a5a6f7b-149d-46d3-9814-d38a302db17c.jpg?1783935684",
+    "artist": "Anna Steinbauer",
+    "focus": "50% 25%"
+   }
+  },
+  "coalition": {
+   "name": "The Brazen Coalition",
+   "title": "Pirates",
+   "portrait": {
+    "card": "Deadeye Plunderers",
+    "set": "xln",
+    "number": "220",
+    "id": "63a7a1a4-aec2-467d-91a1-1a2605718c7c",
+    "crop": "https://cards.scryfall.io/art_crop/front/6/3/63a7a1a4-aec2-467d-91a1-1a2605718c7c.jpg?1783935713",
+    "artist": "Greg Opalinski",
+    "focus": "50% 30%"
+   }
+  },
+  "jace": {
+   "name": "Jace Beleren",
+   "title": "Without his memory",
+   "portrait": {
+    "card": "Jace, Cunning Castaway",
+    "set": "xln",
+    "number": "60",
+    "id": "b75f56f2-88fd-44ba-ad02-56ea3391f173",
+    "crop": "https://cards.scryfall.io/art_crop/front/b/7/b75f56f2-88fd-44ba-ad02-56ea3391f173.jpg?1783935780",
+    "artist": "Kieran Yanner",
+    "focus": "50% 25%"
+   }
+  },
+  "vona": {
+   "name": "Vona of Iedo",
+   "title": "Butcher of Magan",
+   "portrait": {
+    "card": "Vona, Butcher of Magan",
+    "set": "xln",
+    "number": "231",
+    "id": "c1fd4101-d531-43aa-9cb6-79e36a8121d8",
+    "crop": "https://cards.scryfall.io/art_crop/front/c/1/c1fd4101-d531-43aa-9cb6-79e36a8121d8.jpg?1783935708",
+    "artist": "Volkan Baǵa",
+    "focus": "50% 25%"
+   }
+  },
+  "kumena": {
+   "name": "Shaper Kumena",
+   "title": "Tyrant of Orazca",
+   "portrait": {
+    "card": "Kumena, Tyrant of Orazca",
+    "set": "rix",
+    "number": "162",
+    "id": "a3aef818-c896-46e6-aaff-56aee52a066c",
+    "crop": "https://cards.scryfall.io/art_crop/front/a/3/a3aef818-c896-46e6-aaff-56aee52a066c.jpg?1783935272",
+    "artist": "Tyler Jacobson",
+    "focus": "50% 25%"
+   }
+  },
+  "tishana": {
+   "name": "Tishana",
+   "title": "Voice of Thunder",
+   "portrait": {
+    "card": "Tishana, Voice of Thunder",
+    "set": "xln",
+    "number": "230",
+    "id": "19c5cfbe-3972-4d2e-a37f-e96cca33bb33",
+    "crop": "https://cards.scryfall.io/art_crop/front/1/9/19c5cfbe-3972-4d2e-a37f-e96cca33bb33.jpg?1783935708",
+    "artist": "Anna Steinbauer",
+    "focus": "50% 25%"
+   }
+  },
+  "dinos": {
+   "name": "Dinosaurs",
+   "title": "Autumn 2017",
+   "portrait": {
+    "card": "Regisaur Alpha",
+    "set": "xln",
+    "number": "227",
+    "id": "d6a322c5-aa4c-4a99-a3ca-48c1353104f0",
+    "crop": "https://cards.scryfall.io/art_crop/front/d/6/d6a322c5-aa4c-4a99-a3ca-48c1353104f0.jpg?1783935711",
+    "artist": "Jonathan Kuo",
+    "focus": "50% 30%"
+   }
+  },
+  "vampires": {
+   "name": "Vampires",
+   "title": "Autumn 2017",
+   "portrait": {
+    "card": "Legion Lieutenant",
+    "set": "rix",
+    "number": "163",
+    "id": "33f7ff99-65d6-4e97-bdfa-b6e6eac0588f",
+    "crop": "https://cards.scryfall.io/art_crop/front/3/3/33f7ff99-65d6-4e97-bdfa-b6e6eac0588f.jpg?1783935272",
+    "artist": "Zezhou Chen",
+    "focus": "50% 30%"
+   }
+  },
+  "pirates": {
+   "name": "Pirates",
+   "title": "Autumn 2017",
+   "portrait": {
+    "card": "Dire Fleet Captain",
+    "set": "xln",
+    "number": "221",
+    "id": "8200f8a3-d60b-470a-a558-0c3555d1f10b",
+    "crop": "https://cards.scryfall.io/art_crop/front/8/2/8200f8a3-d60b-470a-a558-0c3555d1f10b.jpg?1783935713",
+    "artist": "Yongjae Choi",
+    "focus": "50% 30%"
+   }
+  },
+  "merfolk": {
+   "name": "Merfolk",
+   "title": "Autumn 2017",
+   "portrait": {
+    "card": "Kopala, Warden of Waves",
+    "set": "xln",
+    "number": "61",
+    "id": "34561f87-09d9-4f23-8a05-907fe1303e70",
+    "crop": "https://cards.scryfall.io/art_crop/front/3/4/34561f87-09d9-4f23-8a05-907fe1303e70.jpg?1783935779",
+    "artist": "Magali Villeneuve",
+    "focus": "50% 30%"
+   }
+  },
+  "azor": {
+   "name": "Azor",
+   "title": "The Lawbringer",
+   "portrait": {
+    "card": "Azor, the Lawbringer",
+    "set": "rix",
+    "number": "154",
+    "id": "30dc237e-b28a-4b65-9790-6b434828bf2e",
+    "crop": "https://cards.scryfall.io/art_crop/front/3/0/30dc237e-b28a-4b65-9790-6b434828bf2e.jpg?1783935277",
+    "artist": "Ryan Pancoast",
+    "focus": "50% 25%"
+   }
+  },
+  "brass": {
+   "name": "Rekindling Phoenix",
+   "title": "Winter 2018",
+   "portrait": {
+    "card": "Rekindling Phoenix",
+    "set": "rix",
+    "number": "111",
+    "id": "daccec32-84c6-4de4-9b00-c497a6ba5de8",
+    "crop": "https://cards.scryfall.io/art_crop/front/d/a/daccec32-84c6-4de4-9b00-c497a6ba5de8.jpg?1783935297",
+    "artist": "Jason Rainville",
+    "focus": "50% 30%"
+   }
+  }
+ },
+ "battles": [
+  {
+   "id": "a27b1",
+   "slot": 1,
+   "kind": "Arrival",
+   "mood": "tension",
+   "title": "The Search for the Golden City",
+   "difficulty": "Easy",
+   "teaches": [
+    "Explore"
+   ],
+   "blurb": "You wake on Ixalan with Jace and Vraska. Search the jungle for the way to Orazca. The Legion of Dusk is searching too.",
+   "rewardSet": "xln",
+   "host": false,
+   "hero": {
+    "who": "vraska",
+    "deck": {
+     "name": "The Search Party",
+     "colors": "BG",
+     "archetype": null,
+     "label": "tribute",
+     "cards": [
+      {
+       "qty": 4,
+       "name": "Merfolk Branchwalker",
+       "set": "xln",
+       "number": "197",
+       "id": "2c6f0d4a-4827-47b6-8af6-803949c195f8"
+      },
+      {
+       "qty": 4,
+       "name": "Jadelight Ranger",
+       "set": "rix",
+       "number": "136",
+       "id": "9fe5c719-f20d-4469-9750-fb689d5f3fc8"
+      },
+      {
+       "qty": 4,
+       "name": "Jungle Creeper",
+       "set": "rix",
+       "number": "161",
+       "id": "3d71282d-021c-4028-9ab7-f10e43e92c80"
+      },
+      {
+       "qty": 2,
+       "name": "Vraska's Conquistador",
+       "set": "rix",
+       "number": "199",
+       "id": "4d890a17-ffd4-4bda-bef3-2c116f7bf66f"
+      },
+      {
+       "qty": 4,
+       "name": "Deathgorge Scavenger",
+       "set": "xln",
+       "number": "184",
+       "id": "a0e9d8a4-dfc2-4451-a15f-98592b817155"
+      },
+      {
+       "qty": 3,
+       "name": "Lurking Chupacabra",
+       "set": "xln",
+       "number": "111",
+       "id": "abdbaa34-1ee5-4a2a-bdb3-2f04809a5b42"
+      },
+      {
+       "qty": 3,
+       "name": "Ravenous Chupacabra",
+       "set": "rix",
+       "number": "82",
+       "id": "02551196-ecea-472f-9547-3c9658d0489e"
+      },
+      {
+       "qty": 4,
+       "name": "Vraska's Contempt",
+       "set": "xln",
+       "number": "129",
+       "id": "bd7550dd-dfc5-43cd-a117-1244ee3086a8"
+      },
+      {
+       "qty": 4,
+       "name": "Walk the Plank",
+       "set": "xln",
+       "number": "130",
+       "id": "0038ac6a-318f-44fb-bb64-7ae172c4aca3"
+      },
+      {
+       "qty": 4,
+       "name": "Ranging Raptors",
+       "set": "xln",
+       "number": "201",
+       "id": "9e91efc6-0e6a-4a9e-a486-adf53e53d3f1"
+      },
+      {
+       "qty": 12,
+       "name": "Forest",
+       "set": "xln",
+       "number": "276",
+       "id": "7eef5e5c-27be-45f2-a9c8-4e0a65c984d4"
+      },
+      {
+       "qty": 11,
+       "name": "Swamp",
+       "set": "xln",
+       "number": "268",
+       "id": "db69a637-5770-4eea-9b04-c00e6f90a12a"
+      },
+      {
+       "qty": 1,
+       "name": "Foul Orchard",
+       "set": "rix",
+       "number": "188",
+       "id": "f66f9017-e04b-4f13-aae0-28a903f2fac2"
+      }
+     ]
+    }
+   },
+   "villain": {
+    "who": "legion",
+    "deck": {
+     "name": "Legion Conquistadors",
+     "colors": "W",
+     "archetype": null,
+     "label": "tribute",
+     "cards": [
+      {
+       "qty": 2,
+       "name": "Legion Conquistador",
+       "set": "xln",
+       "number": "20",
+       "id": "f30590d7-59c7-4a1a-a8e5-3cc13f69bd41"
+      },
+      {
+       "qty": 2,
+       "name": "Skymarcher Aspirant",
+       "set": "rix",
+       "number": "21",
+       "id": "9473190f-5e96-4cf7-a0fa-a77d916acc2e"
+      },
+      {
+       "qty": 4,
+       "name": "Sun Sentinel",
+       "set": "rix",
+       "number": "26",
+       "id": "6867fd5a-3bbe-416d-96a6-1db0b341260e"
+      },
+      {
+       "qty": 2,
+       "name": "Imperial Lancer",
+       "set": "xln",
+       "number": "15",
+       "id": "7ed3784a-2dc0-4626-aa6a-268c1e2ac83c"
+      },
+      {
+       "qty": 4,
+       "name": "Legion's Landing // Adanto, the First Fort",
+       "set": "xln",
+       "number": "22",
+       "id": "05e2a5e6-3aaa-4096-bdd0-fcc1afe5a36c"
+      },
+      {
+       "qty": 4,
+       "name": "Raptor Companion",
+       "set": "xln",
+       "number": "31",
+       "id": "2d37fc42-0a7c-46b3-9270-333d370e479f"
+      },
+      {
+       "qty": 3,
+       "name": "Bishop of Binding",
+       "set": "rix",
+       "number": "2",
+       "id": "aaadceb3-8a57-45de-b3f1-aca94f20de18"
+      },
+      {
+       "qty": 3,
+       "name": "Luminous Bonds",
+       "set": "rix",
+       "number": "12",
+       "id": "2ca3a547-ef22-4b87-b90f-e8ffb42f73ac"
+      },
+      {
+       "qty": 2,
+       "name": "Divine Verdict",
+       "set": "rix",
+       "number": "5",
+       "id": "ed07b708-7232-4b87-b5d9-edaa20a69293"
+      },
+      {
+       "qty": 20,
+       "name": "Plains",
+       "set": "xln",
+       "number": "260",
+       "id": "51ff6ee0-01f4-432f-916b-ed771904d64c"
+      },
+      {
+       "qty": 4,
+       "name": "Exultant Skymarcher",
+       "set": "rix",
+       "number": "7",
+       "id": "fffe7b2b-22c3-4e6a-9b1b-c6d7b29b9f86"
+      },
+      {
+       "qty": 4,
+       "name": "Territorial Hammerskull",
+       "set": "xln",
+       "number": "41",
+       "id": "af5a237a-31e7-43ee-8d47-3eb12dd1a60c"
+      },
+      {
+       "qty": 4,
+       "name": "Snubhorn Sentry",
+       "set": "rix",
+       "number": "23",
+       "id": "3ee111e7-5309-46d5-b3ea-a049b3962c23"
+      },
+      {
+       "qty": 2,
+       "name": "Encampment Keeper",
+       "set": "xln",
+       "number": "11",
+       "id": "6fe64569-c1b6-4bd4-a742-6ee46ea5181c"
+      }
+     ]
+    }
+   },
+   "reward": {
+    "hero": {
+     "packs": 1,
+     "coins": 0
+    },
+    "villain": {
+     "card": {
+      "oracle_id": "b20671e6-d740-4ef6-b408-bf8a0465c0da",
+      "name": "Legion Conquistador",
+      "rarity": "common",
+      "set": "xln",
+      "id": "f30590d7-59c7-4a1a-a8e5-3cc13f69bd41",
+      "image": "https://cards.scryfall.io/normal/front/f/3/f30590d7-59c7-4a1a-a8e5-3cc13f69bd41.jpg"
+     },
+     "coins": 50
+    }
+   },
+   "scene": [
+    {
+     "who": "stage",
+     "line": "For the first time in her life, Vraska tried to prevent death.",
+     "quote": true
+    },
+    {
+     "who": "stage",
+     "line": "No lock of iron is a match for Vraska's will of stone.",
+     "quote": true
+    },
+    {
+     "who": "vraska",
+     "line": "Explore: look at the top card of your library. A land goes to your hand. Anything else, and the creature grows and you choose whether to keep the card."
+    }
+   ],
+   "villainScene": [
+    {
+     "who": "adanto",
+     "line": "I claim this land in the name of the queen.",
+     "quote": true
+    },
+    {
+     "who": "stage",
+     "line": "The Legion of Dusk sailed from Torrezon in search of glory, riches, and the Immortal Sun.",
+     "quote": true
+    }
+   ],
+   "after": null,
+   "cues": {
+    "hero": {
+     "start": "Into the jungle.",
+     "big": "Explore!",
+     "low": "We are lost...",
+     "win": "Onward.",
+     "loss": "Turned back...",
+     "half": "Explore for lands early."
+    },
+    "villain": {
+     "start": "In the queen's name.",
+     "big": "Claim it!",
+     "low": "The jungle pushes back...",
+     "win": "Ours.",
+     "loss": "Withdraw..."
+    }
+   },
+   "bigPlays": [],
+   "sim": null
+  },
+  {
+   "id": "a27b2",
+   "slot": 2,
+   "kind": "Lesson",
+   "mood": "march",
+   "title": "Plunder and Dance",
+   "difficulty": "Easy",
+   "teaches": [
+    "Treasure"
+   ],
+   "blurb": "Admiral Beckett Brass and the Brazen Coalition sail up the Great River. The River Heralds are waiting.",
+   "rewardSet": "xln",
+   "host": false,
+   "hero": {
+    "who": "beckett",
+    "deck": {
+     "name": "The Brazen Coalition",
+     "colors": "BR",
+     "archetype": null,
+     "label": "tribute",
+     "cards": [
+      {
+       "qty": 2,
+       "name": "Daring Buccaneer",
+       "set": "rix",
+       "number": "98",
+       "id": "1d413b88-8f5d-415f-bd07-169f6c175e6b"
+      },
+      {
+       "qty": 4,
+       "name": "Dire Fleet Daredevil",
+       "set": "rix",
+       "number": "99",
+       "id": "13e3c0c5-7451-4da9-acc0-d6e4e1f2655e"
+      },
+      {
+       "qty": 3,
+       "name": "Swaggering Corsair",
+       "set": "rix",
+       "number": "119",
+       "id": "22da9f6a-9598-4cfe-b465-719266b65dee"
+      },
+      {
+       "qty": 4,
+       "name": "Dire Fleet Captain",
+       "set": "xln",
+       "number": "221",
+       "id": "8200f8a3-d60b-470a-a558-0c3555d1f10b"
+      },
+      {
+       "qty": 4,
+       "name": "Fathom Fleet Captain",
+       "set": "xln",
+       "number": "106",
+       "id": "36cd7467-ff8c-4a92-ae55-6894213d6c0b"
+      },
+      {
+       "qty": 4,
+       "name": "Captivating Crew",
+       "set": "xln",
+       "number": "137",
+       "id": "c76e66c1-dbe2-4346-b4b3-20e8386e7d76"
+      },
+      {
+       "qty": 2,
+       "name": "Fathom Fleet Cutthroat",
+       "set": "xln",
+       "number": "107",
+       "id": "e83500ed-8c46-488e-bd8e-197bedb8f4bd"
+      },
+      {
+       "qty": 3,
+       "name": "Lightning Strike",
+       "set": "xln",
+       "number": "149",
+       "id": "f0f55dee-7e39-4183-8e74-844d9c299bf5"
+      },
+      {
+       "qty": 2,
+       "name": "Walk the Plank",
+       "set": "xln",
+       "number": "130",
+       "id": "0038ac6a-318f-44fb-bb64-7ae172c4aca3"
+      },
+      {
+       "qty": 4,
+       "name": "Dire Fleet Neckbreaker",
+       "set": "rix",
+       "number": "156",
+       "id": "5146dd15-f696-42c3-b0e5-6a1b1d7be6b4"
+      },
+      {
+       "qty": 12,
+       "name": "Mountain",
+       "set": "xln",
+       "number": "272",
+       "id": "15c96b83-d0b3-4da9-bb2d-249cc18b55e9"
+      },
+      {
+       "qty": 10,
+       "name": "Swamp",
+       "set": "xln",
+       "number": "268",
+       "id": "db69a637-5770-4eea-9b04-c00e6f90a12a"
+      },
+      {
+       "qty": 2,
+       "name": "Cinder Barrens",
+       "set": "rix",
+       "number": "205",
+       "id": "93f6bd6b-92fb-4b4f-89c2-762cc2c465f3"
+      },
+      {
+       "qty": 3,
+       "name": "Ravenous Chupacabra",
+       "set": "rix",
+       "number": "82",
+       "id": "02551196-ecea-472f-9547-3c9658d0489e"
+      },
+      {
+       "qty": 1,
+       "name": "Vraska's Contempt",
+       "set": "xln",
+       "number": "129",
+       "id": "bd7550dd-dfc5-43cd-a117-1244ee3086a8"
+      }
+     ]
+    }
+   },
+   "villain": {
+    "who": "heralds",
+    "deck": {
+     "name": "The River Heralds",
+     "colors": "UG",
+     "archetype": null,
+     "label": "tribute",
+     "cards": [
+      {
+       "qty": 4,
+       "name": "Mist-Cloaked Herald",
+       "set": "rix",
+       "number": "43",
+       "id": "18c1368e-114b-4618-922b-1d824ba0d1d5"
+      },
+      {
+       "qty": 4,
+       "name": "Merfolk Mistbinder",
+       "set": "rix",
+       "number": "164",
+       "id": "2935b829-23fb-415e-90f2-2e0016b5cde9"
+      },
+      {
+       "qty": 4,
+       "name": "Kumena's Speaker",
+       "set": "xln",
+       "number": "196",
+       "id": "52e96ddf-ac9e-4cc5-8c9a-afee421d99a6"
+      },
+      {
+       "qty": 4,
+       "name": "Shapers of Nature",
+       "set": "xln",
+       "number": "228",
+       "id": "7aa682fb-f5b6-41c1-9428-6043b0b76744"
+      },
+      {
+       "qty": 3,
+       "name": "River Heralds' Boon",
+       "set": "xln",
+       "number": "204",
+       "id": "e355a98d-093d-4ab2-84f2-f560d08f1fca"
+      },
+      {
+       "qty": 4,
+       "name": "Silvergill Adept",
+       "set": "rix",
+       "number": "53",
+       "id": "45ea8ca1-612d-4984-8572-06710d38bfa6"
+      },
+      {
+       "qty": 4,
+       "name": "Wildgrowth Walker",
+       "set": "xln",
+       "number": "216",
+       "id": "52e4c0f8-d5f0-4224-9974-190606911480"
+      },
+      {
+       "qty": 11,
+       "name": "Forest",
+       "set": "xln",
+       "number": "276",
+       "id": "7eef5e5c-27be-45f2-a9c8-4e0a65c984d4"
+      },
+      {
+       "qty": 11,
+       "name": "Island",
+       "set": "xln",
+       "number": "264",
+       "id": "40c840af-9a13-4716-8458-09071239cc26"
+      },
+      {
+       "qty": 2,
+       "name": "Woodland Stream",
+       "set": "xln",
+       "number": "284",
+       "id": "740bb19c-0c91-4fc1-9b3c-be84425a3523"
+      },
+      {
+       "qty": 3,
+       "name": "Sworn Guardian",
+       "set": "rix",
+       "number": "58",
+       "id": "6452ba94-6bb0-409c-99f7-71e6457c3f2a"
+      },
+      {
+       "qty": 3,
+       "name": "Shore Keeper",
+       "set": "xln",
+       "number": "77",
+       "id": "135d1145-8640-44e1-8079-45832fa2556d"
+      },
+      {
+       "qty": 3,
+       "name": "Shaper Apprentice",
+       "set": "xln",
+       "number": "75",
+       "id": "02955471-5ffc-4c7b-83fe-a69816415ca1"
+      }
+     ]
+    }
+   },
+   "reward": {
+    "hero": {
+     "packs": 1,
+     "coins": 0
+    },
+    "villain": {
+     "card": {
+      "oracle_id": "74255add-2894-4c31-81c1-d38873fa325f",
+      "name": "Mist-Cloaked Herald",
+      "rarity": "common",
+      "set": "rix",
+      "id": "18c1368e-114b-4618-922b-1d824ba0d1d5",
+      "image": "https://cards.scryfall.io/normal/front/1/8/18c1368e-114b-4618-922b-1d824ba0d1d5.jpg"
+     },
+     "coins": 50
+    }
+   },
+   "scene": [
+    {
+     "who": "beckett",
+     "line": "You and your ship will make a fine addition to my fleet.",
+     "quote": true
+    },
+    {
+     "who": "stage",
+     "line": "We sail. We plunder. Then we dance.",
+     "quote": true
+    },
+    {
+     "who": "beckett",
+     "line": "Treasure: a token that sacrifices for one mana of any colour. Sail fast, spend it on the turn that matters."
+    }
+   ],
+   "villainScene": [
+    {
+     "who": "stage",
+     "line": "The River Heralds would wreck a thousand ships to keep intruders from finding the golden city.",
+     "quote": true
+    },
+    {
+     "who": "stage",
+     "line": "The same power that drives the river ever onward flows through the roots and branches—to me.",
+     "quote": true
+    }
+   ],
+   "after": null,
+   "cues": {
+    "hero": {
+     "start": "Hoist the sails.",
+     "big": "Plunder!",
+     "low": "Holed below the waterline...",
+     "win": "To the loot.",
+     "loss": "Sunk...",
+     "half": "Spend Treasure for a bigger turn."
+    },
+    "villain": {
+     "start": "No ripples, no splashes.",
+     "big": "The river rises.",
+     "low": "Stay in the shallows...",
+     "win": "Turned back.",
+     "loss": "They got through..."
+    }
+   },
+   "bigPlays": [],
+   "sim": null
+  },
+  {
+   "id": "a27b3",
+   "slot": 3,
+   "kind": "Lesson",
+   "mood": "comic",
+   "title": "Huatli and the Raptors",
+   "difficulty": "Easy",
+   "teaches": [
+    "Enrage"
+   ],
+   "blurb": "Huatli, a warrior poet of the Sun Empire, rides her dinosaurs against pirates who have come ashore. Every dinosaur takes a hit and keeps coming.",
+   "rewardSet": "xln",
+   "host": false,
+   "hero": {
+    "who": "huatli",
+    "deck": {
+     "name": "The Sun Empire Hunt",
+     "colors": "RG",
+     "archetype": null,
+     "label": "tribute",
+     "cards": [
+      {
+       "qty": 4,
+       "name": "Raptor Hatchling",
+       "set": "xln",
+       "number": "155",
+       "id": "8093e88d-fd3c-43d3-a025-9ebb9f02a84f"
+      },
+      {
+       "qty": 4,
+       "name": "Ripjaw Raptor",
+       "set": "xln",
+       "number": "203",
+       "id": "7c5368c6-87e0-4f83-aaf7-f4af96d2bf30"
+      },
+      {
+       "qty": 3,
+       "name": "Regisaur Alpha",
+       "set": "xln",
+       "number": "227",
+       "id": "d6a322c5-aa4c-4a99-a3ca-48c1353104f0"
+      },
+      {
+       "qty": 3,
+       "name": "Raging Swordtooth",
+       "set": "xln",
+       "number": "226",
+       "id": "15a79137-9589-4c24-9bea-31041fd3c9ae"
+      },
+      {
+       "qty": 4,
+       "name": "Sun-Collared Raptor",
+       "set": "rix",
+       "number": "118",
+       "id": "62fbd1bc-3e57-43d5-ad54-443ca740fcc4"
+      },
+      {
+       "qty": 3,
+       "name": "Ravenous Daggertooth",
+       "set": "xln",
+       "number": "202",
+       "id": "309b204b-774a-47bc-aead-c78db90f3be2"
+      },
+      {
+       "qty": 3,
+       "name": "Frenzied Raptor",
+       "set": "xln",
+       "number": "146",
+       "id": "a7c3a1c9-ffa2-4990-aa4b-db9d688f1ed4"
+      },
+      {
+       "qty": 3,
+       "name": "Needletooth Raptor",
+       "set": "rix",
+       "number": "107",
+       "id": "e9a90b68-d5f4-4f3c-bd4b-af59dd868919"
+      },
+      {
+       "qty": 3,
+       "name": "Charging Monstrosaur",
+       "set": "xln",
+       "number": "138",
+       "id": "d5222448-95d1-4b63-ab76-d5060febcf38"
+      },
+      {
+       "qty": 3,
+       "name": "Lightning Strike",
+       "set": "xln",
+       "number": "149",
+       "id": "f0f55dee-7e39-4183-8e74-844d9c299bf5"
+      },
+      {
+       "qty": 3,
+       "name": "Savage Stomp",
+       "set": "xln",
+       "number": "205",
+       "id": "cb862587-8821-43c7-ad08-2b7d2b82cc71"
+      },
+      {
+       "qty": 12,
+       "name": "Mountain",
+       "set": "xln",
+       "number": "272",
+       "id": "15c96b83-d0b3-4da9-bb2d-249cc18b55e9"
+      },
+      {
+       "qty": 11,
+       "name": "Forest",
+       "set": "xln",
+       "number": "276",
+       "id": "7eef5e5c-27be-45f2-a9c8-4e0a65c984d4"
+      },
+      {
+       "qty": 1,
+       "name": "Rootbound Crag",
+       "set": "xln",
+       "number": "256",
+       "id": "b6f59e19-9ac1-4f86-893e-5b3364122fc6"
+      }
+     ]
+    }
+   },
+   "villain": {
+    "who": "coalition",
+    "deck": {
+     "name": "Pirates Ashore",
+     "colors": "UB",
+     "archetype": null,
+     "label": "tribute",
+     "cards": [
+      {
+       "qty": 4,
+       "name": "Kitesail Corsair",
+       "set": "rix",
+       "number": "41",
+       "id": "4b8d0e8d-c2d4-4682-8095-827ffd79539b"
+      },
+      {
+       "qty": 4,
+       "name": "Warkite Marauder",
+       "set": "rix",
+       "number": "60",
+       "id": "802ff9cf-f739-40cb-8974-77f6850150eb"
+      },
+      {
+       "qty": 4,
+       "name": "Dire Fleet Poisoner",
+       "set": "rix",
+       "number": "68",
+       "id": "88273b1e-b33b-44d3-8777-4e78a04eed65"
+      },
+      {
+       "qty": 4,
+       "name": "Deadeye Brawler",
+       "set": "rix",
+       "number": "155",
+       "id": "acb1ab66-f2ce-4094-b2dd-1fc63d78eea2"
+      },
+      {
+       "qty": 3,
+       "name": "Shipwreck Looter",
+       "set": "xln",
+       "number": "76",
+       "id": "891cbde7-0dff-4877-b373-03f9f4332002"
+      },
+      {
+       "qty": 3,
+       "name": "Deadeye Tormentor",
+       "set": "xln",
+       "number": "98",
+       "id": "d219fb0a-49a3-4711-9b37-a0c1b36f68d0"
+      },
+      {
+       "qty": 3,
+       "name": "Fathom Fleet Boarder",
+       "set": "rix",
+       "number": "71",
+       "id": "f447eb83-c805-4ba8-b9f2-0add092f6795"
+      },
+      {
+       "qty": 2,
+       "name": "Deadeye Plunderers",
+       "set": "xln",
+       "number": "220",
+       "id": "63a7a1a4-aec2-467d-91a1-1a2605718c7c"
+      },
+      {
+       "qty": 3,
+       "name": "Walk the Plank",
+       "set": "xln",
+       "number": "130",
+       "id": "0038ac6a-318f-44fb-bb64-7ae172c4aca3"
+      },
+      {
+       "qty": 2,
+       "name": "Run Aground",
+       "set": "xln",
+       "number": "72",
+       "id": "9ed573c6-2b95-4052-8b43-106cbaacb721"
+      },
+      {
+       "qty": 12,
+       "name": "Island",
+       "set": "xln",
+       "number": "264",
+       "id": "40c840af-9a13-4716-8458-09071239cc26"
+      },
+      {
+       "qty": 10,
+       "name": "Swamp",
+       "set": "xln",
+       "number": "268",
+       "id": "db69a637-5770-4eea-9b04-c00e6f90a12a"
+      },
+      {
+       "qty": 2,
+       "name": "Drowned Catacomb",
+       "set": "xln",
+       "number": "253",
+       "id": "8ef728f1-5153-47d6-8f9c-dfd473ee0750"
+      },
+      {
+       "qty": 2,
+       "name": "Deadeye Rig-Hauler",
+       "set": "rix",
+       "number": "36",
+       "id": "db310d8f-0db7-44c9-9f2d-9a0773b565b0"
+      },
+      {
+       "qty": 2,
+       "name": "River Sneak",
+       "set": "xln",
+       "number": "70",
+       "id": "2be32ffc-dc1d-4bb2-926f-51d110392b06"
+      }
+     ]
+    }
+   },
+   "reward": {
+    "hero": {
+     "packs": 1,
+     "coins": 0
+    },
+    "villain": {
+     "card": {
+      "oracle_id": "597afe7c-a4ba-48d0-9c37-d9affe5ba195",
+      "name": "Deadeye Plunderers",
+      "rarity": "uncommon",
+      "set": "xln",
+      "id": "63a7a1a4-aec2-467d-91a1-1a2605718c7c",
+      "image": "https://cards.scryfall.io/normal/front/6/3/63a7a1a4-aec2-467d-91a1-1a2605718c7c.jpg"
+     },
+     "coins": 50
+    }
+   },
+   "scene": [
+    {
+     "who": "huatli",
+     "line": "Run like the wind, fierce one. The hunt has begun.",
+     "quote": true
+    },
+    {
+     "who": "stage",
+     "line": "Every little hatchling has a parent's claws to guard it.",
+     "quote": true
+    },
+    {
+     "who": "huatli",
+     "line": "Enrage: it triggers whenever the creature is dealt damage. Let your dinosaur take the hit and watch what happens."
+    }
+   ],
+   "villainScene": [
+    {
+     "who": "stage",
+     "line": "Keep your friends close and your enemies within range.",
+     "quote": true
+    },
+    {
+     "who": "stage",
+     "line": "Disputes within the Brazen Coalition can escalate from insult to broadside in the blink of an eye.",
+     "quote": true
+    }
+   ],
+   "after": null,
+   "cues": {
+    "hero": {
+     "start": "Run, fierce one!",
+     "big": "Enrage!",
+     "low": "Too many cannons...",
+     "win": "The hunt is done.",
+     "loss": "Driven off...",
+     "half": "Let your dinosaurs take the damage."
+    },
+    "villain": {
+     "start": "Fire at will.",
+     "big": "Broadside!",
+     "low": "Who fired that...",
+     "win": "Plundered.",
+     "loss": "Back to the ship..."
+    }
+   },
+   "bigPlays": [],
+   "sim": null
+  },
+  {
+   "id": "a27b4",
+   "slot": 4,
+   "kind": "Rival",
+   "mood": "tension",
+   "title": "Vona of Iedo",
+   "difficulty": "Normal",
+   "teaches": [
+    "Lifelink"
+   ],
+   "blurb": "Jace, with no memory, learns that Vona of Iedo has led armies of conquest for four hundred years. She wants the golden city, and so do you.",
+   "rewardSet": "xln",
+   "host": false,
+   "hero": {
+    "who": "jace",
+    "deck": {
+     "name": "Jace and the Crew",
+     "colors": "UB",
+     "archetype": null,
+     "label": "tribute",
+     "cards": [
+      {
+       "qty": 3,
+       "name": "Jace, Cunning Castaway",
+       "set": "xln",
+       "number": "60",
+       "id": "b75f56f2-88fd-44ba-ad02-56ea3391f173"
+      },
+      {
+       "qty": 4,
+       "name": "Kitesail Corsair",
+       "set": "rix",
+       "number": "41",
+       "id": "4b8d0e8d-c2d4-4682-8095-827ffd79539b"
+      },
+      {
+       "qty": 4,
+       "name": "Deadeye Brawler",
+       "set": "rix",
+       "number": "155",
+       "id": "acb1ab66-f2ce-4094-b2dd-1fc63d78eea2"
+      },
+      {
+       "qty": 3,
+       "name": "Hostage Taker",
+       "set": "xln",
+       "number": "223",
+       "id": "e8dc67a0-05d9-463e-9794-30a7e951c240"
+      },
+      {
+       "qty": 4,
+       "name": "Warkite Marauder",
+       "set": "rix",
+       "number": "60",
+       "id": "802ff9cf-f739-40cb-8974-77f6850150eb"
+      },
+      {
+       "qty": 3,
+       "name": "Deadeye Plunderers",
+       "set": "xln",
+       "number": "220",
+       "id": "63a7a1a4-aec2-467d-91a1-1a2605718c7c"
+      },
+      {
+       "qty": 2,
+       "name": "Vraska's Contempt",
+       "set": "xln",
+       "number": "129",
+       "id": "bd7550dd-dfc5-43cd-a117-1244ee3086a8"
+      },
+      {
+       "qty": 3,
+       "name": "Walk the Plank",
+       "set": "xln",
+       "number": "130",
+       "id": "0038ac6a-318f-44fb-bb64-7ae172c4aca3"
+      },
+      {
+       "qty": 4,
+       "name": "Dire Fleet Poisoner",
+       "set": "rix",
+       "number": "68",
+       "id": "88273b1e-b33b-44d3-8777-4e78a04eed65"
+      },
+      {
+       "qty": 3,
+       "name": "Deadeye Tormentor",
+       "set": "xln",
+       "number": "98",
+       "id": "d219fb0a-49a3-4711-9b37-a0c1b36f68d0"
+      },
+      {
+       "qty": 3,
+       "name": "Shipwreck Looter",
+       "set": "xln",
+       "number": "76",
+       "id": "891cbde7-0dff-4877-b373-03f9f4332002"
+      },
+      {
+       "qty": 11,
+       "name": "Island",
+       "set": "xln",
+       "number": "264",
+       "id": "40c840af-9a13-4716-8458-09071239cc26"
+      },
+      {
+       "qty": 11,
+       "name": "Swamp",
+       "set": "xln",
+       "number": "268",
+       "id": "db69a637-5770-4eea-9b04-c00e6f90a12a"
+      },
+      {
+       "qty": 2,
+       "name": "Drowned Catacomb",
+       "set": "xln",
+       "number": "253",
+       "id": "8ef728f1-5153-47d6-8f9c-dfd473ee0750"
+      }
+     ]
+    }
+   },
+   "villain": {
+    "who": "vona",
+    "deck": {
+     "name": "The Legion of Dusk",
+     "colors": "WB",
+     "archetype": null,
+     "label": "tribute",
+     "cards": [
+      {
+       "qty": 4,
+       "name": "Legion Lieutenant",
+       "set": "rix",
+       "number": "163",
+       "id": "33f7ff99-65d6-4e97-bdfa-b6e6eac0588f"
+      },
+      {
+       "qty": 2,
+       "name": "Vona, Butcher of Magan",
+       "set": "xln",
+       "number": "231",
+       "id": "c1fd4101-d531-43aa-9cb6-79e36a8121d8"
+      },
+      {
+       "qty": 4,
+       "name": "Bloodcrazed Paladin",
+       "set": "xln",
+       "number": "93",
+       "id": "3e2160e9-14a0-4c75-b7b0-fb09051ddb32"
+      },
+      {
+       "qty": 4,
+       "name": "Oathsworn Vampire",
+       "set": "rix",
+       "number": "80",
+       "id": "405f82d6-2991-4958-a563-572f0d298346"
+      },
+      {
+       "qty": 4,
+       "name": "Vampire Champion",
+       "set": "rix",
+       "number": "198",
+       "id": "d47f91ff-c916-4938-8e01-2c684004dd9a"
+      },
+      {
+       "qty": 3,
+       "name": "Mavren Fein, Dusk Apostle",
+       "set": "xln",
+       "number": "24",
+       "id": "f7294e40-11b3-4d5c-82d0-c8ec6bd3a6c9"
+      },
+      {
+       "qty": 4,
+       "name": "Dusk Legion Zealot",
+       "set": "rix",
+       "number": "70",
+       "id": "3190cea3-fbea-464f-999b-4b4473be745e"
+      },
+      {
+       "qty": 3,
+       "name": "Bishop of the Bloodstained",
+       "set": "xln",
+       "number": "91",
+       "id": "373131be-bd66-49f5-80fa-836ced03fedf"
+      },
+      {
+       "qty": 3,
+       "name": "Vanquish the Weak",
+       "set": "xln",
+       "number": "127",
+       "id": "e599ed0b-4b3b-4341-b6ac-7fdfdc6799a3"
+      },
+      {
+       "qty": 2,
+       "name": "Call to the Feast",
+       "set": "xln",
+       "number": "219",
+       "id": "f7226de1-0e05-4baf-8c2f-54297fee43c1"
+      },
+      {
+       "qty": 3,
+       "name": "Vampire Revenant",
+       "set": "rix",
+       "number": "89",
+       "id": "2bd3a6c6-33b8-4530-9d80-c488898afd6e"
+      },
+      {
+       "qty": 12,
+       "name": "Plains",
+       "set": "xln",
+       "number": "260",
+       "id": "51ff6ee0-01f4-432f-916b-ed771904d64c"
+      },
+      {
+       "qty": 10,
+       "name": "Swamp",
+       "set": "xln",
+       "number": "268",
+       "id": "db69a637-5770-4eea-9b04-c00e6f90a12a"
+      },
+      {
+       "qty": 2,
+       "name": "Forsaken Sanctuary",
+       "set": "rix",
+       "number": "187",
+       "id": "32e5daf3-6a55-4c2f-92d1-33e0755ee280"
+      }
+     ]
+    }
+   },
+   "reward": {
+    "hero": {
+     "packs": 1,
+     "coins": 100
+    },
+    "villain": {
+     "card": {
+      "oracle_id": "b1c56e23-eae6-47a1-a1cd-3a2d01621768",
+      "name": "Vona, Butcher of Magan",
+      "rarity": "mythic",
+      "set": "xln",
+      "id": "c1fd4101-d531-43aa-9cb6-79e36a8121d8",
+      "image": "https://cards.scryfall.io/normal/front/c/1/c1fd4101-d531-43aa-9cb6-79e36a8121d8.jpg"
+     },
+     "coins": 100
+    }
+   },
+   "scene": [
+    {
+     "who": "stage",
+     "line": "Jace awoke to the certainty that he was lost.",
+     "quote": true
+    },
+    {
+     "who": "jace",
+     "line": "Clearly, it indicates the aetheric azimuth of . . .",
+     "quote": true
+    },
+    {
+     "who": "jace",
+     "line": "Lifelink: damage it deals gains its controller that much life. Race a lifelinker and your damage has to outrun theirs."
+    }
+   ],
+   "villainScene": [
+    {
+     "who": "vona",
+     "line": "For four hundred years, I have led armies of conquest. These lands hold nothing that can stand against me.",
+     "quote": true
+    },
+    {
+     "who": "vona",
+     "line": "Cut the beasts out from under them and their strength is nothing.",
+     "quote": true
+    }
+   ],
+   "after": null,
+   "cues": {
+    "hero": {
+     "start": "Where are we?",
+     "big": "Steady now.",
+     "low": "I do not remember this...",
+     "win": "I have a plan.",
+     "loss": "Lost again...",
+     "half": "Kill the lifelinker first."
+    },
+    "villain": {
+     "start": "Kneel.",
+     "big": "For the Legion!",
+     "low": "Hold the line...",
+     "win": "Four hundred years.",
+     "loss": "Impossible..."
+    }
+   },
+   "bigPlays": [],
+   "sim": null
+  },
+  {
+   "id": "a27b5",
+   "slot": 5,
+   "kind": "Lesson",
+   "mood": "tension",
+   "title": "The City's Blessing",
+   "difficulty": "Normal",
+   "teaches": [
+    "Ascend"
+   ],
+   "blurb": "Kumena knows the only way to keep his enemies from Orazca is to claim its power himself. Tishana, the Voice of Thunder, stands against him.",
+   "rewardSet": "rix",
+   "host": false,
+   "hero": {
+    "who": "kumena",
+    "deck": {
+     "name": "Shaper Kumena's Tide",
+     "colors": "UG",
+     "archetype": null,
+     "label": "tribute",
+     "cards": [
+      {
+       "qty": 2,
+       "name": "Mist-Cloaked Herald",
+       "set": "rix",
+       "number": "43",
+       "id": "18c1368e-114b-4618-922b-1d824ba0d1d5"
+      },
+      {
+       "qty": 4,
+       "name": "Timestream Navigator",
+       "set": "rix",
+       "number": "59",
+       "id": "14770537-209a-4260-88a4-30f4e2b5ede0"
+      },
+      {
+       "qty": 4,
+       "name": "Silvergill Adept",
+       "set": "rix",
+       "number": "53",
+       "id": "45ea8ca1-612d-4984-8572-06710d38bfa6"
+      },
+      {
+       "qty": 2,
+       "name": "Merfolk Mistbinder",
+       "set": "rix",
+       "number": "164",
+       "id": "2935b829-23fb-415e-90f2-2e0016b5cde9"
+      },
+      {
+       "qty": 2,
+       "name": "Kumena, Tyrant of Orazca",
+       "set": "rix",
+       "number": "162",
+       "id": "a3aef818-c896-46e6-aaff-56aee52a066c"
+      },
+      {
+       "qty": 2,
+       "name": "Spire Winder",
+       "set": "rix",
+       "number": "57",
+       "id": "aca438d7-1134-4fee-9fad-85c3b1abe8ed"
+      },
+      {
+       "qty": 1,
+       "name": "Secrets of the Golden City",
+       "set": "rix",
+       "number": "52",
+       "id": "899ecd7a-bfd6-42a4-8cb2-18bac40b4401"
+      },
+      {
+       "qty": 4,
+       "name": "Kumena's Speaker",
+       "set": "xln",
+       "number": "196",
+       "id": "52e96ddf-ac9e-4cc5-8c9a-afee421d99a6"
+      },
+      {
+       "qty": 3,
+       "name": "Shapers of Nature",
+       "set": "xln",
+       "number": "228",
+       "id": "7aa682fb-f5b6-41c1-9428-6043b0b76744"
+      },
+      {
+       "qty": 1,
+       "name": "Waterknot",
+       "set": "rix",
+       "number": "61",
+       "id": "8b4579ee-76c4-4ed6-9208-55d2b598d3b5"
+      },
+      {
+       "qty": 11,
+       "name": "Island",
+       "set": "xln",
+       "number": "264",
+       "id": "40c840af-9a13-4716-8458-09071239cc26"
+      },
+      {
+       "qty": 11,
+       "name": "Forest",
+       "set": "xln",
+       "number": "276",
+       "id": "7eef5e5c-27be-45f2-a9c8-4e0a65c984d4"
+      },
+      {
+       "qty": 2,
+       "name": "Woodland Stream",
+       "set": "xln",
+       "number": "284",
+       "id": "740bb19c-0c91-4fc1-9b3c-be84425a3523"
+      },
+      {
+       "qty": 4,
+       "name": "Shore Keeper",
+       "set": "xln",
+       "number": "77",
+       "id": "135d1145-8640-44e1-8079-45832fa2556d"
+      },
+      {
+       "qty": 1,
+       "name": "Shaper Apprentice",
+       "set": "xln",
+       "number": "75",
+       "id": "02955471-5ffc-4c7b-83fe-a69816415ca1"
+      },
+      {
+       "qty": 4,
+       "name": "Sworn Guardian",
+       "set": "rix",
+       "number": "58",
+       "id": "6452ba94-6bb0-409c-99f7-71e6457c3f2a"
+      },
+      {
+       "qty": 2,
+       "name": "Siren Lookout",
+       "set": "xln",
+       "number": "78",
+       "id": "0000cd57-91fe-411f-b798-646e965eec37"
+      }
+     ]
+    }
+   },
+   "villain": {
+    "who": "tishana",
+    "deck": {
+     "name": "Tishana's Thunder",
+     "colors": "UG",
+     "archetype": null,
+     "label": "tribute",
+     "cards": [
+      {
+       "qty": 4,
+       "name": "Tishana's Wayfinder",
+       "set": "xln",
+       "number": "211",
+       "id": "af52383b-545e-4b64-93f9-317ba6dcf5a8"
+      },
+      {
+       "qty": 4,
+       "name": "Shapers of Nature",
+       "set": "xln",
+       "number": "228",
+       "id": "7aa682fb-f5b6-41c1-9428-6043b0b76744"
+      },
+      {
+       "qty": 4,
+       "name": "Jade Guardian",
+       "set": "xln",
+       "number": "194",
+       "id": "aca83e48-6e32-477f-8714-6103e77c06df"
+      },
+      {
+       "qty": 4,
+       "name": "Orazca Frillback",
+       "set": "rix",
+       "number": "140",
+       "id": "00c81160-192c-4077-8ed1-3643919a2025"
+      },
+      {
+       "qty": 3,
+       "name": "Jade Bearer",
+       "set": "rix",
+       "number": "134",
+       "id": "696bb954-353e-488b-a1e8-0df75da6339b"
+      },
+      {
+       "qty": 4,
+       "name": "Thundering Spineback",
+       "set": "xln",
+       "number": "210",
+       "id": "35711da6-aac4-4c2a-b324-aebeaa843adc"
+      },
+      {
+       "qty": 4,
+       "name": "Tishana, Voice of Thunder",
+       "set": "xln",
+       "number": "230",
+       "id": "19c5cfbe-3972-4d2e-a37f-e96cca33bb33"
+      },
+      {
+       "qty": 2,
+       "name": "Nezahal, Primal Tide",
+       "set": "rix",
+       "number": "45",
+       "id": "48eba418-94ab-46a3-958c-4d5058fc2bcd"
+      },
+      {
+       "qty": 3,
+       "name": "Kumena's Awakening",
+       "set": "rix",
+       "number": "42",
+       "id": "3a86f499-a2d4-47f1-9fc1-b543e5ad5c82"
+      },
+      {
+       "qty": 3,
+       "name": "Hadana's Climb // Winged Temple of Orazca",
+       "set": "rix",
+       "number": "158",
+       "id": "8e7554bc-8583-4059-8895-c3845bc27ae3"
+      },
+      {
+       "qty": 3,
+       "name": "Wildgrowth Walker",
+       "set": "xln",
+       "number": "216",
+       "id": "52e4c0f8-d5f0-4224-9974-190606911480"
+      },
+      {
+       "qty": 1,
+       "name": "Plummet",
+       "set": "rix",
+       "number": "143",
+       "id": "54a0afaa-f99f-4c7a-9fa1-c6a46dfb2a29"
+      },
+      {
+       "qty": 10,
+       "name": "Forest",
+       "set": "xln",
+       "number": "276",
+       "id": "7eef5e5c-27be-45f2-a9c8-4e0a65c984d4"
+      },
+      {
+       "qty": 9,
+       "name": "Island",
+       "set": "xln",
+       "number": "264",
+       "id": "40c840af-9a13-4716-8458-09071239cc26"
+      },
+      {
+       "qty": 2,
+       "name": "Woodland Stream",
+       "set": "xln",
+       "number": "284",
+       "id": "740bb19c-0c91-4fc1-9b3c-be84425a3523"
+      }
+     ]
+    }
+   },
+   "reward": {
+    "hero": {
+     "packs": 1,
+     "coins": 100
+    },
+    "villain": {
+     "card": {
+      "oracle_id": "479dd04b-0048-446a-9202-a4dc9472e5c3",
+      "name": "Tishana, Voice of Thunder",
+      "rarity": "mythic",
+      "set": "xln",
+      "id": "19c5cfbe-3972-4d2e-a37f-e96cca33bb33",
+      "image": "https://cards.scryfall.io/normal/front/1/9/19c5cfbe-3972-4d2e-a37f-e96cca33bb33.jpg"
+     },
+     "coins": 100
+    }
+   },
+   "scene": [
+    {
+     "who": "stage",
+     "line": "The truth came to Kumena like the Great River's torrent: the only way to keep his enemies away from the hidden city was to claim its power for himself.",
+     "quote": true
+    },
+    {
+     "who": "kumena",
+     "line": "A fool's fire is quickly quenched.",
+     "quote": true
+    },
+    {
+     "who": "kumena",
+     "line": "Ascend: control ten permanents and you get the city's blessing for the rest of the game. Build a wide board, then enjoy the bonus."
+    }
+   ],
+   "villainScene": [
+    {
+     "who": "tishana",
+     "line": "Don't make splashes. Make progress.",
+     "quote": true
+    },
+    {
+     "who": "tishana",
+     "line": "The fools have done it.",
+     "quote": true
+    }
+   ],
+   "after": null,
+   "cues": {
+    "hero": {
+     "start": "Claim the power.",
+     "big": "The blessing is ours!",
+     "low": "The thunder grows...",
+     "win": "The river holds.",
+     "loss": "The city is lost...",
+     "half": "Reach ten permanents."
+    },
+    "villain": {
+     "start": "There is always another way.",
+     "big": "Thunder!",
+     "low": "Wide waters...",
+     "win": "The river is mine.",
+     "loss": "The waters recede..."
+    }
+   },
+   "bigPlays": [],
+   "sim": null
+  },
+  {
+   "id": "a27b6",
+   "slot": 6,
+   "kind": "Meta",
+   "mood": "march",
+   "title": "Dinosaurs",
+   "difficulty": "Normal",
+   "teaches": [
+    "Tribes"
+   ],
+   "blurb": "A tribute to the tribes of Ixalan Standard: Gruul Dinosaurs against Vampires. Big beasts against the Legion of Dusk.",
+   "rewardSet": "rix",
+   "host": false,
+   "hero": {
+    "who": "dinos",
+    "deck": {
+     "name": "RG Dinosaurs",
+     "colors": "RG",
+     "archetype": "Aggro",
+     "label": "tribute",
+     "cards": [
+      {
+       "qty": 4,
+       "name": "Raptor Hatchling",
+       "set": "xln",
+       "number": "155",
+       "id": "8093e88d-fd3c-43d3-a025-9ebb9f02a84f"
+      },
+      {
+       "qty": 4,
+       "name": "Ripjaw Raptor",
+       "set": "xln",
+       "number": "203",
+       "id": "7c5368c6-87e0-4f83-aaf7-f4af96d2bf30"
+      },
+      {
+       "qty": 4,
+       "name": "Regisaur Alpha",
+       "set": "xln",
+       "number": "227",
+       "id": "d6a322c5-aa4c-4a99-a3ca-48c1353104f0"
+      },
+      {
+       "qty": 4,
+       "name": "Raging Swordtooth",
+       "set": "xln",
+       "number": "226",
+       "id": "15a79137-9589-4c24-9bea-31041fd3c9ae"
+      },
+      {
+       "qty": 4,
+       "name": "Charging Monstrosaur",
+       "set": "xln",
+       "number": "138",
+       "id": "d5222448-95d1-4b63-ab76-d5060febcf38"
+      },
+      {
+       "qty": 3,
+       "name": "Ravenous Daggertooth",
+       "set": "xln",
+       "number": "202",
+       "id": "309b204b-774a-47bc-aead-c78db90f3be2"
+      },
+      {
+       "qty": 3,
+       "name": "Needletooth Raptor",
+       "set": "rix",
+       "number": "107",
+       "id": "e9a90b68-d5f4-4f3c-bd4b-af59dd868919"
+      },
+      {
+       "qty": 4,
+       "name": "Frenzied Raptor",
+       "set": "xln",
+       "number": "146",
+       "id": "a7c3a1c9-ffa2-4990-aa4b-db9d688f1ed4"
+      },
+      {
+       "qty": 3,
+       "name": "Savage Stomp",
+       "set": "xln",
+       "number": "205",
+       "id": "cb862587-8821-43c7-ad08-2b7d2b82cc71"
+      },
+      {
+       "qty": 3,
+       "name": "Lightning Strike",
+       "set": "xln",
+       "number": "149",
+       "id": "f0f55dee-7e39-4183-8e74-844d9c299bf5"
+      },
+      {
+       "qty": 12,
+       "name": "Mountain",
+       "set": "xln",
+       "number": "272",
+       "id": "15c96b83-d0b3-4da9-bb2d-249cc18b55e9"
+      },
+      {
+       "qty": 11,
+       "name": "Forest",
+       "set": "xln",
+       "number": "276",
+       "id": "7eef5e5c-27be-45f2-a9c8-4e0a65c984d4"
+      },
+      {
+       "qty": 1,
+       "name": "Rootbound Crag",
+       "set": "xln",
+       "number": "256",
+       "id": "b6f59e19-9ac1-4f86-893e-5b3364122fc6"
+      }
+     ]
+    }
+   },
+   "villain": {
+    "who": "vampires",
+    "deck": {
+     "name": "WB Vampires",
+     "colors": "WB",
+     "archetype": "Midrange",
+     "label": "tribute",
+     "cards": [
+      {
+       "qty": 4,
+       "name": "Legion Lieutenant",
+       "set": "rix",
+       "number": "163",
+       "id": "33f7ff99-65d6-4e97-bdfa-b6e6eac0588f"
+      },
+      {
+       "qty": 2,
+       "name": "Vona, Butcher of Magan",
+       "set": "xln",
+       "number": "231",
+       "id": "c1fd4101-d531-43aa-9cb6-79e36a8121d8"
+      },
+      {
+       "qty": 4,
+       "name": "Bloodcrazed Paladin",
+       "set": "xln",
+       "number": "93",
+       "id": "3e2160e9-14a0-4c75-b7b0-fb09051ddb32"
+      },
+      {
+       "qty": 4,
+       "name": "Oathsworn Vampire",
+       "set": "rix",
+       "number": "80",
+       "id": "405f82d6-2991-4958-a563-572f0d298346"
+      },
+      {
+       "qty": 4,
+       "name": "Vampire Champion",
+       "set": "rix",
+       "number": "198",
+       "id": "d47f91ff-c916-4938-8e01-2c684004dd9a"
+      },
+      {
+       "qty": 3,
+       "name": "Mavren Fein, Dusk Apostle",
+       "set": "xln",
+       "number": "24",
+       "id": "f7294e40-11b3-4d5c-82d0-c8ec6bd3a6c9"
+      },
+      {
+       "qty": 4,
+       "name": "Dusk Legion Zealot",
+       "set": "rix",
+       "number": "70",
+       "id": "3190cea3-fbea-464f-999b-4b4473be745e"
+      },
+      {
+       "qty": 3,
+       "name": "Bishop of the Bloodstained",
+       "set": "xln",
+       "number": "91",
+       "id": "373131be-bd66-49f5-80fa-836ced03fedf"
+      },
+      {
+       "qty": 3,
+       "name": "Vanquish the Weak",
+       "set": "xln",
+       "number": "127",
+       "id": "e599ed0b-4b3b-4341-b6ac-7fdfdc6799a3"
+      },
+      {
+       "qty": 2,
+       "name": "Call to the Feast",
+       "set": "xln",
+       "number": "219",
+       "id": "f7226de1-0e05-4baf-8c2f-54297fee43c1"
+      },
+      {
+       "qty": 3,
+       "name": "Vampire Revenant",
+       "set": "rix",
+       "number": "89",
+       "id": "2bd3a6c6-33b8-4530-9d80-c488898afd6e"
+      },
+      {
+       "qty": 12,
+       "name": "Plains",
+       "set": "xln",
+       "number": "260",
+       "id": "51ff6ee0-01f4-432f-916b-ed771904d64c"
+      },
+      {
+       "qty": 10,
+       "name": "Swamp",
+       "set": "xln",
+       "number": "268",
+       "id": "db69a637-5770-4eea-9b04-c00e6f90a12a"
+      },
+      {
+       "qty": 2,
+       "name": "Forsaken Sanctuary",
+       "set": "rix",
+       "number": "187",
+       "id": "32e5daf3-6a55-4c2f-92d1-33e0755ee280"
+      }
+     ]
+    }
+   },
+   "reward": {
+    "hero": {
+     "packs": 1,
+     "coins": 100
+    },
+    "villain": {
+     "card": {
+      "oracle_id": "5fa1b2f0-3ba4-49db-9cb5-b6130e4c255e",
+      "name": "Legion Lieutenant",
+      "rarity": "uncommon",
+      "set": "rix",
+      "id": "33f7ff99-65d6-4e97-bdfa-b6e6eac0588f",
+      "image": "https://cards.scryfall.io/normal/front/3/3/33f7ff99-65d6-4e97-bdfa-b6e6eac0588f.jpg"
+     },
+     "coins": 100
+    }
+   },
+   "scene": [
+    {
+     "who": "stage",
+     "line": "Carnivorous dinosaurs developed a taste for undead flesh, tracking the vampires by the scent of blood on their breath.",
+     "quote": true
+    },
+    {
+     "who": "stage",
+     "line": "Sun Empire commanders are well versed in advanced martial strategy. Still, the correct maneuver is usually to deploy the giant, implacable death lizard.",
+     "quote": true
+    },
+    {
+     "who": "you",
+     "line": "Dinosaurs hit harder than vampires. Fight them early and fast, before the lifelinkers stabilise."
+    }
+   ],
+   "villainScene": [
+    {
+     "who": "stage",
+     "line": "Vampires, the noble class of old Torrezon, are guided by their dual loyalties to church and crown.",
+     "quote": true
+    },
+    {
+     "who": "stage",
+     "line": "By the law of church and crown, vampires feed only on the blood of the guilty—those declared heretics, rebels, or enemies of war.",
+     "quote": true
+    }
+   ],
+   "after": null,
+   "cues": {
+    "hero": {
+     "start": "Charge!",
+     "big": "Stampede!",
+     "low": "They are bleeding us...",
+     "win": "The herd wins.",
+     "loss": "Hunted down...",
+     "half": "Keep attacking."
+    },
+    "villain": {
+     "start": "For church and crown.",
+     "big": "Feed!",
+     "low": "The sun is rising...",
+     "win": "The Legion endures.",
+     "loss": "Dust..."
+    }
+   },
+   "bigPlays": [],
+   "sim": null
+  },
+  {
+   "id": "a27b7",
+   "slot": 7,
+   "kind": "Meta",
+   "mood": "tension",
+   "title": "Pirates",
+   "difficulty": "Normal",
+   "teaches": [
+    "Racing"
+   ],
+   "blurb": "A tribute to the tribes of Ixalan Standard: Pirate aggro against the Merfolk of the Great River.",
+   "rewardSet": "rix",
+   "host": false,
+   "hero": {
+    "who": "pirates",
+    "deck": {
+     "name": "BR Pirates",
+     "colors": "BR",
+     "archetype": "Aggro",
+     "label": "tribute",
+     "cards": [
+      {
+       "qty": 2,
+       "name": "Daring Buccaneer",
+       "set": "rix",
+       "number": "98",
+       "id": "1d413b88-8f5d-415f-bd07-169f6c175e6b"
+      },
+      {
+       "qty": 4,
+       "name": "Dire Fleet Daredevil",
+       "set": "rix",
+       "number": "99",
+       "id": "13e3c0c5-7451-4da9-acc0-d6e4e1f2655e"
+      },
+      {
+       "qty": 2,
+       "name": "Swaggering Corsair",
+       "set": "rix",
+       "number": "119",
+       "id": "22da9f6a-9598-4cfe-b465-719266b65dee"
+      },
+      {
+       "qty": 4,
+       "name": "Dire Fleet Captain",
+       "set": "xln",
+       "number": "221",
+       "id": "8200f8a3-d60b-470a-a558-0c3555d1f10b"
+      },
+      {
+       "qty": 4,
+       "name": "Fathom Fleet Captain",
+       "set": "xln",
+       "number": "106",
+       "id": "36cd7467-ff8c-4a92-ae55-6894213d6c0b"
+      },
+      {
+       "qty": 4,
+       "name": "Captivating Crew",
+       "set": "xln",
+       "number": "137",
+       "id": "c76e66c1-dbe2-4346-b4b3-20e8386e7d76"
+      },
+      {
+       "qty": 1,
+       "name": "Fathom Fleet Cutthroat",
+       "set": "xln",
+       "number": "107",
+       "id": "e83500ed-8c46-488e-bd8e-197bedb8f4bd"
+      },
+      {
+       "qty": 4,
+       "name": "Lightning Strike",
+       "set": "xln",
+       "number": "149",
+       "id": "f0f55dee-7e39-4183-8e74-844d9c299bf5"
+      },
+      {
+       "qty": 3,
+       "name": "Walk the Plank",
+       "set": "xln",
+       "number": "130",
+       "id": "0038ac6a-318f-44fb-bb64-7ae172c4aca3"
+      },
+      {
+       "qty": 4,
+       "name": "Dire Fleet Neckbreaker",
+       "set": "rix",
+       "number": "156",
+       "id": "5146dd15-f696-42c3-b0e5-6a1b1d7be6b4"
+      },
+      {
+       "qty": 12,
+       "name": "Mountain",
+       "set": "xln",
+       "number": "272",
+       "id": "15c96b83-d0b3-4da9-bb2d-249cc18b55e9"
+      },
+      {
+       "qty": 10,
+       "name": "Swamp",
+       "set": "xln",
+       "number": "268",
+       "id": "db69a637-5770-4eea-9b04-c00e6f90a12a"
+      },
+      {
+       "qty": 2,
+       "name": "Cinder Barrens",
+       "set": "rix",
+       "number": "205",
+       "id": "93f6bd6b-92fb-4b4f-89c2-762cc2c465f3"
+      },
+      {
+       "qty": 3,
+       "name": "Ravenous Chupacabra",
+       "set": "rix",
+       "number": "82",
+       "id": "02551196-ecea-472f-9547-3c9658d0489e"
+      },
+      {
+       "qty": 1,
+       "name": "Vraska's Contempt",
+       "set": "xln",
+       "number": "129",
+       "id": "bd7550dd-dfc5-43cd-a117-1244ee3086a8"
+      }
+     ]
+    }
+   },
+   "villain": {
+    "who": "merfolk",
+    "deck": {
+     "name": "Merfolk Explorers",
+     "colors": "UG",
+     "archetype": "Midrange",
+     "label": "tribute",
+     "cards": [
+      {
+       "qty": 4,
+       "name": "Jungle Delver",
+       "set": "xln",
+       "number": "195",
+       "id": "be0e3547-d8cb-4b68-a396-8c8fbc3b2b1c"
+      },
+      {
+       "qty": 4,
+       "name": "Kumena's Speaker",
+       "set": "xln",
+       "number": "196",
+       "id": "52e96ddf-ac9e-4cc5-8c9a-afee421d99a6"
+      },
+      {
+       "qty": 4,
+       "name": "Mist-Cloaked Herald",
+       "set": "rix",
+       "number": "43",
+       "id": "18c1368e-114b-4618-922b-1d824ba0d1d5"
+      },
+      {
+       "qty": 2,
+       "name": "Silvergill Adept",
+       "set": "rix",
+       "number": "53",
+       "id": "45ea8ca1-612d-4984-8572-06710d38bfa6"
+      },
+      {
+       "qty": 4,
+       "name": "Shapers of Nature",
+       "set": "xln",
+       "number": "228",
+       "id": "7aa682fb-f5b6-41c1-9428-6043b0b76744"
+      },
+      {
+       "qty": 1,
+       "name": "Waterknot",
+       "set": "rix",
+       "number": "61",
+       "id": "8b4579ee-76c4-4ed6-9208-55d2b598d3b5"
+      },
+      {
+       "qty": 3,
+       "name": "Merfolk Mistbinder",
+       "set": "rix",
+       "number": "164",
+       "id": "2935b829-23fb-415e-90f2-2e0016b5cde9"
+      },
+      {
+       "qty": 11,
+       "name": "Forest",
+       "set": "xln",
+       "number": "276",
+       "id": "7eef5e5c-27be-45f2-a9c8-4e0a65c984d4"
+      },
+      {
+       "qty": 11,
+       "name": "Island",
+       "set": "xln",
+       "number": "264",
+       "id": "40c840af-9a13-4716-8458-09071239cc26"
+      },
+      {
+       "qty": 2,
+       "name": "Woodland Stream",
+       "set": "xln",
+       "number": "284",
+       "id": "740bb19c-0c91-4fc1-9b3c-be84425a3523"
+      },
+      {
+       "qty": 2,
+       "name": "Shaper Apprentice",
+       "set": "xln",
+       "number": "75",
+       "id": "02955471-5ffc-4c7b-83fe-a69816415ca1"
+      },
+      {
+       "qty": 3,
+       "name": "Shore Keeper",
+       "set": "xln",
+       "number": "77",
+       "id": "135d1145-8640-44e1-8079-45832fa2556d"
+      },
+      {
+       "qty": 3,
+       "name": "Sworn Guardian",
+       "set": "rix",
+       "number": "58",
+       "id": "6452ba94-6bb0-409c-99f7-71e6457c3f2a"
+      },
+      {
+       "qty": 4,
+       "name": "Siren Lookout",
+       "set": "xln",
+       "number": "78",
+       "id": "0000cd57-91fe-411f-b798-646e965eec37"
+      },
+      {
+       "qty": 2,
+       "name": "Sailor of Means",
+       "set": "xln",
+       "number": "73",
+       "id": "67f15157-6017-4b05-8c74-b3f8728d764b"
+      }
+     ]
+    }
+   },
+   "reward": {
+    "hero": {
+     "packs": 1,
+     "coins": 100
+    },
+    "villain": {
+     "card": {
+      "oracle_id": "744f79da-240f-4d14-a98c-e2796645ae88",
+      "name": "Shapers of Nature",
+      "rarity": "uncommon",
+      "set": "xln",
+      "id": "7aa682fb-f5b6-41c1-9428-6043b0b76744",
+      "image": "https://cards.scryfall.io/normal/front/7/a/7aa682fb-f5b6-41c1-9428-6043b0b76744.jpg"
+     },
+     "coins": 100
+    }
+   },
+   "scene": [
+    {
+     "who": "stage",
+     "line": "The pirates of the Brazen Coalition are the descendants of those displaced by the Legion of Dusk, and they are eager for vengeance.",
+     "quote": true
+    },
+    {
+     "who": "stage",
+     "line": "Without frequent raids, orcs sometimes get bored and plunder their own ships.",
+     "quote": true
+    },
+    {
+     "who": "you",
+     "line": "Pirates are fast and fragile. Hit first and keep the pressure on."
+    }
+   ],
+   "villainScene": [
+    {
+     "who": "stage",
+     "line": "The River Heralds fight to keep all others from reaching the golden city. The city has its own defenses.",
+     "quote": true
+    },
+    {
+     "who": "stage",
+     "line": "With matchless stealth, the River Heralds fought a running battle against the three enemy forces.",
+     "quote": true
+    }
+   ],
+   "after": null,
+   "cues": {
+    "hero": {
+     "start": "Yo ho!",
+     "big": "All hands!",
+     "low": "Taking on water...",
+     "win": "Plunder secured.",
+     "loss": "Overboard...",
+     "half": "Race before the tide turns."
+    },
+    "villain": {
+     "start": "Look downstream.",
+     "big": "Rise!",
+     "low": "Out of the shallows...",
+     "win": "The river holds.",
+     "loss": "The waters part..."
+    }
+   },
+   "bigPlays": [],
+   "sim": null
+  },
+  {
+   "id": "a27b8",
+   "slot": 8,
+   "kind": "Boss",
+   "mood": "boss",
+   "title": "The Lawbringer",
+   "difficulty": "Hard",
+   "teaches": [
+    "Racing"
+   ],
+   "blurb": "Azor built the Immortal Sun and thinks he is keeping the plane safe. Jace and Vraska have to take it away from him.",
+   "rewardSet": "rix",
+   "host": true,
+   "hero": {
+    "who": "vraska",
+    "deck": {
+     "name": "Vraska and Jace",
+     "colors": "UB",
+     "archetype": null,
+     "label": "tribute",
+     "cards": [
+      {
+       "qty": 2,
+       "name": "Jace, Cunning Castaway",
+       "set": "xln",
+       "number": "60",
+       "id": "b75f56f2-88fd-44ba-ad02-56ea3391f173"
+      },
+      {
+       "qty": 1,
+       "name": "Hostage Taker",
+       "set": "xln",
+       "number": "223",
+       "id": "e8dc67a0-05d9-463e-9794-30a7e951c240"
+      },
+      {
+       "qty": 2,
+       "name": "Ravenous Chupacabra",
+       "set": "rix",
+       "number": "82",
+       "id": "02551196-ecea-472f-9547-3c9658d0489e"
+      },
+      {
+       "qty": 4,
+       "name": "Vraska's Contempt",
+       "set": "xln",
+       "number": "129",
+       "id": "bd7550dd-dfc5-43cd-a117-1244ee3086a8"
+      },
+      {
+       "qty": 4,
+       "name": "Kitesail Corsair",
+       "set": "rix",
+       "number": "41",
+       "id": "4b8d0e8d-c2d4-4682-8095-827ffd79539b"
+      },
+      {
+       "qty": 2,
+       "name": "Deadeye Brawler",
+       "set": "rix",
+       "number": "155",
+       "id": "acb1ab66-f2ce-4094-b2dd-1fc63d78eea2"
+      },
+      {
+       "qty": 1,
+       "name": "Vraska, Scheming Gorgon",
+       "set": "rix",
+       "number": "197",
+       "id": "91685732-c118-4f52-ac77-f96866a687a3"
+      },
+      {
+       "qty": 4,
+       "name": "Warkite Marauder",
+       "set": "rix",
+       "number": "60",
+       "id": "802ff9cf-f739-40cb-8974-77f6850150eb"
+      },
+      {
+       "qty": 2,
+       "name": "Walk the Plank",
+       "set": "xln",
+       "number": "130",
+       "id": "0038ac6a-318f-44fb-bb64-7ae172c4aca3"
+      },
+      {
+       "qty": 3,
+       "name": "Dire Fleet Poisoner",
+       "set": "rix",
+       "number": "68",
+       "id": "88273b1e-b33b-44d3-8777-4e78a04eed65"
+      },
+      {
+       "qty": 11,
+       "name": "Island",
+       "set": "xln",
+       "number": "264",
+       "id": "40c840af-9a13-4716-8458-09071239cc26"
+      },
+      {
+       "qty": 11,
+       "name": "Swamp",
+       "set": "xln",
+       "number": "268",
+       "id": "db69a637-5770-4eea-9b04-c00e6f90a12a"
+      },
+      {
+       "qty": 2,
+       "name": "Drowned Catacomb",
+       "set": "xln",
+       "number": "253",
+       "id": "8ef728f1-5153-47d6-8f9c-dfd473ee0750"
+      },
+      {
+       "qty": 3,
+       "name": "Deadeye Tormentor",
+       "set": "xln",
+       "number": "98",
+       "id": "d219fb0a-49a3-4711-9b37-a0c1b36f68d0"
+      },
+      {
+       "qty": 4,
+       "name": "Sworn Guardian",
+       "set": "rix",
+       "number": "58",
+       "id": "6452ba94-6bb0-409c-99f7-71e6457c3f2a"
+      },
+      {
+       "qty": 4,
+       "name": "Siren Lookout",
+       "set": "xln",
+       "number": "78",
+       "id": "0000cd57-91fe-411f-b798-646e965eec37"
+      }
+     ]
+    }
+   },
+   "villain": {
+    "who": "azor",
+    "deck": {
+     "name": "The Keeper of the Sun",
+     "colors": "WU",
+     "archetype": null,
+     "label": "tribute",
+     "cards": [
+      {
+       "qty": 4,
+       "name": "Azor, the Lawbringer",
+       "set": "rix",
+       "number": "154",
+       "id": "30dc237e-b28a-4b65-9790-6b434828bf2e"
+      },
+      {
+       "qty": 4,
+       "name": "Settle the Wreckage",
+       "set": "xln",
+       "number": "34",
+       "id": "9cbd346e-098a-4cf6-a72f-468376fd2e8f"
+      },
+      {
+       "qty": 4,
+       "name": "Baffling End",
+       "set": "rix",
+       "number": "1",
+       "id": "208c6f51-3c00-4fc6-8579-8f57444d0e97"
+      },
+      {
+       "qty": 4,
+       "name": "Resplendent Griffin",
+       "set": "rix",
+       "number": "170",
+       "id": "915f2ad9-fd39-465c-8261-bfa34116cbcc"
+      },
+      {
+       "qty": 4,
+       "name": "Seafloor Oracle",
+       "set": "rix",
+       "number": "51",
+       "id": "4316eacf-4b78-4b99-833c-53ecf49a0ae5"
+      },
+      {
+       "qty": 4,
+       "name": "Cancel",
+       "set": "xln",
+       "number": "47",
+       "id": "cf6e5ad6-ffe2-4588-b357-c415c33fbc11"
+      },
+      {
+       "qty": 3,
+       "name": "Luminous Bonds",
+       "set": "rix",
+       "number": "12",
+       "id": "2ca3a547-ef22-4b87-b90f-e8ffb42f73ac"
+      },
+      {
+       "qty": 2,
+       "name": "Divine Verdict",
+       "set": "rix",
+       "number": "5",
+       "id": "ed07b708-7232-4b87-b5d9-edaa20a69293"
+      },
+      {
+       "qty": 3,
+       "name": "Pious Interdiction",
+       "set": "xln",
+       "number": "26",
+       "id": "670b9645-ce34-41eb-a527-4af3e13c3a54"
+      },
+      {
+       "qty": 1,
+       "name": "The Immortal Sun",
+       "set": "rix",
+       "number": "180",
+       "id": "adeccd88-8dc0-4cc1-943f-27d540d248bb"
+      },
+      {
+       "qty": 1,
+       "name": "Sun-Crested Pterodon",
+       "set": "rix",
+       "number": "27",
+       "id": "c298b51f-b725-4a51-a91e-4c66cf6dfe9d"
+      },
+      {
+       "qty": 12,
+       "name": "Plains",
+       "set": "xln",
+       "number": "260",
+       "id": "51ff6ee0-01f4-432f-916b-ed771904d64c"
+      },
+      {
+       "qty": 10,
+       "name": "Island",
+       "set": "xln",
+       "number": "264",
+       "id": "40c840af-9a13-4716-8458-09071239cc26"
+      },
+      {
+       "qty": 2,
+       "name": "Glacial Fortress",
+       "set": "xln",
+       "number": "255",
+       "id": "cef133d9-26d2-4a1e-8d6a-829f1067c169"
+      },
+      {
+       "qty": 2,
+       "name": "Negate",
+       "set": "rix",
+       "number": "44",
+       "id": "31534f45-43e6-4103-bf58-ad8fa688e4b0"
+      }
+     ]
+    }
+   },
+   "reward": {
+    "hero": {
+     "packs": 2,
+     "coins": 200
+    },
+    "villain": {
+     "card": {
+      "oracle_id": "89812139-9fc1-4fc9-b1d0-d07067d62083",
+      "name": "Azor, the Lawbringer",
+      "rarity": "mythic",
+      "set": "rix",
+      "id": "30dc237e-b28a-4b65-9790-6b434828bf2e",
+      "image": "https://cards.scryfall.io/normal/front/3/0/30dc237e-b28a-4b65-9790-6b434828bf2e.jpg"
+     },
+     "coins": 200
+    }
+   },
+   "scene": [
+    {
+     "who": "stage",
+     "line": "Opening Orazca unleashed more horrors than just the Immortal Sun.",
+     "quote": true
+    },
+    {
+     "who": "stage",
+     "line": "Carefully following the thaumatic compass Bolas had given her, Vraska blundered straight into the River Heralds' trap.",
+     "quote": true
+    },
+    {
+     "who": "jace",
+     "line": "We cannot beat the Sun by force. Break his hold on it before the walkers are trapped."
+    }
+   ],
+   "villainScene": [
+    {
+     "who": "azor",
+     "line": "Be still.",
+     "quote": true
+    },
+    {
+     "who": "stage",
+     "line": "The Immortal Sun will bring us true eternal life to replace the everlasting shadow of undeath.",
+     "quote": true
+    }
+   ],
+   "after": null,
+   "cues": {
+    "hero": {
+     "start": "Take the Sun.",
+     "big": "Now!",
+     "low": "The Sun is binding us...",
+     "win": "He is trapped.",
+     "loss": "We are bound...",
+     "half": "Do not let him keep the Sun."
+    },
+    "villain": {
+     "start": "Be still.",
+     "big": "[the Sun burns gold]",
+     "low": "[a hollow glow]",
+     "win": "It is finished.",
+     "loss": "[the sky turns red]"
+    }
+   },
+   "bigPlays": [],
+   "sim": null
+  },
+  {
+   "id": "a27b9",
+   "slot": 9,
+   "kind": "Secret Boss",
+   "secret": true,
+   "mood": "boss",
+   "title": "Rekindling Phoenix",
+   "difficulty": "Hard",
+   "teaches": [
+    "Racing"
+   ],
+   "blurb": "Deep in the archive, a flier that will not stay dead.",
+   "rewardSet": "rix",
+   "host": true,
+   "archive": {
+    "deck": "Rekindling Phoenix",
+    "when": "Early 2018",
+    "format": "Standard.",
+    "what": "Red and black decks built around Rekindling Phoenix, a four-mana flier that came back from the graveyard if you did not deal with the 0/1 it left behind.",
+    "why": "The Phoenix was a bomb: a threat that was hard to answer for good, in a format full of aggro and midrange.",
+    "beat": "Exile it or kill the Elemental token on their upkeep before it can return the Phoenix.",
+    "after": "Ixalan and Rivals of Ixalan rotated out of Standard in autumn 2019."
+   },
+   "hero": {
+    "who": "you",
+    "deck": {
+     "name": "GW Dinosaurs",
+     "colors": "GW",
+     "archetype": "Midrange",
+     "label": "tribute",
+     "cards": [
+      {
+       "qty": 4,
+       "name": "Drover of the Mighty",
+       "set": "xln",
+       "number": "187",
+       "id": "51fdf2fc-d948-4c64-a34e-2f90eab83212"
+      },
+      {
+       "qty": 4,
+       "name": "Wayward Swordtooth",
+       "set": "rix",
+       "number": "150",
+       "id": "351e8b1b-4e4e-4ffc-a134-3cf0e2a1dd6d"
+      },
+      {
+       "qty": 4,
+       "name": "Thrashing Brontodon",
+       "set": "rix",
+       "number": "148",
+       "id": "0d9264ff-9f7c-46f3-862a-fee7ad213250"
+      },
+      {
+       "qty": 3,
+       "name": "Huatli, Radiant Champion",
+       "set": "rix",
+       "number": "159",
+       "id": "39bcc48a-efdb-443f-93b8-bc0b54aa0eb8"
+      },
+      {
+       "qty": 4,
+       "name": "Siegehorn Ceratops",
+       "set": "rix",
+       "number": "171",
+       "id": "0a9c4c63-402e-489e-ab0d-1c98309b010a"
+      },
+      {
+       "qty": 4,
+       "name": "Atzocan Seer",
+       "set": "rix",
+       "number": "153",
+       "id": "fe84b3c0-bca2-42d3-a82c-540644e59625"
+      },
+      {
+       "qty": 4,
+       "name": "Imperial Ceratops",
+       "set": "rix",
+       "number": "10",
+       "id": "a5030e80-58c4-4ce3-877e-8395b653f6e8"
+      },
+      {
+       "qty": 3,
+       "name": "Steadfast Armasaur",
+       "set": "xln",
+       "number": "39",
+       "id": "197934d5-726c-4cd3-a934-3d6449a5a56e"
+      },
+      {
+       "qty": 3,
+       "name": "Baffling End",
+       "set": "rix",
+       "number": "1",
+       "id": "208c6f51-3c00-4fc6-8579-8f57444d0e97"
+      },
+      {
+       "qty": 3,
+       "name": "Territorial Hammerskull",
+       "set": "xln",
+       "number": "41",
+       "id": "af5a237a-31e7-43ee-8d47-3eb12dd1a60c"
+      },
+      {
+       "qty": 12,
+       "name": "Forest",
+       "set": "xln",
+       "number": "276",
+       "id": "7eef5e5c-27be-45f2-a9c8-4e0a65c984d4"
+      },
+      {
+       "qty": 10,
+       "name": "Plains",
+       "set": "xln",
+       "number": "260",
+       "id": "51ff6ee0-01f4-432f-916b-ed771904d64c"
+      },
+      {
+       "qty": 2,
+       "name": "Sunpetal Grove",
+       "set": "xln",
+       "number": "257",
+       "id": "0f234312-00e8-49f7-a489-f4c316b0a81a"
+      }
+     ]
+    }
+   },
+   "villain": {
+    "who": "brass",
+    "deck": {
+     "name": "Rekindling Phoenix",
+     "colors": "BR",
+     "archetype": "Midrange",
+     "label": "tribute",
+     "note": "Built from cards in this act's sets only. No single tournament list is copied.",
+     "cards": [
+      {
+       "qty": 4,
+       "name": "Rekindling Phoenix",
+       "set": "rix",
+       "number": "111",
+       "id": "daccec32-84c6-4de4-9b00-c497a6ba5de8"
+      },
+      {
+       "qty": 4,
+       "name": "Dire Fleet Daredevil",
+       "set": "rix",
+       "number": "99",
+       "id": "13e3c0c5-7451-4da9-acc0-d6e4e1f2655e"
+      },
+      {
+       "qty": 4,
+       "name": "Daring Buccaneer",
+       "set": "rix",
+       "number": "98",
+       "id": "1d413b88-8f5d-415f-bd07-169f6c175e6b"
+      },
+      {
+       "qty": 4,
+       "name": "Lightning Strike",
+       "set": "xln",
+       "number": "149",
+       "id": "f0f55dee-7e39-4183-8e74-844d9c299bf5"
+      },
+      {
+       "qty": 2,
+       "name": "Walk the Plank",
+       "set": "xln",
+       "number": "130",
+       "id": "0038ac6a-318f-44fb-bb64-7ae172c4aca3"
+      },
+      {
+       "qty": 2,
+       "name": "Vraska's Contempt",
+       "set": "xln",
+       "number": "129",
+       "id": "bd7550dd-dfc5-43cd-a117-1244ee3086a8"
+      },
+      {
+       "qty": 3,
+       "name": "Dire Fleet Neckbreaker",
+       "set": "rix",
+       "number": "156",
+       "id": "5146dd15-f696-42c3-b0e5-6a1b1d7be6b4"
+      },
+      {
+       "qty": 3,
+       "name": "Captivating Crew",
+       "set": "xln",
+       "number": "137",
+       "id": "c76e66c1-dbe2-4346-b4b3-20e8386e7d76"
+      },
+      {
+       "qty": 3,
+       "name": "Angrath's Fury",
+       "set": "rix",
+       "number": "204",
+       "id": "708006ba-d494-4093-b108-8249b110831e"
+      },
+      {
+       "qty": 3,
+       "name": "Dire Fleet Ravager",
+       "set": "xln",
+       "number": "104",
+       "id": "53bd7ccc-aa71-4a3f-a86e-936cb3b2cce3"
+      },
+      {
+       "qty": 2,
+       "name": "Angrath, the Flame-Chained",
+       "set": "rix",
+       "number": "152",
+       "id": "a4d76d03-4fcf-42f8-8c2e-ad6b03d58677"
+      },
+      {
+       "qty": 2,
+       "name": "Captain Lannery Storm",
+       "set": "xln",
+       "number": "136",
+       "id": "5ab86a8a-7a0a-473e-9a97-da2fe0ab866c"
+      },
+      {
+       "qty": 12,
+       "name": "Mountain",
+       "set": "xln",
+       "number": "272",
+       "id": "15c96b83-d0b3-4da9-bb2d-249cc18b55e9"
+      },
+      {
+       "qty": 11,
+       "name": "Swamp",
+       "set": "xln",
+       "number": "268",
+       "id": "db69a637-5770-4eea-9b04-c00e6f90a12a"
+      },
+      {
+       "qty": 1,
+       "name": "Cinder Barrens",
+       "set": "rix",
+       "number": "205",
+       "id": "93f6bd6b-92fb-4b4f-89c2-762cc2c465f3"
+      }
+     ]
+    }
+   },
+   "reward": {
+    "hero": {
+     "packs": 2,
+     "coins": 200
+    },
+    "villain": {
+     "card": {
+      "oracle_id": "f34be4b8-126d-4b5c-8ebb-23b5e5370012",
+      "name": "Rekindling Phoenix",
+      "rarity": "mythic",
+      "set": "rix",
+      "id": "daccec32-84c6-4de4-9b00-c497a6ba5de8",
+      "image": "https://cards.scryfall.io/normal/front/d/a/daccec32-84c6-4de4-9b00-c497a6ba5de8.jpg"
+     },
+     "coins": 200
+    }
+   },
+   "scene": [
+    {
+     "who": "stage",
+     "line": "If you come across a raptor in the city, stay perfectly still. At least then you'll be well rested when you die.",
+     "quote": true
+    },
+    {
+     "who": "you",
+     "line": "Kill the Elemental token before their upkeep, or the Phoenix comes back."
+    }
+   ],
+   "villainScene": [
+    {
+     "who": "stage",
+     "line": "Captain Angrath cares less about treasure than mayhem. If he can't leave Ixalan, he'll burn the plane down.",
+     "quote": true
+    }
+   ],
+   "after": [
+    {
+     "who": "stage",
+     "line": "Recorded: Ixalan block rotated out of Standard in autumn 2019."
+    }
+   ],
+   "cues": {
+    "hero": {
+     "start": "Stay still.",
+     "big": "Strike!",
+     "low": "It came back...",
+     "win": "Ash.",
+     "loss": "Burned...",
+     "half": "Kill the token on their upkeep."
+    },
+    "villain": {
+     "start": "[a screech]",
+     "big": "[it rises]",
+     "low": "[an ember falls]",
+     "win": "[ash]",
+     "loss": "[the embers fade]"
+    }
+   },
+   "bigPlays": [],
+   "sim": null
+  }
+ ]
+}

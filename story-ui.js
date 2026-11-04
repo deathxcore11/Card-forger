@@ -211,6 +211,11 @@ export const LESSONS = {
   'Exert': 'Exert: when it attacks you may exert it, and it will not untap during your next untap step. Use it when the extra effect wins the game.',
   'Aftermath': 'Aftermath: the second half of the split card can only be cast from your graveyard, and is then exiled. Cast the first half first.',
   'Eternalize': 'Eternalize: pay the eternalize cost and exile the card from your graveyard to make a 4/4 black Zombie copy. Exile their graveyard.',
+  'Explore': 'Explore: reveal the top card of your library. If it is a land it goes to your hand. If not, the creature gets a +1/+1 counter and you may put the card into your graveyard.',
+  'Treasure': 'Treasure: a token you can sacrifice for one mana of any colour. Save it for the turn you need the extra mana.',
+  'Enrage': 'Enrage: it triggers each time the creature is dealt damage. Blocking and fighting with it are good ways to set it off.',
+  'Ascend': 'Ascend: control ten permanents and you get the city\'s blessing for the rest of the game. Lands and tokens count.',
+  'Lifelink': 'Lifelink: damage dealt by the creature also gains its controller that much life. Race it carefully, or remove it.',
   'Playing under a lock': 'A lock stops cards from untapping or moving. Break it, or win with what\'s already in play.',
 };
 // Every Story deck says what it is (Randall, 2 Nov 2026): Historical Exact, Historical Tribute or
