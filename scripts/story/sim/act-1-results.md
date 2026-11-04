@@ -6,7 +6,7 @@ Target bands are the hero deck's win rate: slots 1-3 60-80%, 4-7 45-60%, boss 30
 
 | Battle | Hero win | Band | Games (timeouts) | Avg turns | Verdict |
 |---|---|---|---|---|---|
-| 1 The First Summons | 73% | 60-80 | 197 (3) | 22.4 | in band |
+| 1 The First Summons | 79% (48 games, 4 Nov) | 60-80 | 48 (0) | n/a | top of the band on purpose: see 4 Nov retune |
 | 2 The Goblin King's Toll | 82% | 60-80 | 195 (5) | 23.0 | 2 points high, fine for an Easy flying lesson |
 | 3 Knights at the Ford | 64% | 60-80 | 200 (0) | 17.0 | in band after the fix below |
 | 4 The Djinn of the Bottle | 49% | 45-60 | 200 (0) | 18.4 | in band |
@@ -27,3 +27,6 @@ and Argoth's stalls (5). Each needs a deck change plus a rerun, and a human try 
 - Usenet Deck: 4 Red Elemental Blast (dead against a white-red loaner) out, 3 Fireball and 1 Disintegrate in. 1993 Power loaner: 2 Serra Angel and 2 Disenchant out, 2 Pearled Unicorn and 2 Plains in. Hero 87% -> 86.5%: the deck isn't the problem.
   Forge's own Hard.ai profile on the boss seat gave the same result. The app's Hard CPU (CardStashy Hard v2, with look-ahead) can't be run here,
   so the real test is a live match on Hard.
+
+## 4 Nov retune (battle 1 only)
+- Randall: green felt stronger than white, and the green side has to stay beatable for the villain-side replay and the Both Sides deed. White out: Healing Salve, Holy Strength, 2 War Elephant, 1 Moorish Cavalry. White in: 3 Swords to Plowshares, 4 Mesa Pegasus, 4th Serra Angel and Northern Paladin. Green out: 1 War Mammoth, 3 Craw Wurm, 2 Ironroot Treefolk. Green in: 3 Scryb Sprites + 1, 2 Wall of Wood. Hero 73% -> 79% over 48 games (default AI both seats, seed 1). An earlier, harsher green cut gave 90%, which would make the villain side too hard.
