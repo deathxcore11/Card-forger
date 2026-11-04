@@ -93,6 +93,7 @@ class MatchController(private val scope: CoroutineScope, private val input: Stri
                     // What the table showed (match-facts.js), fed every new snapshot; the match is recorded once when Forge ends it.
                     if (st.revision != lastRev || st.finished) runCatching { facts.update(MatchFacts.surface(com.google.gson.JsonParser.parseString(body).asJsonObject)) }
                     if (playedFrom == null && st.turn > 0) playedFrom = SystemClock.elapsedRealtime()
+                    dev.cardstashy.nativeplay.play.Presence.matchTurn = st.turn
                     if (st.finished && !recorded) { recorded = true; runCatching { onFinished?.invoke(st, facts, playedFrom?.let { SystemClock.elapsedRealtime() - it }) } }
                     if (firstState < 0) { firstState = SystemClock.elapsedRealtime() - t0; timings.value = mapOf("startMs" to started, "firstStateMs" to firstState) }
                     // A repeat revision still counts when Forge finished working without a new one.

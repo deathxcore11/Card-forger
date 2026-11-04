@@ -17,16 +17,18 @@ object AppSettings {
     var haptics by mutableStateOf(true); private set
     var sound by mutableStateOf(true); private set
     var appSounds by mutableStateOf(true); private set
+    /** play-presence.js presenceShared(): "Show friends what I’m playing". */
+    var presence by mutableStateOf(true); private set
 
     fun init(context: Context) {
         val p = context.applicationContext.getSharedPreferences("play", Context.MODE_PRIVATE); prefs = p
         glass = p.getBoolean("glass", true); finish = p.getBoolean("finishEffects", true); tilt = p.getBoolean("motionTilt", true)
-        haptics = p.getBoolean("haptics", true); sound = p.getBoolean("packSound", true); appSounds = p.getBoolean("appSounds", true)
+        haptics = p.getBoolean("haptics", true); sound = p.getBoolean("packSound", true); appSounds = p.getBoolean("appSounds", true); presence = p.getBoolean("presence", true)
     }
 
     fun set(key: String, on: Boolean) {
         when (key) {
-            "glass" -> glass = on; "finishEffects" -> finish = on; "haptics" -> haptics = on; "appSounds" -> appSounds = on
+            "glass" -> glass = on; "finishEffects" -> finish = on; "haptics" -> haptics = on; "appSounds" -> appSounds = on; "presence" -> presence = on
             "motionTilt" -> { tilt = on; PackSfx.tilt = on }
             "packSound" -> { sound = on; PackSfx.on = on }
         }

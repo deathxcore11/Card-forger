@@ -430,6 +430,15 @@ private fun AppPane() {
         Check("Card lighting & foil effects", AppSettings.finish, "Soft light follows your tilt in card details. Foil cards shimmer automatically in the gallery.") { AppSettings.set("finishEffects", it) }
         Check("Phone tilt in card views", AppSettings.tilt, "Move your phone to move the card and light. Turn off to use touch controls. Follows Reduce motion.") { AppSettings.set("motionTilt", it) }
         Check("Tap vibration", AppSettings.haptics, "Animations follow your phone’s “Reduce motion” setting.") { AppSettings.set("haptics", it) }
+        // Signed in only (views.js setPresence); C.setPresence's toasts.
+        val signedIn = dev.cardstashy.nativeplay.account.Account.session.collectAsState().value != null
+        if (signedIn) {
+            val context = androidx.compose.ui.platform.LocalContext.current; val scope = androidx.compose.runtime.rememberCoroutineScope()
+            Check("Show friends what I’m playing", AppSettings.presence, "Accepted friends see your Play screen or match, like “Quick Play · Pauper · turn 7”.") { on ->
+                AppSettings.set("presence", on); scope.launch { dev.cardstashy.nativeplay.play.Presence.setShare(on) }
+                Toast.makeText(context, if (on) "Friends can see what you’re playing." else "Friends no longer see what you’re playing.", Toast.LENGTH_SHORT).show()
+            }
+        }
         Check("Sound & music", AppSettings.sound) { AppSettings.set("packSound", it) }
         Check("Soft sounds in the app", AppSettings.appSounds, "Music plays only in matches and Planeswalk. Elsewhere you hear only a few soft sounds, like opening a pack or adding a card, if “Soft sounds in the app” is on. Music streams the first time, then stays on this device. Sound starts after your first tap.") { AppSettings.set("appSounds", it) }
     }

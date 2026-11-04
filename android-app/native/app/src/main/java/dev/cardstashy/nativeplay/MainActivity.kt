@@ -217,6 +217,12 @@ private fun App(activity: MainActivity) {
         is Screen.Match -> MatchFlow(activity, s.pick, onHome = { go(Screen.Home) }, onDecks = { back() })
     }
     // Live achievement toasts (drawn over the app in setContent): at the table they sit just under the status bar; a tap opens the deed's tab.
+    // Rich presence (play-presence.js): what the app shows now, beats only while the app is in front.
+    androidx.compose.runtime.SideEffect { dev.cardstashy.nativeplay.play.Presence.where = presenceWhere(screen) }
+    val presenceUser = dev.cardstashy.nativeplay.account.Account.session.collectAsState().value?.userId
+    LaunchedEffect(presenceUser) { if (presenceUser != null) dev.cardstashy.nativeplay.play.Presence.start() else dev.cardstashy.nativeplay.play.Presence.stop() }
+    androidx.lifecycle.compose.LifecycleEventEffect(androidx.lifecycle.Lifecycle.Event.ON_START) { dev.cardstashy.nativeplay.play.Presence.shown(true) }
+    androidx.lifecycle.compose.LifecycleEventEffect(androidx.lifecycle.Lifecycle.Event.ON_STOP) { dev.cardstashy.nativeplay.play.Presence.visible = false }
     androidx.compose.runtime.SideEffect { dev.cardstashy.nativeplay.ui.AchievementToasts.overTable = screen is Screen.Match; dev.cardstashy.nativeplay.ui.AchievementToasts.open = { tab -> go(Screen.Achievements(tab)) } }
 }
 
@@ -270,6 +276,18 @@ private fun Table(activity: MainActivity, s: QuickPlay.Setup.Ready, t0: Long, on
 }
 
 /** play-forge-player-mat.js matchRow + the play:match-recorded detail: one finished match for quests and achievements. */
+/** app.js presence read(): {view, playView, match} for the screen on show. Collection and the web pages are "In CardStashy". */
+private fun presenceWhere(s: Screen): dev.cardstashy.nativeplay.play.Presence.Where = when (s) {
+    is Screen.Match -> dev.cardstashy.nativeplay.play.Presence.Where("play", "", dev.cardstashy.nativeplay.play.Presence.Match(if ((s.pick as? Pick.Table)?.quick == false) "practice" else "quick", s.pick.format))
+    Screen.Home -> dev.cardstashy.nativeplay.play.Presence.Where("play", "home")
+    is Screen.Lobby, Screen.Decks -> dev.cardstashy.nativeplay.play.Presence.Where("play", "lobby")
+    Screen.PlayDecks -> dev.cardstashy.nativeplay.play.Presence.Where("play", "decks")
+    Screen.Trunk, is Screen.TrunkSet -> dev.cardstashy.nativeplay.play.Presence.Where("play", "collection")
+    is Screen.Shop -> dev.cardstashy.nativeplay.play.Presence.Where("play", if (s.tab == "packs") "packs" else "shop")
+    is Screen.Achievements -> dev.cardstashy.nativeplay.play.Presence.Where("play", "deeds")
+    else -> dev.cardstashy.nativeplay.play.Presence.Where("app")
+}
+
 private fun reportMatch(pick: Pick, st: dev.cardstashy.nativeplay.engine.MatchState, f: dev.cardstashy.nativeplay.play.MatchFacts, durationMs: Long?) {
     val outcome = when { st.draw -> "draw"; st.winnerPlayerId == null -> return; st.winnerPlayerId == st.viewer -> "win"; else -> "loss" }
     val table = pick as? Pick.Table

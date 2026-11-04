@@ -176,6 +176,15 @@ object Account {
         data
     }
 
+    /** cloud.js presenceRequest: one community_presence call; quiet on failure (presence is never worth an error on screen). */
+    suspend fun presence(action: String, payload: JsonObject = JsonObject()): JsonObject? = withContext(Dispatchers.IO) {
+        val s = _session.value ?: return@withContext null
+        val t = token() ?: return@withContext null
+        val out = try { Http.call("POST", "$URL/rest/v1/rpc/community_presence", headers(t),
+            JsonObject().apply { addProperty("action", action); add("payload", payload) }.toString(), 15000) as? JsonObject } catch (_: Exception) { null }
+        if (_session.value?.userId != s.userId) null else out
+    }
+
     /** app.js saveProfileArtwork via community_action save_art (keeps the other of avatar/header). */
     suspend fun saveArt(kind: String, art: Art): Boolean = withContext(Dispatchers.IO) {
         val s = _session.value ?: return@withContext false
