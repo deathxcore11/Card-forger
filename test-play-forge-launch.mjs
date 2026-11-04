@@ -80,11 +80,12 @@ test('account change while acquiring a token sends no request',async()=>{
  const creating=client.create({format:'Commander',humanDeck:s.selected,opponentDeck:s.opponent,difficultyPolicyVersion:'forge-medium-v1'});
  account={...account,accountGeneration:2};gate.resolve('token');await assert.rejects(creating,/ACCOUNT_CHANGED/);assert.equal(requests,0);
 });
-test('native Quick Play picks a random opponent list, the same for every CPU policy',()=>{
- const player=setup('Modern').selected,candidates=[20,45,80].map(score=>({...structuredClone(player),id:'list-'+score,cards:[{name:'List '+score,qty:60}],score}));
- const pick=(difficulty,random)=>chooseQuickOpponent({player,candidates,difficulty,candidateEligible:()=>true,nativeValidationPending:true,estimate:d=>d.score??50,random}).deck.score;
- assert.deepEqual([0,0.5,0.99].map(r=>pick('Medium',()=>r)),[20,45,80]);
- assert.deepEqual(['Easy','Medium','Hard'].map(d=>pick(d,()=>0.99)),[80,80,80]);
+test('native Quick Play: random when Power is unknown; matched by Power, leaning with difficulty, when it is known',()=>{
+ const player=setup('Modern').selected,candidates=[20,35,45,55,65,80].map(score=>({...structuredClone(player),id:'list-'+score,cards:[{name:'List '+score,qty:60}],score}));
+ const pick=(difficulty,random,estimate)=>chooseQuickOpponent({player,candidates,difficulty,candidateEligible:()=>true,nativeValidationPending:true,estimate,random}).deck.score;
+ assert.deepEqual([0,0.5,0.99].map(r=>pick('Medium',()=>r,()=>null)),[20,55,80]);
+ let seed=3;const rnd=()=>(seed=(seed*1664525+1013904223)%4294967296)/4294967296,avg=d=>{let t=0;for(let i=0;i<400;i++)t+=pick(d,rnd,x=>x.score??50);return t/400;};
+ const [e,m,h]=['Easy','Medium','Hard'].map(avg);assert.ok(e<m&&m<h,`difficulty leans the pick: ${e} ${m} ${h}`);
 });
 test('real app handler takes the Forge branch and bypasses legacy pregame and catalogue admission',async()=>{
  let source=readFileSync(new URL('./app.js',import.meta.url),'utf8').match(/A\.playStartCandidate=async\(\)=>\{[\s\S]*?\n\};/)[0];
