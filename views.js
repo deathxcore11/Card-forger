@@ -1,3 +1,4 @@
+import {warChestMarkup,chestResume,CHEST_ICON} from './war-chest.js';
 import {deckViewer,deckCardAttrs,deckShell} from './deck-viewer.js';
 import {discoverCardMarkup,artistCredit} from './card-discovery.js';
 import {versionsMarkup,releaseDot} from './release-status.js';
@@ -912,7 +913,7 @@ export function decks() {
   const tab = S.ui.decksTab;
   // With no decks yet, the empty state below owns Import and New; the header does not repeat them.
   const emptyMine = tab === "mine" && !S.state.decks.length;
-  return `<div class="page-head"><h1>Decks</h1>${emptyMine ? "" : `<div class="head-actions"><button class="btn small" data-act="importDeck">↥ Import</button><button class="btn small ghost" data-act="newDeck">＋ New</button></div>`}</div>
+  return `<div class="page-head"><h1>Decks</h1>${emptyMine ? "" : `<div class="head-actions"><button class="btn small ghost wc-open" data-act="warChest">${CHEST_ICON}War Chest</button><button class="btn small" data-act="importDeck">↥ Import</button><button class="btn small ghost" data-act="newDeck">＋ New</button></div>`}</div>
   ${segmented("decksTab", tab, [["mine", "My decks", "decks"], ["ideas", "Ideas", "ideas"], ["inspiration", "Meta decks", "trophy"]])}<div class="random-tools"><button class="btn ghost small" data-act="randomDeck" aria-label="Random Commander deck">🎲 Random Commander</button><button class="btn ghost small" data-act="randomDeckOptions" data-home="1" aria-label="Random deck in any format">🎲 Random deck</button></div>
   ${tab === "ideas" ? ideasView() : tab === "inspiration" ? inspirationView() : myDecks()}`;
 }
@@ -1199,7 +1200,7 @@ export function deckPage() {
     target = fm.size,
     // No shopping on the Deck page: what is missing is a collection filter, not a store.
     tab = S.ui.deckTab === "shop" ? "cards" : S.ui.deckTab,
-    tabs = [["cards", "Cards", "cardStack"], ["rules", "Rules", "book"], ["engine", "Power", "trophy"], ["matchups", "Matchups", "sword"], ["upgrade", "Upgrade lab", "build"], ["versions", "Versions", "viewStacks"], ["playtest", "Playtest", "random"]];
+    tabs = [["cards", "Cards", "cardStack"], ["rules", "Rules", "book"], ["engine", "Power", "trophy"], ["matchups", "Matchups", "sword"], ["upgrade", "Upgrade lab", "build"], ["versions", "Versions", "viewStacks"], ["playtest", "War Chest", "random"]];
   const power = shownPower(mtgPower(d)), countOk = fm.exact ? mainCopies === target : mainCopies >= target;
   return `${deckShell({game:"mtg",source:"mine",artHtml:img(coverOf(d), d.name, "hero-art"),title:d.name,
     back:`<button class="icon light" data-act="go" data-to="#decks" aria-label="Back to decks">←</button>`,
@@ -1217,12 +1218,12 @@ export function deckPage() {
     owned:t.copies ? t.covered / t.copies : 0,
     actions:[
       {html:`<button class="btn ds-primary deck-play-cpu cs-plate" data-act="deckPlayCpu" data-id="${esc(d.id)}" data-desktop-play-entry="practice" hidden disabled><span class="cs-plate-label">Practice</span></button>`},
-      {label:"Playtest",attrs:'data-act="deckTab" data-id="playtest"'},
+      {label:"War Chest",attrs:'data-act="deckTab" data-id="playtest"'},
       {label:"Share",attrs:'data-act="deckShare"'}]})}
   ${mainCopies < target ? `<div class="note warn">Incomplete draft: ${target - mainCopies} slots remain. Power is unavailable. The listed-card price does not include empty slots.${(d.buildDiagnostics?.warnings || []).slice(0, 2).map(w => `<p class="small">${esc(w)}</p>`).join("")}</div>` : ""}
   <nav class="tabs" role="tablist">${tabs.map(([id, l, icon]) => `<button role="tab" aria-selected="${tab === id}" class="${tab === id ? "on" : ""}" data-act="deckTab" data-id="${id}">${labelIcon(icon)}${l}</button>`).join("")}</nav>
   ${fm.commander && !canLead(meta(d.commander), fm) && tab !== "upgrade" ? `<button class="note warn block-note" data-act="deckTab" data-id="upgrade">⚠ No ${fm.commander === "planeswalker" ? "Oathbreaker" : "commander"} set — tap to choose one so colors and synergy are checked.</button>` : ""}
-  <div class="deck-body" data-tab="${tab}">${{ rules: ()=>interactiveRules("mtg", {format:d.format}), cards: deckCards, engine: deckEngine, matchups: deckMatchups, upgrade: deckUpgrade, versions: deckVersions, playtest: deckPlaytest, shop: deckShop }[tab](d, t)}</div>`;
+  <div class="deck-body" data-tab="${tab}">${{ rules: ()=>interactiveRules("mtg", {format:d.format}), cards: deckCards, engine: deckEngine, matchups: deckMatchups, upgrade: deckUpgrade, versions: deckVersions, playtest: (d) => warChestMarkup({deck:{id:d.id,name:d.name},resume:chestResume("mtg")}) + `<section class="wc-draw" id="chestDraw"><h3>Draw a hand</h3>${deckPlaytest(d)}</section>`, shop: deckShop }[tab](d, t)}</div>`;
 }
 
 function reviewBadge(d) {
