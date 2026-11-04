@@ -243,8 +243,8 @@ private fun GlassBackdrop(art: String?, frost: Frost) {
         ArtRun(p, heroH, tone(1.3f, .78f), Modifier.fillMaxSize().blur(18.dp).fadeDown(hp + 60f * 3, hp + 900f * 3))
         ArtRun(p, heroH, tone(1.15f, .9f), Modifier.fillMaxSize().blur(6.dp).fadeDown(hp - 30f, hp + 130f * 3))
         Box(Modifier.fillMaxSize().drawBehind {
-            drawRect(Brush.verticalGradient(0f to Color.Transparent, (hp * .45f) / size.height to Color.Transparent, (hp * .85f) / size.height to Color(0x330A0B10),
-                hp / size.height to Color(0x470A0B10), ((hp + 220.dp.toPx()) / size.height).coerceAtMost(.99f) to Color(0x700A0B10), 1f to Color(0x8C0A0B10)))
+            drawRect(Brush.verticalGradient(0f to Color.Transparent, (hp * .45f) / size.height to Color.Transparent, (hp * .7f) / size.height to Color(0x2E0A0B10),
+                hp / size.height to Color(0x570A0B10), ((hp + 220.dp.toPx()) / size.height).coerceAtMost(.99f) to Color(0x700A0B10), 1f to Color(0x8C0A0B10)))
         })
     }
 }
@@ -296,7 +296,7 @@ private fun Header(name: String, type: String, cost: String, owned: Int, art: St
                     .graphicsLayer { compositingStrategy = androidx.compose.ui.graphics.CompositingStrategy.Offscreen }
                     .drawWithContent { drawContent(); drawRect(Brush.verticalGradient(0f to Color.Black, .62f to Color.Black, 1f to Color.Transparent), blendMode = androidx.compose.ui.graphics.BlendMode.DstIn) },
                     contentScale = ContentScale.Crop)
-                Box(Modifier.fillMaxSize().background(Brush.verticalGradient(0f to Color(0x33000000), .5f to Color.Transparent, 1f to Color(0x8012151B))))
+                Box(Modifier.fillMaxSize().background(Brush.verticalGradient(0f to Color(0x33000000), .5f to Color.Transparent, 1f to Color.Transparent)))
                 Box(Modifier.align(Alignment.TopCenter).padding(top = 8.dp).size(40.dp, 4.dp).clip(CircleShape).background(Color(0x66FFFFFF)))
                 Box(Modifier.align(Alignment.TopEnd).padding(12.dp)) { CloseButton(onClose) }
             }
@@ -305,7 +305,7 @@ private fun Header(name: String, type: String, cost: String, owned: Int, art: St
                     Text(name, style = TextStyle(fontFamily = Type.Cinzel, fontWeight = FontWeight.Bold, fontSize = 24.sp, lineHeight = 28.sp, color = Ink,
                         shadow = androidx.compose.ui.graphics.Shadow(Color(0xCC000000), Offset(0f, 2f), 12f)))
                     FlowRow(horizontalArrangement = Arrangement.spacedBy(8.dp), verticalArrangement = Arrangement.spacedBy(4.dp)) {
-                        Text(type, style = t(14f, color = Color(0xFFCDD3DC)))
+                        Text(type, style = t(14f, color = Color(0xFFCDD3DC)).copy(shadow = androidx.compose.ui.graphics.Shadow(Color(0xB3000000), Offset(0f, 1f), 10f)))
                         Text("Play · $owned of 4", style = t(12f, FontWeight.Bold, Site.Gold), modifier = Modifier.clip(RoundedCornerShape(999.dp))
                             .background(Color(0x1FE8B95B)).border(1.dp, Color(0x4DE8B95B), RoundedCornerShape(999.dp)).padding(horizontal = 9.dp, vertical = 2.dp))
                     }
@@ -318,7 +318,7 @@ private fun Header(name: String, type: String, cost: String, owned: Int, art: St
 
 
 @Composable
-private fun Tabs(on: String, pick: (String) -> Unit) = Box(Modifier.fillMaxWidth().background(Color(0x5912151B)).padding(horizontal = 16.dp, vertical = 8.dp)) {
+private fun Tabs(on: String, pick: (String) -> Unit) = Box(Modifier.fillMaxWidth().padding(horizontal = 16.dp, vertical = 8.dp)) {
     Segmented(listOf("overview" to "Overview", "guide" to "Play guide", "get" to "Get it"), on, glass = true, pick = pick)
 }
 
