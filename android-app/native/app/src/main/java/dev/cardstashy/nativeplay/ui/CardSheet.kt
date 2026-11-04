@@ -54,6 +54,13 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.alpha
 import androidx.compose.ui.draw.blur
+import androidx.compose.ui.graphics.ColorFilter
+import androidx.compose.ui.graphics.layer.drawLayer
+import androidx.compose.ui.BiasAlignment
+import androidx.compose.ui.graphics.drawscope.translate
+import androidx.compose.ui.draw.drawBehind
+import androidx.compose.ui.layout.positionInRoot
+import androidx.compose.ui.layout.onGloballyPositioned
 import androidx.compose.ui.draw.drawWithContent
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.geometry.Offset
@@ -164,8 +171,11 @@ fun CardSheet(pick: CardPick, state: JsonObject?, act: CardSheetActions, onClose
             val list = rememberLazyListState()
             // Native-plus (Randall 4 Nov 00:13Z): the art runs down the whole sheet, blurred and tinted, so every panel
             // below the banner sits on it as tinted glass instead of a flat sheet.
+            val frostLayer = androidx.compose.ui.graphics.rememberGraphicsLayer()
+            val frost = remember(frostLayer) { Frost(frostLayer) }
             Box(Modifier.fillMaxSize()) {
-            GlassBackdrop(heroArt)
+            GlassBackdrop(heroArt, frost)
+            androidx.compose.runtime.CompositionLocalProvider(LocalFrost provides frost) {
             LazyColumn(state = list, modifier = Modifier.fillMaxSize()) {
                 item {
                     Header(name, f.s("type_line").ifBlank { shown.s("type_line") }, f.s("mana_cost").ifBlank { shown.s("mana_cost") }, owned, heroArt, list.firstVisibleItemScrollOffset,
@@ -183,6 +193,7 @@ fun CardSheet(pick: CardPick, state: JsonObject?, act: CardSheetActions, onClose
                 item { Spacer(Modifier.navigationBarsPadding().height(40.dp)) }
             }
             }
+            }
             // views.js:461 .cd-zoom: data-src = the normal image, data-hi = this face's png, data-art = the hero art crop.
             val hi = (if (imgFaces.size > 1) imgFaces.getOrNull(face) else null)?.getAsJsonObject("image_uris")?.s("png")?.ifBlank { null }
                 ?: shown.getAsJsonObject("image_uris")?.s("png")?.ifBlank { null }
@@ -197,18 +208,70 @@ fun CardSheet(pick: CardPick, state: JsonObject?, act: CardSheetActions, onClose
 }
 
 /** The sheet's art backdrop: the art crop filling the sheet, blurred, under a dark tint that deepens downwards. */
+/** The art the glass panels frost: the backdrop drawn into a layer, and where that backdrop sits on screen. */
+internal class Frost(val layer: androidx.compose.ui.graphics.layer.GraphicsLayer) { var origin by mutableStateOf(Offset.Zero) }
+internal val LocalFrost = androidx.compose.runtime.staticCompositionLocalOf<Frost?> { null }
+
+private fun tone(saturation: Float, brightness: Float) = ColorFilter.colorMatrix(androidx.compose.ui.graphics.ColorMatrix().apply {
+    setToSaturation(saturation); timesAssign(androidx.compose.ui.graphics.ColorMatrix(floatArrayOf(brightness, 0f, 0f, 0f, 0f, 0f, brightness, 0f, 0f, 0f, 0f, 0f, brightness, 0f, 0f, 0f, 0f, 0f, 1f, 0f))) })
+
+/** Fade a layer out downwards between [from] and [to] (px from the top): polish.css mask-image on the bleed layers. */
+private fun Modifier.fadeDown(from: Float, to: Float) = graphicsLayer { compositingStrategy = androidx.compose.ui.graphics.CompositingStrategy.Offscreen }
+    .drawWithContent { drawContent(); val h = size.height.coerceAtLeast(1f)
+        drawRect(Brush.verticalGradient((from / h).coerceIn(0f, 1f) to Color.Black, (to / h).coerceIn(0f, 1f) to Color.Transparent), blendMode = androidx.compose.ui.graphics.BlendMode.DstIn) }
+
+/** One run of the art down the sheet: the hero-sized art, then mirrored copies (polish.css .cs-bleed-mirror) so it never ends. */
 @Composable
-private fun GlassBackdrop(art: String?) {
-    val p = heroPainter(art?.let(homeArt)) ?: return
-    Image(p, null, Modifier.fillMaxSize().blur(22.dp), contentScale = ContentScale.Crop, alignment = Alignment.TopCenter)
-    Box(Modifier.fillMaxSize().background(Brush.verticalGradient(0f to Color(0x3312151B), .22f to Color(0x9912151B), .5f to Color(0xA612151B), 1f to Color(0xC712151B))))
+private fun ArtRun(p: androidx.compose.ui.graphics.painter.Painter, heroH: androidx.compose.ui.unit.Dp, filter: ColorFilter?, modifier: Modifier) = Column(modifier) {
+    repeat(6) { i -> Image(p, null, Modifier.fillMaxWidth().height(heroH).graphicsLayer { if (i % 2 == 1) scaleY = -1f }, contentScale = ContentScale.Crop, colorFilter = filter) }
 }
 
-/** Tinted glass: a dark smoked fill, a faint light sheen from the top, and a bright hairline edge. */
-internal fun Modifier.glass(shape: androidx.compose.ui.graphics.Shape) = clip(shape)
-    .background(Color(0x7310131A))
-    .background(Brush.verticalGradient(0f to Color(0x1FFFFFFF), .4f to Color(0x08FFFFFF), 1f to Color(0x00FFFFFF)))
-    .border(1.dp, Brush.verticalGradient(0f to Color(0x40FFFFFF), 1f to Color(0x14FFFFFF)), shape)
+/**
+ * polish.css .cs-bleed, carried further down the sheet (Randall 4 Nov 00:13Z / 00:23Z "bleed more"): a glow of the whole
+ * art (blur 40, saturate 1.45, brightness .62), the frosted run of the art and its mirror (blur 18) fading out far below
+ * the banner, the soft run (blur 6) just under it, and the darkening veil, lighter than the site's so more art shows.
+ * The finished backdrop is also recorded into [frost] so each glass panel can blur what is behind it.
+ */
+@Composable
+private fun GlassBackdrop(art: String?, frost: Frost) {
+    val p = heroPainter(art?.let(homeArt)) ?: return
+    val heroH = 210.dp
+    Box(Modifier.fillMaxSize().onGloballyPositioned { frost.origin = it.positionInRoot() }
+        .drawWithContent { frost.layer.record { this@drawWithContent.drawContent() }; drawLayer(frost.layer) }) {
+        Image(p, null, Modifier.fillMaxSize().blur(40.dp), contentScale = ContentScale.Crop, alignment = BiasAlignment(0f, -.4f), colorFilter = tone(1.45f, .62f))
+        val hp = with(androidx.compose.ui.platform.LocalDensity.current) { heroH.toPx() }
+        ArtRun(p, heroH, tone(1.3f, .78f), Modifier.fillMaxSize().blur(18.dp).fadeDown(hp + 60f * 3, hp + 900f * 3))
+        ArtRun(p, heroH, tone(1.15f, .9f), Modifier.fillMaxSize().blur(6.dp).fadeDown(hp - 30f, hp + 130f * 3))
+        Box(Modifier.fillMaxSize().drawBehind {
+            drawRect(Brush.verticalGradient(0f to Color.Transparent, (hp * .45f) / size.height to Color.Transparent, (hp * .85f) / size.height to Color(0x330A0B10),
+                hp / size.height to Color(0x470A0B10), ((hp + 220.dp.toPx()) / size.height).coerceAtMost(.99f) to Color(0x700A0B10), 1f to Color(0x8C0A0B10)))
+        })
+    }
+}
+
+/**
+ * Frosted tinted glass: the backdrop right behind the panel, blurred again and lifted, under a smoked tint, a light sheen
+ * from the top and a bright hairline edge. Without a backdrop (or before Android 12, no blur) it is plain smoked glass.
+ */
+@Composable
+internal fun Modifier.glass(shape: androidx.compose.ui.graphics.Shape): Modifier {
+    val frost = LocalFrost.current
+    val at = remember { mutableStateOf(Offset.Zero) }
+    val blurred = androidx.compose.ui.graphics.rememberGraphicsLayer()
+    return this.onGloballyPositioned { at.value = it.positionInRoot() }.clip(shape)
+        .drawBehind {
+            if (frost != null && frost.layer.size.width > 0) {
+                blurred.renderEffect = androidx.compose.ui.graphics.BlurEffect(28.dp.toPx(), 28.dp.toPx(), androidx.compose.ui.graphics.TileMode.Clamp)
+                blurred.record(frost.layer.size) { drawLayer(frost.layer) }
+                val d = frost.origin - at.value
+                translate(d.x, d.y) { drawLayer(blurred) }
+                drawRect(Color(0x14FFFFFF))
+            }
+        }
+        .background(Color(0x5210131A))
+        .background(Brush.verticalGradient(0f to Color(0x29FFFFFF), .35f to Color(0x0AFFFFFF), 1f to Color(0x05FFFFFF)))
+        .border(1.dp, Brush.verticalGradient(0f to Color(0x59FFFFFF), .5f to Color(0x1FFFFFFF), 1f to Color(0x2EFFFFFF)), shape)
+}
 
 @Composable
 private fun Loading(name: String, onClose: () -> Unit) = Column(Modifier.fillMaxSize().padding(24.dp), verticalArrangement = Arrangement.spacedBy(12.dp)) {
