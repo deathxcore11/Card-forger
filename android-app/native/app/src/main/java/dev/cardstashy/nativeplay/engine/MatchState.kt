@@ -29,7 +29,10 @@ data class Player(
     val handCount: Int, val libraryCount: Int,
     val hand: List<Card>, val battlefield: List<Card>, val graveyard: List<Card>, val exile: List<Card>,
     val command: List<Card> = emptyList(), val mana: Map<String, Int> = emptyMap(), val counters: Map<String, Int> = emptyMap(),
+    /** players[].commanderDamage: what each opponent's commander has dealt this player. */
+    val commanderDamage: List<CommanderDamage> = emptyList(),
 )
+data class CommanderDamage(val from: Int, val commander: String, val damage: Int)
 
 data class StackItem(val id: Int, val text: String, val source: Card?, val controller: Int, val ability: Boolean = false, val yielded: Boolean = false, val targets: List<Ref> = emptyList())
 data class Buttons(val ok: String?, val cancel: String?, val okEnabled: Boolean, val cancelEnabled: Boolean)
@@ -185,6 +188,7 @@ data class MatchState(
                 handCount = z?.obj("Hand")?.int("count") ?: 0, libraryCount = z?.obj("Library")?.int("count") ?: 0,
                 hand = cards("Hand"), battlefield = cards("Battlefield"), graveyard = cards("Graveyard"), exile = cards("Exile"),
                 command = cards("Command"), mana = nums(p.obj("mana")), counters = nums(p.obj("counters")),
+                commanderDamage = p.arr("commanderDamage").mapNotNull { e -> (e as? JsonObject)?.let { x -> val f = x.int("from"); val dmg = x.int("damage"); val c = x.str("commander"); if (f != null && dmg != null && dmg >= 0 && c != null) CommanderDamage(f, c.take(200), dmg) else null } },
             )
         }
 

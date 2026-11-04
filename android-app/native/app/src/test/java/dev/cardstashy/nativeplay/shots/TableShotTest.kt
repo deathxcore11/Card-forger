@@ -49,7 +49,7 @@ class TableShotTest {
             if (f.exists()) BitmapFactory.decodeFile(f.path)?.asImageBitmap() else { missing += "$name|$crop"; null }
         }
         val sizes = listOf("844x390" to "w844dp-h390dp-land-xxhdpi", "960x840" to "w960dp-h840dp-land-xhdpi", "1280x800" to "w1280dp-h800dp-land-mdpi")
-        val boards = listOf("main", "triggers", "attack", "block", "early", "crowded", "targets")
+        val boards = listOf("main", "triggers", "attack", "block", "early", "crowded", "targets", "pod", "podattack")
         for ((size, q) in sizes) for (b in if (size == "844x390") boards else listOf("main", "crowded")) {
             RuntimeEnvironment.setQualifiers(q)
             val st = state(b).let { it.copy(phaseStops = mapOf("${if (it.activePlayer == it.viewer) "you" else "opponent"}:COMBAT_BEGIN" to true)) }

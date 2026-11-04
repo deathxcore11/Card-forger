@@ -239,7 +239,12 @@ fun ForgeBoard(
         val d = Du(chromeU(maxWidth, maxHeight))
         with(d) {
             val W = maxWidth; val H = maxHeight
-            val me = st.me; val cpu = st.cpu
+            val me = st.me
+            // A Commander pod shows one opponent at a time (PodFocus); a duel its only opponent.
+            val podFocus = remember { PodFocus() }
+            var picks by remember { mutableStateOf(0) }
+            val pod = st.players.size > 2
+            val cpu = remember(st, picks) { podFocus.of(st, null) }
             // forge-table.mjs role(): chosen, then a target, then a choice (discard while a discard asks), then playable.
             val discarding = st.prompt == null && st.selection.cards.isNotEmpty() && Regex("\\bdiscard\\b", RegexOption.IGNORE_CASE).containsMatchIn(st.message)
             // forge-table.mjs: a card you can't pay for leaves the playable set and says why ("Not enough mana").
@@ -299,16 +304,18 @@ fun ForgeBoard(
 
             // Piles: yours right of your back row, the CPU's left of its back row.
             Piles(me, mine = true, Modifier.offset(x = W - 120.du, y = if (large) mid + 60.dp else mid + 46.du * stretch), d, onInspect)
-            Piles(cpu, mine = false, Modifier.offset(x = 44.du, y = if (large) mid - 120.dp else mid - 104.du * stretch), d, onInspect)
+            if (!pod) Piles(cpu, mine = false, Modifier.offset(x = 44.du, y = if (large) mid - 120.dp else mid - 104.du * stretch), d, onInspect)
 
             // The CPU's hand, tucked off the top edge: the lower half of each back.
-            TuckedHand(cpu.handCount, Modifier.offset(y = (-17).du).align(Alignment.TopCenter), d)
+            // In a pod the rail takes the opponent hand's place (each chip shows its own hand size).
+            if (pod) PodRail(st, cpu.id, live, intents, { podFocus.seat = it; picks++ }, W, d)
+            else TuckedHand(cpu.handCount, Modifier.offset(y = (-17).du).align(Alignment.TopCenter), d)
 
             // Seats: the CPU top right, you bottom left; command-zone crests beside them.
             // A big board moves the seats 4 px in and the bottom-left group 14 px up (site probes at 960 × 840 and 1280 × 800).
             val lx = if (large) 4.dp else 0.dp; val ly = if (large) 14.dp else 0.dp
-            Crest(cpu.command.firstOrNull(), Modifier.offset(x = W - 136.du - lx, y = 6.du + lx), d, onInspect)
-            Medallion(cpu, mine = false, live && cpu.id in st.selection.players, cpu.id in st.selection.chosenPlayers, Modifier.offset(x = W - 66.du - lx, y = 12.du + lx), d) { intents.player(cpu.id) }
+            if (!pod) Crest(cpu.command.firstOrNull(), Modifier.offset(x = W - 136.du - lx, y = 6.du + lx), d, onInspect)
+            if (!pod) Medallion(cpu, mine = false, live && cpu.id in st.selection.players, cpu.id in st.selection.chosenPlayers, Modifier.offset(x = W - 66.du - lx, y = 12.du + lx), d) { intents.player(cpu.id) }
             Crest(me.command.firstOrNull(), Modifier.offset(x = 10.du + lx, y = H - 86.du - ly), d, onInspect)
             Medallion(me, mine = true, live && me.id in st.selection.players, me.id in st.selection.chosenPlayers, Modifier.offset(x = 80.du + lx, y = H - 78.du - ly), d) { intents.player(me.id) }
             ManaPool(me.mana, Modifier.offset(x = 106.du + lx, y = H - 103.du - ly), d)
@@ -323,7 +330,7 @@ fun ForgeBoard(
             // The menu carries the stack size as a badge (summary[data-count]::after: 18 px gold pill at -4, -4).
             if (st.stack.isNotEmpty()) Box(Modifier.offset(x = menuX + (44 - 18 + 4).du, y = menuY - 4.du).heightIn(min = 18.du).widthIn(min = 18.du).clip(RoundedCornerShape(9.du)).background(Color(0xFFE8B95B)).padding(horizontal = 5.du),
                 contentAlignment = Alignment.Center) { Text("${st.stack.size}", style = sans(sp(11f), FontWeight.ExtraBold, Color(0xFF1B1406))) }
-            PhaseTrack(st, stopLights(st), intents.stop, Modifier.offset(x = if (large) 80.dp else 74.du, y = if (large) 20.dp else 42.du), d)
+            PhaseTrack(st, stopLights(st), intents.stop, Modifier.offset(x = if (large) 80.dp else 74.du, y = if (pod) 58.du else if (large) 20.dp else 42.du), d)
 
             // The stack, fanned on the right over its portal, with the arc to its source.
             if (st.stack.isNotEmpty()) { StackFan(st, Modifier.offset(x = W - 214.du, y = mid - 110.du), d, onInspect, live, intents.yieldSource, intents.stack); StackArc(st, d) }
@@ -1043,7 +1050,7 @@ private fun Arrows(st: MatchState, live: Boolean, intents: TableIntents, d: Du) 
             val path = Path().apply { moveTo(sx, sy); quadraticTo(cx, cy, ex, ey) }
             val col = colors.getValue(r.kind)
             val heldLine = r.kind == "attack" && r.held
-            val dash = when { r.kind == "target" -> null; Motion.still -> null; heldLine -> PathEffect.dashPathEffect(floatArrayOf(3 * k, 9 * k), 0f); else -> PathEffect.dashPathEffect(floatArrayOf(6 * k, 7 * k), -flow.value * k) }
+            val dash = when { r.kind == "target" -> null; heldLine -> PathEffect.dashPathEffect(floatArrayOf(3 * k, 9 * k), 0f); else -> PathEffect.dashPathEffect(floatArrayOf(6 * k, 7 * k), -flow.value * k) }
             val w = (if (r.kind == "target") 2f else 2.5f) * k
             val alpha = if (heldLine) .22f else .9f
             if (!heldLine) drawIntoCanvas { c ->
