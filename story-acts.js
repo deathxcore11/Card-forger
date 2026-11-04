@@ -65,6 +65,9 @@ export const STORY_ACTS = [
   {act: 21, age: 'The Theros Years', title: 'The Gods of Theros', years: '2013 to 2014',
     sets: ['ths', 'bng', 'jou', 'm15'], landSet: 'ths', packSets: ['ths', 'bng', 'jou', 'm15'],
     art: {set: 'bng', number: '156', name: 'Xenagos, God of Revels', crop: 'https://cards.scryfall.io/art_crop/front/3/1/3184b138-1109-4195-9d96-4f190164e98b.jpg?1783939521'}},
+  {act: 22, age: 'The Tarkir Years', title: 'The Dragonlords', years: '2014 to 2015',
+    sets: ['ktk', 'frf', 'dtk'], landSet: 'ktk', packSets: ['ktk', 'frf', 'dtk'],
+    art: {set: 'dtk', number: '220', name: 'Dragonlord Silumgar', crop: 'https://cards.scryfall.io/art_crop/front/2/e/2eae504d-d4a9-440f-8ceb-df967cc50494.jpg?1783938572'}},
 ];
 export const SET_NAMES = {lea: 'Limited Edition Alpha', leb: 'Limited Edition Beta', '2ed': 'Unlimited Edition', arn: 'Arabian Nights', atq: 'Antiquities',
   '3ed': 'Revised Edition', leg: 'Legends', drk: 'The Dark', fem: 'Fallen Empires', ice: 'Ice Age', hml: 'Homelands', all: 'Alliances', '4ed': 'Fourth Edition',
@@ -80,6 +83,6 @@ export const SET_NAMES = {lea: 'Limited Edition Alpha', leb: 'Limited Edition Be
   rav: 'Ravnica: City of Guilds', gpt: 'Guildpact', dis: 'Dissension',
   csp: 'Coldsnap', tsp: 'Time Spiral', tsb: 'Time Spiral Timeshifted', plc: 'Planar Chaos', fut: 'Future Sight', '10e': 'Tenth Edition',
   lrw: 'Lorwyn', mor: 'Morningtide', shm: 'Shadowmoor', eve: 'Eventide',
-  ala: 'Shards of Alara', con: 'Conflux', arb: 'Alara Reborn', m10: 'Magic 2010', zen: 'Zendikar', wwk: 'Worldwake', roe: 'Rise of the Eldrazi', m11: 'Magic 2011', som: 'Scars of Mirrodin', mbs: 'Mirrodin Besieged', nph: 'New Phyrexia', m12: 'Magic 2012', isd: 'Innistrad', dka: 'Dark Ascension', avr: 'Avacyn Restored', m13: 'Magic 2013', rtr: 'Return to Ravnica', gtc: 'Gatecrash', dgm: "Dragon's Maze", m14: 'Magic 2014', ths: 'Theros', bng: 'Born of the Gods', jou: 'Journey into Nyx', m15: 'Magic 2015'};
+  ala: 'Shards of Alara', con: 'Conflux', arb: 'Alara Reborn', m10: 'Magic 2010', zen: 'Zendikar', wwk: 'Worldwake', roe: 'Rise of the Eldrazi', m11: 'Magic 2011', som: 'Scars of Mirrodin', mbs: 'Mirrodin Besieged', nph: 'New Phyrexia', m12: 'Magic 2012', isd: 'Innistrad', dka: 'Dark Ascension', avr: 'Avacyn Restored', m13: 'Magic 2013', rtr: 'Return to Ravnica', gtc: 'Gatecrash', dgm: "Dragon's Maze", m14: 'Magic 2014', ths: 'Theros', bng: 'Born of the Gods', jou: 'Journey into Nyx', m15: 'Magic 2015', ktk: 'Khans of Tarkir', frf: 'Fate Reforged', dtk: 'Dragons of Tarkir'};
 export const storyAct = n => STORY_ACTS.find(a => a.act === Number(n)) || null;
 export const setSymbolUrl = code => `https://svgs.scryfall.io/sets/${encodeURIComponent(code)}.svg`;

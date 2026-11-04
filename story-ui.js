@@ -185,6 +185,12 @@ export const LESSONS = {
   'Devotion': 'Devotion: count the mana symbols of one colour in the costs of your permanents. Gods only become creatures when your devotion to their colour is high enough.',
   'Monstrosity': 'Monstrosity: pay the cost once and the creature gets that many +1/+1 counters and often a bonus. It can only become monstrous once.',
   'Constellation': 'Constellation: whenever an enchantment enters the battlefield under your control, a constellation card triggers. Enchantment creatures count.',
+  'Ferocious': 'Ferocious: these cards get a bonus if you control a creature with power 4 or greater. Land a big creature first, then the rest gets better.',
+  'Prowess': 'Prowess: whenever you cast a noncreature spell, this creature gets +1/+1 until end of turn. Cast your spells before combat damage.',
+  'Delve': 'Delve: each card you exile from your graveyard while casting this spell pays for one generic mana. A full graveyard makes big spells cheap.',
+  'Raid': 'Raid: these cards get a bonus if you attacked with a creature this turn. Attack first, then cast them after combat.',
+  'Manifest': 'Manifest: put the top card of your library onto the battlefield face down as a 2/2 creature. If it is a creature card, you can turn it face up for its mana cost.',
+  'Outlast': 'Outlast: pay the cost and tap the creature to put a +1/+1 counter on it, any time you could cast a sorcery. Some cards reward every creature with a counter.',
   'Playing under a lock': 'A lock stops cards from untapping or moving. Break it, or win with what\'s already in play.',
 };
 // Every Story deck says what it is (Randall, 2 Nov 2026): Historical Exact, Historical Tribute or

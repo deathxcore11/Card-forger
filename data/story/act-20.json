@@ -781,7 +781,7 @@
      "label": "tribute",
      "cards": [
       {
-       "qty": 4,
+       "qty": 2,
        "name": "Burning-Tree Emissary",
        "set": "gtc",
        "number": "216",
@@ -837,7 +837,7 @@
        "id": "efa05298-9c94-4179-b75a-49ee2ca92920"
       },
       {
-       "qty": 2,
+       "qty": 4,
        "name": "Skarrg Goliath",
        "set": "gtc",
        "number": "133",
@@ -1408,13 +1408,6 @@
       },
       {
        "qty": 4,
-       "name": "Doom Blade",
-       "set": "m14",
-       "number": "96",
-       "id": "75d96a37-bdbe-46ae-926f-8742699a0b20"
-      },
-      {
-       "qty": 4,
        "name": "Death's Approach",
        "set": "gtc",
        "number": "62",
@@ -1468,6 +1461,13 @@
        "set": "rtr",
        "number": "82",
        "id": "d2b4912a-83a2-4870-8fac-81fa79da2830"
+      },
+      {
+       "qty": 4,
+       "name": "Duskmantle Guildmage",
+       "set": "gtc",
+       "number": "158",
+       "id": "9a1509ff-387e-4ccd-bda0-86e8738a98fb"
       }
      ]
     }
@@ -1717,13 +1717,6 @@
       },
       {
        "qty": 4,
-       "name": "Dreadbore",
-       "set": "rtr",
-       "number": "157",
-       "id": "a83945c6-4dc6-4d9a-9bc2-2d4a264e5422"
-      },
-      {
-       "qty": 4,
        "name": "Shock",
        "set": "m14",
        "number": "155",
@@ -1756,6 +1749,13 @@
        "set": "rtr",
        "number": "238",
        "id": "8bd5828b-8dcd-4ce6-b834-ebe9cbaa12d1"
+      },
+      {
+       "qty": 4,
+       "name": "Dead Reveler",
+       "set": "rtr",
+       "number": "62",
+       "id": "909a0a38-2c22-4b49-8938-1a8162c077e6"
       }
      ]
     }
@@ -2366,7 +2366,7 @@
        "id": "a8c468cd-1255-4257-9a69-c6b40a27c427"
       },
       {
-       "qty": 4,
+       "qty": 2,
        "name": "Shock",
        "set": "m14",
        "number": "155",
@@ -2387,7 +2387,7 @@
        "id": "5ed81ee8-d5e4-4127-876e-9bff81f9c726"
       },
       {
-       "qty": 2,
+       "qty": 4,
        "name": "Ripscale Predator",
        "set": "gtc",
        "number": "103",
@@ -2845,20 +2845,6 @@
      "cards": [
       {
        "qty": 4,
-       "name": "Burning-Tree Emissary",
-       "set": "gtc",
-       "number": "216",
-       "id": "899d5f35-3613-4c69-9176-13baf442fb50"
-      },
-      {
-       "qty": 4,
-       "name": "Experiment One",
-       "set": "gtc",
-       "number": "119",
-       "id": "2cc1d8d0-bb43-4962-ad29-bb6478aa986b"
-      },
-      {
-       "qty": 4,
        "name": "Ghor-Clan Rampager",
        "set": "gtc",
        "number": "167",
@@ -2884,13 +2870,6 @@
        "set": "dgm",
        "number": "120",
        "id": "fd565782-8b2f-4b9f-a62d-4af60af20a82"
-      },
-      {
-       "qty": 4,
-       "name": "Witchstalker",
-       "set": "m14",
-       "number": "202",
-       "id": "5a5ce47d-ea4f-4e15-adb6-5bb66981ed24"
       },
       {
        "qty": 4,
@@ -2933,6 +2912,27 @@
        "set": "gtc",
        "number": "170",
        "id": "080ef367-7904-4e5c-a8b4-1fb62f951f3e"
+      },
+      {
+       "qty": 4,
+       "name": "Gyre Sage",
+       "set": "gtc",
+       "number": "123",
+       "id": "6345376a-3d2d-4fff-9430-5e90a96e2f0f"
+      },
+      {
+       "qty": 4,
+       "name": "Scab-Clan Charger",
+       "set": "gtc",
+       "number": "131",
+       "id": "964c88d3-3141-44ab-8856-44a3f08331ea"
+      },
+      {
+       "qty": 4,
+       "name": "Zhur-Taa Swine",
+       "set": "gtc",
+       "number": "210",
+       "id": "cef93050-2f24-4c85-a00b-796e53868ac1"
       }
      ]
     }
@@ -2974,7 +2974,7 @@
        "id": "d4000b46-7843-4c07-8332-a10f207e2cdc"
       },
       {
-       "qty": 3,
+       "qty": 2,
        "name": "Urban Evolution",
        "set": "gtc",
        "number": "204",
@@ -2988,7 +2988,7 @@
        "id": "26adc211-d089-4102-91e5-225bbeb5f382"
       },
       {
-       "qty": 3,
+       "qty": 4,
        "name": "Supreme Verdict",
        "set": "rtr",
        "number": "201",
@@ -3000,13 +3000,6 @@
        "set": "rtr",
        "number": "200",
        "id": "404d9413-ef57-4b6e-8584-48a1dc7fe6f1"
-      },
-      {
-       "qty": 2,
-       "name": "Elixir of Immortality",
-       "set": "m14",
-       "number": "209",
-       "id": "3d19d950-9e63-4b15-8531-f4b16f5b82fa"
       },
       {
        "qty": 4,
@@ -3098,6 +3091,13 @@
        "set": "rtr",
        "number": "255",
        "id": "78f35064-c662-48ff-a2a9-d26f594500f5"
+      },
+      {
+       "qty": 2,
+       "name": "Detention Sphere",
+       "set": "rtr",
+       "number": "155",
+       "id": "afee5464-83b7-4d7a-b407-9ee7de21535b"
       }
      ]
     }

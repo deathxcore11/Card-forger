@@ -104,7 +104,7 @@ export default {
 10 Mountain
 4 Boros Guildgate`}},
       villain: {who: 'ruric', deck: {label: 'tribute', name: 'The Ghor Clan', colors: 'RG', list: `
-4 Burning-Tree Emissary
+2 Burning-Tree Emissary
 4 Ghor-Clan Rampager
 4 Rubblebelt Raiders
 4 Zhur-Taa Swine
@@ -112,7 +112,7 @@ export default {
 3 Skinbrand Goblin
 4 Zhur-Taa Druid
 3 Clan Defiance
-2 Skarrg Goliath
+4 Skarrg Goliath
 4 Gruul Ragebeast
 10 Forest
 10 Mountain
@@ -187,7 +187,6 @@ export default {
 4 Gutter Skulk
 4 Mindeye Drake
 3 Call of the Nightwing
-4 Doom Blade
 4 Death's Approach
 3 Undercity Informer
 2 Mirko Vosk, Mind Drinker
@@ -195,7 +194,8 @@ export default {
 10 Island
 10 Swamp
 4 Watery Grave
-4 Ultimate Price`}},
+4 Ultimate Price
+4 Duskmantle Guildmage`}},
       scene: [q('jace', 'Is the maze itself a phantom? Or is one as real as the other? Perhaps I am as mad as the dragon.'),
         s('jace', 'Cipher: a cipher spell gets encoded on one of their creatures. Every time that creature hits you, they cast it again. Block it or kill it.')],
       villainScene: [q('lazav', 'Ask the right questions in the right way and truth is inevitable.'),
@@ -228,12 +228,12 @@ export default {
 4 Splatter Thug
 4 Bloodfray Giant
 3 Carnival Hellsteed
-4 Dreadbore
 4 Shock
 3 Hellhole Flailer
 10 Swamp
 10 Mountain
-4 Blood Crypt`}},
+4 Blood Crypt
+4 Dead Reveler`}},
       scene: [q('teysa', 'The fine print of countless contracts has ensured we are never defenseless.'),
         q('teysa', 'We do not believe in hiding our wealth in the shadows. This is Orzhov, and this is how we reward greatness.'),
         s('teysa', 'Extort: whenever you cast a spell, you may pay one more mana to drain them for 1. Every spell is a little payment.')],
@@ -314,10 +314,10 @@ export default {
 4 Ash Zealot
 4 Skinbrand Goblin
 4 Bloodfray Giant
-4 Shock
+2 Shock
 2 Annihilating Fire
 2 Electrickery
-2 Ripscale Predator
+4 Ripscale Predator
 24 Mountain
 2 Splatter Thug`}},
       scene: [q('domri', 'Roots, ruins, and room to fight. All the comforts of home.'),
@@ -381,29 +381,28 @@ export default {
         after: 'This tribute uses only this act\'s sets. No single tournament list is copied.'},
       blurb: 'Deep in the archive, the deck that tried to solve the Maze instead of fighting it.',
       hero: {who: 'you', deck: {label: 'tribute', name: 'Gruul Aggro', colors: 'RG', archetype: 'Aggro', list: `
-4 Burning-Tree Emissary
-4 Experiment One
 4 Ghor-Clan Rampager
 4 Rubblebelt Raiders
 3 Domri Rade
 4 Zhur-Taa Druid
-4 Witchstalker
 4 Scavenging Ooze
 3 Clan Defiance
 10 Forest
 10 Mountain
 4 Stomping Ground
-2 Gruul Ragebeast`}},
+2 Gruul Ragebeast
+4 Gyre Sage
+4 Scab-Clan Charger
+4 Zhur-Taa Swine`}},
       villain: {who: 'gates', deck: {label: 'tribute', name: 'Maze\'s End', colors: 'WUBG', archetype: 'Control', list: `
 4 Opal Lake Gatekeepers
 4 Saruli Gatekeepers
 3 Ubul Sar Gatekeepers
 4 Wall of Frost
-3 Urban Evolution
+2 Urban Evolution
 4 Azorius Charm
-3 Supreme Verdict
+4 Supreme Verdict
 3 Sphinx's Revelation
-2 Elixir of Immortality
 4 Essence Scatter
 2 Maze's End
 2 Azorius Guildgate
@@ -416,7 +415,8 @@ export default {
 2 Rakdos Guildgate
 2 Selesnya Guildgate
 2 Simic Guildgate
-4 Island`}},
+4 Island
+2 Detention Sphere`}},
       scene: [q('stage', 'The Implicit Maze winds through Ravnica, connecting arcane landmarks of all ten guilds.'),
         s('you', 'Ten Gates and it wins. Count them, and hit hard before it gets there.')],
       villainScene: [q('stage', 'Sentries guard Ravnica\'s landmarks and outlying districts, unaware of these places\' import to the maze.')],
