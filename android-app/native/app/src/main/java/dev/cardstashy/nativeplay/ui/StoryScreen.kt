@@ -12,6 +12,7 @@ import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.WindowInsets
 import androidx.compose.foundation.layout.aspectRatio
 import androidx.compose.foundation.layout.asPaddingValues
+import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
@@ -143,7 +144,27 @@ fun StoryRoad(acts: List<PlayRules.Act>, age: String, p: StoryLogic.Progress, on
     val now = StoryLogic.currentAct(p, acts.size)
     val shown = acts.filter { it.act <= now + 1 }
     val top = WindowInsets.statusBars.asPaddingValues().calculateTopPadding()
-    LazyColumn(Modifier.fillMaxSize().background(Site.Bg), contentPadding = PaddingValues(start = 16.dp, end = 16.dp, top = top + 12.dp, bottom = 120.dp), verticalArrangement = Arrangement.spacedBy(18.dp)) {
+    androidx.compose.foundation.layout.BoxWithConstraints(Modifier.fillMaxSize().background(Site.Bg)) {
+    // Sideways phone or handheld: the header on one line and the act covers in a row that scrolls across.
+    if (sideways()) Column(Modifier.fillMaxSize().padding(top = top + 8.dp), verticalArrangement = Arrangement.spacedBy(10.dp)) {
+        Row(Modifier.padding(horizontal = 16.dp), verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(16.dp)) {
+            Box(Modifier.weight(1f)) { PageHeader("Story", "Play", onBack = onBack) }
+            Box(Modifier.weight(1.3f)) { purse() }
+        }
+        Text(age.uppercase(), Modifier.padding(horizontal = 16.dp), style = storyText(12f, FontWeight.ExtraBold, storyGold, 3.4f))
+        val start = shown.indexOfFirst { it.act == now }.coerceAtLeast(0)
+        androidx.compose.foundation.lazy.LazyRow(Modifier.fillMaxWidth().weight(1f), state = androidx.compose.foundation.lazy.rememberLazyListState(start),
+            contentPadding = PaddingValues(start = 16.dp, end = 16.dp, bottom = 16.dp), horizontalArrangement = Arrangement.spacedBy(16.dp)) {
+            shown.forEach { a ->
+                item("act${a.act}") {
+                    val won = StoryLogic.actWon(p, a.act); val done = StoryLogic.actCleared(p, a.act); val here = a.act == now; val tease = a.act > now
+                    Cover(a, won, done, here, tease, StoryLogic.actStars(p, a.act), Modifier.fillMaxHeight().aspectRatio(1.05f)) { onAct(a.act) }
+                }
+            }
+            if (now > acts.size) item("book") { Box(Modifier.fillMaxHeight().aspectRatio(1.4f)) { Book() } }
+        }
+    } else
+    LazyColumn(Modifier.fillMaxSize(), contentPadding = PaddingValues(start = 16.dp, end = 16.dp, top = top + 12.dp, bottom = 120.dp), verticalArrangement = Arrangement.spacedBy(18.dp)) {
         item("head") { Column(verticalArrangement = Arrangement.spacedBy(12.dp)) { PageHeader("Story", "Play", onBack = onBack); purse() } }
         item("age") { Text(age.uppercase(), style = storyText(12f, FontWeight.ExtraBold, storyGold, 3.4f)) }
         shown.forEach { a ->
@@ -154,12 +175,13 @@ fun StoryRoad(acts: List<PlayRules.Act>, age: String, p: StoryLogic.Progress, on
         }
         if (now > acts.size) item("book") { Book() }
     }
+    }
 }
 
 @Composable
-private fun Cover(a: PlayRules.Act, won: Int, done: Boolean, here: Boolean, tease: Boolean, stars: Int, onClick: () -> Unit) {
+private fun Cover(a: PlayRules.Act, won: Int, done: Boolean, here: Boolean, tease: Boolean, stars: Int, size: Modifier = Modifier.fillMaxWidth().heightIn(min = 300.dp).aspectRatio(1.05f), onClick: () -> Unit) {
     val shape = RoundedCornerShape(24.dp)
-    Box(Modifier.fillMaxWidth().heightIn(min = 300.dp).aspectRatio(1.05f).clip(shape)
+    Box(size.clip(shape)
         .border(1.dp, if (here) Color(0xAAD6AD64) else Color(0x38D6AD64), shape)
         .then(if (tease) Modifier else Modifier.clickable(onClick = onClick))
         .semantics { contentDescription = "Act ${a.act}, ${a.name}. " + if (done) "Cleared" else "$won of 8 battles won" }) {
@@ -197,11 +219,10 @@ fun StoryActPage(a: PlayRules.Act, data: JsonObject?, p: StoryLogic.Progress, on
     val battles = data?.getAsJsonArray("battles")?.map { it.asJsonObject }.orEmpty()
     val cast = data?.getAsJsonObject("cast")
     val won = battles.count { it["secret"]?.asBoolean != true && StoryLogic.battleCleared(p, it["id"].asString) }
-    LazyColumn(Modifier.fillMaxSize().background(Site.Bg), contentPadding = PaddingValues(start = 16.dp, end = 16.dp, top = top + 12.dp, bottom = 120.dp), verticalArrangement = Arrangement.spacedBy(12.dp)) {
-        item("head") { Column(verticalArrangement = Arrangement.spacedBy(12.dp)) { PageHeader(a.name, "Story · Act ${a.act}", onBack = onBack); purse() } }
-        item("banner") {
+    val open = battles.filter { b -> if (b["secret"]?.asBoolean == true) StoryLogic.secretOpen(p, a.act) else b["slot"].asInt <= now + 1 }
+    val banner = @Composable { m: Modifier ->
             val shape = RoundedCornerShape(24.dp)
-            Box(Modifier.fillMaxWidth().heightIn(min = 170.dp).clip(shape).border(1.dp, Color(0x38D6AD64), shape)) {
+            Box(m.clip(shape).border(1.dp, Color(0x38D6AD64), shape)) {
                 StoryPic(a.art, Modifier.matchParentSize(), BiasAlignment(0f, -.36f))
                 Box(Modifier.matchParentSize().background(Brush.verticalGradient(0f to Color(0x100C0C0E), 1f to Color(0xF00C0C0E))))
                 Row(Modifier.align(Alignment.BottomStart).fillMaxWidth().padding(18.dp), verticalAlignment = Alignment.Bottom, horizontalArrangement = Arrangement.SpaceBetween) {
@@ -209,11 +230,28 @@ fun StoryActPage(a: PlayRules.Act, data: JsonObject?, p: StoryLogic.Progress, on
                     Ring(won, 8)
                 }
             }
+    }
+    androidx.compose.foundation.layout.BoxWithConstraints(Modifier.fillMaxSize().background(Site.Bg)) {
+    // Sideways: the act's title and picture on the left, its battles scrolling on the right.
+    if (sideways()) Row(Modifier.fillMaxSize().padding(start = 16.dp, end = 16.dp, top = top + 8.dp), horizontalArrangement = Arrangement.spacedBy(16.dp)) {
+        Column(Modifier.weight(.42f).fillMaxHeight().padding(bottom = 16.dp), verticalArrangement = Arrangement.spacedBy(10.dp)) {
+            PageHeader(a.name, "Story · Act ${a.act}", onBack = onBack)
+            banner(Modifier.fillMaxWidth().weight(1f))
         }
+        LazyColumn(Modifier.weight(.58f).fillMaxHeight(), contentPadding = PaddingValues(bottom = 24.dp), verticalArrangement = Arrangement.spacedBy(12.dp)) {
+            item("purse") { purse() }
+            if (data == null) item("loading") { Text("Opening the act…", style = Site.Body, modifier = Modifier.fillMaxWidth().padding(vertical = 40.dp)) }
+            open.forEach { b -> item(b["id"].asString) { BattleRow(b, cast, p, now) { onBattle(b["id"].asString) } } }
+        }
+    } else
+    LazyColumn(Modifier.fillMaxSize(), contentPadding = PaddingValues(start = 16.dp, end = 16.dp, top = top + 12.dp, bottom = 120.dp), verticalArrangement = Arrangement.spacedBy(12.dp)) {
+        item("head") { Column(verticalArrangement = Arrangement.spacedBy(12.dp)) { PageHeader(a.name, "Story · Act ${a.act}", onBack = onBack); purse() } }
+        item("banner") { banner(Modifier.fillMaxWidth().heightIn(min = 170.dp)) }
         if (data == null) item("loading") { Text("Opening the act…", style = Site.Body, modifier = Modifier.fillMaxWidth().padding(vertical = 40.dp)) }
-        battles.filter { b -> if (b["secret"]?.asBoolean == true) StoryLogic.secretOpen(p, a.act) else b["slot"].asInt <= now + 1 }.forEach { b ->
+        open.forEach { b ->
             item(b["id"].asString) { BattleRow(b, cast, p, now) { onBattle(b["id"].asString) } }
         }
+    }
     }
 }
 

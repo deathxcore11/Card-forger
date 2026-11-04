@@ -327,11 +327,13 @@ class ShotTest {
     @Test fun trunk() {
         trunkSetup()
         for ((w, h) in listOf(390 to 844, 884 to 1104, 844 to 390)) {
+            dev.cardstashy.nativeplay.ui.HomeTest.forceShort = if (h < 500) true else null
             RuntimeEnvironment.setQualifiers("w${w}dp-h${h * 3}dp-xxhdpi")
             captureRoboImage(File(System.getProperty("shotsDir"), "trunk-cards-${w}x$h.png").path) {
                 dev.cardstashy.nativeplay.ui.TrunkScreen(trunkState, {}, {}, {}) { PlayNav(PlayTab.TRUNK, {}) }
             }
         }
+        dev.cardstashy.nativeplay.ui.HomeTest.forceShort = null
         home.mkdirs(); home.resolve("missing.txt").writeText(missing.joinToString("\n"))
     }
 

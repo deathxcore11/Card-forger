@@ -560,3 +560,21 @@ fun ValuePill(value: String, cards: Int, decks: Int, change: String?, art: Paint
 private fun Stat(n: String, label: String) = Column(horizontalAlignment = Alignment.End) {
     Text(n, style = Site.Count, maxLines = 1); Text(label, style = Site.Label, maxLines = 1)
 }
+
+/** A regular phone or a gaming handheld held sideways (Randall 4 Nov 17:40Z): wide but short, so headers go on one line. */
+fun androidx.compose.foundation.layout.BoxWithConstraintsScope.sideways(): Boolean = HomeTest.forceShort ?: (maxWidth >= 600.dp && maxHeight < 500.dp)
+
+/** The same test from anywhere (lazy list items have no height of their own): the screen is wide but short. */
+@androidx.compose.runtime.Composable
+fun sidewaysScreen(): Boolean = HomeTest.forceShort ?: androidx.compose.ui.platform.LocalConfiguration.current.let { it.screenWidthDp >= 600 && it.screenHeightDp < 500 }
+
+/** A Play page head: the title, then the purse under it; held sideways, both on one line so the page keeps its height. */
+@androidx.compose.runtime.Composable
+fun PlayHead(title: String, eyebrow: String?, onBack: (() -> Unit)?, purse: @androidx.compose.runtime.Composable () -> Unit) {
+    if (sidewaysScreen()) androidx.compose.foundation.layout.Row(verticalAlignment = androidx.compose.ui.Alignment.CenterVertically, horizontalArrangement = androidx.compose.foundation.layout.Arrangement.spacedBy(16.dp)) {
+        androidx.compose.foundation.layout.Box(Modifier.weight(1f)) { PageHeader(title, eyebrow, onBack = onBack) }
+        androidx.compose.foundation.layout.Box(Modifier.weight(1.3f)) { purse() }
+    } else androidx.compose.foundation.layout.Column(verticalArrangement = androidx.compose.foundation.layout.Arrangement.spacedBy(12.dp)) {
+        PageHeader(title, eyebrow, onBack = onBack); purse()
+    }
+}

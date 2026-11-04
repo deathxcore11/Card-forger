@@ -163,10 +163,7 @@ fun AchievementsRoute(onBack: () -> Unit, startTab: String? = null, nav: @Compos
         val shown = rows.filter { it.get("tab").str() == tab }
         LazyColumn(Modifier.fillMaxSize(), contentPadding = PaddingValues(start = 16.dp, end = 16.dp, top = top + 12.dp, bottom = 120.dp), verticalArrangement = Arrangement.spacedBy(14.dp)) {
             item("head") {
-                Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
-                    PageHeader("Achievements", "Play", onBack = onBack)
-                    PlayMath.purse(state)?.let { PurseRow(it, {}, {}, {}, level = PlayMath.mastery(state, it.xp)) }
-                }
+                PlayHead("Achievements", "Play", onBack) { PlayMath.purse(state)?.let { PurseRow(it, {}, {}, {}, level = PlayMath.mastery(state, it.xp)) } }
             }
             item("sum") {
                 Section("Hall of Deeds") {
