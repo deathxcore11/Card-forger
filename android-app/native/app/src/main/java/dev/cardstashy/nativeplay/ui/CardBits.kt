@@ -17,6 +17,7 @@ import androidx.compose.runtime.State
 import androidx.compose.ui.Alignment
 import androidx.compose.foundation.layout.aspectRatio
 import androidx.compose.ui.layout.layout
+import dev.cardstashy.nativeplay.foil.finish
 import androidx.compose.ui.geometry.isSpecified
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
@@ -118,10 +119,12 @@ fun CardPicture(url: String?, look: Foil.Look?, tilt: State<Offset>?, modifier: 
  */
 @Composable
 fun CardFace(painter: androidx.compose.ui.graphics.painter.Painter, look: Foil.Look?, tilt: State<Offset>?, modifier: Modifier = Modifier,
-             shape: Shape = RoundedCornerShape(10.dp), desc: String? = null, alignment: Alignment = Alignment.Center, crop: Boolean = false) {
+             shape: Shape = RoundedCornerShape(10.dp), desc: String? = null, alignment: Alignment = Alignment.Center, crop: Boolean = false,
+             finish: dev.cardstashy.nativeplay.foil.CardFinish? = null) {
     val s = painter.intrinsicSize
     val ratio = if (s.isSpecified && s.width > 0f && s.height > 0f) s.width / s.height else 63f / 88f
-    val foil = if (look != null && tilt != null) Modifier.foil(look, tilt) else Modifier
+    // One foil layer for every game (foil/FoilLayer.kt); a bare Magic look still works for older callers.
+    val foil = Modifier.finish(finish ?: look?.let { dev.cardstashy.nativeplay.foil.CardFinish.Magic(it) }, tilt)
     if (!crop) Box(modifier, contentAlignment = alignment) {
         Box(Modifier.aspectRatio(ratio).clip(shape).background(Color(0xFF1F232B)).then(foil)) {
             Image(painter, desc, Modifier.fillMaxSize(), contentScale = ContentScale.FillBounds)
