@@ -355,7 +355,9 @@ fun ForgeBoard(
             Arrows(st, live, intents, d)
             OwnCast(st, d)
             overlay?.invoke(W)
-            EmoteLayer(W, H, d)
+            // The order dialog, a damage split and the zone picker sit over the table; the CPU's line waits under them.
+            val covered = live && st.prompt?.let { p -> p.method == "order" || p.method.startsWith("assign") || p.options.any { it.zone in setOf("Library", "Graveyard", "Exile") } } == true
+            if (!covered) EmoteLayer(W, H, d)
             // The deck tracker under the table controls on the left; the menu over everything.
             if (menu != null) { DeckTracker(st, menu, H, d); if (menu.open) MenuPanel(menu, st.stack.size, d) }
         }

@@ -279,6 +279,14 @@ class MatchController(private val scope: CoroutineScope, val input: String) {
         if (amounts != null) add("amounts", JsonArray().apply { amounts.forEach { add(it) } })
     }
 
+    /** forge-session.mjs replyValue (showInputDialog), confirmPrompt with remember (order), replyAmounts(null) (skip). */
+    fun replyText(promptId: Int, value: String) = send("reply") { addProperty("promptId", promptId); addProperty("value", value) }
+    fun replyOrder(promptId: Int, indexes: List<Int>, remember: Boolean) = send("reply") {
+        addProperty("promptId", promptId); add("indexes", JsonArray().apply { indexes.forEach { add(it) } }); addProperty("remember", remember)
+    }
+    fun replySkip(promptId: Int) = send("reply") { addProperty("promptId", promptId); addProperty("skip", true) }
+    val dockReplies by lazy { dev.cardstashy.nativeplay.ui.DockReplies(text = { id, v -> replyText(id, v) }, order = { id, i, r -> replyOrder(id, i, r) }, skipAmounts = { replySkip(it) }) }
+
     private fun send(op: String, force: Boolean = false, fill: JsonObject.() -> Unit = {}) {
         val st = latest ?: return
         if (!force && (!_live.value || _sending.value)) return

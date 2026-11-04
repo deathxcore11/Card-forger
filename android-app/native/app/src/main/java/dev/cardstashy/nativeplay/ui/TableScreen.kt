@@ -399,8 +399,10 @@ private fun TableSide(st: MatchState, c: MatchController, beat: Beat?, live: Boo
     Box(Modifier.fillMaxSize()) {
         when {
             beat != null -> BeatView(beat, st, Modifier.align(Alignment.CenterEnd).padding(end = 12.dp).width(170.dp).fillMaxHeight(.62f)) { c.next() }
-            live && st.prompt != null -> PromptPanel(st.prompt, st, c, live, Modifier.align(Alignment.BottomEnd).padding(end = 8.dp, bottom = 8.dp).width(240.dp).heightIn(max = 300.dp).glass(14.dp).padding(6.dp))
         }
+        // native-panel.mjs dock: Forge's own questions (triggers order, costs, damage split, search, choices). Called every frame: the
+        // spell-mode back-out acts on the step after a prompt.
+        if (beat == null) BoxWithConstraints(Modifier.fillMaxSize()) { DecisionDock(st, live, c.intents, onInspect, minOf(maxWidth.value / 844f, maxHeight.value / 390f), replies = c.dockReplies) }
     }
 }
 
