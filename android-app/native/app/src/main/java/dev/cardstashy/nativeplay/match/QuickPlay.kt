@@ -110,13 +110,13 @@ object QuickPlay {
         val cpuName = cpuDeck.get("name")?.asString?.substringBefore(" · ")?.trim()?.ifBlank { null } ?: "Tournament list"
         val faces = listOfNotNull(pick.face, faceOf(cpuDeck))
         Setup.Ready((pick as? Pick.Table)?.let { forgeInput(format, you, cpuDeck, it.level, quick = it.quick) } ?: quickInput(format, you, cpuDeck), Plate(pick.name, "You", pick.face), Plate(cpuName, "CPU · $format", faceOf(cpuDeck)),
-            youRows + cpuRows, faces, CardArt.knows(youRows.map { it.first }))
+            youRows + cpuRows, faces, CardArt.knowsRows(youRows + cpuRows))
     }
 
     /** Finds and decodes both decks' pictures; returns when done or when [budgetMs] runs out (the table then fills in as they land). */
     suspend fun warmArt(context: Context, s: Setup.Ready, budgetMs: Long) {
         val t0 = SystemClock.elapsedRealtime()
-        CardArt.resolve(s.rows)
+        CardArt.resolveMatch(s.rows)
         val loaded = CardArt.warm(context, s.rows.map { it.first }, (budgetMs - (SystemClock.elapsedRealtime() - t0)).coerceAtLeast(300), crops = s.faces)
         Log.i(TAG, "art warm: ${s.rows.size} rows, loaded=$loaded in ${SystemClock.elapsedRealtime() - t0} ms")
     }

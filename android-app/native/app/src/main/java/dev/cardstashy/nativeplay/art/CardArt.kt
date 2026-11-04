@@ -78,7 +78,27 @@ object CardArt {
     /** Unit tests: the name index without an image loader. */
     internal fun initIndexOnly(dir: File) { indexFile = File(dir, "art-index.json") }
 
-    fun url(name: String, crop: Boolean = false): String? = synchronized(index) { index[name.lowercase()] }?.let { if (crop) it.second ?: it.first else it.first }
+    fun url(name: String, crop: Boolean = false): String? = synchronized(index) { pins[name.lowercase()] ?: index[name.lowercase()] }?.let { if (crop) it.second ?: it.first else it.first }
+
+    /**
+     * The match on the table pins its own printings (a Story deck plays its era's art, Act 1 Alpha):
+     * name -> picture for this match only, ahead of the shared name index. Cleared when the next match pins.
+     */
+    private val pins = HashMap<String, Pair<String, String?>>()
+    fun pinned(name: String): Boolean = synchronized(index) { pins.containsKey(name.lowercase()) }
+    private fun pinId(row: JsonObject) = str(row, "printingId", "scryfallId")?.takeIf { UUID.matches(it) }?.lowercase()
+
+    /** True when every row's picture is on record: its pinned printing when it has one, else its name. */
+    fun knowsRows(rows: List<Pair<String, JsonObject>>) = synchronized(index) { rows.all { (n, r) -> pinId(r)?.let { index.containsKey("#$it") } ?: index.containsKey(n.lowercase()) } }
+
+    /** A match is starting: resolve both decks with their pinned printings first, and pin those for the match. */
+    suspend fun resolveMatch(rows: List<Pair<String, JsonObject>>) {
+        synchronized(index) { pins.clear() }
+        resolve(rows)
+        var pinnedAny = false
+        synchronized(index) { rows.forEach { (n, r) -> pinId(r)?.let { index["#$it"] }?.let { pins[n.lowercase()] = it; pinnedAny = true } } }
+        if (pinnedAny) version.value++
+    }
 
     private fun save() = synchronized(index) {
         val o = JsonObject(); index.forEach { (k, v) -> o.add(k, JsonArray().apply { add(v.first); add(v.second) }) }
@@ -113,7 +133,8 @@ object CardArt {
      * Scryfall call, and remembers it. A deck seen before needs no call at all.
      */
     suspend fun resolve(rows: List<Pair<String, JsonObject>>) = withContext(Dispatchers.IO) {
-        val missing = rows.filter { (name, _) -> url(name) == null }.distinctBy { it.first.lowercase() }
+        val missing = synchronized(index) { rows.filter { (name, r) -> pinId(r)?.let { !index.containsKey("#$it") } ?: (index[name.lowercase()] == null) } }
+            .distinctBy { (n, r) -> pinId(r) ?: n.lowercase() }
         if (missing.isEmpty()) return@withContext
         var added = false
         for (chunk in missing.chunked(75)) {
@@ -132,7 +153,9 @@ object CardArt {
                             ?: names(c).any { it.equals(name, true) }
                     } ?: cards.firstOrNull { c -> names(c).any { it.equals(name, true) } }
                     val img = card?.let { images(it) } ?: return@forEachIndexed
-                    index[name.lowercase()] = img
+                    // A pinned printing is kept by its id; the shared name entry stays whatever it was.
+                    val pin = want.get("id")?.asString?.lowercase()?.takeIf { it.equals(card.get("id")?.asString, true) }
+                    if (pin != null) { index["#$pin"] = img; index.putIfAbsent(name.lowercase(), img) } else index[name.lowercase()] = img
                     card.let { names(it) }.forEach { n -> index.putIfAbsent(n.lowercase(), img) }
                     added = true
                 }

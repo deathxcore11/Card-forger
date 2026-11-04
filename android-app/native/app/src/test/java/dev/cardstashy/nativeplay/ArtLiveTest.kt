@@ -43,4 +43,20 @@ class ArtLiveTest {
         // The cause of the blank cards in 0.2.0: the default client is refused.
         OkHttpClient().newCall(Request.Builder().url(CardArt.url("Lightning Bolt")!!).build()).execute().use { assertEquals(400, it.code) }
     }
+
+    /** Story pins its era printings: a name seen before in modern art still plays Alpha in an Act 1 match, and only there. */
+    @Test fun storyPinsBeatTheNameIndex() = runBlocking {
+        assumeTrue("no network", online())
+        CardArt.initIndexOnly(Files.createTempDirectory("art").toFile())
+        CardArt.resolve(listOf("Plains" to JsonObject().apply { addProperty("name", "Plains") }))
+        val shared = CardArt.url("Plains")!!
+        val alpha = "b1623d57-4729-4796-b3f7-f1837a05c6ed"
+        val story = listOf("Plains" to JsonObject().apply { addProperty("name", "Plains"); addProperty("qty", 24); addProperty("printingId", alpha) })
+        assertTrue(!CardArt.knowsRows(story))
+        CardArt.resolveMatch(story)
+        assertTrue("pinned art: ${CardArt.url("Plains")}", CardArt.url("Plains")!!.contains(alpha))
+        assertTrue(CardArt.knowsRows(story))
+        CardArt.resolveMatch(listOf("Plains" to JsonObject().apply { addProperty("name", "Plains") }))
+        assertEquals(shared, CardArt.url("Plains"))
+    }
 }

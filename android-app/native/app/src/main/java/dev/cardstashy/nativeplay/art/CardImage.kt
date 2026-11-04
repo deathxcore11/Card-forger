@@ -29,9 +29,10 @@ fun CardImage(name: String?, modifier: Modifier = Modifier, crop: Boolean = fals
     if (name == null) { Box(modifier) { fallback() }; return }
     CardImageTest.art?.invoke(name, crop)?.let { b -> androidx.compose.foundation.Image(b, null, if (shape != null) modifier.clip(shape) else modifier, contentScale = contentScale); return }
     val context = LocalContext.current
-    val asset = remember(name, crop) { DemoDecks.load(context).image(name, crop) }
-    if (asset != null) { AssetImage(asset, modifier, maxWidth = if (crop) 900 else 488, contentScale = contentScale, shape = shape); return }
     val v by CardArt.version.collectAsState()
+    // A printing pinned by the match (Story's era art) wins over the bundled demo picture.
+    val asset = remember(name, crop, v) { if (CardArt.pinned(name)) null else DemoDecks.load(context).image(name, crop) }
+    if (asset != null) { AssetImage(asset, modifier, maxWidth = if (crop) 900 else 488, contentScale = contentScale, shape = shape); return }
     val url = remember(name, crop, v) { CardArt.url(name, crop) }
     if (url == null) { Box(modifier) { fallback() }; return }
     val request = remember(url, crop) { CardArt.request(context, url, crop) }
