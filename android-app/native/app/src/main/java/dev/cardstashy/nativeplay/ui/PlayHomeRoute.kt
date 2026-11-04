@@ -49,9 +49,12 @@ fun PlayHomeRoute(onQuickPlay: () -> Unit, onLobby: (String) -> Unit = { onQuick
     }
     val rules = PlayRules.load(context)
     // Wrapper art and set names for the sets this page shows (the web's facts.ensure); the Trunk asks for its own.
-    LaunchedEffect(state) {
+    LaunchedEffect(state, refs) {
         val s = state ?: return@LaunchedEffect
         val codes = kotlinx.coroutines.withContext(kotlinx.coroutines.Dispatchers.Default) { buildList {
+            // The Story card's packs first: they are the first thing on the page.
+            val now = PlayMath.storyHome(refs ?: emptyList(), rules.acts.size).act
+            rules.acts.firstOrNull { it.act == now }?.sets?.forEach { add(it.first) }
             s.getAsJsonArray("packs")?.forEach { (it as? JsonObject)?.get("set")?.asString?.let(::add) }
             s.getAsJsonArray("shop")?.take(12)?.forEach { (it as? JsonObject)?.get("code")?.asString?.let(::add) }
             rules.acts.forEach { a -> a.sets.forEach { add(it.first) } }

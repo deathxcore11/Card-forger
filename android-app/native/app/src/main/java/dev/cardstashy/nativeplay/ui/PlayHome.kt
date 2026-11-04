@@ -445,13 +445,19 @@ private fun StoryCard(d: PlayHomeData, wide: Boolean, act: PlayHomeActions) {
         }
         val packs = @Composable { m: Modifier, w: Dp ->
             Row(m, horizontalArrangement = Arrangement.spacedBy(if (wide) 24.dp else 14.dp), verticalAlignment = Alignment.Bottom) {
-                a.sets.forEachIndexed { i, (code, name) ->
+                a.sets.take(3).forEachIndexed { i, (code, name) ->
                     Booster(code, name, Modifier.width(if (i == 1) w * 1.18f else w).rotate(listOf(-4f, 0f, 4f).getOrElse(i) { 0f }), mini = true)
                 }
             }
         }
-        if (wide) Row(Modifier.matchParentSize().padding(32.dp), verticalAlignment = Alignment.Bottom, horizontalArrangement = Arrangement.spacedBy(24.dp)) {
-            copy(Modifier.weight(1f).widthIn(max = 560.dp)); packs(Modifier, 100.dp)
+        // The copy keeps its width (at least 300 dp beside the packs); the packs shrink to the space left, and below 680 dp they go on top.
+        if (wide) BoxWithConstraints(Modifier.matchParentSize().padding(32.dp)) {
+            val room = maxWidth - 24.dp - 300.dp
+            val w = ((room - 48.dp) / 3.18f).coerceIn(56.dp, 100.dp)
+            if (maxWidth < 680.dp) Column(Modifier.fillMaxSize(), verticalArrangement = Arrangement.spacedBy(18.dp, Alignment.Bottom)) { packs(Modifier.align(Alignment.CenterHorizontally), 84.dp); copy(Modifier) }
+            else Row(Modifier.fillMaxSize(), verticalAlignment = Alignment.Bottom, horizontalArrangement = Arrangement.spacedBy(24.dp)) {
+                copy(Modifier.weight(1f).widthIn(min = 300.dp, max = 560.dp)); packs(Modifier, w)
+            }
         } else Column(Modifier.fillMaxWidth().padding(20.dp), verticalArrangement = Arrangement.spacedBy(22.dp)) {
             packs(Modifier.align(Alignment.CenterHorizontally), 96.dp); copy(Modifier)
         }
@@ -480,7 +486,7 @@ fun Booster(code: String, name: String?, modifier: Modifier = Modifier, mini: Bo
             val sp = { f: Float -> with(dens) { (px * f).toSp() } }
             Box(Modifier.padding(top = h * .055f, bottom = h * .30f).fillMaxSize()) {
                 if (f?.art?.isNotBlank() == true) Art(f.art, Modifier.matchParentSize(), BiasAlignment(0f, -.4f))
-                else Box(Modifier.matchParentSize().background(Brush.radialGradient(listOf(Color(0xFF3B4152), Color(0xFF15181F)))))
+                else ArtShimmer(Modifier.matchParentSize()) // never blank: a soft sweep in the art's own shape until the picture arrives
                 Box(Modifier.matchParentSize().background(Brush.verticalGradient(.55f to Color.Transparent, 1f to Color(0xFF0C0E13))))
             }
             // The band: set icon in gold, Cinzel name, PLAY BOOSTER.
@@ -502,6 +508,17 @@ fun Booster(code: String, name: String?, modifier: Modifier = Modifier, mini: Bo
         else Box(Modifier.matchParentSize().background(Brush.linearGradient(.3f to Color.Transparent, .45f to Color(0x26FFFFFF), .6f to Color.Transparent)))
         Box(Modifier.matchParentSize().border(1.dp, if (collector) Color(0xCCE9C77A) else Color(0x1FFFFFFF), shape))
     }
+}
+
+/** The art window while its picture is on the way: the dark gradient with one light sweep moving across it. */
+@Composable
+private fun ArtShimmer(modifier: Modifier) {
+    val t = if (Motion.still) 0.3f else androidx.compose.animation.core.rememberInfiniteTransition(label = "shimmer").animateFloat(0f, 1f,
+        androidx.compose.animation.core.infiniteRepeatable(androidx.compose.animation.core.tween(1400, easing = androidx.compose.animation.core.LinearEasing)), label = "x").value
+    Box(modifier.background(Brush.radialGradient(listOf(Color(0xFF3B4152), Color(0xFF15181F)))).drawBehind {
+        val x = (t * 1.6f - .3f) * size.width
+        drawRect(Brush.linearGradient(listOf(Color.Transparent, Color(0x22FFFFFF), Color.Transparent), start = Offset(x - size.width * .3f, 0f), end = Offset(x + size.width * .3f, size.height)))
+    })
 }
 
 /** Randall's pack wrappers (art piece 16): where each wrapper's black band sits, as fractions of its height. */
