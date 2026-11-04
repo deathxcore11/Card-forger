@@ -8,11 +8,11 @@ export const RANDOM_DECK_FORMATS=Object.freeze(['Standard','Commander','Modern',
 export function createRandomDeckProducer({pipeline,pickSeed,random=()=>crypto.getRandomValues(new Uint32Array(1))[0],forgeSeed=null}={}){
  if(typeof pipeline?.build!=='function'||typeof pipeline?.recheck!=='function'||typeof pickSeed!=='function')throw Error('OPPONENT_BUILDER_REQUIRED');
  const seedCode=forgeSeed||(()=>{const n=random();return Array.from({length:6},(_,i)=>'23456789ABCDEFGHJKLMNPQRSTUVWXYZ'[(Math.floor(n/Math.pow(32,i))+i*7)%32]).join('');});
- return async function produce({format,targetBracket=null,deckStyle='classic'}={},{current=()=>true,onStatus=()=>{}}={}){
+ return async function produce({format,targetBracket=null,deckStyle='classic',power=null}={},{current=()=>true,onStatus=()=>{}}={}){
   if(!RANDOM_DECK_FORMATS.includes(format)||!['classic','infinite-mana'].includes(deckStyle))throw Error('INVALID_OPPONENT_OPTIONS');
   const bracket=normalizeCommanderTarget(targetBracket);if(format!=='Commander'&&bracket!==null)throw Error('COMMANDER_BRACKET_ONLY');
   // Random decks are Casual by default, with Varied picks and a seed (Deck Forge, spec 12).
-  const request={game:'mtg',format,targetBracket:bracket,deckStyle,budget:'',budgetBasis:'total',budgetMode:'cap',preferOwned:false,ownedOnly:false,randomSeed:random(),forge:{power:bracket&&bracket>=3?'strong':'casual',variation:'varied',seed:seedCode()}};
+  const request={game:'mtg',format,targetBracket:bracket,deckStyle,budget:'',budgetBasis:'total',budgetMode:'cap',preferOwned:false,ownedOnly:false,randomSeed:random(),forge:{power:power==='strong'||bracket&&bracket>=3?'strong':'casual',variation:'varied',seed:seedCode()}};
   const seed=await pickSeed(request);if(!current())return null;if(!seed?.name)throw Error('No legal build-around was returned.');
   const result=await pipeline.build({...request,seed:seed.name,seedCard:seed,seedCards:[seed]},{current,onStatus});
   if(!current())return null;

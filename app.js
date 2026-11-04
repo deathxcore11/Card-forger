@@ -53,6 +53,7 @@ import {createAccountWorkspaces} from './account-workspaces.js';
 import {mountFeedback} from './feedback-layer.js';
 import {playSourceEntries,createPlayDeckSaver} from './play-deck-sources.js';
 import {chooseQuickOpponent} from './play-quick-match.js';
+import {quickStreak} from './play-match-record.js';
 import {loadEngineCardNames,engineUnknownCards} from './play-engine-names.js';
 import {readCpuOptions} from './play-cpu-options.js';
 import {capturePracticeDeckContext} from './play-deck-context.js';
@@ -1712,7 +1713,7 @@ const playSetup = createPlaySetup({
 const playRandomProducer=createRandomDeckProducer({pipeline:deckPipeline,pickSeed:randomBuildSeed});
 const playRandomQueue=createRandomDeckQueue({produce:playRandomProducer,readScope:()=>[cloudInfo().user?.id,accountGeneration,accountLocked],idle:()=>!document.hidden&&!playStarting&&!playerMatHost&&!playerMatRoot&&!practicePregame});
 let playRandomWarmAt=0;
-const warmPlayRandom=()=>{if(!cloudInfo().user?.id||accountLocked||Date.now()-playRandomWarmAt<30000)return;playRandomWarmAt=Date.now();const f=playSetup.snapshot().match.format;playRandomQueue.warm([...new Set([f,'Commander','Standard'])].filter(x=>RANDOM_DECK_FORMATS.includes(x)).map(format=>({format,targetBracket:null,deckStyle:'classic'})));};
+const warmPlayRandom=()=>{if(!cloudInfo().user?.id||accountLocked||Date.now()-playRandomWarmAt<30000)return;playRandomWarmAt=Date.now();const f=playSetup.snapshot().match.format;playRandomQueue.warm([...new Set([f,'Commander','Standard'])].filter(x=>RANDOM_DECK_FORMATS.includes(x)).flatMap(format=>[{format,targetBracket:null,deckStyle:'classic'},{format,targetBracket:null,deckStyle:'classic',power:'strong'}]));};
 const playBuilders=Object.fromEntries(['player','opponent','cpu3','cpu4'].map(seat=>[seat,createPracticeOpponentBuilder({pipeline:deckPipeline,pickSeed:randomBuildSeed,queue:playRandomQueue,produce:playRandomProducer,
  readScope:()=>[cloudInfo().user?.id,accountGeneration,accountLocked,playSetup.snapshot().match.format],
  onSelect:deck=>playSetup.chooseTemporary(deck,{seat,sourceKind:'random'}),onChange:()=>refreshPlayMenu()})]));
@@ -2222,15 +2223,19 @@ A.playFriendJoin=async()=>{
   setFriendRoom({busy:false,status:'started'});await A.playFriendLaunch(joined.matchId);
  }catch(e){setFriendRoom({busy:false,error:friendError(e)});}
 };
+// One Power and bracket read per deck per pick (the same estimates Collection shows).
+const quickContexts=new WeakMap(),quickContext=deck=>{if(!quickContexts.has(deck))quickContexts.set(deck,capturePracticeDeckContext(deck).practiceContext);return quickContexts.get(deck);};
 A.playFindOpponent=async()=>{
  const state=playSetup.snapshot();if(quickStatus.busy||!state.profile.signedIn||!state.selected)return false;
  const ticket=++quickSequence,scope=JSON.stringify([readPlayAccount(),state.selected,state.match]);quickStatus={busy:true,error:null};refreshPlayMenu();await new Promise(resolve=>requestAnimationFrame(resolve));
  // Random means every source: fetch the format's tournament lists too if this page has none yet (bounded wait).
- try{const metaKey='mtg:'+(state.match.format==='Commander'?'EDH':state.match.format);if(!metaState(metaKey).data)await Promise.race([loadMetaData(metaKey).catch(()=>{}),new Promise(resolve=>setTimeout(resolve,4000))]);
+ try{const metaKey='mtg:'+(state.match.format==='Commander'?'EDH':state.match.format),fmt=state.match.format;
+ // Every source the app has: tournament meta, precons, your Play and Collection decks, community lists, and Deck Forge builds (Casual and Strong).
+ await Promise.race([Promise.all([metaState(metaKey).data?null:loadMetaData(metaKey).catch(()=>{}),(readPlaySources().precons||[]).length?null:Promise.resolve(A.finderPrecons(fmt)).catch(()=>{})]),new Promise(resolve=>setTimeout(resolve,4000))]);
  // Only lists the engine can load are offered: a source that spells a card its own way, or a card newer than the engine, never reaches the table.
  const names=FORGE_PLAY_TEST_ENABLED?await loadEngineCardNames():null,unknown=engineUnknownCards(state.selected,names);if(unknown.length)throw Error(engineMissingText('Your deck',unknown));
- const sources=readPlaySources(),candidates=[...S.state.decks,...Object.values(sources).flat().map(x=>x.deck),...playRandomQueue.peek(state.match.format)].filter(deck=>!FORGE_PLAY_TEST_ENABLED||forgeCpuDeckComplete(deck)&&!engineUnknownCards(deck,names).length);
- const result=chooseQuickOpponent({player:state.selected,candidates,difficulty:state.match.difficulty,...(FORGE_PLAY_TEST_ENABLED?{candidateEligible:deck=>forgeDeckSupport(deck).status==='native-pending',nativeValidationPending:true}:{}),estimate:deck=>capturePracticeDeckContext(deck).practiceContext.power.value});
+ const sources=readPlaySources(),candidates=[...playTableDecks(),...Object.values(sources).flat().map(x=>x.deck),...playRandomQueue.peek(state.match.format)].filter(deck=>!FORGE_PLAY_TEST_ENABLED||forgeCpuDeckComplete(deck)&&!engineUnknownCards(deck,names).length);
+ const result=chooseQuickOpponent({player:state.selected,candidates,difficulty:state.match.difficulty,streak:quickStreak(state.match.format),...(FORGE_PLAY_TEST_ENABLED?{candidateEligible:deck=>forgeDeckSupport(deck).status==='native-pending',nativeValidationPending:true}:{}),estimate:deck=>quickContext(deck).power.value,bracketOf:deck=>quickContext(deck).bracket?.value??null});
  const now=playSetup.snapshot();if(ticket!==quickSequence||JSON.stringify([readPlayAccount(),now.selected,now.match])!==scope)return false;playSetup.setQuickOpponent(result);return true;
  }catch(e){if(ticket===quickSequence)quickStatus.error=e.message;}finally{if(ticket===quickSequence){quickStatus.busy=false;refreshPlayMenu();}}
 };
@@ -2248,7 +2253,7 @@ async function pickPodDecks(state,count){
  for(let i=0;i<count;i++){
   if(chosen[i]){picks.push(chosen[i]);continue;}
   const candidates=pool.filter(deck=>!taken.has(cardsOf(deck)));
-  const result=chooseQuickOpponent({player:state.selected,candidates,difficulty:'Medium',...(FORGE_PLAY_TEST_ENABLED?{candidateEligible:deck=>deck===state.selected||forgeDeckSupport(deck).status==='native-pending',nativeValidationPending:true}:{candidateEligible:()=>true})});
+  const result=chooseQuickOpponent({player:state.selected,candidates,difficulty:'Medium',estimate:deck=>quickContext(deck).power.value,bracketOf:deck=>quickContext(deck).bracket?.value??null,...(FORGE_PLAY_TEST_ENABLED?{candidateEligible:deck=>deck===state.selected||forgeDeckSupport(deck).status==='native-pending',nativeValidationPending:true}:{candidateEligible:()=>true})});
   if(taken.has(cardsOf(result.deck)))throw Error('Four-player games need more Commander decks. Load Precons or Meta in Practice, then try again.');
   taken.add(cardsOf(result.deck));picks.push(result.deck);
  }

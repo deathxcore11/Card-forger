@@ -53,7 +53,7 @@ const ASSETS = [
   "./experiments/phase-engine/compiled-card-support.mjs",
   "./experiments/phase-engine/priority-flow.mjs",
   "./play-deck-sources.js",
-  "./play-quick-match.js",
+  "./play-quick-match.js", "./power-tier.js",
   "./play-engine-names.js",
   "./play-cpu-options.js",
   "./play-turn-controls.js",
