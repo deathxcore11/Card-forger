@@ -62,18 +62,19 @@ export default {
       villain: {who: 'minotaurs', deck: {label: 'tribute', name: 'The Felhide Raiders', colors: 'BR', list: `
 4 Deathbellow Raider
 4 Minotaur Skullcleaver
-4 Borderland Minotaur
-3 Rageblood Shaman
-3 Kragma Warcaller
+2 Borderland Minotaur
+1 Rageblood Shaman
+1 Kragma Warcaller
 3 Ragemonger
 4 Mogis's Marauder
 4 Felhide Minotaur
 11 Mountain
 9 Swamp
 4 Temple of Malice
-3 Kragma Butcher
-2 Blood-Toll Harpy
-2 Tormented Hero`}},
+4 Kragma Butcher
+3 Blood-Toll Harpy
+4 Tormented Hero
+2 Spark Jolt`}},
       scene: [q('elspeth', 'It has been my experience that soldiers most fervently follow generals who lead by example.'),
         q('stage', '"You. Poet. Be sure to write this down."'),
         s('elspeth', 'Heroic: whenever you cast a spell that targets a heroic creature, it triggers. Bless your heroes, and they grow.')],
@@ -251,17 +252,17 @@ export default {
 4 Elvish Mystic
 4 Sylvan Caryatid
 4 Courser of Kruphix
-2 Polukranos, World Eater
-2 Stormbreath Dragon
 2 Lightning Strike
-2 Mistcutter Hydra
 4 Arbor Colossus
 4 Ember Swallower
 10 Forest
 10 Mountain
 4 Temple of Abandon
 4 Nessian Asp
-4 Nessian Courser`}},
+4 Nessian Courser
+2 Swordwise Centaur
+2 Nylea's Disciple
+2 Satyr Wayfinder`}},
       scene: [q('stage', 'To resist Thassa is to deny the rising tide.'),
         s('you', 'Every blue symbol on the table is one more Elemental from Master of Waves.')],
       villainScene: [q('xenagos', 'Stoke a fire hot enough and you\'ll never run out of things to burn.')],
@@ -354,18 +355,17 @@ export default {
         after: 'This tribute uses only this act\'s sets, so Pack Rat, Desecration Demon, Underworld Connections and Nightveil Specter are not in it.'},
       blurb: 'Deep in the archive, the deck that was the format for a season.',
       hero: {who: 'you', deck: {label: 'tribute', name: 'Mono-Green Devotion', colors: 'G', archetype: 'Ramp', list: `
-2 Nylea, God of the Hunt
-4 Elvish Mystic
-4 Voyaging Satyr
-4 Sylvan Caryatid
-4 Nessian Game Warden
 3 Arbor Colossus
-4 Reverent Hunter
-22 Forest
-2 Nykthos, Shrine to Nyx
-3 Nessian Asp
+2 Reverent Hunter
+24 Forest
+4 Nessian Asp
 4 Nessian Courser
-4 Satyr Wayfinder`}},
+4 Satyr Wayfinder
+4 Nylea's Disciple
+4 Swordwise Centaur
+3 Leafcrown Dryad
+4 Nyxborn Wolf
+4 Pheres-Band Tromper`}},
       villain: {who: 'black', deck: {label: 'tribute', name: 'Mono-Black Devotion', note: 'Built from cards in this act\'s sets only. No single tournament list is copied.', colors: 'B', archetype: 'Control', list: `
 4 Thoughtseize
 4 Hero's Downfall

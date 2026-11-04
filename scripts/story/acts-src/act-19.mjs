@@ -141,18 +141,19 @@ export default {
 1 Mikaeus, the Unhallowed
 2 Geralf's Messenger
 4 Diregraf Ghoul
-4 Armored Skaab
+2 Armored Skaab
 2 Stitched Drake
 3 Makeshift Mauler
-4 Unbreathing Horde
+2 Unbreathing Horde
 3 Forbidden Alchemy
 12 Swamp
 8 Island
 4 Drowned Catacomb
 4 Walking Corpse
 4 Butcher Ghoul
-3 Ghoulraiser
-2 Typhoid Rats`}},
+4 Ghoulraiser
+3 Typhoid Rats
+2 Highborn Ghoul`}},
       scene: [q('stage', 'The heron is the symbol of the archangel Avacyn. The fact that such spirits still fly gives the church hope that its founder may one day return.'),
         s('traft', 'Undying: when a creature with undying dies with no +1/+1 counter on it, it comes back with one. Kill it twice, or take it away for good.')],
       villainScene: [q('geralf', 'The best skaab are more powerful and more beautiful than the sum of their parts.'),
@@ -168,28 +169,27 @@ export default {
 3 Garruk Relentless
 4 Avacyn's Pilgrim
 4 Strangleroot Geist
-4 Ambush Viper
 4 Darkthicket Wolf
-4 Lumberknot
 4 Wolfir Silverheart
-3 Hollowhenge Scavenger
-2 Somberwald Spider
 4 Prey Upon
-24 Forest`}},
+24 Forest
+2 Ulvenwald Bear
+4 Festerhide Boar
+4 Villagers of Estwald
+3 Grizzled Outcasts`}},
       villain: {who: 'liliana', deck: {label: 'tribute', name: 'The Veil', colors: 'B', list: `
 1 Liliana of the Veil
-3 Tribute to Hunger
-2 Vampire Nighthawk
-3 Bloodgift Demon
-3 Fiend of the Shadows
-3 Falkenrath Noble
-4 Typhoid Rats
+1 Falkenrath Noble
 24 Swamp
 4 Walking Corpse
 4 Butcher Ghoul
-3 Vampire Interloper
+4 Vampire Interloper
 4 Diregraf Ghoul
-2 Markov Patrician`}},
+4 Markov Patrician
+3 Ghoulraiser
+4 Highborn Ghoul
+4 Sightless Ghoul
+3 Farbog Boneflinger`}},
       scene: [q('garruk', 'Your veil\'s curse won\'t stop me, deathmage. I have taken down countless night hunters and this dark plane is not big enough for you to hide.'),
         q('garruk', 'Rid me of this curse, witch, or die with me.'),
         s('garruk', 'Discard: she makes us both throw cards away. Play your cards out instead of holding them, and she has nothing to take.')],
@@ -258,20 +258,19 @@ export default {
       villain: {who: 'wolfrun', deck: {label: 'tribute', name: 'Wolf Run Ramp', note: 'Built from cards in this act\'s sets only, so Primeval Titan and Inferno Titan are not in it.', colors: 'RG', archetype: 'Ramp', list: `
 4 Avacyn's Pilgrim
 4 Borderland Ranger
-3 Garruk Relentless
-2 Huntmaster of the Fells
-2 Zealous Conscripts
 2 Prey Upon
-3 Mayor of Avabruck
-11 Forest
+1 Mayor of Avabruck
+14 Forest
 6 Mountain
 4 Rootbound Crag
-3 Kessig Wolf Run
 4 Gatstaf Shepherd
 4 Kruin Outlaw
 4 Village Ironsmith
 2 Darkthicket Wolf
-2 Villagers of Estwald`}},
+2 Villagers of Estwald
+4 Ulvenwald Bear
+3 Festerhide Boar
+2 Grizzled Outcasts`}},
       scene: [s('you', 'Flashback: some spells can be cast a second time from the graveyard for their flashback cost. Snapcaster Mage gives any spell flashback for a turn.')],
       villainScene: [q('stage', 'When a werewolf changes for the first time, that first howl is said to echo through the wilds till moonset.')],
       cues: {hero: cue('Flip it.', 'It flipped!', 'Too big to race...', 'Out-tempoed.', 'Ramped over.', 'Counter the big one.'),
@@ -329,23 +328,23 @@ export default {
 4 Doomed Traveler
 4 Village Bell-Ringer
 4 Mausoleum Guard
-4 Elite Inquisitor
-3 Chapel Geist`}},
+1 Chapel Geist
+4 Rebuke
+2 Terminus`}},
       villain: {who: 'griselbrand', deck: {label: 'tribute', name: 'Griselbrand\'s Cult', colors: 'BR', list: `
 3 Griselbrand
 4 Unburial Rites
-3 Bloodgift Demon
-2 Harvester of Souls
+4 Bloodgift Demon
+3 Harvester of Souls
 4 Tragic Slip
 4 Victim of Night
 4 Skirsdag High Priest
-3 Demonlord of Ashmouth
-2 Blasphemous Act
 3 Tribute to Hunger
 14 Swamp
 6 Mountain
 4 Dragonskull Summit
-4 Desperate Ravings`}},
+3 Falkenrath Aristocrat
+4 Vampire Nighthawk`}},
       scene: [q('stage', 'A golden helix streaked skyward from the Helvault. A thunderous explosion shattered the silver monolith and Avacyn emerged, free from her prison at last.'),
         q('thalia', 'Avacyn emerged from the broken Helvault, but her freedom came at a price—him.'),
         s('tamiyo', 'His cult will put him in the graveyard and pull him back out. Watch the graveyard, and keep an answer for the big one.')],

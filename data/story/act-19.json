@@ -1038,7 +1038,7 @@
        "id": "4ed5790a-3354-49c2-89b6-3fc0de8dcc7c"
       },
       {
-       "qty": 4,
+       "qty": 2,
        "name": "Armored Skaab",
        "set": "isd",
        "number": "43",
@@ -1059,7 +1059,7 @@
        "id": "d869de57-9454-47ff-af14-eaefd387047a"
       },
       {
-       "qty": 4,
+       "qty": 2,
        "name": "Unbreathing Horde",
        "set": "isd",
        "number": "121",
@@ -1108,18 +1108,25 @@
        "id": "44a91e62-e946-4101-8cef-d1c147caebf2"
       },
       {
-       "qty": 3,
+       "qty": 4,
        "name": "Ghoulraiser",
        "set": "isd",
        "number": "102",
        "id": "52c537d1-2d57-4a87-9dac-594d40d95633"
       },
       {
-       "qty": 2,
+       "qty": 3,
        "name": "Typhoid Rats",
        "set": "isd",
        "number": "120",
        "id": "4490ce65-c73a-4809-abd1-ccc3175bd2a4"
+      },
+      {
+       "qty": 2,
+       "name": "Highborn Ghoul",
+       "set": "dka",
+       "number": "68",
+       "id": "fbe999ed-b419-440c-9189-1046f43d7b87"
       }
      ]
     }
@@ -1243,13 +1250,6 @@
       },
       {
        "qty": 4,
-       "name": "Ambush Viper",
-       "set": "isd",
-       "number": "169",
-       "id": "0c082aa8-bf7f-47f2-baf8-43ad253fd7d7"
-      },
-      {
-       "qty": 4,
        "name": "Darkthicket Wolf",
        "set": "isd",
        "number": "175",
@@ -1257,31 +1257,10 @@
       },
       {
        "qty": 4,
-       "name": "Lumberknot",
-       "set": "isd",
-       "number": "191",
-       "id": "6c86c84e-9bab-4a2c-b594-7f7b4b6bba88"
-      },
-      {
-       "qty": 4,
        "name": "Wolfir Silverheart",
        "set": "avr",
        "number": "206",
        "id": "8629c598-11c8-4911-acfb-0643e5feffa8"
-      },
-      {
-       "qty": 3,
-       "name": "Hollowhenge Scavenger",
-       "set": "isd",
-       "number": "188",
-       "id": "6c9ff632-0e27-4521-9e9d-5725e618f5dd"
-      },
-      {
-       "qty": 2,
-       "name": "Somberwald Spider",
-       "set": "isd",
-       "number": "202",
-       "id": "43003ad7-2f42-4c85-8b00-77cbf3f50a7b"
       },
       {
        "qty": 4,
@@ -1296,6 +1275,34 @@
        "set": "isd",
        "number": "262",
        "id": "b606f644-1728-4cb3-90ed-121838875de1"
+      },
+      {
+       "qty": 2,
+       "name": "Ulvenwald Bear",
+       "set": "dka",
+       "number": "129",
+       "id": "9e3837a7-854a-440d-93d7-d36f50149346"
+      },
+      {
+       "qty": 4,
+       "name": "Festerhide Boar",
+       "set": "isd",
+       "number": "179",
+       "id": "31740fe9-27d2-416e-93de-509ac1a7b7cd"
+      },
+      {
+       "qty": 4,
+       "name": "Villagers of Estwald // Howlpack of Estwald",
+       "set": "isd",
+       "number": "209",
+       "id": "e42a0a3d-a987-4b24-b9d4-27380a12e093"
+      },
+      {
+       "qty": 3,
+       "name": "Grizzled Outcasts // Krallenhorde Wantons",
+       "set": "isd",
+       "number": "185",
+       "id": "4b43b0cb-a5a3-47b4-9b6b-9d2638222bb6"
       }
      ]
     }
@@ -1316,46 +1323,11 @@
        "id": "ac506c17-adc8-49c6-9d8d-43db7cb1ec9d"
       },
       {
-       "qty": 3,
-       "name": "Tribute to Hunger",
-       "set": "isd",
-       "number": "119",
-       "id": "f77e0f88-2285-4b59-9165-9948c75d77a3"
-      },
-      {
-       "qty": 2,
-       "name": "Vampire Nighthawk",
-       "set": "m13",
-       "number": "112",
-       "id": "9ba96d96-8d9e-47c8-ab39-17479564aadf"
-      },
-      {
-       "qty": 3,
-       "name": "Bloodgift Demon",
-       "set": "isd",
-       "number": "89",
-       "id": "f271addb-e267-4397-b181-f1eaeabbfe71"
-      },
-      {
-       "qty": 3,
-       "name": "Fiend of the Shadows",
-       "set": "dka",
-       "number": "62",
-       "id": "38167118-f5b3-4e07-8060-b170b49cff9e"
-      },
-      {
-       "qty": 3,
+       "qty": 1,
        "name": "Falkenrath Noble",
        "set": "isd",
        "number": "100",
        "id": "e2286f94-4cf9-4462-b5d7-cee7f6910018"
-      },
-      {
-       "qty": 4,
-       "name": "Typhoid Rats",
-       "set": "isd",
-       "number": "120",
-       "id": "4490ce65-c73a-4809-abd1-ccc3175bd2a4"
       },
       {
        "qty": 24,
@@ -1379,7 +1351,7 @@
        "id": "44a91e62-e946-4101-8cef-d1c147caebf2"
       },
       {
-       "qty": 3,
+       "qty": 4,
        "name": "Vampire Interloper",
        "set": "isd",
        "number": "123",
@@ -1393,11 +1365,39 @@
        "id": "4ed5790a-3354-49c2-89b6-3fc0de8dcc7c"
       },
       {
-       "qty": 2,
+       "qty": 4,
        "name": "Markov Patrician",
        "set": "isd",
        "number": "107",
        "id": "29c3d3f7-5e28-4fec-8422-87856fcd1e8e"
+      },
+      {
+       "qty": 3,
+       "name": "Ghoulraiser",
+       "set": "isd",
+       "number": "102",
+       "id": "52c537d1-2d57-4a87-9dac-594d40d95633"
+      },
+      {
+       "qty": 4,
+       "name": "Highborn Ghoul",
+       "set": "dka",
+       "number": "68",
+       "id": "fbe999ed-b419-440c-9189-1046f43d7b87"
+      },
+      {
+       "qty": 4,
+       "name": "Sightless Ghoul",
+       "set": "dka",
+       "number": "73",
+       "id": "018bd4ae-cdea-410d-9ce6-6a70f12de966"
+      },
+      {
+       "qty": 3,
+       "name": "Farbog Boneflinger",
+       "set": "dka",
+       "number": "61",
+       "id": "98d45316-b44a-4cf6-8cbe-b02fe6545141"
       }
      ]
     }
@@ -1919,27 +1919,6 @@
        "id": "8f067c26-c51d-44d0-a0af-106b5778f06a"
       },
       {
-       "qty": 3,
-       "name": "Garruk Relentless // Garruk, the Veil-Cursed",
-       "set": "isd",
-       "number": "181",
-       "id": "b4160322-ff40-41a4-887a-73cd6b85ae45"
-      },
-      {
-       "qty": 2,
-       "name": "Huntmaster of the Fells // Ravager of the Fells",
-       "set": "dka",
-       "number": "140",
-       "id": "aae6fb12-b252-453b-bca7-1ea2a0d6c8dc"
-      },
-      {
-       "qty": 2,
-       "name": "Zealous Conscripts",
-       "set": "avr",
-       "number": "166",
-       "id": "fc027b11-1ecc-430d-a862-586a14bb23c3"
-      },
-      {
        "qty": 2,
        "name": "Prey Upon",
        "set": "isd",
@@ -1947,14 +1926,14 @@
        "id": "b7b3eaf0-4207-4bac-923d-29f348c95a35"
       },
       {
-       "qty": 3,
+       "qty": 1,
        "name": "Mayor of Avabruck // Howlpack Alpha",
        "set": "isd",
        "number": "193",
        "id": "dd8ca448-f734-4cb9-b1d5-790eed9a4b2d"
       },
       {
-       "qty": 11,
+       "qty": 14,
        "name": "Forest",
        "set": "isd",
        "number": "262",
@@ -1973,13 +1952,6 @@
        "set": "m13",
        "number": "228",
        "id": "76364643-bfcb-4c50-9224-bf9e35648ddf"
-      },
-      {
-       "qty": 3,
-       "name": "Kessig Wolf Run",
-       "set": "isd",
-       "number": "243",
-       "id": "4a8447fe-7368-470a-911a-1083ec6cc831"
       },
       {
        "qty": 4,
@@ -2015,6 +1987,27 @@
        "set": "isd",
        "number": "209",
        "id": "e42a0a3d-a987-4b24-b9d4-27380a12e093"
+      },
+      {
+       "qty": 4,
+       "name": "Ulvenwald Bear",
+       "set": "dka",
+       "number": "129",
+       "id": "9e3837a7-854a-440d-93d7-d36f50149346"
+      },
+      {
+       "qty": 3,
+       "name": "Festerhide Boar",
+       "set": "isd",
+       "number": "179",
+       "id": "31740fe9-27d2-416e-93de-509ac1a7b7cd"
+      },
+      {
+       "qty": 2,
+       "name": "Grizzled Outcasts // Krallenhorde Wantons",
+       "set": "isd",
+       "number": "185",
+       "id": "4b43b0cb-a5a3-47b4-9b6b-9d2638222bb6"
       }
      ]
     }
@@ -2026,12 +2019,12 @@
     },
     "villain": {
      "card": {
-      "oracle_id": "7cec9021-6f25-4fd8-b40e-adf4ffd3a7b8",
-      "name": "Garruk Relentless // Garruk, the Veil-Cursed",
-      "rarity": "mythic",
+      "oracle_id": "cf518f59-f083-42a0-9953-fac2757bf804",
+      "name": "Kruin Outlaw // Terror of Kruin Pass",
+      "rarity": "rare",
       "set": "isd",
-      "id": "b4160322-ff40-41a4-887a-73cd6b85ae45",
-      "image": "https://cards.scryfall.io/normal/front/b/4/b4160322-ff40-41a4-887a-73cd6b85ae45.jpg"
+      "id": "ec00d2d2-6597-474a-9353-345bbedfe57e",
+      "image": "https://cards.scryfall.io/normal/front/e/c/ec00d2d2-6597-474a-9353-345bbedfe57e.jpg"
      },
      "coins": 100
     }
@@ -2466,18 +2459,25 @@
        "id": "2c7b19de-96a6-4590-bfc3-31b0c7b2e25e"
       },
       {
-       "qty": 4,
-       "name": "Elite Inquisitor",
-       "set": "isd",
-       "number": "13",
-       "id": "c9411c44-92a8-4f5d-b3de-d80046649c8c"
-      },
-      {
-       "qty": 3,
+       "qty": 1,
        "name": "Chapel Geist",
        "set": "isd",
        "number": "7",
        "id": "790cdf67-80d6-4ade-aecf-f77120b509b0"
+      },
+      {
+       "qty": 4,
+       "name": "Rebuke",
+       "set": "isd",
+       "number": "29",
+       "id": "267185ac-a176-423e-a7f8-ee966d1d9a1e"
+      },
+      {
+       "qty": 2,
+       "name": "Terminus",
+       "set": "avr",
+       "number": "38",
+       "id": "0982ea7e-05a4-4e40-98ab-ea9aa6c7342e"
       }
      ]
     }
@@ -2505,14 +2505,14 @@
        "id": "2794c82b-e5ce-4369-894e-bf56c6402ae1"
       },
       {
-       "qty": 3,
+       "qty": 4,
        "name": "Bloodgift Demon",
        "set": "isd",
        "number": "89",
        "id": "f271addb-e267-4397-b181-f1eaeabbfe71"
       },
       {
-       "qty": 2,
+       "qty": 3,
        "name": "Harvester of Souls",
        "set": "avr",
        "number": "107",
@@ -2538,20 +2538,6 @@
        "set": "isd",
        "number": "117",
        "id": "09aa6b66-f69b-4f89-b802-e30c247f90e3"
-      },
-      {
-       "qty": 3,
-       "name": "Demonlord of Ashmouth",
-       "set": "avr",
-       "number": "96",
-       "id": "785da9a3-09af-45aa-bc04-4ab69cfb2ba4"
-      },
-      {
-       "qty": 2,
-       "name": "Blasphemous Act",
-       "set": "isd",
-       "number": "130",
-       "id": "509ce648-fb76-486d-8b39-183e368b7cb7"
       },
       {
        "qty": 3,
@@ -2582,11 +2568,18 @@
        "id": "5e49c561-570c-43dd-a369-48bc7ad7edac"
       },
       {
+       "qty": 3,
+       "name": "Falkenrath Aristocrat",
+       "set": "dka",
+       "number": "138",
+       "id": "c397388e-ebe2-4034-83b7-a7c0df1af78f"
+      },
+      {
        "qty": 4,
-       "name": "Desperate Ravings",
-       "set": "isd",
-       "number": "139",
-       "id": "2ba3ab3e-d16c-492f-a860-6d8efcadf679"
+       "name": "Vampire Nighthawk",
+       "set": "m13",
+       "number": "112",
+       "id": "9ba96d96-8d9e-47c8-ab39-17479564aadf"
       }
      ]
     }

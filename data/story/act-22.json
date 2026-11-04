@@ -1610,24 +1610,10 @@
       },
       {
        "qty": 4,
-       "name": "Whisperwood Elemental",
-       "set": "frf",
-       "number": "145",
-       "id": "66c61828-98b9-4264-b3dd-e83f881f4a67"
-      },
-      {
-       "qty": 4,
        "name": "Formless Nurturing",
        "set": "frf",
        "number": "129",
        "id": "f70646e4-936a-4c2a-8d4a-a2c659733093"
-      },
-      {
-       "qty": 3,
-       "name": "Mastery of the Unseen",
-       "set": "frf",
-       "number": "19",
-       "id": "4b844764-89d4-43a2-8041-3a9a8b4f2912"
       },
       {
        "qty": 4,
@@ -1658,18 +1644,11 @@
        "id": "039b61b1-79d5-44b6-8c0f-b8e8e508e5a9"
       },
       {
-       "qty": 4,
+       "qty": 2,
        "name": "Dragonscale General",
        "set": "frf",
        "number": "11",
        "id": "df904cc6-3ee0-4326-a854-818695aa2890"
-      },
-      {
-       "qty": 3,
-       "name": "Valorous Stance",
-       "set": "frf",
-       "number": "28",
-       "id": "65998e94-15a0-41f1-8288-730b957f81df"
       },
       {
        "qty": 10,
@@ -1691,6 +1670,34 @@
        "set": "ktk",
        "number": "231",
        "id": "a32a1c0b-f6ea-475a-aa01-3618ea7d8647"
+      },
+      {
+       "qty": 4,
+       "name": "Aven Skirmisher",
+       "set": "frf",
+       "number": "6",
+       "id": "05f7a3b1-4d92-4d32-a823-2e774c6e7e73"
+      },
+      {
+       "qty": 4,
+       "name": "Sandsteppe Mastodon",
+       "set": "frf",
+       "number": "137",
+       "id": "76ae01fb-12fa-444d-9d49-bfe195c2a5a6"
+      },
+      {
+       "qty": 2,
+       "name": "Abzan Advantage",
+       "set": "frf",
+       "number": "2",
+       "id": "3ffd46f5-afd1-4130-b019-d8822e61fdfa"
+      },
+      {
+       "qty": 2,
+       "name": "Valorous Stance",
+       "set": "frf",
+       "number": "28",
+       "id": "65998e94-15a0-41f1-8288-730b957f81df"
       }
      ]
     }
@@ -2376,7 +2383,7 @@
        "id": "ac6d021a-7bb8-4173-9a2f-e4a1d21fda8e"
       },
       {
-       "qty": 4,
+       "qty": 3,
        "name": "Crux of Fate",
        "set": "frf",
        "number": "65",
@@ -2390,7 +2397,7 @@
        "id": "7028d9e8-002f-43a1-bdce-0db0b6a642b0"
       },
       {
-       "qty": 2,
+       "qty": 3,
        "name": "Stratus Dancer",
        "set": "dtk",
        "number": "80",
@@ -2538,7 +2545,7 @@
        "id": "a2b9cf2b-efe3-4815-be18-c3b69ee762f2"
       },
       {
-       "qty": 3,
+       "qty": 1,
        "name": "Stormwing Dragon",
        "set": "dtk",
        "number": "159",
@@ -2559,7 +2566,7 @@
        "id": "66356e38-38e1-4b09-80c2-be26007ff99c"
       },
       {
-       "qty": 4,
+       "qty": 2,
        "name": "Arc Lightning",
        "set": "ktk",
        "number": "97",
@@ -2629,11 +2636,18 @@
        "id": "9007c528-0107-40fd-a97e-e5576f297eb2"
       },
       {
-       "qty": 2,
+       "qty": 4,
        "name": "Monastery Flock",
        "set": "ktk",
        "number": "47",
        "id": "e53c0e50-4b0b-43d8-80c0-2c216722c87a"
+      },
+      {
+       "qty": 2,
+       "name": "Mistfire Weaver",
+       "set": "ktk",
+       "number": "46",
+       "id": "8003a31f-7662-4e9e-8165-1ceea04fdf20"
       }
      ]
     }
@@ -2875,25 +2889,11 @@
        "id": "e4810919-b379-40db-a68b-a769dd3ee32d"
       },
       {
-       "qty": 4,
-       "name": "Draconic Roar",
-       "set": "dtk",
-       "number": "134",
-       "id": "6cf5591c-46e3-4904-8b4e-4f1f84d3118f"
-      },
-      {
-       "qty": 4,
+       "qty": 2,
        "name": "Dragon Whisperer",
        "set": "dtk",
        "number": "137",
        "id": "5c75b106-349f-44e1-a737-079955cc91b2"
-      },
-      {
-       "qty": 2,
-       "name": "Wild Slash",
-       "set": "frf",
-       "number": "118",
-       "id": "6975490f-7679-48b3-ba34-04dec97a29c2"
       },
       {
        "qty": 4,
@@ -2903,28 +2903,21 @@
        "id": "5220e572-7386-4f2f-905f-ba4a2d222f83"
       },
       {
-       "qty": 3,
-       "name": "Sarkhan's Rage",
-       "set": "dtk",
-       "number": "153",
-       "id": "4787924f-3186-4e18-b53c-dd67c5f42220"
-      },
-      {
-       "qty": 24,
+       "qty": 29,
        "name": "Mountain",
        "set": "ktk",
        "number": "262",
        "id": "802b1bb0-6c73-481a-ac3e-7d4e1682b4c2"
       },
       {
-       "qty": 2,
+       "qty": 4,
        "name": "Kolaghan Aspirant",
        "set": "dtk",
        "number": "143",
        "id": "aa17972e-c16b-4dec-a108-1c3fb0138a4e"
       },
       {
-       "qty": 4,
+       "qty": 2,
        "name": "Twin Bolt",
        "set": "dtk",
        "number": "164",
@@ -2938,11 +2931,18 @@
        "id": "64ddda91-3ccb-4c87-82e6-d4e60f4afc24"
       },
       {
-       "qty": 2,
+       "qty": 4,
        "name": "Mardu Scout",
        "set": "frf",
        "number": "108",
        "id": "0e7891b8-ba69-4c5b-a29f-ee7bcf2374f0"
+      },
+      {
+       "qty": 4,
+       "name": "Hardened Berserker",
+       "set": "dtk",
+       "number": "139",
+       "id": "d10fb883-12b8-4050-967e-4281ea620906"
       }
      ]
     }
@@ -3013,25 +3013,11 @@
        "id": "0742564e-f7a7-4107-b9ed-63703ca4702c"
       },
       {
-       "qty": 2,
+       "qty": 4,
        "name": "Stratus Dancer",
        "set": "dtk",
        "number": "80",
        "id": "e3bf4f37-2a2e-4c49-88dc-a26dd7367afb"
-      },
-      {
-       "qty": 2,
-       "name": "Disdainful Stroke",
-       "set": "ktk",
-       "number": "37",
-       "id": "180425c9-1898-48d4-9932-ddfb1a28e6b0"
-      },
-      {
-       "qty": 2,
-       "name": "Mindswipe",
-       "set": "ktk",
-       "number": "189",
-       "id": "557e8303-a021-4257-b41a-7d25f04618c8"
       },
       {
        "qty": 10,
@@ -3060,6 +3046,13 @@
        "set": "ktk",
        "number": "43",
        "id": "bff9907c-4090-4dcc-aaf5-bc2a8dacce8b"
+      },
+      {
+       "qty": 2,
+       "name": "Mystic of the Hidden Way",
+       "set": "ktk",
+       "number": "48",
+       "id": "7b5de843-e05d-43b5-a5d0-a737484fbd71"
       }
      ]
     }

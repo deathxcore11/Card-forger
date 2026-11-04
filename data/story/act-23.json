@@ -464,7 +464,7 @@
        "id": "12e7e2b5-3141-4a19-aa49-91ab7e5c211c"
       },
       {
-       "qty": 3,
+       "qty": 1,
        "name": "Ulamog's Reclaimer",
        "set": "bfz",
        "number": "68",
@@ -507,10 +507,17 @@
       },
       {
        "qty": 4,
-       "name": "Tide Drifter",
+       "name": "Incubator Drone",
        "set": "bfz",
-       "number": "67",
-       "id": "4c590579-e0ef-4839-8f67-f52813cd9fe7"
+       "number": "60",
+       "id": "e0855762-7068-4111-a6bf-fe6d5b092c74"
+      },
+      {
+       "qty": 2,
+       "name": "Deathless Behemoth",
+       "set": "bfz",
+       "number": "5",
+       "id": "0d98f1df-f99a-43c5-81cd-9d333226857a"
       }
      ]
     }
@@ -522,12 +529,12 @@
     },
     "villain": {
      "card": {
-      "oracle_id": "137de343-e3d0-4ccb-b8fc-680024387367",
-      "name": "Ulamog's Reclaimer",
+      "oracle_id": "78ee8cd8-de12-440f-8890-a78ab40b6be4",
+      "name": "Deathless Behemoth",
       "rarity": "uncommon",
       "set": "bfz",
-      "id": "29a237a6-0e72-47ce-b28d-a0260963f406",
-      "image": "https://cards.scryfall.io/normal/front/2/9/29a237a6-0e72-47ce-b28d-a0260963f406.jpg"
+      "id": "0d98f1df-f99a-43c5-81cd-9d333226857a",
+      "image": "https://cards.scryfall.io/normal/front/0/d/0d98f1df-f99a-43c5-81cd-9d333226857a.jpg"
      },
      "coins": 50
     }
@@ -703,13 +710,6 @@
        "id": "2f60fdd6-bc18-4c04-83d8-c204f2b35ff1"
       },
       {
-       "qty": 4,
-       "name": "Catacomb Sifter",
-       "set": "bfz",
-       "number": "201",
-       "id": "6c3b220b-e699-45b0-8ec1-1022c1f50329"
-      },
-      {
        "qty": 3,
        "name": "Brood Monitor",
        "set": "bfz",
@@ -752,13 +752,6 @@
        "id": "5d248ed0-c2b4-4558-9a09-ace8fd4b0599"
       },
       {
-       "qty": 1,
-       "name": "Grasp of Darkness",
-       "set": "ogw",
-       "number": "85",
-       "id": "7d692236-92e5-460f-a8fc-8f6c73eba30c"
-      },
-      {
        "qty": 4,
        "name": "Vile Redeemer",
        "set": "ogw",
@@ -780,11 +773,18 @@
        "id": "642102a2-abde-4e76-a6d6-08f7befe1196"
       },
       {
-       "qty": 3,
+       "qty": 4,
        "name": "Skitterskin",
        "set": "bfz",
        "number": "97",
        "id": "e3cbecdc-bc30-4797-bf6f-a7a61db05b48"
+      },
+      {
+       "qty": 4,
+       "name": "Kozilek's Shrieker",
+       "set": "ogw",
+       "number": "73",
+       "id": "a384cd5b-2c6c-4969-bb62-a017e2fc9794"
       }
      ]
     }
@@ -1853,13 +1853,6 @@
        "id": "41193ef1-1619-4448-9905-26b05079c79a"
       },
       {
-       "qty": 4,
-       "name": "Kor Bladewhirl",
-       "set": "bfz",
-       "number": "34",
-       "id": "e31b12c7-df11-4450-95e1-b9a5aa97af0e"
-      },
-      {
        "qty": 3,
        "name": "Tajuru Warcaller",
        "set": "bfz",
@@ -1935,6 +1928,13 @@
        "set": "bfz",
        "number": "193",
        "id": "3447b4af-2eb2-48ae-a12e-2fdf83d4cb70"
+      },
+      {
+       "qty": 4,
+       "name": "Broodhunter Wurm",
+       "set": "bfz",
+       "number": "171",
+       "id": "c11c852d-9c7c-4d9b-8e79-70ea5ac865df"
       }
      ]
     }
@@ -2326,7 +2326,7 @@
        "id": "613513ea-55dd-4ae8-93b2-247e468112a6"
       },
       {
-       "qty": 4,
+       "qty": 2,
        "name": "Undergrowth Champion",
        "set": "bfz",
        "number": "197",
@@ -2340,14 +2340,14 @@
        "id": "4ad1ff9b-306d-47c3-9334-371e4482370b"
       },
       {
-       "qty": 3,
+       "qty": 1,
        "name": "Felidar Cub",
        "set": "bfz",
        "number": "25",
        "id": "ea76a183-e15c-4968-b29d-91c074aa8681"
       },
       {
-       "qty": 4,
+       "qty": 3,
        "name": "Ondu Greathorn",
        "set": "bfz",
        "number": "40",
@@ -2382,13 +2382,6 @@
        "id": "642102a2-abde-4e76-a6d6-08f7befe1196"
       },
       {
-       "qty": 2,
-       "name": "Stasis Snare",
-       "set": "bfz",
-       "number": "50",
-       "id": "ff820544-f4a3-40c4-a48e-84b5e2d06caa"
-      },
-      {
        "qty": 3,
        "name": "Gideon's Reproach",
        "set": "bfz",
@@ -2396,11 +2389,32 @@
        "id": "453d8ec3-15ae-4851-9efb-161ca2ee6019"
       },
       {
+       "qty": 3,
+       "name": "Oran-Rief Hydra",
+       "set": "bfz",
+       "number": "181",
+       "id": "74c3276b-2cbc-4266-b16a-bf72c044d95b"
+      },
+      {
        "qty": 4,
+       "name": "Makindi Patrol",
+       "set": "bfz",
+       "number": "39",
+       "id": "ae03f018-3062-4b1c-99b8-13fcffd70b49"
+      },
+      {
+       "qty": 2,
        "name": "Lantern Scout",
        "set": "bfz",
        "number": "37",
        "id": "fea3b271-226d-4223-8be8-51b5b2b7cae8"
+      },
+      {
+       "qty": 2,
+       "name": "Shadow Glider",
+       "set": "bfz",
+       "number": "47",
+       "id": "b4ffaf62-2e12-4b1d-a590-f63aacb4a30b"
       }
      ]
     }

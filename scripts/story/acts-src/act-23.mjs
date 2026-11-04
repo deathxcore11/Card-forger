@@ -65,13 +65,14 @@ export default {
 4 Culling Drone
 4 Salvage Drone
 4 Dominator Drone
-3 Ulamog's Reclaimer
+1 Ulamog's Reclaimer
 3 Eldrazi Skyspawner
 3 Murk Strider
 3 Sludge Crawler
 12 Island
 12 Swamp
-4 Tide Drifter`}},
+4 Incubator Drone
+2 Deathless Behemoth`}},
       scene: [q('stage', 'Though Gideon arrived at Sea Gate too late to prevent the massacre, he still had enough time to lead its survivors to relative safety.'),
         q('gideon', 'For the lands you have lost and the beauty that remains, for freedom and the future, we must hold nothing back!'),
         s('gideon', 'Ingest: when an ingest creature deals combat damage to you, you exile the top card of your library. Processors then use those exiled cards. Block the small ones.')],
@@ -96,18 +97,17 @@ export default {
 2 Nissa's Pilgrimage`}},
       villain: {who: 'lineage', deck: {label: 'tribute', name: 'The Brood Lineage', colors: 'BG', list: `
 2 Brood Butcher
-4 Catacomb Sifter
 3 Brood Monitor
 4 Blisterpod
 4 Eyeless Watcher
 4 Carrier Thrall
 4 Culling Drone
 3 Call the Scions
-1 Grasp of Darkness
 4 Vile Redeemer
 12 Swamp
 12 Forest
-3 Skitterskin`}},
+4 Skitterskin
+4 Kozilek's Shrieker`}},
       scene: [q('nissa', 'I was wrong. Zendikar isn\'t after me. It isn\'t after any of us. It\'s not evil or vengeful. It\'s magnificent . . . but it\'s in pain.'),
         q('nissa', 'The land will not wait for the enemy to arrive.'),
         s('nissa', 'Awaken: cast the spell for its awaken cost and one of your lands also becomes a 0/0 Elemental creature with that many +1/+1 counters. It is still a land.')],
@@ -247,7 +247,6 @@ export default {
 4 Blighted Woodland`}},
       villain: {who: 'allies', deck: {label: 'tribute', name: 'Allies', colors: 'GW', archetype: 'Aggro', list: `
 4 Expedition Envoy
-4 Kor Bladewhirl
 3 Tajuru Warcaller
 4 Joraga Auxiliary
 4 Makindi Patrol
@@ -258,7 +257,8 @@ export default {
 12 Plains
 12 Forest
 4 Kor Scythemaster
-4 Tajuru Beastmaster`}},
+4 Tajuru Beastmaster
+4 Broodhunter Wurm`}},
       scene: [q('stage', 'The last hedron slotted into place, locking Ulamog in an infinite loop of binding energy.'),
         s('you', 'Survive to ten mana. Then everything they built goes away.')],
       villainScene: [q('stage', 'Everyone who could still lift a weapon had a part in retaking Sea Gate.')],
@@ -308,17 +308,19 @@ export default {
 2 Nissa, Voice of Zendikar
 1 Oath of Gideon
 1 Oath of Nissa
-4 Undergrowth Champion
+2 Undergrowth Champion
 2 Sylvan Advocate
-3 Felidar Cub
-4 Ondu Greathorn
+1 Felidar Cub
+3 Ondu Greathorn
 4 Kor Bladewhirl
 4 Expedition Envoy
 11 Plains
 13 Forest
-2 Stasis Snare
 3 Gideon's Reproach
-4 Lantern Scout`}},
+3 Oran-Rief Hydra
+4 Makindi Patrol
+2 Lantern Scout
+2 Shadow Glider`}},
       villain: {who: 'titans', deck: {label: 'tribute', name: 'The Titans', colors: 'C', list: `
 2 Ulamog, the Ceaseless Hunger
 2 Kozilek, the Great Distortion

@@ -219,18 +219,19 @@ export default {
       blurb: 'Sarkhan reaches the place where Ugin fell after his battle with Nicol Bolas. Ugin is dying. Dragons are circling, and Sarkhan has to hold them off long enough to seal Ugin into a hedron.',
       hero: {who: 'ugin', deck: {label: 'tribute', name: 'The Spirit Dragon\'s Guard', colors: 'GW', list: `
 2 Ugin's Construct
-4 Whisperwood Elemental
 4 Formless Nurturing
-3 Mastery of the Unseen
 4 Soul Summons
 4 Abzan Beastmaster
 4 Sandsteppe Outcast
 4 Map the Wastes
-4 Dragonscale General
-3 Valorous Stance
+2 Dragonscale General
 10 Forest
 10 Plains
-4 Blossoming Sands`}},
+4 Blossoming Sands
+4 Aven Skirmisher
+4 Sandsteppe Mastodon
+2 Abzan Advantage
+2 Valorous Stance`}},
       villain: {who: 'kolaghan', deck: {label: 'tribute', name: 'Kolaghan\'s Brood', colors: 'BR', list: `
 2 Kolaghan, the Storm's Fury
 4 Goblin Heelcutter
@@ -321,9 +322,9 @@ export default {
 1 Dig Through Time
 4 Ultimate Price
 4 Foul-Tongue Invocation
-4 Crux of Fate
+3 Crux of Fate
 2 Anticipate
-2 Stratus Dancer
+3 Stratus Dancer
 8 Island
 4 Plains
 4 Swamp
@@ -341,10 +342,10 @@ export default {
 2 Narset Transcendent
 2 Sarkhan, the Dragonspeaker
 2 Thunderbreak Regent
-3 Stormwing Dragon
+1 Stormwing Dragon
 4 Seeker of the Way
 4 Jeskai Windscout
-4 Arc Lightning
+2 Arc Lightning
 3 Ojutai's Command
 4 Draconic Roar
 2 Icefall Regent
@@ -354,7 +355,8 @@ export default {
 4 Mystic Monastery
 3 Swiftwater Cliffs
 4 Jeskai Student
-2 Monastery Flock`}},
+4 Monastery Flock
+2 Mistfire Weaver`}},
       villain: {who: 'silumgar', deck: {label: 'tribute', name: 'The Silumgar', colors: 'UB', list: `
 2 Dragonlord Silumgar
 2 Silumgar, the Drifting Death
@@ -391,16 +393,14 @@ export default {
       hero: {who: 'you', deck: {label: 'tribute', name: 'Dragons', colors: 'R', archetype: 'Midrange', list: `
 3 Stormwing Dragon
 4 Shockmaw Dragon
-4 Draconic Roar
-4 Dragon Whisperer
-2 Wild Slash
+2 Dragon Whisperer
 4 Dragon Fodder
-3 Sarkhan's Rage
-24 Mountain
-2 Kolaghan Aspirant
-4 Twin Bolt
+29 Mountain
+4 Kolaghan Aspirant
+2 Twin Bolt
 4 Sabertooth Outrider
-2 Mardu Scout`}},
+4 Mardu Scout
+4 Hardened Berserker`}},
       villain: {who: 'cruise', deck: {label: 'tribute', name: 'Treasure Cruise Tempo', note: 'Built from cards in this act\'s sets only. No single tournament list is copied.', colors: 'UR', archetype: 'Tempo', list: `
 4 Monastery Swiftspear
 1 Treasure Cruise
@@ -410,13 +410,12 @@ export default {
 4 Arc Lightning
 4 Wild Slash
 4 Bloodfire Expert
-2 Stratus Dancer
-2 Disdainful Stroke
-2 Mindswipe
+4 Stratus Dancer
 10 Island
 10 Mountain
 4 Swiftwater Cliffs
-4 Jeskai Elder`}},
+4 Jeskai Elder
+2 Mystic of the Hidden Way`}},
       scene: [q('stage', 'Countless delights drift on the surface while dark schemes run below.'),
         s('you', 'Kill the Swiftspears. Make them pay full price.')],
       villainScene: [q('stage', 'The calligraphy of combat is written with strokes of sudden blood.')],
