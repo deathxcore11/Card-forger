@@ -176,7 +176,7 @@ export function refreshDeckScores(root) {
     if (node.isConnected === false) continue;
     const deck = deckById(node.dataset.deckScore);
     if (!deck) continue;
-    const html = powerChip(mtgPower(deck));
+    const html = powerChip(mtgPower(deck),{tier:true});
     if (node.innerHTML !== html) node.innerHTML = html;
   }
 }
@@ -200,7 +200,7 @@ export function deckTile(d, wide = false, {playSelection = null} = {}) {
     <span class="tile-body">
       <b>${esc(d.name)}</b>
       <small>${esc(formatOf(d).commander ? d.commander || "No commander yet" : mtgPower(d).plan)} · ${main}/${target}${side ? ` · ${side} sideboard` : ""}</small>
-      <span class="tile-stats"><span data-deck-score="${esc(d.id)}">${powerChip(mtgPower(d))}</span><span class="tile-owned"><em>${Math.round(owned * 100)}%</em> owned</span><span class="tile-find">${t.missing ? `<em>${t.missing}</em> to find` : t.copies ? "Ready" : ""}</span></span>
+      <span class="tile-stats"><span data-deck-score="${esc(d.id)}">${powerChip(mtgPower(d),{tier:true})}</span><span class="tile-owned"><em>${Math.round(owned * 100)}%</em> owned</span><span class="tile-find">${t.missing ? `<em>${t.missing}</em> to find` : t.copies ? "Ready" : ""}</span></span>
       ${bar(owned, "thin")}
     </span>
   </button>`;
