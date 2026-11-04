@@ -280,7 +280,7 @@ export default {
         villain: cue('The old one is weak.', 'Excise.', 'The island... shakes...', 'Tolaria is Phyrexia.', 'Retreat. Retreat!')},
       after: [q('stage', 'For his family, Barrin made a funeral pyre of Tolaria.'),
         q('stage', '"I knew this day would come," said Urza. Looking at the destruction, Barrin sighed, "You don\'t have to revel in it."')]},
-    {slot: 7, mood: 'march', kind: 'Meta', title: 'Remember Me?', difficulty: 'Normal', rewardSet: 'pls', teaches: ['Racing'],
+    {slot: 7, mood: 'march', kind: 'Meta', title: 'Remember Me?', difficulty: 'Normal', rewardSet: 'pls', teaches: ['Haste'],
       blurb: "On Rath, Crovax had Tahngarth tortured and remade. Now the stronghold has fallen onto Dominaria, Tahngarth has broken free, and the Fires of Yavimaya burn in his blood.",
       hero: {who: 'tahngarth', deck: {name: 'Fires of Yavimaya', colors: 'RG', list: `
 4 Fires of Yavimaya

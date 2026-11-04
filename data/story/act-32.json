@@ -1174,7 +1174,7 @@
    "title": "The Brood of Tiamat",
    "difficulty": "Normal",
    "teaches": [
-    "Racing"
+    "Reach"
    ],
    "blurb": "Arlinn leads the pack against a dungeon full of dragons.",
    "rewardSet": "afr",
@@ -2419,7 +2419,7 @@
    "title": "Olivia, Crimson Bride",
    "difficulty": "Hard",
    "teaches": [
-    "Racing"
+    "Menace"
    ],
    "blurb": "Olivia's wedding is the biggest night of the year. Kaya, Chandra and Teferi are going to crash it.",
    "rewardSet": "vow",
@@ -2784,7 +2784,7 @@
    "title": "Mono-White Humans",
    "difficulty": "Hard",
    "teaches": [
-    "Racing"
+    "Ward"
    ],
    "blurb": "Deep in the archive, a white deck that is out of cards by turn six and does not care.",
    "rewardSet": "mid",

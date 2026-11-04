@@ -205,7 +205,7 @@ export default {
         villain: cue('Still the hero. Still alone.', 'Look, brother. A body built from what you threw away.', 'This shape is failing...', 'Father should have chosen me.', 'Keep the city. I have a throne to collect.')},
       after: [s('stage', 'Volrath steps through a mirror of black water and is gone.'),
         q('stage', 'Without a word, Gerrard and Sisay ran deeper into the mountain. Neither of them intended to leave Mercadia without the *Weatherlight* and its crew.')]},
-    {slot: 5, mood: 'tension', kind: 'Meta', title: 'What Is Mine', difficulty: 'Normal', rewardSet: 'nem', teaches: ['Racing'],
+    {slot: 5, mood: 'tension', kind: 'Meta', title: 'What Is Mine', difficulty: 'Normal', rewardSet: 'nem', teaches: ['Flying'],
       blurb: "Rath has a new evincar: Crovax, the cursed nobleman who murdered Mirri. Phyrexia's emissary Belbe chose him. Now Volrath has come home to take his throne back.",
       hero: {who: 'crovax', deck: {name: 'The Cursed', colors: 'B', list: `
 4 Rathi Intimidator

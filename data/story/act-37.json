@@ -1165,7 +1165,7 @@
    "title": "The House Is Hungry",
    "difficulty": "Normal",
    "teaches": [
-    "Racing"
+    "Vigilance"
    ],
    "blurb": "Tyvar has come to the House of Duskmourn. The House has come for Tyvar.",
    "rewardSet": "dsk",
@@ -2339,7 +2339,7 @@
    "title": "Valgavoth, Terror Eater",
    "difficulty": "Hard",
    "teaches": [
-    "Racing"
+    "Ward"
    ],
    "blurb": "The house is alive and it is hungry. The heist crew and the survivors have to leave it with fewer rooms than it started with.",
    "rewardSet": "dsk",
@@ -2648,7 +2648,7 @@
    "title": "Mono-Red Mice",
    "difficulty": "Hard",
    "teaches": [
-    "Racing"
+    "Haste"
    ],
    "blurb": "Deep in the archive, a deck of tiny mice that wins on turn four.",
    "rewardSet": "blb",

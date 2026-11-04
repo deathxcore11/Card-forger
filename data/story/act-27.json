@@ -2115,7 +2115,7 @@
    "title": "Pirates",
    "difficulty": "Normal",
    "teaches": [
-    "Racing"
+    "Menace"
    ],
    "blurb": "A tribute to the tribes of Ixalan Standard: Pirate aggro against the Merfolk of the Great River.",
    "rewardSet": "rix",
@@ -2433,7 +2433,7 @@
    "title": "The Lawbringer",
    "difficulty": "Hard",
    "teaches": [
-    "Racing"
+    "Deathtouch"
    ],
    "blurb": "Azor built the Immortal Sun and thinks he is keeping the plane safe. Jace and Vraska have to take it away from him.",
    "rewardSet": "rix",
@@ -2759,7 +2759,7 @@
    "title": "Rekindling Phoenix",
    "difficulty": "Hard",
    "teaches": [
-    "Racing"
+    "Vigilance"
    ],
    "blurb": "Deep in the archive, a flier that will not stay dead.",
    "rewardSet": "rix",

@@ -1652,7 +1652,7 @@
    "title": "Energy and Counters",
    "difficulty": "Normal",
    "teaches": [
-    "Racing"
+    "Deathtouch"
    ],
    "blurb": "A tribute to Standard in early 2017: red-green Energy against black-green Winding Constrictor counters.",
    "rewardSet": "aer",
@@ -2490,7 +2490,7 @@
    "title": "Copycat",
    "difficulty": "Hard",
    "teaches": [
-    "Racing"
+    "Haste"
    ],
    "blurb": "Deep in the archive, the cat that copied itself.",
    "rewardSet": "aer",

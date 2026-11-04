@@ -151,7 +151,7 @@ export default {
         q('stage', 'When Glarb ordered the egg stolen, the Great Maha communicated its anger in a universal language.')],
       cues: {hero: cue('Open the door.', 'Unlock!', 'The beasts are huge...', 'A cosy win.', 'Lost in the rooms...', 'Cast one half now, unlock the other later.'),
         villain: cue('Roar.', 'Calamity!', 'The beast falters...', 'All is calamity.', 'Slain...')}},
-    {slot: 4, mood: 'tension', kind: 'Rival', title: 'The House Is Hungry', difficulty: 'Normal', rewardSet: 'dsk', teaches: ['Racing'],
+    {slot: 4, mood: 'tension', kind: 'Rival', title: 'The House Is Hungry', difficulty: 'Normal', rewardSet: 'dsk', teaches: ['Vigilance'],
       blurb: 'Tyvar has come to the House of Duskmourn. The House has come for Tyvar.',
       hero: {who: 'tyvar', deck: {label: 'tribute', name: 'Tyvar\'s Fists', colors: 'G', list: `
 4 Patchwork Beastie
@@ -305,7 +305,7 @@ export default {
         q('stage', 'Oh? Do I need to repeat myself?')],
       cues: {hero: cue('Cool head.', 'Denied!', 'Too many tricks...', 'Control wins.', 'Burnt out...', 'Kill the early creatures first.'),
         villain: cue('Fast!', 'Prowess!', 'Out of tricks...', 'Faster than you.', 'Fizzled...')}},
-    {slot: 8, mood: 'boss', kind: 'Boss', title: 'Valgavoth, Terror Eater', difficulty: 'Hard', rewardSet: 'dsk', teaches: ['Racing'],
+    {slot: 8, mood: 'boss', kind: 'Boss', title: 'Valgavoth, Terror Eater', difficulty: 'Hard', rewardSet: 'dsk', teaches: ['Ward'],
       blurb: 'The house is alive and it is hungry. The heist crew and the survivors have to leave it with fewer rooms than it started with.',
       hero: {who: 'survivors', deck: {label: 'tribute', name: 'The Crew and the Survivors', colors: 'GU', list: `
 4 Pond Prophet
@@ -347,7 +347,7 @@ export default {
         villain: {...cue('Fear.', '[the walls breathe]', '[the walls stop]', 'Delicious.', '[the house goes quiet]'),
           half: {who: 'winter', line: 'Keep moving. The door is this way.'}}}},
     {slot: 9, kind: 'Secret Boss', secret: true, title: 'Mono-Red Mice', difficulty: 'Hard', rewardSet: 'blb', rewardCard: 'Heartfire Hero', mood: 'boss',
-      teaches: ['Racing'],
+      teaches: ['Haste'],
       archive: {deck: 'Mono-Red Mice', when: 'Autumn 2024', format: 'Standard.',
         what: 'A mono-red deck of one- and two-mana mice and burn, built around Heartfire Hero.',
         why: 'It was the fastest deck in the format and punished any slow draw.',

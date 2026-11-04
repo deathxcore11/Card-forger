@@ -268,6 +268,15 @@ export const LESSONS = {
   'Exhaust': 'Exhaust abilities may be used only once per permanent. Choose the moment well.',
   'Mobilize': 'Mobilize makes tapped, attacking Warrior tokens when the creature attacks. They are sacrificed at end of turn.',
   'Harmonize': 'Harmonize lets you cast a spell from your graveyard, paying less by tapping one of your creatures. Then it is exiled.',
+  'Haste': 'A creature with haste can attack the turn it arrives. Fast decks win before you are ready.',
+  'Deathtouch': 'Any damage from a deathtouch creature is lethal. Trade it for something bigger.',
+  'Menace': 'A creature with menace cannot be blocked except by two or more creatures.',
+  'Vigilance': 'Vigilance lets a creature attack and still stand ready to block.',
+  'Hexproof': 'Hexproof stops your opponent from targeting the creature with spells or abilities. Go around it.',
+  'Reach': 'Reach lets a creature block fliers. Their wings stop being a free pass.',
+  'Trample': 'Trample pushes extra damage through a blocker to the player. Chump blocks leak.',
+  'Ward': 'Ward taxes you whenever you target it. Pay the cost or the spell is countered.',
+  'Double strike': 'Double strike deals damage twice, first-strike and regular. Boosts are doubled too.',
   'Playing under a lock': 'A lock stops cards from untapping or moving. Break it, or win with what\'s already in play.',
 };
 // Every Story deck says what it is (Randall, 2 Nov 2026): Historical Exact, Historical Tribute or

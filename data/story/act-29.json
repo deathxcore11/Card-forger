@@ -1892,7 +1892,7 @@
    "title": "Esper Superfriends",
    "difficulty": "Normal",
    "teaches": [
-    "Racing"
+    "Haste"
    ],
    "blurb": "Spring 2019: a pile of planeswalkers against a pile of burn spells.",
    "rewardSet": "m20",
@@ -3003,7 +3003,7 @@
    "title": "Esper Hero",
    "difficulty": "Hard",
    "teaches": [
-    "Racing"
+    "Trample"
    ],
    "blurb": "Deep in the archive, a quiet pile of cheap threats and a planeswalker who will not be countered.",
    "rewardSet": "rna",

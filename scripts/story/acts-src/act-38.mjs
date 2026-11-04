@@ -216,7 +216,7 @@ export default {
         q('stage', 'So, these dragons intend to also manifest through a sandstorm? I take some offense to that.')],
       cues: {hero: cue('Study the storm.', 'Harmonize!', 'The clans hit hard...', 'The school wins.', 'Scattered...', 'Recast a spell from the graveyard.'),
         villain: cue('For the clan!', 'Charge!', 'The clan breaks...', 'The clans stand.', 'Scattered...')}},
-    {slot: 6, mood: 'march', kind: 'Meta', title: 'Mono-Red vs Domain', difficulty: 'Normal', rewardSet: 'dft', teaches: ['Racing'],
+    {slot: 6, mood: 'march', kind: 'Meta', title: 'Mono-Red vs Domain', difficulty: 'Normal', rewardSet: 'dft', teaches: ['Menace'],
       blurb: 'Spring 2025: mono-red aggro against a big green ramp deck.',
       hero: {who: 'red', deck: {label: 'tribute', name: 'Mono-Red Aggro', colors: 'R', archetype: 'Aggro', list: `
 4 Greasewrench Goblin
@@ -285,7 +285,7 @@ export default {
         q('stage', 'At the Tombs Before Time, the living of Amonkhet made vital alliances with the honored dead.')],
       cues: {hero: cue('Quick hands.', 'Prowess!', 'Their removal is good...', 'Quick win.', 'Outlasted...', 'Cast cheap spells to pump your creatures.'),
         villain: cue('Patience.', 'Drain!', 'The tempo is gone...', 'Dimir wins.', 'Outraced...')}},
-    {slot: 8, mood: 'boss', kind: 'Boss', title: 'Sarkhan, Dragon Ascendant', difficulty: 'Hard', rewardSet: 'tdm', teaches: ['Racing'],
+    {slot: 8, mood: 'boss', kind: 'Boss', title: 'Sarkhan, Dragon Ascendant', difficulty: 'Hard', rewardSet: 'tdm', teaches: ['Flying'],
       blurb: 'Sarkhan feeds the dragonstorms because he believes he is saving the dragons. The racers and the clans have to stop him.',
       hero: {who: 'allies', deck: {label: 'tribute', name: 'The Racers and the Clans', colors: 'RG', list: `
 4 Beastrider Vanguard

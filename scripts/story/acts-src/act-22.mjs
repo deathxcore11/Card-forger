@@ -297,7 +297,7 @@ export default {
       cues: {hero: cue('Rhino time.', 'Drain three!', 'Tokens everywhere...', 'Trampled.', 'Outnumbered.', 'Kill the Mentor first.'),
         villain: cue('[a flurry of tokens]', '[prowess]', '[the Rhino lands]', '[swarmed]', '[trampled]')},
       after: [s('stage', 'Recorded: Khans of Tarkir Standard, 2014 to 2015.')]},
-    {slot: 7, mood: 'tension', kind: 'Meta', title: 'Atarka\'s Command', difficulty: 'Normal', rewardSet: 'dtk', teaches: ['Racing'],
+    {slot: 7, mood: 'tension', kind: 'Meta', title: 'Atarka\'s Command', difficulty: 'Normal', rewardSet: 'dtk', teaches: ['Haste'],
       blurb: 'The Archive remembers summer 2015: Atarka Red, which tried to win on turn four with tokens and pump spells, against Esper Dragons and its counterspells.',
       hero: {who: 'atarka', deck: {label: 'tribute', name: 'Atarka Red', colors: 'RG', archetype: 'Aggro', list: `
 4 Monastery Swiftspear
