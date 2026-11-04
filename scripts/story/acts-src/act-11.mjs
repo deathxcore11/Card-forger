@@ -146,15 +146,16 @@ export default {
 1 Chrome Mox
 3 Silver Myr
 4 Trinket Mage
-4 Neurok Familiar
-4 Psychic Membrane
+3 Neurok Familiar
+2 Psychic Membrane
 3 Hoverguard Sweepers
 4 Thirst for Knowledge
 4 Condescend
 3 Echoing Truth
 2 Last Word
 4 Seat of the Synod
-16 Island`}},
+16 Island
+3 Vedalken Mastermind`}},
       scene: [q('stage', 'As Glissa searches for the truth about Memnarch, Bosh searches to unearth the secrets of his past.'),
         s('bosh', 'This machine. It has my face inside it.'),
         s('pontifex', 'Imprint: some machines exile a card when they arrive, and keep it. Duplicant becomes the creature it ate. Mirror Golem guards against everything it holds.'),
@@ -219,15 +220,16 @@ export default {
 4 Solarion
 3 Sawtooth Thresher
 4 Leonin Skyhunter
-3 Skyhunter Patrol
-3 Clearwater Goblet
-3 Opaline Bracers
+2 Skyhunter Patrol
+2 Clearwater Goblet
 4 Eternal Witness
 4 Tree of Tales
 2 Ancient Den
 2 Seat of the Synod
-8 Forest
-4 Plains`}},
+10 Forest
+4 Plains
+1 Raksha Golden Cub
+2 Island`}},
       villain: {who: 'geth', deck: {label: 'tribute', name: 'Mephidross Nim', colors: 'B', list: `
 4 Moriok Rigger
 4 Disciple of the Vault
@@ -271,23 +273,24 @@ export default {
 4 Blinkmoth Nexus
 4 Island
 4 Swamp`}},
-      villain: {who: 'krark', deck: {label: 'tribute', name: 'Krark-Clan Affinity', colors: 'R', archetype: 'Affinity', list: `
+      villain: {who: 'krark', deck: {label: 'tribute', name: 'Krark-Clan Affinity', colors: 'BR', archetype: 'Affinity', list: `
 4 Arcbound Ravager
 4 Frogmite
 4 Myr Enforcer
-4 Ornithopter
+2 Ornithopter
 4 Atog
 4 Disciple of the Vault
 4 Shrapnel Blast
 4 Cranial Plating
-4 Welding Jar
+2 Welding Jar
 2 Talisman of Indulgence
 4 Great Furnace
 4 Vault of Whispers
 4 Darksteel Citadel
 4 Blinkmoth Nexus
 3 Mountain
-3 Swamp`}},
+3 Swamp
+4 Krark-Clan Grunt`}},
       scene: [q('stage', 'All the junk, refuse, and offal of the Krark Clan is diligently collected, melted down, and made into more junk, refuse, and offal.'),
         s('you', 'A mirror. Same engine, different paint.'),
         s('slobad', 'Feed the Ravager what is about to die anyway. Never feed it a land you still need.'),
@@ -301,7 +304,7 @@ export default {
       hero: {who: 'sylvok', deck: {label: 'tribute', name: 'Tooth and Nail', colors: 'G', archetype: 'Ramp', list: `
 4 Tooth and Nail
 4 Sylvan Scrying
-2 Reap and Sow
+1 Reap and Sow
 3 Tel-Jilad Archers
 4 Wayfarer's Bauble
 4 Viridian Joiner
@@ -310,15 +313,16 @@ export default {
 1 Darksteel Colossus
 2 Platinum Angel
 2 Duplicant
-2 Plated Slagwurm
+1 Plated Slagwurm
 1 Tornado Elemental
 4 Mirrodin's Core
-20 Forest`}},
+20 Forest
+2 Sylvok Explorer`}},
       villain: {who: 'janus', deck: {label: 'tribute', name: 'The Synod\'s Shackles', colors: 'U', archetype: 'Control', list: `
 3 Vedalken Shackles
 4 Thirst for Knowledge
 4 Condescend
-4 Override
+2 Override
 4 Last Word
 3 Echoing Truth
 4 Trinket Mage
@@ -326,7 +330,8 @@ export default {
 3 Qumulox
 3 Duplicant
 1 Fold into Aether
-24 Island`}},
+24 Island
+2 Vedalken Archmage`}},
       scene: [q('stage', 'Any creature on a druid\'s shoulder is his family, any land under his feet his home.'),
         q('stage', 'He watches from above. He watches from below. He watches from within.'),
         s('sylvok', 'Entwine: a spell with two modes. Pay the entwine cost and you get both. Tooth and Nail with nine mana finds two creatures and puts them into play.')],
@@ -364,8 +369,8 @@ export default {
 4 Frogmite
 4 Disciple of the Vault
 4 Thoughtcast
-2 Qumulox
-1 Platinum Angel
+1 Qumulox
+2 Platinum Angel
 3 Duplicant
 2 Arcbound Ravager
 4 Cranial Plating

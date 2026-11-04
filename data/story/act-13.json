@@ -356,7 +356,7 @@
        "id": "c4415070-4304-482b-b8e5-2bf689af0843"
       },
       {
-       "qty": 4,
+       "qty": 2,
        "name": "Gather Courage",
        "set": "rav",
        "number": "165",
@@ -389,6 +389,13 @@
        "set": "rav",
        "number": "287",
        "id": "3d8d3cd4-0f5f-4424-82ee-d8ba81da47fd"
+      },
+      {
+       "qty": 2,
+       "name": "Tolsimir Wolfblood",
+       "set": "rav",
+       "number": "236",
+       "id": "069ac859-e0ef-4685-bad3-5c741102b5b9"
       }
      ]
     }
@@ -602,7 +609,7 @@
        "id": "628903a0-6695-4643-80f3-9a6efc4d6a27"
       },
       {
-       "qty": 4,
+       "qty": 2,
        "name": "Woodwraith Strangler",
        "set": "rav",
        "number": "241",
@@ -656,6 +663,13 @@
        "set": "rav",
        "number": "303",
        "id": "706be1bd-720d-4e74-b71f-568081afcab1"
+      },
+      {
+       "qty": 2,
+       "name": "Savra, Queen of the Golgari",
+       "set": "rav",
+       "number": "225",
+       "id": "15accf35-a174-4ba5-a633-cc46da848dbe"
       }
      ]
     }
@@ -951,7 +965,7 @@
        "id": "f7f3fdc0-3fd1-47da-b3ed-e4a462179e75"
       },
       {
-       "qty": 4,
+       "qty": 2,
        "name": "Tin Street Hooligan",
        "set": "gpt",
        "number": "78",
@@ -998,6 +1012,13 @@
        "set": "rav",
        "number": "303",
        "id": "706be1bd-720d-4e74-b71f-568081afcab1"
+      },
+      {
+       "qty": 2,
+       "name": "Borborygmos",
+       "set": "gpt",
+       "number": "103",
+       "id": "7c4a08e9-06c7-43e9-a855-4f507a35ae8b"
       }
      ]
     }
@@ -1009,12 +1030,12 @@
     },
     "villain": {
      "card": {
-      "oracle_id": "e3367ed8-16a3-4b04-bc6a-e0a3c794e6d3",
-      "name": "Ghor-Clan Bloodscale",
-      "rarity": "uncommon",
+      "oracle_id": "9ab0820b-4f5f-47b3-8fa9-43f802aed275",
+      "name": "Borborygmos",
+      "rarity": "rare",
       "set": "gpt",
-      "id": "00cab68b-ee26-46eb-a18b-9b42bf2d10e5",
-      "image": "https://cards.scryfall.io/normal/front/0/0/00cab68b-ee26-46eb-a18b-9b42bf2d10e5.jpg"
+      "id": "7c4a08e9-06c7-43e9-a855-4f507a35ae8b",
+      "image": "https://cards.scryfall.io/normal/front/7/c/7c4a08e9-06c7-43e9-a855-4f507a35ae8b.jpg"
      },
      "coins": 50
     }

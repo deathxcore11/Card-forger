@@ -1,5 +1,6 @@
 {
  "act": 6,
+ "era": null,
  "title": "Urza's War",
  "years": "1998 to 1999",
  "sets": [
@@ -358,6 +359,7 @@
      "name": "Serra's Host",
      "colors": "W",
      "archetype": null,
+     "label": null,
      "cards": [
       {
        "qty": 4,
@@ -445,6 +447,7 @@
      "name": "The First Legion",
      "colors": "B",
      "archetype": null,
+     "label": null,
      "cards": [
       {
        "qty": 4,
@@ -621,6 +624,7 @@
      "name": "The Ghitu",
      "colors": "R",
      "archetype": null,
+     "label": null,
      "cards": [
       {
        "qty": 4,
@@ -715,6 +719,7 @@
      "name": "The Goblins of Shiv",
      "colors": "R",
      "archetype": null,
+     "label": null,
      "cards": [
       {
        "qty": 4,
@@ -891,6 +896,7 @@
      "name": "Third-Level Mischief",
      "colors": "U",
      "archetype": null,
+     "label": null,
      "cards": [
       {
        "qty": 4,
@@ -942,7 +948,7 @@
        "id": "ee0d3f5f-7790-4772-bead-5d7114a23e94"
       },
       {
-       "qty": 2,
+       "qty": 4,
        "name": "Air Elemental",
        "set": "6ed",
        "number": "56",
@@ -956,7 +962,7 @@
        "id": "9e51c4fb-fb29-4b1c-b78e-1fadf94fc9a5"
       },
       {
-       "qty": 4,
+       "qty": 2,
        "name": "Opportunity",
        "set": "ulg",
        "number": "37",
@@ -985,6 +991,7 @@
      "name": "The Master's Exam",
      "colors": "U",
      "archetype": null,
+     "label": null,
      "cards": [
       {
        "qty": 4,
@@ -1015,18 +1022,11 @@
        "id": "3f8c73ff-be92-41ca-93a7-76f9823adb38"
       },
       {
-       "qty": 4,
+       "qty": 2,
        "name": "Power Sink",
        "set": "usg",
        "number": "89",
        "id": "662cf693-18c4-4169-bcce-09862778f60c"
-      },
-      {
-       "qty": 4,
-       "name": "Fog Bank",
-       "set": "usg",
-       "number": "75",
-       "id": "6ade0d30-5a57-439e-95e8-5f865880031f"
       },
       {
        "qty": 4,
@@ -1050,11 +1050,18 @@
        "id": "1ff96224-d6cd-492b-ab2f-3ec15b3230cb"
       },
       {
-       "qty": 24,
+       "qty": 26,
        "name": "Island",
        "set": "usg",
        "number": "335",
        "id": "8e4ce9ff-c295-475b-b9fa-88ed65a84f35"
+      },
+      {
+       "qty": 4,
+       "name": "Veil of Birds",
+       "set": "usg",
+       "number": "106",
+       "id": "55bd3fac-44b6-4078-a096-8d47b01ea979"
       }
      ]
     }
@@ -1156,6 +1163,7 @@
      "name": "The Outcast's Knives",
      "colors": "B",
      "archetype": null,
+     "label": null,
      "cards": [
       {
        "qty": 4,
@@ -1236,6 +1244,7 @@
      "name": "Kerrick's Brood",
      "colors": "B",
      "archetype": null,
+     "label": null,
      "cards": [
       {
        "qty": 4,
@@ -1410,6 +1419,7 @@
      "name": "The Emissary",
      "colors": "G",
      "archetype": null,
+     "label": null,
      "cards": [
       {
        "qty": 2,
@@ -1504,6 +1514,7 @@
      "name": "Yavimaya Wakes",
      "colors": "G",
      "archetype": null,
+     "label": null,
      "cards": [
       {
        "qty": 2,
@@ -1697,6 +1708,7 @@
      "name": "The Chancellor's Rule",
      "colors": "WU",
      "archetype": null,
+     "label": null,
      "cards": [
       {
        "qty": 2,
@@ -1791,6 +1803,7 @@
      "name": "Academy",
      "colors": "U",
      "archetype": "Academy",
+     "label": null,
      "cards": [
       {
        "qty": 1,
@@ -1983,6 +1996,7 @@
      "name": "The Artificer's War",
      "colors": "U",
      "archetype": null,
+     "label": null,
      "cards": [
       {
        "qty": 4,
@@ -2063,6 +2077,7 @@
      "name": "Replenish",
      "colors": "WU",
      "archetype": "Replenish",
+     "label": null,
      "cards": [
       {
        "qty": 2,
@@ -2255,6 +2270,7 @@
      "name": "Tolaria's Defenders",
      "colors": "WU",
      "archetype": null,
+     "label": null,
      "cards": [
       {
        "qty": 4,
@@ -2349,6 +2365,7 @@
      "name": "The Praetor's Court",
      "colors": "B",
      "archetype": null,
+     "label": null,
      "cards": [
       {
        "qty": 4,

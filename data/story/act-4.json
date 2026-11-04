@@ -850,11 +850,11 @@
    "after": null,
    "cues": {
     "hero": {
-     "start": null,
-     "big": null,
-     "low": null,
-     "win": null,
-     "loss": null
+     "start": "Hello? Is the island here today?",
+     "big": "Caught you in phase!",
+     "low": "It keeps vanishing...",
+     "win": "Pinned down. Finally.",
+     "loss": "Gone again..."
     },
     "villain": {
      "start": "Blink and you'll miss it.",
@@ -998,7 +998,7 @@
      "label": null,
      "cards": [
       {
-       "qty": 2,
+       "qty": 4,
        "name": "Purraj of Urborg",
        "set": "mir",
        "number": "135",
@@ -1080,13 +1080,6 @@
        "set": "mir",
        "number": "110",
        "id": "06e954b2-c8ce-4b6c-a118-4a14ffa72063"
-      },
-      {
-       "qty": 2,
-       "name": "Bog Rats",
-       "set": "5ed",
-       "number": "146",
-       "id": "3e325363-1ab9-4b44-9c00-0758830289e8"
       },
       {
        "qty": 24,
@@ -2089,11 +2082,11 @@
    ],
    "cues": {
     "hero": {
-     "start": null,
-     "big": null,
-     "low": null,
-     "win": null,
-     "loss": null
+     "start": "What does it cost?",
+     "big": "Paid in full!",
+     "low": "Everyone draws but me...",
+     "win": "Keep the change.",
+     "loss": "Bankrupt..."
     },
     "villain": {
      "start": "Let's make a deal!",
@@ -2191,7 +2184,7 @@
        "id": "7babd273-3e20-4cf9-bf21-c602eb729fc5"
       },
       {
-       "qty": 4,
+       "qty": 2,
        "name": "Healing Salve",
        "set": "mir",
        "number": "20",
@@ -2203,6 +2196,13 @@
        "set": "mir",
        "number": "331",
        "id": "888f32ad-3bdd-4c46-b3f0-522ac9763591"
+      },
+      {
+       "qty": 2,
+       "name": "Sidar Jabari",
+       "set": "mir",
+       "number": "39",
+       "id": "743f0d06-cd14-49f3-ad3c-0d419a0c30bc"
       }
      ]
     }

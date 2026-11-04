@@ -160,7 +160,7 @@ export default {
     {slot: 4, mood: 'tension', kind: 'Rival', title: 'Ajani\'s Revenge', difficulty: 'Normal', rewardSet: 'ala', teaches: ['Unearth'],
       blurb: 'The trail of Jazal\'s death runs through Grixis, the shard of the dead. Sedris, the Traitor King, rules there. Ajani arrives angry, and his anger has a new shape: Ajani Vengeant.',
       hero: {who: 'vengeant', deck: {label: 'tribute', name: 'Ajani Vengeant', colors: 'RGW', list: `
-2 Ajani Vengeant
+3 Ajani Vengeant
 4 Wild Nacatl
 4 Elite Vanguard
 4 Ranger of Eos
@@ -169,13 +169,13 @@ export default {
 4 Akrasan Squire
 4 Knight of New Alara
 4 Rhox Brute
-2 Naya Charm
+1 Naya Charm
 4 Jungle Shrine
 8 Plains
 6 Mountain
 6 Forest`}},
       villain: {who: 'sedris', deck: {label: 'tribute', name: 'The Traitor King\'s Court', colors: 'UBR', list: `
-2 Sedris, the Traitor King
+3 Sedris, the Traitor King
 4 Dregscape Zombie
 4 Hellspark Elemental
 4 Sedraxis Specter
@@ -183,7 +183,7 @@ export default {
 4 Blightning
 4 Agony Warp
 4 Kederekt Creeper
-2 Lich Lord of Unx
+1 Lich Lord of Unx
 4 Terminate
 4 Crumbling Necropolis
 8 Swamp
@@ -217,14 +217,14 @@ export default {
 5 Mountain
 5 Plains`}},
       villain: {who: 'kresh', deck: {label: 'tribute', name: 'The Bloodbraided Horde', colors: 'BRG', list: `
-2 Kresh the Bloodbraided
+3 Kresh the Bloodbraided
 4 Lightning Bolt
 4 Sprouting Thrinax
 4 Thunder-Thrash Elder
 4 Mycoloth
 4 Skullmulcher
 4 Blightning
-2 Predator Dragon
+1 Predator Dragon
 4 Jund Hackblade
 4 Terminate
 4 Savage Lands

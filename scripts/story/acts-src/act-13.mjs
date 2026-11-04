@@ -52,11 +52,12 @@ export default {
 4 Centaur Safeguard
 4 Conclave Equenaut
 4 Scatter the Seeds
-4 Gather Courage
+2 Gather Courage
 2 Selesnya Sagittars
 2 Conclave Phalanx
 12 Forest
-12 Plains`}},
+12 Plains
+2 Tolsimir Wolfblood`}},
       villain: {who: 'rakdos', deck: {label: 'tribute', name: 'Rakdos Cultists', colors: 'BR', list: `
 4 Gobhobbler Rats
 4 Rakdos Guildmage
@@ -84,14 +85,15 @@ export default {
 4 Golgari Thug
 4 Shambling Shell
 4 Stinkweed Imp
-4 Woodwraith Strangler
+2 Woodwraith Strangler
 4 Golgari Rotwurm
 4 Life from the Loam
 4 Darkblast
 1 Golgari Grave-Troll
 3 Putrefy
 12 Swamp
-12 Forest`}},
+12 Forest
+2 Savra, Queen of the Golgari`}},
       villain: {who: 'izzet', deck: {label: 'tribute', name: 'Izzet Weirds', colors: 'UR', list: `
 4 Steamcore Weird
 4 Izzet Guildmage
@@ -130,13 +132,14 @@ export default {
 4 Gruul Guildmage
 4 Ghor-Clan Bloodscale
 4 Gruul Scrapper
-4 Tin Street Hooligan
+2 Tin Street Hooligan
 4 Streetbreaker Wurm
 4 Bloodscale Prowler
 4 Sell-Sword Brute
 4 Ghor-Clan Savage
 12 Mountain
-12 Forest`}},
+12 Forest
+2 Borborygmos`}},
       scene: [q('razia', 'I do not know which gives me more pride: the legions of soldiers marching in thunderous lockstep, or the cry of the skyknights riding their rocs like jagged lightning overhead.'),
         s('razia', 'Bloodthirst: these Gruul creatures enter bigger if you were dealt damage this turn. Block their first hit, and the rest arrive small.'),
         q('stage', 'Though less well-known than its army of soldiers, the Boros Legion\'s mage-priests are as respected by the innocent as they are hated by the ghosts of the guilty.')],

@@ -1,5 +1,6 @@
 {
  "act": 2,
+ "era": null,
  "title": "Legends and the Dark",
  "years": "1994",
  "sets": [
@@ -30,6 +31,25 @@
    "line": "The thrulls of Sarpadia rise against their masters. The empires fall one by one."
   }
  ],
+ "villainFinale": [
+  {
+   "who": "bolas",
+   "line": "The last of the Umezawa. You were a good game, Tetsuo."
+  },
+  {
+   "who": "stage",
+   "line": "The dragon walks out of the ruined keep. Behind him, nothing moves."
+  },
+  {
+   "who": "bolas",
+   "line": "The Elder Dragons are gone. All but one. Good."
+  },
+  {
+   "who": "narrator",
+   "line": "Recorded: the last Elder Dragon walks away from Madara. The empires fall anyway. He was never here for them."
+  }
+ ],
+ "vibe": null,
  "cast": {
   "you": {
    "name": "You",
@@ -193,6 +213,7 @@
    "id": "a2b1",
    "slot": 1,
    "kind": "Arrival",
+   "mood": "tension",
    "title": "The Pretender's Inquisition",
    "difficulty": "Easy",
    "teaches": [
@@ -207,6 +228,7 @@
      "name": "Hedge Witch",
      "colors": "WG",
      "archetype": null,
+     "label": null,
      "cards": [
       {
        "qty": 4,
@@ -301,6 +323,7 @@
      "name": "The Burning Church",
      "colors": "B",
      "archetype": null,
+     "label": null,
      "cards": [
       {
        "qty": 4,
@@ -423,7 +446,15 @@
      "line": "Burn the magic out and the light comes back. It must."
     }
    ],
+   "after": null,
    "cues": {
+    "hero": {
+     "start": "I am no witch. Mostly.",
+     "big": "Grow!",
+     "low": "The fire is close...",
+     "win": "The Church can burn something else.",
+     "loss": "Run..."
+    },
     "villain": {
      "start": "Burn the witch.",
      "big": "The Church sees all.",
@@ -439,6 +470,7 @@
    "id": "a2b2",
    "slot": 2,
    "kind": "Lesson",
+   "mood": "march",
    "title": "Johan's Crossing",
    "difficulty": "Easy",
    "teaches": [
@@ -454,9 +486,10 @@
      "name": "The Bazaar Guard",
      "colors": "RGW",
      "archetype": null,
+     "label": null,
      "cards": [
       {
-       "qty": 3,
+       "qty": 4,
        "name": "Hazezon Tamar",
        "set": "leg",
        "number": "230",
@@ -470,7 +503,7 @@
        "id": "6a4a524a-fdc7-432d-994b-953808528349"
       },
       {
-       "qty": 2,
+       "qty": 1,
        "name": "Craw Wurm",
        "set": "3ed",
        "number": "190",
@@ -574,18 +607,19 @@
     "who": "johan",
     "deck": {
      "name": "Johan's Host",
-     "colors": "RGW",
+     "colors": "RG",
      "archetype": null,
+     "label": null,
      "cards": [
       {
-       "qty": 3,
+       "qty": 4,
        "name": "Stangg",
        "set": "leg",
        "number": "260",
        "id": "a277775a-6b48-4238-a618-3ae94c4cc85c"
       },
       {
-       "qty": 2,
+       "qty": 3,
        "name": "Elven Riders",
        "set": "leg",
        "number": "183",
@@ -620,7 +654,7 @@
        "id": "a5e4a23b-3b05-4240-9565-bdd8f3f3ef12"
       },
       {
-       "qty": 4,
+       "qty": 2,
        "name": "Lightning Bolt",
        "set": "3ed",
        "number": "162",
@@ -724,6 +758,7 @@
      "line": "Walls fall. Bring the army forward."
     }
    ],
+   "after": null,
    "cues": {
     "hero": {
      "start": "Bazaar's closed.",
@@ -747,6 +782,7 @@
    "id": "a2b3",
    "slot": 3,
    "kind": "Lesson",
+   "mood": "comic",
    "title": "The Thallid Grove",
    "difficulty": "Easy",
    "teaches": [
@@ -762,6 +798,7 @@
      "name": "Havenwood Spores",
      "colors": "G",
      "archetype": null,
+     "label": null,
      "cards": [
       {
        "qty": 4,
@@ -856,6 +893,7 @@
      "name": "The Ebon Hand",
      "colors": "B",
      "archetype": null,
+     "label": null,
      "cards": [
       {
        "qty": 4,
@@ -998,6 +1036,7 @@
      "line": "The Ebon Hand needs that rot more than they do. Take the grove."
     }
    ],
+   "after": null,
    "cues": {
     "hero": {
      "start": "Grow.",
@@ -1021,6 +1060,7 @@
    "id": "a2b4",
    "slot": 4,
    "kind": "Rival",
+   "mood": "tension",
    "title": "Tetsuo's Test",
    "difficulty": "Normal",
    "teaches": [
@@ -1036,6 +1076,7 @@
      "name": "Rift-Walker",
      "colors": "WG",
      "archetype": null,
+     "label": null,
      "cards": [
       {
        "qty": 4,
@@ -1137,6 +1178,7 @@
      "name": "The Umezawa Arts",
      "colors": "UBR",
      "archetype": null,
+     "label": null,
      "cards": [
       {
        "qty": 3,
@@ -1315,7 +1357,15 @@
      "line": "Let's see if this one learns faster than they did."
     }
    ],
+   "after": null,
    "cues": {
+    "hero": {
+     "start": "Test me, then.",
+     "big": "There. Did you see it coming?",
+     "low": "He reads every move...",
+     "win": "Friend, then?",
+     "loss": "Not yet ready..."
+    },
     "villain": {
      "start": "Show me.",
      "big": "Can you see it coming?",
@@ -1331,6 +1381,7 @@
    "id": "a2b5",
    "slot": 5,
    "kind": "Lesson",
+   "mood": "march",
    "title": "The Thrull Rebellion",
    "difficulty": "Normal",
    "teaches": [
@@ -1345,6 +1396,7 @@
      "name": "Valiant Icatia",
      "colors": "W",
      "archetype": null,
+     "label": null,
      "cards": [
       {
        "qty": 4,
@@ -1453,6 +1505,7 @@
      "name": "The Breeding Pits",
      "colors": "B",
      "archetype": null,
+     "label": null,
      "cards": [
       {
        "qty": 4,
@@ -1580,7 +1633,15 @@
      "line": "Thrull has been thinking. Thrull has a list."
     }
    ],
+   "after": null,
    "cues": {
+    "hero": {
+     "start": "Icatia stands.",
+     "big": "Javelins, loose!",
+     "low": "The thrulls are breaking through...",
+     "win": "Icatia holds another day.",
+     "loss": "Fall back to the walls..."
+    },
     "villain": {
      "start": "Feed the altar.",
      "big": "More thrulls, more power.",
@@ -1596,6 +1657,7 @@
    "id": "a2b6",
    "slot": 6,
    "kind": "Meta",
+   "mood": "march",
    "title": "The Deck",
    "difficulty": "Normal",
    "teaches": [
@@ -1611,6 +1673,7 @@
      "name": "Kher Keep Fire",
      "colors": "R",
      "archetype": null,
+     "label": null,
      "cards": [
       {
        "qty": 4,
@@ -1698,6 +1761,7 @@
      "name": "The Deck",
      "colors": "WUG",
      "archetype": "The Deck (control)",
+     "label": null,
      "cards": [
       {
        "qty": 2,
@@ -1883,7 +1947,15 @@
      "line": "Let them cast. Every spell they waste brings the end closer."
     }
    ],
+   "after": null,
    "cues": {
+    "hero": {
+     "start": "Burn first. Ask later.",
+     "big": "Fireball!",
+     "low": "Every spell answered...",
+     "win": "Burned through.",
+     "loss": "Out of fire..."
+    },
     "villain": {
      "start": "Proceed.",
      "big": "Denied.",
@@ -1899,6 +1971,7 @@
    "id": "a2b7",
    "slot": 7,
    "kind": "Meta",
+   "mood": "tension",
    "title": "Hymn to Tourach",
    "difficulty": "Normal",
    "teaches": [
@@ -1913,6 +1986,7 @@
      "name": "The Bazaar Guard",
      "colors": "RGW",
      "archetype": null,
+     "label": null,
      "cards": [
       {
        "qty": 3,
@@ -2028,6 +2102,7 @@
      "name": "The Hymn",
      "colors": "B",
      "archetype": "Black discard",
+     "label": null,
      "cards": [
       {
        "qty": 2,
@@ -2173,7 +2248,15 @@
      "line": "Tourach... Tourach... let them forget what they hold."
     }
    ],
+   "after": null,
    "cues": {
+    "hero": {
+     "start": "The bazaar does not close for hymns.",
+     "big": "Every sand-warrior answers.",
+     "low": "I cannot remember my own plan...",
+     "win": "Sing somewhere else.",
+     "loss": "Save who you can."
+    },
     "villain": {
      "start": "Sing.",
      "big": "Forget. Forget.",
@@ -2189,6 +2272,7 @@
    "id": "a2b8",
    "slot": 8,
    "kind": "Boss",
+   "mood": "boss",
    "title": "The Last Elder Dragon",
    "difficulty": "Hard",
    "teaches": [
@@ -2203,6 +2287,7 @@
      "name": "The Umezawa Arts",
      "colors": "UBR",
      "archetype": null,
+     "label": null,
      "cards": [
       {
        "qty": 4,
@@ -2344,8 +2429,9 @@
     "who": "bolas",
     "deck": {
      "name": "The Elder Dragon",
-     "colors": "BRu",
+     "colors": "UBR",
      "archetype": null,
+     "label": null,
      "cards": [
       {
        "qty": 3,
@@ -2508,6 +2594,7 @@
      "line": "Every hero in this age will die. I simply want to watch how."
     }
    ],
+   "after": null,
    "cues": {
     "hero": {
      "start": "Now.",
