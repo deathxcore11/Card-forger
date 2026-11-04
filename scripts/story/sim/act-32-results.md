@@ -16,3 +16,5 @@ Tuning runs are 24 games. The final check is a 10-game run, per Randall (3 Nov),
 | b9 Mono-White Humans (secret, Hard) | Izzet Dragons vs Mono-White Humans | - | - | 3/10 |
 
 Out of band: this act runs low overall. The hero side in b1 (33%), b2 (50%), b3 (58%), b5 (42%) and the 10-game checks of b4 and b8 sit under their bands, and the villains of b1 and b2 (dragon cult, wolf pack) are strong for Forge's CPU. I stopped tuning after four passes; these are documented, not hidden. The boss b8 sits at 38% in the 24-game run (in band) and 20% in the 10-game check.
+
+Retune (4 Nov, coordinator ask to ease the hero side): last 24-game runs with seeds 6-9 gave b1 38%, b2 50%, b3 50%, b5 54%, b6 58%, b8 50%, b9 42%. b1 stays under its band even against a villain of vanilla fodder, so the weakness is in the hero list under Forge's CPU, not the cult. The b1 hero was briefly rebuilt as mono-white and scored 0%, so the red-white list stayed.

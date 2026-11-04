@@ -374,6 +374,13 @@
        "id": "66e2d723-3fa0-4411-8f98-e4e6b3a5e6df"
       },
       {
+       "qty": 3,
+       "name": "Dragon's Fire",
+       "set": "afr",
+       "number": "139",
+       "id": "9666987a-5267-46d3-9b00-31baa92a9cbc"
+      },
+      {
        "qty": 4,
        "name": "Sundown Pass",
        "set": "vow",
@@ -393,13 +400,6 @@
        "set": "mid",
        "number": "274",
        "id": "3ba24a61-e529-4490-8536-6276ea77c511"
-      },
-      {
-       "qty": 3,
-       "name": "Dawnbringer Cleric",
-       "set": "afr",
-       "number": "9",
-       "id": "c00856f7-fef5-4ba5-9079-59a81d452c82"
       }
      ]
     }
@@ -428,13 +428,6 @@
       },
       {
        "qty": 4,
-       "name": "Hired Hexblade",
-       "set": "afr",
-       "number": "109",
-       "id": "c23cbf01-90d0-4962-92d5-5e1566e8ef4b"
-      },
-      {
-       "qty": 4,
        "name": "Battle Cry Goblin",
        "set": "afr",
        "number": "132",
@@ -442,38 +435,10 @@
       },
       {
        "qty": 3,
-       "name": "Hobgoblin Bandit Lord",
-       "set": "afr",
-       "number": "147",
-       "id": "09e9dc36-f2d8-4384-98cb-e44c00b02433"
-      },
-      {
-       "qty": 3,
-       "name": "Gelatinous Cube",
-       "set": "afr",
-       "number": "105",
-       "id": "1c472e70-300c-4881-86e7-c5ca690ab9b6"
-      },
-      {
-       "qty": 3,
-       "name": "Plundering Barbarian",
-       "set": "afr",
-       "number": "158",
-       "id": "d875881c-c285-47f1-8a37-e4a0239d47ec"
-      },
-      {
-       "qty": 3,
        "name": "Burning Hands",
        "set": "afr",
        "number": "135",
        "id": "66e2d723-3fa0-4411-8f98-e4e6b3a5e6df"
-      },
-      {
-       "qty": 2,
-       "name": "Power Word Kill",
-       "set": "afr",
-       "number": "114",
-       "id": "395b6ce4-143f-4eed-b565-98aa3d6208ef"
       },
       {
        "qty": 2,
@@ -504,18 +469,39 @@
        "id": "3ba24a61-e529-4490-8536-6276ea77c511"
       },
       {
-       "qty": 2,
+       "qty": 4,
        "name": "Vampire Spawn",
        "set": "afr",
        "number": "123",
        "id": "b8975c72-b2ec-4c5f-86a4-4e1e3bb41c15"
       },
       {
-       "qty": 2,
+       "qty": 4,
        "name": "Shambling Ghast",
        "set": "afr",
        "number": "119",
        "id": "d96198a7-dd19-4940-bf8f-23135011fc84"
+      },
+      {
+       "qty": 4,
+       "name": "Concealing Curtains // Revealing Eye",
+       "set": "vow",
+       "number": "101",
+       "id": "612b2e6e-fe8d-49ad-b845-6fa7fa59ffd1"
+      },
+      {
+       "qty": 4,
+       "name": "Doomed Dissenter",
+       "set": "vow",
+       "number": "106",
+       "id": "f7c0cf16-81ea-45e3-99cc-4424d59bb44b"
+      },
+      {
+       "qty": 3,
+       "name": "Undead Butler",
+       "set": "vow",
+       "number": "133",
+       "id": "2c9b8582-8887-4652-82e2-f9b11ee21545"
       }
      ]
     }
@@ -527,12 +513,12 @@
     },
     "villain": {
      "card": {
-      "oracle_id": "43fea418-db6f-4953-89d1-6873b2ca41a8",
-      "name": "Hobgoblin Bandit Lord",
+      "oracle_id": "a3a56b02-7290-4352-a862-f2de608f2a86",
+      "name": "Concealing Curtains // Revealing Eye",
       "rarity": "rare",
-      "set": "afr",
-      "id": "09e9dc36-f2d8-4384-98cb-e44c00b02433",
-      "image": "https://cards.scryfall.io/normal/front/0/9/09e9dc36-f2d8-4384-98cb-e44c00b02433.jpg"
+      "set": "vow",
+      "id": "612b2e6e-fe8d-49ad-b845-6fa7fa59ffd1",
+      "image": "https://cards.scryfall.io/normal/front/6/1/612b2e6e-fe8d-49ad-b845-6fa7fa59ffd1.jpg"
      },
      "coins": 50
     }
@@ -774,13 +760,6 @@
       },
       {
        "qty": 3,
-       "name": "Wolf Strike",
-       "set": "vow",
-       "number": "228",
-       "id": "02e9cd00-7ffd-44e1-aa0f-c94489ff4a0f"
-      },
-      {
-       "qty": 3,
        "name": "Clear Shot",
        "set": "mid",
        "number": "176",
@@ -799,6 +778,13 @@
        "set": "mid",
        "number": "276",
        "id": "ad8ff40e-2d40-4557-8209-d2c84eb4ccf2"
+      },
+      {
+       "qty": 3,
+       "name": "Intrepid Outlander",
+       "set": "afr",
+       "number": "191",
+       "id": "30b00777-d921-4264-9faf-5c048b656210"
       }
      ]
     }
@@ -1673,13 +1659,6 @@
       },
       {
        "qty": 3,
-       "name": "Falkenrath Forebear",
-       "set": "vow",
-       "number": "111",
-       "id": "451559d0-b62d-4757-8eb5-f6b0e240899c"
-      },
-      {
-       "qty": 3,
        "name": "Voldaren Bloodcaster // Bloodbat Summoner",
        "set": "vow",
        "number": "137",
@@ -1747,6 +1726,13 @@
        "set": "vow",
        "number": "245",
        "id": "301dacc9-ef92-4515-b907-a70d6c3fd73e"
+      },
+      {
+       "qty": 3,
+       "name": "Doomed Dissenter",
+       "set": "vow",
+       "number": "106",
+       "id": "f7c0cf16-81ea-45e3-99cc-4424d59bb44b"
       }
      ]
     }
@@ -2591,7 +2577,7 @@
      "label": "tribute",
      "cards": [
       {
-       "qty": 4,
+       "qty": 2,
        "name": "Olivia, Crimson Bride",
        "set": "vow",
        "number": "245",
@@ -2654,7 +2640,7 @@
        "id": "4889c58b-8b84-42af-a56c-e886655aa997"
       },
       {
-       "qty": 3,
+       "qty": 2,
        "name": "Hero's Downfall",
        "set": "vow",
        "number": "120",
@@ -2701,6 +2687,20 @@
        "set": "mid",
        "number": "274",
        "id": "3ba24a61-e529-4490-8536-6276ea77c511"
+      },
+      {
+       "qty": 2,
+       "name": "Voldaren Stinger",
+       "set": "mid",
+       "number": "167",
+       "id": "f27a7c78-3a64-42fc-8808-15b1f41976a1"
+      },
+      {
+       "qty": 1,
+       "name": "Doomed Dissenter",
+       "set": "vow",
+       "number": "106",
+       "id": "f7c0cf16-81ea-45e3-99cc-4424d59bb44b"
       }
      ]
     }
@@ -2931,21 +2931,21 @@
      "note": "Built from cards in this act's sets only. No single tournament list is copied.",
      "cards": [
       {
-       "qty": 4,
+       "qty": 2,
        "name": "Adeline, Resplendent Cathar",
        "set": "mid",
        "number": "1",
        "id": "18092f68-b96e-4084-9eba-b240d2195d81"
       },
       {
-       "qty": 4,
+       "qty": 2,
        "name": "Brutal Cathar // Moonrage Brute",
        "set": "mid",
        "number": "7",
        "id": "0dbac7ce-a6fa-466e-b6ba-173cf2dec98e"
       },
       {
-       "qty": 4,
+       "qty": 2,
        "name": "Thalia, Guardian of Thraben",
        "set": "vow",
        "number": "38",
@@ -2959,7 +2959,7 @@
        "id": "d2704743-2e23-40b9-a367-c73d2db45afc"
       },
       {
-       "qty": 4,
+       "qty": 2,
        "name": "Cathar Commando",
        "set": "mid",
        "number": "10",
@@ -3013,6 +3013,20 @@
        "set": "mid",
        "number": "268",
        "id": "6ed1902d-0b09-4bbe-9059-a0779450ee05"
+      },
+      {
+       "qty": 4,
+       "name": "Ambitious Farmhand // Seasoned Cathar",
+       "set": "mid",
+       "number": "2",
+       "id": "54d4e7c3-294d-4900-8b70-faafda17cc33"
+      },
+      {
+       "qty": 4,
+       "name": "Hopeful Initiate",
+       "set": "vow",
+       "number": "20",
+       "id": "ec1b3fd1-952a-4bc6-9b31-bd9bd13072f5"
       }
      ]
     }
