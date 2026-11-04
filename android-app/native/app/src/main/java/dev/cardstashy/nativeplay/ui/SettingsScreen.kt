@@ -461,15 +461,11 @@ private fun AppPane() {
 private fun CardArtCard() = Panel {
     CardHeading("CARD ART", "Saved on this phone")
     val store = dev.cardstashy.nativeplay.art.ThumbStore
-    val keep by store.keepAll.collectAsState()
-    val walk by store.keepProgress.collectAsState()
     val running by store.progress.collectAsState()
     var stamp by remember { mutableStateOf(0) }
-    val used = remember(stamp, running, walk) { store.bytes() }; val sets = remember(stamp, running, walk) { store.setsSaved() }
+    val used = remember(stamp, running) { store.bytes() }; val sets = remember(stamp, running) { store.setsSaved() }
     Text(if (sets == 0 && used < 1048576) "Nothing saved yet" else "${"%,.0f".format(used / 1048576.0)} MB · $sets ${if (sets == 1) "set" else "sets"}", style = S.Body.copy(fontSize = 13.sp, fontWeight = FontWeight.SemiBold))
     Text("A set's grid pictures save the first time you open it, so it is instant (and works offline) after that. Foil still shimmers on saved cards.", style = S.Foot)
-    Check("Keep all Magic thumbnails", keep, "Saves every printing's grid picture on Wi-Fi, about 4.4 GB. Pauses during matches and picks up where it left off." +
-        (walk?.let { (d, t) -> " Saved $d of $t sets." } ?: "")) { store.setKeepAll(it) }
     if (used > 0) SiteButton("Clear saved art", small = true) { store.clear(); stamp++ }
 }
 
