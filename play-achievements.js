@@ -14,7 +14,8 @@ export const tierNames = n => TIER_NAMES[n] || TIER_NAMES[5];
 const DEFAULT_TIER_REWARD = {bronze: {seals: {u: 1}, xp: 100}, silver: {seals: {r: 1}, xp: 250}, gold: {seals: {m: 1}, xp: 500}, mythic: {seals: {m: 1}, coins: 1000, xp: 1000}};
 const FEAT = {coins: 300, packs: 1, xp: 100};
 // A hidden feat (a riddle until earned) pays more: finding it is the point.
-const HIDDEN_FEAT = {coins: 500, packs: 1, xp: 250, seals: {r: 1}};
+// Hidden riddles pay a Collector pack (every card holo, 1 in 300 to be a god pack) instead of a plain one (Randall, 4 Nov).
+const HIDDEN_FEAT = {coins: 500, collector: 1, xp: 250, seals: {r: 1}};
 // One-step deeds pay by how hard they are (Randall, 4 Nov): some only XP, some a common or uncommon seal,
 // the big ones a pack, hidden ones a rare seal. `reward` on an achievement names one of these.
 const REWARDS = {xp: {xp: 100}, common: {coins: 100, xp: 100, seals: {c: 1}}, uncommon: {coins: 200, xp: 150, seals: {u: 1}}, feat: FEAT};

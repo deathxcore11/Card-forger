@@ -69,6 +69,6 @@ const pay = id => achievementReward(ACHIEVEMENTS.find(a => a.id === id), 0, {});
 const xpOnly = STORY_DEEDS.find(d => storyDeedReward(d) === 'xp');
 assert.deepEqual(pay(xpOnly.id), {xp: 100});
 assert.equal(pay(STORY_DEEDS.find(d => storyDeedReward(d) === 'uncommon').id).seals.u, 1);
-assert.equal(pay('a15-endless-court').seals.r, 1);
+assert.equal(pay('a15-endless-court').seals.r, 1); assert.equal(pay('a15-endless-court').collector, 1, 'hidden riddles pay a Collector pack');
 assert.equal(pay('a1-chronicler').packs, 1);
 console.log('story deeds ok');
