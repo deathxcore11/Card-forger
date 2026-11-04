@@ -64,13 +64,13 @@ console.log('PASS: real Install action opens desktop help when the native prompt
   assert.deepEqual(app?.sha256, [meta.signingCertificateSha256], "assetlinks names the beta's signing certificate");
   assert.ok(ANDROID_APPS.some(a => a.package === "dev.workers.deathxcore11.cardforge2.twa"), "the earlier TWA entry stays");
   // Android phones: the app download replaces the home-screen install as the main action.
-  const android = installCardMarkup("", { ua: "Mozilla/5.0 (Linux; Android 14; Pixel 8) Chrome/141.0 Mobile Safari/537.36", nativeApp: false });
-  assert.match(android, /Get the Android app/); assert.ok(android.includes('<a class="btn" href="https://cardstashy.com/downloads/"')); assert.match(android,/verifies the current app file/);
-  assert.doesNotMatch(android, /<button class="btn" data-act="install">/, "the shortcut install is secondary on Android");
-  // Computers and iPhone keep the home-screen install and never see the APK.
-  for (const ua of ["Mozilla/5.0 (Windows NT 10.0; Win64; x64) Chrome/141.0 Safari/537.36", "Mozilla/5.0 (iPhone; CPU iPhone OS 18_0 like Mac OS X) Safari/605.1"]) {
-    const other = installCardMarkup("", { ua, nativeApp: false });
-    assert.match(other, /Install CardStashy/); assert.match(other, /data-act="install"/); assert.doesNotMatch(other, /\.apk/);
+  // One download everywhere: the native Android app. No home-screen install, no browser steps, no classic app.
+  const { nativeTestInfo } = await import("./android-beta.js");
+  for (const ua of ["Mozilla/5.0 (Linux; Android 14; Pixel 8) Chrome/141.0 Mobile Safari/537.36", "Mozilla/5.0 (Windows NT 10.0; Win64; x64) Chrome/141.0 Safari/537.36 Edg/141.0", "Mozilla/5.0 (iPhone; CPU iPhone OS 18_0 like Mac OS X) Safari/605.1"]) {
+    const card = installCardMarkup("", { ua, nativeApp: false });
+    assert.equal((card.match(/class="btn[^"]*"/g) || []).length, 1, "exactly one button: " + ua);
+    assert.ok(card.includes(`href="https://cardstashy.com${nativeTestInfo().href}"`), "the one button is the native APK");
+    assert.doesNotMatch(card, /data-act="install"|Edge|classic|Install app/i);
   }
   // Inside the Android app there is nothing to install.
   assert.doesNotMatch(installCardMarkup("", { ua: "Android", nativeApp: true }), /\.apk|data-act="install"/);
