@@ -298,7 +298,7 @@ function effectFor(game,c,key,label,ctx,physicalFinish){
  const standIn={extrasecretrare:'Extra Secret Rare',extrasecret:'Extra Secret Rare','10000secretrare':'10,000 Secret Rare'}[rarity];
  const withLayout=p0=>{let p=starFoil?{...p0,stars:starFoil}:p0;p={...p,printingRelease:release,...(standIn?{profileStatus:'approximate',reason:`${standIn} · not yet modelled; shown as Secret Rare`}:{})};return layout==='standard'?p:{...p,layout};};
  const name=material=>layer('ygo-name',material),art=material=>layer(artMask,material);
- const specs={rare:['ygo-rare',[name('silver')]],superrare:['ygo-super',[art('holo')]],ultrarare:['ygo-ultra',[art('holo'),name('gold')]],secretrare:['ygo-secret',[art('secret'),name('rainbow')]],prismaticsecretrare:['ygo-prismatic',[art('prismatic'),name('rainbow')]],starlightrare:['ygo-starlight',[layer('ygo-broad','starlight')]]};
+ const specs={rare:['ygo-rare',[name('silver')]],superrare:['ygo-super',[art('holo')]],ultrarare:['ygo-ultra',[art('holo'),name('gold')]],secretrare:['ygo-secret',[art('secret'),name('rainbow')]],prismaticsecretrare:['ygo-prismatic',[art('prismatic'),name('rainbow')]],starlightrare:['ygo-starlight',[layer('ygo-broad','starlight'),name('rainbow')]]};
  if(specs[rarity])return withLayout(preset(key,label,...specs[rarity],FINISH_SOURCES.ygo));
  // Every other foil rarity comes from the recipe table. Its CSS layers are the light version shown
  // on small tiles; full-size cards render the recipe itself with WebGL (ygo-rarity-foil.js).

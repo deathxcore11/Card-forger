@@ -41,10 +41,9 @@ try{
    await page.evaluate(async([visible,mx])=>{
     document.querySelector('.card').style.setProperty('--mx',mx);
     await new Promise(r=>requestAnimationFrame(()=>requestAnimationFrame(r)));
-    const gl=document.querySelector('canvas.finish-name-foil').getContext('webgl');
-    gl.clearColor(0,0,0,0);gl.clear(gl.COLOR_BUFFER_BIT);
-    if(visible)gl.drawArrays(gl.TRIANGLE_STRIP,0,4);
-    gl.finish();
+    // The name canvas is a 2D copy of the shared WebGL context: clear it, or ask it to draw again.
+    const c=document.querySelector('canvas.finish-name-foil');
+    if(visible)c.foilRedraw();else c.getContext('2d').clearRect(0,0,c.width,c.height);
    },[visible,mx]);
    return page.screenshot({clip,animations:'disabled'});
   };
