@@ -31,6 +31,8 @@ cp "$HERE/decks/demo-decks.json" "$A/"
 node "$HERE/scripts/export-play-rules.mjs" "$REPO" "$A/play-rules.json"
 node "$HERE/scripts/export-board-icons.mjs" "$REPO" "$A/board-icons.json"
 node "$HERE/scripts/export-story-deeds.mjs" "$REPO" "$A/story-deeds.json"
+# Every Story act's battles and card pool, the fallback when the site's copy can't be reached (or is not published yet).
+mkdir -p "$A/story" && cp "$REPO"/data/story/act-*.json "$REPO"/data/story/pool-*.json "$A/story/"
 node "$HERE/scripts/export-audio-loops.mjs" "$REPO" "$A/audio-loops.json"
 # The card pop-up's rule words and foil recipes, from the web's own modules.
 node "$HERE/scripts/export-card-data.mjs" "$REPO" "$A/card-data.json"

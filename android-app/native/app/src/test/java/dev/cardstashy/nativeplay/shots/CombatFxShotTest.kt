@@ -60,7 +60,7 @@ class CombatFxShotTest {
             // Clash and face: 140 ms after contact; the damage and life items start at contact.
             val now = if (at > 0) at else (1700 * .36f).toLong() + 140
             items.forEach { if (it.kind == Fx.DAMAGE || it.kind == Fx.LIFE) it.t0 = (1700 * .36f).toLong() }
-            fx.items.addAll(items); fx.now.longValue = now
+            fx.items.addAll(items); fx.reindex(); fx.now.longValue = now
             dev.cardstashy.nativeplay.ui.TableEmotes.destroy()
             captureRoboImage(File(System.getProperty("shotsDir"), "table/fx-$name-844x390.png").path) {
                 val anchors = remember { Anchors() }

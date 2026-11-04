@@ -70,7 +70,7 @@ class CombatFilmstripTest {
             val list = items(); val end = list.maxOf { it.t0 + it.dur } + 120
             var t = 0L; var i = 0
             while (t <= end) {
-                val fx = Battlefield(); fx.items.addAll(list); fx.now.longValue = t; fx.reduced = reduced
+                val fx = Battlefield(); fx.items.addAll(list); fx.reindex(); fx.now.longValue = t; fx.reduced = reduced
                 dev.cardstashy.nativeplay.ui.TableEmotes.destroy()
                 frame(File(dir, "%04d-%05dms.png".format(i++, t)), state(t), fx)
                 t += step

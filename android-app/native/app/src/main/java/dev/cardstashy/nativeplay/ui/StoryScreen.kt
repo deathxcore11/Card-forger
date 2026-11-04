@@ -310,15 +310,21 @@ fun StoryRoute(startAct: Int? = null, onBack: () -> Unit, onDuel: (dev.cardstash
     BackHandler { if (battle != null) { battle = null; duel = StoryDuelUi() } else if (open != null) act = null else onBack() }
     if (open == null) { StoryRoad(rules.acts, rules.ages[1] ?: "", p, onBack, { act = it }, purse); return }
     val meta = rules.acts.first { it.act == open }
+    val ctx = LocalContext.current
+    // The site's copy first (fixes land without an APK), else the copy shipped in the app (offline, or an act the site has not published yet).
     val data by androidx.compose.runtime.produceState<JsonObject?>(null, open) {
-        value = kotlinx.coroutines.withContext(kotlinx.coroutines.Dispatchers.IO) { runCatching { Http.call("GET", "https://cardstashy.com/data/story/act-$open.json") as? JsonObject }.getOrNull() }
+        value = kotlinx.coroutines.withContext(kotlinx.coroutines.Dispatchers.IO) {
+            runCatching { Http.call("GET", "https://cardstashy.com/data/story/act-$open.json") as? JsonObject }.getOrNull()
+                ?: runCatching { com.google.gson.JsonParser.parseString(ctx.assets.open("story/act-$open.json").use { String(it.readBytes()) }) as? JsonObject }.getOrNull()
+        }
     }
     val b = battle?.let { id -> data?.getAsJsonArray("battles")?.map { it.asJsonObject }?.firstOrNull { it["id"].asString == id } }
     if (b == null) { StoryActPage(meta, data, p, { act = null }, { battle = it; duel = StoryDuelUi() }, purse); return }
     // The act's card pool gates your own decks (story-client.js loadActPool); null while it loads.
     val pool by androidx.compose.runtime.produceState<Set<String>?>(null, open) {
         value = kotlinx.coroutines.withContext(kotlinx.coroutines.Dispatchers.IO) { runCatching {
-            (Http.call("GET", "https://cardstashy.com/data/story/pool-$open.json") as? com.google.gson.JsonArray)?.map { it.asString.lowercase() }?.toSet() }.getOrNull() }
+            ((runCatching { Http.call("GET", "https://cardstashy.com/data/story/pool-$open.json") as? com.google.gson.JsonArray }.getOrNull()
+                ?: com.google.gson.JsonParser.parseString(ctx.assets.open("story/pool-$open.json").use { String(it.readBytes()) }) as? com.google.gson.JsonArray))?.map { it.asString.lowercase() }?.toSet() }.getOrNull() }
     }
     val owned = remember(state) { dev.cardstashy.nativeplay.play.Decks.ownedByName(state) }
     val decks = remember(state) { state?.getAsJsonArray("decks")?.mapNotNull { it as? JsonObject } ?: emptyList() }

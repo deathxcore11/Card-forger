@@ -198,7 +198,7 @@ class Battlefield {
         items.clear(); focalEnd = now.longValue; reindex()
     }
 
-    private fun reindex() {
+    internal fun reindex() {
         byCard.clear()
         for (it in items) it.card?.let { id -> byCard.getOrPut(id) { mutableListOf() } += it }
         rev.intValue++
@@ -817,7 +817,12 @@ private fun DrawScope.faceHit(it: FxItem, p: Float, r: Rect, low: Boolean = fals
     // Red at the screen's edges only, peaking near 0.9 and gone by about 700 ms.
     val vig = (if (ms < 90f) ms / 90f else 1f - smooth(90f, 700f, ms)) * .9f * (.75f + .25f * k)
     // The red vignette lives at the screen's edges; the middle of the board stays readable.
-    drawRect(Brush.radialGradient(0f to Color.Transparent, .5f to Color.Transparent, 1f to Color(0xFFE02A1A).copy(alpha = vig), center = Offset(size.width / 2f, size.height / 2f), radius = size.maxDimension * .62f))
+    // A band along each edge, as deep on a wide screen's sides as on its top and bottom, so the board stays readable.
+    val band = size.minDimension * .24f; val red = Color(0xFFE02A1A).copy(alpha = vig)
+    drawRect(Brush.horizontalGradient(listOf(red, Color.Transparent), 0f, band), Offset.Zero, Size(band, size.height))
+    drawRect(Brush.horizontalGradient(listOf(Color.Transparent, red), size.width - band, size.width), Offset(size.width - band, 0f), Size(band, size.height))
+    drawRect(Brush.verticalGradient(listOf(red, Color.Transparent), 0f, band), Offset.Zero, Size(size.width, band))
+    drawRect(Brush.verticalGradient(listOf(Color.Transparent, red), size.height - band, size.height), Offset(0f, size.height - band), Size(size.width, band))
     for (j in 0..2) { val q = ((p - j * .08f) / .6f).coerceIn(0f, 1f); if (q > 0f)
         drawCircle(it.tone.copy(alpha = .85f * (1f - q)), radius = r.maxDimension * (.5f + (2.4f + 2f * k) * q), center = r.center, style = Stroke((7f - 6f * q) * density)) }
     // The flash: a white-gold burst on the struck portrait only, 150 dp, 120 ms in and 200 ms out.

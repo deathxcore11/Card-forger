@@ -239,7 +239,9 @@ fun ForgeBoard(
     modifier: Modifier = Modifier, menu: MatchMenu? = null, overlay: @Composable (Dp.() -> Unit)? = null,
 ) {
     // Living Battlefield: effects read from each new snapshot; a touch anywhere skips them to their end.
-    val fx = remember { Battlefield() }
+    // One per board; a caller's own (a frame-by-frame test) wins, so card moves and the shake follow it too.
+    val outer = LocalBattlefield.current
+    val fx = outer ?: remember { Battlefield() }
     FxDriver(fx, st)
     androidx.compose.runtime.CompositionLocalProvider(LocalBattlefield provides fx) {
     BoxWithConstraints(modifier.fillMaxSize().fxSkip(fx).graphicsLayer { fx.shake(this) }) {

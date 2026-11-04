@@ -1,5 +1,7 @@
 package dev.cardstashy.nativeplay.ui
 
+import androidx.compose.ui.text.withStyle
+
 import android.widget.Toast
 import androidx.activity.compose.BackHandler
 import androidx.compose.animation.animateContentSize
@@ -550,15 +552,36 @@ private fun Check(label: String, on: Boolean, foot: String? = null, onChange: (B
 
 // ---------------------------------------------------------------- Help (app-info.js infoPanel + views.js sources/about/legal)
 
+/** This build's notes: short, plain, what a player would notice. */
+private val WHATS_NEW = listOf(
+    "Story" to "Acts 29 to 31 are playable.",
+    "Combat" to "New block, clash and face-hit effects and sounds.",
+    "Handhelds" to "Matches run on Android 8 to 13 devices like the Portal 2.",
+    "Fix" to "Your spell\u2019s card closes once it resolves.",
+)
+
 private data class Topic(val id: String, val category: String, val title: String, val summary: String, val route: String, val action: String, val details: List<String>)
 
 @Composable
 private fun InfoPane(onWeb: (String) -> Unit) {
     val context = LocalContext.current
     val version = remember { runCatching { context.packageManager.getPackageInfo(context.packageName, 0).versionName }.getOrNull() ?: "" }
+    // Randall 4 Nov: one download, and notes on a need-to-know basis while the app is in testing (full patch notes at launch).
+    val number = version.substringBefore('-'); val test = "test" in version
     Row(verticalAlignment = Alignment.CenterVertically) {
-        Column(Modifier.weight(1f)) { Text("App $version", style = S.Foot); Text("Updates", style = S.Btn.copy(fontSize = 16.sp)) }
-        LinkText("Check for updates", small = true) { onWeb("https://cardstashy.com/downloads") }
+        Column(Modifier.weight(1f)) {
+            Text("Updates", style = S.Btn.copy(fontSize = 16.sp))
+            Text("Version $number" + if (test) " \u00B7 test build" else "", style = S.Foot)
+        }
+        LinkText("Get the latest", small = true) { onWeb("https://cardstashy.com/downloads") }
+    }
+    Column(verticalArrangement = Arrangement.spacedBy(4.dp)) {
+        Text("WHAT\u2019S NEW", style = S.Eyebrow)
+        WHATS_NEW.forEach { (tag, line) ->
+            Text(androidx.compose.ui.text.buildAnnotatedString {
+                withStyle(androidx.compose.ui.text.SpanStyle(color = Site.Gold, fontWeight = FontWeight.Bold)) { append(tag) }; append("  "); append(line)
+            }, style = S.Small)
+        }
     }
     Box(Modifier.fillMaxWidth().height(1.dp).background(Site.Line))
     Column(verticalArrangement = Arrangement.spacedBy(4.dp)) {

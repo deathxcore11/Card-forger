@@ -61,7 +61,10 @@ object StoryLogic {
         25 to listOf("a25-spire", "a25-fabricate", "a25-compliance"),
         26 to listOf("a26-no-gift", "a26-exerted", "a26-poisons"),
         27 to listOf("a27-golden-city", "a27-treasure", "a27-enrage"),
-        28 to listOf("a28-story-unfolds", "a28-weatherlight", "a28-sisay")
+        28 to listOf("a28-story-unfolds", "a28-weatherlight", "a28-sisay"),
+        29 to listOf("a29-beacon", "a29-queen", "a29-debts"),
+        30 to listOf("a30-story", "a30-questing", "a30-escape"),
+        31 to listOf("a31-party", "a31-doomskar", "a31-extus")
     )
     fun keyFeats(n: Int): List<String> = KEY_FEATS[n].orEmpty()
     fun keyFeatsMissing(n: Int, counters: Map<String, Double>): List<String> = keyFeats(n).filter { (counters["sd:$it"] ?: 0.0) <= 0.0 }
