@@ -45,12 +45,38 @@ data class Selection(
 )
 /** n.payment while Forge asks for mana: what is still owed, the card it is for, and the real cost for the chosen target. */
 data class Payment(val remaining: String?, val forCard: Int?, val forName: String?, val costNow: String?)
-data class PromptOption(val index: Int, val label: String, val cardId: Int?)
+data class PromptOption(
+    val index: Int, val label: String, val cardId: Int?,
+    /** value.kind ("card", "ability", "player", "optionalCost"…), when the option is an object. */
+    val kind: String? = null,
+    /** The zone of the option's card (value.card.zone, else value.zone). */
+    val zone: String? = null,
+    /** isDescribedOption (native-panel.mjs): a primitive, or a visible object with a name, description or text. */
+    val described: Boolean = true,
+    /** value.card.id / value.card.zone even when the card is not shown (modeBackOutOffered). */
+    val rawCardId: Int? = null, val cardZone: String? = null,
+    /** The option's card name (value.card.name, else value.name) when it is visible. */
+    val cardName: String? = null,
+    /** value.id for a player option. */
+    val playerId: Int? = null,
+    /** String(value) for a primitive option (showInputDialog sends it back). */
+    val valueText: String? = null,
+)
 data class Prompt(
     val id: Int, val method: String, val message: String, val min: Int, val max: Int,
     val options: List<PromptOption>, val supported: Boolean, val ordered: Boolean, val destinationIndexes: List<Int>,
     val assignAmount: Int?, val assignMaxima: List<Int>, val maySkip: Boolean,
     val assignLethal: List<Int?>, val defenderIndex: Int?,
+    val sourceIndexes: List<Int> = emptyList(), val remainingMin: Int? = null, val remainingMax: Int? = null,
+    val rememberAllowed: Boolean = false, val topLabel: String? = null, val acknowledgeOnly: Boolean = false,
+    val cancelable: Boolean = false, val numeric: Boolean = false,
+    /** assign.freeDivision / assign.atLeastOne / assign.label; whether assign.lethal / assign.maxima came as arrays. */
+    val assignFree: Boolean = false, val assignAtLeastOne: Boolean = false, val assignLabel: String = "",
+    val hasLethal: Boolean = false, val hasMaxima: Boolean = false,
+    /** Whether supported came as true (the site's p.supported===true). */
+    val supportedExact: Boolean = true,
+    /** Forge's message before tidy() (the dock's cpuName works on Forge's own words). */
+    val rawMessage: String = "",
 ) {
     /** Forge's damage split done the plain way: lethal to each blocker in order, the rest to the
      *  defender (trample) or the last blocker; a generic split fills each target up to its maximum. */
@@ -183,14 +209,32 @@ data class MatchState(
             return Prompt(
                 id = p.int("id") ?: 0, method = p.str("method") ?: "", message = p.str("message") ?: "",
                 min = p.int("min") ?: 0, max = p.int("max") ?: 0,
-                options = p.arr("options").map { e -> val x = e.asJsonObject; val v = x.get("value"); PromptOption(x.int("index") ?: 0, label(v), cardId(v)) },
+                options = p.arr("options").map { e -> val x = e.asJsonObject; val v = x.get("value"); option(x.int("index") ?: 0, v) },
                 supported = p.bool("supported") != false, ordered = p.bool("ordered") == true,
                 destinationIndexes = p.arr("destinationIndexes").map { it.asInt },
                 assignAmount = assign?.int("amount"), assignMaxima = assign?.arr("maxima")?.map { if (it.isJsonPrimitive) it.asInt else 0 } ?: emptyList(),
                 maySkip = assign?.bool("maySkip") == true,
                 assignLethal = assign?.arr("lethal")?.map { if (it.isJsonPrimitive) it.asInt else null } ?: emptyList(),
                 defenderIndex = assign?.int("defenderIndex"),
+                sourceIndexes = p.arr("sourceIndexes").mapNotNull { if (it.isJsonPrimitive && it.asJsonPrimitive.isNumber) it.asInt else null },
+                remainingMin = p.int("remainingMin"), remainingMax = p.int("remainingMax"),
+                rememberAllowed = p.bool("rememberAllowed") == true, topLabel = p.str("topLabel"), acknowledgeOnly = p.bool("acknowledgeOnly") == true,
+                cancelable = p.bool("cancelable") == true, numeric = p.bool("numeric") == true,
+                assignFree = assign?.bool("freeDivision") == true, assignAtLeastOne = assign?.bool("atLeastOne") == true, assignLabel = assign?.str("label") ?: "",
+                hasLethal = assign?.get("lethal")?.isJsonArray == true, hasMaxima = assign?.get("maxima")?.isJsonArray == true,
+                supportedExact = p.bool("supported") == true, rawMessage = p.str("message") ?: "",
             )
+        }
+
+        private fun option(index: Int, v: JsonElement?): PromptOption {
+            val o = v?.takeIf { it.isJsonObject }?.asJsonObject
+            val c = o?.obj("card")
+            // isDescribedOption (native-panel.mjs:55).
+            val described = v != null && !v.isJsonNull && (v.isJsonPrimitive || (o != null && o.bool("hidden") != true && c?.bool("hidden") != true && (o.str("name") != null || o.str("description") != null || o.str("text") != null)))
+            val visible = o != null && o.bool("hidden") != true && c?.bool("hidden") != true
+            return PromptOption(index, label(v), cardId(v), kind = o?.str("kind"), zone = c?.str("zone") ?: o?.str("zone"), described = described,
+                rawCardId = c?.int("id"), cardZone = c?.str("zone"), cardName = if (visible) c?.str("name") ?: o?.str("name") else null,
+                playerId = if (o?.str("kind") == "player") o.int("id") else null, valueText = v?.takeIf { it.isJsonPrimitive }?.asString)
         }
 
         // optionLabel / optionCardId in forge-session.mjs.
