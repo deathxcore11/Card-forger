@@ -256,6 +256,10 @@ export const LESSONS = {
   'Oil counters': 'Oil counters: Phyrexian permanents store them and spend them for effects. They are a resource, like charge, that can be used up or built up.',
   'Battles': 'A battle is a permanent you attack. It has defense counters, and when the last is removed, the battle flips and its owner gets a reward.',
   'Incubate': 'Incubate: create an Incubator token with counters on it. Pay to flip it into a Phyrexian creature that carries them.',
+  'Bargain': 'Bargain: as you cast a spell, you may sacrifice an artifact, enchantment or token. If you do, the spell gets a better effect.',
+  'Roles': 'Roles are Aura tokens with a name. Each creature can only wear one of yours, and each Role gives a small bonus like a counter, ward or extra power.',
+  'Discover': 'Discover N: reveal cards from the top of your library until you find a nonland card of that value or lower. Cast it free or put it in your hand.',
+  'Collect evidence': 'Collect evidence N: exile cards from your graveyard with total mana value N or more. It is a cost, so the spell it powers is stronger.',
   'Playing under a lock': 'A lock stops cards from untapping or moving. Break it, or win with what\'s already in play.',
 };
 // Every Story deck says what it is (Randall, 2 Nov 2026): Historical Exact, Historical Tribute or
