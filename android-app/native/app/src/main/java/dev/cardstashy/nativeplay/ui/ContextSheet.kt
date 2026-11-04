@@ -58,8 +58,8 @@ fun ContextSheet(kind: String, name: String, meta: String?, art: String?, groups
             .clip(RoundedCornerShape(24.dp)).background(Site.Surface).border(1.dp, Site.Line, RoundedCornerShape(24.dp))
             .clickable(remember { MutableInteractionSource() }, null) {}.verticalScroll(rememberScrollState()).padding(18.dp), verticalArrangement = Arrangement.spacedBy(14.dp)) {
             Row(verticalAlignment = Alignment.CenterVertically) {
-                if (art != null) coil3.compose.AsyncImage(art, null, imageLoader = dev.cardstashy.nativeplay.art.CardArt.loader, contentScale = ContentScale.Crop,
-                    modifier = Modifier.size(44.dp, 60.dp).clip(RoundedCornerShape(6.dp)))
+                if (art != null) heroPainter(homeArt(art))?.let { p -> androidx.compose.foundation.Image(p, null, contentScale = ContentScale.Crop,
+                    modifier = Modifier.size(44.dp, 60.dp).clip(RoundedCornerShape(6.dp))) }
                 if (art != null) Spacer(Modifier.width(14.dp))
                 Column(Modifier.weight(1f)) {
                     Text(kind.uppercase(), style = TextStyle(fontFamily = Site.Manrope, fontWeight = FontWeight.Bold, fontSize = 11.sp, letterSpacing = 1.3.sp, color = Site.Muted))

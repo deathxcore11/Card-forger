@@ -197,6 +197,8 @@ private fun rowNames(raw: JsonObject) = raw.getAsJsonArray("cards")?.mapNotNull 
 
 /** views.js coverOf: the commander's art, else the best-ranked card (creature or planeswalker, then spells, then lands) in list order. */
 private fun coverOf(raw: JsonObject): String? {
+    // views.js coverOf: the art the player picked as this deck's cover wins (PR #110).
+    raw.getAsJsonObject("coverCard")?.get("image")?.takeIf { it.isJsonPrimitive }?.asString?.takeIf { it.startsWith("https://") }?.let { return it }
     val commander = raw.get("commander")?.takeIf { it.isJsonPrimitive }?.asString
     factByName(commander)?.a?.takeIf { it.isNotBlank() }?.let { return it }
     fun rank(t: String) = if (Regex("\\b(Creature|Planeswalker)\\b").containsMatchIn(t)) 0 else if (Regex("\\bLand\\b").containsMatchIn(t)) 2 else 1

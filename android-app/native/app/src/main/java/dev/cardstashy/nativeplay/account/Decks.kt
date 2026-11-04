@@ -39,6 +39,9 @@ object Decks {
     private val _error = MutableStateFlow<String?>(null); val error: StateFlow<String?> = _error
     /** The account's saved online lists (workspace data.references): the Play lobby offers them under Community. */
     private val _references = MutableStateFlow<List<JsonObject>>(emptyList()); val references: StateFlow<List<JsonObject>> = _references
+    /** settings.playDeckCovers: deck id -> {name, image} the player picked as a Play deck's cover (PR #110). */
+    private val _covers = MutableStateFlow<Map<String, JsonObject>>(emptyMap()); val playDeckCovers: StateFlow<Map<String, JsonObject>> = _covers
+    private fun covers(data: JsonObject?) = data?.getAsJsonObject("settings")?.getAsJsonObject("playDeckCovers")?.entrySet()?.mapNotNull { (k, v) -> (v as? JsonObject)?.let { k to it } }?.toMap() ?: emptyMap()
     private fun refs(data: JsonObject?) = data?.getAsJsonArray("references")?.mapNotNull { it as? JsonObject } ?: emptyList()
     val timings = MutableStateFlow<Map<String, Long>>(emptyMap())
 
@@ -62,7 +65,7 @@ object Decks {
         val file = cacheFile(context, s.userId)
         if (_decks.value == null && file.isFile) try {
             val disk = JsonParser.parseString(file.readText()).asJsonObject
-            _decks.value = parse(disk); _references.value = refs(disk)
+            _decks.value = parse(disk); _references.value = refs(disk); _covers.value = covers(disk)
             timings.value = timings.value + ("decksFromDisk" to System.currentTimeMillis() - t0)
         } catch (_: Exception) {}
         try {
@@ -71,9 +74,10 @@ object Decks {
                 mapOf("apikey" to Account.KEY, "Authorization" to "Bearer $token"), timeoutMs = 15000)?.asJsonArray
             val data = rows?.firstOrNull()?.asJsonObject?.getAsJsonObject("data")
             // Only the decks and saved online lists are kept on this device.
-            val slim = JsonObject().apply { add("decks", data?.getAsJsonArray("decks") ?: JsonArray()); add("references", data?.getAsJsonArray("references") ?: JsonArray()) }
+            val slim = JsonObject().apply { add("decks", data?.getAsJsonArray("decks") ?: JsonArray()); add("references", data?.getAsJsonArray("references") ?: JsonArray())
+                data?.getAsJsonObject("settings")?.getAsJsonObject("playDeckCovers")?.let { c -> add("settings", JsonObject().apply { add("playDeckCovers", c) }) } }
             file.writeText(slim.toString())
-            _decks.value = parse(slim); _references.value = refs(slim); _error.value = null
+            _decks.value = parse(slim); _references.value = refs(slim); _covers.value = covers(slim); _error.value = null
             timings.value = timings.value + ("decksFromAccount" to System.currentTimeMillis() - t0)
         } catch (e: Exception) {
             if (_decks.value == null) _error.value = "Couldn’t load your decks. Check your connection."
@@ -86,7 +90,18 @@ object Decks {
      * clash the fresh copy is read again and the change re-applied once; a second clash gives up with
      * no write. Never inserts a first copy (the web owns that) and never touches anything but data.decks.
      */
-    suspend fun update(context: Context, change: (JsonArray) -> JsonArray): String? = withContext(Dispatchers.IO) {
+    suspend fun update(context: Context, change: (JsonArray) -> JsonArray): String? =
+        updateData(context) { data -> data.add("decks", change(data.getAsJsonArray("decks")?.deepCopy() ?: JsonArray())) }
+
+    /** app.js saveDeckCover for a Play deck: settings.playDeckCovers[id] = {name, image}, or removed with null. */
+    suspend fun setPlayDeckCover(context: Context, id: String, pick: JsonObject?): String? = updateData(context) { data ->
+        val settings = data.getAsJsonObject("settings") ?: JsonObject().also { data.add("settings", it) }
+        val next = settings.getAsJsonObject("playDeckCovers")?.deepCopy() ?: JsonObject()
+        if (pick != null) next.add(id, pick) else next.remove(id)
+        settings.add("playDeckCovers", next)
+    }
+
+    private suspend fun updateData(context: Context, change: (JsonObject) -> Unit): String? = withContext(Dispatchers.IO) {
         val s = Account.session.value ?: return@withContext "Sign in to save decks."
         repeat(2) {
             val token = Account.token() ?: return@withContext "Sign in again to save decks."
@@ -95,20 +110,24 @@ object Decks {
                 ?: return@withContext "Your account copy isn’t set up yet. Open CardStashy on the web once, then try again."
             val revision = row.get("revision").asLong
             val data = row.getAsJsonObject("data") ?: JsonObject()
-            data.add("decks", change(data.getAsJsonArray("decks")?.deepCopy() ?: JsonArray()))
+            change(data)
             val body = JsonObject().apply { add("data", data); addProperty("revision", revision + 1); addProperty("device", ("Android · " + java.text.DateFormat.getDateInstance(java.text.DateFormat.SHORT).format(java.util.Date())).take(120)) }
             val out = Http.call("PATCH", "${Account.URL}/rest/v1/workspaces?user_id=eq.${s.userId}&revision=eq.$revision&select=revision",
                 auth + ("Prefer" to "return=representation"), body.toString())?.asJsonArray
             if (out != null && out.size() > 0) {
                 _decks.value = parse(data)
-                _references.value = refs(data)
-                try { cacheFile(context, s.userId).writeText(JsonObject().apply { add("decks", data.getAsJsonArray("decks")); add("references", data.getAsJsonArray("references") ?: JsonArray()) }.toString()) } catch (_: Exception) {}
+                _references.value = refs(data); _covers.value = covers(data)
+                try { cacheFile(context, s.userId).writeText(JsonObject().apply { add("decks", data.getAsJsonArray("decks") ?: JsonArray()); add("references", data.getAsJsonArray("references") ?: JsonArray())
+                    data.getAsJsonObject("settings")?.getAsJsonObject("playDeckCovers")?.let { c -> add("settings", JsonObject().apply { add("playDeckCovers", c) }) } }.toString()) } catch (_: Exception) {}
                 return@withContext null
             }
         }
         "Your decks changed on another device. Reload and try again."
     }
 
-    fun clear() { _decks.value = null; _error.value = null; _references.value = emptyList() }
+    fun clear() { _decks.value = null; _error.value = null; _references.value = emptyList(); _covers.value = emptyMap() }
     internal fun setForTest(list: List<UserDeck>?) { _decks.value = list }
+    internal fun setCoversForTest(map: Map<String, JsonObject>) { _covers.value = map }
+    /** play-econ-ui.js pickedCover: the picked art crop for a Play deck, if it is an https image. */
+    fun pickedCover(id: String?): String? = id?.let { _covers.value[it] }?.get("image")?.takeIf { it.isJsonPrimitive }?.asString?.takeIf { it.startsWith("https://") }
 }

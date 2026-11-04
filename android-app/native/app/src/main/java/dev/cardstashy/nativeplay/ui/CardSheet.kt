@@ -111,7 +111,11 @@ class CardSheetActions(
     val precon: (name: String, code: String) -> Unit = { _, _ -> },
     val newDeck: (name: String) -> Unit = {},
     val toast: (String) -> Unit = {},
+    /** app.js play.edit: a deck open in the builder; the card view steps copies there and can make the card its cover. */
+    val edit: DeckEditCtx? = null,
 )
+
+class DeckEditCtx(val name: String, val qty: (String) -> Int, val copies: Int, val step: (String, Int) -> Unit)
 
 private val Ink = Site.Text
 private fun t(size: Float, weight: FontWeight = FontWeight.Medium, color: Color = Ink, line: Float = size * 1.4f) =
@@ -487,6 +491,24 @@ private fun OwnLine(n: Int) = Row(verticalAlignment = Alignment.CenterVertically
     Pips(n); Text(if (n > 0) "$n of 4 in your Play collection" else "Not in your Play collection yet", style = t(14f, FontWeight.Bold))
 }
 
+/** views.js playEditActions: the copy stepper for the open deck (the deck cover is set by holding a tile in the builder). */
+@Composable
+private fun EditActions(e: DeckEditCtx, name: String) {
+    val q = e.qty(name)
+    Column(verticalArrangement = Arrangement.spacedBy(10.dp)) {
+        Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(10.dp)) {
+            StepBtn("−", q > 0, gold = false) { e.step(name, -1) }
+            Text("$q in deck", style = t(15f, FontWeight.Bold), textAlign = androidx.compose.ui.text.style.TextAlign.Center, modifier = Modifier.widthIn(min = 74.dp))
+            StepBtn("+", q < e.copies, gold = true) { e.step(name, 1) }
+        }
+    }
+}
+
+@Composable
+private fun StepBtn(label: String, enabled: Boolean, gold: Boolean, onClick: () -> Unit) = Box(Modifier.size(44.dp).alpha(if (enabled) 1f else .4f).clip(RoundedCornerShape(11.dp))
+    .then(if (gold) Modifier.background(Site.Gold) else Modifier.background(Color(0x0FFFFFFF)).border(1.dp, Color(0x24FFFFFF), RoundedCornerShape(11.dp)))
+    .clickable(enabled = enabled, onClick = onClick), contentAlignment = Alignment.Center) { Text(label, style = t(18f, FontWeight.Bold, if (gold) Color(0xFF1B1406) else Ink)) }
+
 @Composable
 private fun PlayActions(name: String, shown: JsonObject, state: JsonObject?, n: Int, act: CardSheetActions, onGet: () -> Unit) {
     val decks = Trunk.decks(state)
@@ -495,6 +517,7 @@ private fun PlayActions(name: String, shown: JsonObject, state: JsonObject?, n: 
     Column(Modifier.fillMaxWidth().glass(RoundedCornerShape(14.dp)).padding(14.dp),
         verticalArrangement = Arrangement.spacedBy(12.dp)) {
         OwnLine(n)
+        act.edit?.let { e -> EditActions(e, name) }
         FlowRow(horizontalArrangement = Arrangement.spacedBy(8.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
             if (n < 4) GoldCta(if (n > 0) "Get more copies" else "Get it", onClick = onGet)
             if (decks.isNotEmpty()) GhostButton("Add to deck", gold = n >= 4) { open = !open }

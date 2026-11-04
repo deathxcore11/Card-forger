@@ -344,6 +344,19 @@ class ShotTest {
                 dev.cardstashy.nativeplay.ui.DeckEditor(trunkState, ui, {}, {}, {}, {}) { PlayNav(PlayTab.DECKS, {}) }
             }
         }
+        // Hold a deck row (PR #110 playHoldMenu): Play's card actions with Deck cover; then the deck wearing the picked art.
+        RuntimeEnvironment.setQualifiers("w412dp-h915dp-xxhdpi")
+        val hold = dev.cardstashy.nativeplay.ui.EditorUi().apply { edit = dev.cardstashy.nativeplay.play.DeckEdit.open(deck); holdName = "Sheoldred, the Apocalypse" }
+        captureRoboImage(File(System.getProperty("shotsDir"), "deck-editor-hold-cover.png").path) {
+            dev.cardstashy.nativeplay.ui.DeckEditor(trunkState, hold, {}, {}, {}, {}) { PlayNav(PlayTab.DECKS, {}) }
+        }
+        val sheol = trunkCards.first { it["name"].asString == "Sheoldred, the Apocalypse" }.getAsJsonObject("image_uris")["art_crop"].asString
+        dev.cardstashy.nativeplay.account.Decks.setCoversForTest(mapOf("d1" to JsonParser.parseString("""{"name":"Sheoldred, the Apocalypse","image":"$sheol"}""").asJsonObject))
+        val covered = dev.cardstashy.nativeplay.ui.EditorUi().apply { edit = dev.cardstashy.nativeplay.play.DeckEdit.open(deck); holdName = "Sheoldred, the Apocalypse" }
+        captureRoboImage(File(System.getProperty("shotsDir"), "deck-editor-covered.png").path) {
+            dev.cardstashy.nativeplay.ui.DeckEditor(trunkState, covered, {}, {}, {}, {}) { PlayNav(PlayTab.DECKS, {}) }
+        }
+        dev.cardstashy.nativeplay.account.Decks.setCoversForTest(emptyMap())
         home.mkdirs(); home.resolve("missing.txt").writeText(missing.joinToString("\n"))
     }
 

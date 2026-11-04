@@ -1,10 +1,12 @@
 package dev.cardstashy.nativeplay.ui
 
+import dev.cardstashy.nativeplay.account.Decks as Workspace
 import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
+import androidx.compose.foundation.combinedClickable
 import androidx.compose.foundation.horizontalScroll
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
@@ -57,6 +59,8 @@ class EditorUi {
     var crafting by mutableStateOf(false)
     var armed by mutableStateOf(false)
     var filling by mutableStateOf(false)
+    /** The card whose Play card actions (hold) are open. */
+    var holdName by mutableStateOf<String?>(null)
     var mode by mutableStateOf("mine")
     var filter by mutableStateOf(Trunk.Filter())
     var sort by mutableStateOf("")
@@ -80,6 +84,7 @@ private val POOL_TYPES = mapOf("Creatures" to "creature", "Planeswalkers" to "pl
 
 @Composable
 fun DeckEditor(state: JsonObject, ui: EditorUi, onBack: () -> Unit, onCard: (CardPick) -> Unit, onPack: (String) -> Unit, toast: (String) -> Unit, nav: @Composable () -> Unit) {
+    val haptic = androidx.compose.ui.platform.LocalHapticFeedback.current
     val scope = rememberCoroutineScope()
     val clipboard = LocalClipboardManager.current
     val e = ui.edit
@@ -170,6 +175,9 @@ fun DeckEditor(state: JsonObject, ui: EditorUi, onBack: () -> Unit, onCard: (Car
         step = ::stepCard,
         open = { name -> onCard(CardPick(name, byName[name]?.o ?: fact(name)?.o ?: "", byName[name]?.pid ?: idOf(name).ifBlank { null }, "nonfoil")) },
         pack = onPack,
+        // app.js playHoldMenu: on a saved deck, hold opens Play's card actions; otherwise the card view.
+        hold = { name -> if (ui.edit.id.isNullOrBlank()) onCard(CardPick(name, byName[name]?.o ?: fact(name)?.o ?: "", byName[name]?.pid ?: idOf(name).ifBlank { null }, "nonfoil"))
+            else { haptic.performHapticFeedback(androidx.compose.ui.hapticfeedback.HapticFeedbackType.LongPress); ui.holdName = name } },
     )
 
     // Pool tiles (Your cards or All cards).
@@ -182,7 +190,7 @@ fun DeckEditor(state: JsonObject, ui: EditorUi, onBack: () -> Unit, onCard: (Car
     val playSets = remember(state, sets.size) { Trunk.setRows(state) }
 
     val deckBlock: LazyGridScope.() -> Unit = {
-        item(span = { GridItemSpan(maxLineSpan) }) { Hero(e, nums, plan.missing, fact(e.cards.firstOrNull { !Decks.isBasicLand(it.name) }?.name ?: "")?.a, ui.busy, onBack, actions.save) }
+        item(span = { GridItemSpan(maxLineSpan) }) { Workspace.playDeckCovers.collectAsState().value; Hero(e, nums, plan.missing, Workspace.pickedCover(e.id) ?: fact(e.cards.firstOrNull { !Decks.isBasicLand(it.name) }?.name ?: "")?.a, ui.busy, onBack, actions.save) }
         item(span = { GridItemSpan(maxLineSpan) }) { Meta(ui) }
         if (plan.missing > 0) item(span = { GridItemSpan(maxLineSpan) }) { CraftAllBar(plan, ui, actions.craftAll) }
         if (nums.count < nums.size) item(span = { GridItemSpan(maxLineSpan) }) {
@@ -219,7 +227,7 @@ fun DeckEditor(state: JsonObject, ui: EditorUi, onBack: () -> Unit, onCard: (Car
             Column(Modifier.padding(vertical = 18.dp), verticalArrangement = Arrangement.spacedBy(4.dp)) { Text(h, style = t(17f, FontWeight.Bold)); Text(p, style = t(14f, color = Site.Muted)) }
         }
         items(tiles.take(300), key = { "pool:" + it.name }) { c ->
-            PoolCard(c.name, c.image, c.rarity, c.have, DeckEdit.room(e.cards, c.name, e.format), { actions.open(c.name) }) { actions.step(c.name, 1) }
+            PoolCard(c.name, c.image, c.rarity, c.have, DeckEdit.room(e.cards, c.name, e.format), { actions.open(c.name) }, { actions.hold(c.name) }) { actions.step(c.name, 1) }
         }
         if (ui.mode == "all" && ui.poolMore && !ui.poolBusy) item(span = { GridItemSpan(maxLineSpan) }) { GhostButton("More cards", Modifier.fillMaxWidth()) { loadPool(true) } }
     }
@@ -236,11 +244,30 @@ fun DeckEditor(state: JsonObject, ui: EditorUi, onBack: () -> Unit, onCard: (Car
                 horizontalArrangement = Arrangement.spacedBy(10.dp)) { deckBlock(); poolBlock() }
         }
         Box(Modifier.align(Alignment.BottomCenter)) { nav() }
+        ui.holdName?.let { name -> HoldCover(ui, name, fact(name)?.a?.ifBlank { null } ?: named(name, "art_crop"), toast, onOpen = { ui.holdName = null; actions.open(name) }, onClose = { ui.holdName = null }) }
     }
 }
 
+/** app.js playHoldMenu: Play's card actions for a card in a saved deck, the same look as Collection's: Open card, or Deck cover. */
+@Composable
+private fun HoldCover(ui: EditorUi, name: String, image: String, toast: (String) -> Unit, onOpen: () -> Unit, onClose: () -> Unit) {
+    val context = androidx.compose.ui.platform.LocalContext.current; val scope = rememberCoroutineScope()
+    val e = ui.edit; val id = e.id ?: return; val deck = e.name.ifBlank { "this deck" }
+    val pick = Workspace.playDeckCovers.collectAsState().value[id]?.get("name")?.takeIf { it.isJsonPrimitive }?.asString ?: ""
+    val isCover = pick.isNotEmpty() && pick.split(" // ")[0] in listOf(name, name.split(" // ")[0])
+    androidx.activity.compose.BackHandler(onBack = onClose)
+    ContextSheet("Card actions", name, e.name, image, listOf(listOf(
+        ContextAction(SiteIcons.CardStack, "Open card", "Copies, crafting and Secret Lair art") { onOpen() },
+        if (isCover) ContextAction(SiteIcons.Paint, "Use the automatic deck cover", "This card is the cover now") {
+            scope.launch { val err = Workspace.setPlayDeckCover(context, id, null); onClose(); toast(err ?: "$deck uses its automatic cover again.") } }
+        else ContextAction(SiteIcons.Paint, "Deck cover", "Show this art on $deck") {
+            if (!image.startsWith("https://")) { toast("This card has no artwork to use."); return@ContextAction }
+            scope.launch { val err = Workspace.setPlayDeckCover(context, id, JsonObject().apply { addProperty("name", name.take(200)); addProperty("image", image.take(500)) })
+                onClose(); toast(err ?: "$name is the cover of $deck.") } })), onClose)
+}
+
 private class Actions(val save: () -> Unit, val craftAll: () -> Unit, val craftCopies: (String, Int) -> Unit, val fill: () -> Unit, val copy: () -> Unit,
-                      val step: (String, Int) -> Unit, val open: (String) -> Unit, val pack: (String) -> Unit)
+                      val step: (String, Int) -> Unit, val open: (String) -> Unit, val pack: (String) -> Unit, val hold: (String) -> Unit = open)
 
 /** deckShell: the lead card's art bleeding behind the title, "Play deck" and the format, the numbers, Save deck. */
 @Composable
@@ -310,7 +337,7 @@ private fun DeckRow(c: DeckEdit.Line, p: DeckEdit.PlanRow?, f: CardFacts.Fact?, 
     val miss = p?.miss ?: 0
     Row(Modifier.fillMaxWidth().heightIn(min = 56.dp).clip(RoundedCornerShape(14.dp)).background(Color(0x0AFFFFFF)).border(1.dp, SoftRim, RoundedCornerShape(14.dp)),
         verticalAlignment = Alignment.CenterVertically) {
-        Row(Modifier.weight(1f).heightIn(min = 56.dp).clickable { a.open(c.name) }.padding(start = 6.dp, end = 4.dp).alpha(if (miss > 0) .6f else 1f),
+        Row(Modifier.weight(1f).heightIn(min = 56.dp).combinedClickable(onLongClick = { a.hold(c.name) }) { a.open(c.name) }.padding(start = 6.dp, end = 4.dp).alpha(if (miss > 0) .6f else 1f),
             verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(10.dp)) {
             val pt = heroPainter((f?.a?.ifBlank { null } ?: named(c.name, "art_crop")).let(homeArt))
             Box(Modifier.size(width = 52.dp, height = 40.dp).clip(RoundedCornerShape(10.dp)).background(Site.Surface2)) {
@@ -369,11 +396,11 @@ private fun BasicsRow(step: (String, Int) -> Unit) = Row(Modifier.fillMaxWidth()
 
 /** .pe-pool-card: the card; owned count (up to 4) or the seal it costs; + adds one (off at the copy cap). */
 @Composable
-private fun PoolCard(name: String, image: String, rarity: String, have: Int, room: Int, onOpen: () -> Unit, onAdd: () -> Unit) {
+private fun PoolCard(name: String, image: String, rarity: String, have: Int, room: Int, onOpen: () -> Unit, onHold: () -> Unit, onAdd: () -> Unit) {
     val missing = have == 0
     val p = heroPainter(image.let(homeArt))
     Box(Modifier.fillMaxWidth().aspectRatio(63f / 88f)) {
-        Box(Modifier.fillMaxSize().clip(RoundedCornerShape(10.dp)).background(Site.Surface2).clickable(onClick = onOpen).alpha(if (missing) .5f else 1f)) {
+        Box(Modifier.fillMaxSize().clip(RoundedCornerShape(10.dp)).background(Site.Surface2).combinedClickable(onLongClick = onHold, onClick = onOpen).alpha(if (missing) .5f else 1f)) {
             if (p != null) Image(p, name, Modifier.fillMaxSize(), contentScale = ContentScale.Crop)
         }
         Box(Modifier.align(Alignment.BottomStart).padding(6.dp).height(28.dp).widthIn(min = 28.dp).softPill(RoundedCornerShape(14.dp)).padding(horizontal = 6.dp), contentAlignment = Alignment.Center) {

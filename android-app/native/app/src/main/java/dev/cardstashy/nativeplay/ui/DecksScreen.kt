@@ -2,6 +2,7 @@
 
 package dev.cardstashy.nativeplay.ui
 
+import dev.cardstashy.nativeplay.account.Decks as Workspace
 import androidx.activity.compose.BackHandler
 
 import androidx.compose.foundation.Image
@@ -175,7 +176,8 @@ private fun NewDeckTile(modifier: Modifier, onClick: () -> Unit) = TileFrame(DEC
 @Composable
 private fun PlayDeckTile(d: JsonObject, owned: Map<String, Int>, modifier: Modifier, onOpen: () -> Unit, onHold: () -> Unit = {}, onDelete: () -> Unit) {
     val n = Decks.tile(d, owned); val name = d.s("name").ifBlank { "Untitled deck" }
-    TileFrame(Decks.cover(d), modifier, onHold = onHold, onClick = onOpen) {
+    Workspace.playDeckCovers.collectAsState().value
+    TileFrame(Workspace.pickedCover(d.s("id").ifBlank { null }) ?: Decks.cover(d), modifier, onHold = onHold, onClick = onOpen) {
         Text(d.s("format").ifBlank { "Casual" }, style = t(12f, FontWeight.Bold, Color(0xFFE6E8EC)), modifier = Modifier.padding(10.dp)
             .softPill(RoundedCornerShape(999.dp)).padding(horizontal = 10.dp, vertical = 4.dp))
         Box(Modifier.align(Alignment.TopEnd).padding(10.dp).size(44.dp).softPill(CircleShape)
@@ -404,6 +406,7 @@ fun DecksRoute(onBack: () -> Unit, onWeb: (String) -> Unit, onNav: (PlayTab) -> 
     var finder by remember { mutableStateOf<FinderUi?>(null) }
     var card by remember { mutableStateOf<CardPick?>(null) }
     val ed = editor
+    LaunchedEffect(Unit) { if (dev.cardstashy.nativeplay.account.Account.session.value != null && Workspace.decks.value == null) runCatching { Workspace.load(context) } }
     Box(Modifier.fillMaxSize()) {
         val fu = finder
         if (ed == null && fu != null) {
@@ -425,7 +428,10 @@ fun DecksRoute(onBack: () -> Unit, onWeb: (String) -> Unit, onNav: (PlayTab) -> 
                 set = { code -> card = null; onTrunkSet(code) },
                 precon = { _, _ -> card = null },
                 newDeck = { name -> card = null; editor = EditorUi().apply { edit = dev.cardstashy.nativeplay.play.DeckEdit.Edit(null, "", "Standard", listOf(dev.cardstashy.nativeplay.play.DeckEdit.Line(name, 1))) } },
-                toast = toast), onClose = { card = null })
+                toast = toast, edit = ed?.let { u -> DeckEditCtx(u.edit.name.ifBlank { "this deck" },
+                    qty = { n -> u.edit.cards.filter { it.name == n }.sumOf { it.qty } }, copies = if (u.edit.format == "Commander") 1 else 4,
+                    step = { n, k -> u.edit = u.edit.copy(cards = dev.cardstashy.nativeplay.play.DeckEdit.step(u.edit.cards, n, k, u.edit.format), dirty = true) }) }),
+                onClose = { card = null })
         }
     }
 }
