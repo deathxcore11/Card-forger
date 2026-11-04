@@ -103,10 +103,9 @@ export function goldfishFor(d, cards = d.cards, tag = "") {
   }
   return S.ui.gold.get(sig);
 }
-// Cover: the card the player picked (Use artwork as… → Deck cover), else the commander, else the first creature or planeswalker, else any spell; a land only when nothing else has art.
+// Cover: the commander, else the first creature or planeswalker, else any spell; a land only when nothing else has art.
 const coverRank = (c) => /\b(Creature|Planeswalker)\b/.test(c.type_line || "") ? 0 : /\bLand\b/.test(c.type_line || "") ? 2 : 1;
 const coverOf = (d) => {
-  if (typeof d.coverCard?.image === "string" && /^https:\/\//.test(d.coverCard.image)) return d.coverCard.image;
   const lead = meta(d.commander);
   if (lead && art(lead)) return art(lead);
   const pool = d.cards.map((c) => meta(c.name)).filter((c) => c && art(c));
@@ -362,14 +361,13 @@ function playMetaStats(play, name) {
   if (!rows.length) return "";
   return `<div class="play-card-meta" role="group" aria-label="In current tournament lists">${rows.map((m) => `<button class="play-card-meta-row" data-act="playCardDecks" data-format="${esc(m.format)}" data-name="${esc(name)}" aria-label="${esc(m.format)}: in ${m.lists} of ${m.total} lists. Most played in ${esc(m.top)}. Find decks with it."><b>${Math.max(1, Math.round(m.share * 100))}%</b><span>${esc(m.format)}</span><small>${esc(m.top)}</small></button>`).join("")}</div>`;
 }
-// Builder open: add or take out copies of this card, make its art the deck cover; Craft 1 to 4 copies with seals.
+// Builder open: add or take out copies of this card; Craft 1 to 4 copies with seals.
 function playEditActions(play, name, shown, craftOnly = null) {
   const e = craftOnly === true ? null : play.edit, k = craftOnly === false ? null : play.craft?.(name, shown);
   if (!e && !k?.room) return "";
   const q = e ? e.qty(name) : 0;
   return `<div class="play-card-build">
     ${e ? `<div class="play-card-step" role="group" aria-label="Copies in ${esc(e.name)}"><button class="btn ghost" data-act="playEconStep" data-econ-card="${esc(name)}" data-econ-step="-1" ${q ? "" : "disabled"} aria-label="Take one out of the deck">−</button><b>${q} in deck</b><button class="btn" data-act="playEconStep" data-econ-card="${esc(name)}" data-econ-step="1" ${q >= e.copies ? "disabled" : ""} aria-label="Add one to the deck">+</button></div>` : ""}
-    ${e?.id ? (e.coverName && (e.coverName === name || e.coverName.split(" // ")[0] === name) ? `<button class="btn ghost small play-card-cover" data-act="playCardCoverReset">Use the automatic deck cover</button>` : `<button class="btn ghost small play-card-cover" data-act="playCardCover" aria-label="Make ${esc(name)} the cover of ${esc(e.name)}">Make it the deck cover</button>`) : ""}
     ${k?.room ? `<div class="play-card-craft" role="group" aria-label="Craft with ${esc(k.label)} seals">${Array.from({ length: k.room }, (_, i) => i + 1).map((n) => `<button class="pe-craft-n" data-act="playCraftCopies" data-name="${esc(name)}" data-card-id="${esc(k.id)}" data-n="${n}" ${n > k.seals ? "disabled" : ""} aria-label="Craft ${n} for ${n} ${esc(k.label)} seal${n > 1 ? "s" : ""}">${sealIconMini(k.seal)}<b>${n}</b></button>`).join("")}</div>` : ""}
   </div>`;
 }

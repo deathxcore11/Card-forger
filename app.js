@@ -1847,7 +1847,7 @@ V.setPlayLensSource(()=>{const st=playEcon.snapshot().state||{};
    return {id:card.id,have,seals,rarity:{c:'common',u:'uncommon',r:'rare',m:'mythic'}[key],key,holoCost:holo,canFoil:(card.finishes||[]).includes('foil'),sold:(st.shop||[]).some(x=>x.code===card.set)||st.rewardSet?.code===card.set};},
   holo:(name,card)=>{const c=(st.cards||[]).find(x=>x.o===card?.oracle_id)||(st.cards||[]).find(x=>x.n===name||x.n.split(' // ')[0]===name);if(!c)return null;const seal={common:'c',uncommon:'u',rare:'r',mythic:'m'}[c.r],cost=Math.max(1,st.config?.holoSeals??2);return {oracle:c.o,can:(c.h|0)<(c.c|0)&&!!seal,afford:(st.wallet?.['seal_'+seal]|0)>=cost,cost,seal:{c:'common',u:'uncommon',r:'rare',m:'mythic'}[seal]};},
   // While a deck is open in the builder, the card view adds and removes copies there.
-  get edit(){const e=playView==='deck'&&econUi.edit;if(!e)return null;const copies=e.format==='Commander'?1:4;return {id:e.id||'',name:e.name||'this deck',coverName:e.id?S.state.settings.playDeckCovers?.[e.id]?.name||'':'',qty:n=>(e.cards||[]).filter(c=>c.name===n).reduce((t,c)=>t+c.qty,0),copies};},
+  get edit(){const e=playView==='deck'&&econUi.edit;if(!e)return null;const copies=e.format==='Commander'?1:4;return {name:e.name||'this deck',qty:n=>(e.cards||[]).filter(c=>c.name===n).reduce((t,c)=>t+c.qty,0),copies};},
   // Craft with seals: one seal of the card's rarity per copy, up to 4 copies in the Trunk.
   craft:(name,card)=>{const seal={common:'c',uncommon:'u',rare:'r',mythic:'m',special:'r',bonus:'m'}[card?.rarity];const have=(card?.oracle_id&&byOracle.get(card.oracle_id))||byName.get(name)||0;if(!seal||!card?.id)return null;return {id:card.id,seal,room:Math.max(0,4-have),seals:st.wallet?.['seal_'+seal]|0,label:{c:'common',u:'uncommon',r:'rare',m:'mythic'}[seal]};},
   // Secret Lair styles unlocked for this card, and the one in use.
@@ -1861,10 +1861,7 @@ A.playCardToDeck=async t=>{const st=playEcon.snapshot().state,d=(st?.decks||[]).
  const cards=stepDeckCard((d.cards||[]).filter(c=>!c.board).map(c=>({name:c.name,qty:c.qty|0})),t.dataset.name,1,new Map([[t.dataset.name,4]]),d.format);
  if(cards.reduce((a,c)=>a+c.qty,0)===(d.cards||[]).filter(c=>!c.board).reduce((a,c)=>a+(c.qty|0),0))return toast('No more copies of that card can go in '+(d.name||'that deck')+'.');
  try{await playEcon.saveDeck({id:d.id,name:d.name,format:d.format,cards:[...cards,...(d.cards||[]).filter(c=>c.board)]});toast('Added to '+(d.name||'your deck')+(ownedByName(st.cards||[]).get(t.dataset.name)?'.':'. It stays greyed until it is in your Trunk.'));refreshSheet?.();}catch(e){toast(e.message);}};
-// Use artwork from the Play card view: avatar, profile header or the open deck's cover, never the collection banner.
-// Deck builder open: this card's art becomes the deck's cover (art only, no frame), or the deck goes back to its automatic cover.
-A.playCardCover=async()=>{const card=V.playShownCard(),ref={game:'mtg',card,play:true},target=card&&deckCoverTarget(ref),image=card&&bannerImage('mtg',card);if(!target)return;if(!/^https:\/\//.test(String(image||'')))return toast('This card has no artwork to use.');await saveDeckCover(ref,target,image);toast(`${card.name} is the cover of ${target.name}.`);refreshSheet();};
-A.playCardCoverReset=async()=>{const card=V.playShownCard(),target=card&&deckCoverTarget({game:'mtg',card,play:true});if(!target)return;await saveDeckCover({game:'mtg',card,play:true},target,null);toast(`${target.name} uses its automatic cover again.`);refreshSheet();};
+// Use artwork from the Play card view: avatar or profile header only, never the collection banner.
 A.playCardArtwork=()=>{const card=V.playShownCard();if(!card)return;quickCard={game:'mtg',card,play:true};A.quickArtwork();};
 // The precon that holds this card: precons of the card's set first, then a name match; opens it in Decks.
 A.playCardPrecon=async t=>{const name=t.dataset.name,code=String(t.dataset.code||'').toLowerCase();closeSheet();playView='decks';go('#play');await loadPreconIndex();const pc=preconUi(),idx=pc.index||[];
@@ -2691,11 +2688,25 @@ async function pickCompareCard(t) {
     }
   } finally { compareBusy = false; }
 }
+// Play deck builder: hold, right-click or the menu key on a small card tile (deck row or pool card) opens
+// Play's card actions, the same look as Collection's: open the card, or make its art the deck cover.
+// Everywhere else in Play the gesture opens the Play card view as before.
+function playHoldMenu(el){
+ const e=playView==='deck'&&econUi.edit,name=el.dataset.name;if(!e?.id||!name||!el.closest?.('.pe-build-row,.pe-pool-card'))return false;
+ const full=el.dataset.oracle?econFacts.card(el.dataset.oracle)?.card:null,card=full||{name},image=bannerImage('mtg',full)||cardImageByName(name,'art_crop');
+ quickCard={game:'mtg',card,play:true,coverImage:image};haptic('tap');
+ const pick=S.state.settings.playDeckCovers?.[e.id],isCover=!!pick?.name&&[name,name.split(' // ')[0]].includes(pick.name.split(' // ')[0]);
+ openSheet(`<div class="context-menu context-card">${contextHeader({kind:'Card actions',name,meta:e.name||'',art:`<img class="quick-card-thumb" src="${esc(image)}" alt="" decoding="async" referrerpolicy="no-referrer">`})}<div class="context-group card-action-list" aria-label="Card actions">${contextAction('playHoldOpen','cardStack','Open card',{hint:'Copies, crafting and Secret Lair art',attrs:`data-name="${esc(name)}" data-play-card="1"${el.dataset.oracle?` data-oracle="${esc(el.dataset.oracle)}"`:''}`})}${isCover?contextAction('playHoldCoverReset','brush','Use the automatic deck cover',{hint:'This card is the cover now'}):contextAction('playHoldCover','brush','Deck cover',{hint:`Show this art on ${e.name||'this deck'}`})}</div></div>`,{type:'play-card-actions'});
+ return true;
+}
+A.playHoldOpen=t=>A.card(t);
+A.playHoldCover=async()=>{const ref=quickCard;if(!ref?.play)return;const target=deckCoverTarget(ref);if(!target)return closeSheet();if(!/^https:\/\//.test(String(ref.coverImage||'')))return toast('This card has no artwork to use.');await saveDeckCover(ref,target,ref.coverImage);closeSheet();toast(`${ref.card.name} is the cover of ${target.name}.`);};
+A.playHoldCoverReset=async()=>{const ref=quickCard;if(!ref?.play)return;const target=deckCoverTarget(ref);if(!target)return closeSheet();await saveDeckCover(ref,target,null);closeSheet();toast(`${target.name} uses its automatic cover again.`);};
 async function cardQuickMenu(t) {
   t?.closest?.("dialog.zoom")?.querySelector('[data-z="close"]')?.click();
   // Play has its own card actions (Play decks, Craft with seals, packs): right-click and long-press
   // there open the Play card view, never the collection app's menu.
-  if (S.ui.view === "play" || S.ui.lens === "play") { const el = t?.dataset?.name ? t : t?.querySelector?.('[data-act="card"][data-name]') || t?.closest?.("[data-name]"); if (el?.dataset?.name) A.card(el); return; }
+  if (S.ui.view === "play" || S.ui.lens === "play") { const el = t?.dataset?.name ? t : t?.querySelector?.('[data-act="card"][data-name]') || t?.closest?.("[data-name]"); if (el?.dataset?.name && !playHoldMenu(el)) A.card(el); return; }
   const ref = t?.quickRef || await resolveActionCard(t); if (!ref) return;
   quickCard = ref; haptic("tap");
   const st = ref.game === "mtg" ? S.state : T.gs(ref.game);
