@@ -57,6 +57,7 @@ fun TossScreen(toss: MatchController.Toss, cpu: Plate?, onDone: () -> Unit) {
     val spin = remember { Animatable(0f) }
     val arc = remember { Animatable(0f) }
     var landed by remember { mutableStateOf(false) }
+    val opponent = cpu?.takeIf { it.who.startsWith("Friend") }?.name ?: "CPU"
     val target = if (toss.youFirst) 1800f else 1980f
     LaunchedEffect(toss) {
         delay(120) // the screen is painted before the coin moves
@@ -81,12 +82,12 @@ fun TossScreen(toss: MatchController.Toss, cpu: Plate?, onDone: () -> Unit) {
                 val flipped = abs(((spin.value % 360f) + 360f) % 360f - 180f) < 90f // the far face shows between 90° and 270°
                 Box(Modifier.fillMaxSize().graphicsLayer { rotationX = spin.value; cameraDistance = 14f * density }) {
                     Box(Modifier.fillMaxSize().graphicsLayer { if (flipped) rotationX = 180f }) {
-                        if (!flipped) Face(Color(0xFFE3BB6A), "YOU") { ProfileAvatar(profile, coin - 24.dp, ring = false) }
-                        else Face(Color(0xFFD89A57), "CPU") { CardImage(cpu?.face, Modifier.size(coin - 24.dp).clip(CircleShape), crop = true) }
+                        if (!flipped) Face(Color(0xFFE3BB6A), "YOU") { ProfileAvatar(profile, coin - 52.dp, ring = false) }
+                        else Face(Color(0xFFD89A57), opponent.uppercase().take(10)) { CardImage(cpu?.face, Modifier.size(coin - 52.dp).clip(CircleShape), crop = true) }
                     }
                 }
             }
-            val text = if (toss.youFirst) "You play first" else "${cpu?.name ?: "CPU"} plays first"
+            val text = if (toss.youFirst) "You play first" else "$opponent plays first"
             Text(text, style = Type.Title.copy(color = if (landed) Palette.GoldBright else Color.Transparent, fontSize = 26.sp, fontWeight = FontWeight.SemiBold))
             Text("Your opening hand is next.", style = Type.Label.copy(color = Palette.InkSoft), modifier = Modifier.padding(top = 6.dp))
         }
@@ -99,7 +100,7 @@ private fun Face(base: Color, tag: String, picture: @Composable () -> Unit) {
     Box(Modifier.fillMaxSize().clip(CircleShape)
         .background(Brush.radialGradient(listOf(Color(0xFFFFF3C8), base, Color(0xFFA07A34), Color(0xFF6E5222))))
         .border(3.dp, Color(0xFFF6DDA0), CircleShape).padding(6.dp).border(3.dp, Color(0xFF8A682C), CircleShape), contentAlignment = Alignment.Center) {
-        Box(Modifier.padding(6.dp).clip(CircleShape).background(Color(0xFF18181C))) { picture() }
+        Box(Modifier.padding(14.dp).clip(CircleShape).background(Color(0xFF18181C)).border(2.dp, Color(0x66000000), CircleShape)) { picture() }
         Text(tag, style = Type.Label.copy(color = Color(0xFFF6EEDB), fontSize = 11.sp, letterSpacing = 2.sp), modifier = Modifier.align(Alignment.BottomCenter).padding(bottom = 22.dp)
             .clip(RoundedCornerShape(999.dp)).background(Color(0xD90C0C0E)).border(1.dp, Color(0x99F2D496), RoundedCornerShape(999.dp)).padding(horizontal = 10.dp, vertical = 2.dp))
     }

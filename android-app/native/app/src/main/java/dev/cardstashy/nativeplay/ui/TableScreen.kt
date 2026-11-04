@@ -41,6 +41,7 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.safeDrawing
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
+import androidx.compose.foundation.layout.widthIn
 import androidx.compose.foundation.layout.windowInsetsPadding
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.CircleShape
@@ -49,6 +50,7 @@ import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.DisposableEffect
+import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
@@ -96,7 +98,8 @@ private data class Sizes(val sidebar: Dp, val field: Dp, val land: Dp, val hand:
 }
 
 @Composable
-fun TableScreen(controller: MatchController, onHome: () -> Unit, onRematch: () -> Unit, resultNote: String? = null, cpuPlate: dev.cardstashy.nativeplay.match.Plate? = null) {
+fun TableScreen(controller: MatchController, onHome: () -> Unit, onRematch: () -> Unit, resultNote: String? = null, cpuPlate: dev.cardstashy.nativeplay.match.Plate? = null,
+    storyMusic: dev.cardstashy.nativeplay.audio.TableMusic.StoryMusic? = null) {
     val context = LocalContext.current
     val decks = DemoDecks.load(context)
     val shown by controller.shown.collectAsState()
@@ -110,12 +113,15 @@ fun TableScreen(controller: MatchController, onHome: () -> Unit, onRematch: () -
     val live by controller.live.collectAsState()
     val failure by controller.failure.collectAsState()
     val audio = remember { TableAudio(context) }
-    DisposableEffect(Unit) { onDispose { audio.release() } }
-    LifecycleEventEffect(Lifecycle.Event.ON_STOP) { audio.muted = true; controller.setPaused(true) }
-    LifecycleEventEffect(Lifecycle.Event.ON_START) { audio.muted = false; controller.setPaused(false) }
+    val musicScope = rememberCoroutineScope()
+    val music = remember { dev.cardstashy.nativeplay.audio.TableMusic.init(context); dev.cardstashy.nativeplay.audio.TableMusic(context, musicScope, storyMusic) }
+    // The music lasts only while the table is on screen.
+    DisposableEffect(Unit) { onDispose { audio.release(); music.release() } }
+    LifecycleEventEffect(Lifecycle.Event.ON_STOP) { audio.muted = true; music.muted = true; controller.setPaused(true) }
+    LifecycleEventEffect(Lifecycle.Event.ON_START) { audio.muted = false; music.muted = false; controller.setPaused(false) }
     var previous by remember { mutableStateOf<MatchState?>(null) }
     // Keyed on the shown state itself: the board can advance within one revision (one CPU action at a time).
-    LaunchedEffect(shown) { shown?.let { audio.update(previous, it); previous = it } }
+    LaunchedEffect(shown) { shown?.let { audio.update(previous, it); music.update(it); previous = it } }
     var inspect by remember { mutableStateOf<Card?>(null) }
     var selectedHand by remember { mutableStateOf<Int?>(null) }
     var menu by remember { mutableStateOf(false) }
@@ -400,7 +406,8 @@ private fun Hand(st: MatchState, c: MatchController, live: Boolean, sizes: Sizes
 private fun TableSide(st: MatchState, c: MatchController, beat: Beat?, live: Boolean, lastBeat: Beat?, onInspect: (Card) -> Unit) {
     Box(Modifier.fillMaxSize()) {
         when {
-            beat != null -> BeatView(beat, st, Modifier.align(Alignment.CenterEnd).padding(end = 12.dp).width(170.dp).fillMaxHeight(.62f)) { c.next() }
+            // Arena style: no window. The card and its glass caption explain what is happening on the felt; the stack fan and the board effects show the rest.
+            beat != null -> BeatCaption(beat, Modifier.align(Alignment.TopCenter).padding(top = 58.dp)) { c.next() }
         }
         // native-panel.mjs dock: Forge's own questions (triggers order, costs, damage split, search, choices). Called every frame: the
         // spell-mode back-out acts on the step after a prompt.
@@ -440,6 +447,23 @@ private fun Sidebar(st: MatchState, c: MatchController, beat: Beat?, live: Boole
         }
         PhaseDots(st)
         Actions(st, c, live && beat == null, selectedHand)
+    }
+}
+
+/** One line of glass over the felt (.forge-narrate): what just happened, a hairline timer under it, red when it costs you life. Tap to move on. */
+@Composable
+private fun BeatCaption(b: Beat, modifier: Modifier, onTap: () -> Unit) {
+    val timer = remember(b) { Animatable(1f) }
+    LaunchedEffect(b) { timer.animateTo(0f, tween(b.durationMs.toInt(), easing = LinearEasing)) }
+    val red = b.kind == Beat.Kind.AFFECTS_YOU
+    val tone = if (red) Color(0xFFFFB4A8) else Palette.Ink
+    val text = listOfNotNull(b.title, b.detail?.takeIf { it.isNotBlank() }, if (b.lifeFrom != null && b.lifeTo != null) "${b.lifeFrom} → ${b.lifeTo}" else null).joinToString(" · ")
+    Column(modifier.widthIn(max = 460.dp).clip(RoundedCornerShape(999.dp)).background(Color(0xB30C0C0E)).border(1.dp, if (red) Palette.Red else Color(0x55F2D496), RoundedCornerShape(999.dp))
+        .clickable(onClick = onTap).padding(horizontal = 16.dp, vertical = 7.dp), horizontalAlignment = Alignment.CenterHorizontally) {
+        Text(text, style = Type.Label.copy(fontSize = 13.sp, color = tone), textAlign = TextAlign.Center, maxLines = 2)
+        if (b.kind != Beat.Kind.LAND) Box(Modifier.padding(top = 4.dp).fillMaxWidth().height(2.dp).clip(RoundedCornerShape(2.dp)).background(Color(0x22FFFFFF))) {
+            Box(Modifier.fillMaxWidth(timer.value).height(2.dp).background(if (red) Palette.Red else Palette.Gold))
+        }
     }
 }
 

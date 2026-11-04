@@ -242,7 +242,8 @@ class Battlefield {
         val lost = b.players.any { p -> a.players.firstOrNull { it.id == p.id }?.let { q -> p.life < q.life } == true }
         val dmgNow = bfB.values.any { c -> (bfA[c.id]?.damage ?: 0) < c.damage }
         var lunged = false
-        if ((lost || dmgNow) && b.phase?.contains("DAMAGE") == true) for ((id, o) in bfA) if (o.attacking) {
+        // Combat damage may arrive in the damage step or, when priority is passed through it, in the step after: either way the attackers strike.
+        if ((lost || dmgNow) && b.phase?.startsWith("COMBAT") == true) for ((id, o) in bfA) if (o.attacking) {
             val blocker = bfA.values.firstOrNull { it.blocking && id in it.blockingIds }
             val to = when {
                 blocker != null -> "c${blocker.id}"
