@@ -1,0 +1,2708 @@
+{
+ "act": 18,
+ "era": "2011-07-15",
+ "title": "New Phyrexia",
+ "years": "2010 to 2011",
+ "sets": [
+  "som",
+  "mbs",
+  "nph",
+  "m12"
+ ],
+ "landSet": "som",
+ "intro": [
+  {
+   "who": "stage",
+   "line": "Mirrodin. Karn built this plane out of metal, and Memnarch ruled it, and five suns lit it. Act 11 told that story."
+  },
+  {
+   "who": "stage",
+   "line": "What nobody knew was that Karn carried something here when he made it: a drop of black oil from Phyrexia."
+  },
+  {
+   "who": "stage",
+   "line": "As long as one drop of the oil exists, the joyous work continues.",
+   "quote": true
+  },
+  {
+   "who": "stage",
+   "line": "The oil has had a thousand years. Now it is everywhere, and the Phyrexians it made are coming up out of the core."
+  }
+ ],
+ "finale": [
+  {
+   "who": "stage",
+   "line": "Elesh Norn falls back, and it changes nothing. Every layer of the plane is Phyrexian now. Mirrodin is called New Phyrexia."
+  },
+  {
+   "who": "stage",
+   "line": "Deep in the core, Venser is dead. He gave his spark to Karn to burn the oil out of him. Karn wakes up clean, and leaves to make sure this never happens to another world."
+  },
+  {
+   "who": "karn",
+   "line": "My world is corrupted beyond cleansing. I must prevent this from happening to others.",
+   "quote": true
+  },
+  {
+   "who": "elspeth",
+   "line": "I came here to fight. There is nothing left to fight for. I am sorry, Koth."
+  },
+  {
+   "who": "koth",
+   "line": "If there can be no victory, then I will fight forever.",
+   "quote": true
+  },
+  {
+   "who": "melira",
+   "line": "Then we go down, into the furnace layer, where the red Praetor does not care who lives. And we keep the last Mirrans breathing."
+  }
+ ],
+ "villainFinale": [
+  {
+   "who": "stage",
+   "line": "The suns go dark one by one. The last Mirran banners burn on Kuldotha."
+  },
+  {
+   "who": "norn",
+   "line": "The Gitaxians whisper among themselves of other worlds. If they exist, we must bring Phyrexia's magnificence to them.",
+   "quote": true
+  },
+  {
+   "who": "norn",
+   "line": "They called it an invasion. It was a healing. Every flaw on this world has been cut away."
+  },
+  {
+   "who": "stage",
+   "line": "For Elesh Norn, this is the good ending. She has already started planning the next one."
+  }
+ ],
+ "vibe": "phyrexia-wins-oil",
+ "cast": {
+  "you": {
+   "name": "You",
+   "title": "Planeswalker",
+   "portrait": {
+    "card": "Venser's Journal",
+    "set": "som",
+    "number": "220",
+    "id": "2763643d-5b53-49d0-bc3d-5626bf00f3f4",
+    "crop": "https://cards.scryfall.io/art_crop/front/2/7/2763643d-5b53-49d0-bc3d-5626bf00f3f4.jpg?1783941691",
+    "artist": "Christopher Moeller",
+    "focus": "50% 30%"
+   }
+  },
+  "koth": {
+   "name": "Koth",
+   "title": "Of the Hammer",
+   "portrait": {
+    "card": "Koth of the Hammer",
+    "set": "som",
+    "number": "94",
+    "id": "af8b9c79-a161-4d7d-944d-82a44a5f2ab9",
+    "crop": "https://cards.scryfall.io/art_crop/front/a/f/af8b9c79-a161-4d7d-944d-82a44a5f2ab9.jpg?1783941724",
+    "artist": "Jason Chan",
+    "focus": "50% 25%"
+   }
+  },
+  "geth": {
+   "name": "Geth",
+   "title": "Lord of the Vault",
+   "portrait": {
+    "card": "Geth, Lord of the Vault",
+    "set": "som",
+    "number": "64",
+    "id": "fed31f2f-370d-4bbe-aa57-82249ed1b4d4",
+    "crop": "https://cards.scryfall.io/art_crop/front/f/e/fed31f2f-370d-4bbe-aa57-82249ed1b4d4.jpg?1783941732",
+    "artist": "Whit Brachna",
+    "focus": "50% 25%"
+   }
+  },
+  "elspeth": {
+   "name": "Elspeth Tirel",
+   "title": "Planeswalker",
+   "portrait": {
+    "card": "Elspeth Tirel",
+    "set": "som",
+    "number": "6",
+    "id": "ebe9116e-7b04-4f2a-aa67-89a42c6e1801",
+    "crop": "https://cards.scryfall.io/art_crop/front/e/b/ebe9116e-7b04-4f2a-aa67-89a42c6e1801.jpg?1783941746",
+    "artist": "Michael Komarck",
+    "focus": "50% 25%"
+   }
+  },
+  "vorinclex": {
+   "name": "Vorinclex",
+   "title": "Voice of Hunger",
+   "portrait": {
+    "card": "Vorinclex, Voice of Hunger",
+    "set": "nph",
+    "number": "127",
+    "id": "0806adab-6a08-411b-b249-e1c58ade354b",
+    "crop": "https://cards.scryfall.io/art_crop/front/0/8/0806adab-6a08-411b-b249-e1c58ade354b.jpg?1783941297",
+    "artist": "Karl Kopinski",
+    "focus": "50% 30%"
+   }
+  },
+  "melira": {
+   "name": "Melira",
+   "title": "Sylvok Outcast",
+   "portrait": {
+    "card": "Melira, Sylvok Outcast",
+    "set": "nph",
+    "number": "115",
+    "id": "e83851a1-e4e8-49ec-af5c-4efe86fa51ad",
+    "crop": "https://cards.scryfall.io/art_crop/front/e/8/e83851a1-e4e8-49ec-af5c-4efe86fa51ad.jpg?1783941300",
+    "artist": "Min Yum",
+    "focus": "50% 25%"
+   }
+  },
+  "sheoldred": {
+   "name": "Sheoldred",
+   "title": "Whispering One",
+   "portrait": {
+    "card": "Sheoldred, Whispering One",
+    "set": "nph",
+    "number": "73",
+    "id": "3bb8347b-8663-40b8-bdfb-411236d2efc8",
+    "crop": "https://cards.scryfall.io/art_crop/front/3/b/3bb8347b-8663-40b8-bdfb-411236d2efc8.jpg?1783941310",
+    "artist": "Jana Schirmer & Johannes Voss",
+    "focus": "50% 25%"
+   }
+  },
+  "venser": {
+   "name": "Venser",
+   "title": "The Sojourner",
+   "portrait": {
+    "card": "Venser, the Sojourner",
+    "set": "som",
+    "number": "135",
+    "id": "3d48d62e-5c1f-464c-aa81-8a5d2690f48e",
+    "crop": "https://cards.scryfall.io/art_crop/front/3/d/3d48d62e-5c1f-464c-aa81-8a5d2690f48e.jpg?1783941714",
+    "artist": "Eric Deschamps",
+    "focus": "50% 25%"
+   }
+  },
+  "jin": {
+   "name": "Jin-Gitaxias",
+   "title": "Core Augur",
+   "portrait": {
+    "card": "Jin-Gitaxias, Core Augur",
+    "set": "nph",
+    "number": "37",
+    "id": "bd46fc9f-5b92-44d7-8940-2f39b0962b8f",
+    "crop": "https://cards.scryfall.io/art_crop/front/b/d/bd46fc9f-5b92-44d7-8940-2f39b0962b8f.jpg?1783941319",
+    "artist": "Eric Deschamps",
+    "focus": "50% 30%"
+   }
+  },
+  "karn": {
+   "name": "Karn",
+   "title": "Liberated",
+   "portrait": {
+    "card": "Karn Liberated",
+    "set": "nph",
+    "number": "1",
+    "id": "f9287151-95df-4f5a-b32a-4b0aea825452",
+    "crop": "https://cards.scryfall.io/art_crop/front/f/9/f9287151-95df-4f5a-b32a-4b0aea825452.jpg?1783941329",
+    "artist": "Jason Chan",
+    "focus": "50% 25%"
+   }
+  },
+  "urabrask": {
+   "name": "Urabrask",
+   "title": "The Hidden",
+   "portrait": {
+    "card": "Urabrask the Hidden",
+    "set": "nph",
+    "number": "98",
+    "id": "b06fcab2-891e-4fa3-8583-068ba56c2e27",
+    "crop": "https://cards.scryfall.io/art_crop/front/b/0/b06fcab2-891e-4fa3-8583-068ba56c2e27.jpg?1783941305",
+    "artist": "Brad Rigney",
+    "focus": "50% 25%"
+   }
+  },
+  "kuldotha": {
+   "name": "Kuldotha Red",
+   "title": "Winter 2010",
+   "portrait": {
+    "card": "Kuldotha Rebirth",
+    "set": "som",
+    "number": "96",
+    "id": "7ee07266-a95d-4cd8-9863-1664922e9490",
+    "crop": "https://cards.scryfall.io/art_crop/front/7/e/7ee07266-a95d-4cd8-9863-1664922e9490.jpg?1783941723",
+    "artist": "Goran Josic",
+    "focus": "50% 30%"
+   }
+  },
+  "crusaders": {
+   "name": "Mirran Crusaders",
+   "title": "Spring 2011",
+   "portrait": {
+    "card": "Mirran Crusader",
+    "set": "mbs",
+    "number": "14",
+    "id": "aaf7a821-3587-4aad-8411-fca5c96ab5c4",
+    "crop": "https://cards.scryfall.io/art_crop/front/a/a/aaf7a821-3587-4aad-8411-fca5c96ab5c4.jpg?1783941390",
+    "artist": "Eric Deschamps",
+    "focus": "50% 25%"
+   }
+  },
+  "norn": {
+   "name": "Elesh Norn",
+   "title": "Grand Cenobite",
+   "portrait": {
+    "card": "Elesh Norn, Grand Cenobite",
+    "set": "nph",
+    "number": "9",
+    "id": "b66390d6-1649-4bfa-92d3-77664650d552",
+    "crop": "https://cards.scryfall.io/art_crop/front/b/6/b66390d6-1649-4bfa-92d3-77664650d552.jpg?1783941327",
+    "artist": "Igor Kieryluk",
+    "focus": "50% 25%"
+   }
+  },
+  "blade": {
+   "name": "Caw-Blade",
+   "title": "2011",
+   "portrait": {
+    "card": "Sword of Feast and Famine",
+    "set": "mbs",
+    "number": "138",
+    "id": "580b4818-2a01-46ad-b4d9-7d895a625bb3",
+    "crop": "https://cards.scryfall.io/art_crop/front/5/8/580b4818-2a01-46ad-b4d9-7d895a625bb3.jpg?1783941362",
+    "artist": "Chris Rahn",
+    "focus": "50% 40%"
+   }
+  }
+ },
+ "battles": [
+  {
+   "id": "a18b1",
+   "slot": 1,
+   "kind": "Arrival",
+   "mood": "tension",
+   "title": "The Oxid Ridge",
+   "difficulty": "Easy",
+   "teaches": [
+    "Metalcraft"
+   ],
+   "blurb": "You arrive on Mirrodin in the red mountains of the Oxid Ridge. Koth, a Vulshok geomancer who can bend metal, is fighting creatures his people have never seen: Mirrans gone grey and wet, led by Geth, a Moriok who sold himself to the oil.",
+   "rewardSet": "som",
+   "host": false,
+   "hero": {
+    "who": "koth",
+    "deck": {
+     "name": "The Vulshok",
+     "colors": "R",
+     "archetype": null,
+     "label": "tribute",
+     "cards": [
+      {
+       "qty": 2,
+       "name": "Koth of the Hammer",
+       "set": "som",
+       "number": "94",
+       "id": "af8b9c79-a161-4d7d-944d-82a44a5f2ab9"
+      },
+      {
+       "qty": 4,
+       "name": "Spikeshot Elder",
+       "set": "som",
+       "number": "104",
+       "id": "fad5621d-eb77-4b4a-80e7-1bfa75a6fcfb"
+      },
+      {
+       "qty": 4,
+       "name": "Ferrovore",
+       "set": "som",
+       "number": "88",
+       "id": "8dcc7170-38d9-4b9e-a5f9-73ac1208c439"
+      },
+      {
+       "qty": 4,
+       "name": "Iron Myr",
+       "set": "som",
+       "number": "168",
+       "id": "5bd0a588-b695-4060-b5d5-c6a74710ff0f"
+      },
+      {
+       "qty": 4,
+       "name": "Vulshok Heartstoker",
+       "set": "som",
+       "number": "107",
+       "id": "9d3152bc-5c59-4e98-95de-a51de05a3c98"
+      },
+      {
+       "qty": 4,
+       "name": "Galvanic Blast",
+       "set": "som",
+       "number": "91",
+       "id": "f5881bbc-8600-464d-9dcd-5a7780918d1d"
+      },
+      {
+       "qty": 4,
+       "name": "Oxidda Scrapmelter",
+       "set": "som",
+       "number": "101",
+       "id": "c64fe85b-e471-489a-8c38-2357da1c7969"
+      },
+      {
+       "qty": 24,
+       "name": "Mountain",
+       "set": "som",
+       "number": "242",
+       "id": "6df2f49d-097e-4685-8ddb-69c55f07f60c"
+      },
+      {
+       "qty": 4,
+       "name": "Arc Trail",
+       "set": "som",
+       "number": "81",
+       "id": "445e3a0a-29a7-4dc0-80fe-569b9e751db3"
+      },
+      {
+       "qty": 2,
+       "name": "Incinerate",
+       "set": "m12",
+       "number": "146",
+       "id": "1af92296-455a-425e-9397-a96d09937767"
+      },
+      {
+       "qty": 4,
+       "name": "Shock",
+       "set": "m12",
+       "number": "154",
+       "id": "b8fed52c-e84e-41c9-b683-d8b26fa03c5f"
+      }
+     ]
+    }
+   },
+   "villain": {
+    "who": "geth",
+    "deck": {
+     "name": "Geth's Rotters",
+     "colors": "B",
+     "archetype": null,
+     "label": "tribute",
+     "cards": [
+      {
+       "qty": 2,
+       "name": "Geth, Lord of the Vault",
+       "set": "som",
+       "number": "64",
+       "id": "fed31f2f-370d-4bbe-aa57-82249ed1b4d4"
+      },
+      {
+       "qty": 4,
+       "name": "Vector Asp",
+       "set": "som",
+       "number": "219",
+       "id": "7ffe86e1-ad47-4ccb-aa55-119dc681d370"
+      },
+      {
+       "qty": 4,
+       "name": "Ichorclaw Myr",
+       "set": "som",
+       "number": "166",
+       "id": "faef8b8b-2c45-4fed-b6ba-a8ac49c66330"
+      },
+      {
+       "qty": 4,
+       "name": "Septic Rats",
+       "set": "mbs",
+       "number": "55",
+       "id": "8e7915d9-b941-4675-9a1b-18e579977144"
+      },
+      {
+       "qty": 4,
+       "name": "Hand of the Praetors",
+       "set": "som",
+       "number": "66",
+       "id": "94ca493e-f09b-4b11-bb47-0562dfc203ca"
+      },
+      {
+       "qty": 4,
+       "name": "Corpse Cur",
+       "set": "som",
+       "number": "147",
+       "id": "9c6e19a1-b9ea-4724-96d6-63c4b4967257"
+      },
+      {
+       "qty": 24,
+       "name": "Swamp",
+       "set": "som",
+       "number": "238",
+       "id": "42a1264f-bda3-45ac-b959-463c6e532fd3"
+      },
+      {
+       "qty": 4,
+       "name": "Tormented Soul",
+       "set": "m12",
+       "number": "114",
+       "id": "d2699c42-99bb-4b5a-82ec-9c6424c14ec1"
+      },
+      {
+       "qty": 4,
+       "name": "Child of Night",
+       "set": "m12",
+       "number": "87",
+       "id": "c4780079-7f4c-4a43-883f-4722423c4fec"
+      },
+      {
+       "qty": 4,
+       "name": "Dross Hopper",
+       "set": "som",
+       "number": "60",
+       "id": "1a0656f6-a016-479a-a003-72e106e986b0"
+      },
+      {
+       "qty": 2,
+       "name": "Blistergrub",
+       "set": "som",
+       "number": "56",
+       "id": "5431debc-0037-49ff-a38f-3fa2f9f5ee33"
+      }
+     ]
+    }
+   },
+   "reward": {
+    "hero": {
+     "packs": 1,
+     "coins": 0
+    },
+    "villain": {
+     "card": {
+      "oracle_id": "d2310103-ec84-49df-bb12-0f0f175ee801",
+      "name": "Geth, Lord of the Vault",
+      "rarity": "mythic",
+      "set": "som",
+      "id": "fed31f2f-370d-4bbe-aa57-82249ed1b4d4",
+      "image": "https://cards.scryfall.io/normal/front/f/e/fed31f2f-370d-4bbe-aa57-82249ed1b4d4.jpg"
+     },
+     "coins": 50
+    }
+   },
+   "scene": [
+    {
+     "who": "koth",
+     "line": "If it wasn't a blackened, stinking, melted abomination before, it certainly is now.",
+     "quote": true
+    },
+    {
+     "who": "koth",
+     "line": "Metalcraft: some Mirran cards get stronger while you control three or more artifacts. Keep your metal on the table and they hit harder."
+    }
+   ],
+   "villainScene": [
+    {
+     "who": "geth",
+     "line": "To death all must go, and so in death lies ultimate power.",
+     "quote": true
+    },
+    {
+     "who": "geth",
+     "line": "The Moriok are fools. They try so hard to gain my favor. All I want is for them to die quickly, to join the ranks of the nim.",
+     "quote": true
+    }
+   ],
+   "after": [
+    {
+     "who": "koth",
+     "line": "Those were Moriok. My neighbours. Whatever this oil is, it is not a sickness. It is a recruiter."
+    }
+   ],
+   "cues": {
+    "hero": {
+     "start": "Hammer up.",
+     "big": "Metal answers me!",
+     "low": "The rot is spreading...",
+     "win": "Back into the dark.",
+     "loss": "The ridge... falls...",
+     "half": "Three artifacts. Then strike."
+    },
+    "villain": {
+     "start": "Join us.",
+     "big": "The oil takes another.",
+     "low": "Your metal burns...",
+     "win": "One more for the vats.",
+     "loss": "I have been dead before."
+    }
+   },
+   "bigPlays": [],
+   "sim": null
+  },
+  {
+   "id": "a18b2",
+   "slot": 2,
+   "kind": "Lesson",
+   "mood": "march",
+   "title": "Steel Answers",
+   "difficulty": "Easy",
+   "teaches": [
+    "Infect"
+   ],
+   "blurb": "Elspeth Tirel, a planeswalker who has fled too many wars, came to Mirrodin because it was quiet. In the Tangle, the green Praetor Vorinclex is turning the forest's beasts into weapons that poison instead of wound.",
+   "rewardSet": "som",
+   "host": false,
+   "hero": {
+    "who": "elspeth",
+    "deck": {
+     "name": "The Whitesun's Guard",
+     "colors": "W",
+     "archetype": null,
+     "label": "tribute",
+     "cards": [
+      {
+       "qty": 2,
+       "name": "Elspeth Tirel",
+       "set": "som",
+       "number": "6",
+       "id": "ebe9116e-7b04-4f2a-aa67-89a42c6e1801"
+      },
+      {
+       "qty": 4,
+       "name": "Glint Hawk",
+       "set": "som",
+       "number": "10",
+       "id": "284c4710-4183-4743-9c8b-515cc98cbbb8"
+      },
+      {
+       "qty": 4,
+       "name": "Auriok Sunchaser",
+       "set": "som",
+       "number": "4",
+       "id": "e274a8b3-2d92-43d9-a436-d3f6f619ca95"
+      },
+      {
+       "qty": 4,
+       "name": "Kemba's Skyguard",
+       "set": "som",
+       "number": "13",
+       "id": "b9f20a74-7614-4bd9-ac08-0e098f98df0c"
+      },
+      {
+       "qty": 4,
+       "name": "Leonin Skyhunter",
+       "set": "mbs",
+       "number": "11",
+       "id": "f7eb723d-aa4c-4a38-98de-1faefffab56b"
+      },
+      {
+       "qty": 4,
+       "name": "Accorder Paladin",
+       "set": "mbs",
+       "number": "1",
+       "id": "df0a4370-729d-40e7-b68b-21902648492d"
+      },
+      {
+       "qty": 4,
+       "name": "Revoke Existence",
+       "set": "som",
+       "number": "18",
+       "id": "18ae62f9-361c-4849-b0af-2b08fc0421c8"
+      },
+      {
+       "qty": 4,
+       "name": "Arrest",
+       "set": "som",
+       "number": "2",
+       "id": "f52d6cf9-1d92-4d3b-8631-0db19a073b44"
+      },
+      {
+       "qty": 4,
+       "name": "Kemba's Legion",
+       "set": "mbs",
+       "number": "9",
+       "id": "30731756-81a8-480b-938f-48c1d0cb95d7"
+      },
+      {
+       "qty": 2,
+       "name": "Honor of the Pure",
+       "set": "m12",
+       "number": "23",
+       "id": "650a6831-c352-4ca7-9f8f-43ea99a1cf33"
+      },
+      {
+       "qty": 24,
+       "name": "Plains",
+       "set": "som",
+       "number": "230",
+       "id": "a410e95b-afd0-4ac4-beb5-96163b411fe2"
+      }
+     ]
+    }
+   },
+   "villain": {
+    "who": "vorinclex",
+    "deck": {
+     "name": "The Tangle's Hunger",
+     "colors": "G",
+     "archetype": null,
+     "label": "tribute",
+     "cards": [
+      {
+       "qty": 1,
+       "name": "Vorinclex, Voice of Hunger",
+       "set": "nph",
+       "number": "127",
+       "id": "0806adab-6a08-411b-b249-e1c58ade354b"
+      },
+      {
+       "qty": 4,
+       "name": "Cystbearer",
+       "set": "som",
+       "number": "117",
+       "id": "b6c10302-f0b3-4076-ae5c-a8c8c09a7d41"
+      },
+      {
+       "qty": 4,
+       "name": "Blight Mamba",
+       "set": "som",
+       "number": "112",
+       "id": "cf9b3335-565c-406d-bd94-f36974602552"
+      },
+      {
+       "qty": 4,
+       "name": "Tangle Angler",
+       "set": "som",
+       "number": "128",
+       "id": "b678bd68-e866-4081-95f9-2bd93a84d400"
+      },
+      {
+       "qty": 4,
+       "name": "Rot Wolf",
+       "set": "mbs",
+       "number": "90",
+       "id": "7a81dfcf-a7c4-41a4-b1e9-b9e9c3f75742"
+      },
+      {
+       "qty": 4,
+       "name": "Phyrexian Hydra",
+       "set": "mbs",
+       "number": "85",
+       "id": "cb135aa1-9f46-4d60-a1a4-97aa0e852ced"
+      },
+      {
+       "qty": 4,
+       "name": "Blightwidow",
+       "set": "mbs",
+       "number": "77",
+       "id": "26da4278-ba44-4555-8837-e24627b46533"
+      },
+      {
+       "qty": 4,
+       "name": "Thrun, the Last Troll",
+       "set": "mbs",
+       "number": "92",
+       "id": "5d393da0-4cb6-4ae8-b747-8e6d0fa7f55a"
+      },
+      {
+       "qty": 4,
+       "name": "Untamed Might",
+       "set": "som",
+       "number": "131",
+       "id": "17979f0e-bd39-449f-b4ed-9156c229223b"
+      },
+      {
+       "qty": 3,
+       "name": "Viridian Corrupter",
+       "set": "mbs",
+       "number": "94",
+       "id": "0cc13aee-5a74-4dab-a6af-7dc31255981d"
+      },
+      {
+       "qty": 24,
+       "name": "Forest",
+       "set": "som",
+       "number": "246",
+       "id": "34cc6a36-b551-40c7-b081-53beffbca235"
+      }
+     ]
+    }
+   },
+   "reward": {
+    "hero": {
+     "packs": 1,
+     "coins": 0
+    },
+    "villain": {
+     "card": {
+      "oracle_id": "dbf0ad03-ab31-49d2-89b1-05b45948a61f",
+      "name": "Vorinclex, Voice of Hunger",
+      "rarity": "mythic",
+      "set": "nph",
+      "id": "0806adab-6a08-411b-b249-e1c58ade354b",
+      "image": "https://cards.scryfall.io/normal/front/0/8/0806adab-6a08-411b-b249-e1c58ade354b.jpg"
+     },
+     "coins": 50
+    }
+   },
+   "scene": [
+    {
+     "who": "elspeth",
+     "line": "I was called to this world of steel, and it will be my steel that answers.",
+     "quote": true
+    },
+    {
+     "who": "elspeth",
+     "line": "Infect: these creatures deal damage as poison counters to players and -1/-1 counters to creatures. Ten poison counters and you lose, whatever your life total says. Watch the poison, not the life."
+    }
+   ],
+   "villainScene": [
+    {
+     "who": "vorinclex",
+     "line": "Let them have their revel. Soon those who won't submit will be turned. Those who won't be turned will die.",
+     "quote": true
+    },
+    {
+     "who": "stage",
+     "line": "Its venom drips with Phyrexia's hate.",
+     "quote": true
+    }
+   ],
+   "after": [
+    {
+     "who": "elspeth",
+     "line": "I came here to hide from war. It seems wars find me wherever I go."
+    }
+   ],
+   "cues": {
+    "hero": {
+     "start": "Shields up.",
+     "big": "For the Whitesun!",
+     "low": "The poison is spreading...",
+     "win": "The Tangle is quiet.",
+     "loss": "Ten counters...",
+     "half": "Count the poison."
+    },
+    "villain": {
+     "start": "Feed.",
+     "big": "The hunt grows!",
+     "low": "Prey that bites...",
+     "win": "Turned.",
+     "loss": "The Tangle will remember."
+    }
+   },
+   "bigPlays": [],
+   "sim": null
+  },
+  {
+   "id": "a18b3",
+   "slot": 3,
+   "kind": "Lesson",
+   "mood": "tension",
+   "title": "The Outcast",
+   "difficulty": "Easy",
+   "teaches": [
+    "Proliferate"
+   ],
+   "blurb": "Melira is a Sylvok girl the other Mirrans once shunned because metal never grew in her body. Now the oil cannot touch her either, and that makes her the most important person on the plane. Sheoldred, the black Praetor, wants her taken apart to see why.",
+   "rewardSet": "nph",
+   "host": false,
+   "hero": {
+    "who": "melira",
+    "deck": {
+     "name": "Melira's Keepers",
+     "colors": "GW",
+     "archetype": null,
+     "label": "tribute",
+     "cards": [
+      {
+       "qty": 2,
+       "name": "Melira, Sylvok Outcast",
+       "set": "nph",
+       "number": "115",
+       "id": "e83851a1-e4e8-49ec-af5c-4efe86fa51ad"
+      },
+      {
+       "qty": 4,
+       "name": "Llanowar Elves",
+       "set": "m12",
+       "number": "182",
+       "id": "01c6f877-6b00-4d57-8a88-36cd3b16edbc"
+      },
+      {
+       "qty": 4,
+       "name": "Viridian Emissary",
+       "set": "mbs",
+       "number": "95",
+       "id": "129fa334-f561-4fbd-9f51-2fa044b674e1"
+      },
+      {
+       "qty": 4,
+       "name": "Leonin Relic-Warder",
+       "set": "mbs",
+       "number": "10",
+       "id": "dd0900e1-df78-466d-b747-33f22c273d67"
+      },
+      {
+       "qty": 4,
+       "name": "Garruk's Companion",
+       "set": "m12",
+       "number": "175",
+       "id": "b8d8806c-43c5-4c6c-9420-6210a17ec2b0"
+      },
+      {
+       "qty": 4,
+       "name": "Ezuri's Brigade",
+       "set": "som",
+       "number": "121",
+       "id": "079a6b44-3492-4484-aed1-5cd2449e702d"
+      },
+      {
+       "qty": 4,
+       "name": "Melira's Keepers",
+       "set": "mbs",
+       "number": "83",
+       "id": "d9a935b4-347c-46d9-a7c5-8c5079948959"
+      },
+      {
+       "qty": 4,
+       "name": "Revoke Existence",
+       "set": "som",
+       "number": "18",
+       "id": "18ae62f9-361c-4849-b0af-2b08fc0421c8"
+      },
+      {
+       "qty": 4,
+       "name": "Accorder Paladin",
+       "set": "mbs",
+       "number": "1",
+       "id": "df0a4370-729d-40e7-b68b-21902648492d"
+      },
+      {
+       "qty": 2,
+       "name": "Titanic Growth",
+       "set": "m12",
+       "number": "198",
+       "id": "db3c8982-e1c2-48be-8094-683d00c2e52b"
+      },
+      {
+       "qty": 12,
+       "name": "Forest",
+       "set": "som",
+       "number": "246",
+       "id": "34cc6a36-b551-40c7-b081-53beffbca235"
+      },
+      {
+       "qty": 12,
+       "name": "Plains",
+       "set": "som",
+       "number": "230",
+       "id": "a410e95b-afd0-4ac4-beb5-96163b411fe2"
+      }
+     ]
+    }
+   },
+   "villain": {
+    "who": "sheoldred",
+    "deck": {
+     "name": "The Whispering Choir",
+     "colors": "B",
+     "archetype": null,
+     "label": "tribute",
+     "cards": [
+      {
+       "qty": 1,
+       "name": "Sheoldred, Whispering One",
+       "set": "nph",
+       "number": "73",
+       "id": "3bb8347b-8663-40b8-bdfb-411236d2efc8"
+      },
+      {
+       "qty": 2,
+       "name": "Whispering Specter",
+       "set": "nph",
+       "number": "77",
+       "id": "bcb1b486-e336-4e88-b635-b6ff18cb4841"
+      },
+      {
+       "qty": 2,
+       "name": "Plague Stinger",
+       "set": "som",
+       "number": "75",
+       "id": "aae856bc-f65f-42ba-9344-1a30b356c041"
+      },
+      {
+       "qty": 4,
+       "name": "Ichor Rats",
+       "set": "som",
+       "number": "67",
+       "id": "2013aed6-7415-4bf0-a3bb-46d6beecbaff"
+      },
+      {
+       "qty": 2,
+       "name": "Necropede",
+       "set": "som",
+       "number": "185",
+       "id": "8d2e522b-e6f8-4fae-8c08-ce2bb8bed04f"
+      },
+      {
+       "qty": 24,
+       "name": "Swamp",
+       "set": "som",
+       "number": "238",
+       "id": "42a1264f-bda3-45ac-b959-463c6e532fd3"
+      },
+      {
+       "qty": 4,
+       "name": "Tormented Soul",
+       "set": "m12",
+       "number": "114",
+       "id": "d2699c42-99bb-4b5a-82ec-9c6424c14ec1"
+      },
+      {
+       "qty": 3,
+       "name": "Child of Night",
+       "set": "m12",
+       "number": "87",
+       "id": "c4780079-7f4c-4a43-883f-4722423c4fec"
+      },
+      {
+       "qty": 4,
+       "name": "Moriok Reaver",
+       "set": "som",
+       "number": "70",
+       "id": "e2a0410f-95c5-49bf-856d-dea796c96e3b"
+      },
+      {
+       "qty": 2,
+       "name": "Zombie Goliath",
+       "set": "m12",
+       "number": "119",
+       "id": "1985e0bd-05b9-4eaf-9333-6262cf677acd"
+      },
+      {
+       "qty": 2,
+       "name": "Dross Hopper",
+       "set": "som",
+       "number": "60",
+       "id": "1a0656f6-a016-479a-a003-72e106e986b0"
+      },
+      {
+       "qty": 4,
+       "name": "Blistergrub",
+       "set": "som",
+       "number": "56",
+       "id": "5431debc-0037-49ff-a38f-3fa2f9f5ee33"
+      },
+      {
+       "qty": 4,
+       "name": "Duskhunter Bat",
+       "set": "m12",
+       "number": "97",
+       "id": "4560ee1a-1076-4ec5-a177-55ffe12e2165"
+      },
+      {
+       "qty": 2,
+       "name": "Gravedigger",
+       "set": "m12",
+       "number": "99",
+       "id": "11055d4e-3efe-493c-8c18-9e2642267511"
+      }
+     ]
+    }
+   },
+   "reward": {
+    "hero": {
+     "packs": 1,
+     "coins": 0
+    },
+    "villain": {
+     "card": {
+      "oracle_id": "9218b56d-aaec-482f-99e9-d95d227bfe25",
+      "name": "Sheoldred, Whispering One",
+      "rarity": "mythic",
+      "set": "nph",
+      "id": "3bb8347b-8663-40b8-bdfb-411236d2efc8",
+      "image": "https://cards.scryfall.io/normal/front/3/b/3bb8347b-8663-40b8-bdfb-411236d2efc8.jpg"
+     },
+     "coins": 50
+    }
+   },
+   "scene": [
+    {
+     "who": "melira",
+     "line": "Once a pariah, now Mirrodin's greatest hope.",
+     "quote": true
+    },
+    {
+     "who": "melira",
+     "line": "Proliferate: choose any number of things that already have counters, and give each one more of a kind it has. Poison counters too. So kill the infect creatures before they start, and the proliferate has nothing to grow."
+    }
+   ],
+   "villainScene": [
+    {
+     "who": "sheoldred",
+     "line": "Welcome to perfection.",
+     "quote": true
+    },
+    {
+     "who": "sheoldred",
+     "line": "The sooner you join Phyrexia, the sooner you'll forget your painful rebirth.",
+     "quote": true
+    }
+   ],
+   "after": [
+    {
+     "who": "melira",
+     "line": "They want me because I am different. That was always why people wanted me, one way or another."
+    }
+   ],
+   "cues": {
+    "hero": {
+     "start": "Keep together.",
+     "big": "Keepers, hold!",
+     "low": "Too many counters...",
+     "win": "Not today.",
+     "loss": "Run, all of you...",
+     "half": "Stop the first counter."
+    },
+    "villain": {
+     "start": "Bring me the girl.",
+     "big": "Grow, little counters.",
+     "low": "She resists...",
+     "win": "Compleat.",
+     "loss": "The girl... remains..."
+    }
+   },
+   "bigPlays": [],
+   "sim": null
+  },
+  {
+   "id": "a18b4",
+   "slot": 4,
+   "kind": "Rival",
+   "mood": "tension",
+   "title": "Venser's Last Stand",
+   "difficulty": "Normal",
+   "teaches": [
+    "Card advantage"
+   ],
+   "blurb": "Venser, the Dominarian teleporter from Act 14, has come to Mirrodin looking for Karn. He finds him in the core, half eaten by the oil and whispering in Phyrexian. To reach him, Venser has to get past the blue Praetor, Jin-Gitaxias.",
+   "rewardSet": "som",
+   "host": false,
+   "hero": {
+    "who": "venser",
+    "deck": {
+     "name": "The Sojourner's Workshop",
+     "colors": "WU",
+     "archetype": null,
+     "label": "tribute",
+     "cards": [
+      {
+       "qty": 4,
+       "name": "Glint Hawk",
+       "set": "som",
+       "number": "10",
+       "id": "284c4710-4183-4743-9c8b-515cc98cbbb8"
+      },
+      {
+       "qty": 4,
+       "name": "Thrummingbird",
+       "set": "som",
+       "number": "47",
+       "id": "dc2dd336-e457-49a1-88ae-c35f0c846e99"
+      },
+      {
+       "qty": 4,
+       "name": "Trinket Mage",
+       "set": "som",
+       "number": "48",
+       "id": "cb52e7ba-5340-44e1-9b63-775e1f387925"
+      },
+      {
+       "qty": 4,
+       "name": "Riddlesmith",
+       "set": "som",
+       "number": "40",
+       "id": "08e25713-05ea-4eed-aa7f-5ca4e57a8152"
+      },
+      {
+       "qty": 4,
+       "name": "Auriok Sunchaser",
+       "set": "som",
+       "number": "4",
+       "id": "e274a8b3-2d92-43d9-a436-d3f6f619ca95"
+      },
+      {
+       "qty": 4,
+       "name": "Mana Leak",
+       "set": "m12",
+       "number": "63",
+       "id": "6b123efa-8631-4a07-970d-ff4f980a0522"
+      },
+      {
+       "qty": 4,
+       "name": "Arrest",
+       "set": "som",
+       "number": "2",
+       "id": "f52d6cf9-1d92-4d3b-8631-0db19a073b44"
+      },
+      {
+       "qty": 4,
+       "name": "Phyrexian Metamorph",
+       "set": "nph",
+       "number": "42",
+       "id": "d2e27911-87cb-49a0-a34f-6afe4bddd592"
+      },
+      {
+       "qty": 4,
+       "name": "Porcelain Legionnaire",
+       "set": "nph",
+       "number": "19",
+       "id": "2616aa0e-8413-4e63-877c-bffd5263f552"
+      },
+      {
+       "qty": 4,
+       "name": "Seachrome Coast",
+       "set": "som",
+       "number": "229",
+       "id": "99939b90-e88c-4c2f-ba78-56d455611703"
+      },
+      {
+       "qty": 10,
+       "name": "Plains",
+       "set": "som",
+       "number": "230",
+       "id": "a410e95b-afd0-4ac4-beb5-96163b411fe2"
+      },
+      {
+       "qty": 10,
+       "name": "Island",
+       "set": "som",
+       "number": "234",
+       "id": "d2748f53-0d81-4656-8e4b-5f0128215879"
+      }
+     ]
+    }
+   },
+   "villain": {
+    "who": "jin",
+    "deck": {
+     "name": "The Synthesis",
+     "colors": "U",
+     "archetype": null,
+     "label": "tribute",
+     "cards": [
+      {
+       "qty": 1,
+       "name": "Jin-Gitaxias, Core Augur",
+       "set": "nph",
+       "number": "37",
+       "id": "bd46fc9f-5b92-44d7-8940-2f39b0962b8f"
+      },
+      {
+       "qty": 4,
+       "name": "Blighted Agent",
+       "set": "nph",
+       "number": "29",
+       "id": "cddaebde-a060-4510-8c97-68432d931987"
+      },
+      {
+       "qty": 4,
+       "name": "Neurok Invisimancer",
+       "set": "som",
+       "number": "37",
+       "id": "e88f78f4-77d8-4c3e-a5bf-a9dd902aaae1"
+      },
+      {
+       "qty": 4,
+       "name": "Vedalken Anatomist",
+       "set": "mbs",
+       "number": "36",
+       "id": "0c13bb9b-c4e9-4b82-852a-dbd5602b1aa9"
+      },
+      {
+       "qty": 4,
+       "name": "Phyrexian Ingester",
+       "set": "nph",
+       "number": "41",
+       "id": "376e9829-23eb-4b43-9ec7-246cb3156e95"
+      },
+      {
+       "qty": 4,
+       "name": "Inexorable Tide",
+       "set": "som",
+       "number": "35",
+       "id": "8f41e281-fcbb-450b-8a67-7b072c55c6f0"
+      },
+      {
+       "qty": 4,
+       "name": "Mana Leak",
+       "set": "m12",
+       "number": "63",
+       "id": "6b123efa-8631-4a07-970d-ff4f980a0522"
+      },
+      {
+       "qty": 4,
+       "name": "Steady Progress",
+       "set": "som",
+       "number": "45",
+       "id": "6fe212ed-31cb-4f10-8ba7-e97af1d30d24"
+      },
+      {
+       "qty": 3,
+       "name": "Tezzeret's Gambit",
+       "set": "nph",
+       "number": "47",
+       "id": "fff5a09e-9276-44b8-b374-4b84aebd47cc"
+      },
+      {
+       "qty": 4,
+       "name": "Darkslick Drake",
+       "set": "som",
+       "number": "30",
+       "id": "234f4131-1e7f-4220-b46c-bb4a6713876e"
+      },
+      {
+       "qty": 24,
+       "name": "Island",
+       "set": "som",
+       "number": "234",
+       "id": "d2748f53-0d81-4656-8e4b-5f0128215879"
+      }
+     ]
+    }
+   },
+   "reward": {
+    "hero": {
+     "packs": 1,
+     "coins": 100
+    },
+    "villain": {
+     "card": {
+      "oracle_id": "eb23aed0-c450-4e57-96f2-2866dceca004",
+      "name": "Jin-Gitaxias, Core Augur",
+      "rarity": "mythic",
+      "set": "nph",
+      "id": "bd46fc9f-5b92-44d7-8940-2f39b0962b8f",
+      "image": "https://cards.scryfall.io/normal/front/b/d/bd46fc9f-5b92-44d7-8940-2f39b0962b8f.jpg"
+     },
+     "coins": 100
+    }
+   },
+   "scene": [
+    {
+     "who": "venser",
+     "line": "They can't even comprehend nature. How could they improve it?",
+     "quote": true
+    },
+    {
+     "who": "venser",
+     "line": "Karn made me what I am. He was the first one who ever believed in me. I am not leaving him down here."
+    }
+   ],
+   "villainScene": [
+    {
+     "who": "jin",
+     "line": "Forswear the flesh and you will truly see.",
+     "quote": true
+    },
+    {
+     "who": "jin",
+     "line": "See how gratefully this world accepts our blessings.",
+     "quote": true
+    }
+   ],
+   "after": [
+    {
+     "who": "stage",
+     "line": "As the Phyrexian contagion corroded Karn's body, the praetors whispered psalms to corrupt his mind.",
+     "quote": true
+    },
+    {
+     "who": "venser",
+     "line": "There is only one thing that can burn this out of him. A spark. Mine."
+    },
+    {
+     "who": "stage",
+     "line": "Venser puts his hand on Karn's chest. The light goes out of him and into Karn. Venser does not get up again."
+    }
+   ],
+   "cues": {
+    "hero": {
+     "start": "Hold on, Karn.",
+     "big": "Blink and gone!",
+     "low": "He thinks faster than I can...",
+     "win": "Through!",
+     "loss": "Not like this...",
+     "half": "Draw more than he does."
+    },
+    "villain": {
+     "start": "A specimen arrives.",
+     "big": "Synthesis.",
+     "low": "Unexpected data...",
+     "win": "Catalogued.",
+     "loss": "Specimen... lost..."
+    }
+   },
+   "bigPlays": [],
+   "sim": null
+  },
+  {
+   "id": "a18b5",
+   "slot": 5,
+   "kind": "Lesson",
+   "mood": "tension",
+   "title": "The Furnace Layer",
+   "difficulty": "Normal",
+   "teaches": [
+    "Phyrexian mana"
+   ],
+   "blurb": "Koth leads the last Mirrans down into the furnace layer, the home of Urabrask, the red Praetor. Urabrask is a Phyrexian too, but he cares about the Great Work and nothing else, and he might let them pass if they can survive him.",
+   "rewardSet": "nph",
+   "host": false,
+   "hero": {
+    "who": "koth",
+    "deck": {
+     "name": "Koth's Partisans",
+     "colors": "R",
+     "archetype": null,
+     "label": "tribute",
+     "cards": [
+      {
+       "qty": 2,
+       "name": "Koth of the Hammer",
+       "set": "som",
+       "number": "94",
+       "id": "af8b9c79-a161-4d7d-944d-82a44a5f2ab9"
+      },
+      {
+       "qty": 4,
+       "name": "Spikeshot Elder",
+       "set": "som",
+       "number": "104",
+       "id": "fad5621d-eb77-4b4a-80e7-1bfa75a6fcfb"
+      },
+      {
+       "qty": 2,
+       "name": "Galvanic Blast",
+       "set": "som",
+       "number": "91",
+       "id": "f5881bbc-8600-464d-9dcd-5a7780918d1d"
+      },
+      {
+       "qty": 4,
+       "name": "Chandra's Phoenix",
+       "set": "m12",
+       "number": "126",
+       "id": "e8371c83-d7c5-4432-8511-cb3c1dc7d59f"
+      },
+      {
+       "qty": 4,
+       "name": "Goblin Fireslinger",
+       "set": "m12",
+       "number": "139",
+       "id": "3c11db78-f506-4af2-a7be-c7ac2c0ffcf3"
+      },
+      {
+       "qty": 2,
+       "name": "Shrine of Burning Rage",
+       "set": "nph",
+       "number": "153",
+       "id": "d1a8afef-fa50-4aeb-94de-a4d90b1e5631"
+      },
+      {
+       "qty": 24,
+       "name": "Mountain",
+       "set": "som",
+       "number": "242",
+       "id": "6df2f49d-097e-4685-8ddb-69c55f07f60c"
+      },
+      {
+       "qty": 4,
+       "name": "Vulshok Heartstoker",
+       "set": "som",
+       "number": "107",
+       "id": "9d3152bc-5c59-4e98-95de-a51de05a3c98"
+      },
+      {
+       "qty": 4,
+       "name": "Iron Myr",
+       "set": "som",
+       "number": "168",
+       "id": "5bd0a588-b695-4060-b5d5-c6a74710ff0f"
+      },
+      {
+       "qty": 4,
+       "name": "Copper Myr",
+       "set": "som",
+       "number": "146",
+       "id": "323efe27-da58-4207-9c0c-dba5031bfa04"
+      },
+      {
+       "qty": 2,
+       "name": "Ferrovore",
+       "set": "som",
+       "number": "88",
+       "id": "8dcc7170-38d9-4b9e-a5f9-73ac1208c439"
+      },
+      {
+       "qty": 4,
+       "name": "Panic Spellbomb",
+       "set": "som",
+       "number": "191",
+       "id": "e9a29832-8630-498a-9ac3-bc709a6dc95d"
+      }
+     ]
+    }
+   },
+   "villain": {
+    "who": "urabrask",
+    "deck": {
+     "name": "The Great Work",
+     "colors": "R",
+     "archetype": null,
+     "label": "tribute",
+     "cards": [
+      {
+       "qty": 1,
+       "name": "Urabrask the Hidden",
+       "set": "nph",
+       "number": "98",
+       "id": "b06fcab2-891e-4fa3-8583-068ba56c2e27"
+      },
+      {
+       "qty": 4,
+       "name": "Gut Shot",
+       "set": "nph",
+       "number": "86",
+       "id": "a54a2a30-b96a-49c7-9151-1f4b0d4a4413"
+      },
+      {
+       "qty": 4,
+       "name": "Moltensteel Dragon",
+       "set": "nph",
+       "number": "88",
+       "id": "13b78018-bfbe-43fa-809f-9b52a155e11c"
+      },
+      {
+       "qty": 4,
+       "name": "Invader Parasite",
+       "set": "nph",
+       "number": "87",
+       "id": "89a8c53f-2cb0-41ea-8391-c32667f17c30"
+      },
+      {
+       "qty": 4,
+       "name": "Ogre Menial",
+       "set": "nph",
+       "number": "89",
+       "id": "6271c5c1-5f39-4908-b838-0f34c74e912e"
+      },
+      {
+       "qty": 4,
+       "name": "Volt Charge",
+       "set": "nph",
+       "number": "100",
+       "id": "aa88011c-a19d-4faa-8da6-86b9980cd571"
+      },
+      {
+       "qty": 4,
+       "name": "Slagstorm",
+       "set": "mbs",
+       "number": "75",
+       "id": "9e318b03-2aad-462b-a2a9-8b6bdf0e93d6"
+      },
+      {
+       "qty": 3,
+       "name": "Flameborn Viron",
+       "set": "nph",
+       "number": "83",
+       "id": "9601ea62-a609-4bc5-a2f0-f7615b4dd5fa"
+      },
+      {
+       "qty": 24,
+       "name": "Mountain",
+       "set": "som",
+       "number": "242",
+       "id": "6df2f49d-097e-4685-8ddb-69c55f07f60c"
+      },
+      {
+       "qty": 4,
+       "name": "Arc Trail",
+       "set": "som",
+       "number": "81",
+       "id": "445e3a0a-29a7-4dc0-80fe-569b9e751db3"
+      },
+      {
+       "qty": 4,
+       "name": "Incinerate",
+       "set": "m12",
+       "number": "146",
+       "id": "1af92296-455a-425e-9397-a96d09937767"
+      }
+     ]
+    }
+   },
+   "reward": {
+    "hero": {
+     "packs": 1,
+     "coins": 100
+    },
+    "villain": {
+     "card": {
+      "oracle_id": "5b2ffb53-86b7-4665-a5c7-b85b035b6c81",
+      "name": "Urabrask the Hidden",
+      "rarity": "mythic",
+      "set": "nph",
+      "id": "b06fcab2-891e-4fa3-8583-068ba56c2e27",
+      "image": "https://cards.scryfall.io/normal/front/b/0/b06fcab2-891e-4fa3-8583-068ba56c2e27.jpg"
+     },
+     "coins": 100
+    }
+   },
+   "scene": [
+    {
+     "who": "koth",
+     "line": "Drive them back! Make their underworld into their grave!",
+     "quote": true
+    },
+    {
+     "who": "koth",
+     "line": "Phyrexian mana: a symbol with a slash through it can be paid with one coloured mana or with 2 life. Their cards are cheap if they are willing to bleed. Make them bleed."
+    }
+   ],
+   "villainScene": [
+    {
+     "who": "urabrask",
+     "line": "All will be reforged in the fires of glory.",
+     "quote": true
+    },
+    {
+     "who": "stage",
+     "line": "Down here, we have a more pointed version of the scriptures.",
+     "quote": true
+    }
+   ],
+   "after": [
+    {
+     "who": "urabrask",
+     "line": "Elesh Norn wants this world quiet. I want it working. You may hide in my furnace, Vulshok, as long as you do not get in the way of the Work."
+    }
+   ],
+   "cues": {
+    "hero": {
+     "start": "Into the furnace.",
+     "big": "Slag them!",
+     "low": "The heat...",
+     "win": "Keep moving.",
+     "loss": "The core takes us...",
+     "half": "Make them pay in life."
+    },
+    "villain": {
+     "start": "Prove your worth.",
+     "big": "The furnace roars.",
+     "low": "Interesting.",
+     "win": "Into the fires.",
+     "loss": "Go. You amuse me."
+    }
+   },
+   "bigPlays": [],
+   "sim": null
+  },
+  {
+   "id": "a18b6",
+   "slot": 6,
+   "kind": "Meta",
+   "mood": "march",
+   "title": "Tempered Steel",
+   "difficulty": "Normal",
+   "teaches": [
+    "Battle cry"
+   ],
+   "blurb": "Spring 2011. Tempered Steel gave every artifact creature +2/+2, and white decks full of Memnites and Signal Pests used it to swarm. The other cheap swarm was Kuldotha Red, mono-red goblins and burn.",
+   "rewardSet": "som",
+   "host": false,
+   "hero": {
+    "who": "you",
+    "deck": {
+     "name": "Tempered Steel",
+     "colors": "W",
+     "archetype": "Aggro",
+     "label": "tribute",
+     "cards": [
+      {
+       "qty": 4,
+       "name": "Tempered Steel",
+       "set": "som",
+       "number": "24",
+       "id": "6661b39d-505a-48f4-bc06-59084c6a3b0c"
+      },
+      {
+       "qty": 4,
+       "name": "Memnite",
+       "set": "som",
+       "number": "174",
+       "id": "469cc4e0-49c0-4009-97ea-28e44addec69"
+      },
+      {
+       "qty": 4,
+       "name": "Signal Pest",
+       "set": "mbs",
+       "number": "131",
+       "id": "be065962-f2ed-4ab9-be6b-bfc66d63ff4e"
+      },
+      {
+       "qty": 4,
+       "name": "Glint Hawk",
+       "set": "som",
+       "number": "10",
+       "id": "284c4710-4183-4743-9c8b-515cc98cbbb8"
+      },
+      {
+       "qty": 4,
+       "name": "Vault Skirge",
+       "set": "nph",
+       "number": "76",
+       "id": "f254239c-c07a-4c41-98f7-8f4de539c73e"
+      },
+      {
+       "qty": 4,
+       "name": "Porcelain Legionnaire",
+       "set": "nph",
+       "number": "19",
+       "id": "2616aa0e-8413-4e63-877c-bffd5263f552"
+      },
+      {
+       "qty": 4,
+       "name": "Origin Spellbomb",
+       "set": "som",
+       "number": "189",
+       "id": "91e7faa4-160e-47d9-a9a1-5928d9d2b5e4"
+      },
+      {
+       "qty": 4,
+       "name": "Glint Hawk Idol",
+       "set": "som",
+       "number": "156",
+       "id": "0a742da4-638d-4888-94f1-db2f4ada9f94"
+      },
+      {
+       "qty": 4,
+       "name": "Accorder Paladin",
+       "set": "mbs",
+       "number": "1",
+       "id": "df0a4370-729d-40e7-b68b-21902648492d"
+      },
+      {
+       "qty": 4,
+       "name": "Inkmoth Nexus",
+       "set": "mbs",
+       "number": "145",
+       "id": "ec50c1c3-885e-47d3-ada7-cc0edbf09df1"
+      },
+      {
+       "qty": 20,
+       "name": "Plains",
+       "set": "som",
+       "number": "230",
+       "id": "a410e95b-afd0-4ac4-beb5-96163b411fe2"
+      }
+     ]
+    }
+   },
+   "villain": {
+    "who": "kuldotha",
+    "deck": {
+     "name": "Kuldotha Red",
+     "colors": "R",
+     "archetype": "Aggro",
+     "label": "tribute",
+     "cards": [
+      {
+       "qty": 4,
+       "name": "Kuldotha Rebirth",
+       "set": "som",
+       "number": "96",
+       "id": "7ee07266-a95d-4cd8-9863-1664922e9490"
+      },
+      {
+       "qty": 4,
+       "name": "Memnite",
+       "set": "som",
+       "number": "174",
+       "id": "469cc4e0-49c0-4009-97ea-28e44addec69"
+      },
+      {
+       "qty": 4,
+       "name": "Signal Pest",
+       "set": "mbs",
+       "number": "131",
+       "id": "be065962-f2ed-4ab9-be6b-bfc66d63ff4e"
+      },
+      {
+       "qty": 4,
+       "name": "Goblin Fireslinger",
+       "set": "m12",
+       "number": "139",
+       "id": "3c11db78-f506-4af2-a7be-c7ac2c0ffcf3"
+      },
+      {
+       "qty": 4,
+       "name": "Spikeshot Elder",
+       "set": "som",
+       "number": "104",
+       "id": "fad5621d-eb77-4b4a-80e7-1bfa75a6fcfb"
+      },
+      {
+       "qty": 4,
+       "name": "Galvanic Blast",
+       "set": "som",
+       "number": "91",
+       "id": "f5881bbc-8600-464d-9dcd-5a7780918d1d"
+      },
+      {
+       "qty": 4,
+       "name": "Vulshok Refugee",
+       "set": "nph",
+       "number": "101",
+       "id": "0b1615ec-21b3-4575-8b02-fd2bccb930ba"
+      },
+      {
+       "qty": 4,
+       "name": "Shrine of Burning Rage",
+       "set": "nph",
+       "number": "153",
+       "id": "d1a8afef-fa50-4aeb-94de-a4d90b1e5631"
+      },
+      {
+       "qty": 24,
+       "name": "Mountain",
+       "set": "som",
+       "number": "242",
+       "id": "6df2f49d-097e-4685-8ddb-69c55f07f60c"
+      },
+      {
+       "qty": 4,
+       "name": "Arc Trail",
+       "set": "som",
+       "number": "81",
+       "id": "445e3a0a-29a7-4dc0-80fe-569b9e751db3"
+      }
+     ]
+    }
+   },
+   "reward": {
+    "hero": {
+     "packs": 1,
+     "coins": 100
+    },
+    "villain": {
+     "card": {
+      "oracle_id": "f3e28778-0149-4dbd-badb-ba5aeacacd76",
+      "name": "Kuldotha Rebirth",
+      "rarity": "common",
+      "set": "som",
+      "id": "7ee07266-a95d-4cd8-9863-1664922e9490",
+      "image": "https://cards.scryfall.io/normal/front/7/e/7ee07266-a95d-4cd8-9863-1664922e9490.jpg"
+     },
+     "coins": 100
+    }
+   },
+   "scene": [
+    {
+     "who": "stage",
+     "line": "Death shall prevail as long as our will falls to rust. May necessity anneal our resolve.",
+     "quote": true
+    },
+    {
+     "who": "you",
+     "line": "Play every zero-drop, then Tempered Steel. Battle cry pumps everyone else when one attacks."
+    }
+   ],
+   "villainScene": [
+    {
+     "who": "kuldotha",
+     "line": "All goblin rituals serve a dual purpose as fertility rites, even the destructive ones. Especially the destructive ones.",
+     "quote": true
+    }
+   ],
+   "after": null,
+   "cues": {
+    "hero": {
+     "start": "Steel yourselves.",
+     "big": "Tempered!",
+     "low": "They burn the little ones...",
+     "win": "Annealed.",
+     "loss": "Melted down...",
+     "half": "Steel, then swing."
+    },
+    "villain": {
+     "start": "[goblins pour out]",
+     "big": "[the ritual roars]",
+     "low": "[out of goblins]",
+     "win": "[burned to slag]",
+     "loss": "[the ritual fizzles]"
+    }
+   },
+   "bigPlays": [],
+   "sim": null
+  },
+  {
+   "id": "a18b7",
+   "slot": 7,
+   "kind": "Meta",
+   "mood": "tension",
+   "title": "Inkmoth",
+   "difficulty": "Normal",
+   "teaches": [
+    "Protection from a colour"
+   ],
+   "blurb": "Spring 2011, the other side. Infect decks with Glistener Elf, Blighted Agent and Inkmoth Nexus tried to land ten poison before the white decks got set up. The white answer was Mirran Crusader, with protection from black and from green.",
+   "rewardSet": "mbs",
+   "host": false,
+   "hero": {
+    "who": "you",
+    "deck": {
+     "name": "Infect",
+     "colors": "GU",
+     "archetype": "Aggro",
+     "label": "tribute",
+     "cards": [
+      {
+       "qty": 4,
+       "name": "Glistener Elf",
+       "set": "nph",
+       "number": "111",
+       "id": "8b94f4c6-b518-43b3-be52-e889d1f3ea38"
+      },
+      {
+       "qty": 4,
+       "name": "Blighted Agent",
+       "set": "nph",
+       "number": "29",
+       "id": "cddaebde-a060-4510-8c97-68432d931987"
+      },
+      {
+       "qty": 4,
+       "name": "Viridian Corrupter",
+       "set": "mbs",
+       "number": "94",
+       "id": "0cc13aee-5a74-4dab-a6af-7dc31255981d"
+      },
+      {
+       "qty": 4,
+       "name": "Cystbearer",
+       "set": "som",
+       "number": "117",
+       "id": "b6c10302-f0b3-4076-ae5c-a8c8c09a7d41"
+      },
+      {
+       "qty": 4,
+       "name": "Mutagenic Growth",
+       "set": "nph",
+       "number": "116",
+       "id": "af2d23da-70a1-49ba-91bf-c110cc4bbedc"
+      },
+      {
+       "qty": 4,
+       "name": "Titanic Growth",
+       "set": "m12",
+       "number": "198",
+       "id": "db3c8982-e1c2-48be-8094-683d00c2e52b"
+      },
+      {
+       "qty": 4,
+       "name": "Ichorclaw Myr",
+       "set": "som",
+       "number": "166",
+       "id": "faef8b8b-2c45-4fed-b6ba-a8ac49c66330"
+      },
+      {
+       "qty": 4,
+       "name": "Phyrexian Hydra",
+       "set": "mbs",
+       "number": "85",
+       "id": "cb135aa1-9f46-4d60-a1a4-97aa0e852ced"
+      },
+      {
+       "qty": 4,
+       "name": "Inkmoth Nexus",
+       "set": "mbs",
+       "number": "145",
+       "id": "ec50c1c3-885e-47d3-ada7-cc0edbf09df1"
+      },
+      {
+       "qty": 10,
+       "name": "Forest",
+       "set": "som",
+       "number": "246",
+       "id": "34cc6a36-b551-40c7-b081-53beffbca235"
+      },
+      {
+       "qty": 10,
+       "name": "Island",
+       "set": "som",
+       "number": "234",
+       "id": "d2748f53-0d81-4656-8e4b-5f0128215879"
+      },
+      {
+       "qty": 4,
+       "name": "Plague Myr",
+       "set": "mbs",
+       "number": "125",
+       "id": "8f932690-9a38-4a3f-8805-a192208152a3"
+      }
+     ]
+    }
+   },
+   "villain": {
+    "who": "crusaders",
+    "deck": {
+     "name": "Mirran Crusaders",
+     "colors": "W",
+     "archetype": "Aggro",
+     "label": "tribute",
+     "cards": [
+      {
+       "qty": 4,
+       "name": "Accorder Paladin",
+       "set": "mbs",
+       "number": "1",
+       "id": "df0a4370-729d-40e7-b68b-21902648492d"
+      },
+      {
+       "qty": 4,
+       "name": "Leonin Skyhunter",
+       "set": "mbs",
+       "number": "11",
+       "id": "f7eb723d-aa4c-4a38-98de-1faefffab56b"
+      },
+      {
+       "qty": 2,
+       "name": "Timely Reinforcements",
+       "set": "m12",
+       "number": "40",
+       "id": "6ae4669c-e526-4c24-9c25-38cb5c5ef59b"
+      },
+      {
+       "qty": 2,
+       "name": "Arrest",
+       "set": "som",
+       "number": "2",
+       "id": "f52d6cf9-1d92-4d3b-8631-0db19a073b44"
+      },
+      {
+       "qty": 4,
+       "name": "Kemba's Skyguard",
+       "set": "som",
+       "number": "13",
+       "id": "b9f20a74-7614-4bd9-ac08-0e098f98df0c"
+      },
+      {
+       "qty": 24,
+       "name": "Plains",
+       "set": "som",
+       "number": "230",
+       "id": "a410e95b-afd0-4ac4-beb5-96163b411fe2"
+      },
+      {
+       "qty": 4,
+       "name": "Elite Vanguard",
+       "set": "m12",
+       "number": "15",
+       "id": "f03487e9-f584-4bbd-8335-4dd001a88b52"
+      },
+      {
+       "qty": 4,
+       "name": "Glint Hawk",
+       "set": "som",
+       "number": "10",
+       "id": "284c4710-4183-4743-9c8b-515cc98cbbb8"
+      },
+      {
+       "qty": 4,
+       "name": "Siege Mastodon",
+       "set": "m12",
+       "number": "34",
+       "id": "39c340a3-0118-48d3-99ab-f4a0e7099325"
+      },
+      {
+       "qty": 4,
+       "name": "Griffin Sentinel",
+       "set": "m12",
+       "number": "21",
+       "id": "3c8f2fea-2bc1-49fc-91c9-83698f43262f"
+      },
+      {
+       "qty": 4,
+       "name": "Peregrine Griffin",
+       "set": "m12",
+       "number": "29",
+       "id": "0296eaa6-f9fe-4fb8-af9c-04928d99e2e2"
+      }
+     ]
+    }
+   },
+   "reward": {
+    "hero": {
+     "packs": 1,
+     "coins": 100
+    },
+    "villain": {
+     "card": {
+      "oracle_id": "64f4f0ed-e924-459e-86a4-8202fae6ef3e",
+      "name": "Timely Reinforcements",
+      "rarity": "uncommon",
+      "set": "m12",
+      "id": "6ae4669c-e526-4c24-9c25-38cb5c5ef59b",
+      "image": "https://cards.scryfall.io/normal/front/6/a/6ae4669c-e526-4c24-9c25-38cb5c5ef59b.jpg"
+     },
+     "coins": 100
+    }
+   },
+   "scene": [
+    {
+     "who": "stage",
+     "line": "Beg me for life, and I will fill you with the glory of Phyrexian perfection.",
+     "quote": true
+    },
+    {
+     "who": "you",
+     "line": "Ten poison wins. Their Crusader has protection from green, so my green creatures cannot block it. Race it with the blue ones."
+    }
+   ],
+   "villainScene": [
+    {
+     "who": "crusaders",
+     "line": "A symbol of what Mirrodin once was and hope for what it will be again.",
+     "quote": true
+    }
+   ],
+   "after": null,
+   "cues": {
+    "hero": {
+     "start": "Spread the word.",
+     "big": "Ten poison!",
+     "low": "The Crusader holds...",
+     "win": "Compleat.",
+     "loss": "Cleansed...",
+     "half": "Poison, not damage."
+    },
+    "villain": {
+     "start": "[banners raised]",
+     "big": "[the battle cry sounds]",
+     "low": "[the line breaks]",
+     "win": "[cleansed]",
+     "loss": "[poisoned]"
+    }
+   },
+   "bigPlays": [],
+   "sim": null
+  },
+  {
+   "id": "a18b8",
+   "slot": 8,
+   "kind": "Boss",
+   "mood": "boss",
+   "title": "Elesh Norn",
+   "difficulty": "Hard",
+   "teaches": [
+    "Combat math"
+   ],
+   "blurb": "The suns are going out. Elesh Norn, the white Praetor of the Machine Orthodoxy, has won the argument among the Praetors and the war with the Mirrans at once. Koth, Elspeth and Melira make one last attack on her cathedral.",
+   "rewardSet": "nph",
+   "host": true,
+   "hero": {
+    "who": "koth",
+    "deck": {
+     "name": "Koth, Elspeth and Melira",
+     "colors": "RGW",
+     "archetype": null,
+     "label": "tribute",
+     "cards": [
+      {
+       "qty": 1,
+       "name": "Koth of the Hammer",
+       "set": "som",
+       "number": "94",
+       "id": "af8b9c79-a161-4d7d-944d-82a44a5f2ab9"
+      },
+      {
+       "qty": 1,
+       "name": "Elspeth Tirel",
+       "set": "som",
+       "number": "6",
+       "id": "ebe9116e-7b04-4f2a-aa67-89a42c6e1801"
+      },
+      {
+       "qty": 2,
+       "name": "Melira, Sylvok Outcast",
+       "set": "nph",
+       "number": "115",
+       "id": "e83851a1-e4e8-49ec-af5c-4efe86fa51ad"
+      },
+      {
+       "qty": 4,
+       "name": "Llanowar Elves",
+       "set": "m12",
+       "number": "182",
+       "id": "01c6f877-6b00-4d57-8a88-36cd3b16edbc"
+      },
+      {
+       "qty": 4,
+       "name": "Viridian Emissary",
+       "set": "mbs",
+       "number": "95",
+       "id": "129fa334-f561-4fbd-9f51-2fa044b674e1"
+      },
+      {
+       "qty": 4,
+       "name": "Accorder Paladin",
+       "set": "mbs",
+       "number": "1",
+       "id": "df0a4370-729d-40e7-b68b-21902648492d"
+      },
+      {
+       "qty": 4,
+       "name": "Hero of Bladehold",
+       "set": "mbs",
+       "number": "8",
+       "id": "8a3853ec-e307-46e0-96d7-0706b5c45c5e"
+      },
+      {
+       "qty": 4,
+       "name": "Galvanic Blast",
+       "set": "som",
+       "number": "91",
+       "id": "f5881bbc-8600-464d-9dcd-5a7780918d1d"
+      },
+      {
+       "qty": 4,
+       "name": "Arc Trail",
+       "set": "som",
+       "number": "81",
+       "id": "445e3a0a-29a7-4dc0-80fe-569b9e751db3"
+      },
+      {
+       "qty": 4,
+       "name": "Melira's Keepers",
+       "set": "mbs",
+       "number": "83",
+       "id": "d9a935b4-347c-46d9-a7c5-8c5079948959"
+      },
+      {
+       "qty": 4,
+       "name": "Revoke Existence",
+       "set": "som",
+       "number": "18",
+       "id": "18ae62f9-361c-4849-b0af-2b08fc0421c8"
+      },
+      {
+       "qty": 4,
+       "name": "Copperline Gorge",
+       "set": "som",
+       "number": "225",
+       "id": "28f1d784-f286-418d-a712-bc07ad10d4a2"
+      },
+      {
+       "qty": 4,
+       "name": "Razorverge Thicket",
+       "set": "som",
+       "number": "228",
+       "id": "345e053a-3178-485c-8602-1624bbf2f064"
+      },
+      {
+       "qty": 6,
+       "name": "Plains",
+       "set": "som",
+       "number": "230",
+       "id": "a410e95b-afd0-4ac4-beb5-96163b411fe2"
+      },
+      {
+       "qty": 5,
+       "name": "Forest",
+       "set": "som",
+       "number": "246",
+       "id": "34cc6a36-b551-40c7-b081-53beffbca235"
+      },
+      {
+       "qty": 5,
+       "name": "Mountain",
+       "set": "som",
+       "number": "242",
+       "id": "6df2f49d-097e-4685-8ddb-69c55f07f60c"
+      }
+     ]
+    }
+   },
+   "villain": {
+    "who": "norn",
+    "deck": {
+     "name": "The Machine Orthodoxy",
+     "colors": "W",
+     "archetype": null,
+     "label": "tribute",
+     "cards": [
+      {
+       "qty": 2,
+       "name": "Elesh Norn, Grand Cenobite",
+       "set": "nph",
+       "number": "9",
+       "id": "b66390d6-1649-4bfa-92d3-77664650d552"
+      },
+      {
+       "qty": 4,
+       "name": "Porcelain Legionnaire",
+       "set": "nph",
+       "number": "19",
+       "id": "2616aa0e-8413-4e63-877c-bffd5263f552"
+      },
+      {
+       "qty": 4,
+       "name": "Priests of Norn",
+       "set": "mbs",
+       "number": "16",
+       "id": "a978c49d-483a-42fe-971c-858288d07e40"
+      },
+      {
+       "qty": 4,
+       "name": "Blade Splicer",
+       "set": "nph",
+       "number": "4",
+       "id": "b8e56a28-713b-4a13-a601-1128cf117539"
+      },
+      {
+       "qty": 2,
+       "name": "Master Splicer",
+       "set": "nph",
+       "number": "16",
+       "id": "859d2b91-63af-4700-8ca5-b1756aa6639b"
+      },
+      {
+       "qty": 4,
+       "name": "Suture Priest",
+       "set": "nph",
+       "number": "25",
+       "id": "31432e98-86cd-42ea-ad37-eb4383dc6a81"
+      },
+      {
+       "qty": 2,
+       "name": "Chancellor of the Annex",
+       "set": "nph",
+       "number": "6",
+       "id": "be1b482a-badb-4b9a-ab63-2e7944826aa0"
+      },
+      {
+       "qty": 2,
+       "name": "Arrest",
+       "set": "som",
+       "number": "2",
+       "id": "f52d6cf9-1d92-4d3b-8631-0db19a073b44"
+      },
+      {
+       "qty": 4,
+       "name": "Lost Leonin",
+       "set": "nph",
+       "number": "13",
+       "id": "8209fa5d-2c0e-4827-813b-fff123533f16"
+      },
+      {
+       "qty": 2,
+       "name": "Sunblast Angel",
+       "set": "som",
+       "number": "22",
+       "id": "32217d3b-8a44-40e3-a4fd-c849fdffc1e4"
+      },
+      {
+       "qty": 24,
+       "name": "Plains",
+       "set": "som",
+       "number": "230",
+       "id": "a410e95b-afd0-4ac4-beb5-96163b411fe2"
+      },
+      {
+       "qty": 4,
+       "name": "Elite Vanguard",
+       "set": "m12",
+       "number": "15",
+       "id": "f03487e9-f584-4bbd-8335-4dd001a88b52"
+      },
+      {
+       "qty": 2,
+       "name": "Peregrine Griffin",
+       "set": "m12",
+       "number": "29",
+       "id": "0296eaa6-f9fe-4fb8-af9c-04928d99e2e2"
+      }
+     ]
+    }
+   },
+   "reward": {
+    "hero": {
+     "packs": 2,
+     "coins": 200
+    },
+    "villain": {
+     "card": {
+      "oracle_id": "958d71ff-c9f7-46f0-96ca-79e7f4d65a16",
+      "name": "Elesh Norn, Grand Cenobite",
+      "rarity": "mythic",
+      "set": "nph",
+      "id": "b66390d6-1649-4bfa-92d3-77664650d552",
+      "image": "https://cards.scryfall.io/normal/front/b/6/b66390d6-1649-4bfa-92d3-77664650d552.jpg"
+     },
+     "coins": 200
+    }
+   },
+   "scene": [
+    {
+     "who": "stage",
+     "line": "The infection has spread farther than we could glimpse from the heights of Taj-Nar.",
+     "quote": true
+    },
+    {
+     "who": "koth",
+     "line": "As long as we have the will to fight, we are never without weapons.",
+     "quote": true
+    },
+    {
+     "who": "elspeth",
+     "line": "If she is cut off from her priests, the rest of them falter. Get me to her."
+    },
+    {
+     "who": "melira",
+     "line": "The oil cannot take me. Let me go first."
+    }
+   ],
+   "villainScene": [
+    {
+     "who": "norn",
+     "line": "Our glorious infection has taken hold.",
+     "quote": true
+    },
+    {
+     "who": "norn",
+     "line": "May our blessings sever the tongues of the forsaken.",
+     "quote": true
+    },
+    {
+     "who": "stage",
+     "line": "With Phyrexia's victory at hand, each sect began perfecting its vision.",
+     "quote": true
+    }
+   ],
+   "after": null,
+   "cues": {
+    "hero": {
+     "start": "For Mirrodin.",
+     "big": "Break the cathedral!",
+     "low": "Her priests keep rising...",
+     "win": "She falls!",
+     "loss": "The suns go out...",
+     "half": "Kill the anthem first."
+    },
+    "villain": {
+     "start": "Kneel and be perfected.",
+     "big": "Behold the Orthodoxy.",
+     "low": "Heresy.",
+     "win": "Compleat.",
+     "loss": "It changes nothing.",
+     "half": {
+      "who": "elspeth",
+      "line": "She bleeds. Keep pushing."
+     }
+    }
+   },
+   "bigPlays": [],
+   "sim": null
+  },
+  {
+   "id": "a18b9",
+   "slot": 9,
+   "kind": "Secret Boss",
+   "secret": true,
+   "mood": "boss",
+   "title": "Caw-Blade",
+   "difficulty": "Hard",
+   "teaches": [
+    "Equipment"
+   ],
+   "blurb": "Deep in the archive, the deck that got two cards banned out of Standard at once.",
+   "rewardSet": "mbs",
+   "host": true,
+   "archive": {
+    "deck": "Caw-Blade",
+    "when": "Late 2010 to mid 2011",
+    "format": "Standard: Zendikar block, Scars of Mirrodin block, Magic 2011 and Magic 2012.",
+    "what": "A blue-white deck that used Stoneforge Mystic to find Swords of Feast and Famine and Body and Mind, put them on Squadron Hawks, and protected the board with counterspells and Jace, the Mind Sculptor.",
+    "why": "Caw-Blade won almost everything in the first half of 2011. At times more than half of the decks in the top eight of a big event were Caw-Blade.",
+    "beat": "Kill the creature before the Sword goes on it. Burn their small fliers on sight, and keep a removal spell for the equipped one.",
+    "after": "Jace, the Mind Sculptor and Stoneforge Mystic were banned in Standard on 1 July 2011. This tribute uses only this act's sets, so Stoneforge, Squadron Hawk and Jace are not in it; the Swords are."
+   },
+   "hero": {
+    "who": "you",
+    "deck": {
+     "name": "Red Deck Wins",
+     "colors": "R",
+     "archetype": "Aggro",
+     "label": "tribute",
+     "cards": [
+      {
+       "qty": 4,
+       "name": "Goblin Fireslinger",
+       "set": "m12",
+       "number": "139",
+       "id": "3c11db78-f506-4af2-a7be-c7ac2c0ffcf3"
+      },
+      {
+       "qty": 4,
+       "name": "Spikeshot Elder",
+       "set": "som",
+       "number": "104",
+       "id": "fad5621d-eb77-4b4a-80e7-1bfa75a6fcfb"
+      },
+      {
+       "qty": 4,
+       "name": "Chandra's Phoenix",
+       "set": "m12",
+       "number": "126",
+       "id": "e8371c83-d7c5-4432-8511-cb3c1dc7d59f"
+      },
+      {
+       "qty": 4,
+       "name": "Incinerate",
+       "set": "m12",
+       "number": "146",
+       "id": "1af92296-455a-425e-9397-a96d09937767"
+      },
+      {
+       "qty": 4,
+       "name": "Galvanic Blast",
+       "set": "som",
+       "number": "91",
+       "id": "f5881bbc-8600-464d-9dcd-5a7780918d1d"
+      },
+      {
+       "qty": 4,
+       "name": "Arc Trail",
+       "set": "som",
+       "number": "81",
+       "id": "445e3a0a-29a7-4dc0-80fe-569b9e751db3"
+      },
+      {
+       "qty": 4,
+       "name": "Shrine of Burning Rage",
+       "set": "nph",
+       "number": "153",
+       "id": "d1a8afef-fa50-4aeb-94de-a4d90b1e5631"
+      },
+      {
+       "qty": 4,
+       "name": "Vulshok Refugee",
+       "set": "nph",
+       "number": "101",
+       "id": "0b1615ec-21b3-4575-8b02-fd2bccb930ba"
+      },
+      {
+       "qty": 2,
+       "name": "Chandra, the Firebrand",
+       "set": "m12",
+       "number": "124",
+       "id": "efb37556-186f-4660-8b75-c52ef16a6d8f"
+      },
+      {
+       "qty": 2,
+       "name": "Slagstorm",
+       "set": "mbs",
+       "number": "75",
+       "id": "9e318b03-2aad-462b-a2a9-8b6bdf0e93d6"
+      },
+      {
+       "qty": 24,
+       "name": "Mountain",
+       "set": "som",
+       "number": "242",
+       "id": "6df2f49d-097e-4685-8ddb-69c55f07f60c"
+      }
+     ]
+    }
+   },
+   "villain": {
+    "who": "blade",
+    "deck": {
+     "name": "Caw-Blade",
+     "colors": "WU",
+     "archetype": "Control",
+     "label": "tribute",
+     "note": "Built from the 2011 Caw-Blade lists using cards from this act's sets only, so Stoneforge Mystic, Squadron Hawk and Jace, the Mind Sculptor are not in it. No single tournament list is copied.",
+     "cards": [
+      {
+       "qty": 2,
+       "name": "Sword of Feast and Famine",
+       "set": "mbs",
+       "number": "138",
+       "id": "580b4818-2a01-46ad-b4d9-7d895a625bb3"
+      },
+      {
+       "qty": 2,
+       "name": "Sword of Body and Mind",
+       "set": "som",
+       "number": "208",
+       "id": "03cc5caf-b2d7-4211-a1a4-f0ad6e70e3f4"
+      },
+      {
+       "qty": 2,
+       "name": "Sword of War and Peace",
+       "set": "nph",
+       "number": "161",
+       "id": "fab5bc6c-8943-4078-866a-5d02f9be0eef"
+      },
+      {
+       "qty": 4,
+       "name": "Mirran Crusader",
+       "set": "mbs",
+       "number": "14",
+       "id": "aaf7a821-3587-4aad-8411-fca5c96ab5c4"
+      },
+      {
+       "qty": 4,
+       "name": "Spellskite",
+       "set": "nph",
+       "number": "159",
+       "id": "1a84bada-ed6a-4e97-8a0c-05b7cb32d66f"
+      },
+      {
+       "qty": 4,
+       "name": "Mana Leak",
+       "set": "m12",
+       "number": "63",
+       "id": "6b123efa-8631-4a07-970d-ff4f980a0522"
+      },
+      {
+       "qty": 2,
+       "name": "Timely Reinforcements",
+       "set": "m12",
+       "number": "40",
+       "id": "6ae4669c-e526-4c24-9c25-38cb5c5ef59b"
+      },
+      {
+       "qty": 4,
+       "name": "Phyrexian Metamorph",
+       "set": "nph",
+       "number": "42",
+       "id": "d2e27911-87cb-49a0-a34f-6afe4bddd592"
+      },
+      {
+       "qty": 4,
+       "name": "Glint Hawk",
+       "set": "som",
+       "number": "10",
+       "id": "284c4710-4183-4743-9c8b-515cc98cbbb8"
+      },
+      {
+       "qty": 2,
+       "name": "Hero of Bladehold",
+       "set": "mbs",
+       "number": "8",
+       "id": "8a3853ec-e307-46e0-96d7-0706b5c45c5e"
+      },
+      {
+       "qty": 4,
+       "name": "Seachrome Coast",
+       "set": "som",
+       "number": "229",
+       "id": "99939b90-e88c-4c2f-ba78-56d455611703"
+      },
+      {
+       "qty": 10,
+       "name": "Plains",
+       "set": "som",
+       "number": "230",
+       "id": "a410e95b-afd0-4ac4-beb5-96163b411fe2"
+      },
+      {
+       "qty": 10,
+       "name": "Island",
+       "set": "som",
+       "number": "234",
+       "id": "d2748f53-0d81-4656-8e4b-5f0128215879"
+      },
+      {
+       "qty": 2,
+       "name": "Elite Vanguard",
+       "set": "m12",
+       "number": "15",
+       "id": "f03487e9-f584-4bbd-8335-4dd001a88b52"
+      },
+      {
+       "qty": 2,
+       "name": "Accorder Paladin",
+       "set": "mbs",
+       "number": "1",
+       "id": "df0a4370-729d-40e7-b68b-21902648492d"
+      },
+      {
+       "qty": 2,
+       "name": "Leonin Skyhunter",
+       "set": "mbs",
+       "number": "11",
+       "id": "f7eb723d-aa4c-4a38-98de-1faefffab56b"
+      }
+     ]
+    }
+   },
+   "reward": {
+    "hero": {
+     "packs": 2,
+     "coins": 200
+    },
+    "villain": {
+     "card": {
+      "oracle_id": "d0901053-6de0-46d0-9ee3-8d40510236c1",
+      "name": "Sword of Feast and Famine",
+      "rarity": "mythic",
+      "set": "mbs",
+      "id": "580b4818-2a01-46ad-b4d9-7d895a625bb3",
+      "image": "https://cards.scryfall.io/normal/front/5/8/580b4818-2a01-46ad-b4d9-7d895a625bb3.jpg"
+     },
+     "coins": 200
+    }
+   },
+   "scene": [
+    {
+     "who": "stage",
+     "line": "Mirrodin has little weather, but it certainly has lightning.",
+     "quote": true
+    },
+    {
+     "who": "you",
+     "line": "Every Sword needs a body. Kill the bodies."
+    }
+   ],
+   "villainScene": [
+    {
+     "who": "stage",
+     "line": "The fatal flaw in every plan is the assumption that you know more than your enemy.",
+     "quote": true
+    }
+   ],
+   "after": [
+    {
+     "who": "stage",
+     "line": "Recorded: Jace and Stoneforge banned in Standard, 1 July 2011."
+    }
+   ],
+   "cues": {
+    "hero": {
+     "start": "Burn the birds.",
+     "big": "Bolt it!",
+     "low": "The Sword is on...",
+     "win": "Disarmed.",
+     "loss": "Out-equipped...",
+     "half": "Kill the carrier."
+    },
+    "villain": {
+     "start": "[a Sword is equipped]",
+     "big": "[protection from red]",
+     "low": "[out of bodies]",
+     "win": "[feast and famine]",
+     "loss": "[burned out]"
+    }
+   },
+   "bigPlays": [],
+   "sim": null
+  }
+ ]
+}

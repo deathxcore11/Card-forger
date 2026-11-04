@@ -1,0 +1,3072 @@
+{
+ "act": 16,
+ "era": "2009-07-17",
+ "title": "The Conflux",
+ "years": "2008 to 2009",
+ "sets": [
+  "ala",
+  "con",
+  "arb",
+  "m10"
+ ],
+ "landSet": "ala",
+ "intro": [
+  {
+   "who": "stage",
+   "line": "Alara. Long ago it broke into five shards, and each shard kept only three of the five colours of mana."
+  },
+  {
+   "who": "stage",
+   "line": "Bant has knights and angels and law. Esper has etherium, the blue metal it grafts into every living thing. Grixis has the dead. Jund has dragons and the fight to eat or be eaten. Naya has jungles, giants and gods that walk."
+  },
+  {
+   "who": "stage",
+   "line": "Centuries have passed since the plane shattered, yet the obelisks of each shard faithfully serve their long-forgotten purpose.",
+   "quote": true
+  },
+  {
+   "who": "stage",
+   "line": "Now the shards are moving. And an old dragon, who lost most of his power in the Mending of Act 14, is watching them very closely."
+  }
+ ],
+ "finale": [
+  {
+   "who": "stage",
+   "line": "Alara is broken no more.",
+   "quote": true
+  },
+  {
+   "who": "stage",
+   "line": "The shards are one world again. The flood of mana as they came together was the greatest in centuries, and Nicol Bolas drank it. He leaves Alara stronger than he arrived."
+  },
+  {
+   "who": "ajani",
+   "line": "Jazal died because he stood between a dragon and a harvest. That is all he was to Bolas. In the way."
+  },
+  {
+   "who": "ajani",
+   "line": "I could not stop the Conflux. But I know his name now, and I know his face. I will be there the next time."
+  }
+ ],
+ "villainFinale": [
+  {
+   "who": "stage",
+   "line": "After years of world-bending machinations, Bolas's triumph is at hand.",
+   "quote": true
+  },
+  {
+   "who": "bolas",
+   "line": "Birth and death are both reversible.",
+   "quote": true
+  },
+  {
+   "who": "bolas",
+   "line": "Five worlds, one harvest. I lost a god's power in the Mending. A plane's worth of mana is a decent start on getting it back."
+  },
+  {
+   "who": "stage",
+   "line": "In a corner of the reborn plane, a white-maned leonin swears an oath that Bolas does not bother to hear."
+  }
+ ],
+ "vibe": "shards-conflux-bolas",
+ "cast": {
+  "you": {
+   "name": "You",
+   "title": "Planeswalker",
+   "portrait": {
+    "card": "Fold into Aether",
+    "set": "5dn",
+    "number": "31",
+    "id": "615157d6-0160-417b-b06c-0e253b306c37",
+    "artist": "Anthony S. Waters & Cara Mitten",
+    "crop": "https://cards.scryfall.io/art_crop/front/6/1/615157d6-0160-417b-b06c-0e253b306c37.jpg",
+    "focus": "50% 30%"
+   }
+  },
+  "rafiq": {
+   "name": "Rafiq",
+   "title": "Of the Many",
+   "portrait": {
+    "card": "Rafiq of the Many",
+    "set": "ala",
+    "number": "185",
+    "id": "249c188d-c11d-46f7-a2d8-a67df4ba401b",
+    "crop": "https://cards.scryfall.io/art_crop/front/2/4/249c188d-c11d-46f7-a2d8-a67df4ba401b.jpg?1783942541",
+    "artist": "Michael Komarck",
+    "focus": "50% 25%"
+   }
+  },
+  "sharuum": {
+   "name": "Sharuum",
+   "title": "The Hegemon",
+   "portrait": {
+    "card": "Sharuum the Hegemon",
+    "set": "ala",
+    "number": "194",
+    "id": "6589eaa8-95ec-4c97-8155-185487560ae6",
+    "crop": "https://cards.scryfall.io/art_crop/front/6/5/6589eaa8-95ec-4c97-8155-185487560ae6.jpg?1783942540",
+    "artist": "Izzy",
+    "focus": "50% 25%"
+   }
+  },
+  "ajani": {
+   "name": "Ajani",
+   "title": "Goldmane",
+   "portrait": {
+    "card": "Ajani Goldmane",
+    "set": "m10",
+    "number": "1",
+    "id": "46c50891-af21-4427-a495-0e66aef54809",
+    "crop": "https://cards.scryfall.io/art_crop/front/4/6/46c50891-af21-4427-a495-0e66aef54809.jpg?1783942405",
+    "artist": "Aleksi Briclot",
+    "focus": "50% 25%"
+   }
+  },
+  "sarkhan": {
+   "name": "Sarkhan Vol",
+   "title": "Dragon-Speaker of Jund",
+   "portrait": {
+    "card": "Sarkhan Vol",
+    "set": "ala",
+    "number": "191",
+    "id": "ce89ded2-db31-43c0-b00c-999d5d3fa5c6",
+    "crop": "https://cards.scryfall.io/art_crop/front/c/e/ce89ded2-db31-43c0-b00c-999d5d3fa5c6.jpg?1783942540",
+    "artist": "Daarken",
+    "focus": "50% 25%"
+   }
+  },
+  "elspeth": {
+   "name": "Elspeth",
+   "title": "Knight-Errant",
+   "portrait": {
+    "card": "Elspeth, Knight-Errant",
+    "set": "ala",
+    "number": "9",
+    "id": "44c52e52-2b1c-4ca8-ab6d-20d97a342704",
+    "crop": "https://cards.scryfall.io/art_crop/front/4/4/44c52e52-2b1c-4ca8-ab6d-20d97a342704.jpg?1783942583",
+    "artist": "Volkan Baǵa",
+    "focus": "50% 25%"
+   }
+  },
+  "tezzeret": {
+   "name": "Tezzeret",
+   "title": "The Seeker",
+   "portrait": {
+    "card": "Tezzeret the Seeker",
+    "set": "ala",
+    "number": "60",
+    "id": "3b214b6f-4734-4200-8467-92d7e3469b5d",
+    "crop": "https://cards.scryfall.io/art_crop/front/3/b/3b214b6f-4734-4200-8467-92d7e3469b5d.jpg?1783942571",
+    "artist": "Anthony Francisco",
+    "focus": "50% 25%"
+   }
+  },
+  "vengeant": {
+   "name": "Ajani",
+   "title": "Vengeant",
+   "portrait": {
+    "card": "Ajani Vengeant",
+    "set": "ala",
+    "number": "154",
+    "id": "8fc108a3-15e5-44ab-a6e2-182b309f9c0c",
+    "crop": "https://cards.scryfall.io/art_crop/front/8/f/8fc108a3-15e5-44ab-a6e2-182b309f9c0c.jpg?1783942548",
+    "artist": "Wayne Reynolds",
+    "focus": "50% 25%"
+   }
+  },
+  "sedris": {
+   "name": "Sedris",
+   "title": "The Traitor King",
+   "portrait": {
+    "card": "Sedris, the Traitor King",
+    "set": "ala",
+    "number": "193",
+    "id": "70206cff-9f54-4e27-982c-b0093a51d358",
+    "crop": "https://cards.scryfall.io/art_crop/front/7/0/70206cff-9f54-4e27-982c-b0093a51d358.jpg?1783942539",
+    "artist": "Paul Bonner",
+    "focus": "50% 25%"
+   }
+  },
+  "mayael": {
+   "name": "Mayael",
+   "title": "The Anima",
+   "portrait": {
+    "card": "Mayael the Anima",
+    "set": "ala",
+    "number": "179",
+    "id": "316b1fd1-5ec4-4bdc-938b-cbace1bb3f42",
+    "crop": "https://cards.scryfall.io/art_crop/front/3/1/316b1fd1-5ec4-4bdc-938b-cbace1bb3f42.jpg?1783942543",
+    "artist": "Jason Chan",
+    "focus": "50% 25%"
+   }
+  },
+  "kresh": {
+   "name": "Kresh",
+   "title": "The Bloodbraided",
+   "portrait": {
+    "card": "Kresh the Bloodbraided",
+    "set": "ala",
+    "number": "178",
+    "id": "d485fe46-ed24-4b55-8ddc-ac2fdf4eec93",
+    "crop": "https://cards.scryfall.io/art_crop/front/d/4/d485fe46-ed24-4b55-8ddc-ac2fdf4eec93.jpg?1783942544",
+    "artist": "Raymond Swanland",
+    "focus": "50% 25%"
+   }
+  },
+  "zoo": {
+   "name": "Naya Zoo",
+   "title": "Summer 2009",
+   "portrait": {
+    "card": "Wild Nacatl",
+    "set": "ala",
+    "number": "152",
+    "id": "5eb18038-eb6a-4d27-ba52-52a1cee6b512",
+    "crop": "https://cards.scryfall.io/art_crop/front/5/e/5eb18038-eb6a-4d27-ba52-52a1cee6b512.jpg?1783942549",
+    "artist": "Wayne Reynolds",
+    "focus": "50% 30%"
+   }
+  },
+  "esperAggro": {
+   "name": "Esper Artifacts",
+   "title": "Summer 2009",
+   "portrait": {
+    "card": "Master of Etherium",
+    "set": "ala",
+    "number": "49",
+    "id": "322cdf67-5b36-43f9-99b3-f0e24d423314",
+    "crop": "https://cards.scryfall.io/art_crop/front/3/2/322cdf67-5b36-43f9-99b3-f0e24d423314.jpg?1783942572",
+    "artist": "Matt Cavotta",
+    "focus": "50% 30%"
+   }
+  },
+  "bolas": {
+   "name": "Nicol Bolas",
+   "title": "Planeswalker",
+   "portrait": {
+    "card": "Nicol Bolas, Planeswalker",
+    "set": "con",
+    "number": "120",
+    "id": "48ee3939-bc12-4275-a446-9de36f0b4672",
+    "crop": "https://cards.scryfall.io/art_crop/front/4/8/48ee3939-bc12-4275-a446-9de36f0b4672.jpg?1783942466",
+    "artist": "D. Alexander Gregory",
+    "focus": "50% 25%"
+   }
+  },
+  "cruel": {
+   "name": "Five-Colour Control",
+   "title": "2008 to 2009",
+   "portrait": {
+    "card": "Cruel Ultimatum",
+    "set": "ala",
+    "number": "164",
+    "id": "0d267804-23de-4521-ae64-4dd5cd836c6c",
+    "crop": "https://cards.scryfall.io/art_crop/front/0/d/0d267804-23de-4521-ae64-4dd5cd836c6c.jpg?1783942546",
+    "artist": "Ralph Horsley",
+    "focus": "50% 30%"
+   }
+  }
+ },
+ "battles": [
+  {
+   "id": "a16b1",
+   "slot": 1,
+   "kind": "Arrival",
+   "mood": "tension",
+   "title": "The Sky Over Bant",
+   "difficulty": "Easy",
+   "teaches": [
+    "Exalted"
+   ],
+   "blurb": "On Bant, Rafiq of the Many leads the knights of Valeron. One morning the sky over the castle fills with metal: sphinxes and gargoyles from Esper, a shard that should not exist.",
+   "rewardSet": "ala",
+   "host": false,
+   "hero": {
+    "who": "rafiq",
+    "deck": {
+     "name": "The Knights of Valeron",
+     "colors": "GWU",
+     "archetype": null,
+     "label": "tribute",
+     "cards": [
+      {
+       "qty": 2,
+       "name": "Rafiq of the Many",
+       "set": "ala",
+       "number": "185",
+       "id": "249c188d-c11d-46f7-a2d8-a67df4ba401b"
+      },
+      {
+       "qty": 4,
+       "name": "Noble Hierarch",
+       "set": "con",
+       "number": "87",
+       "id": "6adfe928-1305-444d-b709-1e714544daaf"
+      },
+      {
+       "qty": 4,
+       "name": "Akrasan Squire",
+       "set": "ala",
+       "number": "1",
+       "id": "59fdc045-b938-4321-aec3-51685cbbaa52"
+      },
+      {
+       "qty": 4,
+       "name": "Knight of the Skyward Eye",
+       "set": "ala",
+       "number": "15",
+       "id": "1d56e2bf-1937-42c1-8f61-1fd93e84cef7"
+      },
+      {
+       "qty": 4,
+       "name": "Steward of Valeron",
+       "set": "ala",
+       "number": "198",
+       "id": "92e21ff9-0030-4e53-8ddf-86d8e78e347f"
+      },
+      {
+       "qty": 4,
+       "name": "Sigiled Paladin",
+       "set": "ala",
+       "number": "27",
+       "id": "4b22520d-c495-4528-9b24-4aa19e046a9e"
+      },
+      {
+       "qty": 4,
+       "name": "Waveskimmer Aven",
+       "set": "ala",
+       "number": "207",
+       "id": "e75ebcb4-5db8-4c72-9f65-8ee8f2c893ea"
+      },
+      {
+       "qty": 4,
+       "name": "Bant Charm",
+       "set": "ala",
+       "number": "155",
+       "id": "65b65c87-b084-44aa-b841-411a3c73e234"
+      },
+      {
+       "qty": 4,
+       "name": "Rhox War Monk",
+       "set": "ala",
+       "number": "188",
+       "id": "19fb67e1-b791-4246-aebc-49fcf0f92c6c"
+      },
+      {
+       "qty": 2,
+       "name": "Battlegrace Angel",
+       "set": "ala",
+       "number": "6",
+       "id": "b9be1142-3ba8-4915-9541-757e59ed046c"
+      },
+      {
+       "qty": 4,
+       "name": "Seaside Citadel",
+       "set": "ala",
+       "number": "229",
+       "id": "c1995d2a-4550-4c84-ad44-183b06579e98"
+      },
+      {
+       "qty": 8,
+       "name": "Plains",
+       "set": "ala",
+       "number": "230",
+       "id": "e94e2710-7b95-46d0-8261-0afa6b192e70"
+      },
+      {
+       "qty": 8,
+       "name": "Forest",
+       "set": "ala",
+       "number": "246",
+       "id": "12495cfa-ab19-4e9e-a49e-a94499f664a2"
+      },
+      {
+       "qty": 4,
+       "name": "Island",
+       "set": "ala",
+       "number": "234",
+       "id": "2fdcf679-4269-4ed9-84f1-1ac7a513f475"
+      }
+     ]
+    }
+   },
+   "villain": {
+    "who": "sharuum",
+    "deck": {
+     "name": "The Hegemon's Guard",
+     "colors": "WUB",
+     "archetype": null,
+     "label": "tribute",
+     "cards": [
+      {
+       "qty": 2,
+       "name": "Sharuum the Hegemon",
+       "set": "ala",
+       "number": "194",
+       "id": "6589eaa8-95ec-4c97-8155-185487560ae6"
+      },
+      {
+       "qty": 4,
+       "name": "Etherium Sculptor",
+       "set": "ala",
+       "number": "42",
+       "id": "0d050f2d-bd65-4ab9-9ea6-9deba91b2792"
+      },
+      {
+       "qty": 4,
+       "name": "Esper Battlemage",
+       "set": "ala",
+       "number": "40",
+       "id": "2cac0076-8bd5-4fe2-bac8-fd102688fdcb"
+      },
+      {
+       "qty": 4,
+       "name": "Filigree Sages",
+       "set": "ala",
+       "number": "44",
+       "id": "08790aaf-0142-4b20-89cf-cdaffeea4582"
+      },
+      {
+       "qty": 4,
+       "name": "Sanctum Gargoyle",
+       "set": "ala",
+       "number": "24",
+       "id": "1da1a2d5-d1fe-4aa2-aa83-64d6c269f7bc"
+      },
+      {
+       "qty": 4,
+       "name": "Faerie Mechanist",
+       "set": "con",
+       "number": "27",
+       "id": "d350ebd7-afcf-4d67-8173-b07cad3fa9bc"
+      },
+      {
+       "qty": 4,
+       "name": "Courier's Capsule",
+       "set": "ala",
+       "number": "37",
+       "id": "39ae12ff-8039-4aac-aa50-f879376888a1"
+      },
+      {
+       "qty": 4,
+       "name": "Vectis Silencers",
+       "set": "ala",
+       "number": "62",
+       "id": "c0198220-073f-4479-a1c4-1bd626891e28"
+      },
+      {
+       "qty": 2,
+       "name": "Ornithopter",
+       "set": "m10",
+       "number": "216",
+       "id": "22bb9825-ad45-44ad-ace2-eb6b66e3f724"
+      },
+      {
+       "qty": 4,
+       "name": "Cloudheath Drake",
+       "set": "ala",
+       "number": "35",
+       "id": "7f71ec76-47e1-4f55-bc57-e7b1c88baedd"
+      },
+      {
+       "qty": 4,
+       "name": "Arcane Sanctum",
+       "set": "ala",
+       "number": "220",
+       "id": "6edc0681-4252-4d3d-baf3-f03c22af1208"
+      },
+      {
+       "qty": 8,
+       "name": "Island",
+       "set": "ala",
+       "number": "234",
+       "id": "2fdcf679-4269-4ed9-84f1-1ac7a513f475"
+      },
+      {
+       "qty": 6,
+       "name": "Plains",
+       "set": "ala",
+       "number": "230",
+       "id": "e94e2710-7b95-46d0-8261-0afa6b192e70"
+      },
+      {
+       "qty": 6,
+       "name": "Swamp",
+       "set": "ala",
+       "number": "238",
+       "id": "45cbe554-ffdc-4de6-bf27-57790b71effb"
+      }
+     ]
+    }
+   },
+   "reward": {
+    "hero": {
+     "packs": 1,
+     "coins": 0
+    },
+    "villain": {
+     "card": {
+      "oracle_id": "037e7fc9-3aa6-484c-a2c8-43009e45f1d8",
+      "name": "Sharuum the Hegemon",
+      "rarity": "mythic",
+      "set": "ala",
+      "id": "6589eaa8-95ec-4c97-8155-185487560ae6",
+      "image": "https://cards.scryfall.io/normal/front/6/5/6589eaa8-95ec-4c97-8155-185487560ae6.jpg"
+     },
+     "coins": 50
+    }
+   },
+   "scene": [
+    {
+     "who": "rafiq",
+     "line": "Even in single combat, I am never alone.",
+     "quote": true
+    },
+    {
+     "who": "rafiq",
+     "line": "Exalted: whenever a creature attacks alone, it gets +1/+1 for every exalted permanent you control. One knight, carrying the strength of all of them."
+    }
+   ],
+   "villainScene": [
+    {
+     "who": "stage",
+     "line": "To gain audience with the hegemon, one must bring a riddle she has not heard.",
+     "quote": true
+    },
+    {
+     "who": "sharuum",
+     "line": "Soon I will sleep, eyes closing to a world tarnished with flesh, and then wake to a polished vision.",
+     "quote": true
+    }
+   ],
+   "after": [
+    {
+     "who": "rafiq",
+     "line": "Metal birds from a world with no name. The old stories said Bant was the whole of creation. The old stories were wrong."
+    }
+   ],
+   "cues": {
+    "hero": {
+     "start": "For Valeron!",
+     "big": "Strike alone, strike for all!",
+     "low": "The sky is full of them...",
+     "win": "The castle stands.",
+     "loss": "The sigils... fade...",
+     "half": "One attacker. All the strength."
+    },
+    "villain": {
+     "start": "Your flesh offends me.",
+     "big": "Etherium does not bleed.",
+     "low": "Unexpected.",
+     "win": "Polished.",
+     "loss": "A riddle... I could not answer..."
+    }
+   },
+   "bigPlays": [],
+   "sim": null
+  },
+  {
+   "id": "a16b2",
+   "slot": 2,
+   "kind": "Lesson",
+   "mood": "march",
+   "title": "The Dragon-Speaker",
+   "difficulty": "Easy",
+   "teaches": [
+    "Devour"
+   ],
+   "blurb": "Ajani Goldmane is a leonin of Naya and a planeswalker. His brother Jazal is dead, and the trail of the killer leads to Jund, where a shaman named Sarkhan Vol worships dragons and serves an older one.",
+   "rewardSet": "ala",
+   "host": false,
+   "hero": {
+    "who": "ajani",
+    "deck": {
+     "name": "The Pride of Naya",
+     "colors": "RGW",
+     "archetype": null,
+     "label": "tribute",
+     "cards": [
+      {
+       "qty": 4,
+       "name": "Wild Nacatl",
+       "set": "ala",
+       "number": "152",
+       "id": "5eb18038-eb6a-4d27-ba52-52a1cee6b512"
+      },
+      {
+       "qty": 4,
+       "name": "Druid of the Anima",
+       "set": "ala",
+       "number": "128",
+       "id": "de32bf78-73c2-4cd4-b3b3-ef8be53e1e5e"
+      },
+      {
+       "qty": 4,
+       "name": "Steward of Valeron",
+       "set": "ala",
+       "number": "198",
+       "id": "92e21ff9-0030-4e53-8ddf-86d8e78e347f"
+      },
+      {
+       "qty": 4,
+       "name": "Rip-Clan Crasher",
+       "set": "ala",
+       "number": "189",
+       "id": "8d61c4a0-054b-479e-82d9-dc60c5c708e2"
+      },
+      {
+       "qty": 4,
+       "name": "Woolly Thoctar",
+       "set": "ala",
+       "number": "209",
+       "id": "7d5907d5-ae5c-4c9d-a5df-61f1c94f979d"
+      },
+      {
+       "qty": 4,
+       "name": "Rhox Brute",
+       "set": "arb",
+       "number": "59",
+       "id": "237de286-5bf0-4c8e-8504-2d01d3133b55"
+      },
+      {
+       "qty": 4,
+       "name": "Naya Charm",
+       "set": "ala",
+       "number": "180",
+       "id": "47748c3a-c60a-4f2e-9eb8-2675c067bb9c"
+      },
+      {
+       "qty": 4,
+       "name": "Lightning Bolt",
+       "set": "m10",
+       "number": "146",
+       "id": "435589bb-27c6-4a6d-9d63-394d5092b9d8"
+      },
+      {
+       "qty": 2,
+       "name": "Ajani Goldmane",
+       "set": "m10",
+       "number": "1",
+       "id": "46c50891-af21-4427-a495-0e66aef54809"
+      },
+      {
+       "qty": 2,
+       "name": "Knight of New Alara",
+       "set": "arb",
+       "number": "70",
+       "id": "0d3fc235-d0d7-41f8-b35a-6e08761f7fa4"
+      },
+      {
+       "qty": 4,
+       "name": "Jungle Shrine",
+       "set": "ala",
+       "number": "226",
+       "id": "e4f0d262-cbfe-42d2-9066-0b48a38995d6"
+      },
+      {
+       "qty": 8,
+       "name": "Forest",
+       "set": "ala",
+       "number": "246",
+       "id": "12495cfa-ab19-4e9e-a49e-a94499f664a2"
+      },
+      {
+       "qty": 6,
+       "name": "Mountain",
+       "set": "ala",
+       "number": "242",
+       "id": "7c2cc19c-84ce-4c0b-b56f-7a2b3878a26e"
+      },
+      {
+       "qty": 6,
+       "name": "Plains",
+       "set": "ala",
+       "number": "230",
+       "id": "e94e2710-7b95-46d0-8261-0afa6b192e70"
+      }
+     ]
+    }
+   },
+   "villain": {
+    "who": "sarkhan",
+    "deck": {
+     "name": "The Dragon-Speaker's Hunt",
+     "colors": "BRG",
+     "archetype": null,
+     "label": "tribute",
+     "cards": [
+      {
+       "qty": 2,
+       "name": "Sarkhan Vol",
+       "set": "ala",
+       "number": "191",
+       "id": "ce89ded2-db31-43c0-b00c-999d5d3fa5c6"
+      },
+      {
+       "qty": 4,
+       "name": "Dragon Fodder",
+       "set": "ala",
+       "number": "97",
+       "id": "9eab4120-e7d8-4132-a304-30b88e3175e2"
+      },
+      {
+       "qty": 4,
+       "name": "Sprouting Thrinax",
+       "set": "ala",
+       "number": "197",
+       "id": "8950df86-1e27-4b6b-8b5c-25298a3bda85"
+      },
+      {
+       "qty": 4,
+       "name": "Vithian Stinger",
+       "set": "ala",
+       "number": "120",
+       "id": "bf290e2f-2c78-4cf5-8925-0c598ec0d60e"
+      },
+      {
+       "qty": 4,
+       "name": "Thorn-Thrash Viashino",
+       "set": "ala",
+       "number": "116",
+       "id": "e7987de9-d812-4615-845a-3a90572d9b44"
+      },
+      {
+       "qty": 2,
+       "name": "Hellkite Overlord",
+       "set": "ala",
+       "number": "172",
+       "id": "89185829-5c93-4fd9-8c56-11820be6a970"
+      },
+      {
+       "qty": 2,
+       "name": "Predator Dragon",
+       "set": "ala",
+       "number": "109",
+       "id": "352c3c86-1662-4055-b814-026826632cff"
+      },
+      {
+       "qty": 4,
+       "name": "Dragonsoul Knight",
+       "set": "con",
+       "number": "62",
+       "id": "14674d80-2571-4794-863e-247c2e2cfc3e"
+      },
+      {
+       "qty": 4,
+       "name": "Jund Hackblade",
+       "set": "arb",
+       "number": "138",
+       "id": "61e3b73a-598b-4854-b811-2fd40fbce2d0"
+      },
+      {
+       "qty": 4,
+       "name": "Blightning",
+       "set": "ala",
+       "number": "156",
+       "id": "3c05e8a2-b7d0-4f24-b2ae-8e4db30e5842"
+      },
+      {
+       "qty": 2,
+       "name": "Shivan Dragon",
+       "set": "m10",
+       "number": "156",
+       "id": "c5efc94a-b644-4cc4-9598-2ce16fe68420"
+      },
+      {
+       "qty": 4,
+       "name": "Savage Lands",
+       "set": "ala",
+       "number": "228",
+       "id": "f6bcded3-6eea-4533-a855-e03d4c4620d6"
+      },
+      {
+       "qty": 10,
+       "name": "Mountain",
+       "set": "ala",
+       "number": "242",
+       "id": "7c2cc19c-84ce-4c0b-b56f-7a2b3878a26e"
+      },
+      {
+       "qty": 5,
+       "name": "Forest",
+       "set": "ala",
+       "number": "246",
+       "id": "12495cfa-ab19-4e9e-a49e-a94499f664a2"
+      },
+      {
+       "qty": 5,
+       "name": "Swamp",
+       "set": "ala",
+       "number": "238",
+       "id": "45cbe554-ffdc-4de6-bf27-57790b71effb"
+      }
+     ]
+    }
+   },
+   "reward": {
+    "hero": {
+     "packs": 1,
+     "coins": 0
+    },
+    "villain": {
+     "card": {
+      "oracle_id": "d902074a-2a2b-42b7-a1e5-750862c64fbe",
+      "name": "Sarkhan Vol",
+      "rarity": "mythic",
+      "set": "ala",
+      "id": "ce89ded2-db31-43c0-b00c-999d5d3fa5c6",
+      "image": "https://cards.scryfall.io/normal/front/c/e/ce89ded2-db31-43c0-b00c-999d5d3fa5c6.jpg"
+     },
+     "coins": 50
+    }
+   },
+   "scene": [
+    {
+     "who": "ajani",
+     "line": "One's blade is only as sharp as one's conviction.",
+     "quote": true
+    },
+    {
+     "who": "ajani",
+     "line": "Jund does not hide what it is. Eat or be eaten. Their dragons will devour their own goblins to grow, so kill the dragon, not the goblins."
+    }
+   ],
+   "villainScene": [
+    {
+     "who": "sarkhan",
+     "line": "The dragon is a perfect marriage of power and the will to use it.",
+     "quote": true
+    },
+    {
+     "who": "sarkhan",
+     "line": "Devour: as this creature arrives, sacrifice any number of creatures. It gets a +1/+1 counter for each one it eats."
+    },
+    {
+     "who": "stage",
+     "line": "Goblins journey to the sacrificial peaks in pairs so that the rare survivor might be able to relate the details of the other's grisly demise.",
+     "quote": true
+    }
+   ],
+   "after": [
+    {
+     "who": "sarkhan",
+     "line": "You think I killed your brother? I serve something far larger than a murder. You will meet him soon enough."
+    }
+   ],
+   "cues": {
+    "hero": {
+     "start": "For Jazal.",
+     "big": "The pride hunts!",
+     "low": "Too many wings...",
+     "win": "Talk, shaman.",
+     "loss": "Jazal... I'm sorry...",
+     "half": "Kill the dragon."
+    },
+    "villain": {
+     "start": "Burn, cat.",
+     "big": "The dragon feeds!",
+     "low": "My dragons...",
+     "win": "Words are a waste of time.",
+     "loss": "A greater dragon... will come..."
+    }
+   },
+   "bigPlays": [],
+   "sim": null
+  },
+  {
+   "id": "a16b3",
+   "slot": 3,
+   "kind": "Lesson",
+   "mood": "comic",
+   "title": "The Seekers of Carmot",
+   "difficulty": "Easy",
+   "teaches": [
+    "Ultimates"
+   ],
+   "blurb": "Elspeth Tirel, a planeswalker who has seen too many wars, is hiding on Bant because it seemed like a world without one. Then Esper's Seekers of Carmot arrive, led by Tezzeret, an artificer who works for Bolas.",
+   "rewardSet": "ala",
+   "host": false,
+   "hero": {
+    "who": "elspeth",
+    "deck": {
+     "name": "The Knight-Errant",
+     "colors": "W",
+     "archetype": null,
+     "label": "tribute",
+     "cards": [
+      {
+       "qty": 2,
+       "name": "Elspeth, Knight-Errant",
+       "set": "ala",
+       "number": "9",
+       "id": "44c52e52-2b1c-4ca8-ab6d-20d97a342704"
+      },
+      {
+       "qty": 4,
+       "name": "Elite Vanguard",
+       "set": "m10",
+       "number": "9",
+       "id": "6bda0b4b-ab5a-4d91-9dd1-7a5a145b67f5"
+      },
+      {
+       "qty": 4,
+       "name": "Akrasan Squire",
+       "set": "ala",
+       "number": "1",
+       "id": "59fdc045-b938-4321-aec3-51685cbbaa52"
+      },
+      {
+       "qty": 4,
+       "name": "Knight of the White Orchid",
+       "set": "ala",
+       "number": "16",
+       "id": "642c6354-4dab-45c9-a1a6-57bd16f16e30"
+      },
+      {
+       "qty": 4,
+       "name": "Sigiled Paladin",
+       "set": "ala",
+       "number": "27",
+       "id": "4b22520d-c495-4528-9b24-4aa19e046a9e"
+      },
+      {
+       "qty": 4,
+       "name": "Ranger of Eos",
+       "set": "ala",
+       "number": "21",
+       "id": "1a30ee26-5f78-4ac2-9105-1baa9ece8a21"
+      },
+      {
+       "qty": 4,
+       "name": "Soul Warden",
+       "set": "m10",
+       "number": "34",
+       "id": "6bbdd169-958f-42df-812d-f75fbed9576f"
+      },
+      {
+       "qty": 4,
+       "name": "Path to Exile",
+       "set": "con",
+       "number": "15",
+       "id": "29b7a8b1-b98e-483a-87a4-73bd831c03d4"
+      },
+      {
+       "qty": 2,
+       "name": "Martial Coup",
+       "set": "con",
+       "number": "11",
+       "id": "4201385f-6f74-4e3d-aafb-0eff82cb24c1"
+      },
+      {
+       "qty": 4,
+       "name": "Stormfront Pegasus",
+       "set": "m10",
+       "number": "35",
+       "id": "d2429a15-ccbe-463c-9218-968709d9e878"
+      },
+      {
+       "qty": 24,
+       "name": "Plains",
+       "set": "ala",
+       "number": "230",
+       "id": "e94e2710-7b95-46d0-8261-0afa6b192e70"
+      }
+     ]
+    }
+   },
+   "villain": {
+    "who": "tezzeret",
+    "deck": {
+     "name": "The Seekers of Carmot",
+     "colors": "WUB",
+     "archetype": null,
+     "label": "tribute",
+     "cards": [
+      {
+       "qty": 2,
+       "name": "Tezzeret the Seeker",
+       "set": "ala",
+       "number": "60",
+       "id": "3b214b6f-4734-4200-8467-92d7e3469b5d"
+      },
+      {
+       "qty": 4,
+       "name": "Master of Etherium",
+       "set": "ala",
+       "number": "49",
+       "id": "322cdf67-5b36-43f9-99b3-f0e24d423314"
+      },
+      {
+       "qty": 4,
+       "name": "Etherium Sculptor",
+       "set": "ala",
+       "number": "42",
+       "id": "0d050f2d-bd65-4ab9-9ea6-9deba91b2792"
+      },
+      {
+       "qty": 4,
+       "name": "Ornithopter",
+       "set": "m10",
+       "number": "216",
+       "id": "22bb9825-ad45-44ad-ace2-eb6b66e3f724"
+      },
+      {
+       "qty": 4,
+       "name": "Esper Stormblade",
+       "set": "arb",
+       "number": "132",
+       "id": "e60ac6f0-fdec-4e2c-86c6-02d36c7bbaf5"
+      },
+      {
+       "qty": 4,
+       "name": "Tidehollow Sculler",
+       "set": "ala",
+       "number": "202",
+       "id": "1abecc77-07f2-43e4-8585-0a8199cdcf01"
+      },
+      {
+       "qty": 4,
+       "name": "Courier's Capsule",
+       "set": "ala",
+       "number": "37",
+       "id": "39ae12ff-8039-4aac-aa50-f879376888a1"
+      },
+      {
+       "qty": 4,
+       "name": "Executioner's Capsule",
+       "set": "ala",
+       "number": "75",
+       "id": "48185059-fff9-47b0-9774-ad37dee345ed"
+      },
+      {
+       "qty": 2,
+       "name": "Sphinx of the Steel Wind",
+       "set": "arb",
+       "number": "110",
+       "id": "c860cf0f-ef68-455f-9c71-a6dd25b51d71"
+      },
+      {
+       "qty": 4,
+       "name": "Esper Charm",
+       "set": "ala",
+       "number": "167",
+       "id": "a3d70a07-8d91-462c-aa96-901cc9a81531"
+      },
+      {
+       "qty": 4,
+       "name": "Arcane Sanctum",
+       "set": "ala",
+       "number": "220",
+       "id": "6edc0681-4252-4d3d-baf3-f03c22af1208"
+      },
+      {
+       "qty": 8,
+       "name": "Island",
+       "set": "ala",
+       "number": "234",
+       "id": "2fdcf679-4269-4ed9-84f1-1ac7a513f475"
+      },
+      {
+       "qty": 6,
+       "name": "Swamp",
+       "set": "ala",
+       "number": "238",
+       "id": "45cbe554-ffdc-4de6-bf27-57790b71effb"
+      },
+      {
+       "qty": 6,
+       "name": "Plains",
+       "set": "ala",
+       "number": "230",
+       "id": "e94e2710-7b95-46d0-8261-0afa6b192e70"
+      }
+     ]
+    }
+   },
+   "reward": {
+    "hero": {
+     "packs": 1,
+     "coins": 0
+    },
+    "villain": {
+     "card": {
+      "oracle_id": "4aeafdf3-7828-4114-8c74-3bd46357caec",
+      "name": "Tezzeret the Seeker",
+      "rarity": "mythic",
+      "set": "ala",
+      "id": "3b214b6f-4734-4200-8467-92d7e3469b5d",
+      "image": "https://cards.scryfall.io/normal/front/3/b/3b214b6f-4734-4200-8467-92d7e3469b5d.jpg"
+     },
+     "coins": 50
+    }
+   },
+   "scene": [
+    {
+     "who": "elspeth",
+     "line": "Only by the bravery of those who put loyalty above glory is our home kept safe.",
+     "quote": true
+    },
+    {
+     "who": "elspeth",
+     "line": "Ultimates: every planeswalker has a last ability that costs a lot of loyalty. Keep her alive long enough and it ends games. That is why they attack her and not me."
+    }
+   ],
+   "villainScene": [
+    {
+     "who": "tezzeret",
+     "line": "Esper, like any work of art, can be truly appreciated only from a distance.",
+     "quote": true
+    },
+    {
+     "who": "tezzeret",
+     "line": "Etherium is limited. Innovation is not.",
+     "quote": true
+    }
+   ],
+   "after": [
+    {
+     "who": "elspeth",
+     "line": "He kept calling my soldiers \"samples\". I would like to never hear that word again."
+    }
+   ],
+   "cues": {
+    "hero": {
+     "start": "Not this world. Not again.",
+     "big": "Soldiers, to me!",
+     "low": "Every one of them is armored...",
+     "win": "Go home, Seeker.",
+     "loss": "Another world... lost...",
+     "half": "Protect the walker."
+    },
+    "villain": {
+     "start": "Fascinating. Flesh with a sword.",
+     "big": "Assemble.",
+     "low": "Inefficient.",
+     "win": "Collected.",
+     "loss": "Recalculating..."
+    }
+   },
+   "bigPlays": [],
+   "sim": null
+  },
+  {
+   "id": "a16b4",
+   "slot": 4,
+   "kind": "Rival",
+   "mood": "tension",
+   "title": "Ajani's Revenge",
+   "difficulty": "Normal",
+   "teaches": [
+    "Unearth"
+   ],
+   "blurb": "The trail of Jazal's death runs through Grixis, the shard of the dead. Sedris, the Traitor King, rules there. Ajani arrives angry, and his anger has a new shape: Ajani Vengeant.",
+   "rewardSet": "ala",
+   "host": false,
+   "hero": {
+    "who": "vengeant",
+    "deck": {
+     "name": "Ajani Vengeant",
+     "colors": "RGW",
+     "archetype": null,
+     "label": "tribute",
+     "cards": [
+      {
+       "qty": 3,
+       "name": "Ajani Vengeant",
+       "set": "ala",
+       "number": "154",
+       "id": "8fc108a3-15e5-44ab-a6e2-182b309f9c0c"
+      },
+      {
+       "qty": 4,
+       "name": "Wild Nacatl",
+       "set": "ala",
+       "number": "152",
+       "id": "5eb18038-eb6a-4d27-ba52-52a1cee6b512"
+      },
+      {
+       "qty": 4,
+       "name": "Elite Vanguard",
+       "set": "m10",
+       "number": "9",
+       "id": "6bda0b4b-ab5a-4d91-9dd1-7a5a145b67f5"
+      },
+      {
+       "qty": 4,
+       "name": "Ranger of Eos",
+       "set": "ala",
+       "number": "21",
+       "id": "1a30ee26-5f78-4ac2-9105-1baa9ece8a21"
+      },
+      {
+       "qty": 4,
+       "name": "Mosstodon",
+       "set": "ala",
+       "number": "139",
+       "id": "05afd921-ef3b-40fe-a1a8-582ee94ed3f0"
+      },
+      {
+       "qty": 4,
+       "name": "Rip-Clan Crasher",
+       "set": "ala",
+       "number": "189",
+       "id": "8d61c4a0-054b-479e-82d9-dc60c5c708e2"
+      },
+      {
+       "qty": 4,
+       "name": "Akrasan Squire",
+       "set": "ala",
+       "number": "1",
+       "id": "59fdc045-b938-4321-aec3-51685cbbaa52"
+      },
+      {
+       "qty": 4,
+       "name": "Knight of New Alara",
+       "set": "arb",
+       "number": "70",
+       "id": "0d3fc235-d0d7-41f8-b35a-6e08761f7fa4"
+      },
+      {
+       "qty": 4,
+       "name": "Rhox Brute",
+       "set": "arb",
+       "number": "59",
+       "id": "237de286-5bf0-4c8e-8504-2d01d3133b55"
+      },
+      {
+       "qty": 1,
+       "name": "Naya Charm",
+       "set": "ala",
+       "number": "180",
+       "id": "47748c3a-c60a-4f2e-9eb8-2675c067bb9c"
+      },
+      {
+       "qty": 4,
+       "name": "Jungle Shrine",
+       "set": "ala",
+       "number": "226",
+       "id": "e4f0d262-cbfe-42d2-9066-0b48a38995d6"
+      },
+      {
+       "qty": 8,
+       "name": "Plains",
+       "set": "ala",
+       "number": "230",
+       "id": "e94e2710-7b95-46d0-8261-0afa6b192e70"
+      },
+      {
+       "qty": 6,
+       "name": "Mountain",
+       "set": "ala",
+       "number": "242",
+       "id": "7c2cc19c-84ce-4c0b-b56f-7a2b3878a26e"
+      },
+      {
+       "qty": 6,
+       "name": "Forest",
+       "set": "ala",
+       "number": "246",
+       "id": "12495cfa-ab19-4e9e-a49e-a94499f664a2"
+      }
+     ]
+    }
+   },
+   "villain": {
+    "who": "sedris",
+    "deck": {
+     "name": "The Traitor King's Court",
+     "colors": "UBR",
+     "archetype": null,
+     "label": "tribute",
+     "cards": [
+      {
+       "qty": 3,
+       "name": "Sedris, the Traitor King",
+       "set": "ala",
+       "number": "193",
+       "id": "70206cff-9f54-4e27-982c-b0093a51d358"
+      },
+      {
+       "qty": 4,
+       "name": "Dregscape Zombie",
+       "set": "ala",
+       "number": "74",
+       "id": "4b65b7ad-4ab0-4622-81f4-434254625a1e"
+      },
+      {
+       "qty": 4,
+       "name": "Hellspark Elemental",
+       "set": "con",
+       "number": "65",
+       "id": "256a861a-c488-4834-a419-5bd1eeba6873"
+      },
+      {
+       "qty": 4,
+       "name": "Sedraxis Specter",
+       "set": "ala",
+       "number": "192",
+       "id": "c6ca8f2a-ee0e-4708-97d8-c1836d824d4e"
+      },
+      {
+       "qty": 4,
+       "name": "Lightning Bolt",
+       "set": "m10",
+       "number": "146",
+       "id": "435589bb-27c6-4a6d-9d63-394d5092b9d8"
+      },
+      {
+       "qty": 4,
+       "name": "Blightning",
+       "set": "ala",
+       "number": "156",
+       "id": "3c05e8a2-b7d0-4f24-b2ae-8e4db30e5842"
+      },
+      {
+       "qty": 4,
+       "name": "Agony Warp",
+       "set": "ala",
+       "number": "153",
+       "id": "e246294f-7614-48e9-a655-647faf0bf697"
+      },
+      {
+       "qty": 4,
+       "name": "Kederekt Creeper",
+       "set": "ala",
+       "number": "176",
+       "id": "701498e5-1d4d-42f4-9dd0-5d4cf78f0e68"
+      },
+      {
+       "qty": 1,
+       "name": "Lich Lord of Unx",
+       "set": "arb",
+       "number": "24",
+       "id": "df38c422-7830-4f25-b74b-ed90b7047f53"
+      },
+      {
+       "qty": 4,
+       "name": "Terminate",
+       "set": "arb",
+       "number": "46",
+       "id": "dc8acab8-4469-4baa-af2f-a3f49b841a55"
+      },
+      {
+       "qty": 4,
+       "name": "Crumbling Necropolis",
+       "set": "ala",
+       "number": "222",
+       "id": "94da8e38-77a4-4d25-9e1f-f33c246f60c8"
+      },
+      {
+       "qty": 8,
+       "name": "Swamp",
+       "set": "ala",
+       "number": "238",
+       "id": "45cbe554-ffdc-4de6-bf27-57790b71effb"
+      },
+      {
+       "qty": 6,
+       "name": "Island",
+       "set": "ala",
+       "number": "234",
+       "id": "2fdcf679-4269-4ed9-84f1-1ac7a513f475"
+      },
+      {
+       "qty": 6,
+       "name": "Mountain",
+       "set": "ala",
+       "number": "242",
+       "id": "7c2cc19c-84ce-4c0b-b56f-7a2b3878a26e"
+      }
+     ]
+    }
+   },
+   "reward": {
+    "hero": {
+     "packs": 1,
+     "coins": 100
+    },
+    "villain": {
+     "card": {
+      "oracle_id": "48054407-b5e1-431c-ad03-c12a31d0d9a8",
+      "name": "Sedris, the Traitor King",
+      "rarity": "mythic",
+      "set": "ala",
+      "id": "70206cff-9f54-4e27-982c-b0093a51d358",
+      "image": "https://cards.scryfall.io/normal/front/7/0/70206cff-9f54-4e27-982c-b0093a51d358.jpg"
+     },
+     "coins": 100
+    }
+   },
+   "scene": [
+    {
+     "who": "ajani",
+     "line": "Retribution is best delivered by claws and rage, with both magnified.",
+     "quote": true
+    },
+    {
+     "who": "ajani",
+     "line": "Their dead come back. Fine. I will kill them again."
+    }
+   ],
+   "villainScene": [
+    {
+     "who": "sedris",
+     "line": "This is going to hurt a lot, but on the bright side, you'll be dead soon.",
+     "quote": true
+    },
+    {
+     "who": "sedris",
+     "line": "Unearth: pay the unearth cost and a creature in your graveyard comes back with haste for one turn, then is exiled. Every dead servant gets one last fight."
+    },
+    {
+     "who": "sedris",
+     "line": "The meek inherit nothing.",
+     "quote": true
+    }
+   ],
+   "after": [
+    {
+     "who": "sedris",
+     "line": "Your brother? Killed for a dragon's convenience, cat. Everyone on Alara is a pawn. Even me. Especially you."
+    },
+    {
+     "who": "ajani",
+     "line": "Then I will go to the one moving the pieces."
+    }
+   ],
+   "cues": {
+    "hero": {
+     "start": "Where is he?",
+     "big": "Vengeance!",
+     "low": "They keep rising...",
+     "win": "Stay down.",
+     "loss": "Not... yet...",
+     "half": "Kill them twice."
+    },
+    "villain": {
+     "start": "Kneel.",
+     "big": "Rise and strike!",
+     "low": "My court crumbles...",
+     "win": "Dead, like all the rest.",
+     "loss": "A traitor... betrayed..."
+    }
+   },
+   "bigPlays": [],
+   "sim": null
+  },
+  {
+   "id": "a16b5",
+   "slot": 5,
+   "kind": "Lesson",
+   "mood": "tension",
+   "title": "Where Ancients Tread",
+   "difficulty": "Normal",
+   "teaches": [
+    "Cascade"
+   ],
+   "blurb": "The shards collide. Jund's warlord Kresh the Bloodbraided crosses into Naya with a horde behind him, and Mayael the Anima, who speaks for Naya's giant gods, leads the gargantuans to meet him.",
+   "rewardSet": "arb",
+   "host": false,
+   "hero": {
+    "who": "mayael",
+    "deck": {
+     "name": "The Anima's Gargantuans",
+     "colors": "RGW",
+     "archetype": null,
+     "label": "tribute",
+     "cards": [
+      {
+       "qty": 2,
+       "name": "Mayael the Anima",
+       "set": "ala",
+       "number": "179",
+       "id": "316b1fd1-5ec4-4bdc-938b-cbace1bb3f42"
+      },
+      {
+       "qty": 4,
+       "name": "Bloodbraid Elf",
+       "set": "arb",
+       "number": "50",
+       "id": "7ef67487-c8e5-49bb-b0f7-e073ff2e31f1"
+      },
+      {
+       "qty": 4,
+       "name": "Cylian Elf",
+       "set": "ala",
+       "number": "127",
+       "id": "b3afaab6-4768-4852-a0b6-4e6a0295bde7"
+      },
+      {
+       "qty": 4,
+       "name": "Druid of the Anima",
+       "set": "ala",
+       "number": "128",
+       "id": "de32bf78-73c2-4cd4-b3b3-ef8be53e1e5e"
+      },
+      {
+       "qty": 4,
+       "name": "Woolly Thoctar",
+       "set": "ala",
+       "number": "209",
+       "id": "7d5907d5-ae5c-4c9d-a5df-61f1c94f979d"
+      },
+      {
+       "qty": 2,
+       "name": "Godsire",
+       "set": "ala",
+       "number": "170",
+       "id": "e2539ff7-2b7d-47e3-bd77-3138a6c42d2b"
+      },
+      {
+       "qty": 4,
+       "name": "Rhox Brute",
+       "set": "arb",
+       "number": "59",
+       "id": "237de286-5bf0-4c8e-8504-2d01d3133b55"
+      },
+      {
+       "qty": 4,
+       "name": "Enlisted Wurm",
+       "set": "arb",
+       "number": "68",
+       "id": "66605149-3959-4a51-8400-350e6fac2ab2"
+      },
+      {
+       "qty": 4,
+       "name": "Mosstodon",
+       "set": "ala",
+       "number": "139",
+       "id": "05afd921-ef3b-40fe-a1a8-582ee94ed3f0"
+      },
+      {
+       "qty": 2,
+       "name": "Spellbreaker Behemoth",
+       "set": "arb",
+       "number": "60",
+       "id": "a197e3f2-e69f-4716-9979-a304a87506c3"
+      },
+      {
+       "qty": 2,
+       "name": "Naya Charm",
+       "set": "ala",
+       "number": "180",
+       "id": "47748c3a-c60a-4f2e-9eb8-2675c067bb9c"
+      },
+      {
+       "qty": 4,
+       "name": "Jungle Shrine",
+       "set": "ala",
+       "number": "226",
+       "id": "e4f0d262-cbfe-42d2-9066-0b48a38995d6"
+      },
+      {
+       "qty": 10,
+       "name": "Forest",
+       "set": "ala",
+       "number": "246",
+       "id": "12495cfa-ab19-4e9e-a49e-a94499f664a2"
+      },
+      {
+       "qty": 5,
+       "name": "Mountain",
+       "set": "ala",
+       "number": "242",
+       "id": "7c2cc19c-84ce-4c0b-b56f-7a2b3878a26e"
+      },
+      {
+       "qty": 5,
+       "name": "Plains",
+       "set": "ala",
+       "number": "230",
+       "id": "e94e2710-7b95-46d0-8261-0afa6b192e70"
+      }
+     ]
+    }
+   },
+   "villain": {
+    "who": "kresh",
+    "deck": {
+     "name": "The Bloodbraided Horde",
+     "colors": "BRG",
+     "archetype": null,
+     "label": "tribute",
+     "cards": [
+      {
+       "qty": 3,
+       "name": "Kresh the Bloodbraided",
+       "set": "ala",
+       "number": "178",
+       "id": "d485fe46-ed24-4b55-8ddc-ac2fdf4eec93"
+      },
+      {
+       "qty": 4,
+       "name": "Lightning Bolt",
+       "set": "m10",
+       "number": "146",
+       "id": "435589bb-27c6-4a6d-9d63-394d5092b9d8"
+      },
+      {
+       "qty": 4,
+       "name": "Sprouting Thrinax",
+       "set": "ala",
+       "number": "197",
+       "id": "8950df86-1e27-4b6b-8b5c-25298a3bda85"
+      },
+      {
+       "qty": 4,
+       "name": "Thunder-Thrash Elder",
+       "set": "ala",
+       "number": "117",
+       "id": "5552da28-01a3-4277-9e69-b297c3874ea4"
+      },
+      {
+       "qty": 4,
+       "name": "Mycoloth",
+       "set": "ala",
+       "number": "140",
+       "id": "15360a16-b785-4ffe-bfa8-6c7f6a37455d"
+      },
+      {
+       "qty": 4,
+       "name": "Skullmulcher",
+       "set": "ala",
+       "number": "148",
+       "id": "b5178576-573d-4da8-97ae-a684e1e95fa4"
+      },
+      {
+       "qty": 4,
+       "name": "Blightning",
+       "set": "ala",
+       "number": "156",
+       "id": "3c05e8a2-b7d0-4f24-b2ae-8e4db30e5842"
+      },
+      {
+       "qty": 1,
+       "name": "Predator Dragon",
+       "set": "ala",
+       "number": "109",
+       "id": "352c3c86-1662-4055-b814-026826632cff"
+      },
+      {
+       "qty": 4,
+       "name": "Jund Hackblade",
+       "set": "arb",
+       "number": "138",
+       "id": "61e3b73a-598b-4854-b811-2fd40fbce2d0"
+      },
+      {
+       "qty": 4,
+       "name": "Terminate",
+       "set": "arb",
+       "number": "46",
+       "id": "dc8acab8-4469-4baa-af2f-a3f49b841a55"
+      },
+      {
+       "qty": 4,
+       "name": "Savage Lands",
+       "set": "ala",
+       "number": "228",
+       "id": "f6bcded3-6eea-4533-a855-e03d4c4620d6"
+      },
+      {
+       "qty": 8,
+       "name": "Forest",
+       "set": "ala",
+       "number": "246",
+       "id": "12495cfa-ab19-4e9e-a49e-a94499f664a2"
+      },
+      {
+       "qty": 6,
+       "name": "Mountain",
+       "set": "ala",
+       "number": "242",
+       "id": "7c2cc19c-84ce-4c0b-b56f-7a2b3878a26e"
+      },
+      {
+       "qty": 6,
+       "name": "Swamp",
+       "set": "ala",
+       "number": "238",
+       "id": "45cbe554-ffdc-4de6-bf27-57790b71effb"
+      }
+     ]
+    }
+   },
+   "reward": {
+    "hero": {
+     "packs": 1,
+     "coins": 100
+    },
+    "villain": {
+     "card": {
+      "oracle_id": "6343cf6f-b1e3-49ce-8933-8fe6c9dc83f3",
+      "name": "Kresh the Bloodbraided",
+      "rarity": "mythic",
+      "set": "ala",
+      "id": "d485fe46-ed24-4b55-8ddc-ac2fdf4eec93",
+      "image": "https://cards.scryfall.io/normal/front/d/4/d485fe46-ed24-4b55-8ddc-ac2fdf4eec93.jpg"
+     },
+     "coins": 100
+    }
+   },
+   "scene": [
+    {
+     "who": "mayael",
+     "line": "Never subtle nor cryptic is the reckoning of the mighty.",
+     "quote": true
+    },
+    {
+     "who": "mayael",
+     "line": "Cascade: when you cast a cascade spell, reveal cards from the top of your library until you hit a cheaper nonland card. Cast it for free. Two spells for the price of one."
+    }
+   ],
+   "villainScene": [
+    {
+     "who": "stage",
+     "line": "Each of his twenty-two braids is bound with bone and leather from a foe.",
+     "quote": true
+    },
+    {
+     "who": "kresh",
+     "line": "When the wielder is strong enough, any sword will do.",
+     "quote": true
+    }
+   ],
+   "after": [
+    {
+     "who": "stage",
+     "line": "When the shards merged, Mayael found herself the general of Naya's mightiest army.",
+     "quote": true
+    }
+   ],
+   "cues": {
+    "hero": {
+     "start": "The gods walk.",
+     "big": "Another, for free!",
+     "low": "The horde is endless...",
+     "win": "Naya holds.",
+     "loss": "The jungle... burns...",
+     "half": "One spell, then another."
+    },
+    "villain": {
+     "start": "Fresh meat.",
+     "big": "Eat them!",
+     "low": "Your beasts bite back...",
+     "win": "A twenty-third braid.",
+     "loss": "Jund... remembers..."
+    }
+   },
+   "bigPlays": [],
+   "sim": null
+  },
+  {
+   "id": "a16b6",
+   "slot": 6,
+   "kind": "Meta",
+   "mood": "march",
+   "title": "Jund",
+   "difficulty": "Normal",
+   "teaches": [
+    "Card advantage"
+   ],
+   "blurb": "In the real summer of 2009, Standard belonged to Jund: Bloodbraid Elf, Sprouting Thrinax, Blightning and Maelstrom Pulse, every card worth two. Its rival on the aggressive side was Naya Zoo.",
+   "rewardSet": "arb",
+   "host": false,
+   "hero": {
+    "who": "you",
+    "deck": {
+     "name": "Jund",
+     "colors": "BRG",
+     "archetype": "Midrange",
+     "label": "tribute",
+     "cards": [
+      {
+       "qty": 4,
+       "name": "Bloodbraid Elf",
+       "set": "arb",
+       "number": "50",
+       "id": "7ef67487-c8e5-49bb-b0f7-e073ff2e31f1"
+      },
+      {
+       "qty": 4,
+       "name": "Sprouting Thrinax",
+       "set": "ala",
+       "number": "197",
+       "id": "8950df86-1e27-4b6b-8b5c-25298a3bda85"
+      },
+      {
+       "qty": 4,
+       "name": "Blightning",
+       "set": "ala",
+       "number": "156",
+       "id": "3c05e8a2-b7d0-4f24-b2ae-8e4db30e5842"
+      },
+      {
+       "qty": 4,
+       "name": "Maelstrom Pulse",
+       "set": "arb",
+       "number": "92",
+       "id": "eb651c3a-cb27-4b73-8eb6-b87d65211097"
+      },
+      {
+       "qty": 4,
+       "name": "Lightning Bolt",
+       "set": "m10",
+       "number": "146",
+       "id": "435589bb-27c6-4a6d-9d63-394d5092b9d8"
+      },
+      {
+       "qty": 4,
+       "name": "Broodmate Dragon",
+       "set": "ala",
+       "number": "160",
+       "id": "aea1360e-7c6b-400c-893a-82d93e53101e"
+      },
+      {
+       "qty": 4,
+       "name": "Rip-Clan Crasher",
+       "set": "ala",
+       "number": "189",
+       "id": "8d61c4a0-054b-479e-82d9-dc60c5c708e2"
+      },
+      {
+       "qty": 4,
+       "name": "Jund Hackblade",
+       "set": "arb",
+       "number": "138",
+       "id": "61e3b73a-598b-4854-b811-2fd40fbce2d0"
+      },
+      {
+       "qty": 4,
+       "name": "Terminate",
+       "set": "arb",
+       "number": "46",
+       "id": "dc8acab8-4469-4baa-af2f-a3f49b841a55"
+      },
+      {
+       "qty": 4,
+       "name": "Savage Lands",
+       "set": "ala",
+       "number": "228",
+       "id": "f6bcded3-6eea-4533-a855-e03d4c4620d6"
+      },
+      {
+       "qty": 4,
+       "name": "Dragonskull Summit",
+       "set": "m10",
+       "number": "223",
+       "id": "2d4998db-13c0-412f-b02c-9f041cc45c7e"
+      },
+      {
+       "qty": 4,
+       "name": "Rootbound Crag",
+       "set": "m10",
+       "number": "227",
+       "id": "5433b11b-efe9-4d94-8f71-6bf7c403494d"
+      },
+      {
+       "qty": 6,
+       "name": "Forest",
+       "set": "ala",
+       "number": "246",
+       "id": "12495cfa-ab19-4e9e-a49e-a94499f664a2"
+      },
+      {
+       "qty": 4,
+       "name": "Mountain",
+       "set": "ala",
+       "number": "242",
+       "id": "7c2cc19c-84ce-4c0b-b56f-7a2b3878a26e"
+      },
+      {
+       "qty": 2,
+       "name": "Swamp",
+       "set": "ala",
+       "number": "238",
+       "id": "45cbe554-ffdc-4de6-bf27-57790b71effb"
+      }
+     ]
+    }
+   },
+   "villain": {
+    "who": "zoo",
+    "deck": {
+     "name": "Naya Zoo",
+     "colors": "RGW",
+     "archetype": "Aggro",
+     "label": "tribute",
+     "cards": [
+      {
+       "qty": 4,
+       "name": "Wild Nacatl",
+       "set": "ala",
+       "number": "152",
+       "id": "5eb18038-eb6a-4d27-ba52-52a1cee6b512"
+      },
+      {
+       "qty": 4,
+       "name": "Noble Hierarch",
+       "set": "con",
+       "number": "87",
+       "id": "6adfe928-1305-444d-b709-1e714544daaf"
+      },
+      {
+       "qty": 4,
+       "name": "Woolly Thoctar",
+       "set": "ala",
+       "number": "209",
+       "id": "7d5907d5-ae5c-4c9d-a5df-61f1c94f979d"
+      },
+      {
+       "qty": 4,
+       "name": "Knight of New Alara",
+       "set": "arb",
+       "number": "70",
+       "id": "0d3fc235-d0d7-41f8-b35a-6e08761f7fa4"
+      },
+      {
+       "qty": 4,
+       "name": "Qasali Pridemage",
+       "set": "arb",
+       "number": "75",
+       "id": "75256550-bbe0-499d-909e-af10691749c2"
+      },
+      {
+       "qty": 4,
+       "name": "Ranger of Eos",
+       "set": "ala",
+       "number": "21",
+       "id": "1a30ee26-5f78-4ac2-9105-1baa9ece8a21"
+      },
+      {
+       "qty": 4,
+       "name": "Path to Exile",
+       "set": "con",
+       "number": "15",
+       "id": "29b7a8b1-b98e-483a-87a4-73bd831c03d4"
+      },
+      {
+       "qty": 4,
+       "name": "Lightning Bolt",
+       "set": "m10",
+       "number": "146",
+       "id": "435589bb-27c6-4a6d-9d63-394d5092b9d8"
+      },
+      {
+       "qty": 2,
+       "name": "Ajani Vengeant",
+       "set": "ala",
+       "number": "154",
+       "id": "8fc108a3-15e5-44ab-a6e2-182b309f9c0c"
+      },
+      {
+       "qty": 2,
+       "name": "Baneslayer Angel",
+       "set": "m10",
+       "number": "4",
+       "id": "6764ea7b-ccb3-4f39-b8ba-654a186210b9"
+      },
+      {
+       "qty": 4,
+       "name": "Jungle Shrine",
+       "set": "ala",
+       "number": "226",
+       "id": "e4f0d262-cbfe-42d2-9066-0b48a38995d6"
+      },
+      {
+       "qty": 4,
+       "name": "Rootbound Crag",
+       "set": "m10",
+       "number": "227",
+       "id": "5433b11b-efe9-4d94-8f71-6bf7c403494d"
+      },
+      {
+       "qty": 4,
+       "name": "Sunpetal Grove",
+       "set": "m10",
+       "number": "228",
+       "id": "9f4e8ead-8c82-4258-bc59-551f7a74e042"
+      },
+      {
+       "qty": 6,
+       "name": "Forest",
+       "set": "ala",
+       "number": "246",
+       "id": "12495cfa-ab19-4e9e-a49e-a94499f664a2"
+      },
+      {
+       "qty": 3,
+       "name": "Plains",
+       "set": "ala",
+       "number": "230",
+       "id": "e94e2710-7b95-46d0-8261-0afa6b192e70"
+      },
+      {
+       "qty": 3,
+       "name": "Mountain",
+       "set": "ala",
+       "number": "242",
+       "id": "7c2cc19c-84ce-4c0b-b56f-7a2b3878a26e"
+      }
+     ]
+    }
+   },
+   "reward": {
+    "hero": {
+     "packs": 1,
+     "coins": 100
+    },
+    "villain": {
+     "card": {
+      "oracle_id": "35d3d96a-d303-4bf5-b972-f311331ec07a",
+      "name": "Wild Nacatl",
+      "rarity": "common",
+      "set": "ala",
+      "id": "5eb18038-eb6a-4d27-ba52-52a1cee6b512",
+      "image": "https://cards.scryfall.io/normal/front/5/e/5eb18038-eb6a-4d27-ba52-52a1cee6b512.jpg"
+     },
+     "coins": 100
+    }
+   },
+   "scene": [
+    {
+     "who": "stage",
+     "line": "Jund is a world as cruel as those who call it home.",
+     "quote": true
+    },
+    {
+     "who": "you",
+     "line": "Every card in this deck trades for two of theirs. Bloodbraid cascades, Thrinax leaves tokens, Blightning takes two cards and three life. Just keep trading."
+    }
+   ],
+   "villainScene": [
+    {
+     "who": "stage",
+     "line": "The Cloud Nacatl sit and think, a bunch of soft paws. We are the Claws of Marisi, stalking, pouncing, drawing blood.",
+     "quote": true
+    }
+   ],
+   "after": null,
+   "cues": {
+    "hero": {
+     "start": "Jund 'em out.",
+     "big": "Cascade!",
+     "low": "They're too fast...",
+     "win": "Two for one, every time.",
+     "loss": "Out-traded...",
+     "half": "Trade, and trade again."
+    },
+    "villain": {
+     "start": "[a growl in the brush]",
+     "big": "[the pride pounces]",
+     "low": "[the pride scatters]",
+     "win": "[mauled]",
+     "loss": "[the jungle goes quiet]"
+    }
+   },
+   "bigPlays": [],
+   "sim": null
+  },
+  {
+   "id": "a16b7",
+   "slot": 7,
+   "kind": "Meta",
+   "mood": "tension",
+   "title": "Exalted Knights",
+   "difficulty": "Normal",
+   "teaches": [
+    "Racing"
+   ],
+   "blurb": "Summer 2009, the other side of the format. Bant knights with exalted and angels raced Esper artifact decks led by Master of Etherium, which grows with every artifact it sees.",
+   "rewardSet": "con",
+   "host": false,
+   "hero": {
+    "who": "you",
+    "deck": {
+     "name": "Bant Aggro",
+     "colors": "GWU",
+     "archetype": "Aggro",
+     "label": "tribute",
+     "cards": [
+      {
+       "qty": 4,
+       "name": "Noble Hierarch",
+       "set": "con",
+       "number": "87",
+       "id": "6adfe928-1305-444d-b709-1e714544daaf"
+      },
+      {
+       "qty": 2,
+       "name": "Rafiq of the Many",
+       "set": "ala",
+       "number": "185",
+       "id": "249c188d-c11d-46f7-a2d8-a67df4ba401b"
+      },
+      {
+       "qty": 4,
+       "name": "Steward of Valeron",
+       "set": "ala",
+       "number": "198",
+       "id": "92e21ff9-0030-4e53-8ddf-86d8e78e347f"
+      },
+      {
+       "qty": 4,
+       "name": "Rhox War Monk",
+       "set": "ala",
+       "number": "188",
+       "id": "19fb67e1-b791-4246-aebc-49fcf0f92c6c"
+      },
+      {
+       "qty": 4,
+       "name": "Knight of New Alara",
+       "set": "arb",
+       "number": "70",
+       "id": "0d3fc235-d0d7-41f8-b35a-6e08761f7fa4"
+      },
+      {
+       "qty": 4,
+       "name": "Bant Charm",
+       "set": "ala",
+       "number": "155",
+       "id": "65b65c87-b084-44aa-b841-411a3c73e234"
+      },
+      {
+       "qty": 4,
+       "name": "Path to Exile",
+       "set": "con",
+       "number": "15",
+       "id": "29b7a8b1-b98e-483a-87a4-73bd831c03d4"
+      },
+      {
+       "qty": 2,
+       "name": "Elspeth, Knight-Errant",
+       "set": "ala",
+       "number": "9",
+       "id": "44c52e52-2b1c-4ca8-ab6d-20d97a342704"
+      },
+      {
+       "qty": 4,
+       "name": "Battlegrace Angel",
+       "set": "ala",
+       "number": "6",
+       "id": "b9be1142-3ba8-4915-9541-757e59ed046c"
+      },
+      {
+       "qty": 4,
+       "name": "Waveskimmer Aven",
+       "set": "ala",
+       "number": "207",
+       "id": "e75ebcb4-5db8-4c72-9f65-8ee8f2c893ea"
+      },
+      {
+       "qty": 4,
+       "name": "Seaside Citadel",
+       "set": "ala",
+       "number": "229",
+       "id": "c1995d2a-4550-4c84-ad44-183b06579e98"
+      },
+      {
+       "qty": 4,
+       "name": "Glacial Fortress",
+       "set": "m10",
+       "number": "226",
+       "id": "ee834e27-595d-4d12-8e69-e94e84ef337a"
+      },
+      {
+       "qty": 4,
+       "name": "Sunpetal Grove",
+       "set": "m10",
+       "number": "228",
+       "id": "9f4e8ead-8c82-4258-bc59-551f7a74e042"
+      },
+      {
+       "qty": 6,
+       "name": "Forest",
+       "set": "ala",
+       "number": "246",
+       "id": "12495cfa-ab19-4e9e-a49e-a94499f664a2"
+      },
+      {
+       "qty": 4,
+       "name": "Plains",
+       "set": "ala",
+       "number": "230",
+       "id": "e94e2710-7b95-46d0-8261-0afa6b192e70"
+      },
+      {
+       "qty": 2,
+       "name": "Island",
+       "set": "ala",
+       "number": "234",
+       "id": "2fdcf679-4269-4ed9-84f1-1ac7a513f475"
+      }
+     ]
+    }
+   },
+   "villain": {
+    "who": "esperAggro",
+    "deck": {
+     "name": "Esper Artifacts",
+     "colors": "WUB",
+     "archetype": "Aggro",
+     "label": "tribute",
+     "cards": [
+      {
+       "qty": 4,
+       "name": "Tidehollow Sculler",
+       "set": "ala",
+       "number": "202",
+       "id": "1abecc77-07f2-43e4-8585-0a8199cdcf01"
+      },
+      {
+       "qty": 4,
+       "name": "Esper Stormblade",
+       "set": "arb",
+       "number": "132",
+       "id": "e60ac6f0-fdec-4e2c-86c6-02d36c7bbaf5"
+      },
+      {
+       "qty": 4,
+       "name": "Master of Etherium",
+       "set": "ala",
+       "number": "49",
+       "id": "322cdf67-5b36-43f9-99b3-f0e24d423314"
+      },
+      {
+       "qty": 4,
+       "name": "Esper Battlemage",
+       "set": "ala",
+       "number": "40",
+       "id": "2cac0076-8bd5-4fe2-bac8-fd102688fdcb"
+      },
+      {
+       "qty": 4,
+       "name": "Sanctum Gargoyle",
+       "set": "ala",
+       "number": "24",
+       "id": "1da1a2d5-d1fe-4aa2-aa83-64d6c269f7bc"
+      },
+      {
+       "qty": 4,
+       "name": "Path to Exile",
+       "set": "con",
+       "number": "15",
+       "id": "29b7a8b1-b98e-483a-87a4-73bd831c03d4"
+      },
+      {
+       "qty": 4,
+       "name": "Esper Charm",
+       "set": "ala",
+       "number": "167",
+       "id": "a3d70a07-8d91-462c-aa96-901cc9a81531"
+      },
+      {
+       "qty": 4,
+       "name": "Executioner's Capsule",
+       "set": "ala",
+       "number": "75",
+       "id": "48185059-fff9-47b0-9774-ad37dee345ed"
+      },
+      {
+       "qty": 2,
+       "name": "Sphinx of the Steel Wind",
+       "set": "arb",
+       "number": "110",
+       "id": "c860cf0f-ef68-455f-9c71-a6dd25b51d71"
+      },
+      {
+       "qty": 2,
+       "name": "Etherium Sculptor",
+       "set": "ala",
+       "number": "42",
+       "id": "0d050f2d-bd65-4ab9-9ea6-9deba91b2792"
+      },
+      {
+       "qty": 4,
+       "name": "Arcane Sanctum",
+       "set": "ala",
+       "number": "220",
+       "id": "6edc0681-4252-4d3d-baf3-f03c22af1208"
+      },
+      {
+       "qty": 4,
+       "name": "Glacial Fortress",
+       "set": "m10",
+       "number": "226",
+       "id": "ee834e27-595d-4d12-8e69-e94e84ef337a"
+      },
+      {
+       "qty": 4,
+       "name": "Drowned Catacomb",
+       "set": "m10",
+       "number": "224",
+       "id": "bdc6e950-38dd-46da-a1c3-58dc7495a9f9"
+      },
+      {
+       "qty": 4,
+       "name": "Plains",
+       "set": "ala",
+       "number": "230",
+       "id": "e94e2710-7b95-46d0-8261-0afa6b192e70"
+      },
+      {
+       "qty": 4,
+       "name": "Island",
+       "set": "ala",
+       "number": "234",
+       "id": "2fdcf679-4269-4ed9-84f1-1ac7a513f475"
+      },
+      {
+       "qty": 4,
+       "name": "Swamp",
+       "set": "ala",
+       "number": "238",
+       "id": "45cbe554-ffdc-4de6-bf27-57790b71effb"
+      }
+     ]
+    }
+   },
+   "reward": {
+    "hero": {
+     "packs": 1,
+     "coins": 100
+    },
+    "villain": {
+     "card": {
+      "oracle_id": "181e6b3e-c33e-49e7-acb8-67473289a856",
+      "name": "Master of Etherium",
+      "rarity": "rare",
+      "set": "ala",
+      "id": "322cdf67-5b36-43f9-99b3-f0e24d423314",
+      "image": "https://cards.scryfall.io/normal/front/3/2/322cdf67-5b36-43f9-99b3-f0e24d423314.jpg"
+     },
+     "coins": 100
+    }
+   },
+   "scene": [
+    {
+     "who": "stage",
+     "line": "For wisdom's sake, it was built high to gaze on all things. For glory's sake, it was built high as a testament of power. For strength's sake, it was built high to repel all attacks.",
+     "quote": true
+    },
+    {
+     "who": "you",
+     "line": "Attack with one, grow it with everything. Their fliers block well, so swing first and make them chump."
+    }
+   ],
+   "villainScene": [
+    {
+     "who": "stage",
+     "line": "Only a mind unfettered with the concerns of the flesh can see the world as it truly is.",
+     "quote": true
+    },
+    {
+     "who": "stage",
+     "line": "The greatest masters of the craft abandon tools altogether, shaping metal with hand and mind alone.",
+     "quote": true
+    }
+   ],
+   "after": null,
+   "cues": {
+    "hero": {
+     "start": "Ride out.",
+     "big": "Exalted!",
+     "low": "Their metal holds...",
+     "win": "The knights prevail.",
+     "loss": "Unhorsed...",
+     "half": "Race them."
+    },
+    "villain": {
+     "start": "[gears turn]",
+     "big": "[etherium hums]",
+     "low": "[a rattle of loose parts]",
+     "win": "[polished]",
+     "loss": "[scrap]"
+    }
+   },
+   "bigPlays": [],
+   "sim": null
+  },
+  {
+   "id": "a16b8",
+   "slot": 8,
+   "kind": "Boss",
+   "mood": "boss",
+   "title": "The Conflux",
+   "difficulty": "Hard",
+   "teaches": [
+    "Combat math"
+   ],
+   "blurb": "The five shards slam together into one world, and the mana of the collision pours toward one place. Nicol Bolas waits there to drink it. Ajani rallies Bant's champions, Rafiq and Elspeth, to stand in his way.",
+   "rewardSet": "con",
+   "host": true,
+   "hero": {
+    "who": "ajani",
+    "deck": {
+     "name": "Ajani, Elspeth and Rafiq",
+     "colors": "GWU",
+     "archetype": null,
+     "label": "tribute",
+     "cards": [
+      {
+       "qty": 2,
+       "name": "Ajani Goldmane",
+       "set": "m10",
+       "number": "1",
+       "id": "46c50891-af21-4427-a495-0e66aef54809"
+      },
+      {
+       "qty": 2,
+       "name": "Elspeth, Knight-Errant",
+       "set": "ala",
+       "number": "9",
+       "id": "44c52e52-2b1c-4ca8-ab6d-20d97a342704"
+      },
+      {
+       "qty": 2,
+       "name": "Rafiq of the Many",
+       "set": "ala",
+       "number": "185",
+       "id": "249c188d-c11d-46f7-a2d8-a67df4ba401b"
+      },
+      {
+       "qty": 4,
+       "name": "Noble Hierarch",
+       "set": "con",
+       "number": "87",
+       "id": "6adfe928-1305-444d-b709-1e714544daaf"
+      },
+      {
+       "qty": 4,
+       "name": "Knight of New Alara",
+       "set": "arb",
+       "number": "70",
+       "id": "0d3fc235-d0d7-41f8-b35a-6e08761f7fa4"
+      },
+      {
+       "qty": 4,
+       "name": "Rhox War Monk",
+       "set": "ala",
+       "number": "188",
+       "id": "19fb67e1-b791-4246-aebc-49fcf0f92c6c"
+      },
+      {
+       "qty": 4,
+       "name": "Waveskimmer Aven",
+       "set": "ala",
+       "number": "207",
+       "id": "e75ebcb4-5db8-4c72-9f65-8ee8f2c893ea"
+      },
+      {
+       "qty": 4,
+       "name": "Battlegrace Angel",
+       "set": "ala",
+       "number": "6",
+       "id": "b9be1142-3ba8-4915-9541-757e59ed046c"
+      },
+      {
+       "qty": 4,
+       "name": "Path to Exile",
+       "set": "con",
+       "number": "15",
+       "id": "29b7a8b1-b98e-483a-87a4-73bd831c03d4"
+      },
+      {
+       "qty": 4,
+       "name": "Bant Charm",
+       "set": "ala",
+       "number": "155",
+       "id": "65b65c87-b084-44aa-b841-411a3c73e234"
+      },
+      {
+       "qty": 2,
+       "name": "Baneslayer Angel",
+       "set": "m10",
+       "number": "4",
+       "id": "6764ea7b-ccb3-4f39-b8ba-654a186210b9"
+      },
+      {
+       "qty": 4,
+       "name": "Seaside Citadel",
+       "set": "ala",
+       "number": "229",
+       "id": "c1995d2a-4550-4c84-ad44-183b06579e98"
+      },
+      {
+       "qty": 4,
+       "name": "Glacial Fortress",
+       "set": "m10",
+       "number": "226",
+       "id": "ee834e27-595d-4d12-8e69-e94e84ef337a"
+      },
+      {
+       "qty": 4,
+       "name": "Sunpetal Grove",
+       "set": "m10",
+       "number": "228",
+       "id": "9f4e8ead-8c82-4258-bc59-551f7a74e042"
+      },
+      {
+       "qty": 5,
+       "name": "Forest",
+       "set": "ala",
+       "number": "246",
+       "id": "12495cfa-ab19-4e9e-a49e-a94499f664a2"
+      },
+      {
+       "qty": 5,
+       "name": "Plains",
+       "set": "ala",
+       "number": "230",
+       "id": "e94e2710-7b95-46d0-8261-0afa6b192e70"
+      },
+      {
+       "qty": 2,
+       "name": "Island",
+       "set": "ala",
+       "number": "234",
+       "id": "2fdcf679-4269-4ed9-84f1-1ac7a513f475"
+      }
+     ]
+    }
+   },
+   "villain": {
+    "who": "bolas",
+    "deck": {
+     "name": "The Harvest of Alara",
+     "colors": "UBR",
+     "archetype": "Control",
+     "label": "tribute",
+     "cards": [
+      {
+       "qty": 2,
+       "name": "Nicol Bolas, Planeswalker",
+       "set": "con",
+       "number": "120",
+       "id": "48ee3939-bc12-4275-a446-9de36f0b4672"
+      },
+      {
+       "qty": 2,
+       "name": "Cruel Ultimatum",
+       "set": "ala",
+       "number": "164",
+       "id": "0d267804-23de-4521-ae64-4dd5cd836c6c"
+      },
+      {
+       "qty": 4,
+       "name": "Sedraxis Specter",
+       "set": "ala",
+       "number": "192",
+       "id": "c6ca8f2a-ee0e-4708-97d8-c1836d824d4e"
+      },
+      {
+       "qty": 4,
+       "name": "Blightning",
+       "set": "ala",
+       "number": "156",
+       "id": "3c05e8a2-b7d0-4f24-b2ae-8e4db30e5842"
+      },
+      {
+       "qty": 4,
+       "name": "Agony Warp",
+       "set": "ala",
+       "number": "153",
+       "id": "e246294f-7614-48e9-a655-647faf0bf697"
+      },
+      {
+       "qty": 4,
+       "name": "Terminate",
+       "set": "arb",
+       "number": "46",
+       "id": "dc8acab8-4469-4baa-af2f-a3f49b841a55"
+      },
+      {
+       "qty": 4,
+       "name": "Lightning Bolt",
+       "set": "m10",
+       "number": "146",
+       "id": "435589bb-27c6-4a6d-9d63-394d5092b9d8"
+      },
+      {
+       "qty": 4,
+       "name": "Kederekt Creeper",
+       "set": "ala",
+       "number": "176",
+       "id": "701498e5-1d4d-42f4-9dd0-5d4cf78f0e68"
+      },
+      {
+       "qty": 4,
+       "name": "Fleshbag Marauder",
+       "set": "ala",
+       "number": "76",
+       "id": "f71e4391-04a8-4df8-9d52-3a3480bcd5b6"
+      },
+      {
+       "qty": 2,
+       "name": "Malfegor",
+       "set": "con",
+       "number": "117",
+       "id": "7e84de2e-3676-4112-823b-549c4d132280"
+      },
+      {
+       "qty": 2,
+       "name": "Lich Lord of Unx",
+       "set": "arb",
+       "number": "24",
+       "id": "df38c422-7830-4f25-b74b-ed90b7047f53"
+      },
+      {
+       "qty": 4,
+       "name": "Crumbling Necropolis",
+       "set": "ala",
+       "number": "222",
+       "id": "94da8e38-77a4-4d25-9e1f-f33c246f60c8"
+      },
+      {
+       "qty": 4,
+       "name": "Dragonskull Summit",
+       "set": "m10",
+       "number": "223",
+       "id": "2d4998db-13c0-412f-b02c-9f041cc45c7e"
+      },
+      {
+       "qty": 4,
+       "name": "Drowned Catacomb",
+       "set": "m10",
+       "number": "224",
+       "id": "bdc6e950-38dd-46da-a1c3-58dc7495a9f9"
+      },
+      {
+       "qty": 4,
+       "name": "Island",
+       "set": "ala",
+       "number": "234",
+       "id": "2fdcf679-4269-4ed9-84f1-1ac7a513f475"
+      },
+      {
+       "qty": 5,
+       "name": "Swamp",
+       "set": "ala",
+       "number": "238",
+       "id": "45cbe554-ffdc-4de6-bf27-57790b71effb"
+      },
+      {
+       "qty": 3,
+       "name": "Mountain",
+       "set": "ala",
+       "number": "242",
+       "id": "7c2cc19c-84ce-4c0b-b56f-7a2b3878a26e"
+      }
+     ]
+    }
+   },
+   "reward": {
+    "hero": {
+     "packs": 2,
+     "coins": 200
+    },
+    "villain": {
+     "card": {
+      "oracle_id": "05e9b55e-6329-48ec-b7d7-24c6b9692244",
+      "name": "Nicol Bolas, Planeswalker",
+      "rarity": "mythic",
+      "set": "con",
+      "id": "48ee3939-bc12-4275-a446-9de36f0b4672",
+      "image": "https://cards.scryfall.io/normal/front/4/8/48ee3939-bc12-4275-a446-9de36f0b4672.jpg"
+     },
+     "coins": 200
+    }
+   },
+   "scene": [
+    {
+     "who": "stage",
+     "line": "As the shards merged into the Maelstrom, their mana energies fused into new monstrosities.",
+     "quote": true
+    },
+    {
+     "who": "ajani",
+     "line": "He planned every collision. Every war on every shard. Jazal was one more stone he had to move out of the road."
+    },
+    {
+     "who": "elspeth",
+     "line": "I came to Bant to get away from wars. It seems they follow me."
+    },
+    {
+     "who": "rafiq",
+     "line": "Those talons really dig into your skin, but it's better than being dropped.",
+     "quote": true
+    }
+   ],
+   "villainScene": [
+    {
+     "who": "bolas",
+     "line": "The finest pawns are those with pawns of their own.",
+     "quote": true
+    },
+    {
+     "who": "stage",
+     "line": "Nicol Bolas doesn't distinguish between servants and victims.",
+     "quote": true
+    },
+    {
+     "who": "bolas",
+     "line": "You are standing between me and five worlds' worth of mana, little cat. So was your brother."
+    }
+   ],
+   "after": null,
+   "cues": {
+    "hero": {
+     "start": "For Alara.",
+     "big": "Now, together!",
+     "low": "He has an answer for everything...",
+     "win": "Not this time.",
+     "loss": "The Maelstrom... takes us...",
+     "half": "Count before you swing."
+    },
+    "villain": {
+     "start": "Kneel, little things.",
+     "big": "There is always a greater power.",
+     "low": "You are tiresome.",
+     "win": "Harvested.",
+     "loss": "This changes... nothing...",
+     "half": {
+      "who": "elspeth",
+      "line": "He's bleeding. Keep pushing."
+     }
+    }
+   },
+   "bigPlays": [],
+   "sim": null
+  },
+  {
+   "id": "a16b9",
+   "slot": 9,
+   "kind": "Secret Boss",
+   "secret": true,
+   "mood": "boss",
+   "title": "Cruel Ultimatum",
+   "difficulty": "Hard",
+   "teaches": [
+    "Playing around counterspells"
+   ],
+   "blurb": "Deep in the archive, the most expensive sorcery a control deck ever built around.",
+   "rewardSet": "ala",
+   "host": true,
+   "archive": {
+    "deck": "Five-Colour Control",
+    "when": "2008 to 2009",
+    "format": "Standard: Lorwyn and Shadowmoor blocks, Shards of Alara and Tenth Edition.",
+    "what": "A control deck that played all five colours, answered everything early, and won with Cruel Ultimatum, a seven-mana sorcery: the opponent sacrifices a creature, discards three cards and loses 5 life, while you draw three, gain 5 life and get a creature card back from your graveyard.",
+    "why": "Five-Colour Control won the 2008 World Championship. It ran Cruel Ultimatum, Cryptic Command and Kitchen Finks, with lands that made any colour.",
+    "beat": "Pressure early and spread your threats out, so a single sweeper like Volcanic Fallout cannot clear them all. Keep cards in hand if you can; Cruel Ultimatum hurts less when you have more to lose.",
+    "after": "Cruel Ultimatum was never banned. It is remembered as the most greedy card of its time, and players still call any seven-mana blowout \"a Cruel\"."
+   },
+   "hero": {
+    "who": "you",
+    "deck": {
+     "name": "Grixis Unearth",
+     "colors": "UBR",
+     "archetype": "Aggro",
+     "label": "tribute",
+     "cards": [
+      {
+       "qty": 4,
+       "name": "Skeletal Kathari",
+       "set": "ala",
+       "number": "88",
+       "id": "a3e7e593-e5b0-4348-b8e5-20173d41aa39"
+      },
+      {
+       "qty": 4,
+       "name": "Dregscape Zombie",
+       "set": "ala",
+       "number": "74",
+       "id": "4b65b7ad-4ab0-4622-81f4-434254625a1e"
+      },
+      {
+       "qty": 4,
+       "name": "Hellspark Elemental",
+       "set": "con",
+       "number": "65",
+       "id": "256a861a-c488-4834-a419-5bd1eeba6873"
+      },
+      {
+       "qty": 4,
+       "name": "Sedraxis Specter",
+       "set": "ala",
+       "number": "192",
+       "id": "c6ca8f2a-ee0e-4708-97d8-c1836d824d4e"
+      },
+      {
+       "qty": 4,
+       "name": "Kathari Bomber",
+       "set": "arb",
+       "number": "41",
+       "id": "6c0d4f83-6319-4d40-9fee-6a44b05c8e9e"
+      },
+      {
+       "qty": 4,
+       "name": "Blightning",
+       "set": "ala",
+       "number": "156",
+       "id": "3c05e8a2-b7d0-4f24-b2ae-8e4db30e5842"
+      },
+      {
+       "qty": 4,
+       "name": "Agony Warp",
+       "set": "ala",
+       "number": "153",
+       "id": "e246294f-7614-48e9-a655-647faf0bf697"
+      },
+      {
+       "qty": 4,
+       "name": "Kederekt Creeper",
+       "set": "ala",
+       "number": "176",
+       "id": "701498e5-1d4d-42f4-9dd0-5d4cf78f0e68"
+      },
+      {
+       "qty": 4,
+       "name": "Bone Splinters",
+       "set": "ala",
+       "number": "67",
+       "id": "d4a4b3a3-b7ae-4210-8037-098fdf5808d0"
+      },
+      {
+       "qty": 4,
+       "name": "Crumbling Necropolis",
+       "set": "ala",
+       "number": "222",
+       "id": "94da8e38-77a4-4d25-9e1f-f33c246f60c8"
+      },
+      {
+       "qty": 8,
+       "name": "Swamp",
+       "set": "ala",
+       "number": "238",
+       "id": "45cbe554-ffdc-4de6-bf27-57790b71effb"
+      },
+      {
+       "qty": 6,
+       "name": "Island",
+       "set": "ala",
+       "number": "234",
+       "id": "2fdcf679-4269-4ed9-84f1-1ac7a513f475"
+      },
+      {
+       "qty": 6,
+       "name": "Mountain",
+       "set": "ala",
+       "number": "242",
+       "id": "7c2cc19c-84ce-4c0b-b56f-7a2b3878a26e"
+      }
+     ]
+    }
+   },
+   "villain": {
+    "who": "cruel",
+    "deck": {
+     "name": "Five-Colour Control",
+     "colors": "WUBRG",
+     "archetype": "Control",
+     "label": "tribute",
+     "note": "Built from the 2008 and 2009 Five-Colour Control lists with Cruel Ultimatum, using cards from this act's sets only, so Cryptic Command and Kitchen Finks are not in it. No single tournament list is copied.",
+     "cards": [
+      {
+       "qty": 4,
+       "name": "Woolly Thoctar",
+       "set": "ala",
+       "number": "209",
+       "id": "7d5907d5-ae5c-4c9d-a5df-61f1c94f979d"
+      },
+      {
+       "qty": 2,
+       "name": "Cruel Ultimatum",
+       "set": "ala",
+       "number": "164",
+       "id": "0d267804-23de-4521-ae64-4dd5cd836c6c"
+      },
+      {
+       "qty": 4,
+       "name": "Broodmate Dragon",
+       "set": "ala",
+       "number": "160",
+       "id": "aea1360e-7c6b-400c-893a-82d93e53101e"
+      },
+      {
+       "qty": 4,
+       "name": "Volcanic Fallout",
+       "set": "con",
+       "number": "74",
+       "id": "65536d12-e75c-42b5-b592-a3ad4f550a71"
+      },
+      {
+       "qty": 4,
+       "name": "Agony Warp",
+       "set": "ala",
+       "number": "153",
+       "id": "e246294f-7614-48e9-a655-647faf0bf697"
+      },
+      {
+       "qty": 4,
+       "name": "Bloodbraid Elf",
+       "set": "arb",
+       "number": "50",
+       "id": "7ef67487-c8e5-49bb-b0f7-e073ff2e31f1"
+      },
+      {
+       "qty": 4,
+       "name": "Maelstrom Pulse",
+       "set": "arb",
+       "number": "92",
+       "id": "eb651c3a-cb27-4b73-8eb6-b87d65211097"
+      },
+      {
+       "qty": 2,
+       "name": "Baneslayer Angel",
+       "set": "m10",
+       "number": "4",
+       "id": "6764ea7b-ccb3-4f39-b8ba-654a186210b9"
+      },
+      {
+       "qty": 4,
+       "name": "Lightning Bolt",
+       "set": "m10",
+       "number": "146",
+       "id": "435589bb-27c6-4a6d-9d63-394d5092b9d8"
+      },
+      {
+       "qty": 4,
+       "name": "Sprouting Thrinax",
+       "set": "ala",
+       "number": "197",
+       "id": "8950df86-1e27-4b6b-8b5c-25298a3bda85"
+      },
+      {
+       "qty": 4,
+       "name": "Exotic Orchard",
+       "set": "con",
+       "number": "142",
+       "id": "6aae6480-4e71-4d94-a648-f80d3849d792"
+      },
+      {
+       "qty": 4,
+       "name": "Arcane Sanctum",
+       "set": "ala",
+       "number": "220",
+       "id": "6edc0681-4252-4d3d-baf3-f03c22af1208"
+      },
+      {
+       "qty": 4,
+       "name": "Crumbling Necropolis",
+       "set": "ala",
+       "number": "222",
+       "id": "94da8e38-77a4-4d25-9e1f-f33c246f60c8"
+      },
+      {
+       "qty": 4,
+       "name": "Savage Lands",
+       "set": "ala",
+       "number": "228",
+       "id": "f6bcded3-6eea-4533-a855-e03d4c4620d6"
+      },
+      {
+       "qty": 2,
+       "name": "Island",
+       "set": "ala",
+       "number": "234",
+       "id": "2fdcf679-4269-4ed9-84f1-1ac7a513f475"
+      },
+      {
+       "qty": 2,
+       "name": "Swamp",
+       "set": "ala",
+       "number": "238",
+       "id": "45cbe554-ffdc-4de6-bf27-57790b71effb"
+      },
+      {
+       "qty": 2,
+       "name": "Mountain",
+       "set": "ala",
+       "number": "242",
+       "id": "7c2cc19c-84ce-4c0b-b56f-7a2b3878a26e"
+      },
+      {
+       "qty": 1,
+       "name": "Forest",
+       "set": "ala",
+       "number": "246",
+       "id": "12495cfa-ab19-4e9e-a49e-a94499f664a2"
+      },
+      {
+       "qty": 1,
+       "name": "Plains",
+       "set": "ala",
+       "number": "230",
+       "id": "e94e2710-7b95-46d0-8261-0afa6b192e70"
+      }
+     ]
+    }
+   },
+   "reward": {
+    "hero": {
+     "packs": 2,
+     "coins": 200
+    },
+    "villain": {
+     "card": {
+      "oracle_id": "01294ac9-1a06-4ee8-b3b1-db1f07c9d94e",
+      "name": "Cruel Ultimatum",
+      "rarity": "rare",
+      "set": "ala",
+      "id": "0d267804-23de-4521-ae64-4dd5cd836c6c",
+      "image": "https://cards.scryfall.io/normal/front/0/d/0d267804-23de-4521-ae64-4dd5cd836c6c.jpg"
+     },
+     "coins": 200
+    }
+   },
+   "scene": [
+    {
+     "who": "stage",
+     "line": "The undead of Grixis are fueled by their hatred of the living.",
+     "quote": true
+    },
+    {
+     "who": "you",
+     "line": "They want a long game and seven mana. I will give them neither."
+    }
+   ],
+   "villainScene": [
+    {
+     "who": "stage",
+     "line": "There is always a greater power.",
+     "quote": true
+    }
+   ],
+   "after": [
+    {
+     "who": "stage",
+     "line": "Recorded: never banned. The deck that won the 2008 World Championship."
+    }
+   ],
+   "cues": {
+    "hero": {
+     "start": "Rise and rush.",
+     "big": "Unearth!",
+     "low": "Swept away...",
+     "win": "No seventh land for you.",
+     "loss": "Ultimatum...",
+     "half": "Go wide, go fast."
+    },
+    "villain": {
+     "start": "[a hand full of answers]",
+     "big": "[the ultimatum resolves]",
+     "low": "[mana falters]",
+     "win": "[five, three, one]",
+     "loss": "[the last answer runs out]"
+    }
+   },
+   "bigPlays": [],
+   "sim": null
+  }
+ ]
+}

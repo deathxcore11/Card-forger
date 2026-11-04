@@ -134,11 +134,11 @@ export default {
 4 Kyren Sniper
 4 Hammer Mage
 4 Lightning Hounds
-4 Robber Fly
 4 Mogg Toady
-2 Ceremonial Guard
 4 Seal of Fire
-24 Mountain`}},
+24 Mountain
+4 Arms Dealer
+2 Lunge`}},
       villain: {who: 'tahngarth', deck: {name: 'Talruum Fury', colors: 'RG', list: `
 4 Zerapa Minotaur
 4 Veteran Brawlers
@@ -214,24 +214,24 @@ export default {
 4 Spineless Thug
 4 Phyrexian Prowler
 4 Plague Witch
-2 Belbe's Percher
+4 Belbe's Percher
 4 Vicious Hunger
-4 Seal of Doom
-4 Dark Ritual
-24 Swamp`}},
+2 Seal of Doom
+2 Dark Ritual
+26 Swamp`}},
       villain: {who: 'volrath', deck: {name: 'The Fallen', colors: 'UB', list: `
-2 Volrath the Fallen
-4 Stronghold Biologist
-4 Stronghold Machinist
+3 Volrath the Fallen
 4 Rootwater Commando
 4 Sneaky Homunculus
 4 Cloudskate
 4 Phyrexian Driver
 4 Seal of Removal
 4 Vendetta
-2 Stronghold Zeppelin
+1 Stronghold Zeppelin
 12 Island
-12 Swamp`}},
+12 Swamp
+4 Pit Raptor
+4 Troublesome Spirit`}},
       scene: [q('volrath', "I've come to reclaim what is mine. And you, Greven, are mine."),
         s('crovax', 'Greven serves the throne. I am the throne.'),
         s('volrath', 'You are a nobleman who was afraid of the dark. Selenia picked you up off the floor.'), s('crovax', 'Do not say her name.'),
@@ -259,10 +259,9 @@ export default {
 12 Plains
 12 Island`}},
       villain: {who: 'latulla', deck: {name: 'The Keldon Host', colors: 'R', list: `
-2 Lesser Gargadon
+4 Lesser Gargadon
 4 Keldon Arsonist
 4 Keldon Berserker
-2 Keldon Firebombers
 4 Ridgeline Rager
 4 Spur Grappler
 4 Branded Brawlers
@@ -337,7 +336,7 @@ export default {
 12 Forest
 12 Plains`}},
       villain: {who: 'evincar', deck: {name: "The Evincar's Court", colors: 'B', list: `
-2 Ascendant Evincar
+3 Ascendant Evincar
 2 Rathi Assassin
 4 Rathi Fiend
 4 Rathi Intimidator
@@ -347,7 +346,7 @@ export default {
 4 Dark Ritual
 4 Seal of Doom
 2 Massacre
-2 Vicious Hunger
+1 Vicious Hunger
 24 Swamp`}},
       scene: [q('evincar', 'Let all witness the fate of those who defy me.'),
         s('eladamri', 'You killed my daughter.'), s('evincar', 'I killed many daughters. You will have to be more specific.'),

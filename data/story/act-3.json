@@ -1,5 +1,6 @@
 {
  "act": 3,
+ "era": null,
  "title": "Ice Age",
  "years": "1995 to 1996",
  "sets": [
@@ -34,6 +35,30 @@
    "line": "The winter's over. After all this time, it's over."
   }
  ],
+ "villainFinale": [
+  {
+   "who": "limdul",
+   "line": "The winter keeps. So do the dead."
+  },
+  {
+   "who": "stage",
+   "line": "No World Spell. The sky stays grey."
+  },
+  {
+   "who": "leshrac",
+   "line": "Well done, necromancer. Now kneel.",
+   "whisper": true
+  },
+  {
+   "who": "limdul",
+   "line": "...Yes, master."
+  },
+  {
+   "who": "narrator",
+   "line": "Recorded: the winter never ends. Lim-Dûl's legions march south across the ice."
+  }
+ ],
+ "vibe": null,
  "cast": {
   "you": {
    "name": "You",
@@ -223,6 +248,7 @@
    "id": "a3b1",
    "slot": 1,
    "kind": "Arrival",
+   "mood": "tension",
    "title": "The Pass at Kjeldor",
    "difficulty": "Easy",
    "teaches": [
@@ -237,6 +263,7 @@
      "name": "The Royal Guard",
      "colors": "W",
      "archetype": null,
+     "label": null,
      "cards": [
       {
        "qty": 4,
@@ -317,6 +344,7 @@
      "name": "Balduvian Raiders",
      "colors": "R",
      "archetype": null,
+     "label": null,
      "cards": [
       {
        "qty": 4,
@@ -437,6 +465,7 @@
      "line": "Not this winter. Raiders, to the pass!"
     }
    ],
+   "after": null,
    "cues": {
     "hero": {
      "start": "Shields.",
@@ -460,6 +489,7 @@
    "id": "a3b2",
    "slot": 2,
    "kind": "Lesson",
+   "mood": "march",
    "title": "The Royal Mage's Lesson",
    "difficulty": "Easy",
    "teaches": [
@@ -474,6 +504,7 @@
      "name": "The Royal Mage",
      "colors": "U",
      "archetype": null,
+     "label": null,
      "cards": [
       {
        "qty": 4,
@@ -568,6 +599,7 @@
      "name": "Varchild's Company",
      "colors": "R",
      "archetype": null,
+     "label": null,
      "cards": [
       {
        "qty": 4,
@@ -688,6 +720,7 @@
      "line": "Paid by the head. Let's earn a fortune."
     }
    ],
+   "after": null,
    "cues": {
     "hero": {
      "start": "Mind the cost.",
@@ -711,8 +744,9 @@
    "id": "a3b3",
    "slot": 3,
    "kind": "Lesson",
+   "mood": "tension",
    "title": "The Black Book",
-   "difficulty": "Normal",
+   "difficulty": "Easy",
    "teaches": [
     "Card advantage",
     "Paying life"
@@ -726,6 +760,7 @@
      "name": "Fyndhorn Council",
      "colors": "G",
      "archetype": null,
+     "label": null,
      "cards": [
       {
        "qty": 4,
@@ -813,6 +848,7 @@
      "name": "Leshrac's Book",
      "colors": "B",
      "archetype": null,
+     "label": null,
      "cards": [
       {
        "qty": 2,
@@ -865,13 +901,6 @@
       },
       {
        "qty": 2,
-       "name": "Drain Life",
-       "set": "4ed",
-       "number": "132",
-       "id": "b9d10677-36f0-4339-a2c3-213e8ee1c51d"
-      },
-      {
-       "qty": 2,
        "name": "Raise Dead",
        "set": "4ed",
        "number": "156",
@@ -885,7 +914,7 @@
        "id": "2e29882a-c194-48b8-ba18-439b0bda395e"
       },
       {
-       "qty": 3,
+       "qty": 1,
        "name": "Evil Presence",
        "set": "4ed",
        "number": "136",
@@ -899,18 +928,25 @@
        "id": "54d7a0c1-efb4-4a8d-ad92-a96d43835052"
       },
       {
-       "qty": 2,
-       "name": "Terror",
-       "set": "4ed",
-       "number": "164",
-       "id": "deb5d44d-977d-4d0d-8242-17c8ffa7247c"
-      },
-      {
        "qty": 4,
        "name": "Ashen Ghoul",
        "set": "ice",
        "number": "114",
        "id": "6bb83301-5662-4628-b536-6a3ee0296f2e"
+      },
+      {
+       "qty": 2,
+       "name": "Leshrac's Sigil",
+       "set": "ice",
+       "number": "144",
+       "id": "ad5ba7ee-d6df-4b62-a8a1-c81e6fca392a"
+      },
+      {
+       "qty": 4,
+       "name": "Zombie Master",
+       "set": "4ed",
+       "number": "174",
+       "id": "d86753ae-c8da-47d7-b97a-3c75f83ee929"
       }
      ]
     }
@@ -918,18 +954,18 @@
    "reward": {
     "hero": {
      "packs": 1,
-     "coins": 100
+     "coins": 0
     },
     "villain": {
      "card": {
-      "oracle_id": "94a844d2-0574-45a7-b347-e0e329767c42",
-      "name": "Necropotence",
-      "rarity": "rare",
+      "oracle_id": "98388eba-31ab-4302-be9e-ea67ea2b8c1a",
+      "name": "Leshrac's Sigil",
+      "rarity": "uncommon",
       "set": "ice",
-      "id": "54d7a0c1-efb4-4a8d-ad92-a96d43835052",
-      "image": "https://cards.scryfall.io/normal/front/5/4/54d7a0c1-efb4-4a8d-ad92-a96d43835052.jpg"
+      "id": "ad5ba7ee-d6df-4b62-a8a1-c81e6fca392a",
+      "image": "https://cards.scryfall.io/normal/front/a/d/ad5ba7ee-d6df-4b62-a8a1-c81e6fca392a.jpg"
      },
-     "coins": 100
+     "coins": 50
     }
    },
    "scene": [
@@ -965,6 +1001,7 @@
      "line": "Give it the book. Let it pay, page by page."
     }
    ],
+   "after": null,
    "cues": {
     "hero": {
      "start": "Freyalise, guide us.",
@@ -988,6 +1025,7 @@
    "id": "a3b4",
    "slot": 4,
    "kind": "Rival",
+   "mood": "tension",
    "title": "Baron Sengir's Feast",
    "difficulty": "Normal",
    "teaches": [
@@ -1001,8 +1039,9 @@
     "who": "reveka",
     "deck": {
      "name": "Reveka's Fire",
-     "colors": "R",
+     "colors": "UR",
      "archetype": null,
+     "label": null,
      "cards": [
       {
        "qty": 2,
@@ -1068,18 +1107,25 @@
        "id": "70846483-9c23-42c4-9f9f-1fc5cda17c77"
       },
       {
-       "qty": 4,
-       "name": "Stone Giant",
-       "set": "4ed",
-       "number": "223",
-       "id": "265de55e-63d2-4a5d-9078-858da70f2a08"
-      },
-      {
-       "qty": 24,
+       "qty": 14,
        "name": "Mountain",
        "set": "ice",
        "number": "376",
        "id": "4ecf39c3-3b5f-4263-a7b5-9881bded3494"
+      },
+      {
+       "qty": 10,
+       "name": "Island",
+       "set": "ice",
+       "number": "368",
+       "id": "ef2d6fc9-ddad-4dd2-b218-afa1a5449b7e"
+      },
+      {
+       "qty": 4,
+       "name": "Prodigal Sorcerer",
+       "set": "4ed",
+       "number": "94",
+       "id": "dc4e1161-5008-427f-a88e-5497a8eb84cd"
       }
      ]
     }
@@ -1090,6 +1136,7 @@
      "name": "The Baron's Table",
      "colors": "B",
      "archetype": null,
+     "label": null,
      "cards": [
       {
        "qty": 3,
@@ -1120,7 +1167,7 @@
        "id": "2e29882a-c194-48b8-ba18-439b0bda395e"
       },
       {
-       "qty": 4,
+       "qty": 2,
        "name": "Black Knight",
        "set": "4ed",
        "number": "121",
@@ -1134,7 +1181,7 @@
        "id": "4ebcd681-1871-4914-bcd7-6bd95829f6e0"
       },
       {
-       "qty": 4,
+       "qty": 2,
        "name": "Terror",
        "set": "4ed",
        "number": "164",
@@ -1148,7 +1195,7 @@
        "id": "b9d10677-36f0-4339-a2c3-213e8ee1c51d"
       },
       {
-       "qty": 3,
+       "qty": 1,
        "name": "Royal Assassin",
        "set": "4ed",
        "number": "157",
@@ -1162,11 +1209,18 @@
        "id": "a363bc91-8278-448e-9d5c-564e4b51eb62"
       },
       {
-       "qty": 24,
+       "qty": 26,
        "name": "Swamp",
        "set": "ice",
        "number": "373",
        "id": "4695653a-5c4c-4ff3-b80c-f4b6c685f370"
+      },
+      {
+       "qty": 4,
+       "name": "Scathe Zombies",
+       "set": "4ed",
+       "number": "158",
+       "id": "dbd55d32-e969-4d12-b101-a35db8a53921"
       }
      ]
     }
@@ -1220,6 +1274,7 @@
      "line": "Reveka will warn it. They always warn them. It never helps."
     }
    ],
+   "after": null,
    "cues": {
     "hero": {
      "start": "Lights up.",
@@ -1243,6 +1298,7 @@
    "id": "a3b5",
    "slot": 5,
    "kind": "Lesson",
+   "mood": "march",
    "title": "The Dead at the Gate",
    "difficulty": "Normal",
    "teaches": [
@@ -1258,6 +1314,7 @@
      "name": "The Alliance",
      "colors": "WU",
      "archetype": null,
+     "label": null,
      "cards": [
       {
        "qty": 2,
@@ -1394,6 +1451,7 @@
      "name": "Lim-Dûl's Vanguard",
      "colors": "B",
      "archetype": null,
+     "label": null,
      "cards": [
       {
        "qty": 4,
@@ -1537,7 +1595,15 @@
      "line": "We remember their names. They will not remember ours."
     }
    ],
+   "after": null,
    "cues": {
+    "hero": {
+     "start": "Shields. Again.",
+     "big": "For Kjeld!",
+     "low": "The dead keep walking...",
+     "win": "Back into the snow.",
+     "loss": "Fall back to the city..."
+    },
     "villain": {
      "start": "Rise.",
      "big": "Serve me, and live forever.",
@@ -1553,6 +1619,7 @@
    "id": "a3b6",
    "slot": 6,
    "kind": "Meta",
+   "mood": "march",
    "title": "Necro Summer",
    "difficulty": "Normal",
    "teaches": [
@@ -1567,6 +1634,7 @@
      "name": "Knights of the Pass",
      "colors": "W",
      "archetype": null,
+     "label": null,
      "cards": [
       {
        "qty": 4,
@@ -1654,6 +1722,7 @@
      "name": "Necropotence",
      "colors": "B",
      "archetype": "Necro (1996)",
+     "label": null,
      "cards": [
       {
        "qty": 24,
@@ -1800,7 +1869,15 @@
      "line": "I gave my name for this book. It owes me this victory."
     }
    ],
+   "after": null,
    "cues": {
+    "hero": {
+     "start": "Hit before the book opens.",
+     "big": "Charge!",
+     "low": "They draw forever...",
+     "win": "Faster than the book.",
+     "loss": "Paid in full..."
+    },
     "villain": {
      "start": "Draw.",
      "big": "Was it worth it? Yes.",
@@ -1816,6 +1893,7 @@
    "id": "a3b7",
    "slot": 7,
    "kind": "Meta",
+   "mood": "comic",
    "title": "Stasis",
    "difficulty": "Normal",
    "teaches": [
@@ -1828,8 +1906,9 @@
     "who": "reveka",
     "deck": {
      "name": "Reveka's Fire",
-     "colors": "R",
+     "colors": "UR",
      "archetype": null,
+     "label": null,
      "cards": [
       {
        "qty": 2,
@@ -1895,18 +1974,25 @@
        "id": "70846483-9c23-42c4-9f9f-1fc5cda17c77"
       },
       {
-       "qty": 4,
-       "name": "Stone Giant",
-       "set": "4ed",
-       "number": "223",
-       "id": "265de55e-63d2-4a5d-9078-858da70f2a08"
-      },
-      {
-       "qty": 24,
+       "qty": 14,
        "name": "Mountain",
        "set": "ice",
        "number": "376",
        "id": "4ecf39c3-3b5f-4263-a7b5-9881bded3494"
+      },
+      {
+       "qty": 10,
+       "name": "Island",
+       "set": "ice",
+       "number": "368",
+       "id": "ef2d6fc9-ddad-4dd2-b218-afa1a5449b7e"
+      },
+      {
+       "qty": 4,
+       "name": "Prodigal Sorcerer",
+       "set": "4ed",
+       "number": "94",
+       "id": "dc4e1161-5008-427f-a88e-5497a8eb84cd"
       }
      ]
     }
@@ -1917,6 +2003,7 @@
      "name": "The Still House",
      "colors": "UB",
      "archetype": "Winter Orb lock",
+     "label": null,
      "cards": [
       {
        "qty": 2,
@@ -2053,7 +2140,15 @@
      "line": "Everything stays where I put it. Including you, dear."
     }
    ],
+   "after": null,
    "cues": {
+    "hero": {
+     "start": "Lights up.",
+     "big": "Burn the lock!",
+     "low": "Nothing untaps...",
+     "win": "The house is quiet now.",
+     "loss": "Frozen..."
+    },
     "villain": {
      "start": "Be still.",
      "big": "Nothing moves in my house.",
@@ -2069,6 +2164,7 @@
    "id": "a3b8",
    "slot": 8,
    "kind": "Boss",
+   "mood": "boss",
    "title": "Lim-Dûl's Legion",
    "difficulty": "Hard",
    "teaches": [
@@ -2083,6 +2179,7 @@
      "name": "Freyalise's Chosen",
      "colors": "GW",
      "archetype": null,
+     "label": null,
      "cards": [
       {
        "qty": 4,
@@ -2198,6 +2295,7 @@
      "name": "Lim-Dûl's Legion",
      "colors": "B",
      "archetype": "Necro, lore-shaped",
+     "label": null,
      "cards": [
       {
        "qty": 4,
@@ -2341,6 +2439,7 @@
      "line": "Leshrac, my lord. Watch what your servant can do."
     }
    ],
+   "after": null,
    "cues": {
     "hero": {
      "start": "For Fyndhorn.",

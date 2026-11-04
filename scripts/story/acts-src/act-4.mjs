@@ -61,23 +61,21 @@ export default {
 4 Infantry Veteran
 4 Ekundu Griffin
 2 Sidar Jabari
-2 Pearl Dragon
+4 Pearl Dragon
 4 Pacifism
-2 Healing Salve
 2 Warrior's Honor
 24 Plains`}},
       villain: {who: 'telimtor', deck: {name: "Telim'Tor's Lances", colors: 'R', list: `
-2 Telim'Tor
+1 Telim'Tor
 4 Suq'Ata Lancer
-4 Talruum Minotaur
+4 Goblin Digging Team
 4 Viashino Warrior
 4 Goblin Elite Infantry
 4 Mountain Goat
 4 Hill Giant
 4 Dwarven Warriors
-2 Barreling Attack
-2 Goblin Hero
-2 Mons's Goblin Raiders
+3 Goblin Hero
+4 Mons's Goblin Raiders
 24 Mountain`}},
       scene: [{who: 'jabari', line: 'You. Out of the sky. Can you ride?'}, {who: 'jabari', line: "Doesn't matter. Hold on."},
         {who: 'telimtor', line: 'Jabari! Forty lances on my left. Sixty on my right. How many have you?'}, {who: 'jabari', line: 'Enough to be remembered.'},
@@ -124,7 +122,7 @@ export default {
         {who: 'teferi', line: 'So. A game. Your cards will step out of time and back. Try to keep up.'},
         {who: 'teferi', line: 'I had a teacher who played like this once. He never said sorry either.'}],
       villainScene: [{who: 'teferi', line: 'A planeswalker? Here? Oh, this is going to be fun.'}, {who: 'teferi', line: "Let's see how you play when your army keeps disappearing."}],
-      cues: {hero: cue(null, null, null, null, null), villain: cue('Blink and you\'ll miss it.', 'Made you look.', 'Careless, like a child with fire, so was I with time.', 'Again! Same time yesterday?', "Good. Now I'm worried about Kaervek, not you.")}},
+      cues: {hero: cue('Hello? Is the island here today?', 'Caught you in phase!', 'It keeps vanishing...', 'Pinned down. Finally.', 'Gone again...'), villain: cue('Blink and you\'ll miss it.', 'Made you look.', 'Careless, like a child with fire, so was I with time.', 'Again! Same time yesterday?', "Good. Now I'm worried about Kaervek, not you.")}},
     {slot: 3, mood: 'tension', kind: 'Lesson', title: 'The Song of Blood', difficulty: 'Easy', rewardSet: 'mir', teaches: ["Instants on the opponent's turn"],
       blurb: 'A Femeref village goes quiet at sunset. Something is singing in the grass. Rashida has been waiting for it for three nights.',
       hero: {who: 'rashida', deck: {name: "Scalebane's Watch", colors: 'RW', list: `
@@ -143,7 +141,7 @@ export default {
 10 Plains
 10 Mountain`, prefer: ['mir']}},
       villain: {who: 'purraj', deck: {name: 'The Night Stalkers', colors: 'B', list: `
-2 Purraj of Urborg
+4 Purraj of Urborg
 4 Pit Scorpion
 2 Breathstealer
 2 Vampire Bats
@@ -155,7 +153,6 @@ export default {
 4 Sewer Rats
 2 Scathe Zombies
 2 Cadaverous Knight
-2 Bog Rats
 24 Swamp`}},
       scene: [{who: 'rashida', line: "Don't light a fire. He's drawn to it."}, {who: 'rashida', line: "He hunts at dusk. He kills while you're busy."},
         {who: 'rashida', line: "So we'll be busy on HIS turn."}, {who: 'purraj', line: 'Tell me... have you ever sung the Song of Blood?', quote: true},
@@ -185,15 +182,14 @@ export default {
 10 Forest`}},
       villain: {who: 'jolrael', deck: {name: 'Children of the Mwonvuli', colors: 'G', list: `
 4 Mtenda Lion
-4 Bull Elephant
-2 Gibbering Hyenas
+2 Bull Elephant
+4 Gibbering Hyenas
 2 Ley Druid
 4 Jolrael's Centaur
-4 Stalking Tiger
+2 Stalking Tiger
 2 King Cheetah
-2 Grizzly Bears
-2 Crash of Rhinos
-2 Llanowar Elves
+4 Grizzly Bears
+4 Llanowar Elves
 4 Rampant Growth
 2 Giant Growth
 2 Fog
@@ -257,24 +253,25 @@ export default {
 4 Femeref Knight
 4 Harmattan Efreet
 2 Counterspell
-2 Unsummon
+4 Unsummon
 4 Memory Lapse
-4 Healing Salve
+2 Healing Salve
 4 Pacifism
 4 Flood Plain
 10 Plains
 10 Island`}},
       villain: {who: 'pashad', deck: {name: 'Everybody Draws', colors: 'UR', archetype: 'Prosperity', list: `
-4 Howling Mine
-4 Prosperity
+2 Prosperity
+2 Harmattan Efreet
+2 Viashino Sandstalker
 4 Inspiration
 4 Kaervek's Torch
 4 Volcanic Geyser
-3 Fireball
+4 Fireball
 4 Memory Lapse
 4 Counterspell
 2 Impulse
-3 Incinerate
+4 Incinerate
 12 Island
 12 Mountain`}},
       scene: [{who: 'pashad', line: 'Friend! Stranger! Friend-stranger! You look thirsty. And rich.'}, {who: 'pashad', line: 'Water, one coin. Water that heals, two coins.'},
@@ -285,7 +282,7 @@ export default {
       villainScene: [{who: 'pashad', line: 'Wealth is a good thing, compared to poverty. Your food is better, your robes are softer.', quote: true},
         {who: 'pashad', line: 'The war is terrible for business. Except the business of war, which is wonderful.'},
         {who: 'pashad', line: "A planeswalker customer! Do they pay in other worlds' coins? Let's find out."}],
-      cues: {hero: cue(null, null, null, null, null), villain: cue("Let's make a deal!", 'Look at all these cards! Everybody gets some!', 'This is not how the deal was described to me.', 'Two goats. And the apology, in writing.', "Fine! Free water. Don't tell anyone.")},
+      cues: {hero: cue('What does it cost?', 'Paid in full!', 'Everyone draws but me...', 'Keep the change.', 'Bankrupt...'), villain: cue("Let's make a deal!", 'Look at all these cards! Everybody gets some!', 'This is not how the deal was described to me.', 'Two goats. And the apology, in writing.', "Fine! Free water. Don't tell anyone.")},
       after: [{who: 'pashad', line: "A map to Kaervek's camp. Mostly accurate. For you, half price."}, {who: 'hakim', line: "It's entirely accurate. That's what worries me. Why does a merchant have it?"}]},
     {slot: 7, mood: 'march', kind: 'Meta', title: 'Fireblast', difficulty: 'Normal', rewardSet: 'vis', teaches: ['Racing'],
       blurb: "The map was accurate. So was the ambush. Kaervek's embermages hold the road to his camp, and they don't negotiate. The original red curve deck.",
@@ -299,8 +296,9 @@ export default {
 2 Pearl Dragon
 4 Pacifism
 2 Warrior's Honor
-4 Healing Salve
-24 Plains`}},
+2 Healing Salve
+24 Plains
+2 Sidar Jabari`}},
       villain: {who: 'talibah', deck: {name: 'Sligh', colors: 'R', archetype: 'Sligh', list: `
 4 Mountain Goat
 4 Goblin Hero

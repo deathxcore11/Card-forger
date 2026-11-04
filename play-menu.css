@@ -1023,6 +1023,10 @@ body[data-mode="play"] #gameTabs,body[data-mode="play"] [data-nav="scan"]{displa
 .topbar .play-purse-slot :is(.pe-coin,.pe-seal,.pe-pack-icon){width:18px;height:18px;flex:none}
 .topbar .play-purse-slot .pe-purse-item+.pe-purse-item{box-shadow:inset 1px 0 0 #ffffff14}
 @media(max-width:1099px){.topbar .play-purse-slot .pe-purse-seals{display:none}}
+/* Randall 4 Nov: the purse sits in the game chips' column, which is capped at 265px, so its buttons shrank under
+   their counts ("470" ran into the seal, "3" into the packs). The counts never shrink and the column fits the purse. */
+.topbar .play-purse-slot .pe-purse-item,.topbar .play-purse-slot .pe-seal-count{flex:none}
+@media(min-width:1200px){body[data-mode="play"] .topbar{grid-template-columns:auto auto minmax(240px,1fr) auto auto}body[data-mode="play"] .topbar>.play-purse-slot{grid-column:2;grid-row:1}}
 /* The Forge: a furnace panel. Header with the four seal counts over forge art; one row per step with
    the three seals going in, an ember arrow, and the seal that comes out. Rows stack on any width. */
 .pe-forge{position:relative;isolation:isolate;overflow:hidden;display:grid;gap:12px;padding:16px;border-radius:18px;border:1px solid #d6ad6440;background:#120d09;box-shadow:inset 0 1px 0 #ffffff10,0 18px 40px #0007}
@@ -1155,6 +1159,9 @@ button.pd-near-row{cursor:pointer}
 .pd-tabs{margin-top:6px}
 .pd-dot{display:inline-grid;place-items:center;min-width:18px;height:18px;padding:0 5px;border-radius:999px;background:var(--gold);color:#1a1206;font:800 11px/1 'DM Sans',system-ui,sans-serif;margin-left:4px}
 .pd-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(250px,1fr));gap:14px}
+.pd-act{margin-top:22px}
+.pd-act-head{display:flex;justify-content:space-between;align-items:baseline;gap:12px;margin:0 0 10px;padding-bottom:6px;border-bottom:1px solid color-mix(in srgb,var(--gold,#c9a45c) 35%,transparent);font-size:15px}
+.pd-act-count{font-size:13px;font-variant-numeric:tabular-nums;opacity:.8;white-space:nowrap}
 .pd-card{position:relative;display:grid;grid-template-rows:auto 1fr;border-radius:18px;overflow:hidden;border:1px solid color-mix(in srgb,var(--gold) 16%,var(--line));background:#121318;min-width:0}
 .pd-card-art{display:block;aspect-ratio:16/7;overflow:hidden;background:#0c0e13}
 .pd-card-art img{width:100%;height:100%;object-fit:cover;display:block}
@@ -1165,6 +1172,9 @@ button.pd-near-row{cursor:pointer}
 .pd-card-count{font:700 12px/1 'DM Sans',system-ui,sans-serif;color:var(--muted)}
 .pd-card-foot{display:flex;flex-wrap:wrap;align-items:center;justify-content:space-between;gap:8px;margin-top:4px;min-height:44px}
 .pd-done{font:700 12px/1 'DM Sans',system-ui,sans-serif;color:var(--gold);letter-spacing:.06em;text-transform:uppercase}
+.pd-honour{font:600 12px/1.2 'DM Sans',system-ui,sans-serif;color:#cdbf9f;letter-spacing:.04em}
+/* Achievement crops with a frame line or rounded black corners: zoom past the edge, never letterbox. */
+.pd-trim{display:block;width:100%;height:100%;background:#0c0e13 50% 45%/116% auto no-repeat}
 .pd-pips{display:flex;gap:5px}
 .pd-pip{width:12px;height:12px;border-radius:50%;border:1px solid #ffffff30;background:#ffffff08}
 .pd-pip.on.pd-pip--bronze{background:#b0703c;border-color:#e0a46c}
@@ -1198,11 +1208,8 @@ button.pd-near-row{cursor:pointer}
 .pf-own b{font:800 18px/1 'DM Sans',system-ui,sans-serif;font-variant-numeric:tabular-nums}
 .pf-own span{font-size:11px;color:#c9cfd6;letter-spacing:.06em}
 .pf-state{display:flex;flex-wrap:wrap;align-items:center;justify-content:flex-end;gap:4px 10px;font-size:13px}
-.pf-ready{display:grid;place-items:center;width:32px;height:32px;border-radius:50%;border:1px solid #bfe3b088;background:#bfe3b01a}.pf-ready svg{width:18px;height:18px;fill:none;stroke:#bfe3b0;stroke-width:2.4;stroke-linecap:round;stroke-linejoin:round}
-.pf-cost{display:inline-flex;flex-wrap:wrap;gap:8px}
 .pf-seal{display:inline-flex;align-items:center;gap:3px;font:800 14px/1 'DM Sans',system-ui,sans-serif}
 .pf-seal .pe-seal{width:20px;height:20px}
-.pf-cost--covered{padding:4px 10px;border-radius:999px;border:1px solid #f2d18e88;background:#f2d18e1a;box-shadow:0 0 14px #f2d18e26}
 .pf-mini{width:14px;height:14px}
 .pf-card.pf-card--slim{display:inline-flex;align-items:center;gap:6px;width:auto;padding:0 10px;background:#ffffff0d;border:1px solid #ffffff1a;box-shadow:none;color:#f6eedb;font:600 13px/1.2 'DM Sans',system-ui,sans-serif}
 .pf-card--slim b{font-variant-numeric:tabular-nums;color:#e9d6a7}
@@ -1373,3 +1380,232 @@ button.pd-near-row{cursor:pointer}
 .play-nav button{min-height:44px;cursor:pointer;white-space:nowrap;letter-spacing:0}
 .play-nav button span .ico{width:23px;height:23px}
 .play-nav button[data-play-nav="switch"] span{color:var(--gold)}
+
+/* Untapped-style finder (3 Nov): filters with live counts, Buildable / Craftable states, archetype
+   variants, and motion: rows rise in once, meters fill, a status that resolves pops with a glint. */
+.pf-filter{display:inline-flex;align-items:center;gap:7px}
+.pf-filter>svg:not(.pe-seal){width:16px;height:16px;fill:none;stroke:currentColor;stroke-width:2.4;stroke-linecap:round;stroke-linejoin:round}
+.pf-filter .pf-filter-seal{width:18px;height:18px}
+.pf-filter b{min-width:22px;padding:2px 7px;border-radius:999px;background:#ffffff14;font:800 12px/1.2 'DM Sans',system-ui,sans-serif;font-variant-numeric:tabular-nums;text-align:center;transition:background .25s ease}
+.pf-filter.on b{background:color-mix(in srgb,var(--gold) 30%,transparent)}
+.pf-filter--busy b{background:linear-gradient(100deg,#ffffff10 30%,#f2d18e40 50%,#ffffff10 70%) 0 0/300% 100%;animation:pf-shine 1.4s linear infinite}
+.pf-sort.pe-sort{flex:0 0 auto;width:auto;max-width:100%;min-height:44px;padding:0 36px 0 14px;border-radius:999px;border:1px solid var(--line);background-color:color-mix(in srgb,#0d0f14 70%,transparent);color:var(--text);font:700 13px/1 'DM Sans',system-ui,sans-serif}
+.pf-filter-row{flex:1 1 auto}
+.pf-status{display:inline-flex;align-items:center;gap:8px;min-height:32px;padding:4px 12px;border-radius:999px;font:800 13px/1 'DM Sans',system-ui,sans-serif;letter-spacing:.02em;white-space:nowrap;backdrop-filter:blur(6px)}
+.pf-status svg:not(.pe-seal){width:16px;height:16px;fill:none;stroke:currentColor;stroke-width:2.6;stroke-linecap:round;stroke-linejoin:round}
+.pf-status--buildable{color:#cdeec0;border:1px solid #bfe3b077;background:linear-gradient(180deg,#bfe3b024,#bfe3b00c);box-shadow:0 0 18px #9fdc8a22,inset 0 1px 0 #ffffff14}
+.pf-status--craftable{color:#f6e4bb;border:1px solid #f2d18e88;background:linear-gradient(180deg,#f2d18e26,#f2d18e0a);box-shadow:0 0 18px #f2d18e2e,inset 0 1px 0 #ffffff1a}
+.pf-status--short{padding:4px 2px;gap:10px}
+.pf-status--open{color:#e9d6a7;border:1px solid #ffffff22;background:#ffffff0c}
+.pf-seal--short{color:#ffb4a0}
+.pf-seal--short .pe-seal{filter:saturate(.55) brightness(.8)}
+.pf-status--pending{gap:5px;padding:4px 10px}
+.pf-status--pending i{width:6px;height:6px;border-radius:50%;background:#f2d18e;opacity:.3;animation:pf-dot 1s ease-in-out infinite}
+.pf-status--pending i:nth-child(2){animation-delay:.15s}.pf-status--pending i:nth-child(3){animation-delay:.3s}
+@keyframes pf-dot{50%{opacity:1;transform:translateY(-2px)}}
+.pf-status--pop{position:relative;overflow:hidden;animation:pf-pop .55s cubic-bezier(.2,1.4,.4,1) both}
+.pf-status--pop::after{content:'';position:absolute;inset:0;border-radius:inherit;background:linear-gradient(110deg,transparent 30%,#fff6 50%,transparent 70%) -120% 0/250% 100% no-repeat;animation:pf-glint .9s .15s ease-out both;pointer-events:none}
+@keyframes pf-pop{0%{transform:scale(.82);opacity:.4}100%{transform:none;opacity:1}}
+@keyframes pf-glint{to{background-position:120% 0}}
+.pf-status--mini{min-height:28px;font-size:12px;padding:3px 10px}
+.pf-status--mini.pf-status--short{padding:3px 2px}
+.pf-status--mini .pe-seal{width:16px;height:16px}
+.pf-arch-count{display:inline-grid;place-items:center;min-width:24px;height:22px;padding:0 7px;border-radius:999px;border:1px solid #f2d18e55;background:#0c0d11b3;color:#e9d6a7;font:800 11px/1 'DM Sans',system-ui,sans-serif;font-variant-numeric:tabular-nums}
+.pf-row[data-status=buildable]{border-color:#bfe3b055}
+.pf-row[data-status=craftable]{border-color:#f2d18e66;box-shadow:0 18px 40px #0006,0 0 0 1px #f2d18e14,inset 0 1px 0 #ffffff12}
+.pf-row--enter{animation:pf-rise .5s cubic-bezier(.2,.8,.2,1) both;animation-delay:calc(min(var(--pf-i,0),6) * 55ms)}
+.pf-row--enter .pf-meter>i{animation:pf-fill .9s cubic-bezier(.2,.8,.2,1) both;animation-delay:calc(min(var(--pf-i,0),6) * 55ms + .2s)}
+.pf-row--enter .pf-card{animation:pf-rise .4s ease both;animation-delay:calc(min(var(--pf-i,0),6) * 55ms + .12s)}
+@keyframes pf-rise{from{opacity:0;transform:translateY(14px) scale(.985)}to{opacity:1;transform:none}}
+@keyframes pf-fill{from{width:0}}
+.pf-variants{border-top:1px solid #ffffff14;padding-top:4px}
+.pf-variants summary{display:flex;align-items:center;gap:8px;min-height:44px;cursor:pointer;list-style:none;font:700 13px/1.2 'DM Sans',system-ui,sans-serif;color:#e9d6a7}
+.pf-variants summary::-webkit-details-marker{display:none}
+.pf-variants summary svg{width:18px;height:18px;fill:none;stroke:currentColor;stroke-width:2.2;stroke-linecap:round;stroke-linejoin:round;transition:transform .25s ease}
+.pf-variants[open] summary svg{transform:rotate(180deg)}
+.pf-variants summary:focus-visible{outline:2px solid var(--gold);outline-offset:2px;border-radius:8px}
+.pf-variants ul{display:grid;gap:6px;margin:4px 0 0;padding:0;list-style:none}
+.pf-variants[open] ul{animation:pf-open .3s ease both}
+.pf-variants[open] li{animation:pf-rise .35s ease both}
+.pf-variants[open] li:nth-child(2){animation-delay:.04s}.pf-variants[open] li:nth-child(3){animation-delay:.08s}.pf-variants[open] li:nth-child(n+4){animation-delay:.12s}
+@keyframes pf-open{from{opacity:0;transform:translateY(-6px)}}
+.pf-variant{display:grid;grid-template-columns:minmax(0,1fr) auto auto auto;align-items:center;gap:8px 14px;padding:6px 6px 6px 12px;border-radius:14px;background:#0c0d11a6;border:1px solid #ffffff12}
+.pf-variant-name{display:grid;min-width:0}
+.pf-variant-name b{font:700 14px/1.25 'DM Sans',system-ui,sans-serif;overflow-wrap:anywhere}
+.pf-variant-name small{font-size:12px;color:#c9cfd6;overflow-wrap:anywhere}
+.pf-variant-own{display:grid;justify-items:end;font:800 13px/1 'DM Sans',system-ui,sans-serif;font-variant-numeric:tabular-nums}
+.pf-variant-own .pf-meter{width:56px}
+.pf-variant-use{min-height:44px;min-width:64px}
+@media(max-width:700px){
+ .pf-variant{grid-template-columns:minmax(0,1fr) auto;padding:8px 8px 8px 12px}
+ .pf-variant .pf-status{grid-column:1/2;justify-self:start}
+ .pf-variant-use{grid-column:2/3;grid-row:2/3}
+ .pf-sort.pe-sort{flex:1 1 100%;width:100%}
+}
+@media(prefers-reduced-motion:reduce){.pf-row--enter,.pf-row--enter .pf-card,.pf-row--enter .pf-meter>i,.pf-status--pop,.pf-status--pop::after,.pf-variants[open] ul,.pf-variants[open] li,.pf-status--pending i,.pf-filter--busy b{animation:none}.pf-variants summary svg{transition:none}}
+/* A crafted card stamps into the decklist: a gold sweep and a soft press, once. */
+.pe-build-row--crafted{position:relative;animation:pe-crafted .7s cubic-bezier(.2,1.3,.4,1) both}
+.pe-build-row--crafted::after{content:'';position:absolute;inset:0;border-radius:inherit;pointer-events:none;background:linear-gradient(100deg,transparent 25%,#f2d18e55 50%,transparent 75%) -150% 0/250% 100% no-repeat;animation:pf-glint .9s ease-out both}
+@keyframes pe-crafted{0%{transform:scale(.96);box-shadow:0 0 0 #f2d18e00}45%{transform:scale(1.015);box-shadow:0 0 22px #f2d18e55}100%{transform:none;box-shadow:0 0 0 #f2d18e00}}
+@media(prefers-reduced-motion:reduce){.pe-build-row--crafted,.pe-build-row--crafted::after{animation:none}}
+/* Finder → deck page: titles open the app's own deck page; missing cards grey like Arena. */
+.pf-open{display:inline-flex;align-items:center;min-height:44px;padding:0;border:0;background:none;color:inherit;font:inherit;letter-spacing:inherit;text-align:left;text-shadow:inherit;cursor:pointer;overflow-wrap:anywhere}
+.pf-open:hover{color:#f6e4bb}
+.pf-open:focus-visible{outline:2px solid var(--gold);outline-offset:3px;border-radius:6px}
+.pf-variant-name .pf-open{min-height:44px;display:grid;justify-items:start}
+.pf-deck-screen .ds-page{animation:pf-rise .4s cubic-bezier(.2,.8,.2,1) both}
+.pf-stat-seal{width:18px;height:18px;vertical-align:-3px;margin-right:3px}
+.pf-deck-row--missing .lot-art img{filter:grayscale(.9) brightness(.55)}
+.pf-deck-row--missing{border-color:#f2d18e33}
+.pf-deck-row .own.no{display:inline-flex;align-items:center;gap:4px;color:#f2d18e}
+.pf-deck-row .own.yes{color:#bfe3b0}
+.pf-deck-page .pe-pack-goals{margin:12px 0}
+.pf-deck-page .ds-lead{display:flex;flex-wrap:wrap;gap:8px}
+.pf-deck-page .ds-lead .pf-status{margin:4px 0;flex:0 0 auto}
+@media(prefers-reduced-motion:reduce){.pf-deck-screen .ds-page{animation:none}}
+.pf-deck-page details.group>summary{min-height:44px;display:flex;align-items:center}
+/* This week's Secret Lair (play-secret-lair.js): a row of real Secret Lair printings for coins. */
+.pe-sl{display:grid;gap:12px;border-color:color-mix(in srgb,#b48cff 40%,var(--line));background:radial-gradient(120% 90% at 0 0,#b48cff1f,transparent 60%),var(--surface,#ffffff06)}
+.pe-sl-head{display:flex;flex-wrap:wrap;align-items:baseline;justify-content:space-between;gap:4px 12px}
+.pe-sl-head h2{margin:0}
+.pe-sl-left{font-size:13px;color:#d9c6ff}
+.pe-sl-sub{margin:0;font-size:14px;line-height:1.45;color:var(--muted,#c9c2b2)}
+.pe-sl-cards{list-style:none;margin:0;padding:4px 2px 8px;display:grid;grid-auto-flow:column;grid-auto-columns:minmax(112px,150px);gap:12px;overflow-x:auto;overscroll-behavior-x:contain;scroll-snap-type:x proximity}
+.pe-sl-cards li{position:relative;scroll-snap-align:start;animation:pd-rise .4s ease both;animation-delay:calc(var(--i)*60ms)}
+.pe-sl-card{display:block;width:100%;padding:0;border:0;background:none;border-radius:5%/3.6%;overflow:hidden;cursor:pointer;box-shadow:0 8px 22px #0007;transition:transform .2s ease}
+.pe-sl-card:hover,.pe-sl-card:focus-visible{transform:translateY(-4px)}
+.pe-sl-card:focus-visible{outline:2px solid var(--gold);outline-offset:3px}
+.pe-sl-card img{display:block;width:100%;aspect-ratio:488/680;object-fit:cover}
+.pe-sl-have{position:absolute;left:6px;bottom:14px;padding:2px 8px;border-radius:999px;font-size:11px;font-weight:700;background:#0b0a12d9;color:#e9d6a7}
+.pe-sl-foot{display:flex;justify-content:flex-end}
+.pe-sl-done{font-weight:700;color:#e9d6a7}
+@keyframes pd-rise{from{opacity:0;transform:translateY(8px)}to{opacity:1;transform:none}}
+@media (prefers-reduced-motion:reduce){.pe-sl-cards li{animation:none}.pe-sl-card{transition:none}}
+/* Secret Lair art you unlocked for a card, in the Play card view. */
+.play-styles{display:grid;gap:8px;margin:4px 0 0}
+.play-styles h3{margin:0;font:700 13px/1.2 Cinzel,Georgia,serif;letter-spacing:.06em;color:#e9d6a7}
+.play-style-row{display:flex;gap:10px;overflow-x:auto;padding:2px 2px 6px}
+.play-style{flex:0 0 auto;width:72px;min-height:44px;aspect-ratio:488/680;padding:0;border:2px solid transparent;border-radius:8px;overflow:hidden;background:#ffffff0d;cursor:pointer;display:grid;place-items:center}
+.play-style img{width:100%;height:100%;object-fit:cover;display:block}
+.play-style.on{border-color:var(--gold);box-shadow:0 0 0 2px #f2d18e55}
+.play-style:focus-visible{outline:2px solid var(--gold);outline-offset:2px}
+.play-style-own{font-size:12px;font-weight:700;color:#e9d6a7;text-align:center;padding:4px}
+.pe-table>.pe-sl{grid-column:1/-1}
+.play-get>.play-card-own{margin-top:10px}
+/* The day's one free quest swap: a round icon after the quest's name. */
+.pd-quest-name{display:flex;align-items:center;gap:6px;min-width:0}
+.pd-swap{flex:none;display:inline-grid;place-items:center;width:44px;height:44px;margin:-10px -8px -10px 0;padding:0;border:0;border-radius:50%;background:none;color:#e9d6a7;cursor:pointer}
+.pd-swap svg{width:20px;height:20px;padding:6px;border-radius:50%;border:1px solid #e9d6a755;background:#ffffff08;box-sizing:content-box}
+.pd-swap:hover svg,.pd-swap:focus-visible svg{border-color:var(--gold);background:#f2d18e1a}
+.pd-swap:focus-visible{outline:2px solid var(--gold);outline-offset:-4px}
+.pd-swap:disabled{opacity:.5;cursor:default}
+/* Secret Lair cards (Arena's card-style store): a row of ten offers, sale ribbons, coin or seal. */
+.pe-table>.pe-slo-shelf{grid-column:1/-1}
+.pe-slo-shelf{display:grid;gap:12px}
+.pe-slo-row{list-style:none;margin:0;padding:6px 2px 10px;display:grid;grid-auto-flow:column;grid-auto-columns:minmax(150px,176px);gap:14px;overflow-x:auto;overscroll-behavior-x:contain;scroll-snap-type:x proximity}
+.pe-slo{display:grid;grid-template-rows:auto 1fr auto;gap:8px;padding:10px;border-radius:16px;border:1px solid color-mix(in srgb,#b48cff 22%,var(--line));background:linear-gradient(180deg,#b48cff14,#ffffff05 60%);scroll-snap-align:start;animation:pd-rise .4s ease both;animation-delay:calc(var(--i)*45ms)}
+.pe-slo--sale{border-color:color-mix(in srgb,var(--gold) 45%,var(--line))}
+.pe-slo-art{position:relative;display:block;padding:0;border:0;background:none;border-radius:5%/3.6%;overflow:hidden;cursor:pointer;box-shadow:0 8px 20px #0007}
+.pe-slo-art img{display:block;width:100%;aspect-ratio:488/680;object-fit:cover}
+.pe-slo-art:focus-visible{outline:2px solid var(--gold);outline-offset:3px}
+.pe-slo-ribbon{position:absolute;left:-8%;right:-8%;top:52%;transform:rotate(-6deg);padding:5px 0;text-align:center;font:800 15px/1 Manrope,'DM Sans',sans-serif;letter-spacing:.02em;color:#ffd77a;background:linear-gradient(90deg,#120d06e6,#1d1408f2 50%,#120d06e6);box-shadow:0 3px 10px #0009;text-transform:uppercase}
+.pe-slo-name{margin:0;font-size:13px;line-height:1.3;text-align:center;color:var(--text)}
+.pe-slo-pay{display:grid;grid-template-columns:1fr auto;gap:6px;align-items:center}
+.pe-slo-was{grid-column:1/-1;justify-self:center;font-size:12px;color:var(--muted);text-decoration-color:#e0574a;text-decoration-thickness:2px}
+.pe-slo .pe-buy{min-height:44px;width:100%;justify-content:center}
+.pe-slo .pe-buy--seal{width:auto;padding:0 12px}
+.pe-slo.is-owned{opacity:.75}
+.pe-slo .pe-sl-done{justify-self:center}
+@media (prefers-reduced-motion:reduce){.pe-slo{animation:none}}
+.pe-slo .pe-buy{margin-top:0}.pe-slo .pe-buy--seal{background:#ffffff0d;border-color:#ffffff26;color:var(--text,#f3ead6)}
+.pe-slo{min-width:0}.pe-slo-art{width:100%}.pe-slo-ribbon{left:0;right:0}
+.pe-slo{grid-template-columns:minmax(0,1fr)}.pe-slo-pay{grid-template-columns:minmax(0,1fr) auto}.pe-slo .pe-buy{padding:0 10px;min-width:0}.pe-slo .pe-buy--seal{padding:0 10px}
+/* Quick Play: a deck missing cards from the Trunk shows greyed, like an unowned card (Randall 3 Nov 23:06Z). */
+.play-deck-choice.is-locked{position:relative}
+.play-deck-choice.is-locked>.deck-tile,.play-deck-choice.is-locked>button{filter:grayscale(1) brightness(.7);opacity:.6}
+.play-deck-lock{position:absolute;left:8px;bottom:8px;padding:2px 8px;border-radius:999px;background:rgba(0,0,0,.66);color:#f3e6c4;font-size:12px;font-weight:600;pointer-events:none}
+/* Deck emblems on Play deck tiles: mana pips and style inside the format plate, meta archetype in gold. */
+.pe-deck-pips{display:inline-flex;gap:2px;margin-right:2px}
+.pe-deck-pip{width:16px;height:16px;display:block;border-radius:50%;box-shadow:0 1px 2px rgba(0,0,0,.45)}
+.pe-deck-style{font-weight:600;opacity:.92}
+.pe-deck-meta{display:block;max-width:100%;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;color:var(--gold,#e3b85a);font-size:12.5px;font-weight:700;letter-spacing:.04em;text-transform:uppercase;text-shadow:0 1px 3px rgba(0,0,0,.7)}
+/* Live achievement toasts (play-achievement-toasts.js): a glass pill under the status bar. The art ring glows in the
+   tier's colour (the Hall of Deeds pips); never a gold frame. Above every table and dialog. */
+.ach-toast{--tc:#e0a46c;position:fixed;left:50%;top:calc(env(safe-area-inset-top,0px) + 74px);z-index:2147483000;width:min(358px,calc(100vw - 32px));min-height:68px;display:flex;align-items:center;gap:12px;padding:8px 18px 8px 10px;border-radius:34px;border:1px solid #ffffff17;background:#101218d6;-webkit-backdrop-filter:blur(14px);backdrop-filter:blur(14px);box-shadow:0 12px 32px #000a;color:#eceae4;font:inherit;text-align:left;cursor:pointer;transform:translate(-50%,-140%);opacity:0;touch-action:none;transition:transform .42s cubic-bezier(.2,.8,.25,1.1),opacity .42s}
+.ach-toast.is-in{transform:translate(-50%,0);opacity:1}
+/* Under the app's top row, so it never covers Home or the profile; over a match table (no top row) it sits 12px under the status bar. */
+body.practice-table-open .ach-toast{top:calc(env(safe-area-inset-top,0px) + 12px)}
+@media (min-width:900px){.ach-toast{top:88px}}
+.ach-toast.is-out{transform:translate(-50%,-140%);opacity:0;transition:transform .32s ease-in,opacity .32s ease-in}
+.ach-toast--silver{--tc:#e3e9f0}.ach-toast--gold,.ach-toast--feat,.ach-toast--glory{--tc:#f3dfb4}.ach-toast--mythic,.ach-toast--hidden{--tc:#ff9a6a}.ach-toast--honour{--tc:#a9b3c0}
+.ach-toast-art{position:relative;flex:0 0 48px;width:48px;height:48px;border-radius:50%;overflow:hidden;background:#000;box-shadow:0 0 0 2px var(--tc),0 0 18px var(--tc)}
+.ach-toast-art img{display:block;width:100%;height:100%;object-fit:cover}
+.ach-toast-art i{position:absolute;inset:0;background:center/auto 125% no-repeat}
+.ach-toast.is-in .ach-toast-art{animation:achPop .5s .18s cubic-bezier(.3,1.6,.5,1) both,achGlow 1.4s .5s ease-out 1}
+.ach-toast-copy{min-width:0;display:grid;gap:1px}
+.ach-toast-eyebrow{font-size:11px;letter-spacing:.12em;text-transform:uppercase;color:var(--tc)}
+.ach-toast-title{font-weight:700;font-size:16px;line-height:1.2;overflow-wrap:anywhere;display:-webkit-box;-webkit-box-orient:vertical;-webkit-line-clamp:2;overflow:hidden}
+.ach-toast-line{font-size:12px;line-height:1.3;color:#a3a7ae;overflow-wrap:anywhere;display:-webkit-box;-webkit-box-orient:vertical;-webkit-line-clamp:2;overflow:hidden}
+.ach-toast-reward{margin-left:auto;flex:0 0 auto;font-size:12px;font-weight:600;line-height:1.25;text-align:right;color:var(--tc)}
+.ach-toast-more{position:absolute;right:14px;bottom:-9px;font-size:11px;line-height:18px;padding:0 7px;border-radius:9px;background:#232831;border:1px solid #ffffff17}
+.ach-toast:focus-visible{outline:2px solid var(--tc);outline-offset:2px}
+@keyframes achPop{from{transform:scale(.4)}to{transform:scale(1)}}
+@keyframes achGlow{0%{box-shadow:0 0 0 2px var(--tc),0 0 0 0 var(--tc)}40%{box-shadow:0 0 0 2px var(--tc),0 0 30px 8px var(--tc)}100%{box-shadow:0 0 0 2px var(--tc),0 0 18px var(--tc)}}
+@media (prefers-reduced-motion:reduce){.ach-toast,.ach-toast.is-out{transform:translate(-50%,0);transition:opacity .2s}.ach-toast.is-in .ach-toast-art{animation:none}}
+/* Glory: achievement points, meta-achievement checklists and the title picker (Randall 4 Nov 2026). */
+.pd-pts{display:inline-flex;align-items:center;gap:4px;font:700 13px/1 'DM Sans',system-ui,sans-serif;color:var(--muted);white-space:nowrap}
+.pd-pts svg{width:15px;height:17px;fill:#6d6a63}
+.pd-card.is-complete .pd-pts{color:#f3dfb4}.pd-card.is-complete .pd-pts svg{fill:#d6ad64}
+.pd-card-h{display:flex;justify-content:space-between;align-items:baseline;gap:10px}
+.pd-score{display:flex;align-items:center;gap:14px;margin:4px 0 2px}
+.pd-score svg{width:30px;height:34px;fill:#d6ad64;filter:drop-shadow(0 0 10px #d6ad6455)}
+.pd-score b{display:block;font:700 30px/1 Cinzel,Georgia,serif;color:#f3dfb4;font-variant-numeric:tabular-nums}
+.pd-score small{color:var(--muted);font-size:13px}
+.pd-title-btn{display:flex;align-items:center;justify-content:space-between;width:100%;min-height:44px;margin-top:10px;padding:0 14px;border-radius:14px;border:1px solid var(--line);background:#ffffff08;color:inherit;font:inherit;cursor:pointer}
+.pd-title-btn em{font-style:normal;color:#f3dfb4;font-family:Cinzel,Georgia,serif;font-weight:700}
+.pd-kids{list-style:none;margin:6px 0 0;padding:0;display:grid;gap:4px;font-size:13px}
+.pd-kids li{display:flex;gap:8px;align-items:center;color:var(--muted)}.pd-kids li.on{color:#e9e6de}
+.pd-kids i{flex:0 0 16px;height:16px;border-radius:50%;border:1.5px solid #6d6a63}
+.pd-kids li.on i{border-color:#d6ad64;background:#d6ad64;box-shadow:inset 0 0 0 3px #121318}
+.pd-kids li.more{padding-left:24px}
+.pd-unlock{display:flex;flex-wrap:wrap;gap:6px}
+.pd-unlock span{font-size:12px;font-weight:600;padding:4px 10px;border-radius:999px;background:#d6ad641f;color:#f3dfb4}
+.pd-scrim{position:fixed;inset:0;background:#0009;z-index:1500}
+.pd-sheet{position:fixed;left:0;right:0;bottom:0;z-index:1501;max-height:78vh;overflow:auto;padding:10px 16px calc(16px + env(safe-area-inset-bottom));border-radius:22px 22px 0 0;border:1px solid var(--line);border-bottom:0;background:color-mix(in srgb,var(--surface,#151821) 97%,transparent);box-shadow:0 -24px 60px #000a}
+.pd-grab{width:38px;height:4px;border-radius:2px;background:#ffffff30;margin:0 auto 12px}
+.pd-sheet h2{margin:0 0 4px;font:700 20px Cinzel,Georgia,serif;color:#f3e3bd}
+.pd-sheet>p{margin:0 0 12px;color:var(--muted);font-size:13px}
+.pd-sheet ul{list-style:none;margin:0;padding:0;display:grid;gap:2px}
+.pd-sheet li button{display:flex;justify-content:space-between;align-items:center;width:100%;min-height:52px;padding:6px 12px;border:0;border-radius:12px;background:none;color:inherit;font:inherit;text-align:left;cursor:pointer}
+.pd-sheet li button.on{background:#d6ad641a}
+.pd-sheet li b{display:block;font-family:Cinzel,Georgia,serif;color:#f3e3bd}
+.pd-sheet li small{color:var(--muted);font-size:12px}
+.pd-sheet li.locked{opacity:.45}.pd-sheet li.locked button{cursor:default}
+.pd-shown{font-size:12px;font-weight:700;color:#f3dfb4}
+/* Chronicle: this match's page on the result banner, and the deck's record under each deck in the pickers. */
+#practicePlayerMat .play-chronicle{display:grid;gap:8px;text-align:left}
+#practicePlayerMat .play-chronicle>ul{list-style:none;margin:0;padding:0;display:grid;gap:6px}
+#practicePlayerMat .play-chronicle>ul>li{display:grid;grid-template-columns:minmax(0,1fr) auto;column-gap:10px;align-items:baseline;padding:8px 12px;border-radius:12px;background:#ffffff08;border-left:2px solid #d6ad64}
+#practicePlayerMat .play-chronicle li>span{grid-column:1/-1;font:700 11px/1.2 'DM Sans',system-ui,sans-serif;letter-spacing:.14em;text-transform:uppercase;color:#d6ad64b3}
+#practicePlayerMat .play-chronicle li>b{min-width:0;overflow-wrap:anywhere;font:600 14px/1.3 'DM Sans',system-ui,sans-serif;color:#f4ead6}
+#practicePlayerMat .play-chronicle li>small{min-width:0;text-align:right;overflow-wrap:anywhere;font-size:12px;line-height:1.3;color:#b8ad98}
+#practicePlayerMat .play-chronicle details{border-top:1px solid #ffffff14;padding-top:6px}
+#practicePlayerMat .play-chronicle summary{display:flex;align-items:center;min-height:44px;cursor:pointer;color:#e9dfcb;font-size:13px}
+#practicePlayerMat .play-chronicle ol{list-style:none;margin:0;padding:0;display:grid;gap:6px}
+#practicePlayerMat .play-chronicle ol>li{display:grid;gap:2px;padding:8px 12px;border-radius:12px;background:#ffffff08;border-left:2px solid #ffffff2e}
+#practicePlayerMat .play-chronicle ol>li[data-outcome=win]{border-left-color:#d6ad64}
+#practicePlayerMat .play-chronicle ol>li>b{font:600 13px/1.3 'DM Sans',system-ui,sans-serif;color:#f4ead6;overflow-wrap:anywhere}
+#practicePlayerMat .play-chronicle ol>li>small{font-size:12px;line-height:1.3;color:#b8ad98;overflow-wrap:anywhere}
+@media (max-height:480px){#practicePlayerMat .play-chronicle>ul{grid-template-columns:repeat(2,minmax(0,1fr))}#practicePlayerMat .play-chronicle>ul>li{padding:5px 10px}}
+.play-deck-record{display:flex;flex-wrap:wrap;align-items:baseline;gap:0 8px;margin:6px 4px 0;font-size:12px;line-height:1.35;color:#b8ad98;font-variant-numeric:tabular-nums}
+.play-deck-record b{color:#f2d18e;font-weight:700}
+.play-deck-record span{min-width:0;overflow-wrap:anywhere}
+#practicePlayerMat .play-chronicle summary{justify-content:space-between;list-style:none}
+#practicePlayerMat .play-chronicle summary::-webkit-details-marker{display:none}
+#practicePlayerMat .play-chronicle summary::after{content:"";width:8px;height:8px;margin-right:6px;border:solid #d6ad64;border-width:0 2px 2px 0;transform:rotate(45deg);transition:transform .2s}
+#practicePlayerMat .play-chronicle details[open] summary::after{transform:rotate(-135deg)}
+/* The record line sits under the tile, so the Selected and Missing cards pills stay on the tile. */
+.play-deck-choice.has-record .play-deck-selection{bottom:calc(14px + 2.9em)}
+.play-deck-choice.has-record .play-deck-lock{bottom:calc(8px + 2.9em)}
+.pd-key{display:inline-block;margin-left:8px;padding:2px 8px;border-radius:999px;vertical-align:middle;font:700 11px/1.4 'DM Sans',system-ui,sans-serif;letter-spacing:.08em;text-transform:uppercase;background:#d6ad6426;color:#f3dfb4}
+.st-secret-tease{margin:12px 0 0;padding:12px 14px;border-radius:14px;border:1px dashed #d6ad6455;color:var(--muted);font-size:13px;line-height:1.45}

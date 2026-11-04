@@ -2,7 +2,7 @@
 // Play homepage, the Merchant, Packs, Collection and Decks. Legacy of the Duelist style menus
 // on real card art, in the app's glass and gold. Markup only; app.js wires the actions.
 // The wall: no prices anywhere in Play. Cards show art, name, rarity and copies owned (of 4).
-import {SEALS, FORGE_STEPS, forgeRatio, masteryLevel, deckShortfall, deckRules, copiesLeft, isBasicLand, PLAY_FORMATS, ownedByName, preconPrice, scryfallImage, isCollectorPack} from './play-econ-rules.js';
+import {SEALS, FORGE_STEPS, forgeRatio, masteryLevel, deckShortfall, deckRules, copyCap, copiesLeft, isBasicLand, PLAY_FORMATS, ownedByName, preconPrice, scryfallImage, isCollectorPack} from './play-econ-rules.js';
 import {cardGroup, cardFact} from './play-econ-cards.js';
 import {setRowContent, setYearSections} from './set-list-ui.js';
 import {segmented, setIconUrl, img, manaCost, symbolUrl, bar} from './ui.js';
@@ -12,6 +12,7 @@ import {tileChrome} from './tiles.js';
 import {deckShell} from './deck-viewer.js';
 import {purse} from './play-econ-client.js';
 import {deedsScreenMarkup} from './play-deeds-ui.js';
+import {secretLairImage, secretLairOfferPrice} from './play-secret-lair.js';
 const esc = v => String(v ?? '').replace(/[&<>"']/g, c => ({'&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;'}[c]));
 const n = v => Number(v || 0).toLocaleString('en-US');
 const ART = 'https://cards.scryfall.io/art_crop/front/';
@@ -105,6 +106,38 @@ export function forgeMarkup(snapshot, {compact = false} = {}) {
     <div class="pe-forge-rows">${row('u')}${row('r')}${row('m')}</div></section>`;
 }
 
+// This week's Secret Lair bundle (play-secret-lair.js): real Secret Lair printings for coins, gone on Monday.
+export function secretLairShelf(snapshot) {
+  const s = snapshot.state, sl = s?.secretLair; if (!sl?.cards?.length) return '';
+  const coins = s.wallet?.coins | 0, owned = new Set((s.cards || []).map(c => c.o));
+  const days = Math.max(1, Math.ceil((Date.parse(sl.ends) - Date.now()) / 864e5)), left = days === 1 ? 'Leaves tomorrow' : `Leaves in ${days} days`;
+  const btn = sl.bought ? '<span class="pe-sl-done">In your Trunk</span>'
+    : `<button class="pe-buy" data-act="playEconSecretLair" data-econ-week="${esc(sl.week)}" ${coins < sl.price || snapshot.busy ? 'disabled' : ''} aria-label="Buy this Secret Lair for ${n(sl.price)} coins">${coinIcon('pe-coin--sm')}<b>${n(sl.price)}</b></button>`;
+  return `<section class="pe-shelf pe-sl" aria-labelledby="peSlTitle"><div class="pe-sl-head"><h2 id="peSlTitle">This week's Secret Lair</h2><span class="pe-sl-left">${esc(left)}</span></div>
+    <p class="pe-sl-sub"><b>${esc(sl.title)}</b>${sl.by ? ` · ${esc(sl.by)}` : ''}. Each card comes into your Trunk and unlocks its Secret Lair art for your copies.</p>
+    <ul class="pe-sl-cards" data-audit-scroll>${sl.cards.map((c, i) => `<li style="--i:${i}"><button class="pe-sl-card" data-act="card" data-name="${esc(c.n)}" data-play-card="1" aria-label="Open ${esc(c.n)}${owned.has(c.o) ? ', in your Trunk' : ''}"><img src="${esc(secretLairImage(c.id))}" alt="" loading="lazy" decoding="async" referrerpolicy="no-referrer"></button>${owned.has(c.o) ? '<span class="pe-sl-have" aria-hidden="true">Owned</span>' : ''}</li>`).join('')}</ul>
+    <div class="pe-sl-foot">${btn}</div></section>`;
+}
+
+// The Secret Lair store row (Arena's card-style store): ten cards a week, some on sale, a refresh timer.
+const SEAL_WORD = {c: 'common', u: 'uncommon', r: 'rare', m: 'mythic'};
+export function secretLairStore(snapshot) {
+  const s = snapshot.state, st = s?.secretLairStore; if (!st?.offers?.length) return '';
+  const coins = s.wallet?.coins | 0, have = new Set((s.styles || []).map(x => x.id));
+  const ms = Math.max(0, Date.parse(st.ends) - Date.now()), d = Math.floor(ms / 864e5), h = Math.floor(ms % 864e5 / 36e5);
+  const left = d ? `${d} day${d === 1 ? '' : 's'} ${h} h` : `${h} hour${h === 1 ? '' : 's'}`;
+  const tile = (c, i) => { const p = secretLairOfferPrice(c, s.config), owned = have.has(c.id), seals = s.wallet?.['seal_' + p.seal] | 0;
+    return `<li class="pe-slo${c.off ? ' pe-slo--sale' : ''}${owned ? ' is-owned' : ''}" style="--i:${i}">
+      <button class="pe-slo-art" data-act="card" data-name="${esc(c.n)}" data-play-card="1" aria-label="Open ${esc(c.n)}"><img src="${esc(secretLairImage(c.id))}" alt="" loading="lazy" decoding="async" referrerpolicy="no-referrer">${c.off ? `<span class="pe-slo-ribbon" aria-hidden="true">${c.off}% off</span>` : ''}</button>
+      <p class="pe-slo-name">${esc(c.n)}</p>
+      ${owned ? '<span class="pe-sl-done">Yours</span>' : `<div class="pe-slo-pay">
+        ${c.off ? `<s class="pe-slo-was" aria-label="Was ${n(p.was)} coins">${n(p.was)}</s>` : ''}
+        <button class="pe-buy" data-act="playEconSlOffer" data-econ-card="${esc(c.id)}" data-econ-pay="coins" ${coins < p.coins || snapshot.busy ? 'disabled' : ''} aria-label="Buy ${esc(c.n)} for ${n(p.coins)} coins${c.off ? `, ${c.off}% off` : ''}">${coinIcon('pe-coin--sm')}<b>${n(p.coins)}</b></button>
+        <button class="pe-buy pe-buy--seal" data-act="playEconSlOffer" data-econ-card="${esc(c.id)}" data-econ-pay="seal" ${seals < 1 || snapshot.busy ? 'disabled' : ''} aria-label="Buy ${esc(c.n)} for 1 ${SEAL_WORD[p.seal]} seal">${sealIcon(p.seal)}<b>1</b></button></div>`}</li>`; };
+  return `<section class="pe-shelf pe-slo-shelf" aria-labelledby="peSloTitle"><div class="pe-sl-head"><h2 id="peSloTitle">Secret Lair cards</h2><span class="pe-sl-left">New cards in ${esc(left)}</span></div>
+    <ul class="pe-slo-row" data-audit-scroll>${st.offers.map(tile).join('')}</ul></section>`;
+}
+
 export function shopMarkup(snapshot, {query = '', press = null, facts = null, shopFocus = ''} = {}) {
   const s = snapshot.state, price = s.config?.packPrice || 500, coins = s.wallet?.coins | 0, shop = s.shop || [], reward = s.rewardSet;
   const q = query.trim().toLowerCase(), list = (q ? shop.filter(x => x.name.toLowerCase().includes(q) || x.code === q) : shop).slice(0, q ? 60 : 24);
@@ -113,6 +146,8 @@ export function shopMarkup(snapshot, {query = '', press = null, facts = null, sh
     return `<div class="pe-press-result"><img src="${esc(c.image_uris?.normal || c.card_faces?.[0]?.image_uris?.normal || cardImageByName(c.name))}" alt="${esc(c.name)}" loading="lazy" referrerpolicy="no-referrer"><div class="pe-press-copy"><strong>${esc(c.name)}</strong><span>${have} of 4 owned</span><button class="pe-stamp" data-act="playEconCraft" data-econ-card="${esc(c.id)}" ${have >= 4 || seals < 1 || snapshot.busy ? 'disabled' : ''}>${sealIcon(key)}<b>${have >= 4 ? 'All 4 owned' : 'Stamp it'}</b></button></div></div>`; })() : press?.error ? `<p class="pe-press-empty">${esc(press.error)}</p>` : '';
   return `<section class="play-menu pe-screen pe-shop" aria-labelledby="playTitle">${head('Merchant', snapshot)}
     <div class="pe-table">
+      ${secretLairShelf(snapshot)}
+      ${secretLairStore(snapshot)}
       <section class="pe-shelf" aria-labelledby="peShelfTitle"><h2 id="peShelfTitle">Packs</h2>
         ${reward ? `<div class="pe-feature">${buy(reward, true)}</div>` : ''}
         <label class="pe-search"><span>Any set, any year</span><input type="search" data-input="playEconSetSearch" value="${esc(query)}" maxlength="60" placeholder="Search sets"></label>
@@ -141,7 +176,10 @@ const COLORS = [['W', 'White'], ['U', 'Blue'], ['B', 'Black'], ['R', 'Red'], ['G
 const TYPES = ['Creatures', 'Planeswalkers', 'Instants', 'Sorceries', 'Artifacts', 'Enchantments', 'Lands'];
 const pips = c => `<span class="pe-pips${c.holo ? ' pe-pips--holo' : ''}" aria-label="${c.holo ? `${c.c} holo` : `${c.c} of 4`}">${[1, 2, 3, 4].map(i => `<i class="${i <= c.c ? 'on' : ''}"></i>`).join('')}</span>`;
 // The printing you pulled, else the card's own art, else Scryfall's image by name.
-const cardImage = (c, facts) => c.p?.image || facts?.card?.(c.o)?.i || cardImageByName(c.n);
+// Secret Lair styles in use (oracle -> image): the Trunk shows your copy in its chosen Secret Lair art.
+let styleArt = new Map();
+export function setPlayStyles(styles = []) { styleArt = new Map(styles.filter(x => x.on && x.i).map(x => [x.o, x.i])); }
+const cardImage = (c, facts) => styleArt.get(c.o) || c.p?.image || facts?.card?.(c.o)?.i || cardImageByName(c.n);
 
 // The app's own card tile (foil, holo stamp, colour and set emblems, hover and tilt), with copies
 // owned in Play where the app shows a price. Tapping opens the app's card sheet in Play mode.
@@ -265,9 +303,10 @@ export function collectionMarkup(snapshot, ui = {}) {
 // view (add, remove, craft); drag it onto the decklist; + adds one. Cards you don't own yet can go
 // in: they sit greyed in the list with their seal, and Craft (1 to 4 copies) or Craft all spends seals.
 // ui.nameFact(name) → slim Scryfall card for cards not in the Trunk; ui.pool = {mode, cards, busy, error}.
-export function craftPlan(deck = [], owned = new Map(), rarityOf = () => '', wallet = {}) {
+// capOf(name): copies the format lets the deck play (copyCap), so extra copies never bill.
+export function craftPlan(deck = [], owned = new Map(), rarityOf = () => '', wallet = {}, capOf = () => Infinity) {
   const rows = [], need = {c: 0, u: 0, r: 0, m: 0};
-  for (const c of deck) { if (isBasicLand(c.name)) continue; const miss = Math.max(0, (c.qty | 0) - (owned.get(c.name) || 0)); if (!miss) continue;
+  for (const c of deck) { if (isBasicLand(c.name)) continue; const miss = Math.max(0, Math.min(c.qty | 0, capOf(c.name) ?? Infinity) - (owned.get(c.name) || 0)); if (!miss) continue;
     const seal = {common: 'c', uncommon: 'u', rare: 'r', mythic: 'm', special: 'r', bonus: 'm'}[rarityOf(c.name)] || ''; rows.push({name: c.name, miss, seal}); if (seal) need[seal] += miss; }
   const have = {c: wallet.seal_c | 0, u: wallet.seal_u | 0, r: wallet.seal_r | 0, m: wallet.seal_m | 0}, left = {...have};
   let craftable = 0; for (const r of rows) if (r.seal) { const k = Math.min(r.miss, left[r.seal]); left[r.seal] -= k; r.now = k; craftable += k; }
@@ -285,14 +324,16 @@ export function deckBuilderMarkup(snapshot, ui = {}) {
   const lands = groups.get('Lands')?.reduce((t, c) => t + c.qty, 0) || 0, creatures = groups.get('Creatures')?.reduce((t, c) => t + c.qty, 0) || 0;
   const spells = deck.filter(c => !isBasicLand(c.name) && factOf(c.name) && cardGroup(factOf(c.name)) !== 'Lands');
   const mvCount = spells.reduce((t, c) => t + c.qty, 0), avg = mvCount ? (spells.reduce((t, c) => t + c.qty * factOf(c.name).m, 0) / mvCount).toFixed(1) : '—';
-  const lead = deck.find(c => !isBasicLand(c.name)), art = lead ? (factOf(lead.name)?.a || cardImageByName(lead.name, 'art_crop')) : ART + 'f/d/fd99bce1-ce39-464b-8e61-2631eb3ed6f6.jpg';
+  const lead = deck.find(c => !isBasicLand(c.name)), art = pickedCover(edit.id) || (lead ? (factOf(lead.name)?.a || cardImageByName(lead.name, 'art_crop')) : ART + 'f/d/fd99bce1-ce39-464b-8e61-2631eb3ed6f6.jpg');
   const ok = rules.exact ? count === rules.size : count >= rules.size;
-  const plan = craftPlan(deck, owned, name => slimOf(name)?.rarity || byName.get(name)?.r || '', state.wallet || {}), planOf = new Map(plan.rows.map(r => [r.name, r]));
+  // Missing copies bill at the cheapest rarity the card was printed at (ui.craftRarity), and Craft
+  // stamps that printing (ui.craftId), so the seal on the button is the seal the server takes.
+  const plan = craftPlan(deck, owned, name => ui.craftRarity?.(name) || slimOf(name)?.rarity || byName.get(name)?.r || '', state.wallet || {}, name => copyCap(name, edit.format, slimOf(name)?.legalities)), planOf = new Map(plan.rows.map(r => [r.name, r]));
   const inDeck = name => deck.filter(c => c.name === name).reduce((t, c) => t + c.qty, 0);
   const room = name => isBasicLand(name) ? Infinity : Math.max(0, rules.copies - inDeck(name));
   const craftMenu = (name, miss, seal, id) => `<details class="pe-craft"><summary aria-label="Craft ${esc(name)}: ${miss} missing" title="Craft with seals">${sealIcon(seal || 'c')}<b>${miss}</b></summary><div class="pe-craft-pop" role="group" aria-label="Craft copies of ${esc(name)}">${slimOf(name)?.set ? `<button class="pe-craft-set" data-act="playLensSet" data-code="${esc(slimOf(name).set)}" aria-label="Open ${esc(slimOf(name).set_name || slimOf(name).set.toUpperCase())} to get packs" title="Get packs"><span class="set-icon" style="--icon:url('${esc(setIconUrl(slimOf(name).set))}')" aria-hidden="true"></span></button>` : ''}${Array.from({length: miss}, (_, i) => i + 1).map(k => `<button class="pe-craft-n" data-act="playCraftCopies" data-name="${esc(name)}" data-card-id="${esc(id || '')}" data-n="${k}" ${!id || !seal || k > plan.have[seal] || snapshot.busy ? 'disabled' : ''} aria-label="Craft ${k} for ${k} ${SEALS.find(s => s.key === seal)?.label || 'seal'}${k > 1 ? 's' : ''}">${sealIcon(seal || 'c')}<b>${k}</b></button>`).join('')}</div></details>`;
   const row = c => { const miss = planOf.get(c.name)?.miss || 0, have = c.qty - miss, slim = slimOf(c.name);
-    return `<li class="pe-build-row${miss ? ' pe-build-row--missing' : ''}" data-drag-card="${esc(c.name)}"><button class="pe-build-open" data-act="card" data-name="${esc(c.name)}" data-play-card="1"${byName.get(c.name) ? ` data-oracle="${esc(byName.get(c.name).o)}"` : ''} aria-label="Open ${esc(c.name)}${miss ? `, ${have} of ${c.qty} owned` : ''}"><span class="pe-build-thumb" style="background-image:url(${esc(factOf(c.name)?.a || cardImageByName(c.name, 'art_crop'))})" aria-hidden="true"></span><span class="pe-build-name">${esc(c.name)}</span>${factOf(c.name)?.mc ? `<span class="pe-build-cost">${esc(factOf(c.name).mc.replace(/[{}]/g, ''))}</span>` : ''}</button>${miss ? craftMenu(c.name, miss, planOf.get(c.name).seal, slim?.id) : ''}<span class="pe-step"><button data-act="playEconStep" data-econ-card="${esc(c.name)}" data-econ-step="-1" aria-label="Remove one ${esc(c.name)}">−</button><b>${c.qty}</b><button data-act="playEconStep" data-econ-card="${esc(c.name)}" data-econ-step="1" ${room(c.name) < 1 ? 'disabled' : ''} aria-label="Add one ${esc(c.name)}">+</button></span></li>`; };
+    return `<li class="pe-build-row${miss ? ' pe-build-row--missing' : ''}${ui.justCrafted?.has(c.name) ? ' pe-build-row--crafted' : ''}" data-drag-card="${esc(c.name)}"><button class="pe-build-open" data-act="card" data-name="${esc(c.name)}" data-play-card="1"${byName.get(c.name) ? ` data-oracle="${esc(byName.get(c.name).o)}"` : ''} aria-label="Open ${esc(c.name)}${miss ? `, ${have} of ${c.qty} owned` : ''}"><span class="pe-build-thumb" style="background-image:url(${esc(factOf(c.name)?.a || cardImageByName(c.name, 'art_crop'))})" aria-hidden="true"></span><span class="pe-build-name">${esc(c.name)}</span>${factOf(c.name)?.mc ? `<span class="pe-build-cost">${esc(factOf(c.name).mc.replace(/[{}]/g, ''))}</span>` : ''}</button>${miss ? craftMenu(c.name, miss, planOf.get(c.name).seal, ui.craftId?.(c.name) || slim?.id) : ''}<span class="pe-step"><button data-act="playEconStep" data-econ-card="${esc(c.name)}" data-econ-step="-1" aria-label="Remove one ${esc(c.name)}">−</button><b>${c.qty}</b><button data-act="playEconStep" data-econ-card="${esc(c.name)}" data-econ-step="1" ${room(c.name) < 1 ? 'disabled' : ''} aria-label="Add one ${esc(c.name)}">+</button></span></li>`; };
   const mode = ui.pool?.mode === 'all' ? 'all' : 'mine';
   const minePool = filterPlayCards(ownedCards.slice().sort((a, b) => a.n.localeCompare(b.n)), facts, {query: ui.cardQuery, rarity: ui.rarity, color: ui.color, type: ui.type, set: ui.set});
   const tiles = mode === 'all' ? (ui.pool?.cards || []).map(c => ({name: c.name, image: c.image_uris?.normal || c.card_faces?.[0]?.image_uris?.normal || cardImageByName(c.name), rarity: c.rarity, have: owned.get(c.name) || owned.get(c.name.split(' // ')[0]) || 0, oracle: ''}))
@@ -333,7 +374,7 @@ export function deckBuilderMarkup(snapshot, ui = {}) {
 }
 // Pack goals: the sets your missing cards come from, most missing first. Each opens that set's
 // Play page (its cards, greyed where missing, and Buy a pack); Story acts and quests drop them too.
-function packGoals(plan, slimOf, facts) {
+export function packGoals(plan, slimOf, facts) {
   const by = new Map();
   for (const r of plan.rows) { const c = slimOf(r.name); if (!c?.set) continue; const g = by.get(c.set) || {code: c.set, name: facts?.set?.(c.set)?.name || c.set_name || c.set.toUpperCase(), miss: 0}; g.miss += r.miss; by.set(c.set, g); }
   const sets = [...by.values()].sort((a, b) => b.miss - a.miss).slice(0, 4);
@@ -346,24 +387,33 @@ const RARITY_KEY = {common: 'c', uncommon: 'u', rare: 'r', mythic: 'm', special:
 // then published precons (browse, see the exact printings, buy only what you're missing), then
 // "Paste a list", which finds the formats the list is legal in and asks when more than one fits.
 const artCrop = id => scryfallImage(id).replace('/normal/', '/art_crop/');
+// A cover the player picked (Use artwork as… → Deck cover) wins; else the first nonland main card.
+// app.js hands the picks in (settings.playDeckCovers), so Play code never reads collection storage.
+let coverPicks = () => null;
+export const setPlayDeckCovers = fn => { coverPicks = typeof fn === 'function' ? fn : () => null; };
+const pickedCover = id => { const c = id && coverPicks()?.[id]; return typeof c?.image === 'string' && /^https:\/\//.test(c.image) ? c.image : ''; };
 const deckCover = cards => { const lead = (cards || []).find(c => c.board !== 'side' && !isBasicLand(c.name)) || (cards || [])[0];
   return lead ? (lead.id ? artCrop(lead.id) : cardImageByName(lead.name, 'art_crop')) : ''; };
-function playDeckTile(d, owned) {
+// The deck's emblems (play-deck-emblem.js): mana pips beside the format, then its style, and a gold
+// meta line when it matches a tournament archetype. Text and pips sit on the tile's own plates.
+const deckPips = colors => (colors.length ? colors : ['C']).map(k => `<img class="pe-deck-pip" src="${symbolUrl(k)}" alt="" width="16" height="16">`).join('');
+const pipLabel = colors => colors.length ? colors.map(k => ({W: 'white', U: 'blue', B: 'black', R: 'red', G: 'green'})[k]).join(', ') : 'colorless';
+function playDeckTile(d, owned, emblem = null) {
   const main = (d.cards || []).filter(c => c.board !== 'side'), side = (d.cards || []).filter(c => c.board === 'side');
   const count = list => list.reduce((t, c) => t + (c.qty | 0), 0), size = deckRules(d.format).size;
   const sh = deckShortfall(d.cards || [], owned), want = (d.cards || []).filter(c => !isBasicLand(c.name)).reduce((t, c) => t + (c.qty | 0), 0);
   const missing = sh.missing.reduce((t, m) => t + m.need, 0), share = want ? (want - missing) / want : 1, name = d.name || 'Untitled deck';
   return `<div class="pe-deck-cell"><button class="deck-tile" data-act="playEconEditDeck" data-econ-deck="${esc(d.id)}" aria-label="Open ${esc(name)}">
-    <span class="tile-art">${img(deckCover(d.cards), name)}</span><span class="tile-shade"></span>
-    <span class="tile-top"><span class="chip dark deck-format-emblem">${esc(d.format || 'Casual')}</span></span>
-    <span class="tile-body"><b>${esc(name)}</b><small>${count(main)}/${size}${side.length ? ` · ${count(side)} sideboard` : ''}</small>
+    <span class="tile-art">${img(pickedCover(d.id) || deckCover(d.cards), name)}</span><span class="tile-shade"></span>
+    <span class="tile-top"><span class="chip dark deck-format-emblem">${emblem ? `<span class="pe-deck-pips" role="img" aria-label="Colors: ${pipLabel(emblem.colors)}">${deckPips(emblem.colors)}</span>` : ''}${esc(d.format || 'Casual')}${emblem?.style ? `<span class="pe-deck-style"> · ${esc(emblem.style)}</span>` : ''}${emblem?.precon ? '<span class="pe-deck-style pe-deck-precon"> · Precon</span>' : ''}</span></span>
+    <span class="tile-body">${emblem?.meta ? `<span class="pe-deck-meta">Meta · ${esc(emblem.meta)}</span>` : ''}<b>${esc(name)}</b><small>${count(main)}/${size}${side.length ? ` · ${count(side)} sideboard` : ''}</small>
       <span class="tile-stats"><span class="tile-owned"><em>${Math.round(share * 100)}%</em> in your Trunk</span><span class="tile-find">${missing ? `<em>${missing}</em> to stamp` : 'Ready'}</span></span>${bar(share, 'thin')}</span></button>
     <button class="pe-deck-delete" data-act="playEconDeleteDeck" data-econ-deck="${esc(d.id)}" aria-label="Delete ${esc(name)}"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M6 6l12 12M18 6 6 18"/></svg></button></div>`;
 }
 const year = d => String(d || '').slice(0, 4);
 // Hyphenated words (Free-for-All) never split across lines.
 const keepWords = t => esc(t).replace(/\S*-\S*/g, w => `<span class="nowrap">${w}</span>`);
-function preconShelf(snapshot, pc = {}) {
+function preconShelf(snapshot, pc = {}, deckEmblem = null) {
   const s = snapshot.state, owned = ownedByName(s.cards || []);
   if (pc.open) {
     const o = pc.open, rows = o.rows || [], sh = deckShortfall(rows, owned, new Map(rows.map(r => [r.name, r.rarity])));
@@ -372,7 +422,7 @@ function preconShelf(snapshot, pc = {}) {
       return `<figure class="pe-precon-card${got < r.qty ? ' is-missing' : ''}"><img src="${esc(scryfallImage(r.id) || cardImageByName(r.name))}" alt="${esc(r.name)}" loading="lazy" decoding="async" referrerpolicy="no-referrer"><figcaption>${r.qty}×${got < r.qty ? ` <span>${r.qty - got} new</span>` : ''}</figcaption></figure>`; };
     const main = rows.filter(r => r.board !== 'side'), side = rows.filter(r => r.board === 'side');
     return `<div class="pe-precon-open"><div class="pe-precon-top"><button class="btn ghost" data-act="playEconPreconClose">All precons</button>
-      <div class="pe-precon-title"><h3>${keepWords(o.name)}</h3><p>${esc(o.product || 'Precon')} · ${esc(year(o.released))}${o.formats?.length ? ' · ' + o.formats.map(esc).join(', ') : ' · Casual'}</p></div>
+      <div class="pe-precon-title"><h3>${keepWords(o.name)}</h3>${(() => { const e = deckEmblem ? deckEmblem({cards: rows, format: o.formats?.[0] || ''}) : null; return e ? `<span class="chip dark deck-format-emblem pe-precon-emblem"><span class="pe-deck-pips" role="img" aria-label="Colors: ${pipLabel(e.colors)}">${deckPips(e.colors)}</span>Precon${e.style ? `<span class="pe-deck-style"> · ${esc(e.style)}</span>` : ''}</span>${e.meta ? `<span class="pe-deck-meta">Meta · ${esc(e.meta)}</span>` : ''}` : ''; })()}<p>${esc(o.product || 'Precon')} · ${esc(year(o.released))}${o.formats?.length ? ' · ' + o.formats.map(esc).join(', ') : ' · Casual'}</p></div>
       <div class="pe-precon-buy"><p>${missing ? `${missing} card${missing === 1 ? '' : 's'} to add · <b>${price.toLocaleString()} coins</b>` : 'You own every card'}</p>
       <button class="btn" data-act="playEconBuyPrecon" ${snapshot.busy || (price > coins) ? 'disabled' : ''}>${price > coins ? 'Not enough coins' : missing ? 'Buy deck' : 'Add to my decks'}</button></div></div>
       <div class="pe-precon-cards">${main.map(card).join('')}</div>
@@ -399,11 +449,11 @@ function importPanel(snapshot, check) {
       ${short.complete ? '<p class="pe-ready">Every card is in your Trunk.</p>' : `<p>To finish it, stamp ${short.missing.reduce((t, m) => t + m.need, 0)} cards:</p><span class="pe-costs">${sealsLine(short)}</span><ul class="pe-missing">${short.missing.slice(0, 60).map(m => `<li>${sealIcon(m.seal)}<span>${m.need} × ${esc(m.name)}</span></li>`).join('')}</ul>`}
       <div class="pe-import-save"><input data-input="playEconImportName" maxlength="80" placeholder="Deck name" aria-label="Deck name" value="${esc(check.name || '')}"><button class="btn" data-act="playEconSaveDeck" ${snapshot.busy || (formats.length > 1 && !pick) ? 'disabled' : ''}>Save deck</button></div></div>` : ''}`;
 }
-export function decksMarkup(snapshot, {check = null, precon = {}} = {}) {
+export function decksMarkup(snapshot, {check = null, precon = {}, deckEmblem = null} = {}) {
   const s = snapshot.state, decks = s.decks || [], owned = ownedByName(s.cards || []);
   return `<section class="play-menu pe-screen pe-decks" aria-labelledby="playTitle">${head('Decks', snapshot)}
-    <div class="deck-grid pe-deck-shelf"><button class="deck-tile pe-deck-new" data-act="playEconView" data-econ-view="finder"><span class="tile-art">${img(TILE_ART.decks, '')}</span><span class="tile-shade"></span><span class="tile-body"><b>Build a deck</b><small>From the cards in your Trunk</small></span></button>${decks.map(d => playDeckTile(d, owned)).join('')}</div>
-    <section class="pe-import pe-precons" aria-labelledby="pePreconTitle"><h2 id="pePreconTitle">Precons</h2><p class="pe-sub">Published decks with their real printings. You only pay for the cards you don't have yet.</p>${preconShelf(snapshot, precon)}</section>
+    <div class="deck-grid pe-deck-shelf"><button class="deck-tile pe-deck-new" data-act="playEconView" data-econ-view="finder"><span class="tile-art">${img(TILE_ART.decks, '')}</span><span class="tile-shade"></span><span class="tile-body"><b>Build a deck</b><small>From the cards in your Trunk</small></span></button>${decks.map(d => playDeckTile(d, owned, deckEmblem ? deckEmblem(d) : null)).join('')}</div>
+    <section class="pe-import pe-precons" aria-labelledby="pePreconTitle"><h2 id="pePreconTitle">Precons</h2><p class="pe-sub">Published decks with their real printings. You only pay for the cards you don't have yet.</p>${preconShelf(snapshot, precon, deckEmblem)}</section>
     <section class="pe-import" aria-labelledby="peImportTitle"><h2 id="peImportTitle">Paste a list</h2>${importPanel(snapshot, check)}</section>
     ${statusLine(snapshot)}</section>`;
 }
@@ -418,4 +468,4 @@ export function econScreenMarkup(view, snapshot, ui = {}) {
   if (view === 'deeds') return deedsScreenMarkup(snapshot, ui);
   return '';
 }
-export const ECON_VIEWS = new Set(['shop', 'packs', 'collection', 'decks', 'deck', 'deeds', 'finder']);
+export const ECON_VIEWS = new Set(['shop', 'packs', 'collection', 'decks', 'deck', 'deeds', 'finder', 'finderDeck']);

@@ -1,0 +1,3122 @@
+{
+ "act": 22,
+ "era": "2015-03-27",
+ "title": "The Dragonlords",
+ "years": "2014 to 2015",
+ "sets": [
+  "ktk",
+  "frf",
+  "dtk"
+ ],
+ "landSet": "ktk",
+ "intro": [
+  {
+   "who": "stage",
+   "line": "Tarkir. A world of steppes, mountains and ice, ruled by five warrior clans and their khans."
+  },
+  {
+   "who": "stage",
+   "line": "There were dragons here once. The clans hunted them until there were none. Now there are only bones."
+  },
+  {
+   "who": "stage",
+   "line": "Sarkhan Vol was born here, and left, and served Nicol Bolas, and lost his mind on Zendikar. He has come home because a voice keeps calling him."
+  },
+  {
+   "who": "sarkhan",
+   "line": "Unwelcome thoughts crowd my mind. Are they my own madness, or the whispers of another?",
+   "quote": true
+  }
+ ],
+ "finale": [
+  {
+   "who": "stage",
+   "line": "More than a thousand years ago, Bolas left Ugin for dead. Sarkhan wrapped the broken dragon in a hedron and kept him alive. That one act changed everything after it."
+  },
+  {
+   "who": "stage",
+   "line": "The dragon tempests never stopped. The dragons never died. The five clans became the servants of five Dragonlords."
+  },
+  {
+   "who": "sarkhan",
+   "line": "Dragons in the skies of Tarkir—for the first time, it feels like my home.",
+   "quote": true
+  },
+  {
+   "who": "sarkhan",
+   "line": "Even paradise is not without tragedies.",
+   "quote": true
+  },
+  {
+   "who": "stage",
+   "line": "Ugin still sleeps in his hedron, alive. In this Tarkir, Narset is a planeswalker. And for the first time in years, the voice in Sarkhan's head is quiet."
+  }
+ ],
+ "villainFinale": [
+  {
+   "who": "stage",
+   "line": "Silumgar coils on his hoard and does not even look up."
+  },
+  {
+   "who": "stage",
+   "line": "Silumgar never passes up an opportunity to add to his opulence.",
+   "quote": true
+  },
+  {
+   "who": "silumgar",
+   "line": "Bring forth the dead, their skull-grins and rattle-bones. We will feast upon their wailing ghosts.",
+   "quote": true
+  },
+  {
+   "who": "stage",
+   "line": "Sarkhan got exactly what he wanted. A world full of dragons. He forgot to ask what the dragons would want."
+  }
+ ],
+ "vibe": "tarkir-dragonstorm",
+ "cast": {
+  "you": {
+   "name": "You",
+   "title": "Planeswalker",
+   "portrait": {
+    "card": "Tomb of the Spirit Dragon",
+    "set": "ktk",
+    "number": "245",
+    "id": "eb6be7ab-8fad-4606-b623-f2188219d60b",
+    "crop": "https://cards.scryfall.io/art_crop/front/e/b/eb6be7ab-8fad-4606-b623-f2188219d60b.jpg?1783939043",
+    "artist": "Sam Burley",
+    "focus": "50% 30%"
+   }
+  },
+  "surrak": {
+   "name": "Surrak",
+   "title": "Khan of the Temur",
+   "portrait": {
+    "card": "Surrak Dragonclaw",
+    "set": "ktk",
+    "number": "206",
+    "id": "03032d89-caca-43ff-b2ea-028e376c829c",
+    "crop": "https://cards.scryfall.io/art_crop/front/0/3/03032d89-caca-43ff-b2ea-028e376c829c.jpg?1783939052",
+    "artist": "Jaime Jones",
+    "focus": "50% 25%"
+   }
+  },
+  "anafenza": {
+   "name": "Anafenza",
+   "title": "Khan of the Abzan",
+   "portrait": {
+    "card": "Anafenza, the Foremost",
+    "set": "ktk",
+    "number": "163",
+    "id": "c8b432a7-53da-4480-b571-e6feb1364a3a",
+    "crop": "https://cards.scryfall.io/art_crop/front/c/8/c8b432a7-53da-4480-b571-e6feb1364a3a.jpg?1783939061",
+    "artist": "James Ryman",
+    "focus": "50% 25%"
+   }
+  },
+  "narset": {
+   "name": "Narset",
+   "title": "Khan of the Jeskai",
+   "portrait": {
+    "card": "Narset, Enlightened Master",
+    "set": "ktk",
+    "number": "190",
+    "id": "f210adb7-b389-4672-a3eb-0ced9bfe190c",
+    "crop": "https://cards.scryfall.io/art_crop/front/f/2/f210adb7-b389-4672-a3eb-0ced9bfe190c.jpg?1783939056",
+    "artist": "Magali Villeneuve",
+    "focus": "50% 25%"
+   }
+  },
+  "sidisi": {
+   "name": "Sidisi",
+   "title": "Khan of the Sultai",
+   "portrait": {
+    "card": "Sidisi, Brood Tyrant",
+    "set": "ktk",
+    "number": "199",
+    "id": "ffa2b070-952e-4242-83bb-3e73135ceeeb",
+    "crop": "https://cards.scryfall.io/art_crop/front/f/f/ffa2b070-952e-4242-83bb-3e73135ceeeb.jpg?1783939053",
+    "artist": "Karl Kopinski",
+    "focus": "50% 25%"
+   }
+  },
+  "yasova": {
+   "name": "Yasova Dragonclaw",
+   "title": "Temur",
+   "portrait": {
+    "card": "Yasova Dragonclaw",
+    "set": "frf",
+    "number": "148",
+    "id": "490994c6-9fef-482b-835d-a64350bfaa8d",
+    "crop": "https://cards.scryfall.io/art_crop/front/4/9/490994c6-9fef-482b-835d-a64350bfaa8d.jpg?1783938674",
+    "artist": "Winona Nelson",
+    "focus": "50% 25%"
+   }
+  },
+  "tasigur": {
+   "name": "Tasigur",
+   "title": "The Golden Fang",
+   "portrait": {
+    "card": "Tasigur, the Golden Fang",
+    "set": "frf",
+    "number": "87",
+    "id": "81f93ac5-d149-4ccf-8b99-13ecf3190c29",
+    "crop": "https://cards.scryfall.io/art_crop/front/8/1/81f93ac5-d149-4ccf-8b99-13ecf3190c29.jpg?1783938691",
+    "artist": "Chris Rahn",
+    "focus": "50% 25%"
+   }
+  },
+  "sarkhan": {
+   "name": "Sarkhan Vol",
+   "title": "The Dragonspeaker",
+   "portrait": {
+    "card": "Sarkhan, the Dragonspeaker",
+    "set": "ktk",
+    "number": "119",
+    "id": "c58064fd-4d8b-4f54-812f-0bb1d7e2ddc2",
+    "crop": "https://cards.scryfall.io/art_crop/front/c/5/c58064fd-4d8b-4f54-812f-0bb1d7e2ddc2.jpg?1783939070",
+    "artist": "Daarken",
+    "focus": "50% 25%"
+   }
+  },
+  "zurgo": {
+   "name": "Zurgo",
+   "title": "Khan of the Mardu",
+   "portrait": {
+    "card": "Zurgo Helmsmasher",
+    "set": "ktk",
+    "number": "214",
+    "id": "13f4bafe-0d21-47ba-8f16-0274107d618c",
+    "crop": "https://cards.scryfall.io/art_crop/front/1/3/13f4bafe-0d21-47ba-8f16-0274107d618c.jpg?1783939050",
+    "artist": "Aleksi Briclot",
+    "focus": "50% 25%"
+   }
+  },
+  "ugin": {
+   "name": "Ugin",
+   "title": "The Spirit Dragon",
+   "portrait": {
+    "card": "Ugin, the Spirit Dragon",
+    "set": "frf",
+    "number": "1",
+    "id": "58c1e824-c8a9-4312-8e4c-a29a26d189a4",
+    "crop": "https://cards.scryfall.io/art_crop/front/5/8/58c1e824-c8a9-4312-8e4c-a29a26d189a4.jpg?1783938716",
+    "artist": "Raymond Swanland",
+    "focus": "50% 25%"
+   }
+  },
+  "kolaghan": {
+   "name": "Kolaghan",
+   "title": "The Storm's Fury",
+   "portrait": {
+    "card": "Kolaghan, the Storm's Fury",
+    "set": "frf",
+    "number": "155",
+    "id": "96376314-2085-4c57-861e-44d25e2d3bc8",
+    "crop": "https://cards.scryfall.io/art_crop/front/9/6/96376314-2085-4c57-861e-44d25e2d3bc8.jpg?1783938673",
+    "artist": "Jaime Jones",
+    "focus": "50% 25%"
+   }
+  },
+  "abzan": {
+   "name": "Abzan",
+   "title": "Late 2014",
+   "portrait": {
+    "card": "Siege Rhino",
+    "set": "ktk",
+    "number": "200",
+    "id": "9011126a-20bd-4c86-a63b-1691f79ac247",
+    "crop": "https://cards.scryfall.io/art_crop/front/9/0/9011126a-20bd-4c86-a63b-1691f79ac247.jpg?1783939053",
+    "artist": "Volkan Baǵa",
+    "focus": "50% 30%"
+   }
+  },
+  "jeskai": {
+   "name": "Jeskai Tokens",
+   "title": "Early 2015",
+   "portrait": {
+    "card": "Monastery Mentor",
+    "set": "frf",
+    "number": "20",
+    "id": "abcd0e32-2e6b-419b-9e8a-af38f2b48a66",
+    "crop": "https://cards.scryfall.io/art_crop/front/a/b/abcd0e32-2e6b-419b-9e8a-af38f2b48a66.jpg?1783938710",
+    "artist": "Magali Villeneuve",
+    "focus": "50% 25%"
+   }
+  },
+  "atarka": {
+   "name": "Atarka Red",
+   "title": "Mid 2015",
+   "portrait": {
+    "card": "Atarka's Command",
+    "set": "dtk",
+    "number": "213",
+    "id": "903d78c9-c5b3-45c3-a6d0-7e92b4196ae3",
+    "crop": "https://cards.scryfall.io/art_crop/front/9/0/903d78c9-c5b3-45c3-a6d0-7e92b4196ae3.jpg?1783938574",
+    "artist": "Chris Rahn",
+    "focus": "50% 30%"
+   }
+  },
+  "esper": {
+   "name": "Esper Dragons",
+   "title": "Mid 2015",
+   "portrait": {
+    "card": "Dragonlord Ojutai",
+    "set": "dtk",
+    "number": "219",
+    "id": "a42b2c9c-1650-468e-94d6-e09b3518447f",
+    "crop": "https://cards.scryfall.io/art_crop/front/a/4/a42b2c9c-1650-468e-94d6-e09b3518447f.jpg?1783938573",
+    "artist": "Chase Stone",
+    "focus": "50% 25%"
+   }
+  },
+  "silumgar": {
+   "name": "Dragonlord Silumgar",
+   "title": "The Sultai",
+   "portrait": {
+    "card": "Dragonlord Silumgar",
+    "set": "dtk",
+    "number": "220",
+    "id": "2eae504d-d4a9-440f-8ceb-df967cc50494",
+    "crop": "https://cards.scryfall.io/art_crop/front/2/e/2eae504d-d4a9-440f-8ceb-df967cc50494.jpg?1783938572",
+    "artist": "Steven Belledin",
+    "focus": "50% 25%"
+   }
+  },
+  "cruise": {
+   "name": "Treasure Cruise",
+   "title": "2014",
+   "portrait": {
+    "card": "Treasure Cruise",
+    "set": "ktk",
+    "number": "59",
+    "id": "7a59d4b1-6cf4-44ec-8a96-1bb7094fea21",
+    "crop": "https://cards.scryfall.io/art_crop/front/7/a/7a59d4b1-6cf4-44ec-8a96-1bb7094fea21.jpg?1783939083",
+    "artist": "Cynthia Sheppard",
+    "focus": "50% 30%"
+   }
+  }
+ },
+ "battles": [
+  {
+   "id": "a22b1",
+   "slot": 1,
+   "kind": "Arrival",
+   "mood": "tension",
+   "title": "Qal Sisma",
+   "difficulty": "Easy",
+   "teaches": [
+    "Ferocious"
+   ],
+   "blurb": "You arrive in the frozen mountains of Qal Sisma, where Surrak, khan of the Temur, has caught an Abzan war party on his side of the pass. Anafenza leads them herself.",
+   "rewardSet": "ktk",
+   "host": false,
+   "hero": {
+    "who": "surrak",
+    "deck": {
+     "name": "The Temur Frontier",
+     "colors": "GUR",
+     "archetype": null,
+     "label": "tribute",
+     "cards": [
+      {
+       "qty": 2,
+       "name": "Surrak Dragonclaw",
+       "set": "ktk",
+       "number": "206",
+       "id": "03032d89-caca-43ff-b2ea-028e376c829c"
+      },
+      {
+       "qty": 4,
+       "name": "Savage Knuckleblade",
+       "set": "ktk",
+       "number": "197",
+       "id": "4c9dddd3-7c8d-4669-8298-58149b142b8a"
+      },
+      {
+       "qty": 4,
+       "name": "Rattleclaw Mystic",
+       "set": "ktk",
+       "number": "144",
+       "id": "4fb6c2e0-eeaa-4d60-aab7-2b8c739a9278"
+      },
+      {
+       "qty": 4,
+       "name": "Bear's Companion",
+       "set": "ktk",
+       "number": "167",
+       "id": "d6912c5b-6aff-4506-96ca-acb5ce660322"
+      },
+      {
+       "qty": 3,
+       "name": "Snowhorn Rider",
+       "set": "ktk",
+       "number": "201",
+       "id": "f5d9aa9b-1ed4-46db-89d1-6c9593c29f55"
+      },
+      {
+       "qty": 3,
+       "name": "Avalanche Tusker",
+       "set": "ktk",
+       "number": "166",
+       "id": "408e3f12-53d5-45f4-8ccc-6c00f8a9c6fe"
+      },
+      {
+       "qty": 4,
+       "name": "Temur Charm",
+       "set": "ktk",
+       "number": "208",
+       "id": "e2ee3e36-a849-42b0-b84b-027a08427c35"
+      },
+      {
+       "qty": 4,
+       "name": "Savage Punch",
+       "set": "ktk",
+       "number": "147",
+       "id": "6c6b50dc-244a-4df5-a9a9-5a2b8f30d40c"
+      },
+      {
+       "qty": 4,
+       "name": "Alpine Grizzly",
+       "set": "ktk",
+       "number": "127",
+       "id": "38bbf983-df71-4403-86f3-2e86aa8765b8"
+      },
+      {
+       "qty": 4,
+       "name": "Heir of the Wilds",
+       "set": "ktk",
+       "number": "134",
+       "id": "0995e041-fe90-4459-8c70-fd9851ecf830"
+      },
+      {
+       "qty": 7,
+       "name": "Forest",
+       "set": "ktk",
+       "number": "266",
+       "id": "3e5342f9-3f91-48e4-bfd1-49fbf9ca89cf"
+      },
+      {
+       "qty": 4,
+       "name": "Island",
+       "set": "ktk",
+       "number": "254",
+       "id": "9c010ca5-b609-4ae9-8c23-adf5723a9daa"
+      },
+      {
+       "qty": 4,
+       "name": "Mountain",
+       "set": "ktk",
+       "number": "262",
+       "id": "802b1bb0-6c73-481a-ac3e-7d4e1682b4c2"
+      },
+      {
+       "qty": 3,
+       "name": "Frontier Bivouac",
+       "set": "ktk",
+       "number": "234",
+       "id": "e4335951-e73e-45cb-b2a5-6e9d14ba87ee"
+      },
+      {
+       "qty": 3,
+       "name": "Rugged Highlands",
+       "set": "ktk",
+       "number": "240",
+       "id": "501ce6cb-0324-4cca-bc79-903cefe1ac1f"
+      },
+      {
+       "qty": 3,
+       "name": "Thornwood Falls",
+       "set": "ktk",
+       "number": "244",
+       "id": "9e57abd9-e864-4047-a3c8-618952071858"
+      }
+     ]
+    }
+   },
+   "villain": {
+    "who": "anafenza",
+    "deck": {
+     "name": "The Abzan Houses",
+     "colors": "WBG",
+     "archetype": null,
+     "label": "tribute",
+     "cards": [
+      {
+       "qty": 2,
+       "name": "Anafenza, the Foremost",
+       "set": "ktk",
+       "number": "163",
+       "id": "c8b432a7-53da-4480-b571-e6feb1364a3a"
+      },
+      {
+       "qty": 4,
+       "name": "Abzan Guide",
+       "set": "ktk",
+       "number": "162",
+       "id": "1b7f7158-4a31-4a1c-bf3b-574c0b09276a"
+      },
+      {
+       "qty": 4,
+       "name": "Ainok Bond-Kin",
+       "set": "ktk",
+       "number": "3",
+       "id": "22d2a844-17fc-4628-9591-684555e98f7b"
+      },
+      {
+       "qty": 4,
+       "name": "Abzan Falconer",
+       "set": "ktk",
+       "number": "2",
+       "id": "21ee4f3c-dc94-4156-b0ed-60fe6310451a"
+      },
+      {
+       "qty": 4,
+       "name": "Tuskguard Captain",
+       "set": "ktk",
+       "number": "156",
+       "id": "b341cc65-d316-41bb-95b8-294afa019a71"
+      },
+      {
+       "qty": 4,
+       "name": "Abzan Charm",
+       "set": "ktk",
+       "number": "161",
+       "id": "8f7b7598-35b0-4bb5-8347-8c868500f846"
+      },
+      {
+       "qty": 2,
+       "name": "Armament Corps",
+       "set": "ktk",
+       "number": "165",
+       "id": "a5c69876-809d-4af3-9fd6-3bac41541dad"
+      },
+      {
+       "qty": 4,
+       "name": "Disowned Ancestor",
+       "set": "ktk",
+       "number": "70",
+       "id": "2d8bd496-632d-4d6d-a529-f35cf3222de7"
+      },
+      {
+       "qty": 4,
+       "name": "Kin-Tree Warden",
+       "set": "ktk",
+       "number": "139",
+       "id": "dfddafbc-590b-4610-894a-b91335a60528"
+      },
+      {
+       "qty": 4,
+       "name": "Herald of Anafenza",
+       "set": "ktk",
+       "number": "12",
+       "id": "e8bf6ed4-48f3-419f-bafd-d1ee4d798482"
+      },
+      {
+       "qty": 7,
+       "name": "Plains",
+       "set": "ktk",
+       "number": "250",
+       "id": "2576dc74-1847-44b8-aef9-9d74f333b9cc"
+      },
+      {
+       "qty": 5,
+       "name": "Swamp",
+       "set": "ktk",
+       "number": "258",
+       "id": "09d7e861-8dda-4073-bfd6-4ade3bca5cff"
+      },
+      {
+       "qty": 6,
+       "name": "Forest",
+       "set": "ktk",
+       "number": "266",
+       "id": "3e5342f9-3f91-48e4-bfd1-49fbf9ca89cf"
+      },
+      {
+       "qty": 3,
+       "name": "Sandsteppe Citadel",
+       "set": "ktk",
+       "number": "241",
+       "id": "2dd40d90-c939-458a-9a98-27d10da6ff2f"
+      },
+      {
+       "qty": 3,
+       "name": "Scoured Barrens",
+       "set": "ktk",
+       "number": "242",
+       "id": "0824a960-dd89-45c5-90f0-3ec9eb47d9ce"
+      }
+     ]
+    }
+   },
+   "reward": {
+    "hero": {
+     "packs": 1,
+     "coins": 0
+    },
+    "villain": {
+     "card": {
+      "oracle_id": "ebfafabc-5255-4024-be59-7403bdb16ee4",
+      "name": "Anafenza, the Foremost",
+      "rarity": "mythic",
+      "set": "ktk",
+      "id": "c8b432a7-53da-4480-b571-e6feb1364a3a",
+      "image": "https://cards.scryfall.io/normal/front/c/8/c8b432a7-53da-4480-b571-e6feb1364a3a.jpg"
+     },
+     "coins": 50
+    }
+   },
+   "scene": [
+    {
+     "who": "surrak",
+     "line": "Hold the high ground, then bring it to your enemy.",
+     "quote": true
+    },
+    {
+     "who": "surrak",
+     "line": "People are often humbled by the elements. But the elements, too, can be humbled.",
+     "quote": true
+    },
+    {
+     "who": "surrak",
+     "line": "Ferocious: some Temur cards get a bonus if you control a creature with power 4 or greater. Get a big one down first."
+    }
+   ],
+   "villainScene": [
+    {
+     "who": "anafenza",
+     "line": "Stand where the whole battle can see you. Strike so they'll never forget.",
+     "quote": true
+    },
+    {
+     "who": "stage",
+     "line": "Rarely at rest on the Amber Throne, Anafenza always leads the Abzan Houses to battle.",
+     "quote": true
+    }
+   ],
+   "after": [
+    {
+     "who": "surrak",
+     "line": "A man came through the pass last week talking to himself about dragons. Vol, his name was. Of the Mardu, once. Zurgo wants him dead."
+    }
+   ],
+   "cues": {
+    "hero": {
+     "start": "Hold the pass.",
+     "big": "Ferocious!",
+     "low": "They outlast us...",
+     "win": "Back to the desert.",
+     "loss": "The pass falls...",
+     "half": "Big creature first."
+    },
+    "villain": {
+     "start": "For the Houses.",
+     "big": "The ancestors stand with us!",
+     "low": "Cold steel.",
+     "win": "Endure.",
+     "loss": "We withdraw."
+    }
+   },
+   "bigPlays": [],
+   "sim": null
+  },
+  {
+   "id": "a22b2",
+   "slot": 2,
+   "kind": "Lesson",
+   "mood": "march",
+   "title": "The Way of the Jeskai",
+   "difficulty": "Easy",
+   "teaches": [
+    "Prowess"
+   ],
+   "blurb": "Narset, khan of the Jeskai, studies the old dragons in secret, and Sarkhan has heard she knows where the voice is coming from. Sidisi of the Sultai would like to know too.",
+   "rewardSet": "ktk",
+   "host": false,
+   "hero": {
+    "who": "narset",
+    "deck": {
+     "name": "The Jeskai Way",
+     "colors": "URW",
+     "archetype": null,
+     "label": "tribute",
+     "cards": [
+      {
+       "qty": 2,
+       "name": "Narset, Enlightened Master",
+       "set": "ktk",
+       "number": "190",
+       "id": "f210adb7-b389-4672-a3eb-0ced9bfe190c"
+      },
+      {
+       "qty": 4,
+       "name": "Monastery Swiftspear",
+       "set": "ktk",
+       "number": "118",
+       "id": "b81c6c8b-a9cf-4866-89ba-7f8ad077b836"
+      },
+      {
+       "qty": 4,
+       "name": "Seeker of the Way",
+       "set": "ktk",
+       "number": "22",
+       "id": "3c17e350-44f7-4413-ad24-7c5d6616effd"
+      },
+      {
+       "qty": 4,
+       "name": "Jeskai Windscout",
+       "set": "ktk",
+       "number": "44",
+       "id": "66356e38-38e1-4b09-80c2-be26007ff99c"
+      },
+      {
+       "qty": 4,
+       "name": "Mantis Rider",
+       "set": "ktk",
+       "number": "184",
+       "id": "82d5ce46-7118-4ede-ba1d-c387e7ce16e7"
+      },
+      {
+       "qty": 3,
+       "name": "Jeskai Charm",
+       "set": "ktk",
+       "number": "181",
+       "id": "ca268705-ef04-4bf1-8a5d-866bb3e5bb61"
+      },
+      {
+       "qty": 4,
+       "name": "Arc Lightning",
+       "set": "ktk",
+       "number": "97",
+       "id": "35c7c392-6782-40c8-bb24-6aad24f14660"
+      },
+      {
+       "qty": 4,
+       "name": "Jeskai Student",
+       "set": "ktk",
+       "number": "14",
+       "id": "9007c528-0107-40fd-a97e-e5576f297eb2"
+      },
+      {
+       "qty": 3,
+       "name": "Defiant Strike",
+       "set": "ktk",
+       "number": "7",
+       "id": "39ec83fa-5cb4-4633-8827-36d874a2d2e7"
+      },
+      {
+       "qty": 4,
+       "name": "Mystic of the Hidden Way",
+       "set": "ktk",
+       "number": "48",
+       "id": "7b5de843-e05d-43b5-a5d0-a737484fbd71"
+      },
+      {
+       "qty": 7,
+       "name": "Island",
+       "set": "ktk",
+       "number": "254",
+       "id": "9c010ca5-b609-4ae9-8c23-adf5723a9daa"
+      },
+      {
+       "qty": 7,
+       "name": "Mountain",
+       "set": "ktk",
+       "number": "262",
+       "id": "802b1bb0-6c73-481a-ac3e-7d4e1682b4c2"
+      },
+      {
+       "qty": 5,
+       "name": "Plains",
+       "set": "ktk",
+       "number": "250",
+       "id": "2576dc74-1847-44b8-aef9-9d74f333b9cc"
+      },
+      {
+       "qty": 3,
+       "name": "Mystic Monastery",
+       "set": "ktk",
+       "number": "236",
+       "id": "bae51d77-e06b-4e5a-9543-a17dd0b2a333"
+      },
+      {
+       "qty": 2,
+       "name": "Swiftwater Cliffs",
+       "set": "ktk",
+       "number": "243",
+       "id": "e782d005-a563-4738-978a-73a3465de78f"
+      }
+     ]
+    }
+   },
+   "villain": {
+    "who": "sidisi",
+    "deck": {
+     "name": "The Sultai Brood",
+     "colors": "BGU",
+     "archetype": null,
+     "label": "tribute",
+     "cards": [
+      {
+       "qty": 2,
+       "name": "Sidisi, Brood Tyrant",
+       "set": "ktk",
+       "number": "199",
+       "id": "ffa2b070-952e-4242-83bb-3e73135ceeeb"
+      },
+      {
+       "qty": 4,
+       "name": "Sultai Scavenger",
+       "set": "ktk",
+       "number": "91",
+       "id": "2cb8e423-f7e7-4ac3-acc2-2a3722e409e7"
+      },
+      {
+       "qty": 4,
+       "name": "Murderous Cut",
+       "set": "ktk",
+       "number": "81",
+       "id": "b2dadff2-883f-4134-a881-be145cdcbd84"
+      },
+      {
+       "qty": 1,
+       "name": "Treasure Cruise",
+       "set": "ktk",
+       "number": "59",
+       "id": "7a59d4b1-6cf4-44ec-8a96-1bb7094fea21"
+      },
+      {
+       "qty": 4,
+       "name": "Hooting Mandrills",
+       "set": "ktk",
+       "number": "137",
+       "id": "090d678c-f0e4-4757-8900-93dfe67aefe9"
+      },
+      {
+       "qty": 4,
+       "name": "Sultai Soothsayer",
+       "set": "ktk",
+       "number": "205",
+       "id": "ae0de2c9-957e-41ee-8899-b93e6f1091dc"
+      },
+      {
+       "qty": 4,
+       "name": "Rakshasa Deathdealer",
+       "set": "ktk",
+       "number": "192",
+       "id": "ab4e0b33-dad1-4443-a7c7-a7bab067d04a"
+      },
+      {
+       "qty": 2,
+       "name": "Kheru Lich Lord",
+       "set": "ktk",
+       "number": "182",
+       "id": "e7fbca8d-34a3-4df1-986a-36fca142a758"
+      },
+      {
+       "qty": 4,
+       "name": "Throttle",
+       "set": "ktk",
+       "number": "93",
+       "id": "b6b71c00-3f38-47dc-90bc-6464d346c098"
+      },
+      {
+       "qty": 4,
+       "name": "Sultai Flayer",
+       "set": "ktk",
+       "number": "152",
+       "id": "7f3b2ef3-551d-4782-8dce-a923c0e2965e"
+      },
+      {
+       "qty": 3,
+       "name": "Debilitating Injury",
+       "set": "ktk",
+       "number": "68",
+       "id": "09b2b263-34db-4961-bf41-1eaaba3701da"
+      },
+      {
+       "qty": 7,
+       "name": "Swamp",
+       "set": "ktk",
+       "number": "258",
+       "id": "09d7e861-8dda-4073-bfd6-4ade3bca5cff"
+      },
+      {
+       "qty": 7,
+       "name": "Forest",
+       "set": "ktk",
+       "number": "266",
+       "id": "3e5342f9-3f91-48e4-bfd1-49fbf9ca89cf"
+      },
+      {
+       "qty": 4,
+       "name": "Island",
+       "set": "ktk",
+       "number": "254",
+       "id": "9c010ca5-b609-4ae9-8c23-adf5723a9daa"
+      },
+      {
+       "qty": 3,
+       "name": "Opulent Palace",
+       "set": "ktk",
+       "number": "238",
+       "id": "21326575-80b9-4a4e-a93c-6880ec6575d5"
+      },
+      {
+       "qty": 3,
+       "name": "Dismal Backwater",
+       "set": "ktk",
+       "number": "232",
+       "id": "63742780-47ee-4a66-993a-69e06c14967d"
+      }
+     ]
+    }
+   },
+   "reward": {
+    "hero": {
+     "packs": 1,
+     "coins": 0
+    },
+    "villain": {
+     "card": {
+      "oracle_id": "3fad7072-21e3-446e-a28f-615038c8bfea",
+      "name": "Sidisi, Brood Tyrant",
+      "rarity": "mythic",
+      "set": "ktk",
+      "id": "ffa2b070-952e-4242-83bb-3e73135ceeeb",
+      "image": "https://cards.scryfall.io/normal/front/f/f/ffa2b070-952e-4242-83bb-3e73135ceeeb.jpg"
+     },
+     "coins": 50
+    }
+   },
+   "scene": [
+    {
+     "who": "narset",
+     "line": "The Way has no beginning and no end. It is simply the path.",
+     "quote": true
+    },
+    {
+     "who": "narset",
+     "line": "Our own selves are the greatest obstacles to enlightenment.",
+     "quote": true
+    },
+    {
+     "who": "narset",
+     "line": "Prowess: whenever you cast a noncreature spell, a creature with prowess gets +1/+1 until end of turn. Cast your spells before you attack."
+    }
+   ],
+   "villainScene": [
+    {
+     "who": "sidisi",
+     "line": "If weakness does not exist within the Temur then we shall force it upon them.",
+     "quote": true
+    },
+    {
+     "who": "sidisi",
+     "line": "The best servants are made from those who died without a scratch.",
+     "quote": true
+    }
+   ],
+   "after": [
+    {
+     "who": "narset",
+     "line": "The voice you hear is Ugin, the spirit dragon. His bones lie in a tomb of their own. Go, and be careful what you ask him for."
+    }
+   ],
+   "cues": {
+    "hero": {
+     "start": "Center yourself.",
+     "big": "Strike!",
+     "low": "They rise again...",
+     "win": "The Way holds.",
+     "loss": "Unbalanced...",
+     "half": "Spell first, then attack."
+    },
+    "villain": {
+     "start": "Kneel.",
+     "big": "Delve!",
+     "low": "Hss.",
+     "win": "Another servant.",
+     "loss": "Into the swamp."
+    }
+   },
+   "bigPlays": [],
+   "sim": null
+  },
+  {
+   "id": "a22b3",
+   "slot": 3,
+   "kind": "Lesson",
+   "mood": "comic",
+   "title": "A Thousand Years Ago",
+   "difficulty": "Easy",
+   "teaches": [
+    "Delve"
+   ],
+   "blurb": "At the tomb, Ugin's voice pulls Sarkhan back more than a thousand years. The clans are young, the dragon tempests still rage, and Yasova Dragonclaw of the Temur is fighting Tasigur, the Sultai khan, who has expensive taste in zombies.",
+   "rewardSet": "frf",
+   "host": false,
+   "hero": {
+    "who": "yasova",
+    "deck": {
+     "name": "Yasova's Hunters",
+     "colors": "GRU",
+     "archetype": null,
+     "label": "tribute",
+     "cards": [
+      {
+       "qty": 2,
+       "name": "Yasova Dragonclaw",
+       "set": "frf",
+       "number": "148",
+       "id": "490994c6-9fef-482b-835d-a64350bfaa8d"
+      },
+      {
+       "qty": 4,
+       "name": "Frost Walker",
+       "set": "frf",
+       "number": "35",
+       "id": "ebb2c83d-48db-4d0b-8c3a-f4b0353eeb86"
+      },
+      {
+       "qty": 4,
+       "name": "Feral Krushok",
+       "set": "frf",
+       "number": "128",
+       "id": "5041996b-c265-4c4f-a52c-dfe29b2e282d"
+      },
+      {
+       "qty": 3,
+       "name": "Temur Sabertooth",
+       "set": "frf",
+       "number": "141",
+       "id": "5d54da7c-8828-4d34-bfd0-a654692d3f5a"
+      },
+      {
+       "qty": 4,
+       "name": "Ainok Guide",
+       "set": "frf",
+       "number": "121",
+       "id": "c361ea9c-a989-4ded-8b2c-f565aa9d8a1d"
+      },
+      {
+       "qty": 4,
+       "name": "Wild Slash",
+       "set": "frf",
+       "number": "118",
+       "id": "6975490f-7679-48b3-ba34-04dec97a29c2"
+      },
+      {
+       "qty": 4,
+       "name": "Bathe in Dragonfire",
+       "set": "frf",
+       "number": "92",
+       "id": "b8cc6931-2005-4d0a-a42a-ce8bc279372e"
+      },
+      {
+       "qty": 3,
+       "name": "Battlefront Krushok",
+       "set": "frf",
+       "number": "125",
+       "id": "e3b425cd-c5a5-48e9-b697-3860dfa6d5d3"
+      },
+      {
+       "qty": 2,
+       "name": "Whisperwood Elemental",
+       "set": "frf",
+       "number": "145",
+       "id": "66c61828-98b9-4264-b3dd-e83f881f4a67"
+      },
+      {
+       "qty": 9,
+       "name": "Forest",
+       "set": "ktk",
+       "number": "266",
+       "id": "3e5342f9-3f91-48e4-bfd1-49fbf9ca89cf"
+      },
+      {
+       "qty": 7,
+       "name": "Mountain",
+       "set": "ktk",
+       "number": "262",
+       "id": "802b1bb0-6c73-481a-ac3e-7d4e1682b4c2"
+      },
+      {
+       "qty": 4,
+       "name": "Island",
+       "set": "ktk",
+       "number": "254",
+       "id": "9c010ca5-b609-4ae9-8c23-adf5723a9daa"
+      },
+      {
+       "qty": 2,
+       "name": "Rugged Highlands",
+       "set": "ktk",
+       "number": "240",
+       "id": "501ce6cb-0324-4cca-bc79-903cefe1ac1f"
+      },
+      {
+       "qty": 2,
+       "name": "Frontier Bivouac",
+       "set": "ktk",
+       "number": "234",
+       "id": "e4335951-e73e-45cb-b2a5-6e9d14ba87ee"
+      },
+      {
+       "qty": 4,
+       "name": "Savage Knuckleblade",
+       "set": "ktk",
+       "number": "197",
+       "id": "4c9dddd3-7c8d-4669-8298-58149b142b8a"
+      },
+      {
+       "qty": 2,
+       "name": "Alpine Grizzly",
+       "set": "ktk",
+       "number": "127",
+       "id": "38bbf983-df71-4403-86f3-2e86aa8765b8"
+      }
+     ]
+    }
+   },
+   "villain": {
+    "who": "tasigur",
+    "deck": {
+     "name": "The Golden Fang",
+     "colors": "BGU",
+     "archetype": null,
+     "label": "tribute",
+     "cards": [
+      {
+       "qty": 1,
+       "name": "Tasigur, the Golden Fang",
+       "set": "frf",
+       "number": "87",
+       "id": "81f93ac5-d149-4ccf-8b99-13ecf3190c29"
+      },
+      {
+       "qty": 2,
+       "name": "Gurmag Angler",
+       "set": "frf",
+       "number": "72",
+       "id": "c60a8cf1-a8c7-4f45-bbd3-188fab2652f9"
+      },
+      {
+       "qty": 4,
+       "name": "Sibsig Host",
+       "set": "frf",
+       "number": "82",
+       "id": "2791f1a5-bf29-48ac-8a41-88b7f97ede41"
+      },
+      {
+       "qty": 4,
+       "name": "Sultai Emissary",
+       "set": "frf",
+       "number": "85",
+       "id": "12421e1c-5144-4391-abf2-a2fb864920e9"
+      },
+      {
+       "qty": 4,
+       "name": "Sibsig Muckdraggers",
+       "set": "frf",
+       "number": "83",
+       "id": "f88297c1-c612-47bf-80b7-374099b00e07"
+      },
+      {
+       "qty": 4,
+       "name": "Douse in Gloom",
+       "set": "frf",
+       "number": "68",
+       "id": "9b710fcd-0721-4720-a8fa-6d9ceb7b8104"
+      },
+      {
+       "qty": 2,
+       "name": "Reach of Shadows",
+       "set": "frf",
+       "number": "81",
+       "id": "bbf9a803-473a-4c38-b352-d47c4fd93d5e"
+      },
+      {
+       "qty": 4,
+       "name": "Write into Being",
+       "set": "frf",
+       "number": "59",
+       "id": "a85e6fbe-cda0-4fbf-853c-c03c567a7de9"
+      },
+      {
+       "qty": 4,
+       "name": "Hooded Assassin",
+       "set": "frf",
+       "number": "73",
+       "id": "05d4da1d-5b8c-43be-aa30-22df69c0cc23"
+      },
+      {
+       "qty": 10,
+       "name": "Swamp",
+       "set": "ktk",
+       "number": "258",
+       "id": "09d7e861-8dda-4073-bfd6-4ade3bca5cff"
+      },
+      {
+       "qty": 6,
+       "name": "Forest",
+       "set": "ktk",
+       "number": "266",
+       "id": "3e5342f9-3f91-48e4-bfd1-49fbf9ca89cf"
+      },
+      {
+       "qty": 4,
+       "name": "Island",
+       "set": "ktk",
+       "number": "254",
+       "id": "9c010ca5-b609-4ae9-8c23-adf5723a9daa"
+      },
+      {
+       "qty": 2,
+       "name": "Opulent Palace",
+       "set": "ktk",
+       "number": "238",
+       "id": "21326575-80b9-4a4e-a93c-6880ec6575d5"
+      },
+      {
+       "qty": 2,
+       "name": "Jungle Hollow",
+       "set": "ktk",
+       "number": "235",
+       "id": "fea27aa7-7fcf-4198-b03a-5034a03ba81f"
+      },
+      {
+       "qty": 4,
+       "name": "Typhoid Rats",
+       "set": "frf",
+       "number": "89",
+       "id": "d13cb90b-50c3-46ef-83f8-812dfb7ff881"
+      },
+      {
+       "qty": 3,
+       "name": "Kheru Bloodsucker",
+       "set": "ktk",
+       "number": "75",
+       "id": "baf15cd4-13be-48e7-b3f5-a5106eb02c45"
+      }
+     ]
+    }
+   },
+   "reward": {
+    "hero": {
+     "packs": 1,
+     "coins": 0
+    },
+    "villain": {
+     "card": {
+      "oracle_id": "837e3fde-241f-4826-ad04-f146fdcf2278",
+      "name": "Tasigur, the Golden Fang",
+      "rarity": "rare",
+      "set": "frf",
+      "id": "81f93ac5-d149-4ccf-8b99-13ecf3190c29",
+      "image": "https://cards.scryfall.io/normal/front/8/1/81f93ac5-d149-4ccf-8b99-13ecf3190c29.jpg"
+     },
+     "coins": 50
+    }
+   },
+   "scene": [
+    {
+     "who": "stage",
+     "line": "All at once Sarkhan's mind fell silent.",
+     "quote": true
+    },
+    {
+     "who": "yasova",
+     "line": "As the clans carved out their territories, we saw allies where the Mardu saw only obstacles.",
+     "quote": true
+    },
+    {
+     "who": "yasova",
+     "line": "Delve: their big creatures exile cards from their graveyard to pay for themselves. An empty graveyard makes them expensive again."
+    }
+   ],
+   "villainScene": [
+    {
+     "who": "tasigur",
+     "line": "They were your friends, your family, your clan. They want only to welcome you.",
+     "quote": true
+    },
+    {
+     "who": "tasigur",
+     "line": "No machinations, no puppet strings, no plots. Just pure, sweeping death.",
+     "quote": true
+    }
+   ],
+   "after": [
+    {
+     "who": "yasova",
+     "line": "Her hunger knows no limit. Left unchecked, she would feast on all of Tarkir.",
+     "quote": true
+    },
+    {
+     "who": "yasova",
+     "line": "She means Atarka, a dragon. We have more dragons than we can kill. Why would anyone want to save one?"
+    }
+   ],
+   "cues": {
+    "hero": {
+     "start": "Hunt.",
+     "big": "For the Temur!",
+     "low": "Too many dead...",
+     "win": "The prince runs.",
+     "loss": "Buried...",
+     "half": "Starve their graveyard."
+    },
+    "villain": {
+     "start": "How tedious.",
+     "big": "Rise, my darlings.",
+     "low": "My robes!",
+     "win": "Delightful.",
+     "loss": "Fetch my litter."
+    }
+   },
+   "bigPlays": [],
+   "sim": null
+  },
+  {
+   "id": "a22b4",
+   "slot": 4,
+   "kind": "Rival",
+   "mood": "tension",
+   "title": "The Traitor Returns",
+   "difficulty": "Normal",
+   "teaches": [
+    "Raid"
+   ],
+   "blurb": "Before the tomb, there is Zurgo. Sarkhan was once a Mardu warrior and then walked away, and Zurgo Helmsmasher, khan of the Mardu, has made a legend out of hating him.",
+   "rewardSet": "ktk",
+   "host": false,
+   "hero": {
+    "who": "sarkhan",
+    "deck": {
+     "name": "The Dragonspeaker",
+     "colors": "RG",
+     "archetype": null,
+     "label": "tribute",
+     "cards": [
+      {
+       "qty": 2,
+       "name": "Sarkhan, the Dragonspeaker",
+       "set": "ktk",
+       "number": "119",
+       "id": "c58064fd-4d8b-4f54-812f-0bb1d7e2ddc2"
+      },
+      {
+       "qty": 2,
+       "name": "Ashcloud Phoenix",
+       "set": "ktk",
+       "number": "99",
+       "id": "4a53752c-5689-4939-9a8b-bf59d88d7c6b"
+      },
+      {
+       "qty": 4,
+       "name": "Arc Lightning",
+       "set": "ktk",
+       "number": "97",
+       "id": "35c7c392-6782-40c8-bb24-6aad24f14660"
+      },
+      {
+       "qty": 4,
+       "name": "Summit Prowler",
+       "set": "ktk",
+       "number": "121",
+       "id": "f7f998fb-4518-4a0c-8b1e-55393b6ff9c4"
+      },
+      {
+       "qty": 4,
+       "name": "Alpine Grizzly",
+       "set": "ktk",
+       "number": "127",
+       "id": "38bbf983-df71-4403-86f3-2e86aa8765b8"
+      },
+      {
+       "qty": 4,
+       "name": "Heir of the Wilds",
+       "set": "ktk",
+       "number": "134",
+       "id": "0995e041-fe90-4459-8c70-fd9851ecf830"
+      },
+      {
+       "qty": 4,
+       "name": "Savage Punch",
+       "set": "ktk",
+       "number": "147",
+       "id": "6c6b50dc-244a-4df5-a9a9-5a2b8f30d40c"
+      },
+      {
+       "qty": 4,
+       "name": "Bloodfire Expert",
+       "set": "ktk",
+       "number": "101",
+       "id": "0742564e-f7a7-4107-b9ed-63703ca4702c"
+      },
+      {
+       "qty": 4,
+       "name": "Highland Game",
+       "set": "ktk",
+       "number": "135",
+       "id": "7fbb10a9-486a-4b9a-b3f5-c17f661af2b2"
+      },
+      {
+       "qty": 4,
+       "name": "Valley Dasher",
+       "set": "ktk",
+       "number": "125",
+       "id": "8543adbd-0dd1-47d3-ac41-2ec72d6a5d35"
+      },
+      {
+       "qty": 12,
+       "name": "Mountain",
+       "set": "ktk",
+       "number": "262",
+       "id": "802b1bb0-6c73-481a-ac3e-7d4e1682b4c2"
+      },
+      {
+       "qty": 10,
+       "name": "Forest",
+       "set": "ktk",
+       "number": "266",
+       "id": "3e5342f9-3f91-48e4-bfd1-49fbf9ca89cf"
+      },
+      {
+       "qty": 2,
+       "name": "Rugged Highlands",
+       "set": "ktk",
+       "number": "240",
+       "id": "501ce6cb-0324-4cca-bc79-903cefe1ac1f"
+      }
+     ]
+    }
+   },
+   "villain": {
+    "who": "zurgo",
+    "deck": {
+     "name": "The Mardu Horde",
+     "colors": "RWB",
+     "archetype": null,
+     "label": "tribute",
+     "cards": [
+      {
+       "qty": 2,
+       "name": "Zurgo Helmsmasher",
+       "set": "ktk",
+       "number": "214",
+       "id": "13f4bafe-0d21-47ba-8f16-0274107d618c"
+      },
+      {
+       "qty": 4,
+       "name": "Mardu Hordechief",
+       "set": "ktk",
+       "number": "17",
+       "id": "23426221-30a8-4be2-9c70-f0eb022edad7"
+      },
+      {
+       "qty": 4,
+       "name": "Chief of the Edge",
+       "set": "ktk",
+       "number": "169",
+       "id": "28822a9a-97fa-4784-ad97-072fcfc7b9ed"
+      },
+      {
+       "qty": 4,
+       "name": "Mardu Heart-Piercer",
+       "set": "ktk",
+       "number": "116",
+       "id": "d17b6eee-da22-48aa-ba8a-cbd1a3389bcb"
+      },
+      {
+       "qty": 4,
+       "name": "War-Name Aspirant",
+       "set": "ktk",
+       "number": "126",
+       "id": "e8d1714b-ff65-4c5c-ad21-b469f2c72286"
+      },
+      {
+       "qty": 4,
+       "name": "Hordeling Outburst",
+       "set": "ktk",
+       "number": "111",
+       "id": "a5c1bf52-2737-423a-b340-07448afcaea6"
+      },
+      {
+       "qty": 2,
+       "name": "Mardu Charm",
+       "set": "ktk",
+       "number": "186",
+       "id": "c35fb7a3-7c7f-4470-b1ad-5b8709a608e6"
+      },
+      {
+       "qty": 4,
+       "name": "Mardu Skullhunter",
+       "set": "ktk",
+       "number": "78",
+       "id": "dd3ca5e7-96f3-4326-9315-34bb396a054c"
+      },
+      {
+       "qty": 4,
+       "name": "Butcher of the Horde",
+       "set": "ktk",
+       "number": "168",
+       "id": "4c76027b-9c8d-4181-9311-270fed0212e3"
+      },
+      {
+       "qty": 4,
+       "name": "Crackling Doom",
+       "set": "ktk",
+       "number": "171",
+       "id": "f83c7d53-2599-42a9-ae96-a2699c5164cb"
+      },
+      {
+       "qty": 6,
+       "name": "Mountain",
+       "set": "ktk",
+       "number": "262",
+       "id": "802b1bb0-6c73-481a-ac3e-7d4e1682b4c2"
+      },
+      {
+       "qty": 6,
+       "name": "Plains",
+       "set": "ktk",
+       "number": "250",
+       "id": "2576dc74-1847-44b8-aef9-9d74f333b9cc"
+      },
+      {
+       "qty": 6,
+       "name": "Swamp",
+       "set": "ktk",
+       "number": "258",
+       "id": "09d7e861-8dda-4073-bfd6-4ade3bca5cff"
+      },
+      {
+       "qty": 3,
+       "name": "Nomad Outpost",
+       "set": "ktk",
+       "number": "237",
+       "id": "fb6ae4a5-227d-465b-9e99-bae158b7d410"
+      },
+      {
+       "qty": 3,
+       "name": "Bloodfell Caves",
+       "set": "ktk",
+       "number": "229",
+       "id": "15a7b30a-c59f-4a87-9e8a-b29daea27422"
+      }
+     ]
+    }
+   },
+   "reward": {
+    "hero": {
+     "packs": 1,
+     "coins": 100
+    },
+    "villain": {
+     "card": {
+      "oracle_id": "6c48d888-9f5d-43f4-adbd-61dbdba09260",
+      "name": "Zurgo Helmsmasher",
+      "rarity": "mythic",
+      "set": "ktk",
+      "id": "13f4bafe-0d21-47ba-8f16-0274107d618c",
+      "image": "https://cards.scryfall.io/normal/front/1/3/13f4bafe-0d21-47ba-8f16-0274107d618c.jpg"
+     },
+     "coins": 100
+    }
+   },
+   "scene": [
+    {
+     "who": "sarkhan",
+     "line": "No body can contain so much fury. It reminds me of another battle, long past.",
+     "quote": true
+    },
+    {
+     "who": "sarkhan",
+     "line": "Raid: their raid cards get a bonus if they attacked this turn. Make every attack cost them something."
+    }
+   ],
+   "villainScene": [
+    {
+     "who": "zurgo",
+     "line": "You have returned from fire, traitor. This time I will see you leave as ashes.",
+     "quote": true
+    },
+    {
+     "who": "zurgo",
+     "line": "Do you hear that, Sarkhan? The glory of the horde! I made a legend from what you abandoned.",
+     "quote": true
+    },
+    {
+     "who": "zurgo",
+     "line": "I came seeking a challenge. All I found was you.",
+     "quote": true
+    }
+   ],
+   "after": [
+    {
+     "who": "sarkhan",
+     "line": "He will never stop. Neither will the voice. Only one of them is worth following."
+    }
+   ],
+   "cues": {
+    "hero": {
+     "start": "Zurgo.",
+     "big": "Dragonfire!",
+     "low": "The horde is endless...",
+     "win": "Stay down.",
+     "loss": "Not yet...",
+     "half": "Block, and punish the raid."
+    },
+    "villain": {
+     "start": "Traitor!",
+     "big": "RAID!",
+     "low": "Lucky.",
+     "win": "Ashes!",
+     "loss": "Next time, Vol."
+    }
+   },
+   "bigPlays": [],
+   "sim": null
+  },
+  {
+   "id": "a22b5",
+   "slot": 5,
+   "kind": "Lesson",
+   "mood": "tension",
+   "title": "Ugin's Fate",
+   "difficulty": "Normal",
+   "teaches": [
+    "Manifest"
+   ],
+   "blurb": "Sarkhan reaches the place where Ugin fell after his battle with Nicol Bolas. Ugin is dying. Dragons are circling, and Sarkhan has to hold them off long enough to seal Ugin into a hedron.",
+   "rewardSet": "frf",
+   "host": false,
+   "hero": {
+    "who": "ugin",
+    "deck": {
+     "name": "The Spirit Dragon's Guard",
+     "colors": "GW",
+     "archetype": null,
+     "label": "tribute",
+     "cards": [
+      {
+       "qty": 2,
+       "name": "Ugin's Construct",
+       "set": "frf",
+       "number": "164",
+       "id": "7ee009a4-72d0-4828-b826-3ed7c7d87b53"
+      },
+      {
+       "qty": 4,
+       "name": "Formless Nurturing",
+       "set": "frf",
+       "number": "129",
+       "id": "f70646e4-936a-4c2a-8d4a-a2c659733093"
+      },
+      {
+       "qty": 4,
+       "name": "Soul Summons",
+       "set": "frf",
+       "number": "26",
+       "id": "fb884ac2-c990-4ab0-8610-e07d93da2f13"
+      },
+      {
+       "qty": 4,
+       "name": "Abzan Beastmaster",
+       "set": "frf",
+       "number": "119",
+       "id": "219c4ab2-1f7c-469b-a72a-d435213f130c"
+      },
+      {
+       "qty": 4,
+       "name": "Sandsteppe Outcast",
+       "set": "frf",
+       "number": "25",
+       "id": "f29943bb-aa89-443b-96b7-8f6f24672a9d"
+      },
+      {
+       "qty": 4,
+       "name": "Map the Wastes",
+       "set": "frf",
+       "number": "134",
+       "id": "039b61b1-79d5-44b6-8c0f-b8e8e508e5a9"
+      },
+      {
+       "qty": 2,
+       "name": "Dragonscale General",
+       "set": "frf",
+       "number": "11",
+       "id": "df904cc6-3ee0-4326-a854-818695aa2890"
+      },
+      {
+       "qty": 10,
+       "name": "Forest",
+       "set": "ktk",
+       "number": "266",
+       "id": "3e5342f9-3f91-48e4-bfd1-49fbf9ca89cf"
+      },
+      {
+       "qty": 10,
+       "name": "Plains",
+       "set": "ktk",
+       "number": "250",
+       "id": "2576dc74-1847-44b8-aef9-9d74f333b9cc"
+      },
+      {
+       "qty": 4,
+       "name": "Blossoming Sands",
+       "set": "ktk",
+       "number": "231",
+       "id": "a32a1c0b-f6ea-475a-aa01-3618ea7d8647"
+      },
+      {
+       "qty": 4,
+       "name": "Aven Skirmisher",
+       "set": "frf",
+       "number": "6",
+       "id": "05f7a3b1-4d92-4d32-a823-2e774c6e7e73"
+      },
+      {
+       "qty": 4,
+       "name": "Sandsteppe Mastodon",
+       "set": "frf",
+       "number": "137",
+       "id": "76ae01fb-12fa-444d-9d49-bfe195c2a5a6"
+      },
+      {
+       "qty": 2,
+       "name": "Abzan Advantage",
+       "set": "frf",
+       "number": "2",
+       "id": "3ffd46f5-afd1-4130-b019-d8822e61fdfa"
+      },
+      {
+       "qty": 2,
+       "name": "Valorous Stance",
+       "set": "frf",
+       "number": "28",
+       "id": "65998e94-15a0-41f1-8288-730b957f81df"
+      }
+     ]
+    }
+   },
+   "villain": {
+    "who": "kolaghan",
+    "deck": {
+     "name": "Kolaghan's Brood",
+     "colors": "BR",
+     "archetype": null,
+     "label": "tribute",
+     "cards": [
+      {
+       "qty": 2,
+       "name": "Kolaghan, the Storm's Fury",
+       "set": "frf",
+       "number": "155",
+       "id": "96376314-2085-4c57-861e-44d25e2d3bc8"
+      },
+      {
+       "qty": 4,
+       "name": "Goblin Heelcutter",
+       "set": "frf",
+       "number": "102",
+       "id": "5b3bfeb6-95d6-4f00-8981-c6d3c9c93f67"
+      },
+      {
+       "qty": 4,
+       "name": "Mardu Shadowspear",
+       "set": "frf",
+       "number": "74",
+       "id": "c1f55b50-b3b1-4336-914c-1cc2669b8fac"
+      },
+      {
+       "qty": 4,
+       "name": "Mardu Strike Leader",
+       "set": "frf",
+       "number": "75",
+       "id": "c93fd5f0-fb62-42cc-8c7d-c0368e191c4b"
+      },
+      {
+       "qty": 4,
+       "name": "Alesha's Vanguard",
+       "set": "frf",
+       "number": "60",
+       "id": "69bb135f-1c58-42ed-bbf2-4a2e842f99d7"
+      },
+      {
+       "qty": 4,
+       "name": "Shockmaw Dragon",
+       "set": "frf",
+       "number": "114",
+       "id": "e4810919-b379-40db-a68b-a769dd3ee32d"
+      },
+      {
+       "qty": 4,
+       "name": "Wild Slash",
+       "set": "frf",
+       "number": "118",
+       "id": "6975490f-7679-48b3-ba34-04dec97a29c2"
+      },
+      {
+       "qty": 4,
+       "name": "Douse in Gloom",
+       "set": "frf",
+       "number": "68",
+       "id": "9b710fcd-0721-4720-a8fa-6d9ceb7b8104"
+      },
+      {
+       "qty": 4,
+       "name": "Flamerush Rider",
+       "set": "frf",
+       "number": "99",
+       "id": "304107d6-d096-43a1-956f-5a3b6ed6dc60"
+      },
+      {
+       "qty": 10,
+       "name": "Mountain",
+       "set": "ktk",
+       "number": "262",
+       "id": "802b1bb0-6c73-481a-ac3e-7d4e1682b4c2"
+      },
+      {
+       "qty": 10,
+       "name": "Swamp",
+       "set": "ktk",
+       "number": "258",
+       "id": "09d7e861-8dda-4073-bfd6-4ade3bca5cff"
+      },
+      {
+       "qty": 4,
+       "name": "Bloodfell Caves",
+       "set": "ktk",
+       "number": "229",
+       "id": "15a7b30a-c59f-4a87-9e8a-b29daea27422"
+      },
+      {
+       "qty": 2,
+       "name": "Mardu Heart-Piercer",
+       "set": "ktk",
+       "number": "116",
+       "id": "d17b6eee-da22-48aa-ba8a-cbd1a3389bcb"
+      }
+     ]
+    }
+   },
+   "reward": {
+    "hero": {
+     "packs": 1,
+     "coins": 100
+    },
+    "villain": {
+     "card": {
+      "oracle_id": "f6e160c1-b29f-4f3d-ab55-43ffe3ab4acf",
+      "name": "Kolaghan, the Storm's Fury",
+      "rarity": "rare",
+      "set": "frf",
+      "id": "96376314-2085-4c57-861e-44d25e2d3bc8",
+      "image": "https://cards.scryfall.io/normal/front/9/6/96376314-2085-4c57-861e-44d25e2d3bc8.jpg"
+     },
+     "coins": 100
+    }
+   },
+   "scene": [
+    {
+     "who": "stage",
+     "line": "Ugin's whispered summons led Sarkhan Vol to the moment that would echo down the centuries and seal Tarkir's fate: the primal battle between Ugin and Nicol Bolas.",
+     "quote": true
+    },
+    {
+     "who": "sarkhan",
+     "line": "Every choice alters the path of fate.",
+     "quote": true
+    },
+    {
+     "who": "sarkhan",
+     "line": "Manifest: put the top card of your library onto the battlefield face down as a 2/2. If it is a creature, you can turn it face up for its mana cost."
+    }
+   ],
+   "villainScene": [
+    {
+     "who": "stage",
+     "line": "She answers the call of the Crave, the desire for battle sated only by bloodshed.",
+     "quote": true
+    },
+    {
+     "who": "stage",
+     "line": "Kolaghan's army rushes from kill to kill, desperate to avoid the dragon's wrath.",
+     "quote": true
+    }
+   ],
+   "after": [
+    {
+     "who": "stage",
+     "line": "Sarkhan closes the hedron around the broken dragon. Somewhere behind him, a thousand years start to change."
+    }
+   ],
+   "cues": {
+    "hero": {
+     "start": "Hold on, Ugin.",
+     "big": "The hedron holds!",
+     "low": "They are on him...",
+     "win": "Sealed.",
+     "loss": "Too late...",
+     "half": "Flip the creatures you manifest."
+    },
+    "villain": {
+     "start": "[a shriek from the storm]",
+     "big": "[dash]",
+     "low": "[the brood scatters]",
+     "win": "[blood on the wind]",
+     "loss": "[the storm passes]"
+    }
+   },
+   "bigPlays": [],
+   "sim": null
+  },
+  {
+   "id": "a22b6",
+   "slot": 6,
+   "kind": "Meta",
+   "mood": "march",
+   "title": "Siege Rhino",
+   "difficulty": "Normal",
+   "teaches": [
+    "Outlast"
+   ],
+   "blurb": "The Archive remembers Khans Standard: Abzan midrange and its Siege Rhinos, against Jeskai decks that made an army of tokens out of cheap spells.",
+   "rewardSet": "ktk",
+   "host": false,
+   "hero": {
+    "who": "abzan",
+    "deck": {
+     "name": "Abzan",
+     "colors": "WBG",
+     "archetype": "Midrange",
+     "label": "tribute",
+     "note": "Built from cards in this act's sets only, so Courser of Kruphix, Sylvan Caryatid, Hero's Downfall and Elspeth, Sun's Champion are not in it.",
+     "cards": [
+      {
+       "qty": 4,
+       "name": "Siege Rhino",
+       "set": "ktk",
+       "number": "200",
+       "id": "9011126a-20bd-4c86-a63b-1691f79ac247"
+      },
+      {
+       "qty": 2,
+       "name": "Anafenza, the Foremost",
+       "set": "ktk",
+       "number": "163",
+       "id": "c8b432a7-53da-4480-b571-e6feb1364a3a"
+      },
+      {
+       "qty": 4,
+       "name": "Wingmate Roc",
+       "set": "ktk",
+       "number": "31",
+       "id": "25f0f6a2-b392-45e6-97c4-4f00016144d3"
+      },
+      {
+       "qty": 4,
+       "name": "Abzan Charm",
+       "set": "ktk",
+       "number": "161",
+       "id": "8f7b7598-35b0-4bb5-8347-8c868500f846"
+      },
+      {
+       "qty": 4,
+       "name": "Murderous Cut",
+       "set": "ktk",
+       "number": "81",
+       "id": "b2dadff2-883f-4134-a881-be145cdcbd84"
+      },
+      {
+       "qty": 4,
+       "name": "Rakshasa Deathdealer",
+       "set": "ktk",
+       "number": "192",
+       "id": "ab4e0b33-dad1-4443-a7c7-a7bab067d04a"
+      },
+      {
+       "qty": 3,
+       "name": "Den Protector",
+       "set": "dtk",
+       "number": "181",
+       "id": "bd90d5ea-c586-4afd-be75-1c821e48df0c"
+      },
+      {
+       "qty": 3,
+       "name": "Deathmist Raptor",
+       "set": "dtk",
+       "number": "180",
+       "id": "74c40df1-3f63-49e7-a869-1ce14f94a753"
+      },
+      {
+       "qty": 4,
+       "name": "Warden of the First Tree",
+       "set": "frf",
+       "number": "143",
+       "id": "2e0c6628-04f1-4800-baa8-bcaefe64f59f"
+      },
+      {
+       "qty": 2,
+       "name": "Dromoka's Command",
+       "set": "dtk",
+       "number": "221",
+       "id": "df1e43a8-0adc-4e26-bc56-6b914bd35838"
+      },
+      {
+       "qty": 2,
+       "name": "Ultimate Price",
+       "set": "dtk",
+       "number": "124",
+       "id": "b41f7cf3-bd76-4184-b694-f565aa5cf3a4"
+      },
+      {
+       "qty": 6,
+       "name": "Plains",
+       "set": "ktk",
+       "number": "250",
+       "id": "2576dc74-1847-44b8-aef9-9d74f333b9cc"
+      },
+      {
+       "qty": 4,
+       "name": "Forest",
+       "set": "ktk",
+       "number": "266",
+       "id": "3e5342f9-3f91-48e4-bfd1-49fbf9ca89cf"
+      },
+      {
+       "qty": 4,
+       "name": "Swamp",
+       "set": "ktk",
+       "number": "258",
+       "id": "09d7e861-8dda-4073-bfd6-4ade3bca5cff"
+      },
+      {
+       "qty": 4,
+       "name": "Sandsteppe Citadel",
+       "set": "ktk",
+       "number": "241",
+       "id": "2dd40d90-c939-458a-9a98-27d10da6ff2f"
+      },
+      {
+       "qty": 3,
+       "name": "Windswept Heath",
+       "set": "ktk",
+       "number": "248",
+       "id": "e7b28650-cddc-4878-b1d1-b5a764f4df49"
+      },
+      {
+       "qty": 3,
+       "name": "Jungle Hollow",
+       "set": "ktk",
+       "number": "235",
+       "id": "fea27aa7-7fcf-4198-b03a-5034a03ba81f"
+      }
+     ]
+    }
+   },
+   "villain": {
+    "who": "jeskai",
+    "deck": {
+     "name": "Jeskai Tokens",
+     "colors": "URW",
+     "archetype": "Tokens",
+     "label": "tribute",
+     "cards": [
+      {
+       "qty": 4,
+       "name": "Hordeling Outburst",
+       "set": "ktk",
+       "number": "111",
+       "id": "a5c1bf52-2737-423a-b340-07448afcaea6"
+      },
+      {
+       "qty": 1,
+       "name": "Monastery Mentor",
+       "set": "frf",
+       "number": "20",
+       "id": "abcd0e32-2e6b-419b-9e8a-af38f2b48a66"
+      },
+      {
+       "qty": 4,
+       "name": "Seeker of the Way",
+       "set": "ktk",
+       "number": "22",
+       "id": "3c17e350-44f7-4413-ad24-7c5d6616effd"
+      },
+      {
+       "qty": 4,
+       "name": "Mantis Rider",
+       "set": "ktk",
+       "number": "184",
+       "id": "82d5ce46-7118-4ede-ba1d-c387e7ce16e7"
+      },
+      {
+       "qty": 4,
+       "name": "Jeskai Charm",
+       "set": "ktk",
+       "number": "181",
+       "id": "ca268705-ef04-4bf1-8a5d-866bb3e5bb61"
+      },
+      {
+       "qty": 4,
+       "name": "Wild Slash",
+       "set": "frf",
+       "number": "118",
+       "id": "6975490f-7679-48b3-ba34-04dec97a29c2"
+      },
+      {
+       "qty": 4,
+       "name": "Arc Lightning",
+       "set": "ktk",
+       "number": "97",
+       "id": "35c7c392-6782-40c8-bb24-6aad24f14660"
+      },
+      {
+       "qty": 4,
+       "name": "Secure the Wastes",
+       "set": "dtk",
+       "number": "36",
+       "id": "915d2f5f-b228-4190-ade9-52e2a8056847"
+      },
+      {
+       "qty": 2,
+       "name": "Valorous Stance",
+       "set": "frf",
+       "number": "28",
+       "id": "65998e94-15a0-41f1-8288-730b957f81df"
+      },
+      {
+       "qty": 2,
+       "name": "Soulfire Grand Master",
+       "set": "frf",
+       "number": "27",
+       "id": "fc3a4e7d-6667-4c2f-b6b4-484f401b0455"
+      },
+      {
+       "qty": 7,
+       "name": "Plains",
+       "set": "ktk",
+       "number": "250",
+       "id": "2576dc74-1847-44b8-aef9-9d74f333b9cc"
+      },
+      {
+       "qty": 5,
+       "name": "Mountain",
+       "set": "ktk",
+       "number": "262",
+       "id": "802b1bb0-6c73-481a-ac3e-7d4e1682b4c2"
+      },
+      {
+       "qty": 4,
+       "name": "Island",
+       "set": "ktk",
+       "number": "254",
+       "id": "9c010ca5-b609-4ae9-8c23-adf5723a9daa"
+      },
+      {
+       "qty": 4,
+       "name": "Mystic Monastery",
+       "set": "ktk",
+       "number": "236",
+       "id": "bae51d77-e06b-4e5a-9543-a17dd0b2a333"
+      },
+      {
+       "qty": 4,
+       "name": "Wind-Scarred Crag",
+       "set": "ktk",
+       "number": "247",
+       "id": "3b296781-78ac-411f-88fc-2d924ad22986"
+      },
+      {
+       "qty": 3,
+       "name": "Jeskai Windscout",
+       "set": "ktk",
+       "number": "44",
+       "id": "66356e38-38e1-4b09-80c2-be26007ff99c"
+      }
+     ]
+    }
+   },
+   "reward": {
+    "hero": {
+     "packs": 1,
+     "coins": 100
+    },
+    "villain": {
+     "card": {
+      "oracle_id": "3979067a-9c68-443d-a85f-d9f07be880b9",
+      "name": "Monastery Mentor",
+      "rarity": "mythic",
+      "set": "frf",
+      "id": "abcd0e32-2e6b-419b-9e8a-af38f2b48a66",
+      "image": "https://cards.scryfall.io/normal/front/a/b/abcd0e32-2e6b-419b-9e8a-af38f2b48a66.jpg"
+     },
+     "coins": 100
+    }
+   },
+   "scene": [
+    {
+     "who": "stage",
+     "line": "The mere approach of an Abzan war beast is enough to send enemies fleeing in panic.",
+     "quote": true
+    },
+    {
+     "who": "you",
+     "line": "Outlast: pay the cost and tap the creature to put a +1/+1 counter on it, any time you could cast a sorcery. Slow, but it adds up."
+    }
+   ],
+   "villainScene": [
+    {
+     "who": "jeskai",
+     "line": "Speak little. Do much.",
+     "quote": true
+    }
+   ],
+   "after": [
+    {
+     "who": "stage",
+     "line": "Recorded: Khans of Tarkir Standard, 2014 to 2015."
+    }
+   ],
+   "cues": {
+    "hero": {
+     "start": "Rhino time.",
+     "big": "Drain three!",
+     "low": "Tokens everywhere...",
+     "win": "Trampled.",
+     "loss": "Outnumbered.",
+     "half": "Kill the Mentor first."
+    },
+    "villain": {
+     "start": "[a flurry of tokens]",
+     "big": "[prowess]",
+     "low": "[the Rhino lands]",
+     "win": "[swarmed]",
+     "loss": "[trampled]"
+    }
+   },
+   "bigPlays": [],
+   "sim": null
+  },
+  {
+   "id": "a22b7",
+   "slot": 7,
+   "kind": "Meta",
+   "mood": "tension",
+   "title": "Atarka's Command",
+   "difficulty": "Normal",
+   "teaches": [
+    "Racing"
+   ],
+   "blurb": "The Archive remembers summer 2015: Atarka Red, which tried to win on turn four with tokens and pump spells, against Esper Dragons and its counterspells.",
+   "rewardSet": "dtk",
+   "host": false,
+   "hero": {
+    "who": "atarka",
+    "deck": {
+     "name": "Atarka Red",
+     "colors": "RG",
+     "archetype": "Aggro",
+     "label": "tribute",
+     "cards": [
+      {
+       "qty": 4,
+       "name": "Monastery Swiftspear",
+       "set": "ktk",
+       "number": "118",
+       "id": "b81c6c8b-a9cf-4866-89ba-7f8ad077b836"
+      },
+      {
+       "qty": 4,
+       "name": "Zurgo Bellstriker",
+       "set": "dtk",
+       "number": "169",
+       "id": "bbac6d75-59ab-4d7d-87ae-46875abf8cc7"
+      },
+      {
+       "qty": 4,
+       "name": "Atarka's Command",
+       "set": "dtk",
+       "number": "213",
+       "id": "903d78c9-c5b3-45c3-a6d0-7e92b4196ae3"
+      },
+      {
+       "qty": 4,
+       "name": "Dragon Fodder",
+       "set": "dtk",
+       "number": "135",
+       "id": "5220e572-7386-4f2f-905f-ba4a2d222f83"
+      },
+      {
+       "qty": 4,
+       "name": "Hordeling Outburst",
+       "set": "ktk",
+       "number": "111",
+       "id": "a5c1bf52-2737-423a-b340-07448afcaea6"
+      },
+      {
+       "qty": 4,
+       "name": "Wild Slash",
+       "set": "frf",
+       "number": "118",
+       "id": "6975490f-7679-48b3-ba34-04dec97a29c2"
+      },
+      {
+       "qty": 4,
+       "name": "Temur Battle Rage",
+       "set": "frf",
+       "number": "116",
+       "id": "8a1dd786-f4e3-4951-b87b-82442edec016"
+      },
+      {
+       "qty": 4,
+       "name": "Become Immense",
+       "set": "ktk",
+       "number": "130",
+       "id": "5e17b65e-56c3-4e12-a774-780514dfd8ba"
+      },
+      {
+       "qty": 4,
+       "name": "Lightning Berserker",
+       "set": "dtk",
+       "number": "146",
+       "id": "3285cb6f-a9c0-4195-b6b2-3f33a16eaa01"
+      },
+      {
+       "qty": 12,
+       "name": "Mountain",
+       "set": "ktk",
+       "number": "262",
+       "id": "802b1bb0-6c73-481a-ac3e-7d4e1682b4c2"
+      },
+      {
+       "qty": 6,
+       "name": "Forest",
+       "set": "ktk",
+       "number": "266",
+       "id": "3e5342f9-3f91-48e4-bfd1-49fbf9ca89cf"
+      },
+      {
+       "qty": 4,
+       "name": "Wooded Foothills",
+       "set": "ktk",
+       "number": "249",
+       "id": "a8503cca-7e7d-44c4-8587-81376b396398"
+      },
+      {
+       "qty": 2,
+       "name": "Rugged Highlands",
+       "set": "ktk",
+       "number": "240",
+       "id": "501ce6cb-0324-4cca-bc79-903cefe1ac1f"
+      }
+     ]
+    }
+   },
+   "villain": {
+    "who": "esper",
+    "deck": {
+     "name": "Esper Dragons",
+     "colors": "WUB",
+     "archetype": "Control",
+     "label": "tribute",
+     "cards": [
+      {
+       "qty": 3,
+       "name": "Dragonlord Ojutai",
+       "set": "dtk",
+       "number": "219",
+       "id": "a42b2c9c-1650-468e-94d6-e09b3518447f"
+      },
+      {
+       "qty": 4,
+       "name": "Silumgar's Scorn",
+       "set": "dtk",
+       "number": "78",
+       "id": "077bee72-62f6-4d90-8557-ff9cac42ec9a"
+      },
+      {
+       "qty": 4,
+       "name": "Ojutai's Command",
+       "set": "dtk",
+       "number": "227",
+       "id": "c7a7f500-594d-4c7b-80e8-54ae1ada2444"
+      },
+      {
+       "qty": 4,
+       "name": "Icefall Regent",
+       "set": "dtk",
+       "number": "58",
+       "id": "2cbbd377-4617-4285-b367-98418a588dab"
+      },
+      {
+       "qty": 4,
+       "name": "Silumgar's Command",
+       "set": "dtk",
+       "number": "232",
+       "id": "ba26dbbc-d4a2-44a1-8e6b-affe61f43a34"
+      },
+      {
+       "qty": 1,
+       "name": "Dig Through Time",
+       "set": "ktk",
+       "number": "36",
+       "id": "5c18c2d8-995c-4736-bdef-464abcd1d31a"
+      },
+      {
+       "qty": 4,
+       "name": "Ultimate Price",
+       "set": "dtk",
+       "number": "124",
+       "id": "b41f7cf3-bd76-4184-b694-f565aa5cf3a4"
+      },
+      {
+       "qty": 4,
+       "name": "Foul-Tongue Invocation",
+       "set": "dtk",
+       "number": "102",
+       "id": "ac6d021a-7bb8-4173-9a2f-e4a1d21fda8e"
+      },
+      {
+       "qty": 3,
+       "name": "Crux of Fate",
+       "set": "frf",
+       "number": "65",
+       "id": "e1d45374-a41b-4b3f-a7c8-3eb5ca767cf6"
+      },
+      {
+       "qty": 2,
+       "name": "Anticipate",
+       "set": "dtk",
+       "number": "45",
+       "id": "7028d9e8-002f-43a1-bdce-0db0b6a642b0"
+      },
+      {
+       "qty": 3,
+       "name": "Stratus Dancer",
+       "set": "dtk",
+       "number": "80",
+       "id": "e3bf4f37-2a2e-4c49-88dc-a26dd7367afb"
+      },
+      {
+       "qty": 8,
+       "name": "Island",
+       "set": "ktk",
+       "number": "254",
+       "id": "9c010ca5-b609-4ae9-8c23-adf5723a9daa"
+      },
+      {
+       "qty": 4,
+       "name": "Plains",
+       "set": "ktk",
+       "number": "250",
+       "id": "2576dc74-1847-44b8-aef9-9d74f333b9cc"
+      },
+      {
+       "qty": 4,
+       "name": "Swamp",
+       "set": "ktk",
+       "number": "258",
+       "id": "09d7e861-8dda-4073-bfd6-4ade3bca5cff"
+      },
+      {
+       "qty": 4,
+       "name": "Dismal Backwater",
+       "set": "ktk",
+       "number": "232",
+       "id": "63742780-47ee-4a66-993a-69e06c14967d"
+      },
+      {
+       "qty": 4,
+       "name": "Tranquil Cove",
+       "set": "ktk",
+       "number": "246",
+       "id": "0f840bd2-c4f5-4ac4-918c-91b4feeb8783"
+      }
+     ]
+    }
+   },
+   "reward": {
+    "hero": {
+     "packs": 1,
+     "coins": 100
+    },
+    "villain": {
+     "card": {
+      "oracle_id": "654ff673-4630-4068-9bcf-e88a7877eb58",
+      "name": "Dragonlord Ojutai",
+      "rarity": "mythic",
+      "set": "dtk",
+      "id": "a42b2c9c-1650-468e-94d6-e09b3518447f",
+      "image": "https://cards.scryfall.io/normal/front/a/4/a42b2c9c-1650-468e-94d6-e09b3518447f.jpg"
+     },
+     "coins": 100
+    }
+   },
+   "scene": [
+    {
+     "who": "stage",
+     "line": "Atarka serving-goblins coat themselves with grease imbued with noxious herbs, hoping to discourage their ravenous masters from adding them to the meal.",
+     "quote": true
+    },
+    {
+     "who": "you",
+     "line": "Go wide, then pump everything at once. Do not give the dragons time to land."
+    }
+   ],
+   "villainScene": [
+    {
+     "who": "stage",
+     "line": "Attracting a dragon's attention may be the last mistake you make.",
+     "quote": true
+    }
+   ],
+   "after": [
+    {
+     "who": "stage",
+     "line": "Recorded: Dragons of Tarkir Standard, 2015."
+    }
+   ],
+   "cues": {
+    "hero": {
+     "start": "Go!",
+     "big": "Command!",
+     "low": "Countered...",
+     "win": "Overrun.",
+     "loss": "The dragon lands...",
+     "half": "Win before turn six."
+    },
+    "villain": {
+     "start": "[a counterspell]",
+     "big": "[a dragon from the air]",
+     "low": "[too many tokens]",
+     "win": "[the dragonlord rules]",
+     "loss": "[swarmed]"
+    }
+   },
+   "bigPlays": [],
+   "sim": null
+  },
+  {
+   "id": "a22b8",
+   "slot": 8,
+   "kind": "Boss",
+   "mood": "boss",
+   "title": "Dragonlord Silumgar",
+   "difficulty": "Hard",
+   "teaches": [
+    "Card advantage"
+   ],
+   "blurb": "Sarkhan wakes in a Tarkir ruled by dragons. In the swamps, Dragonlord Silumgar sits on a mountain of treasure with Sidisi as his vizier. Sarkhan and Narset go to see the new world's worst dragon.",
+   "rewardSet": "dtk",
+   "host": true,
+   "hero": {
+    "who": "sarkhan",
+    "deck": {
+     "name": "Sarkhan and Narset",
+     "colors": "URW",
+     "archetype": null,
+     "label": "tribute",
+     "cards": [
+      {
+       "qty": 2,
+       "name": "Narset Transcendent",
+       "set": "dtk",
+       "number": "225",
+       "id": "4816d092-e34b-4397-8599-43d8e85a8f39"
+      },
+      {
+       "qty": 2,
+       "name": "Sarkhan, the Dragonspeaker",
+       "set": "ktk",
+       "number": "119",
+       "id": "c58064fd-4d8b-4f54-812f-0bb1d7e2ddc2"
+      },
+      {
+       "qty": 2,
+       "name": "Thunderbreak Regent",
+       "set": "dtk",
+       "number": "162",
+       "id": "a2b9cf2b-efe3-4815-be18-c3b69ee762f2"
+      },
+      {
+       "qty": 1,
+       "name": "Stormwing Dragon",
+       "set": "dtk",
+       "number": "159",
+       "id": "6da2b004-97e5-41ab-98b0-3637cb32a35a"
+      },
+      {
+       "qty": 4,
+       "name": "Seeker of the Way",
+       "set": "ktk",
+       "number": "22",
+       "id": "3c17e350-44f7-4413-ad24-7c5d6616effd"
+      },
+      {
+       "qty": 4,
+       "name": "Jeskai Windscout",
+       "set": "ktk",
+       "number": "44",
+       "id": "66356e38-38e1-4b09-80c2-be26007ff99c"
+      },
+      {
+       "qty": 2,
+       "name": "Arc Lightning",
+       "set": "ktk",
+       "number": "97",
+       "id": "35c7c392-6782-40c8-bb24-6aad24f14660"
+      },
+      {
+       "qty": 3,
+       "name": "Ojutai's Command",
+       "set": "dtk",
+       "number": "227",
+       "id": "c7a7f500-594d-4c7b-80e8-54ae1ada2444"
+      },
+      {
+       "qty": 4,
+       "name": "Draconic Roar",
+       "set": "dtk",
+       "number": "134",
+       "id": "6cf5591c-46e3-4904-8b4e-4f1f84d3118f"
+      },
+      {
+       "qty": 2,
+       "name": "Icefall Regent",
+       "set": "dtk",
+       "number": "58",
+       "id": "2cbbd377-4617-4285-b367-98418a588dab"
+      },
+      {
+       "qty": 7,
+       "name": "Mountain",
+       "set": "ktk",
+       "number": "262",
+       "id": "802b1bb0-6c73-481a-ac3e-7d4e1682b4c2"
+      },
+      {
+       "qty": 5,
+       "name": "Island",
+       "set": "ktk",
+       "number": "254",
+       "id": "9c010ca5-b609-4ae9-8c23-adf5723a9daa"
+      },
+      {
+       "qty": 5,
+       "name": "Plains",
+       "set": "ktk",
+       "number": "250",
+       "id": "2576dc74-1847-44b8-aef9-9d74f333b9cc"
+      },
+      {
+       "qty": 4,
+       "name": "Mystic Monastery",
+       "set": "ktk",
+       "number": "236",
+       "id": "bae51d77-e06b-4e5a-9543-a17dd0b2a333"
+      },
+      {
+       "qty": 3,
+       "name": "Swiftwater Cliffs",
+       "set": "ktk",
+       "number": "243",
+       "id": "e782d005-a563-4738-978a-73a3465de78f"
+      },
+      {
+       "qty": 4,
+       "name": "Jeskai Student",
+       "set": "ktk",
+       "number": "14",
+       "id": "9007c528-0107-40fd-a97e-e5576f297eb2"
+      },
+      {
+       "qty": 4,
+       "name": "Monastery Flock",
+       "set": "ktk",
+       "number": "47",
+       "id": "e53c0e50-4b0b-43d8-80c0-2c216722c87a"
+      },
+      {
+       "qty": 2,
+       "name": "Mistfire Weaver",
+       "set": "ktk",
+       "number": "46",
+       "id": "8003a31f-7662-4e9e-8165-1ceea04fdf20"
+      }
+     ]
+    }
+   },
+   "villain": {
+    "who": "silumgar",
+    "deck": {
+     "name": "The Silumgar",
+     "colors": "UB",
+     "archetype": null,
+     "label": "tribute",
+     "cards": [
+      {
+       "qty": 2,
+       "name": "Dragonlord Silumgar",
+       "set": "dtk",
+       "number": "220",
+       "id": "2eae504d-d4a9-440f-8ceb-df967cc50494"
+      },
+      {
+       "qty": 2,
+       "name": "Silumgar, the Drifting Death",
+       "set": "frf",
+       "number": "157",
+       "id": "4c9108e7-6c39-4587-aa3a-0ec27f9761b2"
+      },
+      {
+       "qty": 4,
+       "name": "Silumgar's Scorn",
+       "set": "dtk",
+       "number": "78",
+       "id": "077bee72-62f6-4d90-8557-ff9cac42ec9a"
+      },
+      {
+       "qty": 2,
+       "name": "Silumgar's Command",
+       "set": "dtk",
+       "number": "232",
+       "id": "ba26dbbc-d4a2-44a1-8e6b-affe61f43a34"
+      },
+      {
+       "qty": 4,
+       "name": "Ultimate Price",
+       "set": "dtk",
+       "number": "124",
+       "id": "b41f7cf3-bd76-4184-b694-f565aa5cf3a4"
+      },
+      {
+       "qty": 3,
+       "name": "Foul-Tongue Invocation",
+       "set": "dtk",
+       "number": "102",
+       "id": "ac6d021a-7bb8-4173-9a2f-e4a1d21fda8e"
+      },
+      {
+       "qty": 4,
+       "name": "Necromaster Dragon",
+       "set": "dtk",
+       "number": "226",
+       "id": "2574aaf5-8397-4a88-b047-1b4dbb176930"
+      },
+      {
+       "qty": 4,
+       "name": "Deathbringer Regent",
+       "set": "dtk",
+       "number": "96",
+       "id": "75cad378-129f-41da-8db2-065fc45c76eb"
+      },
+      {
+       "qty": 4,
+       "name": "Hand of Silumgar",
+       "set": "dtk",
+       "number": "105",
+       "id": "884cbc26-f164-47bd-878c-dd46652465d0"
+      },
+      {
+       "qty": 4,
+       "name": "Gurmag Angler",
+       "set": "frf",
+       "number": "72",
+       "id": "c60a8cf1-a8c7-4f45-bbd3-188fab2652f9"
+      },
+      {
+       "qty": 2,
+       "name": "Crux of Fate",
+       "set": "frf",
+       "number": "65",
+       "id": "e1d45374-a41b-4b3f-a7c8-3eb5ca767cf6"
+      },
+      {
+       "qty": 1,
+       "name": "Dig Through Time",
+       "set": "ktk",
+       "number": "36",
+       "id": "5c18c2d8-995c-4736-bdef-464abcd1d31a"
+      },
+      {
+       "qty": 12,
+       "name": "Swamp",
+       "set": "ktk",
+       "number": "258",
+       "id": "09d7e861-8dda-4073-bfd6-4ade3bca5cff"
+      },
+      {
+       "qty": 8,
+       "name": "Island",
+       "set": "ktk",
+       "number": "254",
+       "id": "9c010ca5-b609-4ae9-8c23-adf5723a9daa"
+      },
+      {
+       "qty": 4,
+       "name": "Dismal Backwater",
+       "set": "ktk",
+       "number": "232",
+       "id": "63742780-47ee-4a66-993a-69e06c14967d"
+      }
+     ]
+    }
+   },
+   "reward": {
+    "hero": {
+     "packs": 2,
+     "coins": 200
+    },
+    "villain": {
+     "card": {
+      "oracle_id": "44581d4f-746b-43b8-a34d-16dc383ab70e",
+      "name": "Dragonlord Silumgar",
+      "rarity": "mythic",
+      "set": "dtk",
+      "id": "2eae504d-d4a9-440f-8ceb-df967cc50494",
+      "image": "https://cards.scryfall.io/normal/front/2/e/2eae504d-d4a9-440f-8ceb-df967cc50494.jpg"
+     },
+     "coins": 200
+    }
+   },
+   "scene": [
+    {
+     "who": "sarkhan",
+     "line": "In the Tarkir I once knew, the Abzan revered their ancestor trees. Now, as Dromoka, they cut their finest groves to make weapons.",
+     "quote": true
+    },
+    {
+     "who": "narset",
+     "line": "Abzan, Jeskai, Sultai, Mardu, Temur—names lost to history, yet worthy of further study.",
+     "quote": true
+    },
+    {
+     "who": "narset",
+     "line": "He takes what you have and keeps it. Make him spend his cards, then spend yours."
+    }
+   ],
+   "villainScene": [
+    {
+     "who": "silumgar",
+     "line": "Bring forth the dead, their skull-grins and rattle-bones. We will feast upon their wailing ghosts.",
+     "quote": true
+    },
+    {
+     "who": "sidisi",
+     "line": "The most profound secrets lie in the darkest places of the world. It can be prudent to make use of another set of eyes.",
+     "quote": true
+    },
+    {
+     "who": "sidisi",
+     "line": "The realization that one is dying is far more terrifying than death itself.",
+     "quote": true
+    }
+   ],
+   "after": null,
+   "cues": {
+    "hero": {
+     "start": "For Tarkir.",
+     "big": "Dragonfire!",
+     "low": "He took it...",
+     "win": "The hoard falls.",
+     "loss": "Added to the hoard...",
+     "half": "Bait the counterspell."
+    },
+    "villain": {
+     "start": "How shiny.",
+     "big": "Mine now.",
+     "low": "You scratched it.",
+     "win": "Into the hoard.",
+     "loss": "Insolent.",
+     "half": {
+      "who": "narset",
+      "line": "He is greedy, not careful. Keep making him choose."
+     }
+    }
+   },
+   "bigPlays": [],
+   "sim": null
+  },
+  {
+   "id": "a22b9",
+   "slot": 9,
+   "kind": "Secret Boss",
+   "secret": true,
+   "mood": "boss",
+   "title": "Treasure Cruise",
+   "difficulty": "Hard",
+   "teaches": [
+    "Delve"
+   ],
+   "blurb": "Deep in the archive, the card that made a cruise ship cost one blue mana.",
+   "rewardSet": "ktk",
+   "host": true,
+   "archive": {
+    "deck": "Treasure Cruise",
+    "when": "Late 2014",
+    "format": "Standard, Modern, Legacy and Vintage.",
+    "what": "Cheap red and blue tempo decks that filled the graveyard with one-mana spells, then cast Treasure Cruise and Dig Through Time for one or two mana by delving it away.",
+    "why": "Delve made an eight-mana card cost almost nothing in the right deck, and the older formats had the right decks.",
+    "beat": "Race them and kill the small creatures. Their card draw is only cheap once the graveyard is full.",
+    "after": "Treasure Cruise and Dig Through Time were banned in Modern in January 2015. This tribute follows the Vintage list, so it plays one of each."
+   },
+   "hero": {
+    "who": "you",
+    "deck": {
+     "name": "Dragons",
+     "colors": "R",
+     "archetype": "Midrange",
+     "label": "tribute",
+     "cards": [
+      {
+       "qty": 3,
+       "name": "Stormwing Dragon",
+       "set": "dtk",
+       "number": "159",
+       "id": "6da2b004-97e5-41ab-98b0-3637cb32a35a"
+      },
+      {
+       "qty": 4,
+       "name": "Shockmaw Dragon",
+       "set": "frf",
+       "number": "114",
+       "id": "e4810919-b379-40db-a68b-a769dd3ee32d"
+      },
+      {
+       "qty": 2,
+       "name": "Dragon Whisperer",
+       "set": "dtk",
+       "number": "137",
+       "id": "5c75b106-349f-44e1-a737-079955cc91b2"
+      },
+      {
+       "qty": 4,
+       "name": "Dragon Fodder",
+       "set": "dtk",
+       "number": "135",
+       "id": "5220e572-7386-4f2f-905f-ba4a2d222f83"
+      },
+      {
+       "qty": 29,
+       "name": "Mountain",
+       "set": "ktk",
+       "number": "262",
+       "id": "802b1bb0-6c73-481a-ac3e-7d4e1682b4c2"
+      },
+      {
+       "qty": 4,
+       "name": "Kolaghan Aspirant",
+       "set": "dtk",
+       "number": "143",
+       "id": "aa17972e-c16b-4dec-a108-1c3fb0138a4e"
+      },
+      {
+       "qty": 2,
+       "name": "Twin Bolt",
+       "set": "dtk",
+       "number": "164",
+       "id": "5bd58ec4-34a9-4fc2-b057-438492e2e06e"
+      },
+      {
+       "qty": 4,
+       "name": "Sabertooth Outrider",
+       "set": "dtk",
+       "number": "152",
+       "id": "64ddda91-3ccb-4c87-82e6-d4e60f4afc24"
+      },
+      {
+       "qty": 4,
+       "name": "Mardu Scout",
+       "set": "frf",
+       "number": "108",
+       "id": "0e7891b8-ba69-4c5b-a29f-ee7bcf2374f0"
+      },
+      {
+       "qty": 4,
+       "name": "Hardened Berserker",
+       "set": "dtk",
+       "number": "139",
+       "id": "d10fb883-12b8-4050-967e-4281ea620906"
+      }
+     ]
+    }
+   },
+   "villain": {
+    "who": "cruise",
+    "deck": {
+     "name": "Treasure Cruise Tempo",
+     "colors": "UR",
+     "archetype": "Tempo",
+     "label": "tribute",
+     "note": "Built from cards in this act's sets only. No single tournament list is copied.",
+     "cards": [
+      {
+       "qty": 4,
+       "name": "Monastery Swiftspear",
+       "set": "ktk",
+       "number": "118",
+       "id": "b81c6c8b-a9cf-4866-89ba-7f8ad077b836"
+      },
+      {
+       "qty": 1,
+       "name": "Treasure Cruise",
+       "set": "ktk",
+       "number": "59",
+       "id": "7a59d4b1-6cf4-44ec-8a96-1bb7094fea21"
+      },
+      {
+       "qty": 1,
+       "name": "Dig Through Time",
+       "set": "ktk",
+       "number": "36",
+       "id": "5c18c2d8-995c-4736-bdef-464abcd1d31a"
+      },
+      {
+       "qty": 4,
+       "name": "Stubborn Denial",
+       "set": "ktk",
+       "number": "56",
+       "id": "6f8626c4-306f-4e9d-8840-2bb73fe87e87"
+      },
+      {
+       "qty": 4,
+       "name": "Elusive Spellfist",
+       "set": "dtk",
+       "number": "53",
+       "id": "af13b8c2-9d7d-44d8-8934-16458e7267dc"
+      },
+      {
+       "qty": 4,
+       "name": "Arc Lightning",
+       "set": "ktk",
+       "number": "97",
+       "id": "35c7c392-6782-40c8-bb24-6aad24f14660"
+      },
+      {
+       "qty": 4,
+       "name": "Wild Slash",
+       "set": "frf",
+       "number": "118",
+       "id": "6975490f-7679-48b3-ba34-04dec97a29c2"
+      },
+      {
+       "qty": 4,
+       "name": "Bloodfire Expert",
+       "set": "ktk",
+       "number": "101",
+       "id": "0742564e-f7a7-4107-b9ed-63703ca4702c"
+      },
+      {
+       "qty": 4,
+       "name": "Stratus Dancer",
+       "set": "dtk",
+       "number": "80",
+       "id": "e3bf4f37-2a2e-4c49-88dc-a26dd7367afb"
+      },
+      {
+       "qty": 10,
+       "name": "Island",
+       "set": "ktk",
+       "number": "254",
+       "id": "9c010ca5-b609-4ae9-8c23-adf5723a9daa"
+      },
+      {
+       "qty": 10,
+       "name": "Mountain",
+       "set": "ktk",
+       "number": "262",
+       "id": "802b1bb0-6c73-481a-ac3e-7d4e1682b4c2"
+      },
+      {
+       "qty": 4,
+       "name": "Swiftwater Cliffs",
+       "set": "ktk",
+       "number": "243",
+       "id": "e782d005-a563-4738-978a-73a3465de78f"
+      },
+      {
+       "qty": 4,
+       "name": "Jeskai Elder",
+       "set": "ktk",
+       "number": "43",
+       "id": "bff9907c-4090-4dcc-aaf5-bc2a8dacce8b"
+      },
+      {
+       "qty": 2,
+       "name": "Mystic of the Hidden Way",
+       "set": "ktk",
+       "number": "48",
+       "id": "7b5de843-e05d-43b5-a5d0-a737484fbd71"
+      }
+     ]
+    }
+   },
+   "reward": {
+    "hero": {
+     "packs": 2,
+     "coins": 200
+    },
+    "villain": {
+     "card": {
+      "oracle_id": "5b6bdf5a-2742-4851-92cd-a857a3852836",
+      "name": "Treasure Cruise",
+      "rarity": "common",
+      "set": "ktk",
+      "id": "7a59d4b1-6cf4-44ec-8a96-1bb7094fea21",
+      "image": "https://cards.scryfall.io/normal/front/7/a/7a59d4b1-6cf4-44ec-8a96-1bb7094fea21.jpg"
+     },
+     "coins": 200
+    }
+   },
+   "scene": [
+    {
+     "who": "stage",
+     "line": "Countless delights drift on the surface while dark schemes run below.",
+     "quote": true
+    },
+    {
+     "who": "you",
+     "line": "Kill the Swiftspears. Make them pay full price."
+    }
+   ],
+   "villainScene": [
+    {
+     "who": "stage",
+     "line": "The calligraphy of combat is written with strokes of sudden blood.",
+     "quote": true
+    }
+   ],
+   "after": [
+    {
+     "who": "stage",
+     "line": "Recorded: Treasure Cruise and Dig Through Time, banned in Modern in January 2015."
+    }
+   ],
+   "cues": {
+    "hero": {
+     "start": "Dragons up.",
+     "big": "Breathe fire!",
+     "low": "They drew three...",
+     "win": "Sunk.",
+     "loss": "Out-drawn.",
+     "half": "Kill the cheap threats."
+    },
+    "villain": {
+     "start": "[delve]",
+     "big": "[treasure cruise]",
+     "low": "[the graveyard is empty]",
+     "win": "[prowess burn]",
+     "loss": "[out of gas]"
+    }
+   },
+   "bigPlays": [],
+   "sim": null
+  }
+ ]
+}

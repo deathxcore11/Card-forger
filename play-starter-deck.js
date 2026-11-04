@@ -4,6 +4,9 @@ export const PRACTICE_STARTER_ROWS=Object.freeze([
  Object.freeze({name:'Forest',qty:24}),
  ...['Llanowar Elves','Bear Cub','Ordinary Bear','Ghalta, Primal Hunger','Lashwhip Predator','Tarmogoyf','Tapestry Warden','Virulent Emissary','Scarecrow Guide'].map(name=>Object.freeze({name,qty:4}))
 ]);
+// The homemade starter decks given 3 Nov, taken back when the free precons arrive (Randall 4 Nov 00:32Z:
+// real recent precons instead, data/play-starters/precons.json). Their cards stay in the Trunk.
+export const RETIRED_STARTER_NAMES=Object.freeze(['White angels · Starter','Blue fliers · Starter','Black drain · Starter','Red burn · Starter',PRACTICE_STARTER_NAME]);
 export const PRACTICE_STARTER_TEXT='Deck\n'+PRACTICE_STARTER_ROWS.map(row=>row.qty+' '+row.name).join('\n');
 export async function selectPracticeStarter(setup){
  setup.configure({format:'Standard',mode:'cpu',difficulty:'Medium'});

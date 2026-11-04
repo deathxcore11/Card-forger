@@ -66,6 +66,6 @@ assert.match(unknown.limitations.join(' '),/Unknown qualifiers/,'the rendered li
 const bear={...permanent('Test Bear','Creature — Bear'),cmc:2,mana_cost:'{1}{W}'};
 const spark={...permanent('Test Spark','Instant','Test Spark deals 3 damage to any target.'),power:undefined};
 const ordinary=simulate([[24,plains],[12,scout],[12,bear],[12,spark]]);
-assert.equal(createHash('sha256').update(JSON.stringify(ordinary)).digest('hex'),'21fbba656cd57ba5b8d62dcd26efb99600dfd44a2d0eadfcbb24a296877b77f8','seeded non-Aura simulation remains byte-for-byte unchanged');
+assert.equal(createHash('sha256').update(JSON.stringify((({worstHands,...core})=>core)(ordinary))).digest('hex'),'21fbba656cd57ba5b8d62dcd26efb99600dfd44a2d0eadfcbb24a296877b77f8','seeded non-Aura simulation remains byte-for-byte unchanged');
 assert.equal(ordinary.auraCasting,undefined);
 console.log('PASS: bounded Aura host/type/controller gating, unknown restriction disclosure, legal same-turn casts, no empty-board casts, and unchanged non-Aura simulation.');

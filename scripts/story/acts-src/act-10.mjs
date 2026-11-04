@@ -15,11 +15,11 @@ export default {
     s('stage', 'In the Grand Coliseum, the Cabal has a new champion. Her touch is death. They call her Phage.')],
   finale: [s('stage', 'Karona falls. Whatever was Akroma and whatever was Phage goes quiet with her.'),
     q('karona', 'Rise once more, so you may continue to destroy our enemies.'),
-    s('stage', 'Nobody rises.'),
+    s('stage', 'Nobody she calls rises. Someone she did not call does: a woman standing up out of the ash, not Phage, not Akroma. Jeska, with a planeswalker\'s spark she never had before.'),
     s('ixidor', 'I made her to kill Phage. I never asked what she wanted. Neither did the Cabal.'),
     s('kamahl', 'Jeska wanted to go home. That was all she ever wanted.'),
     q('stage', "As Phage drank their energy, a vague memory of Jeska stirred. Then she lost herself again in the joy of her victims' suffering."),
-    s('stage', 'Kamahl buries what is left in Krosa. The forest grows around it, slowly, the normal way.'),
+    s('stage', 'Kamahl takes his sister home to Krosa. The forest grows around them, slowly, the normal way. A few days later she is gone, out between the worlds.'),
     s('stage', 'Otaria rests. The Mirari is spent. For a while, nobody on Dominaria is anybody\'s god.')],
   villainFinale: [s('stage', 'Karona stands over the Coliseum. Every eye in Otaria turns to her, and every heart.'),
     s('karona', 'They worship me. I do not know why. I do not know what I am.'),
@@ -119,29 +119,32 @@ export default {
     {slot: 3, mood: 'comic', kind: 'Lesson', title: 'The Riptide Project', difficulty: 'Easy', rewardSet: 'lgn', teaches: ['Slivers'],
       blurb: "A school of wizards on an island tried to recreate the slivers in a lab. They did. Now the slivers own the island, and Pemmin is the last researcher who hasn't been eaten.",
       hero: {who: 'pemmin', deck: {name: 'Riptide Survivors', colors: 'U', list: `
-4 Riptide Survivor
-4 Information Dealer
-4 Fugitive Wizard
+2 Information Dealer
 4 Riptide Biologist
-4 Crafty Pathmage
 4 Disruptive Pitmage
 4 Sage Aven
 4 Mage's Guile
 4 Aven Envoy
-24 Island`}},
+24 Island
+2 Echo Tracer
+4 Fighting Drake
+4 Wind Drake
+4 Ascending Aven`}},
       villain: {who: 'sliver', deck: {name: 'The Escapees', colors: 'RG', list: `
-4 Blade Sliver
-4 Hunter Sliver
+2 Hunter Sliver
 4 Magma Sliver
 4 Quick Sliver
 4 Root Sliver
-2 Brood Sliver
-4 Shock
-4 Primal Boost
+4 Brood Sliver
+2 Shock
+2 Primal Boost
 4 Spark Spray
 2 Run Wild
 12 Mountain
-12 Forest`}},
+12 Forest
+4 Grizzly Bears
+2 Canopy Spider
+2 Giant Spider`}},
       scene: [q('stage', 'Taking the form of a junior researcher, the first sliver slipped out of Riptide.'),
         q('stage', 'The directors of the Riptide Project wanted instant results on the sliver experiments. They got their wish.'),
         s('pemmin', 'Right. Nobody panic. I am panicking for all of us.'),
@@ -159,17 +162,17 @@ export default {
 2 Kamahl, Fist of Krosa
 4 Elvish Warrior
 4 Krosan Tusker
-4 Ravenous Baloth
+2 Ravenous Baloth
 4 Wirewood Savage
 4 Timberwatch Elf
 4 Wellwisher
 4 Krosan Vorine
 4 Silklash Spider
-2 Krosan Colossus
-24 Forest`}},
+24 Forest
+4 Wirewood Elf`}},
       villain: {who: 'phage', deck: {name: 'The Untouchable', colors: 'B', list: `
-2 Phage the Untouchable
-4 Skinthinner
+3 Phage the Untouchable
+3 Skinthinner
 4 Withered Wretch
 4 Vile Deacon
 4 Drinker of Sorrow
@@ -177,8 +180,8 @@ export default {
 4 Smother
 4 Swat
 4 Cabal Executioner
-2 Infest
-24 Swamp`}},
+24 Swamp
+2 Infest`}},
       scene: [s('kamahl', 'Jeska.'), s('phage', 'Who?'),
         q('phage', 'I do unto others as others have done unto me.'),
         s('kamahl', 'I did this to you. I know. Come home and let me make it right.'),
@@ -204,8 +207,10 @@ export default {
 4 Akroma's Devoted
 4 Spark Spray
 4 Shock
-12 Plains
-12 Mountain`}},
+9 Plains
+9 Mountain
+3 Secluded Steppe
+3 Forgotten Cave`}},
       villain: {who: 'braids', deck: {name: "The Cabal's Coliseum", colors: 'B', list: `
 4 Undead Gladiator
 4 Gluttonous Zombie
@@ -213,10 +218,11 @@ export default {
 4 Nantuko Husk
 4 Carrion Feeder
 4 Festering Goblin
-4 Smother
-4 Cruel Revival
-4 Soulless One
-24 Swamp`}},
+2 Smother
+2 Cruel Revival
+2 Soulless One
+26 Swamp
+4 Rotlung Reanimator`}},
       scene: [q('stage', 'Akroma asked for only one thing from her troops: unwavering, unconditional loyalty.'),
         q('akroma', 'Until the world unites in vengeful fury and Phage is destroyed, I will not stay my hand.'),
         q('braids', 'How cute. Does it do any other tricks?'),
@@ -267,7 +273,7 @@ export default {
       blurb: 'Akroma finally finds Phage. The angel made to kill her, and the girl made to kill everything. Both were made by someone else. Neither knows it.',
       hero: {who: 'akroma', deck: {name: 'Angel of Wrath', colors: 'W', list: `
 2 Akroma, Angel of Wrath
-4 Exalted Angel
+2 Exalted Angel
 4 Akroma's Devoted
 4 Daru Lancer
 4 Gustcloak Savior
@@ -276,9 +282,9 @@ export default {
 4 Pacifism
 4 Renewed Faith
 2 Akroma's Vengeance
-24 Plains`}},
+26 Plains`}},
       villain: {who: 'phage', deck: {name: 'The Cabal\'s Champion', colors: 'B', list: `
-2 Phage the Untouchable
+3 Phage the Untouchable
 4 Skinthinner
 4 Withered Wretch
 4 Vile Deacon
@@ -286,9 +292,9 @@ export default {
 4 Smother
 4 Cabal Executioner
 4 Grinning Demon
-4 Severed Legion
-2 Infest
-24 Swamp`}},
+3 Severed Legion
+24 Swamp
+2 Infest`}},
       scene: [s('akroma', 'Phage. I was made for you.'), s('phage', 'Everyone says that. Then they touch me.'),
         s('akroma', 'My voice is justice. Clear and relentless.'),
         s('phage', 'You have a strange face, angel. Like someone dreamed you.'),

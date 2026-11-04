@@ -2,9 +2,11 @@
 // then keep only cards Forge can play: in forge-card-names, not ante/dexterity, legal in Vintage
 // (Story matches run on Forge's Vintage rules), and not marked AI:RemoveDeck:All for the CPU.
 // Usage: node scripts/story/export-pool.mjs <act> > /tmp/story/pool-<act>.json
+//        node scripts/story/export-pool.mjs --sets som,mbs,nph,m12 --land som > /tmp/story/pool-18.json   (acts not built yet)
 import {readFileSync} from 'node:fs';
 import {storyAct} from '../../story-acts.js';
-const act = storyAct(process.argv[2]);
+const argv = process.argv.slice(2), opt = k => { const i = argv.indexOf(k); return i >= 0 ? argv[i + 1] : null; };
+const act = opt('--sets') ? {act: null, sets: opt('--sets').split(','), landSet: opt('--land') || opt('--sets').split(',')[0]} : storyAct(argv[0]);
 if (!act) throw Error('unknown act');
 const forge = new Set(readFileSync(new URL('../../forge-card-names-e5a0f815.txt', import.meta.url), 'utf8').split('\n').map(s => s.trim().toLowerCase()).filter(Boolean));
 const sleep = ms => new Promise(r => setTimeout(r, ms));

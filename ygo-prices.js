@@ -16,11 +16,17 @@ export const rarityKey=(s,printing={})=>{
  }
  return norm(ygoRarity(s));
 };
+// TCGplayer lists some printings twice: the standard card and an "(Extended Art)"
+// or "(Alternate Art)" product with the same number and rarity (MAMO Ultra Rares).
+// The card databases don't tell them apart, so the standard product is the match;
+// an art-variant product counts only when it is the sole listing (MAMO Starlights).
+export const ygoArtVariant=name=>/\((?:extended|alternate|alt\.?)\s+art\)/i.test(String(name||''));
+export const preferStandardArt=hits=>{if(hits.length<2)return hits;const plain=hits.filter(p=>!ygoArtVariant(p.name));return plain.length&&plain.length<hits.length?plain:hits;};
 export function ygoProductMatches(set,products){
- return products.filter(p=>{
+ return preferStandardArt(products.filter(p=>{
   const fields=Object.fromEntries((p.extendedData || []).map(x=>[norm(x.name),x.value]));
   return !!rarityKey(set.rarity,set) && norm(fields.number || fields.cardnumber)===norm(set.code) && rarityKey(fields.rarity,set)===rarityKey(set.rarity,set);
- });
+ }));
 }
 export function applyYgoPrices(card,body){
  if(body?.cardId!==card.id)return false;let changed=false;
@@ -49,7 +55,7 @@ export async function ygoPriceRoute(url,ctx,fetchImpl=fetch){
  op();const k=new Request(url.href.replace(/[?&]more=\d+/,'')+'&schema=3'),cached=await cache?.match(k);if(cached)return cached;
  const fetchJson=async u=>{op();const r=await fetchImpl(u,{headers:{Accept:'application/json','User-Agent':'CardStashy/3.60 (cached exact printing prices; github.com/deathxcore11/Card-forger)'},signal:AbortSignal.timeout(15000)});if(!r.ok)throw Error(`Price provider ${new URL(u).hostname} returned ${r.status}`);return r.json();};
  // One cached JSON per key, built by `make` on a miss.
- const stored=async(key,make)=>{const saved=memo.get(key);if(saved&&Date.now()-saved.at<21600000)return saved.data;memo.delete(key);const req=new Request('https://cardstashy.cache/ygo-v2/'+key);op();const old=await cache?.match(req);if(old){const d=await old.json();memo.set(key,{at:Date.now(),data:d});return d;}const d=await make();memo.set(key,{at:Date.now(),data:d});op();ctx?.waitUntil?.(cache?.put(req,Response.json(d,{headers:{'Cache-Control':'public,max-age=21600'}})));return d;};
+ const stored=async(key,make)=>{const saved=memo.get(key);if(saved&&Date.now()-saved.at<21600000)return saved.data;memo.delete(key);const req=new Request('https://cardstashy.cache/ygo-v3/'+key);op();const old=await cache?.match(req);if(old){const d=await old.json();memo.set(key,{at:Date.now(),data:d});return d;}const d=await make();memo.set(key,{at:Date.now(),data:d});op();ctx?.waitUntil?.(cache?.put(req,Response.json(d,{headers:{'Cache-Control':'public,max-age=21600'}})));return d;};
  try{
   const [data,groups]=await Promise.all([fetchJson('https://db.ygoprodeck.com/api/v7/cardinfo.php?id='+id),stored('groups',async()=>((await fetchJson('https://tcgcsv.com/tcgplayer/2/groups')).results||[]).map(g=>({groupId:g.groupId,name:g.name,abbreviation:g.abbreviation})))]),card=data.data?.[0];
   if(String(card?.id)!==id)throw Error('Card identity mismatch');
@@ -61,7 +67,7 @@ export async function ygoPriceRoute(url,ctx,fetchImpl=fetch){
   const groupFor=s=>{const byName=groups.filter(g=>norm(g.name)===norm(s.name));if(byName.length===1)return byName[0];const pre=String(s.code||'').split('-')[0].toUpperCase(),byCode=groups.filter(g=>String(g.abbreviation||'').toUpperCase()===pre);return byCode.length===1?byCode[0]:null;};
   const byGroup=new Map();for(const set of sets){const g=groupFor(set);if(g)(byGroup.get(g.groupId)||byGroup.set(g.groupId,[]).get(g.groupId)).push(set);}
   // A set's products (number + rarity only) with their market prices, as one compact entry.
-  const groupData=groupId=>stored('group-'+groupId,async()=>{const [products,prices]=await Promise.all([fetchJson(`https://tcgcsv.com/tcgplayer/2/${groupId}/products`),fetchJson(`https://tcgcsv.com/tcgplayer/2/${groupId}/prices`)]);const q=new Map();for(const p of prices.results||[])if(referenceQuote(p))(q.get(p.productId)||q.set(p.productId,[]).get(p.productId)).push({edition:p.subTypeName,market:p.marketPrice,mid:p.midPrice,low:p.lowPrice});return (products.results||[]).map(p=>({productId:p.productId,extendedData:(p.extendedData||[]).filter(x=>/number|rarity/i.test(x.name)),quotes:q.get(p.productId)||[]}));});
+  const groupData=groupId=>stored('group-'+groupId,async()=>{const [products,prices]=await Promise.all([fetchJson(`https://tcgcsv.com/tcgplayer/2/${groupId}/products`),fetchJson(`https://tcgcsv.com/tcgplayer/2/${groupId}/prices`)]);const q=new Map();for(const p of prices.results||[])if(referenceQuote(p))(q.get(p.productId)||q.set(p.productId,[]).get(p.productId)).push({edition:p.subTypeName,market:p.marketPrice,mid:p.midPrice,low:p.lowPrice});return (products.results||[]).map(p=>({productId:p.productId,name:p.name,extendedData:(p.extendedData||[]).filter(x=>/number|rarity/i.test(x.name)),quotes:q.get(p.productId)||[]}));});
   const ids=[...byGroup.keys()];
   for(let i=0;i<ids.length&&!partial;i+=3)await Promise.all(ids.slice(i,i+3).map(async groupId=>{
    try{

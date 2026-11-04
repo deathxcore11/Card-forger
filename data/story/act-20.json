@@ -1,0 +1,3153 @@
+{
+ "act": 20,
+ "era": "2013-07-19",
+ "title": "The Implicit Maze",
+ "years": "2012 to 2013",
+ "sets": [
+  "rtr",
+  "gtc",
+  "dgm",
+  "m14"
+ ],
+ "landSet": "rtr",
+ "intro": [
+  {
+   "who": "stage",
+   "line": "Ravnica. One city the size of a world, run by ten guilds. Act 13 told how the old Guildpact failed."
+  },
+  {
+   "who": "stage",
+   "line": "Now the guilds are arming. Niv-Mizzet, the dragon who leads the Izzet, has found something in the old leylines."
+  },
+  {
+   "who": "stage",
+   "line": "The Implicit Maze winds through Ravnica, connecting arcane landmarks of all ten guilds.",
+   "quote": true
+  },
+  {
+   "who": "jace",
+   "line": "Is the maze itself a phantom? Or is one as real as the other? Perhaps I am as mad as the dragon.",
+   "quote": true
+  },
+  {
+   "who": "stage",
+   "line": "Every guild is sending a runner. Whoever reaches the end gets whatever is waiting there."
+  }
+ ],
+ "finale": [
+  {
+   "who": "stage",
+   "line": "At the end of the Maze the runners stop fighting. Jace Beleren steps into the last chamber, and the old magic of the Guildpact chooses him."
+  },
+  {
+   "who": "stage",
+   "line": "He is the Living Guildpact now. The guilds' agreements run through him, and no guild can break them while he holds them."
+  },
+  {
+   "who": "jace",
+   "line": "I came here to solve a puzzle. It turns out the puzzle was a job."
+  },
+  {
+   "who": "tajic",
+   "line": "I run the maze alone, but I fight with the full might of the Legion.",
+   "quote": true
+  },
+  {
+   "who": "stage",
+   "line": "The ten guilds go back to their districts, still arguing. But they argue under the law again."
+  }
+ ],
+ "villainFinale": [
+  {
+   "who": "stage",
+   "line": "Niv-Mizzet reaches the end first. The chamber opens for the dragon, and the old pact bends around the Izzet."
+  },
+  {
+   "who": "niv",
+   "line": "Don't just have an idea—have all of them.",
+   "quote": true
+  },
+  {
+   "who": "niv",
+   "line": "Nine guilds, one mind. Mine. Ravnica has never been run so efficiently."
+  }
+ ],
+ "vibe": "return-ravnica-maze",
+ "cast": {
+  "you": {
+   "name": "You",
+   "title": "Planeswalker",
+   "portrait": {
+    "card": "Uncovered Clues",
+    "set": "dgm",
+    "number": "19",
+    "id": "9dd24556-994f-4480-835e-11d4443f0700",
+    "crop": "https://cards.scryfall.io/art_crop/front/9/d/9dd24556-994f-4480-835e-11d4443f0700.jpg?1783940040",
+    "artist": "Jaime Jones",
+    "focus": "50% 30%"
+   }
+  },
+  "emmara": {
+   "name": "Emmara Tandris",
+   "title": "Selesnya",
+   "portrait": {
+    "card": "Emmara Tandris",
+    "set": "dgm",
+    "number": "68",
+    "id": "c7c91a0a-2f14-4131-8ca7-1d0046a8edd2",
+    "crop": "https://cards.scryfall.io/art_crop/front/c/7/c7c91a0a-2f14-4131-8ca7-1d0046a8edd2.jpg?1783940029",
+    "artist": "Mark Winters",
+    "focus": "50% 25%"
+   }
+  },
+  "lavinia": {
+   "name": "Lavinia",
+   "title": "Of the Tenth",
+   "portrait": {
+    "card": "Lavinia of the Tenth",
+    "set": "dgm",
+    "number": "80",
+    "id": "813f1967-c048-4e6e-9720-216773fde47e",
+    "crop": "https://cards.scryfall.io/art_crop/front/8/1/813f1967-c048-4e6e-9720-216773fde47e.jpg?1783940026",
+    "artist": "Willian Murai",
+    "focus": "50% 25%"
+   }
+  },
+  "tajic": {
+   "name": "Tajic",
+   "title": "Blade of the Legion",
+   "portrait": {
+    "card": "Tajic, Blade of the Legion",
+    "set": "dgm",
+    "number": "107",
+    "id": "be5717c1-338e-446c-aa7e-93e79e4abb72",
+    "crop": "https://cards.scryfall.io/art_crop/front/b/e/be5717c1-338e-446c-aa7e-93e79e4abb72.jpg?1783940021",
+    "artist": "James Ryman",
+    "focus": "50% 25%"
+   }
+  },
+  "ruric": {
+   "name": "Ruric Thar",
+   "title": "The Unbowed",
+   "portrait": {
+    "card": "Ruric Thar, the Unbowed",
+    "set": "dgm",
+    "number": "99",
+    "id": "84dd3586-7c3b-4f9c-a1eb-7745b75339b0",
+    "crop": "https://cards.scryfall.io/art_crop/front/8/4/84dd3586-7c3b-4f9c-a1eb-7745b75339b0.jpg?1783940022",
+    "artist": "Tyler Jacobson",
+    "focus": "50% 25%"
+   }
+  },
+  "vorel": {
+   "name": "Vorel",
+   "title": "Of the Hull Clade",
+   "portrait": {
+    "card": "Vorel of the Hull Clade",
+    "set": "dgm",
+    "number": "115",
+    "id": "db0665d4-d974-4d5e-ba29-7bf40cbbe29c",
+    "crop": "https://cards.scryfall.io/art_crop/front/d/b/db0665d4-d974-4d5e-ba29-7bf40cbbe29c.jpg?1783940019",
+    "artist": "Mike Bierek",
+    "focus": "50% 25%"
+   }
+  },
+  "varolz": {
+   "name": "Varolz",
+   "title": "The Scar-Striped",
+   "portrait": {
+    "card": "Varolz, the Scar-Striped",
+    "set": "dgm",
+    "number": "112",
+    "id": "4c3ae3db-c14a-4ffc-805c-a3a51da9370d",
+    "crop": "https://cards.scryfall.io/art_crop/front/4/c/4c3ae3db-c14a-4ffc-805c-a3a51da9370d.jpg?1783940019",
+    "artist": "Adam Paquette",
+    "focus": "50% 25%"
+   }
+  },
+  "jace": {
+   "name": "Jace Beleren",
+   "title": "Architect of Thought",
+   "portrait": {
+    "card": "Jace, Architect of Thought",
+    "set": "rtr",
+    "number": "44",
+    "id": "d4df3a38-678e-42dc-a3fd-d1d399368f07",
+    "crop": "https://cards.scryfall.io/art_crop/front/d/4/d4df3a38-678e-42dc-a3fd-d1d399368f07.jpg?1783940367",
+    "artist": "Jaime Jones",
+    "focus": "50% 25%"
+   }
+  },
+  "lazav": {
+   "name": "Lazav",
+   "title": "Dimir Mastermind",
+   "portrait": {
+    "card": "Lazav, Dimir Mastermind",
+    "set": "gtc",
+    "number": "174",
+    "id": "69c8fcdb-4798-4961-995a-e128a3ff431a",
+    "crop": "https://cards.scryfall.io/art_crop/front/6/9/69c8fcdb-4798-4961-995a-e128a3ff431a.jpg?1783940106",
+    "artist": "David Rapoza",
+    "focus": "50% 25%"
+   }
+  },
+  "teysa": {
+   "name": "Teysa Karlov",
+   "title": "Grand Envoy of Orzhov",
+   "portrait": {
+    "card": "Teysa, Envoy of Ghosts",
+    "set": "dgm",
+    "number": "108",
+    "id": "cbd8183c-6967-4332-b822-02b82c14ef2d",
+    "crop": "https://cards.scryfall.io/art_crop/front/c/b/cbd8183c-6967-4332-b822-02b82c14ef2d.jpg?1783940020",
+    "artist": "Karla Ortiz",
+    "focus": "50% 25%"
+   }
+  },
+  "exava": {
+   "name": "Exava",
+   "title": "Rakdos Blood Witch",
+   "portrait": {
+    "card": "Exava, Rakdos Blood Witch",
+    "set": "dgm",
+    "number": "69",
+    "id": "6cb72a64-89e7-4b0e-a3d3-1309829071d2",
+    "crop": "https://cards.scryfall.io/art_crop/front/6/c/6cb72a64-89e7-4b0e-a3d3-1309829071d2.jpg?1783940029",
+    "artist": "Aleksi Briclot",
+    "focus": "50% 25%"
+   }
+  },
+  "esper": {
+   "name": "Esper Control",
+   "title": "Spring 2013",
+   "portrait": {
+    "card": "Sphinx's Revelation",
+    "set": "rtr",
+    "number": "200",
+    "id": "404d9413-ef57-4b6e-8584-48a1dc7fe6f1",
+    "crop": "https://cards.scryfall.io/art_crop/front/4/0/404d9413-ef57-4b6e-8584-48a1dc7fe6f1.jpg?1783940331",
+    "artist": "Slawomir Maniak",
+    "focus": "50% 30%"
+   }
+  },
+  "blitz": {
+   "name": "Naya Blitz",
+   "title": "Spring 2013",
+   "portrait": {
+    "card": "Boros Reckoner",
+    "set": "gtc",
+    "number": "215",
+    "id": "82a18b07-38b8-4854-9735-3cfe83b11bf1",
+    "crop": "https://cards.scryfall.io/art_crop/front/8/2/82a18b07-38b8-4854-9735-3cfe83b11bf1.jpg?1783940095",
+    "artist": "Howard Lyon",
+    "focus": "50% 30%"
+   }
+  },
+  "jund": {
+   "name": "Jund Midrange",
+   "title": "Summer 2013",
+   "portrait": {
+    "card": "Abrupt Decay",
+    "set": "rtr",
+    "number": "141",
+    "id": "3b1e92b4-6e53-4dba-a572-c67e01965ac5",
+    "crop": "https://cards.scryfall.io/art_crop/front/3/b/3b1e92b4-6e53-4dba-a572-c67e01965ac5.jpg?1783940344",
+    "artist": "Svetlin Velinov",
+    "focus": "50% 30%"
+   }
+  },
+  "earth": {
+   "name": "Mono-Red",
+   "title": "Summer 2013",
+   "portrait": {
+    "card": "Burning Earth",
+    "set": "m14",
+    "number": "130",
+    "id": "1df3a7c9-5c8d-438c-a5ad-3c9754c6ea5d",
+    "crop": "https://cards.scryfall.io/art_crop/front/1/d/1df3a7c9-5c8d-438c-a5ad-3c9754c6ea5d.jpg?1783939917",
+    "artist": "rk post",
+    "focus": "50% 40%"
+   }
+  },
+  "niv": {
+   "name": "Niv-Mizzet",
+   "title": "Dracogenius",
+   "portrait": {
+    "card": "Niv-Mizzet, Dracogenius",
+    "set": "rtr",
+    "number": "183",
+    "id": "c345e475-8095-41b5-90b4-771fcf80b939",
+    "crop": "https://cards.scryfall.io/art_crop/front/c/3/c345e475-8095-41b5-90b4-771fcf80b939.jpg?1783940334",
+    "artist": "Todd Lockwood",
+    "focus": "50% 25%"
+   }
+  },
+  "trostani": {
+   "name": "Trostani",
+   "title": "Selesnya's Voice",
+   "portrait": {
+    "card": "Trostani, Selesnya's Voice",
+    "set": "rtr",
+    "number": "206",
+    "id": "9d1d9d86-5666-4e59-9766-137657b4e040",
+    "crop": "https://cards.scryfall.io/art_crop/front/9/d/9d1d9d86-5666-4e59-9766-137657b4e040.jpg?1783940330",
+    "artist": "Chippy",
+    "focus": "50% 25%"
+   }
+  },
+  "isperia": {
+   "name": "Isperia",
+   "title": "Supreme Judge",
+   "portrait": {
+    "card": "Isperia, Supreme Judge",
+    "set": "rtr",
+    "number": "171",
+    "id": "b2cce2d4-3944-4ff0-98e8-80f19697f108",
+    "crop": "https://cards.scryfall.io/art_crop/front/b/2/b2cce2d4-3944-4ff0-98e8-80f19697f108.jpg?1783940339",
+    "artist": "Scott M. Fischer",
+    "focus": "50% 25%"
+   }
+  },
+  "aurelia": {
+   "name": "Aurelia",
+   "title": "The Warleader",
+   "portrait": {
+    "card": "Aurelia, the Warleader",
+    "set": "gtc",
+    "number": "143",
+    "id": "4ec18e35-05e4-4bfc-b32b-c3e71c95a71d",
+    "crop": "https://cards.scryfall.io/art_crop/front/4/e/4ec18e35-05e4-4bfc-b32b-c3e71c95a71d.jpg?1783940113",
+    "artist": "Slawomir Maniak",
+    "focus": "50% 25%"
+   }
+  },
+  "domri": {
+   "name": "Domri Rade",
+   "title": "Gruul",
+   "portrait": {
+    "card": "Domri Rade",
+    "set": "gtc",
+    "number": "156",
+    "id": "21b48170-99dd-440f-9954-fc229d6094d3",
+    "crop": "https://cards.scryfall.io/art_crop/front/2/1/21b48170-99dd-440f-9954-fc229d6094d3.jpg?1783940109",
+    "artist": "Tyler Jacobson",
+    "focus": "50% 25%"
+   }
+  },
+  "rakdos": {
+   "name": "Rakdos",
+   "title": "Lord of Riots",
+   "portrait": {
+    "card": "Rakdos, Lord of Riots",
+    "set": "rtr",
+    "number": "187",
+    "id": "04f3db71-802f-488c-b40d-ac90df2d660a",
+    "crop": "https://cards.scryfall.io/art_crop/front/0/4/04f3db71-802f-488c-b40d-ac90df2d660a.jpg?1783940334",
+    "artist": "Vincent Proce",
+    "focus": "50% 25%"
+   }
+  },
+  "gates": {
+   "name": "Maze's End",
+   "title": "2013",
+   "portrait": {
+    "card": "Maze's End",
+    "set": "dgm",
+    "number": "152",
+    "id": "401f7042-24fd-42a0-ae7c-e6b7de1aa446",
+    "crop": "https://cards.scryfall.io/art_crop/front/4/0/401f7042-24fd-42a0-ae7c-e6b7de1aa446.jpg?1783940010",
+    "artist": "Cliff Childs",
+    "focus": "50% 40%"
+   }
+  }
+ },
+ "battles": [
+  {
+   "id": "a20b1",
+   "slot": 1,
+   "kind": "Arrival",
+   "mood": "tension",
+   "title": "The Selesnya Gate",
+   "difficulty": "Easy",
+   "teaches": [
+    "Populate"
+   ],
+   "blurb": "You arrive in Vitu-Ghazi, the Selesnya tree-city, as its runner sets out. Emmara Tandris has been chosen to run the Maze for the Conclave, and the Azorius arresters have orders to slow every runner down.",
+   "rewardSet": "rtr",
+   "host": false,
+   "hero": {
+    "who": "emmara",
+    "deck": {
+     "name": "The Conclave",
+     "colors": "GW",
+     "archetype": null,
+     "label": "tribute",
+     "cards": [
+      {
+       "qty": 2,
+       "name": "Trostani, Selesnya's Voice",
+       "set": "rtr",
+       "number": "206",
+       "id": "9d1d9d86-5666-4e59-9766-137657b4e040"
+      },
+      {
+       "qty": 4,
+       "name": "Call of the Conclave",
+       "set": "rtr",
+       "number": "146",
+       "id": "c6df8f4d-a07a-4664-878d-efec8b2affb9"
+      },
+      {
+       "qty": 4,
+       "name": "Centaur Healer",
+       "set": "rtr",
+       "number": "148",
+       "id": "833835d1-9beb-4ad8-b675-7adebdbd7d82"
+      },
+      {
+       "qty": 4,
+       "name": "Wayfaring Temple",
+       "set": "rtr",
+       "number": "209",
+       "id": "2125e6aa-f916-4dfa-a9fe-82bb546012af"
+      },
+      {
+       "qty": 4,
+       "name": "Seller of Songbirds",
+       "set": "rtr",
+       "number": "22",
+       "id": "2a41edbe-4c5a-4535-a082-235dc3ffe60a"
+      },
+      {
+       "qty": 2,
+       "name": "Emmara Tandris",
+       "set": "dgm",
+       "number": "68",
+       "id": "c7c91a0a-2f14-4131-8ca7-1d0046a8edd2"
+      },
+      {
+       "qty": 4,
+       "name": "Eyes in the Skies",
+       "set": "rtr",
+       "number": "10",
+       "id": "befef095-3429-4dd7-aa01-2f7f619675d4"
+      },
+      {
+       "qty": 4,
+       "name": "Loxodon Smiter",
+       "set": "rtr",
+       "number": "178",
+       "id": "69247168-2bfb-4cce-a2a6-61459a0fbce4"
+      },
+      {
+       "qty": 4,
+       "name": "Selesnya Charm",
+       "set": "rtr",
+       "number": "194",
+       "id": "a9848eab-1d3a-4ab0-adf6-c20858aa3afb"
+      },
+      {
+       "qty": 4,
+       "name": "Sundering Growth",
+       "set": "rtr",
+       "number": "223",
+       "id": "14d5048e-cb76-48c4-8a95-70dcc14775f6"
+      },
+      {
+       "qty": 10,
+       "name": "Forest",
+       "set": "rtr",
+       "number": "270",
+       "id": "f00849dd-c1ba-4171-a503-603fe77c0a43"
+      },
+      {
+       "qty": 10,
+       "name": "Plains",
+       "set": "rtr",
+       "number": "250",
+       "id": "ac754820-343e-4c01-bcfa-89fa5c8c7e1d"
+      },
+      {
+       "qty": 4,
+       "name": "Selesnya Guildgate",
+       "set": "rtr",
+       "number": "246",
+       "id": "ff61d4e4-3c8c-48f7-a994-ec2317bbd9a0"
+      }
+     ]
+    }
+   },
+   "villain": {
+    "who": "lavinia",
+    "deck": {
+     "name": "The Azorius Senate",
+     "colors": "WU",
+     "archetype": null,
+     "label": "tribute",
+     "cards": [
+      {
+       "qty": 2,
+       "name": "Lavinia of the Tenth",
+       "set": "dgm",
+       "number": "80",
+       "id": "813f1967-c048-4e6e-9720-216773fde47e"
+      },
+      {
+       "qty": 4,
+       "name": "Azorius Arrester",
+       "set": "rtr",
+       "number": "5",
+       "id": "199f7563-563e-483c-8317-5380a83db955"
+      },
+      {
+       "qty": 4,
+       "name": "Lyev Skyknight",
+       "set": "rtr",
+       "number": "179",
+       "id": "11cbeb3b-1579-4318-a024-4a2c06896eaf"
+      },
+      {
+       "qty": 4,
+       "name": "Hussar Patrol",
+       "set": "rtr",
+       "number": "169",
+       "id": "dd775231-e1e0-41e2-ad9a-0726624f57f9"
+      },
+      {
+       "qty": 4,
+       "name": "Concordia Pegasus",
+       "set": "rtr",
+       "number": "8",
+       "id": "f0333d0b-ae42-48aa-83d8-a4f2c7483a46"
+      },
+      {
+       "qty": 3,
+       "name": "Azorius Justiciar",
+       "set": "rtr",
+       "number": "6",
+       "id": "9f56272e-c05e-446b-8871-e3783dd29a8b"
+      },
+      {
+       "qty": 4,
+       "name": "Arrest",
+       "set": "rtr",
+       "number": "3",
+       "id": "498f74a2-7e5e-4082-97e7-b938d703f869"
+      },
+      {
+       "qty": 3,
+       "name": "Inaction Injunction",
+       "set": "rtr",
+       "number": "41",
+       "id": "5342ec3c-9d26-474a-9df5-c21ac90bb233"
+      },
+      {
+       "qty": 4,
+       "name": "Judge's Familiar",
+       "set": "rtr",
+       "number": "218",
+       "id": "0fc51899-3970-416b-b7de-fadbc9678955"
+      },
+      {
+       "qty": 2,
+       "name": "Sphinx of the Chimes",
+       "set": "rtr",
+       "number": "52",
+       "id": "31a0cae5-925f-4d00-a4da-1db8bae5511b"
+      },
+      {
+       "qty": 2,
+       "name": "Isperia's Skywatch",
+       "set": "rtr",
+       "number": "43",
+       "id": "019ba84d-d236-45c5-a8ad-75def7736d0c"
+      },
+      {
+       "qty": 10,
+       "name": "Plains",
+       "set": "rtr",
+       "number": "250",
+       "id": "ac754820-343e-4c01-bcfa-89fa5c8c7e1d"
+      },
+      {
+       "qty": 10,
+       "name": "Island",
+       "set": "rtr",
+       "number": "255",
+       "id": "78f35064-c662-48ff-a2a9-d26f594500f5"
+      },
+      {
+       "qty": 4,
+       "name": "Azorius Guildgate",
+       "set": "rtr",
+       "number": "237",
+       "id": "984e37df-0734-493a-a958-f519a0c98580"
+      }
+     ]
+    }
+   },
+   "reward": {
+    "hero": {
+     "packs": 1,
+     "coins": 0
+    },
+    "villain": {
+     "card": {
+      "oracle_id": "55df6fa3-3d24-46d5-b325-099336c3f0fd",
+      "name": "Lavinia of the Tenth",
+      "rarity": "rare",
+      "set": "dgm",
+      "id": "813f1967-c048-4e6e-9720-216773fde47e",
+      "image": "https://cards.scryfall.io/normal/front/8/1/813f1967-c048-4e6e-9720-216773fde47e.jpg"
+     },
+     "coins": 50
+    }
+   },
+   "scene": [
+    {
+     "who": "stage",
+     "line": "When Selesnya needed a champion, Emmara put the ranks of her guild before herself—making her the perfect choice.",
+     "quote": true
+    },
+    {
+     "who": "trostani",
+     "line": "One day every pillar will be a tree and every hall a glade.",
+     "quote": true
+    },
+    {
+     "who": "emmara",
+     "line": "Populate: make a copy of a creature token you already control. Make one good token, then copy it."
+    }
+   ],
+   "villainScene": [
+    {
+     "who": "lavinia",
+     "line": "You have the right to remain silent. Mostly because I tire of your excuses.",
+     "quote": true
+    },
+    {
+     "who": "lavinia",
+     "line": "To prevent action is to prevent transgression.",
+     "quote": true
+    }
+   ],
+   "after": [
+    {
+     "who": "emmara",
+     "line": "Every guild is in the Maze now, and none of them trusts the others. Go and see. I will keep running."
+    }
+   ],
+   "cues": {
+    "hero": {
+     "start": "Together.",
+     "big": "The Conclave grows!",
+     "low": "They hold us still...",
+     "win": "Onward.",
+     "loss": "Detained...",
+     "half": "Copy the biggest token."
+    },
+    "villain": {
+     "start": "Halt.",
+     "big": "Detained.",
+     "low": "Obstruction noted.",
+     "win": "Case closed.",
+     "loss": "Overruled."
+    }
+   },
+   "bigPlays": [],
+   "sim": null
+  },
+  {
+   "id": "a20b2",
+   "slot": 2,
+   "kind": "Lesson",
+   "mood": "march",
+   "title": "Rubblebelt Crossing",
+   "difficulty": "Easy",
+   "teaches": [
+    "Battalion"
+   ],
+   "blurb": "The Maze runs straight through the Rubblebelt, the ruined districts the Gruul clans call home. Tajic, the Boros runner, has the Legion behind him. The Ghor clan has other ideas.",
+   "rewardSet": "gtc",
+   "host": false,
+   "hero": {
+    "who": "tajic",
+    "deck": {
+     "name": "The Boros Legion",
+     "colors": "RW",
+     "archetype": null,
+     "label": "tribute",
+     "cards": [
+      {
+       "qty": 2,
+       "name": "Tajic, Blade of the Legion",
+       "set": "dgm",
+       "number": "107",
+       "id": "be5717c1-338e-446c-aa7e-93e79e4abb72"
+      },
+      {
+       "qty": 4,
+       "name": "Boros Elite",
+       "set": "gtc",
+       "number": "7",
+       "id": "a03974e6-aced-4664-8c5c-3190bb1eb233"
+      },
+      {
+       "qty": 4,
+       "name": "Daring Skyjek",
+       "set": "gtc",
+       "number": "9",
+       "id": "6c28412d-9add-4911-8487-c84559006fb0"
+      },
+      {
+       "qty": 4,
+       "name": "Wojek Halberdiers",
+       "set": "gtc",
+       "number": "208",
+       "id": "423f0870-dc1c-4cd8-b92c-6d5f92abbaec"
+      },
+      {
+       "qty": 4,
+       "name": "Skyknight Legionnaire",
+       "set": "gtc",
+       "number": "197",
+       "id": "ae8c9948-b52e-4d07-a72a-99ab6be05cc6"
+      },
+      {
+       "qty": 4,
+       "name": "Truefire Paladin",
+       "set": "gtc",
+       "number": "202",
+       "id": "39610192-6d3c-4d03-9c3e-cda966c924b1"
+      },
+      {
+       "qty": 3,
+       "name": "Firemane Avenger",
+       "set": "gtc",
+       "number": "163",
+       "id": "e244c198-efdc-492a-9c52-76aac006de9d"
+      },
+      {
+       "qty": 4,
+       "name": "Boros Charm",
+       "set": "gtc",
+       "number": "148",
+       "id": "d4ddf9cc-40a7-4b4f-bb51-b08171453c9a"
+      },
+      {
+       "qty": 4,
+       "name": "Warleader's Helix",
+       "set": "dgm",
+       "number": "116",
+       "id": "81e474ac-54f7-43f9-8af9-2f1adf258b15"
+      },
+      {
+       "qty": 3,
+       "name": "Precinct Captain",
+       "set": "rtr",
+       "number": "17",
+       "id": "5f1f6178-4071-401f-bd0d-cac0c5967661"
+      },
+      {
+       "qty": 10,
+       "name": "Plains",
+       "set": "rtr",
+       "number": "250",
+       "id": "ac754820-343e-4c01-bcfa-89fa5c8c7e1d"
+      },
+      {
+       "qty": 10,
+       "name": "Mountain",
+       "set": "rtr",
+       "number": "265",
+       "id": "3b4a196f-de7e-4100-ad65-56cf8b0a8b23"
+      },
+      {
+       "qty": 4,
+       "name": "Boros Guildgate",
+       "set": "gtc",
+       "number": "239",
+       "id": "a0b447a8-524b-4bda-b975-7e194fd741fb"
+      }
+     ]
+    }
+   },
+   "villain": {
+    "who": "ruric",
+    "deck": {
+     "name": "The Ghor Clan",
+     "colors": "RG",
+     "archetype": null,
+     "label": "tribute",
+     "cards": [
+      {
+       "qty": 3,
+       "name": "Burning-Tree Emissary",
+       "set": "gtc",
+       "number": "216",
+       "id": "899d5f35-3613-4c69-9176-13baf442fb50"
+      },
+      {
+       "qty": 4,
+       "name": "Ghor-Clan Rampager",
+       "set": "gtc",
+       "number": "167",
+       "id": "382048ec-0bf5-49a5-90d5-f80fbda08962"
+      },
+      {
+       "qty": 4,
+       "name": "Rubblebelt Raiders",
+       "set": "gtc",
+       "number": "224",
+       "id": "2dec7d6a-2362-4c62-bd81-35bba6086f7d"
+      },
+      {
+       "qty": 4,
+       "name": "Zhur-Taa Swine",
+       "set": "gtc",
+       "number": "210",
+       "id": "cef93050-2f24-4c85-a00b-796e53868ac1"
+      },
+      {
+       "qty": 4,
+       "name": "Scab-Clan Charger",
+       "set": "gtc",
+       "number": "131",
+       "id": "964c88d3-3141-44ab-8856-44a3f08331ea"
+      },
+      {
+       "qty": 4,
+       "name": "Skinbrand Goblin",
+       "set": "gtc",
+       "number": "105",
+       "id": "fe4f9b6c-3ba9-4f4f-8135-f5236195e507"
+      },
+      {
+       "qty": 4,
+       "name": "Zhur-Taa Druid",
+       "set": "dgm",
+       "number": "120",
+       "id": "fd565782-8b2f-4b9f-a62d-4af60af20a82"
+      },
+      {
+       "qty": 3,
+       "name": "Clan Defiance",
+       "set": "gtc",
+       "number": "151",
+       "id": "efa05298-9c94-4179-b75a-49ee2ca92920"
+      },
+      {
+       "qty": 4,
+       "name": "Skarrg Goliath",
+       "set": "gtc",
+       "number": "133",
+       "id": "2b2dcafd-eb72-4f3a-9c1c-ba17fe30bf0f"
+      },
+      {
+       "qty": 2,
+       "name": "Gruul Ragebeast",
+       "set": "gtc",
+       "number": "170",
+       "id": "080ef367-7904-4e5c-a8b4-1fb62f951f3e"
+      },
+      {
+       "qty": 10,
+       "name": "Forest",
+       "set": "rtr",
+       "number": "270",
+       "id": "f00849dd-c1ba-4171-a503-603fe77c0a43"
+      },
+      {
+       "qty": 10,
+       "name": "Mountain",
+       "set": "rtr",
+       "number": "265",
+       "id": "3b4a196f-de7e-4100-ad65-56cf8b0a8b23"
+      },
+      {
+       "qty": 4,
+       "name": "Gruul Guildgate",
+       "set": "gtc",
+       "number": "243",
+       "id": "99c54269-8798-4023-836f-640103e08ce0"
+      }
+     ]
+    }
+   },
+   "reward": {
+    "hero": {
+     "packs": 1,
+     "coins": 0
+    },
+    "villain": {
+     "card": {
+      "oracle_id": "72350461-8231-4737-a57f-f20fb5d179a3",
+      "name": "Skarrg Goliath",
+      "rarity": "rare",
+      "set": "gtc",
+      "id": "2b2dcafd-eb72-4f3a-9c1c-ba17fe30bf0f",
+      "image": "https://cards.scryfall.io/normal/front/2/b/2b2dcafd-eb72-4f3a-9c1c-ba17fe30bf0f.jpg"
+     },
+     "coins": 50
+    }
+   },
+   "scene": [
+    {
+     "who": "tajic",
+     "line": "I run the maze alone, but I fight with the full might of the Legion.",
+     "quote": true
+    },
+    {
+     "who": "tajic",
+     "line": "All that steel doesn't make them slower. It makes them bolder.",
+     "quote": true
+    },
+    {
+     "who": "tajic",
+     "line": "Battalion: when this creature and at least two others attack, it gets a bonus. Attack in threes."
+    }
+   ],
+   "villainScene": [
+    {
+     "who": "ruric",
+     "line": "Our fight is not about territory or revenge. It is about freedom, plain and simple.",
+     "quote": true
+    },
+    {
+     "who": "ruric",
+     "line": "If the other guilds want a war, they should know we've been ready the whole time.",
+     "quote": true
+    }
+   ],
+   "after": [
+    {
+     "who": "tajic",
+     "line": "Somebody is hunting runners in the undercity. Not the Gruul. Someone quieter."
+    }
+   ],
+   "cues": {
+    "hero": {
+     "start": "Legion, form up.",
+     "big": "Battalion!",
+     "low": "They hit like a wall...",
+     "win": "Rubble cleared.",
+     "loss": "Fall back...",
+     "half": "Three attackers, always."
+    },
+    "villain": {
+     "start": "Smash.",
+     "big": "Bloodrush!",
+     "low": "Hah. Tough.",
+     "win": "The clans win.",
+     "loss": "Run, then."
+    }
+   },
+   "bigPlays": [],
+   "sim": null
+  },
+  {
+   "id": "a20b3",
+   "slot": 3,
+   "kind": "Lesson",
+   "mood": "comic",
+   "title": "The Zonot",
+   "difficulty": "Easy",
+   "teaches": [
+    "Evolve"
+   ],
+   "blurb": "Below the streets, the Simic runner Vorel of the Hull Clade is racing through the Golgari undercity, and the Golgari runner, a troll called Varolz, is feeding on everyone he meets.",
+   "rewardSet": "gtc",
+   "host": false,
+   "hero": {
+    "who": "vorel",
+    "deck": {
+     "name": "The Hull Clade",
+     "colors": "GU",
+     "archetype": null,
+     "label": "tribute",
+     "cards": [
+      {
+       "qty": 2,
+       "name": "Vorel of the Hull Clade",
+       "set": "dgm",
+       "number": "115",
+       "id": "db0665d4-d974-4d5e-ba29-7bf40cbbe29c"
+      },
+      {
+       "qty": 4,
+       "name": "Experiment One",
+       "set": "gtc",
+       "number": "119",
+       "id": "2cc1d8d0-bb43-4962-ad29-bb6478aa986b"
+      },
+      {
+       "qty": 4,
+       "name": "Cloudfin Raptor",
+       "set": "gtc",
+       "number": "32",
+       "id": "e2931f27-43f9-4e52-aab3-967c26739e43"
+      },
+      {
+       "qty": 4,
+       "name": "Shambleshark",
+       "set": "gtc",
+       "number": "193",
+       "id": "07855a17-4e68-4257-af7f-275c9fb0a9b8"
+      },
+      {
+       "qty": 4,
+       "name": "Elusive Krasis",
+       "set": "gtc",
+       "number": "160",
+       "id": "dd62e422-e5e2-4736-9ed3-d2dc693f6f8f"
+      },
+      {
+       "qty": 4,
+       "name": "Crocanura",
+       "set": "gtc",
+       "number": "116",
+       "id": "b459a988-97b0-4370-b89a-2565f8721b60"
+      },
+      {
+       "qty": 3,
+       "name": "Drakewing Krasis",
+       "set": "gtc",
+       "number": "157",
+       "id": "016d1d17-ba5c-4168-9a3d-232bdcc98c80"
+      },
+      {
+       "qty": 3,
+       "name": "Adaptive Snapjaw",
+       "set": "gtc",
+       "number": "113",
+       "id": "0d3c0c43-2d6d-49b8-a112-07611a23ae69"
+      },
+      {
+       "qty": 2,
+       "name": "Master Biomancer",
+       "set": "gtc",
+       "number": "176",
+       "id": "1a47da7c-80f3-4b98-aaac-778c34a35cb6"
+      },
+      {
+       "qty": 2,
+       "name": "Prime Speaker Zegana",
+       "set": "gtc",
+       "number": "188",
+       "id": "f30dfb8e-f540-45ab-a4e8-63425099646a"
+      },
+      {
+       "qty": 4,
+       "name": "Rapid Hybridization",
+       "set": "gtc",
+       "number": "44",
+       "id": "83557f55-f1ab-4995-9cc1-37be895a59db"
+      },
+      {
+       "qty": 10,
+       "name": "Forest",
+       "set": "rtr",
+       "number": "270",
+       "id": "f00849dd-c1ba-4171-a503-603fe77c0a43"
+      },
+      {
+       "qty": 10,
+       "name": "Island",
+       "set": "rtr",
+       "number": "255",
+       "id": "78f35064-c662-48ff-a2a9-d26f594500f5"
+      },
+      {
+       "qty": 4,
+       "name": "Simic Guildgate",
+       "set": "gtc",
+       "number": "246",
+       "id": "1ce3f6f2-c52c-4fb8-afa0-b1ea723bb4c6"
+      }
+     ]
+    }
+   },
+   "villain": {
+    "who": "varolz",
+    "deck": {
+     "name": "The Swarm",
+     "colors": "BG",
+     "archetype": null,
+     "label": "tribute",
+     "cards": [
+      {
+       "qty": 2,
+       "name": "Varolz, the Scar-Striped",
+       "set": "dgm",
+       "number": "112",
+       "id": "4c3ae3db-c14a-4ffc-805c-a3a51da9370d"
+      },
+      {
+       "qty": 4,
+       "name": "Slitherhead",
+       "set": "rtr",
+       "number": "222",
+       "id": "d9327905-a254-4885-8310-69fc153ec52f"
+      },
+      {
+       "qty": 4,
+       "name": "Dreg Mangler",
+       "set": "rtr",
+       "number": "158",
+       "id": "28d42d6a-e9a0-449e-9b31-436c09b7c1ba"
+      },
+      {
+       "qty": 4,
+       "name": "Sluiceway Scorpion",
+       "set": "rtr",
+       "number": "198",
+       "id": "7b6dbadf-a6f7-4876-9c3f-44e4a33b2bee"
+      },
+      {
+       "qty": 4,
+       "name": "Golgari Longlegs",
+       "set": "rtr",
+       "number": "216",
+       "id": "d44058ba-3419-4777-8d59-05dea5e864e1"
+      },
+      {
+       "qty": 4,
+       "name": "Stonefare Crocodile",
+       "set": "rtr",
+       "number": "136",
+       "id": "a2517d74-0589-49dc-88f1-1fc02b27bc9d"
+      },
+      {
+       "qty": 3,
+       "name": "Deadbridge Goliath",
+       "set": "rtr",
+       "number": "120",
+       "id": "6ad03e99-25d3-4a09-819b-9192dfd8c9d2"
+      },
+      {
+       "qty": 3,
+       "name": "Grisly Salvage",
+       "set": "rtr",
+       "number": "165",
+       "id": "dcb5eb2a-ae7a-4416-970c-6e9306689c88"
+      },
+      {
+       "qty": 4,
+       "name": "Golgari Decoy",
+       "set": "rtr",
+       "number": "127",
+       "id": "511a42a8-71ce-476f-98fa-fc0dc822edcf"
+      },
+      {
+       "qty": 4,
+       "name": "Ultimate Price",
+       "set": "rtr",
+       "number": "82",
+       "id": "d2b4912a-83a2-4870-8fac-81fa79da2830"
+      },
+      {
+       "qty": 10,
+       "name": "Swamp",
+       "set": "rtr",
+       "number": "260",
+       "id": "2d8c3f29-121e-42d1-be21-29f403f97708"
+      },
+      {
+       "qty": 10,
+       "name": "Forest",
+       "set": "rtr",
+       "number": "270",
+       "id": "f00849dd-c1ba-4171-a503-603fe77c0a43"
+      },
+      {
+       "qty": 4,
+       "name": "Golgari Guildgate",
+       "set": "rtr",
+       "number": "239",
+       "id": "8fe2fd1a-f7d3-48b4-bad8-be5ee45d6121"
+      }
+     ]
+    }
+   },
+   "reward": {
+    "hero": {
+     "packs": 1,
+     "coins": 0
+    },
+    "villain": {
+     "card": {
+      "oracle_id": "b6b83b88-0660-4227-895e-78ac43d01b66",
+      "name": "Varolz, the Scar-Striped",
+      "rarity": "rare",
+      "set": "dgm",
+      "id": "4c3ae3db-c14a-4ffc-805c-a3a51da9370d",
+      "image": "https://cards.scryfall.io/normal/front/4/c/4c3ae3db-c14a-4ffc-805c-a3a51da9370d.jpg"
+     },
+     "coins": 50
+    }
+   },
+   "scene": [
+    {
+     "who": "vorel",
+     "line": "We're planting the seeds of change. Sometimes, we plant them in people.",
+     "quote": true
+    },
+    {
+     "who": "stage",
+     "line": "We raised eelhawks to control the squidflies, then waspcrabs to prey on the eelhawks. Now what do we do with all these waspcrabs?",
+     "quote": true
+    },
+    {
+     "who": "vorel",
+     "line": "Evolve: when a bigger creature enters under your control, an evolve creature gets a +1/+1 counter. Play them small to big."
+    }
+   ],
+   "villainScene": [
+    {
+     "who": "stage",
+     "line": "The Golgari maze-runner Varolz hungers to prove his fortitude in battle, and his trail of victims feeds other hungers.",
+     "quote": true
+    },
+    {
+     "who": "stage",
+     "line": "We are all decaying, always in a state of near-death. One moment without breath and we begin to break down.",
+     "quote": true
+    }
+   ],
+   "after": [
+    {
+     "who": "vorel",
+     "line": "Everything serves a purpose. Even you.",
+     "quote": true
+    }
+   ],
+   "cues": {
+    "hero": {
+     "start": "Fascinating.",
+     "big": "It evolved!",
+     "low": "Hm. Rot.",
+     "win": "Specimen collected.",
+     "loss": "A failed trial.",
+     "half": "Small first, then big."
+    },
+    "villain": {
+     "start": "Hungry.",
+     "big": "Scavenge!",
+     "low": "Ow.",
+     "win": "Fed.",
+     "loss": "Back to the rot."
+    }
+   },
+   "bigPlays": [],
+   "sim": null
+  },
+  {
+   "id": "a20b4",
+   "slot": 4,
+   "kind": "Rival",
+   "mood": "tension",
+   "title": "The Shapeshifter",
+   "difficulty": "Normal",
+   "teaches": [
+    "Cipher"
+   ],
+   "blurb": "Jace Beleren has been mapping the Maze on his own. Lazav, the guildmaster of House Dimir, can wear any face in the city, and he wants Jace's notes.",
+   "rewardSet": "gtc",
+   "host": false,
+   "hero": {
+    "who": "jace",
+    "deck": {
+     "name": "Jace's Notes",
+     "colors": "WU",
+     "archetype": null,
+     "label": "tribute",
+     "cards": [
+      {
+       "qty": 2,
+       "name": "Jace, Architect of Thought",
+       "set": "rtr",
+       "number": "44",
+       "id": "d4df3a38-678e-42dc-a3fd-d1d399368f07"
+      },
+      {
+       "qty": 4,
+       "name": "Azorius Arrester",
+       "set": "rtr",
+       "number": "5",
+       "id": "199f7563-563e-483c-8317-5380a83db955"
+      },
+      {
+       "qty": 4,
+       "name": "Lyev Skyknight",
+       "set": "rtr",
+       "number": "179",
+       "id": "11cbeb3b-1579-4318-a024-4a2c06896eaf"
+      },
+      {
+       "qty": 4,
+       "name": "Hussar Patrol",
+       "set": "rtr",
+       "number": "169",
+       "id": "dd775231-e1e0-41e2-ad9a-0726624f57f9"
+      },
+      {
+       "qty": 4,
+       "name": "Essence Scatter",
+       "set": "m14",
+       "number": "55",
+       "id": "49bd28e3-1612-41b3-88a0-bb5c1ee60ace"
+      },
+      {
+       "qty": 4,
+       "name": "Syncopate",
+       "set": "rtr",
+       "number": "54",
+       "id": "ba6f218f-83b0-4b68-a00f-0327cd79f32a"
+      },
+      {
+       "qty": 4,
+       "name": "Azorius Charm",
+       "set": "rtr",
+       "number": "145",
+       "id": "26adc211-d089-4102-91e5-225bbeb5f382"
+      },
+      {
+       "qty": 2,
+       "name": "Isperia, Supreme Judge",
+       "set": "rtr",
+       "number": "171",
+       "id": "b2cce2d4-3944-4ff0-98e8-80f19697f108"
+      },
+      {
+       "qty": 4,
+       "name": "Judge's Familiar",
+       "set": "rtr",
+       "number": "218",
+       "id": "0fc51899-3970-416b-b7de-fadbc9678955"
+      },
+      {
+       "qty": 3,
+       "name": "Detention Sphere",
+       "set": "rtr",
+       "number": "155",
+       "id": "afee5464-83b7-4d7a-b407-9ee7de21535b"
+      },
+      {
+       "qty": 1,
+       "name": "Sphinx's Revelation",
+       "set": "rtr",
+       "number": "200",
+       "id": "404d9413-ef57-4b6e-8584-48a1dc7fe6f1"
+      },
+      {
+       "qty": 10,
+       "name": "Island",
+       "set": "rtr",
+       "number": "255",
+       "id": "78f35064-c662-48ff-a2a9-d26f594500f5"
+      },
+      {
+       "qty": 10,
+       "name": "Plains",
+       "set": "rtr",
+       "number": "250",
+       "id": "ac754820-343e-4c01-bcfa-89fa5c8c7e1d"
+      },
+      {
+       "qty": 4,
+       "name": "Hallowed Fountain",
+       "set": "rtr",
+       "number": "241",
+       "id": "af7091c9-5f98-4078-a42b-c9e057346d9b"
+      }
+     ]
+    }
+   },
+   "villain": {
+    "who": "lazav",
+    "deck": {
+     "name": "House Dimir",
+     "colors": "UB",
+     "archetype": null,
+     "label": "tribute",
+     "cards": [
+      {
+       "qty": 2,
+       "name": "Lazav, Dimir Mastermind",
+       "set": "gtc",
+       "number": "174",
+       "id": "69c8fcdb-4798-4961-995a-e128a3ff431a"
+      },
+      {
+       "qty": 4,
+       "name": "Nightveil Specter",
+       "set": "gtc",
+       "number": "222",
+       "id": "e3754b8c-16d2-41e3-b41b-4b2e70833e82"
+      },
+      {
+       "qty": 4,
+       "name": "Gutter Skulk",
+       "set": "gtc",
+       "number": "67",
+       "id": "830c7c77-20c4-429f-88c7-b85ab7a0e38b"
+      },
+      {
+       "qty": 4,
+       "name": "Mindeye Drake",
+       "set": "gtc",
+       "number": "43",
+       "id": "947f44b0-91be-4115-b499-57893f0f69a9"
+      },
+      {
+       "qty": 3,
+       "name": "Call of the Nightwing",
+       "set": "gtc",
+       "number": "149",
+       "id": "ef30a570-b988-42e8-8910-41fe39ffa260"
+      },
+      {
+       "qty": 4,
+       "name": "Death's Approach",
+       "set": "gtc",
+       "number": "62",
+       "id": "b0f69c6f-522d-42c8-be7c-ea6d7ffb6a90"
+      },
+      {
+       "qty": 3,
+       "name": "Undercity Informer",
+       "set": "gtc",
+       "number": "82",
+       "id": "822d0f73-cfb0-41d9-b4eb-09c605112a13"
+      },
+      {
+       "qty": 2,
+       "name": "Mirko Vosk, Mind Drinker",
+       "set": "dgm",
+       "number": "85",
+       "id": "d37cdd3e-4303-4391-aff4-4a543e65a836"
+      },
+      {
+       "qty": 2,
+       "name": "Last Thoughts",
+       "set": "gtc",
+       "number": "40",
+       "id": "c6033d07-124c-4001-81e1-c6eb99e07fdd"
+      },
+      {
+       "qty": 10,
+       "name": "Island",
+       "set": "rtr",
+       "number": "255",
+       "id": "78f35064-c662-48ff-a2a9-d26f594500f5"
+      },
+      {
+       "qty": 10,
+       "name": "Swamp",
+       "set": "rtr",
+       "number": "260",
+       "id": "2d8c3f29-121e-42d1-be21-29f403f97708"
+      },
+      {
+       "qty": 4,
+       "name": "Watery Grave",
+       "set": "gtc",
+       "number": "249",
+       "id": "47fde349-010e-4a2e-838e-e924dbeec355"
+      },
+      {
+       "qty": 4,
+       "name": "Ultimate Price",
+       "set": "rtr",
+       "number": "82",
+       "id": "d2b4912a-83a2-4870-8fac-81fa79da2830"
+      },
+      {
+       "qty": 4,
+       "name": "Duskmantle Guildmage",
+       "set": "gtc",
+       "number": "158",
+       "id": "9a1509ff-387e-4ccd-bda0-86e8738a98fb"
+      }
+     ]
+    }
+   },
+   "reward": {
+    "hero": {
+     "packs": 1,
+     "coins": 100
+    },
+    "villain": {
+     "card": {
+      "oracle_id": "8027a610-613e-4640-9840-c8778694f312",
+      "name": "Lazav, Dimir Mastermind",
+      "rarity": "mythic",
+      "set": "gtc",
+      "id": "69c8fcdb-4798-4961-995a-e128a3ff431a",
+      "image": "https://cards.scryfall.io/normal/front/6/9/69c8fcdb-4798-4961-995a-e128a3ff431a.jpg"
+     },
+     "coins": 100
+    }
+   },
+   "scene": [
+    {
+     "who": "jace",
+     "line": "Is the maze itself a phantom? Or is one as real as the other? Perhaps I am as mad as the dragon.",
+     "quote": true
+    },
+    {
+     "who": "jace",
+     "line": "Cipher: a cipher spell gets encoded on one of their creatures. Every time that creature hits you, they cast it again. Block it or kill it."
+    }
+   ],
+   "villainScene": [
+    {
+     "who": "lazav",
+     "line": "Ask the right questions in the right way and truth is inevitable.",
+     "quote": true
+    },
+    {
+     "who": "lazav",
+     "line": "The most insidious thing in the world is nonsense that sounds just plausible enough to listen to.",
+     "quote": true
+    },
+    {
+     "who": "lazav",
+     "line": "One tiny peg pulled from a single wagon wheel, and an entire district grinds to a halt.",
+     "quote": true
+    }
+   ],
+   "after": [
+    {
+     "who": "jace",
+     "line": "He let me win that. I don't know why yet, and I don't like it."
+    }
+   ],
+   "cues": {
+    "hero": {
+     "start": "Who are you, really?",
+     "big": "I see you.",
+     "low": "He knows my plans...",
+     "win": "Unmasked.",
+     "loss": "He was ahead of me...",
+     "half": "Kill the encoded one."
+    },
+    "villain": {
+     "start": "Hello, Jace.",
+     "big": "Encoded.",
+     "low": "Interesting.",
+     "win": "Your notes, please.",
+     "loss": "I was never here."
+    }
+   },
+   "bigPlays": [],
+   "sim": null
+  },
+  {
+   "id": "a20b5",
+   "slot": 5,
+   "kind": "Lesson",
+   "mood": "tension",
+   "title": "Debts and Riots",
+   "difficulty": "Normal",
+   "teaches": [
+    "Extort"
+   ],
+   "blurb": "Teysa Karlov, the Grand Envoy of the Orzhov, is collecting on every debt in the city while the guilds are distracted. The Rakdos runner Exava turns her collection round into a carnival.",
+   "rewardSet": "gtc",
+   "host": false,
+   "hero": {
+    "who": "teysa",
+    "deck": {
+     "name": "The Syndicate",
+     "colors": "WB",
+     "archetype": null,
+     "label": "tribute",
+     "cards": [
+      {
+       "qty": 2,
+       "name": "Teysa, Envoy of Ghosts",
+       "set": "dgm",
+       "number": "108",
+       "id": "cbd8183c-6967-4332-b822-02b82c14ef2d"
+      },
+      {
+       "qty": 4,
+       "name": "Syndic of Tithes",
+       "set": "gtc",
+       "number": "26",
+       "id": "2bafaa3b-eeaa-427f-9a73-6a1c98d257ca"
+      },
+      {
+       "qty": 4,
+       "name": "Basilica Screecher",
+       "set": "gtc",
+       "number": "58",
+       "id": "d233c6bc-c4dd-482d-b0f4-87359acab7cb"
+      },
+      {
+       "qty": 4,
+       "name": "Tithe Drinker",
+       "set": "dgm",
+       "number": "109",
+       "id": "e069aa06-35b0-4af8-89cb-af653708ed32"
+      },
+      {
+       "qty": 4,
+       "name": "Kingpin's Pet",
+       "set": "gtc",
+       "number": "173",
+       "id": "3465cf63-4f10-4b53-9703-69746364dbc7"
+      },
+      {
+       "qty": 4,
+       "name": "Knight of Obligation",
+       "set": "gtc",
+       "number": "18",
+       "id": "0c2a1100-a2e6-4ef5-a8e3-2aca552d6b66"
+      },
+      {
+       "qty": 4,
+       "name": "Blind Obedience",
+       "set": "gtc",
+       "number": "6",
+       "id": "07c3e78d-d917-4552-842f-feff99c059e0"
+      },
+      {
+       "qty": 3,
+       "name": "High Priest of Penance",
+       "set": "gtc",
+       "number": "171",
+       "id": "84a3ff8d-6d7e-49f0-8d30-7f8c23db568b"
+      },
+      {
+       "qty": 3,
+       "name": "Doom Blade",
+       "set": "m14",
+       "number": "96",
+       "id": "75d96a37-bdbe-46ae-926f-8742699a0b20"
+      },
+      {
+       "qty": 10,
+       "name": "Plains",
+       "set": "rtr",
+       "number": "250",
+       "id": "ac754820-343e-4c01-bcfa-89fa5c8c7e1d"
+      },
+      {
+       "qty": 10,
+       "name": "Swamp",
+       "set": "rtr",
+       "number": "260",
+       "id": "2d8c3f29-121e-42d1-be21-29f403f97708"
+      },
+      {
+       "qty": 4,
+       "name": "Godless Shrine",
+       "set": "gtc",
+       "number": "242",
+       "id": "6fd672bb-18cf-44e3-8dda-5310b1e0fffe"
+      },
+      {
+       "qty": 4,
+       "name": "Vizkopa Guildmage",
+       "set": "gtc",
+       "number": "206",
+       "id": "41f505a3-2c54-43a9-b4a9-43a1451b36f6"
+      }
+     ]
+    }
+   },
+   "villain": {
+    "who": "exava",
+    "deck": {
+     "name": "The Cult of Rakdos",
+     "colors": "BR",
+     "archetype": null,
+     "label": "tribute",
+     "cards": [
+      {
+       "qty": 2,
+       "name": "Exava, Rakdos Blood Witch",
+       "set": "dgm",
+       "number": "69",
+       "id": "6cb72a64-89e7-4b0e-a3d3-1309829071d2"
+      },
+      {
+       "qty": 4,
+       "name": "Rakdos Cackler",
+       "set": "rtr",
+       "number": "220",
+       "id": "5f873c0b-e779-4f09-8e9c-94a1765eb5da"
+      },
+      {
+       "qty": 4,
+       "name": "Gore-House Chainwalker",
+       "set": "rtr",
+       "number": "96",
+       "id": "56ba132f-95fc-4b99-a1dc-ebe6f622bb41"
+      },
+      {
+       "qty": 4,
+       "name": "Rakdos Shred-Freak",
+       "set": "rtr",
+       "number": "221",
+       "id": "06899549-5534-4d11-86c1-afd1796e18b1"
+      },
+      {
+       "qty": 4,
+       "name": "Splatter Thug",
+       "set": "rtr",
+       "number": "105",
+       "id": "7c511805-3392-4033-8679-811711a0aaca"
+      },
+      {
+       "qty": 4,
+       "name": "Bloodfray Giant",
+       "set": "rtr",
+       "number": "89",
+       "id": "a8c468cd-1255-4257-9a69-c6b40a27c427"
+      },
+      {
+       "qty": 3,
+       "name": "Carnival Hellsteed",
+       "set": "rtr",
+       "number": "147",
+       "id": "d8ada7ce-c693-48f0-a6e3-766f61d93370"
+      },
+      {
+       "qty": 4,
+       "name": "Shock",
+       "set": "m14",
+       "number": "155",
+       "id": "2fbec2ea-7b60-4c51-9782-52ccdd96c4b7"
+      },
+      {
+       "qty": 3,
+       "name": "Hellhole Flailer",
+       "set": "rtr",
+       "number": "167",
+       "id": "4984a089-84af-4387-9a0d-819b119b5565"
+      },
+      {
+       "qty": 10,
+       "name": "Swamp",
+       "set": "rtr",
+       "number": "260",
+       "id": "2d8c3f29-121e-42d1-be21-29f403f97708"
+      },
+      {
+       "qty": 10,
+       "name": "Mountain",
+       "set": "rtr",
+       "number": "265",
+       "id": "3b4a196f-de7e-4100-ad65-56cf8b0a8b23"
+      },
+      {
+       "qty": 4,
+       "name": "Blood Crypt",
+       "set": "rtr",
+       "number": "238",
+       "id": "8bd5828b-8dcd-4ce6-b834-ebe9cbaa12d1"
+      },
+      {
+       "qty": 4,
+       "name": "Dead Reveler",
+       "set": "rtr",
+       "number": "62",
+       "id": "909a0a38-2c22-4b49-8938-1a8162c077e6"
+      }
+     ]
+    }
+   },
+   "reward": {
+    "hero": {
+     "packs": 1,
+     "coins": 100
+    },
+    "villain": {
+     "card": {
+      "oracle_id": "524249cd-68d9-472a-89cd-5872641ca6de",
+      "name": "Exava, Rakdos Blood Witch",
+      "rarity": "rare",
+      "set": "dgm",
+      "id": "6cb72a64-89e7-4b0e-a3d3-1309829071d2",
+      "image": "https://cards.scryfall.io/normal/front/6/c/6cb72a64-89e7-4b0e-a3d3-1309829071d2.jpg"
+     },
+     "coins": 100
+    }
+   },
+   "scene": [
+    {
+     "who": "teysa",
+     "line": "The fine print of countless contracts has ensured we are never defenseless.",
+     "quote": true
+    },
+    {
+     "who": "teysa",
+     "line": "We do not believe in hiding our wealth in the shadows. This is Orzhov, and this is how we reward greatness.",
+     "quote": true
+    },
+    {
+     "who": "teysa",
+     "line": "Extort: whenever you cast a spell, you may pay one more mana to drain them for 1. Every spell is a little payment."
+    }
+   ],
+   "villainScene": [
+    {
+     "who": "rakdos",
+     "line": "Let all feel joy in pain.",
+     "quote": true
+    },
+    {
+     "who": "stage",
+     "line": "Burn. Bleed. Enjoy.",
+     "quote": true
+    },
+    {
+     "who": "stage",
+     "line": "Maze-runners who pass through the Rakdos gate leave behind their scruples and a significant amount of skin.",
+     "quote": true
+    }
+   ],
+   "after": [
+    {
+     "who": "teysa",
+     "line": "Exava is running the Maze for Rakdos, which tells you how seriously he takes it. Go on. The Izzet runner is ahead of all of you."
+    }
+   ],
+   "cues": {
+    "hero": {
+     "start": "Your account is due.",
+     "big": "Paid in full.",
+     "low": "They are not paying...",
+     "win": "Collected.",
+     "loss": "Default...",
+     "half": "Pay the extra mana."
+    },
+    "villain": {
+     "start": "Showtime!",
+     "big": "Unleash!",
+     "low": "Boring!",
+     "win": "Encore!",
+     "loss": "Curtain."
+    }
+   },
+   "bigPlays": [],
+   "sim": null
+  },
+  {
+   "id": "a20b6",
+   "slot": 6,
+   "kind": "Meta",
+   "mood": "march",
+   "title": "Revelation",
+   "difficulty": "Normal",
+   "teaches": [
+    "Racing a card-draw engine"
+   ],
+   "blurb": "The Archive remembers spring 2013: a slow Esper control deck that drew a fistful of cards with Sphinx's Revelation, against Naya Blitz, which tried to win before the Revelation resolved.",
+   "rewardSet": "rtr",
+   "host": false,
+   "hero": {
+    "who": "esper",
+    "deck": {
+     "name": "Esper Control",
+     "colors": "WUB",
+     "archetype": "Control",
+     "label": "tribute",
+     "note": "Built from cards in this act's sets only, so Thragtusk and Restoration Angel are not in it.",
+     "cards": [
+      {
+       "qty": 3,
+       "name": "Sphinx's Revelation",
+       "set": "rtr",
+       "number": "200",
+       "id": "404d9413-ef57-4b6e-8584-48a1dc7fe6f1"
+      },
+      {
+       "qty": 4,
+       "name": "Supreme Verdict",
+       "set": "rtr",
+       "number": "201",
+       "id": "4e9648f9-7a67-4717-bca1-861d1f7fed43"
+      },
+      {
+       "qty": 4,
+       "name": "Azorius Charm",
+       "set": "rtr",
+       "number": "145",
+       "id": "26adc211-d089-4102-91e5-225bbeb5f382"
+      },
+      {
+       "qty": 4,
+       "name": "Detention Sphere",
+       "set": "rtr",
+       "number": "155",
+       "id": "afee5464-83b7-4d7a-b407-9ee7de21535b"
+      },
+      {
+       "qty": 3,
+       "name": "Jace, Architect of Thought",
+       "set": "rtr",
+       "number": "44",
+       "id": "d4df3a38-678e-42dc-a3fd-d1d399368f07"
+      },
+      {
+       "qty": 4,
+       "name": "Essence Scatter",
+       "set": "m14",
+       "number": "55",
+       "id": "49bd28e3-1612-41b3-88a0-bb5c1ee60ace"
+      },
+      {
+       "qty": 2,
+       "name": "Doom Blade",
+       "set": "m14",
+       "number": "96",
+       "id": "75d96a37-bdbe-46ae-926f-8742699a0b20"
+      },
+      {
+       "qty": 2,
+       "name": "Obzedat, Ghost Council",
+       "set": "gtc",
+       "number": "182",
+       "id": "4cc198d8-1f27-482d-8f5d-21e02c59797a"
+      },
+      {
+       "qty": 2,
+       "name": "Isperia, Supreme Judge",
+       "set": "rtr",
+       "number": "171",
+       "id": "b2cce2d4-3944-4ff0-98e8-80f19697f108"
+      },
+      {
+       "qty": 6,
+       "name": "Island",
+       "set": "rtr",
+       "number": "255",
+       "id": "78f35064-c662-48ff-a2a9-d26f594500f5"
+      },
+      {
+       "qty": 5,
+       "name": "Plains",
+       "set": "rtr",
+       "number": "250",
+       "id": "ac754820-343e-4c01-bcfa-89fa5c8c7e1d"
+      },
+      {
+       "qty": 2,
+       "name": "Swamp",
+       "set": "rtr",
+       "number": "260",
+       "id": "2d8c3f29-121e-42d1-be21-29f403f97708"
+      },
+      {
+       "qty": 4,
+       "name": "Hallowed Fountain",
+       "set": "rtr",
+       "number": "241",
+       "id": "af7091c9-5f98-4078-a42b-c9e057346d9b"
+      },
+      {
+       "qty": 4,
+       "name": "Godless Shrine",
+       "set": "gtc",
+       "number": "242",
+       "id": "6fd672bb-18cf-44e3-8dda-5310b1e0fffe"
+      },
+      {
+       "qty": 3,
+       "name": "Watery Grave",
+       "set": "gtc",
+       "number": "249",
+       "id": "47fde349-010e-4a2e-838e-e924dbeec355"
+      },
+      {
+       "qty": 3,
+       "name": "Sin Collector",
+       "set": "dgm",
+       "number": "103",
+       "id": "305a3feb-df49-486c-a3b4-ff2721d60019"
+      },
+      {
+       "qty": 3,
+       "name": "Sphinx of the Chimes",
+       "set": "rtr",
+       "number": "52",
+       "id": "31a0cae5-925f-4d00-a4da-1db8bae5511b"
+      },
+      {
+       "qty": 2,
+       "name": "Lyev Skyknight",
+       "set": "rtr",
+       "number": "179",
+       "id": "11cbeb3b-1579-4318-a024-4a2c06896eaf"
+      }
+     ]
+    }
+   },
+   "villain": {
+    "who": "blitz",
+    "deck": {
+     "name": "Naya Blitz",
+     "colors": "RGW",
+     "archetype": "Aggro",
+     "label": "tribute",
+     "cards": [
+      {
+       "qty": 4,
+       "name": "Experiment One",
+       "set": "gtc",
+       "number": "119",
+       "id": "2cc1d8d0-bb43-4962-ad29-bb6478aa986b"
+      },
+      {
+       "qty": 4,
+       "name": "Burning-Tree Emissary",
+       "set": "gtc",
+       "number": "216",
+       "id": "899d5f35-3613-4c69-9176-13baf442fb50"
+      },
+      {
+       "qty": 4,
+       "name": "Ghor-Clan Rampager",
+       "set": "gtc",
+       "number": "167",
+       "id": "382048ec-0bf5-49a5-90d5-f80fbda08962"
+      },
+      {
+       "qty": 4,
+       "name": "Boros Reckoner",
+       "set": "gtc",
+       "number": "215",
+       "id": "82a18b07-38b8-4854-9735-3cfe83b11bf1"
+      },
+      {
+       "qty": 4,
+       "name": "Loxodon Smiter",
+       "set": "rtr",
+       "number": "178",
+       "id": "69247168-2bfb-4cce-a2a6-61459a0fbce4"
+      },
+      {
+       "qty": 4,
+       "name": "Daring Skyjek",
+       "set": "gtc",
+       "number": "9",
+       "id": "6c28412d-9add-4911-8487-c84559006fb0"
+      },
+      {
+       "qty": 4,
+       "name": "Boros Charm",
+       "set": "gtc",
+       "number": "148",
+       "id": "d4ddf9cc-40a7-4b4f-bb51-b08171453c9a"
+      },
+      {
+       "qty": 4,
+       "name": "Warleader's Helix",
+       "set": "dgm",
+       "number": "116",
+       "id": "81e474ac-54f7-43f9-8af9-2f1adf258b15"
+      },
+      {
+       "qty": 4,
+       "name": "Wojek Halberdiers",
+       "set": "gtc",
+       "number": "208",
+       "id": "423f0870-dc1c-4cd8-b92c-6d5f92abbaec"
+      },
+      {
+       "qty": 6,
+       "name": "Mountain",
+       "set": "rtr",
+       "number": "265",
+       "id": "3b4a196f-de7e-4100-ad65-56cf8b0a8b23"
+      },
+      {
+       "qty": 4,
+       "name": "Forest",
+       "set": "rtr",
+       "number": "270",
+       "id": "f00849dd-c1ba-4171-a503-603fe77c0a43"
+      },
+      {
+       "qty": 4,
+       "name": "Plains",
+       "set": "rtr",
+       "number": "250",
+       "id": "ac754820-343e-4c01-bcfa-89fa5c8c7e1d"
+      },
+      {
+       "qty": 4,
+       "name": "Sacred Foundry",
+       "set": "gtc",
+       "number": "245",
+       "id": "0a26d900-c652-4f9c-8681-a35c5f8b1937"
+      },
+      {
+       "qty": 4,
+       "name": "Stomping Ground",
+       "set": "gtc",
+       "number": "247",
+       "id": "f29f3415-971c-4a5d-aae9-3893f4bdab1e"
+      },
+      {
+       "qty": 2,
+       "name": "Temple Garden",
+       "set": "rtr",
+       "number": "248",
+       "id": "b821e604-f9fd-47a4-b5ff-bfb5022834c2"
+      }
+     ]
+    }
+   },
+   "reward": {
+    "hero": {
+     "packs": 1,
+     "coins": 100
+    },
+    "villain": {
+     "card": {
+      "oracle_id": "5f079a75-899e-467d-b443-3b87ce2fb548",
+      "name": "Boros Reckoner",
+      "rarity": "rare",
+      "set": "gtc",
+      "id": "82a18b07-38b8-4854-9735-3cfe83b11bf1",
+      "image": "https://cards.scryfall.io/normal/front/8/2/82a18b07-38b8-4854-9735-3cfe83b11bf1.jpg"
+     },
+     "coins": 100
+    }
+   },
+   "scene": [
+    {
+     "who": "isperia",
+     "line": "The rules of logic and order have already made the choice for you.",
+     "quote": true
+    },
+    {
+     "who": "you",
+     "line": "Survive the first five turns. After that, every Revelation is a new hand."
+    }
+   ],
+   "villainScene": [
+    {
+     "who": "aurelia",
+     "line": "Practice compassion and mercy. But know when they must end.",
+     "quote": true
+    }
+   ],
+   "after": [
+    {
+     "who": "stage",
+     "line": "Recorded: Return to Ravnica Standard, spring 2013."
+    }
+   ],
+   "cues": {
+    "hero": {
+     "start": "Hold.",
+     "big": "Revelation!",
+     "low": "Too fast...",
+     "win": "Wiped.",
+     "loss": "Raced.",
+     "half": "Wrath, then draw."
+    },
+    "villain": {
+     "start": "[a hasty attack]",
+     "big": "[bloodrush]",
+     "low": "[the board is gone]",
+     "win": "[raced]",
+     "loss": "[out of gas]"
+    }
+   },
+   "bigPlays": [],
+   "sim": null
+  },
+  {
+   "id": "a20b7",
+   "slot": 7,
+   "kind": "Meta",
+   "mood": "tension",
+   "title": "Burning Earth",
+   "difficulty": "Normal",
+   "teaches": [
+    "Paying life"
+   ],
+   "blurb": "The Archive remembers summer 2013: three-colour Jund Midrange on shocklands, against the mono-red deck that played Burning Earth to punish every non-basic land.",
+   "rewardSet": "dgm",
+   "host": false,
+   "hero": {
+    "who": "jund",
+    "deck": {
+     "name": "Jund Midrange",
+     "colors": "BRG",
+     "archetype": "Midrange",
+     "label": "tribute",
+     "note": "Built from cards in this act's sets only, so Olivia Voldaren, Thragtusk and Huntmaster of the Fells are not in it.",
+     "cards": [
+      {
+       "qty": 4,
+       "name": "Deathrite Shaman",
+       "set": "rtr",
+       "number": "213",
+       "id": "70496f16-c4c0-4c03-beef-454eb4824cd1"
+      },
+      {
+       "qty": 4,
+       "name": "Scavenging Ooze",
+       "set": "m14",
+       "number": "195",
+       "id": "ec30153a-36b5-42f8-beed-9efab09f1051"
+      },
+      {
+       "qty": 3,
+       "name": "Vraska the Unseen",
+       "set": "rtr",
+       "number": "208",
+       "id": "8971938c-cd26-4b83-96d7-1408cd0b0de6"
+      },
+      {
+       "qty": 3,
+       "name": "Domri Rade",
+       "set": "gtc",
+       "number": "156",
+       "id": "21b48170-99dd-440f-9954-fc229d6094d3"
+      },
+      {
+       "qty": 4,
+       "name": "Dreadbore",
+       "set": "rtr",
+       "number": "157",
+       "id": "a83945c6-4dc6-4d9a-9bc2-2d4a264e5422"
+      },
+      {
+       "qty": 4,
+       "name": "Abrupt Decay",
+       "set": "rtr",
+       "number": "141",
+       "id": "3b1e92b4-6e53-4dba-a572-c67e01965ac5"
+      },
+      {
+       "qty": 3,
+       "name": "Putrefy",
+       "set": "dgm",
+       "number": "93",
+       "id": "0d43a0b6-2a5c-4959-96ee-6e570949dfed"
+      },
+      {
+       "qty": 4,
+       "name": "Witchstalker",
+       "set": "m14",
+       "number": "202",
+       "id": "5a5ce47d-ea4f-4e15-adb6-5bb66981ed24"
+      },
+      {
+       "qty": 3,
+       "name": "Ghor-Clan Rampager",
+       "set": "gtc",
+       "number": "167",
+       "id": "382048ec-0bf5-49a5-90d5-f80fbda08962"
+      },
+      {
+       "qty": 2,
+       "name": "Garruk, Caller of Beasts",
+       "set": "m14",
+       "number": "172",
+       "id": "a96d0c67-e9f4-46d9-bd74-13a8606fdfe3"
+      },
+      {
+       "qty": 3,
+       "name": "Forest",
+       "set": "rtr",
+       "number": "270",
+       "id": "f00849dd-c1ba-4171-a503-603fe77c0a43"
+      },
+      {
+       "qty": 3,
+       "name": "Swamp",
+       "set": "rtr",
+       "number": "260",
+       "id": "2d8c3f29-121e-42d1-be21-29f403f97708"
+      },
+      {
+       "qty": 2,
+       "name": "Mountain",
+       "set": "rtr",
+       "number": "265",
+       "id": "3b4a196f-de7e-4100-ad65-56cf8b0a8b23"
+      },
+      {
+       "qty": 4,
+       "name": "Blood Crypt",
+       "set": "rtr",
+       "number": "238",
+       "id": "8bd5828b-8dcd-4ce6-b834-ebe9cbaa12d1"
+      },
+      {
+       "qty": 4,
+       "name": "Overgrown Tomb",
+       "set": "rtr",
+       "number": "243",
+       "id": "1c7d50d6-b63a-4d8c-88fa-1d78ae693a45"
+      },
+      {
+       "qty": 4,
+       "name": "Stomping Ground",
+       "set": "gtc",
+       "number": "247",
+       "id": "f29f3415-971c-4a5d-aae9-3893f4bdab1e"
+      },
+      {
+       "qty": 4,
+       "name": "Golgari Guildgate",
+       "set": "rtr",
+       "number": "239",
+       "id": "8fe2fd1a-f7d3-48b4-bad8-be5ee45d6121"
+      },
+      {
+       "qty": 2,
+       "name": "Dreg Mangler",
+       "set": "rtr",
+       "number": "158",
+       "id": "28d42d6a-e9a0-449e-9b31-436c09b7c1ba"
+      }
+     ]
+    }
+   },
+   "villain": {
+    "who": "earth",
+    "deck": {
+     "name": "Mono-Red",
+     "colors": "R",
+     "archetype": "Aggro",
+     "label": "tribute",
+     "cards": [
+      {
+       "qty": 2,
+       "name": "Burning Earth",
+       "set": "m14",
+       "number": "130",
+       "id": "1df3a7c9-5c8d-438c-a5ad-3c9754c6ea5d"
+      },
+      {
+       "qty": 4,
+       "name": "Rakdos Cackler",
+       "set": "rtr",
+       "number": "220",
+       "id": "5f873c0b-e779-4f09-8e9c-94a1765eb5da"
+      },
+      {
+       "qty": 4,
+       "name": "Gore-House Chainwalker",
+       "set": "rtr",
+       "number": "96",
+       "id": "56ba132f-95fc-4b99-a1dc-ebe6f622bb41"
+      },
+      {
+       "qty": 4,
+       "name": "Ash Zealot",
+       "set": "rtr",
+       "number": "86",
+       "id": "1f61b1a3-4b3b-4490-a9dc-17aac258cbda"
+      },
+      {
+       "qty": 4,
+       "name": "Skinbrand Goblin",
+       "set": "gtc",
+       "number": "105",
+       "id": "fe4f9b6c-3ba9-4f4f-8135-f5236195e507"
+      },
+      {
+       "qty": 4,
+       "name": "Bloodfray Giant",
+       "set": "rtr",
+       "number": "89",
+       "id": "a8c468cd-1255-4257-9a69-c6b40a27c427"
+      },
+      {
+       "qty": 4,
+       "name": "Ripscale Predator",
+       "set": "gtc",
+       "number": "103",
+       "id": "3b7d5daf-404d-46e9-b622-e89a1f55e908"
+      },
+      {
+       "qty": 24,
+       "name": "Mountain",
+       "set": "rtr",
+       "number": "265",
+       "id": "3b4a196f-de7e-4100-ad65-56cf8b0a8b23"
+      },
+      {
+       "qty": 4,
+       "name": "Splatter Thug",
+       "set": "rtr",
+       "number": "105",
+       "id": "7c511805-3392-4033-8679-811711a0aaca"
+      },
+      {
+       "qty": 4,
+       "name": "Viashino Racketeer",
+       "set": "rtr",
+       "number": "112",
+       "id": "bf4c2d22-9c36-42cc-854d-f96410bb5cf1"
+      },
+      {
+       "qty": 2,
+       "name": "Bomber Corps",
+       "set": "gtc",
+       "number": "86",
+       "id": "9b1675f2-e950-4f3c-9dd3-29ead615ff23"
+      }
+     ]
+    }
+   },
+   "reward": {
+    "hero": {
+     "packs": 1,
+     "coins": 100
+    },
+    "villain": {
+     "card": {
+      "oracle_id": "21b8192e-46a2-4a6a-abd5-3a074efa30a9",
+      "name": "Burning Earth",
+      "rarity": "rare",
+      "set": "m14",
+      "id": "1df3a7c9-5c8d-438c-a5ad-3c9754c6ea5d",
+      "image": "https://cards.scryfall.io/normal/front/1/d/1df3a7c9-5c8d-438c-a5ad-3c9754c6ea5d.jpg"
+     },
+     "coins": 100
+    }
+   },
+   "scene": [
+    {
+     "who": "domri",
+     "line": "Roots, ruins, and room to fight. All the comforts of home.",
+     "quote": true
+    },
+    {
+     "who": "you",
+     "line": "Shocklands cost 2 life to enter untapped, and Burning Earth costs more. Spend life only when it buys a turn."
+    }
+   ],
+   "villainScene": [
+    {
+     "who": "aurelia",
+     "line": "There is no time to remedy our enemies' ignorance. Blast it out of them.",
+     "quote": true
+    }
+   ],
+   "after": [
+    {
+     "who": "stage",
+     "line": "Recorded: Return to Ravnica Standard, summer 2013."
+    }
+   ],
+   "cues": {
+    "hero": {
+     "start": "Decay it.",
+     "big": "Planeswalker down!",
+     "low": "The earth is burning...",
+     "win": "Outgrown.",
+     "loss": "Burned out.",
+     "half": "Pay life only when it counts."
+    },
+    "villain": {
+     "start": "[the ground ignites]",
+     "big": "[every land burns]",
+     "low": "[outsized]",
+     "win": "[burned out]",
+     "loss": "[stalled]"
+    }
+   },
+   "bigPlays": [],
+   "sim": null
+  },
+  {
+   "id": "a20b8",
+   "slot": 8,
+   "kind": "Boss",
+   "mood": "boss",
+   "title": "Niv-Mizzet",
+   "difficulty": "Hard",
+   "teaches": [
+    "Overload"
+   ],
+   "blurb": "The last stretch of the Maze. Niv-Mizzet called the race, and he means to win it. Jace runs it with whoever is still standing.",
+   "rewardSet": "rtr",
+   "host": true,
+   "hero": {
+    "who": "jace",
+    "deck": {
+     "name": "Jace and the Runners",
+     "colors": "GWU",
+     "archetype": null,
+     "label": "tribute",
+     "cards": [
+      {
+       "qty": 2,
+       "name": "Jace, Architect of Thought",
+       "set": "rtr",
+       "number": "44",
+       "id": "d4df3a38-678e-42dc-a3fd-d1d399368f07"
+      },
+      {
+       "qty": 2,
+       "name": "Vorel of the Hull Clade",
+       "set": "dgm",
+       "number": "115",
+       "id": "db0665d4-d974-4d5e-ba29-7bf40cbbe29c"
+      },
+      {
+       "qty": 2,
+       "name": "Lavinia of the Tenth",
+       "set": "dgm",
+       "number": "80",
+       "id": "813f1967-c048-4e6e-9720-216773fde47e"
+      },
+      {
+       "qty": 4,
+       "name": "Elusive Krasis",
+       "set": "gtc",
+       "number": "160",
+       "id": "dd62e422-e5e2-4736-9ed3-d2dc693f6f8f"
+      },
+      {
+       "qty": 4,
+       "name": "Lyev Skyknight",
+       "set": "rtr",
+       "number": "179",
+       "id": "11cbeb3b-1579-4318-a024-4a2c06896eaf"
+      },
+      {
+       "qty": 4,
+       "name": "Loxodon Smiter",
+       "set": "rtr",
+       "number": "178",
+       "id": "69247168-2bfb-4cce-a2a6-61459a0fbce4"
+      },
+      {
+       "qty": 4,
+       "name": "Centaur Healer",
+       "set": "rtr",
+       "number": "148",
+       "id": "833835d1-9beb-4ad8-b675-7adebdbd7d82"
+      },
+      {
+       "qty": 4,
+       "name": "Azorius Charm",
+       "set": "rtr",
+       "number": "145",
+       "id": "26adc211-d089-4102-91e5-225bbeb5f382"
+      },
+      {
+       "qty": 3,
+       "name": "Detention Sphere",
+       "set": "rtr",
+       "number": "155",
+       "id": "afee5464-83b7-4d7a-b407-9ee7de21535b"
+      },
+      {
+       "qty": 3,
+       "name": "Essence Scatter",
+       "set": "m14",
+       "number": "55",
+       "id": "49bd28e3-1612-41b3-88a0-bb5c1ee60ace"
+      },
+      {
+       "qty": 2,
+       "name": "Advent of the Wurm",
+       "set": "dgm",
+       "number": "51",
+       "id": "f40284e6-01a1-4372-a92c-940e5732607e"
+      },
+      {
+       "qty": 2,
+       "name": "Sphinx's Revelation",
+       "set": "rtr",
+       "number": "200",
+       "id": "404d9413-ef57-4b6e-8584-48a1dc7fe6f1"
+      },
+      {
+       "qty": 5,
+       "name": "Plains",
+       "set": "rtr",
+       "number": "250",
+       "id": "ac754820-343e-4c01-bcfa-89fa5c8c7e1d"
+      },
+      {
+       "qty": 4,
+       "name": "Island",
+       "set": "rtr",
+       "number": "255",
+       "id": "78f35064-c662-48ff-a2a9-d26f594500f5"
+      },
+      {
+       "qty": 4,
+       "name": "Forest",
+       "set": "rtr",
+       "number": "270",
+       "id": "f00849dd-c1ba-4171-a503-603fe77c0a43"
+      },
+      {
+       "qty": 4,
+       "name": "Hallowed Fountain",
+       "set": "rtr",
+       "number": "241",
+       "id": "af7091c9-5f98-4078-a42b-c9e057346d9b"
+      },
+      {
+       "qty": 4,
+       "name": "Breeding Pool",
+       "set": "gtc",
+       "number": "240",
+       "id": "ece3bcdd-cb33-4923-b919-ba57a327d3cd"
+      },
+      {
+       "qty": 3,
+       "name": "Temple Garden",
+       "set": "rtr",
+       "number": "248",
+       "id": "b821e604-f9fd-47a4-b5ff-bfb5022834c2"
+      }
+     ]
+    }
+   },
+   "villain": {
+    "who": "niv",
+    "deck": {
+     "name": "The Izzet League",
+     "colors": "UR",
+     "archetype": null,
+     "label": "tribute",
+     "cards": [
+      {
+       "qty": 2,
+       "name": "Niv-Mizzet, Dracogenius",
+       "set": "rtr",
+       "number": "183",
+       "id": "c345e475-8095-41b5-90b4-771fcf80b939"
+      },
+      {
+       "qty": 2,
+       "name": "Ral Zarek",
+       "set": "dgm",
+       "number": "94",
+       "id": "fcdbb062-0b0b-4b4c-b4db-dd149f744baa"
+      },
+      {
+       "qty": 4,
+       "name": "Goblin Electromancer",
+       "set": "rtr",
+       "number": "163",
+       "id": "79fb620f-4057-4f60-94b9-56ab855be974"
+      },
+      {
+       "qty": 4,
+       "name": "Frostburn Weird",
+       "set": "rtr",
+       "number": "215",
+       "id": "ba5a68d3-6bc9-4de8-bc06-e1106cf9b3d4"
+      },
+      {
+       "qty": 2,
+       "name": "Melek, Izzet Paragon",
+       "set": "dgm",
+       "number": "84",
+       "id": "3e892d86-f443-4846-8049-40ec6b8c22b4"
+      },
+      {
+       "qty": 4,
+       "name": "Mizzium Mortars",
+       "set": "rtr",
+       "number": "101",
+       "id": "d4ded88d-2688-4f5e-a8b2-16216cf9c792"
+      },
+      {
+       "qty": 4,
+       "name": "Izzet Charm",
+       "set": "rtr",
+       "number": "172",
+       "id": "1e3a5af6-5423-442b-a207-364e97a871d8"
+      },
+      {
+       "qty": 3,
+       "name": "Hypersonic Dragon",
+       "set": "rtr",
+       "number": "170",
+       "id": "f024b19a-923a-4313-be06-e743d3fbab46"
+      },
+      {
+       "qty": 3,
+       "name": "Annihilating Fire",
+       "set": "rtr",
+       "number": "85",
+       "id": "ae12fd10-c13e-4777-a233-96204ec75ac1"
+      },
+      {
+       "qty": 2,
+       "name": "Cyclonic Rift",
+       "set": "rtr",
+       "number": "35",
+       "id": "205c4689-8b02-4d40-9274-3c1fcafa8b82"
+      },
+      {
+       "qty": 2,
+       "name": "Thoughtflare",
+       "set": "rtr",
+       "number": "203",
+       "id": "d90514aa-e356-4502-9e0e-76ab7644a07a"
+      },
+      {
+       "qty": 4,
+       "name": "Blistercoil Weird",
+       "set": "rtr",
+       "number": "211",
+       "id": "d2a8e716-ea33-4ae2-9ff8-5e78b0e50459"
+      },
+      {
+       "qty": 10,
+       "name": "Island",
+       "set": "rtr",
+       "number": "255",
+       "id": "78f35064-c662-48ff-a2a9-d26f594500f5"
+      },
+      {
+       "qty": 10,
+       "name": "Mountain",
+       "set": "rtr",
+       "number": "265",
+       "id": "3b4a196f-de7e-4100-ad65-56cf8b0a8b23"
+      },
+      {
+       "qty": 4,
+       "name": "Steam Vents",
+       "set": "rtr",
+       "number": "247",
+       "id": "de911c88-f5c8-4955-9fa5-1f28a9b17236"
+      }
+     ]
+    }
+   },
+   "reward": {
+    "hero": {
+     "packs": 2,
+     "coins": 200
+    },
+    "villain": {
+     "card": {
+      "oracle_id": "899d58dc-60b2-4013-9f91-c1888c585d66",
+      "name": "Niv-Mizzet, Dracogenius",
+      "rarity": "mythic",
+      "set": "rtr",
+      "id": "c345e475-8095-41b5-90b4-771fcf80b939",
+      "image": "https://cards.scryfall.io/normal/front/c/3/c345e475-8095-41b5-90b4-771fcf80b939.jpg"
+     },
+     "coins": 200
+    }
+   },
+   "scene": [
+    {
+     "who": "stage",
+     "line": "The pattern of the Implicit Maze extends in more than two dimensions.",
+     "quote": true
+    },
+    {
+     "who": "stage",
+     "line": "The route has been known for millennia, but only by those with no means to tell it.",
+     "quote": true
+    },
+    {
+     "who": "jace",
+     "line": "Overload: some Izzet spells have a second, bigger cost. Overloaded, they hit every target instead of one. Do not overextend into seven open mana."
+    }
+   ],
+   "villainScene": [
+    {
+     "who": "niv",
+     "line": "The maze seems to fight us at every turn, resisting our efforts to solve it.",
+     "quote": true
+    },
+    {
+     "who": "niv",
+     "line": "Even this primitive specimen of my kind is impressive.",
+     "quote": true
+    },
+    {
+     "who": "niv",
+     "line": "These Gruul skin-runes—discern whether their patterns evoke streets, leylines, or both. You have four days.",
+     "quote": true
+    }
+   ],
+   "after": null,
+   "cues": {
+    "hero": {
+     "start": "Last stretch.",
+     "big": "The Maze opens!",
+     "low": "He is ahead...",
+     "win": "Solved.",
+     "loss": "The dragon wins...",
+     "half": "Hold back against overload."
+    },
+    "villain": {
+     "start": "Do keep up.",
+     "big": "Overloaded!",
+     "low": "An anomaly.",
+     "win": "Conclusion: flawless.",
+     "loss": "Recalculating.",
+     "half": {
+      "who": "vorel",
+      "line": "The dragon is not invincible. Only very well funded."
+     }
+    }
+   },
+   "bigPlays": [],
+   "sim": null
+  },
+  {
+   "id": "a20b9",
+   "slot": 9,
+   "kind": "Secret Boss",
+   "secret": true,
+   "mood": "boss",
+   "title": "Maze's End",
+   "difficulty": "Hard",
+   "teaches": [
+    "Alternate wins"
+   ],
+   "blurb": "Deep in the archive, the deck that tried to solve the Maze instead of fighting it.",
+   "rewardSet": "dgm",
+   "host": true,
+   "archive": {
+    "deck": "Maze's End",
+    "when": "2013",
+    "format": "Standard: Return to Ravnica block and Magic 2014.",
+    "what": "A slow deck that played one of each of the ten guild Gates, stalled the board with walls, Gatekeepers and Supreme Verdict, and used Maze's End to fetch Gates until it controlled all ten.",
+    "why": "Maze's End is a land that says you win the game if you control ten or more Gates with different names. Players built whole decks around it the year it came out.",
+    "beat": "Attack early and keep attacking. The Gates come into play tapped, so the deck is slow. Make it spend its mana surviving instead of fetching Gates.",
+    "after": "This tribute uses only this act's sets. No single tournament list is copied."
+   },
+   "hero": {
+    "who": "you",
+    "deck": {
+     "name": "Gruul Aggro",
+     "colors": "RG",
+     "archetype": "Aggro",
+     "label": "tribute",
+     "cards": [
+      {
+       "qty": 4,
+       "name": "Ghor-Clan Rampager",
+       "set": "gtc",
+       "number": "167",
+       "id": "382048ec-0bf5-49a5-90d5-f80fbda08962"
+      },
+      {
+       "qty": 4,
+       "name": "Rubblebelt Raiders",
+       "set": "gtc",
+       "number": "224",
+       "id": "2dec7d6a-2362-4c62-bd81-35bba6086f7d"
+      },
+      {
+       "qty": 3,
+       "name": "Domri Rade",
+       "set": "gtc",
+       "number": "156",
+       "id": "21b48170-99dd-440f-9954-fc229d6094d3"
+      },
+      {
+       "qty": 4,
+       "name": "Zhur-Taa Druid",
+       "set": "dgm",
+       "number": "120",
+       "id": "fd565782-8b2f-4b9f-a62d-4af60af20a82"
+      },
+      {
+       "qty": 4,
+       "name": "Scavenging Ooze",
+       "set": "m14",
+       "number": "195",
+       "id": "ec30153a-36b5-42f8-beed-9efab09f1051"
+      },
+      {
+       "qty": 3,
+       "name": "Clan Defiance",
+       "set": "gtc",
+       "number": "151",
+       "id": "efa05298-9c94-4179-b75a-49ee2ca92920"
+      },
+      {
+       "qty": 10,
+       "name": "Forest",
+       "set": "rtr",
+       "number": "270",
+       "id": "f00849dd-c1ba-4171-a503-603fe77c0a43"
+      },
+      {
+       "qty": 10,
+       "name": "Mountain",
+       "set": "rtr",
+       "number": "265",
+       "id": "3b4a196f-de7e-4100-ad65-56cf8b0a8b23"
+      },
+      {
+       "qty": 4,
+       "name": "Stomping Ground",
+       "set": "gtc",
+       "number": "247",
+       "id": "f29f3415-971c-4a5d-aae9-3893f4bdab1e"
+      },
+      {
+       "qty": 2,
+       "name": "Gruul Ragebeast",
+       "set": "gtc",
+       "number": "170",
+       "id": "080ef367-7904-4e5c-a8b4-1fb62f951f3e"
+      },
+      {
+       "qty": 4,
+       "name": "Gyre Sage",
+       "set": "gtc",
+       "number": "123",
+       "id": "6345376a-3d2d-4fff-9430-5e90a96e2f0f"
+      },
+      {
+       "qty": 4,
+       "name": "Scab-Clan Charger",
+       "set": "gtc",
+       "number": "131",
+       "id": "964c88d3-3141-44ab-8856-44a3f08331ea"
+      },
+      {
+       "qty": 4,
+       "name": "Zhur-Taa Swine",
+       "set": "gtc",
+       "number": "210",
+       "id": "cef93050-2f24-4c85-a00b-796e53868ac1"
+      }
+     ]
+    }
+   },
+   "villain": {
+    "who": "gates",
+    "deck": {
+     "name": "Maze's End",
+     "colors": "WUBG",
+     "archetype": "Control",
+     "label": "tribute",
+     "cards": [
+      {
+       "qty": 4,
+       "name": "Opal Lake Gatekeepers",
+       "set": "dgm",
+       "number": "16",
+       "id": "f43ac38f-5cd0-46cf-8623-d82cb8fb719b"
+      },
+      {
+       "qty": 4,
+       "name": "Saruli Gatekeepers",
+       "set": "dgm",
+       "number": "48",
+       "id": "471a5b1d-e2e5-4d90-b72a-ffae81ad6602"
+      },
+      {
+       "qty": 2,
+       "name": "Ubul Sar Gatekeepers",
+       "set": "dgm",
+       "number": "30",
+       "id": "f5b2e327-adfd-459b-8d18-faa39d88b5de"
+      },
+      {
+       "qty": 4,
+       "name": "Wall of Frost",
+       "set": "m14",
+       "number": "78",
+       "id": "d4000b46-7843-4c07-8332-a10f207e2cdc"
+      },
+      {
+       "qty": 4,
+       "name": "Azorius Charm",
+       "set": "rtr",
+       "number": "145",
+       "id": "26adc211-d089-4102-91e5-225bbeb5f382"
+      },
+      {
+       "qty": 4,
+       "name": "Supreme Verdict",
+       "set": "rtr",
+       "number": "201",
+       "id": "4e9648f9-7a67-4717-bca1-861d1f7fed43"
+      },
+      {
+       "qty": 4,
+       "name": "Sphinx's Revelation",
+       "set": "rtr",
+       "number": "200",
+       "id": "404d9413-ef57-4b6e-8584-48a1dc7fe6f1"
+      },
+      {
+       "qty": 4,
+       "name": "Essence Scatter",
+       "set": "m14",
+       "number": "55",
+       "id": "49bd28e3-1612-41b3-88a0-bb5c1ee60ace"
+      },
+      {
+       "qty": 2,
+       "name": "Maze's End",
+       "set": "dgm",
+       "number": "152",
+       "id": "401f7042-24fd-42a0-ae7c-e6b7de1aa446"
+      },
+      {
+       "qty": 2,
+       "name": "Azorius Guildgate",
+       "set": "rtr",
+       "number": "237",
+       "id": "984e37df-0734-493a-a958-f519a0c98580"
+      },
+      {
+       "qty": 2,
+       "name": "Boros Guildgate",
+       "set": "gtc",
+       "number": "239",
+       "id": "a0b447a8-524b-4bda-b975-7e194fd741fb"
+      },
+      {
+       "qty": 2,
+       "name": "Dimir Guildgate",
+       "set": "gtc",
+       "number": "241",
+       "id": "4951bf75-1a88-4c85-b4e9-063d84f1dabf"
+      },
+      {
+       "qty": 2,
+       "name": "Golgari Guildgate",
+       "set": "rtr",
+       "number": "239",
+       "id": "8fe2fd1a-f7d3-48b4-bad8-be5ee45d6121"
+      },
+      {
+       "qty": 2,
+       "name": "Gruul Guildgate",
+       "set": "gtc",
+       "number": "243",
+       "id": "99c54269-8798-4023-836f-640103e08ce0"
+      },
+      {
+       "qty": 2,
+       "name": "Izzet Guildgate",
+       "set": "rtr",
+       "number": "242",
+       "id": "6951d84f-2d3c-4203-8d31-e08f4bc707f0"
+      },
+      {
+       "qty": 2,
+       "name": "Orzhov Guildgate",
+       "set": "gtc",
+       "number": "244",
+       "id": "000d609c-deb7-4bd7-9c1d-e20fb3ed4f5f"
+      },
+      {
+       "qty": 2,
+       "name": "Rakdos Guildgate",
+       "set": "rtr",
+       "number": "244",
+       "id": "207048f5-268b-4cdb-b4e7-c8282cac1b28"
+      },
+      {
+       "qty": 2,
+       "name": "Selesnya Guildgate",
+       "set": "rtr",
+       "number": "246",
+       "id": "ff61d4e4-3c8c-48f7-a994-ec2317bbd9a0"
+      },
+      {
+       "qty": 2,
+       "name": "Simic Guildgate",
+       "set": "gtc",
+       "number": "246",
+       "id": "1ce3f6f2-c52c-4fb8-afa0-b1ea723bb4c6"
+      },
+      {
+       "qty": 4,
+       "name": "Island",
+       "set": "rtr",
+       "number": "255",
+       "id": "78f35064-c662-48ff-a2a9-d26f594500f5"
+      },
+      {
+       "qty": 4,
+       "name": "Detention Sphere",
+       "set": "rtr",
+       "number": "155",
+       "id": "afee5464-83b7-4d7a-b407-9ee7de21535b"
+      }
+     ]
+    }
+   },
+   "reward": {
+    "hero": {
+     "packs": 2,
+     "coins": 200
+    },
+    "villain": {
+     "card": {
+      "oracle_id": "71d83fca-e40e-4d0e-956d-d0d6da9cc472",
+      "name": "Sphinx's Revelation",
+      "rarity": "mythic",
+      "set": "rtr",
+      "id": "404d9413-ef57-4b6e-8584-48a1dc7fe6f1",
+      "image": "https://cards.scryfall.io/normal/front/4/0/404d9413-ef57-4b6e-8584-48a1dc7fe6f1.jpg"
+     },
+     "coins": 200
+    }
+   },
+   "scene": [
+    {
+     "who": "stage",
+     "line": "The Implicit Maze winds through Ravnica, connecting arcane landmarks of all ten guilds.",
+     "quote": true
+    },
+    {
+     "who": "you",
+     "line": "Ten Gates and it wins. Count them, and hit hard before it gets there."
+    }
+   ],
+   "villainScene": [
+    {
+     "who": "stage",
+     "line": "Sentries guard Ravnica's landmarks and outlying districts, unaware of these places' import to the maze.",
+     "quote": true
+    }
+   ],
+   "after": [
+    {
+     "who": "stage",
+     "line": "Recorded: Maze's End, Dragon's Maze, 2013."
+    }
+   ],
+   "cues": {
+    "hero": {
+     "start": "Hit the walls.",
+     "big": "Through!",
+     "low": "Another gate...",
+     "win": "Maze blocked.",
+     "loss": "All ten gates...",
+     "half": "Count their Gates."
+    },
+    "villain": {
+     "start": "[a gate opens]",
+     "big": "[maze's end activated]",
+     "low": "[the walls crack]",
+     "win": "[ten gates]",
+     "loss": "[trampled]"
+    }
+   },
+   "bigPlays": [],
+   "sim": null
+  }
+ ]
+}

@@ -121,9 +121,9 @@ export default {
 4 Stern Proctor
 4 Thieving Magpie
 4 Counterspell
-2 Air Elemental
+4 Air Elemental
 2 Rewind
-4 Opportunity
+2 Opportunity
 4 Remote Isle
 20 Island`}},
       villain: {who: 'barrin', deck: {name: "The Master's Exam", colors: 'U', list: `
@@ -131,12 +131,12 @@ export default {
 4 Horseshoe Crab
 4 Air Elemental
 4 Annul
-4 Power Sink
-4 Fog Bank
+2 Power Sink
 4 Catalog
 4 Wind Drake
 4 Unsummon
-24 Island`}},
+26 Island
+4 Veil of Birds`}},
       scene: [q('barrin', 'Teferi is a problem student. Always late for class. No appreciation for constructive use of time.'),
         s('teferi', 'I was on time. Time just arrived late.'), q('barrin', 'To fill your mind with knowledge, we must start by emptying it.'),
         s('barrin', "Today's exam: a duel. If a card is useless, throw it away and draw another. It's called cycling."),

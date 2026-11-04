@@ -1,5 +1,6 @@
 {
  "act": 10,
+ "era": null,
  "title": "The False God",
  "years": "2002 to 2003",
  "sets": [
@@ -45,7 +46,7 @@
   },
   {
    "who": "stage",
-   "line": "Nobody rises."
+   "line": "Nobody she calls rises. Someone she did not call does: a woman standing up out of the ash, not Phage, not Akroma. Jeska, with a planeswalker's spark she never had before."
   },
   {
    "who": "ixidor",
@@ -62,7 +63,7 @@
   },
   {
    "who": "stage",
-   "line": "Kamahl buries what is left in Krosa. The forest grows around it, slowly, the normal way."
+   "line": "Kamahl takes his sister home to Krosa. The forest grows around them, slowly, the normal way. A few days later she is gone, out between the worlds."
   },
   {
    "who": "stage",
@@ -296,6 +297,7 @@
      "name": "Reality Sculptor",
      "colors": "U",
      "archetype": null,
+     "label": null,
      "cards": [
       {
        "qty": 2,
@@ -383,6 +385,7 @@
      "name": "Crowd Favorites",
      "colors": "B",
      "archetype": null,
+     "label": null,
      "cards": [
       {
        "qty": 4,
@@ -568,6 +571,7 @@
      "name": "Wirewood",
      "colors": "G",
      "archetype": null,
+     "label": null,
      "cards": [
       {
        "qty": 4,
@@ -648,6 +652,7 @@
      "name": "Mutated Krosa",
      "colors": "G",
      "archetype": null,
+     "label": null,
      "cards": [
       {
        "qty": 4,
@@ -826,16 +831,10 @@
      "name": "Riptide Survivors",
      "colors": "U",
      "archetype": null,
+     "label": null,
      "cards": [
       {
-       "qty": 4,
-       "name": "Riptide Survivor",
-       "set": "scg",
-       "number": "48",
-       "id": "7515187f-4821-400d-b78f-cec173df6b84"
-      },
-      {
-       "qty": 4,
+       "qty": 2,
        "name": "Information Dealer",
        "set": "ons",
        "number": "88",
@@ -843,24 +842,10 @@
       },
       {
        "qty": 4,
-       "name": "Fugitive Wizard",
-       "set": "lgn",
-       "number": "38",
-       "id": "a1020538-89c8-4986-9687-78ab326acb3e"
-      },
-      {
-       "qty": 4,
        "name": "Riptide Biologist",
        "set": "ons",
        "number": "106",
        "id": "4d399b71-c365-492c-976e-2c79d97d08bc"
-      },
-      {
-       "qty": 4,
-       "name": "Crafty Pathmage",
-       "set": "ons",
-       "number": "77",
-       "id": "c5d91378-f831-40ef-a79b-b044af1470e0"
       },
       {
        "qty": 4,
@@ -896,6 +881,34 @@
        "set": "ons",
        "number": "335",
        "id": "36e062ec-df51-40c0-ad8a-2ee1cb8f8f17"
+      },
+      {
+       "qty": 2,
+       "name": "Echo Tracer",
+       "set": "lgn",
+       "number": "37",
+       "id": "63390760-35a7-4b4c-8c68-5c84f90d0c58"
+      },
+      {
+       "qty": 4,
+       "name": "Fighting Drake",
+       "set": "8ed",
+       "number": "77",
+       "id": "99c0a102-b31c-4cbd-894b-44b1c1e677d2"
+      },
+      {
+       "qty": 4,
+       "name": "Wind Drake",
+       "set": "8ed",
+       "number": "114",
+       "id": "f5a57368-881f-4f1b-8fdd-09e76836227e"
+      },
+      {
+       "qty": 4,
+       "name": "Ascending Aven",
+       "set": "ons",
+       "number": "68",
+       "id": "bd8b17df-615c-4cc1-af1a-2fc35a985af9"
       }
      ]
     }
@@ -906,16 +919,10 @@
      "name": "The Escapees",
      "colors": "RG",
      "archetype": null,
+     "label": null,
      "cards": [
       {
-       "qty": 4,
-       "name": "Blade Sliver",
-       "set": "lgn",
-       "number": "88",
-       "id": "a8d6f7a6-7b6a-44f4-be04-7c02806b9f09"
-      },
-      {
-       "qty": 4,
+       "qty": 2,
        "name": "Hunter Sliver",
        "set": "lgn",
        "number": "102",
@@ -943,21 +950,21 @@
        "id": "fdf5a106-5fb7-40e4-82a7-db559302a923"
       },
       {
-       "qty": 2,
+       "qty": 4,
        "name": "Brood Sliver",
        "set": "lgn",
        "number": "120",
        "id": "33803c12-1d78-49fe-a3a3-7f47c60a96b6"
       },
       {
-       "qty": 4,
+       "qty": 2,
        "name": "Shock",
        "set": "ons",
        "number": "227",
        "id": "83c92b5d-103c-4719-a850-690a7010291a"
       },
       {
-       "qty": 4,
+       "qty": 2,
        "name": "Primal Boost",
        "set": "ons",
        "number": "277",
@@ -990,6 +997,27 @@
        "set": "ons",
        "number": "347",
        "id": "b361b42d-401f-440a-bae9-35338b5dde0e"
+      },
+      {
+       "qty": 4,
+       "name": "Grizzly Bears",
+       "set": "8ed",
+       "number": "256",
+       "id": "72d5d8b0-e22d-4bb3-9e36-5038601d22f7"
+      },
+      {
+       "qty": 2,
+       "name": "Canopy Spider",
+       "set": "8ed",
+       "number": "236",
+       "id": "def682d0-6091-49c8-ac46-da0884b8cdb3"
+      },
+      {
+       "qty": 2,
+       "name": "Giant Spider",
+       "set": "8ed",
+       "number": "255",
+       "id": "4632f3d9-9cdf-4871-9771-e8a8b1eaed52"
       }
      ]
     }
@@ -1105,6 +1133,7 @@
      "name": "Fist of Krosa",
      "colors": "G",
      "archetype": null,
+     "label": null,
      "cards": [
       {
        "qty": 2,
@@ -1128,7 +1157,7 @@
        "id": "0b872f85-60c5-44c4-956d-a8aa8132908b"
       },
       {
-       "qty": 4,
+       "qty": 2,
        "name": "Ravenous Baloth",
        "set": "ons",
        "number": "278",
@@ -1170,18 +1199,18 @@
        "id": "e41680e2-6689-4263-a5a3-9fb2e4280d52"
       },
       {
-       "qty": 2,
-       "name": "Krosan Colossus",
-       "set": "ons",
-       "number": "270",
-       "id": "a804f3c0-5ebf-43ca-b200-09f7c1bbe902"
-      },
-      {
        "qty": 24,
        "name": "Forest",
        "set": "ons",
        "number": "347",
        "id": "b361b42d-401f-440a-bae9-35338b5dde0e"
+      },
+      {
+       "qty": 4,
+       "name": "Wirewood Elf",
+       "set": "ons",
+       "number": "301",
+       "id": "10a34e31-97f1-40e8-9d91-a8139af7f096"
       }
      ]
     }
@@ -1192,16 +1221,17 @@
      "name": "The Untouchable",
      "colors": "B",
      "archetype": null,
+     "label": null,
      "cards": [
       {
-       "qty": 2,
+       "qty": 3,
        "name": "Phage the Untouchable",
        "set": "lgn",
        "number": "78",
        "id": "a410b933-99d0-4383-b54b-4839a76eb6fe"
       },
       {
-       "qty": 4,
+       "qty": 3,
        "name": "Skinthinner",
        "set": "lgn",
        "number": "80",
@@ -1257,18 +1287,18 @@
        "id": "cd7727a7-0cdf-4fd5-82b4-e6587c10ca80"
       },
       {
-       "qty": 2,
-       "name": "Infest",
-       "set": "ons",
-       "number": "157",
-       "id": "b7890ba2-aa42-4c8d-bbc1-94fb1d4150fc"
-      },
-      {
        "qty": 24,
        "name": "Swamp",
        "set": "ons",
        "number": "339",
        "id": "0356ae45-e5ca-46b9-8ebc-42bf4776e89c"
+      },
+      {
+       "qty": 2,
+       "name": "Infest",
+       "set": "ons",
+       "number": "157",
+       "id": "b7890ba2-aa42-4c8d-bbc1-94fb1d4150fc"
       }
      ]
     }
@@ -1383,6 +1413,7 @@
      "name": "Akroma's Wrath",
      "colors": "WR",
      "archetype": null,
+     "label": null,
      "cards": [
       {
        "qty": 2,
@@ -1455,18 +1486,32 @@
        "id": "83c92b5d-103c-4719-a850-690a7010291a"
       },
       {
-       "qty": 12,
+       "qty": 9,
        "name": "Plains",
        "set": "ons",
        "number": "331",
        "id": "7bf7d68a-dbd0-45f3-acbb-59ee38e6057e"
       },
       {
-       "qty": 12,
+       "qty": 9,
        "name": "Mountain",
        "set": "ons",
        "number": "343",
        "id": "05f9bdca-0d54-46c7-b803-9083dfc9ee24"
+      },
+      {
+       "qty": 3,
+       "name": "Secluded Steppe",
+       "set": "ons",
+       "number": "324",
+       "id": "ea454280-f7f4-4315-bb46-b56050c02c97"
+      },
+      {
+       "qty": 3,
+       "name": "Forgotten Cave",
+       "set": "ons",
+       "number": "317",
+       "id": "c5202668-a32c-4473-b272-e86264992576"
       }
      ]
     }
@@ -1477,6 +1522,7 @@
      "name": "The Cabal's Coliseum",
      "colors": "B",
      "archetype": null,
+     "label": null,
      "cards": [
       {
        "qty": 4,
@@ -1521,32 +1567,39 @@
        "id": "e7209cc8-b519-4f27-87d8-b12e239a121f"
       },
       {
-       "qty": 4,
+       "qty": 2,
        "name": "Smother",
        "set": "ons",
        "number": "170",
        "id": "9a8321af-d667-44e7-8c03-3957286604b9"
       },
       {
-       "qty": 4,
+       "qty": 2,
        "name": "Cruel Revival",
        "set": "ons",
        "number": "135",
        "id": "245aba23-2abb-4084-b4cb-d06e46de2108"
       },
       {
-       "qty": 4,
+       "qty": 2,
        "name": "Soulless One",
        "set": "ons",
        "number": "171",
        "id": "c826d786-0d96-4f77-94ae-6907fbce51e0"
       },
       {
-       "qty": 24,
+       "qty": 26,
        "name": "Swamp",
        "set": "ons",
        "number": "339",
        "id": "0356ae45-e5ca-46b9-8ebc-42bf4776e89c"
+      },
+      {
+       "qty": 4,
+       "name": "Rotlung Reanimator",
+       "set": "ons",
+       "number": "164",
+       "id": "87b29d1e-9c06-4ad1-8178-b3eaa212f6f1"
       }
      ]
     }
@@ -1656,6 +1709,7 @@
      "name": "The Daru Line",
      "colors": "W",
      "archetype": null,
+     "label": null,
      "cards": [
       {
        "qty": 4,
@@ -1736,6 +1790,7 @@
      "name": "Siege-Gang",
      "colors": "R",
      "archetype": null,
+     "label": null,
      "cards": [
       {
        "qty": 2,
@@ -1928,6 +1983,7 @@
      "name": "Angel of Wrath",
      "colors": "W",
      "archetype": null,
+     "label": null,
      "cards": [
       {
        "qty": 2,
@@ -1937,7 +1993,7 @@
        "id": "814245de-6105-43ef-acbf-d12d304b6331"
       },
       {
-       "qty": 4,
+       "qty": 2,
        "name": "Exalted Angel",
        "set": "ons",
        "number": "28",
@@ -2000,7 +2056,7 @@
        "id": "5e33aaf7-7490-4b64-a966-82fbf7ca8686"
       },
       {
-       "qty": 24,
+       "qty": 26,
        "name": "Plains",
        "set": "ons",
        "number": "331",
@@ -2015,9 +2071,10 @@
      "name": "The Cabal's Champion",
      "colors": "B",
      "archetype": null,
+     "label": null,
      "cards": [
       {
-       "qty": 2,
+       "qty": 3,
        "name": "Phage the Untouchable",
        "set": "lgn",
        "number": "78",
@@ -2073,18 +2130,11 @@
        "id": "72de2f66-0b86-4c21-b4c8-c2d97e3fd095"
       },
       {
-       "qty": 4,
+       "qty": 3,
        "name": "Severed Legion",
        "set": "ons",
        "number": "166",
        "id": "efe12afd-da41-436e-af84-fa3b36a58030"
-      },
-      {
-       "qty": 2,
-       "name": "Infest",
-       "set": "ons",
-       "number": "157",
-       "id": "b7890ba2-aa42-4c8d-bbc1-94fb1d4150fc"
       },
       {
        "qty": 24,
@@ -2092,6 +2142,13 @@
        "set": "ons",
        "number": "339",
        "id": "0356ae45-e5ca-46b9-8ebc-42bf4776e89c"
+      },
+      {
+       "qty": 2,
+       "name": "Infest",
+       "set": "ons",
+       "number": "157",
+       "id": "b7890ba2-aa42-4c8d-bbc1-94fb1d4150fc"
       }
      ]
     }
@@ -2198,6 +2255,7 @@
      "name": "Kamahl and Ixidor",
      "colors": "GU",
      "archetype": null,
+     "label": null,
      "cards": [
       {
        "qty": 2,
@@ -2292,6 +2350,7 @@
      "name": "The False God",
      "colors": "WB",
      "archetype": null,
+     "label": null,
      "cards": [
       {
        "qty": 2,

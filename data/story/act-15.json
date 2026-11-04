@@ -1,0 +1,2805 @@
+{
+ "act": 15,
+ "era": "2008-07-25",
+ "title": "The Great Aurora",
+ "years": "2007 to 2008",
+ "sets": [
+  "lrw",
+  "mor",
+  "shm",
+  "eve",
+  "10e"
+ ],
+ "landSet": "lrw",
+ "intro": [
+  {
+   "who": "stage",
+   "line": "Lorwyn. A plane of endless summer, where the sun barely dips before it rises again, and there are no humans at all. Elves, kithkin, merfolk, flamekin, boggarts, giants and treefolk share the long bright days."
+  },
+  {
+   "who": "stage",
+   "line": "Beneath the fae's constant pranks runs a subtler undercurrent of mockery: the influence of Oona, their hidden queen.",
+   "quote": true
+  },
+  {
+   "who": "stage",
+   "line": "Every few centuries a light fills the sky, and Lorwyn becomes something else. Nobody remembers the last time. That is the point."
+  }
+ ],
+ "finale": [
+  {
+   "who": "stage",
+   "line": "In Glen Elendra, the queen of the faeries falls. The Aurora has nobody left to hide behind."
+  },
+  {
+   "who": "stage",
+   "line": "Shadowmoor will turn back into Lorwyn, and Lorwyn into Shadowmoor again, for as long as the plane lasts. But for the first time, the people under the sky know why."
+  },
+  {
+   "who": "rhys",
+   "line": "I hunted a flamekin, fought a kithkin, followed a merrow and trusted a faerie. A year ago I would have called that a list of mistakes."
+  },
+  {
+   "who": "stage",
+   "line": "Whole again in honor and horn.",
+   "quote": true
+  }
+ ],
+ "villainFinale": [
+  {
+   "who": "stage",
+   "line": "The queen dreams on. The sky stays dim."
+  },
+  {
+   "who": "oona",
+   "line": "Dreams are fleeting. Reality even more so.",
+   "quote": true
+  },
+  {
+   "who": "oona",
+   "line": "They will forget this, as they forgot the last time, and the time before. I am the only one who remembers. That is what makes me queen."
+  },
+  {
+   "who": "stage",
+   "line": "In a few centuries, the Aurora will come again, and nobody will see it coming."
+  }
+ ],
+ "vibe": "aurora-fae-twilight",
+ "cast": {
+  "you": {
+   "name": "You",
+   "title": "Planeswalker",
+   "portrait": {
+    "card": "Fold into Aether",
+    "set": "5dn",
+    "number": "31",
+    "id": "615157d6-0160-417b-b06c-0e253b306c37",
+    "artist": "Anthony S. Waters & Cara Mitten",
+    "crop": "https://cards.scryfall.io/art_crop/front/6/1/615157d6-0160-417b-b06c-0e253b306c37.jpg",
+    "focus": "50% 30%"
+   }
+  },
+  "rhys": {
+   "name": "Rhys",
+   "title": "Elf of Lys Alana, Exiled",
+   "portrait": {
+    "card": "Rhys the Exiled",
+    "set": "mor",
+    "number": "135",
+    "id": "f26da029-9c95-4e9b-9a1b-62048c16acaf",
+    "crop": "https://cards.scryfall.io/art_crop/front/f/2/f26da029-9c95-4e9b-9a1b-62048c16acaf.jpg?1783942776",
+    "artist": "Steve Prescott",
+    "focus": "50% 25%"
+   }
+  },
+  "brigid": {
+   "name": "Brigid",
+   "title": "Hero of Kinsbaile",
+   "portrait": {
+    "card": "Brigid, Hero of Kinsbaile",
+    "set": "lrw",
+    "number": "6",
+    "id": "da70a20f-213e-4d79-a46f-1ef1fc3f4a51",
+    "crop": "https://cards.scryfall.io/art_crop/front/d/a/da70a20f-213e-4d79-a46f-1ef1fc3f4a51.jpg?1783942917",
+    "artist": "Steve Prescott",
+    "focus": "50% 25%"
+   }
+  },
+  "sygg": {
+   "name": "Sygg",
+   "title": "River Guide",
+   "portrait": {
+    "card": "Sygg, River Guide",
+    "set": "lrw",
+    "number": "251",
+    "id": "fb1aefaf-1b96-4c08-a73e-98e401655965",
+    "crop": "https://cards.scryfall.io/art_crop/front/f/b/fb1aefaf-1b96-4c08-a73e-98e401655965.jpg?1783942852",
+    "artist": "Larry MacDougall",
+    "focus": "50% 25%"
+   }
+  },
+  "ashling": {
+   "name": "Ashling",
+   "title": "The Pilgrim",
+   "portrait": {
+    "card": "Ashling the Pilgrim",
+    "set": "lrw",
+    "number": "149",
+    "id": "63056eb9-4257-4530-8ff4-6909a2cedf47",
+    "crop": "https://cards.scryfall.io/art_crop/front/6/3/63056eb9-4257-4530-8ff4-6909a2cedf47.jpg?1783942881",
+    "artist": "Wayne Reynolds",
+    "focus": "50% 25%"
+   }
+  },
+  "vessifrus": {
+   "name": "Vessifrus",
+   "title": "Flamekin Demagogue",
+   "portrait": {
+    "card": "Sunflare Shaman",
+    "set": "mor",
+    "number": "108",
+    "id": "6db24aa7-4922-4b39-9964-f76df09cba12",
+    "crop": "https://cards.scryfall.io/art_crop/front/6/d/6db24aa7-4922-4b39-9964-f76df09cba12.jpg?1783942783",
+    "artist": "Dave Dorman",
+    "focus": "50% 25%"
+   }
+  },
+  "auntie": {
+   "name": "The Warren",
+   "title": "Tales of Auntie Grub",
+   "portrait": {
+    "card": "Boggart Harbinger",
+    "set": "lrw",
+    "number": "102",
+    "id": "8ea8d2b8-bcac-410d-aa5a-e4a74f7d5315",
+    "crop": "https://cards.scryfall.io/art_crop/front/8/e/8ea8d2b8-bcac-410d-aa5a-e4a74f7d5315.jpg?1783942893",
+    "artist": "Steve Prescott",
+    "focus": "50% 30%"
+   }
+  },
+  "maralen": {
+   "name": "Maralen",
+   "title": "Of the Mornsong",
+   "portrait": {
+    "card": "Maralen of the Mornsong",
+    "set": "mor",
+    "number": "65",
+    "id": "ba98d363-194b-4bc0-b9fe-987c498ab6fa",
+    "crop": "https://cards.scryfall.io/art_crop/front/b/a/ba98d363-194b-4bc0-b9fe-987c498ab6fa.jpg?1783942792",
+    "artist": "Mark Zug",
+    "focus": "50% 25%"
+   }
+  },
+  "extinguisher": {
+   "name": "Ashling",
+   "title": "The Extinguisher",
+   "portrait": {
+    "card": "Ashling, the Extinguisher",
+    "set": "eve",
+    "number": "33",
+    "id": "350580d8-45db-4428-a292-cc4802bf1e4d",
+    "crop": "https://cards.scryfall.io/art_crop/front/3/5/350580d8-45db-4428-a292-cc4802bf1e4d.jpg?1783942688",
+    "artist": "Wayne Reynolds",
+    "focus": "50% 25%"
+   }
+  },
+  "safehold": {
+   "name": "The Safehold",
+   "title": "Kithkin of Shadowmoor",
+   "portrait": {
+    "card": "Ballynock Cohort",
+    "set": "shm",
+    "number": "3",
+    "id": "c5c54ec5-2917-4acf-b56f-8273781477f6",
+    "crop": "https://cards.scryfall.io/art_crop/front/c/5/c5c54ec5-2917-4acf-b56f-8273781477f6.jpg?1783942770",
+    "artist": "Jesper Ejsing",
+    "focus": "50% 30%"
+   }
+  },
+  "merfolk": {
+   "name": "Merfolk",
+   "title": "Winter 2008",
+   "portrait": {
+    "card": "Merrow Reejerey",
+    "set": "lrw",
+    "number": "74",
+    "id": "b57434d9-6fa5-43a6-98b9-044d2259d699",
+    "crop": "https://cards.scryfall.io/art_crop/front/b/5/b57434d9-6fa5-43a6-98b9-044d2259d699.jpg?1783942900",
+    "artist": "Greg Staples",
+    "focus": "50% 30%"
+   }
+  },
+  "kithkin": {
+   "name": "Kithkin",
+   "title": "Spring 2008",
+   "portrait": {
+    "card": "Cloudgoat Ranger",
+    "set": "lrw",
+    "number": "10",
+    "id": "9e344859-7248-4498-8303-252f196a007b",
+    "crop": "https://cards.scryfall.io/art_crop/front/9/e/9e344859-7248-4498-8303-252f196a007b.jpg?1783942916",
+    "artist": "Adam Rex",
+    "focus": "50% 30%"
+   }
+  },
+  "oona": {
+   "name": "Oona",
+   "title": "Queen of the Fae",
+   "portrait": {
+    "card": "Oona, Queen of the Fae",
+    "set": "shm",
+    "number": "172",
+    "id": "24ae75f6-fb74-422c-93f6-a0be7f919e47",
+    "crop": "https://cards.scryfall.io/art_crop/front/2/4/24ae75f6-fb74-422c-93f6-a0be7f919e47.jpg?1783942730",
+    "artist": "Adam Rex",
+    "focus": "50% 25%"
+   }
+  },
+  "doran": {
+   "name": "Doran",
+   "title": "Summer 2008",
+   "portrait": {
+    "card": "Doran, the Siege Tower",
+    "set": "lrw",
+    "number": "247",
+    "id": "b006b169-295d-4ead-8e8e-29a9c3246025",
+    "crop": "https://cards.scryfall.io/art_crop/front/b/0/b006b169-295d-4ead-8e8e-29a9c3246025.jpg?1783942855",
+    "artist": "Mark Zug",
+    "focus": "50% 25%"
+   }
+  }
+ },
+ "battles": [
+  {
+   "id": "a15b1",
+   "slot": 1,
+   "kind": "Arrival",
+   "mood": "tension",
+   "title": "An Arrow's Flight",
+   "difficulty": "Easy",
+   "teaches": [
+    "Tribes"
+   ],
+   "blurb": "Rhys, an elf hunter of Lys Alana, chases a stranger into kithkin country. Kinsbaile does not let armed elves walk in, and its best archer is already on the wall.",
+   "rewardSet": "lrw",
+   "host": false,
+   "hero": {
+    "who": "rhys",
+    "deck": {
+     "name": "The Hunt of Lys Alana",
+     "colors": "GB",
+     "archetype": null,
+     "label": "tribute",
+     "cards": [
+      {
+       "qty": 2,
+       "name": "Rhys the Exiled",
+       "set": "mor",
+       "number": "135",
+       "id": "f26da029-9c95-4e9b-9a1b-62048c16acaf"
+      },
+      {
+       "qty": 4,
+       "name": "Elvish Warrior",
+       "set": "mor",
+       "number": "120",
+       "id": "b2154a16-1fb8-45bb-9b9b-e995e701c330"
+      },
+      {
+       "qty": 4,
+       "name": "Wren's Run Vanquisher",
+       "set": "lrw",
+       "number": "245",
+       "id": "f9c411a0-b8dd-4394-852a-a29dbcec953b"
+      },
+      {
+       "qty": 4,
+       "name": "Bramblewood Paragon",
+       "set": "mor",
+       "number": "115",
+       "id": "3910f5b2-17da-41e4-bf40-1c40b513fa12"
+      },
+      {
+       "qty": 4,
+       "name": "Imperious Perfect",
+       "set": "lrw",
+       "number": "220",
+       "id": "706fce74-fed9-4bf7-949d-7df6bef29238"
+      },
+      {
+       "qty": 4,
+       "name": "Lys Alana Huntmaster",
+       "set": "lrw",
+       "number": "229",
+       "id": "8d21f992-f982-415e-9d77-d11d8c931741"
+      },
+      {
+       "qty": 4,
+       "name": "Winnower Patrol",
+       "set": "mor",
+       "number": "139",
+       "id": "a47bed84-5a4a-4f16-af6c-789c542ce3a7"
+      },
+      {
+       "qty": 4,
+       "name": "Talara's Battalion",
+       "set": "eve",
+       "number": "77",
+       "id": "b0d00ea9-1111-47c3-9722-4c68ce3e4d56"
+      },
+      {
+       "qty": 4,
+       "name": "Twinblade Slasher",
+       "set": "eve",
+       "number": "79",
+       "id": "0092d7a0-bd00-45e5-a052-c0a9d970bc2e"
+      },
+      {
+       "qty": 20,
+       "name": "Forest",
+       "set": "lrw",
+       "number": "298",
+       "id": "6d3a661e-d890-4211-bc9c-8266001ebfba"
+      },
+      {
+       "qty": 4,
+       "name": "Swamp",
+       "set": "lrw",
+       "number": "290",
+       "id": "4f799604-bbbf-4d57-83c8-13a0eafa974e"
+      },
+      {
+       "qty": 2,
+       "name": "Nameless Inversion",
+       "set": "lrw",
+       "number": "128",
+       "id": "94b4e4d2-2358-48d2-9a2a-3d17afea28f5"
+      }
+     ]
+    }
+   },
+   "villain": {
+    "who": "brigid",
+    "deck": {
+     "name": "Kinsbaile Watch",
+     "colors": "W",
+     "archetype": null,
+     "label": "tribute",
+     "cards": [
+      {
+       "qty": 2,
+       "name": "Brigid, Hero of Kinsbaile",
+       "set": "lrw",
+       "number": "6",
+       "id": "da70a20f-213e-4d79-a46f-1ef1fc3f4a51"
+      },
+      {
+       "qty": 4,
+       "name": "Goldmeadow Harrier",
+       "set": "lrw",
+       "number": "17",
+       "id": "b6a7508c-2815-40eb-92f7-3e66dfb28484"
+      },
+      {
+       "qty": 4,
+       "name": "Kinsbaile Skirmisher",
+       "set": "lrw",
+       "number": "24",
+       "id": "6145bcd5-a583-4a04-9a13-a64ecdf4425a"
+      },
+      {
+       "qty": 4,
+       "name": "Mosquito Guard",
+       "set": "mor",
+       "number": "18",
+       "id": "5e5bca35-5098-4100-815b-de141c82eb6a"
+      },
+      {
+       "qty": 4,
+       "name": "Kithkin Greatheart",
+       "set": "lrw",
+       "number": "25",
+       "id": "e75283b6-1b70-4e89-bf21-f85c21454aae"
+      },
+      {
+       "qty": 4,
+       "name": "Plover Knights",
+       "set": "lrw",
+       "number": "35",
+       "id": "ea2de26e-4cb3-4d7e-b884-54d6056dc9e9"
+      },
+      {
+       "qty": 4,
+       "name": "Cenn's Heir",
+       "set": "lrw",
+       "number": "8",
+       "id": "a7610d2f-e35f-42fa-a3fb-fcae54bf5a1d"
+      },
+      {
+       "qty": 4,
+       "name": "Goldmeadow Dodger",
+       "set": "lrw",
+       "number": "16",
+       "id": "5305b5c6-2af6-4b5c-9a57-0a2d2628e2f4"
+      },
+      {
+       "qty": 2,
+       "name": "Neck Snap",
+       "set": "lrw",
+       "number": "32",
+       "id": "fc326b79-363e-4c14-86e4-23041f2d6b4f"
+      },
+      {
+       "qty": 2,
+       "name": "Kinsbaile Balloonist",
+       "set": "lrw",
+       "number": "23",
+       "id": "b6053c20-3632-43e2-8560-259d0c12f235"
+      },
+      {
+       "qty": 2,
+       "name": "Militia's Pride",
+       "set": "lrw",
+       "number": "30",
+       "id": "53c8cde1-e447-422e-aed0-2571a77d3d29"
+      },
+      {
+       "qty": 24,
+       "name": "Plains",
+       "set": "lrw",
+       "number": "282",
+       "id": "b8e41010-a7d2-4e78-8f7b-502347f8c47d"
+      }
+     ]
+    }
+   },
+   "reward": {
+    "hero": {
+     "packs": 1,
+     "coins": 0
+    },
+    "villain": {
+     "card": {
+      "oracle_id": "929ad5c3-4efe-44c3-93ac-eda432814385",
+      "name": "Brigid, Hero of Kinsbaile",
+      "rarity": "rare",
+      "set": "lrw",
+      "id": "da70a20f-213e-4d79-a46f-1ef1fc3f4a51",
+      "image": "https://cards.scryfall.io/normal/front/d/a/da70a20f-213e-4d79-a46f-1ef1fc3f4a51.jpg"
+     },
+     "coins": 50
+    }
+   },
+   "scene": [
+    {
+     "who": "stage",
+     "line": "From the highest tiers of Dawn's Light Palace to the deepest shade of Wren's Run, the silver notes of the horn shimmer through the air, and all who hear it feel its pull.",
+     "quote": true
+    },
+    {
+     "who": "rhys",
+     "line": "Tribes: every elf, kithkin and merrow on Lorwyn has a creature type, and a lot of cards care about it. My elves make my other elves stronger. So do their kithkin."
+    },
+    {
+     "who": "rhys",
+     "line": "I only want to pass through. They are going to make that difficult."
+    }
+   ],
+   "villainScene": [
+    {
+     "who": "stage",
+     "line": "Thanks to one champion archer, the true borders of Kinsbaile extend an arrow's flight beyond the buildings.",
+     "quote": true
+    },
+    {
+     "who": "stage",
+     "line": "Thoughtweft binds us together as one, part of an intricate pattern that would unravel if even one thread came loose.",
+     "quote": true
+    }
+   ],
+   "after": [
+    {
+     "who": "brigid",
+     "line": "You fight well, for an elf. Fine. You can pass. But I am coming with you. Somebody has to keep an eye on you."
+    }
+   ],
+   "cues": {
+    "hero": {
+     "start": "The hunt begins.",
+     "big": "Sound the horn!",
+     "low": "Too many of them...",
+     "win": "Lower your bow.",
+     "loss": "Lys Alana... forgive me...",
+     "half": "Elves lift elves."
+    },
+    "villain": {
+     "start": "Not one step closer, elf.",
+     "big": "Loose!",
+     "low": "The weft is fraying...",
+     "win": "Kinsbaile holds.",
+     "loss": "Out of arrows..."
+    }
+   },
+   "bigPlays": [],
+   "sim": null
+  },
+  {
+   "id": "a15b2",
+   "slot": 2,
+   "kind": "Lesson",
+   "mood": "march",
+   "title": "The Merrow Lanes",
+   "difficulty": "Easy",
+   "teaches": [
+    "Evoke"
+   ],
+   "blurb": "The road runs along the river, and the river belongs to the merfolk. Sygg, a merrow guide, takes the party downstream, until a flamekin firebrand and his followers set the riverbank alight.",
+   "rewardSet": "lrw",
+   "host": false,
+   "hero": {
+    "who": "sygg",
+    "deck": {
+     "name": "Sygg's School",
+     "colors": "UW",
+     "archetype": null,
+     "label": "tribute",
+     "cards": [
+      {
+       "qty": 2,
+       "name": "Sygg, River Guide",
+       "set": "lrw",
+       "number": "251",
+       "id": "fb1aefaf-1b96-4c08-a73e-98e401655965"
+      },
+      {
+       "qty": 4,
+       "name": "Silvergill Adept",
+       "set": "lrw",
+       "number": "86",
+       "id": "9e07a38a-2d88-4b01-9634-f24cbc8d96d6"
+      },
+      {
+       "qty": 4,
+       "name": "Merrow Reejerey",
+       "set": "lrw",
+       "number": "74",
+       "id": "b57434d9-6fa5-43a6-98b9-044d2259d699"
+      },
+      {
+       "qty": 4,
+       "name": "Streambed Aquitects",
+       "set": "lrw",
+       "number": "91",
+       "id": "aed908f4-630c-4f3c-9e61-4725b88b93ff"
+      },
+      {
+       "qty": 4,
+       "name": "Paperfin Rascal",
+       "set": "lrw",
+       "number": "77",
+       "id": "a439c0ca-0cb2-4293-825e-1a72159953b9"
+      },
+      {
+       "qty": 4,
+       "name": "Merrow Harbinger",
+       "set": "lrw",
+       "number": "73",
+       "id": "b47af11c-1090-4f0a-8eea-64a3b639e535"
+      },
+      {
+       "qty": 4,
+       "name": "Inkfathom Infiltrator",
+       "set": "shm",
+       "number": "167",
+       "id": "28854f0f-48d3-4a54-8811-c6329ad2e88e"
+      },
+      {
+       "qty": 4,
+       "name": "Mulldrifter",
+       "set": "lrw",
+       "number": "76",
+       "id": "a97cfefa-ade7-49f6-b2aa-1118b9db4935"
+      },
+      {
+       "qty": 4,
+       "name": "Judge of Currents",
+       "set": "lrw",
+       "number": "22",
+       "id": "3073f3f5-bff8-4ec1-a68f-c83d63435843"
+      },
+      {
+       "qty": 2,
+       "name": "Sentinels of Glen Elendra",
+       "set": "lrw",
+       "number": "84",
+       "id": "f48daf7e-2f8e-4179-a145-a6b36dd11d44"
+      },
+      {
+       "qty": 18,
+       "name": "Island",
+       "set": "lrw",
+       "number": "286",
+       "id": "5885738f-a51d-418c-b194-0ba8ef6af556"
+      },
+      {
+       "qty": 6,
+       "name": "Plains",
+       "set": "lrw",
+       "number": "282",
+       "id": "b8e41010-a7d2-4e78-8f7b-502347f8c47d"
+      }
+     ]
+    }
+   },
+   "villain": {
+    "who": "vessifrus",
+    "deck": {
+     "name": "Embers of Vessifrus",
+     "colors": "R",
+     "archetype": null,
+     "label": "tribute",
+     "cards": [
+      {
+       "qty": 4,
+       "name": "Flamekin Brawler",
+       "set": "lrw",
+       "number": "166",
+       "id": "301abe8f-916a-4e5b-bf25-f1e12ae9cee2"
+      },
+      {
+       "qty": 4,
+       "name": "Flamekin Spitfire",
+       "set": "lrw",
+       "number": "168",
+       "id": "9a7878e5-fcb0-4de5-8dda-fcdb4b138ec1"
+      },
+      {
+       "qty": 4,
+       "name": "Inner-Flame Acolyte",
+       "set": "lrw",
+       "number": "181",
+       "id": "f99a113a-013a-411b-9f16-975cebd5ea5f"
+      },
+      {
+       "qty": 4,
+       "name": "Sunflare Shaman",
+       "set": "mor",
+       "number": "108",
+       "id": "6db24aa7-4922-4b39-9964-f76df09cba12"
+      },
+      {
+       "qty": 4,
+       "name": "Heartlash Cinder",
+       "set": "eve",
+       "number": "56",
+       "id": "f1c38e02-5df3-4655-a18f-a7be2c352b7b"
+      },
+      {
+       "qty": 4,
+       "name": "Inner-Flame Igniter",
+       "set": "lrw",
+       "number": "182",
+       "id": "07ced8a0-1caa-4737-b863-eb244a3d388a"
+      },
+      {
+       "qty": 4,
+       "name": "Tarfire",
+       "set": "lrw",
+       "number": "194",
+       "id": "d13a898e-6a97-4fd9-980e-3bfd8d755386"
+      },
+      {
+       "qty": 2,
+       "name": "Hostility",
+       "set": "lrw",
+       "number": "176",
+       "id": "5f560199-7703-4e2a-8e2d-5728f6efef46"
+      },
+      {
+       "qty": 4,
+       "name": "Flamekin Bladewhirl",
+       "set": "lrw",
+       "number": "165",
+       "id": "1b6ea1c8-ca58-4240-adb7-71cd49664414"
+      },
+      {
+       "qty": 2,
+       "name": "Shard Volley",
+       "set": "mor",
+       "number": "103",
+       "id": "43db4810-078e-487a-afef-57cbc1db0cc7"
+      },
+      {
+       "qty": 24,
+       "name": "Mountain",
+       "set": "lrw",
+       "number": "294",
+       "id": "83beeef7-2bb5-4c3a-9be4-79a968696d65"
+      }
+     ]
+    }
+   },
+   "reward": {
+    "hero": {
+     "packs": 1,
+     "coins": 0
+    },
+    "villain": {
+     "card": {
+      "oracle_id": "0391691f-6708-481a-93a5-6677e6fa2ff3",
+      "name": "Sunflare Shaman",
+      "rarity": "common",
+      "set": "mor",
+      "id": "6db24aa7-4922-4b39-9964-f76df09cba12",
+      "image": "https://cards.scryfall.io/normal/front/6/d/6db24aa7-4922-4b39-9964-f76df09cba12.jpg"
+     },
+     "coins": 50
+    }
+   },
+   "scene": [
+    {
+     "who": "sygg",
+     "line": "If there's a place worth going, the Merrow Lanes already do. And if there's a route worth taking, yours truly already has.",
+     "quote": true
+    },
+    {
+     "who": "sygg",
+     "line": "Evoke: some creatures have a cheaper evoke cost. Pay it and they arrive, do their trick, and leave at once. Mulldrifter draws you two cards for three mana and never touches the ground."
+    },
+    {
+     "who": "stage",
+     "line": "We look in the river and see scattered stones. A merrow looks and sees a map of Lorwyn.",
+     "quote": true
+    }
+   ],
+   "villainScene": [
+    {
+     "who": "vessifrus",
+     "line": "The elves may try to confine us, but they will learn that our blazing spirit can never be suppressed.",
+     "quote": true
+    },
+    {
+     "who": "stage",
+     "line": "Better to flare out than to gutter.",
+     "quote": true
+    }
+   ],
+   "after": [
+    {
+     "who": "stage",
+     "line": "In the smoke, a young flamekin named Ashling walks out of the fire, unburned and very curious. She has been hearing a voice in her own flame, and she wants to know whose it is."
+    },
+    {
+     "who": "ashling",
+     "line": "I am a pilgrim. I go where the fire tells me. Lately it tells me to follow you."
+    }
+   ],
+   "cues": {
+    "hero": {
+     "start": "All aboard the Lanes.",
+     "big": "Ride the current!",
+     "low": "The water's boiling...",
+     "win": "Next stop, downstream.",
+     "loss": "Swept away...",
+     "half": "Pay less, draw more."
+    },
+    "villain": {
+     "start": "Burn bright!",
+     "big": "Flare out!",
+     "low": "Guttering...",
+     "win": "Ash and embers.",
+     "loss": "The flame... goes out..."
+    }
+   },
+   "bigPlays": [],
+   "sim": null
+  },
+  {
+   "id": "a15b3",
+   "slot": 3,
+   "kind": "Lesson",
+   "mood": "comic",
+   "title": "Auntie's Warren",
+   "difficulty": "Easy",
+   "teaches": [
+    "Planeswalkers"
+   ],
+   "blurb": "A boggart warren raids Kinsbaile while Brigid is away, and she runs home to defend it. Lorwyn was the set that introduced planeswalker cards, and Brigid's deck carries one: Ajani Goldmane.",
+   "rewardSet": "lrw",
+   "host": false,
+   "hero": {
+    "who": "brigid",
+    "deck": {
+     "name": "Kinsbaile Defenders",
+     "colors": "W",
+     "archetype": null,
+     "label": "tribute",
+     "cards": [
+      {
+       "qty": 2,
+       "name": "Ajani Goldmane",
+       "set": "lrw",
+       "number": "1",
+       "id": "2a1470a6-d09d-4a2a-84a6-d56e32ed237a"
+      },
+      {
+       "qty": 2,
+       "name": "Brigid, Hero of Kinsbaile",
+       "set": "lrw",
+       "number": "6",
+       "id": "da70a20f-213e-4d79-a46f-1ef1fc3f4a51"
+      },
+      {
+       "qty": 4,
+       "name": "Goldmeadow Harrier",
+       "set": "lrw",
+       "number": "17",
+       "id": "b6a7508c-2815-40eb-92f7-3e66dfb28484"
+      },
+      {
+       "qty": 4,
+       "name": "Wizened Cenn",
+       "set": "lrw",
+       "number": "49",
+       "id": "585f1c8e-6898-4def-8e3f-d45cd263f776"
+      },
+      {
+       "qty": 4,
+       "name": "Kinsbaile Skirmisher",
+       "set": "lrw",
+       "number": "24",
+       "id": "6145bcd5-a583-4a04-9a13-a64ecdf4425a"
+      },
+      {
+       "qty": 4,
+       "name": "Cloudgoat Ranger",
+       "set": "lrw",
+       "number": "10",
+       "id": "9e344859-7248-4498-8303-252f196a007b"
+      },
+      {
+       "qty": 4,
+       "name": "Knight of Meadowgrain",
+       "set": "lrw",
+       "number": "28",
+       "id": "1eb33901-1f97-4080-a9dd-922ef29f42c9"
+      },
+      {
+       "qty": 4,
+       "name": "Plover Knights",
+       "set": "lrw",
+       "number": "35",
+       "id": "ea2de26e-4cb3-4d7e-b884-54d6056dc9e9"
+      },
+      {
+       "qty": 4,
+       "name": "Kithkin Greatheart",
+       "set": "lrw",
+       "number": "25",
+       "id": "e75283b6-1b70-4e89-bf21-f85c21454aae"
+      },
+      {
+       "qty": 4,
+       "name": "Militia's Pride",
+       "set": "lrw",
+       "number": "30",
+       "id": "53c8cde1-e447-422e-aed0-2571a77d3d29"
+      },
+      {
+       "qty": 24,
+       "name": "Plains",
+       "set": "lrw",
+       "number": "282",
+       "id": "b8e41010-a7d2-4e78-8f7b-502347f8c47d"
+      }
+     ]
+    }
+   },
+   "villain": {
+    "who": "auntie",
+    "deck": {
+     "name": "The Squeaking Pie Warren",
+     "colors": "BR",
+     "archetype": null,
+     "label": "tribute",
+     "cards": [
+      {
+       "qty": 4,
+       "name": "Mudbrawler Cohort",
+       "set": "shm",
+       "number": "100",
+       "id": "8fcb1f26-9a2a-40bd-b291-4ef8ce375cdf"
+      },
+      {
+       "qty": 4,
+       "name": "Boggart Sprite-Chaser",
+       "set": "lrw",
+       "number": "156",
+       "id": "6341b73b-a035-45a2-908d-879c8eed4bbd"
+      },
+      {
+       "qty": 4,
+       "name": "Adder-Staff Boggart",
+       "set": "lrw",
+       "number": "148",
+       "id": "d116839f-6a3a-4a2e-a3ab-ea177c012746"
+      },
+      {
+       "qty": 4,
+       "name": "Incinerate",
+       "set": "10e",
+       "number": "213",
+       "id": "723fb62e-735a-4ca6-9d38-f1c3944fe69a"
+      },
+      {
+       "qty": 4,
+       "name": "Auntie's Snitch",
+       "set": "mor",
+       "number": "57",
+       "id": "dc5caf12-9358-490b-aafa-fc4d2b8b9b22"
+      },
+      {
+       "qty": 4,
+       "name": "Boggart Mob",
+       "set": "lrw",
+       "number": "104",
+       "id": "a61990de-0daf-4340-8e6b-c49852d46980"
+      },
+      {
+       "qty": 4,
+       "name": "Nameless Inversion",
+       "set": "lrw",
+       "number": "128",
+       "id": "94b4e4d2-2358-48d2-9a2a-3d17afea28f5"
+      },
+      {
+       "qty": 4,
+       "name": "Tarfire",
+       "set": "lrw",
+       "number": "194",
+       "id": "d13a898e-6a97-4fd9-980e-3bfd8d755386"
+      },
+      {
+       "qty": 4,
+       "name": "Boggart Harbinger",
+       "set": "lrw",
+       "number": "102",
+       "id": "8ea8d2b8-bcac-410d-aa5a-e4a74f7d5315"
+      },
+      {
+       "qty": 12,
+       "name": "Swamp",
+       "set": "lrw",
+       "number": "290",
+       "id": "4f799604-bbbf-4d57-83c8-13a0eafa974e"
+      },
+      {
+       "qty": 12,
+       "name": "Mountain",
+       "set": "lrw",
+       "number": "294",
+       "id": "83beeef7-2bb5-4c3a-9be4-79a968696d65"
+      }
+     ]
+    }
+   },
+   "reward": {
+    "hero": {
+     "packs": 1,
+     "coins": 0
+    },
+    "villain": {
+     "card": {
+      "oracle_id": "56508ae7-6013-4149-8935-96b8d5091baa",
+      "name": "Boggart Harbinger",
+      "rarity": "uncommon",
+      "set": "lrw",
+      "id": "8ea8d2b8-bcac-410d-aa5a-e4a74f7d5315",
+      "image": "https://cards.scryfall.io/normal/front/8/e/8ea8d2b8-bcac-410d-aa5a-e4a74f7d5315.jpg"
+     },
+     "coins": 50
+    }
+   },
+   "scene": [
+    {
+     "who": "stage",
+     "line": "If a boggart even dares breathe near one of my kin, I'll know. And I'll not be happy.",
+     "quote": true
+    },
+    {
+     "who": "brigid",
+     "line": "Planeswalkers: Ajani is a card you cast, with loyalty counters. Each turn you can use one of his abilities, adding or removing loyalty. Creatures can attack him instead of you, so guard him."
+    }
+   ],
+   "villainScene": [
+    {
+     "who": "stage",
+     "line": "Why do our pies squeak? It's all the faeries, mice, and prickly-hogs we stuff inside.",
+     "quote": true
+    },
+    {
+     "who": "stage",
+     "line": "Among the boggarts, there is only one real rule: all new treasures and experiences must be shared.",
+     "quote": true
+    }
+   ],
+   "after": [
+    {
+     "who": "stage",
+     "line": "After Auntie brushed the soot from her eyes, she discovered something wonderful: the fire had turned the goat into something that smelled delicious.",
+     "quote": true
+    }
+   ],
+   "cues": {
+    "hero": {
+     "start": "Kinsbaile, to me!",
+     "big": "Through the weft!",
+     "low": "They're everywhere...",
+     "win": "Out of my village.",
+     "loss": "The weft... breaks...",
+     "half": "Guard the walker."
+    },
+    "villain": {
+     "start": "[giggling from the hedges]",
+     "big": "[the warren rushes in]",
+     "low": "[the warren scatters]",
+     "win": "[everything gets shared]",
+     "loss": "[the pie stops squeaking]"
+    }
+   },
+   "bigPlays": [],
+   "sim": null
+  },
+  {
+   "id": "a15b4",
+   "slot": 4,
+   "kind": "Rival",
+   "mood": "tension",
+   "title": "The Vendilion Clique",
+   "difficulty": "Normal",
+   "teaches": [
+    "Flash"
+   ],
+   "blurb": "Rhys is exiled from Lys Alana for losing his hunt. A strange elf woman named Maralen joins the party, and with her come the faeries, who steal dreams for their hidden queen. One of their pranks turns deadly.",
+   "rewardSet": "mor",
+   "host": false,
+   "hero": {
+    "who": "rhys",
+    "deck": {
+     "name": "Rhys's Pack",
+     "colors": "GB",
+     "archetype": null,
+     "label": "tribute",
+     "cards": [
+      {
+       "qty": 2,
+       "name": "Rhys the Exiled",
+       "set": "mor",
+       "number": "135",
+       "id": "f26da029-9c95-4e9b-9a1b-62048c16acaf"
+      },
+      {
+       "qty": 2,
+       "name": "Garruk Wildspeaker",
+       "set": "lrw",
+       "number": "213",
+       "id": "ca6f13a2-9243-4ce9-9f71-bed74355b781"
+      },
+      {
+       "qty": 4,
+       "name": "Llanowar Elves",
+       "set": "10e",
+       "number": "274",
+       "id": "c7a7fe6e-aa5a-4be6-a730-5cfff4fb89e3"
+      },
+      {
+       "qty": 4,
+       "name": "Wren's Run Vanquisher",
+       "set": "lrw",
+       "number": "245",
+       "id": "f9c411a0-b8dd-4394-852a-a29dbcec953b"
+      },
+      {
+       "qty": 4,
+       "name": "Imperious Perfect",
+       "set": "lrw",
+       "number": "220",
+       "id": "706fce74-fed9-4bf7-949d-7df6bef29238"
+      },
+      {
+       "qty": 4,
+       "name": "Lys Alana Huntmaster",
+       "set": "lrw",
+       "number": "229",
+       "id": "8d21f992-f982-415e-9d77-d11d8c931741"
+      },
+      {
+       "qty": 4,
+       "name": "Elvish Warrior",
+       "set": "mor",
+       "number": "120",
+       "id": "b2154a16-1fb8-45bb-9b9b-e995e701c330"
+      },
+      {
+       "qty": 4,
+       "name": "Wren's Run Packmaster",
+       "set": "lrw",
+       "number": "244",
+       "id": "3e97f29a-1551-4e75-80e8-2dd31cb6c0db"
+      },
+      {
+       "qty": 4,
+       "name": "Nath's Elite",
+       "set": "lrw",
+       "number": "231",
+       "id": "f2a2b029-02ba-46b0-88a2-99025727cc56"
+      },
+      {
+       "qty": 4,
+       "name": "Giant Growth",
+       "set": "10e",
+       "number": "266",
+       "id": "d4db271b-b7f2-4a12-b606-2215bab4ac17"
+      },
+      {
+       "qty": 20,
+       "name": "Forest",
+       "set": "lrw",
+       "number": "298",
+       "id": "6d3a661e-d890-4211-bc9c-8266001ebfba"
+      },
+      {
+       "qty": 4,
+       "name": "Swamp",
+       "set": "lrw",
+       "number": "290",
+       "id": "4f799604-bbbf-4d57-83c8-13a0eafa974e"
+      }
+     ]
+    }
+   },
+   "villain": {
+    "who": "maralen",
+    "deck": {
+     "name": "The Mornsong",
+     "colors": "UB",
+     "archetype": null,
+     "label": "tribute",
+     "cards": [
+      {
+       "qty": 2,
+       "name": "Maralen of the Mornsong",
+       "set": "mor",
+       "number": "65",
+       "id": "ba98d363-194b-4bc0-b9fe-987c498ab6fa"
+      },
+      {
+       "qty": 4,
+       "name": "Spellstutter Sprite",
+       "set": "lrw",
+       "number": "89",
+       "id": "4e5ba4a9-a282-4d4b-b25a-179e05e458f4"
+      },
+      {
+       "qty": 4,
+       "name": "Pestermite",
+       "set": "lrw",
+       "number": "78",
+       "id": "f252ae53-443c-4a27-b8f0-639a9a2b8598"
+      },
+      {
+       "qty": 4,
+       "name": "Oona's Prowler",
+       "set": "lrw",
+       "number": "133",
+       "id": "9675b8ea-47f9-440e-9535-de879da53f76"
+      },
+      {
+       "qty": 4,
+       "name": "Faerie Harbinger",
+       "set": "lrw",
+       "number": "61",
+       "id": "f9bdc319-4e06-420b-ba54-6cb994d4e279"
+      },
+      {
+       "qty": 4,
+       "name": "Thieving Sprite",
+       "set": "lrw",
+       "number": "143",
+       "id": "9b5b51c3-60a8-45b2-9de0-605388091e8a"
+      },
+      {
+       "qty": 4,
+       "name": "Peppersmoke",
+       "set": "lrw",
+       "number": "134",
+       "id": "568586ca-8a02-4a77-bd65-c0b4a74c429d"
+      },
+      {
+       "qty": 4,
+       "name": "Nameless Inversion",
+       "set": "lrw",
+       "number": "128",
+       "id": "94b4e4d2-2358-48d2-9a2a-3d17afea28f5"
+      },
+      {
+       "qty": 4,
+       "name": "Sower of Temptation",
+       "set": "lrw",
+       "number": "88",
+       "id": "2f5320da-7214-4348-84d8-74bf951c9f2f"
+      },
+      {
+       "qty": 2,
+       "name": "Mistbind Clique",
+       "set": "lrw",
+       "number": "75",
+       "id": "cfc421e2-0dd4-4bdf-b5f5-a60c4b0df63b"
+      },
+      {
+       "qty": 12,
+       "name": "Island",
+       "set": "lrw",
+       "number": "286",
+       "id": "5885738f-a51d-418c-b194-0ba8ef6af556"
+      },
+      {
+       "qty": 12,
+       "name": "Swamp",
+       "set": "lrw",
+       "number": "290",
+       "id": "4f799604-bbbf-4d57-83c8-13a0eafa974e"
+      }
+     ]
+    }
+   },
+   "reward": {
+    "hero": {
+     "packs": 1,
+     "coins": 100
+    },
+    "villain": {
+     "card": {
+      "oracle_id": "0b40032b-711d-499f-8bb9-87855f1fce9e",
+      "name": "Maralen of the Mornsong",
+      "rarity": "rare",
+      "set": "mor",
+      "id": "ba98d363-194b-4bc0-b9fe-987c498ab6fa",
+      "image": "https://cards.scryfall.io/normal/front/b/a/ba98d363-194b-4bc0-b9fe-987c498ab6fa.jpg"
+     },
+     "coins": 100
+    }
+   },
+   "scene": [
+    {
+     "who": "stage",
+     "line": "Once a famed hunter and packmaster, now a renegade seeking his own path.",
+     "quote": true
+    },
+    {
+     "who": "rhys",
+     "line": "Flash: faeries can be cast at instant speed, at the end of your turn or in the middle of combat. Expect a blocker that wasn't there a second ago."
+    },
+    {
+     "who": "stage",
+     "line": "Rhys's deck also carries Garruk Wildspeaker, another of the first planeswalker cards. He untaps lands and makes 3/3 beasts."
+    }
+   ],
+   "villainScene": [
+    {
+     "who": "stage",
+     "line": "Maralen sent Veesa, Endry, and Iliona—the Vendilion clique—on the gravest of tasks.",
+     "quote": true
+    },
+    {
+     "who": "stage",
+     "line": "The fae know when they're not wanted. That's precisely why they show up.",
+     "quote": true
+    }
+   ],
+   "after": [
+    {
+     "who": "maralen",
+     "line": "I am not your enemy, Rhys. The faeries have a queen, and she has a plan for this whole world. I need you to help me stop her."
+    }
+   ],
+   "cues": {
+    "hero": {
+     "start": "Swat them out of the air.",
+     "big": "The pack hunts!",
+     "low": "They're too quick...",
+     "win": "Grounded.",
+     "loss": "Exiled twice over...",
+     "half": "Expect the flash."
+    },
+    "villain": {
+     "start": "Shall we play a game?",
+     "big": "Surprise!",
+     "low": "You're no fun.",
+     "win": "What a lovely dream you had.",
+     "loss": "This was... not the plan..."
+    }
+   },
+   "bigPlays": [],
+   "sim": null
+  },
+  {
+   "id": "a15b5",
+   "slot": 5,
+   "kind": "Lesson",
+   "mood": "tension",
+   "title": "The Aurora",
+   "difficulty": "Normal",
+   "teaches": [
+    "Wither",
+    "Persist"
+   ],
+   "blurb": "The sky fills with light, and Lorwyn becomes Shadowmoor. The sun stops at the edge of dusk. Kithkin wall themselves into safeholds, and Ashling's gentle flame turns into a fire that only wants to burn.",
+   "rewardSet": "shm",
+   "host": false,
+   "hero": {
+    "who": "extinguisher",
+    "deck": {
+     "name": "The Extinguisher",
+     "colors": "BR",
+     "archetype": null,
+     "label": "tribute",
+     "cards": [
+      {
+       "qty": 2,
+       "name": "Ashling, the Extinguisher",
+       "set": "eve",
+       "number": "33",
+       "id": "350580d8-45db-4428-a292-cc4802bf1e4d"
+      },
+      {
+       "qty": 4,
+       "name": "Sickle Ripper",
+       "set": "shm",
+       "number": "77",
+       "id": "e07c4e5f-5de7-45ec-b502-0e6d7c5c359d"
+      },
+      {
+       "qty": 4,
+       "name": "Ashenmoor Gouger",
+       "set": "shm",
+       "number": "180",
+       "id": "80c7931f-e979-4f43-81dd-c34166526f87"
+      },
+      {
+       "qty": 4,
+       "name": "Kulrath Knight",
+       "set": "shm",
+       "number": "190",
+       "id": "2408b0bb-37d6-48a3-b140-c826de74c3a0"
+      },
+      {
+       "qty": 4,
+       "name": "Murderous Redcap",
+       "set": "shm",
+       "number": "192",
+       "id": "5f7171f0-7d42-47c9-ab46-93c2bb42c914"
+      },
+      {
+       "qty": 4,
+       "name": "Emberstrike Duo",
+       "set": "shm",
+       "number": "185",
+       "id": "9ccd4374-5339-4529-99f3-f7dcc939e874"
+      },
+      {
+       "qty": 4,
+       "name": "Sootwalkers",
+       "set": "shm",
+       "number": "196",
+       "id": "f36c7932-cc1e-4b1f-ae39-2f04b84bcddb"
+      },
+      {
+       "qty": 4,
+       "name": "Puncture Blast",
+       "set": "eve",
+       "number": "60",
+       "id": "3bf90b4d-98cf-4953-b6ae-c41d21ab559b"
+      },
+      {
+       "qty": 2,
+       "name": "Fulminator Mage",
+       "set": "shm",
+       "number": "188",
+       "id": "be1df367-8e85-4fd8-aa6f-f02a478fecb3"
+      },
+      {
+       "qty": 4,
+       "name": "Smoldering Butcher",
+       "set": "eve",
+       "number": "42",
+       "id": "7f764936-fceb-4a3d-ac32-15397d7ce664"
+      },
+      {
+       "qty": 12,
+       "name": "Swamp",
+       "set": "lrw",
+       "number": "290",
+       "id": "4f799604-bbbf-4d57-83c8-13a0eafa974e"
+      },
+      {
+       "qty": 12,
+       "name": "Mountain",
+       "set": "lrw",
+       "number": "294",
+       "id": "83beeef7-2bb5-4c3a-9be4-79a968696d65"
+      }
+     ]
+    }
+   },
+   "villain": {
+    "who": "safehold",
+    "deck": {
+     "name": "Ballynock Safehold",
+     "colors": "W",
+     "archetype": null,
+     "label": "tribute",
+     "cards": [
+      {
+       "qty": 4,
+       "name": "Ballynock Cohort",
+       "set": "shm",
+       "number": "3",
+       "id": "c5c54ec5-2917-4acf-b56f-8273781477f6"
+      },
+      {
+       "qty": 4,
+       "name": "Safehold Sentry",
+       "set": "shm",
+       "number": "22",
+       "id": "caa8bd74-9897-4515-b1a0-50d5f1bda673"
+      },
+      {
+       "qty": 4,
+       "name": "Kithkin Shielddare",
+       "set": "shm",
+       "number": "10",
+       "id": "7e5102a7-2147-4e22-b683-c08b4a725617"
+      },
+      {
+       "qty": 4,
+       "name": "Knight of Meadowgrain",
+       "set": "lrw",
+       "number": "28",
+       "id": "1eb33901-1f97-4080-a9dd-922ef29f42c9"
+      },
+      {
+       "qty": 4,
+       "name": "Spectral Procession",
+       "set": "shm",
+       "number": "23",
+       "id": "5e26bd0c-5ec7-4653-8e63-747157c20af1"
+      },
+      {
+       "qty": 4,
+       "name": "Last Breath",
+       "set": "shm",
+       "number": "11",
+       "id": "225447a5-41e1-4e57-ab6a-bff74d4523b3"
+      },
+      {
+       "qty": 4,
+       "name": "Safehold Elite",
+       "set": "shm",
+       "number": "239",
+       "id": "14dee5be-94fd-4b5d-9265-edd1b58c8026"
+      },
+      {
+       "qty": 4,
+       "name": "Ballynock Trapper",
+       "set": "eve",
+       "number": "2",
+       "id": "6b10d37b-2cbc-4061-b25a-ad8ff3944ad3"
+      },
+      {
+       "qty": 2,
+       "name": "Kithkin Zealot",
+       "set": "eve",
+       "number": "9",
+       "id": "76f9a29c-9219-424f-a703-dccffbf23cdc"
+      },
+      {
+       "qty": 2,
+       "name": "Glorious Anthem",
+       "set": "10e",
+       "number": "17",
+       "id": "2efbc588-019e-416a-938c-4ccbe7121335"
+      },
+      {
+       "qty": 24,
+       "name": "Plains",
+       "set": "lrw",
+       "number": "282",
+       "id": "b8e41010-a7d2-4e78-8f7b-502347f8c47d"
+      }
+     ]
+    }
+   },
+   "reward": {
+    "hero": {
+     "packs": 1,
+     "coins": 100
+    },
+    "villain": {
+     "card": {
+      "oracle_id": "7c415180-c179-474b-8c58-e7096bd2c763",
+      "name": "Ballynock Cohort",
+      "rarity": "common",
+      "set": "shm",
+      "id": "c5c54ec5-2917-4acf-b56f-8273781477f6",
+      "image": "https://cards.scryfall.io/normal/front/c/5/c5c54ec5-2917-4acf-b56f-8273781477f6.jpg"
+     },
+     "coins": 100
+    }
+   },
+   "scene": [
+    {
+     "who": "stage",
+     "line": "The Aurora had transformed her into a relentless force of destruction.",
+     "quote": true
+    },
+    {
+     "who": "extinguisher",
+     "line": "Wither: damage from these creatures comes as -1/-1 counters. Those never heal at the end of the turn."
+    },
+    {
+     "who": "stage",
+     "line": "Why allow the fires of others to burn, when ours do not? Why leave them content, while we suffer? If there is to be misery, let it be borne by all.",
+     "quote": true
+    }
+   ],
+   "villainScene": [
+    {
+     "who": "stage",
+     "line": "The Aurora had lessened the kithkins' kindness, deepened their paranoia, and dulled their sense of pain.",
+     "quote": true
+    },
+    {
+     "who": "safehold",
+     "line": "Persist: when a persist creature dies without a -1/-1 counter, it comes back with one. Kill it twice, or wither it once."
+    },
+    {
+     "who": "stage",
+     "line": "These bracers were worn by my father and by his mother before him. Boggart fangs have shattered on them. Cinder flames have withered at their touch. While I wear them, the safehold will not fall.",
+     "quote": true
+    }
+   ],
+   "after": [
+    {
+     "who": "ashling",
+     "line": "I knew a creature carved from a dream of wild freedom. Any attempt to leash or exploit it failed, and at terrible cost.",
+     "quote": true
+    },
+    {
+     "who": "stage",
+     "line": "Rhys is changed too. In Shadowmoor he is whole and kind, a peacemaker. He does not remember Lorwyn. But Maralen does."
+    }
+   ],
+   "cues": {
+    "hero": {
+     "start": "Burn.",
+     "big": "Wither away!",
+     "low": "They keep coming back...",
+     "win": "Ashes.",
+     "loss": "Not... extinguished...",
+     "half": "Counters never heal."
+    },
+    "villain": {
+     "start": "Bar the gates!",
+     "big": "We endure!",
+     "low": "The wall is cracking...",
+     "win": "The safehold stands.",
+     "loss": "The safehold... falls..."
+    }
+   },
+   "bigPlays": [],
+   "sim": null
+  },
+  {
+   "id": "a15b6",
+   "slot": 6,
+   "kind": "Meta",
+   "mood": "march",
+   "title": "Bitterblossom",
+   "difficulty": "Normal",
+   "teaches": [
+    "Champion"
+   ],
+   "blurb": "In the real winter of 2008, one tribe ruled Standard: Faeries, built on Bitterblossom, Spellstutter Sprite and Mistbind Clique. The deck it fought most was Merfolk, a school of lords that grows all at once.",
+   "rewardSet": "mor",
+   "host": false,
+   "hero": {
+    "who": "you",
+    "deck": {
+     "name": "Faeries",
+     "colors": "UB",
+     "archetype": "Tempo",
+     "label": "tribute",
+     "cards": [
+      {
+       "qty": 4,
+       "name": "Bitterblossom",
+       "set": "mor",
+       "number": "58",
+       "id": "8145fed6-6b51-420a-84cf-4ea5e0aa1883"
+      },
+      {
+       "qty": 4,
+       "name": "Spellstutter Sprite",
+       "set": "lrw",
+       "number": "89",
+       "id": "4e5ba4a9-a282-4d4b-b25a-179e05e458f4"
+      },
+      {
+       "qty": 4,
+       "name": "Pestermite",
+       "set": "lrw",
+       "number": "78",
+       "id": "f252ae53-443c-4a27-b8f0-639a9a2b8598"
+      },
+      {
+       "qty": 4,
+       "name": "Scion of Oona",
+       "set": "lrw",
+       "number": "83",
+       "id": "f75fc1eb-09ac-4800-a55d-c0e723f5786b"
+      },
+      {
+       "qty": 4,
+       "name": "Mistbind Clique",
+       "set": "lrw",
+       "number": "75",
+       "id": "cfc421e2-0dd4-4bdf-b5f5-a60c4b0df63b"
+      },
+      {
+       "qty": 4,
+       "name": "Sower of Temptation",
+       "set": "lrw",
+       "number": "88",
+       "id": "2f5320da-7214-4348-84d8-74bf951c9f2f"
+      },
+      {
+       "qty": 4,
+       "name": "Wasp Lancer",
+       "set": "shm",
+       "number": "179",
+       "id": "ac48a4ff-433b-4fd0-b0d1-43b188ee81b6"
+      },
+      {
+       "qty": 4,
+       "name": "Nameless Inversion",
+       "set": "lrw",
+       "number": "128",
+       "id": "94b4e4d2-2358-48d2-9a2a-3d17afea28f5"
+      },
+      {
+       "qty": 4,
+       "name": "Faerie Harbinger",
+       "set": "lrw",
+       "number": "61",
+       "id": "f9bdc319-4e06-420b-ba54-6cb994d4e279"
+      },
+      {
+       "qty": 4,
+       "name": "Secluded Glen",
+       "set": "lrw",
+       "number": "271",
+       "id": "9e4afa65-7933-4a64-b50f-a9a9f832b112"
+      },
+      {
+       "qty": 4,
+       "name": "Faerie Conclave",
+       "set": "10e",
+       "number": "351",
+       "id": "69df4707-09c5-48e7-9681-0cf7960aeeb1"
+      },
+      {
+       "qty": 4,
+       "name": "Underground River",
+       "set": "10e",
+       "number": "362",
+       "id": "8c298bf7-2514-43d4-a285-1386d6ba0835"
+      },
+      {
+       "qty": 6,
+       "name": "Island",
+       "set": "lrw",
+       "number": "286",
+       "id": "5885738f-a51d-418c-b194-0ba8ef6af556"
+      },
+      {
+       "qty": 6,
+       "name": "Swamp",
+       "set": "lrw",
+       "number": "290",
+       "id": "4f799604-bbbf-4d57-83c8-13a0eafa974e"
+      }
+     ]
+    }
+   },
+   "villain": {
+    "who": "merfolk",
+    "deck": {
+     "name": "Merfolk",
+     "colors": "U",
+     "archetype": "Aggro",
+     "label": "tribute",
+     "cards": [
+      {
+       "qty": 4,
+       "name": "Silvergill Adept",
+       "set": "lrw",
+       "number": "86",
+       "id": "9e07a38a-2d88-4b01-9634-f24cbc8d96d6"
+      },
+      {
+       "qty": 4,
+       "name": "Merrow Reejerey",
+       "set": "lrw",
+       "number": "74",
+       "id": "b57434d9-6fa5-43a6-98b9-044d2259d699"
+      },
+      {
+       "qty": 4,
+       "name": "Stonybrook Banneret",
+       "set": "mor",
+       "number": "51",
+       "id": "3e3e9c6c-e11a-4771-ae1a-3c13cc97e92e"
+      },
+      {
+       "qty": 4,
+       "name": "Streambed Aquitects",
+       "set": "lrw",
+       "number": "91",
+       "id": "aed908f4-630c-4f3c-9e61-4725b88b93ff"
+      },
+      {
+       "qty": 4,
+       "name": "Merrow Harbinger",
+       "set": "lrw",
+       "number": "73",
+       "id": "b47af11c-1090-4f0a-8eea-64a3b639e535"
+      },
+      {
+       "qty": 4,
+       "name": "Silvergill Douser",
+       "set": "lrw",
+       "number": "87",
+       "id": "8875c883-8d56-406b-bd89-42199a6e79f5"
+      },
+      {
+       "qty": 4,
+       "name": "Paperfin Rascal",
+       "set": "lrw",
+       "number": "77",
+       "id": "a439c0ca-0cb2-4293-825e-1a72159953b9"
+      },
+      {
+       "qty": 4,
+       "name": "Remove Soul",
+       "set": "10e",
+       "number": "100",
+       "id": "35673701-684c-4ba6-99f5-74364bc6fec2"
+      },
+      {
+       "qty": 4,
+       "name": "Ponder",
+       "set": "lrw",
+       "number": "79",
+       "id": "ba6b6fc5-5077-4812-b8e9-906783dbaf67"
+      },
+      {
+       "qty": 24,
+       "name": "Island",
+       "set": "lrw",
+       "number": "286",
+       "id": "5885738f-a51d-418c-b194-0ba8ef6af556"
+      }
+     ]
+    }
+   },
+   "reward": {
+    "hero": {
+     "packs": 1,
+     "coins": 100
+    },
+    "villain": {
+     "card": {
+      "oracle_id": "6b7e6ae4-2ee1-44bf-ac93-79fc87494515",
+      "name": "Merrow Reejerey",
+      "rarity": "uncommon",
+      "set": "lrw",
+      "id": "b57434d9-6fa5-43a6-98b9-044d2259d699",
+      "image": "https://cards.scryfall.io/normal/front/b/5/b57434d9-6fa5-43a6-98b9-044d2259d699.jpg"
+     },
+     "coins": 100
+    }
+   },
+   "scene": [
+    {
+     "who": "stage",
+     "line": "In Lorwyn's brief evenings, the sun pauses at the horizon long enough for a certain species of violet to bloom with the fragrance of mischief.",
+     "quote": true
+    },
+    {
+     "who": "you",
+     "line": "Champion: Mistbind Clique exiles one of my faeries when it arrives and gives it back when the Clique leaves. Cast it in their upkeep and they lose a turn of mana."
+    }
+   ],
+   "villainScene": [
+    {
+     "who": "stage",
+     "line": "Steady and silent as the deep current, the reejerey guides the course of the school.",
+     "quote": true
+    },
+    {
+     "who": "stage",
+     "line": "Made from trout scales and crawfish whiskers, merrows' shimmering banners flash in the water like lightning.",
+     "quote": true
+    }
+   ],
+   "after": null,
+   "cues": {
+    "hero": {
+     "start": "A little mischief.",
+     "big": "Flash in!",
+     "low": "The school is too big...",
+     "win": "Pranked.",
+     "loss": "Dream over...",
+     "half": "Champion in their upkeep."
+    },
+    "villain": {
+     "start": "[the school gathers]",
+     "big": "[lords raise the tide]",
+     "low": "[the current breaks]",
+     "win": "[swept downstream]",
+     "loss": "[the river goes still]"
+    }
+   },
+   "bigPlays": [],
+   "sim": null
+  },
+  {
+   "id": "a15b7",
+   "slot": 7,
+   "kind": "Meta",
+   "mood": "tension",
+   "title": "Reveillark",
+   "difficulty": "Normal",
+   "teaches": [
+    "Leaves the battlefield"
+   ],
+   "blurb": "Spring 2008. Kithkin swarmed Standard with tokens and anthems. The control deck that beat them most was Reveillark: a spirit bird that brings small creatures back from the graveyard when it dies.",
+   "rewardSet": "mor",
+   "host": false,
+   "hero": {
+    "who": "you",
+    "deck": {
+     "name": "Reveillark",
+     "colors": "UW",
+     "archetype": "Control",
+     "label": "tribute",
+     "cards": [
+      {
+       "qty": 4,
+       "name": "Reveillark",
+       "set": "mor",
+       "number": "22",
+       "id": "5629edd4-b5d3-43f8-8c7c-f9d916e35158"
+      },
+      {
+       "qty": 4,
+       "name": "Mulldrifter",
+       "set": "lrw",
+       "number": "76",
+       "id": "a97cfefa-ade7-49f6-b2aa-1118b9db4935"
+      },
+      {
+       "qty": 4,
+       "name": "Plumeveil",
+       "set": "shm",
+       "number": "145",
+       "id": "8e8b0449-3ae5-4fee-b870-af12be5e5a64"
+      },
+      {
+       "qty": 4,
+       "name": "Wrath of God",
+       "set": "10e",
+       "number": "61",
+       "id": "b969f680-b176-4bfa-a160-714de8e03c25"
+      },
+      {
+       "qty": 4,
+       "name": "Glen Elendra Archmage",
+       "set": "eve",
+       "number": "22",
+       "id": "09516d3d-e6c2-4359-af2a-a4aa244ca033"
+      },
+      {
+       "qty": 4,
+       "name": "Knight of Meadowgrain",
+       "set": "lrw",
+       "number": "28",
+       "id": "1eb33901-1f97-4080-a9dd-922ef29f42c9"
+      },
+      {
+       "qty": 4,
+       "name": "Cloudgoat Ranger",
+       "set": "lrw",
+       "number": "10",
+       "id": "9e344859-7248-4498-8303-252f196a007b"
+      },
+      {
+       "qty": 4,
+       "name": "Pacifism",
+       "set": "10e",
+       "number": "31",
+       "id": "686352f6-d8e7-4d31-83bd-3d087c103e75"
+      },
+      {
+       "qty": 4,
+       "name": "Sower of Temptation",
+       "set": "lrw",
+       "number": "88",
+       "id": "2f5320da-7214-4348-84d8-74bf951c9f2f"
+      },
+      {
+       "qty": 4,
+       "name": "Mystic Gate",
+       "set": "shm",
+       "number": "277",
+       "id": "3dfa866b-93e2-4365-91b0-f12d1f7c5395"
+      },
+      {
+       "qty": 4,
+       "name": "Adarkar Wastes",
+       "set": "10e",
+       "number": "347",
+       "id": "f31cf014-7ac9-428b-9ce9-8ba5ebfdd252"
+      },
+      {
+       "qty": 8,
+       "name": "Island",
+       "set": "lrw",
+       "number": "286",
+       "id": "5885738f-a51d-418c-b194-0ba8ef6af556"
+      },
+      {
+       "qty": 8,
+       "name": "Plains",
+       "set": "lrw",
+       "number": "282",
+       "id": "b8e41010-a7d2-4e78-8f7b-502347f8c47d"
+      }
+     ]
+    }
+   },
+   "villain": {
+    "who": "kithkin",
+    "deck": {
+     "name": "Kithkin",
+     "colors": "W",
+     "archetype": "Aggro",
+     "label": "tribute",
+     "cards": [
+      {
+       "qty": 4,
+       "name": "Goldmeadow Dodger",
+       "set": "lrw",
+       "number": "16",
+       "id": "5305b5c6-2af6-4b5c-9a57-0a2d2628e2f4"
+      },
+      {
+       "qty": 4,
+       "name": "Goldmeadow Harrier",
+       "set": "lrw",
+       "number": "17",
+       "id": "b6a7508c-2815-40eb-92f7-3e66dfb28484"
+      },
+      {
+       "qty": 4,
+       "name": "Wizened Cenn",
+       "set": "lrw",
+       "number": "49",
+       "id": "585f1c8e-6898-4def-8e3f-d45cd263f776"
+      },
+      {
+       "qty": 4,
+       "name": "Knight of Meadowgrain",
+       "set": "lrw",
+       "number": "28",
+       "id": "1eb33901-1f97-4080-a9dd-922ef29f42c9"
+      },
+      {
+       "qty": 2,
+       "name": "Cloudgoat Ranger",
+       "set": "lrw",
+       "number": "10",
+       "id": "9e344859-7248-4498-8303-252f196a007b"
+      },
+      {
+       "qty": 2,
+       "name": "Kinsbaile Balloonist",
+       "set": "lrw",
+       "number": "23",
+       "id": "b6053c20-3632-43e2-8560-259d0c12f235"
+      },
+      {
+       "qty": 4,
+       "name": "Spectral Procession",
+       "set": "shm",
+       "number": "23",
+       "id": "5e26bd0c-5ec7-4653-8e63-747157c20af1"
+      },
+      {
+       "qty": 4,
+       "name": "Springjack Knight",
+       "set": "lrw",
+       "number": "41",
+       "id": "75fa0c72-427b-4797-b5b1-15f07fc5fa07"
+      },
+      {
+       "qty": 4,
+       "name": "Kithkin Greatheart",
+       "set": "lrw",
+       "number": "25",
+       "id": "e75283b6-1b70-4e89-bf21-f85c21454aae"
+      },
+      {
+       "qty": 4,
+       "name": "Kinsbaile Skirmisher",
+       "set": "lrw",
+       "number": "24",
+       "id": "6145bcd5-a583-4a04-9a13-a64ecdf4425a"
+      },
+      {
+       "qty": 24,
+       "name": "Plains",
+       "set": "lrw",
+       "number": "282",
+       "id": "b8e41010-a7d2-4e78-8f7b-502347f8c47d"
+      }
+     ]
+    }
+   },
+   "reward": {
+    "hero": {
+     "packs": 1,
+     "coins": 100
+    },
+    "villain": {
+     "card": {
+      "oracle_id": "e1c13a19-46cd-474b-a46b-a483be6b91bb",
+      "name": "Cloudgoat Ranger",
+      "rarity": "uncommon",
+      "set": "lrw",
+      "id": "9e344859-7248-4498-8303-252f196a007b",
+      "image": "https://cards.scryfall.io/normal/front/9/e/9e344859-7248-4498-8303-252f196a007b.jpg"
+     },
+     "coins": 100
+    }
+   },
+   "scene": [
+    {
+     "who": "you",
+     "line": "Leaves the battlefield: when Reveillark leaves play, it returns up to two creatures with power 2 or less from my graveyard. Killing it only makes my army bigger."
+    },
+    {
+     "who": "stage",
+     "line": "It was vast, a great sheet of soaring wings, and equally silent. It caught us unawares and blocked our view of the kithkin stronghold.",
+     "quote": true
+    }
+   ],
+   "villainScene": [
+    {
+     "who": "stage",
+     "line": "The knights are a major attraction at every Lammastide festival. Teams of riders perform daring feats of flight to the delight of all below.",
+     "quote": true
+    },
+    {
+     "who": "stage",
+     "line": "By tradition, we don't speak for two days after battle. If our deeds won't speak for themselves, what else could be said?",
+     "quote": true
+    }
+   ],
+   "after": [
+    {
+     "who": "stage",
+     "line": "In the story, Maralen has found her way to Glen Elendra. She is not a stranger there. She is a piece of Oona herself, split off to walk among the elves, and she has decided she would rather be free."
+    }
+   ],
+   "cues": {
+    "hero": {
+     "start": "Let them come.",
+     "big": "Rise again!",
+     "low": "Too many tokens...",
+     "win": "The lark sings.",
+     "loss": "Silenced...",
+     "half": "Death is a door."
+    },
+    "villain": {
+     "start": "[the cenn calls the weft]",
+     "big": "[the meadow charges]",
+     "low": "[the weft unravels]",
+     "win": "[trampled]",
+     "loss": "[silence after battle]"
+    }
+   },
+   "bigPlays": [],
+   "sim": null
+  },
+  {
+   "id": "a15b8",
+   "slot": 8,
+   "kind": "Boss",
+   "mood": "boss",
+   "title": "Glen Elendra",
+   "difficulty": "Hard",
+   "teaches": [
+    "Hybrid mana"
+   ],
+   "blurb": "The Aurora was never an accident. Oona, the hidden queen of the faeries, turns the world every few centuries to harvest its dreams. Rhys, Ashling and Maralen walk into Glen Elendra to end it.",
+   "rewardSet": "shm",
+   "host": true,
+   "hero": {
+    "who": "rhys",
+    "deck": {
+     "name": "Rhys, Ashling and Maralen",
+     "colors": "BRG",
+     "archetype": null,
+     "label": "tribute",
+     "cards": [
+      {
+       "qty": 2,
+       "name": "Rhys the Exiled",
+       "set": "mor",
+       "number": "135",
+       "id": "f26da029-9c95-4e9b-9a1b-62048c16acaf"
+      },
+      {
+       "qty": 2,
+       "name": "Ashling, the Extinguisher",
+       "set": "eve",
+       "number": "33",
+       "id": "350580d8-45db-4428-a292-cc4802bf1e4d"
+      },
+      {
+       "qty": 4,
+       "name": "Wren's Run Vanquisher",
+       "set": "lrw",
+       "number": "245",
+       "id": "f9c411a0-b8dd-4394-852a-a29dbcec953b"
+      },
+      {
+       "qty": 4,
+       "name": "Murderous Redcap",
+       "set": "shm",
+       "number": "192",
+       "id": "5f7171f0-7d42-47c9-ab46-93c2bb42c914"
+      },
+      {
+       "qty": 4,
+       "name": "Boggart Ram-Gang",
+       "set": "shm",
+       "number": "203",
+       "id": "63e25b70-fa21-4663-aabd-34b7e0b75c34"
+      },
+      {
+       "qty": 4,
+       "name": "Tarfire",
+       "set": "lrw",
+       "number": "194",
+       "id": "d13a898e-6a97-4fd9-980e-3bfd8d755386"
+      },
+      {
+       "qty": 4,
+       "name": "Nameless Inversion",
+       "set": "lrw",
+       "number": "128",
+       "id": "94b4e4d2-2358-48d2-9a2a-3d17afea28f5"
+      },
+      {
+       "qty": 4,
+       "name": "Nath's Elite",
+       "set": "lrw",
+       "number": "231",
+       "id": "f2a2b029-02ba-46b0-88a2-99025727cc56"
+      },
+      {
+       "qty": 4,
+       "name": "Llanowar Wastes",
+       "set": "10e",
+       "number": "355",
+       "id": "fa9d9e2d-6176-4593-b34a-c892a7b34695"
+      },
+      {
+       "qty": 4,
+       "name": "Karplusan Forest",
+       "set": "10e",
+       "number": "354",
+       "id": "d56ad1cb-c1b9-4856-8d46-55012aee4d47"
+      },
+      {
+       "qty": 4,
+       "name": "Sulfurous Springs",
+       "set": "10e",
+       "number": "359",
+       "id": "ca7f2426-5a56-4dca-a059-65aa7266ac83"
+      },
+      {
+       "qty": 4,
+       "name": "Forest",
+       "set": "lrw",
+       "number": "298",
+       "id": "6d3a661e-d890-4211-bc9c-8266001ebfba"
+      },
+      {
+       "qty": 4,
+       "name": "Swamp",
+       "set": "lrw",
+       "number": "290",
+       "id": "4f799604-bbbf-4d57-83c8-13a0eafa974e"
+      },
+      {
+       "qty": 4,
+       "name": "Mountain",
+       "set": "lrw",
+       "number": "294",
+       "id": "83beeef7-2bb5-4c3a-9be4-79a968696d65"
+      },
+      {
+       "qty": 4,
+       "name": "Eyeblight's Ending",
+       "set": "lrw",
+       "number": "110",
+       "id": "e0c08701-7038-4d6b-bbf8-056fd8ffb226"
+      },
+      {
+       "qty": 2,
+       "name": "Rhys the Redeemed",
+       "set": "shm",
+       "number": "237",
+       "id": "59327a58-cd41-479c-81c7-31c9d3b29508"
+      },
+      {
+       "qty": 2,
+       "name": "Maralen of the Mornsong",
+       "set": "mor",
+       "number": "65",
+       "id": "ba98d363-194b-4bc0-b9fe-987c498ab6fa"
+      }
+     ]
+    }
+   },
+   "villain": {
+    "who": "oona",
+    "deck": {
+     "name": "The Queen's Court",
+     "colors": "UB",
+     "archetype": "Control",
+     "label": "tribute",
+     "cards": [
+      {
+       "qty": 3,
+       "name": "Oona, Queen of the Fae",
+       "set": "shm",
+       "number": "172",
+       "id": "24ae75f6-fb74-422c-93f6-a0be7f919e47"
+      },
+      {
+       "qty": 4,
+       "name": "Scion of Oona",
+       "set": "lrw",
+       "number": "83",
+       "id": "f75fc1eb-09ac-4800-a55d-c0e723f5786b"
+      },
+      {
+       "qty": 2,
+       "name": "Mistbind Clique",
+       "set": "lrw",
+       "number": "75",
+       "id": "cfc421e2-0dd4-4bdf-b5f5-a60c4b0df63b"
+      },
+      {
+       "qty": 2,
+       "name": "Spellstutter Sprite",
+       "set": "lrw",
+       "number": "89",
+       "id": "4e5ba4a9-a282-4d4b-b25a-179e05e458f4"
+      },
+      {
+       "qty": 4,
+       "name": "Pestermite",
+       "set": "lrw",
+       "number": "78",
+       "id": "f252ae53-443c-4a27-b8f0-639a9a2b8598"
+      },
+      {
+       "qty": 1,
+       "name": "Wydwen, the Biting Gale",
+       "set": "lrw",
+       "number": "253",
+       "id": "ff6b558b-74a5-497d-8be4-474c375d7ca7"
+      },
+      {
+       "qty": 4,
+       "name": "Glen Elendra Liege",
+       "set": "shm",
+       "number": "163",
+       "id": "94cc72b7-b593-438f-a07a-35f2452e1c48"
+      },
+      {
+       "qty": 4,
+       "name": "Oona's Gatewarden",
+       "set": "shm",
+       "number": "173",
+       "id": "972bb6e4-300c-49f5-8305-459a3ba67baa"
+      },
+      {
+       "qty": 4,
+       "name": "Nameless Inversion",
+       "set": "lrw",
+       "number": "128",
+       "id": "94b4e4d2-2358-48d2-9a2a-3d17afea28f5"
+      },
+      {
+       "qty": 4,
+       "name": "Cryptic Command",
+       "set": "lrw",
+       "number": "56",
+       "id": "829e3d6e-5d7c-4cc4-a7a6-7cbf5a7442ba"
+      },
+      {
+       "qty": 2,
+       "name": "Bitterblossom",
+       "set": "mor",
+       "number": "58",
+       "id": "8145fed6-6b51-420a-84cf-4ea5e0aa1883"
+      },
+      {
+       "qty": 2,
+       "name": "Sower of Temptation",
+       "set": "lrw",
+       "number": "88",
+       "id": "2f5320da-7214-4348-84d8-74bf951c9f2f"
+      },
+      {
+       "qty": 4,
+       "name": "Secluded Glen",
+       "set": "lrw",
+       "number": "271",
+       "id": "9e4afa65-7933-4a64-b50f-a9a9f832b112"
+      },
+      {
+       "qty": 4,
+       "name": "Underground River",
+       "set": "10e",
+       "number": "362",
+       "id": "8c298bf7-2514-43d4-a285-1386d6ba0835"
+      },
+      {
+       "qty": 8,
+       "name": "Island",
+       "set": "lrw",
+       "number": "286",
+       "id": "5885738f-a51d-418c-b194-0ba8ef6af556"
+      },
+      {
+       "qty": 8,
+       "name": "Swamp",
+       "set": "lrw",
+       "number": "290",
+       "id": "4f799604-bbbf-4d57-83c8-13a0eafa974e"
+      }
+     ]
+    }
+   },
+   "reward": {
+    "hero": {
+     "packs": 2,
+     "coins": 200
+    },
+    "villain": {
+     "card": {
+      "oracle_id": "6052822d-47a2-4d69-a32d-40cdd600d7a9",
+      "name": "Oona, Queen of the Fae",
+      "rarity": "rare",
+      "set": "shm",
+      "id": "24ae75f6-fb74-422c-93f6-a0be7f919e47",
+      "image": "https://cards.scryfall.io/normal/front/2/4/24ae75f6-fb74-422c-93f6-a0be7f919e47.jpg"
+     },
+     "coins": 200
+    }
+   },
+   "scene": [
+    {
+     "who": "stage",
+     "line": "Protected by glamers and guile, Glen Elendra harbors the elusive Oona, queen of the fae.",
+     "quote": true
+    },
+    {
+     "who": "rhys",
+     "line": "Hybrid mana: a cost like red-or-green can be paid with either. Murderous Redcap and the Ram-Gang fit any deck with one of their colours."
+    },
+    {
+     "who": "ashling",
+     "line": "Her voice was in my flame all along. I am going to give it back to her."
+    },
+    {
+     "who": "maralen",
+     "line": "She made me to be her eyes. Today I close them."
+    }
+   ],
+   "villainScene": [
+    {
+     "who": "stage",
+     "line": "Deep in Glen Elendra blossoms Oona, queen of the faeries, nourished by secrets and pollinated by stolen dreams.",
+     "quote": true
+    },
+    {
+     "who": "stage",
+     "line": "So now you've seen Glen Elendra. Take a good look. It will be the last thing you'll ever see.",
+     "quote": true
+    },
+    {
+     "who": "stage",
+     "line": "Those who displease Oona soon learn the extent of the armies she commands.",
+     "quote": true
+    }
+   ],
+   "after": null,
+   "cues": {
+    "hero": {
+     "start": "Into the glen.",
+     "big": "Wake up, Lorwyn!",
+     "low": "Her court is endless...",
+     "win": "The dream is over.",
+     "loss": "Lost... in the glen...",
+     "half": "Either colour pays."
+    },
+    "villain": {
+     "start": "How sweetly you dream.",
+     "big": "Kneel to the queen.",
+     "low": "My court... falters...",
+     "win": "Sleep now.",
+     "loss": "This is... not a dream...",
+     "half": {
+      "who": "maralen",
+      "line": "She is afraid. I have never felt her afraid before."
+     }
+    }
+   },
+   "bigPlays": [],
+   "sim": null
+  },
+  {
+   "id": "a15b9",
+   "slot": 9,
+   "kind": "Secret Boss",
+   "secret": true,
+   "mood": "boss",
+   "title": "Doran",
+   "difficulty": "Hard",
+   "teaches": [
+    "Toughness as power"
+   ],
+   "blurb": "Deep in the archive, a treefolk that taught every wall to hit back.",
+   "rewardSet": "lrw",
+   "host": true,
+   "archive": {
+    "deck": "Doran",
+    "when": "2008",
+    "format": "Standard: Lorwyn, Morningtide, Shadowmoor, Eventide, Time Spiral block and Tenth Edition.",
+    "what": "A green, white and black midrange deck built around Doran, the Siege Tower, a treefolk that makes every creature deal combat damage equal to its toughness.",
+    "why": "Treefolk and walls are tough but weak. With Doran out, a 1/4 hits like a 4/4, and Kitchen Finks, Wren's Run Vanquisher and Chameleon Colossus hit far harder than they look. Thoughtseize and removal clear the way.",
+    "beat": "Kill Doran on sight. Without him, the deck is a pile of walls. Burn him in response to nothing, before combat.",
+    "after": "Doran was never banned. It became one of the best-known three-colour decks of its season, and Doran became a Commander favourite."
+   },
+   "hero": {
+    "who": "you",
+    "deck": {
+     "name": "Figures of Fire",
+     "colors": "RW",
+     "archetype": "Aggro",
+     "label": "tribute",
+     "cards": [
+      {
+       "qty": 4,
+       "name": "Figure of Destiny",
+       "set": "eve",
+       "number": "139",
+       "id": "0da69523-cece-425a-b08a-fb27fac29374"
+      },
+      {
+       "qty": 4,
+       "name": "Mogg Fanatic",
+       "set": "10e",
+       "number": "219",
+       "id": "185949ab-55d0-439f-b25b-1f525e3eddf7"
+      },
+      {
+       "qty": 4,
+       "name": "Tarfire",
+       "set": "lrw",
+       "number": "194",
+       "id": "d13a898e-6a97-4fd9-980e-3bfd8d755386"
+      },
+      {
+       "qty": 4,
+       "name": "Incinerate",
+       "set": "10e",
+       "number": "213",
+       "id": "723fb62e-735a-4ca6-9d38-f1c3944fe69a"
+      },
+      {
+       "qty": 4,
+       "name": "Spitemare",
+       "set": "eve",
+       "number": "147",
+       "id": "fefeb0e2-ddd4-4881-bca4-6c7699c82d79"
+      },
+      {
+       "qty": 4,
+       "name": "Hearthfire Hobgoblin",
+       "set": "eve",
+       "number": "141",
+       "id": "9c5fc104-7189-480c-bfe1-c5da07df48f4"
+      },
+      {
+       "qty": 4,
+       "name": "Duergar Hedge-Mage",
+       "set": "eve",
+       "number": "137",
+       "id": "4d45e026-58fc-4a0c-9099-6849e5a8fa67"
+      },
+      {
+       "qty": 4,
+       "name": "Cloudgoat Ranger",
+       "set": "lrw",
+       "number": "10",
+       "id": "9e344859-7248-4498-8303-252f196a007b"
+      },
+      {
+       "qty": 2,
+       "name": "Brion Stoutarm",
+       "set": "lrw",
+       "number": "246",
+       "id": "aa21cfc2-9671-4bf3-b922-2f436f284cb1"
+      },
+      {
+       "qty": 2,
+       "name": "Shock",
+       "set": "10e",
+       "number": "232",
+       "id": "334ad39a-4088-4530-8f3c-d34e7cc99fae"
+      },
+      {
+       "qty": 4,
+       "name": "Battlefield Forge",
+       "set": "10e",
+       "number": "348",
+       "id": "e0df1e5f-8cef-4e13-babf-4254a85ac46b"
+      },
+      {
+       "qty": 4,
+       "name": "Rugged Prairie",
+       "set": "eve",
+       "number": "178",
+       "id": "e31f8b2a-acf4-423c-bc99-8cf44f3c018a"
+      },
+      {
+       "qty": 8,
+       "name": "Mountain",
+       "set": "lrw",
+       "number": "294",
+       "id": "83beeef7-2bb5-4c3a-9be4-79a968696d65"
+      },
+      {
+       "qty": 8,
+       "name": "Plains",
+       "set": "lrw",
+       "number": "282",
+       "id": "b8e41010-a7d2-4e78-8f7b-502347f8c47d"
+      }
+     ]
+    }
+   },
+   "villain": {
+    "who": "doran",
+    "deck": {
+     "name": "Doran",
+     "colors": "BGW",
+     "archetype": "Midrange",
+     "label": "tribute",
+     "note": "Built from the 2008 Doran lists with Doran, the Siege Tower, Treefolk Harbinger and Kitchen Finks, using cards from this act's sets. No single tournament list is copied.",
+     "cards": [
+      {
+       "qty": 4,
+       "name": "Doran, the Siege Tower",
+       "set": "lrw",
+       "number": "247",
+       "id": "b006b169-295d-4ead-8e8e-29a9c3246025"
+      },
+      {
+       "qty": 4,
+       "name": "Treefolk Harbinger",
+       "set": "lrw",
+       "number": "239",
+       "id": "9ef45cdc-2e1c-40c7-8978-b09a50f511fb"
+      },
+      {
+       "qty": 4,
+       "name": "Wren's Run Vanquisher",
+       "set": "lrw",
+       "number": "245",
+       "id": "f9c411a0-b8dd-4394-852a-a29dbcec953b"
+      },
+      {
+       "qty": 4,
+       "name": "Kitchen Finks",
+       "set": "shm",
+       "number": "229",
+       "id": "7d203208-8a21-4c68-afa2-4efd8726f026"
+      },
+      {
+       "qty": 4,
+       "name": "Thoughtseize",
+       "set": "lrw",
+       "number": "145",
+       "id": "3df8c148-e87d-4043-9d8b-ec72bf8b6d5d"
+      },
+      {
+       "qty": 4,
+       "name": "Nameless Inversion",
+       "set": "lrw",
+       "number": "128",
+       "id": "94b4e4d2-2358-48d2-9a2a-3d17afea28f5"
+      },
+      {
+       "qty": 4,
+       "name": "Chameleon Colossus",
+       "set": "mor",
+       "number": "116",
+       "id": "5459f1e6-7019-427d-9e2d-e494b3cd52d2"
+      },
+      {
+       "qty": 4,
+       "name": "Shriekmaw",
+       "set": "lrw",
+       "number": "139",
+       "id": "ea19eb5e-0d70-42e6-bda2-b13757e08ca6"
+      },
+      {
+       "qty": 2,
+       "name": "Garruk Wildspeaker",
+       "set": "lrw",
+       "number": "213",
+       "id": "ca6f13a2-9243-4ce9-9f71-bed74355b781"
+      },
+      {
+       "qty": 2,
+       "name": "Cloudthresher",
+       "set": "lrw",
+       "number": "202",
+       "id": "c759c561-829d-483d-a433-fe1213f20236"
+      },
+      {
+       "qty": 4,
+       "name": "Murmuring Bosk",
+       "set": "mor",
+       "number": "147",
+       "id": "7d4f8cc7-3d02-4cf2-920f-2cc32b58f397"
+      },
+      {
+       "qty": 4,
+       "name": "Gilt-Leaf Palace",
+       "set": "lrw",
+       "number": "268",
+       "id": "cc4bbbb5-4218-4b2a-9ca2-de4d5f5dda19"
+      },
+      {
+       "qty": 4,
+       "name": "Llanowar Wastes",
+       "set": "10e",
+       "number": "355",
+       "id": "fa9d9e2d-6176-4593-b34a-c892a7b34695"
+      },
+      {
+       "qty": 4,
+       "name": "Brushland",
+       "set": "10e",
+       "number": "349",
+       "id": "70afcfca-c065-4a33-95b1-ec2b08bcb493"
+      },
+      {
+       "qty": 4,
+       "name": "Forest",
+       "set": "lrw",
+       "number": "298",
+       "id": "6d3a661e-d890-4211-bc9c-8266001ebfba"
+      },
+      {
+       "qty": 2,
+       "name": "Swamp",
+       "set": "lrw",
+       "number": "290",
+       "id": "4f799604-bbbf-4d57-83c8-13a0eafa974e"
+      },
+      {
+       "qty": 2,
+       "name": "Plains",
+       "set": "lrw",
+       "number": "282",
+       "id": "b8e41010-a7d2-4e78-8f7b-502347f8c47d"
+      }
+     ]
+    }
+   },
+   "reward": {
+    "hero": {
+     "packs": 2,
+     "coins": 200
+    },
+    "villain": {
+     "card": {
+      "oracle_id": "a46d96d9-8e59-4777-8208-7730b9e33240",
+      "name": "Doran, the Siege Tower",
+      "rarity": "rare",
+      "set": "lrw",
+      "id": "b006b169-295d-4ead-8e8e-29a9c3246025",
+      "image": "https://cards.scryfall.io/normal/front/b/0/b006b169-295d-4ead-8e8e-29a9c3246025.jpg"
+     },
+     "coins": 200
+    }
+   },
+   "scene": [
+    {
+     "who": "stage",
+     "line": "Hobgoblins are best left alone. They sharpen their farm implements far more than is necessary for their work in the fields.",
+     "quote": true
+    },
+    {
+     "who": "you",
+     "line": "Toughness as power: while Doran is out, creatures deal combat damage equal to their toughness. Count their toughness, not their power, before you block."
+    }
+   ],
+   "villainScene": [
+    {
+     "who": "doran",
+     "line": "Each year that passes rings you inwardly with memory and might. Wield your heart, and the world will tremble.",
+     "quote": true
+    }
+   ],
+   "after": [
+    {
+     "who": "stage",
+     "line": "Recorded: never banned. The season a wall learned to attack."
+    }
+   ],
+   "cues": {
+    "hero": {
+     "start": "Burn the tree.",
+     "big": "Level up!",
+     "low": "The walls hit back...",
+     "win": "Felled.",
+     "loss": "Rooted out...",
+     "half": "Kill Doran first."
+    },
+    "villain": {
+     "start": "[the bosk murmurs]",
+     "big": "[the siege tower advances]",
+     "low": "[bark splits]",
+     "win": "[crushed under roots]",
+     "loss": "[the old tree falls]"
+    }
+   },
+   "bigPlays": [],
+   "sim": null
+  }
+ ]
+}

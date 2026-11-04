@@ -7,9 +7,10 @@ async function load(){
  root.innerHTML='<p role="status">Checking the latest download…</p>';
  try{
   const r=await fetch('/api/releases/current',{cache:'no-store',credentials:'omit'});if(!r.ok)throw Error('Release information is unavailable.');
-  release=(await r.json()).android;
+  const body=await r.json();release=body.android;const nt=body.nativeTest;
   if(!/^\/downloads\/cardstashy-android-beta-\d+\.\d+\.\d+\.apk$/.test(release?.href)||!Number.isSafeInteger(release.bytes)||release.bytes<=0||!/^[a-f0-9]{64}$/i.test(release.sha256))throw Error('Release information could not be verified.');
   root.innerHTML=`${android?'':'<p class="note">Open <b>cardstashy.com/downloads</b> on your Android phone to install the app there.</p>'}<h2>Android ${esc(release.version)}</h2><p class="muted">Interface ${esc(release.interfaceVersion)} · ${(release.bytes/1048576).toFixed(1)} MB</p><button class="btn" id="download">Download verified APK</button><div id="progress" hidden><div class="app-update-progress" role="progressbar" aria-label="Downloading" aria-valuemin="0" aria-valuemax="100" aria-valuenow="0"><span style="width:0%"></span></div></div><p id="status" role="status"></p>${steps}<details class="settings-disclosure"><summary>Verify this file</summary><p class="foot">${esc(release.href.split('/').pop())}</p><p class="foot" style="overflow-wrap:anywhere">SHA-256 <code>${esc(release.sha256)}</code></p></details>`;
+  if(nt&&/^\/downloads\/cardstashy-native-test-\d+\.\d+\.\d+\.apk$/.test(nt.href)&&/^\d+\.\d+\.\d+$/.test(nt.version||'')&&Number.isSafeInteger(nt.bytes)&&nt.bytes>0){root.insertAdjacentHTML('afterbegin',`<section class="native-preview" aria-label="Native app"><h2>Native app ${esc(nt.version)}</h2><p class="muted">The new native CardStashy app · ${(nt.bytes/1048576).toFixed(1)} MB · installs next to the classic app</p><a class="btn" href="${esc(nt.href)}" download>Download native app ${esc(nt.version)}</a></section><hr style="margin:20px 0 14px;border:0;border-top:1px solid var(--line)"><p class="eyebrow">Classic app (web-based)</p>`);const old=root.querySelector('#download');if(old)old.classList.add('ghost');}
   root.querySelector('#download').onclick=download;
  }catch(e){root.innerHTML=`<p role="alert">${esc(e.message)}</p><button class="btn ghost" id="retry">Retry</button>`;root.querySelector('#retry').onclick=load;}
 }

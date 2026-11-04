@@ -13,11 +13,13 @@ export function supportedYgoEditions(printing){
 
 // When a release prints a card in more than one rarity (LED7 Ra: Ultra + Ghost),
 // browsing shows a real printing instead of a blank "Choose a printing": the
-// most common rarity, first listed on ties. Display only; never saved.
+// most common priced rarity (else most common), first listed on ties. Display only; never saved.
 const rarityRank=p=>{const i=YGO_RARITIES.indexOf(ygoRarity(p?.rarity));return i<0?YGO_RARITIES.length:i;};
 export function ygoDefaultPrinting(rows=[]){
  const usable=rows.filter(p=>p&&!p.releasePriceAmbiguous&&rows.filter(r=>r.code+'::'+r.rarity===p.code+'::'+p.rarity).length===1);
- return usable.reduce((best,p)=>!best||rarityRank(p)<rarityRank(best)?p:best,null);
+ // Prefer a printing with a price, so a tile does not read "No quote yet" when another rarity is quoted.
+ const priced=usable.filter(p=>supportedYgoEditions(p).length||Number(p.price)>0),pool=priced.length?priced:usable;
+ return pool.reduce((best,p)=>!best||rarityRank(p)<rarityRank(best)?p:best,null);
 }
 export function ygoDefaultEdition(printing){
  const supported=supportedYgoEditions(printing);

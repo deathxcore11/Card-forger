@@ -2,9 +2,10 @@
 // an act's battles, the duel setup, the talking-head scenes and the speech bubbles that come from a
 // seat's portrait during a match. Markup and two small DOM controllers; app.js wires the actions.
 // The road reveals itself: cleared acts, the current act, one blurred tease, and nothing after it.
+import {createMatchFacts} from './match-facts.js';
 import {STORY_ACTS, SET_NAMES, setSymbolUrl} from './story-acts.js';
 import {purseMarkup} from './play-econ-ui.js';
-import {battleStars, battleCleared, actCleared, actStars, currentBattle, currentAct, secretOpen, STAR_VALUE} from './story-client.js';
+import {battleStars, battleCleared, actCleared, actStars, currentBattle, currentAct, secretOpen, secretStatus, STAR_VALUE} from './story-client.js';
 const esc = v => String(v ?? '').replace(/[&<>"']/g, c => ({'&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;'}[c]));
 const back = (act, label) => `<button class="pl-back" data-act="${act}" aria-label="${label}"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="m15 5-7 7 7 7"/></svg></button>`;
 const head = (title, econ, eyebrow, backAct = 'playHome', backLabel = 'Back to Play') => `<header class="pl-head pe-head st-head">${back(backAct, backLabel)}<div class="pl-head-title"><p class="eyebrow">${esc(eyebrow)}</p><h1 id="playTitle" tabindex="-1">${esc(title)}</h1></div>${purseMarkup(econ)}</header>`;
@@ -38,7 +39,16 @@ export function storyHomeMarkup({progress, econ, actsData = {}}) {
 }
 
 // One act: its banner and the battles you've reached. Cleared ones, the current one, then one tease.
+// A closed secret boss shows once the act is far enough along: what it still needs (all 8 battles won with the Story
+// decks and the act's key feats). The key feats themselves are marked in Achievements, on the Story tab.
+const secretTease = (data, progress, act, counters) => {
+  if (!data.battles.some(b => b.secret) || secretOpen(progress, act, counters)) return '';
+  const st = secretStatus(progress, act, counters);
+  if (st.won < 4 && !st.keys) return '';
+  return `<p class="st-secret-tease" role="note">A secret battle waits in this act. Win all 8 battles with the Story decks (${st.won} of 8) and earn its ${st.keysNeeded} key feats (${st.keys} of ${st.keysNeeded}). Key feats are marked in Achievements.</p>`;
+};
 export function storyActMarkup({act, data, progress, econ}) {
+  const counters = econ?.state?.counters || {};
   const meta = STORY_ACTS.find(a => a.act === act), now = currentBattle(progress, act), boss = b => b.slot >= 8;
   const cleared = data.battles.filter(b => !b.secret && battleCleared(progress, b.id)).length;
   const villainFace = b => data.cast[b.villain.who]?.portrait;
@@ -53,7 +63,8 @@ export function storyActMarkup({act, data, progress, econ}) {
   return `<section class="play-menu st-screen st-act" aria-labelledby="playTitle">${head(meta.title, econ, 'Story · Act ' + act, 'storyHome', 'Back to Story')}
     <header class="st-banner"><span class="st-banner-art" style="background-image:url(${esc(meta.art.crop)})" aria-hidden="true"></span>
       <span class="st-banner-copy">${symbols(meta)}<span class="st-banner-years">${esc(meta.years)}</span></span>${ring(cleared, 8, cleared + ' of 8 battles won')}</header>
-    <ol class="st-battles">${data.battles.filter(b => b.secret ? secretOpen(progress, act) : b.slot <= now + 1).map(row).join('')}</ol>
+    <ol class="st-battles">${data.battles.filter(b => b.secret ? secretOpen(progress, act, counters) : b.slot <= now + 1).map(row).join('')}</ol>
+    ${secretTease(data, progress, act, counters)}
   </section>`;
 }
 
@@ -117,12 +128,129 @@ export const LESSONS = {
   'Threshold': 'Threshold: with seven or more cards in your graveyard, threshold cards get stronger. Long games feed them.',
   'Flashback': 'Flashback lets you cast a spell again from your graveyard for its flashback cost. One card, two uses.',
   'Madness': 'Madness: if you discard a madness card, you may cast it for its madness cost. Discarding turns into a free spell.',
+  'Equipment': 'Equipment stays in play. Pay its equip cost to attach it to your creature; if the creature dies, move it to another.',
+  'Affinity': 'Affinity for artifacts: the spell costs one less for each artifact you control. Artifact lands count.',
+  'Artifact lands': 'Artifact lands are lands and artifacts at once. They make mana, feed affinity, and die to artifact removal.',
+  'Imprint': 'Imprint: the machine exiles a card when it arrives and keeps it. What it holds decides what it does.',
+  'Modular': 'Modular: it enters with +1/+1 counters, and when it dies they can move onto another artifact creature.',
+  'Indestructible': 'Indestructible permanents can\'t be destroyed by damage or destroy effects. Exile, bounce or make them sacrificed instead.',
+  'Sunburst': 'Sunburst: the card gets a counter for each colour of mana spent to cast it. More colours, bigger machine.',
+  'Entwine': 'Entwine: a spell with two choices. Pay the entwine cost as well and you get both.',
+  'Bushido': 'Bushido: when this creature blocks or becomes blocked, it gets bigger until end of turn.',
+  'Soulshift': 'Soulshift: when this Spirit dies, return a smaller Spirit card from your graveyard to your hand.',
+  'Splice': 'Splice onto Arcane: when you cast an Arcane spell, pay the splice cost to add this card\'s effect too. You keep the spliced card.',
+  'Ninjutsu': 'Ninjutsu: when your attacker is unblocked, pay the ninjutsu cost and swap it for a Ninja from your hand. The Ninja deals the damage.',
+  'Flip cards': 'Flip cards: when the condition is met, the creature turns upside down and becomes the stronger creature printed below.',
+  'Convoke': 'Convoke: tap your creatures to help pay for this spell. Each one pays one mana of its colour, or one generic.',
+  'Dredge': 'Dredge: instead of drawing a card, mill that many cards and return this card from your graveyard to your hand.',
+  'Bloodthirst': 'Bloodthirst: this creature enters with +1/+1 counters if an opponent was dealt damage this turn.',
+  'Transmute': 'Transmute: pay the cost and discard this card to search your library for a card with the same mana value.',
+  'Haunt': 'Haunt: when this dies, exile it haunting a creature. When that creature dies, you get the effect again.',
+  'Forecast': 'Forecast: during your upkeep, reveal this card from your hand to use its effect. It stays in your hand.',
+  'Graft': 'Graft: enters with +1/+1 counters. When another creature enters, you may move one counter onto it.',
+  'Suspend': 'Suspend: pay the suspend cost to exile the card with time counters. Remove one each upkeep; when the last one comes off, cast it for free.',
+  'Split second': 'Split second: while this spell is on the stack, nobody can cast spells or activate abilities. It just happens.',
+  'Card types': 'Card types: creature, instant, sorcery, land, enchantment, artifact. Some cards count how many types are in the graveyards.',
+  'Evoke': 'Evoke: pay a cheaper evoke cost and the creature arrives, does its arrival trick, then is sacrificed at once.',
+  'Planeswalkers': 'Planeswalkers: cast with loyalty counters. Once a turn, use one ability to add or remove loyalty. Creatures can attack them instead of you.',
+  'Flash': 'Flash: these permanents can be cast any time you could cast an instant, even in combat or on the other player\'s turn.',
+  'Wither': 'Wither: this creature deals damage as -1/-1 counters, which stay after the turn ends.',
+  'Persist': 'Persist: when it dies without a -1/-1 counter on it, it comes back with one.',
+  'Champion': 'Champion: when it arrives, exile one of your creatures of the named type. When it leaves, that creature comes back.',
+  'Leaves the battlefield': 'Leaves the battlefield: some cards trigger when they leave play for any reason, so killing them still gives you value.',
+  'Hybrid mana': 'Hybrid mana: a two-colour symbol can be paid with either colour, so the card fits a deck of either colour.',
+  'Toughness as power': 'Toughness as power: with Doran out, every creature deals combat damage equal to its toughness instead of its power.',
+  'Exalted': 'Exalted: whenever a creature you control attacks alone, it gets +1/+1 for each exalted permanent you control.',
+  'Devour': 'Devour: as it arrives, sacrifice any number of creatures. It gets +1/+1 counters for each one it eats.',
+  'Ultimates': 'Ultimates: a planeswalker\'s biggest ability costs lots of loyalty. Protect it long enough and that ability can win the game.',
+  'Unearth': 'Unearth: pay the unearth cost to return a creature from your graveyard with haste. At end of turn, or if it would leave play, exile it.',
+  'Cascade': 'Cascade: when you cast it, reveal cards from your library until you hit a cheaper nonland card, and cast that card for free.',
   'Morph': 'Morph: cast a creature face down as a 2/2 for three mana, then pay its morph cost any time to turn it face up. Watch for face-down cards.',
   'Tribes': 'Tribal cards care about creature types. Elves pump elves, goblins pump goblins. Play the tribe together.',
   'Alternate wins': 'Some cards win the game a different way. If Phage deals combat damage to a player, that player loses. Block her or kill her.',
   'Punishing full hands': 'Black Vise deals 1 damage each turn for every card over four in your hand. Play cards fast, keep your hand small, and break the Vises.',
+  'Landfall': 'Landfall: whenever a land enters the battlefield under your control, a landfall card triggers. Play a land every turn, and hold one back for the right moment.',
+  'Quests': 'Quests: a quest enchantment collects counters as you do something, like playing lands. When it has enough, sacrifice it for a big reward.',
+  'Allies': 'Allies: whenever another Ally enters the battlefield under your control, every Ally you already have triggers. The more you have, the better each new one gets.',
+  'Level up': 'Level up: pay the level up cost any time you could cast a sorcery to put a level counter on the creature. At enough levels it gets bigger and gains abilities.',
+  'Eldrazi Spawn': 'Eldrazi Spawn: 0/1 tokens you can sacrifice for one colourless mana. They chump block too. The decks that make them are ramping into something huge.',
+  'Annihilator': 'Annihilator: whenever it attacks, the defending player sacrifices that many permanents. Keep cheap permanents to give up, and kill it before it attacks twice.',
+  'Metalcraft': 'Metalcraft: some cards get stronger while you control three or more artifacts. Keep your artifacts on the table, and kill the opponent\'s to switch theirs off.',
+  'Infect': 'Infect: these creatures deal damage as -1/-1 counters to creatures and as poison counters to players. Ten poison counters and you lose, whatever your life total.',
+  'Proliferate': 'Proliferate: choose any players and permanents that already have counters, and give each one more of a kind it already has. Poison counters count too.',
+  'Phyrexian mana': 'Phyrexian mana: you can pay each Phyrexian symbol with one mana of its colour or with 2 life. Any deck can cast these cards, but the life adds up.',
+  'Battle cry': 'Battle cry: whenever this creature attacks, each other attacking creature gets +1/+0. Go wide and attack together.',
+  'Transform': 'Transform: double-faced cards have two sides. A werewolf is human until a turn passes with no spells cast, then it turns over into a wolf. Two spells in one turn turn it back.',
+  'Morbid': 'Morbid: these cards get a bonus if a creature died this turn. Any creature counts, yours or theirs, so every trade can switch one on.',
+  'Undying': 'Undying: when a creature with undying dies, if it had no +1/+1 counter on it, it comes back with one. Kill it twice, or exile it.',
+  'Miracle': 'Miracle: if a miracle card is the first card you draw in a turn, you may reveal it and cast it right away for its much cheaper miracle cost.',
+  'Populate': 'Populate: create a copy of a creature token you already control. Make one strong token first, then every populate copies it.',
+  'Battalion': 'Battalion: whenever this creature and at least two other creatures attack, it gets its bonus. Attack in threes.',
+  'Evolve': 'Evolve: whenever a creature with greater power or toughness enters under your control, an evolve creature gets a +1/+1 counter. Play small creatures first.',
+  'Cipher': 'Cipher: after a cipher spell resolves, it is encoded on a creature. Whenever that creature deals combat damage to a player, its controller casts the spell again for free.',
+  'Extort': 'Extort: whenever you cast a spell, you may pay one more mana to make each opponent lose 1 life while you gain that much.',
+  'Overload': 'Overload: some spells have a second, bigger cost. Cast with overload, a spell that says "target" says "each" instead and hits everything it can.',
+  'Heroic': 'Heroic: whenever you cast a spell that targets a heroic creature, its ability triggers. Cheap Auras and pump spells on one hero can win the game.',
+  'Bestow': 'Bestow: cast the creature as an Aura for its bestow cost and it gives its stats to the creature it enchants. If that creature dies, the Aura stays as a creature.',
+  'Devotion': 'Devotion: count the mana symbols of one colour in the costs of your permanents. Gods only become creatures when your devotion to their colour is high enough.',
+  'Monstrosity': 'Monstrosity: pay the cost once and the creature gets that many +1/+1 counters and often a bonus. It can only become monstrous once.',
+  'Constellation': 'Constellation: whenever an enchantment enters the battlefield under your control, a constellation card triggers. Enchantment creatures count.',
+  'Ferocious': 'Ferocious: these cards get a bonus if you control a creature with power 4 or greater. Land a big creature first, then the rest gets better.',
+  'Prowess': 'Prowess: whenever you cast a noncreature spell, this creature gets +1/+1 until end of turn. Cast your spells before combat damage.',
+  'Delve': 'Delve: each card you exile from your graveyard while casting this spell pays for one generic mana. A full graveyard makes big spells cheap.',
+  'Raid': 'Raid: these cards get a bonus if you attacked with a creature this turn. Attack first, then cast them after combat.',
+  'Manifest': 'Manifest: put the top card of your library onto the battlefield face down as a 2/2 creature. If it is a creature card, you can turn it face up for its mana cost.',
+  'Outlast': 'Outlast: pay the cost and tap the creature to put a +1/+1 counter on it, any time you could cast a sorcery. Some cards reward every creature with a counter.',
+  'Ingest': 'Ingest: whenever an ingest creature deals combat damage to a player, that player exiles the top card of their library. Processors then use those exiled cards for bonuses.',
+  'Awaken': 'Awaken: cast the spell for its awaken cost and one of your lands also becomes a 0/0 Elemental creature with that many +1/+1 counters. It stays a land.',
+  'Spell mastery': 'Spell mastery: these spells get a bonus if there are two or more instant and sorcery cards in your graveyard.',
+  'Devoid': 'Devoid: the card has no colour, even though its cost uses coloured mana. Effects that care about colour do not see it.',
+  'Surge': 'Surge: you may cast the spell for its surge cost if you or a teammate has cast another spell this turn. Chain a cheap spell into it.',
+  'Investigate': 'Investigate: make a Clue token. Pay 2 and sacrifice it to draw a card. Crack Clues with spare mana at the end of their turn.',
+  'Delirium': 'Delirium: these cards get stronger when there are four or more card types among cards in your graveyard. Fill it on purpose.',
+  'Emerge': 'Emerge: you may cast the spell by sacrificing a creature and paying the emerge cost, reduced by that creature\'s mana value.',
+  'Skulk': 'Skulk: the creature can\'t be blocked by creatures with greater power. Keep a small blocker back.',
+  'Escalate': 'Escalate: pay the escalate cost for each mode beyond the first. One spell can do two or three things at once.',
+  'Energy': 'Energy: some cards give you energy counters. Save them and spend them on bigger effects later.',
+  'Vehicles': 'Vehicles: artifacts that become creatures only when you crew them. Tap creatures with enough total power, then attack.',
+  'Fabricate': 'Fabricate: when the creature enters, put that many +1/+1 counters on it, or make that many 1/1 Servos instead.',
+  'Improvise': 'Improvise: your artifacts can tap to help pay for the spell, one generic mana each.',
+  'Revolt': 'Revolt: the card gets better if a permanent you controlled left the battlefield this turn. Sacrifice a Clue or a Map first.',
+  'Crew': 'Crew: tap creatures with total power equal to the crew number to turn a vehicle into a creature until end of turn.',
+  'Embalm': 'Embalm: pay the embalm cost and exile the card from your graveyard to make a token copy that is a white Zombie. Kill it twice.',
+  'Exert': 'Exert: when it attacks you may exert it, and it will not untap during your next untap step. Use it when the extra effect wins the game.',
+  'Aftermath': 'Aftermath: the second half of the split card can only be cast from your graveyard, and is then exiled. Cast the first half first.',
+  'Eternalize': 'Eternalize: pay the eternalize cost and exile the card from your graveyard to make a 4/4 black Zombie copy. Exile their graveyard.',
+  'Explore': 'Explore: reveal the top card of your library. If it is a land it goes to your hand. If not, the creature gets a +1/+1 counter and you may put the card into your graveyard.',
+  'Treasure': 'Treasure: a token you can sacrifice for one mana of any colour. Save it for the turn you need the extra mana.',
+  'Enrage': 'Enrage: it triggers each time the creature is dealt damage. Blocking and fighting with it are good ways to set it off.',
+  'Ascend': 'Ascend: control ten permanents and you get the city\'s blessing for the rest of the game. Lands and tokens count.',
+  'Lifelink': 'Lifelink: damage dealt by the creature also gains its controller that much life. Race it carefully, or remove it.',
+  'Sagas': 'Sagas: an enchantment that gets a lore counter each turn and does a chapter ability for each one. When the last chapter is done, it is sacrificed.',
+  'Historic': 'Historic: artifacts, legendary cards and Sagas. Some cards get better when you cast one.',
+  'Legendary sorceries': 'Legendary sorceries can only be cast if you control a legendary creature or planeswalker. Keep a legend on the table first.',
   'Playing under a lock': 'A lock stops cards from untapping or moving. Break it, or win with what\'s already in play.',
 };
+// Every Story deck says what it is (Randall, 2 Nov 2026): Historical Exact, Historical Tribute or
+// Experimental. A deck with a documented original lists every change from it, with the reason.
+export const DECK_LABELS = {exact: 'Historical Exact', tribute: 'Historical Tribute', experimental: 'Experimental'};
+const LABEL_LINE = {exact: 'The original list, card for card.', tribute: 'Built from this era\'s cards for the story.', experimental: 'A deck made for this fight.'};
+export function deckDossierMarkup(deck) {
+  if (!deck || !DECK_LABELS[deck.label]) return '';
+  const changes = deck.changes || [];
+  const line = deck.rules || deck.note || LABEL_LINE[deck.label];
+  return `<section class="st-dossier" aria-label="About this deck"><span class="st-dossier-label st-dossier-label--${esc(deck.label)}">${esc(DECK_LABELS[deck.label])}</span><p>${esc(line)}</p>
+    ${changes.length ? `<h3>Changed from the ${esc(deck.original?.source || 'original')}</h3><ul class="st-changes">${changes.map(c => `<li><span class="st-change-cards"><s>${esc(c.from)}</s><b>${esc(c.to)}</b></span><span class="st-change-why">${esc(c.why)}</span></li>`).join('')}</ul>` : ''}
+  </section>`;
+}
+// The archive record a secret boss opens with: what the deck was, why it won, how to beat it, what came after.
+export function archiveRecordMarkup(a) {
+  if (!a) return '';
+  const row = (k, v) => v ? `<div><dt>${esc(k)}</dt><dd>${esc(v)}</dd></div>` : '';
+  return `<aside class="st-learn st-archive" aria-label="Archive record"><span class="st-learn-tag">Archive record · ${esc(a.when)}</span>
+    <p class="st-archive-what">${esc(a.what)}</p>
+    <dl>${row('Format', a.format)}${row('Why it won', a.why)}${row('How to beat it', a.beat)}${row('What came next', a.after)}</dl></aside>`;
+}
 // What a battle pays, in words: era packs for your side, the villain's signature card for theirs.
 export const rewardText = (rw = {}, set = '') => rw.card ? `${esc(rw.card.name)}${rw.coins ? ` and ${rw.coins} coins` : ''}`
   : `${rw.packs || 1} ${esc(SET_NAMES[set] || set.toUpperCase())} ${(rw.packs || 1) > 1 ? 'packs' : 'pack'}${rw.coins ? ` and ${rw.coins} coins` : ''}`;
@@ -152,11 +280,14 @@ export function storyBattleMarkup({act, data, battle: b, progress, econ, ui = {}
   // Their list stays secret until you've beaten them; after that you can play their side too.
   const listSide = villainOpen && ui.listSide === 'theirs' ? 'theirs' : 'mine';
   const learn = (b.teaches || []).filter(t => LESSONS[t]);
+  // The deck whose list is open: theirs, the Story loaner on your side, or none for your own deck.
+  const listDeck = listSide === 'theirs' ? theirs.deck : (ui.deck || 'loaner') === 'loaner' ? mine.deck : null;
   return `<section class="play-menu st-screen st-duel" aria-labelledby="playTitle">${head(b.title, econ, `Act ${act} · ${b.slot === 8 ? 'Boss' : b.kind}`, 'storyOpenAct', 'Back to the act')}
     <div class="st-duel-stage" style="--st-bg:url(${esc(person('villain').portrait?.crop || '')})">
       <section class="pl-arena st-arena" aria-label="This battle">${sideCard(seat, true)}<span class="pl-vs" aria-hidden="true"><b><span>VS</span></b></span>${sideCard(seat === 'hero' ? 'villain' : 'hero', false)}</section>
       <p class="st-duel-blurb">${esc(b.blurb)}</p>
     </div>
+    ${archiveRecordMarkup(b.archive)}
     ${learn.length ? `<aside class="st-learn" aria-label="New in this battle"><span class="st-learn-tag">New in this battle</span>${learn.map(t => `<p><b>${esc(t)}</b> ${esc(LESSONS[t])}</p>`).join('')}</aside>` : ''}
     <div class="home-personal-grid st-deck-grid" role="group" aria-label="Your deck">${picks}</div>
     <div class="st-duel-bar">
@@ -168,6 +299,7 @@ export function storyBattleMarkup({act, data, battle: b, progress, econ, ui = {}
     ${listOpen ? `<section class="st-decks" id="stDeckList" aria-label="Decklist">
       <div class="st-lists">
         ${villainOpen ? `<div class="st-seg" role="group" aria-label="Decklist"><button data-act="storyListSide" data-story-list="mine" aria-pressed="${listSide === 'mine'}">Your deck</button><button data-act="storyListSide" data-story-list="theirs" aria-pressed="${listSide === 'theirs'}">Their deck</button></div>` : ''}
+        ${deckDossierMarkup(listDeck)}
         ${listHtml}
       </div>
     </section>` : ''}
@@ -224,7 +356,7 @@ export function createStoryBubbles({root, battle, cast, playerSide, avatarUrl = 
   const said = new Set(), queue = [];
   let busy = false, mySeat = null, faced = false, disposed = false;
   // What the table showed this match, for Story deeds (story-deeds.js): only what the viewer saw.
-  const seen = {turns: 0, minLife: null, endLife: null, maxCreatures: 0, maxSlivers: 0, myCards: new Set(), theirCards: new Set()};
+  const seen = createMatchFacts();
   const sideOf = who => who === 'me' ? playerSide : cpuSide;
   const speaker = side => battle[side].who;
   const lineFor = (side, cue) => battle.cues?.[side]?.[cue] || null;
@@ -261,12 +393,7 @@ export function createStoryBubbles({root, battle, cast, playerSide, avatarUrl = 
       if (disposed || state?.phase !== 'playing') return;
       const s = state.game?.status?.surface; if (!s) return;
       mySeat = s.seat ?? mySeat; dressSeat();
-      seen.turns = Math.max(seen.turns, s.turn || 0);
-      const me = (s.players || []).find(p => p.seat === mySeat);
-      if (Number.isFinite(me?.life)) { seen.endLife = me.life; seen.minLife = seen.minLife === null ? me.life : Math.min(seen.minLife, me.life); }
-      const field = (s.cards || []).filter(c => c.zone === 'Battlefield'), mine = field.filter(c => c.controller === mySeat), mineC = mine.filter(c => c.types?.includes('Creature'));
-      seen.maxCreatures = Math.max(seen.maxCreatures, mineC.length); seen.maxSlivers = Math.max(seen.maxSlivers, mineC.filter(c => /Sliver/.test(c.name || '')).length);
-      for (const c of field) if (c.name) (c.controller === mySeat ? seen.myCards : seen.theirCards).add(c.name);
+      seen.update(s);
       if ((s.turn || 0) >= 1 && !said.has(cpuSide + ':start')) { say('cpu', 'start'); setTimeout(() => say('me', 'start'), 400); }
       for (const p of s.players || []) if (Number.isFinite(p.life) && p.life <= 5 && p.life > 0) say(p.seat === mySeat ? 'me' : 'cpu', 'low');
       for (const p of s.players || []) if (Number.isFinite(p.life) && p.life <= 10 && p.life > 5) say(p.seat === mySeat ? 'me' : 'cpu', 'half');
@@ -277,7 +404,7 @@ export function createStoryBubbles({root, battle, cast, playerSide, avatarUrl = 
       say('cpu', outcome === 'win' ? 'loss' : 'win'); say('me', outcome === 'win' ? 'win' : 'loss');
     },
     destroy() { disposed = true; queue.length = 0; root.querySelectorAll('.st-bubble,.st-seat-face').forEach(n => n.remove()); },
-    stats: () => ({turns: seen.turns, minLife: seen.minLife, endLife: seen.endLife, maxCreatures: seen.maxCreatures, maxSlivers: seen.maxSlivers, myCards: [...seen.myCards], theirCards: [...seen.theirCards]}),
+    stats: () => seen.snapshot(),
     _faced: () => faced,
   };
 }

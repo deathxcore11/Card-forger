@@ -1,0 +1,2741 @@
+{
+ "act": 14,
+ "era": "2007-07-20",
+ "title": "The Time Rifts",
+ "years": "2006 to 2007",
+ "sets": [
+  "csp",
+  "tsp",
+  "tsb",
+  "plc",
+  "fut",
+  "10e"
+ ],
+ "landSet": "tsp",
+ "intro": [
+  {
+   "who": "stage",
+   "line": "Dominaria, centuries after the Phyrexian Invasion. The world is ash and salt, and the sky has started to tear."
+  },
+  {
+   "who": "stage",
+   "line": "As the temporal fractures spread and time itself slowly fell apart, visitors started to appear from across the past and future, and those native to the present began to disappear.",
+   "quote": true
+  },
+  {
+   "who": "stage",
+   "line": "Every disaster in Dominaria's history left a wound in time: the Sylex, the Invasion, an island Teferi pulled out of the world. Now all of the wounds are opening at once."
+  },
+  {
+   "who": "stage",
+   "line": "Take two steps north into the unsettled future, south into the unquiet past, east into the present day, or west into the great unknown.",
+   "quote": true
+  }
+ ],
+ "finale": [
+  {
+   "who": "stage",
+   "line": "In Urborg, the last and largest rift closes. Nicol Bolas is driven back through it."
+  },
+  {
+   "who": "stage",
+   "line": "The price is the Mending. Planeswalkers were once nearly gods. After today, none of them will be. Teferi has already given up his spark, and Freyalise gave her life to close a rift of her own."
+  },
+  {
+   "who": "jhoira",
+   "line": "Time runs one way again. I had forgotten how quiet that is."
+  },
+  {
+   "who": "venser",
+   "line": "And I have a spark I didn't ask for, on the one day it stopped meaning anything."
+  },
+  {
+   "who": "stage",
+   "line": "Wind time's watch, and watch time unwind.",
+   "quote": true
+  }
+ ],
+ "villainFinale": [
+  {
+   "who": "stage",
+   "line": "The rifts stay open. Bolas walks through them like doors."
+  },
+  {
+   "who": "bolas",
+   "line": "Do the innocent pay for the crimes of the guilty? Of course they do. That's the fate of the weak.",
+   "quote": true
+  },
+  {
+   "who": "bolas",
+   "line": "They thought the rifts were a wound. I see a road. Every age of this world, waiting for me to take it back."
+  },
+  {
+   "who": "stage",
+   "line": "The Mending never comes. Somewhere in the past, an old dragon wakes up very pleased."
+  }
+ ],
+ "vibe": "broken-time-rifts",
+ "cast": {
+  "you": {
+   "name": "You",
+   "title": "Planeswalker",
+   "portrait": {
+    "card": "Fold into Aether",
+    "set": "5dn",
+    "number": "31",
+    "id": "615157d6-0160-417b-b06c-0e253b306c37",
+    "artist": "Anthony S. Waters & Cara Mitten",
+    "crop": "https://cards.scryfall.io/art_crop/front/6/1/615157d6-0160-417b-b06c-0e253b306c37.jpg",
+    "focus": "50% 30%"
+   }
+  },
+  "jhoira": {
+   "name": "Jhoira",
+   "title": "Of the Ghitu, Master Artificer",
+   "portrait": {
+    "card": "Jhoira of the Ghitu",
+    "set": "fut",
+    "number": "157",
+    "id": "1f437128-3a87-4958-97d0-3940d8761cba",
+    "crop": "https://cards.scryfall.io/art_crop/front/1/f/1f437128-3a87-4958-97d0-3940d8761cba.jpg?1783943093",
+    "artist": "Kev Walker",
+    "focus": "50% 25%"
+   }
+  },
+  "hive": {
+   "name": "The Hive",
+   "title": "Queenless Slivers",
+   "portrait": {
+    "card": "Gemhide Sliver",
+    "set": "tsp",
+    "number": "196",
+    "id": "f09135b0-fd57-4205-aa74-c9869946c264",
+    "crop": "https://cards.scryfall.io/art_crop/front/f/0/f09135b0-fd57-4205-aa74-c9869946c264.jpg?1783943212",
+    "artist": "John Matson",
+    "focus": "50% 30%"
+   }
+  },
+  "freyalise": {
+   "name": "Freyalise",
+   "title": "Goddess of Skyshroud",
+   "portrait": {
+    "card": "Freyalise's Radiance",
+    "set": "csp",
+    "number": "108",
+    "id": "4bafb0b4-9f01-4c67-add4-a0ffe0a3a691",
+    "crop": "https://cards.scryfall.io/art_crop/front/4/b/4bafb0b4-9f01-4c67-add4-a0ffe0a3a691.jpg?1783943331",
+    "artist": "Thomas M. Baxa",
+    "focus": "50% 30%"
+   }
+  },
+  "thelon": {
+   "name": "Thelon",
+   "title": "Of Havenwood",
+   "portrait": {
+    "card": "Thelon of Havenwood",
+    "set": "tsp",
+    "number": "227",
+    "id": "92b0be6d-9183-4938-b7a1-ae7f04ba78a0",
+    "crop": "https://cards.scryfall.io/art_crop/front/9/2/92b0be6d-9183-4938-b7a1-ae7f04ba78a0.jpg?1783943205",
+    "artist": "Kev Walker",
+    "focus": "50% 25%"
+   }
+  },
+  "venser": {
+   "name": "Venser",
+   "title": "Shaper Savant",
+   "portrait": {
+    "card": "Venser, Shaper Savant",
+    "set": "fut",
+    "number": "46",
+    "id": "0e84fc99-4045-4518-b588-512a675f2933",
+    "crop": "https://cards.scryfall.io/art_crop/front/0/e/0e84fc99-4045-4518-b588-512a675f2933.jpg?1783943119",
+    "artist": "Aleksi Briclot",
+    "focus": "50% 25%"
+   }
+  },
+  "cabal": {
+   "name": "The Cabal's Echo",
+   "title": "Urborg",
+   "portrait": {
+    "card": "Magus of the Coffers",
+    "set": "plc",
+    "number": "73",
+    "id": "cf6b93ea-8ada-404c-9920-7976690c3e8c",
+    "crop": "https://cards.scryfall.io/art_crop/front/c/f/cf6b93ea-8ada-404c-9920-7976690c3e8c.jpg?1783943154",
+    "artist": "Don Hazeltine",
+    "focus": "50% 25%"
+   }
+  },
+  "radha": {
+   "name": "Radha",
+   "title": "Heir to Keld",
+   "portrait": {
+    "card": "Radha, Heir to Keld",
+    "set": "plc",
+    "number": "162",
+    "id": "7fc23b2e-9124-4f88-b93e-8bfe90e6eb41",
+    "crop": "https://cards.scryfall.io/art_crop/front/7/f/7fc23b2e-9124-4f88-b93e-8bfe90e6eb41.jpg?1783943133",
+    "artist": "Jim Murray",
+    "focus": "50% 25%"
+   }
+  },
+  "limdul": {
+   "name": "Lim-Dûl",
+   "title": "The Necromancer, Returned",
+   "portrait": {
+    "card": "Lim-Dûl the Necromancer",
+    "set": "tsp",
+    "number": "114",
+    "id": "b8a3cdfe-0289-474b-b9c4-07e8c6588ec5",
+    "crop": "https://cards.scryfall.io/art_crop/front/b/8/b8a3cdfe-0289-474b-b9c4-07e8c6588ec5.jpg?1783943231",
+    "artist": "Matt Cavotta",
+    "focus": "50% 25%"
+   }
+  },
+  "goyf": {
+   "name": "The Future",
+   "title": "A Timeline That Never Was",
+   "portrait": {
+    "card": "Tarmogoyf",
+    "set": "fut",
+    "number": "153",
+    "id": "b6876d9e-0908-43ac-8542-09c7aa02b5ba",
+    "crop": "https://cards.scryfall.io/art_crop/front/b/6/b6876d9e-0908-43ac-8542-09c7aa02b5ba.jpg?1783943094",
+    "artist": "Justin Murray",
+    "focus": "50% 30%"
+   }
+  },
+  "heidar": {
+   "name": "Heidar",
+   "title": "Rimewind Master",
+   "portrait": {
+    "card": "Heidar, Rimewind Master",
+    "set": "csp",
+    "number": "36",
+    "id": "39916d65-60a6-4da6-8675-8a8ef9505772",
+    "crop": "https://cards.scryfall.io/art_crop/front/3/9/39916d65-60a6-4da6-8675-8a8ef9505772.jpg?1783943359",
+    "artist": "Ron Spears",
+    "focus": "50% 25%"
+   }
+  },
+  "blink": {
+   "name": "Blink",
+   "title": "Summer 2007",
+   "portrait": {
+    "card": "Momentary Blink",
+    "set": "tsp",
+    "number": "29",
+    "id": "032e072a-0630-472b-9106-5df554dff785",
+    "crop": "https://cards.scryfall.io/art_crop/front/0/3/032e072a-0630-472b-9106-5df554dff785.jpg?1783943252",
+    "artist": "Anthony S. Waters",
+    "focus": "50% 30%"
+   }
+  },
+  "teferi": {
+   "name": "Teferi's Echo",
+   "title": "Mage of Zhalfir",
+   "portrait": {
+    "card": "Teferi, Mage of Zhalfir",
+    "set": "tsp",
+    "number": "83",
+    "id": "3c0145f6-4e27-49e7-9ef6-bac6fa3de26d",
+    "crop": "https://cards.scryfall.io/art_crop/front/3/c/3c0145f6-4e27-49e7-9ef6-bac6fa3de26d.jpg?1783943239",
+    "artist": "D. Alexander Gregory & Jeremy Jarvis",
+    "focus": "50% 25%"
+   }
+  },
+  "bolas": {
+   "name": "Nicol Bolas",
+   "title": "Through the Rift",
+   "portrait": {
+    "card": "Nicol Bolas",
+    "set": "tsb",
+    "number": "98",
+    "id": "78407de3-b97e-4e30-beea-ef268dda3042",
+    "crop": "https://cards.scryfall.io/art_crop/front/7/8/78407de3-b97e-4e30-beea-ef268dda3042.jpg?1783943264",
+    "artist": "Edward P. Beard, Jr.",
+    "focus": "50% 25%"
+   }
+  },
+  "pickles": {
+   "name": "Pickles",
+   "title": "Spring 2007",
+   "portrait": {
+    "card": "Brine Elemental",
+    "set": "tsp",
+    "number": "50",
+    "id": "8dab2c73-501b-46c9-bc76-134b50d35bb8",
+    "crop": "https://cards.scryfall.io/art_crop/front/8/d/8dab2c73-501b-46c9-bc76-134b50d35bb8.jpg?1783943247",
+    "artist": "Stephen Tappin",
+    "focus": "50% 30%"
+   }
+  }
+ },
+ "battles": [
+  {
+   "id": "a14b1",
+   "slot": 1,
+   "kind": "Arrival",
+   "mood": "tension",
+   "title": "Things from the Rift",
+   "difficulty": "Easy",
+   "teaches": [
+    "Suspend"
+   ],
+   "blurb": "Jhoira of the Ghitu, artificer of the old Weatherlight, studies the rifts. Today one opens next to her workshop and a hive of queenless slivers comes out of it.",
+   "rewardSet": "tsp",
+   "host": false,
+   "hero": {
+    "who": "jhoira",
+    "deck": {
+     "name": "Jhoira's Workshop",
+     "colors": "UR",
+     "archetype": null,
+     "label": "tribute",
+     "cards": [
+      {
+       "qty": 4,
+       "name": "Rift Bolt",
+       "set": "tsp",
+       "number": "176",
+       "id": "88dde96e-6824-4d26-9fb5-86b9f3c50959"
+      },
+      {
+       "qty": 4,
+       "name": "Keldon Halberdier",
+       "set": "tsp",
+       "number": "167",
+       "id": "a90723e0-fbb3-4976-9463-0373f8ed337c"
+      },
+      {
+       "qty": 4,
+       "name": "Riftwing Cloudskate",
+       "set": "tsp",
+       "number": "73",
+       "id": "78ad6c86-8cfb-4f24-b8e8-ecbeffc949b8"
+      },
+      {
+       "qty": 4,
+       "name": "Errant Ephemeron",
+       "set": "tsp",
+       "number": "60",
+       "id": "398c26cc-cd55-42c6-a744-aaefd7018960"
+      },
+      {
+       "qty": 2,
+       "name": "Shivan Meteor",
+       "set": "plc",
+       "number": "106",
+       "id": "108599c3-f641-48f1-af68-8e9a66c6afbc"
+      },
+      {
+       "qty": 4,
+       "name": "Viashino Bladescout",
+       "set": "tsp",
+       "number": "185",
+       "id": "41fce1b3-0961-4672-845f-e1c6ce101c1b"
+      },
+      {
+       "qty": 4,
+       "name": "Fathom Seer",
+       "set": "tsp",
+       "number": "62",
+       "id": "20de275a-2e11-4452-8037-bc397dd53a8c"
+      },
+      {
+       "qty": 4,
+       "name": "Coal Stoker",
+       "set": "tsp",
+       "number": "150",
+       "id": "3a6bdc34-1ef6-4de3-a9a9-b5dd503e02c0"
+      },
+      {
+       "qty": 4,
+       "name": "Sudden Shock",
+       "set": "tsp",
+       "number": "179",
+       "id": "7d2691ee-8eec-437d-9bc1-113264525fb8"
+      },
+      {
+       "qty": 2,
+       "name": "Lightning Axe",
+       "set": "tsp",
+       "number": "168",
+       "id": "1b748290-04b0-48a9-81aa-ab43182cf339"
+      },
+      {
+       "qty": 12,
+       "name": "Island",
+       "set": "tsp",
+       "number": "286",
+       "id": "e5fdeb2c-afb8-4850-bcdc-86283ffa3486"
+      },
+      {
+       "qty": 12,
+       "name": "Mountain",
+       "set": "tsp",
+       "number": "294",
+       "id": "e34229e7-5dc4-47b3-9ba2-609e5b3ca6c2"
+      }
+     ]
+    }
+   },
+   "villain": {
+    "who": "hive",
+    "deck": {
+     "name": "Rift-Born Slivers",
+     "colors": "GW",
+     "archetype": null,
+     "label": "tribute",
+     "cards": [
+      {
+       "qty": 4,
+       "name": "Sidewinder Sliver",
+       "set": "tsp",
+       "number": "41",
+       "id": "b073b8f2-b42d-40f2-b5fb-e78ffb1733ea"
+      },
+      {
+       "qty": 4,
+       "name": "Children of Korlis",
+       "set": "tsp",
+       "number": "8",
+       "id": "221a5895-bc21-4f10-b5fc-a4980fde843e"
+      },
+      {
+       "qty": 4,
+       "name": "Gemhide Sliver",
+       "set": "tsp",
+       "number": "196",
+       "id": "f09135b0-fd57-4205-aa74-c9869946c264"
+      },
+      {
+       "qty": 4,
+       "name": "Spinneret Sliver",
+       "set": "tsp",
+       "number": "219",
+       "id": "da698c63-f167-4129-a650-b50c080a24b5"
+      },
+      {
+       "qty": 4,
+       "name": "Watcher Sliver",
+       "set": "tsp",
+       "number": "45",
+       "id": "7d72a950-82ed-4e7b-9e18-b8231a2ebea7"
+      },
+      {
+       "qty": 4,
+       "name": "Fungus Sliver",
+       "set": "tsp",
+       "number": "195",
+       "id": "c4c0486a-288d-443a-bb07-62dc1dddaed7"
+      },
+      {
+       "qty": 4,
+       "name": "Venser's Sliver",
+       "set": "tsp",
+       "number": "267",
+       "id": "1e3c5a64-453b-4477-853a-9514ba326f16"
+      },
+      {
+       "qty": 4,
+       "name": "Poultice Sliver",
+       "set": "plc",
+       "number": "11",
+       "id": "f3441ae0-4c20-487b-99b8-d6934dfb66ff"
+      },
+      {
+       "qty": 14,
+       "name": "Forest",
+       "set": "tsp",
+       "number": "298",
+       "id": "0d5bd3e1-45ef-43b7-8796-6085842278df"
+      },
+      {
+       "qty": 14,
+       "name": "Plains",
+       "set": "tsp",
+       "number": "282",
+       "id": "cd9a8337-e4ca-458d-8fcd-672d8d6f1c0d"
+      }
+     ]
+    }
+   },
+   "reward": {
+    "hero": {
+     "packs": 1,
+     "coins": 0
+    },
+    "villain": {
+     "card": {
+      "oracle_id": "2c09ca09-8e62-4fe3-9b3d-61573dd2ffbc",
+      "name": "Gemhide Sliver",
+      "rarity": "common",
+      "set": "tsp",
+      "id": "f09135b0-fd57-4205-aa74-c9869946c264",
+      "image": "https://cards.scryfall.io/normal/front/f/0/f09135b0-fd57-4205-aa74-c9869946c264.jpg"
+     },
+     "coins": 50
+    }
+   },
+   "scene": [
+    {
+     "who": "stage",
+     "line": "Some time rifts didn't take away the people but just the ground they stood on.",
+     "quote": true
+    },
+    {
+     "who": "jhoira",
+     "line": "Suspend: pay the suspend cost and exile the card with time counters on it. Remove one each upkeep. When the last one comes off, you cast it for free."
+    },
+    {
+     "who": "jhoira",
+     "line": "Pay now, win later. A good artificer plans three turns ahead."
+    }
+   ],
+   "villainScene": [
+    {
+     "who": "stage",
+     "line": "They encircled our patrol with the stealth of snakes, corralling us like livestock.",
+     "quote": true
+    },
+    {
+     "who": "freyalise",
+     "line": "Slivers are guided only by simple instinct. Advance the hive, and you will be welcomed. Impede the hive, and you will face unrelenting opposition.",
+     "quote": true
+    }
+   ],
+   "after": [
+    {
+     "who": "jhoira",
+     "line": "Slivers from Rath, in a field that was salt this morning. The rifts are getting bigger. I need help, and I know a boy in Urborg who builds impossible things."
+    }
+   ],
+   "cues": {
+    "hero": {
+     "start": "Let's see what time it is.",
+     "big": "Right on schedule!",
+     "low": "Too many of them...",
+     "win": "Back through the rift.",
+     "loss": "Time... ran out...",
+     "half": "Pay now, win later."
+    },
+    "villain": {
+     "start": "[chittering]",
+     "big": "[the hive surges]",
+     "low": "[the hive scatters]",
+     "win": "[the hive feeds]",
+     "loss": "[silence]"
+    }
+   },
+   "bigPlays": [],
+   "sim": null
+  },
+  {
+   "id": "a14b2",
+   "slot": 2,
+   "kind": "Lesson",
+   "mood": "march",
+   "title": "The Second Winter",
+   "difficulty": "Easy",
+   "teaches": [
+    "Snow"
+   ],
+   "blurb": "The rifts reopen the Ice Age in the north. Freyalise, goddess of the elves, sends her druids into the cold, and the thallids of old Havenwood come out of a rift to meet them.",
+   "rewardSet": "csp",
+   "host": false,
+   "hero": {
+    "who": "freyalise",
+    "deck": {
+     "name": "Into the North",
+     "colors": "G",
+     "archetype": null,
+     "label": "tribute",
+     "cards": [
+      {
+       "qty": 4,
+       "name": "Boreal Druid",
+       "set": "csp",
+       "number": "105",
+       "id": "473d3633-6dc7-4026-a50e-3ea76b9e8c20"
+      },
+      {
+       "qty": 4,
+       "name": "Sound the Call",
+       "set": "csp",
+       "number": "123",
+       "id": "ae586221-c13c-4f4e-83ae-9b1ab0aeae61"
+      },
+      {
+       "qty": 4,
+       "name": "Ronom Hulk",
+       "set": "csp",
+       "number": "119",
+       "id": "e5b4b14c-e6fa-4cd2-9be7-fa2a2df05de1"
+      },
+      {
+       "qty": 4,
+       "name": "Brooding Saurian",
+       "set": "csp",
+       "number": "106",
+       "id": "252ef807-f861-4dcf-8e52-9260301c729a"
+      },
+      {
+       "qty": 2,
+       "name": "Into the North",
+       "set": "csp",
+       "number": "111",
+       "id": "79cea55d-8ef3-44a5-894e-967f1e97fc02"
+      },
+      {
+       "qty": 2,
+       "name": "Panglacial Wurm",
+       "set": "csp",
+       "number": "116",
+       "id": "063bb28b-5e32-4f31-a208-16b653edf413"
+      },
+      {
+       "qty": 4,
+       "name": "Penumbra Spider",
+       "set": "tsp",
+       "number": "210",
+       "id": "6a989ac1-df69-45e7-98bf-564cc7c38973"
+      },
+      {
+       "qty": 4,
+       "name": "Craw Wurm",
+       "set": "10e",
+       "number": "257",
+       "id": "da6b8e11-b799-4235-bd8f-c4b55946c769"
+      },
+      {
+       "qty": 4,
+       "name": "Llanowar Elves",
+       "set": "10e",
+       "number": "274",
+       "id": "c7a7fe6e-aa5a-4be6-a730-5cfff4fb89e3"
+      },
+      {
+       "qty": 4,
+       "name": "Giant Growth",
+       "set": "10e",
+       "number": "266",
+       "id": "d4db271b-b7f2-4a12-b606-2215bab4ac17"
+      },
+      {
+       "qty": 24,
+       "name": "Snow-Covered Forest",
+       "set": "csp",
+       "number": "155",
+       "id": "838c915d-8153-43c2-b513-dfbe4e9388a5"
+      }
+     ]
+    }
+   },
+   "villain": {
+    "who": "thelon",
+    "deck": {
+     "name": "Thallid Colony",
+     "colors": "BG",
+     "archetype": null,
+     "label": "tribute",
+     "cards": [
+      {
+       "qty": 4,
+       "name": "Thallid Germinator",
+       "set": "tsp",
+       "number": "225",
+       "id": "ac526fb0-e6d0-4ee0-9888-15098c1704df"
+      },
+      {
+       "qty": 4,
+       "name": "Thallid Shell-Dweller",
+       "set": "tsp",
+       "number": "226",
+       "id": "4ee36256-022f-49b3-8914-9b1c2f4dc506"
+      },
+      {
+       "qty": 4,
+       "name": "Deathspore Thallid",
+       "set": "tsp",
+       "number": "102",
+       "id": "44ee5ee3-11f8-4a4e-bfa3-10ff45ed6d1b"
+      },
+      {
+       "qty": 4,
+       "name": "Pit Keeper",
+       "set": "tsp",
+       "number": "123",
+       "id": "8936e767-0e48-4adb-93e9-790fe0cc19f2"
+      },
+      {
+       "qty": 4,
+       "name": "Psychotrope Thallid",
+       "set": "plc",
+       "number": "137",
+       "id": "e2803fdc-2ae1-438c-b5b1-559817e85fdb"
+      },
+      {
+       "qty": 4,
+       "name": "Vitaspore Thallid",
+       "set": "plc",
+       "number": "143",
+       "id": "cad14bc9-b90e-48e0-9e72-173874dab6bc"
+      },
+      {
+       "qty": 2,
+       "name": "Thallid",
+       "set": "tsb",
+       "number": "86",
+       "id": "6d4d2d63-3552-4e9c-8862-84a3ca3456d7"
+      },
+      {
+       "qty": 4,
+       "name": "Utopia Mycon",
+       "set": "fut",
+       "number": "140",
+       "id": "b9d3d285-8327-4dba-911b-ff03b186f6b8"
+      },
+      {
+       "qty": 18,
+       "name": "Forest",
+       "set": "tsp",
+       "number": "298",
+       "id": "0d5bd3e1-45ef-43b7-8796-6085842278df"
+      },
+      {
+       "qty": 10,
+       "name": "Swamp",
+       "set": "tsp",
+       "number": "290",
+       "id": "3fecc759-61fa-4040-9b46-710512baa4bf"
+      },
+      {
+       "qty": 2,
+       "name": "Thelon of Havenwood",
+       "set": "tsp",
+       "number": "227",
+       "id": "92b0be6d-9183-4938-b7a1-ae7f04ba78a0"
+      }
+     ]
+    }
+   },
+   "reward": {
+    "hero": {
+     "packs": 1,
+     "coins": 0
+    },
+    "villain": {
+     "card": {
+      "oracle_id": "c673b7b0-c1e7-4bcd-8fe0-66d83f22ecb9",
+      "name": "Thelon of Havenwood",
+      "rarity": "rare",
+      "set": "tsp",
+      "id": "92b0be6d-9183-4938-b7a1-ae7f04ba78a0",
+      "image": "https://cards.scryfall.io/normal/front/9/2/92b0be6d-9183-4938-b7a1-ae7f04ba78a0.jpg"
+     },
+     "coins": 50
+    }
+   },
+   "scene": [
+    {
+     "who": "stage",
+     "line": "Our border lands fall under the grip of Heidar's second winter. Go forth and reclaim them for Yavimaya.",
+     "quote": true
+    },
+    {
+     "who": "freyalise",
+     "line": "Life cannot be created and then abandoned. It must be nurtured and fed so that it may express its ripened might.",
+     "quote": true
+    },
+    {
+     "who": "freyalise",
+     "line": "Snow: snow lands make snow mana, and some cards pay with it or care how much you have. The cold is a resource here."
+    }
+   ],
+   "villainScene": [
+    {
+     "who": "thelon",
+     "line": "The sight of my thallids still thriving is a bittersweet welcome to this cold waste.",
+     "quote": true
+    },
+    {
+     "who": "thelon",
+     "line": "Spores, my children. Every three turns, another of you."
+    }
+   ],
+   "after": [
+    {
+     "who": "freyalise",
+     "line": "The land is weary. Even Skyshroud is depleted. We must find another source of mana—one that is growing despite our withering world.",
+     "quote": true
+    }
+   ],
+   "cues": {
+    "hero": {
+     "start": "The Juniper Order marches.",
+     "big": "Grow!",
+     "low": "The cold bites...",
+     "win": "The north is ours again.",
+     "loss": "Skyshroud... I am sorry...",
+     "half": "The cold is ours too."
+    },
+    "villain": {
+     "start": "[spores drift]",
+     "big": "[the colony blooms]",
+     "low": "[the colony withers]",
+     "win": "[saprolings everywhere]",
+     "loss": "[the fungus goes dormant]"
+    }
+   },
+   "bigPlays": [],
+   "sim": null
+  },
+  {
+   "id": "a14b3",
+   "slot": 3,
+   "kind": "Lesson",
+   "mood": "comic",
+   "title": "Faster Than Thought",
+   "difficulty": "Easy",
+   "teaches": [
+    "Split second"
+   ],
+   "blurb": "In the swamps of Urborg, a young inventor named Venser builds a teleporter that should not work. An echo of the old Cabal wants it, and it does not ask nicely.",
+   "rewardSet": "tsp",
+   "host": false,
+   "hero": {
+    "who": "venser",
+    "deck": {
+     "name": "Venser's Workshop",
+     "colors": "UW",
+     "archetype": null,
+     "label": "tribute",
+     "cards": [
+      {
+       "qty": 2,
+       "name": "Venser, Shaper Savant",
+       "set": "fut",
+       "number": "46",
+       "id": "0e84fc99-4045-4518-b588-512a675f2933"
+      },
+      {
+       "qty": 4,
+       "name": "Celestial Crusader",
+       "set": "tsp",
+       "number": "7",
+       "id": "7f5624d6-2c27-4c7a-8001-73edb2512ffb"
+      },
+      {
+       "qty": 4,
+       "name": "Stonecloaker",
+       "set": "plc",
+       "number": "19",
+       "id": "f7b11cec-de85-4289-a7b4-e8bfdf655130"
+      },
+      {
+       "qty": 4,
+       "name": "Whitemane Lion",
+       "set": "plc",
+       "number": "22",
+       "id": "cb1214ff-e959-43ca-8415-79a98d398490"
+      },
+      {
+       "qty": 4,
+       "name": "Wipe Away",
+       "set": "tsp",
+       "number": "94",
+       "id": "37eb43af-367c-4778-a7cc-7ee3b3103379"
+      },
+      {
+       "qty": 4,
+       "name": "Momentary Blink",
+       "set": "tsp",
+       "number": "29",
+       "id": "032e072a-0630-472b-9106-5df554dff785"
+      },
+      {
+       "qty": 4,
+       "name": "Fathom Seer",
+       "set": "tsp",
+       "number": "62",
+       "id": "20de275a-2e11-4452-8037-bc397dd53a8c"
+      },
+      {
+       "qty": 4,
+       "name": "Riftwing Cloudskate",
+       "set": "tsp",
+       "number": "73",
+       "id": "78ad6c86-8cfb-4f24-b8e8-ecbeffc949b8"
+      },
+      {
+       "qty": 4,
+       "name": "Benalish Knight",
+       "set": "10e",
+       "number": "11",
+       "id": "d0ae60d0-20d3-452c-9953-e229567c06f5"
+      },
+      {
+       "qty": 2,
+       "name": "Benalish Cavalry",
+       "set": "tsp",
+       "number": "4",
+       "id": "1013ca9c-1d29-42f6-8665-92f98d076ff8"
+      },
+      {
+       "qty": 12,
+       "name": "Plains",
+       "set": "tsp",
+       "number": "282",
+       "id": "cd9a8337-e4ca-458d-8fcd-672d8d6f1c0d"
+      },
+      {
+       "qty": 12,
+       "name": "Island",
+       "set": "tsp",
+       "number": "286",
+       "id": "e5fdeb2c-afb8-4850-bcdc-86283ffa3486"
+      }
+     ]
+    }
+   },
+   "villain": {
+    "who": "cabal",
+    "deck": {
+     "name": "The Cabal's Echo",
+     "colors": "B",
+     "archetype": null,
+     "label": "tribute",
+     "cards": [
+      {
+       "qty": 4,
+       "name": "Scathe Zombies",
+       "set": "10e",
+       "number": "175",
+       "id": "037cbf71-1199-4457-9b09-f66e7cb294d5"
+      },
+      {
+       "qty": 4,
+       "name": "Faceless Devourer",
+       "set": "tsp",
+       "number": "108",
+       "id": "d17146f8-d517-4941-b01e-09ecf00ec8e4"
+      },
+      {
+       "qty": 4,
+       "name": "Festering Goblin",
+       "set": "10e",
+       "number": "143",
+       "id": "fce1a3a3-f0b8-4088-85f6-8cbdd1f29e65"
+      },
+      {
+       "qty": 4,
+       "name": "Drudge Skeletons",
+       "set": "10e",
+       "number": "139",
+       "id": "01e71542-b9c1-4431-bfef-da629a3edc57"
+      },
+      {
+       "qty": 4,
+       "name": "Rathi Trapper",
+       "set": "plc",
+       "number": "90",
+       "id": "b2968e01-2d04-4591-98de-24688bb087df"
+      },
+      {
+       "qty": 4,
+       "name": "Vampire Bats",
+       "set": "10e",
+       "number": "186",
+       "id": "114f37e0-0a00-4ab0-840c-8f02cea101b3"
+      },
+      {
+       "qty": 4,
+       "name": "Ravenous Rats",
+       "set": "10e",
+       "number": "171",
+       "id": "03a8b556-6e18-46ee-80f8-cbd922e37432"
+      },
+      {
+       "qty": 4,
+       "name": "Drudge Reavers",
+       "set": "tsp",
+       "number": "105",
+       "id": "03c07d9a-afed-4028-9fa1-ec439b60f08f"
+      },
+      {
+       "qty": 2,
+       "name": "Gutless Ghoul",
+       "set": "csp",
+       "number": "60",
+       "id": "b8bb97ce-d9cf-47db-93cb-02745ebeb05e"
+      },
+      {
+       "qty": 24,
+       "name": "Swamp",
+       "set": "tsp",
+       "number": "290",
+       "id": "3fecc759-61fa-4040-9b46-710512baa4bf"
+      },
+      {
+       "qty": 2,
+       "name": "Magus of the Coffers",
+       "set": "plc",
+       "number": "73",
+       "id": "cf6b93ea-8ada-404c-9920-7976690c3e8c"
+      }
+     ]
+    }
+   },
+   "reward": {
+    "hero": {
+     "packs": 1,
+     "coins": 0
+    },
+    "villain": {
+     "card": {
+      "oracle_id": "23dd895c-92bd-4af0-8b1a-7d76ca49178f",
+      "name": "Magus of the Coffers",
+      "rarity": "rare",
+      "set": "plc",
+      "id": "cf6b93ea-8ada-404c-9920-7976690c3e8c",
+      "image": "https://cards.scryfall.io/normal/front/c/f/cf6b93ea-8ada-404c-9920-7976690c3e8c.jpg"
+     },
+     "coins": 50
+    }
+   },
+   "scene": [
+    {
+     "who": "stage",
+     "line": "His marvels of artifice pale in comparison to the developing machinery of his mind.",
+     "quote": true
+    },
+    {
+     "who": "venser",
+     "line": "Two magi could trade spells all day and never crown a victor. The real battle is not one of power but of will. If your confidence breaks, so too shall you.",
+     "quote": true
+    },
+    {
+     "who": "venser",
+     "line": "Split second: while a split second spell is on the stack, nobody can cast spells or activate abilities. No answers, no tricks. It just happens."
+    }
+   ],
+   "villainScene": [
+    {
+     "who": "stage",
+     "line": "All that remains of the Cabal are the echoes in its deepest vault. Yet those who hear the echoes feel a power undiminished by the dust of ages.",
+     "quote": true
+    },
+    {
+     "who": "stage",
+     "line": "Some mages tapped into the time rifts, forcing upon others alternate timelines in which unimaginable horrors befall them.",
+     "quote": true
+    }
+   ],
+   "after": [
+    {
+     "who": "jhoira",
+     "line": "You teleported a fortress's worth of zombies into a bog."
+    },
+    {
+     "who": "venser",
+     "line": "I was aiming for a different bog."
+    }
+   ],
+   "cues": {
+    "hero": {
+     "start": "Hold still. This is a prototype.",
+     "big": "Blink!",
+     "low": "It's not working...",
+     "win": "It worked! It actually worked!",
+     "loss": "Back to the drawing board...",
+     "half": "Too fast to answer."
+    },
+    "villain": {
+     "start": "[the vault echoes]",
+     "big": "[a sudden death]",
+     "low": "[the echo fades]",
+     "win": "[swallowed by the swamp]",
+     "loss": "[the vault goes quiet]"
+    }
+   },
+   "bigPlays": [],
+   "sim": null
+  },
+  {
+   "id": "a14b4",
+   "slot": 4,
+   "kind": "Rival",
+   "mood": "tension",
+   "title": "The Necromancer Returns",
+   "difficulty": "Normal",
+   "teaches": [
+    "Racing"
+   ],
+   "blurb": "Radha, heir to Keld, was born in Skyshroud with a Keldon temper. A rift has opened on her warlord's road, and out of it walks a necromancer from the Ice Age: Lim-Dûl, from Act 3.",
+   "rewardSet": "tsp",
+   "host": false,
+   "hero": {
+    "who": "radha",
+    "deck": {
+     "name": "Radha's Warband",
+     "colors": "RG",
+     "archetype": null,
+     "label": "tribute",
+     "cards": [
+      {
+       "qty": 2,
+       "name": "Radha, Heir to Keld",
+       "set": "plc",
+       "number": "162",
+       "id": "7fc23b2e-9124-4f88-b93e-8bfe90e6eb41"
+      },
+      {
+       "qty": 4,
+       "name": "Llanowar Elves",
+       "set": "10e",
+       "number": "274",
+       "id": "c7a7fe6e-aa5a-4be6-a730-5cfff4fb89e3"
+      },
+      {
+       "qty": 4,
+       "name": "Keldon Marauders",
+       "set": "plc",
+       "number": "102",
+       "id": "677c28db-34d2-4325-99d1-9b689753802f"
+      },
+      {
+       "qty": 4,
+       "name": "Mogg War Marshal",
+       "set": "tsp",
+       "number": "170",
+       "id": "8b9e0bdb-b615-447a-b80d-d7244c25c56e"
+      },
+      {
+       "qty": 4,
+       "name": "Blood Knight",
+       "set": "plc",
+       "number": "115",
+       "id": "0f2133c0-8561-4264-8802-1b2933abf186"
+      },
+      {
+       "qty": 4,
+       "name": "Gathan Raiders",
+       "set": "fut",
+       "number": "99",
+       "id": "8af5c695-d0f4-4ea7-bc12-f3a24d5b6a11"
+      },
+      {
+       "qty": 4,
+       "name": "Rift Bolt",
+       "set": "tsp",
+       "number": "176",
+       "id": "88dde96e-6824-4d26-9fb5-86b9f3c50959"
+      },
+      {
+       "qty": 4,
+       "name": "Giant Growth",
+       "set": "10e",
+       "number": "266",
+       "id": "d4db271b-b7f2-4a12-b606-2215bab4ac17"
+      },
+      {
+       "qty": 4,
+       "name": "Incinerate",
+       "set": "10e",
+       "number": "213",
+       "id": "723fb62e-735a-4ca6-9d38-f1c3944fe69a"
+      },
+      {
+       "qty": 2,
+       "name": "Fomori Nomad",
+       "set": "fut",
+       "number": "114",
+       "id": "8216b3f3-b9b6-4d90-a624-c1b9b7bdf953"
+      },
+      {
+       "qty": 12,
+       "name": "Mountain",
+       "set": "tsp",
+       "number": "294",
+       "id": "e34229e7-5dc4-47b3-9ba2-609e5b3ca6c2"
+      },
+      {
+       "qty": 12,
+       "name": "Forest",
+       "set": "tsp",
+       "number": "298",
+       "id": "0d5bd3e1-45ef-43b7-8796-6085842278df"
+      }
+     ]
+    }
+   },
+   "villain": {
+    "who": "limdul",
+    "deck": {
+     "name": "The Necromancer's Servants",
+     "colors": "B",
+     "archetype": null,
+     "label": "tribute",
+     "cards": [
+      {
+       "qty": 2,
+       "name": "Lim-Dûl the Necromancer",
+       "set": "tsp",
+       "number": "114",
+       "id": "b8a3cdfe-0289-474b-b9c4-07e8c6588ec5"
+      },
+      {
+       "qty": 4,
+       "name": "Gravedigger",
+       "set": "10e",
+       "number": "146",
+       "id": "da57d35a-ca0b-4f93-867c-d0a9fb5108f1"
+      },
+      {
+       "qty": 4,
+       "name": "Corpulent Corpse",
+       "set": "tsp",
+       "number": "98",
+       "id": "a58b842a-a4c0-475d-a8b3-62d4e5bb2eaf"
+      },
+      {
+       "qty": 4,
+       "name": "Drudge Reavers",
+       "set": "tsp",
+       "number": "105",
+       "id": "03c07d9a-afed-4028-9fa1-ec439b60f08f"
+      },
+      {
+       "qty": 4,
+       "name": "Phyrexian Rager",
+       "set": "10e",
+       "number": "167",
+       "id": "4a85419a-7ebb-4fe1-891f-b5295e18878f"
+      },
+      {
+       "qty": 4,
+       "name": "Scathe Zombies",
+       "set": "10e",
+       "number": "175",
+       "id": "037cbf71-1199-4457-9b09-f66e7cb294d5"
+      },
+      {
+       "qty": 4,
+       "name": "Mass of Ghouls",
+       "set": "fut",
+       "number": "88",
+       "id": "20c3f515-de7d-41eb-8ba0-532f4c13ac39"
+      },
+      {
+       "qty": 4,
+       "name": "Severed Legion",
+       "set": "10e",
+       "number": "177",
+       "id": "82633f38-5af1-429e-8c9d-db536af85309"
+      },
+      {
+       "qty": 4,
+       "name": "Sudden Death",
+       "set": "tsp",
+       "number": "134",
+       "id": "16e889c4-105b-4f4e-8a3d-ace753a24a4e"
+      },
+      {
+       "qty": 2,
+       "name": "Dread Return",
+       "set": "tsp",
+       "number": "104",
+       "id": "d7e304fc-0ace-459e-8d2f-376f1899639c"
+      },
+      {
+       "qty": 24,
+       "name": "Swamp",
+       "set": "tsp",
+       "number": "290",
+       "id": "3fecc759-61fa-4040-9b46-710512baa4bf"
+      }
+     ]
+    }
+   },
+   "reward": {
+    "hero": {
+     "packs": 1,
+     "coins": 100
+    },
+    "villain": {
+     "card": {
+      "oracle_id": "820052b3-d217-4b30-acc4-fa5af7465e9e",
+      "name": "Lim-Dûl the Necromancer",
+      "rarity": "rare",
+      "set": "tsp",
+      "id": "b8a3cdfe-0289-474b-b9c4-07e8c6588ec5",
+      "image": "https://cards.scryfall.io/normal/front/b/8/b8a3cdfe-0289-474b-b9c4-07e8c6588ec5.jpg"
+     },
+     "coins": 100
+    }
+   },
+   "scene": [
+    {
+     "who": "stage",
+     "line": "Radha was born in Skyshroud, but her temper is undeniably Keldon.",
+     "quote": true
+    },
+    {
+     "who": "radha",
+     "line": "Run home, cur. I've already taken your master's head. Don't make me thrash you with it.",
+     "quote": true
+    },
+    {
+     "who": "radha",
+     "line": "He raises what we kill. So we kill him faster than he can raise them. Go!"
+    }
+   ],
+   "villainScene": [
+    {
+     "who": "limdul",
+     "line": "The surface of the land is blanched with salt, but the soil beneath is reddened with death—a fertile ground for necromancy.",
+     "quote": true
+    },
+    {
+     "who": "limdul",
+     "line": "I fell in the Ice Age. The rift was kind enough to give me a second winter."
+    }
+   ],
+   "after": [
+    {
+     "who": "radha",
+     "line": "I hope to have such a death—lying in triumph upon the broken bodies of those who slew me.",
+     "quote": true
+    },
+    {
+     "who": "jhoira",
+     "line": "Not today. We need you, Radha. The rifts are coming from Urborg."
+    }
+   ],
+   "cues": {
+    "hero": {
+     "start": "KELD!",
+     "big": "Take his head!",
+     "low": "The dead keep coming...",
+     "win": "Stay dead this time.",
+     "loss": "Lying in triumph... upon the broken...",
+     "half": "Faster than he raises them."
+    },
+    "villain": {
+     "start": "Rise.",
+     "big": "Rise again.",
+     "low": "My servants fail...",
+     "win": "Another soldier for my army.",
+     "loss": "Not... again..."
+    }
+   },
+   "bigPlays": [],
+   "sim": null
+  },
+  {
+   "id": "a14b5",
+   "slot": 5,
+   "kind": "Lesson",
+   "mood": "tension",
+   "title": "A Future That Never Was",
+   "difficulty": "Normal",
+   "teaches": [
+    "Card types"
+   ],
+   "blurb": "Some rifts open onto futures that never happened. Out of one comes a lizard that grows from every kind of card in every graveyard. Heidar, Rimewind master, wants the world frozen before it can happen.",
+   "rewardSet": "fut",
+   "host": false,
+   "hero": {
+    "who": "goyf",
+    "deck": {
+     "name": "Futureshifted",
+     "colors": "GW",
+     "archetype": null,
+     "label": "tribute",
+     "cards": [
+      {
+       "qty": 4,
+       "name": "Tarmogoyf",
+       "set": "fut",
+       "number": "153",
+       "id": "b6876d9e-0908-43ac-8542-09c7aa02b5ba"
+      },
+      {
+       "qty": 4,
+       "name": "Llanowar Elves",
+       "set": "10e",
+       "number": "274",
+       "id": "c7a7fe6e-aa5a-4be6-a730-5cfff4fb89e3"
+      },
+      {
+       "qty": 4,
+       "name": "Blade of the Sixth Pride",
+       "set": "fut",
+       "number": "19",
+       "id": "f6ccfe28-ec08-4751-b65c-c40b2bafa955"
+      },
+      {
+       "qty": 4,
+       "name": "Calciderm",
+       "set": "plc",
+       "number": "23",
+       "id": "f0159719-ccf4-4798-a394-b01f5e422a27"
+      },
+      {
+       "qty": 4,
+       "name": "Saltskitter",
+       "set": "fut",
+       "number": "14",
+       "id": "823bdf79-998f-4d7c-834d-7a474cfa895e"
+      },
+      {
+       "qty": 4,
+       "name": "Aven Riftwatcher",
+       "set": "plc",
+       "number": "1",
+       "id": "f6a4394a-9ce2-4876-8a04-38e3775123af"
+      },
+      {
+       "qty": 4,
+       "name": "Giant Growth",
+       "set": "10e",
+       "number": "266",
+       "id": "d4db271b-b7f2-4a12-b606-2215bab4ac17"
+      },
+      {
+       "qty": 4,
+       "name": "Knight of Sursi",
+       "set": "fut",
+       "number": "10",
+       "id": "84b23129-25b2-4870-9462-ab12718ae7be"
+      },
+      {
+       "qty": 4,
+       "name": "Wild Griffin",
+       "set": "10e",
+       "number": "59",
+       "id": "099ecf12-b750-4a95-85c8-8612d2a77a0a"
+      },
+      {
+       "qty": 12,
+       "name": "Forest",
+       "set": "tsp",
+       "number": "298",
+       "id": "0d5bd3e1-45ef-43b7-8796-6085842278df"
+      },
+      {
+       "qty": 12,
+       "name": "Plains",
+       "set": "tsp",
+       "number": "282",
+       "id": "cd9a8337-e4ca-458d-8fcd-672d8d6f1c0d"
+      }
+     ]
+    }
+   },
+   "villain": {
+    "who": "heidar",
+    "deck": {
+     "name": "The Rimewind Cult",
+     "colors": "U",
+     "archetype": null,
+     "label": "tribute",
+     "cards": [
+      {
+       "qty": 2,
+       "name": "Heidar, Rimewind Master",
+       "set": "csp",
+       "number": "36",
+       "id": "39916d65-60a6-4da6-8675-8a8ef9505772"
+      },
+      {
+       "qty": 4,
+       "name": "Frost Raptor",
+       "set": "csp",
+       "number": "34",
+       "id": "4ab2f81a-fcbe-44d1-8281-04dd78bb9ea3"
+      },
+      {
+       "qty": 4,
+       "name": "Krovikan Mist",
+       "set": "csp",
+       "number": "38",
+       "id": "43e09469-205d-4a60-821c-ceb7ae2e01be"
+      },
+      {
+       "qty": 4,
+       "name": "Snapping Drake",
+       "set": "10e",
+       "number": "110",
+       "id": "03b2ad93-8287-4b87-88ed-c627bd54fd49"
+      },
+      {
+       "qty": 4,
+       "name": "Air Elemental",
+       "set": "10e",
+       "number": "64",
+       "id": "be2326dd-78c9-46bb-a459-306602939a41"
+      },
+      {
+       "qty": 4,
+       "name": "Cloud Elemental",
+       "set": "10e",
+       "number": "74",
+       "id": "c6bc3025-704f-476b-bcb3-74b905755dc9"
+      },
+      {
+       "qty": 4,
+       "name": "Aven Fisher",
+       "set": "10e",
+       "number": "68",
+       "id": "bba2cd91-84a7-4d05-9a0c-55440491be1e"
+      },
+      {
+       "qty": 4,
+       "name": "Cancel",
+       "set": "tsp",
+       "number": "51",
+       "id": "b4e175f7-f649-451b-9ee5-ad1140b2e8a7"
+      },
+      {
+       "qty": 4,
+       "name": "Unsummon",
+       "set": "10e",
+       "number": "122",
+       "id": "ebe16e3c-9cf5-4b5a-8ec9-8a2d60f3fcc9"
+      },
+      {
+       "qty": 2,
+       "name": "Rimefeather Owl",
+       "set": "csp",
+       "number": "42",
+       "id": "7e8e3552-a251-4a80-b0bb-a96a9f8a4c56"
+      },
+      {
+       "qty": 24,
+       "name": "Snow-Covered Island",
+       "set": "csp",
+       "number": "152",
+       "id": "6abf0692-07d1-4b72-af06-93d0e338589d"
+      }
+     ]
+    }
+   },
+   "reward": {
+    "hero": {
+     "packs": 1,
+     "coins": 100
+    },
+    "villain": {
+     "card": {
+      "oracle_id": "58ac4cce-506e-4d6e-a19c-0e875fbfcd81",
+      "name": "Heidar, Rimewind Master",
+      "rarity": "rare",
+      "set": "csp",
+      "id": "39916d65-60a6-4da6-8675-8a8ef9505772",
+      "image": "https://cards.scryfall.io/normal/front/3/9/39916d65-60a6-4da6-8675-8a8ef9505772.jpg"
+     },
+     "coins": 100
+    }
+   },
+   "scene": [
+    {
+     "who": "stage",
+     "line": "Those gifted with the sight have one eye in the present and the other in the future.",
+     "quote": true
+    },
+    {
+     "who": "stage",
+     "line": "Card types: Tarmogoyf counts the different card types in all graveyards, yours and theirs. Creature, instant, sorcery, land, enchantment, artifact. Every trade makes it bigger."
+    },
+    {
+     "who": "stage",
+     "line": "I am irrelevant. The future I hold in my hands is everything.",
+     "quote": true
+    }
+   ],
+   "villainScene": [
+    {
+     "who": "heidar",
+     "line": "The umber stain of the Thaw will be bleached away. Once again the world will be sharp, white, perfect!",
+     "quote": true
+    },
+    {
+     "who": "heidar",
+     "line": "Nature? Fire? Bah! Both are chaotic and difficult to control. Ice is structured, latticed, light as a feather, massive as a glacier. In ice, there is power!",
+     "quote": true
+    }
+   ],
+   "after": [
+    {
+     "who": "venser",
+     "line": "That thing came from a future that doesn't exist anymore. I would like to stop thinking about that now."
+    }
+   ],
+   "cues": {
+    "hero": {
+     "start": "The future arrives.",
+     "big": "It grows!",
+     "low": "Frozen in place...",
+     "win": "This timeline holds.",
+     "loss": "A future... unwritten...",
+     "half": "Fill the graveyards."
+    },
+    "villain": {
+     "start": "Winter returns.",
+     "big": "Freeze!",
+     "low": "The Thaw spreads...",
+     "win": "Sharp, white, perfect.",
+     "loss": "Melting... melting..."
+    }
+   },
+   "bigPlays": [],
+   "sim": null
+  },
+  {
+   "id": "a14b6",
+   "slot": 6,
+   "kind": "Meta",
+   "mood": "march",
+   "title": "Big Red",
+   "difficulty": "Normal",
+   "teaches": [
+    "Direct damage"
+   ],
+   "blurb": "In the real summer of 2007, Standard was rifts and suspend. A red deck of Keldon Marauders and burn raced everything, and the deck it most wanted to race was Blink, built around Momentary Blink.",
+   "rewardSet": "plc",
+   "host": false,
+   "hero": {
+    "who": "you",
+    "deck": {
+     "name": "Big Red",
+     "colors": "R",
+     "archetype": "Aggro",
+     "label": "tribute",
+     "cards": [
+      {
+       "qty": 4,
+       "name": "Keldon Marauders",
+       "set": "plc",
+       "number": "102",
+       "id": "677c28db-34d2-4325-99d1-9b689753802f"
+      },
+      {
+       "qty": 2,
+       "name": "Rift Bolt",
+       "set": "tsp",
+       "number": "176",
+       "id": "88dde96e-6824-4d26-9fb5-86b9f3c50959"
+      },
+      {
+       "qty": 2,
+       "name": "Raging Goblin",
+       "set": "10e",
+       "number": "224",
+       "id": "181ed588-5b9e-4160-967c-ed927b7e0048"
+      },
+      {
+       "qty": 4,
+       "name": "Goblin Piker",
+       "set": "10e",
+       "number": "209",
+       "id": "ceae72d6-f2a2-4345-822d-6a7c2409a237"
+      },
+      {
+       "qty": 4,
+       "name": "Blood Knight",
+       "set": "plc",
+       "number": "115",
+       "id": "0f2133c0-8561-4264-8802-1b2933abf186"
+      },
+      {
+       "qty": 4,
+       "name": "Mogg Fanatic",
+       "set": "10e",
+       "number": "219",
+       "id": "185949ab-55d0-439f-b25b-1f525e3eddf7"
+      },
+      {
+       "qty": 4,
+       "name": "Viashino Runner",
+       "set": "10e",
+       "number": "245",
+       "id": "8aa862a0-388d-43b8-973f-3a00ebf53952"
+      },
+      {
+       "qty": 4,
+       "name": "Hill Giant",
+       "set": "10e",
+       "number": "212",
+       "id": "14c2be6a-9ca6-4d3a-8dd0-db4ea40799f8"
+      },
+      {
+       "qty": 4,
+       "name": "Bogardan Firefiend",
+       "set": "10e",
+       "number": "193",
+       "id": "c6d9be02-935e-4428-863b-95e84c88834a"
+      },
+      {
+       "qty": 4,
+       "name": "Bloodrock Cyclops",
+       "set": "10e",
+       "number": "192",
+       "id": "e3a830f8-b508-431e-aadc-36330dcfe5db"
+      },
+      {
+       "qty": 24,
+       "name": "Mountain",
+       "set": "tsp",
+       "number": "294",
+       "id": "e34229e7-5dc4-47b3-9ba2-609e5b3ca6c2"
+      }
+     ]
+    }
+   },
+   "villain": {
+    "who": "blink",
+    "deck": {
+     "name": "Blink",
+     "colors": "UW",
+     "archetype": "Tempo",
+     "label": "tribute",
+     "cards": [
+      {
+       "qty": 2,
+       "name": "Teferi, Mage of Zhalfir",
+       "set": "tsp",
+       "number": "83",
+       "id": "3c0145f6-4e27-49e7-9ef6-bac6fa3de26d"
+      },
+      {
+       "qty": 4,
+       "name": "Whitemane Lion",
+       "set": "plc",
+       "number": "22",
+       "id": "cb1214ff-e959-43ca-8415-79a98d398490"
+      },
+      {
+       "qty": 4,
+       "name": "Stonecloaker",
+       "set": "plc",
+       "number": "19",
+       "id": "f7b11cec-de85-4289-a7b4-e8bfdf655130"
+      },
+      {
+       "qty": 4,
+       "name": "Aven Riftwatcher",
+       "set": "plc",
+       "number": "1",
+       "id": "f6a4394a-9ce2-4876-8a04-38e3775123af"
+      },
+      {
+       "qty": 4,
+       "name": "Riftwing Cloudskate",
+       "set": "tsp",
+       "number": "73",
+       "id": "78ad6c86-8cfb-4f24-b8e8-ecbeffc949b8"
+      },
+      {
+       "qty": 4,
+       "name": "Momentary Blink",
+       "set": "tsp",
+       "number": "29",
+       "id": "032e072a-0630-472b-9106-5df554dff785"
+      },
+      {
+       "qty": 4,
+       "name": "Wild Griffin",
+       "set": "10e",
+       "number": "59",
+       "id": "099ecf12-b750-4a95-85c8-8612d2a77a0a"
+      },
+      {
+       "qty": 4,
+       "name": "Calciderm",
+       "set": "plc",
+       "number": "23",
+       "id": "f0159719-ccf4-4798-a394-b01f5e422a27"
+      },
+      {
+       "qty": 4,
+       "name": "Celestial Crusader",
+       "set": "tsp",
+       "number": "7",
+       "id": "7f5624d6-2c27-4c7a-8001-73edb2512ffb"
+      },
+      {
+       "qty": 2,
+       "name": "Errant Ephemeron",
+       "set": "tsp",
+       "number": "60",
+       "id": "398c26cc-cd55-42c6-a744-aaefd7018960"
+      },
+      {
+       "qty": 12,
+       "name": "Plains",
+       "set": "tsp",
+       "number": "282",
+       "id": "cd9a8337-e4ca-458d-8fcd-672d8d6f1c0d"
+      },
+      {
+       "qty": 12,
+       "name": "Island",
+       "set": "tsp",
+       "number": "286",
+       "id": "e5fdeb2c-afb8-4850-bcdc-86283ffa3486"
+      }
+     ]
+    }
+   },
+   "reward": {
+    "hero": {
+     "packs": 1,
+     "coins": 100
+    },
+    "villain": {
+     "card": {
+      "oracle_id": "a3ec6b5d-08ec-4ae0-b1db-c4b87a1849c7",
+      "name": "Momentary Blink",
+      "rarity": "common",
+      "set": "tsp",
+      "id": "032e072a-0630-472b-9106-5df554dff785",
+      "image": "https://cards.scryfall.io/normal/front/0/3/032e072a-0630-472b-9106-5df554dff785.jpg"
+     },
+     "coins": 100
+    }
+   },
+   "scene": [
+    {
+     "who": "stage",
+     "line": "The Keldons used the toxic vents in the cracked earth to bolster their home's defenses.",
+     "quote": true
+    },
+    {
+     "who": "you",
+     "line": "They blink their creatures to get the arrival trigger again. I'll aim at their face and let them blink all they like."
+    }
+   ],
+   "villainScene": [
+    {
+     "who": "stage",
+     "line": "Saltfield nomads call a sudden storm a \"whitemane.\"",
+     "quote": true
+    },
+    {
+     "who": "stage",
+     "line": "It disappears each time with the hope that it will not return to the same desolation it left behind.",
+     "quote": true
+    }
+   ],
+   "after": null,
+   "cues": {
+    "hero": {
+     "start": "Burn.",
+     "big": "Straight to the face!",
+     "low": "They keep flickering...",
+     "win": "Burned out.",
+     "loss": "Out of fuel...",
+     "half": "Ignore the blinks. Go face."
+    },
+    "villain": {
+     "start": "[a flicker]",
+     "big": "[blink]",
+     "low": "[the light dims]",
+     "win": "[gone in a blink]",
+     "loss": "[snuffed]"
+    }
+   },
+   "bigPlays": [],
+   "sim": null
+  },
+  {
+   "id": "a14b7",
+   "slot": 7,
+   "kind": "Meta",
+   "mood": "tension",
+   "title": "Teferi's Echo",
+   "difficulty": "Normal",
+   "teaches": [
+    "Slivers"
+   ],
+   "blurb": "A rift shows Teferi as he was centuries ago, before the Mending was even a word: proud, brilliant and cold. Against him, a hive of slivers from every colour. In 2007, Mystical Teachings control fought five-colour slivers everywhere.",
+   "rewardSet": "tsp",
+   "host": false,
+   "hero": {
+    "who": "you",
+    "deck": {
+     "name": "The Hive Mind",
+     "colors": "GWR",
+     "archetype": "Slivers",
+     "label": "tribute",
+     "cards": [
+      {
+       "qty": 4,
+       "name": "Poultice Sliver",
+       "set": "plc",
+       "number": "11",
+       "id": "f3441ae0-4c20-487b-99b8-d6934dfb66ff"
+      },
+      {
+       "qty": 4,
+       "name": "Spinneret Sliver",
+       "set": "tsp",
+       "number": "219",
+       "id": "da698c63-f167-4129-a650-b50c080a24b5"
+      },
+      {
+       "qty": 4,
+       "name": "Gemhide Sliver",
+       "set": "tsp",
+       "number": "196",
+       "id": "f09135b0-fd57-4205-aa74-c9869946c264"
+      },
+      {
+       "qty": 4,
+       "name": "Venser's Sliver",
+       "set": "tsp",
+       "number": "267",
+       "id": "1e3c5a64-453b-4477-853a-9514ba326f16"
+      },
+      {
+       "qty": 4,
+       "name": "Might Sliver",
+       "set": "tsp",
+       "number": "205",
+       "id": "8bb8c52f-e608-4710-872f-8a8ae2b5c00c"
+      },
+      {
+       "qty": 4,
+       "name": "Sidewinder Sliver",
+       "set": "tsp",
+       "number": "41",
+       "id": "b073b8f2-b42d-40f2-b5fb-e78ffb1733ea"
+      },
+      {
+       "qty": 4,
+       "name": "Firewake Sliver",
+       "set": "tsp",
+       "number": "238",
+       "id": "5d3f5a0d-029e-44fd-b3e6-c70176b5b4ac"
+      },
+      {
+       "qty": 4,
+       "name": "Harmonic Sliver",
+       "set": "tsp",
+       "number": "240",
+       "id": "f7904997-a857-44f0-91d8-b78651bb4e83"
+      },
+      {
+       "qty": 1,
+       "name": "Watcher Sliver",
+       "set": "tsp",
+       "number": "45",
+       "id": "7d72a950-82ed-4e7b-9e18-b8231a2ebea7"
+      },
+      {
+       "qty": 4,
+       "name": "Karplusan Forest",
+       "set": "10e",
+       "number": "354",
+       "id": "d56ad1cb-c1b9-4856-8d46-55012aee4d47"
+      },
+      {
+       "qty": 4,
+       "name": "Brushland",
+       "set": "10e",
+       "number": "349",
+       "id": "70afcfca-c065-4a33-95b1-ec2b08bcb493"
+      },
+      {
+       "qty": 4,
+       "name": "Battlefield Forge",
+       "set": "10e",
+       "number": "348",
+       "id": "e0df1e5f-8cef-4e13-babf-4254a85ac46b"
+      },
+      {
+       "qty": 4,
+       "name": "Forest",
+       "set": "tsp",
+       "number": "298",
+       "id": "0d5bd3e1-45ef-43b7-8796-6085842278df"
+      },
+      {
+       "qty": 4,
+       "name": "Mountain",
+       "set": "tsp",
+       "number": "294",
+       "id": "e34229e7-5dc4-47b3-9ba2-609e5b3ca6c2"
+      },
+      {
+       "qty": 4,
+       "name": "Plains",
+       "set": "tsp",
+       "number": "282",
+       "id": "cd9a8337-e4ca-458d-8fcd-672d8d6f1c0d"
+      },
+      {
+       "qty": 3,
+       "name": "Disintegrate",
+       "set": "tsb",
+       "number": "58",
+       "id": "a83420d1-c51a-4fb7-8f1d-b376a0083d95"
+      }
+     ]
+    }
+   },
+   "villain": {
+    "who": "teferi",
+    "deck": {
+     "name": "Mystical Teachings",
+     "colors": "UB",
+     "archetype": "Control",
+     "label": "tribute",
+     "cards": [
+      {
+       "qty": 4,
+       "name": "Mystical Teachings",
+       "set": "tsp",
+       "number": "69",
+       "id": "a057e5f3-b6bd-4995-b990-714201f36989"
+      },
+      {
+       "qty": 2,
+       "name": "Teferi, Mage of Zhalfir",
+       "set": "tsp",
+       "number": "83",
+       "id": "3c0145f6-4e27-49e7-9ef6-bac6fa3de26d"
+      },
+      {
+       "qty": 4,
+       "name": "Damnation",
+       "set": "plc",
+       "number": "85",
+       "id": "26c68473-70ca-40ba-b5c6-71ec30f88a2c"
+      },
+      {
+       "qty": 4,
+       "name": "Sudden Death",
+       "set": "tsp",
+       "number": "134",
+       "id": "16e889c4-105b-4f4e-8a3d-ace753a24a4e"
+      },
+      {
+       "qty": 4,
+       "name": "Gorgon Recluse",
+       "set": "tsp",
+       "number": "111",
+       "id": "abdeb7c9-98bd-4143-87e4-1c78c0ce627e"
+      },
+      {
+       "qty": 4,
+       "name": "Cancel",
+       "set": "tsp",
+       "number": "51",
+       "id": "b4e175f7-f649-451b-9ee5-ad1140b2e8a7"
+      },
+      {
+       "qty": 4,
+       "name": "Phyrexian Rager",
+       "set": "10e",
+       "number": "167",
+       "id": "4a85419a-7ebb-4fe1-891f-b5295e18878f"
+      },
+      {
+       "qty": 4,
+       "name": "Tolarian Sentinel",
+       "set": "tsp",
+       "number": "87",
+       "id": "2e97ec8b-6163-41ff-9e6f-af091a7c529e"
+      },
+      {
+       "qty": 4,
+       "name": "Faceless Devourer",
+       "set": "tsp",
+       "number": "108",
+       "id": "d17146f8-d517-4941-b01e-09ecf00ec8e4"
+      },
+      {
+       "qty": 2,
+       "name": "Shadowmage Infiltrator",
+       "set": "tsb",
+       "number": "99",
+       "id": "07016217-c1ba-4e34-85a7-298247b91440"
+      },
+      {
+       "qty": 4,
+       "name": "Underground River",
+       "set": "10e",
+       "number": "362",
+       "id": "8c298bf7-2514-43d4-a285-1386d6ba0835"
+      },
+      {
+       "qty": 12,
+       "name": "Island",
+       "set": "tsp",
+       "number": "286",
+       "id": "e5fdeb2c-afb8-4850-bcdc-86283ffa3486"
+      },
+      {
+       "qty": 8,
+       "name": "Swamp",
+       "set": "tsp",
+       "number": "290",
+       "id": "3fecc759-61fa-4040-9b46-710512baa4bf"
+      }
+     ]
+    }
+   },
+   "reward": {
+    "hero": {
+     "packs": 1,
+     "coins": 100
+    },
+    "villain": {
+     "card": {
+      "oracle_id": "2b6cbd55-5adc-4a34-ac45-8531705a7ee1",
+      "name": "Teferi, Mage of Zhalfir",
+      "rarity": "rare",
+      "set": "tsp",
+      "id": "3c0145f6-4e27-49e7-9ef6-bac6fa3de26d",
+      "image": "https://cards.scryfall.io/normal/front/3/c/3c0145f6-4e27-49e7-9ef6-bac6fa3de26d.jpg"
+     },
+     "coins": 100
+    }
+   },
+   "scene": [
+    {
+     "who": "stage",
+     "line": "Hidden within the clicking, chittering swarm is a unique mind, still young, but growing more aware as time passes.",
+     "quote": true
+    },
+    {
+     "who": "you",
+     "line": "Every sliver shares its ability with the others. Two make a pair. Five make a wall of teeth."
+    }
+   ],
+   "villainScene": [
+    {
+     "who": "teferi",
+     "line": "You wish for me to cow your enemies? I can do better than that . . . .",
+     "quote": true
+    },
+    {
+     "who": "teferi",
+     "line": "It's difficult to heal a rift after it begins wandering about on its own.",
+     "quote": true
+    },
+    {
+     "who": "stage",
+     "line": "To save this plane, he must forsake all others.",
+     "quote": true
+    }
+   ],
+   "after": [
+    {
+     "who": "stage",
+     "line": "The echo fades. The real Teferi, far away and centuries older, is already giving up his spark to close a rift at Shiv."
+    }
+   ],
+   "cues": {
+    "hero": {
+     "start": "The hive wakes.",
+     "big": "All together!",
+     "low": "He counters everything...",
+     "win": "The hive endures.",
+     "loss": "Scattered...",
+     "half": "One shares with all."
+    },
+    "villain": {
+     "start": "Let us be quick about this.",
+     "big": "Countered.",
+     "low": "Hm. Unexpected.",
+     "win": "As I foresaw.",
+     "loss": "Interesting... very..."
+    }
+   },
+   "bigPlays": [],
+   "sim": null
+  },
+  {
+   "id": "a14b8",
+   "slot": 8,
+   "kind": "Boss",
+   "mood": "boss",
+   "title": "The Mending",
+   "difficulty": "Hard",
+   "teaches": [
+    "Combat math"
+   ],
+   "blurb": "In Urborg, the last rift is the largest. Nicol Bolas, the elder dragon from Act 2, reaches through it to take back the world he lost. Jhoira, Venser and Radha stand in the way.",
+   "rewardSet": "tsb",
+   "host": true,
+   "hero": {
+    "who": "jhoira",
+    "deck": {
+     "name": "Jhoira, Venser and Radha",
+     "colors": "URG",
+     "archetype": null,
+     "label": "tribute",
+     "cards": [
+      {
+       "qty": 2,
+       "name": "Venser, Shaper Savant",
+       "set": "fut",
+       "number": "46",
+       "id": "0e84fc99-4045-4518-b588-512a675f2933"
+      },
+      {
+       "qty": 2,
+       "name": "Radha, Heir to Keld",
+       "set": "plc",
+       "number": "162",
+       "id": "7fc23b2e-9124-4f88-b93e-8bfe90e6eb41"
+      },
+      {
+       "qty": 4,
+       "name": "Riftwing Cloudskate",
+       "set": "tsp",
+       "number": "73",
+       "id": "78ad6c86-8cfb-4f24-b8e8-ecbeffc949b8"
+      },
+      {
+       "qty": 4,
+       "name": "Keldon Marauders",
+       "set": "plc",
+       "number": "102",
+       "id": "677c28db-34d2-4325-99d1-9b689753802f"
+      },
+      {
+       "qty": 4,
+       "name": "Llanowar Elves",
+       "set": "10e",
+       "number": "274",
+       "id": "c7a7fe6e-aa5a-4be6-a730-5cfff4fb89e3"
+      },
+      {
+       "qty": 4,
+       "name": "Viashino Bladescout",
+       "set": "tsp",
+       "number": "185",
+       "id": "41fce1b3-0961-4672-845f-e1c6ce101c1b"
+      },
+      {
+       "qty": 4,
+       "name": "Sage Owl",
+       "set": "10e",
+       "number": "104",
+       "id": "1ed89567-cb18-4e51-a978-eac81d112aa1"
+      },
+      {
+       "qty": 4,
+       "name": "Coal Stoker",
+       "set": "tsp",
+       "number": "150",
+       "id": "3a6bdc34-1ef6-4de3-a9a9-b5dd503e02c0"
+      },
+      {
+       "qty": 4,
+       "name": "Errant Ephemeron",
+       "set": "tsp",
+       "number": "60",
+       "id": "398c26cc-cd55-42c6-a744-aaefd7018960"
+      },
+      {
+       "qty": 4,
+       "name": "Karplusan Forest",
+       "set": "10e",
+       "number": "354",
+       "id": "d56ad1cb-c1b9-4856-8d46-55012aee4d47"
+      },
+      {
+       "qty": 4,
+       "name": "Shivan Reef",
+       "set": "10e",
+       "number": "357",
+       "id": "d62ea973-7799-4179-9d36-60e2287feae7"
+      },
+      {
+       "qty": 4,
+       "name": "Yavimaya Coast",
+       "set": "10e",
+       "number": "363",
+       "id": "7d1d58ea-39f2-4bdb-a960-b610c39e35e3"
+      },
+      {
+       "qty": 6,
+       "name": "Forest",
+       "set": "tsp",
+       "number": "298",
+       "id": "0d5bd3e1-45ef-43b7-8796-6085842278df"
+      },
+      {
+       "qty": 4,
+       "name": "Island",
+       "set": "tsp",
+       "number": "286",
+       "id": "e5fdeb2c-afb8-4850-bcdc-86283ffa3486"
+      },
+      {
+       "qty": 6,
+       "name": "Mountain",
+       "set": "tsp",
+       "number": "294",
+       "id": "e34229e7-5dc4-47b3-9ba2-609e5b3ca6c2"
+      }
+     ]
+    }
+   },
+   "villain": {
+    "who": "bolas",
+    "deck": {
+     "name": "Through the Rift",
+     "colors": "BR",
+     "archetype": "Midrange",
+     "label": "tribute",
+     "cards": [
+      {
+       "qty": 4,
+       "name": "Gathan Raiders",
+       "set": "fut",
+       "number": "99",
+       "id": "8af5c695-d0f4-4ea7-bc12-f3a24d5b6a11"
+      },
+      {
+       "qty": 4,
+       "name": "Blood Knight",
+       "set": "plc",
+       "number": "115",
+       "id": "0f2133c0-8561-4264-8802-1b2933abf186"
+      },
+      {
+       "qty": 4,
+       "name": "Skulking Knight",
+       "set": "tsp",
+       "number": "130",
+       "id": "a7f7927b-64ae-4448-9540-8d7bbe88c9cc"
+      },
+      {
+       "qty": 4,
+       "name": "Keldon Marauders",
+       "set": "plc",
+       "number": "102",
+       "id": "677c28db-34d2-4325-99d1-9b689753802f"
+      },
+      {
+       "qty": 4,
+       "name": "Sudden Death",
+       "set": "tsp",
+       "number": "134",
+       "id": "16e889c4-105b-4f4e-8a3d-ace753a24a4e"
+      },
+      {
+       "qty": 4,
+       "name": "Incinerate",
+       "set": "10e",
+       "number": "213",
+       "id": "723fb62e-735a-4ca6-9d38-f1c3944fe69a"
+      },
+      {
+       "qty": 4,
+       "name": "Sudden Shock",
+       "set": "tsp",
+       "number": "179",
+       "id": "7d2691ee-8eec-437d-9bc1-113264525fb8"
+      },
+      {
+       "qty": 4,
+       "name": "Flamecore Elemental",
+       "set": "tsp",
+       "number": "154",
+       "id": "940bfe4f-bc18-4506-b6f4-13d339fd3e55"
+      },
+      {
+       "qty": 4,
+       "name": "Evil Eye of Urborg",
+       "set": "tsp",
+       "number": "107",
+       "id": "fc17fe31-11f1-48e0-9b0d-7c7dcda417a6"
+      },
+      {
+       "qty": 4,
+       "name": "Sulfurous Springs",
+       "set": "10e",
+       "number": "359",
+       "id": "ca7f2426-5a56-4dca-a059-65aa7266ac83"
+      },
+      {
+       "qty": 10,
+       "name": "Swamp",
+       "set": "tsp",
+       "number": "290",
+       "id": "3fecc759-61fa-4040-9b46-710512baa4bf"
+      },
+      {
+       "qty": 10,
+       "name": "Mountain",
+       "set": "tsp",
+       "number": "294",
+       "id": "e34229e7-5dc4-47b3-9ba2-609e5b3ca6c2"
+      }
+     ]
+    }
+   },
+   "reward": {
+    "hero": {
+     "packs": 2,
+     "coins": 200
+    },
+    "villain": {
+     "card": {
+      "oracle_id": "752b5a97-e2f7-43c0-b8c8-2c1efbbfbd2a",
+      "name": "Evil Eye of Urborg",
+      "rarity": "uncommon",
+      "set": "tsp",
+      "id": "fc17fe31-11f1-48e0-9b0d-7c7dcda417a6",
+      "image": "https://cards.scryfall.io/normal/front/f/c/fc17fe31-11f1-48e0-9b0d-7c7dcda417a6.jpg"
+     },
+     "coins": 200
+    }
+   },
+   "scene": [
+    {
+     "who": "stage",
+     "line": "Yawgmoth's corpse is a wound in the universe. His foul blood seeps out, infecting the land with his final curse.",
+     "quote": true
+    },
+    {
+     "who": "jhoira",
+     "line": "He is old, and he is patient, and he has never lost a fight he chose. So we don't let him choose."
+    },
+    {
+     "who": "radha",
+     "line": "Count his blockers before you swing. Then swing anyway."
+    },
+    {
+     "who": "venser",
+     "line": "I have a teleporter, an artificer and a Keldon. I like our odds less than I'd hoped."
+    }
+   ],
+   "villainScene": [
+    {
+     "who": "bolas",
+     "line": "Do the innocent pay for the crimes of the guilty? Of course they do. That's the fate of the weak.",
+     "quote": true
+    },
+    {
+     "who": "bolas",
+     "line": "I was old when your world was young. Every age of Dominaria is mine. The rift merely opens the door."
+    }
+   ],
+   "after": null,
+   "cues": {
+    "hero": {
+     "start": "Close the rift!",
+     "big": "Now, all of us!",
+     "low": "He is everywhere...",
+     "win": "Time runs one way again.",
+     "loss": "The rift... widens...",
+     "half": "Count, then swing."
+    },
+    "villain": {
+     "start": "Kneel, little things.",
+     "big": "Burn.",
+     "low": "The rift is closing...",
+     "win": "Every age is mine.",
+     "loss": "This is not... the end...",
+     "half": {
+      "who": "venser",
+      "line": "He's hurt. I didn't know he could be hurt."
+     }
+    }
+   },
+   "bigPlays": [],
+   "sim": null
+  },
+  {
+   "id": "a14b9",
+   "slot": 9,
+   "kind": "Secret Boss",
+   "secret": true,
+   "mood": "boss",
+   "title": "Pickles",
+   "difficulty": "Hard",
+   "teaches": [
+    "Playing under a lock"
+   ],
+   "blurb": "Deep in the archive, the deck that made its opponents skip their turns. Every one of them.",
+   "rewardSet": "tsp",
+   "host": true,
+   "archive": {
+    "deck": "Pickles",
+    "when": "2007",
+    "format": "Standard: Ravnica block, Coldsnap, Time Spiral block and Tenth Edition.",
+    "what": "A blue morph control deck named after its two-card lock: Brine Elemental and Vesuvan Shapeshifter.",
+    "why": "When Brine Elemental is turned face up, every opponent skips their next untap step. Vesuvan Shapeshifter copies it, turns face down, and unmorphs again. Every time it does, you lose another untap step.",
+    "beat": "Win before the lock assembles. Brine Elemental needs a lot of mana to unmorph. Pressure early, and keep a spell to kill a face-down morph.",
+    "after": "Pickles was never banned. Players still name it whenever two cards lock someone out of the game."
+   },
+   "hero": {
+    "who": "you",
+    "deck": {
+     "name": "Goyf Beatdown",
+     "colors": "GWR",
+     "archetype": "Aggro",
+     "label": "tribute",
+     "cards": [
+      {
+       "qty": 4,
+       "name": "Tarmogoyf",
+       "set": "fut",
+       "number": "153",
+       "id": "b6876d9e-0908-43ac-8542-09c7aa02b5ba"
+      },
+      {
+       "qty": 4,
+       "name": "Blade of the Sixth Pride",
+       "set": "fut",
+       "number": "19",
+       "id": "f6ccfe28-ec08-4751-b65c-c40b2bafa955"
+      },
+      {
+       "qty": 4,
+       "name": "Llanowar Elves",
+       "set": "10e",
+       "number": "274",
+       "id": "c7a7fe6e-aa5a-4be6-a730-5cfff4fb89e3"
+      },
+      {
+       "qty": 4,
+       "name": "Calciderm",
+       "set": "plc",
+       "number": "23",
+       "id": "f0159719-ccf4-4798-a394-b01f5e422a27"
+      },
+      {
+       "qty": 4,
+       "name": "Keldon Marauders",
+       "set": "plc",
+       "number": "102",
+       "id": "677c28db-34d2-4325-99d1-9b689753802f"
+      },
+      {
+       "qty": 4,
+       "name": "Rift Bolt",
+       "set": "tsp",
+       "number": "176",
+       "id": "88dde96e-6824-4d26-9fb5-86b9f3c50959"
+      },
+      {
+       "qty": 4,
+       "name": "Giant Growth",
+       "set": "10e",
+       "number": "266",
+       "id": "d4db271b-b7f2-4a12-b606-2215bab4ac17"
+      },
+      {
+       "qty": 4,
+       "name": "Mogg War Marshal",
+       "set": "tsp",
+       "number": "170",
+       "id": "8b9e0bdb-b615-447a-b80d-d7244c25c56e"
+      },
+      {
+       "qty": 4,
+       "name": "Aven Mindcensor",
+       "set": "fut",
+       "number": "18",
+       "id": "5b8ede8a-5317-4662-b964-a9bd202a4aab"
+      },
+      {
+       "qty": 4,
+       "name": "Karplusan Forest",
+       "set": "10e",
+       "number": "354",
+       "id": "d56ad1cb-c1b9-4856-8d46-55012aee4d47"
+      },
+      {
+       "qty": 4,
+       "name": "Brushland",
+       "set": "10e",
+       "number": "349",
+       "id": "70afcfca-c065-4a33-95b1-ec2b08bcb493"
+      },
+      {
+       "qty": 4,
+       "name": "Battlefield Forge",
+       "set": "10e",
+       "number": "348",
+       "id": "e0df1e5f-8cef-4e13-babf-4254a85ac46b"
+      },
+      {
+       "qty": 4,
+       "name": "Forest",
+       "set": "tsp",
+       "number": "298",
+       "id": "0d5bd3e1-45ef-43b7-8796-6085842278df"
+      },
+      {
+       "qty": 4,
+       "name": "Mountain",
+       "set": "tsp",
+       "number": "294",
+       "id": "e34229e7-5dc4-47b3-9ba2-609e5b3ca6c2"
+      },
+      {
+       "qty": 4,
+       "name": "Plains",
+       "set": "tsp",
+       "number": "282",
+       "id": "cd9a8337-e4ca-458d-8fcd-672d8d6f1c0d"
+      }
+     ]
+    }
+   },
+   "villain": {
+    "who": "pickles",
+    "deck": {
+     "name": "Pickles",
+     "colors": "U",
+     "archetype": "Lock",
+     "label": "tribute",
+     "note": "Built from the 2007 Pickles lists with Brine Elemental and Vesuvan Shapeshifter, using cards from this act's sets. No single tournament list is copied.",
+     "cards": [
+      {
+       "qty": 4,
+       "name": "Brine Elemental",
+       "set": "tsp",
+       "number": "50",
+       "id": "8dab2c73-501b-46c9-bc76-134b50d35bb8"
+      },
+      {
+       "qty": 4,
+       "name": "Vesuvan Shapeshifter",
+       "set": "tsp",
+       "number": "90",
+       "id": "458031cc-238d-45f0-9a81-b52e82286e0f"
+      },
+      {
+       "qty": 4,
+       "name": "Fathom Seer",
+       "set": "tsp",
+       "number": "62",
+       "id": "20de275a-2e11-4452-8037-bc397dd53a8c"
+      },
+      {
+       "qty": 4,
+       "name": "Riftwing Cloudskate",
+       "set": "tsp",
+       "number": "73",
+       "id": "78ad6c86-8cfb-4f24-b8e8-ecbeffc949b8"
+      },
+      {
+       "qty": 4,
+       "name": "Cancel",
+       "set": "tsp",
+       "number": "51",
+       "id": "b4e175f7-f649-451b-9ee5-ad1140b2e8a7"
+      },
+      {
+       "qty": 4,
+       "name": "Draining Whelk",
+       "set": "tsp",
+       "number": "57",
+       "id": "c559d326-b97b-43d9-b7c9-c09e1a0e9db6"
+      },
+      {
+       "qty": 4,
+       "name": "Errant Ephemeron",
+       "set": "tsp",
+       "number": "60",
+       "id": "398c26cc-cd55-42c6-a744-aaefd7018960"
+      },
+      {
+       "qty": 4,
+       "name": "Looter il-Kor",
+       "set": "tsp",
+       "number": "66",
+       "id": "368ee06f-9021-4b65-9f53-9c326bf3a27f"
+      },
+      {
+       "qty": 4,
+       "name": "Tolarian Sentinel",
+       "set": "tsp",
+       "number": "87",
+       "id": "2e97ec8b-6163-41ff-9e6f-af091a7c529e"
+      },
+      {
+       "qty": 24,
+       "name": "Island",
+       "set": "tsp",
+       "number": "286",
+       "id": "e5fdeb2c-afb8-4850-bcdc-86283ffa3486"
+      }
+     ]
+    }
+   },
+   "reward": {
+    "hero": {
+     "packs": 2,
+     "coins": 200
+    },
+    "villain": {
+     "card": {
+      "oracle_id": "ec577886-fb25-455b-9c3d-5fd610959436",
+      "name": "Vesuvan Shapeshifter",
+      "rarity": "rare",
+      "set": "tsp",
+      "id": "458031cc-238d-45f0-9a81-b52e82286e0f",
+      "image": "https://cards.scryfall.io/normal/front/4/5/458031cc-238d-45f0-9a81-b52e82286e0f.jpg"
+     },
+     "coins": 200
+    }
+   },
+   "scene": [
+    {
+     "who": "stage",
+     "line": "Water calls to water, and the world is left exhausted and withered in its wake.",
+     "quote": true
+    },
+    {
+     "who": "you",
+     "line": "If the lock comes together, I never untap again. So it can't come together."
+    }
+   ],
+   "villainScene": [
+    {
+     "who": "stage",
+     "line": "The deck does not speak. It waits face down."
+    }
+   ],
+   "after": [
+    {
+     "who": "stage",
+     "line": "Recorded: never banned. One of the most famous locks of its age."
+    }
+   ],
+   "cues": {
+    "hero": {
+     "start": "Hit before the lock.",
+     "big": "Now, while they're face down!",
+     "low": "Nothing untaps...",
+     "win": "Unpickled.",
+     "loss": "Locked out...",
+     "half": "Kill the morph."
+    },
+    "villain": {
+     "start": "[a face-down card]",
+     "big": "[unmorph]",
+     "low": "[the shapeshifter falters]",
+     "win": "[skip your untap]",
+     "loss": "[the lock breaks]"
+    }
+   },
+   "bigPlays": [],
+   "sim": null
+  }
+ ]
+}

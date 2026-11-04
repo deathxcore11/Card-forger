@@ -131,8 +131,8 @@ export default {
 8 Forest
 8 Mountain
 8 Plains`}},
-      villain: {who: 'vhati', deck: {name: 'The Hunting Party', colors: 'BR', list: `
-2 Vhati il-Dal
+      villain: {who: 'vhati', deck: {name: 'The Hunting Party', colors: 'BRG', list: `
+4 Vhati il-Dal
 4 Mogg Fanatic
 4 Mogg Conscripts
 4 Rats of Rath
@@ -141,15 +141,15 @@ export default {
 4 Flowstone Sculpture
 4 Dark Banishing
 4 Kindle
-2 Darkling Stalker
-12 Swamp
-12 Mountain`}},
+10 Swamp
+9 Mountain
+5 Forest`}},
       scene: [q('hanna', 'We must learn how they protect each other.'), q('mirri', "After they're done trying to kill us, all right?"),
         q('karn', 'We are kinfolk. Just as you need your progeny to complete you, so do I need the pieces of the Legacy.'),
         s('stage', 'The hive goes quiet. Then it turns to face the cave mouth.'),
         s('vhati', 'Commander Greven will want the golem. And... whatever those are.'), s('karn', 'I will not fight. They will. Lead them well.')],
       villainScene: [q('vhati', 'Sir, I just thought...'), s('vhati', "...that if I bring back the golem, Greven might stop throwing me off things."), s('vhati', "It's a good plan. It's a good plan.")],
-      cues: {hero: cue(null, null, null, null, null),
+      cues: {hero: cue('Karn, stay close.', 'Through the hive!', 'They share every trick...', 'The hive is quiet.', 'Back to the Weatherlight...'),
         villain: cue('For Greven! Mostly.', "He'll have to promote me now!", 'This is going on my record.', 'Bag the golem. Carefully!', "Don't tell Greven. Please don't tell Greven.")}},
     {slot: 4, mood: 'tension', kind: 'Rival', title: "Selenia's Shard", difficulty: 'Normal', rewardSet: 'sth', teaches: ['Gaining life'],
       blurb: 'Crovax came to Rath to save his angel. He found her serving Volrath, and his sword found her before his mind did. Now the curse is waking. Mirri is the only one who sees it.',
@@ -255,7 +255,7 @@ export default {
         s('greven', 'But this minotaur? This one I get to break myself.')],
       cues: {hero: cue('Hold your position! Leave doubt for the dying!', 'You want to know your enemy? Look at your feet while you trample him.', 'Where I come from, stone stays on the ground.', 'Off my ship.', "Torahn's horns..."),
         villain: cue('Moggs! Over the rail!', 'Fear rules those weak enough to accept it.', 'Vhati! VHATI!', 'Chain him. The evincar has plans for horns.', 'Retreat. And someone find me Vhati.')}},
-    {slot: 7, mood: 'tension', kind: 'Meta', title: 'The Laboratory', difficulty: 'Hard', rewardSet: 'exo', teaches: ['Playing against reanimation'],
+    {slot: 7, mood: 'tension', kind: 'Meta', title: 'The Laboratory', difficulty: 'Normal', rewardSet: 'exo', teaches: ['Playing against reanimation'],
       blurb: 'Inside the Stronghold, the crew finds Volrath\'s laboratory, where the dead are works in progress. Something in there is wearing Gerrard\'s face. Survival and Recurring Nightmare, the engine of 1998.',
       hero: {who: 'orim', deck: {name: 'The Samite Way', colors: 'W', list: `
 2 Orim, Samite Healer

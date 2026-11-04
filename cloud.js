@@ -133,6 +133,8 @@ export function statusLabel() {
   );
 }
 
+// The one Supabase client (Realtime for the shared Game Night table); null before the account service starts.
+export const realtimeClient = () => client;
 export const cloudInfo = () => ({ configured: cloudConfigured(), ready: !!client, user, profile, art: accountArt, providers, status: { ...status }, pending, switching: !accountReady, recoveringPassword, authNotice, meta: readMeta() });
 
 // Turn backend errors into something a player can act on.
@@ -355,6 +357,14 @@ export async function communityRequest(action,payload={}) {
  if(data?.error)throw Error(data.error);
  if(action==='save_art'){accountArt={avatar:payload.avatar||null,header:payload.header||null};hooks.changed();}
  return data;
+}
+
+// Rich presence (play-presence.js, supabase/migrations/20261104013000_community_presence.sql): beats, the
+// share switch and accepted friends' status. Quiet on failure: presence is never worth an error on screen.
+export async function presenceRequest(action,payload={}) {
+ if(!client?.rpc||!user||!accountReady)return null;
+ const owner=user.id,epoch=syncEpoch;
+ try{const {data,error}=await client.rpc('community_presence',{action,payload});if(error||user?.id!==owner||syncEpoch!==epoch)return null;return data;}catch{return null;}
 }
 
 async function fetchCloud() {

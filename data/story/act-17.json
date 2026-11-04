@@ -1,0 +1,2730 @@
+{
+ "act": 17,
+ "era": "2010-07-16",
+ "title": "The Eldrazi Rise",
+ "years": "2009 to 2010",
+ "sets": [
+  "zen",
+  "wwk",
+  "roe",
+  "m11"
+ ],
+ "landSet": "zen",
+ "intro": [
+  {
+   "who": "stage",
+   "line": "Zendikar. The land here moves. Storms of stone and water called the Roil tear forests up and drop mountains into the sea."
+  },
+  {
+   "who": "stage",
+   "line": "The Roil redraws the world as it passes, leaving only the hedrons unchanged.",
+   "quote": true
+  },
+  {
+   "who": "stage",
+   "line": "Expeditions from every race hunt for relics in the ruins under the hedrons. Nobody asks what the hedrons are holding down."
+  }
+ ],
+ "finale": [
+  {
+   "who": "stage",
+   "line": "An eye closes. A race awakens.",
+   "quote": true
+  },
+  {
+   "who": "stage",
+   "line": "Emrakul's brood is broken on the slopes, but the titans are free. Ulamog and Kozilek walk the continents, and everything they touch turns to chalk."
+  },
+  {
+   "who": "sorin",
+   "line": "Ten thousand years in that prison. Nahiri's stones, Ugin's plan, my blood. And three children with a map undid it in an afternoon."
+  },
+  {
+   "who": "nissa",
+   "line": "I broke the hedron. I thought it would send them away. I will spend the rest of my life fixing that."
+  },
+  {
+   "who": "gideon",
+   "line": "Then you won't spend it alone."
+  }
+ ],
+ "villainFinale": [
+  {
+   "who": "stage",
+   "line": "The hedrons fall like hail. Three shapes larger than mountains rise out of the ground."
+  },
+  {
+   "who": "stage",
+   "line": "Wordlessly it leads its abhorrent brood.",
+   "quote": true
+  },
+  {
+   "who": "stage",
+   "line": "Ulamog and Kozilek begin to feed. Emrakul, the last and largest to wake, does not."
+  },
+  {
+   "who": "stage",
+   "line": "She drifts upward until the clouds close around her. When the planeswalkers come back to count the titans, they will only ever find two."
+  }
+ ],
+ "vibe": "eldrazi-wake-expedition",
+ "cast": {
+  "you": {
+   "name": "You",
+   "title": "Planeswalker",
+   "portrait": {
+    "card": "Explore",
+    "set": "wwk",
+    "number": "99",
+    "id": "d8f81e8a-e309-4bac-81de-326756cd8901",
+    "crop": "https://cards.scryfall.io/art_crop/front/d/8/d8f81e8a-e309-4bac-81de-326756cd8901.jpg?1783942046",
+    "artist": "John Avon",
+    "focus": "50% 30%"
+   }
+  },
+  "nissa": {
+   "name": "Nissa Revane",
+   "title": "Joraga Elf",
+   "portrait": {
+    "card": "Nissa Revane",
+    "set": "zen",
+    "number": "170",
+    "id": "1b4c26ab-0f7b-4163-b9e4-a415b91352a6",
+    "crop": "https://cards.scryfall.io/art_crop/front/1/b/1b4c26ab-0f7b-4163-b9e4-a415b91352a6.jpg?1783942134",
+    "artist": "Jaime Jones",
+    "focus": "50% 25%"
+   }
+  },
+  "guide": {
+   "name": "Goblin Guide",
+   "title": "Akoum, for a price",
+   "portrait": {
+    "card": "Goblin Guide",
+    "set": "zen",
+    "number": "126",
+    "id": "b2e2a777-0705-4a37-937d-c6e020ebc0f0",
+    "crop": "https://cards.scryfall.io/art_crop/front/b/2/b2e2a777-0705-4a37-937d-c6e020ebc0f0.jpg?1783942145",
+    "artist": "Warren Mahy",
+    "focus": "50% 30%"
+   }
+  },
+  "rana": {
+   "name": "Rana Cloudwake",
+   "title": "Kor skyfisher",
+   "portrait": {
+    "card": "Kor Skyfisher",
+    "set": "zen",
+    "number": "23",
+    "id": "bb2e9465-f5ba-4c7b-9f03-d40dc8394acd",
+    "crop": "https://cards.scryfall.io/art_crop/front/b/b/bb2e9465-f5ba-4c7b-9f03-d40dc8394acd.jpg?1783942172",
+    "artist": "Dan Murayama Scott",
+    "focus": "50% 25%"
+   }
+  },
+  "sorin": {
+   "name": "Sorin Markov",
+   "title": "Planeswalker",
+   "portrait": {
+    "card": "Sorin Markov",
+    "set": "zen",
+    "number": "111",
+    "id": "29606aca-f23f-4dfe-b685-2065193109c8",
+    "crop": "https://cards.scryfall.io/art_crop/front/2/9/29606aca-f23f-4dfe-b685-2065193109c8.jpg?1783942148",
+    "artist": "Michael Komarck",
+    "focus": "50% 25%"
+   }
+  },
+  "expedition": {
+   "name": "Kazandu Expedition",
+   "title": "Allies for hire",
+   "portrait": {
+    "card": "Kazandu Blademaster",
+    "set": "zen",
+    "number": "16",
+    "id": "9642bdbf-c03f-4c48-a5c8-c9201a08b834",
+    "crop": "https://cards.scryfall.io/art_crop/front/9/6/9642bdbf-c03f-4c48-a5c8-c9201a08b834.jpg?1783942172",
+    "artist": "Michael Komarck",
+    "focus": "50% 25%"
+   }
+  },
+  "sovereign": {
+   "name": "Merfolk Sovereign",
+   "title": "Seeker of Emeria",
+   "portrait": {
+    "card": "Merfolk Sovereign",
+    "set": "m11",
+    "number": "65",
+    "id": "ed43af3c-1070-45d9-9de6-17d07a6ef3c0",
+    "crop": "https://cards.scryfall.io/art_crop/front/e/d/ed43af3c-1070-45d9-9de6-17d07a6ef3c0.jpg?1783941823",
+    "artist": "Jesper Ejsing",
+    "focus": "50% 25%"
+   }
+  },
+  "chandra": {
+   "name": "Chandra Nalaar",
+   "title": "Planeswalker",
+   "portrait": {
+    "card": "Chandra Nalaar",
+    "set": "m11",
+    "number": "127",
+    "id": "ac44125d-28de-4ecf-a55b-1299daa5539e",
+    "crop": "https://cards.scryfall.io/art_crop/front/a/c/ac44125d-28de-4ecf-a55b-1299daa5539e.jpg?1783941809",
+    "artist": "Aleksi Briclot",
+    "focus": "50% 25%"
+   }
+  },
+  "sarkhan": {
+   "name": "Sarkhan",
+   "title": "The Mad",
+   "portrait": {
+    "card": "Sarkhan the Mad",
+    "set": "roe",
+    "number": "214",
+    "id": "26c1ba92-556e-4da9-8e3a-a4a82612cb29",
+    "crop": "https://cards.scryfall.io/art_crop/front/2/6/26c1ba92-556e-4da9-8e3a-a4a82612cb29.jpg?1783941958",
+    "artist": "Chippy",
+    "focus": "50% 25%"
+   }
+  },
+  "anowon": {
+   "name": "Anowon",
+   "title": "The Ruin Sage",
+   "portrait": {
+    "card": "Anowon, the Ruin Sage",
+    "set": "wwk",
+    "number": "49",
+    "id": "7b247681-1cf6-42a0-ad44-76261c690596",
+    "crop": "https://cards.scryfall.io/art_crop/front/7/b/7b247681-1cf6-42a0-ad44-76261c690596.jpg?1783942058",
+    "artist": "Dan Murayama Scott",
+    "focus": "50% 25%"
+   }
+  },
+  "gideon": {
+   "name": "Gideon Jura",
+   "title": "Planeswalker",
+   "portrait": {
+    "card": "Gideon Jura",
+    "set": "roe",
+    "number": "21",
+    "id": "e0440668-1b0e-437c-9e42-7166dd14dfe5",
+    "crop": "https://cards.scryfall.io/art_crop/front/e/0/e0440668-1b0e-437c-9e42-7166dd14dfe5.jpg?1783942009",
+    "artist": "Aleksi Briclot",
+    "focus": "50% 25%"
+   }
+  },
+  "brood": {
+   "name": "The Brood",
+   "title": "Spawn of Ulamog",
+   "portrait": {
+    "card": "Pawn of Ulamog",
+    "set": "roe",
+    "number": "122",
+    "id": "85f4d77d-e0de-48fe-899b-5718cee779e2",
+    "crop": "https://cards.scryfall.io/art_crop/front/8/5/85f4d77d-e0de-48fe-899b-5718cee779e2.jpg?1783941982",
+    "artist": "Daarken",
+    "focus": "50% 30%"
+   }
+  },
+  "hawkBlade": {
+   "name": "Hawk-Blade",
+   "title": "Spring 2010",
+   "portrait": {
+    "card": "Stoneforge Mystic",
+    "set": "wwk",
+    "number": "20",
+    "id": "19557351-b65f-4b04-b971-66abdc07000a",
+    "crop": "https://cards.scryfall.io/art_crop/front/1/9/19557351-b65f-4b04-b971-66abdc07000a.jpg?1792506403",
+    "artist": "Mike Bierek",
+    "focus": "50% 25%"
+   }
+  },
+  "boros": {
+   "name": "Boros Landfall",
+   "title": "Spring 2010",
+   "portrait": {
+    "card": "Steppe Lynx",
+    "set": "zen",
+    "number": "36",
+    "id": "b0aaec1c-8084-4468-82e7-2e4cc5ebe244",
+    "crop": "https://cards.scryfall.io/art_crop/front/b/0/b0aaec1c-8084-4468-82e7-2e4cc5ebe244.jpg?1783942167",
+    "artist": "Nic Klein",
+    "focus": "50% 30%"
+   }
+  },
+  "vampires": {
+   "name": "Vampire Aggro",
+   "title": "Summer 2010",
+   "portrait": {
+    "card": "Vampire Nighthawk",
+    "set": "zen",
+    "number": "116",
+    "id": "44f19fe3-7a17-4c45-adfa-590f73dfebfa",
+    "crop": "https://cards.scryfall.io/art_crop/front/4/4/44f19fe3-7a17-4c45-adfa-590f73dfebfa.jpg?1783942148",
+    "artist": "Jason Chan",
+    "focus": "50% 25%"
+   }
+  },
+  "valakut": {
+   "name": "Valakut Ramp",
+   "title": "Summer 2010",
+   "portrait": {
+    "card": "Primeval Titan",
+    "set": "m11",
+    "number": "192",
+    "id": "feee9327-b937-46ba-a2aa-6c015ab6cdd5",
+    "crop": "https://cards.scryfall.io/art_crop/front/f/e/feee9327-b937-46ba-a2aa-6c015ab6cdd5.jpg?1783941794",
+    "artist": "Aleksi Briclot",
+    "focus": "50% 25%"
+   }
+  },
+  "emrakul": {
+   "name": "Emrakul",
+   "title": "The Aeons Torn",
+   "portrait": {
+    "card": "Emrakul, the Aeons Torn",
+    "set": "roe",
+    "number": "4",
+    "id": "67600383-bbb8-411c-b8e6-2296650bc747",
+    "crop": "https://cards.scryfall.io/art_crop/front/6/7/67600383-bbb8-411c-b8e6-2296650bc747.jpg?1783942013",
+    "artist": "Mark Tedin",
+    "focus": "50% 30%"
+   }
+  },
+  "control": {
+   "name": "UW Control",
+   "title": "2010 to 2011",
+   "portrait": {
+    "card": "Jace, the Mind Sculptor",
+    "set": "wwk",
+    "number": "31",
+    "id": "0e606072-a3aa-4300-ba90-ec92a721fa76",
+    "crop": "https://cards.scryfall.io/art_crop/front/0/e/0e606072-a3aa-4300-ba90-ec92a721fa76.jpg?1792506267",
+    "artist": "Jason Chan",
+    "focus": "50% 25%"
+   }
+  }
+ },
+ "battles": [
+  {
+   "id": "a17b1",
+   "slot": 1,
+   "kind": "Arrival",
+   "mood": "tension",
+   "title": "Every Land an Expedition",
+   "difficulty": "Easy",
+   "teaches": [
+    "Landfall"
+   ],
+   "blurb": "You arrive on Zendikar in the jungles of Bala Ged, where the elf Nissa Revane is guarding her tribe's trail. Goblin raiders from the Akoum mountains want what is at the end of it.",
+   "rewardSet": "zen",
+   "host": false,
+   "hero": {
+    "who": "nissa",
+    "deck": {
+     "name": "The Joraga Trail",
+     "colors": "G",
+     "archetype": null,
+     "label": "tribute",
+     "cards": [
+      {
+       "qty": 2,
+       "name": "Nissa Revane",
+       "set": "zen",
+       "number": "170",
+       "id": "1b4c26ab-0f7b-4163-b9e4-a415b91352a6"
+      },
+      {
+       "qty": 4,
+       "name": "Nissa's Chosen",
+       "set": "zen",
+       "number": "171",
+       "id": "a740584f-2ec2-46a9-9344-eac220759e85"
+      },
+      {
+       "qty": 4,
+       "name": "Llanowar Elves",
+       "set": "m11",
+       "number": "184",
+       "id": "c4d1835a-913f-4979-953b-ddd933214538"
+      },
+      {
+       "qty": 4,
+       "name": "Elvish Archdruid",
+       "set": "m11",
+       "number": "171",
+       "id": "fcb80b4c-35a1-461b-8bad-2679b1dd2e05"
+      },
+      {
+       "qty": 4,
+       "name": "Oran-Rief Survivalist",
+       "set": "zen",
+       "number": "174",
+       "id": "0d598220-bddd-48a4-8c80-eb149c6292a3"
+      },
+      {
+       "qty": 4,
+       "name": "Grazing Gladehart",
+       "set": "zen",
+       "number": "163",
+       "id": "078b5290-a613-496f-bd23-8fd109549f31"
+      },
+      {
+       "qty": 4,
+       "name": "Territorial Baloth",
+       "set": "zen",
+       "number": "188",
+       "id": "45033b8a-f3a8-4a23-b6b0-e011e3e7a4c1"
+      },
+      {
+       "qty": 2,
+       "name": "Pelakka Wurm",
+       "set": "roe",
+       "number": "204",
+       "id": "8e732593-0bdc-4dd4-9b07-9aa1a780e6e8"
+      },
+      {
+       "qty": 4,
+       "name": "Joraga Treespeaker",
+       "set": "roe",
+       "number": "190",
+       "id": "1132218d-56cd-441e-9006-df3c50344491"
+      },
+      {
+       "qty": 4,
+       "name": "Giant Growth",
+       "set": "m11",
+       "number": "178",
+       "id": "340c33e0-2e41-4e08-a958-124860225735"
+      },
+      {
+       "qty": 24,
+       "name": "Forest",
+       "set": "zen",
+       "number": "246",
+       "id": "f0ca4b9f-4ee6-4ad8-a95f-326ada9de3cd"
+      }
+     ]
+    }
+   },
+   "villain": {
+    "who": "guide",
+    "deck": {
+     "name": "The Akoum Raiders",
+     "colors": "R",
+     "archetype": null,
+     "label": "tribute",
+     "cards": [
+      {
+       "qty": 4,
+       "name": "Goblin Guide",
+       "set": "zen",
+       "number": "126",
+       "id": "b2e2a777-0705-4a37-937d-c6e020ebc0f0"
+      },
+      {
+       "qty": 4,
+       "name": "Goblin Bushwhacker",
+       "set": "zen",
+       "number": "125",
+       "id": "4085a5bf-a71b-4c73-9b39-0dcc328fe11b"
+      },
+      {
+       "qty": 4,
+       "name": "Plated Geopede",
+       "set": "zen",
+       "number": "141",
+       "id": "fd8b5c0c-acda-411e-9f17-6d9292628a56"
+      },
+      {
+       "qty": 4,
+       "name": "Lightning Bolt",
+       "set": "m11",
+       "number": "149",
+       "id": "e768c957-3a1f-42f5-853a-96942f645df5"
+      },
+      {
+       "qty": 4,
+       "name": "Burst Lightning",
+       "set": "zen",
+       "number": "119",
+       "id": "2dc16614-5cf8-444d-a5ae-cac25018af68"
+      },
+      {
+       "qty": 4,
+       "name": "Goblin Shortcutter",
+       "set": "zen",
+       "number": "128",
+       "id": "5daeaa2e-68e5-4f49-9220-58c0c9b1a3d0"
+      },
+      {
+       "qty": 4,
+       "name": "Bladetusk Boar",
+       "set": "zen",
+       "number": "118",
+       "id": "1558dfaf-15ed-4220-9051-bf0bf442b2e9"
+      },
+      {
+       "qty": 4,
+       "name": "Torch Slinger",
+       "set": "zen",
+       "number": "151",
+       "id": "f4648820-9e87-4c67-8d97-cd7603f2e484"
+      },
+      {
+       "qty": 4,
+       "name": "Shatterskull Giant",
+       "set": "zen",
+       "number": "148",
+       "id": "9cfbb4dd-56a2-4a94-9b15-b3ef8b2f1d0b"
+      },
+      {
+       "qty": 24,
+       "name": "Mountain",
+       "set": "zen",
+       "number": "242",
+       "id": "232ee129-0db1-4a03-9eda-4692a8495b53"
+      }
+     ]
+    }
+   },
+   "reward": {
+    "hero": {
+     "packs": 1,
+     "coins": 0
+    },
+    "villain": {
+     "card": {
+      "oracle_id": "51d9564b-44fc-4de1-9119-09d7b4089378",
+      "name": "Goblin Guide",
+      "rarity": "rare",
+      "set": "zen",
+      "id": "b2e2a777-0705-4a37-937d-c6e020ebc0f0",
+      "image": "https://cards.scryfall.io/normal/front/b/2/b2e2a777-0705-4a37-937d-c6e020ebc0f0.jpg"
+     },
+     "coins": 50
+    }
+   },
+   "scene": [
+    {
+     "who": "nissa",
+     "line": "When the land is angry, so are they.",
+     "quote": true
+    },
+    {
+     "who": "nissa",
+     "line": "Landfall: every time you play a land, some creatures here get stronger or something happens. On Zendikar the ground fights for whoever walks it well. Play a land every turn."
+    }
+   ],
+   "villainScene": [
+    {
+     "who": "guide",
+     "line": "I've been all over this world. I even remember some of those places.",
+     "quote": true
+    },
+    {
+     "who": "stage",
+     "line": "Those who dare stand in its path are either brave or mindless. Or in the case of goblins, both.",
+     "quote": true
+    }
+   ],
+   "after": [
+    {
+     "who": "nissa",
+     "line": "The hedrons above the trail hum louder every season. My people say it means nothing. My people say a lot of things."
+    }
+   ],
+   "cues": {
+    "hero": {
+     "start": "The land is with us.",
+     "big": "Landfall!",
+     "low": "They burn the trail...",
+     "win": "Back to the mountains.",
+     "loss": "The trail is lost...",
+     "half": "Land first, then fight."
+    },
+    "villain": {
+     "start": "Shiny things this way!",
+     "big": "Charge! Everybody charge!",
+     "low": "Who brought the trees?!",
+     "win": "Loot!",
+     "loss": "Run! The forest is angry!"
+    }
+   },
+   "bigPlays": [],
+   "sim": null
+  },
+  {
+   "id": "a17b2",
+   "slot": 2,
+   "kind": "Lesson",
+   "mood": "march",
+   "title": "The Holy Relic",
+   "difficulty": "Easy",
+   "teaches": [
+    "Quests"
+   ],
+   "blurb": "The kor skyfishers of Makindi are nomads who climb the hedrons with ropes and hooks. A vampire planeswalker named Sorin Markov has come to Zendikar to inspect those same stones, and he does not like being followed.",
+   "rewardSet": "zen",
+   "host": false,
+   "hero": {
+    "who": "rana",
+    "deck": {
+     "name": "The Skyfishers of Makindi",
+     "colors": "W",
+     "archetype": null,
+     "label": "tribute",
+     "cards": [
+      {
+       "qty": 4,
+       "name": "Steppe Lynx",
+       "set": "zen",
+       "number": "36",
+       "id": "b0aaec1c-8084-4468-82e7-2e4cc5ebe244"
+      },
+      {
+       "qty": 4,
+       "name": "Kor Skyfisher",
+       "set": "zen",
+       "number": "23",
+       "id": "bb2e9465-f5ba-4c7b-9f03-d40dc8394acd"
+      },
+      {
+       "qty": 4,
+       "name": "Kor Duelist",
+       "set": "zen",
+       "number": "19",
+       "id": "4fd1af74-ba3b-4528-9490-99edd54e9fe1"
+      },
+      {
+       "qty": 4,
+       "name": "Knight of Cliffhaven",
+       "set": "roe",
+       "number": "29",
+       "id": "5e8332e9-7b02-4d58-b081-11004e690524"
+      },
+      {
+       "qty": 2,
+       "name": "Quest for the Holy Relic",
+       "set": "zen",
+       "number": "33",
+       "id": "00d6b8bb-ec11-4ded-a7fc-fa4ea0bb96cc"
+      },
+      {
+       "qty": 4,
+       "name": "Kor Aeronaut",
+       "set": "zen",
+       "number": "17",
+       "id": "87ae3eb8-b570-4129-9d4e-b7afa8fc4840"
+      },
+      {
+       "qty": 4,
+       "name": "Journey to Nowhere",
+       "set": "zen",
+       "number": "14",
+       "id": "09cfe585-8a55-4b27-89e0-dfb6946fe1f3"
+      },
+      {
+       "qty": 4,
+       "name": "Squadron Hawk",
+       "set": "m11",
+       "number": "33",
+       "id": "beddd409-0154-45a5-a20d-833cf1b5e1f4"
+      },
+      {
+       "qty": 4,
+       "name": "Kor Hookmaster",
+       "set": "zen",
+       "number": "20",
+       "id": "68ad3199-c202-4b71-8a36-53547e70c39b"
+      },
+      {
+       "qty": 24,
+       "name": "Plains",
+       "set": "zen",
+       "number": "230",
+       "id": "bc4f4b6d-ff35-4b1f-974b-f39569e6b3c7"
+      },
+      {
+       "qty": 2,
+       "name": "Honor of the Pure",
+       "set": "m11",
+       "number": "17",
+       "id": "3831cb3b-0983-403b-9e0a-4720222817c4"
+      }
+     ]
+    }
+   },
+   "villain": {
+    "who": "sorin",
+    "deck": {
+     "name": "The Blood of Malakir",
+     "colors": "B",
+     "archetype": null,
+     "label": "tribute",
+     "cards": [
+      {
+       "qty": 2,
+       "name": "Sorin Markov",
+       "set": "zen",
+       "number": "111",
+       "id": "29606aca-f23f-4dfe-b685-2065193109c8"
+      },
+      {
+       "qty": 2,
+       "name": "Vampire Hexmage",
+       "set": "zen",
+       "number": "114",
+       "id": "93d2c4d1-6205-404a-b03d-995b90a3a33a"
+      },
+      {
+       "qty": 4,
+       "name": "Bloodghast",
+       "set": "zen",
+       "number": "83",
+       "id": "63870c81-63bf-4a9a-aeb5-74c6eaded9f1"
+      },
+      {
+       "qty": 2,
+       "name": "Gatekeeper of Malakir",
+       "set": "zen",
+       "number": "89",
+       "id": "71db3698-a45c-4eaf-87e6-30502c0c10f4"
+      },
+      {
+       "qty": 1,
+       "name": "Vampire Nighthawk",
+       "set": "zen",
+       "number": "116",
+       "id": "44f19fe3-7a17-4c45-adfa-590f73dfebfa"
+      },
+      {
+       "qty": 4,
+       "name": "Child of Night",
+       "set": "m11",
+       "number": "88",
+       "id": "ef351dcb-64c0-413a-81d3-38e7cd4a8f78"
+      },
+      {
+       "qty": 2,
+       "name": "Disfigure",
+       "set": "zen",
+       "number": "87",
+       "id": "b3842ad2-a449-4963-8c96-276554125757"
+      },
+      {
+       "qty": 4,
+       "name": "Bloodthrone Vampire",
+       "set": "roe",
+       "number": "98",
+       "id": "48bf0233-1d2e-40cb-9a69-8eeeeb2959ca"
+      },
+      {
+       "qty": 4,
+       "name": "Kalastria Highborn",
+       "set": "wwk",
+       "number": "59",
+       "id": "f1efd1dd-903c-47a0-b746-5571a3ea1755"
+      },
+      {
+       "qty": 2,
+       "name": "Vampire's Bite",
+       "set": "zen",
+       "number": "117",
+       "id": "6460a752-e5a7-4fd0-9ae5-e0773b86f19b"
+      },
+      {
+       "qty": 29,
+       "name": "Swamp",
+       "set": "zen",
+       "number": "238",
+       "id": "7cd6becc-f06a-4fd3-8305-70604b92a187"
+      },
+      {
+       "qty": 4,
+       "name": "Pulse Tracker",
+       "set": "wwk",
+       "number": "62",
+       "id": "4604a63c-ebe0-420f-968e-3ffc7641ce22"
+      }
+     ]
+    }
+   },
+   "reward": {
+    "hero": {
+     "packs": 1,
+     "coins": 0
+    },
+    "villain": {
+     "card": {
+      "oracle_id": "c151e8b7-4b28-4f03-8a81-9bf623f893d7",
+      "name": "Sorin Markov",
+      "rarity": "mythic",
+      "set": "zen",
+      "id": "29606aca-f23f-4dfe-b685-2065193109c8",
+      "image": "https://cards.scryfall.io/normal/front/2/9/29606aca-f23f-4dfe-b685-2065193109c8.jpg"
+     },
+     "coins": 50
+    }
+   },
+   "scene": [
+    {
+     "who": "rana",
+     "line": "Sometimes I snare the unexpected, but I know its purpose will be revealed in time.",
+     "quote": true
+    },
+    {
+     "who": "rana",
+     "line": "Quests: a quest enchantment counts your progress, one counter at a time. Fill it and it pays you a reward. Ours counts our landings."
+    }
+   ],
+   "villainScene": [
+    {
+     "who": "sorin",
+     "line": "The vampires of this world don't know the pleasures of hunger. They gorge themselves without savoring the kill.",
+     "quote": true
+    },
+    {
+     "who": "sorin",
+     "line": "I made these stones. Or helped to. I would like to see whether they still hold, without a kor hanging off every one of them."
+    }
+   ],
+   "after": [
+    {
+     "who": "sorin",
+     "line": "The hedrons are holding. For now. Stay off them, skyfisher, and you might live long enough to understand why."
+    }
+   ],
+   "cues": {
+    "hero": {
+     "start": "Ropes out.",
+     "big": "The quest is done!",
+     "low": "Too many fangs...",
+     "win": "The relic is ours.",
+     "loss": "Cut the lines...",
+     "half": "Count every landing."
+    },
+    "villain": {
+     "start": "Climb elsewhere.",
+     "big": "Hunger is a craft.",
+     "low": "Tiresome little climbers.",
+     "win": "The stones are mine to tend.",
+     "loss": "You are stronger than you look. Pity."
+    }
+   },
+   "bigPlays": [],
+   "sim": null
+  },
+  {
+   "id": "a17b3",
+   "slot": 3,
+   "kind": "Lesson",
+   "mood": "comic",
+   "title": "The Race to Halimar",
+   "difficulty": "Easy",
+   "teaches": [
+    "Allies"
+   ],
+   "blurb": "A relic map has been found, and every expedition on Zendikar wants the treasure at its end. A party of sell-swords from Kazandu races a band of merfolk who believe the ruins belong to their sky goddess, Emeria.",
+   "rewardSet": "zen",
+   "host": false,
+   "hero": {
+    "who": "expedition",
+    "deck": {
+     "name": "The Kazandu Expedition",
+     "colors": "GW",
+     "archetype": null,
+     "label": "tribute",
+     "cards": [
+      {
+       "qty": 4,
+       "name": "Kazandu Blademaster",
+       "set": "zen",
+       "number": "16",
+       "id": "9642bdbf-c03f-4c48-a5c8-c9201a08b834"
+      },
+      {
+       "qty": 4,
+       "name": "Talus Paladin",
+       "set": "wwk",
+       "number": "21",
+       "id": "4f5212f4-f04c-4ca3-b254-654bb263829b"
+      },
+      {
+       "qty": 4,
+       "name": "Makindi Shieldmate",
+       "set": "zen",
+       "number": "26",
+       "id": "e76e9555-966c-4fc3-9ef4-a0154ccb8329"
+      },
+      {
+       "qty": 4,
+       "name": "Ondu Cleric",
+       "set": "zen",
+       "number": "30",
+       "id": "ced43447-fefc-482a-b8fa-33b9616aa532"
+      },
+      {
+       "qty": 4,
+       "name": "Oran-Rief Survivalist",
+       "set": "zen",
+       "number": "174",
+       "id": "0d598220-bddd-48a4-8c80-eb149c6292a3"
+      },
+      {
+       "qty": 4,
+       "name": "Tajuru Archer",
+       "set": "zen",
+       "number": "185",
+       "id": "ec46dbeb-f9b3-4e0f-a61f-52a91da6f087"
+      },
+      {
+       "qty": 4,
+       "name": "Turntimber Ranger",
+       "set": "zen",
+       "number": "191",
+       "id": "a24bba56-3256-489b-82a2-22748388e110"
+      },
+      {
+       "qty": 4,
+       "name": "Journey to Nowhere",
+       "set": "zen",
+       "number": "14",
+       "id": "09cfe585-8a55-4b27-89e0-dfb6946fe1f3"
+      },
+      {
+       "qty": 4,
+       "name": "Harabaz Druid",
+       "set": "wwk",
+       "number": "105",
+       "id": "78a538cf-2291-49aa-8429-17d97d454479"
+      },
+      {
+       "qty": 12,
+       "name": "Plains",
+       "set": "zen",
+       "number": "230",
+       "id": "bc4f4b6d-ff35-4b1f-974b-f39569e6b3c7"
+      },
+      {
+       "qty": 12,
+       "name": "Forest",
+       "set": "zen",
+       "number": "246",
+       "id": "f0ca4b9f-4ee6-4ad8-a95f-326ada9de3cd"
+      }
+     ]
+    }
+   },
+   "villain": {
+    "who": "sovereign",
+    "deck": {
+     "name": "The Seekers of Emeria",
+     "colors": "U",
+     "archetype": null,
+     "label": "tribute",
+     "cards": [
+      {
+       "qty": 4,
+       "name": "Merfolk Sovereign",
+       "set": "m11",
+       "number": "65",
+       "id": "ed43af3c-1070-45d9-9de6-17d07a6ef3c0"
+      },
+      {
+       "qty": 4,
+       "name": "Coralhelm Commander",
+       "set": "roe",
+       "number": "57",
+       "id": "4f8d1bea-58cd-4483-a70a-0330ad5ab4a1"
+      },
+      {
+       "qty": 4,
+       "name": "Merfolk Seastalkers",
+       "set": "zen",
+       "number": "55",
+       "id": "4fe5d069-45a0-46ea-b3ec-4e75f0531382"
+      },
+      {
+       "qty": 4,
+       "name": "Umara Raptor",
+       "set": "zen",
+       "number": "75",
+       "id": "6049cc80-1faa-48bf-897e-fefe5a8e7ab2"
+      },
+      {
+       "qty": 4,
+       "name": "Halimar Wavewatch",
+       "set": "roe",
+       "number": "72",
+       "id": "0ff68d2f-6758-45ee-8109-4e8909f49de8"
+      },
+      {
+       "qty": 4,
+       "name": "Lighthouse Chronologist",
+       "set": "roe",
+       "number": "75",
+       "id": "3087f7e7-9163-45b5-907d-7667c1075a74"
+      },
+      {
+       "qty": 4,
+       "name": "Into the Roil",
+       "set": "zen",
+       "number": "48",
+       "id": "5dba9972-dd8b-407b-9374-a8f0ed1a96db"
+      },
+      {
+       "qty": 4,
+       "name": "Mana Leak",
+       "set": "m11",
+       "number": "62",
+       "id": "a7c7757d-8036-4b33-a1cb-07795d392588"
+      },
+      {
+       "qty": 4,
+       "name": "Merfolk Wayfinder",
+       "set": "zen",
+       "number": "56",
+       "id": "71ab86f3-aa75-40ce-a71e-90d40dad4bdc"
+      },
+      {
+       "qty": 24,
+       "name": "Island",
+       "set": "zen",
+       "number": "234",
+       "id": "efd86f2a-bd28-4731-838d-78e67be8b49e"
+      }
+     ]
+    }
+   },
+   "reward": {
+    "hero": {
+     "packs": 1,
+     "coins": 0
+    },
+    "villain": {
+     "card": {
+      "oracle_id": "16aba9af-7a12-4c3d-87eb-06278921cb7c",
+      "name": "Merfolk Sovereign",
+      "rarity": "rare",
+      "set": "m11",
+      "id": "ed43af3c-1070-45d9-9de6-17d07a6ef3c0",
+      "image": "https://cards.scryfall.io/normal/front/e/d/ed43af3c-1070-45d9-9de6-17d07a6ef3c0.jpg"
+     },
+     "coins": 50
+    }
+   },
+   "scene": [
+    {
+     "who": "expedition",
+     "line": "If you hire a sell-sword, you'd better watch your back. Hire me, and I'll watch it for you.",
+     "quote": true
+    },
+    {
+     "who": "expedition",
+     "line": "Allies: every time another Ally joins your party, every Ally already there gets a bonus. Hire more swords and they all get better."
+    }
+   ],
+   "villainScene": [
+    {
+     "who": "sovereign",
+     "line": "Be like the sea: flow around that which is unmovable; for everything else, crash into it unrelentingly.",
+     "quote": true
+    },
+    {
+     "who": "stage",
+     "line": "Do they seek knowledge or wealth? Are they bandits or benefactors? It depends on who is chanting the tale.",
+     "quote": true
+    }
+   ],
+   "after": [
+    {
+     "who": "expedition",
+     "line": "We got there first. The map was gone. Somebody named Chandra had it, and she was headed for a place called the Eye of Ugin."
+    }
+   ],
+   "cues": {
+    "hero": {
+     "start": "Party up!",
+     "big": "More swords, more shares!",
+     "low": "They're rolling us up...",
+     "win": "Treasure split six ways!",
+     "loss": "Nobody gets paid...",
+     "half": "Hire before you fight."
+    },
+    "villain": {
+     "start": "Emeria guides us.",
+     "big": "The tide rises!",
+     "low": "Roil tide! Roil tide!",
+     "win": "The goddess provides.",
+     "loss": "The sea will return."
+    }
+   },
+   "bigPlays": [],
+   "sim": null
+  },
+  {
+   "id": "a17b4",
+   "slot": 4,
+   "kind": "Rival",
+   "mood": "tension",
+   "title": "The Eye of Ugin",
+   "difficulty": "Normal",
+   "teaches": [
+    "Level up"
+   ],
+   "blurb": "Chandra Nalaar, a pyromancer from another plane, has the map and reaches the Eye of Ugin, a chamber at the heart of Zendikar. Sarkhan Vol is waiting there for her. He was sent by Nicol Bolas, and he has not been sane for some time.",
+   "rewardSet": "roe",
+   "host": false,
+   "hero": {
+    "who": "chandra",
+    "deck": {
+     "name": "Chandra's Fire",
+     "colors": "R",
+     "archetype": null,
+     "label": "tribute",
+     "cards": [
+      {
+       "qty": 2,
+       "name": "Chandra Nalaar",
+       "set": "m11",
+       "number": "127",
+       "id": "ac44125d-28de-4ecf-a55b-1299daa5539e"
+      },
+      {
+       "qty": 4,
+       "name": "Goblin Guide",
+       "set": "zen",
+       "number": "126",
+       "id": "b2e2a777-0705-4a37-937d-c6e020ebc0f0"
+      },
+      {
+       "qty": 4,
+       "name": "Plated Geopede",
+       "set": "zen",
+       "number": "141",
+       "id": "fd8b5c0c-acda-411e-9f17-6d9292628a56"
+      },
+      {
+       "qty": 4,
+       "name": "Lightning Bolt",
+       "set": "m11",
+       "number": "149",
+       "id": "e768c957-3a1f-42f5-853a-96942f645df5"
+      },
+      {
+       "qty": 4,
+       "name": "Burst Lightning",
+       "set": "zen",
+       "number": "119",
+       "id": "2dc16614-5cf8-444d-a5ae-cac25018af68"
+      },
+      {
+       "qty": 4,
+       "name": "Searing Blaze",
+       "set": "wwk",
+       "number": "90",
+       "id": "301f13dd-39b8-4a93-9c05-3dc4fa1f1c75"
+      },
+      {
+       "qty": 4,
+       "name": "Fireball",
+       "set": "m11",
+       "number": "138",
+       "id": "b34d3714-f629-4066-8eaa-08817ad01cbb"
+      },
+      {
+       "qty": 4,
+       "name": "Ember Hauler",
+       "set": "m11",
+       "number": "135",
+       "id": "d9df1b79-bf3a-4da3-8d98-bdf175445f10"
+      },
+      {
+       "qty": 4,
+       "name": "Staggershock",
+       "set": "roe",
+       "number": "166",
+       "id": "75624ab3-ddbd-4fe8-8a07-7d1f78ec8a84"
+      },
+      {
+       "qty": 2,
+       "name": "Inferno Titan",
+       "set": "m11",
+       "number": "146",
+       "id": "f1e4a028-6462-4373-9864-a8adfc78d52b"
+      },
+      {
+       "qty": 24,
+       "name": "Mountain",
+       "set": "zen",
+       "number": "242",
+       "id": "232ee129-0db1-4a03-9eda-4692a8495b53"
+      }
+     ]
+    }
+   },
+   "villain": {
+    "who": "sarkhan",
+    "deck": {
+     "name": "Sarkhan's Servants",
+     "colors": "BR",
+     "archetype": null,
+     "label": "tribute",
+     "cards": [
+      {
+       "qty": 2,
+       "name": "Sarkhan the Mad",
+       "set": "roe",
+       "number": "214",
+       "id": "26c1ba92-556e-4da9-8e3a-a4a82612cb29"
+      },
+      {
+       "qty": 4,
+       "name": "Kargan Dragonlord",
+       "set": "roe",
+       "number": "152",
+       "id": "b669d2d9-649b-4941-9a76-9833bdf77ca4"
+      },
+      {
+       "qty": 4,
+       "name": "Null Champion",
+       "set": "roe",
+       "number": "121",
+       "id": "8bf39e84-a554-49e3-8f65-e304e1720818"
+      },
+      {
+       "qty": 4,
+       "name": "Guul Draz Assassin",
+       "set": "roe",
+       "number": "112",
+       "id": "72de01ef-cdf2-44ad-bf2f-a927d82a4f72"
+      },
+      {
+       "qty": 4,
+       "name": "Brimstone Mage",
+       "set": "roe",
+       "number": "137",
+       "id": "1f65ebef-e159-4698-8852-650b7b6a08d3"
+      },
+      {
+       "qty": 4,
+       "name": "Lord of Shatterskull Pass",
+       "set": "roe",
+       "number": "156",
+       "id": "b2159a7d-e37a-4c43-a7b9-1e7179a7e43b"
+      },
+      {
+       "qty": 4,
+       "name": "Hellcarver Demon",
+       "set": "roe",
+       "number": "113",
+       "id": "984a037b-63c0-497d-b3b1-15726ef11a60"
+      },
+      {
+       "qty": 4,
+       "name": "Doom Blade",
+       "set": "m11",
+       "number": "95",
+       "id": "685a74bb-f158-4d0e-b840-222ecbf107d4"
+      },
+      {
+       "qty": 4,
+       "name": "Staggershock",
+       "set": "roe",
+       "number": "166",
+       "id": "75624ab3-ddbd-4fe8-8a07-7d1f78ec8a84"
+      },
+      {
+       "qty": 2,
+       "name": "Bloodthrone Vampire",
+       "set": "roe",
+       "number": "98",
+       "id": "48bf0233-1d2e-40cb-9a69-8eeeeb2959ca"
+      },
+      {
+       "qty": 12,
+       "name": "Swamp",
+       "set": "zen",
+       "number": "238",
+       "id": "7cd6becc-f06a-4fd3-8305-70604b92a187"
+      },
+      {
+       "qty": 12,
+       "name": "Mountain",
+       "set": "zen",
+       "number": "242",
+       "id": "232ee129-0db1-4a03-9eda-4692a8495b53"
+      }
+     ]
+    }
+   },
+   "reward": {
+    "hero": {
+     "packs": 1,
+     "coins": 100
+    },
+    "villain": {
+     "card": {
+      "oracle_id": "e70a93e4-2fe7-46d3-8958-153ab2fcfd99",
+      "name": "Sarkhan the Mad",
+      "rarity": "mythic",
+      "set": "roe",
+      "id": "26c1ba92-556e-4da9-8e3a-a4a82612cb29",
+      "image": "https://cards.scryfall.io/normal/front/2/6/26c1ba92-556e-4da9-8e3a-a4a82612cb29.jpg"
+     },
+     "coins": 100
+    }
+   },
+   "scene": [
+    {
+     "who": "anowon",
+     "line": "So many have died in search of that map. And now it appears in the hands of the arrogant child Chandra Nalaar.",
+     "quote": true
+    },
+    {
+     "who": "chandra",
+     "line": "I like it here. You always get a little more for your mana.",
+     "quote": true
+    },
+    {
+     "who": "chandra",
+     "line": "Level up: some creatures here can be paid into again and again. Each payment adds a level, and at enough levels they turn into something else. Leave one alone and it grows."
+    }
+   ],
+   "villainScene": [
+    {
+     "who": "sarkhan",
+     "line": "Rage courses in every heart, yearning to betray its rational prison.",
+     "quote": true
+    },
+    {
+     "who": "sarkhan",
+     "line": "The dragon wants the Eye opened, girl. Burn the door down for me."
+    }
+   ],
+   "after": [
+    {
+     "who": "stage",
+     "line": "Chandra and Sarkhan's fire fills the chamber. Jace Beleren arrives, chasing Chandra, and adds his own power to the fight."
+    },
+    {
+     "who": "stage",
+     "line": "The three of them are the first people to work magic inside the Eye of Ugin in ten thousand years. The walls begin to glow."
+    },
+    {
+     "who": "stage",
+     "line": "An eye closes. A race awakens.",
+     "quote": true
+    }
+   ],
+   "cues": {
+    "hero": {
+     "start": "Back off, lizard.",
+     "big": "Everything burns!",
+     "low": "He keeps getting bigger...",
+     "win": "That's my map.",
+     "loss": "Too hot... even for me...",
+     "half": "Kill the leveler early."
+    },
+    "villain": {
+     "start": "The dragon speaks.",
+     "big": "Wings! WINGS!",
+     "low": "The voices... quiet...",
+     "win": "Open the Eye.",
+     "loss": "The dragon... lied..."
+    }
+   },
+   "bigPlays": [],
+   "sim": null
+  },
+  {
+   "id": "a17b5",
+   "slot": 5,
+   "kind": "Lesson",
+   "mood": "tension",
+   "title": "The Brood",
+   "difficulty": "Normal",
+   "teaches": [
+    "Eldrazi Spawn"
+   ],
+   "blurb": "The hedrons are falling. Out of the ground under them comes the brood of the Eldrazi: things with no faces that eat the colour out of the land. Gideon Jura, a soldier from another plane, is the first to stand in their way.",
+   "rewardSet": "roe",
+   "host": false,
+   "hero": {
+    "who": "gideon",
+    "deck": {
+     "name": "Gideon's Line",
+     "colors": "W",
+     "archetype": null,
+     "label": "tribute",
+     "cards": [
+      {
+       "qty": 2,
+       "name": "Student of Warfare",
+       "set": "roe",
+       "number": "47",
+       "id": "9f4df9be-324b-458a-9379-ab4aa437a6d2"
+      },
+      {
+       "qty": 4,
+       "name": "Elite Vanguard",
+       "set": "m11",
+       "number": "13",
+       "id": "8969be61-afed-4483-902f-739acf57c43c"
+      },
+      {
+       "qty": 2,
+       "name": "Knight of Cliffhaven",
+       "set": "roe",
+       "number": "29",
+       "id": "5e8332e9-7b02-4d58-b081-11004e690524"
+      },
+      {
+       "qty": 4,
+       "name": "Kor Skyfisher",
+       "set": "zen",
+       "number": "23",
+       "id": "bb2e9465-f5ba-4c7b-9f03-d40dc8394acd"
+      },
+      {
+       "qty": 2,
+       "name": "Squadron Hawk",
+       "set": "m11",
+       "number": "33",
+       "id": "beddd409-0154-45a5-a20d-833cf1b5e1f4"
+      },
+      {
+       "qty": 1,
+       "name": "Baneslayer Angel",
+       "set": "m11",
+       "number": "7",
+       "id": "ff70c4ff-a241-4333-bd8f-9f0ed5a0333b"
+      },
+      {
+       "qty": 2,
+       "name": "Journey to Nowhere",
+       "set": "zen",
+       "number": "14",
+       "id": "09cfe585-8a55-4b27-89e0-dfb6946fe1f3"
+      },
+      {
+       "qty": 4,
+       "name": "Makindi Shieldmate",
+       "set": "zen",
+       "number": "26",
+       "id": "e76e9555-966c-4fc3-9ef4-a0154ccb8329"
+      },
+      {
+       "qty": 4,
+       "name": "Kabira Crossroads",
+       "set": "zen",
+       "number": "216",
+       "id": "a776decb-cdb5-4f41-8a3a-c0cece18eb35"
+      },
+      {
+       "qty": 20,
+       "name": "Plains",
+       "set": "zen",
+       "number": "230",
+       "id": "bc4f4b6d-ff35-4b1f-974b-f39569e6b3c7"
+      },
+      {
+       "qty": 3,
+       "name": "Ajani's Pridemate",
+       "set": "m11",
+       "number": "3",
+       "id": "f70d1452-6b61-4c63-841f-4256ac498e9f"
+      },
+      {
+       "qty": 4,
+       "name": "Kor Hookmaster",
+       "set": "zen",
+       "number": "20",
+       "id": "68ad3199-c202-4b71-8a36-53547e70c39b"
+      },
+      {
+       "qty": 4,
+       "name": "Kor Duelist",
+       "set": "zen",
+       "number": "19",
+       "id": "4fd1af74-ba3b-4528-9490-99edd54e9fe1"
+      },
+      {
+       "qty": 4,
+       "name": "Kor Aeronaut",
+       "set": "zen",
+       "number": "17",
+       "id": "87ae3eb8-b570-4129-9d4e-b7afa8fc4840"
+      }
+     ]
+    }
+   },
+   "villain": {
+    "who": "brood",
+    "deck": {
+     "name": "The Brood of Ulamog",
+     "colors": "BG",
+     "archetype": null,
+     "label": "tribute",
+     "cards": [
+      {
+       "qty": 4,
+       "name": "Pawn of Ulamog",
+       "set": "roe",
+       "number": "122",
+       "id": "85f4d77d-e0de-48fe-899b-5718cee779e2"
+      },
+      {
+       "qty": 4,
+       "name": "Kozilek's Predator",
+       "set": "roe",
+       "number": "193",
+       "id": "4ab37d0e-5542-4ae0-a48e-d0a4e6bf48e7"
+      },
+      {
+       "qty": 4,
+       "name": "Ulamog's Crusher",
+       "set": "roe",
+       "number": "13",
+       "id": "76bacedb-9fa8-4a21-b0eb-e7ead64360b4"
+      },
+      {
+       "qty": 4,
+       "name": "Vampire Nighthawk",
+       "set": "zen",
+       "number": "116",
+       "id": "44f19fe3-7a17-4c45-adfa-590f73dfebfa"
+      },
+      {
+       "qty": 4,
+       "name": "Hand of Emrakul",
+       "set": "roe",
+       "number": "5",
+       "id": "84d602f4-5876-416a-95e5-821a285358bf"
+      },
+      {
+       "qty": 4,
+       "name": "Bloodthrone Vampire",
+       "set": "roe",
+       "number": "98",
+       "id": "48bf0233-1d2e-40cb-9a69-8eeeeb2959ca"
+      },
+      {
+       "qty": 12,
+       "name": "Swamp",
+       "set": "zen",
+       "number": "238",
+       "id": "7cd6becc-f06a-4fd3-8305-70604b92a187"
+      },
+      {
+       "qty": 12,
+       "name": "Forest",
+       "set": "zen",
+       "number": "246",
+       "id": "f0ca4b9f-4ee6-4ad8-a95f-326ada9de3cd"
+      },
+      {
+       "qty": 4,
+       "name": "Gatekeeper of Malakir",
+       "set": "zen",
+       "number": "89",
+       "id": "71db3698-a45c-4eaf-87e6-30502c0c10f4"
+      },
+      {
+       "qty": 4,
+       "name": "Disfigure",
+       "set": "zen",
+       "number": "87",
+       "id": "b3842ad2-a449-4963-8c96-276554125757"
+      },
+      {
+       "qty": 4,
+       "name": "Nest Invader",
+       "set": "roe",
+       "number": "201",
+       "id": "24517d9c-6cde-41e8-9e82-ee73f069379a"
+      }
+     ]
+    }
+   },
+   "reward": {
+    "hero": {
+     "packs": 1,
+     "coins": 100
+    },
+    "villain": {
+     "card": {
+      "oracle_id": "9bcaf141-1f1f-491f-aced-13dc093b9e2c",
+      "name": "Pawn of Ulamog",
+      "rarity": "uncommon",
+      "set": "roe",
+      "id": "85f4d77d-e0de-48fe-899b-5718cee779e2",
+      "image": "https://cards.scryfall.io/normal/front/8/5/85f4d77d-e0de-48fe-899b-5718cee779e2.jpg"
+     },
+     "coins": 100
+    }
+   },
+   "scene": [
+    {
+     "who": "gideon",
+     "line": "'Invincible' is just a word.",
+     "quote": true
+    },
+    {
+     "who": "gideon",
+     "line": "Eldrazi Spawn: the brood leaves little 0/1 tokens everywhere. They can be sacrificed for mana. Every spawn you ignore is a step toward something much bigger. Kill the spawners."
+    }
+   ],
+   "villainScene": [
+    {
+     "who": "stage",
+     "line": "It nurtures its masters' glorious future.",
+     "quote": true
+    },
+    {
+     "who": "stage",
+     "line": "The brood spread far faster than we could kill it. I fear the worst is yet to come.",
+     "quote": true
+    }
+   ],
+   "after": [
+    {
+     "who": "gideon",
+     "line": "I have fought gods and monsters. These are neither. There is nothing in them to fight. Only hunger."
+    }
+   ],
+   "cues": {
+    "hero": {
+     "start": "Hold the line.",
+     "big": "Advance!",
+     "low": "There's no end to them...",
+     "win": "This line holds.",
+     "loss": "Fall back... regroup...",
+     "half": "Kill the source, not the spawn."
+    },
+    "villain": {
+     "start": "[the ground splits]",
+     "big": "[the brood multiplies]",
+     "low": "[a hollow shriek]",
+     "win": "[chalk and silence]",
+     "loss": "[the brood scatters]"
+    }
+   },
+   "bigPlays": [],
+   "sim": null
+  },
+  {
+   "id": "a17b6",
+   "slot": 6,
+   "kind": "Meta",
+   "mood": "march",
+   "title": "Hawk-Blade",
+   "difficulty": "Normal",
+   "teaches": [
+    "Equipment"
+   ],
+   "blurb": "Spring 2010. Worldwake brought Jace, the Mind Sculptor and Stoneforge Mystic, and blue-white decks started grinding everyone out with Squadron Hawks carrying equipment. The deck to beat was Boros landfall, fast and red.",
+   "rewardSet": "wwk",
+   "host": false,
+   "hero": {
+    "who": "hawkBlade",
+    "deck": {
+     "name": "Hawk-Blade",
+     "colors": "WU",
+     "archetype": "Control",
+     "label": "tribute",
+     "cards": [
+      {
+       "qty": 4,
+       "name": "Stoneforge Mystic",
+       "set": "wwk",
+       "number": "20",
+       "id": "19557351-b65f-4b04-b971-66abdc07000a"
+      },
+      {
+       "qty": 4,
+       "name": "Squadron Hawk",
+       "set": "m11",
+       "number": "33",
+       "id": "beddd409-0154-45a5-a20d-833cf1b5e1f4"
+      },
+      {
+       "qty": 4,
+       "name": "Kor Skyfisher",
+       "set": "zen",
+       "number": "23",
+       "id": "bb2e9465-f5ba-4c7b-9f03-d40dc8394acd"
+      },
+      {
+       "qty": 4,
+       "name": "Jace, the Mind Sculptor",
+       "set": "wwk",
+       "number": "31",
+       "id": "0e606072-a3aa-4300-ba90-ec92a721fa76"
+      },
+      {
+       "qty": 4,
+       "name": "Adventuring Gear",
+       "set": "zen",
+       "number": "195",
+       "id": "3aa395f2-656e-4bf3-bd9b-6240bd3e2774"
+      },
+      {
+       "qty": 4,
+       "name": "Wall of Omens",
+       "set": "roe",
+       "number": "53",
+       "id": "6e3510f5-e450-400b-98ea-341dbf212054"
+      },
+      {
+       "qty": 4,
+       "name": "Day of Judgment",
+       "set": "zen",
+       "number": "9",
+       "id": "2aa98fca-972b-46c2-bdec-6ace35c988d5"
+      },
+      {
+       "qty": 4,
+       "name": "Mana Leak",
+       "set": "m11",
+       "number": "62",
+       "id": "a7c7757d-8036-4b33-a1cb-07795d392588"
+      },
+      {
+       "qty": 2,
+       "name": "Basilisk Collar",
+       "set": "wwk",
+       "number": "122",
+       "id": "55cdba1b-7a80-435f-9cff-b9365f62e311"
+      },
+      {
+       "qty": 2,
+       "name": "Baneslayer Angel",
+       "set": "m11",
+       "number": "7",
+       "id": "ff70c4ff-a241-4333-bd8f-9f0ed5a0333b"
+      },
+      {
+       "qty": 4,
+       "name": "Celestial Colonnade",
+       "set": "wwk",
+       "number": "133",
+       "id": "f6929259-2903-4f6f-9b06-42048fd55c6a"
+      },
+      {
+       "qty": 4,
+       "name": "Glacial Fortress",
+       "set": "m11",
+       "number": "225",
+       "id": "b9d18532-2247-4e33-a760-bc42a727e9f5"
+      },
+      {
+       "qty": 8,
+       "name": "Plains",
+       "set": "zen",
+       "number": "230",
+       "id": "bc4f4b6d-ff35-4b1f-974b-f39569e6b3c7"
+      },
+      {
+       "qty": 8,
+       "name": "Island",
+       "set": "zen",
+       "number": "234",
+       "id": "efd86f2a-bd28-4731-838d-78e67be8b49e"
+      }
+     ]
+    }
+   },
+   "villain": {
+    "who": "boros",
+    "deck": {
+     "name": "Boros Landfall",
+     "colors": "RW",
+     "archetype": "Aggro",
+     "label": "tribute",
+     "cards": [
+      {
+       "qty": 4,
+       "name": "Goblin Guide",
+       "set": "zen",
+       "number": "126",
+       "id": "b2e2a777-0705-4a37-937d-c6e020ebc0f0"
+      },
+      {
+       "qty": 4,
+       "name": "Steppe Lynx",
+       "set": "zen",
+       "number": "36",
+       "id": "b0aaec1c-8084-4468-82e7-2e4cc5ebe244"
+      },
+      {
+       "qty": 4,
+       "name": "Plated Geopede",
+       "set": "zen",
+       "number": "141",
+       "id": "fd8b5c0c-acda-411e-9f17-6d9292628a56"
+      },
+      {
+       "qty": 4,
+       "name": "Goblin Bushwhacker",
+       "set": "zen",
+       "number": "125",
+       "id": "4085a5bf-a71b-4c73-9b39-0dcc328fe11b"
+      },
+      {
+       "qty": 4,
+       "name": "Lightning Bolt",
+       "set": "m11",
+       "number": "149",
+       "id": "e768c957-3a1f-42f5-853a-96942f645df5"
+      },
+      {
+       "qty": 4,
+       "name": "Burst Lightning",
+       "set": "zen",
+       "number": "119",
+       "id": "2dc16614-5cf8-444d-a5ae-cac25018af68"
+      },
+      {
+       "qty": 4,
+       "name": "Kor Skyfisher",
+       "set": "zen",
+       "number": "23",
+       "id": "bb2e9465-f5ba-4c7b-9f03-d40dc8394acd"
+      },
+      {
+       "qty": 4,
+       "name": "Elite Vanguard",
+       "set": "m11",
+       "number": "13",
+       "id": "8969be61-afed-4483-902f-739acf57c43c"
+      },
+      {
+       "qty": 4,
+       "name": "Journey to Nowhere",
+       "set": "zen",
+       "number": "14",
+       "id": "09cfe585-8a55-4b27-89e0-dfb6946fe1f3"
+      },
+      {
+       "qty": 4,
+       "name": "Arid Mesa",
+       "set": "zen",
+       "number": "211",
+       "id": "16c8d2fa-54a7-46e8-980c-905258497c90"
+      },
+      {
+       "qty": 4,
+       "name": "Scalding Tarn",
+       "set": "zen",
+       "number": "223",
+       "id": "327cf118-cc92-4073-85d0-94d2a0a6989a"
+      },
+      {
+       "qty": 8,
+       "name": "Mountain",
+       "set": "zen",
+       "number": "242",
+       "id": "232ee129-0db1-4a03-9eda-4692a8495b53"
+      },
+      {
+       "qty": 8,
+       "name": "Plains",
+       "set": "zen",
+       "number": "230",
+       "id": "bc4f4b6d-ff35-4b1f-974b-f39569e6b3c7"
+      }
+     ]
+    }
+   },
+   "reward": {
+    "hero": {
+     "packs": 1,
+     "coins": 100
+    },
+    "villain": {
+     "card": {
+      "oracle_id": "b16cef02-dcf8-4866-ac42-6ee929ddbea2",
+      "name": "Steppe Lynx",
+      "rarity": "common",
+      "set": "zen",
+      "id": "b0aaec1c-8084-4468-82e7-2e4cc5ebe244",
+      "image": "https://cards.scryfall.io/normal/front/b/0/b0aaec1c-8084-4468-82e7-2e4cc5ebe244.jpg"
+     },
+     "coins": 100
+    }
+   },
+   "scene": [
+    {
+     "who": "stage",
+     "line": "An explorer's essentials in a wild world.",
+     "quote": true
+    },
+    {
+     "who": "you",
+     "line": "Survive the first five turns. After that, Jace and the Hawks bury them in cards."
+    }
+   ],
+   "villainScene": [
+    {
+     "who": "stage",
+     "line": "Nothing quickens the predator's blood like the unfamiliar scents of new hunting grounds and the mewling cries of new prey.",
+     "quote": true
+    }
+   ],
+   "after": null,
+   "cues": {
+    "hero": {
+     "start": "Brainstorm. Again.",
+     "big": "Fetch the gear!",
+     "low": "Too fast...",
+     "win": "Out of gas, are we?",
+     "loss": "Burned out...",
+     "half": "Survive, then take over."
+    },
+    "villain": {
+     "start": "[a fetchland cracks]",
+     "big": "[landfall!]",
+     "low": "[out of burn]",
+     "win": "[burned through]",
+     "loss": "[the hawks keep coming]"
+    }
+   },
+   "bigPlays": [],
+   "sim": null
+  },
+  {
+   "id": "a17b7",
+   "slot": 7,
+   "kind": "Meta",
+   "mood": "tension",
+   "title": "Valakut",
+   "difficulty": "Normal",
+   "teaches": [
+    "Racing"
+   ],
+   "blurb": "Summer 2010. Magic 2011 brought Primeval Titan, and green-red decks used it to fetch Valakut, the Molten Pinnacle, a land that burns the opponent whenever a Mountain arrives. Vampire aggro decks tried to win before the Titan landed.",
+   "rewardSet": "m11",
+   "host": false,
+   "hero": {
+    "who": "vampires",
+    "deck": {
+     "name": "Vampire Aggro",
+     "colors": "B",
+     "archetype": "Aggro",
+     "label": "tribute",
+     "cards": [
+      {
+       "qty": 4,
+       "name": "Bloodthrone Vampire",
+       "set": "roe",
+       "number": "98",
+       "id": "48bf0233-1d2e-40cb-9a69-8eeeeb2959ca"
+      },
+      {
+       "qty": 4,
+       "name": "Bloodghast",
+       "set": "zen",
+       "number": "83",
+       "id": "63870c81-63bf-4a9a-aeb5-74c6eaded9f1"
+      },
+      {
+       "qty": 4,
+       "name": "Vampire Hexmage",
+       "set": "zen",
+       "number": "114",
+       "id": "93d2c4d1-6205-404a-b03d-995b90a3a33a"
+      },
+      {
+       "qty": 4,
+       "name": "Vampire Nighthawk",
+       "set": "zen",
+       "number": "116",
+       "id": "44f19fe3-7a17-4c45-adfa-590f73dfebfa"
+      },
+      {
+       "qty": 4,
+       "name": "Gatekeeper of Malakir",
+       "set": "zen",
+       "number": "89",
+       "id": "71db3698-a45c-4eaf-87e6-30502c0c10f4"
+      },
+      {
+       "qty": 4,
+       "name": "Kalastria Highborn",
+       "set": "wwk",
+       "number": "59",
+       "id": "f1efd1dd-903c-47a0-b746-5571a3ea1755"
+      },
+      {
+       "qty": 4,
+       "name": "Malakir Bloodwitch",
+       "set": "zen",
+       "number": "100",
+       "id": "865ac36f-4c61-468b-a2ed-ed2d1bbbf4e3"
+      },
+      {
+       "qty": 4,
+       "name": "Disfigure",
+       "set": "zen",
+       "number": "87",
+       "id": "b3842ad2-a449-4963-8c96-276554125757"
+      },
+      {
+       "qty": 4,
+       "name": "Doom Blade",
+       "set": "m11",
+       "number": "95",
+       "id": "685a74bb-f158-4d0e-b840-222ecbf107d4"
+      },
+      {
+       "qty": 24,
+       "name": "Swamp",
+       "set": "zen",
+       "number": "238",
+       "id": "7cd6becc-f06a-4fd3-8305-70604b92a187"
+      }
+     ]
+    }
+   },
+   "villain": {
+    "who": "valakut",
+    "deck": {
+     "name": "Valakut Ramp",
+     "colors": "RG",
+     "archetype": "Ramp",
+     "label": "tribute",
+     "cards": [
+      {
+       "qty": 4,
+       "name": "Primeval Titan",
+       "set": "m11",
+       "number": "192",
+       "id": "feee9327-b937-46ba-a2aa-6c015ab6cdd5"
+      },
+      {
+       "qty": 4,
+       "name": "Valakut, the Molten Pinnacle",
+       "set": "zen",
+       "number": "228",
+       "id": "37bce60d-2cb0-4772-9f5c-122a7ed426a0"
+      },
+      {
+       "qty": 4,
+       "name": "Growth Spasm",
+       "set": "roe",
+       "number": "186",
+       "id": "61d6a649-ae48-4cf1-b0e3-ba627b4ac1e1"
+      },
+      {
+       "qty": 4,
+       "name": "Cultivate",
+       "set": "m11",
+       "number": "168",
+       "id": "2ef3dbe4-5c03-4be4-ab48-45b6689b6712"
+      },
+      {
+       "qty": 4,
+       "name": "Khalni Heart Expedition",
+       "set": "zen",
+       "number": "167",
+       "id": "797d8cd6-fc6b-4560-9c6f-1a867dfce85a"
+      },
+      {
+       "qty": 4,
+       "name": "Explore",
+       "set": "wwk",
+       "number": "99",
+       "id": "d8f81e8a-e309-4bac-81de-326756cd8901"
+      },
+      {
+       "qty": 4,
+       "name": "Lightning Bolt",
+       "set": "m11",
+       "number": "149",
+       "id": "e768c957-3a1f-42f5-853a-96942f645df5"
+      },
+      {
+       "qty": 4,
+       "name": "Oracle of Mul Daya",
+       "set": "zen",
+       "number": "172",
+       "id": "7f89a173-0b2f-4a6a-b706-9aed8dbcabec"
+      },
+      {
+       "qty": 4,
+       "name": "Harrow",
+       "set": "zen",
+       "number": "165",
+       "id": "e309c1fc-3a7c-4624-8b48-9b152c2590ae"
+      },
+      {
+       "qty": 4,
+       "name": "Avenger of Zendikar",
+       "set": "wwk",
+       "number": "96",
+       "id": "dde073e0-f329-4ab0-8e31-a48929e017ce"
+      },
+      {
+       "qty": 10,
+       "name": "Mountain",
+       "set": "zen",
+       "number": "242",
+       "id": "232ee129-0db1-4a03-9eda-4692a8495b53"
+      },
+      {
+       "qty": 10,
+       "name": "Forest",
+       "set": "zen",
+       "number": "246",
+       "id": "f0ca4b9f-4ee6-4ad8-a95f-326ada9de3cd"
+      }
+     ]
+    }
+   },
+   "reward": {
+    "hero": {
+     "packs": 1,
+     "coins": 100
+    },
+    "villain": {
+     "card": {
+      "oracle_id": "ae83ef2c-960f-4c5b-97cc-52465c687c18",
+      "name": "Primeval Titan",
+      "rarity": "mythic",
+      "set": "m11",
+      "id": "feee9327-b937-46ba-a2aa-6c015ab6cdd5",
+      "image": "https://cards.scryfall.io/normal/front/f/e/feee9327-b937-46ba-a2aa-6c015ab6cdd5.jpg"
+     },
+     "coins": 100
+    }
+   },
+   "scene": [
+    {
+     "who": "stage",
+     "line": "Some humans willingly offered up their blood, hoping it would grant the vampire families the strength to stave off the Eldrazi.",
+     "quote": true
+    },
+    {
+     "who": "you",
+     "line": "They need six lands and a Titan. We need them dead before the sixth."
+    }
+   ],
+   "villainScene": [
+    {
+     "who": "valakut",
+     "line": "When nature calls, *run*.",
+     "quote": true
+    }
+   ],
+   "after": null,
+   "cues": {
+    "hero": {
+     "start": "Bite first.",
+     "big": "Bloodthirst!",
+     "low": "The mountain is waking...",
+     "win": "Drained dry.",
+     "loss": "Titan...",
+     "half": "Win before turn six."
+    },
+    "villain": {
+     "start": "[a land, and another]",
+     "big": "[the Titan arrives]",
+     "low": "[the ramp stalls]",
+     "win": "[Valakut erupts]",
+     "loss": "[the mountain goes cold]"
+    }
+   },
+   "bigPlays": [],
+   "sim": null
+  },
+  {
+   "id": "a17b8",
+   "slot": 8,
+   "kind": "Boss",
+   "mood": "boss",
+   "title": "Emrakul, the Aeons Torn",
+   "difficulty": "Hard",
+   "teaches": [
+    "Annihilator"
+   ],
+   "blurb": "At the Eye of Ugin, Nissa breaks the last hedron, believing it will send the titans away from Zendikar. It does the opposite. The largest of the three, Emrakul, rises over the jungle. Nissa and Gideon stand against her brood while Sorin goes looking for help.",
+   "rewardSet": "roe",
+   "host": true,
+   "hero": {
+    "who": "nissa",
+    "deck": {
+     "name": "Nissa and Gideon",
+     "colors": "GW",
+     "archetype": null,
+     "label": "tribute",
+     "cards": [
+      {
+       "qty": 2,
+       "name": "Nissa Revane",
+       "set": "zen",
+       "number": "170",
+       "id": "1b4c26ab-0f7b-4163-b9e4-a415b91352a6"
+      },
+      {
+       "qty": 4,
+       "name": "Nissa's Chosen",
+       "set": "zen",
+       "number": "171",
+       "id": "a740584f-2ec2-46a9-9344-eac220759e85"
+      },
+      {
+       "qty": 4,
+       "name": "Knight of Cliffhaven",
+       "set": "roe",
+       "number": "29",
+       "id": "5e8332e9-7b02-4d58-b081-11004e690524"
+      },
+      {
+       "qty": 4,
+       "name": "Kor Skyfisher",
+       "set": "zen",
+       "number": "23",
+       "id": "bb2e9465-f5ba-4c7b-9f03-d40dc8394acd"
+      },
+      {
+       "qty": 4,
+       "name": "Baneslayer Angel",
+       "set": "m11",
+       "number": "7",
+       "id": "ff70c4ff-a241-4333-bd8f-9f0ed5a0333b"
+      },
+      {
+       "qty": 4,
+       "name": "Oran-Rief Survivalist",
+       "set": "zen",
+       "number": "174",
+       "id": "0d598220-bddd-48a4-8c80-eb149c6292a3"
+      },
+      {
+       "qty": 4,
+       "name": "Kazandu Blademaster",
+       "set": "zen",
+       "number": "16",
+       "id": "9642bdbf-c03f-4c48-a5c8-c9201a08b834"
+      },
+      {
+       "qty": 4,
+       "name": "Journey to Nowhere",
+       "set": "zen",
+       "number": "14",
+       "id": "09cfe585-8a55-4b27-89e0-dfb6946fe1f3"
+      },
+      {
+       "qty": 4,
+       "name": "Lotus Cobra",
+       "set": "zen",
+       "number": "168",
+       "id": "19adde22-e5eb-4815-beb6-c520b3274cc9"
+      },
+      {
+       "qty": 2,
+       "name": "Day of Judgment",
+       "set": "zen",
+       "number": "9",
+       "id": "2aa98fca-972b-46c2-bdec-6ace35c988d5"
+      },
+      {
+       "qty": 4,
+       "name": "Sunpetal Grove",
+       "set": "m11",
+       "number": "228",
+       "id": "eeee9597-674f-4f72-90f4-5491f4432ec5"
+      },
+      {
+       "qty": 10,
+       "name": "Plains",
+       "set": "zen",
+       "number": "230",
+       "id": "bc4f4b6d-ff35-4b1f-974b-f39569e6b3c7"
+      },
+      {
+       "qty": 10,
+       "name": "Forest",
+       "set": "zen",
+       "number": "246",
+       "id": "f0ca4b9f-4ee6-4ad8-a95f-326ada9de3cd"
+      }
+     ]
+    }
+   },
+   "villain": {
+    "who": "emrakul",
+    "deck": {
+     "name": "The Aeons Torn",
+     "colors": "G",
+     "archetype": "Ramp",
+     "label": "tribute",
+     "cards": [
+      {
+       "qty": 2,
+       "name": "Emrakul, the Aeons Torn",
+       "set": "roe",
+       "number": "4",
+       "id": "67600383-bbb8-411c-b8e6-2296650bc747"
+      },
+      {
+       "qty": 4,
+       "name": "Growth Spasm",
+       "set": "roe",
+       "number": "186",
+       "id": "61d6a649-ae48-4cf1-b0e3-ba627b4ac1e1"
+      },
+      {
+       "qty": 4,
+       "name": "Overgrown Battlement",
+       "set": "roe",
+       "number": "203",
+       "id": "f2e3d197-e978-4ec6-ab69-3c5fd8ac3fc1"
+      },
+      {
+       "qty": 4,
+       "name": "Joraga Treespeaker",
+       "set": "roe",
+       "number": "190",
+       "id": "1132218d-56cd-441e-9006-df3c50344491"
+      },
+      {
+       "qty": 4,
+       "name": "Ulamog's Crusher",
+       "set": "roe",
+       "number": "13",
+       "id": "76bacedb-9fa8-4a21-b0eb-e7ead64360b4"
+      },
+      {
+       "qty": 4,
+       "name": "Nest Invader",
+       "set": "roe",
+       "number": "201",
+       "id": "24517d9c-6cde-41e8-9e82-ee73f069379a"
+      },
+      {
+       "qty": 4,
+       "name": "Kozilek's Predator",
+       "set": "roe",
+       "number": "193",
+       "id": "4ab37d0e-5542-4ae0-a48e-d0a4e6bf48e7"
+      },
+      {
+       "qty": 4,
+       "name": "Eldrazi Monument",
+       "set": "zen",
+       "number": "199",
+       "id": "aa9f4169-8c49-41f4-9e01-20de06ca4ad9"
+      },
+      {
+       "qty": 2,
+       "name": "It That Betrays",
+       "set": "roe",
+       "number": "7",
+       "id": "34d790ad-3559-4c32-9057-e2e326740bdc"
+      },
+      {
+       "qty": 4,
+       "name": "Awakening Zone",
+       "set": "roe",
+       "number": "176",
+       "id": "080dbd69-95a8-4fed-bbaf-875a8a34a2c9"
+      },
+      {
+       "qty": 24,
+       "name": "Forest",
+       "set": "zen",
+       "number": "246",
+       "id": "f0ca4b9f-4ee6-4ad8-a95f-326ada9de3cd"
+      }
+     ]
+    }
+   },
+   "reward": {
+    "hero": {
+     "packs": 2,
+     "coins": 200
+    },
+    "villain": {
+     "card": {
+      "oracle_id": "900ca697-ad38-4b2b-bc74-2ff7eb6ea951",
+      "name": "Emrakul, the Aeons Torn",
+      "rarity": "mythic",
+      "set": "roe",
+      "id": "67600383-bbb8-411c-b8e6-2296650bc747",
+      "image": "https://cards.scryfall.io/normal/front/6/7/67600383-bbb8-411c-b8e6-2296650bc747.jpg"
+     },
+     "coins": 200
+    }
+   },
+   "scene": [
+    {
+     "who": "stage",
+     "line": "Our enemy is nothing less than the end of all life. We shall not want for allies.",
+     "quote": true
+    },
+    {
+     "who": "nissa",
+     "line": "Why fight the world when you know who will win?",
+     "quote": true
+    },
+    {
+     "who": "gideon",
+     "line": "Annihilator: when the big ones attack, you sacrifice permanents. Keep blockers and spare lands, and never let her swing twice."
+    },
+    {
+     "who": "sorin",
+     "line": "I am going to find Nahiri. Try not to let the plane die before I get back."
+    }
+   ],
+   "villainScene": [
+    {
+     "who": "stage",
+     "line": "The ground erupted in time with the hedron's thrum, a dirge of the last days.",
+     "quote": true
+    },
+    {
+     "who": "stage",
+     "line": "Whatever the Eldrazi's purpose is, it has nothing to do with something so insignificant as us.",
+     "quote": true
+    }
+   ],
+   "after": null,
+   "cues": {
+    "hero": {
+     "start": "For Zendikar.",
+     "big": "The land fights with us!",
+     "low": "She's too big...",
+     "win": "She's falling back!",
+     "loss": "Annihilated...",
+     "half": "Keep spare permanents."
+    },
+    "villain": {
+     "start": "[the sky darkens]",
+     "big": "[annihilator]",
+     "low": "[the brood falters]",
+     "win": "[the land turns to chalk]",
+     "loss": "[she drifts away]",
+     "half": {
+      "who": "gideon",
+      "line": "She bleeds. Keep pushing."
+     }
+    }
+   },
+   "bigPlays": [],
+   "sim": null
+  },
+  {
+   "id": "a17b9",
+   "slot": 9,
+   "kind": "Secret Boss",
+   "secret": true,
+   "mood": "boss",
+   "title": "The Mind Sculptor",
+   "difficulty": "Hard",
+   "teaches": [
+    "Playing around counterspells"
+   ],
+   "blurb": "Deep in the archive, the planeswalker that ran Standard for a year. You play the titans.",
+   "rewardSet": "wwk",
+   "host": true,
+   "archive": {
+    "deck": "UW Control with Jace, the Mind Sculptor",
+    "when": "2010 to 2011",
+    "format": "Standard: Zendikar block, Magic 2011 and (later) Scars of Mirrodin.",
+    "what": "A blue-white control deck that held off the board with Wall of Omens, Day of Judgment and counterspells, then won with Jace, the Mind Sculptor, a four-mana planeswalker that drew an extra card every turn and could bounce or lock out anything.",
+    "why": "Jace dominated Standard for over a year. It sold for around a hundred dollars at its peak, and almost every top deck ran four.",
+    "beat": "Attack Jace, not the player. Keep creatures on the board so he cannot sit there brainstorming in peace, and cast your threats in pairs so one counterspell is never enough.",
+    "after": "Jace, the Mind Sculptor and Stoneforge Mystic were banned in Standard on 1 July 2011, the last time two cards were banned from Standard until 2017."
+   },
+   "hero": {
+    "who": "you",
+    "deck": {
+     "name": "The Three Titans",
+     "colors": "G",
+     "archetype": "Ramp",
+     "label": "tribute",
+     "note": "Emrakul, Ulamog and Kozilek in one Eldrazi ramp deck, one copy each. Built for this fight.",
+     "cards": [
+      {
+       "qty": 1,
+       "name": "Emrakul, the Aeons Torn",
+       "set": "roe",
+       "number": "4",
+       "id": "67600383-bbb8-411c-b8e6-2296650bc747"
+      },
+      {
+       "qty": 1,
+       "name": "Ulamog, the Infinite Gyre",
+       "set": "roe",
+       "number": "12",
+       "id": "225e3cc6-34d0-4f81-9f49-162d97e2ea59"
+      },
+      {
+       "qty": 1,
+       "name": "Kozilek, Butcher of Truth",
+       "set": "roe",
+       "number": "6",
+       "id": "067fac91-2483-4678-b86a-2c54a3a480cf"
+      },
+      {
+       "qty": 1,
+       "name": "It That Betrays",
+       "set": "roe",
+       "number": "7",
+       "id": "34d790ad-3559-4c32-9057-e2e326740bdc"
+      },
+      {
+       "qty": 4,
+       "name": "Growth Spasm",
+       "set": "roe",
+       "number": "186",
+       "id": "61d6a649-ae48-4cf1-b0e3-ba627b4ac1e1"
+      },
+      {
+       "qty": 4,
+       "name": "Overgrown Battlement",
+       "set": "roe",
+       "number": "203",
+       "id": "f2e3d197-e978-4ec6-ab69-3c5fd8ac3fc1"
+      },
+      {
+       "qty": 4,
+       "name": "Joraga Treespeaker",
+       "set": "roe",
+       "number": "190",
+       "id": "1132218d-56cd-441e-9006-df3c50344491"
+      },
+      {
+       "qty": 4,
+       "name": "Nest Invader",
+       "set": "roe",
+       "number": "201",
+       "id": "24517d9c-6cde-41e8-9e82-ee73f069379a"
+      },
+      {
+       "qty": 4,
+       "name": "Awakening Zone",
+       "set": "roe",
+       "number": "176",
+       "id": "080dbd69-95a8-4fed-bbaf-875a8a34a2c9"
+      },
+      {
+       "qty": 4,
+       "name": "Ulamog's Crusher",
+       "set": "roe",
+       "number": "13",
+       "id": "76bacedb-9fa8-4a21-b0eb-e7ead64360b4"
+      },
+      {
+       "qty": 4,
+       "name": "Explore",
+       "set": "wwk",
+       "number": "99",
+       "id": "d8f81e8a-e309-4bac-81de-326756cd8901"
+      },
+      {
+       "qty": 4,
+       "name": "Cultivate",
+       "set": "m11",
+       "number": "168",
+       "id": "2ef3dbe4-5c03-4be4-ab48-45b6689b6712"
+      },
+      {
+       "qty": 4,
+       "name": "Eldrazi Temple",
+       "set": "roe",
+       "number": "227",
+       "id": "315924c9-77e3-405b-9bbf-852ed563c6e3"
+      },
+      {
+       "qty": 20,
+       "name": "Forest",
+       "set": "zen",
+       "number": "246",
+       "id": "f0ca4b9f-4ee6-4ad8-a95f-326ada9de3cd"
+      }
+     ]
+    }
+   },
+   "villain": {
+    "who": "control",
+    "deck": {
+     "name": "UW Control",
+     "colors": "WU",
+     "archetype": "Control",
+     "label": "tribute",
+     "note": "Built from the 2010 Jace, the Mind Sculptor control lists using cards from this act's sets only. No single tournament list is copied.",
+     "cards": [
+      {
+       "qty": 4,
+       "name": "Jace, the Mind Sculptor",
+       "set": "wwk",
+       "number": "31",
+       "id": "0e606072-a3aa-4300-ba90-ec92a721fa76"
+      },
+      {
+       "qty": 4,
+       "name": "Wall of Omens",
+       "set": "roe",
+       "number": "53",
+       "id": "6e3510f5-e450-400b-98ea-341dbf212054"
+      },
+      {
+       "qty": 4,
+       "name": "Day of Judgment",
+       "set": "zen",
+       "number": "9",
+       "id": "2aa98fca-972b-46c2-bdec-6ace35c988d5"
+      },
+      {
+       "qty": 4,
+       "name": "Mana Leak",
+       "set": "m11",
+       "number": "62",
+       "id": "a7c7757d-8036-4b33-a1cb-07795d392588"
+      },
+      {
+       "qty": 2,
+       "name": "Ajani Goldmane",
+       "set": "m11",
+       "number": "1",
+       "id": "2d911053-a026-4b20-ba2d-dbcc367c1413"
+      },
+      {
+       "qty": 4,
+       "name": "Baneslayer Angel",
+       "set": "m11",
+       "number": "7",
+       "id": "ff70c4ff-a241-4333-bd8f-9f0ed5a0333b"
+      },
+      {
+       "qty": 4,
+       "name": "Everflowing Chalice",
+       "set": "wwk",
+       "number": "123",
+       "id": "1fdcc0c3-4029-4fc3-a486-5d7f45c910bd"
+      },
+      {
+       "qty": 2,
+       "name": "Sun Titan",
+       "set": "m11",
+       "number": "35",
+       "id": "d8db2b8e-dce9-49b7-833f-381ee55288cb"
+      },
+      {
+       "qty": 2,
+       "name": "Frost Titan",
+       "set": "m11",
+       "number": "55",
+       "id": "065addc8-c235-43cc-a54f-b582826e5df1"
+      },
+      {
+       "qty": 2,
+       "name": "Jace Beleren",
+       "set": "m11",
+       "number": "58",
+       "id": "441af393-2f70-4765-ae95-730c1e1d864f"
+      },
+      {
+       "qty": 4,
+       "name": "Spreading Seas",
+       "set": "zen",
+       "number": "70",
+       "id": "37454c1c-4098-4ac2-884e-3f65f1384bdb"
+      },
+      {
+       "qty": 4,
+       "name": "Celestial Colonnade",
+       "set": "wwk",
+       "number": "133",
+       "id": "f6929259-2903-4f6f-9b06-42048fd55c6a"
+      },
+      {
+       "qty": 4,
+       "name": "Glacial Fortress",
+       "set": "m11",
+       "number": "225",
+       "id": "b9d18532-2247-4e33-a760-bc42a727e9f5"
+      },
+      {
+       "qty": 8,
+       "name": "Island",
+       "set": "zen",
+       "number": "234",
+       "id": "efd86f2a-bd28-4731-838d-78e67be8b49e"
+      },
+      {
+       "qty": 8,
+       "name": "Plains",
+       "set": "zen",
+       "number": "230",
+       "id": "bc4f4b6d-ff35-4b1f-974b-f39569e6b3c7"
+      }
+     ]
+    }
+   },
+   "reward": {
+    "hero": {
+     "packs": 2,
+     "coins": 200
+    },
+    "villain": {
+     "card": {
+      "oracle_id": "7f77a84e-5a4b-4834-aefa-3cecc175ae8e",
+      "name": "Jace, the Mind Sculptor",
+      "rarity": "mythic",
+      "set": "wwk",
+      "id": "0e606072-a3aa-4300-ba90-ec92a721fa76",
+      "image": "https://cards.scryfall.io/normal/front/0/e/0e606072-a3aa-4300-ba90-ec92a721fa76.jpg"
+     },
+     "coins": 200
+    }
+   },
+   "scene": [
+    {
+     "who": "stage",
+     "line": "Each temple is a door to a horrible future.",
+     "quote": true
+    },
+    {
+     "who": "you",
+     "line": "Fifteen mana, and nothing can counter Emrakul. Get there."
+    }
+   ],
+   "villainScene": [
+    {
+     "who": "stage",
+     "line": "The fatal flaw in every plan is the assumption that you know more than your enemy.",
+     "quote": true
+    }
+   ],
+   "after": [
+    {
+     "who": "stage",
+     "line": "Recorded: banned in Standard, 1 July 2011."
+    }
+   ],
+   "cues": {
+    "hero": {
+     "start": "Ramp.",
+     "big": "A titan wakes!",
+     "low": "Countered again...",
+     "win": "Annihilated.",
+     "loss": "Brainstormed out...",
+     "half": "Make them answer twice."
+    },
+    "villain": {
+     "start": "[Jace brainstorms]",
+     "big": "[fateseal]",
+     "low": "[out of counters]",
+     "win": "[the mind sculpted]",
+     "loss": "[a titan they could not counter]"
+    }
+   },
+   "bigPlays": [],
+   "sim": null
+  }
+ ]
+}

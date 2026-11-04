@@ -1,0 +1,2868 @@
+{
+ "act": 23,
+ "era": "2016-01-22",
+ "title": "The Gatewatch Rises",
+ "years": "2015 to 2016",
+ "sets": [
+  "ori",
+  "bfz",
+  "ogw"
+ ],
+ "landSet": "bfz",
+ "intro": [
+  {
+   "who": "stage",
+   "line": "Zendikar. Act 17 ended with the Eldrazi titans set free. Ulamog and Kozilek have spent the years since eating the world."
+  },
+  {
+   "who": "stage",
+   "line": "The continent of Bala Ged was ravaged by massive Eldrazi of Ulamog's lineage, its lush jungles and cascading rivers reduced to dust.",
+   "quote": true
+  },
+  {
+   "who": "stage",
+   "line": "\"Sea Gate has fallen. Survivors are on the move. Will send another griffin when we find refuge. Stay hidden. Stay safe.\"",
+   "quote": true
+  },
+  {
+   "who": "stage",
+   "line": "Four planeswalkers are coming, each from a different world, each for a different reason."
+  }
+ ],
+ "finale": [
+  {
+   "who": "stage",
+   "line": "Jace discovered the leyline pattern needed to anchor Ulamog and Kozilek to reality, but it was Nissa who could trace it on her world.",
+   "quote": true
+  },
+  {
+   "who": "stage",
+   "line": "As Gideon kept the brood lineages at bay, Chandra incinerated the bound Eldrazi titans.",
+   "quote": true
+  },
+  {
+   "who": "gideon",
+   "line": "For justice and peace, I will keep watch.",
+   "quote": true
+  },
+  {
+   "who": "jace",
+   "line": "For the sake of the Multiverse, I will keep watch.",
+   "quote": true
+  },
+  {
+   "who": "nissa",
+   "line": "For the life of every plane, I will keep watch.",
+   "quote": true
+  },
+  {
+   "who": "chandra",
+   "line": "If it means that people can live in freedom, yeah, I'll keep watch.",
+   "quote": true
+  },
+  {
+   "who": "stage",
+   "line": "Two titans are ash. The third, Emrakul, is not on Zendikar at all. Nobody knows where she went."
+  }
+ ],
+ "villainFinale": [
+  {
+   "who": "stage",
+   "line": "The leylines slip. The titans walk on."
+  },
+  {
+   "who": "stage",
+   "line": "Dust and memory are all that remain in Ulamog's wake.",
+   "quote": true
+  },
+  {
+   "who": "kalitas",
+   "line": "No matter how big your champion, theirs is bigger. No matter how great your numbers, theirs are greater. No matter how voracious your appetite, they are hungrier. That is why the Eldrazi will win.",
+   "quote": true
+  }
+ ],
+ "vibe": "gatewatch-zendikar-ruin",
+ "cast": {
+  "you": {
+   "name": "You",
+   "title": "Planeswalker",
+   "portrait": {
+    "card": "Call the Gatewatch",
+    "set": "ogw",
+    "number": "16",
+    "id": "4719ac60-2cff-4abb-b9cc-b677d3ac945c",
+    "crop": "https://cards.scryfall.io/art_crop/front/4/7/4719ac60-2cff-4abb-b9cc-b677d3ac945c.jpg?1783937928",
+    "artist": "Yefim Kligerman",
+    "focus": "50% 30%"
+   }
+  },
+  "gideon": {
+   "name": "Gideon Jura",
+   "title": "Ally of Zendikar",
+   "portrait": {
+    "card": "Gideon, Ally of Zendikar",
+    "set": "bfz",
+    "number": "29",
+    "id": "187e887c-c39d-4d25-a506-cdc95fc70316",
+    "crop": "https://cards.scryfall.io/art_crop/front/1/8/187e887c-c39d-4d25-a506-cdc95fc70316.jpg?1783938219",
+    "artist": "Eric Deschamps",
+    "focus": "50% 25%"
+   }
+  },
+  "drones": {
+   "name": "Ulamog's Brood",
+   "title": "Eldrazi",
+   "portrait": {
+    "card": "Eyeless Watcher",
+    "set": "bfz",
+    "number": "166",
+    "id": "4d949d0e-baf7-4573-bb15-7e30e3e9b202",
+    "crop": "https://cards.scryfall.io/art_crop/front/4/d/4d949d0e-baf7-4573-bb15-7e30e3e9b202.jpg?1783938189",
+    "artist": "Yohann Schepacz",
+    "focus": "50% 30%"
+   }
+  },
+  "nissa": {
+   "name": "Nissa Revane",
+   "title": "Voice of Zendikar",
+   "portrait": {
+    "card": "Nissa, Voice of Zendikar",
+    "set": "ogw",
+    "number": "138",
+    "id": "a600b97b-1851-4b1b-a2af-f80e0307c02c",
+    "crop": "https://cards.scryfall.io/art_crop/front/a/6/a600b97b-1851-4b1b-a2af-f80e0307c02c.jpg?1783937901",
+    "artist": "Raymond Swanland",
+    "focus": "50% 25%"
+   }
+  },
+  "lineage": {
+   "name": "The Brood Lineage",
+   "title": "Eldrazi",
+   "portrait": {
+    "card": "Brood Butcher",
+    "set": "bfz",
+    "number": "199",
+    "id": "2f60fdd6-bc18-4c04-83d8-c204f2b35ff1",
+    "crop": "https://cards.scryfall.io/art_crop/front/2/f/2f60fdd6-bc18-4c04-83d8-c204f2b35ff1.jpg?1783938182",
+    "artist": "Daarken",
+    "focus": "50% 30%"
+   }
+  },
+  "jace": {
+   "name": "Jace Beleren",
+   "title": "Of Vryn",
+   "portrait": {
+    "card": "Jace, Vryn's Prodigy // Jace, Telepath Unbound",
+    "set": "ori",
+    "number": "60",
+    "id": "02d6d693-f1f3-4317-bcc0-c21fa8490d38",
+    "crop": "https://cards.scryfall.io/art_crop/front/0/2/02d6d693-f1f3-4317-bcc0-c21fa8490d38.jpg?1783938353",
+    "artist": "Jaime Jones",
+    "focus": "50% 25%"
+   }
+  },
+  "alhammarret": {
+   "name": "Alhammarret",
+   "title": "High Arbiter",
+   "portrait": {
+    "card": "Alhammarret, High Arbiter",
+    "set": "ori",
+    "number": "43",
+    "id": "4200b101-19d3-4442-bddd-3eb77d5f99a9",
+    "crop": "https://cards.scryfall.io/art_crop/front/4/2/4200b101-19d3-4442-bddd-3eb77d5f99a9.jpg?1783938355",
+    "artist": "Richard Wright",
+    "focus": "50% 25%"
+   }
+  },
+  "chandra": {
+   "name": "Chandra Nalaar",
+   "title": "Flamecaller",
+   "portrait": {
+    "card": "Chandra, Flamecaller",
+    "set": "ogw",
+    "number": "104",
+    "id": "49fdd0d3-7140-4c12-a41c-37eedd986d9e",
+    "crop": "https://cards.scryfall.io/art_crop/front/4/9/49fdd0d3-7140-4c12-a41c-37eedd986d9e.jpg?1783937909",
+    "artist": "Jason Rainville",
+    "focus": "50% 25%"
+   }
+  },
+  "ob": {
+   "name": "Ob Nixilis",
+   "title": "Reignited",
+   "portrait": {
+    "card": "Ob Nixilis Reignited",
+    "set": "bfz",
+    "number": "119",
+    "id": "53b2d6e9-2a43-4ebe-9ae8-944375b46cce",
+    "crop": "https://cards.scryfall.io/art_crop/front/5/3/53b2d6e9-2a43-4ebe-9ae8-944375b46cce.jpg?1783938200",
+    "artist": "Chris Rahn",
+    "focus": "50% 25%"
+   }
+  },
+  "kiora": {
+   "name": "Kiora",
+   "title": "Master of the Depths",
+   "portrait": {
+    "card": "Kiora, Master of the Depths",
+    "set": "bfz",
+    "number": "213",
+    "id": "4b63c228-3265-4029-9bc0-36b3e31dfb53",
+    "crop": "https://cards.scryfall.io/art_crop/front/4/b/4b63c228-3265-4029-9bc0-36b3e31dfb53.jpg?1783938179",
+    "artist": "Jason Chan",
+    "focus": "50% 25%"
+   }
+  },
+  "surge": {
+   "name": "Kozilek's Brood",
+   "title": "Eldrazi",
+   "portrait": {
+    "card": "Herald of Kozilek",
+    "set": "bfz",
+    "number": "205",
+    "id": "2a4180ae-1fd9-4185-b4f0-9e8f668a5737",
+    "crop": "https://cards.scryfall.io/art_crop/front/2/a/2a4180ae-1fd9-4185-b4f0-9e8f668a5737.jpg?1783938181",
+    "artist": "Johannes Voss",
+    "focus": "50% 30%"
+   }
+  },
+  "ramp": {
+   "name": "Eldrazi Ramp",
+   "title": "Late 2015",
+   "portrait": {
+    "card": "Ulamog, the Ceaseless Hunger",
+    "set": "bfz",
+    "number": "15",
+    "id": "1192f7a9-102e-4b3a-b154-18c8eb332217",
+    "crop": "https://cards.scryfall.io/art_crop/front/1/1/1192f7a9-102e-4b3a-b154-18c8eb332217.jpg?1783938222",
+    "artist": "Michael Komarck",
+    "focus": "50% 30%"
+   }
+  },
+  "allies": {
+   "name": "Allies",
+   "title": "Late 2015",
+   "portrait": {
+    "card": "General Tazri",
+    "set": "ogw",
+    "number": "19",
+    "id": "34e9aa86-1a31-4c0f-928d-923f066286b6",
+    "crop": "https://cards.scryfall.io/art_crop/front/3/4/34e9aa86-1a31-4c0f-928d-923f066286b6.jpg?1783937927",
+    "artist": "Chris Rahn",
+    "focus": "50% 25%"
+   }
+  },
+  "thopters": {
+   "name": "Thopters",
+   "title": "2015",
+   "portrait": {
+    "card": "Pia and Kiran Nalaar",
+    "set": "ori",
+    "number": "157",
+    "id": "0dcafa9e-3637-42ca-bdb2-45a2b5da7294",
+    "crop": "https://cards.scryfall.io/art_crop/front/0/d/0dcafa9e-3637-42ca-bdb2-45a2b5da7294.jpg?1783938327",
+    "artist": "Eric Deschamps",
+    "focus": "50% 25%"
+   }
+  },
+  "drana": {
+   "name": "Drana",
+   "title": "Liberator of Malakir",
+   "portrait": {
+    "card": "Drana, Liberator of Malakir",
+    "set": "bfz",
+    "number": "109",
+    "id": "d3f6ed18-eb6f-4d07-8660-cf7c074c87cd",
+    "crop": "https://cards.scryfall.io/art_crop/front/d/3/d3f6ed18-eb6f-4d07-8660-cf7c074c87cd.jpg?1783938202",
+    "artist": "Mike Bierek",
+    "focus": "50% 25%"
+   }
+  },
+  "kalitas": {
+   "name": "Kalitas",
+   "title": "Thrall of Ulamog",
+   "portrait": {
+    "card": "Kalitas, Traitor of Ghet",
+    "set": "ogw",
+    "number": "86",
+    "id": "17a278d0-f601-4d57-bc3d-2972f8602a69",
+    "crop": "https://cards.scryfall.io/art_crop/front/1/7/17a278d0-f601-4d57-bc3d-2972f8602a69.jpg?1783937911",
+    "artist": "Todd Lockwood",
+    "focus": "50% 25%"
+   }
+  },
+  "titans": {
+   "name": "Ulamog and Kozilek",
+   "title": "Eldrazi titans",
+   "portrait": {
+    "card": "Kozilek, the Great Distortion",
+    "set": "ogw",
+    "number": "4",
+    "id": "f06fc6e0-b22c-40d3-bb53-d5ec400d921c",
+    "crop": "https://cards.scryfall.io/art_crop/front/f/0/f06fc6e0-b22c-40d3-bb53-d5ec400d921c.jpg?1783937930",
+    "artist": "Aleksi Briclot",
+    "focus": "50% 30%"
+   }
+  },
+  "winter": {
+   "name": "Eldrazi Winter",
+   "title": "Early 2016",
+   "portrait": {
+    "card": "Thought-Knot Seer",
+    "set": "ogw",
+    "number": "9",
+    "id": "bffc360e-db41-48f3-9365-680d55046e04",
+    "crop": "https://cards.scryfall.io/art_crop/front/b/f/bffc360e-db41-48f3-9365-680d55046e04.jpg?1783937929",
+    "artist": "Svetlin Velinov",
+    "focus": "50% 30%"
+   }
+  }
+ },
+ "battles": [
+  {
+   "id": "a23b1",
+   "slot": 1,
+   "kind": "Arrival",
+   "mood": "tension",
+   "title": "The Fall of Sea Gate",
+   "difficulty": "Easy",
+   "teaches": [
+    "Ingest"
+   ],
+   "blurb": "You arrive on the coast of Tazeem as Sea Gate, the great lighthouse city, falls to Ulamog's brood. Gideon Jura is leading the survivors out with a line of kor and human Allies.",
+   "rewardSet": "bfz",
+   "host": false,
+   "hero": {
+    "who": "gideon",
+    "deck": {
+     "name": "The Sea Gate Allies",
+     "colors": "W",
+     "archetype": null,
+     "label": "tribute",
+     "cards": [
+      {
+       "qty": 2,
+       "name": "Gideon, Ally of Zendikar",
+       "set": "bfz",
+       "number": "29",
+       "id": "187e887c-c39d-4d25-a506-cdc95fc70316"
+      },
+      {
+       "qty": 4,
+       "name": "Expedition Envoy",
+       "set": "bfz",
+       "number": "24",
+       "id": "41193ef1-1619-4448-9905-26b05079c79a"
+      },
+      {
+       "qty": 4,
+       "name": "Kor Bladewhirl",
+       "set": "bfz",
+       "number": "34",
+       "id": "e31b12c7-df11-4450-95e1-b9a5aa97af0e"
+      },
+      {
+       "qty": 4,
+       "name": "Makindi Patrol",
+       "set": "bfz",
+       "number": "39",
+       "id": "ae03f018-3062-4b1c-99b8-13fcffd70b49"
+      },
+      {
+       "qty": 4,
+       "name": "Lantern Scout",
+       "set": "bfz",
+       "number": "37",
+       "id": "fea3b271-226d-4223-8be8-51b5b2b7cae8"
+      },
+      {
+       "qty": 4,
+       "name": "Ondu Greathorn",
+       "set": "bfz",
+       "number": "40",
+       "id": "95d9668e-05dc-41c4-9326-ef4c0e15dd80"
+      },
+      {
+       "qty": 4,
+       "name": "Kor Castigator",
+       "set": "bfz",
+       "number": "35",
+       "id": "f4db2f0e-d7d4-417b-9b94-5ade727907e9"
+      },
+      {
+       "qty": 4,
+       "name": "Felidar Cub",
+       "set": "bfz",
+       "number": "25",
+       "id": "ea76a183-e15c-4968-b29d-91c074aa8681"
+      },
+      {
+       "qty": 24,
+       "name": "Plains",
+       "set": "bfz",
+       "number": "250",
+       "id": "58a735c9-08a1-4950-bf8c-ed1cfba76765"
+      },
+      {
+       "qty": 3,
+       "name": "Kor Scythemaster",
+       "set": "ogw",
+       "number": "23",
+       "id": "5ce587ba-f23a-4548-a5b8-fca54984d4b4"
+      },
+      {
+       "qty": 3,
+       "name": "Topan Freeblade",
+       "set": "ori",
+       "number": "36",
+       "id": "b9ef727b-3e67-46d2-80f9-b1d483977b05"
+      }
+     ]
+    }
+   },
+   "villain": {
+    "who": "drones",
+    "deck": {
+     "name": "Ulamog's Brood",
+     "colors": "UB",
+     "archetype": null,
+     "label": "tribute",
+     "cards": [
+      {
+       "qty": 4,
+       "name": "Mist Intruder",
+       "set": "bfz",
+       "number": "61",
+       "id": "f8c2e662-d8c3-44d4-b666-fe0d4a046271"
+      },
+      {
+       "qty": 4,
+       "name": "Benthic Infiltrator",
+       "set": "bfz",
+       "number": "55",
+       "id": "f380ae58-08cc-42df-ac74-3c6890a62463"
+      },
+      {
+       "qty": 4,
+       "name": "Culling Drone",
+       "set": "bfz",
+       "number": "91",
+       "id": "1a623415-46c0-45aa-ab75-1e2d9708013a"
+      },
+      {
+       "qty": 4,
+       "name": "Salvage Drone",
+       "set": "bfz",
+       "number": "65",
+       "id": "4b8ce2a9-9d8e-442b-bc12-74545ceb65bd"
+      },
+      {
+       "qty": 4,
+       "name": "Dominator Drone",
+       "set": "bfz",
+       "number": "92",
+       "id": "12e7e2b5-3141-4a19-aa49-91ab7e5c211c"
+      },
+      {
+       "qty": 1,
+       "name": "Ulamog's Reclaimer",
+       "set": "bfz",
+       "number": "68",
+       "id": "29a237a6-0e72-47ce-b28d-a0260963f406"
+      },
+      {
+       "qty": 3,
+       "name": "Eldrazi Skyspawner",
+       "set": "bfz",
+       "number": "58",
+       "id": "9c9c1a10-446e-492a-95cc-a459dc6c08a0"
+      },
+      {
+       "qty": 3,
+       "name": "Murk Strider",
+       "set": "bfz",
+       "number": "62",
+       "id": "130849ba-3893-490d-bfb0-51c76e53cf62"
+      },
+      {
+       "qty": 3,
+       "name": "Sludge Crawler",
+       "set": "bfz",
+       "number": "98",
+       "id": "9782b463-0677-40f4-ab2c-4c3ff19f1168"
+      },
+      {
+       "qty": 12,
+       "name": "Island",
+       "set": "bfz",
+       "number": "255",
+       "id": "8490261d-4246-4232-b7fc-23204c14a7b5"
+      },
+      {
+       "qty": 12,
+       "name": "Swamp",
+       "set": "bfz",
+       "number": "260",
+       "id": "132155ae-f7a4-4957-91cb-e51ff52716f9"
+      },
+      {
+       "qty": 4,
+       "name": "Incubator Drone",
+       "set": "bfz",
+       "number": "60",
+       "id": "e0855762-7068-4111-a6bf-fe6d5b092c74"
+      },
+      {
+       "qty": 2,
+       "name": "Deathless Behemoth",
+       "set": "bfz",
+       "number": "5",
+       "id": "0d98f1df-f99a-43c5-81cd-9d333226857a"
+      }
+     ]
+    }
+   },
+   "reward": {
+    "hero": {
+     "packs": 1,
+     "coins": 0
+    },
+    "villain": {
+     "card": {
+      "oracle_id": "78ee8cd8-de12-440f-8890-a78ab40b6be4",
+      "name": "Deathless Behemoth",
+      "rarity": "uncommon",
+      "set": "bfz",
+      "id": "0d98f1df-f99a-43c5-81cd-9d333226857a",
+      "image": "https://cards.scryfall.io/normal/front/0/d/0d98f1df-f99a-43c5-81cd-9d333226857a.jpg"
+     },
+     "coins": 50
+    }
+   },
+   "scene": [
+    {
+     "who": "stage",
+     "line": "Though Gideon arrived at Sea Gate too late to prevent the massacre, he still had enough time to lead its survivors to relative safety.",
+     "quote": true
+    },
+    {
+     "who": "gideon",
+     "line": "For the lands you have lost and the beauty that remains, for freedom and the future, we must hold nothing back!",
+     "quote": true
+    },
+    {
+     "who": "gideon",
+     "line": "Ingest: when an ingest creature deals combat damage to you, you exile the top card of your library. Processors then use those exiled cards. Block the small ones."
+    }
+   ],
+   "villainScene": [
+    {
+     "who": "stage",
+     "line": "Every Eldrazi in Ulamog's lineage is an extension of the titan's will.",
+     "quote": true
+    },
+    {
+     "who": "stage",
+     "line": "Ulamog's progeny swarm the land, draining Zendikar's mana to feed the titan's insatiable hunger.",
+     "quote": true
+    }
+   ],
+   "after": [
+    {
+     "who": "gideon",
+     "line": "We need more than soldiers. We need people who can leave this world and choose to stay."
+    }
+   ],
+   "cues": {
+    "hero": {
+     "start": "Hold the line!",
+     "big": "Allies, now!",
+     "low": "They keep coming...",
+     "win": "Sea Gate stands.",
+     "loss": "Fall back...",
+     "half": "Block the ingest drones."
+    },
+    "villain": {
+     "start": "[a hum from the deep]",
+     "big": "[the brood surges]",
+     "low": "[a drone dissolves]",
+     "win": "[consumed]",
+     "loss": "[the hum fades]"
+    }
+   },
+   "bigPlays": [],
+   "sim": null
+  },
+  {
+   "id": "a23b2",
+   "slot": 2,
+   "kind": "Lesson",
+   "mood": "march",
+   "title": "The Land Fights Back",
+   "difficulty": "Easy",
+   "teaches": [
+    "Awaken"
+   ],
+   "blurb": "Nissa Revane is an elf animist who can wake the land itself. Zendikar is in pain, and she is the only one who can hear it.",
+   "rewardSet": "bfz",
+   "host": false,
+   "hero": {
+    "who": "nissa",
+    "deck": {
+     "name": "The Living Land",
+     "colors": "G",
+     "archetype": null,
+     "label": "tribute",
+     "cards": [
+      {
+       "qty": 2,
+       "name": "Nissa, Vastwood Seer // Nissa, Sage Animist",
+       "set": "ori",
+       "number": "189",
+       "id": "ff0063da-ab6b-499d-8e87-8b34d46f0372"
+      },
+      {
+       "qty": 4,
+       "name": "Snapping Gnarlid",
+       "set": "bfz",
+       "number": "190",
+       "id": "834409e3-134e-4a34-89cb-53e2a039e980"
+      },
+      {
+       "qty": 4,
+       "name": "Undergrowth Champion",
+       "set": "bfz",
+       "number": "197",
+       "id": "d53104d8-5b9a-45b6-a2f9-b2c5d231a03d"
+      },
+      {
+       "qty": 4,
+       "name": "Scythe Leopard",
+       "set": "bfz",
+       "number": "188",
+       "id": "89ef0054-a290-4c41-846d-12f8119c52ae"
+      },
+      {
+       "qty": 4,
+       "name": "Oran-Rief Hydra",
+       "set": "bfz",
+       "number": "181",
+       "id": "74c3276b-2cbc-4266-b16a-bf72c044d95b"
+      },
+      {
+       "qty": 4,
+       "name": "Territorial Baloth",
+       "set": "bfz",
+       "number": "196",
+       "id": "0c3d4afc-5bb7-4159-9a11-f9c989dd9043"
+      },
+      {
+       "qty": 4,
+       "name": "Lifespring Druid",
+       "set": "bfz",
+       "number": "177",
+       "id": "a3657719-7d4d-46db-a5f4-699ee2032ebe"
+      },
+      {
+       "qty": 4,
+       "name": "Tajuru Stalwart",
+       "set": "bfz",
+       "number": "194",
+       "id": "f916220b-a942-41af-8949-aa384fa7857d"
+      },
+      {
+       "qty": 24,
+       "name": "Forest",
+       "set": "bfz",
+       "number": "270",
+       "id": "642102a2-abde-4e76-a6d6-08f7befe1196"
+      },
+      {
+       "qty": 4,
+       "name": "Broodhunter Wurm",
+       "set": "bfz",
+       "number": "171",
+       "id": "c11c852d-9c7c-4d9b-8e79-70ea5ac865df"
+      },
+      {
+       "qty": 2,
+       "name": "Nissa's Pilgrimage",
+       "set": "ori",
+       "number": "190",
+       "id": "800cef89-e90c-4f84-a7a0-3cd203532169"
+      }
+     ]
+    }
+   },
+   "villain": {
+    "who": "lineage",
+    "deck": {
+     "name": "The Brood Lineage",
+     "colors": "BG",
+     "archetype": null,
+     "label": "tribute",
+     "cards": [
+      {
+       "qty": 2,
+       "name": "Brood Butcher",
+       "set": "bfz",
+       "number": "199",
+       "id": "2f60fdd6-bc18-4c04-83d8-c204f2b35ff1"
+      },
+      {
+       "qty": 3,
+       "name": "Brood Monitor",
+       "set": "bfz",
+       "number": "164",
+       "id": "ea7d4a49-8681-4f95-8718-96648bf73c39"
+      },
+      {
+       "qty": 4,
+       "name": "Blisterpod",
+       "set": "bfz",
+       "number": "163",
+       "id": "e16f1803-634a-41b0-ae21-484d6f914a0d"
+      },
+      {
+       "qty": 4,
+       "name": "Eyeless Watcher",
+       "set": "bfz",
+       "number": "166",
+       "id": "4d949d0e-baf7-4573-bb15-7e30e3e9b202"
+      },
+      {
+       "qty": 4,
+       "name": "Carrier Thrall",
+       "set": "bfz",
+       "number": "106",
+       "id": "bd2ab895-9225-4eba-90c3-4023db4f8b70"
+      },
+      {
+       "qty": 4,
+       "name": "Culling Drone",
+       "set": "bfz",
+       "number": "91",
+       "id": "1a623415-46c0-45aa-ab75-1e2d9708013a"
+      },
+      {
+       "qty": 3,
+       "name": "Call the Scions",
+       "set": "bfz",
+       "number": "165",
+       "id": "5d248ed0-c2b4-4558-9a09-ace8fd4b0599"
+      },
+      {
+       "qty": 4,
+       "name": "Vile Redeemer",
+       "set": "ogw",
+       "number": "125",
+       "id": "f48b0613-127a-4338-aea4-ad0b8aa96d77"
+      },
+      {
+       "qty": 12,
+       "name": "Swamp",
+       "set": "bfz",
+       "number": "260",
+       "id": "132155ae-f7a4-4957-91cb-e51ff52716f9"
+      },
+      {
+       "qty": 12,
+       "name": "Forest",
+       "set": "bfz",
+       "number": "270",
+       "id": "642102a2-abde-4e76-a6d6-08f7befe1196"
+      },
+      {
+       "qty": 4,
+       "name": "Skitterskin",
+       "set": "bfz",
+       "number": "97",
+       "id": "e3cbecdc-bc30-4797-bf6f-a7a61db05b48"
+      },
+      {
+       "qty": 4,
+       "name": "Kozilek's Shrieker",
+       "set": "ogw",
+       "number": "73",
+       "id": "a384cd5b-2c6c-4969-bb62-a017e2fc9794"
+      }
+     ]
+    }
+   },
+   "reward": {
+    "hero": {
+     "packs": 1,
+     "coins": 0
+    },
+    "villain": {
+     "card": {
+      "oracle_id": "a20edb8d-219d-4d0f-8346-0c31064eb49f",
+      "name": "Brood Butcher",
+      "rarity": "rare",
+      "set": "bfz",
+      "id": "2f60fdd6-bc18-4c04-83d8-c204f2b35ff1",
+      "image": "https://cards.scryfall.io/normal/front/2/f/2f60fdd6-bc18-4c04-83d8-c204f2b35ff1.jpg"
+     },
+     "coins": 50
+    }
+   },
+   "scene": [
+    {
+     "who": "nissa",
+     "line": "I was wrong. Zendikar isn't after me. It isn't after any of us. It's not evil or vengeful. It's magnificent . . . but it's in pain.",
+     "quote": true
+    },
+    {
+     "who": "nissa",
+     "line": "The land will not wait for the enemy to arrive.",
+     "quote": true
+    },
+    {
+     "who": "nissa",
+     "line": "Awaken: cast the spell for its awaken cost and one of your lands also becomes a 0/0 Elemental creature with that many +1/+1 counters. It is still a land."
+    }
+   ],
+   "villainScene": [
+    {
+     "who": "stage",
+     "line": "Ulamog's processors trail behind him, converting ruined matter into furious energy.",
+     "quote": true
+    },
+    {
+     "who": "nissa",
+     "line": "In the dark places of our world, something horrible is growing. I fear our foes may be more numerous than we had imagined.",
+     "quote": true
+    }
+   ],
+   "after": [
+    {
+     "who": "nissa",
+     "line": "This world tires of its long occupation.",
+     "quote": true
+    }
+   ],
+   "cues": {
+    "hero": {
+     "start": "Wake up.",
+     "big": "The land rises!",
+     "low": "It hurts...",
+     "win": "Zendikar endures.",
+     "loss": "Dust...",
+     "half": "Awaken a land."
+    },
+    "villain": {
+     "start": "[the ground goes grey]",
+     "big": "[spawn]",
+     "low": "[a drone falls]",
+     "win": "[the forest is gone]",
+     "loss": "[driven off]"
+    }
+   },
+   "bigPlays": [],
+   "sim": null
+  },
+  {
+   "id": "a23b3",
+   "slot": 3,
+   "kind": "Lesson",
+   "mood": "comic",
+   "title": "The Prodigy",
+   "difficulty": "Easy",
+   "teaches": [
+    "Spell mastery"
+   ],
+   "blurb": "Jace's origin: years ago on Vryn, a young mind mage worked for a sphinx called Alhammarret, who used him to spy on everyone. Jace has finally noticed.",
+   "rewardSet": "ori",
+   "host": false,
+   "hero": {
+    "who": "jace",
+    "deck": {
+     "name": "The Prodigy",
+     "colors": "U",
+     "archetype": null,
+     "label": "tribute",
+     "cards": [
+      {
+       "qty": 2,
+       "name": "Jace, Vryn's Prodigy // Jace, Telepath Unbound",
+       "set": "ori",
+       "number": "60",
+       "id": "02d6d693-f1f3-4317-bcc0-c21fa8490d38"
+      },
+      {
+       "qty": 2,
+       "name": "Thopter Spy Network",
+       "set": "ori",
+       "number": "79",
+       "id": "5516d86e-539a-4ba8-8d25-1a3b27b1267a"
+      },
+      {
+       "qty": 4,
+       "name": "Whirler Rogue",
+       "set": "ori",
+       "number": "83",
+       "id": "0feb66d2-c50f-4296-af2f-b374c57443b0"
+      },
+      {
+       "qty": 4,
+       "name": "Separatist Voidmage",
+       "set": "ori",
+       "number": "72",
+       "id": "e5634d1a-ca4b-4528-9e0e-b88f1025d434"
+      },
+      {
+       "qty": 4,
+       "name": "Calculated Dismissal",
+       "set": "ori",
+       "number": "48",
+       "id": "2c42ab35-6050-42b2-9c3c-3252f2e69442"
+      },
+      {
+       "qty": 3,
+       "name": "Anchor to the Aether",
+       "set": "ori",
+       "number": "44",
+       "id": "15058f91-d266-4804-96af-fc050b6c8436"
+      },
+      {
+       "qty": 4,
+       "name": "Faerie Miscreant",
+       "set": "ori",
+       "number": "57",
+       "id": "1c487f1a-a51d-449c-827d-c7b9381acb34"
+      },
+      {
+       "qty": 4,
+       "name": "Watercourser",
+       "set": "ori",
+       "number": "82",
+       "id": "60b12e87-ccd6-4c84-80b2-9ac7d099be89"
+      },
+      {
+       "qty": 3,
+       "name": "Mizzium Meddler",
+       "set": "ori",
+       "number": "64",
+       "id": "762d568d-a2d6-449b-85c2-a92755efe4c3"
+      },
+      {
+       "qty": 2,
+       "name": "Psychic Rebuttal",
+       "set": "ori",
+       "number": "67",
+       "id": "67a105f8-0c01-4c09-a3bf-8c912b6dc741"
+      },
+      {
+       "qty": 4,
+       "name": "Jhessian Thief",
+       "set": "ori",
+       "number": "62",
+       "id": "33b8553d-d326-4280-bc3a-2fffdd377cd2"
+      },
+      {
+       "qty": 24,
+       "name": "Island",
+       "set": "bfz",
+       "number": "255",
+       "id": "8490261d-4246-4232-b7fc-23204c14a7b5"
+      }
+     ]
+    }
+   },
+   "villain": {
+    "who": "alhammarret",
+    "deck": {
+     "name": "The High Arbiter",
+     "colors": "WU",
+     "archetype": null,
+     "label": "tribute",
+     "cards": [
+      {
+       "qty": 2,
+       "name": "Alhammarret, High Arbiter",
+       "set": "ori",
+       "number": "43",
+       "id": "4200b101-19d3-4442-bddd-3eb77d5f99a9"
+      },
+      {
+       "qty": 2,
+       "name": "Vryn Wingmare",
+       "set": "ori",
+       "number": "40",
+       "id": "a34291dc-103f-493d-b217-bd1b0e946d8d"
+      },
+      {
+       "qty": 4,
+       "name": "Ringwarden Owl",
+       "set": "ori",
+       "number": "68",
+       "id": "1acf216d-ef8f-431b-9b65-1e2e91285517"
+      },
+      {
+       "qty": 4,
+       "name": "Claustrophobia",
+       "set": "ori",
+       "number": "50",
+       "id": "4d249de3-4a84-4e98-9557-06e23e78de15"
+      },
+      {
+       "qty": 4,
+       "name": "Send to Sleep",
+       "set": "ori",
+       "number": "71",
+       "id": "aa34d648-da0a-4615-8dd8-d2c8b1a1a574"
+      },
+      {
+       "qty": 4,
+       "name": "Cloud Manta",
+       "set": "bfz",
+       "number": "71",
+       "id": "1854f819-d08e-4a23-bedb-4618b79623e9"
+      },
+      {
+       "qty": 4,
+       "name": "Ampryn Tactician",
+       "set": "ori",
+       "number": "2",
+       "id": "82a2e1d9-6763-4024-a18b-982d96395553"
+      },
+      {
+       "qty": 4,
+       "name": "Cleric of the Forward Order",
+       "set": "ori",
+       "number": "10",
+       "id": "cfcea783-e9f0-4d44-ac74-5aee9a07aa69"
+      },
+      {
+       "qty": 4,
+       "name": "Charging Griffin",
+       "set": "ori",
+       "number": "9",
+       "id": "d86bd259-bc2f-402c-9e7a-030f9a3781e2"
+      },
+      {
+       "qty": 12,
+       "name": "Island",
+       "set": "bfz",
+       "number": "255",
+       "id": "8490261d-4246-4232-b7fc-23204c14a7b5"
+      },
+      {
+       "qty": 12,
+       "name": "Plains",
+       "set": "bfz",
+       "number": "250",
+       "id": "58a735c9-08a1-4950-bf8c-ed1cfba76765"
+      },
+      {
+       "qty": 2,
+       "name": "Celestial Flare",
+       "set": "ori",
+       "number": "8",
+       "id": "89bb3b06-b33b-4897-882e-75b75790ea02"
+      },
+      {
+       "qty": 2,
+       "name": "Dreadwaters",
+       "set": "ori",
+       "number": "56",
+       "id": "c4c1434a-4832-4008-a091-e0703dedd0a2"
+      }
+     ]
+    }
+   },
+   "reward": {
+    "hero": {
+     "packs": 1,
+     "coins": 0
+    },
+    "villain": {
+     "card": {
+      "oracle_id": "c2531360-61f8-4edc-886b-408811a0639d",
+      "name": "Alhammarret, High Arbiter",
+      "rarity": "rare",
+      "set": "ori",
+      "id": "4200b101-19d3-4442-bddd-3eb77d5f99a9",
+      "image": "https://cards.scryfall.io/normal/front/4/2/4200b101-19d3-4442-bddd-3eb77d5f99a9.jpg"
+     },
+     "coins": 50
+    }
+   },
+   "scene": [
+    {
+     "who": "jace",
+     "line": "He taught me everything. I am starting to wonder what else he took."
+    },
+    {
+     "who": "jace",
+     "line": "Spell mastery: some spells get a bonus if there are two or more instants or sorceries in your graveyard. Use cheap spells early, then cash in."
+    }
+   ],
+   "villainScene": [
+    {
+     "who": "alhammarret",
+     "line": "As long as each side thinks it can win, the balance holds, and the mage-rings stand.",
+     "quote": true
+    }
+   ],
+   "after": [
+    {
+     "who": "stage",
+     "line": "Jace remembers. Years later, a stranger called Gideon finds him on Ravnica and asks for his help on Zendikar."
+    }
+   ],
+   "cues": {
+    "hero": {
+     "start": "I know what you did.",
+     "big": "Mastery!",
+     "low": "He is in my head...",
+     "win": "Out of my mind.",
+     "loss": "Forgotten...",
+     "half": "Two spells in the yard."
+    },
+    "villain": {
+     "start": "Sit down, boy.",
+     "big": "Arbitrated.",
+     "low": "Ungrateful.",
+     "win": "Forget.",
+     "loss": "Impossible."
+    }
+   },
+   "bigPlays": [],
+   "sim": null
+  },
+  {
+   "id": "a23b4",
+   "slot": 4,
+   "kind": "Rival",
+   "mood": "tension",
+   "title": "Reignited",
+   "difficulty": "Normal",
+   "teaches": [
+    "Devoid"
+   ],
+   "blurb": "Chandra Nalaar is a pyromancer who hates being told to stay. On Zendikar she finds Ob Nixilis, a demon who wants revenge on the world that took his spark long ago.",
+   "rewardSet": "bfz",
+   "host": false,
+   "hero": {
+    "who": "chandra",
+    "deck": {
+     "name": "Chandra's Fire",
+     "colors": "R",
+     "archetype": null,
+     "label": "tribute",
+     "cards": [
+      {
+       "qty": 2,
+       "name": "Chandra, Fire of Kaladesh // Chandra, Roaring Flame",
+       "set": "ori",
+       "number": "135",
+       "id": "b0d6caf0-4fa8-4ec5-b7f4-1307474d1b13"
+      },
+      {
+       "qty": 2,
+       "name": "Chandra, Flamecaller",
+       "set": "ogw",
+       "number": "104",
+       "id": "49fdd0d3-7140-4c12-a41c-37eedd986d9e"
+      },
+      {
+       "qty": 4,
+       "name": "Abbot of Keral Keep",
+       "set": "ori",
+       "number": "127",
+       "id": "cb7a2770-9a20-4f52-aac4-24502f50e374"
+      },
+      {
+       "qty": 4,
+       "name": "Exquisite Firecraft",
+       "set": "ori",
+       "number": "143",
+       "id": "42eca98e-a164-4f70-a0b0-7a604863f30b"
+      },
+      {
+       "qty": 4,
+       "name": "Fiery Impulse",
+       "set": "ori",
+       "number": "145",
+       "id": "5b81a589-44bf-4441-9079-1ae66d067519"
+      },
+      {
+       "qty": 2,
+       "name": "Akoum Hellkite",
+       "set": "bfz",
+       "number": "139",
+       "id": "ce837a65-a588-4b50-b298-f4ca37dbd06d"
+      },
+      {
+       "qty": 4,
+       "name": "Valakut Predator",
+       "set": "bfz",
+       "number": "160",
+       "id": "88318272-8192-4d6d-a22a-eca87abb480d"
+      },
+      {
+       "qty": 4,
+       "name": "Lavastep Raider",
+       "set": "bfz",
+       "number": "147",
+       "id": "2428f13f-c445-4eb4-bab1-309f27cab208"
+      },
+      {
+       "qty": 3,
+       "name": "Goblin Dark-Dwellers",
+       "set": "ogw",
+       "number": "110",
+       "id": "ddf91a4e-97f7-4189-823d-b619bb3b3d55"
+      },
+      {
+       "qty": 4,
+       "name": "Fiery Hellhound",
+       "set": "ori",
+       "number": "284",
+       "id": "8980efa5-bd21-4980-91a7-5e66528b1011"
+      },
+      {
+       "qty": 3,
+       "name": "Prickleboar",
+       "set": "ori",
+       "number": "158",
+       "id": "3191a8fd-2c54-4e47-9d5a-692bb38c811f"
+      },
+      {
+       "qty": 24,
+       "name": "Mountain",
+       "set": "bfz",
+       "number": "265",
+       "id": "0c9cbae1-6b04-4408-82fe-3fcf61dffbe2"
+      }
+     ]
+    }
+   },
+   "villain": {
+    "who": "ob",
+    "deck": {
+     "name": "The Demon's Bargain",
+     "colors": "B",
+     "archetype": null,
+     "label": "tribute",
+     "cards": [
+      {
+       "qty": 2,
+       "name": "Ob Nixilis Reignited",
+       "set": "bfz",
+       "number": "119",
+       "id": "53b2d6e9-2a43-4ebe-9ae8-944375b46cce"
+      },
+      {
+       "qty": 4,
+       "name": "Grasp of Darkness",
+       "set": "ogw",
+       "number": "85",
+       "id": "7d692236-92e5-460f-a8fc-8f6c73eba30c"
+      },
+      {
+       "qty": 4,
+       "name": "Ruinous Path",
+       "set": "bfz",
+       "number": "123",
+       "id": "709ab9cf-eed8-4d73-b10d-c7f6d8750328"
+      },
+      {
+       "qty": 2,
+       "name": "Demon's Grasp",
+       "set": "bfz",
+       "number": "108",
+       "id": "ff953948-db26-43af-9905-7d387769b4a9"
+      },
+      {
+       "qty": 2,
+       "name": "Remorseless Punishment",
+       "set": "ogw",
+       "number": "89",
+       "id": "1dde9379-b335-400f-9748-a7ca3e293ee0"
+      },
+      {
+       "qty": 2,
+       "name": "Altar's Reap",
+       "set": "bfz",
+       "number": "103",
+       "id": "d4ca3f24-eb14-46fe-9a7a-3752f706d067"
+      },
+      {
+       "qty": 2,
+       "name": "Kothophed, Soul Hoarder",
+       "set": "ori",
+       "number": "104",
+       "id": "036e696a-b2aa-40ba-9ed6-3a859c4288a0"
+      },
+      {
+       "qty": 4,
+       "name": "Despoiler of Souls",
+       "set": "ori",
+       "number": "93",
+       "id": "04a09fe4-d7a0-4065-968d-0837c3eafda0"
+      },
+      {
+       "qty": 4,
+       "name": "Erebos's Titan",
+       "set": "ori",
+       "number": "94",
+       "id": "f5972911-2d41-4a0c-8a8f-b3d35a6594d8"
+      },
+      {
+       "qty": 4,
+       "name": "Priest of the Blood Rite",
+       "set": "ori",
+       "number": "112",
+       "id": "118ba6f2-a2f0-4554-ad87-a932c951cdd4"
+      },
+      {
+       "qty": 2,
+       "name": "Fleshbag Marauder",
+       "set": "ori",
+       "number": "98",
+       "id": "9eb8ea7b-dfac-47bf-b608-efd54e4fe0f1"
+      },
+      {
+       "qty": 4,
+       "name": "Dread Defiler",
+       "set": "ogw",
+       "number": "68",
+       "id": "e2b26769-4705-4b09-94b4-1063e67041d1"
+      },
+      {
+       "qty": 24,
+       "name": "Swamp",
+       "set": "bfz",
+       "number": "260",
+       "id": "132155ae-f7a4-4957-91cb-e51ff52716f9"
+      }
+     ]
+    }
+   },
+   "reward": {
+    "hero": {
+     "packs": 1,
+     "coins": 100
+    },
+    "villain": {
+     "card": {
+      "oracle_id": "65481ae1-54b2-44d2-91e1-20cd486386da",
+      "name": "Ob Nixilis Reignited",
+      "rarity": "mythic",
+      "set": "bfz",
+      "id": "53b2d6e9-2a43-4ebe-9ae8-944375b46cce",
+      "image": "https://cards.scryfall.io/normal/front/5/3/53b2d6e9-2a43-4ebe-9ae8-944375b46cce.jpg"
+     },
+     "coins": 100
+    }
+   },
+   "scene": [
+    {
+     "who": "chandra",
+     "line": "I hope to meet Jaya Ballard someday. I think we'd get along.",
+     "quote": true
+    },
+    {
+     "who": "chandra",
+     "line": "Devoid: these cards have colour in their cost but no colour. Anything that cares about colour, like protection from black, does not see them."
+    }
+   ],
+   "villainScene": [
+    {
+     "who": "ob",
+     "line": "I will secure my revenge on Zendikar one soul at a time.",
+     "quote": true
+    },
+    {
+     "who": "ob",
+     "line": "Take what solace you can in the knowledge that you will not be here to witness Zendikar's demise.",
+     "quote": true
+    },
+    {
+     "who": "ob",
+     "line": "I have suffered a thousand lifetimes of agony on this wretched world. I've far less time to share with you, but I assure you, no less pain.",
+     "quote": true
+    }
+   ],
+   "after": [
+    {
+     "who": "stage",
+     "line": "Ob Nixilis had prepared for every eventuality—except Chandra Nalaar.",
+     "quote": true
+    }
+   ],
+   "cues": {
+    "hero": {
+     "start": "Hey, demon.",
+     "big": "Burn!",
+     "low": "He keeps getting up...",
+     "win": "Extinguished.",
+     "loss": "Snuffed out...",
+     "half": "Burn the planeswalker."
+    },
+    "villain": {
+     "start": "A child with matches.",
+     "big": "Suffer.",
+     "low": "Hot.",
+     "win": "Another soul.",
+     "loss": "Not prepared for this."
+    }
+   },
+   "bigPlays": [],
+   "sim": null
+  },
+  {
+   "id": "a23b5",
+   "slot": 5,
+   "kind": "Lesson",
+   "mood": "tension",
+   "title": "The Depths",
+   "difficulty": "Normal",
+   "teaches": [
+    "Surge"
+   ],
+   "blurb": "Kiora, who once tried to out-sea a sea god on Theros (Act 21), has come home to Zendikar with monsters of her own. Kozilek's brood is in the water too.",
+   "rewardSet": "ogw",
+   "host": false,
+   "hero": {
+    "who": "kiora",
+    "deck": {
+     "name": "Kiora's Krakens",
+     "colors": "GU",
+     "archetype": null,
+     "label": "tribute",
+     "cards": [
+      {
+       "qty": 2,
+       "name": "Kiora, Master of the Depths",
+       "set": "bfz",
+       "number": "213",
+       "id": "4b63c228-3265-4029-9bc0-36b3e31dfb53"
+      },
+      {
+       "qty": 4,
+       "name": "Coralhelm Guide",
+       "set": "bfz",
+       "number": "74",
+       "id": "33787a5b-d1d1-4d60-ba09-d9c98025e9b3"
+      },
+      {
+       "qty": 4,
+       "name": "Halimar Tidecaller",
+       "set": "bfz",
+       "number": "79",
+       "id": "dc3e3b18-bf00-4f1a-9918-9a0e9d75b747"
+      },
+      {
+       "qty": 4,
+       "name": "Jwar Isle Avenger",
+       "set": "ogw",
+       "number": "58",
+       "id": "0a5b059f-2fa3-474f-9c74-6d4021703add"
+      },
+      {
+       "qty": 3,
+       "name": "Guardian of Tazeem",
+       "set": "bfz",
+       "number": "78",
+       "id": "5b55cf5e-4499-4e3a-9748-7b1568286b5a"
+      },
+      {
+       "qty": 2,
+       "name": "Plated Crusher",
+       "set": "bfz",
+       "number": "183",
+       "id": "cd68e01c-4a09-450b-bfa0-8fbac8721764"
+      },
+      {
+       "qty": 4,
+       "name": "Snapping Gnarlid",
+       "set": "bfz",
+       "number": "190",
+       "id": "834409e3-134e-4a34-89cb-53e2a039e980"
+      },
+      {
+       "qty": 2,
+       "name": "Oran-Rief Hydra",
+       "set": "bfz",
+       "number": "181",
+       "id": "74c3276b-2cbc-4266-b16a-bf72c044d95b"
+      },
+      {
+       "qty": 4,
+       "name": "Clutch of Currents",
+       "set": "bfz",
+       "number": "72",
+       "id": "3d20f482-e0b2-4e4a-be32-347ab112912c"
+      },
+      {
+       "qty": 4,
+       "name": "Undergrowth Champion",
+       "set": "bfz",
+       "number": "197",
+       "id": "d53104d8-5b9a-45b6-a2f9-b2c5d231a03d"
+      },
+      {
+       "qty": 3,
+       "name": "Skyrider Elf",
+       "set": "bfz",
+       "number": "220",
+       "id": "477eb787-aec7-43fd-9813-184111d9dcc5"
+      },
+      {
+       "qty": 10,
+       "name": "Forest",
+       "set": "bfz",
+       "number": "270",
+       "id": "642102a2-abde-4e76-a6d6-08f7befe1196"
+      },
+      {
+       "qty": 10,
+       "name": "Island",
+       "set": "bfz",
+       "number": "255",
+       "id": "8490261d-4246-4232-b7fc-23204c14a7b5"
+      },
+      {
+       "qty": 4,
+       "name": "Lumbering Falls",
+       "set": "bfz",
+       "number": "239",
+       "id": "f0d8d2e4-3ebe-4311-b99e-dea9fb0b20ac"
+      }
+     ]
+    }
+   },
+   "villain": {
+    "who": "surge",
+    "deck": {
+     "name": "Kozilek's Brood",
+     "colors": "UR",
+     "archetype": null,
+     "label": "tribute",
+     "cards": [
+      {
+       "qty": 4,
+       "name": "Herald of Kozilek",
+       "set": "bfz",
+       "number": "205",
+       "id": "2a4180ae-1fd9-4185-b4f0-9e8f668a5737"
+      },
+      {
+       "qty": 4,
+       "name": "Stormchaser Mage",
+       "set": "ogw",
+       "number": "159",
+       "id": "7bba1b45-d8ae-42fd-b30f-c904640ab173"
+      },
+      {
+       "qty": 3,
+       "name": "Containment Membrane",
+       "set": "ogw",
+       "number": "52",
+       "id": "49dd3963-a4d7-4992-b6f8-753996390bbf"
+      },
+      {
+       "qty": 4,
+       "name": "Comparative Analysis",
+       "set": "ogw",
+       "number": "51",
+       "id": "dd83129b-7e8c-4cc5-a7b3-e0ae221d7ad4"
+      },
+      {
+       "qty": 4,
+       "name": "Reckless Bushwhacker",
+       "set": "ogw",
+       "number": "116",
+       "id": "0405b1b9-976a-4aaf-bec6-fa006decea74"
+      },
+      {
+       "qty": 4,
+       "name": "Maw of Kozilek",
+       "set": "ogw",
+       "number": "99",
+       "id": "48669993-ad68-499e-8f2e-bc5c651b4b28"
+      },
+      {
+       "qty": 3,
+       "name": "Jori En, Ruin Diver",
+       "set": "ogw",
+       "number": "155",
+       "id": "900d3af7-a03f-4173-8a8a-bd146dec9c0f"
+      },
+      {
+       "qty": 4,
+       "name": "Gravity Negator",
+       "set": "ogw",
+       "number": "45",
+       "id": "85f9b63e-6ecc-4d85-9724-87b8176ae6a6"
+      },
+      {
+       "qty": 10,
+       "name": "Island",
+       "set": "bfz",
+       "number": "255",
+       "id": "8490261d-4246-4232-b7fc-23204c14a7b5"
+      },
+      {
+       "qty": 10,
+       "name": "Mountain",
+       "set": "bfz",
+       "number": "265",
+       "id": "0c9cbae1-6b04-4408-82fe-3fcf61dffbe2"
+      },
+      {
+       "qty": 4,
+       "name": "Wandering Fumarole",
+       "set": "ogw",
+       "number": "182",
+       "id": "dd0ee251-6c79-499b-8366-c281c989b061"
+      },
+      {
+       "qty": 2,
+       "name": "Brutal Expulsion",
+       "set": "bfz",
+       "number": "200",
+       "id": "8b0eb64b-a463-4f25-9278-340051139f0e"
+      },
+      {
+       "qty": 2,
+       "name": "Vile Aggregate",
+       "set": "bfz",
+       "number": "137",
+       "id": "1ec66525-a7e9-450f-83df-03d9957837d5"
+      },
+      {
+       "qty": 2,
+       "name": "Kozilek's Sentinel",
+       "set": "bfz",
+       "number": "129",
+       "id": "786c6a0f-3f75-45ff-aae9-5c866be279d0"
+      }
+     ]
+    }
+   },
+   "reward": {
+    "hero": {
+     "packs": 1,
+     "coins": 100
+    },
+    "villain": {
+     "card": {
+      "oracle_id": "e1890cbc-b15b-44bc-b1c0-ca3d9fd6028a",
+      "name": "Herald of Kozilek",
+      "rarity": "uncommon",
+      "set": "bfz",
+      "id": "2a4180ae-1fd9-4185-b4f0-9e8f668a5737",
+      "image": "https://cards.scryfall.io/normal/front/2/a/2a4180ae-1fd9-4185-b4f0-9e8f668a5737.jpg"
+     },
+     "coins": 100
+    }
+   },
+   "scene": [
+    {
+     "who": "kiora",
+     "line": "The seas are no less imperiled than the dry lands. This fight is mine as much as it is yours.",
+     "quote": true
+    },
+    {
+     "who": "kiora",
+     "line": "Nissa is not the only one with a deep connection to Zendikar's primal elements.",
+     "quote": true
+    },
+    {
+     "who": "kiora",
+     "line": "Surge: if you or a teammate cast another spell this turn, surge cards cost less. They chain cheap spells together."
+    }
+   ],
+   "villainScene": [
+    {
+     "who": "stage",
+     "line": "Kozilek's brood infiltrates and deceives. The spawn of Ulamog mindlessly consume.",
+     "quote": true
+    },
+    {
+     "who": "stage",
+     "line": "When Kozilek emerged at Sea Gate, his brood lineage swarmed to the surface.",
+     "quote": true
+    }
+   ],
+   "after": [
+    {
+     "who": "kiora",
+     "line": "Kozilek is here. At Sea Gate. Tell your Gideon he will need more than a speech."
+    }
+   ],
+   "cues": {
+    "hero": {
+     "start": "Rise, my beauties.",
+     "big": "From the depths!",
+     "low": "Something wrong in the water...",
+     "win": "The tide is ours.",
+     "loss": "Pulled under...",
+     "half": "Count their spells."
+    },
+    "villain": {
+     "start": "[the water distorts]",
+     "big": "[surge]",
+     "low": "[a drone breaks apart]",
+     "win": "[reality bends]",
+     "loss": "[the distortion fades]"
+    }
+   },
+   "bigPlays": [],
+   "sim": null
+  },
+  {
+   "id": "a23b6",
+   "slot": 6,
+   "kind": "Meta",
+   "mood": "march",
+   "title": "The Ceaseless Hunger",
+   "difficulty": "Normal",
+   "teaches": [
+    "Eldrazi Spawn"
+   ],
+   "blurb": "The Archive remembers late 2015: Eldrazi Ramp, which made enough mana to cast Ulamog, against the Ally decks that tried to win first.",
+   "rewardSet": "bfz",
+   "host": false,
+   "hero": {
+    "who": "ramp",
+    "deck": {
+     "name": "Eldrazi Ramp",
+     "colors": "RG",
+     "archetype": "Ramp",
+     "label": "tribute",
+     "cards": [
+      {
+       "qty": 2,
+       "name": "Ulamog, the Ceaseless Hunger",
+       "set": "bfz",
+       "number": "15",
+       "id": "1192f7a9-102e-4b3a-b154-18c8eb332217"
+      },
+      {
+       "qty": 3,
+       "name": "Oblivion Sower",
+       "set": "bfz",
+       "number": "11",
+       "id": "22e07a4d-8096-4532-bb00-e6e66f1c6843"
+      },
+      {
+       "qty": 2,
+       "name": "Conduit of Ruin",
+       "set": "bfz",
+       "number": "4",
+       "id": "4bc855d3-817c-4748-a7f5-1533d8b0e930"
+      },
+      {
+       "qty": 4,
+       "name": "Nissa's Pilgrimage",
+       "set": "ori",
+       "number": "190",
+       "id": "800cef89-e90c-4f84-a7a0-3cd203532169"
+      },
+      {
+       "qty": 4,
+       "name": "Hedron Archive",
+       "set": "bfz",
+       "number": "223",
+       "id": "2519149c-f8a3-413f-b7b2-cd596970be4c"
+      },
+      {
+       "qty": 4,
+       "name": "Kozilek's Return",
+       "set": "ogw",
+       "number": "98",
+       "id": "72765559-0a78-4aa3-827e-cb4612720991"
+      },
+      {
+       "qty": 4,
+       "name": "Natural Connection",
+       "set": "bfz",
+       "number": "179",
+       "id": "9e11cd83-5930-4cff-8f9b-55337ed263b7"
+      },
+      {
+       "qty": 3,
+       "name": "Sylvan Scrying",
+       "set": "bfz",
+       "number": "192",
+       "id": "d1b93087-e6a0-4ba9-83ba-a0ed2e396dc7"
+      },
+      {
+       "qty": 4,
+       "name": "Lifespring Druid",
+       "set": "bfz",
+       "number": "177",
+       "id": "a3657719-7d4d-46db-a5f4-699ee2032ebe"
+      },
+      {
+       "qty": 2,
+       "name": "World Breaker",
+       "set": "ogw",
+       "number": "126",
+       "id": "0020a124-ba76-4d40-84e9-9803268d9f16"
+      },
+      {
+       "qty": 4,
+       "name": "Fiery Impulse",
+       "set": "ori",
+       "number": "145",
+       "id": "5b81a589-44bf-4441-9079-1ae66d067519"
+      },
+      {
+       "qty": 12,
+       "name": "Forest",
+       "set": "bfz",
+       "number": "270",
+       "id": "642102a2-abde-4e76-a6d6-08f7befe1196"
+      },
+      {
+       "qty": 8,
+       "name": "Mountain",
+       "set": "bfz",
+       "number": "265",
+       "id": "0c9cbae1-6b04-4408-82fe-3fcf61dffbe2"
+      },
+      {
+       "qty": 4,
+       "name": "Blighted Woodland",
+       "set": "bfz",
+       "number": "233",
+       "id": "7508d531-da52-41fb-a729-3f5704c9a194"
+      }
+     ]
+    }
+   },
+   "villain": {
+    "who": "allies",
+    "deck": {
+     "name": "Allies",
+     "colors": "GW",
+     "archetype": "Aggro",
+     "label": "tribute",
+     "cards": [
+      {
+       "qty": 4,
+       "name": "Expedition Envoy",
+       "set": "bfz",
+       "number": "24",
+       "id": "41193ef1-1619-4448-9905-26b05079c79a"
+      },
+      {
+       "qty": 3,
+       "name": "Tajuru Warcaller",
+       "set": "bfz",
+       "number": "195",
+       "id": "762501fe-5102-4c21-8ad5-430590a59830"
+      },
+      {
+       "qty": 4,
+       "name": "Joraga Auxiliary",
+       "set": "ogw",
+       "number": "154",
+       "id": "65d920b4-81ab-45be-b763-b6114b879357"
+      },
+      {
+       "qty": 4,
+       "name": "Makindi Patrol",
+       "set": "bfz",
+       "number": "39",
+       "id": "ae03f018-3062-4b1c-99b8-13fcffd70b49"
+      },
+      {
+       "qty": 2,
+       "name": "Lantern Scout",
+       "set": "bfz",
+       "number": "37",
+       "id": "fea3b271-226d-4223-8be8-51b5b2b7cae8"
+      },
+      {
+       "qty": 4,
+       "name": "Ondu Greathorn",
+       "set": "bfz",
+       "number": "40",
+       "id": "95d9668e-05dc-41c4-9326-ef4c0e15dd80"
+      },
+      {
+       "qty": 1,
+       "name": "General Tazri",
+       "set": "ogw",
+       "number": "19",
+       "id": "34e9aa86-1a31-4c0f-928d-923f066286b6"
+      },
+      {
+       "qty": 2,
+       "name": "Undergrowth Champion",
+       "set": "bfz",
+       "number": "197",
+       "id": "d53104d8-5b9a-45b6-a2f9-b2c5d231a03d"
+      },
+      {
+       "qty": 12,
+       "name": "Plains",
+       "set": "bfz",
+       "number": "250",
+       "id": "58a735c9-08a1-4950-bf8c-ed1cfba76765"
+      },
+      {
+       "qty": 12,
+       "name": "Forest",
+       "set": "bfz",
+       "number": "270",
+       "id": "642102a2-abde-4e76-a6d6-08f7befe1196"
+      },
+      {
+       "qty": 4,
+       "name": "Kor Scythemaster",
+       "set": "ogw",
+       "number": "23",
+       "id": "5ce587ba-f23a-4548-a5b8-fca54984d4b4"
+      },
+      {
+       "qty": 4,
+       "name": "Tajuru Beastmaster",
+       "set": "bfz",
+       "number": "193",
+       "id": "3447b4af-2eb2-48ae-a12e-2fdf83d4cb70"
+      },
+      {
+       "qty": 4,
+       "name": "Broodhunter Wurm",
+       "set": "bfz",
+       "number": "171",
+       "id": "c11c852d-9c7c-4d9b-8e79-70ea5ac865df"
+      }
+     ]
+    }
+   },
+   "reward": {
+    "hero": {
+     "packs": 1,
+     "coins": 100
+    },
+    "villain": {
+     "card": {
+      "oracle_id": "b0f19cba-1339-4518-8320-d7b1dcaf2eb0",
+      "name": "General Tazri",
+      "rarity": "mythic",
+      "set": "ogw",
+      "id": "34e9aa86-1a31-4c0f-928d-923f066286b6",
+      "image": "https://cards.scryfall.io/normal/front/3/4/34e9aa86-1a31-4c0f-928d-923f066286b6.jpg"
+     },
+     "coins": 100
+    }
+   },
+   "scene": [
+    {
+     "who": "stage",
+     "line": "The last hedron slotted into place, locking Ulamog in an infinite loop of binding energy.",
+     "quote": true
+    },
+    {
+     "who": "you",
+     "line": "Survive to ten mana. Then everything they built goes away."
+    }
+   ],
+   "villainScene": [
+    {
+     "who": "stage",
+     "line": "Everyone who could still lift a weapon had a part in retaking Sea Gate.",
+     "quote": true
+    }
+   ],
+   "after": [
+    {
+     "who": "stage",
+     "line": "Recorded: Battle for Zendikar Standard, late 2015."
+    }
+   ],
+   "cues": {
+    "hero": {
+     "start": "Ramp.",
+     "big": "Ulamog!",
+     "low": "Too many allies...",
+     "win": "Devoured.",
+     "loss": "Overrun.",
+     "half": "Survive to ten mana."
+    },
+    "villain": {
+     "start": "[an ally joins]",
+     "big": "[rally]",
+     "low": "[the titan lands]",
+     "win": "[overrun]",
+     "loss": "[consumed]"
+    }
+   },
+   "bigPlays": [],
+   "sim": null
+  },
+  {
+   "id": "a23b7",
+   "slot": 7,
+   "kind": "Meta",
+   "mood": "tension",
+   "title": "Thopters and Vampires",
+   "difficulty": "Normal",
+   "teaches": [
+    "Tokens"
+   ],
+   "blurb": "The Archive remembers 2015: blue-red thopter decks built around Pia and Kiran Nalaar and Thopter Spy Network, against Drana's Kalastria vampires.",
+   "rewardSet": "ori",
+   "host": false,
+   "hero": {
+    "who": "thopters",
+    "deck": {
+     "name": "Thopters",
+     "colors": "UR",
+     "archetype": "Midrange",
+     "label": "tribute",
+     "cards": [
+      {
+       "qty": 2,
+       "name": "Pia and Kiran Nalaar",
+       "set": "ori",
+       "number": "157",
+       "id": "0dcafa9e-3637-42ca-bdb2-45a2b5da7294"
+      },
+      {
+       "qty": 4,
+       "name": "Thopter Spy Network",
+       "set": "ori",
+       "number": "79",
+       "id": "5516d86e-539a-4ba8-8d25-1a3b27b1267a"
+      },
+      {
+       "qty": 4,
+       "name": "Whirler Rogue",
+       "set": "ori",
+       "number": "83",
+       "id": "0feb66d2-c50f-4296-af2f-b374c57443b0"
+      },
+      {
+       "qty": 2,
+       "name": "Hangarback Walker",
+       "set": "ori",
+       "number": "229",
+       "id": "791c21fb-fc78-4106-9a42-abc73f41ab8b"
+      },
+      {
+       "qty": 4,
+       "name": "Thopter Engineer",
+       "set": "ori",
+       "number": "165",
+       "id": "a5e6c48a-29d0-40ae-aac6-df7319873f50"
+      },
+      {
+       "qty": 4,
+       "name": "Ghirapur Gearcrafter",
+       "set": "ori",
+       "number": "149",
+       "id": "f05cafb6-8812-42bb-ad14-3dde4bcb7034"
+      },
+      {
+       "qty": 4,
+       "name": "Fiery Impulse",
+       "set": "ori",
+       "number": "145",
+       "id": "5b81a589-44bf-4441-9079-1ae66d067519"
+      },
+      {
+       "qty": 3,
+       "name": "Exquisite Firecraft",
+       "set": "ori",
+       "number": "143",
+       "id": "42eca98e-a164-4f70-a0b0-7a604863f30b"
+      },
+      {
+       "qty": 4,
+       "name": "Chief of the Foundry",
+       "set": "ori",
+       "number": "225",
+       "id": "f2c65947-bc1d-4f47-b60b-2f76ab5ebde9"
+      },
+      {
+       "qty": 3,
+       "name": "Artificer's Epiphany",
+       "set": "ori",
+       "number": "45",
+       "id": "4c847774-c76d-44bd-acf6-bc1bc865ac77"
+      },
+      {
+       "qty": 2,
+       "name": "Jace, Vryn's Prodigy // Jace, Telepath Unbound",
+       "set": "ori",
+       "number": "60",
+       "id": "02d6d693-f1f3-4317-bcc0-c21fa8490d38"
+      },
+      {
+       "qty": 10,
+       "name": "Island",
+       "set": "bfz",
+       "number": "255",
+       "id": "8490261d-4246-4232-b7fc-23204c14a7b5"
+      },
+      {
+       "qty": 10,
+       "name": "Mountain",
+       "set": "bfz",
+       "number": "265",
+       "id": "0c9cbae1-6b04-4408-82fe-3fcf61dffbe2"
+      },
+      {
+       "qty": 4,
+       "name": "Wandering Fumarole",
+       "set": "ogw",
+       "number": "182",
+       "id": "dd0ee251-6c79-499b-8366-c281c989b061"
+      }
+     ]
+    }
+   },
+   "villain": {
+    "who": "drana",
+    "deck": {
+     "name": "Kalastria Vampires",
+     "colors": "B",
+     "archetype": "Aggro",
+     "label": "tribute",
+     "cards": [
+      {
+       "qty": 2,
+       "name": "Drana, Liberator of Malakir",
+       "set": "bfz",
+       "number": "109",
+       "id": "d3f6ed18-eb6f-4d07-8660-cf7c074c87cd"
+      },
+      {
+       "qty": 4,
+       "name": "Kalastria Healer",
+       "set": "bfz",
+       "number": "114",
+       "id": "42c21cb3-21f4-4a8d-8068-52649f2a1846"
+      },
+      {
+       "qty": 4,
+       "name": "Malakir Familiar",
+       "set": "bfz",
+       "number": "116",
+       "id": "4f03b00a-f6d0-419a-abfd-fa8bc63226db"
+      },
+      {
+       "qty": 4,
+       "name": "Bloodbond Vampire",
+       "set": "bfz",
+       "number": "104",
+       "id": "ca31ce70-24c5-4fb2-8d88-c9ffa8474c8f"
+      },
+      {
+       "qty": 4,
+       "name": "Vampire Envoy",
+       "set": "ogw",
+       "number": "92",
+       "id": "3ba8e7aa-9a87-410e-b846-5f5c910585cf"
+      },
+      {
+       "qty": 4,
+       "name": "Zulaport Cutthroat",
+       "set": "bfz",
+       "number": "126",
+       "id": "5c963d97-c948-45d9-84cc-58e246d35970"
+      },
+      {
+       "qty": 4,
+       "name": "Grasp of Darkness",
+       "set": "ogw",
+       "number": "85",
+       "id": "7d692236-92e5-460f-a8fc-8f6c73eba30c"
+      },
+      {
+       "qty": 4,
+       "name": "Ruinous Path",
+       "set": "bfz",
+       "number": "123",
+       "id": "709ab9cf-eed8-4d73-b10d-c7f6d8750328"
+      },
+      {
+       "qty": 3,
+       "name": "Defiant Bloodlord",
+       "set": "bfz",
+       "number": "107",
+       "id": "a4b5dd64-9e58-4f22-9d86-7a518d976037"
+      },
+      {
+       "qty": 3,
+       "name": "Guul Draz Overseer",
+       "set": "bfz",
+       "number": "112",
+       "id": "793bb4e0-8fdd-440e-9e6e-92a899794cae"
+      },
+      {
+       "qty": 24,
+       "name": "Swamp",
+       "set": "bfz",
+       "number": "260",
+       "id": "132155ae-f7a4-4957-91cb-e51ff52716f9"
+      }
+     ]
+    }
+   },
+   "reward": {
+    "hero": {
+     "packs": 1,
+     "coins": 100
+    },
+    "villain": {
+     "card": {
+      "oracle_id": "89b24b5f-d837-4274-8877-8ff7dc2708ba",
+      "name": "Drana, Liberator of Malakir",
+      "rarity": "mythic",
+      "set": "bfz",
+      "id": "d3f6ed18-eb6f-4d07-8660-cf7c074c87cd",
+      "image": "https://cards.scryfall.io/normal/front/d/3/d3f6ed18-eb6f-4d07-8660-cf7c074c87cd.jpg"
+     },
+     "coins": 100
+    }
+   },
+   "scene": [
+    {
+     "who": "stage",
+     "line": "\"The rare and beautiful butterflies inspire the design of our thopters. The larvae, however, are a different story entirely.\"",
+     "quote": true
+    },
+    {
+     "who": "you",
+     "line": "Fliers in the air, sacrifice fodder on the ground. Keep making thopters."
+    }
+   ],
+   "villainScene": [
+    {
+     "who": "drana",
+     "line": "Despite their bravado, mortals are fragile. If Zendikar is to endure, its lords must save it.",
+     "quote": true
+    },
+    {
+     "who": "drana",
+     "line": "Kalitas may have returned to mindless servitude beneath the Eldrazi, but we say never again.",
+     "quote": true
+    }
+   ],
+   "after": [
+    {
+     "who": "stage",
+     "line": "Recorded: Magic Origins and Battle for Zendikar Standard, 2015."
+    }
+   ],
+   "cues": {
+    "hero": {
+     "start": "Launch.",
+     "big": "Thopters!",
+     "low": "Drained...",
+     "win": "Grounded.",
+     "loss": "Shot down.",
+     "half": "Make more thopters."
+    },
+    "villain": {
+     "start": "[the bloodchief rises]",
+     "big": "[a drain]",
+     "low": "[a thopter swarm]",
+     "win": "[bloodied]",
+     "loss": "[outflown]"
+    }
+   },
+   "bigPlays": [],
+   "sim": null
+  },
+  {
+   "id": "a23b8",
+   "slot": 8,
+   "kind": "Boss",
+   "mood": "boss",
+   "title": "Ulamog and Kozilek",
+   "difficulty": "Hard",
+   "teaches": [
+    "Indestructible"
+   ],
+   "blurb": "At the ruins of Sea Gate, the four planeswalkers swear their oath. Then they go to work: Jace finds the pattern, Nissa binds the titans to the land, Gideon holds the brood back, and Chandra brings the fire.",
+   "rewardSet": "bfz",
+   "host": true,
+   "hero": {
+    "who": "gideon",
+    "deck": {
+     "name": "The Gatewatch",
+     "colors": "GW",
+     "archetype": null,
+     "label": "tribute",
+     "cards": [
+      {
+       "qty": 2,
+       "name": "Gideon, Ally of Zendikar",
+       "set": "bfz",
+       "number": "29",
+       "id": "187e887c-c39d-4d25-a506-cdc95fc70316"
+      },
+      {
+       "qty": 2,
+       "name": "Nissa, Voice of Zendikar",
+       "set": "ogw",
+       "number": "138",
+       "id": "a600b97b-1851-4b1b-a2af-f80e0307c02c"
+      },
+      {
+       "qty": 1,
+       "name": "Oath of Gideon",
+       "set": "ogw",
+       "number": "30",
+       "id": "97976ade-c6ec-4068-be6b-953255b86a79"
+      },
+      {
+       "qty": 1,
+       "name": "Oath of Nissa",
+       "set": "ogw",
+       "number": "140",
+       "id": "613513ea-55dd-4ae8-93b2-247e468112a6"
+      },
+      {
+       "qty": 2,
+       "name": "Undergrowth Champion",
+       "set": "bfz",
+       "number": "197",
+       "id": "d53104d8-5b9a-45b6-a2f9-b2c5d231a03d"
+      },
+      {
+       "qty": 2,
+       "name": "Sylvan Advocate",
+       "set": "ogw",
+       "number": "144",
+       "id": "4ad1ff9b-306d-47c3-9334-371e4482370b"
+      },
+      {
+       "qty": 1,
+       "name": "Felidar Cub",
+       "set": "bfz",
+       "number": "25",
+       "id": "ea76a183-e15c-4968-b29d-91c074aa8681"
+      },
+      {
+       "qty": 3,
+       "name": "Ondu Greathorn",
+       "set": "bfz",
+       "number": "40",
+       "id": "95d9668e-05dc-41c4-9326-ef4c0e15dd80"
+      },
+      {
+       "qty": 4,
+       "name": "Kor Bladewhirl",
+       "set": "bfz",
+       "number": "34",
+       "id": "e31b12c7-df11-4450-95e1-b9a5aa97af0e"
+      },
+      {
+       "qty": 4,
+       "name": "Expedition Envoy",
+       "set": "bfz",
+       "number": "24",
+       "id": "41193ef1-1619-4448-9905-26b05079c79a"
+      },
+      {
+       "qty": 11,
+       "name": "Plains",
+       "set": "bfz",
+       "number": "250",
+       "id": "58a735c9-08a1-4950-bf8c-ed1cfba76765"
+      },
+      {
+       "qty": 13,
+       "name": "Forest",
+       "set": "bfz",
+       "number": "270",
+       "id": "642102a2-abde-4e76-a6d6-08f7befe1196"
+      },
+      {
+       "qty": 3,
+       "name": "Gideon's Reproach",
+       "set": "bfz",
+       "number": "30",
+       "id": "453d8ec3-15ae-4851-9efb-161ca2ee6019"
+      },
+      {
+       "qty": 3,
+       "name": "Oran-Rief Hydra",
+       "set": "bfz",
+       "number": "181",
+       "id": "74c3276b-2cbc-4266-b16a-bf72c044d95b"
+      },
+      {
+       "qty": 4,
+       "name": "Makindi Patrol",
+       "set": "bfz",
+       "number": "39",
+       "id": "ae03f018-3062-4b1c-99b8-13fcffd70b49"
+      },
+      {
+       "qty": 2,
+       "name": "Lantern Scout",
+       "set": "bfz",
+       "number": "37",
+       "id": "fea3b271-226d-4223-8be8-51b5b2b7cae8"
+      },
+      {
+       "qty": 2,
+       "name": "Shadow Glider",
+       "set": "bfz",
+       "number": "47",
+       "id": "b4ffaf62-2e12-4b1d-a590-f63aacb4a30b"
+      }
+     ]
+    }
+   },
+   "villain": {
+    "who": "titans",
+    "deck": {
+     "name": "The Titans",
+     "colors": "C",
+     "archetype": null,
+     "label": "tribute",
+     "cards": [
+      {
+       "qty": 2,
+       "name": "Ulamog, the Ceaseless Hunger",
+       "set": "bfz",
+       "number": "15",
+       "id": "1192f7a9-102e-4b3a-b154-18c8eb332217"
+      },
+      {
+       "qty": 2,
+       "name": "Kozilek, the Great Distortion",
+       "set": "ogw",
+       "number": "4",
+       "id": "f06fc6e0-b22c-40d3-bb53-d5ec400d921c"
+      },
+      {
+       "qty": 4,
+       "name": "Kozilek's Channeler",
+       "set": "bfz",
+       "number": "10",
+       "id": "c550d179-32ec-4ad8-91c2-d79320a21cba"
+      },
+      {
+       "qty": 4,
+       "name": "Hedron Archive",
+       "set": "bfz",
+       "number": "223",
+       "id": "2519149c-f8a3-413f-b7b2-cd596970be4c"
+      },
+      {
+       "qty": 3,
+       "name": "Oblivion Sower",
+       "set": "bfz",
+       "number": "11",
+       "id": "22e07a4d-8096-4532-bb00-e6e66f1c6843"
+      },
+      {
+       "qty": 3,
+       "name": "Breaker of Armies",
+       "set": "bfz",
+       "number": "3",
+       "id": "784e843e-7010-466d-adbd-1dd1595aead1"
+      },
+      {
+       "qty": 2,
+       "name": "Desolation Twin",
+       "set": "bfz",
+       "number": "6",
+       "id": "4d229d8d-5e64-4403-a4ae-a0a186a83935"
+      },
+      {
+       "qty": 3,
+       "name": "Ulamog's Despoiler",
+       "set": "bfz",
+       "number": "16",
+       "id": "55b6b7f0-d7fc-46b6-99ff-ba8206ecd628"
+      },
+      {
+       "qty": 4,
+       "name": "Walker of the Wastes",
+       "set": "ogw",
+       "number": "10",
+       "id": "34f635ac-ad6d-4a13-a08e-64c8e2b9779c"
+      },
+      {
+       "qty": 4,
+       "name": "Matter Reshaper",
+       "set": "ogw",
+       "number": "6",
+       "id": "3906b61a-3865-4dfd-ae06-a7d2a608851a"
+      },
+      {
+       "qty": 3,
+       "name": "Warping Wail",
+       "set": "ogw",
+       "number": "12",
+       "id": "f2ef4db8-b51c-4f52-84f1-6fee31c4a14c"
+      },
+      {
+       "qty": 2,
+       "name": "Spatial Contortion",
+       "set": "ogw",
+       "number": "8",
+       "id": "4e2acf70-7625-4b77-83c1-0e08436da31f"
+      },
+      {
+       "qty": 20,
+       "name": "Wastes",
+       "set": "ogw",
+       "number": "183",
+       "id": "7019912c-bd9b-4b96-9388-400794909aa1"
+      },
+      {
+       "qty": 4,
+       "name": "Sea Gate Wreckage",
+       "set": "ogw",
+       "number": "177",
+       "id": "cd42576b-9de5-4d77-9d30-1ef5b5a4fd73"
+      }
+     ]
+    }
+   },
+   "reward": {
+    "hero": {
+     "packs": 2,
+     "coins": 200
+    },
+    "villain": {
+     "card": {
+      "oracle_id": "0bfa4512-e35a-4c93-b324-80ec659f5a97",
+      "name": "Ulamog, the Ceaseless Hunger",
+      "rarity": "mythic",
+      "set": "bfz",
+      "id": "1192f7a9-102e-4b3a-b154-18c8eb332217",
+      "image": "https://cards.scryfall.io/normal/front/1/1/1192f7a9-102e-4b3a-b154-18c8eb332217.jpg"
+     },
+     "coins": 200
+    }
+   },
+   "scene": [
+    {
+     "who": "jace",
+     "line": "I've heard it said that a Planeswalker is someone who can always run from danger. But Gideon's right: we're also the ones who can choose to stay.",
+     "quote": true
+    },
+    {
+     "who": "jace",
+     "line": "Our time grows short. If we wish to vanquish the Eldrazi, we must unlock the hedrons' secrets.",
+     "quote": true
+    },
+    {
+     "who": "gideon",
+     "line": "While we delay, they're on the move. They will not wait as we bicker. We are losing this war by moments as our goal slips beyond our reach.",
+     "quote": true
+    },
+    {
+     "who": "nissa",
+     "line": "Hold them in place. I will tie them to the world. Chandra does the rest."
+    }
+   ],
+   "villainScene": [
+    {
+     "who": "stage",
+     "line": "A void as cryptic as reality itself.",
+     "quote": true
+    },
+    {
+     "who": "kalitas",
+     "line": "No matter how big your champion, theirs is bigger. No matter how great your numbers, theirs are greater. No matter how voracious your appetite, they are hungrier. That is why the Eldrazi will win.",
+     "quote": true
+    }
+   ],
+   "after": null,
+   "cues": {
+    "hero": {
+     "start": "We keep watch.",
+     "big": "Bound!",
+     "low": "They are too big...",
+     "win": "Burn them!",
+     "loss": "The world goes grey...",
+     "half": "Answer the titan when it lands."
+    },
+    "villain": {
+     "start": "[the titans rise]",
+     "big": "[the titan exiles everything]",
+     "low": "[a titan is bound]",
+     "win": "[the world is eaten]",
+     "loss": "[ash]",
+     "half": {
+      "who": "chandra",
+      "line": "They are pinned! Get clear, I am lighting them up!"
+     }
+    }
+   },
+   "bigPlays": [],
+   "sim": null
+  },
+  {
+   "id": "a23b9",
+   "slot": 9,
+   "kind": "Secret Boss",
+   "secret": true,
+   "mood": "boss",
+   "title": "Eldrazi Winter",
+   "difficulty": "Hard",
+   "teaches": [
+    "Racing"
+   ],
+   "blurb": "Deep in the archive, the season when the Eldrazi took Modern.",
+   "rewardSet": "ogw",
+   "host": true,
+   "archive": {
+    "deck": "Eldrazi Winter",
+    "when": "Early 2016",
+    "format": "Modern.",
+    "what": "Colourless Eldrazi decks that used Eye of Ugin and Eldrazi Temple to cast Thought-Knot Seer and Reality Smasher on turn two or three.",
+    "why": "For a few months the Eldrazi decks dominated Modern. Players called that season Eldrazi Winter.",
+    "beat": "Kill the creatures early, and do not let them untap with a four-drop on turn two. Cheap removal is everything.",
+    "after": "Eye of Ugin was banned in Modern in April 2016. Eye of Ugin and Eldrazi Temple are not from this act's sets, so this tribute plays Wastes and Eldrazi Displacer instead."
+   },
+   "hero": {
+    "who": "you",
+    "deck": {
+     "name": "Mono-Red",
+     "colors": "R",
+     "archetype": "Aggro",
+     "label": "tribute",
+     "cards": [
+      {
+       "qty": 4,
+       "name": "Abbot of Keral Keep",
+       "set": "ori",
+       "number": "127",
+       "id": "cb7a2770-9a20-4f52-aac4-24502f50e374"
+      },
+      {
+       "qty": 4,
+       "name": "Lavastep Raider",
+       "set": "bfz",
+       "number": "147",
+       "id": "2428f13f-c445-4eb4-bab1-309f27cab208"
+      },
+      {
+       "qty": 4,
+       "name": "Dragonmaster Outcast",
+       "set": "bfz",
+       "number": "144",
+       "id": "314d1424-03c8-443b-a3bc-14bb168e32c9"
+      },
+      {
+       "qty": 4,
+       "name": "Fiery Impulse",
+       "set": "ori",
+       "number": "145",
+       "id": "5b81a589-44bf-4441-9079-1ae66d067519"
+      },
+      {
+       "qty": 4,
+       "name": "Exquisite Firecraft",
+       "set": "ori",
+       "number": "143",
+       "id": "42eca98e-a164-4f70-a0b0-7a604863f30b"
+      },
+      {
+       "qty": 4,
+       "name": "Valakut Predator",
+       "set": "bfz",
+       "number": "160",
+       "id": "88318272-8192-4d6d-a22a-eca87abb480d"
+      },
+      {
+       "qty": 4,
+       "name": "Goblin Glory Chaser",
+       "set": "ori",
+       "number": "150",
+       "id": "e2779415-9e0e-4c61-b590-e15ac089cf30"
+      },
+      {
+       "qty": 4,
+       "name": "Akoum Stonewaker",
+       "set": "bfz",
+       "number": "140",
+       "id": "c92ab7b5-6a29-463e-b294-3cb0efaccddb"
+      },
+      {
+       "qty": 4,
+       "name": "Titan's Strength",
+       "set": "ori",
+       "number": "166",
+       "id": "0e48f309-8e56-4741-a9ff-e899dafb333a"
+      },
+      {
+       "qty": 24,
+       "name": "Mountain",
+       "set": "bfz",
+       "number": "265",
+       "id": "0c9cbae1-6b04-4408-82fe-3fcf61dffbe2"
+      }
+     ]
+    }
+   },
+   "villain": {
+    "who": "winter",
+    "deck": {
+     "name": "Eldrazi Winter",
+     "colors": "WB",
+     "archetype": "Aggro",
+     "label": "tribute",
+     "note": "Built from cards in this act's sets only. No single tournament list is copied.",
+     "cards": [
+      {
+       "qty": 4,
+       "name": "Eldrazi Mimic",
+       "set": "ogw",
+       "number": "2",
+       "id": "311a05b1-042d-47e7-9fd7-6e8abe8fc578"
+      },
+      {
+       "qty": 4,
+       "name": "Thought-Knot Seer",
+       "set": "ogw",
+       "number": "9",
+       "id": "bffc360e-db41-48f3-9365-680d55046e04"
+      },
+      {
+       "qty": 4,
+       "name": "Reality Smasher",
+       "set": "ogw",
+       "number": "7",
+       "id": "52d4b652-a830-4fd4-94bb-c17c227f2928"
+      },
+      {
+       "qty": 4,
+       "name": "Matter Reshaper",
+       "set": "ogw",
+       "number": "6",
+       "id": "3906b61a-3865-4dfd-ae06-a7d2a608851a"
+      },
+      {
+       "qty": 4,
+       "name": "Eldrazi Displacer",
+       "set": "ogw",
+       "number": "13",
+       "id": "f0bb1a5c-0f59-4951-827f-fe9df968232d"
+      },
+      {
+       "qty": 4,
+       "name": "Endless One",
+       "set": "bfz",
+       "number": "8",
+       "id": "64820f4f-1f78-4338-beb8-5ed5a447cfe4"
+      },
+      {
+       "qty": 4,
+       "name": "Wasteland Strangler",
+       "set": "bfz",
+       "number": "102",
+       "id": "5e215ab0-efd6-4ea2-8bd2-0a93865e1e3c"
+      },
+      {
+       "qty": 4,
+       "name": "Warping Wail",
+       "set": "ogw",
+       "number": "12",
+       "id": "f2ef4db8-b51c-4f52-84f1-6fee31c4a14c"
+      },
+      {
+       "qty": 4,
+       "name": "Spatial Contortion",
+       "set": "ogw",
+       "number": "8",
+       "id": "4e2acf70-7625-4b77-83c1-0e08436da31f"
+      },
+      {
+       "qty": 12,
+       "name": "Wastes",
+       "set": "ogw",
+       "number": "183",
+       "id": "7019912c-bd9b-4b96-9388-400794909aa1"
+      },
+      {
+       "qty": 6,
+       "name": "Plains",
+       "set": "bfz",
+       "number": "250",
+       "id": "58a735c9-08a1-4950-bf8c-ed1cfba76765"
+      },
+      {
+       "qty": 6,
+       "name": "Swamp",
+       "set": "bfz",
+       "number": "260",
+       "id": "132155ae-f7a4-4957-91cb-e51ff52716f9"
+      }
+     ]
+    }
+   },
+   "reward": {
+    "hero": {
+     "packs": 2,
+     "coins": 200
+    },
+    "villain": {
+     "card": {
+      "oracle_id": "cef7396d-2168-4282-bf38-670ca9eebd91",
+      "name": "Thought-Knot Seer",
+      "rarity": "rare",
+      "set": "ogw",
+      "id": "bffc360e-db41-48f3-9365-680d55046e04",
+      "image": "https://cards.scryfall.io/normal/front/b/f/bffc360e-db41-48f3-9365-680d55046e04.jpg"
+     },
+     "coins": 200
+    }
+   },
+   "scene": [
+    {
+     "who": "stage",
+     "line": "Listen to the sound of defeat.",
+     "quote": true
+    },
+    {
+     "who": "you",
+     "line": "They are faster than they look. Burn the first one."
+    }
+   ],
+   "villainScene": [
+    {
+     "who": "stage",
+     "line": "From nothingness, sustenance.",
+     "quote": true
+    }
+   ],
+   "after": [
+    {
+     "who": "stage",
+     "line": "Recorded: Eye of Ugin banned in Modern, April 2016."
+    }
+   ],
+   "cues": {
+    "hero": {
+     "start": "Burn early.",
+     "big": "Gone!",
+     "low": "Too big, too fast...",
+     "win": "Thawed.",
+     "loss": "Frozen out.",
+     "half": "Kill the two-drop."
+    },
+    "villain": {
+     "start": "[a seer reveals your hand]",
+     "big": "[reality smashed]",
+     "low": "[a drone dies]",
+     "win": "[winter]",
+     "loss": "[melted]"
+    }
+   },
+   "bigPlays": [],
+   "sim": null
+  }
+ ]
+}

@@ -1,0 +1,2908 @@
+{
+ "act": 13,
+ "era": "2006-05-20",
+ "title": "The Guildpact",
+ "years": "2005 to 2006",
+ "sets": [
+  "rav",
+  "gpt",
+  "dis",
+  "9ed"
+ ],
+ "landSet": "rav",
+ "intro": [
+  {
+   "who": "stage",
+   "line": "Ravnica: one city that covers a whole world. Ten guilds run it, and ten thousand years ago they signed a contract to share it."
+  },
+  {
+   "who": "stage",
+   "line": "Built on the very ground where the Ten signed the Guildpact, the tower is a monument to the past and a reminder of who holds power in the present.",
+   "quote": true
+  },
+  {
+   "who": "stage",
+   "line": "Nine guilds are famous. The tenth, House Dimir, is a story parents tell. Nobody has ever seen its master."
+  },
+  {
+   "who": "szadek",
+   "line": "In secrecy is strength. None can oppose one who cannot be found.",
+   "quote": true
+  }
+ ],
+ "finale": [
+  {
+   "who": "stage",
+   "line": "Szadek falls in the dark under the city, and House Dimir is a rumour again."
+  },
+  {
+   "who": "kos",
+   "line": "Ten thousand years of contract, and it took a ghost to read the small print."
+  },
+  {
+   "who": "teysa",
+   "line": "The Decamillennial is days away. The Guildpact is fraying anyway. Szadek only pulled the first thread."
+  },
+  {
+   "who": "stage",
+   "line": "Everyone knows that violence at the Festival brings the worst of luck, so for at least one day a year arms are laid down in favor of brimming goblets.",
+   "quote": true
+  },
+  {
+   "who": "stage",
+   "line": "On the ten-thousandth anniversary, the Guildpact breaks. The ten guilds are free, and every one of them remembers a grudge."
+  }
+ ],
+ "villainFinale": [
+  {
+   "who": "stage",
+   "line": "The ghost of Agrus Kos fades into the stone. Teysa's contracts burn."
+  },
+  {
+   "who": "szadek",
+   "line": "Your ignorance is my bliss.",
+   "quote": true
+  },
+  {
+   "who": "szadek",
+   "line": "I am confident that if anyone actually penetrates our facades, even the most perceptive would still be fundamentally unprepared for the truth of House Dimir.",
+   "quote": true
+  },
+  {
+   "who": "stage",
+   "line": "On the Decamillennial, the Guildpact breaks. Nine guilds go to war. The tenth watches, and takes its share, one coin purse at a time."
+  }
+ ],
+ "vibe": "ten-guild-city",
+ "cast": {
+  "you": {
+   "name": "You",
+   "title": "Planeswalker",
+   "portrait": {
+    "card": "Fold into Aether",
+    "set": "5dn",
+    "number": "31",
+    "id": "615157d6-0160-417b-b06c-0e253b306c37",
+    "artist": "Anthony S. Waters & Cara Mitten",
+    "crop": "https://cards.scryfall.io/art_crop/front/6/1/615157d6-0160-417b-b06c-0e253b306c37.jpg",
+    "focus": "50% 30%"
+   }
+  },
+  "tolsimir": {
+   "name": "Tolsimir",
+   "title": "Wolfblood, Selesnya",
+   "portrait": {
+    "card": "Tolsimir Wolfblood",
+    "set": "rav",
+    "number": "236",
+    "id": "069ac859-e0ef-4685-bad3-5c741102b5b9",
+    "crop": "https://cards.scryfall.io/art_crop/front/0/6/069ac859-e0ef-4685-bad3-5c741102b5b9.jpg?1783943608",
+    "artist": "Donato Giancola",
+    "focus": "50% 25%"
+   }
+  },
+  "rakdos": {
+   "name": "The Rakdos",
+   "title": "Cult of the Defiler",
+   "portrait": {
+    "card": "Rakdos Guildmage",
+    "set": "dis",
+    "number": "145",
+    "id": "0e01fef8-5563-4dec-ab8e-e486e19e202c",
+    "crop": "https://cards.scryfall.io/art_crop/front/0/e/0e01fef8-5563-4dec-ab8e-e486e19e202c.jpg?1783943388",
+    "artist": "Jeremy Jarvis",
+    "focus": "50% 25%"
+   }
+  },
+  "savra": {
+   "name": "Savra",
+   "title": "Queen of the Golgari",
+   "portrait": {
+    "card": "Savra, Queen of the Golgari",
+    "set": "rav",
+    "number": "225",
+    "id": "15accf35-a174-4ba5-a633-cc46da848dbe",
+    "crop": "https://cards.scryfall.io/art_crop/front/1/5/15accf35-a174-4ba5-a633-cc46da848dbe.jpg?1783943613",
+    "artist": "Scott M. Fischer",
+    "focus": "50% 25%"
+   }
+  },
+  "izzet": {
+   "name": "The Izzet",
+   "title": "League of Weirds",
+   "portrait": {
+    "card": "Steamcore Weird",
+    "set": "gpt",
+    "number": "35",
+    "id": "f8b3992f-f874-448f-8aa4-ade71d6b3168",
+    "crop": "https://cards.scryfall.io/art_crop/front/f/8/f8b3992f-f874-448f-8aa4-ade71d6b3168.jpg?1783943517",
+    "artist": "Justin Norman",
+    "focus": "50% 30%"
+   }
+  },
+  "razia": {
+   "name": "Razia",
+   "title": "Boros Archangel",
+   "portrait": {
+    "card": "Razia, Boros Archangel",
+    "set": "rav",
+    "number": "223",
+    "id": "c4580cc4-ee26-41d9-a81c-91505c9e2a99",
+    "crop": "https://cards.scryfall.io/art_crop/front/c/4/c4580cc4-ee26-41d9-a81c-91505c9e2a99.jpg?1783943615",
+    "artist": "Donato Giancola",
+    "focus": "50% 25%"
+   }
+  },
+  "gruul": {
+   "name": "Borborygmos",
+   "title": "Gruul Clans",
+   "portrait": {
+    "card": "Borborygmos",
+    "set": "gpt",
+    "number": "103",
+    "id": "7c4a08e9-06c7-43e9-a855-4f507a35ae8b",
+    "crop": "https://cards.scryfall.io/art_crop/front/7/c/7c4a08e9-06c7-43e9-a855-4f507a35ae8b.jpg?1783943488",
+    "artist": "Todd Lockwood",
+    "focus": "50% 25%"
+   }
+  },
+  "kos": {
+   "name": "Agrus Kos",
+   "title": "Wojek Veteran",
+   "portrait": {
+    "card": "Agrus Kos, Wojek Veteran",
+    "set": "rav",
+    "number": "190",
+    "id": "c2521942-0ecd-45a9-bac6-04267a2c29ed",
+    "crop": "https://cards.scryfall.io/art_crop/front/c/2/c2521942-0ecd-45a9-bac6-04267a2c29ed.jpg?1783943628",
+    "artist": "Donato Giancola",
+    "focus": "50% 25%"
+   }
+  },
+  "dimir": {
+   "name": "The Dimir Agents",
+   "title": "House Dimir",
+   "portrait": {
+    "card": "Dimir Infiltrator",
+    "set": "rav",
+    "number": "203",
+    "id": "3db9204c-dde8-4241-aac2-1f090566f604",
+    "crop": "https://cards.scryfall.io/art_crop/front/3/d/3db9204c-dde8-4241-aac2-1f090566f604.jpg?1783943621",
+    "artist": "Jim Nelson",
+    "focus": "50% 30%"
+   }
+  },
+  "teysa": {
+   "name": "Teysa",
+   "title": "Orzhov Scion",
+   "portrait": {
+    "card": "Teysa, Orzhov Scion",
+    "set": "gpt",
+    "number": "134",
+    "id": "9eb856e6-8f63-4048-9818-cc3e65748855",
+    "crop": "https://cards.scryfall.io/art_crop/front/9/e/9eb856e6-8f63-4048-9818-cc3e65748855.jpg?1783943468",
+    "artist": "Todd Lockwood",
+    "focus": "50% 25%"
+   }
+  },
+  "augustin": {
+   "name": "Augustin IV",
+   "title": "Grand Arbiter of the Azorius",
+   "portrait": {
+    "card": "Grand Arbiter Augustin IV",
+    "set": "dis",
+    "number": "112",
+    "id": "a2ac328b-923f-48dd-a4f5-de389ade9125",
+    "crop": "https://cards.scryfall.io/art_crop/front/a/2/a2ac328b-923f-48dd-a4f5-de389ade9125.jpg?1783943401",
+    "artist": "Zoltan Boros & Gabor Szikszai",
+    "focus": "50% 25%"
+   }
+  },
+  "zoo": {
+   "name": "Zoo",
+   "title": "Spring 2006",
+   "portrait": {
+    "card": "Watchwolf",
+    "set": "rav",
+    "number": "239",
+    "id": "95e5828a-3e54-4b9c-9e84-21880930f2d5",
+    "crop": "https://cards.scryfall.io/art_crop/front/9/5/95e5828a-3e54-4b9c-9e84-21880930f2d5.jpg?1783943608",
+    "artist": "Kev Walker",
+    "focus": "50% 30%"
+   }
+  },
+  "momir": {
+   "name": "Momir Vig",
+   "title": "Simic Visionary",
+   "portrait": {
+    "card": "Momir Vig, Simic Visionary",
+    "set": "dis",
+    "number": "118",
+    "id": "25a8c801-df0c-402b-a41c-4703a2abfb66",
+    "crop": "https://cards.scryfall.io/art_crop/front/2/5/25a8c801-df0c-402b-a41c-4703a2abfb66.jpg?1783943400",
+    "artist": "Zoltan Boros & Gabor Szikszai",
+    "focus": "50% 25%"
+   }
+  },
+  "niv": {
+   "name": "Niv-Mizzet",
+   "title": "The Firemind",
+   "portrait": {
+    "card": "Niv-Mizzet, the Firemind",
+    "set": "gpt",
+    "number": "123",
+    "id": "5994d98a-090b-4203-b44f-b6517b6a83ea",
+    "crop": "https://cards.scryfall.io/art_crop/front/5/9/5994d98a-090b-4203-b44f-b6517b6a83ea.jpg?1783943476",
+    "artist": "Todd Lockwood",
+    "focus": "50% 25%"
+   }
+  },
+  "szadek": {
+   "name": "Szadek",
+   "title": "Lord of Secrets",
+   "portrait": {
+    "card": "Szadek, Lord of Secrets",
+    "set": "rav",
+    "number": "234",
+    "id": "2882793e-5d7d-47f0-9308-652a5e036c2c",
+    "crop": "https://cards.scryfall.io/art_crop/front/2/8/2882793e-5d7d-47f0-9308-652a5e036c2c.jpg?1783943610",
+    "artist": "Donato Giancola",
+    "focus": "50% 25%"
+   }
+  },
+  "flare": {
+   "name": "Solar Flare",
+   "title": "2006 Standard",
+   "portrait": {
+    "card": "Zombify",
+    "set": "9ed",
+    "number": "171",
+    "id": "a9af694a-6a96-494a-ab16-5c7c7e8e17a9",
+    "crop": "https://cards.scryfall.io/art_crop/front/a/9/a9af694a-6a96-494a-ab16-5c7c7e8e17a9.jpg?1783943978",
+    "artist": "Mark Romanoski",
+    "focus": "50% 35%"
+   }
+  }
+ },
+ "battles": [
+  {
+   "id": "a13b1",
+   "slot": 1,
+   "kind": "Arrival",
+   "mood": "tension",
+   "title": "Festival of the Guildpact",
+   "difficulty": "Easy",
+   "teaches": [
+    "Convoke"
+   ],
+   "blurb": "Once a year the guilds lay down their arms for the Festival of the Guildpact. This year a Rakdos cult has come to the party anyway, and the Selesnya Conclave stands in its way.",
+   "rewardSet": "rav",
+   "host": false,
+   "hero": {
+    "who": "tolsimir",
+    "deck": {
+     "name": "The Conclave",
+     "colors": "GW",
+     "archetype": null,
+     "label": "tribute",
+     "cards": [
+      {
+       "qty": 4,
+       "name": "Selesnya Evangel",
+       "set": "rav",
+       "number": "228",
+       "id": "18bc93c1-f236-4d1b-bb54-5041b3cae5a6"
+      },
+      {
+       "qty": 4,
+       "name": "Watchwolf",
+       "set": "rav",
+       "number": "239",
+       "id": "95e5828a-3e54-4b9c-9e84-21880930f2d5"
+      },
+      {
+       "qty": 4,
+       "name": "Votary of the Conclave",
+       "set": "rav",
+       "number": "35",
+       "id": "9bb6f929-5a19-421b-ae88-9bbb7e64756c"
+      },
+      {
+       "qty": 4,
+       "name": "Selesnya Guildmage",
+       "set": "rav",
+       "number": "252",
+       "id": "21061ce3-d098-4057-b341-c5db6ee1b6d4"
+      },
+      {
+       "qty": 4,
+       "name": "Centaur Safeguard",
+       "set": "rav",
+       "number": "244",
+       "id": "647d3e06-93e6-4948-a3ec-6a00bdfc0f99"
+      },
+      {
+       "qty": 4,
+       "name": "Conclave Equenaut",
+       "set": "rav",
+       "number": "9",
+       "id": "cd663560-915a-4762-a3a6-0b9f6d7a9c64"
+      },
+      {
+       "qty": 4,
+       "name": "Scatter the Seeds",
+       "set": "rav",
+       "number": "181",
+       "id": "c4415070-4304-482b-b8e5-2bf689af0843"
+      },
+      {
+       "qty": 2,
+       "name": "Gather Courage",
+       "set": "rav",
+       "number": "165",
+       "id": "93311f80-0d0e-4005-ba43-5dbfe438d127"
+      },
+      {
+       "qty": 2,
+       "name": "Selesnya Sagittars",
+       "set": "rav",
+       "number": "229",
+       "id": "9a72e933-d977-4be9-985f-8b8cf1267f8c"
+      },
+      {
+       "qty": 2,
+       "name": "Conclave Phalanx",
+       "set": "rav",
+       "number": "10",
+       "id": "83854443-736b-4650-8a7e-e123ee6e0b8b"
+      },
+      {
+       "qty": 12,
+       "name": "Forest",
+       "set": "rav",
+       "number": "303",
+       "id": "706be1bd-720d-4e74-b71f-568081afcab1"
+      },
+      {
+       "qty": 12,
+       "name": "Plains",
+       "set": "rav",
+       "number": "287",
+       "id": "3d8d3cd4-0f5f-4424-82ee-d8ba81da47fd"
+      },
+      {
+       "qty": 2,
+       "name": "Tolsimir Wolfblood",
+       "set": "rav",
+       "number": "236",
+       "id": "069ac859-e0ef-4685-bad3-5c741102b5b9"
+      }
+     ]
+    }
+   },
+   "villain": {
+    "who": "rakdos",
+    "deck": {
+     "name": "Rakdos Cultists",
+     "colors": "BR",
+     "archetype": null,
+     "label": "tribute",
+     "cards": [
+      {
+       "qty": 4,
+       "name": "Gobhobbler Rats",
+       "set": "dis",
+       "number": "111",
+       "id": "ae123ca6-2b96-4bbe-82b2-0be294edff80"
+      },
+      {
+       "qty": 4,
+       "name": "Rakdos Guildmage",
+       "set": "dis",
+       "number": "145",
+       "id": "0e01fef8-5563-4dec-ab8e-e486e19e202c"
+      },
+      {
+       "qty": 4,
+       "name": "Crypt Champion",
+       "set": "dis",
+       "number": "40",
+       "id": "ed424a46-8bac-4a3c-a6e6-87d02a20b292"
+      },
+      {
+       "qty": 4,
+       "name": "Hellhole Rats",
+       "set": "dis",
+       "number": "113",
+       "id": "6e1eb937-21d4-44b1-85e7-b95995865f44"
+      },
+      {
+       "qty": 4,
+       "name": "Rakdos Ickspitter",
+       "set": "dis",
+       "number": "128",
+       "id": "c007b10b-2701-4bac-8b95-8fc7dcfb9e21"
+      },
+      {
+       "qty": 4,
+       "name": "Sadistic Augermage",
+       "set": "rav",
+       "number": "103",
+       "id": "40283989-c2cc-4f17-a817-2c548d2ce71f"
+      },
+      {
+       "qty": 4,
+       "name": "Demon's Jester",
+       "set": "dis",
+       "number": "42",
+       "id": "90a3f694-0cf3-4d25-8ab0-36a3f637ff9a"
+      },
+      {
+       "qty": 4,
+       "name": "Frenzied Goblin",
+       "set": "rav",
+       "number": "125",
+       "id": "d307d8c7-b9b5-4f8f-933d-f1c64cbbf92f"
+      },
+      {
+       "qty": 4,
+       "name": "Gnat Alley Creeper",
+       "set": "dis",
+       "number": "63",
+       "id": "0ccf9c8b-8a03-4ef8-8267-af57ac35fe02"
+      },
+      {
+       "qty": 12,
+       "name": "Swamp",
+       "set": "rav",
+       "number": "295",
+       "id": "2755f9f7-95f9-4907-8ec9-21853eb376f4"
+      },
+      {
+       "qty": 12,
+       "name": "Mountain",
+       "set": "rav",
+       "number": "299",
+       "id": "dad3662a-f7b4-45d5-a35e-fc6c38474692"
+      }
+     ]
+    }
+   },
+   "reward": {
+    "hero": {
+     "packs": 1,
+     "coins": 0
+    },
+    "villain": {
+     "card": {
+      "oracle_id": "650949ca-609b-46c5-bc6b-6f782cdcb6d2",
+      "name": "Rakdos Guildmage",
+      "rarity": "uncommon",
+      "set": "dis",
+      "id": "0e01fef8-5563-4dec-ab8e-e486e19e202c",
+      "image": "https://cards.scryfall.io/normal/front/0/e/0e01fef8-5563-4dec-ab8e-e486e19e202c.jpg"
+     },
+     "coins": 50
+    }
+   },
+   "scene": [
+    {
+     "who": "stage",
+     "line": "The clamor of the city drowns all voices. But together we can sing a harmony that will resonate from Ravnica's tallest spires to her deepest wells.",
+     "quote": true
+    },
+    {
+     "who": "tolsimir",
+     "line": "Convoke: tap your creatures to help pay for a convoke spell. Each one pays one mana of its colour, or one generic."
+    },
+    {
+     "who": "stage",
+     "line": "The symbol of the Conclave is one of unity, with tree supporting sun and sun feeding tree.",
+     "quote": true
+    }
+   ],
+   "villainScene": [
+    {
+     "who": "stage",
+     "line": "A Rakdos party is a flop if anyone lives to talk about it.",
+     "quote": true
+    },
+    {
+     "who": "rakdos",
+     "line": "Great minds bleed alike.",
+     "quote": true
+    }
+   ],
+   "after": [
+    {
+     "who": "tolsimir",
+     "line": "They came for blood on the one day nobody fights. Something is wrong with the city."
+    }
+   ],
+   "cues": {
+    "hero": {
+     "start": "Sing with us.",
+     "big": "Together!",
+     "low": "The song is breaking...",
+     "win": "Peace returns to the Festival.",
+     "loss": "The harmony... falls silent...",
+     "half": "Tap them all."
+    },
+    "villain": {
+     "start": "Let's get this party started!",
+     "big": "Blood for the Defiler!",
+     "low": "Party's over...",
+     "win": "Encore!",
+     "loss": "Nobody... talks..."
+    }
+   },
+   "bigPlays": [],
+   "sim": null
+  },
+  {
+   "id": "a13b2",
+   "slot": 2,
+   "kind": "Lesson",
+   "mood": "march",
+   "title": "The Undercity",
+   "difficulty": "Easy",
+   "teaches": [
+    "Dredge"
+   ],
+   "blurb": "Under Ravnica's streets, the Golgari farm the rot. Their queen Savra has caught Izzet surveyors poking at her gardens with their weird machines.",
+   "rewardSet": "rav",
+   "host": false,
+   "hero": {
+    "who": "savra",
+    "deck": {
+     "name": "Golgari Rot Farm",
+     "colors": "BG",
+     "archetype": null,
+     "label": "tribute",
+     "cards": [
+      {
+       "qty": 4,
+       "name": "Elves of Deep Shadow",
+       "set": "rav",
+       "number": "161",
+       "id": "7bea6dea-d767-4092-a285-305d9997357a"
+      },
+      {
+       "qty": 4,
+       "name": "Golgari Thug",
+       "set": "rav",
+       "number": "87",
+       "id": "87c39e21-3e2f-4cbf-9f99-69e977924a73"
+      },
+      {
+       "qty": 4,
+       "name": "Shambling Shell",
+       "set": "rav",
+       "number": "230",
+       "id": "4c93baa2-a23e-4e18-b4cd-779c992d2042"
+      },
+      {
+       "qty": 4,
+       "name": "Stinkweed Imp",
+       "set": "rav",
+       "number": "107",
+       "id": "628903a0-6695-4643-80f3-9a6efc4d6a27"
+      },
+      {
+       "qty": 2,
+       "name": "Woodwraith Strangler",
+       "set": "rav",
+       "number": "241",
+       "id": "be72ff91-f810-46c3-884f-6e65827824bc"
+      },
+      {
+       "qty": 4,
+       "name": "Golgari Rotwurm",
+       "set": "rav",
+       "number": "210",
+       "id": "2cc97674-f60a-4854-a807-60dbcf90637e"
+      },
+      {
+       "qty": 4,
+       "name": "Life from the Loam",
+       "set": "rav",
+       "number": "172",
+       "id": "7ac16d09-8bc7-407c-a757-666f4707bc90"
+      },
+      {
+       "qty": 4,
+       "name": "Darkblast",
+       "set": "rav",
+       "number": "82",
+       "id": "0dcaba91-06d3-4492-9e07-36a1b858ca47"
+      },
+      {
+       "qty": 1,
+       "name": "Golgari Grave-Troll",
+       "set": "rav",
+       "number": "167",
+       "id": "f61b50e6-2166-435d-bf48-c4a0cff9999c"
+      },
+      {
+       "qty": 3,
+       "name": "Putrefy",
+       "set": "rav",
+       "number": "221",
+       "id": "0a16086c-5a74-45d0-8b38-e832cfbc80f7"
+      },
+      {
+       "qty": 12,
+       "name": "Swamp",
+       "set": "rav",
+       "number": "295",
+       "id": "2755f9f7-95f9-4907-8ec9-21853eb376f4"
+      },
+      {
+       "qty": 12,
+       "name": "Forest",
+       "set": "rav",
+       "number": "303",
+       "id": "706be1bd-720d-4e74-b71f-568081afcab1"
+      },
+      {
+       "qty": 2,
+       "name": "Savra, Queen of the Golgari",
+       "set": "rav",
+       "number": "225",
+       "id": "15accf35-a174-4ba5-a633-cc46da848dbe"
+      }
+     ]
+    }
+   },
+   "villain": {
+    "who": "izzet",
+    "deck": {
+     "name": "Izzet Weirds",
+     "colors": "UR",
+     "archetype": null,
+     "label": "tribute",
+     "cards": [
+      {
+       "qty": 4,
+       "name": "Steamcore Weird",
+       "set": "gpt",
+       "number": "35",
+       "id": "f8b3992f-f874-448f-8aa4-ade71d6b3168"
+      },
+      {
+       "qty": 4,
+       "name": "Izzet Guildmage",
+       "set": "gpt",
+       "number": "145",
+       "id": "ecce6ade-8741-4567-8ed3-3e03becc6f1b"
+      },
+      {
+       "qty": 4,
+       "name": "Lore Broker",
+       "set": "rav",
+       "number": "57",
+       "id": "c7935b2b-aebe-44b3-b91b-52978bb4ded5"
+      },
+      {
+       "qty": 4,
+       "name": "Wild Cantor",
+       "set": "gpt",
+       "number": "149",
+       "id": "242dc29e-d8f5-4207-abbf-cf5425f08551"
+      },
+      {
+       "qty": 4,
+       "name": "Gelectrode",
+       "set": "gpt",
+       "number": "113",
+       "id": "83fa9c4a-7027-4ddd-93e0-3c5dcaa8e48b"
+      },
+      {
+       "qty": 4,
+       "name": "Drake Familiar",
+       "set": "rav",
+       "number": "44",
+       "id": "b4583623-e367-48cc-8e86-e6c5e35f1a9c"
+      },
+      {
+       "qty": 4,
+       "name": "Sparkmage Apprentice",
+       "set": "rav",
+       "number": "144",
+       "id": "6ca91f7f-4b17-469e-8650-4c18e1521ea9"
+      },
+      {
+       "qty": 4,
+       "name": "Grayscaled Gharial",
+       "set": "rav",
+       "number": "52",
+       "id": "89c2c94a-31df-4789-a309-4cdfe7f6a719"
+      },
+      {
+       "qty": 14,
+       "name": "Island",
+       "set": "rav",
+       "number": "291",
+       "id": "db6c8056-f155-434c-a4cb-a532a4707245"
+      },
+      {
+       "qty": 14,
+       "name": "Mountain",
+       "set": "rav",
+       "number": "299",
+       "id": "dad3662a-f7b4-45d5-a35e-fc6c38474692"
+      }
+     ]
+    }
+   },
+   "reward": {
+    "hero": {
+     "packs": 1,
+     "coins": 0
+    },
+    "villain": {
+     "card": {
+      "oracle_id": "e8f6caf4-4c6c-468a-9388-88c323ffe30b",
+      "name": "Steamcore Weird",
+      "rarity": "common",
+      "set": "gpt",
+      "id": "f8b3992f-f874-448f-8aa4-ade71d6b3168",
+      "image": "https://cards.scryfall.io/normal/front/f/8/f8b3992f-f874-448f-8aa4-ade71d6b3168.jpg"
+     },
+     "coins": 50
+    }
+   },
+   "scene": [
+    {
+     "who": "savra",
+     "line": "Nature's most raw beauty is the circle: perfect in its continuance, with no break between death and life.",
+     "quote": true
+    },
+    {
+     "who": "savra",
+     "line": "Dredge: instead of drawing, mill that many cards and return the dredge card from your graveyard to your hand. The dead come back to work."
+    },
+    {
+     "who": "stage",
+     "line": "The Golgari don't bury their dead. They plant them.",
+     "quote": true
+    }
+   ],
+   "villainScene": [
+    {
+     "who": "stage",
+     "line": "Like many Izzet creations, weirds are based on wild contradictions yet somehow manage to work.",
+     "quote": true
+    },
+    {
+     "who": "izzet",
+     "line": "Diametrically opposing energies in self-sealed plasmodermic bubbles make great pets!",
+     "quote": true
+    }
+   ],
+   "after": [
+    {
+     "who": "savra",
+     "line": "When something dies, all things benefit. Well okay, just our things.",
+     "quote": true
+    }
+   ],
+   "cues": {
+    "hero": {
+     "start": "Welcome to the undercity.",
+     "big": "Rise and serve.",
+     "low": "The garden withers...",
+     "win": "Back to the soil with you.",
+     "loss": "The circle... breaks...",
+     "half": "Dig it back up."
+    },
+    "villain": {
+     "start": "Fascinating rot!",
+     "big": "Overload the boilers!",
+     "low": "Contents under pressure...",
+     "win": "Data collected!",
+     "loss": "Experiment... failed..."
+    }
+   },
+   "bigPlays": [],
+   "sim": null
+  },
+  {
+   "id": "a13b3",
+   "slot": 3,
+   "kind": "Lesson",
+   "mood": "comic",
+   "title": "The Legion's Justice",
+   "difficulty": "Easy",
+   "teaches": [
+    "Bloodthirst"
+   ],
+   "blurb": "Razia's Boros Legion keeps the peace with fire and steel. The Gruul clans want no peace at all, and Borborygmos has sent his raiders into the city to prove it.",
+   "rewardSet": "rav",
+   "host": false,
+   "hero": {
+    "who": "razia",
+    "deck": {
+     "name": "The Boros Legion",
+     "colors": "RW",
+     "archetype": null,
+     "label": "tribute",
+     "cards": [
+      {
+       "qty": 4,
+       "name": "Boros Recruit",
+       "set": "rav",
+       "number": "243",
+       "id": "5af01330-05c2-4c5b-9830-2886711b2b5d"
+      },
+      {
+       "qty": 4,
+       "name": "Boros Swiftblade",
+       "set": "rav",
+       "number": "193",
+       "id": "bf25cd63-3304-4eea-841b-1f058010c627"
+      },
+      {
+       "qty": 4,
+       "name": "Skyknight Legionnaire",
+       "set": "rav",
+       "number": "232",
+       "id": "d697ef7f-0e51-4bf1-b0f5-742325706d2a"
+      },
+      {
+       "qty": 4,
+       "name": "Thundersong Trumpeter",
+       "set": "rav",
+       "number": "235",
+       "id": "7410c546-745c-469f-b3b8-eafb69391600"
+      },
+      {
+       "qty": 4,
+       "name": "Sunhome Enforcer",
+       "set": "rav",
+       "number": "233",
+       "id": "c4d5a88e-fc8f-4dd6-a1db-8e44b74ee0a1"
+      },
+      {
+       "qty": 4,
+       "name": "Lightning Helix",
+       "set": "rav",
+       "number": "213",
+       "id": "1b2ecf55-c1cc-4b28-b7ce-e1b25305155e"
+      },
+      {
+       "qty": 4,
+       "name": "Flame-Kin Zealot",
+       "set": "rav",
+       "number": "206",
+       "id": "aec53f16-5bf7-4ef5-b83e-9e36463d1640"
+      },
+      {
+       "qty": 4,
+       "name": "Nightguard Patrol",
+       "set": "rav",
+       "number": "26",
+       "id": "20377fbf-70c0-441b-b2e3-62ed26aaab4a"
+      },
+      {
+       "qty": 4,
+       "name": "Galvanic Arc",
+       "set": "rav",
+       "number": "126",
+       "id": "64d816df-51e5-46f8-ad9a-68f3f656dbcd"
+      },
+      {
+       "qty": 12,
+       "name": "Mountain",
+       "set": "rav",
+       "number": "299",
+       "id": "dad3662a-f7b4-45d5-a35e-fc6c38474692"
+      },
+      {
+       "qty": 12,
+       "name": "Plains",
+       "set": "rav",
+       "number": "287",
+       "id": "3d8d3cd4-0f5f-4424-82ee-d8ba81da47fd"
+      }
+     ]
+    }
+   },
+   "villain": {
+    "who": "gruul",
+    "deck": {
+     "name": "Gruul Raiders",
+     "colors": "RG",
+     "archetype": null,
+     "label": "tribute",
+     "cards": [
+      {
+       "qty": 4,
+       "name": "Scab-Clan Mauler",
+       "set": "gpt",
+       "number": "128",
+       "id": "93e040a6-9e10-4528-8ee1-ef3a00e93cbc"
+      },
+      {
+       "qty": 4,
+       "name": "Gruul Guildmage",
+       "set": "gpt",
+       "number": "144",
+       "id": "cb5a61f8-aab1-48d7-aebb-cf500ac5cb0e"
+      },
+      {
+       "qty": 4,
+       "name": "Ghor-Clan Bloodscale",
+       "set": "gpt",
+       "number": "66",
+       "id": "00cab68b-ee26-46eb-a18b-9b42bf2d10e5"
+      },
+      {
+       "qty": 4,
+       "name": "Gruul Scrapper",
+       "set": "gpt",
+       "number": "89",
+       "id": "f7f3fdc0-3fd1-47da-b3ed-e4a462179e75"
+      },
+      {
+       "qty": 2,
+       "name": "Tin Street Hooligan",
+       "set": "gpt",
+       "number": "78",
+       "id": "ad525bb3-15fd-4887-a3e7-0a036258dcc7"
+      },
+      {
+       "qty": 4,
+       "name": "Streetbreaker Wurm",
+       "set": "gpt",
+       "number": "133",
+       "id": "d5313054-91a5-401c-84d1-03a2cd265060"
+      },
+      {
+       "qty": 4,
+       "name": "Bloodscale Prowler",
+       "set": "gpt",
+       "number": "64",
+       "id": "8197cc43-c787-4372-81dc-759a9fe24708"
+      },
+      {
+       "qty": 4,
+       "name": "Sell-Sword Brute",
+       "set": "rav",
+       "number": "142",
+       "id": "db513835-af5a-4ff3-8cf8-31936732a4db"
+      },
+      {
+       "qty": 4,
+       "name": "Ghor-Clan Savage",
+       "set": "gpt",
+       "number": "86",
+       "id": "d77ad353-7543-4d65-bf02-33f66abaf14b"
+      },
+      {
+       "qty": 12,
+       "name": "Mountain",
+       "set": "rav",
+       "number": "299",
+       "id": "dad3662a-f7b4-45d5-a35e-fc6c38474692"
+      },
+      {
+       "qty": 12,
+       "name": "Forest",
+       "set": "rav",
+       "number": "303",
+       "id": "706be1bd-720d-4e74-b71f-568081afcab1"
+      },
+      {
+       "qty": 2,
+       "name": "Borborygmos",
+       "set": "gpt",
+       "number": "103",
+       "id": "7c4a08e9-06c7-43e9-a855-4f507a35ae8b"
+      }
+     ]
+    }
+   },
+   "reward": {
+    "hero": {
+     "packs": 1,
+     "coins": 0
+    },
+    "villain": {
+     "card": {
+      "oracle_id": "9ab0820b-4f5f-47b3-8fa9-43f802aed275",
+      "name": "Borborygmos",
+      "rarity": "rare",
+      "set": "gpt",
+      "id": "7c4a08e9-06c7-43e9-a855-4f507a35ae8b",
+      "image": "https://cards.scryfall.io/normal/front/7/c/7c4a08e9-06c7-43e9-a855-4f507a35ae8b.jpg"
+     },
+     "coins": 50
+    }
+   },
+   "scene": [
+    {
+     "who": "razia",
+     "line": "I do not know which gives me more pride: the legions of soldiers marching in thunderous lockstep, or the cry of the skyknights riding their rocs like jagged lightning overhead.",
+     "quote": true
+    },
+    {
+     "who": "razia",
+     "line": "Bloodthirst: these Gruul creatures enter bigger if you were dealt damage this turn. Block their first hit, and the rest arrive small."
+    },
+    {
+     "who": "stage",
+     "line": "Though less well-known than its army of soldiers, the Boros Legion's mage-priests are as respected by the innocent as they are hated by the ghosts of the guilty.",
+     "quote": true
+    }
+   ],
+   "villainScene": [
+    {
+     "who": "gruul",
+     "line": "Crush them!",
+     "quote": true
+    },
+    {
+     "who": "stage",
+     "line": "The Gruul aren't satisfied with just smashing things. They continue smashing other things with the things they just smashed.",
+     "quote": true
+    }
+   ],
+   "after": [
+    {
+     "who": "razia",
+     "line": "The Gruul did not plan this raid. Someone told them where our patrols would not be."
+    }
+   ],
+   "cues": {
+    "hero": {
+     "start": "For the Legion!",
+     "big": "Justice, now!",
+     "low": "Hold the line...",
+     "win": "Order is restored.",
+     "loss": "The banner... falls...",
+     "half": "Block the first hit."
+    },
+    "villain": {
+     "start": "WE EAT!",
+     "big": "CRUSH THEM!",
+     "low": "Too many shinies...",
+     "win": "Smash! More smash!",
+     "loss": "Run to the rubble!"
+    }
+   },
+   "bigPlays": [],
+   "sim": null
+  },
+  {
+   "id": "a13b4",
+   "slot": 4,
+   "kind": "Rival",
+   "mood": "tension",
+   "title": "The Last Honest Cop",
+   "difficulty": "Normal",
+   "teaches": [
+    "Transmute"
+   ],
+   "blurb": "Lieutenant Agrus Kos of the Wojek has thirty years on the force and a body nobody can explain. Every clue points to a guild that is supposed to be a myth.",
+   "rewardSet": "rav",
+   "host": false,
+   "hero": {
+    "who": "kos",
+    "deck": {
+     "name": "Wojek Patrol",
+     "colors": "RW",
+     "archetype": null,
+     "label": "tribute",
+     "cards": [
+      {
+       "qty": 2,
+       "name": "Agrus Kos, Wojek Veteran",
+       "set": "rav",
+       "number": "190",
+       "id": "c2521942-0ecd-45a9-bac6-04267a2c29ed"
+      },
+      {
+       "qty": 4,
+       "name": "Boros Guildmage",
+       "set": "rav",
+       "number": "242",
+       "id": "072a1ff1-9c50-426a-a83c-817bde5beab7"
+      },
+      {
+       "qty": 4,
+       "name": "Boros Swiftblade",
+       "set": "rav",
+       "number": "193",
+       "id": "bf25cd63-3304-4eea-841b-1f058010c627"
+      },
+      {
+       "qty": 4,
+       "name": "Veteran Armorer",
+       "set": "rav",
+       "number": "34",
+       "id": "151a455f-c364-4600-a5f8-98da86aabc48"
+      },
+      {
+       "qty": 4,
+       "name": "Ordruun Commando",
+       "set": "rav",
+       "number": "137",
+       "id": "aa726c0e-3a7e-4299-8842-4ce1f9f26567"
+      },
+      {
+       "qty": 4,
+       "name": "Sunhome Enforcer",
+       "set": "rav",
+       "number": "233",
+       "id": "c4d5a88e-fc8f-4dd6-a1db-8e44b74ee0a1"
+      },
+      {
+       "qty": 4,
+       "name": "Skyknight Legionnaire",
+       "set": "rav",
+       "number": "232",
+       "id": "d697ef7f-0e51-4bf1-b0f5-742325706d2a"
+      },
+      {
+       "qty": 4,
+       "name": "Lightning Helix",
+       "set": "rav",
+       "number": "213",
+       "id": "1b2ecf55-c1cc-4b28-b7ce-e1b25305155e"
+      },
+      {
+       "qty": 4,
+       "name": "Screeching Griffin",
+       "set": "rav",
+       "number": "29",
+       "id": "5e2fa710-4615-42de-8716-41b009b56d32"
+      },
+      {
+       "qty": 2,
+       "name": "Galvanic Arc",
+       "set": "rav",
+       "number": "126",
+       "id": "64d816df-51e5-46f8-ad9a-68f3f656dbcd"
+      },
+      {
+       "qty": 12,
+       "name": "Mountain",
+       "set": "rav",
+       "number": "299",
+       "id": "dad3662a-f7b4-45d5-a35e-fc6c38474692"
+      },
+      {
+       "qty": 12,
+       "name": "Plains",
+       "set": "rav",
+       "number": "287",
+       "id": "3d8d3cd4-0f5f-4424-82ee-d8ba81da47fd"
+      }
+     ]
+    }
+   },
+   "villain": {
+    "who": "dimir",
+    "deck": {
+     "name": "Agents of House Dimir",
+     "colors": "UB",
+     "archetype": null,
+     "label": "tribute",
+     "cards": [
+      {
+       "qty": 4,
+       "name": "Dimir Infiltrator",
+       "set": "rav",
+       "number": "203",
+       "id": "3db9204c-dde8-4241-aac2-1f090566f604"
+      },
+      {
+       "qty": 4,
+       "name": "Dimir House Guard",
+       "set": "rav",
+       "number": "83",
+       "id": "9a021caf-d9e7-470b-85be-3af42a3adfd3"
+      },
+      {
+       "qty": 4,
+       "name": "Lurking Informant",
+       "set": "rav",
+       "number": "249",
+       "id": "012a7f5d-f798-4030-86e3-05956487a383"
+      },
+      {
+       "qty": 4,
+       "name": "Dimir Guildmage",
+       "set": "rav",
+       "number": "245",
+       "id": "69b822aa-4144-400a-b993-f146cbeed54f"
+      },
+      {
+       "qty": 4,
+       "name": "Moroii",
+       "set": "rav",
+       "number": "216",
+       "id": "3de9ce70-67d1-4007-94ed-4545867e90c8"
+      },
+      {
+       "qty": 4,
+       "name": "Roofstalker Wight",
+       "set": "rav",
+       "number": "102",
+       "id": "8f43fb78-497b-4a05-84cd-d2aca4b2db1b"
+      },
+      {
+       "qty": 4,
+       "name": "Muddle the Mixture",
+       "set": "rav",
+       "number": "60",
+       "id": "4cc785b0-0a77-4b02-b0b4-2bda2fc621cc"
+      },
+      {
+       "qty": 4,
+       "name": "Last Gasp",
+       "set": "rav",
+       "number": "93",
+       "id": "34e035b3-bd83-43a4-8f31-d2393d29cd94"
+      },
+      {
+       "qty": 4,
+       "name": "Clutch of the Undercity",
+       "set": "rav",
+       "number": "197",
+       "id": "24437641-85a1-4fcd-93dc-bd19a7abf969"
+      },
+      {
+       "qty": 12,
+       "name": "Island",
+       "set": "rav",
+       "number": "291",
+       "id": "db6c8056-f155-434c-a4cb-a532a4707245"
+      },
+      {
+       "qty": 12,
+       "name": "Swamp",
+       "set": "rav",
+       "number": "295",
+       "id": "2755f9f7-95f9-4907-8ec9-21853eb376f4"
+      }
+     ]
+    }
+   },
+   "reward": {
+    "hero": {
+     "packs": 1,
+     "coins": 100
+    },
+    "villain": {
+     "card": {
+      "oracle_id": "d215127b-5f1d-4d3c-935b-c228c9c7f874",
+      "name": "Dimir Infiltrator",
+      "rarity": "common",
+      "set": "rav",
+      "id": "3db9204c-dde8-4241-aac2-1f090566f604",
+      "image": "https://cards.scryfall.io/normal/front/3/d/3db9204c-dde8-4241-aac2-1f090566f604.jpg"
+     },
+     "coins": 100
+    }
+   },
+   "scene": [
+    {
+     "who": "stage",
+     "line": "Lieutenant Kos has never met a group of recruits he could not inspire or a mob he could not quell.",
+     "quote": true
+    },
+    {
+     "who": "kos",
+     "line": "We thought we found the victim's clothes lumped in the street. As it turned out, it was the victim, insides sucked out—just a sack of skin and robes.",
+     "quote": true
+    },
+    {
+     "who": "kos",
+     "line": "Transmute: the Dimir pay mana and discard a transmute card to find any card with the same cost. They always have the right tool. Pressure them before they find it."
+    },
+    {
+     "who": "kos",
+     "line": "The first blow is the most important. It often negates the need for a second.",
+     "quote": true
+    }
+   ],
+   "villainScene": [
+    {
+     "who": "stage",
+     "line": "Dimir rank and file never see nor hear their guildmaster. All orders are given through mysterious necrosages who appear from the shadows, tersely toss out a command, and then melt into the darkness.",
+     "quote": true
+    },
+    {
+     "who": "stage",
+     "line": "In the undercity, forgetfulness is often encouraged at the point of a blade.",
+     "quote": true
+    }
+   ],
+   "after": [
+    {
+     "who": "kos",
+     "line": "Dimir. The guild that isn't there. My captain laughed at me."
+    },
+    {
+     "who": "stage",
+     "line": "Agrus Kos does not live to finish the case. He comes back to finish it anyway."
+    }
+   ],
+   "cues": {
+    "hero": {
+     "start": "Wojek. You're under arrest.",
+     "big": "First blow!",
+     "low": "They're everywhere and nowhere...",
+     "win": "Case closed. For now.",
+     "loss": "Thirty years... for this...",
+     "half": "Hit them before they find it."
+    },
+    "villain": {
+     "start": "[a whisper from the shadows]",
+     "big": "[the necrosage nods]",
+     "low": "[the agents scatter]",
+     "win": "[forgotten]",
+     "loss": "[the trail goes cold]"
+    }
+   },
+   "bigPlays": [],
+   "sim": null
+  },
+  {
+   "id": "a13b5",
+   "slot": 5,
+   "kind": "Lesson",
+   "mood": "tension",
+   "title": "The Dead Bankers",
+   "difficulty": "Normal",
+   "teaches": [
+    "Haunt",
+    "Forecast"
+   ],
+   "blurb": "Teysa Karlov is an Orzhov advokist: a lawyer for a church run by ghosts. Grand Arbiter Augustin IV of the Azorius has a writ against her family, and he intends to serve it.",
+   "rewardSet": "gpt",
+   "host": false,
+   "hero": {
+    "who": "teysa",
+    "deck": {
+     "name": "The Church of Deals",
+     "colors": "WB",
+     "archetype": null,
+     "label": "tribute",
+     "cards": [
+      {
+       "qty": 2,
+       "name": "Teysa, Orzhov Scion",
+       "set": "gpt",
+       "number": "134",
+       "id": "9eb856e6-8f63-4048-9818-cc3e65748855"
+      },
+      {
+       "qty": 4,
+       "name": "Orzhov Guildmage",
+       "set": "gpt",
+       "number": "147",
+       "id": "8e2ae5b4-2caf-4992-b2c2-64f00e9e567a"
+      },
+      {
+       "qty": 4,
+       "name": "Blind Hunter",
+       "set": "gpt",
+       "number": "102",
+       "id": "be1c8995-be36-43f6-9bd7-7b8712894331"
+      },
+      {
+       "qty": 4,
+       "name": "Shrieking Grotesque",
+       "set": "gpt",
+       "number": "15",
+       "id": "3c221f01-b094-41c7-bb5f-eef97cbf584e"
+      },
+      {
+       "qty": 4,
+       "name": "Absolver Thrull",
+       "set": "gpt",
+       "number": "1",
+       "id": "711979c3-e70b-4973-a4f1-020db534fc73"
+      },
+      {
+       "qty": 4,
+       "name": "Mourning Thrull",
+       "set": "gpt",
+       "number": "146",
+       "id": "1e2a217a-e47b-4874-9861-bb57c7b1f06a"
+      },
+      {
+       "qty": 4,
+       "name": "Belfry Spirit",
+       "set": "gpt",
+       "number": "2",
+       "id": "556e4e71-b149-49c8-8a22-83660bef57bb"
+      },
+      {
+       "qty": 4,
+       "name": "Orzhov Euthanist",
+       "set": "gpt",
+       "number": "54",
+       "id": "104adc35-69fb-4b63-9b03-a71097e15652"
+      },
+      {
+       "qty": 4,
+       "name": "Ostiary Thrull",
+       "set": "gpt",
+       "number": "55",
+       "id": "26407330-d7a1-4915-b7c6-e08e166cf638"
+      },
+      {
+       "qty": 2,
+       "name": "Mortify",
+       "set": "gpt",
+       "number": "122",
+       "id": "3b2c5187-71c7-4801-8a76-339c67322d35"
+      },
+      {
+       "qty": 12,
+       "name": "Plains",
+       "set": "rav",
+       "number": "287",
+       "id": "3d8d3cd4-0f5f-4424-82ee-d8ba81da47fd"
+      },
+      {
+       "qty": 12,
+       "name": "Swamp",
+       "set": "rav",
+       "number": "295",
+       "id": "2755f9f7-95f9-4907-8ec9-21853eb376f4"
+      }
+     ]
+    }
+   },
+   "villain": {
+    "who": "augustin",
+    "deck": {
+     "name": "The Azorius Senate",
+     "colors": "WU",
+     "archetype": null,
+     "label": "tribute",
+     "cards": [
+      {
+       "qty": 2,
+       "name": "Grand Arbiter Augustin IV",
+       "set": "dis",
+       "number": "112",
+       "id": "a2ac328b-923f-48dd-a4f5-de389ade9125"
+      },
+      {
+       "qty": 4,
+       "name": "Azorius First-Wing",
+       "set": "dis",
+       "number": "105",
+       "id": "b675c1e6-add5-4959-a5be-f2571ccebcb4"
+      },
+      {
+       "qty": 4,
+       "name": "Azorius Guildmage",
+       "set": "dis",
+       "number": "141",
+       "id": "81f0f0ce-7c23-444c-9d9f-bfa9c8705fd5"
+      },
+      {
+       "qty": 4,
+       "name": "Vedalken Entrancer",
+       "set": "rav",
+       "number": "74",
+       "id": "faf5e4b8-3bb9-4a4c-b8fa-2cae5372ba24"
+      },
+      {
+       "qty": 4,
+       "name": "Azorius Herald",
+       "set": "dis",
+       "number": "2",
+       "id": "1923ffb2-1fab-475a-914a-120312e26628"
+      },
+      {
+       "qty": 2,
+       "name": "Sky Hussar",
+       "set": "dis",
+       "number": "131",
+       "id": "9a795ea0-5a8f-4dc2-863b-d3c00844d873"
+      },
+      {
+       "qty": 2,
+       "name": "Beacon Hawk",
+       "set": "dis",
+       "number": "3",
+       "id": "be04ea4a-087e-4a6d-9973-0778a1ed2b7e"
+      },
+      {
+       "qty": 4,
+       "name": "Soulsworn Jury",
+       "set": "dis",
+       "number": "17",
+       "id": "668c4e40-0035-44e0-8401-dd17fa11ecd4"
+      },
+      {
+       "qty": 2,
+       "name": "Pride of the Clouds",
+       "set": "dis",
+       "number": "125",
+       "id": "ecc2a029-6e64-4b6d-9d82-afc319dbc57a"
+      },
+      {
+       "qty": 2,
+       "name": "Lionheart Maverick",
+       "set": "gpt",
+       "number": "11",
+       "id": "704ba6ce-5d28-417b-8574-d3c097e6e39f"
+      },
+      {
+       "qty": 4,
+       "name": "Plumes of Peace",
+       "set": "dis",
+       "number": "124",
+       "id": "f02dcf40-03ad-463c-a14a-5dfc886dea4c"
+      },
+      {
+       "qty": 2,
+       "name": "Minister of Impediments",
+       "set": "dis",
+       "number": "144",
+       "id": "96aada87-a880-4d33-8694-9fbc74211755"
+      },
+      {
+       "qty": 12,
+       "name": "Plains",
+       "set": "rav",
+       "number": "287",
+       "id": "3d8d3cd4-0f5f-4424-82ee-d8ba81da47fd"
+      },
+      {
+       "qty": 12,
+       "name": "Island",
+       "set": "rav",
+       "number": "291",
+       "id": "db6c8056-f155-434c-a4cb-a532a4707245"
+      }
+     ]
+    }
+   },
+   "reward": {
+    "hero": {
+     "packs": 1,
+     "coins": 100
+    },
+    "villain": {
+     "card": {
+      "oracle_id": "1f8d4d5f-e82f-45f3-823e-1bb6b536eb18",
+      "name": "Grand Arbiter Augustin IV",
+      "rarity": "rare",
+      "set": "dis",
+      "id": "a2ac328b-923f-48dd-a4f5-de389ade9125",
+      "image": "https://cards.scryfall.io/normal/front/a/2/a2ac328b-923f-48dd-a4f5-de389ade9125.jpg"
+     },
+     "coins": 100
+    }
+   },
+   "scene": [
+    {
+     "who": "teysa",
+     "line": "Piece the tragic notes together and is it not a melody?",
+     "quote": true
+    },
+    {
+     "who": "teysa",
+     "line": "Haunt: when a haunt creature dies, exile it haunting another creature. When that creature dies, the effect happens again. In Orzhova, even the dead pay twice."
+    },
+    {
+     "who": "stage",
+     "line": "Unlike most churches, at Orzhova it's best to pray before you arrive.",
+     "quote": true
+    }
+   ],
+   "villainScene": [
+    {
+     "who": "augustin",
+     "line": "As peace should be—gentle yet unstoppable.",
+     "quote": true
+    },
+    {
+     "who": "augustin",
+     "line": "Forecast: during my upkeep I reveal a forecast card from my hand and use its effect, and the card stays in my hand for next time."
+    },
+    {
+     "who": "stage",
+     "line": "Azorius military tactics, like their legal tactics, capitalize on delay and nullification.",
+     "quote": true
+    }
+   ],
+   "after": [
+    {
+     "who": "teysa",
+     "line": "The Arbiter was not after my family. He was after a name in our ledgers. A name with no guild."
+    }
+   ],
+   "cues": {
+    "hero": {
+     "start": "Let's discuss terms.",
+     "big": "Collect.",
+     "low": "The ledger is red...",
+     "win": "Paid in full.",
+     "loss": "Foreclosed...",
+     "half": "Even the dead pay twice."
+    },
+    "villain": {
+     "start": "The Senate is in session.",
+     "big": "Writ served.",
+     "low": "Objection...",
+     "win": "Judgment rendered.",
+     "loss": "The case... is dismissed..."
+    }
+   },
+   "bigPlays": [],
+   "sim": null
+  },
+  {
+   "id": "a13b6",
+   "slot": 6,
+   "kind": "Meta",
+   "mood": "march",
+   "title": "Ghost Dad",
+   "difficulty": "Normal",
+   "teaches": [
+    "Gaining life"
+   ],
+   "blurb": "In the real spring of 2006, the Ghost Council of Orzhova anchored a black-white deck players called Ghost Dad. Its worst matchup on paper was Zoo: three colours of cheap beasts and burn.",
+   "rewardSet": "gpt",
+   "host": false,
+   "hero": {
+    "who": "you",
+    "deck": {
+     "name": "Ghost Dad",
+     "colors": "WB",
+     "archetype": "Orzhov midrange",
+     "label": "tribute",
+     "cards": [
+      {
+       "qty": 4,
+       "name": "Orzhov Euthanist",
+       "set": "gpt",
+       "number": "54",
+       "id": "104adc35-69fb-4b63-9b03-a71097e15652"
+      },
+      {
+       "qty": 4,
+       "name": "Ghost Council of Orzhova",
+       "set": "gpt",
+       "number": "114",
+       "id": "d83a5785-a9a9-4a07-82c7-97dc5b9a2475"
+      },
+      {
+       "qty": 4,
+       "name": "Shrieking Grotesque",
+       "set": "gpt",
+       "number": "15",
+       "id": "3c221f01-b094-41c7-bb5f-eef97cbf584e"
+      },
+      {
+       "qty": 4,
+       "name": "Blind Hunter",
+       "set": "gpt",
+       "number": "102",
+       "id": "be1c8995-be36-43f6-9bd7-7b8712894331"
+      },
+      {
+       "qty": 4,
+       "name": "Pillory of the Sleepless",
+       "set": "gpt",
+       "number": "125",
+       "id": "36964bbd-f068-4a69-8d6b-7e4e97938b98"
+      },
+      {
+       "qty": 4,
+       "name": "Mortify",
+       "set": "gpt",
+       "number": "122",
+       "id": "3b2c5187-71c7-4801-8a76-339c67322d35"
+      },
+      {
+       "qty": 4,
+       "name": "Last Gasp",
+       "set": "rav",
+       "number": "93",
+       "id": "34e035b3-bd83-43a4-8f31-d2393d29cd94"
+      },
+      {
+       "qty": 4,
+       "name": "Orzhov Guildmage",
+       "set": "gpt",
+       "number": "147",
+       "id": "8e2ae5b4-2caf-4992-b2c2-64f00e9e567a"
+      },
+      {
+       "qty": 4,
+       "name": "Absolver Thrull",
+       "set": "gpt",
+       "number": "1",
+       "id": "711979c3-e70b-4973-a4f1-020db534fc73"
+      },
+      {
+       "qty": 4,
+       "name": "Godless Shrine",
+       "set": "gpt",
+       "number": "157",
+       "id": "be010c2f-06db-47e3-80bd-df3f2a21ca34"
+      },
+      {
+       "qty": 4,
+       "name": "Orzhov Basilica",
+       "set": "gpt",
+       "number": "161",
+       "id": "f9154d2a-3fc5-4fd6-9885-a810cb6b542a"
+      },
+      {
+       "qty": 8,
+       "name": "Plains",
+       "set": "rav",
+       "number": "287",
+       "id": "3d8d3cd4-0f5f-4424-82ee-d8ba81da47fd"
+      },
+      {
+       "qty": 8,
+       "name": "Swamp",
+       "set": "rav",
+       "number": "295",
+       "id": "2755f9f7-95f9-4907-8ec9-21853eb376f4"
+      }
+     ]
+    }
+   },
+   "villain": {
+    "who": "zoo",
+    "deck": {
+     "name": "Zoo",
+     "colors": "RGW",
+     "archetype": "Aggro",
+     "label": "tribute",
+     "cards": [
+      {
+       "qty": 4,
+       "name": "Watchwolf",
+       "set": "rav",
+       "number": "239",
+       "id": "95e5828a-3e54-4b9c-9e84-21880930f2d5"
+      },
+      {
+       "qty": 4,
+       "name": "Scab-Clan Mauler",
+       "set": "gpt",
+       "number": "128",
+       "id": "93e040a6-9e10-4528-8ee1-ef3a00e93cbc"
+      },
+      {
+       "qty": 4,
+       "name": "Savannah Lions",
+       "set": "9ed",
+       "number": "41",
+       "id": "db9f9f3c-d024-4529-bffb-c7a5a3085e58"
+      },
+      {
+       "qty": 4,
+       "name": "Burning-Tree Shaman",
+       "set": "gpt",
+       "number": "105",
+       "id": "133863fc-e820-4be6-a354-a02e7fe25eae"
+      },
+      {
+       "qty": 4,
+       "name": "Lightning Helix",
+       "set": "rav",
+       "number": "213",
+       "id": "1b2ecf55-c1cc-4b28-b7ce-e1b25305155e"
+      },
+      {
+       "qty": 4,
+       "name": "Char",
+       "set": "rav",
+       "number": "117",
+       "id": "ff3a24af-e995-4d05-ac2c-e9676048675d"
+      },
+      {
+       "qty": 4,
+       "name": "Shock",
+       "set": "9ed",
+       "number": "220",
+       "id": "ec8b241a-a58e-440a-8591-91dce118bd95"
+      },
+      {
+       "qty": 4,
+       "name": "Skyknight Legionnaire",
+       "set": "rav",
+       "number": "232",
+       "id": "d697ef7f-0e51-4bf1-b0f5-742325706d2a"
+      },
+      {
+       "qty": 4,
+       "name": "Giant Growth",
+       "set": "9ed",
+       "number": "243",
+       "id": "92b1a8a1-6777-4a00-ad3a-defc82bbac27"
+      },
+      {
+       "qty": 4,
+       "name": "Sacred Foundry",
+       "set": "rav",
+       "number": "280",
+       "id": "168ef687-5797-4b45-b75b-393d8117cebd"
+      },
+      {
+       "qty": 4,
+       "name": "Stomping Ground",
+       "set": "gpt",
+       "number": "165",
+       "id": "a2773d8f-f906-475d-aaff-b7ca3b01f188"
+      },
+      {
+       "qty": 4,
+       "name": "Temple Garden",
+       "set": "rav",
+       "number": "284",
+       "id": "794a2b79-8c55-4423-8843-7e6e96f84071"
+      },
+      {
+       "qty": 4,
+       "name": "Karplusan Forest",
+       "set": "9ed",
+       "number": "321",
+       "id": "eb12ce05-cfc9-4628-a2a3-f207fd9b149a"
+      },
+      {
+       "qty": 4,
+       "name": "Mountain",
+       "set": "rav",
+       "number": "299",
+       "id": "dad3662a-f7b4-45d5-a35e-fc6c38474692"
+      },
+      {
+       "qty": 2,
+       "name": "Forest",
+       "set": "rav",
+       "number": "303",
+       "id": "706be1bd-720d-4e74-b71f-568081afcab1"
+      },
+      {
+       "qty": 2,
+       "name": "Plains",
+       "set": "rav",
+       "number": "287",
+       "id": "3d8d3cd4-0f5f-4424-82ee-d8ba81da47fd"
+      }
+     ]
+    }
+   },
+   "reward": {
+    "hero": {
+     "packs": 1,
+     "coins": 100
+    },
+    "villain": {
+     "card": {
+      "oracle_id": "a35c2e20-eb90-4132-b65f-be1fcb569819",
+      "name": "Watchwolf",
+      "rarity": "uncommon",
+      "set": "rav",
+      "id": "95e5828a-3e54-4b9c-9e84-21880930f2d5",
+      "image": "https://cards.scryfall.io/normal/front/9/5/95e5828a-3e54-4b9c-9e84-21880930f2d5.jpg"
+     },
+     "coins": 100
+    }
+   },
+   "scene": [
+    {
+     "who": "stage",
+     "line": "The Golgari raise the bodies of their dead to serve. We raise the spirits of our dead to lead.",
+     "quote": true
+    },
+    {
+     "who": "you",
+     "line": "Ghost Council drains them and feeds me. Every blocker I trade buys time for the next drain."
+    },
+    {
+     "who": "stage",
+     "line": "Orzhov churches don't pass the plate for collection. They charge for admission.",
+     "quote": true
+    }
+   ],
+   "villainScene": [
+    {
+     "who": "stage",
+     "line": "At mealtimes, the Gruul customarily omit such niceties as using forks or killing the entrée.",
+     "quote": true
+    },
+    {
+     "who": "zoo",
+     "line": "[three colours of teeth]"
+    }
+   ],
+   "after": null,
+   "cues": {
+    "hero": {
+     "start": "The Council will see you now.",
+     "big": "Drain them.",
+     "low": "Too fast, too many...",
+     "win": "Paid in full.",
+     "loss": "The ghosts... go quiet...",
+     "half": "Trade, then drain."
+    },
+    "villain": {
+     "start": "[howling]",
+     "big": "[the pack charges]",
+     "low": "[the pack thins]",
+     "win": "[feeding]",
+     "loss": "[scattered]"
+    }
+   },
+   "bigPlays": [],
+   "sim": null
+  },
+  {
+   "id": "a13b7",
+   "slot": 7,
+   "kind": "Rival",
+   "mood": "tension",
+   "title": "Project Kraj",
+   "difficulty": "Normal",
+   "teaches": [
+    "Graft"
+   ],
+   "blurb": "Momir Vig's Simic Combine grows creatures that pass their strength to each other. Niv-Mizzet, the dragon who runs the Izzet, thinks the Simic stole his research. Both are probably right.",
+   "rewardSet": "dis",
+   "host": false,
+   "hero": {
+    "who": "momir",
+    "deck": {
+     "name": "Simic Graft",
+     "colors": "GU",
+     "archetype": null,
+     "label": "tribute",
+     "cards": [
+      {
+       "qty": 2,
+       "name": "Momir Vig, Simic Visionary",
+       "set": "dis",
+       "number": "118",
+       "id": "25a8c801-df0c-402b-a41c-4703a2abfb66"
+      },
+      {
+       "qty": 4,
+       "name": "Coiling Oracle",
+       "set": "dis",
+       "number": "107",
+       "id": "55a6ba2a-b372-4b15-9a1e-09b41316eab7"
+      },
+      {
+       "qty": 4,
+       "name": "Plaxcaster Frogling",
+       "set": "dis",
+       "number": "123",
+       "id": "64bb1946-8057-4a31-9de7-4bd1a9845165"
+      },
+      {
+       "qty": 4,
+       "name": "Simic Initiate",
+       "set": "dis",
+       "number": "92",
+       "id": "6602c592-3cde-4e73-919c-1d3f3df22092"
+      },
+      {
+       "qty": 4,
+       "name": "Trygon Predator",
+       "set": "dis",
+       "number": "133",
+       "id": "f31f54bf-7bf0-48f0-853d-1468713784eb"
+      },
+      {
+       "qty": 4,
+       "name": "Simic Ragworm",
+       "set": "dis",
+       "number": "93",
+       "id": "fa1f4b84-dd5d-4f5f-808e-26ef9414b38a"
+      },
+      {
+       "qty": 4,
+       "name": "Sporeback Troll",
+       "set": "dis",
+       "number": "94",
+       "id": "18bdca24-3beb-4d0d-b3bc-b98c23316fe7"
+      },
+      {
+       "qty": 2,
+       "name": "Assault Zeppelid",
+       "set": "dis",
+       "number": "103",
+       "id": "12bf6443-c941-418a-a766-05bba088a117"
+      },
+      {
+       "qty": 4,
+       "name": "Silkwing Scout",
+       "set": "dis",
+       "number": "31",
+       "id": "04f165aa-2986-47d1-912d-d50490a15c0b"
+      },
+      {
+       "qty": 4,
+       "name": "Patagia Viper",
+       "set": "dis",
+       "number": "89",
+       "id": "78031831-f773-489f-b1c2-c8f5537f2286"
+      },
+      {
+       "qty": 12,
+       "name": "Forest",
+       "set": "rav",
+       "number": "303",
+       "id": "706be1bd-720d-4e74-b71f-568081afcab1"
+      },
+      {
+       "qty": 12,
+       "name": "Island",
+       "set": "rav",
+       "number": "291",
+       "id": "db6c8056-f155-434c-a4cb-a532a4707245"
+      }
+     ]
+    }
+   },
+   "villain": {
+    "who": "niv",
+    "deck": {
+     "name": "Izzet Control",
+     "colors": "UR",
+     "archetype": "Control",
+     "label": "tribute",
+     "cards": [
+      {
+       "qty": 2,
+       "name": "Niv-Mizzet, the Firemind",
+       "set": "gpt",
+       "number": "123",
+       "id": "5994d98a-090b-4203-b44f-b6517b6a83ea"
+      },
+      {
+       "qty": 4,
+       "name": "Izzet Signet",
+       "set": "gpt",
+       "number": "152",
+       "id": "f823be95-bef4-4e86-a924-239be62394bf"
+      },
+      {
+       "qty": 4,
+       "name": "Remand",
+       "set": "rav",
+       "number": "63",
+       "id": "581f3780-c480-48c6-b15c-1618f2feccb9"
+      },
+      {
+       "qty": 4,
+       "name": "Electrolyze",
+       "set": "gpt",
+       "number": "111",
+       "id": "ef42b5b2-6504-486c-aaa0-9d5e4769ba1d"
+      },
+      {
+       "qty": 4,
+       "name": "Compulsive Research",
+       "set": "rav",
+       "number": "40",
+       "id": "20b9c057-b80a-4e4e-a0d7-34b7ff3a69f4"
+      },
+      {
+       "qty": 4,
+       "name": "Repeal",
+       "set": "gpt",
+       "number": "32",
+       "id": "9e7dd929-4bba-46a6-86c9-b8ed853eb721"
+      },
+      {
+       "qty": 4,
+       "name": "Izzet Chronarch",
+       "set": "gpt",
+       "number": "119",
+       "id": "6c82dc47-38db-4ee1-9031-f8ea68d05389"
+      },
+      {
+       "qty": 4,
+       "name": "Mana Leak",
+       "set": "9ed",
+       "number": "86",
+       "id": "60e6486c-644f-4b32-b4e9-3ca29bbdb400"
+      },
+      {
+       "qty": 4,
+       "name": "Steamcore Weird",
+       "set": "gpt",
+       "number": "35",
+       "id": "f8b3992f-f874-448f-8aa4-ade71d6b3168"
+      },
+      {
+       "qty": 2,
+       "name": "Demonfire",
+       "set": "dis",
+       "number": "60",
+       "id": "af2ad333-722e-4d7e-972a-903c24068931"
+      },
+      {
+       "qty": 4,
+       "name": "Steam Vents",
+       "set": "gpt",
+       "number": "164",
+       "id": "054f2276-2dd5-43da-bb26-c57c560861fe"
+      },
+      {
+       "qty": 4,
+       "name": "Izzet Boilerworks",
+       "set": "gpt",
+       "number": "159",
+       "id": "666f455e-3a3d-475d-b67a-a1fdd74820eb"
+      },
+      {
+       "qty": 4,
+       "name": "Shivan Reef",
+       "set": "9ed",
+       "number": "324",
+       "id": "eea38777-e67d-40a5-9301-d4e6d3819899"
+      },
+      {
+       "qty": 6,
+       "name": "Island",
+       "set": "rav",
+       "number": "291",
+       "id": "db6c8056-f155-434c-a4cb-a532a4707245"
+      },
+      {
+       "qty": 6,
+       "name": "Mountain",
+       "set": "rav",
+       "number": "299",
+       "id": "dad3662a-f7b4-45d5-a35e-fc6c38474692"
+      }
+     ]
+    }
+   },
+   "reward": {
+    "hero": {
+     "packs": 1,
+     "coins": 100
+    },
+    "villain": {
+     "card": {
+      "oracle_id": "959acb66-84ca-4535-bca2-ad591895735e",
+      "name": "Niv-Mizzet, the Firemind",
+      "rarity": "rare",
+      "set": "gpt",
+      "id": "5994d98a-090b-4203-b44f-b6517b6a83ea",
+      "image": "https://cards.scryfall.io/normal/front/5/9/5994d98a-090b-4203-b44f-b6517b6a83ea.jpg"
+     },
+     "coins": 100
+    }
+   },
+   "scene": [
+    {
+     "who": "momir",
+     "line": "The unnatural pressures of life in this city are best withstood by lifeforms that adapt with unnatural swiftness.",
+     "quote": true
+    },
+    {
+     "who": "momir",
+     "line": "Graft: these creatures enter with +1/+1 counters. When another creature arrives, you may move a counter onto it. Spread the strength where it is needed."
+    },
+    {
+     "who": "momir",
+     "line": "Of course it will grow beyond control—it was designed to choose its own evolution.",
+     "quote": true
+    }
+   ],
+   "villainScene": [
+    {
+     "who": "niv",
+     "line": "(Z->)90° - (E-N²W)90°t = 1",
+     "quote": true
+    },
+    {
+     "who": "stage",
+     "line": "Niv-Mizzet's genius and vanity reverberate throughout the mirrored halls of Nivix.",
+     "quote": true
+    },
+    {
+     "who": "stage",
+     "line": "The Izzet learn something from every lesson they teach.",
+     "quote": true
+    }
+   ],
+   "after": [
+    {
+     "who": "momir",
+     "line": "The dragon kept saying the same thing. The Guildpact is weakening, and someone is helping it along."
+    }
+   ],
+   "cues": {
+    "hero": {
+     "start": "Adapt.",
+     "big": "Evolve!",
+     "low": "The specimens are failing...",
+     "win": "Natural selection.",
+     "loss": "Back... to the vats...",
+     "half": "Move the counter."
+    },
+    "villain": {
+     "start": "Begin the demonstration.",
+     "big": "Ha! Lightning!",
+     "low": "Recalculating...",
+     "win": "Proven.",
+     "loss": "My equation... was flawed..."
+    }
+   },
+   "bigPlays": [],
+   "sim": null
+  },
+  {
+   "id": "a13b8",
+   "slot": 8,
+   "kind": "Boss",
+   "mood": "boss",
+   "title": "Szadek",
+   "difficulty": "Hard",
+   "teaches": [
+    "Playing around counterspells"
+   ],
+   "blurb": "Szadek, Lord of Secrets, has run House Dimir from the dark for ten thousand years. Agrus Kos, now a ghost bound to Teysa's church, and Teysa herself go under the city to drag him into the light.",
+   "rewardSet": "dis",
+   "host": true,
+   "hero": {
+    "who": "kos",
+    "deck": {
+     "name": "The Ghost and the Advokist",
+     "colors": "RWB",
+     "archetype": null,
+     "label": "tribute",
+     "cards": [
+      {
+       "qty": 2,
+       "name": "Agrus Kos, Wojek Veteran",
+       "set": "rav",
+       "number": "190",
+       "id": "c2521942-0ecd-45a9-bac6-04267a2c29ed"
+      },
+      {
+       "qty": 2,
+       "name": "Teysa, Orzhov Scion",
+       "set": "gpt",
+       "number": "134",
+       "id": "9eb856e6-8f63-4048-9818-cc3e65748855"
+      },
+      {
+       "qty": 4,
+       "name": "Boros Swiftblade",
+       "set": "rav",
+       "number": "193",
+       "id": "bf25cd63-3304-4eea-841b-1f058010c627"
+      },
+      {
+       "qty": 4,
+       "name": "Skyknight Legionnaire",
+       "set": "rav",
+       "number": "232",
+       "id": "d697ef7f-0e51-4bf1-b0f5-742325706d2a"
+      },
+      {
+       "qty": 2,
+       "name": "Lightning Helix",
+       "set": "rav",
+       "number": "213",
+       "id": "1b2ecf55-c1cc-4b28-b7ce-e1b25305155e"
+      },
+      {
+       "qty": 2,
+       "name": "Boros Recruit",
+       "set": "rav",
+       "number": "243",
+       "id": "5af01330-05c2-4c5b-9830-2886711b2b5d"
+      },
+      {
+       "qty": 2,
+       "name": "Mortify",
+       "set": "gpt",
+       "number": "122",
+       "id": "3b2c5187-71c7-4801-8a76-339c67322d35"
+      },
+      {
+       "qty": 2,
+       "name": "Orzhov Euthanist",
+       "set": "gpt",
+       "number": "54",
+       "id": "104adc35-69fb-4b63-9b03-a71097e15652"
+      },
+      {
+       "qty": 4,
+       "name": "Blind Hunter",
+       "set": "gpt",
+       "number": "102",
+       "id": "be1c8995-be36-43f6-9bd7-7b8712894331"
+      },
+      {
+       "qty": 4,
+       "name": "Orzhov Guildmage",
+       "set": "gpt",
+       "number": "147",
+       "id": "8e2ae5b4-2caf-4992-b2c2-64f00e9e567a"
+      },
+      {
+       "qty": 4,
+       "name": "Mourning Thrull",
+       "set": "gpt",
+       "number": "146",
+       "id": "1e2a217a-e47b-4874-9861-bb57c7b1f06a"
+      },
+      {
+       "qty": 4,
+       "name": "Absolver Thrull",
+       "set": "gpt",
+       "number": "1",
+       "id": "711979c3-e70b-4973-a4f1-020db534fc73"
+      },
+      {
+       "qty": 4,
+       "name": "Sacred Foundry",
+       "set": "rav",
+       "number": "280",
+       "id": "168ef687-5797-4b45-b75b-393d8117cebd"
+      },
+      {
+       "qty": 4,
+       "name": "Godless Shrine",
+       "set": "gpt",
+       "number": "157",
+       "id": "be010c2f-06db-47e3-80bd-df3f2a21ca34"
+      },
+      {
+       "qty": 4,
+       "name": "Blood Crypt",
+       "set": "dis",
+       "number": "171",
+       "id": "f281e16f-0fe1-4095-bd63-0a4479f75c11"
+      },
+      {
+       "qty": 4,
+       "name": "Plains",
+       "set": "rav",
+       "number": "287",
+       "id": "3d8d3cd4-0f5f-4424-82ee-d8ba81da47fd"
+      },
+      {
+       "qty": 4,
+       "name": "Mountain",
+       "set": "rav",
+       "number": "299",
+       "id": "dad3662a-f7b4-45d5-a35e-fc6c38474692"
+      },
+      {
+       "qty": 4,
+       "name": "Swamp",
+       "set": "rav",
+       "number": "295",
+       "id": "2755f9f7-95f9-4907-8ec9-21853eb376f4"
+      }
+     ]
+    }
+   },
+   "villain": {
+    "who": "szadek",
+    "deck": {
+     "name": "Lord of Secrets",
+     "colors": "UB",
+     "archetype": "Control",
+     "label": "tribute",
+     "cards": [
+      {
+       "qty": 3,
+       "name": "Szadek, Lord of Secrets",
+       "set": "rav",
+       "number": "234",
+       "id": "2882793e-5d7d-47f0-9308-652a5e036c2c"
+      },
+      {
+       "qty": 4,
+       "name": "Dimir House Guard",
+       "set": "rav",
+       "number": "83",
+       "id": "9a021caf-d9e7-470b-85be-3af42a3adfd3"
+      },
+      {
+       "qty": 4,
+       "name": "Remand",
+       "set": "rav",
+       "number": "63",
+       "id": "581f3780-c480-48c6-b15c-1618f2feccb9"
+      },
+      {
+       "qty": 4,
+       "name": "Mana Leak",
+       "set": "9ed",
+       "number": "86",
+       "id": "60e6486c-644f-4b32-b4e9-3ca29bbdb400"
+      },
+      {
+       "qty": 4,
+       "name": "Compulsive Research",
+       "set": "rav",
+       "number": "40",
+       "id": "20b9c057-b80a-4e4e-a0d7-34b7ff3a69f4"
+      },
+      {
+       "qty": 4,
+       "name": "Last Gasp",
+       "set": "rav",
+       "number": "93",
+       "id": "34e035b3-bd83-43a4-8f31-d2393d29cd94"
+      },
+      {
+       "qty": 4,
+       "name": "Moroii",
+       "set": "rav",
+       "number": "216",
+       "id": "3de9ce70-67d1-4007-94ed-4545867e90c8"
+      },
+      {
+       "qty": 4,
+       "name": "Keening Banshee",
+       "set": "rav",
+       "number": "92",
+       "id": "0866b383-dced-459e-9510-38248a29dd14"
+      },
+      {
+       "qty": 4,
+       "name": "Disembowel",
+       "set": "rav",
+       "number": "85",
+       "id": "c1edb79d-0031-4dc6-8881-f6d1fe4acba2"
+      },
+      {
+       "qty": 1,
+       "name": "Tattered Drake",
+       "set": "rav",
+       "number": "68",
+       "id": "7d28cbc8-4dbb-465b-813d-52b2b2f73b14"
+      },
+      {
+       "qty": 4,
+       "name": "Watery Grave",
+       "set": "rav",
+       "number": "286",
+       "id": "139b90cd-8272-457a-be32-1298145345be"
+      },
+      {
+       "qty": 4,
+       "name": "Dimir Aqueduct",
+       "set": "rav",
+       "number": "276",
+       "id": "df3c3d56-8291-407e-87a1-94b7d12811fd"
+      },
+      {
+       "qty": 8,
+       "name": "Island",
+       "set": "rav",
+       "number": "291",
+       "id": "db6c8056-f155-434c-a4cb-a532a4707245"
+      },
+      {
+       "qty": 8,
+       "name": "Swamp",
+       "set": "rav",
+       "number": "295",
+       "id": "2755f9f7-95f9-4907-8ec9-21853eb376f4"
+      }
+     ]
+    }
+   },
+   "reward": {
+    "hero": {
+     "packs": 2,
+     "coins": 200
+    },
+    "villain": {
+     "card": {
+      "oracle_id": "c40c823c-5954-457a-81a6-02683da57f7f",
+      "name": "Szadek, Lord of Secrets",
+      "rarity": "rare",
+      "set": "rav",
+      "id": "2882793e-5d7d-47f0-9308-652a5e036c2c",
+      "image": "https://cards.scryfall.io/normal/front/2/8/2882793e-5d7d-47f0-9308-652a5e036c2c.jpg"
+     },
+     "coins": 200
+    }
+   },
+   "scene": [
+    {
+     "who": "stage",
+     "line": "An emblem of a secret guild, the Dimir insignia is seen only by its own members—and the doomed.",
+     "quote": true
+    },
+    {
+     "who": "kos",
+     "line": "Being dead has its advantages. He can't kill me twice."
+    },
+    {
+     "who": "teysa",
+     "line": "He counters and he waits. Cast your second-best spell first, and save the one that matters for when his mana is tapped."
+    },
+    {
+     "who": "stage",
+     "line": "Guilds often exterminate those who saw or knew too much. Some vindictive souls retain their knowledge, using it in the afterlife to crush the guilded and the vile bargain that gives them power.",
+     "quote": true
+    }
+   ],
+   "villainScene": [
+    {
+     "who": "szadek",
+     "line": "In secrecy is strength. None can oppose one who cannot be found.",
+     "quote": true
+    },
+    {
+     "who": "szadek",
+     "line": "Some images are so powerful that one glance burns them into your mind forever. Come, let us gaze on nothingness.",
+     "quote": true
+    },
+    {
+     "who": "szadek",
+     "line": "Ten thousand years I have signed their contract in the dark. I will see it torn."
+    }
+   ],
+   "after": null,
+   "cues": {
+    "hero": {
+     "start": "Lieutenant Kos. Still on duty.",
+     "big": "Into the light!",
+     "low": "He knows every move...",
+     "win": "Case closed.",
+     "loss": "Even ghosts... forget...",
+     "half": "Bait the counter."
+    },
+    "villain": {
+     "start": "You were never here.",
+     "big": "Forget.",
+     "low": "The shadows thin...",
+     "win": "Your ignorance is my bliss.",
+     "loss": "Seen... at last...",
+     "half": {
+      "who": "teysa",
+      "line": "He is spending his counters. Now, Kos. Now."
+     }
+    }
+   },
+   "bigPlays": [],
+   "sim": null
+  },
+  {
+   "id": "a13b9",
+   "slot": 9,
+   "kind": "Secret Boss",
+   "secret": true,
+   "mood": "boss",
+   "title": "Solar Flare",
+   "difficulty": "Hard",
+   "teaches": [
+    "Playing against reanimation"
+   ],
+   "blurb": "Deep in the archive, a deck that turned a graveyard into a turn-four angel.",
+   "rewardSet": "gpt",
+   "host": true,
+   "archive": {
+    "deck": "Solar Flare",
+    "when": "2006",
+    "format": "Standard: Kamigawa block, Ravnica block and Ninth Edition.",
+    "what": "A three-colour control deck that draws cards with Compulsive Research, discards a big Angel, then brings it back with Zombify.",
+    "why": "Zombify on turn four put a 5/5 flier that destroys a permanent onto the table long before it could be cast. Wrath of God and Mortify cleaned up the rest.",
+    "beat": "Pressure early, before the graveyard fills. Keep a creature back after a Wrath of God, and make them use Zombify on a board you can answer.",
+    "after": "Solar Flare stayed a top deck through 2006, picking up Kokusho and later Coldsnap and Time Spiral cards. Nothing in it was ever banned."
+   },
+   "hero": {
+    "who": "you",
+    "deck": {
+     "name": "Boros Deck Wins",
+     "colors": "RW",
+     "archetype": "Aggro",
+     "label": "tribute",
+     "cards": [
+      {
+       "qty": 4,
+       "name": "Veteran Armorer",
+       "set": "rav",
+       "number": "34",
+       "id": "151a455f-c364-4600-a5f8-98da86aabc48"
+      },
+      {
+       "qty": 4,
+       "name": "Boros Swiftblade",
+       "set": "rav",
+       "number": "193",
+       "id": "bf25cd63-3304-4eea-841b-1f058010c627"
+      },
+      {
+       "qty": 4,
+       "name": "Skyknight Legionnaire",
+       "set": "rav",
+       "number": "232",
+       "id": "d697ef7f-0e51-4bf1-b0f5-742325706d2a"
+      },
+      {
+       "qty": 4,
+       "name": "Lightning Helix",
+       "set": "rav",
+       "number": "213",
+       "id": "1b2ecf55-c1cc-4b28-b7ce-e1b25305155e"
+      },
+      {
+       "qty": 4,
+       "name": "Screeching Griffin",
+       "set": "rav",
+       "number": "29",
+       "id": "5e2fa710-4615-42de-8716-41b009b56d32"
+      },
+      {
+       "qty": 4,
+       "name": "Shock",
+       "set": "9ed",
+       "number": "220",
+       "id": "ec8b241a-a58e-440a-8591-91dce118bd95"
+      },
+      {
+       "qty": 4,
+       "name": "Thundersong Trumpeter",
+       "set": "rav",
+       "number": "235",
+       "id": "7410c546-745c-469f-b3b8-eafb69391600"
+      },
+      {
+       "qty": 4,
+       "name": "Boros Recruit",
+       "set": "rav",
+       "number": "243",
+       "id": "5af01330-05c2-4c5b-9830-2886711b2b5d"
+      },
+      {
+       "qty": 4,
+       "name": "Flame-Kin Zealot",
+       "set": "rav",
+       "number": "206",
+       "id": "aec53f16-5bf7-4ef5-b83e-9e36463d1640"
+      },
+      {
+       "qty": 4,
+       "name": "Sacred Foundry",
+       "set": "rav",
+       "number": "280",
+       "id": "168ef687-5797-4b45-b75b-393d8117cebd"
+      },
+      {
+       "qty": 10,
+       "name": "Mountain",
+       "set": "rav",
+       "number": "299",
+       "id": "dad3662a-f7b4-45d5-a35e-fc6c38474692"
+      },
+      {
+       "qty": 10,
+       "name": "Plains",
+       "set": "rav",
+       "number": "287",
+       "id": "3d8d3cd4-0f5f-4424-82ee-d8ba81da47fd"
+      }
+     ]
+    }
+   },
+   "villain": {
+    "who": "flare",
+    "deck": {
+     "name": "Solar Flare",
+     "colors": "WUB",
+     "archetype": "Reanimator control",
+     "label": "tribute",
+     "note": "Built from 2006 Standard Solar Flare lists, using only Ravnica block and Ninth Edition cards. No single tournament list is copied.",
+     "cards": [
+      {
+       "qty": 4,
+       "name": "Zombify",
+       "set": "9ed",
+       "number": "171",
+       "id": "a9af694a-6a96-494a-ab16-5c7c7e8e17a9"
+      },
+      {
+       "qty": 4,
+       "name": "Compulsive Research",
+       "set": "rav",
+       "number": "40",
+       "id": "20b9c057-b80a-4e4e-a0d7-34b7ff3a69f4"
+      },
+      {
+       "qty": 2,
+       "name": "Remand",
+       "set": "rav",
+       "number": "63",
+       "id": "581f3780-c480-48c6-b15c-1618f2feccb9"
+      },
+      {
+       "qty": 4,
+       "name": "Wrath of God",
+       "set": "9ed",
+       "number": "56",
+       "id": "b6c1e9e3-c947-47cc-ac60-dc032d984a67"
+      },
+      {
+       "qty": 4,
+       "name": "Mortify",
+       "set": "gpt",
+       "number": "122",
+       "id": "3b2c5187-71c7-4801-8a76-339c67322d35"
+      },
+      {
+       "qty": 4,
+       "name": "Angel of Despair",
+       "set": "gpt",
+       "number": "101",
+       "id": "9ae71424-df9c-481c-9305-a0c30adcfda2"
+      },
+      {
+       "qty": 4,
+       "name": "Skeletal Vampire",
+       "set": "gpt",
+       "number": "62",
+       "id": "69251d44-3038-4b64-ab78-fc87f0406ba2"
+      },
+      {
+       "qty": 2,
+       "name": "Orzhov Signet",
+       "set": "gpt",
+       "number": "155",
+       "id": "f9298a1d-5b41-46d8-929c-b6980d1e6eb7"
+      },
+      {
+       "qty": 4,
+       "name": "Last Gasp",
+       "set": "rav",
+       "number": "93",
+       "id": "34e035b3-bd83-43a4-8f31-d2393d29cd94"
+      },
+      {
+       "qty": 4,
+       "name": "Dimir Signet",
+       "set": "rav",
+       "number": "260",
+       "id": "9a9a1df5-a4e8-49a4-aebe-ca93894ccfcf"
+      },
+      {
+       "qty": 4,
+       "name": "Godless Shrine",
+       "set": "gpt",
+       "number": "157",
+       "id": "be010c2f-06db-47e3-80bd-df3f2a21ca34"
+      },
+      {
+       "qty": 4,
+       "name": "Watery Grave",
+       "set": "rav",
+       "number": "286",
+       "id": "139b90cd-8272-457a-be32-1298145345be"
+      },
+      {
+       "qty": 4,
+       "name": "Hallowed Fountain",
+       "set": "dis",
+       "number": "174",
+       "id": "c28aea19-2a39-4934-afda-909e234fa3ba"
+      },
+      {
+       "qty": 4,
+       "name": "Plains",
+       "set": "rav",
+       "number": "287",
+       "id": "3d8d3cd4-0f5f-4424-82ee-d8ba81da47fd"
+      },
+      {
+       "qty": 4,
+       "name": "Island",
+       "set": "rav",
+       "number": "291",
+       "id": "db6c8056-f155-434c-a4cb-a532a4707245"
+      },
+      {
+       "qty": 4,
+       "name": "Swamp",
+       "set": "rav",
+       "number": "295",
+       "id": "2755f9f7-95f9-4907-8ec9-21853eb376f4"
+      }
+     ]
+    }
+   },
+   "reward": {
+    "hero": {
+     "packs": 2,
+     "coins": 200
+    },
+    "villain": {
+     "card": {
+      "oracle_id": "02520741-d7f0-46e6-acbe-010b65fc24c0",
+      "name": "Angel of Despair",
+      "rarity": "rare",
+      "set": "gpt",
+      "id": "9ae71424-df9c-481c-9305-a0c30adcfda2",
+      "image": "https://cards.scryfall.io/normal/front/9/a/9ae71424-df9c-481c-9305-a0c30adcfda2.jpg"
+     },
+     "coins": 200
+    }
+   },
+   "scene": [
+    {
+     "who": "stage",
+     "line": "The archive opens on a deck that never wanted to cast its own best cards."
+    },
+    {
+     "who": "you",
+     "line": "Discard an angel, raise it on turn four. Then I win by turn four."
+    }
+   ],
+   "villainScene": [
+    {
+     "who": "stage",
+     "line": "The deck does not speak. It digs."
+    }
+   ],
+   "after": [
+    {
+     "who": "stage",
+     "line": "Recorded: never banned. One of the decks that taught a generation to watch the graveyard."
+    }
+   ],
+   "cues": {
+    "hero": {
+     "start": "Race the angel.",
+     "big": "Burn them out!",
+     "low": "The angel is up...",
+     "win": "Too slow to flare.",
+     "loss": "Wings, again...",
+     "half": "Hit before the graveyard fills."
+    },
+    "villain": {
+     "start": "[draw three]",
+     "big": "[an angel rises]",
+     "low": "[the graveyard is empty]",
+     "win": "[wrath]",
+     "loss": "[the flare fades]"
+    }
+   },
+   "bigPlays": [],
+   "sim": null
+  }
+ ]
+}

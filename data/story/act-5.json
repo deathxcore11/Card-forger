@@ -1,5 +1,6 @@
 {
  "act": 5,
+ "era": null,
  "title": "The Rath Cycle",
  "years": "1997 to 1998",
  "sets": [
@@ -429,6 +430,7 @@
      "name": "The Soltari",
      "colors": "W",
      "archetype": null,
+     "label": null,
      "cards": [
       {
        "qty": 4,
@@ -516,6 +518,7 @@
      "name": "The Dauthi",
      "colors": "B",
      "archetype": null,
+     "label": null,
      "cards": [
       {
        "qty": 4,
@@ -695,6 +698,7 @@
      "name": "The Adept",
      "colors": "UR",
      "archetype": null,
+     "label": null,
      "cards": [
       {
        "qty": 2,
@@ -796,6 +800,7 @@
      "name": "The Rootwater",
      "colors": "U",
      "archetype": null,
+     "label": null,
      "cards": [
       {
        "qty": 4,
@@ -969,6 +974,7 @@
      "name": "The Hive",
      "colors": "RGW",
      "archetype": null,
+     "label": null,
      "cards": [
       {
        "qty": 4,
@@ -1068,11 +1074,12 @@
     "who": "vhati",
     "deck": {
      "name": "The Hunting Party",
-     "colors": "BR",
+     "colors": "BRG",
      "archetype": null,
+     "label": null,
      "cards": [
       {
-       "qty": 2,
+       "qty": 4,
        "name": "Vhati il-Dal",
        "set": "tmp",
        "number": "274",
@@ -1135,25 +1142,25 @@
        "id": "930745eb-b038-4b55-97f3-bf8d99b54d32"
       },
       {
-       "qty": 2,
-       "name": "Darkling Stalker",
-       "set": "tmp",
-       "number": "119",
-       "id": "4eb883b7-da6a-45c3-9dde-61334a0ddcae"
-      },
-      {
-       "qty": 12,
+       "qty": 10,
        "name": "Swamp",
        "set": "tmp",
        "number": "339",
        "id": "5912d2aa-fe91-4cea-9c7a-6dca745f8560"
       },
       {
-       "qty": 12,
+       "qty": 9,
        "name": "Mountain",
        "set": "tmp",
        "number": "343",
        "id": "9d6dc341-89dc-4e99-baa2-ad0ae59f0e94"
+      },
+      {
+       "qty": 5,
+       "name": "Forest",
+       "set": "tmp",
+       "number": "347",
+       "id": "36b3ffbd-3f3e-4fca-80c2-94f9fdc198a5"
       }
      ]
     }
@@ -1222,11 +1229,11 @@
    "after": null,
    "cues": {
     "hero": {
-     "start": null,
-     "big": null,
-     "low": null,
-     "win": null,
-     "loss": null
+     "start": "Karn, stay close.",
+     "big": "Through the hive!",
+     "low": "They share every trick...",
+     "win": "The hive is quiet.",
+     "loss": "Back to the Weatherlight..."
     },
     "villain": {
      "start": "For Greven! Mostly.",
@@ -1258,6 +1265,7 @@
      "name": "Mirri's Watch",
      "colors": "GW",
      "archetype": null,
+     "label": null,
      "cards": [
       {
        "qty": 2,
@@ -1352,6 +1360,7 @@
      "name": "Crovax's Hunger",
      "colors": "B",
      "archetype": null,
+     "label": null,
      "cards": [
       {
        "qty": 4,
@@ -1532,6 +1541,7 @@
      "name": "Skyshroud Rising",
      "colors": "GB",
      "archetype": null,
+     "label": null,
      "cards": [
       {
        "qty": 2,
@@ -1626,6 +1636,7 @@
      "name": "Starke's Bargain",
      "colors": "BR",
      "archetype": null,
+     "label": null,
      "cards": [
       {
        "qty": 4,
@@ -1811,6 +1822,7 @@
      "name": "Tahngarth's Charge",
      "colors": "RG",
      "archetype": null,
+     "label": null,
      "cards": [
       {
        "qty": 4,
@@ -1905,6 +1917,7 @@
      "name": "Sligh",
      "colors": "R",
      "archetype": "Sligh",
+     "label": null,
      "cards": [
       {
        "qty": 4,
@@ -2067,7 +2080,7 @@
    "kind": "Meta",
    "mood": "tension",
    "title": "The Laboratory",
-   "difficulty": "Hard",
+   "difficulty": "Normal",
    "teaches": [
     "Playing against reanimation"
    ],
@@ -2080,6 +2093,7 @@
      "name": "The Samite Way",
      "colors": "W",
      "archetype": null,
+     "label": null,
      "cards": [
       {
        "qty": 2,
@@ -2174,6 +2188,7 @@
      "name": "RecSur",
      "colors": "GBU",
      "archetype": "RecSur",
+     "label": null,
      "cards": [
       {
        "qty": 4,
@@ -2386,6 +2401,7 @@
      "name": "The Weatherlight Crew",
      "colors": "RGW",
      "archetype": null,
+     "label": null,
      "cards": [
       {
        "qty": 2,
@@ -2494,6 +2510,7 @@
      "name": "The Evincar's Court",
      "colors": "UB",
      "archetype": null,
+     "label": null,
      "cards": [
       {
        "qty": 4,

@@ -1,0 +1,2830 @@
+{
+ "act": 12,
+ "era": "2005-08-20",
+ "title": "The Kami War",
+ "years": "2004 to 2005",
+ "sets": [
+  "chk",
+  "bok",
+  "sok",
+  "9ed"
+ ],
+ "landSet": "chk",
+ "intro": [
+  {
+   "who": "stage",
+   "line": "Kamigawa: a plane where every stone, river and sword has a spirit, the kami. For centuries mortals prayed and the kami answered."
+  },
+  {
+   "who": "stage",
+   "line": "Early in his reign, Konda fell ill. His head burned with fever, and he saw visions of his future. In them, he saw a spirit-child, and, in that child's eyes, a way to make his empire last forever.",
+   "quote": true
+  },
+  {
+   "who": "stage",
+   "line": "Konda took something from the spirit world and locked it in his castle. The kami have been at war with every mortal ever since."
+  },
+  {
+   "who": "stage",
+   "line": "This god held prisoner in human hands has put all humanity in the hands of angry gods.",
+   "quote": true
+  }
+ ],
+ "finale": [
+  {
+   "who": "stage",
+   "line": "Konda falls in his own tower. The thing he stole twenty years ago is free: a small, shining kami-child, That Which Was Taken."
+  },
+  {
+   "who": "michiko",
+   "line": "Father. You did this for a castle that would last forever."
+  },
+  {
+   "who": "stage",
+   "line": "Freed, it goes home to O-Kagachi, the greatest of the kami, and the spirit world goes quiet."
+  },
+  {
+   "who": "michiko",
+   "line": "The war is over. Now someone has to rebuild what it broke."
+  },
+  {
+   "who": "toshiro",
+   "line": "Life is a series of choices between bad and worse.",
+   "quote": true
+  },
+  {
+   "who": "stage",
+   "line": "The war is over. Twenty years later, a nezumi ninja will still be telling the story of the rogue who stole a jitte and helped end it."
+  }
+ ],
+ "villainFinale": [
+  {
+   "who": "stage",
+   "line": "Toshiro lies on the floor of the Palace of Infinite Halls. Konda stands over him with the stolen kami at his back."
+  },
+  {
+   "who": "konda",
+   "line": "Duty and law are the foundation on which civilization stands. They must not fall, for when they do, they take everything with them.",
+   "quote": true
+  },
+  {
+   "who": "konda",
+   "line": "The kami will tire. I will not. Eiganjo will stand forever."
+  },
+  {
+   "who": "stage",
+   "line": "Despite the massive forces that allied against him, Konda never once believed he would lose the Kami War.",
+   "quote": true
+  },
+  {
+   "who": "stage",
+   "line": "Outside the castle walls, the war goes on."
+  }
+ ],
+ "vibe": "kami-war-ink-and-lantern",
+ "cast": {
+  "you": {
+   "name": "You",
+   "title": "Planeswalker",
+   "portrait": {
+    "card": "Fold into Aether",
+    "set": "5dn",
+    "number": "31",
+    "id": "615157d6-0160-417b-b06c-0e253b306c37",
+    "artist": "Anthony S. Waters & Cara Mitten",
+    "crop": "https://cards.scryfall.io/art_crop/front/6/1/615157d6-0160-417b-b06c-0e253b306c37.jpg",
+    "focus": "50% 30%"
+   }
+  },
+  "takeno": {
+   "name": "Takeno",
+   "title": "Samurai General",
+   "portrait": {
+    "card": "Takeno, Samurai General",
+    "set": "chk",
+    "number": "46",
+    "id": "d038df46-4a30-4125-be0e-8781b16b523e",
+    "crop": "https://cards.scryfall.io/art_crop/front/d/0/d038df46-4a30-4125-be0e-8781b16b523e.jpg?1783944332",
+    "artist": "Matt Cavotta",
+    "focus": "50% 25%"
+   }
+  },
+  "kami": {
+   "name": "The Kami",
+   "title": "Spirits at War",
+   "portrait": {
+    "card": "Kami of the Painted Road",
+    "set": "chk",
+    "number": "23",
+    "id": "7068739c-0a6a-49a1-88c3-68d7abc58ee2",
+    "crop": "https://cards.scryfall.io/art_crop/front/7/0/7068739c-0a6a-49a1-88c3-68d7abc58ee2.jpg?1783944337",
+    "artist": "Ron Spencer",
+    "focus": "50% 30%"
+   }
+  },
+  "dosan": {
+   "name": "Dosan",
+   "title": "The Falling Leaf",
+   "portrait": {
+    "card": "Dosan the Falling Leaf",
+    "set": "chk",
+    "number": "205",
+    "id": "ffb190db-48fc-4c39-ae9f-5e304eabb4f4",
+    "crop": "https://cards.scryfall.io/art_crop/front/f/f/ffb190db-48fc-4c39-ae9f-5e304eabb4f4.jpg?1783944291",
+    "artist": "Mark Zug",
+    "focus": "50% 25%"
+   }
+  },
+  "okiba": {
+   "name": "The Okiba Gang",
+   "title": "Nezumi Thieves",
+   "portrait": {
+    "card": "Nezumi Shortfang // Stabwhisker the Odious",
+    "set": "chk",
+    "number": "131",
+    "id": "c8265c39-d287-4c5a-baba-f2f09dd80a1c",
+    "crop": "https://cards.scryfall.io/art_crop/front/c/8/c8265c39-d287-4c5a-baba-f2f09dd80a1c.jpg?1783944311",
+    "artist": "Daren Bader",
+    "focus": "50% 30%"
+   }
+  },
+  "kumano": {
+   "name": "Kumano",
+   "title": "Master Yamabushi",
+   "portrait": {
+    "card": "Kumano, Master Yamabushi",
+    "set": "chk",
+    "number": "176",
+    "id": "f93870f9-343f-43e7-8ae8-e7aaa56aacca",
+    "crop": "https://cards.scryfall.io/art_crop/front/f/9/f93870f9-343f-43e7-8ae8-e7aaa56aacca.jpg?1783944299",
+    "artist": "Adam Rex",
+    "focus": "50% 25%"
+   }
+  },
+  "akki": {
+   "name": "The Akki",
+   "title": "Goblins of Sokenzan",
+   "portrait": {
+    "card": "Akki Raider",
+    "set": "bok",
+    "number": "92",
+    "id": "c8fb34ae-157c-4f4b-bb47-2a9dc394a20c",
+    "crop": "https://cards.scryfall.io/art_crop/front/c/8/c8fb34ae-157c-4f4b-bb47-2a9dc394a20c.jpg?1783944192",
+    "artist": "Martina Pilcerova",
+    "focus": "50% 30%"
+   }
+  },
+  "toshiro": {
+   "name": "Toshiro",
+   "title": "Umezawa, Rogue",
+   "portrait": {
+    "card": "Toshiro Umezawa",
+    "set": "bok",
+    "number": "89",
+    "id": "0e767e07-febd-4025-bf03-d4d816bc1d3d",
+    "crop": "https://cards.scryfall.io/art_crop/front/0/e/0e767e07-febd-4025-bf03-d4d816bc1d3d.jpg?1783944194",
+    "artist": "Christopher Moeller",
+    "focus": "50% 25%"
+   }
+  },
+  "hidetsugu": {
+   "name": "Hidetsugu",
+   "title": "O-Bakemono of the Ogres",
+   "portrait": {
+    "card": "Heartless Hidetsugu",
+    "set": "bok",
+    "number": "107",
+    "id": "4a3ab177-d9ab-46bf-bd92-20a9ecf2d0ad",
+    "crop": "https://cards.scryfall.io/art_crop/front/4/a/4a3ab177-d9ab-46bf-bd92-20a9ecf2d0ad.jpg?1783944189",
+    "artist": "Carl Critchlow",
+    "focus": "50% 25%"
+   }
+  },
+  "michiko": {
+   "name": "Michiko",
+   "title": "Konda, Truth Seeker",
+   "portrait": {
+    "card": "Michiko Konda, Truth Seeker",
+    "set": "sok",
+    "number": "19",
+    "id": "99c56bf0-ad9f-4419-902c-f3a3880c716c",
+    "crop": "https://cards.scryfall.io/art_crop/front/9/9/99c56bf0-ad9f-4419-902c-f3a3880c716c.jpg?1783944168",
+    "artist": "Christopher Moeller",
+    "focus": "50% 25%"
+   }
+  },
+  "marrow": {
+   "name": "Marrow-Gnawer",
+   "title": "First Lord of the Nezumi",
+   "portrait": {
+    "card": "Marrow-Gnawer",
+    "set": "chk",
+    "number": "124",
+    "id": "72e4548b-c171-4f10-b896-af37543dcf0f",
+    "crop": "https://cards.scryfall.io/art_crop/front/7/2/72e4548b-c171-4f10-b896-af37543dcf0f.jpg?1783944312",
+    "artist": "Wayne Reynolds",
+    "focus": "50% 25%"
+   }
+  },
+  "azami": {
+   "name": "Azami",
+   "title": "Lady of Scrolls",
+   "portrait": {
+    "card": "Azami, Lady of Scrolls",
+    "set": "chk",
+    "number": "52",
+    "id": "15ea91b1-f2ff-4b99-8148-333aa27ea8cd",
+    "crop": "https://cards.scryfall.io/art_crop/front/1/5/15ea91b1-f2ff-4b99-8148-333aa27ea8cd.jpg?1783944329",
+    "artist": "Ittoku",
+    "focus": "50% 25%"
+   }
+  },
+  "godo": {
+   "name": "Godo",
+   "title": "Bandit Warlord",
+   "portrait": {
+    "card": "Godo, Bandit Warlord",
+    "set": "chk",
+    "number": "169",
+    "id": "fcff0b92-edd0-4197-965b-3fd86bc884d8",
+    "crop": "https://cards.scryfall.io/art_crop/front/f/c/fcff0b92-edd0-4197-965b-3fd86bc884d8.jpg?1783944299",
+    "artist": "Paolo Parente",
+    "focus": "50% 25%"
+   }
+  },
+  "seshiro": {
+   "name": "Seshiro",
+   "title": "The Anointed",
+   "portrait": {
+    "card": "Seshiro the Anointed",
+    "set": "chk",
+    "number": "241",
+    "id": "3823e561-5a0a-4020-9322-a2b481499807",
+    "crop": "https://cards.scryfall.io/art_crop/front/3/8/3823e561-5a0a-4020-9322-a2b481499807.jpg?1783944282",
+    "artist": "Daren Bader",
+    "focus": "50% 25%"
+   }
+  },
+  "kiku": {
+   "name": "Kiku",
+   "title": "Night's Flower",
+   "portrait": {
+    "card": "Kiku, Night's Flower",
+    "set": "chk",
+    "number": "121",
+    "id": "07e18994-d08b-4a8e-abfb-b5531fd6f816",
+    "crop": "https://cards.scryfall.io/art_crop/front/0/7/07e18994-d08b-4a8e-abfb-b5531fd6f816.jpg?1783944312",
+    "artist": "Jim Murray",
+    "focus": "50% 25%"
+   }
+  },
+  "konda": {
+   "name": "Konda",
+   "title": "Lord of Eiganjo",
+   "portrait": {
+    "card": "Konda, Lord of Eiganjo",
+    "set": "chk",
+    "number": "30",
+    "id": "5edab171-94b9-4e5e-ab61-bd8c6c8cfc38",
+    "crop": "https://cards.scryfall.io/art_crop/front/5/e/5edab171-94b9-4e5e-ab61-bd8c6c8cfc38.jpg?1783944335",
+    "artist": "John Bolton",
+    "focus": "50% 25%"
+   }
+  },
+  "jitte": {
+   "name": "Jitte Weenie",
+   "title": "Summer 2005",
+   "portrait": {
+    "card": "Umezawa's Jitte",
+    "set": "bok",
+    "number": "163",
+    "id": "3b6e5956-f795-451b-bb24-56462d1ced27",
+    "crop": "https://cards.scryfall.io/art_crop/front/3/b/3b6e5956-f795-451b-bb24-56462d1ced27.jpg?1783944176",
+    "artist": "Christopher Moeller",
+    "focus": "50% 40%"
+   }
+  }
+ },
+ "battles": [
+  {
+   "id": "a12b1",
+   "slot": 1,
+   "kind": "Arrival",
+   "mood": "march",
+   "title": "The Kami Are Coming",
+   "difficulty": "Easy",
+   "teaches": [
+    "Bushido"
+   ],
+   "blurb": "The spirits of Kamigawa have turned on the mortals who worshipped them. Lord Konda's general, Takeno, holds the line with samurai who fight harder when they block or are blocked.",
+   "rewardSet": "chk",
+   "host": false,
+   "hero": {
+    "who": "takeno",
+    "deck": {
+     "name": "Takeno's Samurai",
+     "colors": "W",
+     "archetype": null,
+     "label": "tribute",
+     "cards": [
+      {
+       "qty": 2,
+       "name": "Takeno, Samurai General",
+       "set": "chk",
+       "number": "46",
+       "id": "d038df46-4a30-4125-be0e-8781b16b523e"
+      },
+      {
+       "qty": 4,
+       "name": "Isamaru, Hound of Konda",
+       "set": "chk",
+       "number": "19",
+       "id": "2e7f9919-0713-4ef9-96eb-3e0c444e47f4"
+      },
+      {
+       "qty": 4,
+       "name": "Samurai of the Pale Curtain",
+       "set": "chk",
+       "number": "43",
+       "id": "ead15cf8-f692-4cb9-ac86-0dff00236145"
+      },
+      {
+       "qty": 4,
+       "name": "Kitsune Blademaster",
+       "set": "chk",
+       "number": "25",
+       "id": "fb9d108d-ee19-4b1d-9d4b-b4c4d9b8ad0d"
+      },
+      {
+       "qty": 4,
+       "name": "Konda's Hatamoto",
+       "set": "chk",
+       "number": "31",
+       "id": "83425cf6-f6ad-4302-8f07-099eabdd4b40"
+      },
+      {
+       "qty": 4,
+       "name": "Bushi Tenderfoot // Kenzo the Hardhearted",
+       "set": "chk",
+       "number": "2",
+       "id": "864ad989-19a6-4930-8efc-bbc077a18c32"
+      },
+      {
+       "qty": 4,
+       "name": "Hand of Honor",
+       "set": "sok",
+       "number": "12",
+       "id": "ddef832c-b2be-4fa6-8d66-ac0d442f2d7d"
+      },
+      {
+       "qty": 4,
+       "name": "Indomitable Will",
+       "set": "chk",
+       "number": "17",
+       "id": "73263906-c66b-4f85-b138-0b5deda64ab1"
+      },
+      {
+       "qty": 4,
+       "name": "Glorious Anthem",
+       "set": "9ed",
+       "number": "16",
+       "id": "354a94e8-baba-42e1-8577-03bbaa8f5707"
+      },
+      {
+       "qty": 2,
+       "name": "Hail of Arrows",
+       "set": "sok",
+       "number": "11",
+       "id": "c4a57083-e82c-41aa-94b9-2e6db97f7159"
+      },
+      {
+       "qty": 24,
+       "name": "Plains",
+       "set": "chk",
+       "number": "287",
+       "id": "deff6a75-2ecd-49d6-b58b-a9d24615f9b7"
+      }
+     ]
+    }
+   },
+   "villain": {
+    "who": "kami",
+    "deck": {
+     "name": "The Raging Kami",
+     "colors": "WB",
+     "archetype": null,
+     "label": "tribute",
+     "cards": [
+      {
+       "qty": 4,
+       "name": "Lantern Kami",
+       "set": "chk",
+       "number": "32",
+       "id": "99625787-f184-48a5-a678-e30b7024c7bb"
+      },
+      {
+       "qty": 4,
+       "name": "Kami of False Hope",
+       "set": "bok",
+       "number": "10",
+       "id": "44e4f5e6-935e-429f-89b4-4571376f442e"
+      },
+      {
+       "qty": 4,
+       "name": "Silent-Chant Zubera",
+       "set": "chk",
+       "number": "45",
+       "id": "272dfee6-9c90-4409-9289-f451261909e7"
+      },
+      {
+       "qty": 4,
+       "name": "Ashen-Skin Zubera",
+       "set": "chk",
+       "number": "101",
+       "id": "40cee88d-849d-4715-ad88-7cdb855a3088"
+      },
+      {
+       "qty": 4,
+       "name": "Bile Urchin",
+       "set": "bok",
+       "number": "61",
+       "id": "801c2b46-c7a7-44d6-ae38-5d34bf00c404"
+      },
+      {
+       "qty": 4,
+       "name": "Thief of Hope",
+       "set": "chk",
+       "number": "147",
+       "id": "0a3029b8-01e2-4419-817e-318f23d6ce04"
+      },
+      {
+       "qty": 4,
+       "name": "Kami of the Painted Road",
+       "set": "chk",
+       "number": "23",
+       "id": "7068739c-0a6a-49a1-88c3-68d7abc58ee2"
+      },
+      {
+       "qty": 4,
+       "name": "Hundred-Talon Kami",
+       "set": "chk",
+       "number": "16",
+       "id": "a7b2892a-5c16-4624-9a47-6a47f10e2466"
+      },
+      {
+       "qty": 4,
+       "name": "Kabuto Moth",
+       "set": "chk",
+       "number": "20",
+       "id": "cf3ccd16-bb1b-40d5-87a6-47a6132e0143"
+      },
+      {
+       "qty": 12,
+       "name": "Swamp",
+       "set": "chk",
+       "number": "295",
+       "id": "9d376282-adf0-4d37-b9a4-1329cd496516"
+      },
+      {
+       "qty": 12,
+       "name": "Plains",
+       "set": "chk",
+       "number": "287",
+       "id": "deff6a75-2ecd-49d6-b58b-a9d24615f9b7"
+      }
+     ]
+    }
+   },
+   "reward": {
+    "hero": {
+     "packs": 1,
+     "coins": 0
+    },
+    "villain": {
+     "card": {
+      "oracle_id": "1335c655-35f5-4561-8e12-d79124e52ce6",
+      "name": "Kami of the Painted Road",
+      "rarity": "common",
+      "set": "chk",
+      "id": "7068739c-0a6a-49a1-88c3-68d7abc58ee2",
+      "image": "https://cards.scryfall.io/normal/front/7/0/7068739c-0a6a-49a1-88c3-68d7abc58ee2.jpg"
+     },
+     "coins": 50
+    }
+   },
+   "scene": [
+    {
+     "who": "stage",
+     "line": "The hound sniffed the air and let slip a low growl. General Takeno looked down at the faithful Isamaru and calmed him with a touch. \"Alert the men. The kami are coming.\"",
+     "quote": true
+    },
+    {
+     "who": "takeno",
+     "line": "None of you are yet samurai. Defend your homes with honor, die for your cause, and perhaps then you will be worthy of the word.",
+     "quote": true
+    },
+    {
+     "who": "takeno",
+     "line": "Bushido: when a samurai blocks or is blocked, it gets bigger until the end of the turn. Send them in. Do not fear the trade."
+    },
+    {
+     "who": "takeno",
+     "line": "Rise like the sun, stand like the mountain, charge like the lion, die as a hero.",
+     "quote": true
+    }
+   ],
+   "villainScene": [
+    {
+     "who": "stage",
+     "line": "When the Honden of Night's Reach began to crumble, its attendants swarmed Kamigawa to haunt mortal dreams.",
+     "quote": true
+    },
+    {
+     "who": "stage",
+     "line": "It is said that the mere touch of a kami is like embracing the sun itself.",
+     "quote": true
+    }
+   ],
+   "after": [
+    {
+     "who": "stage",
+     "line": "Since the war began, the castle's walls mark the only place on Kamigawa where no kami has ever set foot.",
+     "quote": true
+    },
+    {
+     "who": "takeno",
+     "line": "Eiganjo holds. Nothing else does. And Lord Konda will not tell me why."
+    }
+   ],
+   "cues": {
+    "hero": {
+     "start": "Hold the line!",
+     "big": "Charge like the lion!",
+     "low": "Stand, men. Stand!",
+     "win": "The day is ours.",
+     "loss": "Die as heroes...",
+     "half": "Block. Then strike."
+    },
+    "villain": {
+     "start": "[a wind full of whispers]",
+     "big": "[the shrines howl]",
+     "low": "[the spirits waver]",
+     "win": "[the village is quiet now]",
+     "loss": "[the whispers fade]"
+    }
+   },
+   "bigPlays": [],
+   "sim": null
+  },
+  {
+   "id": "a12b2",
+   "slot": 2,
+   "kind": "Lesson",
+   "mood": "tension",
+   "title": "The Falling Leaf",
+   "difficulty": "Easy",
+   "teaches": [
+    "Soulshift"
+   ],
+   "blurb": "In Jukai Forest, the monk Dosan still prays to the kami that are killing him. The kodama of the old trees stand with him. A nezumi gang has come to rob the shrine anyway.",
+   "rewardSet": "chk",
+   "host": false,
+   "hero": {
+    "who": "dosan",
+    "deck": {
+     "name": "The Jukai Shrine",
+     "colors": "GW",
+     "archetype": null,
+     "label": "tribute",
+     "cards": [
+      {
+       "qty": 4,
+       "name": "Kami of the Hunt",
+       "set": "chk",
+       "number": "219",
+       "id": "5ace3c4e-3287-4975-b4d0-91f009c0cf5b"
+      },
+      {
+       "qty": 4,
+       "name": "Orochi Sustainer",
+       "set": "chk",
+       "number": "236",
+       "id": "5fb40d7a-f2d3-4c9a-a1ab-6b08bd143fe5"
+      },
+      {
+       "qty": 4,
+       "name": "Kodama of the South Tree",
+       "set": "chk",
+       "number": "223",
+       "id": "120c05f1-5ec3-4a0f-8628-6919e393104a"
+      },
+      {
+       "qty": 2,
+       "name": "Humble Budoka",
+       "set": "chk",
+       "number": "214",
+       "id": "f31bbc89-d5ee-4813-9ebe-ac5b998b076b"
+      },
+      {
+       "qty": 4,
+       "name": "Venerable Kumo",
+       "set": "chk",
+       "number": "248",
+       "id": "308566ed-18cc-4e3b-b5ab-d5b17795f2f1"
+      },
+      {
+       "qty": 2,
+       "name": "Matsu-Tribe Decoy",
+       "set": "chk",
+       "number": "227",
+       "id": "14bf9bec-9a5d-48a6-941b-95e1633b9484"
+      },
+      {
+       "qty": 4,
+       "name": "Order of the Sacred Bell",
+       "set": "chk",
+       "number": "232",
+       "id": "5bc9093a-4397-432f-b9e3-3693efcaec20"
+      },
+      {
+       "qty": 4,
+       "name": "Moss Kami",
+       "set": "chk",
+       "number": "228",
+       "id": "a437cde4-c40b-40a3-bc19-e461c98186dc"
+      },
+      {
+       "qty": 2,
+       "name": "Kami of the Palace Fields",
+       "set": "chk",
+       "number": "24",
+       "id": "690980ce-bbdc-4d52-b34e-2bad11e436a1"
+      },
+      {
+       "qty": 2,
+       "name": "Kodama's Might",
+       "set": "chk",
+       "number": "224",
+       "id": "d0ef91bb-ec25-463f-9fc9-f0f9c0652cf5"
+      },
+      {
+       "qty": 2,
+       "name": "Strength of Cedars",
+       "set": "chk",
+       "number": "245",
+       "id": "85ab46f5-d3e1-403f-92e7-f40de51a3d4d"
+      },
+      {
+       "qty": 14,
+       "name": "Forest",
+       "set": "chk",
+       "number": "303",
+       "id": "a3209b22-56af-45ac-9224-67574c035638"
+      },
+      {
+       "qty": 10,
+       "name": "Plains",
+       "set": "chk",
+       "number": "287",
+       "id": "deff6a75-2ecd-49d6-b58b-a9d24615f9b7"
+      },
+      {
+       "qty": 2,
+       "name": "Dosan the Falling Leaf",
+       "set": "chk",
+       "number": "205",
+       "id": "ffb190db-48fc-4c39-ae9f-5e304eabb4f4"
+      }
+     ]
+    }
+   },
+   "villain": {
+    "who": "okiba",
+    "deck": {
+     "name": "Shrine Robbers",
+     "colors": "B",
+     "archetype": null,
+     "label": "tribute",
+     "cards": [
+      {
+       "qty": 4,
+       "name": "Rag Dealer",
+       "set": "chk",
+       "number": "138",
+       "id": "18ef007a-fcf4-4293-933e-4f9f7f602002"
+      },
+      {
+       "qty": 4,
+       "name": "Thief of Hope",
+       "set": "chk",
+       "number": "147",
+       "id": "0a3029b8-01e2-4419-817e-318f23d6ce04"
+      },
+      {
+       "qty": 4,
+       "name": "Nezumi Bone-Reader",
+       "set": "chk",
+       "number": "127",
+       "id": "c0f27ff7-c7e4-4099-b3ac-6560c6ccba41"
+      },
+      {
+       "qty": 4,
+       "name": "Nezumi Graverobber // Nighteyes the Desecrator",
+       "set": "chk",
+       "number": "129",
+       "id": "77ffd913-8efa-48e5-a5cf-293d3068dbbf"
+      },
+      {
+       "qty": 4,
+       "name": "Ashen-Skin Zubera",
+       "set": "chk",
+       "number": "101",
+       "id": "40cee88d-849d-4715-ad88-7cdb855a3088"
+      },
+      {
+       "qty": 4,
+       "name": "Bile Urchin",
+       "set": "bok",
+       "number": "61",
+       "id": "801c2b46-c7a7-44d6-ae38-5d34bf00c404"
+      },
+      {
+       "qty": 4,
+       "name": "Ghost-Lit Stalker",
+       "set": "sok",
+       "number": "69",
+       "id": "0d3cc092-b673-4f4e-b9a8-8e60ff562dbd"
+      },
+      {
+       "qty": 4,
+       "name": "Nezumi Shortfang // Stabwhisker the Odious",
+       "set": "chk",
+       "number": "131",
+       "id": "c8265c39-d287-4c5a-baba-f2f09dd80a1c"
+      },
+      {
+       "qty": 4,
+       "name": "Wicked Akuba",
+       "set": "chk",
+       "number": "150",
+       "id": "c3172965-6057-472f-9712-1dd23d25d1a7"
+      },
+      {
+       "qty": 24,
+       "name": "Swamp",
+       "set": "chk",
+       "number": "295",
+       "id": "9d376282-adf0-4d37-b9a4-1329cd496516"
+      }
+     ]
+    }
+   },
+   "reward": {
+    "hero": {
+     "packs": 1,
+     "coins": 0
+    },
+    "villain": {
+     "card": {
+      "oracle_id": "45c8e860-5ce5-4a1c-aebe-97ddffcb2f74",
+      "name": "Nezumi Shortfang // Stabwhisker the Odious",
+      "rarity": "rare",
+      "set": "chk",
+      "id": "c8265c39-d287-4c5a-baba-f2f09dd80a1c",
+      "image": "https://cards.scryfall.io/normal/front/c/8/c8265c39-d287-4c5a-baba-f2f09dd80a1c.jpg"
+     },
+     "coins": 50
+    }
+   },
+   "scene": [
+    {
+     "who": "stage",
+     "line": "Each night as Master Dosan prays to the kami, the hate he receives in return withers his body a little more. Though the kami are slowly killing him, still he continues his prayers.",
+     "quote": true
+    },
+    {
+     "who": "dosan",
+     "line": "There may yet be a way to stop the killing without more blood, human or kami, being spilled.",
+     "quote": true
+    },
+    {
+     "who": "dosan",
+     "line": "Soulshift: when this spirit dies, return a smaller spirit from your graveyard to your hand. The forest gives back what it loses."
+    },
+    {
+     "who": "stage",
+     "line": "There were no tombstones in orochi territory. Slain warriors were buried with a tree sapling, so they would become a part of the forest after death.",
+     "quote": true
+    }
+   ],
+   "villainScene": [
+    {
+     "who": "stage",
+     "line": "Some nezumi became as skilled in the samurai arts as the humans and kitsune. Yet no lord would have them, so they sold their swords to the highest bidder.",
+     "quote": true
+    },
+    {
+     "who": "stage",
+     "line": "We had him cornered, we did . . . and, well, you know what they say about rats.",
+     "quote": true
+    }
+   ],
+   "after": [
+    {
+     "who": "dosan",
+     "line": "They were hungry, not wicked. The kami are neither. That is what frightens me."
+    }
+   ],
+   "cues": {
+    "hero": {
+     "start": "Peace, little thieves.",
+     "big": "The trees remember.",
+     "low": "The forest thins...",
+     "win": "Go in peace.",
+     "loss": "The leaf... falls...",
+     "half": "What dies returns."
+    },
+    "villain": {
+     "start": "Grab the gold!",
+     "big": "Cut him!",
+     "low": "Run! The trees move!",
+     "win": "Shrine's empty!",
+     "loss": "Scatter!"
+    }
+   },
+   "bigPlays": [],
+   "sim": null
+  },
+  {
+   "id": "a12b3",
+   "slot": 3,
+   "kind": "Lesson",
+   "mood": "comic",
+   "title": "The Mountain's Secret",
+   "difficulty": "Easy",
+   "teaches": [
+    "Splice"
+   ],
+   "blurb": "High in the Sokenzan Mountains, the yamabushi Kumano knows a secret about the kami. Takeno's letters cannot find him. The akki who live under his mountain can.",
+   "rewardSet": "chk",
+   "host": false,
+   "hero": {
+    "who": "kumano",
+    "deck": {
+     "name": "Kumano's Pupils",
+     "colors": "R",
+     "archetype": null,
+     "label": "tribute",
+     "cards": [
+      {
+       "qty": 2,
+       "name": "Kumano, Master Yamabushi",
+       "set": "chk",
+       "number": "176",
+       "id": "f93870f9-343f-43e7-8ae8-e7aaa56aacca"
+      },
+      {
+       "qty": 4,
+       "name": "Kumano's Pupils",
+       "set": "chk",
+       "number": "177",
+       "id": "c62b233e-95fe-4cfd-ad89-86e07656bf8b"
+      },
+      {
+       "qty": 4,
+       "name": "Frostwielder",
+       "set": "chk",
+       "number": "167",
+       "id": "a54df527-6949-4b74-821b-b051f493f3c5"
+      },
+      {
+       "qty": 4,
+       "name": "Hearth Kami",
+       "set": "chk",
+       "number": "171",
+       "id": "d7361289-5111-49c2-a786-b7181384596b"
+      },
+      {
+       "qty": 4,
+       "name": "Glacial Ray",
+       "set": "chk",
+       "number": "168",
+       "id": "5637a3b0-6204-4893-878e-c34babeab2e6"
+      },
+      {
+       "qty": 4,
+       "name": "Lava Spike",
+       "set": "chk",
+       "number": "178",
+       "id": "60b2fae1-242b-45e0-a757-b1adc02c06f3"
+      },
+      {
+       "qty": 4,
+       "name": "Yamabushi's Flame",
+       "set": "chk",
+       "number": "198",
+       "id": "1a9bacba-55c4-4b92-bdd9-01b6035ed1b2"
+      },
+      {
+       "qty": 4,
+       "name": "Soul of Magma",
+       "set": "chk",
+       "number": "189",
+       "id": "40b20126-da96-4d79-8d3f-8d7da8e94f4a"
+      },
+      {
+       "qty": 4,
+       "name": "Kami of Fire's Roar",
+       "set": "chk",
+       "number": "174",
+       "id": "4380118d-f209-446d-829b-3564796e0219"
+      },
+      {
+       "qty": 2,
+       "name": "Ronin Houndmaster",
+       "set": "chk",
+       "number": "184",
+       "id": "614ead7b-1975-4a99-bdc2-f8afc6cf92d7"
+      },
+      {
+       "qty": 24,
+       "name": "Mountain",
+       "set": "chk",
+       "number": "299",
+       "id": "22262a3a-c2e0-4639-9002-361b39ea9b3a"
+      }
+     ]
+    }
+   },
+   "villain": {
+    "who": "akki",
+    "deck": {
+     "name": "The Sokenzan Akki",
+     "colors": "R",
+     "archetype": null,
+     "label": "tribute",
+     "cards": [
+      {
+       "qty": 4,
+       "name": "Akki Lavarunner // Tok-Tok, Volcano Born",
+       "set": "chk",
+       "number": "153",
+       "id": "6ee6cd34-c117-4d7e-97d1-8f8464bfaac8"
+      },
+      {
+       "qty": 4,
+       "name": "Akki Rockspeaker",
+       "set": "chk",
+       "number": "154",
+       "id": "9c8b6685-2c74-4026-aef0-73ca7bc43306"
+      },
+      {
+       "qty": 4,
+       "name": "Akki Coalflinger",
+       "set": "chk",
+       "number": "152",
+       "id": "3793580a-052b-4e33-83ab-290086511a21"
+      },
+      {
+       "qty": 4,
+       "name": "Akki Drillmaster",
+       "set": "sok",
+       "number": "92",
+       "id": "7fb63254-5786-43fb-8ccd-132095a55e64"
+      },
+      {
+       "qty": 4,
+       "name": "Goblin Cohort",
+       "set": "bok",
+       "number": "106",
+       "id": "8964afec-50a9-45c4-bd2b-d06f8e75f4ae"
+      },
+      {
+       "qty": 4,
+       "name": "Akki Underminer",
+       "set": "chk",
+       "number": "155",
+       "id": "efdd1e22-d68d-4858-b253-80071d26d50e"
+      },
+      {
+       "qty": 4,
+       "name": "Akki Raider",
+       "set": "bok",
+       "number": "92",
+       "id": "c8fb34ae-157c-4f4b-bb47-2a9dc394a20c"
+      },
+      {
+       "qty": 2,
+       "name": "Raging Goblin",
+       "set": "9ed",
+       "number": "209",
+       "id": "b47a96df-dce7-495b-acc0-5551641f5a57"
+      },
+      {
+       "qty": 4,
+       "name": "Battle-Mad Ronin",
+       "set": "chk",
+       "number": "156",
+       "id": "a6e4394a-fa91-4cf9-99c1-dc0bc1011c5b"
+      },
+      {
+       "qty": 26,
+       "name": "Mountain",
+       "set": "chk",
+       "number": "299",
+       "id": "22262a3a-c2e0-4639-9002-361b39ea9b3a"
+      }
+     ]
+    }
+   },
+   "reward": {
+    "hero": {
+     "packs": 1,
+     "coins": 0
+    },
+    "villain": {
+     "card": {
+      "oracle_id": "bf9c5c0d-86a5-467a-863c-653279f2e6e7",
+      "name": "Akki Raider",
+      "rarity": "uncommon",
+      "set": "bok",
+      "id": "c8fb34ae-157c-4f4b-bb47-2a9dc394a20c",
+      "image": "https://cards.scryfall.io/normal/front/c/8/c8fb34ae-157c-4f4b-bb47-2a9dc394a20c.jpg"
+     },
+     "coins": 50
+    }
+   },
+   "scene": [
+    {
+     "who": "stage",
+     "line": "We received an anonymous letter suggesting that Kumano holds a secret to defeating the kami, but he is nowhere to be found.",
+     "quote": true
+    },
+    {
+     "who": "stage",
+     "line": "Long before he reluctantly joined the war, stories spread of Kumano's followers winning victories against the kami.",
+     "quote": true
+    },
+    {
+     "who": "kumano",
+     "line": "Splice onto Arcane: when you cast an Arcane spell, you may pay a splice cost to add another Arcane spell's effect to it. You keep the spliced card."
+    },
+    {
+     "who": "stage",
+     "line": "The most powerful of akki fire spells were developed at the cost of blood, toil, tears, sweat, and usually a nose or two.",
+     "quote": true
+    }
+   ],
+   "villainScene": [
+    {
+     "who": "stage",
+     "line": "Deep inside the Sokenzan Mountains, a band of akki discovered a cache of ancient items of power. Their ensuing spree of destruction became known as 'The Three Days of Fun.'",
+     "quote": true
+    },
+    {
+     "who": "akki",
+     "line": "What part of 'hayaku ikee!' did you not understand?",
+     "quote": true
+    }
+   ],
+   "after": [
+    {
+     "who": "akki",
+     "line": "Say, what rhymes with 'run for your lives'?",
+     "quote": true
+    },
+    {
+     "who": "kumano",
+     "line": "The secret is not mine to tell. Find the one who started the war, and you will know it."
+    }
+   ],
+   "cues": {
+    "hero": {
+     "start": "The mountain teaches.",
+     "big": "Fire on fire.",
+     "low": "Too many shells...",
+     "win": "Go home, little ones.",
+     "loss": "The fire... goes out...",
+     "half": "Splice it."
+    },
+    "villain": {
+     "start": "ROCKS!",
+     "big": "Throw the big one!",
+     "low": "Hide in the shell!",
+     "win": "Three more days of fun!",
+     "loss": "Ow. Ow. Ow."
+    }
+   },
+   "bigPlays": [],
+   "sim": null
+  },
+  {
+   "id": "a12b4",
+   "slot": 4,
+   "kind": "Rival",
+   "mood": "tension",
+   "title": "Toshiro's Blood Oath",
+   "difficulty": "Normal",
+   "teaches": [
+    "Ninjutsu"
+   ],
+   "blurb": "Toshiro Umezawa is a thief, a liar and a very good swordsman. He swore a blood oath to the ogre-mage Hidetsugu and then broke it. Hidetsugu has come to collect.",
+   "rewardSet": "bok",
+   "host": false,
+   "hero": {
+    "who": "toshiro",
+    "deck": {
+     "name": "Umezawa's Shadows",
+     "colors": "UB",
+     "archetype": null,
+     "label": "tribute",
+     "cards": [
+      {
+       "qty": 2,
+       "name": "Toshiro Umezawa",
+       "set": "bok",
+       "number": "89",
+       "id": "0e767e07-febd-4025-bf03-d4d816bc1d3d"
+      },
+      {
+       "qty": 4,
+       "name": "Ninja of the Deep Hours",
+       "set": "bok",
+       "number": "44",
+       "id": "367a67c7-54db-4336-b55a-3fa27625172a"
+      },
+      {
+       "qty": 4,
+       "name": "Mistblade Shinobi",
+       "set": "bok",
+       "number": "43",
+       "id": "5c06f58f-0419-4637-8060-4a93670a4c68"
+      },
+      {
+       "qty": 4,
+       "name": "Okiba-Gang Shinobi",
+       "set": "bok",
+       "number": "76",
+       "id": "5cd9297e-301e-4e70-af9b-3218eacacf8d"
+      },
+      {
+       "qty": 3,
+       "name": "Ink-Eyes, Servant of Oni",
+       "set": "bok",
+       "number": "71",
+       "id": "386d391d-a3f8-49a4-802a-409944b2acf3"
+      },
+      {
+       "qty": 4,
+       "name": "Ashen-Skin Zubera",
+       "set": "chk",
+       "number": "101",
+       "id": "40cee88d-849d-4715-ad88-7cdb855a3088"
+      },
+      {
+       "qty": 4,
+       "name": "Callow Jushi // Jaraku the Interloper",
+       "set": "bok",
+       "number": "31",
+       "id": "ca03131a-9bd4-4fba-b95c-90f1831e86e7"
+      },
+      {
+       "qty": 3,
+       "name": "Mana Leak",
+       "set": "9ed",
+       "number": "86",
+       "id": "60e6486c-644f-4b32-b4e9-3ca29bbdb400"
+      },
+      {
+       "qty": 3,
+       "name": "Rend Flesh",
+       "set": "chk",
+       "number": "140",
+       "id": "92b300a3-e6a8-4ca9-bb26-03f57b5ff6ec"
+      },
+      {
+       "qty": 3,
+       "name": "Hinder",
+       "set": "chk",
+       "number": "65",
+       "id": "dc7befed-805b-4a02-a87d-7df3a95db8a0"
+      },
+      {
+       "qty": 14,
+       "name": "Island",
+       "set": "chk",
+       "number": "291",
+       "id": "d5170ce9-2463-4fec-945b-6c2f23eb7e22"
+      },
+      {
+       "qty": 12,
+       "name": "Swamp",
+       "set": "chk",
+       "number": "295",
+       "id": "9d376282-adf0-4d37-b9a4-1329cd496516"
+      }
+     ]
+    }
+   },
+   "villain": {
+    "who": "hidetsugu",
+    "deck": {
+     "name": "The Oni Rite",
+     "colors": "BR",
+     "archetype": null,
+     "label": "tribute",
+     "cards": [
+      {
+       "qty": 2,
+       "name": "Heartless Hidetsugu",
+       "set": "bok",
+       "number": "107",
+       "id": "4a3ab177-d9ab-46bf-bd92-20a9ecf2d0ad"
+      },
+      {
+       "qty": 2,
+       "name": "Hidetsugu's Second Rite",
+       "set": "sok",
+       "number": "102",
+       "id": "2e48eb77-3bd7-444a-9262-799cc706c05a"
+      },
+      {
+       "qty": 4,
+       "name": "Ogre Marauder",
+       "set": "bok",
+       "number": "75",
+       "id": "f083bd50-d171-4e49-b8e6-972802879c24"
+      },
+      {
+       "qty": 4,
+       "name": "Oni Possession",
+       "set": "chk",
+       "number": "135",
+       "id": "695f122d-e1b7-4dd4-a770-a8f206ba42da"
+      },
+      {
+       "qty": 4,
+       "name": "Akki Underminer",
+       "set": "chk",
+       "number": "155",
+       "id": "efdd1e22-d68d-4858-b253-80071d26d50e"
+      },
+      {
+       "qty": 4,
+       "name": "Gutwrencher Oni",
+       "set": "chk",
+       "number": "113",
+       "id": "7698a5da-5c70-4818-927b-3a923314e537"
+      },
+      {
+       "qty": 4,
+       "name": "Ronin Cliffrider",
+       "set": "bok",
+       "number": "116",
+       "id": "f9f12b75-af29-49ea-a23d-915052db9fef"
+      },
+      {
+       "qty": 4,
+       "name": "Glacial Ray",
+       "set": "chk",
+       "number": "168",
+       "id": "5637a3b0-6204-4893-878e-c34babeab2e6"
+      },
+      {
+       "qty": 4,
+       "name": "Rend Flesh",
+       "set": "chk",
+       "number": "140",
+       "id": "92b300a3-e6a8-4ca9-bb26-03f57b5ff6ec"
+      },
+      {
+       "qty": 4,
+       "name": "Yamabushi's Flame",
+       "set": "chk",
+       "number": "198",
+       "id": "1a9bacba-55c4-4b92-bdd9-01b6035ed1b2"
+      },
+      {
+       "qty": 12,
+       "name": "Mountain",
+       "set": "chk",
+       "number": "299",
+       "id": "22262a3a-c2e0-4639-9002-361b39ea9b3a"
+      },
+      {
+       "qty": 12,
+       "name": "Swamp",
+       "set": "chk",
+       "number": "295",
+       "id": "9d376282-adf0-4d37-b9a4-1329cd496516"
+      }
+     ]
+    }
+   },
+   "reward": {
+    "hero": {
+     "packs": 1,
+     "coins": 100
+    },
+    "villain": {
+     "card": {
+      "oracle_id": "b68e965a-96f4-447a-99be-35dbd27846e9",
+      "name": "Heartless Hidetsugu",
+      "rarity": "rare",
+      "set": "bok",
+      "id": "4a3ab177-d9ab-46bf-bd92-20a9ecf2d0ad",
+      "image": "https://cards.scryfall.io/normal/front/4/a/4a3ab177-d9ab-46bf-bd92-20a9ecf2d0ad.jpg"
+     },
+     "coins": 100
+    }
+   },
+   "scene": [
+    {
+     "who": "toshiro",
+     "line": "He's a lot like me, that masterless little kami . . . unimpressed by grandeur and never at a loss for a trick.",
+     "quote": true
+    },
+    {
+     "who": "toshiro",
+     "line": "Ninjutsu: when a creature of yours is unblocked, pay the ninjutsu cost and swap it for a ninja from your hand. The ninja hits instead."
+    },
+    {
+     "who": "stage",
+     "line": "One scratch on a wall meant safe passage, two that the target had already been raided, and three warned of a trap.",
+     "quote": true
+    }
+   ],
+   "villainScene": [
+    {
+     "who": "stage",
+     "line": "Hidetsugu held over a dozen oni in blood oath. At his touch, rocks scorched. At his word, cities burned.",
+     "quote": true
+    },
+    {
+     "who": "stage",
+     "line": "Hidetsugu never relinquished a grudge. He let it burn within him, gathering ever greater intensity until the final moment of vengeance.",
+     "quote": true
+    },
+    {
+     "who": "stage",
+     "line": "Blood drips. Blood sings. Blood devours all and only blood remains.",
+     "quote": true
+    }
+   ],
+   "after": [
+    {
+     "who": "toshiro",
+     "line": "He'll come back. Ogres always do. Meanwhile, I hear Lord Konda's daughter has run away from home."
+    }
+   ],
+   "cues": {
+    "hero": {
+     "start": "An oath is just words, ogre.",
+     "big": "Unblocked. Thank you.",
+     "low": "He's burning everything...",
+     "win": "I owe you nothing now.",
+     "loss": "Should have kept that oath...",
+     "half": "Swap in the ninja."
+    },
+    "villain": {
+     "start": "You swore in blood.",
+     "big": "Burn, oathbreaker!",
+     "low": "The oni falter...",
+     "win": "The oath is paid.",
+     "loss": "This grudge... is not over..."
+    }
+   },
+   "bigPlays": [],
+   "sim": null
+  },
+  {
+   "id": "a12b5",
+   "slot": 5,
+   "kind": "Lesson",
+   "mood": "march",
+   "title": "The Truth Seeker",
+   "difficulty": "Normal",
+   "teaches": [
+    "Flip cards"
+   ],
+   "blurb": "Michiko Konda has left her father's castle to find out what he did. Marrow-Gnawer, first lord of the nezumi, has heard there is a price on her head.",
+   "rewardSet": "sok",
+   "host": false,
+   "hero": {
+    "who": "michiko",
+    "deck": {
+     "name": "The Truth Seeker",
+     "colors": "W",
+     "archetype": null,
+     "label": "tribute",
+     "cards": [
+      {
+       "qty": 2,
+       "name": "Michiko Konda, Truth Seeker",
+       "set": "sok",
+       "number": "19",
+       "id": "99c56bf0-ad9f-4419-902c-f3a3880c716c"
+      },
+      {
+       "qty": 4,
+       "name": "Bushi Tenderfoot // Kenzo the Hardhearted",
+       "set": "chk",
+       "number": "2",
+       "id": "864ad989-19a6-4930-8efc-bbc077a18c32"
+      },
+      {
+       "qty": 4,
+       "name": "Faithful Squire // Kaiso, Memory of Loyalty",
+       "set": "bok",
+       "number": "3",
+       "id": "758abd53-6ad2-406e-8615-8e48678405b4"
+      },
+      {
+       "qty": 4,
+       "name": "Kami of False Hope",
+       "set": "bok",
+       "number": "10",
+       "id": "44e4f5e6-935e-429f-89b4-4571376f442e"
+      },
+      {
+       "qty": 4,
+       "name": "Samurai of the Pale Curtain",
+       "set": "chk",
+       "number": "43",
+       "id": "ead15cf8-f692-4cb9-ac86-0dff00236145"
+      },
+      {
+       "qty": 4,
+       "name": "Kitsune Blademaster",
+       "set": "chk",
+       "number": "25",
+       "id": "fb9d108d-ee19-4b1d-9d4b-b4c4d9b8ad0d"
+      },
+      {
+       "qty": 4,
+       "name": "Lantern Kami",
+       "set": "chk",
+       "number": "32",
+       "id": "99625787-f184-48a5-a678-e30b7024c7bb"
+      },
+      {
+       "qty": 4,
+       "name": "Kabuto Moth",
+       "set": "chk",
+       "number": "20",
+       "id": "cf3ccd16-bb1b-40d5-87a6-47a6132e0143"
+      },
+      {
+       "qty": 4,
+       "name": "Pious Kitsune",
+       "set": "chk",
+       "number": "38",
+       "id": "bb4124b9-5169-471e-b805-ceeffeec9184"
+      },
+      {
+       "qty": 2,
+       "name": "Ghostly Prison",
+       "set": "chk",
+       "number": "10",
+       "id": "82d7de2b-c909-48dc-9ab7-c4a8328e37bb"
+      },
+      {
+       "qty": 24,
+       "name": "Plains",
+       "set": "chk",
+       "number": "287",
+       "id": "deff6a75-2ecd-49d6-b58b-a9d24615f9b7"
+      }
+     ]
+    }
+   },
+   "villain": {
+    "who": "marrow",
+    "deck": {
+     "name": "Marrow-Gnawer's Gangs",
+     "colors": "BR",
+     "archetype": null,
+     "label": "tribute",
+     "cards": [
+      {
+       "qty": 4,
+       "name": "Nezumi Graverobber // Nighteyes the Desecrator",
+       "set": "chk",
+       "number": "129",
+       "id": "77ffd913-8efa-48e5-a5cf-293d3068dbbf"
+      },
+      {
+       "qty": 4,
+       "name": "Initiate of Blood // Goka the Unjust",
+       "set": "chk",
+       "number": "173",
+       "id": "b3523b8e-065f-427c-8d5b-eb731ca91ede"
+      },
+      {
+       "qty": 4,
+       "name": "Nezumi Shortfang // Stabwhisker the Odious",
+       "set": "chk",
+       "number": "131",
+       "id": "c8265c39-d287-4c5a-baba-f2f09dd80a1c"
+      },
+      {
+       "qty": 4,
+       "name": "Nezumi Cutthroat",
+       "set": "chk",
+       "number": "128",
+       "id": "166af8cd-9690-4741-ade3-5d5f9723c431"
+      },
+      {
+       "qty": 4,
+       "name": "Nezumi Ronin",
+       "set": "chk",
+       "number": "130",
+       "id": "0c3b8d6f-c60a-4107-b931-31b10f497237"
+      },
+      {
+       "qty": 4,
+       "name": "Deathmask Nezumi",
+       "set": "sok",
+       "number": "66",
+       "id": "743e38d1-b1cd-4828-ad3d-529a9f882115"
+      },
+      {
+       "qty": 2,
+       "name": "Ashen-Skin Zubera",
+       "set": "chk",
+       "number": "101",
+       "id": "40cee88d-849d-4715-ad88-7cdb855a3088"
+      },
+      {
+       "qty": 4,
+       "name": "Rend Flesh",
+       "set": "chk",
+       "number": "140",
+       "id": "92b300a3-e6a8-4ca9-bb26-03f57b5ff6ec"
+      },
+      {
+       "qty": 4,
+       "name": "Villainous Ogre",
+       "set": "chk",
+       "number": "148",
+       "id": "0277c1ba-eae4-442b-8b80-20869ba20568"
+      },
+      {
+       "qty": 12,
+       "name": "Swamp",
+       "set": "chk",
+       "number": "295",
+       "id": "9d376282-adf0-4d37-b9a4-1329cd496516"
+      },
+      {
+       "qty": 12,
+       "name": "Mountain",
+       "set": "chk",
+       "number": "299",
+       "id": "22262a3a-c2e0-4639-9002-361b39ea9b3a"
+      },
+      {
+       "qty": 2,
+       "name": "Marrow-Gnawer",
+       "set": "chk",
+       "number": "124",
+       "id": "72e4548b-c171-4f10-b896-af37543dcf0f"
+      }
+     ]
+    }
+   },
+   "reward": {
+    "hero": {
+     "packs": 1,
+     "coins": 100
+    },
+    "villain": {
+     "card": {
+      "oracle_id": "2b934761-5720-477b-94b7-d1d91dc581a6",
+      "name": "Marrow-Gnawer",
+      "rarity": "rare",
+      "set": "chk",
+      "id": "72e4548b-c171-4f10-b896-af37543dcf0f",
+      "image": "https://cards.scryfall.io/normal/front/7/2/72e4548b-c171-4f10-b896-af37543dcf0f.jpg"
+     },
+     "coins": 100
+    }
+   },
+   "scene": [
+    {
+     "who": "michiko",
+     "line": "Watch over my father. Tell him I'm safe, but I won't come home until I find out how to bring him back to his senses, and Kamigawa is again at peace.",
+     "quote": true
+    },
+    {
+     "who": "michiko",
+     "line": "Flip cards: some creatures turn over when a condition is met and become something stronger. Bushi Tenderfoot becomes Kenzo the Hardhearted."
+    },
+    {
+     "who": "stage",
+     "line": "The sword is just a tool. It is the samurai's hand that brings it to life.",
+     "quote": true
+    }
+   ],
+   "villainScene": [
+    {
+     "who": "stage",
+     "line": "Marrow-Gnawer united three nezumi gangs when he slew their leaders in a single night. Now they call him their first lord.",
+     "quote": true
+    },
+    {
+     "who": "marrow",
+     "line": "The Okiba Gang! Night-cursed thieves and assassins! I've had enough of their meddling! Triple the guard!",
+     "quote": true
+    }
+   ],
+   "after": [
+    {
+     "who": "michiko",
+     "line": "The gangs knew more than my father's court. Father stole something from the spirit world, in the year I was born."
+    }
+   ],
+   "cues": {
+    "hero": {
+     "start": "I am not running.",
+     "big": "For Kamigawa!",
+     "low": "Father... is this what you wanted?",
+     "win": "I keep looking.",
+     "loss": "I never found it...",
+     "half": "Turn it over."
+    },
+    "villain": {
+     "start": "A princess! What a price!",
+     "big": "Bite!",
+     "low": "Back to the sewers!",
+     "win": "Pay up, Konda!",
+     "loss": "Not the tail!"
+    }
+   },
+   "bigPlays": [],
+   "sim": null
+  },
+  {
+   "id": "a12b6",
+   "slot": 6,
+   "kind": "Meta",
+   "mood": "tension",
+   "title": "Gifts Ungiven",
+   "difficulty": "Normal",
+   "teaches": [
+    "The graveyard"
+   ],
+   "blurb": "At the Minamo School, Lady Azami searches the scrolls for anything that can end the war, though her own sensei would rather she stopped looking. Godo's bandits have come to burn them. In the real 2005, Gifts Ungiven fed graveyards across Standard.",
+   "rewardSet": "chk",
+   "host": false,
+   "hero": {
+    "who": "azami",
+    "deck": {
+     "name": "Minamo Gifts",
+     "colors": "BGU",
+     "archetype": "Gifts",
+     "label": "tribute",
+     "cards": [
+      {
+       "qty": 4,
+       "name": "Gifts Ungiven",
+       "set": "chk",
+       "number": "62",
+       "id": "32b91eb5-ea53-4a21-a2e5-9c545a42fa30"
+      },
+      {
+       "qty": 4,
+       "name": "Sakura-Tribe Elder",
+       "set": "chk",
+       "number": "239",
+       "id": "91c7707a-bae0-4196-bf26-d276f57b7369"
+      },
+      {
+       "qty": 4,
+       "name": "Kodama's Reach",
+       "set": "chk",
+       "number": "225",
+       "id": "85d207ac-0680-47ef-85d9-4323c1321d6f"
+      },
+      {
+       "qty": 2,
+       "name": "Kokusho, the Evening Star",
+       "set": "chk",
+       "number": "122",
+       "id": "63dc0698-e92f-4134-80e4-5cc37b80e37c"
+      },
+      {
+       "qty": 2,
+       "name": "Keiga, the Tide Star",
+       "set": "chk",
+       "number": "72",
+       "id": "ea83eaeb-cf82-406b-977f-2bac41925739"
+      },
+      {
+       "qty": 2,
+       "name": "Soulless Revival",
+       "set": "chk",
+       "number": "144",
+       "id": "6b36712c-1ccb-4efe-8db8-823b9b80a99f"
+      },
+      {
+       "qty": 3,
+       "name": "Order of the Sacred Bell",
+       "set": "chk",
+       "number": "232",
+       "id": "5bc9093a-4397-432f-b9e3-3693efcaec20"
+      },
+      {
+       "qty": 3,
+       "name": "Kami of the Hunt",
+       "set": "chk",
+       "number": "219",
+       "id": "5ace3c4e-3287-4975-b4d0-91f009c0cf5b"
+      },
+      {
+       "qty": 4,
+       "name": "Rend Flesh",
+       "set": "chk",
+       "number": "140",
+       "id": "92b300a3-e6a8-4ca9-bb26-03f57b5ff6ec"
+      },
+      {
+       "qty": 2,
+       "name": "Moss Kami",
+       "set": "chk",
+       "number": "228",
+       "id": "a437cde4-c40b-40a3-bc19-e461c98186dc"
+      },
+      {
+       "qty": 4,
+       "name": "Kodama of the North Tree",
+       "set": "chk",
+       "number": "222",
+       "id": "2d9b5c33-63c4-4ddd-9f04-37bb36970b43"
+      },
+      {
+       "qty": 4,
+       "name": "Yavimaya Coast",
+       "set": "9ed",
+       "number": "330",
+       "id": "9e2eff74-8dcc-4c4b-8d74-c93b12966e88"
+      },
+      {
+       "qty": 4,
+       "name": "Llanowar Wastes",
+       "set": "9ed",
+       "number": "322",
+       "id": "a7218c70-b170-4d23-b98f-f8fa29312994"
+      },
+      {
+       "qty": 4,
+       "name": "Underground River",
+       "set": "9ed",
+       "number": "326",
+       "id": "be9395fc-ad8a-494a-a5bc-fea3f55b0e2c"
+      },
+      {
+       "qty": 5,
+       "name": "Forest",
+       "set": "chk",
+       "number": "303",
+       "id": "a3209b22-56af-45ac-9224-67574c035638"
+      },
+      {
+       "qty": 4,
+       "name": "Island",
+       "set": "chk",
+       "number": "291",
+       "id": "d5170ce9-2463-4fec-945b-6c2f23eb7e22"
+      },
+      {
+       "qty": 3,
+       "name": "Swamp",
+       "set": "chk",
+       "number": "295",
+       "id": "9d376282-adf0-4d37-b9a4-1329cd496516"
+      },
+      {
+       "qty": 2,
+       "name": "Azami, Lady of Scrolls",
+       "set": "chk",
+       "number": "52",
+       "id": "15ea91b1-f2ff-4b99-8148-333aa27ea8cd"
+      }
+     ]
+    }
+   },
+   "villain": {
+    "who": "godo",
+    "deck": {
+     "name": "Godo's Irregulars",
+     "colors": "R",
+     "archetype": null,
+     "label": "tribute",
+     "cards": [
+      {
+       "qty": 3,
+       "name": "Godo, Bandit Warlord",
+       "set": "chk",
+       "number": "169",
+       "id": "fcff0b92-edd0-4197-965b-3fd86bc884d8"
+      },
+      {
+       "qty": 2,
+       "name": "Ronin Cliffrider",
+       "set": "bok",
+       "number": "116",
+       "id": "f9f12b75-af29-49ea-a23d-915052db9fef"
+      },
+      {
+       "qty": 4,
+       "name": "Ronin Houndmaster",
+       "set": "chk",
+       "number": "184",
+       "id": "614ead7b-1975-4a99-bdc2-f8afc6cf92d7"
+      },
+      {
+       "qty": 4,
+       "name": "Kami of Fire's Roar",
+       "set": "chk",
+       "number": "174",
+       "id": "4380118d-f209-446d-829b-3564796e0219"
+      },
+      {
+       "qty": 4,
+       "name": "Akki Raider",
+       "set": "bok",
+       "number": "92",
+       "id": "c8fb34ae-157c-4f4b-bb47-2a9dc394a20c"
+      },
+      {
+       "qty": 4,
+       "name": "Battle-Mad Ronin",
+       "set": "chk",
+       "number": "156",
+       "id": "a6e4394a-fa91-4cf9-99c1-dc0bc1011c5b"
+      },
+      {
+       "qty": 4,
+       "name": "Frost Ogre",
+       "set": "bok",
+       "number": "102",
+       "id": "1a91e5f1-9179-4763-b7c9-b7ad5451f6d0"
+      },
+      {
+       "qty": 4,
+       "name": "Torrent of Stone",
+       "set": "bok",
+       "number": "119",
+       "id": "716ae2ca-800a-4cc0-8cb1-fe8d6495306f"
+      },
+      {
+       "qty": 2,
+       "name": "Yamabushi's Flame",
+       "set": "chk",
+       "number": "198",
+       "id": "1a9bacba-55c4-4b92-bdd9-01b6035ed1b2"
+      },
+      {
+       "qty": 3,
+       "name": "Akki Lavarunner // Tok-Tok, Volcano Born",
+       "set": "chk",
+       "number": "153",
+       "id": "6ee6cd34-c117-4d7e-97d1-8f8464bfaac8"
+      },
+      {
+       "qty": 26,
+       "name": "Mountain",
+       "set": "chk",
+       "number": "299",
+       "id": "22262a3a-c2e0-4639-9002-361b39ea9b3a"
+      }
+     ]
+    }
+   },
+   "reward": {
+    "hero": {
+     "packs": 1,
+     "coins": 100
+    },
+    "villain": {
+     "card": {
+      "oracle_id": "f890d51a-dc90-4179-8423-4738a72a527c",
+      "name": "Godo, Bandit Warlord",
+      "rarity": "rare",
+      "set": "chk",
+      "id": "fcff0b92-edd0-4197-965b-3fd86bc884d8",
+      "image": "https://cards.scryfall.io/normal/front/f/c/fcff0b92-edd0-4197-965b-3fd86bc884d8.jpg"
+     },
+     "coins": 100
+    }
+   },
+   "scene": [
+    {
+     "who": "azami",
+     "line": "Though in years past speculation was not encouraged about the strange ways of kami, now we must understand their motivations, if such is even possible to the mortal mind.",
+     "quote": true
+    },
+    {
+     "who": "azami",
+     "line": "Gifts Ungiven: find four different cards. Your opponent puts two in your graveyard and you keep the others. Give them a choice where both answers help you."
+    },
+    {
+     "who": "stage",
+     "line": "As the rest of the mortal world waged war, Lady Azami and her students invaded tomes of knowledge. Their search yielded spells critical in the fight.",
+     "quote": true
+    }
+   ],
+   "villainScene": [
+    {
+     "who": "stage",
+     "line": "Godo trained their muscles and honed their skills, but he left their hearts wild and empty.",
+     "quote": true
+    },
+    {
+     "who": "godo",
+     "line": "Scrolls burn. Burn them all and take what is left."
+    }
+   ],
+   "after": [
+    {
+     "who": "azami",
+     "line": "Sensei Hisoka told us to stop asking questions. Now I know why. He helped Konda do it."
+    },
+    {
+     "who": "azami",
+     "line": "The scrolls say the same thing Kumano would not: Konda stole a kami. We must take it back."
+    }
+   ],
+   "cues": {
+    "hero": {
+     "start": "Open the scrolls.",
+     "big": "There it is.",
+     "low": "The library burns...",
+     "win": "The scrolls survive.",
+     "loss": "All that knowledge...",
+     "half": "Two good choices."
+    },
+    "villain": {
+     "start": "Burn the school!",
+     "big": "Loot it!",
+     "low": "Retreat to the hills!",
+     "win": "Take everything!",
+     "loss": "Godo... falls back..."
+    }
+   },
+   "bigPlays": [],
+   "sim": null
+  },
+  {
+   "id": "a12b7",
+   "slot": 7,
+   "kind": "Rival",
+   "mood": "tension",
+   "title": "Snakes in the Swamp",
+   "difficulty": "Normal",
+   "teaches": [
+    "Tribes"
+   ],
+   "blurb": "Seshiro of the orochi snake-folk was the first to reach out to the human monks. Now his people move through Takenuma Swamp, where Kiku, the ogres' assassin, makes shadows kill.",
+   "rewardSet": "sok",
+   "host": false,
+   "hero": {
+    "who": "seshiro",
+    "deck": {
+     "name": "Orochi Snakes",
+     "colors": "GB",
+     "archetype": null,
+     "label": "tribute",
+     "cards": [
+      {
+       "qty": 2,
+       "name": "Seshiro the Anointed",
+       "set": "chk",
+       "number": "241",
+       "id": "3823e561-5a0a-4020-9322-a2b481499807"
+      },
+      {
+       "qty": 2,
+       "name": "Sosuke, Son of Seshiro",
+       "set": "chk",
+       "number": "244",
+       "id": "d1aa2451-e4f0-423b-826e-ae1f93b99e07"
+      },
+      {
+       "qty": 4,
+       "name": "Sosuke's Summons",
+       "set": "bok",
+       "number": "145",
+       "id": "42359e94-9f57-45ae-ae39-d4b939813015"
+      },
+      {
+       "qty": 4,
+       "name": "Orochi Sustainer",
+       "set": "chk",
+       "number": "236",
+       "id": "5fb40d7a-f2d3-4c9a-a1ab-6b08bd143fe5"
+      },
+      {
+       "qty": 4,
+       "name": "Sakura-Tribe Elder",
+       "set": "chk",
+       "number": "239",
+       "id": "91c7707a-bae0-4196-bf26-d276f57b7369"
+      },
+      {
+       "qty": 4,
+       "name": "Orochi Eggwatcher // Shidako, Broodmistress",
+       "set": "chk",
+       "number": "233",
+       "id": "a4f4aa3b-c64a-4430-b1a2-a7fca87d0a22"
+      },
+      {
+       "qty": 4,
+       "name": "Sachi, Daughter of Seshiro",
+       "set": "chk",
+       "number": "238",
+       "id": "4c45b36f-b879-417c-b284-0176990fb9f9"
+      },
+      {
+       "qty": 4,
+       "name": "Kodama of the North Tree",
+       "set": "chk",
+       "number": "222",
+       "id": "2d9b5c33-63c4-4ddd-9f04-37bb36970b43"
+      },
+      {
+       "qty": 4,
+       "name": "Kodama's Might",
+       "set": "chk",
+       "number": "224",
+       "id": "d0ef91bb-ec25-463f-9fc9-f0f9c0652cf5"
+      },
+      {
+       "qty": 4,
+       "name": "Nezumi Cutthroat",
+       "set": "chk",
+       "number": "128",
+       "id": "166af8cd-9690-4741-ade3-5d5f9723c431"
+      },
+      {
+       "qty": 16,
+       "name": "Forest",
+       "set": "chk",
+       "number": "303",
+       "id": "a3209b22-56af-45ac-9224-67574c035638"
+      },
+      {
+       "qty": 8,
+       "name": "Swamp",
+       "set": "chk",
+       "number": "295",
+       "id": "9d376282-adf0-4d37-b9a4-1329cd496516"
+      }
+     ]
+    }
+   },
+   "villain": {
+    "who": "kiku",
+    "deck": {
+     "name": "Takenuma Shadows",
+     "colors": "B",
+     "archetype": null,
+     "label": "tribute",
+     "cards": [
+      {
+       "qty": 2,
+       "name": "Kokusho, the Evening Star",
+       "set": "chk",
+       "number": "122",
+       "id": "63dc0698-e92f-4134-80e4-5cc37b80e37c"
+      },
+      {
+       "qty": 2,
+       "name": "Kami of the Waning Moon",
+       "set": "chk",
+       "number": "120",
+       "id": "23a395a6-b1f5-4b7f-87cc-c77b4d497e9a"
+      },
+      {
+       "qty": 4,
+       "name": "Gutwrencher Oni",
+       "set": "chk",
+       "number": "113",
+       "id": "7698a5da-5c70-4818-927b-3a923314e537"
+      },
+      {
+       "qty": 4,
+       "name": "Nezumi Bone-Reader",
+       "set": "chk",
+       "number": "127",
+       "id": "c0f27ff7-c7e4-4099-b3ac-6560c6ccba41"
+      },
+      {
+       "qty": 4,
+       "name": "Ashen-Skin Zubera",
+       "set": "chk",
+       "number": "101",
+       "id": "40cee88d-849d-4715-ad88-7cdb855a3088"
+      },
+      {
+       "qty": 4,
+       "name": "Thief of Hope",
+       "set": "chk",
+       "number": "147",
+       "id": "0a3029b8-01e2-4419-817e-318f23d6ce04"
+      },
+      {
+       "qty": 4,
+       "name": "Rend Flesh",
+       "set": "chk",
+       "number": "140",
+       "id": "92b300a3-e6a8-4ca9-bb26-03f57b5ff6ec"
+      },
+      {
+       "qty": 4,
+       "name": "Hideous Laughter",
+       "set": "chk",
+       "number": "115",
+       "id": "941fd135-1c5a-4650-8faf-dfa2c93ec8c9"
+      },
+      {
+       "qty": 4,
+       "name": "Cranial Extraction",
+       "set": "chk",
+       "number": "105",
+       "id": "a8cad7a3-777e-4c84-b404-5f504844ab3b"
+      },
+      {
+       "qty": 4,
+       "name": "Nezumi Ronin",
+       "set": "chk",
+       "number": "130",
+       "id": "0c3b8d6f-c60a-4107-b931-31b10f497237"
+      },
+      {
+       "qty": 24,
+       "name": "Swamp",
+       "set": "chk",
+       "number": "295",
+       "id": "9d376282-adf0-4d37-b9a4-1329cd496516"
+      }
+     ]
+    }
+   },
+   "reward": {
+    "hero": {
+     "packs": 1,
+     "coins": 100
+    },
+    "villain": {
+     "card": {
+      "oracle_id": "cf631c93-b7fb-4e4f-b405-3778c15b1117",
+      "name": "Kokusho, the Evening Star",
+      "rarity": "rare",
+      "set": "chk",
+      "id": "63dc0698-e92f-4134-80e4-5cc37b80e37c",
+      "image": "https://cards.scryfall.io/normal/front/6/3/63dc0698-e92f-4134-80e4-5cc37b80e37c.jpg"
+     },
+     "coins": 100
+    }
+   },
+   "scene": [
+    {
+     "who": "stage",
+     "line": "His family was the first to reach out to the human monks. He soon knew as many koans as he did blade strikes.",
+     "quote": true
+    },
+    {
+     "who": "seshiro",
+     "line": "Without the kami to speak to nature on our behalf, we must beg help from nature directly.",
+     "quote": true
+    },
+    {
+     "who": "seshiro",
+     "line": "Seshiro makes every snake bigger, and every snake that hits draws a card. Keep the line of snakes moving."
+    },
+    {
+     "who": "stage",
+     "line": "The orochi learned how to move swiftly and surely along the forest floor, like fish darting through gull-watched waters.",
+     "quote": true
+    }
+   ],
+   "villainScene": [
+    {
+     "who": "kiku",
+     "line": "Me? No, I'm not going to kill you. I won't even lay a finger on you. I promise.",
+     "quote": true
+    },
+    {
+     "who": "kiku",
+     "line": "It is the nature of humanity not to worry about tomorrow, especially when there's a good chance they won't live to see the end of today.",
+     "quote": true
+    },
+    {
+     "who": "stage",
+     "line": "Although nowhere on Kamigawa was safe during the war, the Takenuma Swamp was the most horrifying.",
+     "quote": true
+    }
+   ],
+   "after": [
+    {
+     "who": "seshiro",
+     "line": "The way to Eiganjo is open. Konda's castle is the only place no kami has entered. Now we know why."
+    }
+   ],
+   "cues": {
+    "hero": {
+     "start": "Coil and strike.",
+     "big": "The tribe bites!",
+     "low": "The swamp is deep...",
+     "win": "The path is clear.",
+     "loss": "Bury me with a sapling...",
+     "half": "Keep moving."
+    },
+    "villain": {
+     "start": "Your shadow is mine.",
+     "big": "Kill him, little shadow.",
+     "low": "Too much light...",
+     "win": "Sleep, snake.",
+     "loss": "The flower... closes..."
+    }
+   },
+   "bigPlays": [],
+   "sim": null
+  },
+  {
+   "id": "a12b8",
+   "slot": 8,
+   "kind": "Boss",
+   "mood": "boss",
+   "title": "Konda",
+   "difficulty": "Hard",
+   "teaches": [
+    "Combat math"
+   ],
+   "blurb": "Twenty years ago, Lord Konda stole a kami-child from O-Kagachi, the greatest of the spirits, to live forever. Michiko and Toshiro storm Eiganjo to set it free.",
+   "rewardSet": "bok",
+   "host": true,
+   "hero": {
+    "who": "toshiro",
+    "deck": {
+     "name": "Toshiro and Michiko",
+     "colors": "WB",
+     "archetype": null,
+     "label": "tribute",
+     "cards": [
+      {
+       "qty": 2,
+       "name": "Toshiro Umezawa",
+       "set": "bok",
+       "number": "89",
+       "id": "0e767e07-febd-4025-bf03-d4d816bc1d3d"
+      },
+      {
+       "qty": 2,
+       "name": "Michiko Konda, Truth Seeker",
+       "set": "sok",
+       "number": "19",
+       "id": "99c56bf0-ad9f-4419-902c-f3a3880c716c"
+      },
+      {
+       "qty": 4,
+       "name": "Throat Slitter",
+       "set": "bok",
+       "number": "88",
+       "id": "c4dcfdb4-c2ff-4fc5-aa2a-0c6e311d2910"
+      },
+      {
+       "qty": 4,
+       "name": "Okiba-Gang Shinobi",
+       "set": "bok",
+       "number": "76",
+       "id": "5cd9297e-301e-4e70-af9b-3218eacacf8d"
+      },
+      {
+       "qty": 4,
+       "name": "Bushi Tenderfoot // Kenzo the Hardhearted",
+       "set": "chk",
+       "number": "2",
+       "id": "864ad989-19a6-4930-8efc-bbc077a18c32"
+      },
+      {
+       "qty": 4,
+       "name": "Samurai of the Pale Curtain",
+       "set": "chk",
+       "number": "43",
+       "id": "ead15cf8-f692-4cb9-ac86-0dff00236145"
+      },
+      {
+       "qty": 4,
+       "name": "Kitsune Blademaster",
+       "set": "chk",
+       "number": "25",
+       "id": "fb9d108d-ee19-4b1d-9d4b-b4c4d9b8ad0d"
+      },
+      {
+       "qty": 4,
+       "name": "Kabuto Moth",
+       "set": "chk",
+       "number": "20",
+       "id": "cf3ccd16-bb1b-40d5-87a6-47a6132e0143"
+      },
+      {
+       "qty": 4,
+       "name": "Rend Flesh",
+       "set": "chk",
+       "number": "140",
+       "id": "92b300a3-e6a8-4ca9-bb26-03f57b5ff6ec"
+      },
+      {
+       "qty": 4,
+       "name": "Nezumi Cutthroat",
+       "set": "chk",
+       "number": "128",
+       "id": "166af8cd-9690-4741-ade3-5d5f9723c431"
+      },
+      {
+       "qty": 12,
+       "name": "Plains",
+       "set": "chk",
+       "number": "287",
+       "id": "deff6a75-2ecd-49d6-b58b-a9d24615f9b7"
+      },
+      {
+       "qty": 12,
+       "name": "Swamp",
+       "set": "chk",
+       "number": "295",
+       "id": "9d376282-adf0-4d37-b9a4-1329cd496516"
+      }
+     ]
+    }
+   },
+   "villain": {
+    "who": "konda",
+    "deck": {
+     "name": "Lord of Eiganjo",
+     "colors": "W",
+     "archetype": "Samurai",
+     "label": "tribute",
+     "cards": [
+      {
+       "qty": 2,
+       "name": "Konda, Lord of Eiganjo",
+       "set": "chk",
+       "number": "30",
+       "id": "5edab171-94b9-4e5e-ab61-bd8c6c8cfc38"
+      },
+      {
+       "qty": 2,
+       "name": "Takeno, Samurai General",
+       "set": "chk",
+       "number": "46",
+       "id": "d038df46-4a30-4125-be0e-8781b16b523e"
+      },
+      {
+       "qty": 4,
+       "name": "Isamaru, Hound of Konda",
+       "set": "chk",
+       "number": "19",
+       "id": "2e7f9919-0713-4ef9-96eb-3e0c444e47f4"
+      },
+      {
+       "qty": 4,
+       "name": "Samurai of the Pale Curtain",
+       "set": "chk",
+       "number": "43",
+       "id": "ead15cf8-f692-4cb9-ac86-0dff00236145"
+      },
+      {
+       "qty": 4,
+       "name": "Konda's Hatamoto",
+       "set": "chk",
+       "number": "31",
+       "id": "83425cf6-f6ad-4302-8f07-099eabdd4b40"
+      },
+      {
+       "qty": 4,
+       "name": "Kitsune Blademaster",
+       "set": "chk",
+       "number": "25",
+       "id": "fb9d108d-ee19-4b1d-9d4b-b4c4d9b8ad0d"
+      },
+      {
+       "qty": 4,
+       "name": "Hand of Honor",
+       "set": "sok",
+       "number": "12",
+       "id": "ddef832c-b2be-4fa6-8d66-ac0d442f2d7d"
+      },
+      {
+       "qty": 2,
+       "name": "Yosei, the Morning Star",
+       "set": "chk",
+       "number": "50",
+       "id": "1b38f14a-bd10-47c1-8772-5abe0a0b243f"
+      },
+      {
+       "qty": 2,
+       "name": "Kabuto Moth",
+       "set": "chk",
+       "number": "20",
+       "id": "cf3ccd16-bb1b-40d5-87a6-47a6132e0143"
+      },
+      {
+       "qty": 2,
+       "name": "Wrath of God",
+       "set": "9ed",
+       "number": "56",
+       "id": "b6c1e9e3-c947-47cc-ac60-dc032d984a67"
+      },
+      {
+       "qty": 1,
+       "name": "Lantern Kami",
+       "set": "chk",
+       "number": "32",
+       "id": "99625787-f184-48a5-a678-e30b7024c7bb"
+      },
+      {
+       "qty": 3,
+       "name": "Ghostly Prison",
+       "set": "chk",
+       "number": "10",
+       "id": "82d7de2b-c909-48dc-9ab7-c4a8328e37bb"
+      },
+      {
+       "qty": 2,
+       "name": "Eiganjo Castle",
+       "set": "chk",
+       "number": "275",
+       "id": "219c1d76-40cf-4edf-8145-e6cec8ca39ad"
+      },
+      {
+       "qty": 24,
+       "name": "Plains",
+       "set": "chk",
+       "number": "287",
+       "id": "deff6a75-2ecd-49d6-b58b-a9d24615f9b7"
+      }
+     ]
+    }
+   },
+   "reward": {
+    "hero": {
+     "packs": 2,
+     "coins": 200
+    },
+    "villain": {
+     "card": {
+      "oracle_id": "efea2342-bb24-472a-acfb-1b9e012af91b",
+      "name": "Konda, Lord of Eiganjo",
+      "rarity": "rare",
+      "set": "chk",
+      "id": "5edab171-94b9-4e5e-ab61-bd8c6c8cfc38",
+      "image": "https://cards.scryfall.io/normal/front/5/e/5edab171-94b9-4e5e-ab61-bd8c6c8cfc38.jpg"
+     },
+     "coins": 200
+    }
+   },
+   "scene": [
+    {
+     "who": "stage",
+     "line": "Deep within Eiganjo Castle lay the Palace of Infinite Halls, a seemingly endless network of corridors once guarded by a seemingly endless legion of samurai.",
+     "quote": true
+    },
+    {
+     "who": "stage",
+     "line": "From the moment they swore their oaths, they belonged to their lord, sword and soul.",
+     "quote": true
+    },
+    {
+     "who": "michiko",
+     "line": "He has Takeno's samurai and every wall of the castle. Do not attack into a full guard. Wait for the opening, then send the ninjas."
+    },
+    {
+     "who": "toshiro",
+     "line": "Bad and worse, princess. Let's choose."
+    }
+   ],
+   "villainScene": [
+    {
+     "who": "konda",
+     "line": "Duty and law are the foundation on which civilization stands. They must not fall, for when they do, they take everything with them.",
+     "quote": true
+    },
+    {
+     "who": "stage",
+     "line": "Over time, Konda grew ever more suspicious, fearing even his most loyal allies were being manipulated by unseen hands.",
+     "quote": true
+    },
+    {
+     "who": "konda",
+     "line": "My daughter, and a thief. They would end the only peace this castle has."
+    }
+   ],
+   "after": null,
+   "cues": {
+    "hero": {
+     "start": "Set it free, Father.",
+     "big": "Strike now!",
+     "low": "There are too many guards...",
+     "win": "It's free.",
+     "loss": "Forgive me, Kamigawa...",
+     "half": "Wait for the opening."
+    },
+    "villain": {
+     "start": "Eiganjo stands.",
+     "big": "For the empire!",
+     "low": "My samurai...",
+     "win": "Forever.",
+     "loss": "What... have I done...",
+     "half": {
+      "who": "michiko",
+      "line": "He was a good lord once. Takeno still believes it. Remember that when you strike."
+     }
+    }
+   },
+   "bigPlays": [],
+   "sim": null
+  },
+  {
+   "id": "a12b9",
+   "slot": 9,
+   "kind": "Secret Boss",
+   "secret": true,
+   "mood": "boss",
+   "title": "Jitte Summer",
+   "difficulty": "Hard",
+   "teaches": [
+    "Answering artifacts"
+   ],
+   "blurb": "Deep in the archive, the jitte Toshiro stole, in the deck that made it famous. Every hit it lands grows two counters.",
+   "rewardSet": "bok",
+   "host": true,
+   "archive": {
+    "deck": "Jitte Weenie",
+    "when": "Summer 2005",
+    "format": "Standard: Mirrodin block, Kamigawa block and Ninth Edition.",
+    "what": "White weenie built around Umezawa's Jitte from Betrayers of Kamigawa. Cheap creatures carry the Jitte, and every hit loads two counters.",
+    "why": "Each counter is a choice: pump, kill a small creature, or gain life. Two Jittes in play meant the opponent's creatures died before they could block.",
+    "beat": "Kill the creature carrying the Jitte before combat damage, or answer the Jitte itself. Hearth Kami and Frostwielder buy the time.",
+    "after": "Umezawa's Jitte was never banned in Standard and rotated out in October 2006. It is banned in Modern from its first list in 2011."
+   },
+   "hero": {
+    "who": "you",
+    "deck": {
+     "name": "Kodama and Fire",
+     "colors": "GR",
+     "archetype": "Midrange",
+     "label": "tribute",
+     "cards": [
+      {
+       "qty": 4,
+       "name": "Sakura-Tribe Elder",
+       "set": "chk",
+       "number": "239",
+       "id": "91c7707a-bae0-4196-bf26-d276f57b7369"
+      },
+      {
+       "qty": 4,
+       "name": "Hanabi Blast",
+       "set": "chk",
+       "number": "170",
+       "id": "881fecf4-8c14-4614-84bd-c1a3dcdbb5ff"
+      },
+      {
+       "qty": 4,
+       "name": "Kami of the Hunt",
+       "set": "chk",
+       "number": "219",
+       "id": "5ace3c4e-3287-4975-b4d0-91f009c0cf5b"
+      },
+      {
+       "qty": 4,
+       "name": "Orochi Sustainer",
+       "set": "chk",
+       "number": "236",
+       "id": "5fb40d7a-f2d3-4c9a-a1ab-6b08bd143fe5"
+      },
+      {
+       "qty": 4,
+       "name": "Glacial Ray",
+       "set": "chk",
+       "number": "168",
+       "id": "5637a3b0-6204-4893-878e-c34babeab2e6"
+      },
+      {
+       "qty": 4,
+       "name": "Yamabushi's Flame",
+       "set": "chk",
+       "number": "198",
+       "id": "1a9bacba-55c4-4b92-bdd9-01b6035ed1b2"
+      },
+      {
+       "qty": 4,
+       "name": "Frostwielder",
+       "set": "chk",
+       "number": "167",
+       "id": "a54df527-6949-4b74-821b-b051f493f3c5"
+      },
+      {
+       "qty": 4,
+       "name": "Hearth Kami",
+       "set": "chk",
+       "number": "171",
+       "id": "d7361289-5111-49c2-a786-b7181384596b"
+      },
+      {
+       "qty": 4,
+       "name": "Kodama's Might",
+       "set": "chk",
+       "number": "224",
+       "id": "d0ef91bb-ec25-463f-9fc9-f0f9c0652cf5"
+      },
+      {
+       "qty": 2,
+       "name": "Kumano, Master Yamabushi",
+       "set": "chk",
+       "number": "176",
+       "id": "f93870f9-343f-43e7-8ae8-e7aaa56aacca"
+      },
+      {
+       "qty": 12,
+       "name": "Forest",
+       "set": "chk",
+       "number": "303",
+       "id": "a3209b22-56af-45ac-9224-67574c035638"
+      },
+      {
+       "qty": 10,
+       "name": "Mountain",
+       "set": "chk",
+       "number": "299",
+       "id": "22262a3a-c2e0-4639-9002-361b39ea9b3a"
+      }
+     ]
+    }
+   },
+   "villain": {
+    "who": "jitte",
+    "deck": {
+     "name": "Jitte Weenie",
+     "colors": "W",
+     "archetype": "White Weenie",
+     "label": "tribute",
+     "note": "Built from the 2005 Standard white weenie lists with Umezawa's Jitte. No single tournament list is copied.",
+     "cards": [
+      {
+       "qty": 2,
+       "name": "Umezawa's Jitte",
+       "set": "bok",
+       "number": "163",
+       "id": "3b6e5956-f795-451b-bb24-56462d1ced27"
+      },
+      {
+       "qty": 2,
+       "name": "Isamaru, Hound of Konda",
+       "set": "chk",
+       "number": "19",
+       "id": "2e7f9919-0713-4ef9-96eb-3e0c444e47f4"
+      },
+      {
+       "qty": 4,
+       "name": "Samurai of the Pale Curtain",
+       "set": "chk",
+       "number": "43",
+       "id": "ead15cf8-f692-4cb9-ac86-0dff00236145"
+      },
+      {
+       "qty": 4,
+       "name": "Lantern Kami",
+       "set": "chk",
+       "number": "32",
+       "id": "99625787-f184-48a5-a678-e30b7024c7bb"
+      },
+      {
+       "qty": 1,
+       "name": "Leonin Skyhunter",
+       "set": "9ed",
+       "number": "25",
+       "id": "0415fb9e-fe47-435d-b47d-b0e62f51d327"
+      },
+      {
+       "qty": 4,
+       "name": "Suntail Hawk",
+       "set": "9ed",
+       "number": "49",
+       "id": "3ff9c46b-51d3-44d7-8f27-1a466fa8ba3d"
+      },
+      {
+       "qty": 4,
+       "name": "Hand of Honor",
+       "set": "sok",
+       "number": "12",
+       "id": "ddef832c-b2be-4fa6-8d66-ac0d442f2d7d"
+      },
+      {
+       "qty": 4,
+       "name": "Kami of False Hope",
+       "set": "bok",
+       "number": "10",
+       "id": "44e4f5e6-935e-429f-89b4-4571376f442e"
+      },
+      {
+       "qty": 2,
+       "name": "Glorious Anthem",
+       "set": "9ed",
+       "number": "16",
+       "id": "354a94e8-baba-42e1-8577-03bbaa8f5707"
+      },
+      {
+       "qty": 4,
+       "name": "Kabuto Moth",
+       "set": "chk",
+       "number": "20",
+       "id": "cf3ccd16-bb1b-40d5-87a6-47a6132e0143"
+      },
+      {
+       "qty": 4,
+       "name": "Kitsune Blademaster",
+       "set": "chk",
+       "number": "25",
+       "id": "fb9d108d-ee19-4b1d-9d4b-b4c4d9b8ad0d"
+      },
+      {
+       "qty": 25,
+       "name": "Plains",
+       "set": "chk",
+       "number": "287",
+       "id": "deff6a75-2ecd-49d6-b58b-a9d24615f9b7"
+      }
+     ]
+    }
+   },
+   "reward": {
+    "hero": {
+     "packs": 2,
+     "coins": 200
+    },
+    "villain": {
+     "card": {
+      "oracle_id": "1da10d5c-36a8-473f-a5d4-782ad61d8057",
+      "name": "Umezawa's Jitte",
+      "rarity": "rare",
+      "set": "bok",
+      "id": "3b6e5956-f795-451b-bb24-56462d1ced27",
+      "image": "https://cards.scryfall.io/normal/front/3/b/3b6e5956-f795-451b-bb24-56462d1ced27.jpg"
+     },
+     "coins": 200
+    }
+   },
+   "scene": [
+    {
+     "who": "stage",
+     "line": "Those kitsune trained in the blade preferred to fight with a blade-catching jitte in the off hand, buying them just enough time to deliver the first deadly cut.",
+     "quote": true
+    },
+    {
+     "who": "you",
+     "line": "Every hit is two counters. Then nothing hits."
+    },
+    {
+     "who": "toshiro",
+     "line": "I stole it fair and square. Do not let it steal the game from you."
+    }
+   ],
+   "villainScene": [
+    {
+     "who": "stage",
+     "line": "The deck does not speak. It equips."
+    }
+   ],
+   "after": [
+    {
+     "who": "stage",
+     "line": "Recorded: never banned in Standard. Banned in Modern from 2011."
+    }
+   ],
+   "cues": {
+    "hero": {
+     "start": "Break the jitte.",
+     "big": "Burn the carrier!",
+     "low": "It keeps growing...",
+     "win": "Never banned. Still beaten.",
+     "loss": "Two more counters...",
+     "half": "Kill it before damage."
+    },
+    "villain": {
+     "start": "[equip]",
+     "big": "[two counters]",
+     "low": "[the jitte falls]",
+     "win": "[two counters]",
+     "loss": "[the jitte is broken]"
+    }
+   },
+   "bigPlays": [],
+   "sim": null
+  }
+ ]
+}

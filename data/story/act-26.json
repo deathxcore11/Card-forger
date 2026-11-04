@@ -1,0 +1,2740 @@
+{
+ "act": 26,
+ "era": "2017-07-14",
+ "title": "The God-Pharaoh",
+ "years": "2017",
+ "sets": [
+  "akh",
+  "hou"
+ ],
+ "landSet": "akh",
+ "intro": [
+  {
+   "who": "stage",
+   "line": "Amonkhet, a desert plane of perfect order. Its people train from childhood in the trials, to earn a place in the afterlife."
+  },
+  {
+   "who": "stage",
+   "line": "The one thing the Gatewatch didn't expect to find on a plane ruled by Nicol Bolas was perfection.",
+   "quote": true
+  },
+  {
+   "who": "samut",
+   "line": "I'll fight no more just for the honor of dying. The afterlife will have to wait.",
+   "quote": true
+  },
+  {
+   "who": "stage",
+   "line": "Samut of the Tah crop has stopped believing. She is not alone, but the others do not know it yet."
+  }
+ ],
+ "finale": [
+  {
+   "who": "stage",
+   "line": "The people entered as worthy. They exited as Eternals.",
+   "quote": true
+  },
+  {
+   "who": "bolas",
+   "line": "Everything here exists or perishes at my whim. Including you, Gatewatch.",
+   "quote": true
+  },
+  {
+   "who": "djeru",
+   "line": "I was promised an afterlife, not this. Samut was right. The God-Pharaoh lied.",
+   "quote": true
+  },
+  {
+   "who": "stage",
+   "line": "The Gatewatch loses, and loses badly. The gods are dead and the city is open to the desert."
+  },
+  {
+   "who": "stage",
+   "line": "Bolas leaves with the largest army of Eternals he could ever want. Samut and the survivors walk out of the Hekma into the wastes."
+  }
+ ],
+ "villainFinale": [
+  {
+   "who": "bolas",
+   "line": "My work here is complete. The people have done everything required of them.",
+   "quote": true
+  },
+  {
+   "who": "bolas",
+   "line": "This place has outlived its usefulness.",
+   "quote": true
+  }
+ ],
+ "vibe": "god-pharaoh-desert",
+ "cast": {
+  "you": {
+   "name": "You",
+   "title": "Planeswalker",
+   "portrait": {
+    "card": "Open into Wonder",
+    "set": "akh",
+    "number": "64",
+    "id": "0df4db1e-f2a7-44e7-9b8d-fecf73d1e01c",
+    "crop": "https://cards.scryfall.io/art_crop/front/0/d/0df4db1e-f2a7-44e7-9b8d-fecf73d1e01c.jpg?1783936518",
+    "artist": "Tyler Jacobson",
+    "focus": "50% 30%"
+   }
+  },
+  "samut": {
+   "name": "Samut",
+   "title": "Voice of Dissent",
+   "portrait": {
+    "card": "Samut, Voice of Dissent",
+    "set": "akh",
+    "number": "205",
+    "id": "60f2d8f1-43a9-438a-830c-9d6b5701f950",
+    "crop": "https://cards.scryfall.io/art_crop/front/6/0/60f2d8f1-43a9-438a-830c-9d6b5701f950.jpg?1783936461",
+    "artist": "Aleksi Briclot",
+    "focus": "50% 25%"
+   }
+  },
+  "initiates": {
+   "name": "Oketra's Initiates",
+   "title": "Tah crop",
+   "portrait": {
+    "card": "Anointer Priest",
+    "set": "akh",
+    "number": "3",
+    "id": "4f922231-bf41-47d3-8fa3-13b9baf4a0f3",
+    "crop": "https://cards.scryfall.io/art_crop/front/4/f/4f922231-bf41-47d3-8fa3-13b9baf4a0f3.jpg?1783936543",
+    "artist": "Lake Hurwitz",
+    "focus": "50% 30%"
+   }
+  },
+  "neheb": {
+   "name": "Neheb",
+   "title": "The Worthy",
+   "portrait": {
+    "card": "Neheb, the Worthy",
+    "set": "akh",
+    "number": "203",
+    "id": "7593d5fb-c6b3-4d24-b9d3-97a4378161fd",
+    "crop": "https://cards.scryfall.io/art_crop/front/7/5/7593d5fb-c6b3-4d24-b9d3-97a4378161fd.jpg?1783936461",
+    "artist": "Chris Rahn",
+    "focus": "50% 25%"
+   }
+  },
+  "rhonas": {
+   "name": "Rhonas",
+   "title": "God of Strength",
+   "portrait": {
+    "card": "Rhonas the Indomitable",
+    "set": "akh",
+    "number": "182",
+    "id": "50f23c47-278c-4188-8fb4-ae20a0c423c5",
+    "crop": "https://cards.scryfall.io/art_crop/front/5/0/50f23c47-278c-4188-8fb4-ae20a0c423c5.jpg?1783936470",
+    "artist": "Chase Stone",
+    "focus": "50% 25%"
+   }
+  },
+  "hapatra": {
+   "name": "Hapatra",
+   "title": "Vizier of Poisons",
+   "portrait": {
+    "card": "Hapatra, Vizier of Poisons",
+    "set": "akh",
+    "number": "199",
+    "id": "56fbbcc9-db23-4902-b0f7-cea78a2a36af",
+    "crop": "https://cards.scryfall.io/art_crop/front/5/6/56fbbcc9-db23-4902-b0f7-cea78a2a36af.jpg?1783936464",
+    "artist": "Tyler Jacobson",
+    "focus": "50% 25%"
+   }
+  },
+  "kefnet": {
+   "name": "Kefnet",
+   "title": "God of Knowledge",
+   "portrait": {
+    "card": "Kefnet the Mindful",
+    "set": "akh",
+    "number": "59",
+    "id": "cbda3b24-f2a6-4bcf-9a0a-bab69ffa8069",
+    "crop": "https://cards.scryfall.io/art_crop/front/c/b/cbda3b24-f2a6-4bcf-9a0a-bab69ffa8069.jpg?1783936521",
+    "artist": "Chase Stone",
+    "focus": "50% 25%"
+   }
+  },
+  "gideon": {
+   "name": "Gideon Jura",
+   "title": "Of the Trials",
+   "portrait": {
+    "card": "Gideon of the Trials",
+    "set": "akh",
+    "number": "14",
+    "id": "959ce13f-519f-4472-bbd1-f26a972723d7",
+    "crop": "https://cards.scryfall.io/art_crop/front/9/5/959ce13f-519f-4472-bbd1-f26a972723d7.jpg?1783936539",
+    "artist": "Izzy",
+    "focus": "50% 25%"
+   }
+  },
+  "hazoret": {
+   "name": "Hazoret",
+   "title": "The Fervent",
+   "portrait": {
+    "card": "Hazoret the Fervent",
+    "set": "akh",
+    "number": "136",
+    "id": "36ed9f9d-99a7-49f4-b0ad-d71355809d32",
+    "crop": "https://cards.scryfall.io/art_crop/front/3/6/36ed9f9d-99a7-49f4-b0ad-d71355809d32.jpg?1783936487",
+    "artist": "Chase Stone",
+    "focus": "50% 25%"
+   }
+  },
+  "scarab": {
+   "name": "The Scarab God",
+   "title": "Of the Eternals",
+   "portrait": {
+    "card": "The Scarab God",
+    "set": "hou",
+    "number": "145",
+    "id": "621cfd79-be4e-41e3-95ce-62b0eeff5baf",
+    "crop": "https://cards.scryfall.io/art_crop/front/6/2/621cfd79-be4e-41e3-95ce-62b0eeff5baf.jpg?1783936010",
+    "artist": "Lius Lasahido",
+    "focus": "50% 30%"
+   }
+  },
+  "exert": {
+   "name": "Exert Red",
+   "title": "Summer 2017",
+   "portrait": {
+    "card": "Glorybringer",
+    "set": "akh",
+    "number": "134",
+    "id": "3277ad99-5682-4baa-b106-de15721876a6",
+    "crop": "https://cards.scryfall.io/art_crop/front/3/2/3277ad99-5682-4baa-b106-de15721876a6.jpg?1783936489",
+    "artist": "Sam Burley",
+    "focus": "50% 30%"
+   }
+  },
+  "zombies": {
+   "name": "Zombies",
+   "title": "Summer 2017",
+   "portrait": {
+    "card": "Gravedigger",
+    "set": "akh",
+    "number": "93",
+    "id": "9606f1ce-afeb-4fc5-bd4c-2484cd232924",
+    "crop": "https://cards.scryfall.io/art_crop/front/9/6/9606f1ce-afeb-4fc5-bd4c-2484cd232924.jpg?1783936505",
+    "artist": "Tony Foti",
+    "focus": "50% 30%"
+   }
+  },
+  "camels": {
+   "name": "Cat Tokens",
+   "title": "Summer 2017",
+   "portrait": {
+    "card": "Regal Caracal",
+    "set": "akh",
+    "number": "24",
+    "id": "cd349f95-3eae-4ef2-abf8-e911bb8e93e5",
+    "crop": "https://cards.scryfall.io/art_crop/front/c/d/cd349f95-3eae-4ef2-abf8-e911bb8e93e5.jpg?1783936535",
+    "artist": "Filip Burburan",
+    "focus": "50% 30%"
+   }
+  },
+  "gift": {
+   "name": "God-Pharaoh's Gift",
+   "title": "Summer 2017",
+   "portrait": {
+    "card": "God-Pharaoh's Gift",
+    "set": "hou",
+    "number": "161",
+    "id": "b2e85a9e-4c37-4721-b7ea-de3413ec39df",
+    "crop": "https://cards.scryfall.io/art_crop/front/b/2/b2e85a9e-4c37-4721-b7ea-de3413ec39df.jpg?1783936002",
+    "artist": "Titus Lunter",
+    "focus": "50% 30%"
+   }
+  },
+  "gatewatch": {
+   "name": "The Gatewatch",
+   "title": "At Naktamun",
+   "portrait": {
+    "card": "Gideon, Martial Paragon",
+    "set": "akh",
+    "number": "270",
+    "id": "2c057ca8-9811-4dc3-9b0e-f9f69f752d1d",
+    "crop": "https://cards.scryfall.io/art_crop/front/2/c/2c057ca8-9811-4dc3-9b0e-f9f69f752d1d.jpg?1783936437",
+    "artist": "Daarken",
+    "focus": "50% 25%"
+   }
+  },
+  "bolas": {
+   "name": "Nicol Bolas",
+   "title": "God-Pharaoh",
+   "portrait": {
+    "card": "Nicol Bolas, God-Pharaoh",
+    "set": "hou",
+    "number": "140",
+    "id": "985e92f4-3904-41df-91f7-42eedbe3ccd2",
+    "crop": "https://cards.scryfall.io/art_crop/front/9/8/985e92f4-3904-41df-91f7-42eedbe3ccd2.jpg?1783936012",
+    "artist": "Raymond Swanland",
+    "focus": "50% 25%"
+   }
+  },
+  "jace": {
+   "name": "Jace Beleren",
+   "title": "Of the Gatewatch",
+   "portrait": {
+    "card": "Jace's Defeat",
+    "set": "hou",
+    "number": "38",
+    "id": "c6b103c1-9b25-4bfe-9081-570977e9fdad",
+    "crop": "https://cards.scryfall.io/art_crop/front/c/6/c6b103c1-9b25-4bfe-9081-570977e9fdad.jpg?1783936052",
+    "artist": "Kieran Yanner",
+    "focus": "50% 25%"
+   }
+  },
+  "djeru": {
+   "name": "Djeru",
+   "title": "Of the Tah crop",
+   "portrait": {
+    "card": "Djeru, With Eyes Open",
+    "set": "hou",
+    "number": "10",
+    "id": "2234df89-0835-4a17-b5d8-2334ee8f692d",
+    "crop": "https://cards.scryfall.io/art_crop/front/2/2/2234df89-0835-4a17-b5d8-2334ee8f692d.jpg?1783936062",
+    "artist": "Kieran Yanner",
+    "focus": "50% 25%"
+   }
+  },
+  "ramunap": {
+   "name": "Ramunap Red",
+   "title": "Summer 2017",
+   "portrait": {
+    "card": "Hazoret the Fervent",
+    "set": "akh",
+    "number": "136",
+    "id": "36ed9f9d-99a7-49f4-b0ad-d71355809d32",
+    "crop": "https://cards.scryfall.io/art_crop/front/3/6/36ed9f9d-99a7-49f4-b0ad-d71355809d32.jpg?1783936487",
+    "artist": "Chase Stone",
+    "focus": "50% 30%"
+   }
+  }
+ },
+ "battles": [
+  {
+   "id": "a26b1",
+   "slot": 1,
+   "kind": "Arrival",
+   "mood": "tension",
+   "title": "The Tah Crop",
+   "difficulty": "Easy",
+   "teaches": [
+    "Embalm"
+   ],
+   "blurb": "You arrive in Naktamun with Samut, who has begun to doubt the trials. Her old crop-mates are sent to bring her back.",
+   "rewardSet": "akh",
+   "host": false,
+   "hero": {
+    "who": "samut",
+    "deck": {
+     "name": "The Dissenters",
+     "colors": "RG",
+     "archetype": null,
+     "label": "tribute",
+     "cards": [
+      {
+       "qty": 2,
+       "name": "Samut, Voice of Dissent",
+       "set": "akh",
+       "number": "205",
+       "id": "60f2d8f1-43a9-438a-830c-9d6b5701f950"
+      },
+      {
+       "qty": 4,
+       "name": "Pathmaker Initiate",
+       "set": "akh",
+       "number": "146",
+       "id": "4ccc6b34-aaa7-4ec1-9f37-b03f9b5919f2"
+      },
+      {
+       "qty": 4,
+       "name": "Prowling Serpopard",
+       "set": "akh",
+       "number": "180",
+       "id": "92921fc1-11d0-41a9-b9b2-b44fd0913d31"
+      },
+      {
+       "qty": 4,
+       "name": "Bitterblade Warrior",
+       "set": "akh",
+       "number": "157",
+       "id": "dd54edbb-c35d-4f7f-b5ce-d39b0f766ab8"
+      },
+      {
+       "qty": 4,
+       "name": "Ahn-Crop Crasher",
+       "set": "akh",
+       "number": "117",
+       "id": "dd5db68c-24d5-44ce-9809-e446f26fac5d"
+      },
+      {
+       "qty": 4,
+       "name": "Ramunap Excavator",
+       "set": "hou",
+       "number": "129",
+       "id": "90a54d18-8403-441d-a115-ee462fabdabb"
+      },
+      {
+       "qty": 4,
+       "name": "Pouncing Cheetah",
+       "set": "akh",
+       "number": "179",
+       "id": "fca8a590-75c1-4e85-b8b7-8c0c0f18b96e"
+      },
+      {
+       "qty": 4,
+       "name": "Khenra Charioteer",
+       "set": "akh",
+       "number": "201",
+       "id": "8ab1454e-3c69-4450-bd4c-934af2ff2bcb"
+      },
+      {
+       "qty": 3,
+       "name": "Open Fire",
+       "set": "hou",
+       "number": "105",
+       "id": "448f9fb5-ffb5-4325-9f81-ce8782e5f9e9"
+      },
+      {
+       "qty": 3,
+       "name": "Abrade",
+       "set": "hou",
+       "number": "83",
+       "id": "84319dfb-eaf7-4b98-8c4f-30f5e779591b"
+      },
+      {
+       "qty": 12,
+       "name": "Mountain",
+       "set": "akh",
+       "number": "253",
+       "id": "d3112990-3919-46b0-b927-14566c689a81"
+      },
+      {
+       "qty": 12,
+       "name": "Forest",
+       "set": "akh",
+       "number": "254",
+       "id": "2c2fc9f7-21af-4416-abf5-6fcb4f543680"
+      }
+     ]
+    }
+   },
+   "villain": {
+    "who": "initiates",
+    "deck": {
+     "name": "Oketra's Initiates",
+     "colors": "W",
+     "archetype": null,
+     "label": "tribute",
+     "cards": [
+      {
+       "qty": 4,
+       "name": "Sacred Cat",
+       "set": "akh",
+       "number": "27",
+       "id": "08891c78-13c1-4d84-aa9c-78346b3b7d18"
+      },
+      {
+       "qty": 4,
+       "name": "Anointer Priest",
+       "set": "akh",
+       "number": "3",
+       "id": "4f922231-bf41-47d3-8fa3-13b9baf4a0f3"
+      },
+      {
+       "qty": 4,
+       "name": "Unwavering Initiate",
+       "set": "akh",
+       "number": "36",
+       "id": "8a73fe35-68d6-4882-aeab-5c1e7b97b938"
+      },
+      {
+       "qty": 4,
+       "name": "Glory-Bound Initiate",
+       "set": "akh",
+       "number": "16",
+       "id": "24e23a06-4ed3-4948-aca5-fbdda03f4f2a"
+      },
+      {
+       "qty": 2,
+       "name": "Steadfast Sentinel",
+       "set": "hou",
+       "number": "24",
+       "id": "707a30d2-0fca-4b39-91fb-9b03152705ba"
+      },
+      {
+       "qty": 3,
+       "name": "Binding Mummy",
+       "set": "akh",
+       "number": "6",
+       "id": "fae54072-ae27-4aae-a2b7-71f4551934f6"
+      },
+      {
+       "qty": 3,
+       "name": "Sparring Mummy",
+       "set": "akh",
+       "number": "29",
+       "id": "e4ec1587-0405-4b4d-96b5-1ac2c5a7c9dc"
+      },
+      {
+       "qty": 4,
+       "name": "Trueheart Duelist",
+       "set": "akh",
+       "number": "35",
+       "id": "628f5230-6c0d-4f24-b89a-7f3d443511f3"
+      },
+      {
+       "qty": 2,
+       "name": "Rhet-Crop Spearmaster",
+       "set": "akh",
+       "number": "26",
+       "id": "3fcfc2d3-8719-4ba1-b4c5-b2f8f6bab634"
+      },
+      {
+       "qty": 2,
+       "name": "Gideon's Resolve",
+       "set": "akh",
+       "number": "272",
+       "id": "a30b8c40-39ac-423f-b7da-845a16cd1b63"
+      },
+      {
+       "qty": 28,
+       "name": "Plains",
+       "set": "akh",
+       "number": "250",
+       "id": "c7191d23-b68f-406b-8c28-8dadbaef6562"
+      }
+     ]
+    }
+   },
+   "reward": {
+    "hero": {
+     "packs": 1,
+     "coins": 0
+    },
+    "villain": {
+     "card": {
+      "oracle_id": "4e0b9273-6614-41a8-9738-959349c0717b",
+      "name": "Anointer Priest",
+      "rarity": "common",
+      "set": "akh",
+      "id": "4f922231-bf41-47d3-8fa3-13b9baf4a0f3",
+      "image": "https://cards.scryfall.io/normal/front/4/f/4f922231-bf41-47d3-8fa3-13b9baf4a0f3.jpg"
+     },
+     "coins": 50
+    }
+   },
+   "scene": [
+    {
+     "who": "samut",
+     "line": "Don't you ever wonder what lies beyond the Hekma? Beyond the reach of the gods? Beyond the horns on the horizon?",
+     "quote": true
+    },
+    {
+     "who": "stage",
+     "line": "Initiates live and train with their crop, the unit that begins the trials together.",
+     "quote": true
+    },
+    {
+     "who": "samut",
+     "line": "Embalm: they can return from the graveyard as a white mummy token. Kill them once, and expect to kill them twice."
+    }
+   ],
+   "villainScene": [
+    {
+     "who": "stage",
+     "line": "What the gods decree, the mummies enforce.",
+     "quote": true
+    },
+    {
+     "who": "stage",
+     "line": "Hesitation breeds dissension. To be worthy of the next life, you must never look back.",
+     "quote": true
+    }
+   ],
+   "after": null,
+   "cues": {
+    "hero": {
+     "start": "Come on, then.",
+     "big": "Over the wall!",
+     "low": "They keep coming...",
+     "win": "Free for now.",
+     "loss": "Dragged back...",
+     "half": "Exile them or expect them twice."
+    },
+    "villain": {
+     "start": "Return to the crop.",
+     "big": "For the afterlife!",
+     "low": "Stay together...",
+     "win": "Brought home.",
+     "loss": "She got away..."
+    }
+   },
+   "bigPlays": [],
+   "sim": null
+  },
+  {
+   "id": "a26b2",
+   "slot": 2,
+   "kind": "Lesson",
+   "mood": "march",
+   "title": "The Trial of Strength",
+   "difficulty": "Easy",
+   "teaches": [
+    "Exert"
+   ],
+   "blurb": "Neheb, Samut's brother in all but blood, is training with Hazoret's warriors. First he has to get through Rhonas's trial of beasts and teeth.",
+   "rewardSet": "akh",
+   "host": false,
+   "hero": {
+    "who": "neheb",
+    "deck": {
+     "name": "The Fervent",
+     "colors": "BR",
+     "archetype": null,
+     "label": "tribute",
+     "cards": [
+      {
+       "qty": 2,
+       "name": "Neheb, the Worthy",
+       "set": "akh",
+       "number": "203",
+       "id": "7593d5fb-c6b3-4d24-b9d3-97a4378161fd"
+      },
+      {
+       "qty": 4,
+       "name": "Bloodrage Brawler",
+       "set": "akh",
+       "number": "121",
+       "id": "e6080f9e-2415-4e05-97a1-0fe4ad4fdf3b"
+      },
+      {
+       "qty": 4,
+       "name": "Earthshaker Khenra",
+       "set": "hou",
+       "number": "90",
+       "id": "0d60eabe-b281-4eba-9c26-287364ed2067"
+      },
+      {
+       "qty": 4,
+       "name": "Wildfire Eternal",
+       "set": "hou",
+       "number": "109",
+       "id": "fd845479-619a-4262-b445-d93975c183b4"
+      },
+      {
+       "qty": 4,
+       "name": "Combat Celebrant",
+       "set": "akh",
+       "number": "125",
+       "id": "28b63c3d-2e55-4343-b49a-11fa602ec473"
+      },
+      {
+       "qty": 4,
+       "name": "Ahn-Crop Crasher",
+       "set": "akh",
+       "number": "117",
+       "id": "dd5db68c-24d5-44ce-9809-e446f26fac5d"
+      },
+      {
+       "qty": 4,
+       "name": "Hazoret's Favor",
+       "set": "akh",
+       "number": "137",
+       "id": "8b467412-c06b-4cd9-a877-7722051fb758"
+      },
+      {
+       "qty": 4,
+       "name": "Abrade",
+       "set": "hou",
+       "number": "83",
+       "id": "84319dfb-eaf7-4b98-8c4f-30f5e779591b"
+      },
+      {
+       "qty": 4,
+       "name": "Open Fire",
+       "set": "hou",
+       "number": "105",
+       "id": "448f9fb5-ffb5-4325-9f81-ce8782e5f9e9"
+      },
+      {
+       "qty": 2,
+       "name": "Glorybringer",
+       "set": "akh",
+       "number": "134",
+       "id": "3277ad99-5682-4baa-b106-de15721876a6"
+      },
+      {
+       "qty": 12,
+       "name": "Mountain",
+       "set": "akh",
+       "number": "253",
+       "id": "d3112990-3919-46b0-b927-14566c689a81"
+      },
+      {
+       "qty": 12,
+       "name": "Swamp",
+       "set": "akh",
+       "number": "252",
+       "id": "60b7c997-e520-4ff6-8b3b-705c2f12a9d4"
+      }
+     ]
+    }
+   },
+   "villain": {
+    "who": "rhonas",
+    "deck": {
+     "name": "The Trial of Strength",
+     "colors": "G",
+     "archetype": null,
+     "label": "tribute",
+     "cards": [
+      {
+       "qty": 2,
+       "name": "Rhonas the Indomitable",
+       "set": "akh",
+       "number": "182",
+       "id": "50f23c47-278c-4188-8fb4-ae20a0c423c5"
+      },
+      {
+       "qty": 4,
+       "name": "Rhonas's Stalwart",
+       "set": "hou",
+       "number": "133",
+       "id": "99d4f791-9084-4644-a1f5-85adbf6dc790"
+      },
+      {
+       "qty": 4,
+       "name": "Champion of Rhonas",
+       "set": "akh",
+       "number": "159",
+       "id": "b185b24d-ae33-48ca-966a-511627fdac6d"
+      },
+      {
+       "qty": 4,
+       "name": "Pouncing Cheetah",
+       "set": "akh",
+       "number": "179",
+       "id": "fca8a590-75c1-4e85-b8b7-8c0c0f18b96e"
+      },
+      {
+       "qty": 4,
+       "name": "Prowling Serpopard",
+       "set": "akh",
+       "number": "180",
+       "id": "92921fc1-11d0-41a9-b9b2-b44fd0913d31"
+      },
+      {
+       "qty": 4,
+       "name": "Crocodile of the Crossing",
+       "set": "akh",
+       "number": "162",
+       "id": "2f64ca9c-99c4-45d4-bd21-3ede61702250"
+      },
+      {
+       "qty": 4,
+       "name": "Bitterbow Sharpshooters",
+       "set": "hou",
+       "number": "112",
+       "id": "8ecfcf99-be2b-4e5f-adef-1977ee5c6a0f"
+      },
+      {
+       "qty": 4,
+       "name": "Ornery Kudu",
+       "set": "akh",
+       "number": "178",
+       "id": "8ba1d3a1-8c1b-4b77-b149-13d5ad9f125a"
+      },
+      {
+       "qty": 4,
+       "name": "Defiant Greatmaw",
+       "set": "akh",
+       "number": "163",
+       "id": "b74cb0ba-c691-4823-aa94-399b1aaeaf0b"
+      },
+      {
+       "qty": 26,
+       "name": "Forest",
+       "set": "akh",
+       "number": "254",
+       "id": "2c2fc9f7-21af-4416-abf5-6fcb4f543680"
+      }
+     ]
+    }
+   },
+   "reward": {
+    "hero": {
+     "packs": 1,
+     "coins": 0
+    },
+    "villain": {
+     "card": {
+      "oracle_id": "5d2acd3e-4782-42e3-bcd5-80f8b439cc28",
+      "name": "Rhonas the Indomitable",
+      "rarity": "mythic",
+      "set": "akh",
+      "id": "50f23c47-278c-4188-8fb4-ae20a0c423c5",
+      "image": "https://cards.scryfall.io/normal/front/5/0/50f23c47-278c-4188-8fb4-ae20a0c423c5.jpg"
+     },
+     "coins": 50
+    }
+   },
+   "scene": [
+    {
+     "who": "neheb",
+     "line": "Ashes can't be embalmed.",
+     "quote": true
+    },
+    {
+     "who": "stage",
+     "line": "To Hazoret, those who fight for her are her beloved children.",
+     "quote": true
+    },
+    {
+     "who": "neheb",
+     "line": "Exert: attack hard, and the creature stays tapped through your next untap. Spend it on the turn that wins, not before."
+    }
+   ],
+   "villainScene": [
+    {
+     "who": "rhonas",
+     "line": "Everything in the trial has teeth. You will overcome them, or you will feed them.",
+     "quote": true
+    },
+    {
+     "who": "stage",
+     "line": "There are no safe paths through the Trial of Strength.",
+     "quote": true
+    }
+   ],
+   "after": null,
+   "cues": {
+    "hero": {
+     "start": "Hazoret watches.",
+     "big": "Exert!",
+     "low": "Too much for one turn...",
+     "win": "Passed.",
+     "loss": "Out of the trial...",
+     "half": "Exert only when it kills."
+    },
+    "villain": {
+     "start": "Instinct to guide.",
+     "big": "Strength to overcome.",
+     "low": "You are not yet worthy...",
+     "win": "Another initiate falls.",
+     "loss": "Strong enough..."
+    }
+   },
+   "bigPlays": [],
+   "sim": null
+  },
+  {
+   "id": "a26b3",
+   "slot": 3,
+   "kind": "Lesson",
+   "mood": "comic",
+   "title": "Hapatra's Poisons",
+   "difficulty": "Easy",
+   "teaches": [
+    "Aftermath"
+   ],
+   "blurb": "Hapatra, Bontu's vizier of poisons, sits in on Kefnet's trial of puzzles. Everyone is a little too clever and a little too sure.",
+   "rewardSet": "akh",
+   "host": false,
+   "hero": {
+    "who": "hapatra",
+    "deck": {
+     "name": "The Vizier of Poisons",
+     "colors": "BG",
+     "archetype": null,
+     "label": "tribute",
+     "cards": [
+      {
+       "qty": 2,
+       "name": "Hapatra, Vizier of Poisons",
+       "set": "akh",
+       "number": "199",
+       "id": "56fbbcc9-db23-4902-b0f7-cea78a2a36af"
+      },
+      {
+       "qty": 4,
+       "name": "Doomed Dissenter",
+       "set": "akh",
+       "number": "87",
+       "id": "a1c0b645-de43-46d0-84c1-03f295def217"
+      },
+      {
+       "qty": 4,
+       "name": "Dune Beetle",
+       "set": "akh",
+       "number": "89",
+       "id": "923cb904-c725-4d57-bc17-7aa87a7cd8e0"
+      },
+      {
+       "qty": 2,
+       "name": "Wasteland Scorpion",
+       "set": "akh",
+       "number": "116",
+       "id": "2bab1782-498c-40fc-bf2e-5c991d0c3501"
+      },
+      {
+       "qty": 4,
+       "name": "Never // Return",
+       "set": "akh",
+       "number": "212",
+       "id": "a4b32135-7061-4278-a01a-4fcbaadc9706"
+      },
+      {
+       "qty": 4,
+       "name": "Obelisk Spider",
+       "set": "hou",
+       "number": "141",
+       "id": "ae054604-0d77-45d0-b17b-55a83fb18e39"
+      },
+      {
+       "qty": 4,
+       "name": "Decimator Beetle",
+       "set": "akh",
+       "number": "197",
+       "id": "6b75e834-fa46-4833-ae9f-1bc2809ece2f"
+      },
+      {
+       "qty": 4,
+       "name": "Lethal Sting",
+       "set": "hou",
+       "number": "67",
+       "id": "eaded6bf-2db7-4b1d-93cc-4b7b571cd2de"
+      },
+      {
+       "qty": 3,
+       "name": "Bone Picker",
+       "set": "akh",
+       "number": "81",
+       "id": "bdc6a825-43f7-40a4-95f0-335dc538b6cd"
+      },
+      {
+       "qty": 12,
+       "name": "Swamp",
+       "set": "akh",
+       "number": "252",
+       "id": "60b7c997-e520-4ff6-8b3b-705c2f12a9d4"
+      },
+      {
+       "qty": 12,
+       "name": "Forest",
+       "set": "akh",
+       "number": "254",
+       "id": "2c2fc9f7-21af-4416-abf5-6fcb4f543680"
+      },
+      {
+       "qty": 4,
+       "name": "Gravedigger",
+       "set": "akh",
+       "number": "93",
+       "id": "9606f1ce-afeb-4fc5-bd4c-2484cd232924"
+      },
+      {
+       "qty": 1,
+       "name": "Hapatra's Mark",
+       "set": "akh",
+       "number": "169",
+       "id": "199d6a8d-008d-4495-9cbc-b8d680fab13c"
+      }
+     ]
+    }
+   },
+   "villain": {
+    "who": "kefnet",
+    "deck": {
+     "name": "The Trial of Knowledge",
+     "colors": "U",
+     "archetype": null,
+     "label": "tribute",
+     "cards": [
+      {
+       "qty": 2,
+       "name": "Kefnet the Mindful",
+       "set": "akh",
+       "number": "59",
+       "id": "cbda3b24-f2a6-4bcf-9a0a-bab69ffa8069"
+      },
+      {
+       "qty": 4,
+       "name": "Aven Initiate",
+       "set": "akh",
+       "number": "43",
+       "id": "61203781-24ad-4bc9-9b69-97149f3043bc"
+      },
+      {
+       "qty": 4,
+       "name": "Proven Combatant",
+       "set": "hou",
+       "number": "42",
+       "id": "d83fd08a-c87b-4e29-bd1d-31dea3732156"
+      },
+      {
+       "qty": 4,
+       "name": "Sinuous Striker",
+       "set": "hou",
+       "number": "45",
+       "id": "ed2b97d1-3e69-4305-b1df-947ff64c5043"
+      },
+      {
+       "qty": 28,
+       "name": "Island",
+       "set": "akh",
+       "number": "251",
+       "id": "bec6fced-62bb-4a99-9ea1-374056b5781b"
+      },
+      {
+       "qty": 4,
+       "name": "Naga Oracle",
+       "set": "akh",
+       "number": "62",
+       "id": "9060b7b5-3ef1-443e-8f8a-450cc42c43a6"
+      },
+      {
+       "qty": 2,
+       "name": "Vizier of the Anointed",
+       "set": "hou",
+       "number": "55",
+       "id": "68ef426c-b396-4767-b360-435f67207022"
+      },
+      {
+       "qty": 4,
+       "name": "Riddleform",
+       "set": "hou",
+       "number": "43",
+       "id": "8e54dc4a-3fd6-4895-8497-3a19e4e9a3d8"
+      },
+      {
+       "qty": 4,
+       "name": "River Serpent",
+       "set": "akh",
+       "number": "66",
+       "id": "a89500ba-8256-4002-a9f2-62d529e9886b"
+      },
+      {
+       "qty": 4,
+       "name": "Ancient Crab",
+       "set": "akh",
+       "number": "40",
+       "id": "7c2ca68b-15fb-4691-b549-268df92ca413"
+      }
+     ]
+    }
+   },
+   "reward": {
+    "hero": {
+     "packs": 1,
+     "coins": 0
+    },
+    "villain": {
+     "card": {
+      "oracle_id": "caf626a8-7abc-496b-9d3a-23194ce70e01",
+      "name": "Kefnet the Mindful",
+      "rarity": "mythic",
+      "set": "akh",
+      "id": "cbda3b24-f2a6-4bcf-9a0a-bab69ffa8069",
+      "image": "https://cards.scryfall.io/normal/front/c/b/cbda3b24-f2a6-4bcf-9a0a-bab69ffa8069.jpg"
+     },
+     "coins": 50
+    }
+   },
+   "scene": [
+    {
+     "who": "stage",
+     "line": "If you fear poisons, it is because you are ignorant of them.",
+     "quote": true
+    },
+    {
+     "who": "stage",
+     "line": "Her subtle smile is suffused with venom.",
+     "quote": true
+    },
+    {
+     "who": "hapatra",
+     "line": "Aftermath: the bottom half of the split card can only be cast from the graveyard, and then it is exiled. Cast the top half first."
+    }
+   ],
+   "villainScene": [
+    {
+     "who": "kefnet",
+     "line": "No amount of strength can help you overcome my trial. You must be ready to forgo your body and favor your mind.",
+     "quote": true
+    },
+    {
+     "who": "stage",
+     "line": "The answers are here. This is the way through the trial.",
+     "quote": true
+    }
+   ],
+   "after": null,
+   "cues": {
+    "hero": {
+     "start": "A little sting.",
+     "big": "Aftermath!",
+     "low": "He saw that coming...",
+     "win": "Delicious.",
+     "loss": "Antidote, antidote...",
+     "half": "Cast it twice, once from the graveyard."
+    },
+    "villain": {
+     "start": "Think.",
+     "big": "Solved.",
+     "low": "A flaw in the reasoning...",
+     "win": "Correct.",
+     "loss": "You may try again."
+    }
+   },
+   "bigPlays": [],
+   "sim": null
+  },
+  {
+   "id": "a26b4",
+   "slot": 4,
+   "kind": "Rival",
+   "mood": "tension",
+   "title": "The Trial of Zeal",
+   "difficulty": "Normal",
+   "teaches": [
+    "Cycling"
+   ],
+   "blurb": "Gideon Jura sees an initiate murder his crop-mate in the trial of zeal. His admiration for Naktamun gives way to horror.",
+   "rewardSet": "hou",
+   "host": false,
+   "hero": {
+    "who": "gideon",
+    "deck": {
+     "name": "Gideon of the Trials",
+     "colors": "W",
+     "archetype": null,
+     "label": "tribute",
+     "cards": [
+      {
+       "qty": 2,
+       "name": "Gideon of the Trials",
+       "set": "akh",
+       "number": "14",
+       "id": "959ce13f-519f-4472-bbd1-f26a972723d7"
+      },
+      {
+       "qty": 2,
+       "name": "Gideon's Intervention",
+       "set": "akh",
+       "number": "15",
+       "id": "6e2524fb-ec90-4f8e-b851-f78034edef3f"
+      },
+      {
+       "qty": 2,
+       "name": "Oketra's Attendant",
+       "set": "akh",
+       "number": "22",
+       "id": "6074fe64-8a2d-411e-8d33-97b1c60633e4"
+      },
+      {
+       "qty": 4,
+       "name": "Dauntless Aven",
+       "set": "hou",
+       "number": "7",
+       "id": "01e6320c-6f8b-4582-ad11-9b868bff08a1"
+      },
+      {
+       "qty": 4,
+       "name": "Trueheart Duelist",
+       "set": "akh",
+       "number": "35",
+       "id": "628f5230-6c0d-4f24-b89a-7f3d443511f3"
+      },
+      {
+       "qty": 4,
+       "name": "Sparring Mummy",
+       "set": "akh",
+       "number": "29",
+       "id": "e4ec1587-0405-4b4d-96b5-1ac2c5a7c9dc"
+      },
+      {
+       "qty": 2,
+       "name": "Sandblast",
+       "set": "hou",
+       "number": "20",
+       "id": "0f3c501c-4e23-4e56-ad99-1803c8a877ca"
+      },
+      {
+       "qty": 2,
+       "name": "Crested Sunmare",
+       "set": "hou",
+       "number": "6",
+       "id": "732fa4c9-11da-4bdb-96af-aa37c74be25f"
+      },
+      {
+       "qty": 2,
+       "name": "Djeru, With Eyes Open",
+       "set": "hou",
+       "number": "10",
+       "id": "2234df89-0835-4a17-b5d8-2334ee8f692d"
+      },
+      {
+       "qty": 3,
+       "name": "Binding Mummy",
+       "set": "akh",
+       "number": "6",
+       "id": "fae54072-ae27-4aae-a2b7-71f4551934f6"
+      },
+      {
+       "qty": 25,
+       "name": "Plains",
+       "set": "akh",
+       "number": "250",
+       "id": "c7191d23-b68f-406b-8c28-8dadbaef6562"
+      },
+      {
+       "qty": 4,
+       "name": "Graceful Cat",
+       "set": "akh",
+       "number": "273",
+       "id": "b42ba8bf-9fc1-4d57-9c80-42491d18d929"
+      },
+      {
+       "qty": 4,
+       "name": "Solitary Camel",
+       "set": "hou",
+       "number": "23",
+       "id": "8adb8dbf-c83c-4169-b822-8e32aa36cffa"
+      }
+     ]
+    }
+   },
+   "villain": {
+    "who": "hazoret",
+    "deck": {
+     "name": "Hazoret's Priests",
+     "colors": "R",
+     "archetype": null,
+     "label": "tribute",
+     "cards": [
+      {
+       "qty": 2,
+       "name": "Hazoret the Fervent",
+       "set": "akh",
+       "number": "136",
+       "id": "36ed9f9d-99a7-49f4-b0ad-d71355809d32"
+      },
+      {
+       "qty": 2,
+       "name": "Hazoret's Undying Fury",
+       "set": "hou",
+       "number": "96",
+       "id": "7f578576-19ca-4e67-94da-2c0767d9a2bb"
+      },
+      {
+       "qty": 4,
+       "name": "Zealot of the God-Pharaoh",
+       "set": "hou",
+       "number": "207",
+       "id": "180d1cd4-7d0d-4279-bc2a-59bb21b06904"
+      },
+      {
+       "qty": 4,
+       "name": "Earthshaker Khenra",
+       "set": "hou",
+       "number": "90",
+       "id": "0d60eabe-b281-4eba-9c26-287364ed2067"
+      },
+      {
+       "qty": 4,
+       "name": "Manticore Eternal",
+       "set": "hou",
+       "number": "103",
+       "id": "b03a9686-d30b-4048-8b0a-23fd2f0aed4b"
+      },
+      {
+       "qty": 4,
+       "name": "Heart-Piercer Manticore",
+       "set": "akh",
+       "number": "138",
+       "id": "dd64160a-96e0-4593-ba42-c5e8bbfa0b15"
+      },
+      {
+       "qty": 3,
+       "name": "Hour of Devastation",
+       "set": "hou",
+       "number": "97",
+       "id": "d420cc12-cfd7-4007-a0c2-b16c8f63a754"
+      },
+      {
+       "qty": 4,
+       "name": "Harsh Mentor",
+       "set": "akh",
+       "number": "135",
+       "id": "8936bf9d-c973-4bce-b5c2-2a01b7953638"
+      },
+      {
+       "qty": 4,
+       "name": "Open Fire",
+       "set": "hou",
+       "number": "105",
+       "id": "448f9fb5-ffb5-4325-9f81-ce8782e5f9e9"
+      },
+      {
+       "qty": 3,
+       "name": "Glorybringer",
+       "set": "akh",
+       "number": "134",
+       "id": "3277ad99-5682-4baa-b106-de15721876a6"
+      },
+      {
+       "qty": 2,
+       "name": "Sweltering Suns",
+       "set": "akh",
+       "number": "149",
+       "id": "f11cd406-c6ae-4018-ae45-4e5577aa82ae"
+      },
+      {
+       "qty": 24,
+       "name": "Mountain",
+       "set": "akh",
+       "number": "253",
+       "id": "d3112990-3919-46b0-b927-14566c689a81"
+      }
+     ]
+    }
+   },
+   "reward": {
+    "hero": {
+     "packs": 1,
+     "coins": 100
+    },
+    "villain": {
+     "card": {
+      "oracle_id": "2c6934b6-67c4-457a-ae8f-59914fd8f256",
+      "name": "Hazoret the Fervent",
+      "rarity": "mythic",
+      "set": "akh",
+      "id": "36ed9f9d-99a7-49f4-b0ad-d71355809d32",
+      "image": "https://cards.scryfall.io/normal/front/3/6/36ed9f9d-99a7-49f4-b0ad-d71355809d32.jpg"
+     },
+     "coins": 100
+    }
+   },
+   "scene": [
+    {
+     "who": "stage",
+     "line": "As Gideon watched the initiate murder his crop-mate, his admiration of the city of Naktamun gave way to horror.",
+     "quote": true
+    },
+    {
+     "who": "gideon",
+     "line": "The gods here may walk among the people, but they are not with them.",
+     "quote": true
+    },
+    {
+     "who": "gideon",
+     "line": "Cycling: pay a little mana, discard the card, draw a new one. Cycle the spare lands and the dead cards."
+    }
+   ],
+   "villainScene": [
+    {
+     "who": "hazoret",
+     "line": "When the time comes, only one of you will be honored by my spear.",
+     "quote": true
+    },
+    {
+     "who": "stage",
+     "line": "What the initiates face in the final trial is completely at Hazoret's discretion.",
+     "quote": true
+    }
+   ],
+   "after": null,
+   "cues": {
+    "hero": {
+     "start": "This is not justice.",
+     "big": "Hold the line!",
+     "low": "There are too many...",
+     "win": "The trial is broken.",
+     "loss": "Defeated...",
+     "half": "Cycle away the dead cards."
+    },
+    "villain": {
+     "start": "Prove your zeal.",
+     "big": "Burn!",
+     "low": "Falter and be forgotten...",
+     "win": "Worthy.",
+     "loss": "The spear is dull..."
+    }
+   },
+   "bigPlays": [],
+   "sim": null
+  },
+  {
+   "id": "a26b5",
+   "slot": 5,
+   "kind": "Lesson",
+   "mood": "tension",
+   "title": "The Eternals",
+   "difficulty": "Normal",
+   "teaches": [
+    "Eternalize"
+   ],
+   "blurb": "In the Hour of Revelation, the gods are dead or turned. The Scarab God, who was Kefnet's last act of defiance, hunts for the dissenters.",
+   "rewardSet": "hou",
+   "host": false,
+   "hero": {
+    "who": "samut",
+    "deck": {
+     "name": "The Tested",
+     "colors": "RG",
+     "archetype": null,
+     "label": "tribute",
+     "cards": [
+      {
+       "qty": 2,
+       "name": "Samut, the Tested",
+       "set": "hou",
+       "number": "144",
+       "id": "09f06f55-7918-46c4-80ff-0bf39e091a4a"
+      },
+      {
+       "qty": 4,
+       "name": "Pathmaker Initiate",
+       "set": "akh",
+       "number": "146",
+       "id": "4ccc6b34-aaa7-4ec1-9f37-b03f9b5919f2"
+      },
+      {
+       "qty": 4,
+       "name": "Ahn-Crop Crasher",
+       "set": "akh",
+       "number": "117",
+       "id": "dd5db68c-24d5-44ce-9809-e446f26fac5d"
+      },
+      {
+       "qty": 4,
+       "name": "Combat Celebrant",
+       "set": "akh",
+       "number": "125",
+       "id": "28b63c3d-2e55-4343-b49a-11fa602ec473"
+      },
+      {
+       "qty": 2,
+       "name": "Samut, Voice of Dissent",
+       "set": "akh",
+       "number": "205",
+       "id": "60f2d8f1-43a9-438a-830c-9d6b5701f950"
+      },
+      {
+       "qty": 4,
+       "name": "Prowling Serpopard",
+       "set": "akh",
+       "number": "180",
+       "id": "92921fc1-11d0-41a9-b9b2-b44fd0913d31"
+      },
+      {
+       "qty": 4,
+       "name": "Wildfire Eternal",
+       "set": "hou",
+       "number": "109",
+       "id": "fd845479-619a-4262-b445-d93975c183b4"
+      },
+      {
+       "qty": 4,
+       "name": "Abrade",
+       "set": "hou",
+       "number": "83",
+       "id": "84319dfb-eaf7-4b98-8c4f-30f5e779591b"
+      },
+      {
+       "qty": 4,
+       "name": "Open Fire",
+       "set": "hou",
+       "number": "105",
+       "id": "448f9fb5-ffb5-4325-9f81-ce8782e5f9e9"
+      },
+      {
+       "qty": 4,
+       "name": "Rhonas's Stalwart",
+       "set": "hou",
+       "number": "133",
+       "id": "99d4f791-9084-4644-a1f5-85adbf6dc790"
+      },
+      {
+       "qty": 12,
+       "name": "Mountain",
+       "set": "akh",
+       "number": "253",
+       "id": "d3112990-3919-46b0-b927-14566c689a81"
+      },
+      {
+       "qty": 12,
+       "name": "Forest",
+       "set": "akh",
+       "number": "254",
+       "id": "2c2fc9f7-21af-4416-abf5-6fcb4f543680"
+      }
+     ]
+    }
+   },
+   "villain": {
+    "who": "scarab",
+    "deck": {
+     "name": "The Eternals",
+     "colors": "UB",
+     "archetype": null,
+     "label": "tribute",
+     "cards": [
+      {
+       "qty": 2,
+       "name": "The Scarab God",
+       "set": "hou",
+       "number": "145",
+       "id": "621cfd79-be4e-41e3-95ce-62b0eeff5baf"
+      },
+      {
+       "qty": 4,
+       "name": "Champion of Wits",
+       "set": "hou",
+       "number": "31",
+       "id": "d765221d-9718-47eb-aa49-9c0719337139"
+      },
+      {
+       "qty": 4,
+       "name": "Eternal of Harsh Truths",
+       "set": "hou",
+       "number": "34",
+       "id": "0389daf7-0818-488f-8e6a-94818a6c94a6"
+      },
+      {
+       "qty": 4,
+       "name": "Spellweaver Eternal",
+       "set": "hou",
+       "number": "46",
+       "id": "a6bb7d1a-d606-46a8-a592-648c5d2e7382"
+      },
+      {
+       "qty": 4,
+       "name": "Merciless Eternal",
+       "set": "hou",
+       "number": "71",
+       "id": "11a6becd-15be-4f2d-8fda-35b1b289b28f"
+      },
+      {
+       "qty": 4,
+       "name": "Khenra Eternal",
+       "set": "hou",
+       "number": "66",
+       "id": "abbdc277-4a76-44a9-aeda-edabab1f579e"
+      },
+      {
+       "qty": 2,
+       "name": "Ammit Eternal",
+       "set": "hou",
+       "number": "57",
+       "id": "1b04934f-87d1-4768-b7b5-5f7249a09771"
+      },
+      {
+       "qty": 4,
+       "name": "Cancel",
+       "set": "akh",
+       "number": "44",
+       "id": "7258e651-868a-4f63-9454-6c6c95d25387"
+      },
+      {
+       "qty": 4,
+       "name": "Gravedigger",
+       "set": "akh",
+       "number": "93",
+       "id": "9606f1ce-afeb-4fc5-bd4c-2484cd232924"
+      },
+      {
+       "qty": 4,
+       "name": "Sinuous Striker",
+       "set": "hou",
+       "number": "45",
+       "id": "ed2b97d1-3e69-4305-b1df-947ff64c5043"
+      },
+      {
+       "qty": 12,
+       "name": "Island",
+       "set": "akh",
+       "number": "251",
+       "id": "bec6fced-62bb-4a99-9ea1-374056b5781b"
+      },
+      {
+       "qty": 12,
+       "name": "Swamp",
+       "set": "akh",
+       "number": "252",
+       "id": "60b7c997-e520-4ff6-8b3b-705c2f12a9d4"
+      }
+     ]
+    }
+   },
+   "reward": {
+    "hero": {
+     "packs": 1,
+     "coins": 100
+    },
+    "villain": {
+     "card": {
+      "oracle_id": "c75e55f2-fd6c-4816-9d96-21eeb8369aff",
+      "name": "The Scarab God",
+      "rarity": "mythic",
+      "set": "hou",
+      "id": "621cfd79-be4e-41e3-95ce-62b0eeff5baf",
+      "image": "https://cards.scryfall.io/normal/front/6/2/621cfd79-be4e-41e3-95ce-62b0eeff5baf.jpg"
+     },
+     "coins": 100
+    }
+   },
+   "scene": [
+    {
+     "who": "jace",
+     "line": "If creating the Eternals was Bolas's plan here, what is his plan for the Eternals?",
+     "quote": true
+    },
+    {
+     "who": "stage",
+     "line": "The dead entered as worthy. They exited as Eternals.",
+     "quote": true
+    },
+    {
+     "who": "samut",
+     "line": "Eternalize: they come back from the graveyard as 4/4 black Zombies. Exile the graveyard, or kill the Zombie."
+    }
+   ],
+   "villainScene": [
+    {
+     "who": "stage",
+     "line": "For many years, servant mummies toiled in the mines to extract lazotep. The emergence of the Eternals revealed the sacred substance's true purpose.",
+     "quote": true
+    },
+    {
+     "who": "stage",
+     "line": "The Eternals had long since mastered every technique taught during the trials.",
+     "quote": true
+    }
+   ],
+   "after": null,
+   "cues": {
+    "hero": {
+     "start": "Run!",
+     "big": "Break them!",
+     "low": "They keep standing up...",
+     "win": "We are through.",
+     "loss": "They got us...",
+     "half": "Do not let them eternalize."
+    },
+    "villain": {
+     "start": "[a hollow chant]",
+     "big": "[the dead return stronger]",
+     "low": "[an Eternal crumbles]",
+     "win": "[eternity]",
+     "loss": "[silence]"
+    }
+   },
+   "bigPlays": [],
+   "sim": null
+  },
+  {
+   "id": "a26b6",
+   "slot": 6,
+   "kind": "Meta",
+   "mood": "march",
+   "title": "Exert Red",
+   "difficulty": "Normal",
+   "teaches": [
+    "Racing"
+   ],
+   "blurb": "A tribute to Standard in summer 2017: Temur Exert against Zombies, two ways of surviving the Hour.",
+   "rewardSet": "hou",
+   "host": false,
+   "hero": {
+    "who": "exert",
+    "deck": {
+     "name": "RG Exert",
+     "colors": "RG",
+     "archetype": "Aggro",
+     "label": "tribute",
+     "cards": [
+      {
+       "qty": 4,
+       "name": "Pouncing Cheetah",
+       "set": "akh",
+       "number": "179",
+       "id": "fca8a590-75c1-4e85-b8b7-8c0c0f18b96e"
+      },
+      {
+       "qty": 4,
+       "name": "Bloodrage Brawler",
+       "set": "akh",
+       "number": "121",
+       "id": "e6080f9e-2415-4e05-97a1-0fe4ad4fdf3b"
+      },
+      {
+       "qty": 4,
+       "name": "Earthshaker Khenra",
+       "set": "hou",
+       "number": "90",
+       "id": "0d60eabe-b281-4eba-9c26-287364ed2067"
+      },
+      {
+       "qty": 4,
+       "name": "Ahn-Crop Crasher",
+       "set": "akh",
+       "number": "117",
+       "id": "dd5db68c-24d5-44ce-9809-e446f26fac5d"
+      },
+      {
+       "qty": 4,
+       "name": "Combat Celebrant",
+       "set": "akh",
+       "number": "125",
+       "id": "28b63c3d-2e55-4343-b49a-11fa602ec473"
+      },
+      {
+       "qty": 4,
+       "name": "Wildfire Eternal",
+       "set": "hou",
+       "number": "109",
+       "id": "fd845479-619a-4262-b445-d93975c183b4"
+      },
+      {
+       "qty": 3,
+       "name": "Glorybringer",
+       "set": "akh",
+       "number": "134",
+       "id": "3277ad99-5682-4baa-b106-de15721876a6"
+      },
+      {
+       "qty": 3,
+       "name": "Abrade",
+       "set": "hou",
+       "number": "83",
+       "id": "84319dfb-eaf7-4b98-8c4f-30f5e779591b"
+      },
+      {
+       "qty": 3,
+       "name": "Open Fire",
+       "set": "hou",
+       "number": "105",
+       "id": "448f9fb5-ffb5-4325-9f81-ce8782e5f9e9"
+      },
+      {
+       "qty": 3,
+       "name": "Neheb, the Eternal",
+       "set": "hou",
+       "number": "104",
+       "id": "54231832-d492-4812-b658-4ab9a30fefe2"
+      },
+      {
+       "qty": 12,
+       "name": "Mountain",
+       "set": "akh",
+       "number": "253",
+       "id": "d3112990-3919-46b0-b927-14566c689a81"
+      },
+      {
+       "qty": 12,
+       "name": "Forest",
+       "set": "akh",
+       "number": "254",
+       "id": "2c2fc9f7-21af-4416-abf5-6fcb4f543680"
+      }
+     ]
+    }
+   },
+   "villain": {
+    "who": "zombies",
+    "deck": {
+     "name": "Zombies",
+     "colors": "BR",
+     "archetype": "Midrange",
+     "label": "tribute",
+     "cards": [
+      {
+       "qty": 4,
+       "name": "Dread Wanderer",
+       "set": "akh",
+       "number": "88",
+       "id": "343fc82d-7d10-4489-8f7e-9995322114e2"
+      },
+      {
+       "qty": 4,
+       "name": "Gravedigger",
+       "set": "akh",
+       "number": "93",
+       "id": "9606f1ce-afeb-4fc5-bd4c-2484cd232924"
+      },
+      {
+       "qty": 4,
+       "name": "Zealot of the God-Pharaoh",
+       "set": "hou",
+       "number": "207",
+       "id": "180d1cd4-7d0d-4279-bc2a-59bb21b06904"
+      },
+      {
+       "qty": 4,
+       "name": "Ruthless Sniper",
+       "set": "akh",
+       "number": "105",
+       "id": "d916306a-5cb3-4a38-9038-a433525c5b7b"
+      },
+      {
+       "qty": 4,
+       "name": "Dune Beetle",
+       "set": "akh",
+       "number": "89",
+       "id": "923cb904-c725-4d57-bc17-7aa87a7cd8e0"
+      },
+      {
+       "qty": 4,
+       "name": "Bone Picker",
+       "set": "akh",
+       "number": "81",
+       "id": "bdc6a825-43f7-40a4-95f0-335dc538b6cd"
+      },
+      {
+       "qty": 4,
+       "name": "Liliana's Defeat",
+       "set": "hou",
+       "number": "68",
+       "id": "0f72b028-b9df-40c7-822f-4acc6bdcc719"
+      },
+      {
+       "qty": 4,
+       "name": "Scrounger of Souls",
+       "set": "hou",
+       "number": "76",
+       "id": "3d66f3c4-5a11-4e28-a4ae-673b3b36d3ec"
+      },
+      {
+       "qty": 2,
+       "name": "Liliana, Death's Majesty",
+       "set": "akh",
+       "number": "97",
+       "id": "40d8f490-f04d-4d59-9ab0-a977527fd529"
+      },
+      {
+       "qty": 2,
+       "name": "Open Fire",
+       "set": "hou",
+       "number": "105",
+       "id": "448f9fb5-ffb5-4325-9f81-ce8782e5f9e9"
+      },
+      {
+       "qty": 12,
+       "name": "Swamp",
+       "set": "akh",
+       "number": "252",
+       "id": "60b7c997-e520-4ff6-8b3b-705c2f12a9d4"
+      },
+      {
+       "qty": 12,
+       "name": "Mountain",
+       "set": "akh",
+       "number": "253",
+       "id": "d3112990-3919-46b0-b927-14566c689a81"
+      }
+     ]
+    }
+   },
+   "reward": {
+    "hero": {
+     "packs": 1,
+     "coins": 100
+    },
+    "villain": {
+     "card": {
+      "oracle_id": "1a2030cc-d7ee-4059-b2d7-fb95ea8e267b",
+      "name": "Gravedigger",
+      "rarity": "uncommon",
+      "set": "akh",
+      "id": "9606f1ce-afeb-4fc5-bd4c-2484cd232924",
+      "image": "https://cards.scryfall.io/normal/front/9/6/9606f1ce-afeb-4fc5-bd4c-2484cd232924.jpg"
+     },
+     "coins": 100
+    }
+   },
+   "scene": [
+    {
+     "who": "stage",
+     "line": "What the initiates face in the final trial is completely at Hazoret's discretion.",
+     "quote": true
+    },
+    {
+     "who": "stage",
+     "line": "In Amonkhet's ever-shifting sands, nothing stays buried for long.",
+     "quote": true
+    },
+    {
+     "who": "you",
+     "line": "Their dead keep coming back. Race them, and exert only when it wins you the game."
+    }
+   ],
+   "villainScene": [
+    {
+     "who": "stage",
+     "line": "The Curse of Wandering permeated Amonkhet long before Nicol Bolas. He simply harnessed it.",
+     "quote": true
+    }
+   ],
+   "after": null,
+   "cues": {
+    "hero": {
+     "start": "Charge!",
+     "big": "Full exert!",
+     "low": "They are ahead...",
+     "win": "First across the sand.",
+     "loss": "Buried...",
+     "half": "Exert for lethal only."
+    },
+    "villain": {
+     "start": "[shambling]",
+     "big": "[the dead rise]",
+     "low": "[a zombie drops]",
+     "win": "[sand]",
+     "loss": "[stillness]"
+    }
+   },
+   "bigPlays": [],
+   "sim": null
+  },
+  {
+   "id": "a26b7",
+   "slot": 7,
+   "kind": "Meta",
+   "mood": "tension",
+   "title": "God-Pharaoh's Gift",
+   "difficulty": "Normal",
+   "teaches": [
+    "Card advantage"
+   ],
+   "blurb": "A tribute to Standard in summer 2017: Gideon's green-white against the God-Pharaoh's Gift, which turns every creature in your graveyard into a hasty 4/4.",
+   "rewardSet": "hou",
+   "host": false,
+   "hero": {
+    "who": "camels",
+    "deck": {
+     "name": "GW Cats",
+     "colors": "GW",
+     "archetype": "Aggro",
+     "label": "tribute",
+     "cards": [
+      {
+       "qty": 4,
+       "name": "Pride Sovereign",
+       "set": "hou",
+       "number": "126",
+       "id": "dd3d32b7-672f-4ceb-a1c9-17daefd2cb0c"
+      },
+      {
+       "qty": 4,
+       "name": "Hooded Brawler",
+       "set": "akh",
+       "number": "173",
+       "id": "1b4dab03-abf1-4c8f-983e-77dffcfb1578"
+      },
+      {
+       "qty": 4,
+       "name": "Majestic Myriarch",
+       "set": "hou",
+       "number": "122",
+       "id": "78d47cc7-2849-432e-9bcd-6b97023f1969"
+      },
+      {
+       "qty": 4,
+       "name": "Ramunap Excavator",
+       "set": "hou",
+       "number": "129",
+       "id": "90a54d18-8403-441d-a115-ee462fabdabb"
+      },
+      {
+       "qty": 4,
+       "name": "Ramunap Hydra",
+       "set": "hou",
+       "number": "130",
+       "id": "953f3722-2126-4eb3-a3d8-cff4b0703a9c"
+      },
+      {
+       "qty": 4,
+       "name": "Ahn-Crop Champion",
+       "set": "akh",
+       "number": "194",
+       "id": "2ddda94a-4b2d-47b0-8d2c-3ad70a0d5584"
+      },
+      {
+       "qty": 4,
+       "name": "Nissa, Genesis Mage",
+       "set": "hou",
+       "number": "200",
+       "id": "2923c85a-4022-4cda-bcbb-bb000137f64f"
+      },
+      {
+       "qty": 2,
+       "name": "Gideon's Defeat",
+       "set": "hou",
+       "number": "13",
+       "id": "4722eb81-1aa1-4863-8dfb-d9d6035bd6c6"
+      },
+      {
+       "qty": 2,
+       "name": "Sixth Sense",
+       "set": "akh",
+       "number": "187",
+       "id": "e564db6b-0b8b-4c67-9135-5da76d2225fe"
+      },
+      {
+       "qty": 12,
+       "name": "Forest",
+       "set": "akh",
+       "number": "254",
+       "id": "2c2fc9f7-21af-4416-abf5-6fcb4f543680"
+      },
+      {
+       "qty": 12,
+       "name": "Plains",
+       "set": "akh",
+       "number": "250",
+       "id": "c7191d23-b68f-406b-8c28-8dadbaef6562"
+      },
+      {
+       "qty": 4,
+       "name": "Oketra's Attendant",
+       "set": "akh",
+       "number": "22",
+       "id": "6074fe64-8a2d-411e-8d33-97b1c60633e4"
+      }
+     ]
+    }
+   },
+   "villain": {
+    "who": "gift",
+    "deck": {
+     "name": "God-Pharaoh's Gift",
+     "colors": "W",
+     "archetype": "Midrange",
+     "label": "tribute",
+     "note": "Built from cards in this act's sets only. No single tournament list is copied.",
+     "cards": [
+      {
+       "qty": 3,
+       "name": "God-Pharaoh's Gift",
+       "set": "hou",
+       "number": "161",
+       "id": "b2e85a9e-4c37-4721-b7ea-de3413ec39df"
+      },
+      {
+       "qty": 4,
+       "name": "Angel of Sanctions",
+       "set": "akh",
+       "number": "1",
+       "id": "66b1cbf0-1273-406a-bc99-ce20ce53e5aa"
+      },
+      {
+       "qty": 4,
+       "name": "Steadfast Sentinel",
+       "set": "hou",
+       "number": "24",
+       "id": "707a30d2-0fca-4b39-91fb-9b03152705ba"
+      },
+      {
+       "qty": 2,
+       "name": "Oketra the True",
+       "set": "akh",
+       "number": "21",
+       "id": "f2cc79cf-d4db-4236-b3e2-fd12662b2a74"
+      },
+      {
+       "qty": 4,
+       "name": "Cast Out",
+       "set": "akh",
+       "number": "8",
+       "id": "76ff0dd0-489e-4773-93f6-b77fc3b8ef2e"
+      },
+      {
+       "qty": 4,
+       "name": "Sandblast",
+       "set": "hou",
+       "number": "20",
+       "id": "0f3c501c-4e23-4e56-ad99-1803c8a877ca"
+      },
+      {
+       "qty": 4,
+       "name": "Gust Walker",
+       "set": "akh",
+       "number": "17",
+       "id": "49307ab6-392e-4b61-ad60-e6ea53da39f7"
+      },
+      {
+       "qty": 4,
+       "name": "Regal Caracal",
+       "set": "akh",
+       "number": "24",
+       "id": "cd349f95-3eae-4ef2-abf8-e911bb8e93e5"
+      },
+      {
+       "qty": 24,
+       "name": "Plains",
+       "set": "akh",
+       "number": "250",
+       "id": "c7191d23-b68f-406b-8c28-8dadbaef6562"
+      },
+      {
+       "qty": 1,
+       "name": "Sacred Cat",
+       "set": "akh",
+       "number": "27",
+       "id": "08891c78-13c1-4d84-aa9c-78346b3b7d18"
+      },
+      {
+       "qty": 3,
+       "name": "Hour of Revelation",
+       "set": "hou",
+       "number": "15",
+       "id": "89a89652-95ef-45b4-80c3-02241483f3c0"
+      },
+      {
+       "qty": 3,
+       "name": "Mighty Leap",
+       "set": "akh",
+       "number": "20",
+       "id": "13692658-051b-44ea-bc23-aa33ce6385d3"
+      }
+     ]
+    }
+   },
+   "reward": {
+    "hero": {
+     "packs": 1,
+     "coins": 100
+    },
+    "villain": {
+     "card": {
+      "oracle_id": "9f2d2fda-f098-4375-8fe9-63f929e3928c",
+      "name": "God-Pharaoh's Gift",
+      "rarity": "rare",
+      "set": "hou",
+      "id": "b2e85a9e-4c37-4721-b7ea-de3413ec39df",
+      "image": "https://cards.scryfall.io/normal/front/b/2/b2e85a9e-4c37-4721-b7ea-de3413ec39df.jpg"
+     },
+     "coins": 100
+    }
+   },
+   "scene": [
+    {
+     "who": "stage",
+     "line": "When the Second Sun rests between the horns on the horizon, so begins the Hour of Revelation. Then the Hour of Glory, the Hour of Promise, and finally the Hour of Eternity.",
+     "quote": true
+    },
+    {
+     "who": "stage",
+     "line": "Though the afterlife, the city, and even the God-Pharaoh himself were one great deception, the ideals championed by the gods remain true.",
+     "quote": true
+    },
+    {
+     "who": "you",
+     "line": "Their Gift is slow but it ends games. Kill the graveyard before it fills."
+    }
+   ],
+   "villainScene": [
+    {
+     "who": "stage",
+     "line": "The dead perform all the work here, farming, building, teaching, even embalming their fellow mummies.",
+     "quote": true
+    },
+    {
+     "who": "stage",
+     "line": "A single grain of sand is insignificant, but a sandstorm can reduce pyramids to dust.",
+     "quote": true
+    }
+   ],
+   "after": null,
+   "cues": {
+    "hero": {
+     "start": "Hold the line.",
+     "big": "Together!",
+     "low": "The Gift is coming...",
+     "win": "The sand clears.",
+     "loss": "Overrun...",
+     "half": "Race before the Gift lands."
+    },
+    "villain": {
+     "start": "[a quiet prayer]",
+     "big": "[the Gift is given]",
+     "low": "[a mummy crumbles]",
+     "win": "[the army wakes]",
+     "loss": "[the sands settle]"
+    }
+   },
+   "bigPlays": [],
+   "sim": null
+  },
+  {
+   "id": "a26b8",
+   "slot": 8,
+   "kind": "Boss",
+   "mood": "boss",
+   "title": "The Hour of Devastation",
+   "difficulty": "Hard",
+   "teaches": [
+    "Racing"
+   ],
+   "blurb": "Nicol Bolas has the city, the gods, the Eternals and the Hour. The Gatewatch is what is left of the resistance.",
+   "rewardSet": "hou",
+   "host": true,
+   "hero": {
+    "who": "gatewatch",
+    "deck": {
+     "name": "Samut and Gideon",
+     "colors": "WG",
+     "archetype": null,
+     "label": "tribute",
+     "cards": [
+      {
+       "qty": 2,
+       "name": "Gideon's Intervention",
+       "set": "akh",
+       "number": "15",
+       "id": "6e2524fb-ec90-4f8e-b851-f78034edef3f"
+      },
+      {
+       "qty": 3,
+       "name": "Angel of Sanctions",
+       "set": "akh",
+       "number": "1",
+       "id": "66b1cbf0-1273-406a-bc99-ce20ce53e5aa"
+      },
+      {
+       "qty": 2,
+       "name": "Cast Out",
+       "set": "akh",
+       "number": "8",
+       "id": "76ff0dd0-489e-4773-93f6-b77fc3b8ef2e"
+      },
+      {
+       "qty": 12,
+       "name": "Plains",
+       "set": "akh",
+       "number": "250",
+       "id": "c7191d23-b68f-406b-8c28-8dadbaef6562"
+      },
+      {
+       "qty": 12,
+       "name": "Forest",
+       "set": "akh",
+       "number": "254",
+       "id": "2c2fc9f7-21af-4416-abf5-6fcb4f543680"
+      },
+      {
+       "qty": 4,
+       "name": "Bitterblade Warrior",
+       "set": "akh",
+       "number": "157",
+       "id": "dd54edbb-c35d-4f7f-b5ce-d39b0f766ab8"
+      },
+      {
+       "qty": 4,
+       "name": "Pouncing Cheetah",
+       "set": "akh",
+       "number": "179",
+       "id": "fca8a590-75c1-4e85-b8b7-8c0c0f18b96e"
+      },
+      {
+       "qty": 3,
+       "name": "Dauntless Aven",
+       "set": "hou",
+       "number": "7",
+       "id": "01e6320c-6f8b-4582-ad11-9b868bff08a1"
+      },
+      {
+       "qty": 2,
+       "name": "Trueheart Duelist",
+       "set": "akh",
+       "number": "35",
+       "id": "628f5230-6c0d-4f24-b89a-7f3d443511f3"
+      },
+      {
+       "qty": 4,
+       "name": "Graceful Cat",
+       "set": "akh",
+       "number": "273",
+       "id": "b42ba8bf-9fc1-4d57-9c80-42491d18d929"
+      },
+      {
+       "qty": 4,
+       "name": "Solitary Camel",
+       "set": "hou",
+       "number": "23",
+       "id": "8adb8dbf-c83c-4169-b822-8e32aa36cffa"
+      },
+      {
+       "qty": 4,
+       "name": "Frilled Sandwalla",
+       "set": "hou",
+       "number": "116",
+       "id": "07b1be52-5e54-4840-bb53-0b2512785e0b"
+      },
+      {
+       "qty": 4,
+       "name": "Wall of Forgotten Pharaohs",
+       "set": "hou",
+       "number": "168",
+       "id": "d3f8f211-79f9-4d34-8e23-c0835703cd91"
+      }
+     ]
+    }
+   },
+   "villain": {
+    "who": "bolas",
+    "deck": {
+     "name": "The God-Pharaoh",
+     "colors": "UBR",
+     "archetype": null,
+     "label": "tribute",
+     "cards": [
+      {
+       "qty": 1,
+       "name": "Nicol Bolas, God-Pharaoh",
+       "set": "hou",
+       "number": "140",
+       "id": "985e92f4-3904-41df-91f7-42eedbe3ccd2"
+      },
+      {
+       "qty": 4,
+       "name": "Pitiless Vizier",
+       "set": "akh",
+       "number": "103",
+       "id": "22eb0615-d1b2-4128-bad5-bcff83672f6b"
+      },
+      {
+       "qty": 4,
+       "name": "Merciless Javelineer",
+       "set": "akh",
+       "number": "202",
+       "id": "ee0e8c57-3046-414d-be00-39bfb2537026"
+      },
+      {
+       "qty": 4,
+       "name": "Cartouche of Ambition",
+       "set": "akh",
+       "number": "83",
+       "id": "e68b96b1-b75e-4ee1-a6d7-6545a34fef9b"
+      },
+      {
+       "qty": 3,
+       "name": "Never // Return",
+       "set": "akh",
+       "number": "212",
+       "id": "a4b32135-7061-4278-a01a-4fcbaadc9706"
+      },
+      {
+       "qty": 4,
+       "name": "Archfiend of Ifnir",
+       "set": "akh",
+       "number": "78",
+       "id": "33176679-d571-47a1-ae05-bed9b748491d"
+      },
+      {
+       "qty": 4,
+       "name": "Bone Picker",
+       "set": "akh",
+       "number": "81",
+       "id": "bdc6a825-43f7-40a4-95f0-335dc538b6cd"
+      },
+      {
+       "qty": 10,
+       "name": "Swamp",
+       "set": "akh",
+       "number": "252",
+       "id": "60b7c997-e520-4ff6-8b3b-705c2f12a9d4"
+      },
+      {
+       "qty": 9,
+       "name": "Island",
+       "set": "akh",
+       "number": "251",
+       "id": "bec6fced-62bb-4a99-9ea1-374056b5781b"
+      },
+      {
+       "qty": 5,
+       "name": "Mountain",
+       "set": "akh",
+       "number": "253",
+       "id": "d3112990-3919-46b0-b927-14566c689a81"
+      },
+      {
+       "qty": 4,
+       "name": "Gravedigger",
+       "set": "akh",
+       "number": "93",
+       "id": "9606f1ce-afeb-4fc5-bd4c-2484cd232924"
+      },
+      {
+       "qty": 3,
+       "name": "Apocalypse Demon",
+       "set": "hou",
+       "number": "58",
+       "id": "39dfbf99-55e8-468b-bcd9-9179cad7cab6"
+      },
+      {
+       "qty": 3,
+       "name": "Lord of the Accursed",
+       "set": "akh",
+       "number": "99",
+       "id": "3941562d-3e39-4746-9a18-d3aa6d3468b0"
+      },
+      {
+       "qty": 2,
+       "name": "Liliana's Defeat",
+       "set": "hou",
+       "number": "68",
+       "id": "0f72b028-b9df-40c7-822f-4acc6bdcc719"
+      }
+     ]
+    }
+   },
+   "reward": {
+    "hero": {
+     "packs": 2,
+     "coins": 200
+    },
+    "villain": {
+     "card": {
+      "oracle_id": "cb33e07b-9599-4979-991f-df0c43ddac31",
+      "name": "Nicol Bolas, God-Pharaoh",
+      "rarity": "mythic",
+      "set": "hou",
+      "id": "985e92f4-3904-41df-91f7-42eedbe3ccd2",
+      "image": "https://cards.scryfall.io/normal/front/9/8/985e92f4-3904-41df-91f7-42eedbe3ccd2.jpg"
+     },
+     "coins": 200
+    }
+   },
+   "scene": [
+    {
+     "who": "bolas",
+     "line": "Everything here exists or perishes at my whim. Including you, Gatewatch.",
+     "quote": true
+    },
+    {
+     "who": "bolas",
+     "line": "Fire? Is that your only trick, Chandra?",
+     "quote": true
+    },
+    {
+     "who": "gideon",
+     "line": "He cannot be beaten by force. Hold what you can and get the people out."
+    }
+   ],
+   "villainScene": [
+    {
+     "who": "bolas",
+     "line": "I had hoped for more from you, Jace. But I expected as much.",
+     "quote": true
+    },
+    {
+     "who": "bolas",
+     "line": "This is what glory looks like.",
+     "quote": true
+    }
+   ],
+   "after": null,
+   "cues": {
+    "hero": {
+     "start": "Hold the city.",
+     "big": "Together!",
+     "low": "He is too strong...",
+     "win": "We got them out.",
+     "loss": "The Gatewatch falls...",
+     "half": "You cannot win this, hold on."
+    },
+    "villain": {
+     "start": "[the Second Sun rises]",
+     "big": "[the Hour begins]",
+     "low": "[an Eternal falls]",
+     "win": "It is finished.",
+     "loss": "[a silence like a held breath]",
+     "half": {
+      "who": "djeru",
+      "line": "Everyone, to the Hekma! We can still get out!"
+     }
+    }
+   },
+   "bigPlays": [],
+   "sim": null
+  },
+  {
+   "id": "a26b9",
+   "slot": 9,
+   "kind": "Secret Boss",
+   "secret": true,
+   "mood": "boss",
+   "title": "Ramunap Red",
+   "difficulty": "Hard",
+   "teaches": [
+    "Racing"
+   ],
+   "blurb": "Deep in the archive, the summer red decks ruled the sand.",
+   "rewardSet": "hou",
+   "host": true,
+   "archive": {
+    "deck": "Mono-Red Aggro",
+    "when": "Summer 2017",
+    "format": "Standard.",
+    "what": "Mono-red decks built to kill by turn four, with Bloodrage Brawler, Earthshaker Khenra, Hazoret the Fervent and a land that kept green decks from playing their lands.",
+    "why": "Red had the fastest and most reliable plan in Standard for most of that summer.",
+    "beat": "Kill their small creatures early and keep your life total high enough to take a hit.",
+    "after": "Ramunap Ruins was banned in Standard in January 2018. It is not in this act's sets, so this tribute plays an ordinary Mountain instead."
+   },
+   "hero": {
+    "who": "you",
+    "deck": {
+     "name": "GW Cats",
+     "colors": "GW",
+     "archetype": "Aggro",
+     "label": "tribute",
+     "cards": [
+      {
+       "qty": 4,
+       "name": "Pride Sovereign",
+       "set": "hou",
+       "number": "126",
+       "id": "dd3d32b7-672f-4ceb-a1c9-17daefd2cb0c"
+      },
+      {
+       "qty": 4,
+       "name": "Hooded Brawler",
+       "set": "akh",
+       "number": "173",
+       "id": "1b4dab03-abf1-4c8f-983e-77dffcfb1578"
+      },
+      {
+       "qty": 4,
+       "name": "Majestic Myriarch",
+       "set": "hou",
+       "number": "122",
+       "id": "78d47cc7-2849-432e-9bcd-6b97023f1969"
+      },
+      {
+       "qty": 4,
+       "name": "Ramunap Excavator",
+       "set": "hou",
+       "number": "129",
+       "id": "90a54d18-8403-441d-a115-ee462fabdabb"
+      },
+      {
+       "qty": 4,
+       "name": "Regal Caracal",
+       "set": "akh",
+       "number": "24",
+       "id": "cd349f95-3eae-4ef2-abf8-e911bb8e93e5"
+      },
+      {
+       "qty": 4,
+       "name": "Gideon's Defeat",
+       "set": "hou",
+       "number": "13",
+       "id": "4722eb81-1aa1-4863-8dfb-d9d6035bd6c6"
+      },
+      {
+       "qty": 4,
+       "name": "Sixth Sense",
+       "set": "akh",
+       "number": "187",
+       "id": "e564db6b-0b8b-4c67-9135-5da76d2225fe"
+      },
+      {
+       "qty": 4,
+       "name": "Oketra's Attendant",
+       "set": "akh",
+       "number": "22",
+       "id": "6074fe64-8a2d-411e-8d33-97b1c60633e4"
+      },
+      {
+       "qty": 12,
+       "name": "Forest",
+       "set": "akh",
+       "number": "254",
+       "id": "2c2fc9f7-21af-4416-abf5-6fcb4f543680"
+      },
+      {
+       "qty": 12,
+       "name": "Plains",
+       "set": "akh",
+       "number": "250",
+       "id": "c7191d23-b68f-406b-8c28-8dadbaef6562"
+      },
+      {
+       "qty": 2,
+       "name": "Ahn-Crop Champion",
+       "set": "akh",
+       "number": "194",
+       "id": "2ddda94a-4b2d-47b0-8d2c-3ad70a0d5584"
+      },
+      {
+       "qty": 2,
+       "name": "Prowling Serpopard",
+       "set": "akh",
+       "number": "180",
+       "id": "92921fc1-11d0-41a9-b9b2-b44fd0913d31"
+      }
+     ]
+    }
+   },
+   "villain": {
+    "who": "ramunap",
+    "deck": {
+     "name": "Ramunap Red",
+     "colors": "R",
+     "archetype": "Aggro",
+     "label": "tribute",
+     "note": "Built from cards in this act's sets only. No single tournament list is copied.",
+     "cards": [
+      {
+       "qty": 2,
+       "name": "Hazoret the Fervent",
+       "set": "akh",
+       "number": "136",
+       "id": "36ed9f9d-99a7-49f4-b0ad-d71355809d32"
+      },
+      {
+       "qty": 4,
+       "name": "Bloodrage Brawler",
+       "set": "akh",
+       "number": "121",
+       "id": "e6080f9e-2415-4e05-97a1-0fe4ad4fdf3b"
+      },
+      {
+       "qty": 4,
+       "name": "Earthshaker Khenra",
+       "set": "hou",
+       "number": "90",
+       "id": "0d60eabe-b281-4eba-9c26-287364ed2067"
+      },
+      {
+       "qty": 4,
+       "name": "Combat Celebrant",
+       "set": "akh",
+       "number": "125",
+       "id": "28b63c3d-2e55-4343-b49a-11fa602ec473"
+      },
+      {
+       "qty": 4,
+       "name": "Ahn-Crop Crasher",
+       "set": "akh",
+       "number": "117",
+       "id": "dd5db68c-24d5-44ce-9809-e446f26fac5d"
+      },
+      {
+       "qty": 4,
+       "name": "Wildfire Eternal",
+       "set": "hou",
+       "number": "109",
+       "id": "fd845479-619a-4262-b445-d93975c183b4"
+      },
+      {
+       "qty": 4,
+       "name": "Pathmaker Initiate",
+       "set": "akh",
+       "number": "146",
+       "id": "4ccc6b34-aaa7-4ec1-9f37-b03f9b5919f2"
+      },
+      {
+       "qty": 4,
+       "name": "Abrade",
+       "set": "hou",
+       "number": "83",
+       "id": "84319dfb-eaf7-4b98-8c4f-30f5e779591b"
+      },
+      {
+       "qty": 4,
+       "name": "Open Fire",
+       "set": "hou",
+       "number": "105",
+       "id": "448f9fb5-ffb5-4325-9f81-ce8782e5f9e9"
+      },
+      {
+       "qty": 2,
+       "name": "Glorybringer",
+       "set": "akh",
+       "number": "134",
+       "id": "3277ad99-5682-4baa-b106-de15721876a6"
+      },
+      {
+       "qty": 24,
+       "name": "Mountain",
+       "set": "akh",
+       "number": "253",
+       "id": "d3112990-3919-46b0-b927-14566c689a81"
+      }
+     ]
+    }
+   },
+   "reward": {
+    "hero": {
+     "packs": 2,
+     "coins": 200
+    },
+    "villain": {
+     "card": {
+      "oracle_id": "2c6934b6-67c4-457a-ae8f-59914fd8f256",
+      "name": "Hazoret the Fervent",
+      "rarity": "mythic",
+      "set": "akh",
+      "id": "36ed9f9d-99a7-49f4-b0ad-d71355809d32",
+      "image": "https://cards.scryfall.io/normal/front/3/6/36ed9f9d-99a7-49f4-b0ad-d71355809d32.jpg"
+     },
+     "coins": 200
+    }
+   },
+   "scene": [
+    {
+     "who": "stage",
+     "line": "To Hazoret, those who fight for her are her beloved children.",
+     "quote": true
+    },
+    {
+     "who": "you",
+     "line": "This one is fast. Block early and do not take the first hit."
+    }
+   ],
+   "villainScene": [
+    {
+     "who": "stage",
+     "line": "This world was once so much more than the confines of Naktamun.",
+     "quote": true
+    }
+   ],
+   "after": [
+    {
+     "who": "stage",
+     "line": "Recorded: Ramunap Ruins banned in Standard, January 2018."
+    }
+   ],
+   "cues": {
+    "hero": {
+     "start": "Not today.",
+     "big": "Burn it!",
+     "low": "Too fast...",
+     "win": "Cooled off.",
+     "loss": "Scorched...",
+     "half": "Block the first attacker."
+    },
+    "villain": {
+     "start": "[a roar]",
+     "big": "[the fire spreads]",
+     "low": "[a flame gutters]",
+     "win": "[ash]",
+     "loss": "[the embers fade]"
+    }
+   },
+   "bigPlays": [],
+   "sim": null
+  }
+ ]
+}

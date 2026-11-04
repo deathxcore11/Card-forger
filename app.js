@@ -11,7 +11,7 @@ import { configureAiAuth, invalidateAiAuth } from './ai-auth.js';
 import {openPackPreview,ptcgSetRarities,trimPackArt} from './pack-preview.js';
 import {loadMtgBooster,mtgBoosterCards} from './mtg-boosters.js';
 // Booster pack photos trim to the pack itself wherever they appear.
-document.addEventListener('load',e=>{if(e.target?.matches?.('img[data-pack-art]')&&!e.target.closest?.('.pack-generic'))trimPackArt(e.target);},true);
+document.addEventListener('load',e=>{if(e.target?.matches?.('img[data-pack-art]')&&!e.target.closest?.('.pack-generic,.pack-custom'))trimPackArt(e.target);},true);
 import {dailyDetails,todaySetMarkup,todayPackMarkup} from './home-today.js';
 import {syncDesktopPlayEntries,playDeviceGate,watchPlayDeviceEligibility} from './desktop-play.js';
 import {createPlaySetup} from './play-setup.js';
@@ -21,7 +21,7 @@ import {parsePlayDeckImport} from './play-deck-import.js';
 import {playMenuMarkup} from './play-menu.js';
 import {setPlaymatChoice,mountPlaymatScene,nextPlaymat,unmountPlaymatScene} from './play-playmats.js';
 import {lockPlayLandscape,releasePlayOrientation} from './play-orientation.js';
-import {createPracticeOpponentBuilder,createRandomDeckProducer} from './play-opponent-build.js';
+import {createPracticeOpponentBuilder,createRandomDeckProducer,RANDOM_DECK_FORMATS} from './play-opponent-build.js';
 import {createRandomDeckQueue} from './play-random-queue.js';
 import {forgeOptions,newForgeSeed,commanderHooks,forgeFit} from './deck-forge.js';
 import {createPlayerMat} from './play-player-mat.js';
@@ -60,6 +60,7 @@ import {createCommunity,incomingRequestCount,sharedDeckCopy} from './community-p
 import {addScannedEntry} from './collection-stack.js';
 import {profileAvatar,profileArt,createProfileArtPicker} from './profile-art.js';
 import {openTabletop} from './tabletop.js';
+import {validCode as validTableCode} from './table-share.js';
 import {createTableArtResolver} from './tabletop-themes.js';
 import {INFO_TOPICS,findInfo} from './app-info.js';
 import {attachHomeSearch,homeIntent,rankHomeCards,homeQueries,placeGlobalSearch,searchEmblem} from './home-search.js';
@@ -163,16 +164,22 @@ import { startTabGlide } from "./tab-glide.js";
 import { startSearchHints } from "./search-hints.js";
 import { openZoom, zoomCardOptions } from "./zoom.js";
 import {createPlayEcon,purse} from "./play-econ-client.js";
-import {econScreenMarkup,ECON_VIEWS,purseMarkup,cardImageByName,head as econHead,craftPlan} from "./play-econ-ui.js";
+import {createAchievementToasts,doneSteps,newlyEarned} from "./play-achievement-toasts.js";
+import {createPresence,presenceShared,rememberPresence} from "./play-presence.js";
+import {matchCounters,questRows,playDay,achievementRows,achievementTitles} from "./play-achievements.js";
+import {saveTitle,wornTitle} from "./play-titles.js";
+import {econScreenMarkup,ECON_VIEWS,purseMarkup,cardImageByName,head as econHead,craftPlan,packGoals,setPlayStyles,setPlayDeckCovers} from "./play-econ-ui.js";
+setPlayDeckCovers(()=>S.state?.settings?.playDeckCovers);
 import {rewardFlight} from "./reward-flight.js";
-import {createNameFacts,rankFinderLists,finderRow,trunkDeck,finderMarkup,FINDER_FORMATS,FINDER_SORTS} from "./play-deck-finder.js";
+import {createNameFacts,createCraftRarity,clusterArchetypes,finderArchetypes,rankFinderLists,finderRow,trunkDeck,finderMarkup,finderDeckMarkup,FINDER_FORMATS,FINDER_SORTS,FINDER_FILTERS} from "./play-deck-finder.js";
 import {createCardFacts,slimCard} from "./play-econ-cards.js";
-import {stepDeckCard,ownedByName,deckShortfall,legalFormats,mtgjsonDeckRows,PLAY_FORMATS} from "./play-econ-rules.js";
+import {deckEmblem} from "./play-deck-emblem.js";
+import {stepDeckCard,ownedByName,deckShortfall,legalFormats,mtgjsonDeckRows,PLAY_FORMATS,deckRules,copyCap} from "./play-econ-rules.js";
 import {STORY_ACTS} from "./story-acts.js";
 import {createStoryProgress,loadAct,loadActPool,ownDeckFits,battleCleared,currentAct,currentBattle,actCleared} from "./story-client.js";
 import {storyHomeMarkup,storyActMarkup,storyBattleMarkup,playScene,createStoryBubbles,starsRow,rewardText} from "./story-ui.js";
-import {storyDeedsEarned,STORY_DEEDS,STORY_ACT_DEEDS} from "./story-deeds.js";
-import { initCloud, pauseLocalConflict, communityRequest, cloudAccessToken, cloudInfo, isEmptyWorkspace, statusLabel, scheduleSync, signInGoogle, signInEmail, signInPassword, createAccount, requestPasswordReset, finishPasswordReset, signOut, detachDeviceSync, saveProfile, resolvePending, syncNow, resendConfirmation, deleteAccount } from "./cloud.js";
+import {storyDeedsEarned} from "./story-deeds.js";
+import { initCloud, pauseLocalConflict, communityRequest, presenceRequest, cloudAccessToken, cloudInfo, realtimeClient, isEmptyWorkspace, statusLabel, scheduleSync, signInGoogle, signInEmail, signInPassword, createAccount, requestPasswordReset, finishPasswordReset, signOut, detachDeviceSync, saveProfile, resolvePending, syncNow, resendConfirmation, deleteAccount } from "./cloud.js";
 import { withSnapshot, collectionValue, recordValuePoint, cardSig, engineProfile, swapImpact, lotPrice } from "./insights.js";
 
 /* =========================================================
@@ -1036,6 +1043,8 @@ function parseHash() {
     if(T.isTcg()) { T.ui().coll.tab = a === "wishlist" ? "cards" : a; if(a === "wishlist")T.ui().coll.show="wanted"; }
   }
   if (ui.view === "wiki") currentWikiPage()?.route(a,{query:b==="search"});
+  // A shared Game Night table: #table/<code> opens it for watching, or for tapping when signed in.
+  if (v === "table" && validTableCode(a)) queueMicrotask(() => A.joinTable(a));
   // An invite link: #play/join/<invite>.
   if (ui.view === "play" && a === "join" && /^[A-Za-z0-9_-]{43}$/.test(b || "")) queueMicrotask(() => openFriendInvite(b));
   if (ui.view === "shared" && a !== ui.shared.code) openShared(a);
@@ -1675,9 +1684,24 @@ const I = {}; // input handlers
 // Branch beta setup uses the real account workspace and shared deck renderers.
 // It does not start a manual/cosmetic game or adopt the candidate rules engine.
 const readPlayAccount=()=>{const a=cloudInfo();return {user:a.user?{id:a.user.id}:null,profile:a.profile,art:{avatar:a.art?.avatar||S.state.settings.cardAvatar||null},switching:a.switching,locked:accountLocked,accountGeneration};};
+// The Play table's decks: every Play deck and every Collection deck. Practice can use any of them;
+// Quick Play shows them all but greys out any deck missing cards from your Trunk (Randall 3 Nov 22:31Z-23:06Z).
+const PLAY_SINGLETON=['Commander','Standard Brawl','Oathbreaker'];
+// The free Commander precons live only in the Play deck pickers (Practice, Quick Play, Multiplayer),
+// never in Decks or the Trunk, and always play (Randall 4 Nov 00:40Z; data/play-starters/precons.json).
+let freePrecons=null;
+function loadFreePrecons(){if(freePrecons)return;freePrecons=[];fetchJSON('/data/play-starters/precons.json').then(j=>{freePrecons=(j?.decks||[]).filter(d=>d.format==='Commander').map(d=>({id:'free:'+d.key,name:d.name,format:'Commander',commander:d.rows.find(r=>r.commander)?.name||'',cards:d.rows.map(r=>({name:r.name,qty:r.qty})),side:[],free:true,unlocked:true}));if(S.ui.view==='play')refreshPlayMenu();}).catch(()=>{freePrecons=null;});}
+function playTableDecks(){let st={};try{st=playEcon.snapshot().state||{};}catch{}const owned=ownedByName(st.cards||[]);if(st.wallet)loadFreePrecons();
+ return [...(st.decks||[]).map(d=>{const row=r=>({name:String(r.name||''),qty:Math.max(1,r.qty|0)}),cards=(d.cards||[]).filter(r=>r.board!=='side').map(row),side=(d.cards||[]).filter(r=>r.board==='side').map(row),format=d.format||'Standard';
+  const commander=PLAY_SINGLETON.includes(format)?(cards.find(r=>r.qty===1&&/Legendary.*(Creature|Planeswalker)/.test(meta(r.name)?.type_line||''))?.name||''):'';
+  return {id:d.id,name:d.name||'Untitled deck',format,commander,cards,side,unlocked:deckShortfall(cards,owned,new Map()).complete};}),
+  ...(freePrecons||[]),
+  ...(S.state.decks||[]).map(d=>({...d,collection:true,unlocked:deckShortfall((d.cards||[]).filter(r=>!r.board||r.board==='main'),owned,new Map()).complete}))];}
+const playTableDeck=id=>playTableDecks().find(d=>d.id===id)||null;
+const playLockedDecks=()=>new Set(playTableDecks().filter(d=>!d.unlocked).map(d=>d.id));
 const playSetup = createPlaySetup({
   readAccount:readPlayAccount,
-  readDecks:()=>S.state.decks,
+  readDecks:()=>playTableDecks(),
   parseImport:text=>parsePlayDeckImport(text,{parseDeckImport}),
   resolveNames:async names=>{const owner=cloudInfo().user?.id,generation=accountGeneration,current=()=>!accountLocked&&generation===accountGeneration&&owner===cloudInfo().user?.id;await resolveNames(names,()=>{},false,current);return {failed:current()?names.filter(name=>!meta(name)):[]};}
 });
@@ -1686,7 +1710,7 @@ const playSetup = createPlaySetup({
 const playRandomProducer=createRandomDeckProducer({pipeline:deckPipeline,pickSeed:randomBuildSeed});
 const playRandomQueue=createRandomDeckQueue({produce:playRandomProducer,readScope:()=>[cloudInfo().user?.id,accountGeneration,accountLocked],idle:()=>!document.hidden&&!playStarting&&!playerMatHost&&!playerMatRoot&&!practicePregame});
 let playRandomWarmAt=0;
-const warmPlayRandom=()=>{if(!cloudInfo().user?.id||accountLocked||Date.now()-playRandomWarmAt<30000)return;playRandomWarmAt=Date.now();const f=playSetup.snapshot().match.format;playRandomQueue.warm([...new Set([f,'Commander','Standard'])].filter(x=>['Commander','Standard'].includes(x)).map(format=>({format,targetBracket:null,deckStyle:'classic'})));};
+const warmPlayRandom=()=>{if(!cloudInfo().user?.id||accountLocked||Date.now()-playRandomWarmAt<30000)return;playRandomWarmAt=Date.now();const f=playSetup.snapshot().match.format;playRandomQueue.warm([...new Set([f,'Commander','Standard'])].filter(x=>RANDOM_DECK_FORMATS.includes(x)).map(format=>({format,targetBracket:null,deckStyle:'classic'})));};
 const playBuilders=Object.fromEntries(['player','opponent','cpu3','cpu4'].map(seat=>[seat,createPracticeOpponentBuilder({pipeline:deckPipeline,pickSeed:randomBuildSeed,queue:playRandomQueue,produce:playRandomProducer,
  readScope:()=>[cloudInfo().user?.id,accountGeneration,accountLocked,playSetup.snapshot().match.format],
  onSelect:deck=>playSetup.chooseTemporary(deck,{seat,sourceKind:'random'}),onChange:()=>refreshPlayMenu()})]));
@@ -1724,15 +1748,35 @@ let playPaint=false,storyPaint=0;
 const playRepaint=()=>{if(playPaint)return;playPaint=true;queueMicrotask(()=>{playPaint=false;refreshPlayMenu();});};
 // Story acts arrive one by one from the network: they share one repaint per frame.
 const storyRepaint=()=>{if(!storyPaint)storyPaint=(globalThis.requestAnimationFrame||(f=>setTimeout(f,16)))(()=>{storyPaint=0;refreshPlayMenu();});};
-const playEcon=createPlayEcon({getAccessToken:cloudAccessToken,onChange:()=>{syncPlayChrome();if(S.ui.view==='play')playRepaint();else if(S.ui.lens==='play'&&S.ui.view==='set')render();}});
+// Live achievement toasts: compare the done steps of each new server state with the last one (play-achievement-toasts.js).
+// A refresh or a fresh account only resets the baseline, so opening the app never replays old deeds.
+let achSeen=null,achState=null;
+const achToasts=createAchievementToasts({mount:el=>mountFeedback(el),unmount:el=>el.remove(),haptic,sound:id=>appSound(id,{gap:0,volume:.6}),
+ onOpen:t=>{playView='deeds';econUi.deedTab=t.tab;if(document.body.classList.contains('practice-table-open'))return;if(S.ui.view==='play'){refreshPlayMenu();scrollTo({top:0});}else go('#play');}});
+function achWatch(){const snap=playEcon.snapshot(),s=snap.state;if(s===achState)return;achState=s;if(!s?.counters){achSeen=null;return;}
+ if(snap.loading||!achSeen){achSeen=doneSteps(s);return;}const fresh=newlyEarned(achSeen,s,s.config||{});achSeen=doneSteps(s);achToasts.push(fresh);}
+const playEcon=createPlayEcon({getAccessToken:cloudAccessToken,onChange:()=>{achWatch();setPlayStyles(playEcon.snapshot().state?.styles||[]);syncPlayChrome();if(S.ui.view==='play')playRepaint();else if(S.ui.lens==='play'&&S.ui.view==='set')render();}});
 // The Trunk sort sticks until the player picks another (default: Recently added).
 function savedEconSort(){try{return localStorage.getItem('cardstashy-play-sort')||'';}catch{return '';}}
 let econUi={query:'',cardQuery:'',rarity:'',press:null,check:null,sort:savedEconSort()},econSeen=null;
 const econFacts=createCardFacts({onChange:()=>{if(S.ui.view==='play'&&ECON_VIEWS.has(playView))playRepaint();}});
 // Read the wallet once per signed-in account per visit to Play; a new account starts clean.
-const econWake=()=>{const id=cloudInfo()?.user?.id||null;if(id===econSeen)return;if(econSeen!==null)playEcon.clear();econSeen=id;econUi={query:'',cardQuery:'',rarity:'',press:null,check:null,sort:savedEconSort()};playView=ECON_VIEWS.has(playView)?'home':playView;if(id)setTimeout(()=>playEcon.refresh().then(()=>playEcon.login()).then(l=>{if(l?.fresh)toast(`Day ${l.stamp} stamped on your log-in calendar.`);}),0);};
+// Rich presence (play-presence.js): what accepted friends see. A match line comes from the open table.
+function presenceMatch(){try{if(!playerMatRoot)return null;const s=playerMatHost?.snapshot?.(),turn=s?.game?.status?.surface?.turn,setup=playSetup.snapshot();
+ if(playerMatRoot.classList.contains('st-match'))return {kind:'story',act:storyUi.act,battle:storyBattle()?.title||'',turn};
+ if(/^Friend/.test(playerMatRoot.getAttribute('aria-label')||''))return {kind:'friend',format:setup?.match?.format||'',turn};
+ return {kind:setup?.playStyle==='practice'?'practice':'quick',format:setup?.match?.format||'',turn};}catch{return null;}}
+const presence=createPresence({read:()=>({view:S.ui.view,playView,match:presenceMatch()}),send:(action,payload)=>presenceRequest(action,payload),enabled:()=>!!cloudInfo()?.user?.id&&presenceShared()});
+C.setPresence=t=>{if(!rememberPresence(t.checked)){t.checked=!t.checked;return toast('Could not save that setting.');}void presence.setShare(t.checked);toast(t.checked?'Friends can see what you’re playing.':'Friends no longer see what you’re playing.');};
+const econWake=()=>{const id=cloudInfo()?.user?.id||null;if(id===econSeen)return;if(id){presence.start();if(!presenceShared())void presenceRequest('hide');}if(econSeen!==null)playEcon.clear();econSeen=id;econUi={query:'',cardQuery:'',rarity:'',press:null,check:null,sort:savedEconSort()};playView=ECON_VIEWS.has(playView)?'home':playView;if(id)setTimeout(()=>playEcon.refresh().then(()=>playEcon.login()).then(l=>{if(l?.fresh)toast(`Day ${l.stamp} stamped on your log-in calendar.`);}),0);};
 const econFocus=()=>requestAnimationFrame(()=>document.getElementById('playTitle')?.focus?.({preventScroll:true}));
 A.playEconView=t=>{const v=t.dataset.econView;if(!ECON_VIEWS.has(v))return;playView=v;if(t.dataset.econTab)econUi.deedTab=t.dataset.econTab;if(v==='decks')loadPreconIndex();playInspectOpen=false;refreshPlayMenu();scrollTo({top:0});if(v==='shop'&&t.dataset.econFocus==='press')requestAnimationFrame(()=>document.querySelector('.pe-forge')?.scrollIntoView({block:'center',behavior:'smooth'}));else econFocus();};
+// Secret Lair (play-secret-lair.js): this week's bundle, and the rare art styles rewards unlock.
+const slToast=style=>{if(!style?.id)return;playEcon.noteStyle(style);setTimeout(()=>{toast(`Secret Lair art unlocked: ${style.n}.${style.card?' The card came with it.':''} Pick it in the card view.`);haptic('tick');},900);};
+A.playEconReroll=async t=>{const weekly=t.dataset.econLevel==='weekly';try{await playEcon.reroll(t.dataset.econLevel,t.dataset.econId);toast(weekly?'Weekly quest swapped. One swap a week.':'Quest swapped. One swap a day.');haptic('tick');}catch{}};
+A.playEconSlOffer=async t=>{const st=playEcon.snapshot().state?.secretLairStore;try{await playEcon.secretLairCard(t.dataset.econCard,t.dataset.econPay==='seal'?'seal':'coins',st?.week);const c=st?.offers?.find(x=>x.id===t.dataset.econCard);toast(`${c?.n||'The card'} is yours, in its Secret Lair art.`);haptic('tick');}catch{}};
+A.playEconSecretLair=async t=>{try{const out=await playEcon.secretLair(t.dataset.econWeek);toast(`${out.secretLair?.title||'Secret Lair'} is yours. Every card is in your Trunk, in its Secret Lair art.`);haptic('tick');}catch{}};
+A.playCardStyle=async t=>{try{await playEcon.style(t.dataset.oracle,t.dataset.print||null);refreshSheet?.();}catch{}};
 A.playEconBuy=async t=>{try{await playEcon.buy(t.dataset.econSet);toast('Pack bought. It is waiting in Packs.');}catch{}};
 // The Forge: strike lower seals into the next rarity; the new seal flares where it lands.
 A.playEconForge=async t=>{const to=t.dataset.econTo,times=Number(t.dataset.econTimes)||1;try{const out=await playEcon.forge(to,times);haptic('success');appSound('PACK-005',{volume:.5,gap:0});
@@ -1742,12 +1786,28 @@ A.playEconCraft=async t=>{try{const out=await playEcon.craft(t.dataset.econCard)
 A.playEconRetry=()=>{playEcon.refresh();};
 A.playCardHolo=async t=>{try{const out=await playEcon.holo(t.dataset.oracle);haptic('success');toast(`${out.holo.name} is now holo. It has its own tile in your Trunk.`);refreshSheet?.();}catch{}};
 A.playEconDeedTab=t=>{econUi.deedTab=t.dataset.value||'journey';refreshPlayMenu();};
+// Glory titles: open the picker, wear one (kept on this device, play-titles.js), close it.
+A.playEconTitles=()=>{econUi.titleOpen=true;refreshPlayMenu();};
+A.playEconTitlesClose=()=>{econUi.titleOpen=false;refreshPlayMenu();};
+A.playEconTitlePick=t=>{saveTitle(t.dataset.title||'');econUi.titleOpen=false;refreshPlayMenu();};
 // A claim lands like a reward: a jingle and haptic at the button, then the coins, seals and packs fly into the purse (reward-flight.js).
-A.playEconClaim=async t=>{const {econKind:kind,econId:id,econStep:step}=t.dataset;const from=t.getBoundingClientRect(),before=purse(playEcon.snapshot().state);try{const out=await playEcon.claim(kind,id,step===undefined?undefined:Number(step));t.closest('.pd-card,.pd-quest')?.classList.add('struck');rewardFlight({from,delta:out.delta||{},before,big:kind==='ach'||kind==='weekly-all'});const d=out.delta||{},bits=[d.coins&&d.coins+' coins',d.packs?.length&&d.packs.length+(d.packs.length===1?' pack':' packs'),...Object.entries(d.seals||{}).map(([k,v])=>v+' '+({c:'common',u:'uncommon',r:'rare',m:'mythic'})[k]+(v===1?' seal':' seals')),d.xp&&d.xp+' XP'].filter(Boolean);toast(bits.length?'Claimed: '+bits.join(', ')+'.':'Claimed.');}catch{}};
-// Finished matches move Play quests and achievements (Practice never counts; friend matches count as played).
-addEventListener('play:match-recorded',e=>{const m=e.detail||{};if(!cloudInfo()?.user?.id)return;const mode=m.story?'story':m.friend?'friend':m.playStyle==='practice'?'practice':'quick';if(mode==='practice')return;
+A.playEconClaim=async t=>{const {econKind:kind,econId:id,econStep:step}=t.dataset;const from=t.getBoundingClientRect(),before=purse(playEcon.snapshot().state);try{const out=await playEcon.claim(kind,id,step===undefined?undefined:Number(step));slToast(out.style);t.closest('.pd-card,.pd-quest')?.classList.add('struck');rewardFlight({from,delta:out.delta||{},before,big:kind==='ach'||kind==='weekly-all'});const d=out.delta||{},bits=[d.coins&&d.coins+' coins',d.packs?.length&&d.packs.length+(d.packs.length===1?' pack':' packs'),...Object.entries(d.seals||{}).map(([k,v])=>v+' '+({c:'common',u:'uncommon',r:'rare',m:'mythic'})[k]+(v===1?' seal':' seals')),d.xp&&d.xp+' XP'].filter(Boolean);toast(bits.length?'Claimed: '+bits.join(', ')+'.':'Claimed.');}catch{}};
+// The result banner's goals are the account's own server quests, with this match already counted:
+// today's two quests and the weekly closest to done. Practice moves no quest, so it shows none.
+function resultGoals(m){
+ const s=playEcon.snapshot().state;if(!m||!cloudInfo()?.user?.id||!s?.wallet)return null;
+ const mode=m.story?'story':m.friend?'friend':m.playStyle==='practice'?'practice':'quick';if(mode==='practice')return [];
+ const day=playDay(-new Date().getTimezoneOffset()),before=s.counters||{},after={...before};
+ for(const [k,v] of Object.entries(matchCounters({...m,mode},day,{friendsToday:before[`d:${day}:friend_matches`]||0})||{}))after[k]=(after[k]||0)+v;
+ const was=questRows({counters:before,claimed:s.claimed||[],day}),now=questRows({counters:after,claimed:s.claimed||[],day}),old=new Map([...was.daily,...was.weekly].map(q=>[q.ref,q]));
+ const week=[...now.weekly].sort((a,b)=>Number(a.done)-Number(b.done)||b.have/b.need-a.have/a.need)[0];
+ return [...now.daily.filter(q=>q.level!=='first'),week].filter(Boolean).map(q=>({id:q.id,label:q.label,need:q.need,have:q.have,done:q.done,justDone:q.done&&!old.get(q.ref)?.done}));
+}
+// Finished matches move Play quests and achievements (Practice only its own honour deeds; friend matches count as played).
+addEventListener('play:match-recorded',e=>{const m=e.detail||{};if(!cloudInfo()?.user?.id)return;const mode=m.story?'story':m.friend?'friend':m.playStyle==='practice'?'practice':'quick';
  const id=(crypto.randomUUID?.()||String(Date.now())+Math.random().toString(36).slice(2)).replace(/[^A-Za-z0-9_-]/g,'');
- playEcon.reportMatch({id,mode,outcome:m.outcome,format:m.format,turns:m.turns,life:m.life,onPlay:m.onPlay,durationMs:m.durationMs});});
+ const f=m.facts||{},facts={};for(const k of ['myTurns','minLife','startLife','maxLife','lifeGained','oppBigTurn','oppPoison','oppLibraryMin','oppHandMin','maxHand','maxCreatures','maxTokens','maxLands','maxPower','maxAttackers','maxFlyers','maxCounters','maxAttach','oppMaxCreatures','oppWipes','kills','losses','turnedUp'])if(Number.isSafeInteger(f[k]))facts[k]=f[k];if(f.tribes)facts.maxTribe=Math.max(0,...Object.values(f.tribes).filter(Number.isSafeInteger));
+ playEcon.reportMatch({id,mode,outcome:m.outcome,format:m.format,turns:m.turns,myTurns:m.myTurns,life:m.life,opponentLife:m.opponentLife,onPlay:m.onPlay,durationMs:m.durationMs,colors:m.colors,seats:m.seats,difficulty:m.difficulty,facts:m.facts?facts:undefined});});
 A.playEconRarity=t=>{econUi.rarity=t.dataset.econRarity||'';refreshPlayMenu();};
 I.playEconSetQuery=t=>{econUi.setQuery=t.value;refreshPlayMenu();const f=document.querySelector('[data-input="playEconSetQuery"]');f?.focus({preventScroll:true});try{f.setSelectionRange(t.value.length,t.value.length);}catch{}};
 A.playEconSetFormat=t=>{econUi.setFormat=t.dataset.value||'';refreshPlayMenu();};
@@ -1764,7 +1824,7 @@ const econOpened=out=>{const bits=[];const sb=out.sealBonus||{};for(const [k,lab
 const econLand=list=>list.slice(0,15).forEach((f,i)=>setTimeout(()=>{flyToCollection(f);haptic('tick');},i*85));
 // The server rolls the pack before anything can show, so the pack shakes and glows right away while it does.
 A.playEconOpen=async t=>{let out;const btn=t.closest?.('.pe-pack')||t;btn.classList.add('pe-pack--opening');btn.setAttribute('aria-busy','true');haptic('tap');
- try{out=await playEcon.open(t.dataset.econPack);}catch{return;}finally{btn.classList.remove('pe-pack--opening');btn.removeAttribute('aria-busy');}
+ try{out=await playEcon.open(t.dataset.econPack);slToast(out.style);}catch{return;}finally{btn.classList.remove('pe-pack--opening');btn.removeAttribute('aria-busy');}
  const name=c=>(playEcon.snapshot().state?.shop||[]).find(x=>x.code===c)?.name||c.toUpperCase();
  try{openPackPreview({game:'mtg',set:{code:out.pack.set,name:name(out.pack.set)},cards:[],variant:'play',drawn:econPicks(out),note:[econCollector(out),'Added to your Play collection.',econOpened(out)].filter(Boolean).join(' '),onCopy:copyPlain,isCurrent:()=>true,onLand:econLand,
   onNext:async()=>{const left=playEcon.snapshot().state?.packs||[],next=left.find(p=>p.set===out.pack.set)||left[0];if(!next)return null;out=await playEcon.open(next.id);return {picks:econPicks(out),set:{code:out.pack.set,name:name(out.pack.set)}};}});}catch(e){toast(e.message||'Could not show this pack.');}};
@@ -1821,6 +1881,8 @@ V.setPlayLensSource(()=>{const st=playEcon.snapshot().state||{};
   get edit(){const e=playView==='deck'&&econUi.edit;if(!e)return null;const copies=e.format==='Commander'?1:4;return {name:e.name||'this deck',qty:n=>(e.cards||[]).filter(c=>c.name===n).reduce((t,c)=>t+c.qty,0),copies};},
   // Craft with seals: one seal of the card's rarity per copy, up to 4 copies in the Trunk.
   craft:(name,card)=>{const seal={common:'c',uncommon:'u',rare:'r',mythic:'m',special:'r',bonus:'m'}[card?.rarity];const have=(card?.oracle_id&&byOracle.get(card.oracle_id))||byName.get(name)||0;if(!seal||!card?.id)return null;return {id:card.id,seal,room:Math.max(0,4-have),seals:st.wallet?.['seal_'+seal]|0,label:{c:'common',u:'uncommon',r:'rare',m:'mythic'}[seal]};},
+  // Secret Lair styles unlocked for this card, and the one in use.
+  styles:(name,card)=>{const c=(st.cards||[]).find(x=>x.o===card?.oracle_id)||(st.cards||[]).find(x=>x.n===name);const o=c?.o||card?.oracle_id||'';const list=(st.styles||[]).filter(x=>x.o===o);return list.length?{oracle:o,list,on:list.find(x=>x.on)||null}:null;},
   meta:name=>cardMetaStats(name),
   setProgress:code=>{const have=(st.cards||[]).filter(c=>(c.s||[]).includes(code)).length,total=econFacts.set(code)?.total||null;return {key:'play:'+code,owned:have,total,loaded:total||0,known:total||0,complete:true};}};});
 A.playLensBack=()=>{playView='collection';econUi.tab='sets';go('#play');};
@@ -1848,16 +1910,21 @@ A.playCardStamp=async t=>{const holo=t.dataset.holo==='1';try{const out=await pl
 A.playEconEditDeck=t=>{const d=(playEcon.snapshot().state?.decks||[]).find(x=>x.id===t.dataset.econDeck);econUi.edit=d?{id:d.id,name:d.name,format:d.format||'Standard',cards:(d.cards||[]).filter(c=>!c.board).map(c=>({...c,qty:c.qty|0})),side:(d.cards||[]).filter(c=>c.board)}:{id:null,name:'',format:'Standard',cards:[]};playView='deck';refreshPlayMenu();scrollTo({top:0});requestAnimationFrame(()=>document.getElementById('playDeckTitle')?.focus?.({preventScroll:true}));};
 // Play "Build a deck" (Untapped-style finder): the Trunk build plus meta lists,
 // ranked by how much the player owns; missing cards greyed with seal costs.
-const finderFacts=createNameFacts({onChange:()=>{if(S.ui.view!=='play')return;if(playView==='finder')finderRefresh();else if(playView==='deck')refreshPlayMenu();}});
+const finderFacts=createNameFacts({onChange:()=>{if(S.ui.view!=='play')return;if(playView==='finder')finderRefresh();else if(playView==='deck'||playView==='finderDeck'||playView==='decks')refreshPlayMenu();}});
+// Cheapest craftable rarity per card name (Untapped's lowest-rarity billing): the finder, the deck
+// builder's craft bar and Craft all all bill and stamp that printing. Kept on this device.
+let craftRarityTimer=0;
+const craftRarity=createCraftRarity({onChange:()=>{if(S.ui.view!=='play')return;clearTimeout(craftRarityTimer);craftRarityTimer=setTimeout(()=>{if(playView==='finder')finderRefresh();else if(playView==='deck'||playView==='finderDeck')refreshPlayMenu();},200);}});
+const billRarity=n=>craftRarity.rarity(n)||finderFacts.get(n)?.rarity||(playEcon.snapshot().state?.cards||[]).find(c=>c.n===n)?.r||'';
 // Arena-style builder: cards not in the Trunk get their facts by name (rarity, art, the id that
 // crafting stamps); "All cards" looks through every card legal in the deck's format (no prices).
-function builderWants(snap){const owned=ownedByName(snap.state?.cards||[]),names=(econUi.edit?.cards||[]).map(c=>c.name).filter(n=>!owned.get(n));if(names.length)finderFacts.want(names);
+function builderWants(snap){const owned=ownedByName(snap.state?.cards||[]),names=(econUi.edit?.cards||[]).map(c=>c.name).filter(n=>!owned.get(n));if(names.length){finderFacts.want(names);craftRarity.want(names);}
  if(econUi.pool?.mode==='all'){const k=poolKey();if(k!==econUi.pool.key&&!econUi.pool.timer)econUi.pool.timer=setTimeout(()=>{econUi.pool.timer=0;loadPool();},econUi.pool.key?350:0);}}
 const POOL_COLORS={W:'w',U:'u',B:'b',R:'r',G:'g',C:'c'};
 const POOL_TYPES={Creatures:'creature',Planeswalkers:'planeswalker',Instants:'instant',Sorceries:'sorcery',Artifacts:'artifact',Enchantments:'enchantment',Battles:'battle',Lands:'land'};
 function poolQuery(){const f=(econUi.edit?.format||'Standard').toLowerCase(),q=[`legal:${f}`,'game:paper'];const name=(econUi.cardQuery||'').trim().replace(/["\\]/g,'');if(name)q.push(`name:"${name}"`);
  if(econUi.color)q.push(econUi.color==='C'?'c:c':`c:${POOL_COLORS[econUi.color]||''}`);if(econUi.type&&POOL_TYPES[econUi.type])q.push('t:'+POOL_TYPES[econUi.type]);if(econUi.rarity)q.push('r:'+econUi.rarity);
- const lead=(econUi.edit?.format==='Commander')?(econUi.edit.cards||[]).map(c=>finderFacts.get(c.name)||econFacts.card((playEcon.snapshot().state?.cards||[]).find(x=>x.n===c.name)?.o)?.card).find(c=>/Legendary/.test(c?.type_line||'')&&/Creature/.test(c?.type_line||'')):null;
+ const lead=deckRules(econUi.edit?.format).commander?(econUi.edit.cards||[]).map(c=>finderFacts.get(c.name)||econFacts.card((playEcon.snapshot().state?.cards||[]).find(x=>x.n===c.name)?.o)?.card).find(c=>/Legendary/.test(c?.type_line||'')&&/Creature/.test(c?.type_line||'')):null;
  if(lead?.color_identity)q.push('id<='+(lead.color_identity.join('').toLowerCase()||'c'));return q.join(' ');}
 const poolKey=()=>poolQuery()+'|'+(econUi.sort||'');
 async function loadPool(more=false){const P=econUi.pool;if(!P||P.mode!=='all')return;const key=poolKey();if(P.busy&&P.key===key&&!more)return;const t=++P.ticket;P.busy=true;P.error='';if(!more){P.key=key;P.cards=[];P.page=1;}refreshPlayMenu();
@@ -1870,21 +1937,23 @@ A.playEconPoolMore=()=>loadPool(true);
 A.playGetPack=t=>A.playCardGet(t);
 // Empty slots (a Trunk build that ran out of owned cards): fill them with the format's most-played
 // cards in the deck's colours, one copy each; cards you don't own land greyed, ready to craft.
-A.playFillSlots=async()=>{const e=econUi.edit;if(!e||econUi.filling)return;const size=e.format==='Commander'?100:60,have=(e.cards||[]).reduce((t,c)=>t+c.qty,0),need=size-have;if(need<1)return;
+A.playFillSlots=async()=>{const e=econUi.edit;if(!e||econUi.filling)return;const size=deckRules(e.format).size,have=(e.cards||[]).reduce((t,c)=>t+c.qty,0),need=size-have;if(need<1)return;
  econUi.filling=true;refreshPlayMenu();const saved={cardQuery:econUi.cardQuery,color:econUi.color,type:econUi.type,rarity:econUi.rarity};Object.assign(econUi,{cardQuery:'',color:'',type:'',rarity:''});const q=poolQuery();Object.assign(econUi,saved);
  try{const inDeck=new Set((e.cards||[]).map(c=>key(c.name)));let added=0;
   for(let page=1;page<=3&&added<need;page++){const r=await fetch(`https://api.scryfall.com/cards/search?${new URLSearchParams({q:q+' -t:land',order:'edhrec',unique:'cards',page:String(page)})}`,{headers:{Accept:'application/json'}});const body=r.ok?await r.json().catch(()=>null):null;if(!body?.data)break;
    for(const c of body.data.map(slimCard)){if(added>=need)break;if(inDeck.has(key(c.name)))continue;finderFacts.put(c);inDeck.add(key(c.name));e.cards.push({name:c.name,qty:1});added++;}if(!body.has_more)break;}
   e.dirty=true;toast(added?`${added} suggested card${added>1?'s':''} added. Greyed ones are still to craft.`:'No suggestions found right now.');}
  catch{toast('Suggestions could not load. Check your connection.');}finally{econUi.filling=false;refreshPlayMenu();}};
-const craftIdOf=name=>finderFacts.get(name)?.id||econFacts.card((playEcon.snapshot().state?.cards||[]).find(c=>c.n===name||c.n.split(' // ')[0]===name)?.o)?.card?.id||'';
-async function craftCopies(id,n){let made=0;for(let i=0;i<n;i++){try{await playEcon.craft(id);made++;}catch{break;}}return made;}
+const craftIdOf=name=>craftRarity.id(name)||finderFacts.get(name)?.id||econFacts.card((playEcon.snapshot().state?.cards||[]).find(c=>c.n===name||c.n.split(' // ')[0]===name)?.o)?.card?.id||'';
+// A crafted row stamps in gold once (play-menu.css .pe-build-row--crafted).
+let craftedTimer=0;const markCrafted=names=>{econUi.justCrafted=new Set(names);clearTimeout(craftedTimer);craftedTimer=setTimeout(()=>{econUi.justCrafted=null;},1400);};
+async function craftCopies(id,n,name=''){let made=0;for(let i=0;i<n;i++){try{await playEcon.craft(id);made++;}catch{break;}}if(made&&name)markCrafted([...(econUi.justCrafted||[]),name]);return made;}
 A.playCraftCopies=async t=>{const id=t.dataset.cardId||craftIdOf(t.dataset.name),n=Math.max(1,Math.min(4,Number(t.dataset.n)||1));if(!id)return toast('That card is still loading. Try again in a moment.');
- t.closest('details')?.removeAttribute('open');const made=await craftCopies(id,n);if(made)toast(`${made} ${t.dataset.name} crafted into your Play collection.`);refreshPlayMenu();refreshSheet?.();};
+ t.closest('details')?.removeAttribute('open');const made=await craftCopies(id,n,t.dataset.name);if(made)haptic('success');if(made)toast(`${made} ${t.dataset.name} crafted into your Play collection.`);refreshPlayMenu();refreshSheet?.();};
 A.playCraftAll=async()=>{const e=econUi.edit;if(!e||econUi.crafting)return;if(!econUi.craftArmed){econUi.craftArmed=true;refreshPlayMenu();setTimeout(()=>{if(econUi.craftArmed){econUi.craftArmed=false;refreshPlayMenu();}},5000);return;}
  econUi.craftArmed=false;econUi.crafting=true;refreshPlayMenu();const st=playEcon.snapshot().state||{};
- const plan=craftPlan(e.cards||[],ownedByName(st.cards||[]),n=>finderFacts.get(n)?.rarity||(st.cards||[]).find(c=>c.n===n)?.r||'',st.wallet||{});let made=0;
- try{for(const r of plan.rows){const id=craftIdOf(r.name);if(id&&r.now)made+=await craftCopies(id,r.now);}}finally{econUi.crafting=false;refreshPlayMenu();}
+ const plan=craftPlan(e.cards||[],ownedByName(st.cards||[]),billRarity,st.wallet||{},n=>copyCap(n,e.format,finderFacts.get(n)?.legalities));let made=0;
+ try{for(const r of plan.rows){const id=craftIdOf(r.name);if(id&&r.now)made+=await craftCopies(id,r.now,r.name);}}finally{econUi.crafting=false;refreshPlayMenu();}
  toast(made?`${made} card${made>1?'s':''} crafted.${made<plan.missing?' Open packs or forge seals for the rest.':''}`:'Not enough seals for these cards yet.');};
 // Drag a card from the pool (or the list) onto the decklist: pointer events, one lifted copy.
 (()=>{let drag=null;const zone=()=>document.querySelector('[data-drop-deck]');
@@ -1896,31 +1965,73 @@ A.playCraftAll=async()=>{const e=econUi.edit;if(!e||econUi.crafting)return;if(!e
   const swallow=ev=>{ev.stopPropagation();ev.preventDefault();};addEventListener('click',swallow,{capture:true,once:true});setTimeout(()=>removeEventListener('click',swallow,{capture:true}),0);
   if(on&&e.type==='pointerup')A.playEconStep({dataset:{econCard:d.name,econStep:'1'}});};
  addEventListener('pointerup',end);addEventListener('pointercancel',end);})();
-const finderUi={format:'Standard',rows:null,busy:false,error:'',limit:8,ticket:0,sort:'owned',query:'',total:null,trunk:null};
+const finderUi={format:'Standard',rows:null,items:null,busy:false,error:'',limit:8,ticket:0,sort:'owned',filter:'all',query:'',total:null,trunk:null,clusters:null,clusterKey:'',lists:new Map(),seen:new Set(),status:new Map(),sealKey:'',counts:null};
+const finderMetaKey=format=>'mtg:'+(format==='Commander'?'EDH':format);
+const finderHasMeta=format=>MTG_META_FORMATS.some(([k])=>k===finderMetaKey(format).slice(4));
 // Every meta list the service returns for the format (hundreds for the busy ones), ranked by names
 // alone; only the rows on screen are built in full and have their card facts fetched.
-const finderLists=format=>{const data=metaState('mtg:'+(format==='Commander'?'EDH':format)).data;return (data?.decks||[]).filter(d=>d?.key&&Array.isArray(d.main)).map(d=>{const commanders=(d.commanders||[]).map(r=>typeof r==='string'?{name:r,qty:1}:r);return {key:'meta:'+d.key,name:d.name||d.archetype||'Meta deck',archetype:d.archetype||d.name||'',source:'Meta',detail:[d.place,d.event].filter(Boolean).join(' · '),format,commander:commanders[0]?.name||'',cards:[...commanders,...d.main.filter(r=>!r.board||r.board==='main')]};});};
+const finderLists=format=>{if(!finderHasMeta(format))return [];const data=metaState(finderMetaKey(format)).data;return (data?.decks||[]).filter(d=>d?.key&&Array.isArray(d.main)).map(d=>{const commanders=(d.commanders||[]).map(r=>typeof r==='string'?{name:r,qty:1}:r);return {key:'meta:'+d.key,name:d.name||d.archetype||'Meta deck',archetype:d.archetype||d.name||'',source:'Meta',detail:[d.place,d.event].filter(Boolean).join(' · '),format,commander:commanders[0]?.name||'',cards:[...commanders,...d.main.filter(r=>!r.board||r.board==='main')]};});};
+// Deck emblems on the Decks page (play-deck-emblem.js): card facts come from the finder's name facts,
+// meta lists from the same tournament data the finder ranks (only once it has loaded).
+const playDeckEmblemOf=d=>deckEmblem(d.cards||[],n=>finderFacts.get(n),finderHasMeta(d.format||'')?finderLists(d.format):[]);
+function playDeckEmblemWants(snap){const decks=snap.state?.decks||[],open=econUi.precon?.open?.rows||[];void finderFacts.want([...decks.flatMap(d=>(d.cards||[]).map(r=>r.name)),...open.map(r=>r.name)]);}
+const finderSeals=s=>({c:s?.wallet?.seal_c|0,u:s?.wallet?.seal_u|0,r:s?.wallet?.seal_r|0,m:s?.wallet?.seal_m|0});
 function finderRefresh(){const snap=playEcon.snapshot(),s=snap.state;if(!s)return;const owned=ownedByName(s.cards||[]),ownedFact=new Map((s.cards||[]).map(c=>{const f=econFacts.card(c.o)?.card;return f?[f.name,f]:null;}).filter(Boolean));
  const cardOf=name=>finderFacts.get(name)||ownedFact.get(name)||ownedFact.get(String(name).split(' // ')[0])||null;
  if(finderUi.trunk?.format!==finderUi.format){const hooksOf=(lead,pool)=>{const h=commanderHooks(lead);return pool.filter(c=>(c.color_identity||[]).every(k=>(lead.color_identity||[]).includes(k))&&forgeFit(c,h,{leader:lead}).n>0).length;};
   finderUi.trunk={format:finderUi.format,list:trunkDeck({format:finderUi.format,ownedCards:s.cards||[],factOf:o=>econFacts.card(o)?.card||null,build:buildDeck,hooksOf})};}
- const ranked=rankFinderLists([...(finderUi.trunk.list?[finderUi.trunk.list]:[]),...finderLists(finderUi.format)],{owned,sort:finderUi.sort,query:finderUi.query});
- const top=ranked.slice(0,finderUi.limit);finderUi.total=ranked.length;finderFacts.want(top.flatMap(x=>x.list.cards.map(r=>r.name)));
- const seals={c:s.wallet?.seal_c|0,u:s.wallet?.seal_u|0,r:s.wallet?.seal_r|0,m:s.wallet?.seal_m|0};
- finderUi.rows=top.map(x=>finderRow(x.list,{owned,cardOf,seals}));refreshPlayMenu();}
-async function loadFinder(){const t=++finderUi.ticket,format=finderUi.format,s=playEcon.snapshot().state;finderUi.busy=true;finderUi.error='';finderUi.rows=null;finderUi.trunk=null;refreshPlayMenu();
- try{await econFacts.wantCards((s?.cards||[]).map(c=>({o:c.o,id:c.p?.id})));const mk='mtg:'+(format==='Commander'?'EDH':format);if(!metaState(mk).data)await Promise.race([loadMetaData(mk).catch(()=>{}),new Promise(r=>setTimeout(r,6000))]);if(t!==finderUi.ticket)return;
-  if(!finderLists(format).length)finderUi.error='Meta lists for this format could not load right now. Your Trunk build is still here.';}
+ const lists=[...(finderUi.trunk.list?[finderUi.trunk.list]:[]),...finderLists(finderUi.format)],ck=finderUi.format+':'+lists.length+':'+(lists[0]?.key||'');
+ if(finderUi.clusterKey!==ck){finderUi.clusterKey=ck;finderUi.clusters=clusterArchetypes(lists);finderUi.lists=new Map(lists.map(l=>[l.key,l]));}
+ // Status counts by names alone: a missing card's rarity is pending until its cheapest printing is known.
+ const seals=finderSeals(s),rarityOf=n=>craftRarity.rarity(n)||(craftRarity.busy&&!craftRarity.missed(n)?'':cardOf(n)?.rarity||(craftRarity.missed(n)?'rare':'')),ctx={owned,sort:finderUi.sort,query:finderUi.query,rarityOf,seals,clusters:finderUi.clusters};
+ const every=rankFinderLists(lists,{...ctx,filter:'all'}),ranked=finderUi.filter==='all'?every:rankFinderLists(lists,{...ctx,filter:finderUi.filter});
+ finderUi.counts={all:every.length,trunk:every.filter(x=>x.complete).length,craftable:every.filter(x=>x.complete||x.status==='craftable').length};
+ const archs=finderArchetypes(ranked,finderUi.clusters),top=archs.slice(0,finderUi.limit);finderUi.total=ranked.length;finderUi.more=archs.length>finderUi.limit;finderUi.sealKey=JSON.stringify(seals);
+ finderFacts.want(top.flatMap(a=>a.lead.list.cards.map(r=>r.name)));
+ finderUi.items=top.map(a=>{const row=finderRow(a.lead.list,{owned,cardOf,seals,rarityOf:n=>craftRarity.rarity(n)}),was=finderUi.status.get(row.key);
+  const item={row,arch:a,enter:!finderUi.seen.has(row.key),pop:!!was&&was!==row.status&&row.status!=='short'};finderUi.seen.add(row.key);finderUi.status.set(row.key,row.status);return item;});
+ finderUi.rows=finderUi.items.map(x=>x.row);refreshPlayMenu();}
+async function loadFinder(){const t=++finderUi.ticket,format=finderUi.format,s=playEcon.snapshot().state;finderUi.busy=true;finderUi.error='';finderUi.rows=null;finderUi.items=null;finderUi.trunk=null;refreshPlayMenu();
+ try{await econFacts.wantCards((s?.cards||[]).map(c=>({o:c.o,id:c.p?.id})));const mk=finderMetaKey(format);if(finderHasMeta(format)&&!metaState(mk).data)await Promise.race([loadMetaData(mk).catch(()=>{}),new Promise(r=>setTimeout(r,6000))]);if(t!==finderUi.ticket)return;
+  if(finderHasMeta(format)&&!finderLists(format).length)finderUi.error='Meta lists for this format could not load right now. Your Trunk build is still here.';
+  // Cheapest rarities for every card the Trunk lacks across the format's lists, in the background.
+  const owned=ownedByName(s?.cards||[]);craftRarity.want(finderLists(format).flatMap(l=>l.cards.map(r=>r.name)).filter(n=>!owned.get(n)));}
  catch{finderUi.error='Some deck lists could not load right now.';}
  finally{if(t===finderUi.ticket){finderUi.busy=false;finderRefresh();}}}
-function finderView(snap){if(!finderUi.rows&&!finderUi.busy)queueMicrotask(loadFinder);return finderMarkup({headHtml:econHead('Build a deck',snap),format:finderUi.format,rows:finderUi.rows||[],busy:finderUi.busy,error:finderUi.error,limit:finderUi.limit,total:finderUi.total,sort:finderUi.sort,query:finderUi.query});}
+function finderView(snap){if(!finderUi.rows&&!finderUi.busy)queueMicrotask(loadFinder);else if(finderUi.rows&&!finderUi.busy&&JSON.stringify(finderSeals(snap.state))!==finderUi.sealKey)queueMicrotask(finderRefresh);
+ // Rows rise in once; the next render (facts, seals) leaves them still.
+ const items=finderUi.items;if(items)queueMicrotask(()=>items.forEach(x=>{x.enter=false;x.pop=false;}));
+ return finderMarkup({headHtml:econHead('Build a deck',snap),format:finderUi.format,items:items||[],busy:finderUi.busy,error:finderUi.error,limit:finderUi.limit,total:finderUi.total,more:finderUi.more,sort:finderUi.sort,filter:finderUi.filter,counts:finderUi.counts,rarityBusy:craftRarity.busy,query:finderUi.query});}
 A.playFinderFormat=t=>{const f=t.dataset.finderFormat;if(!FINDER_FORMATS.includes(f)||f===finderUi.format)return;finderUi.format=f;finderUi.limit=8;loadFinder();};
 A.playFinderMore=()=>{finderUi.limit+=8;finderRefresh();};
-A.playFinderSort=t=>{finderUi.sort=FINDER_SORTS.some(([k])=>k===t.dataset.finderSort)?t.dataset.finderSort:'owned';finderUi.limit=8;finderRefresh();};
+// A finder deck opens as the app's own deck page (deckShell + deck viewer), Play data only.
+// The row is built fresh on every paint, so crafting, facts and rarities land live.
+function finderRowFor(key,s=playEcon.snapshot().state){const list=finderUi.lists.get(key)||(finderUi.trunk?.list?.key===key?finderUi.trunk.list:null);if(!list)return null;
+ const owned=ownedByName(s?.cards||[]),ownedFact=new Map((s?.cards||[]).map(c=>{const f=econFacts.card(c.o)?.card;return f?[f.name,f]:null;}).filter(Boolean)),cardOf=n=>finderFacts.get(n)||ownedFact.get(n)||ownedFact.get(String(n).split(' // ')[0])||null;
+ return {row:finderRow(list,{owned,cardOf,seals:finderSeals(s),rarityOf:n=>craftRarity.rarity(n)}),cardOf,owned};}
+function finderDeckView(snap){const key=finderUi.open,hit=key&&finderRowFor(key,snap.state);if(!hit){queueMicrotask(()=>{playView='finder';refreshPlayMenu();});return '';}
+ const {row,cardOf}=hit,names=row.list.cards.map(r=>r.name);finderFacts.want(names);craftRarity.want(names.filter(n=>!hit.owned.get(n)));
+ const plan={rows:row.shortfall.missing.map(m=>({name:m.name,miss:m.need}))},goals=packGoals(plan,n=>cardOf(n),econFacts);
+ return `<section class="play-menu pe-screen pf-deck-screen" aria-labelledby="playFinderDeckTitle">${finderDeckMarkup(row,{arch:finderUi.clusters?.of(key)?{name:finderUi.clusters.of(key).name}:null,cardOf,packGoals:goals,crafting:!!finderUi.crafting,armed:!!finderUi.craftArmed})}</section>`;}
+A.playFinderOpen=t=>{const key=t.dataset.finderKey;if(!finderRowFor(key))return;finderUi.open=key;finderUi.craftArmed=false;finderUi.returnY=scrollY;playView='finderDeck';refreshPlayMenu();scrollTo({top:0});requestAnimationFrame(()=>document.getElementById('playFinderDeckTitle')?.focus?.({preventScroll:true}));};
+A.playFinderBack=()=>{playView='finder';finderUi.open='';refreshPlayMenu();const y=finderUi.returnY||0;requestAnimationFrame(()=>scrollTo({top:y}));};
+A.playFinderCopy=async t=>{const hit=finderRowFor(t.dataset.finderKey);if(!hit)return;const rows=new Map();for(const r of hit.row.list.cards)rows.set(r.name,(rows.get(r.name)||0)+(r.qty|0||1));
+ try{await navigator.clipboard.writeText([...rows].map(([n,q])=>q+' '+n).join('\n'));toast('List copied.');}catch{toast('Copying is blocked here.');}};
+// Craft all from the deck page: one tap arms it (5 s), the second spends seals at each card's cheapest rarity.
+A.playFinderCraftAll=async t=>{const key=t.dataset.finderKey,hit=finderRowFor(key);if(!hit||finderUi.crafting)return;
+ if(!finderUi.craftArmed){finderUi.craftArmed=true;refreshPlayMenu();setTimeout(()=>{if(finderUi.craftArmed){finderUi.craftArmed=false;refreshPlayMenu();}},5000);return;}
+ finderUi.craftArmed=false;finderUi.crafting=true;refreshPlayMenu();let made=0;
+ try{for(const m of hit.row.shortfall.missing){const id=craftIdOf(m.name);if(id)made+=await craftCopies(id,m.need,m.name);}}finally{finderUi.crafting=false;refreshPlayMenu();}
+ if(made){haptic('success');document.querySelectorAll('.pf-deck-row').forEach(el=>{if(econUi.justCrafted?.has(el.dataset.deckName))el.classList.add('pe-build-row--crafted');});}
+ toast(made?`${made} card${made>1?'s':''} crafted into your Trunk.`:'Not enough seals for these cards yet.');};
+C.playFinderSort=t=>{finderUi.sort=FINDER_SORTS.some(([k])=>k===t.value)?t.value:'owned';finderUi.limit=8;finderRefresh();};
+A.playFinderFilter=t=>{const f=t.dataset.finderFilter;if(!FINDER_FILTERS.some(([k])=>k===f)||f===finderUi.filter)return;finderUi.filter=f;finderUi.limit=8;finderRefresh();};
 let finderQueryTimer=0;I.playFinderQuery=t=>{finderUi.query=t.value;clearTimeout(finderQueryTimer);finderQueryTimer=setTimeout(()=>{finderUi.limit=8;finderRefresh();const f=document.querySelector('[data-input="playFinderQuery"]');f?.focus({preventScroll:true});try{f.setSelectionRange(f.value.length,f.value.length);}catch{}},250);};
 // Use / Build it: the list opens in the deck builder. Cards you don't own sit greyed there with
 // their seal, ready to craft one by one or with Craft all; Save keeps it in your Play decks.
-A.playFinderUse=t=>{const row=(finderUi.rows||[]).find(r=>r.key===t.dataset.finderKey);if(!row)return;row.list.cards.forEach(r=>{const f=finderFacts.get(r.name);if(f)finderFacts.put(f);});
+A.playFinderUse=t=>{const key=t.dataset.finderKey,s=playEcon.snapshot().state;let row=(finderUi.rows||[]).find(r=>r.key===key);
+ // A variant opens the same way: built in full on tap.
+ if(!row&&finderUi.lists.get(key))row=finderRow(finderUi.lists.get(key),{owned:ownedByName(s?.cards||[]),cardOf:n=>finderFacts.get(n),seals:finderSeals(s),rarityOf:n=>craftRarity.rarity(n)});if(!row)return;row.list.cards.forEach(r=>{const f=finderFacts.get(r.name);if(f)finderFacts.put(f);});
  const cards=[];for(const r of row.list.cards){const c=cards.find(x=>x.name===r.name);if(c)c.qty+=r.qty|0||1;else cards.push({name:r.name,qty:r.qty|0||1});}
  econUi.edit={id:null,name:row.name.slice(0,80),format:row.format,cards,dirty:true};econUi.pool={mode:row.complete?'mine':'all',cards:[],ticket:0};playView='deck';refreshPlayMenu();scrollTo({top:0});requestAnimationFrame(()=>document.getElementById('playDeckTitle')?.focus?.({preventScroll:true}));};
 A.playEconStep=t=>{const e=econUi.edit;if(!e)return;const name=t.dataset.econCard;e.cards=stepDeckCard(e.cards,name,Number(t.dataset.econStep)||0,new Map([[name,4]]),e.format);e.dirty=true;refreshPlayMenu();if(t.closest?.('#sheet'))refreshSheet?.();};
@@ -1951,7 +2062,9 @@ document.addEventListener('keydown',e=>{if(e.key==='Escape')for(const d of docum
 A.playStyle=t=>{quickSequence++;quickStatus={busy:false,error:null};cancelPlayBuilds();const social=t.dataset.playStyle==='social';
  if(social&&!FRIEND_FORMATS.includes(playSetup.snapshot().match.format))playSetup.configure({format:'Commander'});
  if(!social&&friendRoom?.seat==='host'&&friendRoom.status==='open')void A.playFriendCancel();if(!social&&friendRoom?.seat==='guest'){friendRoom=null;forgetFriendInvite();}if(!social&&friendRoom?.target)friendRoom=null;
- playSetup.configure({mode:social?'friends':'cpu'});if(t.dataset.playStyle!=='social')playSetup.setPlayStyle(t.dataset.playStyle);refreshPlayMenu();};
+ playSetup.configure({mode:social?'friends':'cpu'});if(t.dataset.playStyle!=='social')playSetup.setPlayStyle(t.dataset.playStyle);if(t.dataset.playStyle==='quick'&&!quickDeckReady(playSetup.snapshot()))playSetup.clearSelection('player');refreshPlayMenu();};
+// Quick Play deals only a deck whose cards are all in your Trunk.
+const quickDeckReady=state=>!state.selected||state.selectedSource==='saved'&&!playLockedDecks().has(state.selected.id);
 // Friend matches. The host opens a room with their deck and sends the invite link; the friend
 // opens it (signing in first if needed: the invite waits in this tab), picks a deck and joins.
 // The server starts one match; both players then open it on their own seat.
@@ -1960,7 +2073,9 @@ let friendRoom=null,friendPoll=null,friendRooms=null;
 const roomsModule=()=>import('./play-forge-host-client.js');
 const rooms=async()=>friendRooms||=(await roomsModule()).createFriendRooms({getAccessToken:cloudAccessToken});
 // What the other player sees of you: your display name and profile picture.
-const myFriendCard=async()=>(await roomsModule()).friendPlayerCard(playSetup.snapshot().profile);
+// Your name goes to the other player with the Glory title you wear (play-titles.js), if you earned it.
+const myTitle=()=>{try{const e=playEcon.snapshot().state;return e?wornTitle(achievementTitles(achievementRows({counters:e.counters||{},claimed:e.claimed||[],state:e}))):'';}catch{return '';}};
+const myFriendCard=async()=>(await roomsModule()).friendPlayerCard({...playSetup.snapshot().profile,playTitle:myTitle()});
 // An invite waiting from before sign-in opens as soon as Play shows for a signed-in player.
 let inviteOpening=false;
 const friendRoomView=()=>{
@@ -2193,6 +2308,7 @@ A.playStartCandidate=async()=>{
  playStarting=true;forgeWarmAt=0; // this start claims the warm engine; warm again next time
  try{
  const initial=playSetup.snapshot();
+ if(initial.playStyle==='quick'&&initial.match.mode==='cpu'&&!quickDeckReady(initial)){playSetup.clearSelection('player');refreshPlayMenu();return toast('Quick Play needs a deck with every card in your Trunk.');}
  if(initial.playStyle==='quick'&&initial.match.mode==='cpu'&&!initial.quickMatch){if(!await A.playFindOpponent())return;}
  if(T.game()!=='mtg'||S.ui.view!=='play'||!syncDesktopPlayEntries('mtg').eligible)return;
  const source=playSetup.snapshot();if(!source.selected||!source.opponent||source.match.mode!=='cpu')return toast('Choose both Practice decks first.');
@@ -2221,7 +2337,7 @@ A.playStartCandidate=async()=>{
    const cards=createForgeArtworkPreparation({selectionKey:key,isCurrent:current,
     resolveNames:(names,{isCurrent})=>resolveNames(names,()=>{},false,isCurrent),
     lookup:(name,id)=>id?S.state.printings?.[id]||storyPrints.get(id)||null:meta(name),fetchPrinting:id=>api('/cards/'+encodeURIComponent(id))});
-   playerMatHost=createForgePlayerMat({root:playerMatRoot,readAccount:readPlayAccount,readSetup:()=>playSetup.snapshot(),getAccessToken:cloudAccessToken,createClient:localClient,
+   playerMatHost=createForgePlayerMat({root:playerMatRoot,readAccount:readPlayAccount,readGoals:resultGoals,readSetup:()=>playSetup.snapshot(),getAccessToken:cloudAccessToken,createClient:localClient,
     prepareArtwork:cards.prepare,lookup:cards.lookup,onClose:closePlayerMat,onHome:()=>{closePlayerMat();go('#home');},onRematch:()=>{closePlayerMat();A.playStartCandidate();},
     // A finished match frees its engine after cleanup; warm the next one for a rematch.
     onFinished:()=>setTimeout(()=>warmForgeEngine(playSetup.snapshot(),{afterMatch:true}),4000)});
@@ -2259,7 +2375,7 @@ A.playFriendLaunch=async matchId=>{
   const cards=createForgeArtworkPreparation({selectionKey:key,isCurrent:current,
    resolveNames:(names,{isCurrent})=>resolveNames(names,()=>{},false,isCurrent),
    lookup:(name,id)=>id?S.state.printings?.[id]||null:meta(name),fetchPrinting:id=>api('/cards/'+encodeURIComponent(id))});
-  playerMatHost=createForgePlayerMat({root:playerMatRoot,readAccount:readPlayAccount,readSetup:()=>setup,getAccessToken:cloudAccessToken,
+  playerMatHost=createForgePlayerMat({root:playerMatRoot,readAccount:readPlayAccount,readGoals:resultGoals,readSetup:()=>setup,getAccessToken:cloudAccessToken,
    prepareArtwork:cards.prepare,lookup:cards.lookup,resolveLate:name=>{late.add(name);clearTimeout(lateTimer);lateTimer=setTimeout(()=>{const names=[...late];late.clear();if(current())void resolveNames(names,()=>{},false,current);},250);},
    onClose:()=>{friendRoom=null;closePlayerMat();},onHome:()=>{friendRoom=null;closePlayerMat();go('#home');}});
   try{await playerMatHost.start();}catch{/* The match screen presents the error and recovery action. */}
@@ -2294,8 +2410,10 @@ A.storyListSide=t=>{storyUi.listSide=t.dataset.storyList==='theirs'?'theirs':'mi
 // Story decklists show the exact era printing of every card, basics included: the rows carry
 // Scryfall ids, fetched once and swapped into the catalog only while the list renders.
 const storyPrints=new Map(),storyPrintAsk=new Set();
-async function storyWantPrints(ids){const want=ids.filter(id=>id&&!storyPrints.has(id)&&!storyPrintAsk.has(id));if(!want.length)return;want.forEach(id=>storyPrintAsk.add(id));
- for(let i=0;i<want.length;i+=75){try{const r=await api('/cards/collection',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({identifiers:want.slice(i,i+75).map(id=>({id}))})});for(const c of r?.data||[])storyPrints.set(c.id,slim(c));}catch{want.slice(i,i+75).forEach(id=>storyPrintAsk.delete(id));}}
+const storyPrintJobs=new Set();
+// Resolves once every id asked for so far is in storyPrints (or failed), so a match never starts on a half-loaded set of pins.
+async function storyWantPrints(ids){const want=ids.filter(id=>id&&!storyPrints.has(id)&&!storyPrintAsk.has(id));if(!want.length){await Promise.allSettled([...storyPrintJobs]);return;}want.forEach(id=>storyPrintAsk.add(id));
+ const job=(async()=>{for(let i=0;i<want.length;i+=75){try{const r=await api('/cards/collection',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({identifiers:want.slice(i,i+75).map(id=>({id}))})});for(const c of r?.data||[])storyPrints.set(c.id,slim(c));}catch{want.slice(i,i+75).forEach(id=>storyPrintAsk.delete(id));}}})();storyPrintJobs.add(job);try{await job;}finally{storyPrintJobs.delete(job);}
  if(STORY_VIEWS.has(playView))refreshPlayMenu();}
 function withStoryPrints(rows,fn){const saved=[];for(const r of rows){const c=r.id&&storyPrints.get(r.id);if(!c)continue;const k=key(r.name);saved.push([k,S.catalog[k]]);S.catalog[k]=c;}
  try{return fn();}finally{for(let i=saved.length-1;i>=0;i--){const [k,v]=saved[i];if(v===undefined)delete S.catalog[k];else S.catalog[k]=v;}}}
@@ -2345,22 +2463,24 @@ A.storyPlay=async({skipScene=false}={})=>{
   bubbles=createStoryBubbles({root,battle:b,cast:data.cast,playerSide:seat,avatarUrl:storyAvatar()});
   const cards=createForgeArtworkPreparation({selectionKey:key,isCurrent:current,
    resolveNames:(names,{isCurrent})=>resolveNames(names,()=>{},false,isCurrent),
-   lookup:(name,id)=>id?S.state.printings?.[id]||null:meta(name),fetchPrinting:id=>api('/cards/'+encodeURIComponent(id))});
+   lookup:(name,id)=>id?S.state.printings?.[id]||storyPrints.get(id)||null:meta(name),fetchPrinting:id=>api('/cards/'+encodeURIComponent(id))});
+  // Story pins every card to its era printing (data/story/act-N.json ids): load them in bulk before the table asks for art.
+  const pinIds=[...new Set([b.hero,b.villain].flatMap(s=>s.deck.cards.map(r=>r.id)).filter(Boolean))],prepareCards=cards.prepare;cards.prepare=async(...a)=>{await storyWantPrints(pinIds);return prepareCards(...a);};
   let paid=false,rec=null;
   // The match record (on the play, turns, life) arrives just before the finished state.
   const onRec=e=>{if(e.detail?.story)rec=e.detail;};addEventListener('play:match-recorded',onRec);
   const finished=async outcome=>{bubbles?.finish(outcome);removeEventListener('play:match-recorded',onRec);if(outcome!=='win'||paid)return;paid=true;
    const seenStats=bubbles?.stats?.()||{};
-   const out=await storyProgress.claim({battle:b.id,seat,deck:own?'own':'loaner'});if(out?.state)playEcon.refresh();
+   const out=await storyProgress.claim({battle:b.id,seat,deck:own?'own':'loaner'});if(out?.state)playEcon.refresh();slToast(out?.style);
    // Story deeds: what this win earned (story-deeds.js); the server re-checks and pays each once.
-   const deeds=storyDeedsEarned(b.id,{...seenStats,seat,own:!!own,onPlay:typeof rec?.onPlay==='boolean'?rec.onPlay:null,turns:rec?.turns||seenStats.turns,endLife:rec?.life??seenStats.endLife},out?.refs||[]);
-   if(deeds.length)void playEcon.reportDeeds(b.id,deeds).then(r=>{for(const id of r?.counted||[]){const d=[...STORY_DEEDS,...STORY_ACT_DEEDS].find(x=>x.id===id);if(d)toast(`Deed done: ${d.title}. Claim it in Achievements.`);}});
+   const deeds=storyDeedsEarned(b.id,{...seenStats,...(rec?.facts||{}),seat,own:!!own,onPlay:typeof rec?.onPlay==='boolean'?rec.onPlay:null,endLife:rec?.life??rec?.facts?.endLife??seenStats.endLife},out?.refs||[]);
+   if(deeds.length)void playEcon.reportDeeds(b.id,deeds);// the live achievement toast shows each counted deed
    const panel=root.querySelector('.play-match-result');if(panel){const note=document.createElement('p');note.className='st-result-note';const got=out?.paid||[],won=!own&&got.includes(`story:${b.id}:${seat==='villain'?'villain':'loaner'}`),rw=b.reward?.[seat]||{},coll=got.includes(`story:${b.id}:collector`);
     note.innerHTML=`${starsRow(storyProgress.snapshot().progress.battles?.[b.id])}<span>${won?rewardText(rw,b.rewardSet)+(coll?' and a Collector pack':'')+' added':coll?'A Collector pack added':out?.error?esc(out.error):own?'Your own deck earns XP. Win with the Story deck for the reward.':'Reward already claimed'}</span>`;panel.querySelector('.play-result-actions')?.before(note);}
    const ending=b.slot===8?(seat==='hero'?data.finale:data.villainFinale):b.after;
    if(ending?.length)setTimeout(()=>void playScene({lines:ending,cast:data.cast,leftWho:b.hero.who,rightWho:b.villain.who,avatarUrl:storyAvatar(),title:b.slot===8?'Act '+data.act+' finale':b.title}),2600);};
   const back=()=>{removeEventListener('play:match-recorded',onRec);bubbles?.destroy();bubbles=null;closePlayerMat();playView='storyAct';refreshPlayMenu();scrollTo({top:0});};
-  playerMatHost=createForgePlayerMat({root,readAccount:readPlayAccount,readSetup:()=>setup,getAccessToken:cloudAccessToken,createClient:localClient,
+  playerMatHost=createForgePlayerMat({root,readAccount:readPlayAccount,readGoals:resultGoals,readSetup:()=>setup,getAccessToken:cloudAccessToken,createClient:localClient,
    prepareArtwork:cards.prepare,lookup:cards.lookup,onClose:back,onHome:back,onRematch:()=>{back();void A.storyPlay({skipScene:true});},
    onChange:state=>{bubbles?.update(state);if(state?.phase==='finished'&&state.outcome)void finished(state.outcome);},
    onFinished:()=>{}});
@@ -2448,15 +2568,17 @@ function renderPlayPage() {
    if(playView==='packs')econFacts.wantSets((snap.state?.packs||[]).map(p=>p.set));
    if(playView==='shop'){const q=(econUi.query||'').trim().toLowerCase(),shop=snap.state?.shop||[];econFacts.wantSets([snap.state?.rewardSet?.code,...(q?shop.filter(x=>x.name.toLowerCase().includes(q)||x.code===q):shop).slice(0,q?60:24).map(x=>x.code)].filter(Boolean));}
    if(playView==='finder')return finderView(snap);
+   if(playView==='finderDeck')return finderDeckView(snap);
    if(playView==='deck')builderWants(snap);
-   return econScreenMarkup(playView,snap,{...econUi,query:econUi.query,facts:econFacts,nameFact:n=>finderFacts.get(n)});}
+   if(playView==='decks')playDeckEmblemWants(snap);
+   return econScreenMarkup(playView,snap,{...econUi,deckEmblem:playView==='decks'?playDeckEmblemOf:null,query:econUi.query,facts:econFacts,nameFact:n=>finderFacts.get(n),craftRarity:n=>craftRarity.rarity(n),craftId:n=>craftRarity.id(n)});}
   const state=playSetup.snapshot(),p=state.profile,tiles=new Map();state.opponentBuild=practiceOpponentBuilder.snapshot();state.deckBuild=playBuilders[state.playStyle==='quick'?'player':state.inspectedSeat].snapshot();const sources=readPlaySources(),sourceArt=new Map();for(const entries of Object.values(sources))for(const entry of entries)sourceArt.set(entry.key,V.deckArtwork(entry.deck));
-  for(const summary of state.decks){const deck=deckById(summary.id);if(summary.valid&&deck)tiles.set(summary.id,V.deckTile(deck,false,{playSelection:playSeatSource(state,playBrowseSeat(state))==='saved'&&playSeatDeck(state,playBrowseSeat(state))?.id===deck.id}));}
+  const locked=playLockedDecks();for(const summary of state.decks){const deck=playTableDeck(summary.id);if(summary.valid&&deck)tiles.set(summary.id,V.deckTile(deck,false,{playSelection:playSeatSource(state,playBrowseSeat(state))==='saved'&&playSeatDeck(state,playBrowseSeat(state))?.id===deck.id}));}
   const inspected=state.playStyle!=='quick'&&state.match.mode==='cpu'?playSeatDeck(state,state.inspectedSeat):state.selected;
   if(state.match.mode==='cpu')warmForgeEngine(state);
   if(!playUpdateChecked){playUpdateChecked=true;queueMicrotask(updatePlayWhileIdle);}
   if(playView==='home'){const st=playEcon.snapshot().state;econFacts.wantSets([...storyHomeAct().packSets,...(st?.packs||[]).map(p=>p.set),...(st?.shop||[]).slice(0,6).map(x=>x.code),...(st?.cards||[]).flatMap(c=>c.s||[])]);}
-  return playMenuMarkup(state,{econ:playEcon.snapshot(),story:storyHomeProgress(),friendRoom:friendRoomView(),challengeCount:challenges.length,canShare:typeof navigator.share==='function',view:playView,inspectOpen:playInspectOpen,econFacts,engine:FORGE_PLAY_TEST_ENABLED?'forge':'phase',sourceEntries:sources,sourceArt,cpuDifficulties:readCpuOptions({engine:FORGE_PLAY_TEST_ENABLED?'forge':'phase'}),quickStatus,sourceStatus:currentPlaySources().statuses[state.browse.source+':'+state.match.format]||{},savedCopy:savedPlayCopy(inspected),savePending:playSaver.isSaving(inspected),matchReleaseReady:PLAY_MATCH_RELEASE_READY,avatarMarkup:profileAvatar(p.avatarArt,{display_name:p.displayName,username:p.username,avatar_url:p.avatarUrl}),deckTiles:tiles,deckPreview:playDeckPreview(inspected),importPreview:playDeckPreview(state.reviewDeck),selectedArt:V.deckArtwork(inspected),matchupArt:{player:V.deckArtwork(state.selected),opponent:V.deckArtwork(state.opponent),cpu3:state.podDecks?.cpu3?V.deckArtwork(state.podDecks.cpu3):'',cpu4:state.podDecks?.cpu4?V.deckArtwork(state.podDecks.cpu4):''}});
+  return playMenuMarkup(state,{lockedDecks:locked,econ:playEcon.snapshot(),story:storyHomeProgress(),friendRoom:friendRoomView(),challengeCount:challenges.length,canShare:typeof navigator.share==='function',view:playView,inspectOpen:playInspectOpen,econFacts,engine:FORGE_PLAY_TEST_ENABLED?'forge':'phase',sourceEntries:sources,sourceArt,cpuDifficulties:readCpuOptions({engine:FORGE_PLAY_TEST_ENABLED?'forge':'phase'}),quickStatus,sourceStatus:currentPlaySources().statuses[state.browse.source+':'+state.match.format]||{},savedCopy:savedPlayCopy(inspected),savePending:playSaver.isSaving(inspected),matchReleaseReady:PLAY_MATCH_RELEASE_READY,avatarMarkup:profileAvatar(p.avatarArt,{display_name:p.displayName,username:p.username,avatar_url:p.avatarUrl}),deckTiles:tiles,deckPreview:playDeckPreview(inspected),importPreview:playDeckPreview(state.reviewDeck),selectedArt:V.deckArtwork(inspected),matchupArt:{player:V.deckArtwork(state.selected),opponent:V.deckArtwork(state.opponent),cpu3:state.podDecks?.cpu3?V.deckArtwork(state.podDecks.cpu3):'',cpu4:state.podDecks?.cpu4?V.deckArtwork(state.podDecks.cpu4):''}});
 }
 const refreshPlayMenu=()=>{if(S.ui.view==='play'&&T.game()==='mtg'){
   const scrolls=[...document.querySelectorAll('[data-play-scroll]')].map(n=>[n.dataset.playScroll,n.scrollTop]);
@@ -2470,7 +2592,7 @@ function focusNextPlaySelection(){const state=playSetup.snapshot();const target=
  // On a phone the sticky Play bar would cover the CPU seat that is up next, so bring it to the middle.
  if(target?.dataset.playSeat==='opponent'&&matchMedia('(max-width:700px)').matches)target.closest('.pl-seat')?.scrollIntoView({block:'center',behavior:matchMedia('(prefers-reduced-motion: reduce)').matches?'auto':'smooth'});}
 // In Practice, once your deck is in, the next pick goes to the CPU's seat (it used to replace yours).
-A.playSelectDeck=t=>{cancelPlayBuilds();const before=playSetup.snapshot(),seat=before.playStyle==='quick'?'player':before.inspectedSeat;playSetup.selectDeck(t.dataset.playDeck,seat);const after=playSetup.snapshot();if(after.playStyle!=='quick'&&after.match.mode==='cpu'&&seat==='player'&&after.selected&&!after.opponent)playSetup.inspectSeat('opponent');refreshPlayMenu();focusNextPlaySelection();};
+A.playSelectDeck=t=>{cancelPlayBuilds();const before=playSetup.snapshot(),seat=before.playStyle==='quick'?'player':before.inspectedSeat;if(before.playStyle==='quick'&&before.match.mode==='cpu'&&playLockedDecks().has(t.dataset.playDeck))return toast('Some of its cards aren\'t in your Trunk yet. Practice can use it.');playSetup.selectDeck(t.dataset.playDeck,seat);const after=playSetup.snapshot();if(after.playStyle!=='quick'&&after.match.mode==='cpu'&&seat==='player'&&after.selected&&!after.opponent)playSetup.inspectSeat('opponent');refreshPlayMenu();focusNextPlaySelection();};
 A.playInspectSeat=t=>{playSetup.inspectSeat(t.dataset.playSeat);refreshPlayMenu();};
 A.playClearSelection=()=>{cancelPlayBuilds();playSetup.clearSelection(playSetup.snapshot().inspectedSeat);refreshPlayMenu();};
 // Practice from a deck page: the Practice lobby with this saved deck in its own format.
@@ -2608,11 +2730,25 @@ async function pickCompareCard(t) {
     }
   } finally { compareBusy = false; }
 }
+// Play deck builder: hold, right-click or the menu key on a small card tile (deck row or pool card) opens
+// Play's card actions, the same look as Collection's: open the card, or make its art the deck cover.
+// Everywhere else in Play the gesture opens the Play card view as before.
+function playHoldMenu(el){
+ const e=playView==='deck'&&econUi.edit,name=el.dataset.name;if(!e?.id||!name||!el.closest?.('.pe-build-row,.pe-pool-card'))return false;
+ const full=el.dataset.oracle?econFacts.card(el.dataset.oracle)?.card:null,card=full||{name},image=bannerImage('mtg',full)||cardImageByName(name,'art_crop');
+ quickCard={game:'mtg',card,play:true,coverImage:image};haptic('tap');
+ const pick=S.state.settings.playDeckCovers?.[e.id],isCover=!!pick?.name&&[name,name.split(' // ')[0]].includes(pick.name.split(' // ')[0]);
+ openSheet(`<div class="context-menu context-card">${contextHeader({kind:'Card actions',name,meta:e.name||'',art:`<img class="quick-card-thumb" src="${esc(image)}" alt="" decoding="async" referrerpolicy="no-referrer">`})}<div class="context-group card-action-list" aria-label="Card actions">${contextAction('playHoldOpen','cardStack','Open card',{hint:'Copies, crafting and Secret Lair art',attrs:`data-name="${esc(name)}" data-play-card="1"${el.dataset.oracle?` data-oracle="${esc(el.dataset.oracle)}"`:''}`})}${isCover?contextAction('playHoldCoverReset','brush','Use the automatic deck cover',{hint:'This card is the cover now'}):contextAction('playHoldCover','brush','Deck cover',{hint:`Show this art on ${e.name||'this deck'}`})}</div></div>`,{type:'play-card-actions'});
+ return true;
+}
+A.playHoldOpen=t=>A.card(t);
+A.playHoldCover=async()=>{const ref=quickCard;if(!ref?.play)return;const target=deckCoverTarget(ref);if(!target)return closeSheet();if(!/^https:\/\//.test(String(ref.coverImage||'')))return toast('This card has no artwork to use.');await saveDeckCover(ref,target,ref.coverImage);closeSheet();toast(`${ref.card.name} is the cover of ${target.name}.`);};
+A.playHoldCoverReset=async()=>{const ref=quickCard;if(!ref?.play)return;const target=deckCoverTarget(ref);if(!target)return closeSheet();await saveDeckCover(ref,target,null);closeSheet();toast(`${target.name} uses its automatic cover again.`);};
 async function cardQuickMenu(t) {
   t?.closest?.("dialog.zoom")?.querySelector('[data-z="close"]')?.click();
   // Play has its own card actions (Play decks, Craft with seals, packs): right-click and long-press
   // there open the Play card view, never the collection app's menu.
-  if (S.ui.view === "play" || S.ui.lens === "play") { const el = t?.dataset?.name ? t : t?.querySelector?.('[data-act="card"][data-name]') || t?.closest?.("[data-name]"); if (el?.dataset?.name) A.card(el); return; }
+  if (S.ui.view === "play" || S.ui.lens === "play") { const el = t?.dataset?.name ? t : t?.querySelector?.('[data-act="card"][data-name]') || t?.closest?.("[data-name]"); if (el?.dataset?.name && !playHoldMenu(el)) A.card(el); return; }
   const ref = t?.quickRef || await resolveActionCard(t); if (!ref) return;
   quickCard = ref; haptic("tap");
   const st = ref.game === "mtg" ? S.state : T.gs(ref.game);
@@ -3715,7 +3851,11 @@ A.replayTour = (t) => openTour({...tourArt(),lesson:t?.dataset?.lesson||'',choos
  if(key==='tabletop')A.tabletop();else go(({find:'#home',save:'#collection',scan:'#scan',build:'#decks/inspiration'})[key]||'#home');
 }});
 const tableArtFor=createTableArtResolver(T.SOURCES);
-A.tabletop=()=>openTabletop({game:T.game(),confirm:ask,judge:game=>A.askRules({dataset:{game}}),artFor:tableArtFor});
+const tableCloud={client:()=>realtimeClient(),signedIn:()=>!!cloudInfo().user};
+A.tabletop=()=>openTabletop({game:T.game(),confirm:ask,judge:game=>A.askRules({dataset:{game}}),artFor:tableArtFor,cloud:tableCloud});
+// Game Night: the same table, opened from a deck so its journal stays with that deck.
+A.gameNight=()=>{const d=currentDeck();openTabletop({game:T.game(),confirm:ask,judge:game=>A.askRules({dataset:{game}}),artFor:tableArtFor,cloud:tableCloud,deck:d?{id:d.id,name:d.name}:null});};
+A.joinTable=code=>{history.replaceState(null,'',location.pathname+location.search+'#home');openTabletop({game:T.game(),confirm:ask,artFor:tableArtFor,cloud:tableCloud,joinCode:code});};
 A.dismissGuide=t=>{markGuide(t.dataset.id);markGuide('*');document.querySelectorAll('.context-guide[data-guide]').forEach(g=>g.remove());};
 A.resetOnboarding=async()=>{
 if(!await ask('Reset guide history? Only tutorials will reset. Your cards, decks, account and preferences stay saved.'))return;resetOnboarding();introPending=true;toast('Guides reset. The introduction will return on Home when you finish your current task.');};
@@ -4469,7 +4609,7 @@ async function saveProfileArtwork(kind,value){
 const artworkSaved=()=>{refreshProfileAvatar();settingsPopup.refresh();void community.refresh();toast('Profile artwork saved.');};
 const profilePicker=createProfileArtPicker({lookup:homeLookup,currentGame:T.game,read:()=>cloudInfo().art?.avatar||community.data?.art?.avatar||S.state.settings.cardAvatar,save:value=>saveProfileArtwork('avatar',value),onSaved:artworkSaved});
 const headerPicker=createProfileArtPicker({purpose:'header',lookup:homeLookup,currentGame:T.game,read:()=>cloudInfo().art?.header||community.data?.art?.header||S.state.settings.profileHeader,save:value=>saveProfileArtwork('header',value),onSaved:artworkSaved});
-const community=createCommunity({account:cloudInfo,request:communityRequest,rerender:render,active:()=>S.ui.view==='community',challenge:FORGE_PLAY_TEST_ENABLED?person=>void A.playChallenge(person):null,localArt:()=>({avatar:S.state.settings.cardAvatar,header:S.state.settings.profileHeader}),toast,
+const community=createCommunity({account:cloudInfo,request:communityRequest,presence:()=>presenceRequest('friends'),rerender:render,active:()=>S.ui.view==='community',challenge:FORGE_PLAY_TEST_ENABLED?person=>void A.playChallenge(person):null,localArt:()=>({avatar:S.state.settings.cardAvatar,header:S.state.settings.profileHeader}),toast,
  onChange:data=>{S.ui.communityRequests=incomingRequestCount(data);S.ui.communityFriends=data?(data.people||[]).filter(p=>p.relationship==='accepted').length:null;refreshProfileAvatar();if(settingsPopup.isOpen)settingsPopup.refresh();},
  copyDeck:async item=>{const generation=accountGeneration,owner=cloudInfo().user?.id;if(accountLocked||!owner)throw Error('Sign in before saving a deck.');const d=sharedDeckCopy(item,uid());await commit(state=>{(item.game==='mtg'?state:state.tcg[item.game]).decks.push(d);},{enrich:false,guard:()=>{if(accountLocked||generation!==accountGeneration||cloudInfo().user?.id!==owner)throw Error('Your account changed. Please try again.');return true;}});},
  editItem:async item=>{const generation=accountGeneration;if(accountLocked)return;await navigate({game:item.game,hash:item.kind==='binder'?'#collection':item.game==='mtg'?'#deck/'+item.key.slice(('deck:'+item.game+':').length)+'/cards':'#tdeck/'+item.key.slice(('deck:'+item.game+':').length),mode:'push'});if(generation!==accountGeneration||T.game()!==item.game)return;if(item.kind==='binder')A.editBinder({dataset:{binder:item.key.slice(7)}});},
@@ -4515,8 +4655,26 @@ A.profileHeader=()=>headerPicker.open();
 // Collection banner art: a pin stays until the player changes it; without one the banner
 // changes every hour (collection-banner.js).
 const bannerImage=(game,card)=>game==='mtg'?card?.image_uris?.art_crop||card?.card_faces?.[0]?.image_uris?.art_crop:game==='ygo'?(/^\d{1,12}$/.test(String(card?.id||''))?`https://images.ygoprodeck.com/images/cards_cropped/${card.id}.jpg`:''):artworkSources(card,true)[0];
-A.quickArtwork=()=>{if(!quickCard)return;const ref=quickCard,pinned=!ref.play&&S.state.settings.collectionBanner?.[ref.game],canPin=!ref.play&&!!bannerPin(ref.game,ref.card,bannerImage(ref.game,ref.card));openSheet(`<div class="sheet-head"><h2>Use artwork as…</h2><button class="icon" data-act="closeSheet">✕</button></div><div class="actions"><button class="btn" data-act="quickArtworkAvatar">Avatar</button><button class="btn ghost" data-act="quickArtworkHeader">Profile header</button>${canPin?'<button class="btn ghost" data-act="quickArtworkBanner">Collection banner</button>':''}</div>${pinned?'<p class="artwork-banner-reset"><button class="link" data-act="quickArtworkBannerRotate">Change the banner every hour again</button></p>':''}`,{type:"artwork-actions"});A.quickArtworkAvatar=()=>profilePicker.open({card:ref.card,game:ref.game});A.quickArtworkHeader=()=>headerPicker.open({card:ref.card,game:ref.game});
+// Deck cover: from a card inside a deck view (Collection decks in all 3 games, or a Play deck) the
+// card's art becomes that deck's cover on its tile and header, art only. Play decks keep the pick in
+// settings because the Play deck row on the server holds only name, format and cards.
+const deckCoverTarget=ref=>{
+ if(ref.play)return playView==='deck'&&econUi.edit?.id?{kind:'play',id:econUi.edit.id,name:econUi.edit.name||'this deck',set:!!S.state.settings.playDeckCovers?.[econUi.edit.id]}:null;
+ if(ref.game==='mtg'&&S.ui.view==='deck'){const d=deckById(S.ui.deckId);return d?{kind:'mtg',id:d.id,name:d.name,set:!!d.coverCard}:null;}
+ if(ref.game!=='mtg'&&S.ui.view==='tdeck'&&T.game()===ref.game){const d=T.gs(ref.game).decks.find(x=>x.id===S.ui.tdeckId);return d?{kind:'tcg',id:d.id,name:d.name,set:!!d.coverCard}:null;}
+ return null;};
+async function saveDeckCover(ref,target,image){
+ const pick=image?{...(target.kind==='tcg'?{id:String(ref.card.id)}:{}),name:String(ref.card.name||'').slice(0,200),image:String(image).slice(0,500)}:null;
+ await commit(st=>{
+  if(target.kind==='play'){const next={...(st.settings.playDeckCovers||{})};if(pick)next[target.id]=pick;else delete next[target.id];st.settings.playDeckCovers=next;return;}
+  const d=(target.kind==='mtg'?st.decks:st.tcg[ref.game].decks).find(x=>x.id===target.id);if(!d)return;if(pick)d.coverCard=pick;else delete d.coverCard;
+ },{enrich:false,observeValue:false});
+ if(target.kind==='play')refreshPlayMenu?.();
+}
+A.quickArtwork=()=>{if(!quickCard)return;const ref=quickCard,pinned=!ref.play&&S.state.settings.collectionBanner?.[ref.game],canPin=!ref.play&&!!bannerPin(ref.game,ref.card,bannerImage(ref.game,ref.card)),coverTarget=deckCoverTarget(ref),coverImage=bannerImage(ref.game,ref.card),canCover=!!coverTarget&&/^(https:\/\/|img\/)/.test(String(coverImage||''));openSheet(`<div class="sheet-head"><h2>Use artwork as…</h2><button class="icon" data-act="closeSheet">✕</button></div><div class="actions"><button class="btn" data-act="quickArtworkAvatar">Avatar</button><button class="btn ghost" data-act="quickArtworkHeader">Profile header</button>${canCover?'<button class="btn ghost" data-act="quickArtworkDeckCover">Deck cover</button>':''}${canPin?'<button class="btn ghost" data-act="quickArtworkBanner">Collection banner</button>':''}</div>${coverTarget?.set?'<p class="artwork-banner-reset"><button class="link" data-act="quickArtworkDeckCoverReset">Use the automatic deck cover again</button></p>':''}${pinned?'<p class="artwork-banner-reset"><button class="link" data-act="quickArtworkBannerRotate">Change the banner every hour again</button></p>':''}`,{type:"artwork-actions"});A.quickArtworkAvatar=()=>profilePicker.open({card:ref.card,game:ref.game});A.quickArtworkHeader=()=>headerPicker.open({card:ref.card,game:ref.game});
  A.quickArtworkBanner=async()=>{const pin=bannerPin(ref.game,ref.card,bannerImage(ref.game,ref.card));if(!pin)return toast('This card has no artwork to use.');await commit(st=>{st.settings.collectionBanner={...(st.settings.collectionBanner||{}),[ref.game]:pin};},{enrich:false,recordDeckWork:false,observeValue:false});closeSheet();toast(`${ref.card.name} is your Collection banner.`);};
+ A.quickArtworkDeckCover=async()=>{if(!canCover)return;await saveDeckCover(ref,coverTarget,coverImage);closeSheet();toast(`${ref.card.name} is the cover of ${coverTarget.name}.`);};
+ A.quickArtworkDeckCoverReset=async()=>{if(!coverTarget)return;await saveDeckCover(ref,coverTarget,null);closeSheet();toast(`${coverTarget.name} uses its automatic cover again.`);};
  A.quickArtworkBannerRotate=async()=>{await commit(st=>{const next={...(st.settings.collectionBanner||{})};delete next[ref.game];st.settings.collectionBanner=next;},{enrich:false,recordDeckWork:false,observeValue:false});closeSheet();toast('The Collection banner changes every hour again.');};};
 A.cardProfileHeader=async t=>{
 const ref=await resolveActionCard(t);if(ref)headerPicker.open({card:ref.card,game:ref.game});};
