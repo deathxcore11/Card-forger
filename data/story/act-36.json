@@ -1,0 +1,2960 @@
+{
+ "act": 36,
+ "era": "2023-09-08",
+ "title": "The Murders",
+ "years": "2023 to 2024",
+ "sets": [
+  "woe",
+  "lci",
+  "mkm"
+ ],
+ "landSet": "woe",
+ "intro": [
+  {
+   "who": "stage",
+   "line": "While Neva's mind wandered the realm of dreams, her body lay protected as mages worked frantically to find a cure for the Wicked Slumber.",
+   "quote": true
+  },
+  {
+   "who": "stage",
+   "line": "The war is over, and nobody gets to rest. Eldraine sleeps, Ixalan bleeds, and Ravnica has a body on the floor."
+  }
+ ],
+ "finale": [
+  {
+   "who": "stage",
+   "line": "Proft lit up like a man who had just been handed a glorious and unexpected gift. \"I know who's responsible for this,\" he said. \"And I can prove it.\"",
+   "quote": true
+  },
+  {
+   "who": "stage",
+   "line": "Massacre Girl is caught. She was paid to do it, and the Agency now knows to look for whoever paid her."
+  },
+  {
+   "who": "stage",
+   "line": "Recorded: three mysteries, three plane-sized answers, and one question that stays open."
+  }
+ ],
+ "villainFinale": [
+  {
+   "who": "stage",
+   "line": "'Did I do it?' You'll have to be more specific.",
+   "quote": true
+  },
+  {
+   "who": "stage",
+   "line": "In this version, nobody catches her, and the party at Karlov Manor never ends."
+  }
+ ],
+ "vibe": "murders-and-fairy-caverns",
+ "cast": {
+  "you": {
+   "name": "You",
+   "title": "Planeswalker",
+   "portrait": {
+    "card": "Compass Gnome",
+    "set": "lci",
+    "number": "250",
+    "id": "10e1030e-2b95-4807-9111-e495a2fc8813",
+    "crop": "https://cards.scryfall.io/art_crop/front/1/0/10e1030e-2b95-4807-9111-e495a2fc8813.jpg?1783913725",
+    "artist": "David Astruga",
+    "focus": "50% 30%"
+   }
+  },
+  "will": {
+   "name": "Will and Rowan",
+   "title": "Of Eldraine",
+   "portrait": {
+    "card": "Will, Scion of Peace",
+    "set": "woe",
+    "number": "218",
+    "id": "162088ea-5f99-4244-9427-2fdfb2168fc3",
+    "crop": "https://cards.scryfall.io/art_crop/front/1/6/162088ea-5f99-4244-9427-2fdfb2168fc3.jpg?1783915068",
+    "artist": "Ryan Pancoast",
+    "focus": "50% 25%"
+   }
+  },
+  "nightmares": {
+   "name": "Ashiok's Nightmares",
+   "title": "The Sleepers",
+   "portrait": {
+    "card": "Ashiok, Wicked Manipulator",
+    "set": "woe",
+    "number": "78",
+    "id": "6c4d0db1-74a5-42c0-ac95-e696585d8022",
+    "crop": "https://cards.scryfall.io/art_crop/front/6/c/6c4d0db1-74a5-42c0-ac95-e696585d8022.jpg?1783915111",
+    "artist": "Raymond Swanland",
+    "focus": "50% 25%"
+   }
+  },
+  "quint": {
+   "name": "Quintorius's Expedition",
+   "title": "Of the Lost Caverns",
+   "portrait": {
+    "card": "Quintorius Kand",
+    "set": "lci",
+    "number": "238",
+    "id": "4382fa49-9e34-45b3-8495-4916dcd995ec",
+    "crop": "https://cards.scryfall.io/art_crop/front/4/3/4382fa49-9e34-45b3-8495-4916dcd995ec.jpg?1783913728",
+    "artist": "Zoltan Boros",
+    "focus": "50% 25%"
+   }
+  },
+  "coin": {
+   "name": "The Coin Empire",
+   "title": "Of Ixalan",
+   "portrait": {
+    "card": "Greedy Freebooter",
+    "set": "lci",
+    "number": "109",
+    "id": "692fe4e8-13b4-4bec-938e-a8073a7fbd71",
+    "crop": "https://cards.scryfall.io/art_crop/front/6/9/692fe4e8-13b4-4bec-938e-a8073a7fbd71.jpg?1783913776",
+    "artist": "David Palumbo",
+    "focus": "50% 30%"
+   }
+  },
+  "kellan": {
+   "name": "Kellan's Crew",
+   "title": "Of the Deep",
+   "portrait": {
+    "card": "Kellan, the Fae-Blooded // Birthright Boon",
+    "set": "woe",
+    "number": "230",
+    "id": "ec5e2680-8b42-4571-ab45-4936aec51901",
+    "crop": "https://cards.scryfall.io/art_crop/front/e/c/ec5e2680-8b42-4571-ab45-4936aec51901.jpg?1783915063",
+    "artist": "Anna Steinbauer",
+    "focus": "50% 25%"
+   }
+  },
+  "talion": {
+   "name": "Talion",
+   "title": "The Kindly Lord",
+   "portrait": {
+    "card": "Talion, the Kindly Lord",
+    "set": "woe",
+    "number": "215",
+    "id": "62a6b452-c796-45c6-b4d1-0ae3d675e38e",
+    "crop": "https://cards.scryfall.io/art_crop/front/6/2/62a6b452-c796-45c6-b4d1-0ae3d675e38e.jpg?1783915070",
+    "artist": "Justyna Dura",
+    "focus": "50% 25%"
+   }
+  },
+  "core": {
+   "name": "The Core's Defenders",
+   "title": "Of Ixalan",
+   "portrait": {
+    "card": "Huatli, Poet of Unity // Roar of the Fifth People",
+    "set": "lci",
+    "number": "189",
+    "id": "57df2563-18d4-4526-a8bc-0c114e6fd4d9",
+    "crop": "https://cards.scryfall.io/art_crop/front/5/7/57df2563-18d4-4526-a8bc-0c114e6fd4d9.jpg?1783913751",
+    "artist": "Tyler Jacobson",
+    "focus": "50% 25%"
+   }
+  },
+  "aclazotz": {
+   "name": "Aclazotz",
+   "title": "The Bat God",
+   "portrait": {
+    "card": "Aclazotz, Deepest Betrayal // Temple of the Dead",
+    "set": "lci",
+    "number": "88",
+    "id": "627c392c-4d18-4eb2-a4e8-c668f61f5487",
+    "crop": "https://cards.scryfall.io/art_crop/front/6/2/627c392c-4d18-4eb2-a4e8-c668f61f5487.jpg?1783913789",
+    "artist": "Steve Prescott",
+    "focus": "50% 25%"
+   }
+  },
+  "alquist": {
+   "name": "Alquist Proft",
+   "title": "Master Sleuth",
+   "portrait": {
+    "card": "Alquist Proft, Master Sleuth",
+    "set": "mkm",
+    "number": "185",
+    "id": "41129b44-4fa7-473b-b2b7-48c6a58be03c",
+    "crop": "https://cards.scryfall.io/art_crop/front/4/1/41129b44-4fa7-473b-b2b7-48c6a58be03c.jpg?1783912857",
+    "artist": "Andreas Zafiratos",
+    "focus": "50% 25%"
+   }
+  },
+  "golgari": {
+   "name": "The Rot Farm",
+   "title": "Golgari of Ravnica",
+   "portrait": {
+    "card": "Festerleech",
+    "set": "mkm",
+    "number": "85",
+    "id": "83a6fa37-8351-403b-ae05-b67e9bf74bbb",
+    "crop": "https://cards.scryfall.io/art_crop/front/8/3/83a6fa37-8351-403b-ae05-b67e9bf74bbb.jpg?1783912897",
+    "artist": "Helge C. Balzer",
+    "focus": "50% 30%"
+   }
+  },
+  "esper": {
+   "name": "Esper Midrange",
+   "title": "Winter 2024",
+   "portrait": {
+    "card": "Teysa, Opulent Oligarch",
+    "set": "mkm",
+    "number": "234",
+    "id": "9b5a13dd-c2fd-432e-bc49-cc62d94d62a0",
+    "crop": "https://cards.scryfall.io/art_crop/front/9/b/9b5a13dd-c2fd-432e-bc49-cc62d94d62a0.jpg?1783912836",
+    "artist": "Chris Rallis",
+    "focus": "50% 25%"
+   }
+  },
+  "domain": {
+   "name": "Domain Ramp",
+   "title": "Winter 2024",
+   "portrait": {
+    "card": "Ghalta, Stampede Tyrant",
+    "set": "lci",
+    "number": "185",
+    "id": "72e805e9-69be-45c1-aa04-f460641a0c1e",
+    "crop": "https://cards.scryfall.io/art_crop/front/7/2/72e805e9-69be-45c1-aa04-f460641a0c1e.jpg?1783913747",
+    "artist": "Lars Grant-West",
+    "focus": "50% 25%"
+   }
+  },
+  "dimir": {
+   "name": "Dimir Control",
+   "title": "Winter 2024",
+   "portrait": {
+    "card": "Proft's Eidetic Memory",
+    "set": "mkm",
+    "number": "67",
+    "id": "af5b29b3-974c-4200-8df8-b072c11e1600",
+    "crop": "https://cards.scryfall.io/art_crop/front/a/f/af5b29b3-974c-4200-8df8-b072c11e1600.jpg?1783912906",
+    "artist": "Julie Dillon",
+    "focus": "50% 30%"
+   }
+  },
+  "boros": {
+   "name": "Boros Convoke",
+   "title": "Winter 2024",
+   "portrait": {
+    "card": "Aurelia, the Law Above",
+    "set": "mkm",
+    "number": "188",
+    "id": "8f80c6e7-e9f9-4ca6-87f7-a52c96079e4a",
+    "crop": "https://cards.scryfall.io/art_crop/front/8/f/8f80c6e7-e9f9-4ca6-87f7-a52c96079e4a.jpg?1783912856",
+    "artist": "Lie Setiawan",
+    "focus": "50% 25%"
+   }
+  },
+  "agency": {
+   "name": "The Agency",
+   "title": "Of Ravnica",
+   "portrait": {
+    "card": "Ezrim, Agency Chief",
+    "set": "mkm",
+    "number": "202",
+    "id": "9554d5f2-7a33-4734-8cf3-dfae2ccc3596",
+    "crop": "https://cards.scryfall.io/art_crop/front/9/5/9554d5f2-7a33-4734-8cf3-dfae2ccc3596.jpg?1783912850",
+    "artist": "Jason A. Engle",
+    "focus": "50% 25%"
+   }
+  },
+  "massacre": {
+   "name": "Massacre Girl",
+   "title": "Known Killer",
+   "portrait": {
+    "card": "Massacre Girl, Known Killer",
+    "set": "mkm",
+    "number": "94",
+    "id": "cb1c8800-9d33-485c-b776-042003b9ea92",
+    "crop": "https://cards.scryfall.io/art_crop/front/c/b/cb1c8800-9d33-485c-b776-042003b9ea92.jpg?1783912894",
+    "artist": "Billy Christian",
+    "focus": "50% 25%"
+   }
+  }
+ },
+ "battles": [
+  {
+   "id": "a36b1",
+   "slot": 1,
+   "kind": "Arrival",
+   "mood": "tension",
+   "title": "Bargain",
+   "difficulty": "Easy",
+   "teaches": [
+    "Bargain"
+   ],
+   "blurb": "Will and Rowan are in Eldraine, and everyone is asleep. Ashiok's nightmares walk the halls.",
+   "rewardSet": "woe",
+   "host": false,
+   "hero": {
+    "who": "will",
+    "deck": {
+     "name": "Will and Rowan",
+     "colors": "WU",
+     "archetype": null,
+     "label": "tribute",
+     "note": "Will's side only; Rowan's black and red are left out for our land pool.",
+     "cards": [
+      {
+       "qty": 4,
+       "name": "Frostbridge Guard",
+       "set": "woe",
+       "number": "14",
+       "id": "b9dec431-a20e-4c1c-9855-904779756509"
+      },
+      {
+       "qty": 4,
+       "name": "Regal Bunnicorn",
+       "set": "woe",
+       "number": "25",
+       "id": "03c7d409-90e7-44d7-a8c6-4eda35fbcc83"
+      },
+      {
+       "qty": 4,
+       "name": "Cheeky House-Mouse // Squeak By",
+       "set": "woe",
+       "number": "7",
+       "id": "1f3013bf-9647-4bdb-a638-d299ae00f88e"
+      },
+      {
+       "qty": 3,
+       "name": "Knight of Doves",
+       "set": "woe",
+       "number": "19",
+       "id": "b4f33617-ad19-4d42-ab94-6f21a7fb3dd4"
+      },
+      {
+       "qty": 3,
+       "name": "Werefox Bodyguard",
+       "set": "woe",
+       "number": "39",
+       "id": "4494dfa1-1343-417e-b0c5-2b096442dd0e"
+      },
+      {
+       "qty": 3,
+       "name": "Will, Scion of Peace",
+       "set": "woe",
+       "number": "218",
+       "id": "162088ea-5f99-4244-9427-2fdfb2168fc3"
+      },
+      {
+       "qty": 3,
+       "name": "Gallant Pie-Wielder",
+       "set": "woe",
+       "number": "15",
+       "id": "e053d330-d0a2-4468-afba-42bf165b8fbf"
+      },
+      {
+       "qty": 3,
+       "name": "Rimefur Reindeer",
+       "set": "woe",
+       "number": "27",
+       "id": "60acc0b7-6842-44aa-a7cc-c5d315d90287"
+      },
+      {
+       "qty": 3,
+       "name": "Archon of the Wild Rose",
+       "set": "woe",
+       "number": "1",
+       "id": "00174be7-0dc8-43b9-81b6-f25a8c3fb4eb"
+      },
+      {
+       "qty": 3,
+       "name": "Stockpiling Celebrant",
+       "set": "woe",
+       "number": "32",
+       "id": "0214ebc6-c59f-4170-8dd2-ce07caa6e6ad"
+      },
+      {
+       "qty": 3,
+       "name": "Glass Casket",
+       "set": "woe",
+       "number": "16",
+       "id": "02c5c395-ee8b-47fd-ac52-256354c19cdf"
+      },
+      {
+       "qty": 4,
+       "name": "Meticulous Archive",
+       "set": "mkm",
+       "number": "264",
+       "id": "652236c2-84ef-45e4-b5fc-ed6170bc3d6c"
+      },
+      {
+       "qty": 10,
+       "name": "Plains",
+       "set": "woe",
+       "number": "262",
+       "id": "c9cd4d57-8c51-4fcf-8a9f-5d6a61c33e3d"
+      },
+      {
+       "qty": 10,
+       "name": "Island",
+       "set": "woe",
+       "number": "263",
+       "id": "bd4b4da4-83f6-4280-880b-b6033308f2a2"
+      }
+     ]
+    }
+   },
+   "villain": {
+    "who": "nightmares",
+    "deck": {
+     "name": "Ashiok's Nightmares",
+     "colors": "UB",
+     "archetype": null,
+     "label": "tribute",
+     "cards": [
+      {
+       "qty": 4,
+       "name": "Faerie Dreamthief",
+       "set": "woe",
+       "number": "89",
+       "id": "57ca2ec5-442d-4909-be28-93c50fbc5f7a"
+      },
+      {
+       "qty": 4,
+       "name": "Sleep-Cursed Faerie",
+       "set": "woe",
+       "number": "66",
+       "id": "31051436-68f2-457e-8293-2b10ccf7684e"
+      },
+      {
+       "qty": 2,
+       "name": "Snaremaster Sprite",
+       "set": "woe",
+       "number": "68",
+       "id": "eaa37390-5c32-46ae-89d1-c094c9aa01e5"
+      },
+      {
+       "qty": 4,
+       "name": "Barrow Naughty",
+       "set": "woe",
+       "number": "81",
+       "id": "67da5ad8-4de2-4bd4-8b95-f2657e1fdee5"
+      },
+      {
+       "qty": 3,
+       "name": "Ashiok, Wicked Manipulator",
+       "set": "woe",
+       "number": "78",
+       "id": "6c4d0db1-74a5-42c0-ac95-e696585d8022"
+      },
+      {
+       "qty": 4,
+       "name": "Taken by Nightmares",
+       "set": "woe",
+       "number": "112",
+       "id": "f858d83d-a13e-4ffa-a91d-d695e5e5d71a"
+      },
+      {
+       "qty": 3,
+       "name": "Ashiok's Reaper",
+       "set": "woe",
+       "number": "79",
+       "id": "83957fe0-6500-420c-9b7a-2448a1c1d3b3"
+      },
+      {
+       "qty": 3,
+       "name": "Dream Spoilers",
+       "set": "woe",
+       "number": "85",
+       "id": "4efd1963-fe71-42c1-8ad7-53fd80145ca6"
+      },
+      {
+       "qty": 4,
+       "name": "Mocking Sprite",
+       "set": "woe",
+       "number": "62",
+       "id": "e595014d-4ff4-4561-b7f2-a9bd56300b01"
+      },
+      {
+       "qty": 3,
+       "name": "Spell Stutter",
+       "set": "woe",
+       "number": "69",
+       "id": "24447e36-a42f-40a9-ad44-e904b6f9b276"
+      },
+      {
+       "qty": 2,
+       "name": "Wicked Visitor",
+       "set": "woe",
+       "number": "118",
+       "id": "e26ec4b8-0012-48c4-9ccb-0f062df0c250"
+      },
+      {
+       "qty": 4,
+       "name": "Undercity Sewers",
+       "set": "mkm",
+       "number": "270",
+       "id": "2b5801fb-2026-4f25-98bc-ebb2f99684b9"
+      },
+      {
+       "qty": 10,
+       "name": "Island",
+       "set": "woe",
+       "number": "263",
+       "id": "bd4b4da4-83f6-4280-880b-b6033308f2a2"
+      },
+      {
+       "qty": 10,
+       "name": "Swamp",
+       "set": "woe",
+       "number": "264",
+       "id": "ee68f2cb-851b-4196-ac58-844d72628e6a"
+      }
+     ]
+    }
+   },
+   "reward": {
+    "hero": {
+     "packs": 1,
+     "coins": 0
+    },
+    "villain": {
+     "card": {
+      "oracle_id": "67d66678-a8e6-4f80-bade-1f1daf4b0610",
+      "name": "Ashiok, Wicked Manipulator",
+      "rarity": "mythic",
+      "set": "woe",
+      "id": "6c4d0db1-74a5-42c0-ac95-e696585d8022",
+      "image": "https://cards.scryfall.io/normal/front/6/c/6c4d0db1-74a5-42c0-ac95-e696585d8022.jpg"
+     },
+     "coins": 50
+    }
+   },
+   "scene": [
+    {
+     "who": "stage",
+     "line": "It's easy to cry 'For glory!' and charge those who disagree with you. But it takes finesse to turn enemies into allies rather than corpses.",
+     "quote": true
+    },
+    {
+     "who": "stage",
+     "line": "The sentry watched impassively, its spear unmoving. One by one, the would-be adventurers stumbled and fell, frostbitten, to the ground.",
+     "quote": true
+    },
+    {
+     "who": "will",
+     "line": "Bargain: sacrifice an artifact, enchantment or token as you cast a spell, and get a better version of it."
+    }
+   ],
+   "villainScene": [
+    {
+     "who": "stage",
+     "line": "Dying in your sleep is never peaceful when Ashiok is involved.",
+     "quote": true
+    },
+    {
+     "who": "stage",
+     "line": "Neva's dreams were haunted by memories of the invasion—oil-black tendrils grasping at her through the mist. Or . . . was this something new?",
+     "quote": true
+    }
+   ],
+   "after": null,
+   "cues": {
+    "hero": {
+     "start": "Wake up!",
+     "big": "Bargain!",
+     "low": "The dreams are heavy...",
+     "win": "The sleepers wake.",
+     "loss": "Asleep again...",
+     "half": "Sacrifice a token for the better version."
+    },
+    "villain": {
+     "start": "Sleep.",
+     "big": "Dream!",
+     "low": "Waking...",
+     "win": "Sleep on.",
+     "loss": "Broken awake..."
+    }
+   },
+   "bigPlays": [],
+   "sim": null
+  },
+  {
+   "id": "a36b2",
+   "slot": 2,
+   "kind": "Lesson",
+   "mood": "march",
+   "title": "Roles",
+   "difficulty": "Easy",
+   "teaches": [
+    "Roles"
+   ],
+   "blurb": "Quintorius's expedition reaches Ixalan's depths and meets the Coin Empire.",
+   "rewardSet": "lci",
+   "host": false,
+   "hero": {
+    "who": "quint",
+    "deck": {
+     "name": "Quintorius's Expedition",
+     "colors": "RW",
+     "archetype": null,
+     "label": "tribute",
+     "cards": [
+      {
+       "qty": 4,
+       "name": "Thousand Moons Crackshot",
+       "set": "lci",
+       "number": "37",
+       "id": "741a7439-965d-49f2-b43e-053f29196e6b"
+      },
+      {
+       "qty": 4,
+       "name": "Warden of the Inner Sky",
+       "set": "lci",
+       "number": "43",
+       "id": "549fd992-ed37-431d-97cb-9ca017db1d47"
+      },
+      {
+       "qty": 4,
+       "name": "Kutzil's Flanker",
+       "set": "lci",
+       "number": "20",
+       "id": "d1201811-54ab-4c4e-b6e1-19b0d07e5ede"
+      },
+      {
+       "qty": 3,
+       "name": "Anim Pakal, Thousandth Moon",
+       "set": "lci",
+       "number": "223",
+       "id": "868856b7-8875-43c1-8249-0f8fb2c8319b"
+      },
+      {
+       "qty": 3,
+       "name": "Quintorius Kand",
+       "set": "lci",
+       "number": "238",
+       "id": "4382fa49-9e34-45b3-8495-4916dcd995ec"
+      },
+      {
+       "qty": 3,
+       "name": "Sunshot Militia",
+       "set": "lci",
+       "number": "168",
+       "id": "d3114f5c-21e9-43c3-abe3-3cf1da20916f"
+      },
+      {
+       "qty": 4,
+       "name": "Burning Sun Cavalry",
+       "set": "lci",
+       "number": "138",
+       "id": "0c491ac0-4752-47a7-967e-456b6e4245de"
+      },
+      {
+       "qty": 3,
+       "name": "Inti, Seneschal of the Sun",
+       "set": "lci",
+       "number": "156",
+       "id": "fa7a55aa-ae61-4933-b7a4-dcc55dac6fcd"
+      },
+      {
+       "qty": 2,
+       "name": "Dinotomaton",
+       "set": "lci",
+       "number": "144",
+       "id": "9de1a93e-ec71-45fa-b0b8-2c21123e390c"
+      },
+      {
+       "qty": 3,
+       "name": "Resplendent Angel",
+       "set": "lci",
+       "number": "32",
+       "id": "59adbd35-9959-4a0f-babf-46ea3c15f018"
+      },
+      {
+       "qty": 3,
+       "name": "Abrade",
+       "set": "lci",
+       "number": "131",
+       "id": "47f39b5e-2e85-4f31-bbab-0b0bf58f701d"
+      },
+      {
+       "qty": 4,
+       "name": "Elegant Parlor",
+       "set": "mkm",
+       "number": "260",
+       "id": "72c6d541-e2cb-4d6e-acac-90a8f53b7006"
+      },
+      {
+       "qty": 10,
+       "name": "Mountain",
+       "set": "woe",
+       "number": "265",
+       "id": "8822db23-34dc-452a-92bc-a3ceee4db375"
+      },
+      {
+       "qty": 10,
+       "name": "Plains",
+       "set": "woe",
+       "number": "262",
+       "id": "c9cd4d57-8c51-4fcf-8a9f-5d6a61c33e3d"
+      }
+     ]
+    }
+   },
+   "villain": {
+    "who": "coin",
+    "deck": {
+     "name": "The Coin Empire",
+     "colors": "B",
+     "archetype": null,
+     "label": "tribute",
+     "cards": [
+      {
+       "qty": 4,
+       "name": "Greedy Freebooter",
+       "set": "lci",
+       "number": "109",
+       "id": "692fe4e8-13b4-4bec-938e-a8073a7fbd71"
+      },
+      {
+       "qty": 4,
+       "name": "Deep-Cavern Bat",
+       "set": "lci",
+       "number": "102",
+       "id": "69c68c95-b788-43b1-9f22-1b22c5a00b25"
+      },
+      {
+       "qty": 4,
+       "name": "Acolyte of Aclazotz",
+       "set": "lci",
+       "number": "89",
+       "id": "99009400-ffa4-40af-8305-78295ae605ac"
+      },
+      {
+       "qty": 1,
+       "name": "Bloodletter of Aclazotz",
+       "set": "lci",
+       "number": "92",
+       "id": "d4f6027a-003a-4f9d-929a-0b6da1fa42c9"
+      },
+      {
+       "qty": 1,
+       "name": "Vito's Inquisitor",
+       "set": "lci",
+       "number": "130",
+       "id": "9030048a-b866-4a89-8d4a-aa55411463e4"
+      },
+      {
+       "qty": 3,
+       "name": "Preacher of the Schism",
+       "set": "lci",
+       "number": "113",
+       "id": "89345f55-2b32-4356-945a-d56dded39909"
+      },
+      {
+       "qty": 4,
+       "name": "Bitter Triumph",
+       "set": "lci",
+       "number": "91",
+       "id": "05bdd22c-3e11-4c29-bdfa-d3dfc0e90a9f"
+      },
+      {
+       "qty": 4,
+       "name": "Dead Weight",
+       "set": "lci",
+       "number": "99",
+       "id": "82e6b971-3f5b-47e7-8209-98d72ee781fc"
+      },
+      {
+       "qty": 1,
+       "name": "Starving Revenant",
+       "set": "lci",
+       "number": "123",
+       "id": "f25ea466-eb48-4c4c-b5d4-35f58e46ebe1"
+      },
+      {
+       "qty": 1,
+       "name": "Lord Skitter, Sewer King",
+       "set": "woe",
+       "number": "97",
+       "id": "729877be-4894-4ef5-9e60-de8a8fb2bdc0"
+      },
+      {
+       "qty": 3,
+       "name": "Canonized in Blood",
+       "set": "lci",
+       "number": "96",
+       "id": "384b6892-5dfc-4607-b511-cf83544a9357"
+      },
+      {
+       "qty": 24,
+       "name": "Swamp",
+       "set": "woe",
+       "number": "264",
+       "id": "ee68f2cb-851b-4196-ac58-844d72628e6a"
+      },
+      {
+       "qty": 4,
+       "name": "Stalactite Stalker",
+       "set": "lci",
+       "number": "122",
+       "id": "5319c0b1-de54-492a-bdea-85a5a75d693e"
+      },
+      {
+       "qty": 2,
+       "name": "Skullcap Snail",
+       "set": "lci",
+       "number": "119",
+       "id": "0d96d019-5d80-468a-b891-e3e99346372a"
+      }
+     ]
+    }
+   },
+   "reward": {
+    "hero": {
+     "packs": 1,
+     "coins": 0
+    },
+    "villain": {
+     "card": {
+      "oracle_id": "d4a9d63a-5a8a-4f51-9e49-43d6dc3234b1",
+      "name": "Greedy Freebooter",
+      "rarity": "common",
+      "set": "lci",
+      "id": "692fe4e8-13b4-4bec-938e-a8073a7fbd71",
+      "image": "https://cards.scryfall.io/normal/front/6/9/692fe4e8-13b4-4bec-938e-a8073a7fbd71.jpg"
+     },
+     "coins": 50
+    }
+   },
+   "scene": [
+    {
+     "who": "stage",
+     "line": "If you're afraid to dive into the unknown, how will you ever find anything new?",
+     "quote": true
+    },
+    {
+     "who": "stage",
+     "line": "Look! Aclazotz sends his children to watch over our pilgrimage.",
+     "quote": true
+    },
+    {
+     "who": "quint",
+     "line": "Roles: a Role token on a creature changes what it does. Put the right one on the right creature."
+    }
+   ],
+   "villainScene": [
+    {
+     "who": "stage",
+     "line": "Neither Nurgam nor the mycoid who laid the trap could quite believe their luck.",
+     "quote": true
+    },
+    {
+     "who": "stage",
+     "line": "Its very presence rips old wounds open to bleed anew.",
+     "quote": true
+    }
+   ],
+   "after": null,
+   "cues": {
+    "hero": {
+     "start": "Dig in.",
+     "big": "Treasure!",
+     "low": "The empire is greedy...",
+     "win": "The caverns are ours.",
+     "loss": "Buried...",
+     "half": "Put the role on the creature that matters."
+    },
+    "villain": {
+     "start": "Coin.",
+     "big": "Take it!",
+     "low": "The haul is lost...",
+     "win": "All is ours.",
+     "loss": "Bankrupt..."
+    }
+   },
+   "bigPlays": [],
+   "sim": null
+  },
+  {
+   "id": "a36b3",
+   "slot": 3,
+   "kind": "Lesson",
+   "mood": "comic",
+   "title": "Discover",
+   "difficulty": "Easy",
+   "teaches": [
+    "Discover"
+   ],
+   "blurb": "Kellan finds a cave full of dinosaurs. Talion has a lot of fae friends and a lot of opinions.",
+   "rewardSet": "lci",
+   "host": false,
+   "hero": {
+    "who": "kellan",
+    "deck": {
+     "name": "Kellan's Crew",
+     "colors": "RG",
+     "archetype": null,
+     "label": "tribute",
+     "cards": [
+      {
+       "qty": 4,
+       "name": "Geological Appraiser",
+       "set": "lci",
+       "number": "150",
+       "id": "7f9c1a82-695b-4df2-8e51-2d71a62e7baf"
+      },
+      {
+       "qty": 3,
+       "name": "Trumpeting Carnosaur",
+       "set": "lci",
+       "number": "171",
+       "id": "edc035ca-f0a3-4814-9405-d6dc6f048315"
+      },
+      {
+       "qty": 4,
+       "name": "Intrepid Paleontologist",
+       "set": "lci",
+       "number": "193",
+       "id": "871a164a-0fe6-480e-a1be-cbffce884bd3"
+      },
+      {
+       "qty": 4,
+       "name": "Scytheclaw Raptor",
+       "set": "lci",
+       "number": "165",
+       "id": "9436cf62-56d6-4662-9982-72e9be80d25c"
+      },
+      {
+       "qty": 4,
+       "name": "Jadelight Spelunker",
+       "set": "lci",
+       "number": "196",
+       "id": "68e633d3-47e2-48c5-9be3-574ce5023bf7"
+      },
+      {
+       "qty": 4,
+       "name": "Pugnacious Hammerskull",
+       "set": "lci",
+       "number": "208",
+       "id": "632e5635-a9bc-473a-a885-02e1fd258f7b"
+      },
+      {
+       "qty": 3,
+       "name": "Thrashing Brontodon",
+       "set": "lci",
+       "number": "216",
+       "id": "d52ef7c1-dacb-4204-b64e-5fa3ae3b1ace"
+      },
+      {
+       "qty": 2,
+       "name": "Seismic Monstrosaur",
+       "set": "lci",
+       "number": "166",
+       "id": "98aeb9dc-18f9-4120-ac3d-226c62a1dc1d"
+      },
+      {
+       "qty": 4,
+       "name": "Abrade",
+       "set": "lci",
+       "number": "131",
+       "id": "47f39b5e-2e85-4f31-bbab-0b0bf58f701d"
+      },
+      {
+       "qty": 3,
+       "name": "Triumphant Chomp",
+       "set": "lci",
+       "number": "170",
+       "id": "06b28139-efa7-4818-a012-cf8150692b43"
+      },
+      {
+       "qty": 1,
+       "name": "Hulking Raptor",
+       "set": "lci",
+       "number": "191",
+       "id": "45f763af-5a6a-404c-8e8c-4dbed71277bc"
+      },
+      {
+       "qty": 4,
+       "name": "Commercial District",
+       "set": "mkm",
+       "number": "259",
+       "id": "bf220c06-3cce-4bdd-aa58-83940c223e9c"
+      },
+      {
+       "qty": 10,
+       "name": "Mountain",
+       "set": "woe",
+       "number": "265",
+       "id": "8822db23-34dc-452a-92bc-a3ceee4db375"
+      },
+      {
+       "qty": 10,
+       "name": "Forest",
+       "set": "woe",
+       "number": "266",
+       "id": "ecd6d8fb-780c-446c-a8bf-93386b22fe95"
+      }
+     ]
+    }
+   },
+   "villain": {
+    "who": "talion",
+    "deck": {
+     "name": "Talion's Court",
+     "colors": "UB",
+     "archetype": null,
+     "label": "tribute",
+     "cards": [
+      {
+       "qty": 4,
+       "name": "Mocking Sprite",
+       "set": "woe",
+       "number": "62",
+       "id": "e595014d-4ff4-4561-b7f2-a9bd56300b01"
+      },
+      {
+       "qty": 4,
+       "name": "Snaremaster Sprite",
+       "set": "woe",
+       "number": "68",
+       "id": "eaa37390-5c32-46ae-89d1-c094c9aa01e5"
+      },
+      {
+       "qty": 4,
+       "name": "Storyteller Pixie",
+       "set": "woe",
+       "number": "313",
+       "id": "b9f4cf85-2120-4897-aecd-4ee4b02d6f9b"
+      },
+      {
+       "qty": 3,
+       "name": "Talion, the Kindly Lord",
+       "set": "woe",
+       "number": "215",
+       "id": "62a6b452-c796-45c6-b4d1-0ae3d675e38e"
+      },
+      {
+       "qty": 3,
+       "name": "Tenacious Tomeseeker",
+       "set": "woe",
+       "number": "74",
+       "id": "c40be735-0780-459b-8dd2-a298575beaab"
+      },
+      {
+       "qty": 4,
+       "name": "Spell Stutter",
+       "set": "woe",
+       "number": "69",
+       "id": "24447e36-a42f-40a9-ad44-e904b6f9b276"
+      },
+      {
+       "qty": 3,
+       "name": "Talion's Messenger",
+       "set": "woe",
+       "number": "73",
+       "id": "35fb0640-5b04-4687-b863-46a8b8d36809"
+      },
+      {
+       "qty": 4,
+       "name": "Faerie Dreamthief",
+       "set": "woe",
+       "number": "89",
+       "id": "57ca2ec5-442d-4909-be28-93c50fbc5f7a"
+      },
+      {
+       "qty": 3,
+       "name": "Sweettooth Witch",
+       "set": "woe",
+       "number": "111",
+       "id": "a6bdb984-06f8-4bca-a943-17fe5db97682"
+      },
+      {
+       "qty": 4,
+       "name": "Rat Out",
+       "set": "woe",
+       "number": "103",
+       "id": "f2c42755-bf91-4c75-95c6-d2a60ba3492a"
+      },
+      {
+       "qty": 4,
+       "name": "Undercity Sewers",
+       "set": "mkm",
+       "number": "270",
+       "id": "2b5801fb-2026-4f25-98bc-ebb2f99684b9"
+      },
+      {
+       "qty": 10,
+       "name": "Island",
+       "set": "woe",
+       "number": "263",
+       "id": "bd4b4da4-83f6-4280-880b-b6033308f2a2"
+      },
+      {
+       "qty": 10,
+       "name": "Swamp",
+       "set": "woe",
+       "number": "264",
+       "id": "ee68f2cb-851b-4196-ac58-844d72628e6a"
+      }
+     ]
+    }
+   },
+   "reward": {
+    "hero": {
+     "packs": 1,
+     "coins": 0
+    },
+    "villain": {
+     "card": {
+      "oracle_id": "a019e34d-00c4-4687-9d41-fe550bf1dbdc",
+      "name": "Talion, the Kindly Lord",
+      "rarity": "mythic",
+      "set": "woe",
+      "id": "62a6b452-c796-45c6-b4d1-0ae3d675e38e",
+      "image": "https://cards.scryfall.io/normal/front/6/2/62a6b452-c796-45c6-b4d1-0ae3d675e38e.jpg"
+     },
+     "coins": 50
+    }
+   },
+   "scene": [
+    {
+     "who": "stage",
+     "line": "If you're afraid to dive into the unknown, how will you ever find anything new?",
+     "quote": true
+    },
+    {
+     "who": "stage",
+     "line": "She's a smart one. Noticed all on her own that the bloodsuckers wave their hands around to do their filthy magic, so she rips off their hands first.",
+     "quote": true
+    },
+    {
+     "who": "kellan",
+     "line": "Discover: reveal cards from the top of your library until you find a cheaper spell, then cast it for free."
+    }
+   ],
+   "villainScene": [
+    {
+     "who": "stage",
+     "line": "Look at me, everyone! I'm a High Fae! Watch me do important High Fae things!",
+     "quote": true
+    },
+    {
+     "who": "stage",
+     "line": "You are but learning to walk in a world where I fly, mortal.",
+     "quote": true
+    }
+   ],
+   "after": null,
+   "cues": {
+    "hero": {
+     "start": "Dive in!",
+     "big": "Discover!",
+     "low": "The court is clever...",
+     "win": "A fine find.",
+     "loss": "Trapped...",
+     "half": "Discover a cheaper spell and play it free."
+    },
+    "villain": {
+     "start": "Mortal.",
+     "big": "Flit!",
+     "low": "The court slips...",
+     "win": "High Fae win.",
+     "loss": "Humbled..."
+    }
+   },
+   "bigPlays": [],
+   "sim": null
+  },
+  {
+   "id": "a36b4",
+   "slot": 4,
+   "kind": "Rival",
+   "mood": "tension",
+   "title": "Aclazotz",
+   "difficulty": "Normal",
+   "teaches": [
+    "Flying"
+   ],
+   "blurb": "The bat god of the Lost Caverns. His bats are everywhere and they drain life.",
+   "rewardSet": "lci",
+   "host": false,
+   "hero": {
+    "who": "core",
+    "deck": {
+     "name": "The Core's Defenders",
+     "colors": "GW",
+     "archetype": null,
+     "label": "tribute",
+     "cards": [
+      {
+       "qty": 4,
+       "name": "Cenote Scout",
+       "set": "lci",
+       "number": "178",
+       "id": "4ce4b7bc-636b-4723-a7c1-2c859f333492"
+      },
+      {
+       "qty": 4,
+       "name": "Intrepid Paleontologist",
+       "set": "lci",
+       "number": "193",
+       "id": "871a164a-0fe6-480e-a1be-cbffce884bd3"
+      },
+      {
+       "qty": 3,
+       "name": "Malamet Brawler",
+       "set": "lci",
+       "number": "199",
+       "id": "47d2fb65-cc3d-4664-bee0-8cf1cba5d8fa"
+      },
+      {
+       "qty": 3,
+       "name": "Kutzil, Malamet Exemplar",
+       "set": "lci",
+       "number": "232",
+       "id": "c9f88a40-a6ed-4c1f-a309-011aca1acddd"
+      },
+      {
+       "qty": 3,
+       "name": "Huatli, Poet of Unity // Roar of the Fifth People",
+       "set": "lci",
+       "number": "189",
+       "id": "57df2563-18d4-4526-a8bc-0c114e6fd4d9"
+      },
+      {
+       "qty": 3,
+       "name": "Sovereign Okinec Ahau",
+       "set": "lci",
+       "number": "240",
+       "id": "70c75aa7-e2f9-4a69-8086-c982019ca714"
+      },
+      {
+       "qty": 3,
+       "name": "Mischievous Pup",
+       "set": "lci",
+       "number": "25",
+       "id": "7c219861-f808-456f-b551-37512764062d"
+      },
+      {
+       "qty": 4,
+       "name": "Oltec Cloud Guard",
+       "set": "lci",
+       "number": "28",
+       "id": "02d68a38-2e0b-401b-b67d-a55e2af5b18d"
+      },
+      {
+       "qty": 3,
+       "name": "Walk with the Ancestors",
+       "set": "lci",
+       "number": "218",
+       "id": "71a6f85b-5ef8-4526-9c86-7cb71508b4c0"
+      },
+      {
+       "qty": 3,
+       "name": "Get Lost",
+       "set": "lci",
+       "number": "14",
+       "id": "522aa72b-2b8c-484c-872b-f082101cee35"
+      },
+      {
+       "qty": 3,
+       "name": "Petrify",
+       "set": "lci",
+       "number": "30",
+       "id": "bbc5f28f-6361-455f-ac82-260a70e59316"
+      },
+      {
+       "qty": 4,
+       "name": "Lush Portico",
+       "set": "mkm",
+       "number": "263",
+       "id": "c17816e8-28b1-4295-a637-efb0e5c18873"
+      },
+      {
+       "qty": 10,
+       "name": "Forest",
+       "set": "woe",
+       "number": "266",
+       "id": "ecd6d8fb-780c-446c-a8bf-93386b22fe95"
+      },
+      {
+       "qty": 10,
+       "name": "Plains",
+       "set": "woe",
+       "number": "262",
+       "id": "c9cd4d57-8c51-4fcf-8a9f-5d6a61c33e3d"
+      }
+     ]
+    }
+   },
+   "villain": {
+    "who": "aclazotz",
+    "deck": {
+     "name": "Aclazotz's Bats",
+     "colors": "BW",
+     "archetype": null,
+     "label": "tribute",
+     "cards": [
+      {
+       "qty": 4,
+       "name": "Ruin-Lurker Bat",
+       "set": "lci",
+       "number": "33",
+       "id": "d6bedf13-c2bc-4e5d-aba3-3c0d5495a9bb"
+      },
+      {
+       "qty": 4,
+       "name": "Deep-Cavern Bat",
+       "set": "lci",
+       "number": "102",
+       "id": "69c68c95-b788-43b1-9f22-1b22c5a00b25"
+      },
+      {
+       "qty": 4,
+       "name": "Bat Colony",
+       "set": "lci",
+       "number": "5",
+       "id": "1c02134c-ec9f-4090-820e-8ba7ae4a8c2b"
+      },
+      {
+       "qty": 1,
+       "name": "Aclazotz, Deepest Betrayal // Temple of the Dead",
+       "set": "lci",
+       "number": "88",
+       "id": "627c392c-4d18-4eb2-a4e8-c668f61f5487"
+      },
+      {
+       "qty": 1,
+       "name": "Vito, Fanatic of Aclazotz",
+       "set": "lci",
+       "number": "243",
+       "id": "c4fd9047-df91-4d82-be00-c623acae0f01"
+      },
+      {
+       "qty": 2,
+       "name": "Bloodletter of Aclazotz",
+       "set": "lci",
+       "number": "92",
+       "id": "d4f6027a-003a-4f9d-929a-0b6da1fa42c9"
+      },
+      {
+       "qty": 3,
+       "name": "Sanguine Evangelist",
+       "set": "lci",
+       "number": "34",
+       "id": "269ddd84-fdc4-4c94-b183-32ecec56967c"
+      },
+      {
+       "qty": 4,
+       "name": "Canonized in Blood",
+       "set": "lci",
+       "number": "96",
+       "id": "384b6892-5dfc-4607-b511-cf83544a9357"
+      },
+      {
+       "qty": 3,
+       "name": "Bitter Triumph",
+       "set": "lci",
+       "number": "91",
+       "id": "05bdd22c-3e11-4c29-bdfa-d3dfc0e90a9f"
+      },
+      {
+       "qty": 3,
+       "name": "Get Lost",
+       "set": "lci",
+       "number": "14",
+       "id": "522aa72b-2b8c-484c-872b-f082101cee35"
+      },
+      {
+       "qty": 1,
+       "name": "Amalia Benavides Aguirre",
+       "set": "lci",
+       "number": "221",
+       "id": "9acf80a5-f2ca-45b4-aca8-fbc690e35401"
+      },
+      {
+       "qty": 4,
+       "name": "Shadowy Backstreet",
+       "set": "mkm",
+       "number": "268",
+       "id": "69c1b656-1d67-499c-bf0f-417682a86c7d"
+      },
+      {
+       "qty": 10,
+       "name": "Plains",
+       "set": "woe",
+       "number": "262",
+       "id": "c9cd4d57-8c51-4fcf-8a9f-5d6a61c33e3d"
+      },
+      {
+       "qty": 10,
+       "name": "Swamp",
+       "set": "woe",
+       "number": "264",
+       "id": "ee68f2cb-851b-4196-ac58-844d72628e6a"
+      },
+      {
+       "qty": 4,
+       "name": "Warden of the Inner Sky",
+       "set": "lci",
+       "number": "43",
+       "id": "549fd992-ed37-431d-97cb-9ca017db1d47"
+      },
+      {
+       "qty": 2,
+       "name": "Market Gnome",
+       "set": "lci",
+       "number": "22",
+       "id": "36dafcd6-ce4e-4a27-bd8c-fa1a3bffc99e"
+      }
+     ]
+    }
+   },
+   "reward": {
+    "hero": {
+     "packs": 1,
+     "coins": 100
+    },
+    "villain": {
+     "card": {
+      "oracle_id": "9768d43b-8b3f-4d03-ac1b-e603af832875",
+      "name": "Vito, Fanatic of Aclazotz",
+      "rarity": "mythic",
+      "set": "lci",
+      "id": "c4fd9047-df91-4d82-be00-c623acae0f01",
+      "image": "https://cards.scryfall.io/normal/front/c/4/c4fd9047-df91-4d82-be00-c623acae0f01.jpg"
+     },
+     "coins": 100
+    }
+   },
+   "scene": [
+    {
+     "who": "stage",
+     "line": "The first shriek locates the prey. The second immobilizes it.",
+     "quote": true
+    },
+    {
+     "who": "stage",
+     "line": "Look! Aclazotz sends his children to watch over our pilgrimage.",
+     "quote": true
+    },
+    {
+     "who": "core",
+     "line": "Their bats fly and gain life. Block them with reach or flying, and keep the removal for Aclazotz himself."
+    }
+   ],
+   "villainScene": [
+    {
+     "who": "stage",
+     "line": "Though he wept at Inti's death, Caparocti's eyes were keen, and his spear pierced cleanly through Clavileño's tainted heart.",
+     "quote": true
+    },
+    {
+     "who": "stage",
+     "line": "Its very presence rips old wounds open to bleed anew.",
+     "quote": true
+    }
+   ],
+   "after": null,
+   "cues": {
+    "hero": {
+     "start": "Hold the door.",
+     "big": "Down they go!",
+     "low": "The bats are everywhere...",
+     "win": "The Core stands.",
+     "loss": "Drained...",
+     "half": "Kill the fliers before they stack up."
+    },
+    "villain": {
+     "start": "Shriek.",
+     "big": "Betrayal!",
+     "low": "The bats scatter...",
+     "win": "The god feeds.",
+     "loss": "Silenced..."
+    }
+   },
+   "bigPlays": [],
+   "sim": null
+  },
+  {
+   "id": "a36b5",
+   "slot": 5,
+   "kind": "Lesson",
+   "mood": "tension",
+   "title": "Collect Evidence",
+   "difficulty": "Normal",
+   "teaches": [
+    "Collect evidence"
+   ],
+   "blurb": "A body in Karlov Manor. Alquist Proft and the Agency have a lot of suspects and a lot of ways to look into them.",
+   "rewardSet": "mkm",
+   "host": false,
+   "hero": {
+    "who": "alquist",
+    "deck": {
+     "name": "The Agency Detectives",
+     "colors": "WU",
+     "archetype": null,
+     "label": "tribute",
+     "cards": [
+      {
+       "qty": 4,
+       "name": "Novice Inspector",
+       "set": "mkm",
+       "number": "29",
+       "id": "0ad38866-fc5f-4f62-89c1-afc0f50765aa"
+      },
+      {
+       "qty": 4,
+       "name": "Wojek Investigator",
+       "set": "mkm",
+       "number": "36",
+       "id": "296574c6-3933-4ab3-b591-72514b244da9"
+      },
+      {
+       "qty": 4,
+       "name": "Forensic Researcher",
+       "set": "mkm",
+       "number": "58",
+       "id": "1384df5d-d705-49cb-a982-1588cbf303d8"
+      },
+      {
+       "qty": 4,
+       "name": "Tenth District Hero",
+       "set": "mkm",
+       "number": "34",
+       "id": "7c65a79e-f28a-4f30-95a4-1ea55fd84564"
+      },
+      {
+       "qty": 3,
+       "name": "Alquist Proft, Master Sleuth",
+       "set": "mkm",
+       "number": "185",
+       "id": "41129b44-4fa7-473b-b2b7-48c6a58be03c"
+      },
+      {
+       "qty": 3,
+       "name": "Private Eye",
+       "set": "mkm",
+       "number": "223",
+       "id": "b6a50807-058e-45dc-847c-8ffd13b1bd48"
+      },
+      {
+       "qty": 3,
+       "name": "Eliminate the Impossible",
+       "set": "mkm",
+       "number": "54",
+       "id": "486f1cc2-c162-448e-91a9-577d7d796584"
+      },
+      {
+       "qty": 3,
+       "name": "Deduce",
+       "set": "mkm",
+       "number": "52",
+       "id": "7cbb17af-e17e-438a-ad72-0c942e6706b6"
+      },
+      {
+       "qty": 4,
+       "name": "Crimestopper Sprite",
+       "set": "mkm",
+       "number": "49",
+       "id": "dc4ac597-38f0-48b5-ac2d-dfb0b169f834"
+      },
+      {
+       "qty": 4,
+       "name": "Jaded Analyst",
+       "set": "mkm",
+       "number": "62",
+       "id": "2807dcfb-d99c-483b-835f-2606eae4bd30"
+      },
+      {
+       "qty": 4,
+       "name": "Meticulous Archive",
+       "set": "mkm",
+       "number": "264",
+       "id": "652236c2-84ef-45e4-b5fc-ed6170bc3d6c"
+      },
+      {
+       "qty": 10,
+       "name": "Plains",
+       "set": "woe",
+       "number": "262",
+       "id": "c9cd4d57-8c51-4fcf-8a9f-5d6a61c33e3d"
+      },
+      {
+       "qty": 10,
+       "name": "Island",
+       "set": "woe",
+       "number": "263",
+       "id": "bd4b4da4-83f6-4280-880b-b6033308f2a2"
+      }
+     ]
+    }
+   },
+   "villain": {
+    "who": "golgari",
+    "deck": {
+     "name": "The Rot Farm",
+     "colors": "BG",
+     "archetype": null,
+     "label": "tribute",
+     "cards": [
+      {
+       "qty": 4,
+       "name": "Festerleech",
+       "set": "mkm",
+       "number": "85",
+       "id": "83a6fa37-8351-403b-ae05-b67e9bf74bbb"
+      },
+      {
+       "qty": 4,
+       "name": "Snarling Gorehound",
+       "set": "mkm",
+       "number": "105",
+       "id": "93ab3e11-8584-406f-b9ae-9e1df4396cbc"
+      },
+      {
+       "qty": 4,
+       "name": "Rubblebelt Maverick",
+       "set": "mkm",
+       "number": "174",
+       "id": "81c7ff67-b9e1-4d2e-b1ae-da9b946da00b"
+      },
+      {
+       "qty": 4,
+       "name": "Alley Assailant",
+       "set": "mkm",
+       "number": "76",
+       "id": "edf238c9-61de-4f3a-b82f-05af46e5e81b"
+      },
+      {
+       "qty": 3,
+       "name": "Vengeful Creeper",
+       "set": "mkm",
+       "number": "182",
+       "id": "7a914416-effd-4eda-b609-2773c53a08ec"
+      },
+      {
+       "qty": 3,
+       "name": "Hunted Bonebrute",
+       "set": "mkm",
+       "number": "87",
+       "id": "a4ca0e10-8b7c-4ce2-888b-752fc909757a"
+      },
+      {
+       "qty": 3,
+       "name": "Nightdrinker Moroii",
+       "set": "mkm",
+       "number": "96",
+       "id": "ce043cba-aea4-4156-b1d0-545eda06c400"
+      },
+      {
+       "qty": 3,
+       "name": "Murder",
+       "set": "mkm",
+       "number": "95",
+       "id": "1ea6438b-0e6c-4d65-8bcd-34a988717c81"
+      },
+      {
+       "qty": 3,
+       "name": "Bite Down on Crime",
+       "set": "mkm",
+       "number": "154",
+       "id": "29bbfe93-8225-444c-835b-33ffa006ef66"
+      },
+      {
+       "qty": 3,
+       "name": "Long Goodbye",
+       "set": "mkm",
+       "number": "92",
+       "id": "c3896705-bbd2-4ffb-a590-ee78e0eabdc5"
+      },
+      {
+       "qty": 2,
+       "name": "Dead Weight",
+       "set": "lci",
+       "number": "99",
+       "id": "82e6b971-3f5b-47e7-8209-98d72ee781fc"
+      },
+      {
+       "qty": 4,
+       "name": "Underground Mortuary",
+       "set": "mkm",
+       "number": "271",
+       "id": "f6ca59cd-8779-4a84-a54b-e863b79c61f0"
+      },
+      {
+       "qty": 10,
+       "name": "Swamp",
+       "set": "woe",
+       "number": "264",
+       "id": "ee68f2cb-851b-4196-ac58-844d72628e6a"
+      },
+      {
+       "qty": 10,
+       "name": "Forest",
+       "set": "woe",
+       "number": "266",
+       "id": "ecd6d8fb-780c-446c-a8bf-93386b22fe95"
+      }
+     ]
+    }
+   },
+   "reward": {
+    "hero": {
+     "packs": 1,
+     "coins": 100
+    },
+    "villain": {
+     "card": {
+      "oracle_id": "d14fdc1d-62bc-4e9c-b79b-8c9c3232f0bc",
+      "name": "Festerleech",
+      "rarity": "uncommon",
+      "set": "mkm",
+      "id": "83a6fa37-8351-403b-ae05-b67e9bf74bbb",
+      "image": "https://cards.scryfall.io/normal/front/8/3/83a6fa37-8351-403b-ae05-b67e9bf74bbb.jpg"
+     },
+     "coins": 100
+    }
+   },
+   "scene": [
+    {
+     "who": "stage",
+     "line": "If the perfect evidence appears at your feet, your first task is to rule out misdirection.",
+     "quote": true
+    },
+    {
+     "who": "stage",
+     "line": "Half the city had motive. Time to narrow down who also had the means and opportunity.",
+     "quote": true
+    },
+    {
+     "who": "alquist",
+     "line": "Collect evidence: exile cards from your graveyard with enough total mana value to pay for a better version of the spell."
+    }
+   ],
+   "villainScene": [
+    {
+     "who": "stage",
+     "line": "I'd offer your dog a treat, but I'm afraid I don't have any appendages to spare.",
+     "quote": true
+    },
+    {
+     "who": "stage",
+     "line": "As the days grew longer, so did the list of missing persons.",
+     "quote": true
+    }
+   ],
+   "after": null,
+   "cues": {
+    "hero": {
+     "start": "Follow the clue.",
+     "big": "Evidence!",
+     "low": "The trail is cold...",
+     "win": "Case closed.",
+     "loss": "No leads...",
+     "half": "Exile your graveyard for the stronger spell."
+    },
+    "villain": {
+     "start": "Rot.",
+     "big": "Feast!",
+     "low": "The rot fades...",
+     "win": "The farm wins.",
+     "loss": "Cleaned out..."
+    }
+   },
+   "bigPlays": [],
+   "sim": null
+  },
+  {
+   "id": "a36b6",
+   "slot": 6,
+   "kind": "Meta",
+   "mood": "march",
+   "title": "Esper vs Domain",
+   "difficulty": "Normal",
+   "teaches": [
+    "Card advantage"
+   ],
+   "blurb": "Winter 2024: an Esper midrange deck against a big green ramp deck.",
+   "rewardSet": "mkm",
+   "host": false,
+   "hero": {
+    "who": "esper",
+    "deck": {
+     "name": "Esper Midrange",
+     "colors": "WUB",
+     "archetype": "Midrange",
+     "label": "tribute",
+     "cards": [
+      {
+       "qty": 4,
+       "name": "Deep-Cavern Bat",
+       "set": "lci",
+       "number": "102",
+       "id": "69c68c95-b788-43b1-9f22-1b22c5a00b25"
+      },
+      {
+       "qty": 3,
+       "name": "Marketwatch Phantom",
+       "set": "mkm",
+       "number": "24",
+       "id": "daf6a392-3fc4-45d1-b85d-3b1381b3ab7d"
+      },
+      {
+       "qty": 3,
+       "name": "Kitesail Larcenist",
+       "set": "lci",
+       "number": "61",
+       "id": "03207457-70d8-4462-8c8b-ed39791d56a1"
+      },
+      {
+       "qty": 3,
+       "name": "Resplendent Angel",
+       "set": "lci",
+       "number": "32",
+       "id": "59adbd35-9959-4a0f-babf-46ea3c15f018"
+      },
+      {
+       "qty": 3,
+       "name": "Teysa, Opulent Oligarch",
+       "set": "mkm",
+       "number": "234",
+       "id": "9b5a13dd-c2fd-432e-bc49-cc62d94d62a0"
+      },
+      {
+       "qty": 3,
+       "name": "Alquist Proft, Master Sleuth",
+       "set": "mkm",
+       "number": "185",
+       "id": "41129b44-4fa7-473b-b2b7-48c6a58be03c"
+      },
+      {
+       "qty": 4,
+       "name": "Bitter Triumph",
+       "set": "lci",
+       "number": "91",
+       "id": "05bdd22c-3e11-4c29-bdfa-d3dfc0e90a9f"
+      },
+      {
+       "qty": 3,
+       "name": "Murder",
+       "set": "mkm",
+       "number": "95",
+       "id": "1ea6438b-0e6c-4d65-8bcd-34a988717c81"
+      },
+      {
+       "qty": 3,
+       "name": "Get Lost",
+       "set": "lci",
+       "number": "14",
+       "id": "522aa72b-2b8c-484c-872b-f082101cee35"
+      },
+      {
+       "qty": 3,
+       "name": "Deduce",
+       "set": "mkm",
+       "number": "52",
+       "id": "7cbb17af-e17e-438a-ad72-0c942e6706b6"
+      },
+      {
+       "qty": 3,
+       "name": "Case File Auditor",
+       "set": "mkm",
+       "number": "7",
+       "id": "70a52038-9d1c-4be1-8dbe-6f0ee916ba94"
+      },
+      {
+       "qty": 1,
+       "name": "Unscrupulous Agent",
+       "set": "mkm",
+       "number": "109",
+       "id": "37692f9a-3825-43aa-aacb-1bb92cb5bd07"
+      },
+      {
+       "qty": 4,
+       "name": "Shadowy Backstreet",
+       "set": "mkm",
+       "number": "268",
+       "id": "69c1b656-1d67-499c-bf0f-417682a86c7d"
+      },
+      {
+       "qty": 4,
+       "name": "Meticulous Archive",
+       "set": "mkm",
+       "number": "264",
+       "id": "652236c2-84ef-45e4-b5fc-ed6170bc3d6c"
+      },
+      {
+       "qty": 4,
+       "name": "Undercity Sewers",
+       "set": "mkm",
+       "number": "270",
+       "id": "2b5801fb-2026-4f25-98bc-ebb2f99684b9"
+      },
+      {
+       "qty": 4,
+       "name": "Plains",
+       "set": "woe",
+       "number": "262",
+       "id": "c9cd4d57-8c51-4fcf-8a9f-5d6a61c33e3d"
+      },
+      {
+       "qty": 4,
+       "name": "Island",
+       "set": "woe",
+       "number": "263",
+       "id": "bd4b4da4-83f6-4280-880b-b6033308f2a2"
+      },
+      {
+       "qty": 4,
+       "name": "Swamp",
+       "set": "woe",
+       "number": "264",
+       "id": "ee68f2cb-851b-4196-ac58-844d72628e6a"
+      }
+     ]
+    }
+   },
+   "villain": {
+    "who": "domain",
+    "deck": {
+     "name": "Domain Ramp",
+     "colors": "G",
+     "archetype": "Ramp",
+     "label": "tribute",
+     "note": "Domain Ramp is five colours; here the green ramp core is kept for our land pool.",
+     "cards": [
+      {
+       "qty": 4,
+       "name": "Jadelight Spelunker",
+       "set": "lci",
+       "number": "196",
+       "id": "68e633d3-47e2-48c5-9be3-574ce5023bf7"
+      },
+      {
+       "qty": 4,
+       "name": "Basking Capybara",
+       "set": "lci",
+       "number": "175",
+       "id": "ff0a2ba4-dfa8-49d6-95e9-04b7a14d0c6c"
+      },
+      {
+       "qty": 4,
+       "name": "Armored Kincaller",
+       "set": "lci",
+       "number": "174",
+       "id": "b76a46a1-a63e-460a-98c5-699dd1c827aa"
+      },
+      {
+       "qty": 4,
+       "name": "Thrashing Brontodon",
+       "set": "lci",
+       "number": "216",
+       "id": "d52ef7c1-dacb-4204-b64e-5fa3ae3b1ace"
+      },
+      {
+       "qty": 3,
+       "name": "Hulking Raptor",
+       "set": "lci",
+       "number": "191",
+       "id": "45f763af-5a6a-404c-8e8c-4dbed71277bc"
+      },
+      {
+       "qty": 3,
+       "name": "Earthshaker Dreadmaw",
+       "set": "lci",
+       "number": "183",
+       "id": "cdcbba6f-aa54-44be-a3b0-f712fa8bd5ad"
+      },
+      {
+       "qty": 2,
+       "name": "Ghalta, Stampede Tyrant",
+       "set": "lci",
+       "number": "185",
+       "id": "72e805e9-69be-45c1-aa04-f460641a0c1e"
+      },
+      {
+       "qty": 3,
+       "name": "Cavern Stomper",
+       "set": "lci",
+       "number": "177",
+       "id": "decdfd6b-55ab-47fd-9f98-1845261f1caf"
+      },
+      {
+       "qty": 3,
+       "name": "Bite Down on Crime",
+       "set": "mkm",
+       "number": "154",
+       "id": "29bbfe93-8225-444c-835b-33ffa006ef66"
+      },
+      {
+       "qty": 3,
+       "name": "Spelunking",
+       "set": "lci",
+       "number": "213",
+       "id": "d3be4257-2316-4a2e-b347-f71c0368a947"
+      },
+      {
+       "qty": 3,
+       "name": "Over the Edge",
+       "set": "lci",
+       "number": "205",
+       "id": "23dddddb-5409-4c28-bf32-e6473f2cc620"
+      },
+      {
+       "qty": 24,
+       "name": "Forest",
+       "set": "woe",
+       "number": "266",
+       "id": "ecd6d8fb-780c-446c-a8bf-93386b22fe95"
+      }
+     ]
+    }
+   },
+   "reward": {
+    "hero": {
+     "packs": 1,
+     "coins": 100
+    },
+    "villain": {
+     "card": {
+      "oracle_id": "b8f16311-be5a-4648-b024-849a61dff0bc",
+      "name": "Ghalta, Stampede Tyrant",
+      "rarity": "mythic",
+      "set": "lci",
+      "id": "72e805e9-69be-45c1-aa04-f460641a0c1e",
+      "image": "https://cards.scryfall.io/normal/front/7/2/72e805e9-69be-45c1-aa04-f460641a0c1e.jpg"
+     },
+     "coins": 100
+    }
+   },
+   "scene": [
+    {
+     "who": "stage",
+     "line": "Proft lit up like a man who had just been handed a glorious and unexpected gift.",
+     "quote": true
+    },
+    {
+     "who": "stage",
+     "line": "Laughter and conversation trailed off as the revelers gathered around Zegana's body.",
+     "quote": true
+    },
+    {
+     "who": "esper",
+     "line": "Trade removal for their big creatures, and win with the cards you drew along the way."
+    }
+   ],
+   "villainScene": [
+    {
+     "who": "stage",
+     "line": "A thundering roar calls forth a primeval army.",
+     "quote": true
+    },
+    {
+     "who": "stage",
+     "line": "The bite at the end of the tunnel.",
+     "quote": true
+    }
+   ],
+   "after": null,
+   "cues": {
+    "hero": {
+     "start": "Patience.",
+     "big": "Murder!",
+     "low": "The big ones are landing...",
+     "win": "Quality wins.",
+     "loss": "Trampled...",
+     "half": "Kill the big creatures before they stack up."
+    },
+    "villain": {
+     "start": "Grow.",
+     "big": "Stampede!",
+     "low": "Out of mana...",
+     "win": "The stampede wins.",
+     "loss": "Cut down..."
+    }
+   },
+   "bigPlays": [],
+   "sim": null
+  },
+  {
+   "id": "a36b7",
+   "slot": 7,
+   "kind": "Meta",
+   "mood": "tension",
+   "title": "Dimir vs Boros",
+   "difficulty": "Normal",
+   "teaches": [
+    "Counterspells"
+   ],
+   "blurb": "Winter 2024: a Dimir control deck against a Boros convoke rush.",
+   "rewardSet": "mkm",
+   "host": false,
+   "hero": {
+    "who": "dimir",
+    "deck": {
+     "name": "Dimir Control",
+     "colors": "UB",
+     "archetype": "Control",
+     "label": "tribute",
+     "cards": [
+      {
+       "qty": 4,
+       "name": "Bitter Triumph",
+       "set": "lci",
+       "number": "91",
+       "id": "05bdd22c-3e11-4c29-bdfa-d3dfc0e90a9f"
+      },
+      {
+       "qty": 3,
+       "name": "Murder",
+       "set": "mkm",
+       "number": "95",
+       "id": "1ea6438b-0e6c-4d65-8bcd-34a988717c81"
+      },
+      {
+       "qty": 3,
+       "name": "Long Goodbye",
+       "set": "mkm",
+       "number": "92",
+       "id": "c3896705-bbd2-4ffb-a590-ee78e0eabdc5"
+      },
+      {
+       "qty": 4,
+       "name": "Eaten by Piranhas",
+       "set": "lci",
+       "number": "54",
+       "id": "b0c504ef-2382-4174-9b1d-5f38e12a28fc"
+      },
+      {
+       "qty": 4,
+       "name": "Disdainful Stroke",
+       "set": "woe",
+       "number": "47",
+       "id": "588c6217-c460-417e-98bf-de5475780baf"
+      },
+      {
+       "qty": 3,
+       "name": "Out Cold",
+       "set": "mkm",
+       "number": "66",
+       "id": "aabfada0-3c1b-4237-b06c-573071ccd68d"
+      },
+      {
+       "qty": 4,
+       "name": "Proft's Eidetic Memory",
+       "set": "mkm",
+       "number": "67",
+       "id": "af5b29b3-974c-4200-8df8-b072c11e1600"
+      },
+      {
+       "qty": 4,
+       "name": "Deep-Cavern Bat",
+       "set": "lci",
+       "number": "102",
+       "id": "69c68c95-b788-43b1-9f22-1b22c5a00b25"
+      },
+      {
+       "qty": 3,
+       "name": "Nightdrinker Moroii",
+       "set": "mkm",
+       "number": "96",
+       "id": "ce043cba-aea4-4156-b1d0-545eda06c400"
+      },
+      {
+       "qty": 3,
+       "name": "Persuasive Interrogators",
+       "set": "mkm",
+       "number": "98",
+       "id": "f0713025-581f-451b-97a3-97d891285dcc"
+      },
+      {
+       "qty": 1,
+       "name": "Deduce",
+       "set": "mkm",
+       "number": "52",
+       "id": "7cbb17af-e17e-438a-ad72-0c942e6706b6"
+      },
+      {
+       "qty": 4,
+       "name": "Undercity Sewers",
+       "set": "mkm",
+       "number": "270",
+       "id": "2b5801fb-2026-4f25-98bc-ebb2f99684b9"
+      },
+      {
+       "qty": 10,
+       "name": "Island",
+       "set": "woe",
+       "number": "263",
+       "id": "bd4b4da4-83f6-4280-880b-b6033308f2a2"
+      },
+      {
+       "qty": 10,
+       "name": "Swamp",
+       "set": "woe",
+       "number": "264",
+       "id": "ee68f2cb-851b-4196-ac58-844d72628e6a"
+      }
+     ]
+    }
+   },
+   "villain": {
+    "who": "boros",
+    "deck": {
+     "name": "Boros Convoke",
+     "colors": "RW",
+     "archetype": "Aggro",
+     "label": "tribute",
+     "cards": [
+      {
+       "qty": 4,
+       "name": "Embereth Veteran",
+       "set": "woe",
+       "number": "127",
+       "id": "bc7130b8-3168-421f-912a-46ed5b769807"
+      },
+      {
+       "qty": 4,
+       "name": "Harried Spearguard",
+       "set": "woe",
+       "number": "135",
+       "id": "1db79785-4f55-445f-93f2-14c6e4606fc5"
+      },
+      {
+       "qty": 4,
+       "name": "Grand Ball Guest",
+       "set": "woe",
+       "number": "134",
+       "id": "d6e75228-16af-42b0-8441-ed253a660cc9"
+      },
+      {
+       "qty": 4,
+       "name": "Goblin Maskmaker",
+       "set": "mkm",
+       "number": "130",
+       "id": "6154a991-c602-4fca-91a3-3830060da60e"
+      },
+      {
+       "qty": 1,
+       "name": "Lightning Helix",
+       "set": "mkm",
+       "number": "218",
+       "id": "4101e3fe-b0e7-4f0f-b9ac-9b61a4d628b3"
+      },
+      {
+       "qty": 1,
+       "name": "Warleader's Call",
+       "set": "mkm",
+       "number": "242",
+       "id": "b3e8f8bd-1c8b-4a7c-96c4-57a247ce9ccc"
+      },
+      {
+       "qty": 2,
+       "name": "Torch the Tower",
+       "set": "woe",
+       "number": "153",
+       "id": "b3d6027c-813f-46df-95b4-e2e305a67620"
+      },
+      {
+       "qty": 4,
+       "name": "Stonesplitter Bolt",
+       "set": "woe",
+       "number": "151",
+       "id": "fb22f79c-3075-439d-a072-ceaabe35d76f"
+      },
+      {
+       "qty": 4,
+       "name": "Burning Sun Cavalry",
+       "set": "lci",
+       "number": "138",
+       "id": "0c491ac0-4752-47a7-967e-456b6e4245de"
+      },
+      {
+       "qty": 4,
+       "name": "Elegant Parlor",
+       "set": "mkm",
+       "number": "260",
+       "id": "72c6d541-e2cb-4d6e-acac-90a8f53b7006"
+      },
+      {
+       "qty": 10,
+       "name": "Mountain",
+       "set": "woe",
+       "number": "265",
+       "id": "8822db23-34dc-452a-92bc-a3ceee4db375"
+      },
+      {
+       "qty": 10,
+       "name": "Plains",
+       "set": "woe",
+       "number": "262",
+       "id": "c9cd4d57-8c51-4fcf-8a9f-5d6a61c33e3d"
+      },
+      {
+       "qty": 4,
+       "name": "Kindled Heroism",
+       "set": "woe",
+       "number": "138",
+       "id": "22a6d05e-e566-4a85-bcf8-9d0fbea3dd14"
+      },
+      {
+       "qty": 4,
+       "name": "Monstrous Rage",
+       "set": "woe",
+       "number": "142",
+       "id": "eef5a0ae-5907-42c9-a097-3f973737e392"
+      }
+     ]
+    }
+   },
+   "reward": {
+    "hero": {
+     "packs": 1,
+     "coins": 100
+    },
+    "villain": {
+     "card": {
+      "oracle_id": "a751c07b-fc21-4854-96e7-f71abf4e86c9",
+      "name": "Warleader's Call",
+      "rarity": "rare",
+      "set": "mkm",
+      "id": "b3e8f8bd-1c8b-4a7c-96c4-57a247ce9ccc",
+      "image": "https://cards.scryfall.io/normal/front/b/3/b3e8f8bd-1c8b-4a7c-96c4-57a247ce9ccc.jpg"
+     },
+     "coins": 100
+    }
+   },
+   "scene": [
+    {
+     "who": "stage",
+     "line": "We'll get their statements after they defrost.",
+     "quote": true
+    },
+    {
+     "who": "stage",
+     "line": "In retrospect, using storm magic against a storm giant was not the wisest strategy.",
+     "quote": true
+    },
+    {
+     "who": "dimir",
+     "line": "Kill their early creatures and counter the big plays. You win the long game."
+    }
+   ],
+   "villainScene": [
+    {
+     "who": "stage",
+     "line": "While Aurelia mustered the Boros Legion, Kaya and Kellan raced against the clock, desperate to stave off a war the guilds might not survive.",
+     "quote": true
+    },
+    {
+     "who": "stage",
+     "line": "She realized that she could not, in fact, handle the truth.",
+     "quote": true
+    }
+   ],
+   "after": null,
+   "cues": {
+    "hero": {
+     "start": "Hold on.",
+     "big": "Denied!",
+     "low": "Too many attackers...",
+     "win": "Control wins.",
+     "loss": "Overrun...",
+     "half": "Remove the early attackers."
+    },
+    "villain": {
+     "start": "Charge!",
+     "big": "Convoke!",
+     "low": "Out of fuel...",
+     "win": "The Legion wins.",
+     "loss": "Stalled..."
+    }
+   },
+   "bigPlays": [],
+   "sim": null
+  },
+  {
+   "id": "a36b8",
+   "slot": 8,
+   "kind": "Boss",
+   "mood": "boss",
+   "title": "Massacre Girl, Known Killer",
+   "difficulty": "Hard",
+   "teaches": [
+    "Racing"
+   ],
+   "blurb": "The killer from Karlov Manor, with a deck of removal. Keep your board small and your hand full.",
+   "rewardSet": "mkm",
+   "host": true,
+   "hero": {
+    "who": "agency",
+    "deck": {
+     "name": "The Agency",
+     "colors": "WU",
+     "archetype": null,
+     "label": "tribute",
+     "cards": [
+      {
+       "qty": 4,
+       "name": "Novice Inspector",
+       "set": "mkm",
+       "number": "29",
+       "id": "0ad38866-fc5f-4f62-89c1-afc0f50765aa"
+      },
+      {
+       "qty": 4,
+       "name": "Wojek Investigator",
+       "set": "mkm",
+       "number": "36",
+       "id": "296574c6-3933-4ab3-b591-72514b244da9"
+      },
+      {
+       "qty": 4,
+       "name": "Forensic Researcher",
+       "set": "mkm",
+       "number": "58",
+       "id": "1384df5d-d705-49cb-a982-1588cbf303d8"
+      },
+      {
+       "qty": 4,
+       "name": "Tenth District Hero",
+       "set": "mkm",
+       "number": "34",
+       "id": "7c65a79e-f28a-4f30-95a4-1ea55fd84564"
+      },
+      {
+       "qty": 3,
+       "name": "Alquist Proft, Master Sleuth",
+       "set": "mkm",
+       "number": "185",
+       "id": "41129b44-4fa7-473b-b2b7-48c6a58be03c"
+      },
+      {
+       "qty": 3,
+       "name": "Ezrim, Agency Chief",
+       "set": "mkm",
+       "number": "202",
+       "id": "9554d5f2-7a33-4734-8cf3-dfae2ccc3596"
+      },
+      {
+       "qty": 3,
+       "name": "Eliminate the Impossible",
+       "set": "mkm",
+       "number": "54",
+       "id": "486f1cc2-c162-448e-91a9-577d7d796584"
+      },
+      {
+       "qty": 3,
+       "name": "Deduce",
+       "set": "mkm",
+       "number": "52",
+       "id": "7cbb17af-e17e-438a-ad72-0c942e6706b6"
+      },
+      {
+       "qty": 4,
+       "name": "Crimestopper Sprite",
+       "set": "mkm",
+       "number": "49",
+       "id": "dc4ac597-38f0-48b5-ac2d-dfb0b169f834"
+      },
+      {
+       "qty": 4,
+       "name": "Jaded Analyst",
+       "set": "mkm",
+       "number": "62",
+       "id": "2807dcfb-d99c-483b-835f-2606eae4bd30"
+      },
+      {
+       "qty": 4,
+       "name": "Meticulous Archive",
+       "set": "mkm",
+       "number": "264",
+       "id": "652236c2-84ef-45e4-b5fc-ed6170bc3d6c"
+      },
+      {
+       "qty": 10,
+       "name": "Plains",
+       "set": "woe",
+       "number": "262",
+       "id": "c9cd4d57-8c51-4fcf-8a9f-5d6a61c33e3d"
+      },
+      {
+       "qty": 10,
+       "name": "Island",
+       "set": "woe",
+       "number": "263",
+       "id": "bd4b4da4-83f6-4280-880b-b6033308f2a2"
+      }
+     ]
+    }
+   },
+   "villain": {
+    "who": "massacre",
+    "deck": {
+     "name": "Massacre Girl's Removal Pile",
+     "colors": "BR",
+     "archetype": null,
+     "label": "tribute",
+     "cards": [
+      {
+       "qty": 3,
+       "name": "Massacre Girl, Known Killer",
+       "set": "mkm",
+       "number": "94",
+       "id": "cb1c8800-9d33-485c-b776-042003b9ea92"
+      },
+      {
+       "qty": 4,
+       "name": "Shock",
+       "set": "mkm",
+       "number": "144",
+       "id": "298747bb-eb40-4b58-bb22-4ac2bc1d795c"
+      },
+      {
+       "qty": 4,
+       "name": "Bitter Triumph",
+       "set": "lci",
+       "number": "91",
+       "id": "05bdd22c-3e11-4c29-bdfa-d3dfc0e90a9f"
+      },
+      {
+       "qty": 3,
+       "name": "Murder",
+       "set": "mkm",
+       "number": "95",
+       "id": "1ea6438b-0e6c-4d65-8bcd-34a988717c81"
+      },
+      {
+       "qty": 3,
+       "name": "Molten Collapse",
+       "set": "lci",
+       "number": "234",
+       "id": "2487d124-210b-4808-888c-cd0a78aebd90"
+      },
+      {
+       "qty": 4,
+       "name": "Blood Spatter Analysis",
+       "set": "mkm",
+       "number": "189",
+       "id": "2b80feb8-5cc8-4e91-ac22-a733305a67de"
+      },
+      {
+       "qty": 3,
+       "name": "Judith, Carnage Connoisseur",
+       "set": "mkm",
+       "number": "210",
+       "id": "3eaa19ce-cace-499e-8b23-ef9e56b23700"
+      },
+      {
+       "qty": 3,
+       "name": "Rakdos, Patron of Chaos",
+       "set": "mkm",
+       "number": "224",
+       "id": "cc6fd2d5-8eb2-4265-a1bf-d4ae635285af"
+      },
+      {
+       "qty": 4,
+       "name": "Reckless Detective",
+       "set": "mkm",
+       "number": "141",
+       "id": "18da1a1d-e6ba-47e5-a545-0bacd427b782"
+      },
+      {
+       "qty": 3,
+       "name": "Rune-Brand Juggler",
+       "set": "mkm",
+       "number": "229",
+       "id": "5288cf17-9d79-4d35-85f1-bf4d0a73494b"
+      },
+      {
+       "qty": 2,
+       "name": "Long Goodbye",
+       "set": "mkm",
+       "number": "92",
+       "id": "c3896705-bbd2-4ffb-a590-ee78e0eabdc5"
+      },
+      {
+       "qty": 4,
+       "name": "Raucous Theater",
+       "set": "mkm",
+       "number": "266",
+       "id": "b598c93e-dae1-4d71-a9e4-917abf76d2d0"
+      },
+      {
+       "qty": 10,
+       "name": "Swamp",
+       "set": "woe",
+       "number": "264",
+       "id": "ee68f2cb-851b-4196-ac58-844d72628e6a"
+      },
+      {
+       "qty": 10,
+       "name": "Mountain",
+       "set": "woe",
+       "number": "265",
+       "id": "8822db23-34dc-452a-92bc-a3ceee4db375"
+      }
+     ]
+    }
+   },
+   "reward": {
+    "hero": {
+     "packs": 2,
+     "coins": 200
+    },
+    "villain": {
+     "card": {
+      "oracle_id": "ccb39f4a-2684-4eb7-9066-aad81ae08962",
+      "name": "Massacre Girl, Known Killer",
+      "rarity": "mythic",
+      "set": "mkm",
+      "id": "cb1c8800-9d33-485c-b776-042003b9ea92",
+      "image": "https://cards.scryfall.io/normal/front/c/b/cb1c8800-9d33-485c-b776-042003b9ea92.jpg"
+     },
+     "coins": 200
+    }
+   },
+   "scene": [
+    {
+     "who": "stage",
+     "line": "They always think they're better than the local investigators. They're usually right.",
+     "quote": true
+    },
+    {
+     "who": "stage",
+     "line": "Proft lit up like a man who had just been handed a glorious and unexpected gift.",
+     "quote": true
+    },
+    {
+     "who": "agency",
+     "line": "Do not overcommit. Her Massacre Girl will wipe a crowded board."
+    }
+   ],
+   "villainScene": [
+    {
+     "who": "stage",
+     "line": "'Did I do it?' You'll have to be more specific.",
+     "quote": true
+    },
+    {
+     "who": "stage",
+     "line": "Laughter and conversation trailed off as the revelers gathered around Zegana's body.",
+     "quote": true
+    }
+   ],
+   "after": null,
+   "cues": {
+    "hero": {
+     "start": "Case closed.",
+     "big": "Gotcha!",
+     "low": "She keeps killing...",
+     "win": "Caught.",
+     "loss": "The case is cold...",
+     "half": "Keep your board small and your hand full."
+    },
+    "villain": {
+     "start": "Did I?",
+     "big": "[a music box plays]",
+     "low": "[the music slows]",
+     "win": "Specifically?",
+     "loss": "[the music box stops]",
+     "half": {
+      "who": "alquist",
+      "line": "The evidence points one way. Come quietly."
+     }
+    }
+   },
+   "bigPlays": [],
+   "sim": null
+  },
+  {
+   "id": "a36b9",
+   "slot": 9,
+   "kind": "Secret Boss",
+   "secret": true,
+   "mood": "boss",
+   "title": "Boros Convoke at Full Power",
+   "difficulty": "Hard",
+   "teaches": [
+    "Racing"
+   ],
+   "blurb": "Deep in the archive, a Boros deck that taps out and attacks every turn.",
+   "rewardSet": "mkm",
+   "host": true,
+   "archive": {
+    "deck": "Boros Convoke",
+    "when": "Winter 2024",
+    "format": "Standard.",
+    "what": "A red-white deck of cheap creatures that tap to help cast bigger ones.",
+    "why": "It was one of the fastest decks in the format and punished slow hands.",
+    "beat": "Kill the first two creatures and keep your life above burn range.",
+    "after": "Later sets gave the format more removal and slowed it down."
+   },
+   "hero": {
+    "who": "you",
+    "deck": {
+     "name": "Kellan's Crew",
+     "colors": "RG",
+     "archetype": null,
+     "label": "tribute",
+     "cards": [
+      {
+       "qty": 4,
+       "name": "Geological Appraiser",
+       "set": "lci",
+       "number": "150",
+       "id": "7f9c1a82-695b-4df2-8e51-2d71a62e7baf"
+      },
+      {
+       "qty": 3,
+       "name": "Trumpeting Carnosaur",
+       "set": "lci",
+       "number": "171",
+       "id": "edc035ca-f0a3-4814-9405-d6dc6f048315"
+      },
+      {
+       "qty": 4,
+       "name": "Intrepid Paleontologist",
+       "set": "lci",
+       "number": "193",
+       "id": "871a164a-0fe6-480e-a1be-cbffce884bd3"
+      },
+      {
+       "qty": 4,
+       "name": "Scytheclaw Raptor",
+       "set": "lci",
+       "number": "165",
+       "id": "9436cf62-56d6-4662-9982-72e9be80d25c"
+      },
+      {
+       "qty": 4,
+       "name": "Jadelight Spelunker",
+       "set": "lci",
+       "number": "196",
+       "id": "68e633d3-47e2-48c5-9be3-574ce5023bf7"
+      },
+      {
+       "qty": 4,
+       "name": "Pugnacious Hammerskull",
+       "set": "lci",
+       "number": "208",
+       "id": "632e5635-a9bc-473a-a885-02e1fd258f7b"
+      },
+      {
+       "qty": 3,
+       "name": "Thrashing Brontodon",
+       "set": "lci",
+       "number": "216",
+       "id": "d52ef7c1-dacb-4204-b64e-5fa3ae3b1ace"
+      },
+      {
+       "qty": 2,
+       "name": "Seismic Monstrosaur",
+       "set": "lci",
+       "number": "166",
+       "id": "98aeb9dc-18f9-4120-ac3d-226c62a1dc1d"
+      },
+      {
+       "qty": 4,
+       "name": "Abrade",
+       "set": "lci",
+       "number": "131",
+       "id": "47f39b5e-2e85-4f31-bbab-0b0bf58f701d"
+      },
+      {
+       "qty": 3,
+       "name": "Triumphant Chomp",
+       "set": "lci",
+       "number": "170",
+       "id": "06b28139-efa7-4818-a012-cf8150692b43"
+      },
+      {
+       "qty": 1,
+       "name": "Hulking Raptor",
+       "set": "lci",
+       "number": "191",
+       "id": "45f763af-5a6a-404c-8e8c-4dbed71277bc"
+      },
+      {
+       "qty": 4,
+       "name": "Commercial District",
+       "set": "mkm",
+       "number": "259",
+       "id": "bf220c06-3cce-4bdd-aa58-83940c223e9c"
+      },
+      {
+       "qty": 10,
+       "name": "Mountain",
+       "set": "woe",
+       "number": "265",
+       "id": "8822db23-34dc-452a-92bc-a3ceee4db375"
+      },
+      {
+       "qty": 10,
+       "name": "Forest",
+       "set": "woe",
+       "number": "266",
+       "id": "ecd6d8fb-780c-446c-a8bf-93386b22fe95"
+      }
+     ]
+    }
+   },
+   "villain": {
+    "who": "boros",
+    "deck": {
+     "name": "Boros Convoke",
+     "colors": "RW",
+     "archetype": "Aggro",
+     "label": "tribute",
+     "note": "Built from cards in this act's sets only. No single tournament list is copied.",
+     "cards": [
+      {
+       "qty": 4,
+       "name": "Embereth Veteran",
+       "set": "woe",
+       "number": "127",
+       "id": "bc7130b8-3168-421f-912a-46ed5b769807"
+      },
+      {
+       "qty": 4,
+       "name": "Harried Spearguard",
+       "set": "woe",
+       "number": "135",
+       "id": "1db79785-4f55-445f-93f2-14c6e4606fc5"
+      },
+      {
+       "qty": 4,
+       "name": "Grand Ball Guest",
+       "set": "woe",
+       "number": "134",
+       "id": "d6e75228-16af-42b0-8441-ed253a660cc9"
+      },
+      {
+       "qty": 4,
+       "name": "Goblin Maskmaker",
+       "set": "mkm",
+       "number": "130",
+       "id": "6154a991-c602-4fca-91a3-3830060da60e"
+      },
+      {
+       "qty": 3,
+       "name": "Aurelia, the Law Above",
+       "set": "mkm",
+       "number": "188",
+       "id": "8f80c6e7-e9f9-4ca6-87f7-a52c96079e4a"
+      },
+      {
+       "qty": 4,
+       "name": "Lightning Helix",
+       "set": "mkm",
+       "number": "218",
+       "id": "4101e3fe-b0e7-4f0f-b9ac-9b61a4d628b3"
+      },
+      {
+       "qty": 4,
+       "name": "Warleader's Call",
+       "set": "mkm",
+       "number": "242",
+       "id": "b3e8f8bd-1c8b-4a7c-96c4-57a247ce9ccc"
+      },
+      {
+       "qty": 3,
+       "name": "Torch the Tower",
+       "set": "woe",
+       "number": "153",
+       "id": "b3d6027c-813f-46df-95b4-e2e305a67620"
+      },
+      {
+       "qty": 4,
+       "name": "Stonesplitter Bolt",
+       "set": "woe",
+       "number": "151",
+       "id": "fb22f79c-3075-439d-a072-ceaabe35d76f"
+      },
+      {
+       "qty": 2,
+       "name": "Burning Sun Cavalry",
+       "set": "lci",
+       "number": "138",
+       "id": "0c491ac0-4752-47a7-967e-456b6e4245de"
+      },
+      {
+       "qty": 4,
+       "name": "Elegant Parlor",
+       "set": "mkm",
+       "number": "260",
+       "id": "72c6d541-e2cb-4d6e-acac-90a8f53b7006"
+      },
+      {
+       "qty": 10,
+       "name": "Mountain",
+       "set": "woe",
+       "number": "265",
+       "id": "8822db23-34dc-452a-92bc-a3ceee4db375"
+      },
+      {
+       "qty": 10,
+       "name": "Plains",
+       "set": "woe",
+       "number": "262",
+       "id": "c9cd4d57-8c51-4fcf-8a9f-5d6a61c33e3d"
+      }
+     ]
+    }
+   },
+   "reward": {
+    "hero": {
+     "packs": 2,
+     "coins": 200
+    },
+    "villain": {
+     "card": {
+      "oracle_id": "2a800427-ff8c-4b3c-baee-85211b70656d",
+      "name": "Aurelia, the Law Above",
+      "rarity": "rare",
+      "set": "mkm",
+      "id": "8f80c6e7-e9f9-4ca6-87f7-a52c96079e4a",
+      "image": "https://cards.scryfall.io/normal/front/8/f/8f80c6e7-e9f9-4ca6-87f7-a52c96079e4a.jpg"
+     },
+     "coins": 200
+    }
+   },
+   "scene": [
+    {
+     "who": "stage",
+     "line": "While Aurelia mustered the Boros Legion, Kaya and Kellan raced against the clock, desperate to stave off a war the guilds might not survive.",
+     "quote": true
+    },
+    {
+     "who": "you",
+     "line": "Stop the first two creatures and they run out of steam."
+    }
+   ],
+   "villainScene": [
+    {
+     "who": "stage",
+     "line": "After heavy casualties in the Phyrexian invasion, the Boros mage-priests trained as many rank-and-file soldiers as possible to wield the Legion's legendary battle magic.",
+     "quote": true
+    }
+   ],
+   "after": [
+    {
+     "who": "stage",
+     "line": "Recorded: later sets gave the format more removal and slowed it down."
+    }
+   ],
+   "cues": {
+    "hero": {
+     "start": "Hold the line.",
+     "big": "Strike back!",
+     "low": "They are fast...",
+     "win": "The Legion falls.",
+     "loss": "Overrun...",
+     "half": "Kill the first two creatures."
+    },
+    "villain": {
+     "start": "[a drumbeat]",
+     "big": "[the Legion charges]",
+     "low": "[a pause]",
+     "win": "[the Legion wins]",
+     "loss": "[the Legion breaks]"
+    }
+   },
+   "bigPlays": [],
+   "sim": null
+  }
+ ]
+}
