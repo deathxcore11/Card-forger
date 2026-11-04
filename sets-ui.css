@@ -355,3 +355,11 @@ body:not(.glass) .set-atmosphere{display:none}
 /* The pulled card's glow spills past its own box rather than stopping on a hard edge; the header stays on top. */
 .pack-dialog .pack-focus{overflow:visible;clip-path:none}
 .pack-dialog>.pack-header{position:relative;z-index:3}
+
+/* Custom wrapper art (2:3, own crimps and transparent corners): show it whole, with the set name on its black band. */
+.pack-wrapper.pack-custom{aspect-ratio:2/3}
+.pack-custom .pack-wrap-art{clip-path:none;background:none;border-radius:0}
+.pack-custom .pack-wrap-art>img{object-fit:contain}
+.pack-custom .pack-crimp,.pack-custom .pack-sheen{display:none}
+.pack-custom .pack-wrap-brand{display:grid;inset:auto 14% 12.5% 14%;height:21%;align-content:center;gap:4px;font-size:clamp(11px,3.6vw,15px);line-height:1.15}
+.pack-custom .pack-wrap-brand svg{width:26%}
