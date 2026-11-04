@@ -169,7 +169,7 @@ class MatchController(private val scope: CoroutineScope, val input: String, priv
     }
 
     fun close() {
-        poller?.cancel(); player?.cancel(); autoJob?.cancel()
+        poller?.cancel(); player?.cancel(); autoJob?.cancel(); ticker?.cancel(); timer.stop()
         session?.close(); session = null
     }
 
@@ -195,43 +195,45 @@ class MatchController(private val scope: CoroutineScope, val input: String, priv
         _shown.value = st
         val l = latest
         _live.value = l != null && st.revision == l.revision && st.waitingOnMe && !_sending.value
-        if (_live.value) { scheduleAutoPass(st); armClock(st) } else if (!_sending.value) clearClock()
+        if (_live.value) scheduleAutoPass(st)
+        startTicker()
     }
 
-    // ---- The turn clock (TurnClock): runs while Forge waits on you, once per decision ----
-    /** When the current decision ends, and how long it was given (for the countdown on the table). */
-    class Clock(val endsAt: Long, val totalMs: Long)
+    // ---- The turn clock (TurnClock.Timer, the site's turn-timer.mjs): ticks every 250 ms while the match is on ----
+    /** What the table draws: when the window ends (or how much is left while it holds), its full length, and whose it is. */
+    class Clock(val endsAt: Long, val totalMs: Long, val frozenLeft: Long? = null, val own: Boolean = true)
     private val _clock = MutableStateFlow<Clock?>(null); val clock: StateFlow<Clock?> = _clock
-    private var clockJob: Job? = null
-    private var clockKey: String? = null
-    private var missed = 0
+    /** "One more missed turn and you concede." for 7 s, friend matches only. */
+    private val _afkNote = MutableStateFlow<String?>(null); val afkNote: StateFlow<String?> = _afkNote
     private var autoAnswering = false
-    private fun clearClock() { clockJob?.cancel(); clockJob = null; clockKey = null; _clock.value = null }
-    private fun armClock(st: MatchState) {
-        val key = "${st.revision}:${st.prompt?.id}:${st.inputType}"
-        if (key == clockKey) return
-        clockJob?.cancel(); clockKey = key
-        val total = TurnClock.budgetMs(st)
-        _clock.value = Clock(SystemClock.elapsedRealtime() + total, total)
-        clockJob = scope.launch(Dispatchers.Main) {
-            delay(total)
-            if (!_live.value || latest?.revision != st.revision) return@launch
-            missed++
-            // Friend matches only: someone who is gone for three decisions in a row concedes, so the other player is never left waiting.
-            if (remote != null && missed >= TurnClock.CONCEDE_AFTER) { concede(); return@launch }
+    /** A card pop-up, the menu or a held card: the clock holds while any is open. */
+    private val holds = HashSet<String>()
+    fun hold(reason: String, on: Boolean) { if (on) holds.add(reason) else holds.remove(reason) }
+    private val timer = TurnClock.Timer(
+        snapshot = { latest?.takeIf { _stage.value == Stage.PLAYING || _stage.value == Stage.MULLIGAN } },
+        paused = { paused.value || holds.isNotEmpty() || _beat.value != null || _sending.value || _shown.value?.revision != latest?.revision },
+        act = { w, st, done ->
             autoAnswering = true
             try {
-                when (TurnClock.answer(st)) {
-                    TurnClock.Answer.OK -> ok()
-                    TurnClock.Answer.CANCEL -> cancel()
-                    TurnClock.Answer.SKIP -> st.prompt?.let { replySkip(it.id) }
-                    TurnClock.Answer.EMPTY -> st.prompt?.let { reply(it.id, indexes = emptyList()) }
-                    TurnClock.Answer.NONE -> {}
+                when (val a = TurnClock.answer(w, st)) {
+                    is TurnClock.Answer.Prompt -> reply(a.id, indexes = a.indexes)
+                    TurnClock.Answer.Cancel -> cancel()
+                    TurnClock.Answer.Ok -> ok()
                 }
             } finally { autoAnswering = false }
-            clockKey = null  // the same decision may stay open (a choice that needs something); the clock runs it again
-        }
-    }
+            done(true)
+        },
+        concede = { concede() },
+        onChange = { c -> val now = SystemClock.elapsedRealtime()
+            _clock.value = c?.let { Clock(now + it.remaining, it.total, if (it.paused) it.remaining else null, it.own) } },
+        onStrike = { n, limit -> if (limit != null && n == limit - 1) scope.launch { _afkNote.value = "One more missed turn and you concede."; delay(7000); _afkNote.value = null } },
+        friend = remote != null,
+        now = { SystemClock.elapsedRealtime() },
+    )
+    private var ticker: Job? = null
+    private fun startTicker() { if (ticker == null) ticker = scope.launch(Dispatchers.Main) { while (true) { timer.tick(); delay(250) } } }
+    /** Any touch of the table says you are here. */
+    fun poke() = timer.poke()
 
     private suspend fun play() {
         var gatePassed = false
@@ -343,7 +345,7 @@ class MatchController(private val scope: CoroutineScope, val input: String, priv
         val st = latest ?: return
         if (!force && (!_live.value || _sending.value)) return
         autoJob?.cancel()
-        clearClock(); if (!autoAnswering && op != "concede") missed = 0
+        if (!autoAnswering && op != "concede") timer.poke()
         if (st.isMulligan) answeredMulligan = true
         _sending.value = true; _live.value = false
         scope.launch(Dispatchers.IO) {

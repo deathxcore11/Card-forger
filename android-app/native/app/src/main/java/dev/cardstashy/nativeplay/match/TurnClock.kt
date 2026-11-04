@@ -3,35 +3,132 @@ package dev.cardstashy.nativeplay.match
 import dev.cardstashy.nativeplay.engine.MatchState
 
 /**
- * The turn clock (Randall, 4 Nov: every mode shows an animated countdown and an AFK turn skips itself). It runs only while Forge waits on you
- * and starts again for each new decision. Time out and the safest answer goes in: keep the hand, pass priority, declare no attackers or blockers,
- * back out of targets and payment, skip a choice. Three timeouts in a row in a friend match concede it; against the CPU nothing is conceded.
- * The numbers are the first proposal and are shared with the site's table.
+ * The turn clock, a line-by-line port of the site's turn-timer.mjs (Randall, 4 Nov: every match mode shows a countdown while the
+ * game waits on you, and a player who stays away is skipped). 90 s per turn, 30 s for each prompt (keep, attackers, blockers,
+ * targets, payment) and for a response window on the CPU's turn. The clock runs only while the game waits on you and holds while
+ * the CPU's play is told, a card pop-up or the menu is open, or the table is busy. A missed window plays the safe answer, and
+ * three missed turns in a row concede in a friend match only; against the CPU a missed window just passes. Any touch clears the
+ * count. Pure logic: the controller ticks it and the table draws what [onChange] reports.
  */
 object TurnClock {
-    const val DECISION_MS = 30_000L
-    const val OWN_PRIORITY_MS = 90_000L
-    const val KEEP_MS = 45_000L
+    const val TURN_MS = 90_000L
+    const val PROMPT_MS = 30_000L
     const val WARN_MS = 10_000L
-    const val CONCEDE_AFTER = 3
+    const val STRIKE_LIMIT = 3
 
-    enum class Answer { OK, CANCEL, SKIP, EMPTY, NONE }
+    enum class Kind { TURN, PROMPT, RESPONSE, RIVAL }
+    data class Window(val id: String, val kind: Kind, val total: Long)
+    /** What the table draws: whose window, how much is left, the last-10-s warning, held or running. */
+    data class Shown(val kind: Kind, val own: Boolean, val total: Long, val remaining: Long, val seconds: Int, val warn: Boolean, val paused: Boolean)
 
-    /** How long this decision may take. */
-    fun budgetMs(st: MatchState): Long = when {
-        st.isMulligan -> KEEP_MS
-        st.prompt == null && st.inputType == "InputPassPriority" && st.activePlayer == st.viewer -> OWN_PRIORITY_MS
-        else -> DECISION_MS
+    /** cpu-action-playback.mjs isPlayerDecision on the native snapshot. */
+    fun isPlayerDecision(s: MatchState?): Boolean {
+        if (s == null || s.finished || s.status != "running") return false
+        if (s.prompt != null) return true
+        return !s.busy && s.inputType != null && s.inputType != "InputLockUI"
     }
 
-    /** What goes in when the time is up. */
-    fun answer(st: MatchState): Answer {
-        val p = st.prompt
-        if (p != null) return if (p.maySkip) Answer.SKIP else if (p.min == 0) Answer.EMPTY else Answer.NONE
-        if (st.isMulligan) return Answer.OK
-        return when (st.inputType) {
-            "InputPassPriority", "InputAttack", "InputBlock" -> if (st.buttons.okEnabled) Answer.OK else Answer.NONE
-            else -> if (st.buttons.cancelEnabled) Answer.CANCEL else if (st.buttons.okEnabled) Answer.OK else Answer.NONE
+    /** waitingOn: the window the game waits on you in, or null. */
+    fun waitingOn(s: MatchState?): Window? {
+        if (s == null || !isPlayerDecision(s)) return null
+        val input = s.inputType.orEmpty()
+        s.prompt?.let { return Window("prompt:${it.id}:${s.revision}", Kind.PROMPT, PROMPT_MS) }
+        if (input == "InputPassPriority") {
+            if (s.activePlayer == s.viewer) return Window("turn:${s.turn}", Kind.TURN, TURN_MS)
+            return Window("response:${s.revision}", Kind.RESPONSE, PROMPT_MS)
         }
+        return Window("$input:${s.revision}", Kind.PROMPT, PROMPT_MS)
+    }
+
+    /** rivalTurn: a friend's turn, for the line only; nothing here ever acts. */
+    fun rivalTurn(s: MatchState?): Window? {
+        if (s == null || s.finished || s.status == "failed" || s.activePlayer == null || s.activePlayer == s.viewer) return null
+        return Window("rival:${s.turn}", Kind.RIVAL, TURN_MS)
+    }
+
+    /** What a missed window plays (forge-table.mjs afkAnswer). Never commits attackers or blockers. */
+    sealed interface Answer {
+        /** Clear the prompt, pick its first [indexes] (its minimum), confirm. */
+        data class Prompt(val id: Int, val indexes: List<Int>) : Answer
+        object Cancel : Answer
+        object Ok : Answer
+    }
+    fun answer(w: Window, s: MatchState): Answer {
+        s.prompt?.let { p -> return Answer.Prompt(p.id, p.options.take(maxOf(0, p.min)).map { it.index }) }
+        val input = s.inputType.orEmpty(); val b = s.buttons
+        if (input == "InputSelectTargets" || input.startsWith("InputPayMana")) return if (b.cancelEnabled) Answer.Cancel else Answer.Ok
+        if (w.kind == Kind.TURN && b.cancelEnabled && Regex("end turn", RegexOption.IGNORE_CASE).containsMatchIn(b.cancel.orEmpty())) return Answer.Cancel
+        return Answer.Ok
+    }
+
+    /** createTurnTimer. [act] answers [done] when its answer has gone out (true) or was refused (false). */
+    class Timer(
+        private val snapshot: () -> MatchState?,
+        private val paused: () -> Boolean = { false },
+        private val act: (Window, MatchState, done: (Boolean) -> Unit) -> Unit,
+        private val concede: () -> Unit = {},
+        private val onChange: (Shown?) -> Unit = {},
+        private val onStrike: (Int, Int?) -> Unit = { _, _ -> },
+        private val friend: Boolean = false,
+        private val now: () -> Long,
+    ) {
+        private class Cur(val w: Window, var left: Long, var since: Long?, var attempts: Int = 0)
+        private var cur: Cur? = null
+        private var acting = false
+        private var strikes = 0
+        private var lastStrikeTurn: Int? = null
+        private var shown = ""
+        private var stopped = false
+        private val banks = HashMap<String, Long>()
+        private val INF = Long.MAX_VALUE
+
+        private fun left(): Long { val c = cur ?: return 0; if (c.left == INF) return INF; return maxOf(0, c.left - (c.since?.let { now() - it } ?: 0)) }
+        private fun emit() {
+            val c = cur
+            val s = if (c != null && c.left != INF) ((left() + 999) / 1000).toInt() else 0
+            val key = if (c != null) "${c.w.kind}|$s|${if (c.since == null) "p" else "r"}" else ""
+            if (key == shown) return; shown = key
+            onChange(c?.let { Shown(it.w.kind, it.w.kind != Kind.RIVAL, it.w.total, if (it.left == INF) it.w.total else left(), s,
+                it.w.kind != Kind.RIVAL && it.left != INF && left() <= WARN_MS, it.since == null) })
+        }
+        private fun expire(w: Window, s: MatchState) {
+            val c = cur!!
+            if (c.w.kind == Kind.RIVAL) { c.left = 0; c.since = null; return }
+            val turn = s.turn
+            if (turn != lastStrikeTurn) { lastStrikeTurn = turn; strikes++; runCatching { onStrike(strikes, if (friend) STRIKE_LIMIT else null) } }
+            c.attempts++
+            if (friend && strikes >= STRIKE_LIMIT) { acting = true; runCatching(concede); return }
+            // The answer goes out once; if it is refused (the board moved), try again shortly, a few times.
+            if (c.attempts > 3) { c.left = INF; c.since = null; return }
+            c.left = 3000; c.since = null; acting = true
+            runCatching { act(w, s) { acting = false } }.onFailure { acting = false }
+        }
+        fun tick() {
+            if (stopped) return
+            val s = snapshot()
+            val w = waitingOn(s) ?: if (friend) rivalTurn(s) else null
+            if (w == null || s == null) { cur?.let { banks[it.w.id] = left() }; cur = null; emit(); return }
+            val c0 = cur
+            if (c0 == null || c0.w.id != w.id) {
+                if (c0 != null && c0.w.kind == Kind.TURN) banks[c0.w.id] = left()
+                // A prompt in the middle of your turn pauses that turn's clock; it picks up where it stopped.
+                cur = Cur(w, banks[w.id] ?: w.total, null)
+            }
+            val c = cur!!
+            val hold = paused() || acting || s.busy || c.left == INF
+            if (hold && c.since != null) { c.left -= now() - c.since!!; c.since = null }
+            else if (!hold && c.since == null) c.since = now()
+            if (c.w.kind == Kind.TURN) banks[c.w.id] = left()
+            if (c.left != INF && left() <= 0 && !acting) expire(w, s)
+            emit()
+        }
+        /** Any touch of the table: you are here. The count of missed turns clears, and a prompt's window starts over (never the turn's 90 s). */
+        fun poke() {
+            strikes = 0; lastStrikeTurn = null
+            val c = cur ?: return
+            if (c.w.kind != Kind.TURN && c.w.kind != Kind.RIVAL && c.left != INF) { c.left = c.w.total; if (c.since != null) c.since = now(); emit() }
+        }
+        fun strikes() = strikes
+        fun stop() { stopped = true; cur = null; onChange(null) }
     }
 }

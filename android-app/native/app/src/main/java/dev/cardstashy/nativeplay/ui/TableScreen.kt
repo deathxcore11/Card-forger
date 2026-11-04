@@ -128,8 +128,12 @@ fun TableScreen(controller: MatchController, onHome: () -> Unit, onRematch: () -
     val matchMenu = remember { MatchMenu(controller.input, onConcede = { controller.concede() }, onLeave = onHome) }
     LaunchedEffect(shown?.revision) { if (shown?.selection?.actionable?.contains(selectedHand) != true) selectedHand = null }
 
+    LaunchedEffect(inspect != null) { controller.hold("inspect", inspect != null) }
+    LaunchedEffect(menu) { controller.hold("menu", menu) }
+    val afk by controller.afkNote.collectAsState()
     val anchors = remember { Anchors() }
-    Box(Modifier.fillMaxSize().background(Palette.Night)) {
+    // Any touch of the table says you are here (the clock's missed-turn count clears); the touch still reaches the table.
+    Box(Modifier.fillMaxSize().background(Palette.Night).pointerInput(Unit) { awaitPointerEventScope { while (true) { val e = awaitPointerEvent(androidx.compose.ui.input.pointer.PointerEventPass.Initial); if (e.type == androidx.compose.ui.input.pointer.PointerEventType.Press) controller.poke() } } }) {
       CompositionLocalProvider(LocalAnchors provides anchors) {
         PlaymatScene(Modifier.fillMaxSize()) // play-playmats.js: this match's mat (nextPlaymat), its own shade, the table root see-through
         BoxWithConstraints(Modifier.fillMaxSize().windowInsetsPadding(WindowInsets.safeDrawing)) {
@@ -155,6 +159,8 @@ fun TableScreen(controller: MatchController, onHome: () -> Unit, onRematch: () -
             if (stage == Stage.PLAYING || stage == Stage.MULLIGAN) ClockPill(controller.clock.collectAsState().value, Modifier.align(Alignment.CenterEnd).padding(end = 10.dp).offset(y = (-44).dp))
         }
         if (stage == Stage.PLAYING || stage == Stage.INTRO) shown?.let { CombatLines(it, anchors) }
+        afk?.let { Text(it, style = Type.Label.copy(color = Color(0xFFFFB4A8), fontSize = 14.sp), modifier = Modifier.align(Alignment.TopCenter).padding(top = 96.dp)
+            .clip(RoundedCornerShape(999.dp)).background(Color(0xD90C0C0E)).border(1.dp, Palette.Red, RoundedCornerShape(999.dp)).padding(horizontal = 16.dp, vertical = 8.dp)) }
       }
         inspect?.let { c -> Inspect(c) { inspect = null } }
         if (menu) Menu(onConcede = { menu = false; controller.concede() }, onLeave = { menu = false; onHome() }, onClose = { menu = false })
@@ -714,9 +720,10 @@ private fun FitCard(modifier: Modifier, inner: Modifier = Modifier, content: @Co
 /** The turn clock: a ring that empties over the decision's time, the seconds inside, gold turning red and pulsing for the last ten. Minimal motion counts whole seconds only. */
 @Composable
 internal fun ClockPill(c: MatchController.Clock?, modifier: Modifier) {
-    if (c == null) return
-    var left by remember(c) { mutableStateOf(c.endsAt - android.os.SystemClock.elapsedRealtime()) }
-    LaunchedEffect(c) { while (true) { left = (c.endsAt - android.os.SystemClock.elapsedRealtime()).coerceAtLeast(0); if (Motion.still) delay(1000) else androidx.compose.runtime.withFrameMillis { }; if (left <= 0) break } }
+    if (c == null || !c.own) return
+    var left by remember(c) { mutableStateOf(c.frozenLeft ?: (c.endsAt - android.os.SystemClock.elapsedRealtime())) }
+    // Held (the CPU is playing, a pop-up is open): the ring stands still at what was left.
+    if (c.frozenLeft == null) LaunchedEffect(c) { while (true) { left = (c.endsAt - android.os.SystemClock.elapsedRealtime()).coerceAtLeast(0); if (Motion.still) delay(1000) else androidx.compose.runtime.withFrameMillis { }; if (left <= 0) break } }
     val warn = left <= dev.cardstashy.nativeplay.match.TurnClock.WARN_MS
     val pulse = androidx.compose.animation.core.rememberInfiniteTransition(label = "clock").animateFloat(1f, 1.1f, androidx.compose.animation.core.infiniteRepeatable(tween(450), androidx.compose.animation.core.RepeatMode.Reverse), label = "p").value
     val ring = if (warn) Color(0xFFFF6B5A) else Palette.Gold
