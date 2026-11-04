@@ -63,6 +63,7 @@ import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.IntOffset
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import androidx.compose.ui.unit.em
 import dev.cardstashy.nativeplay.art.CardImage
 import dev.cardstashy.nativeplay.engine.Card
 import dev.cardstashy.nativeplay.engine.MatchState
@@ -82,6 +83,10 @@ import kotlin.math.sin
  * length. A touch anywhere on the board jumps every effect to its end state. Cards only ever move by transform, so no
  * box on the board changes size.
  */
+/** The strike's shape as fractions of its length: windup ends, contact. */
+private const val LUNGE_WIND = .18f
+private const val LUNGE_HIT = .36f
+
 internal enum class Fx { DRAW, CAST, RESOLVE, ARRIVE, TOKEN, ATTACK, LUNGE, BLOCK, DAMAGE, LIFE, DEATH, COUNTER }
 
 internal class FxItem(
@@ -109,13 +114,27 @@ class Battlefield {
     internal val rev = mutableIntStateOf(0)
     /** The board's own jolt: the strongest face hit in flight (0..1) and when it struck. Read in the board's layer only. */
     fun shake(scope: GraphicsLayerScope) {
-        now.longValue
-        val h = items.firstOrNull { it.kind == Fx.LIFE && it.level == 3 && it.p(now.longValue) in 0f..1f } ?: return
-        val p = h.p(now.longValue); val k = h.power
-        if (p > .5f) return
-        val q = p / .5f; val amp = (9f + 14f * k) * (1f - q) * (1f - q * .3f)
-        with(scope) { translationX = amp * sin(q * 52f) * density; translationY = amp * .7f * cos(q * 43f) * density }
+        val t = now.longValue
+        // Camera (table-feel spec 3): the board leans in while a strike travels, 1.07 for a clash and 1.09 for a hit to a face.
+        val lunge = items.firstOrNull { it.kind == Fx.LUNGE && it.p(t) in 0f..1f }
+        var zoom = 1f
+        if (lunge != null) { val p = lunge.p(t); val face = lunge.toKey?.startsWith("orb") == true
+            zoom = 1f + (if (face) .09f else .07f) * smooth(.1f, LUNGE_HIT, p) * (1f - smooth(LUNGE_HIT + .22f, 1f, p)) }
+        // Shake from the contact: 16 dp over 480 ms for a clash, 20 dp over 560 ms for a face hit, damped.
+        var dx = 0f; var dy = 0f
+        val hit = items.firstOrNull { it.kind == Fx.LUNGE && (t - it.t0 - (it.dur * LUNGE_HIT).toLong()) in 0L..560L }
+        if (hit != null) {
+            val face = hit.toKey?.startsWith("orb") == true; val span = if (face) 560f else 480f
+            val q = ((t - hit.t0 - hit.dur * LUNGE_HIT) / span).coerceIn(0f, 1f); val amp = (if (face) 20f else 16f) * (1f - q) * (1f - q)
+            dx = amp * sin(q * 46f); dy = amp * .7f * cos(q * 39f)
+        } else items.firstOrNull { it.kind == Fx.LIFE && it.level == 3 && it.p(t) in 0f..1f }?.let { h ->
+            val p = h.p(t); if (p <= .5f) { val q = p / .5f; val amp = 20f * h.power * (1f - q) * (1f - q); dx = amp * sin(q * 52f); dy = amp * .7f * cos(q * 43f) }
+        }
+        with(scope) { translationX = dx * density; translationY = dy * density; scaleX = zoom; scaleY = zoom }
     }
+    /** Haptics at each beat's contact: light on a block, medium on a clash, heavy on a face hit. Set by FxDriver. */
+    internal var onImpact: ((String) -> Unit)? = null
+    private val felt = HashSet<FxItem>()
     private val byCard = HashMap<Int, MutableList<FxItem>>()
     private var prev: MatchState? = null
     private var focalEnd = 0L
@@ -124,7 +143,15 @@ class Battlefield {
     internal fun tick(ms: Long) {
         if (!started) { started = true; if (items.isNotEmpty()) { val base = ms; items.forEach { it.t0 += base }; focalEnd += base } }
         now.longValue = ms
-        if (items.any { it.done(ms) }) { items.removeAll { it.done(ms) }; reindex() }
+        onImpact?.let { feel -> for (it in items) if (it !in felt) {
+            val kind = when {
+                it.kind == Fx.BLOCK && it.p(ms) >= .1f -> "light"
+                it.kind == Fx.LUNGE && it.p(ms) >= LUNGE_HIT -> if (it.toKey?.startsWith("orb") == true) "heavy" else "medium"
+                else -> null
+            } ?: continue
+            felt += it; feel(kind)
+        } }
+        if (items.any { it.done(ms) }) { items.removeAll { it.done(ms) }; felt.retainAll(items.toSet()); reindex() }
     }
 
     /** A touch on the board: every effect jumps to its end state (spec: "tap = next action"). */
@@ -233,12 +260,13 @@ class Battlefield {
         // Combat: a new attacker leans in; a new blocker sends a pulse down its thread to the attacker.
         for ((id, c) in bfB) {
             val o = bfA[id] ?: continue
-            if (c.attacking && !o.attacking) combat += FxItem(Fx.ATTACK, 1, 420, card = id, mine = c.controller == viewer)
-            if (c.blocking && !o.blocking) c.blockingIds.firstOrNull()?.let { at -> combat += FxItem(Fx.BLOCK, 1, 450, fromKey = "c$id", toKey = "c$at", mine = c.controller == viewer) }
+            if (c.attacking && !o.attacking) combat += FxItem(Fx.ATTACK, 1, 640, card = id, mine = c.controller == viewer)
+            // A block is a moment (spec 3): the blocker steps in, a gold shield flares over it and BLOCKED slams down; held so it reads.
+            if (c.blocking && !o.blocking) c.blockingIds.firstOrNull()?.let { at -> combat += FxItem(Fx.BLOCK, 2, 1640, card = id, fromKey = "c$id", toKey = "c$at", mine = c.controller == viewer) }
         }
 
         // Combat damage lands: every attacker wind-ups, lunges at what it hit (its blocker, else the player) and strikes (level 2, 640 ms).
-        val lungeMs = 1400L; val impactAt = (lungeMs * .5f).toLong()
+        val lungeMs = 1700L; val impactAt = (lungeMs * LUNGE_HIT).toLong()
         val lost = b.players.any { p -> a.players.firstOrNull { it.id == p.id }?.let { q -> p.life < q.life } == true }
         val dmgNow = bfB.values.any { c -> (bfA[c.id]?.damage ?: 0) < c.damage }
         var lunged = false
@@ -251,13 +279,13 @@ class Battlefield {
                 o.attackTarget != null -> "c${o.attackTarget.id}"
                 else -> b.players.firstOrNull { it.id != o.controller }?.let { "orb${it.id}" }
             } ?: continue
-            hits += FxItem(Fx.LUNGE, 2, lungeMs, card = id, mine = o.controller == viewer, toKey = to, tone = Color(0xFFFF6A4A)); lunged = true
+            hits += FxItem(Fx.LUNGE, 2, lungeMs, card = id, mine = o.controller == viewer, toKey = to, tone = Color(0xFFFF6A4A), power = if (to.startsWith("orb")) 1f else .8f); lunged = true
         }
         val lag = if (lunged) impactAt else 0L
         // Damage (level 2, 350 ms): 70 ms hit-stop, the number pops, a 3 px shake. Life totals move with it.
         for ((id, c) in bfB) {
             val o = bfA[id] ?: continue
-            if (c.damage > o.damage) hits += FxItem(Fx.DAMAGE, 2, 350, card = id, tone = Color(0xFFFF5A4A), label = "−${c.damage - o.damage}", delay = lag)
+            if (c.damage > o.damage) hits += FxItem(Fx.DAMAGE, 2, 1100, card = id, tone = Color(0xFFFF5A4A), label = "−${c.damage - o.damage}", delay = lag)
             val gained = c.counters.values.sum() - o.counters.values.sum()
             if (gained != 0) {
                 val key = c.counters.entries.firstOrNull { (k, v) -> v != (o.counters[k] ?: 0) }?.key ?: ""
@@ -318,23 +346,41 @@ class Battlefield {
                         if (p < .2f) { scaleX = 1.04f; scaleY = 1.04f }
                         else { val q = (p - .2f) / .8f; translationX = 3.dp.toPx() * sin(q * 38f) * (1f - q) }
                     }
-                    Fx.ATTACK -> if (p >= 0f) { val k = .1f * sin(PI.toFloat() * p); scaleX = 1f + k; scaleY = 1f + k; translationY = -(if (it.mine) 1f else -1f) * 6.dp.toPx() * sin(PI.toFloat() * p) }
+                    Fx.ATTACK -> if (p >= 0f) {
+                        // Lifts 14 dp and grows to 1.12 over 320 ms, holds, then settles.
+                        val e = smooth(0f, .5f, p) * (1f - smooth(.82f, 1f, p))
+                        scaleX = 1f + .12f * e; scaleY = 1f + .12f * e; translationY = -(if (it.mine) 1f else -1f) * 14.dp.toPx() * e; shadowElevation = 16f * e
+                    }
+                    Fx.BLOCK -> if (p >= 0f) {
+                        // Slides 70 dp toward its attacker with an overshoot in 240 ms, holds while the shield and stamp read, then goes home.
+                        val a = anchors?.rects?.get("c$id"); val b = it.toKey?.let { k -> anchors?.rects?.get(k) }
+                        if (a != null && b != null) {
+                            val dx = b.center.x - a.center.x; val dy = b.center.y - a.center.y; val dist = kotlin.math.hypot(dx, dy).coerceAtLeast(1f)
+                            val go = (p / .146f).coerceAtMost(1f); val back = smooth(.86f, 1f, p)
+                            val off = minOf(70.dp.toPx(), dist * .45f) * easeOutBack(go) * (1f - back)
+                            translationX = dx / dist * off; translationY = dy / dist * off; shadowElevation = 14f * (1f - back)
+                        }
+                    }
                     Fx.LUNGE -> if (p >= 0f) {
                         val a = anchors?.rects?.get("c$id"); val b = it.toKey?.let { k -> anchors?.rects?.get(k) }
                         if (a != null && b != null) {
                             val dx = b.center.x - a.center.x; val dy = b.center.y - a.center.y
                             val dist = kotlin.math.hypot(dx, dy).coerceAtLeast(1f); val ux = dx / dist; val uy = dy / dist
-                            // Pull back, then strike to the target's edge, then settle home.
+                            // Windup (pull back 10 % of the way, grow to 1.12), lunge to contact, a 110 ms hit-stop, a beat at the target,
+                            // then spring home with an overshoot (420 ms).
                             val reach = (dist - minOf(b.width, b.height) * .42f - minOf(a.width, a.height) * .3f).coerceAtLeast(0f)
+                            val pull = dist * .10f
+                            val w0 = LUNGE_WIND; val h = LUNGE_HIT; val stop = h + 110f / it.dur; val home = 1f - 420f / it.dur
                             val off = when {
-                                p < .3f -> -26.dp.toPx() * smooth(0f, .3f, p)
-                                p < .5f -> { val q = (p - .3f) / .2f; -26.dp.toPx() + (reach + 26.dp.toPx()) * q * q * q }
-                                p < .6f -> reach
-                                else -> reach * (1f - smooth(.6f, 1f, p))
+                                p < w0 -> -pull * smooth(0f, w0, p)
+                                p < h -> { val q = (p - w0) / (h - w0); -pull + (reach + pull) * q * q * q }
+                                p < home -> reach
+                                else -> { val q = (p - home) / (1f - home); reach * (1f - easeOutBack(q)) }
                             }
                             translationX = ux * off; translationY = uy * off
-                            val sc = when { p < .3f -> 1f + .25f * smooth(0f, .3f, p); p < .6f -> 1.25f; else -> 1.25f - .25f * smooth(.6f, .9f, p) }
+                            val sc = when { p < w0 -> 1f + .12f * smooth(0f, w0, p); p < home -> 1.12f; else -> 1.12f - .12f * smooth(home, 1f, p) }
                             scaleX = sc; scaleY = sc; shadowElevation = 20f
+                            if (p in h..stop) { translationX = ux * reach; translationY = uy * reach }
                         }
                     }
                     Fx.COUNTER -> if (p >= 0f) { val k = .03f * sin(PI.toFloat() * p); scaleX = 1f + k; scaleY = 1f + k }
@@ -357,6 +403,8 @@ private fun lerpO(a: Offset, b: Offset, t: Float) = Offset(a.x + (b.x - a.x) * t
 @Composable
 internal fun FxDriver(fx: Battlefield, st: MatchState) {
     val anchors = LocalAnchors.current
+    val view = androidx.compose.ui.platform.LocalView.current
+    SideEffect { fx.onImpact = { kind -> if (AppSettings.haptics) Feel.perform(view, when (kind) { "light" -> "pack-deal"; "heavy" -> "pack-rumble"; else -> "pack-reveal" }) } }
     SideEffect { fx.take(st, anchors) }
     LaunchedEffect(fx) { if (!Motion.still) while (true) withFrameMillis { fx.tick(it) } }
 }
@@ -468,8 +516,8 @@ private fun Path.asAndroid() = (this as androidx.compose.ui.graphics.AndroidPath
 // ---- Over the cards: arrivals, casts, hits, deaths, numbers ----
 
 @Composable
-internal fun FxLayer() {
-    if (Motion.still) return
+internal fun FxLayer(force: Boolean = false) {
+    if (Motion.still && !force) return
     val fx = LocalBattlefield.current ?: return
     val anchors = LocalAnchors.current ?: return
     var self by remember { mutableStateOf(Offset.Zero) }
@@ -490,10 +538,10 @@ internal fun FxLayer() {
                     Fx.RESOLVE -> drawResolve(it, p, it.from?.translate(-self.x, -self.y), rect(it.toKey))
                     Fx.ARRIVE -> rect("c${it.card}")?.let { r -> drawArrive(it, p, r) }
                     Fx.TOKEN -> rect("c${it.card}")?.let { r -> drawToken(p, r) }
-                    Fx.ATTACK -> rect("c${it.card}")?.let { r -> glowRing(r, Color(0xFFFF6A4A), .7f * sin(PI.toFloat() * p), 8.dp.toPx()) }
+                    Fx.ATTACK -> rect("c${it.card}")?.let { r -> glowRing(r, Color(0xFFFFD98A), .9f * smooth(0f, .5f, p) * (1f - smooth(.8f, 1f, p)), 17.dp.toPx()) }
                     Fx.LUNGE -> drawLunge(it, p, rect("c${it.card}"), rect(it.toKey))
-                    Fx.BLOCK -> { val a = rect(it.fromKey); val b = rect(it.toKey); if (a != null && b != null) drawBlock(p, a, b) }
-                    Fx.DAMAGE -> rect("c${it.card}")?.let { r -> drawHit(p, r); pop(tm, it.label, p, r.center.copy(y = r.top + r.height * .35f), it.tone, 22f) }
+                    Fx.BLOCK -> { val a = rect(it.fromKey); val b = rect(it.toKey); if (a != null && b != null) drawBlock(tm, it, p, a, b) }
+                    Fx.DAMAGE -> rect("c${it.card}")?.let { r -> drawHit((p * 3.1f).coerceAtMost(1f), r); bigNumber(tm, it.label, p, r.center.copy(y = r.top + r.height * .3f), it.tone, 44f) }
                     Fx.LIFE -> rect(it.toKey)?.let { r -> if (it.level == 3) faceHit(it, p, r) else glowRing(r, it.tone, .8f * (1f - p), 6.dp.toPx(), round = true); pop(tm, it.label, p, Offset(r.center.x, if (r.center.y < size.height / 2) r.bottom + 16.dp.toPx() else r.top - 6.dp.toPx()), it.tone, if (it.level == 3) 34f + 8f * it.power else 20f, down = r.center.y < size.height / 2) }
                     Fx.COUNTER -> rect("c${it.card}")?.let { r -> drawPour(p, r); pop(tm, it.label, p, Offset(r.center.x, r.top + 4.dp.toPx()), Color(0xFFF3D27E), 15f) }
                     Fx.DEATH -> it.from?.translate(-self.x, -self.y)?.let { r -> drawShards(it, p, r, rect(it.toKey)) }
@@ -646,34 +694,51 @@ private fun DrawScope.drawToken(p: Float, r: Rect) {
     }
 }
 
-/** The strike: a streak behind the lunging card, then a hit flash and shock rings where it lands. */
+/** The strike (spec 3): ghost trails behind the lunge (5 for a clash, 7 for a face), then at contact a white-gold flash
+ *  growing to 1.7x, two shock rings (white-gold, then orange 90 ms later, 620 ms) and sparks that fall (28, or 36 at a face). */
 private fun DrawScope.drawLunge(it: FxItem, p: Float, a: Rect?, b: Rect?) {
     if (a == null || b == null) return
-    val col = it.tone
-    if (p in .3f..0.66f) {
-        val q = (p - .3f) / .2f
+    val face = it.toKey?.startsWith("orb") == true
+    val dur = it.dur.toFloat()
+    if (p in LUNGE_WIND..LUNGE_HIT + .02f) {
+        val q = ((p - LUNGE_WIND) / (LUNGE_HIT - LUNGE_WIND)).coerceIn(0f, 1f)
         val dir = b.center - a.center; val len = kotlin.math.hypot(dir.x, dir.y).coerceAtLeast(1f)
         val ux = dir.x / len; val uy = dir.y / len
-        val head = a.center; val n = 11
-        for (i in 0 until n) { val k = 1f - i / n.toFloat(); val at = head - Offset(ux, uy) * (i * 12f * density)
-            drawCircle(col.copy(alpha = .5f * k * (1f - smooth(.8f, 1f, q))), radius = (a.minDimension * .42f) * k, center = at) }
+        val reach = (len - minOf(b.width, b.height) * .42f - minOf(a.width, a.height) * .3f).coerceAtLeast(0f); val pull = len * .1f
+        val n = if (face) 7 else 5
+        for (i in 1..n) {
+            val qi = (q - i * .07f).coerceIn(0f, 1f); val off = -pull + (reach + pull) * qi * qi * qi
+            val w = a.width * 1.12f; val h = a.height * 1.12f; val cx = a.center.x + ux * off; val cy = a.center.y + uy * off
+            drawRoundRect(Color(0xFFFFE2B0).copy(alpha = .5f * (1f - i / (n + 1f)) * (1f - smooth(.85f, 1f, q))), Offset(cx - w / 2, cy - h / 2), Size(w, h), CornerRadius(10f * density))
+        }
     }
-    if (p >= .5f) {
-        val q = ((p - .5f) / .35f).coerceIn(0f, 1f)
-        val at = b.center
-        if (q < .25f) drawCircle(Color.White.copy(alpha = .95f * (1f - q / .25f)), radius = b.maxDimension * .9f, center = at)
-        for (j in 0..2) { val k = (q - j * .12f).coerceIn(0f, 1f); if (k > 0f) drawCircle(col.copy(alpha = .8f * (1f - k)), radius = b.maxDimension * (.3f + 1.1f * k), center = at, style = Stroke((5f - 4f * k) * density)) }
-        val rnd = java.util.Random(it.card?.toLong() ?: 1L)
-        for (i in 0 until 14) { val ang = rnd.nextFloat() * 6.283f; val sp = (30f + rnd.nextFloat() * 70f) * density * q
-            drawCircle(Color(0xFFFFD2A0).copy(alpha = 1f - q), radius = 2.4f * density * (1f - q * .6f), center = at + Offset(cos(ang), sin(ang)) * sp) }
+    val t = (p - LUNGE_HIT) * dur
+    if (t < 0f) return
+    val at = b.center
+    // Flash: 150 dp of white-gold growing to 1.7x and gone.
+    val fq = (t / 260f).coerceIn(0f, 1f)
+    if (fq < 1f) drawCircle(Brush.radialGradient(listOf(Color.White.copy(alpha = .95f * (1f - fq)), Color(0xFFFFD98A).copy(alpha = .7f * (1f - fq)), Color.Transparent), center = at, radius = 75.dp.toPx() * (1f + .7f * fq)), radius = 75.dp.toPx() * (1f + .7f * fq), center = at)
+    // Shock rings: white-gold, then orange 90 ms later (face: and red), 620 ms each.
+    val rings = if (face) listOf(Color(0xFFFFF4D6), Color(0xFFFF4A3A), Color(0xFFF0C27A)) else listOf(Color(0xFFFFF0C8), Color(0xFFFF9A3C))
+    rings.forEachIndexed { j, col -> val k = ((t - j * 90f) / 620f).coerceIn(0f, 1f); if (k > 0f && k < 1f)
+        drawCircle(col.copy(alpha = .9f * (1f - k)), radius = b.maxDimension * (.35f + (if (face) 2.4f else 1.6f) * k), center = at, style = Stroke((6f - 5f * k) * density)) }
+    // Sparks in the fire palette, thrown out and pulled down.
+    val rnd = java.util.Random((it.card?.toLong() ?: 1L) * 31L)
+    val sq = (t / 900f).coerceIn(0f, 1f)
+    if (sq < 1f) for (i in 0 until (if (face) 36 else 28)) {
+        val ang = rnd.nextFloat() * 6.283f; val sp = (60f + rnd.nextFloat() * 160f) * density
+        val col = listOf(Color(0xFFFFF4D6), Color(0xFFFFD98A), Color(0xFFFF9A3C), Color(0xFFFF5A2A))[i % 4]
+        val pos = at + Offset(cos(ang) * sp * sq, sin(ang) * sp * sq + 220f * density * sq * sq)
+        drawCircle(col.copy(alpha = 1f - sq), radius = (1.6f + 2f * rnd.nextFloat()) * density * (1f - sq * .5f), center = pos)
     }
 }
 
 /** A hit to a face: a red flash across the board edge, a big shockwave from the orb, sparks, and the life number slamming in. */
 private fun DrawScope.faceHit(it: FxItem, p: Float, r: Rect) {
     val k = it.power
-    val vig = (if (p < .12f) p / .12f else 1f - smooth(.12f, .7f, p)) * (.34f + .2f * k)
-    drawRect(Brush.radialGradient(listOf(Color.Transparent, Color(0xFFE02A1A).copy(alpha = vig)), center = Offset(size.width / 2f, size.height / 2f), radius = size.maxDimension * .62f))
+    val vig = (if (p < .1f) p / .1f else 1f - smooth(.1f, .74f, p)) * (.55f + .35f * k)
+    // The red vignette lives at the screen's edges; the middle of the board stays readable.
+    drawRect(Brush.radialGradient(0f to Color.Transparent, .5f to Color.Transparent, 1f to Color(0xFFE02A1A).copy(alpha = vig), center = Offset(size.width / 2f, size.height / 2f), radius = size.maxDimension * .62f))
     if (p < .14f) drawRect(Color.White.copy(alpha = .55f * (1f - p / .14f)))
     for (j in 0..2) { val q = ((p - j * .08f) / .6f).coerceIn(0f, 1f); if (q > 0f)
         drawCircle(it.tone.copy(alpha = .85f * (1f - q)), radius = r.maxDimension * (.5f + (2.4f + 2f * k) * q), center = r.center, style = Stroke((7f - 6f * q) * density)) }
@@ -690,13 +755,40 @@ private fun DrawScope.faceHit(it: FxItem, p: Float, r: Rect) {
         drawCircle(Color(0xFFFFB070).copy(alpha = 1f - q), radius = 2.8f * density * (1f - q * .5f), center = r.center + Offset(cos(ang), sin(ang)) * sp) }
 }
 
-private fun DrawScope.drawBlock(p: Float, a: Rect, b: Rect) {
-    for (j in 0..1) {
-        val q = (p * 1.25f - j * .25f).coerceIn(0f, 1f); if (q <= 0f || q >= 1f) continue
+/** The block (spec 3): a pulse down the thread, a gold shield ring flaring over the blocker, and BLOCKED slamming from 3x beside it. */
+private fun DrawScope.drawBlock(tm: androidx.compose.ui.text.TextMeasurer, it: FxItem, p: Float, a: Rect, b: Rect) {
+    val pulse = (p / .2f).coerceAtMost(1f)
+    if (pulse < 1f) for (j in 0..1) {
+        val q = (pulse * 1.25f - j * .25f).coerceIn(0f, 1f); if (q <= 0f || q >= 1f) continue
         val at = lerpO(a.center, b.center, q)
-        drawCircle(Brush.radialGradient(listOf(Color.White, Color(0xFF6AAEFF).copy(alpha = .7f), Color.Transparent), center = at, radius = 12f * density), radius = 12f * density, center = at)
+        drawCircle(Brush.radialGradient(listOf(Color.White, Color(0xFFF0C27A).copy(alpha = .7f), Color.Transparent), center = at, radius = 12f * density), radius = 12f * density, center = at)
     }
-    glowRing(b, Color(0xFF6AAEFF), .6f * smooth(.6f, .8f, p) * (1f - smooth(.85f, 1f, p)), 7f * density)
+    // The blocker's own box follows its slide; its live rect is a.
+    val c = a.center
+    val flare = smooth(0f, .55f, p); val out = 1f - smooth(.84f, 1f, p)
+    val sw = 150.dp.toPx() * (1.25f - .25f * flare); val sh = 110.dp.toPx() * (1.25f - .25f * flare)
+    val oval = Rect(c.x - sw / 2, c.y - sh / 2, c.x + sw / 2, c.y + sh / 2)
+    val gold = Color(0xFFF0C27A)
+    drawIntoCanvas { cv ->
+        val glow = Paint().asFrameworkPaint().apply { isAntiAlias = true; style = android.graphics.Paint.Style.STROKE; strokeWidth = 10.dp.toPx(); color = gold.copy(alpha = .75f * flare * out).toArgb(); maskFilter = BlurMaskFilter(14.dp.toPx(), BlurMaskFilter.Blur.NORMAL) }
+        cv.nativeCanvas.drawOval(oval.left, oval.top, oval.right, oval.bottom, glow)
+        val inner = Paint().asFrameworkPaint().apply { isAntiAlias = true; style = android.graphics.Paint.Style.STROKE; strokeWidth = 8.dp.toPx(); color = gold.copy(alpha = .4f * flare * out).toArgb(); maskFilter = BlurMaskFilter(8.dp.toPx(), BlurMaskFilter.Blur.INNER) }
+        cv.nativeCanvas.drawOval(oval.left + 6.dp.toPx(), oval.top + 6.dp.toPx(), oval.right - 6.dp.toPx(), oval.bottom - 6.dp.toPx(), inner)
+    }
+    drawOval(Color(0xFFFFE6B0).copy(alpha = .95f * flare * out), oval.topLeft, oval.size, style = Stroke(2.5f * density))
+    // BLOCKED: gold, letter-spaced, -4 degrees, slams from 3x to 1x, held, then fades with the shield.
+    val slam = smooth(.1f, .24f, p); if (slam <= 0f) return
+    val k = 3f - 2f * slam
+    val style = TextStyle(fontFamily = Type.Sans, fontWeight = FontWeight.Black, fontSize = 30.sp, letterSpacing = .18.em, color = gold)
+    val lay = tm.measure("BLOCKED", style)
+    val side = if (b.center.x >= c.x) -1f else 1f
+    val at = Offset((c.x + side * (a.width / 2 + lay.size.width * .55f)).coerceIn(lay.size.width / 2f + 8f, size.width - lay.size.width / 2f - 8f), c.y)
+    val alpha = slam.coerceAtMost(1f) * out
+    rotate(-4f, at) { scale(k, at) {
+        val tl = Offset(at.x - lay.size.width / 2f, at.y - lay.size.height / 2f)
+        for ((dx, dy) in listOf(-2f to 0f, 2f to 0f, 0f to -2f, 0f to 2f)) drawText(tm, "BLOCKED", tl + Offset(dx * density, dy * density), style.copy(color = Color(0xFF2A1A06).copy(alpha = .9f * alpha)))
+        drawText(tm, "BLOCKED", tl, style.copy(brush = Brush.verticalGradient(listOf(Color(0xFFFFF0C8), gold, Color(0xFFC4903A)), tl.y, tl.y + lay.size.height), alpha = alpha))
+    } }
 }
 
 private fun DrawScope.drawHit(p: Float, r: Rect) {
@@ -726,6 +818,21 @@ private fun DrawScope.drawShards(it: FxItem, p: Float, r: Rect, grave: Rect?) {
         val at = lerpO(Offset(sx, sy), to, q * q).let { o -> o.copy(y = o.y - sin(PI.toFloat() * q) * 18f * density * rnd.nextFloat()) }
         drawRect(cols[i % 3].copy(alpha = .85f * (1f - q)), at, Size(2.6f * density, 2.6f * density))
     }
+}
+
+/** A damage number (spec 3): pops to 1.7x with a -5 degree tilt, settles, drifts up and fades over its 1.1 s. */
+private fun DrawScope.bigNumber(tm: androidx.compose.ui.text.TextMeasurer, text: String, p: Float, at: Offset, col: Color, sizeSp: Float) {
+    if (text.isEmpty()) return
+    val s = if (p < .12f) 1f + .7f * (p / .12f) else 1.7f - .7f * smooth(.12f, .3f, p)
+    val a = 1f - smooth(.7f, 1f, p)
+    val style = TextStyle(fontFamily = Type.Sans, fontWeight = FontWeight.Black, fontSize = sizeSp.sp, color = col)
+    val lay = tm.measure(text, style)
+    val y = at.y - 34f * density * smooth(.25f, 1f, p)
+    rotate(-5f, Offset(at.x, y)) { scale(s, Offset(at.x, y)) {
+        val tl = Offset(at.x - lay.size.width / 2f, y - lay.size.height / 2f)
+        for ((dx, dy) in listOf(-2f to 0f, 2f to 0f, 0f to -2f, 0f to 2f)) drawText(tm, text, tl + Offset(dx * density, dy * density), style.copy(color = Color.Black.copy(alpha = .9f * a)))
+        drawText(tm, text, tl, style.copy(color = col.copy(alpha = col.alpha * a)))
+    } }
 }
 
 /** A number pops (1.4× to 1× in the first quarter), rises 14 dp and fades in its last third. */

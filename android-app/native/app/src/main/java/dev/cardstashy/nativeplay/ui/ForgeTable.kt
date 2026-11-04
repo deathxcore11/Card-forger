@@ -86,6 +86,9 @@ import androidx.compose.ui.graphics.PathEffect
 import androidx.compose.ui.graphics.StrokeCap
 import androidx.compose.ui.graphics.drawscope.Stroke
 import androidx.compose.ui.graphics.graphicsLayer
+import androidx.compose.runtime.mutableIntStateOf
+import kotlinx.coroutines.delay
+import kotlinx.coroutines.launch
 import androidx.compose.ui.graphics.lerp
 import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.layout.ContentScale
@@ -640,11 +643,26 @@ private fun TuckedHand(n: Int, modifier: Modifier, d: Du) = with(d) {
 @Composable
 internal fun Medallion(p: Player, mine: Boolean, pickable: Boolean, picked: Boolean, modifier: Modifier, d: Du, onPick: () -> Unit) = with(d) {
     val flash = remember { Animatable(0f) }
+    val recoil = remember { Animatable(0f) }
+    val tick = remember { Animatable(1f) }
     var last by remember { mutableStateOf(p.life) }
-    LaunchedEffect(p.life) { if (p.life < last) { flash.snapTo(1f); flash.animateTo(0f, tween(900)) }; last = p.life }
+    var shown by remember { mutableIntStateOf(p.life) }
+    // A hit to the face (spec 3): the portrait recoils 14 dp and flares bright at contact, then the life ticks down one by one,
+    // each step popping coral at 1.5x. Gains and reduced motion just show the new number.
+    LaunchedEffect(p.life) {
+        val from = last; last = p.life
+        if (p.life >= from || Motion.still) { shown = p.life; return@LaunchedEffect }
+        delay(620) // the strike reaches the portrait
+        launch { flash.snapTo(1f); flash.animateTo(0f, tween(900)) }
+        launch { recoil.snapTo(1f); recoil.animateTo(0f, androidx.compose.animation.core.spring(dampingRatio = .45f, stiffness = 380f)) }
+        delay(260)
+        while (shown > p.life) { shown--; tick.snapTo(1.5f); launch { tick.animateTo(1f, tween(140)) }; delay(if (from - p.life > 8) 60 else 110) }
+        shown = p.life
+    }
     val anchors = LocalAnchors.current
     val pulse = if (pickable && !Motion.still) rememberInfiniteTransition(label = "pick").animateFloat(.55f, 1f, infiniteRepeatable(tween(700), RepeatMode.Reverse), label = "a").value else 1f
     Box(modifier.size(52.du).then(if (anchors != null) Modifier.onGloballyPositioned { anchors.putRect("orb${p.id}", it.boundsInRoot()) } else Modifier)
+        .graphicsLayer { translationY = (if (mine) 1f else -1f) * 14.dp.toPx() * recoil.value; translationX = (if (mine) -1f else 1f) * 6.dp.toPx() * recoil.value }
         .clickable(enabled = pickable, onClick = onPick)) {
         Box(Modifier.fillMaxSize().drawBehind {
             drawCircle(Color(0xFF0B0C10), radius = size.minDimension / 2 + 3.du.toPx())
@@ -658,13 +676,15 @@ internal fun Medallion(p: Player, mine: Boolean, pickable: Boolean, picked: Bool
                 url?.let { coil3.compose.AsyncImage(model = it, contentDescription = null, imageLoader = dev.cardstashy.nativeplay.art.CardArt.loader, modifier = Modifier.fillMaxSize(), contentScale = ContentScale.Crop) }
             } else Box(Modifier.fillMaxSize(), contentAlignment = Alignment.Center) { BrandMark(30.du) } // the CPU wears the brand mark
             if (flash.value > 0f) Box(Modifier.fillMaxSize().background(CpuRed.copy(alpha = .55f * flash.value)))
+            if (recoil.value > .3f) Box(Modifier.fillMaxSize().background(Color.White.copy(alpha = .6f * (recoil.value - .3f) / .7f)))
         }
         // .play-match-life: 15 px 800 #fff4d8 on a dark pill with a gold hairline, 39 du below the portrait's top.
         Box(Modifier.align(Alignment.TopCenter).offset(y = 39.du).wrapContentSize(unbounded = true)
             .drawBehind { drawRoundRect(Color(0xCC000000), topLeft = Offset(0f, 3.du.toPx()), size = size, cornerRadius = CornerRadius(size.height / 2)) }
             .clip(RoundedCornerShape(999.dp)).background(Brush.verticalGradient(listOf(Color(0xFF26221A), Color(0xFF14120E)))).border(1.dp, Gold, RoundedCornerShape(999.dp))
             .padding(horizontal = 8.du, vertical = 2.du)) {
-            Text("${p.life}", style = sans(sp(15f), FontWeight.Bold, Color(0xFFFFF4D8)))
+            Text("$shown", style = sans(sp(15f), FontWeight.Bold, if (tick.value > 1.01f) Color(0xFFFF8A6A) else Color(0xFFFFF4D8)),
+                modifier = Modifier.graphicsLayer { scaleX = tick.value; scaleY = tick.value })
         }
     }
 }
