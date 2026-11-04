@@ -53,4 +53,14 @@ object StoryLogic {
         if (outside.isNotEmpty()) return Fit(false, "${outside.size} card${if (outside.size == 1) " is" else "s are"} from outside this act, like ${outside[0]}.")
         return Fit(true, "")
     }
+
+    /** What a battle pays, in words (story-ui.js rewardText): era packs for your side, the villain's signature card for theirs. */
+    fun rewardText(rw: com.google.gson.JsonObject?, set: String, setNames: Map<String, String>): String {
+        fun n(k: String) = rw?.get(k)?.takeIf { it.isJsonPrimitive }?.asInt ?: 0
+        val coins = if (n("coins") > 0) " and ${n("coins")} coins" else ""
+        val card = rw?.getAsJsonObject("card")?.get("name")?.asString
+        if (card != null) return card + coins
+        val packs = n("packs").takeIf { it > 0 } ?: 1
+        return "$packs ${setNames[set] ?: set.uppercase()} ${if (packs > 1) "packs" else "pack"}$coins"
+    }
 }

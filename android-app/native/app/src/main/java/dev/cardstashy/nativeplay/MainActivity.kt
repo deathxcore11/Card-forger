@@ -211,7 +211,7 @@ private fun App(activity: MainActivity) {
         }
         is Screen.Story -> {
             LaunchedEffect(Unit) { activity.inGame(false) }
-            dev.cardstashy.nativeplay.ui.StoryRoute(startAct = s.act, onBack = { back() }, onDuel = { go(Screen.Web(dev.cardstashy.nativeplay.ui.SITE_PLAY)) })
+            dev.cardstashy.nativeplay.ui.StoryRoute(startAct = s.act, onBack = { back() }, onDuel = { _, _, _ -> go(Screen.Web(dev.cardstashy.nativeplay.ui.SITE_PLAY)) })
         }
         is Screen.Achievements -> {
             LaunchedEffect(Unit) { activity.inGame(false) }

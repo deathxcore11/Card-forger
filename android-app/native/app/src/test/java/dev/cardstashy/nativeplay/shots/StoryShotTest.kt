@@ -9,6 +9,9 @@ import com.google.gson.JsonParser
 import dev.cardstashy.nativeplay.play.PlayRules
 import dev.cardstashy.nativeplay.play.StoryLogic
 import dev.cardstashy.nativeplay.ui.StoryActPage
+import dev.cardstashy.nativeplay.ui.StoryDuelPage
+import dev.cardstashy.nativeplay.ui.StoryDuelUi
+import dev.cardstashy.nativeplay.ui.StoryOwnDeck
 import dev.cardstashy.nativeplay.ui.StoryRoad
 import dev.cardstashy.nativeplay.ui.StoryTest
 import org.junit.Rule
@@ -47,5 +50,13 @@ class StoryShotTest {
         show("act-mid") { StoryActPage(rules.acts[0], data, mid, {}, {}) }
         val late = StoryLogic.fromRefs((1..7).map { "story:a1b$it:loaner" })
         show("act-boss") { StoryActPage(rules.acts[0], data, late, {}, {}) }
+    
+        val battles = data.getAsJsonArray("battles").map { it.asJsonObject }
+        val own = listOf(StoryOwnDeck("d1", "Mono Red Burn", "https://cards.scryfall.io/art_crop/front/f/d/fd99bce1-ce39-464b-8e61-2631eb3ed6f6.jpg", 60, StoryLogic.Fit(true, "")),
+            StoryOwnDeck("d2", "Modern Tron", null, 60, StoryLogic.Fit(false, "9 cards are from outside this act, like Karn Liberated.")))
+        show("duel-new") { StoryDuelPage(1, data, battles[0], StoryLogic.fromRefs(emptyList()), rules.setNames, null, own, StoryDuelUi(), {}, {}, { _, _ -> }) }
+        show("duel-list") { StoryDuelPage(1, data, battles[0], StoryLogic.fromRefs(emptyList()), rules.setNames, null, own, StoryDuelUi(listOpen = true), {}, {}, { _, _ -> }) }
+        show("duel-cleared") { StoryDuelPage(1, data, battles[1], StoryLogic.fromRefs(listOf("story:a1b2:loaner", "story:a1b2:own")), rules.setNames, null, own, StoryDuelUi("d1", "villain"), {}, {}, { _, _ -> }) }
+        show("duel-own-bad") { StoryDuelPage(1, data, battles[2], StoryLogic.fromRefs(emptyList()), rules.setNames, null, own, StoryDuelUi("loaner"), {}, {}, { _, _ -> }) }
     }
 }

@@ -44,6 +44,8 @@ class PlayRules(o: JsonObject, storyJson: JsonObject) {
                 a.getAsJsonArray("sets").map { it.asString }.map { c -> c to (names[c]?.asString ?: c.uppercase()) })
         }
     }
+    /** story-acts.js SET_NAMES. */
+    val setNames: Map<String, String> = storyJson.getAsJsonObject("setNames").entrySet().associate { it.key to it.value.asString }
     /** story-acts.js ACT.age per act (the Road prints the first one's). */
     val ages: Map<Int, String> = storyJson.getAsJsonArray("acts").associate { it.asJsonObject["act"].asInt to it.asJsonObject["age"].asString }
     /** Forge CPU levels: Easy, Medium (shown as Normal), Hard, each with its policy version. */
