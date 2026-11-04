@@ -66,14 +66,14 @@ export default {
 3 Rageblood Shaman
 3 Kragma Warcaller
 3 Ragemonger
-4 Lightning Strike
 4 Mogis's Marauder
-3 Magma Jet
-2 Mogis, God of Slaughter
-2 Felhide Minotaur
+4 Felhide Minotaur
 11 Mountain
 9 Swamp
-4 Temple of Malice`}},
+4 Temple of Malice
+3 Kragma Butcher
+2 Blood-Toll Harpy
+2 Tormented Hero`}},
       scene: [q('elspeth', 'It has been my experience that soldiers most fervently follow generals who lead by example.'),
         q('stage', '"You. Poet. Be sure to write this down."'),
         s('elspeth', 'Heroic: whenever you cast a spell that targets a heroic creature, it triggers. Bless your heroes, and they grow.')],
@@ -102,7 +102,7 @@ export default {
       villain: {who: 'thassa', deck: {label: 'tribute', name: 'Thassa\'s Faithful', colors: 'U', list: `
 2 Thassa, God of the Sea
 4 Thassa's Emissary
-2 Master of Waves
+3 Master of Waves
 4 Omenspeaker
 4 Wavecrash Triton
 4 Nyxborn Triton
@@ -110,7 +110,7 @@ export default {
 4 Voyage's End
 3 Sealock Monster
 3 Dissolve
-3 Triton Fortune Hunter
+2 Triton Fortune Hunter
 24 Island`}},
       scene: [q('kiora', 'I will match Thassa drop for drop and show a god what true power is.'),
         q('kiora', 'I want one.'),
@@ -208,19 +208,20 @@ export default {
 10 Plains
 4 Temple of Plenty`}},
       villain: {who: 'ashiok', deck: {label: 'tribute', name: 'Ashiok\'s Nightmares', colors: 'UB', list: `
-2 Ashiok, Nightmare Weaver
+3 Ashiok, Nightmare Weaver
 4 Thoughtrender Lamia
 4 Agent of Erebos
-4 Mind Sculpt
-4 Returned Reveler
+2 Mind Sculpt
+2 Returned Reveler
 4 Pharika's Cure
 3 Dissolve
 4 Voyage's End
-3 Agent of the Fates
+2 Agent of the Fates
 10 Island
 10 Swamp
 4 Temple of Deceit
-4 Baleful Eidolon`}},
+4 Baleful Eidolon
+4 Hero's Downfall`}},
       scene: [q('anthousa', 'More children taken. This is an evil we will track without mercy.'),
         q('stage', 'The emotional echoes of dryad gatherings attract lost souls.'),
         s('anthousa', 'Constellation: whenever an enchantment enters under your control, a constellation card triggers. Play your enchantments one by one.')],
@@ -251,17 +252,16 @@ export default {
 4 Sylvan Caryatid
 4 Courser of Kruphix
 2 Polukranos, World Eater
-4 Stormbreath Dragon
-4 Lightning Strike
+2 Stormbreath Dragon
+2 Lightning Strike
 2 Mistcutter Hydra
-2 Arbor Colossus
-3 Ember Swallower
-2 Magma Jet
-2 Anger of the Gods
+4 Arbor Colossus
+4 Ember Swallower
 10 Forest
 10 Mountain
 4 Temple of Abandon
-3 Nessian Asp`}},
+4 Nessian Asp
+4 Nessian Courser`}},
       scene: [q('stage', 'To resist Thassa is to deny the rising tide.'),
         s('you', 'Every blue symbol on the table is one more Elemental from Master of Waves.')],
       villainScene: [q('xenagos', 'Stoke a fire hot enough and you\'ll never run out of things to burn.')],
@@ -285,17 +285,19 @@ export default {
 4 Temple of Enlightenment
 4 Fabled Hero`}},
       villain: {who: 'burn', deck: {label: 'tribute', name: 'Mono-Red', colors: 'R', archetype: 'Burn', list: `
-4 Eidolon of the Great Revel
+2 Eidolon of the Great Revel
 3 Goblin Rabblemaster
 4 Satyr Hoplite
 4 Lightning Strike
 4 Magma Jet
-4 Searing Blood
-4 Stoke the Flames
+2 Searing Blood
+2 Stoke the Flames
 3 Bolt of Keranos
-2 Lava Axe
 24 Mountain
-4 Akroan Crusader`}},
+4 Akroan Crusader
+4 Akroan Line Breaker
+2 Prophetic Flamespeaker
+2 Spark Jolt`}},
       scene: [q('stage', 'It\'s never good to walk into an ambush, but with the right spell you might walk out again.'),
         s('you', 'Hold a protection spell for their burn. One protected hero wins this.')],
       villainScene: [q('stage', 'Thakolides the Mighty / Slayer of minotaurs / Vanquisher of giants / Killed by a scorpion')],
@@ -353,18 +355,17 @@ export default {
       blurb: 'Deep in the archive, the deck that was the format for a season.',
       hero: {who: 'you', deck: {label: 'tribute', name: 'Mono-Green Devotion', colors: 'G', archetype: 'Ramp', list: `
 2 Nylea, God of the Hunt
-2 Polukranos, World Eater
 4 Elvish Mystic
 4 Voyaging Satyr
 4 Sylvan Caryatid
-4 Courser of Kruphix
-4 Boon Satyr
 4 Nessian Game Warden
 3 Arbor Colossus
-2 Nessian Wilds Ravager
-3 Reverent Hunter
+4 Reverent Hunter
 22 Forest
-2 Nykthos, Shrine to Nyx`}},
+2 Nykthos, Shrine to Nyx
+3 Nessian Asp
+4 Nessian Courser
+4 Satyr Wayfinder`}},
       villain: {who: 'black', deck: {label: 'tribute', name: 'Mono-Black Devotion', note: 'Built from cards in this act\'s sets only. No single tournament list is copied.', colors: 'B', archetype: 'Control', list: `
 4 Thoughtseize
 4 Hero's Downfall

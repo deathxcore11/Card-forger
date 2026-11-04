@@ -104,16 +104,16 @@ export default {
 10 Mountain
 4 Boros Guildgate`}},
       villain: {who: 'ruric', deck: {label: 'tribute', name: 'The Ghor Clan', colors: 'RG', list: `
-2 Burning-Tree Emissary
+3 Burning-Tree Emissary
 4 Ghor-Clan Rampager
 4 Rubblebelt Raiders
 4 Zhur-Taa Swine
 4 Scab-Clan Charger
-3 Skinbrand Goblin
+4 Skinbrand Goblin
 4 Zhur-Taa Druid
 3 Clan Defiance
 4 Skarrg Goliath
-4 Gruul Ragebeast
+2 Gruul Ragebeast
 10 Forest
 10 Mountain
 4 Gruul Guildgate`}},
@@ -308,18 +308,17 @@ export default {
 4 Golgari Guildgate
 2 Dreg Mangler`}},
       villain: {who: 'earth', deck: {label: 'tribute', name: 'Mono-Red', colors: 'R', archetype: 'Aggro', list: `
-4 Burning Earth
+2 Burning Earth
 4 Rakdos Cackler
 4 Gore-House Chainwalker
 4 Ash Zealot
 4 Skinbrand Goblin
 4 Bloodfray Giant
-2 Shock
-2 Annihilating Fire
-2 Electrickery
 4 Ripscale Predator
 24 Mountain
-2 Splatter Thug`}},
+4 Splatter Thug
+4 Viashino Racketeer
+2 Bomber Corps`}},
       scene: [q('domri', 'Roots, ruins, and room to fight. All the comforts of home.'),
         s('you', 'Shocklands cost 2 life to enter untapped, and Burning Earth costs more. Spend life only when it buys a turn.')],
       villainScene: [q('aurelia', 'There is no time to remedy our enemies\' ignorance. Blast it out of them.')],
@@ -397,12 +396,11 @@ export default {
       villain: {who: 'gates', deck: {label: 'tribute', name: 'Maze\'s End', colors: 'WUBG', archetype: 'Control', list: `
 4 Opal Lake Gatekeepers
 4 Saruli Gatekeepers
-3 Ubul Sar Gatekeepers
+2 Ubul Sar Gatekeepers
 4 Wall of Frost
-2 Urban Evolution
 4 Azorius Charm
 4 Supreme Verdict
-3 Sphinx's Revelation
+4 Sphinx's Revelation
 4 Essence Scatter
 2 Maze's End
 2 Azorius Guildgate
@@ -416,7 +414,7 @@ export default {
 2 Selesnya Guildgate
 2 Simic Guildgate
 4 Island
-2 Detention Sphere`}},
+4 Detention Sphere`}},
       scene: [q('stage', 'The Implicit Maze winds through Ravnica, connecting arcane landmarks of all ten guilds.'),
         s('you', 'Ten Gates and it wins. Count them, and hit hard before it gets there.')],
       villainScene: [q('stage', 'Sentries guard Ravnica\'s landmarks and outlying districts, unaware of these places\' import to the maze.')],

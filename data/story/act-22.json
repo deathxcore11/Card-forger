@@ -477,13 +477,6 @@
        "id": "b341cc65-d316-41bb-95b8-294afa019a71"
       },
       {
-       "qty": 2,
-       "name": "Siege Rhino",
-       "set": "ktk",
-       "number": "200",
-       "id": "9011126a-20bd-4c86-a63b-1691f79ac247"
-      },
-      {
        "qty": 4,
        "name": "Abzan Charm",
        "set": "ktk",
@@ -512,7 +505,7 @@
        "id": "dfddafbc-590b-4610-894a-b91335a60528"
       },
       {
-       "qty": 2,
+       "qty": 4,
        "name": "Herald of Anafenza",
        "set": "ktk",
        "number": "12",
@@ -1028,20 +1021,6 @@
        "id": "e3b425cd-c5a5-48e9-b697-3860dfa6d5d3"
       },
       {
-       "qty": 4,
-       "name": "Fierce Invocation",
-       "set": "frf",
-       "number": "98",
-       "id": "0137de04-9fd7-41b0-b497-163e6e93432b"
-      },
-      {
-       "qty": 2,
-       "name": "Shaman of the Great Hunt",
-       "set": "frf",
-       "number": "113",
-       "id": "bfbd8cd1-465c-4501-94ba-5a3402f30ded"
-      },
-      {
        "qty": 2,
        "name": "Whisperwood Elemental",
        "set": "frf",
@@ -1082,6 +1061,20 @@
        "set": "ktk",
        "number": "234",
        "id": "e4335951-e73e-45cb-b2a5-6e9d14ba87ee"
+      },
+      {
+       "qty": 4,
+       "name": "Savage Knuckleblade",
+       "set": "ktk",
+       "number": "197",
+       "id": "4c9dddd3-7c8d-4669-8298-58149b142b8a"
+      },
+      {
+       "qty": 2,
+       "name": "Alpine Grizzly",
+       "set": "ktk",
+       "number": "127",
+       "id": "38bbf983-df71-4403-86f3-2e86aa8765b8"
       }
      ]
     }
@@ -1095,14 +1088,14 @@
      "label": "tribute",
      "cards": [
       {
-       "qty": 2,
+       "qty": 1,
        "name": "Tasigur, the Golden Fang",
        "set": "frf",
        "number": "87",
        "id": "81f93ac5-d149-4ccf-8b99-13ecf3190c29"
       },
       {
-       "qty": 4,
+       "qty": 2,
        "name": "Gurmag Angler",
        "set": "frf",
        "number": "72",
@@ -1123,7 +1116,7 @@
        "id": "12421e1c-5144-4391-abf2-a2fb864920e9"
       },
       {
-       "qty": 3,
+       "qty": 4,
        "name": "Sibsig Muckdraggers",
        "set": "frf",
        "number": "83",
@@ -1137,7 +1130,7 @@
        "id": "9b710fcd-0721-4720-a8fa-6d9ceb7b8104"
       },
       {
-       "qty": 3,
+       "qty": 2,
        "name": "Reach of Shadows",
        "set": "frf",
        "number": "81",
@@ -1198,6 +1191,13 @@
        "set": "frf",
        "number": "89",
        "id": "d13cb90b-50c3-46ef-83f8-812dfb7ff881"
+      },
+      {
+       "qty": 3,
+       "name": "Kheru Bloodsucker",
+       "set": "ktk",
+       "number": "75",
+       "id": "baf15cd4-13be-48e7-b3f5-a5106eb02c45"
       }
      ]
     }
@@ -1451,13 +1451,6 @@
        "id": "c35fb7a3-7c7f-4470-b1ad-5b8709a608e6"
       },
       {
-       "qty": 2,
-       "name": "Ride Down",
-       "set": "ktk",
-       "number": "194",
-       "id": "3bc9a434-9617-4a20-88f0-355b20f2c538"
-      },
-      {
        "qty": 4,
        "name": "Mardu Skullhunter",
        "set": "ktk",
@@ -1465,7 +1458,7 @@
        "id": "dd3ca5e7-96f3-4326-9315-34bb396a054c"
       },
       {
-       "qty": 2,
+       "qty": 4,
        "name": "Butcher of the Horde",
        "set": "ktk",
        "number": "168",
@@ -1746,7 +1739,7 @@
        "id": "69bb135f-1c58-42ed-bbf2-4a2e842f99d7"
       },
       {
-       "qty": 3,
+       "qty": 4,
        "name": "Shockmaw Dragon",
        "set": "frf",
        "number": "114",
@@ -1767,18 +1760,11 @@
        "id": "9b710fcd-0721-4720-a8fa-6d9ceb7b8104"
       },
       {
-       "qty": 3,
+       "qty": 4,
        "name": "Flamerush Rider",
        "set": "frf",
        "number": "99",
        "id": "304107d6-d096-43a1-956f-5a3b6ed6dc60"
-      },
-      {
-       "qty": 4,
-       "name": "Battle Brawler",
-       "set": "frf",
-       "number": "63",
-       "id": "7c9b5baf-6163-48a9-b58d-195edfeb437d"
       },
       {
        "qty": 10,
@@ -1800,6 +1786,13 @@
        "set": "ktk",
        "number": "229",
        "id": "15a7b30a-c59f-4a87-9e8a-b29daea27422"
+      },
+      {
+       "qty": 2,
+       "name": "Mardu Heart-Piercer",
+       "set": "ktk",
+       "number": "116",
+       "id": "d17b6eee-da22-48aa-ba8a-cbd1a3389bcb"
       }
      ]
     }
@@ -2327,7 +2320,7 @@
      "label": "tribute",
      "cards": [
       {
-       "qty": 2,
+       "qty": 3,
        "name": "Dragonlord Ojutai",
        "set": "dtk",
        "number": "219",
@@ -2355,7 +2348,7 @@
        "id": "2cbbd377-4617-4285-b367-98418a588dab"
       },
       {
-       "qty": 2,
+       "qty": 4,
        "name": "Silumgar's Command",
        "set": "dtk",
        "number": "232",
@@ -2376,28 +2369,28 @@
        "id": "b41f7cf3-bd76-4184-b694-f565aa5cf3a4"
       },
       {
-       "qty": 3,
+       "qty": 4,
        "name": "Foul-Tongue Invocation",
        "set": "dtk",
        "number": "102",
        "id": "ac6d021a-7bb8-4173-9a2f-e4a1d21fda8e"
       },
       {
-       "qty": 2,
+       "qty": 4,
        "name": "Crux of Fate",
        "set": "frf",
        "number": "65",
        "id": "e1d45374-a41b-4b3f-a7c8-3eb5ca767cf6"
       },
       {
-       "qty": 4,
+       "qty": 2,
        "name": "Anticipate",
        "set": "dtk",
        "number": "45",
        "id": "7028d9e8-002f-43a1-bdce-0db0b6a642b0"
       },
       {
-       "qty": 4,
+       "qty": 2,
        "name": "Stratus Dancer",
        "set": "dtk",
        "number": "80",
@@ -2437,13 +2430,6 @@
        "set": "ktk",
        "number": "246",
        "id": "0f840bd2-c4f5-4ac4-918c-91b4feeb8783"
-      },
-      {
-       "qty": 2,
-       "name": "Negate",
-       "set": "dtk",
-       "number": "65",
-       "id": "60380ed0-fed1-4d68-9763-56a9ff8ac5e6"
       }
      ]
     }
@@ -2545,7 +2531,7 @@
        "id": "c58064fd-4d8b-4f54-812f-0bb1d7e2ddc2"
       },
       {
-       "qty": 4,
+       "qty": 2,
        "name": "Thunderbreak Regent",
        "set": "dtk",
        "number": "162",
@@ -2594,13 +2580,6 @@
        "id": "6cf5591c-46e3-4904-8b4e-4f1f84d3118f"
       },
       {
-       "qty": 4,
-       "name": "Mantis Rider",
-       "set": "ktk",
-       "number": "184",
-       "id": "82d5ce46-7118-4ede-ba1d-c387e7ce16e7"
-      },
-      {
        "qty": 2,
        "name": "Icefall Regent",
        "set": "dtk",
@@ -2641,6 +2620,20 @@
        "set": "ktk",
        "number": "243",
        "id": "e782d005-a563-4738-978a-73a3465de78f"
+      },
+      {
+       "qty": 4,
+       "name": "Jeskai Student",
+       "set": "ktk",
+       "number": "14",
+       "id": "9007c528-0107-40fd-a97e-e5576f297eb2"
+      },
+      {
+       "qty": 2,
+       "name": "Monastery Flock",
+       "set": "ktk",
+       "number": "47",
+       "id": "e53c0e50-4b0b-43d8-80c0-2c216722c87a"
       }
      ]
     }
@@ -2696,14 +2689,14 @@
        "id": "ac6d021a-7bb8-4173-9a2f-e4a1d21fda8e"
       },
       {
-       "qty": 3,
+       "qty": 4,
        "name": "Necromaster Dragon",
        "set": "dtk",
        "number": "226",
        "id": "2574aaf5-8397-4a88-b047-1b4dbb176930"
       },
       {
-       "qty": 2,
+       "qty": 4,
        "name": "Deathbringer Regent",
        "set": "dtk",
        "number": "96",
@@ -2717,7 +2710,7 @@
        "id": "884cbc26-f164-47bd-878c-dd46652465d0"
       },
       {
-       "qty": 3,
+       "qty": 4,
        "name": "Gurmag Angler",
        "set": "frf",
        "number": "72",
@@ -2757,13 +2750,6 @@
        "set": "ktk",
        "number": "232",
        "id": "63742780-47ee-4a66-993a-69e06c14967d"
-      },
-      {
-       "qty": 4,
-       "name": "Silumgar Assassin",
-       "set": "dtk",
-       "number": "121",
-       "id": "ecc4693f-59fe-4671-b8c6-66fe53a76bbe"
       }
      ]
     }
@@ -2875,13 +2861,6 @@
      "label": "tribute",
      "cards": [
       {
-       "qty": 4,
-       "name": "Thunderbreak Regent",
-       "set": "dtk",
-       "number": "162",
-       "id": "a2b9cf2b-efe3-4815-be18-c3b69ee762f2"
-      },
-      {
        "qty": 3,
        "name": "Stormwing Dragon",
        "set": "dtk",
@@ -2889,7 +2868,7 @@
        "id": "6da2b004-97e5-41ab-98b0-3637cb32a35a"
       },
       {
-       "qty": 2,
+       "qty": 4,
        "name": "Shockmaw Dragon",
        "set": "frf",
        "number": "114",
@@ -2910,25 +2889,11 @@
        "id": "5c75b106-349f-44e1-a737-079955cc91b2"
       },
       {
-       "qty": 4,
-       "name": "Lightning Berserker",
-       "set": "dtk",
-       "number": "146",
-       "id": "3285cb6f-a9c0-4195-b6b2-3f33a16eaa01"
-      },
-      {
-       "qty": 4,
+       "qty": 2,
        "name": "Wild Slash",
        "set": "frf",
        "number": "118",
        "id": "6975490f-7679-48b3-ba34-04dec97a29c2"
-      },
-      {
-       "qty": 4,
-       "name": "Arc Lightning",
-       "set": "ktk",
-       "number": "97",
-       "id": "35c7c392-6782-40c8-bb24-6aad24f14660"
       },
       {
        "qty": 4,
@@ -2950,6 +2915,34 @@
        "set": "ktk",
        "number": "262",
        "id": "802b1bb0-6c73-481a-ac3e-7d4e1682b4c2"
+      },
+      {
+       "qty": 2,
+       "name": "Kolaghan Aspirant",
+       "set": "dtk",
+       "number": "143",
+       "id": "aa17972e-c16b-4dec-a108-1c3fb0138a4e"
+      },
+      {
+       "qty": 4,
+       "name": "Twin Bolt",
+       "set": "dtk",
+       "number": "164",
+       "id": "5bd58ec4-34a9-4fc2-b057-438492e2e06e"
+      },
+      {
+       "qty": 4,
+       "name": "Sabertooth Outrider",
+       "set": "dtk",
+       "number": "152",
+       "id": "64ddda91-3ccb-4c87-82e6-d4e60f4afc24"
+      },
+      {
+       "qty": 2,
+       "name": "Mardu Scout",
+       "set": "frf",
+       "number": "108",
+       "id": "0e7891b8-ba69-4c5b-a29f-ee7bcf2374f0"
       }
      ]
     }

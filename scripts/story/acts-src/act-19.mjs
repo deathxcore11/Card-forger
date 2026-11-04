@@ -138,20 +138,21 @@ export default {
 10 Island
 4 Glacial Fortress`}},
       villain: {who: 'geralf', deck: {label: 'tribute', name: 'Geralf\'s Skaabs', colors: 'UB', list: `
-2 Mikaeus, the Unhallowed
-4 Geralf's Messenger
+1 Mikaeus, the Unhallowed
+2 Geralf's Messenger
 4 Diregraf Ghoul
 4 Armored Skaab
-4 Stitched Drake
+2 Stitched Drake
 3 Makeshift Mauler
 4 Unbreathing Horde
-2 Victim of Night
 3 Forbidden Alchemy
 12 Swamp
 8 Island
 4 Drowned Catacomb
-2 Walking Corpse
-4 Butcher Ghoul`}},
+4 Walking Corpse
+4 Butcher Ghoul
+3 Ghoulraiser
+2 Typhoid Rats`}},
       scene: [q('stage', 'The heron is the symbol of the archangel Avacyn. The fact that such spirits still fly gives the church hope that its founder may one day return.'),
         s('traft', 'Undying: when a creature with undying dies with no +1/+1 counter on it, it comes back with one. Kill it twice, or take it away for good.')],
       villainScene: [q('geralf', 'The best skaab are more powerful and more beautiful than the sum of their parts.'),
@@ -176,19 +177,19 @@ export default {
 4 Prey Upon
 24 Forest`}},
       villain: {who: 'liliana', deck: {label: 'tribute', name: 'The Veil', colors: 'B', list: `
-3 Liliana of the Veil
-2 Victim of Night
-4 Dead Weight
+1 Liliana of the Veil
 3 Tribute to Hunger
-4 Vampire Nighthawk
+2 Vampire Nighthawk
 3 Bloodgift Demon
 3 Fiend of the Shadows
 3 Falkenrath Noble
-2 Harvester of Souls
-3 Typhoid Rats
+4 Typhoid Rats
 24 Swamp
 4 Walking Corpse
-2 Butcher Ghoul`}},
+4 Butcher Ghoul
+3 Vampire Interloper
+4 Diregraf Ghoul
+2 Markov Patrician`}},
       scene: [q('garruk', 'Your veil\'s curse won\'t stop me, deathmage. I have taken down countless night hunters and this dark plane is not big enough for you to hide.'),
         q('garruk', 'Rid me of this curse, witch, or die with me.'),
         s('garruk', 'Discard: she makes us both throw cards away. Play your cards out instead of holding them, and she has nothing to take.')],
@@ -245,35 +246,32 @@ export default {
 3 Geist of Saint Traft
 4 Stormbound Geist
 4 Midnight Haunting
-4 Think Twice
 2 Silent Departure
-3 Dissipate
 3 Feeling of Dread
 11 Island
 7 Plains
 4 Glacial Fortress
 2 Moorland Haunt
-3 Chapel Geist
-2 Fiend Hunter`}},
+4 Chapel Geist
+4 Fiend Hunter
+4 Voiceless Spirit`}},
       villain: {who: 'wolfrun', deck: {label: 'tribute', name: 'Wolf Run Ramp', note: 'Built from cards in this act\'s sets only, so Primeval Titan and Inferno Titan are not in it.', colors: 'RG', archetype: 'Ramp', list: `
 4 Avacyn's Pilgrim
 4 Borderland Ranger
 3 Garruk Relentless
-4 Huntmaster of the Fells
-2 Thragtusk
-1 Wolfir Silverheart
+2 Huntmaster of the Fells
 2 Zealous Conscripts
-4 Prey Upon
-1 Bonfire of the Damned
+2 Prey Upon
 3 Mayor of Avabruck
-2 Searing Spear
 11 Forest
 6 Mountain
 4 Rootbound Crag
 3 Kessig Wolf Run
-2 Gatstaf Shepherd
-2 Kruin Outlaw
-2 Village Ironsmith`}},
+4 Gatstaf Shepherd
+4 Kruin Outlaw
+4 Village Ironsmith
+2 Darkthicket Wolf
+2 Villagers of Estwald`}},
       scene: [s('you', 'Flashback: some spells can be cast a second time from the graveyard for their flashback cost. Snapcaster Mage gives any spell flashback for a turn.')],
       villainScene: [q('stage', 'When a werewolf changes for the first time, that first howl is said to echo through the wilds till moonset.')],
       cues: {hero: cue('Flip it.', 'It flipped!', 'Too big to race...', 'Out-tempoed.', 'Ramped over.', 'Counter the big one.'),
@@ -321,20 +319,18 @@ export default {
 4 Thalia, Guardian of Thraben
 2 Tamiyo, the Moon Sage
 1 Avacyn, Angel of Hope
-4 Fiend Hunter
-2 Silverblade Paladin
-4 Rebuke
+2 Fiend Hunter
 3 Feeling of Dread
 2 Dissipate
-2 Terminus
 3 Midnight Haunting
 13 Plains
 7 Island
 4 Glacial Fortress
 4 Doomed Traveler
-2 Village Bell-Ringer
-1 Mausoleum Guard
-2 Elite Inquisitor`}},
+4 Village Bell-Ringer
+4 Mausoleum Guard
+4 Elite Inquisitor
+3 Chapel Geist`}},
       villain: {who: 'griselbrand', deck: {label: 'tribute', name: 'Griselbrand\'s Cult', colors: 'BR', list: `
 3 Griselbrand
 4 Unburial Rites

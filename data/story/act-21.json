@@ -458,34 +458,13 @@
       },
       {
        "qty": 4,
-       "name": "Lightning Strike",
-       "set": "ths",
-       "number": "127",
-       "id": "bbb03f2e-2b92-4aa1-afae-301ed5d151d3"
-      },
-      {
-       "qty": 4,
        "name": "Mogis's Marauder",
        "set": "ths",
        "number": "97",
        "id": "9dfd36c5-a484-4973-873c-b6a433da8e7a"
       },
       {
-       "qty": 3,
-       "name": "Magma Jet",
-       "set": "ths",
-       "number": "128",
-       "id": "8b0686b0-27a2-46bc-bc04-717f368d9a78"
-      },
-      {
-       "qty": 2,
-       "name": "Mogis, God of Slaughter",
-       "set": "bng",
-       "number": "151",
-       "id": "2a0417bf-b735-46d7-9985-2d991051020f"
-      },
-      {
-       "qty": 2,
+       "qty": 4,
        "name": "Felhide Minotaur",
        "set": "ths",
        "number": "87",
@@ -511,6 +490,27 @@
        "set": "bng",
        "number": "164",
        "id": "52f50818-aede-4667-883a-e0339d86d870"
+      },
+      {
+       "qty": 3,
+       "name": "Kragma Butcher",
+       "set": "bng",
+       "number": "100",
+       "id": "56d1dcab-7e46-4ff1-91f6-77352ef0cd90"
+      },
+      {
+       "qty": 2,
+       "name": "Blood-Toll Harpy",
+       "set": "ths",
+       "number": "79",
+       "id": "d334fc9b-c1f4-411e-8619-a92f1cc4e7db"
+      },
+      {
+       "qty": 2,
+       "name": "Tormented Hero",
+       "set": "ths",
+       "number": "108",
+       "id": "c101cf1b-cedf-4b74-9e3c-35f9a8695a8f"
       }
      ]
     }
@@ -729,7 +729,7 @@
        "id": "f52b325b-3ea9-4a99-ae99-9d158560e45b"
       },
       {
-       "qty": 2,
+       "qty": 3,
        "name": "Master of Waves",
        "set": "ths",
        "number": "53",
@@ -785,7 +785,7 @@
        "id": "992e8119-f933-4e54-bb04-e1cc78f7e87b"
       },
       {
-       "qty": 3,
+       "qty": 2,
        "name": "Triton Fortune Hunter",
        "set": "ths",
        "number": "69",
@@ -1542,7 +1542,7 @@
      "label": "tribute",
      "cards": [
       {
-       "qty": 2,
+       "qty": 3,
        "name": "Ashiok, Nightmare Weaver",
        "set": "ths",
        "number": "188",
@@ -1563,14 +1563,14 @@
        "id": "1e07a595-5579-4d5a-b07c-84239d690459"
       },
       {
-       "qty": 4,
+       "qty": 2,
        "name": "Mind Sculpt",
        "set": "m15",
        "number": "70",
        "id": "037d6277-1fc3-41a4-ade6-7cca10535b0f"
       },
       {
-       "qty": 4,
+       "qty": 2,
        "name": "Returned Reveler",
        "set": "jou",
        "number": "79",
@@ -1598,7 +1598,7 @@
        "id": "3992ae67-ad0b-40be-a97d-d7fb36754918"
       },
       {
-       "qty": 3,
+       "qty": 2,
        "name": "Agent of the Fates",
        "set": "ths",
        "number": "76",
@@ -1631,6 +1631,13 @@
        "set": "ths",
        "number": "78",
        "id": "853a89c6-63f9-4b12-8a5b-2c382e22b226"
+      },
+      {
+       "qty": 4,
+       "name": "Hero's Downfall",
+       "set": "ths",
+       "number": "90",
+       "id": "596822f6-dbd4-4cc8-aa50-9331ff42544e"
       }
      ]
     }
@@ -1865,14 +1872,14 @@
        "id": "4979cc1b-9c1a-47e4-ae37-7c41798eb89a"
       },
       {
-       "qty": 4,
+       "qty": 2,
        "name": "Stormbreath Dragon",
        "set": "ths",
        "number": "143",
        "id": "471979de-f569-444a-8651-12d7e726949a"
       },
       {
-       "qty": 4,
+       "qty": 2,
        "name": "Lightning Strike",
        "set": "ths",
        "number": "127",
@@ -1886,32 +1893,18 @@
        "id": "3c844ed7-8ed2-4a39-9134-e14e476ab0c4"
       },
       {
-       "qty": 2,
+       "qty": 4,
        "name": "Arbor Colossus",
        "set": "ths",
        "number": "150",
        "id": "dfbd7c65-ebe5-47a6-8d2f-9a8c63a30a7b"
       },
       {
-       "qty": 3,
+       "qty": 4,
        "name": "Ember Swallower",
        "set": "ths",
        "number": "120",
        "id": "e2715851-9def-42a0-bed4-0923e599e19a"
-      },
-      {
-       "qty": 2,
-       "name": "Magma Jet",
-       "set": "ths",
-       "number": "128",
-       "id": "8b0686b0-27a2-46bc-bc04-717f368d9a78"
-      },
-      {
-       "qty": 2,
-       "name": "Anger of the Gods",
-       "set": "ths",
-       "number": "112",
-       "id": "90795891-5e67-47c0-8d52-a5e5c5a9ef81"
       },
       {
        "qty": 10,
@@ -1935,11 +1928,18 @@
        "id": "46febc5d-1625-4e48-bb3f-31ee06fc13dd"
       },
       {
-       "qty": 3,
+       "qty": 4,
        "name": "Nessian Asp",
        "set": "ths",
        "number": "164",
        "id": "2d922596-4c2d-47fd-8c28-0e62972effbf"
+      },
+      {
+       "qty": 4,
+       "name": "Nessian Courser",
+       "set": "ths",
+       "number": "165",
+       "id": "4697f3aa-abde-4379-af82-f30115f59be0"
       }
      ]
     }
@@ -2130,7 +2130,7 @@
      "label": "tribute",
      "cards": [
       {
-       "qty": 4,
+       "qty": 2,
        "name": "Eidolon of the Great Revel",
        "set": "jou",
        "number": "94",
@@ -2165,14 +2165,14 @@
        "id": "8b0686b0-27a2-46bc-bc04-717f368d9a78"
       },
       {
-       "qty": 4,
+       "qty": 2,
        "name": "Searing Blood",
        "set": "bng",
        "number": "111",
        "id": "bb43fd07-d281-447d-88bf-c53498c2cf20"
       },
       {
-       "qty": 4,
+       "qty": 2,
        "name": "Stoke the Flames",
        "set": "m15",
        "number": "164",
@@ -2184,13 +2184,6 @@
        "set": "bng",
        "number": "89",
        "id": "4df70b14-5d67-4a92-aaba-72480c621d10"
-      },
-      {
-       "qty": 2,
-       "name": "Lava Axe",
-       "set": "m15",
-       "number": "154",
-       "id": "63b35586-e56d-4e7a-9a4e-8879529c082d"
       },
       {
        "qty": 24,
@@ -2205,6 +2198,27 @@
        "set": "ths",
        "number": "111",
        "id": "a47c50d9-11ec-486b-a5ce-5a6b70858f30"
+      },
+      {
+       "qty": 4,
+       "name": "Akroan Line Breaker",
+       "set": "jou",
+       "number": "88",
+       "id": "a5114db5-b545-43dc-85a3-c0e68ab22a95"
+      },
+      {
+       "qty": 2,
+       "name": "Prophetic Flamespeaker",
+       "set": "jou",
+       "number": "106",
+       "id": "73326c79-f884-42d5-8546-3db46ce4fe52"
+      },
+      {
+       "qty": 2,
+       "name": "Spark Jolt",
+       "set": "ths",
+       "number": "140",
+       "id": "6ee479c2-a115-450b-bc2e-b03d23b82f2d"
       }
      ]
     }
@@ -2617,13 +2631,6 @@
        "id": "f185a734-a32a-4244-88e8-dabafbfd064f"
       },
       {
-       "qty": 2,
-       "name": "Polukranos, World Eater",
-       "set": "ths",
-       "number": "172",
-       "id": "4979cc1b-9c1a-47e4-ae37-7c41798eb89a"
-      },
-      {
        "qty": 4,
        "name": "Elvish Mystic",
        "set": "m15",
@@ -2646,20 +2653,6 @@
       },
       {
        "qty": 4,
-       "name": "Courser of Kruphix",
-       "set": "bng",
-       "number": "119",
-       "id": "da5a807f-58e8-4d92-a61c-47bb9b28977f"
-      },
-      {
-       "qty": 4,
-       "name": "Boon Satyr",
-       "set": "ths",
-       "number": "152",
-       "id": "f50c12c4-5565-449a-b30e-7cd896da7735"
-      },
-      {
-       "qty": 4,
        "name": "Nessian Game Warden",
        "set": "jou",
        "number": "132",
@@ -2673,14 +2666,7 @@
        "id": "dfbd7c65-ebe5-47a6-8d2f-9a8c63a30a7b"
       },
       {
-       "qty": 2,
-       "name": "Nessian Wilds Ravager",
-       "set": "bng",
-       "number": "129",
-       "id": "65368cf0-7d92-4248-b930-633fd023065b"
-      },
-      {
-       "qty": 3,
+       "qty": 4,
        "name": "Reverent Hunter",
        "set": "ths",
        "number": "173",
@@ -2699,6 +2685,27 @@
        "set": "ths",
        "number": "223",
        "id": "834b27a0-dfd7-4f96-8cde-cacac4b24acc"
+      },
+      {
+       "qty": 3,
+       "name": "Nessian Asp",
+       "set": "ths",
+       "number": "164",
+       "id": "2d922596-4c2d-47fd-8c28-0e62972effbf"
+      },
+      {
+       "qty": 4,
+       "name": "Nessian Courser",
+       "set": "ths",
+       "number": "165",
+       "id": "4697f3aa-abde-4379-af82-f30115f59be0"
+      },
+      {
+       "qty": 4,
+       "name": "Satyr Wayfinder",
+       "set": "bng",
+       "number": "136",
+       "id": "13c5a1ce-932a-4b3d-8b86-ed920e646afc"
       }
      ]
     }
