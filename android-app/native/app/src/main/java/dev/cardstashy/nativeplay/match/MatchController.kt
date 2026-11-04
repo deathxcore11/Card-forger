@@ -59,6 +59,48 @@ class MatchController(private val scope: CoroutineScope, private val input: Stri
     private val _live = MutableStateFlow(false); val live: StateFlow<Boolean> = _live // shown == latest and Forge waits on you
     private val _failure = MutableStateFlow<String?>(null); val failure: StateFlow<String?> = _failure
     private val _log = MutableStateFlow<List<String>>(emptyList()); val log: StateFlow<List<String>> = _log
+    /** The phase lights you stopped at (the table's track): priority there is never passed for you. */
+    /**
+     * A phase light (approved calm v2: tap a light, an orange ring) is Forge's own phase stop (forge-session.mjs setPhaseStop):
+     * for the seat whose turn the track shows, off → pinned for the match → off. A bridge without phaseStops offers none.
+     */
+    fun toggleStop(label: String) {
+        val st = latest ?: return
+        val stops = st.phaseStops ?: return
+        val phase = dev.cardstashy.nativeplay.ui.STOP_PHASE[label] ?: return
+        val seat = if (st.activePlayer == st.viewer) "you" else "opponent"
+        setting("phaseStop") { addProperty("seat", seat); addProperty("phase", phase); addProperty("mode", if (stops.containsKey("$seat:$phase")) "off" else "pinned") }
+    }
+
+    /** forge-table.mjs switchMode: Smart or Full Control; auto-pay keeps your own setting (the engine resets it on a switch, so it is put back). */
+    fun setMode(mode: String) {
+        val keep = latest?.autoPay
+        if (!setting("controlMode") { addProperty("value", mode) }) return
+        if (keep == null) return
+        scope.launch {
+            val until = SystemClock.elapsedRealtime() + 3000
+            while (SystemClock.elapsedRealtime() < until && latest?.controlMode != mode) delay(100)
+            val now = latest
+            if (now?.controlMode == mode && now.autoPay != null && now.autoPay != keep) setting("autoPay") { addProperty("value", keep) }
+        }
+    }
+    fun setAutoPay(on: Boolean) { setting("autoPay") { addProperty("value", on) } }
+    /** Forge's own yield on a triggered ability: passes while it is on top, until your next turn. */
+    fun yieldSource(id: Int, on: Boolean) { setting("yieldSource") { addProperty("id", id); addProperty("value", on) } }
+
+    /** A settings command (forge-session.mjs SETTINGS_OPS): accepted at once, never waits for a new revision, never while Forge works or asks. */
+    private fun setting(op: String, fill: JsonObject.() -> Unit): Boolean {
+        val st = latest ?: return false
+        if (st.prompt != null || st.inputType == "InputLockUI" || st.busy || _sending.value) return false
+        val body = JsonObject().apply { addProperty("revision", st.revision); addProperty("op", op); fill() }
+        scope.launch(Dispatchers.IO) {
+            try { val r = session?.call("POST", "/action", body.toString()); if (r != null && r.status() != 202) Log.i(TAG, "setting $op -> ${r.status()} ${r.body()}") }
+            catch (t: Throwable) { Log.w(TAG, "setting", t) }
+        }
+        return true
+    }
+    val intents by lazy { dev.cardstashy.nativeplay.ui.TableIntents(card = { card(it) }, player = { player(it) }, ok = { ok() }, cancel = { cancel() }, reply = { id, v, i, a -> reply(id, v, i, a) },
+        stop = { toggleStop(it) }, mode = { setMode(it) }, autoPay = { setAutoPay(it) }, yieldSource = { id, on -> yieldSource(id, on) }) }
     val timings = MutableStateFlow<Map<String, Long>>(emptyMap())
 
     /** match-facts.js for this match, and the finished-match hook (play:match-recorded). */
@@ -69,6 +111,8 @@ class MatchController(private val scope: CoroutineScope, private val input: Stri
 
     @Volatile private var session: LocalEngine.Session? = null
     @Volatile private var latest: MatchState? = null
+    /** You have answered the opening hand (keep, or the cards to bottom). Until then no later snapshot is shown, in every mode. */
+    @Volatile private var answeredMulligan = false
     private val snapshots = Channel<MatchState>(Channel.UNLIMITED)
     private var skip: CompletableDeferred<Unit>? = null
     private var lastSeq = 0L
@@ -152,6 +196,8 @@ class MatchController(private val scope: CoroutineScope, private val input: Stri
             // The board stays closed until Forge has actually asked for the keep at least once.
             if (!gatePassed && st.isMulligan && !st.busy && (st.prompt != null || st.inputType != null)) mulliganSeen = true
             if (!gatePassed && !mulliganSeen) continue
+            // A snapshot past the opening hand before you answered it is never drawn (unless the game now waits on you, so it can never stall).
+            if (!gatePassed && !st.isMulligan && !answeredMulligan && !st.waitingOnMe) continue
             if (!gatePassed && st.isMulligan) {
                 _stage.value = Stage.MULLIGAN; lastSeq = st.events.maxOfOrNull { it.seq } ?: lastSeq
                 cpuHandAtKeep = st.cpu.handCount
@@ -227,6 +273,7 @@ class MatchController(private val scope: CoroutineScope, private val input: Stri
         val st = latest ?: return
         if (!force && (!_live.value || _sending.value)) return
         autoJob?.cancel()
+        if (st.isMulligan) answeredMulligan = true
         _sending.value = true; _live.value = false
         scope.launch(Dispatchers.IO) {
             val body = JsonObject().apply { addProperty("revision", st.revision); addProperty("op", op); fill() }
@@ -279,6 +326,8 @@ class MatchController(private val scope: CoroutineScope, private val input: Stri
             return
         }
         if (st.prompt != null || st.inputType != "InputPassPriority" || st.priorityPlayer != st.viewer || !st.buttons.okEnabled || st.controlMode == "full") return
+        // A stop you set on the phase track: you get priority there, whatever you hold.
+        if (st.phaseStops?.containsKey("${if (st.activePlayer == st.viewer) "you" else "opponent"}:${st.phase}") == true) return
         val ownTop = st.stack.firstOrNull()?.controller == st.viewer
         val nothing = st.selection.actionable.isEmpty()
         if (!ownTop && !nothing) return

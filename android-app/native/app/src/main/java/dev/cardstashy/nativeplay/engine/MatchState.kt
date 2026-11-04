@@ -12,6 +12,7 @@ data class Card(
     val power: Int?, val toughness: Int?, val tapped: Boolean, val attacking: Boolean, val blocking: Boolean,
     val damage: Int, val summoningSick: Boolean, val token: Boolean, val counters: Map<String, Int>,
     val keywords: List<String>, val attachedTo: Int?, val blockingIds: List<Int>,
+    val commander: Boolean = false, val setCode: String? = null, val collectorNumber: String? = null,
 ) {
     val isLand get() = type.contains("Land")
     val isCreature get() = type.contains("Creature")
@@ -21,9 +22,10 @@ data class Player(
     val id: Int, val name: String, val life: Int, val isViewer: Boolean,
     val handCount: Int, val libraryCount: Int,
     val hand: List<Card>, val battlefield: List<Card>, val graveyard: List<Card>, val exile: List<Card>,
+    val command: List<Card> = emptyList(), val mana: Map<String, Int> = emptyMap(), val counters: Map<String, Int> = emptyMap(),
 )
 
-data class StackItem(val id: Int, val text: String, val source: Card?, val controller: Int)
+data class StackItem(val id: Int, val text: String, val source: Card?, val controller: Int, val ability: Boolean = false, val yielded: Boolean = false)
 data class Buttons(val ok: String?, val cancel: String?, val okEnabled: Boolean, val cancelEnabled: Boolean)
 data class Selection(
     val cards: Set<Int>, val players: Set<Int>, val chosenCards: Set<Int>, val chosenPlayers: Set<Int>,
@@ -66,6 +68,8 @@ data class MatchState(
     val selection: Selection, val prompt: Prompt?, val busy: Boolean, val message: String,
     val events: List<GameEvent>, val winnerPlayerId: Int?, val draw: Boolean, val priorityStop: String?,
     val hasPriorityView: Boolean, val lastActionError: String?, val controlMode: String?,
+    /** Auto-pay mana (null on a bridge without it); phase stops "you:MAIN1" → pinned (true) or once (false), null when the bridge has none. */
+    val autoPay: Boolean? = null, val phaseStops: Map<String, Boolean>? = null,
 ) {
     val me get() = players.first { it.id == viewer }
     val cpu get() = players.first { it.id != viewer }
@@ -104,13 +108,14 @@ data class MatchState(
                 errors = init?.arr("errors")?.mapNotNull { it.takeIf { e -> e.isJsonPrimitive }?.asString } ?: emptyList(),
                 viewer = viewer, turn = o.int("turn") ?: 0, phase = o.str("phase"), activePlayer = o.int("activePlayer"), priorityPlayer = o.int("priorityPlayer"),
                 players = players,
-                stack = o.arr("stack").map { e -> val s = e.asJsonObject; StackItem(s.int("id") ?: 0, tidy((s.str("text") ?: "").replace(Regex("\\s*\\[Phase: [^\\]]*\\]"), "").trim()), s.obj("source")?.let { parseCard(it) }, s.int("activatingPlayer") ?: -1) },
+                stack = o.arr("stack").map { e -> val s = e.asJsonObject; StackItem(s.int("id") ?: 0, tidy((s.str("text") ?: "").replace(Regex("\\s*\\[Phase: [^\\]]*\\]"), "").trim()), s.obj("source")?.let { parseCard(it) }, s.int("activatingPlayer") ?: -1, s.bool("ability") == true, s.bool("yielded") == true) },
                 buttons = Buttons(b?.str("ok"), b?.str("cancel"), b?.bool("okEnabled") == true, b?.bool("cancelEnabled") == true),
                 inputType = o.str("inputType"), selection = selection, prompt = o.obj("prompt")?.let { parsePrompt(it) }?.let { p -> p.copy(message = tidy(p.message), options = p.options.map { it.copy(label = tidy(it.label)) }) },
                 busy = o.bool("busy") == true, message = tidy(o.str("message") ?: ""),
                 events = o.obj("events")?.arr("items")?.map { parseEvent(it.asJsonObject) } ?: emptyList(),
                 winnerPlayerId = o.int("winnerPlayerId"), draw = o.bool("draw") == true,
                 priorityStop = pv?.str("stop"), hasPriorityView = pv != null, lastActionError = o.str("lastActionError"), controlMode = o.str("controlMode"),
+                autoPay = o.bool("autoPay"), phaseStops = o.obj("phaseStops")?.entrySet()?.mapNotNull { (k, v) -> if (v.isJsonPrimitive && v.asJsonPrimitive.isBoolean) k to v.asBoolean else null }?.toMap(),
             )
         }
 
@@ -131,8 +136,11 @@ data class MatchState(
                 id = p.int("id") ?: 0, name = p.str("name") ?: "", life = p.int("life") ?: 0, isViewer = p.bool("isViewer") == true,
                 handCount = z?.obj("Hand")?.int("count") ?: 0, libraryCount = z?.obj("Library")?.int("count") ?: 0,
                 hand = cards("Hand"), battlefield = cards("Battlefield"), graveyard = cards("Graveyard"), exile = cards("Exile"),
+                command = cards("Command"), mana = nums(p.obj("mana")), counters = nums(p.obj("counters")),
             )
         }
+
+        private fun nums(o: JsonObject?) = o?.entrySet()?.mapNotNull { (k, v) -> if (v.isJsonPrimitive && v.asJsonPrimitive.isNumber) k to v.asInt else null }?.toMap() ?: emptyMap()
 
         fun parseCard(c: JsonObject) = Card(
             id = c.int("id") ?: 0, zone = c.str("zone") ?: "", owner = c.int("owner") ?: -1, controller = c.int("controller") ?: -1,
@@ -143,6 +151,7 @@ data class MatchState(
             counters = c.obj("counters")?.entrySet()?.mapNotNull { (k, v) -> if (v.isJsonPrimitive && v.asJsonPrimitive.isNumber) k to v.asInt else null }?.toMap() ?: emptyMap(),
             keywords = c.arr("keywords").mapNotNull { if (it.isJsonPrimitive) it.asString else it.asJsonObject.str("keyword") },
             attachedTo = c.int("attachedTo"), blockingIds = c.arr("blockingIds").mapNotNull { if (it.isJsonPrimitive) it.asInt else null },
+            commander = c.bool("commander") == true, setCode = c.str("setCode"), collectorNumber = c.str("collectorNumber"),
         )
 
         private fun parsePrompt(p: JsonObject): Prompt {

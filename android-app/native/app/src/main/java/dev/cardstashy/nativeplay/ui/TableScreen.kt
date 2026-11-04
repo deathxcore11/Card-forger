@@ -132,10 +132,15 @@ fun TableScreen(controller: MatchController, onHome: () -> Unit, onRematch: () -
             when {
                 st == null || stage == Stage.STARTING -> Loading()
                 stage == Stage.MULLIGAN -> Mulligan(st, controller, live, sizes, audio, onHold = { inspect = it })
-                else -> Row(Modifier.fillMaxSize()) {
-                    Board(st, controller, live, sizes, selectedHand, Modifier.weight(1f).fillMaxHeight(),
-                        onSelectHand = { selectedHand = it }, onInspect = { inspect = it }, onMenu = { menu = true })
-                    Sidebar(st, controller, beat, live, sizes, selectedHand, Modifier.width(sizes.sidebar).fillMaxHeight(), onInspect = { inspect = it }, lastBeat = lastBeat)
+                else -> {
+                    var handOrder by remember { mutableStateOf(emptyList<Int>()) }
+                    // table-emotes.mjs mount(): the CPU's hello once the match is on; everything goes with the table.
+                    LaunchedEffect(Unit) { TableEmotes.start(this) }
+                    DisposableEffect(Unit) { onDispose { TableEmotes.destroy() } }
+                    ForgeBoard(st, live && beat == null, controller.intents, selectedHand, { selectedHand = it }, { inspect = it }, { menu = true },
+                        handOrder, { handOrder = it }) {
+                        TableSide(st, controller, beat, live, lastBeat) { inspect = it }
+                    }
                 }
             }
             banner?.let { b -> BannerView(b.text, b.yours, Modifier.align(Alignment.Center)) }
@@ -385,8 +390,17 @@ private fun Hand(st: MatchState, c: MatchController, live: Boolean, sizes: Sizes
     }
 }
 
-private fun manaValue(cost: String): Int = Regex("\\{([^}]+)\\}").findAll(cost).sumOf { m ->
-    val s = m.groupValues[1]; s.toIntOrNull() ?: if (s in setOf("X", "Y", "Z")) 0 else 1
+
+
+/** What the site shows on the right of the board: the CPU's action as it happens, or Forge's question (native-panel.mjs dock). */
+@Composable
+private fun TableSide(st: MatchState, c: MatchController, beat: Beat?, live: Boolean, lastBeat: Beat?, onInspect: (Card) -> Unit) {
+    Box(Modifier.fillMaxSize()) {
+        when {
+            beat != null -> BeatView(beat, st, Modifier.align(Alignment.CenterEnd).padding(end = 12.dp).width(170.dp).fillMaxHeight(.62f)) { c.next() }
+            live && st.prompt != null -> PromptPanel(st.prompt, st, c, live, Modifier.align(Alignment.BottomEnd).padding(end = 8.dp, bottom = 8.dp).width(240.dp).heightIn(max = 300.dp).glass(14.dp).padding(6.dp))
+        }
+    }
 }
 
 // ---- Sidebar: CPU seat, the feed, phase dots, the gold action ----

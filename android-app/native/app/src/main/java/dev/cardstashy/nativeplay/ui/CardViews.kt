@@ -1,5 +1,9 @@
 package dev.cardstashy.nativeplay.ui
 
+import androidx.compose.ui.graphics.toArgb
+import androidx.compose.ui.graphics.nativeCanvas
+import androidx.compose.ui.graphics.drawscope.drawIntoCanvas
+import androidx.compose.ui.draw.drawBehind
 import dev.cardstashy.nativeplay.art.CardImage
 import androidx.compose.runtime.setValue
 import androidx.compose.runtime.remember
@@ -99,11 +103,18 @@ fun CardFace(
         mark == Mark.PICKABLE -> Palette.GoldBright.copy(alpha = pulse)
         card.attacking -> Palette.Red
         card.blocking -> Color(0xFF6FA8DC)
-        mark == Mark.PLAYABLE -> Palette.Gold
+        mark == Mark.PLAYABLE -> Color(0xFF8FDCFF) // site: border #8fdcff, 0 0 18px 2px #5cc8ffa6
         else -> Color(0x99000000)
     }
     val edgeW = if (mark != Mark.NONE || card.attacking || card.blocking) 2.dp else 1.dp
-    Box(modifier.size(w, h).then(if (anchors != null && card.zone == "Battlefield") Modifier.onGloballyPositioned { anchors.put("c${card.id}", it.boundsInRoot().center) } else Modifier).graphicsLayer { rotationZ = turn; translationY = lift * density }
+    val glow = if (mark == Mark.PLAYABLE && card.zone == "Hand") Modifier.drawBehind {
+        val spread = 2.dp.toPx(); val r = 6.dp.toPx()
+        drawIntoCanvas { c ->
+            val p = androidx.compose.ui.graphics.Paint().asFrameworkPaint().apply { isAntiAlias = true; color = Color(0xA65CC8FF).toArgb(); maskFilter = android.graphics.BlurMaskFilter(9.dp.toPx(), android.graphics.BlurMaskFilter.Blur.NORMAL) }
+            c.nativeCanvas.drawRoundRect(-spread, -spread, size.width + spread, size.height + spread, r, r, p)
+        }
+    } else Modifier
+    Box(modifier.size(w, h).then(glow).then(if (anchors != null && card.zone == "Battlefield") Modifier.onGloballyPositioned { anchors.put("c${card.id}", it.boundsInRoot().center) } else Modifier).graphicsLayer { rotationZ = turn; translationY = lift * density }
         .then(if (onTap == null && onHold == null) Modifier else Modifier.pointerInput(card.id, onTap, onHold) { detectTapGestures(onTap = { onTap?.invoke() }, onLongPress = { onHold?.invoke() }) })) {
         Box(Modifier.fillMaxSize().clip(shape).background(Color(0xFF15151A))) {
             if (card.hidden) CardBack(Modifier.fillMaxSize())

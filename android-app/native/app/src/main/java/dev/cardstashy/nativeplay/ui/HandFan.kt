@@ -62,6 +62,7 @@ fun HandFan(
     onHold: (Card) -> Unit = {},
     onDeal: () -> Unit = {},
     pop: Float? = null,
+    onReorder: ((List<Int>) -> Unit)? = null,
 ) {
     val cardH = cardW * 1.4f
     val haptic = LocalHapticFeedback.current
@@ -75,7 +76,11 @@ fun HandFan(
     val current by rememberUpdatedState(cards)
     val tapCb by rememberUpdatedState(onTap); val playCb by rememberUpdatedState(onPlay)
     val holdCb by rememberUpdatedState(onHold); val canPlayCb by rememberUpdatedState(canPlay)
-    val dealCb by rememberUpdatedState(onDeal)
+    val dealCb by rememberUpdatedState(onDeal); val reorderCb by rememberUpdatedState(onReorder)
+    // Sideways drag (Randall 3 Nov, approved): the card lifts and follows the finger; its neighbours slide to open a gap.
+    var moving by remember { mutableStateOf<Int?>(null) }      // card id being moved sideways
+    var moveTo by remember { mutableStateOf(0) }               // the slot it would drop into
+    var moveX by remember { mutableStateOf(0f) }               // its left edge, px
     val seen = remember { HashSet<Int>() }
     var shownOnce by remember { mutableStateOf(false) }
     LaunchedEffect(Unit) { shownOnce = true }
@@ -85,7 +90,8 @@ fun HandFan(
     BoxWithConstraints(modifier.fillMaxWidth().height(cardH + 8.dp), contentAlignment = Alignment.BottomStart) {
         val width = maxWidth
         // The slots: the card flying out after a play no longer holds one, so the fan closes behind it.
-        val slots = cards.filter { it.id != leaving }
+        val held = cards.filter { it.id != leaving }
+        val slots = moving?.let { id -> held.firstOrNull { it.id == id }?.let { m -> held.filter { it.id != id }.toMutableList().apply { add(moveTo.coerceIn(0, size), m) } } } ?: held
         val n = slots.size
         val step: Dp = if (n <= 1) 0.dp else maxOf(cardW / 4, minOf(cardW + 4.dp, (width - cardW) / (n - 1)))
         val total = cardW + step * (n - 1).coerceAtLeast(0)
@@ -144,8 +150,19 @@ fun HandFan(
                     if (card != null && d.y < -slop * 1.5f && abs(d.y) > abs(d.x) * 1.2f) {
                         stretching = !canPlayCb(card); scope.launch { drag.snapTo(Offset.Zero) }; dragging = card.id; anchor = ch.position; continue
                     }
+                    if (reorderCb != null && card != null && (moving != null || abs(d.x) > slop * 1.5f && abs(d.x) > abs(d.y))) {
+                        if (moving == null) { moving = card.id; moveTo = idx; focus = null; haptic.performHapticFeedback(HapticFeedbackType.LongPress) }
+                        moveX = pxStart + pxStep * idx + (ch.position.x - down.position.x)
+                        val next = indexAt(moveX + pxStep / 2)
+                        if (next != moveTo) { moveTo = next; haptic.performHapticFeedback(HapticFeedbackType.TextHandleMove) }
+                        swept = true; continue
+                    }
                     val next = indexAt(ch.position.x)
                     if (next != idx) { idx = next; swept = true; focus = hand.getOrNull(idx)?.id; haptic.performHapticFeedback(HapticFeedbackType.TextHandleMove); anchor = Offset(anchor.x, ch.position.y) }
+                }
+                moving?.let { id ->
+                    val order = hand.filter { it.id != id }.map { it.id }.toMutableList().apply { add(moveTo.coerceIn(0, size), id) }
+                    moving = null; focus = null; reorderCb?.invoke(order); return@awaitEachGesture
                 }
                 val lifted = dragging
                 val card = hand.firstOrNull { it.id == lifted }
@@ -180,8 +197,8 @@ fun HandFan(
                     }
                     // A popped card keeps its whole scaled rect inside the fan (never over the sidebar).
                     val edge = if (isLift) popW / 2 else 0.dp
-                    val x = (start + step * i + shift).coerceIn(edge, (width - cardW - edge).coerceAtLeast(edge))
-                    val y = if (isLift) -rise else 2.dp * (t * t)
+                    val x = if (card.id == moving) with(density) { moveX.toDp() } else (start + step * i + shift).coerceIn(edge, (width - cardW - edge).coerceAtLeast(edge))
+                    val y = if (isLift || card.id == moving) -rise else 2.dp * (t * t)
                     val newIndex = arriving.indexOf(card.id)
                     val delayMs = if (newIndex >= 0) (dealOrder++) * 70L else 0L
                     val fromX = if (newIndex >= 0) with(density) { (width + cardW).toPx() } else null
@@ -189,13 +206,14 @@ fun HandFan(
                     if (newIndex >= 0) LaunchedEffect(card.id) { delay(delayMs); dealCb(); seen.add(card.id) }
                     // A card flying out keeps the slot it left from; only the others close the gap.
                     val rest = remember { FloatArray(3) }
-                    if (!isLeaving) { rest[0] = with(density) { x.toPx() }; rest[1] = with(density) { y.toPx() }; rest[2] = if (isLift) 0f else t * angleDeg }
+                    if (!isLeaving) { rest[0] = with(density) { x.toPx() }; rest[1] = with(density) { (y - if (!isLift && canPlayCb(card)) cardW * (8f / 66f) else 0.dp).toPx() }; // site: a playable card sits 8 px up
+                         rest[2] = if (isLift) 0f else t * angleDeg }
                     val ax = rememberSpring(rest[0], fromX, delayMs)
                     val ay = rememberSpring(rest[1], fromY, delayMs)
                     val ar = rememberSpring(rest[2], if (newIndex >= 0) 20f else null, delayMs)
                     val asc = rememberSpring(if (isLift) popScale else 1f, null, 0L)
                     val isDrag = dragging == card.id
-                    Box(Modifier.zIndex(if (isDrag || isLeaving) 3f else if (isLift) 2f else 0f).graphicsLayer {
+                    Box(Modifier.zIndex(if (isDrag || isLeaving || card.id == moving) 3f else if (isLift) 2f else 0f).graphicsLayer {
                         transformOrigin = TransformOrigin(.5f, 1f)
                         val f = if (isLeaving) flight.value else 0f
                         translationX = ax + (if (isDrag || isLeaving) drag.value.x else 0f)

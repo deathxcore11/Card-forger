@@ -27,6 +27,7 @@ import dev.cardstashy.nativeplay.ui.AssetImage
 fun CardImage(name: String?, modifier: Modifier = Modifier, crop: Boolean = false, contentScale: ContentScale = ContentScale.Crop,
               shape: Shape? = null, fallback: @Composable () -> Unit = {}) {
     if (name == null) { Box(modifier) { fallback() }; return }
+    CardImageTest.art?.invoke(name, crop)?.let { b -> androidx.compose.foundation.Image(b, null, if (shape != null) modifier.clip(shape) else modifier, contentScale = contentScale); return }
     val context = LocalContext.current
     val asset = remember(name, crop) { DemoDecks.load(context).image(name, crop) }
     if (asset != null) { AssetImage(asset, modifier, maxWidth = if (crop) 900 else 488, contentScale = contentScale, shape = shape); return }
@@ -43,3 +44,6 @@ fun CardImage(name: String?, modifier: Modifier = Modifier, crop: Boolean = fals
             onState = { failed = it is AsyncImagePainter.State.Error })
     }
 }
+
+/** Screenshot tests only: a card's picture from a local file instead of the network. */
+object CardImageTest { @Volatile var art: ((String, Boolean) -> androidx.compose.ui.graphics.ImageBitmap?)? = null }
