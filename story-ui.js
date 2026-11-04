@@ -229,6 +229,10 @@ export const LESSONS = {
   'Sagas': 'Sagas: an enchantment that gets a lore counter each turn and does a chapter ability for each one. When the last chapter is done, it is sacrificed.',
   'Historic': 'Historic: artifacts, legendary cards and Sagas. Some cards get better when you cast one.',
   'Legendary sorceries': 'Legendary sorceries can only be cast if you control a legendary creature or planeswalker. Keep a legend on the table first.',
+  'Surveil': 'Surveil: look at the top cards of your library, then put any of them into your graveyard and the rest back on top in any order. It digs and fuels graveyard cards.',
+  'Mentor': 'Mentor: when this creature attacks, put a +1/+1 counter on an attacking creature with lesser power. Attack with the small ones beside it.',
+  'Afterlife': 'Afterlife: when the creature dies, you make that many 1/1 flying Spirit tokens. Trading it away still leaves something behind.',
+  'Amass': 'Amass: put counters on your Army token, or make one first. Kill the Army and all of its counters go with it.',
   'Playing under a lock': 'A lock stops cards from untapping or moving. Break it, or win with what\'s already in play.',
 };
 // Every Story deck says what it is (Randall, 2 Nov 2026): Historical Exact, Historical Tribute or
