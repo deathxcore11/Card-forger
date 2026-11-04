@@ -177,9 +177,16 @@ private val RANDOM_FORMATS = listOf("Standard", "Commander")
 
 // ---------------------------------------------------------------- look (play-menu.css, computed at 390 px)
 
-private val Gold = Color(0xFFE8B95B)
-private val Muted = Color(0xFF9AA2B1)
-private val Line = Color(0xFF2A2F39)
+// Page-surface tokens follow the colour mode (settings-theme.css); the VS stage keeps its own dark gold (StageGold) as on the site.
+private val Gold: Color get() = Site.Gold
+private val Muted: Color get() = Site.Muted
+private val Line: Color get() = Site.Line
+private val StageGold = Color(0xFFE8B95B)
+private val lightMode: Boolean get() = AppSettings.theme == "light"
+/** .play-source-tabs / .pl-cpu-level: surface-2 at 65 %. */
+private val TabsFill: Color get() = if (lightMode) Color(0xA6E7ECF3) else Color(0xA61F232B)
+/** Copy on page surfaces (#d3d9df dark; --muted in light). */
+private val SoftInk: Color get() = if (lightMode) Site.Muted else Color(0xFFD3D9DF)
 private fun sans(size: Float, weight: FontWeight = FontWeight.Normal, color: Color = Site.Text, spacing: Float = 0f, line: Float = size * 1.45f) =
     TextStyle(fontFamily = Type.Sans, fontWeight = weight, fontSize = size.sp, color = color, letterSpacing = spacing.sp, lineHeight = line.sp)
 private fun cinzel(size: Float, color: Color = Color(0xFFF6EEDB), spacing: Float = .01f * size, line: Float = size * 1.12f) =
@@ -340,7 +347,7 @@ fun LobbyScreen(model: LobbyModel, onBack: () -> Unit, onStart: (Pick) -> Unit, 
                     val last = info.visibleItemsInfo.lastOrNull { it.index < info.totalItemsCount - 1 } ?: return@drawBehind
                     val bottom = if (last.index == info.totalItemsCount - 2) last.offset.y - info.viewportStartOffset + last.size.height + 19.dp.toPx() else size.height + 40.dp.toPx()
                     val r = androidx.compose.ui.geometry.CornerRadius(20.dp.toPx()); val x = 16.dp.toPx()
-                    drawRoundRect(Color(0xD6171A20), Offset(x, top), Size(size.width - 2 * x, bottom - top), r)
+                    drawRoundRect(if (lightMode) Color(0x94FFFFFF) else Color(0xD6171A20), Offset(x, top), Size(size.width - 2 * x, bottom - top), r)
                     drawRoundRect(Line, Offset(x, top), Size(size.width - 2 * x, bottom - top), r, style = Stroke(1.dp.toPx()))
                 }
             },
@@ -456,7 +463,7 @@ private fun Head(m: LobbyModel, onBack: () -> Unit, onFriends: () -> Unit) {
                 androidx.compose.foundation.Image(SiteIcons.Back, "Back to Play", Modifier.size(22.dp), colorFilter = ColorFilter.tint(Site.Text)) }
             Column {
                 Text("PLAY", style = sans(11f, FontWeight.Bold, Gold, 3.3f, 16f))
-                Text(if (m.quick) "Quick Play" else "Practice", style = cinzel(24f, spacing = .48f, line = 25.2f).copy(brush = Brush.verticalGradient(0.3f to Color(0xFFF8F0DC), 1f to Color(0xFFD6AD64))))
+                Text(if (m.quick) "Quick Play" else "Practice", style = if (lightMode) cinzel(24f, Site.Text, .48f, 25.2f) else cinzel(24f, spacing = .48f, line = 25.2f).copy(brush = Brush.verticalGradient(0.3f to Color(0xFFF8F0DC), 1f to Color(0xFFD6AD64))))
             }
         }
         FlowRow(horizontalArrangement = Arrangement.spacedBy(10.dp), verticalArrangement = Arrangement.spacedBy(10.dp)) {
@@ -515,8 +522,8 @@ private fun Arena(m: LobbyModel, onFocusDecks: () -> Unit) {
             Box(Modifier.size(44.dp).rotate(45f).drawBehind {
                 drawRoundRect(Color(0x26E8B95B), Offset(-7.dp.toPx(), -7.dp.toPx()), Size(size.width + 14.dp.toPx(), size.height + 14.dp.toPx()), androidx.compose.ui.geometry.CornerRadius(16.dp.toPx()))
                 drawRoundRect(Color(0xFF0C0D10), Offset(-6.dp.toPx(), -6.dp.toPx()), Size(size.width + 12.dp.toPx(), size.height + 12.dp.toPx()), androidx.compose.ui.geometry.CornerRadius(15.dp.toPx()))
-            }.clip(RoundedCornerShape(10.dp)).background(Brush.linearGradient(listOf(Color(0xFF2A2416), Color(0xFF121008)))).border(2.dp, Gold, RoundedCornerShape(10.dp)))
-            Text("VS", style = cinzel(14f, Gold, 0f, 14f))
+            }.clip(RoundedCornerShape(10.dp)).background(Brush.linearGradient(listOf(Color(0xFF2A2416), Color(0xFF121008)))).border(2.dp, StageGold, RoundedCornerShape(10.dp)))
+            Text("VS", style = cinzel(14f, StageGold, 0f, 14f))
         }
     }
 }
@@ -534,7 +541,7 @@ private fun Seat(m: LobbyModel, key: String, practice: Boolean, onFocusDecks: ()
     val art = deck?.raw?.let(::coverOf)
     Box(Modifier.fillMaxWidth().heightIn(min = 175.dp).shadow(22.dp, shape, ambientColor = Color(0x77000000), spotColor = Color(0x77000000)).clip(shape)
         .background(if (cpu) Brush.radialGradient(listOf(Color(0xFF1B2130), Color(0xFF0E1016)), center = Offset(.3f, .5f)) else SeatFill)
-        .border(1.dp, if (seam) Gold.copy(alpha = .75f) else Color(0x40D6AD64), shape)
+        .border(1.dp, if (seam) StageGold.copy(alpha = .75f) else Color(0x40D6AD64), shape)
         .then(if (practice) Modifier.clickable { m.inspected = key } else if (deck == null && !cpu) Modifier.clickable(onClick = onFocusDecks) else Modifier)) {
         if (art != null) {
             Pic(art, Modifier.matchParentSize(), contentScale = ContentScale.Crop, alpha = .55f)
@@ -565,7 +572,7 @@ private fun Slot(modifier: Modifier) {
         .background(Brush.radialGradient(listOf(Color(0x22E8B95B), Color.Transparent)))
         .drawBehind { drawRoundRect(Color(0x88D6AD64), style = Stroke(1.dp.toPx(), pathEffect = PathEffect.dashPathEffect(floatArrayOf(4.dp.toPx(), 3.dp.toPx()))), cornerRadius = androidx.compose.ui.geometry.CornerRadius(10.dp.toPx())) },
         contentAlignment = Alignment.Center) {
-        Text("+", style = sans(30f, FontWeight.Normal, Gold, 0f, 30f))
+        Text("+", style = sans(30f, FontWeight.Normal, StageGold, 0f, 30f))
     }
 }
 
@@ -588,9 +595,9 @@ private fun Backs(modifier: Modifier) {
 
 @Composable
 private fun StartBar(m: LobbyModel, signedIn: Boolean, status: String, onStart: () -> Unit) {
-    Column(Modifier.fillMaxWidth().clip(RoundedCornerShape(18.dp)).background(Color(0xB30F1115)).padding(horizontal = 10.dp, vertical = 8.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
-        if (status.isNotEmpty()) Text(status, style = sans(13f, color = Color(0xFFD3D9DF)), modifier = Modifier.padding(horizontal = 4.dp))
-        if (!m.quick) Row(Modifier.fillMaxWidth().height(54.dp).pill(Color(0xA61F232B), Line).padding(4.dp), verticalAlignment = Alignment.CenterVertically) {
+    Column(Modifier.fillMaxWidth().clip(RoundedCornerShape(18.dp)).background(if (lightMode) Color(0xB3F3F5F8) else Color(0xB30F1115)).padding(horizontal = 10.dp, vertical = 8.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
+        if (status.isNotEmpty()) Text(status, style = sans(13f, color = SoftInk), modifier = Modifier.padding(horizontal = 4.dp))
+        if (!m.quick) Row(Modifier.fillMaxWidth().height(54.dp).pill(TabsFill, Line).padding(4.dp), verticalAlignment = Alignment.CenterVertically) {
             Text("CPU", style = sans(11f, FontWeight.Normal, Muted), modifier = Modifier.padding(horizontal = 10.dp))
             listOf("Easy", "Medium", "Hard").forEach { lv -> val on = m.difficulty == lv
                 Box(Modifier.weight(1f).height(44.dp).clip(RoundedCornerShape(999.dp)).then(if (on) Modifier.background(Picked).border(1.dp, Color(0x66D8B76C), RoundedCornerShape(999.dp)) else Modifier)
@@ -639,7 +646,7 @@ private fun LibraryHead(m: LobbyModel, source: String, signedIn: Boolean, onOpen
                 Text("Open Decks", style = sans(13.5f, FontWeight.Bold, Site.Text)) }
         }
         if (m.quick) Text(TableDecks.QUICK_INTRO, style = sans(13f, color = Muted, line = 19.5f))
-        else Row(Modifier.fillMaxWidth().clip(RoundedCornerShape(14.dp)).background(Color(0xA61F232B)).border(1.dp, Line, RoundedCornerShape(14.dp)).padding(3.dp)) {
+        else Row(Modifier.fillMaxWidth().clip(RoundedCornerShape(14.dp)).background(TabsFill).border(1.dp, Line, RoundedCornerShape(14.dp)).padding(3.dp)) {
             SOURCES.forEach { (k, label) -> val on = source == k
                 Box(Modifier.weight(1f).height(44.dp).clip(RoundedCornerShape(10.dp)).then(if (on) Modifier.background(Picked).border(1.dp, Color(0x66D8B76C), RoundedCornerShape(10.dp)) else Modifier)
                     .clickable { m.source = k; m.query = "" }, contentAlignment = Alignment.Center) { Text(if (k == "yours") "Mine" else label, style = sans(11.5f, color = if (on) Site.Text else Muted)) }
@@ -789,7 +796,7 @@ private fun SourceCard(e: LobbySources.Entry, on: Boolean, signedIn: Boolean, on
         Column(Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(2.dp)) {
             if (e.detail.isNotBlank()) Text(e.detail, style = sans(11.5f, color = Muted), maxLines = 1, overflow = TextOverflow.Ellipsis)
             Text(e.deck.get("name")?.asString ?: "Deck", style = sans(14.5f, FontWeight.Bold), maxLines = 2, overflow = TextOverflow.Ellipsis)
-            Text("$count cards · ${e.deck.get("format")?.asString ?: ""}", style = sans(12.5f, color = Color(0xFFD3D9DF)))
+            Text("$count cards · ${e.deck.get("format")?.asString ?: ""}", style = sans(12.5f, color = SoftInk))
             Row(horizontalArrangement = Arrangement.spacedBy(8.dp), verticalAlignment = Alignment.CenterVertically) {
                 Text(if (forgeCpuDeckComplete(e.deck) || e.deck.getAsJsonArray("cards")?.size() ?: 0 > 0) "Checked when you play" else "List needs review", style = sans(11.5f, FontWeight.SemiBold, Color(0xFFBFD7FF)))
                 Text(if (on) "Selected" else "Inspect & select", style = sans(12f, FontWeight.Bold, Gold))
@@ -895,7 +902,7 @@ private fun PasteImport(m: LobbyModel, onPreview: () -> Unit, onUse: () -> Unit,
         Field("Deck list", m.draftText, (if (m.format == "Commander") "Commander\n1 Your commander\n\n" else "") + "Deck\n1 Card name", 100000, singleLine = false, size = 13.5f) { m.updateDraft(text = it) }
         Row(Modifier.padding(top = 10.dp), horizontalArrangement = Arrangement.spacedBy(8.dp)) {
             Box(Modifier.height(44.dp).clip(RoundedCornerShape(11.dp)).background(Gold.copy(alpha = if (m.importBusy) .55f else 1f)).clickable(enabled = !m.importBusy, onClick = onPreview).padding(horizontal = 16.dp), contentAlignment = Alignment.Center) {
-                Text(if (m.importBusy) "Matching cards…" else "Preview & match", style = sans(15f, FontWeight.Bold, Color(0xFF1B1406))) }
+                Text(if (m.importBusy) "Matching cards…" else "Preview & match", style = sans(15f, FontWeight.Bold, Site.GoldInk)) }
             if (m.importReady) Box(Modifier.height(44.dp).clip(RoundedCornerShape(11.dp)).background(Site.Surface2).border(1.dp, Line, RoundedCornerShape(11.dp)).clickable(onClick = onUse).padding(horizontal = 16.dp), contentAlignment = Alignment.Center) {
                 Text("Use this list", style = sans(15f, FontWeight.Bold)) }
         }

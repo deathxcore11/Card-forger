@@ -100,6 +100,12 @@ class LobbyShotTest {
             }
         }
         }
+        // settings-theme.js: the first lobby state in Light and Aura.
+        try { for (t in listOf("light", "aura")) {
+            dev.cardstashy.nativeplay.ui.AppSettings.applyTheme(t); RuntimeEnvironment.setQualifiers("w390dp-h2532dp-xxhdpi")
+            val (name, set) = states.first(); val m = LobbyModel("practice").apply { format = "Standard" }; set(m)
+            captureRoboImage(File(System.getProperty("shotsDir"), "theme-$t-lobby-$name.png").path) { LobbyScreen(m, {}, {}, {}, {}, {}, online = false) }
+        } } finally { dev.cardstashy.nativeplay.ui.AppSettings.applyTheme("dark") }
         home.mkdirs(); home.resolve("missing.txt").writeText(missing.joinToString("\n"))
     }
 

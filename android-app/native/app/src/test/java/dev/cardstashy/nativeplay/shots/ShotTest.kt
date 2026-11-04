@@ -354,6 +354,13 @@ class ShotTest {
                 dev.cardstashy.nativeplay.ui.DecksScreen(state, {}, {}, {}, {}, { PlayNav(PlayTab.DECKS, {}) }, pc, if (open) pasted else dev.cardstashy.nativeplay.ui.Check())
             }
         }
+        // settings-theme.js: the deck list in Light and Aura too.
+        try { for (t in listOf("light", "aura")) {
+            dev.cardstashy.nativeplay.ui.AppSettings.applyTheme(t); RuntimeEnvironment.setQualifiers("w412dp-h${915 * 3}dp-xxhdpi")
+            captureRoboImage(File(System.getProperty("shotsDir"), "theme-$t-decks-list.png").path) {
+                dev.cardstashy.nativeplay.ui.DecksScreen(state, {}, {}, {}, {}, { PlayNav(PlayTab.DECKS, {}) }, dev.cardstashy.nativeplay.ui.PreconUi().apply { this.index = index }, dev.cardstashy.nativeplay.ui.Check())
+            }
+        } } finally { dev.cardstashy.nativeplay.ui.AppSettings.applyTheme("dark") }
         home.mkdirs(); home.resolve("missing.txt").writeText(missing.joinToString("\n"))
     }
 
