@@ -91,6 +91,8 @@ private sealed interface Screen {
     data class Match(val pick: Pick) : Screen
     /** Achievements with the daily and weekly quests (one page, like the site's Trophies). */
     data class Achievements(val tab: String? = null) : Screen
+    /** Story: the road of acts and an act's battles (the duel setup is still the site's page). */
+    data class Story(val act: Int? = null) : Screen
 }
 
 class MainActivity : ComponentActivity() {
@@ -167,7 +169,7 @@ private fun App(activity: MainActivity) {
             LaunchedEffect(Unit) { activity.inGame(false) }
             dev.cardstashy.nativeplay.ui.PlayHomeRoute(
                 onQuickPlay = { go(Screen.Decks) }, onLobby = { if (LOBBY_LIVE) go(Screen.Lobby(it)) else go(Screen.Decks) }, onCollection = { go(Screen.Collection) },
-                onSignIn = { go(Screen.SignIn) }, onWeb = { go(Screen.Web(it)) }, onTrunk = { go(Screen.Trunk) }, onDecks = { go(Screen.PlayDecks) }, onAchievements = { go(Screen.Achievements(it)) }, onShop = { t, set -> go(Screen.Shop(t, set)) })
+                onSignIn = { go(Screen.SignIn) }, onWeb = { go(Screen.Web(it)) }, onTrunk = { go(Screen.Trunk) }, onDecks = { go(Screen.PlayDecks) }, onAchievements = { go(Screen.Achievements(it)) }, onStory = { go(Screen.Story()) }, onShop = { t, set -> go(Screen.Shop(t, set)) })
         }
         Screen.Trunk -> {
             LaunchedEffect(Unit) { activity.inGame(false) }
@@ -206,6 +208,10 @@ private fun App(activity: MainActivity) {
             LaunchedEffect(Unit) { activity.inGame(false) }
             DeckPickScreen(onPick = { go(Screen.Match(it)) }, onBack = { back() },
                 onSignIn = { go(Screen.SignIn) })
+        }
+        is Screen.Story -> {
+            LaunchedEffect(Unit) { activity.inGame(false) }
+            dev.cardstashy.nativeplay.ui.StoryRoute(startAct = s.act, onBack = { back() }, onDuel = { go(Screen.Web(dev.cardstashy.nativeplay.ui.SITE_PLAY)) })
         }
         is Screen.Achievements -> {
             LaunchedEffect(Unit) { activity.inGame(false) }
@@ -285,6 +291,7 @@ private fun presenceWhere(s: Screen): dev.cardstashy.nativeplay.play.Presence.Wh
     Screen.Trunk, is Screen.TrunkSet -> dev.cardstashy.nativeplay.play.Presence.Where("play", "collection")
     is Screen.Shop -> dev.cardstashy.nativeplay.play.Presence.Where("play", if (s.tab == "packs") "packs" else "shop")
     is Screen.Achievements -> dev.cardstashy.nativeplay.play.Presence.Where("play", "deeds")
+    is Screen.Story -> dev.cardstashy.nativeplay.play.Presence.Where("play", "story")
     else -> dev.cardstashy.nativeplay.play.Presence.Where("app")
 }
 

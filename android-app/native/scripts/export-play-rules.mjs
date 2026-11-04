@@ -3,7 +3,7 @@
 // Usage: node scripts/export-play-rules.mjs <repo root> <out file>
 import {writeFileSync} from 'node:fs';
 import {pathToFileURL} from 'node:url';
-import {join} from 'node:path';
+import {join, dirname} from 'node:path';
 const [root, out] = process.argv.slice(2);
 const mod = f => import(pathToFileURL(join(root, f)).href);
 const ach = await mod('play-achievements.js');
@@ -25,4 +25,6 @@ const data = {
   playFormats: rules.PLAY_FORMATS,
 };
 writeFileSync(out, JSON.stringify(data));
+// The full Story act list (story-acts.js STORY_ACTS with each act's age and art) and set names, beside the rules.
+writeFileSync(join(dirname(out), 'story-acts.json'), JSON.stringify({acts: acts.STORY_ACTS, setNames: acts.SET_NAMES}));
 console.log(`play rules: ${data.achievements.length} achievements, ${data.storyActs.length} acts, ${data.playmats.length} mats`);
