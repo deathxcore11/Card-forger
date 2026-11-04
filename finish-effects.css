@@ -13,6 +13,10 @@
 @property --finish-x{syntax:"<percentage>";inherits:true;initial-value:50%}
 @property --finish-y{syntax:"<percentage>";inherits:true;initial-value:50%}
 .finish-overlay{--finish-x:var(--mx,50%);--finish-y:var(--my,50%);position:absolute;display:block;overflow:hidden;border-radius:4.75% / 3.5%;pointer-events:none!important;z-index:2;isolation:isolate}
+/* The shared foil plane: 0-100% is the whole printed card. finish-preview.js sizes it to the picture as
+   the browser paints it (object-fit / object-position / padding), so a cropped grid tile and a full
+   card page map the same recipe to the same card features. The overlay above clips it to what shows. */
+.finish-plane{position:absolute;left:0;top:0;width:100%;height:100%;display:block;pointer-events:none!important}
 .finish-layer{position:absolute;inset:0;pointer-events:none!important;opacity:.16;mix-blend-mode:screen;background-size:220% 220%;background-position:var(--finish-x) var(--finish-y)}
 .tilting .finish-layer,.zoom-card-surface:hover .finish-layer{opacity:.26}
 /* The same soft light catches only each material’s masked foil region. */
@@ -107,7 +111,7 @@
    spotlight step aside while it is active; the name lettering stays on top. */
 .finish-rarity-gl{position:absolute;inset:0;display:block;width:100%;height:100%;pointer-events:none!important}
 .finish-rarity-gl[hidden]{display:none}
-.finish-overlay.rarity-gl>.finish-layer:not(.finish-name-region),.finish-overlay.rarity-gl>.finish-spotlight,.finish-overlay.rarity-gl>.finish-pattern{display:none}
+.finish-overlay.rarity-gl .finish-layer:not(.finish-name-region),.finish-overlay.rarity-gl .finish-spotlight,.finish-overlay.rarity-gl .finish-pattern{display:none}
 .finish-overlay[data-material-profile] .finish-pattern{position:absolute;inset:0;pointer-events:none;background-position:var(--finish-x) var(--finish-y);mix-blend-mode:screen;opacity:.46}
 [data-material-profile=classic-holo] .finish-pattern,[data-material-profile=cosmos-holo] .finish-pattern{background-image:url('assets/finishes/cosmos.svg'),radial-gradient(ellipse at var(--finish-x) var(--finish-y),#b9e3ff55,transparent 45%);background-size:100% 100%;}
 [data-material-profile=classic-holo] .finish-pattern{opacity:.3}

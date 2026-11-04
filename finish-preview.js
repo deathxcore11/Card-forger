@@ -95,8 +95,26 @@ export function syncFinishChoiceRail(rail,{force=false}={}){
 // Object-fit: contain geometry in untransformed CSS pixels; the same parent transforms both layers.
 export function containedImageBox(width,height,naturalWidth,naturalHeight){
  if(![width,height,naturalWidth,naturalHeight].every(x=>Number.isFinite(x)&&x>0))return null;
- const k=Math.min(width/naturalWidth,height/naturalHeight),w=naturalWidth*k,h=naturalHeight*k;
- return {left:(width-w)/2,top:(height-h)/2,width:w,height:h};
+ return paintedImageBox(width,height,naturalWidth,naturalHeight,'contain','50% 50%');
+}
+// The box the browser actually paints the picture into, inside the image's content box, for any
+// object-fit and object-position: letterboxed (contain), cropped past the edges (cover), stretched
+// (fill), 1:1 (none) or the smaller of 1:1 and contain (scale-down). Everything that foils a card
+// is laid on this box, so the foil is glued to the printed card at every size and crop.
+export function paintedImageBox(width,height,naturalWidth,naturalHeight,fit='fill',position='50% 50%'){
+ if(![width,height,naturalWidth,naturalHeight].every(x=>Number.isFinite(x)&&x>0))return null;
+ const contain=Math.min(width/naturalWidth,height/naturalHeight),cover=Math.max(width/naturalWidth,height/naturalHeight);
+ const k=fit==='cover'?cover:fit==='contain'?contain:fit==='none'?1:fit==='scale-down'?Math.min(1,contain):0;
+ const w=k?naturalWidth*k:width,h=k?naturalHeight*k:height;
+ const [px,py]=String(position||'').trim().split(/\s+/),off=(v,room)=>{const n=parseFloat(v);if(!Number.isFinite(n))return room/2;return String(v).endsWith('%')?room*n/100:n;};
+ return {left:off(px,width-w),top:off(py,height-h),width:w,height:h};
+}
+// Where the foil is clipped (the painted picture, cut to the content box) and where its plane sits inside that clip.
+export function foilGeometry(width,height,naturalWidth,naturalHeight,fit,position){
+ const p=paintedImageBox(width,height,naturalWidth,naturalHeight,fit,position);if(!p)return null;
+ const l=Math.max(0,p.left),t=Math.max(0,p.top),r=Math.min(width,p.left+p.width),b=Math.min(height,p.top+p.height);
+ if(r-l<=0||b-t<=0)return null;
+ return {clip:{left:l,top:t,width:r-l,height:b-t},plane:{left:p.left-l,top:p.top-t,width:p.width,height:p.height}};
 }
 export function finishEligible(el){
  if(!el?.dataset?.finishSurface||el.hidden||el.closest?.('[hidden]'))return false;
@@ -125,13 +143,15 @@ export function attachFinishPreview(root){
  const unmount=el=>{const m=mounted.get(el);if(m){ro?.unobserve(m.img);m.nameFoil?.dispose();m.rarityFoil?.dispose();m.overlay.remove();m.pop?.remove();mounted.delete(el);}};
  const size=el=>{
   const m=mounted.get(el);if(!m)return;
-  const {img,overlay,host}=m,css=globalThis.getComputedStyle?.(img),px=v=>parseFloat(v)||0;
-  const left=px(css?.paddingLeft),top=px(css?.paddingTop),box=containedImageBox(img.clientWidth-left-px(css?.paddingRight),img.clientHeight-top-px(css?.paddingBottom),img.naturalWidth,img.naturalHeight);
-  if(!box||img.hidden){if(!overlay.hidden)overlay.hidden=true;if(m.pop)m.pop.hidden=true;return;}
+  const {img,overlay,plane,host}=m,css=globalThis.getComputedStyle?.(img),px=v=>parseFloat(v)||0;
+  const left=px(css?.paddingLeft),top=px(css?.paddingTop),geoOf=foilGeometry(img.clientWidth-left-px(css?.paddingRight),img.clientHeight-top-px(css?.paddingBottom),img.naturalWidth,img.naturalHeight,css?.objectFit||'fill',css?.objectPosition||'50% 50%');
+  if(!geoOf||img.hidden){if(!overlay.hidden)overlay.hidden=true;if(m.pop)m.pop.hidden=true;return;}
+  const box=geoOf.clip,pl=geoOf.plane;
   let x=(img.offsetLeft||0)+(img.clientLeft||0)+left,y=(img.offsetTop||0)+(img.clientTop||0)+top,ancestor=img.offsetParent;
   while(ancestor&&ancestor!==host){x+=ancestor.offsetLeft||0;y+=ancestor.offsetTop||0;ancestor=ancestor.offsetParent;}
   if(ancestor!==host){if(!overlay.hidden)overlay.hidden=true;if(m.pop)m.pop.hidden=true;return;}
   const geo={left:`${x+box.left}px`,top:`${y+box.top}px`,width:`${box.width}px`,height:`${box.height}px`};Object.assign(overlay.style,geo);if(overlay.hidden)overlay.hidden=false;
+  Object.assign(plane.style,{left:`${pl.left}px`,top:`${pl.top}px`,width:`${pl.width}px`,height:`${pl.height}px`});
   if(m.pop){Object.assign(m.pop.style,geo);m.pop.hidden=false;}
  };
  const ro=typeof ResizeObserver==='undefined'?null:new ResizeObserver(entries=>{for(const [el,m] of mounted)if(entries.some(x=>x.target===m.img))size(el);for(const entry of entries)if(choiceRails.has(entry.target))syncFinishChoiceRail(entry.target);});
@@ -148,33 +168,37 @@ export function attachFinishPreview(root){
   const img=el.querySelector?.('img'),host=el.dataset.finishSurface==='detail'?(el.querySelector('.cd-zoom')||el):el;
   if(!img||!img.complete||!img.naturalWidth||img.hidden)return;
   if(!finishImageMatches(p,img.currentSrc||img.src))return unmount(el);
+  // One shared foil layer for every card view: the overlay clips to the visible card, the plane inside
+  // it is the whole printed card (0-100% = the card, even when the view crops it), and every finish
+  // (CSS layers, WebGL foils, lettering, stamps) is drawn on the plane.
   const overlay=img.ownerDocument.createElement('span');overlay.className='finish-overlay'+(['large','card'].includes(el.dataset.finishSurface)?' finish-auto':'');
+  const plane=img.ownerDocument.createElement('span');plane.className='finish-plane';overlay.append(plane);
   const profile=finishOverlayProfile(p,img.currentSrc||img.src);
-  if(profile&&FINISH_MASKS[profile.mask])overlay.style.clipPath=FINISH_MASKS[profile.mask];
+  if(profile&&FINISH_MASKS[profile.mask])plane.style.clipPath=FINISH_MASKS[profile.mask];
   const layers=profile?.artMask?(p.layers||[]).map(l=>({...l,mask:profile.artMask})):(p.layers||[]);
   if(p.materialProfile)overlay.dataset.materialProfile=p.materialProfile;
   if(['large','card'].includes(el.dataset.finishSurface)){const phase=String(p.printingId||'').split('').reduce((n,c)=>n+c.charCodeAt(0),0)%80;overlay.style.animationDelay=`-${phase/10}s`;}
   overlay.setAttribute('aria-hidden','true');
-  if(detail){const light=img.ownerDocument.createElement('span');light.className='finish-spotlight';overlay.append(light);}
-  if(stamp){const holo=img.ownerDocument.createElement('span');holo.className='finish-holostamp'+(onFoil?' on-foil':'');overlay.append(holo);}
-  for(const l of layers){if(!FINISH_MASKS[l.mask])continue;const part=img.ownerDocument.createElement('span');part.className=`finish-layer finish-${l.material}${l.mask==='ygo-name'?' finish-name-region':''}`;part.style.clipPath=FINISH_MASKS[l.mask];overlay.append(part);}
-  if(hasFinishPattern(p.materialProfile)&&FINISH_MASKS[layers[0]?.mask]){const pattern=img.ownerDocument.createElement('span');pattern.className='finish-pattern';pattern.style.clipPath=FINISH_MASKS[layers[0].mask];overlay.append(pattern);}
+  if(detail){const light=img.ownerDocument.createElement('span');light.className='finish-spotlight';plane.append(light);}
+  if(stamp){const holo=img.ownerDocument.createElement('span');holo.className='finish-holostamp'+(onFoil?' on-foil':'');plane.append(holo);}
+  for(const l of layers){if(!FINISH_MASKS[l.mask])continue;const part=img.ownerDocument.createElement('span');part.className=`finish-layer finish-${l.material}${l.mask==='ygo-name'?' finish-name-region':''}`;part.style.clipPath=FINISH_MASKS[l.mask];plane.append(part);}
+  if(hasFinishPattern(p.materialProfile)&&FINISH_MASKS[layers[0]?.mask]){const pattern=img.ownerDocument.createElement('span');pattern.className='finish-pattern';pattern.style.clipPath=FINISH_MASKS[layers[0].mask];plane.append(pattern);}
   // Foil pass: every real foil (not a plain card) gets the pop layer over the whole card face: rim, glare,
   // glints and a light catch. It covers the card box, so it maps to each game's frame at any size.
   const pop=p.effect&&p.effect!=='plain'?mountFinishPop(host,{surface:el.dataset.finishSurface,seed:p.printingId||img.currentSrc}):null;
   // Opening a foil in the zoom view gives a small tap, once per card, so a rare foil feels like one.
   if(pop&&el.dataset.finishSurface==='zoom'&&!buzzed.has(el)){buzzed.add(el);import('./feel.js').then(m=>m.haptic('pack-value-2')).catch(()=>{});}
-  host.append(overlay);if(pop)host.append(pop);mounted.set(el,{img,host,overlay,pop,model:el.dataset.finishModel,src:img.currentSrc});ro?.observe(img);size(el);
-  // Yu-Gi-Oh!, Magic and Pokémon cards get the WebGL foil; the CSS layers stay beneath as the fallback.
-  if(p.game==='ygo')mounted.get(el).rarityFoil=mountYgoRarityFoil(overlay,img,p.effect,{surface:el.dataset.finishSurface,layout:p.layout,stars:p.stars});
-  else if(p.game==='mtg'&&p.treatment)mounted.get(el).rarityFoil=mountMtgFoil(overlay,img,p.treatment,{surface:el.dataset.finishSurface,frame:p.frame,holostamp:!!p.holostamp});
-  else if(p.game==='ptcg'&&p.treatment)mounted.get(el).rarityFoil=mountPtcgFoil(overlay,img,p.treatment,{surface:el.dataset.finishSurface,clip:FINISH_MASKS[layers[0]?.mask]||'',window:!!profile});
+  host.append(overlay);if(pop)host.append(pop);mounted.set(el,{img,host,overlay,plane,pop,model:el.dataset.finishModel,src:img.currentSrc});ro?.observe(img);size(el);
+  // Yu-Gi-Oh!, Magic and Pokémon cards get the WebGL foil on the plane; the CSS layers stay beneath as the fallback.
+  if(p.game==='ygo')mounted.get(el).rarityFoil=mountYgoRarityFoil(plane,img,p.effect,{surface:el.dataset.finishSurface,layout:p.layout,stars:p.stars});
+  else if(p.game==='mtg'&&p.treatment)mounted.get(el).rarityFoil=mountMtgFoil(plane,img,p.treatment,{surface:el.dataset.finishSurface,frame:p.frame,holostamp:!!p.holostamp});
+  else if(p.game==='ptcg'&&p.treatment)mounted.get(el).rarityFoil=mountPtcgFoil(plane,img,p.treatment,{surface:el.dataset.finishSurface,clip:FINISH_MASKS[layers[0]?.mask]||'',window:!!profile});
   const nameLayer=p.game==='ygo'&&(p.layers||[]).find(l=>l.mask==='ygo-name'),nameMask=nameLayer?ygoNameMask(img):null;
   if(nameMask){
    // Letters from this exact image replace the title-band placeholder; the art foil layers are unchanged.
    for(const n of overlay.querySelectorAll('.finish-name-region')){Object.assign(n.style,nameMaskStyle(nameMask.alphaUrl));n.classList.add('finish-title-glyphs');}
    // The big card faces (detail, zoom, a pulled pack card) also draw the lettering's own WebGL foil.
-   if(detail||el.dataset.finishSurface==='pack'){const m=mounted.get(el);m.nameFoil=mountYgoNameFoil(overlay,img,nameLayer.material,nameMask);}
+   if(detail||el.dataset.finishSurface==='pack'){const m=mounted.get(el);m.nameFoil=mountYgoNameFoil(plane,img,nameLayer.material,nameMask);}
   }else if(p.game==='ygo'&&overlay.querySelector('.finish-name-region')){
    const src=img.currentSrc;
    void verifiedTitleMask(p.printingId,src).then(mask=>{if(!mask||mounted.get(el)?.overlay!==overlay||img.currentSrc!==src)return;for(const n of overlay.querySelectorAll('.finish-name-region')){n.style.clipPath='none';n.style.maskImage=`url("${mask}")`;n.classList.add('finish-title-glyphs');}});

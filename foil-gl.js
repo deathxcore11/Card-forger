@@ -135,10 +135,13 @@ export function foilAnalyzer(workerUrl,local){
 export function mountFoilCanvas(overlay,{source,key,surface='detail',program,analysis,setUniforms}){
  if(!foilSurface(surface))return null;
  const r0=program();if(!r0)return null;
+ // overlay is the card plane the canvas is drawn on; its clipping .finish-overlay (when it is a separate
+ // ancestor) carries the same state class so styles and tests read it in one place.
  const doc=overlay.ownerDocument,canvas=doc.createElement('canvas');canvas.className='finish-rarity-gl';canvas.setAttribute('aria-hidden','true');canvas.hidden=true;overlay.prepend(canvas);
- overlay.classList.add('rarity-gl');
+ const clipper=overlay.closest?.('.finish-overlay')||overlay,mark=on=>{for(const n of new Set([overlay,clipper]))n.classList.toggle('rarity-gl',on);};
+ mark(true);
  let data=null,img=null,last='',dead=false,visible=true;
- const fail=()=>{canvas.hidden=true;overlay.classList.remove('rarity-gl');};
+ const fail=()=>{canvas.hidden=true;mark(false);};
  const h={
   draw(){
    if(dead||!visible||!data||!img?.naturalWidth)return;if(r0.lost)return fail();
@@ -154,9 +157,9 @@ export function mountFoilCanvas(overlay,{source,key,surface='detail',program,ana
    canvas.hidden=false;
   },
   // Gallery cards sweep their light with a CSS animation; follow it only while one is running.
-  animated:()=>!dead&&visible&&!canvas.hidden&&overlay.classList.contains('finish-auto')&&overlay.isConnected,
+  animated:()=>!dead&&visible&&!canvas.hidden&&clipper.classList.contains('finish-auto')&&overlay.isConnected,
   fallback:fail,
-  dispose(){dead=true;foilLoop.delete(h);r0.handles.delete(h);unwatch();io?.disconnect();canvas.remove();overlay.classList.remove('rarity-gl');}
+  dispose(){dead=true;foilLoop.delete(h);r0.handles.delete(h);unwatch();io?.disconnect();canvas.remove();mark(false);}
  };
  foilLoop.add(h);r0.handles.add(h);
  const unwatch=watchFoilLight(overlay,()=>h.draw());
