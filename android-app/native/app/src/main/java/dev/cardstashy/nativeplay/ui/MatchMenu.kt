@@ -66,6 +66,8 @@ class MatchMenu(input: String?, val onConcede: () -> Unit, val onLeave: () -> Un
 
     var open by mutableStateOf(false)
     var history by mutableStateOf(false)
+    /** The match told in plain words (HistoryPanel's Story), kept for the whole match. */
+    val story = Story()
     /** "deck" or "opponent" while the tracker shows (cardstashy.tracker), else null. */
     var tracker by mutableStateOf(saved())
         private set

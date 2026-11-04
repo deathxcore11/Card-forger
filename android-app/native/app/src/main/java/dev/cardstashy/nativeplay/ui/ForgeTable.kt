@@ -399,6 +399,11 @@ fun ForgeBoard(
             val covered = live && st.prompt?.let { p -> p.method == "order" || p.method.startsWith("assign") || p.options.any { it.zone in setOf("Library", "Graveyard", "Exile") } } == true
             if (!covered) EmoteLayer(W, H, d)
             // The deck tracker under the table controls on the left; the menu over everything.
+            if (menu != null) {
+                // History & stack: the story is kept on every state, the panel shows while it is open.
+                LaunchedEffect(st) { menu.story.take(st) }
+                if (menu.history) HistoryPanel(st, menu.story, onInspect, { menu.history = false }, u)
+            }
             if (menu != null) { DeckTracker(st, menu, H, d, menuX, menuY + 44.du + 10.du); if (menu.open) MenuPanel(menu, st.stack.size, d, menuX, menuY + 44.du + 8.du) }
         }
     }

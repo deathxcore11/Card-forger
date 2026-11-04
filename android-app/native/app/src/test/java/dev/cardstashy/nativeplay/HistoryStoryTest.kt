@@ -65,13 +65,12 @@ class HistoryStoryTest {
         assertEquals(duelFull, storyLines(full("duel", st), StorySurface.of(st)))
     }
 
-    /** MatchState alone (no fizzled/token/number): node on the same events with those keys removed ("## bare"). */
+    /** Through MatchState, which now carries fizzled, token and number: the full set, one line per event number. */
     @Test fun storyKeepsOneLinePerEventFromMatchState() {
         val st = state("duel")
         val story = Story(); story.take(st); story.take(st)
-        val bare = duelFull.filter { it.seq != 6L && it.seq != 16L && it.seq != 17L }
         // tellStory keeps the first line of an event number: the second block line of event 24 is not shown.
-        assertEquals(bare.distinctBy { it.seq }, story.rows)
+        assertEquals(duelFull.distinctBy { it.seq }, story.rows)
     }
 
     @Test fun podNamesEachCpuByItsCommander() {

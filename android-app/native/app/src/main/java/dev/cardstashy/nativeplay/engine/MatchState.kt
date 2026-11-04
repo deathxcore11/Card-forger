@@ -99,6 +99,8 @@ data class GameEvent(
     val seq: Long, val type: String, val turn: Int, val phase: String?, val player: Int?,
     val card: Ref?, val source: Ref?, val target: Ref?, val targets: List<Ref>, val attackers: List<Pair<Ref, Ref?>>, val blockers: List<Pair<Ref, Int?>>,
     val from: String?, val to: String?, val amount: Int?, val lifeFrom: Int?, val lifeTo: Int?, val cause: String?,
+    /** events.items[].number (a turn event's turn), fizzled (left the stack with no legal targets), token (a token was created). */
+    val number: Int? = null, val fizzled: Boolean = false, val token: Boolean = false,
 
 )
 
@@ -262,6 +264,7 @@ data class MatchState(
             from = e.str("from"), to = e.str("to"), amount = e.int("amount"),
             lifeFrom = if (e.str("type") == "life") e.int("from") else null, lifeTo = if (e.str("type") == "life") e.int("to") else null,
             cause = e.str("cause"),
+            number = e.int("number"), fizzled = e.bool("fizzled") == true, token = e.bool("token") == true,
         )
     }
 }

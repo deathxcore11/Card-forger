@@ -182,7 +182,7 @@ class Story {
     var progressOpen by mutableStateOf(false)
     val scroll = ScrollState(0)
 
-    fun take(st: MatchState) = take(st.events.map { StoryEvent(it) }, StorySurface.of(st))
+    fun take(st: MatchState) = take(st.events.map { StoryEvent(it, it.number, it.fizzled, it.token) }, StorySurface.of(st))
 
     fun take(events: List<StoryEvent>, surface: StorySurface) {
         for (line in storyLines(events, surface)) if (!kept.containsKey(line.seq)) kept[line.seq] = line
