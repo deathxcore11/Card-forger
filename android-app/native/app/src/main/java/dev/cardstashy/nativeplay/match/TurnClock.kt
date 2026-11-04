@@ -71,6 +71,8 @@ object TurnClock {
         private val onStrike: (Int, Int?) -> Unit = { _, _ -> },
         private val friend: Boolean = false,
         private val now: () -> Long,
+        /** A friend match host that sends its own clock: (present, the window with the time it arrived). The host acts, never this phone. */
+        private val host: () -> Pair<Boolean, Pair<dev.cardstashy.nativeplay.engine.Afk, Long>?> = { false to null },
     ) {
         private class Cur(val w: Window, var left: Long, var since: Long?, var attempts: Int = 0)
         private var cur: Cur? = null
@@ -103,9 +105,25 @@ object TurnClock {
             c.left = 3000; c.since = null; acting = true
             runCatching { act(w, s) { acting = false } }.onFailure { acting = false }
         }
+        // The host's window, drawn as it stands: time left at receipt minus the time since, never the device's date.
+        private var hostStrikes = 0
+        private fun hostTick(h: Pair<dev.cardstashy.nativeplay.engine.Afk, Long>?) {
+            if (h == null) { cur = null; emit(); return }
+            val (a, at) = h
+            val kind = if (a.own) when (a.reason) { "turn" -> Kind.TURN; "response" -> Kind.RESPONSE; else -> Kind.PROMPT } else Kind.RIVAL
+            val remain = maxOf(0L, a.remainingMs - (now() - at))
+            val c0 = cur
+            if (c0 == null || c0.w.id != "host" || c0.w.kind != kind || c0.w.total != a.total) cur = Cur(Window("host", kind, if (a.total > 0) a.total else TURN_MS), 0, null)
+            cur!!.left = remain; cur!!.since = now()
+            if (a.own) { val n = a.strikes; if (n > hostStrikes) runCatching { onStrike(n, a.strikeLimit) }; hostStrikes = n }
+            emit()
+        }
         fun tick() {
             if (stopped) return
             val s = snapshot()
+            // A friend match whose host sends its own clock: draw that one and let the host act (it works when the app is closed too).
+            val (present, h) = host()
+            if (friend && present) return hostTick(if (s == null || s.finished || s.status == "failed") null else h)
             val w = waitingOn(s) ?: if (friend) rivalTurn(s) else null
             if (w == null || s == null) { cur?.let { banks[it.w.id] = left() }; cur = null; emit(); return }
             val c0 = cur

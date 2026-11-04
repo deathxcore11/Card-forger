@@ -155,6 +155,8 @@ class MatchController(private val scope: CoroutineScope, val input: String, priv
                     dev.cardstashy.nativeplay.play.Presence.matchTurn = st.turn
                     if (st.finished && !recorded) { recorded = true; runCatching { onFinished?.invoke(st, facts, playedFrom?.let { SystemClock.elapsedRealtime() - it }) } }
                     if (firstState < 0) { firstState = SystemClock.elapsedRealtime() - t0; timings.value = mapOf("startMs" to started, "firstStateMs" to firstState) }
+                    if (remote != null && st.revision >= hostRev) { hostRev = st.revision
+                        hostClock = st.hasAfk to st.afk?.let { it to SystemClock.elapsedRealtime() } }
                     // A repeat revision still counts when Forge finished working without a new one.
                     val prev = latest
                     if (st.revision != lastRev || prev == null || prev.busy != st.busy || prev.inputType != st.inputType || prev.prompt?.id != st.prompt?.id) {
@@ -229,7 +231,11 @@ class MatchController(private val scope: CoroutineScope, val input: String, priv
         onStrike = { n, limit -> if (limit != null && n == limit - 1) scope.launch { _afkNote.value = "One more missed turn and you concede."; delay(7000); _afkNote.value = null } },
         friend = remote != null,
         now = { SystemClock.elapsedRealtime() },
+        host = { hostClock },
     )
+    /** The host's clock as last received (it changes without a new revision), with its arrival time. Never rewound by an older board. */
+    @Volatile private var hostClock: Pair<Boolean, Pair<dev.cardstashy.nativeplay.engine.Afk, Long>?> = false to null
+    private var hostRev = -1L
     private var ticker: Job? = null
     private fun startTicker() { if (ticker == null) ticker = scope.launch(Dispatchers.Main) { while (true) { timer.tick(); delay(250) } } }
     /** Any touch of the table says you are here. */

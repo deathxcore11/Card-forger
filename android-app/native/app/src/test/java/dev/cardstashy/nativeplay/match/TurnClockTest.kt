@@ -15,10 +15,10 @@ class TurnClockTest {
             buttons = base.buttons.copy(ok = "OK", okEnabled = true, cancel = "End turn", cancelEnabled = true))
 
     private inner class Rig(first: MatchState, friend: Boolean = false, val refuse: Boolean = false) {
-        var t = 1000L; var s = first; var held = false
+        var t = 1000L; var s = first; var held = false; var host: Pair<Boolean, Pair<dev.cardstashy.nativeplay.engine.Afk, Long>?> = false to null
         val acts = mutableListOf<Pair<Kind, String?>>(); val changes = mutableListOf<TurnClock.Shown?>(); val strikes = mutableListOf<Pair<Int, Int?>>(); var conceded = 0; var calls = 0
         val timer = TurnClock.Timer(snapshot = { s }, paused = { held }, act = { w, x, done -> calls++; if (!refuse) acts += w.kind to x.inputType; done(!refuse) },
-            concede = { conceded++ }, onChange = { changes += it }, onStrike = { n, l -> strikes += n to l }, friend = friend, now = { t })
+            concede = { conceded++ }, onChange = { changes += it }, onStrike = { n, l -> strikes += n to l }, friend = friend, now = { t }, host = { host })
         fun run(ms: Long) { repeat((ms / 250).toInt()) { t += 250; timer.tick() } }
         fun last() = changes.last()!!
     }
@@ -102,5 +102,20 @@ class TurnClockTest {
         assertEquals(TurnClock.Answer.Cancel, TurnClock.answer(w, snap(input = "InputPayManaOfCostPayment")))
         assertEquals(TurnClock.Answer.Ok, TurnClock.answer(w, snap(input = "InputAttack")))
         assertEquals(TurnClock.Answer.Cancel, TurnClock.answer(TurnClock.Window("t", Kind.TURN, 1), snap()))
+    }
+
+    /** test-play-forge-host-clock.mjs: a friend match draws the host's clock and never answers or concedes for itself. */
+    @Test fun friendDrawsHostClock() {
+        val r = Rig(snap(), friend = true)
+        r.host = true to (dev.cardstashy.nativeplay.engine.Afk(true, "turn", 90_000, 60_000, 0, 3) to r.t)
+        r.run(5000)
+        assertEquals(Kind.TURN, r.last().kind); assertTrue(r.last().remaining in 54_000..56_000)
+        r.host = true to (dev.cardstashy.nativeplay.engine.Afk(true, "turn", 90_000, 1_000, 2, 3) to r.t)
+        r.run(120_000)
+        assertTrue("never answers locally", r.acts.isEmpty()); assertEquals(0, r.conceded)
+        assertEquals(listOf(2 to 3), r.strikes.map { it.first to it.second })
+        r.host = true to null; r.run(250); assertNull(r.changes.last())
+        // A host without a clock: the local clock runs as before.
+        val local = Rig(snap(), friend = true); local.run(TurnClock.TURN_MS + 500); assertEquals(1, local.acts.size)
     }
 }

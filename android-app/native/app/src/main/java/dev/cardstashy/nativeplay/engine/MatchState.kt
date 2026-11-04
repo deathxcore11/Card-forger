@@ -107,6 +107,9 @@ data class GameEvent(
 
 )
 
+/** The host's turn window as sent: whose it is, why, its length, the time left when the host wrote it, and the strikes. */
+data class Afk(val own: Boolean, val reason: String, val total: Long, val remainingMs: Long, val strikes: Int, val strikeLimit: Int)
+
 data class MatchState(
     val revision: Long, val status: String, val failure: String?, val errors: List<String>,
     val viewer: Int, val turn: Int, val phase: String?, val activePlayer: Int?, val priorityPlayer: Int?,
@@ -119,6 +122,8 @@ data class MatchState(
     val payment: Payment? = null,
     /** snapshot.pregame (forgeStartingPlayer): who Forge committed to start, and how it was chosen (random = the coin). */
     val firstPlayerId: Int? = null, val startSelection: String? = null,
+    /** A friend match host's turn clock (afk): absent on hosts without one ([hasAfk] false), null when no window is open. */
+    val hasAfk: Boolean = false, val afk: Afk? = null,
 ) {
     val me get() = players.first { it.id == viewer }
     val cpu get() = players.first { it.id != viewer }
@@ -168,6 +173,8 @@ data class MatchState(
                 priorityStop = pv?.str("stop"), hasPriorityView = pv != null, lastActionError = o.str("lastActionError"), controlMode = o.str("controlMode"),
                 payment = o.obj("payment")?.let { pm -> val fc = pm.obj("forCard")?.takeIf { it.str("kind") == "card" }
                     Payment(pm.get("remaining")?.takeIf { it.isJsonPrimitive }?.asString, fc?.int("id"), fc?.str("name"), pm.obj("costNow")?.get("mana")?.takeIf { it.isJsonPrimitive }?.asString) },
+                hasAfk = o.has("afk"), afk = o.obj("afk")?.let { a -> Afk(a.bool("own") == true, a.str("reason") ?: "turn", a.get("total")?.takeIf { it.isJsonPrimitive }?.asLong ?: 90_000,
+                    a.get("remainingMs")?.takeIf { it.isJsonPrimitive }?.asLong ?: 0, a.int("strikes") ?: 0, a.int("strikeLimit") ?: 3) },
                 firstPlayerId = o.obj("pregame")?.int("firstPlayerId"), startSelection = o.obj("pregame")?.str("selection"),
                 autoPay = o.bool("autoPay"), phaseStops = o.obj("phaseStops")?.entrySet()?.mapNotNull { (k, v) -> if (v.isJsonPrimitive && v.asJsonPrimitive.isBoolean) k to v.asBoolean else null }?.toMap(),
             )
