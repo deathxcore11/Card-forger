@@ -356,6 +356,10 @@ float3 shoulder(float3 x){float3 e=max(x-.82,0.);return min(x,.82)+.18*e/(e+.18)
 float3 voro(float2 q){float2 n=floor(q),f=fract(q);float d1=8.,d2=8.;float2 id=n;
  for(int y=-1;y<=1;y++)for(int x=-1;x<=1;x++){float2 o=float2(float(x),float(y)),h=hash2(n+o),r=o+h-f;float d=dot(r,r);if(d<d1){d2=d1;d1=d;id=n+o;}else if(d<d2)d2=d;}
  return float3(id,sqrt(d2)-sqrt(d1));}
+// Distance to the nearest flake centre, for the soft glow around a lit flake.
+float seedDist(float2 q){float2 n=floor(q),f=fract(q);float d1=8.;for(int y=-1;y<=1;y++)for(int x=-1;x<=1;x++){float2 o=float2(float(x),float(y));float2 r=o+hash2(n+o)-f;d1=min(d1,dot(r,r));}return sqrt(d1);}
+// Real glitter twinkles as the card moves: each flake's phase turns with the tilt, so a still card is still and a moving one sparkles.
+float twinkle(float2 id){return .3+.7*sq(.5+.5*sin(dot(u_tilt,float2(9.,7.))+hash(id)*6.2832));}
 float4 mapAt(float2 uv){return u_maps>.5?u_mask.eval(uv*u_map):float4(.35,0.,0.,1.);}
 float4 relAt(float2 uv){return u_maps>.5?u_relief.eval(uv*u_map):float4(.5,.5,.5,0.);}
 float3 foil(float pat,float tint,float2 uv,float3 L,float3 V,float3 H,float spot,float energy,float2 stroke){
@@ -365,7 +369,7 @@ float3 foil(float pat,float tint,float2 uv,float3 L,float3 V,float3 H,float spot
  if(pat<1.5){d=1350.;lines=.5+.5*sin(px.x*2.0944);mirror=.7;ex=14.;}
  else if(pat<2.5){float2 r=float2(uv.x+uv.y*u_aspect,uv.x-uv.y*u_aspect);float2 j=hash2(floor(r*float2(90.,22.)));float a=PI*.25+(j.x-.5)*.16;g=float2(cos(a),-sin(a));d=1250.+j.y*450.;lines=.5+.5*sin((px.x+px.y)*1.5708);mirror=.35;}
  else if(pat<3.5){float2 c=floor(q*prism),f=fract(q*prism);g=mod(c.x+c.y,2.)<.5?float2(1.,0.):float2(0.,1.);d=1150.+hash(c)*600.;lines=smoothstep(0.,.12,f.x)*smoothstep(0.,.12,f.y)*smoothstep(1.,.88,f.x)*smoothstep(1.,.88,f.y);mirror=.3;}
- else if(pat<4.5){float3 w=voro(q*fine);float2 j=mix(hash2(w.xy*1.7),float2(vnoise(q*24.),vnoise(q*24.+5.1)),.6);float a=j.x*PI;g=float2(cos(a),sin(a));d=1000.+j.y*900.;glint=pow(max(dot(normalize(float3((hash2(w.xy*3.1)-.5)*.5,1.)),H),0.),400.)*1.8;mirror=.25;}
+ else if(pat<4.5){float3 w=voro(q*fine);float2 j=mix(hash2(w.xy*1.7),float2(vnoise(q*24.),vnoise(q*24.+5.1)),.6);float a=j.x*PI;g=float2(cos(a),sin(a));d=1000.+j.y*900.;float gk=pow(max(dot(normalize(float3((hash2(w.xy*3.1)-.5)*.5,1.)),H),0.),400.)*twinkle(w.xy);glint=gk*1.8+gk*exp(-sq(seedDist(q*fine)/.45))*.9;mirror=.25;}
  else if(pat<7.5){g=normalize(float2(-stroke.y,stroke.x)+1e-4);mirror=.45;}
  else if(pat<8.5){float3 w=voro(q*18.);float2 j=hash2(w.xy);float a=j.x*PI;g=float2(cos(a),sin(a));d=1100.+j.y*700.;seam=smoothstep(0.,.06,w.z);mirror=.4;}
  else if(pat<9.5){float3 w=voro(q*float2(7.,4.));float2 j=hash2(w.xy);float a=j.x*PI;g=float2(cos(a),sin(a));d=1200.+j.y*800.;glint=(1.-smoothstep(0.,.035,w.z))*pow(max(dot(normalize(float3((j-.5)*.8,1.)),H),0.),20.)*1.5;mirror=.35;}
@@ -377,7 +381,7 @@ float3 foil(float pat,float tint,float2 uv,float3 L,float3 V,float3 H,float spot
   float show=exp(-sq((u_tilt.x-.35)/.22))*exp(-sq((u_tilt.y+.1)/.5));g=float2(.7071,.7071);d=1300.;lines=glyph*show;mirror=.5;glint=glyph*show*pow(max(H.z,0.),20.)*1.2;}
  else if(pat>13.5){float2 c=floor(q*dots),f=fract(q*dots)-.5;float dm=1.-smoothstep(.26,.32,max(abs(f.x),abs(f.y)));float2 j=hash2(c);
   g=normalize(float2(1.,(j.x-.5)*.3));d=mix(1500.,1200.+j.y*500.,dm);lines=dm;mirror=.35;}
- else{float2 r=float2(uv.x+uv.y*u_aspect,uv.x-uv.y*u_aspect);float2 j=hash2(floor(r*float2(130.,30.)));float a=PI*.25+(j.x-.5)*.3;g=float2(cos(a),-sin(a));d=1150.+j.y*600.;float3 w=voro(q*flake);glint=pow(max(dot(normalize(float3((hash2(w.xy)-.5)*.5,1.)),H),0.),300.)*1.6;mirror=.3;}
+ else{float2 r=float2(uv.x+uv.y*u_aspect,uv.x-uv.y*u_aspect);float2 j=hash2(floor(r*float2(130.,30.)));float a=PI*.25+(j.x-.5)*.3;g=float2(cos(a),-sin(a));d=1150.+j.y*600.;float3 w=voro(q*flake);float gk=pow(max(dot(normalize(float3((hash2(w.xy)-.5)*.5,1.)),H),0.),300.)*twinkle(w.xy);glint=gk*1.6+gk*exp(-sq(seedDist(q*flake)/.45))*.8;mirror=.3;}
  float3 dif=grating(L,V,g,d)*seam;float spec=pow(max(H.z,0.),ex);
  float3 metal=tint<.5?float3(1.):tint<1.5?float3(1.,.74,.32):tint<2.5?float3(.86,.9,.96):float3(.92,.94,1.);
  float3 col=tint<.5?dif*(1.9+energy*1.2):tint<2.5?metal*(.55*spot+.8*length(dif))*1.4:mix(metal*(.5+.9*length(dif)),dif*1.6,.35);
@@ -441,6 +445,8 @@ half4 main(float2 p){
    float hatch=.5+.5*sin(dot(p,float2(1.))*1.2566);metal=mix(float3(.70,.72,.78),toLin(rain),.55+.25*hatch);}
   float3 nf=metal*shade*(.42+.58*sp2)+float3(1.,.97,.9)*(spec*(.35+.65*sp2)+wall*max(dot(n,Ln),0.)*sp2*.6);
   outC=mix(outC,clamp(nf,0.,1.),c);}}
+ // The card's clear gloss coat: a soft band of light that slides across the whole face with the tilt.
+ float band=dot((uv-lp)*float2(1.,u_aspect),normalize(float2(1.,.55)));outC+=(1.-outC)*.07*exp(-sq(band/.09))*(.4+.6*spot);
  return half4(half3(toSrgb(clamp(outC,0.,1.))*a),half(a));
 }
 """
