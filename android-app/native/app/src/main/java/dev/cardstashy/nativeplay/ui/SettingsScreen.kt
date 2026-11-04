@@ -554,7 +554,7 @@ private fun Check(label: String, on: Boolean, foot: String? = null, onChange: (B
 
 /** This build's notes: short, plain, what a player would notice. */
 private val WHATS_NEW = listOf(
-    "Story" to "Acts 29 to 31 are playable.",
+    "Story" to "Acts 29 to 32 are playable.",
     "Updates" to "The app finds new versions and installs them for you.",
     "Fix" to "Cards only glow when you can pay for them.",
     "Combat" to "New block, clash and face-hit effects and sounds.",
