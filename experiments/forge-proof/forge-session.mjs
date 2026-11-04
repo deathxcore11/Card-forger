@@ -167,7 +167,9 @@ export function createForgePresentationSession({request,pollMs=350,lookupArtwork
   return kept.length?{...projection,surface:{...view,cards:[...view.cards,...kept],hand}}:projection;
  };
  const effectiveDraft=()=>draft||(native?.prompt?.method==='order'&&native.prompt.ordered===true?{revision:native.revision,promptId:native.prompt.id,indexes:[...list(native.prompt.destinationIndexes)],remember:false}:null);
- const snapshot=()=>({status,selected,pending:null,busy:sending||awaitRevision!==null||!!native?.busy||transportStatus().blocked===true,error:status?.failure?'NATIVE_PROJECTION_UNAVAILABLE':!status&&error?'FORGE_PROJECTION_UNAVAILABLE':null,clock:null,native,nativeDraft:effectiveDraft(),transportError:transportStatus().error||actionError||error});
+ // The host's turn clock (friend matches): undefined = this host does not send one, null = no window right now.
+ let hostClock;
+ const snapshot=()=>({status,selected,pending:null,busy:sending||awaitRevision!==null||!!native?.busy||transportStatus().blocked===true,error:status?.failure?'NATIVE_PROJECTION_UNAVAILABLE':!status&&error?'FORGE_PROJECTION_UNAVAILABLE':null,clock:null,hostClock,native,nativeDraft:effectiveDraft(),transportError:transportStatus().error||actionError||error});
  // The transport state last shown. A lost action settled without a new board changes only
  // this, so it is redrawn on its own; otherwise the table would stay looking locked.
  let shownTransport='';
@@ -178,6 +180,9 @@ export function createForgePresentationSession({request,pollMs=350,lookupArtwork
   if(closed)return false;
   if(boundViewer!==null&&next?.viewer!==boundViewer){clearPrivateState();error='Forge viewer identity changed.';emit();throw Error(error);}
   if(id(next?.revision)&&next.revision<lastAcceptedRevision)return false;
+  // The clock changes without a new revision (it counts down, and the other seat's window comes and goes), so it is read before the repeat check.
+  if(next&&'afk' in next){const was=hostClock,now=next.afk&&typeof next.afk==='object'?{...next.afk,receivedAt:Date.now()}:null;hostClock=now;
+   if(was===undefined||(was?`${was.own}|${was.reason}|${was.deadline}|${was.strikes}`:'')!==(now?`${now.own}|${now.reason}|${now.deadline}|${now.strikes}`:''))queueMicrotask(()=>{if(!closed)emit();});}
   // A snapshot at the same revision is normally a repeat. Forge can still finish working without
   // a new revision (busy clears and a payment step opens), so a change of busy, input or prompt
   // is taken; otherwise the table would sit on "applying your play" with no Cancel.

@@ -87,3 +87,19 @@ test('an answer the table refuses is tried again a few times, then left alone',a
  for(let i=0;i<400;i++){t+=250;tickFn();await Promise.resolve();await Promise.resolve();await Promise.resolve();}
  assert.ok(calls>=1&&calls<=3,`tried ${calls} times`);timer.stop();
 });
+
+test('a friend match with a host clock draws the host’s time and never acts itself',async()=>{
+ const host=(o={})=>({...snap(),hostClock:{own:true,reason:'turn',total:90000,remainingMs:60000,strikes:0,strikeLimit:3,receivedAt:1000,...o}});
+ const r=rig(host(),{mode:'friend'});
+ await r.run(250);assert.equal(r.last().kind,'turn');assert.ok(Math.abs(r.last().remaining-59750)<=1300,'it starts from the host’s time left');
+ await r.run(20000);assert.ok(Math.abs(r.last().remaining-39750)<=1300,'then counts down on the local clock from receipt');
+ r.set(host({remainingMs:5000,receivedAt:21250}));await r.run(250);assert.equal(r.last().warn,true,'the host’s last 10 s warn');
+ await r.run(30000);assert.deepEqual(r.acts,[],'the host answers, not this client');assert.equal(r.conceded(),0);
+ r.set(host({own:false,reason:'turn',remainingMs:50000,receivedAt:51500}));await r.run(250);assert.equal(r.last().own,false,'the other seat’s window is a line only');
+ r.set({...snap(),hostClock:null});await r.run(250);assert.equal(r.last(),null,'no window, no clock');
+ r.set(host({strikes:2}));await r.run(250);assert.deepEqual(r.strikes.at(-1),[2,3],'a strike from the host shows the warning');
+});
+
+test('without a host clock a friend match keeps the local one',async()=>{
+ const r=rig(snap(),{mode:'friend'});await r.run(250);assert.equal(r.last().kind,'turn');await r.run(TURN_MS);assert.equal(r.acts.length,1);
+});
