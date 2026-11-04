@@ -41,6 +41,7 @@ begin
  raise exception 'Unknown table invite action.';
 end $$;
 revoke all on function community_private.table_invite_action(text,jsonb) from public, anon, authenticated;
+grant execute on function community_private.table_invite_action(text,jsonb) to authenticated;
 create or replace function public.community_table_invite(action text, payload jsonb default '{}'::jsonb)
 returns jsonb language sql security invoker set search_path='' as $$ select community_private.table_invite_action(action,payload); $$;
 revoke all on function public.community_table_invite(text,jsonb) from public, anon;
