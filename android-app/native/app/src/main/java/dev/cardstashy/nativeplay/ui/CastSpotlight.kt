@@ -119,12 +119,16 @@ fun CastSpotlight(s: Spotlight, modifier: Modifier = Modifier, onTap: () -> Unit
     }
     LaunchedEffect(s) { if (s.durationMs > 0) timer.animateTo(0f, tween(s.durationMs.toInt(), easing = LinearEasing)) }
     BoxWithConstraints(modifier.fillMaxSize()) {
-        val cardH = maxHeight * .65f; val cardW = cardH * .716f
+        // Under the CPU's portrait, above End turn and To combat (Table thread check, 4 Nov 18:38Z): at most 62 % of the table.
+        val u = chromeU(maxWidth, maxHeight)
+        val top = 74.dp * u; val bottom = 104.dp * u
+        val cardH = minOf(maxHeight * .62f, maxHeight - top - bottom); val cardW = cardH * .716f
         // The glass box keeps the site's proportions: on a short phone table everything in it scales down together.
         val k = (maxHeight / 560.dp).coerceIn(.64f, 1f)
-        val boxW = (340.dp * k).coerceAtMost(maxWidth - cardW - 16.dp - 96.dp)
+        val boxW = (340.dp * k).coerceAtMost(maxWidth - cardW - 16.dp - 160.dp * u)
         val glow = if (s.yours) GLOW_YOU else GLOW_CPU
-        Row(Modifier.align(Alignment.CenterEnd).padding(end = 64.dp).graphicsLayer {
+        // Clear of the CPU's library and graveyard piles at the right edge.
+        Row(Modifier.align(Alignment.TopEnd).padding(end = 128.dp * u, top = top).graphicsLayer {
                 alpha = enter.value; translationX = (1f - enter.value) * 40.dp.toPx(); val k = .94f + .06f * enter.value; scaleX = k; scaleY = k }
             .clickable(remember { MutableInteractionSource() }, null, onClick = onTap)
             .semantics { contentDescription = "${s.actor} ${s.verb.lowercase()} ${s.card.name}" },
@@ -190,7 +194,7 @@ private fun GlassBox(s: Spotlight, w: Dp, h: Dp, timer: Float) {
                 style = sans(12.sp, FontWeight.Normal, Color(0xFFB9B2A4)), inlineContent = inline, maxLines = 2, overflow = TextOverflow.Ellipsis)
         }
         Spacer(Modifier.height(2.dp))
-        if (s.durationMs > 0) Box(Modifier.fillMaxWidth().height(3.dp).clip(RoundedCornerShape(2.dp))) {
+        if (s.durationMs > 0) Box(Modifier.fillMaxWidth().height(3.dp).clip(RoundedCornerShape(2.dp)).background(Color(0x1FFFFFFF))) {
             Box(Modifier.fillMaxWidth(timer).height(3.dp).background(Brush.horizontalGradient(listOf(Color(0xFFF7DA97), Color(0xFFE8B95B)))))
         }
     }

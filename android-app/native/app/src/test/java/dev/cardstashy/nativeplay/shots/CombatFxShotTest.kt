@@ -50,7 +50,8 @@ class CombatFxShotTest {
         val frames = listOf(
             Triple("block", listOf(item(Fx.BLOCK, 1640, mine.id, "c${mine.id}", "c${theirs.id}")), 700L),
             Triple("clash", listOf(item(Fx.LUNGE, 1700, theirs.id, to = "c${mine.id}", tone = Color(0xFFFF6A4A), power = .8f),
-                item(Fx.DAMAGE, 1100, mine.id, label = "−3"), item(Fx.DAMAGE, 1100, theirs.id, label = "−2")), 0L),
+                FxItem(Fx.DAMAGE, 2, 1100, card = mine.id, tone = Color(0xFFFF5A4A), side = 1).also { it.label = "−3"; it.dur = 1100 },
+                FxItem(Fx.DAMAGE, 2, 1100, card = theirs.id, tone = Color(0xFFFF5A4A), side = -1).also { it.label = "−2"; it.dur = 1100 }), 0L),
             Triple("face", listOf(item(Fx.LUNGE, 1700, theirs.id, to = "orb${st.viewer}", tone = Color(0xFFFF6A4A)),
                 item(Fx.LIFE, 950, to = "orb${st.viewer}", label = "−4", level = 3, player = st.viewer, power = .8f)), 0L),
         )

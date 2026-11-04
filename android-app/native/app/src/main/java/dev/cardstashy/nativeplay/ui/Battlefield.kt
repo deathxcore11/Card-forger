@@ -99,6 +99,8 @@ internal class FxItem(
     val ghost: Card? = null, val tone: Color = Color.White, val land: Boolean = false, val power: Float = 1f,
     /** A stagger inside its group (ms), and the short label it shows (a damage number, a counter). */
     val delay: Long = 0L, var label: String = "",
+    /** Where its number sits: -1 lower left (an attacker), 1 upper right (a blocker), 0 centred. */
+    val side: Int = 0,
 ) {
     var t0 = 0L; var dur = baseMs; var p0 = 0f
     /** 0..1 through the effect, or -1 while it waits for its turn. */
@@ -285,7 +287,8 @@ class Battlefield {
         // Damage (level 2, 350 ms): 70 ms hit-stop, the number pops, a 3 px shake. Life totals move with it.
         for ((id, c) in bfB) {
             val o = bfA[id] ?: continue
-            if (c.damage > o.damage) hits += FxItem(Fx.DAMAGE, 2, 1100, card = id, tone = Color(0xFFFF5A4A), label = "−${c.damage - o.damage}", delay = lag)
+            if (c.damage > o.damage) hits += FxItem(Fx.DAMAGE, 2, 1100, card = id, tone = Color(0xFFFF5A4A), label = "−${c.damage - o.damage}", delay = lag,
+                side = if (o.attacking) -1 else if (o.blocking) 1 else 0)
             val gained = c.counters.values.sum() - o.counters.values.sum()
             if (gained != 0) {
                 val key = c.counters.entries.firstOrNull { (k, v) -> v != (o.counters[k] ?: 0) }?.key ?: ""
@@ -541,7 +544,11 @@ internal fun FxLayer(force: Boolean = false) {
                     Fx.ATTACK -> rect("c${it.card}")?.let { r -> glowRing(r, Color(0xFFFFD98A), .9f * smooth(0f, .5f, p) * (1f - smooth(.8f, 1f, p)), 17.dp.toPx()) }
                     Fx.LUNGE -> drawLunge(it, p, rect("c${it.card}"), rect(it.toKey))
                     Fx.BLOCK -> { val a = rect(it.fromKey); val b = rect(it.toKey); if (a != null && b != null) drawBlock(tm, it, p, a, b) }
-                    Fx.DAMAGE -> rect("c${it.card}")?.let { r -> drawHit((p * 3.1f).coerceAtMost(1f), r); bigNumber(tm, it.label, p, r.center.copy(y = r.top + r.height * .3f), it.tone, 44f) }
+                    Fx.DAMAGE -> rect("c${it.card}")?.let { r -> drawHit((p * 3.1f).coerceAtMost(1f), r)
+                        // An attacker's number sits lower left and a blocker's upper right, so two never stack and the P/T stays readable.
+                        // Away from the clash: a card in the upper half shows it above-left, one in the lower half below-right.
+                        val at = if (it.side == 0) r.center.copy(y = r.top + r.height * .3f) else if (r.center.y < size.height / 2) Offset(r.left - r.width * .2f, r.top - r.height * .15f) else Offset(r.right + r.width * .2f, r.bottom + r.height * .05f)
+                        bigNumber(tm, it.label, p, at, it.tone, if (size.height < 500.dp.toPx()) 40f else 52f) }
                     Fx.LIFE -> rect(it.toKey)?.let { r -> if (it.level == 3) faceHit(it, p, r) else glowRing(r, it.tone, .8f * (1f - p), 6.dp.toPx(), round = true); pop(tm, it.label, p, Offset(r.center.x, if (r.center.y < size.height / 2) r.bottom + 16.dp.toPx() else r.top - 6.dp.toPx()), it.tone, if (it.level == 3) 34f + 8f * it.power else 20f, down = r.center.y < size.height / 2) }
                     Fx.COUNTER -> rect("c${it.card}")?.let { r -> drawPour(p, r); pop(tm, it.label, p, Offset(r.center.x, r.top + 4.dp.toPx()), Color(0xFFF3D27E), 15f) }
                     Fx.DEATH -> it.from?.translate(-self.x, -self.y)?.let { r -> drawShards(it, p, r, rect(it.toKey)) }
@@ -763,26 +770,31 @@ private fun DrawScope.drawBlock(tm: androidx.compose.ui.text.TextMeasurer, it: F
         val at = lerpO(a.center, b.center, q)
         drawCircle(Brush.radialGradient(listOf(Color.White, Color(0xFFF0C27A).copy(alpha = .7f), Color.Transparent), center = at, radius = 12f * density), radius = 12f * density, center = at)
     }
-    // The blocker's own box follows its slide; its live rect is a.
-    val c = a.center
+    // Centred on the blocker where its slide put it, the tile plus 12 %.
+    val dx = b.center.x - a.center.x; val dy = b.center.y - a.center.y; val dist = kotlin.math.hypot(dx, dy).coerceAtLeast(1f)
+    val slide = minOf(70.dp.toPx(), dist * .45f) * easeOutBack((p / .146f).coerceAtMost(1f)) * (1f - smooth(.86f, 1f, p))
+    val c = a.center + Offset(dx / dist * slide, dy / dist * slide)
     val flare = smooth(0f, .55f, p); val out = 1f - smooth(.84f, 1f, p)
-    val sw = 150.dp.toPx() * (1.25f - .25f * flare); val sh = 110.dp.toPx() * (1.25f - .25f * flare)
+    val grow = 1.12f * (1.2f - .2f * flare)
+    val sw = a.width * grow; val sh = a.height * grow
     val oval = Rect(c.x - sw / 2, c.y - sh / 2, c.x + sw / 2, c.y + sh / 2)
+    val rad = CornerRadius(minOf(sw, sh) * .18f)
     val gold = Color(0xFFF0C27A)
     drawIntoCanvas { cv ->
         val glow = Paint().asFrameworkPaint().apply { isAntiAlias = true; style = android.graphics.Paint.Style.STROKE; strokeWidth = 10.dp.toPx(); color = gold.copy(alpha = .75f * flare * out).toArgb(); maskFilter = BlurMaskFilter(14.dp.toPx(), BlurMaskFilter.Blur.NORMAL) }
-        cv.nativeCanvas.drawOval(oval.left, oval.top, oval.right, oval.bottom, glow)
+        cv.nativeCanvas.drawRoundRect(oval.left, oval.top, oval.right, oval.bottom, rad.x, rad.y, glow)
         val inner = Paint().asFrameworkPaint().apply { isAntiAlias = true; style = android.graphics.Paint.Style.STROKE; strokeWidth = 8.dp.toPx(); color = gold.copy(alpha = .4f * flare * out).toArgb(); maskFilter = BlurMaskFilter(8.dp.toPx(), BlurMaskFilter.Blur.INNER) }
-        cv.nativeCanvas.drawOval(oval.left + 6.dp.toPx(), oval.top + 6.dp.toPx(), oval.right - 6.dp.toPx(), oval.bottom - 6.dp.toPx(), inner)
+        cv.nativeCanvas.drawRoundRect(oval.left + 4.dp.toPx(), oval.top + 4.dp.toPx(), oval.right - 4.dp.toPx(), oval.bottom - 4.dp.toPx(), rad.x, rad.y, inner)
     }
-    drawOval(Color(0xFFFFE6B0).copy(alpha = .95f * flare * out), oval.topLeft, oval.size, style = Stroke(2.5f * density))
+    drawRoundRect(Color(0xFFFFE6B0).copy(alpha = .95f * flare * out), oval.topLeft, oval.size, rad, style = Stroke(2.5f * density))
     // BLOCKED: gold, letter-spaced, -4 degrees, slams from 3x to 1x, held, then fades with the shield.
     val slam = smooth(.1f, .24f, p); if (slam <= 0f) return
     val k = 3f - 2f * slam
     val style = TextStyle(fontFamily = Type.Sans, fontWeight = FontWeight.Black, fontSize = 30.sp, letterSpacing = .18.em, color = gold)
     val lay = tm.measure("BLOCKED", style)
-    val side = if (b.center.x >= c.x) -1f else 1f
-    val at = Offset((c.x + side * (a.width / 2 + lay.size.width * .55f)).coerceIn(lay.size.width / 2f + 8f, size.width - lay.size.width / 2f - 8f), c.y)
+    // The stamp goes on whichever side of the blocker has more room.
+    val side = if (c.x > size.width - c.x) -1f else 1f
+    val at = Offset((c.x + side * (sw / 2 + lay.size.width * .55f)).coerceIn(lay.size.width / 2f + 8f, size.width - lay.size.width / 2f - 8f), c.y)
     val alpha = slam.coerceAtMost(1f) * out
     rotate(-4f, at) { scale(k, at) {
         val tl = Offset(at.x - lay.size.width / 2f, at.y - lay.size.height / 2f)
