@@ -32,6 +32,11 @@ const COUNTER_NAMES={P1P1:'+1/+1',M1M1:'\u22121/\u22121',LOYALTY:'Loyalty',DEFEN
 // untapped source of yours readable. Anything unclear keeps the glow; Forge still validates every play.
 const COST_BENDERS=/\bcosts?\b[^.]*\bless\b|\breduc|without paying|rather than pay|alternative|convoke|delve|improvise|affinity|evoke|emerge|offering|assist|spectacle|surge|prowl|\bdash\b|blitz|madness|foretell|\bplot\b|bestow|mutate|overload|prototype|flashback|escape|unearth|cycling|channel|ninjutsu|morph|disguise|\bwarp\b|sneak|freerunning|impending|mayhem|from your hand|discard this card|exile this card|reveal this card/i;
 const MANA_SYMBOL=/^(?:\d+|[WUBRGC])$/;
+// A card that only changes what OTHER spells cost ("Spells you cast cost {1} less") doesn't bend its own cost.
+const OTHER_SPELL_COST=/[^.\n]*\b(?<!\bthis )(?<!\bthis\s)spells?\b[^.\n]*\bcosts?\b[^.\n]*\b(?:less|more)\b[^.\n]*\.?/gi;
+export const bendsOwnCost=text=>COST_BENDERS.test(String(text||'').replace(OTHER_SPELL_COST,' '));
+// A land on the table whose every ability just adds mana: tappable, but never worth a glow.
+const manaOnlyLand=c=>!!c&&c.zone==='Battlefield'&&!!c.types?.includes('Land')&&String(c.text||'').split('\n').filter(l=>l.includes(':')).every(l=>/\badd\b/i.test(l));
 function manaSources(card,tapped=false){
  const lines=String(card.text||'').split(/\n|(?<=\.)\s+(?=[A-Z{])/).map(l=>l.trim().replace(/^\((.*)\)$/,'$1')).filter(l=>/\badd\b/i.test(l));
  if(!lines.length){if(!card.types?.includes('Land')||tapped)return [];const basic={Plains:'W',Island:'U',Swamp:'B',Mountain:'R',Forest:'G'},colors=Object.entries(basic).filter(([t])=>new RegExp(`\\b${t}\\b`).test(card.type||'')).map(([,c])=>c);return colors.length?[colors.map(c=>[c])]:null;}
@@ -54,7 +59,7 @@ function landCeiling(card){
 // Only an effect that changes what your spells cost (or how they can be paid) keeps a card lit.
 const TABLE_BENDERS=/\bcosts?\b[^.]*\bless\b|\breduc|without paying|rather than pay|alternative cost|as though it were mana|spend mana as though|convoke|improvise|affinity|\bdelve\b/i;
 export function provenUnaffordable(card,surface,pool={}){
- if(!card?.known||card.zone!=='Hand'||card.types?.includes('Land')||COST_BENDERS.test(card.text||''))return false;
+ if(!card?.known||card.zone!=='Hand'||card.types?.includes('Land')||bendsOwnCost(card.text))return false;
  const symbols=(String(card.manaCost||'').match(/\{[^}]+\}/g)||[]).map(x=>x.slice(1,-1));if(!symbols.length||!symbols.every(x=>MANA_SYMBOL.test(x)))return false;
  const generic=symbols.filter(x=>/\d/.test(x)).reduce((a,x)=>a+Number(x),0),colored=symbols.filter(x=>!/\d/.test(x));
  const table=surface.cards.filter(c=>c.zone==='Battlefield'||c.zone==='Command');if(table.some(c=>!c.known||TABLE_BENDERS.test(c.text||'')))return false;
@@ -211,7 +216,7 @@ const name=String(card.name);if(Math.max(...name.split(/\s+/).map(word=>word.len
   const role=id=>chosen.has(id)?'chosen':targets.has(id)?'target':choices.has(id)?(discarding?'discard':'choice'):actionable.has(id)?'playable':'';
   const inputName=String(n.inputType||'');if(root.dataset.forgeInput!==inputName)root.dataset.forgeInput=inputName;
   const combatInput=n.inputType==='InputAttack'||n.inputType==='InputBlock';
-  for(const el of root.querySelectorAll('.play-match-card[data-instance]')){const cardId=Number(el.dataset.instance),r=role(cardId);const dragOk=combatInput&&!!combatDrops(cardId);if((el.dataset.forgeDrag==='true')!==dragOk){if(dragOk)el.dataset.forgeDrag='true';else delete el.dataset.forgeDrag;}el.dataset.forgeHint=String(actionable.has(cardId)||targets.has(cardId)||choices.has(cardId));if(actionable.has(cardId)&&el.closest('.play-match-hand')){const c=snap.status.surface.cards.find(x=>x.id===cardId);const a=affordability.get(cardId);el.dataset.forgeSure=String(a?a==='available':!(c&&COST_BENDERS.test(c.text||'')));}else delete el.dataset.forgeSure;
+  for(const el of root.querySelectorAll('.play-match-card[data-instance]')){const cardId=Number(el.dataset.instance),r=role(cardId);const dragOk=combatInput&&!!combatDrops(cardId);if((el.dataset.forgeDrag==='true')!==dragOk){if(dragOk)el.dataset.forgeDrag='true';else delete el.dataset.forgeDrag;}el.dataset.forgeHint=String(actionable.has(cardId)||targets.has(cardId)||choices.has(cardId));if(actionable.has(cardId)&&el.closest('.play-match-hand')){const a=affordability.get(cardId);el.dataset.forgeSure=String(a==='available');}else if(actionable.has(cardId)&&manaOnlyLand(snap.status.surface.cards.find(x=>x.id===cardId)))el.dataset.forgeSure='false';else delete el.dataset.forgeSure;
    // A creature Forge says must attack this combat wears a tag until it is in the attack.
    const must=n.inputType==='InputAttack'&&!!snap.status.surface.cards.find(x=>x.id===cardId&&owesAttack(x));if(must&&el.dataset.forgeMust!=='true'){el.dataset.forgeMust='true';const tag=doc.createElement('span');tag.className='forge-must-tag';tag.textContent='Must attack';el.append(tag);}else if(!must&&el.dataset.forgeMust){delete el.dataset.forgeMust;el.querySelector(':scope>.forge-must-tag')?.remove();}el.dataset.forgeChosen=String(chosen.has(cardId));const why=!actionable.has(cardId)&&blockedWhy.get(cardId);if(why){el.dataset.forgeBlocked=why;el.title=why;}else if(el.dataset.forgeBlocked){delete el.dataset.forgeBlocked;el.removeAttribute('title');}if(el.dataset.forgeRole!==r)el.dataset.forgeRole=r;el.setAttribute('aria-description',presentation.hosted?'When highlighted, click to play or select this card, or drag it up onto the table to play. Otherwise click to see it larger. Press I to see it larger at any time.':'Click sends this card to Forge; legality is checked by Forge. Magnifier or I inspects without acting.');}
   const surface=snap.status.surface,nativePlayer=seat=>n.players.find(p=>p.id===surface.players.find(p=>p.seat===seat)?.nativeId);
