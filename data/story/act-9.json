@@ -291,7 +291,7 @@
      "name": "The Pit Fighter",
      "colors": "R",
      "archetype": null,
-     "label": null,
+     "label": "tribute",
      "cards": [
       {
        "qty": 2,
@@ -379,7 +379,7 @@
      "name": "The House Champion",
      "colors": "B",
      "archetype": null,
-     "label": null,
+     "label": "tribute",
      "cards": [
       {
        "qty": 4,
@@ -563,7 +563,7 @@
      "name": "Seton's Grove",
      "colors": "G",
      "archetype": null,
-     "label": null,
+     "label": "tribute",
      "cards": [
       {
        "qty": 4,
@@ -651,7 +651,7 @@
      "name": "The Cabal's Offer",
      "colors": "B",
      "archetype": null,
-     "label": null,
+     "label": "tribute",
      "cards": [
       {
        "qty": 4,
@@ -828,7 +828,7 @@
      "name": "The Squirrels of Krosa",
      "colors": "G",
      "archetype": null,
-     "label": null,
+     "label": "tribute",
      "cards": [
       {
        "qty": 4,
@@ -909,7 +909,7 @@
      "name": "Cabal Grave Robbers",
      "colors": "B",
      "archetype": null,
-     "label": null,
+     "label": "tribute",
      "cards": [
       {
        "qty": 4,
@@ -1090,7 +1090,7 @@
      "name": "Kamahl's Fury",
      "colors": "RG",
      "archetype": null,
-     "label": null,
+     "label": "tribute",
      "cards": [
       {
        "qty": 2,
@@ -1185,7 +1185,7 @@
      "name": "Chainer's Nightmares",
      "colors": "B",
      "archetype": null,
-     "label": null,
+     "label": "tribute",
      "cards": [
       {
        "qty": 2,
@@ -1380,7 +1380,7 @@
      "name": "Temper of Steel",
      "colors": "RG",
      "archetype": null,
-     "label": null,
+     "label": "tribute",
      "cards": [
       {
        "qty": 2,
@@ -1482,7 +1482,7 @@
      "name": "The Cephalid Court",
      "colors": "U",
      "archetype": null,
-     "label": null,
+     "label": "tribute",
      "cards": [
       {
        "qty": 2,
@@ -1673,7 +1673,7 @@
      "name": "The Order",
      "colors": "W",
      "archetype": null,
-     "label": null,
+     "label": "tribute",
      "cards": [
       {
        "qty": 2,
@@ -1761,7 +1761,7 @@
      "name": "Mono-Black Control",
      "colors": "B",
      "archetype": null,
-     "label": null,
+     "label": "tribute",
      "cards": [
       {
        "qty": 2,
@@ -1951,7 +1951,7 @@
      "name": "Balthor's Forge",
      "colors": "RW",
      "archetype": null,
-     "label": null,
+     "label": "tribute",
      "cards": [
       {
        "qty": 2,
@@ -2046,7 +2046,7 @@
      "name": "Mirari's Wake",
      "colors": "GW",
      "archetype": null,
-     "label": null,
+     "label": "tribute",
      "cards": [
       {
        "qty": 4,
@@ -2251,7 +2251,7 @@
      "name": "The Barbarian's Penance",
      "colors": "RG",
      "archetype": null,
-     "label": null,
+     "label": "tribute",
      "cards": [
       {
        "qty": 2,
@@ -2346,7 +2346,7 @@
      "name": "The Cabal",
      "colors": "B",
      "archetype": null,
-     "label": null,
+     "label": "tribute",
      "cards": [
       {
        "qty": 4,

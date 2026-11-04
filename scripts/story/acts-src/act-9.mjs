@@ -44,7 +44,7 @@ export default {
   battles: [
     {slot: 1, mood: 'tension', kind: 'Arrival', title: 'The Pit Fights', difficulty: 'Easy', rewardSet: 'ody', teaches: ['Combat math'],
       blurb: "Kamahl is a barbarian from the mountains who fights in the Cabal's pits for coin. Tonight the prize is the Mirari. The Cabal's champion has never lost.",
-      hero: {who: 'kamahl', deck: {name: 'The Pit Fighter', colors: 'R', list: `
+      hero: {who: 'kamahl', deck: {label: 'tribute', name: 'The Pit Fighter', colors: 'R', list: `
 2 Kamahl, Pit Fighter
 4 Barbarian Lunatic
 4 Dwarven Grunt
@@ -56,7 +56,7 @@ export default {
 2 Balthor the Stout
 4 Firebolt
 24 Mountain`}},
-      villain: {who: 'torturer', deck: {name: 'The House Champion', colors: 'B', list: `
+      villain: {who: 'torturer', deck: {label: 'tribute', name: 'The House Champion', colors: 'B', list: `
 4 Cabal Torturer
 4 Zombie Cannibal
 4 Dirty Wererat
@@ -81,7 +81,7 @@ export default {
         s('stage', 'By morning, the Cabal, the Order and the cephalids of the sea all know his name.')]},
     {slot: 2, mood: 'march', kind: 'Lesson', title: "Krosa's Keepers", difficulty: 'Easy', rewardSet: 'ody', teaches: ['Threshold'],
       blurb: "Seton is a centaur druid who guards the Krosan Forest. The Cabal is recruiting at its edge, offering power to anyone who will take it. Seton's beasts get stronger as the battle goes on.",
-      hero: {who: 'seton', deck: {name: "Seton's Grove", colors: 'G', list: `
+      hero: {who: 'seton', deck: {label: 'tribute', name: "Seton's Grove", colors: 'G', list: `
 4 Werebear
 4 Krosan Avenger
 4 Nimble Mongoose
@@ -93,7 +93,7 @@ export default {
 4 Muscle Burst
 2 Roar of the Wurm
 24 Forest`}},
-      villain: {who: 'surgeon', deck: {name: "The Cabal's Offer", colors: 'B', list: `
+      villain: {who: 'surgeon', deck: {label: 'tribute', name: "The Cabal's Offer", colors: 'B', list: `
 4 Cabal Surgeon
 4 Childhood Horror
 4 Frightcrawler
@@ -116,7 +116,7 @@ export default {
       after: [q('seton', "Don't dismiss its anger as mindless fury. I assure you, it has purpose.")]},
     {slot: 3, mood: 'comic', kind: 'Lesson', title: 'Keep an Eye on the Squirrels', difficulty: 'Easy', rewardSet: 'ody', teaches: ['Flashback'],
       blurb: "A Cabal grave robber has come to Krosa to dig up the dead. The forest's oldest hermit and his squirrels have opinions about that. The dead stay buried. The squirrels keep coming back.",
-      hero: {who: 'collector', deck: {name: 'The Squirrels of Krosa', colors: 'G', list: `
+      hero: {who: 'collector', deck: {label: 'tribute', name: 'The Squirrels of Krosa', colors: 'G', list: `
 4 Nut Collector
 4 Squirrel Mob
 4 Squirrel Nest
@@ -127,7 +127,7 @@ export default {
 4 Elephant Ambush
 4 Muscle Burst
 24 Forest`}},
-      villain: {who: 'robber', deck: {name: 'Cabal Grave Robbers', colors: 'B', list: `
+      villain: {who: 'robber', deck: {label: 'tribute', name: 'Cabal Grave Robbers', colors: 'B', list: `
 4 Gravedigger
 4 Zombie Cannibal
 4 Morgue Theft
@@ -151,7 +151,7 @@ export default {
       after: [q('robber', 'That does it—I quit!'), s('collector', 'He will be back. They always come back. So do we.')]},
     {slot: 4, mood: 'tension', kind: 'Rival', title: "Chainer's Nightmares", difficulty: 'Normal', rewardSet: 'tor', teaches: ['Playing against reanimation'],
       blurb: "Chainer, the Cabal's dementia master, took the Mirari from Kamahl. It shows him everything. He summons nightmares from his own mind, and his mind is not well.",
-      hero: {who: 'kamahl', deck: {name: "Kamahl's Fury", colors: 'RG', list: `
+      hero: {who: 'kamahl', deck: {label: 'tribute', name: "Kamahl's Fury", colors: 'RG', list: `
 2 Kamahl, Pit Fighter
 4 Wild Mongrel
 4 Werebear
@@ -164,7 +164,7 @@ export default {
 4 Volcanic Spray
 12 Mountain
 12 Forest`}},
-      villain: {who: 'chainer', deck: {name: "Chainer's Nightmares", colors: 'B', list: `
+      villain: {who: 'chainer', deck: {label: 'tribute', name: "Chainer's Nightmares", colors: 'B', list: `
 2 Chainer, Dementia Master
 4 Nantuko Shade
 4 Zombify
@@ -189,7 +189,7 @@ export default {
         s('stage', 'Chainer burns out like a candle. The Mirari rolls out of his hand, and Kamahl picks it up again. He should not have.')]},
     {slot: 5, mood: 'tension', kind: 'Lesson', title: 'Under New Management', difficulty: 'Normal', rewardSet: 'tor', teaches: ['Madness'],
       blurb: "Laquatus, the cephalid ambassador, has poisoned his way into power under the sea. He wants the Mirari, and he has decided Kamahl's sister is the easiest way to get it.",
-      hero: {who: 'jeska', deck: {name: 'Temper of Steel', colors: 'RG', list: `
+      hero: {who: 'jeska', deck: {label: 'tribute', name: 'Temper of Steel', colors: 'RG', list: `
 2 Jeska, Warrior Adept
 4 Wild Mongrel
 4 Arrogant Wurm
@@ -203,7 +203,7 @@ export default {
 12 Mountain
 12 Forest
 2 Elephant Guide`}},
-      villain: {who: 'laquatus', deck: {name: 'The Cephalid Court', colors: 'U', list: `
+      villain: {who: 'laquatus', deck: {label: 'tribute', name: 'The Cephalid Court', colors: 'U', list: `
 2 Ambassador Laquatus
 2 Aboshan, Cephalid Emperor
 4 Cephalid Looter
@@ -228,7 +228,7 @@ export default {
       after: [q('laquatus', "I have a hunch we'll be seeing that one again soon."), q('stage', 'Laquatus dreams of seizing control.')]},
     {slot: 6, mood: 'march', kind: 'Meta', title: 'The Holy Wind', difficulty: 'Normal', rewardSet: 'tor', teaches: ['Card advantage'],
       blurb: "The Order is Otaria's other great power, the aven and their soldiers. Major Teroh has sworn to wipe out the Cabal. Braids, the Cabal's dementia summoner, plays the coldest deck of the era: kill everything, draw more, never blink.",
-      hero: {who: 'teroh', deck: {name: 'The Order', colors: 'W', list: `
+      hero: {who: 'teroh', deck: {label: 'tribute', name: 'The Order', colors: 'W', list: `
 2 Major Teroh
 4 Aven Trooper
 4 Teroh's Faithful
@@ -240,7 +240,7 @@ export default {
 4 Pilgrim of Justice
 2 Silver Seraph
 24 Plains`}},
-      villain: {who: 'braids', deck: {name: 'Mono-Black Control', colors: 'B', list: `
+      villain: {who: 'braids', deck: {label: 'tribute', name: 'Mono-Black Control', colors: 'B', list: `
 2 Braids, Cabal Minion
 4 Nantuko Shade
 4 Chainer's Edict
@@ -265,7 +265,7 @@ export default {
       after: [q('stage', 'Teroh dreams of his enemies\' doom.'), s('stage', 'Braids smiles at Teroh as she retreats. She has seen how his story ends.')]},
     {slot: 7, mood: 'tension', kind: 'Meta', title: 'Brother and Sister', difficulty: 'Normal', rewardSet: 'jud', teaches: ['Racing'],
       blurb: "Kamahl has the Mirari again, and it has changed him. It plays itself now, the Mirari's Wake. Jeska comes to make him put it down. He will not.",
-      hero: {who: 'jeska', deck: {name: "Balthor's Forge", colors: 'RW', list: `
+      hero: {who: 'jeska', deck: {label: 'tribute', name: "Balthor's Forge", colors: 'RW', list: `
 2 Jeska, Warrior Adept
 4 Barbarian Lunatic
 4 Halberdier
@@ -278,7 +278,7 @@ export default {
 2 Balthor the Stout
 12 Mountain
 12 Plains`}},
-      villain: {who: 'kamahl', deck: {name: "Mirari's Wake", colors: 'GW', list: `
+      villain: {who: 'kamahl', deck: {label: 'tribute', name: "Mirari's Wake", colors: 'GW', list: `
 4 Mirari's Wake
 2 Mirari
 4 Phantom Centaur
@@ -306,7 +306,7 @@ export default {
         s('stage', 'He carries her for a day. Then Cabal riders take her from him, and he is too broken to stop them.')]},
     {slot: 8, mood: 'boss', kind: 'Boss', title: 'The Cabal Patriarch', difficulty: 'Hard', rewardCard: "Chainer's Edict", rewardSet: 'jud', teaches: ['Everything so far'],
       blurb: 'The Patriarch rules the Cabal. He has Jeska. He wants the Mirari. Kamahl walks into the Cabal\'s city alone, carrying both his guilt and the sphere.',
-      hero: {who: 'kamahl', deck: {name: "The Barbarian's Penance", colors: 'RG', list: `
+      hero: {who: 'kamahl', deck: {label: 'tribute', name: "The Barbarian's Penance", colors: 'RG', list: `
 2 Kamahl, Pit Fighter
 4 Werebear
 4 Krosan Beast
@@ -319,7 +319,7 @@ export default {
 4 Volcanic Spray
 12 Mountain
 12 Forest`}},
-      villain: {who: 'patriarch', deck: {name: 'The Cabal', colors: 'B', list: `
+      villain: {who: 'patriarch', deck: {label: 'tribute', name: 'The Cabal', colors: 'B', list: `
 4 Chainer's Edict
 4 Nantuko Shade
 4 Mesmeric Fiend

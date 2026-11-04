@@ -34,7 +34,7 @@ export default {
   battles: [
     {slot: 1, kind: 'Arrival', title: 'The Pass at Kjeldor', difficulty: 'Easy', mood: 'tension', rewardSet: 'ice', teaches: ['Snow'],
       blurb: 'Centuries after the Sylex, the snow never melts. Two nations fight over the last warm valleys.',
-      hero: {who: 'kjeldor', deck: {name: 'The Royal Guard', colors: 'W', list: `
+      hero: {who: 'kjeldor', deck: {label: 'tribute', name: 'The Royal Guard', colors: 'W', list: `
 4 Kjeldoran Royal Guard
 4 Kjeldoran Skycaptain
 4 Kjeldoran Elite Guard
@@ -45,7 +45,7 @@ export default {
 4 Mesa Pegasus
 4 Kjeldoran Skyknight
 24 Snow-Covered Plains`}},
-      villain: {who: 'balduvian', deck: {name: 'Balduvian Raiders', colors: 'R', list: `
+      villain: {who: 'balduvian', deck: {label: 'tribute', name: 'Balduvian Raiders', colors: 'R', list: `
 4 Balduvian Barbarians
 4 Mons's Goblin Raiders
 4 Fire Elemental
@@ -62,7 +62,7 @@ export default {
         villain: cue('Burn the fences!', 'Balduvia rides!', 'The cold bites both ways!', 'The valley is ours.', "We'll be back when it's colder.")}},
     {slot: 2, kind: 'Lesson', title: "The Royal Mage's Lesson", difficulty: 'Easy', mood: 'march', rewardSet: 'ice', teaches: ['Cumulative upkeep'],
       blurb: "Kjeldor's royal mage teaches you a hard truth of the long winter: power that keeps you warm costs more every day you keep it.",
-      hero: {who: 'gustha', deck: {name: 'The Royal Mage', colors: 'U', list: `
+      hero: {who: 'gustha', deck: {label: 'tribute', name: 'The Royal Mage', colors: 'U', list: `
 4 Illusionary Forces
 4 Phantom Monster
 4 Air Elemental
@@ -75,7 +75,7 @@ export default {
 4 Arcane Denial
 1 Lord of Atlantis
 24 Snow-Covered Island`}},
-      villain: {who: 'varchild', deck: {name: "Varchild's Company", colors: 'R', list: `
+      villain: {who: 'varchild', deck: {label: 'tribute', name: "Varchild's Company", colors: 'R', list: `
 4 Varchild's War-Riders
 4 Gray Ogre
 4 Balduvian Horde
@@ -92,7 +92,7 @@ export default {
         villain: cue('Ride!', 'Pay me in blood.', "This wasn't the contract!", 'Collect the bounty.', 'Somebody owes me.')}},
     {slot: 3, kind: 'Lesson', title: 'The Black Book', difficulty: 'Easy', mood: 'tension', rewardSet: 'ice', teaches: ['Card advantage', 'Paying life'],
       blurb: 'In the dark of the forest, a planeswalker offers you a book. Every page is a card. Every card costs life.',
-      hero: {who: 'laina', deck: {name: 'Fyndhorn Council', colors: 'G', list: `
+      hero: {who: 'laina', deck: {label: 'tribute', name: 'Fyndhorn Council', colors: 'G', list: `
 4 Fyndhorn Elves
 4 Fyndhorn Elder
 4 Folk of the Pines
@@ -104,7 +104,7 @@ export default {
 3 Craw Wurm
 2 Pygmy Allosaurus
 24 Snow-Covered Forest`}},
-      villain: {who: 'leshrac', deck: {name: "Leshrac's Book", colors: 'B', list: `
+      villain: {who: 'leshrac', deck: {label: 'tribute', name: "Leshrac's Book", colors: 'B', list: `
 2 Knight of Stromgald
 2 Swamp
 2 Dark Ritual
@@ -131,7 +131,7 @@ export default {
         villain: cue('Read.', 'More.', 'Pay.', 'Mine.', 'Later.')}},
     {slot: 4, kind: 'Rival', title: "Baron Sengir's Feast", difficulty: 'Normal', mood: 'tension', rewardSet: 'hml', teaches: ['Direct damage', 'Growing creatures'],
       blurb: "A rift pulls you to Ulgrotha, a dying world ruled from a castle. The Baron is having guests for dinner. You're on the menu.",
-      hero: {who: 'reveka', deck: {name: "Reveka's Fire", colors: 'UR', list: `
+      hero: {who: 'reveka', deck: {label: 'tribute', name: "Reveka's Fire", colors: 'UR', list: `
 2 Reveka, Wizard Savant
 4 Orcish Artillery
 4 Orcish Cannoneers
@@ -144,7 +144,7 @@ export default {
 14 Mountain
 10 Island
 4 Prodigal Sorcerer`}},
-      villain: {who: 'baron', deck: {name: "The Baron's Table", colors: 'B', list: `
+      villain: {who: 'baron', deck: {label: 'tribute', name: "The Baron's Table", colors: 'B', list: `
 3 Baron Sengir
 4 Sengir Bats
 4 Sengir Autocrat
@@ -163,7 +163,7 @@ export default {
         villain: cue('Dinner is served.', 'Delicious.', 'Rude guests.', "You'll keep.", 'Come back hungrier.')}},
     {slot: 5, kind: 'Lesson', title: 'The Dead at the Gate', difficulty: 'Normal', mood: 'march', rewardSet: 'all', teaches: ['Alternate costs', 'Counterspells'],
       blurb: 'The dead are walking south. Kjeldor and Balduvia stop fighting each other long enough to form an Alliance.',
-      hero: {who: 'kjeldor', deck: {name: 'The Alliance', colors: 'WU', list: `
+      hero: {who: 'kjeldor', deck: {label: 'tribute', name: 'The Alliance', colors: 'WU', list: `
 2 Force of Will
 2 Benalish Hero
 2 Arcane Denial
@@ -184,7 +184,7 @@ export default {
 1 Air Elemental
 12 Plains
 12 Island`}},
-      villain: {who: 'cohort', deck: {name: "Lim-Dûl's Vanguard", colors: 'B', list: `
+      villain: {who: 'cohort', deck: {label: 'tribute', name: "Lim-Dûl's Vanguard", colors: 'B', list: `
 4 Lim-Dûl's Cohort
 4 Ashen Ghoul
 2 Drift of the Dead
@@ -203,7 +203,7 @@ export default {
       cues: {hero: cue('Shields. Again.', 'For Kjeld!', 'The dead keep walking...', 'Back into the snow.', 'Fall back to the city...'), villain: cue('Rise.', 'Serve me, and live forever.', 'Rise again.', 'They shall kill those whom once they loved.', 'There are always more dead.')}},
     {slot: 6, kind: 'Meta', title: 'Necro Summer', difficulty: 'Normal', mood: 'march', rewardSet: 'ice', teaches: ['Racing a card-draw engine'],
       blurb: 'A fallen knight of Ulgrotha has found the Black Book. He draws until he wins, or dies trying. The deck that ruled 1996.',
-      hero: {who: 'you', deck: {name: 'Knights of the Pass', colors: 'W', list: `
+      hero: {who: 'you', deck: {label: 'tribute', name: 'Knights of the Pass', colors: 'W', list: `
 4 White Knight
 4 Savannah Lions
 4 Kjeldoran Elite Guard
@@ -215,7 +215,7 @@ export default {
 4 Mesa Pegasus
 2 Benalish Hero
 24 Plains`}},
-      villain: {who: 'ihsan', deck: {name: 'Necropotence', colors: 'B', archetype: 'Necro (1996)', list: `
+      villain: {who: 'ihsan', deck: {label: 'tribute', name: 'Necropotence', colors: 'B', archetype: 'Necro (1996)', list: `
 1 Swamp
 4 Dark Ritual
 2 Hypnotic Specter
@@ -237,7 +237,7 @@ export default {
       cues: {hero: cue('Hit before the book opens.', 'Charge!', 'They draw forever...', 'Faster than the book.', 'Paid in full...'), villain: cue('Draw.', 'Was it worth it? Yes.', 'Just one more card.', 'Paid in full.', 'The book... is empty.')}},
     {slot: 7, kind: 'Meta', title: 'Stasis', difficulty: 'Normal', mood: 'comic', rewardSet: 'hml', teaches: ['Playing under a lock'],
       blurb: "The Baron's mother has a trick: nothing in her house moves unless she lets it.",
-      hero: {who: 'reveka', deck: {name: "Reveka's Fire", colors: 'UR', list: `
+      hero: {who: 'reveka', deck: {label: 'tribute', name: "Reveka's Fire", colors: 'UR', list: `
 2 Reveka, Wizard Savant
 4 Orcish Artillery
 4 Orcish Cannoneers
@@ -250,7 +250,7 @@ export default {
 14 Mountain
 10 Island
 4 Prodigal Sorcerer`}},
-      villain: {who: 'grandmother', deck: {name: 'The Still House', colors: 'UB', archetype: 'Winter Orb lock', list: `
+      villain: {who: 'grandmother', deck: {label: 'tribute', name: 'The Still House', colors: 'UB', archetype: 'Winter Orb lock', list: `
 2 Grandmother Sengir
 4 Winter Orb
 4 Icy Manipulator
@@ -269,7 +269,7 @@ export default {
       cues: {hero: cue('Lights up.', 'Burn the lock!', 'Nothing untaps...', 'The house is quiet now.', 'Frozen...'), villain: cue('Be still.', 'Nothing moves in my house.', 'Who untapped that?', 'There. Quiet.', 'Insolent.')}},
     {slot: 8, kind: 'Boss', title: "Lim-Dûl's Legion", difficulty: 'Hard', mood: 'boss', rewardCard: "Pestilence", rewardSet: 'all', teaches: ['Everything so far'],
       blurb: 'The necromancer stands at the gates of Kjeldor with every dead soldier of the long winter behind him.',
-      hero: {who: 'laina', deck: {name: "Freyalise's Chosen", colors: 'GW', list: `
+      hero: {who: 'laina', deck: {label: 'tribute', name: "Freyalise's Chosen", colors: 'GW', list: `
 4 Fyndhorn Elves
 4 White Knight
 2 Order of the White Shield
@@ -288,7 +288,7 @@ export default {
 3 Folk of the Pines
 12 Plains
 12 Forest`}},
-      villain: {who: 'limdul', deck: {name: "Lim-Dûl's Legion", colors: 'B', archetype: 'Necro, lore-shaped', list: `
+      villain: {who: 'limdul', deck: {label: 'tribute', name: "Lim-Dûl's Legion", colors: 'B', archetype: 'Necro, lore-shaped', list: `
 4 Lim-Dûl's High Guard
 4 Lim-Dûl's Cohort
 1 Necropotence

@@ -53,7 +53,7 @@ export default {
   battles: [
     {slot: 1, mood: 'march', kind: 'Arrival', title: "The Lancers of Suq'Ata", difficulty: 'Easy', rewardSet: 'mir', teaches: ['Flanking'],
       blurb: "You land in the middle of a cavalry charge. Zhalfir's general grabs your reins before you can ask whose side you're on.",
-      hero: {who: 'jabari', deck: {name: "Jabari's Knights", colors: 'W', list: `
+      hero: {who: 'jabari', deck: {label: 'tribute', name: "Jabari's Knights", colors: 'W', list: `
 4 Zhalfirin Knight
 4 Zhalfirin Commander
 4 Knight of Valor
@@ -65,7 +65,7 @@ export default {
 4 Pacifism
 2 Warrior's Honor
 24 Plains`}},
-      villain: {who: 'telimtor', deck: {name: "Telim'Tor's Lances", colors: 'R', list: `
+      villain: {who: 'telimtor', deck: {label: 'tribute', name: "Telim'Tor's Lances", colors: 'R', list: `
 1 Telim'Tor
 4 Suq'Ata Lancer
 4 Goblin Digging Team
@@ -88,7 +88,7 @@ export default {
         villain: cue('One charge. Two. Count them.', "That's a hundred lances, Jabari.", "I've lost count. Bad sign.", 'Gold, then. Always gold.', 'Zhalfir pays in songs. Write me a short one.')}},
     {slot: 2, mood: 'comic', kind: 'Lesson', title: "Teferi's Isle", difficulty: 'Easy', rewardSet: 'mir', teaches: ['Phasing'],
       blurb: "Jabari sends you to Zhalfir's court mage for help. The court mage is a thousand years old, lives on an island that isn't always there, and wants to play first.",
-      hero: {who: 'you', deck: {name: 'Out of Time', colors: 'U', list: `
+      hero: {who: 'you', deck: {label: 'tribute', name: 'Out of Time', colors: 'U', list: `
 4 Teferi's Imp
 4 Merfolk Raiders
 4 Teferi's Drake
@@ -101,7 +101,7 @@ export default {
 4 Inspiration
 2 Cloak of Invisibility
 24 Island`}},
-      villain: {who: 'teferi', deck: {name: "Teferi's Tricks", colors: 'U', list: `
+      villain: {who: 'teferi', deck: {label: 'tribute', name: "Teferi's Tricks", colors: 'U', list: `
 4 Daring Apprentice
 4 Merfolk Seer
 4 Azure Drake
@@ -125,7 +125,7 @@ export default {
       cues: {hero: cue('Hello? Is the island here today?', 'Caught you in phase!', 'It keeps vanishing...', 'Pinned down. Finally.', 'Gone again...'), villain: cue('Blink and you\'ll miss it.', 'Made you look.', 'Careless, like a child with fire, so was I with time.', 'Again! Same time yesterday?', "Good. Now I'm worried about Kaervek, not you.")}},
     {slot: 3, mood: 'tension', kind: 'Lesson', title: 'The Song of Blood', difficulty: 'Easy', rewardSet: 'mir', teaches: ["Instants on the opponent's turn"],
       blurb: 'A Femeref village goes quiet at sunset. Something is singing in the grass. Rashida has been waiting for it for three nights.',
-      hero: {who: 'rashida', deck: {name: "Scalebane's Watch", colors: 'RW', list: `
+      hero: {who: 'rashida', deck: {label: 'tribute', name: "Scalebane's Watch", colors: 'RW', list: `
 3 Rashida Scalebane
 4 Zhalfirin Knight
 4 Ekundu Griffin
@@ -140,7 +140,7 @@ export default {
 2 Flood Plain
 10 Plains
 10 Mountain`, prefer: ['mir']}},
-      villain: {who: 'purraj', deck: {name: 'The Night Stalkers', colors: 'B', list: `
+      villain: {who: 'purraj', deck: {label: 'tribute', name: 'The Night Stalkers', colors: 'B', list: `
 4 Purraj of Urborg
 4 Pit Scorpion
 2 Breathstealer
@@ -164,7 +164,7 @@ export default {
         villain: cue('Hmmmm.', 'The chorus!', 'You... interrupted my verse.', 'Encore.', 'The song... ends... early.')}},
     {slot: 4, mood: 'tension', kind: 'Rival', title: 'The Amber Prison', difficulty: 'Normal', rewardSet: 'mir', teaches: ['Locking creatures down'],
       blurb: "Deep in the Mwonvuli jungle, Mangara hangs inside a block of amber like a fly. The jungle's empress has been told to keep him there.",
-      hero: {who: 'asmira', deck: {name: "Asmira's Faithful", colors: 'GW', list: `
+      hero: {who: 'asmira', deck: {label: 'tribute', name: "Asmira's Faithful", colors: 'GW', list: `
 2 Asmira, Holy Avenger
 4 Femeref Archers
 4 Mtenda Lion
@@ -180,7 +180,7 @@ export default {
 2 Grasslands
 10 Plains
 10 Forest`}},
-      villain: {who: 'jolrael', deck: {name: 'Children of the Mwonvuli', colors: 'G', list: `
+      villain: {who: 'jolrael', deck: {label: 'tribute', name: 'Children of the Mwonvuli', colors: 'G', list: `
 4 Mtenda Lion
 2 Bull Elephant
 4 Gibbering Hyenas
@@ -207,7 +207,7 @@ export default {
       after: [{who: 'stage', line: "Asmira's prayers crack the amber. They don't break it."}, {who: 'hakim', line: "Asmira's prayers alone should have freed Mangara from the amber prison...", quote: true}]},
     {slot: 5, mood: 'tension', kind: 'Lesson', title: 'The Last Library', difficulty: 'Normal', rewardSet: 'mir', teaches: ['Counterspells'],
       blurb: "Kaervek's ally has come for Femeref's library. She doesn't want to burn it. She wants to rewrite it.",
-      hero: {who: 'hakim', deck: {name: 'The Loreweaver', colors: 'U', list: `
+      hero: {who: 'hakim', deck: {label: 'tribute', name: 'The Loreweaver', colors: 'U', list: `
 2 Hakim, Loreweaver
 4 Daring Apprentice
 4 Harmattan Efreet
@@ -219,7 +219,7 @@ export default {
 4 Memory Lapse
 4 Inspiration
 24 Island`}},
-      villain: {who: 'shauku', deck: {name: "Shauku's Pen", colors: 'B', list: `
+      villain: {who: 'shauku', deck: {label: 'tribute', name: "Shauku's Pen", colors: 'B', list: `
 2 Mindstab Thrull
 2 Abyssal Specter
 2 Scathe Zombies
@@ -246,7 +246,7 @@ export default {
         villain: cue('Shall we begin the chapter?', 'The flesh is a casket for the soul.', 'How very rude.', 'The end. Beautifully done.', 'A draft. Only a draft.')}},
     {slot: 6, mood: 'comic', kind: 'Meta', title: 'Prosperity', difficulty: 'Normal', rewardSet: 'vis', teaches: ['Racing a card-draw engine'],
       blurb: "On your way to the front you stop in a Suq'Ata bazaar for water. You leave owing a merchant a duel, two goats and an apology. His machines make everyone draw. He's the one holding the fireball.",
-      hero: {who: 'you', deck: {name: 'Thirsty Traveller', colors: 'WU', list: `
+      hero: {who: 'you', deck: {label: 'tribute', name: 'Thirsty Traveller', colors: 'WU', list: `
 4 Infantry Veteran
 4 Zhalfirin Knight
 4 Mtenda Herder
@@ -260,7 +260,7 @@ export default {
 4 Flood Plain
 10 Plains
 10 Island`}},
-      villain: {who: 'pashad', deck: {name: 'Everybody Draws', colors: 'UR', archetype: 'Prosperity', list: `
+      villain: {who: 'pashad', deck: {label: 'tribute', name: 'Everybody Draws', colors: 'UR', archetype: 'Prosperity', list: `
 2 Prosperity
 2 Harmattan Efreet
 2 Viashino Sandstalker
@@ -286,7 +286,7 @@ export default {
       after: [{who: 'pashad', line: "A map to Kaervek's camp. Mostly accurate. For you, half price."}, {who: 'hakim', line: "It's entirely accurate. That's what worries me. Why does a merchant have it?"}]},
     {slot: 7, mood: 'march', kind: 'Meta', title: 'Fireblast', difficulty: 'Normal', rewardSet: 'vis', teaches: ['Racing'],
       blurb: "The map was accurate. So was the ambush. Kaervek's embermages hold the road to his camp, and they don't negotiate. The original red curve deck.",
-      hero: {who: 'jabari', deck: {name: 'The Vanguard of Zhalfir', colors: 'W', list: `
+      hero: {who: 'jabari', deck: {label: 'tribute', name: 'The Vanguard of Zhalfir', colors: 'W', list: `
 4 Infantry Veteran
 4 Zhalfirin Knight
 4 Femeref Knight
@@ -299,7 +299,7 @@ export default {
 2 Healing Salve
 24 Plains
 2 Sidar Jabari`}},
-      villain: {who: 'talibah', deck: {name: 'Sligh', colors: 'R', archetype: 'Sligh', list: `
+      villain: {who: 'talibah', deck: {label: 'tribute', name: 'Sligh', colors: 'R', archetype: 'Sligh', list: `
 4 Mountain Goat
 4 Goblin Hero
 4 Viashino Warrior
@@ -323,7 +323,7 @@ export default {
         villain: cue('BURN!', 'Blow, fiery wind of truth.', 'I have one more. I always have one more.', 'Ash. All of it.', 'Next time... a bigger volcano.')}},
     {slot: 8, mood: 'boss', kind: 'Boss', title: "Kaervek's Torch", difficulty: 'Hard', rewardCard: "Kaervek's Torch", rewardSet: 'mir', teaches: ['Everything so far'],
       blurb: "Three nations that have hated each other for centuries ride together into Kaervek's camp. He's been expecting them. He seems almost pleased.",
-      hero: {who: 'asmira', deck: {name: 'The Reeds of a Basket', colors: 'GWR', list: `
+      hero: {who: 'asmira', deck: {label: 'tribute', name: 'The Reeds of a Basket', colors: 'GWR', list: `
 2 Asmira, Holy Avenger
 2 Sidar Jabari
 2 Rashida Scalebane
@@ -341,7 +341,7 @@ export default {
 8 Plains
 6 Forest
 6 Mountain`}},
-      villain: {who: 'kaervek', deck: {name: "Kaervek's War", colors: 'BR', list: `
+      villain: {who: 'kaervek', deck: {label: 'tribute', name: "Kaervek's War", colors: 'BR', list: `
 4 Dark Ritual
 4 Kaervek's Torch
 2 Incinerate
