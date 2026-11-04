@@ -5,6 +5,7 @@ import {mountNativePanel,nativePayment,owesAttack} from './native-panel.mjs';
 import {createMotion} from './motion-kit.mjs';
 import {optionCardId} from './forge-session.mjs';
 import {CpuActionPlaybackQueue,createPlaybackSession,storyLines,tableActivity} from './cpu-action-playback.mjs';
+import {createTurnTimer} from './turn-timer.mjs';
 import {tileBadges,tileLayerHtml,badgeSummary,currentKeywords,counterList,playerCounterBadges,playerCountersHtml} from '../../play-board-badges.js';
 import {boardIcon} from '../../play-board-icons.js';
 import {drawnArtwork,frameTone,surfaceColors} from '../../play-token-art.js';
@@ -1167,6 +1168,50 @@ const name=String(card.name);if(Math.max(...name.split(/\s+/).map(word=>word.len
  root.addEventListener('pointerdown',skipPlayback,true);
  const unsub=authority.subscribe(s=>{if(presentation.hosted)playback.push(s);else renderAccepted(s);});
 
+ // The turn clock (turn-timer.mjs): a ring drains around the main button and a line under the turn pill while the game
+ // waits on you; the last 10 s warn; a missed window plays the safe answer, and three missed turns in a row concede in a
+ // friend match only. It never runs while the CPU's play is told, a card pop-up or the menu is open, or you hold a card.
+ let turnTimer=null,afkNote=null,afkNoteTimer=0;
+ const timerCount=doc.createElement('div');timerCount.className='forge-turn-count';timerCount.setAttribute('aria-hidden','true');
+ const timerRing=doc.createElement('div');timerRing.className='forge-turn-ring';timerRing.setAttribute('aria-hidden','true');
+ const timerLabel=c=>c.warn?`${c.seconds} seconds left`:'';
+ const showTimer=c=>{
+  if(!c||!c.own){timerRing.remove();timerCount.remove();root.removeAttribute('data-turn-warn');}
+  if(!c){root.removeAttribute('data-turn-timer');root.style.removeProperty('--tt-left');return;}
+  root.dataset.turnTimer=c.own?'own':'rival';root.style.setProperty('--tt-left',String(Math.max(0,Math.min(1,c.remaining/c.total)).toFixed(4)));
+  if(!c.own)return;
+  if(c.warn)root.dataset.turnWarn='true';else root.removeAttribute('data-turn-warn');
+  // The ring sits on the main button, wherever the table has put it right now.
+  const ok=root.querySelector('[data-native-key=ok],[data-native-key=confirm-prompt]');
+  if(!ok){timerRing.remove();timerCount.remove();return;}
+  const r=ok.getBoundingClientRect(),box=`${Math.round(r.left)}|${Math.round(r.top)}|${Math.round(r.width)}|${Math.round(r.height)}`;
+  if(!timerRing.isConnected)root.append(timerRing);
+  if(timerRing.dataset.box!==box){timerRing.dataset.box=box;Object.assign(timerRing.style,{left:`${Math.round(r.left-6)}px`,top:`${Math.round(r.top-6)}px`,width:`${Math.round(r.width+12)}px`,height:`${Math.round(r.height+12)}px`});}
+  if(c.warn){
+   if(!timerCount.isConnected)root.append(timerCount);timerCount.textContent=String(c.seconds);timerCount.setAttribute('aria-label',timerLabel(c));timerCount.style.left=`${Math.round(r.left-44)}px`;timerCount.style.top=`${Math.round(r.top+r.height/2-16)}px`;
+   try{presentation.onTimerTick?.(c.seconds);}catch{/* a tick sound is optional */}
+  }else timerCount.remove();
+ };
+ // What a missed window plays: keep the hand, no attackers or blockers, decline what is optional, cancel a cast, pass the turn.
+ const afkAnswer=(w,s)=>{
+  const n=s.native,b=n.buttons||{},input=String(n.inputType||'');
+  if(n.prompt){const p=n.prompt;session.clearPrompt();if((p.min??0)>0)for(const o of (p.options||[]).slice(0,p.min))session.selectPrompt(o.index);return session.confirmPrompt();}
+  if(input==='InputSelectTargets'||input.startsWith('InputPayMana'))return b.cancelEnabled?session.nativeButton('cancel',n.revision):session.nativeButton('ok',n.revision);
+  if(w.kind==='turn'&&b.cancelEnabled&&/end turn/i.test(String(b.cancel||'')))return session.nativeButton('cancel',n.revision);
+  return session.nativeButton('ok',n.revision);
+ };
+ const afkWarn=(count,limit)=>{
+  if(!limit||count!==limit-1)return;
+  afkNote?.remove();afkNote=doc.createElement('div');afkNote.className='forge-afk-note';afkNote.setAttribute('role','status');afkNote.textContent='One more missed turn and you concede.';root.append(afkNote);
+  clearTimeout(afkNoteTimer);afkNoteTimer=setTimeout(()=>{afkNote?.remove();afkNote=null;},7000);
+ };
+ if(presentation.hosted&&presentation.turnTimer!==false){
+  const paused=()=>!!(playback?.busy||drag?.active||doc.querySelector('.forge-peek[data-open="true"]')||root.querySelector('.play-match-menu[open]')||doc.querySelector('.play-screen-pause')||doc.querySelector('.forge-lane-tray'));
+  turnTimer=createTurnTimer({snapshot:()=>session.snapshot(),paused,act:afkAnswer,concede:()=>session.concede?.(),onChange:showTimer,onStrike:afkWarn,mode:presentation.friend?'friend':'solo'});
+  // Any touch or key on the table says you are here.
+  const here=()=>turnTimer?.poke();root.addEventListener('pointerdown',here,true);root.addEventListener('keydown',here,true);
+ }
+
  // Card preview, Arena style: the whole card beside the one you point at, and what it
  // does right now beside that. Hover with a mouse, press and hold on touch, click or
  // tap a card you can't act on, or press I. It only reads the current native state.
@@ -1704,7 +1749,8 @@ const name=String(card.name);if(Math.max(...name.split(/\s+/).map(word=>word.len
  // fuse starts over instead of passing. You start with one and earn another (up to three) for every eight
  // decisions made before the fuse appears.
  const ROPE_BANK_MAX=3,ROPE_EARN=8;let ropeBank=1,ropeQuick=0,ropeShown=false;
- const ropeLoop=presentation.hosted?win.setInterval(()=>{
+ // The turn clock (turn-timer.mjs) replaces the fuse wherever it runs; two clocks on one button would only confuse.
+ const ropeLoop=presentation.hosted&&!turnTimer?win.setInterval(()=>{
   const s=session.snapshot(),n=s.native,ok=root.querySelector('.forge-native-panel [data-native-key=ok]');
   const timed=root.dataset.stage==='match'&&!s.busy&&!s.status?.terminal&&n?.inputType==='InputPassPriority'&&!n?.prompt&&!!ok&&!ok.disabled;
   if(doc.hidden||drag?.active||handFocus||peek.dataset.open==='true'||root.querySelector('.play-match-zones-menu[open]'))ropeReset();
@@ -1730,5 +1776,5 @@ const name=String(card.name);if(Math.max(...name.split(/\s+/).map(word=>word.len
    const seat=seatEl(defenderOf(sf.players,c)),blocked=blockerOf.has(c.id)?cardEl(blockerOf.get(c.id)):null,to=blocked||(c.attackTarget?.kind==='card'?cardEl(c.attackTarget.id):seat);if(!to)continue;
    ms=Math.max(ms,strike(el,to,{face:!blocked&&to===seat,delay:next,big:(c.power||0)>=5,power:c.power||0}));struck++;next+=MOTION.windup+strikeTravel(el.closest('.play-match-card-wrap'),to)+MOTION.hold+140;}
   return struck?Math.max(ms,strikeEnd-Date.now())+250:ms;}
- return {finale,destroy(){closed=true;win.removeEventListener('resize',queueBoard);doc.removeEventListener('pointerdown',foldEmblems,true);if(heldDrop){clearTimeout(heldDrop.timer);heldDrop.ghost.remove();heldDrop=null;}boardSizes?.disconnect();doc.removeEventListener('visibilitychange',dropOnHide);win.removeEventListener('orientationchange',dropGesture);win.removeEventListener('resize',dropOnFold);win.clearInterval(ropeLoop);rope.remove();doc.removeEventListener('pointerdown',ropeReset,true);doc.removeEventListener('keydown',ropeReset,true);doc.removeEventListener('visibilitychange',ropeReset);tableAudio.destroy();emotes?.destroy();clearTimeout(handLiftTimer);doc.removeEventListener('pointerup',handUp,true);doc.removeEventListener('click',swallowTapClick,true);doc.removeEventListener('pointermove',handSift);doc.removeEventListener('pointercancel',handUp,true);doc.removeEventListener('pointermove',handHover);clearTimeout(idleTimer);clearTimeout(noResponseTimer);delete root.dataset.lowPower;delete root.dataset.csStriking;playback.destroy();motion.destroy();activity.remove();root.removeEventListener('pointerdown',skipPlayback,true);doc.removeEventListener('pointerdown',closeZones,true);root.removeEventListener('click',trackerClick,true);root.removeEventListener('toggle',zonesToggled,true);doc.body.removeAttribute('data-forge-search');dockObserver?.disconnect();unsub();observer.disconnect();cancel();hidePeek();clearTimeout(pressTimer);if(arrowFrame)win.cancelAnimationFrame(arrowFrame);if(loopFrame)win.cancelAnimationFrame(loopFrame);win.removeEventListener('resize',queueArrows);if(railFrame)win.cancelAnimationFrame(railFrame);win.removeEventListener('resize',queueRails);peek.remove();ownCast.remove();doc.body.querySelector(':scope>.forge-ask-line')?.remove();doc.body.style.removeProperty('--forge-hand-top');castShow.remove();arrows.remove();fx.remove();root.removeEventListener('pointerover',over);root.removeEventListener('pointerout',out);root.removeEventListener('contextmenu',contextMenu,true);root.removeEventListener('keydown',peekKeys,true);win.removeEventListener('resize',reflow);root.removeEventListener('scroll',reflow,true);table.destroy();root.removeEventListener('input',saveInput);root.removeEventListener('change',saveInput);root.removeEventListener('click',click,true);root.removeEventListener('pointerdown',down);doc.removeEventListener('pointermove',move);doc.removeEventListener('pointerup',up);doc.removeEventListener('pointercancel',pressCancel);doc.removeEventListener('keydown',key);win.removeEventListener('blur',cancel);}};
+ return {finale,destroy(){closed=true;turnTimer?.stop();clearTimeout(afkNoteTimer);afkNote?.remove();timerCount.remove();timerRing.remove();win.removeEventListener('resize',queueBoard);doc.removeEventListener('pointerdown',foldEmblems,true);if(heldDrop){clearTimeout(heldDrop.timer);heldDrop.ghost.remove();heldDrop=null;}boardSizes?.disconnect();doc.removeEventListener('visibilitychange',dropOnHide);win.removeEventListener('orientationchange',dropGesture);win.removeEventListener('resize',dropOnFold);win.clearInterval(ropeLoop);rope.remove();doc.removeEventListener('pointerdown',ropeReset,true);doc.removeEventListener('keydown',ropeReset,true);doc.removeEventListener('visibilitychange',ropeReset);tableAudio.destroy();emotes?.destroy();clearTimeout(handLiftTimer);doc.removeEventListener('pointerup',handUp,true);doc.removeEventListener('click',swallowTapClick,true);doc.removeEventListener('pointermove',handSift);doc.removeEventListener('pointercancel',handUp,true);doc.removeEventListener('pointermove',handHover);clearTimeout(idleTimer);clearTimeout(noResponseTimer);delete root.dataset.lowPower;delete root.dataset.csStriking;playback.destroy();motion.destroy();activity.remove();root.removeEventListener('pointerdown',skipPlayback,true);doc.removeEventListener('pointerdown',closeZones,true);root.removeEventListener('click',trackerClick,true);root.removeEventListener('toggle',zonesToggled,true);doc.body.removeAttribute('data-forge-search');dockObserver?.disconnect();unsub();observer.disconnect();cancel();hidePeek();clearTimeout(pressTimer);if(arrowFrame)win.cancelAnimationFrame(arrowFrame);if(loopFrame)win.cancelAnimationFrame(loopFrame);win.removeEventListener('resize',queueArrows);if(railFrame)win.cancelAnimationFrame(railFrame);win.removeEventListener('resize',queueRails);peek.remove();ownCast.remove();doc.body.querySelector(':scope>.forge-ask-line')?.remove();doc.body.style.removeProperty('--forge-hand-top');castShow.remove();arrows.remove();fx.remove();root.removeEventListener('pointerover',over);root.removeEventListener('pointerout',out);root.removeEventListener('contextmenu',contextMenu,true);root.removeEventListener('keydown',peekKeys,true);win.removeEventListener('resize',reflow);root.removeEventListener('scroll',reflow,true);table.destroy();root.removeEventListener('input',saveInput);root.removeEventListener('change',saveInput);root.removeEventListener('click',click,true);root.removeEventListener('pointerdown',down);doc.removeEventListener('pointermove',move);doc.removeEventListener('pointerup',up);doc.removeEventListener('pointercancel',pressCancel);doc.removeEventListener('keydown',key);win.removeEventListener('blur',cancel);}};
 }
