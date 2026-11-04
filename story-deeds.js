@@ -627,6 +627,45 @@ xp: 'a1-dawn-charge a1-ford-held a1-sky-court a1-old-growth a1-no-efreet a1-tawn
   common: 'a1-order-ford a1-unbroken a1-tron a2-heretic a2-unburned a2-legend-remains a2-test-passed a2-swift-answer a2-combat-medic a2-phalanx a2-choir-silenced a2-on-the-draw a3-hold-pass a3-winter-sky a3-book-refused a3-race-book a3-warm-blood a4-elephants a4-amber-holds a4-unrewritten a5-shadow-army a5-adept a5-hive a5-mirri-watch a5-our-nightmare a5-no-nightmare a5-light-of-day a5-for-mirri a6-grunk a6-brood-cleansed a6-cradle a6-rancor a6-radiant a7-rebel-chain a7-hammer a7-throne a7-agreed a7-defiant a8-cloak a8-ancient a8-goblin-host a8-ship-held a8-tolaria-avenged a8-destiny a8-honor-guard a9-thirteen a9-champion a9-nuts a9-sledge a9-lavamancer a9-mongrel a9-braids a9-wake a10-faces a10-wirewood a10-pemmin a10-touched a10-angel-stands a10-made-to-kill a10-no-god a10-faces-turned a11-makers a11-equipped a11-junk a11-iron-golem a11-sunburst a11-geth a12-shrine a12-robbers a12-kumano a12-flipped a12-dragon a12-snakes a13-cultists a13-legion a13-raiders-down a13-first-blow a13-advokist a13-ghost-dad a13-firemind a13-light a13-no-angel a14-echo-fades a14-keld a14-goyf a14-heidar a14-marauders a14-hive-mind a14-trio a14-goyf-beats a15-arrow a15-cold-water a15-warren-cleared a15-goldmane a15-overrun a15-clique-caught a15-redcap a15-plumeveil a15-tower-falls a15-destiny a16-dragonslayer a16-brothers-keeper a16-ancients a16-unearthed a16-rise-again a17-expedition a17-dragonlord a17-brood a17-pridemate a17-bloodwitch a17-nissa a18-spark a18-riddles a18-furnace a18-tempered a18-resistance a18-firebrand a18-swordless a19-hunters a19-parish a19-delver a19-zombies a19-travelers a19-wurm a20-rubblebelt a20-hybrid a20-ghosts a20-revelation a20-verdict a20-maze a21-phalanx a21-canyon a21-tides a21-skyguard a21-world-eater a22-mantis a22-horde a22-manifest a22-ugin a22-cruise a23-hydra a23-spy-network a23-reignited a23-flamecaller a23-oath a24-grounded a24-bloodmad a24-defiance a24-arlinn a24-moonlight a24-imprisoned a24-deep-fiend a24-geistblast a25-spire a25-syndicate a25-fabricate a25-compliance a25-crew a25-copycat a25-saheeli a26-exerted a26-trial-strength a26-poisons a26-cycling a26-eternals a26-exert-red a26-neheb-eternal a26-gift a26-myriarch a26-hour a26-dissent a26-ramunap a27-golden-city a27-branchwalkers a27-treasure a27-enrage a27-raptors a27-ascend a27-monstrosaur a27-pirates a27-buccaneers a27-lawbringer a27-phoenix a27-ceratops a28-story-unfolds a28-chapter-three a28-weatherlight a28-jhoira a28-sisay a28-karn a28-cold-shoulder a28-radha a28-yargle a28-lavarunner a28-demonlord a28-lyra a28-teferi a28-allosaurus',
   uncommon: 'a1-not-a-scratch a1-toll-unpaid a1-regicide a1-wish-denied a1-argoth-answers a1-deep-answers a1-v-dragon-engine a2-twin-fall a2-quick-deck a2-moon-rising a2-dragonslayer a2-v-elder a3-thaw a3-off-menu a3-master-falls a3-house-burns a3-grandmother a3-v-legion a4-lance-broken a4-on-time a4-purraj a4-no-sale a4-fireblast-dodged a4-camp-falls a4-v-torch a5-vhati a5-skyshroud-rising a5-shapeshifter a5-v-evincar a6-avatar a6-one-use a6-detention a6-before-academy a6-school-stands a6-v-praetor a7-climb a7-falcons a7-fallen-again a7-five-winds a7-gargadon a7-curse-broken a7-v-massacre a8-tsabo a8-llanowar a8-pyre a8-fires a8-remembered a8-v-agenda a9-threshold a9-nightmare-ends a9-screech a9-sister a9-v-mutilate a10-wrath a10-exalted a10-siege a10-v-karona a11-plating a11-modular a11-colossus a11-panopticon a11-v-platinum a11-cleansing a12-line a12-hidetsugu a12-godo a12-oath a12-v-konda a12-unjitted a13-festival a13-rotwurm a13-writ a13-graft a13-dragged a13-v-secrets a13-boros-wins a14-necro-down a14-teferi-echo a14-v-rift a15-brigid-falls a15-extinguished a15-bitterblossom a15-three-banners a15-v-glen a16-exalted a16-seekers a16-squadron a16-traitor-king a16-kresh a16-baneslayer a16-three-walkers a16-v-conflux a17-joraga a17-skyfishers a17-eye a17-stoneforge a17-v-monument a17-betrayed a18-metalcraft a18-geth a18-clean-blood a18-skyguard a18-v-norn a19-olivia a19-haunting a19-v-griselbrand a20-battalion a20-v-overload a21-mentor a21-devotion a21-v-revels a22-atarka a22-battle-rage a22-v-silumgar a23-rogues a23-depths a23-v-distortion a23-abbot a24-v-nemesis a24-v-promised a25-v-dovin a25-heart a25-v-tezzeret a26-v-scarab a26-v-bolas a26-ruined a27-tishana a27-v-nezahal a27-immortal-sun a27-v-azor a28-mono-red a28-stompy a28-marwyn a28-v-garna a28-v-belzenlok',
 }).reduce((m, [tier, ids]) => { for (const id of ids.split(' ')) m[id] = tier; return m; }, {});
+// Key feats (Randall, 4 Nov 2026): an act's secret boss (slot 9) opens only when all 8 battles are won with
+// the Story decks AND these three hero-side deeds are earned. They are picked from deeds Forge self-play
+// reaches (never a 0% one); the ones that are hidden stay riddles until earned. A player who already cleared
+// the secret boss keeps it open, whatever they have earned since.
+export const KEY_FEATS = Object.freeze({
+  1: ['a1-colossus', 'a1-order-ford', 'a1-dawn-charge'],
+  2: ['a2-ball-rolls', 'a2-heretic', 'a2-legend-remains'],
+  3: ['a3-greedy', 'a3-hold-pass', 'a3-winter-sky'],
+  4: ['a4-elephants', 'a4-unrewritten', 'a4-flank'],
+  5: ['a5-shadow-army', 'a5-adept', 'a5-hive'],
+  6: ['a6-grunk', 'a6-brood-cleansed', 'a6-cradle'],
+  7: ['a7-hat', 'a7-rebel-chain', 'a7-throne'],
+  8: ['a8-cloak', 'a8-ancient', 'a8-goblin-host'],
+  9: ['a9-thirteen', 'a9-nuts', 'a9-sledge'],
+  10: ['a10-faces', 'a10-wirewood', 'a10-pemmin'],
+  11: ['a11-makers', 'a11-junk', 'a11-iron-golem'],
+  12: ['a12-shrine', 'a12-kumano', 'a12-flipped'],
+  13: ['a13-cultists', 'a13-legion', 'a13-first-blow'],
+  14: ['a14-future-waits', 'a14-echo-fades', 'a14-keld'],
+  15: ['a15-endless-court', 'a15-arrow', 'a15-cold-water'],
+  16: ['a16-dragonslayer', 'a16-brothers-keeper', 'a16-ancients'],
+  17: ['a17-titan', 'a17-expedition', 'a17-brood'],
+  18: ['a18-spark', 'a18-furnace', 'a18-tempered'],
+  19: ['a19-hunters', 'a19-delver', 'a19-zombies'],
+  20: ['a20-biomancer', 'a20-rubblebelt', 'a20-ghosts'],
+  21: ['a21-phalanx', 'a21-tides', 'a21-skyguard'],
+  22: ['a22-mantis', 'a22-horde', 'a22-manifest'],
+  23: ['a23-hydra', 'a23-spy-network', 'a23-reignited'],
+  24: ['a24-howlpack', 'a24-grounded', 'a24-bloodmad'],
+  25: ['a25-spire', 'a25-fabricate', 'a25-compliance'],
+  26: ['a26-no-gift', 'a26-exerted', 'a26-poisons'],
+  27: ['a27-golden-city', 'a27-treasure', 'a27-enrage'],
+  28: ['a28-story-unfolds', 'a28-weatherlight', 'a28-sisay']
+});
+export const storyKeyFeats = act => KEY_FEATS[act] || [];
+const keyIds = new Set(Object.values(KEY_FEATS).flat());
+export const isKeyFeat = id => keyIds.has(id);
+// The key feats an act still needs, from the account's counters ('sd:<id>' counts each earned deed).
+export const keyFeatsMissing = (act, counters = {}) => storyKeyFeats(act).filter(id => !(Number(counters?.['sd:' + id]) > 0));
 export const storyDeedReward = d => d.hidden || d.gold ? null : d.kind ? 'feat' : REWARD_OF[d.id] || 'uncommon';
 export const STORY_DEED_IDS = new Set([...STORY_DEEDS, ...STORY_ACT_DEEDS].map(d => d.id));
 export const storyDeedArt = d => d.art || (d.kind === 'both' ? BOTH_SIDES_ART : CHRONICLER_ART)[d.act];

@@ -5,7 +5,7 @@
 import {createMatchFacts} from './match-facts.js';
 import {STORY_ACTS, SET_NAMES, setSymbolUrl} from './story-acts.js';
 import {purseMarkup} from './play-econ-ui.js';
-import {battleStars, battleCleared, actCleared, actStars, currentBattle, currentAct, secretOpen, STAR_VALUE} from './story-client.js';
+import {battleStars, battleCleared, actCleared, actStars, currentBattle, currentAct, secretOpen, secretStatus, STAR_VALUE} from './story-client.js';
 const esc = v => String(v ?? '').replace(/[&<>"']/g, c => ({'&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;'}[c]));
 const back = (act, label) => `<button class="pl-back" data-act="${act}" aria-label="${label}"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="m15 5-7 7 7 7"/></svg></button>`;
 const head = (title, econ, eyebrow, backAct = 'playHome', backLabel = 'Back to Play') => `<header class="pl-head pe-head st-head">${back(backAct, backLabel)}<div class="pl-head-title"><p class="eyebrow">${esc(eyebrow)}</p><h1 id="playTitle" tabindex="-1">${esc(title)}</h1></div>${purseMarkup(econ)}</header>`;
@@ -39,7 +39,16 @@ export function storyHomeMarkup({progress, econ, actsData = {}}) {
 }
 
 // One act: its banner and the battles you've reached. Cleared ones, the current one, then one tease.
+// A closed secret boss shows once the act is far enough along: what it still needs (all 8 battles won with the Story
+// decks and the act's key feats). The key feats themselves are marked in Achievements, on the Story tab.
+const secretTease = (data, progress, act, counters) => {
+  if (!data.battles.some(b => b.secret) || secretOpen(progress, act, counters)) return '';
+  const st = secretStatus(progress, act, counters);
+  if (st.won < 4 && !st.keys) return '';
+  return `<p class="st-secret-tease" role="note">A secret battle waits in this act. Win all 8 battles with the Story decks (${st.won} of 8) and earn its ${st.keysNeeded} key feats (${st.keys} of ${st.keysNeeded}). Key feats are marked in Achievements.</p>`;
+};
 export function storyActMarkup({act, data, progress, econ}) {
+  const counters = econ?.state?.counters || {};
   const meta = STORY_ACTS.find(a => a.act === act), now = currentBattle(progress, act), boss = b => b.slot >= 8;
   const cleared = data.battles.filter(b => !b.secret && battleCleared(progress, b.id)).length;
   const villainFace = b => data.cast[b.villain.who]?.portrait;
@@ -54,7 +63,8 @@ export function storyActMarkup({act, data, progress, econ}) {
   return `<section class="play-menu st-screen st-act" aria-labelledby="playTitle">${head(meta.title, econ, 'Story · Act ' + act, 'storyHome', 'Back to Story')}
     <header class="st-banner"><span class="st-banner-art" style="background-image:url(${esc(meta.art.crop)})" aria-hidden="true"></span>
       <span class="st-banner-copy">${symbols(meta)}<span class="st-banner-years">${esc(meta.years)}</span></span>${ring(cleared, 8, cleared + ' of 8 battles won')}</header>
-    <ol class="st-battles">${data.battles.filter(b => b.secret ? secretOpen(progress, act) : b.slot <= now + 1).map(row).join('')}</ol>
+    <ol class="st-battles">${data.battles.filter(b => b.secret ? secretOpen(progress, act, counters) : b.slot <= now + 1).map(row).join('')}</ol>
+    ${secretTease(data, progress, act, counters)}
   </section>`;
 }
 

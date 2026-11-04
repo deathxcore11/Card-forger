@@ -11,6 +11,7 @@ const esc = v => String(v ?? '').replace(/[&<>"']/g, c => ({'&': '&amp;', '<': '
 const n = v => Number(v || 0).toLocaleString('en-US');
 // The shield that marks achievement points; gold once earned.
 const shield = '<svg viewBox="0 0 20 23" aria-hidden="true"><path d="M10 0 20 3.5V11c0 6-4.3 10-10 12C4.3 21 0 17 0 11V3.5z"/></svg>';
+const keyPill = r => r.key ? '<span class="pd-key" title="Earn this to open the act\'s secret battle">Key</span>' : '';
 const pts = r => `<span class="pd-pts" title="Achievement points">${shield}<span>${n(r.points.total)}</span></span>`;
 const today = () => playDay(-new Date().getTimezoneOffset());
 // One pinned art crop per achievement (play-achievement-art.js); crops with a frame line or rounded
@@ -61,11 +62,11 @@ export function deedsPanel(econ, user = '') {
 }
 
 function deedCard(r, config, busy) {
-  if (r.hidden && !r.earned) return `<article class="pd-card pd-card--hidden"><span class="pd-card-back" aria-hidden="true"></span><div class="pd-card-body"><div class="pd-card-h"><h3>Hidden</h3>${pts(r)}</div><p>${esc(r.riddle)}</p><div class="pd-card-foot">${r.honour ? '<span class="pd-honour">Honour only</span>' : rewardIcons(achievementReward(r, 0, config))}</div></div></article>`;
+  if (r.hidden && !r.earned) return `<article class="pd-card pd-card--hidden"><span class="pd-card-back" aria-hidden="true"></span><div class="pd-card-body"><div class="pd-card-h"><h3>Hidden${keyPill(r)}</h3>${pts(r)}</div><p>${esc(r.riddle)}</p><div class="pd-card-foot">${r.honour ? '<span class="pd-honour">Honour only</span>' : rewardIcons(achievementReward(r, 0, config))}</div></div></article>`;
   const ready = r.honour ? -1 : r.steps.findIndex(x => x.done && !x.claimed), step = r.next || r.steps.at(-1), shown = ready >= 0 ? ready : r.steps.indexOf(step);
   return `<article class="pd-card${r.complete ? ' is-complete' : ''}${ready >= 0 ? ' is-ready' : ''}">
     <span class="pd-card-art" aria-hidden="true">${artImg(r.art)}</span>
-    <div class="pd-card-body"><div class="pd-card-h"><h3>${esc(r.title)}</h3>${pts(r)}</div><p>${esc(r.lore)}</p>
+    <div class="pd-card-body"><div class="pd-card-h"><h3>${esc(r.title)}${keyPill(r)}</h3>${pts(r)}</div><p>${esc(r.lore)}</p>
       ${r.children ? `<ul class="pd-kids">${r.children.slice(0, 12).map(k => `<li class="${k.done ? 'on' : ''}"><i></i>${esc(k.title)}</li>`).join('')}${r.children.length > 12 ? `<li class="more">and ${r.children.length - 12} more</li>` : ''}</ul>` : ''}
       ${r.steps.length > 1 ? `<span class="pd-pips" role="img" aria-label="${r.earned} of ${r.steps.length} tiers">${r.steps.map(x => `<i class="pd-pip pd-pip--${x.tier}${x.done ? ' on' : ''}"></i>`).join('')}</span>` : ''}
       ${bar(Math.min(1, r.value / step.need), 'thin')}<span class="pd-card-count">${n(fmtValue(r, Math.min(r.value, step.need)))} / ${fmtNeed(r, step.need)}</span>
