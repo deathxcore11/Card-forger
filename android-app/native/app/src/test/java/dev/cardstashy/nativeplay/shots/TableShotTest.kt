@@ -66,6 +66,39 @@ class TableShotTest {
                 }
             }
         }
+        // The cast spotlight (table-feel spec 2): a CPU creature and your own spell, card at the right and the glass box beside it.
+        for ((size, q) in listOf("844x390" to "w844dp-h390dp-land-xxhdpi", "960x840" to "w960dp-h840dp-land-xhdpi")) {
+            RuntimeEnvironment.setQualifiers(q)
+            val st = state("main")
+            val cpuCard = (st.cpu.battlefield + st.cpu.graveyard).filter { !it.isLand }.maxByOrNull { it.text.length + if (it.isCreature) 100 else 0 }!!
+            val myCard = (st.me.hand + st.me.battlefield).filter { !it.isLand && !it.isCreature }.maxByOrNull { it.text.length } ?: st.me.hand.first()
+            for ((name, spot) in listOf("cpu" to dev.cardstashy.nativeplay.ui.Spotlight(cpuCard, "CPU", "casts", emptyList(), 4000, false),
+                    "you" to dev.cardstashy.nativeplay.ui.Spotlight(myCard, "You", "casts", listOf(cpuCard.name), 1600, true))) {
+                dev.cardstashy.nativeplay.ui.TableEmotes.destroy()
+                captureRoboImage(File(System.getProperty("shotsDir"), "table/table-spotlight-$name-$size.png").path) {
+                    val anchors = remember { Anchors() }
+                    CompositionLocalProvider(LocalAnchors provides anchors) {
+                        Box(Modifier.fillMaxSize().background(Palette.Night)) {
+                            PlaymatScene(Modifier.fillMaxSize())
+                            ForgeBoard(st, live = false, intents = TableIntents(), selectedHand = null, onSelectHand = {}, onInspect = {}, onMenu = {},
+                                handOrder = emptyList(), onHandOrder = {}) { dev.cardstashy.nativeplay.ui.CastSpotlight(spot) {} }
+                        }
+                    }
+                }
+            }
+        }
+        // The opening hand (table-feel spec 1): no side panel, who goes first, pips, Mulligan and Keep with its clock.
+        for ((size, q) in listOf("844x390" to "w844dp-h390dp-land-xxhdpi", "960x840" to "w960dp-h840dp-land-xhdpi")) {
+            RuntimeEnvironment.setQualifiers(q)
+            val st = state("opening")
+            captureRoboImage(File(System.getProperty("shotsDir"), "table/table-mulligan-$size.png").path) {
+                Box(Modifier.fillMaxSize().background(Palette.Night)) {
+                    PlaymatScene(Modifier.fillMaxSize())
+                    dev.cardstashy.nativeplay.ui.Mulligan(st, live = true, clock = dev.cardstashy.nativeplay.match.MatchController.Clock(android.os.SystemClock.elapsedRealtime() + 21_000, 30_000),
+                        onOk = {}, onCancel = {}, onCard = {}, onDeal = {}, onHold = {})
+                }
+            }
+        }
         // The match menu open over the deck tracker (site-tracker-crowded), and the Opponent tab alone; the fixture's own tracker list.
         RuntimeEnvironment.setQualifiers("w844dp-h390dp-land-xxhdpi")
         val deck = listOf("Legion Warboss" to 2, "Goblin Guide" to 1, "Hill Giant" to 2, "Grizzly Bears" to 2, "Rancor" to 1, "Sol Ring" to 1, "Arcane Signet" to 1,

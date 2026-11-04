@@ -65,6 +65,7 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.foundation.layout.wrapContentSize
 import androidx.compose.ui.draw.alpha
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.geometry.Offset
@@ -143,7 +144,8 @@ fun TableScreen(controller: MatchController, onHome: () -> Unit, onRematch: () -
             when {
                 stage == Stage.TOSS -> { val t = controller.toss.collectAsState().value; if (t != null) TossScreen(t, cpuPlate, onDone = { controller.tossFinished() }) else Loading() }
                 st == null || stage == Stage.STARTING -> Loading()
-                stage == Stage.MULLIGAN -> Mulligan(st, controller, live, sizes, audio, onHold = { inspect = it })
+                stage == Stage.MULLIGAN -> Mulligan(st, live, controller.clock.collectAsState().value, onOk = { controller.ok() }, onCancel = { controller.cancel() },
+                    onCard = { controller.card(it) }, onDeal = { audio.play("QP-012", .55f) }, onHold = { inspect = it })
                 else -> {
                     var handOrder by remember { mutableStateOf(emptyList<Int>()) }
                     // table-emotes.mjs mount(): the CPU's hello once the match is on; everything goes with the table.
@@ -156,7 +158,7 @@ fun TableScreen(controller: MatchController, onHome: () -> Unit, onRematch: () -
                 }
             }
             banner?.let { b -> BannerView(b.text, b.yours, Modifier.align(Alignment.Center)) }
-            if (stage == Stage.PLAYING || stage == Stage.MULLIGAN) ClockPill(controller.clock.collectAsState().value, Modifier.align(Alignment.CenterEnd).padding(end = 10.dp).offset(y = (-44).dp))
+            if (stage == Stage.PLAYING) ClockPill(controller.clock.collectAsState().value, Modifier.align(Alignment.CenterEnd).padding(end = 10.dp).offset(y = (-44).dp))
         }
         if (stage == Stage.PLAYING || stage == Stage.INTRO) shown?.let { CombatLines(it, anchors) }
         afk?.let { Text(it, style = Type.Label.copy(color = Color(0xFFFFB4A8), fontSize = 14.sp), modifier = Modifier.align(Alignment.TopCenter).padding(top = 96.dp)
@@ -179,19 +181,84 @@ private fun Loading() {
 
 // ---- The opening hand: nothing else is drawn before the keep ----
 
+/**
+ * The opening hand (table-feel spec 1, Randall 4 Nov 18:18Z): no side panel. The hand fans across the felt, the seats keep
+ * their corners, a small glass pill says who goes first, three pips and a caption count the mulligans, and the table's own
+ * pair sits bottom right: Mulligan (dark glass) and Keep (the gold main button) with the decision's clock running round it.
+ */
 @Composable
-private fun Mulligan(st: MatchState, c: MatchController, live: Boolean, sizes: Sizes, audio: TableAudio, onHold: (Card) -> Unit) {
-    // The same hand as the table, dealt in over the dimmed mat; Keep and Mulligan sit in the sidebar.
-    Row(Modifier.fillMaxSize()) {
-        BoxWithConstraints(Modifier.weight(1f).fillMaxHeight().background(Color(0x66000000)).padding(horizontal = 16.dp), contentAlignment = Alignment.Center) {
-            val cardW = minOf((maxWidth - 32.dp) / 5.2f, maxHeight * .55f / 1.4f)
-            HandFan(st.me.hand, cardW, Modifier.fillMaxWidth(), angleDeg = 2.5f, dealIn = true,
-                markOf = { card -> if (card.id in st.selection.chosenCards) Mark.PICKED else if (live && card.id in st.selection.cards) Mark.PICKABLE else Mark.NONE },
-                onTap = { card -> if (live && card.id in st.selection.cards) c.card(card.id) else onHold(card) },
-                onHold = onHold, onDeal = { audio.play("QP-012", .55f) }, pop = 1.2f)
+internal fun Mulligan(st: MatchState, live: Boolean, clock: MatchController.Clock?, onOk: () -> Unit, onCancel: () -> Unit, onCard: (Int) -> Unit, onDeal: () -> Unit, onHold: (Card) -> Unit) {
+    var mulls by remember { androidx.compose.runtime.mutableIntStateOf(0) }
+    val choosing = st.inputType != "InputConfirmMulligan" && st.selection.cards.isNotEmpty()
+    val yours = live && st.waitingOnMe
+    val youFirst = Regex("(?i)\\byou (are|go|will go)( going)? first").containsMatchIn(st.message) ||
+        !Regex("(?i)going first|goes first").containsMatchIn(st.message) && st.activePlayer == st.viewer
+    BoxWithConstraints(Modifier.fillMaxSize().background(Color(0x59000000))) {
+        val W = maxWidth; val H = maxHeight
+        val d = Du(chromeU(W, H))
+        with(d) {
+            Medallion(st.cpu, mine = false, pickable = false, picked = false, modifier = Modifier.offset(x = W - 132.du, y = 26.du), d = d) {}
+            Medallion(st.me, mine = true, pickable = false, picked = false, modifier = Modifier.offset(x = 80.du, y = H - 78.du), d = d) {}
+            // Who goes first: one glass pill with a coin, centred above the hand.
+            Row(Modifier.align(Alignment.TopCenter).padding(top = 20.du).clip(RoundedCornerShape(999.dp)).background(Color(0xD90C0D12)).border(1.dp, Color(0x33F2D496), RoundedCornerShape(999.dp))
+                .padding(horizontal = 16.du, vertical = 8.du), verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(8.du)) {
+                androidx.compose.foundation.Canvas(Modifier.size(18.du)) {
+                    drawCircle(Brush.verticalGradient(listOf(Color(0xFFF7DA97), Color(0xFFC4903A))))
+                    drawCircle(Color(0xFF8A6424), radius = size.minDimension * .34f, style = androidx.compose.ui.graphics.drawscope.Stroke(1.2f * density))
+                }
+                Text(if (youFirst) "You go first" else "CPU goes first", style = sans(sp(15f), FontWeight.SemiBold, Color(0xFFF3E9D2)))
+            }
+            // The hand, full width on the felt; nothing is drawn over it.
+            val cardW = minOf((W - 64.dp) / 6.2f, H * .5f / 1.4f)
+            Box(Modifier.fillMaxSize().padding(horizontal = 24.dp), contentAlignment = Alignment.Center) {
+                HandFan(st.me.hand, cardW, Modifier.fillMaxWidth().offset(y = (-8).du), angleDeg = 2.5f, dealIn = true,
+                    markOf = { card -> if (card.id in st.selection.chosenCards) Mark.PICKED else if (live && card.id in st.selection.cards) Mark.PICKABLE else Mark.NONE },
+                    onTap = { card -> if (live && card.id in st.selection.cards) onCard(card.id) else onHold(card) },
+                    onHold = onHold, onDeal = onDeal, pop = 1.2f)
+            }
+            // Three pips (7, 6, 5) and the caption; while putting cards on the bottom, Forge's own line instead.
+            val cards = 7 - mulls
+            Column(Modifier.align(Alignment.BottomCenter).padding(bottom = 22.du), horizontalAlignment = Alignment.CenterHorizontally, verticalArrangement = Arrangement.spacedBy(8.du)) {
+                Row(horizontalArrangement = Arrangement.spacedBy(10.du)) {
+                    repeat(3) { i -> Box(Modifier.size(9.du).clip(CircleShape).background(if (i == mulls.coerceAtMost(2)) Color(0xFFE8B95B) else Color(0x40FFFFFF))) }
+                }
+                Text(if (choosing) shortMessage(st) else if (cards > 1) "$cards cards \u00B7 you may mulligan to ${cards - 1}" else "$cards card",
+                    style = sans(sp(14f), FontWeight.Medium, Color(0xFFE6DCC6)), textAlign = TextAlign.Center)
+            }
+            if (yours) Row(Modifier.align(Alignment.BottomEnd).padding(end = 28.du, bottom = 18.du), horizontalArrangement = Arrangement.spacedBy(14.du), verticalAlignment = Alignment.CenterVertically) {
+                if (!choosing) st.buttons.cancel?.takeIf { st.buttons.cancelEnabled }?.let { label ->
+                    Box(Modifier.height(48.du).widthIn(min = 128.du).clip(RoundedCornerShape(999.dp)).background(Color(0xE60C0D12)).border(1.dp, Color(0x26FFFFFF), RoundedCornerShape(999.dp))
+                        .clickable { mulls++; onCancel() }.padding(horizontal = 22.du), contentAlignment = Alignment.Center) {
+                        Text(label, style = sans(sp(16f), FontWeight.Bold, Color(0xFFF3E9D2)), maxLines = 1)
+                    }
+                }
+                Box(contentAlignment = Alignment.Center) {
+                    GoldPill(st.buttons.ok ?: "Keep", st.buttons.okEnabled, Modifier.height(48.du), d) { onOk() }
+                    KeepClock(clock, Modifier.matchParentSize())
+                }
+            }
         }
-        Sidebar(st, c, null, live, sizes, null, Modifier.width(sizes.sidebar).fillMaxHeight(), onInspect = onHold)
     }
+}
+
+/** The decision's clock as a gold line running round the Keep pill (coral for the last ten seconds); it auto-keeps at zero. */
+@Composable
+private fun KeepClock(c: MatchController.Clock?, modifier: Modifier) {
+    if (c == null || !c.own) return
+    var left by remember(c) { mutableStateOf(c.frozenLeft ?: (c.endsAt - android.os.SystemClock.elapsedRealtime())) }
+    if (c.frozenLeft == null) LaunchedEffect(c) { while (true) { left = (c.endsAt - android.os.SystemClock.elapsedRealtime()).coerceAtLeast(0); if (Motion.still) delay(1000) else androidx.compose.runtime.withFrameMillis { }; if (left <= 0) break } }
+    val warn = left <= dev.cardstashy.nativeplay.match.TurnClock.WARN_MS
+    val frac = (left.toFloat() / c.totalMs).coerceIn(0f, 1f)
+    androidx.compose.foundation.Canvas(modifier.padding(0.dp)) {
+        val inset = 3.dp.toPx()
+        val path = androidx.compose.ui.graphics.Path().apply {
+            addRoundRect(androidx.compose.ui.geometry.RoundRect(-inset, -inset, size.width + inset, size.height + inset, androidx.compose.ui.geometry.CornerRadius(size.height / 2 + inset)))
+        }
+        val m = androidx.compose.ui.graphics.PathMeasure().apply { setPath(path, false) }
+        val seg = androidx.compose.ui.graphics.Path(); m.getSegment(0f, m.length * frac, seg, true)
+        drawPath(seg, if (warn) Color(0xFFFF6B5A) else Color(0xFFF6DFA8), style = androidx.compose.ui.graphics.drawscope.Stroke(2.5f.dp.toPx(), cap = androidx.compose.ui.graphics.StrokeCap.Round))
+    }
+    if (warn) Text(((left + 999) / 1000).toString(), style = Type.Label.copy(color = Color(0xFFFF6B5A), fontSize = 13.sp), modifier = modifier.wrapContentSize(Alignment.TopEnd).offset(x = 10.dp, y = (-14).dp))
 }
 
 // ---- The board: CPU half above, yours below, hand fan at the bottom ----
@@ -411,14 +478,40 @@ private fun Hand(st: MatchState, c: MatchController, live: Boolean, sizes: Sizes
 @Composable
 private fun TableSide(st: MatchState, c: MatchController, beat: Beat?, live: Boolean, lastBeat: Beat?, onInspect: (Card) -> Unit) {
     Box(Modifier.fillMaxSize()) {
+        // Arena style: no window. A CPU cast, trigger or ability gets the spotlight (the card big at the right and our glass box
+        // beside it, table-feel spec 2); other beats keep their one line of glass. Your own spell gets the same, in gold, as it lands on the stack.
+        val spot = beat?.let { spotlightFor(st, it) }
+        var mine by remember { mutableStateOf<Spotlight?>(null) }
+        val top = st.stack.firstOrNull()
+        val seen = remember { HashSet<Int>() }
+        LaunchedEffect(top?.id) {
+            val t = top ?: return@LaunchedEffect
+            if (t.controller != st.viewer || t.ability || t.source == null || !seen.add(t.id)) return@LaunchedEffect
+            mine = Spotlight(t.source, "You", "casts", t.targets.map { r -> if (r.kind == "player") (if (r.id == st.viewer) "you" else "CPU") else r.name ?: "" }, 1600, yours = true)
+            delay(1600); mine = null
+        }
         when {
-            // Arena style: no window. The card and its glass caption explain what is happening on the felt; the stack fan and the board effects show the rest.
+            spot != null -> CastSpotlight(spot) { c.next() }
             beat != null -> BeatCaption(beat, Modifier.align(Alignment.TopCenter).padding(top = 58.dp)) { c.next() }
+            mine != null -> CastSpotlight(mine!!) { mine = null }
         }
         // native-panel.mjs dock: Forge's own questions (triggers order, costs, damage split, search, choices). Called every frame: the
         // spell-mode back-out acts on the step after a prompt.
         if (beat == null) BoxWithConstraints(Modifier.fillMaxSize()) { DecisionDock(st, live, c.intents, onInspect, chromeU(maxWidth, maxHeight), replies = c.dockReplies) }
     }
+}
+
+/** The spotlight for a CPU beat about one card: a cast, a trigger or an activation (Pacing's titles). */
+internal fun spotlightFor(st: MatchState, b: Beat): Spotlight? {
+    val verb = when {
+        b.title.startsWith("CPU casts ") -> "casts"
+        Regex(" triggers( ×\\d+)?$").containsMatchIn(b.title) -> "triggers"
+        b.title.endsWith(" is activated") -> "activates"
+        else -> return null
+    }
+    val card = b.cardId?.let { id -> st.card(id) ?: st.stack.firstOrNull { it.source?.id == id }?.source } ?: return null
+    val targets = b.detail?.split(", ")?.mapNotNull { it.removePrefix("Targets ").takeIf { x -> x.isNotBlank() } }.orEmpty()
+    return Spotlight(card, "CPU", verb, targets, b.durationMs, yours = false)
 }
 
 // ---- Sidebar: CPU seat, the feed, phase dots, the gold action ----

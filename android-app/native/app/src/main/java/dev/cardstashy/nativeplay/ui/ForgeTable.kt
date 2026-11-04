@@ -638,7 +638,7 @@ private fun TuckedHand(n: Int, modifier: Modifier, d: Du) = with(d) {
 
 /** .play-match-seat: a 52 du round portrait in a gold ring, the life total on a pill under it (tap to target the player). */
 @Composable
-private fun Medallion(p: Player, mine: Boolean, pickable: Boolean, picked: Boolean, modifier: Modifier, d: Du, onPick: () -> Unit) = with(d) {
+internal fun Medallion(p: Player, mine: Boolean, pickable: Boolean, picked: Boolean, modifier: Modifier, d: Du, onPick: () -> Unit) = with(d) {
     val flash = remember { Animatable(0f) }
     var last by remember { mutableStateOf(p.life) }
     LaunchedEffect(p.life) { if (p.life < last) { flash.snapTo(1f); flash.animateTo(0f, tween(900)) }; last = p.life }
@@ -831,7 +831,7 @@ private fun StackCard(st: MatchState, s: StackItem, n: Int, modifier: Modifier, 
 // ---- Buttons (.forge-native-actions on the seat) ----
 
 @Composable
-private fun GoldPill(text: String, enabled: Boolean, modifier: Modifier, d: Du, onClick: () -> Unit) = with(d) {
+internal fun GoldPill(text: String, enabled: Boolean, modifier: Modifier, d: Du, onClick: () -> Unit) = with(d) {
     Box(modifier.widthIn(min = 138.du).height(44.du).drawBehind { drawRoundRect(Color(0x3DC99A4B), topLeft = Offset(0f, 8.du.toPx()), size = size, cornerRadius = CornerRadius(size.height / 2)) }
         .clip(RoundedCornerShape(999.dp)).background(if (enabled) Brush.verticalGradient(listOf(Color(0xFFF7DA97), Color(0xFFE8B95B), Color(0xFFC4903A))) else Brush.verticalGradient(listOf(Color(0xFF6B5A3A), Color(0xFF4A3E28))))
         .border(1.dp, Color(0xFFF6DFA8), RoundedCornerShape(999.dp)).clickable(enabled = enabled, onClick = onClick), contentAlignment = Alignment.Center) {
@@ -844,7 +844,7 @@ private fun GoldPill(text: String, enabled: Boolean, modifier: Modifier, d: Du, 
 }
 
 @Composable
-private fun GlassPill(text: String, enabled: Boolean, modifier: Modifier, d: Du, tone: Color = Color(0xFFEEE6D4), edge: Color = Color(0x26FFFFFF), onClick: () -> Unit) = with(d) {
+internal fun GlassPill(text: String, enabled: Boolean, modifier: Modifier, d: Du, tone: Color = Color(0xFFEEE6D4), edge: Color = Color(0x26FFFFFF), onClick: () -> Unit) = with(d) {
     Box(modifier.height(36.du).clip(RoundedCornerShape(999.dp)).background(Color(0xB30C0D12)).border(1.dp, edge, RoundedCornerShape(999.dp))
         .clickable(enabled = enabled, onClick = onClick).padding(horizontal = 14.du), contentAlignment = Alignment.Center) {
         Text(text, style = sans(sp(12.5f), FontWeight.SemiBold, tone), maxLines = 1)
