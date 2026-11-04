@@ -134,3 +134,29 @@ export function createLessonCoach({root, battle, playerSide = 'hero', doc = docu
   };
   return api;
 }
+
+// Stacked draws for the four lesson battles (engine setting setup.stack, CPU matches only): names, top of the
+// library first. The first seven are the opening hand and the hero keeps it (no mulligan); the rest are the next draws.
+// Forge still shuffles, deals and plays; this only moves named cards to the top before the opening draw.
+export const LESSON_STACKS = {
+  a1b1: {
+    hero: ['Plains', 'Savannah Lions', 'Plains', 'Benalish Hero', 'Plains', 'Mesa Pegasus', 'White Knight', 'Plains', 'Pearled Unicorn', 'Plains', 'Northern Paladin', 'Plains'],
+    villain: ['Forest', 'Llanowar Elves', 'Forest', 'Grizzly Bears', 'Forest', 'Timber Wolves', 'Elvish Archers', 'Forest', 'Wyluli Wolf', 'Forest'],
+  },
+  a1b2: {
+    hero: ['Plains', 'Mesa Pegasus', 'Plains', 'Mesa Pegasus', 'Plains', 'Swords to Plowshares', 'Pearled Unicorn', 'Plains', 'Plains', 'Savannah Lions', 'Serra Angel', 'Plains'],
+    villain: ['Mountain', 'Hill Giant', 'Mountain', 'Gray Ogre', 'Mountain', 'Goblin King', 'Mountain', 'Mountain', 'Uthden Troll', 'Mountain'],
+  },
+  a1b3: {
+    hero: ['Plains', 'White Knight', 'Plains', 'Savannah Lions', 'Plains', 'Benalish Hero', 'Northern Paladin', 'Plains', 'Plains', 'Serra Angel', 'Plains'],
+    villain: ['Swamp', 'Black Knight', 'Swamp', 'Scathe Zombies', 'Swamp', 'Erg Raiders', 'Drudge Skeletons', 'Swamp', 'Swamp', 'Hasran Ogress'],
+  },
+  a1b4: {
+    hero: ['Plains', 'Island', 'Plains', 'Island', 'Mesa Pegasus', 'Unsummon', 'Flying Men', 'Island', 'Moorish Cavalry', 'Plains', 'Serra Angel', 'Island'],
+    villain: ['Forest', 'Llanowar Elves', 'Forest', 'Ghazbán Ogre', 'Giant Growth', 'Forest', 'Scryb Sprites', 'Forest', 'Grizzly Bears', 'Forest'],
+  },
+};
+// OFF until the Forge host with setup.stack is deployed (PR #121 + Randall's yes). Older hosts and older APK engines
+// refuse an unknown `setup` key, so sending it early would break the four lesson battles. Flip to true with the host deploy.
+export const STACK_LIVE = false;
+export const lessonSetup = (id, live = STACK_LIVE) => live && LESSON_STACKS[id] ? {stack: structuredClone(LESSON_STACKS[id]), noMulligan: true} : null;

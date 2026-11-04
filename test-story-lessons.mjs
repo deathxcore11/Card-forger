@@ -25,3 +25,22 @@ assert.ok(s2.seen.has('w:Flanking'));
 // Every lesson concept has a line.
 for(const k of Object.values(LESSON_BATTLES).flat())assert.ok(SAY[k],k);
 console.log('story lessons ok');
+// Stack lists name only cards that exist in the right deck, within the engine's limits (15 names).
+import {readFileSync} from 'node:fs';
+import {LESSON_STACKS,lessonSetup} from './story-lessons.js';
+const act=JSON.parse(readFileSync('data/story/act-1.json','utf8'));
+for(const b of act.battles.slice(0,4)){
+  const st=LESSON_STACKS[b.id],names=d=>new Set(d.cards.map(r=>r.name));
+  const hero=names(b.hero.deck),vil=names(b.lessonDeck.deck);
+  for(const [side,set] of [['hero',hero],['villain',vil]]){assert.ok(st[side].length<=15);for(const n of st[side])assert.ok(set.has(n),`${b.id} ${side}: ${n}`);}
+  assert.equal(st.hero.slice(0,7).filter(n=>/^(Plains|Island)$/.test(n)).length>=3||b.id==='a1b4',true);
+}
+assert.equal(lessonSetup('a1b5',true),null);assert.equal(lessonSetup('a1b1'),null,'off until the host deploy');
+// The request: first player, quick style, stack + no mulligan; ordinary Story stays random with no setup.
+const {exactForgeInput}=await import('./play-forge-host-client.js');
+const deck={name:'d',cards:[{name:'Plains',qty:60}]};
+const base={playStyle:'quick',match:{mode:'cpu',format:'Vintage',difficulty:'Medium',startingPlayer:'random',podSize:2},selected:deck,opponent:deck};
+const plain=exactForgeInput(base);assert.equal(plain.startingPlayer,'random');assert.equal(plain.setup,undefined);
+const les=exactForgeInput({...base,lesson:lessonSetup('a1b1',true)},{startingPlayer:'random'});
+assert.equal(les.startingPlayer,'first');assert.equal(les.setup.noMulligan,true);assert.deepEqual(les.setup.stack.hero.slice(0,2),['Plains','Savannah Lions']);
+console.log('lesson stacks ok');
