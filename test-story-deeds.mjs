@@ -2,7 +2,8 @@
 import assert from 'node:assert/strict';
 import {readFileSync} from 'node:fs';
 import {createMatchFacts, factsMeet} from './match-facts.js';
-import {STORY_DEEDS, STORY_ACT_DEEDS, storyDeedsEarned, storyDeedArt} from './story-deeds.js';
+import {STORY_DEEDS, STORY_ACT_DEEDS, storyDeedsEarned, storyDeedArt, storyDeedReward} from './story-deeds.js';
+import {ACHIEVEMENTS, achievementReward} from './play-achievements.js';
 
 // --- The tracker reads a Forge surface the way the table shows it ---------------------------------
 const card = (id, controller, name, extra = {}) => ({id, zone: 'Battlefield', owner: controller, controller, known: true, name, types: ['Creature'], type: 'Creature - Goblin', power: 2, ...extra});
@@ -60,4 +61,14 @@ assert.deepEqual(storyDeedsEarned('a1b2', {...won, own: true}), [], 'your own de
 assert.deepEqual(storyDeedsEarned('a1b8', {seat: 'villain', maxPower: 6}), ['a1-v-dragon-engine']);
 const refs = Array.from({length: 8}, (_, i) => `story:a3b${i + 1}:loaner`);
 assert.ok(storyDeedsEarned('a3b8', {seat: 'hero', own: true}, refs).includes('a3-chronicler'));
+// Rewards vary with difficulty: XP only, a common seal, an uncommon seal; act deeds a pack; hidden a rare seal.
+const kinds = new Set(STORY_DEEDS.map(storyDeedReward));
+for (const k of ['xp', 'common', 'uncommon', null]) assert.ok(kinds.has(k), 'some deeds pay ' + k);
+assert.ok(STORY_ACT_DEEDS.every(d => storyDeedReward(d) === 'feat'));
+const pay = id => achievementReward(ACHIEVEMENTS.find(a => a.id === id), 0, {});
+const xpOnly = STORY_DEEDS.find(d => storyDeedReward(d) === 'xp');
+assert.deepEqual(pay(xpOnly.id), {xp: 100});
+assert.equal(pay(STORY_DEEDS.find(d => storyDeedReward(d) === 'uncommon').id).seals.u, 1);
+assert.equal(pay('a15-endless-court').seals.r, 1);
+assert.equal(pay('a1-chronicler').packs, 1);
 console.log('story deeds ok');
