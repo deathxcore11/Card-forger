@@ -84,7 +84,7 @@ export function checkDeck(deck, ctx) {
     if (c.name !== r.name) fail.push(`identity: ${r.set} #${r.number} is "${c.name}", list says "${r.name}"`);
     if (r.id && r.id !== c.id) fail.push(`identity: ${c.name} printing id does not match ${r.set} #${r.number}`);
     if (!ctx.act.sets.includes(r.set)) fail.push(`era: ${c.name} from ${r.set}, outside this act`);
-    if (BASIC.test(c.name)) { if (ctx.act.landSet && r.set !== ctx.act.landSet && !(/^Snow-Covered /.test(c.name) && (ctx.act.sets || []).includes(r.set))) fail.push(`era: basic ${c.name} from ${r.set}, must be ${ctx.act.landSet}`); }
+    if (BASIC.test(c.name)) { if (ctx.act.landSet && r.set !== ctx.act.landSet && !(/^(Snow-Covered |Wastes$)/.test(c.name) && (ctx.act.sets || []).includes(r.set))) fail.push(`era: basic ${c.name} from ${r.set}, must be ${ctx.act.landSet}`); }
     else counts.set(c.name, (counts.get(c.name) || 0) + r.qty);
     if (['banned', 'not_legal'].includes(c.vintage)) fail.push(`build: ${c.name} is not legal in Vintage, which Story matches run on`);
     rows.push({r, c});
