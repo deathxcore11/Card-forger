@@ -238,7 +238,7 @@ class Battlefield {
         }
 
         // Combat damage lands: every attacker wind-ups, lunges at what it hit (its blocker, else the player) and strikes (level 2, 640 ms).
-        val lungeMs = 760L; val impactAt = (lungeMs * .45f).toLong()
+        val lungeMs = 1400L; val impactAt = (lungeMs * .5f).toLong()
         val lost = b.players.any { p -> a.players.firstOrNull { it.id == p.id }?.let { q -> p.life < q.life } == true }
         val dmgNow = bfB.values.any { c -> (bfA[c.id]?.damage ?: 0) < c.damage }
         var lunged = false
@@ -327,12 +327,12 @@ class Battlefield {
                             val reach = (dist - minOf(b.width, b.height) * .42f - minOf(a.width, a.height) * .3f).coerceAtLeast(0f)
                             val off = when {
                                 p < .3f -> -26.dp.toPx() * smooth(0f, .3f, p)
-                                p < .45f -> { val q = (p - .3f) / .15f; -26.dp.toPx() + (reach + 26.dp.toPx()) * q * q * q }
-                                p < .55f -> reach
-                                else -> reach * (1f - smooth(.55f, 1f, p))
+                                p < .5f -> { val q = (p - .3f) / .2f; -26.dp.toPx() + (reach + 26.dp.toPx()) * q * q * q }
+                                p < .6f -> reach
+                                else -> reach * (1f - smooth(.6f, 1f, p))
                             }
                             translationX = ux * off; translationY = uy * off
-                            val sc = when { p < .3f -> 1f + .25f * smooth(0f, .3f, p); p < .55f -> 1.25f; else -> 1.25f - .25f * smooth(.55f, .85f, p) }
+                            val sc = when { p < .3f -> 1f + .25f * smooth(0f, .3f, p); p < .6f -> 1.25f; else -> 1.25f - .25f * smooth(.6f, .9f, p) }
                             scaleX = sc; scaleY = sc; shadowElevation = 20f
                         }
                     }
@@ -649,16 +649,16 @@ private fun DrawScope.drawToken(p: Float, r: Rect) {
 private fun DrawScope.drawLunge(it: FxItem, p: Float, a: Rect?, b: Rect?) {
     if (a == null || b == null) return
     val col = it.tone
-    if (p in .3f..0.62f) {
-        val q = (p - .3f) / .15f
+    if (p in .3f..0.66f) {
+        val q = (p - .3f) / .2f
         val dir = b.center - a.center; val len = kotlin.math.hypot(dir.x, dir.y).coerceAtLeast(1f)
         val ux = dir.x / len; val uy = dir.y / len
         val head = a.center; val n = 11
         for (i in 0 until n) { val k = 1f - i / n.toFloat(); val at = head - Offset(ux, uy) * (i * 12f * density)
             drawCircle(col.copy(alpha = .5f * k * (1f - smooth(.8f, 1f, q))), radius = (a.minDimension * .42f) * k, center = at) }
     }
-    if (p >= .48f) {
-        val q = ((p - .48f) / .4f).coerceIn(0f, 1f)
+    if (p >= .5f) {
+        val q = ((p - .5f) / .35f).coerceIn(0f, 1f)
         val at = b.center
         if (q < .25f) drawCircle(Color.White.copy(alpha = .95f * (1f - q / .25f)), radius = b.maxDimension * .9f, center = at)
         for (j in 0..2) { val k = (q - j * .12f).coerceIn(0f, 1f); if (k > 0f) drawCircle(col.copy(alpha = .8f * (1f - k)), radius = b.maxDimension * (.3f + 1.1f * k), center = at, style = Stroke((5f - 4f * k) * density)) }

@@ -107,7 +107,7 @@ class BattlefieldVideoTest {
         val guide = s.me.battlefield.first { it.id == 109 }
         s = s.copy(phase = "COMBAT_DAMAGE").me { it.copy(battlefield = it.battlefield.filter { c -> c.id != 109 }, graveyard = it.graveyard + guide.copy(zone = "Graveyard", attacking = false, tapped = false)) }
             .cpu { p -> p.copy(life = 34).bf { if (it.id == 124) it.copy(damage = 2) else it } }.mine()
-        out += s to 1700L
+        out += s to 3000L
         s = s.copy(phase = "MAIN2").me { p -> p.bf { it.copy(attacking = false, attackTarget = null) } }.cpu { p -> p.bf { it.copy(blocking = false, blockingIds = emptyList(), damage = 0) } }.mine()
         out += s to 700L
         // 10. The turn passes: the light moves to their side.
