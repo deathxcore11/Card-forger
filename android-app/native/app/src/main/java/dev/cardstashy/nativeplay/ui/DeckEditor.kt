@@ -83,7 +83,8 @@ private val POOL_TYPES = mapOf("Creatures" to "creature", "Planeswalkers" to "pl
     "Enchantments" to "enchantment", "Battles" to "battle", "Lands" to "land")
 
 @Composable
-fun DeckEditor(state: JsonObject, ui: EditorUi, onBack: () -> Unit, onCard: (CardPick) -> Unit, onPack: (String) -> Unit, toast: (String) -> Unit, nav: @Composable () -> Unit) {
+fun DeckEditor(state: JsonObject, ui: EditorUi, onBack: () -> Unit, onCard: (CardPick) -> Unit, onPack: (String) -> Unit, toast: (String) -> Unit,
+               onCardTab: (CardPick, String) -> Unit = { p, _ -> onCard(p) }, nav: @Composable () -> Unit) {
     val haptic = androidx.compose.ui.platform.LocalHapticFeedback.current
     val scope = rememberCoroutineScope()
     val clipboard = LocalClipboardManager.current
@@ -175,9 +176,8 @@ fun DeckEditor(state: JsonObject, ui: EditorUi, onBack: () -> Unit, onCard: (Car
         step = ::stepCard,
         open = { name -> onCard(CardPick(name, byName[name]?.o ?: fact(name)?.o ?: "", byName[name]?.pid ?: idOf(name).ifBlank { null }, "nonfoil")) },
         pack = onPack,
-        // app.js playHoldMenu: on a saved deck, hold opens Play's card actions; otherwise the card view.
-        hold = { name -> if (ui.edit.id.isNullOrBlank()) onCard(CardPick(name, byName[name]?.o ?: fact(name)?.o ?: "", byName[name]?.pid ?: idOf(name).ifBlank { null }, "nonfoil"))
-            else { haptic.performHapticFeedback(androidx.compose.ui.hapticfeedback.HapticFeedbackType.LongPress); ui.holdName = name } },
+        // app.js playHoldMenu: hold opens Play's card actions.
+        hold = { name -> haptic.performHapticFeedback(androidx.compose.ui.hapticfeedback.HapticFeedbackType.LongPress); ui.holdName = name },
     )
 
     // Pool tiles (Your cards or All cards).
@@ -244,26 +244,49 @@ fun DeckEditor(state: JsonObject, ui: EditorUi, onBack: () -> Unit, onCard: (Car
                 horizontalArrangement = Arrangement.spacedBy(10.dp)) { deckBlock(); poolBlock() }
         }
         Box(Modifier.align(Alignment.BottomCenter)) { nav() }
-        ui.holdName?.let { name -> HoldCover(ui, name, fact(name)?.a?.ifBlank { null } ?: named(name, "art_crop"), toast, onOpen = { ui.holdName = null; actions.open(name) }, onClose = { ui.holdName = null }) }
+        ui.holdName?.let { name -> val f = fact(name); val art = f?.a?.ifBlank { null } ?: named(name, "art_crop")
+            val set = f?.card?.get("set")?.takeIf { it.isJsonPrimitive }?.asString ?: ""
+            PlayDeckHold(ui, name, art, set, owned[name] ?: owned[name.split(" // ")[0]] ?: 0, toast,
+                onOpen = { tab -> ui.holdName = null; onCardTab(CardPick(name, byName[name]?.o ?: f?.o ?: "", byName[name]?.pid ?: idOf(name).ifBlank { null }, "nonfoil"), tab) },
+                onStep = { k -> stepCard(name, k); toast(if (k > 0) "Added to ${ui.edit.name.ifBlank { "your deck" }}." else "Taken out of ${ui.edit.name.ifBlank { "your deck" }}.") },
+                onPack = { code -> ui.holdName = null; onPack(code) },
+                onArt = { ui.holdName = null; ArtPick.open("avatar", ArtPick.Card("mtg", f?.card?.get("id")?.asString ?: name, name, set.uppercase(), art, art)) },
+                onClose = { ui.holdName = null }) }
     }
 }
 
-/** app.js playHoldMenu: Play's card actions for a card in a saved deck, the same look as Collection's: Open card, or Deck cover. */
+/**
+ * Hold a card in the builder (app.js playHoldMenu, widened by Randall 4 Nov 00:35Z): Play's card actions in Collection's look,
+ * every one a diegetic Play move: open it, put a copy in or take one out of this deck, get it with seals, its pack, its set,
+ * and its art as this deck's cover (saved decks) or as your avatar or header.
+ */
 @Composable
-private fun HoldCover(ui: EditorUi, name: String, image: String, toast: (String) -> Unit, onOpen: () -> Unit, onClose: () -> Unit) {
+private fun PlayDeckHold(ui: EditorUi, name: String, image: String, set: String, have: Int, toast: (String) -> Unit,
+                         onOpen: (tab: String) -> Unit, onStep: (Int) -> Unit, onPack: (String) -> Unit, onArt: () -> Unit, onClose: () -> Unit) {
     val context = androidx.compose.ui.platform.LocalContext.current; val scope = rememberCoroutineScope()
-    val e = ui.edit; val id = e.id ?: return; val deck = e.name.ifBlank { "this deck" }
-    val pick = Workspace.playDeckCovers.collectAsState().value[id]?.get("name")?.takeIf { it.isJsonPrimitive }?.asString ?: ""
+    val e = ui.edit; val id = e.id; val deck = e.name.ifBlank { "this deck" }
+    val q = e.cards.filter { it.name == name }.sumOf { it.qty }; val room = DeckEdit.room(e.cards, name, e.format)
+    val pick = id?.let { Workspace.playDeckCovers.collectAsState().value[it] }?.get("name")?.takeIf { it.isJsonPrimitive }?.asString ?: ""
     val isCover = pick.isNotEmpty() && pick.split(" // ")[0] in listOf(name, name.split(" // ")[0])
     androidx.activity.compose.BackHandler(onBack = onClose)
-    ContextSheet("Card actions", name, e.name, image, listOf(listOf(
-        ContextAction(SiteIcons.CardStack, "Open card", "Copies, crafting and Secret Lair art") { onOpen() },
-        if (isCover) ContextAction(SiteIcons.Paint, "Use the automatic deck cover", "This card is the cover now") {
-            scope.launch { val err = Workspace.setPlayDeckCover(context, id, null); onClose(); toast(err ?: "$deck uses its automatic cover again.") } }
-        else ContextAction(SiteIcons.Paint, "Deck cover", "Show this art on $deck") {
-            if (!image.startsWith("https://")) { toast("This card has no artwork to use."); return@ContextAction }
-            scope.launch { val err = Workspace.setPlayDeckCover(context, id, JsonObject().apply { addProperty("name", name.take(200)); addProperty("image", image.take(500)) })
-                onClose(); toast(err ?: "$name is the cover of $deck.") } })), onClose)
+    val meta = listOfNotNull(e.name.ifBlank { null }, "$q in deck", if (have > 0) "${minOf(have, 4)} in your Trunk" else "Not in your Trunk yet").joinToString(" · ")
+    ContextSheet("Card actions", name, meta, image, listOf(
+        listOfNotNull(
+            ContextAction(SiteIcons.CardStack, "Open card", "Copies, crafting and Secret Lair art") { onOpen("overview") },
+            if (room > 0) ContextAction(SiteIcons.Decks, "Add a copy to $deck", if (have > q) "${q + 1} in deck" else "${q + 1} in deck · greyed until it is in your Trunk") { onStep(1) } else null,
+            if (q > 0) ContextAction(SiteIcons.Close, "Take one out", if (q == 1) "Out of the deck" else "${q - 1} left in deck") { onStep(-1) } else null),
+        listOfNotNull(
+            if (have < 4) ContextAction(SiteIcons.Trunk, if (have > 0) "Get more copies" else "Get it", "Stamp a copy or make it holo with seals") { onOpen("get") } else null,
+            if (set.isNotBlank()) ContextAction(SiteIcons.PackIcon, "Its pack at the Merchant") { onPack(set) } else null,
+            if (set.isNotBlank()) ContextAction(SiteIcons.ViewGallery, "See the whole set") { onPack(set) } else null),
+        listOfNotNull(
+            if (id == null) null else if (isCover) ContextAction(SiteIcons.Paint, "Use the automatic deck cover", "This card is the cover now") {
+                scope.launch { val err = Workspace.setPlayDeckCover(context, id, null); onClose(); toast(err ?: "$deck uses its automatic cover again.") } }
+            else ContextAction(SiteIcons.Paint, "Deck cover", "Show this art on $deck") {
+                if (!image.startsWith("https://")) { toast("This card has no artwork to use."); return@ContextAction }
+                scope.launch { val err = Workspace.setPlayDeckCover(context, id, JsonObject().apply { addProperty("name", name.take(200)); addProperty("image", image.take(500)) })
+                    onClose(); toast(err ?: "$name is the cover of $deck.") } },
+            ContextAction(SiteIcons.Paint, "Use artwork as…", "Avatar or profile header") { onArt() })).filter { it.isNotEmpty() }, onClose)
 }
 
 private class Actions(val save: () -> Unit, val craftAll: () -> Unit, val craftCopies: (String, Int) -> Unit, val fill: () -> Unit, val copy: () -> Unit,

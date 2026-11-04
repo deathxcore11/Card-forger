@@ -405,6 +405,7 @@ fun DecksRoute(onBack: () -> Unit, onWeb: (String) -> Unit, onNav: (PlayTab) -> 
     var editor by remember { mutableStateOf<EditorUi?>(null) }
     var finder by remember { mutableStateOf<FinderUi?>(null) }
     var card by remember { mutableStateOf<CardPick?>(null) }
+    var cardTab by remember { mutableStateOf("overview") }
     val ed = editor
     LaunchedEffect(Unit) { if (dev.cardstashy.nativeplay.account.Account.session.value != null && Workspace.decks.value == null) runCatching { Workspace.load(context) } }
     Box(Modifier.fillMaxSize()) {
@@ -415,8 +416,8 @@ fun DecksRoute(onBack: () -> Unit, onWeb: (String) -> Unit, onNav: (PlayTab) -> 
                 onCard = { name -> card = CardPick(name, "", null, "nonfoil") }, toast = toast, onPack = { finder = null; onTrunkSet(it) }, nav = { PlayNav(PlayTab.DECKS, onNav) })
         } else if (ed != null) {
             BackHandler { editor = null }
-            DeckEditor(s, ed, onBack = { editor = null }, onCard = { card = it }, onPack = { editor = null; onTrunkSet(it) }, toast = toast,
-                nav = { PlayNav(PlayTab.DECKS, onNav) })
+            DeckEditor(s, ed, onBack = { editor = null }, onCard = { cardTab = "overview"; card = it }, onPack = { editor = null; onTrunkSet(it) }, toast = toast,
+                onCardTab = { p, tab -> cardTab = tab; card = p }, nav = { PlayNav(PlayTab.DECKS, onNav) })
         } else DecksScreen(s, onBack,
             onDeck = { id -> editor = EditorUi().apply { edit = dev.cardstashy.nativeplay.play.DeckEdit.open(s.getAsJsonArray("decks")?.mapNotNull { it as? JsonObject }?.firstOrNull { it.get("id")?.asString == id }) } },
             // The finder ships in a signed build only once its web twin (PR #105) is live: native never leads the web.
@@ -431,7 +432,7 @@ fun DecksRoute(onBack: () -> Unit, onWeb: (String) -> Unit, onNav: (PlayTab) -> 
                 toast = toast, edit = ed?.let { u -> DeckEditCtx(u.edit.name.ifBlank { "this deck" },
                     qty = { n -> u.edit.cards.filter { it.name == n }.sumOf { it.qty } }, copies = if (u.edit.format == "Commander") 1 else 4,
                     step = { n, k -> u.edit = u.edit.copy(cards = dev.cardstashy.nativeplay.play.DeckEdit.step(u.edit.cards, n, k, u.edit.format), dirty = true) }) }),
-                onClose = { card = null })
+                onClose = { card = null; cardTab = "overview" }, startTab = cardTab)
         }
     }
 }
