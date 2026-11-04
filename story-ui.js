@@ -159,6 +159,12 @@ export const LESSONS = {
   'Tribes': 'Tribal cards care about creature types. Elves pump elves, goblins pump goblins. Play the tribe together.',
   'Alternate wins': 'Some cards win the game a different way. If Phage deals combat damage to a player, that player loses. Block her or kill her.',
   'Punishing full hands': 'Black Vise deals 1 damage each turn for every card over four in your hand. Play cards fast, keep your hand small, and break the Vises.',
+  'Landfall': 'Landfall: whenever a land enters the battlefield under your control, a landfall card triggers. Play a land every turn, and hold one back for the right moment.',
+  'Quests': 'Quests: a quest enchantment collects counters as you do something, like playing lands. When it has enough, sacrifice it for a big reward.',
+  'Allies': 'Allies: whenever another Ally enters the battlefield under your control, every Ally you already have triggers. The more you have, the better each new one gets.',
+  'Level up': 'Level up: pay the level up cost any time you could cast a sorcery to put a level counter on the creature. At enough levels it gets bigger and gains abilities.',
+  'Eldrazi Spawn': 'Eldrazi Spawn: 0/1 tokens you can sacrifice for one colourless mana. They chump block too. The decks that make them are ramping into something huge.',
+  'Annihilator': 'Annihilator: whenever it attacks, the defending player sacrifices that many permanents. Keep cheap permanents to give up, and kill it before it attacks twice.',
   'Playing under a lock': 'A lock stops cards from untapping or moving. Break it, or win with what\'s already in play.',
 };
 // Every Story deck says what it is (Randall, 2 Nov 2026): Historical Exact, Historical Tribute or
