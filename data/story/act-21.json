@@ -1,0 +1,2876 @@
+{
+ "act": 21,
+ "era": "2014-07-18",
+ "title": "The Gods of Theros",
+ "years": "2013 to 2014",
+ "sets": [
+  "ths",
+  "bng",
+  "jou",
+  "m15"
+ ],
+ "landSet": "ths",
+ "intro": [
+  {
+   "who": "stage",
+   "line": "Theros. A world of sea and sun and bronze, where the gods walk in the night sky of Nyx and listen to every prayer."
+  },
+  {
+   "who": "stage",
+   "line": "Here, the gods exist because mortals believe in them. Faith makes them, and faith feeds them."
+  },
+  {
+   "who": "stage",
+   "line": "Elspeth Tirel came here to rest after Mirrodin fell. She did not get to rest for long."
+  },
+  {
+   "who": "elspeth",
+   "line": "I was not chosen for my faith in the gods. Sometimes the gods must put their faith in us.",
+   "quote": true
+  }
+ ],
+ "finale": [
+  {
+   "who": "stage",
+   "line": "In Nyx, among the stars, Elspeth drives the Godsend through the god of revels."
+  },
+  {
+   "who": "elspeth",
+   "line": "It is done.",
+   "quote": true
+  },
+  {
+   "who": "stage",
+   "line": "Heliod watches the mortal who has just killed a god. He gave her the spear. He takes it back."
+  },
+  {
+   "who": "stage",
+   "line": "Elspeth Tirel dies on Theros, at the hand of the god she served. Ajani carries the news down from Nyx."
+  },
+  {
+   "who": "ajani",
+   "line": "All peoples treasure a place where the weary traveler may drink in peace.",
+   "quote": true
+  },
+  {
+   "who": "ajani",
+   "line": "She found one here. That is what I will remember."
+  }
+ ],
+ "villainFinale": [
+  {
+   "who": "stage",
+   "line": "Xenagos sits in Nyx with the other gods, and the revel never ends."
+  },
+  {
+   "who": "xenagos",
+   "line": "The gods of Theros are born of the expectations and beliefs of mortals. If I have found godhood, what does that say about their true desires?",
+   "quote": true
+  },
+  {
+   "who": "xenagos",
+   "line": "Embrace every moment, for it could be your last.",
+   "quote": true
+  }
+ ],
+ "vibe": "theros-gods-lyre",
+ "cast": {
+  "you": {
+   "name": "You",
+   "title": "Planeswalker",
+   "portrait": {
+    "card": "Fleetfeather Sandals",
+    "set": "ths",
+    "number": "216",
+    "id": "2222f499-09f9-45a6-8255-9de79df76f1c",
+    "crop": "https://cards.scryfall.io/art_crop/front/2/2/2222f499-09f9-45a6-8255-9de79df76f1c.jpg?1783939720",
+    "artist": "Steve Prescott",
+    "focus": "50% 30%"
+   }
+  },
+  "elspeth": {
+   "name": "Elspeth Tirel",
+   "title": "Sun's Champion",
+   "portrait": {
+    "card": "Elspeth, Sun's Champion",
+    "set": "ths",
+    "number": "9",
+    "id": "fd5b1633-c41d-42b1-af1b-4a872077ffbd",
+    "crop": "https://cards.scryfall.io/art_crop/front/f/d/fd5b1633-c41d-42b1-af1b-4a872077ffbd.jpg?1783939818",
+    "artist": "Eric Deschamps",
+    "focus": "50% 25%"
+   }
+  },
+  "minotaurs": {
+   "name": "The Minotaurs",
+   "title": "Of Deathbellow Canyon",
+   "portrait": {
+    "card": "Minotaur Skullcleaver",
+    "set": "ths",
+    "number": "130",
+    "id": "6854c913-d4bd-42f7-901c-f3c25be5c4b2",
+    "crop": "https://cards.scryfall.io/art_crop/front/6/8/6854c913-d4bd-42f7-901c-f3c25be5c4b2.jpg?1783939759",
+    "artist": "Phill Simmer",
+    "focus": "50% 30%"
+   }
+  },
+  "kiora": {
+   "name": "Kiora",
+   "title": "The Crashing Wave",
+   "portrait": {
+    "card": "Kiora, the Crashing Wave",
+    "set": "bng",
+    "number": "149",
+    "id": "f77ac7fa-718d-425f-a0aa-2f8e2bfc0950",
+    "crop": "https://cards.scryfall.io/art_crop/front/f/7/f77ac7fa-718d-425f-a0aa-2f8e2bfc0950.jpg?1783939525",
+    "artist": "Scott M. Fischer",
+    "focus": "50% 25%"
+   }
+  },
+  "thassa": {
+   "name": "Thassa",
+   "title": "God of the Sea",
+   "portrait": {
+    "card": "Thassa, God of the Sea",
+    "set": "ths",
+    "number": "66",
+    "id": "d6876c7a-8bbe-484e-b733-70229fa336cd",
+    "crop": "https://cards.scryfall.io/art_crop/front/d/6/d6876c7a-8bbe-484e-b733-70229fa336cd.jpg?1783939788",
+    "artist": "Jason Chan",
+    "focus": "50% 25%"
+   }
+  },
+  "heliod": {
+   "name": "Heliod",
+   "title": "God of the Sun",
+   "portrait": {
+    "card": "Heliod, God of the Sun",
+    "set": "ths",
+    "number": "17",
+    "id": "e90d01c9-e76e-42ff-b0fa-8b6786242aae",
+    "crop": "https://cards.scryfall.io/art_crop/front/e/9/e90d01c9-e76e-42ff-b0fa-8b6786242aae.jpg?1783939814",
+    "artist": "Jaime Jones",
+    "focus": "50% 25%"
+   }
+  },
+  "erebos": {
+   "name": "Erebos",
+   "title": "God of the Dead",
+   "portrait": {
+    "card": "Erebos, God of the Dead",
+    "set": "ths",
+    "number": "85",
+    "id": "d0787e1f-0b75-44ab-a8fd-90358906a787",
+    "crop": "https://cards.scryfall.io/art_crop/front/d/0/d0787e1f-0b75-44ab-a8fd-90358906a787.jpg?1783939779",
+    "artist": "Peter Mohrbacher",
+    "focus": "50% 25%"
+   }
+  },
+  "ajani": {
+   "name": "Ajani",
+   "title": "Mentor of Heroes",
+   "portrait": {
+    "card": "Ajani, Mentor of Heroes",
+    "set": "jou",
+    "number": "145",
+    "id": "4a30bcfa-6f95-450f-aea7-885983d7c6a5",
+    "crop": "https://cards.scryfall.io/art_crop/front/4/a/4a30bcfa-6f95-450f-aea7-885983d7c6a5.jpg?1783939407",
+    "artist": "Aaron Miller",
+    "focus": "50% 25%"
+   }
+  },
+  "xenagos": {
+   "name": "Xenagos",
+   "title": "The Reveler",
+   "portrait": {
+    "card": "Xenagos, the Reveler",
+    "set": "ths",
+    "number": "209",
+    "id": "3aecfe99-9c4b-4087-84ee-fb208fd22820",
+    "crop": "https://cards.scryfall.io/art_crop/front/3/a/3aecfe99-9c4b-4087-84ee-fb208fd22820.jpg?1783939722",
+    "artist": "Jason Chan",
+    "focus": "50% 25%"
+   }
+  },
+  "anthousa": {
+   "name": "Anthousa",
+   "title": "Of Setessa",
+   "portrait": {
+    "card": "Anthousa, Setessan Hero",
+    "set": "ths",
+    "number": "149",
+    "id": "ca89e4d4-185d-4a08-b7af-03f6eff38ba3",
+    "crop": "https://cards.scryfall.io/art_crop/front/c/a/ca89e4d4-185d-4a08-b7af-03f6eff38ba3.jpg?1783939750",
+    "artist": "Howard Lyon",
+    "focus": "50% 25%"
+   }
+  },
+  "ashiok": {
+   "name": "Ashiok",
+   "title": "Nightmare Weaver",
+   "portrait": {
+    "card": "Ashiok, Nightmare Weaver",
+    "set": "ths",
+    "number": "188",
+    "id": "599c3c9f-dfb7-4357-9d9c-9a1a4616b103",
+    "crop": "https://cards.scryfall.io/art_crop/front/5/9/599c3c9f-dfb7-4357-9d9c-9a1a4616b103.jpg?1783939731",
+    "artist": "Karla Ortiz",
+    "focus": "50% 25%"
+   }
+  },
+  "blue": {
+   "name": "Mono-Blue Devotion",
+   "title": "Late 2013",
+   "portrait": {
+    "card": "Master of Waves",
+    "set": "ths",
+    "number": "53",
+    "id": "19242db3-660d-4d66-800c-d6cee636bcaf",
+    "crop": "https://cards.scryfall.io/art_crop/front/1/9/19242db3-660d-4d66-800c-d6cee636bcaf.jpg?1783939795",
+    "artist": "Karl Kopinski",
+    "focus": "50% 30%"
+   }
+  },
+  "monsters": {
+   "name": "RG Monsters",
+   "title": "Early 2014",
+   "portrait": {
+    "card": "Stormbreath Dragon",
+    "set": "ths",
+    "number": "143",
+    "id": "471979de-f569-444a-8651-12d7e726949a",
+    "crop": "https://cards.scryfall.io/art_crop/front/4/7/471979de-f569-444a-8651-12d7e726949a.jpg?1783939753",
+    "artist": "Slawomir Maniak",
+    "focus": "50% 30%"
+   }
+  },
+  "heroic": {
+   "name": "Heroic",
+   "title": "2014",
+   "portrait": {
+    "card": "Favored Hoplite",
+    "set": "ths",
+    "number": "13",
+    "id": "251015ed-9408-4941-894a-158551ed2613",
+    "crop": "https://cards.scryfall.io/art_crop/front/2/5/251015ed-9408-4941-894a-158551ed2613.jpg?1783939818",
+    "artist": "Winona Nelson",
+    "focus": "50% 25%"
+   }
+  },
+  "burn": {
+   "name": "Mono-Red",
+   "title": "2014",
+   "portrait": {
+    "card": "Eidolon of the Great Revel",
+    "set": "jou",
+    "number": "94",
+    "id": "a6c10816-e825-452a-90b0-80eb9f20bd6d",
+    "crop": "https://cards.scryfall.io/art_crop/front/a/6/a6c10816-e825-452a-90b0-80eb9f20bd6d.jpg?1783939426",
+    "artist": "Cyril Van Der Haegen",
+    "focus": "50% 30%"
+   }
+  },
+  "god": {
+   "name": "Xenagos",
+   "title": "God of Revels",
+   "portrait": {
+    "card": "Xenagos, God of Revels",
+    "set": "bng",
+    "number": "156",
+    "id": "3184b138-1109-4195-9d96-4f190164e98b",
+    "crop": "https://cards.scryfall.io/art_crop/front/3/1/3184b138-1109-4195-9d96-4f190164e98b.jpg?1783939521",
+    "artist": "Jason Chan",
+    "focus": "50% 25%"
+   }
+  },
+  "black": {
+   "name": "Mono-Black Devotion",
+   "title": "2013 to 2014",
+   "portrait": {
+    "card": "Gray Merchant of Asphodel",
+    "set": "ths",
+    "number": "89",
+    "id": "b06078ce-f534-4e16-9a70-d51620a33eb2",
+    "crop": "https://cards.scryfall.io/art_crop/front/b/0/b06078ce-f534-4e16-9a70-d51620a33eb2.jpg?1783939779",
+    "artist": "Robbie Trevino",
+    "focus": "50% 30%"
+   }
+  }
+ },
+ "battles": [
+  {
+   "id": "a21b1",
+   "slot": 1,
+   "kind": "Arrival",
+   "mood": "tension",
+   "title": "Deathbellow Canyon",
+   "difficulty": "Easy",
+   "teaches": [
+    "Heroic"
+   ],
+   "blurb": "You arrive on a hot white road outside Akros. Minotaur raiders have come up out of Deathbellow Canyon, and Elspeth Tirel is holding the pass with the Akroan hoplites.",
+   "rewardSet": "ths",
+   "host": false,
+   "hero": {
+    "who": "elspeth",
+    "deck": {
+     "name": "The Champion's Phalanx",
+     "colors": "W",
+     "archetype": null,
+     "label": "tribute",
+     "cards": [
+      {
+       "qty": 1,
+       "name": "Elspeth, Sun's Champion",
+       "set": "ths",
+       "number": "9",
+       "id": "fd5b1633-c41d-42b1-af1b-4a872077ffbd"
+      },
+      {
+       "qty": 4,
+       "name": "Favored Hoplite",
+       "set": "ths",
+       "number": "13",
+       "id": "251015ed-9408-4941-894a-158551ed2613"
+      },
+      {
+       "qty": 4,
+       "name": "Phalanx Leader",
+       "set": "ths",
+       "number": "26",
+       "id": "0c6c2458-edb7-4822-866b-ca1b2ea7a8e8"
+      },
+      {
+       "qty": 4,
+       "name": "Hero of Iroas",
+       "set": "bng",
+       "number": "17",
+       "id": "7917f2ee-f093-4ffb-83ed-a181b14b5957"
+      },
+      {
+       "qty": 4,
+       "name": "Soldier of the Pantheon",
+       "set": "ths",
+       "number": "32",
+       "id": "5cfc0f46-4df4-4ae3-bfe6-391916eb590f"
+      },
+      {
+       "qty": 3,
+       "name": "Wingsteed Rider",
+       "set": "ths",
+       "number": "36",
+       "id": "e04751f2-b571-49fa-94b6-ec589d314ee6"
+      },
+      {
+       "qty": 3,
+       "name": "Fabled Hero",
+       "set": "ths",
+       "number": "12",
+       "id": "642d9a5c-5697-4747-adce-5a71bcf1c086"
+      },
+      {
+       "qty": 4,
+       "name": "Gods Willing",
+       "set": "ths",
+       "number": "16",
+       "id": "abafabb3-b2e7-4d78-b4b7-d8f701d3ee8b"
+      },
+      {
+       "qty": 3,
+       "name": "Ordeal of Heliod",
+       "set": "ths",
+       "number": "25",
+       "id": "77e85180-f3c9-4b03-9c25-223599b937ad"
+      },
+      {
+       "qty": 3,
+       "name": "Dauntless Onslaught",
+       "set": "ths",
+       "number": "6",
+       "id": "e652229d-81fe-4261-bebc-9e405bb2d991"
+      },
+      {
+       "qty": 3,
+       "name": "Ajani's Presence",
+       "set": "jou",
+       "number": "2",
+       "id": "e77e2fd5-5c46-4f6b-ac43-ec23fab57a1a"
+      },
+      {
+       "qty": 24,
+       "name": "Plains",
+       "set": "ths",
+       "number": "230",
+       "id": "18013a78-d156-42bf-89b7-72e7070872c0"
+      }
+     ]
+    }
+   },
+   "villain": {
+    "who": "minotaurs",
+    "deck": {
+     "name": "The Felhide Raiders",
+     "colors": "BR",
+     "archetype": null,
+     "label": "tribute",
+     "cards": [
+      {
+       "qty": 4,
+       "name": "Deathbellow Raider",
+       "set": "ths",
+       "number": "117",
+       "id": "b29fc64e-297e-4e10-8f4e-289dc1c3ebfd"
+      },
+      {
+       "qty": 4,
+       "name": "Minotaur Skullcleaver",
+       "set": "ths",
+       "number": "130",
+       "id": "6854c913-d4bd-42f7-901c-f3c25be5c4b2"
+      },
+      {
+       "qty": 4,
+       "name": "Borderland Minotaur",
+       "set": "ths",
+       "number": "114",
+       "id": "9c7f6eb2-feae-4dc9-a009-0ad60f89a592"
+      },
+      {
+       "qty": 3,
+       "name": "Rageblood Shaman",
+       "set": "ths",
+       "number": "138",
+       "id": "ffaa31fd-5ba5-49d4-90b6-fafb9f1a8b3a"
+      },
+      {
+       "qty": 3,
+       "name": "Kragma Warcaller",
+       "set": "ths",
+       "number": "195",
+       "id": "78791fc6-054f-45eb-b8b0-28f2512d72b6"
+      },
+      {
+       "qty": 3,
+       "name": "Ragemonger",
+       "set": "bng",
+       "number": "153",
+       "id": "1eb6eda2-e3df-440a-8900-8310f11db6e9"
+      },
+      {
+       "qty": 4,
+       "name": "Lightning Strike",
+       "set": "ths",
+       "number": "127",
+       "id": "bbb03f2e-2b92-4aa1-afae-301ed5d151d3"
+      },
+      {
+       "qty": 4,
+       "name": "Mogis's Marauder",
+       "set": "ths",
+       "number": "97",
+       "id": "9dfd36c5-a484-4973-873c-b6a433da8e7a"
+      },
+      {
+       "qty": 3,
+       "name": "Magma Jet",
+       "set": "ths",
+       "number": "128",
+       "id": "8b0686b0-27a2-46bc-bc04-717f368d9a78"
+      },
+      {
+       "qty": 2,
+       "name": "Mogis, God of Slaughter",
+       "set": "bng",
+       "number": "151",
+       "id": "2a0417bf-b735-46d7-9985-2d991051020f"
+      },
+      {
+       "qty": 2,
+       "name": "Felhide Minotaur",
+       "set": "ths",
+       "number": "87",
+       "id": "b4e424de-81be-4f90-a7a2-4102c8ba8989"
+      },
+      {
+       "qty": 11,
+       "name": "Mountain",
+       "set": "ths",
+       "number": "242",
+       "id": "e78801a7-af8c-4f1d-b29e-7a36676b6818"
+      },
+      {
+       "qty": 9,
+       "name": "Swamp",
+       "set": "ths",
+       "number": "238",
+       "id": "8b153bb8-f9d9-44dc-ae19-d0eb2ea26ba1"
+      },
+      {
+       "qty": 4,
+       "name": "Temple of Malice",
+       "set": "bng",
+       "number": "164",
+       "id": "52f50818-aede-4667-883a-e0339d86d870"
+      }
+     ]
+    }
+   },
+   "reward": {
+    "hero": {
+     "packs": 1,
+     "coins": 0
+    },
+    "villain": {
+     "card": {
+      "oracle_id": "dd36aea8-9f1c-4daf-86f6-ab9307279ce7",
+      "name": "Minotaur Skullcleaver",
+      "rarity": "common",
+      "set": "ths",
+      "id": "6854c913-d4bd-42f7-901c-f3c25be5c4b2",
+      "image": "https://cards.scryfall.io/normal/front/6/8/6854c913-d4bd-42f7-901c-f3c25be5c4b2.jpg"
+     },
+     "coins": 50
+    }
+   },
+   "scene": [
+    {
+     "who": "elspeth",
+     "line": "It has been my experience that soldiers most fervently follow generals who lead by example.",
+     "quote": true
+    },
+    {
+     "who": "stage",
+     "line": "\"You. Poet. Be sure to write this down.\"",
+     "quote": true
+    },
+    {
+     "who": "elspeth",
+     "line": "Heroic: whenever you cast a spell that targets a heroic creature, it triggers. Bless your heroes, and they grow."
+    }
+   ],
+   "villainScene": [
+    {
+     "who": "minotaurs",
+     "line": "Their only dreams are of full stomachs.",
+     "quote": true
+    },
+    {
+     "who": "stage",
+     "line": "Deathbellow Canyon is home to minotaurs and many other creatures that share a love for the taste of human flesh.",
+     "quote": true
+    },
+    {
+     "who": "stage",
+     "line": "A minotaur does not distinguish between human, satyr, and triton. They are all meat.",
+     "quote": true
+    }
+   ],
+   "after": [
+    {
+     "who": "elspeth",
+     "line": "The priests say Heliod is watching me. I came here to stop being watched."
+    }
+   ],
+   "cues": {
+    "hero": {
+     "start": "Shields up.",
+     "big": "For Akros!",
+     "low": "They keep coming...",
+     "win": "The pass holds.",
+     "loss": "Fall back...",
+     "half": "Target your heroes."
+    },
+    "villain": {
+     "start": "[a bellow from the canyon]",
+     "big": "[the herd charges]",
+     "low": "[a raider falls]",
+     "win": "[a feast]",
+     "loss": "[driven back]"
+    }
+   },
+   "bigPlays": [],
+   "sim": null
+  },
+  {
+   "id": "a21b2",
+   "slot": 2,
+   "kind": "Lesson",
+   "mood": "march",
+   "title": "The Crashing Wave",
+   "difficulty": "Easy",
+   "teaches": [
+    "Bestow"
+   ],
+   "blurb": "Out on the sea, the merfolk planeswalker Kiora has decided that a god of the sea is just a rival with good publicity. Thassa's tritons disagree.",
+   "rewardSet": "bng",
+   "host": false,
+   "hero": {
+    "who": "kiora",
+    "deck": {
+     "name": "Kiora's Tide",
+     "colors": "GU",
+     "archetype": null,
+     "label": "tribute",
+     "cards": [
+      {
+       "qty": 2,
+       "name": "Kiora, the Crashing Wave",
+       "set": "bng",
+       "number": "149",
+       "id": "f77ac7fa-718d-425f-a0aa-2f8e2bfc0950"
+      },
+      {
+       "qty": 4,
+       "name": "Boon Satyr",
+       "set": "ths",
+       "number": "152",
+       "id": "f50c12c4-5565-449a-b30e-7cd896da7735"
+      },
+      {
+       "qty": 3,
+       "name": "Nessian Wilds Ravager",
+       "set": "bng",
+       "number": "129",
+       "id": "65368cf0-7d92-4248-b930-633fd023065b"
+      },
+      {
+       "qty": 4,
+       "name": "Voyaging Satyr",
+       "set": "ths",
+       "number": "182",
+       "id": "155ae6c0-5085-45f1-ba9f-508d501fee2c"
+      },
+      {
+       "qty": 4,
+       "name": "Nimbus Naiad",
+       "set": "ths",
+       "number": "56",
+       "id": "19e9c9a2-4c5b-4518-a127-e4ffb23437d6"
+      },
+      {
+       "qty": 4,
+       "name": "Vaporkin",
+       "set": "ths",
+       "number": "72",
+       "id": "09b661a5-359b-4f21-b1b6-aa0988810b4d"
+      },
+      {
+       "qty": 3,
+       "name": "Courser of Kruphix",
+       "set": "bng",
+       "number": "119",
+       "id": "da5a807f-58e8-4d92-a61c-47bb9b28977f"
+      },
+      {
+       "qty": 4,
+       "name": "Sylvan Caryatid",
+       "set": "ths",
+       "number": "180",
+       "id": "d40b65c1-b24d-492d-81b9-d8474ebdc08c"
+      },
+      {
+       "qty": 10,
+       "name": "Forest",
+       "set": "ths",
+       "number": "246",
+       "id": "ddfd1469-94b9-4964-ada6-4fb43b0b9282"
+      },
+      {
+       "qty": 10,
+       "name": "Island",
+       "set": "ths",
+       "number": "234",
+       "id": "d851b88b-6ce6-4889-83c2-e191307bcee6"
+      },
+      {
+       "qty": 4,
+       "name": "Temple of Mystery",
+       "set": "ths",
+       "number": "226",
+       "id": "2f66945b-3e64-498a-9478-5f96a61d4ec7"
+      },
+      {
+       "qty": 4,
+       "name": "Omenspeaker",
+       "set": "ths",
+       "number": "57",
+       "id": "f347eb88-7d1d-4ed5-b841-2bf81f00d5f0"
+      },
+      {
+       "qty": 4,
+       "name": "Savage Surge",
+       "set": "ths",
+       "number": "176",
+       "id": "5916d5e7-0825-4d72-82e4-1e4c86d1fafe"
+      }
+     ]
+    }
+   },
+   "villain": {
+    "who": "thassa",
+    "deck": {
+     "name": "Thassa's Faithful",
+     "colors": "U",
+     "archetype": null,
+     "label": "tribute",
+     "cards": [
+      {
+       "qty": 2,
+       "name": "Thassa, God of the Sea",
+       "set": "ths",
+       "number": "66",
+       "id": "d6876c7a-8bbe-484e-b733-70229fa336cd"
+      },
+      {
+       "qty": 4,
+       "name": "Thassa's Emissary",
+       "set": "ths",
+       "number": "68",
+       "id": "f52b325b-3ea9-4a99-ae99-9d158560e45b"
+      },
+      {
+       "qty": 2,
+       "name": "Master of Waves",
+       "set": "ths",
+       "number": "53",
+       "id": "19242db3-660d-4d66-800c-d6cee636bcaf"
+      },
+      {
+       "qty": 4,
+       "name": "Omenspeaker",
+       "set": "ths",
+       "number": "57",
+       "id": "f347eb88-7d1d-4ed5-b841-2bf81f00d5f0"
+      },
+      {
+       "qty": 4,
+       "name": "Wavecrash Triton",
+       "set": "ths",
+       "number": "74",
+       "id": "7336ca1e-13ef-4e49-a526-3f285bc339bb"
+      },
+      {
+       "qty": 4,
+       "name": "Nyxborn Triton",
+       "set": "bng",
+       "number": "46",
+       "id": "65371de6-13a2-401f-9334-ae9e19619487"
+      },
+      {
+       "qty": 3,
+       "name": "Breaching Hippocamp",
+       "set": "ths",
+       "number": "43",
+       "id": "8841c01e-015e-4541-942a-f8859dd03fea"
+      },
+      {
+       "qty": 4,
+       "name": "Voyage's End",
+       "set": "ths",
+       "number": "73",
+       "id": "3992ae67-ad0b-40be-a97d-d7fb36754918"
+      },
+      {
+       "qty": 3,
+       "name": "Sealock Monster",
+       "set": "ths",
+       "number": "62",
+       "id": "3f942075-b285-495c-941e-6f1da48d7948"
+      },
+      {
+       "qty": 3,
+       "name": "Dissolve",
+       "set": "ths",
+       "number": "47",
+       "id": "992e8119-f933-4e54-bb04-e1cc78f7e87b"
+      },
+      {
+       "qty": 3,
+       "name": "Triton Fortune Hunter",
+       "set": "ths",
+       "number": "69",
+       "id": "1173ff96-998c-4fe7-9b28-602d990e0339"
+      },
+      {
+       "qty": 24,
+       "name": "Island",
+       "set": "ths",
+       "number": "234",
+       "id": "d851b88b-6ce6-4889-83c2-e191307bcee6"
+      }
+     ]
+    }
+   },
+   "reward": {
+    "hero": {
+     "packs": 1,
+     "coins": 0
+    },
+    "villain": {
+     "card": {
+      "oracle_id": "69e5df2f-be1f-4608-a90f-3e2f51e2fea4",
+      "name": "Thassa, God of the Sea",
+      "rarity": "mythic",
+      "set": "ths",
+      "id": "d6876c7a-8bbe-484e-b733-70229fa336cd",
+      "image": "https://cards.scryfall.io/normal/front/d/6/d6876c7a-8bbe-484e-b733-70229fa336cd.jpg"
+     },
+     "coins": 50
+    }
+   },
+   "scene": [
+    {
+     "who": "kiora",
+     "line": "I will match Thassa drop for drop and show a god what true power is.",
+     "quote": true
+    },
+    {
+     "who": "kiora",
+     "line": "I want one.",
+     "quote": true
+    },
+    {
+     "who": "kiora",
+     "line": "Bestow: some creatures can be cast as an Aura instead. If the creature they enchant dies, they fall off and stay as a creature."
+    }
+   ],
+   "villainScene": [
+    {
+     "who": "thassa",
+     "line": "Mortal strength, like mortal hope, is so easily crushed.",
+     "quote": true
+    },
+    {
+     "who": "stage",
+     "line": "When mortals claim there are places Thassa cannot reach, the sea god laughs.",
+     "quote": true
+    }
+   ],
+   "after": [
+    {
+     "who": "kiora",
+     "line": "I can see why this appeals to Thassa.",
+     "quote": true
+    }
+   ],
+   "cues": {
+    "hero": {
+     "start": "Let's make waves.",
+     "big": "The tide turns!",
+     "low": "She is stronger...",
+     "win": "Mine now.",
+     "loss": "Washed out...",
+     "half": "Bestow, then keep the creature."
+    },
+    "villain": {
+     "start": "[the tide rises]",
+     "big": "[a triton surfaces]",
+     "low": "[the sea goes quiet]",
+     "win": "[pulled under]",
+     "loss": "[the tide goes out]"
+    }
+   },
+   "bigPlays": [],
+   "sim": null
+  },
+  {
+   "id": "a21b3",
+   "slot": 3,
+   "kind": "Lesson",
+   "mood": "comic",
+   "title": "The Sun and the Dead",
+   "difficulty": "Easy",
+   "teaches": [
+    "Devotion"
+   ],
+   "blurb": "Heliod, the sun god, and Erebos, the god of the dead, are brothers, and they have never agreed on anything. Their faithful settle it with a duel at the edge of the Underworld.",
+   "rewardSet": "ths",
+   "host": false,
+   "hero": {
+    "who": "heliod",
+    "deck": {
+     "name": "Heliod's Faithful",
+     "colors": "W",
+     "archetype": null,
+     "label": "tribute",
+     "cards": [
+      {
+       "qty": 2,
+       "name": "Heliod, God of the Sun",
+       "set": "ths",
+       "number": "17",
+       "id": "e90d01c9-e76e-42ff-b0fa-8b6786242aae"
+      },
+      {
+       "qty": 4,
+       "name": "Heliod's Emissary",
+       "set": "ths",
+       "number": "18",
+       "id": "49663acb-582e-495a-b45e-5fc5f4949f22"
+      },
+      {
+       "qty": 4,
+       "name": "Favored Hoplite",
+       "set": "ths",
+       "number": "13",
+       "id": "251015ed-9408-4941-894a-158551ed2613"
+      },
+      {
+       "qty": 4,
+       "name": "Akroan Skyguard",
+       "set": "bng",
+       "number": "3",
+       "id": "d55e85c3-234e-49c4-a307-96fb4497eea8"
+      },
+      {
+       "qty": 4,
+       "name": "Phalanx Leader",
+       "set": "ths",
+       "number": "26",
+       "id": "0c6c2458-edb7-4822-866b-ca1b2ea7a8e8"
+      },
+      {
+       "qty": 3,
+       "name": "Archetype of Courage",
+       "set": "bng",
+       "number": "4",
+       "id": "8e6c4afb-6a94-4519-91c6-9824fed2892c"
+      },
+      {
+       "qty": 4,
+       "name": "Wingsteed Rider",
+       "set": "ths",
+       "number": "36",
+       "id": "e04751f2-b571-49fa-94b6-ec589d314ee6"
+      },
+      {
+       "qty": 4,
+       "name": "Battlewise Valor",
+       "set": "ths",
+       "number": "1",
+       "id": "7d967a4c-2323-4361-a907-5ca9140d8793"
+      },
+      {
+       "qty": 3,
+       "name": "Chosen by Heliod",
+       "set": "ths",
+       "number": "5",
+       "id": "d8ead499-920c-465a-a23d-f08710d7e9bc"
+      },
+      {
+       "qty": 4,
+       "name": "Last Breath",
+       "set": "ths",
+       "number": "22",
+       "id": "1857fc37-1e7e-4b93-9fa9-ec139f16b7fa"
+      },
+      {
+       "qty": 24,
+       "name": "Plains",
+       "set": "ths",
+       "number": "230",
+       "id": "18013a78-d156-42bf-89b7-72e7070872c0"
+      }
+     ]
+    }
+   },
+   "villain": {
+    "who": "erebos",
+    "deck": {
+     "name": "The Returned",
+     "colors": "B",
+     "archetype": null,
+     "label": "tribute",
+     "cards": [
+      {
+       "qty": 2,
+       "name": "Erebos, God of the Dead",
+       "set": "ths",
+       "number": "85",
+       "id": "d0787e1f-0b75-44ab-a8fd-90358906a787"
+      },
+      {
+       "qty": 4,
+       "name": "Gray Merchant of Asphodel",
+       "set": "ths",
+       "number": "89",
+       "id": "b06078ce-f534-4e16-9a70-d51620a33eb2"
+      },
+      {
+       "qty": 4,
+       "name": "Returned Phalanx",
+       "set": "ths",
+       "number": "104",
+       "id": "93613e23-b363-4bcb-8f63-8f1d25f7f174"
+      },
+      {
+       "qty": 4,
+       "name": "Returned Centaur",
+       "set": "ths",
+       "number": "103",
+       "id": "1067cf71-a270-4b1b-aa06-0ec0e732ed16"
+      },
+      {
+       "qty": 4,
+       "name": "Spiteful Returned",
+       "set": "bng",
+       "number": "84",
+       "id": "017e8cfb-7cb0-403c-b8be-abee22369661"
+      },
+      {
+       "qty": 3,
+       "name": "Erebos's Emissary",
+       "set": "ths",
+       "number": "86",
+       "id": "5aa96f63-d5c3-47d3-a54d-a67883406fc5"
+      },
+      {
+       "qty": 4,
+       "name": "Baleful Eidolon",
+       "set": "ths",
+       "number": "78",
+       "id": "853a89c6-63f9-4b12-8a5b-2c382e22b226"
+      },
+      {
+       "qty": 3,
+       "name": "Pharika's Cure",
+       "set": "ths",
+       "number": "100",
+       "id": "c0efc963-5848-44eb-a654-c08b5bd4501d"
+      },
+      {
+       "qty": 4,
+       "name": "Returned Reveler",
+       "set": "jou",
+       "number": "79",
+       "id": "9ea61098-2c6a-48d2-b99f-f3065c67d8e3"
+      },
+      {
+       "qty": 4,
+       "name": "Asphyxiate",
+       "set": "bng",
+       "number": "60",
+       "id": "894f3f5f-586d-45e4-9af7-4de80e44dfae"
+      },
+      {
+       "qty": 24,
+       "name": "Swamp",
+       "set": "ths",
+       "number": "238",
+       "id": "8b153bb8-f9d9-44dc-ae19-d0eb2ea26ba1"
+      }
+     ]
+    }
+   },
+   "reward": {
+    "hero": {
+     "packs": 1,
+     "coins": 0
+    },
+    "villain": {
+     "card": {
+      "oracle_id": "1cfc7b12-a595-492d-81ee-bd100ba7de6a",
+      "name": "Erebos, God of the Dead",
+      "rarity": "mythic",
+      "set": "ths",
+      "id": "d0787e1f-0b75-44ab-a8fd-90358906a787",
+      "image": "https://cards.scryfall.io/normal/front/d/0/d0787e1f-0b75-44ab-a8fd-90358906a787.jpg"
+     },
+     "coins": 50
+    }
+   },
+   "scene": [
+    {
+     "who": "stage",
+     "line": "Legend speaks of the Sun Spear, the mighty weapon that can strike any point in Theros, even the depths of the Underworld.",
+     "quote": true
+    },
+    {
+     "who": "heliod",
+     "line": "Devotion: count the coloured mana symbols in the costs of your permanents. The gods only walk as creatures when your devotion is high enough."
+    }
+   ],
+   "villainScene": [
+    {
+     "who": "stage",
+     "line": "A body Returned, a soul still lost.",
+     "quote": true
+    },
+    {
+     "who": "stage",
+     "line": "The sailor had never seen a god before. Now she had gazed upon Thassa. Shortly she would see Athreos, and then she would meet Erebos.",
+     "quote": true
+    }
+   ],
+   "after": [
+    {
+     "who": "elspeth",
+     "line": "Two gods and their followers bled for a family argument. Remind me why we pray to them."
+    }
+   ],
+   "cues": {
+    "hero": {
+     "start": "Let the sun rise.",
+     "big": "Heliod walks!",
+     "low": "The dead drain us...",
+     "win": "Back to the dark, brother.",
+     "loss": "Sunset...",
+     "half": "Count your white symbols."
+    },
+    "villain": {
+     "start": "Everyone comes to me.",
+     "big": "Gray Merchant!",
+     "low": "Bright. Ugh.",
+     "win": "Welcome home.",
+     "loss": "You will be back."
+    }
+   },
+   "bigPlays": [],
+   "sim": null
+  },
+  {
+   "id": "a21b4",
+   "slot": 4,
+   "kind": "Rival",
+   "mood": "tension",
+   "title": "The Revel",
+   "difficulty": "Normal",
+   "teaches": [
+    "Monstrosity"
+   ],
+   "blurb": "Ajani Goldmane, a leonin planeswalker and an old friend of Elspeth's, has come to Theros to find her. In the hills he finds Xenagos instead: a satyr planeswalker whose revels have started to look like worship.",
+   "rewardSet": "bng",
+   "host": false,
+   "hero": {
+    "who": "ajani",
+    "deck": {
+     "name": "Ajani's Pride",
+     "colors": "GW",
+     "archetype": null,
+     "label": "tribute",
+     "cards": [
+      {
+       "qty": 2,
+       "name": "Ajani, Mentor of Heroes",
+       "set": "jou",
+       "number": "145",
+       "id": "4a30bcfa-6f95-450f-aea7-885983d7c6a5"
+      },
+      {
+       "qty": 4,
+       "name": "Fleecemane Lion",
+       "set": "ths",
+       "number": "193",
+       "id": "622d6c46-82bb-4a97-abe6-b388def44bda"
+      },
+      {
+       "qty": 4,
+       "name": "Chronicler of Heroes",
+       "set": "ths",
+       "number": "190",
+       "id": "de1cbee6-61f4-40f0-86fe-93831a0b87d8"
+      },
+      {
+       "qty": 4,
+       "name": "Setessan Oathsworn",
+       "set": "bng",
+       "number": "138",
+       "id": "e5579755-4718-406a-bba6-27f1f2811e59"
+      },
+      {
+       "qty": 4,
+       "name": "Nessian Courser",
+       "set": "ths",
+       "number": "165",
+       "id": "4697f3aa-abde-4379-af82-f30115f59be0"
+      },
+      {
+       "qty": 3,
+       "name": "Staunch-Hearted Warrior",
+       "set": "ths",
+       "number": "179",
+       "id": "3485eb83-f83c-4776-b164-abd72f3c9547"
+      },
+      {
+       "qty": 4,
+       "name": "Boon Satyr",
+       "set": "ths",
+       "number": "152",
+       "id": "f50c12c4-5565-449a-b30e-7cd896da7735"
+      },
+      {
+       "qty": 3,
+       "name": "Brimaz, King of Oreskos",
+       "set": "bng",
+       "number": "5",
+       "id": "f54eb705-6326-4bac-bf0e-68d42db7a270"
+      },
+      {
+       "qty": 4,
+       "name": "Banishing Light",
+       "set": "jou",
+       "number": "5",
+       "id": "fbaa4800-30cc-4a80-a6cc-9a24ada9eb40"
+      },
+      {
+       "qty": 4,
+       "name": "Ordeal of Nylea",
+       "set": "ths",
+       "number": "170",
+       "id": "e5c48950-c246-47ad-94e1-bf42a62c2fe7"
+      },
+      {
+       "qty": 10,
+       "name": "Forest",
+       "set": "ths",
+       "number": "246",
+       "id": "ddfd1469-94b9-4964-ada6-4fb43b0b9282"
+      },
+      {
+       "qty": 10,
+       "name": "Plains",
+       "set": "ths",
+       "number": "230",
+       "id": "18013a78-d156-42bf-89b7-72e7070872c0"
+      },
+      {
+       "qty": 4,
+       "name": "Temple of Plenty",
+       "set": "bng",
+       "number": "165",
+       "id": "b0830054-b140-49c3-90cb-24e2502757be"
+      }
+     ]
+    }
+   },
+   "villain": {
+    "who": "xenagos",
+    "deck": {
+     "name": "The Satyr Revel",
+     "colors": "RG",
+     "archetype": null,
+     "label": "tribute",
+     "cards": [
+      {
+       "qty": 4,
+       "name": "Satyr Hedonist",
+       "set": "ths",
+       "number": "174",
+       "id": "88c67e15-833c-406a-b75f-8de97fbacf5a"
+      },
+      {
+       "qty": 4,
+       "name": "Satyr Rambler",
+       "set": "ths",
+       "number": "139",
+       "id": "fabccddd-c0ea-45a5-bebc-d8f858242a2a"
+      },
+      {
+       "qty": 4,
+       "name": "Satyr Firedancer",
+       "set": "bng",
+       "number": "108",
+       "id": "7fc6a735-cbf5-4af2-b15c-7ced82f0d9da"
+      },
+      {
+       "qty": 4,
+       "name": "Fanatic of Xenagos",
+       "set": "bng",
+       "number": "147",
+       "id": "3687799c-81bd-4c49-902a-2a96863629c3"
+      },
+      {
+       "qty": 2,
+       "name": "Polukranos, World Eater",
+       "set": "ths",
+       "number": "172",
+       "id": "4979cc1b-9c1a-47e4-ae37-7c41798eb89a"
+      },
+      {
+       "qty": 4,
+       "name": "Lightning Strike",
+       "set": "ths",
+       "number": "127",
+       "id": "bbb03f2e-2b92-4aa1-afae-301ed5d151d3"
+      },
+      {
+       "qty": 3,
+       "name": "Ember Swallower",
+       "set": "ths",
+       "number": "120",
+       "id": "e2715851-9def-42a0-bed4-0923e599e19a"
+      },
+      {
+       "qty": 4,
+       "name": "Satyr Hoplite",
+       "set": "jou",
+       "number": "110",
+       "id": "b8754d66-facb-432e-a6c2-91430a6dec94"
+      },
+      {
+       "qty": 3,
+       "name": "Savage Surge",
+       "set": "ths",
+       "number": "176",
+       "id": "5916d5e7-0825-4d72-82e4-1e4c86d1fafe"
+      },
+      {
+       "qty": 2,
+       "name": "Stormbreath Dragon",
+       "set": "ths",
+       "number": "143",
+       "id": "471979de-f569-444a-8651-12d7e726949a"
+      },
+      {
+       "qty": 10,
+       "name": "Mountain",
+       "set": "ths",
+       "number": "242",
+       "id": "e78801a7-af8c-4f1d-b29e-7a36676b6818"
+      },
+      {
+       "qty": 10,
+       "name": "Forest",
+       "set": "ths",
+       "number": "246",
+       "id": "ddfd1469-94b9-4964-ada6-4fb43b0b9282"
+      },
+      {
+       "qty": 4,
+       "name": "Temple of Abandon",
+       "set": "ths",
+       "number": "224",
+       "id": "46febc5d-1625-4e48-bb3f-31ee06fc13dd"
+      },
+      {
+       "qty": 2,
+       "name": "Satyr Nyx-Smith",
+       "set": "bng",
+       "number": "109",
+       "id": "3bc2c65e-3cba-4813-9949-87e15f592247"
+      }
+     ]
+    }
+   },
+   "reward": {
+    "hero": {
+     "packs": 1,
+     "coins": 100
+    },
+    "villain": {
+     "card": {
+      "oracle_id": "7a770865-9383-45aa-883f-21ee649d1ea3",
+      "name": "Stormbreath Dragon",
+      "rarity": "mythic",
+      "set": "ths",
+      "id": "471979de-f569-444a-8651-12d7e726949a",
+      "image": "https://cards.scryfall.io/normal/front/4/7/471979de-f569-444a-8651-12d7e726949a.jpg"
+     },
+     "coins": 100
+    }
+   },
+   "scene": [
+    {
+     "who": "ajani",
+     "line": "All peoples treasure a place where the weary traveler may drink in peace.",
+     "quote": true
+    },
+    {
+     "who": "ajani",
+     "line": "Monstrosity: pay a creature's monstrosity cost once and it gets bigger for good, often with a bonus. Kill it before they can afford it."
+    }
+   ],
+   "villainScene": [
+    {
+     "who": "xenagos",
+     "line": "Why pray to the gods, who feed on your worship? Dissolve your illusions and see the true nature of things.",
+     "quote": true
+    },
+    {
+     "who": "xenagos",
+     "line": "Stoke a fire hot enough and you'll never run out of things to burn.",
+     "quote": true
+    }
+   ],
+   "after": [
+    {
+     "who": "xenagos",
+     "line": "You think the gods are real because people believe in them? Then watch what happens when they believe in me."
+    }
+   ],
+   "cues": {
+    "hero": {
+     "start": "Where is she?",
+     "big": "For the pride!",
+     "low": "The revel grows...",
+     "win": "The music stops.",
+     "loss": "Too much wine...",
+     "half": "Kill the monsters early."
+    },
+    "villain": {
+     "start": "Join the dance!",
+     "big": "Monstrous!",
+     "low": "Killjoy.",
+     "win": "More wine!",
+     "loss": "The party moves on."
+    }
+   },
+   "bigPlays": [],
+   "sim": null
+  },
+  {
+   "id": "a21b5",
+   "slot": 5,
+   "kind": "Lesson",
+   "mood": "tension",
+   "title": "Nightmares",
+   "difficulty": "Normal",
+   "teaches": [
+    "Constellation"
+   ],
+   "blurb": "In the woods of Setessa, children are going missing and the dreams are going wrong. Anthousa, a Setessan hero, is tracking something that is not a monster. It is a planeswalker called Ashiok, who feeds on nightmares.",
+   "rewardSet": "jou",
+   "host": false,
+   "hero": {
+    "who": "anthousa",
+    "deck": {
+     "name": "The Setessan Grove",
+     "colors": "GW",
+     "archetype": null,
+     "label": "tribute",
+     "cards": [
+      {
+       "qty": 4,
+       "name": "Eidolon of Blossoms",
+       "set": "jou",
+       "number": "122",
+       "id": "8dbb2112-85b9-49cf-9ed5-9273829c34f1"
+      },
+      {
+       "qty": 4,
+       "name": "Harvestguard Alseids",
+       "set": "jou",
+       "number": "13",
+       "id": "3b9256e2-b59c-4997-91c1-4c565746d53d"
+      },
+      {
+       "qty": 4,
+       "name": "Oakheart Dryads",
+       "set": "jou",
+       "number": "133",
+       "id": "d8ef63b9-c021-40fe-910e-93c06d660c20"
+      },
+      {
+       "qty": 2,
+       "name": "Humbler of Mortals",
+       "set": "jou",
+       "number": "127",
+       "id": "f12149b9-b450-4ad6-ab5d-9a0eeb36997e"
+      },
+      {
+       "qty": 4,
+       "name": "Courser of Kruphix",
+       "set": "bng",
+       "number": "119",
+       "id": "da5a807f-58e8-4d92-a61c-47bb9b28977f"
+      },
+      {
+       "qty": 4,
+       "name": "Nyx-Fleece Ram",
+       "set": "jou",
+       "number": "18",
+       "id": "98d13a98-e715-49a8-a59e-a2adfcdec70b"
+      },
+      {
+       "qty": 4,
+       "name": "Banishing Light",
+       "set": "jou",
+       "number": "5",
+       "id": "fbaa4800-30cc-4a80-a6cc-9a24ada9eb40"
+      },
+      {
+       "qty": 4,
+       "name": "Sylvan Caryatid",
+       "set": "ths",
+       "number": "180",
+       "id": "d40b65c1-b24d-492d-81b9-d8474ebdc08c"
+      },
+      {
+       "qty": 2,
+       "name": "Anthousa, Setessan Hero",
+       "set": "ths",
+       "number": "149",
+       "id": "ca89e4d4-185d-4a08-b7af-03f6eff38ba3"
+      },
+      {
+       "qty": 4,
+       "name": "Leafcrown Dryad",
+       "set": "ths",
+       "number": "161",
+       "id": "8202e426-ad91-4d2e-9373-7a829b58fff5"
+      },
+      {
+       "qty": 10,
+       "name": "Forest",
+       "set": "ths",
+       "number": "246",
+       "id": "ddfd1469-94b9-4964-ada6-4fb43b0b9282"
+      },
+      {
+       "qty": 10,
+       "name": "Plains",
+       "set": "ths",
+       "number": "230",
+       "id": "18013a78-d156-42bf-89b7-72e7070872c0"
+      },
+      {
+       "qty": 4,
+       "name": "Temple of Plenty",
+       "set": "bng",
+       "number": "165",
+       "id": "b0830054-b140-49c3-90cb-24e2502757be"
+      }
+     ]
+    }
+   },
+   "villain": {
+    "who": "ashiok",
+    "deck": {
+     "name": "Ashiok's Nightmares",
+     "colors": "UB",
+     "archetype": null,
+     "label": "tribute",
+     "cards": [
+      {
+       "qty": 2,
+       "name": "Ashiok, Nightmare Weaver",
+       "set": "ths",
+       "number": "188",
+       "id": "599c3c9f-dfb7-4357-9d9c-9a1a4616b103"
+      },
+      {
+       "qty": 4,
+       "name": "Thoughtrender Lamia",
+       "set": "jou",
+       "number": "85",
+       "id": "69799971-6e24-4b90-ba72-44c6393fc3c4"
+      },
+      {
+       "qty": 4,
+       "name": "Agent of Erebos",
+       "set": "jou",
+       "number": "59",
+       "id": "1e07a595-5579-4d5a-b07c-84239d690459"
+      },
+      {
+       "qty": 4,
+       "name": "Mind Sculpt",
+       "set": "m15",
+       "number": "70",
+       "id": "037d6277-1fc3-41a4-ade6-7cca10535b0f"
+      },
+      {
+       "qty": 4,
+       "name": "Returned Reveler",
+       "set": "jou",
+       "number": "79",
+       "id": "9ea61098-2c6a-48d2-b99f-f3065c67d8e3"
+      },
+      {
+       "qty": 4,
+       "name": "Pharika's Cure",
+       "set": "ths",
+       "number": "100",
+       "id": "c0efc963-5848-44eb-a654-c08b5bd4501d"
+      },
+      {
+       "qty": 3,
+       "name": "Dissolve",
+       "set": "ths",
+       "number": "47",
+       "id": "992e8119-f933-4e54-bb04-e1cc78f7e87b"
+      },
+      {
+       "qty": 4,
+       "name": "Voyage's End",
+       "set": "ths",
+       "number": "73",
+       "id": "3992ae67-ad0b-40be-a97d-d7fb36754918"
+      },
+      {
+       "qty": 3,
+       "name": "Agent of the Fates",
+       "set": "ths",
+       "number": "76",
+       "id": "ecd59977-8788-417d-ba50-e21b8a636bd3"
+      },
+      {
+       "qty": 10,
+       "name": "Island",
+       "set": "ths",
+       "number": "234",
+       "id": "d851b88b-6ce6-4889-83c2-e191307bcee6"
+      },
+      {
+       "qty": 10,
+       "name": "Swamp",
+       "set": "ths",
+       "number": "238",
+       "id": "8b153bb8-f9d9-44dc-ae19-d0eb2ea26ba1"
+      },
+      {
+       "qty": 4,
+       "name": "Temple of Deceit",
+       "set": "ths",
+       "number": "225",
+       "id": "686559d7-8ac1-496b-a5a6-1467bf8fc7c5"
+      },
+      {
+       "qty": 4,
+       "name": "Baleful Eidolon",
+       "set": "ths",
+       "number": "78",
+       "id": "853a89c6-63f9-4b12-8a5b-2c382e22b226"
+      }
+     ]
+    }
+   },
+   "reward": {
+    "hero": {
+     "packs": 1,
+     "coins": 100
+    },
+    "villain": {
+     "card": {
+      "oracle_id": "b6f52260-9ad5-4024-acf9-d77f3c08c872",
+      "name": "Ashiok, Nightmare Weaver",
+      "rarity": "mythic",
+      "set": "ths",
+      "id": "599c3c9f-dfb7-4357-9d9c-9a1a4616b103",
+      "image": "https://cards.scryfall.io/normal/front/5/9/599c3c9f-dfb7-4357-9d9c-9a1a4616b103.jpg"
+     },
+     "coins": 100
+    }
+   },
+   "scene": [
+    {
+     "who": "anthousa",
+     "line": "More children taken. This is an evil we will track without mercy.",
+     "quote": true
+    },
+    {
+     "who": "stage",
+     "line": "The emotional echoes of dryad gatherings attract lost souls.",
+     "quote": true
+    },
+    {
+     "who": "anthousa",
+     "line": "Constellation: whenever an enchantment enters under your control, a constellation card triggers. Play your enchantments one by one."
+    }
+   ],
+   "villainScene": [
+    {
+     "who": "ashiok",
+     "line": "Every nightmare is a caged bird that yearns to be set free.",
+     "quote": true
+    },
+    {
+     "who": "ashiok",
+     "line": "Not all nightmares can be escaped by waking.",
+     "quote": true
+    },
+    {
+     "who": "ashiok",
+     "line": "To think some believe it peaceful to die in one's sleep.",
+     "quote": true
+    }
+   ],
+   "after": [
+    {
+     "who": "ashiok",
+     "line": "It saddens me to lose a source of inspiration. This one seemed especially promising.",
+     "quote": true
+    }
+   ],
+   "cues": {
+    "hero": {
+     "start": "Wake up.",
+     "big": "The stars align!",
+     "low": "The dreams are winning...",
+     "win": "Morning comes.",
+     "loss": "Lost in sleep...",
+     "half": "One enchantment at a time."
+    },
+    "villain": {
+     "start": "Sleep.",
+     "big": "Dream with me.",
+     "low": "Such a bright mind.",
+     "win": "Another for the collection.",
+     "loss": "Only a dream."
+    }
+   },
+   "bigPlays": [],
+   "sim": null
+  },
+  {
+   "id": "a21b6",
+   "slot": 6,
+   "kind": "Meta",
+   "mood": "march",
+   "title": "Master of Waves",
+   "difficulty": "Normal",
+   "teaches": [
+    "Devotion"
+   ],
+   "blurb": "The Archive remembers late 2013, when Mono-Blue Devotion turned Thassa into a creature and flooded the board with Master of Waves tokens, against the Red-Green Monsters deck and its dragons.",
+   "rewardSet": "ths",
+   "host": false,
+   "hero": {
+    "who": "blue",
+    "deck": {
+     "name": "Mono-Blue Devotion",
+     "colors": "U",
+     "archetype": "Aggro",
+     "label": "tribute",
+     "note": "Built from cards in this act's sets only, so Tidebinder Mage, Frostburn Weird, Cloudfin Raptor and Nightveil Specter are not in it.",
+     "cards": [
+      {
+       "qty": 2,
+       "name": "Thassa, God of the Sea",
+       "set": "ths",
+       "number": "66",
+       "id": "d6876c7a-8bbe-484e-b733-70229fa336cd"
+      },
+      {
+       "qty": 4,
+       "name": "Master of Waves",
+       "set": "ths",
+       "number": "53",
+       "id": "19242db3-660d-4d66-800c-d6cee636bcaf"
+      },
+      {
+       "qty": 4,
+       "name": "Thassa's Emissary",
+       "set": "ths",
+       "number": "68",
+       "id": "f52b325b-3ea9-4a99-ae99-9d158560e45b"
+      },
+      {
+       "qty": 4,
+       "name": "Vaporkin",
+       "set": "ths",
+       "number": "72",
+       "id": "09b661a5-359b-4f21-b1b6-aa0988810b4d"
+      },
+      {
+       "qty": 4,
+       "name": "Nyxborn Triton",
+       "set": "bng",
+       "number": "46",
+       "id": "65371de6-13a2-401f-9334-ae9e19619487"
+      },
+      {
+       "qty": 2,
+       "name": "Bident of Thassa",
+       "set": "ths",
+       "number": "42",
+       "id": "85e45d14-a501-40b9-af0a-720ecd20dad7"
+      },
+      {
+       "qty": 4,
+       "name": "Wavecrash Triton",
+       "set": "ths",
+       "number": "74",
+       "id": "7336ca1e-13ef-4e49-a526-3f285bc339bb"
+      },
+      {
+       "qty": 4,
+       "name": "Voyage's End",
+       "set": "ths",
+       "number": "73",
+       "id": "3992ae67-ad0b-40be-a97d-d7fb36754918"
+      },
+      {
+       "qty": 2,
+       "name": "Prognostic Sphinx",
+       "set": "ths",
+       "number": "60",
+       "id": "9f0a27a6-54b8-4615-89b3-591a4e3ef626"
+      },
+      {
+       "qty": 2,
+       "name": "Dissolve",
+       "set": "ths",
+       "number": "47",
+       "id": "992e8119-f933-4e54-bb04-e1cc78f7e87b"
+      },
+      {
+       "qty": 4,
+       "name": "Triton Fortune Hunter",
+       "set": "ths",
+       "number": "69",
+       "id": "1173ff96-998c-4fe7-9b28-602d990e0339"
+      },
+      {
+       "qty": 22,
+       "name": "Island",
+       "set": "ths",
+       "number": "234",
+       "id": "d851b88b-6ce6-4889-83c2-e191307bcee6"
+      },
+      {
+       "qty": 2,
+       "name": "Nykthos, Shrine to Nyx",
+       "set": "ths",
+       "number": "223",
+       "id": "834b27a0-dfd7-4f96-8cde-cacac4b24acc"
+      }
+     ]
+    }
+   },
+   "villain": {
+    "who": "monsters",
+    "deck": {
+     "name": "RG Monsters",
+     "colors": "RG",
+     "archetype": "Midrange",
+     "label": "tribute",
+     "cards": [
+      {
+       "qty": 4,
+       "name": "Elvish Mystic",
+       "set": "m15",
+       "number": "173",
+       "id": "deb5ca6a-f91d-443d-ad84-6fe1e80bfb51"
+      },
+      {
+       "qty": 4,
+       "name": "Sylvan Caryatid",
+       "set": "ths",
+       "number": "180",
+       "id": "d40b65c1-b24d-492d-81b9-d8474ebdc08c"
+      },
+      {
+       "qty": 4,
+       "name": "Courser of Kruphix",
+       "set": "bng",
+       "number": "119",
+       "id": "da5a807f-58e8-4d92-a61c-47bb9b28977f"
+      },
+      {
+       "qty": 2,
+       "name": "Polukranos, World Eater",
+       "set": "ths",
+       "number": "172",
+       "id": "4979cc1b-9c1a-47e4-ae37-7c41798eb89a"
+      },
+      {
+       "qty": 4,
+       "name": "Stormbreath Dragon",
+       "set": "ths",
+       "number": "143",
+       "id": "471979de-f569-444a-8651-12d7e726949a"
+      },
+      {
+       "qty": 4,
+       "name": "Lightning Strike",
+       "set": "ths",
+       "number": "127",
+       "id": "bbb03f2e-2b92-4aa1-afae-301ed5d151d3"
+      },
+      {
+       "qty": 2,
+       "name": "Mistcutter Hydra",
+       "set": "ths",
+       "number": "162",
+       "id": "3c844ed7-8ed2-4a39-9134-e14e476ab0c4"
+      },
+      {
+       "qty": 2,
+       "name": "Arbor Colossus",
+       "set": "ths",
+       "number": "150",
+       "id": "dfbd7c65-ebe5-47a6-8d2f-9a8c63a30a7b"
+      },
+      {
+       "qty": 3,
+       "name": "Ember Swallower",
+       "set": "ths",
+       "number": "120",
+       "id": "e2715851-9def-42a0-bed4-0923e599e19a"
+      },
+      {
+       "qty": 2,
+       "name": "Magma Jet",
+       "set": "ths",
+       "number": "128",
+       "id": "8b0686b0-27a2-46bc-bc04-717f368d9a78"
+      },
+      {
+       "qty": 2,
+       "name": "Anger of the Gods",
+       "set": "ths",
+       "number": "112",
+       "id": "90795891-5e67-47c0-8d52-a5e5c5a9ef81"
+      },
+      {
+       "qty": 10,
+       "name": "Forest",
+       "set": "ths",
+       "number": "246",
+       "id": "ddfd1469-94b9-4964-ada6-4fb43b0b9282"
+      },
+      {
+       "qty": 10,
+       "name": "Mountain",
+       "set": "ths",
+       "number": "242",
+       "id": "e78801a7-af8c-4f1d-b29e-7a36676b6818"
+      },
+      {
+       "qty": 4,
+       "name": "Temple of Abandon",
+       "set": "ths",
+       "number": "224",
+       "id": "46febc5d-1625-4e48-bb3f-31ee06fc13dd"
+      },
+      {
+       "qty": 3,
+       "name": "Nessian Asp",
+       "set": "ths",
+       "number": "164",
+       "id": "2d922596-4c2d-47fd-8c28-0e62972effbf"
+      }
+     ]
+    }
+   },
+   "reward": {
+    "hero": {
+     "packs": 1,
+     "coins": 100
+    },
+    "villain": {
+     "card": {
+      "oracle_id": "7a770865-9383-45aa-883f-21ee649d1ea3",
+      "name": "Stormbreath Dragon",
+      "rarity": "mythic",
+      "set": "ths",
+      "id": "471979de-f569-444a-8651-12d7e726949a",
+      "image": "https://cards.scryfall.io/normal/front/4/7/471979de-f569-444a-8651-12d7e726949a.jpg"
+     },
+     "coins": 100
+    }
+   },
+   "scene": [
+    {
+     "who": "stage",
+     "line": "To resist Thassa is to deny the rising tide.",
+     "quote": true
+    },
+    {
+     "who": "you",
+     "line": "Every blue symbol on the table is one more Elemental from Master of Waves."
+    }
+   ],
+   "villainScene": [
+    {
+     "who": "xenagos",
+     "line": "Stoke a fire hot enough and you'll never run out of things to burn.",
+     "quote": true
+    }
+   ],
+   "after": [
+    {
+     "who": "stage",
+     "line": "Recorded: Theros Standard, late 2013."
+    }
+   ],
+   "cues": {
+    "hero": {
+     "start": "Tide in.",
+     "big": "Thassa awakens!",
+     "low": "Dragon incoming...",
+     "win": "Flooded.",
+     "loss": "Burned dry.",
+     "half": "Count your devotion."
+    },
+    "villain": {
+     "start": "[a dragon with haste]",
+     "big": "[monstrous]",
+     "low": "[the board floods]",
+     "win": "[burned out]",
+     "loss": "[outnumbered]"
+    }
+   },
+   "bigPlays": [],
+   "sim": null
+  },
+  {
+   "id": "a21b7",
+   "slot": 7,
+   "kind": "Meta",
+   "mood": "tension",
+   "title": "Heroes and Burn",
+   "difficulty": "Normal",
+   "teaches": [
+    "Heroic"
+   ],
+   "blurb": "The Archive remembers 2014: heroic decks that turned one small creature into a monster with a stack of cheap spells, against mono-red burn that never let a creature live long enough.",
+   "rewardSet": "bng",
+   "host": false,
+   "hero": {
+    "who": "heroic",
+    "deck": {
+     "name": "Heroic",
+     "colors": "WU",
+     "archetype": "Aggro",
+     "label": "tribute",
+     "note": "Built from cards in this act's sets only, so Feat of Resistance and Hopeful Initiate are not in it.",
+     "cards": [
+      {
+       "qty": 4,
+       "name": "Favored Hoplite",
+       "set": "ths",
+       "number": "13",
+       "id": "251015ed-9408-4941-894a-158551ed2613"
+      },
+      {
+       "qty": 4,
+       "name": "Battlewise Hoplite",
+       "set": "ths",
+       "number": "189",
+       "id": "4c929a57-2c23-4bbf-b265-666630a4fde8"
+      },
+      {
+       "qty": 4,
+       "name": "Hero of Iroas",
+       "set": "bng",
+       "number": "17",
+       "id": "7917f2ee-f093-4ffb-83ed-a181b14b5957"
+      },
+      {
+       "qty": 4,
+       "name": "Akroan Skyguard",
+       "set": "bng",
+       "number": "3",
+       "id": "d55e85c3-234e-49c4-a307-96fb4497eea8"
+      },
+      {
+       "qty": 4,
+       "name": "Phalanx Leader",
+       "set": "ths",
+       "number": "26",
+       "id": "0c6c2458-edb7-4822-866b-ca1b2ea7a8e8"
+      },
+      {
+       "qty": 4,
+       "name": "Gods Willing",
+       "set": "ths",
+       "number": "16",
+       "id": "abafabb3-b2e7-4d78-b4b7-d8f701d3ee8b"
+      },
+      {
+       "qty": 4,
+       "name": "Ordeal of Heliod",
+       "set": "ths",
+       "number": "25",
+       "id": "77e85180-f3c9-4b03-9c25-223599b937ad"
+      },
+      {
+       "qty": 2,
+       "name": "Ordeal of Thassa",
+       "set": "ths",
+       "number": "58",
+       "id": "fa764244-c5d5-4f27-9c56-866566a1404a"
+      },
+      {
+       "qty": 2,
+       "name": "Battlewise Valor",
+       "set": "ths",
+       "number": "1",
+       "id": "7d967a4c-2323-4361-a907-5ca9140d8793"
+      },
+      {
+       "qty": 14,
+       "name": "Plains",
+       "set": "ths",
+       "number": "230",
+       "id": "18013a78-d156-42bf-89b7-72e7070872c0"
+      },
+      {
+       "qty": 6,
+       "name": "Island",
+       "set": "ths",
+       "number": "234",
+       "id": "d851b88b-6ce6-4889-83c2-e191307bcee6"
+      },
+      {
+       "qty": 4,
+       "name": "Temple of Enlightenment",
+       "set": "bng",
+       "number": "163",
+       "id": "c657a645-f454-4eaf-be0d-15c9989fa4ef"
+      },
+      {
+       "qty": 4,
+       "name": "Fabled Hero",
+       "set": "ths",
+       "number": "12",
+       "id": "642d9a5c-5697-4747-adce-5a71bcf1c086"
+      }
+     ]
+    }
+   },
+   "villain": {
+    "who": "burn",
+    "deck": {
+     "name": "Mono-Red",
+     "colors": "R",
+     "archetype": "Burn",
+     "label": "tribute",
+     "cards": [
+      {
+       "qty": 4,
+       "name": "Eidolon of the Great Revel",
+       "set": "jou",
+       "number": "94",
+       "id": "a6c10816-e825-452a-90b0-80eb9f20bd6d"
+      },
+      {
+       "qty": 3,
+       "name": "Goblin Rabblemaster",
+       "set": "m15",
+       "number": "145",
+       "id": "ee9c697e-d2c0-413b-9142-ecf5d7cf5322"
+      },
+      {
+       "qty": 4,
+       "name": "Satyr Hoplite",
+       "set": "jou",
+       "number": "110",
+       "id": "b8754d66-facb-432e-a6c2-91430a6dec94"
+      },
+      {
+       "qty": 4,
+       "name": "Lightning Strike",
+       "set": "ths",
+       "number": "127",
+       "id": "bbb03f2e-2b92-4aa1-afae-301ed5d151d3"
+      },
+      {
+       "qty": 4,
+       "name": "Magma Jet",
+       "set": "ths",
+       "number": "128",
+       "id": "8b0686b0-27a2-46bc-bc04-717f368d9a78"
+      },
+      {
+       "qty": 4,
+       "name": "Searing Blood",
+       "set": "bng",
+       "number": "111",
+       "id": "bb43fd07-d281-447d-88bf-c53498c2cf20"
+      },
+      {
+       "qty": 4,
+       "name": "Stoke the Flames",
+       "set": "m15",
+       "number": "164",
+       "id": "1d94c000-52e0-4215-83af-6351dc43e636"
+      },
+      {
+       "qty": 3,
+       "name": "Bolt of Keranos",
+       "set": "bng",
+       "number": "89",
+       "id": "4df70b14-5d67-4a92-aaba-72480c621d10"
+      },
+      {
+       "qty": 2,
+       "name": "Lava Axe",
+       "set": "m15",
+       "number": "154",
+       "id": "63b35586-e56d-4e7a-9a4e-8879529c082d"
+      },
+      {
+       "qty": 24,
+       "name": "Mountain",
+       "set": "ths",
+       "number": "242",
+       "id": "e78801a7-af8c-4f1d-b29e-7a36676b6818"
+      },
+      {
+       "qty": 4,
+       "name": "Akroan Crusader",
+       "set": "ths",
+       "number": "111",
+       "id": "a47c50d9-11ec-486b-a5ce-5a6b70858f30"
+      }
+     ]
+    }
+   },
+   "reward": {
+    "hero": {
+     "packs": 1,
+     "coins": 100
+    },
+    "villain": {
+     "card": {
+      "oracle_id": "2fd7018e-1c36-4d7f-8f72-22f2f7f60c60",
+      "name": "Eidolon of the Great Revel",
+      "rarity": "rare",
+      "set": "jou",
+      "id": "a6c10816-e825-452a-90b0-80eb9f20bd6d",
+      "image": "https://cards.scryfall.io/normal/front/a/6/a6c10816-e825-452a-90b0-80eb9f20bd6d.jpg"
+     },
+     "coins": 100
+    }
+   },
+   "scene": [
+    {
+     "who": "stage",
+     "line": "It's never good to walk into an ambush, but with the right spell you might walk out again.",
+     "quote": true
+    },
+    {
+     "who": "you",
+     "line": "Hold a protection spell for their burn. One protected hero wins this."
+    }
+   ],
+   "villainScene": [
+    {
+     "who": "stage",
+     "line": "Thakolides the Mighty / Slayer of minotaurs / Vanquisher of giants / Killed by a scorpion",
+     "quote": true
+    }
+   ],
+   "after": [
+    {
+     "who": "stage",
+     "line": "Recorded: Theros Standard, 2014."
+    }
+   ],
+   "cues": {
+    "hero": {
+     "start": "Ready the hoplites.",
+     "big": "Heroic!",
+     "low": "Burned again...",
+     "win": "Legend made.",
+     "loss": "Ash.",
+     "half": "Protect your best hero."
+    },
+    "villain": {
+     "start": "[a bolt in response]",
+     "big": "[the Eidolon burns]",
+     "low": "[the hero is shielded]",
+     "win": "[face burn]",
+     "loss": "[out of fire]"
+    }
+   },
+   "bigPlays": [],
+   "sim": null
+  },
+  {
+   "id": "a21b8",
+   "slot": 8,
+   "kind": "Boss",
+   "mood": "boss",
+   "title": "The God of Revels",
+   "difficulty": "Hard",
+   "teaches": [
+    "Monstrosity"
+   ],
+   "blurb": "Xenagos did it. Enough mortals danced in his name that he rose into Nyx as a god. Heliod gives Elspeth his own weapon, the Godsend, and sends her and Ajani up into the stars after him.",
+   "rewardSet": "bng",
+   "host": true,
+   "hero": {
+    "who": "elspeth",
+    "deck": {
+     "name": "Elspeth and Ajani",
+     "colors": "GW",
+     "archetype": null,
+     "label": "tribute",
+     "cards": [
+      {
+       "qty": 2,
+       "name": "Elspeth, Sun's Champion",
+       "set": "ths",
+       "number": "9",
+       "id": "fd5b1633-c41d-42b1-af1b-4a872077ffbd"
+      },
+      {
+       "qty": 2,
+       "name": "Ajani, Mentor of Heroes",
+       "set": "jou",
+       "number": "145",
+       "id": "4a30bcfa-6f95-450f-aea7-885983d7c6a5"
+      },
+      {
+       "qty": 1,
+       "name": "Godsend",
+       "set": "jou",
+       "number": "12",
+       "id": "2dcf3975-7f81-4bdd-810d-476f46444b7a"
+      },
+      {
+       "qty": 4,
+       "name": "Fleecemane Lion",
+       "set": "ths",
+       "number": "193",
+       "id": "622d6c46-82bb-4a97-abe6-b388def44bda"
+      },
+      {
+       "qty": 3,
+       "name": "Brimaz, King of Oreskos",
+       "set": "bng",
+       "number": "5",
+       "id": "f54eb705-6326-4bac-bf0e-68d42db7a270"
+      },
+      {
+       "qty": 4,
+       "name": "Courser of Kruphix",
+       "set": "bng",
+       "number": "119",
+       "id": "da5a807f-58e8-4d92-a61c-47bb9b28977f"
+      },
+      {
+       "qty": 4,
+       "name": "Sylvan Caryatid",
+       "set": "ths",
+       "number": "180",
+       "id": "d40b65c1-b24d-492d-81b9-d8474ebdc08c"
+      },
+      {
+       "qty": 4,
+       "name": "Banishing Light",
+       "set": "jou",
+       "number": "5",
+       "id": "fbaa4800-30cc-4a80-a6cc-9a24ada9eb40"
+      },
+      {
+       "qty": 4,
+       "name": "Boon Satyr",
+       "set": "ths",
+       "number": "152",
+       "id": "f50c12c4-5565-449a-b30e-7cd896da7735"
+      },
+      {
+       "qty": 3,
+       "name": "Setessan Oathsworn",
+       "set": "bng",
+       "number": "138",
+       "id": "e5579755-4718-406a-bba6-27f1f2811e59"
+      },
+      {
+       "qty": 2,
+       "name": "Last Breath",
+       "set": "ths",
+       "number": "22",
+       "id": "1857fc37-1e7e-4b93-9fa9-ec139f16b7fa"
+      },
+      {
+       "qty": 3,
+       "name": "Archetype of Courage",
+       "set": "bng",
+       "number": "4",
+       "id": "8e6c4afb-6a94-4519-91c6-9824fed2892c"
+      },
+      {
+       "qty": 11,
+       "name": "Plains",
+       "set": "ths",
+       "number": "230",
+       "id": "18013a78-d156-42bf-89b7-72e7070872c0"
+      },
+      {
+       "qty": 9,
+       "name": "Forest",
+       "set": "ths",
+       "number": "246",
+       "id": "ddfd1469-94b9-4964-ada6-4fb43b0b9282"
+      },
+      {
+       "qty": 4,
+       "name": "Temple of Plenty",
+       "set": "bng",
+       "number": "165",
+       "id": "b0830054-b140-49c3-90cb-24e2502757be"
+      }
+     ]
+    }
+   },
+   "villain": {
+    "who": "god",
+    "deck": {
+     "name": "The Endless Revel",
+     "colors": "RG",
+     "archetype": null,
+     "label": "tribute",
+     "cards": [
+      {
+       "qty": 2,
+       "name": "Xenagos, God of Revels",
+       "set": "bng",
+       "number": "156",
+       "id": "3184b138-1109-4195-9d96-4f190164e98b"
+      },
+      {
+       "qty": 4,
+       "name": "Elvish Mystic",
+       "set": "m15",
+       "number": "173",
+       "id": "deb5ca6a-f91d-443d-ad84-6fe1e80bfb51"
+      },
+      {
+       "qty": 4,
+       "name": "Sylvan Caryatid",
+       "set": "ths",
+       "number": "180",
+       "id": "d40b65c1-b24d-492d-81b9-d8474ebdc08c"
+      },
+      {
+       "qty": 2,
+       "name": "Polukranos, World Eater",
+       "set": "ths",
+       "number": "172",
+       "id": "4979cc1b-9c1a-47e4-ae37-7c41798eb89a"
+      },
+      {
+       "qty": 4,
+       "name": "Stormbreath Dragon",
+       "set": "ths",
+       "number": "143",
+       "id": "471979de-f569-444a-8651-12d7e726949a"
+      },
+      {
+       "qty": 4,
+       "name": "Courser of Kruphix",
+       "set": "bng",
+       "number": "119",
+       "id": "da5a807f-58e8-4d92-a61c-47bb9b28977f"
+      },
+      {
+       "qty": 3,
+       "name": "Arbor Colossus",
+       "set": "ths",
+       "number": "150",
+       "id": "dfbd7c65-ebe5-47a6-8d2f-9a8c63a30a7b"
+      },
+      {
+       "qty": 4,
+       "name": "Lightning Strike",
+       "set": "ths",
+       "number": "127",
+       "id": "bbb03f2e-2b92-4aa1-afae-301ed5d151d3"
+      },
+      {
+       "qty": 3,
+       "name": "Anger of the Gods",
+       "set": "ths",
+       "number": "112",
+       "id": "90795891-5e67-47c0-8d52-a5e5c5a9ef81"
+      },
+      {
+       "qty": 4,
+       "name": "Fanatic of Xenagos",
+       "set": "bng",
+       "number": "147",
+       "id": "3687799c-81bd-4c49-902a-2a96863629c3"
+      },
+      {
+       "qty": 10,
+       "name": "Forest",
+       "set": "ths",
+       "number": "246",
+       "id": "ddfd1469-94b9-4964-ada6-4fb43b0b9282"
+      },
+      {
+       "qty": 10,
+       "name": "Mountain",
+       "set": "ths",
+       "number": "242",
+       "id": "e78801a7-af8c-4f1d-b29e-7a36676b6818"
+      },
+      {
+       "qty": 4,
+       "name": "Temple of Abandon",
+       "set": "ths",
+       "number": "224",
+       "id": "46febc5d-1625-4e48-bb3f-31ee06fc13dd"
+      },
+      {
+       "qty": 2,
+       "name": "Ember Swallower",
+       "set": "ths",
+       "number": "120",
+       "id": "e2715851-9def-42a0-bed4-0923e599e19a"
+      }
+     ]
+    }
+   },
+   "reward": {
+    "hero": {
+     "packs": 2,
+     "coins": 200
+    },
+    "villain": {
+     "card": {
+      "oracle_id": "cb15a8dd-57fe-466f-847e-66476b690a1f",
+      "name": "Xenagos, God of Revels",
+      "rarity": "mythic",
+      "set": "bng",
+      "id": "3184b138-1109-4195-9d96-4f190164e98b",
+      "image": "https://cards.scryfall.io/normal/front/3/1/3184b138-1109-4195-9d96-4f190164e98b.jpg"
+     },
+     "coins": 200
+    }
+   },
+   "scene": [
+    {
+     "who": "elspeth",
+     "line": "The false god Xenagos treats the whole world as his rollick site. If his whims are left unchecked, Theros will be reduced to rubble and ashes.",
+     "quote": true
+    },
+    {
+     "who": "elspeth",
+     "line": "A tiny flame is enough to dispel the night.",
+     "quote": true
+    },
+    {
+     "who": "ajani",
+     "line": "I am with you. Whatever is up there."
+    }
+   ],
+   "villainScene": [
+    {
+     "who": "god",
+     "line": "The gods of Theros are born of the expectations and beliefs of mortals. If I have found godhood, what does that say about their true desires?",
+     "quote": true
+    },
+    {
+     "who": "god",
+     "line": "Embrace every moment, for it could be your last.",
+     "quote": true
+    }
+   ],
+   "after": null,
+   "cues": {
+    "hero": {
+     "start": "Into Nyx.",
+     "big": "The Godsend!",
+     "low": "He is a god now...",
+     "win": "It is done.",
+     "loss": "The revel wins...",
+     "half": "Kill the monsters, then him."
+    },
+    "villain": {
+     "start": "Welcome to my revel.",
+     "big": "Dance!",
+     "low": "That spear stings.",
+     "win": "Worship me.",
+     "loss": "The music... stops.",
+     "half": {
+      "who": "ajani",
+      "line": "He is only as strong as his dancers. Cut them down."
+     }
+    }
+   },
+   "bigPlays": [],
+   "sim": null
+  },
+  {
+   "id": "a21b9",
+   "slot": 9,
+   "kind": "Secret Boss",
+   "secret": true,
+   "mood": "boss",
+   "title": "Gray Merchant",
+   "difficulty": "Hard",
+   "teaches": [
+    "Devotion"
+   ],
+   "blurb": "Deep in the archive, the deck that was the format for a season.",
+   "rewardSet": "ths",
+   "host": true,
+   "archive": {
+    "deck": "Mono-Black Devotion",
+    "when": "Late 2013 to mid 2014",
+    "format": "Standard: Return to Ravnica block, Theros block and Magic 2014 or 2015.",
+    "what": "A black deck that took the opponent's best card with Thoughtseize, killed every threat with Hero's Downfall, and piled black mana symbols onto the table until Gray Merchant of Asphodel drained the opponent for a game's worth of life.",
+    "why": "It was one of the most played and most successful decks of its Standard season.",
+    "beat": "Go big and go early. Their removal is one-for-one, so play more threats than they have answers, and keep your life total high for the Merchants.",
+    "after": "This tribute uses only this act's sets, so Pack Rat, Desecration Demon, Underworld Connections and Nightveil Specter are not in it."
+   },
+   "hero": {
+    "who": "you",
+    "deck": {
+     "name": "Mono-Green Devotion",
+     "colors": "G",
+     "archetype": "Ramp",
+     "label": "tribute",
+     "cards": [
+      {
+       "qty": 2,
+       "name": "Nylea, God of the Hunt",
+       "set": "ths",
+       "number": "166",
+       "id": "f185a734-a32a-4244-88e8-dabafbfd064f"
+      },
+      {
+       "qty": 2,
+       "name": "Polukranos, World Eater",
+       "set": "ths",
+       "number": "172",
+       "id": "4979cc1b-9c1a-47e4-ae37-7c41798eb89a"
+      },
+      {
+       "qty": 4,
+       "name": "Elvish Mystic",
+       "set": "m15",
+       "number": "173",
+       "id": "deb5ca6a-f91d-443d-ad84-6fe1e80bfb51"
+      },
+      {
+       "qty": 4,
+       "name": "Voyaging Satyr",
+       "set": "ths",
+       "number": "182",
+       "id": "155ae6c0-5085-45f1-ba9f-508d501fee2c"
+      },
+      {
+       "qty": 4,
+       "name": "Sylvan Caryatid",
+       "set": "ths",
+       "number": "180",
+       "id": "d40b65c1-b24d-492d-81b9-d8474ebdc08c"
+      },
+      {
+       "qty": 4,
+       "name": "Courser of Kruphix",
+       "set": "bng",
+       "number": "119",
+       "id": "da5a807f-58e8-4d92-a61c-47bb9b28977f"
+      },
+      {
+       "qty": 4,
+       "name": "Boon Satyr",
+       "set": "ths",
+       "number": "152",
+       "id": "f50c12c4-5565-449a-b30e-7cd896da7735"
+      },
+      {
+       "qty": 4,
+       "name": "Nessian Game Warden",
+       "set": "jou",
+       "number": "132",
+       "id": "5099d18d-c8b5-4706-bc93-40d1bb12988d"
+      },
+      {
+       "qty": 3,
+       "name": "Arbor Colossus",
+       "set": "ths",
+       "number": "150",
+       "id": "dfbd7c65-ebe5-47a6-8d2f-9a8c63a30a7b"
+      },
+      {
+       "qty": 2,
+       "name": "Nessian Wilds Ravager",
+       "set": "bng",
+       "number": "129",
+       "id": "65368cf0-7d92-4248-b930-633fd023065b"
+      },
+      {
+       "qty": 3,
+       "name": "Reverent Hunter",
+       "set": "ths",
+       "number": "173",
+       "id": "97b4e736-d19a-42ac-8bcb-b8e6b7b7b539"
+      },
+      {
+       "qty": 22,
+       "name": "Forest",
+       "set": "ths",
+       "number": "246",
+       "id": "ddfd1469-94b9-4964-ada6-4fb43b0b9282"
+      },
+      {
+       "qty": 2,
+       "name": "Nykthos, Shrine to Nyx",
+       "set": "ths",
+       "number": "223",
+       "id": "834b27a0-dfd7-4f96-8cde-cacac4b24acc"
+      }
+     ]
+    }
+   },
+   "villain": {
+    "who": "black",
+    "deck": {
+     "name": "Mono-Black Devotion",
+     "colors": "B",
+     "archetype": "Control",
+     "label": "tribute",
+     "note": "Built from cards in this act's sets only. No single tournament list is copied.",
+     "cards": [
+      {
+       "qty": 4,
+       "name": "Thoughtseize",
+       "set": "ths",
+       "number": "107",
+       "id": "65b7275a-5305-42e6-b5c3-8b88568b4e28"
+      },
+      {
+       "qty": 4,
+       "name": "Hero's Downfall",
+       "set": "ths",
+       "number": "90",
+       "id": "596822f6-dbd4-4cc8-aa50-9331ff42544e"
+      },
+      {
+       "qty": 4,
+       "name": "Gray Merchant of Asphodel",
+       "set": "ths",
+       "number": "89",
+       "id": "b06078ce-f534-4e16-9a70-d51620a33eb2"
+      },
+      {
+       "qty": 2,
+       "name": "Erebos, God of the Dead",
+       "set": "ths",
+       "number": "85",
+       "id": "d0787e1f-0b75-44ab-a8fd-90358906a787"
+      },
+      {
+       "qty": 2,
+       "name": "Whip of Erebos",
+       "set": "ths",
+       "number": "110",
+       "id": "9e5ec47c-47a2-4eda-b81a-4a07f04e5989"
+      },
+      {
+       "qty": 4,
+       "name": "Pharika's Cure",
+       "set": "ths",
+       "number": "100",
+       "id": "c0efc963-5848-44eb-a654-c08b5bd4501d"
+      },
+      {
+       "qty": 3,
+       "name": "Bile Blight",
+       "set": "bng",
+       "number": "61",
+       "id": "3ca11057-e50a-4817-924a-5bb504d0780f"
+      },
+      {
+       "qty": 2,
+       "name": "Hythonia the Cruel",
+       "set": "ths",
+       "number": "91",
+       "id": "a9fbc814-4281-4ac6-a844-68bcd848f229"
+      },
+      {
+       "qty": 4,
+       "name": "Herald of Torment",
+       "set": "bng",
+       "number": "75",
+       "id": "6bb7e5ab-57d7-4a86-b7c2-262932ac3344"
+      },
+      {
+       "qty": 4,
+       "name": "Erebos's Emissary",
+       "set": "ths",
+       "number": "86",
+       "id": "5aa96f63-d5c3-47d3-a54d-a67883406fc5"
+      },
+      {
+       "qty": 3,
+       "name": "Agent of the Fates",
+       "set": "ths",
+       "number": "76",
+       "id": "ecd59977-8788-417d-ba50-e21b8a636bd3"
+      },
+      {
+       "qty": 22,
+       "name": "Swamp",
+       "set": "ths",
+       "number": "238",
+       "id": "8b153bb8-f9d9-44dc-ae19-d0eb2ea26ba1"
+      },
+      {
+       "qty": 2,
+       "name": "Nykthos, Shrine to Nyx",
+       "set": "ths",
+       "number": "223",
+       "id": "834b27a0-dfd7-4f96-8cde-cacac4b24acc"
+      }
+     ]
+    }
+   },
+   "reward": {
+    "hero": {
+     "packs": 2,
+     "coins": 200
+    },
+    "villain": {
+     "card": {
+      "oracle_id": "edd8d1e8-be43-4c38-bb3a-83081fbaf0b5",
+      "name": "Thoughtseize",
+      "rarity": "rare",
+      "set": "ths",
+      "id": "65b7275a-5305-42e6-b5c3-8b88568b4e28",
+      "image": "https://cards.scryfall.io/normal/front/6/5/65b7275a-5305-42e6-b5c3-8b88568b4e28.jpg"
+     },
+     "coins": 200
+    }
+   },
+   "scene": [
+    {
+     "who": "stage",
+     "line": "\"It is not yours to hunt, mortal. Be content with its beauty alone.\"",
+     "quote": true
+    },
+    {
+     "who": "you",
+     "line": "Too many threats for their removal. That is the whole plan."
+    }
+   ],
+   "villainScene": [
+    {
+     "who": "ashiok",
+     "line": "Knowledge is such a burden. Release it. Release all your fears to me.",
+     "quote": true
+    },
+    {
+     "who": "stage",
+     "line": "Destiny exalts a chosen few, but even heroes break.",
+     "quote": true
+    }
+   ],
+   "after": [
+    {
+     "who": "stage",
+     "line": "Recorded: Theros Standard, 2013 to 2014."
+    }
+   ],
+   "cues": {
+    "hero": {
+     "start": "Ramp up.",
+     "big": "Too big to answer!",
+     "low": "Drained again...",
+     "win": "Overgrown.",
+     "loss": "Merchant's toll.",
+     "half": "More threats than answers."
+    },
+    "villain": {
+     "start": "[Thoughtseize]",
+     "big": "[Gray Merchant drains]",
+     "low": "[out of removal]",
+     "win": "[drained]",
+     "loss": "[overrun]"
+    }
+   },
+   "bigPlays": [],
+   "sim": null
+  }
+ ]
+}

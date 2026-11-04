@@ -53,6 +53,18 @@ export const STORY_ACTS = [
   {act: 17, age: 'The Zendikar Years', title: 'The Eldrazi Rise', years: '2009 to 2010',
     sets: ['zen', 'wwk', 'roe', 'm11'], landSet: 'zen', packSets: ['zen', 'wwk', 'roe', 'm11'],
     art: {set: 'roe', number: '4', name: 'Emrakul, the Aeons Torn', crop: 'https://cards.scryfall.io/art_crop/front/6/7/67600383-bbb8-411c-b8e6-2296650bc747.jpg?1783942013'}},
+  {act: 18, age: 'The Scars of Mirrodin Years', title: 'New Phyrexia', years: '2010 to 2011',
+    sets: ['som', 'mbs', 'nph', 'm12'], landSet: 'som', packSets: ['som', 'mbs', 'nph', 'm12'],
+    art: {set: 'nph', number: '9', name: 'Elesh Norn, Grand Cenobite', crop: 'https://cards.scryfall.io/art_crop/front/b/6/b66390d6-1649-4bfa-92d3-77664650d552.jpg?1783941327'}},
+  {act: 19, age: 'The Innistrad Years', title: 'The Helvault', years: '2011 to 2012',
+    sets: ['isd', 'dka', 'avr', 'm13'], landSet: 'isd', packSets: ['isd', 'dka', 'avr', 'm13'],
+    art: {set: 'avr', number: '6', name: 'Avacyn, Angel of Hope', crop: 'https://cards.scryfall.io/art_crop/front/b/a/ba149706-cd17-4da6-8403-ccfe2d6cb437.jpg?1783940743'}},
+  {act: 20, age: 'The Return to Ravnica Years', title: 'The Implicit Maze', years: '2012 to 2013',
+    sets: ['rtr', 'gtc', 'dgm', 'm14'], landSet: 'rtr', packSets: ['rtr', 'gtc', 'dgm', 'm14'],
+    art: {set: 'rtr', number: '183', name: 'Niv-Mizzet, Dracogenius', crop: 'https://cards.scryfall.io/art_crop/front/c/3/c345e475-8095-41b5-90b4-771fcf80b939.jpg?1783940334'}},
+  {act: 21, age: 'The Theros Years', title: 'The Gods of Theros', years: '2013 to 2014',
+    sets: ['ths', 'bng', 'jou', 'm15'], landSet: 'ths', packSets: ['ths', 'bng', 'jou', 'm15'],
+    art: {set: 'bng', number: '156', name: 'Xenagos, God of Revels', crop: 'https://cards.scryfall.io/art_crop/front/3/1/3184b138-1109-4195-9d96-4f190164e98b.jpg?1783939521'}},
 ];
 export const SET_NAMES = {lea: 'Limited Edition Alpha', leb: 'Limited Edition Beta', '2ed': 'Unlimited Edition', arn: 'Arabian Nights', atq: 'Antiquities',
   '3ed': 'Revised Edition', leg: 'Legends', drk: 'The Dark', fem: 'Fallen Empires', ice: 'Ice Age', hml: 'Homelands', all: 'Alliances', '4ed': 'Fourth Edition',
@@ -68,6 +80,6 @@ export const SET_NAMES = {lea: 'Limited Edition Alpha', leb: 'Limited Edition Be
   rav: 'Ravnica: City of Guilds', gpt: 'Guildpact', dis: 'Dissension',
   csp: 'Coldsnap', tsp: 'Time Spiral', tsb: 'Time Spiral Timeshifted', plc: 'Planar Chaos', fut: 'Future Sight', '10e': 'Tenth Edition',
   lrw: 'Lorwyn', mor: 'Morningtide', shm: 'Shadowmoor', eve: 'Eventide',
-  ala: 'Shards of Alara', con: 'Conflux', arb: 'Alara Reborn', m10: 'Magic 2010', zen: 'Zendikar', wwk: 'Worldwake', roe: 'Rise of the Eldrazi', m11: 'Magic 2011'};
+  ala: 'Shards of Alara', con: 'Conflux', arb: 'Alara Reborn', m10: 'Magic 2010', zen: 'Zendikar', wwk: 'Worldwake', roe: 'Rise of the Eldrazi', m11: 'Magic 2011', som: 'Scars of Mirrodin', mbs: 'Mirrodin Besieged', nph: 'New Phyrexia', m12: 'Magic 2012', isd: 'Innistrad', dka: 'Dark Ascension', avr: 'Avacyn Restored', m13: 'Magic 2013', rtr: 'Return to Ravnica', gtc: 'Gatecrash', dgm: "Dragon's Maze", m14: 'Magic 2014', ths: 'Theros', bng: 'Born of the Gods', jou: 'Journey into Nyx', m15: 'Magic 2015'};
 export const storyAct = n => STORY_ACTS.find(a => a.act === Number(n)) || null;
 export const setSymbolUrl = code => `https://svgs.scryfall.io/sets/${encodeURIComponent(code)}.svg`;
