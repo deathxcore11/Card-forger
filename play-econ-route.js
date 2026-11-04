@@ -6,14 +6,16 @@
 import {SUPABASE} from './config.js';
 import {loadMtgBooster, mtgBoosterCards, drawMtgBooster, mtgGodPackPicks} from './mtg-boosters.js';
 import {rewardSet, setFormats} from './play-econ-sets.js';
-import {starterGrant, sealTrackBonus, packContentsRow, cardDelta, RARITY_SEAL, FORGE_STEPS, forgeRatio, holoCost, preconPrice, mtgjsonCardDelta, mtgjsonDeckRows, deckShortfall, ownedByName, isCollectorPack, collectorOdds, collectorPicks, collectorSource, godPackOdds} from './play-econ-rules.js';
-import {PRACTICE_STARTER_ROWS} from './play-starter-deck.js';
-import {weeklySecretLair, secretLairPrice, secretLairLabel, secretLairRef, secretLairCardDelta, secretLairStyle, pickSecretLairStyle} from './play-secret-lair.js';
+import {isBasicLand, starterGrant, sealTrackBonus, packContentsRow, cardDelta, RARITY_SEAL, FORGE_STEPS, forgeRatio, holoCost, preconPrice, mtgjsonCardDelta, mtgjsonDeckRows, deckShortfall, ownedByName, isCollectorPack, collectorOdds, collectorPicks, collectorSource, godPackOdds} from './play-econ-rules.js';
+import {PRACTICE_STARTER_ROWS, STARTER_DECKS} from './play-starter-deck.js';
+import {weeklySecretLairOffers, secretLairOfferPrice, weeklySecretLair, secretLairPrice, secretLairLabel, secretLairRef, secretLairCardDelta, secretLairStyle, pickSecretLairStyle} from './play-secret-lair.js';
 import {STORY_DEEDS, STORY_ACT_DEEDS, storyDeedsEarned} from './story-deeds.js';
 import {rerollUsed, weeklyRerollUsed, ACHIEVEMENTS, achievementRows, achievementReward, achievementRef, questRows, questReward, loginStamp, rewardDelta, matchCounters, playDay, playWeek, achievementsPayload} from './play-achievements.js';
 
 const json = (body, status = 200) => new Response(JSON.stringify(body), {status, headers: {'Content-Type': 'application/json', 'Cache-Control': 'no-store'}});
 const fail = (error, status = 400) => json({error}, status);
+// Existing players get the four new starter decks on their next visit (Randall's call, 3 Nov).
+export const STARTER_TOP_UP = true;
 
 function rpc(env, name, args, fetcher) {
   const key = env.SUPABASE_SERVICE_KEY, headers = {apikey: key, 'Content-Type': 'application/json', Accept: 'application/json'};
@@ -48,6 +50,15 @@ export function secretLairOffer(drops, config = {}, now = new Date()) {
   const end = new Date(Date.UTC(now.getUTCFullYear(), now.getUTCMonth(), now.getUTCDate() + ((8 - (now.getUTCDay() || 7)) % 7 || 7)));
   return {week, ref: secretLairRef(week), id: drop.id, ...secretLairLabel(drop), price: secretLairPrice(drop, config), ends: end.toISOString(),
     cards: drop.cards.map(c => ({id: c.id, o: c.o, n: c.n, r: c.r, f: c.f}))};
+}
+
+// This Play week's Secret Lair store: ten single cards beside the bundle, four on sale (Arena's style store).
+export function secretLairStoreOffer(drops, now = new Date()) {
+  const today = now.toISOString().slice(0, 10), week = playWeek(today), bundle = weeklySecretLair(drops, week, today);
+  const offers = weeklySecretLairOffers(drops, week, today, bundle?.id || '');
+  if (!offers.length) return null;
+  const end = new Date(Date.UTC(now.getUTCFullYear(), now.getUTCMonth(), now.getUTCDate() + ((8 - (now.getUTCDay() || 7)) % 7 || 7)));
+  return {week, ends: end.toISOString(), offers: offers.map(c => ({id: c.id, o: c.o, n: c.n, r: c.r, f: c.f, off: c.off}))};
 }
 
 let setsCache = null;
@@ -131,14 +142,31 @@ export async function progressRoute(request, env, {verifyBearer, fetcher = fetch
     for (const [k, v] of Object.entries(c)) { if (!v) continue; out[k] = v; if (!/:/.test(k)) { out[`d:${day}:${k}`] = v; out[`w:${week}:${k}`] = v; } }
     return Object.keys(out).length ? counters.bump('cnt:' + ref, 'tally', out) : Promise.resolve(null);
   };
+  // The five starter decks (play-starter-deck.js): the other four colours' cards into the Trunk once
+  // (ref starter:colours; Green came with the first gift), then all five saved as Play decks, skipping
+  // names already there. Existing players get them on their next visit (STARTER_TOP_UP).
+  const grantStarterDecks = async () => {
+    const extra = STARTER_DECKS.filter(d => d.rows !== PRACTICE_STARTER_ROWS);
+    const names = [...new Set(extra.flatMap(d => d.rows.map(r => r.name)).filter(n => !isBasicLand(n)))];
+    const cards = await scryfallCollection(names.map(name => ({name})), fetcher);
+    if (cards.length < names.length) return false;
+    const delta = starterGrant({}, '', cards, extra.flatMap(d => d.rows));
+    const paid = await apply('starter:colours', 'starter', {cards: delta.cards});
+    await counters.bump('starter:colours', 'tally', {starter_decks: 1});
+    if (paid?.duplicate) return false;
+    const have = new Set(((await state()).decks || []).map(d => d.name));
+    for (const d of STARTER_DECKS) if (!have.has(d.name)) await rpc(env, 'play_save_deck', {p_user: uid, p_id: null, p_name: d.name, p_format: d.format, p_cards: d.rows.map(r => ({name: r.name, qty: r.qty})), p_delete: false}, fetcher).catch(() => null);
+    return true;
+  };
   // State for the app: the wallet plus the counters, claims and Story refs that achievements read.
   try {
     if (path === 'state' && request.method === 'GET') {
       const [s, sets, c, claimed, story] = await Promise.all([state(), shopSets(env, request, fetcher), counters.read(), counters.claims(), storyRefs()]);
       const [l, drops] = await Promise.all([looks(), secretLairDrops(env, request, fetcher)]);
       const sl = l ? secretLairOffer(drops, s.config) : null;
+      const store = l ? secretLairStoreOffer(drops) : null;
       return json({...s, rewardSet: sets.reward, shop: sets.shop, counters: c || {}, claimed: claimed || [], story: Array.isArray(story) ? story : [],
-        styles: l?.styles || [], secretLair: sl ? {...sl, bought: (l.bundles || []).includes(sl.ref)} : null});
+        styles: l?.styles || [], secretLair: sl ? {...sl, bought: (l.bundles || []).includes(sl.ref)} : null, secretLairStore: store});
     }
     if (path === 'achievements' && request.method === 'GET') {
       // Every achievement, quest and log-in reward, worked out for this player (play-achievements.js).
@@ -157,6 +185,7 @@ export async function progressRoute(request, env, {verifyBearer, fetcher = fetch
       const cards = await scryfallCollection(PRACTICE_STARTER_ROWS.filter(r => !/^(?:plains|island|swamp|mountain|forest)$/i.test(r.name)).map(r => ({name: r.name})), fetcher);
       const delta = starterGrant(s.config, reward.code, cards, PRACTICE_STARTER_ROWS);
       await apply('starter', 'starter', delta);
+      await grantStarterDecks().catch(() => false);
       return json({...await state(), rewardSet: reward});
     }
     if (path === 'open') {
@@ -252,8 +281,10 @@ export async function progressRoute(request, env, {verifyBearer, fetcher = fetch
       if (!s.wallet?.starter_at) return json({login: null});
       const bump = await counters.bump('login:' + day, 'login', {logins: 1});
       if (!bump) return json({login: null});
+      // Players from before the five starter decks get the four new ones once.
+      const topUp = STARTER_TOP_UP && !bump.counters?.starter_decks && await grantStarterDecks().catch(() => false);
       const st = loginStamp(bump.counters?.logins);
-      if (bump.duplicate) return json({login: {day, ...st, fresh: false}, counters: bump.counters});
+      if (bump.duplicate) return json({login: {day, ...st, fresh: false}, counters: bump.counters, ...(topUp ? {state: await state()} : {})});
       const reward = await currentRewardSet(env, request, fetcher);
       await apply('loginpay:' + day, 'login', rewardDelta([st.reward, st.monthReward], reward?.code, 'login'));
       return json({login: {day, ...st, fresh: true}, counters: bump.counters, state: await state()});
@@ -359,6 +390,26 @@ export async function progressRoute(request, env, {verifyBearer, fetcher = fetch
       await tally(offer.ref, {buys: 1, coins_spent: offer.price}, body.tz);
       const after = await looks();
       return json({counters: await counters.read(), state: await state(), styles: after?.styles || [], secretLair: {...offer, bought: true}});
+    }
+    if (path === 'sloffer') {
+      // One card from this week's Secret Lair store, for coins (less its sale) or one seal of its rarity.
+      // Once per card: owning its Secret Lair style means it's bought.
+      const [s, l, drops] = await Promise.all([state(), looks(), secretLairDrops(env, request, fetcher)]);
+      if (!l) return fail('not_ready', 503);
+      const store = secretLairStoreOffer(drops);
+      if (!store || (body.week && body.week !== store.week)) return fail('bundle_gone', 409);
+      const card = store.offers.find(c => c.id === body.id), full = card && drops.flatMap(d => d.cards).find(c => c.id === card.id);
+      if (!card || !full) return fail('no_offer', 404);
+      if ((l.styles || []).some(x => x.id === card.id)) return fail('bought', 409);
+      const price = secretLairOfferPrice(card, s.config), seal = body.pay === 'seal';
+      if (seal ? (s.wallet?.['seal_' + price.seal] || 0) < 1 : (s.wallet?.coins || 0) < price.coins) return fail(seal ? 'no_seal' : 'short_coins', 409);
+      const ref = `slo:${store.week}:${card.id}`;
+      const paid = await apply(ref, 'secretlair', {...(seal ? {seals: {[price.seal]: -1}} : {coins: -price.coins}), cards: [secretLairCardDelta(full)]});
+      if (paid?.duplicate) return fail('bought', 409);
+      await rpc(env, 'play_add_styles', {p_user: uid, p_ref: ref + ':style', p_styles: [secretLairStyle(full)]}, fetcher);
+      await tally(ref, {buys: 1, ...(seal ? {} : {coins_spent: price.coins})}, body.tz);
+      const after = await looks();
+      return json({counters: await counters.read(), state: await state(), styles: after?.styles || [], secretLairStore: store});
     }
     if (path === 'style') {
       // Shows an unlocked Secret Lair style on your copy of the card, or its own art again (print: null).

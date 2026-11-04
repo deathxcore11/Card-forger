@@ -1676,9 +1676,19 @@ const I = {}; // input handlers
 // Branch beta setup uses the real account workspace and shared deck renderers.
 // It does not start a manual/cosmetic game or adopt the candidate rules engine.
 const readPlayAccount=()=>{const a=cloudInfo();return {user:a.user?{id:a.user.id}:null,profile:a.profile,art:{avatar:a.art?.avatar||S.state.settings.cardAvatar||null},switching:a.switching,locked:accountLocked,accountGeneration};};
+// The Play table's decks: every Play deck and every Collection deck. Practice can use any of them;
+// Quick Play shows them all but greys out any deck missing cards from your Trunk (Randall 3 Nov 22:31Z-23:06Z).
+const PLAY_SINGLETON=['Commander','Standard Brawl','Oathbreaker'];
+function playTableDecks(){let st={};try{st=playEcon.snapshot().state||{};}catch{}const owned=ownedByName(st.cards||[]);
+ return [...(st.decks||[]).map(d=>{const row=r=>({name:String(r.name||''),qty:Math.max(1,r.qty|0)}),cards=(d.cards||[]).filter(r=>r.board!=='side').map(row),side=(d.cards||[]).filter(r=>r.board==='side').map(row),format=d.format||'Standard';
+  const commander=PLAY_SINGLETON.includes(format)?(cards.find(r=>r.qty===1&&/Legendary.*(Creature|Planeswalker)/.test(meta(r.name)?.type_line||''))?.name||''):'';
+  return {id:d.id,name:d.name||'Untitled deck',format,commander,cards,side,unlocked:deckShortfall(cards,owned,new Map()).complete};}),
+  ...(S.state.decks||[]).map(d=>({...d,collection:true,unlocked:deckShortfall((d.cards||[]).filter(r=>!r.board||r.board==='main'),owned,new Map()).complete}))];}
+const playTableDeck=id=>playTableDecks().find(d=>d.id===id)||null;
+const playLockedDecks=()=>new Set(playTableDecks().filter(d=>!d.unlocked).map(d=>d.id));
 const playSetup = createPlaySetup({
   readAccount:readPlayAccount,
-  readDecks:()=>S.state.decks,
+  readDecks:()=>playTableDecks(),
   parseImport:text=>parsePlayDeckImport(text,{parseDeckImport}),
   resolveNames:async names=>{const owner=cloudInfo().user?.id,generation=accountGeneration,current=()=>!accountLocked&&generation===accountGeneration&&owner===cloudInfo().user?.id;await resolveNames(names,()=>{},false,current);return {failed:current()?names.filter(name=>!meta(name)):[]};}
 });
@@ -1737,6 +1747,7 @@ A.playEconView=t=>{const v=t.dataset.econView;if(!ECON_VIEWS.has(v))return;playV
 // Secret Lair (play-secret-lair.js): this week's bundle, and the rare art styles rewards unlock.
 const slToast=style=>{if(!style?.id)return;playEcon.noteStyle(style);setTimeout(()=>{toast(`Secret Lair art unlocked: ${style.n}.${style.card?' The card came with it.':''} Pick it in the card view.`);haptic('tick');},900);};
 A.playEconReroll=async t=>{const weekly=t.dataset.econLevel==='weekly';try{await playEcon.reroll(t.dataset.econLevel,t.dataset.econId);toast(weekly?'Weekly quest swapped. One swap a week.':'Quest swapped. One swap a day.');haptic('tick');}catch{}};
+A.playEconSlOffer=async t=>{const st=playEcon.snapshot().state?.secretLairStore;try{await playEcon.secretLairCard(t.dataset.econCard,t.dataset.econPay==='seal'?'seal':'coins',st?.week);const c=st?.offers?.find(x=>x.id===t.dataset.econCard);toast(`${c?.n||'The card'} is yours, in its Secret Lair art.`);haptic('tick');}catch{}};
 A.playEconSecretLair=async t=>{try{const out=await playEcon.secretLair(t.dataset.econWeek);toast(`${out.secretLair?.title||'Secret Lair'} is yours. Every card is in your Trunk, in its Secret Lair art.`);haptic('tick');}catch{}};
 A.playCardStyle=async t=>{try{await playEcon.style(t.dataset.oracle,t.dataset.print||null);refreshSheet?.();}catch{}};
 A.playEconBuy=async t=>{try{await playEcon.buy(t.dataset.econSet);toast('Pack bought. It is waiting in Packs.');}catch{}};
@@ -2016,7 +2027,9 @@ document.addEventListener('keydown',e=>{if(e.key==='Escape')for(const d of docum
 A.playStyle=t=>{quickSequence++;quickStatus={busy:false,error:null};cancelPlayBuilds();const social=t.dataset.playStyle==='social';
  if(social&&!FRIEND_FORMATS.includes(playSetup.snapshot().match.format))playSetup.configure({format:'Commander'});
  if(!social&&friendRoom?.seat==='host'&&friendRoom.status==='open')void A.playFriendCancel();if(!social&&friendRoom?.seat==='guest'){friendRoom=null;forgetFriendInvite();}if(!social&&friendRoom?.target)friendRoom=null;
- playSetup.configure({mode:social?'friends':'cpu'});if(t.dataset.playStyle!=='social')playSetup.setPlayStyle(t.dataset.playStyle);refreshPlayMenu();};
+ playSetup.configure({mode:social?'friends':'cpu'});if(t.dataset.playStyle!=='social')playSetup.setPlayStyle(t.dataset.playStyle);if(t.dataset.playStyle==='quick'&&!quickDeckReady(playSetup.snapshot()))playSetup.clearSelection('player');refreshPlayMenu();};
+// Quick Play deals only a deck whose cards are all in your Trunk.
+const quickDeckReady=state=>!state.selected||state.selectedSource==='saved'&&!playLockedDecks().has(state.selected.id);
 // Friend matches. The host opens a room with their deck and sends the invite link; the friend
 // opens it (signing in first if needed: the invite waits in this tab), picks a deck and joins.
 // The server starts one match; both players then open it on their own seat.
@@ -2258,6 +2271,7 @@ A.playStartCandidate=async()=>{
  playStarting=true;forgeWarmAt=0; // this start claims the warm engine; warm again next time
  try{
  const initial=playSetup.snapshot();
+ if(initial.playStyle==='quick'&&initial.match.mode==='cpu'&&!quickDeckReady(initial)){playSetup.clearSelection('player');refreshPlayMenu();return toast('Quick Play needs a deck with every card in your Trunk.');}
  if(initial.playStyle==='quick'&&initial.match.mode==='cpu'&&!initial.quickMatch){if(!await A.playFindOpponent())return;}
  if(T.game()!=='mtg'||S.ui.view!=='play'||!syncDesktopPlayEntries('mtg').eligible)return;
  const source=playSetup.snapshot();if(!source.selected||!source.opponent||source.match.mode!=='cpu')return toast('Choose both Practice decks first.');
@@ -2517,12 +2531,12 @@ function renderPlayPage() {
    if(playView==='deck')builderWants(snap);
    return econScreenMarkup(playView,snap,{...econUi,query:econUi.query,facts:econFacts,nameFact:n=>finderFacts.get(n),craftRarity:n=>craftRarity.rarity(n),craftId:n=>craftRarity.id(n)});}
   const state=playSetup.snapshot(),p=state.profile,tiles=new Map();state.opponentBuild=practiceOpponentBuilder.snapshot();state.deckBuild=playBuilders[state.playStyle==='quick'?'player':state.inspectedSeat].snapshot();const sources=readPlaySources(),sourceArt=new Map();for(const entries of Object.values(sources))for(const entry of entries)sourceArt.set(entry.key,V.deckArtwork(entry.deck));
-  for(const summary of state.decks){const deck=deckById(summary.id);if(summary.valid&&deck)tiles.set(summary.id,V.deckTile(deck,false,{playSelection:playSeatSource(state,playBrowseSeat(state))==='saved'&&playSeatDeck(state,playBrowseSeat(state))?.id===deck.id}));}
+  const locked=playLockedDecks();for(const summary of state.decks){const deck=playTableDeck(summary.id);if(summary.valid&&deck)tiles.set(summary.id,V.deckTile(deck,false,{playSelection:playSeatSource(state,playBrowseSeat(state))==='saved'&&playSeatDeck(state,playBrowseSeat(state))?.id===deck.id}));}
   const inspected=state.playStyle!=='quick'&&state.match.mode==='cpu'?playSeatDeck(state,state.inspectedSeat):state.selected;
   if(state.match.mode==='cpu')warmForgeEngine(state);
   if(!playUpdateChecked){playUpdateChecked=true;queueMicrotask(updatePlayWhileIdle);}
   if(playView==='home'){const st=playEcon.snapshot().state;econFacts.wantSets([...storyHomeAct().packSets,...(st?.packs||[]).map(p=>p.set),...(st?.shop||[]).slice(0,6).map(x=>x.code),...(st?.cards||[]).flatMap(c=>c.s||[])]);}
-  return playMenuMarkup(state,{econ:playEcon.snapshot(),story:storyHomeProgress(),friendRoom:friendRoomView(),challengeCount:challenges.length,canShare:typeof navigator.share==='function',view:playView,inspectOpen:playInspectOpen,econFacts,engine:FORGE_PLAY_TEST_ENABLED?'forge':'phase',sourceEntries:sources,sourceArt,cpuDifficulties:readCpuOptions({engine:FORGE_PLAY_TEST_ENABLED?'forge':'phase'}),quickStatus,sourceStatus:currentPlaySources().statuses[state.browse.source+':'+state.match.format]||{},savedCopy:savedPlayCopy(inspected),savePending:playSaver.isSaving(inspected),matchReleaseReady:PLAY_MATCH_RELEASE_READY,avatarMarkup:profileAvatar(p.avatarArt,{display_name:p.displayName,username:p.username,avatar_url:p.avatarUrl}),deckTiles:tiles,deckPreview:playDeckPreview(inspected),importPreview:playDeckPreview(state.reviewDeck),selectedArt:V.deckArtwork(inspected),matchupArt:{player:V.deckArtwork(state.selected),opponent:V.deckArtwork(state.opponent),cpu3:state.podDecks?.cpu3?V.deckArtwork(state.podDecks.cpu3):'',cpu4:state.podDecks?.cpu4?V.deckArtwork(state.podDecks.cpu4):''}});
+  return playMenuMarkup(state,{lockedDecks:locked,econ:playEcon.snapshot(),story:storyHomeProgress(),friendRoom:friendRoomView(),challengeCount:challenges.length,canShare:typeof navigator.share==='function',view:playView,inspectOpen:playInspectOpen,econFacts,engine:FORGE_PLAY_TEST_ENABLED?'forge':'phase',sourceEntries:sources,sourceArt,cpuDifficulties:readCpuOptions({engine:FORGE_PLAY_TEST_ENABLED?'forge':'phase'}),quickStatus,sourceStatus:currentPlaySources().statuses[state.browse.source+':'+state.match.format]||{},savedCopy:savedPlayCopy(inspected),savePending:playSaver.isSaving(inspected),matchReleaseReady:PLAY_MATCH_RELEASE_READY,avatarMarkup:profileAvatar(p.avatarArt,{display_name:p.displayName,username:p.username,avatar_url:p.avatarUrl}),deckTiles:tiles,deckPreview:playDeckPreview(inspected),importPreview:playDeckPreview(state.reviewDeck),selectedArt:V.deckArtwork(inspected),matchupArt:{player:V.deckArtwork(state.selected),opponent:V.deckArtwork(state.opponent),cpu3:state.podDecks?.cpu3?V.deckArtwork(state.podDecks.cpu3):'',cpu4:state.podDecks?.cpu4?V.deckArtwork(state.podDecks.cpu4):''}});
 }
 const refreshPlayMenu=()=>{if(S.ui.view==='play'&&T.game()==='mtg'){
   const scrolls=[...document.querySelectorAll('[data-play-scroll]')].map(n=>[n.dataset.playScroll,n.scrollTop]);
@@ -2536,7 +2550,7 @@ function focusNextPlaySelection(){const state=playSetup.snapshot();const target=
  // On a phone the sticky Play bar would cover the CPU seat that is up next, so bring it to the middle.
  if(target?.dataset.playSeat==='opponent'&&matchMedia('(max-width:700px)').matches)target.closest('.pl-seat')?.scrollIntoView({block:'center',behavior:matchMedia('(prefers-reduced-motion: reduce)').matches?'auto':'smooth'});}
 // In Practice, once your deck is in, the next pick goes to the CPU's seat (it used to replace yours).
-A.playSelectDeck=t=>{cancelPlayBuilds();const before=playSetup.snapshot(),seat=before.playStyle==='quick'?'player':before.inspectedSeat;playSetup.selectDeck(t.dataset.playDeck,seat);const after=playSetup.snapshot();if(after.playStyle!=='quick'&&after.match.mode==='cpu'&&seat==='player'&&after.selected&&!after.opponent)playSetup.inspectSeat('opponent');refreshPlayMenu();focusNextPlaySelection();};
+A.playSelectDeck=t=>{cancelPlayBuilds();const before=playSetup.snapshot(),seat=before.playStyle==='quick'?'player':before.inspectedSeat;if(before.playStyle==='quick'&&before.match.mode==='cpu'&&playLockedDecks().has(t.dataset.playDeck))return toast('Some of its cards aren\'t in your Trunk yet. Practice can use it.');playSetup.selectDeck(t.dataset.playDeck,seat);const after=playSetup.snapshot();if(after.playStyle!=='quick'&&after.match.mode==='cpu'&&seat==='player'&&after.selected&&!after.opponent)playSetup.inspectSeat('opponent');refreshPlayMenu();focusNextPlaySelection();};
 A.playInspectSeat=t=>{playSetup.inspectSeat(t.dataset.playSeat);refreshPlayMenu();};
 A.playClearSelection=()=>{cancelPlayBuilds();playSetup.clearSelection(playSetup.snapshot().inspectedSeat);refreshPlayMenu();};
 // Practice from a deck page: the Practice lobby with this saved deck in its own format.

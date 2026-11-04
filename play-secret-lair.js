@@ -100,3 +100,31 @@ export function stylesFor(styles = [], oracle = '') {
   const list = styles.filter(s => s.o === oracle);
   return {list, on: list.find(s => s.on) || null};
 }
+
+// The Secret Lair store (Randall 3 Nov 22:34Z, like Arena's card-style store): ten single Secret Lair
+// cards a week beside the bundle, a few of them on sale. Each one is the real printing: into the Trunk,
+// with its Secret Lair art unlocked. Pay in coins, or one seal of the card's rarity.
+const SALES = [60, 50, 40, 25];
+const BASIC = /^(?:Snow-Covered )?(?:Plains|Island|Swamp|Mountain|Forest|Wastes)$/;
+export const SECRET_LAIR_OFFERS = 10;
+export function weeklySecretLairOffers(drops = [], week = '', today = '', bundleId = '', n = SECRET_LAIR_OFFERS) {
+  const pool = drops.filter(d => d.id !== bundleId && (!today || d.released <= today)).flatMap(d => d.cards).filter(c => !BASIC.test(c.n));
+  const out = [], seen = new Set();
+  let h = hash('slo:' + week);
+  for (let tries = 0; out.length < n && tries < n * 20 && pool.length; tries++) {
+    const c = pool[h % pool.length]; h = Math.imul(h ^ (h >>> 13), 2654435761) >>> 0;
+    if (seen.has(c.o)) continue;
+    seen.add(c.o); out.push(c);
+  }
+  // Four are on sale, at 60, 50, 40 and 25% off, in places that change every week.
+  const saleAt = new Set(); for (let i = 0; saleAt.size < Math.min(SALES.length, out.length); i++) saleAt.add((hash('sls:' + week + i)) % out.length);
+  const order = [...saleAt];
+  return out.map((c, i) => ({...c, off: order.includes(i) ? SALES[order.indexOf(i)] : 0}));
+}
+const SEAL = {common: 'c', uncommon: 'u', rare: 'r', mythic: 'm'};
+// Coins: 200 for a common or uncommon, 300 for a rare, 500 for a mythic (config.secretLair.offerCoins),
+// less the sale, rounded to 10. Or one seal of the card's rarity.
+export function secretLairOfferPrice(card, config = {}) {
+  const base = {...{common: 200, uncommon: 200, rare: 300, mythic: 500}, ...(config?.secretLair?.offerCoins || {})}[card?.r] ?? 300;
+  return {was: base, coins: card?.off ? Math.max(10, Math.round(base * (100 - card.off) / 1000) * 10) : base, seal: SEAL[card?.r] || 'r'};
+}

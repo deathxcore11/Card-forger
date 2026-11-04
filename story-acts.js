@@ -44,6 +44,9 @@ export const STORY_ACTS = [
   {act: 14, age: 'The Time Spiral Years', title: 'The Time Rifts', years: '2006 to 2007',
     sets: ['csp', 'tsp', 'tsb', 'plc', 'fut', '10e'], landSet: 'tsp', packSets: ['csp', 'tsp', 'plc', 'fut'],
     art: {set: 'tsb', number: '98', name: 'Nicol Bolas', crop: 'https://cards.scryfall.io/art_crop/front/7/8/78407de3-b97e-4e30-beea-ef268dda3042.jpg'}},
+  {act: 15, age: 'The Lorwyn Years', title: 'The Great Aurora', years: '2007 to 2008',
+    sets: ['lrw', 'mor', 'shm', 'eve', '10e'], landSet: 'lrw', packSets: ['lrw', 'mor', 'shm', 'eve'],
+    art: {set: 'shm', number: '172', name: 'Oona, Queen of the Fae', crop: 'https://cards.scryfall.io/art_crop/front/2/4/24ae75f6-fb74-422c-93f6-a0be7f919e47.jpg'}},
 ];
 export const SET_NAMES = {lea: 'Limited Edition Alpha', leb: 'Limited Edition Beta', '2ed': 'Unlimited Edition', arn: 'Arabian Nights', atq: 'Antiquities',
   '3ed': 'Revised Edition', leg: 'Legends', drk: 'The Dark', fem: 'Fallen Empires', ice: 'Ice Age', hml: 'Homelands', all: 'Alliances', '4ed': 'Fourth Edition',
@@ -57,6 +60,7 @@ export const SET_NAMES = {lea: 'Limited Edition Alpha', leb: 'Limited Edition Be
   mrd: 'Mirrodin', dst: 'Darksteel', '5dn': 'Fifth Dawn',
   chk: 'Champions of Kamigawa', bok: 'Betrayers of Kamigawa', sok: 'Saviors of Kamigawa', '9ed': 'Ninth Edition',
   rav: 'Ravnica: City of Guilds', gpt: 'Guildpact', dis: 'Dissension',
-  csp: 'Coldsnap', tsp: 'Time Spiral', tsb: 'Time Spiral Timeshifted', plc: 'Planar Chaos', fut: 'Future Sight', '10e': 'Tenth Edition'};
+  csp: 'Coldsnap', tsp: 'Time Spiral', tsb: 'Time Spiral Timeshifted', plc: 'Planar Chaos', fut: 'Future Sight', '10e': 'Tenth Edition',
+  lrw: 'Lorwyn', mor: 'Morningtide', shm: 'Shadowmoor', eve: 'Eventide'};
 export const storyAct = n => STORY_ACTS.find(a => a.act === Number(n)) || null;
 export const setSymbolUrl = code => `https://svgs.scryfall.io/sets/${encodeURIComponent(code)}.svg`;
