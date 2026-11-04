@@ -1,0 +1,2788 @@
+{
+ "act": 25,
+ "era": "2017-01-20",
+ "title": "The Inventors' Fair",
+ "years": "2016 to 2017",
+ "sets": [
+  "kld",
+  "aer"
+ ],
+ "landSet": "kld",
+ "intro": [
+  {
+   "who": "stage",
+   "line": "Kaladesh, the plane of inventors, where aether powers everything. The Inventors' Fair is about to open."
+  },
+  {
+   "who": "stage",
+   "line": "Never before have there been so many brilliant minds and wondrous inventions in one place. Denizens from every corner of Kaladesh will flock to the once-in-a-lifetime Inventors' Fair.",
+   "quote": true
+  },
+  {
+   "who": "stage",
+   "line": "Chandra Nalaar has come home. The last time she was here, the Consulate took her father."
+  },
+  {
+   "who": "chandra",
+   "line": "Baral took my family from me back then. I'd do anything to face him now.",
+   "quote": true
+  }
+ ],
+ "finale": [
+  {
+   "who": "stage",
+   "line": "The renegades mounted an aether disruptor aboard a lightweight thopter to destroy Tezzeret's Planar Bridge.",
+   "quote": true
+  },
+  {
+   "who": "pia",
+   "line": "You want to know what we are fighting for? Look at the wonder in that child's eyes.",
+   "quote": true
+  },
+  {
+   "who": "stage",
+   "line": "Until all have found their place, I will keep watch.",
+   "quote": true
+  },
+  {
+   "who": "stage",
+   "line": "The bridge is broken. Tezzeret is gone, and so is whoever he was working for."
+  }
+ ],
+ "villainFinale": [
+  {
+   "who": "tezzeret",
+   "line": "It is finished. Now the real work can begin.",
+   "quote": true
+  },
+  {
+   "who": "tezzeret",
+   "line": "You can't hope to comprehend the plans that are in motion.",
+   "quote": true
+  }
+ ],
+ "vibe": "inventors-fair-aether",
+ "cast": {
+  "you": {
+   "name": "You",
+   "title": "Planeswalker",
+   "portrait": {
+    "card": "Commencement of Festivities",
+    "set": "kld",
+    "number": "148",
+    "id": "f1724602-2ae1-40a4-aeb0-51a483a6948c",
+    "crop": "https://cards.scryfall.io/art_crop/front/f/1/f1724602-2ae1-40a4-aeb0-51a483a6948c.jpg?1783937181",
+    "artist": "Zack Stella",
+    "focus": "50% 30%"
+   }
+  },
+  "chandra": {
+   "name": "Chandra Nalaar",
+   "title": "Torch of Defiance",
+   "portrait": {
+    "card": "Chandra, Torch of Defiance",
+    "set": "kld",
+    "number": "110",
+    "id": "ff8086cd-b868-4f4e-823e-2635ad7ebc07",
+    "crop": "https://cards.scryfall.io/art_crop/front/f/f/ff8086cd-b868-4f4e-823e-2635ad7ebc07.jpg?1783937196",
+    "artist": "Magali Villeneuve",
+    "focus": "50% 25%"
+   }
+  },
+  "consulate": {
+   "name": "The Consulate",
+   "title": "Fair security",
+   "portrait": {
+    "card": "Aerial Responder",
+    "set": "kld",
+    "number": "2",
+    "id": "956adc86-c0d9-4408-837e-b5def19af1ec",
+    "crop": "https://cards.scryfall.io/art_crop/front/9/5/956adc86-c0d9-4408-837e-b5def19af1ec.jpg?1783937238",
+    "artist": "Raoul Vitale",
+    "focus": "50% 30%"
+   }
+  },
+  "pia": {
+   "name": "Pia Nalaar",
+   "title": "Renegade",
+   "portrait": {
+    "card": "Pia Nalaar",
+    "set": "kld",
+    "number": "124",
+    "id": "6a2b2954-0734-4219-b6df-c6cc3dcd8d5a",
+    "crop": "https://cards.scryfall.io/art_crop/front/6/a/6a2b2954-0734-4219-b6df-c6cc3dcd8d5a.jpg?1783937192",
+    "artist": "Tyler Jacobson",
+    "focus": "50% 25%"
+   }
+  },
+  "agents": {
+   "name": "Gonti",
+   "title": "Lord of Luxury",
+   "portrait": {
+    "card": "Gonti, Lord of Luxury",
+    "set": "kld",
+    "number": "84",
+    "id": "7735ecda-9bb0-4ef9-86b2-16e5b6592e61",
+    "crop": "https://cards.scryfall.io/art_crop/front/7/7/7735ecda-9bb0-4ef9-86b2-16e5b6592e61.jpg?1783937205",
+    "artist": "Daarken",
+    "focus": "50% 25%"
+   }
+  },
+  "saheeli": {
+   "name": "Saheeli Rai",
+   "title": "Inventor",
+   "portrait": {
+    "card": "Saheeli Rai",
+    "set": "kld",
+    "number": "186",
+    "id": "94b38464-39cd-4ee6-b9bf-a0bc1e128d9a",
+    "crop": "https://cards.scryfall.io/art_crop/front/9/4/94b38464-39cd-4ee6-b9bf-a0bc1e128d9a.jpg?1783937167",
+    "artist": "Willian Murai",
+    "focus": "50% 25%"
+   }
+  },
+  "padeem": {
+   "name": "Padeem",
+   "title": "Consul of Innovation",
+   "portrait": {
+    "card": "Padeem, Consul of Innovation",
+    "set": "kld",
+    "number": "59",
+    "id": "e31b30a7-13e8-408e-a758-60e6e9290808",
+    "crop": "https://cards.scryfall.io/art_crop/front/e/3/e31b30a7-13e8-408e-a758-60e6e9290808.jpg?1783937217",
+    "artist": "Matt Stewart",
+    "focus": "50% 25%"
+   }
+  },
+  "baral": {
+   "name": "Baral",
+   "title": "Chief of Compliance",
+   "portrait": {
+    "card": "Baral, Chief of Compliance",
+    "set": "aer",
+    "number": "28",
+    "id": "60e16d94-1166-4050-8554-686e153a7f80",
+    "crop": "https://cards.scryfall.io/art_crop/front/6/0/60e16d94-1166-4050-8554-686e153a7f80.jpg?1783936774",
+    "artist": "Wesley Burt",
+    "focus": "50% 25%"
+   }
+  },
+  "rashmi": {
+   "name": "Rashmi",
+   "title": "Eternities Crafter",
+   "portrait": {
+    "card": "Rashmi, Eternities Crafter",
+    "set": "kld",
+    "number": "184",
+    "id": "3ce37555-49a2-4112-95b4-f3376b55b45b",
+    "crop": "https://cards.scryfall.io/art_crop/front/3/c/3ce37555-49a2-4112-95b4-f3376b55b45b.jpg?1783937168",
+    "artist": "Magali Villeneuve",
+    "focus": "50% 25%"
+   }
+  },
+  "dovin": {
+   "name": "Dovin Baan",
+   "title": "Consulate inquirer",
+   "portrait": {
+    "card": "Dovin Baan",
+    "set": "kld",
+    "number": "179",
+    "id": "2344e710-4570-41b6-af84-a3e7d784003a",
+    "crop": "https://cards.scryfall.io/art_crop/front/2/3/2344e710-4570-41b6-af84-a3e7d784003a.jpg?1783937169",
+    "artist": "Tyler Jacobson",
+    "focus": "50% 25%"
+   }
+  },
+  "energy": {
+   "name": "RG Energy",
+   "title": "Early 2017",
+   "portrait": {
+    "card": "Bristling Hydra",
+    "set": "kld",
+    "number": "147",
+    "id": "4bf38096-05bc-4734-b33c-eb1e8f2986de",
+    "crop": "https://cards.scryfall.io/art_crop/front/4/b/4bf38096-05bc-4734-b33c-eb1e8f2986de.jpg?1783937182",
+    "artist": "Chris Rahn",
+    "focus": "50% 30%"
+   }
+  },
+  "constrictor": {
+   "name": "BG Constrictor",
+   "title": "Early 2017",
+   "portrait": {
+    "card": "Winding Constrictor",
+    "set": "aer",
+    "number": "140",
+    "id": "107c8aa8-c8f8-4cbf-821b-bd2cb33354f0",
+    "crop": "https://cards.scryfall.io/art_crop/front/1/0/107c8aa8-c8f8-4cbf-821b-bd2cb33354f0.jpg?1783936732",
+    "artist": "Izzy",
+    "focus": "50% 30%"
+   }
+  },
+  "vehicles": {
+   "name": "Mardu Vehicles",
+   "title": "Early 2017",
+   "portrait": {
+    "card": "Heart of Kiran",
+    "set": "aer",
+    "number": "153",
+    "id": "5e847c44-1849-4251-9075-88ed5c7792a6",
+    "crop": "https://cards.scryfall.io/art_crop/front/5/e/5e847c44-1849-4251-9075-88ed5c7792a6.jpg?1783936731",
+    "artist": "Jaime Jones",
+    "focus": "50% 30%"
+   }
+  },
+  "marvel": {
+   "name": "Aetherworks Marvel",
+   "title": "Early 2017",
+   "portrait": {
+    "card": "Aetherworks Marvel",
+    "set": "kld",
+    "number": "193",
+    "id": "884f6948-3e03-48c6-8be2-6f2539386c9d",
+    "crop": "https://cards.scryfall.io/art_crop/front/8/8/884f6948-3e03-48c6-8be2-6f2539386c9d.jpg?1783937164",
+    "artist": "James Paick",
+    "focus": "50% 30%"
+   }
+  },
+  "ajani": {
+   "name": "Ajani Goldmane",
+   "title": "Unyielding",
+   "portrait": {
+    "card": "Ajani Unyielding",
+    "set": "aer",
+    "number": "127",
+    "id": "23b82ee9-2ac6-4b81-8c64-dd4f47c2d8cb",
+    "crop": "https://cards.scryfall.io/art_crop/front/2/3/23b82ee9-2ac6-4b81-8c64-dd4f47c2d8cb.jpg?1783936737",
+    "artist": "Kieran Yanner",
+    "focus": "50% 25%"
+   }
+  },
+  "gideon": {
+   "name": "Gideon Jura",
+   "title": "Of the Gatewatch",
+   "portrait": {
+    "card": "Deft Dismissal",
+    "set": "aer",
+    "number": "17",
+    "id": "5cb26d5b-ffeb-4dac-ad61-f85e5e7b1675",
+    "crop": "https://cards.scryfall.io/art_crop/front/5/c/5cb26d5b-ffeb-4dac-ad61-f85e5e7b1675.jpg?1783936780",
+    "artist": "Izzy",
+    "focus": "50% 30%"
+   }
+  },
+  "tezzeret": {
+   "name": "Tezzeret",
+   "title": "The Schemer",
+   "portrait": {
+    "card": "Tezzeret the Schemer",
+    "set": "aer",
+    "number": "137",
+    "id": "58265203-bc16-41d2-875c-2ff3b4870824",
+    "crop": "https://cards.scryfall.io/art_crop/front/5/8/58265203-bc16-41d2-875c-2ff3b4870824.jpg?1783936735",
+    "artist": "Ryan Alexander Lee",
+    "focus": "50% 25%"
+   }
+  },
+  "copycat": {
+   "name": "Copycat",
+   "title": "Early 2017",
+   "portrait": {
+    "card": "Felidar Guardian",
+    "set": "aer",
+    "number": "19",
+    "id": "44bdbed8-5d21-4bf5-8a32-9623b1139c85",
+    "crop": "https://cards.scryfall.io/art_crop/front/4/4/44bdbed8-5d21-4bf5-8a32-9623b1139c85.jpg?1783936780",
+    "artist": "Jakub Kasper",
+    "focus": "50% 30%"
+   }
+  }
+ },
+ "battles": [
+  {
+   "id": "a25b1",
+   "slot": 1,
+   "kind": "Arrival",
+   "mood": "tension",
+   "title": "The Fairgrounds",
+   "difficulty": "Easy",
+   "teaches": [
+    "Energy"
+   ],
+   "blurb": "You arrive in Ghirapur as the Inventors' Fair opens. Chandra Nalaar is home for the first time in years, and Consulate guards are watching every gate.",
+   "rewardSet": "kld",
+   "host": false,
+   "hero": {
+    "who": "chandra",
+    "deck": {
+     "name": "Chandra's Fire",
+     "colors": "R",
+     "archetype": null,
+     "label": "tribute",
+     "cards": [
+      {
+       "qty": 1,
+       "name": "Chandra, Torch of Defiance",
+       "set": "kld",
+       "number": "110",
+       "id": "ff8086cd-b868-4f4e-823e-2635ad7ebc07"
+      },
+      {
+       "qty": 4,
+       "name": "Inventor's Apprentice",
+       "set": "kld",
+       "number": "120",
+       "id": "f737109b-15fb-4b92-9007-99a33ae68628"
+      },
+      {
+       "qty": 4,
+       "name": "Aether Chaser",
+       "set": "aer",
+       "number": "76",
+       "id": "290cde84-d97a-4737-aff2-c443a4e43f7d"
+      },
+      {
+       "qty": 4,
+       "name": "Spontaneous Artist",
+       "set": "kld",
+       "number": "134",
+       "id": "b8bbeb22-5e50-4b90-b756-9d420f9cfe7f"
+      },
+      {
+       "qty": 4,
+       "name": "Lathnu Hellion",
+       "set": "kld",
+       "number": "121",
+       "id": "14050179-84af-46f6-89be-338f8e7131cc"
+      },
+      {
+       "qty": 4,
+       "name": "Harnessed Lightning",
+       "set": "kld",
+       "number": "117",
+       "id": "f9be9b5c-eed4-4a5d-962f-3482da5a6f1d"
+      },
+      {
+       "qty": 3,
+       "name": "Aethertorch Renegade",
+       "set": "kld",
+       "number": "106",
+       "id": "e5c443e1-fd13-4627-85a9-8e9a340a2786"
+      },
+      {
+       "qty": 4,
+       "name": "Shock",
+       "set": "aer",
+       "number": "98",
+       "id": "00365412-41db-427c-9109-8f69c17c326d"
+      },
+      {
+       "qty": 4,
+       "name": "Maulfist Doorbuster",
+       "set": "kld",
+       "number": "123",
+       "id": "53681384-b72d-42a6-b134-aa420115ea12"
+      },
+      {
+       "qty": 4,
+       "name": "Renegade Firebrand",
+       "set": "kld",
+       "number": "268",
+       "id": "4b633884-867c-4b51-bd5b-5f246d0ecd4e"
+      },
+      {
+       "qty": 24,
+       "name": "Mountain",
+       "set": "kld",
+       "number": "259",
+       "id": "29b4a0e0-3d27-414b-80cb-352f16389a83"
+      }
+     ]
+    }
+   },
+   "villain": {
+    "who": "consulate",
+    "deck": {
+     "name": "Fair Security",
+     "colors": "W",
+     "archetype": null,
+     "label": "tribute",
+     "cards": [
+      {
+       "qty": 4,
+       "name": "Consulate Surveillance",
+       "set": "kld",
+       "number": "10",
+       "id": "72c92238-7765-48ee-a799-9e8b68ec118d"
+      },
+      {
+       "qty": 4,
+       "name": "Consulate Skygate",
+       "set": "kld",
+       "number": "202",
+       "id": "9a7922c3-1baa-41ed-bd06-b5a97cddb90e"
+      },
+      {
+       "qty": 4,
+       "name": "Aether Inspector",
+       "set": "aer",
+       "number": "3",
+       "id": "f5dcbe97-d582-464e-98e7-dd06d8652606"
+      },
+      {
+       "qty": 4,
+       "name": "Eddytrail Hawk",
+       "set": "kld",
+       "number": "12",
+       "id": "81dcaec6-4cb9-46d8-aed1-46f33c67dff2"
+      },
+      {
+       "qty": 4,
+       "name": "Ninth Bridge Patrol",
+       "set": "kld",
+       "number": "22",
+       "id": "10a22cf8-4441-48ab-8adc-ae071cbc5999"
+      },
+      {
+       "qty": 4,
+       "name": "Fairgrounds Warden",
+       "set": "kld",
+       "number": "13",
+       "id": "49b6c8f3-76b7-4954-8608-023304cdec3e"
+      },
+      {
+       "qty": 3,
+       "name": "Dawnfeather Eagle",
+       "set": "aer",
+       "number": "14",
+       "id": "f7113ddc-cb3c-46da-a6c7-2567bd0affa9"
+      },
+      {
+       "qty": 4,
+       "name": "Built to Last",
+       "set": "kld",
+       "number": "7",
+       "id": "ef3e09a4-93d0-4ed7-bbee-82108672d5f8"
+      },
+      {
+       "qty": 24,
+       "name": "Plains",
+       "set": "kld",
+       "number": "250",
+       "id": "32912b82-bbe5-4d70-817d-cd18bfdecacb"
+      },
+      {
+       "qty": 4,
+       "name": "Fragmentize",
+       "set": "kld",
+       "number": "14",
+       "id": "5bf09deb-2607-4eb0-94a7-9584e771fdfb"
+      },
+      {
+       "qty": 1,
+       "name": "Authority of the Consuls",
+       "set": "kld",
+       "number": "5",
+       "id": "324b2f55-1e09-490e-8f7e-bfde85a91ac4"
+      }
+     ]
+    }
+   },
+   "reward": {
+    "hero": {
+     "packs": 1,
+     "coins": 0
+    },
+    "villain": {
+     "card": {
+      "oracle_id": "55f3c721-e13a-406e-bc8e-d6cdc91ac477",
+      "name": "Authority of the Consuls",
+      "rarity": "rare",
+      "set": "kld",
+      "id": "324b2f55-1e09-490e-8f7e-bfde85a91ac4",
+      "image": "https://cards.scryfall.io/normal/front/3/2/324b2f55-1e09-490e-8f7e-bfde85a91ac4.jpg"
+     },
+     "coins": 50
+    }
+   },
+   "scene": [
+    {
+     "who": "stage",
+     "line": "Welcome, one and all! Right this way! Open your eyes, your ears, and your imaginations to the wonders of the Inventors' Fair!",
+     "quote": true
+    },
+    {
+     "who": "stage",
+     "line": "This one's for my mom, and this one's for me.",
+     "quote": true
+    },
+    {
+     "who": "chandra",
+     "line": "Energy: some cards give you energy counters. Save them up and spend them on bigger effects later."
+    }
+   ],
+   "villainScene": [
+    {
+     "who": "stage",
+     "line": "All skyships entering or leaving the fairgrounds must pass through the security checkpoint.",
+     "quote": true
+    },
+    {
+     "who": "stage",
+     "line": "Citizens are free to do as they wish, within the confines of the Consulate's laws.",
+     "quote": true
+    }
+   ],
+   "after": null,
+   "cues": {
+    "hero": {
+     "start": "Home again.",
+     "big": "Burn!",
+     "low": "They are everywhere...",
+     "win": "Still standing.",
+     "loss": "Not like this...",
+     "half": "Spend the energy."
+    },
+    "villain": {
+     "start": "Papers, please.",
+     "big": "Detain her!",
+     "low": "Call for backup...",
+     "win": "Order restored.",
+     "loss": "Breach at the gate..."
+    }
+   },
+   "bigPlays": [],
+   "sim": null
+  },
+  {
+   "id": "a25b2",
+   "slot": 2,
+   "kind": "Lesson",
+   "mood": "march",
+   "title": "The Leaking Spire",
+   "difficulty": "Easy",
+   "teaches": [
+    "Vehicles"
+   ],
+   "blurb": "Pia Nalaar, Chandra's mother, runs with the renegades. Kari Zev and her skyship crew ride with them against Gonti's smugglers.",
+   "rewardSet": "aer",
+   "host": false,
+   "hero": {
+    "who": "pia",
+    "deck": {
+     "name": "The Renegades",
+     "colors": "R",
+     "archetype": null,
+     "label": "tribute",
+     "cards": [
+      {
+       "qty": 2,
+       "name": "Pia Nalaar",
+       "set": "kld",
+       "number": "124",
+       "id": "6a2b2954-0734-4219-b6df-c6cc3dcd8d5a"
+      },
+      {
+       "qty": 2,
+       "name": "Kari Zev, Skyship Raider",
+       "set": "aer",
+       "number": "87",
+       "id": "72495879-39ce-449d-ad2f-ef32ea46f3aa"
+      },
+      {
+       "qty": 4,
+       "name": "Renegade Freighter",
+       "set": "kld",
+       "number": "230",
+       "id": "7a10e2c3-0132-4eb2-94f0-5915caca2a17"
+      },
+      {
+       "qty": 4,
+       "name": "Sky Skiff",
+       "set": "kld",
+       "number": "233",
+       "id": "cf4a4939-130b-40d7-8a0f-e31eb931d2d5"
+      },
+      {
+       "qty": 4,
+       "name": "Inventor's Apprentice",
+       "set": "kld",
+       "number": "120",
+       "id": "f737109b-15fb-4b92-9007-99a33ae68628"
+      },
+      {
+       "qty": 4,
+       "name": "Speedway Fanatic",
+       "set": "kld",
+       "number": "132",
+       "id": "436ce901-6ac6-4f8c-8ff0-18103f2642b8"
+      },
+      {
+       "qty": 4,
+       "name": "Aether Chaser",
+       "set": "aer",
+       "number": "76",
+       "id": "290cde84-d97a-4737-aff2-c443a4e43f7d"
+      },
+      {
+       "qty": 4,
+       "name": "Renegade Firebrand",
+       "set": "kld",
+       "number": "268",
+       "id": "4b633884-867c-4b51-bd5b-5f246d0ecd4e"
+      },
+      {
+       "qty": 2,
+       "name": "Renegade Tactics",
+       "set": "kld",
+       "number": "127",
+       "id": "6c06a39c-68bb-4e65-9a6d-9d9bc745201f"
+      },
+      {
+       "qty": 4,
+       "name": "Shock",
+       "set": "aer",
+       "number": "98",
+       "id": "00365412-41db-427c-9109-8f69c17c326d"
+      },
+      {
+       "qty": 24,
+       "name": "Mountain",
+       "set": "kld",
+       "number": "259",
+       "id": "29b4a0e0-3d27-414b-80cb-352f16389a83"
+      },
+      {
+       "qty": 2,
+       "name": "Fleetwheel Cruiser",
+       "set": "kld",
+       "number": "214",
+       "id": "5fdaca1e-5741-456e-ae98-e2c45fd1731b"
+      }
+     ]
+    }
+   },
+   "villain": {
+    "who": "agents",
+    "deck": {
+     "name": "Gonti's Syndicate",
+     "colors": "UB",
+     "archetype": null,
+     "label": "tribute",
+     "cards": [
+      {
+       "qty": 2,
+       "name": "Gonti, Lord of Luxury",
+       "set": "kld",
+       "number": "84",
+       "id": "7735ecda-9bb0-4ef9-86b2-16e5b6592e61"
+      },
+      {
+       "qty": 4,
+       "name": "Aether Poisoner",
+       "set": "aer",
+       "number": "51",
+       "id": "c9b217f1-1621-40d1-8a98-24c1f7cba800"
+      },
+      {
+       "qty": 4,
+       "name": "Aethersphere Harvester",
+       "set": "aer",
+       "number": "142",
+       "id": "4160bb5f-4b49-4535-94f5-776d7abd1d1a"
+      },
+      {
+       "qty": 4,
+       "name": "Ovalchase Dragster",
+       "set": "kld",
+       "number": "225",
+       "id": "20411aa0-f87b-49dd-b943-ca82d59db185"
+      },
+      {
+       "qty": 4,
+       "name": "Aether Swooper",
+       "set": "aer",
+       "number": "26",
+       "id": "8c34dbe3-3a66-40b3-a5c2-c2d6acb47773"
+      },
+      {
+       "qty": 4,
+       "name": "Shielded Aether Thief",
+       "set": "aer",
+       "number": "44",
+       "id": "e34be31b-eeb4-40e5-acf7-6cd0ba6d4bcf"
+      },
+      {
+       "qty": 4,
+       "name": "Tezzeret's Touch",
+       "set": "aer",
+       "number": "138",
+       "id": "3c2e917f-734e-4b8b-abc6-ea33c0fc722e"
+      },
+      {
+       "qty": 2,
+       "name": "Fatal Push",
+       "set": "aer",
+       "number": "57",
+       "id": "b5e81649-9954-424c-89d1-f87d73b66047"
+      },
+      {
+       "qty": 4,
+       "name": "Thriving Rats",
+       "set": "kld",
+       "number": "102",
+       "id": "52ba911b-6a52-4430-8f61-63bdae25c16a"
+      },
+      {
+       "qty": 12,
+       "name": "Island",
+       "set": "kld",
+       "number": "253",
+       "id": "8ca139d8-08a1-45d4-be9d-2ee5c9b3de43"
+      },
+      {
+       "qty": 12,
+       "name": "Swamp",
+       "set": "kld",
+       "number": "256",
+       "id": "4760cdcc-e973-439c-a74a-5cb73b4fa22f"
+      },
+      {
+       "qty": 4,
+       "name": "Subtle Strike",
+       "set": "kld",
+       "number": "100",
+       "id": "61a8cb98-7ee7-4f90-bfba-0a406a5e6d6b"
+      }
+     ]
+    }
+   },
+   "reward": {
+    "hero": {
+     "packs": 1,
+     "coins": 0
+    },
+    "villain": {
+     "card": {
+      "oracle_id": "d5be0ff6-39d9-4f9f-a028-e62dc38463f2",
+      "name": "Gonti, Lord of Luxury",
+      "rarity": "rare",
+      "set": "kld",
+      "id": "7735ecda-9bb0-4ef9-86b2-16e5b6592e61",
+      "image": "https://cards.scryfall.io/normal/front/7/7/7735ecda-9bb0-4ef9-86b2-16e5b6592e61.jpg"
+     },
+     "coins": 50
+    }
+   },
+   "scene": [
+    {
+     "who": "pia",
+     "line": "To invent is to rebel.",
+     "quote": true
+    },
+    {
+     "who": "stage",
+     "line": "Aboard her ship, the *Dragon's Smile*, Kari follows no one's rules but her own.",
+     "quote": true
+    },
+    {
+     "who": "pia",
+     "line": "Vehicles: they are artifacts that only fight once you crew them, by tapping creatures with enough total power. Crew, then attack."
+    }
+   ],
+   "villainScene": [
+    {
+     "who": "stage",
+     "line": "I am confident that all our enterprises can benefit from this little revolution.",
+     "quote": true
+    },
+    {
+     "who": "stage",
+     "line": "Renegades do some of their best work right under the Consulate's nose.",
+     "quote": true
+    }
+   ],
+   "after": null,
+   "cues": {
+    "hero": {
+     "start": "For freedom!",
+     "big": "Crewed and flying!",
+     "low": "They outnumber us...",
+     "win": "Fly free.",
+     "loss": "Grounded...",
+     "half": "Crew the vehicle, then attack."
+    },
+    "villain": {
+     "start": "[a deal is struck]",
+     "big": "[the syndicate strikes]",
+     "low": "[a smuggler flees]",
+     "win": "[profit]",
+     "loss": "[the market closes]"
+    }
+   },
+   "bigPlays": [],
+   "sim": null
+  },
+  {
+   "id": "a25b3",
+   "slot": 3,
+   "kind": "Lesson",
+   "mood": "comic",
+   "title": "The Exhibition",
+   "difficulty": "Easy",
+   "teaches": [
+    "Fabricate"
+   ],
+   "blurb": "Saheeli Rai shows her filigree creations at the Fair. Consul Padeem judges them, and he wants them under Consulate control.",
+   "rewardSet": "kld",
+   "host": false,
+   "hero": {
+    "who": "saheeli",
+    "deck": {
+     "name": "The Inventors",
+     "colors": "UR",
+     "archetype": null,
+     "label": "tribute",
+     "cards": [
+      {
+       "qty": 1,
+       "name": "Saheeli Rai",
+       "set": "kld",
+       "number": "186",
+       "id": "94b38464-39cd-4ee6-b9bf-a0bc1e128d9a"
+      },
+      {
+       "qty": 2,
+       "name": "Whirler Virtuoso",
+       "set": "kld",
+       "number": "190",
+       "id": "ae429806-28b5-4bee-b0e1-1bd876f282c2"
+      },
+      {
+       "qty": 2,
+       "name": "Accomplished Automaton",
+       "set": "kld",
+       "number": "191",
+       "id": "61dc2362-f901-4ec6-9bc4-1988f30380fd"
+      },
+      {
+       "qty": 2,
+       "name": "Maverick Thopterist",
+       "set": "aer",
+       "number": "130",
+       "id": "cad17d67-538e-4c60-a582-a394032a5112"
+      },
+      {
+       "qty": 4,
+       "name": "Aether Theorist",
+       "set": "kld",
+       "number": "37",
+       "id": "882b5580-ee23-4d65-a2b3-82475d6faf8e"
+      },
+      {
+       "qty": 4,
+       "name": "Glimmer of Genius",
+       "set": "kld",
+       "number": "49",
+       "id": "19f1673d-c92c-43be-8648-af7fbc790421"
+      },
+      {
+       "qty": 3,
+       "name": "Era of Innovation",
+       "set": "kld",
+       "number": "45",
+       "id": "5dae3b1f-6a31-4a8a-9e44-063f8f670134"
+      },
+      {
+       "qty": 4,
+       "name": "Weldfast Wingsmith",
+       "set": "kld",
+       "number": "69",
+       "id": "8b115a65-e273-4264-9db7-317e1855f492"
+      },
+      {
+       "qty": 4,
+       "name": "Shock",
+       "set": "aer",
+       "number": "98",
+       "id": "00365412-41db-427c-9109-8f69c17c326d"
+      },
+      {
+       "qty": 2,
+       "name": "Quicksmith Genius",
+       "set": "kld",
+       "number": "125",
+       "id": "c9f1dc85-3cda-45d6-8d65-3cb93854bb16"
+      },
+      {
+       "qty": 12,
+       "name": "Island",
+       "set": "kld",
+       "number": "253",
+       "id": "8ca139d8-08a1-45d4-be9d-2ee5c9b3de43"
+      },
+      {
+       "qty": 12,
+       "name": "Mountain",
+       "set": "kld",
+       "number": "259",
+       "id": "29b4a0e0-3d27-414b-80cb-352f16389a83"
+      },
+      {
+       "qty": 2,
+       "name": "Whirlermaker",
+       "set": "kld",
+       "number": "239",
+       "id": "ff1a1246-d5a0-43dc-825a-062a3bb4def9"
+      },
+      {
+       "qty": 2,
+       "name": "Prizefighter Construct",
+       "set": "aer",
+       "number": "172",
+       "id": "8e389c92-b54b-46b3-a7ab-b8a5a2a7d380"
+      },
+      {
+       "qty": 2,
+       "name": "Aether Swooper",
+       "set": "aer",
+       "number": "26",
+       "id": "8c34dbe3-3a66-40b3-a5c2-c2d6acb47773"
+      },
+      {
+       "qty": 2,
+       "name": "Inventor's Apprentice",
+       "set": "kld",
+       "number": "120",
+       "id": "f737109b-15fb-4b92-9007-99a33ae68628"
+      }
+     ]
+    }
+   },
+   "villain": {
+    "who": "padeem",
+    "deck": {
+     "name": "The Consulate Inquiry",
+     "colors": "WU",
+     "archetype": null,
+     "label": "tribute",
+     "cards": [
+      {
+       "qty": 1,
+       "name": "Padeem, Consul of Innovation",
+       "set": "kld",
+       "number": "59",
+       "id": "e31b30a7-13e8-408e-a758-60e6e9290808"
+      },
+      {
+       "qty": 4,
+       "name": "Consulate Skygate",
+       "set": "kld",
+       "number": "202",
+       "id": "9a7922c3-1baa-41ed-bd06-b5a97cddb90e"
+      },
+      {
+       "qty": 4,
+       "name": "Minister of Inquiries",
+       "set": "kld",
+       "number": "57",
+       "id": "0e6c31d1-6e2a-41b3-aa4f-d30a7cd997d2"
+      },
+      {
+       "qty": 4,
+       "name": "Aether Inspector",
+       "set": "aer",
+       "number": "3",
+       "id": "f5dcbe97-d582-464e-98e7-dd06d8652606"
+      },
+      {
+       "qty": 4,
+       "name": "Thriving Ibex",
+       "set": "kld",
+       "number": "31",
+       "id": "8edc7c57-9298-4fad-a0c2-4b75b944e2ce"
+      },
+      {
+       "qty": 3,
+       "name": "Captured by the Consulate",
+       "set": "kld",
+       "number": "8",
+       "id": "e0c20018-4446-4c2b-bdc5-53fcf1fbc3bf"
+      },
+      {
+       "qty": 4,
+       "name": "Eddytrail Hawk",
+       "set": "kld",
+       "number": "12",
+       "id": "81dcaec6-4cb9-46d8-aed1-46f33c67dff2"
+      },
+      {
+       "qty": 12,
+       "name": "Island",
+       "set": "kld",
+       "number": "253",
+       "id": "8ca139d8-08a1-45d4-be9d-2ee5c9b3de43"
+      },
+      {
+       "qty": 12,
+       "name": "Plains",
+       "set": "kld",
+       "number": "250",
+       "id": "32912b82-bbe5-4d70-817d-cd18bfdecacb"
+      },
+      {
+       "qty": 4,
+       "name": "Aeronaut Admiral",
+       "set": "aer",
+       "number": "2",
+       "id": "ff15c06c-160d-4960-92d5-6f8e7b33f051"
+      },
+      {
+       "qty": 4,
+       "name": "Spire Patrol",
+       "set": "aer",
+       "number": "136",
+       "id": "1daaf494-70af-4a8d-836f-f6a9d6c1f080"
+      },
+      {
+       "qty": 4,
+       "name": "Cloudblazer",
+       "set": "kld",
+       "number": "176",
+       "id": "3cb12355-abd8-4bf3-aac1-f710ac162585"
+      }
+     ]
+    }
+   },
+   "reward": {
+    "hero": {
+     "packs": 1,
+     "coins": 0
+    },
+    "villain": {
+     "card": {
+      "oracle_id": "0c7ba712-6a99-4d2f-9242-a2163a11f69c",
+      "name": "Padeem, Consul of Innovation",
+      "rarity": "rare",
+      "set": "kld",
+      "id": "e31b30a7-13e8-408e-a758-60e6e9290808",
+      "image": "https://cards.scryfall.io/normal/front/e/3/e31b30a7-13e8-408e-a758-60e6e9290808.jpg"
+     },
+     "coins": 50
+    }
+   },
+   "scene": [
+    {
+     "who": "saheeli",
+     "line": "Our creations are more than mere things. They have life in them, little bits of ourselves.",
+     "quote": true
+    },
+    {
+     "who": "stage",
+     "line": "From the first touch, I know exactly what the metal wants to be.",
+     "quote": true
+    },
+    {
+     "who": "saheeli",
+     "line": "Fabricate: when it enters, choose. Put +1/+1 counters on it, or make that many 1/1 Servos instead."
+    }
+   ],
+   "villainScene": [
+    {
+     "who": "padeem",
+     "line": "Impress me.",
+     "quote": true
+    },
+    {
+     "who": "stage",
+     "line": "This research violates Consulate law.",
+     "quote": true
+    }
+   ],
+   "after": null,
+   "cues": {
+    "hero": {
+     "start": "Ta-da!",
+     "big": "Look at it go!",
+     "low": "Oh no, the gears...",
+     "win": "Best in show.",
+     "loss": "Back to the workshop...",
+     "half": "Choose counters or Servos."
+    },
+    "villain": {
+     "start": "Impress me.",
+     "big": "Confiscated.",
+     "low": "Most irregular...",
+     "win": "Approved for storage.",
+     "loss": "Hm. Not bad."
+    }
+   },
+   "bigPlays": [],
+   "sim": null
+  },
+  {
+   "id": "a25b4",
+   "slot": 4,
+   "kind": "Rival",
+   "mood": "tension",
+   "title": "Chief of Compliance",
+   "difficulty": "Normal",
+   "teaches": [
+    "Improvise"
+   ],
+   "blurb": "Baral, the man who killed Chandra's father, sets a trap for her. She walks into it anyway.",
+   "rewardSet": "aer",
+   "host": false,
+   "hero": {
+    "who": "chandra",
+    "deck": {
+     "name": "Chandra's Revenge",
+     "colors": "R",
+     "archetype": null,
+     "label": "tribute",
+     "cards": [
+      {
+       "qty": 1,
+       "name": "Chandra, Torch of Defiance",
+       "set": "kld",
+       "number": "110",
+       "id": "ff8086cd-b868-4f4e-823e-2635ad7ebc07"
+      },
+      {
+       "qty": 4,
+       "name": "Inventor's Apprentice",
+       "set": "kld",
+       "number": "120",
+       "id": "f737109b-15fb-4b92-9007-99a33ae68628"
+      },
+      {
+       "qty": 4,
+       "name": "Lathnu Hellion",
+       "set": "kld",
+       "number": "121",
+       "id": "14050179-84af-46f6-89be-338f8e7131cc"
+      },
+      {
+       "qty": 4,
+       "name": "Harnessed Lightning",
+       "set": "kld",
+       "number": "117",
+       "id": "f9be9b5c-eed4-4a5d-962f-3482da5a6f1d"
+      },
+      {
+       "qty": 4,
+       "name": "Pia Nalaar",
+       "set": "kld",
+       "number": "124",
+       "id": "6a2b2954-0734-4219-b6df-c6cc3dcd8d5a"
+      },
+      {
+       "qty": 4,
+       "name": "Aethertorch Renegade",
+       "set": "kld",
+       "number": "106",
+       "id": "e5c443e1-fd13-4627-85a9-8e9a340a2786"
+      },
+      {
+       "qty": 4,
+       "name": "Renegade Firebrand",
+       "set": "kld",
+       "number": "268",
+       "id": "4b633884-867c-4b51-bd5b-5f246d0ecd4e"
+      },
+      {
+       "qty": 3,
+       "name": "Chandra's Pyrohelix",
+       "set": "kld",
+       "number": "111",
+       "id": "05659715-3002-4bd0-919e-664814c1ca57"
+      },
+      {
+       "qty": 4,
+       "name": "Thriving Grubs",
+       "set": "kld",
+       "number": "138",
+       "id": "bbc3184a-eeda-4f22-92de-257c20cff6e2"
+      },
+      {
+       "qty": 4,
+       "name": "Spireside Infiltrator",
+       "set": "kld",
+       "number": "133",
+       "id": "b9551190-9764-47a6-b414-8411beec89d2"
+      },
+      {
+       "qty": 24,
+       "name": "Mountain",
+       "set": "kld",
+       "number": "259",
+       "id": "29b4a0e0-3d27-414b-80cb-352f16389a83"
+      }
+     ]
+    }
+   },
+   "villain": {
+    "who": "baral",
+    "deck": {
+     "name": "Compliance",
+     "colors": "U",
+     "archetype": null,
+     "label": "tribute",
+     "cards": [
+      {
+       "qty": 2,
+       "name": "Baral, Chief of Compliance",
+       "set": "aer",
+       "number": "28",
+       "id": "60e16d94-1166-4050-8554-686e153a7f80"
+      },
+      {
+       "qty": 4,
+       "name": "Metallic Rebuke",
+       "set": "aer",
+       "number": "39",
+       "id": "f712ac26-dca4-459b-84c1-010597007f60"
+      },
+      {
+       "qty": 4,
+       "name": "Aether Swooper",
+       "set": "aer",
+       "number": "26",
+       "id": "8c34dbe3-3a66-40b3-a5c2-c2d6acb47773"
+      },
+      {
+       "qty": 4,
+       "name": "Hinterland Drake",
+       "set": "aer",
+       "number": "34",
+       "id": "418448d0-3e8d-4581-b598-696165775d23"
+      },
+      {
+       "qty": 4,
+       "name": "Reverse Engineer",
+       "set": "aer",
+       "number": "42",
+       "id": "d56f8cca-6b8f-45ea-926f-161938716ee9"
+      },
+      {
+       "qty": 4,
+       "name": "Shielded Aether Thief",
+       "set": "aer",
+       "number": "44",
+       "id": "e34be31b-eeb4-40e5-acf7-6cd0ba6d4bcf"
+      },
+      {
+       "qty": 4,
+       "name": "Aether Meltdown",
+       "set": "kld",
+       "number": "36",
+       "id": "91f99614-45e2-4688-8403-f3a6b9162b08"
+      },
+      {
+       "qty": 2,
+       "name": "Baral's Expertise",
+       "set": "aer",
+       "number": "29",
+       "id": "d273f5b7-b3a3-485a-acc8-34e10a504646"
+      },
+      {
+       "qty": 4,
+       "name": "Ornithopter",
+       "set": "aer",
+       "number": "167",
+       "id": "ddb96645-44d2-426c-90cb-3186297a8728"
+      },
+      {
+       "qty": 24,
+       "name": "Island",
+       "set": "kld",
+       "number": "253",
+       "id": "8ca139d8-08a1-45d4-be9d-2ee5c9b3de43"
+      },
+      {
+       "qty": 4,
+       "name": "Negate",
+       "set": "aer",
+       "number": "40",
+       "id": "cb142515-0856-441d-84d4-9c9d450a86e9"
+      }
+     ]
+    }
+   },
+   "reward": {
+    "hero": {
+     "packs": 1,
+     "coins": 100
+    },
+    "villain": {
+     "card": {
+      "oracle_id": "baf80db7-2ca8-4bfc-b5b6-25ed51878dd7",
+      "name": "Baral, Chief of Compliance",
+      "rarity": "rare",
+      "set": "aer",
+      "id": "60e16d94-1166-4050-8554-686e153a7f80",
+      "image": "https://cards.scryfall.io/normal/front/6/0/60e16d94-1166-4050-8554-686e153a7f80.jpg"
+     },
+     "coins": 100
+    }
+   },
+   "scene": [
+    {
+     "who": "stage",
+     "line": "Chandra was driven by her anger, directed particularly at the man who had taken her father from her.",
+     "quote": true
+    },
+    {
+     "who": "baral",
+     "line": "We meet again, pyromancer.",
+     "quote": true
+    },
+    {
+     "who": "chandra",
+     "line": "Improvise: his spells can tap his artifacts to help pay. Count his artifacts before you count his mana."
+    }
+   ],
+   "villainScene": [
+    {
+     "who": "baral",
+     "line": "The echo of silence is music to my ears.",
+     "quote": true
+    },
+    {
+     "who": "baral",
+     "line": "How easily your flames are quenched.",
+     "quote": true
+    }
+   ],
+   "after": null,
+   "cues": {
+    "hero": {
+     "start": "Baral.",
+     "big": "Burn it all!",
+     "low": "He counters everything...",
+     "win": "For my father.",
+     "loss": "Not again...",
+     "half": "Make him counter something small first."
+    },
+    "villain": {
+     "start": "Comply.",
+     "big": "Denied.",
+     "low": "She is persistent...",
+     "win": "Silence.",
+     "loss": "Impossible..."
+    }
+   },
+   "bigPlays": [],
+   "sim": null
+  },
+  {
+   "id": "a25b5",
+   "slot": 5,
+   "kind": "Lesson",
+   "mood": "tension",
+   "title": "The Great Conduit",
+   "difficulty": "Normal",
+   "teaches": [
+    "Revolt"
+   ],
+   "blurb": "Rashmi, an aether-seer, is helping the renegades. Dovin Baan, the Consulate's fair-minded inquirer, is following the trail.",
+   "rewardSet": "aer",
+   "host": false,
+   "hero": {
+    "who": "rashmi",
+    "deck": {
+     "name": "Rashmi's Workshop",
+     "colors": "UG",
+     "archetype": null,
+     "label": "tribute",
+     "cards": [
+      {
+       "qty": 2,
+       "name": "Rashmi, Eternities Crafter",
+       "set": "kld",
+       "number": "184",
+       "id": "3ce37555-49a2-4112-95b4-f3376b55b45b"
+      },
+      {
+       "qty": 4,
+       "name": "Rogue Refiner",
+       "set": "aer",
+       "number": "135",
+       "id": "618652b4-7ce9-4994-9d16-68d2cc8644ef"
+      },
+      {
+       "qty": 4,
+       "name": "Narnam Renegade",
+       "set": "aer",
+       "number": "117",
+       "id": "041cc6b1-61c8-4c34-86fc-d647ce306f59"
+      },
+      {
+       "qty": 4,
+       "name": "Silkweaver Elite",
+       "set": "aer",
+       "number": "125",
+       "id": "d10938c8-6fc4-495f-912a-1d3f12278f78"
+      },
+      {
+       "qty": 4,
+       "name": "Hidden Herbalists",
+       "set": "aer",
+       "number": "110",
+       "id": "9ec8db01-415e-42a1-8eb2-57280d58b38e"
+      },
+      {
+       "qty": 4,
+       "name": "Lifecraft Cavalry",
+       "set": "aer",
+       "number": "113",
+       "id": "b2a92a03-4e1d-4b79-ad75-a29db2ea5495"
+      },
+      {
+       "qty": 4,
+       "name": "Aid from the Cowl",
+       "set": "aer",
+       "number": "105",
+       "id": "565cb7fc-cf90-4020-84fe-05ec7b18709d"
+      },
+      {
+       "qty": 4,
+       "name": "Renegade Map",
+       "set": "aer",
+       "number": "173",
+       "id": "ac063445-d0e2-4015-96dc-97098433f30a"
+      },
+      {
+       "qty": 3,
+       "name": "Shielded Aether Thief",
+       "set": "aer",
+       "number": "44",
+       "id": "e34be31b-eeb4-40e5-acf7-6cd0ba6d4bcf"
+      },
+      {
+       "qty": 3,
+       "name": "Empyreal Voyager",
+       "set": "kld",
+       "number": "180",
+       "id": "4554b10e-9c3e-4eb4-b0fe-044e483e872f"
+      },
+      {
+       "qty": 12,
+       "name": "Forest",
+       "set": "kld",
+       "number": "262",
+       "id": "92e67efe-cc8a-4132-9019-26ddfc72a735"
+      },
+      {
+       "qty": 12,
+       "name": "Island",
+       "set": "kld",
+       "number": "253",
+       "id": "8ca139d8-08a1-45d4-be9d-2ee5c9b3de43"
+      }
+     ]
+    }
+   },
+   "villain": {
+    "who": "dovin",
+    "deck": {
+     "name": "The Inquiry",
+     "colors": "WU",
+     "archetype": null,
+     "label": "tribute",
+     "cards": [
+      {
+       "qty": 2,
+       "name": "Dovin Baan",
+       "set": "kld",
+       "number": "179",
+       "id": "2344e710-4570-41b6-af84-a3e7d784003a"
+      },
+      {
+       "qty": 4,
+       "name": "Consulate Skygate",
+       "set": "kld",
+       "number": "202",
+       "id": "9a7922c3-1baa-41ed-bd06-b5a97cddb90e"
+      },
+      {
+       "qty": 4,
+       "name": "Thopter Arrest",
+       "set": "aer",
+       "number": "25",
+       "id": "a4e738cb-e4ea-41c2-99a1-55b6167eccb0"
+      },
+      {
+       "qty": 4,
+       "name": "Eddytrail Hawk",
+       "set": "kld",
+       "number": "12",
+       "id": "81dcaec6-4cb9-46d8-aed1-46f33c67dff2"
+      },
+      {
+       "qty": 4,
+       "name": "Skyswirl Harrier",
+       "set": "kld",
+       "number": "28",
+       "id": "b951bc89-be0b-4330-8a13-e196e084d53c"
+      },
+      {
+       "qty": 4,
+       "name": "Aether Inspector",
+       "set": "aer",
+       "number": "3",
+       "id": "f5dcbe97-d582-464e-98e7-dd06d8652606"
+      },
+      {
+       "qty": 2,
+       "name": "Fumigate",
+       "set": "kld",
+       "number": "15",
+       "id": "f00f27a7-9e92-4fbf-baa8-f47a5eee48a6"
+      },
+      {
+       "qty": 4,
+       "name": "Minister of Inquiries",
+       "set": "kld",
+       "number": "57",
+       "id": "0e6c31d1-6e2a-41b3-aa4f-d30a7cd997d2"
+      },
+      {
+       "qty": 12,
+       "name": "Island",
+       "set": "kld",
+       "number": "253",
+       "id": "8ca139d8-08a1-45d4-be9d-2ee5c9b3de43"
+      },
+      {
+       "qty": 12,
+       "name": "Plains",
+       "set": "kld",
+       "number": "250",
+       "id": "32912b82-bbe5-4d70-817d-cd18bfdecacb"
+      },
+      {
+       "qty": 4,
+       "name": "Select for Inspection",
+       "set": "kld",
+       "number": "63",
+       "id": "120f0fb0-4831-4759-b58c-05c4be90a4af"
+      },
+      {
+       "qty": 4,
+       "name": "Fragmentize",
+       "set": "kld",
+       "number": "14",
+       "id": "5bf09deb-2607-4eb0-94a7-9584e771fdfb"
+      }
+     ]
+    }
+   },
+   "reward": {
+    "hero": {
+     "packs": 1,
+     "coins": 100
+    },
+    "villain": {
+     "card": {
+      "oracle_id": "5b33bfbf-e4e1-43de-9c96-ccdc2916510a",
+      "name": "Dovin Baan",
+      "rarity": "mythic",
+      "set": "kld",
+      "id": "2344e710-4570-41b6-af84-a3e7d784003a",
+      "image": "https://cards.scryfall.io/normal/front/2/3/2344e710-4570-41b6-af84-a3e7d784003a.jpg"
+     },
+     "coins": 100
+    }
+   },
+   "scene": [
+    {
+     "who": "rashmi",
+     "line": "I opened my mind to the immensity of the wonders around me. It was only then that I could see the Great Conduit.",
+     "quote": true
+    },
+    {
+     "who": "stage",
+     "line": "The results of Rashmi's experimentation forced her to consider the possibility that multitudinous realities existed beyond her own.",
+     "quote": true
+    },
+    {
+     "who": "rashmi",
+     "line": "Revolt: these cards get better if a permanent of yours left the battlefield this turn. Sacrifice a Clue or a Map first."
+    }
+   ],
+   "villainScene": [
+    {
+     "who": "dovin",
+     "line": "Too much friction on your bearings, your countersinking is inconsistent, and there are lines in your casting. Dispose of it, and begin again.",
+     "quote": true
+    },
+    {
+     "who": "dovin",
+     "line": "Give me eight walkers, I'll give you the city.",
+     "quote": true
+    }
+   ],
+   "after": null,
+   "cues": {
+    "hero": {
+     "start": "Let us see.",
+     "big": "Revolt!",
+     "low": "He has thought of everything...",
+     "win": "Eureka.",
+     "loss": "Back to the notes...",
+     "half": "Make something leave first."
+    },
+    "villain": {
+     "start": "Proceed.",
+     "big": "Flaw found.",
+     "low": "Hm. Unexpected.",
+     "win": "Case closed.",
+     "loss": "Fair enough."
+    }
+   },
+   "bigPlays": [],
+   "sim": null
+  },
+  {
+   "id": "a25b6",
+   "slot": 6,
+   "kind": "Meta",
+   "mood": "march",
+   "title": "Energy and Counters",
+   "difficulty": "Normal",
+   "teaches": [
+    "Racing"
+   ],
+   "blurb": "A tribute to Standard in early 2017: red-green Energy against black-green Winding Constrictor counters.",
+   "rewardSet": "aer",
+   "host": false,
+   "hero": {
+    "who": "energy",
+    "deck": {
+     "name": "RG Energy",
+     "colors": "RG",
+     "archetype": "Aggro",
+     "label": "tribute",
+     "cards": [
+      {
+       "qty": 4,
+       "name": "Longtusk Cub",
+       "set": "kld",
+       "number": "161",
+       "id": "c4de778a-4419-49a5-9dcf-5d0095c873fa"
+      },
+      {
+       "qty": 4,
+       "name": "Greenbelt Rampager",
+       "set": "aer",
+       "number": "107",
+       "id": "f3f06124-bcc4-48c0-a7a6-a461c7485ecd"
+      },
+      {
+       "qty": 4,
+       "name": "Bristling Hydra",
+       "set": "kld",
+       "number": "147",
+       "id": "4bf38096-05bc-4734-b33c-eb1e8f2986de"
+      },
+      {
+       "qty": 4,
+       "name": "Harnessed Lightning",
+       "set": "kld",
+       "number": "117",
+       "id": "f9be9b5c-eed4-4a5d-962f-3482da5a6f1d"
+      },
+      {
+       "qty": 4,
+       "name": "Servant of the Conduit",
+       "set": "kld",
+       "number": "169",
+       "id": "9ce9cf30-4baa-4f28-84e8-b9b1168a40e0"
+      },
+      {
+       "qty": 4,
+       "name": "Voltaic Brawler",
+       "set": "kld",
+       "number": "189",
+       "id": "cb038fd3-51b7-4de7-9b38-cbad7c8717c2"
+      },
+      {
+       "qty": 4,
+       "name": "Thriving Rhino",
+       "set": "kld",
+       "number": "171",
+       "id": "5acf10ec-f2dd-4569-909b-ac52a9ed6adf"
+      },
+      {
+       "qty": 4,
+       "name": "Attune with Aether",
+       "set": "kld",
+       "number": "145",
+       "id": "32b0707d-241e-4ced-9251-b16af4fef2cb"
+      },
+      {
+       "qty": 2,
+       "name": "Rishkar, Peema Renegade",
+       "set": "aer",
+       "number": "122",
+       "id": "7cff0dc6-5455-4dea-940b-dff7fe88dc5d"
+      },
+      {
+       "qty": 2,
+       "name": "Verdurous Gearhulk",
+       "set": "kld",
+       "number": "172",
+       "id": "0130b99e-5b2f-4482-b141-752e59b72c31"
+      },
+      {
+       "qty": 12,
+       "name": "Forest",
+       "set": "kld",
+       "number": "262",
+       "id": "92e67efe-cc8a-4132-9019-26ddfc72a735"
+      },
+      {
+       "qty": 12,
+       "name": "Mountain",
+       "set": "kld",
+       "number": "259",
+       "id": "29b4a0e0-3d27-414b-80cb-352f16389a83"
+      }
+     ]
+    }
+   },
+   "villain": {
+    "who": "constrictor",
+    "deck": {
+     "name": "BG Constrictor",
+     "colors": "BG",
+     "archetype": "Midrange",
+     "label": "tribute",
+     "cards": [
+      {
+       "qty": 4,
+       "name": "Winding Constrictor",
+       "set": "aer",
+       "number": "140",
+       "id": "107c8aa8-c8f8-4cbf-821b-bd2cb33354f0"
+      },
+      {
+       "qty": 4,
+       "name": "Walking Ballista",
+       "set": "aer",
+       "number": "181",
+       "id": "329a8738-3e17-403a-857a-0ba529ce8cd1"
+      },
+      {
+       "qty": 4,
+       "name": "Rishkar, Peema Renegade",
+       "set": "aer",
+       "number": "122",
+       "id": "7cff0dc6-5455-4dea-940b-dff7fe88dc5d"
+      },
+      {
+       "qty": 4,
+       "name": "Fatal Push",
+       "set": "aer",
+       "number": "57",
+       "id": "b5e81649-9954-424c-89d1-f87d73b66047"
+      },
+      {
+       "qty": 4,
+       "name": "Servant of the Conduit",
+       "set": "kld",
+       "number": "169",
+       "id": "9ce9cf30-4baa-4f28-84e8-b9b1168a40e0"
+      },
+      {
+       "qty": 4,
+       "name": "Gifted Aetherborn",
+       "set": "aer",
+       "number": "61",
+       "id": "abceb4fd-e3c5-400d-af7a-6dd17108a4b4"
+      },
+      {
+       "qty": 4,
+       "name": "Longtusk Cub",
+       "set": "kld",
+       "number": "161",
+       "id": "c4de778a-4419-49a5-9dcf-5d0095c873fa"
+      },
+      {
+       "qty": 12,
+       "name": "Forest",
+       "set": "kld",
+       "number": "262",
+       "id": "92e67efe-cc8a-4132-9019-26ddfc72a735"
+      },
+      {
+       "qty": 12,
+       "name": "Swamp",
+       "set": "kld",
+       "number": "256",
+       "id": "4760cdcc-e973-439c-a74a-5cb73b4fa22f"
+      },
+      {
+       "qty": 4,
+       "name": "Fortuitous Find",
+       "set": "kld",
+       "number": "81",
+       "id": "7706bbb1-c94a-4169-9f12-a54cfcc3a7ad"
+      },
+      {
+       "qty": 4,
+       "name": "Rush of Vitality",
+       "set": "kld",
+       "number": "99",
+       "id": "1e53cd8b-18f8-4950-84d4-7aafa26c7ae4"
+      }
+     ]
+    }
+   },
+   "reward": {
+    "hero": {
+     "packs": 1,
+     "coins": 100
+    },
+    "villain": {
+     "card": {
+      "oracle_id": "c9404d7d-a026-4082-9fcb-1ab571a136b5",
+      "name": "Winding Constrictor",
+      "rarity": "uncommon",
+      "set": "aer",
+      "id": "107c8aa8-c8f8-4cbf-821b-bd2cb33354f0",
+      "image": "https://cards.scryfall.io/normal/front/1/0/107c8aa8-c8f8-4cbf-821b-bd2cb33354f0.jpg"
+     },
+     "coins": 100
+    }
+   },
+   "scene": [
+    {
+     "who": "stage",
+     "line": "It won't be small forever.",
+     "quote": true
+    },
+    {
+     "who": "stage",
+     "line": "It's natural, it's all around us, and it's there for the taking. Just try and tell me what I'm doing is wrong.",
+     "quote": true
+    },
+    {
+     "who": "you",
+     "line": "Their counters grow every turn. Race them before the Constrictor gets going."
+    }
+   ],
+   "villainScene": [
+    {
+     "who": "stage",
+     "line": "A few aetherborn have discovered a way to sustain their own existences at the cost of an insatiable hunger for the life essence of other beings.",
+     "quote": true
+    }
+   ],
+   "after": null,
+   "cues": {
+    "hero": {
+     "start": "Charge up.",
+     "big": "Full power!",
+     "low": "They keep growing...",
+     "win": "Spent and won.",
+     "loss": "Out of energy...",
+     "half": "Kill the Constrictor."
+    },
+    "villain": {
+     "start": "[coils tighten]",
+     "big": "[counters pile up]",
+     "low": "[a coil slips]",
+     "win": "[squeezed]",
+     "loss": "[released]"
+    }
+   },
+   "bigPlays": [],
+   "sim": null
+  },
+  {
+   "id": "a25b7",
+   "slot": 7,
+   "kind": "Meta",
+   "mood": "tension",
+   "title": "Heart of Kiran",
+   "difficulty": "Normal",
+   "teaches": [
+    "Crew"
+   ],
+   "blurb": "A tribute to Standard in early 2017: Mardu Vehicles against the Aetherworks Marvel.",
+   "rewardSet": "kld",
+   "host": false,
+   "hero": {
+    "who": "vehicles",
+    "deck": {
+     "name": "Mardu Vehicles",
+     "colors": "WBR",
+     "archetype": "Aggro",
+     "label": "tribute",
+     "cards": [
+      {
+       "qty": 4,
+       "name": "Toolcraft Exemplar",
+       "set": "kld",
+       "number": "32",
+       "id": "daae3dae-3297-4750-9bca-c8aadaf815ea"
+      },
+      {
+       "qty": 4,
+       "name": "Veteran Motorist",
+       "set": "kld",
+       "number": "188",
+       "id": "3f5be9c1-cb28-42bd-b159-5548124ba8d1"
+      },
+      {
+       "qty": 4,
+       "name": "Inventor's Apprentice",
+       "set": "kld",
+       "number": "120",
+       "id": "f737109b-15fb-4b92-9007-99a33ae68628"
+      },
+      {
+       "qty": 4,
+       "name": "Heart of Kiran",
+       "set": "aer",
+       "number": "153",
+       "id": "5e847c44-1849-4251-9075-88ed5c7792a6"
+      },
+      {
+       "qty": 4,
+       "name": "Unlicensed Disintegration",
+       "set": "kld",
+       "number": "187",
+       "id": "16ad8f86-7860-4896-a161-07bf347bbd5b"
+      },
+      {
+       "qty": 3,
+       "name": "Scrapheap Scrounger",
+       "set": "kld",
+       "number": "231",
+       "id": "216a8e4e-ea7b-41c7-a982-b5751025ff25"
+      },
+      {
+       "qty": 3,
+       "name": "Fleetwheel Cruiser",
+       "set": "kld",
+       "number": "214",
+       "id": "5fdaca1e-5741-456e-ae98-e2c45fd1731b"
+      },
+      {
+       "qty": 2,
+       "name": "Pia Nalaar",
+       "set": "kld",
+       "number": "124",
+       "id": "6a2b2954-0734-4219-b6df-c6cc3dcd8d5a"
+      },
+      {
+       "qty": 4,
+       "name": "Renegade Freighter",
+       "set": "kld",
+       "number": "230",
+       "id": "7a10e2c3-0132-4eb2-94f0-5915caca2a17"
+      },
+      {
+       "qty": 8,
+       "name": "Mountain",
+       "set": "kld",
+       "number": "259",
+       "id": "29b4a0e0-3d27-414b-80cb-352f16389a83"
+      },
+      {
+       "qty": 8,
+       "name": "Plains",
+       "set": "kld",
+       "number": "250",
+       "id": "32912b82-bbe5-4d70-817d-cd18bfdecacb"
+      },
+      {
+       "qty": 8,
+       "name": "Swamp",
+       "set": "kld",
+       "number": "256",
+       "id": "4760cdcc-e973-439c-a74a-5cb73b4fa22f"
+      },
+      {
+       "qty": 4,
+       "name": "Aethersphere Harvester",
+       "set": "aer",
+       "number": "142",
+       "id": "4160bb5f-4b49-4535-94f5-776d7abd1d1a"
+      }
+     ]
+    }
+   },
+   "villain": {
+    "who": "marvel",
+    "deck": {
+     "name": "Aetherworks Marvel",
+     "colors": "URG",
+     "archetype": "Ramp",
+     "label": "tribute",
+     "note": "Built from cards in this act's sets only. No single tournament list is copied.",
+     "cards": [
+      {
+       "qty": 4,
+       "name": "Aetherworks Marvel",
+       "set": "kld",
+       "number": "193",
+       "id": "884f6948-3e03-48c6-8be2-6f2539386c9d"
+      },
+      {
+       "qty": 4,
+       "name": "Rogue Refiner",
+       "set": "aer",
+       "number": "135",
+       "id": "618652b4-7ce9-4994-9d16-68d2cc8644ef"
+      },
+      {
+       "qty": 4,
+       "name": "Whirler Virtuoso",
+       "set": "kld",
+       "number": "190",
+       "id": "ae429806-28b5-4bee-b0e1-1bd876f282c2"
+      },
+      {
+       "qty": 4,
+       "name": "Harnessed Lightning",
+       "set": "kld",
+       "number": "117",
+       "id": "f9be9b5c-eed4-4a5d-962f-3482da5a6f1d"
+      },
+      {
+       "qty": 4,
+       "name": "Attune with Aether",
+       "set": "kld",
+       "number": "145",
+       "id": "32b0707d-241e-4ced-9251-b16af4fef2cb"
+      },
+      {
+       "qty": 4,
+       "name": "Servant of the Conduit",
+       "set": "kld",
+       "number": "169",
+       "id": "9ce9cf30-4baa-4f28-84e8-b9b1168a40e0"
+      },
+      {
+       "qty": 4,
+       "name": "Glimmer of Genius",
+       "set": "kld",
+       "number": "49",
+       "id": "19f1673d-c92c-43be-8648-af7fbc790421"
+      },
+      {
+       "qty": 4,
+       "name": "Longtusk Cub",
+       "set": "kld",
+       "number": "161",
+       "id": "c4de778a-4419-49a5-9dcf-5d0095c873fa"
+      },
+      {
+       "qty": 8,
+       "name": "Forest",
+       "set": "kld",
+       "number": "262",
+       "id": "92e67efe-cc8a-4132-9019-26ddfc72a735"
+      },
+      {
+       "qty": 8,
+       "name": "Island",
+       "set": "kld",
+       "number": "253",
+       "id": "8ca139d8-08a1-45d4-be9d-2ee5c9b3de43"
+      },
+      {
+       "qty": 8,
+       "name": "Mountain",
+       "set": "kld",
+       "number": "259",
+       "id": "29b4a0e0-3d27-414b-80cb-352f16389a83"
+      },
+      {
+       "qty": 1,
+       "name": "Negate",
+       "set": "aer",
+       "number": "40",
+       "id": "cb142515-0856-441d-84d4-9c9d450a86e9"
+      },
+      {
+       "qty": 3,
+       "name": "Highspire Infusion",
+       "set": "aer",
+       "number": "111",
+       "id": "08325c39-0eeb-4bd0-9adc-2892c1c6637e"
+      }
+     ]
+    }
+   },
+   "reward": {
+    "hero": {
+     "packs": 1,
+     "coins": 100
+    },
+    "villain": {
+     "card": {
+      "oracle_id": "470ec98e-120c-446d-ade6-7d80aa836b55",
+      "name": "Aetherworks Marvel",
+      "rarity": "mythic",
+      "set": "kld",
+      "id": "884f6948-3e03-48c6-8be2-6f2539386c9d",
+      "image": "https://cards.scryfall.io/normal/front/8/8/884f6948-3e03-48c6-8be2-6f2539386c9d.jpg"
+     },
+     "coins": 100
+    }
+   },
+   "scene": [
+    {
+     "who": "stage",
+     "line": "He's set to compete in every race at the Fair, and he plans to win them all.",
+     "quote": true
+    },
+    {
+     "who": "stage",
+     "line": "If you wish to produce the finest work, you must start with the finest tools.",
+     "quote": true
+    },
+    {
+     "who": "you",
+     "line": "Crew: tap creatures to turn a vehicle on. Keep enough power around to crew every turn."
+    }
+   ],
+   "villainScene": [
+    {
+     "who": "stage",
+     "line": "If nothing else, the Inventors' Fair taught us that we're only beginning to discover aether's true potential.",
+     "quote": true
+    }
+   ],
+   "after": null,
+   "cues": {
+    "hero": {
+     "start": "Start your engines.",
+     "big": "Full throttle!",
+     "low": "They spun the Marvel...",
+     "win": "First across the line.",
+     "loss": "Wrecked...",
+     "half": "Race before the Marvel spins."
+    },
+    "villain": {
+     "start": "[the Marvel hums]",
+     "big": "[jackpot]",
+     "low": "[a dud spin]",
+     "win": "[overload]",
+     "loss": "[the engine stalls]"
+    }
+   },
+   "bigPlays": [],
+   "sim": null
+  },
+  {
+   "id": "a25b8",
+   "slot": 8,
+   "kind": "Boss",
+   "mood": "boss",
+   "title": "The Planar Bridge",
+   "difficulty": "Hard",
+   "teaches": [
+    "Card advantage"
+   ],
+   "blurb": "Tezzeret runs the Consulate and the Fair, and he has built a Planar Bridge for someone. The Gatewatch and the renegades storm the Aether Spire.",
+   "rewardSet": "aer",
+   "host": true,
+   "hero": {
+    "who": "ajani",
+    "deck": {
+     "name": "The Gatewatch and the Renegades",
+     "colors": "RGW",
+     "archetype": null,
+     "label": "tribute",
+     "cards": [
+      {
+       "qty": 1,
+       "name": "Chandra, Torch of Defiance",
+       "set": "kld",
+       "number": "110",
+       "id": "ff8086cd-b868-4f4e-823e-2635ad7ebc07"
+      },
+      {
+       "qty": 2,
+       "name": "Ajani Unyielding",
+       "set": "aer",
+       "number": "127",
+       "id": "23b82ee9-2ac6-4b81-8c64-dd4f47c2d8cb"
+      },
+      {
+       "qty": 2,
+       "name": "Pia Nalaar",
+       "set": "kld",
+       "number": "124",
+       "id": "6a2b2954-0734-4219-b6df-c6cc3dcd8d5a"
+      },
+      {
+       "qty": 2,
+       "name": "Kari Zev, Skyship Raider",
+       "set": "aer",
+       "number": "87",
+       "id": "72495879-39ce-449d-ad2f-ef32ea46f3aa"
+      },
+      {
+       "qty": 4,
+       "name": "Renegade Rallier",
+       "set": "aer",
+       "number": "133",
+       "id": "90bad312-80e3-45b0-9556-60ce06808a47"
+      },
+      {
+       "qty": 4,
+       "name": "Veteran Motorist",
+       "set": "kld",
+       "number": "188",
+       "id": "3f5be9c1-cb28-42bd-b159-5548124ba8d1"
+      },
+      {
+       "qty": 4,
+       "name": "Renegade Wheelsmith",
+       "set": "aer",
+       "number": "134",
+       "id": "6956a341-10fd-48af-b382-88c2b2934a3e"
+      },
+      {
+       "qty": 4,
+       "name": "Harnessed Lightning",
+       "set": "kld",
+       "number": "117",
+       "id": "f9be9b5c-eed4-4a5d-962f-3482da5a6f1d"
+      },
+      {
+       "qty": 4,
+       "name": "Toolcraft Exemplar",
+       "set": "kld",
+       "number": "32",
+       "id": "daae3dae-3297-4750-9bca-c8aadaf815ea"
+      },
+      {
+       "qty": 3,
+       "name": "Depala, Pilot Exemplar",
+       "set": "kld",
+       "number": "178",
+       "id": "592f3a92-787e-4180-9d0b-06c973ce8975"
+      },
+      {
+       "qty": 4,
+       "name": "Thriving Rhino",
+       "set": "kld",
+       "number": "171",
+       "id": "5acf10ec-f2dd-4569-909b-ac52a9ed6adf"
+      },
+      {
+       "qty": 2,
+       "name": "Heart of Kiran",
+       "set": "aer",
+       "number": "153",
+       "id": "5e847c44-1849-4251-9075-88ed5c7792a6"
+      },
+      {
+       "qty": 8,
+       "name": "Mountain",
+       "set": "kld",
+       "number": "259",
+       "id": "29b4a0e0-3d27-414b-80cb-352f16389a83"
+      },
+      {
+       "qty": 8,
+       "name": "Plains",
+       "set": "kld",
+       "number": "250",
+       "id": "32912b82-bbe5-4d70-817d-cd18bfdecacb"
+      },
+      {
+       "qty": 8,
+       "name": "Forest",
+       "set": "kld",
+       "number": "262",
+       "id": "92e67efe-cc8a-4132-9019-26ddfc72a735"
+      }
+     ]
+    }
+   },
+   "villain": {
+    "who": "tezzeret",
+    "deck": {
+     "name": "The Schemer",
+     "colors": "UB",
+     "archetype": null,
+     "label": "tribute",
+     "cards": [
+      {
+       "qty": 2,
+       "name": "Tezzeret the Schemer",
+       "set": "aer",
+       "number": "137",
+       "id": "58265203-bc16-41d2-875c-2ff3b4870824"
+      },
+      {
+       "qty": 4,
+       "name": "Herald of Anguish",
+       "set": "aer",
+       "number": "64",
+       "id": "31a69ebe-4229-4067-8414-381b123fe63c"
+      },
+      {
+       "qty": 4,
+       "name": "Metallic Mimic",
+       "set": "aer",
+       "number": "164",
+       "id": "1aa4eba9-9e91-4beb-9296-a18baa73a318"
+      },
+      {
+       "qty": 4,
+       "name": "Fatal Push",
+       "set": "aer",
+       "number": "57",
+       "id": "b5e81649-9954-424c-89d1-f87d73b66047"
+      },
+      {
+       "qty": 3,
+       "name": "Battle at the Bridge",
+       "set": "aer",
+       "number": "53",
+       "id": "74d8b644-4cca-451e-a46c-5237c13bf373"
+      },
+      {
+       "qty": 4,
+       "name": "Gifted Aetherborn",
+       "set": "aer",
+       "number": "61",
+       "id": "abceb4fd-e3c5-400d-af7a-6dd17108a4b4"
+      },
+      {
+       "qty": 4,
+       "name": "Foundry Inspector",
+       "set": "kld",
+       "number": "215",
+       "id": "93f827e8-1cc4-4a15-a4be-2e74323963b9"
+      },
+      {
+       "qty": 3,
+       "name": "Contraband Kingpin",
+       "set": "kld",
+       "number": "177",
+       "id": "69beafcd-6c90-40c2-afff-0bd82377febf"
+      },
+      {
+       "qty": 4,
+       "name": "Metalwork Colossus",
+       "set": "kld",
+       "number": "222",
+       "id": "474480b5-c60b-4c7f-9d3e-751bca43d074"
+      },
+      {
+       "qty": 12,
+       "name": "Island",
+       "set": "kld",
+       "number": "253",
+       "id": "8ca139d8-08a1-45d4-be9d-2ee5c9b3de43"
+      },
+      {
+       "qty": 12,
+       "name": "Swamp",
+       "set": "kld",
+       "number": "256",
+       "id": "4760cdcc-e973-439c-a74a-5cb73b4fa22f"
+      },
+      {
+       "qty": 2,
+       "name": "Gonti, Lord of Luxury",
+       "set": "kld",
+       "number": "84",
+       "id": "7735ecda-9bb0-4ef9-86b2-16e5b6592e61"
+      },
+      {
+       "qty": 2,
+       "name": "Noxious Gearhulk",
+       "set": "kld",
+       "number": "96",
+       "id": "9f86e5fe-8723-4494-b4cc-b7ac3a047bd1"
+      }
+     ]
+    }
+   },
+   "reward": {
+    "hero": {
+     "packs": 2,
+     "coins": 200
+    },
+    "villain": {
+     "card": {
+      "oracle_id": "49d64ecb-3a4f-4013-9a34-8b1539a91e96",
+      "name": "Tezzeret the Schemer",
+      "rarity": "mythic",
+      "set": "aer",
+      "id": "58265203-bc16-41d2-875c-2ff3b4870824",
+      "image": "https://cards.scryfall.io/normal/front/5/8/58265203-bc16-41d2-875c-2ff3b4870824.jpg"
+     },
+     "coins": 200
+    }
+   },
+   "scene": [
+    {
+     "who": "ajani",
+     "line": "This is about more than aether or inventions. Tezzeret's schemes must be stopped!",
+     "quote": true
+    },
+    {
+     "who": "gideon",
+     "line": "With spy thopters all around, how can the consuls be so blind to Tezzeret's manipulations?",
+     "quote": true
+    },
+    {
+     "who": "ajani",
+     "line": "He draws and he builds. Make him use his cards on your creatures, not on his own plans."
+    }
+   ],
+   "villainScene": [
+    {
+     "who": "tezzeret",
+     "line": "This is bigger than you. All of you.",
+     "quote": true
+    },
+    {
+     "who": "tezzeret",
+     "line": "Too little, too late. The machine is in motion.",
+     "quote": true
+    }
+   ],
+   "after": null,
+   "cues": {
+    "hero": {
+     "start": "Storm the Spire!",
+     "big": "For Kaladesh!",
+     "low": "The metal keeps coming...",
+     "win": "The bridge is down.",
+     "loss": "He got away with it...",
+     "half": "Hit the artifacts."
+    },
+    "villain": {
+     "start": "This is bigger than you.",
+     "big": "The machine is in motion.",
+     "low": "An inconvenience.",
+     "win": "It is finished.",
+     "loss": "Another time.",
+     "half": {
+      "who": "pia",
+      "line": "The disruptor thopter is away! Keep him busy!"
+     }
+    }
+   },
+   "bigPlays": [],
+   "sim": null
+  },
+  {
+   "id": "a25b9",
+   "slot": 9,
+   "kind": "Secret Boss",
+   "secret": true,
+   "mood": "boss",
+   "title": "Copycat",
+   "difficulty": "Hard",
+   "teaches": [
+    "Racing"
+   ],
+   "blurb": "Deep in the archive, the cat that copied itself.",
+   "rewardSet": "aer",
+   "host": true,
+   "archive": {
+    "deck": "Copycat",
+    "when": "Early 2017",
+    "format": "Standard.",
+    "what": "Decks built around Saheeli Rai and Felidar Guardian. The Guardian blinks Saheeli, Saheeli copies the Guardian, and the copies repeat until there are endless hasty cats.",
+    "why": "Any deck that let the two land together could lose on the spot. The combo pieces also fit neatly into Energy decks.",
+    "beat": "Pressure them hard and kill Saheeli as soon as she lands.",
+    "after": "Felidar Guardian was banned in Standard in April 2017. Forge's CPU rarely assembles the combo, so this tribute mostly plays fair."
+   },
+   "hero": {
+    "who": "you",
+    "deck": {
+     "name": "BR Aggro",
+     "colors": "BR",
+     "archetype": "Aggro",
+     "label": "tribute",
+     "cards": [
+      {
+       "qty": 2,
+       "name": "Gifted Aetherborn",
+       "set": "aer",
+       "number": "61",
+       "id": "abceb4fd-e3c5-400d-af7a-6dd17108a4b4"
+      },
+      {
+       "qty": 4,
+       "name": "Fatal Push",
+       "set": "aer",
+       "number": "57",
+       "id": "b5e81649-9954-424c-89d1-f87d73b66047"
+      },
+      {
+       "qty": 4,
+       "name": "Night Market Lookout",
+       "set": "kld",
+       "number": "95",
+       "id": "4edb03b7-e5a2-4ba1-b0ec-bfbfeaa94efd"
+      },
+      {
+       "qty": 2,
+       "name": "Aethersphere Harvester",
+       "set": "aer",
+       "number": "142",
+       "id": "4160bb5f-4b49-4535-94f5-776d7abd1d1a"
+      },
+      {
+       "qty": 4,
+       "name": "Inventor's Apprentice",
+       "set": "kld",
+       "number": "120",
+       "id": "f737109b-15fb-4b92-9007-99a33ae68628"
+      },
+      {
+       "qty": 4,
+       "name": "Bomat Courier",
+       "set": "kld",
+       "number": "199",
+       "id": "425bff89-ad15-4d22-bce9-a4a07dbafd87"
+      },
+      {
+       "qty": 2,
+       "name": "Shock",
+       "set": "aer",
+       "number": "98",
+       "id": "00365412-41db-427c-9109-8f69c17c326d"
+      },
+      {
+       "qty": 12,
+       "name": "Mountain",
+       "set": "kld",
+       "number": "259",
+       "id": "29b4a0e0-3d27-414b-80cb-352f16389a83"
+      },
+      {
+       "qty": 12,
+       "name": "Swamp",
+       "set": "kld",
+       "number": "256",
+       "id": "4760cdcc-e973-439c-a74a-5cb73b4fa22f"
+      },
+      {
+       "qty": 4,
+       "name": "Live Fast",
+       "set": "kld",
+       "number": "87",
+       "id": "ad0bb8da-ad05-43d9-aba3-d917744168fe"
+      },
+      {
+       "qty": 4,
+       "name": "Fortuitous Find",
+       "set": "kld",
+       "number": "81",
+       "id": "7706bbb1-c94a-4169-9f12-a54cfcc3a7ad"
+      },
+      {
+       "qty": 3,
+       "name": "Fen Hauler",
+       "set": "aer",
+       "number": "58",
+       "id": "b5ef4616-e3c2-4448-83b1-f7d439705eaf"
+      },
+      {
+       "qty": 3,
+       "name": "Dukhara Scavenger",
+       "set": "kld",
+       "number": "77",
+       "id": "81591264-1342-418d-b5c6-9d700b729c51"
+      }
+     ]
+    }
+   },
+   "villain": {
+    "who": "copycat",
+    "deck": {
+     "name": "Copycat",
+     "colors": "WURG",
+     "archetype": "Combo",
+     "label": "tribute",
+     "note": "Built from cards in this act's sets only. No single tournament list is copied.",
+     "cards": [
+      {
+       "qty": 4,
+       "name": "Saheeli Rai",
+       "set": "kld",
+       "number": "186",
+       "id": "94b38464-39cd-4ee6-b9bf-a0bc1e128d9a"
+      },
+      {
+       "qty": 4,
+       "name": "Felidar Guardian",
+       "set": "aer",
+       "number": "19",
+       "id": "44bdbed8-5d21-4bf5-8a32-9623b1139c85"
+      },
+      {
+       "qty": 2,
+       "name": "Rogue Refiner",
+       "set": "aer",
+       "number": "135",
+       "id": "618652b4-7ce9-4994-9d16-68d2cc8644ef"
+      },
+      {
+       "qty": 3,
+       "name": "Whirler Virtuoso",
+       "set": "kld",
+       "number": "190",
+       "id": "ae429806-28b5-4bee-b0e1-1bd876f282c2"
+      },
+      {
+       "qty": 3,
+       "name": "Harnessed Lightning",
+       "set": "kld",
+       "number": "117",
+       "id": "f9be9b5c-eed4-4a5d-962f-3482da5a6f1d"
+      },
+      {
+       "qty": 4,
+       "name": "Attune with Aether",
+       "set": "kld",
+       "number": "145",
+       "id": "32b0707d-241e-4ced-9251-b16af4fef2cb"
+      },
+      {
+       "qty": 2,
+       "name": "Servant of the Conduit",
+       "set": "kld",
+       "number": "169",
+       "id": "9ce9cf30-4baa-4f28-84e8-b9b1168a40e0"
+      },
+      {
+       "qty": 4,
+       "name": "Torrential Gearhulk",
+       "set": "kld",
+       "number": "67",
+       "id": "d52868cb-087e-4f91-91bc-455f2e2e7cd7"
+      },
+      {
+       "qty": 6,
+       "name": "Forest",
+       "set": "kld",
+       "number": "262",
+       "id": "92e67efe-cc8a-4132-9019-26ddfc72a735"
+      },
+      {
+       "qty": 6,
+       "name": "Island",
+       "set": "kld",
+       "number": "253",
+       "id": "8ca139d8-08a1-45d4-be9d-2ee5c9b3de43"
+      },
+      {
+       "qty": 6,
+       "name": "Mountain",
+       "set": "kld",
+       "number": "259",
+       "id": "29b4a0e0-3d27-414b-80cb-352f16389a83"
+      },
+      {
+       "qty": 6,
+       "name": "Plains",
+       "set": "kld",
+       "number": "250",
+       "id": "32912b82-bbe5-4d70-817d-cd18bfdecacb"
+      },
+      {
+       "qty": 4,
+       "name": "Longtusk Cub",
+       "set": "kld",
+       "number": "161",
+       "id": "c4de778a-4419-49a5-9dcf-5d0095c873fa"
+      },
+      {
+       "qty": 4,
+       "name": "Glimmer of Genius",
+       "set": "kld",
+       "number": "49",
+       "id": "19f1673d-c92c-43be-8648-af7fbc790421"
+      },
+      {
+       "qty": 2,
+       "name": "Ridgescale Tusker",
+       "set": "aer",
+       "number": "121",
+       "id": "84b689cc-35ef-4a23-bb1e-4d81b9fb8455"
+      }
+     ]
+    }
+   },
+   "reward": {
+    "hero": {
+     "packs": 2,
+     "coins": 200
+    },
+    "villain": {
+     "card": {
+      "oracle_id": "33869ba6-13e5-4e48-8963-92f7965648fb",
+      "name": "Felidar Guardian",
+      "rarity": "uncommon",
+      "set": "aer",
+      "id": "44bdbed8-5d21-4bf5-8a32-9623b1139c85",
+      "image": "https://cards.scryfall.io/normal/front/4/4/44bdbed8-5d21-4bf5-8a32-9623b1139c85.jpg"
+     },
+     "coins": 200
+    }
+   },
+   "scene": [
+    {
+     "who": "stage",
+     "line": "The loyalty of a felidar is hard won but worth the effort.",
+     "quote": true
+    },
+    {
+     "who": "you",
+     "line": "If the cat and the inventor ever meet, it is over. Keep the pressure on."
+    }
+   ],
+   "villainScene": [
+    {
+     "who": "stage",
+     "line": "From the first touch, I know exactly what the metal wants to be.",
+     "quote": true
+    }
+   ],
+   "after": [
+    {
+     "who": "stage",
+     "line": "Recorded: Felidar Guardian banned in Standard, April 2017."
+    }
+   ],
+   "cues": {
+    "hero": {
+     "start": "Go fast.",
+     "big": "Got her!",
+     "low": "There are two of them...",
+     "win": "No more cats.",
+     "loss": "Infinite cats...",
+     "half": "Kill Saheeli on sight."
+    },
+    "villain": {
+     "start": "[a soft purr]",
+     "big": "[the copies begin]",
+     "low": "[the cat flinches]",
+     "win": "[endless cats]",
+     "loss": "[the cat wanders off]"
+    }
+   },
+   "bigPlays": [],
+   "sim": null
+  }
+ ]
+}

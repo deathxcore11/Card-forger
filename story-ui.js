@@ -201,6 +201,12 @@ export const LESSONS = {
   'Emerge': 'Emerge: you may cast the spell by sacrificing a creature and paying the emerge cost, reduced by that creature\'s mana value.',
   'Skulk': 'Skulk: the creature can\'t be blocked by creatures with greater power. Keep a small blocker back.',
   'Escalate': 'Escalate: pay the escalate cost for each mode beyond the first. One spell can do two or three things at once.',
+  'Energy': 'Energy: some cards give you energy counters. Save them and spend them on bigger effects later.',
+  'Vehicles': 'Vehicles: artifacts that become creatures only when you crew them. Tap creatures with enough total power, then attack.',
+  'Fabricate': 'Fabricate: when the creature enters, put that many +1/+1 counters on it, or make that many 1/1 Servos instead.',
+  'Improvise': 'Improvise: your artifacts can tap to help pay for the spell, one generic mana each.',
+  'Revolt': 'Revolt: the card gets better if a permanent you controlled left the battlefield this turn. Sacrifice a Clue or a Map first.',
+  'Crew': 'Crew: tap creatures with total power equal to the crew number to turn a vehicle into a creature until end of turn.',
   'Playing under a lock': 'A lock stops cards from untapping or moving. Break it, or win with what\'s already in play.',
 };
 // Every Story deck says what it is (Randall, 2 Nov 2026): Historical Exact, Historical Tribute or
