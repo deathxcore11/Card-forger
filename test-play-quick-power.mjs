@@ -1,0 +1,17 @@
+import assert from 'node:assert/strict';
+import {chooseQuickOpponent as pick} from './play-quick-match.js';
+import {quickStreak,recordMatch} from './play-match-record.js';
+let seed=7;const rnd=()=>(seed=(seed*1664525+1013904223)%4294967296)/4294967296;
+const deck=i=>({id:'d'+i,format:'Modern',cards:[{name:'c'+i,qty:60}],side:[],p:i*2.5}),pool=Array.from({length:41},(_,i)=>deck(i));
+const base={estimate:d=>d.p,support:()=>({status:'pool'}),random:rnd},me=pool[20],rest=pool.filter(d=>d!==me);
+const avg=d=>{let s=0,w=0;for(let k=0;k<600;k++){const r=pick({...base,player:me,candidates:rest,difficulty:d});s+=r.power;w+=r.wildCard?1:0;assert.ok(!r.mirror);}return {avg:s/600,wild:w/6};};
+const e=avg('Easy'),m=avg('Medium'),h=avg('Hard');
+assert.ok(e.avg<m.avg&&m.avg<h.avg,'difficulty leans the pick');assert.ok(Math.abs(m.avg-me.p)<6);
+for(const x of [e,m,h])assert.ok(x.wild>6&&x.wild<20,'wild card about 1 in 8');
+assert.equal(pick({...base,player:me,candidates:rest,difficulty:'Medium',estimate:()=>null}).estimated,false,'unrated falls back to random');
+assert.ok(pick({...base,player:me,candidates:rest.slice(0,2)}).deck,'tiny pool still picks');
+const mem=()=>{const m=new Map();return {getItem:k=>m.get(k)??null,setItem:(k,v)=>m.set(k,v)};},st=mem();
+const rec=o=>recordMatch({outcome:o,deck:{id:1,name:'a'},format:'Modern',playStyle:'quick'},{storage:st});
+rec('win');assert.equal(quickStreak('Modern',{storage:st}),0);rec('win');assert.equal(quickStreak('Modern',{storage:st}),5);rec('win');assert.equal(quickStreak('Modern',{storage:st}),10);
+rec('loss');assert.equal(quickStreak('Modern',{storage:st}),0);rec('loss');assert.equal(quickStreak('Modern',{storage:st}),-5);
+console.log('ok');
