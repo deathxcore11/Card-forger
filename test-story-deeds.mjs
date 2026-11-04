@@ -32,7 +32,7 @@ assert.ok(!factsMeet({}, {minLife: ['>=', 0]}), 'a fact the match never reported
 
 // --- Every deed reads cards that are really in its battle -------------------------------------------
 const acts = {};
-for (let a = 1; a <= 15; a++) acts[a] = JSON.parse(readFileSync(new URL(`./data/story/act-${a}.json`, import.meta.url), 'utf8'));
+for (let a = 1; a <= 16; a++) acts[a] = JSON.parse(readFileSync(new URL(`./data/story/act-${a}.json`, import.meta.url), 'utf8'));
 const deckNames = side => side.deck.cards.flatMap(c => [c.name, c.name.split(' // ')[0]]);
 const ids = new Set(), arts = new Set();
 for (const d of [...STORY_DEEDS, ...STORY_ACT_DEEDS]) {
@@ -46,7 +46,7 @@ for (const d of STORY_DEEDS) {
   perBattle[d.battle] = (perBattle[d.battle] || 0) + 1;
   const mine = deckNames(d.seat === 'hero' ? b.hero : b.villain), theirs = deckNames(d.seat === 'hero' ? b.villain : b.hero);
   for (const k of ['mine', 'mineAny', 'survived']) for (const n of [].concat(d.when[k] || [])) assert.ok(mine.includes(n), `${d.id}: ${n} is in your deck`);
-  for (const k of ['killed', 'notTheirs']) for (const n of [].concat(d.when[k] || [])) assert.ok(theirs.includes(n), `${d.id}: ${n} is in their deck`);
+  for (const k of ['killed', 'killedAny', 'notTheirs']) for (const n of [].concat(d.when[k] || [])) assert.ok(theirs.includes(n), `${d.id}: ${n} is in their deck`);
   if (d.hidden || d.gold) assert.ok(d.riddle, d.id + ' has a riddle');
   assert.ok(['hero', 'villain'].includes(d.seat));
 }
