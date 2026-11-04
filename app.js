@@ -168,6 +168,7 @@ import {econScreenMarkup,ECON_VIEWS,purseMarkup,cardImageByName,head as econHead
 import {rewardFlight} from "./reward-flight.js";
 import {createNameFacts,createCraftRarity,clusterArchetypes,finderArchetypes,rankFinderLists,finderRow,trunkDeck,finderMarkup,finderDeckMarkup,FINDER_FORMATS,FINDER_SORTS,FINDER_FILTERS} from "./play-deck-finder.js";
 import {createCardFacts,slimCard} from "./play-econ-cards.js";
+import {deckEmblem} from "./play-deck-emblem.js";
 import {stepDeckCard,ownedByName,deckShortfall,legalFormats,mtgjsonDeckRows,PLAY_FORMATS,deckRules,copyCap} from "./play-econ-rules.js";
 import {STORY_ACTS} from "./story-acts.js";
 import {createStoryProgress,loadAct,loadActPool,ownDeckFits,battleCleared,currentAct,currentBattle,actCleared} from "./story-client.js";
@@ -1878,7 +1879,7 @@ A.playCardStamp=async t=>{const holo=t.dataset.holo==='1';try{const out=await pl
 A.playEconEditDeck=t=>{const d=(playEcon.snapshot().state?.decks||[]).find(x=>x.id===t.dataset.econDeck);econUi.edit=d?{id:d.id,name:d.name,format:d.format||'Standard',cards:(d.cards||[]).filter(c=>!c.board).map(c=>({...c,qty:c.qty|0})),side:(d.cards||[]).filter(c=>c.board)}:{id:null,name:'',format:'Standard',cards:[]};playView='deck';refreshPlayMenu();scrollTo({top:0});requestAnimationFrame(()=>document.getElementById('playDeckTitle')?.focus?.({preventScroll:true}));};
 // Play "Build a deck" (Untapped-style finder): the Trunk build plus meta lists,
 // ranked by how much the player owns; missing cards greyed with seal costs.
-const finderFacts=createNameFacts({onChange:()=>{if(S.ui.view!=='play')return;if(playView==='finder')finderRefresh();else if(playView==='deck'||playView==='finderDeck')refreshPlayMenu();}});
+const finderFacts=createNameFacts({onChange:()=>{if(S.ui.view!=='play')return;if(playView==='finder')finderRefresh();else if(playView==='deck'||playView==='finderDeck'||playView==='decks')refreshPlayMenu();}});
 // Cheapest craftable rarity per card name (Untapped's lowest-rarity billing): the finder, the deck
 // builder's craft bar and Craft all all bill and stamp that printing. Kept on this device.
 let craftRarityTimer=0;
@@ -1939,6 +1940,10 @@ const finderHasMeta=format=>MTG_META_FORMATS.some(([k])=>k===finderMetaKey(forma
 // Every meta list the service returns for the format (hundreds for the busy ones), ranked by names
 // alone; only the rows on screen are built in full and have their card facts fetched.
 const finderLists=format=>{if(!finderHasMeta(format))return [];const data=metaState(finderMetaKey(format)).data;return (data?.decks||[]).filter(d=>d?.key&&Array.isArray(d.main)).map(d=>{const commanders=(d.commanders||[]).map(r=>typeof r==='string'?{name:r,qty:1}:r);return {key:'meta:'+d.key,name:d.name||d.archetype||'Meta deck',archetype:d.archetype||d.name||'',source:'Meta',detail:[d.place,d.event].filter(Boolean).join(' · '),format,commander:commanders[0]?.name||'',cards:[...commanders,...d.main.filter(r=>!r.board||r.board==='main')]};});};
+// Deck emblems on the Decks page (play-deck-emblem.js): card facts come from the finder's name facts,
+// meta lists from the same tournament data the finder ranks (only once it has loaded).
+const playDeckEmblemOf=d=>deckEmblem(d.cards||[],n=>finderFacts.get(n),finderHasMeta(d.format||'')?finderLists(d.format):[]);
+function playDeckEmblemWants(snap){const decks=snap.state?.decks||[];void finderFacts.want(decks.flatMap(d=>(d.cards||[]).map(r=>r.name)));}
 const finderSeals=s=>({c:s?.wallet?.seal_c|0,u:s?.wallet?.seal_u|0,r:s?.wallet?.seal_r|0,m:s?.wallet?.seal_m|0});
 function finderRefresh(){const snap=playEcon.snapshot(),s=snap.state;if(!s)return;const owned=ownedByName(s.cards||[]),ownedFact=new Map((s.cards||[]).map(c=>{const f=econFacts.card(c.o)?.card;return f?[f.name,f]:null;}).filter(Boolean));
  const cardOf=name=>finderFacts.get(name)||ownedFact.get(name)||ownedFact.get(String(name).split(' // ')[0])||null;
@@ -2528,7 +2533,8 @@ function renderPlayPage() {
    if(playView==='finder')return finderView(snap);
    if(playView==='finderDeck')return finderDeckView(snap);
    if(playView==='deck')builderWants(snap);
-   return econScreenMarkup(playView,snap,{...econUi,query:econUi.query,facts:econFacts,nameFact:n=>finderFacts.get(n),craftRarity:n=>craftRarity.rarity(n),craftId:n=>craftRarity.id(n)});}
+   if(playView==='decks')playDeckEmblemWants(snap);
+   return econScreenMarkup(playView,snap,{...econUi,deckEmblem:playView==='decks'?playDeckEmblemOf:null,query:econUi.query,facts:econFacts,nameFact:n=>finderFacts.get(n),craftRarity:n=>craftRarity.rarity(n),craftId:n=>craftRarity.id(n)});}
   const state=playSetup.snapshot(),p=state.profile,tiles=new Map();state.opponentBuild=practiceOpponentBuilder.snapshot();state.deckBuild=playBuilders[state.playStyle==='quick'?'player':state.inspectedSeat].snapshot();const sources=readPlaySources(),sourceArt=new Map();for(const entries of Object.values(sources))for(const entry of entries)sourceArt.set(entry.key,V.deckArtwork(entry.deck));
   const locked=playLockedDecks();for(const summary of state.decks){const deck=playTableDeck(summary.id);if(summary.valid&&deck)tiles.set(summary.id,V.deckTile(deck,false,{playSelection:playSeatSource(state,playBrowseSeat(state))==='saved'&&playSeatDeck(state,playBrowseSeat(state))?.id===deck.id}));}
   const inspected=state.playStyle!=='quick'&&state.match.mode==='cpu'?playSeatDeck(state,state.inspectedSeat):state.selected;

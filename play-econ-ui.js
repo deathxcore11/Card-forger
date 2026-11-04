@@ -389,15 +389,19 @@ const RARITY_KEY = {common: 'c', uncommon: 'u', rare: 'r', mythic: 'm', special:
 const artCrop = id => scryfallImage(id).replace('/normal/', '/art_crop/');
 const deckCover = cards => { const lead = (cards || []).find(c => c.board !== 'side' && !isBasicLand(c.name)) || (cards || [])[0];
   return lead ? (lead.id ? artCrop(lead.id) : cardImageByName(lead.name, 'art_crop')) : ''; };
-function playDeckTile(d, owned) {
+// The deck's emblems (play-deck-emblem.js): mana pips beside the format, then its style, and a gold
+// meta line when it matches a tournament archetype. Text and pips sit on the tile's own plates.
+const deckPips = colors => (colors.length ? colors : ['C']).map(k => `<img class="pe-deck-pip" src="${symbolUrl(k)}" alt="" width="16" height="16">`).join('');
+const pipLabel = colors => colors.length ? colors.map(k => ({W: 'white', U: 'blue', B: 'black', R: 'red', G: 'green'})[k]).join(', ') : 'colorless';
+function playDeckTile(d, owned, emblem = null) {
   const main = (d.cards || []).filter(c => c.board !== 'side'), side = (d.cards || []).filter(c => c.board === 'side');
   const count = list => list.reduce((t, c) => t + (c.qty | 0), 0), size = deckRules(d.format).size;
   const sh = deckShortfall(d.cards || [], owned), want = (d.cards || []).filter(c => !isBasicLand(c.name)).reduce((t, c) => t + (c.qty | 0), 0);
   const missing = sh.missing.reduce((t, m) => t + m.need, 0), share = want ? (want - missing) / want : 1, name = d.name || 'Untitled deck';
   return `<div class="pe-deck-cell"><button class="deck-tile" data-act="playEconEditDeck" data-econ-deck="${esc(d.id)}" aria-label="Open ${esc(name)}">
     <span class="tile-art">${img(deckCover(d.cards), name)}</span><span class="tile-shade"></span>
-    <span class="tile-top"><span class="chip dark deck-format-emblem">${esc(d.format || 'Casual')}</span></span>
-    <span class="tile-body"><b>${esc(name)}</b><small>${count(main)}/${size}${side.length ? ` · ${count(side)} sideboard` : ''}</small>
+    <span class="tile-top"><span class="chip dark deck-format-emblem">${emblem ? `<span class="pe-deck-pips" role="img" aria-label="Colors: ${pipLabel(emblem.colors)}">${deckPips(emblem.colors)}</span>` : ''}${esc(d.format || 'Casual')}${emblem?.style ? `<span class="pe-deck-style"> · ${esc(emblem.style)}</span>` : ''}</span></span>
+    <span class="tile-body">${emblem?.meta ? `<span class="pe-deck-meta">Meta · ${esc(emblem.meta)}</span>` : ''}<b>${esc(name)}</b><small>${count(main)}/${size}${side.length ? ` · ${count(side)} sideboard` : ''}</small>
       <span class="tile-stats"><span class="tile-owned"><em>${Math.round(share * 100)}%</em> in your Trunk</span><span class="tile-find">${missing ? `<em>${missing}</em> to stamp` : 'Ready'}</span></span>${bar(share, 'thin')}</span></button>
     <button class="pe-deck-delete" data-act="playEconDeleteDeck" data-econ-deck="${esc(d.id)}" aria-label="Delete ${esc(name)}"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M6 6l12 12M18 6 6 18"/></svg></button></div>`;
 }
@@ -440,10 +444,10 @@ function importPanel(snapshot, check) {
       ${short.complete ? '<p class="pe-ready">Every card is in your Trunk.</p>' : `<p>To finish it, stamp ${short.missing.reduce((t, m) => t + m.need, 0)} cards:</p><span class="pe-costs">${sealsLine(short)}</span><ul class="pe-missing">${short.missing.slice(0, 60).map(m => `<li>${sealIcon(m.seal)}<span>${m.need} × ${esc(m.name)}</span></li>`).join('')}</ul>`}
       <div class="pe-import-save"><input data-input="playEconImportName" maxlength="80" placeholder="Deck name" aria-label="Deck name" value="${esc(check.name || '')}"><button class="btn" data-act="playEconSaveDeck" ${snapshot.busy || (formats.length > 1 && !pick) ? 'disabled' : ''}>Save deck</button></div></div>` : ''}`;
 }
-export function decksMarkup(snapshot, {check = null, precon = {}} = {}) {
+export function decksMarkup(snapshot, {check = null, precon = {}, deckEmblem = null} = {}) {
   const s = snapshot.state, decks = s.decks || [], owned = ownedByName(s.cards || []);
   return `<section class="play-menu pe-screen pe-decks" aria-labelledby="playTitle">${head('Decks', snapshot)}
-    <div class="deck-grid pe-deck-shelf"><button class="deck-tile pe-deck-new" data-act="playEconView" data-econ-view="finder"><span class="tile-art">${img(TILE_ART.decks, '')}</span><span class="tile-shade"></span><span class="tile-body"><b>Build a deck</b><small>From the cards in your Trunk</small></span></button>${decks.map(d => playDeckTile(d, owned)).join('')}</div>
+    <div class="deck-grid pe-deck-shelf"><button class="deck-tile pe-deck-new" data-act="playEconView" data-econ-view="finder"><span class="tile-art">${img(TILE_ART.decks, '')}</span><span class="tile-shade"></span><span class="tile-body"><b>Build a deck</b><small>From the cards in your Trunk</small></span></button>${decks.map(d => playDeckTile(d, owned, deckEmblem ? deckEmblem(d) : null)).join('')}</div>
     <section class="pe-import pe-precons" aria-labelledby="pePreconTitle"><h2 id="pePreconTitle">Precons</h2><p class="pe-sub">Published decks with their real printings. You only pay for the cards you don't have yet.</p>${preconShelf(snapshot, precon)}</section>
     <section class="pe-import" aria-labelledby="peImportTitle"><h2 id="peImportTitle">Paste a list</h2>${importPanel(snapshot, check)}</section>
     ${statusLine(snapshot)}</section>`;
