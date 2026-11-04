@@ -50,26 +50,24 @@ export default {
 2 Adult Gold Dragon
 3 Divine Smite
 3 Burning Hands
+3 Dragon's Fire
 4 Sundown Pass
 10 Plains
-10 Mountain
-3 Dawnbringer Cleric`}},
+10 Mountain`}},
       villain: {who: 'cult', deck: {label: 'tribute', name: 'The Cult of the Dragon', colors: 'BR', list: `
 4 Dungeon Crawler
 4 Hoard Robber
-4 Hired Hexblade
 4 Battle Cry Goblin
-3 Hobgoblin Bandit Lord
-3 Gelatinous Cube
-3 Plundering Barbarian
 3 Burning Hands
-2 Power Word Kill
 2 Dragon's Fire
 4 Haunted Ridge
 10 Swamp
 10 Mountain
-2 Vampire Spawn
-2 Shambling Ghast`}},
+4 Vampire Spawn
+4 Shambling Ghast
+4 Concealing Curtains
+4 Doomed Dissenter
+3 Undead Butler`}},
       scene: [q('stage', 'This one is for goblins, this one is for owlbears, this one is for toast, this one is for . . .'),
         q('stage', 'Courage is neither a shield nor an axe, but the will to wield both in defense of the innocent.'),
         s('party', 'Dungeons: venture into the dungeon, and each room you reach does something. A deeper dungeon pays off the most.')],
@@ -103,10 +101,10 @@ export default {
 2 Tovolar's Huntmaster
 3 Oakshade Stalker
 2 Ulvenwald Oddity
-3 Wolf Strike
 3 Clear Shot
 2 Might of the Old Ways
-24 Forest`}},
+24 Forest
+3 Intrepid Outlander`}},
       scene: [q('stage', 'Even in our darkest times, Avacyn\'s light still guides us.'),
         q('stage', 'Begone, moon-cursed! These folk are no prey of yours.'),
         s('cathars', 'Day and night: it becomes night if a player casts no spells on their own turn, and day returns if a player casts two or more. Werewolves change with it.')],
@@ -221,7 +219,6 @@ export default {
 2 Voldaren Epicure
 3 Bloodcrazed Socialite
 3 Dominating Vampire
-3 Falkenrath Forebear
 3 Voldaren Bloodcaster
 2 Bloodvial Purveyor
 2 Olivia's Attendants
@@ -231,7 +228,8 @@ export default {
 4 Haunted Ridge
 10 Swamp
 10 Mountain
-2 Olivia, Crimson Bride`}},
+2 Olivia, Crimson Bride
+3 Doomed Dissenter`}},
       scene: [q('stage', 'Sensing a plot, Sorin raced to his grandfather\'s resting-crypt. But someone else had gotten there first.'),
         q('stage', 'Our kind has taken my gift for granted. It is time to correct that folly.'),
         s('sorin', 'Planeswalkers: protect them with blockers, and attack Olivia\'s court before they bury you in blood.')],
@@ -342,7 +340,7 @@ export default {
 4 Swamp
 4 Mountain`}},
       villain: {who: 'olivia', deck: {label: 'tribute', name: 'Olivia\'s Court', colors: 'BR', list: `
-4 Olivia, Crimson Bride
+2 Olivia, Crimson Bride
 4 Bloodtithe Harvester
 4 Vampire Socialite
 4 Voldaren Epicure
@@ -351,13 +349,15 @@ export default {
 2 Florian, Voldaren Scion
 2 Anje, Maid of Dishonor
 1 Bloodvial Purveyor
-3 Hero's Downfall
+2 Hero's Downfall
 3 Infernal Grasp
 3 Flame-Blessed Bolt
 1 Olivia's Midnight Ambush
 4 Haunted Ridge
 10 Swamp
-10 Mountain`}},
+10 Mountain
+2 Voldaren Stinger
+1 Doomed Dissenter`}},
       scene: [q('stage', 'I\'ll lead.'),
         q('stage', 'And you were almost finished with that ritual, weren\'t you, darling? How very rude of me. To make it up to you, I\'ll send you an invitation to my wedding.'),
         s('heroes', 'Her court is bigger than yours. Hit Olivia first.')],
@@ -392,18 +392,20 @@ export default {
 10 Island
 10 Mountain`}},
       villain: {who: 'whiteagg', deck: {label: 'tribute', name: 'Mono-White Humans', note: 'Built from cards in this act\'s sets only. No single tournament list is copied.', colors: 'W', archetype: 'Aggro', list: `
-4 Adeline, Resplendent Cathar
-4 Brutal Cathar
-4 Thalia, Guardian of Thraben
+2 Adeline, Resplendent Cathar
+2 Brutal Cathar
+2 Thalia, Guardian of Thraben
 4 Lunarch Veteran
-4 Cathar Commando
+2 Cathar Commando
 3 Clarion Cathars
 3 Gavony Dawnguard
 2 Sigardian Savior
 2 Voice of the Blessed
 3 Fateful Absence
 3 Valorous Stance
-24 Plains`}},
+24 Plains
+4 Ambitious Farmhand
+4 Hopeful Initiate`}},
       scene: [q('stage', 'Honorable tactics are for honorable foes. These werewolves are preying on innocent travelers. I\'ll stab them in the back while they sleep if I have to.'),
         s('you', 'Kill Adeline the turn she lands, or they will run you over.')],
       villainScene: [q('stage', 'Thraben belongs to the living. I will not rest until it is cleansed.')],
