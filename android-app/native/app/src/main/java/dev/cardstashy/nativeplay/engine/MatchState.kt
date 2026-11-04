@@ -13,6 +13,8 @@ data class Card(
     val damage: Int, val summoningSick: Boolean, val token: Boolean, val counters: Map<String, Int>,
     val keywords: List<String>, val attachedTo: Int?, val blockingIds: List<Int>,
     val commander: Boolean = false, val setCode: String? = null, val collectorNumber: String? = null,
+    /** Who or what this attacker attacks (a player or a planeswalker/battle), when Forge says. */
+    val attackTarget: Ref? = null,
 ) {
     val isLand get() = type.contains("Land")
     val isCreature get() = type.contains("Creature")
@@ -25,11 +27,13 @@ data class Player(
     val command: List<Card> = emptyList(), val mana: Map<String, Int> = emptyMap(), val counters: Map<String, Int> = emptyMap(),
 )
 
-data class StackItem(val id: Int, val text: String, val source: Card?, val controller: Int, val ability: Boolean = false, val yielded: Boolean = false)
+data class StackItem(val id: Int, val text: String, val source: Card?, val controller: Int, val ability: Boolean = false, val yielded: Boolean = false, val targets: List<Ref> = emptyList())
 data class Buttons(val ok: String?, val cancel: String?, val okEnabled: Boolean, val cancelEnabled: Boolean)
 data class Selection(
     val cards: Set<Int>, val players: Set<Int>, val chosenCards: Set<Int>, val chosenPlayers: Set<Int>,
     val actionable: Set<Int>, val blocked: Map<Int, String>, val min: Int, val max: Int,
+    /** Cards Forge offers as targets for the spell or ability being cast (selection.targets). */
+    val targetCards: Set<Int> = emptySet(),
 )
 data class PromptOption(val index: Int, val label: String, val cardId: Int?)
 data class Prompt(
@@ -59,6 +63,7 @@ data class GameEvent(
     val seq: Long, val type: String, val turn: Int, val phase: String?, val player: Int?,
     val card: Ref?, val source: Ref?, val target: Ref?, val targets: List<Ref>, val attackers: List<Pair<Ref, Ref?>>, val blockers: List<Pair<Ref, Int?>>,
     val from: String?, val to: String?, val amount: Int?, val lifeFrom: Int?, val lifeTo: Int?, val cause: String?,
+
 )
 
 data class MatchState(
@@ -97,7 +102,7 @@ data class MatchState(
                 chosenCards = refs("chosen", "card"), chosenPlayers = refs("chosen", "player"),
                 actionable = refs("actionable", "card"),
                 blocked = sel?.arr("blocked")?.mapNotNull { e -> val x = e.asJsonObject; x.int("id")?.let { it to (x.str("reason") ?: "") } }?.toMap() ?: emptyMap(),
-                min = sel?.int("min") ?: 0, max = sel?.int("max") ?: 0,
+                min = sel?.int("min") ?: 0, max = sel?.int("max") ?: 0, targetCards = refs("targets", "card"),
             )
             val b = o.obj("buttons")
             val init = o.obj("initialization")
@@ -108,7 +113,7 @@ data class MatchState(
                 errors = init?.arr("errors")?.mapNotNull { it.takeIf { e -> e.isJsonPrimitive }?.asString } ?: emptyList(),
                 viewer = viewer, turn = o.int("turn") ?: 0, phase = o.str("phase"), activePlayer = o.int("activePlayer"), priorityPlayer = o.int("priorityPlayer"),
                 players = players,
-                stack = o.arr("stack").map { e -> val s = e.asJsonObject; StackItem(s.int("id") ?: 0, tidy((s.str("text") ?: "").replace(Regex("\\s*\\[Phase: [^\\]]*\\]"), "").trim()), s.obj("source")?.let { parseCard(it) }, s.int("activatingPlayer") ?: -1, s.bool("ability") == true, s.bool("yielded") == true) },
+                stack = o.arr("stack").map { e -> val s = e.asJsonObject; StackItem(s.int("id") ?: 0, tidy((s.str("text") ?: "").replace(Regex("\\s*\\[Phase: [^\\]]*\\]"), "").trim()), s.obj("source")?.let { parseCard(it) }, s.int("activatingPlayer") ?: -1, s.bool("ability") == true, s.bool("yielded") == true, refsOf(s, "targets")) },
                 buttons = Buttons(b?.str("ok"), b?.str("cancel"), b?.bool("okEnabled") == true, b?.bool("cancelEnabled") == true),
                 inputType = o.str("inputType"), selection = selection, prompt = o.obj("prompt")?.let { parsePrompt(it) }?.let { p -> p.copy(message = tidy(p.message), options = p.options.map { it.copy(label = tidy(it.label)) }) },
                 busy = o.bool("busy") == true, message = tidy(o.str("message") ?: ""),
@@ -152,6 +157,7 @@ data class MatchState(
             keywords = c.arr("keywords").mapNotNull { if (it.isJsonPrimitive) it.asString else it.asJsonObject.str("keyword") },
             attachedTo = c.int("attachedTo"), blockingIds = c.arr("blockingIds").mapNotNull { if (it.isJsonPrimitive) it.asInt else null },
             commander = c.bool("commander") == true, setCode = c.str("setCode"), collectorNumber = c.str("collectorNumber"),
+            attackTarget = c.obj("attackTarget")?.let { t -> val k = t.str("kind"); val i = t.int("id"); if (k != null && i != null) Ref(k, i, null) else null },
         )
 
         private fun parsePrompt(p: JsonObject): Prompt {
@@ -200,6 +206,7 @@ data class MatchState(
 
 private fun JsonObject.str(k: String): String? = get(k)?.takeIf { it.isJsonPrimitive }?.asString
 private fun JsonObject.int(k: String): Int? = get(k)?.takeIf { it.isJsonPrimitive && it.asJsonPrimitive.isNumber }?.asInt
+internal fun refsOf(o: JsonObject, k: String): List<Ref> = o.get(k)?.takeIf { it.isJsonArray }?.asJsonArray?.mapNotNull { e -> e.takeIf { it.isJsonObject }?.asJsonObject?.let { r -> val kind = r.get("kind")?.takeIf { it.isJsonPrimitive }?.asString; val id = r.get("id")?.takeIf { it.isJsonPrimitive && it.asJsonPrimitive.isNumber }?.asInt; if (kind != null && id != null) Ref(kind, id, r.get("name")?.takeIf { it.isJsonPrimitive }?.asString) else null } } ?: emptyList()
 private fun JsonObject.bool(k: String): Boolean? = get(k)?.takeIf { it.isJsonPrimitive && it.asJsonPrimitive.isBoolean }?.asBoolean
 private fun JsonObject.obj(k: String): JsonObject? = get(k)?.takeIf { it.isJsonObject }?.asJsonObject
 private fun JsonObject.arr(k: String): JsonArray = get(k)?.takeIf { it.isJsonArray }?.asJsonArray ?: JsonArray()

@@ -84,6 +84,15 @@ class MatchController(private val scope: CoroutineScope, private val input: Stri
             if (now?.controlMode == mode && now.autoPay != null && now.autoPay != keep) setting("autoPay") { addProperty("value", keep) }
         }
     }
+    /** native-panel.mjs "Attack all": each offered creature joins in turn, while Forge still asks for attackers. */
+    fun attackAll(ids: List<Int>) { scope.launch { for (id in ids) { val now = latest ?: break; if (now.inputType != "InputAttack" || now.prompt != null || now.lastActionError != null) break
+        if (now.card(id)?.attacking == true) continue; if (!awaitLive()) break; card(id); awaitSettled(now.revision) } } }
+    /** forge-table.mjs unblock: Forge drops a blocker clicked again while its attacker is in focus. */
+    fun unblock(blocker: Int, attacker: Int) { scope.launch { val s = latest ?: return@launch; if (s.inputType != "InputBlock" || s.prompt != null) return@launch
+        card(attacker); if (!awaitSettled(s.revision)) return@launch; val now = latest ?: return@launch
+        if (now.inputType != "InputBlock" || now.prompt != null || now.lastActionError != null) return@launch; if (awaitLive()) card(blocker) } }
+    private suspend fun awaitLive(): Boolean = withTimeoutOrNull(4000) { _live.first { it } } != null
+    private suspend fun awaitSettled(from: Long): Boolean = withTimeoutOrNull(4000) { while (true) { val l = latest; if (l != null && l.revision > from && !l.busy && !_sending.value) break; delay(50) }; true } == true
     fun setAutoPay(on: Boolean) { setting("autoPay") { addProperty("value", on) } }
     /** Forge's own yield on a triggered ability: passes while it is on top, until your next turn. */
     fun yieldSource(id: Int, on: Boolean) { setting("yieldSource") { addProperty("id", id); addProperty("value", on) } }
@@ -100,7 +109,7 @@ class MatchController(private val scope: CoroutineScope, private val input: Stri
         return true
     }
     val intents by lazy { dev.cardstashy.nativeplay.ui.TableIntents(card = { card(it) }, player = { player(it) }, ok = { ok() }, cancel = { cancel() }, reply = { id, v, i, a -> reply(id, v, i, a) },
-        stop = { toggleStop(it) }, mode = { setMode(it) }, autoPay = { setAutoPay(it) }, yieldSource = { id, on -> yieldSource(id, on) }) }
+        stop = { toggleStop(it) }, attackAll = { attackAll(it) }, unblock = { b, a -> unblock(b, a) }, mode = { setMode(it) }, autoPay = { setAutoPay(it) }, yieldSource = { id, on -> yieldSource(id, on) }) }
     val timings = MutableStateFlow<Map<String, Long>>(emptyMap())
 
     /** match-facts.js for this match, and the finished-match hook (play:match-recorded). */

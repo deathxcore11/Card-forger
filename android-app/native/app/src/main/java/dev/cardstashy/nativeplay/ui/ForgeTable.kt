@@ -1,5 +1,17 @@
 package dev.cardstashy.nativeplay.ui
 
+import dev.cardstashy.nativeplay.engine.Ref
+import dev.cardstashy.nativeplay.engine.GameEvent
+import androidx.compose.ui.text.withStyle
+import androidx.compose.ui.graphics.asAndroidPath
+import androidx.compose.runtime.mutableStateListOf
+import androidx.compose.foundation.layout.wrapContentHeight
+import androidx.compose.foundation.layout.aspectRatio
+import androidx.compose.ui.unit.em
+import androidx.compose.ui.graphics.drawscope.drawIntoCanvas
+import androidx.compose.ui.graphics.toArgb
+import androidx.compose.ui.graphics.nativeCanvas
+import androidx.compose.ui.graphics.Paint
 import androidx.compose.ui.graphics.vector.PathParser
 import androidx.compose.foundation.layout.IntrinsicSize
 import androidx.compose.foundation.layout.heightIn
@@ -113,6 +125,7 @@ import dev.cardstashy.nativeplay.engine.StackItem
 class TableIntents(
     val card: (Int) -> Unit = {}, val player: (Int) -> Unit = {}, val ok: () -> Unit = {}, val cancel: () -> Unit = {},
     val reply: (Int, Boolean?, List<Int>?, List<Int>?) -> Unit = { _, _, _, _ -> },
+    val attackAll: (List<Int>) -> Unit = {}, val unblock: (Int, Int) -> Unit = { _, _ -> },
     val stop: (String) -> Unit = {}, val mode: (String) -> Unit = {}, val autoPay: (Boolean) -> Unit = {}, val yieldSource: (Int, Boolean) -> Unit = { _, _ -> },
 )
 
@@ -217,15 +230,17 @@ fun ForgeBoard(
         with(d) {
             val W = maxWidth; val H = maxHeight
             val me = st.me; val cpu = st.cpu
+            // forge-table.mjs role(): chosen, then a target, then a choice (discard while a discard asks), then playable.
+            val discarding = st.prompt == null && st.selection.cards.isNotEmpty() && Regex("\\bdiscard\\b", RegexOption.IGNORE_CASE).containsMatchIn(st.message)
             fun markOf(card: Card): Mark = when {
                 !live -> Mark.NONE
-                card.id in st.selection.chosenCards || (st.inputType == "InputAttack" && card.attacking && card.controller == st.viewer) ||
-                    (st.inputType == "InputBlock" && card.blocking && card.controller == st.viewer) -> Mark.PICKED
-                card.id in st.selection.cards -> Mark.PICKABLE
+                card.id in st.selection.chosenCards -> Mark.PICKED
+                card.id in st.selection.targetCards -> Mark.TARGET
+                card.id in st.selection.cards -> if (discarding) Mark.DISCARD else Mark.PICKABLE
                 card.id in st.selection.actionable -> Mark.PLAYABLE
                 else -> Mark.NONE
             }
-            fun tapOf(card: Card): (() -> Unit)? = if (live && (card.id in st.selection.cards || card.id in st.selection.actionable || card.id in st.selection.chosenCards ||
+            fun tapOf(card: Card): (() -> Unit)? = if (live && (card.id in st.selection.cards || card.id in st.selection.targetCards || card.id in st.selection.actionable || card.id in st.selection.chosenCards ||
                 ((st.inputType == "InputAttack" || st.inputType == "InputBlock") && card.controller == st.viewer && (card.attacking || card.blocking)))) ({ intents.card(card.id) }) else null
 
             // The battlefield band (46 du from the top to 61 du from the bottom); the two halves meet at its middle.
@@ -240,8 +255,8 @@ fun ForgeBoard(
             // CPU half: lands at the back, creatures at the front; yours mirrored.
             PermanentRow(backRow(cpu.battlefield), true, lands(cpu.battlefield).size, centreX, mid - 77.5f.du * stretch, W - 180.du, d, ::markOf, ::tapOf, onInspect)
             PermanentRow(others(cpu.battlefield), false, 0, centreX, mid - 34.du * stretch, W - 180.du, d, ::markOf, ::tapOf, onInspect)
-            PermanentRow(others(me.battlefield), false, 0, centreX, mid + 27.du * stretch, W - 180.du, d, ::markOf, ::tapOf, onInspect)
-            PermanentRow(backRow(me.battlefield), true, lands(me.battlefield).size, centreX, mid + 71.5f.du * stretch, W - 300.du, d, ::markOf, ::tapOf, onInspect)
+            PermanentRow(others(me.battlefield), false, 0, centreX, mid + 27.du * stretch, W - 180.du, d, ::markOf, ::tapOf, onInspect, mine = true)
+            PermanentRow(backRow(me.battlefield), true, lands(me.battlefield).size, centreX, mid + 71.5f.du * stretch, W - 300.du, d, ::markOf, ::tapOf, onInspect, mine = true)
 
             // Piles: yours right of your back row, the CPU's left of its back row.
             Piles(me, mine = true, Modifier.offset(x = W - 120.du, y = mid + 46.du * stretch), d, onInspect)
@@ -263,6 +278,9 @@ fun ForgeBoard(
             // Menu and the phase track, top left.
             Box(Modifier.offset(x = 8.du, y = 34.du).size(44.du).clip(CircleShape).background(Color(0x6612141A)).border(1.dp, Color(0x24FFFFFF), CircleShape)
                 .clickable(onClick = onMenu), contentAlignment = Alignment.Center) { MenuGlyph(d) }
+            // The menu carries the stack size as a badge (summary[data-count]::after: 18 px gold pill at -4, -4).
+            if (st.stack.isNotEmpty()) Box(Modifier.offset(x = (8 + 44 - 18 + 4).du, y = (34 - 4).du).heightIn(min = 18.du).widthIn(min = 18.du).clip(RoundedCornerShape(9.du)).background(Color(0xFFE8B95B)).padding(horizontal = 5.du),
+                contentAlignment = Alignment.Center) { Text("${st.stack.size}", style = sans(sp(11f), FontWeight.ExtraBold, Color(0xFF1B1406))) }
             PhaseTrack(st, stopLights(st), intents.stop, Modifier.offset(x = 74.du, y = 42.du), d)
 
             // The stack, fanned on the right over its portal, with the arc to its source.
@@ -272,7 +290,7 @@ fun ForgeBoard(
             val hand = orderedHand(me.hand, handOrder)
             Box(Modifier.offset(x = centreX + 44.du - 222.du, y = H - 67.du).width(444.du).height(120.du)) {
                 HandFan(hand, 66.du, Modifier.fillMaxWidth(), raised = selectedHand, angleDeg = 1.2f,
-                    markOf = { card -> if (live && card.id in st.selection.cards) Mark.PICKABLE else if (live && card.id in st.selection.actionable) Mark.PLAYABLE else Mark.NONE },
+                    markOf = ::markOf,
                     canPlay = { card -> live && card.id in st.selection.actionable },
                     onTap = { card ->
                         val playable = live && card.id in st.selection.actionable
@@ -287,16 +305,33 @@ fun ForgeBoard(
                     onHold = onInspect, onReorder = { ids -> onHandOrder(ids) })
             }
 
-            // The buttons, bottom right: the gold step and the quiet second one above it.
+            // The buttons, bottom right: the gold step and the quiet second one above it (right edges 8 du in, as the site's dock).
             if (st.prompt == null && st.waitingOnMe) {
                 val selected = selectedHand?.let { st.card(it) }
                 val ok = if (selected != null) (if (selected.isLand) "Play land" else "Cast") else okLabel(st)
                 val second = if (selected != null) null else cancelLabel(st)
-                second?.let { GlassPill(it, live, Modifier.offset(x = W - 90.du, y = H - 94.du), d) { intents.cancel() } }
-                GoldPill(ok, live && (selected != null || st.buttons.okEnabled), Modifier.offset(x = W - 146.du, y = H - 52.du), d) {
-                    if (selected != null) { onSelectHand(null); intents.card(selected.id) } else intents.ok()
+                // native-panel.mjs "Attack all": every creature Forge offers joins, one tap each, in order.
+                val offered = if (st.inputType == "InputAttack") st.selection.cards.mapNotNull { st.card(it) }.filter { it.zone == "Battlefield" && it.controller == st.viewer && !it.attacking } else emptyList()
+                val attackAll = offered.isNotEmpty() && st.selection.cards.size >= 2
+                if (attackAll) {
+                    GoldPill(ok, live && st.buttons.okEnabled, Modifier.align(Alignment.TopEnd).offset(x = (-8).du, y = H - 94.du), d) { intents.ok() }
+                    GlassPill("Attack all", live, Modifier.align(Alignment.TopEnd).offset(x = (-8).du, y = H - 44.du), d, tone = Color(0xFFFFD9CF), edge = Color(0x88FF8A6A)) { intents.attackAll(offered.map { it.id }) }
+                } else if (oneTarget(st)) {
+                    second?.let { GlassPill(it, live, Modifier.align(Alignment.TopEnd).offset(x = (-8).du, y = H - 94.du), d) { intents.cancel() } }
+                    if (st.selection.min == 0 && st.buttons.okEnabled) GoldPill("No target", live, Modifier.align(Alignment.TopEnd).offset(x = (-8).du, y = H - 52.du), d) { intents.ok() }
+                } else {
+                    second?.let { GlassPill(it, live, Modifier.align(Alignment.TopEnd).offset(x = (-8).du, y = H - 94.du), d) { intents.cancel() } }
+                    GoldPill(ok, live && (selected != null || st.buttons.okEnabled), Modifier.align(Alignment.TopEnd).offset(x = (-8).du, y = H - 52.du), d) {
+                        if (selected != null) { onSelectHand(null); intents.card(selected.id) } else intents.ok()
+                    }
                 }
             }
+            if (live) askLine(st)?.let { AskLine(it, W, H, d) }
+            // The line between the halves turns into the combat line while you declare (gold attacking, blue blocking).
+            CombatLine(st, mid, W, d)
+            // Arrows: attackers to what they attack, blockers to their attacker, your spell to its targets, the top of the stack to its own.
+            Arrows(st, live, intents, d)
+            OwnCast(st, d)
             overlay?.invoke(W)
             EmoteLayer(W, H, d)
         }
@@ -330,7 +365,7 @@ internal fun orderedHand(hand: List<Card>, order: List<Int>): List<Card> {
  * apart); everything else stands alone 10 du apart. A row wider than [room] shrinks to fit (the site's zone scale).
  */
 @Composable
-private fun PermanentRow(cards: List<Card>, land: Boolean, split: Int = 0, cx: Dp, cy: Dp, room: Dp, d: Du, markOf: (Card) -> Mark, tapOf: (Card) -> (() -> Unit)?, onInspect: (Card) -> Unit) = with(d) {
+private fun PermanentRow(cards: List<Card>, land: Boolean, split: Int = 0, cx: Dp, cy: Dp, room: Dp, d: Du, markOf: (Card) -> Mark, tapOf: (Card) -> (() -> Unit)?, onInspect: (Card) -> Unit, mine: Boolean = false) = with(d) {
     if (cards.isEmpty()) return@with
     val piles = cards.withIndex().groupBy { (i, it) -> if (markOf(it) == Mark.NONE && tapOf(it) == null && it.counters.isEmpty() && it.damage == 0 && !it.attacking && !it.blocking) "${if (i < split) "l" else "o"}|${it.name}|${it.tapped}" else "id${it.id}" }.values.map { g -> g.map { it.value } }
     // The second lane (site: +22 px between lanes) starts at the first pile past the lands.
@@ -348,7 +383,7 @@ private fun PermanentRow(cards: List<Card>, land: Boolean, split: Int = 0, cx: D
             val px = x
             key(pile.first().id) {
                 pile.forEachIndexed { j, card ->
-                    Tile(card, w, h, land, markOf(card), tapOf(card), onInspect, Modifier.offset(x = px + step * j).zIndex(j.toFloat()), d,
+                    Tile(card, w, h, land, markOf(card), mine, tapOf(card), onInspect, Modifier.offset(x = px + step * j).zIndex(j.toFloat()), d,
                         count = if (j == pile.lastIndex && pile.size > 1) pile.size else 1)
                 }
             }
@@ -359,36 +394,43 @@ private fun PermanentRow(cards: List<Card>, land: Boolean, split: Int = 0, cx: D
 
 /** A permanent (.play-match-card on the battlefield): the art crop in a #141418 tile with a 1.5 du ring in its frame colour. */
 @Composable
-private fun Tile(card: Card, w: Dp, h: Dp, land: Boolean, mark: Mark, onTap: (() -> Unit)?, onInspect: (Card) -> Unit, modifier: Modifier, d: Du, count: Int = 1) = with(d) {
+private fun Tile(card: Card, w: Dp, h: Dp, land: Boolean, mark: Mark, mineSide: Boolean, onTap: (() -> Unit)?, onInspect: (Card) -> Unit, modifier: Modifier, d: Du, count: Int = 1) = with(d) {
     val (a, _) = frameTone(cardColors(card))
-    val ring = when {
-        mark == Mark.PICKED -> Palette.GoldBright
-        mark == Mark.PICKABLE -> Palette.GoldBright
-        mark == Mark.PLAYABLE -> Ice
-        card.attacking -> CpuRed
-        card.blocking -> Color(0xFF6FA8DC)
-        else -> lerp(a, Color.White, .15f)
+    // play-forge-table.css: a role's ring and glow (playable/choice #5cc8ff, target #ff9d5c, chosen #f3d27e), combat over it (attacking #ff6a4a, blocking #6aaeff).
+    val combat = card.attacking || card.blocking
+    val role: Triple<Color, Float, Color>? = when {
+        card.attacking -> Triple(Color(0xFFFF6A4A), 2f, Color(0x99FF5A3A))
+        card.blocking -> Triple(Color(0xFF6AAEFF), 2f, Color(0x995A9CFF))
+        mark == Mark.PICKED -> Triple(Color(0xFFF3D27E), 2.5f, Color(0x8CF3D27E))
+        mark == Mark.TARGET -> Triple(Color(0xFFFF9D5C), 2f, Color(0x8CFF9D5C))
+        mark == Mark.DISCARD -> Triple(Color(0xFFFF7A6B), 2f, Color(0x8CFF6A5A))
+        mark == Mark.PLAYABLE || mark == Mark.PICKABLE -> Triple(Ice, 2f, Color(0x8C5CC8FF))
+        else -> null
     }
+    val ring = role?.first ?: lerp(a, Color.White, .15f)
     val turn by animateFloatAsState(if (card.tapped) 20f else 0f, tween(140, easing = FastOutSlowInEasing), label = "tap")
     val anchors = LocalAnchors.current
     val shape = RoundedCornerShape(10.du)
     Box(modifier.size(w, h)
-        .then(if (anchors != null) Modifier.onGloballyPositioned { anchors.put("c${card.id}", it.boundsInRoot().center) } else Modifier)
-        .graphicsLayer { rotationZ = turn; val s = if (card.tapped) .94f else 1f; scaleX = s; scaleY = s; translationY = if (card.attacking) (if (card.controller == card.owner) -6f else 6f) * density else 0f }
+        .graphicsLayer { rotationZ = turn; val s = if (card.tapped) .94f else 1f; scaleX = s; scaleY = s; translationY = if (card.attacking) (if (mineSide) -12f else 12f) * u * density else 0f }
+        .then(if (anchors != null) Modifier.onGloballyPositioned { anchors.putRect("c${card.id}", it.boundsInRoot()) } else Modifier)
         .drawBehind {
             // box-shadow: 0 0 0 1.5px ring, 0 0 0 2.5px #000d, 0 10px 22px #000b
             val r = 10.du.toPx()
             drawRoundRect(Color(0xBB000000), topLeft = Offset(0f, 6.du.toPx()), size = size, cornerRadius = CornerRadius(r))
             drawRoundRect(Color(0xDD000000), topLeft = Offset(-2.5f.du.toPx(), -2.5f.du.toPx()), size = Size(size.width + 5f.du.toPx(), size.height + 5f.du.toPx()), cornerRadius = CornerRadius(r + 2.5f.du.toPx()))
-            val ringW = if (mark != Mark.NONE || card.attacking || card.blocking) 2.du.toPx() else 1.5f.du.toPx()
+            if (role != null) drawIntoCanvas { c ->
+                // 0 0 ~20px 4px glow
+                val spread = 4.du.toPx(); val p = Paint().asFrameworkPaint().apply { isAntiAlias = true; color = role.third.toArgb(); maskFilter = android.graphics.BlurMaskFilter(10.du.toPx(), android.graphics.BlurMaskFilter.Blur.NORMAL) }
+                c.nativeCanvas.drawRoundRect(-spread, -spread, size.width + spread, size.height + spread, r + spread, r + spread, p)
+            }
+            val ringW = (role?.second ?: 1.5f).du.toPx()
             drawRoundRect(ring, topLeft = Offset(-ringW, -ringW), size = Size(size.width + 2 * ringW, size.height + 2 * ringW), cornerRadius = CornerRadius(r + ringW))
-            if (mark == Mark.PLAYABLE) drawRoundRect(Ice.copy(alpha = .35f), topLeft = Offset(-5.du.toPx(), -5.du.toPx()), size = Size(size.width + 10.du.toPx(), size.height + 10.du.toPx()), cornerRadius = CornerRadius(r + 5.du.toPx()))
         }
         .clip(shape).background(Color(0xFF141418))
         .pointerInput(card.id, onTap) { detectTapGestures(onTap = { onTap?.invoke() ?: onInspect(card) }, onLongPress = { onInspect(card) }) }) {
         Box(Modifier.fillMaxSize().padding(2.du).clip(RoundedCornerShape(9.du))) {
             CardImage(card.name, Modifier.fillMaxSize(), crop = true) { Box(Modifier.fillMaxSize().background(Brush.linearGradient(listOf(frameTone(cardColors(card)).first, frameTone(cardColors(card)).second)))) }
-            if (mark == Mark.PICKED) Box(Modifier.fillMaxSize().background(Palette.GoldBright.copy(alpha = .22f)))
         }
         if (land) cardColors(card)?.firstOrNull()?.let { c ->
             Box(Modifier.align(Alignment.BottomStart).offset(x = 4.du, y = (-3).du).size(10.du).clip(CircleShape).background(LAND_DOT.getValue(c)).border(1.dp, Color(0xAAFFFFFF), CircleShape),
@@ -458,7 +500,7 @@ private fun Medallion(p: Player, mine: Boolean, pickable: Boolean, picked: Boole
     LaunchedEffect(p.life) { if (p.life < last) { flash.snapTo(1f); flash.animateTo(0f, tween(900)) }; last = p.life }
     val anchors = LocalAnchors.current
     val pulse = if (pickable && !Motion.still) rememberInfiniteTransition(label = "pick").animateFloat(.55f, 1f, infiniteRepeatable(tween(700), RepeatMode.Reverse), label = "a").value else 1f
-    Box(modifier.size(52.du).then(if (anchors != null) Modifier.onGloballyPositioned { anchors.put("orb${p.id}", it.boundsInRoot().center) } else Modifier)
+    Box(modifier.size(52.du).then(if (anchors != null) Modifier.onGloballyPositioned { anchors.putRect("orb${p.id}", it.boundsInRoot()) } else Modifier)
         .clickable(enabled = pickable, onClick = onPick)) {
         Box(Modifier.fillMaxSize().drawBehind {
             drawCircle(Color(0xFF0B0C10), radius = size.minDimension / 2 + 3.du.toPx())
@@ -574,13 +616,13 @@ private fun StackFan(st: MatchState, modifier: Modifier, d: Du, onInspect: (Card
             StackCard(st, s, 1, Modifier.offset(x = (44 - 16 * depth).du, y = (34 - 16 * depth).du).alpha(.6f), d, onInspect, small = true)
         }
         val (top, n) = shown.first()
-        StackCard(st, top, n, Modifier.offset(x = 44.du, y = 34.du).then(if (anchors != null) Modifier.onGloballyPositioned { val b = it.boundsInRoot(); anchors.put("stacktop", Offset(b.left, b.top + b.height * .3f)) } else Modifier), d, onInspect)
+        StackCard(st, top, n, Modifier.offset(x = 44.du, y = 34.du).then(if (anchors != null) Modifier.onGloballyPositioned { val b = it.boundsInRoot(); anchors.put("stacktop", Offset(b.left, b.top + b.height * .3f)); anchors.putRect("stackcard", b) } else Modifier), d, onInspect)
         // native-panel.mjs withYield: an ability on top offers Forge's own yield (pass on it every time it is on top, until end of turn).
         if (top.ability) {
             val on = top.yielded
             val lock = st.prompt != null || st.inputType == "InputLockUI"
-            Box(Modifier.offset(y = 183.du).width(192.du).wrapContentWidth(Alignment.CenterHorizontally)) {
-                Box(Modifier.offset(x = (-44).du).clip(RoundedCornerShape(999.dp))
+            Box(Modifier.offset(y = 34.du + 145.du - 42.du).width(36.du).wrapContentWidth(Alignment.End, unbounded = true)) {
+                Box(Modifier.clip(RoundedCornerShape(999.dp))
                     .background(if (on) Brush.verticalGradient(listOf(Color(0xFFF6DC9A), Color(0xFFD9A64A))) else Brush.verticalGradient(listOf(Color(0x0DFFFFFF), Color(0x0DFFFFFF))))
                     .semantics { contentDescription = if (on) "Stop yielding to this ability" else "Pass on this ability every time it is on top, until end of turn. Targets and choices still stop."; role = Role.Button; stateDescription = if (on) "On" else "Off" }
                     .clickable(enabled = !lock) { onYield(top.id, !on) }.padding(horizontal = 10.du, vertical = 4.du)) {
@@ -643,18 +685,22 @@ private fun StackCard(st: MatchState, s: StackItem, n: Int, modifier: Modifier, 
 
 @Composable
 private fun GoldPill(text: String, enabled: Boolean, modifier: Modifier, d: Du, onClick: () -> Unit) = with(d) {
-    Box(modifier.size(138.du, 44.du).drawBehind { drawRoundRect(Color(0x3DC99A4B), topLeft = Offset(0f, 8.du.toPx()), size = size, cornerRadius = CornerRadius(size.height / 2)) }
+    Box(modifier.widthIn(min = 138.du).height(44.du).drawBehind { drawRoundRect(Color(0x3DC99A4B), topLeft = Offset(0f, 8.du.toPx()), size = size, cornerRadius = CornerRadius(size.height / 2)) }
         .clip(RoundedCornerShape(999.dp)).background(if (enabled) Brush.verticalGradient(listOf(Color(0xFFF7DA97), Color(0xFFE8B95B), Color(0xFFC4903A))) else Brush.verticalGradient(listOf(Color(0xFF6B5A3A), Color(0xFF4A3E28))))
         .border(1.dp, Color(0xFFF6DFA8), RoundedCornerShape(999.dp)).clickable(enabled = enabled, onClick = onClick), contentAlignment = Alignment.Center) {
-        Text(text, style = sans(sp(15f), FontWeight.Bold, Color(0xFF1B1408)), maxLines = 1, textAlign = TextAlign.Center)
+        // [data-native-key=ok]:after { content: ' ›'; font-size: 20px }
+        Text(androidx.compose.ui.text.buildAnnotatedString {
+            append(text)
+            if (enabled) withStyle(androidx.compose.ui.text.SpanStyle(fontSize = sp(20f))) { append(" \u203A") }
+        }, style = sans(sp(15f), FontWeight.Bold, Color(0xFF1B1408)), maxLines = 1, textAlign = TextAlign.Center, modifier = Modifier.padding(horizontal = 18.du))
     }
 }
 
 @Composable
-private fun GlassPill(text: String, enabled: Boolean, modifier: Modifier, d: Du, onClick: () -> Unit) = with(d) {
-    Box(modifier.height(36.du).clip(RoundedCornerShape(999.dp)).background(Color(0xB30C0D12)).border(1.dp, Color(0x26FFFFFF), RoundedCornerShape(999.dp))
+private fun GlassPill(text: String, enabled: Boolean, modifier: Modifier, d: Du, tone: Color = Color(0xFFEEE6D4), edge: Color = Color(0x26FFFFFF), onClick: () -> Unit) = with(d) {
+    Box(modifier.height(36.du).clip(RoundedCornerShape(999.dp)).background(Color(0xB30C0D12)).border(1.dp, edge, RoundedCornerShape(999.dp))
         .clickable(enabled = enabled, onClick = onClick).padding(horizontal = 14.du), contentAlignment = Alignment.Center) {
-        Text(text, style = sans(sp(12.5f), FontWeight.SemiBold, Color(0xFFEEE6D4)), maxLines = 1)
+        Text(text, style = sans(sp(12.5f), FontWeight.SemiBold, tone), maxLines = 1)
     }
 }
 
@@ -767,6 +813,228 @@ private fun EmoteLayer(W: Dp, H: Dp, d: Du) = with(d) {
             Box(Modifier.fillMaxWidth().heightIn(min = 40.du).clip(RoundedCornerShape(bottomStart = 10.du, bottomEnd = 10.du)).clickable { TableEmotes.toggleMute() }.padding(horizontal = 14.du), contentAlignment = Alignment.CenterStart) {
                 Text(if (TableEmotes.muted) "Unmute CPU" else "Mute CPU", style = sans(sp(12f), FontWeight.SemiBold, Color(0xFFA99D86)))
             }
+        }
+    }
+}
+
+
+// ---- Combat line, arrows and the Casting panel (forge-table.mjs renderCombatLine, relations/drawArrows, paintOwnCast) ----
+
+@Composable
+private fun CombatLine(st: MatchState, mid: Dp, W: Dp, d: Du) = with(d) {
+    val mode = when (st.inputType) { "InputAttack" -> "attack"; "InputBlock" -> "block"; else -> return@with }
+    if (st.prompt != null) return@with
+    val mine = st.me.battlefield
+    val k = if (mode == "attack") mine.count { it.attacking } else mine.count { it.blockingIds.isNotEmpty() || it.blocking }
+    val line = if (mode == "attack") Color(0xFFF2C46F) else Color(0xFF8FC4FF)
+    val shown = remember(mode) { Animatable(if (Motion.still) 1f else 0f) }
+    LaunchedEffect(mode) { if (!Motion.still) shown.animateTo(1f, tween(360, easing = CubicBezierEasing(.2f, .8f, .2f, 1f))) }
+    Row(Modifier.offset(y = mid - 1.dp).width(W).height(0.dp).wrapContentHeight(unbounded = true).graphicsLayer { alpha = shown.value; scaleX = .6f + .4f * shown.value },
+        verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(12.du)) {
+        @Composable fun bar(reverse: Boolean) = Box(Modifier.weight(1f).height(3.du).drawBehind {
+            drawIntoCanvas { c ->
+                val p = Paint().asFrameworkPaint().apply { isAntiAlias = true; color = line.copy(alpha = .5f).toArgb(); maskFilter = android.graphics.BlurMaskFilter(11.du.toPx(), android.graphics.BlurMaskFilter.Blur.NORMAL) }
+                c.nativeCanvas.drawRect(size.width * (if (reverse) 0f else .3f), 0f, size.width * (if (reverse) .7f else 1f), size.height, p)
+            }
+        }.clip(RoundedCornerShape(2.dp)).background(Brush.horizontalGradient(if (reverse) listOf(line, line, Color.Transparent) else listOf(Color.Transparent, line, line), startX = 0f, endX = Float.POSITIVE_INFINITY)))
+        bar(false)
+        if (k > 0) {
+            Row(Modifier.drawBehind { drawRoundRect(line.copy(alpha = .4f), topLeft = Offset(-4.du.toPx(), -4.du.toPx()), size = Size(size.width + 8.du.toPx(), size.height + 8.du.toPx()), cornerRadius = CornerRadius(size.height)) }
+                .clip(RoundedCornerShape(999.dp)).background(Color(0xCC120E08)).border(1.dp, line.copy(alpha = .7f), RoundedCornerShape(999.dp)).padding(start = 11.du, end = 11.du, top = 3.du, bottom = 4.du),
+                verticalAlignment = Alignment.Bottom, horizontalArrangement = Arrangement.spacedBy(5.du)) {
+                Text("$k", style = sans(sp(14f), FontWeight.ExtraBold, if (mode == "attack") Color(0xFFFFF1CF) else Color(0xFFE6F1FF)))
+            }
+        } else bar(true)
+    }
+}
+
+private data class Rel(val kind: String, val from: String, val to: String, val held: Boolean = false, val blocker: Int? = null, val attacker: Int? = null)
+
+/** forge-table.mjs relations(): what the arrows join, as anchor keys ("c<id>" a card, "orb<id>" a player, "stackcard", "owncast"). */
+private fun relations(st: MatchState): List<Rel> {
+    val out = mutableListOf<Rel>()
+    val board = st.players.flatMap { it.battlefield }
+    val attackers = board.filter { it.attacking }
+    for (a in attackers) {
+        val defending = st.players.firstOrNull { it.id != a.controller }?.id
+        val attackable = board.any { it.controller == defending && (it.type.contains("Planeswalker") || it.type.contains("Battle")) }
+        val t = a.attackTarget
+        val to = when {
+            t?.kind == "card" && board.any { it.id == t.id } -> "c${t.id}"
+            t?.kind == "player" && st.players.any { it.id == t.id } -> "orb${t.id}"
+            !attackable && defending != null -> "orb$defending"
+            else -> null
+        } ?: continue
+        val held = board.any { a.id in it.blockingIds } && a.keywords.none { it.contains("trample", true) }
+        out += Rel("attack", "c${a.id}", to, held)
+    }
+    for (b in board.filter { it.blocking }) {
+        val named = b.blockingIds.filter { id -> attackers.any { it.id == id } }
+        val pair = named.ifEmpty { if (attackers.size == 1) listOf(attackers[0].id) else emptyList() }
+        for (id in pair) out += Rel("block", "c${b.id}", "c$id", blocker = b.id, attacker = id)
+    }
+    if (st.inputType == "InputSelectTargets") {
+        val named = Regex("targets? for ([^\n]+)", RegexOption.IGNORE_CASE).find(st.message)?.groupValues?.get(1)?.trim()
+        val mine = st.players.flatMap { listOf(it.battlefield, it.hand) }.flatten().filter { it.controller == st.viewer }
+        val source = st.stack.mapNotNull { it.source }.filter { it.controller == st.viewer && it.zone == "Stack" }.maxByOrNull { it.id }
+            ?: named?.let { n -> mine.firstOrNull { it.zone == "Battlefield" && it.name == n } }
+        val from = when { source != null && source.zone == "Battlefield" -> "c${source.id}"; pendingCast(st) != null -> "owncast"; else -> null }
+        if (from != null) for (id in st.selection.chosenCards) out += Rel("target", from, "c$id")
+        if (from != null) for (id in st.selection.chosenPlayers) out += Rel("target", from, "orb$id")
+    } else st.stack.firstOrNull()?.let { top ->
+        for (r in top.targets) {
+            val to = if (r.kind == "card" && board.any { it.id == r.id }) "c${r.id}" else if (r.kind == "player" && st.players.any { it.id == r.id }) "orb${r.id}" else null
+            if (to != null) out += Rel("target", "stackcard", to)
+        }
+    }
+    return out
+}
+
+/** forge-table.mjs pendingCast: the card you just moved from hand to the stack, while its targets or mana are being chosen. */
+internal fun pendingCast(st: MatchState): Card? {
+    val input = st.inputType ?: ""
+    if (!(input == "InputSelectTargets" || input.startsWith("InputPayMana") || st.prompt != null)) return null
+    val last = HashMap<Int, GameEvent>()
+    for (e in st.events) if (e.type == "zone" && e.card?.kind == "card") last[e.card.id] = e
+    val ev = last.values.filter { it.to == "Stack" && it.from == "Hand" && (it.player == st.viewer || it.player == null) }.maxByOrNull { it.seq } ?: return null
+    val id = ev.card!!.id
+    if (st.stack.any { it.id == id || it.source?.id == id }) return null
+    val all = st.players.flatMap { it.battlefield + it.hand + it.graveyard }
+    if (all.any { it.id == id && it.zone != "Stack" }) return null
+    return Card(id, "Stack", st.viewer, st.viewer, false, eventName(st, id), "", "", "", null, null, false, false, false, 0, false, false, emptyMap(), emptyList(), null, emptyList())
+}
+private fun eventName(st: MatchState, id: Int): String = st.events.lastOrNull { it.card?.id == id && it.card.name != null }?.card?.name ?: ""
+
+@Composable
+private fun Arrows(st: MatchState, live: Boolean, intents: TableIntents, d: Du) = with(d) {
+    val anchors = LocalAnchors.current ?: return@with
+    val rels = remember(st) { relations(st) }
+    if (rels.isEmpty()) return@with
+    val flowing = !Motion.still && rels.any { it.kind != "target" }
+    val flow = if (flowing) rememberInfiniteTransition(label = "flow").animateFloat(0f, 13f, infiniteRepeatable(tween(1400, easing = LinearEasing)), label = "dash") else remember { mutableFloatStateOf(0f) }
+    var self by remember { mutableStateOf(Offset.Zero) }
+    val blocking = st.inputType == "InputBlock" && st.prompt == null
+    val colors = mapOf("attack" to Color(0xFFFF6A4A), "block" to Color(0xFF6AAEFF), "target" to Color(0xFFF3D27E))
+    val glows = mapOf("attack" to Color(0xAAFF5A3A), "block" to Color(0xAA5A9CFF), "target" to Color(0xAAF3D27E))
+    // The x on your own block line takes that block back (forge-table.mjs unblock).
+    val hits = remember { mutableStateListOf<Pair<Offset, Rel>>() }
+    Canvas(Modifier.fillMaxSize().onGloballyPositioned { self = it.boundsInRoot().topLeft }
+        .then(if (blocking && live) Modifier.pointerInput(rels) { detectTapGestures { p -> hits.firstOrNull { (at, _) -> (at - p).getDistance() < 18.du.toPx() }?.second?.let { r -> intents.unblock(r.blocker!!, r.attacker!!) } } } else Modifier)) {
+        anchors.version.intValue
+        val k = 1.du.toPx()
+        val found = mutableListOf<Pair<Offset, Rel>>()
+        for (r in rels) {
+            val a = anchors.rects[r.from] ?: continue; val b = anchors.rects[r.to] ?: continue
+            val ax = a.center.x - self.x; val ay = a.center.y - self.y; val bx = b.center.x - self.x; val by = b.center.y - self.y
+            val len = kotlin.math.hypot(bx - ax, by - ay); if (len < 20 * k) continue
+            val ux = (bx - ax) / len; val uy = (by - ay) / len
+            val start = minOf(a.width, a.height) * .42f; val stop = minOf(b.width, b.height) * .48f + 4 * k
+            val sx = ax + ux * start; val sy = ay + uy * start; val ex = bx - ux * stop; val ey = by - uy * stop
+            val bend = minOf(60 * k, len * .16f); val cx = (sx + ex) / 2 - uy * bend; val cy = (sy + ey) / 2 + ux * bend
+            val path = Path().apply { moveTo(sx, sy); quadraticTo(cx, cy, ex, ey) }
+            val col = colors.getValue(r.kind)
+            val heldLine = r.kind == "attack" && r.held
+            val dash = when { r.kind == "target" -> null; Motion.still -> null; heldLine -> PathEffect.dashPathEffect(floatArrayOf(3 * k, 9 * k), 0f); else -> PathEffect.dashPathEffect(floatArrayOf(6 * k, 7 * k), -flow.value * k) }
+            val w = (if (r.kind == "target") 2f else 2.5f) * k
+            val alpha = if (heldLine) .22f else .9f
+            if (!heldLine) drawIntoCanvas { c ->
+                val gp = Paint().asFrameworkPaint().apply { isAntiAlias = true; style = android.graphics.Paint.Style.STROKE; strokeWidth = w + 2 * k; color = glows.getValue(r.kind).toArgb(); maskFilter = android.graphics.BlurMaskFilter(6 * k, android.graphics.BlurMaskFilter.Blur.NORMAL); pathEffect = dash?.let { android.graphics.DashPathEffect(if (r.kind == "attack" || r.kind == "block") floatArrayOf(6 * k, 7 * k) else floatArrayOf(1f, 0f), flow.value * k) } }
+                c.nativeCanvas.drawPath(path.asAndroidPath(), gp)
+            }
+            drawPath(path, col.copy(alpha = alpha), style = Stroke(w, cap = StrokeCap.Round, pathEffect = dash))
+            // Arrowhead (marker 10×10 at 4.5 × stroke, refX 7), along the curve's end tangent.
+            if (r.kind != "target") {
+                val tx = ex - cx; val ty = ey - cy; val tl = kotlin.math.hypot(tx, ty).coerceAtLeast(.001f); val dx = tx / tl; val dy = ty / tl
+                val m = 4.5f * w / 10f
+                val tipX = ex + dx * 3 * m; val tipY = ey + dy * 3 * m
+                val head = Path().apply { moveTo(tipX, tipY); lineTo(tipX - dx * 10 * m - dy * 5 * m, tipY - dy * 10 * m + dx * 5 * m); lineTo(tipX - dx * 10 * m + dy * 5 * m, tipY - dy * 10 * m - dx * 5 * m); close() }
+                drawPath(head, col.copy(alpha = alpha))
+            }
+            drawCircle(col.copy(alpha = alpha), radius = 3.5f * k, center = Offset(sx, sy))
+            // The ring round the target (rx = min(14, w·0.18)).
+            val rx = minOf(14 * k, b.width * .18f)
+            drawRoundRect(col.copy(alpha = if (heldLine) .22f else 1f), topLeft = Offset(b.left - self.x - 4 * k, b.top - self.y - 4 * k), size = Size(b.width + 8 * k, b.height + 8 * k), cornerRadius = CornerRadius(rx), style = Stroke(2 * k))
+            if (r.kind == "block" && blocking && st.card(r.blocker!!)?.controller == st.viewer) {
+                val mx = (sx + 2 * cx + ex) / 4; val my = (sy + 2 * cy + ey) / 4
+                drawCircle(Color(0xF014161D), radius = 11 * k, center = Offset(mx, my))
+                drawCircle(Color(0xFFFF8A6A), radius = 11 * k, center = Offset(mx, my), style = Stroke(1.5f * k))
+                drawLine(Color(0xFFFFF1EC), Offset(mx - 4 * k, my - 4 * k), Offset(mx + 4 * k, my + 4 * k), 2 * k, StrokeCap.Round)
+                drawLine(Color(0xFFFFF1EC), Offset(mx + 4 * k, my - 4 * k), Offset(mx - 4 * k, my + 4 * k), 2 * k, StrokeCap.Round)
+                found += Offset(mx, my) to r
+            }
+        }
+        if (found.map { it.first } != hits.map { it.first }) { hits.clear(); hits.addAll(found) }
+    }
+}
+
+/** .forge-own-cast on a phone (max-height 520): the card you are casting, top left, while you pick its targets or pay. */
+@Composable
+private fun OwnCast(st: MatchState, d: Du) = with(d) {
+    val c = pendingCast(st) ?: return@with
+    val anchors = LocalAnchors.current
+    val name = c.name.ifEmpty { Regex("targets? for ([^\n]+)", RegexOption.IGNORE_CASE).find(st.message)?.groupValues?.get(1)?.trim() ?: "" }
+    Column(Modifier.offset(x = 8.du, y = 58.du).width(76.du)
+        .drawBehind { drawRoundRect(Color(0x55F0C27A), topLeft = Offset(-6.du.toPx(), -6.du.toPx()), size = Size(size.width + 12.du.toPx(), size.height + 12.du.toPx()), cornerRadius = CornerRadius(18.du.toPx())) }
+        .clip(RoundedCornerShape(12.du)).background(Color(0xF5111622)).border(1.dp, Color(0xAAF0C27A), RoundedCornerShape(12.du)).padding(4.du),
+        verticalArrangement = Arrangement.spacedBy(3.du)) {
+        Box(Modifier.fillMaxWidth().aspectRatio(488f / 680f).heightIn(max = 150.du).clip(RoundedCornerShape(8.du)).background(Color(0xFF141418))
+            .then(if (anchors != null) Modifier.onGloballyPositioned { anchors.putRect("owncast", it.boundsInRoot()) } else Modifier)) {
+            if (name.isNotEmpty()) CardImage(name, Modifier.fillMaxSize(), contentScale = ContentScale.Crop)
+        }
+        Text("CASTING", style = sans(sp(11f), FontWeight.Bold, Color(0xFFF0C27A)).copy(letterSpacing = 0.05.em))
+        Text(name, style = sans(sp(12f), FontWeight.Bold, Color(0xFFFBF3DF)), maxLines = 2, overflow = TextOverflow.Ellipsis)
+    }
+}
+
+
+/** native-panel.mjs: the one line that says what the table is asking (the .forge-ask-line above your hand), or null. */
+internal fun askLine(st: MatchState): String? {
+    if (st.prompt != null) return null
+    val input = st.inputType ?: ""
+    val discard = st.selection.cards.isNotEmpty() && Regex("\\bdiscard\\b", RegexOption.IGNORE_CASE).containsMatchIn(st.message)
+    val picks = st.selection.cards.size + st.selection.targetCards.size + st.selection.players.size
+    val asking = picks > 0 && input !in setOf("InputPassPriority", "InputAttack", "InputBlock", "InputConfirmMulligan", "InputLockUI") && !input.startsWith("InputPayMana") && !discard
+    if (asking) {
+        val first = st.message.lines().firstOrNull { !Regex("^(Priority|Turn|Phase|Stack):").containsMatchIn(it) } ?: ""
+        var ask = first.replace(Regex("Forge AI(?:\\s+—[^·\\n]*·?)?"), "CPU").replace(Regex("\\s*\\[Phase: [^\\]]*\\]"), "").trim()
+        if (Regex("legend(ary)? rule|same name|choose .* to keep|keep one", RegexOption.IGNORE_CASE).containsMatchIn(ask)) ask = "Two legendary permanents share a name. Choose the one to keep."
+        val named = Regex("^(.{2,60}?) - (.+)$").find(ask)
+        when {
+            input == "InputSelectTargets" && named != null -> ask = "Choose a target for ${named.groupValues[1]}"
+            named != null -> ask = named.groupValues[2]
+        }
+        if (ask.isEmpty()) ask = if (input == "InputSelectTargets") "Choose a target" else "Choose a card on the table"
+        ask = if (oneTarget(st)) ask.replace(Regex("^(Select|Choose) (a )?targets? for", RegexOption.IGNORE_CASE), "Tap a target for") else ask.replace(Regex("^Select\\b"), "Choose")
+        return ask
+    }
+    if (discard) return null
+    val top = st.stack.firstOrNull()
+    val cpuTop = top != null && top.controller != st.viewer
+    val topName = (top?.source?.name ?: top?.text?.split(Regex("\\s+[\\u2014-]\\s+"))?.firstOrNull() ?: "").replace(Regex("\\s*\\(\\d+\\)"), "").trim()
+    return when {
+        input == "InputBlock" -> "Block the CPU’s attack?"
+        input == "InputPassPriority" && cpuTop && topName.isNotEmpty() && st.priorityPlayer == st.viewer -> "Respond to $topName?"
+        else -> null
+    }
+}
+
+/** A required single target commits on the tap (Arena): no Confirm then; an optional one offers "No target". */
+internal fun oneTarget(st: MatchState): Boolean = st.prompt == null && st.inputType == "InputSelectTargets" && st.selection.max == 1 && st.selection.chosenCards.isEmpty() && st.selection.chosenPlayers.isEmpty()
+
+/** .forge-ask-line on a phone: centred 30 du right of the middle, its bottom 4 du above your hand. */
+@Composable
+private fun AskLine(text: String, W: Dp, H: Dp, d: Du) = with(d) {
+    Box(Modifier.fillMaxWidth().offset(x = 30.du, y = H - 64.du).wrapContentHeight(unbounded = true, align = Alignment.Bottom), contentAlignment = Alignment.BottomCenter) {
+        Box(Modifier.widthIn(max = W - 444.du).drawBehind {
+            drawIntoCanvas { c ->
+                val p = Paint().asFrameworkPaint().apply { isAntiAlias = true; color = Color(0x40F2D18E).toArgb(); maskFilter = android.graphics.BlurMaskFilter(11.du.toPx(), android.graphics.BlurMaskFilter.Blur.NORMAL) }
+                c.nativeCanvas.drawRoundRect(0f, 0f, size.width, size.height, size.height / 2, size.height / 2, p)
+            }
+            drawRoundRect(Color(0xBB000000), topLeft = Offset(0f, 10.du.toPx()), size = size, cornerRadius = CornerRadius(size.height / 2))
+        }.clip(RoundedCornerShape(999.dp)).background(Color(0xF010131B))
+            .background(Brush.linearGradient(listOf(Color(0x14FFFFFF), Color(0x03FFFFFF), Color.Transparent)))
+            .border(1.dp, Color(0xAAF2D18E), RoundedCornerShape(999.dp)).padding(horizontal = 16.du, vertical = 8.du)) {
+            Text(text, style = sans(sp(14f), FontWeight.Bold, Color(0xFFFBF3DF)), maxLines = 1, overflow = TextOverflow.Ellipsis)
         }
     }
 }

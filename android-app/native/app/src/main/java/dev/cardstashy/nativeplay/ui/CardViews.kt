@@ -60,7 +60,8 @@ import androidx.compose.ui.unit.sp
 import dev.cardstashy.nativeplay.engine.Card
 import dev.cardstashy.nativeplay.match.DemoDecks
 
-enum class Mark { NONE, PLAYABLE, PICKABLE, PICKED }
+/** forge-table.mjs roles: playable, choice (PICKABLE), chosen (PICKED), target, discard. */
+enum class Mark { NONE, PLAYABLE, PICKABLE, PICKED, TARGET, DISCARD }
 
 /** Where each card and life orb sits on screen (root coordinates), for the attack and block lines. */
 class Anchors {
@@ -69,6 +70,12 @@ class Anchors {
     /** Bumped when an anchor really moves (more than 0.5 px), so draw-time readers redraw. */
     val version = mutableIntStateOf(0)
     fun put(key: String, at: Offset) { val old = map[key]; if (old == null || (old - at).getDistance() > .5f) { map[key] = at; version.intValue++ } }
+    /** Whole boxes in root space, for lines that stop at an edge and rings that go round a target. */
+    val rects = HashMap<String, androidx.compose.ui.geometry.Rect>()
+    fun putRect(key: String, r: androidx.compose.ui.geometry.Rect) {
+        val old = rects[key]
+        if (old == null || (old.center - r.center).getDistance() > .5f || kotlin.math.abs(old.width - r.width) > .5f) { rects[key] = r; put(key, r.center); version.intValue++ }
+    }
 }
 val LocalAnchors = staticCompositionLocalOf<Anchors?> { null }
 
@@ -104,13 +111,16 @@ fun CardFace(
         card.attacking -> Palette.Red
         card.blocking -> Color(0xFF6FA8DC)
         mark == Mark.PLAYABLE -> Color(0xFF8FDCFF) // site: border #8fdcff, 0 0 18px 2px #5cc8ffa6
+        mark == Mark.TARGET -> Color(0xFFFF9D5C) // --ob-target, 0 0 18px 2px #ff9d5ca6
+        mark == Mark.DISCARD -> Color(0xFFFF7A6B) // 0 0 18px 2px #ff6a5aa6
         else -> Color(0x99000000)
     }
     val edgeW = if (mark != Mark.NONE || card.attacking || card.blocking) 2.dp else 1.dp
-    val glow = if (mark == Mark.PLAYABLE && card.zone == "Hand") Modifier.drawBehind {
+    val glowColor = when (mark) { Mark.PLAYABLE -> Color(0xA65CC8FF); Mark.TARGET -> Color(0xA6FF9D5C); Mark.DISCARD -> Color(0xA6FF6A5A); else -> null }
+    val glow = if (glowColor != null && card.zone == "Hand") Modifier.drawBehind {
         val spread = 2.dp.toPx(); val r = 6.dp.toPx()
         drawIntoCanvas { c ->
-            val p = androidx.compose.ui.graphics.Paint().asFrameworkPaint().apply { isAntiAlias = true; color = Color(0xA65CC8FF).toArgb(); maskFilter = android.graphics.BlurMaskFilter(9.dp.toPx(), android.graphics.BlurMaskFilter.Blur.NORMAL) }
+            val p = androidx.compose.ui.graphics.Paint().asFrameworkPaint().apply { isAntiAlias = true; color = glowColor!!.toArgb(); maskFilter = android.graphics.BlurMaskFilter(9.dp.toPx(), android.graphics.BlurMaskFilter.Blur.NORMAL) }
             c.nativeCanvas.drawRoundRect(-spread, -spread, size.width + spread, size.height + spread, r, r, p)
         }
     } else Modifier
