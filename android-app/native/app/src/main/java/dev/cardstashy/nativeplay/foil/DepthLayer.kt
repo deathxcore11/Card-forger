@@ -36,7 +36,11 @@ import kotlin.math.hypot
  * off, a small tile, Android below 13 or a card without a measured window: no layer at all, the card draws exactly as it did.
  * Figure plane (take 3): the first time a card shows big, the phone measures its depth and cuts the figure out of the window
  * (DepthModel, DepthMatte). The figure then stays at the glass with a faint shadow on the backdrop receding behind it. A cut that
- * fails the quality gate leaves the window alone. Not done yet: full arts, which need the text plates per frame family.
+ * fails the quality gate leaves the window alone.
+ *
+ * Full arts (borderless Magic, Secret Lairs, Pokémon full arts): no window. The whole card is cut; the figure, the printed panels
+ * (the depth model reads name bars and text boxes as near) and the printed words stay at the glass while the art slides behind them,
+ * clipped only by the card's own edge. A full art that fails the gate, or the seam checks (DepthMatte.cutFull), stays the flat card.
  */
 object Depth {
     /** Backdrop slide at full tilt, as a share of the window's width. */
@@ -49,17 +53,20 @@ object Depth {
     /** Tiles narrower than this stay flat: the slide would be under a pixel and the extra layer costs scrolling. */
     val MIN_WIDTH = 220.dp
 
-    /** The art window of a card face in card space (x0, y0, x1, y1), or null when it has none the layer can use yet. */
-    fun window(finish: CardFinish?, context: android.content.Context): FloatArray? = when (finish) {
-        is CardFinish.Magic -> finish.look.frame.art.takeUnless { full(it) }
-        is CardFinish.Ygo -> finish.layout.art.takeUnless { full(it) }
+    /** Where a card face's art recedes: [win] the printed art window in card space (x0, y0, x1, y1); for a full art ([open]) the whole
+     *  card, whose own edge is the only clip. */
+    class Plane(val win: FloatArray, val open: Boolean)
+
+    fun plane(finish: CardFinish?, context: android.content.Context): Plane? = when (finish) {
+        is CardFinish.Magic -> finish.look.frame.art
+        is CardFinish.Ygo -> finish.layout.art
         is CardFinish.Ptcg -> runCatching {
             val masks = PtcgFoil.Masks.load(context)
             val shape = masks.shape(finish.mask) ?: return@runCatching null
-            PtcgFoil.artBox(shape).takeUnless { full(it) }
+            PtcgFoil.artBox(shape)
         }.getOrNull()
         else -> null
-    }
+    }?.let { if (full(it)) Plane(floatArrayOf(0f, 0f, 1f, 1f), true) else Plane(it, false) }
     private fun full(b: FloatArray) = b[0] <= .01f && b[1] <= .01f && b[2] >= .99f && b[3] >= .99f
 
     /** The card picture the figure is measured from. */
@@ -79,9 +86,11 @@ uniform float4 u_win;    // art window, card space
 uniform float2 u_slide;  // the backdrop plate's slide, card space
 uniform float u_full;    // |slide| at full tilt, card-space x
 uniform float2 u_lsize;  // plate and figure size, px
+uniform float4 u_lbox;   // card-space box the plate and figure cover: the window, or for a full art the card and a margin past its edge
+uniform float u_open;    // 1 for a full art: no frame, no wall, no lip; the card's own edge is the only clip
 uniform float u_layers;  // the figure plane's weight: 0 for the window alone, easing to 1 once the card's figure is measured
 float inBox(float2 p,float4 b){return step(b.x,p.x)*step(p.x,b.z)*step(b.y,p.y)*step(p.y,b.w);}
-float2 lp(float2 uv){return (uv-u_win.xy)/(u_win.zw-u_win.xy)*u_lsize;}
+float2 lp(float2 uv){return (uv-u_lbox.xy)/(u_lbox.zw-u_lbox.xy)*u_lsize;}
 // The backdrop at a window point: the card itself [c], except under the figure, where the plate holds what it hid.
 half4 back(float2 uv,half4 c){float2 l=lp(uv);return mix(c,u_plate.eval(l),u_fig.eval(l).b);}
 half4 main(float2 fc){
@@ -89,9 +98,12 @@ half4 main(float2 fc){
  half4 c=u_card.eval(fc);
  float m=length(u_slide*u_size);
  if(m<.01||inBox(uv,u_win)<.5)return c;
+ if(u_open>.5&&u_layers<=0.)return c;
  float2 q=uv-u_slide;
  half4 o,ob;
- if(inBox(q,u_win)>.5){o=u_card.eval(q*u_size);ob=o;if(u_layers>0.)ob=back(q,o);}
+ // a full art: the backdrop plate runs past the card's edge, so the slide only ever uncovers more backdrop
+ if(u_open>.5){o=c;ob=back(q,u_card.eval(clamp(q,0.,1.)*u_size));}
+ else if(inBox(q,u_win)>.5){o=u_card.eval(q*u_size);ob=o;if(u_layers>0.)ob=back(q,o);}
  else{
   // the window's inner wall: the frame's own material just past the edge the ray left through, in shadow, darker the deeper
   float2 d=normalize(-u_slide*u_size);
@@ -112,7 +124,7 @@ half4 main(float2 fc){
   o=mix(o,ob,half(u_layers));a*=half(u_layers);
  }
  // the frame's lip on the opposite edge catches the light: one pixel, faint, growing with the tilt
- float lip=(1.-inBox(uv+normalize(u_slide*u_size)/u_size,u_win))*clamp(length(u_slide)/max(u_full,1e-5),0.,1.)*float(1.-a);
+ float lip=(1.-inBox(uv+normalize(u_slide*u_size)/u_size,u_win))*clamp(length(u_slide)/max(u_full,1e-5),0.,1.)*float(1.-a)*(1.-u_open);
  o.rgb+=(o.a-o.rgb)*half(.22*lip);
  return o;
 }
@@ -127,14 +139,15 @@ half4 main(float2 fc){
 fun Modifier.depth(finish: CardFinish?, tilt: State<Offset>?): Modifier =
     if (tilt == null || finish == null || Build.VERSION.SDK_INT < 33 || Foil.testFallback) this else composed {
         val context = androidx.compose.ui.platform.LocalContext.current
-        val win = remember(finish) { Depth.window(finish, context.applicationContext) } ?: return@composed this
+        val plane = remember(finish) { Depth.plane(finish, context.applicationContext) } ?: return@composed this
+        val win = plane.win; val open = plane.open
         if (!AppSettings.depth) return@composed this
         val shader = remember { runCatching { RuntimeShader(Depth.AGSL) }.getOrNull() } ?: return@composed this
         val image = Depth.image(finish)
         val minPx = with(LocalDensity.current) { Depth.MIN_WIDTH.toPx() }
         var big by remember { mutableStateOf(false) }
         val layers by produceState<DepthLayers.Ready?>(null, big, image, win) {
-            if (big && image != null) DepthLayers.layers(context.applicationContext, image, win).collect { value = it }
+            if (big && image != null) DepthLayers.layers(context.applicationContext, image, win, open).collect { value = it }
         }
         val blank = remember { FoilMaps.blank }
         val ease = remember { Animatable(0f) }
@@ -142,14 +155,16 @@ fun Modifier.depth(finish: CardFinish?, tilt: State<Offset>?): Modifier =
         this.onSizeChanged { big = it.width >= minPx }.graphicsLayer {
             val t by tilt
             val w = size.width; val h = size.height
-            if (w >= minPx && h > 0f) {
+            val l = layers
+            // A full art stays the flat card until its layers are measured: with no frame, nothing may move before the cut is known.
+            if (w >= minPx && h > 0f && (!open || l != null)) {
                 val ww = (win[2] - win[0]) * w
                 // Px the plate moves; the sign follows the card's own turn (rotationY = tilt.x * 8 deg), so the plate reads as behind the frame.
                 val sx = Depth.SIGN_X * t.x * Depth.K * ww; val sy = Depth.SIGN_Y * t.y * Depth.K * ww
-                val l = layers
                 shader.setInputShader("u_plate", l?.inputs?.first ?: blank.first); shader.setInputShader("u_fig", l?.inputs?.second ?: blank.second)
                 shader.setFloatUniform("u_lsize", (l?.plate?.width ?: 1).toFloat(), (l?.plate?.height ?: 1).toFloat())
                 shader.setFloatUniform("u_layers", if (l != null) ease.value else 0f)
+                shader.setFloatUniform("u_lbox", l?.box ?: win); shader.setFloatUniform("u_open", if (open) 1f else 0f)
                 shader.setFloatUniform("u_size", w, h); shader.setFloatUniform("u_win", win)
                 shader.setFloatUniform("u_slide", sx / w, sy / h); shader.setFloatUniform("u_full", Depth.K * ww * hypot(1f, 1f) / w)
                 renderEffect = RenderEffect.createRuntimeShaderEffect(shader, "u_card").asComposeRenderEffect()

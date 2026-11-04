@@ -77,4 +77,33 @@ class DepthMatteTest {
         assertTrue(l.plate.contentEquals(IntArray(w * h) { -0x777778 }))
         assertTrue(l.shadow.all { it == 0f })
     }
+
+    /** Full arts against the preview's reference (fa/vid.py): Wastes and Memnarch pass, Mystical Tutor's cut runs over plain art and stays flat. */
+    @Test fun fullArtsCutLikeThePreview() {
+        val inp = DataInputStream(GZIPInputStream(javaClass.getResourceAsStream("/foil/depth-full-golden.bin.gz")!!))
+        fun u(b: Byte) = b.toInt() and 255
+        repeat(inp.readInt()) { k ->
+            val w = inp.readInt(); val h = inp.readInt(); val n = w * h
+            val rgb = ByteArray(n * 3).also { inp.readFully(it) }; val dep = ByteArray(n).also { inp.readFully(it) }; val words = ByteArray(n).also { inp.readFully(it) }
+            val sep = inp.readFloat(); val area = inp.readFloat(); val soft = inp.readFloat(); val weak = inp.readFloat(); val title = inp.readFloat(); val pass = inp.readByte() == 1.toByte()
+            val argb = IntArray(n) { i -> (255 shl 24) or (u(rgb[i * 3]) shl 16) or (u(rgb[i * 3 + 1]) shl 8) or u(rgb[i * 3 + 2]) }
+            val cut = DepthMatte.cutFull(argb, FloatArray(n) { u(dep[it]) / 255f }, w, h, argb, w, h)
+            val g = cut.gate
+            assertEquals("case $k separation", sep, g.separation, .01f); assertEquals("case $k area", area, g.area, .01f)
+            assertEquals("case $k soft", soft, g.softEdge, .01f); assertEquals("case $k weak", weak, g.weak, .04f); assertEquals("case $k title", title, g.title, .05f)
+            assertEquals("case $k $g", pass, g.pass)
+            if (pass) {
+                // every printed word the reference pins stays at the glass here too
+                var want = 0; var got = 0
+                for (i in 0 until n) if (u(words[i]) > 127) { want++; if (cut.figure!![i] > .5f) got++ }
+                assertTrue("case $k: $got of $want word pixels pinned", got >= want * .9)
+                // the plate runs past the card's edge, and the card itself is untouched wherever it shows
+                val pad = 9
+                val l = DepthMatte.layersFull(argb, cut.figure!!, w, h, pad, g)
+                assertEquals((w + 2 * pad) * (h + 2 * pad), l.plate.size)
+                assertTrue(l.hide[0] && l.hide[(h + 2 * pad) * (w + 2 * pad) - 1])
+                for (y in 0 until h) for (x in 0 until w) { val i = (y + pad) * (w + 2 * pad) + x + pad; if (!l.hide[i]) assertEquals(argb[y * w + x], l.plate[i]) }
+            }
+        }
+    }
 }

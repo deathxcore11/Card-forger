@@ -19,9 +19,11 @@ import kotlin.math.roundToInt
  * The gate judges the crop at most [CUT_WIDTH] wide, as approved; the figure is then drawn at the full crop size ([cut]).
  */
 object DepthMatte {
-    class Gate(val separation: Float, val area: Float, val softEdge: Float) {
-        val pass get() = separation >= .55f && area in .08f..0.70f && softEdge <= .15f
-        override fun toString() = "sep %.2f area %.2f soft %.3f %s".format(separation, area, softEdge, if (pass) "pass" else "fail")
+    /** Full arts add two seam checks: [weak] the share of the cut's edge that runs over plain art (no line in the picture to hide it),
+     *  [title] how far the cut splits a display title. Framed cards leave both at 0. */
+    class Gate(val separation: Float, val area: Float, val softEdge: Float, val weak: Float = 0f, val title: Float = 0f) {
+        val pass get() = separation >= .55f && area in .08f..0.70f && softEdge <= .15f && weak <= .25f && title <= .15f
+        override fun toString() = "sep %.2f area %.2f soft %.3f weak %.2f title %.2f %s".format(separation, area, softEdge, weak, title, if (pass) "pass" else "fail")
     }
     /** [figure] 0..1 per pixel; [hide] where the plate was filled in; [plate] ARGB backdrop; [shadow] 0..1 softened silhouette. */
     class Layers(val w: Int, val h: Int, val figure: FloatArray, val shadow: FloatArray, val plate: IntArray, val hide: BooleanArray, val gate: Gate)
@@ -143,6 +145,99 @@ object DepthMatte {
     }
 
     /**
+     * The full-art cut (no window: the whole card). The depth cut as above, then the printed words on the art (name, cost, footer,
+     * flavour) are pinned to the glass with it: word-shaped clusters of ink strokes, holes filled. Big display titles stay with the art
+     * as one piece, and the gate fails a card whose cut would tear one, or whose cut runs over plain art where a seam would show.
+     */
+    fun cutFull(lo: IntArray, depth: FloatArray, lw: Int, lh: Int, hi: IntArray, hw: Int, hh: Int): Cut {
+        val gl = gray(lo); val s = split(depth, lw, lh)
+        val (ma, mb) = coeffs(gl, s.soft, lw, lh, s.r, 2e-3f)
+        val m = FloatArray(lw * lh) { (ma[it] * gl[it] + mb[it]).coerceIn(0f, 1f) }
+        val ink = ink(gl, lw, lh)
+        val (words, title) = words(ink, m, lw, lh)
+        val g0 = gate(m, s.sep)
+        val g = Gate(g0.separation, g0.area, g0.softEdge, weak(gl, m, lw, lh), title)
+        if (!g.pass) return Cut(hw, hh, null, g)
+        val pin = box(words, lw, lh, 1).let { b -> FloatArray(b.size) { if (words[it] > 0f) 1f else b[it] } }
+        val gh = gray(hi); val A = resize(ma, lw, lh, hw, hh); val B = resize(mb, lw, lh, hw, hh); val P = resize(pin, lw, lh, hw, hh)
+        return Cut(hw, hh, FloatArray(hw * hh) { max((A[it] * gh[it] + B[it]).coerceIn(0f, 1f), P[it].coerceIn(0f, 1f)) }, g)
+    }
+
+    /** Ink strokes: pixels that stand out from their neighbourhood (a Gaussian of 1/150 of the width) by more than 12%. */
+    private fun ink(g: FloatArray, w: Int, h: Int): BooleanArray {
+        val r = boxFor(w / 150f); val bl = box(box(g, w, h, r), w, h, r)
+        return BooleanArray(w * h) { kotlin.math.abs(g[it] - bl[it]) > .12f }
+    }
+
+    /** Printed words to pin (1 on their strokes and filled holes) and the worst split of a display title by the cut [m]. */
+    private fun words(ink: BooleanArray, m: FloatArray, w: Int, h: Int): Pair<FloatArray, Float> {
+        // join letters into words: dilate 3 px across, 1 px down
+        val joined = BooleanArray(w * h)
+        for (y in 0 until h) for (x in 0 until w) {
+            if (!ink[y * w + x]) continue
+            for (yy in max(0, y - 1)..min(h - 1, y + 1)) for (xx in max(0, x - 3)..min(w - 1, x + 3)) joined[yy * w + xx] = true
+        }
+        val label = IntArray(w * h); var n = 0; val stack = IntArray(w * h)
+        val pin = FloatArray(w * h); var title = 0f
+        for (start in 0 until w * h) {
+            if (!joined[start] || label[start] != 0) continue
+            n++; var sp = 0; stack[sp++] = start; label[start] = n
+            var x0 = w; var y0 = h; var x1 = -1; var y1 = -1
+            val members = ArrayList<Int>()
+            while (sp > 0) {
+                val i = stack[--sp]; members += i
+                val x = i % w; val y = i / w
+                if (x < x0) x0 = x; if (x > x1) x1 = x; if (y < y0) y0 = y; if (y > y1) y1 = y
+                if (x > 0 && joined[i - 1] && label[i - 1] == 0) { label[i - 1] = n; stack[sp++] = i - 1 }
+                if (x < w - 1 && joined[i + 1] && label[i + 1] == 0) { label[i + 1] = n; stack[sp++] = i + 1 }
+                if (y > 0 && joined[i - w] && label[i - w] == 0) { label[i - w] = n; stack[sp++] = i - w }
+                if (y < h - 1 && joined[i + w] && label[i + w] == 0) { label[i + w] = n; stack[sp++] = i + w }
+            }
+            val bh = y1 - y0 + 1; val bw = x1 - x0 + 1
+            if (bw < 2 * bh) continue
+            val strokes = members.filter { ink[it] }
+            if (strokes.size < 15) continue
+            if (bh >= .012f * h && bh <= .06f * h) {
+                // a printed word: its strokes grown a pixel, and the holes inside its letters, stay at the glass
+                val bx0 = max(0, x0 - 1); val by0 = max(0, y0 - 1); val bx1 = min(w - 1, x1 + 1); val by1 = min(h - 1, y1 + 1)
+                val ww = bx1 - bx0 + 1; val hh = by1 - by0 + 1; val solid = BooleanArray(ww * hh)
+                for (i in strokes) { val x = i % w; val y = i / w
+                    for (yy in max(by0, y - 1)..min(by1, y + 1)) for (xx in max(bx0, x - 1)..min(bx1, x + 1)) solid[(yy - by0) * ww + xx - bx0] = true }
+                val out = BooleanArray(ww * hh); var tp = 0
+                for (yy in 0 until hh) for (xx in 0 until ww) if ((yy == 0 || xx == 0 || yy == hh - 1 || xx == ww - 1) && !solid[yy * ww + xx]) { out[yy * ww + xx] = true; stack[tp++] = yy * ww + xx }
+                while (tp > 0) {
+                    val k = stack[--tp]; val xx = k % ww; val yy = k / ww
+                    if (xx > 0 && !solid[k - 1] && !out[k - 1]) { out[k - 1] = true; stack[tp++] = k - 1 }
+                    if (xx < ww - 1 && !solid[k + 1] && !out[k + 1]) { out[k + 1] = true; stack[tp++] = k + 1 }
+                    if (yy > 0 && !solid[k - ww] && !out[k - ww]) { out[k - ww] = true; stack[tp++] = k - ww }
+                    if (yy < hh - 1 && !solid[k + ww] && !out[k + ww]) { out[k + ww] = true; stack[tp++] = k + ww }
+                }
+                for (yy in 0 until hh) for (xx in 0 until ww) if (!out[yy * ww + xx]) pin[(yy + by0) * w + xx + bx0] = 1f
+            } else if (bh > .06f * h && bh <= .14f * h) {
+                val fr = strokes.count { m[it] > .5f }.toFloat() / strokes.size
+                title = max(title, min(fr, 1 - fr))
+            }
+        }
+        return pin to title
+    }
+
+    /** The share of the cut's edge (0.3 to 0.7) where the picture has no line within 2 px to hide a seam. */
+    private fun weak(g: FloatArray, m: FloatArray, w: Int, h: Int): Float {
+        val G = FloatArray(w * h)
+        for (y in 1 until h - 1) for (x in 1 until w - 1) {
+            val i = y * w + x; G[i] = min(.5f, kotlin.math.hypot(g[i + 1] - g[i - 1], g[i + w] - g[i - w]))
+        }
+        var edge = 0; var plain = 0
+        for (y in 0 until h) for (x in 0 until w) {
+            val i = y * w + x; if (m[i] <= .3f || m[i] >= .7f) continue
+            edge++; var best = 0f
+            for (yy in max(0, y - 2)..min(h - 1, y + 2)) for (xx in max(0, x - 2)..min(w - 1, x + 2)) best = max(best, G[yy * w + xx])
+            if (best < .06f) plain++
+        }
+        return if (edge == 0) 0f else plain.toFloat() / edge
+    }
+
+    /**
      * Fills hidden pixels from the visible ones with a push-pull pyramid: each hidden pixel takes the blurred colour of the nearest
      * backdrop around it, with none of the streaks that neighbour-averaging rings leave. Visible pixels are kept exactly.
      */
@@ -194,6 +289,21 @@ object DepthMatte {
         val grown = box(FloatArray(w * h) { if (figure[it] > .15f) 1f else 0f }, w, h, max(1, Math.round(s)))
         val hide = BooleanArray(w * h) { grown[it] > 1e-4f }
         return Layers(w, h, figure, shadow(figure, w, h, max(1, Math.round(3 * s)), boxFor(2 * s)), fill(argb, hide, w, h), hide, gate)
+    }
+
+    /**
+     * Full arts: the plate runs [pad] px past the card's own edge on every side (and fills its see-through corners), so the slide never
+     * uncovers anything but backdrop. Every array is (w + 2 pad) x (h + 2 pad); the card sits in the middle. Proof scale: a 360 px card.
+     */
+    fun layersFull(argb: IntArray, figure: FloatArray, w: Int, h: Int, pad: Int, gate: Gate): Layers {
+        val W = w + 2 * pad; val H = h + 2 * pad; val s = w / 360f
+        val a = IntArray(W * H); val f = FloatArray(W * H); val inside = BooleanArray(W * H)
+        for (y in 0 until h) for (x in 0 until w) {
+            val i = (y + pad) * W + x + pad; a[i] = argb[y * w + x]; f[i] = figure[y * w + x]; inside[i] = (argb[y * w + x] ushr 24) >= 128
+        }
+        val grown = box(FloatArray(W * H) { if (f[it] > .15f) 1f else 0f }, W, H, max(1, Math.round(s)))
+        val hide = BooleanArray(W * H) { grown[it] > 1e-4f || !inside[it] }
+        return Layers(W, H, f, shadow(f, W, H, max(1, Math.round(3 * s)), boxFor(2 * s)), fill(a, hide, W, H), hide, gate)
     }
 
     /** Everything for one window crop at one size (the take-3 pipeline end to end). */
