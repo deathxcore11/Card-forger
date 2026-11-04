@@ -1214,6 +1214,7 @@ public final class ForgeHttpBridge implements IRemote {
             if(count>0)snapshot.put("cpuWarnings",obj("count",count,"message","The CPU may play some cards in this deck imperfectly."));
         }
         snapshot.putAll(obj("revision",publicationRevision,"status",failure!=null?"failed":(finished||Boolean.TRUE.equals(board.get("gameOver"))?"finished":exactAdmission!=null&&(!Boolean.TRUE.equals(exactAdmission.receipt().get("nativeRosterVerified"))||startingPlayer!=null&&pregame.isEmpty())?"initializing":"running"),"failure",failure,"message",message,"buttons",buttons,"inputType",input,"selection",select,"prompt",concessionRequested||pending==null?null:pending.dto,"busy",!(finished||Boolean.TRUE.equals(board.get("gameOver")))&&(concessionRequested||(pending!=null?pending.answer.isDone():(busy||commandInFlight||nativePaymentPending()||publishedInput==null||publishedInput instanceof forge.gamemodes.match.input.InputLockUI))),"lastActionError",lastActionError,"notification",notification,"controlMode",controlMode,"autoPay",autoPay(),"phaseStops",Map.copyOf(phaseStops),"autoPassNoActions",effectiveAutoPass,"nativeAutoPayments",nativeAutoPayments,"canConcede",failure==null&&!finished&&!concessionRequested&&!Boolean.TRUE.equals(board.get("gameOver")),"concession",obj("requested",concessionRequested,"nativeConfirmed",nativeOutcomeConfirmed,"applied",concessionApplied)));
+        snapshot.put("afk",afkSync(snapshot));
         published.set(snapshot);
     }}
     /** Who holds priority and, when the table is waiting on you, why it stopped. Additive and
@@ -1347,109 +1348,265 @@ public final class ForgeHttpBridge implements IRemote {
                 byte[] bytes=x.getRequestBody().readNBytes(16385);if(bytes.length>16384)throw new IllegalArgumentException("body_too_large");
                 JsonObject body=JsonParser.parseString(new String(bytes,StandardCharsets.UTF_8)).getAsJsonObject();
                 synchronized(lock){
-                    if(exactLong(body.get("revision"),"revision")!=((Number)published.get().get("revision")).longValue()){respond(x,409,obj("error","stale_revision"));return;}
-                    if(exactAdmission!=null&&!Boolean.TRUE.equals(exactAdmission.receipt().get("nativeRosterVerified"))){respond(x,409,obj("error","exact_initialization_unverified"));return;}
-                    if(failure!=null){respond(x,409,obj("error","native_match_unavailable"));return;}
-                    String op=exactString(body.get("op"),"op");
-                    if(concessionRequested){respond(x,409,obj("error",nativeOutcomeConfirmed?"native_game_finished":"native_concession_in_progress"));return;}
-                    if(finished||Boolean.TRUE.equals(board.get("gameOver"))){respond(x,409,obj("error","native_game_finished"));return;}
-                    if(op.equals("concede")){
-                        if(failure!=null||controller==null){respond(x,409,obj("error","native_match_unavailable"));return;}
-                        requestConcession();
-                    }else if(op.equals("controlMode")){
-                        String mode=exactString(body.get("value"),"value");
-                        if(!Set.of("smart","full").contains(mode))throw new IllegalArgumentException("controlMode_must_be_smart_or_full");
-                        if(pending!=null||busy||commandInFlight||nativePaymentPending()){respond(x,409,obj("error","native_engine_busy"));return;}
-                        final var modeInput=publishedInput;
-                        final long modeGeneration=promptGeneration.get();
-                        if(modeInput==null||modeInput instanceof forge.gamemodes.match.input.InputLockUI
-                            ||modeInput!=controller.getInputProxy().getInput()){respond(x,409,obj("error","native_input_changed"));return;}
-                        commandInFlight=true;publish();
-                        SwingUtilities.invokeLater(()->{
-                            try{
-                                if(concessionRequested||modeInput!=controller.getInputProxy().getInput()||modeGeneration!=promptGeneration.get()||pending!=null){
-                                    lastActionError="native_decision_changed";clearSmartIntent();return;
-                                }
-                                controlMode=mode;autoPayChoice=null;applyControlMode();
-                            }
-                            catch(Throwable t){recordFailure(t);}
-                            finally{synchronized(lock){commandInFlight=false;publish();}}
-                        });
-                    }else if(op.equals("phaseStop")){
-                        // Only marks which steps Smart may skip; no native command runs.
-                        String seat=exactString(body.get("seat"),"seat"),mode=exactString(body.get("mode"),"mode");
-                        if(!Set.of("you","opponent").contains(seat)||!Set.of("off","once","pinned").contains(mode))throw new IllegalArgumentException("phaseStop_invalid");
-                        String key=seat+":"+forge.game.phase.PhaseType.valueOf(exactString(body.get("phase"),"phase")).name();
-                        if(mode.equals("off"))phaseStops.remove(key);else phaseStops.put(key,mode.equals("pinned"));
-                        reachedOnceStops.remove(key);applyStops();publish();
-                    }else if(op.equals("yieldSource")){
-                        StackItemView s=exposedStack.get(exactInt(body.get("id"),"id"));
-                        if(s==null||!s.isAbility())throw new IllegalArgumentException("stack_item_not_offered");
-                        boolean on=exactBoolean(body.get("value"),"value");
-                        if(pending!=null||busy||commandInFlight||nativePaymentPending()){respond(x,409,obj("error","native_engine_busy"));return;}
-                        final String key=s.getKey(),suffix=forge.player.AutoYieldStore.abilitySuffix(key);
-                        commandInFlight=true;publish();
-                        // Forge's own yield: passes priority while this ability is on top, then
-                        // the yield is dropped at the start of the next turn.
-                        SwingUtilities.invokeLater(()->{
-                            try{if(on)turnYields.add(suffix);else turnYields.remove(suffix);controller.setShouldAutoYield(key,on,true);}
-                            catch(Throwable t){recordFailure(t);}
-                            finally{synchronized(lock){commandInFlight=false;publish();}}
-                        });
-                    }else if(op.equals("autoPay")){
-                        // Only decides whether a later cast's first cost is paid for you; no
-                        // native command runs, so it applies at once. Turning it off drops a
-                        // spell intention that has not reached its payment yet.
-                        autoPayChoice=exactBoolean(body.get("value"),"value");
-                        if(!autoPayChoice)clearSmartIntent();
-                        publish();
-                    }else if(op.equals("reply")){
-                        Pending p=pending;
-                        if(p==null||p.answer.isDone()||exactInt(body.get("promptId"),"promptId")!=p.event.getId()){respond(x,409,obj("error","stale_prompt"));return;}
-                        Object answer=reply(p,body);busy=true;p.answer.complete(answer);publish();
-                    }else{
-                        if(pending!=null){respond(x,409,obj("error","native_dialog_requires_reply"));return;}
-                        if(busy||commandInFlight||nativePaymentPending()){respond(x,409,obj("error","native_engine_busy"));return;}
-                        final var capturedInput=publishedInput;
-                        final long capturedPromptGeneration=promptGeneration.get();
-                        if(capturedInput==null||capturedInput!=controller.getInputProxy().getInput()||capturedInput instanceof forge.gamemodes.match.input.InputLockUI){respond(x,409,obj("error","native_input_changed"));return;}
-                        Runnable action;
-                        switch(op){
-                            case "ok" -> {if(!Boolean.TRUE.equals(buttons.get("okEnabled")))throw new IllegalArgumentException("ok_disabled");action=capturedInput::selectButtonOK;}
-                            case "cancel" -> {if(!Boolean.TRUE.equals(buttons.get("cancelEnabled")))throw new IllegalArgumentException("cancel_disabled");action=capturedInput::selectButtonCancel;}
-                            case "card" -> {int i=exactInt(body.get("id"),"id");CardView c=exposedCards.get(i);if(c==null)throw new IllegalArgumentException("card_not_visible");action=()->{
-                                boolean accepted=capturedInput.selectCard(controller.getCard(c),null,null);
-                                if(capturedInput instanceof forge.gamemodes.match.input.InputPassPriority){if(accepted)armSmartSpellIntent(capturedInput);else clearSmartIntent();}
-                                if(!accepted){synchronized(lock){busy=false;}}
-                            };}
-                            case "player" -> {int i=exactInt(body.get("id"),"id");PlayerView p=exposedPlayers.get(i);if(p==null)throw new IllegalArgumentException("player_not_offered");action=()->capturedInput.selectPlayer(game.getPlayer(p),null);}
-                            case "stack" -> {StackItemView s=exposedStack.get(exactInt(body.get("id"),"id"));if(s==null)throw new IllegalArgumentException("stack_item_not_offered");action=()->{for(SpellAbilityStackInstance si:game.getStack())if(si.getId()==s.getId()){
-                                boolean accepted=capturedInput.selectAbility(si.getSpellAbility());
-                                if(capturedInput instanceof forge.gamemodes.match.input.InputPassPriority){if(accepted)armSmartSpellIntent(capturedInput);else clearSmartIntent();}
-                                if(!accepted){synchronized(lock){busy=false;}}break;}};}
-                            default -> throw new IllegalArgumentException("unknown_operation");
-                        }
-                        if(capturedInput instanceof forge.gamemodes.match.input.InputPassPriority
-                            &&(op.equals("ok")||op.equals("cancel")))clearSmartIntent();
-                        busy=true; commandInFlight=true; lastActionError=null;
-                        publish(); // the accepted command consumes this presentation before dispatch
-                        SwingUtilities.invokeLater(()->{
-                            try{
-                                if(concessionRequested||capturedInput!=controller.getInputProxy().getInput()||capturedPromptGeneration!=promptGeneration.get()||pending!=null){lastActionError="native_decision_changed";clearSmartIntent();return;}
-                                action.run();
-                            }catch(Throwable t){recordFailure(t);}
-                            finally{ synchronized(lock){
-                                commandInFlight=false;
-                                // Only native stable prompt callbacks or an explicit false selection result release busy.
-                                // The same Input identity can enqueue a later native confirmation, so identity alone is not enough.
-                                maybeNativeAutoPay();
-                                publish();
-                            }}
-                        });
-                    }
+                    String refused=dispatchAction(body,true);
+                    if(refused!=null){respond(x,409,obj("error",refused));return;}
                     respond(x,202,obj("accepted",true));
                 }
             }catch(Exception e){respond(x,400,obj("error",e.getMessage()==null?e.getClass().getSimpleName():e.getMessage()));}
+    }
+    /** One action, as /action runs it (caller holds {@code lock}). Returns null when accepted, else the 409 error code;
+     *  malformed input throws IllegalArgumentException (a 400). {@code byPlayer} is false for the AFK clock's own
+     *  answers, which must not count as the player being there. */
+    String dispatchAction(JsonObject body,boolean byPlayer){
+            if(exactLong(body.get("revision"),"revision")!=((Number)published.get().get("revision")).longValue()){return "stale_revision";}
+            if(exactAdmission!=null&&!Boolean.TRUE.equals(exactAdmission.receipt().get("nativeRosterVerified"))){return "exact_initialization_unverified";}
+            if(failure!=null){return "native_match_unavailable";}
+            String op=exactString(body.get("op"),"op");
+            if(concessionRequested){return nativeOutcomeConfirmed?"native_game_finished":"native_concession_in_progress";}
+            if(finished||Boolean.TRUE.equals(board.get("gameOver"))){return "native_game_finished";}
+            if(op.equals("concede")){
+                if(failure!=null||controller==null){return "native_match_unavailable";}
+                requestConcession();
+            }else if(op.equals("controlMode")){
+                String mode=exactString(body.get("value"),"value");
+                if(!Set.of("smart","full").contains(mode))throw new IllegalArgumentException("controlMode_must_be_smart_or_full");
+                if(pending!=null||busy||commandInFlight||nativePaymentPending()){return "native_engine_busy";}
+                final var modeInput=publishedInput;
+                final long modeGeneration=promptGeneration.get();
+                if(modeInput==null||modeInput instanceof forge.gamemodes.match.input.InputLockUI
+                    ||modeInput!=controller.getInputProxy().getInput()){return "native_input_changed";}
+                commandInFlight=true;publish();
+                SwingUtilities.invokeLater(()->{
+                    try{
+                        if(concessionRequested||modeInput!=controller.getInputProxy().getInput()||modeGeneration!=promptGeneration.get()||pending!=null){
+                            lastActionError="native_decision_changed";clearSmartIntent();return;
+                        }
+                        controlMode=mode;autoPayChoice=null;applyControlMode();
+                    }
+                    catch(Throwable t){recordFailure(t);}
+                    finally{synchronized(lock){commandInFlight=false;publish();}}
+                });
+            }else if(op.equals("phaseStop")){
+                // Only marks which steps Smart may skip; no native command runs.
+                String seat=exactString(body.get("seat"),"seat"),mode=exactString(body.get("mode"),"mode");
+                if(!Set.of("you","opponent").contains(seat)||!Set.of("off","once","pinned").contains(mode))throw new IllegalArgumentException("phaseStop_invalid");
+                String key=seat+":"+forge.game.phase.PhaseType.valueOf(exactString(body.get("phase"),"phase")).name();
+                if(mode.equals("off"))phaseStops.remove(key);else phaseStops.put(key,mode.equals("pinned"));
+                reachedOnceStops.remove(key);applyStops();publish();
+            }else if(op.equals("yieldSource")){
+                StackItemView s=exposedStack.get(exactInt(body.get("id"),"id"));
+                if(s==null||!s.isAbility())throw new IllegalArgumentException("stack_item_not_offered");
+                boolean on=exactBoolean(body.get("value"),"value");
+                if(pending!=null||busy||commandInFlight||nativePaymentPending()){return "native_engine_busy";}
+                final String key=s.getKey(),suffix=forge.player.AutoYieldStore.abilitySuffix(key);
+                commandInFlight=true;publish();
+                // Forge's own yield: passes priority while this ability is on top, then
+                // the yield is dropped at the start of the next turn.
+                SwingUtilities.invokeLater(()->{
+                    try{if(on)turnYields.add(suffix);else turnYields.remove(suffix);controller.setShouldAutoYield(key,on,true);}
+                    catch(Throwable t){recordFailure(t);}
+                    finally{synchronized(lock){commandInFlight=false;publish();}}
+                });
+            }else if(op.equals("autoPay")){
+                // Only decides whether a later cast's first cost is paid for you; no
+                // native command runs, so it applies at once. Turning it off drops a
+                // spell intention that has not reached its payment yet.
+                autoPayChoice=exactBoolean(body.get("value"),"value");
+                if(!autoPayChoice)clearSmartIntent();
+                publish();
+            }else if(op.equals("reply")){
+                Pending p=pending;
+                if(p==null||p.answer.isDone()||exactInt(body.get("promptId"),"promptId")!=p.event.getId()){return "stale_prompt";}
+                Object answer=reply(p,body);busy=true;p.answer.complete(answer);publish();
+            }else{
+                if(pending!=null){return "native_dialog_requires_reply";}
+                if(busy||commandInFlight||nativePaymentPending()){return "native_engine_busy";}
+                final var capturedInput=publishedInput;
+                final long capturedPromptGeneration=promptGeneration.get();
+                if(capturedInput==null||capturedInput!=controller.getInputProxy().getInput()||capturedInput instanceof forge.gamemodes.match.input.InputLockUI){return "native_input_changed";}
+                Runnable action;
+                switch(op){
+                    case "ok" -> {if(!Boolean.TRUE.equals(buttons.get("okEnabled")))throw new IllegalArgumentException("ok_disabled");action=capturedInput::selectButtonOK;}
+                    case "cancel" -> {if(!Boolean.TRUE.equals(buttons.get("cancelEnabled")))throw new IllegalArgumentException("cancel_disabled");action=capturedInput::selectButtonCancel;}
+                    case "card" -> {int i=exactInt(body.get("id"),"id");CardView c=exposedCards.get(i);if(c==null)throw new IllegalArgumentException("card_not_visible");action=()->{
+                        boolean accepted=capturedInput.selectCard(controller.getCard(c),null,null);
+                        if(capturedInput instanceof forge.gamemodes.match.input.InputPassPriority){if(accepted)armSmartSpellIntent(capturedInput);else clearSmartIntent();}
+                        if(!accepted){synchronized(lock){busy=false;}}
+                    };}
+                    case "player" -> {int i=exactInt(body.get("id"),"id");PlayerView p=exposedPlayers.get(i);if(p==null)throw new IllegalArgumentException("player_not_offered");action=()->capturedInput.selectPlayer(game.getPlayer(p),null);}
+                    case "stack" -> {StackItemView s=exposedStack.get(exactInt(body.get("id"),"id"));if(s==null)throw new IllegalArgumentException("stack_item_not_offered");action=()->{for(SpellAbilityStackInstance si:game.getStack())if(si.getId()==s.getId()){
+                        boolean accepted=capturedInput.selectAbility(si.getSpellAbility());
+                        if(capturedInput instanceof forge.gamemodes.match.input.InputPassPriority){if(accepted)armSmartSpellIntent(capturedInput);else clearSmartIntent();}
+                        if(!accepted){synchronized(lock){busy=false;}}break;}};}
+                    default -> throw new IllegalArgumentException("unknown_operation");
+                }
+                if(capturedInput instanceof forge.gamemodes.match.input.InputPassPriority
+                    &&(op.equals("ok")||op.equals("cancel")))clearSmartIntent();
+                busy=true; commandInFlight=true; lastActionError=null;
+                publish(); // the accepted command consumes this presentation before dispatch
+                SwingUtilities.invokeLater(()->{
+                    try{
+                        if(concessionRequested||capturedInput!=controller.getInputProxy().getInput()||capturedPromptGeneration!=promptGeneration.get()||pending!=null){lastActionError="native_decision_changed";clearSmartIntent();return;}
+                        action.run();
+                    }catch(Throwable t){recordFailure(t);}
+                    finally{ synchronized(lock){
+                        commandInFlight=false;
+                        // Only native stable prompt callbacks or an explicit false selection result release busy.
+                        // The same Input identity can enqueue a later native confirmation, so identity alone is not enough.
+                        maybeNativeAutoPay();
+                        publish();
+                    }}
+                });
+            }
+        if(byPlayer)afkTouch();
+        return null;
+    }
+    // ---- AFK clock (friend matches only) -------------------------------------------------------
+    // Randall's standing rule: every match mode has a turn countdown and an AFK player's turn is skipped.
+    // The site client draws the ring; this makes it real on the host, where a closed or sleeping app can't
+    // be skipped by a client. While the game waits on a human the host holds a deadline (90 s for your own
+    // turn, 30 s for a prompt or a chance to respond) and publishes it as `afk` in each seat's state, so
+    // both clients draw the same ring (`own:false` is the other seat's window). At expiry it plays the
+    // safe answer: pass priority, keep the hand, decline or choose the minimum, cancel a payment, declare
+    // no attackers and no blockers. One strike per turn; three in a row concede; any input from the
+    // player clears them. The clock is off in CPU matches (the site client's clock is enough there) and
+    // is held while the engine is busy (the other side's play is being told).
+    static final long AFK_TURN_MS=Long.getLong("cardstashy.afkTurnMs",90_000L),AFK_PROMPT_MS=Long.getLong("cardstashy.afkPromptMs",30_000L);
+    static final int AFK_STRIKE_LIMIT=Integer.getInteger("cardstashy.afkStrikeLimit",3);
+    static final ScheduledExecutorService AFK_CLOCK=Executors.newSingleThreadScheduledExecutor(r->{Thread t=new Thread(r,"cardstashy-afk-clock");t.setDaemon(true);return t;});
+    static final class AfkWindow{
+        final String id,kind;final long total;volatile long deadlineEpoch;int attempts;volatile boolean expired;ScheduledFuture<?> task;
+        AfkWindow(String id,String kind,long total){this.id=id;this.kind=kind;this.total=total;}
+        long remaining(){return Math.max(0,deadlineEpoch-System.currentTimeMillis());}
+    }
+    volatile AfkWindow afk;
+    final Map<String,Long> afkBank=new HashMap<>(); // a turn's time left while a prompt interrupts it
+    int afkStrikes;Object afkLastStrikeTurn;
+    /** Called from publish() with the snapshot about to be published (holds {@code lock}); returns its `afk` field. */
+    Map<String,Object> afkSync(Map<String,Object> snap){
+        if(!humanOpponent||AFK_TURN_MS<=0||AFK_PROMPT_MS<=0)return null;
+        String id=null,kind=null;long total=0;
+        if("running".equals(snap.get("status"))&&!Boolean.TRUE.equals(snap.get("busy"))&&!concessionRequested&&!finished&&failure==null){
+            Object input=snap.get("inputType");
+            if(snap.get("prompt") instanceof Map<?,?> prompt){id="prompt:"+prompt.get("id");kind="prompt";total=AFK_PROMPT_MS;}
+            else if(input!=null&&!"InputLockUI".equals(input)){
+                if("InputPassPriority".equals(input)){
+                    if(Objects.equals(snap.get("activePlayer"),snap.get("viewer"))){id="turn:"+snap.get("turn");kind="turn";total=AFK_TURN_MS;}
+                    else{id="response:"+System.identityHashCode(publishedInput);kind="response";total=AFK_PROMPT_MS;}
+                }else{id=input+":"+System.identityHashCode(publishedInput);kind="prompt";total=AFK_PROMPT_MS;}
+            }
+        }
+        AfkWindow w=afk;
+        if(id==null){if(w!=null){afkClose();afkShare();}return afkRival();}
+        if(w==null||!w.id.equals(id)){afkClose();w=afkOpen(id,kind,total);afkShare();}
+        return afkView(w,true);
+    }
+    Map<String,Object> afkView(AfkWindow w,boolean own){
+        Map<String,Object> m=obj("own",own,"reason",w.kind,"total",w.total,"deadline",w.deadlineEpoch,"remainingMs",w.remaining(),"serverNow",System.currentTimeMillis());
+        if(own){m.put("strikes",afkStrikes);m.put("strikeLimit",AFK_STRIKE_LIMIT);}
+        return m;
+    }
+    /** The other seat's window, shown while this seat has none. */
+    Map<String,Object> afkRival(){
+        var other=peer;AfkWindow w=other==null?null:other.afk;
+        return w==null||w.expired?null:afkView(w,false);
+    }
+    AfkWindow afkOpen(String id,String kind,long total){
+        AfkWindow w=new AfkWindow(id,kind,total);
+        Long banked=kind.equals("turn")?afkBank.remove(id):null;
+        long left=banked!=null?banked:total;
+        w.deadlineEpoch=System.currentTimeMillis()+left;
+        w.task=AFK_CLOCK.schedule(()->afkExpire(w),left,TimeUnit.MILLISECONDS);
+        afk=w;
+        return w;
+    }
+    void afkClose(){
+        AfkWindow w=afk;if(w==null)return;
+        if(w.task!=null)w.task.cancel(false);
+        if(w.kind.equals("turn")&&!w.expired){afkBank.put(w.id,w.remaining());if(afkBank.size()>64)afkBank.clear();}
+        afk=null;
+    }
+    /** Lets the other seat's published state show this seat's window, without a new revision (an action sent
+     *  against the current revision stays valid). Takes no lock of the other seat. */
+    void afkShare(){
+        var other=peer;if(other==null)return;
+        var cur=other.published.get();
+        if(!cur.containsKey("revision")||other.afk!=null)return;
+        Map<String,Object> next=new LinkedHashMap<>(cur);next.put("afk",other.afkRival());
+        other.published.compareAndSet(cur,next);
+    }
+    /** Any accepted input from the player: the strikes clear and a prompt's window starts over. */
+    void afkTouch(){
+        afkStrikes=0;afkLastStrikeTurn=null;
+        AfkWindow w=afk;
+        if(w!=null&&!w.kind.equals("turn")&&!w.expired){
+            if(w.task!=null)w.task.cancel(false);
+            w.deadlineEpoch=System.currentTimeMillis()+w.total;
+            w.task=AFK_CLOCK.schedule(()->afkExpire(w),w.total,TimeUnit.MILLISECONDS);
+        }
+    }
+    void afkExpire(AfkWindow w){
+        synchronized(lock){
+            if(afk!=w||w.expired||finished||concessionRequested||failure!=null)return;
+            Object turn=board.get("turn");
+            if(!Objects.equals(turn,afkLastStrikeTurn)){afkLastStrikeTurn=turn;afkStrikes++;System.out.println("AFK_STRIKE "+afkStrikes+" turn="+turn+" window="+w.id);}
+            String refused;
+            try{
+                if(afkStrikes>=AFK_STRIKE_LIMIT){System.out.println("AFK_CONCEDE");JsonObject b=new JsonObject();b.addProperty("revision",((Number)published.get().get("revision")).longValue());b.addProperty("op","concede");refused=dispatchAction(b,false);}
+                else{JsonObject b=afkSafeBody();refused=b==null?"no_safe_answer":dispatchAction(b,false);}
+            }catch(RuntimeException ex){refused="afk_answer_failed:"+ex.getMessage();}
+            if(refused==null)return; // the answer was accepted: publish() has moved to the next window
+            // The board moved under the answer, or the engine was busy: try again shortly, a few times.
+            if(++w.attempts>=4){w.expired=true;System.out.println("AFK_GAVE_UP "+refused);publish();return;}
+            w.deadlineEpoch=System.currentTimeMillis()+3000;
+            w.task=AFK_CLOCK.schedule(()->afkExpire(w),3000,TimeUnit.MILLISECONDS);
+        }
+    }
+    /** The safe answer to what the game is waiting on now, as an /action body; null when there is none. */
+    JsonObject afkSafeBody(){
+        JsonObject b=new JsonObject();
+        b.addProperty("revision",((Number)published.get().get("revision")).longValue());
+        Pending p=pending;
+        if(p!=null&&!p.answer.isDone()){
+            b.addProperty("op","reply");b.addProperty("promptId",p.event.getId());
+            switch(p.event.getMethod()){
+                case confirm,showConfirmDialog -> b.addProperty("value",false);
+                case showInputDialog -> {
+                    Object init=p.dto.get("initialValue");
+                    b.addProperty("value",init!=null?String.valueOf(init):!p.options.isEmpty()?String.valueOf(p.options.get(0)):"0");
+                }
+                case assignCombatDamage -> {
+                    Map<?,?> spec=(Map<?,?>)p.dto.get("assign");
+                    if(Boolean.TRUE.equals(spec.get("maySkip")))b.addProperty("skip",true);
+                    else{JsonArray amounts=new JsonArray();for(int i=0;i<p.options.size();i++)amounts.add(i==0?((Number)spec.get("amount")).intValue():0);b.add("amounts",amounts);}
+                }
+                case assignGenericAmount -> {
+                    Map<?,?> spec=(Map<?,?>)p.dto.get("assign");List<?> maxima=(List<?>)spec.get("maxima");
+                    int left=((Number)spec.get("amount")).intValue(),n=maxima.size();int[] out=new int[n];
+                    if(Boolean.TRUE.equals(spec.get("atLeastOne"))){for(int i=0;i<n;i++){out[i]=1;left--;}}
+                    for(int i=0;i<n&&left>0;i++){int room=((Number)maxima.get(i)).intValue()-out[i];int add=Math.min(room,left);out[i]+=add;left-=add;}
+                    JsonArray amounts=new JsonArray();for(int v:out)amounts.add(v);b.add("amounts",amounts);
+                }
+                default -> {JsonArray idx=new JsonArray();for(int i=0;i<Math.max(0,p.min)&&i<p.options.size();i++)idx.add(i);b.add("indexes",idx);}
+            }
+            return b;
+        }
+        var input=publishedInput;if(input==null)return null;
+        String name=input.getClass().getSimpleName();
+        boolean ok=Boolean.TRUE.equals(buttons.get("okEnabled")),cancel=Boolean.TRUE.equals(buttons.get("cancelEnabled"));
+        String op=switch(name){
+            // Keep the hand; declare no attackers and no blockers; pass priority.
+            case "InputConfirmMulligan","InputAttack","InputBlock","InputPassPriority" -> ok?"ok":null;
+            // Forge's cancel on the London mulligan is "Auto": it picks the cards to bottom, then OK.
+            case "InputLondonMulligan" -> ok?"ok":cancel?"cancel":null;
+            // A payment is cancelled; any other choice is cancelled when it can be, else its minimum is taken.
+            default -> cancel?"cancel":ok?"ok":null;
+        };
+        if(op!=null){b.addProperty("op",op);return b;}
+        // A choice that needs cards picked before OK works (and cannot be cancelled): take the first unchosen card.
+        Set<Integer> chosen=new HashSet<>();for(TrackableObject c:selection.chosen())chosen.add(c.getId());
+        for(TrackableObject c:selection.cards())if(!chosen.contains(c.getId())&&exposedCards.containsKey(c.getId())){b.addProperty("op","card");b.addProperty("id",c.getId());return b;}
+        return null;
     }
     boolean auth(HttpExchange x)throws IOException {
         String origin=x.getRequestHeaders().getFirst("Origin");

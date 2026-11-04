@@ -63,7 +63,7 @@ try {
     assert.equal(sha(await readFile(path.join(host, file))), expected, 'Host source changed: ' + file);
   }
   const manifest = await readFile(path.join(harness, 'MANIFEST.json'));
-  assert.equal(sha(manifest), '746930d44ed41e945879a92a0a8100b904ee94119d304fb5d64a631becbbd794');
+  assert.equal(sha(manifest), '0e7a6aa35cb85f50d8ea168e886d564d938cddca31d9469b23ea10906d1a1b7b');
   process.env.FORGE_COMBINED_WORK = work;
   process.env.FORGE_COMBINED_REVIEWED_MANIFEST_SHA256 = sha(manifest);
   await run('source-inventory', 'python3', [path.join(harness, 'verify-inputs.py')]);
@@ -89,7 +89,7 @@ try {
   const image = registryImageForProbe(JSON.parse(inspected.stdout)[0], built.imageId, `registry.cloudflare.com/${ACCOUNT}/cardstashy-forge`);
   const releaseFile = path.join(work, 'release.json');
   await run('bind-release-policy', process.execPath, [path.join(host, 'scripts/create-release-policy.mjs'),
-    '--image', image, '--native-manifest-sha256', '77e897a19e2bcb931d67add4df79f4eb4923c0403ab3052885146f06cf498dd6',
+    '--image', image, '--native-manifest-sha256', '4590486395da784a130be436be86ee5ea7ec77bd53c0081d78ebdb906ee0ab4f',
     '--native-root', path.join(candidate, 'native'), '--build-attestation', path.join(imageRoot, 'actual-build-attestation.json'),
     '--runtime-index', path.join(imageRoot, 'actual-runtime-index.json'), '--runtime-receipt', path.join(work, 'runtime-receipt.json'), '--out', releaseFile]);
   const release = await json(releaseFile);

@@ -1,5 +1,5 @@
 import test from 'node:test';import assert from 'node:assert/strict';import {mkdtemp,writeFile,rm}from 'node:fs/promises';import {tmpdir}from 'node:os';import path from 'node:path';import {cleanupImage}from './cleanup-image.mjs';import {createImageOwnershipLedger}from './image-stages/image-ownership.mjs';
-const id='sha256:'+'b'.repeat(64),SOURCE='cde8dff4ff3c7f74ab9e805a87e8c1d24792f0311bddd9c868b33be060e9575a',MANIFEST='77e897a19e2bcb931d67add4df79f4eb4923c0403ab3052885146f06cf498dd6';
+const id='sha256:'+'b'.repeat(64),SOURCE='4b047f1a21d5aaa96dbdbddbb86dc826d4fa882a65af7262922863b64dfee8a5',MANIFEST='4590486395da784a130be436be86ee5ea7ec77bd53c0081d78ebdb906ee0ab4f';
 async function fixture(fn){const root=await mkdtemp(path.join(tmpdir(),'image-cleanup-test-'));try{await fn(root);}finally{await rm(root,{recursive:true,force:true});}}
 test('no build started permits empty cleanup',()=>fixture(async root=>assert.deepEqual(await cleanupImage(root),{confirmed:true,createdImage:false})));
 test('prebuild ledger but missing ID is unresolved daemon outcome',()=>fixture(async root=>{await createImageOwnershipLedger(root);const r=await cleanupImage(root,{run:()=>{throw Error('must not guess');}});assert.equal(r.confirmed,false);assert.equal(r.buildOutcome,'uncertain');}));
