@@ -28,6 +28,7 @@ cp "$HERE/decks/demo-decks.json" "$A/"
 # The web's Play rule data (achievements, quests, Story acts, CPU levels, playmats), from its own modules.
 node "$HERE/scripts/export-play-rules.mjs" "$REPO" "$A/play-rules.json"
 node "$HERE/scripts/export-board-icons.mjs" "$REPO" "$A/board-icons.json"
+node "$HERE/scripts/export-story-deeds.mjs" "$REPO" "$A/story-deeds.json"
 # The card pop-up's rule words and foil recipes, from the web's own modules.
 node "$HERE/scripts/export-card-data.mjs" "$REPO" "$A/card-data.json"
 # Randall's painted art pieces (each replaces its code-drawn version; a missing piece keeps the code one).

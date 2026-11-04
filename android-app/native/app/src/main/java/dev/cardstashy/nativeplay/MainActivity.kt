@@ -60,6 +60,7 @@ import dev.cardstashy.nativeplay.ui.SignInScreen
 import dev.cardstashy.nativeplay.ui.Type
 import dev.cardstashy.nativeplay.ui.glass
 import kotlinx.coroutines.flow.first
+import kotlinx.coroutines.flow.filterNotNull
 import kotlinx.coroutines.launch
 import dev.cardstashy.nativeplay.match.MatchController
 import dev.cardstashy.nativeplay.ui.DeckPickScreen
@@ -265,6 +266,7 @@ private fun MatchFlow(activity: MainActivity, pick: Pick, onHome: () -> Unit, on
     }
     if (story != null) {
         val c = story
+        dev.cardstashy.nativeplay.ui.StoryBubbleLayer(outcome.bubbles, c.cast, c.avatarUrl)
         if (sceneOn) dev.cardstashy.nativeplay.ui.StoryScene(scene!!, c.cast, c.battle.getAsJsonObject("hero")["who"].asString, c.battle.getAsJsonObject("villain")["who"].asString, c.avatarUrl, c.battle["title"].asString) { scene = null }
         outcome.ending?.let { lines -> dev.cardstashy.nativeplay.ui.StoryScene(lines, c.cast, c.battle.getAsJsonObject("hero")["who"].asString, c.battle.getAsJsonObject("villain")["who"].asString, c.avatarUrl,
             if (c.battle["slot"].asInt == 8) "Act ${c.act} finale" else c.battle["title"].asString) { outcome.ending = null } }
@@ -278,7 +280,8 @@ private fun Table(activity: MainActivity, s: QuickPlay.Setup.Ready, t0: Long, on
     key(round) {
         val context = LocalContext.current
         val scope = rememberCoroutineScope()
-        val controller = remember { MatchController(scope, s.input).apply { onFinished = { st, f, ms -> reportMatch(pick, st, f, ms); (pick as? Pick.Table)?.story?.let { c -> outcome?.let { o -> storyFinished(scope, context, c, st, o) } } } } }
+        val bubbles = remember { (pick as? Pick.Table)?.story?.let { dev.cardstashy.nativeplay.play.StoryBubbles(it.battle, it.seat) } }
+        val controller = remember { MatchController(scope, s.input).apply { onFinished = { st, f, ms -> reportMatch(pick, st, f, ms); (pick as? Pick.Table)?.story?.let { c -> outcome?.let { o -> storyFinished(scope, context, c, st, f, o, bubbles) } } } } }
         var versus by remember { mutableStateOf(round == 0) }
         DisposableEffect(Unit) { activity.inGame(true); controller.start(); onDispose { controller.close() } }
         if (round == 0) LaunchedEffect(Unit) {
@@ -291,17 +294,29 @@ private fun Table(activity: MainActivity, s: QuickPlay.Setup.Ready, t0: Long, on
             controller.shown.first { it != null }
             if (round == 0) Speed.record(if (s.known) Speed.KNOWN else Speed.NEW, SystemClock.elapsedRealtime() - t0)
         }
+        if (bubbles != null && outcome != null) LaunchedEffect(Unit) { controller.shown.filterNotNull().collect { st -> bubbles.update(st).forEach { outcome.bubbles.add(it) } } }
         BackHandler { /* the table's menu has Leave; Back never drops a match by accident */ }
         if (versus || holdForScene) VersusScreen(s.you, s.cpu, intro = false) else TableScreen(controller, onHome = onHome, onRematch = { round++ }, resultNote = outcome?.note)
     }
 }
 
 /** app.js storyPlay finished(): a win claims the battle (server-paid), the result gets its note, and the ending scene plays 2.6 s later. */
-private fun storyFinished(scope: kotlinx.coroutines.CoroutineScope, context: android.content.Context, c: dev.cardstashy.nativeplay.match.StoryCtx, st: dev.cardstashy.nativeplay.engine.MatchState, o: dev.cardstashy.nativeplay.ui.StoryOutcome) {
-    if (st.draw || st.winnerPlayerId != st.viewer) return
+private fun storyFinished(scope: kotlinx.coroutines.CoroutineScope, context: android.content.Context, c: dev.cardstashy.nativeplay.match.StoryCtx, st: dev.cardstashy.nativeplay.engine.MatchState, f: dev.cardstashy.nativeplay.play.MatchFacts, o: dev.cardstashy.nativeplay.ui.StoryOutcome,
+                          bubbles: dev.cardstashy.nativeplay.play.StoryBubbles?) {
+    if (st.draw || st.winnerPlayerId == null) return
+    val win = st.winnerPlayerId == st.viewer
+    bubbles?.finish(win)?.forEach { o.bubbles.add(it) }
+    if (!win) return
+    val facts = f.snapshot(f.ownFirst)
     val b = c.battle; val id = b["id"].asString
     scope.launch {
         val out = dev.cardstashy.nativeplay.play.Progress.claimStory(id, c.seat, if (c.own) "own" else "loaner")
+        // Story deeds: what this win earned; the server re-checks and pays each once, and the in-app pop-up fires from the refreshed achievements.
+        runCatching {
+            val refs = out?.getAsJsonArray("refs")?.mapNotNull { it.takeIf { e -> e.isJsonPrimitive }?.asString } ?: emptyList()
+            val deeds = dev.cardstashy.nativeplay.play.StoryDeeds.load(context).earned(id, c.seat, c.own, facts, refs)
+            if (deeds.isNotEmpty()) scope.launch { dev.cardstashy.nativeplay.play.Progress.reportDeeds(id, deeds) }
+        }
         val paid = out?.getAsJsonArray("paid")?.map { it.asString } ?: emptyList()
         val won = !c.own && paid.contains("story:$id:${if (c.seat == "villain") "villain" else "loaner"}")
         val coll = paid.contains("story:$id:collector")

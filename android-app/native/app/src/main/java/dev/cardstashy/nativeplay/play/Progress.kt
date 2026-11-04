@@ -119,6 +119,16 @@ object Progress {
         out
     } catch (e: Failure) { JsonObject().apply { addProperty("error", e.message) } }
 
+    /** play-econ-client reportDeeds: the Story deeds a won battle earned; the server re-checks and pays each once. Returns the ids it counted. */
+    suspend fun reportDeeds(battle: String, deeds: List<String>): List<String> {
+        if (deeds.isEmpty()) return emptyList()
+        return try {
+            val out = call("deeds", JsonObject().apply { addProperty("battle", battle); add("deeds", com.google.gson.JsonArray().apply { deeds.forEach { add(it) } }) })
+            runCatching { refreshDeeds() }   // the in-app pop-up fires from the achievements it returns
+            out.getAsJsonArray("counted")?.map { it.asString } ?: emptyList()
+        } catch (_: Failure) { emptyList() }
+    }
+
     /** The day's log-in stamp; {day, stamp, reward, monthReward, fresh} or null. Quiet on failure, like the web. */
     suspend fun login(): JsonObject? = try {
         val out = call("login", JsonObject().apply { addProperty("tz", tz) })

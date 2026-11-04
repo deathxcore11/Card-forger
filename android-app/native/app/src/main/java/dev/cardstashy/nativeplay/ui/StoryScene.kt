@@ -47,6 +47,11 @@ import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import com.google.gson.JsonObject
 import kotlinx.coroutines.delay
+import androidx.compose.foundation.layout.safeDrawing
+import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.layout.windowInsetsPadding
+import kotlinx.coroutines.flow.filterNotNull
+import kotlinx.coroutines.flow.first
 
 /**
  * Story talking heads (story-ui.js playScene): two portraits, the speaker lit and the others dimmed, stage and narrator lines
@@ -117,4 +122,39 @@ fun StoryScene(lines: List<JsonObject>, cast: JsonObject?, leftWho: String, righ
 class StoryOutcome {
     var note by androidx.compose.runtime.mutableStateOf<String?>(null)
     var ending by androidx.compose.runtime.mutableStateOf<List<JsonObject>?>(null)
+    /** Speech waiting to be shown, one bubble at a time. */
+    val bubbles = androidx.compose.runtime.mutableStateListOf<dev.cardstashy.nativeplay.play.StoryBubbles.Line>()
+}
+
+/** A bubble from the speaker's side of the table, never taking a tap and never pausing play (story-mode.css .st-bubble, docked: theirs top, yours low). */
+@Composable
+fun StoryBubbleLayer(queue: androidx.compose.runtime.snapshots.SnapshotStateList<dev.cardstashy.nativeplay.play.StoryBubbles.Line>, cast: JsonObject?, avatarUrl: String?, modifier: Modifier = Modifier) {
+    var line by remember { mutableStateOf<dev.cardstashy.nativeplay.play.StoryBubbles.Line?>(null) }
+    var shown by remember { mutableStateOf(false) }
+    LaunchedEffect(queue) {
+        while (true) {
+            val next = androidx.compose.runtime.snapshotFlow { queue.firstOrNull() }.filterNotNull().first()
+            line = next; shown = true
+            delay(minOf(5200L, 2200L + 45L * next.text.length))
+            shown = false; delay(300); queue.removeAt(0); delay(250)
+        }
+    }
+    val a by androidx.compose.animation.core.animateFloatAsState(if (shown) 1f else 0f, androidx.compose.animation.core.tween(if (Motion.still) 0 else 260), label = "bubble")
+    val l = line
+    if (l != null && a > 0f) {
+        val person = cast?.getAsJsonObject(l.who)
+        val url = if (l.who == "you") avatarUrl else person?.getAsJsonObject("portrait")?.get("crop")?.asString
+        val bias = storyFocus(person?.getAsJsonObject("portrait")?.get("focus")?.asString)
+        Box(modifier.fillMaxSize().windowInsetsPadding(WindowInsets.safeDrawing).padding(horizontal = 12.dp, vertical = if (l.mine) 120.dp else 56.dp)
+            .graphicsLayer { alpha = a; scaleX = .92f + .08f * a; scaleY = .92f + .08f * a }, contentAlignment = if (l.mine) Alignment.BottomCenter else Alignment.TopCenter) {
+            androidx.compose.foundation.layout.Row(Modifier.widthIn(max = 300.dp).clip(RoundedCornerShape(16.dp)).background(Color(0xF2191A22)).border(1.dp, Color(0x80D6AD64), RoundedCornerShape(16.dp)).padding(10.dp),
+                horizontalArrangement = androidx.compose.foundation.layout.Arrangement.spacedBy(10.dp)) {
+                if (url != null) StoryPic(url, Modifier.size(40.dp).clip(RoundedCornerShape(10.dp)).border(1.5.dp, Color(0xFFD6AD64), RoundedCornerShape(10.dp)), bias)
+                Column(verticalArrangement = androidx.compose.foundation.layout.Arrangement.spacedBy(2.dp)) {
+                    Text(person?.get("name")?.asString ?: "You", style = storyCinzel(12f, Color(0xFFE8B95B)))
+                    Text(l.text, style = storyText(14f, FontWeight.Medium, Color(0xFFF6EEDB)))
+                }
+            }
+        }
+    }
 }
