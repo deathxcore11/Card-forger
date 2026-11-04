@@ -257,17 +257,35 @@ fun heroPainter(art: Any?): Painter? = when (art) {
 @Composable
 fun TopBarItems(mode: Mode, avatarUrl: String?, name: String?, unread: Boolean, onSwitch: () -> Unit, onProfile: () -> Unit, modifier: Modifier = Modifier) {
     Row(modifier.fillMaxWidth().height(56.dp).padding(horizontal = 12.dp), verticalAlignment = Alignment.CenterVertically) {
-        val other = if (mode == Mode.PLAY) Mode.COLLECTION else Mode.PLAY
-        // The site's brand mark (icon.svg) in its rounded glass tile, alive; tapping it goes to the other mode like the site's Home.
-        Box(Modifier.size(48.dp).clip(RoundedCornerShape(14.dp)).background(Color(0x99171A20)).border(1.dp, Site.GlassLine, RoundedCornerShape(14.dp)),
-            contentAlignment = Alignment.Center) {
-            BrandMark(40.dp, onClick = onSwitch, modifier = Modifier.semantics { contentDescription = if (other == Mode.PLAY) "Play" else "Collection" })
-        }
+        ModePill(mode, onSwitch)
         Spacer(Modifier.weight(1f))
         Box(Modifier.size(44.dp).clickable(onClick = onProfile).semantics { contentDescription = "Account" }) {
             val p by dev.cardstashy.nativeplay.account.Account.profile.collectAsState()
             ProfileAvatar(p ?: dev.cardstashy.nativeplay.account.Account.Profile(name, avatarUrl), 44.dp)
             if (unread) Box(Modifier.align(Alignment.TopEnd).size(11.dp).clip(CircleShape).background(Site.Unread).border(1.5.dp, Site.Bg, CircleShape))
+        }
+    }
+}
+
+/**
+ * Play or Collection, one tap from every screen and every layout (Randall 4 Nov 20:28Z: "a good way to go to Play and
+ * Collection mode, easy, in game mode and portrait or tablet"). The brand mark, then the two halves as a glass capsule;
+ * the half you're in is gold, tapping the other one switches. Words, not a puzzle icon.
+ */
+@Composable
+fun ModePill(mode: Mode, onSwitch: () -> Unit) {
+    val shape = RoundedCornerShape(24.dp)
+    Row(Modifier.height(44.dp).clip(shape).background(Color(0xB3101318)).border(1.dp, Site.GlassLine, shape).padding(4.dp),
+        verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(2.dp)) {
+        BrandMark(30.dp, modifier = Modifier.padding(horizontal = 3.dp))
+        for (m in Mode.entries) {
+            val on = m == mode
+            val label = if (m == Mode.PLAY) "Play" else "Collection"
+            Box(Modifier.fillMaxHeight().clip(RoundedCornerShape(20.dp))
+                .then(if (on) Modifier.background(Brush.verticalGradient(listOf(Color(0xFFF2CF7E), Color(0xFFC9963A)))) else Modifier)
+                .clickable(enabled = !on, onClick = onSwitch).semantics { contentDescription = label }.padding(horizontal = 14.dp), contentAlignment = Alignment.Center) {
+                Text(label, style = TextStyle(fontFamily = Site.Manrope, fontWeight = FontWeight.ExtraBold, fontSize = 14.sp, color = if (on) Color(0xFF1B1406) else Color(0xE6F1F3F6)))
+            }
         }
     }
 }

@@ -85,10 +85,17 @@ fun CollectionHome(d: CollectionHomeData, top: @Composable () -> Unit, act: Coll
             // Sideways (handhelds, a phone on its side): the nav becomes a rail so the height goes to content; the art header
             // owns the left, the scrolling content the right.
             nav(true)
-            Box(Modifier.fillMaxHeight().weight(.46f)) { Header(d, act, top, Modifier.fillMaxSize(), compact = true) }
-            Column(Modifier.fillMaxHeight().weight(.54f).verticalScroll(rememberScrollState()).windowInsetsPadding(WindowInsets.statusBars)
-                .padding(horizontal = 16.dp, vertical = 14.dp), verticalArrangement = Arrangement.spacedBy(14.dp)) {
-                ValueCard(d, act); Shelf(d, act, columns = 3, lead = 124.dp, small = 96.dp); RandomRow(act); Meta(d, act); News(d, act, compact = true)
+            Box(Modifier.fillMaxHeight().weight(1f)) {
+                // The art melts into the page like the upright header does: it runs on behind the content column and fades
+                // out sideways and at the foot, so there's no hard edge down the middle (Randall 4 Nov 20:27Z).
+                SideArt(d, Modifier.fillMaxHeight().fillMaxWidth(.7f))
+                Row(Modifier.fillMaxSize()) {
+                    Box(Modifier.fillMaxHeight().weight(.46f)) { Header(d, act, top, Modifier.fillMaxSize(), compact = true, drawArt = false) }
+                    Column(Modifier.fillMaxHeight().weight(.54f).verticalScroll(rememberScrollState()).windowInsetsPadding(WindowInsets.statusBars)
+                        .padding(horizontal = 16.dp, vertical = 14.dp), verticalArrangement = Arrangement.spacedBy(14.dp)) {
+                        ValueCard(d, act); Shelf(d, act, columns = 3, lead = 124.dp, small = 96.dp); RandomRow(act); Meta(d, act); News(d, act, compact = true)
+                    }
+                }
             }
         } else Column(Modifier.fillMaxSize()) {
             Column(Modifier.weight(1f).verticalScroll(rememberScrollState()), verticalArrangement = Arrangement.spacedBy(16.dp)) {
@@ -118,12 +125,12 @@ fun CollectionHome(d: CollectionHomeData, top: @Composable () -> Unit, act: Coll
 // ---------------------------------------------------------------- the art header (home-hero + home-today + search dock)
 
 @Composable
-private fun Header(d: CollectionHomeData, act: CollectionHomeActions, top: @Composable () -> Unit, modifier: Modifier, compact: Boolean) {
-    val art = heroPainter(d.dailyArt)
+private fun Header(d: CollectionHomeData, act: CollectionHomeActions, top: @Composable () -> Unit, modifier: Modifier, compact: Boolean, drawArt: Boolean = true) {
+    val art = if (drawArt) heroPainter(d.dailyArt) else null
     Box(modifier.clip(if (compact) RoundedCornerShape(0.dp) else RoundedCornerShape(bottomStart = 28.dp, bottomEnd = 28.dp))) {
         if (art != null) Image(art, null, Modifier.fillMaxSize(), contentScale = ContentScale.Crop, alignment = BiasAlignment(0f, -.2f))
-        else Box(Modifier.fillMaxSize().background(Site.Surface))
-        Box(Modifier.fillMaxSize().background(Brush.verticalGradient(0f to Color(0x8C000000), .28f to Color.Transparent, .55f to Color(0x66000000), 1f to Color(0xF20B0D11))))
+        else if (drawArt) Box(Modifier.fillMaxSize().background(Site.Surface))
+        if (drawArt) Box(Modifier.fillMaxSize().background(Brush.verticalGradient(0f to Color(0x8C000000), .28f to Color.Transparent, .55f to Color(0x66000000), 1f to Color(0xF20B0D11))))
         Box(Modifier.windowInsetsPadding(WindowInsets.statusBars)) { top() }
         Column(Modifier.align(Alignment.BottomStart).fillMaxWidth().padding(horizontal = 20.dp).padding(bottom = if (compact) 16.dp else 22.dp),
             verticalArrangement = Arrangement.spacedBy(if (compact) 10.dp else 12.dp)) {
@@ -138,6 +145,21 @@ private fun Header(d: CollectionHomeData, act: CollectionHomeActions, top: @Comp
                 Text(d.dailySet, style = Site.Label.copy(color = Color(0xB3F1F3F6)), maxLines = 1, overflow = TextOverflow.Ellipsis)
             }
         }
+    }
+}
+
+/** Sideways: the Card of the Day art as a backdrop that fades into the page on the right and at the foot, under the words. */
+@Composable
+private fun SideArt(d: CollectionHomeData, modifier: Modifier) {
+    val art = heroPainter(d.dailyArt) ?: return
+    val bg = Site.Bg
+    Box(modifier) {
+        Image(art, null, Modifier.fillMaxSize(), contentScale = ContentScale.Crop, alignment = BiasAlignment(0f, -.2f))
+        // Words stay readable: dark at the top (status bar) and lower left (title, search), clear in the middle of the art.
+        Box(Modifier.fillMaxSize().background(Brush.verticalGradient(0f to Color(0x8C000000), .3f to Color.Transparent, .6f to bg.copy(alpha = .55f), 1f to bg.copy(alpha = .96f))))
+        // The melt: art thins out across the right third into the page colour, with a soft start so there's no seam.
+        Box(Modifier.fillMaxSize().background(Brush.horizontalGradient(0f to bg, .07f to bg.copy(alpha = .45f), .18f to Color.Transparent, .5f to Color.Transparent,
+            .72f to bg.copy(alpha = .6f), .88f to bg.copy(alpha = .92f), 1f to bg)))
     }
 }
 
@@ -300,22 +322,31 @@ private fun Panel(modifier: Modifier = Modifier, content: @Composable ColumnScop
         verticalArrangement = Arrangement.spacedBy(8.dp, Alignment.CenterVertically), content = content)
 
 /** Collection's bottom nav (index.html .bottom-nav): Home first, as in Play, so Home is one tap from everywhere. Sideways it
- *  stands up as a rail on the left edge, so the short screen height goes to the content. */
+ *  stands up as a rail on the left edge, so the short screen height goes to the content. Scan only where there's a camera
+ *  to scan with, never in game mode (Randall 4 Nov: handhelds have no cameras). */
 @Composable
-fun CollectionNav(active: CollectionTab?, vertical: Boolean = false, onSelect: (CollectionTab) -> Unit) {
-    val icons = listOf(SiteIcons.House, SiteIcons.CardStack, SiteIcons.Search, SiteIcons.Decks, SiteIcons.Scan)
-    @Composable fun item(i: Int, t: CollectionTab, modifier: Modifier) {
+fun CollectionNav(active: CollectionTab?, vertical: Boolean = false, scan: Boolean = !vertical && hasCamera(), onSelect: (CollectionTab) -> Unit) {
+    val icons = mapOf(CollectionTab.HOME to SiteIcons.House, CollectionTab.CARDS to SiteIcons.CardStack, CollectionTab.SEARCH to SiteIcons.Search,
+        CollectionTab.DECKS to SiteIcons.Decks, CollectionTab.SCAN to SiteIcons.Scan)
+    val tabs = CollectionTab.entries.filter { it != CollectionTab.SCAN || scan }
+    @Composable fun item(t: CollectionTab, modifier: Modifier) {
         val on = t == active
         Column(modifier.clickable { onSelect(t) }, horizontalAlignment = Alignment.CenterHorizontally, verticalArrangement = Arrangement.spacedBy(2.dp, Alignment.CenterVertically)) {
             Box(Modifier.size(56.dp, 30.dp).clip(RoundedCornerShape(15.dp)).background(if (on) Site.Gold.copy(alpha = .2f) else Color.Transparent), contentAlignment = Alignment.Center) {
-                Icon(icons[i], 22.dp, if (on) Site.Gold else Site.Muted)
+                Icon(icons.getValue(t), 22.dp, if (on) Site.Gold else Site.Muted)
             }
             Text(t.label, style = Site.Label.copy(color = if (on) Site.Text else Site.Muted, fontSize = if (vertical) 11.sp else Site.Label.fontSize), maxLines = 1)
         }
     }
-    if (vertical) Column(Modifier.fillMaxHeight().width(76.dp).background(Color(0xF00C0E13)).windowInsetsPadding(WindowInsets.statusBars).padding(vertical = 6.dp)) {
-        CollectionTab.entries.forEachIndexed { i, t -> item(i, t, Modifier.fillMaxWidth().weight(1f)) }
+    if (vertical) Column(Modifier.fillMaxHeight().width(76.dp).background(Site.Bg).windowInsetsPadding(WindowInsets.statusBars).padding(vertical = 6.dp)) {
+        tabs.forEach { t -> item(t, Modifier.fillMaxWidth().weight(1f)) }
     } else Row(Modifier.fillMaxWidth().background(Color(0xF00C0E13)).navigationBarsPadding().height(72.dp)) {
-        CollectionTab.entries.forEachIndexed { i, t -> item(i, t, Modifier.weight(1f).fillMaxHeight()) }
+        tabs.forEach { t -> item(t, Modifier.weight(1f).fillMaxHeight()) }
     }
+}
+
+@Composable
+private fun hasCamera(): Boolean {
+    val context = androidx.compose.ui.platform.LocalContext.current
+    return androidx.compose.runtime.remember { context.packageManager.hasSystemFeature(android.content.pm.PackageManager.FEATURE_CAMERA_ANY) }
 }

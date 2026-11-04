@@ -195,7 +195,7 @@ class ShotTest {
             news = emptyList())
         val page = @Composable {
             dev.cardstashy.nativeplay.ui.CollectionHome(d, top = { TopBarItems(Mode.COLLECTION, null, "Randall", unread = true, onSwitch = {}, onProfile = {}) },
-                nav = { v -> dev.cardstashy.nativeplay.ui.CollectionNav(dev.cardstashy.nativeplay.ui.CollectionTab.HOME, vertical = v) {} })
+                nav = { v -> dev.cardstashy.nativeplay.ui.CollectionNav(dev.cardstashy.nativeplay.ui.CollectionTab.HOME, vertical = v, scan = !v) {} })
         }
         shot("collection-home", 390, 844, 1f) { page() }
         shot("collection-home", 884, 1104, 1f) { page() }

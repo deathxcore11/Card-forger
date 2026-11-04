@@ -16,6 +16,7 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.State
 import androidx.compose.ui.Alignment
 import androidx.compose.foundation.layout.aspectRatio
+import androidx.compose.ui.layout.layout
 import androidx.compose.ui.geometry.isSpecified
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
@@ -99,7 +100,7 @@ fun SetBadge(code: String, rarity: String) = Row(Modifier.clip(RoundedCornerShap
 @Composable
 fun CardPicture(url: String?, look: Foil.Look?, tilt: State<Offset>?, modifier: Modifier = Modifier, shape: Shape = RoundedCornerShape(10.dp), contentScale: ContentScale = ContentScale.Fit) {
     val p = heroPainter(url?.let(homeArt))
-    if (p != null && contentScale == ContentScale.Fit) { CardFace(p, look, tilt, modifier, shape); return }
+    if (p != null && (contentScale == ContentScale.Fit || contentScale == ContentScale.Crop)) { CardFace(p, look, tilt, modifier, shape, crop = contentScale == ContentScale.Crop); return }
     Box(modifier.clip(shape).background(Color(0xFF1F232B))) {
         if (p != null) {
             val m = if (look != null && tilt != null) Modifier.fillMaxSize().foil(look, tilt) else Modifier.fillMaxSize()
@@ -117,11 +118,23 @@ fun CardPicture(url: String?, look: Foil.Look?, tilt: State<Offset>?, modifier: 
  */
 @Composable
 fun CardFace(painter: androidx.compose.ui.graphics.painter.Painter, look: Foil.Look?, tilt: State<Offset>?, modifier: Modifier = Modifier,
-             shape: Shape = RoundedCornerShape(10.dp), desc: String? = null, alignment: Alignment = Alignment.Center) {
+             shape: Shape = RoundedCornerShape(10.dp), desc: String? = null, alignment: Alignment = Alignment.Center, crop: Boolean = false) {
     val s = painter.intrinsicSize
     val ratio = if (s.isSpecified && s.width > 0f && s.height > 0f) s.width / s.height else 63f / 88f
-    Box(modifier, contentAlignment = alignment) {
-        Box(Modifier.aspectRatio(ratio).clip(shape).background(Color(0xFF1F232B)).then(if (look != null && tilt != null) Modifier.foil(look, tilt) else Modifier)) {
+    val foil = if (look != null && tilt != null) Modifier.foil(look, tilt) else Modifier
+    if (!crop) Box(modifier, contentAlignment = alignment) {
+        Box(Modifier.aspectRatio(ratio).clip(shape).background(Color(0xFF1F232B)).then(foil)) {
+            Image(painter, desc, Modifier.fillMaxSize(), contentScale = ContentScale.FillBounds)
+        }
+    } else Box(modifier.clip(shape).background(Color(0xFF1F232B))) {
+        // A cropped tile: the plane is still the WHOLE card, sized to cover the tile and centred, so the foil's card-space boxes
+        // land on the printed frame; the tile's clip cuts the overflow (foil-anchor-spec.md, site paintedImageBox 'cover').
+        Box(Modifier.layout { m, c ->
+            val w = c.maxWidth; val h = c.maxHeight
+            val (pw, ph) = if (w.toFloat() / h > ratio) w to (w / ratio).toInt() else (h * ratio).toInt() to h
+            val placeable = m.measure(androidx.compose.ui.unit.Constraints.fixed(pw, ph))
+            layout(w, h) { placeable.place((w - pw) / 2, (h - ph) / 2) }
+        }.then(foil)) {
             Image(painter, desc, Modifier.fillMaxSize(), contentScale = ContentScale.FillBounds)
         }
     }

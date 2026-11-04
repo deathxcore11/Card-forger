@@ -226,7 +226,7 @@ fun PlayHome(d: PlayHomeData, top: @Composable () -> Unit, act: PlayHomeActions 
                 }.statusBarsPadding()) {
                     top()
                     // The dashboard's purse rides in the bar between the brand and the avatar.
-                    if (dash) Box(Modifier.align(Alignment.Center).padding(horizontal = 76.dp).widthIn(max = 560.dp).fillMaxWidth()) { PurseRow(purse, onCoins = { act.view("shop") }, onSeals = { act.view("forge") }, onPacks = { act.view("packs") }) }
+                    if (dash) Box(Modifier.align(Alignment.Center).padding(start = 248.dp, end = 64.dp).widthIn(max = 560.dp).fillMaxWidth()) { PurseRow(purse, onCoins = { act.view("shop") }, onSeals = { act.view("forge") }, onPacks = { act.view("packs") }) }
                 }
             }
             if (!dash) nav()
