@@ -155,7 +155,7 @@ export function mtgGoldfish(rows, { size = 60, commander = null, plan = "Midrang
   for(const c of deck)if(c.aura.status==="unmodeled")unmodeledAuras.set(c.name,{name:c.name,reason:c.aura.reason});
   for (let run = 0; run < runs; run++) {
     const lib = shuffle(deck.slice(), r),
-      hand = lib.splice(0, 7), openNames = hand.map((c) => c.name), openLands = hand.filter((c) => c.land).length,
+      hand = lib.splice(0, 7), openNames = hand.map((c) => c.name), libNames = lib.map((c) => c.name), openLands = hand.filter((c) => c.land).length,
       log = run < 400 ? [] : null;
     let lands = 0, extra = 0, nextExtra = 0, board = [], damage = 0, kill = null, cmdrCast = null, spent = 0, avail = 0, castEach = 0, bigCast = false;
     const landMana=[],extraMana=[],nextMana=[],permanents=[];
@@ -242,7 +242,7 @@ export function mtgGoldfish(rows, { size = 60, commander = null, plan = "Midrang
       if (kill == null && damage >= life) kill = t;
     }
     kills.push(kill);
-    opens.push({ cards: openNames, lands: openLands, kill, totalLands: lands });
+    opens.push({ cards: openNames, lands: openLands, kill, totalLands: lands, library: libNames });
     if (cmdr) cmdrTurn.push(cmdrCast);
     spent4.push(avail ? spent / avail : 0);
     curveOuts.push(castEach === 3);
@@ -261,7 +261,7 @@ export function mtgGoldfish(rows, { size = 60, commander = null, plan = "Midrang
     worst = samples.filter((s) => s.kill == null || s.kill > (killT ?? 99)).sort((a, b) => (b.kill ?? 99) - (a.kill ?? 99))[0];
   // The three worst opening hands this run met, for "play it out by hand". Slowest kill first, then the
   // most extreme land count; the same seven cards are shown only once.
-  const seen = new Set(), worstHands = opens.map((o, i) => ({ ...o, i })).sort((a, b) => (b.kill ?? 99) - (a.kill ?? 99) || Math.abs(b.lands - 3.5) - Math.abs(a.lands - 3.5) || a.i - b.i).filter((o) => { const k = [...o.cards].sort().join("|"); if (seen.has(k)) return false; seen.add(k); return true; }).slice(0, 3).map((o) => ({ cards: o.cards, lands: o.lands, kill: o.kill, reason: o.lands <= 1 ? "Almost no lands" : o.lands >= 6 ? "Almost all lands" : o.kill == null ? "No 20 damage by turn 10" : "Slowest of the " + runs + " games" }));
+  const seen = new Set(), worstHands = opens.map((o, i) => ({ ...o, i })).sort((a, b) => (b.kill ?? 99) - (a.kill ?? 99) || Math.abs(b.lands - 3.5) - Math.abs(a.lands - 3.5) || a.i - b.i).filter((o) => { const k = [...o.cards].sort().join("|"); if (seen.has(k)) return false; seen.add(k); return true; }).slice(0, 3).map((o) => ({ cards: o.cards, library: o.library, lands: o.lands, kill: o.kill, reason: o.lands <= 1 ? "Almost no lands" : o.lands >= 6 ? "Almost all lands" : o.kill == null ? "No 20 damage by turn 10" : "Slowest of the " + runs + " games" }));
   const target = cmdr ? null : { Aggro: 5, Midrange: 6, Control: 8, Ramp: 6 }[String(plan).split(" ")[0]] ?? 6;
   return {
     game: "mtg",
