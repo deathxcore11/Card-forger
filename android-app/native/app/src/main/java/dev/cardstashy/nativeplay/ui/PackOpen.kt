@@ -60,6 +60,7 @@ import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.RectangleShape
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.layout.layout
 import androidx.compose.ui.text.style.TextOverflow
@@ -809,7 +810,7 @@ fun PullFace(p: Pull, modifier: Modifier, lx: Float = .5f, ly: Float = .4f) = Bo
         data?.let { Foil.look(it, prints[p.id], "foil") }
     } else null
     val light = androidx.compose.runtime.rememberUpdatedState(Offset((lx - .5f) * 2f, (ly - .5f) * 2f))
-    if (painter != null) Image(painter, p.name, Modifier.fillMaxSize().then(if (look != null) Modifier.foil(look, light) else Modifier), contentScale = ContentScale.Fit)
+    if (painter != null) CardFace(painter, look, light, Modifier.fillMaxSize(), RectangleShape, p.name)
 }
 
 /** rarityEmblem('mtg'): the faceted gem in the set-symbol colour, with the finish before the rarity. */

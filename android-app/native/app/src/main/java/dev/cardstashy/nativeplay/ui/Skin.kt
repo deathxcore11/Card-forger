@@ -167,6 +167,8 @@ object SiteIcons {
     // index.html's nav icons, stroke 1.75 on a 24 grid; tinted by the caller.
     /** The app's Home tab (Randall 4 Nov: the first tab went to Collection, which the app doesn't have yet). */
     val House = line("M3.5 10.5 12 3.5l8.5 7M5.5 9v11h5v-6h3v6h5V9")
+    val Search = line("M10.5 4a6.5 6.5 0 1 0 0 13a6.5 6.5 0 1 0 0-13zM15.5 15.5 20 20")
+    val Scan = line("M4 8V5.5A1.5 1.5 0 0 1 5.5 4H8M16 4h2.5A1.5 1.5 0 0 1 20 5.5V8M20 16v2.5a1.5 1.5 0 0 1-1.5 1.5H16M8 20H5.5A1.5 1.5 0 0 1 4 18.5V16M8 12h8")
     val Sync = line("M19.5 9A8 8 0 0 0 6 5.5L3.5 8M3.5 4v4h4M4.5 15A8 8 0 0 0 18 18.5l2.5-2.5M20.5 20v-4h-4")
     val Trunk = line(rrect(4f, 3.5f, 16f, 17f, 2f), "M8 3.5v17M11.5 8h5M11.5 12h5")
     val Decks = line("m6 18-2.5-1a1.5 1.5 0 0 1-.8-2L7 4.5a1.5 1.5 0 0 1 2-.8l5 2", rrect(8f, 5.5f, 11.5f, 15f, 1.8f), "M11.5 10h4.5M11.5 13.5h4.5")

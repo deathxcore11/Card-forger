@@ -15,6 +15,8 @@ import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.State
 import androidx.compose.ui.Alignment
+import androidx.compose.foundation.layout.aspectRatio
+import androidx.compose.ui.geometry.isSpecified
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.draw.drawBehind
@@ -97,10 +99,30 @@ fun SetBadge(code: String, rarity: String) = Row(Modifier.clip(RoundedCornerShap
 @Composable
 fun CardPicture(url: String?, look: Foil.Look?, tilt: State<Offset>?, modifier: Modifier = Modifier, shape: Shape = RoundedCornerShape(10.dp), contentScale: ContentScale = ContentScale.Fit) {
     val p = heroPainter(url?.let(homeArt))
+    if (p != null && contentScale == ContentScale.Fit) { CardFace(p, look, tilt, modifier, shape); return }
     Box(modifier.clip(shape).background(Color(0xFF1F232B))) {
         if (p != null) {
             val m = if (look != null && tilt != null) Modifier.fillMaxSize().foil(look, tilt) else Modifier.fillMaxSize()
             Image(p, null, m, contentScale = contentScale)
+        }
+    }
+}
+
+/**
+ * One card face with its foil glued on (Randall 4 Nov: "make it glue to the card so when it scales or moves its not going to
+ * mess it up"). The foil, its frame boxes and the holo stamp are all placed in 0..1 card space, so they only line up if the
+ * layer that wears them is exactly the card: this box takes the picture's own aspect, draws it edge to edge, clips to the
+ * card's corners and wears the foil itself. Any size, any slot, any scale or tilt from a parent: the foil moves with it.
+ * Badges, counts and outlines go on top as siblings, outside this layer, so the foil never covers them.
+ */
+@Composable
+fun CardFace(painter: androidx.compose.ui.graphics.painter.Painter, look: Foil.Look?, tilt: State<Offset>?, modifier: Modifier = Modifier,
+             shape: Shape = RoundedCornerShape(10.dp), desc: String? = null, alignment: Alignment = Alignment.Center) {
+    val s = painter.intrinsicSize
+    val ratio = if (s.isSpecified && s.width > 0f && s.height > 0f) s.width / s.height else 63f / 88f
+    Box(modifier, contentAlignment = alignment) {
+        Box(Modifier.aspectRatio(ratio).clip(shape).background(Color(0xFF1F232B)).then(if (look != null && tilt != null) Modifier.foil(look, tilt) else Modifier)) {
+            Image(painter, desc, Modifier.fillMaxSize(), contentScale = ContentScale.FillBounds)
         }
     }
 }

@@ -176,6 +176,33 @@ class ShotTest {
         finally { dev.cardstashy.nativeplay.ui.HomeTest.forceShort = null }
     }
 
+    /** Collection Home preview (Randall 4 Nov): sample collection, real card art, upright, sideways and unfolded. */
+    @Test fun collectionHome() {
+        dev.cardstashy.nativeplay.ui.Motion.still = true
+        fun c(n: String) = art("collection/$n.jpg")
+        val d = dev.cardstashy.nativeplay.ui.CollectionHomeData(
+            game = dev.cardstashy.nativeplay.ui.CardGame.MTG, dailyArt = art("cotd.jpg"), dailyName = "Skyshroud Claim", dailySet = "Secret Lair Drop · Rare",
+            amount = "$1,284.50", note = "Estimated value · USD", movement = "↑ +$12.40 · total change since Nov 3, 2026", direction = "up", copies = 2318, decks = 14,
+            shelf = listOf(dev.cardstashy.nativeplay.ui.ShelfDeck("Atraxa Superfriends", "Commander", 100, c("atraxapraetorsvoice"), edited = "Nov 3, 2026"),
+                dev.cardstashy.nativeplay.ui.ShelfDeck("Krenko Goblins", "Commander", 100, c("krenkomobboss")),
+                dev.cardstashy.nativeplay.ui.ShelfDeck("Ragavan Murktide", "Modern", 60, c("ragavannimblepilferer")),
+                dev.cardstashy.nativeplay.ui.ShelfDeck("The Ur-Dragon", "Commander", 100, c("theurdragon"))),
+            metaFormat = "Modern",
+            meta = listOf(dev.cardstashy.nativeplay.ui.MetaDeck("Basking Broodscale", "17% of lists", c("baskingbroodscale")),
+                dev.cardstashy.nativeplay.ui.MetaDeck("Karn · Expedition Map", "8% of lists", c("ugineyeofthestorms")),
+                dev.cardstashy.nativeplay.ui.MetaDeck("Detective's Phoenix", "8% of lists", c("darkmattermanipulator")),
+                dev.cardstashy.nativeplay.ui.MetaDeck("Primeval Titan", "8% of lists", c("primevaltitan"))),
+            news = emptyList())
+        val page = @Composable {
+            dev.cardstashy.nativeplay.ui.CollectionHome(d, top = { TopBarItems(Mode.COLLECTION, null, "Randall", unread = true, onSwitch = {}, onProfile = {}) },
+                nav = { v -> dev.cardstashy.nativeplay.ui.CollectionNav(dev.cardstashy.nativeplay.ui.CollectionTab.HOME, vertical = v) {} })
+        }
+        shot("collection-home", 390, 844, 1f) { page() }
+        shot("collection-home", 884, 1104, 1f) { page() }
+        dev.cardstashy.nativeplay.ui.HomeTest.forceShort = true
+        try { shot("collection-home", 844, 390, 1f) { page() } } finally { dev.cardstashy.nativeplay.ui.HomeTest.forceShort = null }
+    }
+
     /** A controller on a handheld: the gold focus ring on Quick Play and the A/B hint (Pad connected). */
     @Test fun padFocus() {
         dev.cardstashy.nativeplay.ui.Motion.still = true
