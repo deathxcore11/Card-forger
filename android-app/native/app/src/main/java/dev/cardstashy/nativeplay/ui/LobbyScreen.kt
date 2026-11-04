@@ -41,6 +41,7 @@ import androidx.compose.foundation.lazy.grid.LazyGridScope
 import androidx.compose.foundation.lazy.grid.LazyVerticalGrid
 import androidx.compose.foundation.lazy.grid.items
 import androidx.compose.foundation.lazy.grid.rememberLazyGridState
+import androidx.compose.ui.layout.onSizeChanged
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
@@ -312,6 +313,8 @@ fun LobbyScreen(model: LobbyModel, onBack: () -> Unit, onStart: (Pick) -> Unit, 
     var cardPick by remember { mutableStateOf<CardPick?>(null) }
     BackHandler(cardPick == null && (m.inspectOpen || m.formatOpen)) { m.inspectOpen = false; m.formatOpen = false }
     val grid = rememberLazyGridState()
+    val density = androidx.compose.ui.platform.LocalDensity.current
+    var barH by remember { mutableStateOf(0) }
     Box(Modifier.fillMaxSize().background(Site.Bg)) {
         // .play-library is a panel (surface 84 %, 1 px line, radius 20) from its head to the last deck, its contents 19 px in;
         // the grid is laid out at the panel's inner edge and the panel is drawn behind those items.
@@ -320,17 +323,17 @@ fun LobbyScreen(model: LobbyModel, onBack: () -> Unit, onStart: (Pick) -> Unit, 
                 val first = info.visibleItemsInfo.firstOrNull() ?: return@drawBehind
                 if (first.index > LIB_HEAD || head != null) {
                     val top = if (head != null) head.offset.y.toFloat() - info.viewportStartOffset - 18.dp.toPx() else -40.dp.toPx()
-                    val last = info.visibleItemsInfo.last()
-                    val bottom = if (last.index == info.totalItemsCount - 1) last.offset.y - info.viewportStartOffset + last.size.height + 19.dp.toPx() else size.height + 40.dp.toPx()
+                    // The last item is the start bar's resting slot (outside the panel); the panel ends at the item before it.
+                    val last = info.visibleItemsInfo.lastOrNull { it.index < info.totalItemsCount - 1 } ?: return@drawBehind
+                    val bottom = if (last.index == info.totalItemsCount - 2) last.offset.y - info.viewportStartOffset + last.size.height + 19.dp.toPx() else size.height + 40.dp.toPx()
                     val r = androidx.compose.ui.geometry.CornerRadius(20.dp.toPx()); val x = 16.dp.toPx()
                     drawRoundRect(Color(0xD6171A20), Offset(x, top), Size(size.width - 2 * x, bottom - top), r)
                     drawRoundRect(Line, Offset(x, top), Size(size.width - 2 * x, bottom - top), r, style = Stroke(1.dp.toPx()))
                 }
             },
-            contentPadding = PaddingValues(start = 35.dp, end = 35.dp, top = 18.dp, bottom = 120.dp), horizontalArrangement = Arrangement.spacedBy(10.dp), verticalArrangement = Arrangement.spacedBy(10.dp)) {
+            contentPadding = PaddingValues(start = 35.dp, end = 35.dp, top = 18.dp, bottom = 18.dp), horizontalArrangement = Arrangement.spacedBy(10.dp), verticalArrangement = Arrangement.spacedBy(10.dp)) {
             full { Box(Modifier.outset(19.dp)) { Head(m, onBack, onFriends) } }
             full { Box(Modifier.outset(19.dp)) { Arena(m, onFocusDecks = { scope.launch { grid.animateScrollToItem(LIB_HEAD) } }) } }
-            full { Box(Modifier.outset(19.dp).padding(bottom = 18.dp)) { StartBar(m, signedIn, statusText(m)) { start() } } }
             full {
                 LibraryHead(m, source, signedIn, onOpenDecks)
             }
@@ -351,6 +354,25 @@ fun LobbyScreen(model: LobbyModel, onBack: () -> Unit, onStart: (Pick) -> Unit, 
                     else items(entries, key = { "s:" + it.key }, span = { GridItemSpan(maxLineSpan) }) { e -> SourceCard(e, browserSelected?.id == e.deck.get("id")?.asString, signedIn) { pickSource(e) } }
                 }
             }
+            // Phones (polish.css): the Play bar is laid out after the deck list and sticky, so it stays pinned to the
+            // bottom while the list scrolls and rests here at the end.
+            item(key = "startbar", span = { GridItemSpan(maxLineSpan) }) { Spacer(Modifier.height(with(density) { barH.toDp() } + 8.dp)) }
+        }
+        // position:sticky; bottom:0 — the bar sits at its slot, or at the bottom edge when the slot is further down.
+        Box(Modifier.fillMaxSize().windowInsetsPadding(WindowInsets.safeDrawing)) {
+            val info = grid.layoutInfo
+            val slot = info.visibleItemsInfo.firstOrNull { it.key == "startbar" }
+            val restY = (slot?.let { it.offset.y - info.viewportStartOffset + with(density) { 8.dp.roundToPx() } } ?: Int.MAX_VALUE)
+            val y = minOf(restY, info.viewportSize.height - barH).coerceAtLeast(0)
+            Box(Modifier.offset { androidx.compose.ui.unit.IntOffset(0, y) }.padding(horizontal = 16.dp).fillMaxWidth()
+                .then(Modifier.onSizeChanged { sz -> barH = sz.height })) {
+                // ::before: a short fade above the pinned bar so the panel reads as sliding under a dock.
+                Box(Modifier.matchParentSize().drawBehind {
+                    val h = 28.dp.toPx(); val ext = 20.dp.toPx()
+                    drawRect(Brush.verticalGradient(listOf(Color.Transparent, Site.Bg.copy(alpha = .92f)), startY = -h + 1f, endY = 1f), Offset(-ext, -h + 1f), Size(size.width + 2 * ext, h))
+                })
+                StartBar(m, signedIn, statusText(m)) { start() }
+            }
         }
         if (m.formatOpen) FormatSheet(m)
         if (m.inspectOpen) Inspector(m, onRemove = { m.put(m.inspected, null); m.inspectOpen = false },
@@ -360,7 +382,7 @@ fun LobbyScreen(model: LobbyModel, onBack: () -> Unit, onStart: (Pick) -> Unit, 
     }
 }
 
-private const val LIB_HEAD = 3
+private const val LIB_HEAD = 2
 /** Lay a child out wider than its slot by [by] on each side (the head and seats span the page, past the panel's inset). */
 private fun Modifier.outset(by: Dp) = layout { m, c -> val px = by.roundToPx()
     val p = m.measure(c.copy(minWidth = c.minWidth + 2 * px, maxWidth = c.maxWidth + 2 * px)); layout(c.maxWidth, p.height) { p.place(-px, 0) } }
@@ -501,7 +523,10 @@ private fun Seat(m: LobbyModel, key: String, practice: Boolean, onFocusDecks: ()
             randomCpu -> Backs(Modifier.align(Alignment.CenterStart).padding(start = 10.dp))
             deck == null -> Slot(Modifier.align(if (cpu) Alignment.CenterStart else Alignment.CenterEnd).padding(horizontal = 40.dp))
         }
-        Column(Modifier.align(if (cpu) Alignment.CenterEnd else Alignment.CenterStart).padding(18.dp).fillMaxWidth(if (deck == null && !randomCpu) .62f else if (randomCpu) .62f else 1f),
+        // An empty seat's copy fills the seat up to its slot (slot 40 px in, 66 wide, then a 6 px gap), as on the site.
+        val slotSide = if (deck == null && !randomCpu) 112.dp else 18.dp
+        Column(Modifier.align(if (cpu) Alignment.CenterEnd else Alignment.CenterStart).padding(top = 18.dp, bottom = 18.dp, start = if (cpu) slotSide else 18.dp, end = if (cpu) 18.dp else slotSide)
+            .fillMaxWidth(if (randomCpu) .62f else 1f),
             horizontalAlignment = if (cpu) Alignment.End else Alignment.Start, verticalArrangement = Arrangement.spacedBy(6.dp)) {
             Text(who, style = sans(11f, FontWeight.Bold, if (cpu) Color(0xFF8EC5FF) else Color(0xFFF0C27A), 1.76f, 16f), textAlign = if (cpu) TextAlign.End else TextAlign.Start)
             Text(title, style = cinzel(21f, line = 23.5f), textAlign = if (cpu) TextAlign.End else TextAlign.Start)
@@ -553,10 +578,11 @@ private fun StartBar(m: LobbyModel, signedIn: Boolean, status: String, onStart: 
         val label = if (!signedIn) "Sign in to play" else if (m.quickBusy) "Finding a CPU deck…" else if (m.player == null) "Pick your deck" else if (!m.quick && m.opponent == null) "Pick the CPU deck" else "Play vs CPU"
         val ready = !signedIn || (!m.quickBusy && m.player != null && (m.quick || m.opponent != null))
         val shape = RoundedCornerShape(10.dp)
-        Box(Modifier.fillMaxWidth().height(50.dp).clip(shape)
-            .background(if (ready) GoldPlate else Brush.verticalGradient(listOf(Color(0xFF1D1A14), Color(0xFF121014))))
+        // .cs-plate:disabled — the dark plate at opacity .6 under saturate(.4) (#d6ad64 reads #bfaf92).
+        Box(Modifier.fillMaxWidth().height(50.dp).then(if (ready) Modifier else Modifier.alpha(.6f)).clip(shape)
+            .background(if (ready) GoldPlate else Brush.verticalGradient(listOf(Color(0xFF1B1A16), Color(0xFF121113))))
             .border(1.dp, Color(0xFF5A3B12), shape).clickable(enabled = ready, onClick = onStart), contentAlignment = Alignment.Center) {
-            Text("◆  $label  ◆".let { if (signedIn) it else label }, style = cinzel(15f, if (ready) Color(0xFF2A1906) else Color(0xFFD6AD64), 1.5f, 15f))
+            Text("◆  $label  ◆".let { if (signedIn) it else label }, style = cinzel(15f, if (ready) Color(0xFF2A1906) else Color(0xFFBFAF92), 1.5f, 15f))
         }
     }
 }

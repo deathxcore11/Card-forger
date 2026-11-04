@@ -87,13 +87,15 @@ class LobbyShotTest {
             "paste" to { m -> m.updateDraft(name = "Pasted burn", text = PASTE); kotlinx.coroutines.runBlocking { dev.cardstashy.nativeplay.ui.importPasteInto(m, online = false) } },
             "pasteused" to { m -> m.updateDraft(name = "Pasted burn", text = PASTE); kotlinx.coroutines.runBlocking { dev.cardstashy.nativeplay.ui.importPasteInto(m, online = false) }; m.candidate?.let { c -> m.inspected = "player"; m.put("player", SeatDeck(c, "import")); m.candidate = null; m.importStatus = "selected" } },
             "inspectpasted" to { m -> m.updateDraft(name = "Pasted burn", text = PASTE); kotlinx.coroutines.runBlocking { dev.cardstashy.nativeplay.ui.importPasteInto(m, online = false) }; m.candidate?.let { c -> m.put("player", SeatDeck(c, "import")) }; m.inspectOpen = true })
-        RuntimeEnvironment.setQualifiers("w390dp-h2532dp-xxhdpi")
+        for ((tall, suffix) in listOf(true to "", false to "-844")) {
+        RuntimeEnvironment.setQualifiers(if (tall) "w390dp-h2532dp-xxhdpi" else "w390dp-h844dp-xxhdpi")
         for ((name, set) in states) {
             val m = LobbyModel(if (name.startsWith("quick") || name == "inspect") "quick" else "practice").apply { format = "Standard" }
             set(m)
-            captureRoboImage(File(System.getProperty("shotsDir"), "lobby-$name.png").path) {
+            captureRoboImage(File(System.getProperty("shotsDir"), "lobby-$name$suffix.png").path) {
                 LobbyScreen(m, {}, {}, {}, {}, {}, online = false)
             }
+        }
         }
         home.mkdirs(); home.resolve("missing.txt").writeText(missing.joinToString("\n"))
     }
