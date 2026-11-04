@@ -310,7 +310,9 @@ export class CpuActionPlaybackQueue {
   if(!this.opened&&(this.current.native?.inputType==='InputConfirmMulligan'||Number(this.current.status?.surface?.turn)===0)&&Number(snapshot.status.surface?.turn)>0&&snapshot.native?.inputType!=='InputConfirmMulligan'){
    this.opened=true;this.keptAt=Date.now();try{console.info('[pace] keep confirmed',this.keptAt);}catch{}
    this.current=answered(this.current);this.present(this.current,true);
-   if(!this.reducedMotion()){this.gate=snapshot;this.timer=this.schedule(()=>{const next=this.gate;this.gate=null;this.timer=null;if(next&&!this.closed)this.push(next);},KEEP_BEAT);return;}
+   // Pace is not motion (Randall, 4 Nov: with animations off the CPU's land appeared the moment he kept), so the beat
+   // holds with reduced motion too; only the movement itself is dropped there.
+   this.gate=snapshot;this.timer=this.schedule(()=>{const next=this.gate;this.gate=null;this.timer=null;if(next&&!this.closed)this.push(next);},KEEP_BEAT);return;
   }
   if(this.overlay&&snapshot.status.revision===this.current.status?.revision){this.current=snapshot;this.present(snapshot,false);return;}
   // The board being told is polled again unchanged: keep telling it.
@@ -326,12 +328,12 @@ export class CpuActionPlaybackQueue {
  }
  // A real decision arrived. As on Arena, what the CPU did first plays out at its own pace, beat by
  // beat on the table, and the decision opens when it ends; one tap skips straight to it. Reduced
- // motion shows the decision at once and tells the story over it instead.
+ // motion keeps the same pace; it only drops the movement.
  // The log covers everything since the board shown last, so beats already seen are not replayed.
  yieldTo(snapshot){
   const all=playbackBeats(this.current,snapshot),beats=onScreen(all),fresh=beats.filter(b=>!this.seen(b));
   this.stop();this.pending=[];this.remember(all);
-  if(fresh.length&&!this.reducedMotion()){this.present(answered(this.current),true);this.play(beats,snapshot,false);return;}
+  if(fresh.length){this.present(answered(this.current),true);this.play(beats,snapshot,false);return;}
   this.current=snapshot;this.present(snapshot,false);
   if(fresh.length)this.play(fresh.map(b=>({...b,duration:Math.max(350,Math.round(b.duration*.7))})),snapshot,true);
  }
@@ -364,7 +366,7 @@ export class CpuActionPlaybackQueue {
    const spent=Date.now()-start;
    // A backlog of two or more updates hurries a little; the table never races through a turn.
    if(beat.actor&&!this.firstCpuShown){this.firstCpuShown=true;try{console.info('[pace] first CPU action shown',Date.now(),this.keptAt?`${Date.now()-this.keptAt} ms after the keep`:'');}catch{}}
-   this.timer=this.schedule(step,this.reducedMotion()?250:Math.max(spotlit(beat)?Math.min(SPOT_MIN,beat.duration):MIN_BEAT,Math.round((this.pending.length>1?beat.duration*.85:beat.duration)*this.speed())-(spent>=10?spent:0)));
+   this.timer=this.schedule(step,Math.max(spotlit(beat)?Math.min(SPOT_MIN,beat.duration):MIN_BEAT,Math.round((this.pending.length>1?beat.duration*.85:beat.duration)*this.speed())-(spent>=10?spent:0)));
   };this.step=step;step();
  }
  // A tap moves straight on to the next action (Arena's click-to-continue), never past the whole turn.

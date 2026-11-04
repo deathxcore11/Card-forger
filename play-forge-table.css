@@ -1234,6 +1234,9 @@
 @media not ((hover:none) and (pointer:coarse)){
  :where(body.practice-table-open) .play-match-table[data-stage=match][data-forge-native] .play-match-battlefields .play-match-zone-groups>.play-match-lane[data-card-group=lands]{flex:0 1 auto;margin-right:auto;padding-left:2%}
  :where(body.practice-table-open) .play-match-table[data-stage=match][data-forge-native] .play-match-battlefields .play-match-zone-groups>.play-match-lane[data-card-group=other]{flex:0 1 auto;margin-left:auto;padding-right:2%}
+ /* A wide, short window (Randall, 4 Nov) keeps the lanes about as wide as the table is tall, centred,
+    so a lone land sits near the middle instead of out at the mat's far edge. */
+ :where(body.practice-table-open) .play-match-table[data-stage=match][data-forge-native] .play-match-battlefields .play-match-zone-groups{max-width:max(820px,calc((100vh - 120px) * 1.4));margin-inline:auto}
 }
 @media (prefers-reduced-motion:reduce){:where(body.practice-table-open) .play-match-table[data-forge-native] .play-match-hand .play-match-card[data-forge-role=playable]{animation:none}:where(body.practice-table-open) .play-match-table[data-forge-native] .forge-drag-ghost{transition:none}}
 :where(body.practice-table-open) .forge-fx-ring[data-kind=attack]{border-color:#ff8a5a;box-shadow:0 0 26px 6px #ff6a3a88}
