@@ -43,11 +43,24 @@ class GlowTest {
         assertEquals(setOf(31), sc.quiet(st, blocked))
     }
 
+    @Test fun combatThatSkipsToMain2StillLunges() {
+        dev.cardstashy.nativeplay.ui.Motion.still = false
+        fun snap(phase: String, attacking: Boolean, life: Int) = MatchState.parse("""{"status":"running","viewer":1,"turn":3,"revision":${if (attacking) 1 else 2},"phase":"$phase",
+            "players":[{"id":1,"isViewer":true,"life":20,"zones":{"Battlefield":{"cards":[{"id":5,"zone":"Battlefield","owner":1,"controller":1,"hidden":false,"name":"Bear","type":"Creature — Bear","power":2,"toughness":2,"attacking":$attacking}]}}},
+                       {"id":2,"life":$life,"zones":{}}]}""")!!
+        val anchors = dev.cardstashy.nativeplay.ui.Anchors()
+        val fx = dev.cardstashy.nativeplay.ui.Battlefield()
+        fx.take(snap("COMBAT_DECLARE_ATTACKERS", true, 20), anchors)
+        fx.take(snap("MAIN2", false, 18), anchors)
+        assertTrue(fx.items.any { it.kind == dev.cardstashy.nativeplay.ui.Fx.LUNGE && it.card == 5 && it.toKey == "orb2" })
+    }
+
     @Test fun updaterComparesVersions() {
         assertFalse(Updater.newer("0.4.9", 0, "0.4.10-test5-native-test", 33))
         assertTrue(Updater.newer("0.4.11", 0, "0.4.10-test5-native-test", 33))
         assertTrue(Updater.newer("0.4.10", 0, "0.4.10-test5-native-test", 33))
         assertFalse(Updater.newer("0.4.10", 0, "0.4.10", 34))
+        assertFalse(Updater.newer("0.4.10", 0, "0.4.10-native-test", 35))
         assertTrue(Updater.newer("0.4.10", 35, "0.4.10", 34))
         val rel = Updater.parse(com.google.gson.JsonParser.parseString("""{"nativeTest":{"href":"/downloads/cardstashy-native-test-0.4.9.apk","bytes":74063483,"version":"0.4.9"}}""").asJsonObject)!!
         assertEquals("https://cardstashy.com/downloads/cardstashy-native-test-0.4.9.apk", rel.url)

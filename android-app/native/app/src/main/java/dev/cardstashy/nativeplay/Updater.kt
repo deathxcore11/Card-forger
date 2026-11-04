@@ -72,7 +72,9 @@ object Updater {
         val a = numbers(offered); val b = numbers(haveName)
         for (i in 0 until maxOf(a.size, b.size)) { val x = a.getOrElse(i) { 0 }; val y = b.getOrElse(i) { 0 }; if (x != y) return x > y }
         // Same numbers: the finished release beats its own test builds (0.4.10 over 0.4.10-test5).
-        return haveName.contains("-test") && !offered.contains("-test")
+        // Only a numbered test build ("-test6"); the public build's own name ends in "-native-test" and must not loop.
+        val testBuild = Regex("-test\\d")
+        return testBuild.containsMatchIn(haveName) && !testBuild.containsMatchIn(offered)
     }
 
     internal fun parse(o: JsonObject?): Release? {

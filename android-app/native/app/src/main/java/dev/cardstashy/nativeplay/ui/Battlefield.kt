@@ -308,8 +308,11 @@ class Battlefield {
         val lost = b.players.any { p -> a.players.firstOrNull { it.id == p.id }?.let { q -> p.life < q.life } == true }
         val dmgNow = bfB.values.any { c -> (bfA[c.id]?.damage ?: 0) < c.damage }
         var lunged = false
-        // Combat damage may arrive in the damage step or, when priority is passed through it, in the step after: either way the attackers strike.
-        if ((lost || dmgNow) && b.phase?.startsWith("COMBAT") == true) for ((id, o) in bfA) if (o.attacking) {
+        // Combat damage may arrive in the damage step or, when priority is passed through it, in a later step: even straight to
+        // Main 2 (Randall 4 Nov, test 6: no lunge on his board). Either way the attackers strike. A clash that only kills counts too.
+        val wasCombat = a.phase?.startsWith("COMBAT") == true || b.phase?.startsWith("COMBAT") == true
+        val clashDied = bfA.values.any { it.isCreature && (it.attacking || it.blocking) && it.id !in bfB }
+        if ((lost || dmgNow || clashDied) && wasCombat && a.turn == b.turn) for ((id, o) in bfA) if (o.attacking) {
             val blocker = bfA.values.firstOrNull { it.blocking && id in it.blockingIds }
             val to = when {
                 blocker != null -> "c${blocker.id}"
