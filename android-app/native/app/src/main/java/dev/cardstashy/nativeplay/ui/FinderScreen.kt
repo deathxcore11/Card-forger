@@ -152,7 +152,7 @@ fun FinderScreen(state: JsonObject, ui: FinderUi, onBack: () -> Unit, onUse: (De
             item {
                 Column(Modifier.windowInsetsPadding(WindowInsets.statusBars), verticalArrangement = Arrangement.spacedBy(12.dp)) {
                     PageHeader("Build a deck", "Play", onBack = onBack)
-                    PlayMath.purse(state)?.let { PurseRow(it, {}, {}, {}, level = PlayMath.mastery(state, it.xp)) }
+                    PlayMath.purse(state)?.let { PurseRow(it, level = PlayMath.mastery(state, it.xp)) }
                     FlowRow(horizontalArrangement = Arrangement.spacedBy(8.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
                         Finder.FORMATS.forEach { f -> Chip(f, f == ui.format) { if (f != ui.format) { ui.format = f; ui.limit = 8 } } }
                     }

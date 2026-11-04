@@ -70,10 +70,10 @@ object Progress {
         Account.session.value?.userId?.let { u -> pending?.cancel(); pending = writer.launch { try { file(u)?.writeText(next.toString()) } catch (_: Exception) {} } }
     }
 
-    private suspend fun call(path: String, body: JsonObject? = null): JsonObject = withContext(Dispatchers.IO) {
+    private suspend fun call(path: String, body: JsonObject? = null, timeoutMs: Int = 15000): JsonObject = withContext(Dispatchers.IO) {
         val token = Account.token() ?: throw Failure("sign_in", MESSAGES.getValue("sign_in"))
         try {
-            Http.call(if (body == null) "GET" else "POST", "$SITE/api/progress/$path", mapOf("Authorization" to "Bearer $token"), body?.toString(), timeoutMs = 15000)?.asJsonObject ?: JsonObject()
+            Http.call(if (body == null) "GET" else "POST", "$SITE/api/progress/$path", mapOf("Authorization" to "Bearer $token"), body?.toString(), timeoutMs = timeoutMs)?.asJsonObject ?: JsonObject()
         } catch (e: Http.Failure) {
             val code = Regex("\"error\"\\s*:\\s*\"([^\"]+)\"").find(e.body)?.groupValues?.get(1) ?: "http_${e.status}"
             throw Failure(code, MESSAGES[code] ?: "Play rewards are unavailable right now. Try again in a moment.")
@@ -198,10 +198,10 @@ object Progress {
     private val REPORTED_FACTS = listOf("myTurns", "minLife", "startLife", "maxLife", "lifeGained", "oppBigTurn", "oppPoison", "oppLibraryMin", "oppHandMin", "maxHand", "maxCreatures",
         "maxTokens", "maxLands", "maxPower", "maxAttackers", "maxFlyers", "maxCounters", "maxAttach", "oppMaxCreatures", "oppWipes", "kills", "losses", "turnedUp")
 
-    private suspend fun run(label: String, path: String, body: JsonObject, extra: (JsonObject) -> JsonObject? = { null }): JsonObject {
+    private suspend fun run(label: String, path: String, body: JsonObject, timeoutMs: Int = 15000, extra: (JsonObject) -> JsonObject? = { null }): JsonObject {
         _busy.value = label; _error.value = null
         try {
-            val out = call(path, body)
+            val out = call(path, body, timeoutMs)
             out.getAsJsonObject("state")?.let { set(keep(it, extra(out))) }
             return out
         } catch (e: Failure) { _error.value = e; throw e } finally { _busy.value = "" }
@@ -213,7 +213,20 @@ object Progress {
         out.get("counters")?.let { c -> val base = _state.value?.deepCopy() ?: JsonObject(); base.add("counters", c); set(base) }
     }
 
-    suspend fun open(id: String) = run("open:$id", "open", JsonObject().apply { addProperty("id", id); addProperty("tz", tz) })
+    /**
+     * Opening rolls the pack on the server, which first loads the set's cards from Scryfall: an old set's first open can
+     * take well over 15 s (Randall 4 Nov, Tenth Edition: "That pack didn't open"). So it waits up to a minute, and a
+     * pack that came back unopened for a passing reason is tried once more by itself; the server never spends a pack on
+     * a failed roll.
+     */
+    suspend fun open(id: String): JsonObject {
+        val body = JsonObject().apply { addProperty("id", id); addProperty("tz", tz) }
+        return try { run("open:$id", "open", body, timeoutMs = 60000) } catch (e: Failure) {
+            if (e.code !in setOf("offline", "cards_unavailable", "http_502", "http_503", "http_504", "http_500")) throw e
+            kotlinx.coroutines.delay(1500)
+            run("open:$id", "open", body, timeoutMs = 60000)
+        }
+    }
     suspend fun buy(set: String) = run("buy", "buy", JsonObject().apply { addProperty("set", set); addProperty("tz", tz) })
     suspend fun forge(to: String, times: Int = 1) = run("forge", "forge", JsonObject().apply { addProperty("to", to); addProperty("times", times); addProperty("tz", tz) })
     /** This week's Secret Lair bundle for coins (play-econ-client secretLair): the cards land in the Trunk in their Secret Lair art. */

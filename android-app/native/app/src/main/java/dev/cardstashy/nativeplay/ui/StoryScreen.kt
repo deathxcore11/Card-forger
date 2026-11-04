@@ -305,7 +305,7 @@ fun StoryRoute(startAct: Int? = null, onBack: () -> Unit, onDuel: (dev.cardstash
     var duel by remember { mutableStateOf(StoryDuelUi()) }
     LaunchedEffect(Unit) { Progress.refreshStory() }
     val p = remember(refs) { StoryLogic.fromRefs(refs ?: emptyList()) }
-    val purse: @Composable () -> Unit = { PlayMath.purse(state)?.let { PurseRow(it, {}, {}, {}, level = PlayMath.mastery(state, it.xp)) } }
+    val purse: @Composable () -> Unit = { PlayMath.purse(state)?.let { PurseRow(it, level = PlayMath.mastery(state, it.xp)) } }
     val open = act
     BackHandler { if (battle != null) { battle = null; duel = StoryDuelUi() } else if (open != null) act = null else onBack() }
     if (open == null) { StoryRoad(rules.acts, rules.ages[1] ?: "", p, onBack, { act = it }, purse); return }

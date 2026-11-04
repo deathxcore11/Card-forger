@@ -109,8 +109,9 @@ fun ShopRoute(onBack: () -> Unit, nav: @Composable () -> Unit, startTab: String 
     LaunchedEffect(s) { SetFacts.ensure(Trunk.allSets(s).map { it.code }) }
     val toast = { m: String -> android.widget.Toast.makeText(context, m, android.widget.Toast.LENGTH_SHORT).show() }
     fun setName(code: String) = Trunk.allSets(s).firstOrNull { it.code == code }?.name ?: SetFacts.set(code)?.name ?: code.uppercase()
-    suspend fun openOne(id: String): PackResult? = runCatching { Progress.open(id) }.getOrNull()?.let { out ->
-        packResult(out, setName(out.getAsJsonObject("pack")?.get("set").s() ?: "")) }
+    var why: String? = null
+    suspend fun openOne(id: String): PackResult? = runCatching { Progress.open(id) }.onFailure { why = it.message }.getOrNull()?.let { out ->
+        runCatching { packResult(out, setName(out.getAsJsonObject("pack")?.get("set").s() ?: "")) }.onFailure { why = "Your pack opened. Find the cards in Trunk." }.getOrNull() }
     fun act(label: String, done: String? = null, block: suspend () -> Unit) {
         if (busy.isNotEmpty()) return
         scope.launch { runCatching { block() }.onSuccess { done?.let(toast); Feel.perform(view, "success") }.onFailure { toast(it.message ?: "Try again in a moment.") }; Progress.refreshDeeds() }
@@ -121,7 +122,7 @@ fun ShopRoute(onBack: () -> Unit, nav: @Composable () -> Unit, startTab: String 
         if (busy.isEmpty() && opener == null) {
             val code = s.getAsJsonArray("packs")?.firstNotNullOfOrNull { (it as? JsonObject)?.takeIf { o -> o["id"].s() == id }?.get("set").s() } ?: ""
             opener = loadingPack(code, setName(code))
-            scope.launch { val r = openOne(id); if (opener?.note == LOADING) { opener = r; if (r == null) toast("That pack didn't open. Try again in a moment.") } }
+            scope.launch { val r = openOne(id); if (opener?.note == LOADING) { opener = r; if (r == null) toast(why ?: "That pack didn't open. Try again in a moment.") } }
         }; Unit }
     val actions = PlayHomeActions(forge = { to, times -> act("forge", "Forged $times ${mapOf("u" to "uncommon", "r" to "rare", "m" to "mythic")[to]} seal${if (times > 1) "s" else ""}.") { Progress.forge(to, times) } })
 

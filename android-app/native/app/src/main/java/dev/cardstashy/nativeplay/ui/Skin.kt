@@ -165,6 +165,8 @@ object SiteIcons {
     private fun line(vararg d: String): ImageVector = svg(24f, *d.map { VPath(it, stroke = SolidColor(Color.White), width = 1.75f) }.toTypedArray())
 
     // index.html's nav icons, stroke 1.75 on a 24 grid; tinted by the caller.
+    /** The app's Home tab (Randall 4 Nov: the first tab went to Collection, which the app doesn't have yet). */
+    val House = line("M3.5 10.5 12 3.5l8.5 7M5.5 9v11h5v-6h3v6h5V9")
     val Sync = line("M19.5 9A8 8 0 0 0 6 5.5L3.5 8M3.5 4v4h4M4.5 15A8 8 0 0 0 18 18.5l2.5-2.5M20.5 20v-4h-4")
     val Trunk = line(rrect(4f, 3.5f, 16f, 17f, 2f), "M8 3.5v17M11.5 8h5M11.5 12h5")
     val Decks = line("m6 18-2.5-1a1.5 1.5 0 0 1-.8-2L7 4.5a1.5 1.5 0 0 1 2-.8l5 2", rrect(8f, 5.5f, 11.5f, 15f, 1.8f), "M11.5 10h4.5M11.5 13.5h4.5")
@@ -435,7 +437,7 @@ private fun Count(n: Int) {
 
 // ---------------------------------------------------------------- 0.4 bottom nav
 
-enum class PlayTab(val label: String) { SWITCH("Collection"), TRUNK("Trunk"), DECKS("Decks"), SHOP("Shop"), TROPHIES("Trophies") }
+enum class PlayTab(val label: String) { HOME("Home"), TRUNK("Trunk"), DECKS("Decks"), SHOP("Shop"), TROPHIES("Trophies") }
 
 /**
  * .play-nav: five items on the site's 1.2/1/1/1/1.1 grid, 56x32 icon pills; the active one on the
@@ -445,7 +447,7 @@ enum class PlayTab(val label: String) { SWITCH("Collection"), TRUNK("Trunk"), DE
 @Composable
 fun PlayNav(active: PlayTab?, onSelect: (PlayTab) -> Unit, modifier: Modifier = Modifier) {
     val weights = listOf(1.2f, 1f, 1f, 1f, 1.1f)
-    val icons = listOf(SiteIcons.Sync, SiteIcons.Trunk, SiteIcons.Decks, SiteIcons.Bag, SiteIcons.Trophy)
+    val icons = listOf(SiteIcons.House, SiteIcons.Trunk, SiteIcons.Decks, SiteIcons.Bag, SiteIcons.Trophy)
     BoxWithConstraints(modifier.fillMaxWidth().background(if (AppSettings.theme == "light") Color(0xF0F6F9FD) else Color(0xF00C0E13)).drawBehind { // light: settings-theme.css .bottom-nav rgba(246,249,253,.94)
         drawLine(Site.Line, Offset(0f, 0f), Offset(size.width, 0f), 1.dp.toPx())
     }.navigationBarsPadding()) {
@@ -467,7 +469,7 @@ fun PlayNav(active: PlayTab?, onSelect: (PlayTab) -> Unit, modifier: Modifier = 
                     Column(Modifier.weight(weights[k]).fillMaxSize().clickable(press, dev.cardstashy.nativeplay.ui.PadFocus.Ring) { onSelect(tab) }.semantics { contentDescription = tab.label }.padding(top = 14.dp),
                         horizontalAlignment = Alignment.CenterHorizontally) {
                         Box(Modifier.size(56.dp, 32.dp).scale(s), contentAlignment = Alignment.Center) {
-                            Icon(icons[k], 24.dp, if (on || tab == PlayTab.SWITCH) Site.Gold else Site.Muted)
+                            Icon(icons[k], 24.dp, if (on) Site.Gold else Site.Muted)
                         }
                         Spacer(Modifier.height(4.dp))
                         Text(tab.label, style = Site.Label.copy(color = if (on) Site.Text else Site.Muted), maxLines = 1, softWrap = false)

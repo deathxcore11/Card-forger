@@ -107,7 +107,7 @@ fun TrunkScreen(state: JsonObject, onBack: () -> Unit, onCard: (CardPick) -> Uni
                 item(span = { GridItemSpan(maxLineSpan) }) {
                     Column(Modifier.windowInsetsPadding(WindowInsets.statusBars).padding(top = 12.dp), verticalArrangement = Arrangement.spacedBy(12.dp)) {
                         // head('Collection', snapshot): the purse sits under the title, as on every Play screen.
-                        PlayHead("Collection", "Play", onBack) { dev.cardstashy.nativeplay.play.PlayMath.purse(state)?.let { PurseRow(it, {}, {}, {}, level = dev.cardstashy.nativeplay.play.PlayMath.mastery(state, it.xp)) } }
+                        PlayHead("Collection", "Play", onBack) { dev.cardstashy.nativeplay.play.PlayMath.purse(state)?.let { PurseRow(it, level = dev.cardstashy.nativeplay.play.PlayMath.mastery(state, it.xp)) } }
                         // Sets moved to the Shop (Randall 3 Nov 20:00Z): the Trunk is your cards only.
                     }
                 }

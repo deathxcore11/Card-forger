@@ -82,13 +82,14 @@ fun PlayHomeRoute(onQuickPlay: () -> Unit, onLobby: (String) -> Unit = { onQuick
     fun setName(code: String) = s.getAsJsonArray("shop")?.firstNotNullOfOrNull { (it as? JsonObject)?.takeIf { o -> o["code"]?.asString == code }?.get("name")?.asString }
         ?: SetFacts.set(code)?.name ?: code.uppercase()
     // Opening: the server rolls the pack, then the opener plays it (app.js playEconOpen).
-    suspend fun openOne(id: String): PackResult? = runCatching { Progress.open(id) }.getOrNull()?.let { out ->
-        packResult(out, setName(out.getAsJsonObject("pack")?.get("set")?.asString ?: "")) }
+    var why: String? = null
+    suspend fun openOne(id: String): PackResult? = runCatching { Progress.open(id) }.onFailure { why = it.message }.getOrNull()?.let { out ->
+        runCatching { packResult(out, setName(out.getAsJsonObject("pack")?.get("set")?.asString ?: "")) }.onFailure { why = "Your pack opened. Find the cards in Trunk." }.getOrNull() }
     fun run(block: suspend () -> Unit) { scope.launch { block(); Progress.refresh(); Progress.refreshDeeds() } }
     val act = PlayHomeActions(
         mode = { when (it) { "quick", "practice", "social" -> onLobby(it); "planeswalk" -> onWeb("https://cardstashy.com/planeswalk.html"); else -> onWeb(SITE_PLAY) } },
         story = { onStory() },
-        view = { when (it) { "switch" -> onCollection(); "collection" -> onTrunk(); "decks" -> onDecks(); "deeds" -> onAchievements(null); "quests" -> onAchievements("quests"); "shop" -> onShop("sets", null); "packs" -> onShop("packs", null); else -> onWeb(SITE_PLAY) } },
+        view = { when (it) { "switch" -> onCollection(); "collection" -> onTrunk(); "decks" -> onDecks(); "deeds" -> onAchievements(null); "quests" -> onAchievements("quests"); "shop" -> onShop("sets", null); "packs" -> onShop("packs", null); "forge" -> onShop("forge", null); else -> onWeb(SITE_PLAY) } },
         claim = { kind, id -> run { Progress.claim(kind, id, null) } },
         claimDeed = { id, step -> run { Progress.claim("ach", id, step) } },
         forge = { to, times -> run { Progress.forge(to, times) } },
@@ -97,7 +98,7 @@ fun PlayHomeRoute(onQuickPlay: () -> Unit, onLobby: (String) -> Unit = { onQuick
             if (opener == null) {
                 val code = s.getAsJsonArray("packs")?.firstNotNullOfOrNull { (it as? JsonObject)?.takeIf { o -> o["id"]?.asString == id }?.get("set")?.asString } ?: ""
                 opener = loadingPack(code, setName(code))
-                scope.launch { val r = openOne(id); if (opener?.note == LOADING) { opener = r; if (r == null) android.widget.Toast.makeText(context, "That pack didn't open. Try again in a moment.", android.widget.Toast.LENGTH_SHORT).show() } }
+                scope.launch { val r = openOne(id); if (opener?.note == LOADING) { opener = r; if (r == null) android.widget.Toast.makeText(context, why ?: "That pack didn't open. Try again in a moment.", android.widget.Toast.LENGTH_LONG).show() } }
             } },
         buy = { code -> run { Progress.buy(code) } },
         deck = { onWeb(SITE_PLAY) },
@@ -109,7 +110,7 @@ fun PlayHomeRoute(onQuickPlay: () -> Unit, onLobby: (String) -> Unit = { onQuick
     PlayHome(PlayHomeData(s, rules, story, PlayMath.playDay(tz), session?.userId ?: "", ambient, deeds),
         top = { TopBarItems(Mode.PLAY, profile?.avatarUrl, profile?.name, unread = false, onSwitch = onCollection, onProfile = onSignIn) },
         act = act,
-        nav = { PlayNav(null, { t -> when (t) { PlayTab.SWITCH -> onCollection(); PlayTab.TRUNK -> onTrunk(); PlayTab.DECKS -> onDecks(); PlayTab.TROPHIES -> onAchievements(null); PlayTab.SHOP -> onShop("sets", null) } }) })
+        nav = { PlayNav(PlayTab.HOME, { t -> when (t) { PlayTab.HOME -> {}; PlayTab.TRUNK -> onTrunk(); PlayTab.DECKS -> onDecks(); PlayTab.TROPHIES -> onAchievements(null); PlayTab.SHOP -> onShop("sets", null) } }) })
     }
     daily?.let { LoginRewardPopup(it) { daily = null } }
     opener?.let { first ->

@@ -233,10 +233,11 @@ private fun App(activity: MainActivity) {
     fun back() { if (trail.size > 1) trail.removeAt(trail.lastIndex) }
     BackHandler(enabled = trail.size > 1) { back() }
     fun tabTo(t: dev.cardstashy.nativeplay.ui.PlayTab) { when (t) {
-        dev.cardstashy.nativeplay.ui.PlayTab.SWITCH -> go(Screen.Collection); dev.cardstashy.nativeplay.ui.PlayTab.TRUNK -> go(Screen.Trunk)
+        dev.cardstashy.nativeplay.ui.PlayTab.HOME -> go(Screen.Home); dev.cardstashy.nativeplay.ui.PlayTab.TRUNK -> go(Screen.Trunk)
         dev.cardstashy.nativeplay.ui.PlayTab.DECKS -> go(Screen.PlayDecks); dev.cardstashy.nativeplay.ui.PlayTab.TROPHIES -> go(Screen.Achievements())
         dev.cardstashy.nativeplay.ui.PlayTab.SHOP -> { if (screen !is Screen.Shop) go(Screen.Shop()) }
     } }
+    androidx.compose.runtime.CompositionLocalProvider(dev.cardstashy.nativeplay.ui.LocalShopNav provides { tab -> go(Screen.Shop(tab)) }) {
     when (val s = screen) {
         Screen.Home -> {
             LaunchedEffect(Unit) { activity.inGame(false) }
@@ -247,12 +248,12 @@ private fun App(activity: MainActivity) {
         Screen.Trunk -> {
             LaunchedEffect(Unit) { activity.inGame(false) }
             dev.cardstashy.nativeplay.ui.TrunkRoute(onBack = { back() }, onWeb = { go(Screen.Web(it)) }, onSet = { go(Screen.Shop("sets", it)) }, onNav = { t ->
-                when (t) { dev.cardstashy.nativeplay.ui.PlayTab.SWITCH -> go(Screen.Collection); dev.cardstashy.nativeplay.ui.PlayTab.TRUNK -> {}; dev.cardstashy.nativeplay.ui.PlayTab.DECKS -> go(Screen.PlayDecks); dev.cardstashy.nativeplay.ui.PlayTab.TROPHIES -> go(Screen.Achievements()); dev.cardstashy.nativeplay.ui.PlayTab.SHOP -> go(Screen.Shop()) } })
+                when (t) { dev.cardstashy.nativeplay.ui.PlayTab.HOME -> go(Screen.Home); dev.cardstashy.nativeplay.ui.PlayTab.TRUNK -> {}; dev.cardstashy.nativeplay.ui.PlayTab.DECKS -> go(Screen.PlayDecks); dev.cardstashy.nativeplay.ui.PlayTab.TROPHIES -> go(Screen.Achievements()); dev.cardstashy.nativeplay.ui.PlayTab.SHOP -> go(Screen.Shop()) } })
         }
         Screen.PlayDecks -> {
             LaunchedEffect(Unit) { activity.inGame(false) }
             dev.cardstashy.nativeplay.ui.DecksRoute(onBack = { back() }, onWeb = { go(Screen.Web(it)) }, onTrunkSet = { go(Screen.TrunkSet(it)) }, onNav = { t ->
-                when (t) { dev.cardstashy.nativeplay.ui.PlayTab.SWITCH -> go(Screen.Collection); dev.cardstashy.nativeplay.ui.PlayTab.TRUNK -> go(Screen.Trunk); dev.cardstashy.nativeplay.ui.PlayTab.DECKS -> {}; dev.cardstashy.nativeplay.ui.PlayTab.TROPHIES -> go(Screen.Achievements()); dev.cardstashy.nativeplay.ui.PlayTab.SHOP -> go(Screen.Shop()) } })
+                when (t) { dev.cardstashy.nativeplay.ui.PlayTab.HOME -> go(Screen.Home); dev.cardstashy.nativeplay.ui.PlayTab.TRUNK -> go(Screen.Trunk); dev.cardstashy.nativeplay.ui.PlayTab.DECKS -> {}; dev.cardstashy.nativeplay.ui.PlayTab.TROPHIES -> go(Screen.Achievements()); dev.cardstashy.nativeplay.ui.PlayTab.SHOP -> go(Screen.Shop()) } })
         }
         is Screen.TrunkSet -> {
             // Set pages live in the Shop now (Randall 3 Nov 20:00Z); older links that name a set land there.
@@ -293,10 +294,11 @@ private fun App(activity: MainActivity) {
             LaunchedEffect(Unit) { activity.inGame(false) }
             dev.cardstashy.nativeplay.ui.AchievementsRoute(onBack = { back() }, startTab = s.tab, nav = {
                 dev.cardstashy.nativeplay.ui.PlayNav(dev.cardstashy.nativeplay.ui.PlayTab.TROPHIES, { t ->
-                    when (t) { dev.cardstashy.nativeplay.ui.PlayTab.SWITCH -> go(Screen.Collection); dev.cardstashy.nativeplay.ui.PlayTab.TRUNK -> go(Screen.Trunk); dev.cardstashy.nativeplay.ui.PlayTab.DECKS -> go(Screen.PlayDecks); dev.cardstashy.nativeplay.ui.PlayTab.TROPHIES -> {}; dev.cardstashy.nativeplay.ui.PlayTab.SHOP -> go(Screen.Shop()) } })
+                    when (t) { dev.cardstashy.nativeplay.ui.PlayTab.HOME -> go(Screen.Home); dev.cardstashy.nativeplay.ui.PlayTab.TRUNK -> go(Screen.Trunk); dev.cardstashy.nativeplay.ui.PlayTab.DECKS -> go(Screen.PlayDecks); dev.cardstashy.nativeplay.ui.PlayTab.TROPHIES -> {}; dev.cardstashy.nativeplay.ui.PlayTab.SHOP -> go(Screen.Shop()) } })
             })
         }
         is Screen.Match -> MatchFlow(activity, s.pick, onHome = { if ((s.pick as? Pick.Table)?.story != null) back() else go(Screen.Home) }, onDecks = { back() })
+    }
     }
     // Live achievement toasts (drawn over the app in setContent): at the table they sit just under the status bar; a tap opens the deed's tab.
     // Rich presence (play-presence.js): what the app shows now, beats only while the app is in front.

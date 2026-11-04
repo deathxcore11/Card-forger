@@ -194,7 +194,7 @@ fun PlayHome(d: PlayHomeData, top: @Composable () -> Unit, act: PlayHomeActions 
                     if (short) item("head") {
                         Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(16.dp)) {
                             Text("Play", style = Site.Display.copy(fontSize = 28.sp, letterSpacing = .04.em))
-                            Box(Modifier.weight(1f)) { PurseRow(purse, onCoins = { act.view("shop") }, onSeals = { act.view("shop") }, onPacks = { act.view("packs") }) }
+                            Box(Modifier.weight(1f)) { PurseRow(purse, onCoins = { act.view("shop") }, onSeals = { act.view("forge") }, onPacks = { act.view("packs") }) }
                             LevelRing(level, framed = true)
                         }
                     } else item("head") {
@@ -203,7 +203,7 @@ fun PlayHome(d: PlayHomeData, top: @Composable () -> Unit, act: PlayHomeActions 
                                 Text("Play", style = Site.Display.copy(fontSize = 34.sp, letterSpacing = .04.em), modifier = Modifier.weight(1f))
                                 LevelRing(level, framed = true)
                             }
-                            PurseRow(purse, onCoins = { act.view("shop") }, onSeals = { act.view("shop") }, onPacks = { act.view("packs") })
+                            PurseRow(purse, onCoins = { act.view("shop") }, onSeals = { act.view("forge") }, onPacks = { act.view("packs") })
                         }
                     }
                     item("modes") { Probe("modes") { Modes(wide, act, if (short) (maxHeight - 120.dp).coerceIn(170.dp, 240.dp) else null) } }
@@ -226,7 +226,7 @@ fun PlayHome(d: PlayHomeData, top: @Composable () -> Unit, act: PlayHomeActions 
                 }.statusBarsPadding()) {
                     top()
                     // The dashboard's purse rides in the bar between the brand and the avatar.
-                    if (dash) Box(Modifier.align(Alignment.Center).padding(horizontal = 76.dp).widthIn(max = 560.dp).fillMaxWidth()) { PurseRow(purse, onCoins = { act.view("shop") }, onSeals = { act.view("shop") }, onPacks = { act.view("packs") }) }
+                    if (dash) Box(Modifier.align(Alignment.Center).padding(horizontal = 76.dp).widthIn(max = 560.dp).fillMaxWidth()) { PurseRow(purse, onCoins = { act.view("shop") }, onSeals = { act.view("forge") }, onPacks = { act.view("packs") }) }
                 }
             }
             if (!dash) nav()
@@ -360,6 +360,16 @@ private fun Duo(two: Boolean, a: @Composable () -> Unit, b: @Composable () -> Un
 }
 
 // ---------------------------------------------------------------- purse (pe-purse, full width on phones)
+
+/** Where the wallet's badges lead from any screen (Randall 4 Nov): coins to the Shop, seals to the Forge, packs to Your packs. */
+val LocalShopNav = androidx.compose.runtime.staticCompositionLocalOf<(String) -> Unit> { {} }
+
+/** The wallet pill with the app's own routes (screens other than Play home and the Shop). */
+@Composable
+internal fun PurseRow(p: PlayMath.Purse, level: PlayMath.Level? = null) {
+    val nav = LocalShopNav.current
+    PurseRow(p, { nav("sets") }, { nav("forge") }, { nav("packs") }, level)
+}
 
 @Composable
 internal fun PurseRow(p: PlayMath.Purse, onCoins: () -> Unit, onSeals: () -> Unit, onPacks: () -> Unit, level: PlayMath.Level? = null) {
