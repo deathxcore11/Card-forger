@@ -329,7 +329,12 @@ export function openPackPreview({game,set,cards,complete=false,featured=null,hyd
  dialog.addEventListener('load',e=>{const img=e.target,b=img?.closest?.('.pack-card');if(b&&img.matches('img[data-pack-src]')&&b.classList.contains('revealed'))fit(b,img);},true);
  const handImg=i=>dialog.querySelector(`.pack-card[data-index="${i}"] img[data-pack-src]`);
  // Ready to turn: the front is decoded (or failed, or took longer than a breath, so a slow network never stalls a tap).
- const ready=i=>{const img=handImg(i);if(!img||(img.complete&&img.naturalWidth))return Promise.resolve();return Promise.race([img.decode?img.decode().catch(()=>{}):new Promise(r=>img.addEventListener('load',r,{once:true})),new Promise(r=>setTimeout(r,700))]);};
+ // Fronts we know are in the browser's cache, by absolute address. A card's art can change after its full card loads (Pokémon
+ // sets list a small picture first), so the flip waits on the address it will really show, not on the picture first dealt.
+ const abs=s=>{try{return new URL(s,location.href).href;}catch{return s;}},artDone=new Set(),artUrl=i=>abs(setImageUrl(cardArt(picks[i])));
+ dialog.addEventListener('load',e=>{if(e.target?.matches?.('img[data-pack-src],.pack-face img')&&e.target.currentSrc)artDone.add(abs(e.target.currentSrc));},true);
+ // Ready to turn: the front is decoded (or failed, or took a few seconds, so a dead network never stalls a tap).
+ const ready=i=>{const u=artUrl(i);if(artDone.has(u))return Promise.resolve();return Promise.race([new Promise(r=>{const im=new Image();im.referrerPolicy='no-referrer';im.onload=()=>{artDone.add(u);r();};im.onerror=r;im.src=u;}),new Promise(r=>setTimeout(r,4000))]);};
  // Long-press / right-click on any card opens the same card actions as everywhere else.
  const wireHold=()=>{dialog.querySelectorAll('.pack-card').forEach((b,i)=>{b.quickRef=ref(i);});};wireHold();
  // Price tier of a pulled card: the same colours as the collection's borders; unpriced cards stay neutral.
@@ -354,7 +359,7 @@ export function openPackPreview({game,set,cards,complete=false,featured=null,hyd
  // Pulled shiny slots load their full card in the background and pick up their holo before they are seen.
  let deal=0;const fill=()=>{if(!hydrate)return;const n=++deal,now=picks;now.forEach((c,i)=>{const hit=!!featured&&c===featured;if(!packNeedsHydration(game,c,hit))return;
   Promise.resolve().then(()=>hydrate(c)).then(full=>{if(disposed||n!==deal||!full||String(full.id)!==String(c.id))return;
-   const {setContext,...rest}=full;now[i]={...c,...rest,name:c.name,rarity:c.rarity||full.rarity,packSlot:c.packSlot};ctxs[i]=(hit&&featuredFinish(now[i]))||packFinishes(game,[now[i]])[0];if(revealed.has(i))setTier(dialog.querySelector(`.pack-card[data-index="${i}"]`),tierOf(i));if(focus===i&&revealed.has(i))show(i);}).catch(()=>{});});};
+   const {setContext,...rest}=full;now[i]={...c,...rest,name:c.name,rarity:c.rarity||full.rarity,packSlot:c.packSlot};ctxs[i]=(hit&&featuredFinish(now[i]))||packFinishes(game,[now[i]])[0];if(revealed.has(i))setTier(dialog.querySelector(`.pack-card[data-index="${i}"]`),tierOf(i));const hi=handImg(i),u=setImageUrl(cardArt(now[i]));if(hi&&hi.dataset.packSrc!==u){hi.dataset.packSrc=u;hi.src=u;}if(focus===i&&revealed.has(i))show(i);}).catch(()=>{});});};
  // A pull feels as good as its price or its rarity, whichever is bigger, so an unpriced mythic still hits hard.
  const RARITY_FEEL=['pack-reveal','pack-reveal','pack-tier-2','pack-tier-3','pack-tier-4'];
  const levelOf=i=>FEELS.indexOf(feelOf(i));
@@ -370,7 +375,7 @@ export function openPackPreview({game,set,cards,complete=false,featured=null,hyd
  const unCharge=()=>{charging=null;focusCard.classList.remove('pack-charge');};
  const reveal=(i,{silent=false,charged=false,loaded=false}={})=>{if(!Number.isInteger(i)||!picks[i]||charging!==null)return;if(!revealed.has(i)){
    // Wait (briefly) for the front to be decoded first; the card lifts a touch so the tap still answers at once.
-   if(!silent&&!loaded){const img=handImg(i);if(img&&!(img.complete&&img.naturalWidth)){charging=i;if(focus===i)flipLift(focusCard,2,420);ready(i).then(()=>{if(disposed||charging!==i)return;charging=null;reveal(i,{charged,loaded:true});});return;}}if(!silent&&!charged&&!reduce()&&focus===i&&levelOf(i)>=3)return charge(i);revealed.add(i);if(!silent){const f=feelOf(i);haptic(f);appSound(PACK_SOUND[f]||'PACK-006',{gap:0});}const b=dialog.querySelector(`.pack-card[data-index="${i}"]`),img=b.querySelector('img[data-pack-src]');if(img.getAttribute('src')!==img.dataset.packSrc)img.src=img.dataset.packSrc;b.classList.add('revealed','pack-flipping');later(()=>b.classList.remove('pack-flipping'),360);fit(b,img);
+   if(!silent&&!loaded){if(!artDone.has(artUrl(i))){charging=i;if(focus===i)flipLift(focusCard,2,420);ready(i).then(()=>{if(disposed||charging!==i)return;charging=null;reveal(i,{charged,loaded:true});});return;}}if(!silent&&!charged&&!reduce()&&focus===i&&levelOf(i)>=3)return charge(i);revealed.add(i);if(!silent){const f=feelOf(i);haptic(f);appSound(PACK_SOUND[f]||'PACK-006',{gap:0});}const b=dialog.querySelector(`.pack-card[data-index="${i}"]`),img=b.querySelector('img[data-pack-src]');if(img.getAttribute('src')!==img.dataset.packSrc)img.src=img.dataset.packSrc;b.classList.add('revealed','pack-flipping');later(()=>b.classList.remove('pack-flipping'),360);fit(b,img);
    // The price frame and its glow wait until the face has turned, so nothing flat shows behind the card mid-turn.
    if(focus===i||!silent){focusCard.classList.add('pack-flipping');later(()=>focusCard.classList.remove('pack-flipping'),400);}flipLift(b,22);if(!silent){const L=levelOf(i);flipLift(focusCard,[3,5,7,10,13,17][L]||3,560+L*70);}b.setAttribute('aria-pressed','true');b.setAttribute('aria-label',picks[i].name+' · revealed');
    setTier(b,tierOf(i));status.textContent=`${revealed.size} of ${picks.length} revealed`;
