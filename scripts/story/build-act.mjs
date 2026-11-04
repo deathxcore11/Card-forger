@@ -6,7 +6,8 @@ import {readFileSync, writeFileSync} from 'node:fs';
 import {storyAct} from '../../story-acts.js';
 const n = Number(process.argv[2]), act = storyAct(n);
 const src = (await import(`./acts-src/act-${n}.mjs`)).default;
-const pool = JSON.parse(readFileSync(`/tmp/story/pool-${n}.json`, 'utf8')).cards.filter(c => !/^(?:A-|)$/.test('x'));
+const poolFile = JSON.parse(readFileSync(`/tmp/story/pool-${n}.json`, 'utf8')), eraSets = poolFile.eraSets || [];
+const pool = poolFile.cards.filter(c => !/^(?:A-|)$/.test('x'));
 const BASIC = /^(Snow-Covered )?(Plains|Island|Swamp|Mountain|Forest)$/;
 const missing = [];
 // Alpha printed on cards with rounded black corners; Beta and Unlimited share the same paintings.
@@ -18,7 +19,7 @@ function pick(name, prefer = []) {
   if (!hits.length) { missing.push(name); return null; }
   // Snow-covered basics come from whichever act set printed them (Coldsnap in Act 14); plain basics use the land set.
   const snow = /^Snow-Covered /.test(name);
-  const order = BASIC.test(name) && !snow ? [act.landSet] : [...prefer, ...act.sets];
+  const order = BASIC.test(name) && !snow ? [act.landSet] : [...prefer, ...act.sets, ...eraSets];
   hits.sort((a, b) => (order.indexOf(a.set) + 1 || 99) - (order.indexOf(b.set) + 1 || 99) || parseInt(a.number) - parseInt(b.number));
   const h = hits[0];
   if (BASIC.test(name) && !snow && h.set !== act.landSet) missing.push(name + ' (no ' + act.landSet + ' printing)');
@@ -67,6 +68,6 @@ for (const b of src.battles) {
 }
 if (missing.length) { console.error('MISSING:', [...new Set(missing)].join(' | ')); process.exit(1); }
 writeFileSync(new URL(`../../data/story/act-${n}.json`, import.meta.url), JSON.stringify(out, null, 1));
-const legal = [...new Set(pool.filter(c => c.forge && !['banned', 'not_legal'].includes(c.vintage)).map(c => c.name))].sort();
+const legal = [...new Set(pool.filter(c => act.sets.includes(c.set) && c.forge && !['banned', 'not_legal'].includes(c.vintage)).map(c => c.name))].sort();
 writeFileSync(new URL(`../../data/story/pool-${n}.json`, import.meta.url), JSON.stringify(legal));
 console.log('built act', n, out.battles.length, 'battles');
