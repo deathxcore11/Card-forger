@@ -79,7 +79,8 @@ try{
     stampPixels=await compare(clean,painted,{printedMark:stamp.witness});
     assert(stampPixels.printedMark.count>0);
     assert(stampPixels.printedMark.mean<.5&&stampPixels.printedMark.changedFraction<.05,source.id+' entire overlay excludes printed mark '+JSON.stringify(stampPixels));
-    assert(await overlay.evaluate(el=>getComputedStyle(el).clipPath!=='none'),'All effects share the root stamp exclusion');
+    // Every effect draws on the shared card plane, which carries the stamp exclusion for all of them.
+    assert(await overlay.evaluate(el=>getComputedStyle(el.querySelector(':scope>.finish-plane')).clipPath!=='none'),'All effects share the root stamp exclusion');
    }
    report.cases.push({id:source.id,finish,pixels,stampPixels});
   }

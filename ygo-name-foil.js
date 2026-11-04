@@ -4,7 +4,7 @@
 // as recessed foil by the detail view's existing light position. Approximate
 // simulation over a flat image, not a physical-foil capture.
 // Name bar measured on 813x1185 YGOPRODeck renders: clears descenders, stops before the Attribute orb.
-import {frameThrottle} from './foil-gl.js';
+import {frameThrottle,foilLoop} from './foil-gl.js';
 export const YGO_NAME_BOX=[.072,.050,.828,.108];
 export const YGO_NAME_RARITY={silver:1,gold:2,rainbow:3,platinum:4};
 const masks=new Map();
@@ -75,41 +75,69 @@ void main(){
  vec3 foil=metal*shade*(.42+.58*spot)+vec3(1.0,.97,.9)*(spec*(.35+.65*spot)+wall*max(dot(n,L),0.0)*spot*.6);
  gl_FragColor=vec4(toSrgb(clamp(foil,0.0,1.0)),c);
 }`;
-// Mounts the lit name canvas over the name bar. Returns null (keep the CSS layer) when
-// WebGL, the shader or the pixels are unavailable; never fakes a lit result.
-export function mountYgoNameFoil(overlay,img,material,mask){
- const rarity=YGO_NAME_RARITY[material];if(!rarity||!mask)return null;
- const doc=overlay.ownerDocument,canvas=doc.createElement('canvas'),[x0,y0,x1,y1]=YGO_NAME_BOX;
- canvas.className='finish-name-foil';canvas.setAttribute('aria-hidden','true');
- Object.assign(canvas.style,{left:`${x0*100}%`,top:`${y0*100}%`,width:`${(x1-x0)*100}%`,height:`${(y1-y0)*100}%`});
- const gl=canvas.getContext('webgl',{alpha:true,premultipliedAlpha:false,antialias:false});if(!gl)return null;
+// One shared WebGL context lights every name bar (grid tiles included) and copies each result into
+// that card's ordinary 2D canvas, the same way the rarity foil does, so a Small grid of forty foils
+// never asks the browser for forty live contexts.
+let shared=null;
+function renderer(doc){
+ if(shared?.lost)return null;
+ if(shared)return shared;
+ const canvas=doc.createElement('canvas'),gl=canvas.getContext('webgl',{alpha:true,premultipliedAlpha:false,antialias:false,preserveDrawingBuffer:false});if(!gl)return null;
  const shader=(type,text)=>{const s=gl.createShader(type);gl.shaderSource(s,text);gl.compileShader(s);return gl.getShaderParameter(s,gl.COMPILE_STATUS)?s:null;};
  const vs=shader(gl.VERTEX_SHADER,VS),fs=shader(gl.FRAGMENT_SHADER,YGO_NAME_FRAGMENT);if(!vs||!fs)return null;
  const p=gl.createProgram();gl.attachShader(p,vs);gl.attachShader(p,fs);gl.linkProgram(p);if(!gl.getProgramParameter(p,gl.LINK_STATUS))return null;
  gl.useProgram(p);gl.bindBuffer(gl.ARRAY_BUFFER,gl.createBuffer());gl.bufferData(gl.ARRAY_BUFFER,new Float32Array([-1,-1,1,-1,-1,1,1,1]),gl.STATIC_DRAW);
  const loc=gl.getAttribLocation(p,'a');gl.enableVertexAttribArray(loc);gl.vertexAttribPointer(loc,2,gl.FLOAT,false,0,0);
- const u=n=>gl.getUniformLocation(p,n);
- [[mask.glyph,'u_glyph']].forEach(([source,name],i)=>{gl.activeTexture(gl.TEXTURE0+i);gl.bindTexture(gl.TEXTURE_2D,gl.createTexture());gl.pixelStorei(gl.UNPACK_FLIP_Y_WEBGL,true);gl.texImage2D(gl.TEXTURE_2D,0,gl.RGBA,gl.RGBA,gl.UNSIGNED_BYTE,source);
-  for(const [k,val] of [[gl.TEXTURE_WRAP_S,gl.CLAMP_TO_EDGE],[gl.TEXTURE_WRAP_T,gl.CLAMP_TO_EDGE],[gl.TEXTURE_MIN_FILTER,gl.LINEAR],[gl.TEXTURE_MAG_FILTER,gl.LINEAR]])gl.texParameteri(gl.TEXTURE_2D,k,val);gl.uniform1i(u(name),i);});
- gl.uniform2f(u('u_texel'),1/mask.width,1/mask.height);gl.uniform4f(u('u_box'),x0,y0,x1,y1);gl.uniform1f(u('u_aspect'),img.naturalHeight/img.naturalWidth);gl.uniform1f(u('u_rarity'),rarity);
- if(gl.getError())return null;
+ const U={};for(const n of ['u_glyph','u_light','u_texel','u_box','u_aspect','u_rarity'])U[n]=gl.getUniformLocation(p,n);
+ gl.uniform1i(U.u_glyph,0);
+ shared={canvas,gl,U,glyphs:new WeakMap(),handles:new Set(),lost:false};
+ canvas.addEventListener('webglcontextlost',e=>{e.preventDefault();shared.lost=true;for(const h of shared.handles)h.fallback();});
+ return shared;
+}
+// Glyph coverage texture per mask (uploaded once, shared by every card showing the same picture).
+function glyphTexture(r,mask){
+ let t=r.glyphs.get(mask);if(t)return t;
+ const {gl}=r;t=gl.createTexture();gl.activeTexture(gl.TEXTURE0);gl.bindTexture(gl.TEXTURE_2D,t);gl.pixelStorei(gl.UNPACK_FLIP_Y_WEBGL,true);gl.texImage2D(gl.TEXTURE_2D,0,gl.RGBA,gl.RGBA,gl.UNSIGNED_BYTE,mask.glyph);
+ for(const [k,val] of [[gl.TEXTURE_WRAP_S,gl.CLAMP_TO_EDGE],[gl.TEXTURE_WRAP_T,gl.CLAMP_TO_EDGE],[gl.TEXTURE_MIN_FILTER,gl.LINEAR],[gl.TEXTURE_MAG_FILTER,gl.LINEAR]])gl.texParameteri(gl.TEXTURE_2D,k,val);
+ r.glyphs.set(mask,t);return t;
+}
+// Mounts the lit name canvas over the name bar of any card face: the card page, zoom, a pulled pack
+// card and every grid tile. Returns null (keep the CSS layer) when WebGL, the shader or the pixels
+// are unavailable; never fakes a lit result.
+export function mountYgoNameFoil(overlay,img,material,mask){
+ const rarity=YGO_NAME_RARITY[material];if(!rarity||!mask||!overlay||!img)return null;
+ const doc=overlay.ownerDocument,r=renderer(doc);if(!r)return null;
+ const canvas=doc.createElement('canvas'),[x0,y0,x1,y1]=YGO_NAME_BOX;
+ canvas.className='finish-name-foil';canvas.setAttribute('aria-hidden','true');
+ Object.assign(canvas.style,{left:`${x0*100}%`,top:`${y0*100}%`,width:`${(x1-x0)*100}%`,height:`${(y1-y0)*100}%`});
  overlay.append(canvas);
- let last='';
+ const clipper=overlay.closest?.('.finish-overlay')||overlay;
+ let last='',dead=false;
  const pct=v=>{const n=parseFloat(v);return Number.isFinite(n)?Math.max(0,Math.min(100,n))/100:.5;};
  const draw=()=>{
-  if(!canvas.isConnected)return;
+  if(dead||!canvas.isConnected)return;if(r.lost)return h.fallback();
   const css=globalThis.getComputedStyle?.(overlay),lx=pct(css?.getPropertyValue('--finish-x')),ly=pct(css?.getPropertyValue('--finish-y'));
-  const dpr=Math.min(2,globalThis.devicePixelRatio||1),w=Math.max(1,Math.min(mask.width,Math.round(canvas.clientWidth*dpr))),h=Math.max(1,Math.min(mask.height,Math.round(canvas.clientHeight*dpr))),key=[lx,ly,w,h].join();
+  const dpr=Math.min(2,globalThis.devicePixelRatio||1),w=Math.max(1,Math.min(mask.width,Math.round(canvas.clientWidth*dpr))),hh=Math.max(1,Math.min(mask.height,Math.round(canvas.clientHeight*dpr))),key=[lx.toFixed(3),ly.toFixed(3),w,hh].join();
   if(key===last)return;last=key;
-  if(canvas.width!==w||canvas.height!==h){canvas.width=w;canvas.height=h;}
+  const {gl,U}=r;if(r.canvas.width!==w||r.canvas.height!==hh){r.canvas.width=w;r.canvas.height=hh;}
+  gl.activeTexture(gl.TEXTURE0);gl.bindTexture(gl.TEXTURE_2D,glyphTexture(r,mask));
+  gl.uniform2f(U.u_texel,1/mask.width,1/mask.height);gl.uniform4f(U.u_box,x0,y0,x1,y1);gl.uniform1f(U.u_aspect,img.naturalHeight/img.naturalWidth);gl.uniform1f(U.u_rarity,rarity);
   // Same mapping as the approved prototype: light sits ahead of the pointer by 10%.
-  gl.viewport(0,0,w,h);gl.uniform2f(u('u_light'),.5+(lx-.5)*1.1,.5+(ly-.5)*1.1);gl.clearColor(0,0,0,0);gl.clear(gl.COLOR_BUFFER_BIT);gl.drawArrays(gl.TRIANGLE_STRIP,0,4);
+  gl.viewport(0,0,w,hh);gl.uniform2f(U.u_light,.5+(lx-.5)*1.1,.5+(ly-.5)*1.1);gl.clearColor(0,0,0,0);gl.clear(gl.COLOR_BUFFER_BIT);gl.drawArrays(gl.TRIANGLE_STRIP,0,4);
+  if(canvas.width!==w||canvas.height!==hh){canvas.width=w;canvas.height=hh;}
+  const out=canvas.getContext('2d');out.clearRect(0,0,w,hh);out.drawImage(r.canvas,0,0);
  };
- // Light coordinates are inline custom properties set on an ancestor (pointer, gyro, zoom).
- // Watch those style attributes instead of running a per-frame loop.
+ // Tests clear the 2D copy and ask for the same light again; a forced pass ignores the last key.
+ canvas.foilRedraw=()=>{last='';draw();};
+ // Light coordinates are inline custom properties set on an ancestor (pointer, gyro, zoom); gallery
+ // cards sweep their light with a CSS animation and follow it through the shared foil loop.
  const request=frameThrottle(draw),mo=typeof MutationObserver==='undefined'?null:new MutationObserver(request);
  for(let n=overlay.parentElement;n&&n!==doc.documentElement;n=n.parentElement)mo?.observe(n,{attributes:true,attributeFilter:['style','class']});
- const ro=typeof ResizeObserver==='undefined'?null:new ResizeObserver(request);ro?.observe(canvas);
- draw();
- return {canvas,draw,dispose(){request.cancel();mo?.disconnect();ro?.disconnect();canvas.remove();gl.getExtension('WEBGL_lose_context')?.loseContext();}};
+ const ro=typeof ResizeObserver==='undefined'?null:new ResizeObserver(()=>{request();foilLoop.kick();});ro?.observe(canvas);
+ const h={canvas,draw,
+  animated:()=>!dead&&canvas.isConnected&&clipper.classList.contains('finish-auto'),
+  fallback(){if(dead)return;dead=true;canvas.remove();foilLoop.delete(h);r.handles.delete(h);},
+  dispose(){dead=true;request.cancel();mo?.disconnect();ro?.disconnect();canvas.remove();foilLoop.delete(h);r.handles.delete(h);}};
+ r.handles.add(h);foilLoop.add(h);draw();foilLoop.kick();
+ return h;
 }

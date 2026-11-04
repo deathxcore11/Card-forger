@@ -134,7 +134,7 @@ assert.equal(charizard.rarity,'Shiny rare VMAX');
 assert.equal(finishChoices('ptcg',charizard).length,1);assert.equal(charizard.variants[0].finish,'holofoil');
 assert.equal(resolveFinish('ptcg',charizard,{priceFinish:charizard.variants[0].key}).effect,'ptcg-full-art');
 assert.equal(finishEffect('ptcg',{...charizard,variants:[]},{priceFinish:'holofoil'}),'unknown','Rarity never creates a finish option');
-assert.deepEqual(yp('Starlight Rare').layers,[{mask:'ygo-broad',material:'starlight'}],'No rectangular name paint or textbox cutout on Starlight');
+assert.deepEqual(yp('Starlight Rare').layers,[{mask:'ygo-broad',material:'starlight'},{mask:'ygo-name',material:'rainbow'}],'Starlight foils the whole face and its letters (rainbow), with no textbox cutout');
 console.log('PASS: actual Charizard VMAX source Holofoil, no invented variants, full-face Starlight and settings-only controls.');
 
 const zekrom=normalizePtcg(await fixture('cel25-10')),mega=normalizePtcg(await fixture('me02.5-022'));
