@@ -84,8 +84,8 @@ void main(){
   for(int i=-4;i<=4;i++)acc+=dot(toLin(texture2D(u_card,clamp(v+vec2(float(i)*.009,0.),0.,1.)).rgb),LUM);
   nameInk=smoothstep(.05,.16,abs(l0-acc/9.));}
  if(u_whole.x>.5){vec3 F=foil(u_whole.x,u_whole.y,uv,L,V,H,spot,0.,stroke);outC=overInk(outC,F,(1.-text*(1.-u_whole.z))*(1.-name*nameInk)*.85);
-  // A dark name-bar ground (Xyz black, Link navy) passes too little light through overInk to show its flakes;
-  // the sheet's own glints add on top there, scaled by how dark the ground is.
+ // A dark name-bar ground (Xyz black, Link navy) passes too little light through overInk to show its flakes,
+  // so the sheet's own glints add on top there, scaled by how dark the ground is.
   if(name>.5){float dark=1.-smoothstep(.04,.25,dot(base,vec3(.2126,.7152,.0722)));outC=shoulder(outC+F*dark*(1.-nameInk)*.16);}}
  // Frame: the coloured frame, or only the outer border band (Gold, Platinum).
  if(u_frame.x>.5){float cov=u_frame.z>1.5?1.-inBox(uv,vec4(.045,.032,.955,.968)):frame;

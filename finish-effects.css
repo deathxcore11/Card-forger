@@ -111,6 +111,8 @@
    spotlight step aside while it is active; the name lettering stays on top. */
 .finish-rarity-gl{position:absolute;inset:0;display:block;width:100%;height:100%;pointer-events:none!important}
 .finish-rarity-gl[hidden]{display:none}
+/* Whole-face Starlight never shows a rectangular name paint: its name layer appears only once it is masked to the letters. */
+.finish-overlay[data-material-profile="starlight"] .finish-name-region:not(.finish-title-glyphs){display:none}
 .finish-overlay.rarity-gl .finish-layer:not(.finish-name-region),.finish-overlay.rarity-gl .finish-spotlight,.finish-overlay.rarity-gl .finish-pattern{display:none}
 .finish-overlay[data-material-profile] .finish-pattern{position:absolute;inset:0;pointer-events:none;background-position:var(--finish-x) var(--finish-y);mix-blend-mode:screen;opacity:.46}
 [data-material-profile=classic-holo] .finish-pattern,[data-material-profile=cosmos-holo] .finish-pattern{background-image:url('assets/finishes/cosmos.svg'),radial-gradient(ellipse at var(--finish-x) var(--finish-y),#b9e3ff55,transparent 45%);background-size:100% 100%;}
