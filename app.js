@@ -163,6 +163,8 @@ import { startTabGlide } from "./tab-glide.js";
 import { startSearchHints } from "./search-hints.js";
 import { openZoom, zoomCardOptions } from "./zoom.js";
 import {createPlayEcon,purse} from "./play-econ-client.js";
+import {createAchievementToasts,doneSteps,newlyEarned} from "./play-achievement-toasts.js";
+import {createPresence,presenceShared,rememberPresence} from "./play-presence.js";
 import {matchCounters,questRows,playDay} from "./play-achievements.js";
 import {econScreenMarkup,ECON_VIEWS,purseMarkup,cardImageByName,head as econHead,craftPlan,packGoals,setPlayStyles,setPlayDeckCovers} from "./play-econ-ui.js";
 setPlayDeckCovers(()=>S.state?.settings?.playDeckCovers);
@@ -174,8 +176,8 @@ import {stepDeckCard,ownedByName,deckShortfall,legalFormats,mtgjsonDeckRows,PLAY
 import {STORY_ACTS} from "./story-acts.js";
 import {createStoryProgress,loadAct,loadActPool,ownDeckFits,battleCleared,currentAct,currentBattle,actCleared} from "./story-client.js";
 import {storyHomeMarkup,storyActMarkup,storyBattleMarkup,playScene,createStoryBubbles,starsRow,rewardText} from "./story-ui.js";
-import {storyDeedsEarned,STORY_DEEDS,STORY_ACT_DEEDS} from "./story-deeds.js";
-import { initCloud, pauseLocalConflict, communityRequest, cloudAccessToken, cloudInfo, isEmptyWorkspace, statusLabel, scheduleSync, signInGoogle, signInEmail, signInPassword, createAccount, requestPasswordReset, finishPasswordReset, signOut, detachDeviceSync, saveProfile, resolvePending, syncNow, resendConfirmation, deleteAccount } from "./cloud.js";
+import {storyDeedsEarned} from "./story-deeds.js";
+import { initCloud, pauseLocalConflict, communityRequest, presenceRequest, cloudAccessToken, cloudInfo, isEmptyWorkspace, statusLabel, scheduleSync, signInGoogle, signInEmail, signInPassword, createAccount, requestPasswordReset, finishPasswordReset, signOut, detachDeviceSync, saveProfile, resolvePending, syncNow, resendConfirmation, deleteAccount } from "./cloud.js";
 import { withSnapshot, collectionValue, recordValuePoint, cardSig, engineProfile, swapImpact, lotPrice } from "./insights.js";
 
 /* =========================================================
@@ -1742,13 +1744,27 @@ let playPaint=false,storyPaint=0;
 const playRepaint=()=>{if(playPaint)return;playPaint=true;queueMicrotask(()=>{playPaint=false;refreshPlayMenu();});};
 // Story acts arrive one by one from the network: they share one repaint per frame.
 const storyRepaint=()=>{if(!storyPaint)storyPaint=(globalThis.requestAnimationFrame||(f=>setTimeout(f,16)))(()=>{storyPaint=0;refreshPlayMenu();});};
-const playEcon=createPlayEcon({getAccessToken:cloudAccessToken,onChange:()=>{setPlayStyles(playEcon.snapshot().state?.styles||[]);syncPlayChrome();if(S.ui.view==='play')playRepaint();else if(S.ui.lens==='play'&&S.ui.view==='set')render();}});
+// Live achievement toasts: compare the done steps of each new server state with the last one (play-achievement-toasts.js).
+// A refresh or a fresh account only resets the baseline, so opening the app never replays old deeds.
+let achSeen=null,achState=null;
+const achToasts=createAchievementToasts({mount:el=>mountFeedback(el),unmount:el=>el.remove(),haptic,sound:id=>appSound(id,{gap:0,volume:.6}),
+ onOpen:t=>{playView='deeds';econUi.deedTab=t.tab;if(document.body.classList.contains('practice-table-open'))return;if(S.ui.view==='play'){refreshPlayMenu();scrollTo({top:0});}else go('#play');}});
+function achWatch(){const snap=playEcon.snapshot(),s=snap.state;if(s===achState)return;achState=s;if(!s?.counters){achSeen=null;return;}
+ if(snap.loading||!achSeen){achSeen=doneSteps(s);return;}const fresh=newlyEarned(achSeen,s,s.config||{});achSeen=doneSteps(s);achToasts.push(fresh);}
+const playEcon=createPlayEcon({getAccessToken:cloudAccessToken,onChange:()=>{achWatch();setPlayStyles(playEcon.snapshot().state?.styles||[]);syncPlayChrome();if(S.ui.view==='play')playRepaint();else if(S.ui.lens==='play'&&S.ui.view==='set')render();}});
 // The Trunk sort sticks until the player picks another (default: Recently added).
 function savedEconSort(){try{return localStorage.getItem('cardstashy-play-sort')||'';}catch{return '';}}
 let econUi={query:'',cardQuery:'',rarity:'',press:null,check:null,sort:savedEconSort()},econSeen=null;
 const econFacts=createCardFacts({onChange:()=>{if(S.ui.view==='play'&&ECON_VIEWS.has(playView))playRepaint();}});
 // Read the wallet once per signed-in account per visit to Play; a new account starts clean.
-const econWake=()=>{const id=cloudInfo()?.user?.id||null;if(id===econSeen)return;if(econSeen!==null)playEcon.clear();econSeen=id;econUi={query:'',cardQuery:'',rarity:'',press:null,check:null,sort:savedEconSort()};playView=ECON_VIEWS.has(playView)?'home':playView;if(id)setTimeout(()=>playEcon.refresh().then(()=>playEcon.login()).then(l=>{if(l?.fresh)toast(`Day ${l.stamp} stamped on your log-in calendar.`);}),0);};
+// Rich presence (play-presence.js): what accepted friends see. A match line comes from the open table.
+function presenceMatch(){try{if(!playerMatRoot)return null;const s=playerMatHost?.snapshot?.(),turn=s?.game?.status?.surface?.turn,setup=playSetup.snapshot();
+ if(playerMatRoot.classList.contains('st-match'))return {kind:'story',act:storyUi.act,battle:storyBattle()?.title||'',turn};
+ if(/^Friend/.test(playerMatRoot.getAttribute('aria-label')||''))return {kind:'friend',format:setup?.match?.format||'',turn};
+ return {kind:setup?.playStyle==='practice'?'practice':'quick',format:setup?.match?.format||'',turn};}catch{return null;}}
+const presence=createPresence({read:()=>({view:S.ui.view,playView,match:presenceMatch()}),send:(action,payload)=>presenceRequest(action,payload),enabled:()=>!!cloudInfo()?.user?.id&&presenceShared()});
+C.setPresence=t=>{if(!rememberPresence(t.checked)){t.checked=!t.checked;return toast('Could not save that setting.');}void presence.setShare(t.checked);toast(t.checked?'Friends can see what you’re playing.':'Friends no longer see what you’re playing.');};
+const econWake=()=>{const id=cloudInfo()?.user?.id||null;if(id===econSeen)return;if(id){presence.start();if(!presenceShared())void presenceRequest('hide');}if(econSeen!==null)playEcon.clear();econSeen=id;econUi={query:'',cardQuery:'',rarity:'',press:null,check:null,sort:savedEconSort()};playView=ECON_VIEWS.has(playView)?'home':playView;if(id)setTimeout(()=>playEcon.refresh().then(()=>playEcon.login()).then(l=>{if(l?.fresh)toast(`Day ${l.stamp} stamped on your log-in calendar.`);}),0);};
 const econFocus=()=>requestAnimationFrame(()=>document.getElementById('playTitle')?.focus?.({preventScroll:true}));
 A.playEconView=t=>{const v=t.dataset.econView;if(!ECON_VIEWS.has(v))return;playView=v;if(t.dataset.econTab)econUi.deedTab=t.dataset.econTab;if(v==='decks')loadPreconIndex();playInspectOpen=false;refreshPlayMenu();scrollTo({top:0});if(v==='shop'&&t.dataset.econFocus==='press')requestAnimationFrame(()=>document.querySelector('.pe-forge')?.scrollIntoView({block:'center',behavior:'smooth'}));else econFocus();};
 // Secret Lair (play-secret-lair.js): this week's bundle, and the rare art styles rewards unlock.
@@ -2444,7 +2460,7 @@ A.storyPlay=async({skipScene=false}={})=>{
    const out=await storyProgress.claim({battle:b.id,seat,deck:own?'own':'loaner'});if(out?.state)playEcon.refresh();slToast(out?.style);
    // Story deeds: what this win earned (story-deeds.js); the server re-checks and pays each once.
    const deeds=storyDeedsEarned(b.id,{...seenStats,...(rec?.facts||{}),seat,own:!!own,onPlay:typeof rec?.onPlay==='boolean'?rec.onPlay:null,endLife:rec?.life??rec?.facts?.endLife??seenStats.endLife},out?.refs||[]);
-   if(deeds.length)void playEcon.reportDeeds(b.id,deeds).then(r=>{for(const id of r?.counted||[]){const d=[...STORY_DEEDS,...STORY_ACT_DEEDS].find(x=>x.id===id);if(d)toast(`Deed done: ${d.title}. Claim it in Achievements.`);}});
+   if(deeds.length)void playEcon.reportDeeds(b.id,deeds);// the live achievement toast shows each counted deed
    const panel=root.querySelector('.play-match-result');if(panel){const note=document.createElement('p');note.className='st-result-note';const got=out?.paid||[],won=!own&&got.includes(`story:${b.id}:${seat==='villain'?'villain':'loaner'}`),rw=b.reward?.[seat]||{},coll=got.includes(`story:${b.id}:collector`);
     note.innerHTML=`${starsRow(storyProgress.snapshot().progress.battles?.[b.id])}<span>${won?rewardText(rw,b.rewardSet)+(coll?' and a Collector pack':'')+' added':coll?'A Collector pack added':out?.error?esc(out.error):own?'Your own deck earns XP. Win with the Story deck for the reward.':'Reward already claimed'}</span>`;panel.querySelector('.play-result-actions')?.before(note);}
    const ending=b.slot===8?(seat==='hero'?data.finale:data.villainFinale):b.after;
@@ -4575,7 +4591,7 @@ async function saveProfileArtwork(kind,value){
 const artworkSaved=()=>{refreshProfileAvatar();settingsPopup.refresh();void community.refresh();toast('Profile artwork saved.');};
 const profilePicker=createProfileArtPicker({lookup:homeLookup,currentGame:T.game,read:()=>cloudInfo().art?.avatar||community.data?.art?.avatar||S.state.settings.cardAvatar,save:value=>saveProfileArtwork('avatar',value),onSaved:artworkSaved});
 const headerPicker=createProfileArtPicker({purpose:'header',lookup:homeLookup,currentGame:T.game,read:()=>cloudInfo().art?.header||community.data?.art?.header||S.state.settings.profileHeader,save:value=>saveProfileArtwork('header',value),onSaved:artworkSaved});
-const community=createCommunity({account:cloudInfo,request:communityRequest,rerender:render,active:()=>S.ui.view==='community',challenge:FORGE_PLAY_TEST_ENABLED?person=>void A.playChallenge(person):null,localArt:()=>({avatar:S.state.settings.cardAvatar,header:S.state.settings.profileHeader}),toast,
+const community=createCommunity({account:cloudInfo,request:communityRequest,presence:()=>presenceRequest('friends'),rerender:render,active:()=>S.ui.view==='community',challenge:FORGE_PLAY_TEST_ENABLED?person=>void A.playChallenge(person):null,localArt:()=>({avatar:S.state.settings.cardAvatar,header:S.state.settings.profileHeader}),toast,
  onChange:data=>{S.ui.communityRequests=incomingRequestCount(data);S.ui.communityFriends=data?(data.people||[]).filter(p=>p.relationship==='accepted').length:null;refreshProfileAvatar();if(settingsPopup.isOpen)settingsPopup.refresh();},
  copyDeck:async item=>{const generation=accountGeneration,owner=cloudInfo().user?.id;if(accountLocked||!owner)throw Error('Sign in before saving a deck.');const d=sharedDeckCopy(item,uid());await commit(state=>{(item.game==='mtg'?state:state.tcg[item.game]).decks.push(d);},{enrich:false,guard:()=>{if(accountLocked||generation!==accountGeneration||cloudInfo().user?.id!==owner)throw Error('Your account changed. Please try again.');return true;}});},
  editItem:async item=>{const generation=accountGeneration;if(accountLocked)return;await navigate({game:item.game,hash:item.kind==='binder'?'#collection':item.game==='mtg'?'#deck/'+item.key.slice(('deck:'+item.game+':').length)+'/cards':'#tdeck/'+item.key.slice(('deck:'+item.game+':').length),mode:'push'});if(generation!==accountGeneration||T.game()!==item.game)return;if(item.kind==='binder')A.editBinder({dataset:{binder:item.key.slice(7)}});},

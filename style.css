@@ -5566,3 +5566,7 @@ body[data-game="ygo"] .card-grid .tile-chrome { aspect-ratio: 59 / 86; }
 .cs-letter-later{border:1px solid #b88d4a8c;color:#5a4424;background:transparent}
 @media(prefers-reduced-motion:no-preference){.cs-challenge-letter{animation:cs-letter-in .42s cubic-bezier(.2,.8,.2,1)}}
 @keyframes cs-letter-in{from{opacity:0;transform:translate(-50%,24px) rotate(-1.5deg)}to{opacity:1;transform:translate(-50%,0)}}
+/* Friends' rich presence (play-presence.js): green dot in a match, gold in the app, none when offline. */
+.community-presence{display:flex;align-items:center;gap:6px;font-size:13px;line-height:1.3;color:var(--muted);overflow-wrap:anywhere}
+.community-presence.is-online::before,.community-presence.is-match::before{content:"";flex:0 0 8px;width:8px;height:8px;border-radius:50%;background:#d6ad64;box-shadow:0 0 6px #d6ad6499}
+.community-presence.is-match{color:var(--text)}.community-presence.is-match::before{background:#7fc79a;box-shadow:0 0 6px #7fc79a99}
