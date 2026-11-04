@@ -124,8 +124,7 @@ fun TableScreen(controller: MatchController, onHome: () -> Unit, onRematch: () -
     val anchors = remember { Anchors() }
     Box(Modifier.fillMaxSize().background(Palette.Night)) {
       CompositionLocalProvider(LocalAnchors provides anchors) {
-        AssetImage("play/playmat-charcoal-table.webp", Modifier.fillMaxSize(), maxWidth = 1600)
-        Box(Modifier.fillMaxSize().background(Color(0x55000000)))
+        PlaymatScene(Modifier.fillMaxSize()) // play-playmats.js: this match's mat (nextPlaymat), its own shade, the table root see-through
         BoxWithConstraints(Modifier.fillMaxSize().windowInsetsPadding(WindowInsets.safeDrawing)) {
             val k = if (maxHeight >= 600.dp) 1.45f else if (maxHeight >= 480.dp) 1.2f else 1f
             val sizes = Sizes(sidebar = if (maxWidth >= 1000.dp) 280.dp else 168.dp, field = 46.dp * k, land = 36.dp * k, hand = 60.dp * k, back = 20.dp * k)

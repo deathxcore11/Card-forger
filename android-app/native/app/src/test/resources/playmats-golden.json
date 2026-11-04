@@ -1,0 +1,687 @@
+{
+ "playmats": [
+  [
+   "moonlit-courtyard",
+   "Moonlit Courtyard"
+  ],
+  [
+   "white-sanctuary",
+   "White Sanctuary"
+  ],
+  [
+   "ashen-forge",
+   "Ashen Forge"
+  ],
+  [
+   "drowned-archive",
+   "Drowned Archive"
+  ],
+  [
+   "black-ossuary",
+   "Black Ossuary"
+  ],
+  [
+   "star-observatory",
+   "Star Observatory"
+  ],
+  [
+   "forest-temple",
+   "Forest Temple"
+  ],
+  [
+   "keldon-battlefield",
+   "Keldon Battlefield"
+  ],
+  [
+   "wild-hedrons",
+   "Wild Hedrons"
+  ],
+  [
+   "artifact-vault",
+   "Artifact Vault"
+  ],
+  [
+   "innistrad-graveyard",
+   "Innistrad Graveyard"
+  ],
+  [
+   "ravnica-guild-city",
+   "Ravnica Guild City"
+  ],
+  [
+   "zendikar-expedition",
+   "Zendikar Expedition"
+  ],
+  [
+   "charcoal-table",
+   "Charcoal Table"
+  ]
+ ],
+ "randoms": [
+  0,
+  0.07,
+  0.5,
+  0.93,
+  0.999999,
+  0.3,
+  0.3,
+  0.61
+ ],
+ "runs": [
+  {
+   "init": {},
+   "choice": "rotate",
+   "picks": [
+    "moonlit-courtyard",
+    "white-sanctuary",
+    "keldon-battlefield",
+    "charcoal-table",
+    "zendikar-expedition",
+    "drowned-archive",
+    "black-ossuary",
+    "wild-hedrons"
+   ],
+   "after": {
+    "cardstashy.playmat.last": "wild-hedrons"
+   }
+  },
+  {
+   "init": {
+    "cardstashy.playmat": "rotate"
+   },
+   "choice": "rotate",
+   "picks": [
+    "moonlit-courtyard",
+    "white-sanctuary",
+    "keldon-battlefield",
+    "charcoal-table",
+    "zendikar-expedition",
+    "drowned-archive",
+    "black-ossuary",
+    "wild-hedrons"
+   ],
+   "after": {
+    "cardstashy.playmat": "rotate",
+    "cardstashy.playmat.last": "wild-hedrons"
+   }
+  },
+  {
+   "init": {
+    "cardstashy.playmat": "ashen-forge"
+   },
+   "choice": "ashen-forge",
+   "picks": [
+    "ashen-forge",
+    "ashen-forge",
+    "ashen-forge",
+    "ashen-forge",
+    "ashen-forge",
+    "ashen-forge",
+    "ashen-forge",
+    "ashen-forge"
+   ],
+   "after": {
+    "cardstashy.playmat": "ashen-forge",
+    "cardstashy.playmat.last": "ashen-forge"
+   }
+  },
+  {
+   "init": {
+    "cardstashy.playmat": "nope"
+   },
+   "choice": "rotate",
+   "picks": [
+    "moonlit-courtyard",
+    "white-sanctuary",
+    "keldon-battlefield",
+    "charcoal-table",
+    "zendikar-expedition",
+    "drowned-archive",
+    "black-ossuary",
+    "wild-hedrons"
+   ],
+   "after": {
+    "cardstashy.playmat": "nope",
+    "cardstashy.playmat.last": "wild-hedrons"
+   }
+  },
+  {
+   "init": {
+    "cardstashy.playmat.last": "moonlit-courtyard"
+   },
+   "choice": "rotate",
+   "picks": [
+    "white-sanctuary",
+    "moonlit-courtyard",
+    "keldon-battlefield",
+    "charcoal-table",
+    "zendikar-expedition",
+    "drowned-archive",
+    "black-ossuary",
+    "wild-hedrons"
+   ],
+   "after": {
+    "cardstashy.playmat.last": "wild-hedrons"
+   }
+  },
+  {
+   "init": {
+    "cardstashy.playmat.last": "charcoal-table"
+   },
+   "choice": "rotate",
+   "picks": [
+    "moonlit-courtyard",
+    "white-sanctuary",
+    "keldon-battlefield",
+    "charcoal-table",
+    "zendikar-expedition",
+    "drowned-archive",
+    "black-ossuary",
+    "wild-hedrons"
+   ],
+   "after": {
+    "cardstashy.playmat.last": "wild-hedrons"
+   }
+  }
+ ],
+ "hedrons": {
+  "wild-hedrons": [
+   [
+    113,
+    490,
+    68,
+    79
+   ],
+   [
+    186,
+    551,
+    132,
+    149
+   ],
+   [
+    1553,
+    118,
+    68,
+    88
+   ],
+   [
+    1588,
+    484,
+    88,
+    176
+   ],
+   [
+    615,
+    -3,
+    74,
+    77
+   ],
+   [
+    448,
+    53,
+    48,
+    63
+   ]
+  ],
+  "zendikar-expedition": [
+   [
+    1523,
+    389,
+    147,
+    237
+   ],
+   [
+    1535,
+    160,
+    59,
+    85
+   ],
+   [
+    96,
+    301,
+    52,
+    74
+   ],
+   [
+    284,
+    11,
+    46,
+    74
+   ]
+  ]
+ },
+ "halos": {
+  "drowned-archive": [
+   [
+    990,
+    26,
+    70,
+    "#dfe8ff"
+   ]
+  ],
+  "moonlit-courtyard": [
+   [
+    995,
+    30,
+    62,
+    "#e6ecff"
+   ]
+  ],
+  "innistrad-graveyard": [
+   [
+    965,
+    31,
+    66,
+    "#e6ecff"
+   ]
+  ],
+  "artifact-vault": [
+   [
+    990,
+    30,
+    64,
+    "#e8eeff"
+   ]
+  ],
+  "star-observatory": [
+   [
+    98,
+    48,
+    34,
+    "#d8dcff"
+   ],
+   [
+    150,
+    872,
+    110,
+    "#7d9cff"
+   ],
+   [
+    1468,
+    882,
+    92,
+    "#7d9cff"
+   ],
+   [
+    332,
+    30,
+    52,
+    "#8fa8ff"
+   ],
+   [
+    1305,
+    22,
+    46,
+    "#8fa8ff"
+   ],
+   [
+    1555,
+    60,
+    60,
+    "#c9a8ff"
+   ],
+   [
+    835,
+    30,
+    60,
+    "#f3e2b8"
+   ],
+   [
+    835,
+    880,
+    60,
+    "#f3e2b8"
+   ]
+  ],
+  "white-sanctuary": [
+   [
+    1040,
+    32,
+    120,
+    "#ffe6a8"
+   ]
+  ],
+  "ashen-forge": [
+   [
+    965,
+    26,
+    90,
+    "#ff7a2a"
+   ]
+  ]
+ },
+ "sparkles": {
+  "drowned-archive": [
+   [
+    600,
+    58,
+    625,
+    87
+   ]
+  ],
+  "star-observatory": [
+   [
+    0,
+    0,
+    175,
+    360
+   ],
+   [
+    1495,
+    0,
+    177,
+    720
+   ],
+   [
+    600,
+    0,
+    480,
+    140
+   ],
+   [
+    600,
+    800,
+    480,
+    141
+   ]
+  ],
+  "ashen-forge": [
+   [
+    690,
+    0,
+    540,
+    112
+   ]
+  ],
+  "ravnica-guild-city": [
+   [
+    560,
+    0,
+    770,
+    95
+   ]
+  ]
+ },
+ "clouds": {
+  "drowned-archive": [
+   [
+    600,
+    40,
+    625,
+    70
+   ]
+  ],
+  "moonlit-courtyard": [
+   [
+    500,
+    0,
+    760,
+    70
+   ]
+  ],
+  "innistrad-graveyard": [
+   [
+    640,
+    60,
+    420,
+    90
+   ]
+  ],
+  "artifact-vault": [
+   [
+    640,
+    40,
+    480,
+    90
+   ]
+  ],
+  "white-sanctuary": [
+   [
+    640,
+    50,
+    520,
+    100
+   ]
+  ],
+  "ashen-forge": [
+   [
+    700,
+    0,
+    520,
+    70
+   ]
+  ]
+ },
+ "looks": {
+  "moonlit-courtyard": {
+   "light": "mat-candle",
+   "lightS": 3.4,
+   "motes": "dust",
+   "rise": 48
+  },
+  "white-sanctuary": {
+   "light": "mat-candle-soft",
+   "lightS": 4.6,
+   "motes": "dust",
+   "rise": 48
+  },
+  "ashen-forge": {
+   "light": "mat-lava",
+   "lightS": 6.5,
+   "motes": "embers",
+   "rise": 22
+  },
+  "drowned-archive": {
+   "light": "mat-candle",
+   "lightS": 3.4,
+   "motes": "mist",
+   "rise": 40
+  },
+  "black-ossuary": {
+   "light": "mat-candle",
+   "lightS": 3.4,
+   "motes": "dust",
+   "rise": 48
+  },
+  "star-observatory": {
+   "light": "mat-shimmer",
+   "lightS": 5.5,
+   "motes": "stardust",
+   "rise": 60
+  },
+  "forest-temple": {
+   "light": "mat-firefly",
+   "lightS": 4,
+   "motes": "fireflies",
+   "rise": 36
+  },
+  "keldon-battlefield": {
+   "light": "mat-lava",
+   "lightS": 6.5,
+   "motes": "embers",
+   "rise": 22
+  },
+  "wild-hedrons": {
+   "light": "mat-water",
+   "lightS": 2.6,
+   "motes": "mist",
+   "rise": 40
+  },
+  "artifact-vault": {
+   "light": "mat-shimmer",
+   "lightS": 5.5,
+   "motes": "dust",
+   "rise": 48
+  },
+  "innistrad-graveyard": {
+   "light": "mat-candle",
+   "lightS": 3.4,
+   "motes": "mist",
+   "rise": 40
+  },
+  "ravnica-guild-city": {
+   "light": "mat-candle",
+   "lightS": 3.4,
+   "motes": "dust",
+   "rise": 48
+  },
+  "zendikar-expedition": {
+   "light": "mat-water",
+   "lightS": 2.6,
+   "motes": "mist",
+   "rise": 40
+  },
+  "charcoal-table": {
+   "light": "mat-candle",
+   "lightS": 3.4,
+   "motes": null,
+   "rise": 30
+  }
+ },
+ "lights": {
+  "mat-candle": [
+   [
+    0,
+    0.78
+   ],
+   [
+    0.09,
+    0.6
+   ],
+   [
+    0.13,
+    0.9
+   ],
+   [
+    0.31,
+    0.72
+   ],
+   [
+    0.47,
+    1
+   ],
+   [
+    0.52,
+    0.8
+   ],
+   [
+    0.7,
+    0.92
+   ],
+   [
+    0.84,
+    0.66
+   ],
+   [
+    1,
+    0.78
+   ]
+  ],
+  "mat-candle-soft": [
+   [
+    0,
+    0.45
+   ],
+   [
+    0.4,
+    0.62
+   ],
+   [
+    0.62,
+    0.5
+   ],
+   [
+    0.8,
+    0.6
+   ],
+   [
+    1,
+    0.45
+   ]
+  ],
+  "mat-lava": [
+   [
+    0,
+    0.5
+   ],
+   [
+    0.14,
+    0.82
+   ],
+   [
+    0.19,
+    0.66
+   ],
+   [
+    0.38,
+    1
+   ],
+   [
+    0.55,
+    0.6
+   ],
+   [
+    0.72,
+    0.9
+   ],
+   [
+    0.86,
+    0.7
+   ],
+   [
+    1,
+    0.5
+   ]
+  ],
+  "mat-shimmer": [
+   [
+    0,
+    0.55
+   ],
+   [
+    0.5,
+    0.95
+   ],
+   [
+    1,
+    0.55
+   ]
+  ],
+  "mat-firefly": [
+   [
+    0,
+    0.35
+   ],
+   [
+    0.3,
+    0.9
+   ],
+   [
+    0.45,
+    0.5
+   ],
+   [
+    0.7,
+    1
+   ],
+   [
+    1,
+    0.35
+   ]
+  ],
+  "mat-water": [
+   [
+    0,
+    0.4
+   ],
+   [
+    0.5,
+    0.85
+   ],
+   [
+    1,
+    0.4
+   ]
+  ]
+ }
+}

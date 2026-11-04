@@ -421,6 +421,7 @@ private fun Head(m: LobbyModel, onBack: () -> Unit, onFriends: () -> Unit) {
                 Text(m.format, style = sans(14f, FontWeight.Bold, Site.Text))
                 androidx.compose.foundation.Image(SiteIcons.Chevron, null, Modifier.size(18.dp), colorFilter = ColorFilter.tint(Site.Text))
             }
+            if (!m.quick) PlaymatPicker(Modifier.weight(1f)) // playmatPickerMarkup, Practice only (.pl-head-tools .pl-mat{flex:1})
             if (!m.quick) Row(Modifier.height(44.dp).pill(Color(0xB30D0F14), Color(0xFF766647)).clickable(onClick = onFriends).padding(horizontal = 16.dp),
                 verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(8.dp)) {
                 androidx.compose.foundation.Image(SiteIcons.Friends, null, Modifier.size(18.dp), colorFilter = ColorFilter.tint(Color(0xFFF6E4BB)))
