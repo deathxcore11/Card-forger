@@ -165,7 +165,8 @@ import { openZoom, zoomCardOptions } from "./zoom.js";
 import {createPlayEcon,purse} from "./play-econ-client.js";
 import {createAchievementToasts,doneSteps,newlyEarned} from "./play-achievement-toasts.js";
 import {createPresence,presenceShared,rememberPresence} from "./play-presence.js";
-import {matchCounters,questRows,playDay} from "./play-achievements.js";
+import {matchCounters,questRows,playDay,achievementRows,achievementTitles} from "./play-achievements.js";
+import {saveTitle,wornTitle} from "./play-titles.js";
 import {econScreenMarkup,ECON_VIEWS,purseMarkup,cardImageByName,head as econHead,craftPlan,packGoals,setPlayStyles,setPlayDeckCovers} from "./play-econ-ui.js";
 setPlayDeckCovers(()=>S.state?.settings?.playDeckCovers);
 import {rewardFlight} from "./reward-flight.js";
@@ -1782,6 +1783,10 @@ A.playEconCraft=async t=>{try{const out=await playEcon.craft(t.dataset.econCard)
 A.playEconRetry=()=>{playEcon.refresh();};
 A.playCardHolo=async t=>{try{const out=await playEcon.holo(t.dataset.oracle);haptic('success');toast(`${out.holo.name} is now holo. It has its own tile in your Trunk.`);refreshSheet?.();}catch{}};
 A.playEconDeedTab=t=>{econUi.deedTab=t.dataset.value||'journey';refreshPlayMenu();};
+// Glory titles: open the picker, wear one (kept on this device, play-titles.js), close it.
+A.playEconTitles=()=>{econUi.titleOpen=true;refreshPlayMenu();};
+A.playEconTitlesClose=()=>{econUi.titleOpen=false;refreshPlayMenu();};
+A.playEconTitlePick=t=>{saveTitle(t.dataset.title||'');econUi.titleOpen=false;refreshPlayMenu();};
 // A claim lands like a reward: a jingle and haptic at the button, then the coins, seals and packs fly into the purse (reward-flight.js).
 A.playEconClaim=async t=>{const {econKind:kind,econId:id,econStep:step}=t.dataset;const from=t.getBoundingClientRect(),before=purse(playEcon.snapshot().state);try{const out=await playEcon.claim(kind,id,step===undefined?undefined:Number(step));slToast(out.style);t.closest('.pd-card,.pd-quest')?.classList.add('struck');rewardFlight({from,delta:out.delta||{},before,big:kind==='ach'||kind==='weekly-all'});const d=out.delta||{},bits=[d.coins&&d.coins+' coins',d.packs?.length&&d.packs.length+(d.packs.length===1?' pack':' packs'),...Object.entries(d.seals||{}).map(([k,v])=>v+' '+({c:'common',u:'uncommon',r:'rare',m:'mythic'})[k]+(v===1?' seal':' seals')),d.xp&&d.xp+' XP'].filter(Boolean);toast(bits.length?'Claimed: '+bits.join(', ')+'.':'Claimed.');}catch{}};
 // The result banner's goals are the account's own server quests, with this match already counted:
@@ -2065,7 +2070,9 @@ let friendRoom=null,friendPoll=null,friendRooms=null;
 const roomsModule=()=>import('./play-forge-host-client.js');
 const rooms=async()=>friendRooms||=(await roomsModule()).createFriendRooms({getAccessToken:cloudAccessToken});
 // What the other player sees of you: your display name and profile picture.
-const myFriendCard=async()=>(await roomsModule()).friendPlayerCard(playSetup.snapshot().profile);
+// Your name goes to the other player with the Glory title you wear (play-titles.js), if you earned it.
+const myTitle=()=>{try{const e=playEcon.snapshot().state;return e?wornTitle(achievementTitles(achievementRows({counters:e.counters||{},claimed:e.claimed||[],state:e}))):'';}catch{return '';}};
+const myFriendCard=async()=>(await roomsModule()).friendPlayerCard({...playSetup.snapshot().profile,playTitle:myTitle()});
 // An invite waiting from before sign-in opens as soon as Play shows for a signed-in player.
 let inviteOpening=false;
 const friendRoomView=()=>{

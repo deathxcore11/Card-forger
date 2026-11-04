@@ -1537,7 +1537,7 @@ button.pd-near-row{cursor:pointer}
 body.practice-table-open .ach-toast{top:calc(env(safe-area-inset-top,0px) + 12px)}
 @media (min-width:900px){.ach-toast{top:88px}}
 .ach-toast.is-out{transform:translate(-50%,-140%);opacity:0;transition:transform .32s ease-in,opacity .32s ease-in}
-.ach-toast--silver{--tc:#e3e9f0}.ach-toast--gold,.ach-toast--feat{--tc:#f3dfb4}.ach-toast--mythic,.ach-toast--hidden{--tc:#ff9a6a}.ach-toast--honour{--tc:#a9b3c0}
+.ach-toast--silver{--tc:#e3e9f0}.ach-toast--gold,.ach-toast--feat,.ach-toast--glory{--tc:#f3dfb4}.ach-toast--mythic,.ach-toast--hidden{--tc:#ff9a6a}.ach-toast--honour{--tc:#a9b3c0}
 .ach-toast-art{position:relative;flex:0 0 48px;width:48px;height:48px;border-radius:50%;overflow:hidden;background:#000;box-shadow:0 0 0 2px var(--tc),0 0 18px var(--tc)}
 .ach-toast-art img{display:block;width:100%;height:100%;object-fit:cover}
 .ach-toast-art i{position:absolute;inset:0;background:center/auto 125% no-repeat}
@@ -1552,3 +1552,33 @@ body.practice-table-open .ach-toast{top:calc(env(safe-area-inset-top,0px) + 12px
 @keyframes achPop{from{transform:scale(.4)}to{transform:scale(1)}}
 @keyframes achGlow{0%{box-shadow:0 0 0 2px var(--tc),0 0 0 0 var(--tc)}40%{box-shadow:0 0 0 2px var(--tc),0 0 30px 8px var(--tc)}100%{box-shadow:0 0 0 2px var(--tc),0 0 18px var(--tc)}}
 @media (prefers-reduced-motion:reduce){.ach-toast,.ach-toast.is-out{transform:translate(-50%,0);transition:opacity .2s}.ach-toast.is-in .ach-toast-art{animation:none}}
+/* Glory: achievement points, meta-achievement checklists and the title picker (Randall 4 Nov 2026). */
+.pd-pts{display:inline-flex;align-items:center;gap:4px;font:700 13px/1 'DM Sans',system-ui,sans-serif;color:var(--muted);white-space:nowrap}
+.pd-pts svg{width:15px;height:17px;fill:#6d6a63}
+.pd-card.is-complete .pd-pts{color:#f3dfb4}.pd-card.is-complete .pd-pts svg{fill:#d6ad64}
+.pd-card-h{display:flex;justify-content:space-between;align-items:baseline;gap:10px}
+.pd-score{display:flex;align-items:center;gap:14px;margin:4px 0 2px}
+.pd-score svg{width:30px;height:34px;fill:#d6ad64;filter:drop-shadow(0 0 10px #d6ad6455)}
+.pd-score b{display:block;font:700 30px/1 Cinzel,Georgia,serif;color:#f3dfb4;font-variant-numeric:tabular-nums}
+.pd-score small{color:var(--muted);font-size:13px}
+.pd-title-btn{display:flex;align-items:center;justify-content:space-between;width:100%;min-height:44px;margin-top:10px;padding:0 14px;border-radius:14px;border:1px solid var(--line);background:#ffffff08;color:inherit;font:inherit;cursor:pointer}
+.pd-title-btn em{font-style:normal;color:#f3dfb4;font-family:Cinzel,Georgia,serif;font-weight:700}
+.pd-kids{list-style:none;margin:6px 0 0;padding:0;display:grid;gap:4px;font-size:13px}
+.pd-kids li{display:flex;gap:8px;align-items:center;color:var(--muted)}.pd-kids li.on{color:#e9e6de}
+.pd-kids i{flex:0 0 16px;height:16px;border-radius:50%;border:1.5px solid #6d6a63}
+.pd-kids li.on i{border-color:#d6ad64;background:#d6ad64;box-shadow:inset 0 0 0 3px #121318}
+.pd-kids li.more{padding-left:24px}
+.pd-unlock{display:flex;flex-wrap:wrap;gap:6px}
+.pd-unlock span{font-size:12px;font-weight:600;padding:4px 10px;border-radius:999px;background:#d6ad641f;color:#f3dfb4}
+.pd-scrim{position:fixed;inset:0;background:#0009;z-index:1500}
+.pd-sheet{position:fixed;left:0;right:0;bottom:0;z-index:1501;max-height:78vh;overflow:auto;padding:10px 16px calc(16px + env(safe-area-inset-bottom));border-radius:22px 22px 0 0;border:1px solid var(--line);border-bottom:0;background:color-mix(in srgb,var(--surface,#151821) 97%,transparent);box-shadow:0 -24px 60px #000a}
+.pd-grab{width:38px;height:4px;border-radius:2px;background:#ffffff30;margin:0 auto 12px}
+.pd-sheet h2{margin:0 0 4px;font:700 20px Cinzel,Georgia,serif;color:#f3e3bd}
+.pd-sheet>p{margin:0 0 12px;color:var(--muted);font-size:13px}
+.pd-sheet ul{list-style:none;margin:0;padding:0;display:grid;gap:2px}
+.pd-sheet li button{display:flex;justify-content:space-between;align-items:center;width:100%;min-height:52px;padding:6px 12px;border:0;border-radius:12px;background:none;color:inherit;font:inherit;text-align:left;cursor:pointer}
+.pd-sheet li button.on{background:#d6ad641a}
+.pd-sheet li b{display:block;font-family:Cinzel,Georgia,serif;color:#f3e3bd}
+.pd-sheet li small{color:var(--muted);font-size:12px}
+.pd-sheet li.locked{opacity:.45}.pd-sheet li.locked button{cursor:default}
+.pd-shown{font-size:12px;font-weight:700;color:#f3dfb4}
