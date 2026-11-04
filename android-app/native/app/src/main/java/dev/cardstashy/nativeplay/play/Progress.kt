@@ -104,6 +104,7 @@ object Progress {
             }
             s.add("login", _state.value?.get("login") ?: com.google.gson.JsonNull.INSTANCE)
             set(s)
+            if (waiting() > 0) deedsScope.launch { flushQueue() } // back online: matches played offline go up now
         } catch (e: Failure) { _error.value = e }
     }
 
@@ -162,11 +163,38 @@ object Progress {
                 durationMs?.let { addProperty("durationMs", it) }; addProperty("colors", colors); seats?.let { addProperty("seats", it) }; difficulty?.let { addProperty("difficulty", it) }
                 if (facts != null) add("facts", f); addProperty("tz", tz)
             }
-            val out = call("match", body)
-            out.get("counters")?.takeIf { it.isJsonObject }?.let { c -> _state.value?.deepCopy()?.let { st -> st.add("counters", c); set(st) } }
-            out
+            // Only Practice waits for a signal (approved plan); Quick Play, Story and friends stay online-only.
+            try { send(body) } catch (e: Failure) { if (e.code == "offline" && mode == "practice") enqueue(body); null }
         }
     } catch (_: Failure) { null }
+
+    private suspend fun send(body: JsonObject): JsonObject {
+        val out = call("match", body)
+        out.get("counters")?.takeIf { it.isJsonObject }?.let { c -> _state.value?.deepCopy()?.let { st -> st.add("counters", c); set(st) } }
+        return out
+    }
+
+    // ---- Offline play (offline art plan, approved 4 Nov): a match finished with no signal waits on the phone and is sent,
+    // with its original id, as soon as the app is back online. The server still decides every reward and quest. ----
+    private val queueLock = Any()
+    private fun queueFile() = cacheDir?.let { File(it, "match-queue.json") }
+    private fun queued(): JsonArray = synchronized(queueLock) { runCatching { JsonParser.parseString(queueFile()!!.readText()).asJsonArray }.getOrNull() ?: JsonArray() }
+    private fun enqueue(body: JsonObject) = synchronized(queueLock) {
+        val q = queued(); if (q.size() < 200) q.add(body.deepCopy().apply { addProperty("queuedAt", System.currentTimeMillis()) })
+        runCatching { queueFile()?.writeText(q.toString()) }
+    }
+    /** Matches waiting to be sent. */
+    fun waiting(): Int = queued().size()
+    /** Sends queued matches oldest first; stops at the first one that still cannot reach the server. A refused one is dropped. */
+    suspend fun flushQueue() = withContext(Dispatchers.IO) {
+        if (Account.session.value == null) return@withContext
+        while (true) {
+            val next = queued().firstOrNull() as? JsonObject ?: break
+            val body = next.deepCopy().apply { remove("queuedAt") }
+            val sent = try { send(body); true } catch (e: Failure) { if (e.code == "offline") break; true }
+            if (sent) synchronized(queueLock) { val q = queued(); if (q.size() > 0) q.remove(0); runCatching { queueFile()?.writeText(q.toString()) } }
+        }
+    }
     private val REPORTED_FACTS = listOf("myTurns", "minLife", "startLife", "maxLife", "lifeGained", "oppBigTurn", "oppPoison", "oppLibraryMin", "oppHandMin", "maxHand", "maxCreatures",
         "maxTokens", "maxLands", "maxPower", "maxAttackers", "maxFlyers", "maxCounters", "maxAttach", "oppMaxCreatures", "oppWipes", "kills", "losses", "turnedUp")
 

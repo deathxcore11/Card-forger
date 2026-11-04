@@ -108,6 +108,10 @@ class MainActivity : ComponentActivity() {
         Account.init(this); dev.cardstashy.nativeplay.ui.AppSettings.init(this); dev.cardstashy.nativeplay.ui.Aura.init(this); dev.cardstashy.nativeplay.ui.TableEmotes.init(this); dev.cardstashy.nativeplay.ui.MatchMenu.init(this); Thread { dev.cardstashy.nativeplay.ui.BoardIcons.get(applicationContext, "tapped") }.start(); CardArt.init(this); Speed.init(this)
         dev.cardstashy.nativeplay.play.Progress.init(this); dev.cardstashy.nativeplay.play.SetFacts.init(this); dev.cardstashy.nativeplay.play.CardFacts.init(this); dev.cardstashy.nativeplay.play.DeckEngine.init(this); dev.cardstashy.nativeplay.play.CraftRarity.init(this)
         dev.cardstashy.nativeplay.play.CardData.warm(this); dev.cardstashy.nativeplay.ui.PackSfx.warm(this)
+        // Offline play: when a network comes back, matches finished without signal are sent (the server still decides rewards).
+        runCatching { (getSystemService(CONNECTIVITY_SERVICE) as android.net.ConnectivityManager).registerDefaultNetworkCallback(object : android.net.ConnectivityManager.NetworkCallback() {
+            override fun onAvailable(network: android.net.Network) { kotlinx.coroutines.CoroutineScope(kotlinx.coroutines.Dispatchers.IO).launch { dev.cardstashy.nativeplay.play.Progress.flushQueue() } }
+        }) }
         setContent {
             // The app is recorded into a layer as it draws, so the toast pill can blur what is under it (backdrop-filter).
             val page = androidx.compose.ui.graphics.rememberGraphicsLayer()
@@ -202,7 +206,10 @@ private fun App(activity: MainActivity) {
         is Screen.Lobby -> {
             LaunchedEffect(Unit) { activity.inGame(false) }
             val model = lobbies.getOrPut(s.style) { dev.cardstashy.nativeplay.ui.LobbyModel(s.style) }
-            dev.cardstashy.nativeplay.ui.LobbyScreen(model, onBack = { back() }, onStart = { go(Screen.Match(it)) }, onOpenDecks = { go(Screen.PlayDecks) },
+            dev.cardstashy.nativeplay.ui.LobbyScreen(model, onBack = { back() }, onStart = { p ->
+                    // Offline play is Practice only: Quick Play's rewards need the server at the end of the match.
+                    if ((p as? Pick.Table)?.quick == true && !online(activity)) android.widget.Toast.makeText(activity, "Quick Play needs a connection. Practice works offline.", android.widget.Toast.LENGTH_LONG).show()
+                    else go(Screen.Match(p)) }, onOpenDecks = { go(Screen.PlayDecks) },
                 onSignIn = { go(Screen.SignIn) }, onFriends = { go(Screen.Lobby("social")) },
                 onOpenSaved = { go(Screen.Web("https://cardstashy.com/#deck/" + android.net.Uri.encode(it) + "/cards")) })
         }
@@ -350,6 +357,12 @@ private fun presenceWhere(s: Screen): dev.cardstashy.nativeplay.play.Presence.Wh
     is Screen.Story -> dev.cardstashy.nativeplay.play.Presence.Where("play", "story")
     else -> dev.cardstashy.nativeplay.play.Presence.Where("app")
 }
+
+/** Any validated internet connection right now. */
+private fun online(context: android.content.Context): Boolean = runCatching {
+    val cm = context.getSystemService(android.content.Context.CONNECTIVITY_SERVICE) as android.net.ConnectivityManager
+    cm.getNetworkCapabilities(cm.activeNetwork)?.hasCapability(android.net.NetworkCapabilities.NET_CAPABILITY_VALIDATED) == true
+}.getOrDefault(true)
 
 private fun reportMatch(pick: Pick, st: dev.cardstashy.nativeplay.engine.MatchState, f: dev.cardstashy.nativeplay.play.MatchFacts, durationMs: Long?) {
     val outcome = when { st.draw -> "draw"; st.winnerPlayerId == null -> return; st.winnerPlayerId == st.viewer -> "win"; else -> "loss" }
