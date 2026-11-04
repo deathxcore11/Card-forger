@@ -1943,7 +1943,7 @@ const finderLists=format=>{if(!finderHasMeta(format))return [];const data=metaSt
 // Deck emblems on the Decks page (play-deck-emblem.js): card facts come from the finder's name facts,
 // meta lists from the same tournament data the finder ranks (only once it has loaded).
 const playDeckEmblemOf=d=>deckEmblem(d.cards||[],n=>finderFacts.get(n),finderHasMeta(d.format||'')?finderLists(d.format):[]);
-function playDeckEmblemWants(snap){const decks=snap.state?.decks||[];void finderFacts.want(decks.flatMap(d=>(d.cards||[]).map(r=>r.name)));}
+function playDeckEmblemWants(snap){const decks=snap.state?.decks||[],open=econUi.precon?.open?.rows||[];void finderFacts.want([...decks.flatMap(d=>(d.cards||[]).map(r=>r.name)),...open.map(r=>r.name)]);}
 const finderSeals=s=>({c:s?.wallet?.seal_c|0,u:s?.wallet?.seal_u|0,r:s?.wallet?.seal_r|0,m:s?.wallet?.seal_m|0});
 function finderRefresh(){const snap=playEcon.snapshot(),s=snap.state;if(!s)return;const owned=ownedByName(s.cards||[]),ownedFact=new Map((s.cards||[]).map(c=>{const f=econFacts.card(c.o)?.card;return f?[f.name,f]:null;}).filter(Boolean));
  const cardOf=name=>finderFacts.get(name)||ownedFact.get(name)||ownedFact.get(String(name).split(' // ')[0])||null;
