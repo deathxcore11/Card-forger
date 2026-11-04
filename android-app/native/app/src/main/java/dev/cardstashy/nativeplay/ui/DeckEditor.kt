@@ -72,7 +72,7 @@ class EditorUi {
     var poolKey = ""
 }
 
-private val Ink = Site.Text
+private val Ink get() = Site.Text
 private val Warn = Color(0xFFFFB86B)
 private fun t(size: Float, weight: FontWeight = FontWeight.Medium, color: Color = Ink, line: Float = size * 1.4f) =
     TextStyle(fontFamily = Site.Manrope, fontWeight = weight, fontSize = size.sp, lineHeight = line.sp, color = color)

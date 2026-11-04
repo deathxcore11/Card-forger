@@ -102,10 +102,10 @@ fun ArtFrame(art: Account.Art, frame: Float, modifier: Modifier = Modifier, shap
 }
 
 private val T = object {
-    val Head = TextStyle(fontFamily = Site.Manrope, fontWeight = FontWeight.Bold, fontSize = 20.sp, color = Site.Text)
-    val Eyebrow = TextStyle(fontFamily = Site.Manrope, fontWeight = FontWeight.Bold, fontSize = 11.sp, letterSpacing = 1.3.sp, color = Site.Muted)
-    val Body = TextStyle(fontFamily = Site.Manrope, fontWeight = FontWeight.Medium, fontSize = 14.sp, lineHeight = 20.sp, color = Site.Text)
-    val Small = TextStyle(fontFamily = Site.Manrope, fontWeight = FontWeight.Medium, fontSize = 13.sp, lineHeight = 18.sp, color = Site.Muted)
+    val Head get() = TextStyle(fontFamily = Site.Manrope, fontWeight = FontWeight.Bold, fontSize = 20.sp, color = Site.Text)
+    val Eyebrow get() = TextStyle(fontFamily = Site.Manrope, fontWeight = FontWeight.Bold, fontSize = 11.sp, letterSpacing = 1.3.sp, color = Site.Muted)
+    val Body get() = TextStyle(fontFamily = Site.Manrope, fontWeight = FontWeight.Medium, fontSize = 14.sp, lineHeight = 20.sp, color = Site.Text)
+    val Small get() = TextStyle(fontFamily = Site.Manrope, fontWeight = FontWeight.Medium, fontSize = 13.sp, lineHeight = 18.sp, color = Site.Muted)
 }
 
 private val GAMES = listOf("mtg" to "Magic: The Gathering", "ptcg" to "Pokémon", "ygo" to "Yu-Gi-Oh!")

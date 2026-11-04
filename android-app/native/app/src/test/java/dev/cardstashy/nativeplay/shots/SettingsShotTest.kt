@@ -53,6 +53,15 @@ class SettingsShotTest {
         rule.onNodeWithText("Help").performClick(); rule.waitForIdle(); shot("help")
     }
 
+    /** settings-theme.js / grid-settings.js: the Appearance pane in each colour mode, tall enough for all three cards. */
+    @Config(qualifiers = "w390dp-h1900dp-xxhdpi")
+    @Test fun appearanceThemes() {
+        signedIn()
+        rule.setContent { SettingsScreen(onBack = {}, onWeb = {}, startTab = "app") }
+        try { for (t in listOf("dark", "light", "aura")) { dev.cardstashy.nativeplay.ui.AppSettings.applyTheme(t); rule.waitForIdle(); shot("appearance-$t") } }
+        finally { dev.cardstashy.nativeplay.ui.AppSettings.applyTheme("dark") }
+    }
+
     @Test fun holdMenus() {
         val img = "https://cards.scryfall.io/normal/front/a/9/a9738cda-adb1-47fb-9f4c-ecd930228c4d.jpg"
         rule.setContent { dev.cardstashy.nativeplay.ui.PlayCardHold(dev.cardstashy.nativeplay.ui.CardHold(dev.cardstashy.nativeplay.ui.CardPick("Ragavan, Nimble Pilferer", "o", "p", "foil"), img, "mh2", true), {}, {}, {}, {}, {}) }

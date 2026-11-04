@@ -133,12 +133,18 @@ private object P {
     val Gold = Color(0xFFE8B95B)
     val GoldSoft = Color(0xFFE9CF93)
     val CtaEdge = Color(0xFFF6DFA8); val CtaTop = Color(0xFFF2D18E); val CtaBottom = Color(0xFFC99A4B); val CtaInk = Color(0xFF1B1408)
-    val RowBg = Color(0x0DFFFFFF); val RowLine = Color(0x1AFFFFFF)
+    // settings-theme.css light: page-surface rows, ink and links follow the tokens; text over art keeps Ink.
+    private val light: Boolean get() = AppSettings.theme == "light"
+    val PageInk: Color get() = if (light) Site.Text else Ink
+    val PageSoft: Color get() = if (light) Site.Muted else Color(0xFFC9CED6)
+    val PageFaint: Color get() = if (light) Site.Muted else Color(0xFFB9BFC9)
+    val Track: Color get() = if (light) Site.Surface2 else Color(0xFF1F2430)
+    val RowBg: Color get() = if (light) Color(0x94FFFFFF) else Color(0x0DFFFFFF); val RowLine: Color get() = if (light) Site.GlassLine else Color(0x1AFFFFFF)
     val CardLine = Color(0xFF5B4D33)          // color-mix(gold 22-26%, line)
-    val Muted = Color(0xFF9AA2B1)
+    val Muted: Color get() = Site.Muted
     val Sans = Type.Sans
-    val h2 = TextStyle(fontFamily = Type.Cinzel, fontWeight = FontWeight.Bold, fontSize = 22.sp, letterSpacing = .02.em, color = Color(0xFFF1EDE4))
-    val link = TextStyle(fontFamily = Type.Sans, fontWeight = FontWeight.SemiBold, fontSize = 15.sp, color = Gold)
+    val h2: TextStyle get() = TextStyle(fontFamily = Type.Cinzel, fontWeight = FontWeight.Bold, fontSize = 22.sp, letterSpacing = .02.em, color = if (light) Site.Text else Color(0xFFF1EDE4))
+    val link: TextStyle get() = TextStyle(fontFamily = Type.Sans, fontWeight = FontWeight.SemiBold, fontSize = 15.sp, color = if (light) Site.Gold else Gold)
     val shadow = Shadow(Color(0xCC000000), Offset(0f, 4f), 28f)
 }
 
@@ -200,7 +206,7 @@ fun PlayHome(d: PlayHomeData, top: @Composable () -> Unit, act: PlayHomeActions 
                     if (g >= 4 && (s.getAsJsonArray("shop")?.size() ?: 0) > 0) item("shop") { Probe("shop") { Merchant(s, act) } }
                 }
                 // The site's sticky glass top bar.
-                Box(Modifier.fillMaxWidth().background(Color(0xD90C0E13)).drawBehind {
+                Box(Modifier.fillMaxWidth().background(if (AppSettings.theme == "light") Color(0xF0F6F9FD) else Color(0xD90C0E13)).drawBehind { // light: settings-theme.css .topbar
                     drawLine(Brush.horizontalGradient(listOf(Color.Transparent, Color(0x80D6AD64), Color.Transparent)), Offset(0f, size.height), Offset(size.width, size.height), 1.dp.toPx())
                 }.statusBarsPadding()) { top() }
             }
@@ -229,21 +235,33 @@ private fun Probe(name: String, content: @Composable () -> Unit) {
  */
 @Composable
 fun Ambient(art: String?) {
-    Box(Modifier.fillMaxSize()) {
+    val theme = AppSettings.theme
+    // aura.css: #ambient on #272a33, the art at full strength (blur 38, saturate .62); light (settings-theme.css): saturate 1.15, brightness 1.08, at 80 %.
+    Box(Modifier.fillMaxSize().then(if (theme == "aura") Modifier.background(Color(0xFF272A33)) else Modifier)) {
         val ctx = LocalContext.current
         // Blurred once, small, off the main thread; a full-screen live blur cost every scroll frame at Fold size.
         val soft = produceState<ImageBitmap?>(null, art) { value = art?.let { softArt(ctx, it) } }.value
-        if (soft != null) androidx.compose.foundation.Image(soft, null, Modifier.fillMaxSize().graphicsLayer { alpha = .85f }, alignment = BiasAlignment(0f, -.4f),
-            contentScale = ContentScale.Crop, colorFilter = ambientFilter, filterQuality = androidx.compose.ui.graphics.FilterQuality.High)
+        if (soft != null) androidx.compose.foundation.Image(soft, null, Modifier.fillMaxSize().graphicsLayer { alpha = when (theme) { "light" -> .8f; "aura" -> 1f; else -> .85f } }, alignment = BiasAlignment(0f, -.4f),
+            contentScale = ContentScale.Crop, colorFilter = when (theme) { "light" -> ambientLight; "aura" -> ambientAura; else -> ambientFilter }, filterQuality = androidx.compose.ui.graphics.FilterQuality.High)
         Box(Modifier.fillMaxSize().drawBehind {
-            val game = Color(0xFFF08A5D)
-            drawRect(Brush.radialGradient(listOf(game.copy(alpha = .26f), Color.Transparent), center = Offset(size.width * .85f, 0f), radius = size.width * .8f))
-            drawRect(Brush.radialGradient(listOf(game.copy(alpha = .16f), Color.Transparent), center = Offset(0f, size.height), radius = size.width * .7f))
-            drawRect(Brush.verticalGradient(0f to Color(0x590A0C10), .6f to Color(0xC70A0C10), 1f to Color(0xEB0A0C10)))
+            when (theme) {
+                // :root[data-theme="light"] body.glass #ambient::after
+                "light" -> drawRect(Brush.verticalGradient(0f to Color(0xBDF3F5F8), .65f to Color(0xC7F3F5F8), 1f to Color(0xD1F3F5F8)))
+                // :root[data-theme="aura"] body #ambient::after
+                "aura" -> drawRect(Brush.verticalGradient(0f to Color(0xB30F1115), .65f to Color(0xC40F1115), 1f to Color(0xD60F1115)))
+                else -> {
+                    val game = Color(0xFFF08A5D)
+                    drawRect(Brush.radialGradient(listOf(game.copy(alpha = .26f), Color.Transparent), center = Offset(size.width * .85f, 0f), radius = size.width * .8f))
+                    drawRect(Brush.radialGradient(listOf(game.copy(alpha = .16f), Color.Transparent), center = Offset(0f, size.height), radius = size.width * .7f))
+                    drawRect(Brush.verticalGradient(0f to Color(0x590A0C10), .6f to Color(0xC70A0C10), 1f to Color(0xEB0A0C10)))
+                }
+            }
         })
     }
 }
 
+private val ambientLight = ColorFilter.colorMatrix(ColorMatrix().apply { setToSaturation(1.15f); timesAssign(ColorMatrix(floatArrayOf(1.08f,0f,0f,0f,0f, 0f,1.08f,0f,0f,0f, 0f,0f,1.08f,0f,0f, 0f,0f,0f,1f,0f))) })
+private val ambientAura = ColorFilter.colorMatrix(ColorMatrix().apply { setToSaturation(.62f) })
 private val ambientFilter = ColorFilter.colorMatrix(ColorMatrix().apply { setToSaturation(1.35f); timesAssign(ColorMatrix(floatArrayOf(.5f,0f,0f,0f,0f, 0f,.5f,0f,0f,0f, 0f,0f,.5f,0f,0f, 0f,0f,0f,1f,0f))) })
 /**
  * The ambient art at 96 px wide, box-blurred three times (close to a Gaussian): the site's 42 px blur on a
@@ -617,7 +635,7 @@ private fun Shelf(title: String, link: String?, onLink: () -> Unit, content: @Co
 }
 
 @Composable
-private fun Bar(frac: Float, thin: Boolean = false, modifier: Modifier = Modifier) = Box(modifier.fillMaxWidth().height(if (thin) 5.dp else 8.dp).clip(CircleShape).background(Color(0xFF1F2430))) {
+private fun Bar(frac: Float, thin: Boolean = false, modifier: Modifier = Modifier) = Box(modifier.fillMaxWidth().height(if (thin) 5.dp else 8.dp).clip(CircleShape).background(P.Track)) {
     Box(Modifier.fillMaxWidth(frac.coerceIn(0f, 1f)).fillMaxHeight().clip(CircleShape).background(Color(0xFFE2B866)))
 }
 
@@ -636,7 +654,7 @@ private fun Rewards(r: PlayRules.Reward, column: Boolean = false) {
         items.forEach { Column(horizontalAlignment = Alignment.CenterHorizontally, verticalArrangement = Arrangement.spacedBy(2.dp)) { it() } }
     } else Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(8.dp)) {
         items.forEach { Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(4.dp)) { it() } }
-        if (r.xp > 0) Text("${r.xp} XP", style = TextStyle(fontFamily = P.Sans, fontWeight = FontWeight.Bold, fontSize = 13.sp, color = Color(0xFFC9CED6)))
+        if (r.xp > 0) Text("${r.xp} XP", style = TextStyle(fontFamily = P.Sans, fontWeight = FontWeight.Bold, fontSize = 13.sp, color = P.PageSoft))
     }
 }
 
@@ -717,14 +735,14 @@ private fun QuestRow(r: PlayMath.QuestRow, reward: PlayRules.Reward, claim: () -
     Column(Modifier.fillMaxWidth().rowGlass().border(1.dp, if (r.done) Color(0x55D6AD64) else Color.Transparent, rowShape).let { if (r.claimed) it.then(Modifier) else it }
         .padding(horizontal = 16.dp, vertical = 12.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
         Row(verticalAlignment = Alignment.CenterVertically) {
-            Text(r.quest.label, style = TextStyle(fontFamily = P.Sans, fontWeight = FontWeight.SemiBold, fontSize = 16.sp, lineHeight = 21.sp, color = P.Ink.copy(alpha = if (r.claimed) .6f else 1f)), modifier = Modifier.weight(1f).padding(end = 12.dp))
+            Text(r.quest.label, style = TextStyle(fontFamily = P.Sans, fontWeight = FontWeight.SemiBold, fontSize = 16.sp, lineHeight = 21.sp, color = P.PageInk.copy(alpha = if (r.claimed) .6f else 1f)), modifier = Modifier.weight(1f).padding(end = 12.dp))
             when { r.claimed -> Text("Claimed", style = TextStyle(fontFamily = P.Sans, fontWeight = FontWeight.Bold, fontSize = 13.sp, color = P.Muted))
                 r.done -> GoldCta("Claim", onClick = claim)
                 else -> Rewards(reward) }
         }
         if (!r.done) Row(verticalAlignment = Alignment.CenterVertically) {
             Bar(r.have.toFloat() / r.quest.need, thin = true, modifier = Modifier.weight(1f))
-            Text("${r.have} / ${r.quest.need}", style = TextStyle(fontFamily = P.Sans, fontWeight = FontWeight.Bold, fontSize = 14.sp, color = Color(0xFFC9CED6), fontFeatureSettings = "tnum"), modifier = Modifier.widthIn(min = 72.dp), textAlign = TextAlign.End)
+            Text("${r.have} / ${r.quest.need}", style = TextStyle(fontFamily = P.Sans, fontWeight = FontWeight.Bold, fontSize = 14.sp, color = P.PageSoft, fontFeatureSettings = "tnum"), modifier = Modifier.widthIn(min = 72.dp), textAlign = TextAlign.End)
         }
     }
 }
@@ -771,7 +789,7 @@ private fun Deeds(d: PlayHomeData, act: PlayHomeActions) {
     Shelf("Achievements", if (t.ready > 0) "${t.ready} to claim" else "All achievements", { act.view("deeds") }) {
         Row(verticalAlignment = Alignment.Bottom, horizontalArrangement = Arrangement.spacedBy(8.dp), modifier = Modifier.padding(top = 6.dp)) {
             Text("${t.earned}", style = TextStyle(fontFamily = Type.Cinzel, fontWeight = FontWeight.Bold, fontSize = 30.sp, color = Color(0xFFF3E3BD)))
-            Text("of ${t.total} earned", style = TextStyle(fontFamily = P.Sans, fontWeight = FontWeight.SemiBold, fontSize = 17.sp, color = Color(0xFFB9BFC9)), modifier = Modifier.padding(bottom = 3.dp))
+            Text("of ${t.total} earned", style = TextStyle(fontFamily = P.Sans, fontWeight = FontWeight.SemiBold, fontSize = 17.sp, color = P.PageFaint), modifier = Modifier.padding(bottom = 3.dp))
         }
         Bar(if (t.total > 0) t.earned.toFloat() / t.total else 0f, modifier = Modifier.padding(vertical = 6.dp))
         Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
@@ -783,7 +801,7 @@ private fun Deeds(d: PlayHomeData, act: PlayHomeActions) {
                         Art(r.art, Modifier.matchParentSize().let { if (r.trim) it.scale(1.16f) else it }, BiasAlignment(0f, -.1f))
                     }
                     Column(Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(4.dp)) {
-                        Text(r.title, style = TextStyle(fontFamily = P.Sans, fontWeight = FontWeight.Bold, fontSize = 16.sp, color = P.Ink))
+                        Text(r.title, style = TextStyle(fontFamily = P.Sans, fontWeight = FontWeight.Bold, fontSize = 16.sp, color = P.PageInk))
                         Bar(r.value.toFloat() / r.need, thin = true)
                         Text(if (r.hours) "${r.value / 60} / ${r.need / 60} h" else "${"%,d".format(r.value)} / ${"%,d".format(r.need)}",
                             style = TextStyle(fontFamily = P.Sans, fontSize = 13.sp, color = P.Muted, fontFeatureSettings = "tnum"))
@@ -802,7 +820,7 @@ private fun Packs(s: JsonObject, act: PlayHomeActions) {
     val names = remember(s) { buildMap { s.getAsJsonArray("shop")?.forEach { o -> (o as? JsonObject)?.let { put(it["code"].str() ?: "", it["name"].str() ?: "") } }
         s.getAsJsonObject("rewardSet")?.let { put(it["code"].str() ?: "", it["name"].str() ?: "") } } }
     Shelf("Your packs", "All packs", { act.view("packs") }) {
-        if (groups.isEmpty()) Text("Every pack is open. Story battles, Planeswalk bosses and the Merchant give more.", style = TextStyle(fontFamily = P.Sans, fontSize = 15.sp, lineHeight = 22.sp, color = Color(0xFFB9BFC9)), modifier = Modifier.padding(top = 8.dp))
+        if (groups.isEmpty()) Text("Every pack is open. Story battles, Planeswalk bosses and the Merchant give more.", style = TextStyle(fontFamily = P.Sans, fontSize = 15.sp, lineHeight = 22.sp, color = P.PageFaint), modifier = Modifier.padding(top = 8.dp))
         else PackGrid(groups.entries.take(6).toList()) { (code, list) ->
             Box(Modifier.clickable { act.openPack(list.first()["id"].str() ?: "") }) {
                 Booster(code, names[code])
@@ -926,7 +944,7 @@ private fun Collection(s: JsonObject, act: PlayHomeActions) {
         .sortedWith(compareByDescending<Triple<String, SetFacts.Set?, Int>> { it.second?.released ?: "" }.thenBy { it.second?.name ?: it.first }).take(4)
     val total = s.getAsJsonArray("cards")?.size() ?: 0
     Shelf("Your collection", "${"%,d".format(total)} cards", { act.view("collection") }) {
-        if (rows.isEmpty()) Text("Open a pack and your first set starts filling in.", style = TextStyle(fontFamily = P.Sans, fontSize = 15.sp, color = Color(0xFFB9BFC9)))
+        if (rows.isEmpty()) Text("Open a pack and your first set starts filling in.", style = TextStyle(fontFamily = P.Sans, fontSize = 15.sp, color = P.PageFaint))
         Column(Modifier.padding(top = 8.dp), verticalArrangement = Arrangement.spacedBy(10.dp)) {
             rows.forEach { (code, f, have) ->
                 val pct = f?.total?.takeIf { it > 0 }?.let { have.toFloat() / it } ?: 0f
@@ -934,7 +952,7 @@ private fun Collection(s: JsonObject, act: PlayHomeActions) {
                     Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(14.dp)) {
                         Box(Modifier.size(56.dp).clip(RoundedCornerShape(12.dp)).background(Color(0x0FFFFFFF)), contentAlignment = Alignment.Center) { SetIcon(code, Modifier.size(34.dp), Color(0xFFE6E8EC)) }
                         Column(Modifier.weight(1f)) {
-                            Text(f?.name ?: code.uppercase(), style = TextStyle(fontFamily = P.Sans, fontWeight = FontWeight.Bold, fontSize = 16.sp, color = P.Ink))
+                            Text(f?.name ?: code.uppercase(), style = TextStyle(fontFamily = P.Sans, fontWeight = FontWeight.Bold, fontSize = 16.sp, color = P.PageInk))
                             Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
                                 Text(code.uppercase(), style = TextStyle(fontFamily = P.Sans, fontWeight = FontWeight.Bold, fontSize = 12.sp, color = P.Gold),
                                     modifier = Modifier.border(1.dp, Color(0x44D6AD64), RoundedCornerShape(6.dp)).padding(horizontal = 6.dp, vertical = 2.dp))
@@ -942,13 +960,13 @@ private fun Collection(s: JsonObject, act: PlayHomeActions) {
                             }
                         }
                         Column(horizontalAlignment = Alignment.End) {
-                            Text(f?.total?.let { "%,d".format(it) } ?: "", style = TextStyle(fontFamily = P.Sans, fontWeight = FontWeight.Bold, fontSize = 18.sp, color = P.Ink))
+                            Text(f?.total?.let { "%,d".format(it) } ?: "", style = TextStyle(fontFamily = P.Sans, fontWeight = FontWeight.Bold, fontSize = 18.sp, color = P.PageInk))
                             Text("cards", style = TextStyle(fontFamily = P.Sans, fontSize = 12.sp, color = P.Muted))
                         }
                     }
                     Row(verticalAlignment = Alignment.CenterVertically) {
                         Text("$have / ${f?.total ?: "?"} unique cards owned", style = TextStyle(fontFamily = P.Sans, fontSize = 12.sp, color = P.Muted), modifier = Modifier.weight(1f))
-                        Text("${(pct * 100).toInt()}%", style = TextStyle(fontFamily = P.Sans, fontWeight = FontWeight.Bold, fontSize = 12.sp, color = Color(0xFFC9CED6)))
+                        Text("${(pct * 100).toInt()}%", style = TextStyle(fontFamily = P.Sans, fontWeight = FontWeight.Bold, fontSize = 12.sp, color = P.PageSoft))
                     }
                     Bar(pct, thin = true)
                 }

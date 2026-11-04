@@ -71,8 +71,8 @@ data class CardPick(val name: String, val oracle: String, val printId: String?, 
 /** A held Trunk card: what the Play hold menu needs (the printing's picture and set). */
 data class CardHold(val pick: CardPick, val image: String, val set: String, val holo: Boolean)
 
-private val Ink = Site.Text
-private val small = TextStyle(fontFamily = Site.Manrope, fontWeight = FontWeight.Medium, fontSize = 13.sp, color = Site.Muted)
+private val Ink get() = Site.Text
+private val small get() = TextStyle(fontFamily = Site.Manrope, fontWeight = FontWeight.Medium, fontSize = 13.sp, color = Site.Muted)
 
 /**
  * The Trunk, collectionMarkup in play-econ-ui.js: Cards and Sets. Cards = the filter bar (name, colour,

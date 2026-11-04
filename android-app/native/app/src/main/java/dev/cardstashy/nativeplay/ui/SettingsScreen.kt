@@ -53,6 +53,7 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.draw.shadow
 import androidx.compose.ui.draw.drawWithContent
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
@@ -77,23 +78,22 @@ import kotlinx.coroutines.launch
  * Settings, ported from the site: views.js settings() 1949 (tabs, panes), accountPanel 1889, signedOutAccount 1861,
  * settings-theme.js SETTINGS_TABS, app-info.js infoPanel, profile-art.js profileAvatar / profilePhotoControl.
  * Native differences (deviation list): no Backup tab (it holds the device's Collection workspace, which this Play app
- * doesn't keep; app updates live in Help), no colour mode or card-grid size (native Play is the dark theme; grids are
- * Collection), no Google button or email link yet (both need the browser round trip), Friends / View profile /
+ * doesn't keep; app updates live in Help), no Google button or email link yet (both need the browser round trip), Friends / View profile /
  * Blocked accounts open the site.
  */
 
-private val Bad = Color(0xFFF08A7E)       // --bad
-private val Faint = Color(0xFF8B93A3)     // --faint
-private val Ok = Color(0xFF7BD88F)
+private val Bad get() = if (AppSettings.theme == "light") Color(0xFF922A24) else Color(0xFFF08A7E)       // --bad
+private val Faint get() = Site.Faint     // --faint
+private val Ok get() = if (AppSettings.theme == "light") Color(0xFF125334) else Color(0xFF7BD88F)
 
 private object S {
-    val H1 = TextStyle(fontFamily = Site.Manrope, fontWeight = FontWeight.Bold, fontSize = 20.sp, lineHeight = 26.sp, color = Site.Text, letterSpacing = (-.02).sp)
-    val H2 = TextStyle(fontFamily = Site.Manrope, fontWeight = FontWeight.Bold, fontSize = 18.sp, lineHeight = 24.sp, color = Site.Text)
-    val Eyebrow = TextStyle(fontFamily = Site.Manrope, fontWeight = FontWeight.Bold, fontSize = 11.sp, letterSpacing = 1.3.sp, color = Site.Muted)
-    val Body = TextStyle(fontFamily = Site.Manrope, fontWeight = FontWeight.Medium, fontSize = 14.sp, lineHeight = 20.sp, color = Site.Text)
-    val Small = TextStyle(fontFamily = Site.Manrope, fontWeight = FontWeight.Medium, fontSize = 13.sp, lineHeight = 18.sp, color = Site.Muted)
-    val Foot = TextStyle(fontFamily = Site.Manrope, fontWeight = FontWeight.Medium, fontSize = 12.sp, lineHeight = 17.sp, color = Faint)
-    val Btn = TextStyle(fontFamily = Site.Manrope, fontWeight = FontWeight.Bold, fontSize = 14.sp, color = Site.Text)
+    val H1 get() = TextStyle(fontFamily = Site.Manrope, fontWeight = FontWeight.Bold, fontSize = 20.sp, lineHeight = 26.sp, color = Site.Text, letterSpacing = (-.02).sp)
+    val H2 get() = TextStyle(fontFamily = Site.Manrope, fontWeight = FontWeight.Bold, fontSize = 18.sp, lineHeight = 24.sp, color = Site.Text)
+    val Eyebrow get() = TextStyle(fontFamily = Site.Manrope, fontWeight = FontWeight.Bold, fontSize = 11.sp, letterSpacing = 1.3.sp, color = Site.Muted)
+    val Body get() = TextStyle(fontFamily = Site.Manrope, fontWeight = FontWeight.Medium, fontSize = 14.sp, lineHeight = 20.sp, color = Site.Text)
+    val Small get() = TextStyle(fontFamily = Site.Manrope, fontWeight = FontWeight.Medium, fontSize = 13.sp, lineHeight = 18.sp, color = Site.Muted)
+    val Foot get() = TextStyle(fontFamily = Site.Manrope, fontWeight = FontWeight.Medium, fontSize = 12.sp, lineHeight = 17.sp, color = Faint)
+    val Btn get() = TextStyle(fontFamily = Site.Manrope, fontWeight = FontWeight.Bold, fontSize = 14.sp, color = Site.Text)
 }
 
 private enum class Tab(val label: String) { ACCOUNT("Profile & account"), APP("Appearance"), INFO("Help") }
@@ -424,6 +424,8 @@ private fun EditProfile(profile: Account.Profile?, onPick: (String) -> Unit) {
 /** views.js settings app pane, "Glass, motion & feel" (ST-02): the exact labels and foot notes, each live (ST-04). */
 @Composable
 private fun AppPane() {
+    ThemeCard()
+    GridCard()
     Panel {
         CardHeading("DISPLAY & FEEDBACK", "Glass, motion & feel")
         Check("Frosted glass", AppSettings.glass, "Turn it off for plain solid panels (a little lighter on older phones).") { AppSettings.set("glass", it) }
@@ -442,6 +444,71 @@ private fun AppPane() {
         Check("Sound & music", AppSettings.sound) { AppSettings.set("packSound", it) }
         Check("Soft sounds in the app", AppSettings.appSounds, "Music plays only in matches and Planeswalk. Elsewhere you hear only a few soft sounds, like opening a pack or adding a card, if “Soft sounds in the app” is on. Music streams the first time, then stays on this device. Sound starts after your first tap.") { AppSettings.set("appSounds", it) }
     }
+}
+
+/** settings-theme.js themeSettings(): Color mode, three choices (aura.css: one column under 480 px, radio · 64 px swatch · text). */
+@Composable
+private fun ThemeCard() = Panel {
+    CardHeading("APPEARANCE", "Appearance")
+    Text("Color mode", style = S.Body.copy(fontSize = 13.sp, fontWeight = FontWeight.SemiBold), modifier = Modifier.padding(top = 4.dp, bottom = 2.dp))
+    // Measured on the site (polish.css over settings-theme.css): rows 67 px, 3 px apart, padding 9, radius 10; only the checked one
+    // has a fill (--gold mixed into the panel: #232323 dark, #f6f4f0 light) and a 2 px gold ring. Names are DM Sans 14/900 in --muted.
+    Column(verticalArrangement = Arrangement.spacedBy(3.dp)) {
+        for ((id, label, description) in listOf(Triple("light", "Light", "Bright, soft surfaces"), Triple("dark", "Dark", "The familiar night view"), Triple("aura", "Aura", "Soft color from the art you explore"))) {
+            val on = AppSettings.theme == id; val sh = RoundedCornerShape(10.dp)
+            Row(Modifier.fillMaxWidth().heightIn(min = 67.dp).clip(sh).then(if (on) Modifier.background(if (AppSettings.theme == "light") Color(0xFFF6F4F0) else Color(0xFF232323)).border(2.dp, Site.Gold, sh) else Modifier)
+                .clickable { AppSettings.applyTheme(id) }.padding(9.dp), verticalAlignment = Alignment.CenterVertically) {
+                // input[type=radio] 18 px, accent-color --gold
+                Box(Modifier.size(18.dp).clip(CircleShape).border(if (on) 5.dp else 1.dp, if (on) Site.Gold else Site.Muted, CircleShape).background(if (on) Color.White else Color.Transparent, CircleShape))
+                Spacer(Modifier.width(6.dp))
+                Swatch(id, Modifier.width(64.dp))
+                Spacer(Modifier.width(6.dp))
+                Column(Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(4.dp)) {
+                    Text(label, style = TextStyle(fontFamily = Type.Sans, fontWeight = FontWeight.Black, fontSize = 14.sp, lineHeight = 20.sp, color = Site.Muted))
+                    Text(description, style = TextStyle(fontFamily = Type.Sans, fontWeight = FontWeight.Normal, fontSize = 12.sp, lineHeight = 16.8.sp, color = Site.Muted))
+                }
+            }
+        }
+    }
+    Text("Applies to all three games on this device.", style = S.Foot)
+}
+
+/** .settings-theme-swatch-{light,dark,aura}: 52 px, a 17 px column beside a 12 px bar over a panel. */
+@Composable
+private fun Swatch(id: String, modifier: Modifier) {
+    val (bg, bar, panel) = when (id) {
+        "light" -> Triple(Brush.linearGradient(listOf(Color(0xFFF0F3F7), Color(0xFFF0F3F7))), Color(0xFFC1CBD9), Color(0xFFFFFFFF))
+        "aura" -> Triple(Brush.linearGradient(listOf(Color(0xFF505967), Color(0xFF434056), Color(0xFF665348))), Color(0x808792A6), Color(0xB8252B36))
+        else -> Triple(Brush.linearGradient(listOf(Color(0xFF10141B), Color(0xFF10141B))), Color(0xFF4B5568), Color(0xFF252E3C))
+    }
+    val sh = RoundedCornerShape(8.dp)
+    Row(modifier.height(52.dp).clip(sh).background(bg).border(1.dp, Color(0x55798397), sh).padding(7.dp), horizontalArrangement = Arrangement.spacedBy(5.dp)) {
+        Box(Modifier.width(17.dp).fillMaxSize().clip(RoundedCornerShape(3.dp)).background(bar))
+        Column(Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(5.dp)) {
+            Box(Modifier.fillMaxWidth().height(12.dp).clip(RoundedCornerShape(3.dp)).background(bar))
+            Box(Modifier.fillMaxSize().clip(RoundedCornerShape(3.dp)).background(panel))
+        }
+    }
+}
+
+/** grid-settings.js gridSettings(): Card size (Small / Medium / Large) and the pinch switch. */
+@Composable
+private fun GridCard() = Panel {
+    CardHeading("CARD GRIDS", "Room to browse")
+    Text("Card size", style = S.Body.copy(fontSize = 13.sp, fontWeight = FontWeight.SemiBold), modifier = Modifier.padding(top = 4.dp))
+    Row(Modifier.fillMaxWidth().clip(RoundedCornerShape(14.dp)).background(Site.Surface2).border(1.dp, Site.Line, RoundedCornerShape(14.dp)).padding(4.dp),
+        horizontalArrangement = Arrangement.spacedBy(4.dp)) {
+        for (id in AppSettings.GRID_SIZES) {
+            val on = AppSettings.gridSize == id; val sh = RoundedCornerShape(10.dp)
+            // input:checked+span: var(--glass) (white .58 light, surface .46 dark) and a soft drop.
+            Box(Modifier.weight(1f).heightIn(min = 44.dp).then(if (on) Modifier.shadow(2.dp, sh, ambientColor = Color(0x22000000), spotColor = Color(0x22000000)).clip(sh).background(if (AppSettings.theme == "light") Color(0x94FFFFFF) else Site.Surface.copy(alpha = .46f)) else Modifier.clip(sh)).clickable { AppSettings.applyGridSize(id) },
+                contentAlignment = Alignment.Center) {
+                Text(id.replaceFirstChar { it.uppercase() }, style = S.Body.copy(fontSize = 13.sp, fontWeight = FontWeight.SemiBold, color = if (on) Site.Text else Site.Muted))
+            }
+        }
+    }
+    Text("Applies to card galleries in all three games. List views keep their current layout.", style = S.Foot)
+    Check("Pinch to resize card grids", AppSettings.gridPinch, "Spread two fingers for larger cards; pinch for smaller cards. Only card grids use this gesture when enabled. Turn it off to use browser pinch zoom there.") { AppSettings.applyGridPinch(it) }
 }
 
 @Composable

@@ -117,7 +117,7 @@ class CardSheetActions(
 
 class DeckEditCtx(val name: String, val qty: (String) -> Int, val copies: Int, val step: (String, Int) -> Unit)
 
-private val Ink = Site.Text
+private val Ink get() = Site.Text
 private fun t(size: Float, weight: FontWeight = FontWeight.Medium, color: Color = Ink, line: Float = size * 1.4f) =
     TextStyle(fontFamily = Site.Manrope, fontWeight = weight, fontSize = size.sp, lineHeight = line.sp, color = color)
 private val RARITY = mapOf("common" to "Common", "uncommon" to "Uncommon", "rare" to "Rare", "mythic" to "Mythic", "special" to "Special", "bonus" to "Bonus")

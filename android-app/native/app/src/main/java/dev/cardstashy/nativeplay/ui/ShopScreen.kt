@@ -81,8 +81,8 @@ private fun JsonElement?.i(): Int = this?.takeIf { it.isJsonPrimitive && it.asJs
 private fun JsonElement?.b(): Boolean = this?.takeIf { it.isJsonPrimitive && it.asJsonPrimitive.isBoolean }?.asBoolean == true
 private fun JsonObject.objs(k: String) = (get(k) as? com.google.gson.JsonArray)?.mapNotNull { it as? JsonObject }.orEmpty()
 
-private val Ink = Site.Text
-private val small = TextStyle(fontFamily = Site.Manrope, fontWeight = FontWeight.Medium, fontSize = 13.sp, color = Site.Muted)
+private val Ink get() = Site.Text
+private val small get() = TextStyle(fontFamily = Site.Manrope, fontWeight = FontWeight.Medium, fontSize = 13.sp, color = Site.Muted)
 private val bold = TextStyle(fontFamily = Site.Manrope, fontWeight = FontWeight.Bold, fontSize = 16.sp, color = Ink)
 private val h2 = TextStyle(fontFamily = Type.Cinzel, fontWeight = FontWeight.Bold, fontSize = 20.sp, color = Color(0xFFF3E3BD))
 /** isCollectorPack (play-econ-rules.js): the source ends in "collector". */

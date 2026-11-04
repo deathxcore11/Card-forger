@@ -105,17 +105,20 @@ import dev.cardstashy.nativeplay.play.PlayMath
  * read off the site's CSS; the comment beside it names the rule.
  */
 object Site {
-    val Bg = Color(0xFF0F1115)            // --bg
-    val Surface = Color(0xFF171A20)       // --surface
-    val Surface2 = Color(0xFF1F232B)      // --surface-2
-    val Line = Color(0xFF2A2F39)          // --line
-    val GlassLine = Color(0x17FFFFFF)     // --glass-line rgba(255,255,255,.09)
-    val GlassHi = Color(0x12FFFFFF)       // --glass-hi: inset 0 1px 0 rgba(255,255,255,.07)
-    val GlassRing = Color(0x06FFFFFF)     // --glass-hi second ring: inset 0 0 0 1px rgba(255,255,255,.025)
-    val Text = Color(0xFFEEF0F4)          // --text
-    val Muted = Color(0xFF9AA2B1)         // --muted
-    val Gold = Color(0xFFE8B95B)          // --gold: one primary per screen, the nav pill, earned things
-    val GoldInk = Color(0xFF1B1406)       // --gold-ink
+    // settings-theme.css :root[data-theme="light"] and aura.css :root[data-theme="aura"] override these tokens; dark is style.css.
+    private val light: Boolean get() = AppSettings.theme == "light"
+    val Bg: Color get() = if (light) Color(0xFFF3F5F8) else Color(0xFF0F1115)            // --bg
+    val Surface: Color get() = if (light) Color(0xFFFFFFFF) else Color(0xFF171A20)       // --surface
+    val Surface2: Color get() = if (light) Color(0xFFE7ECF3) else Color(0xFF1F232B)      // --surface-2
+    val Line: Color get() = if (light) Color(0xFFC2CBD8) else Color(0xFF2A2F39)          // --line
+    val GlassLine: Color get() = if (light) Color(0x42556987) else Color(0x17FFFFFF)     // --glass-line rgba(255,255,255,.09) / light rgba(85,105,135,.26)
+    val GlassHi: Color get() = if (light) Color(0xFFFFFFFF) else Color(0x12FFFFFF)       // --glass-hi: inset 0 1px 0 rgba(255,255,255,.07) / light #fff
+    val GlassRing: Color get() = if (light) Color(0x70FFFFFF) else Color(0x06FFFFFF)     // --glass-hi second ring: rgba(255,255,255,.025) / light #ffffff70
+    val Text: Color get() = if (light) Color(0xFF172337) else Color(0xFFEEF0F4)          // --text
+    val Muted: Color get() = when (AppSettings.theme) { "light" -> Color(0xFF33445A); "aura" -> Color(0xFFB5BDCB); else -> Color(0xFF9AA2B1) } // --muted
+    val Faint: Color get() = when (AppSettings.theme) { "light" -> Color(0xFF3E5068); "aura" -> Color(0xFFA5AFBF); else -> Color(0xFF8B93A3) } // --faint
+    val Gold: Color get() = if (light) Color(0xFF674407) else Color(0xFFE8B95B)          // --gold: one primary per screen, the nav pill, earned things
+    val GoldInk: Color get() = if (light) Color(0xFFFFFFFF) else Color(0xFF1B1406)       // --gold-ink
     val Unread = Color(0xFFE5484D)        // the profile orb's red dot
     val Radius = 14.dp                    // --radius
     /** 0a.5: one spring for all motion (stiffness 600, damping 0.8). */
@@ -129,16 +132,18 @@ object Site {
 
     // 0a.4: Cinzel at two sizes only (28 title, 12 tracked eyebrow); Manrope at four (20 / 16 / 14 / 12). No italic, shadow or outline.
     /** .pl-home-head h1: Cinzel 700, the light-to-gold fill. */
-    val Display = TextStyle(fontFamily = Type.Cinzel, fontWeight = FontWeight.Bold, fontSize = 34.sp, letterSpacing = .04.em,
+    // play-menu.css :root:not([data-theme=light]) .pl-home-head h1: the gradient fill is dark/aura only; light keeps --text.
+    val Display: TextStyle get() = if (AppSettings.theme == "light") TextStyle(fontFamily = Type.Cinzel, fontWeight = FontWeight.Bold, fontSize = 34.sp, letterSpacing = .04.em, color = Text)
+        else TextStyle(fontFamily = Type.Cinzel, fontWeight = FontWeight.Bold, fontSize = 34.sp, letterSpacing = .04.em,
         brush = Brush.verticalGradient(0.3f to Color(0xFFF8F0DC), 1f to Color(0xFFD6AD64)))
-    val Title = TextStyle(fontFamily = Type.Cinzel, fontWeight = FontWeight.Bold, fontSize = 28.sp, lineHeight = 32.sp, letterSpacing = .02.em, color = Text)
-    val Eyebrow = TextStyle(fontFamily = Type.Cinzel, fontWeight = FontWeight.Bold, fontSize = 12.sp, lineHeight = 16.sp, letterSpacing = .2.em, color = Text.copy(alpha = .82f))
-    val CardTitle = TextStyle(fontFamily = Manrope, fontWeight = FontWeight.SemiBold, fontSize = 20.sp, lineHeight = 26.sp, color = Text)
-    val Body = TextStyle(fontFamily = Manrope, fontWeight = FontWeight.Medium, fontSize = 16.sp, lineHeight = 22.sp, color = Text)
-    val Meta = TextStyle(fontFamily = Manrope, fontWeight = FontWeight.Medium, fontSize = 14.sp, lineHeight = 20.sp, color = Muted, fontFeatureSettings = tnum)
-    val Label = TextStyle(fontFamily = Manrope, fontWeight = FontWeight.SemiBold, fontSize = 12.sp, lineHeight = 16.sp, color = Muted)
-    val Count = TextStyle(fontFamily = Manrope, fontWeight = FontWeight.Bold, fontSize = 14.sp, color = Text, fontFeatureSettings = tnum)
-    val Button = TextStyle(fontFamily = Manrope, fontWeight = FontWeight.Bold, fontSize = 16.sp, color = Text)
+    val Title: TextStyle get() = TextStyle(fontFamily = Type.Cinzel, fontWeight = FontWeight.Bold, fontSize = 28.sp, lineHeight = 32.sp, letterSpacing = .02.em, color = Text)
+    val Eyebrow: TextStyle get() = TextStyle(fontFamily = Type.Cinzel, fontWeight = FontWeight.Bold, fontSize = 12.sp, lineHeight = 16.sp, letterSpacing = .2.em, color = Text.copy(alpha = .82f))
+    val CardTitle: TextStyle get() = TextStyle(fontFamily = Manrope, fontWeight = FontWeight.SemiBold, fontSize = 20.sp, lineHeight = 26.sp, color = Text)
+    val Body: TextStyle get() = TextStyle(fontFamily = Manrope, fontWeight = FontWeight.Medium, fontSize = 16.sp, lineHeight = 22.sp, color = Text)
+    val Meta: TextStyle get() = TextStyle(fontFamily = Manrope, fontWeight = FontWeight.Medium, fontSize = 14.sp, lineHeight = 20.sp, color = Muted, fontFeatureSettings = tnum)
+    val Label: TextStyle get() = TextStyle(fontFamily = Manrope, fontWeight = FontWeight.SemiBold, fontSize = 12.sp, lineHeight = 16.sp, color = Muted)
+    val Count: TextStyle get() = TextStyle(fontFamily = Manrope, fontWeight = FontWeight.Bold, fontSize = 14.sp, color = Text, fontFeatureSettings = tnum)
+    val Button: TextStyle get() = TextStyle(fontFamily = Manrope, fontWeight = FontWeight.Bold, fontSize = 16.sp, color = Text)
 }
 
 // ---------------------------------------------------------------- icons, the site's own SVG paths
@@ -441,7 +446,7 @@ enum class PlayTab(val label: String) { SWITCH("Collection"), TRUNK("Trunk"), DE
 fun PlayNav(active: PlayTab?, onSelect: (PlayTab) -> Unit, modifier: Modifier = Modifier) {
     val weights = listOf(1.2f, 1f, 1f, 1f, 1.1f)
     val icons = listOf(SiteIcons.Sync, SiteIcons.Trunk, SiteIcons.Decks, SiteIcons.Bag, SiteIcons.Trophy)
-    BoxWithConstraints(modifier.fillMaxWidth().background(Color(0xF00C0E13)).drawBehind {
+    BoxWithConstraints(modifier.fillMaxWidth().background(if (AppSettings.theme == "light") Color(0xF0F6F9FD) else Color(0xF00C0E13)).drawBehind { // light: settings-theme.css .bottom-nav rgba(246,249,253,.94)
         drawLine(Site.Line, Offset(0f, 0f), Offset(size.width, 0f), 1.dp.toPx())
     }.navigationBarsPadding()) {
         val inner = minOf(maxWidth, 640.dp)

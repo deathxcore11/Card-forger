@@ -37,7 +37,7 @@ import dev.cardstashy.nativeplay.play.Roles
  */
 object DeckViewPref { var mode by mutableStateOf("gallery") }  // deckViewFor: Art grid by default
 
-private val Ink = Site.Text
+private val Ink get() = Site.Text
 private val Warn = Color(0xFFFFB86B)
 private val Ok = Color(0xFF8FD19E)
 private fun t(size: Float, weight: FontWeight = FontWeight.Medium, color: Color = Ink, line: Float = size * 1.4f) =

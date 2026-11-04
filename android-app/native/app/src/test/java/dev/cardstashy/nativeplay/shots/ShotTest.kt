@@ -139,6 +139,30 @@ class ShotTest {
         home.mkdirs(); home.resolve("missing.txt").writeText(missing.joinToString("\n"))
     }
 
+    /** settings-theme.js: Play home and Trunk in each colour mode, against site-home-<theme>.png / site-trunk-cards-<theme>.png. */
+    @Test fun themes() {
+        dev.cardstashy.nativeplay.ui.Motion.still = true
+        dev.cardstashy.nativeplay.ui.homeArt = ::homeArt
+        home.resolve("facts.json").takeIf { it.exists() }?.let { f ->
+            dev.cardstashy.nativeplay.play.SetFacts.seed(JsonParser.parseString(f.readText()).asJsonObject.entrySet().associate { (k, v) -> val o = v.asJsonObject
+                k to dev.cardstashy.nativeplay.play.SetFacts.Set(o["name"].asString, o["icon"].asString, o["released"].asString, o["total"]?.asInt, o["art"].asString) })
+        }
+        try {
+            for (t in listOf("light", "aura", "dark")) {
+                dev.cardstashy.nativeplay.ui.AppSettings.applyTheme(t)
+                tall("theme-$t-play-home", 390, 844, 1f) { Home() }
+            }
+            trunkSetup()
+            for (t in listOf("light", "aura")) {
+                dev.cardstashy.nativeplay.ui.AppSettings.applyTheme(t)
+                RuntimeEnvironment.setQualifiers("w390dp-h${844 * 3}dp-xxhdpi")
+                captureRoboImage(File(System.getProperty("shotsDir"), "theme-$t-trunk-cards.png").path) {
+                    dev.cardstashy.nativeplay.ui.TrunkScreen(trunkState, {}, {}, {}) { PlayNav(PlayTab.TRUNK, {}) }
+                }
+            }
+        } finally { dev.cardstashy.nativeplay.ui.AppSettings.applyTheme("dark") }
+    }
+
     /** A long page: rendered at 4x the screen height so the whole scroll shows in one image. */
     private fun tall(name: String, w: Int, h: Int, scale: Float, content: @Composable () -> Unit) {
         RuntimeEnvironment.setQualifiers("w${w}dp-h${if (w < 600) h * 7 else h * 4}dp-xxhdpi")
