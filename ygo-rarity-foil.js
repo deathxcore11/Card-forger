@@ -75,9 +75,15 @@ void main(){
  vec3 nRel=normalize(vec3(-hx*6.,-hy*6.,1.));vec2 stroke=normalize(rl.gb*2.-1.+1e-4);
  vec3 outC=base;
  // Whole card (Starlight, Parallel, Shatterfoil, Starfoil): the rules box only gets a share. The name bar is foil
- // like the rest of the card, so it never shows as a flat box: only its light ground takes the foil, the dark
- // letters keep their ink and the lettering canvas lights them.
- if(u_whole.x>.5)outC=overInk(outC,foil(u_whole.x,u_whole.y,uv,L,V,H,spot,0.,stroke),(1.-text*(1.-u_whole.z))*mix(1.,smoothstep(.22,.55,dot(base,vec3(.2126,.7152,.0722))),name)*.85);
+ // like the rest of the card, so it never shows as a flat box: its ground takes the foil, the letters keep their
+ // ink and the lettering canvas lights them.
+ // Ink in the name bar is what differs from the bar's own ground (a wide horizontal average), so a dark
+ // bar with black letters and a black Xyz bar with white letters both foil their ground, never the letters.
+ float nameInk=0.;
+ if(name>.5){const vec3 LUM=vec3(.2126,.7152,.0722);float l0=dot(base,LUM),acc=0.;
+  for(int i=-4;i<=4;i++)acc+=dot(toLin(texture2D(u_card,clamp(v+vec2(float(i)*.009,0.),0.,1.)).rgb),LUM);
+  nameInk=smoothstep(.05,.16,abs(l0-acc/9.));}
+ if(u_whole.x>.5)outC=overInk(outC,foil(u_whole.x,u_whole.y,uv,L,V,H,spot,0.,stroke),(1.-text*(1.-u_whole.z))*(1.-name*nameInk)*.85);
  // Frame: the coloured frame, or only the outer border band (Gold, Platinum).
  if(u_frame.x>.5){float cov=u_frame.z>1.5?1.-inBox(uv,vec4(.045,.032,.955,.968)):frame;
   if(u_frame.x>5.5&&u_frame.x<6.5){float rim=pow(max(dot(nRel,H),0.),18.)*(.35+.65*spot);outC=outC*(1.-.06*cov)+(1.-outC)*mix(vec3(.95,.88,.7),outC*2.,.6)*rim*cov*.7;}
