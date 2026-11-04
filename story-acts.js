@@ -71,6 +71,9 @@ export const STORY_ACTS = [
   {act: 23, age: 'The Gatewatch Years', title: 'The Gatewatch Rises', years: '2015 to 2016',
     sets: ['ori', 'bfz', 'ogw'], landSet: 'bfz', packSets: ['ori', 'bfz', 'ogw'],
     art: {set: 'bfz', number: '15', name: 'Ulamog, the Ceaseless Hunger', crop: 'https://cards.scryfall.io/art_crop/front/1/1/1192f7a9-102e-4b3a-b154-18c8eb332217.jpg?1783938222'}},
+  {act: 24, age: 'The Gatewatch Years', title: 'The Moon', years: '2016',
+    sets: ['soi', 'emn'], landSet: 'soi', packSets: ['soi', 'emn'],
+    art: {set: 'emn', number: '6', name: 'Emrakul, the Promised End', crop: 'https://cards.scryfall.io/art_crop/front/8/d/8d74a469-c71d-4773-99d3-5456b31df424.jpg?1783937526'}},
 ];
 export const SET_NAMES = {lea: 'Limited Edition Alpha', leb: 'Limited Edition Beta', '2ed': 'Unlimited Edition', arn: 'Arabian Nights', atq: 'Antiquities',
   '3ed': 'Revised Edition', leg: 'Legends', drk: 'The Dark', fem: 'Fallen Empires', ice: 'Ice Age', hml: 'Homelands', all: 'Alliances', '4ed': 'Fourth Edition',
@@ -86,6 +89,6 @@ export const SET_NAMES = {lea: 'Limited Edition Alpha', leb: 'Limited Edition Be
   rav: 'Ravnica: City of Guilds', gpt: 'Guildpact', dis: 'Dissension',
   csp: 'Coldsnap', tsp: 'Time Spiral', tsb: 'Time Spiral Timeshifted', plc: 'Planar Chaos', fut: 'Future Sight', '10e': 'Tenth Edition',
   lrw: 'Lorwyn', mor: 'Morningtide', shm: 'Shadowmoor', eve: 'Eventide',
-  ala: 'Shards of Alara', con: 'Conflux', arb: 'Alara Reborn', m10: 'Magic 2010', zen: 'Zendikar', wwk: 'Worldwake', roe: 'Rise of the Eldrazi', m11: 'Magic 2011', som: 'Scars of Mirrodin', mbs: 'Mirrodin Besieged', nph: 'New Phyrexia', m12: 'Magic 2012', isd: 'Innistrad', dka: 'Dark Ascension', avr: 'Avacyn Restored', m13: 'Magic 2013', rtr: 'Return to Ravnica', gtc: 'Gatecrash', dgm: "Dragon's Maze", m14: 'Magic 2014', ths: 'Theros', bng: 'Born of the Gods', jou: 'Journey into Nyx', m15: 'Magic 2015', ktk: 'Khans of Tarkir', frf: 'Fate Reforged', dtk: 'Dragons of Tarkir', ori: 'Magic Origins', bfz: 'Battle for Zendikar', ogw: 'Oath of the Gatewatch'};
+  ala: 'Shards of Alara', con: 'Conflux', arb: 'Alara Reborn', m10: 'Magic 2010', zen: 'Zendikar', wwk: 'Worldwake', roe: 'Rise of the Eldrazi', m11: 'Magic 2011', som: 'Scars of Mirrodin', mbs: 'Mirrodin Besieged', nph: 'New Phyrexia', m12: 'Magic 2012', isd: 'Innistrad', dka: 'Dark Ascension', avr: 'Avacyn Restored', m13: 'Magic 2013', rtr: 'Return to Ravnica', gtc: 'Gatecrash', dgm: "Dragon's Maze", m14: 'Magic 2014', ths: 'Theros', bng: 'Born of the Gods', jou: 'Journey into Nyx', m15: 'Magic 2015', ktk: 'Khans of Tarkir', frf: 'Fate Reforged', dtk: 'Dragons of Tarkir', ori: 'Magic Origins', bfz: 'Battle for Zendikar', ogw: 'Oath of the Gatewatch', soi: 'Shadows over Innistrad', emn: 'Eldritch Moon'};
 export const storyAct = n => STORY_ACTS.find(a => a.act === Number(n)) || null;
 export const setSymbolUrl = code => `https://svgs.scryfall.io/sets/${encodeURIComponent(code)}.svg`;

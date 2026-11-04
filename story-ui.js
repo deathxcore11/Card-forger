@@ -196,6 +196,11 @@ export const LESSONS = {
   'Spell mastery': 'Spell mastery: these spells get a bonus if there are two or more instant and sorcery cards in your graveyard.',
   'Devoid': 'Devoid: the card has no colour, even though its cost uses coloured mana. Effects that care about colour do not see it.',
   'Surge': 'Surge: you may cast the spell for its surge cost if you or a teammate has cast another spell this turn. Chain a cheap spell into it.',
+  'Investigate': 'Investigate: make a Clue token. Pay 2 and sacrifice it to draw a card. Crack Clues with spare mana at the end of their turn.',
+  'Delirium': 'Delirium: these cards get stronger when there are four or more card types among cards in your graveyard. Fill it on purpose.',
+  'Emerge': 'Emerge: you may cast the spell by sacrificing a creature and paying the emerge cost, reduced by that creature\'s mana value.',
+  'Skulk': 'Skulk: the creature can\'t be blocked by creatures with greater power. Keep a small blocker back.',
+  'Escalate': 'Escalate: pay the escalate cost for each mode beyond the first. One spell can do two or three things at once.',
   'Playing under a lock': 'A lock stops cards from untapping or moving. Break it, or win with what\'s already in play.',
 };
 // Every Story deck says what it is (Randall, 2 Nov 2026): Historical Exact, Historical Tribute or

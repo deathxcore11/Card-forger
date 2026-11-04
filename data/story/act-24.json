@@ -1,0 +1,2771 @@
+{
+ "act": 24,
+ "era": "2016-07-22",
+ "title": "The Moon",
+ "years": "2016",
+ "sets": [
+  "soi",
+  "emn"
+ ],
+ "landSet": "soi",
+ "intro": [
+  {
+   "who": "stage",
+   "line": "Innistrad, years after the Helvault opened. The angels are back, the moon is silver, and something is wrong."
+  },
+  {
+   "who": "stage",
+   "line": "The renewed howling of werewolves announced the end of the Cursemute—and the beginning of Avacyn's madness.",
+   "quote": true
+  },
+  {
+   "who": "stage",
+   "line": "Sorin Markov has vanished. Jace Beleren has come looking for him, and finds strange stones everywhere he goes."
+  },
+  {
+   "who": "jace",
+   "line": "Every answer seems to lead to a more terrifying question.",
+   "quote": true
+  }
+ ],
+ "finale": [
+  {
+   "who": "stage",
+   "line": "Only one vault was great enough to hold Emrakul.",
+   "quote": true
+  },
+  {
+   "who": "stage",
+   "line": "The last titan is sealed inside the silver moon. Innistrad is broken, but it is still here."
+  },
+  {
+   "who": "stage",
+   "line": "It was easier than it should have been. Tamiyo is the only one who knows why, and she does not say."
+  }
+ ],
+ "villainFinale": [
+  {
+   "who": "stage",
+   "line": "The moon goes dark."
+  },
+  {
+   "who": "stage",
+   "line": "All around Emrakul, life re-formed in her image.",
+   "quote": true
+  },
+  {
+   "who": "stage",
+   "line": "Emrakul does not grant wishes. Desires simply align to her will.",
+   "quote": true
+  }
+ ],
+ "vibe": "innistrad-madness-moon",
+ "cast": {
+  "you": {
+   "name": "You",
+   "title": "Planeswalker",
+   "portrait": {
+    "card": "Epiphany at the Drownyard",
+    "set": "soi",
+    "number": "59",
+    "id": "64b44364-8f83-4dcf-8458-0fd54a698524",
+    "crop": "https://cards.scryfall.io/art_crop/front/6/4/64b44364-8f83-4dcf-8458-0fd54a698524.jpg?1783937800",
+    "artist": "Titus Lunter",
+    "focus": "50% 30%"
+   }
+  },
+  "jace": {
+   "name": "Jace Beleren",
+   "title": "Investigator",
+   "portrait": {
+    "card": "Jace, Unraveler of Secrets",
+    "set": "soi",
+    "number": "69",
+    "id": "20d5521d-e9f1-49e0-aa13-8e6de794cb12",
+    "crop": "https://cards.scryfall.io/art_crop/front/2/0/20d5521d-e9f1-49e0-aa13-8e6de794cb12.jpg?1783937795",
+    "artist": "Tyler Jacobson",
+    "focus": "50% 25%"
+   }
+  },
+  "cult": {
+   "name": "The Drownyard Cult",
+   "title": "Nephalia",
+   "portrait": {
+    "card": "Thing in the Ice // Awoken Horror",
+    "set": "soi",
+    "number": "92",
+    "id": "359d1b13-6156-43b0-a9a7-6bfff36c1a91",
+    "crop": "https://cards.scryfall.io/art_crop/front/3/5/359d1b13-6156-43b0-a9a7-6bfff36c1a91.jpg?1783937788",
+    "artist": "Svetlin Velinov",
+    "focus": "50% 30%"
+   }
+  },
+  "tamiyo": {
+   "name": "Tamiyo",
+   "title": "Field Researcher",
+   "portrait": {
+    "card": "Tamiyo, Field Researcher",
+    "set": "emn",
+    "number": "190",
+    "id": "9f9aced7-9ae9-432f-b8c0-caac9cad098b",
+    "crop": "https://cards.scryfall.io/art_crop/front/9/f/9f9aced7-9ae9-432f-b8c0-caac9cad098b.jpg?1783937424",
+    "artist": "Tianhua X",
+    "focus": "50% 25%"
+   }
+  },
+  "bruna": {
+   "name": "Bruna",
+   "title": "The Fading Light",
+   "portrait": {
+    "card": "Bruna, the Fading Light",
+    "set": "emn",
+    "number": "15",
+    "id": "27907985-b5f6-4098-ab43-15a0c2bf94d5",
+    "crop": "https://cards.scryfall.io/art_crop/front/2/7/27907985-b5f6-4098-ab43-15a0c2bf94d5.jpg?1783937523",
+    "artist": "Clint Cearley",
+    "focus": "50% 25%"
+   }
+  },
+  "olivia": {
+   "name": "Olivia Voldaren",
+   "title": "Mobilized for War",
+   "portrait": {
+    "card": "Olivia, Mobilized for War",
+    "set": "soi",
+    "number": "248",
+    "id": "7297dd81-8367-42e9-abf9-9227e202e7ae",
+    "crop": "https://cards.scryfall.io/art_crop/front/7/2/7297dd81-8367-42e9-abf9-9227e202e7ae.jpg?1783937713",
+    "artist": "Eric Deschamps",
+    "focus": "50% 25%"
+   }
+  },
+  "thalia": {
+   "name": "Thalia",
+   "title": "Heretic Cathar",
+   "portrait": {
+    "card": "Thalia, Heretic Cathar",
+    "set": "emn",
+    "number": "46",
+    "id": "ab0cee38-5e24-49d0-870c-22843ed4e101",
+    "crop": "https://cards.scryfall.io/art_crop/front/a/b/ab0cee38-5e24-49d0-870c-22843ed4e101.jpg?1783937507",
+    "artist": "Magali Villeneuve",
+    "focus": "50% 25%"
+   }
+  },
+  "nahiri": {
+   "name": "Nahiri",
+   "title": "The Harbinger",
+   "portrait": {
+    "card": "Nahiri, the Harbinger",
+    "set": "soi",
+    "number": "247",
+    "id": "84d70487-21d1-4897-ac20-2a996e893b5b",
+    "crop": "https://cards.scryfall.io/art_crop/front/8/4/84d70487-21d1-4897-ac20-2a996e893b5b.jpg?1783937713",
+    "artist": "Aleksi Briclot",
+    "focus": "50% 25%"
+   }
+  },
+  "sorin": {
+   "name": "Sorin Markov",
+   "title": "Grim Nemesis",
+   "portrait": {
+    "card": "Sorin, Grim Nemesis",
+    "set": "soi",
+    "number": "251",
+    "id": "c2933144-c931-498a-9e91-f5165873c3b7",
+    "crop": "https://cards.scryfall.io/art_crop/front/c/2/c2933144-c931-498a-9e91-f5165873c3b7.jpg?1783937711",
+    "artist": "Eric Deschamps",
+    "focus": "50% 25%"
+   }
+  },
+  "arlinn": {
+   "name": "Arlinn Kord",
+   "title": "Of the pack",
+   "portrait": {
+    "card": "Arlinn Kord // Arlinn, Embraced by the Moon",
+    "set": "soi",
+    "number": "243",
+    "id": "b37aa12c-a6b3-4cf8-b5a4-0a999ff12d02",
+    "crop": "https://cards.scryfall.io/art_crop/front/b/3/b37aa12c-a6b3-4cf8-b5a4-0a999ff12d02.jpg?1783937719",
+    "artist": "Winona Nelson",
+    "focus": "50% 25%"
+   }
+  },
+  "horrors": {
+   "name": "Emrakul's Horrors",
+   "title": "Eldrazi",
+   "portrait": {
+    "card": "Lashweed Lurker",
+    "set": "emn",
+    "number": "9",
+    "id": "a13f9a76-3370-4809-88ff-c300bca31c9e",
+    "crop": "https://cards.scryfall.io/art_crop/front/a/1/a13f9a76-3370-4809-88ff-c300bca31c9e.jpg?1783937525",
+    "artist": "Igor Kieryluk",
+    "focus": "50% 30%"
+   }
+  },
+  "humans": {
+   "name": "Humans",
+   "title": "Spring 2016",
+   "portrait": {
+    "card": "Thalia's Lieutenant",
+    "set": "soi",
+    "number": "43",
+    "id": "fe162594-2332-4816-a9e1-57eb19b12651",
+    "crop": "https://cards.scryfall.io/art_crop/front/f/e/fe162594-2332-4816-a9e1-57eb19b12651.jpg?1783937806",
+    "artist": "Johannes Voss",
+    "focus": "50% 25%"
+   }
+  },
+  "zombies": {
+   "name": "Zombies",
+   "title": "Summer 2016",
+   "portrait": {
+    "card": "Relentless Dead",
+    "set": "soi",
+    "number": "131",
+    "id": "2a0d7998-2f3d-43b8-a0be-6ff7e5c83223",
+    "crop": "https://cards.scryfall.io/art_crop/front/2/a/2a0d7998-2f3d-43b8-a0be-6ff7e5c83223.jpg?1783937766",
+    "artist": "Ryan Yee",
+    "focus": "50% 30%"
+   }
+  },
+  "spirits": {
+   "name": "Spirits",
+   "title": "Summer 2016",
+   "portrait": {
+    "card": "Spell Queller",
+    "set": "emn",
+    "number": "189",
+    "id": "9b76bcd4-580a-4435-afe9-290940b1837f",
+    "crop": "https://cards.scryfall.io/art_crop/front/9/b/9b76bcd4-580a-4435-afe9-290940b1837f.jpg?1783937428",
+    "artist": "Adam Paquette",
+    "focus": "50% 25%"
+   }
+  },
+  "delirium": {
+   "name": "GB Delirium",
+   "title": "Summer 2016",
+   "portrait": {
+    "card": "Ishkanah, Grafwidow",
+    "set": "emn",
+    "number": "162",
+    "id": "2a6c5a98-2fe5-4671-a6a8-98a47c09c5a7",
+    "crop": "https://cards.scryfall.io/art_crop/front/2/a/2a6c5a98-2fe5-4671-a6a8-98a47c09c5a7.jpg?1783937444",
+    "artist": "Christine Choi",
+    "focus": "50% 30%"
+   }
+  },
+  "gatewatch": {
+   "name": "The Gatewatch",
+   "title": "At Thraben",
+   "portrait": {
+    "card": "Deploy the Gatewatch",
+    "set": "emn",
+    "number": "20",
+    "id": "a3aa54d9-9f01-46e4-b4bd-f8bc57b44ac1",
+    "crop": "https://cards.scryfall.io/art_crop/front/a/3/a3aa54d9-9f01-46e4-b4bd-f8bc57b44ac1.jpg?1783937520",
+    "artist": "Wesley Burt",
+    "focus": "50% 30%"
+   }
+  },
+  "emrakul": {
+   "name": "Emrakul",
+   "title": "The Promised End",
+   "portrait": {
+    "card": "Emrakul, the Promised End",
+    "set": "emn",
+    "number": "6",
+    "id": "8d74a469-c71d-4773-99d3-5456b31df424",
+    "crop": "https://cards.scryfall.io/art_crop/front/8/d/8d74a469-c71d-4773-99d3-5456b31df424.jpg?1783937526",
+    "artist": "Jaime Jones",
+    "focus": "50% 30%"
+   }
+  },
+  "emerge": {
+   "name": "Emerge",
+   "title": "Summer 2016",
+   "portrait": {
+    "card": "Elder Deep-Fiend",
+    "set": "emn",
+    "number": "5",
+    "id": "3c2789fb-a263-4207-8a56-4eeb015a024c",
+    "crop": "https://cards.scryfall.io/art_crop/front/3/c/3c2789fb-a263-4207-8a56-4eeb015a024c.jpg?1783937526",
+    "artist": "Jason Felix",
+    "focus": "50% 30%"
+   }
+  }
+ },
+ "battles": [
+  {
+   "id": "a24b1",
+   "slot": 1,
+   "kind": "Arrival",
+   "mood": "tension",
+   "title": "The Drownyard",
+   "difficulty": "Easy",
+   "teaches": [
+    "Investigate"
+   ],
+   "blurb": "You find Jace Beleren on the Nephalian coast, following a trail of warped stones to a temple full of cultists.",
+   "rewardSet": "soi",
+   "host": false,
+   "hero": {
+    "who": "jace",
+    "deck": {
+     "name": "The Investigation",
+     "colors": "UG",
+     "archetype": null,
+     "label": "tribute",
+     "cards": [
+      {
+       "qty": 4,
+       "name": "Tireless Tracker",
+       "set": "soi",
+       "number": "233",
+       "id": "ee8e9928-d9b2-4570-adb8-44b34115decd"
+      },
+      {
+       "qty": 3,
+       "name": "Ongoing Investigation",
+       "set": "soi",
+       "number": "77",
+       "id": "19b8f962-8d4e-4dd8-a157-c0a55f9e152a"
+      },
+      {
+       "qty": 4,
+       "name": "Briarbridge Patrol",
+       "set": "soi",
+       "number": "195",
+       "id": "f44a017b-40cb-4c15-b9ea-a3ed904e4e49"
+      },
+      {
+       "qty": 4,
+       "name": "Byway Courier",
+       "set": "soi",
+       "number": "196",
+       "id": "2f243a51-bbd3-4028-a469-469ab5591aae"
+      },
+      {
+       "qty": 4,
+       "name": "Daring Sleuth // Bearer of Overwhelming Truths",
+       "set": "soi",
+       "number": "54",
+       "id": "440f9f10-6999-4cff-ab98-8aed77813b07"
+      },
+      {
+       "qty": 3,
+       "name": "Drownyard Explorers",
+       "set": "soi",
+       "number": "56",
+       "id": "3714713f-deb4-4b1c-8764-35287293ca18"
+      },
+      {
+       "qty": 3,
+       "name": "Erdwal Illuminator",
+       "set": "soi",
+       "number": "60",
+       "id": "63df99f9-4f85-4c76-8d76-9075c9ef2b86"
+      },
+      {
+       "qty": 4,
+       "name": "Press for Answers",
+       "set": "soi",
+       "number": "80",
+       "id": "5ec8b8bf-7b02-4f5e-bbd3-9560f9888192"
+      },
+      {
+       "qty": 4,
+       "name": "Thornhide Wolves",
+       "set": "soi",
+       "number": "232",
+       "id": "9c699b5f-a2de-4c87-a7bc-16be4bc0a8cd"
+      },
+      {
+       "qty": 12,
+       "name": "Forest",
+       "set": "soi",
+       "number": "295",
+       "id": "42efdb6a-1c54-497a-9058-af4256241649"
+      },
+      {
+       "qty": 12,
+       "name": "Island",
+       "set": "soi",
+       "number": "286",
+       "id": "bffca348-2af9-44bb-815f-f7f7240ac975"
+      },
+      {
+       "qty": 3,
+       "name": "Kessig Dire Swine",
+       "set": "soi",
+       "number": "214",
+       "id": "9235ac46-dac9-46e6-9c7f-a69caaee1a2e"
+      }
+     ]
+    }
+   },
+   "villain": {
+    "who": "cult",
+    "deck": {
+     "name": "The Drownyard Cult",
+     "colors": "UB",
+     "archetype": null,
+     "label": "tribute",
+     "cards": [
+      {
+       "qty": 1,
+       "name": "Thing in the Ice // Awoken Horror",
+       "set": "soi",
+       "number": "92",
+       "id": "359d1b13-6156-43b0-a9a7-6bfff36c1a91"
+      },
+      {
+       "qty": 2,
+       "name": "Exultant Cultist",
+       "set": "emn",
+       "number": "59",
+       "id": "b2c22e0a-81c5-485f-81f0-3e85397108e0"
+      },
+      {
+       "qty": 4,
+       "name": "Pore Over the Pages",
+       "set": "soi",
+       "number": "79",
+       "id": "b2288f7b-05b1-4a6c-8d02-42ffcadc6f0b"
+      },
+      {
+       "qty": 2,
+       "name": "Weirded Vampire",
+       "set": "emn",
+       "number": "113",
+       "id": "fb5234ac-e308-417d-96b0-d860f3186e6b"
+      },
+      {
+       "qty": 4,
+       "name": "Murderous Compulsion",
+       "set": "soi",
+       "number": "126",
+       "id": "33b94db1-ac8c-4667-81d5-408df0f30879"
+      },
+      {
+       "qty": 12,
+       "name": "Island",
+       "set": "soi",
+       "number": "286",
+       "id": "bffca348-2af9-44bb-815f-f7f7240ac975"
+      },
+      {
+       "qty": 12,
+       "name": "Swamp",
+       "set": "soi",
+       "number": "289",
+       "id": "19f62f5c-ddea-4564-bc47-5845ab15d8e2"
+      },
+      {
+       "qty": 4,
+       "name": "Gisa's Bidding",
+       "set": "soi",
+       "number": "114",
+       "id": "e01e904c-7d8e-447b-90cb-1f4ae3fb304d"
+      },
+      {
+       "qty": 4,
+       "name": "Dead Weight",
+       "set": "soi",
+       "number": "106",
+       "id": "f09a09de-35c9-4a4e-a4ac-1ce24e166ad9"
+      },
+      {
+       "qty": 4,
+       "name": "Jace's Scrutiny",
+       "set": "soi",
+       "number": "70",
+       "id": "3d0eea0d-c790-4d91-962f-f05b22d0c8fa"
+      },
+      {
+       "qty": 4,
+       "name": "Throttle",
+       "set": "soi",
+       "number": "138",
+       "id": "953f9001-17b2-4087-8d87-5dbaa6c48b16"
+      },
+      {
+       "qty": 4,
+       "name": "Confirm Suspicions",
+       "set": "soi",
+       "number": "53",
+       "id": "cf7fcbc2-1034-442d-9f2a-7d79ea40ac3d"
+      },
+      {
+       "qty": 3,
+       "name": "Furtive Homunculus",
+       "set": "soi",
+       "number": "64",
+       "id": "f376ec9b-48ac-4ed7-bfa2-60e9dca32dd7"
+      }
+     ]
+    }
+   },
+   "reward": {
+    "hero": {
+     "packs": 1,
+     "coins": 0
+    },
+    "villain": {
+     "card": {
+      "oracle_id": "a30d076b-c942-45e4-b943-3749ce955291",
+      "name": "Confirm Suspicions",
+      "rarity": "rare",
+      "set": "soi",
+      "id": "cf7fcbc2-1034-442d-9f2a-7d79ea40ac3d",
+      "image": "https://cards.scryfall.io/normal/front/c/f/cf7fcbc2-1034-442d-9f2a-7d79ea40ac3d.jpg"
+     },
+     "coins": 50
+    }
+   },
+   "scene": [
+    {
+     "who": "jace",
+     "line": "This is it! All the cryptoliths point here!",
+     "quote": true
+    },
+    {
+     "who": "stage",
+     "line": "Amid the gibbering chorus that rose from the drownyard temple, Jace recognized a single word: \"Emrakul.\"",
+     "quote": true
+    },
+    {
+     "who": "jace",
+     "line": "Investigate: you make a Clue. Pay 2 and sacrifice it to draw a card. Crack them when you have spare mana."
+    }
+   ],
+   "villainScene": [
+    {
+     "who": "stage",
+     "line": "In times of madness, people cling to the familiar, monstrous though it may be.",
+     "quote": true
+    },
+    {
+     "who": "stage",
+     "line": "A slow knock at midnight is best left unanswered.",
+     "quote": true
+    }
+   ],
+   "after": null,
+   "cues": {
+    "hero": {
+     "start": "Follow the evidence.",
+     "big": "Solved!",
+     "low": "The trail goes cold...",
+     "win": "Case closed.",
+     "loss": "Lost in the fog...",
+     "half": "Crack a Clue at end of turn."
+    },
+    "villain": {
+     "start": "[the chanting begins]",
+     "big": "[the thing rises from the ice]",
+     "low": "[a cultist falls silent]",
+     "win": "[the chorus swells]",
+     "loss": "[silence]"
+    }
+   },
+   "bigPlays": [],
+   "sim": null
+  },
+  {
+   "id": "a24b2",
+   "slot": 2,
+   "kind": "Lesson",
+   "mood": "march",
+   "title": "Tamiyo's Journal",
+   "difficulty": "Easy",
+   "teaches": [
+    "Delirium"
+   ],
+   "blurb": "Tamiyo, the moonfolk scholar, has been studying Innistrad for years. Avacyn's angels have stopped telling friend from foe.",
+   "rewardSet": "emn",
+   "host": false,
+   "hero": {
+    "who": "tamiyo",
+    "deck": {
+     "name": "The Scholar's Notes",
+     "colors": "UG",
+     "archetype": null,
+     "label": "tribute",
+     "cards": [
+      {
+       "qty": 2,
+       "name": "Tamiyo's Journal",
+       "set": "soi",
+       "number": "265",
+       "id": "b474378c-5fa8-418f-8d76-23e78003ed18"
+      },
+      {
+       "qty": 4,
+       "name": "Traverse the Ulvenwald",
+       "set": "soi",
+       "number": "234",
+       "id": "bbc69a17-db08-4b4a-bc37-98a12ea108dc"
+      },
+      {
+       "qty": 3,
+       "name": "Grapple with the Past",
+       "set": "emn",
+       "number": "160",
+       "id": "d44a77a6-e8a1-4706-886f-8ab3af56b342"
+      },
+      {
+       "qty": 4,
+       "name": "Vessel of Nascency",
+       "set": "soi",
+       "number": "237",
+       "id": "89533790-38c2-4b53-90fa-8abf8c1a6abb"
+      },
+      {
+       "qty": 4,
+       "name": "Gnarlwood Dryad",
+       "set": "emn",
+       "number": "159",
+       "id": "fa506387-e538-4b2c-94df-29866eb74a71"
+      },
+      {
+       "qty": 4,
+       "name": "Kessig Dire Swine",
+       "set": "soi",
+       "number": "214",
+       "id": "9235ac46-dac9-46e6-9c7f-a69caaee1a2e"
+      },
+      {
+       "qty": 4,
+       "name": "Moldgraf Scavenger",
+       "set": "soi",
+       "number": "218",
+       "id": "76755763-7c02-451f-b799-2106a3a4973b"
+      },
+      {
+       "qty": 4,
+       "name": "Ingenious Skaab",
+       "set": "emn",
+       "number": "66",
+       "id": "19d6ed0b-40ba-407d-94de-05a705e79b95"
+      },
+      {
+       "qty": 4,
+       "name": "Clear Shot",
+       "set": "emn",
+       "number": "152",
+       "id": "12fa1d34-7e32-45b7-9f6f-68f152f75d1a"
+      },
+      {
+       "qty": 12,
+       "name": "Forest",
+       "set": "soi",
+       "number": "295",
+       "id": "42efdb6a-1c54-497a-9058-af4256241649"
+      },
+      {
+       "qty": 12,
+       "name": "Island",
+       "set": "soi",
+       "number": "286",
+       "id": "bffca348-2af9-44bb-815f-f7f7240ac975"
+      },
+      {
+       "qty": 3,
+       "name": "Pore Over the Pages",
+       "set": "soi",
+       "number": "79",
+       "id": "b2288f7b-05b1-4a6c-8d02-42ffcadc6f0b"
+      }
+     ]
+    }
+   },
+   "villain": {
+    "who": "bruna",
+    "deck": {
+     "name": "The Mad Flight",
+     "colors": "W",
+     "archetype": null,
+     "label": "tribute",
+     "cards": [
+      {
+       "qty": 1,
+       "name": "Bruna, the Fading Light",
+       "set": "emn",
+       "number": "15",
+       "id": "27907985-b5f6-4098-ab43-15a0c2bf94d5"
+      },
+      {
+       "qty": 4,
+       "name": "Thraben Inspector",
+       "set": "soi",
+       "number": "44",
+       "id": "d140c3b7-ca78-483d-baeb-307b624fea8b"
+      },
+      {
+       "qty": 4,
+       "name": "Militant Inquisitor",
+       "set": "soi",
+       "number": "26",
+       "id": "68d99f1f-80d6-4b5e-aeae-83fb8ae62cdc"
+      },
+      {
+       "qty": 4,
+       "name": "Expose Evil",
+       "set": "soi",
+       "number": "19",
+       "id": "9de0341a-cd45-439c-adc2-8d24c47c4bd5"
+      },
+      {
+       "qty": 4,
+       "name": "Angelic Purge",
+       "set": "soi",
+       "number": "3",
+       "id": "d38bae3e-95f3-413a-bb4d-6a0814112a7a"
+      },
+      {
+       "qty": 4,
+       "name": "Strength of Arms",
+       "set": "soi",
+       "number": "40",
+       "id": "52c5c5cf-0ed6-4953-a03a-af51038e3f54"
+      },
+      {
+       "qty": 24,
+       "name": "Plains",
+       "set": "soi",
+       "number": "283",
+       "id": "56bbcfb7-cfbc-4752-9b6c-ffbd5d3dd678"
+      },
+      {
+       "qty": 4,
+       "name": "Puncturing Light",
+       "set": "soi",
+       "number": "35",
+       "id": "5b101264-4994-43b7-9156-228f7d10d2bd"
+      },
+      {
+       "qty": 4,
+       "name": "Chaplain's Blessing",
+       "set": "soi",
+       "number": "10",
+       "id": "f70ea481-1751-4097-af41-2d13fe79e788"
+      },
+      {
+       "qty": 3,
+       "name": "Hope Against Hope",
+       "set": "soi",
+       "number": "22",
+       "id": "a6f7c6f5-159a-40ed-823a-8740a1ce373e"
+      },
+      {
+       "qty": 4,
+       "name": "Not Forgotten",
+       "set": "soi",
+       "number": "30",
+       "id": "66ecdadf-56f7-4dfb-9c3c-7d240ba19b00"
+      }
+     ]
+    }
+   },
+   "reward": {
+    "hero": {
+     "packs": 1,
+     "coins": 0
+    },
+    "villain": {
+     "card": {
+      "oracle_id": "bce7e45d-b2c5-43aa-91a6-3a3c24f30850",
+      "name": "Bruna, the Fading Light",
+      "rarity": "rare",
+      "set": "emn",
+      "id": "27907985-b5f6-4098-ab43-15a0c2bf94d5",
+      "image": "https://cards.scryfall.io/normal/front/2/7/27907985-b5f6-4098-ab43-15a0c2bf94d5.jpg"
+     },
+     "coins": 50
+    }
+   },
+   "scene": [
+    {
+     "who": "stage",
+     "line": "Entry 434: There's more to Avacyn's madness . . .",
+     "quote": true
+    },
+    {
+     "who": "jace",
+     "line": "Is this what you found, Tamiyo?",
+     "quote": true
+    },
+    {
+     "who": "tamiyo",
+     "line": "Delirium: count the card types in your graveyard. Four or more and these cards grow stronger. Fill the graveyard on purpose."
+    }
+   ],
+   "villainScene": [
+    {
+     "who": "stage",
+     "line": "She now sees only Emrakul's visions.",
+     "quote": true
+    },
+    {
+     "who": "stage",
+     "line": "If you refuse to see the light, then you will feel it.",
+     "quote": true
+    }
+   ],
+   "after": null,
+   "cues": {
+    "hero": {
+     "start": "Write everything down.",
+     "big": "Delirium!",
+     "low": "The pages blur...",
+     "win": "A new entry.",
+     "loss": "The journal closes...",
+     "half": "Get four types in the yard."
+    },
+    "villain": {
+     "start": "[wings overhead]",
+     "big": "[holy fire]",
+     "low": "[an angel falls]",
+     "win": "[the purge goes on]",
+     "loss": "[the light fades]"
+    }
+   },
+   "bigPlays": [],
+   "sim": null
+  },
+  {
+   "id": "a24b3",
+   "slot": 3,
+   "kind": "Lesson",
+   "mood": "comic",
+   "title": "Call the Bloodline",
+   "difficulty": "Easy",
+   "teaches": [
+    "Madness"
+   ],
+   "blurb": "Sorin needs an army, so he asks Olivia Voldaren for one. Thalia's heretic cathars are in the way, and none of them will bow.",
+   "rewardSet": "emn",
+   "host": false,
+   "hero": {
+    "who": "olivia",
+    "deck": {
+     "name": "The Voldaren Bloodline",
+     "colors": "BR",
+     "archetype": null,
+     "label": "tribute",
+     "cards": [
+      {
+       "qty": 2,
+       "name": "Olivia, Mobilized for War",
+       "set": "soi",
+       "number": "248",
+       "id": "7297dd81-8367-42e9-abf9-9227e202e7ae"
+      },
+      {
+       "qty": 4,
+       "name": "Heir of Falkenrath // Heir to the Night",
+       "set": "soi",
+       "number": "116",
+       "id": "cf2ad186-4d85-4628-ae84-3c58c88d34cb"
+      },
+      {
+       "qty": 4,
+       "name": "Bloodmad Vampire",
+       "set": "soi",
+       "number": "146",
+       "id": "b64e974a-3cf7-49f1-9d5a-c74f920f0169"
+      },
+      {
+       "qty": 4,
+       "name": "Fiery Temper",
+       "set": "soi",
+       "number": "156",
+       "id": "61caf82d-e077-4931-a6ad-09fa7f04b36f"
+      },
+      {
+       "qty": 4,
+       "name": "Asylum Visitor",
+       "set": "soi",
+       "number": "99",
+       "id": "55a4bf6c-167a-4122-a55b-7bc28ca4f0d4"
+      },
+      {
+       "qty": 4,
+       "name": "Incorrigible Youths",
+       "set": "soi",
+       "number": "166",
+       "id": "4e826571-6f00-4b40-975b-d51b2b17b4a4"
+      },
+      {
+       "qty": 12,
+       "name": "Mountain",
+       "set": "soi",
+       "number": "292",
+       "id": "a7878436-bf83-45c6-a040-e2fad447862a"
+      },
+      {
+       "qty": 12,
+       "name": "Swamp",
+       "set": "soi",
+       "number": "289",
+       "id": "19f62f5c-ddea-4564-bc47-5845ab15d8e2"
+      },
+      {
+       "qty": 4,
+       "name": "Vampire Noble",
+       "set": "soi",
+       "number": "143",
+       "id": "b2435f17-0378-4480-8d56-d256245c7ced"
+      },
+      {
+       "qty": 3,
+       "name": "Gibbering Fiend",
+       "set": "soi",
+       "number": "161",
+       "id": "5113c437-3276-4591-b95e-c2afb9d6329a"
+      },
+      {
+       "qty": 4,
+       "name": "Lightning Axe",
+       "set": "soi",
+       "number": "170",
+       "id": "97d3105d-4cf9-48bf-8d12-27e856ae7a87"
+      },
+      {
+       "qty": 3,
+       "name": "Galvanic Bombardment",
+       "set": "emn",
+       "number": "129",
+       "id": "dc6a4367-bbee-43b8-b5dd-28498f8e2ede"
+      }
+     ]
+    }
+   },
+   "villain": {
+    "who": "thalia",
+    "deck": {
+     "name": "The Heretic Cathars",
+     "colors": "W",
+     "archetype": null,
+     "label": "tribute",
+     "cards": [
+      {
+       "qty": 1,
+       "name": "Thalia, Heretic Cathar",
+       "set": "emn",
+       "number": "46",
+       "id": "ab0cee38-5e24-49d0-870c-22843ed4e101"
+      },
+      {
+       "qty": 4,
+       "name": "Thraben Inspector",
+       "set": "soi",
+       "number": "44",
+       "id": "d140c3b7-ca78-483d-baeb-307b624fea8b"
+      },
+      {
+       "qty": 4,
+       "name": "Dauntless Cathar",
+       "set": "soi",
+       "number": "11",
+       "id": "bb1a458a-d3b6-44d9-ac80-a7a46b505805"
+      },
+      {
+       "qty": 3,
+       "name": "Thraben Standard Bearer",
+       "set": "emn",
+       "number": "48",
+       "id": "15b7cd60-e3b9-4dd8-ad3c-a687f642147f"
+      },
+      {
+       "qty": 24,
+       "name": "Plains",
+       "set": "soi",
+       "number": "283",
+       "id": "56bbcfb7-cfbc-4752-9b6c-ffbd5d3dd678"
+      },
+      {
+       "qty": 4,
+       "name": "Chaplain's Blessing",
+       "set": "soi",
+       "number": "10",
+       "id": "f70ea481-1751-4097-af41-2d13fe79e788"
+      },
+      {
+       "qty": 1,
+       "name": "Moorland Drifter",
+       "set": "soi",
+       "number": "27",
+       "id": "5839942c-0ad1-4f77-97a0-142b8ef2266c"
+      },
+      {
+       "qty": 4,
+       "name": "Expose Evil",
+       "set": "soi",
+       "number": "19",
+       "id": "9de0341a-cd45-439c-adc2-8d24c47c4bd5"
+      },
+      {
+       "qty": 4,
+       "name": "Strength of Arms",
+       "set": "soi",
+       "number": "40",
+       "id": "52c5c5cf-0ed6-4953-a03a-af51038e3f54"
+      },
+      {
+       "qty": 4,
+       "name": "Hope Against Hope",
+       "set": "soi",
+       "number": "22",
+       "id": "a6f7c6f5-159a-40ed-823a-8740a1ce373e"
+      },
+      {
+       "qty": 4,
+       "name": "Vessel of Ephemera",
+       "set": "soi",
+       "number": "48",
+       "id": "f4051020-688c-473a-9a08-b62f0fd75675"
+      },
+      {
+       "qty": 1,
+       "name": "Survive the Night",
+       "set": "soi",
+       "number": "41",
+       "id": "5cb4a0bc-196a-466b-a704-377f5c7eb5b7"
+      },
+      {
+       "qty": 2,
+       "name": "Town Gossipmonger // Incited Rabble",
+       "set": "soi",
+       "number": "46",
+       "id": "d238d324-8c88-43ca-b203-133830d29447"
+      }
+     ]
+    }
+   },
+   "reward": {
+    "hero": {
+     "packs": 1,
+     "coins": 0
+    },
+    "villain": {
+     "card": {
+      "oracle_id": "13be47e4-9da2-4f9e-baf0-db96f7777ccb",
+      "name": "Thalia, Heretic Cathar",
+      "rarity": "rare",
+      "set": "emn",
+      "id": "ab0cee38-5e24-49d0-870c-22843ed4e101",
+      "image": "https://cards.scryfall.io/normal/front/a/b/ab0cee38-5e24-49d0-870c-22843ed4e101.jpg"
+     },
+     "coins": 50
+    }
+   },
+   "scene": [
+    {
+     "who": "stage",
+     "line": "At Sorin's appeal, Olivia Voldaren summoned the full might of her bloodline to gather at Lurenbraum Fortress.",
+     "quote": true
+    },
+    {
+     "who": "stage",
+     "line": "As we muster for war, I have little patience for lethargy or recalcitrance.",
+     "quote": true
+    },
+    {
+     "who": "olivia",
+     "line": "Madness: when you discard a madness card, you may cast it for its madness cost instead. Discard on purpose, darling."
+    }
+   ],
+   "villainScene": [
+    {
+     "who": "thalia",
+     "line": "Salvation will not be granted by the Lunarch Council. It must be earned—at the edge of a sword, if necessary.",
+     "quote": true
+    },
+    {
+     "who": "thalia",
+     "line": "We fight not for Avacyn, but for her ideals; not for the church, but for its people.",
+     "quote": true
+    }
+   ],
+   "after": null,
+   "cues": {
+    "hero": {
+     "start": "Manners are for mortals.",
+     "big": "Madness!",
+     "low": "How tiresome...",
+     "win": "Delicious.",
+     "loss": "Ugh. Peasants.",
+     "half": "Discard a madness card."
+    },
+    "villain": {
+     "start": "Hold the line, cathars.",
+     "big": "For the people!",
+     "low": "Fall back to Thraben...",
+     "win": "Thraben stands.",
+     "loss": "Regroup..."
+    }
+   },
+   "bigPlays": [],
+   "sim": null
+  },
+  {
+   "id": "a24b4",
+   "slot": 4,
+   "kind": "Rival",
+   "mood": "tension",
+   "title": "Avacyn's Fall",
+   "difficulty": "Normal",
+   "teaches": [
+    "Transform"
+   ],
+   "blurb": "The truth comes out. Sorin sealed Nahiri in stone for a thousand years, and Nahiri has come back to take everything from him.",
+   "rewardSet": "soi",
+   "host": false,
+   "hero": {
+    "who": "nahiri",
+    "deck": {
+     "name": "The Harbinger",
+     "colors": "RW",
+     "archetype": null,
+     "label": "tribute",
+     "cards": [
+      {
+       "qty": 2,
+       "name": "Nahiri, the Harbinger",
+       "set": "soi",
+       "number": "247",
+       "id": "84d70487-21d1-4897-ac20-2a996e893b5b"
+      },
+      {
+       "qty": 4,
+       "name": "Thraben Inspector",
+       "set": "soi",
+       "number": "44",
+       "id": "d140c3b7-ca78-483d-baeb-307b624fea8b"
+      },
+      {
+       "qty": 4,
+       "name": "Geier Reach Bandit // Vildin-Pack Alpha",
+       "set": "soi",
+       "number": "159",
+       "id": "4570117d-c04b-4bdc-b804-21d49154721b"
+      },
+      {
+       "qty": 4,
+       "name": "Ember-Eye Wolf",
+       "set": "soi",
+       "number": "154",
+       "id": "98fe1e1e-b14a-4efe-894b-b9da635f007f"
+      },
+      {
+       "qty": 4,
+       "name": "Lightning Axe",
+       "set": "soi",
+       "number": "170",
+       "id": "97d3105d-4cf9-48bf-8d12-27e856ae7a87"
+      },
+      {
+       "qty": 4,
+       "name": "Galvanic Bombardment",
+       "set": "emn",
+       "number": "129",
+       "id": "dc6a4367-bbee-43b8-b5dd-28498f8e2ede"
+      },
+      {
+       "qty": 3,
+       "name": "Sanctifier of Souls",
+       "set": "emn",
+       "number": "39",
+       "id": "8d839c5a-dc35-4eaa-9cf0-b6e002815726"
+      },
+      {
+       "qty": 3,
+       "name": "Pyre Hound",
+       "set": "soi",
+       "number": "174",
+       "id": "5d19c5fb-01af-4ca4-af7e-00ec2a748afd"
+      },
+      {
+       "qty": 2,
+       "name": "Declaration in Stone",
+       "set": "soi",
+       "number": "12",
+       "id": "f685445d-e2af-455f-b3b2-97cf15362f3c"
+      },
+      {
+       "qty": 12,
+       "name": "Mountain",
+       "set": "soi",
+       "number": "292",
+       "id": "a7878436-bf83-45c6-a040-e2fad447862a"
+      },
+      {
+       "qty": 12,
+       "name": "Plains",
+       "set": "soi",
+       "number": "283",
+       "id": "56bbcfb7-cfbc-4752-9b6c-ffbd5d3dd678"
+      },
+      {
+       "qty": 2,
+       "name": "Collective Defiance",
+       "set": "emn",
+       "number": "123",
+       "id": "8960883f-3813-412b-9a5b-f8cf8d566fac"
+      },
+      {
+       "qty": 4,
+       "name": "Chaplain's Blessing",
+       "set": "soi",
+       "number": "10",
+       "id": "f70ea481-1751-4097-af41-2d13fe79e788"
+      }
+     ]
+    }
+   },
+   "villain": {
+    "who": "sorin",
+    "deck": {
+     "name": "The Markov Line",
+     "colors": "WB",
+     "archetype": null,
+     "label": "tribute",
+     "cards": [
+      {
+       "qty": 2,
+       "name": "Sorin, Grim Nemesis",
+       "set": "soi",
+       "number": "251",
+       "id": "c2933144-c931-498a-9e91-f5165873c3b7"
+      },
+      {
+       "qty": 2,
+       "name": "Archangel Avacyn // Avacyn, the Purifier",
+       "set": "soi",
+       "number": "5",
+       "id": "ae155ee2-008f-4dc6-82bf-476be7baa224"
+      },
+      {
+       "qty": 4,
+       "name": "Olivia's Bloodsworn",
+       "set": "soi",
+       "number": "127",
+       "id": "fdda34e9-f28b-4606-8298-b2d0c15033e6"
+      },
+      {
+       "qty": 4,
+       "name": "Vampire Noble",
+       "set": "soi",
+       "number": "143",
+       "id": "b2435f17-0378-4480-8d56-d256245c7ced"
+      },
+      {
+       "qty": 4,
+       "name": "Markov Crusader",
+       "set": "emn",
+       "number": "95",
+       "id": "87d8354b-df56-4294-9f8a-b7c92e31b88e"
+      },
+      {
+       "qty": 3,
+       "name": "Anguished Unmaking",
+       "set": "soi",
+       "number": "242",
+       "id": "90ced4fa-6509-4f7a-9da7-efc70de6f90c"
+      },
+      {
+       "qty": 2,
+       "name": "Campaign of Vengeance",
+       "set": "emn",
+       "number": "182",
+       "id": "c284997a-cfc3-4ffc-bc25-00c130fb1eb0"
+      },
+      {
+       "qty": 4,
+       "name": "Dauntless Cathar",
+       "set": "soi",
+       "number": "11",
+       "id": "bb1a458a-d3b6-44d9-ac80-a7a46b505805"
+      },
+      {
+       "qty": 4,
+       "name": "Stromkirk Mentor",
+       "set": "soi",
+       "number": "137",
+       "id": "aa90b7dc-fb90-411e-a762-06a800bae0cf"
+      },
+      {
+       "qty": 4,
+       "name": "Dead Weight",
+       "set": "soi",
+       "number": "106",
+       "id": "f09a09de-35c9-4a4e-a4ac-1ce24e166ad9"
+      },
+      {
+       "qty": 3,
+       "name": "Vampire Cutthroat",
+       "set": "emn",
+       "number": "110",
+       "id": "954d53f3-ebbe-48e0-9e1a-7019d2b0740c"
+      },
+      {
+       "qty": 12,
+       "name": "Plains",
+       "set": "soi",
+       "number": "283",
+       "id": "56bbcfb7-cfbc-4752-9b6c-ffbd5d3dd678"
+      },
+      {
+       "qty": 12,
+       "name": "Swamp",
+       "set": "soi",
+       "number": "289",
+       "id": "19f62f5c-ddea-4564-bc47-5845ab15d8e2"
+      }
+     ]
+    }
+   },
+   "reward": {
+    "hero": {
+     "packs": 1,
+     "coins": 100
+    },
+    "villain": {
+     "card": {
+      "oracle_id": "0a01dd05-e289-489f-b3ad-88e15e157bd0",
+      "name": "Sorin, Grim Nemesis",
+      "rarity": "mythic",
+      "set": "soi",
+      "id": "c2933144-c931-498a-9e91-f5165873c3b7",
+      "image": "https://cards.scryfall.io/normal/front/c/2/c2933144-c931-498a-9e91-f5165873c3b7.jpg"
+     },
+     "coins": 100
+    }
+   },
+   "scene": [
+    {
+     "who": "nahiri",
+     "line": "Sorin, I'm going to take everything from you.",
+     "quote": true
+    },
+    {
+     "who": "nahiri",
+     "line": "As Zendikar has bled, so will Innistrad. As I have wept, so will Sorin.",
+     "quote": true
+    },
+    {
+     "who": "nahiri",
+     "line": "Transform: double-faced cards flip into their other side when something happens. Watch the angel. When she turns, she burns everything."
+    }
+   ],
+   "villainScene": [
+    {
+     "who": "sorin",
+     "line": "You sought to anger me, Nahiri. Soon you will see how well you have succeeded.",
+     "quote": true
+    },
+    {
+     "who": "stage",
+     "line": "Sorin had created Avacyn, so it was a cruelty beyond imagining, a pain beyond description, that it fell upon him to end her forever.",
+     "quote": true
+    }
+   ],
+   "after": null,
+   "cues": {
+    "hero": {
+     "start": "A thousand years, Sorin.",
+     "big": "Everything!",
+     "low": "Not yet...",
+     "win": "Now you know.",
+     "loss": "Stone again...",
+     "half": "Kill the angel before she turns."
+    },
+    "villain": {
+     "start": "Leave, Nahiri.",
+     "big": "Enough.",
+     "low": "She is stronger than I remember...",
+     "win": "It is finished.",
+     "loss": "What have I made..."
+    }
+   },
+   "bigPlays": [],
+   "sim": null
+  },
+  {
+   "id": "a24b5",
+   "slot": 5,
+   "kind": "Lesson",
+   "mood": "tension",
+   "title": "The Dronepack",
+   "difficulty": "Normal",
+   "teaches": [
+    "Emerge"
+   ],
+   "blurb": "In Kessig, werewolves are turning into something worse. Arlinn Kord, a planeswalker who is also a werewolf, leads what is left of the pack.",
+   "rewardSet": "emn",
+   "host": false,
+   "hero": {
+    "who": "arlinn",
+    "deck": {
+     "name": "Arlinn's Pack",
+     "colors": "RG",
+     "archetype": null,
+     "label": "tribute",
+     "cards": [
+      {
+       "qty": 2,
+       "name": "Arlinn Kord // Arlinn, Embraced by the Moon",
+       "set": "soi",
+       "number": "243",
+       "id": "b37aa12c-a6b3-4cf8-b5a4-0a999ff12d02"
+      },
+      {
+       "qty": 4,
+       "name": "Village Messenger // Moonrise Intruder",
+       "set": "soi",
+       "number": "190",
+       "id": "44deb8cf-b9d1-4a14-aeaf-e62cf3dc9ef2"
+      },
+      {
+       "qty": 4,
+       "name": "Kessig Forgemaster // Flameheart Werewolf",
+       "set": "soi",
+       "number": "169",
+       "id": "33e542ce-1106-489d-9563-bd62886b8ed3"
+      },
+      {
+       "qty": 4,
+       "name": "Duskwatch Recruiter // Krallenhorde Howler",
+       "set": "soi",
+       "number": "203",
+       "id": "e1915d93-c7dd-4bb7-bd5c-63a359a02b97"
+      },
+      {
+       "qty": 4,
+       "name": "Lambholt Pacifist // Lambholt Butcher",
+       "set": "soi",
+       "number": "215",
+       "id": "23f3fa96-6276-463e-8033-a64c8f06c933"
+      },
+      {
+       "qty": 4,
+       "name": "Breakneck Rider // Neck Breaker",
+       "set": "soi",
+       "number": "147",
+       "id": "fe9f85e8-1e4c-4478-8344-71fae357b694"
+      },
+      {
+       "qty": 3,
+       "name": "Kessig Prowler // Sinuous Predator",
+       "set": "emn",
+       "number": "163",
+       "id": "f89f116a-1e8e-4ae7-be39-552e4954f229"
+      },
+      {
+       "qty": 4,
+       "name": "Gatstaf Arsonists // Gatstaf Ravagers",
+       "set": "soi",
+       "number": "158",
+       "id": "6ab67098-d3d5-4799-ae03-c734244f370e"
+      },
+      {
+       "qty": 4,
+       "name": "Moonlight Hunt",
+       "set": "soi",
+       "number": "219",
+       "id": "d9633603-a80f-448d-98d9-00064d379c26"
+      },
+      {
+       "qty": 12,
+       "name": "Forest",
+       "set": "soi",
+       "number": "295",
+       "id": "42efdb6a-1c54-497a-9058-af4256241649"
+      },
+      {
+       "qty": 12,
+       "name": "Mountain",
+       "set": "soi",
+       "number": "292",
+       "id": "a7878436-bf83-45c6-a040-e2fad447862a"
+      },
+      {
+       "qty": 3,
+       "name": "Clear Shot",
+       "set": "emn",
+       "number": "152",
+       "id": "12fa1d34-7e32-45b7-9f6f-68f152f75d1a"
+      }
+     ]
+    }
+   },
+   "villain": {
+    "who": "horrors",
+    "deck": {
+     "name": "The Dronepack",
+     "colors": "UG",
+     "archetype": null,
+     "label": "tribute",
+     "cards": [
+      {
+       "qty": 3,
+       "name": "Elder Deep-Fiend",
+       "set": "emn",
+       "number": "5",
+       "id": "3c2789fb-a263-4207-8a56-4eeb015a024c"
+      },
+      {
+       "qty": 4,
+       "name": "Wretched Gryff",
+       "set": "emn",
+       "number": "12",
+       "id": "9d65efec-018f-485c-906c-460379b4af87"
+      },
+      {
+       "qty": 4,
+       "name": "Lashweed Lurker",
+       "set": "emn",
+       "number": "9",
+       "id": "a13f9a76-3370-4809-88ff-c300bca31c9e"
+      },
+      {
+       "qty": 2,
+       "name": "Mockery of Nature",
+       "set": "emn",
+       "number": "10",
+       "id": "3118737f-2fd9-4fe5-bd0f-43c9ef2166e2"
+      },
+      {
+       "qty": 4,
+       "name": "Kessig Prowler // Sinuous Predator",
+       "set": "emn",
+       "number": "163",
+       "id": "f89f116a-1e8e-4ae7-be39-552e4954f229"
+      },
+      {
+       "qty": 4,
+       "name": "Gnarlwood Dryad",
+       "set": "emn",
+       "number": "159",
+       "id": "fa506387-e538-4b2c-94df-29866eb74a71"
+      },
+      {
+       "qty": 4,
+       "name": "Grizzled Angler // Grisly Anglerfish",
+       "set": "emn",
+       "number": "63",
+       "id": "1eb4ddf4-f695-412d-be80-b93392432498"
+      },
+      {
+       "qty": 4,
+       "name": "Byway Courier",
+       "set": "soi",
+       "number": "196",
+       "id": "2f243a51-bbd3-4028-a469-469ab5591aae"
+      },
+      {
+       "qty": 3,
+       "name": "Vexing Scuttler",
+       "set": "emn",
+       "number": "11",
+       "id": "1c3dd0aa-f6e9-435c-af64-20e9de67efe9"
+      },
+      {
+       "qty": 2,
+       "name": "Primal Druid",
+       "set": "emn",
+       "number": "167",
+       "id": "e928f694-c53b-46c5-8390-fa24b53f559c"
+      },
+      {
+       "qty": 2,
+       "name": "Clear Shot",
+       "set": "emn",
+       "number": "152",
+       "id": "12fa1d34-7e32-45b7-9f6f-68f152f75d1a"
+      },
+      {
+       "qty": 12,
+       "name": "Forest",
+       "set": "soi",
+       "number": "295",
+       "id": "42efdb6a-1c54-497a-9058-af4256241649"
+      },
+      {
+       "qty": 12,
+       "name": "Island",
+       "set": "soi",
+       "number": "286",
+       "id": "bffca348-2af9-44bb-815f-f7f7240ac975"
+      }
+     ]
+    }
+   },
+   "reward": {
+    "hero": {
+     "packs": 1,
+     "coins": 100
+    },
+    "villain": {
+     "card": {
+      "oracle_id": "a7dd75bf-ecda-406c-baa2-8c051f138809",
+      "name": "Lashweed Lurker",
+      "rarity": "uncommon",
+      "set": "emn",
+      "id": "a13f9a76-3370-4809-88ff-c300bca31c9e",
+      "image": "https://cards.scryfall.io/normal/front/a/1/a13f9a76-3370-4809-88ff-c300bca31c9e.jpg"
+     },
+     "coins": 100
+    }
+   },
+   "scene": [
+    {
+     "who": "arlinn",
+     "line": "How can werewolves be considered abominations next to such creatures?",
+     "quote": true
+    },
+    {
+     "who": "stage",
+     "line": "In the wake of Emrakul, some werewolves' human forms were lost forever.",
+     "quote": true
+    },
+    {
+     "who": "arlinn",
+     "line": "Emerge: they sacrifice a creature to cast a horror for less. Every sacrifice makes something bigger. Kill the fodder first."
+    }
+   ],
+   "villainScene": [
+    {
+     "who": "stage",
+     "line": "The Somberwald has become a hunting ground for the Dronepack, the group of werewolves that have succumbed to the flesh-twisting power of Emrakul.",
+     "quote": true
+    },
+    {
+     "who": "stage",
+     "line": "Emrakul does not grant wishes. Desires simply align to her will.",
+     "quote": true
+    }
+   ],
+   "after": null,
+   "cues": {
+    "hero": {
+     "start": "Run with me.",
+     "big": "The moon is ours!",
+     "low": "They are not wolves anymore...",
+     "win": "The pack holds.",
+     "loss": "Lost to the moon...",
+     "half": "Kill the small ones first."
+    },
+    "villain": {
+     "start": "[something wet moves in the trees]",
+     "big": "[a horror emerges]",
+     "low": "[a husk falls]",
+     "win": "[the woods twist]",
+     "loss": "[stillness]",
+     "half": {
+      "who": "arlinn",
+      "line": "They sacrifice their own to make those things. Leave them nothing to sacrifice!"
+     }
+    }
+   },
+   "bigPlays": [],
+   "sim": null
+  },
+  {
+   "id": "a24b6",
+   "slot": 6,
+   "kind": "Meta",
+   "mood": "march",
+   "title": "Thraben Holds",
+   "difficulty": "Normal",
+   "teaches": [
+    "Skulk"
+   ],
+   "blurb": "A tribute to Standard in 2016: white Humans against the Zombies that came from Gisa and Geralf's labs.",
+   "rewardSet": "emn",
+   "host": false,
+   "hero": {
+    "who": "humans",
+    "deck": {
+     "name": "Humans",
+     "colors": "W",
+     "archetype": "Aggro",
+     "label": "tribute",
+     "cards": [
+      {
+       "qty": 2,
+       "name": "Thalia, Heretic Cathar",
+       "set": "emn",
+       "number": "46",
+       "id": "ab0cee38-5e24-49d0-870c-22843ed4e101"
+      },
+      {
+       "qty": 4,
+       "name": "Thraben Inspector",
+       "set": "soi",
+       "number": "44",
+       "id": "d140c3b7-ca78-483d-baeb-307b624fea8b"
+      },
+      {
+       "qty": 4,
+       "name": "Thalia's Lieutenant",
+       "set": "soi",
+       "number": "43",
+       "id": "fe162594-2332-4816-a9e1-57eb19b12651"
+      },
+      {
+       "qty": 4,
+       "name": "Town Gossipmonger // Incited Rabble",
+       "set": "soi",
+       "number": "46",
+       "id": "d238d324-8c88-43ca-b203-133830d29447"
+      },
+      {
+       "qty": 4,
+       "name": "Dauntless Cathar",
+       "set": "soi",
+       "number": "11",
+       "id": "bb1a458a-d3b6-44d9-ac80-a7a46b505805"
+      },
+      {
+       "qty": 4,
+       "name": "Hanweir Militia Captain // Westvale Cult Leader",
+       "set": "soi",
+       "number": "21",
+       "id": "7e137566-5033-48e8-88ba-65e3821b3cec"
+      },
+      {
+       "qty": 3,
+       "name": "Always Watching",
+       "set": "soi",
+       "number": "1",
+       "id": "84826f49-b5fb-4bd6-ab46-98e84b0d25c8"
+      },
+      {
+       "qty": 3,
+       "name": "Declaration in Stone",
+       "set": "soi",
+       "number": "12",
+       "id": "f685445d-e2af-455f-b3b2-97cf15362f3c"
+      },
+      {
+       "qty": 4,
+       "name": "Cathar's Companion",
+       "set": "soi",
+       "number": "9",
+       "id": "0f4b9943-0fe6-4383-90a0-4a719dcf9499"
+      },
+      {
+       "qty": 24,
+       "name": "Plains",
+       "set": "soi",
+       "number": "283",
+       "id": "56bbcfb7-cfbc-4752-9b6c-ffbd5d3dd678"
+      },
+      {
+       "qty": 4,
+       "name": "Chaplain's Blessing",
+       "set": "soi",
+       "number": "10",
+       "id": "f70ea481-1751-4097-af41-2d13fe79e788"
+      }
+     ]
+    }
+   },
+   "villain": {
+    "who": "zombies",
+    "deck": {
+     "name": "Zombies",
+     "colors": "UB",
+     "archetype": "Aggro",
+     "label": "tribute",
+     "cards": [
+      {
+       "qty": 4,
+       "name": "Prized Amalgam",
+       "set": "soi",
+       "number": "249",
+       "id": "634cedb6-8b00-4f4b-8790-541188955295"
+      },
+      {
+       "qty": 4,
+       "name": "Relentless Dead",
+       "set": "soi",
+       "number": "131",
+       "id": "2a0d7998-2f3d-43b8-a0be-6ff7e5c83223"
+      },
+      {
+       "qty": 3,
+       "name": "Diregraf Colossus",
+       "set": "soi",
+       "number": "107",
+       "id": "9039e8f6-5513-4307-a1b5-07209dc8e1c8"
+      },
+      {
+       "qty": 4,
+       "name": "Cryptbreaker",
+       "set": "emn",
+       "number": "86",
+       "id": "629e37d1-c0f3-44f2-926e-41eb3687c1d9"
+      },
+      {
+       "qty": 2,
+       "name": "Gisa and Geralf",
+       "set": "emn",
+       "number": "183",
+       "id": "2e2c85d8-0bef-40d0-abaf-4555462c29c5"
+      },
+      {
+       "qty": 4,
+       "name": "Haunted Dead",
+       "set": "emn",
+       "number": "92",
+       "id": "14a7c8b7-ca77-47a0-8965-949723ec902d"
+      },
+      {
+       "qty": 4,
+       "name": "Stitchwing Skaab",
+       "set": "soi",
+       "number": "90",
+       "id": "f84bb1ce-a8a0-4a29-9129-b1d7041fd01a"
+      },
+      {
+       "qty": 4,
+       "name": "Dark Salvation",
+       "set": "emn",
+       "number": "87",
+       "id": "4b5978bd-a696-430e-8c35-729d96eec53e"
+      },
+      {
+       "qty": 3,
+       "name": "Liliana's Elite",
+       "set": "emn",
+       "number": "94",
+       "id": "ad542aa9-5c0e-4962-b167-9071e66f9c03"
+      },
+      {
+       "qty": 4,
+       "name": "Ghoulcaller's Accomplice",
+       "set": "soi",
+       "number": "112",
+       "id": "6f48828d-5f97-434f-a3b8-9e8c75cc8932"
+      },
+      {
+       "qty": 12,
+       "name": "Island",
+       "set": "soi",
+       "number": "286",
+       "id": "bffca348-2af9-44bb-815f-f7f7240ac975"
+      },
+      {
+       "qty": 12,
+       "name": "Swamp",
+       "set": "soi",
+       "number": "289",
+       "id": "19f62f5c-ddea-4564-bc47-5845ab15d8e2"
+      }
+     ]
+    }
+   },
+   "reward": {
+    "hero": {
+     "packs": 1,
+     "coins": 100
+    },
+    "villain": {
+     "card": {
+      "oracle_id": "7404c078-228b-4296-bf1f-62f57bf832d9",
+      "name": "Relentless Dead",
+      "rarity": "mythic",
+      "set": "soi",
+      "id": "2a0d7998-2f3d-43b8-a0be-6ff7e5c83223",
+      "image": "https://cards.scryfall.io/normal/front/2/a/2a0d7998-2f3d-43b8-a0be-6ff7e5c83223.jpg"
+     },
+     "coins": 100
+    }
+   },
+   "scene": [
+    {
+     "who": "stage",
+     "line": "If you've been at this as long as I have, nothing can surprise you. That's the hope, at least.",
+     "quote": true
+    },
+    {
+     "who": "stage",
+     "line": "The uncorrupted rallied under Thalia's leadership and Sigarda's banner.",
+     "quote": true
+    },
+    {
+     "who": "you",
+     "line": "Skulk: a creature with skulk can't be blocked by creatures with greater power. Keep a small blocker home."
+    }
+   ],
+   "villainScene": [
+    {
+     "who": "stage",
+     "line": "Countless ghouls surged through Thraben's streets, and with them came the city's salvation.",
+     "quote": true
+    },
+    {
+     "who": "stage",
+     "line": "Ludevic's laboratory is a veritable wonderland. I have never felt so inspired.",
+     "quote": true
+    }
+   ],
+   "after": null,
+   "cues": {
+    "hero": {
+     "start": "Line up.",
+     "big": "Together!",
+     "low": "They keep getting back up...",
+     "win": "Thraben holds.",
+     "loss": "Overrun...",
+     "half": "Exile the graveyard threats."
+    },
+    "villain": {
+     "start": "[shambling]",
+     "big": "[the dead return]",
+     "low": "[a ghoul drops]",
+     "win": "[the city falls]",
+     "loss": "[still]"
+    }
+   },
+   "bigPlays": [],
+   "sim": null
+  },
+  {
+   "id": "a24b7",
+   "slot": 7,
+   "kind": "Meta",
+   "mood": "tension",
+   "title": "The Spider Queen",
+   "difficulty": "Normal",
+   "teaches": [
+    "Flash"
+   ],
+   "blurb": "A tribute to Standard in summer 2016: white-blue Spirits with flash against green-black Delirium.",
+   "rewardSet": "emn",
+   "host": false,
+   "hero": {
+    "who": "spirits",
+    "deck": {
+     "name": "Spirits",
+     "colors": "WU",
+     "archetype": "Tempo",
+     "label": "tribute",
+     "cards": [
+      {
+       "qty": 4,
+       "name": "Spell Queller",
+       "set": "emn",
+       "number": "189",
+       "id": "9b76bcd4-580a-4435-afe9-290940b1837f"
+      },
+      {
+       "qty": 4,
+       "name": "Rattlechains",
+       "set": "soi",
+       "number": "81",
+       "id": "a6fc4db9-a29c-4f50-8e41-105b45af0be9"
+      },
+      {
+       "qty": 4,
+       "name": "Selfless Spirit",
+       "set": "emn",
+       "number": "40",
+       "id": "a4624976-3773-4a1e-b725-5f6efce147a5"
+      },
+      {
+       "qty": 4,
+       "name": "Nebelgast Herald",
+       "set": "emn",
+       "number": "71",
+       "id": "40965d3b-9b8f-4706-9364-64f758a768e6"
+      },
+      {
+       "qty": 4,
+       "name": "Mausoleum Wanderer",
+       "set": "emn",
+       "number": "69",
+       "id": "42391fa7-6172-487c-b8aa-d41ab7c64973"
+      },
+      {
+       "qty": 3,
+       "name": "Bygone Bishop",
+       "set": "soi",
+       "number": "8",
+       "id": "7c45198f-fb2b-4c83-abdc-8b1a0071cfed"
+      },
+      {
+       "qty": 4,
+       "name": "Unsubstantiate",
+       "set": "emn",
+       "number": "79",
+       "id": "ba5dac3d-4b49-44c4-a7b2-0a99485252c9"
+      },
+      {
+       "qty": 3,
+       "name": "Spectral Shepherd",
+       "set": "soi",
+       "number": "38",
+       "id": "ac355ae2-7553-4b51-bcce-1c4168dad0d6"
+      },
+      {
+       "qty": 3,
+       "name": "Drogskol Shieldmate",
+       "set": "emn",
+       "number": "22",
+       "id": "156b4bca-4145-472b-bf80-13edb0bef561"
+      },
+      {
+       "qty": 3,
+       "name": "Turn Aside",
+       "set": "emn",
+       "number": "78",
+       "id": "3b7573c2-484c-4b4e-9c26-0f005bd1daee"
+      },
+      {
+       "qty": 12,
+       "name": "Island",
+       "set": "soi",
+       "number": "286",
+       "id": "bffca348-2af9-44bb-815f-f7f7240ac975"
+      },
+      {
+       "qty": 12,
+       "name": "Plains",
+       "set": "soi",
+       "number": "283",
+       "id": "56bbcfb7-cfbc-4752-9b6c-ffbd5d3dd678"
+      }
+     ]
+    }
+   },
+   "villain": {
+    "who": "delirium",
+    "deck": {
+     "name": "GB Delirium",
+     "colors": "BG",
+     "archetype": "Midrange",
+     "label": "tribute",
+     "cards": [
+      {
+       "qty": 2,
+       "name": "Ishkanah, Grafwidow",
+       "set": "emn",
+       "number": "162",
+       "id": "2a6c5a98-2fe5-4671-a6a8-98a47c09c5a7"
+      },
+      {
+       "qty": 4,
+       "name": "Grim Flayer",
+       "set": "emn",
+       "number": "184",
+       "id": "025af99f-a029-4f99-9c76-676b68821520"
+      },
+      {
+       "qty": 2,
+       "name": "Liliana, the Last Hope",
+       "set": "emn",
+       "number": "93",
+       "id": "fa6ac7d2-0127-49a8-b7d2-a38308d3c27b"
+      },
+      {
+       "qty": 2,
+       "name": "Mindwrack Demon",
+       "set": "soi",
+       "number": "124",
+       "id": "b804cb9c-349e-4143-a372-cf65470d5b46"
+      },
+      {
+       "qty": 4,
+       "name": "Traverse the Ulvenwald",
+       "set": "soi",
+       "number": "234",
+       "id": "bbc69a17-db08-4b4a-bc37-98a12ea108dc"
+      },
+      {
+       "qty": 4,
+       "name": "Vessel of Nascency",
+       "set": "soi",
+       "number": "237",
+       "id": "89533790-38c2-4b53-90fa-8abf8c1a6abb"
+      },
+      {
+       "qty": 3,
+       "name": "Grapple with the Past",
+       "set": "emn",
+       "number": "160",
+       "id": "d44a77a6-e8a1-4706-886f-8ab3af56b342"
+      },
+      {
+       "qty": 4,
+       "name": "Murderous Compulsion",
+       "set": "soi",
+       "number": "126",
+       "id": "33b94db1-ac8c-4667-81d5-408df0f30879"
+      },
+      {
+       "qty": 4,
+       "name": "Deathcap Cultivator",
+       "set": "soi",
+       "number": "202",
+       "id": "fc4aee46-ac42-4ede-ad06-906e2955a9d3"
+      },
+      {
+       "qty": 3,
+       "name": "Kessig Prowler // Sinuous Predator",
+       "set": "emn",
+       "number": "163",
+       "id": "f89f116a-1e8e-4ae7-be39-552e4954f229"
+      },
+      {
+       "qty": 4,
+       "name": "Gnarlwood Dryad",
+       "set": "emn",
+       "number": "159",
+       "id": "fa506387-e538-4b2c-94df-29866eb74a71"
+      },
+      {
+       "qty": 12,
+       "name": "Forest",
+       "set": "soi",
+       "number": "295",
+       "id": "42efdb6a-1c54-497a-9058-af4256241649"
+      },
+      {
+       "qty": 12,
+       "name": "Swamp",
+       "set": "soi",
+       "number": "289",
+       "id": "19f62f5c-ddea-4564-bc47-5845ab15d8e2"
+      }
+     ]
+    }
+   },
+   "reward": {
+    "hero": {
+     "packs": 1,
+     "coins": 100
+    },
+    "villain": {
+     "card": {
+      "oracle_id": "6f4861f4-1b3b-4dbc-b55b-196075d0a693",
+      "name": "Ishkanah, Grafwidow",
+      "rarity": "mythic",
+      "set": "emn",
+      "id": "2a6c5a98-2fe5-4671-a6a8-98a47c09c5a7",
+      "image": "https://cards.scryfall.io/normal/front/2/a/2a6c5a98-2fe5-4671-a6a8-98a47c09c5a7.jpg"
+     },
+     "coins": 100
+    }
+   },
+   "scene": [
+    {
+     "who": "stage",
+     "line": "Immune to the physical warping caused by Emrakul, geists proved to be some of humanity's most important allies.",
+     "quote": true
+    },
+    {
+     "who": "stage",
+     "line": "There is always more to give.",
+     "quote": true
+    },
+    {
+     "who": "you",
+     "line": "Flash: these cards can be cast at instant speed. Pass with mana up and act on their turn."
+    }
+   ],
+   "villainScene": [
+    {
+     "who": "stage",
+     "line": "The old hermit would never say what he fed his mushrooms, and people learned not to ask.",
+     "quote": true
+    },
+    {
+     "who": "stage",
+     "line": "When I was a child, we worried about picking the wrong mushrooms for the cook pot. Now we must worry about being picked ourselves.",
+     "quote": true
+    }
+   ],
+   "after": null,
+   "cues": {
+    "hero": {
+     "start": "Wait for it.",
+     "big": "Flash!",
+     "low": "The webs close in...",
+     "win": "Gone like mist.",
+     "loss": "Caught...",
+     "half": "Hold mana on their turn."
+    },
+    "villain": {
+     "start": "[spiders skitter]",
+     "big": "[the grafwidow descends]",
+     "low": "[a web tears]",
+     "win": "[cocooned]",
+     "loss": "[the web is empty]"
+    }
+   },
+   "bigPlays": [],
+   "sim": null
+  },
+  {
+   "id": "a24b8",
+   "slot": 8,
+   "kind": "Boss",
+   "mood": "boss",
+   "title": "The Promised End",
+   "difficulty": "Hard",
+   "teaches": [
+    "Escalate"
+   ],
+   "blurb": "Nahiri called Emrakul across the Blind Eternities. Now the last titan is on Innistrad, and the Gatewatch stands at Thraben.",
+   "rewardSet": "emn",
+   "host": true,
+   "hero": {
+    "who": "gatewatch",
+    "deck": {
+     "name": "The Gatewatch",
+     "colors": "WU",
+     "archetype": null,
+     "label": "tribute",
+     "cards": [
+      {
+       "qty": 2,
+       "name": "Jace, Unraveler of Secrets",
+       "set": "soi",
+       "number": "69",
+       "id": "20d5521d-e9f1-49e0-aa13-8e6de794cb12"
+      },
+      {
+       "qty": 3,
+       "name": "Imprisoned in the Moon",
+       "set": "emn",
+       "number": "65",
+       "id": "7990ebba-e9f2-4ba4-a352-e26ec81d4bed"
+      },
+      {
+       "qty": 2,
+       "name": "Deploy the Gatewatch",
+       "set": "emn",
+       "number": "20",
+       "id": "a3aa54d9-9f01-46e4-b4bd-f8bc57b44ac1"
+      },
+      {
+       "qty": 2,
+       "name": "Thalia, Heretic Cathar",
+       "set": "emn",
+       "number": "46",
+       "id": "ab0cee38-5e24-49d0-870c-22843ed4e101"
+      },
+      {
+       "qty": 4,
+       "name": "Spell Queller",
+       "set": "emn",
+       "number": "189",
+       "id": "9b76bcd4-580a-4435-afe9-290940b1837f"
+      },
+      {
+       "qty": 3,
+       "name": "Bygone Bishop",
+       "set": "soi",
+       "number": "8",
+       "id": "7c45198f-fb2b-4c83-abdc-8b1a0071cfed"
+      },
+      {
+       "qty": 4,
+       "name": "Declaration in Stone",
+       "set": "soi",
+       "number": "12",
+       "id": "f685445d-e2af-455f-b3b2-97cf15362f3c"
+      },
+      {
+       "qty": 4,
+       "name": "Spectral Shepherd",
+       "set": "soi",
+       "number": "38",
+       "id": "ac355ae2-7553-4b51-bcce-1c4168dad0d6"
+      },
+      {
+       "qty": 4,
+       "name": "Unsubstantiate",
+       "set": "emn",
+       "number": "79",
+       "id": "ba5dac3d-4b49-44c4-a7b2-0a99485252c9"
+      },
+      {
+       "qty": 12,
+       "name": "Island",
+       "set": "soi",
+       "number": "286",
+       "id": "bffca348-2af9-44bb-815f-f7f7240ac975"
+      },
+      {
+       "qty": 12,
+       "name": "Plains",
+       "set": "soi",
+       "number": "283",
+       "id": "56bbcfb7-cfbc-4752-9b6c-ffbd5d3dd678"
+      },
+      {
+       "qty": 4,
+       "name": "Turn Aside",
+       "set": "emn",
+       "number": "78",
+       "id": "3b7573c2-484c-4b4e-9c26-0f005bd1daee"
+      },
+      {
+       "qty": 4,
+       "name": "Choking Restraints",
+       "set": "emn",
+       "number": "16",
+       "id": "4549735d-df63-47db-ad53-0497499fe387"
+      }
+     ]
+    }
+   },
+   "villain": {
+    "who": "emrakul",
+    "deck": {
+     "name": "The Promised End",
+     "colors": "BG",
+     "archetype": null,
+     "label": "tribute",
+     "cards": [
+      {
+       "qty": 4,
+       "name": "Ishkanah, Grafwidow",
+       "set": "emn",
+       "number": "162",
+       "id": "2a6c5a98-2fe5-4671-a6a8-98a47c09c5a7"
+      },
+      {
+       "qty": 4,
+       "name": "Traverse the Ulvenwald",
+       "set": "soi",
+       "number": "234",
+       "id": "bbc69a17-db08-4b4a-bc37-98a12ea108dc"
+      },
+      {
+       "qty": 4,
+       "name": "Grapple with the Past",
+       "set": "emn",
+       "number": "160",
+       "id": "d44a77a6-e8a1-4706-886f-8ab3af56b342"
+      },
+      {
+       "qty": 4,
+       "name": "Vessel of Nascency",
+       "set": "soi",
+       "number": "237",
+       "id": "89533790-38c2-4b53-90fa-8abf8c1a6abb"
+      },
+      {
+       "qty": 3,
+       "name": "Distended Mindbender",
+       "set": "emn",
+       "number": "3",
+       "id": "8b5d1e41-fb0b-4866-912a-2a7d49542428"
+      },
+      {
+       "qty": 4,
+       "name": "Decimator of the Provinces",
+       "set": "emn",
+       "number": "2",
+       "id": "587cb384-db24-4e3d-a338-230e50305d31"
+      },
+      {
+       "qty": 2,
+       "name": "Collective Brutality",
+       "set": "emn",
+       "number": "85",
+       "id": "cb94a02f-4660-45b6-8a39-941b710cf8f3"
+      },
+      {
+       "qty": 3,
+       "name": "Deathcap Cultivator",
+       "set": "soi",
+       "number": "202",
+       "id": "fc4aee46-ac42-4ede-ad06-906e2955a9d3"
+      },
+      {
+       "qty": 4,
+       "name": "Mindwrack Demon",
+       "set": "soi",
+       "number": "124",
+       "id": "b804cb9c-349e-4143-a372-cf65470d5b46"
+      },
+      {
+       "qty": 4,
+       "name": "Gnarlwood Dryad",
+       "set": "emn",
+       "number": "159",
+       "id": "fa506387-e538-4b2c-94df-29866eb74a71"
+      },
+      {
+       "qty": 12,
+       "name": "Forest",
+       "set": "soi",
+       "number": "295",
+       "id": "42efdb6a-1c54-497a-9058-af4256241649"
+      },
+      {
+       "qty": 12,
+       "name": "Swamp",
+       "set": "soi",
+       "number": "289",
+       "id": "19f62f5c-ddea-4564-bc47-5845ab15d8e2"
+      }
+     ]
+    }
+   },
+   "reward": {
+    "hero": {
+     "packs": 2,
+     "coins": 200
+    },
+    "villain": {
+     "card": {
+      "oracle_id": "7f522ded-09fd-457e-9efe-0a6324925e4c",
+      "name": "Decimator of the Provinces",
+      "rarity": "mythic",
+      "set": "emn",
+      "id": "587cb384-db24-4e3d-a338-230e50305d31",
+      "image": "https://cards.scryfall.io/normal/front/5/8/587cb384-db24-4e3d-a338-230e50305d31.jpg"
+     },
+     "coins": 200
+    }
+   },
+   "scene": [
+    {
+     "who": "stage",
+     "line": "At Nahiri's call, Emrakul traversed the vast emptiness between the planes and arrived on Innistrad.",
+     "quote": true
+    },
+    {
+     "who": "stage",
+     "line": "Gideon and Liliana may not have seen eye to eye, but that did not stop them from fighting side by side.",
+     "quote": true
+    },
+    {
+     "who": "jace",
+     "line": "Escalate: their spells pay extra for each extra mode. Expect two or three effects at once. Hold the moon for the biggest thing."
+    }
+   ],
+   "villainScene": [
+    {
+     "who": "stage",
+     "line": "Hordes of Eldrazi and cultists swarmed over Thraben's defenses, and the members of the Gatewatch found themselves overrun.",
+     "quote": true
+    },
+    {
+     "who": "stage",
+     "line": "An enigma as vexing as life itself.",
+     "quote": true
+    }
+   ],
+   "after": null,
+   "cues": {
+    "hero": {
+     "start": "Hold Thraben.",
+     "big": "Into the moon!",
+     "low": "There is too much of it...",
+     "win": "Sealed.",
+     "loss": "The moon is gone...",
+     "half": "Save the Moon for the biggest one."
+    },
+    "villain": {
+     "start": "[the sky tears open]",
+     "big": "[the world bends]",
+     "low": "[a horror unravels]",
+     "win": "[the promised end]",
+     "loss": "[silence in the moon]",
+     "half": {
+      "who": "tamiyo",
+      "line": "The moon. Use the moon. I will explain later."
+     }
+    }
+   },
+   "bigPlays": [],
+   "sim": null
+  },
+  {
+   "id": "a24b9",
+   "slot": 9,
+   "kind": "Secret Boss",
+   "secret": true,
+   "mood": "boss",
+   "title": "Elder Deep-Fiend",
+   "difficulty": "Hard",
+   "teaches": [
+    "Racing"
+   ],
+   "blurb": "Deep in the archive, the summer the horrors came from the sea.",
+   "rewardSet": "emn",
+   "host": true,
+   "archive": {
+    "deck": "Temur Emerge",
+    "when": "Summer 2016",
+    "format": "Standard.",
+    "what": "Green-blue decks, often with red, that sacrificed creatures to emerge Elder Deep-Fiend and Wretched Gryff, and later to cast Emrakul, the Promised End.",
+    "why": "Elder Deep-Fiend has flash. Emerged in your upkeep, it taps four of your permanents and leaves you a turn behind.",
+    "beat": "Play fast and keep their small creatures dead. Without fodder, emerge costs full price.",
+    "after": "Emrakul, the Promised End was banned in Standard in January 2017. Emrakul's card cannot be played by Forge's CPU, so this tribute plays its emerge creatures only."
+   },
+   "hero": {
+    "who": "you",
+    "deck": {
+     "name": "UR Spells",
+     "colors": "UR",
+     "archetype": "Tempo",
+     "label": "tribute",
+     "cards": [
+      {
+       "qty": 4,
+       "name": "Thermo-Alchemist",
+       "set": "emn",
+       "number": "147",
+       "id": "c6c194ea-32a5-4683-a6da-4a93d9b4722e"
+      },
+      {
+       "qty": 4,
+       "name": "Fiery Temper",
+       "set": "soi",
+       "number": "156",
+       "id": "61caf82d-e077-4931-a6ad-09fa7f04b36f"
+      },
+      {
+       "qty": 4,
+       "name": "Galvanic Bombardment",
+       "set": "emn",
+       "number": "129",
+       "id": "dc6a4367-bbee-43b8-b5dd-28498f8e2ede"
+      },
+      {
+       "qty": 3,
+       "name": "Fevered Visions",
+       "set": "soi",
+       "number": "244",
+       "id": "3ee3fc2b-c2e4-421d-ac1d-6a111bb44f44"
+      },
+      {
+       "qty": 4,
+       "name": "Lightning Axe",
+       "set": "soi",
+       "number": "170",
+       "id": "97d3105d-4cf9-48bf-8d12-27e856ae7a87"
+      },
+      {
+       "qty": 4,
+       "name": "Take Inventory",
+       "set": "emn",
+       "number": "76",
+       "id": "a3584150-4f09-4c15-b13e-707bd91b3004"
+      },
+      {
+       "qty": 2,
+       "name": "Sanguinary Mage",
+       "set": "soi",
+       "number": "178",
+       "id": "ace86fac-769c-4440-9a40-318d7172555b"
+      },
+      {
+       "qty": 4,
+       "name": "Pieces of the Puzzle",
+       "set": "soi",
+       "number": "78",
+       "id": "69204c83-2e43-4ca1-a4cd-d75399a7d6dd"
+      },
+      {
+       "qty": 4,
+       "name": "Geistblast",
+       "set": "soi",
+       "number": "160",
+       "id": "19b1dfd9-b717-4c23-b8e5-a6ec835b278a"
+      },
+      {
+       "qty": 12,
+       "name": "Island",
+       "set": "soi",
+       "number": "286",
+       "id": "bffca348-2af9-44bb-815f-f7f7240ac975"
+      },
+      {
+       "qty": 12,
+       "name": "Mountain",
+       "set": "soi",
+       "number": "292",
+       "id": "a7878436-bf83-45c6-a040-e2fad447862a"
+      },
+      {
+       "qty": 3,
+       "name": "Jace's Scrutiny",
+       "set": "soi",
+       "number": "70",
+       "id": "3d0eea0d-c790-4d91-962f-f05b22d0c8fa"
+      }
+     ]
+    }
+   },
+   "villain": {
+    "who": "emerge",
+    "deck": {
+     "name": "Emerge",
+     "colors": "UG",
+     "archetype": "Midrange",
+     "label": "tribute",
+     "note": "Built from cards in this act's sets only. No single tournament list is copied.",
+     "cards": [
+      {
+       "qty": 4,
+       "name": "Elder Deep-Fiend",
+       "set": "emn",
+       "number": "5",
+       "id": "3c2789fb-a263-4207-8a56-4eeb015a024c"
+      },
+      {
+       "qty": 4,
+       "name": "Wretched Gryff",
+       "set": "emn",
+       "number": "12",
+       "id": "9d65efec-018f-485c-906c-460379b4af87"
+      },
+      {
+       "qty": 4,
+       "name": "Kessig Prowler // Sinuous Predator",
+       "set": "emn",
+       "number": "163",
+       "id": "f89f116a-1e8e-4ae7-be39-552e4954f229"
+      },
+      {
+       "qty": 3,
+       "name": "Primal Druid",
+       "set": "emn",
+       "number": "167",
+       "id": "e928f694-c53b-46c5-8390-fa24b53f559c"
+      },
+      {
+       "qty": 4,
+       "name": "Grapple with the Past",
+       "set": "emn",
+       "number": "160",
+       "id": "d44a77a6-e8a1-4706-886f-8ab3af56b342"
+      },
+      {
+       "qty": 4,
+       "name": "Traverse the Ulvenwald",
+       "set": "soi",
+       "number": "234",
+       "id": "bbc69a17-db08-4b4a-bc37-98a12ea108dc"
+      },
+      {
+       "qty": 3,
+       "name": "Vessel of Nascency",
+       "set": "soi",
+       "number": "237",
+       "id": "89533790-38c2-4b53-90fa-8abf8c1a6abb"
+      },
+      {
+       "qty": 4,
+       "name": "Clear Shot",
+       "set": "emn",
+       "number": "152",
+       "id": "12fa1d34-7e32-45b7-9f6f-68f152f75d1a"
+      },
+      {
+       "qty": 12,
+       "name": "Forest",
+       "set": "soi",
+       "number": "295",
+       "id": "42efdb6a-1c54-497a-9058-af4256241649"
+      },
+      {
+       "qty": 12,
+       "name": "Island",
+       "set": "soi",
+       "number": "286",
+       "id": "bffca348-2af9-44bb-815f-f7f7240ac975"
+      },
+      {
+       "qty": 4,
+       "name": "Grizzled Angler // Grisly Anglerfish",
+       "set": "emn",
+       "number": "63",
+       "id": "1eb4ddf4-f695-412d-be80-b93392432498"
+      },
+      {
+       "qty": 2,
+       "name": "Mockery of Nature",
+       "set": "emn",
+       "number": "10",
+       "id": "3118737f-2fd9-4fe5-bd0f-43c9ef2166e2"
+      }
+     ]
+    }
+   },
+   "reward": {
+    "hero": {
+     "packs": 2,
+     "coins": 200
+    },
+    "villain": {
+     "card": {
+      "oracle_id": "4eafe717-4ba4-4901-8c67-11757230eb54",
+      "name": "Elder Deep-Fiend",
+      "rarity": "rare",
+      "set": "emn",
+      "id": "3c2789fb-a263-4207-8a56-4eeb015a024c",
+      "image": "https://cards.scryfall.io/normal/front/3/c/3c2789fb-a263-4207-8a56-4eeb015a024c.jpg"
+     },
+     "coins": 200
+    }
+   },
+   "scene": [
+    {
+     "who": "stage",
+     "line": "Madness can't touch a mind ignited by genius.",
+     "quote": true
+    },
+    {
+     "who": "you",
+     "line": "If they sacrifice something in my upkeep, I lose a turn. Burn the fodder first."
+    }
+   ],
+   "villainScene": [
+    {
+     "who": "stage",
+     "line": "The tides have begun to ignore the moon.",
+     "quote": true
+    }
+   ],
+   "after": [
+    {
+     "who": "stage",
+     "line": "Recorded: Emrakul, the Promised End banned in Standard, January 2017."
+    }
+   ],
+   "cues": {
+    "hero": {
+     "start": "Burn the fodder.",
+     "big": "Ignited!",
+     "low": "Tapped down again...",
+     "win": "The sea is calm.",
+     "loss": "Pulled under.",
+     "half": "Kill the small creatures."
+    },
+    "villain": {
+     "start": "[the tide pulls back]",
+     "big": "[the deep-fiend rises]",
+     "low": "[a husk dissolves]",
+     "win": "[pulled under]",
+     "loss": "[the tide turns]"
+    }
+   },
+   "bigPlays": [],
+   "sim": null
+  }
+ ]
+}
