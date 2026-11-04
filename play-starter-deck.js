@@ -4,17 +4,9 @@ export const PRACTICE_STARTER_ROWS=Object.freeze([
  Object.freeze({name:'Forest',qty:24}),
  ...['Llanowar Elves','Bear Cub','Ordinary Bear','Ghalta, Primal Hunger','Lashwhip Predator','Tarmogoyf','Tapestry Warden','Virulent Emissary','Scarecrow Guide'].map(name=>Object.freeze({name,qty:4}))
 ]);
-// Five free starter decks, one per colour (Randall 3 Nov 23:01Z), granted at sign-up as Play decks with
-// their cards in the Trunk, so Quick Play works from the first visit. Same shape as the green one:
-// 24 basics and nine Standard-legal cards, four of each, every one with rules in the engine.
-const starter=(key,colour,name,land,names)=>Object.freeze({key,colour,name,format:'Standard',rows:Object.freeze([Object.freeze({name:land,qty:24}),...names.map(n=>Object.freeze({name:n,qty:4}))])});
-export const STARTER_DECKS=Object.freeze([
- starter('w','White','White angels · Starter','Plains',["Healer's Hawk",'Hinterland Sanctifier',"Ajani's Pridemate",'Lifecreed Duo','Helpful Hunter','Dazzling Angel','Inspiring Overseer','Angel of Vitality','Bovine Intervention']),
- starter('u','Blue','Blue fliers · Starter','Island',['Spectral Sailor','Harrier Strix','Plumecreed Escort','Floodpits Drowner','Bellowing Crier','Mocking Sprite','Geyser Drake','Essence Scatter','Unsummon']),
- starter('b','Black','Black drain · Starter','Swamp',['Greedy Freebooter','Infestation Sage','Sanguine Syphoner','Burglar Rat','Marauding Blight-Priest','Vampire Nighthawk','Vile Entomber','Murder','Feed the Swarm']),
- starter('r','Red','Red burn · Starter','Mountain',['Fanatical Firebrand','Reckless Lackey','Firebrand Archer','Sunset Strikemaster','Scytheclaw Raptor','Spitfire Lagac','Volley Veteran','Shock','Lightning Strike']),
- Object.freeze({key:'g',colour:'Green',name:PRACTICE_STARTER_NAME,format:'Standard',rows:PRACTICE_STARTER_ROWS})
-]);
+// The homemade starter decks given 3 Nov, taken back when the free precons arrive (Randall 4 Nov 00:32Z:
+// real recent precons instead, data/play-starters/precons.json). Their cards stay in the Trunk.
+export const RETIRED_STARTER_NAMES=Object.freeze(['White angels · Starter','Blue fliers · Starter','Black drain · Starter','Red burn · Starter',PRACTICE_STARTER_NAME]);
 export const PRACTICE_STARTER_TEXT='Deck\n'+PRACTICE_STARTER_ROWS.map(row=>row.qty+' '+row.name).join('\n');
 export async function selectPracticeStarter(setup){
  setup.configure({format:'Standard',mode:'cpu',difficulty:'Medium'});

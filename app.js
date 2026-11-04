@@ -163,17 +163,21 @@ import { startTabGlide } from "./tab-glide.js";
 import { startSearchHints } from "./search-hints.js";
 import { openZoom, zoomCardOptions } from "./zoom.js";
 import {createPlayEcon,purse} from "./play-econ-client.js";
+import {createAchievementToasts,doneSteps,newlyEarned} from "./play-achievement-toasts.js";
+import {createPresence,presenceShared,rememberPresence} from "./play-presence.js";
 import {matchCounters,questRows,playDay} from "./play-achievements.js";
-import {econScreenMarkup,ECON_VIEWS,purseMarkup,cardImageByName,head as econHead,craftPlan,packGoals,setPlayStyles} from "./play-econ-ui.js";
+import {econScreenMarkup,ECON_VIEWS,purseMarkup,cardImageByName,head as econHead,craftPlan,packGoals,setPlayStyles,setPlayDeckCovers} from "./play-econ-ui.js";
+setPlayDeckCovers(()=>S.state?.settings?.playDeckCovers);
 import {rewardFlight} from "./reward-flight.js";
 import {createNameFacts,createCraftRarity,clusterArchetypes,finderArchetypes,rankFinderLists,finderRow,trunkDeck,finderMarkup,finderDeckMarkup,FINDER_FORMATS,FINDER_SORTS,FINDER_FILTERS} from "./play-deck-finder.js";
 import {createCardFacts,slimCard} from "./play-econ-cards.js";
+import {deckEmblem} from "./play-deck-emblem.js";
 import {stepDeckCard,ownedByName,deckShortfall,legalFormats,mtgjsonDeckRows,PLAY_FORMATS,deckRules,copyCap} from "./play-econ-rules.js";
 import {STORY_ACTS} from "./story-acts.js";
 import {createStoryProgress,loadAct,loadActPool,ownDeckFits,battleCleared,currentAct,currentBattle,actCleared} from "./story-client.js";
 import {storyHomeMarkup,storyActMarkup,storyBattleMarkup,playScene,createStoryBubbles,starsRow,rewardText} from "./story-ui.js";
-import {storyDeedsEarned,STORY_DEEDS,STORY_ACT_DEEDS} from "./story-deeds.js";
-import { initCloud, pauseLocalConflict, communityRequest, cloudAccessToken, cloudInfo, isEmptyWorkspace, statusLabel, scheduleSync, signInGoogle, signInEmail, signInPassword, createAccount, requestPasswordReset, finishPasswordReset, signOut, detachDeviceSync, saveProfile, resolvePending, syncNow, resendConfirmation, deleteAccount } from "./cloud.js";
+import {storyDeedsEarned} from "./story-deeds.js";
+import { initCloud, pauseLocalConflict, communityRequest, presenceRequest, cloudAccessToken, cloudInfo, isEmptyWorkspace, statusLabel, scheduleSync, signInGoogle, signInEmail, signInPassword, createAccount, requestPasswordReset, finishPasswordReset, signOut, detachDeviceSync, saveProfile, resolvePending, syncNow, resendConfirmation, deleteAccount } from "./cloud.js";
 import { withSnapshot, collectionValue, recordValuePoint, cardSig, engineProfile, swapImpact, lotPrice } from "./insights.js";
 
 /* =========================================================
@@ -1679,10 +1683,15 @@ const readPlayAccount=()=>{const a=cloudInfo();return {user:a.user?{id:a.user.id
 // The Play table's decks: every Play deck and every Collection deck. Practice can use any of them;
 // Quick Play shows them all but greys out any deck missing cards from your Trunk (Randall 3 Nov 22:31Z-23:06Z).
 const PLAY_SINGLETON=['Commander','Standard Brawl','Oathbreaker'];
-function playTableDecks(){let st={};try{st=playEcon.snapshot().state||{};}catch{}const owned=ownedByName(st.cards||[]);
+// The free Commander precons live only in the Play deck pickers (Practice, Quick Play, Multiplayer),
+// never in Decks or the Trunk, and always play (Randall 4 Nov 00:40Z; data/play-starters/precons.json).
+let freePrecons=null;
+function loadFreePrecons(){if(freePrecons)return;freePrecons=[];fetchJSON('/data/play-starters/precons.json').then(j=>{freePrecons=(j?.decks||[]).filter(d=>d.format==='Commander').map(d=>({id:'free:'+d.key,name:d.name,format:'Commander',commander:d.rows.find(r=>r.commander)?.name||'',cards:d.rows.map(r=>({name:r.name,qty:r.qty})),side:[],free:true,unlocked:true}));if(S.ui.view==='play')refreshPlayMenu();}).catch(()=>{freePrecons=null;});}
+function playTableDecks(){let st={};try{st=playEcon.snapshot().state||{};}catch{}const owned=ownedByName(st.cards||[]);if(st.wallet)loadFreePrecons();
  return [...(st.decks||[]).map(d=>{const row=r=>({name:String(r.name||''),qty:Math.max(1,r.qty|0)}),cards=(d.cards||[]).filter(r=>r.board!=='side').map(row),side=(d.cards||[]).filter(r=>r.board==='side').map(row),format=d.format||'Standard';
   const commander=PLAY_SINGLETON.includes(format)?(cards.find(r=>r.qty===1&&/Legendary.*(Creature|Planeswalker)/.test(meta(r.name)?.type_line||''))?.name||''):'';
   return {id:d.id,name:d.name||'Untitled deck',format,commander,cards,side,unlocked:deckShortfall(cards,owned,new Map()).complete};}),
+  ...(freePrecons||[]),
   ...(S.state.decks||[]).map(d=>({...d,collection:true,unlocked:deckShortfall((d.cards||[]).filter(r=>!r.board||r.board==='main'),owned,new Map()).complete}))];}
 const playTableDeck=id=>playTableDecks().find(d=>d.id===id)||null;
 const playLockedDecks=()=>new Set(playTableDecks().filter(d=>!d.unlocked).map(d=>d.id));
@@ -1735,13 +1744,27 @@ let playPaint=false,storyPaint=0;
 const playRepaint=()=>{if(playPaint)return;playPaint=true;queueMicrotask(()=>{playPaint=false;refreshPlayMenu();});};
 // Story acts arrive one by one from the network: they share one repaint per frame.
 const storyRepaint=()=>{if(!storyPaint)storyPaint=(globalThis.requestAnimationFrame||(f=>setTimeout(f,16)))(()=>{storyPaint=0;refreshPlayMenu();});};
-const playEcon=createPlayEcon({getAccessToken:cloudAccessToken,onChange:()=>{setPlayStyles(playEcon.snapshot().state?.styles||[]);syncPlayChrome();if(S.ui.view==='play')playRepaint();else if(S.ui.lens==='play'&&S.ui.view==='set')render();}});
+// Live achievement toasts: compare the done steps of each new server state with the last one (play-achievement-toasts.js).
+// A refresh or a fresh account only resets the baseline, so opening the app never replays old deeds.
+let achSeen=null,achState=null;
+const achToasts=createAchievementToasts({mount:el=>mountFeedback(el),unmount:el=>el.remove(),haptic,sound:id=>appSound(id,{gap:0,volume:.6}),
+ onOpen:t=>{playView='deeds';econUi.deedTab=t.tab;if(document.body.classList.contains('practice-table-open'))return;if(S.ui.view==='play'){refreshPlayMenu();scrollTo({top:0});}else go('#play');}});
+function achWatch(){const snap=playEcon.snapshot(),s=snap.state;if(s===achState)return;achState=s;if(!s?.counters){achSeen=null;return;}
+ if(snap.loading||!achSeen){achSeen=doneSteps(s);return;}const fresh=newlyEarned(achSeen,s,s.config||{});achSeen=doneSteps(s);achToasts.push(fresh);}
+const playEcon=createPlayEcon({getAccessToken:cloudAccessToken,onChange:()=>{achWatch();setPlayStyles(playEcon.snapshot().state?.styles||[]);syncPlayChrome();if(S.ui.view==='play')playRepaint();else if(S.ui.lens==='play'&&S.ui.view==='set')render();}});
 // The Trunk sort sticks until the player picks another (default: Recently added).
 function savedEconSort(){try{return localStorage.getItem('cardstashy-play-sort')||'';}catch{return '';}}
 let econUi={query:'',cardQuery:'',rarity:'',press:null,check:null,sort:savedEconSort()},econSeen=null;
 const econFacts=createCardFacts({onChange:()=>{if(S.ui.view==='play'&&ECON_VIEWS.has(playView))playRepaint();}});
 // Read the wallet once per signed-in account per visit to Play; a new account starts clean.
-const econWake=()=>{const id=cloudInfo()?.user?.id||null;if(id===econSeen)return;if(econSeen!==null)playEcon.clear();econSeen=id;econUi={query:'',cardQuery:'',rarity:'',press:null,check:null,sort:savedEconSort()};playView=ECON_VIEWS.has(playView)?'home':playView;if(id)setTimeout(()=>playEcon.refresh().then(()=>playEcon.login()).then(l=>{if(l?.fresh)toast(`Day ${l.stamp} stamped on your log-in calendar.`);}),0);};
+// Rich presence (play-presence.js): what accepted friends see. A match line comes from the open table.
+function presenceMatch(){try{if(!playerMatRoot)return null;const s=playerMatHost?.snapshot?.(),turn=s?.game?.status?.surface?.turn,setup=playSetup.snapshot();
+ if(playerMatRoot.classList.contains('st-match'))return {kind:'story',act:storyUi.act,battle:storyBattle()?.title||'',turn};
+ if(/^Friend/.test(playerMatRoot.getAttribute('aria-label')||''))return {kind:'friend',format:setup?.match?.format||'',turn};
+ return {kind:setup?.playStyle==='practice'?'practice':'quick',format:setup?.match?.format||'',turn};}catch{return null;}}
+const presence=createPresence({read:()=>({view:S.ui.view,playView,match:presenceMatch()}),send:(action,payload)=>presenceRequest(action,payload),enabled:()=>!!cloudInfo()?.user?.id&&presenceShared()});
+C.setPresence=t=>{if(!rememberPresence(t.checked)){t.checked=!t.checked;return toast('Could not save that setting.');}void presence.setShare(t.checked);toast(t.checked?'Friends can see what you’re playing.':'Friends no longer see what you’re playing.');};
+const econWake=()=>{const id=cloudInfo()?.user?.id||null;if(id===econSeen)return;if(id){presence.start();if(!presenceShared())void presenceRequest('hide');}if(econSeen!==null)playEcon.clear();econSeen=id;econUi={query:'',cardQuery:'',rarity:'',press:null,check:null,sort:savedEconSort()};playView=ECON_VIEWS.has(playView)?'home':playView;if(id)setTimeout(()=>playEcon.refresh().then(()=>playEcon.login()).then(l=>{if(l?.fresh)toast(`Day ${l.stamp} stamped on your log-in calendar.`);}),0);};
 const econFocus=()=>requestAnimationFrame(()=>document.getElementById('playTitle')?.focus?.({preventScroll:true}));
 A.playEconView=t=>{const v=t.dataset.econView;if(!ECON_VIEWS.has(v))return;playView=v;if(t.dataset.econTab)econUi.deedTab=t.dataset.econTab;if(v==='decks')loadPreconIndex();playInspectOpen=false;refreshPlayMenu();scrollTo({top:0});if(v==='shop'&&t.dataset.econFocus==='press')requestAnimationFrame(()=>document.querySelector('.pe-forge')?.scrollIntoView({block:'center',behavior:'smooth'}));else econFocus();};
 // Secret Lair (play-secret-lair.js): this week's bundle, and the rare art styles rewards unlock.
@@ -1879,7 +1902,7 @@ A.playCardStamp=async t=>{const holo=t.dataset.holo==='1';try{const out=await pl
 A.playEconEditDeck=t=>{const d=(playEcon.snapshot().state?.decks||[]).find(x=>x.id===t.dataset.econDeck);econUi.edit=d?{id:d.id,name:d.name,format:d.format||'Standard',cards:(d.cards||[]).filter(c=>!c.board).map(c=>({...c,qty:c.qty|0})),side:(d.cards||[]).filter(c=>c.board)}:{id:null,name:'',format:'Standard',cards:[]};playView='deck';refreshPlayMenu();scrollTo({top:0});requestAnimationFrame(()=>document.getElementById('playDeckTitle')?.focus?.({preventScroll:true}));};
 // Play "Build a deck" (Untapped-style finder): the Trunk build plus meta lists,
 // ranked by how much the player owns; missing cards greyed with seal costs.
-const finderFacts=createNameFacts({onChange:()=>{if(S.ui.view!=='play')return;if(playView==='finder')finderRefresh();else if(playView==='deck'||playView==='finderDeck')refreshPlayMenu();}});
+const finderFacts=createNameFacts({onChange:()=>{if(S.ui.view!=='play')return;if(playView==='finder')finderRefresh();else if(playView==='deck'||playView==='finderDeck'||playView==='decks')refreshPlayMenu();}});
 // Cheapest craftable rarity per card name (Untapped's lowest-rarity billing): the finder, the deck
 // builder's craft bar and Craft all all bill and stamp that printing. Kept on this device.
 let craftRarityTimer=0;
@@ -1940,6 +1963,10 @@ const finderHasMeta=format=>MTG_META_FORMATS.some(([k])=>k===finderMetaKey(forma
 // Every meta list the service returns for the format (hundreds for the busy ones), ranked by names
 // alone; only the rows on screen are built in full and have their card facts fetched.
 const finderLists=format=>{if(!finderHasMeta(format))return [];const data=metaState(finderMetaKey(format)).data;return (data?.decks||[]).filter(d=>d?.key&&Array.isArray(d.main)).map(d=>{const commanders=(d.commanders||[]).map(r=>typeof r==='string'?{name:r,qty:1}:r);return {key:'meta:'+d.key,name:d.name||d.archetype||'Meta deck',archetype:d.archetype||d.name||'',source:'Meta',detail:[d.place,d.event].filter(Boolean).join(' · '),format,commander:commanders[0]?.name||'',cards:[...commanders,...d.main.filter(r=>!r.board||r.board==='main')]};});};
+// Deck emblems on the Decks page (play-deck-emblem.js): card facts come from the finder's name facts,
+// meta lists from the same tournament data the finder ranks (only once it has loaded).
+const playDeckEmblemOf=d=>deckEmblem(d.cards||[],n=>finderFacts.get(n),finderHasMeta(d.format||'')?finderLists(d.format):[]);
+function playDeckEmblemWants(snap){const decks=snap.state?.decks||[],open=econUi.precon?.open?.rows||[];void finderFacts.want([...decks.flatMap(d=>(d.cards||[]).map(r=>r.name)),...open.map(r=>r.name)]);}
 const finderSeals=s=>({c:s?.wallet?.seal_c|0,u:s?.wallet?.seal_u|0,r:s?.wallet?.seal_r|0,m:s?.wallet?.seal_m|0});
 function finderRefresh(){const snap=playEcon.snapshot(),s=snap.state;if(!s)return;const owned=ownedByName(s.cards||[]),ownedFact=new Map((s.cards||[]).map(c=>{const f=econFacts.card(c.o)?.card;return f?[f.name,f]:null;}).filter(Boolean));
  const cardOf=name=>finderFacts.get(name)||ownedFact.get(name)||ownedFact.get(String(name).split(' // ')[0])||null;
@@ -2433,7 +2460,7 @@ A.storyPlay=async({skipScene=false}={})=>{
    const out=await storyProgress.claim({battle:b.id,seat,deck:own?'own':'loaner'});if(out?.state)playEcon.refresh();slToast(out?.style);
    // Story deeds: what this win earned (story-deeds.js); the server re-checks and pays each once.
    const deeds=storyDeedsEarned(b.id,{...seenStats,...(rec?.facts||{}),seat,own:!!own,onPlay:typeof rec?.onPlay==='boolean'?rec.onPlay:null,endLife:rec?.life??rec?.facts?.endLife??seenStats.endLife},out?.refs||[]);
-   if(deeds.length)void playEcon.reportDeeds(b.id,deeds).then(r=>{for(const id of r?.counted||[]){const d=[...STORY_DEEDS,...STORY_ACT_DEEDS].find(x=>x.id===id);if(d)toast(`Deed done: ${d.title}. Claim it in Achievements.`);}});
+   if(deeds.length)void playEcon.reportDeeds(b.id,deeds);// the live achievement toast shows each counted deed
    const panel=root.querySelector('.play-match-result');if(panel){const note=document.createElement('p');note.className='st-result-note';const got=out?.paid||[],won=!own&&got.includes(`story:${b.id}:${seat==='villain'?'villain':'loaner'}`),rw=b.reward?.[seat]||{},coll=got.includes(`story:${b.id}:collector`);
     note.innerHTML=`${starsRow(storyProgress.snapshot().progress.battles?.[b.id])}<span>${won?rewardText(rw,b.rewardSet)+(coll?' and a Collector pack':'')+' added':coll?'A Collector pack added':out?.error?esc(out.error):own?'Your own deck earns XP. Win with the Story deck for the reward.':'Reward already claimed'}</span>`;panel.querySelector('.play-result-actions')?.before(note);}
    const ending=b.slot===8?(seat==='hero'?data.finale:data.villainFinale):b.after;
@@ -2529,7 +2556,8 @@ function renderPlayPage() {
    if(playView==='finder')return finderView(snap);
    if(playView==='finderDeck')return finderDeckView(snap);
    if(playView==='deck')builderWants(snap);
-   return econScreenMarkup(playView,snap,{...econUi,query:econUi.query,facts:econFacts,nameFact:n=>finderFacts.get(n),craftRarity:n=>craftRarity.rarity(n),craftId:n=>craftRarity.id(n)});}
+   if(playView==='decks')playDeckEmblemWants(snap);
+   return econScreenMarkup(playView,snap,{...econUi,deckEmblem:playView==='decks'?playDeckEmblemOf:null,query:econUi.query,facts:econFacts,nameFact:n=>finderFacts.get(n),craftRarity:n=>craftRarity.rarity(n),craftId:n=>craftRarity.id(n)});}
   const state=playSetup.snapshot(),p=state.profile,tiles=new Map();state.opponentBuild=practiceOpponentBuilder.snapshot();state.deckBuild=playBuilders[state.playStyle==='quick'?'player':state.inspectedSeat].snapshot();const sources=readPlaySources(),sourceArt=new Map();for(const entries of Object.values(sources))for(const entry of entries)sourceArt.set(entry.key,V.deckArtwork(entry.deck));
   const locked=playLockedDecks();for(const summary of state.decks){const deck=playTableDeck(summary.id);if(summary.valid&&deck)tiles.set(summary.id,V.deckTile(deck,false,{playSelection:playSeatSource(state,playBrowseSeat(state))==='saved'&&playSeatDeck(state,playBrowseSeat(state))?.id===deck.id}));}
   const inspected=state.playStyle!=='quick'&&state.match.mode==='cpu'?playSeatDeck(state,state.inspectedSeat):state.selected;
@@ -2688,11 +2716,25 @@ async function pickCompareCard(t) {
     }
   } finally { compareBusy = false; }
 }
+// Play deck builder: hold, right-click or the menu key on a small card tile (deck row or pool card) opens
+// Play's card actions, the same look as Collection's: open the card, or make its art the deck cover.
+// Everywhere else in Play the gesture opens the Play card view as before.
+function playHoldMenu(el){
+ const e=playView==='deck'&&econUi.edit,name=el.dataset.name;if(!e?.id||!name||!el.closest?.('.pe-build-row,.pe-pool-card'))return false;
+ const full=el.dataset.oracle?econFacts.card(el.dataset.oracle)?.card:null,card=full||{name},image=bannerImage('mtg',full)||cardImageByName(name,'art_crop');
+ quickCard={game:'mtg',card,play:true,coverImage:image};haptic('tap');
+ const pick=S.state.settings.playDeckCovers?.[e.id],isCover=!!pick?.name&&[name,name.split(' // ')[0]].includes(pick.name.split(' // ')[0]);
+ openSheet(`<div class="context-menu context-card">${contextHeader({kind:'Card actions',name,meta:e.name||'',art:`<img class="quick-card-thumb" src="${esc(image)}" alt="" decoding="async" referrerpolicy="no-referrer">`})}<div class="context-group card-action-list" aria-label="Card actions">${contextAction('playHoldOpen','cardStack','Open card',{hint:'Copies, crafting and Secret Lair art',attrs:`data-name="${esc(name)}" data-play-card="1"${el.dataset.oracle?` data-oracle="${esc(el.dataset.oracle)}"`:''}`})}${isCover?contextAction('playHoldCoverReset','brush','Use the automatic deck cover',{hint:'This card is the cover now'}):contextAction('playHoldCover','brush','Deck cover',{hint:`Show this art on ${e.name||'this deck'}`})}</div></div>`,{type:'play-card-actions'});
+ return true;
+}
+A.playHoldOpen=t=>A.card(t);
+A.playHoldCover=async()=>{const ref=quickCard;if(!ref?.play)return;const target=deckCoverTarget(ref);if(!target)return closeSheet();if(!/^https:\/\//.test(String(ref.coverImage||'')))return toast('This card has no artwork to use.');await saveDeckCover(ref,target,ref.coverImage);closeSheet();toast(`${ref.card.name} is the cover of ${target.name}.`);};
+A.playHoldCoverReset=async()=>{const ref=quickCard;if(!ref?.play)return;const target=deckCoverTarget(ref);if(!target)return closeSheet();await saveDeckCover(ref,target,null);closeSheet();toast(`${target.name} uses its automatic cover again.`);};
 async function cardQuickMenu(t) {
   t?.closest?.("dialog.zoom")?.querySelector('[data-z="close"]')?.click();
   // Play has its own card actions (Play decks, Craft with seals, packs): right-click and long-press
   // there open the Play card view, never the collection app's menu.
-  if (S.ui.view === "play" || S.ui.lens === "play") { const el = t?.dataset?.name ? t : t?.querySelector?.('[data-act="card"][data-name]') || t?.closest?.("[data-name]"); if (el?.dataset?.name) A.card(el); return; }
+  if (S.ui.view === "play" || S.ui.lens === "play") { const el = t?.dataset?.name ? t : t?.querySelector?.('[data-act="card"][data-name]') || t?.closest?.("[data-name]"); if (el?.dataset?.name && !playHoldMenu(el)) A.card(el); return; }
   const ref = t?.quickRef || await resolveActionCard(t); if (!ref) return;
   quickCard = ref; haptic("tap");
   const st = ref.game === "mtg" ? S.state : T.gs(ref.game);
@@ -4549,7 +4591,7 @@ async function saveProfileArtwork(kind,value){
 const artworkSaved=()=>{refreshProfileAvatar();settingsPopup.refresh();void community.refresh();toast('Profile artwork saved.');};
 const profilePicker=createProfileArtPicker({lookup:homeLookup,currentGame:T.game,read:()=>cloudInfo().art?.avatar||community.data?.art?.avatar||S.state.settings.cardAvatar,save:value=>saveProfileArtwork('avatar',value),onSaved:artworkSaved});
 const headerPicker=createProfileArtPicker({purpose:'header',lookup:homeLookup,currentGame:T.game,read:()=>cloudInfo().art?.header||community.data?.art?.header||S.state.settings.profileHeader,save:value=>saveProfileArtwork('header',value),onSaved:artworkSaved});
-const community=createCommunity({account:cloudInfo,request:communityRequest,rerender:render,active:()=>S.ui.view==='community',challenge:FORGE_PLAY_TEST_ENABLED?person=>void A.playChallenge(person):null,localArt:()=>({avatar:S.state.settings.cardAvatar,header:S.state.settings.profileHeader}),toast,
+const community=createCommunity({account:cloudInfo,request:communityRequest,presence:()=>presenceRequest('friends'),rerender:render,active:()=>S.ui.view==='community',challenge:FORGE_PLAY_TEST_ENABLED?person=>void A.playChallenge(person):null,localArt:()=>({avatar:S.state.settings.cardAvatar,header:S.state.settings.profileHeader}),toast,
  onChange:data=>{S.ui.communityRequests=incomingRequestCount(data);S.ui.communityFriends=data?(data.people||[]).filter(p=>p.relationship==='accepted').length:null;refreshProfileAvatar();if(settingsPopup.isOpen)settingsPopup.refresh();},
  copyDeck:async item=>{const generation=accountGeneration,owner=cloudInfo().user?.id;if(accountLocked||!owner)throw Error('Sign in before saving a deck.');const d=sharedDeckCopy(item,uid());await commit(state=>{(item.game==='mtg'?state:state.tcg[item.game]).decks.push(d);},{enrich:false,guard:()=>{if(accountLocked||generation!==accountGeneration||cloudInfo().user?.id!==owner)throw Error('Your account changed. Please try again.');return true;}});},
  editItem:async item=>{const generation=accountGeneration;if(accountLocked)return;await navigate({game:item.game,hash:item.kind==='binder'?'#collection':item.game==='mtg'?'#deck/'+item.key.slice(('deck:'+item.game+':').length)+'/cards':'#tdeck/'+item.key.slice(('deck:'+item.game+':').length),mode:'push'});if(generation!==accountGeneration||T.game()!==item.game)return;if(item.kind==='binder')A.editBinder({dataset:{binder:item.key.slice(7)}});},
@@ -4595,8 +4637,26 @@ A.profileHeader=()=>headerPicker.open();
 // Collection banner art: a pin stays until the player changes it; without one the banner
 // changes every hour (collection-banner.js).
 const bannerImage=(game,card)=>game==='mtg'?card?.image_uris?.art_crop||card?.card_faces?.[0]?.image_uris?.art_crop:game==='ygo'?(/^\d{1,12}$/.test(String(card?.id||''))?`https://images.ygoprodeck.com/images/cards_cropped/${card.id}.jpg`:''):artworkSources(card,true)[0];
-A.quickArtwork=()=>{if(!quickCard)return;const ref=quickCard,pinned=!ref.play&&S.state.settings.collectionBanner?.[ref.game],canPin=!ref.play&&!!bannerPin(ref.game,ref.card,bannerImage(ref.game,ref.card));openSheet(`<div class="sheet-head"><h2>Use artwork as…</h2><button class="icon" data-act="closeSheet">✕</button></div><div class="actions"><button class="btn" data-act="quickArtworkAvatar">Avatar</button><button class="btn ghost" data-act="quickArtworkHeader">Profile header</button>${canPin?'<button class="btn ghost" data-act="quickArtworkBanner">Collection banner</button>':''}</div>${pinned?'<p class="artwork-banner-reset"><button class="link" data-act="quickArtworkBannerRotate">Change the banner every hour again</button></p>':''}`,{type:"artwork-actions"});A.quickArtworkAvatar=()=>profilePicker.open({card:ref.card,game:ref.game});A.quickArtworkHeader=()=>headerPicker.open({card:ref.card,game:ref.game});
+// Deck cover: from a card inside a deck view (Collection decks in all 3 games, or a Play deck) the
+// card's art becomes that deck's cover on its tile and header, art only. Play decks keep the pick in
+// settings because the Play deck row on the server holds only name, format and cards.
+const deckCoverTarget=ref=>{
+ if(ref.play)return playView==='deck'&&econUi.edit?.id?{kind:'play',id:econUi.edit.id,name:econUi.edit.name||'this deck',set:!!S.state.settings.playDeckCovers?.[econUi.edit.id]}:null;
+ if(ref.game==='mtg'&&S.ui.view==='deck'){const d=deckById(S.ui.deckId);return d?{kind:'mtg',id:d.id,name:d.name,set:!!d.coverCard}:null;}
+ if(ref.game!=='mtg'&&S.ui.view==='tdeck'&&T.game()===ref.game){const d=T.gs(ref.game).decks.find(x=>x.id===S.ui.tdeckId);return d?{kind:'tcg',id:d.id,name:d.name,set:!!d.coverCard}:null;}
+ return null;};
+async function saveDeckCover(ref,target,image){
+ const pick=image?{...(target.kind==='tcg'?{id:String(ref.card.id)}:{}),name:String(ref.card.name||'').slice(0,200),image:String(image).slice(0,500)}:null;
+ await commit(st=>{
+  if(target.kind==='play'){const next={...(st.settings.playDeckCovers||{})};if(pick)next[target.id]=pick;else delete next[target.id];st.settings.playDeckCovers=next;return;}
+  const d=(target.kind==='mtg'?st.decks:st.tcg[ref.game].decks).find(x=>x.id===target.id);if(!d)return;if(pick)d.coverCard=pick;else delete d.coverCard;
+ },{enrich:false,observeValue:false});
+ if(target.kind==='play')refreshPlayMenu?.();
+}
+A.quickArtwork=()=>{if(!quickCard)return;const ref=quickCard,pinned=!ref.play&&S.state.settings.collectionBanner?.[ref.game],canPin=!ref.play&&!!bannerPin(ref.game,ref.card,bannerImage(ref.game,ref.card)),coverTarget=deckCoverTarget(ref),coverImage=bannerImage(ref.game,ref.card),canCover=!!coverTarget&&/^(https:\/\/|img\/)/.test(String(coverImage||''));openSheet(`<div class="sheet-head"><h2>Use artwork as…</h2><button class="icon" data-act="closeSheet">✕</button></div><div class="actions"><button class="btn" data-act="quickArtworkAvatar">Avatar</button><button class="btn ghost" data-act="quickArtworkHeader">Profile header</button>${canCover?'<button class="btn ghost" data-act="quickArtworkDeckCover">Deck cover</button>':''}${canPin?'<button class="btn ghost" data-act="quickArtworkBanner">Collection banner</button>':''}</div>${coverTarget?.set?'<p class="artwork-banner-reset"><button class="link" data-act="quickArtworkDeckCoverReset">Use the automatic deck cover again</button></p>':''}${pinned?'<p class="artwork-banner-reset"><button class="link" data-act="quickArtworkBannerRotate">Change the banner every hour again</button></p>':''}`,{type:"artwork-actions"});A.quickArtworkAvatar=()=>profilePicker.open({card:ref.card,game:ref.game});A.quickArtworkHeader=()=>headerPicker.open({card:ref.card,game:ref.game});
  A.quickArtworkBanner=async()=>{const pin=bannerPin(ref.game,ref.card,bannerImage(ref.game,ref.card));if(!pin)return toast('This card has no artwork to use.');await commit(st=>{st.settings.collectionBanner={...(st.settings.collectionBanner||{}),[ref.game]:pin};},{enrich:false,recordDeckWork:false,observeValue:false});closeSheet();toast(`${ref.card.name} is your Collection banner.`);};
+ A.quickArtworkDeckCover=async()=>{if(!canCover)return;await saveDeckCover(ref,coverTarget,coverImage);closeSheet();toast(`${ref.card.name} is the cover of ${coverTarget.name}.`);};
+ A.quickArtworkDeckCoverReset=async()=>{if(!coverTarget)return;await saveDeckCover(ref,coverTarget,null);closeSheet();toast(`${coverTarget.name} uses its automatic cover again.`);};
  A.quickArtworkBannerRotate=async()=>{await commit(st=>{const next={...(st.settings.collectionBanner||{})};delete next[ref.game];st.settings.collectionBanner=next;},{enrich:false,recordDeckWork:false,observeValue:false});closeSheet();toast('The Collection banner changes every hour again.');};};
 A.cardProfileHeader=async t=>{
 const ref=await resolveActionCard(t);if(ref)headerPicker.open({card:ref.card,game:ref.game});};
