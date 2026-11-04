@@ -235,7 +235,11 @@ fun ForgeBoard(
     onMenu: () -> Unit, handOrder: List<Int>, onHandOrder: (List<Int>) -> Unit,
     modifier: Modifier = Modifier, menu: MatchMenu? = null, overlay: @Composable (Dp.() -> Unit)? = null,
 ) {
-    BoxWithConstraints(modifier.fillMaxSize()) {
+    // Living Battlefield: effects read from each new snapshot; a touch anywhere skips them to their end.
+    val fx = remember { Battlefield() }
+    FxDriver(fx, st)
+    androidx.compose.runtime.CompositionLocalProvider(LocalBattlefield provides fx) {
+    BoxWithConstraints(modifier.fillMaxSize().fxSkip(fx)) {
         val d = Du(chromeU(maxWidth, maxHeight))
         with(d) {
             val W = maxWidth; val H = maxHeight
@@ -283,6 +287,8 @@ fun ForgeBoard(
 
             // The divider between the halves: a thin violet line with a notch on your side's turn.
             Box(Modifier.offset(y = mid).fillMaxWidth().height(1.dp).background(Brush.horizontalGradient(listOf(Color.Transparent, Color(0x998A7BD8), Color(0x998A7BD8), Color.Transparent))))
+            // The mat's ambient light: turn warmth, the priority edge light and combat grain, under every card.
+            FxMat(st, mid)
 
             // CPU half: lands at the back, creatures at the front; yours mirrored.
             // A creature Forge says must attack this combat wears a tag until it is in the attack.
@@ -309,7 +315,7 @@ fun ForgeBoard(
             // The CPU's hand, tucked off the top edge: the lower half of each back.
             // In a pod the rail takes the opponent hand's place (each chip shows its own hand size).
             if (pod) PodRail(st, cpu.id, live, intents, { podFocus.seat = it; picks++ }, W, d)
-            else TuckedHand(cpu.handCount, Modifier.offset(y = (-17).du).align(Alignment.TopCenter), d)
+            else TuckedHand(cpu.handCount, Modifier.offset(y = (-17).du).align(Alignment.TopCenter).then(LocalAnchors.current?.let { a -> Modifier.onGloballyPositioned { a.putRect("cpuhand", it.boundsInRoot()) } } ?: Modifier), d)
 
             // Seats: the CPU top right, you bottom left; command-zone crests beside them.
             // A big board moves the seats 4 px in and the bottom-left group 14 px up (site probes at 960 × 840 and 1280 × 800).
@@ -339,7 +345,9 @@ fun ForgeBoard(
             val hand = orderedHand(me.hand, handOrder)
             // The hand: 66 px cards on a phone; on a big board they grow with the screen (site: 109 px at 840 tall, 104 at 800).
             val handW = if (large) (H.value * .13f).coerceIn(66f, 120f).dp else 66.du
-            Box(Modifier.offset(x = centreX + 44.du - handW / 66f * 222f, y = H - handW / 66f * 67f).width(handW / 66f * 444f).height(handW / 66f * 120f)) {
+            val handAnchors = LocalAnchors.current
+            Box(Modifier.offset(x = centreX + 44.du - handW / 66f * 222f, y = H - handW / 66f * 67f).width(handW / 66f * 444f).height(handW / 66f * 120f)
+                .then(if (handAnchors != null) Modifier.onGloballyPositioned { handAnchors.putRect("hand", it.boundsInRoot()) } else Modifier)) {
                 HandFan(hand, handW, Modifier.fillMaxWidth(), raised = selectedHand, angleDeg = 1.2f,
                     markOf = ::markOf,
                     canPlay = { card -> live && card.id in st.selection.actionable && card.id !in blocked },
@@ -398,6 +406,8 @@ fun ForgeBoard(
             if (live) askLine(st)?.let { AskLine(it, W, H, d) }
             // The line between the halves turns into the combat line while you declare (gold attacking, blue blocking).
             CombatLine(st, mid, W, d)
+            // Arrivals, casts, hits, deaths and numbers over the cards, under the threads.
+            FxLayer()
             // Arrows: attackers to what they attack, blockers to their attacker, your spell to its targets, the top of the stack to its own.
             Arrows(st, live, intents, d)
             OwnCast(st, d)
@@ -413,6 +423,7 @@ fun ForgeBoard(
             }
             if (menu != null) { DeckTracker(st, menu, H, d, menuX, menuY + 44.du + 10.du); if (menu.open) MenuPanel(menu, st.stack.size, d, menuX, menuY + 44.du + 8.du) }
         }
+    }
     }
 }
 
@@ -488,12 +499,16 @@ private fun Tile(card: Card, w: Dp, h: Dp, land: Boolean, mark: Mark, mineSide: 
         else -> null
     }
     val ring = role?.first ?: lerp(a, Color.White, .15f)
-    val turn by animateFloatAsState(if (card.tapped) 20f else 0f, tween(140, easing = FastOutSlowInEasing), label = "tap")
+    // Tap: 180 ms (Living Battlefield page 9).
+    val turn by animateFloatAsState(if (card.tapped) 20f else 0f, tween(180, easing = FastOutSlowInEasing), label = "tap")
     val anchors = LocalAnchors.current
+    val fx = LocalBattlefield.current
     val shape = RoundedCornerShape(10.du)
     Box(modifier.size(w, h)
         .graphicsLayer { rotationZ = turn; val s = if (card.tapped) .94f else 1f; scaleX = s; scaleY = s; translationY = if (card.attacking) (if (mineSide) -12f else 12f) * u * density else 0f }
         .then(if (anchors != null) Modifier.onGloballyPositioned { anchors.putRect("c${card.id}", it.boundsInRoot()) } else Modifier)
+        // Effects move the card by transform only, after its anchor is read, so lines and slots never follow the motion.
+        .then(if (fx != null) Modifier.graphicsLayer { fx.move(this, card.id, anchors) } else Modifier)
         .drawBehind {
             // box-shadow: 0 0 0 1.5px ring, 0 0 0 2.5px #000d, 0 10px 22px #000b
             val r = 10.du.toPx()
@@ -567,16 +582,18 @@ private fun Tile(card: Card, w: Dp, h: Dp, land: Boolean, mark: Mark, mineSide: 
 private fun Piles(p: Player, mine: Boolean, modifier: Modifier, d: Du, onInspect: (Card) -> Unit) = with(d) {
     // Yours: graveyard then library; the CPU's mirrored (library then graveyard).
     Row(modifier, horizontalArrangement = Arrangement.spacedBy(8.du)) {
-        @Composable fun lib() = Pile(p.libraryCount, null, d) {}
-        @Composable fun grave() = Pile(p.graveyard.size, p.graveyard.lastOrNull(), d) { p.graveyard.lastOrNull()?.let(onInspect) }
+        @Composable fun lib() = Pile(p.libraryCount, null, d, "lib${p.id}") {}
+        @Composable fun grave() = Pile(p.graveyard.size, p.graveyard.lastOrNull(), d, "grave${p.id}") { p.graveyard.lastOrNull()?.let(onInspect) }
         if (mine) { grave(); lib() } else { lib(); grave() }
     }
 }
 
 @Composable
-private fun Pile(count: Int, top: Card?, d: Du, onTap: () -> Unit) = with(d) {
+private fun Pile(count: Int, top: Card?, d: Du, anchor: String? = null, onTap: () -> Unit) = with(d) {
+    val anchors = LocalAnchors.current
     Column(horizontalAlignment = Alignment.CenterHorizontally) {
-        Box(Modifier.size(33.du, 46.du).clickable(enabled = top != null, onClick = onTap)) {
+        Box(Modifier.size(33.du, 46.du).then(if (anchors != null && anchor != null) Modifier.onGloballyPositioned { anchors.putRect(anchor, it.boundsInRoot()) } else Modifier)
+            .clickable(enabled = top != null, onClick = onTap)) {
             // A little depth under the top card: up to three edges.
             val depth = minOf(3, (count - 1).coerceAtLeast(0))
             for (i in depth downTo 1) Box(Modifier.offset(x = (i * 1.5f).du, y = (i * 1.5f).du).fillMaxSize().clip(RoundedCornerShape(3.du)).background(Color(0xFF15182A)).border(1.dp, Color(0x55C9A75A), RoundedCornerShape(3.du)))

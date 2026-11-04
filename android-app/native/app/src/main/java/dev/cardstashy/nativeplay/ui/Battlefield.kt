@@ -1,0 +1,656 @@
+package dev.cardstashy.nativeplay.ui
+
+import android.graphics.BlurMaskFilter
+import android.graphics.RuntimeShader
+import android.os.Build
+import androidx.compose.animation.core.Animatable
+import androidx.compose.animation.core.tween
+import androidx.compose.foundation.Canvas
+import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.offset
+import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.SideEffect
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableIntStateOf
+import androidx.compose.runtime.mutableLongStateOf
+import androidx.compose.runtime.mutableStateListOf
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
+import androidx.compose.runtime.staticCompositionLocalOf
+import androidx.compose.runtime.withFrameMillis
+import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.clip
+import androidx.compose.ui.draw.drawWithContent
+import androidx.compose.ui.geometry.CornerRadius
+import androidx.compose.ui.geometry.Offset
+import androidx.compose.ui.geometry.Rect
+import androidx.compose.ui.geometry.RoundRect
+import androidx.compose.ui.geometry.Size
+import androidx.compose.ui.graphics.Brush
+import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.GraphicsLayerScope
+import androidx.compose.ui.graphics.Paint
+import androidx.compose.ui.graphics.Path
+import androidx.compose.ui.graphics.PathMeasure
+import androidx.compose.ui.graphics.ShaderBrush
+import androidx.compose.ui.graphics.drawscope.DrawScope
+import androidx.compose.ui.graphics.drawscope.Stroke
+import androidx.compose.ui.graphics.drawscope.clipPath
+import androidx.compose.ui.graphics.drawscope.clipRect
+import androidx.compose.ui.graphics.drawscope.drawIntoCanvas
+import androidx.compose.ui.graphics.drawscope.rotate
+import androidx.compose.ui.graphics.drawscope.translate
+import androidx.compose.ui.graphics.graphicsLayer
+import androidx.compose.ui.graphics.toArgb
+import androidx.compose.ui.graphics.nativeCanvas
+import androidx.compose.ui.graphics.drawscope.scale
+import androidx.compose.ui.input.pointer.PointerEventPass
+import androidx.compose.ui.input.pointer.PointerEventType
+import androidx.compose.ui.input.pointer.pointerInput
+import androidx.compose.ui.layout.boundsInRoot
+import androidx.compose.ui.layout.onGloballyPositioned
+import androidx.compose.ui.platform.LocalDensity
+import androidx.compose.ui.text.TextStyle
+import androidx.compose.ui.text.drawText
+import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.rememberTextMeasurer
+import androidx.compose.ui.unit.Dp
+import androidx.compose.ui.unit.IntOffset
+import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.sp
+import dev.cardstashy.nativeplay.art.CardImage
+import dev.cardstashy.nativeplay.engine.Card
+import dev.cardstashy.nativeplay.engine.MatchState
+import kotlin.math.PI
+import kotlin.math.abs
+import kotlin.math.cos
+import kotlin.math.roundToInt
+import kotlin.math.sin
+
+/**
+ * Living Battlefield, Phase 0 (spec v1, pages 5, 9, 12 and 15): the ten table moments drawn from Forge's own state.
+ *
+ * Every effect comes from a difference between two Forge snapshots (a card arrived, left, took damage, a spell went on or
+ * off the stack, a life total moved); nothing is predicted. The interpreter scores each one 0 to 3 and applies the attention
+ * budget: one focal (level 2 or 3) effect at a time, the rest wait their turn or play beside it at level 1. When the
+ * player gets priority or a question, everything in flight finishes within 150 ms and new focal effects play at half
+ * length. A touch anywhere on the board jumps every effect to its end state. Cards only ever move by transform, so no
+ * box on the board changes size.
+ */
+internal enum class Fx { DRAW, CAST, RESOLVE, ARRIVE, TOKEN, ATTACK, BLOCK, DAMAGE, LIFE, DEATH, COUNTER }
+
+internal class FxItem(
+    val kind: Fx, val level: Int, val baseMs: Long,
+    val card: Int? = null, val player: Int? = null, val mine: Boolean = false,
+    /** A box captured before it went away (a dying card, the stack card that resolved). */
+    val from: Rect? = null,
+    /** Anchor keys read at draw time, so they follow the live layout. */
+    val fromKey: String? = null, val toKey: String? = null,
+    val ghost: Card? = null, val tone: Color = Color.White, val land: Boolean = false,
+    /** A stagger inside its group (ms), and the short label it shows (a damage number, a counter). */
+    val delay: Long = 0L, var label: String = "",
+) {
+    var t0 = 0L; var dur = baseMs; var p0 = 0f
+    /** 0..1 through the effect, or -1 while it waits for its turn. */
+    fun p(now: Long): Float = if (now < t0) -1f else (p0 + (1f - p0) * ((now - t0).toFloat() / dur.coerceAtLeast(1))).coerceAtMost(1f)
+    fun done(now: Long) = now >= t0 + dur
+}
+
+class Battlefield {
+    internal val items = mutableStateListOf<FxItem>()
+    /** The frame clock (ms). Draw lambdas read it; the composition never does. */
+    internal val now = mutableLongStateOf(0L)
+    /** Bumped when the set of running effects changes, so card layers know to look again. */
+    internal val rev = mutableIntStateOf(0)
+    private val byCard = HashMap<Int, MutableList<FxItem>>()
+    private var prev: MatchState? = null
+    private var focalEnd = 0L
+    private var started = false
+
+    internal fun tick(ms: Long) {
+        if (!started) { started = true; if (items.isNotEmpty()) { val base = ms; items.forEach { it.t0 += base }; focalEnd += base } }
+        now.longValue = ms
+        if (items.any { it.done(ms) }) { items.removeAll { it.done(ms) }; reindex() }
+    }
+
+    /** A touch on the board: every effect jumps to its end state (spec: "tap = next action"). */
+    fun skip() {
+        if (items.isEmpty()) return
+        items.clear(); focalEnd = now.longValue; reindex()
+    }
+
+    private fun reindex() {
+        byCard.clear()
+        for (it in items) it.card?.let { id -> byCard.getOrPut(id) { mutableListOf() } += it }
+        rev.intValue++
+    }
+
+    /** Reads the new snapshot against the last one and queues what changed. */
+    fun take(st: MatchState, anchors: Anchors?) {
+        val before = prev
+        prev = st
+        if (before == null || Motion.still || anchors == null) return
+        if (st.revision <= before.revision && st.revision != 0L) return
+        if (st.players.map { it.id } != before.players.map { it.id }) return
+        val t = now.longValue
+        val yours = st.waitingOnMe
+        if (yours) {
+            // Priority or a question: what is in flight finishes within 150 ms; what was still waiting is dropped.
+            val keep = items.filter { it.t0 <= t }
+            items.retainAll(keep)
+            for (it in keep) { val p = it.p(t); val left = it.t0 + it.dur - t; if (left > 150) { it.p0 = p; it.t0 = t; it.dur = 150 } }
+            focalEnd = minOf(focalEnd, t + 150)
+        }
+        val groups = diff(before, st, anchors)
+        if (groups.isEmpty()) { if (yours) reindex(); return }
+        var cursor = maxOf(t, focalEnd)
+        for (g in groups) {
+            val focal = g.any { it.level >= 2 }
+            for (it in g) {
+                // New focal effects play at half length while the decision is yours.
+                it.dur = if (yours && it.level >= 2) it.baseMs / 2 else it.baseMs
+                // A long queue never runs away from the game: anything starting more than 1.2 s out drops to half length.
+                if (cursor - t > 1200) it.dur /= 2
+                it.t0 = cursor + it.delay
+                items += it
+            }
+            if (focal) cursor += g.filter { it.level >= 2 }.maxOf { it.dur }
+        }
+        focalEnd = maxOf(focalEnd, cursor)
+        // Never more than 6 thread-like effects at once (spec: max 6 threads).
+        val threads = items.filter { it.kind == Fx.BLOCK || it.kind == Fx.CAST || (it.kind == Fx.RESOLVE && it.toKey != null) }
+        if (threads.size > 6) items.removeAll(threads.drop(6).toSet())
+        reindex()
+    }
+
+    private fun diff(a: MatchState, b: MatchState, anchors: Anchors): List<List<FxItem>> {
+        val viewer = b.viewer
+        val bfA = a.players.flatMap { it.battlefield }.associateBy { it.id }
+        val bfB = b.players.flatMap { it.battlefield }.associateBy { it.id }
+        val handA = a.me.hand.map { it.id }.toSet()
+        val stackSrcA = a.stack.mapNotNull { it.source?.id }.toSet()
+        val stackRect = anchors.rects["stackcard"]
+
+        val draws = mutableListOf<FxItem>(); val casts = mutableListOf<FxItem>(); val resolves = mutableListOf<FxItem>()
+        val arrivals = mutableListOf<FxItem>(); val combat = mutableListOf<FxItem>(); val hits = mutableListOf<FxItem>()
+        val deaths = mutableListOf<FxItem>(); val counters = mutableListOf<FxItem>()
+
+        // Draw (level 1, 350 ms): a card slides off the library into the hand.
+        val drawn = b.me.hand.filter { it.id !in handA && it.id !in bfA && it.id !in stackSrcA && a.players.none { p -> p.graveyard.any { g -> g.id == it.id } } }
+        drawn.take(3).forEachIndexed { i, _ -> draws += FxItem(Fx.DRAW, 1, 350, player = viewer, mine = true, fromKey = "lib$viewer", toKey = "hand", delay = i * 90L) }
+        for (p in b.players) if (!p.isViewer && p.id != viewer) {
+            val q = a.players.firstOrNull { it.id == p.id } ?: continue
+            if (p.handCount > q.handCount && p.libraryCount < q.libraryCount) draws += FxItem(Fx.DRAW, 1, 350, player = p.id, fromKey = "lib${p.id}", toKey = "cpuhand")
+        }
+
+        // Cast (level 2, 450 ms): the card lifts out of the hand to the stack; an ability starts at its permanent.
+        val idsA = a.stack.map { it.id }.toSet()
+        for (s in b.stack.reversed()) if (s.id !in idsA) {
+            val mine = s.controller == viewer
+            val src = s.source?.id
+            val from = when {
+                s.ability && src != null -> "c$src"
+                mine -> "hand"
+                else -> "cpuhand"
+            }
+            casts += FxItem(Fx.CAST, 2, 450, card = null, mine = mine, fromKey = from, toKey = "stackcard", tone = if (mine) Color(0xFFF3D27E) else Color(0xFFFF8A5C))
+        }
+        // Resolve (level 2, 300 ms): the stack card ripples; a spell with targets sends its light to them.
+        val idsB = b.stack.map { it.id }.toSet()
+        for (s in a.stack) if (s.id !in idsB) {
+            val src = s.source?.id
+            val becomesPermanent = src != null && src in bfB && src !in bfA
+            val target = s.targets.firstOrNull()?.let { r -> if (r.kind == "player") "orb${r.id}" else "c${r.id}" }
+            resolves += FxItem(Fx.RESOLVE, if (becomesPermanent) 1 else 2, if (becomesPermanent) 220 else 320, mine = s.controller == viewer, from = stackRect,
+                toKey = if (becomesPermanent) null else target, tone = if (s.controller == viewer) Color(0xFFF3D27E) else Color(0xFFFF8A5C))
+        }
+
+        // Arrivals: travel on an arc to the real slot, land with a 2 % squash and a light sweep (450 ms); tokens form from light (400 ms).
+        for ((id, c) in bfB) if (id !in bfA) {
+            if (c.token && id !in stackSrcA) { arrivals += FxItem(Fx.TOKEN, 1, 400, card = id, mine = c.controller == viewer); continue }
+            val fromStack = id in stackSrcA
+            val fromHand = id in handA
+            val key = when { fromStack -> null; fromHand -> "hand"; c.controller != viewer && !c.token -> "cpuhand"; else -> null }
+            val tone = cardColors(c)?.firstOrNull()?.let { MANA_GLOW[it] } ?: Color(0xFFE8D7A8)
+            arrivals += FxItem(Fx.ARRIVE, if (fromStack && c.isCreature) 2 else 1, 450, card = id, mine = c.controller == viewer,
+                from = if (fromStack) stackRect else null, fromKey = key, tone = tone, land = c.isLand)
+        }
+
+        // Combat: a new attacker leans in; a new blocker sends a pulse down its thread to the attacker.
+        for ((id, c) in bfB) {
+            val o = bfA[id] ?: continue
+            if (c.attacking && !o.attacking) combat += FxItem(Fx.ATTACK, 1, 300, card = id, mine = c.controller == viewer)
+            if (c.blocking && !o.blocking) c.blockingIds.firstOrNull()?.let { at -> combat += FxItem(Fx.BLOCK, 1, 450, fromKey = "c$id", toKey = "c$at", mine = c.controller == viewer) }
+        }
+
+        // Damage (level 2, 350 ms): 70 ms hit-stop, the number pops, a 3 px shake. Life totals move with it.
+        for ((id, c) in bfB) {
+            val o = bfA[id] ?: continue
+            if (c.damage > o.damage) hits += FxItem(Fx.DAMAGE, 2, 350, card = id, tone = Color(0xFFFF5A4A), label = "−${c.damage - o.damage}")
+            val gained = c.counters.values.sum() - o.counters.values.sum()
+            if (gained != 0) {
+                val key = c.counters.entries.firstOrNull { (k, v) -> v != (o.counters[k] ?: 0) }?.key ?: ""
+                val n = c.counters.values.sum() - o.counters.values.sum()
+                val label = when {
+                    key.equals("P1P1", true) -> if (n > 0) "+$n/+$n" else "−${-n}/−${-n}"
+                    key.equals("M1M1", true) -> "−${abs(n)}/−${abs(n)}"
+                    else -> (if (n > 0) "+$n " else "−${-n} ") + key.lowercase().replace('_', ' ')
+                }
+                counters += FxItem(Fx.COUNTER, 1, 300, card = id, label = label)
+            }
+        }
+        for (p in b.players) {
+            val q = a.players.firstOrNull { it.id == p.id } ?: continue
+            if (p.life != q.life) hits += FxItem(Fx.LIFE, 1, 700, player = p.id, toKey = "orb${p.id}", tone = if (p.life < q.life) Color(0xFFFF5A4A) else Color(0xFF7BE08A))
+                .also { it.label = if (p.life < q.life) "−${q.life - p.life}" else "+${p.life - q.life}" }
+        }
+
+        // Death (level 2, 600 ms): the holo bands break and drift to the graveyard. Exile and bounce fade where they stood.
+        for ((id, c) in bfA) if (id !in bfB) {
+            val rect = anchors.rects["c$id"] ?: continue
+            val toGrave = b.players.any { p -> p.graveyard.any { it.id == id } }
+            deaths += FxItem(Fx.DEATH, 2, 600, mine = c.controller == viewer, from = rect, toKey = if (toGrave) "grave${c.owner}" else null, ghost = c)
+        }
+        return listOf(draws, casts, resolves, arrivals, combat, hits, deaths, counters).filter { it.isNotEmpty() }
+    }
+
+    /** The card's own motion this frame (transform and alpha only), applied in its tile's layer. */
+    internal fun move(scope: GraphicsLayerScope, id: Int, anchors: Anchors?) {
+        rev.intValue
+        val list = byCard[id] ?: return
+        val t = now.longValue
+        anchors?.version?.intValue
+        with(scope) {
+            for (it in list) {
+                val p = it.p(t)
+                when (it.kind) {
+                    Fx.ARRIVE -> {
+                        if (p < 0f) { alpha = 0f; continue }
+                        val slot = anchors?.rects?.get("c$id")
+                        val src = it.from?.center ?: it.fromKey?.let { k -> anchors?.rects?.get(k)?.center }
+                        val travel = (p / .7f).coerceAtMost(1f)
+                        val e = 1f - (1f - travel).let { x -> x * x * x }
+                        if (slot != null && src != null && travel < 1f) {
+                            translationX = (src.x - slot.center.x) * (1f - e)
+                            translationY = (src.y - slot.center.y) * (1f - e) - sin(PI.toFloat() * e) * 26.dp.toPx() * (if (it.mine) 1f else -1f)
+                            val s = .72f + .28f * e; scaleX = s; scaleY = s
+                        }
+                        alpha = (p / .12f).coerceIn(0f, 1f)
+                        if (p >= .7f) { val q = (p - .7f) / .3f; val k = .02f * sin(PI.toFloat() * q); scaleX = 1f + k; scaleY = 1f - k }
+                    }
+                    Fx.TOKEN -> {
+                        if (p < 0f) { alpha = 0f; continue }
+                        alpha = (p / .55f).coerceIn(0f, 1f)
+                        val s = .86f + .14f * easeOutBack(p); scaleX = s; scaleY = s
+                    }
+                    Fx.DAMAGE -> if (p >= 0f) {
+                        if (p < .2f) { scaleX = 1.04f; scaleY = 1.04f }
+                        else { val q = (p - .2f) / .8f; translationX = 3.dp.toPx() * sin(q * 38f) * (1f - q) }
+                    }
+                    Fx.ATTACK -> if (p >= 0f) { val k = .04f * sin(PI.toFloat() * p); scaleX = 1f + k; scaleY = 1f + k }
+                    Fx.COUNTER -> if (p >= 0f) { val k = .03f * sin(PI.toFloat() * p); scaleX = 1f + k; scaleY = 1f + k }
+                    else -> {}
+                }
+            }
+        }
+    }
+}
+
+val LocalBattlefield = staticCompositionLocalOf<Battlefield?> { null }
+
+private val MANA_GLOW = mapOf('W' to Color(0xFFFFF1C2), 'U' to Color(0xFF5AB4FF), 'B' to Color(0xFFB08BD8), 'R' to Color(0xFFFF7A4A), 'G' to Color(0xFF6BE08A))
+
+private fun easeOutBack(x: Float): Float { val c1 = 1.70158f; val c3 = c1 + 1f; return 1f + c3 * (x - 1f).let { it * it * it } + c1 * (x - 1f).let { it * it } }
+private fun smooth(e0: Float, e1: Float, x: Float): Float { val t = ((x - e0) / (e1 - e0)).coerceIn(0f, 1f); return t * t * (3f - 2f * t) }
+private fun lerpO(a: Offset, b: Offset, t: Float) = Offset(a.x + (b.x - a.x) * t, a.y + (b.y - a.y) * t)
+
+/** Reads each new snapshot (after composition, before the frame draws) and runs the frame clock. */
+@Composable
+internal fun FxDriver(fx: Battlefield, st: MatchState) {
+    val anchors = LocalAnchors.current
+    SideEffect { fx.take(st, anchors) }
+    LaunchedEffect(fx) { if (!Motion.still) while (true) withFrameMillis { fx.tick(it) } }
+}
+
+/** A touch anywhere on the board skips every effect to its end (seen first, never consumed). */
+internal fun Modifier.fxSkip(fx: Battlefield) = pointerInput(fx) {
+    awaitPointerEventScope { while (true) { val e = awaitPointerEvent(PointerEventPass.Initial); if (e.type == PointerEventType.Press) fx.skip() } }
+}
+
+// ---- The mat itself: ambient light under the cards (spec page 15) ----
+
+private const val GRAIN_SKSL = """
+uniform float2 size; uniform float time; uniform float alpha; uniform float mid; uniform float dir;
+float hash(float2 p) { return fract(sin(dot(p, float2(127.1, 311.7))) * 43758.5453); }
+half4 main(float2 fc) {
+    float band = 1.0 - smoothstep(0.0, size.y * 0.26, abs(fc.y - mid));
+    float2 g = float2(fc.x * 0.03 + time * 0.45 * dir, fc.y * 0.5);
+    float2 cell = floor(g);
+    float n = hash(cell);
+    float streak = step(0.94, n) * (1.0 - fract(g.x)) * (0.6 + 0.4 * hash(cell + 3.1));
+    float a = streak * band * alpha;
+    return half4(half3(1.0, 0.88, 0.72) * a, a);
+}
+"""
+
+/**
+ * Your turn warms your half of the mat by 6 % (their turn, theirs); whoever holds priority has a slow light travelling
+ * round their edge, gold for you and cooler for the CPU (one loop per 3 s); combat lays a faint directional grain across
+ * the centre. Word twins: the phase strip and the lit play button already say each of these in words.
+ */
+@Composable
+internal fun FxMat(st: MatchState, mid: Dp) {
+    if (Motion.still) return
+    val fx = LocalBattlefield.current ?: return
+    val mineTurn = st.activePlayer == st.viewer
+    val warm = remember { Animatable(if (mineTurn) 1f else 0f) }
+    LaunchedEffect(mineTurn) { warm.animateTo(if (mineTurn) 1f else 0f, tween(700)) }
+    val running = st.status == "running"
+    val myEdge = running && st.waitingOnMe
+    val theirEdge = running && !myEdge && (st.busy || (st.priorityPlayer != null && st.priorityPlayer != st.viewer))
+    val edge = remember { Animatable(0f) } // -1 theirs, +1 yours
+    LaunchedEffect(myEdge, theirEdge) { edge.animateTo(if (myEdge) 1f else if (theirEdge) -1f else 0f, tween(500)) }
+    val combat = st.phase?.startsWith("COMBAT") == true
+    val grain = remember { Animatable(0f) }
+    LaunchedEffect(combat) { grain.animateTo(if (combat) 1f else 0f, tween(450)) }
+    val shader = remember { if (Build.VERSION.SDK_INT >= 33) runCatching { RuntimeShader(GRAIN_SKSL) }.getOrNull() else null }
+    val streaks = remember { val r = java.util.Random(7); List(80) { floatArrayOf(r.nextFloat(), r.nextFloat() * 2f - 1f, .4f + r.nextFloat() * .6f, r.nextFloat()) } }
+    val dir = if (mineTurn) -1f else 1f
+    Canvas(Modifier.fillMaxSize()) {
+        val t = fx.now.longValue
+        val m = mid.toPx()
+        // Turn warmth: +6 % on the active player's half.
+        val wy = warm.value
+        if (wy > 0f) drawRect(Color(0xFFFFE4B8).copy(alpha = .06f * wy), topLeft = Offset(0f, m), size = Size(size.width, size.height - m))
+        if (wy < 1f) drawRect(Color(0xFFFFE4B8).copy(alpha = .06f * (1f - wy)), size = Size(size.width, m))
+        // Combat grain across the centre.
+        val g = grain.value
+        if (g > 0f) {
+            val secs = (t % 600_000L) / 1000f
+            if (shader != null && Build.VERSION.SDK_INT >= 33) {
+                shader.setFloatUniform("size", size.width, size.height); shader.setFloatUniform("time", secs); shader.setFloatUniform("alpha", .22f * g)
+                shader.setFloatUniform("mid", m); shader.setFloatUniform("dir", dir)
+                drawRect(ShaderBrush(shader))
+            } else {
+                val band = size.height * .26f
+                for (s in streaks) {
+                    // One cycle per 6 s across the board: never faster than one cycle per 2 s.
+                    val x = ((s[0] + dir * secs / 6f) % 1f + 1f) % 1f * size.width
+                    val y = m + s[1] * band
+                    val fade = 1f - abs(s[1])
+                    val len = 26.dp.toPx() * s[2]
+                    drawLine(Color(0xFFFFE0B8).copy(alpha = .11f * g * fade * (.5f + .5f * s[3])), Offset(x, y), Offset(x + len, y), strokeWidth = 1.dp.toPx())
+                }
+            }
+        }
+        // Priority: a light travels round the holder's half.
+        val e = edge.value
+        if (abs(e) > .01f) {
+            val inset = 5.dp.toPx()
+            val mine = e > 0f
+            val r = if (mine) Rect(inset, m + inset, size.width - inset, size.height - inset) else Rect(inset, inset, size.width - inset, m - inset)
+            val path = Path().apply { addRoundRect(RoundRect(r, CornerRadius(14.dp.toPx()))) }
+            val pm = PathMeasure().apply { setPath(path, false) }
+            val len = pm.length
+            val col = if (mine) Color(0xFFF3D27E) else Color(0xFF8FB4FF)
+            val a = abs(e) * (if (mine) 1f else .7f)
+            drawPath(path, col.copy(alpha = .07f * a), style = Stroke(1.dp.toPx()))
+            val head = ((t % 3000L) / 3000f) * len
+            val tail = len * .2f
+            val parts = 12
+            for (i in 0 until parts) {
+                val s0 = head - tail * (i + 1) / parts; val s1 = head - tail * i / parts
+                val seg = Path()
+                fun cut(x0: Float, x1: Float) { pm.getSegment(x0, x1, seg, true) }
+                if (s0 >= 0) cut(s0, s1) else if (s1 <= 0) cut(s0 + len, s1 + len) else { cut(s0 + len, len); cut(0f, s1) }
+                val k = 1f - i.toFloat() / parts
+                drawPath(seg, col.copy(alpha = .55f * a * k), style = Stroke(1.6.dp.toPx() * (.6f + .4f * k)))
+                if (i < 3) drawIntoCanvas { c ->
+                    val p = Paint().asFrameworkPaint().apply { isAntiAlias = true; style = android.graphics.Paint.Style.STROKE; strokeWidth = 5.dp.toPx(); color = col.copy(alpha = .35f * a * k).toArgb(); maskFilter = BlurMaskFilter(6.dp.toPx(), BlurMaskFilter.Blur.NORMAL) }
+                    c.nativeCanvas.drawPath(seg.asAndroid(), p)
+                }
+            }
+        }
+    }
+}
+
+private fun Path.asAndroid() = (this as androidx.compose.ui.graphics.AndroidPath).internalPath
+
+// ---- Over the cards: arrivals, casts, hits, deaths, numbers ----
+
+@Composable
+internal fun FxLayer() {
+    if (Motion.still) return
+    val fx = LocalBattlefield.current ?: return
+    val anchors = LocalAnchors.current ?: return
+    var self by remember { mutableStateOf(Offset.Zero) }
+    val tm = rememberTextMeasurer()
+    val density = LocalDensity.current
+    Box(Modifier.fillMaxSize().onGloballyPositioned { self = it.boundsInRoot().topLeft }) {
+        // Dying cards: the last picture of the card, breaking into holo bands as it drifts to its graveyard.
+        for (it in fx.items) if (it.kind == Fx.DEATH && it.ghost != null && it.from != null) key(it) { Ghost(it, fx, anchors, self, density) }
+        Canvas(Modifier.fillMaxSize()) {
+            val t = fx.now.longValue
+            anchors.version.intValue
+            fun rect(k: String?): Rect? = k?.let { anchors.rects[it] }?.translate(-self.x, -self.y)
+            for (it in fx.items) {
+                val p = it.p(t); if (p < 0f) continue
+                when (it.kind) {
+                    Fx.DRAW -> drawDraw(it, p, rect(it.fromKey), rect(it.toKey) ?: Rect(size.width / 2 - 20f, size.height - 60f, size.width / 2 + 20f, size.height))
+                    Fx.CAST -> drawCast(it, p, rect(it.fromKey) ?: (if (it.mine) Rect(size.width / 2, size.height - 40f, size.width / 2, size.height) else Rect(size.width / 2, 0f, size.width / 2, 20f)), rect(it.toKey))
+                    Fx.RESOLVE -> drawResolve(it, p, it.from?.translate(-self.x, -self.y), rect(it.toKey))
+                    Fx.ARRIVE -> rect("c${it.card}")?.let { r -> drawArrive(it, p, r) }
+                    Fx.TOKEN -> rect("c${it.card}")?.let { r -> drawToken(p, r) }
+                    Fx.ATTACK -> rect("c${it.card}")?.let { r -> glowRing(r, Color(0xFFFF6A4A), .7f * sin(PI.toFloat() * p), 8.dp.toPx()) }
+                    Fx.BLOCK -> { val a = rect(it.fromKey); val b = rect(it.toKey); if (a != null && b != null) drawBlock(p, a, b) }
+                    Fx.DAMAGE -> rect("c${it.card}")?.let { r -> drawHit(p, r); pop(tm, it.label, p, r.center.copy(y = r.top + r.height * .35f), it.tone, 22f) }
+                    Fx.LIFE -> rect(it.toKey)?.let { r -> glowRing(r, it.tone, .8f * (1f - p), 6.dp.toPx(), round = true); pop(tm, it.label, p, Offset(r.center.x, if (r.center.y < size.height / 2) r.bottom + 16.dp.toPx() else r.top - 6.dp.toPx()), it.tone, 20f, down = r.center.y < size.height / 2) }
+                    Fx.COUNTER -> rect("c${it.card}")?.let { r -> drawPour(p, r); pop(tm, it.label, p, Offset(r.center.x, r.top + 4.dp.toPx()), Color(0xFFF3D27E), 15f) }
+                    Fx.DEATH -> it.from?.translate(-self.x, -self.y)?.let { r -> drawShards(it, p, r, rect(it.toKey)) }
+                }
+            }
+        }
+    }
+}
+
+@Composable private fun key(k: Any, content: @Composable () -> Unit) = androidx.compose.runtime.key(k) { content() }
+
+@Composable
+private fun Ghost(it: FxItem, fx: Battlefield, anchors: Anchors, self: Offset, density: androidx.compose.ui.unit.Density) {
+    val r = it.from!!
+    // The anchor is the tile's box on screen, so a tapped card's box is the bounds of the turned card: undo the 20° turn.
+    val turn = if (it.ghost?.tapped == true) 20f else 0f
+    val (gw, gh) = if (turn == 0f) r.width to r.height else {
+        val c = cos(turn * PI.toFloat() / 180f); val s = sin(turn * PI.toFloat() / 180f); val k = c * c - s * s
+        ((r.width * c - r.height * s) / k).coerceAtLeast(8f) to ((r.height * c - r.width * s) / k).coerceAtLeast(8f)
+    }
+    val w = with(density) { gw.toDp() }; val h = with(density) { gh.toDp() }
+    Box(Modifier.offset { IntOffset((r.center.x - gw / 2 - self.x).roundToInt(), (r.center.y - gh / 2 - self.y).roundToInt()) }.size(w, h)
+        .graphicsLayer {
+            val p = it.p(fx.now.longValue)
+            if (p < 0f) { alpha = 1f; return@graphicsLayer }
+            anchors.version.intValue
+            val grave = it.toKey?.let { k -> anchors.rects[k] }
+            val drift = smooth(.28f, 1f, p)
+            if (grave != null) {
+                translationX = (grave.center.x - r.center.x) * drift
+                translationY = (grave.center.y - r.center.y) * drift
+                val s = 1f + (grave.width / gw - 1f) * drift; scaleX = s; scaleY = s
+                rotationZ = turn * (1f - drift) - 8f * drift * (if (it.mine) 1f else -1f)
+            } else { val s = 1f - .12f * drift; scaleX = s; scaleY = s; rotationZ = turn }
+            alpha = 1f - smooth(.7f, 1f, p)
+        }
+        .drawWithContent {
+            val p = it.p(fx.now.longValue).coerceAtLeast(0f)
+            val brk = smooth(.12f, .55f, p)
+            val n = 6; val bh = size.height / n
+            for (i in 0 until n) {
+                val dx = (if (i % 2 == 0) 1f else -1f) * brk * (5f + i * 1.4f) * density.density
+                val dy = brk * (i - n / 2f) * 1.6f * density.density
+                clipRect(0f, i * bh, size.width, (i + 1) * bh) { translate(dx, dy) { this@drawWithContent.drawContent() } }
+            }
+            // Holo seams where the bands part.
+            if (brk > 0f) for (i in 1 until n) {
+                val y = i * bh + brk * (i - n / 2f) * 1.6f * density.density
+                drawLine(Brush.horizontalGradient(listOf(Color(0xFF6FF2FF), Color(0xFFE77CFF), Color(0xFFFFE07A), Color(0xFF6FF2FF))),
+                    Offset(-4f, y), Offset(size.width + 4f, y), strokeWidth = 1.6f * density.density, alpha = (.9f * brk * (1f - smooth(.6f, 1f, p))))
+            }
+            // The hit-stop: a white flash for the first 70 ms.
+            if (p < .12f) drawRect(Color.White.copy(alpha = .45f * (1f - p / .12f)))
+        }
+        .clip(RoundedCornerShape(10.dp))) {
+        CardImage(it.ghost!!.name, Modifier.fillMaxSize(), crop = true) {
+            val (a, b) = frameTone(cardColors(it.ghost))
+            Box(Modifier.fillMaxSize().drawWithContent { drawRect(Brush.linearGradient(listOf(a, b))) })
+        }
+    }
+}
+
+private fun DrawScope.glowRing(r: Rect, col: Color, a: Float, spread: Float, round: Boolean = false) {
+    if (a <= 0.01f) return
+    drawIntoCanvas { c ->
+        val p = Paint().asFrameworkPaint().apply { isAntiAlias = true; style = android.graphics.Paint.Style.STROKE; strokeWidth = spread; color = col.copy(alpha = a.coerceIn(0f, 1f)).toArgb(); maskFilter = BlurMaskFilter(spread, BlurMaskFilter.Blur.NORMAL) }
+        if (round) c.nativeCanvas.drawCircle(r.center.x, r.center.y, r.minDimension / 2 + spread / 2, p)
+        else c.nativeCanvas.drawRoundRect(r.left - spread / 2, r.top - spread / 2, r.right + spread / 2, r.bottom + spread / 2, 10.dp.toPx(), 10.dp.toPx(), p)
+    }
+}
+
+private fun DrawScope.comet(from: Offset, to: Offset, p: Float, col: Color, lift: Float) {
+    val n = 9
+    for (i in n downTo 0) {
+        val q = (p - i * .035f).coerceIn(0f, 1f)
+        val e = 1f - (1f - q).let { it * it }
+        val at = lerpO(from, to, e).let { it.copy(y = it.y - sin(PI.toFloat() * e) * lift) }
+        val k = 1f - i.toFloat() / (n + 1)
+        drawCircle(col.copy(alpha = .75f * k), radius = (2.5f + 4f * k) * density, center = at)
+        if (i == 0) drawCircle(Brush.radialGradient(listOf(col.copy(alpha = .6f), Color.Transparent), center = at, radius = 18f * density), radius = 18f * density, center = at)
+    }
+}
+
+private fun DrawScope.drawDraw(it: FxItem, p: Float, lib: Rect?, hand: Rect) {
+    val from = lib?.center ?: Offset(size.width - 60f * density, size.height / 2)
+    val to = Offset(hand.center.x, hand.top + hand.height * .45f)
+    val e = 1f - (1f - p).let { x -> x * x }
+    val at = lerpO(from, to, e).let { o -> o.copy(y = o.y - sin(PI.toFloat() * e) * 30f * density) }
+    val w = 30f * density * (1f + .5f * e); val h = w * 1.4f
+    // Flips into the hand: the back narrows past the middle of the move and the face side widens again.
+    val flip = abs(cos(PI.toFloat() * e))
+    val a = if (it.mine) 1f else .7f
+    rotate(-12f * (1f - e), pivot = at) {
+        val tl = Offset(at.x - w * flip / 2, at.y - h / 2)
+        drawRoundRect(Brush.linearGradient(listOf(Color(0xFF2A2F55), Color(0xFF14172B)), tl, tl + Offset(w, h)), tl, Size(w * flip, h), CornerRadius(3f * density), alpha = a * (1f - smooth(.85f, 1f, p)))
+        drawRoundRect(Color(0xFFC9A75A), tl, Size(w * flip, h), CornerRadius(3f * density), style = Stroke(1.2f * density), alpha = a * (1f - smooth(.85f, 1f, p)))
+    }
+}
+
+private fun DrawScope.drawCast(it: FxItem, p: Float, from: Rect, stack: Rect?) {
+    val to = stack?.center ?: Offset(size.width - 150f * density, size.height / 2)
+    val travel = (p / .65f).coerceAtMost(1f)
+    if (travel < 1f) comet(from.center, to, travel, it.tone, 40f * density * (if (it.mine) 1f else -1f))
+    if (p > .55f) { val q = (p - .55f) / .45f; ripple(to, (stack?.maxDimension ?: 80f * density) * .5f, q, it.tone) }
+}
+
+private fun DrawScope.ripple(c: Offset, base: Float, q: Float, col: Color) {
+    for (j in 0..1) {
+        val k = (q - j * .25f).coerceIn(0f, 1f); if (k <= 0f) continue
+        drawCircle(col.copy(alpha = .6f * (1f - k)), radius = base * (.6f + .9f * k), center = c, style = Stroke((3f - 2f * k) * density))
+    }
+}
+
+private fun DrawScope.drawResolve(it: FxItem, p: Float, stack: Rect?, target: Rect?) {
+    val c = stack?.center ?: Offset(size.width - 150f * density, size.height / 2)
+    ripple(c, (stack?.maxDimension ?: 80f * density) * .5f, (p / .6f).coerceAtMost(1f), it.tone)
+    if (stack != null) drawRoundRect(Color.White.copy(alpha = .35f * (1f - smooth(0f, .5f, p))), stack.topLeft, stack.size, CornerRadius(8f * density))
+    if (target != null) {
+        // The spell's light runs to what it targets: a bright head with a fading line behind it.
+        val q = smooth(.1f, .8f, p)
+        val head = lerpO(c, target.center, q)
+        drawLine(Brush.linearGradient(listOf(it.tone.copy(alpha = 0f), it.tone.copy(alpha = .85f)), c, head), c, head, strokeWidth = 2.5f * density, alpha = 1f - smooth(.8f, 1f, p))
+        drawCircle(Brush.radialGradient(listOf(Color.White, it.tone.copy(alpha = .6f), Color.Transparent), center = head, radius = 14f * density), radius = 14f * density, center = head, alpha = 1f - smooth(.85f, 1f, p))
+    }
+}
+
+private fun DrawScope.drawArrive(it: FxItem, p: Float, r: Rect) {
+    if (p < .62f) return
+    val q = (p - .62f) / .38f
+    // The landing: a light sweep across the card, and a land's mana glow in its colour.
+    val shape = Path().apply { addRoundRect(RoundRect(r, CornerRadius(10f * density))) }
+    clipPath(shape) {
+        val x = r.left - r.width * .6f + (r.width * 2.2f) * q
+        drawRect(Brush.linearGradient(listOf(Color.Transparent, Color.White.copy(alpha = .42f), Color.Transparent), Offset(x - r.width * .3f, r.top), Offset(x + r.width * .3f, r.bottom)), r.topLeft, r.size)
+    }
+    glowRing(r, it.tone, (if (it.land) .9f else .55f) * sin(PI.toFloat() * q), (if (it.land) 10f else 7f) * density)
+    if (it.land) drawCircle(Brush.radialGradient(listOf(it.tone.copy(alpha = .35f * sin(PI.toFloat() * q)), Color.Transparent), center = r.center, radius = r.maxDimension), radius = r.maxDimension, center = r.center)
+}
+
+private fun DrawScope.drawToken(p: Float, r: Rect) {
+    // Form from light: motes gather into the card while a bloom fades.
+    val bloom = 1f - smooth(.2f, .8f, p)
+    drawCircle(Brush.radialGradient(listOf(Color.White.copy(alpha = .75f * bloom), Color(0xFFF3D27E).copy(alpha = .3f * bloom), Color.Transparent), center = r.center, radius = r.maxDimension), radius = r.maxDimension, center = r.center)
+    val gather = smooth(0f, .7f, p)
+    for (i in 0 until 14) {
+        val ang = i / 14f * 2f * PI.toFloat() + .4f
+        val rad = r.maxDimension * (1.1f - gather)
+        val at = r.center + Offset(cos(ang) * rad, sin(ang) * rad)
+        drawCircle(Color(0xFFFFF4D6).copy(alpha = .9f * (1f - smooth(.7f, 1f, p))), radius = 2.2f * density, center = at)
+    }
+}
+
+private fun DrawScope.drawBlock(p: Float, a: Rect, b: Rect) {
+    for (j in 0..1) {
+        val q = (p * 1.25f - j * .25f).coerceIn(0f, 1f); if (q <= 0f || q >= 1f) continue
+        val at = lerpO(a.center, b.center, q)
+        drawCircle(Brush.radialGradient(listOf(Color.White, Color(0xFF6AAEFF).copy(alpha = .7f), Color.Transparent), center = at, radius = 12f * density), radius = 12f * density, center = at)
+    }
+    glowRing(b, Color(0xFF6AAEFF), .6f * smooth(.6f, .8f, p) * (1f - smooth(.85f, 1f, p)), 7f * density)
+}
+
+private fun DrawScope.drawHit(p: Float, r: Rect) {
+    if (p < .2f) drawRoundRect(Color.White.copy(alpha = .5f), r.topLeft, r.size, CornerRadius(10f * density))
+    val q = smooth(0f, .7f, p)
+    drawCircle(Color(0xFFFFB08A).copy(alpha = .7f * (1f - q)), radius = r.minDimension * (.3f + .6f * q), center = r.center, style = Stroke(3f * density * (1f - q) + .5f))
+}
+
+private fun DrawScope.drawPour(p: Float, r: Rect) {
+    // Light pours into the card from the top.
+    val shape = Path().apply { addRoundRect(RoundRect(r, CornerRadius(10f * density))) }
+    val fill = smooth(0f, .7f, p); val a = .45f * (1f - smooth(.6f, 1f, p))
+    clipPath(shape) {
+        drawRect(Brush.verticalGradient(listOf(Color(0xFFF3D27E).copy(alpha = a), Color.Transparent), r.top, r.top + r.height * fill + 1f), r.topLeft, Size(r.width, r.height * fill + 1f))
+    }
+}
+
+private fun DrawScope.drawShards(it: FxItem, p: Float, r: Rect, grave: Rect?) {
+    if (p < .15f) return
+    val to = grave?.center ?: r.center.copy(y = r.center.y + r.height * .3f)
+    val rnd = java.util.Random(it.ghost?.id?.toLong() ?: 3L)
+    val cols = listOf(Color(0xFF6FF2FF), Color(0xFFE77CFF), Color(0xFFFFE07A))
+    for (i in 0 until 18) {
+        val sx = r.left + rnd.nextFloat() * r.width; val sy = r.top + rnd.nextFloat() * r.height
+        val delay = rnd.nextFloat() * .25f
+        val q = smooth(.15f + delay, 1f, p)
+        val at = lerpO(Offset(sx, sy), to, q * q).let { o -> o.copy(y = o.y - sin(PI.toFloat() * q) * 18f * density * rnd.nextFloat()) }
+        drawRect(cols[i % 3].copy(alpha = .85f * (1f - q)), at, Size(2.6f * density, 2.6f * density))
+    }
+}
+
+/** A number pops (1.4× to 1× in the first quarter), rises 14 dp and fades in its last third. */
+private fun DrawScope.pop(tm: androidx.compose.ui.text.TextMeasurer, text: String, p: Float, at: Offset, col: Color, sizeSp: Float, down: Boolean = false) {
+    if (text.isEmpty()) return
+    val s = if (p < .25f) 1.4f - .4f * (p / .25f) else 1f
+    val a = 1f - smooth(.66f, 1f, p)
+    val style = TextStyle(fontFamily = Type.Sans, fontWeight = FontWeight.Black, fontSize = sizeSp.sp, color = col)
+    val lay = tm.measure(text, style)
+    val y = at.y + (if (down) 10f else -14f) * density * smooth(0f, 1f, p)
+    scale(s, Offset(at.x, y)) {
+        val tl = Offset(at.x - lay.size.width / 2f, y - lay.size.height / 2f)
+        // A dark outline so the number reads on any art.
+        for ((dx, dy) in listOf(-1.5f to 0f, 1.5f to 0f, 0f to -1.5f, 0f to 1.5f)) drawText(tm, text, tl + Offset(dx * density, dy * density), style.copy(color = Color.Black.copy(alpha = .9f * a)))
+        drawText(tm, text, tl, style.copy(color = col.copy(alpha = col.alpha * a)))
+    }
+}
