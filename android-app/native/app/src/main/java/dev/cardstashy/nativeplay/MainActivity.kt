@@ -202,7 +202,7 @@ private fun App(activity: MainActivity) {
             LaunchedEffect(Unit) { activity.inGame(false) }
             val model = lobbies.getOrPut(s.style) { dev.cardstashy.nativeplay.ui.LobbyModel(s.style) }
             dev.cardstashy.nativeplay.ui.LobbyScreen(model, onBack = { back() }, onStart = { go(Screen.Match(it)) }, onOpenDecks = { go(Screen.PlayDecks) },
-                onSignIn = { go(Screen.SignIn) }, onFriends = { go(Screen.Web(dev.cardstashy.nativeplay.ui.SITE_PLAY)) },
+                onSignIn = { go(Screen.SignIn) }, onFriends = { go(Screen.Lobby("social")) },
                 onOpenSaved = { go(Screen.Web("https://cardstashy.com/#deck/" + android.net.Uri.encode(it) + "/cards")) })
         }
         Screen.Decks -> {
@@ -281,7 +281,7 @@ private fun Table(activity: MainActivity, s: QuickPlay.Setup.Ready, t0: Long, on
         val context = LocalContext.current
         val scope = rememberCoroutineScope()
         val bubbles = remember { (pick as? Pick.Table)?.story?.let { dev.cardstashy.nativeplay.play.StoryBubbles(it.battle, it.seat) } }
-        val controller = remember { MatchController(scope, s.input).apply { onFinished = { st, f, ms -> reportMatch(pick, st, f, ms); (pick as? Pick.Table)?.story?.let { c -> outcome?.let { o -> storyFinished(scope, context, c, st, f, o, bubbles) } } } } }
+        val controller = remember { MatchController(scope, s.input, (pick as? Pick.Friend)?.let { f -> { dev.cardstashy.nativeplay.match.RemoteSession(f.matchId) } }).apply { onFinished = { st, f, ms -> reportMatch(pick, st, f, ms); (pick as? Pick.Table)?.story?.let { c -> outcome?.let { o -> storyFinished(scope, context, c, st, f, o, bubbles) } } } } }
         var versus by remember { mutableStateOf(round == 0) }
         DisposableEffect(Unit) { activity.inGame(true); controller.start(); onDispose { controller.close() } }
         if (round == 0) LaunchedEffect(Unit) {
@@ -337,7 +337,7 @@ private fun storyFinished(scope: kotlinx.coroutines.CoroutineScope, context: and
 /** play-forge-player-mat.js matchRow + the play:match-recorded detail: one finished match for quests and achievements. */
 /** app.js presence read(): {view, playView, match} for the screen on show. Collection and the web pages are "In CardStashy". */
 private fun presenceWhere(s: Screen): dev.cardstashy.nativeplay.play.Presence.Where = when (s) {
-    is Screen.Match -> dev.cardstashy.nativeplay.play.Presence.Where("play", "", dev.cardstashy.nativeplay.play.Presence.Match(if ((s.pick as? Pick.Table)?.quick == false) "practice" else "quick", s.pick.format))
+    is Screen.Match -> dev.cardstashy.nativeplay.play.Presence.Where("play", "", dev.cardstashy.nativeplay.play.Presence.Match(if (s.pick is Pick.Friend) "friend" else if ((s.pick as? Pick.Table)?.quick == false) "practice" else "quick", s.pick.format))
     Screen.Home -> dev.cardstashy.nativeplay.play.Presence.Where("play", "home")
     is Screen.Lobby, Screen.Decks -> dev.cardstashy.nativeplay.play.Presence.Where("play", "lobby")
     Screen.PlayDecks -> dev.cardstashy.nativeplay.play.Presence.Where("play", "decks")

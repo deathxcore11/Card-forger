@@ -30,6 +30,10 @@ sealed interface Pick {
                      val level: String, val quick: Boolean, val story: StoryCtx? = null) : Pick {
         override val id get() = you.get("id")?.takeIf { it.isJsonPrimitive }?.asString ?: name; override val raw get() = you
     }
+    /** A friend match: the server already started it, so both seats just open it (play-forge-host-client.js attach). The friend's cards arrive as they are played. */
+    data class Friend(val you: JsonObject, override val name: String, override val format: String, override val face: String?, val matchId: String, val friendName: String?) : Pick {
+        override val id get() = you.get("id")?.takeIf { it.isJsonPrimitive }?.asString ?: name; override val raw get() = you
+    }
     data class Mine(val deck: UserDeck) : Pick {
         override val id get() = deck.id; override val name get() = deck.name; override val format get() = QuickPlay.formatOf(deck)
         override val face get() = deck.face?.let(EngineNames::name); override val raw get() = deck.raw
@@ -81,6 +85,11 @@ object QuickPlay {
         ?: rows(deck).firstOrNull { (n, r) -> n !in UserDeck.BASICS && r.get("type")?.asString?.contains("Land") != true }?.first
 
     suspend fun setup(context: Context, pick: Pick, demos: DemoDecks): Setup = withContext(Dispatchers.Default) {
+        if (pick is Pick.Friend) {
+            // The host's engine has the whole card list and checked both decks when the room opened; nothing to load here but your pictures.
+            val youRows = rows(pick.raw)
+            return@withContext Setup.Ready("", Plate(pick.name, "You", pick.face), Plate(pick.friendName ?: "Friend", "Friend · ${pick.format}", null), youRows, listOfNotNull(pick.face), CardArt.knows(youRows.map { it.first }))
+        }
         // The engine is usually ready long before a deck is picked; this only waits on a cold start.
         val status = ForgeService.status.first { it is ForgeService.Status.Ready || it is ForgeService.Status.Failed }
         if (status is ForgeService.Status.Failed) return@withContext Setup.Failed("The engine couldn’t start: ${status.reason}")

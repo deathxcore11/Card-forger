@@ -97,6 +97,9 @@ import dev.cardstashy.nativeplay.match.MetaDecks
 import dev.cardstashy.nativeplay.match.Pick
 import dev.cardstashy.nativeplay.match.QuickOpponent
 import dev.cardstashy.nativeplay.play.CardFacts
+import kotlinx.coroutines.delay
+import androidx.compose.ui.platform.LocalDensity
+import dev.cardstashy.nativeplay.play.FriendRooms
 import dev.cardstashy.nativeplay.play.Decks as PlayRules
 import dev.cardstashy.nativeplay.play.Progress
 import dev.cardstashy.nativeplay.play.RandomBuild
@@ -153,12 +156,24 @@ class LobbyModel(style: String) {
     var importTicket = 0
     val importReady get() = importStatus == "review" || importStatus == "ready"
     val quick get() = style == "quick"
+    val social get() = style == "social"
+    /** Friends: the room you opened or the invite you hold (play-forge-host-client.js createFriendRooms). */
+    sealed interface Room {
+        data object Idle : Room
+        data object Busy : Room
+        data class Waiting(val roomId: String, val invite: String) : Room
+        data class Guest(val invite: String, val format: String, val from: String? = null, val roomId: String? = null) : Room
+    }
+    var room by mutableStateOf<Room>(Room.Idle)
+    var roomNote by mutableStateOf<String?>(null)
+    var inviteText by mutableStateOf("")
+    var challenges by mutableStateOf<List<FriendRooms.Challenge>>(emptyList())
     /** updateDraft: any change retires the previous preview. */
     fun updateDraft(name: String = draftName, text: String = draftText) {
         if (name != draftName || text != draftText) { draftName = name; draftText = text; importTicket++; candidate = null; importBusy = false; importStatus = "idle"; error = null; warnings = emptyList(); unresolved = emptyList() }
     }
     /** The seat the browser fills: always yours in Quick Play. */
-    val browseSeat get() = if (quick) "player" else inspected
+    val browseSeat get() = if (quick || social) "player" else inspected
     fun seat(k: String) = if (k == "player") player else opponent
     fun put(k: String, d: SeatDeck?) { if (k == "player") { player = d; if (quick) { opponent = null; quickMatch = null } } else opponent = d }
     fun configureFormat(f: String) { if (f != format) { player = null; opponent = null; inspected = "player"; quickMatch = null; importTicket++; candidate = null; importBusy = false; importStatus = "idle"; warnings = emptyList(); unresolved = emptyList() }; format = f; error = null; quickError = null }
@@ -266,12 +281,12 @@ fun LobbyScreen(model: LobbyModel, onBack: () -> Unit, onStart: (Pick) -> Unit, 
         m.importTicket++; m.importBusy = false; m.candidate = null; m.importStatus = "idle"; m.warnings = emptyList(); m.unresolved = emptyList()
         m.error = null
         // In Practice, once your deck is in, the next pick goes to the CPU's seat.
-        if (!m.quick && seat == "player" && m.player != null && m.opponent == null) m.inspected = "opponent"
+        if (!m.quick && !m.social && seat == "player" && m.player != null && m.opponent == null) m.inspected = "opponent"
     }
     fun pickSource(e: LobbySources.Entry) {
         RandomBuild.cancel()
         m.put(m.browseSeat, SeatDeck(e.deck.deepCopy(), e.kind))
-        if (!m.quick && m.browseSeat == "player" && m.opponent == null) m.inspected = "opponent"
+        if (!m.quick && !m.social && m.browseSeat == "player" && m.opponent == null) m.inspected = "opponent"
     }
     fun importPaste() {
         if (!signedIn) { onSignIn(); return }
@@ -283,17 +298,66 @@ fun LobbyScreen(model: LobbyModel, onBack: () -> Unit, onStart: (Pick) -> Unit, 
         if (!signedIn) { onSignIn(); return }
         val c = m.candidate
         if (m.importBusy || c == null || m.importStatus != "review") { m.error = "Finish reviewing a valid pasted list before selecting it."; return }
-        val seat = if (m.quick) "player" else m.inspected
+        val seat = if (m.quick || m.social) "player" else m.inspected
         m.inspected = seat; m.put(seat, SeatDeck(c.deepCopy(), "import"))
         m.candidate = null; m.importStatus = "selected"; m.error = null
     }
     // A finished random build lands in the seat it was built for.
     var buildSeat by remember { mutableStateOf("player") }
-    LaunchedEffect(build.deck) { build.deck?.let { d -> d.addProperty("format", m.format); m.put(buildSeat, SeatDeck(d.deepCopy(), "random")); if (!m.quick && buildSeat == "player" && m.opponent == null) m.inspected = "opponent" } }
+    LaunchedEffect(build.deck) { build.deck?.let { d -> d.addProperty("format", m.format); m.put(buildSeat, SeatDeck(d.deepCopy(), "random")); if (!m.quick && !m.social && buildSeat == "player" && m.opponent == null) m.inspected = "opponent" } }
+
+    // ---- Friends (app.js playFriendCreate / playFriendJoin / playFriendLaunch)
+    val rooms = remember { FriendRooms() }
+    val profile by Account.profile.collectAsState()
+    val card = remember(profile) { FriendRooms.playerCard(profile?.name ?: profile?.username, profile?.avatarUrl) }
+    fun roomFailure(e: Throwable) { m.room = LobbyModel.Room.Idle; m.roomNote = (e as? FriendRooms.Failure)?.message ?: e.message ?: "The room could not be reached. Try again." }
+    fun launch(you: SeatDeck, matchId: String, friendName: String?) { m.room = LobbyModel.Room.Idle; m.roomNote = null; onStart(Pick.Friend(you.raw, you.name, m.format, factName(you.raw), matchId, friendName)) }
+    fun cancelRoom() { (m.room as? LobbyModel.Room.Waiting)?.let { r -> scope.launch { runCatching { rooms.cancel(r.roomId) } } }; m.room = LobbyModel.Room.Idle; m.roomNote = null }
+    val friend = remember(m) { FriendActions(
+        copy = { inv -> (context.getSystemService(android.content.Context.CLIPBOARD_SERVICE) as android.content.ClipboardManager).setPrimaryClip(android.content.ClipData.newPlainText("Invite link", FriendRooms.link(inv))); toast("Link copied") },
+        share = { inv -> context.startActivity(android.content.Intent.createChooser(android.content.Intent(android.content.Intent.ACTION_SEND).setType("text/plain")
+            .putExtra(android.content.Intent.EXTRA_TEXT, "Play a Magic match with me on CardStashy: " + FriendRooms.link(inv)), "Send the invite")) },
+        cancel = { cancelRoom() },
+        useInvite = {
+            val code = FriendRooms.inviteFrom(m.inviteText) ?: FriendRooms.inviteFrom((context.getSystemService(android.content.Context.CLIPBOARD_SERVICE) as android.content.ClipboardManager).primaryClip?.getItemAt(0)?.text?.toString())
+            if (code == null) m.roomNote = "That isn’t an invite link. Paste the link your friend sent."
+            else { m.roomNote = null; m.room = LobbyModel.Room.Busy
+                scope.launch { try { val r = rooms.peek(code); val f = r.get("format")?.asString ?: m.format; if (f != m.format) m.configureFormat(f); m.inviteText = ""; m.room = LobbyModel.Room.Guest(code, f) } catch (e: Exception) { roomFailure(e) } } }
+        },
+        accept = { c -> if (c.format != m.format) m.configureFormat(c.format); m.roomNote = null; m.room = LobbyModel.Room.Guest(c.invite, c.format, c.fromName, c.roomId); m.challenges = m.challenges - c },
+        decline = { c -> m.challenges = m.challenges - c; scope.launch { runCatching { rooms.decline(c.roomId) } } }) }
+    // The host waits here: a started room brings the match both players open.
+    val room = m.room
+    LaunchedEffect(room) {
+        if (room !is LobbyModel.Room.Waiting) return@LaunchedEffect
+        while (true) {
+            delay(2000)
+            val d = try { rooms.read(room.roomId) } catch (e: Exception) { roomFailure(e); break }
+            val status = d.get("status")?.takeIf { it.isJsonPrimitive }?.asString
+            val matchId = d.get("matchId")?.takeIf { it.isJsonPrimitive }?.asString
+            if (status == "started" && matchId != null) { m.player?.let { launch(it, matchId, d.getAsJsonObject("opponent")?.get("name")?.takeIf { n -> n.isJsonPrimitive }?.asString) }; break }
+            if (status != null && status != "open") { m.room = LobbyModel.Room.Idle; m.roomNote = FriendRooms.MESSAGES[if (status == "expired") "invite_expired" else "room_closed"]; break }
+        }
+    }
+    // Challenges from friends, while this page is open and nothing is under way.
+    LaunchedEffect(m.social, signedIn) {
+        if (!m.social || !signedIn || !online) return@LaunchedEffect
+        while (true) { runCatching { m.challenges = rooms.challenges() }; delay(8000) }
+    }
 
     fun start() {
         if (!signedIn) { onSignIn(); return }
         val you = m.player ?: return
+        if (m.social) {
+            when (val r = m.room) {
+                is LobbyModel.Room.Idle -> { m.roomNote = null; m.room = LobbyModel.Room.Busy
+                    scope.launch { try { val o = rooms.open(m.format, you.raw, card); m.room = LobbyModel.Room.Waiting(o["roomId"].asString, o["invite"].asString) } catch (e: Exception) { roomFailure(e) } } }
+                is LobbyModel.Room.Guest -> { m.roomNote = null; m.room = LobbyModel.Room.Busy
+                    scope.launch { try { val o = rooms.join(r.invite, r.format, you.raw, card); launch(you, o["matchId"].asString, o.getAsJsonObject("opponent")?.get("name")?.takeIf { it.isJsonPrimitive }?.asString ?: r.from) } catch (e: Exception) { roomFailure(e) } } }
+                else -> {}
+            }
+            return
+        }
         if (m.quick) {
             if (!TableDecks.quickReady(you.id, you.source == "saved", locked)) {
                 m.player = null; toast(TableDecks.QUICK_NEEDS); return }
@@ -324,6 +388,7 @@ fun LobbyScreen(model: LobbyModel, onBack: () -> Unit, onStart: (Pick) -> Unit, 
 
     var cardPick by remember { mutableStateOf<CardPick?>(null) }
     BackHandler(cardPick == null && (m.inspectOpen || m.formatOpen)) { m.inspectOpen = false; m.formatOpen = false }
+    BackHandler(m.social && m.room is LobbyModel.Room.Waiting) { cancelRoom() }
     val grid = rememberLazyGridState()
     val density = androidx.compose.ui.platform.LocalDensity.current
     var barH by remember { mutableStateOf(0) }
@@ -353,7 +418,7 @@ fun LobbyScreen(model: LobbyModel, onBack: () -> Unit, onStart: (Pick) -> Unit, 
             },
             contentPadding = PaddingValues(start = 35.dp, end = 35.dp, top = 18.dp, bottom = 18.dp), horizontalArrangement = Arrangement.spacedBy(10.dp), verticalArrangement = Arrangement.spacedBy(10.dp)) {
             full { Box(Modifier.outset(19.dp)) { Head(m, onBack, onFriends) } }
-            full { Box(Modifier.outset(19.dp)) { Arena(m, onFocusDecks = { scope.launch { grid.animateScrollToItem(LIB_HEAD) } }) } }
+            full { Box(Modifier.outset(19.dp)) { Arena(m, friend, onFocusDecks = { scope.launch { grid.animateScrollToItem(LIB_HEAD) } }) } }
             full {
                 LibraryHead(m, source, signedIn, onOpenDecks)
             }
@@ -400,7 +465,7 @@ fun LobbyScreen(model: LobbyModel, onBack: () -> Unit, onStart: (Pick) -> Unit, 
                         val d = gridAt.value - barAt.value
                         translate(d.x, d.y) { drawLayer(blurLayer) }
                     }
-                }) { StartBar(m, signedIn, statusText(m)) { start() } }
+                }) { StartBar(m, signedIn, statusText(m), friend) { start() } }
             }
         }
         if (m.formatOpen) FormatSheet(m)
@@ -444,7 +509,7 @@ fun forgeCpuDeckComplete(deck: JsonObject): Boolean {
 }
 
 /** The footer only speaks up for a real problem (quick error, then Quick Play's pick reason). */
-private fun statusText(m: LobbyModel): String = m.quickError ?: m.error ?: (if (m.quick) m.quickMatch?.reason ?: "" else "")
+private fun statusText(m: LobbyModel): String = m.roomNote ?: m.quickError ?: m.error ?: (if (m.quick) m.quickMatch?.reason ?: "" else "")
 
 private fun emptyText(source: String, format: String) = when (source) {
     "precons" -> "Load more precons to see published lists that are legal in $format."
@@ -463,7 +528,7 @@ private fun Head(m: LobbyModel, onBack: () -> Unit, onFriends: () -> Unit) {
                 androidx.compose.foundation.Image(SiteIcons.Back, "Back to Play", Modifier.size(22.dp), colorFilter = ColorFilter.tint(Site.Text)) }
             Column {
                 Text("PLAY", style = sans(11f, FontWeight.Bold, Gold, 3.3f, 16f))
-                Text(if (m.quick) "Quick Play" else "Practice", style = if (lightMode) cinzel(24f, Site.Text, .48f, 25.2f) else cinzel(24f, spacing = .48f, line = 25.2f).copy(brush = Brush.verticalGradient(0.3f to Color(0xFFF8F0DC), 1f to Color(0xFFD6AD64))))
+                Text(if (m.quick) "Quick Play" else if (m.social) "Friends" else "Practice", style = if (lightMode) cinzel(24f, Site.Text, .48f, 25.2f) else cinzel(24f, spacing = .48f, line = 25.2f).copy(brush = Brush.verticalGradient(0.3f to Color(0xFFF8F0DC), 1f to Color(0xFFD6AD64))))
             }
         }
         FlowRow(horizontalArrangement = Arrangement.spacedBy(10.dp), verticalArrangement = Arrangement.spacedBy(10.dp)) {
@@ -473,7 +538,7 @@ private fun Head(m: LobbyModel, onBack: () -> Unit, onFriends: () -> Unit) {
                 androidx.compose.foundation.Image(SiteIcons.Chevron, null, Modifier.size(18.dp), colorFilter = ColorFilter.tint(Site.Text))
             }
             if (!m.quick) PlaymatPicker(Modifier.weight(1f)) // playmatPickerMarkup, Practice only (.pl-head-tools .pl-mat{flex:1})
-            if (!m.quick) Row(Modifier.height(44.dp).pill(Color(0xB30D0F14), Color(0xFF766647)).clickable(onClick = onFriends).padding(horizontal = 16.dp),
+            if (!m.quick && !m.social) Row(Modifier.height(44.dp).pill(Color(0xB30D0F14), Color(0xFF766647)).clickable(onClick = onFriends).padding(horizontal = 16.dp),
                 verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(8.dp)) {
                 androidx.compose.foundation.Image(SiteIcons.Friends, null, Modifier.size(18.dp), colorFilter = ColorFilter.tint(Color(0xFFF6E4BB)))
                 Text("Invite a friend", style = sans(14f, FontWeight.Bold, Color(0xFFF6E4BB)))
@@ -487,7 +552,7 @@ private fun FormatSheet(m: LobbyModel) {
     Box(Modifier.fillMaxSize().background(Color(0x99000000)).tap { m.formatOpen = false }, contentAlignment = Alignment.BottomCenter) {
         Column(Modifier.fillMaxWidth().widthIn(max = 560.dp).clip(RoundedCornerShape(topStart = 22.dp, topEnd = 22.dp)).background(Site.Surface).border(1.dp, Line, RoundedCornerShape(topStart = 22.dp, topEnd = 22.dp))
             .tap { }.windowInsetsPadding(WindowInsets.safeDrawing).padding(16.dp).verticalScroll(rememberScrollState()), verticalArrangement = Arrangement.spacedBy(10.dp)) {
-            FORMAT_GROUPS.forEach { (label, rows) ->
+            FORMAT_GROUPS.map { (l, r) -> l to (if (m.social) r.filter { it.first in FriendRooms.FORMATS } else r) }.filter { it.second.isNotEmpty() }.forEach { (label, rows) ->
                 Text(label, style = sans(12f, FontWeight.Bold, Muted, 1f))
                 rows.chunked(2).forEach { pair -> Row(horizontalArrangement = Arrangement.spacedBy(10.dp)) {
                     pair.forEach { (f, note) ->
@@ -510,15 +575,16 @@ private fun FormatSheet(m: LobbyModel) {
 // ---------------------------------------------------------------- arena
 
 @Composable
-private fun Arena(m: LobbyModel, onFocusDecks: () -> Unit) {
+private fun Arena(m: LobbyModel, friend: FriendActions, onFocusDecks: () -> Unit) {
     val practice = !m.quick
+    var seam by remember { mutableStateOf(-1) }
     Box {
         Column {
-            Seat(m, "player", practice, onFocusDecks)
-            Seat(m, "opponent", practice, onFocusDecks)
+            Box(Modifier.onSizeChanged { seam = it.height }) { Seat(m, "player", practice, onFocusDecks) }
+            if (m.social) FriendSeat(m, friend) else Seat(m, "opponent", practice, onFocusDecks)
         }
         // The VS medallion: a 44 px diamond with a gold edge and a dark ring, centred on the seam.
-        Box(Modifier.align(Alignment.Center).size(62.dp), contentAlignment = Alignment.Center) {
+        Box(Modifier.align(if (m.social && seam > 0) Alignment.TopCenter else Alignment.Center).offset(y = if (m.social && seam > 0) with(LocalDensity.current) { seam.toDp() - 31.dp } else 0.dp).size(62.dp), contentAlignment = Alignment.Center) {
             Box(Modifier.size(44.dp).rotate(45f).drawBehind {
                 drawRoundRect(Color(0x26E8B95B), Offset(-7.dp.toPx(), -7.dp.toPx()), Size(size.width + 14.dp.toPx(), size.height + 14.dp.toPx()), androidx.compose.ui.geometry.CornerRadius(16.dp.toPx()))
                 drawRoundRect(Color(0xFF0C0D10), Offset(-6.dp.toPx(), -6.dp.toPx()), Size(size.width + 12.dp.toPx(), size.height + 12.dp.toPx()), androidx.compose.ui.geometry.CornerRadius(15.dp.toPx()))
@@ -594,18 +660,22 @@ private fun Backs(modifier: Modifier) {
 // ---------------------------------------------------------------- start bar
 
 @Composable
-private fun StartBar(m: LobbyModel, signedIn: Boolean, status: String, onStart: () -> Unit) {
+private fun StartBar(m: LobbyModel, signedIn: Boolean, status: String, friend: FriendActions, onStart: () -> Unit) {
     Column(Modifier.fillMaxWidth().clip(RoundedCornerShape(18.dp)).background(if (lightMode) Color(0xB3F3F5F8) else Color(0xB30F1115)).padding(horizontal = 10.dp, vertical = 8.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
         if (status.isNotEmpty()) Text(status, style = sans(13f, color = SoftInk), modifier = Modifier.padding(horizontal = 4.dp))
-        if (!m.quick) Row(Modifier.fillMaxWidth().height(54.dp).pill(TabsFill, Line).padding(4.dp), verticalAlignment = Alignment.CenterVertically) {
+        if (m.social) FriendInvite(m, friend)
+        if (!m.quick && !m.social) Row(Modifier.fillMaxWidth().height(54.dp).pill(TabsFill, Line).padding(4.dp), verticalAlignment = Alignment.CenterVertically) {
             Text("CPU", style = sans(11f, FontWeight.Normal, Muted), modifier = Modifier.padding(horizontal = 10.dp))
             listOf("Easy", "Medium", "Hard").forEach { lv -> val on = m.difficulty == lv
                 Box(Modifier.weight(1f).height(44.dp).clip(RoundedCornerShape(999.dp)).then(if (on) Modifier.background(Picked).border(1.dp, Color(0x66D8B76C), RoundedCornerShape(999.dp)) else Modifier)
                     .clickable { m.difficulty = lv; m.quickMatch = null }, contentAlignment = Alignment.Center) { Text(CPU_LABELS.getValue(lv), style = sans(15f, color = if (on) Gold else Muted)) }
             }
         }
-        val label = if (!signedIn) "Sign in to play" else if (m.quickBusy) "Finding a CPU deck…" else if (m.player == null) "Pick your deck" else if (!m.quick && m.opponent == null) "Pick the CPU deck" else "Play vs CPU"
-        val ready = !signedIn || (!m.quickBusy && m.player != null && (m.quick || m.opponent != null))
+        val room = m.room
+        val label = if (m.social) (if (!signedIn) "Sign in to play" else if (room is LobbyModel.Room.Busy) "Opening the room…" else if (m.player == null) "Pick your deck" else if (room is LobbyModel.Room.Waiting) "Waiting for your friend…"
+            else if (room is LobbyModel.Room.Guest) "Join room" else "Create room")
+            else if (!signedIn) "Sign in to play" else if (m.quickBusy) "Finding a CPU deck…" else if (m.player == null) "Pick your deck" else if (!m.quick && m.opponent == null) "Pick the CPU deck" else "Play vs CPU"
+        val ready = if (m.social) (!signedIn || (m.player != null && room is LobbyModel.Room.Idle || m.player != null && room is LobbyModel.Room.Guest)) else (!signedIn || (!m.quickBusy && m.player != null && (m.quick || m.opponent != null)))
         val shape = RoundedCornerShape(10.dp)
         // .cs-plate:disabled — the dark plate at opacity .6 under saturate(.4) (#d6ad64 reads #bfaf92).
         Box(Modifier.fillMaxWidth().height(50.dp).then(if (ready) Modifier else Modifier.alpha(.6f)).clip(shape)
@@ -1011,4 +1081,61 @@ private fun Pic(url: String?, modifier: Modifier, contentScale: ContentScale = C
                 alignment: Alignment = Alignment.Center) {
     val p = heroPainter(url?.let(homeArt)) ?: return
     androidx.compose.foundation.Image(p, null, modifier, alignment = alignment, contentScale = contentScale, alpha = alpha, colorFilter = colorFilter)
+}
+
+// ---------------------------------------------------------------- friends
+
+class FriendActions(val copy: (String) -> Unit, val share: (String) -> Unit, val cancel: () -> Unit, val useInvite: () -> Unit,
+                    val accept: (FriendRooms.Challenge) -> Unit, val decline: (FriendRooms.Challenge) -> Unit)
+
+private val FriendBlue = Color(0xFF8EC5FF)
+
+/** The friend's seat: an open slot, the room waiting with its link, or the room you were invited to. */
+@Composable
+private fun FriendSeat(m: LobbyModel, f: FriendActions) {
+    val shape = RoundedCornerShape(bottomStart = 18.dp, bottomEnd = 18.dp)
+    val room = m.room
+    val (who, title, detail) = when (room) {
+        is LobbyModel.Room.Waiting -> Triple("FRIEND", "Waiting for your friend", "Send them the link. The room opens the match when they join.")
+        is LobbyModel.Room.Guest -> Triple("FRIEND’S ROOM", "${room.format} match", room.from?.let { "Challenge from $it" } ?: "Pick your deck, then join.")
+        LobbyModel.Room.Busy -> Triple("FRIEND", "Opening the room…", "")
+        else -> Triple("FRIEND", "Invite a friend", "Create a room and send the link, or paste one you were sent.")
+    }
+    Box(Modifier.fillMaxWidth().heightIn(min = 175.dp).shadow(22.dp, shape, ambientColor = Color(0x77000000), spotColor = Color(0x77000000)).clip(shape)
+        .background(Brush.radialGradient(listOf(Color(0xFF1B2130), Color(0xFF0E1016)), center = Offset(.3f, .5f))).border(1.dp, Color(0x40D6AD64), shape)) {
+        if (room is LobbyModel.Room.Guest) Backs(Modifier.align(Alignment.CenterStart).padding(start = 10.dp)) else Slot(Modifier.align(Alignment.CenterStart).padding(horizontal = 40.dp))
+        Column(Modifier.align(Alignment.CenterEnd).padding(top = 18.dp, bottom = 18.dp, start = 112.dp, end = 18.dp).fillMaxWidth(), horizontalAlignment = Alignment.End, verticalArrangement = Arrangement.spacedBy(6.dp)) {
+            Text(who, style = sans(11f, FontWeight.Bold, FriendBlue, 1.76f, 16f), textAlign = TextAlign.End)
+            Text(title, style = cinzel(21f, line = 23.5f), textAlign = TextAlign.End)
+            if (detail.isNotEmpty()) Text(detail, style = sans(13f, color = Color(0xFFD3D9DF)), textAlign = TextAlign.End)
+            if (room is LobbyModel.Room.Waiting) FlowRow(Modifier.padding(top = 4.dp), horizontalArrangement = Arrangement.spacedBy(8.dp, Alignment.End), verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                listOf<Pair<String, () -> Unit>>("Copy link" to { f.copy(room.invite) }, "Share" to { f.share(room.invite) }, "Cancel" to { f.cancel() }).forEach { (l, a) ->
+                    Box(Modifier.height(44.dp).pill(Color(0xB30C0E13), Color(0x66D6AD64)).clickable(onClick = a).padding(horizontal = 14.dp), contentAlignment = Alignment.Center) { Text(l, style = sans(13.5f, FontWeight.Bold, Color(0xFFF1E9D8))) }
+                }
+            }
+            if (room is LobbyModel.Room.Guest) Box(Modifier.height(44.dp).pill(Color(0xB30C0E13), Color(0x33FFFFFF)).clickable { f.cancel(); m.room = LobbyModel.Room.Idle }.padding(horizontal = 12.dp), contentAlignment = Alignment.Center) { Text("Leave room", style = sans(13.5f, FontWeight.Bold, Color(0xFFF1E9D8))) }
+        }
+    }
+}
+
+/** Above the Create room button: a link you were sent, and the challenges friends have for you. */
+@Composable
+private fun FriendInvite(m: LobbyModel, f: FriendActions) {
+    if (m.room !is LobbyModel.Room.Idle) return
+    Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
+        m.challenges.forEach { c ->
+            Row(Modifier.fillMaxWidth().pill(TabsFill, Color(0x66D6AD64)).padding(start = 14.dp, end = 6.dp, top = 6.dp, bottom = 6.dp), verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                Text("${c.fromName ?: "A friend"} challenges you · ${c.format}", style = sans(13.5f, FontWeight.SemiBold, Site.Text), modifier = Modifier.weight(1f))
+                Box(Modifier.height(40.dp).pill(Color(0x33E8B95B), Color(0x99D6AD64)).clickable { f.accept(c) }.padding(horizontal = 14.dp), contentAlignment = Alignment.Center) { Text("Accept", style = sans(13.5f, FontWeight.Bold, Gold)) }
+                Box(Modifier.height(40.dp).clickable { f.decline(c) }.padding(horizontal = 10.dp), contentAlignment = Alignment.Center) { Text("Not now", style = sans(13.5f, color = Muted)) }
+            }
+        }
+        Row(Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+            Box(Modifier.weight(1f).height(44.dp).pill(TabsFill, Line).padding(horizontal = 14.dp), contentAlignment = Alignment.CenterStart) {
+                androidx.compose.foundation.text.BasicTextField(m.inviteText, { m.inviteText = it.take(400) }, singleLine = true, textStyle = sans(14f, color = Site.Text), cursorBrush = SolidColor(Gold), modifier = Modifier.fillMaxWidth(),
+                    decorationBox = { inner -> if (m.inviteText.isEmpty()) Text("Paste a friend’s invite link", style = sans(14f, color = Muted)); inner() })
+            }
+            Box(Modifier.height(44.dp).pill(Color(0x33E8B95B), Color(0x99D6AD64)).clickable(onClick = f.useInvite).padding(horizontal = 16.dp), contentAlignment = Alignment.Center) { Text("Join", style = sans(14f, FontWeight.Bold, Gold)) }
+        }
+    }
 }
