@@ -1,0 +1,1331 @@
+{
+  "source": "e4e938bb93b8257590ab7e54dde81bd9684b281a",
+  "runtime": "a86578b23adcd26c",
+  "cases": [
+    {
+      "name": "installed Calling All Angels",
+      "admitted": false,
+      "playerMissing": 44,
+      "reasons": [
+        "Unknown cards: Always Watching, Angel of Finality, Angel of Vitality, Angelic Sleuth, Austere Command, Bishop of Wings, +38 more",
+        "Always Watching: card rules are not installed.",
+        "Angelic Sleuth: card rules are not installed.",
+        "Austere Command: card rules are not installed."
+      ]
+    },
+    {
+      "name": "engine The Arkenstone // Seek the Heart",
+      "admitted": false,
+      "seat": {
+        "constructionLegal": true,
+        "reasons": [
+          "The Arkenstone // Seek the Heart: card rules are not installed."
+        ],
+        "unsupported": [
+          "The Arkenstone // Seek the Heart"
+        ],
+        "admitted": false
+      }
+    },
+    {
+      "name": "engine The Arkenstone",
+      "admitted": true,
+      "seat": {
+        "constructionLegal": true,
+        "reasons": [],
+        "unsupported": [],
+        "admitted": true
+      }
+    },
+    {
+      "name": "priority export",
+      "available": false
+    },
+    {
+      "name": "full-name catalog matching with known card metadata fixture",
+      "passes": true,
+      "note": "Fixture metadata only; actual owner lookup response remains NOT TESTED."
+    },
+    {
+      "name": "44 absent angel definitions deserialize into existing runtime",
+      "passed": 44,
+      "failed": [],
+      "note": "Schema compatibility only; card behavior is not certified."
+    },
+    {
+      "name": "experimental Calling All Angels expansion",
+      "admitted": true,
+      "reasons": [],
+      "note": "Only a local diagnostic. No production data, rules or guards were changed."
+    },
+    {
+      "name": "exact Calling All Angels initialization",
+      "players": [
+        {
+          "life": 40,
+          "cardsInLibrary": 92
+        },
+        {
+          "life": 40,
+          "cardsInLibrary": 92
+        }
+      ],
+      "objects": 200,
+      "note": "Initialization only. No complete match or human/CPU mechanic coverage claimed."
+    },
+    {
+      "name": "experimental exact Angels Medium mirror",
+      "status": "FAIL",
+      "seed": 7331,
+      "accepted": 109,
+      "decisionKinds": {
+        "MulliganDecision": 2,
+        "Priority": 105,
+        "DeclareAttackers": 2
+      },
+      "trace": [
+        {
+          "actor": 0,
+          "decision": "MulliganDecision",
+          "action": {
+            "type": "MulliganDecision",
+            "data": {
+              "choice": {
+                "type": "Keep"
+              }
+            }
+          }
+        },
+        {
+          "actor": 1,
+          "decision": "MulliganDecision",
+          "action": {
+            "type": "MulliganDecision",
+            "data": {
+              "choice": {
+                "type": "Keep"
+              }
+            }
+          }
+        },
+        {
+          "actor": 0,
+          "decision": "Priority",
+          "action": {
+            "type": "PassPriority"
+          }
+        },
+        {
+          "actor": 1,
+          "decision": "Priority",
+          "action": {
+            "type": "PassPriority"
+          }
+        },
+        {
+          "actor": 0,
+          "decision": "Priority",
+          "action": {
+            "type": "PlayLand",
+            "data": {
+              "object_id": 11,
+              "card_id": 11
+            }
+          }
+        },
+        {
+          "actor": 0,
+          "decision": "Priority",
+          "action": {
+            "type": "CastSpell",
+            "data": {
+              "object_id": 7,
+              "card_id": 7,
+              "targets": [],
+              "payment_mode": {
+                "type": "Auto"
+              }
+            }
+          }
+        },
+        {
+          "actor": 0,
+          "decision": "Priority",
+          "action": {
+            "type": "PassPriority"
+          }
+        },
+        {
+          "actor": 1,
+          "decision": "Priority",
+          "action": {
+            "type": "PassPriority"
+          }
+        },
+        {
+          "actor": 0,
+          "decision": "Priority",
+          "action": {
+            "type": "PassPriority"
+          }
+        },
+        {
+          "actor": 1,
+          "decision": "Priority",
+          "action": {
+            "type": "PassPriority"
+          }
+        },
+        {
+          "actor": 0,
+          "decision": "Priority",
+          "action": {
+            "type": "PassPriority"
+          }
+        },
+        {
+          "actor": 1,
+          "decision": "Priority",
+          "action": {
+            "type": "PassPriority"
+          }
+        },
+        {
+          "actor": 0,
+          "decision": "Priority",
+          "action": {
+            "type": "PassPriority"
+          }
+        },
+        {
+          "actor": 1,
+          "decision": "Priority",
+          "action": {
+            "type": "PassPriority"
+          }
+        },
+        {
+          "actor": 0,
+          "decision": "Priority",
+          "action": {
+            "type": "PassPriority"
+          }
+        },
+        {
+          "actor": 1,
+          "decision": "Priority",
+          "action": {
+            "type": "PassPriority"
+          }
+        },
+        {
+          "actor": 0,
+          "decision": "Priority",
+          "action": {
+            "type": "PassPriority"
+          }
+        },
+        {
+          "actor": 1,
+          "decision": "Priority",
+          "action": {
+            "type": "PassPriority"
+          }
+        },
+        {
+          "actor": 1,
+          "decision": "Priority",
+          "action": {
+            "type": "PassPriority"
+          }
+        },
+        {
+          "actor": 0,
+          "decision": "Priority",
+          "action": {
+            "type": "PassPriority"
+          }
+        },
+        {
+          "actor": 1,
+          "decision": "Priority",
+          "action": {
+            "type": "PassPriority"
+          }
+        },
+        {
+          "actor": 0,
+          "decision": "Priority",
+          "action": {
+            "type": "PassPriority"
+          }
+        },
+        {
+          "actor": 1,
+          "decision": "Priority",
+          "action": {
+            "type": "PlayLand",
+            "data": {
+              "object_id": 103,
+              "card_id": 103
+            }
+          }
+        },
+        {
+          "actor": 1,
+          "decision": "Priority",
+          "action": {
+            "type": "PassPriority"
+          }
+        },
+        {
+          "actor": 0,
+          "decision": "Priority",
+          "action": {
+            "type": "PassPriority"
+          }
+        },
+        {
+          "actor": 1,
+          "decision": "Priority",
+          "action": {
+            "type": "PassPriority"
+          }
+        },
+        {
+          "actor": 0,
+          "decision": "Priority",
+          "action": {
+            "type": "PassPriority"
+          }
+        },
+        {
+          "actor": 1,
+          "decision": "Priority",
+          "action": {
+            "type": "PassPriority"
+          }
+        },
+        {
+          "actor": 0,
+          "decision": "Priority",
+          "action": {
+            "type": "PassPriority"
+          }
+        },
+        {
+          "actor": 1,
+          "decision": "Priority",
+          "action": {
+            "type": "PassPriority"
+          }
+        },
+        {
+          "actor": 0,
+          "decision": "Priority",
+          "action": {
+            "type": "PassPriority"
+          }
+        },
+        {
+          "actor": 1,
+          "decision": "Priority",
+          "action": {
+            "type": "PassPriority"
+          }
+        },
+        {
+          "actor": 0,
+          "decision": "Priority",
+          "action": {
+            "type": "PassPriority"
+          }
+        },
+        {
+          "actor": 0,
+          "decision": "Priority",
+          "action": {
+            "type": "PassPriority"
+          }
+        },
+        {
+          "actor": 1,
+          "decision": "Priority",
+          "action": {
+            "type": "PassPriority"
+          }
+        },
+        {
+          "actor": 0,
+          "decision": "Priority",
+          "action": {
+            "type": "PassPriority"
+          }
+        },
+        {
+          "actor": 1,
+          "decision": "Priority",
+          "action": {
+            "type": "PassPriority"
+          }
+        },
+        {
+          "actor": 0,
+          "decision": "Priority",
+          "action": {
+            "type": "PlayLand",
+            "data": {
+              "object_id": 26,
+              "card_id": 26
+            }
+          }
+        },
+        {
+          "actor": 0,
+          "decision": "Priority",
+          "action": {
+            "type": "CastSpell",
+            "data": {
+              "object_id": 97,
+              "card_id": 97,
+              "targets": [],
+              "payment_mode": {
+                "type": "Auto"
+              }
+            }
+          }
+        },
+        {
+          "actor": 0,
+          "decision": "Priority",
+          "action": {
+            "type": "PassPriority"
+          }
+        },
+        {
+          "actor": 1,
+          "decision": "Priority",
+          "action": {
+            "type": "PassPriority"
+          }
+        },
+        {
+          "actor": 0,
+          "decision": "Priority",
+          "action": {
+            "type": "CastSpell",
+            "data": {
+              "object_id": 34,
+              "card_id": 34,
+              "targets": [],
+              "payment_mode": {
+                "type": "Auto"
+              }
+            }
+          }
+        },
+        {
+          "actor": 0,
+          "decision": "Priority",
+          "action": {
+            "type": "PassPriority"
+          }
+        },
+        {
+          "actor": 1,
+          "decision": "Priority",
+          "action": {
+            "type": "PassPriority"
+          }
+        },
+        {
+          "actor": 0,
+          "decision": "Priority",
+          "action": {
+            "type": "PassPriority"
+          }
+        },
+        {
+          "actor": 1,
+          "decision": "Priority",
+          "action": {
+            "type": "PassPriority"
+          }
+        },
+        {
+          "actor": 0,
+          "decision": "Priority",
+          "action": {
+            "type": "PassPriority"
+          }
+        },
+        {
+          "actor": 1,
+          "decision": "Priority",
+          "action": {
+            "type": "PassPriority"
+          }
+        },
+        {
+          "actor": 0,
+          "decision": "Priority",
+          "action": {
+            "type": "PassPriority"
+          }
+        },
+        {
+          "actor": 1,
+          "decision": "Priority",
+          "action": {
+            "type": "PassPriority"
+          }
+        },
+        {
+          "actor": 0,
+          "decision": "DeclareAttackers",
+          "action": {
+            "type": "DeclareAttackers",
+            "data": {
+              "attacks": [
+                [
+                  7,
+                  {
+                    "type": "Player",
+                    "data": 1
+                  }
+                ]
+              ],
+              "bands": []
+            }
+          }
+        },
+        {
+          "actor": 0,
+          "decision": "Priority",
+          "action": {
+            "type": "PassPriority"
+          }
+        },
+        {
+          "actor": 1,
+          "decision": "Priority",
+          "action": {
+            "type": "PassPriority"
+          }
+        },
+        {
+          "actor": 0,
+          "decision": "Priority",
+          "action": {
+            "type": "PassPriority"
+          }
+        },
+        {
+          "actor": 1,
+          "decision": "Priority",
+          "action": {
+            "type": "PassPriority"
+          }
+        },
+        {
+          "actor": 0,
+          "decision": "Priority",
+          "action": {
+            "type": "PassPriority"
+          }
+        },
+        {
+          "actor": 1,
+          "decision": "Priority",
+          "action": {
+            "type": "PassPriority"
+          }
+        },
+        {
+          "actor": 0,
+          "decision": "Priority",
+          "action": {
+            "type": "PassPriority"
+          }
+        },
+        {
+          "actor": 1,
+          "decision": "Priority",
+          "action": {
+            "type": "PassPriority"
+          }
+        },
+        {
+          "actor": 0,
+          "decision": "Priority",
+          "action": {
+            "type": "PassPriority"
+          }
+        },
+        {
+          "actor": 1,
+          "decision": "Priority",
+          "action": {
+            "type": "PassPriority"
+          }
+        },
+        {
+          "actor": 0,
+          "decision": "Priority",
+          "action": {
+            "type": "PassPriority"
+          }
+        },
+        {
+          "actor": 1,
+          "decision": "Priority",
+          "action": {
+            "type": "PassPriority"
+          }
+        },
+        {
+          "actor": 1,
+          "decision": "Priority",
+          "action": {
+            "type": "PassPriority"
+          }
+        },
+        {
+          "actor": 0,
+          "decision": "Priority",
+          "action": {
+            "type": "PassPriority"
+          }
+        },
+        {
+          "actor": 1,
+          "decision": "Priority",
+          "action": {
+            "type": "PassPriority"
+          }
+        },
+        {
+          "actor": 0,
+          "decision": "Priority",
+          "action": {
+            "type": "PassPriority"
+          }
+        },
+        {
+          "actor": 1,
+          "decision": "Priority",
+          "action": {
+            "type": "PlayLand",
+            "data": {
+              "object_id": 114,
+              "card_id": 114
+            }
+          }
+        },
+        {
+          "actor": 1,
+          "decision": "Priority",
+          "action": {
+            "type": "PassPriority"
+          }
+        },
+        {
+          "actor": 0,
+          "decision": "Priority",
+          "action": {
+            "type": "PassPriority"
+          }
+        },
+        {
+          "actor": 1,
+          "decision": "Priority",
+          "action": {
+            "type": "CastSpell",
+            "data": {
+              "object_id": 128,
+              "card_id": 128,
+              "targets": [],
+              "payment_mode": {
+                "type": "Auto"
+              }
+            }
+          }
+        },
+        {
+          "actor": 1,
+          "decision": "Priority",
+          "action": {
+            "type": "PassPriority"
+          }
+        },
+        {
+          "actor": 0,
+          "decision": "Priority",
+          "action": {
+            "type": "PassPriority"
+          }
+        },
+        {
+          "actor": 1,
+          "decision": "Priority",
+          "action": {
+            "type": "PassPriority"
+          }
+        },
+        {
+          "actor": 0,
+          "decision": "Priority",
+          "action": {
+            "type": "PassPriority"
+          }
+        },
+        {
+          "actor": 1,
+          "decision": "Priority",
+          "action": {
+            "type": "PassPriority"
+          }
+        },
+        {
+          "actor": 0,
+          "decision": "Priority",
+          "action": {
+            "type": "PassPriority"
+          }
+        },
+        {
+          "actor": 1,
+          "decision": "Priority",
+          "action": {
+            "type": "PassPriority"
+          }
+        },
+        {
+          "actor": 0,
+          "decision": "Priority",
+          "action": {
+            "type": "PassPriority"
+          }
+        },
+        {
+          "actor": 1,
+          "decision": "Priority",
+          "action": {
+            "type": "PassPriority"
+          }
+        },
+        {
+          "actor": 0,
+          "decision": "Priority",
+          "action": {
+            "type": "PassPriority"
+          }
+        },
+        {
+          "actor": 1,
+          "decision": "Priority",
+          "action": {
+            "type": "PassPriority"
+          }
+        },
+        {
+          "actor": 0,
+          "decision": "Priority",
+          "action": {
+            "type": "PassPriority"
+          }
+        },
+        {
+          "actor": 0,
+          "decision": "Priority",
+          "action": {
+            "type": "PassPriority"
+          }
+        },
+        {
+          "actor": 1,
+          "decision": "Priority",
+          "action": {
+            "type": "PassPriority"
+          }
+        },
+        {
+          "actor": 0,
+          "decision": "Priority",
+          "action": {
+            "type": "PassPriority"
+          }
+        },
+        {
+          "actor": 1,
+          "decision": "Priority",
+          "action": {
+            "type": "PassPriority"
+          }
+        },
+        {
+          "actor": 0,
+          "decision": "Priority",
+          "action": {
+            "type": "PlayLand",
+            "data": {
+              "object_id": 42,
+              "card_id": 42
+            }
+          }
+        },
+        {
+          "actor": 0,
+          "decision": "Priority",
+          "action": {
+            "type": "CastSpell",
+            "data": {
+              "object_id": 25,
+              "card_id": 25,
+              "targets": [],
+              "payment_mode": {
+                "type": "Auto"
+              }
+            }
+          }
+        },
+        {
+          "actor": 0,
+          "decision": "Priority",
+          "action": {
+            "type": "PassPriority"
+          }
+        },
+        {
+          "actor": 1,
+          "decision": "Priority",
+          "action": {
+            "type": "PassPriority"
+          }
+        },
+        {
+          "actor": 0,
+          "decision": "Priority",
+          "action": {
+            "type": "PassPriority"
+          }
+        },
+        {
+          "actor": 1,
+          "decision": "Priority",
+          "action": {
+            "type": "PassPriority"
+          }
+        },
+        {
+          "actor": 0,
+          "decision": "Priority",
+          "action": {
+            "type": "PassPriority"
+          }
+        },
+        {
+          "actor": 1,
+          "decision": "Priority",
+          "action": {
+            "type": "PassPriority"
+          }
+        },
+        {
+          "actor": 0,
+          "decision": "DeclareAttackers",
+          "action": {
+            "type": "DeclareAttackers",
+            "data": {
+              "attacks": [
+                [
+                  7,
+                  {
+                    "type": "Player",
+                    "data": 1
+                  }
+                ],
+                [
+                  34,
+                  {
+                    "type": "Player",
+                    "data": 1
+                  }
+                ]
+              ],
+              "bands": []
+            }
+          }
+        },
+        {
+          "actor": 0,
+          "decision": "Priority",
+          "action": {
+            "type": "PassPriority"
+          }
+        },
+        {
+          "actor": 1,
+          "decision": "Priority",
+          "action": {
+            "type": "PassPriority"
+          }
+        },
+        {
+          "actor": 0,
+          "decision": "Priority",
+          "action": {
+            "type": "PassPriority"
+          }
+        },
+        {
+          "actor": 1,
+          "decision": "Priority",
+          "action": {
+            "type": "PassPriority"
+          }
+        },
+        {
+          "actor": 0,
+          "decision": "Priority",
+          "action": {
+            "type": "PassPriority"
+          }
+        },
+        {
+          "actor": 1,
+          "decision": "Priority",
+          "action": {
+            "type": "PassPriority"
+          }
+        },
+        {
+          "actor": 0,
+          "decision": "Priority",
+          "action": {
+            "type": "PassPriority"
+          }
+        },
+        {
+          "actor": 1,
+          "decision": "Priority",
+          "action": {
+            "type": "PassPriority"
+          }
+        },
+        {
+          "actor": 0,
+          "decision": "Priority",
+          "action": {
+            "type": "PassPriority"
+          }
+        },
+        {
+          "actor": 1,
+          "decision": "Priority",
+          "action": {
+            "type": "PassPriority"
+          }
+        },
+        {
+          "actor": 0,
+          "decision": "Priority",
+          "action": {
+            "type": "PassPriority"
+          }
+        },
+        {
+          "actor": 1,
+          "decision": "Priority",
+          "action": {
+            "type": "PassPriority"
+          }
+        },
+        {
+          "actor": 1,
+          "decision": "Priority",
+          "action": {
+            "type": "CastSpell",
+            "data": {
+              "object_id": 168,
+              "card_id": 168,
+              "targets": [],
+              "payment_mode": {
+                "type": "Auto"
+              }
+            }
+          }
+        }
+      ],
+      "note": "Bounded direct-policy diagnostic; no rendered UI, worker/account journey, or comprehensive mechanic certification.",
+      "turn": 6,
+      "error": "Error: CPU_DECISION_UNSUPPORTED\n    at chooseVisible (file:///workspace/scratch/0cc108df2868/audit/project/experiments/phase-engine/visible-cpu-policy.mjs:53:19)\n    at analyzeCpu (file:///workspace/scratch/0cc108df2868/audit/project/experiments/phase-engine/cpu-public-policy.mjs:45:17)\n    at file:///workspace/scratch/0cc108df2868/audit/project/experiments/phase-engine/real-deck-hotfix-audit.mjs:77:16",
+      "waiting": {
+        "data": {
+          "modal": {
+            "allow_repeat_modes": false,
+            "chooser": {
+              "type": "Controller"
+            },
+            "max_choices": 1,
+            "min_choices": 1,
+            "mode_count": 2,
+            "mode_descriptions": [
+              "Destroy target creature with toughness 4 or greater.",
+              "Destroy target enchantment."
+            ]
+          },
+          "pending_cast": {
+            "ability": {
+              "chosen_target_slots": [],
+              "condition": null,
+              "context": {
+                "additional_cost_paid": false,
+                "alternative_mana_cost_paid": false,
+                "optional_effect_performed": false
+              },
+              "controller": 1,
+              "detached_remainder": "NoProducer",
+              "duration": null,
+              "effect": {
+                "cant_regenerate": false,
+                "target": {
+                  "controller": null,
+                  "properties": [
+                    {
+                      "comparator": "GE",
+                      "scope": "Current",
+                      "stat": "Toughness",
+                      "type": "PtComparison",
+                      "value": {
+                        "type": "Fixed",
+                        "value": 4
+                      }
+                    }
+                  ],
+                  "type": "Typed",
+                  "type_filters": [
+                    "Creature"
+                  ]
+                },
+                "type": "Destroy"
+              },
+              "forward_result": false,
+              "kind": "Spell",
+              "optional": false,
+              "optional_targeting": false,
+              "source_id": 168,
+              "sub_ability": null,
+              "targets": []
+            },
+            "activation_cost_committed": false,
+            "additional_cost_decided": false,
+            "additional_cost_source": "Other",
+            "alternative_cost_election": "Undecided",
+            "assist_state": "NotOffered",
+            "base_cost": {
+              "generic": 1,
+              "shards": [
+                "White"
+              ],
+              "type": "Cost"
+            },
+            "card_id": 168,
+            "casting_variant": "Normal",
+            "cost": {
+              "generic": 1,
+              "shards": [
+                "White"
+              ],
+              "type": "Cost"
+            },
+            "crime_candidate": false,
+            "deferred_target_selection": false,
+            "object_id": 168,
+            "origin_zone": "Hand",
+            "payment_mode": {
+              "type": "Auto"
+            }
+          },
+          "player": 1,
+          "unavailable_modes": [
+            1
+          ]
+        },
+        "type": "ModeChoice"
+      },
+      "sourceName": "Hidden Card"
+    }
+  ],
+  "upstreamSha256": "84d5fd2af84e2f125b740eeb05637785b2e8df26d34e41a2cd628697dae30513",
+  "moduleSha256": {
+    "cpu-public-observation.mjs": "35c6945aee6756cdd9af18ff4dd9ad3620b7492085ddb1f11e1b7c5f232df4bf",
+    "cpu-public-policy.mjs": "f1c6cf140231fc70fcc51bfbd2891dbda4aa9cf7eabe155dcf0a504895ccdf68",
+    "cpu-legal-candidates.mjs": "3ac18bf8a3b0fd0d7337ee58cf49b80f05db3d3a6f7e13205b55b513daf16c24",
+    "cpu-playbook.mjs": "b6e1c38dccbe79ba87a0fe4ea73037ac7960862c3d77ccc2d08a6ec5cbe9be2c",
+    "cpu-difficulty-config.mjs": "f0a9998c21b55ea2814a7e43f1be02eae41731859e9fd8205bfa70f3ff613715",
+    "visible-cpu-policy.mjs": "755897085ee4e42cf0fa94b6f37a68187ba111f69c2f54c629ec249f4c02dfe5",
+    "match-input.mjs": "a48a094ca21369ed478fba9b0bef630be5bb3dc67cb3903379966a51107b3046",
+    "compiled-card-support.mjs": "ca13f2c544b4ad29eea64e0c9931b238e4c9333b9d9d0692e86a5e058d40d6d3",
+    "real-deck-hotfix-audit.mjs": "014fcd55e1249da268d07ea399d326ed5b5753791c5e6ea8fad7fe2b7b0555b2"
+  },
+  "postRunEvidence": {
+    "failureSource": {
+      "objectId": 168,
+      "name": "Destroy Evil",
+      "owner": 1,
+      "zone": "Hand"
+    },
+    "exportedFailureStateSha256": "a63713b48f59e07b3f7edb688a3be0362420183ac4a53d1cf6e4489f8e2c6223",
+    "explanation": "Resolved from exported synthetic fixture state after the policy failure, never supplied to CPU policy."
+  },
+  "inventory": {
+    "productionCommit": "e4e938bb93b8257590ab7e54dde81bd9684b281a",
+    "installedRecords": 6137,
+    "upstreamRecords": 36037,
+    "upstreamSha256": "84d5fd2af84e2f125b740eeb05637785b2e8df26d34e41a2cd628697dae30513",
+    "decks": [
+      {
+        "name": "Calling All Angels",
+        "uniqueNames": 69,
+        "missingInstalled": [
+          "Always Watching",
+          "Angelic Sleuth",
+          "Austere Command",
+          "Bishop of Wings",
+          "Cleansing Nova",
+          "Court of Grace",
+          "Day of Judgment",
+          "Herald of Eternal Dawn",
+          "Herald of War",
+          "Linvala, the Preserver",
+          "Lyra Dawnbringer",
+          "Merchant of Truth",
+          "Metropolis Reformer",
+          "Norn's Choirmaster",
+          "Reya Dawnbringer",
+          "Search the Premises",
+          "Sephara, Sky's Blade",
+          "Seraph of the Sword",
+          "Serra Avenger",
+          "Speaker of the Heavens",
+          "Sunblast Angel",
+          "Endless Atlas",
+          "Bonders' Enclave",
+          "War Room",
+          "Angel of Finality",
+          "Angel of Vitality",
+          "Dazzling Angel",
+          "Defy Death",
+          "Destroy Evil",
+          "Exorcise",
+          "Inspiring Overseer",
+          "Invoke the Divine",
+          "Segovian Angel",
+          "Starnheim Aspirant",
+          "Thraben Watcher",
+          "Valorous Stance",
+          "Vanguard Seraph",
+          "Youthful Valkyrie",
+          "Commander's Sphere",
+          "Marble Diamond",
+          "Patchwork Banner",
+          "Radiant Fountain",
+          "Secluded Steppe",
+          "Seraph Sanctuary"
+        ],
+        "foundUpstream": 44,
+        "upstreamStillMissing": [],
+        "upstreamUnimplemented": []
+      },
+      {
+        "name": "Tramplesaurus Rex",
+        "uniqueNames": 69,
+        "missingInstalled": [
+          "Arachnogenesis",
+          "Arasta of the Endless Web",
+          "Curious Altisaur",
+          "Dungrove Elder",
+          "Elder Gargaroth",
+          "Ezuri's Predation",
+          "Gigantosaurus",
+          "Hulking Raptor",
+          "Loot, Exuberant Explorer",
+          "Managorger Hydra",
+          "Overwhelming Stampede",
+          "Regal Imperiosaur",
+          "Rhonas the Indomitable",
+          "Ripjaw Raptor",
+          "Shamanic Revelation",
+          "Steel Leaf Champion",
+          "Surrak, the Hunt Caller",
+          "Tangleweave Armor",
+          "Unnatural Growth",
+          "Verdant Sun's Avatar",
+          "Whiptongue Hydra",
+          "Yeva, Nature's Herald",
+          "Bonders' Enclave",
+          "Scavenger Grounds",
+          "War Room",
+          "Witch's Clinic",
+          "Beast Within",
+          "Challenger Troll",
+          "Clifftop Lookout",
+          "Collective Resistance",
+          "Colossal Majesty",
+          "Elemental Bond",
+          "Garruk's Packleader",
+          "Garruk's Uprising",
+          "Goreclaw, Terror of Qal Sisma",
+          "Ilysian Caryatid",
+          "Paradise Druid",
+          "Tamiyo's Safekeeping",
+          "Terrian, World Tyrant",
+          "Thrashing Brontodon",
+          "Commander's Sphere",
+          "Rhonas's Monument",
+          "Rogue's Passage",
+          "Tranquil Thicket"
+        ],
+        "foundUpstream": 44,
+        "upstreamStillMissing": [],
+        "upstreamUnimplemented": []
+      }
+    ],
+    "screenshotCards": [
+      {
+        "name": "Bitter Triumph",
+        "installed": false,
+        "installedUnimplemented": false,
+        "upstream": true,
+        "upstreamUnimplemented": false
+      },
+      {
+        "name": "Dream Beavers",
+        "installed": false,
+        "installedUnimplemented": false,
+        "upstream": true,
+        "upstreamUnimplemented": false
+      },
+      {
+        "name": "Enduring Curiosity",
+        "installed": false,
+        "installedUnimplemented": false,
+        "upstream": true,
+        "upstreamUnimplemented": false
+      },
+      {
+        "name": "Hidden Lair",
+        "installed": false,
+        "installedUnimplemented": false,
+        "upstream": true,
+        "upstreamUnimplemented": false
+      },
+      {
+        "name": "Soulstone Sanctuary",
+        "installed": false,
+        "installedUnimplemented": false,
+        "upstream": true,
+        "upstreamUnimplemented": false
+      },
+      {
+        "name": "Requiting Hex",
+        "installed": false,
+        "installedUnimplemented": false,
+        "upstream": true,
+        "upstreamUnimplemented": false
+      },
+      {
+        "name": "Seasoned Cryomancer",
+        "installed": true,
+        "installedUnimplemented": true,
+        "upstream": true,
+        "upstreamUnimplemented": true
+      },
+      {
+        "name": "Shoot the Sheriff",
+        "installed": false,
+        "installedUnimplemented": false,
+        "upstream": true,
+        "upstreamUnimplemented": false
+      },
+      {
+        "name": "Restless Reef",
+        "installed": false,
+        "installedUnimplemented": false,
+        "upstream": true,
+        "upstreamUnimplemented": false
+      },
+      {
+        "name": "The Wondrous Wasp",
+        "installed": false,
+        "installedUnimplemented": false,
+        "upstream": true,
+        "upstreamUnimplemented": false
+      },
+      {
+        "name": "Spell Snare",
+        "installed": false,
+        "installedUnimplemented": false,
+        "upstream": true,
+        "upstreamUnimplemented": false
+      },
+      {
+        "name": "Fountainport",
+        "installed": false,
+        "installedUnimplemented": false,
+        "upstream": true,
+        "upstreamUnimplemented": false
+      },
+      {
+        "name": "Theorix Charm",
+        "installed": false,
+        "installedUnimplemented": false,
+        "upstream": true,
+        "upstreamUnimplemented": false
+      },
+      {
+        "name": "Flashfreeze",
+        "installed": false,
+        "installedUnimplemented": false,
+        "upstream": true,
+        "upstreamUnimplemented": false
+      },
+      {
+        "name": "Torpor Orb",
+        "installed": false,
+        "installedUnimplemented": false,
+        "upstream": true,
+        "upstreamUnimplemented": false
+      },
+      {
+        "name": "The Theorist, Jace Beleren",
+        "installed": false,
+        "installedUnimplemented": false,
+        "upstream": true,
+        "upstreamUnimplemented": false
+      },
+      {
+        "name": "Ghost Vacuum",
+        "installed": false,
+        "installedUnimplemented": false,
+        "upstream": true,
+        "upstreamUnimplemented": false
+      },
+      {
+        "name": "The Arkenstone // Seek the Heart",
+        "installed": false,
+        "installedUnimplemented": false,
+        "upstream": false,
+        "upstreamUnimplemented": false
+      }
+    ]
+  },
+  "lostWoods": {
+    "shippedRecord": false,
+    "fullExportRecord": true,
+    "shippedBehavior": "UNSUPPORTED",
+    "issue": 56
+  },
+  "liveBattlefield": "NOT TESTED: browser open net::ERR_FAILED, observation rejected by browser URL policy; no workaround"
+}
