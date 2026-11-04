@@ -663,6 +663,12 @@ class LobbySources {
     data class Status(val busy: Boolean = false, val message: String = "", val error: String = "")
     private val lists = androidx.compose.runtime.mutableStateMapOf<String, List<Entry>>()
     val statuses = androidx.compose.runtime.mutableStateMapOf<String, Status>()
+    private var community: List<dev.cardstashy.nativeplay.play.CommunityDecks.Shared> = emptyList()
+    /** playSourceEntries' community rows: friends' shared decks in the format, then your saved online lists in it. */
+    private fun communityEntries(format: String) = community.filter { it.deck.get("format")?.asString == format }.map { Entry("community:" + it.key, "community", it.detail, it.deck.deepCopy()) } +
+        Workspace.references.value.filter { it.get("format")?.takeIf { f -> f.isJsonPrimitive }?.asString == format && it.get("cards")?.isJsonArray == true }.map { d ->
+            val src = d.getAsJsonObject("source")
+            Entry("reference:" + (d.get("id")?.asString ?: ""), "community", src?.get("author")?.asString?.ifBlank { null } ?: src?.get("website")?.asString?.ifBlank { null } ?: "Saved online list", d.deepCopy()) }
     fun entries(source: String, format: String) = lists["$source:$format"] ?: emptyList()
 
     suspend fun load(context: android.content.Context, source: String, format: String, signedIn: Boolean) {
@@ -685,7 +691,9 @@ class LobbySources {
                 }
                 else -> {
                     if (!signedIn) throw IllegalStateException("Sign in to load decks shared with you.")
-                    lists[key] = emptyList(); statuses[key] = Status(message = "0 shared decks loaded. Public showcase is coming later.")
+                    val got = dev.cardstashy.nativeplay.play.CommunityDecks.load()
+                    community = got.decks
+                    lists[key] = communityEntries(format); statuses[key] = Status(message = got.message)
                 }
             }
             CardFacts.wantNames(entries(source, format).take(24).mapNotNull { e -> e.deck.get("commander")?.takeIf { it.isJsonPrimitive }?.asString?.takeIf { it.isNotBlank() } ?: rowNames(e.deck).firstOrNull { it !in BASIC } })

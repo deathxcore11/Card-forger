@@ -37,6 +37,9 @@ object Decks {
 
     private val _decks = MutableStateFlow<List<UserDeck>?>(null); val decks: StateFlow<List<UserDeck>?> = _decks
     private val _error = MutableStateFlow<String?>(null); val error: StateFlow<String?> = _error
+    /** The account's saved online lists (workspace data.references): the Play lobby offers them under Community. */
+    private val _references = MutableStateFlow<List<JsonObject>>(emptyList()); val references: StateFlow<List<JsonObject>> = _references
+    private fun refs(data: JsonObject?) = data?.getAsJsonArray("references")?.mapNotNull { it as? JsonObject } ?: emptyList()
     val timings = MutableStateFlow<Map<String, Long>>(emptyMap())
 
     private fun cacheFile(context: Context, user: String) = File(context.filesDir, "workspace-$user.json")
@@ -58,7 +61,8 @@ object Decks {
         val t0 = System.currentTimeMillis()
         val file = cacheFile(context, s.userId)
         if (_decks.value == null && file.isFile) try {
-            _decks.value = parse(JsonParser.parseString(file.readText()).asJsonObject)
+            val disk = JsonParser.parseString(file.readText()).asJsonObject
+            _decks.value = parse(disk); _references.value = refs(disk)
             timings.value = timings.value + ("decksFromDisk" to System.currentTimeMillis() - t0)
         } catch (_: Exception) {}
         try {
@@ -66,10 +70,10 @@ object Decks {
             val rows = Http.call("GET", "${Account.URL}/rest/v1/workspaces?select=data,revision&user_id=eq.${s.userId}",
                 mapOf("apikey" to Account.KEY, "Authorization" to "Bearer $token"), timeoutMs = 15000)?.asJsonArray
             val data = rows?.firstOrNull()?.asJsonObject?.getAsJsonObject("data")
-            // Only the decks are kept on this device.
-            val slim = JsonObject().apply { add("decks", data?.getAsJsonArray("decks") ?: JsonArray()) }
+            // Only the decks and saved online lists are kept on this device.
+            val slim = JsonObject().apply { add("decks", data?.getAsJsonArray("decks") ?: JsonArray()); add("references", data?.getAsJsonArray("references") ?: JsonArray()) }
             file.writeText(slim.toString())
-            _decks.value = parse(slim); _error.value = null
+            _decks.value = parse(slim); _references.value = refs(slim); _error.value = null
             timings.value = timings.value + ("decksFromAccount" to System.currentTimeMillis() - t0)
         } catch (e: Exception) {
             if (_decks.value == null) _error.value = "Couldn’t load your decks. Check your connection."
@@ -97,13 +101,14 @@ object Decks {
                 auth + ("Prefer" to "return=representation"), body.toString())?.asJsonArray
             if (out != null && out.size() > 0) {
                 _decks.value = parse(data)
-                try { cacheFile(context, s.userId).writeText(JsonObject().apply { add("decks", data.getAsJsonArray("decks")) }.toString()) } catch (_: Exception) {}
+                _references.value = refs(data)
+                try { cacheFile(context, s.userId).writeText(JsonObject().apply { add("decks", data.getAsJsonArray("decks")); add("references", data.getAsJsonArray("references") ?: JsonArray()) }.toString()) } catch (_: Exception) {}
                 return@withContext null
             }
         }
         "Your decks changed on another device. Reload and try again."
     }
 
-    fun clear() { _decks.value = null; _error.value = null }
+    fun clear() { _decks.value = null; _error.value = null; _references.value = emptyList() }
     internal fun setForTest(list: List<UserDeck>?) { _decks.value = list }
 }

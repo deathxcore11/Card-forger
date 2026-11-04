@@ -163,6 +163,19 @@ object Account {
         catch (_: Exception) { "Couldn’t reach the account service. Check your connection and try again." }
     }
 
+    /** cloud.js communityRequest: one community_action call; the server's error text, or the site's update notice. */
+    suspend fun community(action: String, payload: JsonObject = JsonObject()): JsonObject = withContext(Dispatchers.IO) {
+        val s = _session.value ?: throw IllegalStateException("Sign in to use friends.")
+        val t = token() ?: throw IllegalStateException("Sign in to use friends.")
+        val out = try { Http.call("POST", "$URL/rest/v1/rpc/community_action", headers(t),
+            JsonObject().apply { addProperty("action", action); add("payload", payload) }.toString(), 15000) as? JsonObject }
+            catch (e: Exception) { val m = e.message ?: ""; throw IllegalStateException(if (Regex("PGRST202|does not exist").containsMatchIn(m)) "Community is updating. Please try again shortly." else m) }
+        if (_session.value?.userId != s.userId) throw IllegalStateException("Your account changed. Please try again.")
+        val data = out ?: JsonObject()
+        data.get("error")?.takeIf { it.isJsonPrimitive }?.let { throw IllegalStateException(it.asString) }
+        data
+    }
+
     /** app.js saveProfileArtwork via community_action save_art (keeps the other of avatar/header). */
     suspend fun saveArt(kind: String, art: Art): Boolean = withContext(Dispatchers.IO) {
         val s = _session.value ?: return@withContext false
