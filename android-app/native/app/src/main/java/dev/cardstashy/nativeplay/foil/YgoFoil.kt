@@ -385,7 +385,10 @@ float3 foil(float pat,float tint,float2 uv,float3 L,float3 V,float3 H,float spot
 }
 // Ink over foil: thin inks pass part of the foil, brightened toward the ink's own hue. The scan is already a lit print, so the
 // foil may add colour and sparkle but never sink the printed art below 80 % of its own brightness (art stays readable).
-float3 overInk(float3 base,float3 F,float cover){float3 T=mix(base,base/max(max(base.r,max(base.g,base.b)),.04),.32);float3 o=mix(base,shoulder(T*F*1.35),clamp(cover,0.,1.));
+// Whole-card and art glitter stay light on the subject (the printed figure sits on white underbase; Randall 4 Nov 20:51Z).
+float3 overInk(float3 base,float3 F,float cover){float3 T=mix(base,base/max(max(base.r,max(base.g,base.b)),.04),.32);
+ // Most of a foil's reflection is broadband metal; only part of it is the grating's hue, so inks keep their own colour.
+ float3 Fm=mix(float3(dot(F,float3(.2126,.7152,.0722))),F,.55);float3 o=mix(base,shoulder(T*Fm*1.35),clamp(cover,0.,1.));
  float lb=dot(base,float3(.2126,.7152,.0722)),lo=dot(o,float3(.2126,.7152,.0722));return lo<lb*.8?min(o*(lb*.8/max(lo,1e-4)),float3(1.)):o;}
 float gl(float2 uv){float2 t=(uv-u_name.xy)/(u_name.zw-u_name.xy);if(t.x<0.||t.y<0.||t.x>1.||t.y>1.)return 0.;return u_glyph.eval(t*u_gmap).r;}
 half4 main(float2 p){
@@ -398,19 +401,22 @@ half4 main(float2 p){
  float2 e=2./u_map;float hx=relAt(uv+float2(e.x,0.)).r-relAt(uv-float2(e.x,0.)).r,hy=relAt(uv+float2(0.,e.y)).r-relAt(uv-float2(0.,e.y)).r;
  float3 nRel=normalize(float3(-hx*6.,-hy*6.,1.));float2 stroke=normalize(rl.gb*2.-1.+1e-4);
  float3 outC=base;
+ // The figure's drawn folds and hair (strong strokes, little colour) stay ink even where the measuring calls them open:
+ float satB=(max(base.r,max(base.g,base.b))-min(base.r,min(base.g,base.b)))/(max(base.r,max(base.g,base.b))+1e-3);
+ mk.r*=1.-.75*art*smoothstep(.15,.6,mk.b)*(1.-smoothstep(.25,.6,satB));
  // Name bar ink is what differs from the bar's own ground (a wide horizontal average), so dark bars with black letters and black
  // Xyz bars with white letters both foil their ground, never the letters (site c86c6dbf, 05e587b6).
  float nameInk=0.;
  if(name>.5){float3 LW=float3(.2126,.7152,.0722);float l0=dot(base,LW),acc=0.;
   for(int i=-4;i<=4;i++)acc+=dot(toLin(float3(u_card.eval(float2(clamp(p.x+float(i)*.009*u_size.x,0.,u_size.x-1.),p.y)).rgb)),LW);
   nameInk=smoothstep(.05,.16,abs(l0-acc/9.));}
- if(u_whole.x>.5){float3 F=foil(u_whole.x,u_whole.y,uv,L,V,H,spot,0.,stroke);outC=overInk(outC,F,(1.-text*(1.-u_whole.z))*(1.-name*nameInk)*.85);
+ if(u_whole.x>.5){float3 F=foil(u_whole.x,u_whole.y,uv,L,V,H,spot,0.,stroke);outC=overInk(outC,F,(1.-text*(1.-u_whole.z))*(1.-name*nameInk)*mix(1.,max(mk.r,.18),art)*.85);
   // A dark ground (Xyz black, Link navy) passes too little light through the ink to show its flakes; the sheet's glints add on top.
   if(name>.5){float dark=1.-smoothstep(.04,.25,dot(base,float3(.2126,.7152,.0722)));outC=shoulder(outC+F*dark*(1.-nameInk)*.16);}}
  if(u_frame.x>.5){float cov=u_frame.z>1.5?1.-inBox(uv,float4(.045,.032,.955,.968)):frame;
   if(u_frame.x>5.5&&u_frame.x<6.5){float rim=pow(max(dot(nRel,H),0.),18.)*(.35+.65*spot);outC=outC*(1.-.06*cov)+(1.-outC)*mix(float3(.95,.88,.7),outC*2.,.6)*rim*cov*.7;}
   else outC=overInk(outC,foil(u_frame.x,u_frame.y,uv,L,V,H,spot,0.,stroke),cov);}
- if(u_artL.x>.5){float cov=art*(u_artL.z>1.5?1.:max(mk.r,.35));if(u_artL.x>6.5&&u_artL.x<7.5)cov=art*max(mk.r,.22*mk.b);
+ if(u_artL.x>.5){float cov=art*(u_artL.z>1.5?1.:max(mk.r,u_artL.x>3.5&&u_artL.x<4.5?.15:.35));if(u_artL.x>6.5&&u_artL.x<7.5)cov=art*max(mk.r,.22*mk.b);
   if(u_artL.x>4.5&&u_artL.x<5.5){float3 silver=float3(dot(outC,float3(.2126,.7152,.0722)))*float3(.9,.95,1.04);float rim=pow(max(dot(nRel,H),0.),10.);
    outC=mix(outC,shoulder(mix(silver,outC,.2)*(.55+.9*rim*(.4+.6*spot))+grating(L,V,float2(.7071),1600.)*.35*spot),art);}
   else if(u_artL.x>5.5&&u_artL.x<6.5){float rim=pow(max(dot(nRel,H),0.),18.)*(.35+.65*spot);outC=outC*(1.-.06*art)+(1.-outC)*mix(float3(.95,.88,.7),outC*2.,.6)*rim*art*.7;}

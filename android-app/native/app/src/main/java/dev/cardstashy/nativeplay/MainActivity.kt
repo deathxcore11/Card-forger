@@ -98,12 +98,22 @@ private sealed interface Screen {
 }
 
 class MainActivity : ComponentActivity() {
+    /** Run at the screen's top refresh rate (120 Hz on the AYN Thor and most flagships) at its current resolution: foil, card
+     *  lean and the table animate every frame the panel can show. Android still drops it for battery saver on its own. */
+    private fun fastestRefresh() = runCatching {
+        @Suppress("DEPRECATION") val d = if (android.os.Build.VERSION.SDK_INT >= 30) display else windowManager.defaultDisplay
+        val now = d?.mode ?: return@runCatching
+        val best = d.supportedModes.filter { it.physicalWidth == now.physicalWidth && it.physicalHeight == now.physicalHeight }.maxByOrNull { it.refreshRate } ?: return@runCatching
+        if (best.modeId != now.modeId) window.attributes = window.attributes.apply { preferredDisplayModeId = best.modeId }
+    }
+
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         // First, so a stall anywhere in start-up is caught too (the 0.3.2 freeze hit 2 s after launch).
         // Silent: a stall or crash report uploads itself; nothing shows on screen (test strip and frame watch off since 0.3.8).
         FreezeReport.init(this); dev.cardstashy.nativeplay.ui.HomeTest.init(this)
         enableEdgeToEdge()
+        fastestRefresh()
         // The card database starts loading as the app opens, so it is ready before Quick Play is.
         ForgeService.prepare(this)
         Account.init(this); dev.cardstashy.nativeplay.ui.AppSettings.init(this); dev.cardstashy.nativeplay.ui.Aura.init(this); dev.cardstashy.nativeplay.ui.TableEmotes.init(this); dev.cardstashy.nativeplay.ui.MatchMenu.init(this); Thread { dev.cardstashy.nativeplay.ui.BoardIcons.get(applicationContext, "tapped") }.start(); CardArt.init(this); Speed.init(this)
