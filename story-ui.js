@@ -232,6 +232,9 @@ export const LESSONS = {
   'Foretell': 'Foretell: pay 2 on your turn to set the card face down in exile. On a later turn, cast it for its foretell cost.',
   'Learn': 'Learn: get a Lesson from outside the game, or discard a card to draw a card. Most of the time it is a way to find what you need.',
   'Magecraft': 'Magecraft: triggers whenever you cast or copy an instant or sorcery spell. Keep the mage on the table, then cast spells.',
+  'Dungeons': 'Dungeons: venture into the dungeon to move to a room and get its effect. Each new venture goes deeper, and the last room is the best.',
+  'Day and night': 'Day and night: it starts as neither. It becomes day or night after a player casts no spells on their own turn, and returns to day if a player casts two or more spells in a turn. Werewolves transform with it.',
+  'Disturb': 'Disturb: cast the back face of this spirit card from your graveyard. A creature that dies can come back as an aura or a spirit.',
   'Playing under a lock': 'A lock stops cards from untapping or moving. Break it, or win with what\'s already in play.',
 };
 // Every Story deck says what it is (Randall, 2 Nov 2026): Historical Exact, Historical Tribute or
