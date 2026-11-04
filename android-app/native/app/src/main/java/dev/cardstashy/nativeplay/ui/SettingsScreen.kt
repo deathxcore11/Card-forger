@@ -435,6 +435,7 @@ private fun AppPane() {
         Check("Frosted glass", AppSettings.glass, "Turn it off for plain solid panels (a little lighter on older phones).") { AppSettings.set("glass", it) }
         Check("Card lighting & foil effects", AppSettings.finish, "Soft light follows your tilt in card details. Foil cards shimmer automatically in the gallery.") { AppSettings.set("finishEffects", it) }
         Check("Phone tilt in card views", AppSettings.tilt, "Move your phone to move the card and light. Turn off to use touch controls. Follows Reduce motion.") { AppSettings.set("motionTilt", it) }
+        Check("3D cards", AppSettings.depth, "The art sits a little deeper than the frame and shifts as you tilt, like looking into the card. Turn off for the flat card with its foil exactly as before.") { AppSettings.set("depthCards", it) }
         // Story playmat MOTION-SPEC: the table's living mat (light rays, leaves, smoke). Reduce motion and battery saver keep it still.
         Text("Table effects", style = S.Body.copy(fontSize = 13.sp, fontWeight = FontWeight.SemiBold), modifier = Modifier.padding(top = 6.dp))
         Segmented(AppSettings.EFFECTS, AppSettings.effects) { AppSettings.applyEffects(it) }
@@ -554,12 +555,12 @@ private fun Check(label: String, on: Boolean, foot: String? = null, onChange: (B
 
 /** This build's notes: short, plain, what a player would notice. */
 private val WHATS_NEW = listOf(
+    "3D cards" to "Big cards have depth: the art sits behind the frame and shifts as you tilt. Settings \u203a 3D cards turns it off.",
+    "Foil" to "Gilded, neon, textured and oil-slick Magic foils now shine only where their special ink is printed.",
     "Story" to "Acts 29 to 32 are playable.",
     "Updates" to "The app finds new versions and installs them for you.",
     "Fix" to "Cards only glow when you can pay for them.",
-    "Combat" to "New block, clash and face-hit effects and sounds.",
     "Handhelds" to "Matches run on Android 8 to 13 devices like the Portal 2.",
-    "Fix" to "Your spell\u2019s card closes once it resolves.",
 )
 
 private data class Topic(val id: String, val category: String, val title: String, val summary: String, val route: String, val action: String, val details: List<String>)

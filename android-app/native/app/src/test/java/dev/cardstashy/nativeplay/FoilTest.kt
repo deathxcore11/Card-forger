@@ -41,7 +41,7 @@ class FoilTest {
     @Test(expected = IllegalArgumentException::class) fun brokenShaderIsRefused() { android.graphics.RuntimeShader("half4 main(float2 p){ return nope; }") }
 
     @Test fun shaderCompiles() {
-        try { android.graphics.RuntimeShader(dev.cardstashy.nativeplay.ui.Foil.AGSL) }
+        try { android.graphics.RuntimeShader(dev.cardstashy.nativeplay.ui.Foil.AGSL); android.graphics.RuntimeShader(dev.cardstashy.nativeplay.foil.Depth.AGSL) }
         catch (e: UnsupportedOperationException) { println("RuntimeShader not available here: ${e.message}") }
     }
 }

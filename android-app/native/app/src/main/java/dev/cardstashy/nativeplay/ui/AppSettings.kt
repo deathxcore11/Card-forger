@@ -17,6 +17,8 @@ object AppSettings {
     var glass by mutableStateOf(true); private set
     var finish by mutableStateOf(true); private set
     var tilt by mutableStateOf(true); private set
+    /** App-only 3D cards (rigid depth layers, foil/DepthLayer.kt). Off draws every card exactly as the foil-only renderer did. */
+    var depth by mutableStateOf(true); private set
     var haptics by mutableStateOf(true); private set
     var sound by mutableStateOf(true); private set
     var appSounds by mutableStateOf(true); private set
@@ -34,7 +36,7 @@ object AppSettings {
 
     fun init(context: Context) {
         val p = context.applicationContext.getSharedPreferences("play", Context.MODE_PRIVATE); prefs = p
-        glass = p.getBoolean("glass", true); finish = p.getBoolean("finishEffects", true); tilt = p.getBoolean("motionTilt", true)
+        glass = p.getBoolean("glass", true); finish = p.getBoolean("finishEffects", true); tilt = p.getBoolean("motionTilt", true); depth = p.getBoolean("depthCards", true)
         haptics = p.getBoolean("haptics", true); sound = p.getBoolean("packSound", true); appSounds = p.getBoolean("appSounds", true); presence = p.getBoolean("presence", true)
         theme = normalizeTheme(p.getString("cardstashy-theme", null)); gridSize = normalizeGridSize(p.getString("cardstashy-grid-size", null))
         gridPinch = p.getString("cardstashy-grid-pinch", null) == "on"
@@ -43,7 +45,7 @@ object AppSettings {
 
     fun set(key: String, on: Boolean) {
         when (key) {
-            "glass" -> glass = on; "finishEffects" -> finish = on; "haptics" -> haptics = on; "appSounds" -> appSounds = on; "presence" -> presence = on
+            "glass" -> glass = on; "finishEffects" -> finish = on; "haptics" -> haptics = on; "appSounds" -> appSounds = on; "presence" -> presence = on; "depthCards" -> depth = on
             "motionTilt" -> { tilt = on; PackSfx.tilt = on }
             "packSound" -> { sound = on; PackSfx.on = on }
         }

@@ -1,5 +1,6 @@
 package dev.cardstashy.nativeplay.ui
 
+import dev.cardstashy.nativeplay.foil.depth
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
@@ -124,7 +125,9 @@ fun CardFace(painter: androidx.compose.ui.graphics.painter.Painter, look: Foil.L
     val s = painter.intrinsicSize
     val ratio = if (s.isSpecified && s.width > 0f && s.height > 0f) s.width / s.height else 63f / 88f
     // One foil layer for every game (foil/FoilLayer.kt); a bare Magic look still works for older callers.
-    val foil = Modifier.finish(finish ?: look?.let { dev.cardstashy.nativeplay.foil.CardFinish.Magic(it) }, tilt)
+    val worn = finish ?: look?.let { dev.cardstashy.nativeplay.foil.CardFinish.Magic(it) }
+    // The 3D layer sits inside the foil (foil/DepthLayer.kt): the foil wears the moved card, so every recipe stays as it was.
+    val foil = Modifier.finish(worn, tilt).depth(worn, tilt)
     if (!crop) Box(modifier, contentAlignment = alignment) {
         Box(Modifier.aspectRatio(ratio).clip(shape).background(Color(0xFF1F232B)).then(foil)) {
             Image(painter, desc, Modifier.fillMaxSize(), contentScale = ContentScale.FillBounds)
