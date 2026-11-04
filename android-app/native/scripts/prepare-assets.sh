@@ -33,6 +33,8 @@ node "$HERE/scripts/export-story-deeds.mjs" "$REPO" "$A/story-deeds.json"
 node "$HERE/scripts/export-card-data.mjs" "$REPO" "$A/card-data.json"
 # Randall's painted art pieces (each replaces its code-drawn version; a missing piece keeps the code one).
 for f in "$HERE"/art/*.webp; do [ -e "$f" ] && cp "$f" "$A/play/"; done
+# The table playmats (all 128 files): without them the table is a flat black card, so this script now does it too.
+cp "$REPO"/assets/play/playmat-*.webp "$A/play/"
 cp "$HERE/deck-engine/deck-engine.js" "$A/deck-engine.js"  # the web's Deck Forge for QuickJS (scripts/export-deck-engine.mjs)
 rm -rf "$T"
 echo "assets ready: $(du -sh "$A" | cut -f1), libs $(ls "$HERE/engine-libs" | wc -l) jars, pack $(cat "$A/forge-engine/pack.version")"

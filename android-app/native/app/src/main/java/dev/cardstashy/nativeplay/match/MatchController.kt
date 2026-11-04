@@ -33,7 +33,7 @@ data class Beat(
 
 data class Banner(val text: String, val yours: Boolean)
 
-enum class Stage { STARTING, MULLIGAN, INTRO, PLAYING, FINISHED, FAILED }
+enum class Stage { STARTING, TOSS, MULLIGAN, INTRO, PLAYING, FINISHED, FAILED }
 
 /**
  * The table's pace, owned by the client (standing rule): Forge's snapshots are queued and shown
@@ -55,6 +55,12 @@ class MatchController(private val scope: CoroutineScope, val input: String, priv
     private val _beat = MutableStateFlow<Beat?>(null); val beat: StateFlow<Beat?> = _beat
     private val _banner = MutableStateFlow<Banner?>(null); val banner: StateFlow<Banner?> = _banner
     private val _stage = MutableStateFlow(Stage.STARTING); val stage: StateFlow<Stage> = _stage
+    /** The coin (play-forge-pregame.js reveal): who Forge already committed to start and whether it was a flip. Shown in full before the opening hand. */
+    class Toss(val youFirst: Boolean, val flip: Boolean)
+    private val _toss = MutableStateFlow<Toss?>(null); val toss: StateFlow<Toss?> = _toss
+    private var tossDone: CompletableDeferred<Unit>? = null
+    /** The table calls this when the coin has landed and been read; the opening hand follows. */
+    fun tossFinished() { tossDone?.complete(Unit) }
     private val _sending = MutableStateFlow(false); val sending: StateFlow<Boolean> = _sending
     private val _live = MutableStateFlow(false); val live: StateFlow<Boolean> = _live // shown == latest and Forge waits on you
     private val _failure = MutableStateFlow<String?>(null); val failure: StateFlow<String?> = _failure
@@ -189,7 +195,42 @@ class MatchController(private val scope: CoroutineScope, val input: String, priv
         _shown.value = st
         val l = latest
         _live.value = l != null && st.revision == l.revision && st.waitingOnMe && !_sending.value
-        if (_live.value) scheduleAutoPass(st)
+        if (_live.value) { scheduleAutoPass(st); armClock(st) } else if (!_sending.value) clearClock()
+    }
+
+    // ---- The turn clock (TurnClock): runs while Forge waits on you, once per decision ----
+    /** When the current decision ends, and how long it was given (for the countdown on the table). */
+    class Clock(val endsAt: Long, val totalMs: Long)
+    private val _clock = MutableStateFlow<Clock?>(null); val clock: StateFlow<Clock?> = _clock
+    private var clockJob: Job? = null
+    private var clockKey: String? = null
+    private var missed = 0
+    private var autoAnswering = false
+    private fun clearClock() { clockJob?.cancel(); clockJob = null; clockKey = null; _clock.value = null }
+    private fun armClock(st: MatchState) {
+        val key = "${st.revision}:${st.prompt?.id}:${st.inputType}"
+        if (key == clockKey) return
+        clockJob?.cancel(); clockKey = key
+        val total = TurnClock.budgetMs(st)
+        _clock.value = Clock(SystemClock.elapsedRealtime() + total, total)
+        clockJob = scope.launch(Dispatchers.Main) {
+            delay(total)
+            if (!_live.value || latest?.revision != st.revision) return@launch
+            missed++
+            // Friend matches only: someone who is gone for three decisions in a row concedes, so the other player is never left waiting.
+            if (remote != null && missed >= TurnClock.CONCEDE_AFTER) { concede(); return@launch }
+            autoAnswering = true
+            try {
+                when (TurnClock.answer(st)) {
+                    TurnClock.Answer.OK -> ok()
+                    TurnClock.Answer.CANCEL -> cancel()
+                    TurnClock.Answer.SKIP -> st.prompt?.let { replySkip(it.id) }
+                    TurnClock.Answer.EMPTY -> st.prompt?.let { reply(it.id, indexes = emptyList()) }
+                    TurnClock.Answer.NONE -> {}
+                }
+            } finally { autoAnswering = false }
+            clockKey = null  // the same decision may stay open (a choice that needs something); the clock runs it again
+        }
     }
 
     private suspend fun play() {
@@ -208,6 +249,17 @@ class MatchController(private val scope: CoroutineScope, val input: String, priv
             // A snapshot past the opening hand before you answered it is never drawn (unless the game now waits on you, so it can never stall).
             if (!gatePassed && !st.isMulligan && !answeredMulligan && !st.waitingOnMe) continue
             if (!gatePassed && st.isMulligan) {
+                // The whole toss is always seen: the table shows it (once it is on screen) and answers when it is done.
+                if (_toss.value == null && !answeredMulligan) {
+                    val first = st.firstPlayerId ?: st.activePlayer
+                    if (first != null) {
+                        _toss.value = Toss(first == st.viewer, st.startSelection != "first" && st.startSelection != "second")
+                        val d = CompletableDeferred<Unit>(); tossDone = d
+                        _stage.value = Stage.TOSS
+                        withTimeoutOrNull(20_000) { d.await() }
+                        tossDone = null
+                    }
+                }
                 _stage.value = Stage.MULLIGAN; lastSeq = st.events.maxOfOrNull { it.seq } ?: lastSeq
                 cpuHandAtKeep = st.cpu.handCount
                 show(st); continue
@@ -291,6 +343,7 @@ class MatchController(private val scope: CoroutineScope, val input: String, priv
         val st = latest ?: return
         if (!force && (!_live.value || _sending.value)) return
         autoJob?.cancel()
+        clearClock(); if (!autoAnswering && op != "concede") missed = 0
         if (st.isMulligan) answeredMulligan = true
         _sending.value = true; _live.value = false
         scope.launch(Dispatchers.IO) {
@@ -339,7 +392,7 @@ class MatchController(private val scope: CoroutineScope, val input: String, priv
                 val first = p.options.firstOrNull()
                 _beat.value = Beat(Beat.Kind.ACTION, "CPU reveals", first?.cardId, first?.label, p.options.drop(1).joinToString(", ") { it.label }.ifBlank { null }, durationMs = ACTION_MS)
                 hold(ACTION_MS)
-                if (latest?.prompt?.id == p.id) reply(p.id, indexes = emptyList())
+                if (latest?.prompt?.id == p.id) { autoAnswering = true; try { reply(p.id, indexes = emptyList()) } finally { autoAnswering = false } }
             }
             return
         }
@@ -351,7 +404,7 @@ class MatchController(private val scope: CoroutineScope, val input: String, priv
         if (!ownTop && !nothing) return
         autoJob = scope.launch(Dispatchers.Main) {
             delay(if (ownTop) 200 else 700)
-            if (_live.value && latest?.revision == st.revision) ok()
+            if (_live.value && latest?.revision == st.revision) { autoAnswering = true; try { ok() } finally { autoAnswering = false } }
         }
     }
 }

@@ -117,6 +117,8 @@ data class MatchState(
     /** Auto-pay mana (null on a bridge without it); phase stops "you:MAIN1" → pinned (true) or once (false), null when the bridge has none. */
     val autoPay: Boolean? = null, val phaseStops: Map<String, Boolean>? = null,
     val payment: Payment? = null,
+    /** snapshot.pregame (forgeStartingPlayer): who Forge committed to start, and how it was chosen (random = the coin). */
+    val firstPlayerId: Int? = null, val startSelection: String? = null,
 ) {
     val me get() = players.first { it.id == viewer }
     val cpu get() = players.first { it.id != viewer }
@@ -166,6 +168,7 @@ data class MatchState(
                 priorityStop = pv?.str("stop"), hasPriorityView = pv != null, lastActionError = o.str("lastActionError"), controlMode = o.str("controlMode"),
                 payment = o.obj("payment")?.let { pm -> val fc = pm.obj("forCard")?.takeIf { it.str("kind") == "card" }
                     Payment(pm.get("remaining")?.takeIf { it.isJsonPrimitive }?.asString, fc?.int("id"), fc?.str("name"), pm.obj("costNow")?.get("mana")?.takeIf { it.isJsonPrimitive }?.asString) },
+                firstPlayerId = o.obj("pregame")?.int("firstPlayerId"), startSelection = o.obj("pregame")?.str("selection"),
                 autoPay = o.bool("autoPay"), phaseStops = o.obj("phaseStops")?.entrySet()?.mapNotNull { (k, v) -> if (v.isJsonPrimitive && v.asJsonPrimitive.isBoolean) k to v.asBoolean else null }?.toMap(),
             )
         }

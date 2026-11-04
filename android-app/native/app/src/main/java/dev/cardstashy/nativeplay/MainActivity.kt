@@ -296,7 +296,7 @@ private fun Table(activity: MainActivity, s: QuickPlay.Setup.Ready, t0: Long, on
         }
         if (bubbles != null && outcome != null) LaunchedEffect(Unit) { controller.shown.filterNotNull().collect { st -> bubbles.update(st).forEach { outcome.bubbles.add(it) } } }
         BackHandler { /* the table's menu has Leave; Back never drops a match by accident */ }
-        if (versus || holdForScene) VersusScreen(s.you, s.cpu, intro = false) else TableScreen(controller, onHome = onHome, onRematch = { round++ }, resultNote = outcome?.note)
+        if (versus || holdForScene) VersusScreen(s.you, s.cpu, intro = false) else TableScreen(controller, onHome = onHome, onRematch = { round++ }, resultNote = outcome?.note, cpuPlate = s.cpu)
     }
 }
 

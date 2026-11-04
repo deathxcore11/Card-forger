@@ -96,7 +96,7 @@ private data class Sizes(val sidebar: Dp, val field: Dp, val land: Dp, val hand:
 }
 
 @Composable
-fun TableScreen(controller: MatchController, onHome: () -> Unit, onRematch: () -> Unit, resultNote: String? = null) {
+fun TableScreen(controller: MatchController, onHome: () -> Unit, onRematch: () -> Unit, resultNote: String? = null, cpuPlate: dev.cardstashy.nativeplay.match.Plate? = null) {
     val context = LocalContext.current
     val decks = DemoDecks.load(context)
     val shown by controller.shown.collectAsState()
@@ -131,6 +131,7 @@ fun TableScreen(controller: MatchController, onHome: () -> Unit, onRematch: () -
             val sizes = Sizes(sidebar = if (maxWidth >= 1000.dp) 280.dp else 168.dp, field = 46.dp * k, land = 36.dp * k, hand = 60.dp * k, back = 20.dp * k)
             val st = shown
             when {
+                stage == Stage.TOSS -> { val t = controller.toss.collectAsState().value; if (t != null) TossScreen(t, cpuPlate, onDone = { controller.tossFinished() }) else Loading() }
                 st == null || stage == Stage.STARTING -> Loading()
                 stage == Stage.MULLIGAN -> Mulligan(st, controller, live, sizes, audio, onHold = { inspect = it })
                 else -> {
@@ -145,6 +146,7 @@ fun TableScreen(controller: MatchController, onHome: () -> Unit, onRematch: () -
                 }
             }
             banner?.let { b -> BannerView(b.text, b.yours, Modifier.align(Alignment.Center)) }
+            if (stage == Stage.PLAYING || stage == Stage.MULLIGAN) ClockPill(controller.clock.collectAsState().value, Modifier.align(Alignment.CenterEnd).padding(end = 10.dp).offset(y = (-44).dp))
         }
         if (stage == Stage.PLAYING || stage == Stage.INTRO) shown?.let { CombatLines(it, anchors) }
       }
@@ -682,5 +684,24 @@ private fun FitCard(modifier: Modifier, inner: Modifier = Modifier, content: @Co
     BoxWithConstraints(modifier, contentAlignment = Alignment.Center) {
         val w = minOf(maxWidth, maxHeight * .716f)
         Box(inner.size(w, w / .716f), content = content)
+    }
+}
+
+/** The turn clock: a ring that empties over the decision's time, the seconds inside, gold turning red and pulsing for the last ten. Minimal motion counts whole seconds only. */
+@Composable
+internal fun ClockPill(c: MatchController.Clock?, modifier: Modifier) {
+    if (c == null) return
+    var left by remember(c) { mutableStateOf(c.endsAt - android.os.SystemClock.elapsedRealtime()) }
+    LaunchedEffect(c) { while (true) { left = (c.endsAt - android.os.SystemClock.elapsedRealtime()).coerceAtLeast(0); if (Motion.still) delay(1000) else androidx.compose.runtime.withFrameMillis { }; if (left <= 0) break } }
+    val warn = left <= dev.cardstashy.nativeplay.match.TurnClock.WARN_MS
+    val pulse = androidx.compose.animation.core.rememberInfiniteTransition(label = "clock").animateFloat(1f, 1.1f, androidx.compose.animation.core.infiniteRepeatable(tween(450), androidx.compose.animation.core.RepeatMode.Reverse), label = "p").value
+    val ring = if (warn) Color(0xFFFF6B5A) else Palette.Gold
+    val frac = (left.toFloat() / c.totalMs).coerceIn(0f, 1f)
+    Box(modifier.size(46.dp).graphicsLayer { val k = if (warn && !Motion.still) pulse else 1f; scaleX = k; scaleY = k }.clip(CircleShape).background(Color(0xCC0C0E13)), contentAlignment = Alignment.Center) {
+        androidx.compose.foundation.Canvas(Modifier.fillMaxSize().padding(3.dp)) {
+            drawCircle(Color(0x33FFFFFF), style = androidx.compose.ui.graphics.drawscope.Stroke(3.dp.toPx()))
+            drawArc(ring, -90f, 360f * frac, false, style = androidx.compose.ui.graphics.drawscope.Stroke(3.dp.toPx(), cap = androidx.compose.ui.graphics.StrokeCap.Round))
+        }
+        Text(((left + 999) / 1000).toString(), style = Type.Label.copy(color = if (warn) ring else Palette.Ink, fontSize = 14.sp))
     }
 }
