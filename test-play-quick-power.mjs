@@ -14,6 +14,8 @@ const mem=()=>{const m=new Map();return {getItem:k=>m.get(k)??null,setItem:(k,v)
 const rec=o=>recordMatch({outcome:o,deck:{id:1,name:'a'},format:'Modern',playStyle:'quick'},{storage:st});
 rec('win');assert.equal(quickStreak('Modern',{storage:st}),0);rec('win');assert.equal(quickStreak('Modern',{storage:st}),5);rec('win');assert.equal(quickStreak('Modern',{storage:st}),10);
 rec('loss');assert.equal(quickStreak('Modern',{storage:st}),0);rec('loss');assert.equal(quickStreak('Modern',{storage:st}),-5);
+{const cmd=i=>({id:'k'+i,format:'Commander',commander:'C'+i,cards:[{name:'x'+i,qty:99}],p:50+i,b:i%4+1}),cp=Array.from({length:20},(_,i)=>cmd(i)),mine={...cmd(99),b:1,p:60};
+ for(let k=0;k<200;k++){const r=pick({...base,player:mine,candidates:cp,bracketOf:d=>d.b});assert.ok(r.deck.b<=2,'Commander stays within one bracket');}}
 import {powerTier,fairness,matchupLine} from './power-tier.js';
 assert.deepEqual([95,85,70,40].map(powerTier),['Top Meta','Competitive','Tuned','Casual']);assert.equal(powerTier(null),'');
 assert.deepEqual([[60,70],[60,60],[70,60]].map(([a,b])=>fairness(a,b)),['You’re the underdog','Even match','You’re favoured']);

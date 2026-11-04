@@ -1,6 +1,6 @@
 // Pick a CPU list for review: matched to the player's deck Power (same number as Collection), with a Wild Card chance. Never engine admission.
 import {playDeckSupport} from './play-deck-sources.js';
-export function chooseQuickOpponent({player,candidates=[],difficulty='Medium',estimate=()=>null,support=playDeckSupport,candidateEligible=null,nativeValidationPending=false,random=Math.random,streak=0,wildChance=0.125,sample=40}={}){
+export function chooseQuickOpponent({player,candidates=[],difficulty='Medium',estimate=()=>null,support=playDeckSupport,candidateEligible=null,nativeValidationPending=false,random=Math.random,streak=0,wildChance=0.125,sample=40,bracketOf=()=>null}={}){
  if(!['Easy','Medium','Hard'].includes(difficulty))throw Error('Choose a CPU difficulty.');
  const eligible=candidateEligible||((deck)=>support(deck).status==='pool');
  if(!player||!eligible(player))throw Error('Your selected deck needs play-support review before Quick Play.');
@@ -21,6 +21,9 @@ export function chooseQuickOpponent({player,candidates=[],difficulty='Medium',es
   const pool=rows.length>sample?rows.map(r=>[random(),r]).sort((a,b)=>a[0]-b[0]).slice(0,sample).map(x=>x[1]):rows;
   for(const r of pool)r.score=r.score??rate(r.deck);
   const rated=pool.filter(r=>r.score!==null).sort((a,b)=>a.score-b.score);
+  // Commander: keep the CPU within one bracket of yours whenever three or more such lists are rated.
+  if(player.format==='Commander'){const b=d=>{try{const n=bracketOf(d);return Number.isFinite(n)?n:null;}catch{return null;}},mineB=b(player);
+   if(mineB!==null){const near=rated.filter(r=>{const x=b(r.deck);return x!==null&&Math.abs(x-mineB)<=1;});if(near.length>2)rated.splice(0,rated.length,...near);}}
   if(rated.length>2){
    // Rank, not raw points: placing lists crowd the top of the 0-100 scale, so the gap is measured in pool percentile.
    const pct=v=>100*rated.filter(r=>r.score<v).length/rated.length,mine=pct(myPower);

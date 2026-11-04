@@ -2223,6 +2223,8 @@ A.playFriendJoin=async()=>{
   setFriendRoom({busy:false,status:'started'});await A.playFriendLaunch(joined.matchId);
  }catch(e){setFriendRoom({busy:false,error:friendError(e)});}
 };
+// One Power and bracket read per deck per pick (the same estimates Collection shows).
+const quickContexts=new WeakMap(),quickContext=deck=>{if(!quickContexts.has(deck))quickContexts.set(deck,capturePracticeDeckContext(deck).practiceContext);return quickContexts.get(deck);};
 A.playFindOpponent=async()=>{
  const state=playSetup.snapshot();if(quickStatus.busy||!state.profile.signedIn||!state.selected)return false;
  const ticket=++quickSequence,scope=JSON.stringify([readPlayAccount(),state.selected,state.match]);quickStatus={busy:true,error:null};refreshPlayMenu();await new Promise(resolve=>requestAnimationFrame(resolve));
@@ -2233,7 +2235,7 @@ A.playFindOpponent=async()=>{
  // Only lists the engine can load are offered: a source that spells a card its own way, or a card newer than the engine, never reaches the table.
  const names=FORGE_PLAY_TEST_ENABLED?await loadEngineCardNames():null,unknown=engineUnknownCards(state.selected,names);if(unknown.length)throw Error(engineMissingText('Your deck',unknown));
  const sources=readPlaySources(),candidates=[...playTableDecks(),...Object.values(sources).flat().map(x=>x.deck),...playRandomQueue.peek(state.match.format)].filter(deck=>!FORGE_PLAY_TEST_ENABLED||forgeCpuDeckComplete(deck)&&!engineUnknownCards(deck,names).length);
- const result=chooseQuickOpponent({player:state.selected,candidates,difficulty:state.match.difficulty,streak:quickStreak(state.match.format),...(FORGE_PLAY_TEST_ENABLED?{candidateEligible:deck=>forgeDeckSupport(deck).status==='native-pending',nativeValidationPending:true}:{}),estimate:deck=>capturePracticeDeckContext(deck).practiceContext.power.value});
+ const result=chooseQuickOpponent({player:state.selected,candidates,difficulty:state.match.difficulty,streak:quickStreak(state.match.format),...(FORGE_PLAY_TEST_ENABLED?{candidateEligible:deck=>forgeDeckSupport(deck).status==='native-pending',nativeValidationPending:true}:{}),estimate:deck=>quickContext(deck).power.value,bracketOf:deck=>quickContext(deck).bracket?.value??null});
  const now=playSetup.snapshot();if(ticket!==quickSequence||JSON.stringify([readPlayAccount(),now.selected,now.match])!==scope)return false;playSetup.setQuickOpponent(result);return true;
  }catch(e){if(ticket===quickSequence)quickStatus.error=e.message;}finally{if(ticket===quickSequence){quickStatus.busy=false;refreshPlayMenu();}}
 };
@@ -2251,7 +2253,7 @@ async function pickPodDecks(state,count){
  for(let i=0;i<count;i++){
   if(chosen[i]){picks.push(chosen[i]);continue;}
   const candidates=pool.filter(deck=>!taken.has(cardsOf(deck)));
-  const result=chooseQuickOpponent({player:state.selected,candidates,difficulty:'Medium',estimate:deck=>capturePracticeDeckContext(deck).practiceContext.power.value,...(FORGE_PLAY_TEST_ENABLED?{candidateEligible:deck=>deck===state.selected||forgeDeckSupport(deck).status==='native-pending',nativeValidationPending:true}:{candidateEligible:()=>true})});
+  const result=chooseQuickOpponent({player:state.selected,candidates,difficulty:'Medium',estimate:deck=>quickContext(deck).power.value,bracketOf:deck=>quickContext(deck).bracket?.value??null,...(FORGE_PLAY_TEST_ENABLED?{candidateEligible:deck=>deck===state.selected||forgeDeckSupport(deck).status==='native-pending',nativeValidationPending:true}:{candidateEligible:()=>true})});
   if(taken.has(cardsOf(result.deck)))throw Error('Four-player games need more Commander decks. Load Precons or Meta in Practice, then try again.');
   taken.add(cardsOf(result.deck));picks.push(result.deck);
  }
