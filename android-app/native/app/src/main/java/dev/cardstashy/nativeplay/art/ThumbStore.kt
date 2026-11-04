@@ -40,7 +40,49 @@ object ThumbStore {
     /** True while a match runs: downloads wait so the table gets the network and CPU. */
     @Volatile var paused = false
 
-    fun init(context: Context) { if (!::root.isInitialized) root = File(context.applicationContext.filesDir, "thumbs/mtg").apply { mkdirs() } }
+    private var app: Context? = null
+    fun init(context: Context) {
+        if (::root.isInitialized) return
+        app = context.applicationContext
+        root = File(context.applicationContext.filesDir, "thumbs/mtg").apply { mkdirs() }
+        keepAll.value = prefs()?.getBoolean(KEEP, false) == true
+        if (keepAll.value) scope.launch { runKeepAll() }
+    }
+    private fun prefs() = app?.getSharedPreferences("play", Context.MODE_PRIVATE)
+
+    // ---- Settings > Card art: "Keep all Magic thumbnails" (every paper set, Wi-Fi only, resumes next launch) ----
+    private const val KEEP = "thumbsKeepAll"
+    val keepAll = MutableStateFlow(false)
+    /** (sets saved, sets total) while keep-all walks the sets. */
+    val keepProgress = MutableStateFlow<Pair<Int, Int>?>(null)
+    @Volatile private var walking = false
+    fun setKeepAll(on: Boolean) {
+        keepAll.value = on; prefs()?.edit()?.putBoolean(KEEP, on)?.apply()
+        if (on) scope.launch { runKeepAll() }
+    }
+    private fun unmetered(): Boolean = runCatching {
+        val cm = app!!.getSystemService(Context.CONNECTIVITY_SERVICE) as android.net.ConnectivityManager
+        cm.getNetworkCapabilities(cm.activeNetwork)?.hasCapability(android.net.NetworkCapabilities.NET_CAPABILITY_NOT_METERED) == true
+    }.getOrDefault(false)
+    private suspend fun runKeepAll() {
+        if (walking) return; walking = true
+        try {
+            val sets = get("$SCRYFALL/sets")?.let { JsonParser.parseString(it).asJsonObject.getAsJsonArray("data") }
+                ?.mapNotNull { it as? JsonObject }?.filter { it.get("digital")?.asBoolean != true && (it.get("card_count")?.asInt ?: 0) > 0 }
+                ?.map { it.get("code").asString } ?: return
+            var done = sets.count { setDone(it) }
+            keepProgress.value = done to sets.size
+            for (code in sets) {
+                if (!keepAll.value) break
+                if (setDone(code)) continue
+                while (keepAll.value && (paused || !unmetered())) delay(5000)
+                if (!keepAll.value) break
+                synchronized(busy) { if (!busy.add(code)) null else Unit } ?: continue
+                try { runCatching { downloadSet(code) } } finally { synchronized(busy) { busy.remove(code) }; progress.value = progress.value - code }
+                if (setDone(code)) { done++; keepProgress.value = done to sets.size }
+            }
+        } finally { walking = false; if (keepProgress.value?.let { it.first >= it.second } != false) keepProgress.value = null }
+    }
     private val ready get() = ::root.isInitialized
 
     /** cards.scryfall.io/normal/front/a/9/<uuid>.jpg?123 -> "<uuid>-front"; null for anything else. */
@@ -53,6 +95,7 @@ object ThumbStore {
 
     fun setDone(code: String) = ready && File(root, "sets/${code.lowercase()}.json").isFile
     fun bytes(): Long = if (!ready) 0 else root.walkTopDown().filter { it.isFile }.sumOf { it.length() }
+    fun setsSaved(): Int = if (!ready) 0 else File(root, "sets").list()?.size ?: 0
 
     /** Coil: a stored thumbnail answers before the cache or the network. */
     val interceptor = object : coil3.intercept.Interceptor {
@@ -130,5 +173,5 @@ object ThumbStore {
     }.getOrDefault(emptyList())
 
     /** Settings: forget every stored thumbnail. */
-    fun clear() { if (ready) { root.deleteRecursively(); root.mkdirs() } }
+    fun clear() { if (ready) { setKeepAll(false); root.deleteRecursively(); root.mkdirs() } }
 }

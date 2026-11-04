@@ -427,6 +427,7 @@ private fun EditProfile(profile: Account.Profile?, onPick: (String) -> Unit) {
 private fun AppPane() {
     ThemeCard()
     GridCard()
+    CardArtCard()
     Panel {
         CardHeading("DISPLAY & FEEDBACK", "Glass, motion & feel")
         Check("Frosted glass", AppSettings.glass, "Turn it off for plain solid panels (a little lighter on older phones).") { AppSettings.set("glass", it) }
@@ -453,6 +454,23 @@ private fun AppPane() {
         Check("Sound & music", AppSettings.sound) { AppSettings.set("packSound", it) }
         Check("Soft sounds in the app", AppSettings.appSounds, "Music plays only in matches and Planeswalk. Elsewhere you hear only a few soft sounds, like opening a pack or adding a card, if “Soft sounds in the app” is on. Music streams the first time, then stays on this device. Sound starts after your first tap.") { AppSettings.set("appSounds", it) }
     }
+}
+
+/** Offline art plan (4 Nov): what this phone keeps for fast grids, the keep-all switch and Clear. */
+@Composable
+private fun CardArtCard() = Panel {
+    CardHeading("CARD ART", "Saved on this phone")
+    val store = dev.cardstashy.nativeplay.art.ThumbStore
+    val keep by store.keepAll.collectAsState()
+    val walk by store.keepProgress.collectAsState()
+    val running by store.progress.collectAsState()
+    var stamp by remember { mutableStateOf(0) }
+    val used = remember(stamp, running, walk) { store.bytes() }; val sets = remember(stamp, running, walk) { store.setsSaved() }
+    Text(if (sets == 0 && used < 1048576) "Nothing saved yet" else "${"%,.0f".format(used / 1048576.0)} MB · $sets ${if (sets == 1) "set" else "sets"}", style = S.Body.copy(fontSize = 13.sp, fontWeight = FontWeight.SemiBold))
+    Text("A set's grid pictures save the first time you open it, so it is instant (and works offline) after that. Foil still shimmers on saved cards.", style = S.Foot)
+    Check("Keep all Magic thumbnails", keep, "Saves every printing's grid picture on Wi-Fi, about 4.4 GB. Pauses during matches and picks up where it left off." +
+        (walk?.let { (d, t) -> " Saved $d of $t sets." } ?: "")) { store.setKeepAll(it) }
+    if (used > 0) SiteButton("Clear saved art", small = true) { store.clear(); stamp++ }
 }
 
 /** settings-theme.js themeSettings(): Color mode, three choices (aura.css: one column under 480 px, radio · 64 px swatch · text). */
