@@ -320,14 +320,28 @@ fun ForgeBoard(
             // Seats: the CPU top right, you bottom left; command-zone crests beside them.
             // A big board moves the seats 4 px in and the bottom-left group 14 px up (site probes at 960 × 840 and 1280 × 800).
             val lx = if (large) 4.dp else 0.dp; val ly = if (large) 14.dp else 0.dp
-            if (!pod) Crest(cpu.command.firstOrNull(), Modifier.offset(x = W - 136.du - lx, y = 6.du + lx), d, onInspect)
-            if (!pod) Medallion(cpu, mine = false, live && cpu.id in st.selection.players, cpu.id in st.selection.chosenPlayers, Modifier.offset(x = W - 66.du - lx, y = 12.du + lx), d) { intents.player(cpu.id) }
+            // Seat dock (Randall 4 Nov, design/seat-dock/spec.md): your corner is crest, portrait, then a tray: one row of 34 du
+            // round tools (stops, hold, [auto-pay], chat; pitch 42) and under it the floating mana. Nothing overlaps.
+            // The CPU's corner is the same dock turned half a circle: crest outermost at the right edge, portrait inside it.
+            // Library and graveyard stay the calm-v2 card piles with their counts, so the dock carries no count pill.
+            val ax = 80.du + lx; val ay = H - 78.du - ly; val x0 = ax + 52.du + 14.du
+            if (!pod) Crest(cpu.command.firstOrNull(), Modifier.offset(x = W - 68.du - lx, y = 16.du + lx), d, onInspect)
+            if (!pod) Medallion(cpu, mine = false, live && cpu.id in st.selection.players, cpu.id in st.selection.chosenPlayers, Modifier.offset(x = W - 132.du - lx, y = 26.du + lx), d) { intents.player(cpu.id) }
             Crest(me.command.firstOrNull(), Modifier.offset(x = 10.du + lx, y = H - 86.du - ly), d, onInspect)
-            Medallion(me, mine = true, live && me.id in st.selection.players, me.id in st.selection.chosenPlayers, Modifier.offset(x = 80.du + lx, y = H - 78.du - ly), d) { intents.player(me.id) }
-            ManaPool(me.mana, Modifier.offset(x = 106.du + lx, y = H - 103.du - ly), d)
-            // Smart / Full Control / auto-pay just right of your portrait, the emote button on its top-right corner (site: 117, 297).
-            ControlEmblems(st, intents, Modifier.offset(x = 149.du + lx, y = H - 103.du - ly), d)
-            EmoteButton(Modifier.offset(x = 117.du + lx, y = H - 93.du - ly), d)
+            Medallion(me, mine = true, live && me.id in st.selection.players, me.id in st.selection.chosenPlayers, Modifier.offset(x = ax, y = ay), d) { intents.player(me.id) }
+            // A phone's hand starts close to the seat: when the full tool row would reach it, chat drops to the second row
+            // beside the mana, so the tray still never touches the hand.
+            val tools = (if (st.controlMode in setOf("smart", "full")) 2 + (if (st.autoPay != null) 1 else 0) else 0) + 1
+            val handLeftAt = centreX + 44.du - (if (large) (H.value * .13f).coerceIn(66f, 120f).dp else 66.du) / 66f * 222f
+            val chatInRow = x0 + 42.du * tools - 8.du + 8.du <= handLeftAt
+            Row(Modifier.offset(x = x0, y = ay - 4.du), horizontalArrangement = Arrangement.spacedBy(8.du), verticalAlignment = Alignment.CenterVertically) {
+                ControlEmblems(st, intents, Modifier, d)
+                if (chatInRow) EmoteButton(Modifier, d)
+            }
+            Row(Modifier.offset(x = x0, y = ay + 34.du), horizontalArrangement = Arrangement.spacedBy(8.du), verticalAlignment = Alignment.CenterVertically) {
+                if (!chatInRow) EmoteButton(Modifier, d)
+                ManaPool(me.mana, Modifier, d)
+            }
 
             // Menu and the phase track, top left.
             val menuX = if (large) 12.dp else 8.du; val menuY = if (large) 12.dp else 34.du
@@ -677,7 +691,7 @@ private fun Crest(c: Card?, modifier: Modifier, d: Du, onInspect: (Card) -> Unit
 private fun ManaPool(mana: Map<String, Int>, modifier: Modifier, d: Du) = with(d) {
     val floating = listOf("W", "U", "B", "R", "G", "C").mapNotNull { k -> mana[k]?.takeIf { it > 0 }?.let { k to it } }
     if (floating.isEmpty()) return@with
-    Row(modifier.offset(x = -(16 + 13 * floating.size).du).clip(RoundedCornerShape(999.dp)).background(Color(0xE60B0D12)).border(1.dp, Gold.copy(alpha = .33f), RoundedCornerShape(999.dp))
+    Row(modifier.heightIn(min = 34.du).clip(RoundedCornerShape(999.dp)).background(Color(0xE60B0D12)).border(1.dp, Gold.copy(alpha = .33f), RoundedCornerShape(999.dp))
         .padding(horizontal = 6.du, vertical = 4.du), horizontalArrangement = Arrangement.spacedBy(4.du)) {
         floating.forEach { (k, n) ->
             Box(Modifier.size(24.du)) {
@@ -865,7 +879,7 @@ private fun Emblem(on: Boolean, enabled: Boolean, label: String, d: Du, onClick:
     val hf = androidx.compose.ui.platform.LocalHapticFeedback.current
     val press = remember { androidx.compose.foundation.interaction.MutableInteractionSource() }
     val down by press.collectIsPressedAsState()
-    Box(Modifier.size(28.du).graphicsLayer { val s = if (down && enabled) .92f else 1f; scaleX = s; scaleY = s; alpha = if (enabled) 1f else .55f }
+    Box(Modifier.size(34.du).graphicsLayer { val s = if (down && enabled) .92f else 1f; scaleX = s; scaleY = s; alpha = if (enabled) 1f else .55f }
         .drawBehind { if (on) drawCircle(Brush.radialGradient(listOf(Gold.copy(alpha = .33f), Color.Transparent), radius = size.width * .9f), radius = size.width * .9f) }
         .clip(CircleShape)
         .background(if (on) Brush.radialGradient(listOf(Color(0xFF4A3C1F), Color(0xFF1B160C)), center = Offset.Unspecified) else Brush.linearGradient(listOf(Color(0xCC0F1117), Color(0xCC0F1117))))
@@ -879,7 +893,7 @@ private fun Emblem(on: Boolean, enabled: Boolean, label: String, d: Du, onClick:
 private fun ControlEmblems(st: MatchState, intents: TableIntents, modifier: Modifier, d: Du) = with(d) {
     if (st.controlMode !in setOf("smart", "full")) return@with
     val lock = st.prompt != null || st.inputType == "InputLockUI" || st.busy
-    Row(modifier, horizontalArrangement = Arrangement.spacedBy(6.du)) {
+    Row(modifier, horizontalArrangement = Arrangement.spacedBy(8.du)) {
         Emblem(st.controlMode == "smart", !lock, "Smart: passes empty response windows. Targets and required choices stay yours.", d, { intents.mode("smart") }) { StrokeIcon(SMART_ICON, it, 14.du) }
         Emblem(st.controlMode == "full", !lock, "Full Control: stop at every response window.", d, { intents.mode("full") }) { StrokeIcon(FULL_ICON, it, 14.du) }
         st.autoPay?.let { on ->
@@ -895,7 +909,7 @@ private fun ControlEmblems(st: MatchState, intents: TableIntents, modifier: Modi
 private fun EmoteButton(modifier: Modifier, d: Du) = with(d) {
     val hf = androidx.compose.ui.platform.LocalHapticFeedback.current
     val open = TableEmotes.menuOpen
-    Box(modifier.size(30.du).drawBehind { drawCircle(Color(0x99000000), radius = size.width / 2 + 2.du.toPx(), center = center + Offset(0f, 4.du.toPx())) }
+    Box(modifier.size(34.du).drawBehind { drawCircle(Color(0x99000000), radius = size.width / 2 + 2.du.toPx(), center = center + Offset(0f, 4.du.toPx())) }
         .clip(CircleShape).background(Color(0xD914161D)).border(1.dp, if (open) Color(0xFFF0C27A) else Color(0x66D6AD64), CircleShape)
         .semantics { contentDescription = "Emotes"; role = Role.Button }
         .clickable { if (AppSettings.haptics) hf.performHapticFeedback(androidx.compose.ui.hapticfeedback.HapticFeedbackType.TextHandleMove); TableEmotes.menuOpen = !open }, contentAlignment = Alignment.Center) {
@@ -915,7 +929,7 @@ private fun EmoteLayer(W: Dp, H: Dp, d: Du) = with(d) {
         val leave by animateFloatAsState(if (b.leaving) 1f else 0f, tween(250), label = "leave")
         var size by remember(b.serial) { mutableStateOf(IntSize.Zero) }
         val w = with(density) { size.width.toDp() }; val h = with(density) { size.height.toDp() }
-        val cx = if (mine) 106.du else W - 40.du
+        val cx = if (mine) 106.du else W - 106.du
         val left = (cx - w / 2).coerceIn(8.du, (W - w - 8.du).coerceAtLeast(8.du))
         val top = if (mine) (H - 78.du - h - 10.du).coerceAtLeast(8.du) else 88.du
         Box(Modifier.offset(x = left, y = top).widthIn(max = 220.du).onSizeChanged { size = it }
