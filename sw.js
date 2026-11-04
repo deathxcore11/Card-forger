@@ -24,6 +24,7 @@ const ASSETS = [
   "./play-deeds-ui.js",
   "./reward-flight.js",
   "./play-achievement-toasts.js",
+  "./play-titles.js",
   "./play-presence.js",
   "./play-achievements.js",
   "./play-achievement-art.js",
