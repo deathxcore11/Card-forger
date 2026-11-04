@@ -149,9 +149,13 @@ fun rowsJson(rows: List<Decks.Row>) = JsonArray().apply { rows.forEach { r -> ad
 /** .pe-shelf / .pe-import: 22 dp glass with a gold-tinted line, Cinzel 20 title. */
 @Composable
 private fun Panel(title: String, sub: String?, content: @Composable () -> Unit) {
-    Column(Modifier.fillMaxWidth().clip(RoundedCornerShape(26.dp)).background(Brush.verticalGradient(listOf(Color(0x08FFFFFF), Color(0x02FFFFFF)))).background(Color(0xCC0D0F14))
-        .border(1.dp, Brush.verticalGradient(listOf(Color(0x40E9C27A), Color(0x0FE9C27A), Color(0x05FFFFFF))), RoundedCornerShape(26.dp)).padding(20.dp), verticalArrangement = Arrangement.spacedBy(14.dp)) {
-        Text(title, style = TextStyle(fontFamily = Type.Cinzel, fontWeight = FontWeight.Bold, fontSize = 20.sp, letterSpacing = .04.em, color = Color(0xFFF3E3BD)))
+    // Native fix (Randall 4 Nov 10:26Z): in Light the site leaves these panels dark with unreadable grey text; the app uses
+    // the site's light glass instead (rgba(255,255,255,.58), --glass-line, --text), like the lobby's import panel.
+    val light = AppSettings.theme == "light"
+    Column(Modifier.fillMaxWidth().clip(RoundedCornerShape(26.dp)).then(if (light) Modifier.background(Color(0x94FFFFFF)).border(1.dp, Site.GlassLine, RoundedCornerShape(26.dp))
+        else Modifier.background(Brush.verticalGradient(listOf(Color(0x08FFFFFF), Color(0x02FFFFFF)))).background(Color(0xCC0D0F14))
+        .border(1.dp, Brush.verticalGradient(listOf(Color(0x40E9C27A), Color(0x0FE9C27A), Color(0x05FFFFFF))), RoundedCornerShape(26.dp))).padding(20.dp), verticalArrangement = Arrangement.spacedBy(14.dp)) {
+        Text(title, style = TextStyle(fontFamily = Type.Cinzel, fontWeight = FontWeight.Bold, fontSize = 20.sp, letterSpacing = .04.em, color = if (light) Site.Text else Color(0xFFF3E3BD)))
         if (sub != null) Text(sub, style = t(14f, color = Site.Muted))
         content()
     }
@@ -372,7 +376,8 @@ private fun PreconCards(rows: List<Decks.Row>, owned: Map<String, Int>) {
 
 @Composable
 internal fun Field(value: String, hint: String, lines: Int = 1, onChange: (String) -> Unit) {
-    Box(Modifier.fillMaxWidth().heightIn(min = if (lines > 1) (lines * 22 + 24).dp else 44.dp).clip(RoundedCornerShape(16.dp)).background(Color(0xB30D0F14)).border(1.dp, SoftRim, RoundedCornerShape(16.dp))
+    Box(Modifier.fillMaxWidth().heightIn(min = if (lines > 1) (lines * 22 + 24).dp else 44.dp).clip(RoundedCornerShape(16.dp))
+        .then(if (AppSettings.theme == "light") Modifier.background(Color(0xADF1F5FB)).border(1.dp, Site.GlassLine, RoundedCornerShape(16.dp)) else Modifier.background(Color(0xB30D0F14)).border(1.dp, SoftRim, RoundedCornerShape(16.dp)))
         .padding(horizontal = 14.dp, vertical = 12.dp)) {
         if (value.isEmpty()) Text(hint, style = t(15f, color = Site.Muted))
         BasicTextField(value, onChange, singleLine = lines == 1, minLines = lines, textStyle = t(15f), cursorBrush = SolidColor(Site.Gold), modifier = Modifier.fillMaxWidth())

@@ -46,6 +46,7 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.draw.scale
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.SolidColor
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalView
 import androidx.compose.ui.text.TextStyle
@@ -74,7 +75,10 @@ private val Gold = Color(0xFFD6AD64)
 private val Cream = Color(0xFFF3E3BD)
 private fun t(size: Float, weight: FontWeight = FontWeight.Medium, color: Color = Site.Text, line: Float = size * 1.35f) =
     TextStyle(fontFamily = Site.Manrope, fontWeight = weight, fontSize = size.sp, lineHeight = line.sp, color = color)
-private val cinzel = TextStyle(fontFamily = Type.Cinzel, fontWeight = FontWeight.Bold, fontSize = 17.sp, lineHeight = 21.sp, color = Cream)
+// Light (native fix, Randall 4 Nov 10:26Z): panels and deed cards turn light, so their titles and copy follow the tokens.
+private val light: Boolean get() = AppSettings.theme == "light"
+private val Soft: Color get() = if (light) Site.Muted else Color(0xFFC9CED6)
+private val cinzel: TextStyle get() = TextStyle(fontFamily = Type.Cinzel, fontWeight = FontWeight.Bold, fontSize = 17.sp, lineHeight = 21.sp, color = if (light) Site.Text else Cream)
 
 /** rewardIcons' aria label, the toast's words: coins, seals, packs, Collector packs, XP, in that order. */
 fun rewardWords(r: JsonObject?): String {
@@ -96,18 +100,18 @@ internal fun RewardIcons(r: JsonObject?) {
         (r.get("seals") as? JsonObject)?.entrySet()?.forEach { (k, v) -> val n = v.int(); if (n > 0) SiteIcons.Seals[k]?.let { cell(it, n) } }
         r.get("packs").int().takeIf { it > 0 }?.let { cell(SiteIcons.Pack, it) }
         r.get("collector").int().takeIf { it > 0 }?.let { cell(SiteIcons.Pack, it) }
-        r.get("xp").int().takeIf { it > 0 }?.let { Text("%,d XP".format(it), style = t(13f, FontWeight.Bold, Color(0xFFC9CED6))) }
+        r.get("xp").int().takeIf { it > 0 }?.let { Text("%,d XP".format(it), style = t(13f, FontWeight.Bold, Soft)) }
     }
 }
 
 @Composable
-private fun Bar(frac: Float, thin: Boolean = false, modifier: Modifier = Modifier) = Box(modifier.fillMaxWidth().height(if (thin) 5.dp else 8.dp).clip(CircleShape).background(Color(0xFF1F2430))) {
+private fun Bar(frac: Float, thin: Boolean = false, modifier: Modifier = Modifier) = Box(modifier.fillMaxWidth().height(if (thin) 5.dp else 8.dp).clip(CircleShape).background(if (light) Site.Surface2 else Color(0xFF1F2430))) {
     Box(Modifier.fillMaxWidth(frac.coerceIn(0f, 1f)).fillMaxHeight().clip(CircleShape).background(Color(0xFFE2B866)))
 }
 
 @Composable
 private fun Section(title: String, content: @Composable androidx.compose.foundation.layout.ColumnScope.() -> Unit) =
-    Column(Modifier.fillMaxWidth().clip(RoundedCornerShape(22.dp)).background(Color(0xCC0D0F14)).border(1.dp, Brush.verticalGradient(listOf(Color(0x40E9C27A), Color(0x0FE9C27A))), RoundedCornerShape(22.dp))
+    Column(Modifier.fillMaxWidth().clip(RoundedCornerShape(22.dp)).background(if (light) Color(0x94FFFFFF) else Color(0xCC0D0F14)).border(1.dp, if (light) SolidColor(Site.GlassLine) else Brush.verticalGradient(listOf(Color(0x40E9C27A), Color(0x0FE9C27A))), RoundedCornerShape(22.dp))
         .padding(18.dp), verticalArrangement = Arrangement.spacedBy(10.dp)) {
         Text(title, style = cinzel.copy(fontSize = 20.sp)); content()
     }
@@ -166,7 +170,7 @@ fun AchievementsRoute(onBack: () -> Unit, startTab: String? = null, nav: @Compos
             item("sum") {
                 Section("Hall of Deeds") {
                     Row(verticalAlignment = Alignment.Bottom, horizontalArrangement = Arrangement.spacedBy(6.dp)) {
-                        Text("%,d".format(earned), style = cinzel.copy(fontSize = 28.sp)); Text("/ %,d earned".format(total), style = t(16f, FontWeight.SemiBold, Color(0xFFB9BFC9)), modifier = Modifier.padding(bottom = 3.dp))
+                        Text("%,d".format(earned), style = cinzel.copy(fontSize = 28.sp)); Text("/ %,d earned".format(total), style = t(16f, FontWeight.SemiBold, if (light) Site.Muted else Color(0xFFB9BFC9)), modifier = Modifier.padding(bottom = 3.dp))
                     }
                     Bar(if (total > 0) earned.toFloat() / total else 0f)
                     Text(if (ready > 0) "$ready ready to claim. Look for the gold edge."
@@ -233,7 +237,7 @@ private fun QuestHead(label: String, rows: List<JsonObject>, modifier: Modifier 
     Column(modifier.fillMaxWidth(), verticalArrangement = Arrangement.spacedBy(6.dp)) {
         Row(verticalAlignment = Alignment.CenterVertically) {
             Text(label.uppercase(), style = t(12f, FontWeight.Bold, Site.Muted).copy(letterSpacing = 1.2.sp), modifier = Modifier.weight(1f))
-            Text("$done / ${rows.size} done", style = t(13f, FontWeight.Bold, if (rows.isNotEmpty() && done == rows.size) Gold else Color(0xFFC9CED6)))
+            Text("$done / ${rows.size} done", style = t(13f, FontWeight.Bold, if (rows.isNotEmpty() && done == rows.size) Gold else Soft))
         }
         Bar(if (rows.isEmpty()) 0f else done.toFloat() / rows.size)
     }
@@ -247,20 +251,20 @@ private val SwapIcon by lazy { androidx.compose.ui.graphics.vector.ImageVector.B
 @Composable
 private fun QuestLine(q: JsonObject, busy: Boolean, onSwap: (() -> Unit)? = null, onClaim: () -> Unit) {
     val done = q.get("done").bool(); val claimed = q.get("claimed").bool(); val need = q.get("need").int().coerceAtLeast(1); val have = q.get("have").int()
-    Column(Modifier.fillMaxWidth().clip(RoundedCornerShape(14.dp)).background(Color(0x0DFFFFFF)).border(1.dp, if (done && !claimed) Color(0x55D6AD64) else Color(0x14FFFFFF), RoundedCornerShape(14.dp))
+    Column(Modifier.fillMaxWidth().clip(RoundedCornerShape(14.dp)).background(if (light) Site.Surface2.copy(alpha = .6f) else Color(0x0DFFFFFF)).border(1.dp, if (done && !claimed) Color(0x55D6AD64) else if (light) Site.GlassLine else Color(0x14FFFFFF), RoundedCornerShape(14.dp))
         .padding(horizontal = 14.dp, vertical = 10.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
         Row(verticalAlignment = Alignment.CenterVertically) {
             Text(q.get("label").str() ?: "", style = t(15f, FontWeight.SemiBold, Site.Text.copy(alpha = if (claimed) .6f else 1f)), modifier = Modifier.weight(1f).padding(end = 10.dp))
-            when { claimed -> Text("CLAIMED", style = t(12f, FontWeight.Bold, Gold).copy(letterSpacing = .7.sp))
+            when { claimed -> Text("CLAIMED", style = t(12f, FontWeight.Bold, if (light) Site.Gold else Gold).copy(letterSpacing = .7.sp))
                 done -> GoldCta("Claim", enabled = !busy, onClick = onClaim)
                 else -> RewardIcons(q.get("reward") as? JsonObject) }
         }
         if (!done) Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(10.dp)) {
-            Bar(have.toFloat() / need, thin = true, modifier = Modifier.weight(1f)); Text("%,d / %,d".format(have, need), style = t(13f, FontWeight.Bold, Color(0xFFC9CED6)))
+            Bar(have.toFloat() / need, thin = true, modifier = Modifier.weight(1f)); Text("%,d / %,d".format(have, need), style = t(13f, FontWeight.Bold, Soft))
             // pd-swap: the two-arrow swap, once a day (dailies) or once a week (weeklies), only on an unfinished quest.
             if (onSwap != null) Row(Modifier.height(32.dp).clip(CircleShape).background(Color(0x14FFFFFF)).border(1.dp, Color(0x33D6AD64), CircleShape)
                 .clickable(enabled = !busy, onClick = onSwap).padding(horizontal = 10.dp), verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(5.dp)) {
-                Icon(SwapIcon, 14.dp, Gold); Text("Swap", style = t(12f, FontWeight.Bold, Gold)) }
+                Icon(SwapIcon, 14.dp, if (light) Site.Gold else Gold); Text("Swap", style = t(12f, FontWeight.Bold, if (light) Site.Gold else Gold)) }
         }
     }
 }
@@ -274,7 +278,7 @@ private fun DeedCard(r: JsonObject, busy: Boolean, modifier: Modifier, onClaim: 
     val readyStep = if (honour) -1 else steps.indexOfFirst { it.get("done").bool() && !it.get("claimed").bool() }
     val shape = RoundedCornerShape(18.dp)
     val edge = when { readyStep >= 0 -> Gold; complete -> Color(0x99D6AD64); else -> Color(0x29D6AD64) }
-    Column(modifier.clip(shape).background(Color(0xFF121318)).border(1.dp, edge, shape)) {
+    Column(modifier.clip(shape).background(if (light) Site.Surface else Color(0xFF121318)).border(1.dp, edge, shape)) {
         if (hidden && earnedSteps == 0) {
             Box(Modifier.fillMaxWidth().aspectRatio(16f / 7f).background(Brush.radialGradient(listOf(Color(0xFF3A2A14), Color(0xFF120D08)))))
             Column(Modifier.padding(start = 14.dp, end = 14.dp, top = 12.dp, bottom = 14.dp), verticalArrangement = Arrangement.spacedBy(6.dp)) {
@@ -295,7 +299,7 @@ private fun DeedCard(r: JsonObject, busy: Boolean, modifier: Modifier, onClaim: 
                     val (fill, line) = when (s.get("tier").str()) { "bronze" -> Color(0xFFB0703C) to Color(0xFFE0A46C); "silver" -> Color(0xFFA9B3C0) to Color(0xFFE3E9F0)
                         "gold" -> Color(0xFFD6AD64) to Color(0xFFF3DFB4); "mythic" -> Color(0xFFD4552C) to Color(0xFFFF9A6A); else -> Gold to Cream }
                     val on = s.get("done").bool()
-                    Box(Modifier.size(12.dp).clip(CircleShape).background(if (on) fill else Color(0x08FFFFFF)).border(1.dp, if (on) line else Color(0x30FFFFFF), CircleShape))
+                    Box(Modifier.size(12.dp).clip(CircleShape).background(if (on) fill else if (light) Site.Surface2 else Color(0x08FFFFFF)).border(1.dp, if (on) line else if (light) Site.Line else Color(0x30FFFFFF), CircleShape))
                 }
             }
             // The step shown: the one ready to claim, else the next, else the last.

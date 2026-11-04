@@ -47,6 +47,15 @@ class AchievementsShotTest {
         settle()
         rule.onRoot().captureRoboImage(File(System.getProperty("shotsDir"), "achievements-390.png").path)
     }
+
+    @Test fun pageLight() {
+        Progress.setForTest(state, deeds()); dev.cardstashy.nativeplay.ui.AppSettings.applyTheme("light")
+        try {
+            rule.setContent { AchievementsRoute(onBack = {}, nav = { PlayNav(PlayTab.TROPHIES, {}) }) }
+            settle()
+            rule.onRoot().captureRoboImage(File(System.getProperty("shotsDir"), "theme-light-achievements.png").path)
+        } finally { dev.cardstashy.nativeplay.ui.AppSettings.applyTheme("dark") }
+    }
 }
 
 /** The purse pill on the narrowest phones, at normal and large text, with big numbers: one line, nothing squeezed. */

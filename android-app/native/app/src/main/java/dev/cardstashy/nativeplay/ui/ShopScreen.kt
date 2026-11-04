@@ -84,7 +84,8 @@ private fun JsonObject.objs(k: String) = (get(k) as? com.google.gson.JsonArray)?
 private val Ink get() = Site.Text
 private val small get() = TextStyle(fontFamily = Site.Manrope, fontWeight = FontWeight.Medium, fontSize = 13.sp, color = Site.Muted)
 private val bold = TextStyle(fontFamily = Site.Manrope, fontWeight = FontWeight.Bold, fontSize = 16.sp, color = Ink)
-private val h2 = TextStyle(fontFamily = Type.Cinzel, fontWeight = FontWeight.Bold, fontSize = 20.sp, color = Color(0xFFF3E3BD))
+// Light: headings on the page follow --text (native fix, Randall 4 Nov 10:26Z: light panels must be readable).
+private val h2: TextStyle get() = TextStyle(fontFamily = Type.Cinzel, fontWeight = FontWeight.Bold, fontSize = 20.sp, color = if (AppSettings.theme == "light") Site.Text else Color(0xFFF3E3BD))
 /** isCollectorPack (play-econ-rules.js): the source ends in "collector". */
 private fun collector(p: JsonObject) = Regex("(?:^|:)collector$").containsMatchIn(p.get("source").s() ?: "")
 private fun price(s: JsonObject) = s.getAsJsonObject("config")?.get("packPrice").i().takeIf { it > 0 } ?: 500
@@ -223,7 +224,7 @@ private fun ShopHub(s: JsonObject, tab: String, busy: Boolean, onTab: (String) -
 private fun ShopSetRow(r: Trunk.SetRow, waiting: Int, price: Int, canBuy: Boolean, sold: Boolean, onClick: () -> Unit, onBuy: () -> Unit) {
     val pct = r.total?.takeIf { it > 0 }?.let { r.owned.toFloat() / it } ?: 0f
     val shape = RoundedCornerShape(18.dp)
-    Row(Modifier.fillMaxWidth().clip(shape).background(Color(0x0DFFFFFF)).border(1.dp, if (r.owned > 0 || waiting > 0) Color(0x40D6AD64) else Color(0x14FFFFFF), shape)
+    Row(Modifier.fillMaxWidth().clip(shape).background(if (AppSettings.theme == "light") Color(0x94FFFFFF) else Color(0x0DFFFFFF)).border(1.dp, if (r.owned > 0 || waiting > 0) Color(0x40D6AD64) else if (AppSettings.theme == "light") Site.GlassLine else Color(0x14FFFFFF), shape)
         .clickable(onClick = onClick).padding(start = 10.dp, end = 12.dp, top = 10.dp, bottom = 10.dp), verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(14.dp)) {
         Booster(r.code, r.name, Modifier.width(62.dp), mini = true)
         Column(Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(5.dp)) {
@@ -231,7 +232,7 @@ private fun ShopSetRow(r: Trunk.SetRow, waiting: Int, price: Int, canBuy: Boolea
             Text(listOfNotNull(r.code.uppercase(), r.released.take(4).ifBlank { null }, waiting.takeIf { it > 0 }?.let { "$it pack${if (it == 1) "" else "s"} waiting" }).joinToString(" · "),
                 style = small.copy(fontSize = 12.sp, color = if (waiting > 0) Site.Gold else Site.Muted))
             ProgressBar(pct)
-            Text(if (r.total == null) (if (r.owned > 0) "${"%,d".format(r.owned)} cards owned" else "Not started") else "${"%,d".format(r.owned)} of ${"%,d".format(r.total)} cards · ${(pct * 100).toInt()}%", style = small.copy(fontSize = 12.sp, fontWeight = FontWeight.Bold, color = Color(0xFFC9CED6)))
+            Text(if (r.total == null) (if (r.owned > 0) "${"%,d".format(r.owned)} cards owned" else "Not started") else "${"%,d".format(r.owned)} of ${"%,d".format(r.total)} cards · ${(pct * 100).toInt()}%", style = small.copy(fontSize = 12.sp, fontWeight = FontWeight.Bold, color = if (AppSettings.theme == "light") Site.Muted else Color(0xFFC9CED6)))
         }
         if (sold) GoldCta("%,d".format(price), enabled = canBuy, muted = true, radius = 12.dp, leading = { Icon(SiteIcons.Coin, 16.dp) }, onClick = onBuy)
     }
@@ -247,7 +248,7 @@ private fun SecretLairShelf(s: JsonObject, sl: JsonObject, busy: Boolean, onBuy:
     Column(Modifier.fillMaxWidth().clip(shape).background(Brush.linearGradient(listOf(Color(0xFF2A1B3A), Color(0xFF14161D)))).border(1.dp, Color(0x55B79CFF), shape).padding(18.dp),
         verticalArrangement = Arrangement.spacedBy(10.dp)) {
         Row(verticalAlignment = Alignment.CenterVertically) {
-            Text("This week's Secret Lair", style = h2.copy(fontSize = 18.sp), modifier = Modifier.weight(1f).padding(end = 8.dp))
+            Text("This week's Secret Lair", style = h2.copy(fontSize = 18.sp, color = Color(0xFFF3E3BD)), modifier = Modifier.weight(1f).padding(end = 8.dp))
             Text(if (days == 1L) "Leaves tomorrow" else "Leaves in $days days", style = small.copy(fontSize = 12.sp, color = Color(0xFFC9C2E6)))
         }
         Text(buildString { append(title); sl.get("by").s()?.let { append(" · $it") }; append(". Each card comes into your Trunk and unlocks its Secret Lair art for your copies.") },
@@ -277,7 +278,7 @@ private fun SealPress(s: JsonObject, busy: Boolean, onStamp: (String, String) ->
     var error by remember { mutableStateOf("") }
     val scope = rememberCoroutineScope()
     val shape = RoundedCornerShape(22.dp)
-    Column(Modifier.fillMaxWidth().clip(shape).background(Color(0xCC0D0F14)).border(1.dp, Color(0x33D6AD64), shape).padding(18.dp), verticalArrangement = Arrangement.spacedBy(12.dp)) {
+    Column(Modifier.fillMaxWidth().clip(shape).background(if (AppSettings.theme == "light") Color(0x94FFFFFF) else Color(0xCC0D0F14)).border(1.dp, if (AppSettings.theme == "light") Site.GlassLine else Color(0x33D6AD64), shape).padding(18.dp), verticalArrangement = Arrangement.spacedBy(12.dp)) {
         Text("Seal press", style = h2)
         Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(10.dp)) {
             Box(Modifier.weight(1f)) { SearchField(query, "Card name") { query = it.take(160) } }

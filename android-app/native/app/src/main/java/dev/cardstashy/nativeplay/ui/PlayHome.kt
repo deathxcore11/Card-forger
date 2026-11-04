@@ -337,8 +337,8 @@ internal fun PurseRow(p: PlayMath.Purse, onCoins: () -> Unit, onSeals: () -> Uni
     Row(Modifier.height(44.dp).clip(CircleShape).clickable(onClick = onClick).semantics { contentDescription = label }.padding(horizontal = pad),
         verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(gap)) { content() }
 
-@Composable private fun Num(n: Int, size: Int) = Num(n, size.toFloat())
-@Composable private fun Num(n: Int, size: Float = 14f) = Text("%,d".format(n), style = TextStyle(fontFamily = P.Sans, fontWeight = FontWeight.ExtraBold, fontSize = size.sp, color = P.Ink, fontFeatureSettings = "tnum"), maxLines = 1, softWrap = false)
+@Composable private fun Num(n: Int, size: Int, color: Color = P.Ink) = Num(n, size.toFloat(), color)
+@Composable private fun Num(n: Int, size: Float = 14f, color: Color = P.Ink) = Text("%,d".format(n), style = TextStyle(fontFamily = P.Sans, fontWeight = FontWeight.ExtraBold, fontSize = size.sp, color = color, fontFeatureSettings = "tnum"), maxLines = 1, softWrap = false)
 
 // ---------------------------------------------------------------- gold CTA (pl-mode-cta / pe-buy / pd-claim)
 
@@ -644,11 +644,11 @@ private fun Modifier.rowGlass() = this.clip(rowShape).background(P.RowBg).border
 
 @OptIn(androidx.compose.foundation.layout.ExperimentalLayoutApi::class)
 @Composable
-private fun Rewards(r: PlayRules.Reward, column: Boolean = false) {
+private fun Rewards(r: PlayRules.Reward, column: Boolean = false, ink: Color = P.PageInk) {
     val items = buildList<@Composable () -> Unit> {
-        if (r.coins > 0) add { Icon(SiteIcons.Coin, 16.dp); Num(r.coins, 13) }
-        r.seals.filter { it.value > 0 }.forEach { (k, v) -> add { Icon(SiteIcons.Seals.getValue(k), 16.dp); Num(v, 13) } }
-        if (r.packs > 0) add { Icon(SiteIcons.Pack, 16.dp); Num(r.packs, 13) }
+        if (r.coins > 0) add { Icon(SiteIcons.Coin, 16.dp); Num(r.coins, 13, ink) }
+        r.seals.filter { it.value > 0 }.forEach { (k, v) -> add { Icon(SiteIcons.Seals.getValue(k), 16.dp); Num(v, 13, ink) } }
+        if (r.packs > 0) add { Icon(SiteIcons.Pack, 16.dp); Num(r.packs, 13, ink) }
     }
     if (column) FlowRow(horizontalArrangement = Arrangement.spacedBy(3.dp, Alignment.CenterHorizontally), verticalArrangement = Arrangement.spacedBy(4.dp)) {
         items.forEach { Column(horizontalAlignment = Alignment.CenterHorizontally, verticalArrangement = Arrangement.spacedBy(2.dp)) { it() } }
@@ -723,7 +723,7 @@ private fun Calendar(d: PlayHomeData) {
                     .border(1.dp, if (on) Color(0x66D6AD64) else Color(0x12FFFFFF), sh).padding(vertical = 8.dp, horizontal = 2.dp),
                     horizontalAlignment = Alignment.CenterHorizontally, verticalArrangement = Arrangement.spacedBy(6.dp)) {
                     Text("${i + 1}", style = TextStyle(fontFamily = P.Sans, fontWeight = FontWeight.ExtraBold, fontSize = 11.sp, letterSpacing = .04.em, color = if (on) Color(0xFFF3DFB4) else P.Muted))
-                    Rewards(r.copy(xp = 0), column = true)
+                    Rewards(r.copy(xp = 0), column = true, ink = if (on) P.Ink else P.PageInk)
                 }
             }
         }
@@ -788,7 +788,7 @@ private fun Deeds(d: PlayHomeData, act: PlayHomeActions) {
     } } }.value
     Shelf("Achievements", if (t.ready > 0) "${t.ready} to claim" else "All achievements", { act.view("deeds") }) {
         Row(verticalAlignment = Alignment.Bottom, horizontalArrangement = Arrangement.spacedBy(8.dp), modifier = Modifier.padding(top = 6.dp)) {
-            Text("${t.earned}", style = TextStyle(fontFamily = Type.Cinzel, fontWeight = FontWeight.Bold, fontSize = 30.sp, color = Color(0xFFF3E3BD)))
+            Text("${t.earned}", style = TextStyle(fontFamily = Type.Cinzel, fontWeight = FontWeight.Bold, fontSize = 30.sp, color = if (AppSettings.theme == "light") Site.Text else Color(0xFFF3E3BD)))
             Text("of ${t.total} earned", style = TextStyle(fontFamily = P.Sans, fontWeight = FontWeight.SemiBold, fontSize = 17.sp, color = P.PageFaint), modifier = Modifier.padding(bottom = 3.dp))
         }
         Bar(if (t.total > 0) t.earned.toFloat() / t.total else 0f, modifier = Modifier.padding(vertical = 6.dp))

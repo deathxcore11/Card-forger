@@ -65,6 +65,15 @@ class ShopShotTest {
         rule.onNodeWithText("Forge").performClick(); settle(10); shot("forge")
     }
 
+    @Test fun hubLight() {
+        Progress.setForTest(state(), null); dev.cardstashy.nativeplay.ui.AppSettings.applyTheme("light")
+        try {
+            rule.setContent { ShopRoute(onBack = {}, nav = { PlayNav(PlayTab.SHOP, {}) }) }
+            settle(); rule.onRoot().captureRoboImage(File(System.getProperty("shotsDir"), "theme-light-shop-sets.png").path)
+            rule.onNodeWithText("Forge").performClick(); settle(10); rule.onRoot().captureRoboImage(File(System.getProperty("shotsDir"), "theme-light-shop-forge.png").path)
+        } finally { dev.cardstashy.nativeplay.ui.AppSettings.applyTheme("dark") }
+    }
+
     @Test fun set() {
         Progress.setForTest(state(), null)
         rule.setContent { ShopRoute(onBack = {}, startSet = "fra", nav = { PlayNav(PlayTab.SHOP, {}) }) }

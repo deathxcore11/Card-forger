@@ -306,7 +306,7 @@ private fun SetTile(x: Trunk.SetRow, onClick: () -> Unit) {
 }
 
 @Composable
-fun ProgressBar(frac: Float, modifier: Modifier = Modifier) = Box(modifier.fillMaxWidth().height(5.dp).clip(CircleShape).background(Color(0xFF1F2430))) {
+fun ProgressBar(frac: Float, modifier: Modifier = Modifier) = Box(modifier.fillMaxWidth().height(5.dp).clip(CircleShape).background(if (AppSettings.theme == "light") Site.Surface2 else Color(0xFF1F2430))) {
     Box(Modifier.fillMaxWidth(frac.coerceIn(0f, 1f)).height(5.dp).clip(CircleShape).background(androidx.compose.ui.graphics.Brush.horizontalGradient(listOf(Color(0xFFD6AD64), Color(0xFFF2D18E)))))
 }
 
