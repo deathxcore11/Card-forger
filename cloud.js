@@ -133,6 +133,8 @@ export function statusLabel() {
   );
 }
 
+// The one Supabase client (Realtime for the shared Game Night table); null before the account service starts.
+export const realtimeClient = () => client;
 export const cloudInfo = () => ({ configured: cloudConfigured(), ready: !!client, user, profile, art: accountArt, providers, status: { ...status }, pending, switching: !accountReady, recoveringPassword, authNotice, meta: readMeta() });
 
 // Turn backend errors into something a player can act on.

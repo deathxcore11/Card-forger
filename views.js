@@ -1304,7 +1304,7 @@ function deckCards(d, t) {
   ${mtgDeckEmblems(d)}
   <section class="deck-table-footer" aria-label="Take it to the table">
     <div><h3>Take it to the table</h3><p><span>${t.covered}/${t.copies} owned</span> · ${need}</p>${bar(t.copies ? t.covered / t.copies : 0)}</div>
-    <div class="deck-table-actions">${fill}${t.missing ? `<button class="btn ghost" data-act="acquire">I got cards</button>` : ""}<button class="btn ghost" data-act="deckCopy">Copy list</button><button class="btn" data-act="deckExport">Export list</button></div>
+    <div class="deck-table-actions">${fill}${t.missing ? `<button class="btn ghost" data-act="acquire">I got cards</button>` : ""}<button class="btn ghost" data-act="deckCopy">Copy list</button><button class="btn ghost" data-act="gameNight">Game Night</button><button class="btn" data-act="deckExport">Export list</button></div>
   </section>`;
 }
 

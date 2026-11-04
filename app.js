@@ -60,6 +60,7 @@ import {createCommunity,incomingRequestCount,sharedDeckCopy} from './community-p
 import {addScannedEntry} from './collection-stack.js';
 import {profileAvatar,profileArt,createProfileArtPicker} from './profile-art.js';
 import {openTabletop} from './tabletop.js';
+import {validCode as validTableCode} from './table-share.js';
 import {createTableArtResolver} from './tabletop-themes.js';
 import {INFO_TOPICS,findInfo} from './app-info.js';
 import {attachHomeSearch,homeIntent,rankHomeCards,homeQueries,placeGlobalSearch,searchEmblem} from './home-search.js';
@@ -178,7 +179,7 @@ import {STORY_ACTS} from "./story-acts.js";
 import {createStoryProgress,loadAct,loadActPool,ownDeckFits,battleCleared,currentAct,currentBattle,actCleared} from "./story-client.js";
 import {storyHomeMarkup,storyActMarkup,storyBattleMarkup,playScene,createStoryBubbles,starsRow,rewardText} from "./story-ui.js";
 import {storyDeedsEarned} from "./story-deeds.js";
-import { initCloud, pauseLocalConflict, communityRequest, presenceRequest, cloudAccessToken, cloudInfo, isEmptyWorkspace, statusLabel, scheduleSync, signInGoogle, signInEmail, signInPassword, createAccount, requestPasswordReset, finishPasswordReset, signOut, detachDeviceSync, saveProfile, resolvePending, syncNow, resendConfirmation, deleteAccount } from "./cloud.js";
+import { initCloud, pauseLocalConflict, communityRequest, presenceRequest, cloudAccessToken, cloudInfo, realtimeClient, isEmptyWorkspace, statusLabel, scheduleSync, signInGoogle, signInEmail, signInPassword, createAccount, requestPasswordReset, finishPasswordReset, signOut, detachDeviceSync, saveProfile, resolvePending, syncNow, resendConfirmation, deleteAccount } from "./cloud.js";
 import { withSnapshot, collectionValue, recordValuePoint, cardSig, engineProfile, swapImpact, lotPrice } from "./insights.js";
 
 /* =========================================================
@@ -1042,6 +1043,8 @@ function parseHash() {
     if(T.isTcg()) { T.ui().coll.tab = a === "wishlist" ? "cards" : a; if(a === "wishlist")T.ui().coll.show="wanted"; }
   }
   if (ui.view === "wiki") currentWikiPage()?.route(a,{query:b==="search"});
+  // A shared Game Night table: #table/<code> opens it for watching, or for tapping when signed in.
+  if (v === "table" && validTableCode(a)) queueMicrotask(() => A.joinTable(a));
   // An invite link: #play/join/<invite>.
   if (ui.view === "play" && a === "join" && /^[A-Za-z0-9_-]{43}$/.test(b || "")) queueMicrotask(() => openFriendInvite(b));
   if (ui.view === "shared" && a !== ui.shared.code) openShared(a);
@@ -3844,7 +3847,11 @@ A.replayTour = (t) => openTour({...tourArt(),lesson:t?.dataset?.lesson||'',choos
  if(key==='tabletop')A.tabletop();else go(({find:'#home',save:'#collection',scan:'#scan',build:'#decks/inspiration'})[key]||'#home');
 }});
 const tableArtFor=createTableArtResolver(T.SOURCES);
-A.tabletop=()=>openTabletop({game:T.game(),confirm:ask,judge:game=>A.askRules({dataset:{game}}),artFor:tableArtFor});
+const tableCloud={client:()=>realtimeClient(),signedIn:()=>!!cloudInfo().user};
+A.tabletop=()=>openTabletop({game:T.game(),confirm:ask,judge:game=>A.askRules({dataset:{game}}),artFor:tableArtFor,cloud:tableCloud});
+// Game Night: the same table, opened from a deck so its journal stays with that deck.
+A.gameNight=()=>{const d=currentDeck();openTabletop({game:T.game(),confirm:ask,judge:game=>A.askRules({dataset:{game}}),artFor:tableArtFor,cloud:tableCloud,deck:d?{id:d.id,name:d.name}:null});};
+A.joinTable=code=>{history.replaceState(null,'',location.pathname+location.search+'#home');openTabletop({game:T.game(),confirm:ask,artFor:tableArtFor,cloud:tableCloud,joinCode:code});};
 A.dismissGuide=t=>{markGuide(t.dataset.id);markGuide('*');document.querySelectorAll('.context-guide[data-guide]').forEach(g=>g.remove());};
 A.resetOnboarding=async()=>{
 if(!await ask('Reset guide history? Only tutorials will reset. Your cards, decks, account and preferences stay saved.'))return;resetOnboarding();introPending=true;toast('Guides reset. The introduction will return on Home when you finish your current task.');};
