@@ -245,7 +245,7 @@ private fun BattleRow(b: JsonObject, cast: JsonObject?, p: StoryLogic.Progress, 
 
 /** The Story pages: the road, an act, then a battle's duel setup. The match itself still opens the site's Play page (next piece). */
 @Composable
-fun StoryRoute(startAct: Int? = null, onBack: () -> Unit, onDuel: (battle: String, seat: String, own: String?) -> Unit = { _, _, _ -> }) {
+fun StoryRoute(startAct: Int? = null, onBack: () -> Unit, onDuel: (dev.cardstashy.nativeplay.match.Pick.Table) -> Unit = {}) {
     val refs by Progress.storyRefs.collectAsState()
     val state by Progress.state.collectAsState()
     val profile by dev.cardstashy.nativeplay.account.Account.profile.collectAsState()
@@ -279,6 +279,30 @@ fun StoryRoute(startAct: Int? = null, onBack: () -> Unit, onDuel: (battle: Strin
         StoryOwnDeck(d["id"].asString, d["name"]?.asString ?: "Deck", dev.cardstashy.nativeplay.play.Decks.cover(d).ifBlank { null }, rows.sumOf { it.qty }, fit)
     } }
     StoryDuelPage(open, data!!, b, p, rules.setNames, profile?.avatarUrl, ownDecks, duel, { duel = it }, { battle = null; duel = StoryDuelUi() },
-        { seat, own -> onDuel(b["id"].asString, seat, own) },
+        { seat, own -> onDuel(storyPick(open, data!!, b, seat, own, StoryLogic.battleCleared(p, b["id"].asString), profile?.avatarUrl,
+            decks.firstOrNull { it["id"].asString == own }?.let { d -> dev.cardstashy.nativeplay.play.Decks.rows(d).filter { it.board != "side" } }, ownDecks.firstOrNull { it.id == own }?.art)) },
         listFor = { id -> decks.firstOrNull { it["id"].asString == id }?.let { d -> dev.cardstashy.nativeplay.play.Decks.rows(d).filter { it.board != "side" }.map { it.name to it.qty } } }, purse = purse)
 }
+
+private val STORY_LEVEL = mapOf("Easy" to "Easy", "Normal" to "Medium", "Hard" to "Hard")
+
+/** app.js storyPlay's launch: Vintage, the battle's level, a random first player; the Story deck (or your own) against the other side's deck. */
+private fun storyPick(act: Int, data: JsonObject, b: JsonObject, seat: String, own: String?, cleared: Boolean, avatar: String?,
+                      ownRows: List<dev.cardstashy.nativeplay.play.Decks.Row>?, ownFace: String?): dev.cardstashy.nativeplay.match.Pick.Table {
+    val me = if (seat == "villain" && cleared) "villain" else "hero"; val other = if (me == "hero") "villain" else "hero"
+    fun deck(id: String, name: String, cards: List<Triple<String, Int, String?>>) = JsonObject().apply {
+        addProperty("id", id); addProperty("name", name); addProperty("format", "Vintage")
+        add("cards", com.google.gson.JsonArray().apply { cards.forEach { (n, q, pid) -> add(JsonObject().apply { addProperty("name", n); addProperty("qty", q); pid?.let { addProperty("printingId", it) } }) } })
+    }
+    fun side(k: String): JsonObject = b.getAsJsonObject(k).getAsJsonObject("deck")
+    fun sideDeck(k: String, id: String) = side(k).let { d -> deck(id, d["name"].asString, d.getAsJsonArray("cards").map { it.asJsonObject }.map { Triple(it["name"].asString, it["qty"].asInt, it.get("id")?.takeIf { x -> x.isJsonPrimitive }?.asString) }) }
+    val id = b["id"].asString
+    val you = if (own != null && ownRows != null) deck(own, "Your deck", ownRows.map { Triple(it.name, it.qty, null) }) else sideDeck(me, "story:$id:$me")
+    val cpu = sideDeck(other, "story:$id:$other")
+    val cast = data.getAsJsonObject("cast")
+    fun lines(k: String) = data.getAsJsonArray(k)?.map { it.asJsonObject } ?: emptyList()
+    val face = ownFace?.takeIf { own != null } ?: side(me).getAsJsonArray("cards").map { it.asJsonObject["name"].asString }.firstOrNull { !basicLand.matches(it) }
+    val ctx = dev.cardstashy.nativeplay.match.StoryCtx(act, b, cast, me, own != null, b["slot"].asInt == 1 && me == "hero" && !cleared, avatar, lines("intro"), lines("finale"), lines("villainFinale"))
+    return dev.cardstashy.nativeplay.match.Pick.Table(you, you["name"].asString, "Vintage", face, cpu, STORY_LEVEL[b["difficulty"].asString] ?: "Medium", quick = false, story = ctx)
+}
+private val basicLand = Regex("^(snow-covered )?(plains|island|swamp|mountain|forest)$", RegexOption.IGNORE_CASE)

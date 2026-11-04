@@ -96,7 +96,7 @@ private data class Sizes(val sidebar: Dp, val field: Dp, val land: Dp, val hand:
 }
 
 @Composable
-fun TableScreen(controller: MatchController, onHome: () -> Unit, onRematch: () -> Unit) {
+fun TableScreen(controller: MatchController, onHome: () -> Unit, onRematch: () -> Unit, resultNote: String? = null) {
     val context = LocalContext.current
     val decks = DemoDecks.load(context)
     val shown by controller.shown.collectAsState()
@@ -150,7 +150,7 @@ fun TableScreen(controller: MatchController, onHome: () -> Unit, onRematch: () -
       }
         inspect?.let { c -> Inspect(c) { inspect = null } }
         if (menu) Menu(onConcede = { menu = false; controller.concede() }, onLeave = { menu = false; onHome() }, onClose = { menu = false })
-        if (stage == Stage.FINISHED) shown?.let { Result(it, audio, onHome, onRematch) }
+        if (stage == Stage.FINISHED) shown?.let { Result(it, audio, onHome, onRematch, resultNote) }
         if (stage == Stage.FAILED) Failed(failure ?: "The match stopped.", onHome)
     }
 }
@@ -644,7 +644,7 @@ private fun Menu(onConcede: () -> Unit, onLeave: () -> Unit, onClose: () -> Unit
 }
 
 @Composable
-private fun Result(st: MatchState, audio: TableAudio, onHome: () -> Unit, onRematch: () -> Unit) {
+private fun Result(st: MatchState, audio: TableAudio, onHome: () -> Unit, onRematch: () -> Unit, note: String? = null) {
     val won = !st.draw && st.winnerPlayerId == st.viewer
     val draw = st.draw || st.winnerPlayerId == null
     val rise = remember { Animatable(0f) }
@@ -656,6 +656,7 @@ private fun Result(st: MatchState, audio: TableAudio, onHome: () -> Unit, onRema
                 Text(if (draw) "Draw" else if (won) "Victory" else "Defeat", style = Type.Title.copy(fontSize = 26.sp))
             }
             Text("Turn ${st.turn} · You ${st.me.life} · CPU ${st.cpu.life}", style = Type.Body.copy(color = Palette.Ink))
+            if (note != null) Text(note, style = Type.Body.copy(color = Palette.Gold, fontSize = 13.sp), textAlign = androidx.compose.ui.text.style.TextAlign.Center)
             Row(horizontalArrangement = Arrangement.spacedBy(10.dp)) {
                 GoldButton("Home", true, Modifier.width(150.dp), primary = false, onClick = onHome)
                 GoldButton("Rematch", true, Modifier.width(150.dp), onClick = onRematch)

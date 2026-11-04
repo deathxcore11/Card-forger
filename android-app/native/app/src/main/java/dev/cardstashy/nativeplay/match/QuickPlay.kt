@@ -27,7 +27,7 @@ sealed interface Pick {
     }
     /** A lobby pick (Quick Play or Practice): both decks chosen, the CPU's level, and whether it is Quick Play. */
     data class Table(val you: JsonObject, override val name: String, override val format: String, override val face: String?, val cpu: JsonObject,
-                     val level: String, val quick: Boolean) : Pick {
+                     val level: String, val quick: Boolean, val story: StoryCtx? = null) : Pick {
         override val id get() = you.get("id")?.takeIf { it.isJsonPrimitive }?.asString ?: name; override val raw get() = you
     }
     data class Mine(val deck: UserDeck) : Pick {
@@ -35,6 +35,10 @@ sealed interface Pick {
         override val face get() = deck.face?.let(EngineNames::name); override val raw get() = deck.raw
     }
 }
+
+/** A Story battle's context (app.js storyPlay): which battle and side, whether your own deck plays, and the act's cast, scenes and cues. */
+class StoryCtx(val act: Int, val battle: JsonObject, val cast: JsonObject?, val seat: String, val own: Boolean, val firstVisit: Boolean, val avatarUrl: String?,
+               val intro: List<JsonObject>, val finale: List<JsonObject>, val villainFinale: List<JsonObject>)
 
 /** One side of the versus beat. */
 data class Plate(val name: String, val who: String, val face: String?)

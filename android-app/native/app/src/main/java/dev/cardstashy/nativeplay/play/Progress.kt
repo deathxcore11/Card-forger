@@ -111,6 +111,14 @@ object Progress {
         try { _story.value = call("story").getAsJsonArray("refs")?.mapNotNull { it.takeIf { e -> e.isJsonPrimitive }?.asString } } catch (_: Failure) {}
     }
 
+    /** A won Story battle (story-client.js claim): the server pays each side once and returns the ledger refs and what it paid. */
+    suspend fun claimStory(battle: String, seat: String, deck: String): JsonObject? = try {
+        val out = call("story", JsonObject().apply { addProperty("battle", battle); addProperty("seat", seat); addProperty("deck", deck) })
+        out.getAsJsonArray("refs")?.let { a -> _story.value = a.mapNotNull { it.takeIf { e -> e.isJsonPrimitive }?.asString } }
+        out.getAsJsonObject("state")?.let { st -> runCatching { refresh() } }
+        out
+    } catch (e: Failure) { JsonObject().apply { addProperty("error", e.message) } }
+
     /** The day's log-in stamp; {day, stamp, reward, monthReward, fresh} or null. Quiet on failure, like the web. */
     suspend fun login(): JsonObject? = try {
         val out = call("login", JsonObject().apply { addProperty("tz", tz) })

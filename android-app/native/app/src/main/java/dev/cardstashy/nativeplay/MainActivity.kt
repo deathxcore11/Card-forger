@@ -211,7 +211,7 @@ private fun App(activity: MainActivity) {
         }
         is Screen.Story -> {
             LaunchedEffect(Unit) { activity.inGame(false) }
-            dev.cardstashy.nativeplay.ui.StoryRoute(startAct = s.act, onBack = { back() }, onDuel = { _, _, _ -> go(Screen.Web(dev.cardstashy.nativeplay.ui.SITE_PLAY)) })
+            dev.cardstashy.nativeplay.ui.StoryRoute(startAct = s.act, onBack = { back() }, onDuel = { go(Screen.Match(it)) })
         }
         is Screen.Achievements -> {
             LaunchedEffect(Unit) { activity.inGame(false) }
@@ -220,7 +220,7 @@ private fun App(activity: MainActivity) {
                     when (t) { dev.cardstashy.nativeplay.ui.PlayTab.SWITCH -> go(Screen.Collection); dev.cardstashy.nativeplay.ui.PlayTab.TRUNK -> go(Screen.Trunk); dev.cardstashy.nativeplay.ui.PlayTab.DECKS -> go(Screen.PlayDecks); dev.cardstashy.nativeplay.ui.PlayTab.TROPHIES -> {}; dev.cardstashy.nativeplay.ui.PlayTab.SHOP -> go(Screen.Shop()) } })
             })
         }
-        is Screen.Match -> MatchFlow(activity, s.pick, onHome = { go(Screen.Home) }, onDecks = { back() })
+        is Screen.Match -> MatchFlow(activity, s.pick, onHome = { if ((s.pick as? Pick.Table)?.story != null) back() else go(Screen.Home) }, onDecks = { back() })
     }
     // Live achievement toasts (drawn over the app in setContent): at the table they sit just under the status bar; a tap opens the deed's tab.
     // Rich presence (play-presence.js): what the app shows now, beats only while the app is in front.
@@ -248,27 +248,42 @@ private fun MatchFlow(activity: MainActivity, pick: Pick, onHome: () -> Unit, on
         setup = QuickPlay.setup(context, pick, DemoDecks.load(context))
     }
     BackHandler { if (setup !is QuickPlay.Setup.Ready) onDecks() }
+    // Story: the intro scene plays over the match as it loads (a rematch has none). The table stays behind the scene, so
+    // nothing of the match shows and the CPU cannot act (Forge waits on your keep) until the scene ends or is skipped.
+    val story = (pick as? Pick.Table)?.story
+    val outcome = remember { dev.cardstashy.nativeplay.ui.StoryOutcome() }
+    var scene by remember { mutableStateOf(story?.let { c -> (if (c.firstVisit) c.intro else emptyList()) + (c.battle.get("scene")?.takeIf { it.isJsonArray }?.asJsonArray?.map { it.asJsonObject } ?: emptyList()) +
+        (if (c.seat == "villain") c.battle.get("villainScene")?.takeIf { it.isJsonArray }?.asJsonArray?.map { it.asJsonObject } ?: emptyList() else emptyList()) }?.takeIf { it.isNotEmpty() }) }
+    val sceneOn = scene != null && setup !is QuickPlay.Setup.Unknown && setup !is QuickPlay.Setup.Failed
+    Box {
     when (val s = setup) {
         null -> VersusScreen(Plate(pick.name, "You", pick.face), null)
         is QuickPlay.Setup.Unknown -> { LaunchedEffect(Unit) { activity.inGame(false) }; Problem("Forge doesn’t know ${if (s.names.size == 1) "this card" else "these ${s.names.size} cards"} yet",
             s.names.joinToString("\n") + "\n\nThis deck can’t be played until they’re added to the rules. Pick another deck for now.", onDecks) }
         is QuickPlay.Setup.Failed -> { LaunchedEffect(Unit) { activity.inGame(false) }; Problem("Couldn’t start the match", s.reason, onDecks) }
-        is QuickPlay.Setup.Ready -> Table(activity, s, t0, onHome, pick)
+        is QuickPlay.Setup.Ready -> Table(activity, s, t0, onHome, pick, holdForScene = sceneOn, outcome = outcome)
+    }
+    if (story != null) {
+        val c = story
+        if (sceneOn) dev.cardstashy.nativeplay.ui.StoryScene(scene!!, c.cast, c.battle.getAsJsonObject("hero")["who"].asString, c.battle.getAsJsonObject("villain")["who"].asString, c.avatarUrl, c.battle["title"].asString) { scene = null }
+        outcome.ending?.let { lines -> dev.cardstashy.nativeplay.ui.StoryScene(lines, c.cast, c.battle.getAsJsonObject("hero")["who"].asString, c.battle.getAsJsonObject("villain")["who"].asString, c.avatarUrl,
+            if (c.battle["slot"].asInt == 8) "Act ${c.act} finale" else c.battle["title"].asString) { outcome.ending = null } }
+    }
     }
 }
 
 @Composable
-private fun Table(activity: MainActivity, s: QuickPlay.Setup.Ready, t0: Long, onHome: () -> Unit, pick: Pick) {
+private fun Table(activity: MainActivity, s: QuickPlay.Setup.Ready, t0: Long, onHome: () -> Unit, pick: Pick, holdForScene: Boolean = false, outcome: dev.cardstashy.nativeplay.ui.StoryOutcome? = null) {
     var round by remember { mutableIntStateOf(0) }
     key(round) {
         val context = LocalContext.current
         val scope = rememberCoroutineScope()
-        val controller = remember { MatchController(scope, s.input).apply { onFinished = { st, f, ms -> reportMatch(pick, st, f, ms) } } }
+        val controller = remember { MatchController(scope, s.input).apply { onFinished = { st, f, ms -> reportMatch(pick, st, f, ms); (pick as? Pick.Table)?.story?.let { c -> outcome?.let { o -> storyFinished(scope, context, c, st, o) } } } } }
         var versus by remember { mutableStateOf(round == 0) }
         DisposableEffect(Unit) { activity.inGame(true); controller.start(); onDispose { controller.close() } }
         if (round == 0) LaunchedEffect(Unit) {
             // Art and engine load side by side; the beat holds at least 0.9 s so it reads as a beat, not a flicker.
-            val minBeat = launch { delay(900) }
+            val minBeat = launch { delay(if ((pick as? Pick.Table)?.story != null) 0 else 900) }
             QuickPlay.warmArt(context, s, budgetMs = if (s.known) 2000 else 4500)
             minBeat.join(); versus = false
         }
@@ -277,7 +292,30 @@ private fun Table(activity: MainActivity, s: QuickPlay.Setup.Ready, t0: Long, on
             if (round == 0) Speed.record(if (s.known) Speed.KNOWN else Speed.NEW, SystemClock.elapsedRealtime() - t0)
         }
         BackHandler { /* the table's menu has Leave; Back never drops a match by accident */ }
-        if (versus) VersusScreen(s.you, s.cpu, intro = false) else TableScreen(controller, onHome = onHome, onRematch = { round++ })
+        if (versus || holdForScene) VersusScreen(s.you, s.cpu, intro = false) else TableScreen(controller, onHome = onHome, onRematch = { round++ }, resultNote = outcome?.note)
+    }
+}
+
+/** app.js storyPlay finished(): a win claims the battle (server-paid), the result gets its note, and the ending scene plays 2.6 s later. */
+private fun storyFinished(scope: kotlinx.coroutines.CoroutineScope, context: android.content.Context, c: dev.cardstashy.nativeplay.match.StoryCtx, st: dev.cardstashy.nativeplay.engine.MatchState, o: dev.cardstashy.nativeplay.ui.StoryOutcome) {
+    if (st.draw || st.winnerPlayerId != st.viewer) return
+    val b = c.battle; val id = b["id"].asString
+    scope.launch {
+        val out = dev.cardstashy.nativeplay.play.Progress.claimStory(id, c.seat, if (c.own) "own" else "loaner")
+        val paid = out?.getAsJsonArray("paid")?.map { it.asString } ?: emptyList()
+        val won = !c.own && paid.contains("story:$id:${if (c.seat == "villain") "villain" else "loaner"}")
+        val coll = paid.contains("story:$id:collector")
+        val rw = b.getAsJsonObject("reward")?.getAsJsonObject(if (c.seat == "villain") "villain" else "hero")
+        val sets = dev.cardstashy.nativeplay.play.PlayRules.load(context).setNames
+        o.note = when {
+            won -> dev.cardstashy.nativeplay.play.StoryLogic.rewardText(rw, b["rewardSet"].asString, sets) + (if (coll) " and a Collector pack" else "") + " added"
+            coll -> "A Collector pack added"
+            out?.get("error") != null -> out.get("error").asString
+            c.own -> "Your own deck earns XP. Win with the Story deck for the reward."
+            else -> "Reward already claimed"
+        }
+        val ending = if (b["slot"].asInt == 8) (if (c.seat == "hero") c.finale else c.villainFinale) else b.get("after")?.takeIf { it.isJsonArray }?.asJsonArray?.map { it.asJsonObject } ?: emptyList()
+        if (ending.isNotEmpty()) { delay(2600); o.ending = ending }
     }
 }
 
