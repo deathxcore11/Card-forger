@@ -1,4 +1,4 @@
-const CACHE = "cardforge-shell-acts37-38-lessons-43106-v478";
+const CACHE = "cardforge-shell-story-fixes-43107-v479";
 const ASSETS = [
   "./assets/fonts/fonts.css",
   "./play-forge-feature.js",
