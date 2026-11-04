@@ -3870,7 +3870,7 @@ setTimeout(checkTableInvites,8000);
 A.tabletop=()=>openTabletop({game:T.game(),confirm:ask,judge:game=>A.askRules({dataset:{game}}),artFor:tableArtFor,cloud:tableCloud});
 // Game Night: the same table, opened from a deck so its journal stays with that deck.
 A.playByHand=t=>openPlayByHand(t.dataset.hand);
-A.gameNight=()=>{const d=currentDeck();openTabletop({game:T.game(),confirm:ask,judge:game=>A.askRules({dataset:{game}}),artFor:tableArtFor,cloud:tableCloud,deck:d?{id:d.id,name:d.name}:null});};
+A.gameNight=()=>{const d=T.game()==='mtg'?currentDeck():T.gs(T.game()).decks.find(x=>x.id===S.ui.tdeckId);openTabletop({game:T.game(),confirm:ask,judge:game=>A.askRules({dataset:{game}}),artFor:tableArtFor,cloud:tableCloud,deck:d?{id:d.id,name:d.name}:null});};
 A.joinTable=code=>{history.replaceState(null,'',location.pathname+location.search+'#home');openTabletop({game:T.game(),confirm:ask,artFor:tableArtFor,cloud:tableCloud,joinCode:code});};
 A.dismissGuide=t=>{markGuide(t.dataset.id);markGuide('*');document.querySelectorAll('.context-guide[data-guide]').forEach(g=>g.remove());};
 A.resetOnboarding=async()=>{
