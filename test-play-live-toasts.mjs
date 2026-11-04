@@ -72,7 +72,7 @@ doc.visibilityState = 'visible'; on = false; t += PRESENCE_TIMING.beatMs; p.poke
 
 // The server keeps presence to accepted friends, honours blocks and the switch.
 const sql = readFileSync('supabase/migrations/20261104013000_community_presence.sql', 'utf8');
-assert.match(sql, /f\.status='accepted' and p\.share/);
-assert.match(sql, /community_private\.blocks/);
-assert.match(sql, /revoke all on community_private\.presence from public, anon, authenticated/);
+assert.match(sql, /f\.status = 'accepted'\s+and x\.share/);
+assert.match(sql, /community_private\s*\.blocks/);
+assert.match(sql, /revoke all\s+on community_private\.presence\s+from public, anon, authenticated/);
 console.log('live toasts and presence ok');
