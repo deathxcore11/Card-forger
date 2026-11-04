@@ -2410,8 +2410,10 @@ A.storyListSide=t=>{storyUi.listSide=t.dataset.storyList==='theirs'?'theirs':'mi
 // Story decklists show the exact era printing of every card, basics included: the rows carry
 // Scryfall ids, fetched once and swapped into the catalog only while the list renders.
 const storyPrints=new Map(),storyPrintAsk=new Set();
-async function storyWantPrints(ids){const want=ids.filter(id=>id&&!storyPrints.has(id)&&!storyPrintAsk.has(id));if(!want.length)return;want.forEach(id=>storyPrintAsk.add(id));
- for(let i=0;i<want.length;i+=75){try{const r=await api('/cards/collection',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({identifiers:want.slice(i,i+75).map(id=>({id}))})});for(const c of r?.data||[])storyPrints.set(c.id,slim(c));}catch{want.slice(i,i+75).forEach(id=>storyPrintAsk.delete(id));}}
+const storyPrintJobs=new Set();
+// Resolves once every id asked for so far is in storyPrints (or failed), so a match never starts on a half-loaded set of pins.
+async function storyWantPrints(ids){const want=ids.filter(id=>id&&!storyPrints.has(id)&&!storyPrintAsk.has(id));if(!want.length){await Promise.allSettled([...storyPrintJobs]);return;}want.forEach(id=>storyPrintAsk.add(id));
+ const job=(async()=>{for(let i=0;i<want.length;i+=75){try{const r=await api('/cards/collection',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({identifiers:want.slice(i,i+75).map(id=>({id}))})});for(const c of r?.data||[])storyPrints.set(c.id,slim(c));}catch{want.slice(i,i+75).forEach(id=>storyPrintAsk.delete(id));}}})();storyPrintJobs.add(job);try{await job;}finally{storyPrintJobs.delete(job);}
  if(STORY_VIEWS.has(playView))refreshPlayMenu();}
 function withStoryPrints(rows,fn){const saved=[];for(const r of rows){const c=r.id&&storyPrints.get(r.id);if(!c)continue;const k=key(r.name);saved.push([k,S.catalog[k]]);S.catalog[k]=c;}
  try{return fn();}finally{for(let i=saved.length-1;i>=0;i--){const [k,v]=saved[i];if(v===undefined)delete S.catalog[k];else S.catalog[k]=v;}}}
@@ -2461,7 +2463,9 @@ A.storyPlay=async({skipScene=false}={})=>{
   bubbles=createStoryBubbles({root,battle:b,cast:data.cast,playerSide:seat,avatarUrl:storyAvatar()});
   const cards=createForgeArtworkPreparation({selectionKey:key,isCurrent:current,
    resolveNames:(names,{isCurrent})=>resolveNames(names,()=>{},false,isCurrent),
-   lookup:(name,id)=>id?S.state.printings?.[id]||null:meta(name),fetchPrinting:id=>api('/cards/'+encodeURIComponent(id))});
+   lookup:(name,id)=>id?S.state.printings?.[id]||storyPrints.get(id)||null:meta(name),fetchPrinting:id=>api('/cards/'+encodeURIComponent(id))});
+  // Story pins every card to its era printing (data/story/act-N.json ids): load them in bulk before the table asks for art.
+  const pinIds=[...new Set([b.hero,b.villain].flatMap(s=>s.deck.cards.map(r=>r.id)).filter(Boolean))],prepareCards=cards.prepare;cards.prepare=async(...a)=>{await storyWantPrints(pinIds);return prepareCards(...a);};
   let paid=false,rec=null;
   // The match record (on the play, turns, life) arrives just before the finished state.
   const onRec=e=>{if(e.detail?.story)rec=e.detail;};addEventListener('play:match-recorded',onRec);
