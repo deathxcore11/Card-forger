@@ -225,7 +225,10 @@ fun LobbyScreen(model: LobbyModel, onBack: () -> Unit, onStart: (Pick) -> Unit, 
     LaunchedEffect(session?.userId) { if (session != null && online) { Workspace.load(context); Progress.loadCached(); Progress.refresh() } }
 
     val typeOf = { n: String -> factByName(n)?.t ?: "" }
-    val decks = remember(state, workspace, facts) { TableDecks.list(state, workspace ?: emptyList(), typeOf) }
+    val free by TableDecks.free.collectAsState()
+    // loadFreePrecons once the wallet is there (playTableDecks: if(st.wallet)loadFreePrecons()).
+    LaunchedEffect(state?.has("wallet") == true) { if (state?.has("wallet") == true && online) TableDecks.loadFree() }
+    val decks = remember(state, workspace, facts, free) { TableDecks.list(state, workspace ?: emptyList(), typeOf, free.orEmpty()) }
     val locked = remember(decks) { TableDecks.locked(decks) }
     // Names the tiles, seats and covers need, fetched once by name (the site resolves them into its catalog).
     LaunchedEffect(decks) { if (online) CardFacts.wantNames(decks.flatMap { d -> listOf(d.commander) + d.cards.take(12).map { it.name } }.filter { it.isNotBlank() }) }

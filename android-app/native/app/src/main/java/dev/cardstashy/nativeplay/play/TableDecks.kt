@@ -30,7 +30,31 @@ object TableDecks {
      * its first one-copy legendary creature or planeswalker), then Collection decks as saved, each marked
      * unlocked when deckShortfall finds nothing missing from the Trunk. [typeOf] is the site's meta(name).type_line.
      */
-    fun list(state: JsonObject?, workspace: List<UserDeck>, typeOf: (String) -> String): List<Deck> {
+    /**
+     * loadFreePrecons: the free Commander precons (data/play-starters/precons.json) live only in the Play deck pickers
+     * (Practice, Quick Play, Multiplayer), never in Decks or the Trunk, and always play (Randall 4 Nov 00:40Z).
+     */
+    val free = kotlinx.coroutines.flow.MutableStateFlow<List<Deck>?>(null)
+    @Volatile private var freeAsked = false
+    suspend fun loadFree() {
+        if (freeAsked) return; freeAsked = true
+        val body = runCatching { kotlinx.coroutines.withContext(kotlinx.coroutines.Dispatchers.IO) {
+            dev.cardstashy.nativeplay.account.Http.call("GET", "https://cardstashy.com/data/play-starters/precons.json", mapOf("Accept" to "application/json"), null, 20_000) as? JsonObject } }.getOrNull()
+        if (body == null) { freeAsked = false; return }
+        free.value = freeFrom(body)
+    }
+    fun freeFrom(body: JsonObject): List<Deck> = (body.getAsJsonArray("decks") ?: JsonArray()).mapNotNull { it as? JsonObject }.filter { it.s("format") == "Commander" }.map { d ->
+        val rows = d.getAsJsonArray("rows")?.mapNotNull { it as? JsonObject } ?: emptyList()
+        val commander = rows.firstOrNull { it.get("commander")?.takeIf { p -> p.isJsonPrimitive }?.asBoolean == true }.s("name")
+        val raw = JsonObject().apply {
+            addProperty("id", "free:" + d.s("key")); addProperty("name", d.s("name")); addProperty("format", "Commander"); addProperty("commander", commander)
+            add("cards", JsonArray().apply { rows.forEach { r -> add(JsonObject().apply { addProperty("name", r.s("name")); addProperty("qty", r.get("qty")?.asInt ?: 1) }) } })
+            add("side", JsonArray()); addProperty("free", true)
+        }
+        Deck("free:" + d.s("key"), d.s("name"), "Commander", commander, raw, false, true)
+    }
+
+    fun list(state: JsonObject?, workspace: List<UserDeck>, typeOf: (String) -> String, freeDecks: List<Deck> = free.value.orEmpty()): List<Deck> {
         val owned = Decks.ownedByName(state)
         val play = Trunk.decks(state).map { d ->
             val all = Decks.rows(d); val cards = all.filter { it.board != "side" }; val side = all.filter { it.board == "side" }
@@ -47,7 +71,7 @@ object TableDecks {
             val main = rowsOf(u.cards).filter { it.board == null || it.board == "main" }
             Deck(u.id, u.name, u.format, u.commander ?: "", u.raw, true, Decks.shortfall(main, owned).complete)
         }
-        return play + collection
+        return play + freeDecks + collection
     }
 
     /** playLockedDecks. */
