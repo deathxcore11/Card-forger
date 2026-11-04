@@ -38,6 +38,10 @@ android {
     androidResources { noCompress += ['zip', 'ogg', 'jpg', 'webp'] }
     packaging.resources.excludes += ['META-INF/LICENSE*', 'META-INF/NOTICE*', 'META-INF/DEPENDENCIES', 'META-INF/*.kotlin_module', 'META-INF/versions/**', 'module-info.class']
     packaging.resources.merges += ['META-INF/services/**']
+    // 3D cards' depth model runs on ONNX Runtime: 64-bit ARM only (every phone and handheld we target), packed compressed so the
+    // download grows by about 13 MB, not 34. Elsewhere the library is absent and cards keep the window-only depth (DepthModel).
+    packaging.jniLibs.excludes += ['lib/armeabi-v7a/libonnxruntime*.so', 'lib/x86/libonnxruntime*.so', 'lib/x86_64/libonnxruntime*.so']
+    packaging.jniLibs.useLegacyPackaging = true
 }
 
 // Robolectric's own downloader ignores the build proxy, so Gradle fetches its Android jar and the
@@ -69,6 +73,7 @@ dependencies {
     implementation 'io.coil-kt.coil3:coil-compose:3.2.0'
     implementation 'io.coil-kt.coil3:coil-network-okhttp:3.2.0'
     implementation 'io.coil-kt.coil3:coil-svg:3.2.0'
+    implementation 'com.microsoft.onnxruntime:onnxruntime-android:1.31.1' // 3D cards: the on-phone depth model (MODEL-LICENSE.txt)
     // QuickJS for the web's Deck Forge bundle (assets/deck-engine.js): the same builder as the site, never a Kotlin rewrite.
     implementation files('../qjs-libs/zipline-android-1.24.0.aar')
     testImplementation files('../qjs-libs/zipline-jvm-1.24.0.jar')
