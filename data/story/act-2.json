@@ -228,7 +228,7 @@
      "name": "Hedge Witch",
      "colors": "WG",
      "archetype": null,
-     "label": null,
+     "label": "tribute",
      "cards": [
       {
        "qty": 4,
@@ -323,7 +323,7 @@
      "name": "The Burning Church",
      "colors": "B",
      "archetype": null,
-     "label": null,
+     "label": "tribute",
      "cards": [
       {
        "qty": 4,
@@ -486,14 +486,14 @@
      "name": "The Bazaar Guard",
      "colors": "RGW",
      "archetype": null,
-     "label": null,
+     "label": "tribute",
      "cards": [
       {
        "qty": 4,
-       "name": "Hazezon Tamar",
-       "set": "leg",
-       "number": "230",
-       "id": "17fc3a85-c6b9-4fd2-a6a2-d3210708e5ea"
+       "name": "Pearled Unicorn",
+       "set": "3ed",
+       "number": "30",
+       "id": "a450ce98-4854-4378-8809-27019b3800c2"
       },
       {
        "qty": 2,
@@ -560,10 +560,10 @@
       },
       {
        "qty": 2,
-       "name": "Lightning Bolt",
+       "name": "Swords to Plowshares",
        "set": "3ed",
-       "number": "162",
-       "id": "cb9b9a9d-ae4c-4e04-bf9d-cae48f01292c"
+       "number": "41",
+       "id": "057d2410-30d3-4b7a-9dc3-f2512c1cf31c"
       },
       {
        "qty": 4,
@@ -573,28 +573,14 @@
        "id": "5ae71290-c133-406c-8b17-9ea22b437806"
       },
       {
-       "qty": 2,
-       "name": "Plateau",
-       "set": "3ed",
-       "number": "284",
-       "id": "c6ae9cff-8646-4069-8761-df734e067beb"
-      },
-      {
-       "qty": 2,
-       "name": "Taiga",
-       "set": "3ed",
-       "number": "287",
-       "id": "54c5c65a-a444-4e0f-ae44-a3722cdd32a1"
-      },
-      {
-       "qty": 8,
+       "qty": 10,
        "name": "Plains",
        "set": "3ed",
        "number": "292",
        "id": "275c03f9-f9d2-45c5-a332-b3bee54e7065"
       },
       {
-       "qty": 8,
+       "qty": 10,
        "name": "Forest",
        "set": "3ed",
        "number": "304",
@@ -609,7 +595,7 @@
      "name": "Johan's Host",
      "colors": "RG",
      "archetype": null,
-     "label": null,
+     "label": "tribute",
      "cards": [
       {
        "qty": 4,
@@ -798,7 +784,7 @@
      "name": "Havenwood Spores",
      "colors": "G",
      "archetype": null,
-     "label": null,
+     "label": "tribute",
      "cards": [
       {
        "qty": 4,
@@ -893,7 +879,7 @@
      "name": "The Ebon Hand",
      "colors": "B",
      "archetype": null,
-     "label": null,
+     "label": "tribute",
      "cards": [
       {
        "qty": 4,
@@ -1076,7 +1062,7 @@
      "name": "Rift-Walker",
      "colors": "WG",
      "archetype": null,
-     "label": null,
+     "label": "tribute",
      "cards": [
       {
        "qty": 4,
@@ -1178,7 +1164,7 @@
      "name": "The Umezawa Arts",
      "colors": "UBR",
      "archetype": null,
-     "label": null,
+     "label": "tribute",
      "cards": [
       {
        "qty": 3,
@@ -1396,7 +1382,7 @@
      "name": "Valiant Icatia",
      "colors": "W",
      "archetype": null,
-     "label": null,
+     "label": "tribute",
      "cards": [
       {
        "qty": 4,
@@ -1505,7 +1491,7 @@
      "name": "The Breeding Pits",
      "colors": "B",
      "archetype": null,
-     "label": null,
+     "label": "tribute",
      "cards": [
       {
        "qty": 4,
@@ -1673,7 +1659,7 @@
      "name": "Kher Keep Fire",
      "colors": "R",
      "archetype": null,
-     "label": null,
+     "label": "tribute",
      "cards": [
       {
        "qty": 4,
@@ -1761,15 +1747,8 @@
      "name": "The Deck",
      "colors": "WUG",
      "archetype": "The Deck (control)",
-     "label": null,
+     "label": "tribute",
      "cards": [
-      {
-       "qty": 2,
-       "name": "Arcades Sabboth",
-       "set": "leg",
-       "number": "218",
-       "id": "2c1dbc62-ceb5-4540-ae38-901e5deafc75"
-      },
       {
        "qty": 4,
        "name": "Counterspell",
@@ -1799,28 +1778,28 @@
        "id": "41859c6f-1017-42ae-9061-050fe0db9731"
       },
       {
-       "qty": 2,
+       "qty": 1,
        "name": "Moat",
        "set": "leg",
        "number": "28",
        "id": "952ba126-0915-47f0-9b6a-a0a6dcd22c6f"
       },
       {
-       "qty": 3,
+       "qty": 4,
        "name": "Serra Angel",
        "set": "3ed",
        "number": "40",
        "id": "97fa5f07-46ba-408d-a861-bdb1791cc188"
       },
       {
-       "qty": 2,
+       "qty": 3,
        "name": "Jayemdae Tome",
        "set": "3ed",
        "number": "258",
        "id": "e8661e0a-faf8-4c16-b988-55622707de6f"
       },
       {
-       "qty": 2,
+       "qty": 3,
        "name": "Control Magic",
        "set": "3ed",
        "number": "52",
@@ -1834,7 +1813,7 @@
        "id": "a21b08d4-b43d-4c93-99e7-39dfe83ced91"
       },
       {
-       "qty": 2,
+       "qty": 1,
        "name": "Wrath of God",
        "set": "3ed",
        "number": "46",
@@ -1855,7 +1834,7 @@
        "id": "af4f8926-9a9e-4b2d-8224-118655f12809"
       },
       {
-       "qty": 3,
+       "qty": 4,
        "name": "Mahamoti Djinn",
        "set": "3ed",
        "number": "66",
@@ -1913,12 +1892,12 @@
     },
     "villain": {
      "card": {
-      "oracle_id": "8ead94c5-8447-4f20-87ec-efdccde689fc",
-      "name": "Arcades Sabboth",
+      "oracle_id": "c39ea5f9-6ec0-4697-897b-779e326754a7",
+      "name": "Mahamoti Djinn",
       "rarity": "rare",
-      "set": "leg",
-      "id": "2c1dbc62-ceb5-4540-ae38-901e5deafc75",
-      "image": "https://cards.scryfall.io/normal/front/2/c/2c1dbc62-ceb5-4540-ae38-901e5deafc75.jpg"
+      "set": "3ed",
+      "id": "4765276e-ad80-4734-b485-36eebf1b6ae1",
+      "image": "https://cards.scryfall.io/normal/front/4/7/4765276e-ad80-4734-b485-36eebf1b6ae1.jpg"
      },
      "coins": 100
     }
@@ -1986,14 +1965,14 @@
      "name": "The Bazaar Guard",
      "colors": "RGW",
      "archetype": null,
-     "label": null,
+     "label": "tribute",
      "cards": [
       {
        "qty": 3,
-       "name": "Hazezon Tamar",
-       "set": "leg",
-       "number": "230",
-       "id": "17fc3a85-c6b9-4fd2-a6a2-d3210708e5ea"
+       "name": "Pearled Unicorn",
+       "set": "3ed",
+       "number": "30",
+       "id": "a450ce98-4854-4378-8809-27019b3800c2"
       },
       {
        "qty": 4,
@@ -2024,7 +2003,7 @@
        "id": "ae541c73-9903-49e6-997a-db4701135145"
       },
       {
-       "qty": 3,
+       "qty": 4,
        "name": "Serra Angel",
        "set": "3ed",
        "number": "40",
@@ -2045,14 +2024,14 @@
        "id": "d33fe386-d165-4874-aa6b-07b7df9b6209"
       },
       {
-       "qty": 3,
-       "name": "Lightning Bolt",
+       "qty": 1,
+       "name": "Mesa Pegasus",
        "set": "3ed",
-       "number": "162",
-       "id": "cb9b9a9d-ae4c-4e04-bf9d-cae48f01292c"
+       "number": "28",
+       "id": "ce7e6bfb-9038-48b5-bfaf-9450c503c69e"
       },
       {
-       "qty": 3,
+       "qty": 4,
        "name": "Swords to Plowshares",
        "set": "3ed",
        "number": "41",
@@ -2066,28 +2045,14 @@
        "id": "5ae71290-c133-406c-8b17-9ea22b437806"
       },
       {
-       "qty": 2,
-       "name": "Plateau",
-       "set": "3ed",
-       "number": "284",
-       "id": "c6ae9cff-8646-4069-8761-df734e067beb"
-      },
-      {
-       "qty": 2,
-       "name": "Taiga",
-       "set": "3ed",
-       "number": "287",
-       "id": "54c5c65a-a444-4e0f-ae44-a3722cdd32a1"
-      },
-      {
-       "qty": 8,
+       "qty": 10,
        "name": "Plains",
        "set": "3ed",
        "number": "292",
        "id": "275c03f9-f9d2-45c5-a332-b3bee54e7065"
       },
       {
-       "qty": 8,
+       "qty": 10,
        "name": "Forest",
        "set": "3ed",
        "number": "304",
@@ -2102,7 +2067,7 @@
      "name": "The Hymn",
      "colors": "B",
      "archetype": "Black discard",
-     "label": null,
+     "label": "tribute",
      "cards": [
       {
        "qty": 2,
@@ -2112,21 +2077,14 @@
        "id": "eb9273ea-9a41-42e3-8c9c-0d50b127a818"
       },
       {
-       "qty": 2,
+       "qty": 4,
        "name": "Scathe Zombies",
        "set": "3ed",
        "number": "127",
        "id": "6cbe576f-03d5-4d22-947a-187d9e20425d"
       },
       {
-       "qty": 2,
-       "name": "Hypnotic Specter",
-       "set": "3ed",
-       "number": "115",
-       "id": "2c8bd2bc-f48d-43c4-b2aa-5a0905656e90"
-      },
-      {
-       "qty": 2,
+       "qty": 4,
        "name": "Bog Rats",
        "set": "drk",
        "number": "42",
@@ -2140,42 +2098,42 @@
        "id": "48cb9467-657e-453f-afc8-1bf7121570ad"
       },
       {
-       "qty": 4,
+       "qty": 2,
        "name": "Black Knight",
        "set": "3ed",
        "number": "95",
        "id": "eaa55b3c-acf4-4d2a-9f32-c7fce6672f3d"
       },
       {
-       "qty": 4,
+       "qty": 2,
        "name": "Order of the Ebon Hand",
        "set": "fem",
        "number": "42a",
        "id": "9e51f5d8-a7cc-4720-8af5-e002bcfd78a0"
       },
       {
-       "qty": 4,
+       "qty": 2,
        "name": "Necrite",
        "set": "fem",
        "number": "41a",
        "id": "311d752a-ce8a-44cb-8aeb-1ed66705eb09"
       },
       {
-       "qty": 3,
+       "qty": 1,
        "name": "Sengir Vampire",
        "set": "3ed",
        "number": "129",
        "id": "fa35113b-5242-41f4-a989-42f2cd8002b6"
       },
       {
-       "qty": 4,
+       "qty": 2,
        "name": "Terror",
        "set": "3ed",
        "number": "132",
        "id": "0eaf0ac8-f5a7-4689-8d3e-dd865763df44"
       },
       {
-       "qty": 3,
+       "qty": 1,
        "name": "Drain Life",
        "set": "3ed",
        "number": "106",
@@ -2194,6 +2152,34 @@
        "set": "3ed",
        "number": "122",
        "id": "b6647e7d-b0ad-4170-8dce-ea4c89897c6a"
+      },
+      {
+       "qty": 4,
+       "name": "Drudge Skeletons",
+       "set": "3ed",
+       "number": "107",
+       "id": "59145073-2cfd-4153-a6d8-47ad42e739c3"
+      },
+      {
+       "qty": 2,
+       "name": "Scavenging Ghoul",
+       "set": "3ed",
+       "number": "128",
+       "id": "33a5daf6-ce4f-4d00-8458-b7d1a9e037bc"
+      },
+      {
+       "qty": 2,
+       "name": "Frozen Shade",
+       "set": "3ed",
+       "number": "112",
+       "id": "6cba931e-94b5-4fcc-8d5f-eb60664baf31"
+      },
+      {
+       "qty": 2,
+       "name": "Wall of Bone",
+       "set": "3ed",
+       "number": "134",
+       "id": "4f9d6c2b-3492-4360-90cf-649608d4910f"
       },
       {
        "qty": 24,
@@ -2287,7 +2273,7 @@
      "name": "The Umezawa Arts",
      "colors": "UBR",
      "archetype": null,
-     "label": null,
+     "label": "tribute",
      "cards": [
       {
        "qty": 4,
@@ -2431,7 +2417,7 @@
      "name": "The Elder Dragon",
      "colors": "UBR",
      "archetype": null,
-     "label": null,
+     "label": "tribute",
      "cards": [
       {
        "qty": 3,
@@ -2539,7 +2525,14 @@
        "id": "95e936cf-3bbb-4f3b-8e1a-4be1d4702b99"
       },
       {
-       "qty": 6,
+       "qty": 5,
+       "name": "Island",
+       "set": "3ed",
+       "number": "295",
+       "id": "22f6e971-349d-498b-ae01-ab81ce21772c"
+      },
+      {
+       "qty": 1,
        "name": "Mountain",
        "set": "3ed",
        "number": "301",

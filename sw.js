@@ -1,4 +1,4 @@
-const CACHE = "cardforge-shell-foil-act35-43105-v477";
+const CACHE = "cardforge-shell-story-fixes-43107-v479";
 const ASSETS = [
   "./assets/fonts/fonts.css",
   "./play-forge-feature.js",
@@ -31,7 +31,7 @@ const ASSETS = [
   "./play-secret-lair.js",
   "./play-deck-emblem.js",
   "./play-econ-rules.js",
-  "./play-econ-sets.js", "./story-acts.js", "./story-client.js", "./story-ui.js", "./story-deeds.js", "./match-facts.js", "./story-mode.css",
+  "./play-econ-sets.js", "./story-acts.js", "./story-client.js", "./story-ui.js", "./story-lessons.js", "./story-deeds.js", "./match-facts.js", "./story-mode.css",
   "./play-daily-goals.js",
   "./experiments/forge-proof/table-emotes.mjs",
   "./play-forge-table.css",

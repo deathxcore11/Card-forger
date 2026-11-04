@@ -1715,7 +1715,7 @@
    "title": "Mono-Red",
    "difficulty": "Normal",
    "teaches": [
-    "Racing"
+    "Hexproof"
    ],
    "blurb": "A tribute to Standard in spring 2018: Mono-Red against Esper Teferi, burn against a slow control deck.",
    "rewardSet": "m19",
@@ -2295,7 +2295,7 @@
    "title": "The Demonlord",
    "difficulty": "Hard",
    "teaches": [
-    "Racing"
+    "First strike"
    ],
    "blurb": "Belzenlok's story is all he has. Teferi, Jhoira and Karn have a ship, a spark and a lot of old Dominaria behind them.",
    "rewardSet": "m19",
@@ -2618,7 +2618,7 @@
    "title": "Teferi, Hero of Dominaria",
    "difficulty": "Hard",
    "teaches": [
-    "Racing"
+    "Reach"
    ],
    "blurb": "Deep in the archive, a planeswalker who will not let you finish your turn.",
    "rewardSet": "dom",

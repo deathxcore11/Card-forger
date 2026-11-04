@@ -249,18 +249,17 @@ export default {
 10 Swamp
 10 Mountain`}},
       villain: {who: 'white', deck: {label: 'tribute', name: 'Mono-White', colors: 'W', archetype: 'Aggro', list: `
-2 Skrelv, Defector Mite
-3 Swooping Lookout
-2 Mandible Justiciar
-2 Swordsworn Cavalier
-1 Archangel Elspeth
-2 Ossification
-2 Planar Disruption
-2 Attentive Skywarden
+4 Skrelv, Defector Mite
+4 Swooping Lookout
+3 Mandible Justiciar
+4 Swordsworn Cavalier
+1 Planar Disruption
 24 Plains
 4 Kor Halberd
-4 Zealot's Conviction
-4 Progenitor Exarch
+2 Sinew Dancer
+2 Kithkin Billyrider
+2 Zealot's Conviction
+2 Progenitor Exarch
 4 Enduring Bondwarden
 4 Crawling Chorus`}},
       scene: [q('stage', 'There\'s a war brewing between Norn and Urabrask. Exploit the chaos, and we can take them both down for good.'),
@@ -270,7 +269,7 @@ export default {
         q('stage', 'There is a single, glorious truth, etched in the hearts of the faithful. Join in unity, or be washed away.')],
       cues: {hero: cue('Patience.', 'Removal!', 'The weenies are fast...', 'Quality wins.', 'Run over...', 'Do not take too much damage early.'),
         villain: cue('Unity.', 'Charge!', 'They have answers...', 'One truth.', 'Washed away...')}},
-    {slot: 7, mood: 'tension', kind: 'Meta', title: 'Rakdos vs Esper Legends', difficulty: 'Normal', rewardSet: 'one', teaches: ['Racing'],
+    {slot: 7, mood: 'tension', kind: 'Meta', title: 'Rakdos vs Esper Legends', difficulty: 'Normal', rewardSet: 'one', teaches: ['Menace'],
       blurb: 'Spring 2023: Rakdos midrange against a deck full of legends.',
       hero: {who: 'rakdos', deck: {label: 'tribute', name: 'Rakdos Midrange', colors: 'BR', archetype: 'Midrange', list: `
 4 Cutthroat Centurion
@@ -314,7 +313,7 @@ export default {
         q('stage', 'Behold your inevitable defeat.')],
       cues: {hero: cue('Fast and sharp.', 'Kill it!', 'Too many legends...', 'The legends fall.', 'Outclassed...', 'Race them before the legends stack up.'),
         villain: cue('A legend arrives.', 'Legendary!', 'Out of legends...', 'The legends stand.', 'Toppled...')}},
-    {slot: 8, mood: 'boss', kind: 'Boss', title: 'Elesh Norn, Mother of Machines', difficulty: 'Hard', rewardSet: 'mom', teaches: ['Racing'],
+    {slot: 8, mood: 'boss', kind: 'Boss', title: 'Elesh Norn, Mother of Machines', difficulty: 'Hard', rewardSet: 'mom', teaches: ['Vigilance'],
       blurb: 'Every plane stands against the Mother of Machines. Her creatures only have to be on the battlefield.',
       hero: {who: 'elspeth', deck: {label: 'tribute', name: 'Every Plane United', colors: 'GW', list: `
 3 Archangel Elspeth

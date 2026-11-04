@@ -50,7 +50,7 @@ export default {
   battles: [
     {slot: 1, mood: 'tension', kind: 'Arrival', title: 'The Inverted Mountain', difficulty: 'Easy', rewardSet: 'mmq', teaches: ['Alternate costs'],
       blurb: 'The Weatherlight came down hard below a city that sits on top of an upside-down mountain. Gerrard climbs up to ask for help. The city sends its guard down instead.',
-      hero: {who: 'gerrard', deck: {name: 'The Weatherlight Crew', colors: 'RW', list: `
+      hero: {who: 'gerrard', deck: {label: 'tribute', name: 'The Weatherlight Crew', colors: 'RW', list: `
 4 Steadfast Guard
 4 Crossbow Infantry
 4 Kyren Sniper
@@ -62,7 +62,7 @@ export default {
 4 Seal of Fire
 12 Mountain
 12 Plains`}},
-      villain: {who: 'magistrate', deck: {name: "The Magistrate's Guard", colors: 'WU', list: `
+      villain: {who: 'magistrate', deck: {label: 'tribute', name: "The Magistrate's Guard", colors: 'WU', list: `
 4 Port Inspector
 4 Darting Merfolk
 4 Cloud Sprite
@@ -89,7 +89,7 @@ export default {
         s('stage', 'By morning he is training the very soldiers who attacked him. He thinks he has found allies.')]},
     {slot: 2, mood: 'march', kind: 'Lesson', title: 'Uphill Battle', difficulty: 'Easy', rewardSet: 'mmq', teaches: ['Rebels'],
       blurb: "The Cho-Arrim live below the mountain and guard the Fountain of Cho. Mercadia wants the water. Its army has a new commander, and he doesn't know what he's marching against.",
-      hero: {who: 'chomanno', deck: {name: 'The Cho-Arrim', colors: 'W', list: `
+      hero: {who: 'chomanno', deck: {label: 'tribute', name: 'The Cho-Arrim', colors: 'W', list: `
 2 Cho-Manno, Revolutionary
 4 Ramosian Sergeant
 4 Ramosian Lieutenant
@@ -101,7 +101,7 @@ export default {
 4 Cho-Manno's Blessing
 4 Arrest
 24 Plains`}},
-      villain: {who: 'gerrard', deck: {name: "Gerrard's Irregulars", colors: 'RW', list: `
+      villain: {who: 'gerrard', deck: {label: 'tribute', name: "Gerrard's Irregulars", colors: 'RW', list: `
 4 Gerrard's Irregulars
 4 Ceremonial Guard
 4 Crossbow Infantry
@@ -127,7 +127,7 @@ export default {
         q('stage', '"I did not choose my role, Orim," said Cho-Manno patiently, "and I suspect Gerrard did not choose his."')]},
     {slot: 3, mood: 'comic', kind: 'Lesson', title: 'General Nuisance', difficulty: 'Easy', rewardSet: 'mmq', teaches: ['Spellshapers'],
       blurb: "The Kyren goblins secretly run half of Mercadia, and they've decided Squee is very important. They gave him a hat, an army and a war. Then they pointed it at the ship's first mate.",
-      hero: {who: 'squee', deck: {name: 'The Kyren Host', colors: 'R', list: `
+      hero: {who: 'squee', deck: {label: 'tribute', name: 'The Kyren Host', colors: 'R', list: `
 2 Squee, Goblin Nabob
 4 Kyren Glider
 4 Kyren Legate
@@ -139,7 +139,7 @@ export default {
 24 Mountain
 4 Arms Dealer
 2 Lunge`}},
-      villain: {who: 'tahngarth', deck: {name: 'Talruum Fury', colors: 'RG', list: `
+      villain: {who: 'tahngarth', deck: {label: 'tribute', name: 'Talruum Fury', colors: 'RG', list: `
 4 Zerapa Minotaur
 4 Veteran Brawlers
 4 Branded Brawlers
@@ -167,7 +167,7 @@ export default {
         s('squee', 'Whose table?'), s('tahngarth', "That's what worries me.")]},
     {slot: 4, mood: 'tension', kind: 'Rival', title: 'The Helpless Woman', difficulty: 'Normal', rewardSet: 'mmq', teaches: ['Discard'],
       blurb: "On the way out of Rath, the crew rescued a frightened woman named Takara, Starke's daughter. She has been quiet ever since. Too quiet. Someone in Mercadia has known every move Gerrard makes.",
-      hero: {who: 'gerrard', deck: {name: 'Heir of the Legacy', colors: 'RW', list: `
+      hero: {who: 'gerrard', deck: {label: 'tribute', name: 'Heir of the Legacy', colors: 'RW', list: `
 4 Steadfast Guard
 4 Thermal Glider
 4 Defiant Falcon
@@ -179,7 +179,7 @@ export default {
 4 Seal of Fire
 12 Mountain
 12 Plains`}},
-      villain: {who: 'takara', deck: {name: 'A Borrowed Face', colors: 'UB', list: `
+      villain: {who: 'takara', deck: {label: 'tribute', name: 'A Borrowed Face', colors: 'UB', list: `
 2 Volrath the Fallen
 4 Stronghold Biologist
 4 Rootwater Commando
@@ -205,9 +205,9 @@ export default {
         villain: cue('Still the hero. Still alone.', 'Look, brother. A body built from what you threw away.', 'This shape is failing...', 'Father should have chosen me.', 'Keep the city. I have a throne to collect.')},
       after: [s('stage', 'Volrath steps through a mirror of black water and is gone.'),
         q('stage', 'Without a word, Gerrard and Sisay ran deeper into the mountain. Neither of them intended to leave Mercadia without the *Weatherlight* and its crew.')]},
-    {slot: 5, mood: 'tension', kind: 'Meta', title: 'What Is Mine', difficulty: 'Normal', rewardSet: 'nem', teaches: ['Racing'],
+    {slot: 5, mood: 'tension', kind: 'Meta', title: 'What Is Mine', difficulty: 'Normal', rewardSet: 'nem', teaches: ['Flying'],
       blurb: "Rath has a new evincar: Crovax, the cursed nobleman who murdered Mirri. Phyrexia's emissary Belbe chose him. Now Volrath has come home to take his throne back.",
-      hero: {who: 'crovax', deck: {name: 'The Cursed', colors: 'B', list: `
+      hero: {who: 'crovax', deck: {label: 'tribute', name: 'The Cursed', colors: 'B', list: `
 4 Rathi Intimidator
 4 Rathi Fiend
 2 Rathi Assassin
@@ -219,7 +219,7 @@ export default {
 2 Seal of Doom
 2 Dark Ritual
 26 Swamp`}},
-      villain: {who: 'volrath', deck: {name: 'The Fallen', colors: 'UB', list: `
+      villain: {who: 'volrath', deck: {label: 'tribute', name: 'The Fallen', colors: 'UB', list: `
 3 Volrath the Fallen
 4 Rootwater Commando
 4 Sneaky Homunculus
@@ -246,7 +246,7 @@ export default {
         s('belbe', 'Adequate. Begin preparing the plane for transit.')]},
     {slot: 6, mood: 'march', kind: 'Lesson', title: 'Keld Triumphant', difficulty: 'Normal', rewardSet: 'pcy', teaches: ['Rhystic'],
       blurb: "Back on Dominaria, the Keldon warlords have come south into Jamuraa, the land Gerrard grew up in. They believe a prophecy of five winds will make Keld rule the world. A zephyr mage named Alexi disagrees.",
-      hero: {who: 'alexi', deck: {name: 'The Kipamu League', colors: 'WU', list: `
+      hero: {who: 'alexi', deck: {label: 'tribute', name: 'The Kipamu League', colors: 'WU', list: `
 4 Glittering Lion
 4 Diving Griffin
 4 Sword Dancer
@@ -258,7 +258,7 @@ export default {
 4 Withdraw
 12 Plains
 12 Island`}},
-      villain: {who: 'latulla', deck: {name: 'The Keldon Host', colors: 'R', list: `
+      villain: {who: 'latulla', deck: {label: 'tribute', name: 'The Keldon Host', colors: 'R', list: `
 4 Lesser Gargadon
 4 Keldon Arsonist
 4 Keldon Berserker
@@ -283,7 +283,7 @@ export default {
         s('stage', 'The Keldons pull back. Their prophecy does not. The winds are still coming.')]},
     {slot: 7, mood: 'tension', kind: 'Rival', title: 'Uneasy Allies', difficulty: 'Normal', rewardSet: 'nem', teaches: ['Fading'],
       blurb: "On Rath, two rebel leaders meet: Eladamri of the Skyshroud elves and Lin Sivvi of the Vec. They both want Crovax dead. They have never agreed on anything else.",
-      hero: {who: 'eladamri', deck: {name: 'Skyshroud', colors: 'G', list: `
+      hero: {who: 'eladamri', deck: {label: 'tribute', name: 'Skyshroud', colors: 'G', list: `
 4 Blastoderm
 4 Skyshroud Sentinel
 4 Skyshroud Cutter
@@ -295,7 +295,7 @@ export default {
 4 Mossdog
 4 Seal of Strength
 24 Forest`}},
-      villain: {who: 'linsivvi', deck: {name: 'The Vec Defiant', colors: 'W', list: `
+      villain: {who: 'linsivvi', deck: {label: 'tribute', name: 'The Vec Defiant', colors: 'W', list: `
 2 Lin Sivvi, Defiant Hero
 4 Defiant Falcon
 4 Defiant Vanguard
@@ -322,7 +322,7 @@ export default {
         s('linsivvi', 'Eladamri... I am sorry. I am so sorry.'), s('eladamri', 'Get everyone up. We march on the stronghold tonight.')]},
     {slot: 8, mood: 'boss', kind: 'Boss', title: 'The Ascendant Evincar', difficulty: 'Hard', rewardCard: 'Ascendant Evincar', rewardSet: 'nem', teaches: ['Lords'],
       blurb: 'Crovax sits on Volrath\'s throne with Phyrexia behind him. His curse makes him stronger as everything around him dies. The rebels are going to the stronghold anyway.',
-      hero: {who: 'eladamri', deck: {name: 'The Rebellion', colors: 'GW', list: `
+      hero: {who: 'eladamri', deck: {label: 'tribute', name: 'The Rebellion', colors: 'GW', list: `
 2 Lin Sivvi, Defiant Hero
 4 Defiant Vanguard
 4 Defiant Falcon
@@ -335,7 +335,7 @@ export default {
 2 Rhox
 12 Forest
 12 Plains`}},
-      villain: {who: 'evincar', deck: {name: "The Evincar's Court", colors: 'B', list: `
+      villain: {who: 'evincar', deck: {label: 'tribute', name: "The Evincar's Court", colors: 'B', list: `
 3 Ascendant Evincar
 2 Rathi Assassin
 4 Rathi Fiend

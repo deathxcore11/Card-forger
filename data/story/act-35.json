@@ -1901,28 +1901,28 @@
      "label": "tribute",
      "cards": [
       {
-       "qty": 2,
+       "qty": 4,
        "name": "Skrelv, Defector Mite",
        "set": "one",
        "number": "33",
        "id": "60b565da-a49b-479c-b0c4-8ff3dd20cc0b"
       },
       {
-       "qty": 3,
+       "qty": 4,
        "name": "Swooping Lookout",
        "set": "one",
        "number": "35",
        "id": "b62c740d-260d-4dfa-b6b3-9a1527538f89"
       },
       {
-       "qty": 2,
+       "qty": 3,
        "name": "Mandible Justiciar",
        "set": "one",
        "number": "21",
        "id": "544a707d-4090-4a74-91aa-60fbd8a4ae96"
       },
       {
-       "qty": 2,
+       "qty": 4,
        "name": "Swordsworn Cavalier",
        "set": "mom",
        "number": "42",
@@ -1930,31 +1930,10 @@
       },
       {
        "qty": 1,
-       "name": "Archangel Elspeth",
-       "set": "mom",
-       "number": "6",
-       "id": "35ed6263-bdd7-4013-ac8c-9b652d71a0db"
-      },
-      {
-       "qty": 2,
-       "name": "Ossification",
-       "set": "one",
-       "number": "26",
-       "id": "0da03224-c1af-438f-96c2-b0e41e1070b7"
-      },
-      {
-       "qty": 2,
        "name": "Planar Disruption",
        "set": "one",
        "number": "28",
        "id": "8ee69a1f-aeed-4eb4-8987-fa720fc99715"
-      },
-      {
-       "qty": 2,
-       "name": "Attentive Skywarden",
-       "set": "mom",
-       "number": "7",
-       "id": "83d89bd5-95cc-41fc-aea2-2dde52231919"
       },
       {
        "qty": 24,
@@ -1971,14 +1950,28 @@
        "id": "a4705327-ada6-4575-82fc-351e183d060e"
       },
       {
-       "qty": 4,
+       "qty": 2,
+       "name": "Sinew Dancer",
+       "set": "one",
+       "number": "32",
+       "id": "ebad4fcc-4f78-48dc-b236-c78c22edc1e9"
+      },
+      {
+       "qty": 2,
+       "name": "Kithkin Billyrider",
+       "set": "mom",
+       "number": "24",
+       "id": "0535b69f-247d-49c9-97e1-d988700578ab"
+      },
+      {
+       "qty": 2,
        "name": "Zealot's Conviction",
        "set": "one",
        "number": "39",
        "id": "3a419ba1-7bd3-48e3-8f88-d9f833b25d6d"
       },
       {
-       "qty": 4,
+       "qty": 2,
        "name": "Progenitor Exarch",
        "set": "mom",
        "number": "32",
@@ -2008,12 +2001,12 @@
     },
     "villain": {
      "card": {
-      "oracle_id": "0b2481d6-97a0-4f92-b7e5-3451863fd7fb",
-      "name": "Archangel Elspeth",
-      "rarity": "mythic",
-      "set": "mom",
-      "id": "35ed6263-bdd7-4013-ac8c-9b652d71a0db",
-      "image": "https://cards.scryfall.io/normal/front/3/5/35ed6263-bdd7-4013-ac8c-9b652d71a0db.jpg"
+      "oracle_id": "20053847-6623-493c-8cdb-a69cda3b1577",
+      "name": "Skrelv, Defector Mite",
+      "rarity": "rare",
+      "set": "one",
+      "id": "60b565da-a49b-479c-b0c4-8ff3dd20cc0b",
+      "image": "https://cards.scryfall.io/normal/front/6/0/60b565da-a49b-479c-b0c4-8ff3dd20cc0b.jpg"
      },
      "coins": 100
     }
@@ -2075,7 +2068,7 @@
    "title": "Rakdos vs Esper Legends",
    "difficulty": "Normal",
    "teaches": [
-    "Racing"
+    "Menace"
    ],
    "blurb": "Spring 2023: Rakdos midrange against a deck full of legends.",
    "rewardSet": "one",
@@ -2407,7 +2400,7 @@
    "title": "Elesh Norn, Mother of Machines",
    "difficulty": "Hard",
    "teaches": [
-    "Racing"
+    "Vigilance"
    ],
    "blurb": "Every plane stands against the Mother of Machines. Her creatures only have to be on the battlefield.",
    "rewardSet": "mom",

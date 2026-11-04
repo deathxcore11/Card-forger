@@ -6,7 +6,7 @@ import {readFileSync, existsSync} from 'node:fs';
 import {checkDeck, eraFormat, BASIC} from './deck-gates.mjs';
 const argv = process.argv.slice(2), opt = k => { const i = argv.indexOf(k); return i >= 0 ? argv[i + 1] : null; };
 const poolFile = JSON.parse(readFileSync(opt('--pool'), 'utf8'));
-const act = {sets: poolFile.sets, landSet: poolFile.landSet};
+const act = {sets: poolFile.sets, eraSets: poolFile.eraSets || [], landSet: poolFile.landSet};
 const pool = poolFile.cards.filter(c => !/[a-z]$/.test(c.number) || /^\d+a$/.test(c.number));
 const byKey = new Map(pool.map(c => [c.set + '#' + c.number, c]));
 const forgeRoot = opt('--forge-root') || (existsSync('/tmp/fe/root') ? '/tmp/fe/root' : null), era = eraFormat(forgeRoot, opt('--era'));
@@ -17,7 +17,7 @@ for (const f of files) {
   for (const line of readFileSync(f, 'utf8').split('\n')) {
     const m = line.trim().match(/^(\d+)\s+(.+)$/); if (!m) continue;
     const hits = pool.filter(c => c.name === m[2] || c.name.split(' // ')[0] === m[2]);
-    const order = BASIC.test(m[2]) ? [act.landSet] : act.sets;
+    const order = BASIC.test(m[2]) ? [act.landSet] : [...act.sets, ...act.eraSets];
     hits.sort((a, b) => (order.indexOf(a.set) + 1 || 99) - (order.indexOf(b.set) + 1 || 99) || parseInt(a.number) - parseInt(b.number));
     if (!hits.length) { unknown.push(m[2]); continue; }
     cards.push({qty: +m[1], name: hits[0].name, set: hits[0].set, number: hits[0].number});

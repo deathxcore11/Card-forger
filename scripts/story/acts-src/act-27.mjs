@@ -279,7 +279,7 @@ export default {
         q('stage', 'By the law of church and crown, vampires feed only on the blood of the guilty\u2014those declared heretics, rebels, or enemies of war.')],
       cues: {hero: cue('Charge!', 'Stampede!', 'They are bleeding us...', 'The herd wins.', 'Hunted down...', 'Keep attacking.'),
         villain: cue('For church and crown.', 'Feed!', 'The sun is rising...', 'The Legion endures.', 'Dust...')}},
-    {slot: 7, mood: 'tension', kind: 'Meta', title: 'Pirates', difficulty: 'Normal', rewardSet: 'rix', teaches: ['Racing'],
+    {slot: 7, mood: 'tension', kind: 'Meta', title: 'Pirates', difficulty: 'Normal', rewardSet: 'rix', teaches: ['Menace'],
       blurb: 'A tribute to the tribes of Ixalan Standard: Pirate aggro against the Merfolk of the Great River.',
       hero: {who: 'pirates', deck: {label: 'tribute', name: 'BR Pirates', colors: 'BR', archetype: 'Aggro', list: `
 2 Daring Buccaneer
@@ -321,7 +321,7 @@ export default {
         q('stage', 'With matchless stealth, the River Heralds fought a running battle against the three enemy forces.')],
       cues: {hero: cue('Yo ho!', 'All hands!', 'Taking on water...', 'Plunder secured.', 'Overboard...', 'Race before the tide turns.'),
         villain: cue('Look downstream.', 'Rise!', 'Out of the shallows...', 'The river holds.', 'The waters part...')}},
-    {slot: 8, mood: 'boss', kind: 'Boss', title: 'The Lawbringer', difficulty: 'Hard', rewardSet: 'rix', teaches: ['Racing'],
+    {slot: 8, mood: 'boss', kind: 'Boss', title: 'The Lawbringer', difficulty: 'Hard', rewardSet: 'rix', teaches: ['Deathtouch'],
       blurb: 'Azor built the Immortal Sun and thinks he is keeping the plane safe. Jace and Vraska have to take it away from him.',
       hero: {who: 'vraska', deck: {label: 'tribute', name: 'Vraska and Jace', colors: 'UB', list: `
 1 Hostage Taker
@@ -365,7 +365,7 @@ export default {
       cues: {hero: cue('Take the Sun.', 'Now!', 'The Sun is binding us...', 'He is trapped.', 'We are bound...', 'Do not let him keep the Sun.'),
         villain: cue('Be still.', '[the Sun burns gold]', '[a hollow glow]', 'It is finished.', '[the sky turns red]')}},
     {slot: 9, kind: 'Secret Boss', secret: true, title: 'Rekindling Phoenix', difficulty: 'Hard', rewardSet: 'rix', rewardCard: 'Rekindling Phoenix', mood: 'boss',
-      teaches: ['Racing'],
+      teaches: ['Vigilance'],
       archive: {deck: 'Rekindling Phoenix', when: 'Early 2018', format: 'Standard.',
         what: 'Red and black decks built around Rekindling Phoenix, a four-mana flier that came back from the graveyard if you did not deal with the 0/1 it left behind.',
         why: 'The Phoenix was a bomb: a threat that was hard to answer for good, in a format full of aggro and midrange.',

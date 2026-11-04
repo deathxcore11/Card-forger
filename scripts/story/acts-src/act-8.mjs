@@ -52,7 +52,7 @@ export default {
   battles: [
     {slot: 1, mood: 'tension', kind: 'Arrival', title: 'The First Wave', difficulty: 'Easy', rewardSet: 'inv', teaches: ['Multicolour gold cards'],
       blurb: "Benalia was the first nation to see the sky open. Gerrard was born a Capashen of Benalia. He comes home to find Tsabo Tavoc's killers in the streets.",
-      hero: {who: 'gerrard', deck: {name: 'The Coalition Vanguard', colors: 'GW', list: `
+      hero: {who: 'gerrard', deck: {label: 'tribute', name: 'The Coalition Vanguard', colors: 'GW', list: `
 4 Llanowar Knight
 4 Noble Panther
 4 Charging Troll
@@ -65,7 +65,7 @@ export default {
 12 Forest
 12 Plains
 2 Gerrard Capashen`}},
-      villain: {who: 'slayer', deck: {name: 'The First Wave', colors: 'B', list: `
+      villain: {who: 'slayer', deck: {label: 'tribute', name: 'The First Wave', colors: 'B', list: `
 4 Phyrexian Slayer
 4 Phyrexian Infiltrator
 4 Phyrexian Battleflies
@@ -91,7 +91,7 @@ export default {
         q('stage', 'Urza convinced many Dominarians not only to set aside their differences, but to embrace them.')]},
     {slot: 2, mood: 'march', kind: 'Lesson', title: 'Yavimaya Wakes', difficulty: 'Easy', rewardSet: 'inv', teaches: ['Kicker'],
       blurb: 'The living forest of Yavimaya has a guardian, Multani, who is the forest. When the Phyrexian vanguard lands on its edge, the forest answers with things nobody has seen in a thousand years.',
-      hero: {who: 'multani', deck: {name: 'The Heart of Yavimaya', colors: 'G', list: `
+      hero: {who: 'multani', deck: {label: 'tribute', name: 'The Heart of Yavimaya', colors: 'G', list: `
 4 Llanowar Elves
 4 Kavu Titan
 4 Llanowar Elite
@@ -103,7 +103,7 @@ export default {
 4 Rampant Growth
 2 Explosive Growth
 24 Forest`}},
-      villain: {who: 'scuta', deck: {name: 'The Vanguard', colors: 'B', list: `
+      villain: {who: 'scuta', deck: {label: 'tribute', name: 'The Vanguard', colors: 'B', list: `
 4 Phyrexian Scuta
 4 Urborg Skeleton
 4 Agonizing Demise
@@ -127,7 +127,7 @@ export default {
         q('urza', "They weren't part of my plan, but Gaea insisted.")]},
     {slot: 3, mood: 'comic', kind: 'Lesson', title: "Squee Isn't Thirsty", difficulty: 'Easy', rewardSet: 'pls', teaches: ['The graveyard'],
       blurb: "In the swamps of Urborg, Lord Dralnu raises the dead to fight Phyrexia. He has heard of a goblin who comes back every time he dies, and he would very much like to study him.",
-      hero: {who: 'squee', deck: {name: "Squee's Goblins", colors: 'R', list: `
+      hero: {who: 'squee', deck: {label: 'tribute', name: "Squee's Goblins", colors: 'R', list: `
 4 Goblin Raider
 4 Raging Goblin
 4 Goblin Spy
@@ -138,7 +138,7 @@ export default {
 4 Goblin War Drums
 4 Shock
 24 Mountain`}},
-      villain: {who: 'dralnu', deck: {name: "Dralnu's Crusade", colors: 'BR', list: `
+      villain: {who: 'dralnu', deck: {label: 'tribute', name: "Dralnu's Crusade", colors: 'BR', list: `
 4 Pyre Zombie
 4 Shivan Zombie
 4 Cinder Shade
@@ -165,7 +165,7 @@ export default {
         s('squee', 'Squee is very hard to kill. Squee does not know why.'), s('sisay', "Let's keep it that way.")]},
     {slot: 4, mood: 'tension', kind: 'Rival', title: 'Dueling Grounds', difficulty: 'Normal', rewardSet: 'inv', teaches: ['Paying life'],
       blurb: "Tsabo Tavoc, Yawgmoth's general, poisoned Benalia's wells and let her plague loose across Llanowar. Gerrard finds her where the forest is dying fastest.",
-      hero: {who: 'gerrard', deck: {name: 'Llanowar', colors: 'GW', list: `
+      hero: {who: 'gerrard', deck: {label: 'tribute', name: 'Llanowar', colors: 'GW', list: `
 4 Llanowar Elves
 4 Llanowar Knight
 4 Elvish Champion
@@ -178,7 +178,7 @@ export default {
 4 Giant Growth
 12 Forest
 12 Plains`}},
-      villain: {who: 'tsabo', deck: {name: "Tsabo's Legion", colors: 'BR', list: `
+      villain: {who: 'tsabo', deck: {label: 'tribute', name: "Tsabo's Legion", colors: 'BR', list: `
 4 Tsabo Tavoc
 4 Phyrexian Slayer
 4 Tsabo's Assassin
@@ -203,7 +203,7 @@ export default {
       }},
     {slot: 5, mood: 'tension', kind: 'Meta', title: 'The Corrupted', difficulty: 'Normal', rewardSet: 'pls', teaches: ['Counterspells'],
       blurb: "Ertai stayed behind on Rath to hold the portal so the Weatherlight could escape. Phyrexia found him there. Now he has come home on the overlay, and he wants Hanna's ship.",
-      hero: {who: 'hanna', deck: {name: 'The Weatherlight', colors: 'WU', list: `
+      hero: {who: 'hanna', deck: {label: 'tribute', name: 'The Weatherlight', colors: 'WU', list: `
 2 Hanna, Ship's Navigator
 4 Galina's Knight
 4 Samite Archer
@@ -216,7 +216,7 @@ export default {
 4 Repulse
 12 Plains
 12 Island`}},
-      villain: {who: 'ertai', deck: {name: 'The Corrupted', colors: 'UB', list: `
+      villain: {who: 'ertai', deck: {label: 'tribute', name: 'The Corrupted', colors: 'UB', list: `
 4 Fact or Fiction
 4 Counterspell
 4 Undermine
@@ -244,7 +244,7 @@ export default {
         s('stage', 'Orim tries everything. Gerrard does not leave her side. Hanna dies on the ship she loved, before the war is over.')]},
     {slot: 6, mood: 'tension', kind: 'Lesson', title: 'A Funeral Pyre', difficulty: 'Normal', rewardSet: 'apc', teaches: ['Split cards'],
       blurb: 'Barrin trusted Urza for three thousand years. His wife Rayne is gone. Now his daughter Hanna is gone too. He goes home to Tolaria, and the Phyrexians are waiting.',
-      hero: {who: 'barrin', deck: {name: "Barrin's Spite", colors: 'UR', list: `
+      hero: {who: 'barrin', deck: {label: 'tribute', name: "Barrin's Spite", colors: 'UR', list: `
 4 Fire // Ice
 4 Prophetic Bolt
 4 Razorfin Hunter
@@ -256,7 +256,7 @@ export default {
 4 Zap
 12 Island
 12 Mountain`}},
-      villain: {who: 'slayer', deck: {name: 'The Tolarian Blight', colors: 'UB', list: `
+      villain: {who: 'slayer', deck: {label: 'tribute', name: 'The Tolarian Blight', colors: 'UB', list: `
 4 Phyrexian Infiltrator
 4 Urborg Phantom
 4 Phyrexian Reaper
@@ -280,9 +280,9 @@ export default {
         villain: cue('The old one is weak.', 'Excise.', 'The island... shakes...', 'Tolaria is Phyrexia.', 'Retreat. Retreat!')},
       after: [q('stage', 'For his family, Barrin made a funeral pyre of Tolaria.'),
         q('stage', '"I knew this day would come," said Urza. Looking at the destruction, Barrin sighed, "You don\'t have to revel in it."')]},
-    {slot: 7, mood: 'march', kind: 'Meta', title: 'Remember Me?', difficulty: 'Normal', rewardSet: 'pls', teaches: ['Racing'],
+    {slot: 7, mood: 'march', kind: 'Meta', title: 'Remember Me?', difficulty: 'Normal', rewardSet: 'pls', teaches: ['Haste'],
       blurb: "On Rath, Crovax had Tahngarth tortured and remade. Now the stronghold has fallen onto Dominaria, Tahngarth has broken free, and the Fires of Yavimaya burn in his blood.",
-      hero: {who: 'tahngarth', deck: {name: 'Fires of Yavimaya', colors: 'RG', list: `
+      hero: {who: 'tahngarth', deck: {label: 'tribute', name: 'Fires of Yavimaya', colors: 'RG', list: `
 4 Fires of Yavimaya
 4 Raging Kavu
 4 Yavimaya Barbarian
@@ -295,7 +295,7 @@ export default {
 2 Ancient Kavu
 12 Mountain
 12 Forest`}},
-      villain: {who: 'evincar', deck: {name: 'The Overlay', colors: 'B', list: `
+      villain: {who: 'evincar', deck: {label: 'tribute', name: 'The Overlay', colors: 'B', list: `
 4 Maggot Carrier
 4 Nightscape Familiar
 4 Volcano Imp
@@ -321,7 +321,7 @@ export default {
         s('gerrard', 'For Mirri. For Selenia. Rest, Crovax. You were one of us once.')]},
     {slot: 8, mood: 'boss', kind: 'Boss', title: "Yawgmoth's Agenda", difficulty: 'Hard', rewardCard: 'Phyrexian Arena', rewardSet: 'apc', teaches: ['Everything so far'],
       blurb: "The Dark Lord of Phyrexia has come to Dominaria himself. He was a Thran healer once. Now he is a god of machines, and he knows every hero's grief by name.",
-      hero: {who: 'gerrard', deck: {name: 'The Legacy', colors: 'GW', list: `
+      hero: {who: 'gerrard', deck: {label: 'tribute', name: 'The Legacy', colors: 'GW', list: `
 2 Gerrard Capashen
 2 Captain Sisay
 4 Coalition Honor Guard
@@ -334,7 +334,7 @@ export default {
 4 Pacifism
 12 Forest
 12 Plains`}},
-      villain: {who: 'yawgmoth', deck: {name: "Yawgmoth's Agenda", colors: 'B', list: `
+      villain: {who: 'yawgmoth', deck: {label: 'tribute', name: "Yawgmoth's Agenda", colors: 'B', list: `
 4 Phyrexian Arena
 2 Desolation Angel
 2 Phyrexian Gargantua

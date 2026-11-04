@@ -8,9 +8,11 @@ import {storyAct} from '../../story-acts.js';
 const argv = process.argv.slice(2), opt = k => { const i = argv.indexOf(k); return i >= 0 ? argv[i + 1] : null; };
 const act = opt('--sets') ? {act: null, sets: opt('--sets').split(','), landSet: opt('--land') || opt('--sets').split(',')[0]} : storyAct(argv[0]);
 if (!act) throw Error('unknown act');
+// Older cards that were legal in the era's format (scripts/story/era-sets.json, made by make-era-sets.mjs).
+const eraSets = act.act ? (JSON.parse(readFileSync(new URL('./era-sets.json', import.meta.url), 'utf8'))[act.act]?.sets || []) : (opt('--era-sets') ? opt('--era-sets').split(',') : []);
 const forge = new Set(readFileSync(new URL('../../forge-card-names-e5a0f815.txt', import.meta.url), 'utf8').split('\n').map(s => s.trim().toLowerCase()).filter(Boolean));
 const sleep = ms => new Promise(r => setTimeout(r, ms));
-let url = 'https://api.scryfall.com/cards/search?unique=prints&order=set&q=' + encodeURIComponent(`(${act.sets.map(s => 'e:' + s).join(' or ')}) -is:digital`);
+let url = 'https://api.scryfall.com/cards/search?unique=prints&order=set&q=' + encodeURIComponent(`(${[...act.sets, ...eraSets].map(s => 'e:' + s).join(' or ')}) -is:digital`);
 const out = [];
 while (url) {
   const body = await fetch(url, {headers: {'User-Agent': 'CardStashy/1.0 story-pool', Accept: 'application/json'}}).then(r => r.json());
@@ -21,4 +23,4 @@ while (url) {
   }
   url = body.has_more ? body.next_page : null; await sleep(120);
 }
-console.log(JSON.stringify({act: act.act, sets: act.sets, landSet: act.landSet, cards: out}));
+console.log(JSON.stringify({act: act.act, sets: act.sets, eraSets, landSet: act.landSet, cards: out}));

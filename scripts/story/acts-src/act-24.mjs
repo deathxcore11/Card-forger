@@ -330,7 +330,7 @@ export default {
         villain: {...cue('[the sky tears open]', '[the world bends]', '[a horror unravels]', '[the promised end]', '[silence in the moon]'),
           half: {who: 'tamiyo', line: 'The moon. Use the moon. I will explain later.'}}}},
     {slot: 9, kind: 'Secret Boss', secret: true, title: 'Elder Deep-Fiend', difficulty: 'Hard', rewardSet: 'emn', rewardCard: 'Elder Deep-Fiend', mood: 'boss',
-      teaches: ['Racing'],
+      teaches: ['Flying'],
       archive: {deck: 'Temur Emerge', when: 'Summer 2016', format: 'Standard.',
         what: 'Green-blue decks, often with red, that sacrificed creatures to emerge Elder Deep-Fiend and Wretched Gryff, and later to cast Emrakul, the Promised End.',
         why: 'Elder Deep-Fiend has flash. Emerged in your upkeep, it taps four of your permanents and leaves you a turn behind.',

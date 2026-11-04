@@ -284,7 +284,7 @@ export default {
         q('stage', 'A single grain of sand is insignificant, but a sandstorm can reduce pyramids to dust.')],
       cues: {hero: cue('Hold the line.', 'Together!', 'The Gift is coming...', 'The sand clears.', 'Overrun...', 'Race before the Gift lands.'),
         villain: cue('[a quiet prayer]', '[the Gift is given]', '[a mummy crumbles]', '[the army wakes]', '[the sands settle]')}},
-    {slot: 8, mood: 'boss', kind: 'Boss', title: 'The Hour of Devastation', difficulty: 'Hard', rewardSet: 'hou', teaches: ['Racing'],
+    {slot: 8, mood: 'boss', kind: 'Boss', title: 'The Hour of Devastation', difficulty: 'Hard', rewardSet: 'hou', teaches: ['Flying'],
       blurb: 'Nicol Bolas has the city, the gods, the Eternals and the Hour. The Gatewatch is what is left of the resistance.',
       hero: {who: 'gatewatch', deck: {label: 'tribute', name: 'Samut and Gideon', colors: 'WG', list: `
 2 Gideon's Intervention

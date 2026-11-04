@@ -48,7 +48,7 @@ export default {
   battles: [
     {slot: 1, mood: 'tension', kind: 'Arrival', title: "Serra's Realm", difficulty: 'Easy', rewardSet: 'usg', teaches: ['Enchantments'],
       blurb: "Serra built a world out of faith and let a broken planeswalker sleep in it. Then the things hunting him found the door.",
-      hero: {who: 'serra', deck: {name: "Serra's Host", colors: 'W', list: `
+      hero: {who: 'serra', deck: {label: 'tribute', name: "Serra's Host", colors: 'W', list: `
 4 Serra Zealot
 4 Serra Advocate
 4 Sanctum Custodian
@@ -60,7 +60,7 @@ export default {
 4 Glorious Anthem
 2 Absolute Grace
 24 Plains`}},
-      villain: {who: 'priest', deck: {name: 'The First Legion', colors: 'B', list: `
+      villain: {who: 'priest', deck: {label: 'tribute', name: 'The First Legion', colors: 'B', list: `
 4 Phyrexian Ghoul
 4 Phyrexian Debaser
 4 Bog Raiders
@@ -81,7 +81,7 @@ export default {
       after: [q('stage', 'In pursuit of Urza, the Phyrexians sent countless foul legions into Serra\'s realm. Though beaten back, they left it tainted.')]},
     {slot: 2, mood: 'comic', kind: 'Lesson', title: 'It Hums', difficulty: 'Easy', rewardSet: 'usg', teaches: ['Echo'],
       blurb: "Urza needs the ancient Thran mana rig under the mountains of Shiv. The goblins worship it, the viashino guard it, and nobody knows what it does.",
-      hero: {who: 'jhoira', deck: {name: 'The Ghitu', colors: 'R', list: `
+      hero: {who: 'jhoira', deck: {label: 'tribute', name: 'The Ghitu', colors: 'R', list: `
 4 Ghitu Slinger
 4 Avalanche Riders
 4 Keldon Champion
@@ -94,7 +94,7 @@ export default {
 4 Arc Lightning
 4 Fire Ants
 24 Mountain`}},
-      villain: {who: 'goblin', deck: {name: 'The Goblins of Shiv', colors: 'R', list: `
+      villain: {who: 'goblin', deck: {label: 'tribute', name: 'The Goblins of Shiv', colors: 'R', list: `
 4 Goblin Raider
 4 Goblin Lackey
 4 Goblin Matron
@@ -113,7 +113,7 @@ export default {
         villain: cue('FOR THE HUMMER!', 'Grunk made a BIG one!', 'Grunk is having a bad day.', 'Hummer stays! Hummer hums!', 'Grunk will be back. Grunk always comes back.')}},
     {slot: 3, mood: 'comic', kind: 'Lesson', title: 'Always Late for Class', difficulty: 'Easy', rewardSet: 'usg', teaches: ['Cycling'],
       blurb: 'Tolaria, an island academy where Urza trains the minds that will fight Phyrexia. Its most gifted student is a boy called Teferi. He has never once been on time.',
-      hero: {who: 'teferi', deck: {name: 'Third-Level Mischief', colors: 'U', list: `
+      hero: {who: 'teferi', deck: {label: 'tribute', name: 'Third-Level Mischief', colors: 'U', list: `
 4 Miscalculation
 4 Disruptive Student
 4 Pendrell Drake
@@ -126,7 +126,7 @@ export default {
 2 Opportunity
 4 Remote Isle
 20 Island`}},
-      villain: {who: 'barrin', deck: {name: "The Master's Exam", colors: 'U', list: `
+      villain: {who: 'barrin', deck: {label: 'tribute', name: "The Master's Exam", colors: 'U', list: `
 4 Sandbar Serpent
 4 Horseshoe Crab
 4 Air Elemental
@@ -147,7 +147,7 @@ export default {
         villain: cue('Begin.', 'Knowledge is no more expensive than ignorance.', 'Focus, Teferi.', 'See me after class.', 'Fine. Full marks. Don\'t tell anyone.')}},
     {slot: 4, mood: 'tension', kind: 'Rival', title: 'The Sleeper', difficulty: 'Normal', rewardSet: 'ulg', teaches: ['Sacrifice'],
       blurb: 'One of Tolaria\'s own has been a Phyrexian all along. Kerrick hid inside a fast-time bubble where years pass in a day, and built himself an army.',
-      hero: {who: 'xantcha', deck: {name: "The Outcast's Knives", colors: 'B', list: `
+      hero: {who: 'xantcha', deck: {label: 'tribute', name: "The Outcast's Knives", colors: 'B', list: `
 4 Phyrexian Ghoul
 4 Bone Shredder
 4 Phyrexian Monitor
@@ -158,7 +158,7 @@ export default {
 4 Yawgmoth's Edict
 4 Corrupt
 24 Swamp`}},
-      villain: {who: 'kerrick', deck: {name: "Kerrick's Brood", colors: 'B', list: `
+      villain: {who: 'kerrick', deck: {label: 'tribute', name: "Kerrick's Brood", colors: 'B', list: `
 4 Phyrexian Debaser
 4 Phyrexian Defiler
 4 Phyrexian Denouncer
@@ -180,7 +180,7 @@ export default {
         villain: cue('The illness begins.', 'The final stage!', 'Some borders can never be crossed.', 'Tolaria is infected.', 'Sealed... in my own tomb...')}},
     {slot: 5, mood: 'tension', kind: 'Lesson', title: 'The Dreaming Grove', difficulty: 'Normal', rewardSet: 'ulg', teaches: ['Mana creatures'],
       blurb: "Urza wants Yavimaya to grow living weapons for him. Yavimaya's guardian answers by swallowing him in a tree. An elf from Llanowar has to talk the forest down.",
-      hero: {who: 'rofellos', deck: {name: 'The Emissary', colors: 'G', list: `
+      hero: {who: 'rofellos', deck: {label: 'tribute', name: 'The Emissary', colors: 'G', list: `
 2 Rofellos, Llanowar Emissary
 4 Llanowar Elves
 4 Priest of Titania
@@ -193,7 +193,7 @@ export default {
 2 Rofellos's Gift
 2 Gaea's Cradle
 22 Forest`}},
-      villain: {who: 'multani', deck: {name: 'Yavimaya Wakes', colors: 'G', list: `
+      villain: {who: 'multani', deck: {label: 'tribute', name: 'Yavimaya Wakes', colors: 'G', list: `
 2 Multani, Maro-Sorcerer
 4 Yavimaya Wurm
 4 Ancient Silverback
@@ -216,7 +216,7 @@ export default {
       after: [q('multani', 'Rise, elf. We are both of Gaea, and thus we are equal.'), s('multani', 'Tell the artificer: Yavimaya will fight. For Dominaria. Not for him.')]},
     {slot: 6, mood: 'tension', kind: 'Meta', title: 'The Time Rift', difficulty: 'Normal', rewardSet: 'uds', teaches: ['Artifact mana'],
       blurb: 'The academy works with time, until time runs out. In the slow bubble, a renegade named Gatha breeds his own students. It is the most broken deck ever made, and the reason bans exist.',
-      hero: {who: 'rayne', deck: {name: "The Chancellor's Rule", colors: 'WU', list: `
+      hero: {who: 'rayne', deck: {label: 'tribute', name: "The Chancellor's Rule", colors: 'WU', list: `
 2 Rayne, Academy Chancellor
 4 Thieving Magpie
 4 Metathran Soldier
@@ -229,7 +229,7 @@ export default {
 2 Rescue
 12 Plains
 12 Island`}},
-      villain: {who: 'gatha', deck: {name: 'Academy', colors: 'U', archetype: 'Academy', list: `
+      villain: {who: 'gatha', deck: {label: 'tribute', name: 'Academy', colors: 'U', archetype: 'Academy', list: `
 1 Tolarian Academy
 4 Grim Monolith
 4 Voltaic Key
@@ -239,8 +239,8 @@ export default {
 4 Thran Dynamo
 4 Thran Golem
 4 Counterspell
-4 Opportunity
-2 Sandbar Serpent
+2 Opportunity
+4 Sandbar Serpent
 4 Rewind
 23 Island`}},
       scene: [q('stage', 'The flow of time was disrupted; like a flooding river it rose from its banks. Tolaria was drowned in an instant that stretched toward infinity.'),
@@ -253,7 +253,7 @@ export default {
         villain: cue('Shall we break something?', 'Look what the machines give!', 'The experiment... destabilises...', 'Fascinating.', 'Write it down. Write it all down.')}},
     {slot: 7, mood: 'tension', kind: 'Meta', title: 'Planar Collapse', difficulty: 'Normal', rewardSet: 'uds', teaches: ['Enchantments returning'],
       blurb: "Serra has left her realm, and it is dying. Urza returns to take what's left of it to build his war. Radiant, the archangel now in charge, has been waiting for him.",
-      hero: {who: 'urza', deck: {name: 'The Artificer\'s War', colors: 'U', list: `
+      hero: {who: 'urza', deck: {label: 'tribute', name: 'The Artificer\'s War', colors: 'U', list: `
 4 Metathran Soldier
 4 Pendrell Drake
 4 Thran Golem
@@ -264,7 +264,7 @@ export default {
 4 Stroke of Genius
 4 Grim Monolith
 24 Island`}},
-      villain: {who: 'radiant', deck: {name: 'Replenish', colors: 'WU', archetype: 'Replenish', list: `
+      villain: {who: 'radiant', deck: {label: 'tribute', name: 'Replenish', colors: 'WU', archetype: 'Replenish', list: `
 2 Radiant, Archangel
 4 Replenish
 4 Attunement
@@ -288,7 +288,7 @@ export default {
       after: [q('stage', "With heavy heart, Urza doused one world's light to rekindle another's.")]},
     {slot: 8, mood: 'boss', kind: 'Boss', title: "Gix's Assault", difficulty: 'Hard', rewardCard: 'Bone Shredder', rewardSet: 'uds', teaches: ['Everything so far'],
       blurb: 'Gix has come for Tolaria himself. Yawgmoth\'s praetor, the voice in Mishra\'s ear at the Brothers\' War. He has waited three thousand years to finish the brother who got away.',
-      hero: {who: 'urza', deck: {name: "Tolaria's Defenders", colors: 'WU', list: `
+      hero: {who: 'urza', deck: {label: 'tribute', name: "Tolaria's Defenders", colors: 'WU', list: `
 4 Metathran Soldier
 4 Thran Golem
 4 Serra Advocate
@@ -301,7 +301,7 @@ export default {
 2 Rescue
 12 Plains
 12 Island`}},
-      villain: {who: 'gix', deck: {name: 'The Praetor\'s Court', colors: 'B', list: `
+      villain: {who: 'gix', deck: {label: 'tribute', name: 'The Praetor\'s Court', colors: 'B', list: `
 4 Dark Ritual
 4 Duress
 4 Bone Shredder

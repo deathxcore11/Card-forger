@@ -224,7 +224,7 @@ export default {
         q('stage', 'They may show up with the wrong thigh bone or mandible, but they always show up.')],
       cues: {hero: cue('Ride!', 'Legends first!', 'Where is my legend...', 'Yargle is fed.', 'Eaten...', 'Cast a legend before the sorcery.'),
         villain: cue('Hungry.', 'Feast!', 'A frog, no...', 'Delicious.', 'Burp...')}},
-    {slot: 6, mood: 'march', kind: 'Meta', title: 'Mono-Red', difficulty: 'Normal', rewardSet: 'm19', teaches: ['Racing'],
+    {slot: 6, mood: 'march', kind: 'Meta', title: 'Mono-Red', difficulty: 'Normal', rewardSet: 'm19', teaches: ['Hexproof'],
       blurb: 'A tribute to Standard in spring 2018: Mono-Red against Esper Teferi, burn against a slow control deck.',
       hero: {who: 'wizards', deck: {label: 'tribute', name: 'Mono-Red', colors: 'R', archetype: 'Aggro', list: `
 4 Goblin Chainwhirler
@@ -300,7 +300,7 @@ export default {
         q('stage', 'You should have seen the look on both their faces.')],
       cues: {hero: cue('Elves up!', 'Stomp!', 'They are burning my elves...', 'Krosa blooms.', 'Burned out...', 'Play your biggest creature.'),
         villain: cue('Shadows.', 'Burn!', 'Out of fuel...', 'Ash.', 'Overgrown...')}},
-    {slot: 8, mood: 'boss', kind: 'Boss', title: 'The Demonlord', difficulty: 'Hard', rewardSet: 'm19', teaches: ['Racing'],
+    {slot: 8, mood: 'boss', kind: 'Boss', title: 'The Demonlord', difficulty: 'Hard', rewardSet: 'm19', teaches: ['First strike'],
       blurb: 'Belzenlok\'s story is all he has. Teferi, Jhoira and Karn have a ship, a spark and a lot of old Dominaria behind them.',
       hero: {who: 'weatherlight', deck: {label: 'tribute', name: 'The Weatherlight Crew', colors: 'WU', list: `
 2 Teferi, Hero of Dominaria
@@ -344,7 +344,7 @@ export default {
         villain: {...cue('All hail.', '[the Stronghold roars]', '[a hollow chant]', 'It was a story.', '[the Stronghold falls silent]'),
           half: {who: 'tiana', line: 'Nothing is too broken to mend.'}}}},
     {slot: 9, kind: 'Secret Boss', secret: true, title: 'Teferi, Hero of Dominaria', difficulty: 'Hard', rewardSet: 'dom', rewardCard: 'Teferi, Hero of Dominaria', mood: 'boss',
-      teaches: ['Racing'],
+      teaches: ['Reach'],
       archive: {deck: 'Esper Teferi', when: 'Spring 2018', format: 'Standard.',
         what: 'White-blue control decks built around Teferi, Hero of Dominaria, which untaps lands, draws cards and tucks a permanent away every turn.',
         why: 'Teferi was a planeswalker that protected itself and generated card advantage in a format full of aggro decks.',

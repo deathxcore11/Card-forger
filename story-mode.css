@@ -216,3 +216,14 @@
   .st-cover:hover,.st-battle:hover{transform:none}.st-cover:hover .st-cover-art{transform:none}
   .st-say.done .st-say-next{animation:none}
 }
+
+/* Lesson whispers (story-lessons.js): the Rift speaks once, softly. Never takes a tap except Skip. */
+.st-whisper{position:fixed;z-index:2590;right:max(16px,env(safe-area-inset-right,0px));bottom:calc(env(safe-area-inset-bottom,0px) + 104px);transform:translateY(8px);width:min(260px,calc(100vw - 32px));display:flex;flex-direction:column;gap:4px;padding:10px 16px 11px;border:1px solid #d6ad6499;border-radius:16px;background:linear-gradient(180deg,#14161cf0,#0d0f14f5);box-shadow:0 12px 32px #000b,inset 0 1px 0 #ffffff14;backdrop-filter:blur(12px);color:#f3e7c4;opacity:0;transition:opacity .3s ease,transform .3s ease;pointer-events:none}
+.st-whisper.in{opacity:1;transform:none}
+.st-whisper.out{opacity:0}
+.st-whisper-tag{font:600 11px/1.2 system-ui,sans-serif;letter-spacing:.12em;text-transform:uppercase;color:#d8b565}
+.st-whisper-line{font:500 16px/1.3 "Cormorant Garamond",Georgia,serif}
+.st-whisper-skip{pointer-events:auto;align-self:flex-end;min-height:44px;min-width:44px;padding:0 14px;border:1px solid #ffffff40;border-radius:99px;background:#ffffff10;color:#f3e7c4;font:600 12px system-ui,sans-serif}
+.play-match-card.st-glow{outline:3px solid #f1d27a!important;outline-offset:2px;box-shadow:0 0 22px 6px #f1d27acc!important;animation:st-glow-pulse 2.4s ease-in-out infinite}
+@keyframes st-glow-pulse{50%{outline-color:#f1d27a80;box-shadow:0 0 12px 3px #f1d27a80}}
+@media (prefers-reduced-motion:reduce){.play-match-card.st-glow{animation:none}.st-whisper{transition:none}}

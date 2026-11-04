@@ -346,7 +346,7 @@ export default {
         villain: {...cue('[the titans rise]', '[the titan exiles everything]', '[a titan is bound]', '[the world is eaten]', '[ash]'),
           half: {who: 'chandra', line: 'They are pinned! Get clear, I am lighting them up!'}}}},
     {slot: 9, kind: 'Secret Boss', secret: true, title: 'Eldrazi Winter', difficulty: 'Hard', rewardSet: 'ogw', rewardCard: 'Thought-Knot Seer', mood: 'boss',
-      teaches: ['Racing'],
+      teaches: ['Trample'],
       archive: {deck: 'Eldrazi Winter', when: 'Early 2016', format: 'Modern.',
         what: 'Colourless Eldrazi decks that used Eye of Ugin and Eldrazi Temple to cast Thought-Knot Seer and Reality Smasher on turn two or three.',
         why: 'For a few months the Eldrazi decks dominated Modern. Players called that season Eldrazi Winter.',

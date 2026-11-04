@@ -160,7 +160,7 @@ export default {
         q('stage', 'I am very much in the mood to start handing out expulsions.')],
       cues: {hero: cue('Pass the pests.', 'Transfer of energy!', 'The debate is going their way...', 'Class dismissed.', 'Expelled...', 'Pests are useful when they die.'),
         villain: cue('Order!', 'Expelled!', 'Out of arguments...', 'Silence in class.', 'Overruled...')}},
-    {slot: 4, mood: 'tension', kind: 'Rival', title: 'The Elves of Kaldheim', difficulty: 'Normal', rewardSet: 'khm', teaches: ['Racing'],
+    {slot: 4, mood: 'tension', kind: 'Rival', title: 'The Elves of Kaldheim', difficulty: 'Normal', rewardSet: 'khm', teaches: ['Reach'],
       blurb: 'Nahiri\'s expedition meets a much bigger monster in Kaldheim\'s forests.',
       hero: {who: 'nahiri', deck: {label: 'tribute', name: 'The Kor Expedition', colors: 'RW', list: `
 4 Luminarch Aspirant
@@ -285,7 +285,7 @@ export default {
         q('stage', 'This is a realm of the living. King Narfi\'s legion is coming to change that.')],
       cues: {hero: cue('Strike fast.', 'Swords out!', 'They are stealing our plans...', 'Dawn.', 'Mugged...', 'Attack every turn.'),
         villain: cue('Quietly.', 'Mill them!', 'Out of tricks...', 'They never saw it.', 'Caught...')}},
-    {slot: 7, mood: 'tension', kind: 'Meta', title: 'Izzet Dragons', difficulty: 'Normal', rewardSet: 'stx', teaches: ['Racing'],
+    {slot: 7, mood: 'tension', kind: 'Meta', title: 'Izzet Dragons', difficulty: 'Normal', rewardSet: 'stx', teaches: ['Flying'],
       blurb: 'Spring 2021: Izzet Dragons against a Rakdos pile of berserkers.',
       hero: {who: 'dragons', deck: {label: 'tribute', name: 'Izzet Dragons', colors: 'UR', archetype: 'Midrange', list: `
 4 Elemental Expressionist
@@ -372,7 +372,7 @@ export default {
         villain: {...cue('A new age.', '[the avatar rises]', '[a hollow laugh]', 'The campus is mine.', '[the Oriq scatter]'),
           half: {who: 'silverquill', line: 'Aim higher next time.'}}}},
     {slot: 9, kind: 'Secret Boss', secret: true, title: 'Kaldheim Snow Stompy', difficulty: 'Hard', rewardSet: 'khm', rewardCard: 'Icehide Troll', mood: 'boss',
-      teaches: ['Racing'],
+      teaches: ['Trample'],
       archive: {deck: 'Snow Stompy', when: 'Spring 2021', format: 'Standard.',
         what: 'A green deck that used snow basics to power Icehide Troll, Sculptor of Winter and Blizzard Brawl.',
         why: 'Cheap, efficient snow creatures and a one-mana fight spell made it a fast, consistent attacker.',

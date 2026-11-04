@@ -1,0 +1,2925 @@
+{
+ "act": 37,
+ "era": "2024-04-19",
+ "title": "The Heist, the Mice and the House",
+ "years": "2024",
+ "sets": [
+  "otj",
+  "big",
+  "blb",
+  "dsk",
+  "fdn"
+ ],
+ "landSet": "blb",
+ "intro": [
+  {
+   "who": "stage",
+   "line": "Akul didn't know what lay inside Tarnation's great vault, but the mystery fueled his obsession.",
+   "quote": true
+  },
+  {
+   "who": "stage",
+   "line": "Three very different places, one after another: a western with a vault, a valley of animal folk, and a house that is alive."
+  }
+ ],
+ "finale": [
+  {
+   "who": "stage",
+   "line": "As the vault collapsed around them, Kellan made sure Akul couldn't follow them out.",
+   "quote": true
+  },
+  {
+   "who": "stage",
+   "line": "Valgavoth is destroyed. The survivors walk out of the House into daylight, and the story goes on without him."
+  },
+  {
+   "who": "stage",
+   "line": "Recorded: a heist, a valley and a house, and the survivors of all three."
+  }
+ ],
+ "villainFinale": [
+  {
+   "who": "stage",
+   "line": "Within the silken shroud, all doubts are cleansed, and all desires are united with Valgavoth.",
+   "quote": true
+  },
+  {
+   "who": "stage",
+   "line": "In this version, the house eats everyone, and you were afraid."
+  }
+ ],
+ "vibe": "heist-mice-house",
+ "cast": {
+  "you": {
+   "name": "You",
+   "title": "Planeswalker",
+   "portrait": {
+    "card": "Friendly Teddy",
+    "set": "dsk",
+    "number": "247",
+    "id": "82b142be-4586-487a-8dd8-a55eff776458",
+    "crop": "https://cards.scryfall.io/art_crop/front/8/2/82b142be-4586-487a-8dd8-a55eff776458.jpg?1783909433",
+    "artist": "Johann Bodin",
+    "focus": "50% 30%"
+   }
+  },
+  "oko": {
+   "name": "Oko's Crew",
+   "title": "Of Thunder Junction",
+   "portrait": {
+    "card": "Oko, the Ringleader",
+    "set": "otj",
+    "number": "223",
+    "id": "396df8d6-e85d-4486-8116-68841b7e1e2e",
+    "crop": "https://cards.scryfall.io/art_crop/front/3/9/396df8d6-e85d-4486-8116-68841b7e1e2e.jpg?1783911788",
+    "artist": "Magali Villeneuve",
+    "focus": "50% 25%"
+   }
+  },
+  "hellspur": {
+   "name": "The Hellspur Gang",
+   "title": "Of Thunder Junction",
+   "portrait": {
+    "card": "Laughing Jasper Flint",
+    "set": "otj",
+    "number": "215",
+    "id": "af0b3a41-ba99-41e8-bcfb-5796500c17c7",
+    "crop": "https://cards.scryfall.io/art_crop/front/a/f/af0b3a41-ba99-41e8-bcfb-5796500c17c7.jpg?1783911791",
+    "artist": "Francis Tneh",
+    "focus": "50% 25%"
+   }
+  },
+  "kellan": {
+   "name": "Kellan",
+   "title": "The Kid",
+   "portrait": {
+    "card": "Kellan, the Kid",
+    "set": "otj",
+    "number": "213",
+    "id": "04dfbc4c-ab21-45db-bbd9-b9d245d60015",
+    "crop": "https://cards.scryfall.io/art_crop/front/0/4/04dfbc4c-ab21-45db-bbd9-b9d245d60015.jpg?1783911792",
+    "artist": "Magali Villeneuve",
+    "focus": "50% 25%"
+   }
+  },
+  "akul": {
+   "name": "Akul's Gang",
+   "title": "Of Thunder Junction",
+   "portrait": {
+    "card": "Hired Claw",
+    "set": "blb",
+    "number": "140",
+    "id": "1ae41080-0d67-4719-adb2-49bf2a268b6c",
+    "crop": "https://cards.scryfall.io/art_crop/front/1/a/1ae41080-0d67-4719-adb2-49bf2a268b6c.jpg?1783910820",
+    "artist": "Quintin Gleim",
+    "focus": "50% 30%"
+   }
+  },
+  "mabel": {
+   "name": "Mabel's Mice",
+   "title": "Of Bloomburrow",
+   "portrait": {
+    "card": "Mabel, Heir to Cragflame",
+    "set": "blb",
+    "number": "224",
+    "id": "be6627fd-729d-44f2-b6bf-5299f49d1e3d",
+    "crop": "https://cards.scryfall.io/art_crop/front/b/e/be6627fd-729d-44f2-b6bf-5299f49d1e3d.jpg?1783910794",
+    "artist": "Aurore Folny",
+    "focus": "50% 25%"
+   }
+  },
+  "beasts": {
+   "name": "The Calamity Beasts",
+   "title": "Of Bloomburrow",
+   "portrait": {
+    "card": "Dragonhawk, Fate's Tempest",
+    "set": "blb",
+    "number": "132",
+    "id": "8659789c-6a2c-439f-a348-b9b1b06c55b8",
+    "crop": "https://cards.scryfall.io/art_crop/front/8/6/8659789c-6a2c-439f-a348-b9b1b06c55b8.jpg?1783910824",
+    "artist": "Victor Adame Minguez",
+    "focus": "50% 25%"
+   }
+  },
+  "tyvar": {
+   "name": "Tyvar",
+   "title": "The Pummeler",
+   "portrait": {
+    "card": "Tyvar, the Pummeler",
+    "set": "dsk",
+    "number": "202",
+    "id": "5f7687b1-630a-4e95-89c7-eaf456d8cb68",
+    "crop": "https://cards.scryfall.io/art_crop/front/5/f/5f7687b1-630a-4e95-89c7-eaf456d8cb68.jpg?1783909447",
+    "artist": "Olivier Bernard",
+    "focus": "50% 25%"
+   }
+  },
+  "house": {
+   "name": "Valgavoth's House",
+   "title": "Of Duskmourn",
+   "portrait": {
+    "card": "Balemurk Leech",
+    "set": "dsk",
+    "number": "84",
+    "id": "f0621b32-95c5-4f70-96cf-d46d20efc85d",
+    "crop": "https://cards.scryfall.io/art_crop/front/f/0/f0621b32-95c5-4f70-96cf-d46d20efc85d.jpg?1783909486",
+    "artist": "John Tedrick",
+    "focus": "50% 30%"
+   }
+  },
+  "winter": {
+   "name": "Winter",
+   "title": "The Misanthropic Guide",
+   "portrait": {
+    "card": "Winter, Misanthropic Guide",
+    "set": "dsk",
+    "number": "240",
+    "id": "e9b81421-44cb-440f-a6ac-3ddf620f1989",
+    "crop": "https://cards.scryfall.io/art_crop/front/e/9/e9b81421-44cb-440f-a6ac-3ddf620f1989.jpg?1783909435",
+    "artist": "Jodie Muir",
+    "focus": "50% 25%"
+   }
+  },
+  "ghosts": {
+   "name": "The Haunted Rooms",
+   "title": "Of Duskmourn",
+   "portrait": {
+    "card": "Sheltered by Ghosts",
+    "set": "dsk",
+    "number": "30",
+    "id": "389f3f7b-be40-4a2d-b5cc-28471a577981",
+    "crop": "https://cards.scryfall.io/art_crop/front/3/8/389f3f7b-be40-4a2d-b5cc-28471a577981.jpg?1783909504",
+    "artist": "Mirko Failoni",
+    "focus": "50% 30%"
+   }
+  },
+  "boros": {
+   "name": "Boros Mice",
+   "title": "Autumn 2024",
+   "portrait": {
+    "card": "Heartfire Hero",
+    "set": "blb",
+    "number": "138",
+    "id": "48ace959-66b2-40c8-9bff-fd7ed9c99a82",
+    "crop": "https://cards.scryfall.io/art_crop/front/4/8/48ace959-66b2-40c8-9bff-fd7ed9c99a82.jpg?1783910820",
+    "artist": "Jakub Kasper",
+    "focus": "50% 30%"
+   }
+  },
+  "golgari": {
+   "name": "Golgari Midrange",
+   "title": "Autumn 2024",
+   "portrait": {
+    "card": "Camellia, the Seedmiser",
+    "set": "blb",
+    "number": "207",
+    "id": "2c16eaec-924c-42f6-9fea-07edd7ed93b9",
+    "crop": "https://cards.scryfall.io/art_crop/front/2/c/2c16eaec-924c-42f6-9fea-07edd7ed93b9.jpg?1783910799",
+    "artist": "Steve Prescott",
+    "focus": "50% 25%"
+   }
+  },
+  "dimir": {
+   "name": "Dimir Midrange",
+   "title": "Autumn 2024",
+   "portrait": {
+    "card": "Kaito, Bane of Nightmares",
+    "set": "dsk",
+    "number": "220",
+    "id": "55a14f30-4ff9-4472-90a6-c3139f1c18e5",
+    "crop": "https://cards.scryfall.io/art_crop/front/5/5/55a14f30-4ff9-4472-90a6-c3139f1c18e5.jpg?1784963190",
+    "artist": "Joshua Raphael",
+    "focus": "50% 25%"
+   }
+  },
+  "izzet": {
+   "name": "Izzet Prowess",
+   "title": "Autumn 2024",
+   "portrait": {
+    "card": "Tempest Angler",
+    "set": "blb",
+    "number": "235",
+    "id": "850daae4-f0b7-4604-95e7-ad044ec165c3",
+    "crop": "https://cards.scryfall.io/art_crop/front/8/5/850daae4-f0b7-4604-95e7-ad044ec165c3.jpg?1783910789",
+    "artist": "Raluca Marinescu",
+    "focus": "50% 30%"
+   }
+  },
+  "survivors": {
+   "name": "The Survivors",
+   "title": "Of the House",
+   "portrait": {
+    "card": "Niko, Light of Hope",
+    "set": "dsk",
+    "number": "224",
+    "id": "91ad013f-de8d-4980-b4b6-c7f91ff495b1",
+    "crop": "https://cards.scryfall.io/art_crop/front/9/1/91ad013f-de8d-4980-b4b6-c7f91ff495b1.jpg?1783909440",
+    "artist": "Aurore Folny",
+    "focus": "50% 25%"
+   }
+  },
+  "valgavoth": {
+   "name": "Valgavoth",
+   "title": "Terror Eater",
+   "portrait": {
+    "card": "Valgavoth, Terror Eater",
+    "set": "dsk",
+    "number": "120",
+    "id": "7740ff55-67bb-409e-90f7-2c2c8b8c770a",
+    "crop": "https://cards.scryfall.io/art_crop/front/7/7/7740ff55-67bb-409e-90f7-2c2c8b8c770a.jpg?1783909475",
+    "artist": "Antonio José Manzanedo",
+    "focus": "50% 25%"
+   }
+  }
+ },
+ "battles": [
+  {
+   "id": "a37b1",
+   "slot": 1,
+   "kind": "Arrival",
+   "mood": "tension",
+   "title": "Plot the Job",
+   "difficulty": "Easy",
+   "teaches": [
+    "Plot"
+   ],
+   "blurb": "Oko's crew plans a heist on the Tarnation vault. The Hellspur gang wants it too.",
+   "rewardSet": "otj",
+   "host": false,
+   "hero": {
+    "who": "oko",
+    "deck": {
+     "name": "Oko's Heist Crew",
+     "colors": "GU",
+     "archetype": null,
+     "label": "tribute",
+     "cards": [
+      {
+       "qty": 4,
+       "name": "Pond Prophet",
+       "set": "blb",
+       "number": "229",
+       "id": "fb959e74-61ea-453d-bb9f-ad0183c0e1b1"
+      },
+      {
+       "qty": 4,
+       "name": "Oblivious Bookworm",
+       "set": "dsk",
+       "number": "225",
+       "id": "c7b4c50b-fe76-430d-8f96-208f15ca4cd7"
+      },
+      {
+       "qty": 3,
+       "name": "Oko, the Ringleader",
+       "set": "otj",
+       "number": "223",
+       "id": "396df8d6-e85d-4486-8116-68841b7e1e2e"
+      },
+      {
+       "qty": 3,
+       "name": "Zimone, All-Questioning",
+       "set": "dsk",
+       "number": "241",
+       "id": "7722f4f7-fe38-4107-a715-7b27b6a4e341"
+      },
+      {
+       "qty": 4,
+       "name": "Druid of the Spade",
+       "set": "blb",
+       "number": "170",
+       "id": "6b485cf7-bad0-4824-9ba7-cb112ce4769f"
+      },
+      {
+       "qty": 4,
+       "name": "Hazardroot Herbalist",
+       "set": "blb",
+       "number": "174",
+       "id": "e2882982-b3a3-4762-a550-6b82db1038e8"
+      },
+      {
+       "qty": 3,
+       "name": "Kitsa, Otterball Elite",
+       "set": "blb",
+       "number": "54",
+       "id": "c8ff751a-ec64-41d5-b22c-2a483ad9a9b2"
+      },
+      {
+       "qty": 3,
+       "name": "Thieving Otter",
+       "set": "blb",
+       "number": "390",
+       "id": "52a258be-39e3-4689-b2d0-7c353ce7d574"
+      },
+      {
+       "qty": 4,
+       "name": "Rabid Bite",
+       "set": "blb",
+       "number": "394",
+       "id": "53a73200-b798-4bfd-a431-8b94e17b70be"
+      },
+      {
+       "qty": 4,
+       "name": "Cache Grab",
+       "set": "blb",
+       "number": "167",
+       "id": "dfd977dc-a7c3-4d0a-aca7-b25bd154e963"
+      },
+      {
+       "qty": 4,
+       "name": "Botanical Sanctum",
+       "set": "otj",
+       "number": "267",
+       "id": "cc18d5f4-a56a-4f7d-9f56-ccc92cbfb7f7"
+      },
+      {
+       "qty": 10,
+       "name": "Forest",
+       "set": "blb",
+       "number": "278",
+       "id": "f791876a-f3fb-45b8-90a9-af846d8b8f74"
+      },
+      {
+       "qty": 10,
+       "name": "Island",
+       "set": "blb",
+       "number": "266",
+       "id": "106a5332-0104-4ec9-9e1f-806381ae4cad"
+      }
+     ]
+    }
+   },
+   "villain": {
+    "who": "hellspur",
+    "deck": {
+     "name": "The Hellspur Gang",
+     "colors": "BR",
+     "archetype": null,
+     "label": "tribute",
+     "cards": [
+      {
+       "qty": 4,
+       "name": "Agate-Blade Assassin",
+       "set": "blb",
+       "number": "82",
+       "id": "39ebb84a-1c52-4b07-9bd0-b360523b3a5b"
+      },
+      {
+       "qty": 4,
+       "name": "Ravine Raider",
+       "set": "blb",
+       "number": "106",
+       "id": "874510be-7ecd-4eff-abad-b9594eb4821a"
+      },
+      {
+       "qty": 3,
+       "name": "Laughing Jasper Flint",
+       "set": "otj",
+       "number": "215",
+       "id": "af0b3a41-ba99-41e8-bcfb-5796500c17c7"
+      },
+      {
+       "qty": 4,
+       "name": "Cindering Cutthroat",
+       "set": "blb",
+       "number": "208",
+       "id": "b2ea10dd-21ea-4622-be27-79d03a802b85"
+      },
+      {
+       "qty": 4,
+       "name": "Heartfire Immolator",
+       "set": "fdn",
+       "number": "201",
+       "id": "3ca38f4d-01f5-4a02-9000-01261a440dbf"
+      },
+      {
+       "qty": 3,
+       "name": "Strongbox Raider",
+       "set": "fdn",
+       "number": "96",
+       "id": "b2223eb8-59f9-489b-a3f3-b6496218cb79"
+      },
+      {
+       "qty": 4,
+       "name": "Burst Lightning",
+       "set": "fdn",
+       "number": "192",
+       "id": "aec5d380-d354-4750-931a-6c91853e2edc"
+      },
+      {
+       "qty": 3,
+       "name": "Fell",
+       "set": "blb",
+       "number": "95",
+       "id": "c96ac326-de44-470b-a592-a4c2a052c091"
+      },
+      {
+       "qty": 3,
+       "name": "Hero's Downfall",
+       "set": "fdn",
+       "number": "175",
+       "id": "ad2c01d9-8f54-46c0-9dc9-d4d4764ce1c9"
+      },
+      {
+       "qty": 4,
+       "name": "Fanatical Firebrand",
+       "set": "fdn",
+       "number": "195",
+       "id": "d1296316-7781-4e98-95e6-7020648be6a5"
+      },
+      {
+       "qty": 4,
+       "name": "Rakdos Guildgate",
+       "set": "fdn",
+       "number": "693",
+       "id": "e1f01964-c610-4d0f-a2b4-f52e46dc50d2"
+      },
+      {
+       "qty": 10,
+       "name": "Swamp",
+       "set": "blb",
+       "number": "270",
+       "id": "faa54bef-c90e-4e9b-b94b-942ea829e0d2"
+      },
+      {
+       "qty": 10,
+       "name": "Mountain",
+       "set": "blb",
+       "number": "274",
+       "id": "c1bba8fb-d763-4efa-8db1-e5e81994b5f9"
+      }
+     ]
+    }
+   },
+   "reward": {
+    "hero": {
+     "packs": 1,
+     "coins": 0
+    },
+    "villain": {
+     "card": {
+      "oracle_id": "bd7c5a8b-cf62-41e1-a664-b16e3e5d142b",
+      "name": "Laughing Jasper Flint",
+      "rarity": "rare",
+      "set": "otj",
+      "id": "af0b3a41-ba99-41e8-bcfb-5796500c17c7",
+      "image": "https://cards.scryfall.io/normal/front/a/f/af0b3a41-ba99-41e8-bcfb-5796500c17c7.jpg"
+     },
+     "coins": 50
+    }
+   },
+   "scene": [
+    {
+     "who": "stage",
+     "line": "Sure it's risky, but that's what makes it fun! That and the money. And the bankers' faces.",
+     "quote": true
+    },
+    {
+     "who": "stage",
+     "line": "Kind of them to put all their valuables in the same place.",
+     "quote": true
+    },
+    {
+     "who": "oko",
+     "line": "Plot: a card that is plotted is exiled with the plan and cast later for free. Do the thinking now and pay for it on a later turn."
+    }
+   ],
+   "villainScene": [
+    {
+     "who": "stage",
+     "line": "Every moving carriage is an accident waiting to happen, and the Hellspurs hate waiting.",
+     "quote": true
+    },
+    {
+     "who": "stage",
+     "line": "Crackling with rage and stolen thunder, he drives the Hellspurs to ever-greater heights of violence.",
+     "quote": true
+    }
+   ],
+   "after": null,
+   "cues": {
+    "hero": {
+     "start": "Plan the job.",
+     "big": "Plot!",
+     "low": "They knew we were coming...",
+     "win": "The vault is open.",
+     "loss": "Caught...",
+     "half": "Plot a spell now, cast it free later."
+    },
+    "villain": {
+     "start": "Ride!",
+     "big": "Fire!",
+     "low": "The gang scatters...",
+     "win": "The vault is ours.",
+     "loss": "Shot down..."
+    }
+   },
+   "bigPlays": [],
+   "sim": null
+  },
+  {
+   "id": "a37b2",
+   "slot": 2,
+   "kind": "Lesson",
+   "mood": "march",
+   "title": "Small Heroes",
+   "difficulty": "Easy",
+   "teaches": [
+    "Offspring"
+   ],
+   "blurb": "The vault is empty and so are Kellan's hopes. Akul wants a word. Kellan has a lot of tiny friends.",
+   "rewardSet": "blb",
+   "host": false,
+   "hero": {
+    "who": "kellan",
+    "deck": {
+     "name": "Kellan's Warren",
+     "colors": "GW",
+     "archetype": null,
+     "label": "tribute",
+     "cards": [
+      {
+       "qty": 4,
+       "name": "Seasoned Warrenguard",
+       "set": "blb",
+       "number": "30",
+       "id": "90873995-876f-4e89-8bc7-41a74f4d931f"
+      },
+      {
+       "qty": 4,
+       "name": "Flowerfoot Swordmaster",
+       "set": "blb",
+       "number": "14",
+       "id": "97ff118f-9c3c-43a2-8085-980c7fe7d227"
+      },
+      {
+       "qty": 4,
+       "name": "Brightblade Stoat",
+       "set": "blb",
+       "number": "4",
+       "id": "df7fea2e-7414-4bc8-adb0-9342e174c009"
+      },
+      {
+       "qty": 4,
+       "name": "Intrepid Rabbit",
+       "set": "blb",
+       "number": "17",
+       "id": "4d70b99d-c8bf-4a56-8957-cf587fe60b81"
+      },
+      {
+       "qty": 3,
+       "name": "Warren Warleader",
+       "set": "blb",
+       "number": "38",
+       "id": "eb5237a0-5ac3-4ded-9f92-5f782a7bbbd7"
+      },
+      {
+       "qty": 3,
+       "name": "Burrowguard Mentor",
+       "set": "blb",
+       "number": "206",
+       "id": "87138ace-3594-499e-bad5-ec76148613ea"
+      },
+      {
+       "qty": 3,
+       "name": "Finneas, Ace Archer",
+       "set": "blb",
+       "number": "212",
+       "id": "0dee197d-c313-4364-b52c-f83d5f579bc3"
+      },
+      {
+       "qty": 3,
+       "name": "Valley Questcaller",
+       "set": "blb",
+       "number": "36",
+       "id": "ba629ca8-a368-4282-8a61-9bf6a5c217f0"
+      },
+      {
+       "qty": 4,
+       "name": "Mabel's Mettle",
+       "set": "blb",
+       "number": "21",
+       "id": "5cfcf83f-089c-4e35-855e-b61b98bb1cd8"
+      },
+      {
+       "qty": 4,
+       "name": "Hop to It",
+       "set": "blb",
+       "number": "16",
+       "id": "ee7207f8-5daa-42af-aeea-7a489047110b"
+      },
+      {
+       "qty": 4,
+       "name": "Selesnya Guildgate",
+       "set": "fdn",
+       "number": "694",
+       "id": "6718d4e7-768e-473f-8064-a68422e977f6"
+      },
+      {
+       "qty": 10,
+       "name": "Forest",
+       "set": "blb",
+       "number": "278",
+       "id": "f791876a-f3fb-45b8-90a9-af846d8b8f74"
+      },
+      {
+       "qty": 10,
+       "name": "Plains",
+       "set": "blb",
+       "number": "262",
+       "id": "3663ff0c-d02f-49ac-bb88-6f0dbd684337"
+      }
+     ]
+    }
+   },
+   "villain": {
+    "who": "akul",
+    "deck": {
+     "name": "Akul's Gang",
+     "colors": "BR",
+     "archetype": null,
+     "label": "tribute",
+     "cards": [
+      {
+       "qty": 4,
+       "name": "Hired Claw",
+       "set": "blb",
+       "number": "140",
+       "id": "1ae41080-0d67-4719-adb2-49bf2a268b6c"
+      },
+      {
+       "qty": 4,
+       "name": "Ravine Raider",
+       "set": "blb",
+       "number": "106",
+       "id": "874510be-7ecd-4eff-abad-b9594eb4821a"
+      },
+      {
+       "qty": 4,
+       "name": "Brazen Collector",
+       "set": "blb",
+       "number": "128",
+       "id": "78b55a58-c669-4dc6-aa63-5d9dff52e613"
+      },
+      {
+       "qty": 3,
+       "name": "Laughing Jasper Flint",
+       "set": "otj",
+       "number": "215",
+       "id": "af0b3a41-ba99-41e8-bcfb-5796500c17c7"
+      },
+      {
+       "qty": 4,
+       "name": "Byway Barterer",
+       "set": "blb",
+       "number": "129",
+       "id": "f41fc718-641b-4f32-a8c1-3e5591a05bf8"
+      },
+      {
+       "qty": 4,
+       "name": "Agate-Blade Assassin",
+       "set": "blb",
+       "number": "82",
+       "id": "39ebb84a-1c52-4b07-9bd0-b360523b3a5b"
+      },
+      {
+       "qty": 4,
+       "name": "Take Out the Trash",
+       "set": "blb",
+       "number": "156",
+       "id": "7a1c6f00-af4c-4d35-b682-6c0e759df9a5"
+      },
+      {
+       "qty": 3,
+       "name": "Fell",
+       "set": "blb",
+       "number": "95",
+       "id": "c96ac326-de44-470b-a592-a4c2a052c091"
+      },
+      {
+       "qty": 3,
+       "name": "Hero's Downfall",
+       "set": "fdn",
+       "number": "175",
+       "id": "ad2c01d9-8f54-46c0-9dc9-d4d4764ce1c9"
+      },
+      {
+       "qty": 3,
+       "name": "Burst Lightning",
+       "set": "fdn",
+       "number": "192",
+       "id": "aec5d380-d354-4750-931a-6c91853e2edc"
+      },
+      {
+       "qty": 4,
+       "name": "Rakdos Guildgate",
+       "set": "fdn",
+       "number": "693",
+       "id": "e1f01964-c610-4d0f-a2b4-f52e46dc50d2"
+      },
+      {
+       "qty": 10,
+       "name": "Swamp",
+       "set": "blb",
+       "number": "270",
+       "id": "faa54bef-c90e-4e9b-b94b-942ea829e0d2"
+      },
+      {
+       "qty": 10,
+       "name": "Mountain",
+       "set": "blb",
+       "number": "274",
+       "id": "c1bba8fb-d763-4efa-8db1-e5e81994b5f9"
+      }
+     ]
+    }
+   },
+   "reward": {
+    "hero": {
+     "packs": 1,
+     "coins": 0
+    },
+    "villain": {
+     "card": {
+      "oracle_id": "031cfc7d-8bda-454b-b88a-15d3f5fe47e2",
+      "name": "Hired Claw",
+      "rarity": "rare",
+      "set": "blb",
+      "id": "1ae41080-0d67-4719-adb2-49bf2a268b6c",
+      "image": "https://cards.scryfall.io/normal/front/1/a/1ae41080-0d67-4719-adb2-49bf2a268b6c.jpg"
+     },
+     "coins": 50
+    }
+   },
+   "scene": [
+    {
+     "who": "stage",
+     "line": "I found out who I was. Now it's time to discover who I am.",
+     "quote": true
+    },
+    {
+     "who": "stage",
+     "line": "Never underestimate what a rabbit can do with a root vegetable and some moxie.",
+     "quote": true
+    },
+    {
+     "who": "kellan",
+     "line": "Offspring: pay extra and get a small 1/1 copy of the creature along with it. Two bodies for one card."
+    }
+   ],
+   "villainScene": [
+    {
+     "who": "stage",
+     "line": "Akul saw his Hellspur followers as little more than ammunition to be expended.",
+     "quote": true
+    },
+    {
+     "who": "stage",
+     "line": "The last fool who called him \"cowboy\" earned a free ride to the bottom of Blacksnag Bog.",
+     "quote": true
+    }
+   ],
+   "after": null,
+   "cues": {
+    "hero": {
+     "start": "Come on, everyone.",
+     "big": "Offspring!",
+     "low": "Akul is too big...",
+     "win": "Small and mighty.",
+     "loss": "Squashed...",
+     "half": "Pay the offspring cost for a second body."
+    },
+    "villain": {
+     "start": "Hellspurs!",
+     "big": "Charge!",
+     "low": "You little...",
+     "win": "Nobody survives.",
+     "loss": "Beaten by mice..."
+    }
+   },
+   "bigPlays": [],
+   "sim": null
+  },
+  {
+   "id": "a37b3",
+   "slot": 3,
+   "kind": "Lesson",
+   "mood": "comic",
+   "title": "Every Door",
+   "difficulty": "Easy",
+   "teaches": [
+    "Rooms"
+   ],
+   "blurb": "Mabel and her mice take a house with doors that lead to doors. The Calamity Beasts have a vote in this too.",
+   "rewardSet": "dsk",
+   "host": false,
+   "hero": {
+    "who": "mabel",
+    "deck": {
+     "name": "Mabel's Mice",
+     "colors": "RW",
+     "archetype": null,
+     "label": "tribute",
+     "cards": [
+      {
+       "qty": 4,
+       "name": "Heartfire Hero",
+       "set": "blb",
+       "number": "138",
+       "id": "48ace959-66b2-40c8-9bff-fd7ed9c99a82"
+      },
+      {
+       "qty": 4,
+       "name": "Emberheart Challenger",
+       "set": "blb",
+       "number": "133",
+       "id": "0035082e-bb86-4f95-be48-ffc87fe5286d"
+      },
+      {
+       "qty": 4,
+       "name": "Manifold Mouse",
+       "set": "blb",
+       "number": "143",
+       "id": "db3832b5-e83f-4569-bd49-fb7b86fa2d47"
+      },
+      {
+       "qty": 4,
+       "name": "Valley Questcaller",
+       "set": "blb",
+       "number": "36",
+       "id": "ba629ca8-a368-4282-8a61-9bf6a5c217f0"
+      },
+      {
+       "qty": 3,
+       "name": "Mabel, Heir to Cragflame",
+       "set": "blb",
+       "number": "224",
+       "id": "be6627fd-729d-44f2-b6bf-5299f49d1e3d"
+      },
+      {
+       "qty": 3,
+       "name": "Seedglaive Mentor",
+       "set": "blb",
+       "number": "231",
+       "id": "d21c3e41-0636-49a3-8c9c-384c5e5c9c3e"
+      },
+      {
+       "qty": 3,
+       "name": "Veteran Guardmouse",
+       "set": "blb",
+       "number": "237",
+       "id": "3db43c46-b616-4ef8-80ed-0fab345ab3d0"
+      },
+      {
+       "qty": 4,
+       "name": "Steampath Charger",
+       "set": "blb",
+       "number": "153",
+       "id": "03bf1296-e347-4070-8c6f-5c362c2f9364"
+      },
+      {
+       "qty": 2,
+       "name": "Dazzling Theater // Prop Room",
+       "set": "dsk",
+       "number": "3",
+       "id": "8e2fae80-60af-44cf-95b4-177837435d1a"
+      },
+      {
+       "qty": 2,
+       "name": "Painter's Studio // Defaced Gallery",
+       "set": "dsk",
+       "number": "147",
+       "id": "e96901eb-5b57-43f4-a7b1-ae3b809bc36e"
+      },
+      {
+       "qty": 2,
+       "name": "Might of the Meek",
+       "set": "blb",
+       "number": "144",
+       "id": "509bf254-8a2b-4dfa-9ae5-386321b35e8b"
+      },
+      {
+       "qty": 1,
+       "name": "Boros Charm",
+       "set": "fdn",
+       "number": "721",
+       "id": "e0d8c9f6-cbbd-4694-b100-01cfb81036cc"
+      },
+      {
+       "qty": 4,
+       "name": "Inspiring Vantage",
+       "set": "otj",
+       "number": "269",
+       "id": "85df6b6a-2dcf-4828-a4a8-e07d52e1fddd"
+      },
+      {
+       "qty": 10,
+       "name": "Mountain",
+       "set": "blb",
+       "number": "274",
+       "id": "c1bba8fb-d763-4efa-8db1-e5e81994b5f9"
+      },
+      {
+       "qty": 10,
+       "name": "Plains",
+       "set": "blb",
+       "number": "262",
+       "id": "3663ff0c-d02f-49ac-bb88-6f0dbd684337"
+      }
+     ]
+    }
+   },
+   "villain": {
+    "who": "beasts",
+    "deck": {
+     "name": "The Calamity Beasts",
+     "colors": "BR",
+     "archetype": null,
+     "label": "tribute",
+     "cards": [
+      {
+       "qty": 4,
+       "name": "Daggerfang Duo",
+       "set": "blb",
+       "number": "89",
+       "id": "cea2bb34-e328-44fb-918a-72208c9457e4"
+      },
+      {
+       "qty": 4,
+       "name": "Persistent Marshstalker",
+       "set": "blb",
+       "number": "104",
+       "id": "8b900c71-713b-4b7e-b4be-ad9f4aa0c139"
+      },
+      {
+       "qty": 4,
+       "name": "Hearthborn Battler",
+       "set": "blb",
+       "number": "139",
+       "id": "bef1cf5c-9738-4062-8cb1-87a372d36687"
+      },
+      {
+       "qty": 3,
+       "name": "Dragonhawk, Fate's Tempest",
+       "set": "blb",
+       "number": "132",
+       "id": "8659789c-6a2c-439f-a348-b9b1b06c55b8"
+      },
+      {
+       "qty": 3,
+       "name": "Maha, Its Feathers Night",
+       "set": "blb",
+       "number": "100",
+       "id": "cf3320ec-c4e8-405a-982d-e009c58c9e21"
+      },
+      {
+       "qty": 2,
+       "name": "Quaketusk Boar",
+       "set": "blb",
+       "number": "146",
+       "id": "2f2b7fd3-a139-49ea-8a89-b64261e868ef"
+      },
+      {
+       "qty": 2,
+       "name": "Glidedive Duo",
+       "set": "blb",
+       "number": "96",
+       "id": "4831e7ae-54e3-4bd9-b5af-52dc29f81715"
+      },
+      {
+       "qty": 2,
+       "name": "Fell",
+       "set": "blb",
+       "number": "95",
+       "id": "c96ac326-de44-470b-a592-a4c2a052c091"
+      },
+      {
+       "qty": 2,
+       "name": "Agate Assault",
+       "set": "blb",
+       "number": "122",
+       "id": "7dd9946b-515e-4e0d-9da2-711e126e9fa6"
+      },
+      {
+       "qty": 2,
+       "name": "Savor",
+       "set": "blb",
+       "number": "109",
+       "id": "1397f689-dca1-4d35-864b-92c5606afb9a"
+      },
+      {
+       "qty": 2,
+       "name": "Valley Flamecaller",
+       "set": "blb",
+       "number": "158",
+       "id": "a0812db4-b7d1-4cf7-aaa5-9c0e784079a1"
+      },
+      {
+       "qty": 4,
+       "name": "Rakdos Guildgate",
+       "set": "fdn",
+       "number": "693",
+       "id": "e1f01964-c610-4d0f-a2b4-f52e46dc50d2"
+      },
+      {
+       "qty": 10,
+       "name": "Swamp",
+       "set": "blb",
+       "number": "270",
+       "id": "faa54bef-c90e-4e9b-b94b-942ea829e0d2"
+      },
+      {
+       "qty": 10,
+       "name": "Mountain",
+       "set": "blb",
+       "number": "274",
+       "id": "c1bba8fb-d763-4efa-8db1-e5e81994b5f9"
+      },
+      {
+       "qty": 4,
+       "name": "Ravine Raider",
+       "set": "blb",
+       "number": "106",
+       "id": "874510be-7ecd-4eff-abad-b9594eb4821a"
+      },
+      {
+       "qty": 2,
+       "name": "Hired Claw",
+       "set": "blb",
+       "number": "140",
+       "id": "1ae41080-0d67-4719-adb2-49bf2a268b6c"
+      }
+     ]
+    }
+   },
+   "reward": {
+    "hero": {
+     "packs": 1,
+     "coins": 0
+    },
+    "villain": {
+     "card": {
+      "oracle_id": "f7f435bc-1716-4412-9505-a1f2f2d83d08",
+      "name": "Dragonhawk, Fate's Tempest",
+      "rarity": "mythic",
+      "set": "blb",
+      "id": "8659789c-6a2c-439f-a348-b9b1b06c55b8",
+      "image": "https://cards.scryfall.io/normal/front/8/6/8659789c-6a2c-439f-a348-b9b1b06c55b8.jpg"
+     },
+     "coins": 50
+    }
+   },
+   "scene": [
+    {
+     "who": "stage",
+     "line": "We sought adventure and found calamity. Forward, so we may meet both with courage!",
+     "quote": true
+    },
+    {
+     "who": "stage",
+     "line": "\"You stole a child from its nest,\" Mabel accused. \"The only calamity I see here is you.\"",
+     "quote": true
+    },
+    {
+     "who": "mabel",
+     "line": "Rooms: a Room has two doors. Cast one half, then pay to unlock the other later. Two rooms, one card."
+    }
+   ],
+   "villainScene": [
+    {
+     "who": "stage",
+     "line": "Its wingspan reaches from dusk to dawn.",
+     "quote": true
+    },
+    {
+     "who": "stage",
+     "line": "When Glarb ordered the egg stolen, the Great Maha communicated its anger in a universal language.",
+     "quote": true
+    }
+   ],
+   "after": null,
+   "cues": {
+    "hero": {
+     "start": "Open the door.",
+     "big": "Unlock!",
+     "low": "The beasts are huge...",
+     "win": "A cosy win.",
+     "loss": "Lost in the rooms...",
+     "half": "Cast one half now, unlock the other later."
+    },
+    "villain": {
+     "start": "Roar.",
+     "big": "Calamity!",
+     "low": "The beast falters...",
+     "win": "All is calamity.",
+     "loss": "Slain..."
+    }
+   },
+   "bigPlays": [],
+   "sim": null
+  },
+  {
+   "id": "a37b4",
+   "slot": 4,
+   "kind": "Rival",
+   "mood": "tension",
+   "title": "The House Is Hungry",
+   "difficulty": "Normal",
+   "teaches": [
+    "Vigilance"
+   ],
+   "blurb": "Tyvar has come to the House of Duskmourn. The House has come for Tyvar.",
+   "rewardSet": "dsk",
+   "host": false,
+   "hero": {
+    "who": "tyvar",
+    "deck": {
+     "name": "Tyvar's Fists",
+     "colors": "G",
+     "archetype": null,
+     "label": "tribute",
+     "cards": [
+      {
+       "qty": 4,
+       "name": "Patchwork Beastie",
+       "set": "dsk",
+       "number": "195",
+       "id": "895de583-36d2-43fd-927f-8876d4302c73"
+      },
+      {
+       "qty": 4,
+       "name": "Twitching Doll",
+       "set": "dsk",
+       "number": "201",
+       "id": "416c025b-e40e-4d95-a774-ba3961f43808"
+      },
+      {
+       "qty": 4,
+       "name": "Wary Watchdog",
+       "set": "dsk",
+       "number": "206",
+       "id": "25ed97f2-b47e-49b7-9b1a-694c4bbeca3b"
+      },
+      {
+       "qty": 3,
+       "name": "Tyvar, the Pummeler",
+       "set": "dsk",
+       "number": "202",
+       "id": "5f7687b1-630a-4e95-89c7-eaf456d8cb68"
+      },
+      {
+       "qty": 4,
+       "name": "Spineseeker Centipede",
+       "set": "dsk",
+       "number": "199",
+       "id": "b50d697c-8358-429b-8f79-7ad9d01a5edd"
+      },
+      {
+       "qty": 3,
+       "name": "Hedge Shredder",
+       "set": "dsk",
+       "number": "183",
+       "id": "39e83502-2ffd-4169-94e3-116701323ed5"
+      },
+      {
+       "qty": 3,
+       "name": "Kona, Rescue Beastie",
+       "set": "dsk",
+       "number": "187",
+       "id": "6f035294-2787-4719-8520-227bf03e84e7"
+      },
+      {
+       "qty": 3,
+       "name": "Overgrown Zealot",
+       "set": "dsk",
+       "number": "193",
+       "id": "96d68d29-499a-4864-be18-bd98fda0d173"
+      },
+      {
+       "qty": 4,
+       "name": "Giant Growth",
+       "set": "blb",
+       "number": "393",
+       "id": "e70722d6-b4d5-45c2-9488-9a5eb0bdb9bd"
+      },
+      {
+       "qty": 4,
+       "name": "Rabid Bite",
+       "set": "blb",
+       "number": "394",
+       "id": "53a73200-b798-4bfd-a431-8b94e17b70be"
+      },
+      {
+       "qty": 24,
+       "name": "Forest",
+       "set": "blb",
+       "number": "278",
+       "id": "f791876a-f3fb-45b8-90a9-af846d8b8f74"
+      }
+     ]
+    }
+   },
+   "villain": {
+    "who": "house",
+    "deck": {
+     "name": "Valgavoth's House",
+     "colors": "UB",
+     "archetype": null,
+     "label": "tribute",
+     "cards": [
+      {
+       "qty": 4,
+       "name": "Balemurk Leech",
+       "set": "dsk",
+       "number": "84",
+       "id": "f0621b32-95c5-4f70-96cf-d46d20efc85d"
+      },
+      {
+       "qty": 4,
+       "name": "Cynical Loner",
+       "set": "dsk",
+       "number": "89",
+       "id": "cc93bcb8-778d-491e-877b-e6ad432764cb"
+      },
+      {
+       "qty": 4,
+       "name": "Paranormal Analyst",
+       "set": "dsk",
+       "number": "69",
+       "id": "60cf954a-5503-460c-8720-8960842eea47"
+      },
+      {
+       "qty": 4,
+       "name": "Silent Hallcreeper",
+       "set": "dsk",
+       "number": "72",
+       "id": "aac4f0cc-63be-4f08-956e-39839c9735ba"
+      },
+      {
+       "qty": 4,
+       "name": "Floodpits Drowner",
+       "set": "dsk",
+       "number": "59",
+       "id": "a6a62aa3-8edb-4000-8ebd-15ec4b00eed7"
+      },
+      {
+       "qty": 3,
+       "name": "Unholy Annex // Ritual Chamber",
+       "set": "dsk",
+       "number": "118",
+       "id": "0fb4c734-c698-46f2-bc78-5f036f472e5b"
+      },
+      {
+       "qty": 1,
+       "name": "Murder",
+       "set": "dsk",
+       "number": "110",
+       "id": "2c249609-9cf7-46f1-b94c-9329add966bb"
+      },
+      {
+       "qty": 2,
+       "name": "Get Out",
+       "set": "dsk",
+       "number": "60",
+       "id": "5d9471c8-2db9-4ce3-a1e5-42b85134cb8e"
+      },
+      {
+       "qty": 1,
+       "name": "Come Back Wrong",
+       "set": "dsk",
+       "number": "86",
+       "id": "72ee3b45-aa4e-4c5b-a9e6-608bfbd93f8b"
+      },
+      {
+       "qty": 3,
+       "name": "Cracked Skull",
+       "set": "dsk",
+       "number": "88",
+       "id": "7616ad5e-ed30-4876-8743-6f0f9f143ea1"
+      },
+      {
+       "qty": 4,
+       "name": "Dimir Guildgate",
+       "set": "fdn",
+       "number": "688",
+       "id": "f9b8a159-5e58-4432-8ecd-62f39afa96da"
+      },
+      {
+       "qty": 10,
+       "name": "Island",
+       "set": "blb",
+       "number": "266",
+       "id": "106a5332-0104-4ec9-9e1f-806381ae4cad"
+      },
+      {
+       "qty": 10,
+       "name": "Swamp",
+       "set": "blb",
+       "number": "270",
+       "id": "faa54bef-c90e-4e9b-b94b-942ea829e0d2"
+      },
+      {
+       "qty": 4,
+       "name": "Scrabbling Skullcrab",
+       "set": "dsk",
+       "number": "71",
+       "id": "c1017b8e-e7fa-41de-8eb2-2e4a59db5117"
+      },
+      {
+       "qty": 2,
+       "name": "Enter the Enigma",
+       "set": "dsk",
+       "number": "52",
+       "id": "cf5479c7-9e46-4a57-abe7-8cc670de89e4"
+      }
+     ]
+    }
+   },
+   "reward": {
+    "hero": {
+     "packs": 1,
+     "coins": 100
+    },
+    "villain": {
+     "card": {
+      "oracle_id": "a511772c-3739-469d-a5a2-5827b7ce9b5c",
+      "name": "Balemurk Leech",
+      "rarity": "common",
+      "set": "dsk",
+      "id": "f0621b32-95c5-4f70-96cf-d46d20efc85d",
+      "image": "https://cards.scryfall.io/normal/front/f/0/f0621b32-95c5-4f70-96cf-d46d20efc85d.jpg"
+     },
+     "coins": 100
+    }
+   },
+   "scene": [
+    {
+     "who": "stage",
+     "line": "They just keep coming and coming—perfect for my morning workout!",
+     "quote": true
+    },
+    {
+     "who": "stage",
+     "line": "Be on your guard. Valgavoth has eyes everywhere. And I don't mean that figuratively.",
+     "quote": true
+    },
+    {
+     "who": "tyvar",
+     "line": "Hit hard and fast. The house gets stronger the longer you let it feed."
+    }
+   ],
+   "villainScene": [
+    {
+     "who": "stage",
+     "line": "Valgavoth wants our pain, our terror! We cannot join him unless we suffer!",
+     "quote": true
+    },
+    {
+     "who": "stage",
+     "line": "Hope and reliable lighting are in short supply in the House. Glimmers provide both.",
+     "quote": true
+    }
+   ],
+   "after": null,
+   "cues": {
+    "hero": {
+     "start": "Come at me!",
+     "big": "Pummel!",
+     "low": "The house is big...",
+     "win": "The house shakes.",
+     "loss": "Eaten...",
+     "half": "Win before the house stabilises."
+    },
+    "villain": {
+     "start": "Feed.",
+     "big": "Fear!",
+     "low": "The house shudders...",
+     "win": "Fed.",
+     "loss": "Starved..."
+    }
+   },
+   "bigPlays": [],
+   "sim": null
+  },
+  {
+   "id": "a37b5",
+   "slot": 5,
+   "kind": "Lesson",
+   "mood": "tension",
+   "title": "Survival",
+   "difficulty": "Normal",
+   "teaches": [
+    "Survival"
+   ],
+   "blurb": "Winter leads survivors through the ghost rooms. Staying alive is the only plan.",
+   "rewardSet": "dsk",
+   "host": false,
+   "hero": {
+    "who": "winter",
+    "deck": {
+     "name": "Winter's Survivors",
+     "colors": "BG",
+     "archetype": null,
+     "label": "tribute",
+     "cards": [
+      {
+       "qty": 4,
+       "name": "Patchwork Beastie",
+       "set": "dsk",
+       "number": "195",
+       "id": "895de583-36d2-43fd-927f-8876d4302c73"
+      },
+      {
+       "qty": 4,
+       "name": "Cynical Loner",
+       "set": "dsk",
+       "number": "89",
+       "id": "cc93bcb8-778d-491e-877b-e6ad432764cb"
+      },
+      {
+       "qty": 4,
+       "name": "Innocuous Rat",
+       "set": "dsk",
+       "number": "103",
+       "id": "94edbbc5-5673-4753-bfad-4432c4b7dca4"
+      },
+      {
+       "qty": 4,
+       "name": "Wary Watchdog",
+       "set": "dsk",
+       "number": "206",
+       "id": "25ed97f2-b47e-49b7-9b1a-694c4bbeca3b"
+      },
+      {
+       "qty": 4,
+       "name": "Overlord of the Hauntwoods",
+       "set": "dsk",
+       "number": "194",
+       "id": "05d08ff1-edcc-4c76-96e0-683b3da36ebb"
+      },
+      {
+       "qty": 3,
+       "name": "Hedge Shredder",
+       "set": "dsk",
+       "number": "183",
+       "id": "39e83502-2ffd-4169-94e3-116701323ed5"
+      },
+      {
+       "qty": 3,
+       "name": "Say Its Name",
+       "set": "dsk",
+       "number": "197",
+       "id": "94c58683-b5f2-4863-9562-6f6be1ec21fe"
+      },
+      {
+       "qty": 4,
+       "name": "Murder",
+       "set": "dsk",
+       "number": "110",
+       "id": "2c249609-9cf7-46f1-b94c-9329add966bb"
+      },
+      {
+       "qty": 4,
+       "name": "Manifest Dread",
+       "set": "dsk",
+       "number": "189",
+       "id": "a649265b-6c32-49e7-b6cb-6086c40d26e8"
+      },
+      {
+       "qty": 2,
+       "name": "Give In to Violence",
+       "set": "dsk",
+       "number": "101",
+       "id": "00ac1759-d4cc-41d5-a9b7-a89b80d2190c"
+      },
+      {
+       "qty": 4,
+       "name": "Blooming Marsh",
+       "set": "otj",
+       "number": "266",
+       "id": "861caabb-0573-4e94-8b03-342f90465064"
+      },
+      {
+       "qty": 10,
+       "name": "Swamp",
+       "set": "blb",
+       "number": "270",
+       "id": "faa54bef-c90e-4e9b-b94b-942ea829e0d2"
+      },
+      {
+       "qty": 10,
+       "name": "Forest",
+       "set": "blb",
+       "number": "278",
+       "id": "f791876a-f3fb-45b8-90a9-af846d8b8f74"
+      }
+     ]
+    }
+   },
+   "villain": {
+    "who": "ghosts",
+    "deck": {
+     "name": "The Haunted Rooms",
+     "colors": "WU",
+     "archetype": null,
+     "label": "tribute",
+     "cards": [
+      {
+       "qty": 2,
+       "name": "Sheltered by Ghosts",
+       "set": "dsk",
+       "number": "30",
+       "id": "389f3f7b-be40-4a2d-b5cc-28471a577981"
+      },
+      {
+       "qty": 4,
+       "name": "Reluctant Role Model",
+       "set": "dsk",
+       "number": "26",
+       "id": "4dde86d6-34a0-4b3b-a46a-d9941501d08c"
+      },
+      {
+       "qty": 4,
+       "name": "Optimistic Scavenger",
+       "set": "dsk",
+       "number": "21",
+       "id": "9c72fc6f-6a96-420d-812d-b5cf0f57cc7f"
+      },
+      {
+       "qty": 4,
+       "name": "Acrobatic Cheerleader",
+       "set": "dsk",
+       "number": "1",
+       "id": "6f1a7590-3eee-4803-b192-d4fb771e6a86"
+      },
+      {
+       "qty": 2,
+       "name": "Silent Hallcreeper",
+       "set": "dsk",
+       "number": "72",
+       "id": "aac4f0cc-63be-4f08-956e-39839c9735ba"
+      },
+      {
+       "qty": 2,
+       "name": "Stalked Researcher",
+       "set": "dsk",
+       "number": "73",
+       "id": "8a26ccad-adfa-43cc-be4c-dc8dd584bca3"
+      },
+      {
+       "qty": 1,
+       "name": "Fear of Surveillance",
+       "set": "dsk",
+       "number": "11",
+       "id": "6e98559d-d9fd-4bdf-8df9-389eee756a3a"
+      },
+      {
+       "qty": 1,
+       "name": "Get Out",
+       "set": "dsk",
+       "number": "60",
+       "id": "5d9471c8-2db9-4ce3-a1e5-42b85134cb8e"
+      },
+      {
+       "qty": 1,
+       "name": "Warren Elder",
+       "set": "blb",
+       "number": "37",
+       "id": "4bf20069-5a20-4f95-976b-6af2b69f3ad0"
+      },
+      {
+       "qty": 1,
+       "name": "Unwanted Remake",
+       "set": "dsk",
+       "number": "39",
+       "id": "7b54447f-1daf-4352-b5c3-3c0ec8b8f4d0"
+      },
+      {
+       "qty": 4,
+       "name": "Splitskin Doll",
+       "set": "dsk",
+       "number": "33",
+       "id": "0453be94-e59b-48f1-a488-7a9fd96a627e"
+      },
+      {
+       "qty": 4,
+       "name": "Azorius Guildgate",
+       "set": "fdn",
+       "number": "683",
+       "id": "f98a7264-0a83-42c8-a94d-05ad4c234242"
+      },
+      {
+       "qty": 10,
+       "name": "Plains",
+       "set": "blb",
+       "number": "262",
+       "id": "3663ff0c-d02f-49ac-bb88-6f0dbd684337"
+      },
+      {
+       "qty": 2,
+       "name": "Hardened Escort",
+       "set": "dsk",
+       "number": "16",
+       "id": "12054e10-46d6-4581-a7e5-ff277cb0e229"
+      },
+      {
+       "qty": 2,
+       "name": "Possessed Goat",
+       "set": "dsk",
+       "number": "25",
+       "id": "cd02b8ff-ff65-4a38-b8fb-f8dd130edbf7"
+      },
+      {
+       "qty": 10,
+       "name": "Island",
+       "set": "blb",
+       "number": "266",
+       "id": "106a5332-0104-4ec9-9e1f-806381ae4cad"
+      },
+      {
+       "qty": 2,
+       "name": "Jump Scare",
+       "set": "dsk",
+       "number": "17",
+       "id": "a2dd8903-31ca-470d-b2ff-280f6d40c794"
+      },
+      {
+       "qty": 4,
+       "name": "Veteran Survivor",
+       "set": "dsk",
+       "number": "40",
+       "id": "39368ea2-f665-40b1-b042-c0182f7c6df0"
+      }
+     ]
+    }
+   },
+   "reward": {
+    "hero": {
+     "packs": 1,
+     "coins": 100
+    },
+    "villain": {
+     "card": {
+      "oracle_id": "d13fc657-c6fc-4394-bc70-691050550226",
+      "name": "Sheltered by Ghosts",
+      "rarity": "uncommon",
+      "set": "dsk",
+      "id": "389f3f7b-be40-4a2d-b5cc-28471a577981",
+      "image": "https://cards.scryfall.io/normal/front/3/8/389f3f7b-be40-4a2d-b5cc-28471a577981.jpg"
+     },
+     "coins": 100
+    }
+   },
+   "scene": [
+    {
+     "who": "stage",
+     "line": "That's the one good thing about these cultists: sometimes they do your work for you.",
+     "quote": true
+    },
+    {
+     "who": "stage",
+     "line": "Thanks, but no thanks. I'm done with hope.",
+     "quote": true
+    },
+    {
+     "who": "winter",
+     "line": "Survival: if your creature is tapped after attacking, it triggers at your second main phase. Attack, then enjoy the extra effect."
+    }
+   ],
+   "villainScene": [
+    {
+     "who": "stage",
+     "line": "Valgavoth commands us to feed the trees. Let our blood be their mulch, our flesh their soil.",
+     "quote": true
+    },
+    {
+     "who": "stage",
+     "line": "On the second day after he'd been separated from his friends, Tino worried they'd be panicking at his absence. By the fourth, he was certain they'd never cared for him at all.",
+     "quote": true
+    }
+   ],
+   "after": null,
+   "cues": {
+    "hero": {
+     "start": "Stay alive.",
+     "big": "Survive!",
+     "low": "The ghosts are everywhere...",
+     "win": "We survived.",
+     "loss": "The house wins...",
+     "half": "Attack to tap, then collect the survival trigger."
+    },
+    "villain": {
+     "start": "Boo.",
+     "big": "Haunt!",
+     "low": "The ghosts fade...",
+     "win": "Welcome home.",
+     "loss": "Exorcised..."
+    }
+   },
+   "bigPlays": [],
+   "sim": null
+  },
+  {
+   "id": "a37b6",
+   "slot": 6,
+   "kind": "Meta",
+   "mood": "march",
+   "title": "Boros Mice vs Golgari",
+   "difficulty": "Normal",
+   "teaches": [
+    "Tempo"
+   ],
+   "blurb": "Autumn 2024: tiny Boros aggro against a Golgari midrange deck full of removal.",
+   "rewardSet": "blb",
+   "host": false,
+   "hero": {
+    "who": "boros",
+    "deck": {
+     "name": "Boros Mice",
+     "colors": "RW",
+     "archetype": "Aggro",
+     "label": "tribute",
+     "cards": [
+      {
+       "qty": 4,
+       "name": "Heartfire Hero",
+       "set": "blb",
+       "number": "138",
+       "id": "48ace959-66b2-40c8-9bff-fd7ed9c99a82"
+      },
+      {
+       "qty": 4,
+       "name": "Emberheart Challenger",
+       "set": "blb",
+       "number": "133",
+       "id": "0035082e-bb86-4f95-be48-ffc87fe5286d"
+      },
+      {
+       "qty": 4,
+       "name": "Manifold Mouse",
+       "set": "blb",
+       "number": "143",
+       "id": "db3832b5-e83f-4569-bd49-fb7b86fa2d47"
+      },
+      {
+       "qty": 4,
+       "name": "Valley Questcaller",
+       "set": "blb",
+       "number": "36",
+       "id": "ba629ca8-a368-4282-8a61-9bf6a5c217f0"
+      },
+      {
+       "qty": 3,
+       "name": "Mabel, Heir to Cragflame",
+       "set": "blb",
+       "number": "224",
+       "id": "be6627fd-729d-44f2-b6bf-5299f49d1e3d"
+      },
+      {
+       "qty": 3,
+       "name": "Seedglaive Mentor",
+       "set": "blb",
+       "number": "231",
+       "id": "d21c3e41-0636-49a3-8c9c-384c5e5c9c3e"
+      },
+      {
+       "qty": 3,
+       "name": "Veteran Guardmouse",
+       "set": "blb",
+       "number": "237",
+       "id": "3db43c46-b616-4ef8-80ed-0fab345ab3d0"
+      },
+      {
+       "qty": 4,
+       "name": "Steampath Charger",
+       "set": "blb",
+       "number": "153",
+       "id": "03bf1296-e347-4070-8c6f-5c362c2f9364"
+      },
+      {
+       "qty": 2,
+       "name": "Dazzling Theater // Prop Room",
+       "set": "dsk",
+       "number": "3",
+       "id": "8e2fae80-60af-44cf-95b4-177837435d1a"
+      },
+      {
+       "qty": 2,
+       "name": "Painter's Studio // Defaced Gallery",
+       "set": "dsk",
+       "number": "147",
+       "id": "e96901eb-5b57-43f4-a7b1-ae3b809bc36e"
+      },
+      {
+       "qty": 2,
+       "name": "Might of the Meek",
+       "set": "blb",
+       "number": "144",
+       "id": "509bf254-8a2b-4dfa-9ae5-386321b35e8b"
+      },
+      {
+       "qty": 1,
+       "name": "Boros Charm",
+       "set": "fdn",
+       "number": "721",
+       "id": "e0d8c9f6-cbbd-4694-b100-01cfb81036cc"
+      },
+      {
+       "qty": 4,
+       "name": "Inspiring Vantage",
+       "set": "otj",
+       "number": "269",
+       "id": "85df6b6a-2dcf-4828-a4a8-e07d52e1fddd"
+      },
+      {
+       "qty": 10,
+       "name": "Mountain",
+       "set": "blb",
+       "number": "274",
+       "id": "c1bba8fb-d763-4efa-8db1-e5e81994b5f9"
+      },
+      {
+       "qty": 10,
+       "name": "Plains",
+       "set": "blb",
+       "number": "262",
+       "id": "3663ff0c-d02f-49ac-bb88-6f0dbd684337"
+      }
+     ]
+    }
+   },
+   "villain": {
+    "who": "golgari",
+    "deck": {
+     "name": "Golgari Midrange",
+     "colors": "BG",
+     "archetype": "Midrange",
+     "label": "tribute",
+     "cards": [
+      {
+       "qty": 4,
+       "name": "Valley Rotcaller",
+       "set": "blb",
+       "number": "119",
+       "id": "4da80a9a-b1d5-4fc5-92f7-36946195d0c7"
+      },
+      {
+       "qty": 4,
+       "name": "Daggerfang Duo",
+       "set": "blb",
+       "number": "89",
+       "id": "cea2bb34-e328-44fb-918a-72208c9457e4"
+      },
+      {
+       "qty": 4,
+       "name": "Bushy Bodyguard",
+       "set": "blb",
+       "number": "166",
+       "id": "0de60cf7-fa82-4b6f-9f88-6590fba5c863"
+      },
+      {
+       "qty": 3,
+       "name": "Camellia, the Seedmiser",
+       "set": "blb",
+       "number": "207",
+       "id": "2c16eaec-924c-42f6-9fea-07edd7ed93b9"
+      },
+      {
+       "qty": 3,
+       "name": "Corpseberry Cultivator",
+       "set": "blb",
+       "number": "210",
+       "id": "c911a759-ed7b-452b-88a3-663478357610"
+      },
+      {
+       "qty": 3,
+       "name": "Maelstrom Pulse",
+       "set": "fdn",
+       "number": "661",
+       "id": "019e8d47-a086-4e9f-8130-8c3b2dc50179"
+      },
+      {
+       "qty": 3,
+       "name": "Murder",
+       "set": "dsk",
+       "number": "110",
+       "id": "2c249609-9cf7-46f1-b94c-9329add966bb"
+      },
+      {
+       "qty": 3,
+       "name": "Hero's Downfall",
+       "set": "fdn",
+       "number": "175",
+       "id": "ad2c01d9-8f54-46c0-9dc9-d4d4764ce1c9"
+      },
+      {
+       "qty": 4,
+       "name": "Treeguard Duo",
+       "set": "blb",
+       "number": "200",
+       "id": "89c8456e-c971-42b7-abf3-ff5ae1320abe"
+      },
+      {
+       "qty": 3,
+       "name": "Hazardroot Herbalist",
+       "set": "blb",
+       "number": "174",
+       "id": "e2882982-b3a3-4762-a550-6b82db1038e8"
+      },
+      {
+       "qty": 2,
+       "name": "Fell",
+       "set": "blb",
+       "number": "95",
+       "id": "c96ac326-de44-470b-a592-a4c2a052c091"
+      },
+      {
+       "qty": 4,
+       "name": "Blooming Marsh",
+       "set": "otj",
+       "number": "266",
+       "id": "861caabb-0573-4e94-8b03-342f90465064"
+      },
+      {
+       "qty": 10,
+       "name": "Swamp",
+       "set": "blb",
+       "number": "270",
+       "id": "faa54bef-c90e-4e9b-b94b-942ea829e0d2"
+      },
+      {
+       "qty": 10,
+       "name": "Forest",
+       "set": "blb",
+       "number": "278",
+       "id": "f791876a-f3fb-45b8-90a9-af846d8b8f74"
+      }
+     ]
+    }
+   },
+   "reward": {
+    "hero": {
+     "packs": 1,
+     "coins": 100
+    },
+    "villain": {
+     "card": {
+      "oracle_id": "312c7a7b-2084-42b0-9b13-0a6d3e43a73d",
+      "name": "Camellia, the Seedmiser",
+      "rarity": "rare",
+      "set": "blb",
+      "id": "2c16eaec-924c-42f6-9fea-07edd7ed93b9",
+      "image": "https://cards.scryfall.io/normal/front/2/c/2c16eaec-924c-42f6-9fea-07edd7ed93b9.jpg"
+     },
+     "coins": 100
+    }
+   },
+   "scene": [
+    {
+     "who": "stage",
+     "line": "Fear is unavoidable. You can run from it with your tail between your legs, or charge it head on with sword in hand. I prefer the latter.",
+     "quote": true
+    },
+    {
+     "who": "stage",
+     "line": "No battle is fought, or won, alone.",
+     "quote": true
+    },
+    {
+     "who": "boros",
+     "line": "Be fast. Their removal is better than yours, so end the game before they stabilise."
+    }
+   ],
+   "villainScene": [
+    {
+     "who": "stage",
+     "line": "\"Should we act now or later?\" the rat asked. \"Both,\" whispered the squirrel.",
+     "quote": true
+    },
+    {
+     "who": "stage",
+     "line": "Disgusting. Revolting. Effective.",
+     "quote": true
+    }
+   ],
+   "after": null,
+   "cues": {
+    "hero": {
+     "start": "Quick and small.",
+     "big": "Swarm!",
+     "low": "Their removal is good...",
+     "win": "Mice win.",
+     "loss": "Swept...",
+     "half": "Win before they stabilise."
+    },
+    "villain": {
+     "start": "Patience.",
+     "big": "Remove!",
+     "low": "The mice are fast...",
+     "win": "Golgari wins.",
+     "loss": "Overrun..."
+    }
+   },
+   "bigPlays": [],
+   "sim": null
+  },
+  {
+   "id": "a37b7",
+   "slot": 7,
+   "kind": "Meta",
+   "mood": "tension",
+   "title": "Dimir vs Izzet Prowess",
+   "difficulty": "Normal",
+   "teaches": [
+    "Counterspells"
+   ],
+   "blurb": "Autumn 2024: Dimir midrange against a fast Izzet prowess deck.",
+   "rewardSet": "dsk",
+   "host": false,
+   "hero": {
+    "who": "dimir",
+    "deck": {
+     "name": "Dimir Midrange",
+     "colors": "UB",
+     "archetype": "Midrange",
+     "label": "tribute",
+     "cards": [
+      {
+       "qty": 3,
+       "name": "Kaito, Bane of Nightmares",
+       "set": "dsk",
+       "number": "220",
+       "id": "55a14f30-4ff9-4472-90a6-c3139f1c18e5"
+      },
+      {
+       "qty": 4,
+       "name": "Skullsnap Nuisance",
+       "set": "dsk",
+       "number": "234",
+       "id": "0fdcdfd0-8c66-4767-a894-58cf0c6d7e07"
+      },
+      {
+       "qty": 4,
+       "name": "Dreadwing Scavenger",
+       "set": "fdn",
+       "number": "118",
+       "id": "e24d838b-ab48-410a-9a50-dbfea5da089b"
+      },
+      {
+       "qty": 3,
+       "name": "Satoru, the Infiltrator",
+       "set": "otj",
+       "number": "230",
+       "id": "acc9a5cc-2b3c-4c2f-8176-4a2d86265cc5"
+      },
+      {
+       "qty": 4,
+       "name": "Murder",
+       "set": "dsk",
+       "number": "110",
+       "id": "2c249609-9cf7-46f1-b94c-9329add966bb"
+      },
+      {
+       "qty": 4,
+       "name": "Essence Scatter",
+       "set": "fdn",
+       "number": "153",
+       "id": "dd05c850-f91e-4ffb-b4cc-8418d49dad90"
+      },
+      {
+       "qty": 4,
+       "name": "Hero's Downfall",
+       "set": "fdn",
+       "number": "175",
+       "id": "ad2c01d9-8f54-46c0-9dc9-d4d4764ce1c9"
+      },
+      {
+       "qty": 4,
+       "name": "Thought-Stalker Warlock",
+       "set": "blb",
+       "number": "118",
+       "id": "42e80284-d489-493b-ae92-95b742d07cb3"
+      },
+      {
+       "qty": 4,
+       "name": "Get Out",
+       "set": "dsk",
+       "number": "60",
+       "id": "5d9471c8-2db9-4ce3-a1e5-42b85134cb8e"
+      },
+      {
+       "qty": 2,
+       "name": "Fell",
+       "set": "blb",
+       "number": "95",
+       "id": "c96ac326-de44-470b-a592-a4c2a052c091"
+      },
+      {
+       "qty": 4,
+       "name": "Dimir Guildgate",
+       "set": "fdn",
+       "number": "688",
+       "id": "f9b8a159-5e58-4432-8ecd-62f39afa96da"
+      },
+      {
+       "qty": 10,
+       "name": "Island",
+       "set": "blb",
+       "number": "266",
+       "id": "106a5332-0104-4ec9-9e1f-806381ae4cad"
+      },
+      {
+       "qty": 10,
+       "name": "Swamp",
+       "set": "blb",
+       "number": "270",
+       "id": "faa54bef-c90e-4e9b-b94b-942ea829e0d2"
+      }
+     ]
+    }
+   },
+   "villain": {
+    "who": "izzet",
+    "deck": {
+     "name": "Izzet Prowess",
+     "colors": "UR",
+     "archetype": "Aggro",
+     "label": "tribute",
+     "cards": [
+      {
+       "qty": 4,
+       "name": "Stormchaser's Talent",
+       "set": "blb",
+       "number": "75",
+       "id": "a36e682d-b43d-4e08-bf5b-70d7e924dbe5"
+      },
+      {
+       "qty": 4,
+       "name": "Coruscation Mage",
+       "set": "blb",
+       "number": "131",
+       "id": "dc2c1de0-6233-469a-be72-a050b97d2c8f"
+      },
+      {
+       "qty": 4,
+       "name": "Emberheart Challenger",
+       "set": "blb",
+       "number": "133",
+       "id": "0035082e-bb86-4f95-be48-ffc87fe5286d"
+      },
+      {
+       "qty": 4,
+       "name": "Tempest Angler",
+       "set": "blb",
+       "number": "235",
+       "id": "850daae4-f0b7-4604-95e7-ad044ec165c3"
+      },
+      {
+       "qty": 2,
+       "name": "Stormcatch Mentor",
+       "set": "blb",
+       "number": "234",
+       "id": "99754055-6d67-4fde-aff3-41f6af6ea764"
+      },
+      {
+       "qty": 2,
+       "name": "Abrade",
+       "set": "fdn",
+       "number": "188",
+       "id": "548947dc-a5ca-43b5-9531-bcef20fa4ae5"
+      },
+      {
+       "qty": 4,
+       "name": "Mockingbird",
+       "set": "blb",
+       "number": "61",
+       "id": "ade32396-8841-4ba4-8852-d11146607f21"
+      },
+      {
+       "qty": 4,
+       "name": "Shoreline Looter",
+       "set": "blb",
+       "number": "70",
+       "id": "d5bf8cf0-419a-4dc9-9342-aad55c1af05a"
+      },
+      {
+       "qty": 4,
+       "name": "Spirebluff Canal",
+       "set": "otj",
+       "number": "270",
+       "id": "59a04e16-a767-4112-ab01-6ca1b09c286c"
+      },
+      {
+       "qty": 10,
+       "name": "Island",
+       "set": "blb",
+       "number": "266",
+       "id": "106a5332-0104-4ec9-9e1f-806381ae4cad"
+      },
+      {
+       "qty": 10,
+       "name": "Mountain",
+       "set": "blb",
+       "number": "274",
+       "id": "c1bba8fb-d763-4efa-8db1-e5e81994b5f9"
+      },
+      {
+       "qty": 4,
+       "name": "Thought Shucker",
+       "set": "blb",
+       "number": "77",
+       "id": "44b0d83b-cc41-4f82-892c-ef6d3293228a"
+      },
+      {
+       "qty": 4,
+       "name": "Plumecreed Escort",
+       "set": "blb",
+       "number": "65",
+       "id": "f71320ed-2f30-49ce-bcb0-19aebba3f0e8"
+      }
+     ]
+    }
+   },
+   "reward": {
+    "hero": {
+     "packs": 1,
+     "coins": 100
+    },
+    "villain": {
+     "card": {
+      "oracle_id": "60ac490c-b489-4ad2-bcc2-3babaabf8ccb",
+      "name": "Tempest Angler",
+      "rarity": "common",
+      "set": "blb",
+      "id": "850daae4-f0b7-4604-95e7-ad044ec165c3",
+      "image": "https://cards.scryfall.io/normal/front/8/5/850daae4-f0b7-4604-95e7-ad044ec165c3.jpg"
+     },
+     "coins": 100
+    }
+   },
+   "scene": [
+    {
+     "who": "stage",
+     "line": "Kaito's blade brought the light of another plane into Duskmourn, and with it, a brief chance to escape.",
+     "quote": true
+    },
+    {
+     "who": "stage",
+     "line": "It scours battlefields for corpses, consuming flesh and souls alike.",
+     "quote": true
+    },
+    {
+     "who": "dimir",
+     "line": "Kill their early creatures and counter the tricks. You win the long game."
+    }
+   ],
+   "villainScene": [
+    {
+     "who": "stage",
+     "line": "Hot-footed and cold-blooded.",
+     "quote": true
+    },
+    {
+     "who": "stage",
+     "line": "Oh? Do I need to repeat myself?",
+     "quote": true
+    }
+   ],
+   "after": null,
+   "cues": {
+    "hero": {
+     "start": "Cool head.",
+     "big": "Denied!",
+     "low": "Too many tricks...",
+     "win": "Control wins.",
+     "loss": "Burnt out...",
+     "half": "Kill the early creatures first."
+    },
+    "villain": {
+     "start": "Fast!",
+     "big": "Prowess!",
+     "low": "Out of tricks...",
+     "win": "Faster than you.",
+     "loss": "Fizzled..."
+    }
+   },
+   "bigPlays": [],
+   "sim": null
+  },
+  {
+   "id": "a37b8",
+   "slot": 8,
+   "kind": "Boss",
+   "mood": "boss",
+   "title": "Valgavoth, Terror Eater",
+   "difficulty": "Hard",
+   "teaches": [
+    "Ward"
+   ],
+   "blurb": "The house is alive and it is hungry. The heist crew and the survivors have to leave it with fewer rooms than it started with.",
+   "rewardSet": "dsk",
+   "host": true,
+   "hero": {
+    "who": "survivors",
+    "deck": {
+     "name": "The Crew and the Survivors",
+     "colors": "GU",
+     "archetype": null,
+     "label": "tribute",
+     "cards": [
+      {
+       "qty": 4,
+       "name": "Pond Prophet",
+       "set": "blb",
+       "number": "229",
+       "id": "fb959e74-61ea-453d-bb9f-ad0183c0e1b1"
+      },
+      {
+       "qty": 4,
+       "name": "Oblivious Bookworm",
+       "set": "dsk",
+       "number": "225",
+       "id": "c7b4c50b-fe76-430d-8f96-208f15ca4cd7"
+      },
+      {
+       "qty": 3,
+       "name": "Oko, the Ringleader",
+       "set": "otj",
+       "number": "223",
+       "id": "396df8d6-e85d-4486-8116-68841b7e1e2e"
+      },
+      {
+       "qty": 3,
+       "name": "Zimone, All-Questioning",
+       "set": "dsk",
+       "number": "241",
+       "id": "7722f4f7-fe38-4107-a715-7b27b6a4e341"
+      },
+      {
+       "qty": 4,
+       "name": "Druid of the Spade",
+       "set": "blb",
+       "number": "170",
+       "id": "6b485cf7-bad0-4824-9ba7-cb112ce4769f"
+      },
+      {
+       "qty": 4,
+       "name": "Hazardroot Herbalist",
+       "set": "blb",
+       "number": "174",
+       "id": "e2882982-b3a3-4762-a550-6b82db1038e8"
+      },
+      {
+       "qty": 3,
+       "name": "Kitsa, Otterball Elite",
+       "set": "blb",
+       "number": "54",
+       "id": "c8ff751a-ec64-41d5-b22c-2a483ad9a9b2"
+      },
+      {
+       "qty": 3,
+       "name": "Thieving Otter",
+       "set": "blb",
+       "number": "390",
+       "id": "52a258be-39e3-4689-b2d0-7c353ce7d574"
+      },
+      {
+       "qty": 4,
+       "name": "Rabid Bite",
+       "set": "blb",
+       "number": "394",
+       "id": "53a73200-b798-4bfd-a431-8b94e17b70be"
+      },
+      {
+       "qty": 4,
+       "name": "Manifest Dread",
+       "set": "dsk",
+       "number": "189",
+       "id": "a649265b-6c32-49e7-b6cb-6086c40d26e8"
+      },
+      {
+       "qty": 4,
+       "name": "Botanical Sanctum",
+       "set": "otj",
+       "number": "267",
+       "id": "cc18d5f4-a56a-4f7d-9f56-ccc92cbfb7f7"
+      },
+      {
+       "qty": 10,
+       "name": "Forest",
+       "set": "blb",
+       "number": "278",
+       "id": "f791876a-f3fb-45b8-90a9-af846d8b8f74"
+      },
+      {
+       "qty": 10,
+       "name": "Island",
+       "set": "blb",
+       "number": "266",
+       "id": "106a5332-0104-4ec9-9e1f-806381ae4cad"
+      }
+     ]
+    }
+   },
+   "villain": {
+    "who": "valgavoth",
+    "deck": {
+     "name": "Valgavoth's Midrange",
+     "colors": "BG",
+     "archetype": null,
+     "label": "tribute",
+     "cards": [
+      {
+       "qty": 2,
+       "name": "Valgavoth, Terror Eater",
+       "set": "dsk",
+       "number": "120",
+       "id": "7740ff55-67bb-409e-90f7-2c2c8b8c770a"
+      },
+      {
+       "qty": 4,
+       "name": "Cynical Loner",
+       "set": "dsk",
+       "number": "89",
+       "id": "cc93bcb8-778d-491e-877b-e6ad432764cb"
+      },
+      {
+       "qty": 4,
+       "name": "Innocuous Rat",
+       "set": "dsk",
+       "number": "103",
+       "id": "94edbbc5-5673-4753-bfad-4432c4b7dca4"
+      },
+      {
+       "qty": 4,
+       "name": "Balemurk Leech",
+       "set": "dsk",
+       "number": "84",
+       "id": "f0621b32-95c5-4f70-96cf-d46d20efc85d"
+      },
+      {
+       "qty": 3,
+       "name": "Murder",
+       "set": "dsk",
+       "number": "110",
+       "id": "2c249609-9cf7-46f1-b94c-9329add966bb"
+      },
+      {
+       "qty": 3,
+       "name": "Hero's Downfall",
+       "set": "fdn",
+       "number": "175",
+       "id": "ad2c01d9-8f54-46c0-9dc9-d4d4764ce1c9"
+      },
+      {
+       "qty": 4,
+       "name": "Wary Watchdog",
+       "set": "dsk",
+       "number": "206",
+       "id": "25ed97f2-b47e-49b7-9b1a-694c4bbeca3b"
+      },
+      {
+       "qty": 3,
+       "name": "Spineseeker Centipede",
+       "set": "dsk",
+       "number": "199",
+       "id": "b50d697c-8358-429b-8f79-7ad9d01a5edd"
+      },
+      {
+       "qty": 4,
+       "name": "Manifest Dread",
+       "set": "dsk",
+       "number": "189",
+       "id": "a649265b-6c32-49e7-b6cb-6086c40d26e8"
+      },
+      {
+       "qty": 1,
+       "name": "Rootwise Survivor",
+       "set": "dsk",
+       "number": "196",
+       "id": "d843c242-088f-4131-9e52-7ee2d0db5e20"
+      },
+      {
+       "qty": 4,
+       "name": "Blooming Marsh",
+       "set": "otj",
+       "number": "266",
+       "id": "861caabb-0573-4e94-8b03-342f90465064"
+      },
+      {
+       "qty": 10,
+       "name": "Swamp",
+       "set": "blb",
+       "number": "270",
+       "id": "faa54bef-c90e-4e9b-b94b-942ea829e0d2"
+      },
+      {
+       "qty": 10,
+       "name": "Forest",
+       "set": "blb",
+       "number": "278",
+       "id": "f791876a-f3fb-45b8-90a9-af846d8b8f74"
+      },
+      {
+       "qty": 1,
+       "name": "Hungry Ghoul",
+       "set": "fdn",
+       "number": "62",
+       "id": "790f9433-7565-4f7f-88e8-8af762ea0296"
+      },
+      {
+       "qty": 2,
+       "name": "Infestation Sage",
+       "set": "fdn",
+       "number": "64",
+       "id": "d40c73de-7a5f-46f2-a70b-449bc8ecfe24"
+      },
+      {
+       "qty": 1,
+       "name": "Overlord of the Balemurk",
+       "set": "dsk",
+       "number": "113",
+       "id": "9b911653-7b96-4cf3-a907-13c5c53a14f7"
+      }
+     ]
+    }
+   },
+   "reward": {
+    "hero": {
+     "packs": 2,
+     "coins": 200
+    },
+    "villain": {
+     "card": {
+      "oracle_id": "cae3ec72-436d-4086-9dcb-17b3d92ad5c4",
+      "name": "Valgavoth, Terror Eater",
+      "rarity": "mythic",
+      "set": "dsk",
+      "id": "7740ff55-67bb-409e-90f7-2c2c8b8c770a",
+      "image": "https://cards.scryfall.io/normal/front/7/7/7740ff55-67bb-409e-90f7-2c2c8b8c770a.jpg"
+     },
+     "coins": 200
+    }
+   },
+   "scene": [
+    {
+     "who": "stage",
+     "line": "Clad in the light of conviction and hope, Linette strode forth to face Duskmourn's terrors without fear.",
+     "quote": true
+    },
+    {
+     "who": "stage",
+     "line": "The vault's ultimate prize wasn't exactly what Kellan had imagined.",
+     "quote": true
+    },
+    {
+     "who": "survivors",
+     "line": "He feeds on fear, so stay calm. Kill the small creatures early and hit him when he finally lands."
+    }
+   ],
+   "villainScene": [
+    {
+     "who": "stage",
+     "line": "All who enter the House hear Valgavoth's whispers, worming through their consciousness until they can no longer resist his influence.",
+     "quote": true
+    },
+    {
+     "who": "stage",
+     "line": "Valgavoth whispered into Marina's ear until he was all she could hear.",
+     "quote": true
+    }
+   ],
+   "after": null,
+   "cues": {
+    "hero": {
+     "start": "Stay calm.",
+     "big": "Together!",
+     "low": "The house is loud...",
+     "win": "We are out.",
+     "loss": "The house wins...",
+     "half": "Stay calm and kill the small creatures early."
+    },
+    "villain": {
+     "start": "Fear.",
+     "big": "[the walls breathe]",
+     "low": "[the walls stop]",
+     "win": "Delicious.",
+     "loss": "[the house goes quiet]",
+     "half": {
+      "who": "winter",
+      "line": "Keep moving. The door is this way."
+     }
+    }
+   },
+   "bigPlays": [],
+   "sim": null
+  },
+  {
+   "id": "a37b9",
+   "slot": 9,
+   "kind": "Secret Boss",
+   "secret": true,
+   "mood": "boss",
+   "title": "Mono-Red Mice",
+   "difficulty": "Hard",
+   "teaches": [
+    "Haste"
+   ],
+   "blurb": "Deep in the archive, a deck of tiny mice that wins on turn four.",
+   "rewardSet": "blb",
+   "host": true,
+   "archive": {
+    "deck": "Mono-Red Mice",
+    "when": "Autumn 2024",
+    "format": "Standard.",
+    "what": "A mono-red deck of one- and two-mana mice and burn, built around Heartfire Hero.",
+    "why": "It was the fastest deck in the format and punished any slow draw.",
+    "beat": "Block early and kill the first two mice. Heartfire Hero gets out of hand if you let it.",
+    "after": "Later sets gave the format more removal and slowed it down."
+   },
+   "hero": {
+    "who": "you",
+    "deck": {
+     "name": "Winter's Survivors",
+     "colors": "BG",
+     "archetype": null,
+     "label": "tribute",
+     "cards": [
+      {
+       "qty": 4,
+       "name": "Patchwork Beastie",
+       "set": "dsk",
+       "number": "195",
+       "id": "895de583-36d2-43fd-927f-8876d4302c73"
+      },
+      {
+       "qty": 4,
+       "name": "Cynical Loner",
+       "set": "dsk",
+       "number": "89",
+       "id": "cc93bcb8-778d-491e-877b-e6ad432764cb"
+      },
+      {
+       "qty": 4,
+       "name": "Innocuous Rat",
+       "set": "dsk",
+       "number": "103",
+       "id": "94edbbc5-5673-4753-bfad-4432c4b7dca4"
+      },
+      {
+       "qty": 4,
+       "name": "Wary Watchdog",
+       "set": "dsk",
+       "number": "206",
+       "id": "25ed97f2-b47e-49b7-9b1a-694c4bbeca3b"
+      },
+      {
+       "qty": 4,
+       "name": "Overlord of the Hauntwoods",
+       "set": "dsk",
+       "number": "194",
+       "id": "05d08ff1-edcc-4c76-96e0-683b3da36ebb"
+      },
+      {
+       "qty": 3,
+       "name": "Hedge Shredder",
+       "set": "dsk",
+       "number": "183",
+       "id": "39e83502-2ffd-4169-94e3-116701323ed5"
+      },
+      {
+       "qty": 3,
+       "name": "Say Its Name",
+       "set": "dsk",
+       "number": "197",
+       "id": "94c58683-b5f2-4863-9562-6f6be1ec21fe"
+      },
+      {
+       "qty": 4,
+       "name": "Murder",
+       "set": "dsk",
+       "number": "110",
+       "id": "2c249609-9cf7-46f1-b94c-9329add966bb"
+      },
+      {
+       "qty": 4,
+       "name": "Manifest Dread",
+       "set": "dsk",
+       "number": "189",
+       "id": "a649265b-6c32-49e7-b6cb-6086c40d26e8"
+      },
+      {
+       "qty": 2,
+       "name": "Give In to Violence",
+       "set": "dsk",
+       "number": "101",
+       "id": "00ac1759-d4cc-41d5-a9b7-a89b80d2190c"
+      },
+      {
+       "qty": 4,
+       "name": "Blooming Marsh",
+       "set": "otj",
+       "number": "266",
+       "id": "861caabb-0573-4e94-8b03-342f90465064"
+      },
+      {
+       "qty": 10,
+       "name": "Swamp",
+       "set": "blb",
+       "number": "270",
+       "id": "faa54bef-c90e-4e9b-b94b-942ea829e0d2"
+      },
+      {
+       "qty": 10,
+       "name": "Forest",
+       "set": "blb",
+       "number": "278",
+       "id": "f791876a-f3fb-45b8-90a9-af846d8b8f74"
+      }
+     ]
+    }
+   },
+   "villain": {
+    "who": "boros",
+    "deck": {
+     "name": "Mono-Red Mice",
+     "colors": "R",
+     "archetype": "Aggro",
+     "label": "tribute",
+     "note": "Built from cards in this act's sets only. No single tournament list is copied.",
+     "cards": [
+      {
+       "qty": 4,
+       "name": "Heartfire Hero",
+       "set": "blb",
+       "number": "138",
+       "id": "48ace959-66b2-40c8-9bff-fd7ed9c99a82"
+      },
+      {
+       "qty": 4,
+       "name": "Emberheart Challenger",
+       "set": "blb",
+       "number": "133",
+       "id": "0035082e-bb86-4f95-be48-ffc87fe5286d"
+      },
+      {
+       "qty": 4,
+       "name": "Manifold Mouse",
+       "set": "blb",
+       "number": "143",
+       "id": "db3832b5-e83f-4569-bd49-fb7b86fa2d47"
+      },
+      {
+       "qty": 4,
+       "name": "Steampath Charger",
+       "set": "blb",
+       "number": "153",
+       "id": "03bf1296-e347-4070-8c6f-5c362c2f9364"
+      },
+      {
+       "qty": 4,
+       "name": "Whiskerquill Scribe",
+       "set": "blb",
+       "number": "161",
+       "id": "da653996-9bd4-40bd-afb4-48c7e070a269"
+      },
+      {
+       "qty": 4,
+       "name": "Hired Claw",
+       "set": "blb",
+       "number": "140",
+       "id": "1ae41080-0d67-4719-adb2-49bf2a268b6c"
+      },
+      {
+       "qty": 4,
+       "name": "Burst Lightning",
+       "set": "fdn",
+       "number": "192",
+       "id": "aec5d380-d354-4750-931a-6c91853e2edc"
+      },
+      {
+       "qty": 4,
+       "name": "Might of the Meek",
+       "set": "blb",
+       "number": "144",
+       "id": "509bf254-8a2b-4dfa-9ae5-386321b35e8b"
+      },
+      {
+       "qty": 4,
+       "name": "Playful Shove",
+       "set": "blb",
+       "number": "145",
+       "id": "07956edf-34c1-4218-9784-ddbca13e380c"
+      },
+      {
+       "qty": 24,
+       "name": "Mountain",
+       "set": "blb",
+       "number": "274",
+       "id": "c1bba8fb-d763-4efa-8db1-e5e81994b5f9"
+      }
+     ]
+    }
+   },
+   "reward": {
+    "hero": {
+     "packs": 2,
+     "coins": 200
+    },
+    "villain": {
+     "card": {
+      "oracle_id": "49e1e202-37bf-46ed-93d1-1adb13726039",
+      "name": "Heartfire Hero",
+      "rarity": "uncommon",
+      "set": "blb",
+      "id": "48ace959-66b2-40c8-9bff-fd7ed9c99a82",
+      "image": "https://cards.scryfall.io/normal/front/4/8/48ace959-66b2-40c8-9bff-fd7ed9c99a82.jpg"
+     },
+     "coins": 200
+    }
+   },
+   "scene": [
+    {
+     "who": "stage",
+     "line": "The boisterous pat on the back was painful, but not nearly as painful as the joke that inspired it.",
+     "quote": true
+    },
+    {
+     "who": "you",
+     "line": "Block early and kill the first two mice."
+    }
+   ],
+   "villainScene": [
+    {
+     "who": "stage",
+     "line": "Hot-footed and cold-blooded.",
+     "quote": true
+    }
+   ],
+   "after": [
+    {
+     "who": "stage",
+     "line": "Recorded: later sets gave the format more removal and slowed it down."
+    }
+   ],
+   "cues": {
+    "hero": {
+     "start": "Hold the line.",
+     "big": "Strike back!",
+     "low": "They are fast...",
+     "win": "The mice fall.",
+     "loss": "Overrun...",
+     "half": "Kill the first two mice."
+    },
+    "villain": {
+     "start": "[a squeak]",
+     "big": "[the swarm]",
+     "low": "[a pause]",
+     "win": "[mice win]",
+     "loss": "[the swarm scatters]"
+    }
+   },
+   "bigPlays": [],
+   "sim": null
+  }
+ ]
+}
