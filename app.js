@@ -164,7 +164,8 @@ import { startSearchHints } from "./search-hints.js";
 import { openZoom, zoomCardOptions } from "./zoom.js";
 import {createPlayEcon,purse} from "./play-econ-client.js";
 import {matchCounters,questRows,playDay} from "./play-achievements.js";
-import {econScreenMarkup,ECON_VIEWS,purseMarkup,cardImageByName,head as econHead,craftPlan,packGoals,setPlayStyles} from "./play-econ-ui.js";
+import {econScreenMarkup,ECON_VIEWS,purseMarkup,cardImageByName,head as econHead,craftPlan,packGoals,setPlayStyles,setPlayDeckCovers} from "./play-econ-ui.js";
+setPlayDeckCovers(()=>S.state?.settings?.playDeckCovers);
 import {rewardFlight} from "./reward-flight.js";
 import {createNameFacts,createCraftRarity,clusterArchetypes,finderArchetypes,rankFinderLists,finderRow,trunkDeck,finderMarkup,finderDeckMarkup,FINDER_FORMATS,FINDER_SORTS,FINDER_FILTERS} from "./play-deck-finder.js";
 import {createCardFacts,slimCard} from "./play-econ-cards.js";
@@ -1846,7 +1847,7 @@ V.setPlayLensSource(()=>{const st=playEcon.snapshot().state||{};
    return {id:card.id,have,seals,rarity:{c:'common',u:'uncommon',r:'rare',m:'mythic'}[key],key,holoCost:holo,canFoil:(card.finishes||[]).includes('foil'),sold:(st.shop||[]).some(x=>x.code===card.set)||st.rewardSet?.code===card.set};},
   holo:(name,card)=>{const c=(st.cards||[]).find(x=>x.o===card?.oracle_id)||(st.cards||[]).find(x=>x.n===name||x.n.split(' // ')[0]===name);if(!c)return null;const seal={common:'c',uncommon:'u',rare:'r',mythic:'m'}[c.r],cost=Math.max(1,st.config?.holoSeals??2);return {oracle:c.o,can:(c.h|0)<(c.c|0)&&!!seal,afford:(st.wallet?.['seal_'+seal]|0)>=cost,cost,seal:{c:'common',u:'uncommon',r:'rare',m:'mythic'}[seal]};},
   // While a deck is open in the builder, the card view adds and removes copies there.
-  get edit(){const e=playView==='deck'&&econUi.edit;if(!e)return null;const copies=e.format==='Commander'?1:4;return {name:e.name||'this deck',qty:n=>(e.cards||[]).filter(c=>c.name===n).reduce((t,c)=>t+c.qty,0),copies};},
+  get edit(){const e=playView==='deck'&&econUi.edit;if(!e)return null;const copies=e.format==='Commander'?1:4;return {id:e.id||'',name:e.name||'this deck',coverName:e.id?S.state.settings.playDeckCovers?.[e.id]?.name||'':'',qty:n=>(e.cards||[]).filter(c=>c.name===n).reduce((t,c)=>t+c.qty,0),copies};},
   // Craft with seals: one seal of the card's rarity per copy, up to 4 copies in the Trunk.
   craft:(name,card)=>{const seal={common:'c',uncommon:'u',rare:'r',mythic:'m',special:'r',bonus:'m'}[card?.rarity];const have=(card?.oracle_id&&byOracle.get(card.oracle_id))||byName.get(name)||0;if(!seal||!card?.id)return null;return {id:card.id,seal,room:Math.max(0,4-have),seals:st.wallet?.['seal_'+seal]|0,label:{c:'common',u:'uncommon',r:'rare',m:'mythic'}[seal]};},
   // Secret Lair styles unlocked for this card, and the one in use.
@@ -1860,7 +1861,10 @@ A.playCardToDeck=async t=>{const st=playEcon.snapshot().state,d=(st?.decks||[]).
  const cards=stepDeckCard((d.cards||[]).filter(c=>!c.board).map(c=>({name:c.name,qty:c.qty|0})),t.dataset.name,1,new Map([[t.dataset.name,4]]),d.format);
  if(cards.reduce((a,c)=>a+c.qty,0)===(d.cards||[]).filter(c=>!c.board).reduce((a,c)=>a+(c.qty|0),0))return toast('No more copies of that card can go in '+(d.name||'that deck')+'.');
  try{await playEcon.saveDeck({id:d.id,name:d.name,format:d.format,cards:[...cards,...(d.cards||[]).filter(c=>c.board)]});toast('Added to '+(d.name||'your deck')+(ownedByName(st.cards||[]).get(t.dataset.name)?'.':'. It stays greyed until it is in your Trunk.'));refreshSheet?.();}catch(e){toast(e.message);}};
-// Use artwork from the Play card view: avatar or profile header only, never the collection banner.
+// Use artwork from the Play card view: avatar, profile header or the open deck's cover, never the collection banner.
+// Deck builder open: this card's art becomes the deck's cover (art only, no frame), or the deck goes back to its automatic cover.
+A.playCardCover=async()=>{const card=V.playShownCard(),ref={game:'mtg',card,play:true},target=card&&deckCoverTarget(ref),image=card&&bannerImage('mtg',card);if(!target)return;if(!/^https:\/\//.test(String(image||'')))return toast('This card has no artwork to use.');await saveDeckCover(ref,target,image);toast(`${card.name} is the cover of ${target.name}.`);refreshSheet();};
+A.playCardCoverReset=async()=>{const card=V.playShownCard(),target=card&&deckCoverTarget({game:'mtg',card,play:true});if(!target)return;await saveDeckCover({game:'mtg',card,play:true},target,null);toast(`${target.name} uses its automatic cover again.`);refreshSheet();};
 A.playCardArtwork=()=>{const card=V.playShownCard();if(!card)return;quickCard={game:'mtg',card,play:true};A.quickArtwork();};
 // The precon that holds this card: precons of the card's set first, then a name match; opens it in Decks.
 A.playCardPrecon=async t=>{const name=t.dataset.name,code=String(t.dataset.code||'').toLowerCase();closeSheet();playView='decks';go('#play');await loadPreconIndex();const pc=preconUi(),idx=pc.index||[];
@@ -4594,8 +4598,26 @@ A.profileHeader=()=>headerPicker.open();
 // Collection banner art: a pin stays until the player changes it; without one the banner
 // changes every hour (collection-banner.js).
 const bannerImage=(game,card)=>game==='mtg'?card?.image_uris?.art_crop||card?.card_faces?.[0]?.image_uris?.art_crop:game==='ygo'?(/^\d{1,12}$/.test(String(card?.id||''))?`https://images.ygoprodeck.com/images/cards_cropped/${card.id}.jpg`:''):artworkSources(card,true)[0];
-A.quickArtwork=()=>{if(!quickCard)return;const ref=quickCard,pinned=!ref.play&&S.state.settings.collectionBanner?.[ref.game],canPin=!ref.play&&!!bannerPin(ref.game,ref.card,bannerImage(ref.game,ref.card));openSheet(`<div class="sheet-head"><h2>Use artwork as…</h2><button class="icon" data-act="closeSheet">✕</button></div><div class="actions"><button class="btn" data-act="quickArtworkAvatar">Avatar</button><button class="btn ghost" data-act="quickArtworkHeader">Profile header</button>${canPin?'<button class="btn ghost" data-act="quickArtworkBanner">Collection banner</button>':''}</div>${pinned?'<p class="artwork-banner-reset"><button class="link" data-act="quickArtworkBannerRotate">Change the banner every hour again</button></p>':''}`,{type:"artwork-actions"});A.quickArtworkAvatar=()=>profilePicker.open({card:ref.card,game:ref.game});A.quickArtworkHeader=()=>headerPicker.open({card:ref.card,game:ref.game});
+// Deck cover: from a card inside a deck view (Collection decks in all 3 games, or a Play deck) the
+// card's art becomes that deck's cover on its tile and header, art only. Play decks keep the pick in
+// settings because the Play deck row on the server holds only name, format and cards.
+const deckCoverTarget=ref=>{
+ if(ref.play)return playView==='deck'&&econUi.edit?.id?{kind:'play',id:econUi.edit.id,name:econUi.edit.name||'this deck',set:!!S.state.settings.playDeckCovers?.[econUi.edit.id]}:null;
+ if(ref.game==='mtg'&&S.ui.view==='deck'){const d=deckById(S.ui.deckId);return d?{kind:'mtg',id:d.id,name:d.name,set:!!d.coverCard}:null;}
+ if(ref.game!=='mtg'&&S.ui.view==='tdeck'&&T.game()===ref.game){const d=T.gs(ref.game).decks.find(x=>x.id===S.ui.tdeckId);return d?{kind:'tcg',id:d.id,name:d.name,set:!!d.coverCard}:null;}
+ return null;};
+async function saveDeckCover(ref,target,image){
+ const pick=image?{...(target.kind==='tcg'?{id:String(ref.card.id)}:{}),name:String(ref.card.name||'').slice(0,200),image:String(image).slice(0,500)}:null;
+ await commit(st=>{
+  if(target.kind==='play'){const next={...(st.settings.playDeckCovers||{})};if(pick)next[target.id]=pick;else delete next[target.id];st.settings.playDeckCovers=next;return;}
+  const d=(target.kind==='mtg'?st.decks:st.tcg[ref.game].decks).find(x=>x.id===target.id);if(!d)return;if(pick)d.coverCard=pick;else delete d.coverCard;
+ },{enrich:false,observeValue:false});
+ if(target.kind==='play')refreshPlayMenu?.();
+}
+A.quickArtwork=()=>{if(!quickCard)return;const ref=quickCard,pinned=!ref.play&&S.state.settings.collectionBanner?.[ref.game],canPin=!ref.play&&!!bannerPin(ref.game,ref.card,bannerImage(ref.game,ref.card)),coverTarget=deckCoverTarget(ref),coverImage=bannerImage(ref.game,ref.card),canCover=!!coverTarget&&/^(https:\/\/|img\/)/.test(String(coverImage||''));openSheet(`<div class="sheet-head"><h2>Use artwork as…</h2><button class="icon" data-act="closeSheet">✕</button></div><div class="actions"><button class="btn" data-act="quickArtworkAvatar">Avatar</button><button class="btn ghost" data-act="quickArtworkHeader">Profile header</button>${canCover?'<button class="btn ghost" data-act="quickArtworkDeckCover">Deck cover</button>':''}${canPin?'<button class="btn ghost" data-act="quickArtworkBanner">Collection banner</button>':''}</div>${coverTarget?.set?'<p class="artwork-banner-reset"><button class="link" data-act="quickArtworkDeckCoverReset">Use the automatic deck cover again</button></p>':''}${pinned?'<p class="artwork-banner-reset"><button class="link" data-act="quickArtworkBannerRotate">Change the banner every hour again</button></p>':''}`,{type:"artwork-actions"});A.quickArtworkAvatar=()=>profilePicker.open({card:ref.card,game:ref.game});A.quickArtworkHeader=()=>headerPicker.open({card:ref.card,game:ref.game});
  A.quickArtworkBanner=async()=>{const pin=bannerPin(ref.game,ref.card,bannerImage(ref.game,ref.card));if(!pin)return toast('This card has no artwork to use.');await commit(st=>{st.settings.collectionBanner={...(st.settings.collectionBanner||{}),[ref.game]:pin};},{enrich:false,recordDeckWork:false,observeValue:false});closeSheet();toast(`${ref.card.name} is your Collection banner.`);};
+ A.quickArtworkDeckCover=async()=>{if(!canCover)return;await saveDeckCover(ref,coverTarget,coverImage);closeSheet();toast(`${ref.card.name} is the cover of ${coverTarget.name}.`);};
+ A.quickArtworkDeckCoverReset=async()=>{if(!coverTarget)return;await saveDeckCover(ref,coverTarget,null);closeSheet();toast(`${coverTarget.name} uses its automatic cover again.`);};
  A.quickArtworkBannerRotate=async()=>{await commit(st=>{const next={...(st.settings.collectionBanner||{})};delete next[ref.game];st.settings.collectionBanner=next;},{enrich:false,recordDeckWork:false,observeValue:false});closeSheet();toast('The Collection banner changes every hour again.');};};
 A.cardProfileHeader=async t=>{
 const ref=await resolveActionCard(t);if(ref)headerPicker.open({card:ref.card,game:ref.game});};
