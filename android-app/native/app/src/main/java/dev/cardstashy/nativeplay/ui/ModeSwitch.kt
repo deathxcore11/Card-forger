@@ -56,7 +56,7 @@ fun Emblem(mode: Mode, size: Dp, onClick: () -> Unit, modifier: Modifier = Modif
     val art by produceState<Any?>(AssetImages.cached("${mode.asset}@256") ?: Unit, mode) { value = AssetImages.load(context, mode.asset, maxWidth = 256) }
     val press = remember { MutableInteractionSource() }
     val pressed by press.collectIsPressedAsState()
-    Box(modifier.size(size).scale(if (pressed) .92f else 1f).clickable(press, null, onClick = onClick), contentAlignment = Alignment.Center) {
+    Box(modifier.size(size).scale(if (pressed) .92f else 1f).clickable(press, dev.cardstashy.nativeplay.ui.PadFocus.Ring, onClick = onClick), contentAlignment = Alignment.Center) {
         when (val a = art) {
             is ImageBitmap -> Image(a, null, Modifier.fillMaxSize())
             null -> Canvas(Modifier.fillMaxSize()) { drawEmblem(mode) }

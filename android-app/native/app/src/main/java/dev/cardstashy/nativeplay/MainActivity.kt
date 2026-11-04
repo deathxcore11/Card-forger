@@ -5,6 +5,7 @@ import android.os.Bundle
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.BackHandler
 import androidx.activity.compose.setContent
+import dev.cardstashy.nativeplay.ui.PadHintHost
 import androidx.compose.ui.draw.drawWithContent
 import androidx.compose.ui.graphics.layer.drawLayer
 import androidx.activity.enableEdgeToEdge
@@ -112,19 +113,60 @@ class MainActivity : ComponentActivity() {
         runCatching { (getSystemService(CONNECTIVITY_SERVICE) as android.net.ConnectivityManager).registerDefaultNetworkCallback(object : android.net.ConnectivityManager.NetworkCallback() {
             override fun onAvailable(network: android.net.Network) { kotlinx.coroutines.CoroutineScope(kotlinx.coroutines.Dispatchers.IO).launch { dev.cardstashy.nativeplay.play.Progress.flushQueue() } }
         }) }
+        dev.cardstashy.nativeplay.ui.Pad.watch(this)
         setContent {
             // The app is recorded into a layer as it draws, so the toast pill can blur what is under it (backdrop-filter).
             val page = androidx.compose.ui.graphics.rememberGraphicsLayer()
             androidx.compose.foundation.layout.Box(androidx.compose.ui.Modifier.fillMaxSize()) {
                 androidx.compose.foundation.layout.Box(androidx.compose.ui.Modifier.fillMaxSize().drawWithContent { page.record { this@drawWithContent.drawContent() }; drawLayer(page) }) {
-                    App(this@MainActivity); dev.cardstashy.nativeplay.ui.ProfileArtPickerHost()
+                    androidx.compose.runtime.CompositionLocalProvider(androidx.compose.foundation.LocalIndication provides dev.cardstashy.nativeplay.ui.PadFocus) {
+                        App(this@MainActivity); dev.cardstashy.nativeplay.ui.ProfileArtPickerHost()
+                    }
                 }
                 dev.cardstashy.nativeplay.ui.AchievementToastHost(page)
+                PadHintHost()
             }
         }
     }
 
     override fun dispatchTouchEvent(ev: android.view.MotionEvent): Boolean { FreezeReport.touched(ev); return super.dispatchTouchEvent(ev) }
+
+    /**
+     * Controllers on handhelds (AYN Thor, Retroid and the like): A presses what has the gold focus ring
+     * (sent on as d-pad centre, which every clickable answers), B goes back. Not every pad's key map
+     * gives these fallbacks, so the app maps them itself. The left stick moves focus like the d-pad.
+     */
+    override fun dispatchKeyEvent(event: android.view.KeyEvent): Boolean {
+        if (event.isFromSource(android.view.InputDevice.SOURCE_GAMEPAD)) dev.cardstashy.nativeplay.ui.Pad.used()
+        when (event.keyCode) {
+            android.view.KeyEvent.KEYCODE_BUTTON_A ->
+                return super.dispatchKeyEvent(android.view.KeyEvent(event.downTime, event.eventTime, event.action, android.view.KeyEvent.KEYCODE_DPAD_CENTER, event.repeatCount, event.metaState, event.deviceId, event.scanCode, event.flags, event.source))
+            android.view.KeyEvent.KEYCODE_BUTTON_B -> {
+                if (event.action == android.view.KeyEvent.ACTION_UP && !event.isCanceled) onBackPressedDispatcher.onBackPressed()
+                return true
+            }
+        }
+        return super.dispatchKeyEvent(event)
+    }
+
+    private var stickDir = 0
+    override fun dispatchGenericMotionEvent(ev: android.view.MotionEvent): Boolean {
+        if (ev.isFromSource(android.view.InputDevice.SOURCE_JOYSTICK) && ev.action == android.view.MotionEvent.ACTION_MOVE) {
+            dev.cardstashy.nativeplay.ui.Pad.used()
+            val x = ev.getAxisValue(android.view.MotionEvent.AXIS_X); val y = ev.getAxisValue(android.view.MotionEvent.AXIS_Y)
+            val dir = when { y < -.6f -> android.view.KeyEvent.KEYCODE_DPAD_UP; y > .6f -> android.view.KeyEvent.KEYCODE_DPAD_DOWN
+                x < -.6f -> android.view.KeyEvent.KEYCODE_DPAD_LEFT; x > .6f -> android.view.KeyEvent.KEYCODE_DPAD_RIGHT; else -> 0 }
+            // One step per push: the stick must come back to centre before it moves focus again.
+            if (dir != stickDir) {
+                stickDir = dir
+                if (dir != 0) { val now = android.os.SystemClock.uptimeMillis()
+                    super.dispatchKeyEvent(android.view.KeyEvent(now, now, android.view.KeyEvent.ACTION_DOWN, dir, 0))
+                    super.dispatchKeyEvent(android.view.KeyEvent(now, now, android.view.KeyEvent.ACTION_UP, dir, 0)) }
+            }
+            return true
+        }
+        return super.dispatchGenericMotionEvent(ev)
+    }
 
     /**
      * Games lock landscape like a video game; menus turn freely, portrait or sideways (Randall 4 Nov 17:40Z: keep portrait on

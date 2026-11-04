@@ -346,7 +346,7 @@ fun GoldButton(label: String, onClick: () -> Unit, modifier: Modifier = Modifier
     val k by animateFloatAsState(if (pressed) .96f else 1f, Site.spring(), label = "press")
     Box(modifier.scale(k).height(44.dp).clip(CircleShape)
         .background(Brush.verticalGradient(listOf(Color(0xFFF2CF7E), Site.Gold, Color(0xFFC9963A))))
-        .clickable(press, null, onClick = onClick).padding(horizontal = 20.dp), contentAlignment = Alignment.Center) {
+        .clickable(press, dev.cardstashy.nativeplay.ui.PadFocus.Ring, onClick = onClick).padding(horizontal = 20.dp), contentAlignment = Alignment.Center) {
         Text(label, style = Site.Button.copy(color = Site.GoldInk), maxLines = 1, softWrap = false)
     }
 }
@@ -423,7 +423,7 @@ private fun PurseItem(onClick: () -> Unit, label: String, content: @Composable (
     val pressed by press.collectIsPressedAsState()
     val k by animateFloatAsState(if (pressed) .94f else 1f, Site.spring(), label = "press")
     val compact = LocalCompact.current
-    Row(Modifier.height(44.dp).scale(k).clip(CircleShape).clickable(press, null, onClick = onClick).semantics { contentDescription = label }.padding(horizontal = if (compact) 3.dp else 6.dp),
+    Row(Modifier.height(44.dp).scale(k).clip(CircleShape).clickable(press, dev.cardstashy.nativeplay.ui.PadFocus.Ring, onClick = onClick).semantics { contentDescription = label }.padding(horizontal = if (compact) 3.dp else 6.dp),
         verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(if (compact) 4.dp else 6.dp)) { content() }
 }
 
@@ -464,7 +464,7 @@ fun PlayNav(active: PlayTab?, onSelect: (PlayTab) -> Unit, modifier: Modifier = 
                     val press = remember { MutableInteractionSource() }
                     val pressed by press.collectIsPressedAsState()
                     val s by animateFloatAsState(if (pressed) .92f else 1f, Site.spring(), label = "press")
-                    Column(Modifier.weight(weights[k]).fillMaxSize().clickable(press, null) { onSelect(tab) }.semantics { contentDescription = tab.label }.padding(top = 14.dp),
+                    Column(Modifier.weight(weights[k]).fillMaxSize().clickable(press, dev.cardstashy.nativeplay.ui.PadFocus.Ring) { onSelect(tab) }.semantics { contentDescription = tab.label }.padding(top = 14.dp),
                         horizontalAlignment = Alignment.CenterHorizontally) {
                         Box(Modifier.size(56.dp, 32.dp).scale(s), contentAlignment = Alignment.Center) {
                             Icon(icons[k], 24.dp, if (on || tab == PlayTab.SWITCH) Site.Gold else Site.Muted)

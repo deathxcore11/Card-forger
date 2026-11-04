@@ -75,7 +75,7 @@ fun BrandMark(markSize: Dp, modifier: Modifier = Modifier, onClick: (() -> Unit)
     Box(modifier.size(markSize).graphicsLayer {
         val k = (.98f + .045f * breathe) * (if (pressed) .92f else 1f)
         scaleX = k; scaleY = k; translationY = -breathe * markSize.toPx() / 128f
-    }.let { if (onClick != null) it.clickable(press, null, onClick = onClick) else it }.semantics { contentDescription = "CardStashy" }) {
+    }.let { if (onClick != null) it.clickable(press, dev.cardstashy.nativeplay.ui.PadFocus.Ring, onClick = onClick) else it }.semantics { contentDescription = "CardStashy" }) {
         // Paint order as in icon.svg: right, centre, left on top.
         for ((name, rest) in listOf("right" to (3f to 14f), "center" to (0f to 0f), "left" to (-3f to -14f))) {
             val img = layers.getValue(name).value ?: continue

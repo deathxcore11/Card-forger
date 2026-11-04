@@ -211,7 +211,7 @@ private val GoldPlate = Brush.verticalGradient(0f to Color(0xFFF8E2A8), .44f to 
 private val Picked = Brush.linearGradient(listOf(Color(0x25E3C37C), Color(0x0AC4A85C)))
 
 private fun Modifier.pill(fill: Color, edge: Color, shape: RoundedCornerShape = RoundedCornerShape(999.dp)) = clip(shape).background(fill).border(1.dp, edge, shape)
-private fun Modifier.tap(onClick: () -> Unit) = clickable(MutableInteractionSource(), null, onClick = onClick)
+private fun Modifier.tap(onClick: () -> Unit) = clickable(MutableInteractionSource(), dev.cardstashy.nativeplay.ui.PadFocus.Ring, onClick = onClick)
 
 /** The site's colour filter on a deck missing Trunk cards: grayscale(1) brightness(.7), opacity .6. */
 private val Greyed = ColorFilter.colorMatrix(ColorMatrix().apply { setToSaturation(0f); timesAssign(ColorMatrix(floatArrayOf(.7f, 0f, 0f, 0f, 0f, 0f, .7f, 0f, 0f, 0f, 0f, 0f, .7f, 0f, 0f, 0f, 0f, 0f, 1f, 0f))) })

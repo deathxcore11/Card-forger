@@ -144,6 +144,28 @@ class ShotTest {
         home.mkdirs(); home.resolve("missing.txt").writeText(missing.joinToString("\n"))
     }
 
+    /** A controller on a handheld: the gold focus ring on Quick Play and the A/B hint (Pad connected). */
+    @Test fun padFocus() {
+        dev.cardstashy.nativeplay.ui.Motion.still = true
+        dev.cardstashy.nativeplay.ui.homeArt = ::homeArt
+        dev.cardstashy.nativeplay.ui.HomeTest.forceShort = true
+        dev.cardstashy.nativeplay.ui.Pad.used()
+        try {
+            shot("play-home-pad", 844, 390, 1f) {
+                androidx.compose.runtime.CompositionLocalProvider(androidx.compose.foundation.LocalIndication provides dev.cardstashy.nativeplay.ui.PadFocus) {
+                    val modes = androidx.compose.ui.platform.LocalInputModeManager.current
+                    val focus = androidx.compose.ui.platform.LocalFocusManager.current
+                    androidx.compose.foundation.layout.Box(Modifier.fillMaxSize()) { Home(); with(dev.cardstashy.nativeplay.ui.PadHintHostScope) { this@Box.hint() } }
+                    androidx.compose.runtime.LaunchedEffect(Unit) {
+                        modes.requestInputMode(androidx.compose.ui.input.InputMode.Keyboard)
+                        kotlinx.coroutines.delay(50)
+                        repeat(System.getProperty("padSteps")?.toInt() ?: 8) { focus.moveFocus(androidx.compose.ui.focus.FocusDirection.Next) }
+                    }
+                }
+            }
+        } finally { dev.cardstashy.nativeplay.ui.HomeTest.forceShort = null }
+    }
+
     /** settings-theme.js: Play home and Trunk in each colour mode, against site-home-<theme>.png / site-trunk-cards-<theme>.png. */
     @Test fun themes() {
         dev.cardstashy.nativeplay.ui.Motion.still = true

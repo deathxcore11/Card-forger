@@ -498,7 +498,7 @@ private fun Sealed(pack: PackResult, tearing: Boolean, onTear: () -> Unit, loadi
         if (loading && !Motion.still) rotationZ = (if (eager) 1.6f else .7f) * kotlin.math.sin(power * 6.283f * 3f)
     }.glow(Color(0xFFE8B95B), if (loading) .25f + .4f * power * (if (eager) 1.4f else 1f) else 0f, .08f + .05f * power, .06f + .04f * power, .08f, 36.dp)
         .glow(Color.Black, .6f, .02f, .03f, .04f, 30.dp)
-        .clickable(remember { MutableInteractionSource() }, null, onClick = onTear).semantics { contentDescription = "Open the ${pack.name} pack" }) {
+        .clickable(remember { MutableInteractionSource() }, dev.cardstashy.nativeplay.ui.PadFocus.Ring, onClick = onTear).semantics { contentDescription = "Open the ${pack.name} pack" }) {
         Booster(pack.set, pack.name, Modifier.fillMaxSize(), fill = true)
         if (!Motion.still && !tearing) {
             // pack-sheen-move: a soft rainbow band sweeping across every 3.2 s.
