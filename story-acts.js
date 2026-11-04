@@ -47,6 +47,9 @@ export const STORY_ACTS = [
   {act: 15, age: 'The Lorwyn Years', title: 'The Great Aurora', years: '2007 to 2008',
     sets: ['lrw', 'mor', 'shm', 'eve', '10e'], landSet: 'lrw', packSets: ['lrw', 'mor', 'shm', 'eve'],
     art: {set: 'shm', number: '172', name: 'Oona, Queen of the Fae', crop: 'https://cards.scryfall.io/art_crop/front/2/4/24ae75f6-fb74-422c-93f6-a0be7f919e47.jpg'}},
+  {act: 16, age: 'The Alara Years', title: 'The Conflux', years: '2008 to 2009',
+    sets: ['ala', 'con', 'arb', 'm10'], landSet: 'ala', packSets: ['ala', 'con', 'arb', 'm10'],
+    art: {set: 'con', number: '120', name: 'Nicol Bolas, Planeswalker', crop: 'https://cards.scryfall.io/art_crop/front/4/8/48ee3939-bc12-4275-a446-9de36f0b4672.jpg'}},
 ];
 export const SET_NAMES = {lea: 'Limited Edition Alpha', leb: 'Limited Edition Beta', '2ed': 'Unlimited Edition', arn: 'Arabian Nights', atq: 'Antiquities',
   '3ed': 'Revised Edition', leg: 'Legends', drk: 'The Dark', fem: 'Fallen Empires', ice: 'Ice Age', hml: 'Homelands', all: 'Alliances', '4ed': 'Fourth Edition',
@@ -61,6 +64,7 @@ export const SET_NAMES = {lea: 'Limited Edition Alpha', leb: 'Limited Edition Be
   chk: 'Champions of Kamigawa', bok: 'Betrayers of Kamigawa', sok: 'Saviors of Kamigawa', '9ed': 'Ninth Edition',
   rav: 'Ravnica: City of Guilds', gpt: 'Guildpact', dis: 'Dissension',
   csp: 'Coldsnap', tsp: 'Time Spiral', tsb: 'Time Spiral Timeshifted', plc: 'Planar Chaos', fut: 'Future Sight', '10e': 'Tenth Edition',
-  lrw: 'Lorwyn', mor: 'Morningtide', shm: 'Shadowmoor', eve: 'Eventide'};
+  lrw: 'Lorwyn', mor: 'Morningtide', shm: 'Shadowmoor', eve: 'Eventide',
+  ala: 'Shards of Alara', con: 'Conflux', arb: 'Alara Reborn', m10: 'Magic 2010'};
 export const storyAct = n => STORY_ACTS.find(a => a.act === Number(n)) || null;
 export const setSymbolUrl = code => `https://svgs.scryfall.io/sets/${encodeURIComponent(code)}.svg`;
