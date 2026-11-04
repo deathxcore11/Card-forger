@@ -226,16 +226,16 @@
     "focus": "50% 25%"
    }
   },
-  "hisoka": {
-   "name": "Hisoka",
-   "title": "Minamo Sensei",
+  "azami": {
+   "name": "Azami",
+   "title": "Lady of Scrolls",
    "portrait": {
-    "card": "Hisoka, Minamo Sensei",
+    "card": "Azami, Lady of Scrolls",
     "set": "chk",
-    "number": "66",
-    "id": "a87aea05-5970-455e-a728-668cf23940a6",
-    "crop": "https://cards.scryfall.io/art_crop/front/a/8/a87aea05-5970-455e-a728-668cf23940a6.jpg?1783944327",
-    "artist": "Donato Giancola",
+    "number": "52",
+    "id": "15ea91b1-f2ff-4b99-8148-333aa27ea8cd",
+    "crop": "https://cards.scryfall.io/art_crop/front/1/5/15ea91b1-f2ff-4b99-8148-333aa27ea8cd.jpg?1783944329",
+    "artist": "Ittoku",
     "focus": "50% 25%"
    }
   },
@@ -619,7 +619,7 @@
        "id": "120c05f1-5ec3-4a0f-8628-6919e393104a"
       },
       {
-       "qty": 4,
+       "qty": 2,
        "name": "Humble Budoka",
        "set": "chk",
        "number": "214",
@@ -633,7 +633,7 @@
        "id": "308566ed-18cc-4e3b-b5ab-d5b17795f2f1"
       },
       {
-       "qty": 4,
+       "qty": 2,
        "name": "Matsu-Tribe Decoy",
        "set": "chk",
        "number": "227",
@@ -654,7 +654,7 @@
        "id": "a437cde4-c40b-40a3-bc19-e461c98186dc"
       },
       {
-       "qty": 4,
+       "qty": 2,
        "name": "Kami of the Palace Fields",
        "set": "chk",
        "number": "24",
@@ -675,18 +675,25 @@
        "id": "85ab46f5-d3e1-403f-92e7-f40de51a3d4d"
       },
       {
-       "qty": 12,
+       "qty": 14,
        "name": "Forest",
        "set": "chk",
        "number": "303",
        "id": "a3209b22-56af-45ac-9224-67574c035638"
       },
       {
-       "qty": 8,
+       "qty": 10,
        "name": "Plains",
        "set": "chk",
        "number": "287",
        "id": "deff6a75-2ecd-49d6-b58b-a9d24615f9b7"
+      },
+      {
+       "qty": 2,
+       "name": "Dosan the Falling Leaf",
+       "set": "chk",
+       "number": "205",
+       "id": "ffb190db-48fc-4c39-ae9f-5e304eabb4f4"
       }
      ]
     }
@@ -1542,7 +1549,7 @@
        "id": "743e38d1-b1cd-4828-ad3d-529a9f882115"
       },
       {
-       "qty": 4,
+       "qty": 2,
        "name": "Ashen-Skin Zubera",
        "set": "chk",
        "number": "101",
@@ -1575,6 +1582,13 @@
        "set": "chk",
        "number": "299",
        "id": "22262a3a-c2e0-4639-9002-361b39ea9b3a"
+      },
+      {
+       "qty": 2,
+       "name": "Marrow-Gnawer",
+       "set": "chk",
+       "number": "124",
+       "id": "72e4548b-c171-4f10-b896-af37543dcf0f"
       }
      ]
     }
@@ -1586,12 +1600,12 @@
     },
     "villain": {
      "card": {
-      "oracle_id": "45c8e860-5ce5-4a1c-aebe-97ddffcb2f74",
-      "name": "Nezumi Shortfang // Stabwhisker the Odious",
+      "oracle_id": "2b934761-5720-477b-94b7-d1d91dc581a6",
+      "name": "Marrow-Gnawer",
       "rarity": "rare",
       "set": "chk",
-      "id": "c8265c39-d287-4c5a-baba-f2f09dd80a1c",
-      "image": "https://cards.scryfall.io/normal/front/c/8/c8265c39-d287-4c5a-baba-f2f09dd80a1c.jpg"
+      "id": "72e4548b-c171-4f10-b896-af37543dcf0f",
+      "image": "https://cards.scryfall.io/normal/front/7/2/72e4548b-c171-4f10-b896-af37543dcf0f.jpg"
      },
      "coins": 100
     }
@@ -1660,11 +1674,11 @@
    "teaches": [
     "The graveyard"
    ],
-   "blurb": "At the Minamo School, Sensei Hisoka searches the scrolls for anything that can end the war. Godo's bandits have come to burn them. In the real 2005, Gifts Ungiven fed graveyards across Standard.",
+   "blurb": "At the Minamo School, Lady Azami searches the scrolls for anything that can end the war, though her own sensei would rather she stopped looking. Godo's bandits have come to burn them. In the real 2005, Gifts Ungiven fed graveyards across Standard.",
    "rewardSet": "chk",
    "host": false,
    "hero": {
-    "who": "hisoka",
+    "who": "azami",
     "deck": {
      "name": "Minamo Gifts",
      "colors": "BGU",
@@ -1735,18 +1749,11 @@
        "id": "92b300a3-e6a8-4ca9-bb26-03f57b5ff6ec"
       },
       {
-       "qty": 3,
+       "qty": 2,
        "name": "Moss Kami",
        "set": "chk",
        "number": "228",
        "id": "a437cde4-c40b-40a3-bc19-e461c98186dc"
-      },
-      {
-       "qty": 1,
-       "name": "Venerable Kumo",
-       "set": "chk",
-       "number": "248",
-       "id": "308566ed-18cc-4e3b-b5ab-d5b17795f2f1"
       },
       {
        "qty": 4,
@@ -1796,6 +1803,13 @@
        "set": "chk",
        "number": "295",
        "id": "9d376282-adf0-4d37-b9a4-1329cd496516"
+      },
+      {
+       "qty": 2,
+       "name": "Azami, Lady of Scrolls",
+       "set": "chk",
+       "number": "52",
+       "id": "15ea91b1-f2ff-4b99-8148-333aa27ea8cd"
       }
      ]
     }
@@ -1809,7 +1823,7 @@
      "label": "tribute",
      "cards": [
       {
-       "qty": 2,
+       "qty": 3,
        "name": "Godo, Bandit Warlord",
        "set": "chk",
        "number": "169",
@@ -1865,14 +1879,14 @@
        "id": "716ae2ca-800a-4cc0-8cb1-fe8d6495306f"
       },
       {
-       "qty": 4,
+       "qty": 2,
        "name": "Yamabushi's Flame",
        "set": "chk",
        "number": "198",
        "id": "1a9bacba-55c4-4b92-bdd9-01b6035ed1b2"
       },
       {
-       "qty": 2,
+       "qty": 3,
        "name": "Akki Lavarunner // Tok-Tok, Volcano Born",
        "set": "chk",
        "number": "153",
@@ -1907,12 +1921,12 @@
    },
    "scene": [
     {
-     "who": "hisoka",
-     "line": "By all rights we should have perished in the Kami War. Our perseverence is a tribute to mortal ingenuity. And perhaps a few forgotten secrets found in the nick of time.",
+     "who": "azami",
+     "line": "Though in years past speculation was not encouraged about the strange ways of kami, now we must understand their motivations, if such is even possible to the mortal mind.",
      "quote": true
     },
     {
-     "who": "hisoka",
+     "who": "azami",
      "line": "Gifts Ungiven: find four different cards. Your opponent puts two in your graveyard and you keep the others. Give them a choice where both answers help you."
     },
     {
@@ -1934,13 +1948,12 @@
    ],
    "after": [
     {
-     "who": "hisoka",
-     "line": "I advise against this war.",
-     "quote": true
+     "who": "azami",
+     "line": "Sensei Hisoka told us to stop asking questions. Now I know why. He helped Konda do it."
     },
     {
-     "who": "hisoka",
-     "line": "Nobody listened then. Now the scrolls say the same thing Kumano would not: Konda stole a kami. We must take it back."
+     "who": "azami",
+     "line": "The scrolls say the same thing Kumano would not: Konda stole a kami. We must take it back."
     }
    ],
    "cues": {

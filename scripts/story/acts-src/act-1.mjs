@@ -14,6 +14,13 @@ export default {
     {who: 'stage', line: 'A white flash. Then snow.'},
     {who: 'mishra', line: 'It was never just me, brother. Someone else was listening.', whisper: true},
     {who: 'narrator', line: 'Recorded: the war ends at Argoth. The blast begins an ice age. And on Phyrexia, someone has learned the name Dominaria.'}],
+  villainFinale: [
+    {who: 'stage', line: 'Argoth burns. Nobody sets off the Sylex.'},
+    {who: 'mishra', line: 'You built walls, brother. I built a door.'},
+    {who: 'ashnod', line: 'And the workers, my lord?'},
+    {who: 'mishra', line: 'Feed them to the factories. We need more.'},
+    {who: 'stage', line: "Far below the world, something answers Mishra's call."},
+    {who: 'narrator', line: 'Recorded: Mishra wins the war. Phyrexia never has to find Dominaria. It was invited.'}],
   cast: {
     you: {name: 'You', title: 'Planeswalker', card: 'Prodigal Sorcerer'},
     archers: {name: 'Elvish Archer', title: 'Llanowar', card: 'Elvish Archers', focus: '50% 25%'},
@@ -31,7 +38,7 @@ export default {
     mishra: {name: 'Mishra', title: 'The Brother', fixed: {card: 'Mishra, Excavation Prodigy', set: 'bro', number: '140', id: 'f5d02416-8578-40a5-bf31-d1ef9b8764f1', crop: 'https://cards.scryfall.io/art_crop/front/f/5/f5d02416-8578-40a5-bf31-d1ef9b8764f1.jpg', artist: 'Donato Giancola'}, focus: '50% 25%'},
   },
   battles: [
-    {slot: 1, kind: 'Arrival', title: 'The First Summons', difficulty: 'Easy', rewardSet: 'lea', teaches: ['Land drops and mana', 'Casting creatures', 'Attacking and blocking'],
+    {slot: 1, kind: 'Arrival', title: 'The First Summons', difficulty: 'Easy', mood: 'tension', rewardSet: 'lea', teaches: ['Land drops and mana', 'Casting creatures', 'Attacking and blocking'],
       blurb: 'You wake in a forest that has never seen a planeswalker. Its archers have their bows up already.',
       hero: {who: 'you', deck: {label: 'tribute', name: 'Knights of the Dawn', colors: 'W', list: `
 4 Savannah Lions
@@ -59,8 +66,8 @@ export default {
 24 Forest`}},
       scene: [{who: 'archers', line: 'Stop. You came out of the air.'}, {who: 'archers', line: "Things that come out of the air don't usually leave."}, {who: 'archers', line: 'Show us what you are. Call something.'}],
       villainScene: [{who: 'archers', line: "Something fell out of the sky into our forest."}, {who: 'archers', line: "Eyes on it. If it calls one beast, we call ten."}],
-      cues: {villain: cue('Bows up.', 'The forest answers us, not you.', 'Fall back to the trees!', 'Go back to wherever you fell from.', 'Fine. The forest will remember you.')}},
-    {slot: 2, kind: 'Lesson', title: "The Goblin King's Toll", difficulty: 'Easy', rewardSet: 'lea', teaches: ['Flying'],
+      cues: {hero: cue('I am here. Somehow.', 'To me, knights!', 'Too many arrows...', 'The forest can keep its secrets.', 'Back through the rift...'), villain: cue('Bows up.', 'The forest answers us, not you.', 'Fall back to the trees!', 'Go back to wherever you fell from.', 'Fine. The forest will remember you.')}},
+    {slot: 2, kind: 'Lesson', title: "The Goblin King's Toll", difficulty: 'Easy', mood: 'comic', rewardSet: 'lea', teaches: ['Flying'],
       blurb: 'A mountain pass with a toll and a king who collects it. His army is big, loud and stuck on the ground.',
       hero: {who: 'you', deck: {label: 'tribute', name: 'Wings of the Dawn', colors: 'W', list: `
 4 Mesa Pegasus
@@ -87,8 +94,8 @@ export default {
 24 Mountain`}},
       scene: [{who: 'goblinKing', line: 'Halt! This pass belongs to the king.'}, {who: 'goblinKing', line: 'I am the king.'}, {who: 'goblinKing', line: "Toll is everything you've got. Pay or get stomped."}, {who: 'goblinKing', line: '...Why is your stuff flying? Nobody said flying was allowed.'}],
       villainScene: [{who: 'goblinKing', line: "Big toll today, boys. Biggest ever."}, {who: 'goblinKing', line: "If it flies, throw rocks at it. Rocks fly too. Sort of."}],
-      cues: {villain: cue('Charge! No, the OTHER way!', "Look at THAT one. That one's mine.", 'Who let the sky in?!', "Toll's paid! Hah!", 'Next time, nets. Lots of nets.')}},
-    {slot: 3, kind: 'Lesson', title: 'Knights at the Ford', difficulty: 'Easy', rewardSet: 'lea', teaches: ['First strike', 'Protection from a colour'],
+      cues: {hero: cue('Up, into the sky.', 'Wings!', 'They are everywhere...', 'Toll unpaid.', 'Grounded...'), villain: cue('Charge! No, the OTHER way!', "Look at THAT one. That one's mine.", 'Who let the sky in?!', "Toll's paid! Hah!", 'Next time, nets. Lots of nets.')}},
+    {slot: 3, kind: 'Lesson', title: 'Knights at the Ford', difficulty: 'Easy', mood: 'march', rewardSet: 'lea', teaches: ['First strike', 'Protection from a colour'],
       blurb: 'Two knights have held the same river crossing for years. Today one of them finally wants it settled.',
       hero: {who: 'whiteKnight', deck: {label: 'tribute', name: 'The Order of the Ford', colors: 'W', list: `
 4 White Knight
@@ -122,7 +129,7 @@ export default {
       villainScene: [{who: 'blackKnight', line: "Years at this ford. Every morning, the same white armour."}, {who: 'blackKnight', line: "Today it ends. No prayers, no tricks. Just steel."}],
       cues: {hero: cue('Steady.', 'There. First, and last.', "I've held this ford through worse.", 'Same time tomorrow.', 'Go on, cross. Just this once.'),
         villain: cue('No mercy at the ford.', 'Feel that, paladin?', "The river's getting deeper...", 'At last!', 'Tomorrow, then.')}},
-    {slot: 4, kind: 'Rival', title: 'The Djinn of the Bottle', difficulty: 'Normal', rewardSet: 'arn', teaches: ['Instants on the opponent\'s turn', 'Bounce'],
+    {slot: 4, kind: 'Rival', title: 'The Djinn of the Bottle', difficulty: 'Normal', mood: 'comic', rewardSet: 'arn', teaches: ['Instants on the opponent\'s turn', 'Bounce'],
       blurb: 'A rift drops you into Rabiah, the world of the Thousand and One Nights, at the feet of a djinn who is bored of granting wishes.',
       hero: {who: 'you', deck: {label: 'tribute', name: 'Rift-Walker\'s Court', colors: 'WU', list: `
 4 Serendib Efreet
@@ -152,8 +159,8 @@ export default {
 24 Forest`}},
       scene: [{who: 'erhnam', line: "A new face! Do you know how long it's been since I had a new face?"}, {who: 'erhnam', line: 'Every visitor wishes. Gold, wives, kingdoms. Tiresome.'}, {who: 'erhnam', line: "You will not wish. You will duel. Win, and I'll show you the way home."}, {who: 'erhnam', line: 'Lose, and you stay. I collect people.'}],
       villainScene: [{who: 'erhnam', line: "A rift-walker. I've collected kings, but never one of those."}, {who: 'erhnam', line: "Make it a long duel. I want to savour this one."}],
-      cues: {villain: cue('Entertain me.', 'Behold the gift of the djinn.', 'Ah. That stung. How novel.', 'Another for my collection.', 'Go, then! The rift is that way. Visit.')}},
-    {slot: 5, kind: 'Lesson', title: 'Argoth Burns', difficulty: 'Normal', rewardSet: 'atq', teaches: ['Artifacts', 'Answering artifacts'],
+      cues: {hero: cue('Let us bargain, djinn.', 'Back in the bottle!', 'He collects everything...', 'Not one of your collection.', 'Collected...'), villain: cue('Entertain me.', 'Behold the gift of the djinn.', 'Ah. That stung. How novel.', 'Another for my collection.', 'Go, then! The rift is that way. Visit.')}},
+    {slot: 5, kind: 'Lesson', title: 'Argoth Burns', difficulty: 'Normal', mood: 'tension', rewardSet: 'atq', teaches: ['Artifacts', 'Answering artifacts'],
       blurb: 'The rift spits you out on Argoth, a forest island. Two brothers are cutting it down to build their war.',
       hero: {who: 'titania', deck: {label: 'tribute', name: 'The Argoth Grove', colors: 'G', list: `
 2 Argothian Pixies
@@ -190,7 +197,7 @@ export default {
       villainScene: [{who: 'urza', line: "Titania thinks the trees are sacred. Mishra thinks they're spite."}, {who: 'urza', line: "I think they're fuel. And I am out of fuel."}],
       cues: {hero: cue('The forest stands.', 'Roots, rise!', 'Argoth bleeds.', 'Go home, artificer.', "He'll burn us all..."),
         villain: cue('Proceed.', 'Note the efficiency.', 'Recalculating.', 'Clear it.', 'A delay. Nothing more.')}},
-    {slot: 6, kind: 'Meta', title: 'The Efreet of Serendib', difficulty: 'Normal', rewardSet: 'arn', teaches: ['Tempo', 'Counterspells'],
+    {slot: 6, kind: 'Meta', title: 'The Efreet of Serendib', difficulty: 'Normal', mood: 'march', rewardSet: 'arn', teaches: ['Tempo', 'Counterspells'],
       blurb: 'The rift flickers back to Rabiah. Sindbad needs a crew, and the island of Serendib has its own guardian.',
       hero: {who: 'sindbad', deck: {label: 'tribute', name: "Sindbad's Crew", colors: 'U', list: `
 4 Sindbad
@@ -222,7 +229,7 @@ export default {
       villainScene: [{who: 'efreet', line: "Another sailor, another promise of treasure."}, {who: 'efreet', line: "Serendib has outlasted a thousand ships. It can outlast one more."}],
       cues: {hero: cue('Hoist!', 'Fair winds!', "I've been shipwrecked six times. Seven's fine.", 'To Serendib!', 'Back to port...'),
         villain: cue('Turn back.', 'Burn, little boats.', 'Even fire tires.', 'Serendib keeps its own.', 'Go. Take nothing.')}},
-    {slot: 7, kind: 'Meta', title: 'Factories at Kroog', difficulty: 'Normal', rewardCard: "Ashnod's Altar", rewardSet: 'atq', teaches: ['Artifact creatures', 'Sacrifice'],
+    {slot: 7, kind: 'Meta', title: 'Factories at Kroog', difficulty: 'Normal', mood: 'march', rewardCard: "Ashnod's Altar", rewardSet: 'atq', teaches: ['Artifact creatures', 'Sacrifice'],
       blurb: "The war comes to Kroog, Urza's capital. His apprentice holds the walls against Mishra's cruellest engineer.",
       hero: {who: 'tawnos', deck: {label: 'tribute', name: 'The Walls of Kroog', colors: 'W', list: `
 4 Yotian Soldier
@@ -255,7 +262,7 @@ export default {
       villainScene: [{who: 'ashnod', line: "Kroog's walls, Tawnos's toys, and a planeswalker to open up."}, {who: 'ashnod', line: "Mishra wants the factories. I want to see how everything works inside."}],
       cues: {hero: cue('Seal the gates.', 'Built for exactly this.', 'Hold the line!', 'Kroog stands.', 'Get the people out...'),
         villain: cue("Let's see what's inside.", "Isn't she beautiful?", "That's... rude.", 'Mishra will be so pleased.', "Next time I'm bringing the big altar.")}},
-    {slot: 8, kind: 'Boss', title: "Mishra's War Machine", difficulty: 'Normal', rewardSet: 'atq', teaches: ['Everything so far'],
+    {slot: 8, kind: 'Boss', title: "Mishra's War Machine", difficulty: 'Normal', mood: 'boss', rewardSet: 'atq', teaches: ['Everything so far'],
       blurb: 'Thirty years of war, two halves of one stone, and two brothers meeting on the same battlefield at last.',
       hero: {who: 'urza', deck: {label: 'tribute', name: "Urza's Engines", colors: 'W', list: `
 4 Ornithopter
@@ -312,7 +319,7 @@ export default {
         beat: 'Keep your hand at four or fewer, break the Vises with Disenchant, and hit hard while it spends its turns drawing.',
         after: 'In January 1994 the first restricted list arrived: one copy each of Ancestral Recall, Timetwister, Black Lotus, Sol Ring, Time Walk and every Mox. Black Vise and Wheel of Fortune stayed legal at four.'},
       blurb: 'Under the snow, a deck from before anything was forbidden. It draws you cards until they kill you.',
-      hero: {who: 'you', deck: {label: 'experimental', rules: 'Built for this fight: every Power card at one copy, as Vintage allows, behind a fast white-red army.', name: '1993 Power', colors: 'WR', archetype: 'Power and pressure', list: `
+      hero: {who: 'you', deck: {label: 'experimental', rules: 'Built for this fight: every Power card at one copy, as Vintage allows, behind a fast white-red army.', name: '1993 Power', colors: 'WUR', archetype: 'Power and pressure', list: `
 1 Black Lotus
 1 Mox Pearl
 1 Mox Ruby
@@ -352,7 +359,7 @@ export default {
           {from: '5 Wheel of Fortune', to: '1 Wheel of Fortune and 4 Howling Mine', why: 'Story matches run on Vintage rules, where Wheel is restricted. Howling Mine keeps both hands full the same way.'},
           {from: '4 Timetwister', to: '1 Timetwister', why: 'Restricted in Vintage.'},
           {from: '5 Ancestral Recall', to: '1 Ancestral Recall', why: 'Restricted in Vintage.'},
-          {from: 'Moxen in multiples', to: '1 Mox Sapphire, 1 Mox Ruby, 1 Mox Pearl', why: 'Restricted in Vintage.'}], colors: 'UR', archetype: 'Black Vise draw-seven', list: `
+          {from: 'Moxen in multiples', to: '1 Mox Sapphire, 1 Mox Ruby, 1 Mox Pearl', why: 'Restricted in Vintage.'}], colors: 'WUR', archetype: 'Black Vise draw-seven', list: `
 4 Black Vise
 4 Howling Mine
 1 Wheel of Fortune

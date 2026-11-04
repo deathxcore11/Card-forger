@@ -1,5 +1,6 @@
 {
  "act": 7,
+ "era": null,
  "title": "The Mercadian Masques",
  "years": "1999 to 2000",
  "sets": [
@@ -357,6 +358,7 @@
      "name": "The Weatherlight Crew",
      "colors": "RW",
      "archetype": null,
+     "label": null,
      "cards": [
       {
        "qty": 4,
@@ -444,6 +446,7 @@
      "name": "The Magistrate's Guard",
      "colors": "WU",
      "archetype": null,
+     "label": null,
      "cards": [
       {
        "qty": 4,
@@ -641,6 +644,7 @@
      "name": "The Cho-Arrim",
      "colors": "W",
      "archetype": null,
+     "label": null,
      "cards": [
       {
        "qty": 2,
@@ -728,6 +732,7 @@
      "name": "Gerrard's Irregulars",
      "colors": "RW",
      "archetype": null,
+     "label": null,
      "cards": [
       {
        "qty": 4,
@@ -916,6 +921,7 @@
      "name": "The Kyren Host",
      "colors": "R",
      "archetype": null,
+     "label": null,
      "cards": [
       {
        "qty": 2,
@@ -961,24 +967,10 @@
       },
       {
        "qty": 4,
-       "name": "Robber Fly",
-       "set": "mmq",
-       "number": "209",
-       "id": "7d5cf073-2ba0-463e-bcd4-979ad18e28fc"
-      },
-      {
-       "qty": 4,
        "name": "Mogg Toady",
        "set": "nem",
        "number": "95",
        "id": "ee8edaf6-d46e-4efb-8bc0-ec11e06eb499"
-      },
-      {
-       "qty": 2,
-       "name": "Ceremonial Guard",
-       "set": "mmq",
-       "number": "182",
-       "id": "4a6c69d1-5295-419f-bb8f-af826bf92cb3"
       },
       {
        "qty": 4,
@@ -993,6 +985,20 @@
        "set": "mmq",
        "number": "343",
        "id": "19b5fff1-7a60-4e50-893a-8177cd62bf82"
+      },
+      {
+       "qty": 4,
+       "name": "Arms Dealer",
+       "set": "mmq",
+       "number": "172",
+       "id": "dafea45d-be00-428d-a127-70e6a14efe3f"
+      },
+      {
+       "qty": 2,
+       "name": "Lunge",
+       "set": "mmq",
+       "number": "203",
+       "id": "e9e43349-429c-43f7-b808-c4bf37370a9f"
       }
      ]
     }
@@ -1003,6 +1009,7 @@
      "name": "Talruum Fury",
      "colors": "RG",
      "archetype": null,
+     "label": null,
      "cards": [
       {
        "qty": 4,
@@ -1207,6 +1214,7 @@
      "name": "Heir of the Legacy",
      "colors": "RW",
      "archetype": null,
+     "label": null,
      "cards": [
       {
        "qty": 4,
@@ -1294,6 +1302,7 @@
      "name": "A Borrowed Face",
      "colors": "UB",
      "archetype": null,
+     "label": null,
      "cards": [
       {
        "qty": 2,
@@ -1499,6 +1508,7 @@
      "name": "The Cursed",
      "colors": "B",
      "archetype": null,
+     "label": null,
      "cards": [
       {
        "qty": 4,
@@ -1543,7 +1553,7 @@
        "id": "ca3614c2-39b4-4f67-adab-373dcb9e4553"
       },
       {
-       "qty": 2,
+       "qty": 4,
        "name": "Belbe's Percher",
        "set": "nem",
        "number": "53",
@@ -1557,21 +1567,21 @@
        "id": "ccaff6a0-7831-45db-a50f-881c6cb7ce49"
       },
       {
-       "qty": 4,
+       "qty": 2,
        "name": "Seal of Doom",
        "set": "nem",
        "number": "70",
        "id": "396d9f58-a4ca-4197-94be-0f115427224e"
       },
       {
-       "qty": 4,
+       "qty": 2,
        "name": "Dark Ritual",
        "set": "mmq",
        "number": "129",
        "id": "a6aacc3e-fe37-4a08-83e6-7ee8c0c0af74"
       },
       {
-       "qty": 24,
+       "qty": 26,
        "name": "Swamp",
        "set": "mmq",
        "number": "339",
@@ -1586,27 +1596,14 @@
      "name": "The Fallen",
      "colors": "UB",
      "archetype": null,
+     "label": null,
      "cards": [
       {
-       "qty": 2,
+       "qty": 3,
        "name": "Volrath the Fallen",
        "set": "nem",
        "number": "75",
        "id": "08bdd66e-9ca1-456e-a61c-7c96cf6f7c56"
-      },
-      {
-       "qty": 4,
-       "name": "Stronghold Biologist",
-       "set": "nem",
-       "number": "45",
-       "id": "6215a5d9-d6d2-4f9f-8a0c-a65d1afd956a"
-      },
-      {
-       "qty": 4,
-       "name": "Stronghold Machinist",
-       "set": "nem",
-       "number": "46",
-       "id": "d3567b4e-6e31-40b0-83ea-4a2a58bd637c"
       },
       {
        "qty": 4,
@@ -1651,7 +1648,7 @@
        "id": "67ced38e-0f33-4bda-8e18-09f6ac03a3d7"
       },
       {
-       "qty": 2,
+       "qty": 1,
        "name": "Stronghold Zeppelin",
        "set": "nem",
        "number": "47",
@@ -1670,6 +1667,20 @@
        "set": "mmq",
        "number": "339",
        "id": "72020810-bfa3-42d5-ad0d-6d02a6fe1b31"
+      },
+      {
+       "qty": 4,
+       "name": "Pit Raptor",
+       "set": "pcy",
+       "number": "72",
+       "id": "e37cd150-1064-43b7-919b-8922d8a18f21"
+      },
+      {
+       "qty": 4,
+       "name": "Troublesome Spirit",
+       "set": "pcy",
+       "number": "52",
+       "id": "23d7e856-6852-4b97-ae0e-a4becdfc8166"
       }
      ]
     }
@@ -1786,6 +1797,7 @@
      "name": "The Kipamu League",
      "colors": "WU",
      "archetype": null,
+     "label": null,
      "cards": [
       {
        "qty": 4,
@@ -1873,9 +1885,10 @@
      "name": "The Keldon Host",
      "colors": "R",
      "archetype": null,
+     "label": null,
      "cards": [
       {
-       "qty": 2,
+       "qty": 4,
        "name": "Lesser Gargadon",
        "set": "pcy",
        "number": "97",
@@ -1894,13 +1907,6 @@
        "set": "pcy",
        "number": "93",
        "id": "daa3f9c0-66ff-4b94-b0c3-e1c65d2040b9"
-      },
-      {
-       "qty": 2,
-       "name": "Keldon Firebombers",
-       "set": "pcy",
-       "number": "94",
-       "id": "d3fc78b5-c259-4c67-810c-99655e72c2da"
       },
       {
        "qty": 4,
@@ -1961,12 +1967,12 @@
     },
     "villain": {
      "card": {
-      "oracle_id": "d5e02fa5-827e-414b-acb5-932de4bb3ee3",
-      "name": "Keldon Firebombers",
-      "rarity": "rare",
+      "oracle_id": "7e162cc1-9482-4812-8897-209ec2927ec0",
+      "name": "Lesser Gargadon",
+      "rarity": "uncommon",
       "set": "pcy",
-      "id": "d3fc78b5-c259-4c67-810c-99655e72c2da",
-      "image": "https://cards.scryfall.io/normal/front/d/3/d3fc78b5-c259-4c67-810c-99655e72c2da.jpg"
+      "id": "63ed7aec-a513-418e-9cef-e0c51203055b",
+      "image": "https://cards.scryfall.io/normal/front/6/3/63ed7aec-a513-418e-9cef-e0c51203055b.jpg"
      },
      "coins": 100
     }
@@ -2065,6 +2071,7 @@
      "name": "Skyshroud",
      "colors": "G",
      "archetype": null,
+     "label": null,
      "cards": [
       {
        "qty": 4,
@@ -2152,6 +2159,7 @@
      "name": "The Vec Defiant",
      "colors": "W",
      "archetype": null,
+     "label": null,
      "cards": [
       {
        "qty": 2,
@@ -2344,6 +2352,7 @@
      "name": "The Rebellion",
      "colors": "GW",
      "archetype": null,
+     "label": null,
      "cards": [
       {
        "qty": 2,
@@ -2438,9 +2447,10 @@
      "name": "The Evincar's Court",
      "colors": "B",
      "archetype": null,
+     "label": null,
      "cards": [
       {
-       "qty": 2,
+       "qty": 3,
        "name": "Ascendant Evincar",
        "set": "nem",
        "number": "51",
@@ -2510,7 +2520,7 @@
        "id": "f05f5d93-50d1-4aa6-af05-383a6808345b"
       },
       {
-       "qty": 2,
+       "qty": 1,
        "name": "Vicious Hunger",
        "set": "nem",
        "number": "74",

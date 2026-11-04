@@ -199,9 +199,10 @@ export default {
 4 Firebolt
 4 Grim Lavamancer
 4 Barbarian Lunatic
-4 Pardic Firecat
+2 Pardic Firecat
 12 Mountain
-12 Forest`}},
+12 Forest
+2 Elephant Guide`}},
       villain: {who: 'laquatus', deck: {name: 'The Cephalid Court', colors: 'U', list: `
 2 Ambassador Laquatus
 2 Aboshan, Cephalid Emperor

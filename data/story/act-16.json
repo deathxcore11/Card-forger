@@ -1170,7 +1170,7 @@
      "label": "tribute",
      "cards": [
       {
-       "qty": 2,
+       "qty": 3,
        "name": "Ajani Vengeant",
        "set": "ala",
        "number": "154",
@@ -1233,7 +1233,7 @@
        "id": "237de286-5bf0-4c8e-8504-2d01d3133b55"
       },
       {
-       "qty": 2,
+       "qty": 1,
        "name": "Naya Charm",
        "set": "ala",
        "number": "180",
@@ -1279,7 +1279,7 @@
      "label": "tribute",
      "cards": [
       {
-       "qty": 2,
+       "qty": 3,
        "name": "Sedris, the Traitor King",
        "set": "ala",
        "number": "193",
@@ -1335,7 +1335,7 @@
        "id": "701498e5-1d4d-42f4-9dd0-5d4cf78f0e68"
       },
       {
-       "qty": 2,
+       "qty": 1,
        "name": "Lich Lord of Unx",
        "set": "arb",
        "number": "24",
@@ -1591,7 +1591,7 @@
      "label": "tribute",
      "cards": [
       {
-       "qty": 2,
+       "qty": 3,
        "name": "Kresh the Bloodbraided",
        "set": "ala",
        "number": "178",
@@ -1640,7 +1640,7 @@
        "id": "3c05e8a2-b7d0-4f24-b2ae-8e4db30e5842"
       },
       {
-       "qty": 2,
+       "qty": 1,
        "name": "Predator Dragon",
        "set": "ala",
        "number": "109",

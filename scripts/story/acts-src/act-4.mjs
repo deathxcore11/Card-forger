@@ -122,7 +122,7 @@ export default {
         {who: 'teferi', line: 'So. A game. Your cards will step out of time and back. Try to keep up.'},
         {who: 'teferi', line: 'I had a teacher who played like this once. He never said sorry either.'}],
       villainScene: [{who: 'teferi', line: 'A planeswalker? Here? Oh, this is going to be fun.'}, {who: 'teferi', line: "Let's see how you play when your army keeps disappearing."}],
-      cues: {hero: cue(null, null, null, null, null), villain: cue('Blink and you\'ll miss it.', 'Made you look.', 'Careless, like a child with fire, so was I with time.', 'Again! Same time yesterday?', "Good. Now I'm worried about Kaervek, not you.")}},
+      cues: {hero: cue('Hello? Is the island here today?', 'Caught you in phase!', 'It keeps vanishing...', 'Pinned down. Finally.', 'Gone again...'), villain: cue('Blink and you\'ll miss it.', 'Made you look.', 'Careless, like a child with fire, so was I with time.', 'Again! Same time yesterday?', "Good. Now I'm worried about Kaervek, not you.")}},
     {slot: 3, mood: 'tension', kind: 'Lesson', title: 'The Song of Blood', difficulty: 'Easy', rewardSet: 'mir', teaches: ["Instants on the opponent's turn"],
       blurb: 'A Femeref village goes quiet at sunset. Something is singing in the grass. Rashida has been waiting for it for three nights.',
       hero: {who: 'rashida', deck: {name: "Scalebane's Watch", colors: 'RW', list: `
@@ -141,7 +141,7 @@ export default {
 10 Plains
 10 Mountain`, prefer: ['mir']}},
       villain: {who: 'purraj', deck: {name: 'The Night Stalkers', colors: 'B', list: `
-2 Purraj of Urborg
+4 Purraj of Urborg
 4 Pit Scorpion
 2 Breathstealer
 2 Vampire Bats
@@ -153,7 +153,6 @@ export default {
 4 Sewer Rats
 2 Scathe Zombies
 2 Cadaverous Knight
-2 Bog Rats
 24 Swamp`}},
       scene: [{who: 'rashida', line: "Don't light a fire. He's drawn to it."}, {who: 'rashida', line: "He hunts at dusk. He kills while you're busy."},
         {who: 'rashida', line: "So we'll be busy on HIS turn."}, {who: 'purraj', line: 'Tell me... have you ever sung the Song of Blood?', quote: true},
@@ -283,7 +282,7 @@ export default {
       villainScene: [{who: 'pashad', line: 'Wealth is a good thing, compared to poverty. Your food is better, your robes are softer.', quote: true},
         {who: 'pashad', line: 'The war is terrible for business. Except the business of war, which is wonderful.'},
         {who: 'pashad', line: "A planeswalker customer! Do they pay in other worlds' coins? Let's find out."}],
-      cues: {hero: cue(null, null, null, null, null), villain: cue("Let's make a deal!", 'Look at all these cards! Everybody gets some!', 'This is not how the deal was described to me.', 'Two goats. And the apology, in writing.', "Fine! Free water. Don't tell anyone.")},
+      cues: {hero: cue('What does it cost?', 'Paid in full!', 'Everyone draws but me...', 'Keep the change.', 'Bankrupt...'), villain: cue("Let's make a deal!", 'Look at all these cards! Everybody gets some!', 'This is not how the deal was described to me.', 'Two goats. And the apology, in writing.', "Fine! Free water. Don't tell anyone.")},
       after: [{who: 'pashad', line: "A map to Kaervek's camp. Mostly accurate. For you, half price."}, {who: 'hakim', line: "It's entirely accurate. That's what worries me. Why does a merchant have it?"}]},
     {slot: 7, mood: 'march', kind: 'Meta', title: 'Fireblast', difficulty: 'Normal', rewardSet: 'vis', teaches: ['Racing'],
       blurb: "The map was accurate. So was the ambush. Kaervek's embermages hold the road to his camp, and they don't negotiate. The original red curve deck.",
@@ -297,8 +296,9 @@ export default {
 2 Pearl Dragon
 4 Pacifism
 2 Warrior's Honor
-4 Healing Salve
-24 Plains`}},
+2 Healing Salve
+24 Plains
+2 Sidar Jabari`}},
       villain: {who: 'talibah', deck: {name: 'Sligh', colors: 'R', archetype: 'Sligh', list: `
 4 Mountain Goat
 4 Goblin Hero

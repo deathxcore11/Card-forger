@@ -59,11 +59,12 @@ export default {
 4 Benalish Trapper
 4 Llanowar Elite
 4 Benalish Lancer
-4 Quirion Sentinel
+2 Quirion Sentinel
 4 Armadillo Cloak
 4 Pacifism
 12 Forest
-12 Plains`}},
+12 Plains
+2 Gerrard Capashen`}},
       villain: {who: 'slayer', deck: {name: 'The First Wave', colors: 'B', list: `
 4 Phyrexian Slayer
 4 Phyrexian Infiltrator
@@ -145,10 +146,11 @@ export default {
 4 Lava Zombie
 4 Blazing Specter
 4 Phyrexian Rager
-4 Urborg Skeleton
+2 Urborg Skeleton
 4 Terminate
 12 Swamp
-12 Mountain`}},
+12 Mountain
+2 Lord of the Undead`}},
       scene: [q('squee', "No, *you* get the water. I ain't thirsty."),
         s('stage', 'Squee gets the water. Something in the water gets Squee.'),
         s('dralnu', 'Remarkable. Drowned, and walking. Do it again.'), s('squee', 'Squee does not want to do it again!'),
@@ -177,14 +179,13 @@ export default {
 12 Forest
 12 Plains`}},
       villain: {who: 'tsabo', deck: {name: "Tsabo's Legion", colors: 'BR', list: `
-2 Tsabo Tavoc
+4 Tsabo Tavoc
 4 Phyrexian Slayer
 4 Tsabo's Assassin
 4 Phyrexian Scuta
 4 Firescreamer
 4 Blazing Specter
 4 Hooded Kavu
-2 Plague Spitter
 4 Terminate
 4 Agonizing Demise
 12 Swamp
@@ -245,12 +246,11 @@ export default {
       blurb: 'Barrin trusted Urza for three thousand years. His wife Rayne is gone. Now his daughter Hanna is gone too. He goes home to Tolaria, and the Phyrexians are waiting.',
       hero: {who: 'barrin', deck: {name: "Barrin's Spite", colors: 'UR', list: `
 4 Fire // Ice
-2 Prophetic Bolt
+4 Prophetic Bolt
 4 Razorfin Hunter
 4 Tower Drake
 4 Tolarian Emissary
 4 Viashino Grappler
-2 Shivan Emissary
 4 Thunderscape Battlemage
 4 Repulse
 4 Zap
@@ -260,14 +260,15 @@ export default {
 4 Phyrexian Infiltrator
 4 Urborg Phantom
 4 Phyrexian Reaper
-4 Plague Spitter
-4 Stalking Assassin
 4 Vodalian Zombie
 4 Urborg Drake
-4 Recoil
-4 Agonizing Demise
+2 Recoil
+2 Agonizing Demise
 12 Island
-12 Swamp`}},
+14 Swamp
+4 Phyrexian Slayer
+2 Ravenous Rats
+4 Phyrexian Battleflies`}},
       scene: [q('stage', "As Barrin exhumed his daughter's body, he finally realized the full price of his faith in Urza."),
         q('stage', 'Barrin waited for the nausea to pass or for Urza to say something else. He waited in vain.'),
         q('barrin', 'Only vengeance matters now.'),

@@ -267,7 +267,7 @@
     "who": "rhys",
     "deck": {
      "name": "The Hunt of Lys Alana",
-     "colors": "G",
+     "colors": "GB",
      "archetype": null,
      "label": "tribute",
      "cards": [
@@ -335,25 +335,25 @@
        "id": "0092d7a0-bd00-45e5-a052-c0a9d970bc2e"
       },
       {
-       "qty": 2,
-       "name": "Nath's Elite",
-       "set": "lrw",
-       "number": "231",
-       "id": "f2a2b029-02ba-46b0-88a2-99025727cc56"
-      },
-      {
-       "qty": 22,
+       "qty": 20,
        "name": "Forest",
        "set": "lrw",
        "number": "298",
        "id": "6d3a661e-d890-4211-bc9c-8266001ebfba"
       },
       {
-       "qty": 2,
+       "qty": 4,
        "name": "Swamp",
        "set": "lrw",
        "number": "290",
        "id": "4f799604-bbbf-4d57-83c8-13a0eafa974e"
+      },
+      {
+       "qty": 2,
+       "name": "Nameless Inversion",
+       "set": "lrw",
+       "number": "128",
+       "id": "94b4e4d2-2358-48d2-9a2a-3d17afea28f5"
       }
      ]
     }
@@ -1067,7 +1067,7 @@
     "who": "rhys",
     "deck": {
      "name": "Rhys's Pack",
-     "colors": "G",
+     "colors": "GB",
      "archetype": null,
      "label": "tribute",
      "cards": [
@@ -1622,18 +1622,11 @@
      "label": "tribute",
      "cards": [
       {
-       "qty": 2,
+       "qty": 4,
        "name": "Bitterblossom",
        "set": "mor",
        "number": "58",
        "id": "8145fed6-6b51-420a-84cf-4ea5e0aa1883"
-      },
-      {
-       "qty": 2,
-       "name": "Oona's Gatewarden",
-       "set": "shm",
-       "number": "173",
-       "id": "972bb6e4-300c-49f5-8305-459a3ba67baa"
       },
       {
        "qty": 4,
@@ -2198,13 +2191,6 @@
       },
       {
        "qty": 4,
-       "name": "Shriekmaw",
-       "set": "lrw",
-       "number": "139",
-       "id": "ea19eb5e-0d70-42e6-bda2-b13757e08ca6"
-      },
-      {
-       "qty": 4,
        "name": "Tarfire",
        "set": "lrw",
        "number": "194",
@@ -2216,13 +2202,6 @@
        "set": "lrw",
        "number": "128",
        "id": "94b4e4d2-2358-48d2-9a2a-3d17afea28f5"
-      },
-      {
-       "qty": 4,
-       "name": "Elvish Warrior",
-       "set": "mor",
-       "number": "120",
-       "id": "b2154a16-1fb8-45bb-9b9b-e995e701c330"
       },
       {
        "qty": 4,
@@ -2272,6 +2251,27 @@
        "set": "lrw",
        "number": "294",
        "id": "83beeef7-2bb5-4c3a-9be4-79a968696d65"
+      },
+      {
+       "qty": 4,
+       "name": "Eyeblight's Ending",
+       "set": "lrw",
+       "number": "110",
+       "id": "e0c08701-7038-4d6b-bbf8-056fd8ffb226"
+      },
+      {
+       "qty": 2,
+       "name": "Rhys the Redeemed",
+       "set": "shm",
+       "number": "237",
+       "id": "59327a58-cd41-479c-81c7-31c9d3b29508"
+      },
+      {
+       "qty": 2,
+       "name": "Maralen of the Mornsong",
+       "set": "mor",
+       "number": "65",
+       "id": "ba98d363-194b-4bc0-b9fe-987c498ab6fa"
       }
      ]
     }
@@ -2285,7 +2285,7 @@
      "label": "tribute",
      "cards": [
       {
-       "qty": 2,
+       "qty": 3,
        "name": "Oona, Queen of the Fae",
        "set": "shm",
        "number": "172",
@@ -2320,7 +2320,7 @@
        "id": "f252ae53-443c-4a27-b8f0-639a9a2b8598"
       },
       {
-       "qty": 2,
+       "qty": 1,
        "name": "Wydwen, the Biting Gale",
        "set": "lrw",
        "number": "253",

@@ -684,7 +684,7 @@
        "id": "cad14bc9-b90e-48e0-9e72-173874dab6bc"
       },
       {
-       "qty": 4,
+       "qty": 2,
        "name": "Thallid",
        "set": "tsb",
        "number": "86",
@@ -710,6 +710,13 @@
        "set": "tsp",
        "number": "290",
        "id": "3fecc759-61fa-4040-9b46-710512baa4bf"
+      },
+      {
+       "qty": 2,
+       "name": "Thelon of Havenwood",
+       "set": "tsp",
+       "number": "227",
+       "id": "92b0be6d-9183-4938-b7a1-ae7f04ba78a0"
       }
      ]
     }
@@ -721,12 +728,12 @@
     },
     "villain": {
      "card": {
-      "oracle_id": "46abaabe-7015-4d82-a5aa-2706b1f51bed",
-      "name": "Thallid",
-      "rarity": "special",
-      "set": "tsb",
-      "id": "6d4d2d63-3552-4e9c-8862-84a3ca3456d7",
-      "image": "https://cards.scryfall.io/normal/front/6/d/6d4d2d63-3552-4e9c-8862-84a3ca3456d7.jpg"
+      "oracle_id": "c673b7b0-c1e7-4bcd-8fe0-66d83f22ecb9",
+      "name": "Thelon of Havenwood",
+      "rarity": "rare",
+      "set": "tsp",
+      "id": "92b0be6d-9183-4938-b7a1-ae7f04ba78a0",
+      "image": "https://cards.scryfall.io/normal/front/9/2/92b0be6d-9183-4938-b7a1-ae7f04ba78a0.jpg"
      },
      "coins": 50
     }
@@ -958,7 +965,7 @@
        "id": "03c07d9a-afed-4028-9fa1-ec439b60f08f"
       },
       {
-       "qty": 4,
+       "qty": 2,
        "name": "Gutless Ghoul",
        "set": "csp",
        "number": "60",
@@ -970,6 +977,13 @@
        "set": "tsp",
        "number": "290",
        "id": "3fecc759-61fa-4040-9b46-710512baa4bf"
+      },
+      {
+       "qty": 2,
+       "name": "Magus of the Coffers",
+       "set": "plc",
+       "number": "73",
+       "id": "cf6b93ea-8ada-404c-9920-7976690c3e8c"
       }
      ]
     }
@@ -981,12 +995,12 @@
     },
     "villain": {
      "card": {
-      "oracle_id": "be291913-dd50-4443-ad06-7cfd04a643eb",
-      "name": "Faceless Devourer",
-      "rarity": "uncommon",
-      "set": "tsp",
-      "id": "d17146f8-d517-4941-b01e-09ecf00ec8e4",
-      "image": "https://cards.scryfall.io/normal/front/d/1/d17146f8-d517-4941-b01e-09ecf00ec8e4.jpg"
+      "oracle_id": "23dd895c-92bd-4af0-8b1a-7d76ca49178f",
+      "name": "Magus of the Coffers",
+      "rarity": "rare",
+      "set": "plc",
+      "id": "cf6b93ea-8ada-404c-9920-7976690c3e8c",
+      "image": "https://cards.scryfall.io/normal/front/c/f/cf6b93ea-8ada-404c-9920-7976690c3e8c.jpg"
      },
      "coins": 50
     }
@@ -1915,7 +1929,7 @@
        "id": "f7904997-a857-44f0-91d8-b78651bb4e83"
       },
       {
-       "qty": 4,
+       "qty": 1,
        "name": "Watcher Sliver",
        "set": "tsp",
        "number": "45",
@@ -1962,6 +1976,13 @@
        "set": "tsp",
        "number": "282",
        "id": "cd9a8337-e4ca-458d-8fcd-672d8d6f1c0d"
+      },
+      {
+       "qty": 3,
+       "name": "Disintegrate",
+       "set": "tsb",
+       "number": "58",
+       "id": "a83420d1-c51a-4fb7-8f1d-b376a0083d95"
       }
      ]
     }

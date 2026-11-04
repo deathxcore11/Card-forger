@@ -96,10 +96,11 @@ export default {
 4 Pit Keeper
 4 Psychotrope Thallid
 4 Vitaspore Thallid
-4 Thallid
+2 Thallid
 4 Utopia Mycon
 18 Forest
-10 Swamp`}},
+10 Swamp
+2 Thelon of Havenwood`}},
       scene: [q('stage', 'Our border lands fall under the grip of Heidar\'s second winter. Go forth and reclaim them for Yavimaya.'),
         q('freyalise', 'Life cannot be created and then abandoned. It must be nurtured and fed so that it may express its ripened might.'),
         s('freyalise', 'Snow: snow lands make snow mana, and some cards pay with it or care how much you have. The cold is a resource here.')],
@@ -132,8 +133,9 @@ export default {
 4 Vampire Bats
 4 Ravenous Rats
 4 Drudge Reavers
-4 Gutless Ghoul
-24 Swamp`}},
+2 Gutless Ghoul
+24 Swamp
+2 Magus of the Coffers`}},
       scene: [q('stage', 'His marvels of artifice pale in comparison to the developing machinery of his mind.'),
         q('venser', 'Two magi could trade spells all day and never crown a victor. The real battle is not one of power but of will. If your confidence breaks, so too shall you.'),
         s('venser', 'Split second: while a split second spell is on the stack, nobody can cast spells or activate abilities. No answers, no tricks. It just happens.')],
@@ -257,13 +259,14 @@ export default {
 4 Sidewinder Sliver
 4 Firewake Sliver
 4 Harmonic Sliver
-4 Watcher Sliver
+1 Watcher Sliver
 4 Karplusan Forest
 4 Brushland
 4 Battlefield Forge
 4 Forest
 4 Mountain
-4 Plains`}},
+4 Plains
+3 Disintegrate`}},
       villain: {who: 'teferi', deck: {label: 'tribute', name: 'Mystical Teachings', colors: 'UB', archetype: 'Control', list: `
 4 Mystical Teachings
 2 Teferi, Mage of Zhalfir
