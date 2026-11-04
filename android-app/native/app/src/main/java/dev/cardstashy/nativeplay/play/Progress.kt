@@ -38,7 +38,7 @@ object Progress {
     private val _deeds = MutableStateFlow<JsonObject?>(null)
     /** GET /api/progress/achievements: every achievement worked out by the server (web 4.3.79). Null until it answers; the home falls back to PlayMath. */
     val deeds: StateFlow<JsonObject?> = _deeds
-    suspend fun refreshDeeds() { try { _deeds.value = call("achievements?tz=$tz") } catch (_: Failure) {} }
+    suspend fun refreshDeeds() { try { _deeds.value = call("achievements?tz=$tz").also { dev.cardstashy.nativeplay.ui.AchievementToasts.seen(it) } } catch (_: Failure) {} }
     private val _story = MutableStateFlow<List<String>?>(null); val storyRefs: StateFlow<List<String>?> = _story
     private val lock = Mutex()
     private var cacheDir: File? = null
@@ -60,8 +60,13 @@ object Progress {
     private val writer = kotlinx.coroutines.CoroutineScope(kotlinx.coroutines.SupervisorJob() + Dispatchers.IO.limitedParallelism(1))
     private var pending: kotlinx.coroutines.Job? = null
 
+    private val deedsScope = kotlinx.coroutines.CoroutineScope(kotlinx.coroutines.SupervisorJob() + Dispatchers.IO)
+
     private fun set(next: JsonObject) {
+        val before = _state.value?.get("counters")
         _state.value = next
+        // Live toasts (app.js: every new server state is diffed): a Play answer that moved the counters refetches the deeds.
+        if (Account.session.value != null && (!dev.cardstashy.nativeplay.ui.AchievementToasts.hasBaseline || before != next.get("counters"))) deedsScope.launch { refreshDeeds() }
         Account.session.value?.userId?.let { u -> pending?.cancel(); pending = writer.launch { try { file(u)?.writeText(next.toString()) } catch (_: Exception) {} } }
     }
 
@@ -178,7 +183,7 @@ object Progress {
     suspend fun saveDeck(deck: JsonObject): JsonElement? { val out = run("deck", "deck", deck); refresh(); return out.get("deck") }
 
     internal fun setForTest(state: JsonObject?, deeds: JsonObject?) { _state.value = state; _deeds.value = deeds }
-    fun clear() { _deeds.value = null; _state.value = null; _story.value = null; _error.value = null }
+    fun clear() { dev.cardstashy.nativeplay.ui.AchievementToasts.reset(); _deeds.value = null; _state.value = null; _story.value = null; _error.value = null }
 
     val MESSAGES = mapOf(
         "sign_in" to "Sign in to use your Play collection.",

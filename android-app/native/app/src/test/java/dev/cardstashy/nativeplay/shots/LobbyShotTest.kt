@@ -1,6 +1,9 @@
 package dev.cardstashy.nativeplay.shots
 
 import android.graphics.BitmapFactory
+import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.ui.draw.drawWithContent
+import androidx.compose.ui.graphics.layer.drawLayer
 import androidx.compose.ui.graphics.asImageBitmap
 import com.github.takahirom.roborazzi.captureRoboImage
 import com.google.gson.JsonArray
@@ -98,5 +101,29 @@ class LobbyShotTest {
         }
         }
         home.mkdirs(); home.resolve("missing.txt").writeText(missing.joinToString("\n"))
+    }
+
+    /** Live achievement toasts over the Practice lobby, as the site harness (scratchpad site/toasts.mjs) shows them on web 4.3.92. */
+    @Test fun toasts() {
+        setup()
+        RuntimeEnvironment.setQualifiers("w390dp-h844dp-xxhdpi")
+        val g = JsonParser.parseString(javaClass.classLoader!!.getResource("toasts-golden.json")!!.readText()).asJsonObject.getAsJsonObject("payloads")
+        val T = dev.cardstashy.nativeplay.ui.AchievementToasts
+        val fresh = T.newlyEarned(T.doneSteps(g.getAsJsonObject("before")), g.getAsJsonObject("after"))
+        for ((name, pick, over) in listOf(Triple("first-more", fresh, false), Triple("hidden", fresh.filter { it.id == "by-a-thread" }, false),
+            Triple("feat-table", fresh.filter { it.id == "swift-justice" }, true))) {
+            T.reset(); T.push(pick.map { it.copy(queued = false) }); T.overTable = over
+            captureRoboImage(File(System.getProperty("shotsDir"), "toast-$name.png").path) {
+                val page = androidx.compose.ui.graphics.rememberGraphicsLayer()
+                androidx.compose.foundation.layout.Box(androidx.compose.ui.Modifier.fillMaxSize()) {
+                    androidx.compose.foundation.layout.Box(androidx.compose.ui.Modifier.fillMaxSize().drawWithContent { page.record { this@drawWithContent.drawContent() }; drawLayer(page) }) {
+                        LobbyScreen(LobbyModel("practice").apply { format = "Standard" }, {}, {}, {}, {}, {}, online = false)
+                    }
+                    dev.cardstashy.nativeplay.ui.AchievementToastHost(page)
+                }
+            }
+        }
+        T.reset(); T.overTable = false
+        home.mkdirs(); home.resolve("missing.txt").appendText("\n" + missing.joinToString("\n"))
     }
 }

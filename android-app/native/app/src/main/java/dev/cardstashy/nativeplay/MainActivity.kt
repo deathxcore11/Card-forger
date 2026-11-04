@@ -5,6 +5,8 @@ import android.os.Bundle
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.BackHandler
 import androidx.activity.compose.setContent
+import androidx.compose.ui.draw.drawWithContent
+import androidx.compose.ui.graphics.layer.drawLayer
 import androidx.activity.enableEdgeToEdge
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.DisposableEffect
@@ -103,7 +105,16 @@ class MainActivity : ComponentActivity() {
         Account.init(this); dev.cardstashy.nativeplay.ui.AppSettings.init(this); CardArt.init(this); Speed.init(this)
         dev.cardstashy.nativeplay.play.Progress.init(this); dev.cardstashy.nativeplay.play.SetFacts.init(this); dev.cardstashy.nativeplay.play.CardFacts.init(this); dev.cardstashy.nativeplay.play.DeckEngine.init(this); dev.cardstashy.nativeplay.play.CraftRarity.init(this)
         dev.cardstashy.nativeplay.play.CardData.warm(this); dev.cardstashy.nativeplay.ui.PackSfx.warm(this)
-        setContent { androidx.compose.foundation.layout.Box(androidx.compose.ui.Modifier.fillMaxSize()) { App(this@MainActivity); dev.cardstashy.nativeplay.ui.ProfileArtPickerHost() } }
+        setContent {
+            // The app is recorded into a layer as it draws, so the toast pill can blur what is under it (backdrop-filter).
+            val page = androidx.compose.ui.graphics.rememberGraphicsLayer()
+            androidx.compose.foundation.layout.Box(androidx.compose.ui.Modifier.fillMaxSize()) {
+                androidx.compose.foundation.layout.Box(androidx.compose.ui.Modifier.fillMaxSize().drawWithContent { page.record { this@drawWithContent.drawContent() }; drawLayer(page) }) {
+                    App(this@MainActivity); dev.cardstashy.nativeplay.ui.ProfileArtPickerHost()
+                }
+                dev.cardstashy.nativeplay.ui.AchievementToastHost(page)
+            }
+        }
     }
 
     override fun dispatchTouchEvent(ev: android.view.MotionEvent): Boolean { FreezeReport.touched(ev); return super.dispatchTouchEvent(ev) }
@@ -205,6 +216,8 @@ private fun App(activity: MainActivity) {
         }
         is Screen.Match -> MatchFlow(activity, s.pick, onHome = { go(Screen.Home) }, onDecks = { back() })
     }
+    // Live achievement toasts (drawn over the app in setContent): at the table they sit just under the status bar; a tap opens the deed's tab.
+    androidx.compose.runtime.SideEffect { dev.cardstashy.nativeplay.ui.AchievementToasts.overTable = screen is Screen.Match; dev.cardstashy.nativeplay.ui.AchievementToasts.open = { tab -> go(Screen.Achievements(tab)) } }
 }
 
 /**
