@@ -248,6 +248,10 @@ export const LESSONS = {
   'Reconfigure': 'Reconfigure: an Equipment creature can pay to attach to another creature, and pay again to become a creature once more.',
   'Shield counters': 'A shield counter protects a permanent: the next time it would be destroyed or take damage, remove the counter instead.',
   'Connive': 'Connive: draw a card, then discard one. If you discarded a nonland card, the creature gets a +1/+1 counter.',
+  'Read ahead': 'Read ahead: when this saga enters, you may begin at any chapter. Pick the chapter you need and skip the earlier ones.',
+  'Domain': 'Domain counts the basic land types among lands you control. Plains, Island, Swamp, Mountain and Forest each count once, so mixed lands make domain cards cheaper.',
+  'Prototype': 'Prototype: you may cast this card for a smaller cost as a smaller creature, or for its full cost as the big one.',
+  'Enlist': 'Enlist: as this creature attacks, you may tap a non-attacking creature you control. This creature gets +X/+0, where X is the tapped creature\'s power.',
   'Playing under a lock': 'A lock stops cards from untapping or moving. Break it, or win with what\'s already in play.',
 };
 // Every Story deck says what it is (Randall, 2 Nov 2026): Historical Exact, Historical Tribute or
