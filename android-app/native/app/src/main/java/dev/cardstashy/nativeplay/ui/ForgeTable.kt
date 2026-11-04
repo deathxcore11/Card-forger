@@ -1,5 +1,6 @@
 package dev.cardstashy.nativeplay.ui
 
+import androidx.compose.ui.draw.drawWithContent
 import dev.cardstashy.nativeplay.engine.Ref
 import dev.cardstashy.nativeplay.engine.GameEvent
 import androidx.compose.ui.text.withStyle
@@ -253,10 +254,10 @@ fun ForgeBoard(
             Box(Modifier.offset(y = mid).fillMaxWidth().height(1.dp).background(Brush.horizontalGradient(listOf(Color.Transparent, Color(0x998A7BD8), Color(0x998A7BD8), Color.Transparent))))
 
             // CPU half: lands at the back, creatures at the front; yours mirrored.
-            PermanentRow(backRow(cpu.battlefield), true, lands(cpu.battlefield).size, centreX, mid - 77.5f.du * stretch, W - 180.du, d, ::markOf, ::tapOf, onInspect)
-            PermanentRow(others(cpu.battlefield), false, 0, centreX, mid - 34.du * stretch, W - 180.du, d, ::markOf, ::tapOf, onInspect)
-            PermanentRow(others(me.battlefield), false, 0, centreX, mid + 27.du * stretch, W - 180.du, d, ::markOf, ::tapOf, onInspect, mine = true)
-            PermanentRow(backRow(me.battlefield), true, lands(me.battlefield).size, centreX, mid + 71.5f.du * stretch, W - 300.du, d, ::markOf, ::tapOf, onInspect, mine = true)
+            PermanentRow(backRow(cpu.battlefield), true, lands(cpu.battlefield).size, centreX, mid - 77.5f.du * stretch, W - 180.du, d, ::markOf, ::tapOf, onInspect, lookup = { st.card(it) })
+            PermanentRow(others(cpu.battlefield), false, 0, centreX, mid - 34.du * stretch, W - 180.du, d, ::markOf, ::tapOf, onInspect, lookup = { st.card(it) })
+            PermanentRow(others(me.battlefield), false, 0, centreX, mid + 27.du * stretch, W - 180.du, d, ::markOf, ::tapOf, onInspect, mine = true, lookup = { st.card(it) })
+            PermanentRow(backRow(me.battlefield), true, lands(me.battlefield).size, centreX, mid + 71.5f.du * stretch, W - 300.du, d, ::markOf, ::tapOf, onInspect, mine = true, lookup = { st.card(it) })
 
             // Piles: yours right of your back row, the CPU's left of its back row.
             Piles(me, mine = true, Modifier.offset(x = W - 120.du, y = mid + 46.du * stretch), d, onInspect)
@@ -365,7 +366,7 @@ internal fun orderedHand(hand: List<Card>, order: List<Int>): List<Card> {
  * apart); everything else stands alone 10 du apart. A row wider than [room] shrinks to fit (the site's zone scale).
  */
 @Composable
-private fun PermanentRow(cards: List<Card>, land: Boolean, split: Int = 0, cx: Dp, cy: Dp, room: Dp, d: Du, markOf: (Card) -> Mark, tapOf: (Card) -> (() -> Unit)?, onInspect: (Card) -> Unit, mine: Boolean = false) = with(d) {
+private fun PermanentRow(cards: List<Card>, land: Boolean, split: Int = 0, cx: Dp, cy: Dp, room: Dp, d: Du, markOf: (Card) -> Mark, tapOf: (Card) -> (() -> Unit)?, onInspect: (Card) -> Unit, mine: Boolean = false, lookup: (Int) -> Card? = { null }) = with(d) {
     if (cards.isEmpty()) return@with
     val piles = cards.withIndex().groupBy { (i, it) -> if (markOf(it) == Mark.NONE && tapOf(it) == null && it.counters.isEmpty() && it.damage == 0 && !it.attacking && !it.blocking) "${if (i < split) "l" else "o"}|${it.name}|${it.tapped}" else "id${it.id}" }.values.map { g -> g.map { it.value } }
     // The second lane (site: +22 px between lanes) starts at the first pile past the lands.
@@ -383,7 +384,7 @@ private fun PermanentRow(cards: List<Card>, land: Boolean, split: Int = 0, cx: D
             val px = x
             key(pile.first().id) {
                 pile.forEachIndexed { j, card ->
-                    Tile(card, w, h, land, markOf(card), mine, tapOf(card), onInspect, Modifier.offset(x = px + step * j).zIndex(j.toFloat()), d,
+                    Tile(card, w, h, land, markOf(card), mine, lookup, tapOf(card), onInspect, Modifier.offset(x = px + step * j).zIndex(j.toFloat()), d,
                         count = if (j == pile.lastIndex && pile.size > 1) pile.size else 1)
                 }
             }
@@ -394,7 +395,7 @@ private fun PermanentRow(cards: List<Card>, land: Boolean, split: Int = 0, cx: D
 
 /** A permanent (.play-match-card on the battlefield): the art crop in a #141418 tile with a 1.5 du ring in its frame colour. */
 @Composable
-private fun Tile(card: Card, w: Dp, h: Dp, land: Boolean, mark: Mark, mineSide: Boolean, onTap: (() -> Unit)?, onInspect: (Card) -> Unit, modifier: Modifier, d: Du, count: Int = 1) = with(d) {
+private fun Tile(card: Card, w: Dp, h: Dp, land: Boolean, mark: Mark, mineSide: Boolean, lookup: (Int) -> Card?, onTap: (() -> Unit)?, onInspect: (Card) -> Unit, modifier: Modifier, d: Du, count: Int = 1) = with(d) {
     val (a, _) = frameTone(cardColors(card))
     // play-forge-table.css: a role's ring and glow (playable/choice #5cc8ff, target #ff9d5c, chosen #f3d27e), combat over it (attacking #ff6a4a, blocking #6aaeff).
     val combat = card.attacking || card.blocking
@@ -436,16 +437,27 @@ private fun Tile(card: Card, w: Dp, h: Dp, land: Boolean, mark: Mark, mineSide: 
             Box(Modifier.align(Alignment.BottomStart).offset(x = 4.du, y = (-3).du).size(10.du).clip(CircleShape).background(LAND_DOT.getValue(c)).border(1.dp, Color(0xAAFFFFFF), CircleShape),
                 contentAlignment = Alignment.Center) { Text("$c", style = sans(sp(7f), FontWeight.Bold, if (c == 'W') Color(0xFF111111) else Color.White)) }
         }
+        TileLayer(card, mark == Mark.PLAYABLE, lookup, d, h, if (card.isCreature && card.power != null) (h.value / u * .26f).coerceIn(9f, 18f) else 0f)
+        // .play-current-stats: right 6px, bottom 2px, 1px 7px, #d6ad64c0 hairline, radius 7, #111114f2, white 700; the toughness reads #ff8f84 while damage is marked
+        // (forge-table.mjs data-damaged; Forge's toughness already counts counters, damage is not subtracted).
         if (card.isCreature && card.power != null) {
-            val tough = (card.toughness ?: 0) - card.damage
-            Box(Modifier.align(Alignment.BottomCenter).offset(y = (-2).du).clip(RoundedCornerShape(999.dp)).background(Color(0xE60D0F14)).border(1.dp, Color(0x33FFFFFF), RoundedCornerShape(999.dp))
-                .padding(horizontal = 5.du)) { Text("${card.power}/$tough", style = sans(sp(9f), FontWeight.Bold, if (card.damage > 0) Color(0xFFFF9A8A) else Color(0xFFF4EEDF))) }
+            val fs = sp((h.value / u * .26f).coerceIn(9f, 18f))
+            Row(Modifier.align(Alignment.BottomEnd).offset(x = (-6).du, y = (-2).du).clip(RoundedCornerShape(7.du)).background(Color(0xF2111114)).border(1.dp, Color(0xC0D6AD64), RoundedCornerShape(7.du))
+                .padding(horizontal = 7.du, vertical = 1.du)) {
+                Text("${card.power} / ", style = sans(fs, FontWeight.Bold, Color.White))
+                Text("${card.toughness ?: 0}", style = sans(fs, FontWeight.Bold, if (card.damage > 0) Color(0xFFFF8F84) else Color.White))
+            }
         }
-        if (card.summoningSick && card.isCreature) Box(Modifier.align(Alignment.TopStart).offset(3.du, 3.du).size(9.du).clip(CircleShape).background(Color(0xEB101114)).border(1.dp, Color(0xB8D6AD64), CircleShape))
     }
-    if (count > 1) Box(modifier.offset(x = w - 14.du, y = (-8).du).zIndex(20f).clip(RoundedCornerShape(999.dp))
-        .background(Brush.radialGradient(listOf(Color(0xFFFFF2C6), Color(0xFFD9B463), Color(0xFFA9822F)))).border(2.dp, Color(0xFFFFF3CF), RoundedCornerShape(999.dp))
-        .padding(horizontal = 4.du)) { Text("×$count", style = sans(sp(10f), FontWeight.Bold, Color(0xFF2A1D05))) }
+    // .play-match-pile-count: on the card's left edge (left -10px), hanging under the pile (bottom -12px, translate -50%); a tapped pile centres it
+    // (left 50%, translate -50% 0). It takes a tap and passes it to the top card.
+    if (count > 1) {
+        val bh = 19.du
+        Box(modifier.offset(x = if (card.tapped) w / 2 - 15.du else (-10).du, y = if (card.tapped) h + 12.du - bh else h + 12.du - bh * 1.5f).zIndex(20f).height(bh).widthIn(min = 30.du)
+            .clip(RoundedCornerShape(999.dp)).background(Brush.radialGradient(listOf(Color(0xFFFFF2C6), Color(0xFFD9B463), Color(0xFFA9822F)))).border(2.dp, Color(0xFFFFF3CF), RoundedCornerShape(999.dp))
+            .pointerInput(card.id, onTap) { detectTapGestures(onTap = { onTap?.invoke() ?: onInspect(card) }) }
+            .padding(horizontal = 4.du), contentAlignment = Alignment.Center) { Text("×$count", style = sans(sp(11f), FontWeight.ExtraBold, Color(0xFF2A1D05))) }
+    }
 }
 
 // ---- Piles (approved: real card piles, a count printed under each) ----
@@ -1035,6 +1047,101 @@ private fun AskLine(text: String, W: Dp, H: Dp, d: Du) = with(d) {
             .background(Brush.linearGradient(listOf(Color(0x14FFFFFF), Color(0x03FFFFFF), Color.Transparent)))
             .border(1.dp, Color(0xAAF2D18E), RoundedCornerShape(999.dp)).padding(horizontal = 16.du, vertical = 8.du)) {
             Text(text, style = sans(sp(14f), FontWeight.Bold, Color(0xFFFBF3DF)), maxLines = 1, overflow = TextOverflow.Ellipsis)
+        }
+    }
+}
+
+
+// ---- The tile's decoration layer (play-board-badges.js tileLayerHtml, play-forge-table.css .cs-*) ----
+
+private val BadgeEdge = Color(0xB8D6AD64)
+private val BadgeInk = Color(0xFFF2D496)
+
+@Composable
+private fun TileLayer(card: Card, actionable: Boolean, lookup: (Int) -> Card?, d: Du, h: Dp, statFont: Float) = with(d) {
+    val b = remember(card, actionable) { TileBadges.of(card, actionable) } ?: return@with
+    val bsz = 9.du
+    // .cs-badge: a dark pill with a gold hairline; an icon (72%) and a white number.
+    @Composable fun badge(icon: String?, edge: Color = BadgeEdge, ink: Color = BadgeInk, fill: Color = Color(0xEB101114), glow: Color? = null, text: String? = null, dashed: Boolean = false) {
+        Row(Modifier.heightIn(min = bsz).widthIn(min = bsz)
+            .drawBehind { glow?.let { g -> drawIntoCanvas { c -> val p = Paint().asFrameworkPaint().apply { isAntiAlias = true; color = g.toArgb(); maskFilter = android.graphics.BlurMaskFilter(4.du.toPx(), android.graphics.BlurMaskFilter.Blur.NORMAL) }; c.nativeCanvas.drawRoundRect(0f, 0f, this.size.width, this.size.height, this.size.height / 2, this.size.height / 2, p) } }
+                drawRoundRect(Color(0xCC000000), topLeft = Offset(0f, 1.du.toPx()), size = this.size, cornerRadius = CornerRadius(this.size.height / 2)) }
+            .clip(RoundedCornerShape(999.dp)).background(fill)
+            .drawWithContent { drawContent(); drawRoundRect(edge, cornerRadius = CornerRadius(bsz.toPx() / 2), style = Stroke(1.dp.toPx(), pathEffect = if (dashed) PathEffect.dashPathEffect(floatArrayOf(2f, 2f)) else null)) }
+            .padding(horizontal = (bsz.value * .12f).dp), verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(1.du, Alignment.CenterHorizontally)) {
+            if (icon != null) BoardIcon(icon, ink, bsz * .72f)
+            if (text != null) Text(text, style = sans(sp(6.8f), FontWeight.Bold, Color.White).copy(lineHeight = sp(6.8f)))
+        }
+    }
+    Box(Modifier.fillMaxSize()) {
+        val rail: @Composable () -> Unit = {
+            b.keywords.forEach { badge(it.key) }
+            if (b.keywordsMore > 0) badge(null, ink = Color.White, text = "+${b.keywordsMore}", dashed = true)
+        }
+        val top = 14.du
+        if (b.state.isNotEmpty() || b.activation || (b.compact && (b.keywords.isNotEmpty() || b.keywordsMore > 0)))
+            Row(Modifier.offset(x = 3.du, y = top), horizontalArrangement = Arrangement.spacedBy(1.du)) {
+                b.state.forEach { badge(it) }
+                if (b.activation) badge("activated-ability", edge = Color(0xFF7FD6F0), ink = Color(0xFF9BE6FF), glow = Color(0x805CC8F0))
+                if (b.compact) rail()
+            }
+        b.combat?.let { cb ->
+            Box(Modifier.align(Alignment.TopCenter).offset(y = 13.du)) {
+                if (cb == "attacking") badge("attacking", edge = Color(0xFFFF9D5C), ink = Color(0xFFFFB27A), glow = Color(0x99FF8A3D))
+                else badge("blocking", edge = Color(0xFF7FB8FF), ink = Color(0xFFA8CEFF), glow = Color(0x995A9CFF))
+            }
+        }
+        val cornerShown = b.state.isNotEmpty() || b.activation
+        if (!b.compact && (b.keywords.isNotEmpty() || b.keywordsMore > 0))
+            Column(Modifier.offset(x = 3.du, y = if (cornerShown) top + bsz + 3.du else top), verticalArrangement = Arrangement.spacedBy(1.du)) { rail() }
+        // fitRails(): when the counters column would run into the stats plaque, it becomes a row (row-reverse) sitting 3px above the plaque.
+        val railN = b.counters.size + (if (b.countersMore > 0) 1 else 0) + (if (b.damage > 0) 1 else 0)
+        val floor = if (statFont > 0f) 2.du + (statFont * 1.25f + 4f).du else 0.du
+        val railRow = statFont > 0f && top + bsz * railN + 2.du * (railN - 1) + 3.du > h - floor - 2.du
+        @Composable fun railBox(content: @Composable () -> Unit) = if (railRow)
+            Row(Modifier.align(Alignment.BottomEnd).offset(x = (-3).du, y = -(floor + 3.du)), horizontalArrangement = Arrangement.spacedBy(1.du, Alignment.End), verticalAlignment = Alignment.CenterVertically) { content() }
+        else Column(Modifier.align(Alignment.TopEnd).offset(x = (-3).du, y = top), horizontalAlignment = Alignment.End, verticalArrangement = Arrangement.spacedBy(1.du)) { content() }
+        if (railN > 0)
+            railBox {
+                b.counters.forEach { c ->
+                    val (edge, ink) = when (c.name) {
+                        "P1P1" -> Color(0xFF5FD08A) to Color(0xFF8FF0B0); "M1M1" -> Color(0xFFEF6B5E) to Color(0xFFFF9A8F); "SHIELD" -> Color(0xFF6FD8F0) to Color(0xFFA6ECFF)
+                        "STUN" -> Color(0xFFF0C35A) to Color(0xFFFFD98A); "FINALITY" -> Color(0xFFB0A4C8) to Color(0xFFD8CFF0); else -> BadgeEdge to BadgeInk
+                    }
+                    if (c.icon != null) badge(c.icon, edge = edge, ink = ink, text = "${c.count}") else badge(null, text = "${c.count} ${c.label.take(4)}")
+                }
+                if (b.countersMore > 0) badge(null, ink = Color.White, text = "+${b.countersMore}", dashed = true)
+                if (b.damage > 0) badge("marked-damage", edge = Color(0xFFFF8A7D), ink = Color.White, fill = Color(0xF2A8322A), text = "${b.damage}")
+            }
+        b.plaque?.let { (kind, value) ->
+            Row(Modifier.align(Alignment.BottomEnd).offset(x = (-4).du, y = (-4).du).clip(RoundedCornerShape(5.du)).background(Color(0xF2111114)).border(1.dp, Color(0xC0D6AD64), RoundedCornerShape(5.du))
+                .padding(start = 3.du, end = 5.du, top = 1.du, bottom = 1.du), verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(2.du)) {
+                BoardIcon(if (kind == "loyalty") "loyalty" else "defense", BadgeInk, bsz * .8f)
+                Text("$value", style = sans(sp(9f), FontWeight.Bold, Color.White))
+            }
+        }
+        b.crew?.let { crew ->
+            Row(Modifier.align(Alignment.BottomStart).offset(x = 3.du, y = (-4).du).clip(RoundedCornerShape(999.dp)).background(Color(0xEB101114)).border(1.dp, BadgeEdge, RoundedCornerShape(999.dp))
+                .padding(start = 2.du, end = 4.du), verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(1.du)) {
+                BoardIcon("vehicle-crew", BadgeInk, bsz * .7f); Text("$crew", style = sans(sp(6.5f), FontWeight.Bold, Color.White))
+            }
+        }
+        val attached = card.attachments.mapNotNull(lookup).filter { !it.hidden }
+        if (attached.isNotEmpty() && b.crew == null) {
+            fun kind(c: Card) = if (Regex("\\bEquipment\\b").containsMatchIn(c.type)) "equipment" else if (Regex("\\bAura\\b").containsMatchIn(c.type)) "aura" else "attached"
+            val kinds = listOf("equipment", "aura", "attached").map { k -> k to attached.count { kind(it) == k } }.filter { it.second > 0 }
+            Row(Modifier.align(Alignment.BottomStart).offset(x = 3.du, y = (-4).du), horizontalArrangement = Arrangement.spacedBy(1.du)) {
+                kinds.forEach { (k, n) -> badge(k, text = if (n > 1) "$n" else null) }
+            }
+        }
+        // .cs-damage-marks: three claw strokes over the art (viewBox 60 × 40, #ff6b5e, opacity .85 × .75).
+        if (b.damage > 0) Canvas(Modifier.fillMaxSize().padding(horizontal = 11.du, vertical = 11.du)) {
+            val sx = size.width / 60f; val sy = size.height / 40f; val k = minOf(sx, sy)
+            val ox = (size.width - 60 * k) / 2; val oy = (size.height - 40 * k) / 2
+            for (pts in listOf(listOf(14f to 4f, 8f to 18f, 16f to 24f, 10f to 38f), listOf(30f to 2f, 24f to 18f, 32f to 24f, 26f to 38f), listOf(46f to 4f, 40f to 18f, 48f to 24f, 42f to 38f))) {
+                val path = Path().apply { pts.forEachIndexed { i, (x, y) -> if (i == 0) moveTo(ox + x * k, oy + y * k) else lineTo(ox + x * k, oy + y * k) } }
+                drawPath(path, Color(0xFFFF6B5E).copy(alpha = .64f), style = Stroke(3 * k, cap = StrokeCap.Round))
+            }
         }
     }
 }

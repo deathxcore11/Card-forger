@@ -15,6 +15,8 @@ data class Card(
     val commander: Boolean = false, val setCode: String? = null, val collectorNumber: String? = null,
     /** Who or what this attacker attacks (a player or a planeswalker/battle), when Forge says. */
     val attackTarget: Ref? = null,
+    /** Forge sent its own keyword list (an empty list then means none); otherwise the rules text decides. */
+    val keywordsKnown: Boolean = false, val attachments: List<Int> = emptyList(), val crew: Int? = null,
 ) {
     val isLand get() = type.contains("Land")
     val isCreature get() = type.contains("Creature")
@@ -154,7 +156,9 @@ data class MatchState(
             tapped = c.bool("tapped") == true, attacking = c.bool("attacking") == true, blocking = c.bool("blocking") == true,
             damage = c.int("damage") ?: 0, summoningSick = c.bool("summoningSick") == true, token = c.bool("token") == true,
             counters = c.obj("counters")?.entrySet()?.mapNotNull { (k, v) -> if (v.isJsonPrimitive && v.asJsonPrimitive.isNumber) k to v.asInt else null }?.toMap() ?: emptyMap(),
-            keywords = c.arr("keywords").mapNotNull { if (it.isJsonPrimitive) it.asString else it.asJsonObject.str("keyword") },
+            keywords = c.arr("keywords").mapNotNull { if (it.isJsonPrimitive) it.asString.replace(Regex("([a-z])([A-Z])"), "$1 $2") else it.asJsonObject.let { o -> o.str("text") ?: o.str("keyword") } },
+            keywordsKnown = c.get("keywords")?.isJsonArray == true,
+            attachments = c.arr("attachments").mapNotNull { if (it.isJsonPrimitive && it.asJsonPrimitive.isNumber) it.asInt else null }, crew = c.int("crew"),
             attachedTo = c.int("attachedTo"), blockingIds = c.arr("blockingIds").mapNotNull { if (it.isJsonPrimitive) it.asInt else null },
             commander = c.bool("commander") == true, setCode = c.str("setCode"), collectorNumber = c.str("collectorNumber"),
             attackTarget = c.obj("attackTarget")?.let { t -> val k = t.str("kind"); val i = t.int("id"); if (k != null && i != null) Ref(k, i, null) else null },
