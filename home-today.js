@@ -3,6 +3,7 @@
 // are kept for the day in memory.
 import {esc,safeHref} from './ui.js';
 import {packArtUrl} from './pack-preview.js';
+import {packArtSources} from './pack-wrappers.js';
 import {packEligible,setArtworkSources,setImageUrl} from './set-experience.js';
 const resolved=new Map();
 // TCGdex gives an image base without an extension; a stored copy may already carry one.
@@ -40,7 +41,7 @@ export function todaySetMarkup(g,set,{rarity=''}={}){
 export function todayPackMarkup(g,set,{cardImage=''}={}){
  const from=set?.pack||set;
  if(!from||!packEligible(g,from))return '';
- const real=packArtUrl(g,from),sources=[...new Set([real,...setArtworkSources(g,from),cardImage?setImageUrl(cardImage):''].filter(x=>x&&x!=='#').map(x=>safeHref(x)))];
+ const real=packArtUrl(g,from),sources=[...new Set([...packArtSources(g,from,real),...setArtworkSources(g,from),cardImage?setImageUrl(cardImage):''].filter(x=>x&&x!=='#').map(x=>safeHref(x)))];
  const generic=i=>i>0?' pack-generic':'';
  return `<span class="today-pack-actions"><button class="today-pack${sources.length?'':' pack-art-unavailable'}" data-act="homeTodayPack" data-game="${g}" aria-label="Open today’s ${esc(from.name)} pack"><span class="today-pack-wrap" aria-hidden="true"></span>${sources.length?`<img data-pack-art src="${esc(sources[0])}" data-sources="${esc(JSON.stringify(sources))}" data-real="${esc(sources[0]===safeHref(real)?'1':'')}" alt="" loading="lazy" referrerpolicy="no-referrer" onerror="const s=JSON.parse(this.dataset.sources),i=(+this.dataset.i||0)+1;if(s[i]){this.dataset.i=i;this.src=s[i];this.parentElement.classList.add('pack-generic')}else{this.hidden=true;this.parentElement.classList.add('pack-art-unavailable')}">`:''}<span class="pack-crimp-band top" aria-hidden="true"></span><span class="pack-crimp-band bottom" aria-hidden="true"></span></button></span>`;
 }

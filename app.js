@@ -11,7 +11,7 @@ import { configureAiAuth, invalidateAiAuth } from './ai-auth.js';
 import {openPackPreview,ptcgSetRarities,trimPackArt} from './pack-preview.js';
 import {loadMtgBooster,mtgBoosterCards} from './mtg-boosters.js';
 // Booster pack photos trim to the pack itself wherever they appear.
-document.addEventListener('load',e=>{if(e.target?.matches?.('img[data-pack-art]')&&!e.target.closest?.('.pack-generic'))trimPackArt(e.target);},true);
+document.addEventListener('load',e=>{if(e.target?.matches?.('img[data-pack-art]')&&!e.target.closest?.('.pack-generic,.pack-custom'))trimPackArt(e.target);},true);
 import {dailyDetails,todaySetMarkup,todayPackMarkup} from './home-today.js';
 import {syncDesktopPlayEntries,playDeviceGate,watchPlayDeviceEligibility} from './desktop-play.js';
 import {createPlaySetup} from './play-setup.js';
