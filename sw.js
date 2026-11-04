@@ -1,4 +1,4 @@
-const CACHE = "cardforge-shell-story-audit-4393-v465";
+const CACHE = "cardforge-shell-purse-fix-4394-v466";
 const ASSETS = [
   "./assets/fonts/fonts.css",
   "./play-forge-feature.js",
