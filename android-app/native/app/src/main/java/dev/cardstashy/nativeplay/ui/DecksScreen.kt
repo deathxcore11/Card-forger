@@ -98,6 +98,9 @@ fun DecksScreen(state: JsonObject, onBack: () -> Unit, onDeck: (String) -> Unit,
     val clip = androidx.compose.ui.platform.LocalClipboardManager.current
     val owned = remember(state) { Decks.ownedByName(state) }
     val decks = state.getAsJsonArray("decks")?.mapNotNull { it as? JsonObject } ?: emptyList()
+    val nameFact = rememberNameFacts()
+    // playDeckEmblemWants: every deck's names, and the open precon's, so the emblems can read their cards.
+    LaunchedEffect(decks, precon.open) { dev.cardstashy.nativeplay.play.CardFacts.wantNames(decks.flatMap { Decks.rows(it).map { r -> r.name } } + precon.open?.rows.orEmpty().map { it.name }) }
     Box(Modifier.fillMaxSize().background(Site.Bg)) {
         Column(Modifier.fillMaxSize().verticalScroll(rememberScrollState()).windowInsetsPadding(WindowInsets.statusBars).padding(start = 16.dp, end = 16.dp, top = 12.dp, bottom = 120.dp),
             verticalArrangement = Arrangement.spacedBy(18.dp)) {
@@ -105,7 +108,7 @@ fun DecksScreen(state: JsonObject, onBack: () -> Unit, onDeck: (String) -> Unit,
             BoxWithConstraints(Modifier.fillMaxWidth()) {
                 val cols = when { maxWidth >= 1000.dp -> 3; maxWidth >= 640.dp -> 2; else -> 1 }
                 val tiles: List<@Composable (Modifier) -> Unit> = listOf<@Composable (Modifier) -> Unit>({ m -> NewDeckTile(m, onFinder) }) +
-                    decks.map { d -> @Composable { m: Modifier -> PlayDeckTile(d, owned, m, { onDeck(d.s("id")) }, onHold = { holding = d }) { deleting = d } } }
+                    decks.map { d -> @Composable { m: Modifier -> PlayDeckTile(d, owned, m, nameFact, { onDeck(d.s("id")) }, onHold = { holding = d }) { deleting = d } } }
                 Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
                     tiles.chunked(cols).forEach { row -> Row(horizontalArrangement = Arrangement.spacedBy(12.dp)) {
                         row.forEach { it(Modifier.weight(1f)) }; repeat(cols - row.size) { Spacer(Modifier.weight(1f)) } } }
@@ -173,16 +176,48 @@ private fun NewDeckTile(modifier: Modifier, onClick: () -> Unit) = TileFrame(DEC
     }
 }
 
+/** Card facts by name for the deck emblems (the site's finderFacts.get): the full name, then the front face. */
 @Composable
-private fun PlayDeckTile(d: JsonObject, owned: Map<String, Int>, modifier: Modifier, onOpen: () -> Unit, onHold: () -> Unit = {}, onDelete: () -> Unit) {
+internal fun rememberNameFacts(): (String) -> JsonObject? {
+    val facts by dev.cardstashy.nativeplay.play.CardFacts.cards.collectAsState()
+    val byName = remember(facts) { HashMap<String, JsonObject>().also { m -> facts.values.forEach { f -> val n = f.card.get("name")?.asString ?: return@forEach; m.putIfAbsent(n, f.card); m.putIfAbsent(n.split(" // ")[0], f.card) } } }
+    return { n -> byName[n] ?: byName[n.split(" // ")[0]] }
+}
+/** playDeckEmblemOf: meta lists only once the finder's tournament data has loaded, as on the site. */
+internal fun emblemOf(rows: List<Decks.Row>, format: String, nameFact: (String) -> JsonObject?) = dev.cardstashy.nativeplay.play.DeckEmblem.of(rows, nameFact,
+    (if (dev.cardstashy.nativeplay.play.MetaLists.hasMeta(format)) dev.cardstashy.nativeplay.play.MetaLists.cached(format) else null).orEmpty()
+        .map { dev.cardstashy.nativeplay.play.DeckEmblem.Meta(it.archetype.ifBlank { it.name }, it.cards) })
+
+/** The emblem plate (.deck-format-emblem with .pe-deck-pips / .pe-deck-style): pips, the label, then " · plan" and " · Precon". */
+@Composable
+internal fun EmblemPlate(label: String, e: dev.cardstashy.nativeplay.play.DeckEmblem.Emblem?, modifier: Modifier = Modifier) =
+    Row(modifier.softPill(RoundedCornerShape(999.dp)).padding(horizontal = 10.dp, vertical = 4.dp), verticalAlignment = Alignment.CenterVertically) {
+        if (e != null) { Row(Modifier.padding(end = 4.dp), horizontalArrangement = Arrangement.spacedBy(2.dp)) {
+            (e.colors.ifEmpty { listOf("C") }).forEach { k -> Symbol(k, 16.dp, Modifier.shadow(2.dp, CircleShape)) } } }
+        Text(androidx.compose.ui.text.buildAnnotatedString {
+            append(label)
+            val plan = androidx.compose.ui.text.SpanStyle(fontWeight = FontWeight.SemiBold, color = Color(0xEBE6E8EC))
+            if (!e?.style.isNullOrEmpty()) { pushStyle(plan); append(" · " + e!!.style); pop() }
+            if (e?.precon == true && label != "Precon") { pushStyle(plan); append(" · Precon"); pop() }
+        }, style = t(12f, FontWeight.Bold, Color(0xFFE6E8EC)), maxLines = 1, overflow = TextOverflow.Ellipsis)
+    }
+
+/** .pe-deck-meta: the gold "META · archetype" line above the deck's name. */
+@Composable
+internal fun MetaLine(meta: String) = Text("Meta · $meta".uppercase(), maxLines = 1, overflow = TextOverflow.Ellipsis,
+    style = t(12.5f, FontWeight.Bold, Color(0xFFE3B85A)).copy(letterSpacing = 0.5.sp, shadow = androidx.compose.ui.graphics.Shadow(Color(0xB3000000), androidx.compose.ui.geometry.Offset(0f, 1f), 3f)))
+
+@Composable
+private fun PlayDeckTile(d: JsonObject, owned: Map<String, Int>, modifier: Modifier, nameFact: (String) -> JsonObject?, onOpen: () -> Unit, onHold: () -> Unit = {}, onDelete: () -> Unit) {
     val n = Decks.tile(d, owned); val name = d.s("name").ifBlank { "Untitled deck" }
+    val e = emblemOf(Decks.rows(d), d.s("format"), nameFact)
     Workspace.playDeckCovers.collectAsState().value
     TileFrame(Workspace.pickedCover(d.s("id").ifBlank { null }) ?: Decks.cover(d), modifier, onHold = onHold, onClick = onOpen) {
-        Text(d.s("format").ifBlank { "Casual" }, style = t(12f, FontWeight.Bold, Color(0xFFE6E8EC)), modifier = Modifier.padding(10.dp)
-            .softPill(RoundedCornerShape(999.dp)).padding(horizontal = 10.dp, vertical = 4.dp))
+        EmblemPlate(d.s("format").ifBlank { "Casual" }, e, Modifier.padding(start = 10.dp, top = 10.dp, end = 62.dp))
         Box(Modifier.align(Alignment.TopEnd).padding(10.dp).size(44.dp).softPill(CircleShape)
             .clickable(onClick = onDelete), contentAlignment = Alignment.Center) { Text("✕", style = t(16f, FontWeight.Bold, Color(0xFFF6EEDB))) }
         Column(Modifier.align(Alignment.BottomStart).padding(horizontal = 12.dp, vertical = 10.dp), verticalArrangement = Arrangement.spacedBy(1.dp)) {
+            if (e.meta.isNotEmpty()) MetaLine(e.meta)
             Text(name, style = t(18f, FontWeight.ExtraBold, Color.White), maxLines = 1, overflow = TextOverflow.Ellipsis)
             Text("${n.main}/${n.size}" + if (n.side > 0) " · ${n.side} sideboard" else "", style = t(12.5f, color = Color(0xFFD5D9E0)))
             Row(Modifier.padding(top = 4.dp), horizontalArrangement = Arrangement.spacedBy(12.dp)) {
@@ -291,6 +326,8 @@ private fun OpenPreconView(state: JsonObject, o: OpenPrecon, owned: Map<String, 
             Box(Modifier.fillMaxSize().background(Brush.verticalGradient(0f to Color(0x33000000), .4f to Color.Transparent, .8f to Color(0xE608090C), 1f to Color(0xF208090C))))
             Column(Modifier.align(Alignment.BottomStart).padding(horizontal = 14.dp, vertical = 12.dp)) {
                 Text(o.name, style = TextStyle(fontFamily = Type.Cinzel, fontWeight = FontWeight.Bold, fontSize = 21.sp, lineHeight = 25.sp, color = Color(0xFFF3E3BD)))
+                val e = emblemOf(o.rows, o.formats.firstOrNull() ?: "", rememberNameFacts())
+                EmblemPlate("Precon", e, Modifier.padding(vertical = 4.dp)); if (e.meta.isNotEmpty()) MetaLine(e.meta)
                 Text("${o.product.ifBlank { "Precon" }} · ${o.released.take(4)}" + if (o.formats.isNotEmpty()) " · " + o.formats.joinToString(", ") else " · Casual", style = t(13.5f, color = Color(0xFFD5D9E0)))
             }
         }

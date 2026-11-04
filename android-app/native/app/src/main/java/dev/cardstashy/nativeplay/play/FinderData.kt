@@ -75,6 +75,8 @@ object MetaLists {
             ?: return@withContext null
         parse(format, body).also { cache[format] = it }
     }
+    /** Only what has loaded already (the Decks page's emblems never fetch meta on their own). */
+    fun cached(format: String): List<Finder.MetaList>? = cache[format]
     /** For shots: a saved /api/meta/mtg answer stands in for the network. */
     fun seed(format: String, body: JsonObject) { cache[format] = parse(format, body) }
     private fun parse(format: String, body: JsonObject): List<Finder.MetaList> {
