@@ -260,6 +260,14 @@ export const LESSONS = {
   'Roles': 'Roles are Aura tokens with a name. Each creature can only wear one of yours, and each Role gives a small bonus like a counter, ward or extra power.',
   'Discover': 'Discover N: reveal cards from the top of your library until you find a nonland card of that value or lower. Cast it free or put it in your hand.',
   'Collect evidence': 'Collect evidence N: exile cards from your graveyard with total mana value N or more. It is a cost, so the spell it powers is stronger.',
+  'Plot': 'Plot: exile a card from your hand as part of a spell\'s cost. On a later turn you may cast it from exile for free.',
+  'Offspring': 'Offspring: pay extra as you cast the creature and you also get a 1/1 token copy of it.',
+  'Rooms': 'A Room is an enchantment with two doors. Cast one half, then pay to unlock the other later.',
+  'Survival': 'Survival: at the start of your second main phase, if the creature is tapped, its survival ability triggers.',
+  'Max speed': 'Speed starts at 1 and rises when you hurt an opponent. At speed 4 you reach Max speed and your cards get stronger.',
+  'Exhaust': 'Exhaust abilities may be used only once per permanent. Choose the moment well.',
+  'Mobilize': 'Mobilize makes tapped, attacking Warrior tokens when the creature attacks. They are sacrificed at end of turn.',
+  'Harmonize': 'Harmonize lets you cast a spell from your graveyard, paying less by tapping one of your creatures. Then it is exiled.',
   'Playing under a lock': 'A lock stops cards from untapping or moving. Break it, or win with what\'s already in play.',
 };
 // Every Story deck says what it is (Randall, 2 Nov 2026): Historical Exact, Historical Tribute or
