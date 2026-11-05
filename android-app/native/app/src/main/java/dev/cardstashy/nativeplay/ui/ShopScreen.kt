@@ -145,7 +145,7 @@ fun ShopRoute(onBack: () -> Unit, nav: @Composable () -> Unit, startTab: String 
     val weekly = remember(s) { weeklyPrecons(s) }
     val storePrecons = remember(precon.index, precon.commander, weekly) { precon.index?.let { it + precon.commander }?.filter { it.fileName.removeSuffix(".json") in weekly } }
     val needs = remember(s, owned) { HashMap<String, PreconNeed>() }
-    fun needOf(file: String): PreconNeed? = PreconStore.summaries[file]?.let { x -> needs.getOrPut(file) { preconNeed(x.rows, owned, s, file) } }
+    fun needOf(file: String, type: String): PreconNeed? = PreconStore.summaries[file]?.let { x -> needs.getOrPut(file) { preconNeed(x.rows, owned, s, file, type) } }
     val calm = open == null && opener == null && precon.open == null
 
     BackHandler(enabled = set != null && calm) { set = null }
@@ -196,7 +196,7 @@ fun ShopRoute(onBack: () -> Unit, nav: @Composable () -> Unit, startTab: String 
  */
 @OptIn(androidx.compose.foundation.ExperimentalFoundationApi::class)
 @Composable
-private fun Storefront(s: JsonObject, busy: Boolean, start: String, weekly: Set<String>, precons: List<Decks.PreconEntry>?, needOf: (String) -> PreconNeed?,
+private fun Storefront(s: JsonObject, busy: Boolean, start: String, weekly: Set<String>, precons: List<Decks.PreconEntry>?, needOf: (String, String) -> PreconNeed?,
                        onBack: () -> Unit, onPage: (String) -> Unit, onSet: (String) -> Unit, onBuy: (String) -> Unit, actions: PlayHomeActions,
                        onSecretLair: (JsonObject) -> Unit, onStamp: (String, String) -> Unit, onCard: (CardPick) -> Unit, onPrecon: (Decks.PreconEntry) -> Unit) {
     val list = rememberLazyListState()
@@ -451,7 +451,7 @@ private fun ShelfPack(code: String, name: String, row: Trunk.SetRow?, price: Int
  * flat list, the precons are grouped by the formats their cards are legal in.
  */
 @Composable
-private fun PreconAisle(precons: List<Decks.PreconEntry>?, byFormat: Map<String, List<String>>, pre: PreconPrerelease?, needOf: (String) -> PreconNeed?, onOpen: (Decks.PreconEntry) -> Unit) {
+private fun PreconAisle(precons: List<Decks.PreconEntry>?, byFormat: Map<String, List<String>>, pre: PreconPrerelease?, needOf: (String, String) -> PreconNeed?, onOpen: (Decks.PreconEntry) -> Unit) {
     var format by rememberSaveable { mutableStateOf("") }
     Column(verticalArrangement = Arrangement.spacedBy(14.dp)) {
         AisleHead("Precons", "Whole decks for coins. You only pay for the cards you don't have yet.")
@@ -480,7 +480,7 @@ private fun PreconAisle(precons: List<Decks.PreconEntry>?, byFormat: Map<String,
         val early = pre?.files.orEmpty().toSet()
         LazyRow(Modifier.bleed(16.dp), state = row, contentPadding = PaddingValues(horizontal = 16.dp), horizontalArrangement = Arrangement.spacedBy(12.dp)) {
             items(shown, key = { it.fileName }) { e ->
-                PreconTile(e, needOf(e.fileName), Modifier.width(272.dp), shop = true, tag = if (e.fileName.removeSuffix(".json") in early) "Pre-release" else null) { onOpen(e) } }
+                PreconTile(e, needOf(e.fileName, e.type), Modifier.width(272.dp), shop = true, tag = if (e.fileName.removeSuffix(".json") in early) "Pre-release" else null) { onOpen(e) } }
         }
     }
 }

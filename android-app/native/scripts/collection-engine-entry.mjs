@@ -49,6 +49,10 @@ import {pkCatalogueSymbolSources, pkRarity} from 'WEB/emblems.js';
 import {rarityKind} from 'WEB/rarity-emblem.js';
 import {cardImage, img as imgHtml} from 'WEB/ui.js';
 import {massEntryUrl} from 'WEB/buy.js';
+import {interactiveRules, attachRuleLearning} from 'WEB/rule-learning.js';
+import {showRuleHint} from 'WEB/rule-dex.js';
+import '../scripts/web-bytes.mjs';
+import {Document as SiteDocument, serialize as domJson, byId as domById, tap as domTap, type as domType} from '../scripts/site-dom.mjs';
 
 // app.js:193-198, verbatim.
 const stripCache = (s) => {
@@ -1587,33 +1591,86 @@ function deckMenuHtml(d) {
 function deckMenuModel(id) {
   const d = deckOf(id);
   if (!d) return {missing: true};
-  const t = tree(deckMenuHtml(d)), head = one(t, cls('context-head')), box = one(head, cls('deck-box'));
+  return menuModelOf(tree(deckMenuHtml(d)), d, {name: 'dmName', format: 'dmFormat'});
+}
+// tcg.js A.tDeckMenu (a Yu-Gi-Oh! or Pokémon deck's ⋯ menu), the site's own: the sheet it opens is caught and read as the Magic one is.
+// It has no budget, focus or More deck tools; its format is one plain list.
+function tcgDeckMenuModel(G, id) {
+  tcgFocus(G, 'tdeck'); S.ui.tdeckId = id;
+  const d = tcgGs(G).decks.find(x => String(x.id) === String(id));
+  if (!d) return {missing: true};
+  let html = ''; const was = tcgSheetHook; tcgSheetHook = h => { html = String(h || ''); };
+  try { TA.tDeckMenu({dataset: {id: d.id}}); } finally { tcgSheetHook = was; }
+  return {...menuModelOf(tree(html), d, {name: 'tDmName', format: 'tDmFormat'}), game: G};
+}
+function menuModelOf(t, d, ids) {
+  const head = one(t, cls('context-head')), box = one(head, cls('deck-box'));
   const action = b => ({act: b.attrs['data-act'] || '', label: text({kids: (one(b, tagIs('span'))?.kids || []).filter(k => k.tag !== 'small')}), hint: text(one(b, tagIs('small'))),
     icon: icon(svgIn(b)), danger: cls('danger')(b), tab: b.attrs['data-tab'] || '', scope: b.attrs['data-scope'] || ''});
   const summary = det => { const sm = one(det, tagIs('summary')), svgs = all(sm, tagIs('svg')); return {title: text({kids: (one(sm, tagIs('span'))?.kids || []).filter(k => k.tag !== 'small')}), hint: text(one(sm, tagIs('small'))), icon: icon(svgs[0]), chev: icon(svgs[svgs.length - 1])}; };
   const [edit, tools] = all(t, x => x.tag === 'details' && cls('context-edit')(x));
   const field = idv => one(edit, x => x.attrs.id === idv);
   const labelOf = n => text({kids: (n?.kids || []).filter(k => k.text !== undefined)});
-  const fmt = field('dmFormat'), boxS = one(edit, cls('deck-box-settings')), lock = one(tools, cls('toggle'));
+  const fmt = field(ids.format), boxS = one(edit, cls('deck-box-settings')), lock = tools ? one(tools, cls('toggle')) : null;
+  const groupsOf = all(fmt, tagIs('optgroup')), plain = groupsOf.length ? [] : [{group: '', options: all(fmt, tagIs('option')).map(o => [o.attrs.value ?? text(o), text(o)])}];
   const source = one(t, cls('context-source'));
   return {id: String(d.id), name: d.name,
     head: {kind: text(one(head, cls('context-kicker'))), name: text(one(head, tagIs('h2'))), meta: text(one(one(head, cls('context-identity')), tagIs('p'))), close: icon(svgIn(one(head, cls('context-close')))),
       box: box && {color: ((/--deck-box-color:\s*([^;]+)/.exec(box.attrs.style || '') || [])[1] || '').trim(), cards: all(one(box, cls('deck-box-cards')), tagIs('img')).map(i => i.attrs.src || '')}},
     shortcuts: all(one(t, cls('context-shortcuts')), tagIs('button')).map(action),
     edit: {...summary(edit), labels: all(one(edit, cls('grid2')), tagIs('label')).map(labelOf),
-      name: field('dmName')?.attrs.value || '', max: Number(field('dmName')?.attrs.maxlength || 100),
-      formats: all(fmt, tagIs('optgroup')).map(g => ({group: g.attrs.label || '', options: all(g, tagIs('option')).map(o => [o.attrs.value ?? text(o), text(o)])})),
+      name: field(ids.name)?.attrs.value || '', max: Number(field(ids.name)?.attrs.maxlength || 100),
+      formats: [...groupsOf.map(g => ({group: g.attrs.label || '', options: all(g, tagIs('option')).map(o => [o.attrs.value ?? text(o), text(o)])})), ...plain],
       format: (all(fmt, tagIs('option')).find(o => o.attrs.selected !== undefined)?.attrs.value) || '',
-      budget: field('dmBudget')?.attrs.value || '', strategy: selectOf(field('dmStrategy')),
+      budget: field('dmBudget')?.attrs.value || '', strategy: field('dmStrategy') ? selectOf(field('dmStrategy')) : null,
       box: {summary: text(one(boxS, tagIs('summary'))), labels: all(boxS, tagIs('label')).map(labelOf), color: field('deckBoxColor')?.attrs.value || '', image: selectOf(field('deckBoxImage')), foot: text(one(boxS, cls('foot')))},
       save: text(one(edit, cls('context-save')))},
     groups: all(t, x => cls('context-group')(x) && !cls('context-danger')(x)).map(g => ({aria: g.attrs['aria-label'] || '', actions: all(g, tagIs('button')).map(action)})),
-    tools: {...summary(tools), lock: {on: one(lock, tagIs('input'))?.attrs.checked !== undefined, title: text(one(lock, tagIs('b'))), hint: text(one(lock, tagIs('small')))},
-      actions: all(tools, x => x.tag === 'button' && cls('context-action')(x)).map(action)},
+    tools: tools ? {...summary(tools), lock: {on: one(lock, tagIs('input'))?.attrs.checked !== undefined, title: text(one(lock, tagIs('b'))), hint: text(one(lock, tagIs('small')))},
+      actions: all(tools, x => x.tag === 'button' && cls('context-action')(x)).map(action)} : null,
     danger: all(one(t, cls('context-danger')), tagIs('button')).map(action),
     source: source ? {text: text({kids: (source.kids || []).filter(k => k.tag !== 'a')}).replace(/\s*·\s*$/, ''), link: one(source, tagIs('a'))?.attrs.href || '', linkText: text(one(source, tagIs('a')))} : null,
     // app.js A.snapshot's suggested name.
     version: 'Version ' + ((d.versions || []).length + 1)};
+}
+// A site handler run as the site runs it, with what the browser would give it standing in:
+// - dialog.js ask / askText: the dialog it opens is read (title, words, buttons) and the run stops there. The app asks the player,
+//   and Yes taps again (confirmed); each question answered Yes in this tap's chain is then answered Yes again as it opens.
+// - buy.js copyPlain (the clipboard), tcg.js copyText, window.open (Mass Entry): kept for the app, which copies and opens them.
+// - document.querySelector for a form's fields ([vals]).
+const SITE_ASKED = {siteAsked: true};
+let siteAsk = null, siteYes = [], siteCopied = null, siteOpened = '';
+function siteDialogs() {
+  const el = () => { const ls = {}; return {value: '', ls, addEventListener(t, f) { (ls[t] ||= []).push(f); }, focus() {}, select() {}, setAttribute() {}, classList: {add() {}}, close() {}, remove() {}}; };
+  return {body: {append() {}}, createElement() {
+    let html = ''; const parts = {}, d = el();
+    Object.defineProperty(d, 'innerHTML', {set(h) { html = String(h); }, get() { return html; }});
+    d.querySelector = sel => (parts[sel] ||= el());
+    d.showModal = () => {
+      const t = tree(html), btns = all(t, tagIs('button')), field = one(t, tagIs('input'));
+      const q = {question: text(one(t, cls('cf-dialog-msg'))), title: text(one(t, cls('cf-dialog-title'))), cancel: text(btns[0]), ok: text(btns[1]), danger: cls('danger')(btns[1] || {attrs: {}})};
+      if (!siteYes.includes(q.question)) { siteAsk = q; throw SITE_ASKED; }
+      if (field) parts.input.value = field.attrs.value || '';
+      for (const f of parts.form?.ls.submit || []) f({preventDefault() {}});
+    };
+    return d; }};
+}
+async function siteRun(fn, d = {}, vals = {}) {
+  if (!d.confirmed) siteYes = []; else if (siteAsk) siteYes.push(siteAsk.question);
+  siteAsk = null; siteCopied = null; siteOpened = '';
+  const was = {document: globalThis.document, navigator: globalThis.navigator, window: globalThis.window, copy: tcgCtx.copyText};
+  const put = (k, v) => Object.defineProperty(globalThis, k, {value: v, writable: true, configurable: true});
+  put('document', {...siteDialogs(), querySelector: q => vals[q] == null ? null : {value: String(vals[q])}});
+  put('navigator', {...(was.navigator || {}), clipboard: {writeText: async t => { siteCopied = String(t); }}});
+  put('window', Object.assign(Object.create(was.window || null), {open: u => { siteOpened = String(u || ''); }}));
+  tcgCtx.copyText = async (t, msg) => { siteCopied = String(t); if (msg) toasts.push({text: String(msg), undo: false}); return true; };
+  // The stand-ins stay while the handler runs: its questions can come after an await (buy.js asks once the list is copied).
+  try { await fn(); } catch (e) { if (e !== SITE_ASKED) throw e; }
+  finally {
+    for (const k of ['document', 'navigator', 'window']) { if (was[k] === undefined) delete globalThis[k]; else put(k, was[k]); }
+    tcgCtx.copyText = was.copy;
+  }
+  if (siteAsk) asked = siteAsk.question;
 }
 // store.js deckById, and app.js scopedEditDeck for the deck with that id: it throws when the deck went away before the write ran.
 const deckOf = (id) => (id == null ? null : S.state.decks.find((x) => String(x.id) === String(id)) || null);
@@ -1672,6 +1729,21 @@ const writeActs = {
   async tDeckMove(d) { tcgFocus(d.game, 'tdeck'); S.ui.tdeckId = d.deck; await TA.tDeckMove({dataset: d}); },
   async tDeckAdd(d) { tcgFocus(d.game, 'tdeck'); S.ui.tdeckId = d.deck; await TA.tDeckAdd({dataset: d}); },
   async tDeckEmbSwap(d) { tcgFocus(d.game, 'tdeck'); S.ui.tdeckId = d.deck; await TA.tDeckEmbSwap({dataset: d}); },
+  // tcg.js A.tDeckSave, the ⋯ menu's Save changes: its form (#tDmName, #tDmFormat and deck-box.js readDeckBox's two) as the app has it.
+  async tDeckSave(d) { tcgFocus(d.game, 'tdeck'); S.ui.tdeckId = d.deck;
+    await siteRun(() => TA.tDeckSave({dataset: {id: d.deck}}), d, {'#tDmName': d.name, '#tDmFormat': d.format, '#deckBoxColor': d.color, '#deckBoxImage': d.image}); },
+  // tcg.js A.tDeckDup: the copy is made and its page opened (go: the app follows made).
+  async tDeckDup(d) { tcgFocus(d.game, 'tdeck'); tcgWent = '';
+    await siteRun(() => TA.tDeckDup({dataset: {id: d.deck}}), d);
+    if (tcgWent.startsWith('#tdeck/')) made = decodeURIComponent(tcgWent.slice(7)); },
+  // tcg.js A.tDeckDelete: asked first, then the deck goes (Undo on the toast).
+  async tDeckDelete(d) { tcgFocus(d.game, 'tdeck'); await siteRun(() => TA.tDeckDelete({dataset: {id: d.deck}}), d); },
+  // The price panel: tcg.js A.tDeckRefresh (every card's data and price read again), A.tDeckCheapest (Pokémon: each card to its
+  // cheapest legal printing, the old list kept in Versions) and A.tDeckCopyMissing (Buy on TCGplayer: buy.js copies the list and
+  // asks before Mass Entry opens; a Yu-Gi-Oh! exact-printing list asks first whether to keep its checklist).
+  async tDeckRefresh(d) { tcgFocus(d.game, 'tdeck'); S.ui.tdeckId = d.deck; await siteRun(() => TA.tDeckRefresh({dataset: {id: d.deck}}), d); },
+  async tDeckCheapest(d) { tcgFocus(d.game, 'tdeck'); S.ui.tdeckId = d.deck; await siteRun(() => TA.tDeckCheapest({dataset: {id: d.deck}}), d); },
+  async tDeckCopyMissing(d) { tcgFocus(d.game, 'tdeck'); S.ui.tdeckId = d.deck; await siteRun(() => TA.tDeckCopyMissing({dataset: {id: d.deck}}), d); },
   // tcg.js A.tOwnSave, the site's own: it reads its form from the page (#tQty, #tCond…), so the form as the app has it stands in for
   // those fields while the handler reads them (before its first await); it closes the sheet when saved (made: "closed").
   async tOwnSave(d) {
@@ -2140,6 +2212,34 @@ async function refreshMagicCollectionPrices(force = false) {
 let pricesRun = null;
 
 let acting = null;
+// A tab of the site's markup with its own listeners, in a small DOM (site-dom.mjs): the Rules tab is rule-learning.js
+// interactiveRules with attachRuleLearning on it, as tcg.js's deck page draws it (format: the deck's), and app.js's click
+// handling over the page (A.ruleHint = rule-dex.js showRuleHint, whose glass opens over it). Taps and typing reach the same
+// listeners; the markup as they leave it goes back to the app. A data-act this page doesn't run here goes to the app (acted).
+let panel = null;
+function panelRun(f) {
+  const was = {document: globalThis.document, window: globalThis.window};
+  globalThis.document = panel.doc; globalThis.window = {innerWidth: 390, innerHeight: 844, document: panel.doc, addEventListener() {}, removeEventListener() {}, dispatchEvent() { return true; }, getComputedStyle: () => ({})};
+  try { return f(); } finally { for (const k of ['document', 'window']) { if (was[k] === undefined) delete globalThis[k]; else globalThis[k] = was[k]; } }
+}
+const PANEL_ACTS = {ruleHint: t => showRuleHint(t)};
+function panelOpen(key, html, attach) {
+  if (panel?.key === key) return;
+  const doc = new SiteDocument(), host = doc.createElement('div');
+  panel = {key, doc, host, acted: null};
+  doc.body.append(host);
+  // app.js's document click: the nearest data-act, unless disabled, runs its handler (the ones this page has here).
+  doc.addEventListener('click', e => {
+    const t = e.target.closest('[data-act]'); if (!t || t.disabled) return;
+    const fn = PANEL_ACTS[t.dataset.act];
+    if (t.localName === 'a' && t.getAttribute('href')) return;
+    e.preventDefault();
+    if (fn) fn(t, e); else panel.acted = {act: t.dataset.act, data: {...t.dataset}};
+  });
+  panelRun(() => { host.innerHTML = html; attach?.(host); });
+}
+const panelModel = () => { const reveal = panel.doc.reveals.splice(0); const acted = panel.acted; panel.acted = null; return json({key: panel.key, body: domJson(panel.doc.body, el => icon(svgIn(tree(el.outerHTML)))), reveal: reveal.length ? reveal[reveal.length - 1] : null, acted}); };
+
 globalThis.Collection = {
   // The account's workspace row data (cloud.js), normalized as app.js loads it; [catalogJson] is the app's saved catalog.
   load(workspaceJson, catalogJson) {
@@ -2181,7 +2281,8 @@ globalThis.Collection = {
     if (!writeActs[kind]) throw Error('unknown write ' + kind);
     const run = acting = {done: false}; toasts = []; asked = ''; made = ''; const n = commits;
     Promise.resolve().then(() => writeActs[kind](JSON.parse(dataJson || '{}'))).then(
-      () => { Object.assign(run, {done: true, ask: asked, toasts, writes: commits - n, made}); },
+      () => { Object.assign(run, {done: true, ask: asked, toasts, writes: commits - n, made, ...(asked && siteAsk?.question === asked ? {asking: siteAsk} : {}),
+        ...(siteCopied != null ? {copied: siteCopied} : {}), ...(siteOpened ? {opened: siteOpened} : {})}); siteCopied = null; siteOpened = ''; },
       e => { Object.assign(run, {done: true, error: String(e?.message || e), ask: '', toasts, writes: commits - n}); });
   },
   actPoll() { return json(acting || {done: true, writes: 0, toasts: []}); },
@@ -2196,6 +2297,14 @@ globalThis.Collection = {
   // app.js closeSheet: the sheet [id] opened is gone (a newer one is left alone).
   // app.js A.deckMenu (6108): the ⋯ menu of deck [id] (deckMenuModel).
   deckMenu(id) { return json(deckMenuModel(id)); },
+  // tcg.js A.tDeckMenu: a Yu-Gi-Oh! or Pokémon deck's ⋯ menu.
+  tdeckMenu(game, id) { return json(tcgDeckMenuModel(game, id)); },
+  // tcg.js A.tDeckCopy (listText: Main / Extra / Side with "qty name" lines) and A.tDeckExport (the game's own export, .ydk or .txt).
+  tdeckText(game, id) {
+    const d = tcgGs(game).decks.find(x => String(x.id) === String(id)); if (!d) return '{}';
+    const listText = (d) => ["main", "extra", "side"].flatMap((z) => ((d.zones[z] || []).length ? [z === "main" ? "Main" : z === "extra" ? "Extra" : "Side", ...d.zones[z].map((r) => `${r.qty} ${r.name}`), ""] : [])).join("\n");
+    return json({text: listText(d), export: tcgSources[game].exportText(d, (x) => tcgCardOf(game, x)), file: d.name.replace(/[^a-z0-9]+/gi, "_") + "." + tcgSources[game].exportExt});
+  },
   // app.js A.deckCopy / A.deckExport: the decklist as the site writes it (core.js exportDeckText) and the file it saves (fileSafe).
   deckText(id) { const d = deckOf(id); return json(d ? {text: exportDeckText(d), file: `CardStashy_${String(d.name).replace(/[^a-z0-9]+/gi, "_").replace(/^_|_$/g, "") || "deck"}.txt`} : {}); },
   // app.js A.cardDeckPicker (4782): the decks a card page's Add to deck offers ([id, name]), and the one its <select> shows first.
@@ -2275,6 +2384,11 @@ globalThis.Collection = {
   // it and reads setWent() for the #set/<id> it went to.
   setByName(game, name) { tcgFocus(game, 'home'); tcgWent = ''; Promise.resolve(TA.tSetByName({dataset: {name}})).catch(() => {}); },
   setWent() { const m = /^#set\/(.+)$/.exec(tcgWent); return m ? decodeURIComponent(m[1]) : ''; },
+  // The deck page's Rules tab (tcg.js: interactiveRules(g, {format: d.format})), and taps and typing on whatever panel is open.
+  rules(game, format) { panelOpen('rules|' + game + '|' + (format || ''), interactiveRules(game, {format: format || ''}), host => attachRuleLearning(host)); return panelModel(); },
+  panelModel() { return panel ? panelModel() : '{}'; },
+  panelTap(id) { const el = panel && domById(panel.doc.documentElement, Number(id)); if (el) panelRun(() => domTap(el)); return panel ? panelModel() : '{}'; },
+  panelType(id, value) { const el = panel && domById(panel.doc.documentElement, Number(id)); if (el) panelRun(() => domType(el, value)); return panel ? panelModel() : '{}'; },
   catalog() { return json(S.catalog); },
   // search-hints.js hintPool: the names and questions the search field fades through (the player's own cards mixed in).
   hints(game) { return json({prompt: SEARCH_PROMPT, first: 4000, every: 4200, fade: 260, pool: hintPool(game, game === 'mtg' ? S.state.collection.map(e => e.name) : (S.state.tcg?.[game]?.collection || []).map(e => e.name))}); },

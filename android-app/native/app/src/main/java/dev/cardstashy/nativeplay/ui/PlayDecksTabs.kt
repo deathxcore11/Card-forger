@@ -216,12 +216,15 @@ fun preconPrerelease(state: JsonObject?): PreconPrerelease? = ((state?.get("prec
     PreconPrerelease(str("set"), str("name"), str("releases"), (o.get("files") as? JsonArray)?.mapNotNull { it.takeIf { e -> e.isJsonPrimitive }?.asString }.orEmpty())
 }?.takeIf { it.files.isNotEmpty() }
 fun isWeeklyPrecon(state: JsonObject?, file: String) = file.removeSuffix(".json") in weeklyPrecons(state)
-fun preconNeed(rows: List<Decks.Row>, owned: Map<String, Int>, state: JsonObject, file: String = ""): PreconNeed {
-    val sh = Decks.shortfall(rows, owned, rows.associate { it.name to it.rarity }, Decks.preconCopies(rows))
+/** [type]: the precon's MTGJSON deck type (its DeckList entry's), which sets its list price (Decks.preconQuote). */
+fun preconNeed(rows: List<Decks.Row>, owned: Map<String, Int>, state: JsonObject, file: String = "", type: String = ""): PreconNeed {
+    val config = state.getAsJsonObject("config")
+    val quote = Decks.preconQuote(rows, owned, type, config, if (type.equals(Decks.COMMANDER_PRECON_TYPE, true)) 1 else Decks.preconCopies(rows).let { c -> if (c == 1) 1 else config?.get("maxCopies")?.takeIf { it.isJsonPrimitive }?.asInt ?: 4 })
+    val sh = quote.short
     val wallet = state.getAsJsonObject("wallet")
     val short = SEAL_KEYS.associateWith { k -> maxOf(0, (sh.seals[k] ?: 0) - (wallet?.get("seal_$k")?.takeIf { it.isJsonPrimitive }?.asInt ?: 0)) }
     val want = rows.filter { !Decks.isBasicLand(it.name) }.sumOf { maxOf(1, it.qty) }
-    return PreconNeed(sh, short, Decks.preconPrice(sh.seals, state.getAsJsonObject("config")), if (want > 0) (want - sh.total).coerceAtLeast(0).toDouble() / want else 1.0,
+    return PreconNeed(sh, short, quote.price, if (want > 0) (want - sh.total).coerceAtLeast(0).toDouble() / want else 1.0,
         sh.complete || isWeeklyPrecon(state, file))
 }
 
@@ -284,7 +287,7 @@ fun PreconsTab(state: JsonObject, pc: PreconUi, owned: Map<String, Int>, onOpen:
     val candidates = remember(searched, f.product, f.format) { searched.filter { (f.product.isEmpty() || preconLine(it.type) == f.product) && (f.format.isEmpty() || preconInWindow(it, f.format)) } }
     fun matches(s: PreconStore.Summary) = (f.format.isEmpty() || f.format in s.formats) && f.colors.all { it in s.colors }
     val needs = remember(state, owned) { HashMap<String, PreconNeed>() }
-    fun needOf(file: String): PreconNeed? = PreconStore.summaries[file]?.let { s -> needs.getOrPut(file) { preconNeed(s.rows, owned, state, file) } }
+    fun needOf(file: String, type: String): PreconNeed? = PreconStore.summaries[file]?.let { s -> needs.getOrPut(file) { preconNeed(s.rows, owned, state, file, type) } }
     // The week's five store precons come first (preconShelf sorts isWeekly first).
     val weekly = remember(state) { weeklyPrecons(state) }
     fun isWeekly(e: Decks.PreconEntry) = e.fileName.removeSuffix(".json") in weekly
@@ -292,7 +295,7 @@ fun PreconsTab(state: JsonObject, pc: PreconUi, owned: Map<String, Int>, onOpen:
         rails -> emptyList()
         !needSummary -> (if (f.sort == "name") candidates.sortedBy { it.name } else candidates).sortedByDescending(::isWeekly).take(pc.limit)
         else -> candidates.filter { e -> PreconStore.summaries[e.fileName]?.let(::matches) == true }
-            .let { l -> when (f.sort) { "closest" -> l.sortedBy { needOf(it.fileName)?.total ?: Int.MAX_VALUE }; "name" -> l.sortedBy { it.name }; else -> l } }.sortedByDescending(::isWeekly).take(pc.limit)
+            .let { l -> when (f.sort) { "closest" -> l.sortedBy { needOf(it.fileName, it.type)?.total ?: Int.MAX_VALUE }; "name" -> l.sortedBy { it.name }; else -> l } }.sortedByDescending(::isWeekly).take(pc.limit)
     }
     // A filter that needs the deck files reads them in order until a page of matches is in (Closest checks the first 60).
     LaunchedEffect(rails, needSummary, candidates, f.format, f.colors, f.sort, pc.limit, PreconStore.summaries.size, failedCount) {
@@ -335,7 +338,7 @@ fun PreconsTab(state: JsonObject, pc: PreconUi, owned: Map<String, Int>, onOpen:
                         Text("In the store", style = cinzel(18f)); Text("  ${store.size}", style = t(13f, FontWeight.Bold, Site.Muted)); Spacer(Modifier.weight(1f))
                         Text("This week", style = t(13f, FontWeight.Bold, Site.Muted)) } }
                     item(key = "r:store") { LazyRow(horizontalArrangement = Arrangement.spacedBy(10.dp), modifier = Modifier.fillMaxWidth()) {
-                        items(store, key = { it.fileName }) { e -> PreconTile(e, needOf(e.fileName), Modifier.width(262.dp), weekly = true) { onOpen(e) } } } }
+                        items(store, key = { it.fileName }) { e -> PreconTile(e, needOf(e.fileName, e.type), Modifier.width(262.dp), weekly = true) { onOpen(e) } } } }
                 }
                 lines.forEach { (l, es) ->
                 item(key = "h:$l") { Row(Modifier.fillMaxWidth().padding(top = 6.dp), verticalAlignment = Alignment.CenterVertically) {
@@ -344,7 +347,7 @@ fun PreconsTab(state: JsonObject, pc: PreconUi, owned: Map<String, Int>, onOpen:
                 item(key = "r:$l") {
                     val rs = remember(l) { f.rails.getOrPut(l) { LazyListState() } }
                     LazyRow(state = rs, horizontalArrangement = Arrangement.spacedBy(10.dp), modifier = Modifier.fillMaxWidth()) {
-                        items(es.take(16), key = { it.fileName }) { e -> PreconTile(e, needOf(e.fileName), Modifier.width(262.dp), weekly = isWeekly(e)) { onOpen(e) } }
+                        items(es.take(16), key = { it.fileName }) { e -> PreconTile(e, needOf(e.fileName, e.type), Modifier.width(262.dp), weekly = isWeekly(e)) { onOpen(e) } }
                     }
                 }
             } }
@@ -354,7 +357,7 @@ fun PreconsTab(state: JsonObject, pc: PreconUi, owned: Map<String, Int>, onOpen:
                     shown.isEmpty() -> "No precons match."
                     needSummary && pending > 0 -> "${shown.size} so far · checking more…"
                     else -> "${if (needSummary) shown.size else candidates.size} precon${if ((if (needSummary) shown.size else candidates.size) == 1) "" else "s"}" }, style = t(13f, color = Site.Muted)) }
-                itemsIndexed(shown, key = { _, e -> "t:" + e.fileName }) { _, e -> PreconTile(e, needOf(e.fileName), Modifier.fillMaxWidth().animateItem(), weekly = isWeekly(e)) { onOpen(e) } }
+                itemsIndexed(shown, key = { _, e -> "t:" + e.fileName }) { _, e -> PreconTile(e, needOf(e.fileName, e.type), Modifier.fillMaxWidth().animateItem(), weekly = isWeekly(e)) { onOpen(e) } }
                 val more = if (needSummary) (shown.size >= pc.limit) else candidates.size > shown.size
                 if (more) item(key = "more") { GhostButton("Show more", Modifier.fillMaxWidth()) { pc.limit += 12 } }
             }
@@ -432,7 +435,7 @@ fun SealCosts(cost: Map<String, Int>, short: Map<String, Int>, size: Dp, modifie
 @Composable
 fun PreconPage(state: JsonObject, o: OpenPrecon, owned: Map<String, Int>, pc: PreconUi, onBack: () -> Unit, onCard: (String) -> Unit, toast: (String) -> Unit, nav: @Composable () -> Unit) {
     val scope = rememberCoroutineScope()
-    val need = remember(o, owned, state) { preconNeed(o.rows, owned, state, o.file) }
+    val need = remember(o, owned, state) { preconNeed(o.rows, owned, state, o.file, o.product) }
     val sh = need.sh
     val coins = state.getAsJsonObject("wallet")?.get("coins")?.takeIf { it.isJsonPrimitive }?.asInt ?: 0
     val have = remember(state) { SEAL_KEYS.associateWith { k -> state.getAsJsonObject("wallet")?.get("seal_$k")?.takeIf { it.isJsonPrimitive }?.asInt ?: 0 } }

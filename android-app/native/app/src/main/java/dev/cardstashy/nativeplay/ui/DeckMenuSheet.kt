@@ -132,14 +132,16 @@ internal fun DeckMenuSheet(o: CollectionWrites.DeckMenuOpen, backdrop: GraphicsL
     val written by CollectionWrites.written.collectAsState()
     // The menu as the site draws it now (a save draws the sheet again: refreshSheet), the form keeping what was typed.
     val model by produceState<JsonObject?>(null, o.id, written) {
-        val m = CollectionWrites.deckMenuModel(context, o.deck)
+        val m = CollectionWrites.deckMenuModel(context, o.deck, o.game)
         if (m == null || m.b("missing")) { onClose(); return@produceState }
         value = m
     }
     val m = model ?: return
     val edit = m.o("edit") ?: JsonObject()
     val box = edit.o("box") ?: JsonObject()
-    val tools = m.o("tools") ?: JsonObject()
+    val tools = m.o("tools")
+    // A Yu-Gi-Oh! or Pokémon deck's menu (tcg.js A.tDeckMenu): its saves are tcg.js's handlers, told the game.
+    val tcg = o.game != "mtg"
     var editOpen by remember(o.id) { mutableStateOf(false) }
     var boxOpen by remember(o.id) { mutableStateOf(false) }
     var toolsOpen by remember(o.id) { mutableStateOf(false) }
@@ -153,7 +155,7 @@ internal fun DeckMenuSheet(o: CollectionWrites.DeckMenuOpen, backdrop: GraphicsL
     var refreshing by remember(o.id) { mutableStateOf(false) }
     var busy by remember(o.id) { mutableStateOf(false) }
     fun data(vararg p: Pair<String, Any>) = JsonObject().apply {
-        addProperty("deck", o.deck)
+        addProperty("deck", o.deck); if (tcg) addProperty("game", o.game)
         p.forEach { (k, v) -> when (v) { is Boolean -> addProperty(k, v); is Number -> addProperty(k, v); else -> addProperty(k, v.toString()) } }
     }
     /** One save at a time from the menu (the site's buttons run once per tap). */
@@ -192,6 +194,19 @@ internal fun DeckMenuSheet(o: CollectionWrites.DeckMenuOpen, backdrop: GraphicsL
             "refreshDeck" -> if (!refreshing) { refreshing = true; scope.launch { try { CollectionWrites.act(context, "refreshDeck", data()) } finally { refreshing = false } } }
             // A.deckDelete: ask first; then closeSheet and the decks.
             "deckDelete" -> save("deckDelete", data()) { onClose(); o.deleted() }
+            // tcg.js A.tDeckCopy: copyText(listText(deck), "Decklist copied.").
+            "tDeckCopy" -> scope.launch {
+                val t = CollectionWrites.deckText(context, o.deck, o.game) ?: return@launch
+                val cm = context.getSystemService(android.content.Context.CLIPBOARD_SERVICE) as android.content.ClipboardManager
+                cm.setPrimaryClip(android.content.ClipData.newPlainText("Decklist", t.s("text")))
+                CollectionWrites.show("Decklist copied.")
+            }
+            // tcg.js A.tDeckExport: download(name.ydk or .txt, the game's exportText).
+            "tDeckExport" -> scope.launch { exportTcgDeck(context, o.deck, o.game) }
+            // tcg.js A.tDeckDup: the copy, then its page.
+            "tDeckDup" -> save("tDeckDup", data()) { r -> r.s("made").takeIf { it.isNotEmpty() }?.let { id -> onClose(); o.openDeck(id) } }
+            // tcg.js A.tDeckDelete: asked first; then the decks.
+            "tDeckDelete" -> save("tDeckDelete", data()) { onClose(); o.deleted() }
             else -> { onClose(); o.web(act, a.s("scope")) }
         }
     }
@@ -227,7 +242,7 @@ internal fun DeckMenuSheet(o: CollectionWrites.DeckMenuOpen, backdrop: GraphicsL
                         val heads = groups.flatMap { g -> g.get("options").asJsonArray.mapIndexed { i, _ -> if (i == 0) g.s("group") else "" } }
                         FormSelect(opts, format, FIELD, desc = labels.getOrElse(1) { "Format" }, groups = heads) { format = it }
                     }
-                    Pair2(one, { mod -> Labeled(labels.getOrElse(2) { "Budget $" }, mod) {
+                    if (edit.o("strategy") != null) Pair2(one, { mod -> Labeled(labels.getOrElse(2) { "Budget $" }, mod) {
                         FormInput(budget, { v -> budget = v.filter { it.isDigit() || it == '.' } }, FIELD, desc = labels.getOrElse(2) { "Budget $" }, keyboard = KeyboardType.Number)
                     } }, { mod -> Labeled(labels.getOrElse(3) { "Focus" }, mod) {
                         FormSelect(edit.o("strategy").options(), strategy, FIELD, desc = labels.getOrElse(3) { "Focus" }) { strategy = it }
@@ -259,7 +274,8 @@ internal fun DeckMenuSheet(o: CollectionWrites.DeckMenuOpen, backdrop: GraphicsL
                 Spacer(Modifier.height(12.dp))
                 // .context-save: gold words on a 13 % gold wash, 44 tall, 11 corners.
                 Box(Modifier.fillMaxWidth().heightIn(min = 44.dp).clip(RoundedCornerShape(11.dp)).background(Site.Gold.copy(alpha = .13f))
-                    .clickable { save("deckSaveInfo", data("name" to name, "format" to format, "budget" to budget, "strategy" to strategy, "color" to color, "image" to image)) { onClose() } }
+                    .clickable { if (tcg) save("tDeckSave", data("name" to name, "format" to format, "color" to color, "image" to image)) { onClose() }
+                        else save("deckSaveInfo", data("name" to name, "format" to format, "budget" to budget, "strategy" to strategy, "color" to color, "image" to image)) { onClose() } }
                     .semantics { role = Role.Button }.padding(horizontal = 16.dp), contentAlignment = Alignment.Center) {
                     Text(edit.s("save"), style = cssType(13f, 600, 18.85f, Site.Gold), maxLines = 1)
                 }
@@ -269,9 +285,8 @@ internal fun DeckMenuSheet(o: CollectionWrites.DeckMenuOpen, backdrop: GraphicsL
             Spacer(Modifier.height(12.dp))
             Panel(g.s("aria")) { g.objs("actions").forEachIndexed { i, a -> Action(a, phone, divider = i < g.objs("actions").size - 1, busyLabel = if (a.s("act") == "refreshDeck" && refreshing) "Refreshing…" else null) { press(a) } } }
         }
-        Spacer(Modifier.height(12.dp))
-        // details.context-edit.context-tools: More deck tools.
-        Panel(tag = "details-tools") {
+        // details.context-edit.context-tools: More deck tools (the Magic menu's alone).
+        if (tools != null) { Spacer(Modifier.height(12.dp)); Panel(tag = "details-tools") {
             Summary(tools, toolsOpen, phone) { toolsOpen = !toolsOpen }
             if (toolsOpen) Column(Modifier.fillMaxWidth().padding(start = 15.dp, end = 15.dp, top = 1.dp, bottom = 15.dp)) {
                 val lock = tools.o("lock") ?: JsonObject()
@@ -290,7 +305,7 @@ internal fun DeckMenuSheet(o: CollectionWrites.DeckMenuOpen, backdrop: GraphicsL
                 Spacer(Modifier.height(4.dp))
                 tools.objs("actions").forEach { a -> Action(a, phone, divider = false) { press(a) } }
             }
-        }
+        } }
         // .context-danger: 16 above, the bad colour at 4 % and 12 %.
         Spacer(Modifier.height(16.dp))
         Panel(fill = MBad.copy(alpha = .04f), line = MBad.copy(alpha = .12f)) { m.objs("danger").forEach { a -> Action(a, phone, divider = false, color = MBad) { press(a) } } }
@@ -566,4 +581,13 @@ private fun Bar(label: String, at: Float, track: Brush, onAt: (Float) -> Unit) {
                 drawCircle(Color(0x66000000), 11.dp.toPx(), Offset(x.coerceIn(11.dp.toPx(), size.width - 11.dp.toPx()), size.height / 2), style = Stroke(1.dp.toPx()))
             })
     }
+}
+
+/** tcg.js A.tDeckExport: the game's own export (Yu-Gi-Oh! .ydk, Pokémon .txt) saved to Downloads, as the site's download does. */
+internal suspend fun exportTcgDeck(context: android.content.Context, deck: String, game: String) {
+    val t = CollectionWrites.deckText(context, deck, game) ?: return
+    val file = t.s("file")
+    runCatching { kotlinx.coroutines.withContext(kotlinx.coroutines.Dispatchers.IO) { CollectionWrites.download(context.applicationContext, file, t.s("export")) } }
+        .onSuccess { CollectionWrites.show("Saved $file to Downloads.") }
+        .onFailure { CollectionWrites.show("Couldn’t save $file.") }
 }

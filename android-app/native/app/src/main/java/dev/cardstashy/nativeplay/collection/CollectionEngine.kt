@@ -33,7 +33,9 @@ object CollectionEngine {
     private val answers = ConcurrentLinkedQueue<Triple<Int, Int, Pair<String, String>>>()
     private val client by lazy { OkHttpClient.Builder().callTimeout(20, TimeUnit.SECONDS).build() }
 
-    fun init(context: Context) { val app = context.applicationContext; source = { app.assets.open("collection-engine.js").bufferedReader().readText() } }
+    fun init(context: Context) { val app = context.applicationContext; filesDir = app.filesDir; source = { app.assets.open("collection-engine.js").bufferedReader().readText() } }
+    /** This device's files (rulebooks kept for offline use); unset in tests run from a file. */
+    @Volatile internal var filesDir: File? = null
     /** For tests: the bundle from a file. */
     fun initFrom(file: File) { source = { file.readText() } }
 
@@ -123,6 +125,16 @@ object CollectionEngine {
     /** One deck-page control as app.js handles it (search, filter, sort, view), then the page again. */
     suspend fun deckDo(game: String, id: String, kind: String, value: String = ""): JsonObject =
         on { q -> JsonParser.parseString(q.evaluate("Collection.deckDo(${str(game)}, ${str(id)}, ${str(kind)}, ${str(value)})") as String).asJsonObject }
+
+    /**
+     * A panel of the site's own markup run by its own scripts (the bundle's site-dom.mjs): the deck page's Rules tab (rule-learning.js
+     * interactiveRules for [game] and the deck's [format]). The model is the page's nodes as those scripts leave them; [panelTap] and
+     * [panelType] reach their listeners; what they start (the rulebook, a source) lands through [settle] with "Collection.panelModel()".
+     */
+    suspend fun rules(game: String, format: String): JsonObject =
+        on { q -> JsonParser.parseString(q.evaluate("Collection.rules(${str(game)}, ${str(format)})") as String).asJsonObject }
+    suspend fun panelTap(id: Int): JsonObject = on { q -> JsonParser.parseString(q.evaluate("Collection.panelTap($id)") as String).asJsonObject }
+    suspend fun panelType(id: Int, value: String): JsonObject = on { q -> JsonParser.parseString(q.evaluate("Collection.panelType($id, ${str(value)})") as String).asJsonObject }
 
     /** views.js cardSheet(), a card's page, as a model; [opts] = {name, entry, deck} as the tapped tile has them. */
     suspend fun card(game: String, opts: JsonObject): JsonObject =
@@ -218,9 +230,9 @@ object CollectionEngine {
      * tEntryQty, tWish) with the tapped button's dataset, run through app.js's commit; returns once its chain has finished:
      * {done, error, ask (a question to put to the player, then tap again with confirmed), toasts [{text, undo}], writes}.
      */
-    suspend fun act(kind: String, data: JsonObject): JsonObject {
+    suspend fun act(kind: String, data: JsonObject, ms: Long = 15_000): JsonObject {
         on { q -> q.evaluate("Collection.act(${str(kind)}, ${str(data.toString())})") }
-        val until = System.currentTimeMillis() + 15_000
+        val until = System.currentTimeMillis() + ms
         while (true) {
             val (p, r) = turn { q, _, _ -> JsonParser.parseString(q.evaluate("Collection.actPoll()") as String).asJsonObject }
             if (r.get("done")?.asBoolean == true) return r
@@ -261,6 +273,10 @@ object CollectionEngine {
     suspend fun deckMenu(id: String): JsonObject = on { q -> JsonParser.parseString(q.evaluate("Collection.deckMenu(${str(id)})") as String).asJsonObject }
     /** app.js A.deckCopy / A.deckExport: {text, file}. */
     suspend fun deckText(id: String): JsonObject = on { q -> JsonParser.parseString(q.evaluate("Collection.deckText(${str(id)})") as String).asJsonObject }
+    /** tcg.js A.tDeckMenu's sheet for a Yu-Gi-Oh! or Pokémon deck, read as deckMenu reads the Magic one. */
+    suspend fun tdeckMenu(game: String, id: String): JsonObject = on { q -> JsonParser.parseString(q.evaluate("Collection.tdeckMenu(${str(game)}, ${str(id)})") as String).asJsonObject }
+    /** tcg.js A.tDeckCopy's list and A.tDeckExport's file: {text, export, file}. */
+    suspend fun tdeckText(game: String, id: String): JsonObject = on { q -> JsonParser.parseString(q.evaluate("Collection.tdeckText(${str(game)}, ${str(id)})") as String).asJsonObject }
     /** app.js A.cardDeckPicker: {decks: [[id, name]], selected} for a card page's Add to deck. */
     suspend fun deckPick(game: String): JsonObject = on { q -> JsonParser.parseString(q.evaluate("Collection.deckPick(${str(game)})") as String).asJsonObject }
     /** app.js A.addLookup: {name, preview, clearPrint} or {error}. */
@@ -311,6 +327,16 @@ object CollectionEngine {
     internal suspend fun eval(code: String): String = on { q -> q.evaluate("String($code)") as String }
 
     private val JSON = "application/json".toMediaType()
+    /** A body as text: a gzip file (the rulebooks, .json.gz) unpacked first, as the site's loadRulePack unpacks it. */
+    private fun body(b: ByteArray): String =
+        if (b.size > 2 && b[0] == 0x1f.toByte() && b[1] == 0x8b.toByte()) java.util.zip.GZIPInputStream(b.inputStream()).use { it.readBytes() }.toString(Charsets.UTF_8)
+        else b.toString(Charsets.UTF_8)
+    /** Where a rulebook file is kept on this device (the manifest and each game's book), or null for anything else. */
+    private fun kept(url: String): java.io.File? {
+        val m = Regex("^https://cardstashy\\.com/rulebooks/([\\w.-]+)$").find(url.substringBefore('?')) ?: return null
+        val dir = filesDir ?: return null
+        return java.io.File(dir, "rulebooks/" + m.groupValues[1])
+    }
     private fun send(r: JsonObject) {
         val id = r.get("id").asInt
         val raw = r.get("url").asString
@@ -325,9 +351,14 @@ object CollectionEngine {
                 b.method(method, body?.toRequestBody(JSON) ?: if (method == "GET" || method == "HEAD") null else ByteArray(0).toRequestBody(JSON))
                 client.newCall(b.build()).execute().use { res ->
                     val h = JsonObject(); res.headers.forEach { (k, v) -> h.addProperty(k.lowercase(), v) }
-                    Triple(id, res.code, h.toString() to (res.body?.string() ?: ""))
+                    val text = body(res.body?.bytes() ?: ByteArray(0))
+                    if (res.isSuccessful) kept(url)?.let { f -> runCatching { f.parentFile?.mkdirs(); f.writeText(text) } }
+                    Triple(id, res.code, h.toString() to text)
                 }
-            } catch (_: Exception) { Triple(id, -1, "{}" to "") }
+            } catch (_: Exception) {
+                // Offline: the rulebook files saved when they last came in (the site keeps them in the browser's storage).
+                kept(url)?.takeIf { it.exists() }?.let { f -> Triple(id, 200, "{}" to body(f.readBytes())) } ?: Triple(id, -1, "{}" to "")
+            }
             answers.add(ans)
         }
     }

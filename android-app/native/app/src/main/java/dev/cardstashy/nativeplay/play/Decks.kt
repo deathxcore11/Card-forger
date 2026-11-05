@@ -57,6 +57,38 @@ object Decks {
         return preconTotal(listOf("c", "u", "r", "m").sumOf { (seals[it] ?: 0) * (rates[it] ?: 0) }, config)
     }
 
+    /**
+     * preconQuote (play-econ-rules.js, site PR #130, Randall 5 Nov 19:59Z "option A"): 1 pack = 500 coins = $5. Each product has
+     * a list price from its MSRP (play.config precon.list: starter 1,500, standard 3,000, commander 5,000); a player pays that
+     * list price times the share of the deck's value they don't own yet, the value weighing common 1, uncommon 3, rare 20,
+     * mythic 60 and basic lands nothing. At least precon.min (250), rounded to 5; a deck owned entirely is free.
+     * [type]: the MTGJSON deck type (the DeckList entry's); [cap]: copies per card (a Commander deck's 1).
+     */
+    val PRECON_LIST = mapOf("starter" to 1500, "standard" to 3000, "commander" to 5000)
+    val PRECON_VALUE = mapOf("c" to 1, "u" to 3, "r" to 20, "m" to 60)
+    private val STARTER_TYPES = Regex("^(?:Starter Kit|Arena Starter Kit|Intro Pack|Welcome Deck|Clash Pack)$", RegexOption.IGNORE_CASE)
+    private val COMMANDER_TYPE = Regex("^Commander Deck$", RegexOption.IGNORE_CASE)
+    fun preconListPrice(type: String, config: JsonObject?): Int {
+        val custom = config?.getAsJsonObject("precon")?.getAsJsonObject("list")
+        val key = if (COMMANDER_TYPE.matches(type)) "commander" else if (STARTER_TYPES.matches(type)) "starter" else "standard"
+        val v = custom?.get(key)?.takeIf { it.isJsonPrimitive }?.asDouble ?: PRECON_LIST.getValue(key).toDouble()
+        return if (v.isNaN() || v == 0.0) PRECON_LIST.getValue("standard") else v.toInt()
+    }
+    data class Quote(val price: Int, val missing: Int, val share: Double, val short: Shortfall)
+    fun preconQuote(rows: List<Row>, owned: Map<String, Int>, type: String, config: JsonObject?, cap: Int = 4): Quote {
+        val rarity = rows.associate { it.name to it.rarity }
+        val short = shortfall(rows, owned, rarity, cap)
+        fun w(r: String?) = PRECON_VALUE[RARITY_SEAL[rarityOf(r)]] ?: 1
+        val want = LinkedHashMap<String, Int>()
+        for (r in rows) if (r.name.isNotEmpty() && !isBasicLand(r.name)) want[r.name] = (want[r.name] ?: 0) + maxOf(1, r.qty)
+        var total = 0; for ((name, qty) in want) total += minOf(qty, cap) * w(rarity[name])
+        val miss = short.missing.sumOf { it.need * w(it.rarity) }
+        val share = if (total > 0) minOf(1.0, miss.toDouble() / total) else 0.0
+        val min = config?.getAsJsonObject("precon")?.get("min")?.takeIf { it.isJsonPrimitive }?.asInt ?: 250
+        val price = if (miss <= 0) 0 else maxOf(min, (Math.round(preconListPrice(type, config) * share / 5) * 5).toInt())
+        return Quote(price, short.total, share, short)
+    }
+
     /** legalFormats: every card legal (Vintage allows restricted at one copy) and the deck rules met. */
     fun legalFormats(rows: List<Row>, legal: Map<String, Map<String, String>>): List<String> {
         val main = rows.filter { it.board != "side" }; val size = main.sumOf { it.qty }

@@ -115,7 +115,7 @@ fun CollectionWritesHost(backdrop: androidx.compose.ui.graphics.layer.GraphicsLa
     val menu by CollectionWrites.menu.collectAsState()
     menu?.let { m -> key(m.id) { DeckMenuSheet(m, backdrop, onClose = { if (CollectionWrites.menu.value === m) CollectionWrites.menu.value = null }) } }
     toast?.let { t -> key(t.id) { SiteToast(t, onUndo = { CollectionWrites.dismiss(t); scope.launch { CollectionWrites.undo(context) } }, onGone = { CollectionWrites.dismiss(t) }) } }
-    ask?.let { a -> key(a) { AskDialog(a.question, backdrop, onAnswer = { yes -> CollectionWrites.answer(yes, context, scope) }) } }
+    ask?.let { a -> key(a) { AskDialog(a.question, backdrop, site = a.site, onAnswer = { yes -> CollectionWrites.answer(yes, context, scope) }) } }
     val asking by CollectionWrites.askingText.collectAsState()
     asking?.let { a -> key(a) { AskDialog(a.question, backdrop, input = a.value, onText = { a.reply.complete(it) }, onAnswer = {}) } }
 }
@@ -172,11 +172,14 @@ private fun SiteToast(t: CollectionWrites.Toast, onUndo: () -> Unit, onGone: () 
  * margin auto auto 16px, buttons share the row) and centred at 420 px wide otherwise. A removal's button is red and named for it.
  */
 @Composable
-private fun AskDialog(question: String, backdrop: androidx.compose.ui.graphics.layer.GraphicsLayer?, input: String? = null, onText: (String?) -> Unit = {}, onAnswer: (Boolean) -> Unit) {
+private fun AskDialog(question: String, backdrop: androidx.compose.ui.graphics.layer.GraphicsLayer?, input: String? = null, onText: (String?) -> Unit = {},
+                      site: CollectionWrites.SiteAsk? = null, onAnswer: (Boolean) -> Unit) {
     val verb = Regex("^(Delete|Remove|Replace|Clear|Sign out|Start empty|Switch|End|Restore)\\b", RegexOption.IGNORE_CASE).find(question)?.groupValues?.get(1)
-    val danger = verb != null && !Regex("^(Restore|Switch)$", RegexOption.IGNORE_CASE).matches(verb)
+    // A question a site handler asked (dialog.js open's own title, buttons and danger) keeps them as the site set them.
+    val danger = site?.danger ?: (verb != null && !Regex("^(Restore|Switch)$", RegexOption.IGNORE_CASE).matches(verb))
     // askText: the field (its words selected, the caret in it), and Save; finish() hands back the words trimmed, or null.
-    val okLabel = if (input != null) "Save" else verb?.replaceFirstChar { it.uppercase() } ?: "OK"
+    val okLabel = site?.ok?.ifBlank { null } ?: if (input != null) "Save" else verb?.replaceFirstChar { it.uppercase() } ?: "OK"
+    val cancelLabel = site?.cancel?.ifBlank { null } ?: "Cancel"
     var field by remember { androidx.compose.runtime.mutableStateOf(androidx.compose.ui.text.input.TextFieldValue(input.orEmpty(), androidx.compose.ui.text.TextRange(0, input.orEmpty().length))) }
     val answer: (Boolean) -> Unit = { yes -> if (input != null) onText(if (yes) field.text.trim() else null) else onAnswer(yes) }
     val still = Motion.still
@@ -209,7 +212,11 @@ private fun AskDialog(question: String, backdrop: androidx.compose.ui.graphics.l
             .drawBehind { drawLine(Color(0x0DFFFFFF), Offset(20.dp.toPx(), .5f), Offset(size.width - 20.dp.toPx(), .5f), 1f) }
             .clickable(interactionSource = remember { MutableInteractionSource() }, indication = null) {}
             .padding(start = 20.dp, end = 20.dp, top = 22.dp, bottom = 16.dp)) {
-            Text(question, Modifier.padding(bottom = 16.dp), style = cssType(16f, 600, 23.2f))
+            // .cf-dialog-title (17 / 700) over the words, which then read as .cf-dialog-msg.sub (14, muted).
+            if (!site?.title.isNullOrBlank()) {
+                Text(site!!.title, Modifier.padding(bottom = 6.dp), style = cssType(17f, 700, 23.8f))
+                Text(question, Modifier.padding(bottom = 16.dp), style = cssType(14f, 400, 20.3f, Color(0xFF9AA2B1)))
+            } else Text(question, Modifier.padding(bottom = 16.dp), style = cssType(16f, 600, 23.2f))
             if (input != null) androidx.compose.runtime.CompositionLocalProvider(androidx.compose.foundation.text.selection.LocalTextSelectionColors provides
                 androidx.compose.foundation.text.selection.TextSelectionColors(Site.Gold, Color(0xFF053AA6))) {
                 // .cf-dialog-input: the glass field, 12 / 14 in, 12 corners, 16 px words, 80 at most; :focus { outline: 2px solid
@@ -234,7 +241,7 @@ private fun AskDialog(question: String, backdrop: androidx.compose.ui.graphics.l
                 Box(btn.defaultMinSize(minWidth = 96.dp, minHeight = 44.dp).clip(r).background(Color(0x851F232B)).border(1.dp, Color(0x31EDC980), r)
                     .drawBehind { drawLine(Color(0x12FFFFFF), Offset(11.dp.toPx(), 1.5f), Offset(size.width - 11.dp.toPx(), 1.5f), 1f) }
                     .clickable { answer(false) }.padding(horizontal = 16.dp), contentAlignment = Alignment.Center) {
-                    Text("Cancel", style = type(15f, 700, 21.75f), textAlign = TextAlign.Center)
+                    Text(cancelLabel, style = type(15f, 700, 21.75f), textAlign = TextAlign.Center, maxLines = 2)
                 }
                 Box(btn.defaultMinSize(minWidth = 96.dp, minHeight = 44.dp).clip(r).background(if (danger) Color(0xFFF08A7E) else Site.Gold)
                     .clickable { if (danger) Feel.perform(view, "warn"); answer(true) }.padding(horizontal = 16.dp), contentAlignment = Alignment.Center) {

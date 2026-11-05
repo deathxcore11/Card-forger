@@ -143,6 +143,15 @@ fun CollectionDeckRoute(deckId: String, onPlay: () -> Unit, onProfile: () -> Uni
                     // tcg.js A.tDeckTab (War Chest, Power): that tab of the website's deck page.
                     a == "tDeckTab" -> web("$page/" + android.net.Uri.encode(id), null)
                     // A.deckMenu: the menu here (DeckMenuSheet); what it still leaves to the website opens the site's menu and taps it.
+                    // tcg.js A.tDeckMenu: the menu here too (DeckMenuSheet on tcg.js's sheet); Share deck opens the website's menu and taps it.
+                    a == "tDeckMenu" && onDeck != null -> CollectionWrites.menu.value = CollectionWrites.DeckMenuOpen(deckId,
+                        tab = { k -> if (k != "cards") web("$page/" + android.net.Uri.encode(k), null) },
+                        web = { x, _ -> web(page, "[data-act=\"tDeckMenu\"]\n[data-act=\"${css(x)}\"]") },
+                        openDeck = onDeck, deleted = onBack, game = game.id)
+                    // tcg.js A.tDeckExport (the hero's and the price panel's): the game's file, saved to Downloads.
+                    a == "tDeckExport" && tcg -> { scope.launch { exportTcgDeck(context, deckId, game.id) }; Unit }
+                    // The price panel: tcg.js A.tDeckRefresh, A.tDeckCheapest and A.tDeckCopyMissing, the site's own (CollectionWrites).
+                    tcg && a in setOf("tDeckRefresh", "tDeckCheapest", "tDeckCopyMissing") -> { write(a, "game" to game.id); Unit }
                     a == "deckMenu" && onDeck != null -> CollectionWrites.menu.value = CollectionWrites.DeckMenuOpen(deckId,
                         tab = { k -> if (k != "cards") web("$page/" + android.net.Uri.encode(k), null) },
                         web = { x, sc -> web(page, "[data-act=\"deckMenu\"]\n[data-act=\"${css(x)}\"]" + (if (sc.isNotEmpty()) "[data-scope=\"${css(sc)}\"]" else "")) },

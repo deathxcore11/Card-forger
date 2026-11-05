@@ -29,7 +29,10 @@ internal object CollectionWrites {
     fun show(text: String, undo: Boolean = false) { _toast.value = Toast(text, undo) }
 
     /** dialog.js ask: a question the player answers before the write runs; yes taps again with confirmed (or runs [then]). */
-    data class Ask(val question: String, val kind: String, val data: JsonObject, val then: (suspend () -> Unit)? = null, val after: ((JsonObject) -> Unit)? = null)
+    data class Ask(val question: String, val kind: String, val data: JsonObject, val then: (suspend () -> Unit)? = null, val after: ((JsonObject) -> Unit)? = null,
+                   val site: SiteAsk? = null)
+    /** dialog.js open's own title, buttons and danger, when a site handler asked (the engine's siteRun). */
+    data class SiteAsk(val title: String, val ok: String, val cancel: String, val danger: Boolean)
     private val _ask = MutableStateFlow<Ask?>(null); val ask: StateFlow<Ask?> = _ask
     fun answer(yes: Boolean, context: Context, scope: kotlinx.coroutines.CoroutineScope) {
         val a = _ask.value ?: return; _ask.value = null
@@ -70,7 +73,13 @@ internal object CollectionWrites {
      */
     suspend fun act(context: Context, kind: String, data: JsonObject, after: ((JsonObject) -> Unit)? = null): Boolean {
         pendingAsk = Ask("", kind, data, after = after)
-        val r = commitAct(context, kind, data) ?: return false
+        val r = commitAct(context, kind, data, if (kind in LONG_ACTS) 120_000 else 15_000) ?: return false
+        // What a site handler gave the browser (siteRun): the list it copied goes on the clipboard, the page it opened opens.
+        r["copied"]?.takeIf { it.isJsonPrimitive }?.asString?.let { t ->
+            val cm = context.getSystemService(Context.CLIPBOARD_SERVICE) as android.content.ClipboardManager
+            cm.setPrimaryClip(android.content.ClipData.newPlainText("CardStashy", t)) }
+        r["opened"]?.takeIf { it.isJsonPrimitive }?.asString?.takeIf { it.startsWith("https://") }?.let { u ->
+            runCatching { context.startActivity(android.content.Intent(android.content.Intent.ACTION_VIEW, android.net.Uri.parse(u)).addFlags(android.content.Intent.FLAG_ACTIVITY_NEW_TASK)) } }
         val saved = done(r)
         if (kind == "addDelete" && saved) adding.value = null
         if (saved) { settleLater(context); after?.invoke(r) }
@@ -78,12 +87,14 @@ internal object CollectionWrites {
     }
 
     /** The write itself: under the sync's lock, in the engine holding this device's copy, then that copy written. Null: not run. */
-    private suspend fun commitAct(context: Context, kind: String, data: JsonObject): JsonObject? {
+    /** Taps that read the card sources for a while (every card's price, each card's printings). */
+    private val LONG_ACTS = setOf("tDeckRefresh", "tDeckCheapest", "tDeckCopyMissing")
+    private suspend fun commitAct(context: Context, kind: String, data: JsonObject, ms: Long = 15_000): JsonObject? {
         val s = Account.session.value ?: run { show("Sign in to save cards to your collection."); return null }
         val app = context.applicationContext
         return WorkspaceSync.lock.withLock {
             if (!ensureCollection(app, s.userId, true, Decks.fullRevision.value)) return null.also { show("Your collection is still loading. Try again in a moment.") }
-            val r = CollectionEngine.act(kind, data)
+            val r = CollectionEngine.act(kind, data, ms)
             if ((r["writes"]?.asInt ?: 0) > 0 || CollectionEngine.bg() > 0) { val text = CollectionEngine.saved(); withContext(Dispatchers.IO) { WorkspaceSync.wroteLocally(app, s.userId, text) } }
             r
         }
@@ -144,12 +155,14 @@ internal object CollectionWrites {
      * duplicate and a deletion do there.
      */
     data class DeckMenuOpen(val deck: String, val tab: (String) -> Unit, val web: (act: String, scope: String) -> Unit, val openDeck: (String) -> Unit,
-                            val deleted: () -> Unit, val id: Long = System.nanoTime())
+                            val deleted: () -> Unit, val id: Long = System.nanoTime(), val game: String = "mtg")
     val menu = MutableStateFlow<DeckMenuOpen?>(null)
     /** The menu's model from this device's collection (CollectionEngine.deckMenu). Null (with a toast) when it can't open. */
-    suspend fun deckMenuModel(context: Context, deck: String): JsonObject? = withCollection(context) { CollectionEngine.deckMenu(deck) }
-    /** core.js exportDeckText for the deck and app.js's file name for it: {text, file}. */
-    suspend fun deckText(context: Context, deck: String): JsonObject? = withCollection(context) { CollectionEngine.deckText(deck) }
+    suspend fun deckMenuModel(context: Context, deck: String, game: String = "mtg"): JsonObject? =
+        withCollection(context) { if (game == "mtg") CollectionEngine.deckMenu(deck) else CollectionEngine.tdeckMenu(game, deck) }
+    /** core.js exportDeckText for the deck and app.js's file name for it: {text, file}; a Yu-Gi-Oh! or Pokémon deck's {text, export, file}. */
+    suspend fun deckText(context: Context, deck: String, game: String = "mtg"): JsonObject? =
+        withCollection(context) { if (game == "mtg") CollectionEngine.deckText(deck) else CollectionEngine.tdeckText(game, deck) }
     private suspend fun withCollection(context: Context, run: suspend () -> JsonObject): JsonObject? {
         val s = Account.session.value ?: return null.also { show("Sign in to save cards to your collection.") }
         return WorkspaceSync.lock.withLock {
@@ -226,7 +239,10 @@ internal object CollectionWrites {
     private fun done(r: JsonObject): Boolean {
         r["error"]?.takeIf { it.isJsonPrimitive }?.asString?.takeIf { it.isNotBlank() }?.let { show(it); return false }
         val writes = r["writes"]?.asInt ?: 0
-        r["ask"]?.takeIf { it.isJsonPrimitive }?.asString?.takeIf { it.isNotBlank() }?.let { q -> pendingAsk?.let { _ask.value = it.copy(question = q) }; return false }
+        r["ask"]?.takeIf { it.isJsonPrimitive }?.asString?.takeIf { it.isNotBlank() }?.let { q ->
+            val site = (r["asking"] as? JsonObject)?.let { o -> fun str(k: String) = o[k]?.takeIf { it.isJsonPrimitive }?.asString.orEmpty()
+                SiteAsk(str("title"), str("ok"), str("cancel"), o["danger"]?.takeIf { it.isJsonPrimitive }?.asBoolean == true) }
+            pendingAsk?.let { _ask.value = it.copy(question = q, site = site) }; return false }
         val toasts = r.getAsJsonArray("toasts")?.mapNotNull { it as? JsonObject }.orEmpty()
         toasts.lastOrNull()?.let { t ->
             val text = t["text"].asString

@@ -48,6 +48,22 @@ class DecksTest {
         assertEquals(listOf("Commander"), Decks.preconFormatsAny(j)); assertEquals(1, Decks.preconCopies(rows)); assertEquals(4, Decks.preconCopies(rows.drop(1)))
     }
 
+    /** preconQuote against the site's own (play-econ-rules.js at PR #130 098ecbf, run in node on these rows). */
+    @Test fun preconQuote() {
+        fun r(n: String, q: Int, rar: String, b: String? = null) = Decks.Row(n, q, b, rarity = rar)
+        val cases = listOf(
+            listOf(r("Cloud, Ex-SOLDIER", 1, "mythic", "commander"), r("Sol Ring", 1, "uncommon"), r("Mountain", 30, "common"), r("Lightning Bolt", 1, "common"), r("Rare Thing", 1, "rare")) to
+                Triple(mapOf("Sol Ring" to 1), "Commander Deck", 1) to listOf(4820, 3),
+            listOf(r("A", 4, "common"), r("B", 3, "uncommon"), r("C", 2, "rare"), r("D", 1, "mythic"), r("Island", 20, "common")) to Triple(mapOf("A" to 2, "C" to 2), "Challenger Deck", 4) to listOf(1885, 6),
+            listOf(r("A", 4, "common"), r("B", 3, "special")) to Triple(emptyMap<String, Int>(), "Starter Kit", 4) to listOf(1500, 7),
+            listOf(r("A", 4, "common"), r("B", 3, "uncommon")) to Triple(mapOf("A" to 4), "Intro Pack", 4) to listOf(1040, 3),
+            listOf(r("A", 4, "common"), r("B", 3, "uncommon")) to Triple(mapOf("A" to 4, "B" to 3), "Theme Deck", 4) to listOf(0, 0))
+        for ((input, want) in cases) { val (rows, o) = input
+            val q = Decks.preconQuote(rows, o.first, o.second, null, o.third); assertEquals(o.second, want, listOf(q.price, q.missing)) }
+        val cfg = JsonParser.parseString("""{"precon":{"min":100,"list":{"standard":2000}}}""").asJsonObject
+        assertEquals(695, Decks.preconQuote(listOf(r("A", 4, "common"), r("B", 3, "mythic")), mapOf("B" to 2), "Theme Deck", cfg, 4).price)
+    }
+
     @Test fun paste() {
         val rows = Decks.parsePaste("Deck\n4 Lightning Bolt\n2x Counterspell (MH2) 267\n\nSideboard\n3 Pyroblast\nnot a card\n300 Island")
         assertEquals(listOf(Decks.Row("Lightning Bolt", 4), Decks.Row("Counterspell", 2), Decks.Row("Pyroblast", 3, "side"), Decks.Row("Island", 250, "side")), rows)

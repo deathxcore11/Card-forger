@@ -95,6 +95,20 @@ globalThis.addEventListener = () => {}; globalThis.removeEventListener = () => {
 globalThis.location = {href: 'https://cardstashy.com/', origin: 'https://cardstashy.com', pathname: '/', hash: '', search: '', host: 'cardstashy.com', hostname: 'cardstashy.com', protocol: 'https:'};
 globalThis.navigator = {userAgent: 'CardStashy native', onLine: true, maxTouchPoints: 1};
 
+// A body as UTF-8 bytes (Response.arrayBuffer; the app hands bodies over as text, a gzip file already unpacked).
+const utf8Bytes = t => {
+  t = String(t); const out = new Uint8Array(t.length * 3); let n = 0;
+  for (let i = 0; i < t.length; i++) {
+    let c = t.charCodeAt(i);
+    if (c >= 0xd800 && c < 0xdc00 && i + 1 < t.length) { const d = t.charCodeAt(i + 1); if (d >= 0xdc00 && d < 0xe000) { c = 0x10000 + ((c - 0xd800) << 10) + (d - 0xdc00); i++; } }
+    if (c < 0x80) out[n++] = c; else if (c < 0x800) { out[n++] = 0xc0 | c >> 6; out[n++] = 0x80 | c & 63; }
+    else if (c < 0x10000) { out[n++] = 0xe0 | c >> 12; out[n++] = 0x80 | c >> 6 & 63; out[n++] = 0x80 | c & 63; }
+    else { out[n++] = 0xf0 | c >> 18; out[n++] = 0x80 | c >> 12 & 63; out[n++] = 0x80 | c >> 6 & 63; out[n++] = 0x80 | c & 63; }
+  }
+  return out.slice(0, n);
+};
+globalThis.__utf8Bytes = utf8Bytes;
+
 // The app's side of the loop.
 globalThis.__host = {
   seed(n) { rng = n | 0; },
@@ -116,7 +130,7 @@ globalThis.__host = {
     const r = requests.get(id); if (!r) return; requests.delete(id);
     if (status < 0) return r.reject(new TypeError('Failed to fetch'));
     const headers = new Headers(JSON.parse(headersJson || '{}'));
-    r.resolve({ok: status >= 200 && status < 300, status, headers, url: r.url, json: () => Promise.resolve().then(() => JSON.parse(body)), text: () => Promise.resolve(body), clone() { return this; }});
+    r.resolve({ok: status >= 200 && status < 300, status, headers, url: r.url, json: () => Promise.resolve().then(() => JSON.parse(body)), text: () => Promise.resolve(body), arrayBuffer: () => Promise.resolve().then(() => utf8Bytes(body).buffer), clone() { return this; }});
   },
 };
 
