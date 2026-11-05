@@ -58,24 +58,40 @@ object Decks {
     }
 
     /**
-     * preconQuote (play-econ-rules.js, site PR #130, Randall 5 Nov 19:59Z "option A"): 1 pack = 500 coins = $5. Each product has
-     * a list price from its MSRP (play.config precon.list: starter 1,500, standard 3,000, commander 5,000); a player pays that
-     * list price times the share of the deck's value they don't own yet, the value weighing common 1, uncommon 3, rare 20,
-     * mythic 60 and basic lands nothing. At least precon.min (250), rounded to 5; a deck owned entirely is free.
-     * [type]: the MTGJSON deck type (the DeckList entry's); [cap]: copies per card (a Commander deck's 1).
+     * preconQuote (play-econ-rules.js, site PR #130, Randall 5 Nov 20:12Z "half-scale ladder"): 1 pack = 500 coins = $5. Each
+     * product class has a list price (play.config precon.list: pauper 1,500, standard 2,500, brawl 3,000, modern 3,500, commander
+     * 5,000, legacy 7,500); a player pays it times the share of the deck's value they don't own yet, the value weighing common 1,
+     * uncommon 3, rare 20, mythic 60 and basic lands nothing. At least precon.min (250), rounded to 5; a deck owned entirely is free.
+     * [type] and [released]: the DeckList entry's MTGJSON deck type and release date (preconClass); [cap]: copies per card (a Commander deck's 1).
      */
-    val PRECON_LIST = mapOf("starter" to 1500, "standard" to 3000, "commander" to 5000)
+    val PRECON_LIST = mapOf("pauper" to 1500, "standard" to 2500, "brawl" to 3000, "modern" to 3500, "commander" to 5000, "legacy" to 7500)
+    /** MTGJSON deck type to class; anything not listed is classed by its cards and release date. */
+    val PRECON_TYPE_CLASS = mapOf("Commander Deck" to "commander", "Brawl Deck" to "brawl", "Starter Kit" to "standard", "Arena Starter Kit" to "standard",
+        "Intro Pack" to "standard", "Welcome Deck" to "standard", "Clash Pack" to "standard", "Masters Deck" to "legacy", "From the Vault" to "legacy", "Premium Deck" to "legacy")
+    /** Release-date eras for the rest (a date opens its class): Standard is the last three years. */
+    val PRECON_ERAS = mapOf("modern" to "2012-10-05", "legacy" to "1900-01-01")
     val PRECON_VALUE = mapOf("c" to 1, "u" to 3, "r" to 20, "m" to 60)
-    private val STARTER_TYPES = Regex("^(?:Starter Kit|Arena Starter Kit|Intro Pack|Welcome Deck|Clash Pack)$", RegexOption.IGNORE_CASE)
-    private val COMMANDER_TYPE = Regex("^Commander Deck$", RegexOption.IGNORE_CASE)
-    fun preconListPrice(type: String, config: JsonObject?): Int {
-        val custom = config?.getAsJsonObject("precon")?.getAsJsonObject("list")
-        val key = if (COMMANDER_TYPE.matches(type)) "commander" else if (STARTER_TYPES.matches(type)) "starter" else "standard"
-        val v = custom?.get(key)?.takeIf { it.isJsonPrimitive }?.asDouble ?: PRECON_LIST.getValue(key).toDouble()
-        return if (v.isNaN() || v == 0.0) PRECON_LIST.getValue("standard") else v.toInt()
+    private fun JsonObject?.strings(vararg path: String): Map<String, String> {
+        var o: JsonObject? = this
+        for (k in path) o = o?.get(k)?.takeIf { it.isJsonObject }?.asJsonObject
+        return o?.entrySet()?.mapNotNull { (k, v) -> v.takeIf { it.isJsonPrimitive }?.let { k to it.asString } }?.toMap().orEmpty()
     }
-    data class Quote(val price: Int, val missing: Int, val share: Double, val short: Shortfall)
-    fun preconQuote(rows: List<Row>, owned: Map<String, Int>, type: String, config: JsonObject?, cap: Int = 4): Quote {
+    /** preconClass: the type's class (precon.types over PRECON_TYPE_CLASS), else no rare or mythic card = pauper, else by release era. */
+    fun preconClass(type: String, rows: List<Row>, released: String, config: JsonObject?, now: Long = System.currentTimeMillis()): String {
+        (PRECON_TYPE_CLASS + config.strings("precon", "types"))[type]?.let { return it }
+        val cards = rows.filter { it.name.isNotEmpty() && !isBasicLand(it.name) }
+        if (cards.isNotEmpty() && cards.all { rarityOf(it.rarity) == "common" || rarityOf(it.rarity) == "uncommon" }) return "pauper"
+        val eras = PRECON_ERAS + config.strings("precon", "eras")
+        val std = java.time.Instant.ofEpochMilli(now - 3L * 366 * 86_400_000).toString().take(10)
+        return if (released.isEmpty() || released >= std) "standard" else if (released >= eras.getValue("modern")) "modern" else "legacy"
+    }
+    fun preconListPrice(cls: String, config: JsonObject?): Int {
+        val v = config?.getAsJsonObject("precon")?.getAsJsonObject("list")?.get(cls)?.takeIf { it.isJsonPrimitive }?.let { runCatching { it.asDouble }.getOrNull() }
+            ?: PRECON_LIST[cls]?.toDouble()
+        return if (v == null || v.isNaN() || v == 0.0) PRECON_LIST.getValue("standard") else v.toInt()
+    }
+    data class Quote(val price: Int, val missing: Int, val share: Double, val short: Shortfall, val cls: String)
+    fun preconQuote(rows: List<Row>, owned: Map<String, Int>, type: String, config: JsonObject?, cap: Int = 4, released: String = "", now: Long = System.currentTimeMillis()): Quote {
         val rarity = rows.associate { it.name to it.rarity }
         val short = shortfall(rows, owned, rarity, cap)
         fun w(r: String?) = PRECON_VALUE[RARITY_SEAL[rarityOf(r)]] ?: 1
@@ -85,8 +101,9 @@ object Decks {
         val miss = short.missing.sumOf { it.need * w(it.rarity) }
         val share = if (total > 0) minOf(1.0, miss.toDouble() / total) else 0.0
         val min = config?.getAsJsonObject("precon")?.get("min")?.takeIf { it.isJsonPrimitive }?.asInt ?: 250
-        val price = if (miss <= 0) 0 else maxOf(min, (Math.round(preconListPrice(type, config) * share / 5) * 5).toInt())
-        return Quote(price, short.total, share, short)
+        val cls = preconClass(type, rows, released, config, now)
+        val price = if (miss <= 0) 0 else maxOf(min, (Math.round(preconListPrice(cls, config) * share / 5) * 5).toInt())
+        return Quote(price, short.total, share, short, cls)
     }
 
     /** legalFormats: every card legal (Vintage allows restricted at one copy) and the deck rules met. */

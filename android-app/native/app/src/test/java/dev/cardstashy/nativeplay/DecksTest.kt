@@ -49,19 +49,33 @@ class DecksTest {
     }
 
     /** preconQuote against the site's own (play-econ-rules.js at PR #130 098ecbf, run in node on these rows). */
+    /** preconQuote against the site's play-econ-rules.js (PR #131 dcb8043, the half-scale ladder; goldens from node at 2026-11-05T12:00Z). */
     @Test fun preconQuote() {
         fun r(n: String, q: Int, rar: String, b: String? = null) = Decks.Row(n, q, b, rarity = rar)
-        val cases = listOf(
-            listOf(r("Cloud, Ex-SOLDIER", 1, "mythic", "commander"), r("Sol Ring", 1, "uncommon"), r("Mountain", 30, "common"), r("Lightning Bolt", 1, "common"), r("Rare Thing", 1, "rare")) to
-                Triple(mapOf("Sol Ring" to 1), "Commander Deck", 1) to listOf(4820, 3),
-            listOf(r("A", 4, "common"), r("B", 3, "uncommon"), r("C", 2, "rare"), r("D", 1, "mythic"), r("Island", 20, "common")) to Triple(mapOf("A" to 2, "C" to 2), "Challenger Deck", 4) to listOf(1885, 6),
-            listOf(r("A", 4, "common"), r("B", 3, "special")) to Triple(emptyMap<String, Int>(), "Starter Kit", 4) to listOf(1500, 7),
-            listOf(r("A", 4, "common"), r("B", 3, "uncommon")) to Triple(mapOf("A" to 4), "Intro Pack", 4) to listOf(1040, 3),
-            listOf(r("A", 4, "common"), r("B", 3, "uncommon")) to Triple(mapOf("A" to 4, "B" to 3), "Theme Deck", 4) to listOf(0, 0))
-        for ((input, want) in cases) { val (rows, o) = input
-            val q = Decks.preconQuote(rows, o.first, o.second, null, o.third); assertEquals(o.second, want, listOf(q.price, q.missing)) }
-        val cfg = JsonParser.parseString("""{"precon":{"min":100,"list":{"standard":2000}}}""").asJsonObject
-        assertEquals(695, Decks.preconQuote(listOf(r("A", 4, "common"), r("B", 3, "mythic")), mapOf("B" to 2), "Theme Deck", cfg, 4).price)
+        val now = java.time.Instant.parse("2026-11-05T12:00:00Z").toEpochMilli()
+        class Case(val rows: List<Decks.Row>, val owned: Map<String, Int>, val type: String, val released: String, val cap: Int, val config: String?, val price: Int, val missing: Int, val cls: String)
+        val cases = mapOf(
+            "cmdr" to Case(listOf(r("Cloud, Ex-SOLDIER", 1, "mythic", "commander"), r("Sol Ring", 1, "uncommon"), r("Mountain", 30, "common"), r("Lightning Bolt", 1, "common"), r("Rare Thing", 1, "rare")),
+                mapOf("Sol Ring" to 1), "Commander Deck", "2025-06-13", 1, null, 4820, 3, "commander"),
+            "chal" to Case(listOf(r("A", 4, "common"), r("B", 3, "uncommon"), r("C", 2, "rare"), r("D", 1, "mythic"), r("Island", 20, "common")), mapOf("A" to 2, "C" to 2), "Challenger Deck", "2025-02-01", 4, null, 1570, 6, "standard"),
+            "start" to Case(listOf(r("A", 4, "common"), r("B", 3, "special")), emptyMap(), "Starter Kit", "2019-01-01", 4, null, 2500, 7, "standard"),
+            "intro" to Case(listOf(r("A", 4, "common"), r("B", 3, "uncommon")), mapOf("A" to 4), "Intro Pack", "2010-01-01", 4, null, 1730, 3, "standard"),
+            "pauper" to Case(listOf(r("A", 4, "common"), r("B", 3, "uncommon"), r("Forest", 10, "common")), mapOf("A" to 4), "Theme Deck", "2024-01-01", 4, null, 1040, 3, "pauper"),
+            "modern" to Case(listOf(r("A", 4, "common"), r("B", 3, "mythic")), mapOf("B" to 2), "Theme Deck", "2015-06-01", 4, null, 1215, 5, "modern"),
+            "legacy" to Case(listOf(r("A", 4, "common"), r("B", 2, "rare")), emptyMap(), "Theme Deck", "2005-01-01", 4, null, 7500, 6, "legacy"),
+            "masters" to Case(listOf(r("A", 4, "common"), r("B", 2, "rare")), mapOf("A" to 1), "Masters Deck", "2025-01-01", 4, null, 7330, 5, "legacy"),
+            "brawl" to Case(listOf(r("A", 1, "common"), r("B", 1, "rare"), r("C", 1, "mythic")), mapOf("C" to 1), "Brawl Deck", "2025-01-01", 1, null, 780, 2, "brawl"),
+            "nodate" to Case(listOf(r("A", 4, "common"), r("B", 2, "rare")), emptyMap(), "Theme Deck", "", 4, null, 2500, 6, "standard"),
+            "edge" to Case(listOf(r("A", 4, "common"), r("B", 2, "rare")), emptyMap(), "Theme Deck", "2023-11-04", 4, null, 2500, 6, "standard"),
+            "edge2" to Case(listOf(r("A", 4, "common"), r("B", 2, "rare")), emptyMap(), "Theme Deck", "2023-11-02", 4, null, 3500, 6, "modern"),
+            "owned" to Case(listOf(r("A", 4, "common"), r("B", 3, "uncommon")), mapOf("A" to 4, "B" to 3), "Theme Deck", "2024-01-01", 4, null, 0, 0, "pauper"),
+            "cfg" to Case(listOf(r("A", 4, "common"), r("B", 3, "mythic")), mapOf("B" to 2), "Theme Deck", "2024-01-01", 4,
+                """{"precon":{"min":100,"list":{"legacy":2000},"types":{"Theme Deck":"legacy"}}}""", 695, 5, "legacy"),
+            "eras" to Case(listOf(r("A", 4, "common"), r("B", 3, "mythic")), mapOf("B" to 2), "Theme Deck", "2015-06-01", 4, """{"precon":{"eras":{"modern":"2016-01-01"}}}""", 2610, 5, "legacy"))
+        for ((k, c) in cases) {
+            val q = Decks.preconQuote(c.rows, c.owned, c.type, c.config?.let { JsonParser.parseString(it).asJsonObject }, c.cap, c.released, now)
+            assertEquals(k, listOf(c.price.toString(), c.missing.toString(), c.cls), listOf(q.price.toString(), q.missing.toString(), q.cls))
+        }
     }
 
     @Test fun paste() {
