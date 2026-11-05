@@ -114,11 +114,11 @@ export default {
 3 Michelangelo, Improviser
 4 Cowabunga!
 3 Raph & Mikey, Troublemakers
-4 Powerful Broker
-4 K'un-Lun Warrior
-4 Zoo Escapees
+4 Pet Avengers
+4 Primordial Pachyderm
 4 Mutant Town Musicians
-1 HYDRA Assault Robot
+4 Guerrilla Gorilla
+1 Machinesmith Automaton
 12 Forest
 12 Mountain`}},
       villain: {who: 'krang', deck: {label: 'tribute', name: "Krang's Technodrome", colors: 'UB', list: `
@@ -128,11 +128,11 @@ export default {
 4 Henchbots
 3 Mind Transfer Protocol
 2 Fugitive Droid
-4 S.H.I.E.L.D. Deployment Drone
+4 Agents of HYDRA
+4 Utrom Scientists
+4 Crustacean Commando
 4 HYDRA Troopers
-4 Insectoid Exterminator
-4 Ninja of the Hand
-3 Hydraulic Helper
+3 Red Room Recruit
 12 Island
 12 Swamp`}},
       scene: [q('raph', 'Anger is a dangerous ally. It clouds your judgment. You need to control it, lest it control you.'),
@@ -151,11 +151,11 @@ export default {
 1 Venus, Torn Between Worlds
 1 Make Your Move
 4 Undercover Skrull
-4 Kree Commandos
 4 Hero in Training
-4 Frog Butler
 4 Courier of Comestibles
 4 Ant-Man's Army
+4 Action News Crew
+4 Raft Security Officer
 12 Forest
 12 Plains`}},
       villain: {who: 'shredder', deck: {label: 'tribute', name: "Super Shredder's Foot", colors: 'BW', list: `
@@ -166,9 +166,9 @@ export default {
 4 Foot Ninjas
 4 Shredder's Armor
 4 The Cloning of Shredder
-4 Agents of S.H.I.E.L.D.
-4 HYDRA Troopers
-3 Raft Security Officer
+4 Kingpin's Enforcers
+4 High-Flying Ace
+3 Brave Brawler
 12 Swamp
 12 Plains`}},
       scene: [q('mutanimals', "Yer right. We're just a scrappy band of mutants. We can't win. But boy, can we stir up trouble."),
@@ -179,34 +179,34 @@ export default {
         villain: cue('Know fear.', 'Super Shredder!', 'Flawed...', 'Perfect.', 'Hamato...')}},
     {slot: 5, mood: 'tension', kind: 'Arrival', title: 'Assemble', difficulty: 'Easy', rewardSet: 'msh', teaches: ['Teamwork'],
       blurb: 'A shield, a soldier and a cause that has outlasted decades.',
-      hero: {who: 'cap', deck: {label: 'tribute', name: 'S.H.I.E.L.D.', colors: 'W', list: `
+      hero: {who: 'cap', deck: {label: 'tribute', name: 'S.H.I.E.L.D.', colors: 'WU', list: `
 1 Captain America, Super-Soldier
-1 Captain America, Wings of Freedom
-1 Nick Fury, Agent of S.H.I.E.L.D.
-1 Agent Phil Coulson
-2 Agents of S.H.I.E.L.D.
+2 Helicarrier Strike
+1 Agents of S.H.I.E.L.D.
 4 Mighty Mutanimals
-4 Kree Commandos
+4 Utrom Scientists
 4 Hero in Training
-4 High-Flying Ace
+4 Crustacean Commando
+4 Atlantean Cavalry
+4 A.I.M. Scientists
+4 Bold Biochemist
 4 Agent of Atlas
-4 Wakandan Drone Flock
-4 Brave Brawler
-2 Action News Crew
-24 Plains`}},
-      villain: {who: 'hydra', deck: {label: 'tribute', name: 'HYDRA', colors: 'B', list: `
+12 Plains
+12 Island`}},
+      villain: {who: 'hydra', deck: {label: 'tribute', name: 'HYDRA', colors: 'BR', list: `
 4 Agents of HYDRA
 4 HYDRA Troopers
 3 Baron Strucker, HYDRA Overlord
-2 Arnim Zola, Bio-Fanatic
-2 Crossbones, Malicious Mercenary
-3 HYDRA Infiltration
-4 Kingpin's Enforcers
-4 Paramecia Coloniex
-4 Insectoid Exterminator
-4 Ninja of the Hand
-2 Project Deathlok Soldier
-24 Swamp`}},
+3 Arnim Zola, Bio-Fanatic
+3 Crossbones, Malicious Mercenary
+4 HYDRA Infiltration
+3 Madame Hydra
+3 Bullseye, Death Dealer
+4 Lightning Strike
+4 Mutant Town Musicians
+1 Kingpin's Enforcers
+12 Swamp
+12 Mountain`}},
       scene: [q('cap', 'Our worst day is only where we start from. Where we *rise* from.'),
         s('cap', 'Teamwork: tap creatures with enough total power to boost a spell. A crowd turns a small spell into a big one.')],
       villainScene: [q('hydra', 'Minions of HYDRA! Behold! Our ultimate destiny is at hand!'),
@@ -215,34 +215,33 @@ export default {
         villain: cue('Hail HYDRA.', 'Attack!', 'A setback...', 'Hail HYDRA!', 'Cut one head...')}},
     {slot: 6, mood: 'comic', kind: 'Lesson', title: 'Power-Up', difficulty: 'Normal', rewardSet: 'msh', teaches: ['Power-up'],
       blurb: 'The God of Thunder, a hammer and a brother who lies about everything.',
-      hero: {who: 'thor', deck: {label: 'tribute', name: 'The Asgardians', colors: 'RW', list: `
-1 Thor Odinson
+      hero: {who: 'thor', deck: {label: 'tribute', name: 'The Asgardians', colors: 'RWG', list: `
 2 Brave Brawler
-1 Daredevil, Man Without Fear
-1 War Machine, Legacy of Iron
 4 Mighty Mutanimals
-4 Kree Commandos
-4 Hero in Training
 4 EPF Point Squad
-4 Volcanic Villain
 4 Mechanized Ninja Cavalry
-4 Machinesmith Automaton
-3 Null Group Biological Assets
-12 Mountain
-12 Plains`}},
-      villain: {who: 'loki', deck: {label: 'tribute', name: "Loki's Tricks", colors: 'U', list: `
+4 Crimson Operative
+4 Undercover Skrull
+4 Null Group Biological Assets
+4 Hero in Training
+4 Courier of Comestibles
+2 Volcanic Villain
+8 Mountain
+8 Plains
+8 Forest`}},
+      villain: {who: 'loki', deck: {label: 'tribute', name: "Loki's Tricks", colors: 'UR', list: `
 3 Loki, God of Mischief
 3 Kid Loki
 4 Atlantean Cavalry
-2 Frozen in Ice
-2 Depower
-3 Multiversal Incursion
-4 Hydraulic Helper
-4 Bold Biochemist
-4 Crustacean Commando
-4 S.H.I.E.L.D. Deployment Drone
-3 Utrom Scientists
-24 Island`}},
+4 Frozen in Ice
+4 Depower
+4 Multiversal Incursion
+4 Lightning Strike
+3 Loki Laufeyson
+4 Mutant Town Musicians
+3 Aerial Doombot
+12 Island
+12 Mountain`}},
       scene: [q('thor', 'Now, my hammer shall speak for me . . . in a voice of thunder!'),
         s('thor', 'Power-up: pay once to put counters on a creature. It is cheaper the turn it enters.')],
       villainScene: [q('loki', 'Foolish heroes. Loki can match you trick for trick, and *then* some.'),
@@ -251,33 +250,33 @@ export default {
         villain: cue('A trick.', 'Gotcha!', 'Hm...', 'Fooled you.', 'Oops.')}},
     {slot: 7, mood: 'rival', kind: 'Rival', title: 'Doctor Doom', difficulty: 'Hard', rewardSet: 'msh', teaches: ['Playing around counterspells'],
       blurb: 'The Baxter Building against a monarch who is always three steps ahead.',
-      hero: {who: 'ff', deck: {label: 'tribute', name: 'The Fantastic Four', colors: 'RW', list: `
-1 Human Torch, Johnny Storm
+      hero: {who: 'ff', deck: {label: 'tribute', name: 'The Fantastic Four', colors: 'RG', list: `
 1 Invisible Woman, Sue Storm
 2 Kree Commandos
-2 Hero in Training
-4 EPF Point Squad
-4 Mighty Mutanimals
-4 Machinesmith Automaton
-4 Null Group Biological Assets
-4 Mechanized Ninja Cavalry
+4 Undercover Skrull
 4 Crimson Operative
+4 Null Group Biological Assets
+4 Courier of Comestibles
 4 Volcanic Villain
-2 Mutant Town Musicians
+4 Ant-Man's Army
+4 HYDRA Assault Robot
+4 Purple Dragon Punks
+1 K'un-Lun Warrior
 12 Mountain
-12 Plains`}},
-      villain: {who: 'doom', deck: {label: 'tribute', name: 'Doom Reigns Supreme', colors: 'B', list: `
+12 Forest`}},
+      villain: {who: 'doom', deck: {label: 'tribute', name: 'Doom Reigns Supreme', colors: 'BR', list: `
 3 Doctor Doom
 4 Doom Reigns Supreme
 4 Project Deathlok Soldier
 4 Kingpin's Enforcers
 4 Dark Deed
 4 Hour of Defeat
-4 Paramecia Coloniex
-4 Tunnel Rats
-4 HYDRA Troopers
-1 Ninja of the Hand
-24 Swamp`}},
+3 Bullseye, Death Dealer
+4 Lightning Strike
+4 Photon Blast Barrage
+2 Mutant Town Musicians
+12 Swamp
+12 Mountain`}},
       scene: [q('ff', "I'll hold down the fort while you guys bicker."),
         s('ff', 'Doom answers your plays. Bait with a small spell first, then land the one that matters.')],
       villainScene: [q('doom', 'I have seen your rightful place. Beneath me.'),
@@ -294,10 +293,10 @@ export default {
 3 War Machine, Legacy of Iron
 2 Avengers Assemble!
 4 EPF Point Squad
-4 Kree Commandos
 4 Mighty Mutanimals
 4 Mechanized Ninja Cavalry
 4 Null Group Biological Assets
+4 Hero in Training
 12 Mountain
 12 Plains`}},
       villain: {who: 'thanos', deck: {label: 'tribute', name: 'Thanos and the Black Order', colors: 'BRW', list: `
@@ -308,11 +307,11 @@ export default {
 2 Madame Hydra
 3 Cruel Alliance
 2 Avengers: Under Siege
-4 Foot Elite
-4 Agents of S.H.I.E.L.D.
 4 Kingpin's Enforcers
-4 Action News Crew
-2 Purple Dragon Punks
+4 Mutant Town Musicians
+4 High-Flying Ace
+4 Insectoid Exterminator
+2 Machinesmith Automaton
 8 Swamp
 8 Mountain
 8 Plains`}},
@@ -338,11 +337,11 @@ export default {
 3 The Astonishing Ant-Man
 4 Giant Growth
 3 Worlds Within Worlds
-4 Powerful Broker
-4 Hydraulic Helper
 4 Slithering Cryptid
 4 Atlantean Cavalry
-1 Primordial Pachyderm
+4 Utrom Scientists
+4 Powerful Broker
+1 S.H.I.E.L.D. Deployment Drone
 12 Forest
 12 Island`}},
       villain: {who: 'heralds', deck: {label: 'tribute', name: 'The Heralds of Galactus', note: 'Built from cards in this act\'s sets only. No tournament list is copied.', colors: 'BG', list: `
@@ -350,14 +349,14 @@ export default {
 2 Titania, Rugged Rumbler
 1 The Serpent Society
 1 The Coming of Galactus
-4 Ninja of the Hand
-4 Frog Butler
-4 Kingpin's Enforcers
 4 Undercover Skrull
-4 Ant-Man's Army
 4 Agents of HYDRA
+4 Courier of Comestibles
+4 Ant-Man's Army
+4 Red Room Recruit
 4 HYDRA Troopers
-2 Knight of Wundagore
+4 Tunnel Rats
+2 Ice Cream Kitty
 12 Swamp
 12 Forest`}},
       scene: [q('guardians', 'C\'mon girls, we\'re not here for snacks. Okay, maybe just one.'),
