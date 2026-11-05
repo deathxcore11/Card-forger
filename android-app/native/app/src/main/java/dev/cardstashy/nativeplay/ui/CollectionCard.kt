@@ -15,6 +15,7 @@ import androidx.compose.foundation.clickable
 import androidx.compose.foundation.gestures.detectTapGestures
 import androidx.compose.foundation.horizontalScroll
 import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.aspectRatio
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.BoxWithConstraints
 import androidx.compose.foundation.layout.Column
@@ -1194,8 +1195,9 @@ private fun Blocks(blocks: List<CardBlock>, act: CollectionCardActions, meta: Bo
             else -> act.press(p)
         }
     }
-    for (b in blocks) when (b.kind) {
-        "title" -> FlowRow(Modifier.padding(bottom = if (meta) 4.dp else 12.dp), horizontalArrangement = Arrangement.spacedBy(8.dp), itemVerticalAlignment = Alignment.Bottom) {
+    val titleGap = if (meta) 4 else 12
+    for ((i, b) in blocks.withIndex()) when (b.kind) {
+        "title" -> FlowRow(Modifier.padding(bottom = titleGap.dp), horizontalArrangement = Arrangement.spacedBy(8.dp), itemVerticalAlignment = Alignment.Bottom) {
             Text(b.text, style = manrope(16f, 700, Ink, lh = if (meta) 1.15f else 1.4f, ls = -.32f))
             if (b.sub.isNotBlank()) Text(b.sub, style = manrope(13f, 700, Mute, lh = 1.15f, ls = -.32f))
         }
@@ -1229,18 +1231,28 @@ private fun Blocks(blocks: List<CardBlock>, act: CollectionCardActions, meta: Bo
                 Text(r.pct, style = sans(13f, 700, Ink), textAlign = TextAlign.End, modifier = Modifier.width(40.dp))
             } }
         }
-        "pairs" -> Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
-            b.items.forEach { r -> Row(Modifier.fillMaxWidth().siteGlass(12.dp).clickable { r.press?.let(::go) }.padding(6.dp), verticalAlignment = Alignment.CenterVertically,
-                horizontalArrangement = Arrangement.spacedBy(10.dp)) {
-                val pic = heroPainter(r.image.ifBlank { null }?.let(homeArt))
-                Box(Modifier.size(54.dp, 75.dp).clip(RoundedCornerShape(4.dp)).background(Surface2)) { if (pic != null) Image(pic, null, Modifier.fillMaxSize(), contentScale = ContentScale.Crop) }
-                Column(Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(3.dp)) {
-                    Text(r.name, style = sans(14f, 700, Ink)); if (r.why.isNotBlank()) Text(r.why, style = sans(11.5f, 400, Mute, lh = 1.4f))
-                }
-                if (r.score.isNotBlank()) Text(r.score, style = sans(12f, 800, GoldC), modifier = Modifier.clip(RoundedCornerShape(999.dp)).border(1.dp, pal.gold.copy(alpha = .4f), RoundedCornerShape(999.dp)).padding(horizontal = 8.dp, vertical = 2.dp))
-            } }
+        // .card-guide .pair-list: a grid of repeat(auto-fill, minmax(min(100%, 300px), 1fr)), 8 apart, so a wide sheet shows two or
+        // more a row, each row as tall as its tallest. style.css .pair-row: 6 in plus its 1px line; the picture 54 wide at a card's 488:680.
+        "pairs" -> BoxWithConstraints(Modifier.fillMaxWidth()) {
+            val cols = ((maxWidth.value + 8f) / 308f).toInt().coerceAtLeast(1)
+            Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                b.items.chunked(cols).forEach { line -> Row(Modifier.fillMaxWidth().height(IntrinsicSize.Min), horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                    for (r in line) Row(Modifier.weight(1f).fillMaxHeight().siteGlass(12.dp).clickable { r.press?.let(::go) }.padding(7.dp), verticalAlignment = Alignment.CenterVertically,
+                        horizontalArrangement = Arrangement.spacedBy(10.dp)) {
+                        val pic = heroPainter(r.image.ifBlank { null }?.let(homeArt))
+                        Box(Modifier.width(54.dp).aspectRatio(488f / 680f).clip(RoundedCornerShape(4.dp)).background(Surface2)) { if (pic != null) Image(pic, null, Modifier.fillMaxSize(), contentScale = ContentScale.Crop) }
+                        Column(Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(3.dp)) {
+                            Text(r.name, style = sans(14f, 700, Ink)); if (r.why.isNotBlank()) Text(r.why, style = sans(11.5f, 400, Mute, lh = 1.4f))
+                        }
+                        if (r.score.isNotBlank()) Text(r.score, style = sans(12f, 800, GoldC), modifier = Modifier.clip(RoundedCornerShape(999.dp)).border(1.dp, pal.gold.copy(alpha = .4f), RoundedCornerShape(999.dp)).padding(horizontal = 8.dp, vertical = 2.dp))
+                    }
+                    repeat(cols - line.size) { Spacer(Modifier.weight(1f)) }
+                } }
+            }
         }
-        "head" -> Text(b.text.uppercase(), style = sans(13f, 700, Ink, lh = 1.45f, ls = .78f), modifier = Modifier.padding(top = 12.dp, bottom = 4.dp))
+        // .list-head's 12 top margin folds into the h3's 12 bottom one right above it (block margins collapse), as in "Works with".
+        "head" -> Text(b.text.uppercase(), style = sans(13f, 700, Ink, lh = 1.45f, ls = .78f),
+            modifier = Modifier.padding(top = if (blocks.getOrNull(i - 1)?.kind == "title") (12 - titleGap).coerceAtLeast(0).dp else 12.dp, bottom = 4.dp))
         "limits" -> FlowRowEqual2(b.items) { r ->
             val c = when (r.level) { "ok" -> Good; "warn" -> Warn; else -> Bad }
             // polish.css 636-639: 8 12 8 14 in, the level's 3 wide bar 8 from each end; a grid, so a box stretched to its row's

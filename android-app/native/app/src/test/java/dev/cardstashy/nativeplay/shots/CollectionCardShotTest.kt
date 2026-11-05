@@ -116,6 +116,17 @@ class CollectionCardShotTest {
         if (missing.isNotEmpty()) println("MISSING ART ${missing.joinToString()}")
     }
 
+    /** guide.js's Magic "Works with" (grouped by why, mtg-synergy.json) and "Watch out" (read from the rules text), on Lava Coil,
+     *  which has both. */
+    @Test fun playGuideStrip() {
+        setUp()
+        val page = page("lava-coil-guide"); assumeTrue("write the Lava Coil guide fixture first", page != null)
+        shot("collection-card-guide-strip", 390, 844) { page!!() }
+        shot("collection-card-guide-strip-page", 390, 3600) { page!!() }
+        shot("collection-card-guide-strip-page", 884, 2700) { page!!() }
+        if (missing.isNotEmpty()) println("MISSING ART ${missing.joinToString()}")
+    }
+
     /** tcg.js tcgCardSheet: a Yu-Gi-Oh! card (Beyond the Brave's secret rare) and a Pokémon card (Surging Sparks' Scovillain ex), over their set pages
      *  (scratchpad cardpage/tcard.cjs: opened from the set page's own tile). */
     @Test fun tcgCards() {
