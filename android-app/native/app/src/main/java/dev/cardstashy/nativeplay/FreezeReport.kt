@@ -165,6 +165,12 @@ object FreezeReport {
         }
     }
 
+    /** The match table got stuck and the stuck watch freed it (MatchController): what was held, sent quietly so the cause can be fixed. */
+    fun matchStuck(kind: String, detail: String) {
+        if (!::file.isInitialized) return
+        Thread { try { append("== Match stuck: $kind ==\n" + header() + detail + "\n\n"); if (::prefs.isInitialized) upload(file.readText()) } catch (_: Throwable) {} }.start()
+    }
+
     /** Every picture decoded (Coil): the biggest ones and the running total, to see if one image is what fills memory. */
     private val images = java.util.concurrent.ConcurrentHashMap<String, Long>()
     @Volatile private var imageCount = 0

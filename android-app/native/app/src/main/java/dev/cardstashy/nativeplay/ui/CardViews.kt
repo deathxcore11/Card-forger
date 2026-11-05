@@ -141,9 +141,12 @@ fun CardFace(
                 androidx.compose.ui.geometry.CornerRadius(r + o), style = androidx.compose.ui.graphics.drawscope.Stroke(3.dp.toPx()))
         }
     } else Modifier
+    // Read when the tap lands, so a redraw (a fresh lambda) never restarts the gesture and drops the tap.
+    val tapNow by androidx.compose.runtime.rememberUpdatedState(onTap)
+    val holdNow by androidx.compose.runtime.rememberUpdatedState(onHold)
     Box(modifier.size(w, h).then(glow).then(if (anchors != null && card.zone == "Battlefield") Modifier.onGloballyPositioned { anchors.put("c${card.id}", it.boundsInRoot().center) } else Modifier).graphicsLayer { rotationZ = turn; translationY = lift * density }
         .then(lessonGlow)
-        .then(if (onTap == null && onHold == null) Modifier else Modifier.pointerInput(card.id, onTap, onHold) { detectTapGestures(onTap = { onTap?.invoke() }, onLongPress = { onHold?.invoke() }) })) {
+        .then(if (onTap == null && onHold == null) Modifier else Modifier.pointerInput(card.id, onTap != null, onHold != null) { detectTapGestures(onTap = { tapNow?.invoke() }, onLongPress = { holdNow?.invoke() }) })) {
         Box(Modifier.fillMaxSize().clip(shape).background(Color(0xFF15151A))) {
             if (card.hidden) CardBack(Modifier.fillMaxSize())
             else CardImage(card.name, Modifier.fillMaxSize()) { TokenFace(card) }

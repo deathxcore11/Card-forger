@@ -42,6 +42,7 @@ import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
+import androidx.compose.foundation.gestures.detectDragGestures
 import androidx.compose.foundation.gestures.detectTapGestures
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
@@ -130,6 +131,8 @@ class TableIntents(
     val card: (Int) -> Unit = {}, val player: (Int) -> Unit = {}, val ok: () -> Unit = {}, val cancel: () -> Unit = {},
     val reply: (Int, Boolean?, List<Int>?, List<Int>?) -> Unit = { _, _, _, _ -> },
     val attackAll: (List<Int>) -> Unit = {}, val unblock: (Int, Int) -> Unit = { _, _ -> },
+    /** forge-table.mjs dropCombat: this blocker blocks that attacker (blocker, attacker). */
+    val block: (Int, Int) -> Unit = { _, _ -> },
     val stop: (String) -> Unit = {}, val mode: (String) -> Unit = {}, val autoPay: (Boolean) -> Unit = {}, val yieldSource: (Int, Boolean) -> Unit = { _, _ -> },
     /** nativeSelect('stack', id): a spell or ability on the stack picked as a target. */
     val stack: (Int) -> Unit = {},
@@ -216,6 +219,26 @@ internal fun sans(size: TextUnit, weight: FontWeight = FontWeight.Bold, color: C
 
 /** One design unit as Dp: the site's CSS px at 844 × 390, scaled to fit. */
 internal val LocalAttackInput = androidx.compose.runtime.staticCompositionLocalOf { false }
+/** The CPU's attackers numbered in attack order while you block (Table spec, 5 Nov: name each attacker before you drag). */
+internal val LocalAttackNumbers = androidx.compose.runtime.compositionLocalOf { emptyMap<Int, Int>() }
+
+/** A blocker on its way to an attacker (forge-table.mjs combat drag): where the finger is and the attacker it would land on. */
+internal class BlockDrag {
+    var from by mutableStateOf<Int?>(null)
+    var at by mutableStateOf(Offset.Zero)
+    var over by mutableStateOf<Int?>(null)
+    /** Your creatures that can be dragged onto an attacker now, and what a drop does. */
+    var blockers: Set<Int> = emptySet()
+    var attackers: List<Int> = emptyList()
+    var drop: (Int, Int) -> Unit = { _, _ -> }
+}
+internal val LocalBlockDrag = androidx.compose.runtime.compositionLocalOf<BlockDrag?> { null }
+
+/** Forge still judges every block; this only tells which attacker a creature could plausibly meet (a flyer needs flying or reach). */
+internal fun mayBlock(attacker: Card, blocker: Card): Boolean {
+    fun has(c: Card, k: String) = c.keywords.any { it.equals(k, true) || it.startsWith("$k ", true) }
+    return !has(attacker, "Flying") || has(blocker, "Flying") || has(blocker, "Reach")
+}
 
 /** The site's touch layout for a big board (min-width 600, min-height 480). */
 internal fun bigBoard(w: Dp, h: Dp) = w >= 600.dp && h >= 480.dp
@@ -260,8 +283,24 @@ fun ForgeBoard(
             val shortCasts = remember { ShortCasts() }
             val blocked = remember(st) { shortCasts.blocked(st) }
             val quiet = remember(st, blocked) { shortCasts.quiet(st, blocked) }
+            // Blocking by tap, either order (Table spec, 5 Nov): a creature you tap first waits for the attacker you tap next;
+            // an attacker you tap first waits for your creature. One attacker, or one it could meet, pairs at once.
+            val blockingNow = live && st.inputType == "InputBlock" && st.prompt == null
+            var blockPick by remember { mutableStateOf<Int?>(null) }
+            var attackFocus by remember { mutableStateOf<Int?>(null) }
+            LaunchedEffect(blockingNow) { if (!blockingNow) { blockPick = null; attackFocus = null } }
+            val attackersNow = if (blockingNow) attackOrder(st).mapNotNull { st.card(it) } else emptyList()
+            val blockDrag = remember { BlockDrag() }
+            fun myBlocker(card: Card) = blockingNow && card.controller == st.viewer && card.zone == "Battlefield" && card.isCreature && !card.attacking &&
+                (card.blocking || card.id in st.selection.cards || card.id in st.selection.actionable || (!card.tapped && st.selection.cards.isEmpty() && st.selection.actionable.isEmpty()))
+            blockDrag.blockers = if (blockingNow) me.battlefield.filter { myBlocker(it) && !it.blocking }.map { it.id }.toSet() else emptySet()
+            blockDrag.attackers = attackersNow.map { it.id }
+            blockDrag.drop = { b, a -> blockPick = null; attackFocus = null; intents.block(b, a) }
             fun markOf(card: Card): Mark = when {
                 !live -> Mark.NONE
+                blockingNow && card.id == blockPick -> Mark.PICKED
+                blockingNow && card.attacking && card.controller != st.viewer && (card.id == attackFocus || card.id == blockDrag.over ||
+                    (blockPick ?: blockDrag.from)?.let { b -> st.card(b)?.let { mayBlock(card, it) } } == true) -> Mark.TARGET
                 card.id in blocked -> Mark.NONE
                 card.id in st.selection.chosenCards -> Mark.PICKED
                 card.id in st.selection.targetCards -> Mark.TARGET
@@ -269,7 +308,26 @@ fun ForgeBoard(
                 card.id in st.selection.actionable -> if (card.id in quiet) Mark.NONE else Mark.PLAYABLE
                 else -> Mark.NONE
             }
-            fun tapOf(card: Card): (() -> Unit)? = if (live && (card.id in st.selection.cards || card.id in st.selection.targetCards || (card.id in st.selection.actionable && card.id !in blocked) || card.id in st.selection.chosenCards ||
+            fun blockTap(card: Card): (() -> Unit)? = when {
+                card.attacking && card.controller != st.viewer -> ({
+                    val b = blockPick
+                    if (b != null) { blockPick = null; intents.block(b, card.id) } else attackFocus = if (attackFocus == card.id) null else card.id
+                })
+                !myBlocker(card) -> null
+                // Your creature already blocking: a tap takes that block back (forge-table.mjs unblock).
+                card.blocking -> ({ (card.blockingIds.firstOrNull() ?: attackersNow.singleOrNull()?.id)?.let { intents.unblock(card.id, it) } ?: intents.card(card.id) })
+                else -> ({
+                    val focus = attackFocus?.takeIf { f -> attackersNow.any { it.id == f } }
+                    val fit = attackersNow.filter { mayBlock(it, card) }
+                    when {
+                        focus != null -> { attackFocus = null; intents.block(card.id, focus) }
+                        attackersNow.size == 1 -> intents.block(card.id, attackersNow[0].id)
+                        fit.size == 1 -> intents.block(card.id, fit[0].id)
+                        else -> blockPick = if (blockPick == card.id) null else card.id
+                    }
+                })
+            }
+            fun tapOf(card: Card): (() -> Unit)? = if (blockingNow) blockTap(card) else if (live && (card.id in st.selection.cards || card.id in st.selection.targetCards || (card.id in st.selection.actionable && card.id !in blocked) || card.id in st.selection.chosenCards ||
                 ((st.inputType == "InputAttack" || st.inputType == "InputBlock") && card.controller == st.viewer && (card.attacking || card.blocking)))) ({ intents.card(card.id) }) else null
 
             // The battlefield band (46 du from the top to 61 du from the bottom); the two halves meet at its middle.
@@ -298,7 +356,9 @@ fun ForgeBoard(
 
             // CPU half: lands at the back, creatures at the front; yours mirrored.
             // A creature Forge says must attack this combat wears a tag until it is in the attack.
-            androidx.compose.runtime.CompositionLocalProvider(LocalAttackInput provides (live && st.inputType == "InputAttack")) {
+            androidx.compose.runtime.CompositionLocalProvider(LocalAttackInput provides (live && st.inputType == "InputAttack"),
+                LocalAttackNumbers provides (if (blockingNow && attackersNow.size > 1) attackersNow.withIndex().associate { (i, c) -> c.id to i + 1 } else emptyMap()),
+                LocalBlockDrag provides (if (blockingNow) blockDrag else null)) {
                 if (piece != null) {
                     // Rows on a big board: the CPU's creatures end 34 above the divider, its other lane 32 above them; yours start 26 below, the other lane 19 under.
                     val ch = piece * .9f; val oh = piece * .68f; val room = W - 192.dp
@@ -430,6 +490,7 @@ fun ForgeBoard(
             FxLayer()
             // Arrows: attackers to what they attack, blockers to their attacker, your spell to its targets, the top of the stack to its own.
             Arrows(st, live, intents, d)
+            if (blockingNow) DragLine(blockDrag, d)
             OwnCast(st, d)
             overlay?.invoke(W)
             // The order dialog, a damage split and the zone picker sit over the table; the CPU's line waits under them.
@@ -524,9 +585,15 @@ private fun Tile(card: Card, w: Dp, h: Dp, land: Boolean, mark: Mark, mineSide: 
     val anchors = LocalAnchors.current
     val fx = LocalBattlefield.current
     val shape = RoundedCornerShape(10.du)
+    // The tap handler is read when the tap lands: keying the gesture on a fresh lambda restarted it on every redraw and dropped taps.
+    val tap by androidx.compose.runtime.rememberUpdatedState(onTap)
+    val inspect by androidx.compose.runtime.rememberUpdatedState(onInspect)
+    val drag = LocalBlockDrag.current
+    val draggable = drag != null && card.id in drag.blockers
+    val place = remember { arrayOfNulls<androidx.compose.ui.layout.LayoutCoordinates>(1) }
     Box(modifier.size(w, h)
         .graphicsLayer { rotationZ = turn; val s = if (card.tapped) .94f else 1f; scaleX = s; scaleY = s; translationY = if (card.attacking) (if (mineSide) -12f else 12f) * u * density else 0f }
-        .then(if (anchors != null) Modifier.onGloballyPositioned { anchors.putRect("c${card.id}", it.boundsInRoot()) } else Modifier)
+        .onGloballyPositioned { place[0] = it; anchors?.putRect("c${card.id}", it.boundsInRoot()) }
         // Effects move the card by transform only, after its anchor is read, so lines and slots never follow the motion.
         .then(if (fx != null) Modifier.graphicsLayer { fx.move(this, card.id, anchors) } else Modifier)
         .drawBehind {
@@ -543,7 +610,8 @@ private fun Tile(card: Card, w: Dp, h: Dp, land: Boolean, mark: Mark, mineSide: 
             drawRoundRect(ring, topLeft = Offset(-ringW, -ringW), size = Size(size.width + 2 * ringW, size.height + 2 * ringW), cornerRadius = CornerRadius(r + ringW))
         }
         .clip(shape).background(Color(0xFF141418))
-        .pointerInput(card.id, onTap) { detectTapGestures(onTap = { onTap?.invoke() ?: onInspect(card) }, onLongPress = { onInspect(card) }) }) {
+        .pointerInput(card.id) { detectTapGestures(onTap = { tap?.invoke() ?: inspect(card) }, onLongPress = { inspect(card) }) }
+        .then(if (draggable && drag != null) Modifier.pointerInput(card.id, drag) { blockDragGestures(card.id, drag, anchors, 22.dp.toPx()) { p -> place[0]?.takeIf { it.isAttached }?.localToRoot(p) } } else Modifier)) {
         // A big board (play-forge-table.css: --nh clamp(15, piece·.15, 22), --nf clamp(11, piece·.083, 13)): the name strip over a dark fade, the art below it.
         val nh = piece?.let { (it.value * .15f).coerceIn(15f, 22f).dp }
         Box(Modifier.fillMaxSize().padding(start = 2.du, end = 2.du, bottom = 2.du, top = nh?.let { it + 3.dp } ?: 2.du).clip(RoundedCornerShape(9.du))) {
@@ -585,14 +653,56 @@ private fun Tile(card: Card, w: Dp, h: Dp, land: Boolean, mark: Mark, mineSide: 
                     .border(1.dp, Color(0xFFFF8A6A), RoundedCornerShape(999.dp)).padding(horizontal = 7.du, vertical = 2.du))
         }
     }
+    // The attacker's number while you block (1, 2 … in attack order), on its top-left corner.
+    LocalAttackNumbers.current[card.id]?.let { n ->
+        Box(modifier.size(w, h).zIndex(21f)) {
+            Box(Modifier.offset(x = (-7).du, y = (-7).du).size(19.du).clip(CircleShape).background(Color(0xFFB8321F)).border(1.5.dp, Color(0xFFFFC7B4), CircleShape),
+                contentAlignment = Alignment.Center) { Text("$n", style = sans(sp(11f), FontWeight.ExtraBold, Color.White)) }
+        }
+    }
     // .play-match-pile-count: on the card's left edge (left -10px), hanging under the pile (bottom -12px, translate -50%); a tapped pile centres it
     // (left 50%, translate -50% 0). It takes a tap and passes it to the top card.
     if (count > 1) {
         val bh = 19.du
         Box(modifier.offset(x = if (card.tapped) w / 2 - 15.du else (-10).du, y = if (card.tapped) h + 12.du - bh else h + 12.du - bh * 1.5f).zIndex(20f).height(bh).widthIn(min = 30.du)
             .clip(RoundedCornerShape(999.dp)).background(Brush.radialGradient(listOf(Color(0xFFFFF2C6), Color(0xFFD9B463), Color(0xFFA9822F)))).border(2.dp, Color(0xFFFFF3CF), RoundedCornerShape(999.dp))
-            .pointerInput(card.id, onTap) { detectTapGestures(onTap = { onTap?.invoke() ?: onInspect(card) }) }
+            .pointerInput(card.id) { detectTapGestures(onTap = { tap?.invoke() ?: inspect(card) }) }
             .padding(horizontal = 4.du), contentAlignment = Alignment.Center) { Text("×$count", style = sans(sp(11f), FontWeight.ExtraBold, Color(0xFF2A1D05))) }
+    }
+}
+
+/** The CPU's attackers in the order Forge declared them (its last attack event), then any it did not list. */
+internal fun attackOrder(st: MatchState): List<Int> {
+    val now = st.players.filter { it.id != st.viewer }.flatMap { it.battlefield }.filter { it.attacking }.map { it.id }
+    val said = st.events.lastOrNull { it.type == "attack" && it.attackers.isNotEmpty() }?.attackers?.map { it.first.id }.orEmpty().filter { it in now }
+    return said + now.filter { it !in said }
+}
+
+/** Drag a blocker onto an attacker: the nearest attacker within [slack] of the finger lights, and a drop there blocks it. */
+private suspend fun androidx.compose.ui.input.pointer.PointerInputScope.blockDragGestures(id: Int, drag: BlockDrag, anchors: Anchors?, slack: Float, toRoot: (Offset) -> Offset?) {
+    fun nearest(p: Offset): Int? = drag.attackers.mapNotNull { a -> anchors?.rects?.get("c$a")?.let { r ->
+        val dx = maxOf(r.left - p.x, 0f, p.x - r.right); val dy = maxOf(r.top - p.y, 0f, p.y - r.bottom); a to kotlin.math.hypot(dx, dy) } }
+        .filter { it.second <= slack }.minByOrNull { it.second }?.first
+    fun end(drop: Boolean) { val over = drag.over; drag.from = null; drag.over = null; if (drop && over != null) drag.drop(id, over) }
+    detectDragGestures(
+        onDragStart = { p -> toRoot(p)?.let { drag.at = it; drag.from = id; drag.over = nearest(it) } },
+        onDrag = { change, _ -> change.consume(); toRoot(change.position)?.let { drag.at = it; drag.over = nearest(it) } },
+        onDragEnd = { end(true) }, onDragCancel = { end(false) })
+}
+
+/** The blocker's line to your finger while you drag it (block blue, the site's forge-arrow block colour). */
+@Composable
+private fun DragLine(drag: BlockDrag, d: Du) = with(d) {
+    val from = drag.from ?: return@with
+    val anchors = LocalAnchors.current ?: return@with
+    var self by remember { mutableStateOf(Offset.Zero) }
+    Canvas(Modifier.fillMaxSize().onGloballyPositioned { self = it.boundsInRoot().topLeft }) {
+        val a = anchors.rects["c$from"] ?: return@Canvas
+        val to = drag.over?.let { anchors.rects["c$it"]?.center } ?: drag.at
+        val s0 = a.center - self; val e = to - self
+        drawLine(Color(0x665A9CFF), s0, e, strokeWidth = 9.du.toPx(), cap = androidx.compose.ui.graphics.StrokeCap.Round)
+        drawLine(Color(0xFF6AAEFF), s0, e, strokeWidth = 3.du.toPx(), cap = androidx.compose.ui.graphics.StrokeCap.Round)
+        drawCircle(Color(0xFF6AAEFF), 7.du.toPx(), e, style = Stroke(2.du.toPx()))
     }
 }
 

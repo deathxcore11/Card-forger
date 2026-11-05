@@ -49,10 +49,11 @@ class TableShotTest {
             if (f.exists()) BitmapFactory.decodeFile(f.path)?.asImageBitmap() else { missing += "$name|$crop"; null }
         }
         val sizes = listOf("844x390" to "w844dp-h390dp-land-xxhdpi", "960x840" to "w960dp-h840dp-land-xhdpi", "1280x800" to "w1280dp-h800dp-land-mdpi")
-        val boards = listOf("main", "triggers", "attack", "block", "early", "crowded", "targets", "pod", "podattack")
+        val boards = listOf("main", "triggers", "attack", "block", "realblock", "early", "crowded", "targets", "pod", "podattack")
         for ((size, q) in sizes) for (b in if (size == "844x390") boards else listOf("main", "crowded")) {
             RuntimeEnvironment.setQualifiers(q)
-            val st = state(b).let { it.copy(phaseStops = mapOf("${if (it.activePlayer == it.viewer) "you" else "opponent"}:COMBAT_BEGIN" to true)) }
+            // As the table shows it: the controller names each blocker's attacker (the app's engine leaves that out).
+            val st = dev.cardstashy.nativeplay.match.MatchController(kotlinx.coroutines.CoroutineScope(kotlinx.coroutines.Dispatchers.Unconfined), "{}").paired(state(b)).let { it.copy(phaseStops = mapOf("${if (it.activePlayer == it.viewer) "you" else "opponent"}:COMBAT_BEGIN" to true)) }
             dev.cardstashy.nativeplay.ui.TableEmotes.destroy()
             if (b == "main") dev.cardstashy.nativeplay.ui.TableEmotes.say("cpu", "Good luck, have fun.")
             captureRoboImage(File(System.getProperty("shotsDir"), "table/table-$b-$size.png").path) {

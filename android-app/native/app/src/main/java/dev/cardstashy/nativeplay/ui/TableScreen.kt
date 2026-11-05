@@ -151,6 +151,8 @@ fun TableScreen(controller: MatchController, onHome: () -> Unit, onRematch: () -
     LaunchedEffect(inspect != null) { controller.hold("inspect", inspect != null) }
     LaunchedEffect(menu) { controller.hold("menu", menu) }
     val afk by controller.afkNote.collectAsState()
+    // A line from the table itself ("Block not assigned. Try again."), the site's localError.
+    val note by controller.note.collectAsState()
     val anchors = remember { Anchors() }
     // Any touch of the table says you are here (the clock's missed-turn count clears); the touch still reaches the table.
     Box(Modifier.fillMaxSize().background(Palette.Night).pointerInput(Unit) { awaitPointerEventScope { while (true) { val e = awaitPointerEvent(androidx.compose.ui.input.pointer.PointerEventPass.Initial); if (e.type == androidx.compose.ui.input.pointer.PointerEventType.Press) controller.poke() } } }) {
@@ -180,7 +182,7 @@ fun TableScreen(controller: MatchController, onHome: () -> Unit, onRematch: () -
             if (stage == Stage.PLAYING) ClockPill(controller.clock.collectAsState().value, Modifier.align(Alignment.CenterEnd).padding(end = 10.dp).offset(y = (-44).dp))
         }
         if (stage == Stage.PLAYING || stage == Stage.INTRO) shown?.let { CombatLines(it, anchors) }
-        afk?.let { Text(it, style = Type.Label.copy(color = Color(0xFFFFB4A8), fontSize = 14.sp), modifier = Modifier.align(Alignment.TopCenter).padding(top = 96.dp)
+        (afk ?: note)?.let { Text(it, style = Type.Label.copy(color = Color(0xFFFFB4A8), fontSize = 14.sp), modifier = Modifier.align(Alignment.TopCenter).padding(top = 96.dp)
             .clip(RoundedCornerShape(999.dp)).background(Color(0xD90C0C0E)).border(1.dp, Palette.Red, RoundedCornerShape(999.dp)).padding(horizontal = 16.dp, vertical = 8.dp)) }
       }
         inspect?.let { c -> CardInspect(c, shown?.viewer) { inspect = null } }

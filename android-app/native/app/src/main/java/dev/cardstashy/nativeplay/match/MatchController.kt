@@ -7,6 +7,7 @@ import cardstashy.forge.LocalEngine
 import com.google.gson.JsonArray
 import com.google.gson.JsonObject
 import dev.cardstashy.nativeplay.engine.ForgeService
+import dev.cardstashy.nativeplay.engine.Card
 import dev.cardstashy.nativeplay.engine.GameEvent
 import dev.cardstashy.nativeplay.engine.MatchState
 import kotlinx.coroutines.CompletableDeferred
@@ -96,7 +97,57 @@ class MatchController(private val scope: CoroutineScope, val input: String, priv
     /** forge-table.mjs unblock: Forge drops a blocker clicked again while its attacker is in focus. */
     fun unblock(blocker: Int, attacker: Int) { scope.launch { val s = latest ?: return@launch; if (s.inputType != "InputBlock" || s.prompt != null) return@launch
         card(attacker); if (!awaitSettled(s.revision)) return@launch; val now = latest ?: return@launch
-        if (now.inputType != "InputBlock" || now.prompt != null || now.lastActionError != null) return@launch; if (awaitLive()) card(blocker) } }
+        if (now.inputType != "InputBlock" || now.prompt != null || now.lastActionError != null) return@launch; if (awaitLive()) { card(blocker); if (awaitSent() && latest?.card(blocker)?.blocking != true) pairs.remove(blocker) } } }
+    /**
+     * forge-table.mjs dropCombat (block): Forge pairs a block as two clicks, the attacker and then the blocker. A creature
+     * already blocking another attacker leaves that block first (it blocks one), and a block that does not take says so.
+     */
+    fun block(blocker: Int, attacker: Int) { scope.launch {
+        val s = latest ?: return@launch; if (s.inputType != "InputBlock" || s.prompt != null) return@launch
+        val me = s.card(blocker) ?: return@launch
+        val was = me.blockingIds.firstOrNull()
+        if (me.blocking && was == attacker) return@launch
+        if (me.blocking && was != null) { if (!clickPair(was, blocker) || latest?.card(blocker)?.blocking == true) { say("Block not assigned. Try again."); return@launch }; pairs.remove(blocker) }
+        if (!clickPair(attacker, blocker)) { say("Block not assigned. Try again."); return@launch }
+        val now = latest ?: return@launch
+        if (now.card(blocker)?.blocking == true) { pairs[blocker] = attacker; latest = paired(now); _shown.value?.let { if (it.revision == now.revision) show(latest!!) } }
+        else if (now.inputType == "InputBlock" && now.prompt == null) say("Block not assigned. Try again.")
+    } }
+
+    /**
+     * Who blocks whom. The app's engine marks a blocker but does not name its attacker (the host's names it as blockingIds), so
+     * the table fills it in: your own pairings as you make them, the attacker Forge has in focus when you tap a creature
+     * ("Select creatures to block Savannah Lions (117) …"), and Forge's block events once blocks are declared.
+     */
+    private val pairs = java.util.concurrent.ConcurrentHashMap<Int, Int>()
+    internal fun paired(st: MatchState): MatchState {
+        val field = st.players.flatMap { it.battlefield }
+        if (field.none { it.blocking }) { if (st.inputType != "InputBlock") pairs.clear(); return st }
+        val attackers = field.filter { it.attacking }.map { it.id }.toSet()
+        for (e in st.events) if (e.type == "block" && e.turn == st.turn) for ((b, a) in e.blockers) if (a != null && a in attackers) pairs[b.id] = a
+        if (field.none { it.blocking && it.blockingIds.isEmpty() }) return st
+        val focus = if (st.inputType == "InputBlock") Regex("\\((\\d+)\\)").find(st.message)?.groupValues?.get(1)?.toIntOrNull()?.takeIf { it in attackers } else null
+        fun pairOf(c: Card): Int? = pairs[c.id]?.takeIf { it in attackers }
+            ?: (if (c.controller == st.viewer && focus != null) focus.also { pairs[c.id] = it } else null)
+            ?: attackers.singleOrNull()
+        return st.copy(players = st.players.map { p -> p.copy(battlefield = p.battlefield.map { c ->
+            if (c.blocking && c.blockingIds.isEmpty()) pairOf(c)?.let { c.copy(blockingIds = listOf(it)) } ?: c else c }) })
+    }
+    /** Two clicks Forge reads as one pairing; the second only when Forge took the first and still asks the same question. */
+    private suspend fun clickPair(first: Int, second: Int): Boolean {
+        if (!awaitLive()) return false
+        val input = latest?.inputType
+        card(first); if (!awaitSent()) return false
+        val now = latest ?: return false
+        if (now.inputType != input || now.prompt != null || now.lastActionError != null) return false
+        if (!awaitLive()) return false
+        card(second); return awaitSent()
+    }
+    /** The last action has gone through (send() clears its flag once Forge has moved on, never later than 4 s). */
+    private suspend fun awaitSent(): Boolean = withTimeoutOrNull(6000) { _sending.first { !it } } != null
+    /** A short line over the table ("Block not assigned. Try again."), gone after a few seconds. */
+    private val _note = MutableStateFlow<String?>(null); val note: StateFlow<String?> = _note
+    private fun say(text: String) { scope.launch(Dispatchers.Main) { _note.value = text; delay(3500); if (_note.value == text) _note.value = null } }
     private suspend fun awaitLive(): Boolean = withTimeoutOrNull(4000) { _live.first { it } } != null
     private suspend fun awaitSettled(from: Long): Boolean = withTimeoutOrNull(4000) { while (true) { val l = latest; if (l != null && l.revision > from && !l.busy && !_sending.value) break; delay(50) }; true } == true
     fun setAutoPay(on: Boolean) { setting("autoPay") { addProperty("value", on) } }
@@ -115,7 +166,7 @@ class MatchController(private val scope: CoroutineScope, val input: String, priv
         return true
     }
     val intents by lazy { dev.cardstashy.nativeplay.ui.TableIntents(card = { card(it) }, stack = { stackItem(it) }, player = { player(it) }, ok = { ok() }, cancel = { cancel() }, reply = { id, v, i, a -> reply(id, v, i, a) },
-        stop = { toggleStop(it) }, attackAll = { attackAll(it) }, unblock = { b, a -> unblock(b, a) }, mode = { setMode(it) }, autoPay = { setAutoPay(it) }, yieldSource = { id, on -> yieldSource(id, on) }) }
+        stop = { toggleStop(it) }, attackAll = { attackAll(it) }, unblock = { b, a -> unblock(b, a) }, block = { b, a -> block(b, a) }, mode = { setMode(it) }, autoPay = { setAutoPay(it) }, yieldSource = { id, on -> yieldSource(id, on) }) }
     val timings = MutableStateFlow<Map<String, Long>>(emptyMap())
 
     /** match-facts.js for this match, and the finished-match hook (play:match-recorded). */
@@ -137,7 +188,10 @@ class MatchController(private val scope: CoroutineScope, val input: String, priv
     private var poller: Job? = null
     private var player: Job? = null
     private var autoJob: Job? = null
-    private var queued = 0
+    /** Snapshots waiting to be shown. Counted on the polling thread and the main thread both, so atomic: a plain count
+     *  drifted, and a drifted count kept a decision from ever going live after your tap (a stuck table). */
+    private val queue = java.util.concurrent.atomic.AtomicInteger(0)
+    private val queued get() = queue.get()
 
     fun start() {
         poller = scope.launch(Dispatchers.IO) {
@@ -147,10 +201,21 @@ class MatchController(private val scope: CoroutineScope, val input: String, priv
             }
             session = s
             val started = SystemClock.elapsedRealtime() - t0
-            var lastRev = -1L; var firstState = -1L
-            while (isActive) {
+            poll(s, t0, started)
+        }
+        player = scope.launch(Dispatchers.Main) { play() }
+        startWatch()
+    }
+
+    /** Forge's board, read every 50-120 ms; restarted by the stuck watch if a read never comes back. */
+    private suspend fun poll(s: EngineSession, t0: Long, started: Long) {
+            val job = kotlinx.coroutines.currentCoroutineContext()
+            var lastRev = latest?.revision ?: -1L; var firstState = if (latest != null) 0L else -1L
+            while (job.isActive) {
                 var body: String? = null
-                val st = try { s.call("GET", "/state", null).body().also { body = it }.let { MatchState.parse(it) } } catch (t: Throwable) { Log.w(TAG, "state", t); null }
+                readAsked = SystemClock.elapsedRealtime()
+                val st = try { s.call("GET", "/state", null).body().also { body = it }.let { MatchState.parse(it) }?.let { paired(it) } } catch (t: Throwable) { Log.w(TAG, "state", t); null }
+                readAt = SystemClock.elapsedRealtime()
                 if (st != null) {
                     // What the table showed (match-facts.js), fed every new snapshot; the match is recorded once when Forge ends it.
                     if (st.revision != lastRev || st.finished) runCatching { facts.update(MatchFacts.surface(com.google.gson.JsonParser.parseString(body).asJsonObject)) }
@@ -163,18 +228,17 @@ class MatchController(private val scope: CoroutineScope, val input: String, priv
                     // A repeat revision still counts when Forge finished working without a new one.
                     val prev = latest
                     if (st.revision != lastRev || prev == null || prev.busy != st.busy || prev.inputType != st.inputType || prev.prompt?.id != st.prompt?.id) {
-                        lastRev = st.revision; latest = st; queued++; snapshots.trySend(st)
+                        if (st.revision != lastRev) revisionAt = SystemClock.elapsedRealtime()
+                        lastRev = st.revision; latest = st; queue.incrementAndGet(); snapshots.trySend(st)
                     }
                     if (st.status == "failed" || st.finished) { if (st.finished) break }
                 }
                 delay(if (st?.busy != false) 50 else 120)
             }
-        }
-        player = scope.launch(Dispatchers.Main) { play() }
     }
 
     fun close() {
-        poller?.cancel(); player?.cancel(); autoJob?.cancel(); ticker?.cancel(); timer.stop()
+        poller?.cancel(); player?.cancel(); autoJob?.cancel(); ticker?.cancel(); watch?.cancel(); timer.stop()
         session?.close(); session = null
     }
 
@@ -247,12 +311,13 @@ class MatchController(private val scope: CoroutineScope, val input: String, priv
     /** Any touch of the table says you are here. */
     fun poke() = timer.poke()
 
+    // The pacing loop's place, kept outside it so the stuck watch can restart a loop that stopped without replaying the intro.
+    private var gatePassed = false
+    private var mulliganSeen = keepsOpeningHand
+    private var cpuHandAtKeep = 0
     private suspend fun play() {
-        var gatePassed = false
-        var mulliganSeen = keepsOpeningHand
-        var cpuHandAtKeep = 0
         for (st in snapshots) {
-            queued--
+            queue.decrementAndGet(); progressAt = SystemClock.elapsedRealtime()
             if (st.status == "failed") {
                 _failure.value = (listOf(st.failure ?: "native_failed") + st.errors).joinToString("\n"); _stage.value = Stage.FAILED; show(st); continue
             }
@@ -362,7 +427,7 @@ class MatchController(private val scope: CoroutineScope, val input: String, priv
         autoJob?.cancel()
         if (!autoAnswering && op != "concede") timer.poke()
         if (st.isMulligan) answeredMulligan = true
-        _sending.value = true; _live.value = false
+        _sending.value = true; _live.value = false; sendingAt = SystemClock.elapsedRealtime()
         scope.launch(Dispatchers.IO) {
             val body = JsonObject().apply { addProperty("revision", st.revision); addProperty("op", op); fill() }
             try {
@@ -386,6 +451,71 @@ class MatchController(private val scope: CoroutineScope, val input: String, priv
             }
             withContext(Dispatchers.Main) { _sending.value = false; _shown.value?.let { if (queued <= 0) show(latest ?: it) } }
         }
+    }
+
+    // ---- The stuck watch (Randall, 5 Nov: "a lot of getting stuck ... detect that and fix it") ----
+    // Every second: can the match move? Forge waiting on you must be a table that takes your taps, and a board Forge has
+    // moved on must reach the screen. When either has held too long the watch frees it, and each time it sends a short
+    // report of what was held (FreezeReport, quietly), so the cause can be fixed too.
+    @Volatile private var progressAt = SystemClock.elapsedRealtime()
+    @Volatile private var sendingAt = 0L
+    @Volatile private var readAsked = 0L
+    @Volatile private var readAt = SystemClock.elapsedRealtime()
+    @Volatile private var revisionAt = SystemClock.elapsedRealtime()
+    private var watch: Job? = null
+    private val stuckSince = HashMap<String, Long>()
+    private val engineReported = HashSet<Long>()
+    /** How many times the watch freed the table this match (the tests read it). */
+    @Volatile var freed = 0; private set
+    private fun startWatch() { if (watch == null) watch = scope.launch(Dispatchers.Main) { while (isActive) { delay(1000); runCatching { watchOnce() }.onFailure { Log.w(TAG, "watch", it) } } } }
+
+    internal fun watchOnce(now: Long = SystemClock.elapsedRealtime()) {
+        val stage = _stage.value
+        if ((stage != Stage.PLAYING && stage != Stage.MULLIGAN) || paused.value || session == null) { stuckSince.clear(); return }
+        val l = latest ?: return
+        val on = _shown.value ?: return
+        val calm = _beat.value == null && _banner.value == null && autoJob?.isActive != true
+        fun held(kind: String, cond: Boolean, ms: Long): Boolean {
+            if (!cond) { stuckSince.remove(kind); return false }
+            val t = stuckSince.getOrPut(kind) { now }; if (now - t < ms) return false
+            stuckSince.remove(kind); return true
+        }
+        // 1. A tap went out and never came back: the sending flag would hold every later tap.
+        if (held("send", _sending.value && now - sendingAt > 9000, 0)) free("send", l) { _sending.value = false; show(latest ?: on) }
+        // 2. Forge waits on you and the table shows that very moment, yet it takes no taps.
+        if (held("live", l.waitingOnMe && on.revision == l.revision && !_live.value && !_sending.value && calm, 2500)) free("live", l) { show(l) }
+        // 3. Forge has moved on, nothing is playing out, and the pacing loop takes no new board: restart the loop where it was.
+        if (stage == Stage.PLAYING && held("behind", on.revision != l.revision && calm && !scene.value && now - progressAt > 6000, 6000)) free("behind", l) {
+            player?.cancel(); player = scope.launch(Dispatchers.Main) { play() }
+            if (queued <= 0) show(l)
+        }
+        // 4. A board read that never came back: start reading again.
+        if (held("read", readAsked > readAt && now - readAsked > 15000, 0)) free("read", l) {
+            val s = session ?: return@free
+            poller?.cancel(); poller = scope.launch(Dispatchers.IO) { poll(s, 0, 0) }; readAt = now
+        }
+        // 5. Forge itself has not moved for a minute while it is not waiting on you (working, or on the CPU): the cause is in
+        // the engine, so this is only reported, once per board.
+        if (!l.waitingOnMe && !l.finished && l.status == "running" && now - revisionAt > 60_000 && engineReported.add(l.revision))
+            dev.cardstashy.nativeplay.FreezeReport.matchStuck("engine", describe(l, on))
+    }
+
+    private inline fun free(kind: String, l: MatchState, fix: () -> Unit) {
+        val what = describe(l, _shown.value)
+        Log.w(TAG, "stuck ($kind), freeing: $what")
+        freed++
+        fix()
+        dev.cardstashy.nativeplay.FreezeReport.matchStuck(kind, what)
+    }
+
+    private fun describe(l: MatchState, on: MatchState?): String = buildString {
+        val now = SystemClock.elapsedRealtime()
+        append("input=${l.inputType} prompt=${l.prompt?.let { "${it.method} \"${it.message.take(120)}\" options=${it.options.size}" }} busy=${l.busy} status=${l.status}\n")
+        append("turn=${l.turn} phase=${l.phase} active=${l.activePlayer} priority=${l.priorityPlayer} viewer=${l.viewer} message=\"${l.message.take(160)}\"\n")
+        append("revision latest=${l.revision} shown=${on?.revision} live=${_live.value} sending=${_sending.value} (${if (sendingAt > 0) now - sendingAt else -1} ms) queued=$queued\n")
+        append("beat=${_beat.value?.title} banner=${_banner.value?.text} stage=${_stage.value} paused=${paused.value} scene=${scene.value} holds=$holds\n")
+        append("loop idle ${now - progressAt} ms, board unchanged ${now - revisionAt} ms, last read ${now - readAt} ms ago, mode=${l.controlMode} remote=${remote != null}\n")
+        append("last events: " + l.events.takeLast(6).joinToString(" | ") { "${it.type} ${it.card?.name ?: ""}".trim() })
     }
 
     // Smart, the way the web table plays (forge-table.mjs): your own spell on top of the stack
