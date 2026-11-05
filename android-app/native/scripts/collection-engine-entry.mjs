@@ -22,19 +22,22 @@ import {loadPulse} from 'WEB/news-pulse.js';
 import {collection as collectionPage, decks as decksView, deckPage as deckView, cardSheet as cardView, setsPage as setsView, setPage as setView} from 'WEB/views.js';
 import {loadMagicPrintingPage, mergeMagicCards} from 'WEB/catalog-tools.js';
 import {magicOwnedDetail, magicOwnedContext, magicOwnedCurrent} from 'WEB/magic-owned-detail.js';
-import {selectPreviewFinish} from 'WEB/finish-preview.js';
+import {selectPreviewFinish, finishAttrs} from 'WEB/finish-preview.js';
 import {selectedFinish, quoteForContext} from 'WEB/pricing-presentation.js';
 import {quoteModel, recordQuote, HISTORY_RANGES} from 'WEB/workbench-ui.js';
 import {loadSharedHistory} from 'WEB/shared-history.js';
 import {playedAlongside} from 'WEB/guide.js';
 import {mtgPairQueries, rankPairs, edhPop} from 'WEB/pairing.js';
 import {ICON} from 'WEB/icons.js';
-import {registerTcg, tcgSets as tcgSetsView, tcgSet as tcgSetView, ui as tcgUi, cardOf as tcgCardOf, SOURCES as tcgSources} from 'WEB/tcg.js';
-import {samplePack, packSize, packRarity, packFinishes, packPrice, trustedPackPrice, packRevealHaptic, packFinishLabel, packNeedsHydration, godPackText, collectorText, packRandom, ptcgSetRarities} from 'WEB/pack-preview.js';
+import {registerTcg, tcgSets as tcgSetsView, tcgSet as tcgSetView, ui as tcgUi, cardOf as tcgCardOf, SOURCES as tcgSources, cache as tcgCache, ensureCard as tcgEnsureCard, gs as tcgGs, tcgCardSheet, setContextCard as tcgSetContextCard, currentYgoCatalogue as tcgYgoCatalogue} from 'WEB/tcg.js';
+import {packArtUrl, samplePack, packSize, packRarity, packFinishes, packPrice, trustedPackPrice, packRevealHaptic, packFinishLabel, packNeedsHydration, godPackText, collectorText, packRandom, ptcgSetRarities} from 'WEB/pack-preview.js';
 import {loadMtgBooster, mtgBoosterCards, drawMtgBooster, mtgGodPackPicks, GOD_PACK_ODDS as MTG_GOD_ODDS} from 'WEB/mtg-boosters.js';
 import {COLLECTOR_ODDS, collectorPicks} from 'WEB/play-econ-rules.js';
 import {TIERS, priceTier} from 'WEB/tier.js';
-import {packEligible, setImageUrl} from 'WEB/set-experience.js';
+import {packEligible, setImageUrl, setArtworkSources} from 'WEB/set-experience.js';
+import {packTemplateArt, packArtSources} from 'WEB/pack-wrappers.js';
+import {pkCatalogueSymbolSources, pkRarity} from 'WEB/emblems.js';
+import {rarityKind} from 'WEB/rarity-emblem.js';
 import {cardImage} from 'WEB/ui.js';
 import {massEntryUrl} from 'WEB/buy.js';
 
@@ -205,7 +208,10 @@ function icon(svg, css = {}) {
   } };
   walk(svg, base);
   const vb = String(svg.attrs.viewbox || '0 0 24 24').split(/[\s,]+/).map(Number);
-  return {vb, items, grads};
+  // A glyph drawn as text (emblems.js ygoProperty's 魔 / 罠 for a property without its own shape).
+  const texts = all(svg, tagIs('text')).map(x => ({x: num(x.attrs.x) ?? 0, y: num(x.attrs.y) ?? 0, text: text(x), size: num(x.attrs['font-size']) ?? 12, weight: num(x.attrs['font-weight']) ?? 400,
+    fill: x.attrs.fill || base.fill, anchor: x.attrs['text-anchor'] || 'start'}));
+  return {vb, items, grads, ...(texts.length ? {texts} : {})};
 }
 const svgIn = n => n && (n.tag === 'svg' ? n : one(n, tagIs('svg')));
 const sources = img => { try { return JSON.parse(img?.attrs['data-art-sources'] || '[]'); } catch { return []; } };
@@ -748,7 +754,9 @@ function tcgTileModel(n, G) {
   const emb = (one(one(c, cls('tile-emb')), cls('emblems'))?.kids || []).filter(k => k.tag).map(k => k.tag === 'svg' ? {icon: icon(k)}
     : cls('lvl')(k) ? {icon: icon(svgIn(k)), text: text(k), label: k.attrs['aria-label'] || ''} : cls('more')(k) || cls('hp')(k) ? {text: text(k)} : {icon: icon(svgIn(k)), text: text(k)});
   const printing = n.attrs['data-printing'] || '';
-  return {id, act: n.attrs['data-act'] || '', name: img?.attrs.alt || '', picture: picture(img), fallback: img ? '' : text(one(n, cls('img-missing'))), ...tierOfNode(n),
+  // What the tile hands A.tCard: the set it was opened from, the finish the page prices, Yu-Gi-Oh!'s printing and edition.
+  const open = {setId: n.attrs['data-set-id'] || '', setVariant: n.attrs['data-set-variant'] || '', printing, edition: n.attrs['data-edition'] || ''};
+  return {id, act: n.attrs['data-act'] || '', open, name: img?.attrs.alt || '', picture: picture(img), fallback: img ? '' : text(one(n, cls('img-missing'))), ...tierOfNode(n),
     finish: f && {key: f.key || '', effect: f.effect || n.attrs['data-finish-effect'] || '', status: f.status || '', stars: Number(f.stars) || 0,
       treatment: f.treatment || '', mask: f.layers?.[0]?.mask || '', clip: f.overlayProfiles?.[0]?.mask || '', source: abs(typeof f.source === 'string' && /^https?:/.test(f.source) ? f.source : ''),
       rarity: n.attrs['data-printed-rarity'] || '', code: printing.split('::')[0] || '', date: f.printingRelease?.date || '', frame: String(card?.frame || card?.cardType || card?.typeLine || '')},
@@ -825,8 +833,10 @@ const press = n => { if (!n) return null; const g = glyph(text(n)); const p = {l
 const richRuns = n => { const out = []; const walk = (x, b, i) => { for (const k of x.kids || []) {
   if (k.text !== undefined) { const t = k.text.replace(/\s+/g, ' '); if (t) { const last = out[out.length - 1]; if (last && last.t !== undefined && last.b === b && last.i === i) last.t += t; else out.push({t, b, i}); } }
   else if (k.tag === 'img') out.push({sym: k.attrs.src || '', alt: k.attrs.alt || '', title: k.attrs.title || ''});
-  else if (k.tag === 'button' && cls('rule-word')(k)) out.push({rule: k.attrs['data-rule'] || '', label: text(k)});
-  else if (k.tag !== 'svg') walk(k, b || k.tag === 'b' || k.tag === 'strong', i || k.tag === 'i' || k.tag === 'em'); } };
+  // A rule word takes its line's weight (font: inherit), bold inside a Yu-Gi-Oh! condition.
+  else if (k.tag === 'button' && cls('rule-word')(k)) out.push({rule: k.attrs['data-rule'] || '', label: text(k), b, i});
+  // effectText's logic-condition (style.css 2579: weight 650) reads as bold.
+  else if (k.tag !== 'svg') walk(k, b || k.tag === 'b' || k.tag === 'strong' || cls('logic-condition')(k), i || k.tag === 'i' || k.tag === 'em'); } };
   walk(n || {kids: []}, false, false);
   if (out[0]?.t !== undefined) out[0].t = out[0].t.replace(/^\s+/, ''); const z = out[out.length - 1]; if (z?.t !== undefined) z.t = z.t.replace(/\s+$/, '');
   return out.filter(r => r.t === undefined || r.t); };
@@ -838,11 +848,11 @@ function blocks(sec) {
     if (k.tag === 'h3') { const sub = one(k, cls('muted')); out.push({kind: 'title', text: text({kids: (k.kids || []).filter(x => x !== sub)}), sub: text(sub)}); }
     else if (k.tag === 'ol' || k.tag === 'ul') out.push({kind: k.tag === 'ol' ? 'steps' : 'list', items: all(k, tagIs('li')).map(li => ({runs: richRuns(li), foot: text(one(li, tagIs('small')))}))});
     else if (cls('guide-along')(k)) out.push({kind: 'along', rows: all(k, cls('guide-along-row')).map(r => ({name: text(one(r, cls('ellip'))), pct: text(one(r, tagIs('b'))), fill: widthOf(one(r, tagIs('i'))) / 100, press: press(r)}))});
-    else if (cls('pair-list')(k)) out.push({kind: 'pairs', rows: all(k, cls('pair-row')).map(r => ({name: text(one(one(r, cls('pair-txt')), tagIs('b'))), why: text(one(one(r, cls('pair-txt')), tagIs('small'))), image: one(r, tagIs('img'))?.attrs.src || '',
+    else if (cls('pair-list')(k)) out.push({kind: 'pairs', rows: all(k, cls('pair-row')).map(r => ({name: text(one(one(r, cls('pair-txt')), tagIs('b'))), why: text(one(one(r, cls('pair-txt')), tagIs('small'))), image: abs(one(r, tagIs('img'))?.attrs.src || ''),
       score: text(one(r, cls('pair-score'))), owned: cls('owned')(r), press: press(r)}))});
     else if (cls('guide-limits')(k)) out.push({kind: 'limits', rows: (k.kids || []).filter(x => x.tag).map(x => ({level: ['ok', 'warn', 'bad'].find(c => cls(c)(x)) || '', formats: text(one(x, tagIs('small'))), copies: text(one(x, tagIs('b')))}))});
     else if (cls('guide-rulings')(k)) out.push({kind: 'rulings', head: text(one(k, cls('list-head'))), items: all(k, tagIs('li')).map(li => ({runs: richRuns(one(li, tagIs('p'))), source: text(one(li, tagIs('small')))})),
-      note: text(one(k, x => x.tag === 'p' && cls('muted')(x)))});
+      note: text(one(k, x => x.tag === 'p' && cls('muted')(x))), ...(one(k, cls('guide-link')) ? {links: all(k, cls('guide-link')).map(a => ({...press(a), label: text(one(a, tagIs('span')))}))} : {})});
     else if (cls('guide-roles')(k)) out.push({kind: 'roles', items: (k.kids || []).filter(x => x.tag).map(x => ({label: text(x), main: cls('main')(x)}))});
     else if (cls('list')(k) && cls('compact')(k)) out.push({kind: 'rows', rows: all(k, cls('mini-row')).map(r => ({title: text(one(one(r, cls('ellip')), tagIs('b'))), line: text(one(one(r, cls('ellip')), tagIs('small'))), go: text(one(r, cls('link'))), press: press(r)}))});
     else if (k.tag === 'p' && cls('list-head')(k)) out.push({kind: 'head', text: text(k)});
@@ -868,6 +878,10 @@ const inlineRuns = n => { const out = []; const walk = (x, b, tone) => { for (co
   return out.filter(r => r.t === undefined || r.t); };
 const optionsOf = sel => all(sel, tagIs('option')).map(o => ({value: o.attrs.value ?? text(o), label: text(o), on: o.attrs.selected !== undefined}));
 const pathPoints = d => { const n = (d || '').match(/-?\d+(?:\.\d+)?/g) || []; const out = []; for (let i = 0; i + 1 < n.length; i += 2) out.push([Number(n[i]), Number(n[i + 1])]); return out; };
+const tableOf = table => ({cols: all(one(table, cls('pt-head')), tagIs('b')).map(x => ({finish: x.attrs.class || '', label: text(x)})),
+  rows: all(table, cls('pt-row')).map(r => { const l = one(r, cls('pt-label')), sm = one(l, tagIs('small'));
+    return {label: text({kids: (l?.kids || []).filter(x => x !== sm)}), sub: text(sm), cells: (r.kids || []).filter(x => x.tag === 'span' && x !== l).map(text)}; })});
+const tableCorner = table => text((one(table, cls('pt-head'))?.kids || []).find(k => k.tag === 'span'));
 function pricesModel(p) {
   const hero = one(p, cls('price-hero')), fresh = one(hero, cls('price-fresh'));
   const copy = c => { const l = one(c, cls('price-copy-label')), v = one(c, cls('price-copy-value'));
@@ -899,10 +913,11 @@ function pricesModel(p) {
   }
   const sellers = one(p, cls('market-sellers')), list = one(sellers, cls('vendor-list'));
   const details = (p.kids || []).find(k => k.tag === 'details' && cls('market-details')(k)), table = one(details, cls('price-table'));
+  const plist = one(details, cls('print-list')), dk = (details?.kids || []).filter(k => k.tag), printsFoot = plist ? dk[dk.indexOf(plist) + 1] : null;
   return {
     hero: hero ? {eyebrow: text(one(hero, cls('eyebrow'))), value: text(one(hero, cls('price-hero-value'))), id: text(one(hero, cls('price-hero-id'))), rarity: text(one(hero, cls('printing-rarity-label'))),
       fresh: fresh ? {text: text(fresh), state: ['fresh', 'stale', 'unknown'].find(c => cls(c)(fresh)) || 'unknown', title: fresh.attrs.title || ''} : null,
-      notes: (hero.kids || []).filter(k => k.tag === 'p').map(text)} : null,
+      notes: (hero.kids || []).filter(k => k.tag === 'p').map(text), ...(one(hero, cls('price-selectors')) ? {pickers: pickers(one(hero, cls('price-selectors'))).selects} : {})} : null,
     copies: all(p, cls('price-copy')).map(copy),
     warning: warn ? {summary: text(one(warn, tagIs('summary'))), text: text(one(warn, tagIs('p')))} : null,
     history,
@@ -912,25 +927,47 @@ function pricesModel(p) {
           value: text(one(q, tagIs('strong'))), unit: text(one(q, tagIs('small'))), action: text(one(q, cls('vendor-action'))), href: a.attrs.href || '', aria: a.attrs['aria-label'] || ''}; }),
       empty: text(one(list, tagIs('p')))} : null,
     details: details ? {summary: text(one(details, tagIs('summary'))), sources: all(one(details, cls('src-row')), tagIs('button')).map(press),
-      table: table ? {cols: all(one(table, cls('pt-head')), tagIs('b')).map(x => ({finish: x.attrs.class || '', label: text(x)})),
-        rows: all(table, cls('pt-row')).map(r => { const l = one(r, cls('pt-label')), sm = one(l, tagIs('small'));
-          return {label: text({kids: (l?.kids || []).filter(x => x !== sm)}), sub: text(sm), cells: (r.kids || []).filter(x => x.tag === 'span' && x !== l).map(text)}; })} : null,
-      lines: (details.kids || []).filter(k => k.tag === 'p').map(k => ({foot: cls('foot')(k), runs: inlineRuns(k)}))} : null,
+      table: table ? tableOf(table) : null,
+      // Yu-Gi-Oh! and Pokémon name each table's source in its corner (Store, TCGplayer (USD), Cardmarket (EUR)); Pokémon has two.
+      ...(all(details, cls('price-table')).some(x => tableCorner(x)) ? {tables: all(details, cls('price-table')).map(x => ({corner: tableCorner(x), ...tableOf(x)}))} : {}),
+      lines: (details.kids || []).filter(k => k.tag === 'p' && !(plist && k === printsFoot)).map(k => ({foot: cls('foot')(k), runs: inlineRuns(k)})),
+      ...(plist ? {printings: {head: text(one(details, cls('price-printings-head'))), foot: text(printsFoot), rows: all(plist, cls('print')).map(r => { const m = one(r, cls('print-main')), nm = one(m, cls('print-name')), sm = one(nm, tagIs('small')), ts = one(sm, cls('tset')), pr = one(r, cls('print-prices'));
+        const buy = one(pr, cls('buy')), ref = (pr?.kids || []).find(k => k.tag === 'span' && cls('pp')(k));
+        return {press: press(m), thumb: abs(one(m, cls('print-thumb'))?.attrs.src || ''), name: text(one(nm, tagIs('b'))), tset: ts ? tsetOf(ts) : null, line: text({kids: (sm?.kids || []).filter(k => k !== ts)}),
+          buy: buy ? {label: text(buy), href: buy.attrs.href || '', aria: buy.attrs['aria-label'] || ''} : null, refLabel: text((ref?.kids || []).find(k => k.tag === 'small')),
+          quotes: all(ref, cls('printing-quote')).map(q => ({label: text(one(q, tagIs('small'))), value: text({kids: (q.kids || []).filter(k => k.tag !== 'small')})})),
+          value: one(ref, cls('printing-quote')) ? '' : text({kids: (ref?.kids || []).filter(k => k.tag !== 'small')})}; })}} : {})} : null,
   };
 }
 function cardPageModel(ctx) {
   if (!ctx) return {missing: true};
   const c = ctx.print || meta(ctx.name);
   if (ctx.blocked || !c) return {name: ctx.name, notice: ctx.ownedNotice || '', loading: !ctx.blocked, deck: ctx.deckId || ''};
-  const t = tree(cardView(c, ctx)), title = one(t, cls('cs-title')), typeP = one(title, cls('type-line')), owned = one(typeP, cls('card-owned-summary'));
-  const head = {art: one(one(t, cls('cs-hero')), cls('cs-art'))?.attrs.src || '', title: text(one(title, tagIs('h2'))),
+  const m = sheetModel(tree(cardView(c, ctx)));
+  if (m.overview?.card) m.overview.card.printingsShown = ctx.print?.id || c.id || '';
+  return {game: 'mtg', name: ctx.name, deck: ctx.deckId || '', entry: ctx.entryId || '', ...m,
+    // The card the picture is drawn from (finish-preview.js reads the same record): the app's foil needs its frame and finishes.
+    shown: (({prices, legalities, purchase_uris, related_uris, all_parts, prints_search_uri, rulings_uri, ...rest}) => rest)(ctx.print || c),
+    busy: !!(ctx.detailsBusy || ctx.printsBusy || ctx.rulingsBusy || ctx.ownedLoading || S.ui.guide?.['mtg:' + c.name]?.loading),
+    glyphs: sheetGlyphs()};
+}
+const sheetGlyphs = () => Object.fromEntries(['minus', 'plus', 'close', 'back', 'heart', 'heartOn'].map(k => [k, ICON[k] ? icon(svgIn(tree(ICON[k]))) : null]));
+// views.js cardSheet (Magic) or tcg.js tcgCardSheet (Yu-Gi-Oh!, Pokémon): the two draw the same sheet, so one reading serves both. The parts
+// only a Yu-Gi-Oh! or Pokémon card has (its emblems, set badge, archetype, printing and edition pickers, Pokémon's text, the stat grid, every
+// printing's price) are read where they appear and left out where they don't.
+function sheetModel(t) {
+  const title = one(t, cls('cs-title')), typeP = one(title, cls('type-line')), owned = one(typeP, cls('card-owned-summary')), heroArt = one(one(t, cls('cs-hero')), cls('cs-art')), embs = one(title, cls('emblems'));
+  const head = {art: abs((heroArt?.tag === 'img' ? heroArt : one(heroArt, tagIs('img')))?.attrs.src || ''), title: text(one(title, tagIs('h2'))),
     type: text({kids: (typeP?.kids || []).filter(k => k !== owned)}), owned: owned ? {label: text(owned), aria: owned.attrs['aria-label'] || ''} : null,
-    mana: all(one(title, cls('mana')), tagIs('img')).map(i => ({src: i.attrs.src || '', alt: i.attrs.alt || '', title: i.attrs.title || ''})), back: !!one(one(t, cls('sheet-head')), x => x.attrs['data-act'] === 'sheetBack')};
+    mana: all(one(title, cls('mana')), tagIs('img')).map(i => ({src: i.attrs.src || '', alt: i.attrs.alt || '', title: i.attrs.title || ''})), back: !!one(one(t, cls('sheet-head')), x => x.attrs['data-act'] === 'sheetBack'),
+    // artwork.js pokemonArtCrop: Pokémon's banner is the card picture cropped to its art window.
+    ...(heroArt && cls('pk-crop')(heroArt) ? {crop: 'pokemon'} : {}), ...(embs ? {emblems: embRow(embs)} : {})};
   const tabs = all(one(t, cls('cs-tabs')), tagIs('button')).map(b => ({key: b.attrs['data-tab'], label: text(b), on: cls('on')(b), icon: icon(svgIn(b))}));
   const tab = tabs.find(x => x.on)?.key || 'overview';
   // .cs-overview-head: emblems, the set and its progress, the quick price.
   const oh = one(t, cls('cs-overview-head')), setB = one(oh, cls('card-set-summary')), setI = one(setB, cls('set-icon')), setName = one(one(setB, cls('card-set-identity')), tagIs('b'));
-  const prog = one(setB, cls('set-collection-progress')), bar = one(prog, x => x.attrs.role === 'progressbar'), fill = one(bar, tagIs('span'));
+  const prog = one(setB, cls('set-collection-progress')), bar = one(prog, x => x.attrs.role === 'progressbar') || one(prog, cls('set-progress-track')), fill = one(bar, tagIs('span'));
+  const setImg = one(one(setB, cls('card-set-identity')), tagIs('img')), setSmall = one(one(setB, cls('card-set-identity')), tagIs('small'));
   const qa = one(oh, cls('card-price-actions'));
   const price = qa ? {buy: (b => b && {brand: text(one(b, cls('card-buy-brand'))), label: text({kids: (b.kids || []).filter(k => !cls('card-buy-brand')(k))}), href: b.attrs.href || '', title: b.attrs.title || '', aria: b.attrs['aria-label'] || ''})(one(qa, cls('card-buy-link'))),
     ref: (b => b && {value: text(one(b, tagIs('strong'))), label: text(one(b, tagIs('span'))), finish: text(one(b, tagIs('small'))), press: press(b)})(one(qa, cls('card-price-reference'))),
@@ -941,29 +978,40 @@ function cardPageModel(ctx) {
     set: setB ? {code: setB.attrs['data-code'] || '', act: setB.attrs['data-act'] || '', rarity: (classes(setI).find(c => c.startsWith('r-')) || 'r-common').slice(2), icon: urlIn(styleVar(setI, 'icon')), iconTitle: setI?.attrs.title || '',
       name: text({kids: (setName?.kids || []).filter(k => !cls('set-go')(k))}), go: !!one(setName, cls('set-go')), line: text(one(one(setB, cls('card-set-identity')), tagIs('small'))),
       progress: prog ? {eyebrow: text(one(prog, cls('eyebrow'))), label: text(one(one(one(prog, cls('set-progress-top')), tagIs('span')), x => x.tag === 'span' && !cls('eyebrow')(x))), pct: text(one(prog, tagIs('strong'))),
-        fill: Number(styleVar(fill, 'progress-to')) || 0, caption: text(one(prog, cls('set-progress-caption')))} : null} : null,
-    price};
+        // Yu-Gi-Oh!'s unverified card total draws no bar (tcg.js setProgress), only the count and its caption.
+        fill: Number(styleVar(fill, 'progress-to')) || 0, track: !!bar, caption: text(one(prog, cls('set-progress-caption')))} : null,
+      ...(setImg ? {picture: {src: [setImg.attrs.src, setImg.attrs['data-direct']].filter(Boolean).map(abs), kind: classes(setImg).find(x => ['ygo-pack', 'pks', 'set-logo'].includes(x)) || '', alt: setImg.attrs.alt || ''}} : {}),
+      ...(one(setSmall, x => cls('tset')(x) || x.tag === 'img') ? {parts: lineParts(setSmall)} : {}), ...(setI ? {} : {press: press(setB)})} : null,
+    price, ...(one(oh, cls('card-archetype')) ? {archetype: press(one(oh, cls('card-archetype')))} : {})};
   // Overview: the card, its finishes, its other printings; then the rules text and what you do with it.
-  const ov = one(t, x => x.attrs.id === 'card-panel-overview'), stack = one(ov, cls('cd-art-stack')), cdImg = one(stack, cls('cd-img')), zoom = one(cdImg, cls('cd-zoom')), img = one(zoom, tagIs('img'));
+  const ov = one(t, x => x.attrs.id === 'card-panel-overview'), pv = one(ov, cls('ygo-price-preview')), stack = one(ov, cls('cd-art-stack')), cdImg = one(stack, cls('cd-img')), zoom = one(cdImg, cls('cd-zoom')), img = one(zoom, tagIs('img'));
   let finishModel = null; try { finishModel = JSON.parse(cdImg?.attrs['data-finish-model'] || 'null'); } catch {}
   const fp = one(stack, cls('finish-preview')), pp = one(stack, cls('card-printing-preview')), flip = one(stack, x => x.attrs['data-act'] === 'flipFace');
-  const card = {image: img?.attrs.src || '', sources: sources(img), tier: styleVar(img, 'tier'), tierKey: img?.attrs['data-tier'] || '', zoom: zoom ? {src: zoom.attrs['data-src'] || '', hi: zoom.attrs['data-hi'] || '', art: zoom.attrs['data-art'] || '', aria: zoom.attrs['aria-label'] || ''} : null,
+  // Yu-Gi-Oh!'s pictures are the site's own (img/ygo/…): whole addresses, as the app loads them.
+  const card = {image: abs(img?.attrs.src || ''), sources: sources(img).map(abs), tier: styleVar(img, 'tier'), tierKey: img?.attrs['data-tier'] || '', zoom: zoom ? {src: abs(zoom.attrs['data-src'] || ''), hi: abs(zoom.attrs['data-hi'] || ''), art: abs(zoom.attrs['data-art'] || ''), aria: zoom.attrs['aria-label'] || ''} : null,
     finish: finishModel && {key: finishModel.key || '', label: finishModel.label || '', effect: finishModel.effect || cdImg?.attrs['data-finish-effect'] || ''},
+    // A Yu-Gi-Oh! or Pokémon card's foil as finish-preview.js models it (tcgTileModel's reading): the recipe, its masks, the Level-star foil.
+    ...(finishModel?.game && finishModel.game !== 'mtg' ? {tcgFinish: {effect: finishModel.effect || cdImg?.attrs['data-finish-effect'] || '', treatment: finishModel.treatment || '', mask: finishModel.layers?.[0]?.mask || '',
+      clip: finishModel.overlayProfiles?.[0]?.mask || '', stars: Number(finishModel.stars) || 0}} : {}),
     flip: flip ? press(flip) : null,
-    finishes: fp ? {label: text(one(fp, x => cls('small')(x) && cls('muted')(x) && !cls('finish-choice-hint')(x))), chips: all(fp, cls('finish-choice-chip')).map(b => ({finish: b.attrs['data-finish'] || '', label: text(b), on: cls('on')(b),
-      swatch: (classes(one(b, cls('rarity-swatch'))).find(c => c.startsWith('rarity-swatch-')) || '').slice(14)})), foot: text(one(fp, cls('foot')))} : null,
+    finishes: fp ? {label: text(one(fp, x => cls('small')(x) && cls('muted')(x) && !cls('finish-choice-hint')(x))), chips: all(fp, x => cls('finish-choice-chip')(x) || cls('ygo-rarity-chip')(x)).map(b => ({finish: b.attrs['data-finish'] || '', label: text(b), on: cls('on')(b),
+      swatch: (classes(one(b, cls('rarity-swatch'))).find(c => c.startsWith('rarity-swatch-')) || '').slice(14), ...(b.attrs['data-act'] !== 'cardFinish' ? {press: press(b)} : {})})), foot: text(one(fp, cls('foot')))} : null,
     profile: press(one(stack, cls('card-profile-photo'))),
     printings: pp ? {title: text(one(pp, tagIs('h3'))), more: press(one(one(pp, cls('row')), tagIs('button'))),
-      rows: all(pp, cls('card-printing-mini')).map(b => ({i: Number(b.attrs['data-i']), picture: picture(one(b, tagIs('img'))), name: text(one(b, tagIs('b'))), num: text(one(b, tagIs('small'))), aria: b.attrs['aria-label'] || '', on: cls('on')(b) || b.attrs['aria-current'] !== undefined})),
-      notes: (pp.kids || []).filter(k => k.tag === 'p' && !cls('foot')(k)).map(k => ({text: text(k), retry: press(one(k, tagIs('button')))})), foot: text(one(pp, x => x.tag === 'p' && cls('foot')(x)))} : null,
-    printingsShown: ctx.print?.id || c.id || ''};
+      rows: all(pp, cls('card-printing-mini')).map(b => ({i: b.attrs['data-i'] !== undefined ? Number(b.attrs['data-i']) : -1, picture: picture(one(b, tagIs('img'))), name: text(one(b, tagIs('b'))), num: text(one(b, tagIs('small'))), aria: b.attrs['aria-label'] || '', on: cls('on')(b) || b.attrs['aria-current'] !== undefined,
+        // img[data-tier] (style.css 2287): a 2 px ring in the price tier's colour inside the picture's box (#9aa3ad unless it says).
+        ...(one(b, tagIs('img'))?.attrs['data-tier'] ? {tierKey: one(b, tagIs('img')).attrs['data-tier'], tier: styleVar(one(b, tagIs('img')), 'tier') || '#9aa3ad'} : {}),
+        ...(b.attrs['data-i'] === undefined ? {press: press(b)} : {})})),
+      notes: (pp.kids || []).filter(k => k.tag === 'p' && !cls('foot')(k)).map(k => ({text: text(k), retry: press(one(k, tagIs('button')))})).filter(n => n.text || n.retry), foot: text(one(pp, x => x.tag === 'p' && cls('foot')(x)))} : null,
+  };
   const side = one(ov, cls('cs-card-side')), readable = one(side, cls('cs-readable')), disc = one(readable, cls('card-discovery'));
   const faces = all(readable, x => x.tag === 'section' && cls('cd-text')(x)).map(s => {
-    const multi = one(s, x => cls('row')(x) && cls('between')(x) && !cls('small')(x)), fl = one(s, cls('flavor')), foot = one(s, x => cls('row')(x) && cls('small')(x)), artist = one(foot, cls('card-artist'));
+    const multi = cls('pk')(s) ? null : one(s, x => cls('row')(x) && cls('between')(x) && !cls('small')(x)), fl = one(s, cls('flavor')), foot = one(s, x => cls('row')(x) && cls('small')(x)), artist = one(foot, cls('card-artist')) || one(s, cls('card-artist'));
     return {eyebrow: text(one(s, cls('effect-label'))), name: text(one(multi, tagIs('b'))), mana: all(one(multi, cls('mana')), tagIs('img')).map(i => ({src: i.attrs.src || '', alt: i.attrs.alt || ''})),
       type: multi ? text(one(s, x => x.tag === 'p' && cls('type-line')(x))) : '', lines: all(one(s, cls('oracle')), cls('effect-line')).map(richRuns),
       flavor: fl ? {label: text(one(fl, tagIs('small'))), text: text({kids: (fl.kids || []).filter(k => k.tag !== 'small')})} : null,
-      pt: text(one(foot, cls('pt'))), artist: artist ? {name: text(one(artist, tagIs('button'))) || text(artist).replace(/^🖌\s*/u, ''), press: press(one(artist, tagIs('button')))} : null};
+      pt: text(one(foot, cls('pt'))), artist: artist ? {name: text(one(artist, tagIs('button'))) || text(artist).replace(/^🖌\s*/u, ''), press: press(one(artist, tagIs('button')))} : null,
+      ...(cls('pk')(s) ? {pk: pkText(s)} : {}), ...(one(s, cls('logic-condition')) ? {logic: true} : {})};
   });
   const loading = one(readable, x => x.attrs.id === 'cardLoading');
   const deckPanel = one(side, x => cls('panel')(x) && cls('tight')(x)), legal = one(side, cls('deck-legal')), sec = one(side, cls('cs-secondary')), fact = one(sec, cls('fact'));
@@ -972,27 +1020,64 @@ function cardPageModel(ctx) {
     loading: loading ? {text: text({kids: (loading.kids || []).filter(k => k.tag !== 'button')}), retry: press(one(loading, tagIs('button')))} : null,
     rulesEntry: press(one(one(readable, cls('card-rules-entry')), tagIs('button'))),
     alert: (b => b && {title: text(one(b, tagIs('b'))), line: text(one(b, tagIs('small'))), press: press(b)})(one(side, cls('watch-status'))),
-    own: text(one(side, cls('own-line'))),
+    // Magic's line sits under the rules text; tcg.js puts it, muted, at the head of the collection and deck actions.
+    own: text(one(side, cls('own-line'))), ownInActions: !!one(one(side, cls('card-secondary-actions')), cls('own-line')), ownMuted: cls('muted')(one(side, cls('own-line')) || {attrs: {}}),
     legal: legal ? {level: ['ok-text', 'warn-text', 'bad-text'].find(c => cls(c)(legal))?.replace('-text', '') || '', ...(g => ({icon: g.icon, runs: runs({kids: [{text: g.label}]})}))(glyph(text({kids: (legal.kids || []).filter(k => !cls('muted')(k))}))),
       deck: text(one(legal, cls('muted')))} : null,
     deck: deckPanel ? {title: text(one(one(deckPanel, cls('row')), tagIs('b'))), qty: Number(text(one(one(deckPanel, cls('stepper')), tagIs('b')))) || 0,
       steps: all(one(deckPanel, cls('stepper')), tagIs('button')).map(press), remove: press(one(deckPanel, x => x.attrs['data-act'] === 'deckRemove'))} : null,
     chips: all(one(sec, cls('chips')), cls('chip')).map(x => ({label: text(x), role: (classes(x).find(k => k.startsWith('role-')) || '').slice(5), warn: cls('warn')(x)})),
-    fact: fact ? {label: text(one(fact, cls('fact-label'))), text: text(one(fact, tagIs('p')))} : null,
+    fact: fact ? {label: text(one(fact, cls('fact-label'))), text: rawText(all(fact, tagIs('p')).find(x => x.attrs.hidden === undefined) || one(fact, tagIs('p'))),
+      ...(all(fact, tagIs('p')).length > 1 ? {all: all(fact, tagIs('p')).map(rawText), next: press(one(fact, x => x.attrs['data-act'] === 'nextFact'))} : {})} : null,
+    ...(one(sec, cls('stat-grid')) ? {stats: (one(sec, cls('stat-grid')).kids || []).filter(k => k.tag).map(k => { const note = (k.kids || []).find(x => x.tag === 'span');
+      return {label: text(one(k, tagIs('small'))), value: text(one(k, tagIs('b'))), wide: k.attrs['data-stat-wide'] === 'true', ...(note ? {note: text(note), tone: toneOf(note) || (cls('muted')(note) ? 'muted' : '')} : {})}; })} : {}),
+    ...(one(sec, cls('stat-help')) ? {statHelp: {summary: text(one(one(sec, cls('stat-help')), tagIs('summary'))), runs: richRuns(one(one(sec, cls('stat-help')), tagIs('p')))}} : {}),
     research: {label: text(one(one(sec, cls('research')), cls('muted'))), links: (one(sec, cls('research'))?.kids || []).filter(k => k.tag === 'a' || k.tag === 'button').map(press)},
     owned: groups ? {aria: groups.attrs['aria-label'] || '', groups: all(groups, cls('owned-group')).map(g => ({lot: g.attrs['data-owned-group'] || '', label: text(one(g, cls('owned-group-label'))),
       qty: Number(text(one(one(g, cls('owned-copy-details')), tagIs('b')))) || 0, steps: all(one(g, cls('owned-pill')), x => x.tag === 'button' && x.attrs['data-act'] === 'cardOwnedQty').map(press), details: press(one(g, cls('owned-copy-details')))}))} : null,
     main: all(one(ca, cls('ca-main')), x => x.tag === 'button' || x.tag === 'a').map(press), more: all(one(ca, cls('ca-more')), x => x.tag === 'button' || x.tag === 'a').map(press)};
   const panel = id => one(t, x => x.attrs.id === 'card-panel-' + id);
   const metaP = panel('meta'), guideP = panel('guide'), guide = one(guideP, cls('card-guide')), pricesP = panel('prices');
-  return {game: 'mtg', name: ctx.name, deck: ctx.deckId || '', entry: ctx.entryId || '', tab, head, tabs, overviewHead, overview,
+  return {tab, head, tabs, overviewHead, overview: pv ? {...overview, selectors: pickers(pv)} : overview,
     meta: metaP ? {sections: all(metaP, cls('meta-use')).map(blocks), foot: text((metaP.kids || []).find(k => k.tag === 'p' && cls('foot')(k)))} : null,
     prices: pricesP ? pricesModel(pricesP) : null,
-    guide: guide ? {sections: (guide.kids || []).filter(k => k.tag).map(k => ({cls: k.attrs.class || '', panel: cls('guide-panel')(k), hero: cls('guide-hero')(k), blocks: k.tag === 'p' ? [{kind: cls('foot')(k) ? 'foot' : 'text', text: text(k), runs: richRuns(k)}] : blocks(k)}))} : null,
-    // The card the picture is drawn from (finish-preview.js reads the same record): the app's foil needs its frame and finishes.
-    shown: (({prices, legalities, purchase_uris, related_uris, all_parts, prints_search_uri, rulings_uri, ...rest}) => rest)(ctx.print || c),
-    busy: !!(ctx.detailsBusy || ctx.printsBusy || ctx.rulingsBusy || ctx.ownedLoading || S.ui.guide?.['mtg:' + c.name]?.loading),
-    glyphs: Object.fromEntries(['minus', 'plus', 'close', 'back', 'heart', 'heartOn'].map(k => [k, ICON[k] ? icon(svgIn(tree(ICON[k]))) : null]))};
+    guide: guide ? {sections: (guide.kids || []).filter(k => k.tag).map(k => ({cls: k.attrs.class || '', panel: cls('guide-panel')(k), hero: cls('guide-hero')(k), blocks: k.tag === 'p' ? [{kind: cls('foot')(k) ? 'foot' : 'text', text: text(k), runs: richRuns(k)}] : blocks(k)}))} : null};
+}
+// Text as written, hidden parts included (a fact the site keeps for "Another fact ›").
+const rawText = n => { if (!n) return ''; const walk = x => x.text !== undefined ? x.text : x.tag === 'svg' ? '' : (x.kids || []).map(walk).join(''); return walk(n).replace(/\s+/g, ' ').trim(); };
+// emblems.js gameEmblems: Yu-Gi-Oh!'s Level / Rank star or Link rating and Attribute orb, a Spell or Trap's property; Pokémon's energy orbs and HP.
+const embRow = n => (n?.kids || []).filter(k => k.tag).map(k => { if (k.tag === 'svg') return {icon: icon(k), label: k.attrs['aria-label'] || ''};
+  const lm = one(k, cls('link-mark'));
+  return cls('lvl')(k) ? {icon: icon(svgIn(k)), text: text({kids: (k.kids || []).filter(x => x !== lm)}), mark: text(lm), label: k.attrs['aria-label'] || ''} : {text: text(k), hp: cls('hp')(k)}; });
+// A line with Yu-Gi-Oh!'s set badge (emblems.js tcgSetBadge: code and rarity code) or Pokémon's rarity symbol among its words.
+const tsetOf = k => { const rx = one(k, cls('rx-code'));
+  return {tone: classes(k).find(x => ['secret', 'ultra', 'super', 'rare', 'common'].includes(x)) || '', code: text(one(k, tagIs('b'))),
+    rarity: rx ? {text: text(rx), kind: (classes(rx).find(x => x.startsWith('rx-') && x !== 'rx-code') || 'rx-common').slice(3)} : null, title: k.attrs.title || ''}; };
+const lineParts = n => { const out = []; for (const k of n?.kids || []) {
+  if (k.text !== undefined) { const t = k.text.replace(/\s+/g, ' '); if (t.trim()) out.push({t}); }
+  else if (cls('tset')(k)) out.push({tset: tsetOf(k)});
+  else if (k.tag === 'img') out.push({img: [k.attrs.src, k.attrs['data-direct']].filter(Boolean).map(abs), alt: k.attrs.alt || '', ink: cls('ink')(k), kind: k.attrs.class || ''});
+  else if (k.tag !== 'svg') { const t = text(k); if (t) out.push({t, b: k.tag === 'b'}); } }
+  return out; };
+// workbench-ui.js's Printing & rarity and Edition pickers (ygoPreviewSelectors, the price hero's .price-selectors).
+const pickers = n => ({selects: all(n, tagIs('label')).filter(l => one(l, tagIs('select'))).map(l => { const sel = one(l, tagIs('select'));
+  return {title: text({kids: (l.kids || []).filter(x => x !== sel)}), name: sel.attrs['data-change'] || '', aria: sel.attrs['aria-label'] || '', options: optionsOf(sel)}; }),
+  foot: text((n.kids || []).find(k => k.tag === 'p' && cls('foot')(k)))});
+// A line of Pokémon text with its energy orbs in place: {t} words, {icon, label} an orb.
+const orbRuns = n => { const out = []; const walk = x => { for (const k of x.kids || []) {
+  if (k.text !== undefined) { const t = k.text.replace(/\s+/g, ' '); if (t) out.push({t}); }
+  else if (k.tag === 'svg') out.push({icon: icon(k), label: k.attrs['aria-label'] || ''});
+  else walk(k); } }; walk(n || {kids: []}); if (out[0]?.t) out[0].t = out[0].t.replace(/^\s+/, ''); const z = out[out.length - 1]; if (z?.t) z.t = z.t.replace(/\s+$/, ''); return out.filter(r => !r.t || r.t.length); };
+// tcg.js pokemonText: Evolves from, the Abilities and attacks (with their Energy costs and damage), the card's own rules text, then the
+// Weakness / Resistance / Retreat strip.
+function pkText(s) {
+  const evo = one(s, cls('card-evolution'));
+  return {evolves: evo ? {label: text(one(evo, cls('muted'))), name: text(one(evo, tagIs('b')))} : null,
+    abilities: all(s, cls('pk-ability')).map(a => ({tag: text(one(a, cls('pk-tag'))), name: text((a.kids || []).find(k => k.tag === 'b')), runs: richRuns(one(a, tagIs('p')))})),
+    attacks: all(s, cls('pk-attack')).map(a => { const r = one(a, cls('row')), name = one(one(r, cls('row')), x => x.tag === 'b');
+      return {costs: all(one(r, cls('costs')), tagIs('svg')).map(x => ({icon: icon(x), label: x.attrs['aria-label'] || ''})), name: text(name), damage: text(one(r, cls('dmg'))), runs: richRuns(one(a, tagIs('p')))}; }),
+    rules: (s.kids || []).filter(k => cls('oracle')(k)).map(k => k.tag === 'p' ? [richRuns(k)] : all(k, cls('effect-line')).map(richRuns)).flat(),
+    strip: all(one(s, cls('pk-strip')), tagIs('span')).filter(x => !cls('energy-txt')(x)).map(orbRuns)};
 }
 
 let job = 0, status = {busy: false, step: '', error: null};
@@ -1057,8 +1142,128 @@ function packPickModel(P, i) {
   return {id: String(c.id ?? ''), name: c.name || '', image: abs(setImageUrl(art)), rarity: rarity.label, rank: rarity.rank,
     finish: game === 'mtg' ? pulled.finish || '' : pulled.priceFinish || '', finishLabel: packFinishLabel(game, pulled, rarity.label),
     tier: tier ? tier.key : 'tn', tierColor: tier ? tier.color : '#8b939c', level: PACK_FEELS.indexOf(feel),
-    worth: trusted || price || 0, setI, card: game === 'mtg' ? c : null};
+    worth: trusted || price || 0, setI, card: game === 'mtg' ? c : null, ...(game === 'mtg' ? {} : packTcgPick(P, c, pulled))};
 }
+// A Yu-Gi-Oh! or Pokémon pull: its foil (finishAttrs(game, c, ctx, 'pack'), as the dialog's face reads it, in tcgTileModel's shape)
+// and how pack-preview.js onDetails opens it (A.tCard's dataset: the set, the finish it came out in, a Yu-Gi-Oh! printing).
+function packTcgPick(P, c, pulled) {
+  const game = P.game, i = one(tree(`<i ${finishAttrs(game, c, pulled, 'pack')}></i>`), tagIs('i'));
+  let f = null; try { f = JSON.parse(i?.attrs['data-finish-model'] || 'null'); } catch {}
+  // rarity-emblem.js rarityEmblem(game, label): the pill's colour family, and Pokémon's printed rarity mark (img.pkr or span.rar).
+  const label = packRarity(game, c).label, mk = game === 'ptcg' ? tree(pkRarity(label)) : null, img = one(mk, cls('pkr')), rar = one(mk, cls('rar'));
+  const rx = {kind: rarityKind(game, label), mark: img ? {src: [img.attrs.src, img.attrs['data-direct']].filter(Boolean).map(abs), ink: cls('ink')(img), alt: img.attrs.alt || ''}
+    : rar ? {text: text(rar), gold: cls('gold')(rar)} : null};
+  return {rx, tcgFinish: f && {effect: f.effect || i.attrs['data-finish-effect'] || '', treatment: f.treatment || '', mask: f.layers?.[0]?.mask || '', clip: f.overlayProfiles?.[0]?.mask || '',
+      stars: Number(f.stars) || 0, frame: String(c.frame || c.cardType || c.typeLine || '')},
+    open: {game, id: String(c.id), setId: String(P.set?.id ?? ''), ...(pulled.priceFinish ? {setVariant: pulled.priceFinish} : {}),
+      ...(game === 'ygo' && c.setContext?.printing ? {printing: c.setContext.printing.code + '::' + c.setContext.printing.rarity} : {})}};
+}
+// A Yu-Gi-Oh! or Pokémon pack's looks (openPackPreview): its emblem (setEmblems), its template art (packTemplateArt: the art, its
+// focus, Pokémon's logo, Yu-Gi-Oh!'s set code), the pictures behind it (packArtSources, then setArtworkSources) and the card back.
+function packTcgLook(P) {
+  const {game, set} = P, tpl = packTemplateArt(game, set);
+  return {emblems: (game === 'ptcg' ? pkCatalogueSymbolSources(set) : []).map(abs),
+    template: tpl && {art: abs(String(tpl.art).replace(/^\.\//, '')), x: tpl.x, y: tpl.y, logo: abs(tpl.logo || ''), sub: tpl.sub || ''},
+    sources: [...packArtSources(game, set, packArtUrl(game, set)), ...setArtworkSources(game, set, P.picks?.[0])].filter(Boolean).map(abs),
+    back: abs(`/img/back/${game}.jpg`)};
+}
+// ---------------------------------------------------------------- a Yu-Gi-Oh! or Pokémon card's page (tcg.js tcgCardSheet)
+// tcg.js A.tCard (tcg.js:2349) without the DOM: the sheet's context as the site builds it from the pressed element's dataset (o), then
+// the full card (ensureCard), Pokémon's other printings (an exact-name search, newest first) and the game's set list (ctx.loadSets).
+let tsheet = null;
+function tcardOpen(o) {
+  const G = o.game === 'ptcg' ? 'ptcg' : 'ygo', id = String(o.id || '');
+  const as = JSON.stringify([G, id, o.entry || '', o.setId || '', o.setVariant || '', o.printing || '', o.edition || '', o.deck || '', o.pack ?? '']);
+  tcgFocus(G, S.ui.view || 'set', S.ui.tsetId || '');
+  if (tsheet && tsheet.openedAs === as && S.ui.sheetCtx === tsheet) return tsheet;
+  const lot = o.entry ? tcgGs(G).collection.find(e => e.id === o.entry && String(e.cardId) === id) : null,
+    setId = o.setId || (G === 'ygo' ? lot?.setReleaseId : '') || '', setReleaseUnverified = !!(G === 'ygo' && lot?.setReleaseUnverified),
+    sctx = {type: 'tcard', game: G, id, setId, setReleaseUnverified, previewBusy: G === 'ptcg', previewMore: null, previewError: '', setVariant: o.setVariant || lot?.variant || '', priceFinish: o.setVariant || lot?.variant || '',
+      priceEdition: G === 'ygo' ? (o.printing || (lot?.printing && lot?.rarity ? lot.printing + '::' + lot.rarity : '')) : '', priceYgoEdition: G === 'ygo' ? (o.edition || lot?.edition || '') : '',
+      entryId: lot?.id || '', savedVariant: lot?.variant || '', savedProductId: lot?.productId || '', random: false, deckId: o.deck || null, openedAs: as};
+  if (G === 'ygo' && o.ygoPurchase === '1' && Object.hasOwn(o, 'edition')) sctx.ygoEditionExplicit = true;
+  const sourceMembership = tcgUi(G).set.info?.id === sctx.setId ? tcgUi(G).set.cards.find(card => card.id === id)?.setContext : null;
+  if (sourceMembership?.membership === 'set-response' && sourceMembership.game === G && sourceMembership.cardId === id && sourceMembership.releaseId === sctx.setId) sctx.setMembership = {...sourceMembership};
+  tsheet = S.ui.sheetCtx = sctx;
+  return sctx;
+}
+// tcg.js remember() for a search's brief printings: a card already known in full stays the full one; a new one joins the cache.
+const rememberPrint = c => { const prev = tcgCache[c.game]?.[c.id]; if (c.brief && prev && !prev.brief) return prev; if (tcgCache[c.game] && !prev) tcgCache[c.game][c.id] = c; return c; };
+async function tcardLoad(sctx) {
+  const G = sctx.game, still = () => tsheet === sctx && S.ui.sheetCtx === sctx;
+  try {
+    const card = await tcgEnsureCard(G, sctx.id);
+    if (!still()) return;
+    if (G === 'ptcg') {
+      sctx.previewBusy = true;
+      try {
+        const result = await tcgSources.ptcg.search({q: card.name, sort: 'new', page: 0, exactName: true});
+        if (!still()) return;
+        if (!Array.isArray(result?.cards)) throw Error('The printing database returned an invalid result.');
+        sctx.previewPrints = result.cards.filter(p => p?.id && p.game === 'ptcg' && String(p.name || '').normalize('NFC').toLowerCase() === card.name.normalize('NFC').toLowerCase()).map(rememberPrint);
+        sctx.previewMore = !!result.more; sctx.previewError = '';
+      } catch (e) { if (still()) sctx.previewError = e.message || 'Printings could not load.'; }
+      finally { if (still()) sctx.previewBusy = false; }
+    }
+    if (!tcgUi(G).sets.list.length) await tcgCtx.loadSets(G).catch(() => {});
+    if (still()) await tcardTabLoads(sctx);
+  } catch (e) { if (still()) sctx.error = e.message || 'Couldn’t load card'; }
+}
+// app.js contextTcgCard (829-838): the card as this sheet shows it, projected into the set it was opened from.
+function contextTcgCard(game, id, ctx = tsheet) {
+  if (!['ptcg', 'ygo'].includes(game)) return null;
+  const card = tcgCardOf(game, id);
+  if (!card || (card.game && card.game !== game)) return null;
+  const contextId = ctx?.id ?? ctx?.card?.id;
+  const scoped = ['tcard', 'tadd', 'market'].includes(ctx?.type) && ctx.game === game && String(contextId) === String(id);
+  const membership = ctx?.setMembership;
+  const source = scoped && membership?.membership === 'set-response' && membership.game === game && String(membership.cardId) === String(id) && membership.releaseId === ctx.setId ? {...card, setContext: membership} : card;
+  return scoped && (ctx.setId || ctx.setReleaseUnverified) ? tcgSetContextCard(game, source, ctx.setId, game === 'ygo' ? tcgYgoCatalogue() : tcgUi(game).sets.list, {variantKey: ctx.setVariant || '', unverifiedRelease: !!ctx.setReleaseUnverified}) : card;
+}
+// The sheet's own controls, as app.js (cardTab, cardFinishPreview, ygoPickRarity, cardPriceJump) and workbench-ui.js (historyEdition,
+// historyYgoEdition and their overview twins, marketRange, marketSource) handle them; the redraw is the app's.
+const ygoPrinting = (sctx, v) => { sctx.priceEdition = v; sctx.priceYgoEdition = ''; sctx.ygoPrintingExplicit = true; sctx.ygoEditionExplicit = false; delete sctx.ygoPriceDefault; };
+const ygoEdition = (sctx, v) => { sctx.priceYgoEdition = v; sctx.ygoEditionExplicit = true; delete sctx.ygoPriceDefault; };
+const tcardAct = {
+  tab: v => {
+    const sctx = tsheet; if (!['overview', 'meta', 'guide', 'prices', 'rulings', 'legal'].includes(v)) return;
+    sctx.tab = ['legal', 'rulings'].includes(v) ? 'guide' : v;
+    // As the Magic sheet: the quote shown is recorded in the account's market history for this visit only (the app's copy isn't saved back).
+    if (sctx.tab === 'prices') { const c = contextTcgCard(sctx.game, sctx.id, sctx); if (c) recordQuote(S.state, quoteModel(sctx.game, c, selectedFinish(sctx.game, c, sctx.priceFinish), sctx.priceEdition, sctx.priceYgoEdition)); }
+  },
+  finish: v => { const sctx = tsheet, c = contextTcgCard(sctx.game, sctx.id, sctx); if (c) selectPreviewFinish(sctx.game, c, sctx, v); },
+  rarity: v => { const sctx = tsheet; if (sctx.game === 'ygo' && v) ygoPrinting(sctx, v); },
+  // A picker's change: {name: its data-change, value}.
+  select: v => {
+    const sctx = tsheet, {name, value} = JSON.parse(v);
+    if (['historyEdition', 'ygoPreviewPrinting'].includes(name)) { if (name === 'historyEdition' || sctx.game === 'ygo') ygoPrinting(sctx, value); }
+    else if (['historyYgoEdition', 'ygoPreviewEdition'].includes(name)) { if (name === 'historyYgoEdition' || sctx.game === 'ygo') ygoEdition(sctx, value); }
+  },
+  jump: v => {
+    const sctx = tsheet, G = sctx.game, c = contextTcgCard(G, sctx.id, sctx);
+    if (v && c) { sctx.priceFinish = selectedFinish(G, c, v); if (sctx.setId && G === 'ptcg') sctx.setVariant = sctx.priceFinish; }
+    tcardAct.tab('prices');
+  },
+  range: v => { if (HISTORY_RANGES.some(([r]) => r === v)) tsheet.priceRange = v; },
+  historySource: v => { const {key, source} = JSON.parse(v); (S.ui.historySource ||= {})[key] = source; },
+};
+// What the open tab looks up as it opens: the Play guide's pairings (tcg.js guideLoad), the shown quote's price history.
+async function tcardTabLoads(sctx) {
+  const G = sctx.game, c = contextTcgCard(G, sctx.id, sctx); if (!c) return;
+  if (sctx.tab === 'guide') await tcgCtx.guideLoad?.(G, c);
+  if (sctx.tab === 'prices') await loadSharedHistory(quoteForContext(G, c, sctx)).catch(() => {});
+}
+// The sheet as tcgCardSheet draws it now (it settles the Yu-Gi-Oh! printing and edition into the context as the site's redraw does).
+function tcardModel() {
+  const sctx = tsheet; if (!sctx) return {missing: true};
+  const G = sctx.game, c = tcgCardOf(G, sctx.id);
+  if (!c) return {game: G, id: sctx.id, name: '', loading: !sctx.error, notice: sctx.error || ''};
+  const m = sheetModel(tree(tcgCardSheet(c, sctx)));
+  if (m.overview?.card?.tcgFinish) m.overview.card.tcgFinish.frame = String(c.frame || c.cardType || c.typeLine || '');
+  return {game: G, id: String(c.id), name: c.name, deck: sctx.deckId || '', entry: sctx.entryId || '', setId: sctx.setId || '', ...m, notice: sctx.error || '',
+    busy: !!(sctx.previewBusy || c.brief || S.ui.guide?.[G + ':' + c.id]?.loading), glyphs: sheetGlyphs()};
+}
+const tcardHtml = () => { const sctx = tsheet, c = sctx && tcgCardOf(sctx.game, sctx.id); return c ? tcgCardSheet(c, sctx) : ''; };
 function packModel() {
   const P = pack; if (!P) return {};
   const {game, set} = P, picks = P.picks || [], lines = picks.map(c => `1 ${c.name}`), n = lines.reduce((a, l) => a + (parseInt(l, 10) || 1), 0);
@@ -1066,6 +1271,7 @@ function packModel() {
     note: P.booster ? 'Free preview drawn from this set’s real booster sheets and pull rates (MTGJSON). Nothing is added to your collection.' : 'Free preview with approximate pull rates, not a real booster. Nothing is added to your collection.',
     done: picks.godPack ? godPackText(game) : picks.collector ? collectorText(picks) : '',
     picks: picks.map((_, i) => packPickModel(P, i)),
+    ...(game === 'mtg' ? {} : packTcgLook(P)),
     // buy.js buyOnTcgplayer(game, lines, {what: 'preview cards; check exact printings'}): the list is copied, then TCGplayer's Mass Entry.
     shop: {lines, title: 'Shopping list copied', text: `${n} preview cards; check exact printings (${lines.length} line${lines.length === 1 ? '' : 's'}) are on your clipboard. On TCGplayer, paste them into Mass Entry and tap Add to cart.`,
       failTitle: 'Couldn\'t copy', failText: 'Your browser blocked the clipboard. On TCGplayer, open Mass Entry and type the list, or copy it from the deck page.', ok: 'Open TCGplayer', cancel: 'Done', url: massEntryUrl(game)}};
@@ -1120,6 +1326,11 @@ globalThis.Collection = {
   card(game, opts) { mtgFocus(); const ctx = cardOpen(JSON.parse(opts)); return json(cardPageModel(ctx)); },
   cardModel() { return sheet ? json(cardPageModel(sheet)) : '{}'; },
   cardHtml() { const ctx = sheet, c = ctx && (ctx.print || meta(ctx.name)); return c ? cardView(c, ctx) : ''; },
+  tcard(opts) { tcgReady(); const o = JSON.parse(opts); if (o.pack != null && o.pack !== '') { const pick = pack?.picks?.[Number(o.pack)]; if (pick) Object.assign(o, {game: pack.game, id: String(pick.id), setId: String(pack.set?.id ?? '')}); } tcardOpen(o); return json(tcardModel()); },
+  tcardLoad() { const sctx = tsheet; if (sctx) tcardLoad(sctx); },
+  tcardHtml,
+  tcardModel() { return json(tcardModel()); },
+  tcardDo(kind, value) { if (!tcardAct[kind] || !tsheet) throw Error('unknown card control ' + kind); tcardAct[kind](value); if (['tab', 'finish', 'rarity', 'select', 'jump'].includes(kind)) tcardTabLoads(tsheet).catch(() => {}); return json(tcardModel()); },
   cardLoad() { const ctx = sheet; if (!ctx) return; (async () => { if (ctx.ownedLoading) await ownedLoad(ctx); if (!ctx.blocked && still(ctx)) { if (!(ctx.print || meta(ctx.name))) await resolveNames([ctx.name], () => {}, false, () => still(ctx)).catch(() => {}); await Promise.all([cardExtras(ctx), cardTabLoads(ctx), loadSetIndex()]); } })(); },
   // A.cardTab starts the tab's lookups (the guide's pairings and rulings, the price history); a finish or printing changes the quote.
   cardDo(kind, value) { if (!cardAct[kind] || !sheet) throw Error('unknown card control ' + kind); cardAct[kind](value); if (['tab', 'finish', 'print'].includes(kind)) cardTabLoads(sheet).catch(() => {}); return json(cardPageModel(sheet)); },

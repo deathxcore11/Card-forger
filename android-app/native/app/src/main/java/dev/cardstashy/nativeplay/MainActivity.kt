@@ -87,6 +87,8 @@ private const val NATIVE_SETS = true
 private const val NATIVE_TCG_SETS = true
 /** Open Pack on a Magic set page drawn natively (the site's own draw in the app's pack opener, with its price frames); off, it opens the website's. On since Randall's yes (5 Nov). */
 private const val NATIVE_PACK = true
+/** Yu-Gi-Oh! and Pokémon card pages and their Open Pack, drawn natively from the site's tcg.js and pack-preview.js. On since Randall's "turn on all" (5 Nov). */
+private const val NATIVE_TCG_CARDS = true
 
 private sealed interface Screen {
     data object Home : Screen
@@ -350,7 +352,7 @@ private fun App(activity: MainActivity) {
                 onDecks = { if (NATIVE_DECKS) go(Screen.CollectionDecks) else go(Screen.Web("https://cardstashy.com/#decks", null)) },
                 // "‹ All sets" goes back when the list opened this set, as the site's back does.
                 onSets = { if (trail.getOrNull(trail.size - 2) == Screen.CollectionSets(s.game)) back() else go(Screen.CollectionSets(s.game)) },
-                onSet = { code -> go(Screen.CollectionSet(code)) }, web = { url, press -> go(Screen.Web(url, press)) }, nativeCard = NATIVE_CARD, nativePack = NATIVE_PACK,
+                onSet = { code -> go(Screen.CollectionSet(code, s.game)) }, web = { url, press -> go(Screen.Web(url, press)) }, nativeCard = NATIVE_CARD, nativePack = NATIVE_PACK, nativeTcgCards = NATIVE_TCG_CARDS,
                 // Another game's tab: its set list here when those are native, else the website's.
                 onGame = { g -> if (g == "mtg" || NATIVE_TCG_SETS) swap(Screen.CollectionSets(g)) else go(Screen.Web("https://cardstashy.com/#sets", "[data-act=\"setGame\"][data-game=\"$g\"]")) })
         }

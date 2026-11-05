@@ -104,6 +104,7 @@ import androidx.compose.ui.platform.LocalView
 import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.text.TextStyle
+import androidx.compose.ui.text.withStyle
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.Dp
@@ -155,7 +156,23 @@ class Pull(val id: String, val name: String, val rarity: String, val image: Stri
  */
 class PullSim(val rank: Int, val level: Int, val tier: String, val tierColor: Color, val finish: String, val finishLabel: String, val worth: Double,
               /** Its place in the set page's cards (data-set-i), or -1 for a card from another sheet. */
-              val setI: Int, val card: JsonObject?)
+              val setI: Int, val card: JsonObject?,
+              /** A Yu-Gi-Oh! or Pokémon pull: its foil (finishAttrs(game, c, ctx, 'pack')) and A.tCard's dataset for its card page. */
+              val tcgFinish: TcgFinish? = null, val open: JsonObject? = null, val rx: PackRx? = null)
+
+/** rarity-emblem.js rarityEmblem for Yu-Gi-Oh! and Pokémon: the pill's colour family and Pokémon's printed mark (a picture, or text). */
+class PackRx(val kind: String, val markSrc: List<String>, val markInk: Boolean, val markText: String, val markGold: Boolean)
+
+/** A Yu-Gi-Oh! or Pokémon pack's looks (openPackPreview): its emblem, its template art, the pictures behind that, its card back. */
+class PackLook(val emblems: List<String>, val template: PackTplArt?, val sources: List<String>, val back: String)
+/** pack-wrappers.js packTemplateArt for Yu-Gi-Oh! and Pokémon: the art and its focus, Pokémon's set logo, Yu-Gi-Oh!'s set code. */
+class PackTplArt(val art: String, val x: Float, val y: Float, val logo: String, val sub: String)
+
+/** The pack's accent (the site's var(--gold): Yu-Gi-Oh!'s violet, Pokémon's coral in their simulators). */
+internal val LocalPackGold = androidx.compose.runtime.staticCompositionLocalOf<Color?> { null }
+/** The open pack, for the parts drawn far below PackOpening (its card back, its band). */
+internal val LocalPackResult = androidx.compose.runtime.staticCompositionLocalOf<PackResult?> { null }
+@Composable internal fun packGold(): Color = LocalPackGold.current ?: Site.Gold
 
 /** buy.js buyOnTcgplayer for the simulator's pack: the list it copies and the ask that follows. */
 class PackShop(val lines: List<String>, val title: String, val text: String, val failTitle: String, val failText: String, val ok: String, val cancel: String, val url: String)
@@ -165,25 +182,38 @@ val TIER_COLORS = listOf(0xFF9AA3AD, 0xFF4FD18B, 0xFF4AA3FF, 0xFFB46CFF, 0xFFFFC
 
 class PackResult(val set: String, val name: String, val pulls: List<Pull>, val note: String, val done: String,
                  /** The set page's Open Pack simulator (not Play): its Shop list. */
-                 val shop: PackShop? = null)
+                 val shop: PackShop? = null,
+                 /** The simulator's game, and a Yu-Gi-Oh! or Pokémon pack's looks. */
+                 val game: CardGame = CardGame.MTG, val look: PackLook? = null)
 
 /** Collection.packModel(): the simulator's pack, drawn by the site's own code (pack-preview.js / mtg-boosters.js). */
 fun simPack(j: JsonObject): PackResult {
     fun JsonObject.s(k: String) = get(k)?.takeIf { it.isJsonPrimitive }?.asString ?: ""
     fun JsonObject.i(k: String) = get(k)?.takeIf { it.isJsonPrimitive }?.asInt ?: 0
     fun JsonObject.d(k: String) = get(k)?.takeIf { it.isJsonPrimitive }?.asDouble ?: 0.0
+    fun JsonObject.f(k: String) = get(k)?.takeIf { it.isJsonPrimitive }?.asFloat ?: 0f
+    fun JsonObject.list(k: String) = getAsJsonArray(k)?.mapNotNull { it.takeIf { e -> e.isJsonPrimitive }?.asString }.orEmpty()
+    val game = CardGame.of(j.s("game"))
     val pulls = j.getAsJsonArray("picks")?.mapNotNull { it as? JsonObject }.orEmpty().map { c ->
         val color = runCatching { Color(android.graphics.Color.parseColor(c.s("tierColor"))) }.getOrDefault(Color(0xFF8B939C))
-        Pull(c.s("id"), c.s("name"), c.s("rarity"), c.s("image"), "", c.s("finish").isNotBlank(),
-            PullSim(c.i("rank"), c.i("level").coerceIn(0, 5), c.s("tier"), color, c.s("finish"), c.s("finishLabel"), c.d("worth"), c.get("setI")?.takeIf { it.isJsonPrimitive }?.asInt ?: -1, c.get("card") as? JsonObject))
+        val tf = (c.get("tcgFinish") as? JsonObject)?.let { TcgFinish(it.s("effect"), it.s("treatment"), it.s("mask"), it.s("clip"), it.f("stars"), it.s("frame")) }
+        // A Yu-Gi-Oh! or Pokémon pull is shiny when its finish is (the site's pack-foil: an effect that isn't plain).
+        val foil = if (game == CardGame.MTG) c.s("finish").isNotBlank() else tf != null && tf.effect !in setOf("", "plain", "unknown")
+        Pull(c.s("id"), c.s("name"), c.s("rarity"), c.s("image"), "", foil,
+            PullSim(c.i("rank"), c.i("level").coerceIn(0, 5), c.s("tier"), color, c.s("finish"), c.s("finishLabel"), c.d("worth"), c.get("setI")?.takeIf { it.isJsonPrimitive }?.asInt ?: -1, c.get("card") as? JsonObject,
+                tf, c.get("open") as? JsonObject, (c.get("rx") as? JsonObject)?.let { r -> val m = r.get("mark") as? JsonObject
+                    PackRx(r.s("kind"), m?.list("src").orEmpty(), m?.get("ink")?.asBoolean == true, m?.s("text").orEmpty(), m?.get("gold")?.asBoolean == true) }))
     }
+    val look = if (game == CardGame.MTG) null else PackLook(j.list("emblems"),
+        (j.get("template") as? JsonObject)?.let { PackTplArt(it.s("art"), it.f("x"), it.f("y"), it.s("logo"), it.s("sub")) }, j.list("sources"), j.s("back"))
     val shop = j.getAsJsonObject("shop")?.let { o -> PackShop(o.getAsJsonArray("lines")?.mapNotNull { it.takeIf { e -> e.isJsonPrimitive }?.asString }.orEmpty(),
         o.s("title"), o.s("text"), o.s("failTitle"), o.s("failText"), o.s("ok"), o.s("cancel"), o.s("url")) }
-    return PackResult(j.s("code"), j.s("name"), pulls, j.s("note"), j.s("done"), shop ?: PackShop(emptyList(), "", "", "", "", "", "", ""))
+    return PackResult(j.s("code"), j.s("name"), pulls, j.s("note"), j.s("done"), shop ?: PackShop(emptyList(), "", "", "", "", "", "", ""), game, look)
 }
 /** The pack shown while the server rolls it (no cards yet). */
 const val LOADING = "\u0000loading"
-fun loadingPack(set: String, name: String) = PackResult(set, name, emptyList(), LOADING, "")
+fun loadingPack(set: String, name: String, game: CardGame = CardGame.MTG) =
+    PackResult(set, name, emptyList(), LOADING, "", game = game, look = if (game == CardGame.MTG) null else PackLook(emptyList(), null, emptyList(), ""))
 
 /** The open route's answer, read the way app.js econPicks / econCollector / econOpened read it. */
 fun packResult(out: JsonObject, name: String): PackResult {
@@ -358,6 +388,8 @@ fun PackOpening(first: PackResult, onNext: (suspend () -> PackResult?)?, onClose
         try { progress.collect { backPull = it.progress }; Feel.cancel(context); onClose() } catch (e: CancellationException) { backPull = 0f; throw e }
     }
 
+    androidx.compose.runtime.CompositionLocalProvider(LocalPackResult provides pack, LocalPackGold provides pack.look?.let { pack.game.gold }) {
+    val gold = packGold()
     Box(Modifier.fillMaxSize().graphicsLayer { val k = 1f - .1f * backPull; scaleX = k; scaleY = k; alpha = 1f - .35f * backPull; shape = RoundedCornerShape((26 * backPull).dp); clip = backPull > 0f }
         .background(Color(0xE605060B)).clickable(remember { MutableInteractionSource() }, null) {}) {
         // .pack-dialog on a phone: width 100 % - 20 px, max-height 100dvh - 16 px, radius 20, border var(--line),
@@ -365,7 +397,7 @@ fun PackOpening(first: PackResult, onNext: (suspend () -> PackResult?)?, onClose
         val panel = RoundedCornerShape(20.dp)
         Column(Modifier.fillMaxSize().statusBarsPadding().navigationBarsPadding().padding(horizontal = 10.dp, vertical = 8.dp)
             .clip(panel).background(Site.Bg).drawBehind {
-                val mix = lerp(Site.Bg, Site.Gold, .09f)
+                val mix = lerp(Site.Bg, gold, .09f)
                 scale(1f, (size.height * .7f) / (size.width * 1.2f), pivot = Offset(size.width / 2, 0f)) {
                     drawRect(Brush.radialGradient(0f to mix, .6f to Site.Bg, center = Offset(size.width / 2, 0f), radius = size.width * 1.2f),
                         topLeft = Offset(0f, 0f), size = Size(size.width, size.height * (size.width * 1.2f) / (size.height * .7f)))
@@ -379,7 +411,10 @@ fun PackOpening(first: PackResult, onNext: (suspend () -> PackResult?)?, onClose
                 val pl = m.measure(c.copy(minWidth = c.minWidth + r, maxWidth = c.maxWidth + r))
                 layout(c.maxWidth, (pl.height - up).coerceAtLeast(0)) { pl.place(0, -up) } }) {
                 Row(Modifier.weight(1f), verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(10.dp)) {
-                    SetIcon(pack.set, Modifier.size(30.dp), tint = Color.White)
+                    // setEmblems: Magic's set symbol in white; Pokémon's set symbol (invert + hue-rotate 180°); none for Yu-Gi-Oh!.
+                    val look = pack.look
+                    if (look == null) SetIcon(pack.set, Modifier.size(30.dp), tint = Color.White)
+                    else if (look.emblems.isNotEmpty()) PkSymbol(look.emblems, 30.dp)
                     Text(pack.name, Modifier.weight(1f).semantics { contentDescription = if (pack.note == LOADING) "${pack.name}. Opening…" else "${pack.name}. ${pack.note}" }, maxLines = 1, overflow = TextOverflow.Ellipsis,
                         style = TextStyle(fontFamily = Site.Manrope, fontWeight = FontWeight.ExtraBold, fontSize = 17.sp, lineHeight = 20.sp, letterSpacing = .01.em, color = Site.Text))
                 }
@@ -407,7 +442,7 @@ fun PackOpening(first: PackResult, onNext: (suspend () -> PackResult?)?, onClose
                     },
                     onNext = if (onNext != null) ::next else null, busy = busy, drift = { drift.value })
             }
-            Text(status, Modifier.fillMaxWidth().heightIn(min = 16.dp).padding(top = 2.dp), style = TextStyle(fontFamily = Site.Body.fontFamily, fontSize = 11.5.sp, lineHeight = 17.sp, color = Site.Gold, textAlign = TextAlign.Center))
+            Text(status, Modifier.fillMaxWidth().heightIn(min = 16.dp).padding(top = 2.dp), style = TextStyle(fontFamily = Site.Body.fontFamily, fontSize = 11.5.sp, lineHeight = 17.sp, color = gold, textAlign = TextAlign.Center))
         }
         // buy.js buyOnTcgplayer: the pack's list goes to the clipboard, then the ask: Open TCGplayer (Mass Entry) or Done.
         if (shopAsk) pack.shop?.let { sh ->
@@ -417,7 +452,7 @@ fun PackOpening(first: PackResult, onNext: (suspend () -> PackResult?)?, onClose
                 title = { Text(if (copied) sh.title else sh.failTitle, style = TextStyle(fontFamily = Site.Body.fontFamily, fontWeight = FontWeight.Bold, fontSize = 17.sp, color = Site.Text)) },
                 text = { Text(if (copied) sh.text else sh.failText, style = TextStyle(fontFamily = Site.Body.fontFamily, fontSize = 14.sp, lineHeight = 20.sp, color = Site.Muted)) },
                 confirmButton = { androidx.compose.material3.TextButton({ shopAsk = false; runCatching { context.startActivity(android.content.Intent(android.content.Intent.ACTION_VIEW, android.net.Uri.parse(sh.url))) } }) {
-                    Text(sh.ok, style = TextStyle(fontFamily = Site.Body.fontFamily, fontWeight = FontWeight.Bold, fontSize = 15.sp, color = Site.Gold)) } },
+                    Text(sh.ok, style = TextStyle(fontFamily = Site.Body.fontFamily, fontWeight = FontWeight.Bold, fontSize = 15.sp, color = gold)) } },
                 dismissButton = { androidx.compose.material3.TextButton({ shopAsk = false }) { Text(sh.cancel, style = TextStyle(fontFamily = Site.Body.fontFamily, fontWeight = FontWeight.SemiBold, fontSize = 15.sp, color = Site.Muted)) } })
         }
         // pack-preview.js inspect(): a revealed card opens the Play card view over the pack (onDetails); closing it brings the pack back.
@@ -427,12 +462,13 @@ fun PackOpening(first: PackResult, onNext: (suspend () -> PackResult?)?, onClose
                 CardSheetActions(toast = { m -> android.widget.Toast.makeText(context, m, android.widget.Toast.LENGTH_SHORT).show() }), onClose = { inspecting = null })
         }
     }
+    }
 }
 
 @Composable
 private fun RoundTool(label: String, pressed: Boolean = false, hint: Boolean = false, onClick: () -> Unit, glyph: @Composable () -> Unit) {
     val pulse = if (hint && !Motion.still) rememberInfiniteTransition(label = "hint").animateFloat(.35f, 1f, infiniteRepeatable(tween(1200), RepeatMode.Reverse), label = "h").value else 0f
-    Box(Modifier.size(44.dp).glow(Site.Gold, pulse * .6f, .1f, .1f, .5f, 10.dp).clip(CircleShape).background(Color(0x0AFFFFFF))
+    Box(Modifier.size(44.dp).glow(packGold(), pulse * .6f, .1f, .1f, .5f, 10.dp).clip(CircleShape).background(Color(0x0AFFFFFF))
         .border(1.dp, if (hint) Color(0x99E8B95B) else Color(0x24FFFFFF), CircleShape)
         .clickable(onClick = onClick).semantics { contentDescription = label }, contentAlignment = Alignment.Center) { glyph() }
 }
@@ -454,15 +490,15 @@ private val GlyphInk = Color(0xFFD9DDE6)
 }
 
 /** The site's tilt glyph: a phone leaning, with two motion arcs; struck through when tilt is off. */
-@Composable private fun TiltGlyph(on: Boolean) = Canvas(Modifier.size(20.dp)) {
+@Composable private fun TiltGlyph(on: Boolean) { val gold = packGold(); Canvas(Modifier.size(20.dp)) {
     val u = size.width / 24f
-    val ink = if (on) Site.Gold else GlyphInk
+    val ink = if (on) gold else GlyphInk
     val st = Stroke(1.8f * u, cap = StrokeCap.Round, join = androidx.compose.ui.graphics.StrokeJoin.Round)
     rotate(-18f, Offset(12 * u, 10 * u)) { drawRoundRect(ink, Offset(8 * u, 3 * u), Size(8 * u, 14 * u), CornerRadius(2 * u), style = st) }
     drawArc(ink, 90f, 70f, false, Offset(3 * u - 9 * u, 15 * u - 9 * u + 0f), Size(18 * u, 18 * u), style = st)
     drawArc(ink, -90f, 70f, false, Offset(21 * u - 9 * u, 9 * u - 9 * u), Size(18 * u, 18 * u), style = st)
     if (!on) drawLine(ink, Offset(4 * u, 4 * u), Offset(20 * u, 20 * u), st.width, StrokeCap.Round)
-}
+} }
 
 // ---------------------------------------------------------------- sealed
 
@@ -487,7 +523,7 @@ private fun packSize(set: String, w: Dp, h: Dp, template: Boolean = false, sim: 
 private fun Sealed(pack: PackResult, tearing: Boolean, onTear: () -> Unit, loading: Boolean = false, eager: Boolean = false,
                    drift: Animatable<Offset, AnimationVector2D>? = null, tiltOn: Boolean = false) {
     val ctx = LocalContext.current
-    val template = remember(pack.set) { PackTemplate.art(ctx, pack.set) != null } && drift != null
+    val template = remember(pack.set) { pack.look?.template != null || PackTemplate.art(ctx, pack.set) != null } && drift != null
     // The template pack's parallax (pack-preview.js): a finger over the screen, placed against the pack, or the phone's tilt when
     // pack tilt is on, eased over 120 ms (.pack-tpl-art transition .12s linear). Reduce motion: still. A lifted finger leaves the
     // art where it was unless the tilt takes over again, as on the site.
@@ -588,7 +624,7 @@ private fun Sealed(pack: PackResult, tearing: Boolean, onTear: () -> Unit, loadi
         .glow(Color.Black, .6f, .02f, .03f, .04f, 30.dp)
         .clickable(remember { MutableInteractionSource() }, dev.cardstashy.nativeplay.ui.PadFocus.Ring, onClick = onTear).semantics { contentDescription = "Open the ${pack.name} pack" }) {
         // The set's art under Randall's template when the set has one (its painted wrapper until the art is in), else the wrapper.
-        val tpl = TemplatePack(pack.set, pack.name, { drift?.value ?: Offset.Zero }, Modifier.fillMaxSize(), brand = pack.shop != null) { Booster(pack.set, pack.name, Modifier.fillMaxSize(), fill = true, brand = pack.shop != null) }
+        val tpl = TemplatePack(pack.set, pack.name, { drift?.value ?: Offset.Zero }, Modifier.fillMaxSize(), brand = pack.shop != null, override = pack.look?.template?.let { PackTemplate.Art("", it.art, it.x, it.y) }) { Booster(pack.set, pack.name, Modifier.fillMaxSize(), fill = true, brand = pack.shop != null) }
         // .pack-tpl .pack-crimp, .pack-tpl .pack-sheen { display: none }: the template pack has neither.
         if (!tpl && !Motion.still && !tearing) {
             // pack-sheen-move: a soft rainbow band sweeping across every 3.2 s.
@@ -702,7 +738,7 @@ private fun Dealt(pack: PackResult, stage: PackStage, revealed: List<Int>, focus
             translationY = size.height * .36f * e; scaleX = 1f - .1f * e; scaleY = scaleX; alpha = 1f - e
         }) {
             Box(Modifier.fillMaxSize().drawWithContent { clipRect(top = size.height * .085f) { this@drawWithContent.drawContent() } }) {
-                TemplatePack(pack.set, pack.name, drift, Modifier.fillMaxSize(), brand = pack.shop != null) { Booster(pack.set, pack.name, Modifier.fillMaxSize(), fill = true, brand = pack.shop != null) }
+                TemplatePack(pack.set, pack.name, drift, Modifier.fillMaxSize(), brand = pack.shop != null, override = pack.look?.template?.let { PackTemplate.Art("", it.art, it.x, it.y) }) { Booster(pack.set, pack.name, Modifier.fillMaxSize(), fill = true, brand = pack.shop != null) }
             }
             val m = (t / 900f).coerceIn(0f, 1f)
             val ma = if (m < .35f) m / .35f else 1f - (m - .35f) / .65f
@@ -761,10 +797,11 @@ private fun PackTools(onShop: () -> Unit) {
 private fun PillButton(label: String, ghost: Boolean, wide: Boolean = false, onClick: () -> Unit) {
     val shape = RoundedCornerShape(999.dp)
     Box((if (wide) Modifier.widthIn(max = 420.dp).fillMaxWidth() else Modifier).heightIn(min = 44.dp)
-        .then(if (!ghost) Modifier.glow(Site.Gold, .3f, .02f, .1f, .5f, 18.dp) else Modifier).clip(shape)
-        .then(if (ghost) Modifier.background(Color(0x0FFFFFFF)).border(1.dp, Color(0x2EFFFFFF), shape) else Modifier.background(Brush.verticalGradient(listOf(Color(0xFFF2D488), Color(0xFFD6AD64)))))
+        .then(if (!ghost) Modifier.glow(packGold(), .3f, .02f, .1f, .5f, 18.dp) else Modifier).clip(shape)
+        // style.css .btn: Yu-Gi-Oh!'s and Pokémon's simulators wear their game's --gold, flat, with its --gold-ink.
+        .then(if (ghost) Modifier.background(Color(0x0FFFFFFF)).border(1.dp, Color(0x2EFFFFFF), shape) else LocalPackGold.current?.let { Modifier.background(it) } ?: Modifier.background(Brush.verticalGradient(listOf(Color(0xFFF2D488), Color(0xFFD6AD64)))))
         .clickable(onClick = onClick).padding(horizontal = 26.dp), contentAlignment = Alignment.Center) {
-        Text(label, style = TextStyle(fontFamily = Site.Body.fontFamily, fontWeight = FontWeight.Bold, fontSize = 14.sp, letterSpacing = .01.em, color = if (ghost) Site.Text else Color(0xFF1B1507)))
+        Text(label, style = TextStyle(fontFamily = Site.Body.fontFamily, fontWeight = FontWeight.Bold, fontSize = 14.sp, letterSpacing = .01.em, color = if (ghost) Site.Text else when (LocalPackResult.current?.takeIf { it.look != null }?.game) { CardGame.YGO -> Color(0xFF150A2C); CardGame.PTCG -> Color(0xFF2A0D09); else -> Color(0xFF1B1507) }))
     }
 }
 
@@ -892,7 +929,7 @@ private fun Focus(pack: PackResult, focus: Int, open: Boolean, charging: Boolean
         Column(Modifier.heightIn(min = meta - 6.dp), horizontalAlignment = Alignment.CenterHorizontally, verticalArrangement = Arrangement.spacedBy(3.dp)) {
             if (open) {
                 Text(p.name, style = TextStyle(fontFamily = Site.Body.fontFamily, fontWeight = FontWeight.Bold, fontSize = 14.sp, color = Site.Text), textAlign = TextAlign.Center)
-                RarityPill(p.rarity, p.sim?.finishLabel ?: if (p.foil) "Foil" else "")
+                RarityPill(p.rarity, p.sim?.finishLabel ?: if (p.foil) "Foil" else "", p.sim?.rx?.takeIf { pack.look != null }, pack.game)
             }
         }
     }
@@ -921,6 +958,19 @@ private fun FlungCard(p: Pull, step: Int, w: Dp, h: Dp, onDone: () -> Unit) {
 @Composable
 fun PullFace(p: Pull, modifier: Modifier, lx: Float = .5f, ly: Float = .4f) = Box(modifier) {
     val painter = heroPainter(p.image.ifBlank { null }?.let(homeArt))
+    val sim = LocalPackResult.current?.takeIf { it.look != null }
+    if (sim != null) {
+        // A Yu-Gi-Oh! or Pokémon pull: .pack-face's picture fits inside the card (object-fit: contain on #0b0c10), wearing its
+        // game's foil (finishAttrs(game, c, ctx, 'pack') → the same foil layer as the set page's tiles).
+        val context = androidx.compose.ui.platform.LocalContext.current
+        val tf = p.sim?.tcgFinish
+        val finish = remember(tf, p.image) { if (p.foil && tf != null) tcgFinishOf(context, sim.game, tf, p.image) else null }
+        val tilt = androidx.compose.runtime.rememberUpdatedState(Offset((lx - .5f) * 2f, (ly - .5f) * 2f))
+        Box(Modifier.fillMaxSize().background(Color(0xFF0B0C10))) {
+            if (painter != null) CardFace(painter, null, if (finish != null) tilt else null, Modifier.fillMaxSize(), RectangleShape, p.name, finish = finish)
+        }
+        return@Box
+    }
     // A foil pull wears the card's real finish (finish-preview.js surface 'pack' → mountMtgFoil, the same AGSL foil as
     // the card view), lit from where the light is. The old wash drawn on an empty layer greyed the card (Randall 3 Nov 23:17Z).
     val look = if (p.foil && p.sim?.card != null) {
@@ -985,7 +1035,8 @@ private fun PackBand(tier: String, outset: Dp, corner: DrawScope.(Size) -> Corne
 
 /** rarityEmblem('mtg'): the faceted gem in the set-symbol colour, with the finish before the rarity. */
 @Composable
-fun RarityPill(rarity: String, finish: String) {
+fun RarityPill(rarity: String, finish: String, rx: PackRx? = null, game: CardGame = CardGame.MTG) {
+    if (rx != null) { TcgRarityPill(rarity, finish, rx, game); return }
     val r = rarity.lowercase()
     val (gem, ink) = when {
         "mythic" in r -> Color(0xFFF0662A) to Color(0xFFFFB27A)
@@ -1093,10 +1144,67 @@ fun MagicBack(modifier: Modifier) = Box(modifier.drawBehind {
     drawRect(Brush.radialGradient(0f to Color(0xFF4A4256), .72f to Color(0xFF16161E), center = c, radius = Offset(size.width, size.height).getDistance() * .75f))
     drawRect(Color(0x66000000), style = Stroke(7.dp.toPx() * 2)); drawRect(Color(0x55B39AE6), style = Stroke(3.dp.toPx() * 2))
 }) {
-    AssetImage("play/mtg-back.webp", Modifier.fillMaxSize(), maxWidth = 400)
+    // A Yu-Gi-Oh! or Pokémon simulator: the game's own back (/img/back/<game>.jpg, from the worker), the static mark beneath it
+    // in case it can't load (pack-preview.js .pack-card-back: brandStaticMark() under img.pack-back-img).
+    val back = LocalPackResult.current?.look?.back
+    if (back != null) BoxWithConstraints(Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
+        BrandMark(maxWidth * .6f, static = true)
+        heroPainter(homeArt(back))?.let { Image(it, null, Modifier.fillMaxSize(), contentScale = ContentScale.Crop) }
+    } else AssetImage("play/mtg-back.webp", Modifier.fillMaxSize(), maxWidth = 400)
 }
 
 /** .pack-focus-card border-radius 4.6% / 3.3%: elliptical corners, 4.6 % of the width across and 3.3 % of the height down. */
 val CardCorner = androidx.compose.foundation.shape.GenericShape { sz, _ ->
     addRoundRect(androidx.compose.ui.geometry.RoundRect(0f, 0f, sz.width, sz.height, CornerRadius(sz.width * .046f, sz.height * .033f)))
+}
+
+/** .rx-finish: the finish lettered in a still rainbow foil. */
+private val RxFinish = Brush.linearGradient(.15f to Color(0xFFE9EDF3), .3f to Color(0xFF9FE6FF), .45f to Color(0xFFFFC6F0), .6f to Color(0xFFFFF3A8), .75f to Color(0xFFE9EDF3))
+
+/** rarity-emblem.js rarityEmblem for Yu-Gi-Oh! and Pokémon (.rx-ygo / .rx-ptcg): no gem; Pokémon's mark first; the rarity lettered in its kind's
+ *  colour, and the shimmering kinds (.rx-shine) in their foil, held still as the site holds it (.rx-shine .rx-text { animation: none }). */
+@Composable
+private fun TcgRarityPill(rarity: String, finish: String, rx: PackRx, game: CardGame) {
+    val k = rx.kind
+    fun foil(vararg stops: Pair<Float, Long>) = Brush.linearGradient(*stops.map { (at, c) -> at to Color(c) }.toTypedArray())
+    val shine: Brush? = when (game) {
+        CardGame.PTCG -> when (k) {
+            "holo" -> foil(.15f to 0xFFE9EDF3, .3f to 0xFF9FE6FF, .45f to 0xFFFFC6F0, .6f to 0xFFFFF3A8, .75f to 0xFFE9EDF3)
+            "silver" -> foil(.2f to 0xFFC7CED8, .4f to 0xFFFFFFFF, .6f to 0xFFC7CED8)
+            "shine" -> foil(.15f to 0xFFFF9DE1, .35f to 0xFF9FE6FF, .55f to 0xFFFFF3A8, .75f to 0xFFFF9DE1)
+            "gold" -> foil(.15f to 0xFFC99A2E, .35f to 0xFFFFE58A, .45f to 0xFFFFF8D6, .55f to 0xFFFFE58A, .75f to 0xFFC99A2E)
+            else -> null }
+        else -> when (k) {
+            "gold" -> foil(.15f to 0xFFC99A2E, .35f to 0xFFFFE58A, .45f to 0xFFFFF8D6, .55f to 0xFFFFE58A, .75f to 0xFFC99A2E)
+            "ultimate" -> foil(.15f to 0xFF9C7425, .35f to 0xFFE9C96A, .45f to 0xFFFFF1C2, .55f to 0xFFE9C96A, .75f to 0xFF9C7425)
+            "prismatic" -> foil(.1f to 0xFFDFE6EE, .25f to 0xFFFFB3E6, .4f to 0xFFA8F0FF, .55f to 0xFFFFF1A6, .7f to 0xFFDFE6EE)
+            "ghost" -> foil(.2f to 0xFFC5CCD6, .35f to 0xFFFFFFFF, .45f to 0xFFE6F4FF, .6f to 0xFFC5CCD6)
+            "platinum" -> foil(.2f to 0xFFB7C0CC, .4f to 0xFFF6F8FB, .6f to 0xFFB7C0CC)
+            "rare" -> Brush.verticalGradient(listOf(Color.White, Color(0xFFA9B3C2)))
+            else -> null }
+    }
+    // A shimmering kind without a foil of its own (secret, ultra, starlight…) letters in --rx-foil's unset value: the plain text colour.
+    val ink = when {
+        game == CardGame.PTCG && k == "uncommon" -> Color(0xFFCBD8EC)
+        game == CardGame.PTCG && k == "rare" -> Color(0xFFF0F2F6)
+        game == CardGame.PTCG && k == "promo" -> Color(0xFFFFD36B)
+        game == CardGame.YGO && k == "super" -> Color(0xFFF4F8FF)
+        else -> Color(0xFFE4E7EC)
+    }
+    val shape = RoundedCornerShape(99.dp)
+    Row(Modifier.clip(shape).background(Color(0x0CFFFFFF))
+        .then(if (game == CardGame.YGO && k == "super") Modifier.background(Brush.linearGradient(listOf(Color(0x227FF6FF), Color(0x22FFC6F0), Color(0x22FFF3A8)))) else Modifier)
+        .border(1.dp, if (game == CardGame.PTCG && k == "gold") Color(0x55FFD54A) else Color(0x1CFFFFFF), shape).padding(start = 9.dp, end = 12.dp, top = 3.dp, bottom = 3.dp),
+        verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(6.dp)) {
+        when {
+            rx.markSrc.isNotEmpty() -> PkSymbol(rx.markSrc, 34.dp, ink = rx.markInk, glow = k == "gold", height = 13.dp)
+            rx.markText.isNotBlank() -> Text(rx.markText, style = TextStyle(fontFamily = Site.Body.fontFamily, fontWeight = FontWeight.Bold, fontSize = 13.sp, color = if (rx.markGold) Color(0xFFFFD54A) else Color(0xFFE4E7EC)))
+        }
+        val label = rarity.replaceFirstChar { it.uppercase() }
+        val text = androidx.compose.ui.text.buildAnnotatedString {
+            if (finish.isNotBlank()) { withStyle(androidx.compose.ui.text.SpanStyle(brush = RxFinish)) { append(finish) }; append(" · ") }
+            if (shine != null) withStyle(androidx.compose.ui.text.SpanStyle(brush = shine)) { append(label) } else append(label)
+        }
+        Text(text, maxLines = 1, overflow = TextOverflow.Ellipsis, style = TextStyle(fontFamily = Site.Body.fontFamily, fontWeight = FontWeight.Bold, fontSize = 12.sp, letterSpacing = .03.em, color = ink))
+    }
 }

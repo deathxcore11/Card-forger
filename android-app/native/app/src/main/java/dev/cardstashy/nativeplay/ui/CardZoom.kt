@@ -1,5 +1,6 @@
 package dev.cardstashy.nativeplay.ui
 
+import dev.cardstashy.nativeplay.foil.finish
 import android.content.Context
 import android.hardware.Sensor
 import android.hardware.SensorEvent
@@ -75,7 +76,7 @@ fun scryfallHi(url: String?): String = (url ?: "").replace(Regex("/(small|normal
 private class View(val label: String, val src: String, val hi: String?, val effects: Boolean, val art: Boolean)
 
 @Composable
-fun CardZoom(src: String, hi: String?, art: String?, look: Foil.Look?, onClose: () -> Unit) {
+fun CardZoom(src: String, hi: String?, art: String?, look: Foil.Look?, finish: dev.cardstashy.nativeplay.foil.CardFinish? = null, onClose: () -> Unit) {
     BackHandler(onBack = onClose)
     val views = remember(src, hi, art) {
         val h = (hi?.ifBlank { null } ?: if (src.contains("scryfall.io")) scryfallHi(src) else null)?.takeIf { it != src }
@@ -246,7 +247,7 @@ fun CardZoom(src: String, hi: String?, art: String?, look: Foil.Look?, onClose: 
                 }
                 .shadow(36.dp, RoundedCornerShape(radius), ambientColor = Color(0xCC000000), spotColor = Color(0xCC000000))
                 .clip(RoundedCornerShape(radius))
-                .then(if (v.effects && look != null) Modifier.foil(look, foilTilt) else Modifier)
+                .then(if (v.effects && look != null) Modifier.foil(look, foilTilt) else if (v.effects && finish != null) Modifier.finish(finish, foilTilt) else Modifier)
                 .drawWithContent {
                     drawContent()
                     if (!v.effects || Motion.still || !AppSettings.finish) return@drawWithContent

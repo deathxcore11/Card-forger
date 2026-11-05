@@ -18,6 +18,8 @@ import dev.cardstashy.nativeplay.ui.CollectionCardSheet
 import dev.cardstashy.nativeplay.ui.CollectionDeck
 import dev.cardstashy.nativeplay.ui.CollectionDeckModel
 import dev.cardstashy.nativeplay.ui.CollectionNav
+import dev.cardstashy.nativeplay.ui.CollectionSet
+import dev.cardstashy.nativeplay.ui.CollectionSetModel
 import dev.cardstashy.nativeplay.ui.CollectionTab
 import dev.cardstashy.nativeplay.ui.Mode
 import dev.cardstashy.nativeplay.ui.TopBarItems
@@ -110,6 +112,32 @@ class CollectionCardShotTest {
             shot("collection-card-$t", 390, 844) { page!!() }
             shot("collection-card-$t-page", 390, if (t == "guide") 4200 else 2600) { page!!() }
             shot("collection-card-$t", 884, 1104) { page!!() }
+        }
+        if (missing.isNotEmpty()) println("MISSING ART ${missing.joinToString()}")
+    }
+
+    /** tcg.js tcgCardSheet: a Yu-Gi-Oh! card (Beyond the Brave's secret rare) and a Pokémon card (Surging Sparks' Scovillain ex), over their set pages
+     *  (scratchpad cardpage/tcard.cjs: opened from the set page's own tile). */
+    @Test fun tcgCards() {
+        setUp()
+        for (g in listOf("ygo", "ptcg")) for (t in listOf("", "-guide", "-prices")) {
+            val fx = home.resolve("collection-card-$g$t.json"); assumeTrue("write the $g card fixtures first", fx.exists())
+            val m = CollectionCardModel.parse(JsonParser.parseString(fx.readText()).asJsonObject)
+            val set = home.resolve("collection-tset-$g.json").takeIf { it.exists() }?.let { CollectionSetModel.parse(JsonParser.parseString(it.readText()).asJsonObject) }
+            val page: @Composable () -> Unit = {
+                Box(Modifier.fillMaxSize()) {
+                    if (set != null) CollectionSet(set, { tabs -> TopBarItems(Mode.COLLECTION, null, "Randall", unread = true, onSwitch = {}, onProfile = {}, middle = tabs) },
+                        nav = { v -> CollectionNav(CollectionTab.SEARCH, vertical = v, scan = !v) {} })
+                    CollectionCardSheet(m, CollectionCardActions()) {}
+                }
+            }
+            val tab = t.ifBlank { "-overview" }
+            shot("collection-tcard-$g$tab", 390, 844) { page() }
+            shot("collection-tcard-$g$tab-page", 390, 3600) { page() }
+            shot("collection-tcard-$g$tab", 884, 1104) { page() }
+            // Market details open: the sources' tables and every printing's prices.
+            if (t == "-prices") { dev.cardstashy.nativeplay.ui.CardSheetTest.open = true
+                try { shot("collection-tcard-$g-prices-open", 390, 4400) { page() } } finally { dev.cardstashy.nativeplay.ui.CardSheetTest.open = false } }
         }
         if (missing.isNotEmpty()) println("MISSING ART ${missing.joinToString()}")
     }

@@ -57,7 +57,9 @@ import dev.cardstashy.nativeplay.ui.CollectionSetsModel.Companion.strs
 class SetTileM(val r: CollRow, val i: Int, val label: String, val price: String, val badge: String?, val badgeOther: Boolean, val badgeTitle: String, val own: Boolean,
                val missing: Boolean, val emb: List<Pair<String, String>>, val set: String?, val rarity: String, val setTitle: String, val imp: SiteSvg?,
                /** Yu-Gi-Oh! / Pokémon: the card's id (data-act="tCard" data-id), its chrome, what kind of price it is ("Market ref."), its finish. */
-               val id: String = "", val tcgEmb: List<TcgEmb> = emptyList(), val tcgSet: TcgSetBadge? = null, val priceNote: String = "", val tcgFinish: TcgFinish? = null)
+               val id: String = "", val tcgEmb: List<TcgEmb> = emptyList(), val tcgSet: TcgSetBadge? = null, val priceNote: String = "", val tcgFinish: TcgFinish? = null,
+               /** What the tile hands the card page (A.tCard's dataset): setId, setVariant, printing, edition. */
+               val open: Map<String, String> = emptyMap())
 /** tiles.js typePart: a Level / Rank star with its number, an Attribute or energy orb (the site's own svg), or "+1". */
 class TcgEmb(val icon: SiteSvg?, val text: String, val label: String)
 /** emblems.js tcgSetBadge: Yu-Gi-Oh!'s set code and rarity code ([tone] / [rarityKind] colour them); Pokémon's set and rarity symbols. */
@@ -84,7 +86,8 @@ class CollectionSetModel(val code: String, val title: String, val line: String, 
                 j.s("id"), c?.objs("emb").orEmpty().map { TcgEmb(CollectionCardsModel.svg(it.o("icon")), it.s("text"), it.s("label")) },
                 set?.let { TcgSetBadge(it.s("tone"), it.s("code"), rx?.s("text") ?: "", rx?.s("kind") ?: "", it.strs("symbol"), mark?.strs("src").orEmpty(), mark?.b("ink") ?: false,
                     mark?.s("text") ?: "", mark?.b("gold") ?: false, it.s("title")) }, j.s("priceNote"),
-                fin?.let { TcgFinish(it.s("effect"), it.s("treatment"), it.s("mask"), it.s("clip"), it.get("stars")?.takeIf { x -> x.isJsonPrimitive }?.asFloat ?: 0f, it.s("frame")) })
+                fin?.let { TcgFinish(it.s("effect"), it.s("treatment"), it.s("mask"), it.s("clip"), it.get("stars")?.takeIf { x -> x.isJsonPrimitive }?.asFloat ?: 0f, it.s("frame")) },
+                j.o("open")?.entrySet()?.associate { (k, v) -> k to (if (v.isJsonPrimitive) v.asString else "") }.orEmpty())
         }
 
         private fun tile(j: JsonObject): SetTileM {
@@ -457,7 +460,7 @@ private val InkFlip = androidx.compose.ui.graphics.ColorMatrix(floatArrayOf(
 
 /** The first of [sources] that loads, or null once none has (the site's onerror chain). */
 @Composable
-private fun firstOf(sources: List<String>): androidx.compose.ui.graphics.painter.Painter? {
+internal fun firstOf(sources: List<String>): androidx.compose.ui.graphics.painter.Painter? {
     var i by remember(sources) { androidx.compose.runtime.mutableIntStateOf(0) }
     val p = heroPainter(sources.getOrNull(i)?.let(homeArt))
     val st = (p as? coil3.compose.AsyncImagePainter)?.state?.collectAsState()?.value
@@ -483,7 +486,7 @@ internal fun PkSymbol(sources: List<String>, size: Dp, modifier: Modifier = Modi
  * Starlight, Collector's and Quarter Century's rainbow sweeping across every 3.2 s; Common plain.
  */
 @Composable
-private fun RxCode(text: String, kind: String, size: Float, reduced: Boolean) {
+internal fun RxCode(text: String, kind: String, size: Float, reduced: Boolean) {
     val base = TextStyle(fontFamily = Type.Sans, fontWeight = FontWeight(800), fontSize = size.sp, lineHeight = (size * 1.2f).sp, letterSpacing = (size * .02f).sp,
         lineHeightStyle = androidx.compose.ui.text.style.LineHeightStyle(androidx.compose.ui.text.style.LineHeightStyle.Alignment.Center, androidx.compose.ui.text.style.LineHeightStyle.Trim.None))
     fun stops(vararg s: Pair<Float, Long>) = s.map { (o, c) -> o to Color(c) }
@@ -573,6 +576,16 @@ private fun SetBadgeParts(b: TcgSetBadge, reduced: Boolean, code: Float, rx: Flo
     if (b.rarity.isNotBlank()) RxCode(b.rarity, b.rarityKind, rx, reduced)
 }
 
+/** finish-preview.js's model as the app's foil layer (foil/FoilLayer.kt): Yu-Gi-Oh!'s recipe on its frame, Pokémon's treatment in its masks. */
+internal fun tcgFinishOf(context: android.content.Context, game: CardGame, f: TcgFinish, art: String): dev.cardstashy.nativeplay.foil.CardFinish? =
+    if (game == CardGame.YGO) f.effect.takeIf { it in dev.cardstashy.nativeplay.foil.YgoFoil.RECIPES }?.let {
+        dev.cardstashy.nativeplay.foil.CardFinish.Ygo(it, art, dev.cardstashy.nativeplay.foil.YgoFoil.layoutOf(f.frame), f.stars) }
+    else f.treatment.takeIf { it in dev.cardstashy.nativeplay.foil.PtcgFoil.RECIPES && f.mask.isNotBlank() }?.let { tr ->
+        val masks = runCatching { dev.cardstashy.nativeplay.foil.PtcgFoil.Masks.load(context) }.getOrNull()
+        if (masks?.shape(f.mask) == null) null
+        else dev.cardstashy.nativeplay.foil.CardFinish.Ptcg(tr, f.mask, art, f.clip.takeIf { c -> c.isNotBlank() && masks.shape(c) != null }, f.clip.isNotBlank())
+    }
+
 /** A Yu-Gi-Oh! / Pokémon card's picture with its foil (finish-preview.js → foil/FoilLayer.kt), walking its picture's addresses. */
 @Composable
 private fun TcgPicture(t: SetTileM, game: CardGame, modifier: Modifier, shape: androidx.compose.ui.graphics.Shape) {
@@ -580,16 +593,7 @@ private fun TcgPicture(t: SetTileM, game: CardGame, modifier: Modifier, shape: a
     if (p == null) { Box(modifier.clip(shape).background(Surface2), contentAlignment = Alignment.Center) { Text(t.r.fallback.ifBlank { "◇" }, style = sans(10f, 400, Mute)) }; return }
     val context = LocalContext.current
     val f = t.tcgFinish
-    val finish = remember(f, t.r.art) {
-        if (f == null) null
-        else if (game == CardGame.YGO) f.effect.takeIf { it in dev.cardstashy.nativeplay.foil.YgoFoil.RECIPES }?.let {
-            dev.cardstashy.nativeplay.foil.CardFinish.Ygo(it, t.r.art ?: "", dev.cardstashy.nativeplay.foil.YgoFoil.layoutOf(f.frame), f.stars) }
-        else f.treatment.takeIf { it in dev.cardstashy.nativeplay.foil.PtcgFoil.RECIPES && f.mask.isNotBlank() }?.let { tr ->
-            val masks = runCatching { dev.cardstashy.nativeplay.foil.PtcgFoil.Masks.load(context) }.getOrNull()
-            if (masks?.shape(f.mask) == null) null
-            else dev.cardstashy.nativeplay.foil.CardFinish.Ptcg(tr, f.mask, t.r.art ?: "", f.clip.takeIf { c -> c.isNotBlank() && masks.shape(c) != null }, f.clip.isNotBlank())
-        }
-    }
+    val finish = remember(f, t.r.art) { f?.let { tcgFinishOf(context, game, it, t.r.art ?: "") } }
     val tilt = if (finish != null) rememberFoilTilt(live = true, phase = (t.r.name.hashCode() and 0xff) / 255f, tile = true) else null
     CardFace(p, null, tilt, modifier, shape, desc = null, finish = finish)
 }

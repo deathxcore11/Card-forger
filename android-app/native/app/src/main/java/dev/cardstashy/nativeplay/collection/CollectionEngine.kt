@@ -156,6 +156,18 @@ object CollectionEngine {
     const val CARD_MODEL = "Collection.cardModel()"
     suspend fun cardModel(): JsonObject = on { q -> JsonParser.parseString(q.evaluate(CARD_MODEL) as String).asJsonObject }
 
+    /** tcg.js tcgCardSheet(), a Yu-Gi-Oh! or Pokémon card's page, as a model; [opts] = A.tCard's dataset {game, id, setId, setVariant, printing,
+     *  edition, entry, deck} (or {pack: i}, a card pulled in Open Pack). */
+    suspend fun tcard(opts: JsonObject): JsonObject =
+        on { q -> JsonParser.parseString(q.evaluate("Collection.tcard(${str(opts.toString())})") as String).asJsonObject }
+    /** Starts its lookups (the full card, Pokémon's printings, the set list, the open tab's). */
+    suspend fun tcardLoad() = on { q -> q.evaluate("Collection.tcardLoad()"); Unit }
+    /** One control as app.js / workbench-ui.js handle it (tab, finish, rarity, select, jump, range, historySource), then the page again. */
+    suspend fun tcardDo(kind: String, value: String = ""): JsonObject =
+        on { q -> JsonParser.parseString(q.evaluate("Collection.tcardDo(${str(kind)}, ${str(value)})") as String).asJsonObject }
+    const val TCARD_MODEL = "Collection.tcardModel()"
+    suspend fun tcardModel(): JsonObject = on { q -> JsonParser.parseString(q.evaluate(TCARD_MODEL) as String).asJsonObject }
+
     /** views.js setsPage(), every set by year, as a model; [opts] = {q, family, release, year, sort}, the site's own filter values. */
     suspend fun sets(game: String, opts: JsonObject = JsonObject()): JsonObject =
         on { q -> JsonParser.parseString(q.evaluate("Collection.sets(${str(game)}, ${str(opts.toString())})") as String).asJsonObject }

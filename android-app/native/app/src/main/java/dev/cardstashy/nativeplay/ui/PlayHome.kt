@@ -86,6 +86,7 @@ import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.em
+import androidx.compose.ui.unit.TextUnit
 import androidx.compose.ui.unit.sp
 import androidx.compose.animation.core.animateFloatAsState
 import androidx.compose.animation.core.LinearEasing
@@ -561,7 +562,12 @@ fun Booster(code: String, name: String?, modifier: Modifier = Modifier, mini: Bo
         if (img != null) { WrappedBooster(code, label, wrap, img, modifier, mini, collector, fill, brand = brand); return }
     }
     // Only a set with no template art: while a template set's art loads, this stands in without fetching the product photo.
-    if (brand && !HomeTest.noPictures && PackTemplate.art(LocalContext.current, code) == null && RemotePack(code, label, modifier)) return
+    // A Yu-Gi-Oh! or Pokémon simulator walks its own pictures (packArtSources, then setArtworkSources).
+    val look = LocalPackResult.current?.look
+    if (brand && !HomeTest.noPictures && look != null) { if (look.template == null && RemotePackFrom(look.sources, label, modifier)) return }
+    else if (brand && !HomeTest.noPictures && PackTemplate.art(LocalContext.current, code) == null && RemotePack(code, label, modifier)) return
+    // The simulator with no picture (yet): the site's bare pack, its band showing (.pack-wrap-art>img[hidden] + .pack-wrap-brand).
+    if (brand) { BarePack(label, modifier); return }
     val shape = RoundedCornerShape(6.dp)
     Box(modifier.aspectRatio(5f / 8.2f).testShadow(18.dp, shape).clip(shape)
         .background(Brush.linearGradient(listOf(Color(0xFF2A2F3A), Color(0xFF14171D), Color(0xFF262B35))))) {
@@ -659,10 +665,22 @@ internal fun WrappedBooster(code: String, label: String, wrap: Wrap, img: ImageB
                 val vw = with(dens) { LocalContext.current.resources.displayMetrics.widthPixels.toDp() }
                 val fs = (vw.value * .036f).coerceIn(11f, 15f)
                 // (The grid's content overflows its 21 % box when the name wraps, centred on it, as on the site.)
+                // A Yu-Gi-Oh! or Pokémon template (packTemplateArt): Pokémon's set logo in place of the mark and name (.pack-has-logo,
+                // 76 % of the band, until it fails to load); Yu-Gi-Oh!'s set code under the name instead of the mark (.pack-has-sub).
+                val tpl = LocalPackResult.current?.look?.template
+                val logo = tpl?.logo.orEmpty(); val sub = tpl?.sub.orEmpty()
+                var logoOk by remember(logo) { mutableStateOf(logo.isNotBlank()) }
                 Box(Modifier.align(Alignment.BottomCenter).padding(bottom = h * .125f).width(w * .72f).height(h * .21f), contentAlignment = Alignment.Center) {
-                    Column(Modifier.wrapContentHeight(unbounded = true), horizontalAlignment = Alignment.CenterHorizontally, verticalArrangement = Arrangement.spacedBy(4.dp)) {
-                        BrandMark(w * .72f * .26f, static = true)
-                        Text(label, style = TextStyle(fontFamily = Site.Body.fontFamily, fontWeight = FontWeight.Bold, fontSize = fs.sp, lineHeight = (fs * 1.15f).sp, color = Color(0xFFF5EAD0), textAlign = TextAlign.Center))
+                    val lp = if (logoOk) heroPainter(homeArt(logo)) else null
+                    val ls = (lp as? coil3.compose.AsyncImagePainter)?.state?.collectAsState()?.value
+                    if (ls is coil3.compose.AsyncImagePainter.State.Error) LaunchedEffect(logo) { logoOk = false }
+                    if (lp != null) Image(lp, label, Modifier.fillMaxWidth().fillMaxHeight(.76f), contentScale = ContentScale.Fit)
+                    else Column(Modifier.wrapContentHeight(unbounded = true), horizontalAlignment = Alignment.CenterHorizontally, verticalArrangement = Arrangement.spacedBy(if (sub.isNotBlank()) 6.dp else 4.dp)) {
+                        if (sub.isBlank()) BrandMark(w * .72f * .26f, static = true)
+                        val nf = if (sub.isBlank()) fs else (vw.value * .034f).coerceIn(11f, 15f)
+                        Text(label, style = TextStyle(fontFamily = Site.Body.fontFamily, fontWeight = FontWeight.Bold, fontSize = nf.sp, lineHeight = (nf * 1.15f).sp,
+                            letterSpacing = if (sub.isBlank()) TextUnit.Unspecified else .02.em, color = Color(0xFFF5EAD0), textAlign = TextAlign.Center))
+                        if (sub.isNotBlank()) Text(sub, style = TextStyle(fontFamily = Site.Body.fontFamily, fontSize = (fs * .8f).sp, lineHeight = (fs * .8f * 1.15f).sp, letterSpacing = .14.em, color = Color(0xFFD6AD64), textAlign = TextAlign.Center))
                     }
                 }
                 return@BoxWithConstraints

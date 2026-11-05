@@ -8,6 +8,10 @@ import androidx.compose.ui.draw.clip
 import coil3.request.allowHardware
 import androidx.compose.foundation.layout.offset
 import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.width
+import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.sp
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.produceState
@@ -63,9 +67,11 @@ object PackTemplate {
  * read only while drawing. Returns true while the template shows, so the opener can drop the effects the site hides on it.
  */
 @Composable
-fun TemplatePack(code: String, name: String?, drift: () -> Offset, modifier: Modifier, brand: Boolean = false, fallback: @Composable () -> Unit): Boolean {
+fun TemplatePack(code: String, name: String?, drift: () -> Offset, modifier: Modifier, brand: Boolean = false,
+                 /** A Yu-Gi-Oh! or Pokémon simulator's template art (packTemplateArt, from the engine): not in pack-art.json. */
+                 override: PackTemplate.Art? = null, fallback: @Composable () -> Unit): Boolean {
     val ctx = LocalContext.current
-    val art = remember(code) { PackTemplate.art(ctx, code) }
+    val art = override ?: remember(code) { PackTemplate.art(ctx, code) }
     if (art == null || HomeTest.noPictures) { fallback(); return false }
     // The band's name, as Booster names it.
     val label = name?.ifBlank { null } ?: dev.cardstashy.nativeplay.play.SetFacts.sets.collectAsState().value[code]?.name ?: code.uppercase()
@@ -129,14 +135,19 @@ private val CrimpedPack = androidx.compose.foundation.shape.GenericShape { size,
  * cover). False until it has loaded, or when it can't; the caller then draws its own pack.
  */
 @Composable
-fun RemotePack(code: String, name: String, modifier: Modifier): Boolean {
+fun RemotePack(code: String, name: String, modifier: Modifier): Boolean = RemotePackFrom(remember(code, name) { listOf(packArtUrl(code, name)).filter { it.isNotEmpty() } }, name, modifier)
+
+/** [RemotePack] from a list of pictures, the first that loads (a Yu-Gi-Oh! or Pokémon pack: packArtSources, then setArtworkSources). */
+@Composable
+fun RemotePackFrom(urls: List<String>, name: String, modifier: Modifier): Boolean {
     val ctx = LocalContext.current
-    val url = remember(code, name) { packArtUrl(code, name) }
-    if (url.isEmpty()) return false
-    val picture = produceState<ImageBitmap?>(null, url) {
+    if (urls.isEmpty()) return false
+    val picture = produceState<ImageBitmap?>(null, urls) {
         value = kotlinx.coroutines.withContext(kotlinx.coroutines.Dispatchers.Default) {
-            val r = coil3.request.ImageRequest.Builder(ctx).data(url).size(coil3.size.Size.ORIGINAL).allowHardware(false).build()
-            (CardArt.loader.execute(r) as? coil3.request.SuccessResult)?.image?.toBitmap()?.let(::trimPackArt)?.asImageBitmap()
+            urls.firstNotNullOfOrNull { url ->
+                val r = coil3.request.ImageRequest.Builder(ctx).data(url).size(coil3.size.Size.ORIGINAL).allowHardware(false).build()
+                (CardArt.loader.execute(r) as? coil3.request.SuccessResult)?.image?.toBitmap()?.let(::trimPackArt)?.asImageBitmap()
+            }
         }
     }.value ?: return false
     androidx.compose.foundation.layout.Box(modifier.clip(CrimpedPack)
@@ -178,4 +189,26 @@ internal fun trimPackArt(src: android.graphics.Bitmap): android.graphics.Bitmap 
     val sx = W.toFloat() / w; val sy = H.toFloat() / h
     val x0 = Math.round(l * sx).coerceIn(0, W - 1); val y0 = Math.round(t * sy).coerceIn(0, H - 1)
     return android.graphics.Bitmap.createBitmap(soft, x0, y0, Math.round(cw * sx).coerceIn(1, W - x0), Math.round(ch * sy).coerceIn(1, H - y0))
+}
+
+/**
+ * The site's pack with no picture (sets-ui.css): .pack-wrap-art's crimped linear-gradient(160deg, #2b2836, #121218), and its band
+ * (.pack-wrap-brand: inset auto 10 % 12 % 10 %, the static mark at 44 % over the set's name, 14 px, #f5ead0, 10 px apart).
+ */
+@Composable
+fun BarePack(name: String, modifier: Modifier) = androidx.compose.foundation.layout.BoxWithConstraints(modifier.clip(CrimpedPack).drawWithContent {
+    // 160°: from the top-left-ish corner down to the bottom-right-ish one, as CSS draws it through the box's middle.
+    val r = Math.toRadians(160.0); val dx = kotlin.math.sin(r).toFloat(); val dy = -kotlin.math.cos(r).toFloat()
+    val half = (kotlin.math.abs(size.width * dx) + kotlin.math.abs(size.height * dy)) / 2f; val c = Offset(size.width / 2f, size.height / 2f)
+    drawRect(androidx.compose.ui.graphics.Brush.linearGradient(listOf(androidx.compose.ui.graphics.Color(0xFF2B2836), androidx.compose.ui.graphics.Color(0xFF121218)),
+        c - Offset(dx * half, dy * half), c + Offset(dx * half, dy * half)))
+    drawContent()
+}, contentAlignment = androidx.compose.ui.Alignment.BottomCenter) {
+    val bw = maxWidth * .8f
+    androidx.compose.foundation.layout.Column(Modifier.padding(bottom = maxHeight * .12f).width(bw), horizontalAlignment = androidx.compose.ui.Alignment.CenterHorizontally,
+        verticalArrangement = androidx.compose.foundation.layout.Arrangement.spacedBy(10.dp)) {
+        BrandMark(bw * .44f, static = true)
+        androidx.compose.material3.Text(name, style = androidx.compose.ui.text.TextStyle(fontFamily = Site.Body.fontFamily, fontWeight = androidx.compose.ui.text.font.FontWeight.Bold, fontSize = 14.sp,
+            lineHeight = 20.sp, color = androidx.compose.ui.graphics.Color(0xFFF5EAD0), textAlign = androidx.compose.ui.text.style.TextAlign.Center))
+    }
 }

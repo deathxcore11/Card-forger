@@ -52,6 +52,12 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
+import androidx.compose.foundation.layout.requiredSize
+import androidx.compose.foundation.layout.wrapContentSize
+import androidx.compose.ui.text.rememberTextMeasurer
+import androidx.compose.ui.graphics.drawscope.translate
+import androidx.compose.ui.graphics.drawscope.clipRect
+import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.draw.blur
@@ -124,6 +130,8 @@ class CollectionCardActions(
     val source: (String) -> Unit = {},
     val historySource: (key: String, source: String) -> Unit = { _, _ -> },
     val press: (CardPress) -> Unit = {},
+    /** A picker's change (Yu-Gi-Oh!'s Edition, Printing & rarity): its data-change and the value picked. */
+    val select: (name: String, value: String) -> Unit = { _, _ -> },
 )
 
 private val Ink = Color(0xFFEEF0F4)
@@ -134,8 +142,18 @@ private val LineC = Color(0xFF2A2F39)
 private val SheetBg = Color(0xFF12141A)
 private val Surface = Color(0xFF171A20)
 private val Surface2 = Color(0xFF1F232B)
-private val GoldC = Color(0xFFE8B95B)
-private val BtnInk = Color(0xFF1B1406)
+/**
+ * The page's --gold and --gold-ink (style.css 13, 742-743: Magic's gold, Yu-Gi-Oh!'s violet, Pokémon's coral) with polish.css --pill's
+ * two mixes of it: 78 % with 22 % white over, 86 % with 14 % black under.
+ */
+internal class SheetPal(val gold: Color, val ink: Color) {
+    private fun mix(c: Color, f: Float) = Color(gold.red + (c.red - gold.red) * f, gold.green + (c.green - gold.green) * f, gold.blue + (c.blue - gold.blue) * f)
+    val light = mix(Color.White, .22f); val dark = mix(Color.Black, .14f)
+}
+internal fun sheetPal(game: CardGame) = SheetPal(game.gold, when (game) { CardGame.YGO -> Color(0xFF150A2C); CardGame.PTCG -> Color(0xFF2A0D09); else -> Color(0xFF1B1406) })
+internal val LocalSheetPal = androidx.compose.runtime.staticCompositionLocalOf { sheetPal(CardGame.MTG) }
+private val GoldC: Color @Composable @androidx.compose.runtime.ReadOnlyComposable get() = LocalSheetPal.current.gold
+private val BtnInk: Color @Composable @androidx.compose.runtime.ReadOnlyComposable get() = LocalSheetPal.current.ink
 private val Bad = Color(0xFFF08A7E)
 private val Good = Color(0xFF6FD29A)
 private val Warn = Color(0xFFF2C66D)
@@ -194,9 +212,10 @@ private fun Ghost(label: String, icon: SiteSvg?, modifier: Modifier = Modifier, 
     Row(modifier.heightIn(min = h).clip(RoundedCornerShape(r)).drawBehind {
         drawRect(Color(0x851F232A))
         drawRect(Color(0x12FFFFFF), topLeft = Offset(r.toPx() * .5f, 0f), size = Size(size.width - r.toPx(), 1.dp.toPx()))
-    }.border(1.dp, Edge, RoundedCornerShape(r)).clickable(onClick = onClick).padding(horizontal = pad, vertical = 4.dp),
+    }.border(1.dp, Edge, RoundedCornerShape(r)).clickable(onClick = onClick).padding(horizontal = pad + 1.dp, vertical = 4.dp),
         horizontalArrangement = Arrangement.Center, verticalAlignment = Alignment.CenterVertically) {
-        if (icon != null) { SiteIcon(icon, 18.dp, Ink); Spacer(Modifier.width(10.dp)) }
+        // .btn .gl: the 18 icon, then .btn .ico's 4, .gl's .15em and the button's 6 gap: 12 to the words; the 1 px border outside the padding.
+        if (icon != null) { SiteIcon(icon, 18.dp, Ink); Spacer(Modifier.width(12.dp)) }
         Text(label, style = sans(fs, 700, Ink, lh = 1.35f), textAlign = TextAlign.Center)
     }
 }
@@ -226,21 +245,65 @@ private fun Sym(src: String, alt: String, size: Dp) {
     }
 }
 
-/** Rules text with its symbols inline and its rule words underlined (rule-dex.js ruleText); a rule word opens its reminder. */
+/**
+ * Rules text with its symbols inline and its rule words marked (rule-dex.js ruleText); a rule word opens its reminder.
+ * .rule-word (style.css 2577): the text's own colour (its --accent is unset in the dark theme) over a 1 px dotted line in that
+ * colour, at the bottom of the word's box. [pretty] is text-wrap: pretty (.effect-line), wrapped so a line never ends a word short.
+ */
 @Composable
-private fun Rich(runs: List<CardRun>, style: TextStyle, onRule: (String) -> Unit, modifier: Modifier = Modifier) {
+private fun Rich(runs: List<CardRun>, style: TextStyle, onRule: (String) -> Unit, modifier: Modifier = Modifier, pretty: Boolean = false) {
     val inline = HashMap<String, InlineTextContent>()
+    val words = ArrayList<IntRange>()
     val text = buildAnnotatedString {
         for (r in runs) when {
             r.sym != null -> { val id = "sym:" + r.sym
                 inline.getOrPut(id) { InlineTextContent(Placeholder(1.05.em, 1.05.em, PlaceholderVerticalAlign.TextCenter)) { Sym(r.sym, r.alt, 15.dp) } }
                 appendInlineContent(id, r.alt) }
-            r.rule != null -> withLink(LinkAnnotation.Clickable("rule:" + r.rule, TextLinkStyles(SpanStyle(textDecoration = TextDecoration.Underline,
-                color = Color(0xFFE9CF93)))) { onRule(r.rule) }) { append(r.t.orEmpty()) }
+            r.rule != null -> { val from = length
+                withLink(LinkAnnotation.Clickable("rule:" + r.rule, TextLinkStyles(SpanStyle(fontWeight = if (r.bold) FontWeight.Bold else null, fontStyle = if (r.italic) FontStyle.Italic else null))) { onRule(r.rule) }) { append(r.t.orEmpty()) }
+                if (length > from) words += from until length }
             else -> withStyle(SpanStyle(fontWeight = if (r.bold) FontWeight.Bold else null, fontStyle = if (r.italic) FontStyle.Italic else null)) { append(r.t.orEmpty()) }
         }
     }
-    Text(text, style = style, inlineContent = inline, modifier = modifier)
+    var layout by remember { mutableStateOf<androidx.compose.ui.text.TextLayoutResult?>(null) }
+    val ink = style.color.takeIf { it != Color.Unspecified } ?: Ink
+    if (pretty) BoxWithConstraints(modifier) {
+        // Chrome's text-wrap: pretty keeps a lone word off the last line: the width that first pulls a second word down to it.
+        val measurer = rememberTextMeasurer()
+        val full = constraints.maxWidth
+        val holes = remember(text) { text.getStringAnnotations("androidx.compose.foundation.text.inlineContent", 0, text.length).mapNotNull { a ->
+            inline[a.item]?.let { androidx.compose.ui.text.AnnotatedString.Range(it.placeholder, a.start, a.end) } } }
+        val width = remember(text, full, style) {
+            fun lone(r: androidx.compose.ui.text.TextLayoutResult) = r.lineCount >= 2 && text.text.substring(r.getLineStart(r.lineCount - 1), r.getLineEnd(r.lineCount - 1)).trim().none { it == ' ' }
+            fun at(w: Int) = measurer.measure(text, style, constraints = androidx.compose.ui.unit.Constraints(maxWidth = w), placeholders = holes)
+            val base = if (full == androidx.compose.ui.unit.Constraints.Infinity) null else at(full)
+            var best = full
+            if (base != null && lone(base)) for (i in 1..8) { val r = at((full * (1f - .03f * i)).toInt()); if (r.lineCount > base.lineCount) break; if (!lone(r)) { best = (full * (1f - .03f * i)).toInt(); break } }
+            best
+        }
+        RichText(text, style, inline, words, ink, { layout = it }, { layout }, Modifier.width(with(LocalDensity.current) { width.toDp() }))
+    } else RichText(text, style, inline, words, ink, { layout = it }, { layout }, modifier)
+}
+
+@Composable
+private fun RichText(text: androidx.compose.ui.text.AnnotatedString, style: TextStyle, inline: Map<String, InlineTextContent>, words: List<IntRange>, ink: Color,
+                     onLayout: (androidx.compose.ui.text.TextLayoutResult) -> Unit, layoutNow: () -> androidx.compose.ui.text.TextLayoutResult?, modifier: Modifier) {
+    Text(text, style = style, inlineContent = inline, onTextLayout = onLayout,
+        modifier = modifier.drawBehind {
+            val layout = layoutNow()
+            val l = layout ?: return@drawBehind
+            val dot = 1.dp.toPx(); val drop = style.fontSize.toPx() * .27f
+            for (w in words) {
+                val a = l.getLineForOffset(w.first); val b = l.getLineForOffset(w.last)
+                for (line in a..b) {
+                    val x0 = if (line == a) l.getHorizontalPosition(w.first, true) else l.getLineLeft(line)
+                    val x1 = if (line == b) l.getHorizontalPosition(w.last + 1, true) else l.getLineRight(line)
+                    val y = l.getLineBaseline(line) + drop
+                    var x = minOf(x0, x1); val end = maxOf(x0, x1)
+                    while (x < end) { drawRect(ink, Offset(x, y), Size(minOf(dot, end - x), dot)); x += dot * 2 }
+                }
+            }
+        })
 }
 
 // ---------------------------------------------------------------- the sheet
@@ -261,6 +324,7 @@ fun CollectionCardSheet(m: CollectionCardModel, act: CollectionCardActions, onCl
     var zoom by remember { mutableStateOf(false) }
     BackHandler(enabled = !zoom) { close() }
     FoilFocus.Cover()
+    androidx.compose.runtime.CompositionLocalProvider(LocalSheetPal provides sheetPal(m.game)) {
     BoxWithConstraints(Modifier.fillMaxSize()) {
         val screenW = maxWidth; val screenH = maxHeight
         val landscape = screenW > screenH
@@ -282,11 +346,14 @@ fun CollectionCardSheet(m: CollectionCardModel, act: CollectionCardActions, onCl
                 landscape && screenH <= 500.dp -> (screenH * .48f).coerceIn(170.dp, 220.dp)
                 big && landscape -> (screenH * .46f).coerceIn(300.dp, 420.dp)
                 big -> (screenH * .38f).coerceIn(340.dp, 460.dp)
+                // A phone upright: Pokémon's header is lower (64vw, 220-300) and Yu-Gi-Oh!'s taller (82vw, 250-360) (polish.css 692-693).
+                m.game == CardGame.PTCG -> (screenW * .64f).coerceIn(220.dp, 300.dp)
+                m.game == CardGame.YGO -> (screenW * .82f).coerceIn(250.dp, 360.dp)
                 else -> (screenW * .74f).coerceIn(240.dp, 340.dp)
             }
             val frostLayer = androidx.compose.ui.graphics.rememberGraphicsLayer()
             val frost = remember(frostLayer) { Frost(frostLayer) }
-            GlassBackdrop(m.head?.art?.ifBlank { null }, frost) { p -> CardBleed(p, heroH) }
+            GlassBackdrop(m.head?.art?.ifBlank { null }, frost) { p -> CardBleed(if (m.head?.crop == "pokemon") remember(p) { PkArtCrop(p) } else p, heroH, m.game) }
             androidx.compose.runtime.CompositionLocalProvider(LocalFrost provides frost) {
                 val list = rememberLazyListState()
                 // Past 110 scrolled (app.js scrollTop > 110) the head becomes the bar with the card's name.
@@ -315,9 +382,23 @@ fun CollectionCardSheet(m: CollectionCardModel, act: CollectionCardActions, onCl
         if (zoom) {
             val o = m.overview
             val data = dev.cardstashy.nativeplay.play.CardData.ready.collectAsStateValue()
-            val look = data?.let { Foil.look(it, m.shown, Foil.finishFor(m.shown, o?.finishKey ?: "nonfoil")) }
-            if (o != null) CardZoom(o.zoomSrc.ifBlank { o.image }, o.zoomHi.ifBlank { null }, o.zoomArt.ifBlank { null }, look) { zoom = false }
+            val look = if (m.game != CardGame.MTG) null else data?.let { Foil.look(it, m.shown, Foil.finishFor(m.shown, o?.finishKey ?: "nonfoil")) }
+            val ctx = androidx.compose.ui.platform.LocalContext.current
+            val tcg = remember(o?.tcgFinish, o?.image) { o?.tcgFinish?.let { tcgFinishOf(ctx, m.game, it, o.image) } }
+            if (o != null) CardZoom(o.zoomSrc.ifBlank { o.image }, o.zoomHi.ifBlank { null }, o.zoomArt.ifBlank { null }, look, finish = tcg) { zoom = false }
         }
+    }
+    }
+}
+
+/** artwork.js pokemonArtCrop (style.css 2132-2134): a Pokémon card picture cut to its art window, 122 % wide moved 9 % left and 10.8 % up, 1.68 : 1. */
+internal class PkArtCrop(private val base: androidx.compose.ui.graphics.painter.Painter) : androidx.compose.ui.graphics.painter.Painter() {
+    private val l = .09f; private val w = 1f / 1.22f; private val t = .108f
+    private val h get() = base.intrinsicSize.let { s -> if (s.width > 0f && s.height > 0f && s.width.isFinite()) w * s.width / 1.68f / s.height else w / 1.68f * 63f / 88f }
+    override val intrinsicSize: Size get() = base.intrinsicSize.let { s -> if (s.width > 0f && s.height > 0f && s.width.isFinite()) Size(s.width * w, s.width * w / 1.68f) else Size.Unspecified }
+    override fun DrawScope.onDraw() {
+        val full = Size(size.width / w, size.height / h)
+        clipRect { translate(-full.width * l, -full.height * t) { with(base) { draw(full) } } }
     }
 }
 
@@ -332,15 +413,19 @@ private fun <T> kotlinx.coroutines.flow.StateFlow<T>.collectAsStateValue(): T = 
  * then the veil (::after) darkening downwards. The sheet's own colour is under it all (so the glass panels have a backdrop).
  */
 @Composable
-private fun CardBleed(p: androidx.compose.ui.graphics.painter.Painter, heroH: Dp) {
+private fun CardBleed(p: androidx.compose.ui.graphics.painter.Painter, heroH: Dp, game: CardGame = CardGame.MTG) {
     val density = LocalDensity.current
     fun px(d: Dp) = with(density) { d.toPx() }
     val h = heroH * 1.25f + 300.dp
+    // .cs-bleed.ygo: Yu-Gi-Oh!'s art sits 28 % down, not 32 %; Pokémon's is its art window (.pk-crop), zoomed past the frame.
+    val oy = if (game == CardGame.YGO) .28f else .32f
+    val pk = game == CardGame.PTCG
     Box(Modifier.fillMaxSize().background(SheetBg)) {
         Box(Modifier.fillMaxWidth().height(h).fadeDown(px(heroH + 120.dp), px(h))) {
-            Image(p, null, Modifier.fillMaxSize().blur(40.dp), contentScale = ContentScale.Crop, alignment = androidx.compose.ui.BiasAlignment(0f, -.4f), colorFilter = tone(1.45f, .62f))
-            BleedFit(p, heroH, tone(1.3f, .72f), Modifier.fillMaxSize().fadeDown(px(heroH + 60.dp), px(heroH + 340.dp)).blur(18.dp))
-            BleedFit(p, heroH, tone(1.15f, .9f), Modifier.fillMaxSize().fadeDown(px(heroH - 10.dp), px(heroH + 130.dp)).blur(6.dp))
+            Image(p, null, Modifier.fillMaxSize().blur(40.dp), contentScale = ContentScale.Crop,
+                alignment = if (pk) Alignment.Center else androidx.compose.ui.BiasAlignment(0f, -.4f), colorFilter = tone(1.45f, .62f))
+            BleedFit(p, heroH, tone(1.3f, .72f), Modifier.fillMaxSize().fadeDown(px(heroH + 60.dp), px(heroH + 340.dp)).blur(18.dp), oy, pk)
+            BleedFit(p, heroH, tone(1.15f, .9f), Modifier.fillMaxSize().fadeDown(px(heroH - 10.dp), px(heroH + 130.dp)).blur(6.dp), oy, pk)
             Box(Modifier.fillMaxSize().drawBehind {
                 val hh = px(heroH); val bottom = size.height
                 fun at(y: Float) = (y / bottom).coerceIn(0f, 1f)
@@ -353,12 +438,29 @@ private fun CardBleed(p: androidx.compose.ui.graphics.painter.Painter, heroH: Dp
 
 /** .cs-bleed-fit: the art at full width (at least the hero tall) placed as the banner crops it (32 % down), its mirror under it. */
 @Composable
-private fun BleedFit(p: androidx.compose.ui.graphics.painter.Painter, heroH: Dp, filter: androidx.compose.ui.graphics.ColorFilter, modifier: Modifier) = BoxWithConstraints(modifier) {
+private fun BleedFit(p: androidx.compose.ui.graphics.painter.Painter, heroH: Dp, filter: androidx.compose.ui.graphics.ColorFilter, modifier: Modifier, oy: Float = .32f, pk: Boolean = false) = BoxWithConstraints(modifier) {
     val w = maxWidth
+    if (pk) {
+        // .cs-bleed-fit.pk-crop: the window (max(width, 1.68 × hero) wide, 1.68 : 1) at the top, zoomed 1.22 about (50 %, 88 %), its last
+        // 6 % fading; the mirror flips the whole fit about the zoomed window's lower edge, 1.0264 of the window down (polish.css 715-720).
+        val winH = maxOf(w / 1.68f, heroH); val winW = winH * 1.68f
+        val dens = LocalDensity.current
+        val fadeFrom = with(dens) { (winH * .94f).toPx() }; val fadeTo = with(dens) { winH.toPx() }
+        for (mirror in listOf(false, true)) Box(Modifier.fillMaxWidth().height(heroH).graphicsLayer {
+            if (mirror) { scaleY = -1f; transformOrigin = androidx.compose.ui.graphics.TransformOrigin(.5f, winH * 1.0264f / heroH) }
+        }) {
+            Box(Modifier.align(Alignment.TopCenter).wrapContentSize(Alignment.TopCenter, unbounded = true).requiredSize(winW, winH)
+                .graphicsLayer { scaleX = 1.22f; scaleY = 1.22f; transformOrigin = androidx.compose.ui.graphics.TransformOrigin(.5f, .88f) }
+                .fadeDown(fadeFrom, fadeTo)) {
+                Image(p, null, Modifier.fillMaxSize(), contentScale = ContentScale.FillBounds, colorFilter = filter)
+            }
+        }
+        return@BoxWithConstraints
+    }
     val ar = p.intrinsicSize.let { if (it.width > 0f && it.height > 0f && it.width.isFinite()) it.width / it.height else 626f / 457f }
     val imgH = maxOf(w / ar, heroH)
-    val top = heroH * .32f - imgH * .32f
-    val crop = androidx.compose.ui.BiasAlignment(0f, -.36f)
+    val top = heroH * oy - imgH * oy
+    val crop = androidx.compose.ui.BiasAlignment(0f, oy * 2f - 1f)
     Image(p, null, Modifier.offset(y = top).requiredWidth(w).requiredHeight(imgH), contentScale = ContentScale.Crop, alignment = crop, colorFilter = filter)
     Image(p, null, Modifier.offset(y = top + imgH).requiredWidth(w).requiredHeight(imgH).graphicsLayer { scaleY = -1f }, contentScale = ContentScale.Crop, alignment = crop, colorFilter = filter)
 }
@@ -383,11 +485,15 @@ private fun SheetHead(title: String, scrolled: Boolean, gutter: Dp, onClose: () 
 @Composable
 private fun Banner(h: CardHead, heroH: Dp, big: Boolean, gutter: Dp) {
     Box(Modifier.fillMaxWidth().height(heroH)) {
-        val p = heroPainter(h.art.ifBlank { null }?.let(homeArt))
+        val p0 = heroPainter(h.art.ifBlank { null }?.let(homeArt))
+        // Pokémon: the art window (pokemonArtCrop), centred, scaled 1.05 about 50 % 60 % (style.css 2680-2681).
+        val pk = h.crop == "pokemon"
+        val p = if (pk && p0 != null) remember(p0) { PkArtCrop(p0) } else p0
         // .cs-art: cover at 50 % 32 %, masked solid to half way, .533 at 74 %, gone at 94 %.
-        if (p != null) Image(p, null, Modifier.fillMaxSize().graphicsLayer { scaleX = 1.02f; scaleY = 1.02f; compositingStrategy = androidx.compose.ui.graphics.CompositingStrategy.Offscreen }
+        if (p != null) Image(p, null, Modifier.fillMaxSize().graphicsLayer { val k = if (pk) 1.05f else 1.02f; scaleX = k; scaleY = k
+                if (pk) transformOrigin = androidx.compose.ui.graphics.TransformOrigin(.5f, .6f); compositingStrategy = androidx.compose.ui.graphics.CompositingStrategy.Offscreen }
             .drawWithContent { drawContent(); drawRect(Brush.verticalGradient(0f to Color.Black, .5f to Color.Black, .74f to Color(0x88000000), .94f to Color.Transparent), blendMode = androidx.compose.ui.graphics.BlendMode.DstIn) },
-            contentScale = ContentScale.Crop, alignment = androidx.compose.ui.BiasAlignment(0f, -.36f))
+            contentScale = ContentScale.Crop, alignment = if (pk) Alignment.Center else androidx.compose.ui.BiasAlignment(0f, -.36f))
         Box(Modifier.fillMaxSize().drawBehind { drawRect(Brush.verticalGradient(0f to Color(0x52000000), .3f to Color(0x00000000))) })
         // .cs-title: 20 over / 18 under, the gutter in from each side, sitting on the foot of the art.
         Row(Modifier.align(Alignment.BottomStart).fillMaxWidth().padding(horizontal = gutter).padding(top = 20.dp, bottom = 18.dp), verticalAlignment = Alignment.Bottom,
@@ -403,7 +509,27 @@ private fun Banner(h: CardHead, heroH: Dp, big: Boolean, gutter: Dp) {
                         .padding(horizontal = 8.dp, vertical = 3.dp).semantics { contentDescription = h.ownedAria }) }
                 }
             }
-            Row(horizontalArrangement = Arrangement.spacedBy(2.dp)) { h.mana.forEach { Sym(it.src, it.alt, 22.dp) } }
+            if (h.emblems.isNotEmpty()) Row(horizontalArrangement = Arrangement.spacedBy(6.dp), verticalAlignment = Alignment.CenterVertically) { h.emblems.forEach { TitleEmblem(it) } }
+            else Row(horizontalArrangement = Arrangement.spacedBy(2.dp)) { h.mana.forEach { Sym(it.src, it.alt, 22.dp) } }
+        }
+    }
+}
+
+/**
+ * emblems.js gameEmblems beside the name (style.css 856-866): an orb 28 across; a Level / Rank star 22 with its number at 18 / 800, or a
+ * Link rating's LINK tag (9 / 900 on #1d4fa5) and number; HP at 18 / 800.
+ */
+@Composable
+private fun TitleEmblem(e: TcgEmblem) {
+    val num = sans(18f, 800, Ink, lh = 1.2f)
+    when {
+        e.icon != null && e.text.isBlank() -> Box(Modifier.semantics { contentDescription = e.label }) { SiteIcon(e.icon, 28.dp, Ink) }
+        e.hp -> Text(e.text, style = num, modifier = Modifier.padding(start = 2.dp))
+        else -> Row(Modifier.semantics { contentDescription = e.label }, verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(2.dp)) {
+            if (e.mark.isNotBlank()) Text(e.mark, style = sans(9f, 900, Color.White, lh = 1.2f, ls = .54f), modifier = Modifier.padding(end = 3.dp).clip(RoundedCornerShape(4.dp))
+                .background(Color(0xFF1D4FA5)).padding(horizontal = 4.dp, vertical = 1.dp))
+            e.icon?.let { SiteIcon(it, 22.dp, Ink) }
+            Text(e.text, style = num)
         }
     }
 }
@@ -414,6 +540,7 @@ private fun Banner(h: CardHead, heroH: Dp, big: Boolean, gutter: Dp) {
  */
 @Composable
 private fun CardTabs(tabs: List<CollTab>, big: Boolean, act: CollectionCardActions) {
+    val pal = LocalSheetPal.current
     GrowRow(Modifier.fillMaxWidth().drawBehind {
         // box-shadow -11 -5 0 5 and 11 -5 0 5 in #111318: the bar's pill, 5 larger, moved 11 out and 5 up each way.
         val g = 5.dp.toPx(); val dx = 11.dp.toPx(); val dy = 5.dp.toPx(); val r = CornerRadius(size.height / 2 + g)
@@ -421,7 +548,7 @@ private fun CardTabs(tabs: List<CollTab>, big: Boolean, act: CollectionCardActio
     }.clip(RoundedCornerShape(999.dp)).background(Color(0xF0121419)).border(1.dp, Color(0xCC2A2F38), RoundedCornerShape(999.dp)).padding(4.dp), gap = 2.dp) {
         tabs.forEach { t ->
             Row(Modifier.heightIn(min = 44.dp).clip(RoundedCornerShape(999.dp)).then(if (t.on) Modifier.drawBehind {
-                cssLinear(180f, 0f to Color(0xFFEDC87F), .58f to GoldC, 1f to Color(0xFFC79F4E), corner = CornerRadius(size.height / 2))
+                cssLinear(180f, 0f to pal.light, .58f to pal.gold, 1f to pal.dark, corner = CornerRadius(size.height / 2))
                 drawRoundRect(Color(0x70FFFFFF), topLeft = Offset(size.height / 2, 0f), size = Size(size.width - size.height, 1.dp.toPx()))
             } else Modifier).clickable { act.tab(t.key) }.padding(horizontal = if (big) 16.dp else 8.dp, vertical = 8.dp),
                 horizontalArrangement = Arrangement.Center, verticalAlignment = Alignment.CenterVertically) {
@@ -460,7 +587,9 @@ private fun OverviewHead(m: CollectionCardModel, act: CollectionCardActions, big
             }
         }
         Column(Modifier.padding(top = 12.dp, bottom = 14.dp), verticalArrangement = Arrangement.spacedBy(10.dp)) {
-            m.set?.let { SetSummary(it, big) { act.press(CardPress("", null, it.let { _ -> "set" }, mapOf("act" to "set", "code" to it.code), "", "", "", false, false, false, false, false)) } }
+            m.set?.let { SetSummary(it, big) { act.press(it.press ?: CardPress("", null, "set", mapOf("act" to "set", "code" to it.code), "", "", "", false, false, false, false, false)) } }
+            // .card-archetype: Yu-Gi-Oh!'s archetype and its printings, a gold link (13 / 600, 4 over and under).
+            m.archetype?.let { a -> Text(a.label, style = sans(13f, 600, GoldC, lh = 1.45f), modifier = Modifier.clickable { act.press(a) }.padding(vertical = 4.dp)) }
             m.price?.let { PriceSummary(it, m.glyphs, big, act) }
         }
     }
@@ -471,10 +600,17 @@ private fun OverviewHead(m: CollectionCardModel, act: CollectionCardActions, big
 private fun SetSummary(s: CardSetSummary, big: Boolean, onClick: () -> Unit) {
     val identity: @Composable (Modifier) -> Unit = { mod ->
         Row(mod, verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(12.dp)) {
-            SetSymbol(s, 24.dp)
-            Column {
+            when {
+                // .ygo-pack: 34 × 48, cover, 4 corners, a soft shadow under; img.pks.big: 34 square in light ink.
+                s.pictureKind == "ygo-pack" -> firstOf(s.picture).let { p -> Box(Modifier.size(34.dp, 48.dp).drawBehind { drawRoundRect(Color(0x80000000), Offset(0f, 1.dp.toPx()), size, CornerRadius(4.dp.toPx())) }
+                    .clip(RoundedCornerShape(4.dp)).background(Surface2)) { if (p != null) Image(p, null, Modifier.fillMaxSize(), contentScale = ContentScale.Crop) } }
+                s.picture.isNotEmpty() -> PkSymbol(s.picture, 34.dp)
+                else -> SetSymbol(s, 24.dp)
+            }
+            Column(Modifier.weight(1f, fill = false)) {
                 Text(buildAnnotatedString { append(s.name); if (s.go) withStyle(SpanStyle(color = GoldC)) { append(" ›") } }, style = sans(14f, 700, Ink, lh = 1.4f))
-                Text(s.line, style = sans(12f, 400, Mute, lh = 1.45f), modifier = Modifier.padding(top = 4.dp))
+                if (s.parts.isNotEmpty()) PartsLine(s.parts, sans(12f, 400, Mute, lh = 1.45f), Modifier.padding(top = 4.dp))
+                else Text(s.line, style = sans(12f, 400, Mute, lh = 1.45f), modifier = Modifier.padding(top = 4.dp))
             }
         }
     }
@@ -486,7 +622,7 @@ private fun SetSummary(s: CardSetSummary, big: Boolean, onClick: () -> Unit) {
                 }
                 if (p.pct.isNotBlank()) Text(p.pct, style = sans(20f, 650, Ink, lh = 1.45f, ls = -.8f))
             }
-            Box(Modifier.padding(vertical = 8.dp).fillMaxWidth().height(5.dp).clip(RoundedCornerShape(99.dp)).background(Color(0x14EDEFF4))) {
+            if (p.track) Box(Modifier.padding(vertical = 8.dp).fillMaxWidth().height(5.dp).clip(RoundedCornerShape(99.dp)).background(Color(0x14EDEFF4))) {
                 Box(Modifier.fillMaxHeight().fillMaxWidth(p.fill.coerceIn(0f, 1f)).clip(RoundedCornerShape(99.dp))
                     .background(Brush.horizontalGradient(listOf(Color(0xFFC69F78), Color(0xFFA3D7AD)))))
             }
@@ -497,6 +633,42 @@ private fun SetSummary(s: CardSetSummary, big: Boolean, onClick: () -> Unit) {
     if (big) Row(mod.padding(horizontal = 16.dp, vertical = 14.dp), verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(16.dp)) {
         identity(Modifier.weight(1.18f)); progress(Modifier.weight(1f))
     } else Column(mod.padding(12.dp), verticalArrangement = Arrangement.spacedBy(12.dp)) { identity(Modifier); progress(Modifier) }
+}
+
+/**
+ * A line with its set badge or rarity mark in place (style.css .tset: an 11 / 700 chip on the second surface, 6 corners, 1 6 in, the code
+ * at 14 / 900 and the rarity code 4 lower at 10 / 800 in its foil; .cd-set small img.pkr: 9 tall).
+ */
+@Composable
+private fun PartsLine(parts: List<TcgPart>, style: TextStyle, modifier: Modifier = Modifier) {
+    val measurer = androidx.compose.ui.text.rememberTextMeasurer()
+    val density = LocalDensity.current
+    val code = sans(14f, 900, Ink, lh = 1.4f); val rx = sans(10f, 800, Ink, lh = 1.45f)
+    val inline = HashMap<String, InlineTextContent>()
+    val text = buildAnnotatedString {
+        parts.forEachIndexed { i, p -> when {
+            p.tset != null -> { val b = p.tset
+                val w = with(density) { (measurer.measure(b.code, code).size.width + (if (b.rarity.isNotBlank()) measurer.measure(b.rarity, rx).size.width else 0)).toDp() } +
+                    (if (b.rarity.isNotBlank()) 3.dp else 0.dp) + 14.dp
+                inline["p$i"] = InlineTextContent(Placeholder(with(density) { w.toSp() }, 24.sp, PlaceholderVerticalAlign.TextCenter)) {
+                    Row(Modifier.fillMaxSize().clip(RoundedCornerShape(6.dp)).background(Surface2).border(1.dp, LineC, RoundedCornerShape(6.dp)).padding(horizontal = 6.dp, vertical = 1.dp),
+                        verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(3.dp)) {
+                        Text(b.code, style = code, maxLines = 1, softWrap = false)
+                        if (b.rarity.isNotBlank()) Box(Modifier.padding(top = 4.dp)) { RxCode(b.rarity, b.rarityKind, 10f, Motion.still) }
+                    }
+                }
+                appendInlineContent("p$i", b.code + " " + b.rarity)
+            }
+            p.img.isNotEmpty() -> {
+                inline["p$i"] = InlineTextContent(Placeholder(2.4.em, .75.em, PlaceholderVerticalAlign.TextCenter)) {
+                    Box(Modifier.fillMaxSize(), contentAlignment = Alignment.Center) { PkSymbol(p.img, 28.dp, ink = p.ink, glow = !p.ink, height = 9.dp) }
+                }
+                appendInlineContent("p$i", p.alt)
+            }
+            else -> withStyle(SpanStyle(fontWeight = if (p.bold) FontWeight.Bold else null)) { append(p.t.orEmpty()) }
+        } }
+    }
+    Text(text, style = style, inlineContent = inline, modifier = modifier)
 }
 
 /** A set's symbol masked with its rarity's colours (the site's .set-icon over --icon). */
@@ -550,7 +722,8 @@ private fun PriceSummary(p: CardPrice, glyphs: Map<String, SiteSvg>, big: Boolea
 /** .cs-card: the card and its finishes and printings; beside it (over 600 wide) or under it, the rules text and what you do with it. */
 @Composable
 private fun Overview(m: CollectionCardModel, o: CardOverview, act: CollectionCardActions, two: Boolean, gutter: Dp, onZoom: () -> Unit) {
-    Box(Modifier.padding(horizontal = gutter).padding(top = 6.dp, bottom = 12.dp)) {
+    Column(Modifier.padding(horizontal = gutter).padding(top = 6.dp, bottom = 12.dp)) {
+        if (o.pickers.isNotEmpty()) Pickers(o.pickers, act, Modifier.padding(bottom = 12.dp), o.pickersFoot)
         if (two) Row(horizontalArrangement = Arrangement.spacedBy(22.dp)) {
             Box(Modifier.weight(.45f)) { ArtStack(m, o, act, onZoom) }
             Box(Modifier.weight(.55f)) { Side(m, o, act, 14.dp) }
@@ -561,6 +734,18 @@ private fun Overview(m: CollectionCardModel, o: CardOverview, act: CollectionCar
     }
 }
 
+/** workbench-ui.js's pickers (.ygo-price-preview, .price-selectors): each label (12.5 / 600, muted) over its glass select, 10 apart; then the note. */
+@Composable
+private fun Pickers(pickers: List<TcgPicker>, act: CollectionCardActions, modifier: Modifier = Modifier, foot: String = "") {
+    Column(modifier.fillMaxWidth(), verticalArrangement = Arrangement.spacedBy(10.dp)) {
+        pickers.forEach { p -> Column(verticalArrangement = Arrangement.spacedBy(4.dp)) {
+            Text(p.title, style = sans(12.5f, 600, Mute, lh = 1.45f))
+            SiteSelect(p.options, 12.5f, p.options.indexOfFirst { it.on }.coerceAtLeast(0)) { i -> act.select(p.name, p.options[i].value) }
+        } }
+        if (foot.isNotBlank()) Text(foot, style = sans(12f, 400, Foot, lh = 1.45f), modifier = Modifier.padding(bottom = 6.dp))
+    }
+}
+
 /** .cd-art-stack: the card in its tier frame and finish (tap to enlarge), the flip, the finish chips, profile photo, other printings. */
 @Composable
 private fun ArtStack(m: CollectionCardModel, o: CardOverview, act: CollectionCardActions, onZoom: () -> Unit) {
@@ -568,19 +753,25 @@ private fun ArtStack(m: CollectionCardModel, o: CardOverview, act: CollectionCar
         val data = dev.cardstashy.nativeplay.play.CardData.ready.collectAsStateValue()
         val ctx = androidx.compose.ui.platform.LocalContext.current
         LaunchedEffect(Unit) { if (data == null) dev.cardstashy.nativeplay.play.CardData.warm(ctx) }
+        val tcg = m.game != CardGame.MTG
         val finish = Foil.finishFor(m.shown, o.finishKey.ifBlank { "nonfoil" })
-        val look = data?.let { Foil.look(it, m.shown, finish) }
+        val look = if (tcg) null else data?.let { Foil.look(it, m.shown, finish) }
+        val worn = remember(o.tcgFinish, o.image) { o.tcgFinish?.let { tcgFinishOf(ctx, m.game, it, o.image) } }
         val lean = rememberCardLean()
         val touch = remember(lean) { derivedStateOf { lean.light } }
         val shines = look?.takeIf { it.shines }
-        val tilt = rememberFoilTilt(live = look?.recipe != null, touch = touch)
+        val tilt = rememberFoilTilt(live = look?.recipe != null || worn != null, touch = touch)
         BoxWithConstraints(Modifier.fillMaxWidth()) {
             // --frame-w: clamp(6px, 2.4vw, 10px); the card inside at 6 corners.
             val frameW = (androidx.compose.ui.platform.LocalConfiguration.current.screenWidthDp.dp * .024f).coerceIn(6.dp, 10.dp)
-            val w = maxWidth; val cardH = (w - frameW * 2) * 88f / 63f + frameW * 2
+            // A Yu-Gi-Oh! card is 59 × 86.
+            val w = maxWidth; val cardH = (w - frameW * 2) * (if (m.game == CardGame.YGO) 86f / 59f else 88f / 63f) + frameW * 2
             TierFrame(o.tier, w, cardH, frameW) {
-                CardPicture(o.image, shines, tilt, Modifier.fillMaxSize().cardLean(lean, foil = shines != null, shape = RoundedCornerShape(6.dp))
-                    .pointerInput(Unit) { detectTapGestures(onLongPress = {}) { onZoom() } }.semantics { contentDescription = "Enlarge ${m.name}" }, shape = RoundedCornerShape(6.dp))
+                val mod = Modifier.fillMaxSize().cardLean(lean, foil = shines != null || worn != null, shape = RoundedCornerShape(6.dp))
+                    .pointerInput(Unit) { detectTapGestures(onLongPress = {}) { onZoom() } }.semantics { contentDescription = "Enlarge ${m.name}" }
+                if (!tcg) CardPicture(o.image, shines, tilt, mod, shape = RoundedCornerShape(6.dp))
+                else firstOf(o.sources.ifEmpty { listOf(o.image) }).let { p -> if (p != null) CardFace(p, null, tilt, mod, RoundedCornerShape(6.dp), finish = worn)
+                    else Box(mod.clip(RoundedCornerShape(6.dp)).background(Surface2)) }
             }
         }
         o.flip?.let { f -> Ghost(f.label, f.icon, Modifier.fillMaxWidth(), fs = 13.5f) { act.face() } }
@@ -590,9 +781,9 @@ private fun ArtStack(m: CollectionCardModel, o: CardOverview, act: CollectionCar
                 horizontalArrangement = Arrangement.spacedBy(5.6.dp)) {
                 o.finishes.forEach { c ->
                     Row(Modifier.heightIn(min = 44.dp).clip(RoundedCornerShape(999.dp)).background(Surface2).border(1.dp, if (c.on) GoldC else Color(0xFF353B46), RoundedCornerShape(999.dp))
-                        .clickable { act.finish(c.finish) }.padding(horizontal = 9.dp, vertical = 3.dp), verticalAlignment = Alignment.CenterVertically,
+                        .clickable { c.press?.takeIf { tcg }?.let(act.press) ?: act.finish(c.finish) }.padding(horizontal = 9.dp, vertical = 3.dp), verticalAlignment = Alignment.CenterVertically,
                         horizontalArrangement = Arrangement.spacedBy(6.4.dp)) {
-                        Swatch(c.swatch); Text(c.label, style = sans(12f, 700, Ink, lh = 1.45f))
+                        Swatch(c.swatch, glint = c.on && c.press?.act == "ygoPickRarity"); Text(c.label, style = sans(12f, 700, Ink, lh = 1.45f))
                     }
                 }
             }
@@ -603,18 +794,66 @@ private fun ArtStack(m: CollectionCardModel, o: CardOverview, act: CollectionCar
     }
 }
 
-/** .rarity-swatch: 16 square, 5 corners, a hair edge; plain grey, or the foil's colours. */
+/**
+ * .rarity-swatch (finish-effects.css 146-160): 16 square, 5 corners, a hair edge (the ink at 30 %), #8b8f96 unless its kind paints
+ * it: plain, silver, rainbow, ultra (a 2 px gold ring inside), diagonal and parallel stripes, the prism's 6 px checks, gold, platinum
+ * (a sheen over steel), glitter (three white sparks), ghost (greyed to 30 %), emboss (lit and shaded edges) and foilcard. The chosen
+ * Yu-Gi-Oh! rarity glints (brightness 1 → 1.35 → 1 over 2.4 s) unless motion is reduced.
+ */
 @Composable
-private fun Swatch(kind: String) {
-    val brush = when (kind) {
-        "rainbow" -> null
-        "etched" -> Brush.linearGradient(listOf(Color(0xFFB9A57A), Color(0xFFF2E3B5), Color(0xFF8F7A4E)))
-        "gold" -> Brush.linearGradient(listOf(Color(0xFF9A6F08), Color(0xFFFFD34D), Color(0xFFFFF6C9)))
-        else -> Brush.linearGradient(listOf(Color(0xFF6F737A), Color(0xFF9A9EA6)))
-    }
+private fun Swatch(kind: String, glint: Boolean = false) {
+    val k = if (glint && !Motion.still) rememberInfiniteTransition(label = "glint").animateFloat(0f, 1f, infiniteRepeatable(tween(1200, easing = androidx.compose.animation.core.FastOutSlowInEasing), RepeatMode.Reverse), label = "glint") else null
     Box(Modifier.size(16.dp).clip(RoundedCornerShape(5.dp)).drawBehind {
-        if (brush != null) drawRect(brush) else cssLinear(135f, 0f to Color(0xFF4FB6E6), .3f to Color(0xFFA98BE6), .52f to Color(0xFFF0A0B8), .72f to Color(0xFFF2D27A), 1f to Color(0xFF7FD3A6))
+        paintSwatch(kind, 1f, null)
+        // filter: brightness(1.35) at the peak: the same paint added again at up to .35.
+        k?.value?.takeIf { it > 0f }?.let { paintSwatch(kind, .35f * it, androidx.compose.ui.graphics.BlendMode.Plus) }
     }.border(1.dp, Color(0x4DEDEFF4), RoundedCornerShape(5.dp)))
+}
+
+private fun hex(v: Long) = Color(v)
+/** CSS saturate(s): each colour pulled toward its luminance. */
+private fun Color.saturate(s: Float): Color { val l = .2126f * red + .7152f * green + .0722f * blue
+    return Color((l + (red - l) * s).coerceIn(0f, 1f), (l + (green - l) * s).coerceIn(0f, 1f), (l + (blue - l) * s).coerceIn(0f, 1f), alpha) }
+
+private fun DrawScope.paintSwatch(kind: String, a: Float, blend: androidx.compose.ui.graphics.BlendMode?) {
+    val bm = blend ?: androidx.compose.ui.graphics.BlendMode.SrcOver
+    fun lin(deg: Float, vararg st: Pair<Float, Color>) { val rad = Math.toRadians(deg.toDouble()); val dx = sin(rad).toFloat(); val dy = -cos(rad).toFloat()
+        val len = abs(size.width * dx) + abs(size.height * dy); val c = Offset(size.width / 2, size.height / 2); val half = Offset(dx * len / 2, dy * len / 2)
+        drawRect(Brush.linearGradient(*st, start = c - half, end = c + half), alpha = a, blendMode = bm) }
+    // repeating-linear-gradient: hard bands [period] px long along [deg], from the gradient line's start.
+    fun stripes(deg: Float, band: Float, cs: List<Color>) { val rad = Math.toRadians(deg.toDouble()); val dx = sin(rad).toFloat(); val dy = -cos(rad).toFloat()
+        val len = abs(size.width * dx) + abs(size.height * dy); val c = Offset(size.width / 2, size.height / 2); val st = c - Offset(dx * len / 2, dy * len / 2)
+        val period = band.dp.toPx() * cs.size; val stops = cs.flatMapIndexed { i, col -> listOf(i.toFloat() / cs.size to col, (i + 1f) / cs.size to col) }.toTypedArray()
+        drawRect(Brush.linearGradient(*stops, start = st, end = st + Offset(dx * period, dy * period), tileMode = androidx.compose.ui.graphics.TileMode.Repeated), alpha = a, blendMode = bm) }
+    fun ring(w: Float, col: Color) { val px = w.dp.toPx(); drawRoundRect(col, Offset(px / 2, px / 2), Size(size.width - px, size.height - px), CornerRadius(5.dp.toPx() - px / 2), style = androidx.compose.ui.graphics.drawscope.Stroke(px), alpha = a, blendMode = bm) }
+    when (kind) {
+        "plain" -> lin(135f, 0f to hex(0xFF6F737A), 1f to hex(0xFF9A9EA6))
+        "silver" -> lin(135f, 0f to hex(0xFF7C8796), .45f to hex(0xFFEEF3F8), .6f to hex(0xFF9AA6B4), 1f to hex(0xFFDDE4EC))
+        "rainbow" -> lin(135f, 0f to hex(0xFF4FB6E6), .3f to hex(0xFFA98BE6), .52f to hex(0xFFF0A0B8), .72f to hex(0xFFF2D27A), 1f to hex(0xFF7FD3A6))
+        "ultra" -> { lin(135f, 0f to hex(0xFF4FB6E6), .3f to hex(0xFFA98BE6), .52f to hex(0xFFF0A0B8), 1f to hex(0xFF7FD3A6)); ring(2f, hex(0xFFE3B44F)) }
+        "diagonal" -> stripes(135f, 2f, listOf(hex(0xFF9FD8EC), hex(0xFFD6B2EE), hex(0xFFF4D891)))
+        "parallel" -> stripes(0f, 1.5f, listOf(hex(0xFFA5DCEF), hex(0xFFE2C2F2), hex(0xFFF6DDA0)))
+        "prism" -> { val t = 6.dp.toPx(); val h = t / 2; var y = 0f
+            // conic-gradient in 6 px tiles: from twelve o'clock, a quarter each.
+            while (y < size.height) { var x = 0f
+                while (x < size.width) {
+                    drawRect(hex(0xFF9FD8EC), Offset(x + h, y), Size(h, h), alpha = a, blendMode = bm); drawRect(hex(0xFFF0B0D0), Offset(x + h, y + h), Size(h, h), alpha = a, blendMode = bm)
+                    drawRect(hex(0xFFF4D891), Offset(x, y + h), Size(h, h), alpha = a, blendMode = bm); drawRect(hex(0xFFA6E4C2), Offset(x, y), Size(h, h), alpha = a, blendMode = bm)
+                    x += t }
+                y += t } }
+        "gold" -> lin(135f, 0f to hex(0xFF8C5F17), .45f to hex(0xFFF4D27D), .62f to hex(0xFFB8862D), 1f to hex(0xFFFFE9A8))
+        "platinum" -> { lin(135f, 0f to hex(0xFF6F7A8E), .4f to hex(0xFFDFE6F2), .64f to hex(0xFF8F9BB0), 1f to hex(0xFFC9D2E2))
+            lin(135f, 0f to Color.Transparent, .38f to Color.Transparent, .46f to hex(0xAAB8E4F4), .52f to hex(0xAAE6C8F4), .58f to hex(0xAAF4E2B0), .66f to Color.Transparent, 1f to Color.Transparent) }
+        "glitter" -> { lin(135f, 0f to hex(0xFF5AB6E8), .5f to hex(0xFFC08AE8), 1f to hex(0xFFF1C26E))
+            for ((fx, fy, r) in listOf(Triple(.25f, .3f, 1f), Triple(.7f, .65f, 1f), Triple(.6f, .2f, .8f))) { val c = Offset(size.width * fx, size.height * fy); val rr = r.dp.toPx()
+                drawCircle(Brush.radialGradient(0f to Color.White, .5f to Color.White, 1f to Color.Transparent, center = c, radius = rr * 2), rr * 2, c, alpha = a, blendMode = bm) } }
+        "ghost" -> lin(135f, 0f to hex(0xFFC9D6E6).saturate(.3f), .4f to Color.White, .6f to hex(0xFFA9B8CC).saturate(.3f), 1f to hex(0xFFE8EEF6).saturate(.3f))
+        "emboss" -> { lin(145f, 0f to hex(0xFFF2D690), .55f to hex(0xFF9A6D22), 1f to hex(0xFFF7E2A6)); val px = 1.dp.toPx()
+            drawRect(hex(0x66FFFFFF), Offset.Zero, Size(size.width, px), alpha = a, blendMode = bm); drawRect(hex(0x66FFFFFF), Offset.Zero, Size(px, size.height), alpha = a, blendMode = bm)
+            drawRect(hex(0x55000000), Offset(0f, size.height - px), Size(size.width, px), alpha = a, blendMode = bm); drawRect(hex(0x55000000), Offset(size.width - px, 0f), Size(px, size.height), alpha = a, blendMode = bm) }
+        "foilcard" -> { lin(135f, 0f to hex(0xFF7FD0EA), .4f to hex(0xFFC8A6EE), .7f to hex(0xFFF3C6A0), 1f to hex(0xFF9FE0BF)); ring(1f, hex(0x88FFFFFF)) }
+        else -> drawRect(hex(0xFF8B8F96), alpha = a, blendMode = bm)
+    }
 }
 
 /**
@@ -678,11 +917,18 @@ private fun Printings(p: CardPrintings, act: CollectionCardActions) {
             horizontalArrangement = Arrangement.spacedBy(10.dp)) {
             p.rows.forEach { r ->
                 Column(Modifier.width(100.dp).clip(RoundedCornerShape(10.dp)).then(if (r.on) Modifier.border(1.dp, GoldC, RoundedCornerShape(10.dp)) else Modifier)
-                    .clickable { act.print(r.i) }.padding(5.dp).semantics { contentDescription = r.aria }, horizontalAlignment = Alignment.CenterHorizontally,
+                    .clickable { r.press?.let(act.press) ?: act.print(r.i) }.padding(5.dp).semantics { contentDescription = r.aria }, horizontalAlignment = Alignment.CenterHorizontally,
                     verticalArrangement = Arrangement.spacedBy(5.dp)) {
                     val pic = heroPainter(r.src.ifBlank { null }?.let(homeArt))
                     // img 88 × 123, contain; the set's name wraps anywhere, unclamped (a long name makes the whole rail taller).
-                    Box(Modifier.size(88.dp, 123.dp).clip(RoundedCornerShape(5.dp))) { if (pic != null) Image(pic, null, Modifier.fillMaxSize(), contentScale = ContentScale.Fit) }
+                    // img[data-tier]: outline 2 px inside the box in --tier (t3-t5 glow 0 0 12 -3 in it too).
+                    val ring = r.tier.takeIf { r.tierKey.isNotBlank() }?.let { cssColor(it, Ink) }
+                    Box(Modifier.size(88.dp, 123.dp).then(if (ring != null && r.tierKey in setOf("t3", "t4", "t5")) Modifier.drawBehind {
+                        drawRoundRect(Brush.radialGradient(listOf(ring.copy(alpha = .55f), Color.Transparent), center, size.maxDimension * .62f), Offset(-6.dp.toPx(), -6.dp.toPx()), Size(size.width + 12.dp.toPx(), size.height + 12.dp.toPx()), CornerRadius(8.dp.toPx()))
+                    } else Modifier).clip(RoundedCornerShape(5.dp))) {
+                        if (pic != null) Image(pic, null, Modifier.fillMaxSize(), contentScale = ContentScale.Fit)
+                        if (ring != null) Box(Modifier.fillMaxSize().border(2.dp, ring, RoundedCornerShape(5.dp)))
+                    }
                     Text(r.name, style = sans(10f, 700, Ink, lh = 1.3f), textAlign = TextAlign.Center)
                     Text(r.num, style = sans(10f, 400, Mute, lh = 1.45f), textAlign = TextAlign.Center)
                 }
@@ -711,7 +957,7 @@ private fun Side(m: CollectionCardModel, o: CardOverview, act: CollectionCardAct
         }
         o.alert?.let { a -> Column(Modifier.fillMaxWidth().siteGlass(12.dp).clickable { go(a) }.padding(10.dp)) {
             Text(o.alertTitle, style = sans(13f, 700, Ink)); Text(o.alertLine, style = sans(12f, 400, Mute)) } }
-        if (o.own.isNotBlank()) Text(o.own, style = sans(13f, 400, Ink, lh = 1.5f), modifier = Modifier.padding(bottom = 4.dp))
+        if (o.own.isNotBlank() && !o.ownInActions) Text(o.own, style = sans(13f, 400, if (o.ownMuted) Mute else Ink, lh = 1.5f), modifier = Modifier.padding(bottom = 4.dp))
         o.legal?.let { l -> Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(4.dp)) {
             val c = when (l.level) { "ok" -> Good; "warn" -> Warn; else -> Bad }
             SiteIcon(l.icon, 14.dp, c)
@@ -721,6 +967,7 @@ private fun Side(m: CollectionCardModel, o: CardOverview, act: CollectionCardAct
         Secondary(o, ::go)
         Column(Modifier.padding(top = 8.dp), verticalArrangement = Arrangement.spacedBy(12.dp)) {
             Box(Modifier.fillMaxWidth().height(1.dp).background(LineC))
+            if (o.own.isNotBlank() && o.ownInActions) Text(o.own, style = sans(13f, 400, if (o.ownMuted) Mute else Ink, lh = 1.5f))
             o.owned.forEach { g -> OwnedGroup(g, m.glyphs, ::go) }
             if (o.owned.isNotEmpty()) Box(Modifier.fillMaxWidth().height(1.dp).background(LineC))
             Column(verticalArrangement = Arrangement.spacedBy(10.dp)) {
@@ -754,9 +1001,11 @@ private fun Discovery(o: CardOverview, go: (CardPress) -> Unit) {
 private fun Face(f: CardFace, act: CollectionCardActions, go: (CardPress) -> Unit) {
     Column(Modifier.padding(bottom = 10.dp).fillMaxWidth().siteGlass(14.dp).padding(12.dp)) {
         Text(f.eyebrow.uppercase(), style = Eyebrow, modifier = Modifier.padding(bottom = 14.dp))
+        f.pk?.let { PkFace(it, act) }
         if (f.name.isNotBlank()) Row(verticalAlignment = Alignment.CenterVertically) { Text(f.name, style = sans(15f, 700), modifier = Modifier.weight(1f)); f.mana.forEach { Sym(it.src, it.alt, 16.dp) } }
         if (f.type.isNotBlank()) Text(f.type, style = sans(14f, 600, Ink))
-        if (f.lines.isNotEmpty()) Column(Modifier.padding(vertical = 8.dp)) { f.lines.forEach { Rich(it, sans(14f, 400, Ink, lh = 1.7f), act.rule) } }
+        // .effect-line (style.css 2575): 14 / 1.7, 16 between paragraphs, wrapped "pretty".
+        if (f.lines.isNotEmpty() && f.pk == null) Column(Modifier.padding(vertical = 8.dp), verticalArrangement = Arrangement.spacedBy(16.dp)) { f.lines.forEach { Rich(it, sans(14f, 400, Ink, lh = 1.7f), act.rule, pretty = true) } }
         f.flavor?.let { fl ->
             Column(Modifier.padding(top = 22.dp, bottom = 6.dp).padding(start = 18.dp, top = 16.dp)) {
                 Text(fl.let { f.flavorLabel }.uppercase(), style = Eyebrow.copy(fontFamily = FontFamily.Serif), modifier = Modifier.padding(bottom = 8.dp))
@@ -767,6 +1016,44 @@ private fun Face(f: CardFace, act: CollectionCardActions, go: (CardPress) -> Uni
             Text(f.pt, style = sans(13f, 400, Mute), modifier = Modifier.weight(1f))
             f.artist?.let { a -> Text("🖌 ", style = sans(13f, 400, Mute))
                 Text(a, style = sans(13f, 400, Mute).copy(textDecoration = TextDecoration.Underline), modifier = Modifier.clickable { f.artistPress?.let(go) }) }
+        }
+    }
+}
+
+/**
+ * tcg.js pokemonText (style.css 867-886, 4742): "Evolves from" and the Pokémon; each Ability on a red wash (its tag 11 / 900 coral, upper case);
+ * each attack, a hairline between them, its Energy orbs (16, 2 apart) and name, its damage at 18 / 800 Manrope; the card's own rules; then
+ * Weakness, Resistance and Retreat in a muted 13 strip under a hairline.
+ */
+@OptIn(ExperimentalLayoutApi::class)
+@Composable
+private fun PkFace(pk: PkText, act: CollectionCardActions) {
+    // .pk-ability p, .pk-attack p: 15 / 1.45, 4 under the name.
+    val body = sans(15f, 400, Ink, lh = 1.45f)
+    Column(Modifier.fillMaxWidth()) {
+        pk.evolves?.let { e -> Text(buildAnnotatedString { withStyle(SpanStyle(color = Mute)) { append(pk.evolvesLabel) }; append(" "); withStyle(SpanStyle(fontWeight = FontWeight.Bold)) { append(e) } },
+            style = sans(13f, 400, Ink, lh = 1.5f), modifier = Modifier.padding(bottom = 12.dp)) }
+        pk.abilities.forEach { a -> Column(Modifier.padding(bottom = 8.dp).fillMaxWidth().clip(RoundedCornerShape(10.dp)).background(Color(0x1FDC3C3C)).padding(horizontal = 10.dp, vertical = 8.dp)) {
+            Text(buildAnnotatedString { withStyle(SpanStyle(color = Color(0xFFFF8A7A), fontSize = 11.sp, fontWeight = FontWeight(900), letterSpacing = .66.sp)) { append(a.tag.uppercase()) }
+                append(" "); withStyle(SpanStyle(fontWeight = FontWeight.Bold)) { append(a.name) } }, style = sans(15f, 400, Ink, lh = 1.45f))
+            if (a.runs.isNotEmpty()) Rich(a.runs, body, act.rule, Modifier.padding(top = 4.dp))
+        } }
+        pk.attacks.forEachIndexed { i, a -> Column(Modifier.fillMaxWidth().then(if (i > 0) Modifier.topLine() else Modifier).padding(vertical = 8.dp)) {
+            Row(verticalAlignment = Alignment.CenterVertically) {
+                Row(Modifier.weight(1f), verticalAlignment = Alignment.CenterVertically) {
+                    Row(Modifier.padding(end = 6.dp), horizontalArrangement = Arrangement.spacedBy(2.dp)) { a.costs.forEach { c -> Box(Modifier.semantics { contentDescription = c.label }) { SiteIcon(c.icon, 16.dp, Ink) } } }
+                    Text(a.name, style = sans(15f, 700, Ink, lh = 1.45f))
+                }
+                if (a.damage.isNotBlank()) Text(a.damage, style = manrope(18f, 800, Ink, lh = 1.2f))
+            }
+            if (a.runs.isNotEmpty()) Rich(a.runs, body, act.rule, Modifier.padding(top = 4.dp))
+        } }
+        pk.rules.forEach { Rich(it, body, act.rule, Modifier.padding(vertical = 4.dp)) }
+        if (pk.strip.isNotEmpty()) FlowRow(Modifier.padding(top = 10.dp).fillMaxWidth().topLine().padding(top = 8.dp), horizontalArrangement = Arrangement.spacedBy(16.dp),
+            verticalArrangement = Arrangement.spacedBy(6.dp)) {
+            pk.strip.forEach { part -> Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(3.dp)) {
+                part.forEach { o -> if (o.icon != null) Box(Modifier.semantics { contentDescription = o.label }) { SiteIcon(o.icon, 16.dp, Ink) } else Text(o.t.orEmpty().trim(), style = sans(13f, 400, Mute, lh = 1.45f)) }
+            } }
         }
     }
 }
@@ -791,21 +1078,63 @@ private fun DeckPanel(d: CardDeckPanel, glyphs: Map<String, SiteSvg>, go: (CardP
 @OptIn(ExperimentalLayoutApi::class)
 @Composable
 private fun Secondary(o: CardOverview, go: (CardPress) -> Unit) {
+    val gold = GoldC
+    var fact by remember(o.facts, o.fact) { mutableStateOf(o.facts.indexOf(o.fact).coerceAtLeast(0)) }
     Column(Modifier.padding(top = 4.dp), verticalArrangement = Arrangement.spacedBy(10.dp)) {
         Box(Modifier.fillMaxWidth().height(1.dp).background(LineC))
+        if (o.stats.isNotEmpty()) StatGrid(o.stats)
+        o.statHelp?.let { (summary, runs) -> var open by remember { mutableStateOf(false) }
+            Column {
+                Text(summary, style = sans(13f, 400, Mute, lh = 1.45f), modifier = Modifier.clickable { open = !open }.padding(vertical = 2.dp))
+                if (open) Rich(runs, sans(13f, 400, Mute, lh = 1.45f), {}, Modifier.padding(top = 6.dp))
+            }
+        }
         if (o.chips.isNotEmpty()) FlowRow(Modifier.padding(vertical = 8.dp), horizontalArrangement = Arrangement.spacedBy(6.dp), verticalArrangement = Arrangement.spacedBy(6.dp)) {
             o.chips.forEach { c -> Chip(c.label, roleColor(c.role) ?: if (c.warn) Warn else Ink) }
         }
-        if (o.fact.isNotBlank()) Column(Modifier.fillMaxWidth().clip(RoundedCornerShape(8.dp)).background(Color(0x14E8B85B)).drawBehind {
-            drawRect(GoldC.copy(alpha = .7f), size = Size(3.dp.toPx(), size.height))
+        if (o.fact.isNotBlank()) Column(Modifier.fillMaxWidth().clip(RoundedCornerShape(8.dp)).background(gold.copy(alpha = .08f)).drawBehind {
+            drawRect(gold.copy(alpha = .7f), size = Size(3.dp.toPx(), size.height))
         }.padding(horizontal = 10.dp, vertical = 8.dp)) {
-            Text(o.factLabel.uppercase(), style = sans(11f, 700, GoldC, lh = 1.45f, ls = .66f), modifier = Modifier.padding(bottom = 3.dp))
-            Text(o.fact, style = sans(13f, 400, Ink, lh = 1.45f), modifier = Modifier.padding(bottom = 4.dp))
+            Text(o.factLabel.uppercase(), style = sans(11f, 700, gold, lh = 1.45f, ls = .66f), modifier = Modifier.padding(bottom = 3.dp))
+            Text(o.facts.getOrNull(fact) ?: o.fact, style = sans(13f, 400, Ink, lh = 1.45f), modifier = Modifier.padding(bottom = 4.dp))
+            // facts.js nextFact: "Another fact ›" shows the next one, round again after the last.
+            o.factNext?.takeIf { o.facts.size > 1 }?.let { n -> Text(n.label, style = sans(13f, 600, gold, lh = 1.45f), modifier = Modifier.clickable { fact = (fact + 1) % o.facts.size }) }
         }
         if (o.research.isNotEmpty()) FlowRow(horizontalArrangement = Arrangement.spacedBy(12.dp), verticalArrangement = Arrangement.spacedBy(8.dp), itemVerticalAlignment = Alignment.CenterVertically) {
             Text(o.researchLabel, style = sans(13f, 400, Mute))
             o.research.forEach { l -> Text(l.label, style = sans(14f, if (l.link) 600 else 650, GoldC, lh = 1.45f), modifier = Modifier.clickable { go(l) }.padding(vertical = 4.dp)) }
         }
+    }
+}
+
+/**
+ * .cs-card-side .stat-grid (style.css 768-771, 806, 4104-4121): on a phone two columns 5 apart, each box 7 in with its label (11, upper case,
+ * muted, .025em) 3 over its value (15 / 700); the regulation mark and a long value take the full width. Wider: as many 160 columns as fit, 6 apart, 8 10 in.
+ */
+@Composable
+private fun StatGrid(stats: List<TcgStat>) = BoxWithConstraints(Modifier.fillMaxWidth()) {
+    val phone = maxWidth <= 520.dp
+    val gap = if (phone) 5.dp else 6.dp
+    val cols = if (phone) 2 else ((maxWidth + gap) / (160.dp + gap)).toInt().coerceAtLeast(1)
+    val rows = ArrayList<List<TcgStat>>(); var line = ArrayList<TcgStat>()
+    for (st in stats) {
+        val full = phone && (st.wide || st.note.isNotBlank()) || stats.size == 1
+        if (full) { if (line.isNotEmpty()) { rows += line; line = ArrayList() }; rows += listOf(st) }
+        else { line += st; if (line.size == cols) { rows += line; line = ArrayList() } }
+    }
+    if (line.isNotEmpty()) rows += line
+    Column(verticalArrangement = Arrangement.spacedBy(gap)) {
+        rows.forEach { r -> Row(Modifier.height(IntrinsicSize.Min), horizontalArrangement = Arrangement.spacedBy(gap)) {
+            val n = if (r.size == 1 && (phone && (r[0].wide || r[0].note.isNotBlank()) || stats.size == 1)) 1 else cols
+            r.forEach { st -> Column(Modifier.weight(1f).fillMaxHeight().clip(RoundedCornerShape(10.dp)).background(Surface).border(1.dp, LineC, RoundedCornerShape(10.dp))
+                .padding(if (phone) PaddingValues(7.dp) else PaddingValues(horizontal = 10.dp, vertical = 8.dp)), verticalArrangement = Arrangement.spacedBy(3.dp)) {
+                Text(st.label.uppercase(), style = sans(11f, 400, Mute, lh = 1.45f, ls = if (phone) .275f else .66f))
+                Text(st.value, style = sans(15f, 700, Ink, lh = if (phone) 1.25f else 1.45f))
+                // .stat-reg span: 12 / 600, 2 under, in its tone.
+                if (st.note.isNotBlank()) Text(st.note, style = sans(12f, 600, when (st.tone) { "ok" -> Good; "warn" -> Warn; "bad" -> Bad; else -> Mute }, lh = 1.3f), modifier = Modifier.padding(top = 2.dp))
+            } }
+            repeat(n - r.size) { Spacer(Modifier.weight(1f)) }
+        } }
     }
 }
 
@@ -857,6 +1186,7 @@ private fun GuidePanel(m: CollectionCardModel, act: CollectionCardActions, gutte
 @Composable
 private fun Blocks(blocks: List<CardBlock>, act: CollectionCardActions, meta: Boolean) {
     val uri = LocalUriHandler.current
+    val pal = LocalSheetPal.current
     fun go(p: CardPress) {
         when {
             p.act == "card" && p.data["name"] != null -> act.card(p.data.getValue("name"))
@@ -872,7 +1202,7 @@ private fun Blocks(blocks: List<CardBlock>, act: CollectionCardActions, meta: Bo
         "eyebrow" -> Text(b.text.uppercase(), style = Eyebrow)
         "roles" -> FlowRow(horizontalArrangement = Arrangement.spacedBy(6.dp), verticalArrangement = Arrangement.spacedBy(6.dp)) {
             b.items.forEach { r -> Box(Modifier.heightIn(min = 30.dp).clip(RoundedCornerShape(999.dp)).then(if (r.main) Modifier.drawBehind {
-                cssLinear(180f, 0f to Color(0xFFEDC87F), .58f to GoldC, 1f to Color(0xFFC79F4E)) } else Modifier.background(Surface2).border(1.dp, LineC, RoundedCornerShape(999.dp)))
+                cssLinear(180f, 0f to pal.light, .58f to pal.gold, 1f to pal.dark) } else Modifier.background(Surface2).border(1.dp, LineC, RoundedCornerShape(999.dp)))
                 .padding(horizontal = 12.dp, vertical = 4.dp), contentAlignment = Alignment.Center) {
                 Text(r.label, style = sans(13f, 700, if (r.main) BtnInk else Ink, lh = 1.45f)) } }
         }
@@ -880,7 +1210,7 @@ private fun Blocks(blocks: List<CardBlock>, act: CollectionCardActions, meta: Bo
             act.rule, Modifier.padding(vertical = if (b.lead) 0.dp else 6.dp))
         "steps" -> Column(verticalArrangement = Arrangement.spacedBy(10.dp)) {
             b.items.forEachIndexed { i, s -> Row(horizontalArrangement = Arrangement.spacedBy(10.dp)) {
-                Box(Modifier.size(26.dp).clip(CircleShape).background(Color(0x1AE8B85B)).border(1.dp, Color(0x73E8B85B), CircleShape), contentAlignment = Alignment.Center) {
+                Box(Modifier.size(26.dp).clip(CircleShape).background(pal.gold.copy(alpha = .1f)).border(1.dp, pal.gold.copy(alpha = .45f), CircleShape), contentAlignment = Alignment.Center) {
                     Text("${i + 1}", style = sans(12f, 700, GoldC, lh = 1.2f)) }
                 Rich(s.runs, sans(15f, 400, Ink, lh = 1.5f), act.rule, Modifier.weight(1f))
             } }
@@ -907,7 +1237,7 @@ private fun Blocks(blocks: List<CardBlock>, act: CollectionCardActions, meta: Bo
                 Column(Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(3.dp)) {
                     Text(r.name, style = sans(14f, 700, Ink)); if (r.why.isNotBlank()) Text(r.why, style = sans(11.5f, 400, Mute, lh = 1.4f))
                 }
-                if (r.score.isNotBlank()) Text(r.score, style = sans(12f, 800, GoldC), modifier = Modifier.clip(RoundedCornerShape(999.dp)).border(1.dp, Color(0x66E8B85B), RoundedCornerShape(999.dp)).padding(horizontal = 8.dp, vertical = 2.dp))
+                if (r.score.isNotBlank()) Text(r.score, style = sans(12f, 800, GoldC), modifier = Modifier.clip(RoundedCornerShape(999.dp)).border(1.dp, pal.gold.copy(alpha = .4f), RoundedCornerShape(999.dp)).padding(horizontal = 8.dp, vertical = 2.dp))
             } }
         }
         "head" -> Text(b.text.uppercase(), style = sans(13f, 700, Ink, lh = 1.45f, ls = .78f), modifier = Modifier.padding(top = 12.dp, bottom = 4.dp))
@@ -927,6 +1257,13 @@ private fun Blocks(blocks: List<CardBlock>, act: CollectionCardActions, meta: Bo
             Text(b.head.uppercase(), style = sans(13f, 700, Ink, lh = 1.45f, ls = .78f), modifier = Modifier.padding(bottom = 4.dp))
             b.items.forEach { r -> Column(Modifier.padding(vertical = 6.dp)) { Rich(r.runs, sans(14f, 400, Ink, lh = 1.5f), act.rule); Text(r.source, style = sans(12f, 400, Mute)) } }
             if (b.note.isNotBlank() && b.items.isEmpty()) Text(b.note, style = sans(13f, 400, Mute, lh = 1.45f))
+            // .guide-link-list (polish.css 642-643, 669): each official source a 44 tall glass row, 8 14 in, 650 words and its ↗, 6 apart.
+            if (b.buttons.isNotEmpty()) Column(Modifier.padding(top = 4.dp), verticalArrangement = Arrangement.spacedBy(6.dp)) {
+                b.buttons.forEach { l -> Row(Modifier.fillMaxWidth().heightIn(min = 44.dp).siteGlass(12.dp).clickable { go(l) }.padding(horizontal = 14.dp, vertical = 8.dp),
+                    verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(10.dp)) {
+                    Text(l.label, style = sans(15f, 650, Ink, lh = 1.45f), modifier = Modifier.weight(1f)); Text("↗", style = sans(15f, 650, Ink, lh = 1.45f))
+                } }
+            }
         }
         "rows" -> Column {
             // .mini-row: 9 / 2 in, a hairline under each but the last.
@@ -1054,7 +1391,7 @@ private fun PricesPanel(p: CardPrices, act: CollectionCardActions, gutter: Dp, v
     }
     // Each piece with its CSS margins (top, bottom); siblings' margins collapse to the larger.
     val parts = ArrayList<Triple<Dp, Dp, @Composable () -> Unit>>()
-    p.hero?.let { h -> parts += Triple(6.dp, 12.dp) { PriceHero(h, vw > 420.dp) } }
+    p.hero?.let { h -> parts += Triple(6.dp, 12.dp) { PriceHero(h, vw > 420.dp, act) } }
     p.copies.forEach { c -> parts += Triple(0.dp, 12.dp) { PriceCopy(c) } }
     p.warning?.let { w -> parts += Triple(12.dp, 12.dp) { QuoteWarning(w) } }
     p.history?.let { h -> parts += Triple(20.dp, 24.dp) { History(h, act, vw, vh, ::go) } }
@@ -1081,12 +1418,13 @@ private fun Fresh(f: CardFresh) {
 /** .history-status: muted words behind a 2 gold rule. */
 @Composable
 private fun Status(text: String, modifier: Modifier = Modifier) {
-    Text(text, style = sans(12f, 400, Mute, lh = 1.5f), modifier = modifier.fillMaxWidth().drawBehind { drawRect(GoldC, size = Size(2.dp.toPx(), size.height)) }.padding(start = 10.dp))
+    val gold = GoldC
+    Text(text, style = sans(12f, 400, Mute, lh = 1.5f), modifier = modifier.fillMaxWidth().drawBehind { drawRect(gold, size = Size(2.dp.toPx(), size.height)) }.padding(start = 10.dp))
 }
 
 /** .price-hero: the market price, the printing it is for, and how fresh it is; the freshness sits beside it from 421 wide, under it below. */
 @Composable
-private fun PriceHero(h: CardPriceHero, two: Boolean) {
+private fun PriceHero(h: CardPriceHero, two: Boolean, act: CollectionCardActions) {
     Column(Modifier.fillMaxWidth().sitePanel(18.dp).padding(horizontal = 16.dp, vertical = 14.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
         Row(horizontalArrangement = Arrangement.spacedBy(12.dp), verticalAlignment = Alignment.Top) {
             Column(Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(2.dp)) {
@@ -1099,6 +1437,7 @@ private fun PriceHero(h: CardPriceHero, two: Boolean) {
         }
         if (!two) h.fresh?.let { Fresh(it) }
         h.notes.forEach { Status(it, Modifier.padding(top = 4.dp)) }
+        if (h.pickers.isNotEmpty()) Pickers(h.pickers, act, Modifier.padding(top = 6.dp))
     }
 }
 
@@ -1158,7 +1497,8 @@ private fun History(h: CardHistory, act: CollectionCardActions, vw: Dp, vh: Dp, 
                     SiteSelect(b.options, 12.5f, b.options.indexOfFirst { it.on }.coerceAtLeast(0)) { j -> act.historySource(b.key, b.options[j].value) }
                 }
                 "ranges" -> Row(Modifier.fillMaxWidth().glassField(999.dp).padding(4.dp), horizontalArrangement = Arrangement.spacedBy(4.dp)) {
-                    b.ranges.forEach { r -> Box(Modifier.weight(1f).heightIn(min = 44.dp).then(if (r.on) Modifier.goldGlide() else Modifier).clip(RoundedCornerShape(999.dp))
+                    val pal = LocalSheetPal.current
+                    b.ranges.forEach { r -> Box(Modifier.weight(1f).heightIn(min = 44.dp).then(if (r.on) Modifier.goldGlide(pal) else Modifier).clip(RoundedCornerShape(999.dp))
                         .clickable { if (!r.on) act.range(r.range) }.semantics { contentDescription = r.label }.padding(horizontal = 5.dp, vertical = 8.dp), contentAlignment = Alignment.Center) {
                         Text(r.label, style = sans(12f, 650, if (r.on) BtnInk else Mute, ls = -.12f), maxLines = 1)
                     } }
@@ -1172,7 +1512,8 @@ private fun History(h: CardHistory, act: CollectionCardActions, vw: Dp, vh: Dp, 
                 "single" -> Row(Modifier.fillMaxWidth().clip(RoundedCornerShape(14.dp)).background(Ink.copy(alpha = .05f)).semantics { contentDescription = b.text }
                     .padding(horizontal = 14.dp, vertical = 12.dp), horizontalArrangement = Arrangement.spacedBy(10.dp), verticalAlignment = Alignment.CenterVertically) {
                     // .history-start-dot: 10 across in the accent with a 4 ring of it at 22 %.
-                    Box(Modifier.size(10.dp).drawBehind { drawCircle(GoldC.copy(alpha = .22f), size.minDimension / 2 + 4.dp.toPx()); drawCircle(GoldC) })
+                    val gold = GoldC
+                    Box(Modifier.size(10.dp).drawBehind { drawCircle(gold.copy(alpha = .22f), size.minDimension / 2 + 4.dp.toPx()); drawCircle(gold) })
                     Text(buildAnnotatedString { b.runs.forEach { r -> withStyle(SpanStyle(color = if (r.bold) Ink else Mute, fontWeight = if (r.bold) FontWeight.Bold else null)) { append(r.t.orEmpty()) } } },
                         style = sans(14f, 400, Mute))
                 }
@@ -1190,19 +1531,19 @@ private fun History(h: CardHistory, act: CollectionCardActions, vw: Dp, vh: Dp, 
 }
 
 /** .glide on a segmented control: the gold plate, its 1 gold ring, its soft glow and the light along its top. */
-private fun Modifier.goldGlide(): Modifier = this.drawBehind {
+private fun Modifier.goldGlide(pal: SheetPal): Modifier = this.drawBehind {
     val r = CornerRadius(size.height / 2)
     drawIntoCanvas { c ->
         val glow = androidx.compose.ui.graphics.Paint().asFrameworkPaint().apply { isAntiAlias = true }
         // 0 0 22 gold .22, then 0 6 18 -6 gold .7 (blur radius is twice the mask's sigma).
-        glow.color = Color(0x38E8B95B).toArgb(); glow.maskFilter = android.graphics.BlurMaskFilter(11.dp.toPx(), android.graphics.BlurMaskFilter.Blur.NORMAL)
+        glow.color = pal.gold.copy(alpha = .22f).toArgb(); glow.maskFilter = android.graphics.BlurMaskFilter(11.dp.toPx(), android.graphics.BlurMaskFilter.Blur.NORMAL)
         c.nativeCanvas.drawRoundRect(0f, 0f, size.width, size.height, r.x, r.y, glow)
         val s = 6.dp.toPx()
-        glow.color = Color(0xB3E8B95B).toArgb(); glow.maskFilter = android.graphics.BlurMaskFilter(9.dp.toPx(), android.graphics.BlurMaskFilter.Blur.NORMAL)
+        glow.color = pal.gold.copy(alpha = .7f).toArgb(); glow.maskFilter = android.graphics.BlurMaskFilter(9.dp.toPx(), android.graphics.BlurMaskFilter.Blur.NORMAL)
         c.nativeCanvas.drawRoundRect(s, s + s, size.width - s, size.height, r.x, r.y, glow)
     }
-    drawRoundRect(Color(0xA6E8B95B), topLeft = Offset(-1.dp.toPx(), -1.dp.toPx()), size = Size(size.width + 2.dp.toPx(), size.height + 2.dp.toPx()), cornerRadius = CornerRadius(r.x + 1.dp.toPx()))
-    cssLinear(180f, 0f to Color(0xFFEDC87F), .58f to GoldC, 1f to Color(0xFFC79F4E), corner = r)
+    drawRoundRect(pal.gold.copy(alpha = .65f), topLeft = Offset(-1.dp.toPx(), -1.dp.toPx()), size = Size(size.width + 2.dp.toPx(), size.height + 2.dp.toPx()), cornerRadius = CornerRadius(r.x + 1.dp.toPx()))
+    cssLinear(180f, 0f to pal.light, .58f to pal.gold, 1f to pal.dark, corner = r)
     drawRoundRect(Color(0x70FFFFFF), topLeft = Offset(size.height / 2, 0f), size = Size(size.width - size.height, 1.dp.toPx()))
 }
 
@@ -1213,15 +1554,16 @@ private fun Modifier.goldGlide(): Modifier = this.drawBehind {
 @Composable
 private fun PriceChart(b: CardHistBlock, maxH: Dp) = BoxWithConstraints(Modifier.fillMaxWidth()) {
     val h = (maxWidth * (154f / 360f)).coerceIn(120.dp, maxH)
+    val gold = GoldC
     androidx.compose.foundation.Canvas(Modifier.fillMaxWidth().height(h).semantics { contentDescription = b.text }) {
         if (b.points.isEmpty()) return@Canvas
         val s = minOf(size.width / 360f, size.height / 154f); val ox = (size.width - 360f * s) / 2; val oy = (size.height - 154f * s) / 2
         fun at(p: Pair<Float, Float>) = Offset(ox + p.first * s, oy + p.second * s)
         val line = androidx.compose.ui.graphics.Path().apply { b.points.forEachIndexed { i, p -> val o = at(p); if (i == 0) moveTo(o.x, o.y) else lineTo(o.x, o.y) } }
         val area = androidx.compose.ui.graphics.Path().apply { addPath(line); lineTo(at(b.points.last()).x, oy + 150f * s); lineTo(at(b.points.first()).x, oy + 150f * s); close() }
-        drawPath(area, GoldC.copy(alpha = .08f))
-        drawPath(line, GoldC, style = androidx.compose.ui.graphics.drawscope.Stroke(2.5f * s, join = androidx.compose.ui.graphics.StrokeJoin.Round))
-        if (b.dots) b.points.forEach { drawCircle(GoldC, 2.5f * s, at(it)) }
+        drawPath(area, gold.copy(alpha = .08f))
+        drawPath(line, gold, style = androidx.compose.ui.graphics.drawscope.Stroke(2.5f * s, join = androidx.compose.ui.graphics.StrokeJoin.Round))
+        if (b.dots) b.points.forEach { drawCircle(gold, 2.5f * s, at(it)) }
     }
 }
 
@@ -1282,6 +1624,58 @@ private fun Sellers(s: CardSellers, vw: Dp, open: (String) -> Unit) {
     }
 }
 
+/** .price-table with its source in the corner (style.css 810-813): the head on the second surface, 12.5 muted; each row 14, the cells right. */
+@Composable
+private fun PriceTable(corner: String, cols: List<Pair<String, String>>, rows: List<CardPriceRow>) {
+    val shape = RoundedCornerShape(14.dp)
+    Column(Modifier.fillMaxWidth().clip(shape).border(1.dp, LineC, shape).padding(1.dp)) {
+        Row(Modifier.fillMaxWidth().background(Surface2).padding(horizontal = 12.dp, vertical = 10.dp), horizontalArrangement = Arrangement.spacedBy(6.dp), verticalAlignment = Alignment.CenterVertically) {
+            Text(corner, style = sans(12.5f, 400, Mute), modifier = Modifier.weight(1.6f))
+            cols.forEach { (f, l) -> Text(l, style = sans(12.5f, 700, if (f == "foil") Color(0xFFFF9F68) else Ink), textAlign = TextAlign.End, maxLines = 1, modifier = Modifier.weight(1f)) }
+        }
+        rows.forEach { r ->
+            Row(Modifier.fillMaxWidth().topLine().padding(horizontal = 12.dp, vertical = 10.dp), horizontalArrangement = Arrangement.spacedBy(6.dp), verticalAlignment = Alignment.CenterVertically) {
+                Text(r.label, style = sans(14f, 400, Ink), overflow = TextOverflow.Ellipsis, modifier = Modifier.weight(1.6f))
+                // The last column (the market price) is bold on the site.
+                r.cells.forEachIndexed { i, c -> Text(c, style = sans(14f, if (i == r.cells.lastIndex) 700 else 400, Ink).copy(fontFeatureSettings = Tnum), textAlign = TextAlign.End, maxLines = 1, modifier = Modifier.weight(1f)) }
+            }
+        }
+    }
+}
+
+/**
+ * Yu-Gi-Oh!'s "Every printing" row (style.css 511-522, 616, 985, 1357-1361, 2586): the glass row 6 in, the 40 × 56 thumbnail, the set (13 / 700) over
+ * its badge and rarity (11.5 muted); under it on a phone, Buy (gold) and the reference quotes in small boxes on the second surface.
+ */
+@OptIn(ExperimentalLayoutApi::class)
+@Composable
+private fun PrintRow(r: TcgPrint, go: (CardPress) -> Unit) {
+    val uri = LocalUriHandler.current
+    val gold = GoldC
+    Column(Modifier.fillMaxWidth().siteGlass(12.dp).padding(6.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
+        Row(Modifier.fillMaxWidth().clickable { r.press?.let(go) }, horizontalArrangement = Arrangement.spacedBy(8.dp), verticalAlignment = Alignment.CenterVertically) {
+            val p = heroPainter(r.thumb.ifBlank { null }?.let(homeArt))
+            Box(Modifier.size(40.dp, 56.dp).clip(RoundedCornerShape(4.dp)).background(Surface2)) { if (p != null) Image(p, null, Modifier.fillMaxSize(), contentScale = ContentScale.Crop) }
+            Column(Modifier.weight(1f)) {
+                Text(r.name, style = sans(13f, 700, Ink, lh = 1.45f))
+                val parts = listOfNotNull(r.tset?.let { TcgPart(null, false, it, emptyList(), "", false) }, TcgPart(" " + r.line.trim(), false, null, emptyList(), "", false))
+                PartsLine(parts, sans(11.5f, 400, Mute, lh = 1.45f))
+            }
+        }
+        FlowRow(Modifier.padding(start = 4.dp), horizontalArrangement = Arrangement.spacedBy(4.dp), verticalArrangement = Arrangement.spacedBy(4.dp)) {
+            val box = Modifier.clip(RoundedCornerShape(8.dp)).background(Surface2).border(1.dp, LineC, RoundedCornerShape(8.dp))
+            if (r.buyHref.isNotBlank()) Box(box.heightIn(min = 44.dp).clickable { runCatching { uri.openUri(r.buyHref) } }.semantics { contentDescription = r.buyAria }.padding(horizontal = 7.dp, vertical = 2.dp),
+                contentAlignment = Alignment.Center) { Text(r.buyLabel, style = sans(13f, 700, gold)) }
+            Column(box.padding(horizontal = 7.dp, vertical = 2.dp), horizontalAlignment = Alignment.End) {
+                Text(r.refLabel.uppercase(), style = sans(9.5f, 600, Mute, lh = 1.45f))
+                if (r.quotes.isEmpty()) Text(r.value, style = sans(13f, 700, Ink).copy(fontFeatureSettings = Tnum))
+                r.quotes.forEach { (l, v) -> Column(Modifier.padding(horizontal = 6.dp, vertical = 4.dp), horizontalAlignment = Alignment.End, verticalArrangement = Arrangement.spacedBy(3.dp)) {
+                    Text(l.uppercase(), style = sans(9.5f, 600, Mute, lh = 1.45f)); Text(v, style = sans(13f, 700, Ink).copy(fontFeatureSettings = Tnum)) } }
+            }
+        }
+    }
+}
+
 /** views.js Market details: the source chips, this printing's price in each finish, and the cheapest and dearest printings. */
 @OptIn(ExperimentalLayoutApi::class)
 @Composable
@@ -1299,7 +1693,8 @@ private fun MarketDetails(d: CardMarket, act: CollectionCardActions, go: (CardPr
                 }
             }
         }
-        if (d.cols.isNotEmpty()) {
+        if (d.tables.isNotEmpty()) d.tables.forEach { t -> Spacer(Modifier.height(12.dp)); PriceTable(t.corner, t.cols, t.rows) }
+        else if (d.cols.isNotEmpty()) {
             Spacer(Modifier.height(12.dp))
             val shape = RoundedCornerShape(14.dp)
             Column(Modifier.fillMaxWidth().clip(shape).border(1.dp, LineC, shape).padding(1.dp)) {
@@ -1317,7 +1712,15 @@ private fun MarketDetails(d: CardMarket, act: CollectionCardActions, go: (CardPr
                 }
             }
         }
-        var prev = if (d.cols.isNotEmpty()) 8.dp else 12.dp
+        var prev = if (d.cols.isNotEmpty() || d.tables.isNotEmpty()) 8.dp else 12.dp
+        if (d.prints.isNotEmpty()) {
+            Spacer(Modifier.height(maxOf(prev, 12.dp)))
+            // h3.price-printings-head: 15 / 700 Manrope, 8 under.
+            Text(d.printsHead, style = manrope(15f, 700, Ink, lh = 1.15f, ls = -.3f), modifier = Modifier.padding(bottom = 8.dp))
+            Column(verticalArrangement = Arrangement.spacedBy(6.dp)) { d.prints.forEach { PrintRow(it, go) } }
+            if (d.printsFoot.isNotBlank()) { Spacer(Modifier.height(10.dp)); Text(d.printsFoot, style = sans(12f, 400, Foot, lh = 1.45f)) }
+            prev = 6.dp
+        }
         d.lines.forEach { (foot, runs) ->
             val top = if (foot) 10.dp else 6.dp
             Spacer(Modifier.height(maxOf(prev, top)))

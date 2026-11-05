@@ -21,7 +21,10 @@ data class CardOpen(val name: String, val entry: String = "", val deck: String =
                     /** A set page's tile: its data-set-i (that printing) and data-set-finish (the finish the page prices). */
                     val setI: Int? = null, val setFinish: String = "",
                     /** A card pulled in Open Pack that isn't one of the set page's (another sheet's printing): its place in the pack. */
-                    val pack: Int? = null)
+                    val pack: Int? = null,
+                    /** Yu-Gi-Oh! or Pokémon (tcg.js A.tCard): the game, the card's id and what its tile hands the sheet (the set it was
+                     *  opened from, the finish that page prices, Yu-Gi-Oh!'s printing::rarity and edition). */
+                    val game: String = "mtg", val id: String = "", val setId: String = "", val setVariant: String = "", val printing: String = "", val edition: String = "")
 
 private fun css(v: String) = v.replace("\\", "\\\\").replace("\"", "\\\"")
 
@@ -34,6 +37,7 @@ private fun css(v: String) = v.replace("\\", "\\\\").replace("\"", "\\\"")
  */
 @Composable
 fun CollectionCardHost(open: CardOpen, onClose: () -> Unit, onOpen: (CardOpen) -> Unit, web: (url: String, press: String?) -> Unit, onSet: ((String) -> Unit)? = null) {
+    if (open.game != "mtg") return TcgCardHost(open, onClose, onOpen, web, onSet)
     val context = LocalContext.current
     var model by remember(open) { mutableStateOf<CollectionCardModel?>(null) }
     /** A control waiting for the site's handler (kind to value). */
@@ -96,6 +100,87 @@ fun CollectionCardHost(open: CardOpen, onClose: () -> Unit, onOpen: (CardOpen) -
             val art = u("art_crop").ifBlank { u("large") }.ifBlank { m.overview?.image.orEmpty() }
             // As the picker's own Magic search makes them (ProfileArtPicker.kt): the art crop, the set's name.
             ArtPick.open("avatar", ArtPick.Card("mtg", s?.get("id")?.asString.orEmpty(), m.name, s?.get("set_name")?.asString ?: "Magic", art, art))
+        },
+        press = ::press,
+    )
+    CollectionCardSheet(m, act, onClose)
+}
+
+/**
+ * tcg.js tcgCardSheet through the site's own code (Collection.tcard / tcardDo), drawn natively over the page that opened it: the card
+ * draws at once from what the set page has, then the full card, Pokémon's other printings, the set list, the Play guide's pairings and
+ * the price history fill it in (A.tCard). The tabs, finish chips, Yu-Gi-Oh!'s rarity chips and Edition / Printing pickers, the price
+ * jump, the history range, other printings and the set are drawn here; everything that changes the account (own, wishlist, decks,
+ * your price, Compare, Build), the archetype list, a set by name and the wiki open the website's card sheet and press the same control.
+ */
+@Composable
+private fun TcgCardHost(open: CardOpen, onClose: () -> Unit, onOpen: (CardOpen) -> Unit, web: (url: String, press: String?) -> Unit, onSet: ((String) -> Unit)?) {
+    val context = LocalContext.current
+    var model by remember(open) { mutableStateOf<CollectionCardModel?>(null) }
+    var asked by remember(open) { mutableStateOf<Pair<String, String>?>(null) }
+    fun show(j: JsonObject) { if (j.size() > 0 && j.get("missing") == null) model = CollectionCardModel.parse(j) }
+    LaunchedEffect(open) {
+        runCatching {
+            val o = JsonObject().apply {
+                addProperty("game", open.game); addProperty("id", open.id); addProperty("entry", open.entry); addProperty("deck", open.deck)
+                addProperty("setId", open.setId); addProperty("setVariant", open.setVariant); addProperty("printing", open.printing); addProperty("edition", open.edition)
+                open.pack?.let { addProperty("pack", it) }
+            }
+            show(withContext(Dispatchers.Default) { CollectionEngine.tcard(o) })
+            CollectionEngine.tcardLoad()
+            CollectionEngine.settle(30_000, CollectionEngine.TCARD_MODEL, ::show)
+            show(CollectionEngine.tcardModel())
+        }
+    }
+    LaunchedEffect(asked) {
+        val (kind, value) = asked ?: return@LaunchedEffect
+        runCatching {
+            show(withContext(Dispatchers.Default) { CollectionEngine.tcardDo(kind, value) })
+            // A tab, finish, rarity or edition starts its tab's lookups (the guide's pairings, the shown quote's price history).
+            CollectionEngine.settle(20_000, CollectionEngine.TCARD_MODEL, ::show)
+        }
+        asked = null
+    }
+    /** The website's card sheet (the page, the tile that opened it), then [control] inside it. */
+    fun site(control: String?) = web(open.page, listOfNotNull(open.tile.ifBlank { null }, control?.let { "#sheet[open] $it" }).joinToString("\n").ifBlank { null })
+    fun press(p: CardPress) {
+        val d = p.data
+        fun v(k: String) = d[k].orEmpty()
+        when {
+            p.href.isNotBlank() -> {
+                val uri = android.net.Uri.parse(p.href)
+                if (uri.host?.endsWith("cardstashy.com") == true) web(p.href, null)
+                else runCatching { context.startActivity(android.content.Intent(android.content.Intent.ACTION_VIEW, uri)) }
+            }
+            // Another printing (card-detail-extras.js miniPrintingMarkup): its page over this one; on the website, this card's sheet then that printing.
+            p.act == "tCard" && v("id").isNotBlank() && (v("game").isBlank() || v("game") == open.game) ->
+                onOpen(CardOpen("", entry = v("entry"), deck = v("deck").ifBlank { open.deck }, page = open.page,
+                    tile = listOfNotNull(open.tile.ifBlank { null }, "#sheet[open] [data-act=\"tCard\"][data-id=\"${css(v("id"))}\"]").joinToString("\n"),
+                    game = open.game, id = v("id"), setId = v("set-id"), setVariant = v("set-variant"), printing = v("printing"), edition = v("edition")))
+            p.act == "tSet" && v("id").isNotBlank() && onSet != null -> onSet(v("id"))
+            p.act == "go" && v("to").isNotBlank() -> web("https://cardstashy.com/" + v("to"), null)
+            p.act == "cardTab" && v("tab") in setOf("overview", "meta", "guide", "prices", "rulings", "legal") -> asked = "tab" to v("tab")
+            p.act == "cardFinishPreview" && v("finish").isNotBlank() -> asked = "finish" to v("finish")
+            p.act == "ygoPickRarity" && v("edition").isNotBlank() -> asked = "rarity" to v("edition")
+            p.act == "cardPriceJump" -> asked = "jump" to v("finish")
+            p.act == "marketRange" && v("range").isNotBlank() -> asked = "range" to v("range")
+            p.act.isNotBlank() -> site("[data-act=\"${css(p.act)}\"]" + d.filterKeys { it != "act" }.entries.joinToString("") { (k, x) -> "[data-${k}=\"${css(x)}\"]" })
+        }
+    }
+    val m = model ?: return
+    val act = CollectionCardActions(
+        tab = { k -> asked = "tab" to k },
+        range = { r -> asked = "range" to r },
+        historySource = { key, src -> asked = "historySource" to JsonObject().apply { addProperty("key", key); addProperty("source", src) }.toString() },
+        finish = { f -> asked = "finish" to f },
+        select = { name, value -> asked = "select" to JsonObject().apply { addProperty("name", name); addProperty("value", value) }.toString() },
+        card = { _ -> },
+        rule = { key -> site("[data-act=\"ruleHint\"][data-rule=\"${css(key)}\"]") },
+        profile = {
+            // app.js A.cardProfilePhoto: the enlarged card's picture, as the picker's own search makes a card (ProfileArtPicker.kt).
+            val o = m.overview
+            val img = o?.zoomSrc?.ifBlank { null } ?: o?.image.orEmpty()
+            ArtPick.open("avatar", ArtPick.Card(open.game, m.id, m.name, m.set?.name?.ifBlank { null } ?: m.game.label, img, img))
         },
         press = ::press,
     )

@@ -322,6 +322,57 @@ class CollectionEngineTest {
         assertEquals("Magic sets", CollectionEngine.setsModel()["title"].asString)
     }
 
+    /** tcg.js A.tCard → tcgCardSheet: a Yu-Gi-Oh! and a Pokémon card opened from their set page's own tile, each tab, and a rarity / finish change. */
+    @Test fun tcgCardModel() = runBlocking {
+        assumeTrue(bundle.isFile)
+        CollectionEngine.initFrom(bundle)
+        fourDecks()
+        for (g in listOf("ygo", "ptcg")) {
+            CollectionEngine.sets(g)
+            CollectionEngine.setsLoad()
+            CollectionEngine.settle(60_000)
+            val id = CollectionEngine.setsModel()["sections"].asJsonArray.flatMap { it.asJsonObject["rows"].asJsonArray.map { r -> r.asJsonObject } }.first()["code"].asString
+            CollectionEngine.set(g, id)
+            CollectionEngine.setLoad()
+            CollectionEngine.settle(120_000)
+            val tile = CollectionEngine.setModel()["tiles"].asJsonArray.map { it.asJsonObject }.first()
+            val open = tile["open"].asJsonObject
+            assertEquals(id, open["setId"].asString)
+            val o = JsonObject().apply { addProperty("game", g); addProperty("id", tile["id"].asString); open.entrySet().forEach { (k, v) -> add(k, v) } }
+            CollectionEngine.tcard(o)
+            CollectionEngine.tcardLoad()
+            CollectionEngine.settle(120_000)
+            val m = CollectionEngine.tcardModel()
+            println("TCARD $g ${m["name"]} tabs=${m["tabs"]} set=${m["overviewHead"]?.asJsonObject?.get("set")}".take(900))
+            assertEquals(g, m["game"].asString)
+            assertEquals(tile["id"].asString, m["id"].asString)
+            assertEquals(id, m["setId"].asString)
+            assertTrue(m["name"].asString.isNotBlank())
+            assertEquals(listOf("overview", "guide", "prices"), m["tabs"].asJsonArray.map { it.asJsonObject["key"].asString })
+            val card = m["overview"].asJsonObject["card"].asJsonObject
+            assertTrue(card["image"].asString.startsWith("https://"))
+            assertTrue(card["sources"].asJsonArray.all { it.asString.startsWith("https://") })
+            assertTrue(m["head"].asJsonObject["art"].asString.let { it.isEmpty() || it.startsWith("https://") })
+            assertTrue(m["overviewHead"].asJsonObject["set"].isJsonObject)
+            // A finish or rarity chip keeps the card and redraws it.
+            card["finishes"]?.takeIf { it.isJsonObject }?.asJsonObject?.get("chips")?.asJsonArray?.map { it.asJsonObject }?.firstOrNull { !it["on"].asBoolean }?.let { c ->
+                val d = c["press"].asJsonObject["data"].asJsonObject
+                val after = if (g == "ygo") CollectionEngine.tcardDo("rarity", d["edition"].asString) else CollectionEngine.tcardDo("finish", d["finish"].asString)
+                assertEquals(tile["id"].asString, after["id"].asString)
+            }
+            for (t in listOf("guide", "prices")) {
+                CollectionEngine.tcardDo("tab", t)
+                CollectionEngine.settle(60_000)
+                val x = CollectionEngine.tcardModel()
+                assertEquals(t, x["tab"].asString)
+                if (t == "prices") assertTrue(x["prices"].asJsonObject["hero"].isJsonObject)
+                else assertTrue(x["guide"].asJsonObject["sections"].asJsonArray.size() > 0)
+            }
+        }
+        CollectionEngine.sets("mtg")
+        assertEquals("Magic sets", CollectionEngine.setsModel()["title"].asString)
+    }
+
     /** app.js A.openSetPack → pack-preview.js's draw from Duskmourn's real booster sheets, a new pack, and a pulled card's page. */
     @Test fun openPack() = runBlocking {
         assumeTrue(bundle.isFile)

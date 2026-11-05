@@ -104,7 +104,9 @@ import dev.cardstashy.nativeplay.play.CardData
 // ---------------------------------------------------------------- the model (CollectionEngine.cards, views.js collection())
 
 /** An inline site icon (icons.js / importance.js svg) as the engine read it: shapes in its view box, currentColor left open. */
-class SiteSvg(val vb: List<Float>, val items: List<Item>, val grads: Map<String, Grad>) {
+class SiteSvg(val vb: List<Float>, val items: List<Item>, val grads: Map<String, Grad>, val texts: List<Glyph> = emptyList()) {
+    /** A <text> glyph: at [x], [y] (its baseline) in the view box, [anchor] start / middle / end. */
+    class Glyph(val x: Float, val y: Float, val text: String, val size: Float, val weight: Int, val fill: String, val anchor: String)
     class Item(val t: String, val d: String, val x: Float, val y: Float, val w: Float, val h: Float, val r: Float, val rx: Float, val ry: Float,
                val fill: String, val stroke: String, val sw: Float, val cap: String, val join: String)
     class Grad(val x1: Float, val y1: Float, val x2: Float, val y2: Float, val stops: List<Pair<Float, String>>)
@@ -145,7 +147,8 @@ class CollectionCardsModel(val game: CardGame, val title: String, val banner: St
                 j.objs("items").map { SiteSvg.Item(it.s("t"), it.s("d"), it.f("x", it.f("cx")), it.f("y", it.f("cy")), it.f("w"), it.f("h"), it.f("r"), it.f("rx"), it.f("ry"),
                     it.s("fill"), it.s("stroke"), it.f("sw", 1f), it.s("cap"), it.s("join")) },
                 j.o("grads")?.entrySet()?.associate { (k, v) -> val g = v.asJsonObject
-                    k to SiteSvg.Grad(g.f("x1"), g.f("y1"), g.f("x2", 1f), g.f("y2"), g.get("stops").asJsonArray.map { s -> s.asJsonArray[0].asFloat to s.asJsonArray[1].asString }) }.orEmpty())
+                    k to SiteSvg.Grad(g.f("x1"), g.f("y1"), g.f("x2", 1f), g.f("y2"), g.get("stops").asJsonArray.map { s -> s.asJsonArray[0].asFloat to s.asJsonArray[1].asString }) }.orEmpty(),
+                j.objs("texts").map { SiteSvg.Glyph(it.f("x"), it.f("y"), it.s("text"), it.f("size", 12f), it.f("weight", 400f).toInt(), it.s("fill"), it.s("anchor")) })
         }
         private fun select(o: JsonObject?) = o?.let { CollSelect(it.s("name"), it.s("label"), it.objs("options").map { x -> CollOption(x.s("value"), x.s("label"), x.b("on")) }) }
 
@@ -227,6 +230,11 @@ internal fun cssColor(v: String, current: Color): Color? {
         val n = full.toLong(16)
         return Color(((n shr 24) and 0xff).toInt(), ((n shr 16) and 0xff).toInt(), ((n shr 8) and 0xff).toInt(), (n and 0xff).toInt())
     }
+    Regex("^rgba?\\(([^)]*)\\)$").find(s)?.let { m ->
+        val p = m.groupValues[1].split(',', '/', ' ').map { it.trim() }.filter { it.isNotEmpty() }
+        fun ch(v: String) = if (v.endsWith("%")) v.dropLast(1).toFloat() / 100f else v.toFloat() / 255f
+        return runCatching { Color(ch(p[0]).coerceIn(0f, 1f), ch(p[1]).coerceIn(0f, 1f), ch(p[2]).coerceIn(0f, 1f), p.getOrNull(3)?.let { a -> if (a.endsWith("%")) a.dropLast(1).toFloat() / 100f else a.toFloat() }?.coerceIn(0f, 1f) ?: 1f) }.getOrNull()
+    }
     return when (s) { "white" -> Color.White; "black" -> Color.Black; else -> null }
 }
 
@@ -277,7 +285,23 @@ internal fun SiteIcon(icon: SiteSvg?, size: Dp, color: Color, modifier: Modifier
     // [filled]: a rule like .want-tag svg { fill: currentColor } over an outline icon.
     val v = remember(icon, color, stroke, filled) { (if (filled) SiteSvg(icon.vb, icon.items.map { SiteSvg.Item(it.t, it.d, it.x, it.y, it.w, it.h, it.r, it.rx, it.ry,
         "currentColor", it.stroke, it.sw, it.cap, it.join) }, icon.grads) else icon).vector(color, stroke) }
-    Image(rememberVectorPainter(v), null, modifier.size(size))
+    if (icon.texts.isEmpty()) { Image(rememberVectorPainter(v), null, modifier.size(size)); return }
+    val face = remember { android.graphics.Typeface.create(android.graphics.Typeface.SANS_SERIF, android.graphics.Typeface.BOLD) }
+    Box(modifier.size(size)) {
+        Image(rememberVectorPainter(v), null, Modifier.fillMaxSize())
+        androidx.compose.foundation.Canvas(Modifier.fillMaxSize()) {
+            val (vx, vy, vw, vh) = icon.vb + List(4 - icon.vb.size.coerceAtMost(4)) { 24f }
+            val k = minOf(this.size.width / vw, this.size.height / vh)
+            for (g in icon.texts) {
+                val paint = android.graphics.Paint(android.graphics.Paint.ANTI_ALIAS_FLAG).apply {
+                    textSize = g.size * k; typeface = if (g.weight >= 600) face else android.graphics.Typeface.SANS_SERIF
+                    this.color = (cssColor(g.fill, color) ?: color).toArgb()
+                    textAlign = when (g.anchor) { "middle" -> android.graphics.Paint.Align.CENTER; "end" -> android.graphics.Paint.Align.RIGHT; else -> android.graphics.Paint.Align.LEFT }
+                }
+                drawContext.canvas.nativeCanvas.drawText(g.text, (g.x - vx) * k, (g.y - vy) * k, paint)
+            }
+        }
+    }
 }
 
 // ---------------------------------------------------------------- the page

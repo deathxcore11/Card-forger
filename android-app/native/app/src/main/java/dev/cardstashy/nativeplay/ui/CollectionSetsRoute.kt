@@ -156,7 +156,9 @@ fun CollectionSetRoute(code: String, onPlay: () -> Unit, onProfile: () -> Unit, 
                        /** Another game's tab: its set list (native) or the website's. */
                        onGame: (String) -> Unit = {},
                        /** Open Pack drawn here (Magic): the site's own draw, in the app's pack opener; otherwise the website's simulator. */
-                       nativePack: Boolean = false) {
+                       nativePack: Boolean = false,
+                       /** Yu-Gi-Oh! and Pokémon too: their Open Pack, and their card pages. */
+                       nativeTcgCards: Boolean = false) {
     val context = LocalContext.current
     val session by Account.session.collectAsState()
     val revision by Decks.fullRevision.collectAsState()
@@ -231,14 +233,18 @@ fun CollectionSetRoute(code: String, onPlay: () -> Unit, onProfile: () -> Unit, 
             view = { v -> prefs.edit().putString("setView", v).apply(); asked = "view" to v },
             more = { asked = "more" to "" },
             card = { t ->
-                if (game != "mtg") site("[data-act=\"tCard\"][data-id=\"${css(t.id)}\"]")
-                else {
+                if (game != "mtg") {
+                    val tile = "[data-act=\"tCard\"][data-id=\"${css(t.id)}\"]"
+                    if (nativeTcgCards) cards = cards + CardOpen(t.r.name, page = page, tile = (lead + tile).joinToString("\n"), game = game, id = t.id,
+                        setId = t.open["setId"].orEmpty(), setVariant = t.open["setVariant"].orEmpty(), printing = t.open["printing"].orEmpty(), edition = t.open["edition"].orEmpty())
+                    else site(tile)
+                } else {
                     val tile = "[data-act=\"card\"][data-set-i=\"${t.i}\"]"
                     val finish = model?.selects?.firstOrNull { it.name == "setFinish" }?.current?.value?.takeIf { it != "all" }.orEmpty()
                     if (nativeCard) cards = cards + CardOpen(t.r.name, page = page, tile = tile, setI = t.i, setFinish = finish) else web(page, tile)
                 }
             },
-            pack = { if (nativePack && game == "mtg") { if (pack == null) { pack = loadingPack(code, model?.title.orEmpty()); packAsk++ } } else site("[data-act=\"openSetPack\"]") },
+            pack = { if (nativePack && (game == "mtg" || nativeTcgCards)) { if (pack == null) { pack = loadingPack(code, model?.title.orEmpty(), CardGame.of(game)); packAsk++ } } else site("[data-act=\"openSetPack\"]") },
             press = { p -> when (plain(p.act)) {
                 "setReload", "setRetry" -> asked = "reload" to ""
                 "setDetails" -> asked = "details" to ""
@@ -271,6 +277,15 @@ fun CollectionSetRoute(code: String, onPlay: () -> Unit, onProfile: () -> Unit, 
                     // pack-preview.js onDetails: a pulled card opens its card page in the printing and finish that came out of the pack,
                     // as the set page's own tile would when it is one of this set's cards.
                     onInspect = { i, p -> val sim = p.sim ?: return@PackOpening
+                        if (game != "mtg") {
+                            // pack-preview.js onDetails → A.tCard with the pull's own dataset (its set, the finish it came out in, Yu-Gi-Oh!'s printing).
+                            val o = sim.open ?: return@PackOpening
+                            fun v(k: String) = o.get(k)?.takeIf { it.isJsonPrimitive }?.asString.orEmpty()
+                            if (nativeTcgCards && v("id").isNotBlank()) cards = cards + CardOpen(p.name, page = page,
+                                tile = (lead + "[data-act=\"tCard\"][data-id=\"${css(v("id"))}\"]").joinToString("\n"), game = game, id = v("id"),
+                                setId = v("setId"), setVariant = v("setVariant"), printing = v("printing"), edition = v("edition"))
+                            return@PackOpening
+                        }
                         cards = cards + if (sim.setI >= 0) CardOpen(p.name, page = page, tile = "[data-act=\"card\"][data-set-i=\"${sim.setI}\"]", setI = sim.setI, setFinish = sim.finish)
                             else CardOpen(p.name, page = page, tile = "", setFinish = sim.finish, pack = i) })
             }
