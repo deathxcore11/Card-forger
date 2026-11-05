@@ -5,4 +5,11 @@ export function packWrapperUrl(game,set={}){
  const code=String(set.code||set.id||'').toLowerCase();
  return game==='mtg'&&CODES.has(code)?`./assets/packs/pack-${code}.webp`:'';
 }
+import {PACK_ART,PACK_ART_BASE} from './pack-art-data.js';
+// Real set art under the template's empty window: the art layer moves, the frame stays (parallax). Magic only for now.
+const FOCUS={ktk:[64,40]};// [x,y] percent where the default centre crop hides the subject
+export function packTemplateArt(game,set={}){
+ const e=game==='mtg'?PACK_ART[String(set.code||set.id||'').toLowerCase()]:null;
+ return e?{art:PACK_ART_BASE+e.art,x:(FOCUS[String(set.code||set.id||'').toLowerCase()]||[50,35])[0],y:(FOCUS[String(set.code||set.id||'').toLowerCase()]||[50,35])[1],card:e.card}:null;
+}
 export function packArtSources(game,set={},remote=''){return [packWrapperUrl(game,set),remote].filter(Boolean);}

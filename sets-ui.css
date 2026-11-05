@@ -363,3 +363,17 @@ body:not(.glass) .set-atmosphere{display:none}
 .pack-custom .pack-crimp,.pack-custom .pack-sheen{display:none}
 .pack-custom .pack-wrap-brand{display:grid;inset:auto 14% 12.5% 14%;height:21%;align-content:center;gap:4px;font-size:clamp(11px,3.6vw,15px);line-height:1.15}
 .pack-custom .pack-wrap-brand svg{width:26%}
+
+/* Template packs: the set's real art sits under the template's empty window; the art layer drifts against the fixed frame. */
+.pack-wrapper.pack-tpl{aspect-ratio:2/3}
+.pack-tpl .pack-wrap-art{clip-path:none;background:none;border-radius:0}
+.pack-tpl .pack-wrap-art>img[data-pack-art]{display:none}
+.pack-tpl.pack-generic .pack-wrap-art>img{filter:none;transform:none}
+.pack-tpl .pack-wrap-art>.pack-tpl-frame{object-fit:contain}
+.pack-tpl .pack-crimp,.pack-tpl .pack-sheen{display:none}
+.pack-tpl-win{position:absolute;inset:0;overflow:hidden;-webkit-mask:url(./assets/packs/pack-window.png) center/100% 100% no-repeat;mask:url(./assets/packs/pack-window.png) center/100% 100% no-repeat}
+.pack-tpl-art{position:absolute;left:3%;top:9%;width:94%;height:57%;object-fit:cover;object-position:var(--fx,50%) var(--fy,35%);transform:translate3d(calc(var(--px,0)*-2.4%),calc(var(--py,0)*-2%),0) scale(1.07);transition:transform .12s linear;will-change:transform}
+.pack-tpl-frame{position:absolute;inset:0;width:100%;height:100%;object-fit:contain;pointer-events:none}
+.pack-tpl .pack-wrap-brand{display:grid;inset:auto 14% 12.5% 14%;height:21%;align-content:center;gap:4px;font-size:clamp(11px,3.6vw,15px);line-height:1.15;z-index:1}
+.pack-tpl .pack-wrap-brand svg{width:26%}
+@media(prefers-reduced-motion:reduce){.pack-tpl-art{transition:none;transform:scale(1.07)}}
