@@ -122,8 +122,11 @@ export const STORY_ACTS = [
   {act: 40, age: 'The Gatewatch Years', title: 'The Edge of Eternities', years: '2025',
     sets: ['eoe', 'eos'], landSet: 'eoe', packSets: ['eoe'],
     art: {set: 'eoe', number: '115', name: 'Sothera, the Supervoid', crop: 'https://cards.scryfall.io/art_crop/front/e/9/e99d6fc0-dcf2-4b25-81c2-02c230a36246.jpg?1783905962'}},
+  {act: 41, age: 'Crossings', title: 'Spider-Man and Avatar', years: '2025',
+    sets: ['spm', 'tla'], landSet: 'spm', packSets: ['spm', 'tla'],
+    art: {set: 'tla', number: '235', name: 'Ozai, the Phoenix King', crop: 'https://cards.scryfall.io/art_crop/front/a/9/a98b1550-4609-4a2f-9371-4afe1cdc613e.jpg?1783904923'}},
 ];
-export const SET_NAMES = {eoe: 'Edge of Eternities', eos: 'Edge of Eternities: Stellar Sights', fin: 'Final Fantasy', dft: 'Aetherdrift', tdm: 'Tarkir: Dragonstorm', lea: 'Limited Edition Alpha', leb: 'Limited Edition Beta', '2ed': 'Unlimited Edition', arn: 'Arabian Nights', atq: 'Antiquities',
+export const SET_NAMES = {spm: "Marvel's Spider-Man", tla: 'Avatar: The Last Airbender', eoe: 'Edge of Eternities', eos: 'Edge of Eternities: Stellar Sights', fin: 'Final Fantasy', dft: 'Aetherdrift', tdm: 'Tarkir: Dragonstorm', lea: 'Limited Edition Alpha', leb: 'Limited Edition Beta', '2ed': 'Unlimited Edition', arn: 'Arabian Nights', atq: 'Antiquities',
   '3ed': 'Revised Edition', leg: 'Legends', drk: 'The Dark', fem: 'Fallen Empires', ice: 'Ice Age', hml: 'Homelands', all: 'Alliances', '4ed': 'Fourth Edition',
   mir: 'Mirage', vis: 'Visions', '5ed': 'Fifth Edition',
   wth: 'Weatherlight', tmp: 'Tempest', sth: 'Stronghold', exo: 'Exodus',

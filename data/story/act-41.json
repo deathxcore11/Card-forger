@@ -1,0 +1,2696 @@
+{
+ "act": 41,
+ "era": "2025-11-21",
+ "title": "Spider-Man and Avatar",
+ "years": "2025",
+ "sets": [
+  "spm",
+  "tla"
+ ],
+ "landSet": "spm",
+ "intro": [
+  {
+   "who": "stage",
+   "line": "An Omenpath opens over a city of glass towers and webs. Then, past it, another opens onto four nations at war."
+  },
+  {
+   "who": "stage",
+   "line": "Neither world is part of the Multiverse you know. Each has its own heroes, its own villains and its own rules."
+  },
+  {
+   "who": "stage",
+   "line": "Recorded: crossings sit outside Magic canon. You are only passing through, twice."
+  }
+ ],
+ "finale": [
+  {
+   "who": "stage",
+   "line": "The Phoenix King falls, and the comet that was meant to burn the world fades from the sky."
+  },
+  {
+   "who": "katara",
+   "line": "I will never, ever turn my back on people who need me!",
+   "quote": true
+  },
+  {
+   "who": "stage",
+   "line": "The Omenpaths fold shut, one after the other. The road turns back to the Multiverse."
+  }
+ ],
+ "villainFinale": [
+  {
+   "who": "stage",
+   "line": "In this version the war never ends. The skies stay red."
+  },
+  {
+   "who": "ozai",
+   "line": "Out of the ashes, a new world will be born.",
+   "quote": true
+  },
+  {
+   "who": "stage",
+   "line": "The last Omenpath flickers, and holds just long enough for you to leave."
+  }
+ ],
+ "vibe": "crossing-spider-avatar",
+ "cast": {
+  "you": {
+   "name": "You",
+   "title": "Planeswalker",
+   "portrait": {
+    "card": "Web-Shooters",
+    "set": "spm",
+    "number": "22",
+    "id": "a0ca1108-6d99-4dc2-96ab-7728d65b0c06",
+    "crop": "https://cards.scryfall.io/art_crop/front/a/0/a0ca1108-6d99-4dc2-96ab-7728d65b0c06.jpg?1783905358",
+    "artist": "Javier Charro",
+    "focus": "50% 30%"
+   }
+  },
+  "peter": {
+   "name": "Peter Parker",
+   "title": "Your Friendly Neighborhood Spider-Man",
+   "portrait": {
+    "card": "Peter Parker // Amazing Spider-Man",
+    "set": "spm",
+    "number": "10",
+    "id": "3ce33422-5dba-4a42-8375-dd8ccc692a7b",
+    "crop": "https://cards.scryfall.io/art_crop/front/3/c/3ce33422-5dba-4a42-8375-dd8ccc692a7b.jpg?1783905367",
+    "artist": "Thanh Tuấn",
+    "focus": "50% 25%"
+   }
+  },
+  "crooks": {
+   "name": "The Wild Pack",
+   "title": "Street Crooks",
+   "portrait": {
+    "card": "Common Crook",
+    "set": "spm",
+    "number": "53",
+    "id": "6f5872df-e692-44aa-b18d-22447f5f274c",
+    "crop": "https://cards.scryfall.io/art_crop/front/6/f/6f5872df-e692-44aa-b18d-22447f5f274c.jpg?1783905345",
+    "artist": "Ben Harvey",
+    "focus": "50% 30%"
+   }
+  },
+  "gwen": {
+   "name": "Spider-Punk and Gwen",
+   "title": "Spiders of the Multiverse",
+   "portrait": {
+    "card": "Spider-Punk",
+    "set": "spm",
+    "number": "92",
+    "id": "0bd41879-fcd4-4211-9b98-47e7cdba5399",
+    "crop": "https://cards.scryfall.io/art_crop/front/0/b/0bd41879-fcd4-4211-9b98-47e7cdba5399.jpg?1783905333",
+    "artist": "Forrest Imel",
+    "focus": "50% 25%"
+   }
+  },
+  "symbiotes": {
+   "name": "The Symbiotes",
+   "title": "Gwenom and Venom",
+   "portrait": {
+    "card": "Gwenom, Remorseless",
+    "set": "spm",
+    "number": "56",
+    "id": "46b6cc5d-7a37-4e8b-a1a5-9a573056610c",
+    "crop": "https://cards.scryfall.io/art_crop/front/4/6/46b6cc5d-7a37-4e8b-a1a5-9a573056610c.jpg?1783905344",
+    "artist": "Lordigan",
+    "focus": "50% 25%"
+   }
+  },
+  "mj": {
+   "name": "Mary Jane and Silk",
+   "title": "The Team-Up",
+   "portrait": {
+    "card": "Mary Jane Watson",
+    "set": "spm",
+    "number": "134",
+    "id": "178345f7-8ccd-4e47-80f4-5bd31bab6655",
+    "crop": "https://cards.scryfall.io/art_crop/front/1/7/178345f7-8ccd-4e47-80f4-5bd31bab6655.jpg?1783905316",
+    "artist": "Steve Argyle",
+    "focus": "50% 25%"
+   }
+  },
+  "ock": {
+   "name": "Doctor Octopus",
+   "title": "Master Planner",
+   "portrait": {
+    "card": "Doctor Octopus, Master Planner",
+    "set": "spm",
+    "number": "128",
+    "id": "76e1d361-18a1-4dec-a203-f83bf0014e02",
+    "crop": "https://cards.scryfall.io/art_crop/front/7/6/76e1d361-18a1-4dec-a203-f83bf0014e02.jpg?1783905317",
+    "artist": "Xabi Gaztelua",
+    "focus": "50% 25%"
+   }
+  },
+  "spiderverse": {
+   "name": "The Spider-Verse",
+   "title": "Every Spider, Together",
+   "portrait": {
+    "card": "Spider-UK",
+    "set": "spm",
+    "number": "17",
+    "id": "6beb4548-1fab-4b9e-bf24-f7b9aadecc87",
+    "crop": "https://cards.scryfall.io/art_crop/front/6/b/6beb4548-1fab-4b9e-bf24-f7b9aadecc87.jpg?1783905359",
+    "artist": "Allen Morris",
+    "focus": "50% 25%"
+   }
+  },
+  "goblin": {
+   "name": "The Green Goblin",
+   "title": "Of Oscorp",
+   "portrait": {
+    "card": "Ultimate Green Goblin",
+    "set": "spm",
+    "number": "157",
+    "id": "e82d3f71-8404-40e7-b7fa-35713d1b384e",
+    "crop": "https://cards.scryfall.io/art_crop/front/e/8/e82d3f71-8404-40e7-b7fa-35713d1b384e.jpg?1783905308",
+    "artist": "Jesper Ejsing",
+    "focus": "50% 25%"
+   }
+  },
+  "aang": {
+   "name": "Aang",
+   "title": "The Last Airbender",
+   "portrait": {
+    "card": "Aang, the Last Airbender",
+    "set": "tla",
+    "number": "4",
+    "id": "245e008c-e073-443f-9592-6f628c0026ec",
+    "crop": "https://cards.scryfall.io/art_crop/front/2/4/245e008c-e073-443f-9592-6f628c0026ec.jpg?1783905008",
+    "artist": "Yueko",
+    "focus": "50% 25%"
+   }
+  },
+  "fire": {
+   "name": "The Fire Nation",
+   "title": "Raiders",
+   "portrait": {
+    "card": "Fire Nation Raider",
+    "set": "tla",
+    "number": "135",
+    "id": "ede1bbdb-c726-46e3-aaf1-b8cf2be2c341",
+    "crop": "https://cards.scryfall.io/art_crop/front/e/d/ede1bbdb-c726-46e3-aaf1-b8cf2be2c341.jpg?1783904958",
+    "artist": "Tubaki Halsame",
+    "focus": "50% 30%"
+   }
+  },
+  "bumi": {
+   "name": "Bumi",
+   "title": "King of Omashu",
+   "portrait": {
+    "card": "Bumi, King of Three Trials",
+    "set": "tla",
+    "number": "169",
+    "id": "a268697b-22b0-4e1b-a5b6-d9be95025e57",
+    "crop": "https://cards.scryfall.io/art_crop/front/a/2/a268697b-22b0-4e1b-a5b6-d9be95025e57.jpg?1783904948",
+    "artist": "Thomas Chamberlain-Keen",
+    "focus": "50% 25%"
+   }
+  },
+  "dailee": {
+   "name": "The Dai Li",
+   "title": "Of Ba Sing Se",
+   "portrait": {
+    "card": "Long Feng, Grand Secretariat",
+    "set": "tla",
+    "number": "233",
+    "id": "a3eb92fe-bc59-4472-9028-f368bd015609",
+    "crop": "https://cards.scryfall.io/art_crop/front/a/3/a3eb92fe-bc59-4472-9028-f368bd015609.jpg?1783904924",
+    "artist": "Robin Har",
+    "focus": "50% 25%"
+   }
+  },
+  "katara": {
+   "name": "Katara",
+   "title": "Waterbending Prodigy",
+   "portrait": {
+    "card": "Katara, Bending Prodigy",
+    "set": "tla",
+    "number": "59",
+    "id": "e8372167-383f-4302-a8ea-b6bf495c870c",
+    "crop": "https://cards.scryfall.io/art_crop/front/e/8/e8372167-383f-4302-a8ea-b6bf495c870c.jpg?1783904986",
+    "artist": "Mephisto",
+    "focus": "50% 25%"
+   }
+  },
+  "koh": {
+   "name": "Koh",
+   "title": "The Face Stealer",
+   "portrait": {
+    "card": "Koh, the Face Stealer",
+    "set": "tla",
+    "number": "107",
+    "id": "28f6fa32-5058-4c29-9ba8-9d8f2057eb6d",
+    "crop": "https://cards.scryfall.io/art_crop/front/2/8/28f6fa32-5058-4c29-9ba8-9d8f2057eb6d.jpg?1783904969",
+    "artist": "Eduardo Francisco",
+    "focus": "50% 25%"
+   }
+  },
+  "gaang": {
+   "name": "Team Avatar",
+   "title": "The Gaang",
+   "portrait": {
+    "card": "Suki, Kyoshi Warrior",
+    "set": "tla",
+    "number": "243",
+    "id": "3e311480-04f8-4b8f-938e-1cc6d06b9902",
+    "crop": "https://cards.scryfall.io/art_crop/front/3/e/3e311480-04f8-4b8f-938e-1cc6d06b9902.jpg?1783904920",
+    "artist": "Yuhong Ding",
+    "focus": "50% 25%"
+   }
+  },
+  "ozai": {
+   "name": "Ozai",
+   "title": "The Phoenix King",
+   "portrait": {
+    "card": "Ozai, the Phoenix King",
+    "set": "tla",
+    "number": "235",
+    "id": "a98b1550-4609-4a2f-9371-4afe1cdc613e",
+    "crop": "https://cards.scryfall.io/art_crop/front/a/9/a98b1550-4609-4a2f-9371-4afe1cdc613e.jpg?1783904923",
+    "artist": "Kekai Kotaki",
+    "focus": "50% 25%"
+   }
+  },
+  "arana": {
+   "name": "Araña",
+   "title": "Heart of the Spider",
+   "portrait": {
+    "card": "Araña, Heart of the Spider",
+    "set": "spm",
+    "number": "123",
+    "id": "b02bfa0e-f761-45e1-b35c-f44ff7c5d0e8",
+    "crop": "https://cards.scryfall.io/art_crop/front/b/0/b02bfa0e-f761-45e1-b35c-f44ff7c5d0e8.jpg?1783905320",
+    "artist": "Kevin Glint",
+    "focus": "50% 25%"
+   }
+  },
+  "totems": {
+   "name": "The Spider-Totems",
+   "title": "Hunters of Spiders",
+   "portrait": {
+    "card": "Spider-Rex, Daring Dino",
+    "set": "spm",
+    "number": "116",
+    "id": "5b6e0bea-f126-4adb-8808-901950a77c7b",
+    "crop": "https://cards.scryfall.io/art_crop/front/5/b/5b6e0bea-f126-4adb-8808-901950a77c7b.jpg?1783905322",
+    "artist": "Narendra Bintara Adi",
+    "focus": "50% 25%"
+   }
+  }
+ },
+ "battles": [
+  {
+   "id": "a41b1",
+   "slot": 1,
+   "kind": "Arrival",
+   "mood": "tension",
+   "title": "Web-Slinging",
+   "difficulty": "Easy",
+   "teaches": [
+    "Web-slinging"
+   ],
+   "blurb": "A photographer on a rooftop, a gang at the corner and a camera that needs film.",
+   "rewardSet": "spm",
+   "host": false,
+   "hero": {
+    "who": "peter",
+    "deck": {
+     "name": "Friendly Neighborhood",
+     "colors": "W",
+     "archetype": null,
+     "label": "tribute",
+     "cards": [
+      {
+       "qty": 3,
+       "name": "Peter Parker // Amazing Spider-Man",
+       "set": "spm",
+       "number": "10",
+       "id": "3ce33422-5dba-4a42-8375-dd8ccc692a7b"
+      },
+      {
+       "qty": 2,
+       "name": "Spider-Man, Web-Slinger",
+       "set": "spm",
+       "number": "16",
+       "id": "897418bc-df8c-4c97-b6bf-7c9133a8a577"
+      },
+      {
+       "qty": 3,
+       "name": "Aunt May",
+       "set": "spm",
+       "number": "3",
+       "id": "ad96343b-baac-428c-8270-fcffbbbe9fb8"
+      },
+      {
+       "qty": 4,
+       "name": "Web-Shooters",
+       "set": "spm",
+       "number": "22",
+       "id": "a0ca1108-6d99-4dc2-96ab-7728d65b0c06"
+      },
+      {
+       "qty": 4,
+       "name": "Daily Bugle Reporters",
+       "set": "spm",
+       "number": "6",
+       "id": "530dbeb0-b0cd-473e-a43e-7b23c88650a3"
+      },
+      {
+       "qty": 4,
+       "name": "Web Up",
+       "set": "spm",
+       "number": "21",
+       "id": "1ab7c1e6-54af-4002-8a81-23a1ccafa3ff"
+      },
+      {
+       "qty": 2,
+       "name": "Flash Thompson, Spider-Fan",
+       "set": "spm",
+       "number": "7",
+       "id": "44cf372b-f668-45e9-981e-4533295dcc74"
+      },
+      {
+       "qty": 4,
+       "name": "Earth Kingdom Jailer",
+       "set": "tla",
+       "number": "16",
+       "id": "9207362c-3605-4794-803f-ad1d0175fcca"
+      },
+      {
+       "qty": 4,
+       "name": "Glider Kids",
+       "set": "tla",
+       "number": "21",
+       "id": "0613afb5-4cee-4132-8adf-404767ed8d07"
+      },
+      {
+       "qty": 4,
+       "name": "Wild Pack Squad",
+       "set": "spm",
+       "number": "23",
+       "id": "7b0eda7c-e44d-4d9b-9042-4a1eb8c4ed4a"
+      },
+      {
+       "qty": 2,
+       "name": "Selfless Police Captain",
+       "set": "spm",
+       "number": "12",
+       "id": "fb0fd7bd-10d0-4d29-af88-387d1e07f3b7"
+      },
+      {
+       "qty": 24,
+       "name": "Plains",
+       "set": "spm",
+       "number": "189",
+       "id": "1164f7ec-7b2f-4cc9-90bb-7eaaa331b4cd"
+      }
+     ]
+    }
+   },
+   "villain": {
+    "who": "crooks",
+    "deck": {
+     "name": "The Wild Pack",
+     "colors": "B",
+     "archetype": null,
+     "label": "tribute",
+     "cards": [
+      {
+       "qty": 4,
+       "name": "Common Crook",
+       "set": "spm",
+       "number": "53",
+       "id": "6f5872df-e692-44aa-b18d-22447f5f274c"
+      },
+      {
+       "qty": 4,
+       "name": "Inner Demons Gangsters",
+       "set": "spm",
+       "number": "57",
+       "id": "f0252819-4eda-457d-9688-b08b83b1edc9"
+      },
+      {
+       "qty": 3,
+       "name": "Merciless Enforcers",
+       "set": "spm",
+       "number": "58",
+       "id": "fba9c76c-1432-4554-88bd-3f5e8709a963"
+      },
+      {
+       "qty": 2,
+       "name": "Tombstone, Career Criminal",
+       "set": "spm",
+       "number": "70",
+       "id": "313189ef-fe6e-4511-9386-920a88a49a88"
+      },
+      {
+       "qty": 2,
+       "name": "Scorpion's Sting",
+       "set": "spm",
+       "number": "65",
+       "id": "0fb03437-32cf-4c97-bf91-ea8b2ad3f964"
+      },
+      {
+       "qty": 4,
+       "name": "Venomized Cat",
+       "set": "spm",
+       "number": "72",
+       "id": "6330f3e9-e031-4d55-b5d8-536c16bba063"
+      },
+      {
+       "qty": 4,
+       "name": "Hog-Monkey",
+       "set": "tla",
+       "number": "104",
+       "id": "4f442970-5355-4abf-8684-17daaa8e469b"
+      },
+      {
+       "qty": 4,
+       "name": "Fire Nation Engineer",
+       "set": "tla",
+       "number": "99",
+       "id": "5daba108-277d-46c8-ac35-7610f4786813"
+      },
+      {
+       "qty": 4,
+       "name": "Pirate Peddlers",
+       "set": "tla",
+       "number": "115",
+       "id": "5c998994-6c3b-4f34-9b31-babba2b17266"
+      },
+      {
+       "qty": 4,
+       "name": "Fire Navy Trebuchet",
+       "set": "tla",
+       "number": "100",
+       "id": "e58372cc-9a89-47a4-a0db-df5435e26cd3"
+      },
+      {
+       "qty": 1,
+       "name": "Corrupt Court Official",
+       "set": "tla",
+       "number": "92",
+       "id": "4692610e-d64c-438e-b5ad-0cf67fd57f1f"
+      },
+      {
+       "qty": 24,
+       "name": "Swamp",
+       "set": "spm",
+       "number": "191",
+       "id": "5cb03b18-d74c-4c89-9539-3549d2e8ff5f"
+      }
+     ]
+    }
+   },
+   "reward": {
+    "hero": {
+     "packs": 1,
+     "coins": 0
+    },
+    "villain": {
+     "card": {
+      "oracle_id": "ebcbfdba-34c7-40eb-91a9-d306ff5ae8b9",
+      "name": "Common Crook",
+      "rarity": "common",
+      "set": "spm",
+      "id": "6f5872df-e692-44aa-b18d-22447f5f274c",
+      "image": "https://cards.scryfall.io/normal/front/6/f/6f5872df-e692-44aa-b18d-22447f5f274c.jpg"
+     },
+     "coins": 50
+    }
+   },
+   "scene": [
+    {
+     "who": "peter",
+     "line": "This batch of web fluid will just have to wait!",
+     "quote": true
+    },
+    {
+     "who": "peter",
+     "line": "Web-slinging: cast it for its web cost by returning a tapped creature to your hand. A swing, a reset and a ready ambush."
+    }
+   ],
+   "villainScene": [
+    {
+     "who": "crooks",
+     "line": "Don't be a hero, Gary! We don't get paid enough for a scrap with Spider-Man!",
+     "quote": true
+    },
+    {
+     "who": "crooks",
+     "line": "The Wild Pack: one corner, three crooks and nobody wants to be first."
+    }
+   ],
+   "after": null,
+   "cues": {
+    "hero": {
+     "start": "Time to swing.",
+     "big": "Thwip!",
+     "low": "Too many of them...",
+     "win": "Another night, another save.",
+     "loss": "Back to the rooftops...",
+     "half": "Web-sling a tapped creature to recast it cheaply."
+    },
+    "villain": {
+     "start": "Stay low.",
+     "big": "Rush him!",
+     "low": "He is too fast...",
+     "win": "We got him!",
+     "loss": "Run!"
+    }
+   },
+   "bigPlays": [],
+   "sim": null
+  },
+  {
+   "id": "a41b2",
+   "slot": 2,
+   "kind": "Lesson",
+   "mood": "comic",
+   "title": "Mayhem",
+   "difficulty": "Easy",
+   "teaches": [
+    "Mayhem"
+   ],
+   "blurb": "A punk spider with a guitar, a symbiote that learned the wrong lesson and a rooftop concert.",
+   "rewardSet": "spm",
+   "host": false,
+   "hero": {
+    "who": "gwen",
+    "deck": {
+     "name": "Spider-Punk's Riot",
+     "colors": "R",
+     "archetype": null,
+     "label": "tribute",
+     "cards": [
+      {
+       "qty": 3,
+       "name": "Spider-Punk",
+       "set": "spm",
+       "number": "92",
+       "id": "0bd41879-fcd4-4211-9b98-47e7cdba5399"
+      },
+      {
+       "qty": 3,
+       "name": "Spider-Gwen, Free Spirit",
+       "set": "spm",
+       "number": "90",
+       "id": "3bc04fa7-6265-4549-91f6-eebdcd67398a"
+      },
+      {
+       "qty": 3,
+       "name": "Gwen Stacy // Ghost-Spider",
+       "set": "spm",
+       "number": "78",
+       "id": "b0f1597f-1dc7-465e-8fcb-0afe61bcca46"
+      },
+      {
+       "qty": 4,
+       "name": "Shock",
+       "set": "spm",
+       "number": "88",
+       "id": "760b41a1-c087-4b11-b8a0-fb01d8a4c0c6"
+      },
+      {
+       "qty": 4,
+       "name": "Angry Rabble",
+       "set": "spm",
+       "number": "75",
+       "id": "938730fa-496f-4871-80ec-3e9843ecb219"
+      },
+      {
+       "qty": 4,
+       "name": "Electro's Bolt",
+       "set": "spm",
+       "number": "77",
+       "id": "25fe063f-35e4-4fca-9889-06834a8ef9b9"
+      },
+      {
+       "qty": 2,
+       "name": "Spider-Islanders",
+       "set": "spm",
+       "number": "91",
+       "id": "c9132e45-4ddb-4565-ac45-86f1ecc6230d"
+      },
+      {
+       "qty": 4,
+       "name": "Boar-q-pine",
+       "set": "tla",
+       "number": "124",
+       "id": "087a445c-5f63-45d6-83e8-20d22650db20"
+      },
+      {
+       "qty": 4,
+       "name": "Treetop Freedom Fighters",
+       "set": "tla",
+       "number": "156",
+       "id": "a9394200-7ffc-440f-8b5f-c08b7930133c"
+      },
+      {
+       "qty": 4,
+       "name": "Taxi Driver",
+       "set": "spm",
+       "number": "97",
+       "id": "a80d3ed9-5e81-41b7-bb74-ab86cba841c8"
+      },
+      {
+       "qty": 1,
+       "name": "Superior Foes of Spider-Man",
+       "set": "spm",
+       "number": "96",
+       "id": "28e7bf86-5791-4412-8184-fa63fb292be4"
+      },
+      {
+       "qty": 24,
+       "name": "Mountain",
+       "set": "spm",
+       "number": "192",
+       "id": "b044630d-50e7-431b-8e91-bd53e967f594"
+      }
+     ]
+    }
+   },
+   "villain": {
+    "who": "symbiotes",
+    "deck": {
+     "name": "The Symbiotes",
+     "colors": "B",
+     "archetype": null,
+     "label": "tribute",
+     "cards": [
+      {
+       "qty": 3,
+       "name": "Gwenom, Remorseless",
+       "set": "spm",
+       "number": "56",
+       "id": "46b6cc5d-7a37-4e8b-a1a5-9a573056610c"
+      },
+      {
+       "qty": 3,
+       "name": "Venom, Evil Unleashed",
+       "set": "spm",
+       "number": "71",
+       "id": "ab3d51a4-40f0-4606-b5f9-2686c12fd54b"
+      },
+      {
+       "qty": 4,
+       "name": "Venomized Cat",
+       "set": "spm",
+       "number": "72",
+       "id": "6330f3e9-e031-4d55-b5d8-536c16bba063"
+      },
+      {
+       "qty": 2,
+       "name": "Venom's Hunger",
+       "set": "spm",
+       "number": "73",
+       "id": "01d276cd-e4ad-488f-8447-004aefad1ebb"
+      },
+      {
+       "qty": 1,
+       "name": "Alien Symbiosis",
+       "set": "spm",
+       "number": "50",
+       "id": "b898ccb7-758e-4f11-95e0-b412721d8bf9"
+      },
+      {
+       "qty": 4,
+       "name": "Fire Nation Engineer",
+       "set": "tla",
+       "number": "99",
+       "id": "5daba108-277d-46c8-ac35-7610f4786813"
+      },
+      {
+       "qty": 4,
+       "name": "Wolfbat",
+       "set": "tla",
+       "number": "122",
+       "id": "2ae83b4e-e5a4-4c98-8d16-eef3c71b8ff2"
+      },
+      {
+       "qty": 4,
+       "name": "Fire Navy Trebuchet",
+       "set": "tla",
+       "number": "100",
+       "id": "e58372cc-9a89-47a4-a0db-df5435e26cd3"
+      },
+      {
+       "qty": 4,
+       "name": "Pirate Peddlers",
+       "set": "tla",
+       "number": "115",
+       "id": "5c998994-6c3b-4f34-9b31-babba2b17266"
+      },
+      {
+       "qty": 4,
+       "name": "Common Crook",
+       "set": "spm",
+       "number": "53",
+       "id": "6f5872df-e692-44aa-b18d-22447f5f274c"
+      },
+      {
+       "qty": 3,
+       "name": "Hog-Monkey",
+       "set": "tla",
+       "number": "104",
+       "id": "4f442970-5355-4abf-8684-17daaa8e469b"
+      },
+      {
+       "qty": 24,
+       "name": "Swamp",
+       "set": "spm",
+       "number": "191",
+       "id": "5cb03b18-d74c-4c89-9539-3549d2e8ff5f"
+      }
+     ]
+    }
+   },
+   "reward": {
+    "hero": {
+     "packs": 1,
+     "coins": 0
+    },
+    "villain": {
+     "card": {
+      "oracle_id": "c48cf135-b280-4e9f-a9d9-225104870741",
+      "name": "Gwenom, Remorseless",
+      "rarity": "mythic",
+      "set": "spm",
+      "id": "46b6cc5d-7a37-4e8b-a1a5-9a573056610c",
+      "image": "https://cards.scryfall.io/normal/front/4/6/46b6cc5d-7a37-4e8b-a1a5-9a573056610c.jpg"
+     },
+     "coins": 50
+    }
+   },
+   "scene": [
+    {
+     "who": "gwen",
+     "line": "Disrespect authority. Smash the system.",
+     "quote": true
+    },
+    {
+     "who": "gwen",
+     "line": "Mayhem: if a card was discarded this turn, you may cast it from your graveyard right away. Use it before the turn ends."
+    }
+   ],
+   "villainScene": [
+    {
+     "who": "symbiotes",
+     "line": "We like seeing fear in our victim's eyes.",
+     "quote": true
+    },
+    {
+     "who": "symbiotes",
+     "line": "Sinner takes all. The symbiote does not need a reason."
+    }
+   ],
+   "after": null,
+   "cues": {
+    "hero": {
+     "start": "Smash the system.",
+     "big": "Riot!",
+     "low": "The feedback is killing us...",
+     "win": "Encore!",
+     "loss": "Silenced...",
+     "half": "Discard, then cast it from the graveyard."
+    },
+    "villain": {
+     "start": "We hunger.",
+     "big": "Take it!",
+     "low": "We bleed...",
+     "win": "We win.",
+     "loss": "We fade..."
+    }
+   },
+   "bigPlays": [],
+   "sim": null
+  },
+  {
+   "id": "a41b3",
+   "slot": 3,
+   "kind": "Rival",
+   "mood": "rival",
+   "title": "Doctor Octopus",
+   "difficulty": "Normal",
+   "teaches": [
+    "Tokens"
+   ],
+   "blurb": "Four arms, one plan and a lab full of henchmen who want out.",
+   "rewardSet": "spm",
+   "host": false,
+   "hero": {
+    "who": "mj",
+    "deck": {
+     "name": "Parker's Team-Up",
+     "colors": "GW",
+     "archetype": null,
+     "label": "tribute",
+     "cards": [
+      {
+       "qty": 3,
+       "name": "Mary Jane Watson",
+       "set": "spm",
+       "number": "134",
+       "id": "178345f7-8ccd-4e47-80f4-5bd31bab6655"
+      },
+      {
+       "qty": 3,
+       "name": "Silk, Web Weaver",
+       "set": "spm",
+       "number": "145",
+       "id": "588dc8d9-6ce0-4bd7-afbd-84bb251fdcb1"
+      },
+      {
+       "qty": 3,
+       "name": "Spider-Girl, Legacy Hero",
+       "set": "spm",
+       "number": "149",
+       "id": "d1f3196a-fe48-446f-ab07-00c66b7816c8"
+      },
+      {
+       "qty": 4,
+       "name": "Gallant Citizen",
+       "set": "spm",
+       "number": "129",
+       "id": "43790471-6ec8-4c1d-b6d3-74c6cdf8ce43"
+      },
+      {
+       "qty": 4,
+       "name": "Web-Warriors",
+       "set": "spm",
+       "number": "159",
+       "id": "741f5373-b51a-421a-9a74-326f0575c99b"
+      },
+      {
+       "qty": 4,
+       "name": "Terrific Team-Up",
+       "set": "spm",
+       "number": "120",
+       "id": "f3c587b0-66b9-46bf-90ee-a6163c006c9e"
+      },
+      {
+       "qty": 4,
+       "name": "Avatar Enthusiasts",
+       "set": "tla",
+       "number": "11",
+       "id": "7292e5f2-d5a1-4e39-8f75-eba471819f04"
+      },
+      {
+       "qty": 4,
+       "name": "Water Tribe Captain",
+       "set": "tla",
+       "number": "41",
+       "id": "0a0cdf97-1927-47c6-8ef1-29969e3567ee"
+      },
+      {
+       "qty": 4,
+       "name": "Ostrich-Horse",
+       "set": "tla",
+       "number": "188",
+       "id": "5ca3fd45-9301-44ef-afc0-4d7999d66d36"
+      },
+      {
+       "qty": 3,
+       "name": "White Lotus Reinforcements",
+       "set": "tla",
+       "number": "251",
+       "id": "4c7e3e2f-d7ac-4d40-ab84-cb7efe06a316"
+      },
+      {
+       "qty": 12,
+       "name": "Forest",
+       "set": "spm",
+       "number": "193",
+       "id": "7b6c2532-be5a-4f1f-893c-36bcda2a699d"
+      },
+      {
+       "qty": 12,
+       "name": "Plains",
+       "set": "spm",
+       "number": "189",
+       "id": "1164f7ec-7b2f-4cc9-90bb-7eaaa331b4cd"
+      }
+     ]
+    }
+   },
+   "villain": {
+    "who": "ock",
+    "deck": {
+     "name": "Doc Ock's Gang",
+     "colors": "UB",
+     "archetype": null,
+     "label": "tribute",
+     "cards": [
+      {
+       "qty": 3,
+       "name": "Doctor Octopus, Master Planner",
+       "set": "spm",
+       "number": "128",
+       "id": "76e1d361-18a1-4dec-a203-f83bf0014e02"
+      },
+      {
+       "qty": 3,
+       "name": "Doc Ock, Sinister Scientist",
+       "set": "spm",
+       "number": "29",
+       "id": "de16ad65-c8c3-48c0-9d13-5af91b4e6f01"
+      },
+      {
+       "qty": 4,
+       "name": "Doc Ock's Henchmen",
+       "set": "spm",
+       "number": "30",
+       "id": "a383c442-3f4a-4115-97e4-23f0eb88465b"
+      },
+      {
+       "qty": 4,
+       "name": "Oscorp Research Team",
+       "set": "spm",
+       "number": "40",
+       "id": "a800ffb4-0c48-41eb-b221-cf1d855131d9"
+      },
+      {
+       "qty": 4,
+       "name": "Flying Octobot",
+       "set": "spm",
+       "number": "31",
+       "id": "ebadcd4a-f58f-4328-a765-0ea8d8028417"
+      },
+      {
+       "qty": 2,
+       "name": "Lady Octopus, Inspired Inventor",
+       "set": "spm",
+       "number": "35",
+       "id": "8c5f360b-f9a0-46e0-9e8b-58e5b4b0389e"
+      },
+      {
+       "qty": 4,
+       "name": "Wolfbat",
+       "set": "tla",
+       "number": "122",
+       "id": "2ae83b4e-e5a4-4c98-8d16-eef3c71b8ff2"
+      },
+      {
+       "qty": 4,
+       "name": "North Pole Patrol",
+       "set": "tla",
+       "number": "65",
+       "id": "c2c0c138-5b61-4949-8431-4a6d458ead6a"
+      },
+      {
+       "qty": 4,
+       "name": "Fire Navy Trebuchet",
+       "set": "tla",
+       "number": "100",
+       "id": "e58372cc-9a89-47a4-a0db-df5435e26cd3"
+      },
+      {
+       "qty": 4,
+       "name": "Common Crook",
+       "set": "spm",
+       "number": "53",
+       "id": "6f5872df-e692-44aa-b18d-22447f5f274c"
+      },
+      {
+       "qty": 12,
+       "name": "Island",
+       "set": "spm",
+       "number": "190",
+       "id": "d59cb0b5-fd4f-4dde-a69f-7ca6aa12b89f"
+      },
+      {
+       "qty": 12,
+       "name": "Swamp",
+       "set": "spm",
+       "number": "191",
+       "id": "5cb03b18-d74c-4c89-9539-3549d2e8ff5f"
+      }
+     ]
+    }
+   },
+   "reward": {
+    "hero": {
+     "packs": 1,
+     "coins": 100
+    },
+    "villain": {
+     "card": {
+      "oracle_id": "2fecfbef-e521-4025-94ea-451c9abde3de",
+      "name": "Doctor Octopus, Master Planner",
+      "rarity": "mythic",
+      "set": "spm",
+      "id": "76e1d361-18a1-4dec-a203-f83bf0014e02",
+      "image": "https://cards.scryfall.io/normal/front/7/6/76e1d361-18a1-4dec-a203-f83bf0014e02.jpg"
+     },
+     "coins": 100
+    }
+   },
+   "scene": [
+    {
+     "who": "mj",
+     "line": "Charismatic and confident, Mary Jane was born for the limelight.",
+     "quote": true
+    },
+    {
+     "who": "mj",
+     "line": "Tokens are creatures without a card behind them. Make a crowd and ride it to the finish."
+    }
+   ],
+   "villainScene": [
+    {
+     "who": "ock",
+     "line": "Soon all will cower before the superior intellect of Doctor Octopus!",
+     "quote": true
+    },
+    {
+     "who": "ock",
+     "line": "The Master Planner has a plan. The henchmen have a union."
+    }
+   ],
+   "after": null,
+   "cues": {
+    "hero": {
+     "start": "Team up.",
+     "big": "All together!",
+     "low": "The arms are everywhere...",
+     "win": "Plans foiled.",
+     "loss": "Overpowered...",
+     "half": "Fill the board with tokens."
+    },
+    "villain": {
+     "start": "Superior intellect.",
+     "big": "Tentacles!",
+     "low": "A setback...",
+     "win": "Cower!",
+     "loss": "Impossible..."
+    }
+   },
+   "bigPlays": [],
+   "sim": null
+  },
+  {
+   "id": "a41b4",
+   "slot": 4,
+   "kind": "Boss",
+   "mood": "boss",
+   "title": "The Green Goblin",
+   "difficulty": "Hard",
+   "teaches": [
+    "Combat math"
+   ],
+   "blurb": "A glider, a pumpkin bomb and a laugh that carries across the rooftops.",
+   "rewardSet": "spm",
+   "host": false,
+   "hero": {
+    "who": "spiderverse",
+    "deck": {
+     "name": "Spider-Verse United",
+     "colors": "GW",
+     "archetype": null,
+     "label": "tribute",
+     "cards": [
+      {
+       "qty": 3,
+       "name": "Spiders-Man, Heroic Horde",
+       "set": "spm",
+       "number": "117",
+       "id": "1183262e-1f02-46b3-8cfa-fe30e0016c11"
+      },
+      {
+       "qty": 3,
+       "name": "Spider-UK",
+       "set": "spm",
+       "number": "17",
+       "id": "6beb4548-1fab-4b9e-bf24-f7b9aadecc87"
+      },
+      {
+       "qty": 3,
+       "name": "Spider-Man, Brooklyn Visionary",
+       "set": "spm",
+       "number": "115",
+       "id": "e19929bc-cbe1-4970-952d-8e9d0193ddce"
+      },
+      {
+       "qty": 3,
+       "name": "Miles Morales // Ultimate Spider-Man",
+       "set": "spm",
+       "number": "108",
+       "id": "9f8b4d9b-208a-4673-a617-5e3edd069c33"
+      },
+      {
+       "qty": 3,
+       "name": "Spider-Ham, Peter Porker",
+       "set": "spm",
+       "number": "114",
+       "id": "41f18f42-b86b-4a12-9f0d-76b761571195"
+      },
+      {
+       "qty": 2,
+       "name": "Terrific Team-Up",
+       "set": "spm",
+       "number": "120",
+       "id": "f3c587b0-66b9-46bf-90ee-a6163c006c9e"
+      },
+      {
+       "qty": 1,
+       "name": "Kapow!",
+       "set": "spm",
+       "number": "103",
+       "id": "cec575f6-43c9-41c6-a996-bb806bf82185"
+      },
+      {
+       "qty": 4,
+       "name": "Avatar Enthusiasts",
+       "set": "tla",
+       "number": "11",
+       "id": "7292e5f2-d5a1-4e39-8f75-eba471819f04"
+      },
+      {
+       "qty": 4,
+       "name": "Invasion Reinforcements",
+       "set": "tla",
+       "number": "24",
+       "id": "b8845bba-d116-43cd-8ae0-e553f3324d66"
+      },
+      {
+       "qty": 4,
+       "name": "Earth Kingdom General",
+       "set": "tla",
+       "number": "173",
+       "id": "8688fce5-74b1-41e1-a59a-05a3878a75cb"
+      },
+      {
+       "qty": 4,
+       "name": "Ostrich-Horse",
+       "set": "tla",
+       "number": "188",
+       "id": "5ca3fd45-9301-44ef-afc0-4d7999d66d36"
+      },
+      {
+       "qty": 2,
+       "name": "Selfless Police Captain",
+       "set": "spm",
+       "number": "12",
+       "id": "fb0fd7bd-10d0-4d29-af88-387d1e07f3b7"
+      },
+      {
+       "qty": 12,
+       "name": "Forest",
+       "set": "spm",
+       "number": "193",
+       "id": "7b6c2532-be5a-4f1f-893c-36bcda2a699d"
+      },
+      {
+       "qty": 12,
+       "name": "Plains",
+       "set": "spm",
+       "number": "189",
+       "id": "1164f7ec-7b2f-4cc9-90bb-7eaaa331b4cd"
+      }
+     ]
+    }
+   },
+   "villain": {
+    "who": "goblin",
+    "deck": {
+     "name": "The Goblin's Gambit",
+     "colors": "BR",
+     "archetype": null,
+     "label": "tribute",
+     "cards": [
+      {
+       "qty": 3,
+       "name": "Ultimate Green Goblin",
+       "set": "spm",
+       "number": "157",
+       "id": "e82d3f71-8404-40e7-b7fa-35713d1b384e"
+      },
+      {
+       "qty": 2,
+       "name": "Green Goblin, Revenant",
+       "set": "spm",
+       "number": "130",
+       "id": "218ef931-46f5-4a4d-9f26-898a1ff8f70f"
+      },
+      {
+       "qty": 3,
+       "name": "Hobgoblin, Mantled Marauder",
+       "set": "spm",
+       "number": "80",
+       "id": "50716fe3-7a19-431e-8758-984fc48d714e"
+      },
+      {
+       "qty": 4,
+       "name": "Raging Goblinoids",
+       "set": "spm",
+       "number": "85",
+       "id": "8519598f-ab7f-49b0-90cc-c0b6422ebdf8"
+      },
+      {
+       "qty": 4,
+       "name": "Pumpkin Bombardment",
+       "set": "spm",
+       "number": "139",
+       "id": "a268ad73-9a1f-47d9-9a85-a4669a769c3d"
+      },
+      {
+       "qty": 4,
+       "name": "Shadow of the Goblin",
+       "set": "spm",
+       "number": "87",
+       "id": "854b6898-c480-435b-8952-a077c7977cec"
+      },
+      {
+       "qty": 4,
+       "name": "Maximum Carnage",
+       "set": "spm",
+       "number": "83",
+       "id": "7d72d867-6ed2-4900-a8ae-9d86f581ce32"
+      },
+      {
+       "qty": 4,
+       "name": "Tiger-Dillo",
+       "set": "tla",
+       "number": "155",
+       "id": "067bd117-04e6-410e-89c4-6d431d627751"
+      },
+      {
+       "qty": 4,
+       "name": "Superior Foes of Spider-Man",
+       "set": "spm",
+       "number": "96",
+       "id": "28e7bf86-5791-4412-8184-fa63fb292be4"
+      },
+      {
+       "qty": 4,
+       "name": "Vindictive Warden",
+       "set": "tla",
+       "number": "249",
+       "id": "0f34de05-39a9-425f-a3b4-3a9d46c917ac"
+      },
+      {
+       "qty": 12,
+       "name": "Swamp",
+       "set": "spm",
+       "number": "191",
+       "id": "5cb03b18-d74c-4c89-9539-3549d2e8ff5f"
+      },
+      {
+       "qty": 12,
+       "name": "Mountain",
+       "set": "spm",
+       "number": "192",
+       "id": "b044630d-50e7-431b-8e91-bd53e967f594"
+      }
+     ]
+    }
+   },
+   "reward": {
+    "hero": {
+     "packs": 1,
+     "coins": 100
+    },
+    "villain": {
+     "card": {
+      "oracle_id": "b5b43d01-fce6-4a00-9c19-7a7e2a09d833",
+      "name": "Ultimate Green Goblin",
+      "rarity": "rare",
+      "set": "spm",
+      "id": "e82d3f71-8404-40e7-b7fa-35713d1b384e",
+      "image": "https://cards.scryfall.io/normal/front/e/8/e82d3f71-8404-40e7-b7fa-35713d1b384e.jpg"
+     },
+     "coins": 100
+    }
+   },
+   "scene": [
+    {
+     "who": "spiderverse",
+     "line": "Spiders across the Multiverse are dying. I must keep them safe.",
+     "quote": true
+    },
+    {
+     "who": "spiderverse",
+     "line": "Combat math: count the blocks and the trick before you commit. A pumpkin bomb ends a bad attack."
+    }
+   ],
+   "villainScene": [
+    {
+     "who": "goblin",
+     "line": "The Green Goblin lives again!",
+     "quote": true
+    },
+    {
+     "who": "goblin",
+     "line": "Oscorp has a glider, a bomb and a very long grudge."
+    }
+   ],
+   "after": null,
+   "cues": {
+    "hero": {
+     "start": "Spiders, together.",
+     "big": "Web them!",
+     "low": "The bombs keep coming...",
+     "win": "The Goblin is down.",
+     "loss": "Cackling in the dark...",
+     "half": "Count before you swing."
+    },
+    "villain": {
+     "start": "Ha ha ha!",
+     "big": "Pumpkin bomb!",
+     "low": "Hold on...",
+     "win": "The city is mine.",
+     "loss": "No..."
+    }
+   },
+   "bigPlays": [],
+   "sim": null
+  },
+  {
+   "id": "a41b5",
+   "slot": 5,
+   "kind": "Arrival",
+   "mood": "tension",
+   "title": "The Four Nations",
+   "difficulty": "Easy",
+   "teaches": [
+    "Bending"
+   ],
+   "blurb": "The last Airbender wakes in a world where the Fire Nation has been waiting a hundred years.",
+   "rewardSet": "tla",
+   "host": false,
+   "hero": {
+    "who": "aang",
+    "deck": {
+     "name": "Team Avatar",
+     "colors": "W",
+     "archetype": null,
+     "label": "tribute",
+     "cards": [
+      {
+       "qty": 3,
+       "name": "Aang, the Last Airbender",
+       "set": "tla",
+       "number": "4",
+       "id": "245e008c-e073-443f-9592-6f628c0026ec"
+      },
+      {
+       "qty": 2,
+       "name": "Appa, Loyal Sky Bison",
+       "set": "tla",
+       "number": "9",
+       "id": "a9b2a843-c6fe-4d19-801e-1538e4381ab0"
+      },
+      {
+       "qty": 3,
+       "name": "Momo, Friendly Flier",
+       "set": "tla",
+       "number": "29",
+       "id": "c472ef84-a632-4ad7-853c-60588a7a4b12"
+      },
+      {
+       "qty": 4,
+       "name": "Kyoshi Warriors",
+       "set": "tla",
+       "number": "26",
+       "id": "211045e1-85c7-4088-b830-a2afa0fe520b"
+      },
+      {
+       "qty": 4,
+       "name": "Glider Kids",
+       "set": "tla",
+       "number": "21",
+       "id": "0613afb5-4cee-4132-8adf-404767ed8d07"
+      },
+      {
+       "qty": 4,
+       "name": "Airbending Lesson",
+       "set": "tla",
+       "number": "8",
+       "id": "e2bcd0a6-e94d-4a21-a334-a57459c1b8cc"
+      },
+      {
+       "qty": 2,
+       "name": "Enter the Avatar State",
+       "set": "tla",
+       "number": "18",
+       "id": "a8f3d2cb-d073-4df8-8769-49612628a377"
+      },
+      {
+       "qty": 4,
+       "name": "Avatar Enthusiasts",
+       "set": "tla",
+       "number": "11",
+       "id": "7292e5f2-d5a1-4e39-8f75-eba471819f04"
+      },
+      {
+       "qty": 4,
+       "name": "Wild Pack Squad",
+       "set": "spm",
+       "number": "23",
+       "id": "7b0eda7c-e44d-4d9b-9042-4a1eb8c4ed4a"
+      },
+      {
+       "qty": 4,
+       "name": "Jeong Jeong's Deserters",
+       "set": "tla",
+       "number": "25",
+       "id": "060966f9-5e56-4512-9ef3-2b216daf093c"
+      },
+      {
+       "qty": 2,
+       "name": "Water Tribe Captain",
+       "set": "tla",
+       "number": "41",
+       "id": "0a0cdf97-1927-47c6-8ef1-29969e3567ee"
+      },
+      {
+       "qty": 24,
+       "name": "Plains",
+       "set": "spm",
+       "number": "189",
+       "id": "1164f7ec-7b2f-4cc9-90bb-7eaaa331b4cd"
+      }
+     ]
+    }
+   },
+   "villain": {
+    "who": "fire",
+    "deck": {
+     "name": "The Fire Nation Raiders",
+     "colors": "R",
+     "archetype": null,
+     "label": "tribute",
+     "cards": [
+      {
+       "qty": 4,
+       "name": "Fire Nation Raider",
+       "set": "tla",
+       "number": "135",
+       "id": "ede1bbdb-c726-46e3-aaf1-b8cf2be2c341"
+      },
+      {
+       "qty": 4,
+       "name": "Fire Nation Cadets",
+       "set": "tla",
+       "number": "134",
+       "id": "1a3a862c-9c9a-41cd-94d1-2d0cff22a6cd"
+      },
+      {
+       "qty": 4,
+       "name": "Firebending Student",
+       "set": "tla",
+       "number": "139",
+       "id": "3b366f59-16fe-43cb-888d-1f93ef8fd332"
+      },
+      {
+       "qty": 4,
+       "name": "Fire Nation Attacks",
+       "set": "tla",
+       "number": "133",
+       "id": "9cc10845-8989-46ca-a57a-fd728fca0729"
+      },
+      {
+       "qty": 4,
+       "name": "Lightning Strike",
+       "set": "tla",
+       "number": "146",
+       "id": "5787b0e0-9469-4a6d-8b81-c992628e28c0"
+      },
+      {
+       "qty": 3,
+       "name": "Combustion Man",
+       "set": "tla",
+       "number": "127",
+       "id": "86f7399d-6876-4e85-ba34-ff1f97dc144a"
+      },
+      {
+       "qty": 4,
+       "name": "Superior Foes of Spider-Man",
+       "set": "spm",
+       "number": "96",
+       "id": "28e7bf86-5791-4412-8184-fa63fb292be4"
+      },
+      {
+       "qty": 4,
+       "name": "Treetop Freedom Fighters",
+       "set": "tla",
+       "number": "156",
+       "id": "a9394200-7ffc-440f-8b5f-c08b7930133c"
+      },
+      {
+       "qty": 4,
+       "name": "Fire Sages",
+       "set": "tla",
+       "number": "136",
+       "id": "71a9fa44-306f-417a-a9d9-991aff95025c"
+      },
+      {
+       "qty": 1,
+       "name": "Boar-q-pine",
+       "set": "tla",
+       "number": "124",
+       "id": "087a445c-5f63-45d6-83e8-20d22650db20"
+      },
+      {
+       "qty": 24,
+       "name": "Mountain",
+       "set": "spm",
+       "number": "192",
+       "id": "b044630d-50e7-431b-8e91-bd53e967f594"
+      }
+     ]
+    }
+   },
+   "reward": {
+    "hero": {
+     "packs": 1,
+     "coins": 0
+    },
+    "villain": {
+     "card": {
+      "oracle_id": "b37e9bc5-6a2c-4f08-b856-3f8d0d16defb",
+      "name": "Fire Nation Raider",
+      "rarity": "common",
+      "set": "tla",
+      "id": "ede1bbdb-c726-46e3-aaf1-b8cf2be2c341",
+      "image": "https://cards.scryfall.io/normal/front/e/d/ede1bbdb-c726-46e3-aaf1-b8cf2be2c341.jpg"
+     },
+     "coins": 50
+    }
+   },
+   "scene": [
+    {
+     "who": "aang",
+     "line": "When the world needed him most, the Avatar returned.",
+     "quote": true
+    },
+    {
+     "who": "aang",
+     "line": "Bending: each nation has its own element and its own trick. Airbending sends a creature away to be cast again for two."
+    }
+   ],
+   "villainScene": [
+    {
+     "who": "fire",
+     "line": "We are the sons and daughters of fire, the superior element!",
+     "quote": true
+    },
+    {
+     "who": "fire",
+     "line": "The raiders are young, fast and very sure of themselves."
+    }
+   ],
+   "after": null,
+   "cues": {
+    "hero": {
+     "start": "Let us go.",
+     "big": "Airbend!",
+     "low": "The fire is close...",
+     "win": "The wind is with us.",
+     "loss": "Too hot...",
+     "half": "Airbend to reset a creature."
+    },
+    "villain": {
+     "start": "For the Fire Lord!",
+     "big": "Burn it!",
+     "low": "The cadets falter...",
+     "win": "Victory!",
+     "loss": "Fall back!"
+    }
+   },
+   "bigPlays": [],
+   "sim": null
+  },
+  {
+   "id": "a41b6",
+   "slot": 6,
+   "kind": "Lesson",
+   "mood": "comic",
+   "title": "Earthbending",
+   "difficulty": "Normal",
+   "teaches": [
+    "Earthbend"
+   ],
+   "blurb": "The King of Omashu has a puzzle for you, and the Dai Li have a different plan.",
+   "rewardSet": "tla",
+   "host": false,
+   "hero": {
+    "who": "bumi",
+    "deck": {
+     "name": "The Earth Kingdom",
+     "colors": "G",
+     "archetype": null,
+     "label": "tribute",
+     "cards": [
+      {
+       "qty": 3,
+       "name": "Bumi, King of Three Trials",
+       "set": "tla",
+       "number": "169",
+       "id": "a268697b-22b0-4e1b-a5b6-d9be95025e57"
+      },
+      {
+       "qty": 3,
+       "name": "Haru, Hidden Talent",
+       "set": "tla",
+       "number": "182",
+       "id": "9657a0c0-2c26-4331-8e62-f032265a01af"
+      },
+      {
+       "qty": 3,
+       "name": "The Earth King",
+       "set": "tla",
+       "number": "172",
+       "id": "a8d5dca6-381a-4361-b265-27de8d04335c"
+      },
+      {
+       "qty": 4,
+       "name": "Earth Kingdom General",
+       "set": "tla",
+       "number": "173",
+       "id": "8688fce5-74b1-41e1-a59a-05a3878a75cb"
+      },
+      {
+       "qty": 4,
+       "name": "Badgermole Cub",
+       "set": "tla",
+       "number": "167",
+       "id": "340c5799-4964-44dd-8c48-8f3f3aba5211"
+      },
+      {
+       "qty": 4,
+       "name": "Earthbending Lesson",
+       "set": "tla",
+       "number": "176",
+       "id": "eccd63b3-3a3a-4661-9d6e-fb8152429bdb"
+      },
+      {
+       "qty": 3,
+       "name": "Earth Rumble",
+       "set": "tla",
+       "number": "174",
+       "id": "62730505-56f1-4043-a8b9-4fb7bc508b47"
+      },
+      {
+       "qty": 4,
+       "name": "Supportive Parents",
+       "set": "spm",
+       "number": "119",
+       "id": "d3fe8a5b-4166-46cc-b910-71cd1a19ae1b"
+      },
+      {
+       "qty": 4,
+       "name": "Ostrich-Horse",
+       "set": "tla",
+       "number": "188",
+       "id": "5ca3fd45-9301-44ef-afc0-4d7999d66d36"
+      },
+      {
+       "qty": 4,
+       "name": "Rebellious Captives",
+       "set": "tla",
+       "number": "191",
+       "id": "e64a4a8b-323c-4c8b-92af-1a3295799e65"
+      },
+      {
+       "qty": 24,
+       "name": "Forest",
+       "set": "spm",
+       "number": "193",
+       "id": "7b6c2532-be5a-4f1f-893c-36bcda2a699d"
+      }
+     ]
+    }
+   },
+   "villain": {
+    "who": "dailee",
+    "deck": {
+     "name": "The Dai Li",
+     "colors": "BG",
+     "archetype": null,
+     "label": "tribute",
+     "cards": [
+      {
+       "qty": 3,
+       "name": "Long Feng, Grand Secretariat",
+       "set": "tla",
+       "number": "233",
+       "id": "a3eb92fe-bc59-4472-9028-f368bd015609"
+      },
+      {
+       "qty": 4,
+       "name": "Dai Li Agents",
+       "set": "tla",
+       "number": "214",
+       "id": "9ddb8715-341b-400a-b6eb-f3f90518157c"
+      },
+      {
+       "qty": 4,
+       "name": "Beifong's Bounty Hunters",
+       "set": "tla",
+       "number": "209",
+       "id": "4f88ec3a-44a7-4ae5-a68c-24294dabaeed"
+      },
+      {
+       "qty": 3,
+       "name": "Joo Dee, One of Many",
+       "set": "tla",
+       "number": "105",
+       "id": "7ae1439f-a0c4-42c2-a4f3-8851defa981e"
+      },
+      {
+       "qty": 4,
+       "name": "Earth Village Ruffians",
+       "set": "tla",
+       "number": "219",
+       "id": "56d4e0b7-232f-4953-84a3-e6f17781aa45"
+      },
+      {
+       "qty": 4,
+       "name": "Dai Li Indoctrination",
+       "set": "tla",
+       "number": "93",
+       "id": "eca652b8-44f1-4bd9-b4bf-036eeead13aa"
+      },
+      {
+       "qty": 4,
+       "name": "Ostrich-Horse",
+       "set": "tla",
+       "number": "188",
+       "id": "5ca3fd45-9301-44ef-afc0-4d7999d66d36"
+      },
+      {
+       "qty": 4,
+       "name": "Wolfbat",
+       "set": "tla",
+       "number": "122",
+       "id": "2ae83b4e-e5a4-4c98-8d16-eef3c71b8ff2"
+      },
+      {
+       "qty": 4,
+       "name": "Guy in the Chair",
+       "set": "spm",
+       "number": "102",
+       "id": "65e97c06-55a6-4841-be0f-055c015df90a"
+      },
+      {
+       "qty": 2,
+       "name": "Pirate Peddlers",
+       "set": "tla",
+       "number": "115",
+       "id": "5c998994-6c3b-4f34-9b31-babba2b17266"
+      },
+      {
+       "qty": 12,
+       "name": "Swamp",
+       "set": "spm",
+       "number": "191",
+       "id": "5cb03b18-d74c-4c89-9539-3549d2e8ff5f"
+      },
+      {
+       "qty": 12,
+       "name": "Forest",
+       "set": "spm",
+       "number": "193",
+       "id": "7b6c2532-be5a-4f1f-893c-36bcda2a699d"
+      }
+     ]
+    }
+   },
+   "reward": {
+    "hero": {
+     "packs": 1,
+     "coins": 100
+    },
+    "villain": {
+     "card": {
+      "oracle_id": "9bf9fe83-b0df-4ef8-ac54-c0d223d4e410",
+      "name": "Long Feng, Grand Secretariat",
+      "rarity": "uncommon",
+      "set": "tla",
+      "id": "a3eb92fe-bc59-4472-9028-f368bd015609",
+      "image": "https://cards.scryfall.io/normal/front/a/3/a3eb92fe-bc59-4472-9028-f368bd015609.jpg"
+     },
+     "coins": 100
+    }
+   },
+   "scene": [
+    {
+     "who": "bumi",
+     "line": "You thought I was a frail old man, but I'm the most powerful Earthbender you'll ever see.",
+     "quote": true
+    },
+    {
+     "who": "bumi",
+     "line": "Earthbend: a land becomes a creature with counters, and it comes back if it dies. Rock is a stubborn element."
+    }
+   ],
+   "villainScene": [
+    {
+     "who": "dailee",
+     "line": "In silencing talk of conflict, Ba Sing Se remains a peaceful, orderly utopia.",
+     "quote": true
+    },
+    {
+     "who": "dailee",
+     "line": "The Dai Li do not fight in the open. They arrange things."
+    }
+   ],
+   "after": null,
+   "cues": {
+    "hero": {
+     "start": "Rock is stubborn.",
+     "big": "Earthbend!",
+     "low": "The agents close in...",
+     "win": "Omashu stands.",
+     "loss": "Buried...",
+     "half": "Earthbend a land into a fighter."
+    },
+    "villain": {
+     "start": "Order.",
+     "big": "Seize them!",
+     "low": "A flaw in the plan...",
+     "win": "All is quiet.",
+     "loss": "The wall cracks..."
+    }
+   },
+   "bigPlays": [],
+   "sim": null
+  },
+  {
+   "id": "a41b7",
+   "slot": 7,
+   "kind": "Rival",
+   "mood": "rival",
+   "title": "Koh, the Face Stealer",
+   "difficulty": "Normal",
+   "teaches": [
+    "Locking creatures down"
+   ],
+   "blurb": "Show no emotion in the spirit swamp. Koh takes faces, and koh is patient.",
+   "rewardSet": "tla",
+   "host": false,
+   "hero": {
+    "who": "katara",
+    "deck": {
+     "name": "The Water Tribe",
+     "colors": "U",
+     "archetype": null,
+     "label": "tribute",
+     "cards": [
+      {
+       "qty": 3,
+       "name": "Katara, Bending Prodigy",
+       "set": "tla",
+       "number": "59",
+       "id": "e8372167-383f-4302-a8ea-b6bf495c870c"
+      },
+      {
+       "qty": 3,
+       "name": "Master Pakku",
+       "set": "tla",
+       "number": "63",
+       "id": "91e30df5-63f7-4281-8d64-8d522d663652"
+      },
+      {
+       "qty": 3,
+       "name": "Gran-Gran",
+       "set": "tla",
+       "number": "54",
+       "id": "fa434b41-e5f7-4989-865a-95db67b05cb1"
+      },
+      {
+       "qty": 4,
+       "name": "Flexible Waterbender",
+       "set": "tla",
+       "number": "50",
+       "id": "1447ebce-7e48-4b21-a39c-740920538bdd"
+      },
+      {
+       "qty": 4,
+       "name": "Waterbending Lesson",
+       "set": "tla",
+       "number": "80",
+       "id": "4f81e3b5-a0a9-4764-8c2d-b499ce1740b4"
+      },
+      {
+       "qty": 4,
+       "name": "Rowdy Snowballers",
+       "set": "tla",
+       "number": "68",
+       "id": "17d71522-b133-4003-b787-0c742a2fd70e"
+      },
+      {
+       "qty": 3,
+       "name": "Geyser Leaper",
+       "set": "tla",
+       "number": "52",
+       "id": "4d25428d-e5a5-43c4-8544-43120ed1c4d5"
+      },
+      {
+       "qty": 4,
+       "name": "Doc Ock's Henchmen",
+       "set": "spm",
+       "number": "30",
+       "id": "a383c442-3f4a-4115-97e4-23f0eb88465b"
+      },
+      {
+       "qty": 4,
+       "name": "First-Time Flyer",
+       "set": "tla",
+       "number": "49",
+       "id": "ea22d29d-3a62-4ae2-91d5-21a678be9b48"
+      },
+      {
+       "qty": 4,
+       "name": "North Pole Patrol",
+       "set": "tla",
+       "number": "65",
+       "id": "c2c0c138-5b61-4949-8431-4a6d458ead6a"
+      },
+      {
+       "qty": 24,
+       "name": "Island",
+       "set": "spm",
+       "number": "190",
+       "id": "d59cb0b5-fd4f-4dde-a69f-7ca6aa12b89f"
+      }
+     ]
+    }
+   },
+   "villain": {
+    "who": "koh",
+    "deck": {
+     "name": "Koh and the Spirits",
+     "colors": "B",
+     "archetype": null,
+     "label": "tribute",
+     "cards": [
+      {
+       "qty": 3,
+       "name": "Koh, the Face Stealer",
+       "set": "tla",
+       "number": "107",
+       "id": "28f6fa32-5058-4c29-9ba8-9d8f2057eb6d"
+      },
+      {
+       "qty": 3,
+       "name": "Lo and Li, Twin Tutors",
+       "set": "tla",
+       "number": "108",
+       "id": "cba9260d-ef07-4429-99f9-6004cc1fea0f"
+      },
+      {
+       "qty": 4,
+       "name": "Canyon Crawler",
+       "set": "tla",
+       "number": "90",
+       "id": "30a30bfb-f0f3-425b-b37d-20079ee27046"
+      },
+      {
+       "qty": 4,
+       "name": "Cat-Gator",
+       "set": "tla",
+       "number": "91",
+       "id": "ec83a825-79e6-42a4-919c-3bc498ff4433"
+      },
+      {
+       "qty": 4,
+       "name": "Foggy Swamp Visions",
+       "set": "tla",
+       "number": "102",
+       "id": "3a46deaa-88f7-4eec-aa99-b85073847918"
+      },
+      {
+       "qty": 4,
+       "name": "Corrupt Court Official",
+       "set": "tla",
+       "number": "92",
+       "id": "4692610e-d64c-438e-b5ad-0cf67fd57f1f"
+      },
+      {
+       "qty": 2,
+       "name": "Heartless Act",
+       "set": "tla",
+       "number": "103",
+       "id": "b57c57a8-d72b-4c6c-a2db-a7ef61190f42"
+      },
+      {
+       "qty": 4,
+       "name": "Fire Nation Engineer",
+       "set": "tla",
+       "number": "99",
+       "id": "5daba108-277d-46c8-ac35-7610f4786813"
+      },
+      {
+       "qty": 4,
+       "name": "Venomized Cat",
+       "set": "spm",
+       "number": "72",
+       "id": "6330f3e9-e031-4d55-b5d8-536c16bba063"
+      },
+      {
+       "qty": 4,
+       "name": "Pirate Peddlers",
+       "set": "tla",
+       "number": "115",
+       "id": "5c998994-6c3b-4f34-9b31-babba2b17266"
+      },
+      {
+       "qty": 24,
+       "name": "Swamp",
+       "set": "spm",
+       "number": "191",
+       "id": "5cb03b18-d74c-4c89-9539-3549d2e8ff5f"
+      }
+     ]
+    }
+   },
+   "reward": {
+    "hero": {
+     "packs": 1,
+     "coins": 100
+    },
+    "villain": {
+     "card": {
+      "oracle_id": "2bbb33e3-7d03-457c-92bb-b0c943615fa1",
+      "name": "Koh, the Face Stealer",
+      "rarity": "mythic",
+      "set": "tla",
+      "id": "28f6fa32-5058-4c29-9ba8-9d8f2057eb6d",
+      "image": "https://cards.scryfall.io/normal/front/2/8/28f6fa32-5058-4c29-9ba8-9d8f2057eb6d.jpg"
+     },
+     "coins": 100
+    }
+   },
+   "scene": [
+    {
+     "who": "katara",
+     "line": "You can't knock me down!",
+     "quote": true
+    },
+    {
+     "who": "katara",
+     "line": "Just push and pull the water—like this.",
+     "quote": true
+    },
+    {
+     "who": "katara",
+     "line": "Locking creatures down: tap them, stun them, or take their attack away. Koh will lock you the same way."
+    }
+   ],
+   "villainScene": [
+    {
+     "who": "koh",
+     "line": "I take faces. I do not hurry."
+    },
+    {
+     "who": "koh",
+     "line": "The swamp is old. The swamp remembers every face it has taken."
+    }
+   ],
+   "after": null,
+   "cues": {
+    "hero": {
+     "start": "Push and pull.",
+     "big": "Waterbend!",
+     "low": "He is taking faces...",
+     "win": "The spirit is calm.",
+     "loss": "Lost in the swamp...",
+     "half": "Lock his big creature before it attacks."
+    },
+    "villain": {
+     "start": "Patience.",
+     "big": "Your face!",
+     "low": "Stirring...",
+     "win": "Mine.",
+     "loss": "Gone..."
+    }
+   },
+   "bigPlays": [],
+   "sim": null
+  },
+  {
+   "id": "a41b8",
+   "slot": 8,
+   "kind": "Boss",
+   "mood": "boss",
+   "title": "The Phoenix King",
+   "difficulty": "Hard",
+   "teaches": [
+    "Direct damage"
+   ],
+   "blurb": "Sozin's Comet burns overhead. The Fire Lord has promised to end the war by ending the world.",
+   "rewardSet": "tla",
+   "host": true,
+   "hero": {
+    "who": "gaang",
+    "deck": {
+     "name": "The Gaang",
+     "colors": "GW",
+     "archetype": null,
+     "label": "tribute",
+     "cards": [
+      {
+       "qty": 1,
+       "name": "Suki, Kyoshi Warrior",
+       "set": "tla",
+       "number": "243",
+       "id": "3e311480-04f8-4b8f-938e-1cc6d06b9902"
+      },
+      {
+       "qty": 1,
+       "name": "Earth King's Lieutenant",
+       "set": "tla",
+       "number": "217",
+       "id": "4533d155-5c56-41a5-9d76-2d1414ac47c9"
+      },
+      {
+       "qty": 2,
+       "name": "White Lotus Reinforcements",
+       "set": "tla",
+       "number": "251",
+       "id": "4c7e3e2f-d7ac-4d40-ab84-cb7efe06a316"
+      },
+      {
+       "qty": 4,
+       "name": "Earth Kingdom Soldier",
+       "set": "tla",
+       "number": "216",
+       "id": "2d543d35-945a-4ffa-beb7-7c5d4f894f79"
+      },
+      {
+       "qty": 1,
+       "name": "Hakoda, Selfless Commander",
+       "set": "tla",
+       "number": "23",
+       "id": "9aef3ddb-9bb7-42c8-975b-b1917955a416"
+      },
+      {
+       "qty": 2,
+       "name": "Aang, the Last Airbender",
+       "set": "tla",
+       "number": "4",
+       "id": "245e008c-e073-443f-9592-6f628c0026ec"
+      },
+      {
+       "qty": 1,
+       "name": "Enter the Avatar State",
+       "set": "tla",
+       "number": "18",
+       "id": "a8f3d2cb-d073-4df8-8769-49612628a377"
+      },
+      {
+       "qty": 4,
+       "name": "Avatar Enthusiasts",
+       "set": "tla",
+       "number": "11",
+       "id": "7292e5f2-d5a1-4e39-8f75-eba471819f04"
+      },
+      {
+       "qty": 4,
+       "name": "Selfless Police Captain",
+       "set": "spm",
+       "number": "12",
+       "id": "fb0fd7bd-10d0-4d29-af88-387d1e07f3b7"
+      },
+      {
+       "qty": 4,
+       "name": "Ostrich-Horse",
+       "set": "tla",
+       "number": "188",
+       "id": "5ca3fd45-9301-44ef-afc0-4d7999d66d36"
+      },
+      {
+       "qty": 4,
+       "name": "Wild Pack Squad",
+       "set": "spm",
+       "number": "23",
+       "id": "7b0eda7c-e44d-4d9b-9042-4a1eb8c4ed4a"
+      },
+      {
+       "qty": 4,
+       "name": "Jeong Jeong's Deserters",
+       "set": "tla",
+       "number": "25",
+       "id": "060966f9-5e56-4512-9ef3-2b216daf093c"
+      },
+      {
+       "qty": 4,
+       "name": "Glider Kids",
+       "set": "tla",
+       "number": "21",
+       "id": "0613afb5-4cee-4132-8adf-404767ed8d07"
+      },
+      {
+       "qty": 12,
+       "name": "Forest",
+       "set": "spm",
+       "number": "193",
+       "id": "7b6c2532-be5a-4f1f-893c-36bcda2a699d"
+      },
+      {
+       "qty": 12,
+       "name": "Plains",
+       "set": "spm",
+       "number": "189",
+       "id": "1164f7ec-7b2f-4cc9-90bb-7eaaa331b4cd"
+      }
+     ]
+    }
+   },
+   "villain": {
+    "who": "ozai",
+    "deck": {
+     "name": "The Phoenix King",
+     "colors": "BR",
+     "archetype": null,
+     "label": "tribute",
+     "cards": [
+      {
+       "qty": 3,
+       "name": "Ozai, the Phoenix King",
+       "set": "tla",
+       "number": "235",
+       "id": "a98b1550-4609-4a2f-9371-4afe1cdc613e"
+      },
+      {
+       "qty": 3,
+       "name": "Zhao, Ruthless Admiral",
+       "set": "tla",
+       "number": "252",
+       "id": "3fd48a57-b0bb-4177-a0f3-bd317a179cbe"
+      },
+      {
+       "qty": 3,
+       "name": "Azula, On the Hunt",
+       "set": "tla",
+       "number": "85",
+       "id": "1335a145-248a-4f1e-8760-9a5d531e14e3"
+      },
+      {
+       "qty": 4,
+       "name": "Vindictive Warden",
+       "set": "tla",
+       "number": "249",
+       "id": "0f34de05-39a9-425f-a3b4-3a9d46c917ac"
+      },
+      {
+       "qty": 4,
+       "name": "Cruel Administrator",
+       "set": "tla",
+       "number": "213",
+       "id": "9d70707b-2e25-40b1-80a8-9a5492bca7e2"
+      },
+      {
+       "qty": 4,
+       "name": "Fire Navy Trebuchet",
+       "set": "tla",
+       "number": "100",
+       "id": "e58372cc-9a89-47a4-a0db-df5435e26cd3"
+      },
+      {
+       "qty": 3,
+       "name": "Zuko, Conflicted",
+       "set": "tla",
+       "number": "253",
+       "id": "9d555cab-ec86-4f27-bca2-7d01f79c3f46"
+      },
+      {
+       "qty": 4,
+       "name": "Tiger-Dillo",
+       "set": "tla",
+       "number": "155",
+       "id": "067bd117-04e6-410e-89c4-6d431d627751"
+      },
+      {
+       "qty": 4,
+       "name": "Superior Foes of Spider-Man",
+       "set": "spm",
+       "number": "96",
+       "id": "28e7bf86-5791-4412-8184-fa63fb292be4"
+      },
+      {
+       "qty": 4,
+       "name": "Merchant of Many Hats",
+       "set": "tla",
+       "number": "110",
+       "id": "752ffa24-93b6-4b33-bf10-7222357ac472"
+      },
+      {
+       "qty": 12,
+       "name": "Swamp",
+       "set": "spm",
+       "number": "191",
+       "id": "5cb03b18-d74c-4c89-9539-3549d2e8ff5f"
+      },
+      {
+       "qty": 12,
+       "name": "Mountain",
+       "set": "spm",
+       "number": "192",
+       "id": "b044630d-50e7-431b-8e91-bd53e967f594"
+      }
+     ]
+    }
+   },
+   "reward": {
+    "hero": {
+     "packs": 2,
+     "coins": 200
+    },
+    "villain": {
+     "card": {
+      "oracle_id": "7472af8e-2e93-43b2-bc32-a3741f6d7502",
+      "name": "Ozai, the Phoenix King",
+      "rarity": "mythic",
+      "set": "tla",
+      "id": "a98b1550-4609-4a2f-9371-4afe1cdc613e",
+      "image": "https://cards.scryfall.io/normal/front/a/9/a98b1550-4609-4a2f-9371-4afe1cdc613e.jpg"
+     },
+     "coins": 200
+    }
+   },
+   "scene": [
+    {
+     "who": "gaang",
+     "line": "I'm okay. Just finish the mission!",
+     "quote": true
+    },
+    {
+     "who": "aang",
+     "line": "When the world needed him most, the Avatar returned.",
+     "quote": true
+    },
+    {
+     "who": "gaang",
+     "line": "Direct damage skips combat. Use it to finish him when the board is stuck."
+    }
+   ],
+   "villainScene": [
+    {
+     "who": "ozai",
+     "line": "Out of the ashes, a new world will be born.",
+     "quote": true
+    },
+    {
+     "who": "ozai",
+     "line": "You will learn respect, and suffering will be your teacher.",
+     "quote": true
+    }
+   ],
+   "after": null,
+   "cues": {
+    "hero": {
+     "start": "Together, now.",
+     "big": "Avatar State!",
+     "low": "The comet is too strong...",
+     "win": "Peace.",
+     "loss": "The world burns...",
+     "half": "Burn him out when the board is stuck."
+    },
+    "villain": {
+     "start": "Bow.",
+     "big": "Phoenix fire!",
+     "low": "Impossible...",
+     "win": "The world is mine.",
+     "loss": "No..."
+    }
+   },
+   "bigPlays": [],
+   "sim": null
+  },
+  {
+   "id": "a41b9",
+   "slot": 9,
+   "kind": "Secret Boss",
+   "secret": true,
+   "mood": "boss",
+   "title": "The Spider-Totems",
+   "difficulty": "Hard",
+   "teaches": [
+    "Trample"
+   ],
+   "blurb": "A hunter has been tracking every spider in the Multiverse. This one is the last on his list.",
+   "rewardSet": "spm",
+   "host": true,
+   "archive": {
+    "deck": "The Spider-Totems",
+    "when": "Fall 2025",
+    "format": "Story archive, no tournament list.",
+    "what": "A green deck of hunters and big creatures from the set: Spider-Rex, Lizard, Kraven's Cats.",
+    "why": "It stands for the hunt that follows every Spider, not a list anyone won with.",
+    "beat": "Block the big ones, chump the pack and burn out the totem.",
+    "after": "Nothing; this is the optional superboss at the end of the story."
+   },
+   "hero": {
+    "who": "arana",
+    "deck": {
+     "name": "Araña and the Spiders",
+     "colors": "RW",
+     "archetype": null,
+     "label": "tribute",
+     "cards": [
+      {
+       "qty": 2,
+       "name": "Araña, Heart of the Spider",
+       "set": "spm",
+       "number": "123",
+       "id": "b02bfa0e-f761-45e1-b35c-f44ff7c5d0e8"
+      },
+      {
+       "qty": 4,
+       "name": "Sudden Strike",
+       "set": "spm",
+       "number": "19",
+       "id": "6eea2718-93d2-4d83-9b5d-eb943a0f1d11"
+      },
+      {
+       "qty": 4,
+       "name": "Spectacular Tactics",
+       "set": "spm",
+       "number": "15",
+       "id": "836b4246-f1f2-4495-8664-650dda70ed4f"
+      },
+      {
+       "qty": 3,
+       "name": "Shock",
+       "set": "spm",
+       "number": "88",
+       "id": "760b41a1-c087-4b11-b8a0-fb01d8a4c0c6"
+      },
+      {
+       "qty": 4,
+       "name": "Glider Kids",
+       "set": "tla",
+       "number": "21",
+       "id": "0613afb5-4cee-4132-8adf-404767ed8d07"
+      },
+      {
+       "qty": 4,
+       "name": "Avatar Enthusiasts",
+       "set": "tla",
+       "number": "11",
+       "id": "7292e5f2-d5a1-4e39-8f75-eba471819f04"
+      },
+      {
+       "qty": 4,
+       "name": "Treetop Freedom Fighters",
+       "set": "tla",
+       "number": "156",
+       "id": "a9394200-7ffc-440f-8b5f-c08b7930133c"
+      },
+      {
+       "qty": 4,
+       "name": "Water Tribe Captain",
+       "set": "tla",
+       "number": "41",
+       "id": "0a0cdf97-1927-47c6-8ef1-29969e3567ee"
+      },
+      {
+       "qty": 4,
+       "name": "Superior Foes of Spider-Man",
+       "set": "spm",
+       "number": "96",
+       "id": "28e7bf86-5791-4412-8184-fa63fb292be4"
+      },
+      {
+       "qty": 3,
+       "name": "Invasion Reinforcements",
+       "set": "tla",
+       "number": "24",
+       "id": "b8845bba-d116-43cd-8ae0-e553f3324d66"
+      },
+      {
+       "qty": 12,
+       "name": "Mountain",
+       "set": "spm",
+       "number": "192",
+       "id": "b044630d-50e7-431b-8e91-bd53e967f594"
+      },
+      {
+       "qty": 12,
+       "name": "Plains",
+       "set": "spm",
+       "number": "189",
+       "id": "1164f7ec-7b2f-4cc9-90bb-7eaaa331b4cd"
+      }
+     ]
+    }
+   },
+   "villain": {
+    "who": "totems",
+    "deck": {
+     "name": "The Spider-Totems",
+     "colors": "G",
+     "archetype": null,
+     "label": "tribute",
+     "note": "Built from cards in this act's sets only. No tournament list is copied.",
+     "cards": [
+      {
+       "qty": 3,
+       "name": "Spider-Rex, Daring Dino",
+       "set": "spm",
+       "number": "116",
+       "id": "5b6e0bea-f126-4adb-8808-901950a77c7b"
+      },
+      {
+       "qty": 3,
+       "name": "Spider-Ham, Peter Porker",
+       "set": "spm",
+       "number": "114",
+       "id": "41f18f42-b86b-4a12-9f0d-76b761571195"
+      },
+      {
+       "qty": 3,
+       "name": "Lizard, Connors's Curse",
+       "set": "spm",
+       "number": "106",
+       "id": "6add5d2a-950e-4bee-9850-e68f5f6d6142"
+      },
+      {
+       "qty": 4,
+       "name": "Kraven's Cats",
+       "set": "spm",
+       "number": "104",
+       "id": "86c415d8-1d2d-4339-955b-0f2aebeb3c95"
+      },
+      {
+       "qty": 4,
+       "name": "Lurking Lizards",
+       "set": "spm",
+       "number": "107",
+       "id": "58b5b49c-ddd6-4d1b-9b61-6e02d8fc55ad"
+      },
+      {
+       "qty": 4,
+       "name": "Grow Extra Arms",
+       "set": "spm",
+       "number": "101",
+       "id": "63fab399-00db-4398-922e-c3ca3356731a"
+      },
+      {
+       "qty": 4,
+       "name": "Kraven's Last Hunt",
+       "set": "spm",
+       "number": "105",
+       "id": "d0c18ffe-a2b9-40df-a6b4-a9381e6dc467"
+      },
+      {
+       "qty": 4,
+       "name": "Walltop Sentries",
+       "set": "tla",
+       "number": "202",
+       "id": "e55f1c63-58f6-4e2b-aaeb-f2d5faca47a2"
+      },
+      {
+       "qty": 4,
+       "name": "Raucous Audience",
+       "set": "tla",
+       "number": "190",
+       "id": "ccd03ec3-0fae-48b2-9f04-9c57d2f94267"
+      },
+      {
+       "qty": 3,
+       "name": "Ostrich-Horse",
+       "set": "tla",
+       "number": "188",
+       "id": "5ca3fd45-9301-44ef-afc0-4d7999d66d36"
+      },
+      {
+       "qty": 24,
+       "name": "Forest",
+       "set": "spm",
+       "number": "193",
+       "id": "7b6c2532-be5a-4f1f-893c-36bcda2a699d"
+      }
+     ]
+    }
+   },
+   "reward": {
+    "hero": {
+     "packs": 2,
+     "coins": 200
+    },
+    "villain": {
+     "card": {
+      "oracle_id": "58b771d4-dfaf-4189-a5f6-4bc0fb4c0fa3",
+      "name": "Spider-Rex, Daring Dino",
+      "rarity": "common",
+      "set": "spm",
+      "id": "5b6e0bea-f126-4adb-8808-901950a77c7b",
+      "image": "https://cards.scryfall.io/normal/front/5/b/5b6e0bea-f126-4adb-8808-901950a77c7b.jpg"
+     },
+     "coins": 200
+    }
+   },
+   "scene": [
+    {
+     "who": "arana",
+     "line": "I'm creating an all-new legacy.",
+     "quote": true
+    },
+    {
+     "who": "totems",
+     "line": "The hunter seeks only the greatest prey."
+    }
+   ],
+   "villainScene": [
+    {
+     "who": "totems",
+     "line": "I have found honor, not in the civilized, but in the primal.",
+     "quote": true
+    }
+   ],
+   "after": [
+    {
+     "who": "stage",
+     "line": "Recorded: the last spider escapes the hunt. The Omenpaths close."
+    }
+   ],
+   "cues": {
+    "hero": {
+     "start": "Stay quick.",
+     "big": "Strike!",
+     "low": "He is faster than us...",
+     "win": "The hunt is over.",
+     "loss": "Caught...",
+     "half": "Chump the big ones, burn the pack."
+    },
+    "villain": {
+     "start": "The hunt begins.",
+     "big": "Take them!",
+     "low": "Prey...",
+     "win": "The hunt ends.",
+     "loss": "Escaped..."
+    }
+   },
+   "bigPlays": [],
+   "sim": null
+  }
+ ]
+}
