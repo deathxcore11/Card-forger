@@ -1,0 +1,245 @@
+package dev.cardstashy.nativeplay.ui
+
+import androidx.activity.compose.BackHandler
+import androidx.compose.animation.core.Animatable
+import androidx.compose.animation.core.CubicBezierEasing
+import androidx.compose.animation.core.keyframes
+import androidx.compose.animation.core.tween
+import androidx.compose.foundation.Canvas
+import androidx.compose.foundation.background
+import androidx.compose.foundation.border
+import androidx.compose.foundation.clickable
+import androidx.compose.foundation.interaction.MutableInteractionSource
+import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.BoxWithConstraints
+import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.ExperimentalLayoutApi
+import androidx.compose.foundation.layout.FlowRow
+import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.WindowInsets
+import androidx.compose.foundation.layout.asPaddingValues
+import androidx.compose.foundation.layout.defaultMinSize
+import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.IntrinsicSize
+import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.heightIn
+import androidx.compose.foundation.layout.navigationBars
+import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.layout.width
+import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.foundation.verticalScroll
+import androidx.compose.material3.Text
+import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.produceState
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.rememberCoroutineScope
+import androidx.compose.ui.Alignment
+import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.clip
+import androidx.compose.ui.draw.drawBehind
+import androidx.compose.ui.geometry.Offset
+import androidx.compose.ui.graphics.Brush
+import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.StrokeCap
+import androidx.compose.ui.graphics.drawscope.Stroke
+import androidx.compose.ui.graphics.drawscope.translate
+import androidx.compose.ui.graphics.nativeCanvas
+import androidx.compose.ui.graphics.asComposeRenderEffect
+import androidx.compose.ui.graphics.graphicsLayer
+import androidx.compose.ui.graphics.layer.GraphicsLayer
+import androidx.compose.ui.graphics.layer.drawLayer
+import androidx.compose.ui.layout.boundsInRoot
+import androidx.compose.ui.layout.onGloballyPositioned
+import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.semantics.contentDescription
+import androidx.compose.ui.semantics.semantics
+import androidx.compose.ui.text.TextStyle
+import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.sp
+import dev.cardstashy.nativeplay.account.Decks
+import dev.cardstashy.nativeplay.collection.WorkspaceSync
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.launch
+import kotlinx.coroutines.withContext
+
+private val INK = Color(0xFFEEF0F4)
+private val MUTED = Color(0xFF9AA2B1)
+private fun sans(size: Float, weight: Int, line: Float, color: Color = INK, track: Float = 0f) =
+    TextStyle(fontFamily = Type.Sans, fontWeight = FontWeight(weight), fontSize = size.sp, lineHeight = line.sp, color = color, letterSpacing = track.sp)
+
+/** views.js when(): new Date(iso).toLocaleString(), or "never". */
+internal fun siteWhen(millis: Long?): String {
+    millis ?: return "never"
+    val l = java.util.Locale.getDefault()
+    return java.text.SimpleDateFormat(android.text.format.DateFormat.getBestDateTimePattern(l, "yMdjms"), l).format(java.util.Date(millis))
+}
+internal fun siteWhen(iso: String?): String = siteWhen(iso?.let { runCatching { java.time.OffsetDateTime.parse(it).toInstant().toEpochMilli() }.getOrNull()
+    ?: runCatching { java.time.Instant.parse(it).toEpochMilli() }.getOrNull() })
+
+/**
+ * views.js syncDecideSheet ("choose"), opened from the account panel's "Choose which copy to keep" (app.js A.syncDecide) as the
+ * site's #sheet: a bottom sheet on a phone, a centred 720 card from 700 wide, glass over the blurred app. Its buttons are
+ * app.js A.syncChoice: replacing the account asks first; keeping the account's copy says so in a toast.
+ */
+@OptIn(ExperimentalLayoutApi::class)
+@Composable
+fun SyncDecideSheet(backdrop: GraphicsLayer?, onClose: () -> Unit) {
+    val context = LocalContext.current
+    val scope = rememberCoroutineScope()
+    val p0 = WorkspaceSync.pending.value ?: run { LaunchedEffect(Unit) { onClose() }; return }
+    // The account's side gains its updated_at and device once read; this device's copy is the file the engine runs on.
+    val p by produceState(p0) { WorkspaceSync.pendingDetails()?.let { value = it } }
+    val local by produceState<WorkspaceSync.Summary?>(null) {
+        value = withContext(Dispatchers.IO) { WorkspaceSync.summarize(Decks.deviceFile(context, p0.userId).takeIf { it.isFile }?.readText()) }
+    }
+    val cloud = remember(p0) { WorkspaceSync.summarize(p0.cloud.data) }
+    val still = Motion.still
+    val fade = remember { Animatable(if (still) 1f else 0f) }
+    val y = remember { Animatable(if (still) 0f else 46f) }; val k = remember { Animatable(if (still) 1f else .985f) }; val a = remember { Animatable(if (still) 1f else .2f) }
+    LaunchedEffect(Unit) {
+        // dialog.sheet[open]: sheet-spring .42 s cubic-bezier(.2, .9, .25, 1.1) (0 %: 46 px down, .985, .2; 60 %: 4 px up, 1.002, 1);
+        // ::backdrop fade .3 s ease-out.
+        val e = CubicBezierEasing(.2f, .9f, .25f, 1.1f)
+        launch { fade.animateTo(1f, tween(300, easing = CubicBezierEasing(0f, 0f, .58f, 1f))) }
+        launch { y.animateTo(0f, keyframes { durationMillis = 420; 46f at 0 using e; -4f at 252 using e }) }
+        launch { k.animateTo(1f, keyframes { durationMillis = 420; .985f at 0 using e; 1.002f at 252 using e }) }
+        a.animateTo(1f, keyframes { durationMillis = 420; .2f at 0 using e; 1f at 252 using e })
+    }
+    BackHandler { onClose() }
+    fun choose(c: String) {
+        val pending = WorkspaceSync.pending.value
+        suspend fun run() { if (pending !== WorkspaceSync.pending.value) return; onClose(); WorkspaceSync.resolve(context.applicationContext, c, pending)
+            if (c == "account") CollectionWrites.show("Loaded your account copy. This device’s previous data was downloaded as a backup.") }
+        if (c == "device") CollectionWrites.confirm("Replace your account copy with this device’s? The account copy is downloaded as a backup first.") { run() }
+        else scope.launch { run() }
+    }
+    val dim = androidx.compose.ui.graphics.rememberGraphicsLayer(); val frost = androidx.compose.ui.graphics.rememberGraphicsLayer()
+    val sheetBox = remember { arrayOf(androidx.compose.ui.geometry.Rect.Zero) }
+    val glass = backdrop != null && android.os.Build.VERSION.SDK_INT >= 31; val bg = Site.Bg
+    BoxWithConstraints(Modifier.fillMaxSize()
+        .drawBehind {
+            // body.glass dialog.sheet::backdrop { background: rgba(4, 5, 8, .45); backdrop-filter: blur(3px) }, fading in.
+            if (backdrop != null && backdrop.size.width > 0) {
+                dim.renderEffect = androidx.compose.ui.graphics.BlurEffect(3.dp.toPx(), 3.dp.toPx(), androidx.compose.ui.graphics.TileMode.Clamp)
+                dim.alpha = fade.value
+                dim.record(backdrop.size) { drawLayer(backdrop) }
+                drawLayer(dim)
+            }
+            drawRect(Color(0x73040508), alpha = fade.value)
+        }
+        .clickable(interactionSource = remember { MutableInteractionSource() }, indication = null) { onClose() }) {
+        val big = maxWidth >= 700.dp
+        val gutter = if (big) 22.dp else 16.dp
+        val shape = if (big) RoundedCornerShape(22.dp) else RoundedCornerShape(topStart = 22.dp, topEnd = 22.dp)
+        val navBottom = WindowInsets.navigationBars.asPaddingValues().calculateBottomPadding()
+        Column(Modifier.align(if (big) Alignment.Center else Alignment.BottomCenter)
+            .width(if (big) minOf(720.dp, maxWidth - 32.dp) else minOf(640.dp, maxWidth))
+            .heightIn(max = maxHeight * .92f)
+            .graphicsLayer { translationY = y.value * density; scaleX = k.value; scaleY = k.value; alpha = a.value }
+            .onGloballyPositioned { sheetBox[0] = it.boundsInRoot() }
+            // 0 -20px 60px rgba(0, 0, 0, .45) under the glass.
+            .drawBehind {
+                drawIntoShadow(this, Color(0x73000000), 60.dp.toPx(), (-20).dp.toPx(), 22.dp.toPx())
+            }
+            .clip(shape)
+            .drawBehind {
+                // background: linear-gradient(180deg, rgba(255,255,255,.05), transparent 120px), rgba(18, 20, 26, .6);
+                // backdrop-filter: blur(28px) saturate(1.4) — the app behind, blurred and saturated, where the sheet is.
+                // Where there is no backdrop-filter (before Android 12), the site's own no-glass sheet: var(--bg), solid.
+                if (glass) {
+                    frost.renderEffect = frostEffect(28.dp.toPx())
+                    frost.record(backdrop!!.size) { drawLayer(backdrop) }
+                    val r = sheetBox[0]
+                    translate(-r.left, -r.top) { drawLayer(frost) }
+                    drawRect(Color(0x9912141A))
+                    drawRect(Brush.verticalGradient(0f to Color(0x0DFFFFFF), 1f to Color.Transparent, endY = 120.dp.toPx()))
+                } else drawRect(bg)
+                // inset 0 1px 0 rgba(255, 255, 255, .1)
+                drawRect(Color(0x1AFFFFFF), size = androidx.compose.ui.geometry.Size(size.width, 1.dp.toPx()))
+            }
+            .border(1.dp, Color(0x31EDC980), shape)
+            .clickable(interactionSource = remember { MutableInteractionSource() }, indication = null) {}) {
+            // .sheet-head (glass): sticky, rgba(18, 20, 26, .8), a .06 white rule under it; h2 Manrope 19/800; the 44 close.
+            Row(Modifier.fillMaxWidth().background(if (glass) Color(0xCC12141A) else bg)
+                .drawBehind { drawRect(Color(0x0FFFFFFF), topLeft = Offset(0f, size.height - 1.dp.toPx()), size = androidx.compose.ui.geometry.Size(size.width, 1.dp.toPx())) }
+                .padding(start = gutter, end = gutter, top = 12.dp, bottom = 10.dp),
+                verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(10.dp)) {
+                Text("Which copy should we keep?", Modifier.weight(1f), style = TextStyle(fontFamily = Site.Manrope, fontWeight = FontWeight.ExtraBold, fontSize = 19.sp,
+                    lineHeight = 21.85.sp, letterSpacing = (-.38).sp, color = INK))
+                Box(Modifier.size(44.dp).clip(RoundedCornerShape(12.dp)).background(Color(0xFF1F232B)).border(1.dp, Color(0xFF2A2F39), RoundedCornerShape(12.dp))
+                    .clickable(onClick = onClose).semantics { contentDescription = "Close" }, contentAlignment = Alignment.Center) {
+                    // ICON.close: m6.5 6.5 11 11 M17.5 6.5l-11 11, stroke 1.75 on a 24 grid.
+                    Canvas(Modifier.size(20.dp)) { val u = size.width / 24f; val st = Stroke(1.75f * u, cap = StrokeCap.Round)
+                        drawLine(INK, Offset(6.5f * u, 6.5f * u), Offset(17.5f * u, 17.5f * u), st.width, StrokeCap.Round)
+                        drawLine(INK, Offset(17.5f * u, 6.5f * u), Offset(6.5f * u, 17.5f * u), st.width, StrokeCap.Round) }
+                }
+            }
+            Column(Modifier.verticalScroll(rememberScrollState()).padding(start = gutter, end = gutter, top = 6.dp, bottom = 22.dp + navBottom)) {
+                Text("This device and your account both have cards, and they’re different. The other copy is downloaded as a backup file. Keep that file before continuing. CardStashy doesn’t merge copies automatically, so cards are never counted twice.",
+                    style = sans(13f, 400, 18.85f, MUTED))
+                // .sync-compare: two columns, 8 apart, 12 above and below.
+                Row(Modifier.fillMaxWidth().padding(vertical = 12.dp).height(IntrinsicSize.Max), horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                    val l = local
+                    Side("This device", l, "Saved " + siteWhen(l?.saved), Modifier.weight(1f))
+                    Side("Your account", cloud, "Saved " + siteWhen(p.cloud.updatedAt) + (p.cloud.device?.takeIf { it.isNotEmpty() }?.let { " · $it" } ?: ""), Modifier.weight(1f))
+                }
+                // .actions.wrap (its 10 above collapses into the 12 under the copies): the gold button and the glass one, wrapping; then the link.
+                FlowRow(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(8.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                    SheetButton("Use account copy on this device", ghost = false) { choose("account") }
+                    SheetButton("Replace account with device copy", ghost = true) { choose("device") }
+                }
+                Text("Decide later (sync stays paused)", Modifier.clip(RoundedCornerShape(6.dp)).clickable { choose("later") }.padding(vertical = 4.dp),
+                    style = sans(13f, 600, 18.85f, Site.Gold))
+            }
+        }
+    }
+}
+
+/** .sync-side: the copy's eyebrow, its cards, what they are, and when it was saved. */
+@Composable
+private fun Side(title: String, s: WorkspaceSync.Summary?, extra: String, modifier: Modifier) {
+    val nf = java.text.NumberFormat.getInstance()
+    Column(modifier.fillMaxSize().clip(RoundedCornerShape(14.dp)).background(Color(0xFF171A20)).border(1.dp, Color(0xFF2A2F39), RoundedCornerShape(14.dp)).padding(12.dp),
+        verticalArrangement = Arrangement.spacedBy(2.dp)) {
+        Text(title.uppercase(), Modifier.padding(bottom = 4.dp), style = sans(11f, 700, 15.95f, MUTED, 1.32f))
+        Text(if (s == null) " " else "${nf.format(s.copies)} cards", style = sans(18f, 700, 26.1f))
+        Text(if (s == null) " " else "${nf.format(s.names)} different · ${s.decks} decks · ${s.wishlist} wishlist", style = sans(13f, 400, 18.85f))
+        Text(if (s == null) " " else extra, style = sans(13f, 400, 18.85f, MUTED))
+    }
+}
+
+/** .btn (gold) and .btn.ghost (glass): 44 tall, 8 / 16 padding, radius 11, 15 / 700. */
+@Composable
+private fun SheetButton(label: String, ghost: Boolean, onClick: () -> Unit) {
+    val r = RoundedCornerShape(11.dp)
+    Box(Modifier.defaultMinSize(minHeight = 44.dp).clip(r)
+        .then(if (ghost) Modifier.background(Color(0x851F232B)).border(1.dp, Color(0x31EDC980), r)
+            .drawBehind { drawLine(Color(0x12FFFFFF), Offset(11.dp.toPx(), 1.5f), Offset(size.width - 11.dp.toPx(), 1.5f), 1f) }
+        else Modifier.background(Color(0xFFE8B95B)))
+        .clickable(onClick = onClick).padding(horizontal = 16.dp, vertical = 8.dp), contentAlignment = Alignment.Center) {
+        Text(label, style = sans(15f, 700, 21.75f, if (ghost) INK else Color(0xFF1B1406)))
+    }
+}
+
+/** blur(r) saturate(1.4): the saturation as a colour matrix chained under the blur (Android 12+; earlier, no backdrop-filter). */
+private fun frostEffect(r: Float): androidx.compose.ui.graphics.RenderEffect? {
+    if (android.os.Build.VERSION.SDK_INT < 31) return null
+    val m = android.graphics.ColorMatrix().apply { setSaturation(1.4f) }
+    return android.graphics.RenderEffect.createChainEffect(android.graphics.RenderEffect.createColorFilterEffect(android.graphics.ColorMatrixColorFilter(m)),
+        android.graphics.RenderEffect.createBlurEffect(r, r, android.graphics.Shader.TileMode.CLAMP)).asComposeRenderEffect()
+}
+
+/** A CSS box-shadow (blur, dy) under a box rounded at its top corners. */
+private fun drawIntoShadow(scope: androidx.compose.ui.graphics.drawscope.DrawScope, color: Color, blur: Float, dy: Float, radius: Float) = with(scope) {
+    drawContext.canvas.nativeCanvas.drawRoundRect(0f, dy, size.width, size.height + dy, radius, radius, android.graphics.Paint().apply {
+        isAntiAlias = true; this.color = android.graphics.Color.argb((color.alpha * 255).toInt(), 0, 0, 0)
+        maskFilter = android.graphics.BlurMaskFilter(blur / 2f, android.graphics.BlurMaskFilter.Blur.NORMAL)
+    })
+}

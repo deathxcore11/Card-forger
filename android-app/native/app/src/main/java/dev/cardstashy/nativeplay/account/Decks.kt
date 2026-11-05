@@ -74,8 +74,8 @@ object Decks {
         }
     }
 
-    /** Shows the disk copy at once (if any), then the account copy. */
-    suspend fun load(context: Context) = withContext(Dispatchers.IO) {
+    /** Shows the disk copy at once (if any), then the account copy. [rethrow]: Sync now hears why the account couldn't be read. */
+    suspend fun load(context: Context, rethrow: Boolean = false) = withContext(Dispatchers.IO) {
         val s = Account.session.value ?: run { _decks.value = null; return@withContext }
         val t0 = System.currentTimeMillis()
         val file = cacheFile(context, s.userId)
@@ -85,7 +85,8 @@ object Decks {
             timings.value = timings.value + ("decksFromDisk" to System.currentTimeMillis() - t0)
         } catch (_: Exception) {}
         try {
-            val token = Account.token() ?: run { _error.value = "Sign in again to load your decks."; return@withContext }
+            val token = Account.token() ?: run { _error.value = "Sign in again to load your decks."
+                if (rethrow) throw IllegalStateException("Your sign-in expired. Sign in again to resume syncing."); return@withContext }
             val rows = Http.call("GET", "${Account.URL}/rest/v1/workspaces?select=data,revision&user_id=eq.${s.userId}",
                 mapOf("apikey" to Account.KEY, "Authorization" to "Bearer $token"), timeoutMs = 15000)?.asJsonArray
             val data = rows?.firstOrNull()?.asJsonObject?.getAsJsonObject("data")
@@ -99,6 +100,7 @@ object Decks {
             timings.value = timings.value + ("decksFromAccount" to System.currentTimeMillis() - t0)
         } catch (e: Exception) {
             if (_decks.value == null) _error.value = "Couldn’t load your decks. Check your connection."
+            if (rethrow) throw e
         }
     }
 

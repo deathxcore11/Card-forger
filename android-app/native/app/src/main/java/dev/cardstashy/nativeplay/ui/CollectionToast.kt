@@ -81,7 +81,8 @@ private fun Modifier.cssShadow(color: Color, blur: Dp, dy: Dp, spread: Dp, radiu
 
 /**
  * Over every screen: what a Collection save says (app.js toast, with Undo), dialog.js ask's question before a removal, a merge's
- * notice, and the save's haptic and chime. [backdrop]: the app as drawn, for the dialog's backdrop-filter.
+ * notice, the save's haptic and chime, and the sync's "Which copy should we keep?" sheet. [backdrop]: the app as drawn, for the
+ * backdrop-filters.
  */
 @Composable
 fun CollectionWritesHost(backdrop: androidx.compose.ui.graphics.layer.GraphicsLayer? = null) {
@@ -97,6 +98,9 @@ fun CollectionWritesHost(backdrop: androidx.compose.ui.graphics.layer.GraphicsLa
     LaunchedEffect(user) { if (user != last) { last = user; WorkspaceSync.reset() } }
     LaunchedEffect(feel) { feel?.let { f -> Feel.perform(view, f.kind); if (f.chime) PackSfx.app("COL-005", .6f) } }
     LaunchedEffect(notice) { notice?.let { CollectionWrites.show(it); WorkspaceSync.notice.value = null } }
+    val deciding by CollectionWrites.deciding.collectAsState()
+    val pending by WorkspaceSync.pending.collectAsState()
+    if (deciding && pending != null) key(pending) { SyncDecideSheet(backdrop, onClose = { CollectionWrites.deciding.value = false }) }
     toast?.let { t -> key(t.id) { SiteToast(t, onUndo = { CollectionWrites.dismiss(t); scope.launch { CollectionWrites.undo(context) } }, onGone = { CollectionWrites.dismiss(t) }) } }
     ask?.let { a -> key(a) { AskDialog(a.question, backdrop, onAnswer = { yes -> CollectionWrites.answer(yes, context, scope) }) } }
 }

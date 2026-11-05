@@ -6,6 +6,7 @@ import androidx.compose.ui.test.performClick
 import androidx.compose.ui.test.onRoot
 import com.github.takahirom.roborazzi.captureRoboImage
 import dev.cardstashy.nativeplay.account.Account
+import dev.cardstashy.nativeplay.collection.WorkspaceSync
 import dev.cardstashy.nativeplay.ui.ArtPick
 import dev.cardstashy.nativeplay.ui.ProfileArtPickerHost
 import dev.cardstashy.nativeplay.ui.SettingsScreen
@@ -44,6 +45,48 @@ class SettingsShotTest {
         rule.setContent { SettingsScreen(onBack = {}, onWeb = {}) }
         rule.waitForIdle(); settle(); shot("account")
         rule.onNodeWithText("Edit profile").performClick(); rule.waitForIdle(); shot("account-edit")
+    }
+
+    // views.js syncDecideSheet's case, as decide.cjs renders it on the live site: this device has a third card and a wish; the
+    // account (older, from Chrome) a second deck.
+    private val local = """{"collection":[{"id":"l1","name":"Card 1","qty":4},{"id":"l2","name":"Card 2","qty":1},{"id":"l3","name":"Card 3","qty":2}],"decks":[{"id":"d1"}],"wishlist":[{"name":"Sol Ring"}],"lastSavedAt":"2026-11-05T13:20:00Z"}"""
+    private val cloud = """{"collection":[{"id":"l1","name":"Card 1","qty":4},{"id":"l2","name":"Card 2","qty":1}],"decks":[{"id":"d1"},{"id":"d2"}],"wishlist":[],"lastSavedAt":"2026-11-04T21:05:00Z"}"""
+    private fun deciding() {
+        java.util.TimeZone.setDefault(java.util.TimeZone.getTimeZone("America/New_York"))
+        signedIn()
+        dev.cardstashy.nativeplay.account.Decks.deviceFile(org.robolectric.RuntimeEnvironment.getApplication(), "u").writeText(local)
+        val row = WorkspaceSync.Row(3, cloud, "2026-11-04T21:05:00Z", "Chrome · 11/4/2026")
+        WorkspaceSync.rows = object : WorkspaceSync.Rows {
+            override suspend fun read(userId: String) = row
+            override suspend fun write(userId: String, revision: Long, data: String): Long? = null
+        }
+        WorkspaceSync.setForTest(WorkspaceSync.Status(WorkspaceSync.State.ERROR, "Sync paused until you choose which copy to keep."), WorkspaceSync.Pending("u", row.copy(updatedAt = null, device = null)))
+    }
+    private fun undecide() { WorkspaceSync.reset(); WorkspaceSync.rows = WorkspaceSync.AccountRows; dev.cardstashy.nativeplay.ui.CollectionWrites.deciding.value = false }
+    private val withHost = @androidx.compose.runtime.Composable {
+        androidx.compose.foundation.layout.Box { SettingsScreen(onBack = {}, onWeb = {}); dev.cardstashy.nativeplay.ui.CollectionWritesHost() }
+    }
+
+    /** accountPanel's sync line (Synced · when), then the paused sync's words and "Choose which copy to keep", then its sheet. */
+    @Test fun accountSync() {
+        java.util.TimeZone.setDefault(java.util.TimeZone.getTimeZone("America/New_York"))
+        signedIn()
+        WorkspaceSync.setForTest(WorkspaceSync.Status(WorkspaceSync.State.SYNCED, at = java.time.Instant.parse("2026-11-05T13:41:00Z").toEpochMilli()), null)
+        try {
+            rule.setContent { withHost() }
+            settle(); shot("account-synced")
+            deciding(); rule.waitForIdle(); settle(); shot("account-decide")
+            rule.onNodeWithText("Choose which copy to keep").performClick(); rule.waitForIdle(); settle(); shot("sync-decide-390")
+        } finally { undecide() }
+    }
+
+    @Config(qualifiers = "w884dp-h1104dp-xxhdpi")
+    @Test fun syncDecideUnfolded() {
+        deciding()
+        try {
+            rule.setContent { withHost() }
+            settle(); dev.cardstashy.nativeplay.ui.CollectionWrites.deciding.value = true; rule.waitForIdle(); settle(); shot("sync-decide-884")
+        } finally { undecide() }
     }
 
     @Test fun appearanceAndHelp() {

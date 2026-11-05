@@ -47,7 +47,10 @@ class WorkspaceSyncTest {
 
     private fun fx(name: String) = JsonParser.parseString(javaClass.getResource("/account-writes/$name")!!.readText()).asJsonObject
     private var loaded = -1L
+    private val downloads = mutableListOf<Pair<String, String>>()
     @Before fun setUp() {
+        downloads.clear()
+        WorkspaceSync.download = { _, label, data -> downloads += label to data }
         assumeTrue(bundle.isFile)
         c = RuntimeEnvironment.getApplication()
         CollectionEngine.initFrom(bundle)
@@ -61,7 +64,7 @@ class WorkspaceSyncTest {
         WorkspaceSync.engineHolds = { _, rev -> loaded = rev }
         WorkspaceSync.reset()
     }
-    @After fun tearDown() { WorkspaceSync.autoPush = true; WorkspaceSync.rows = WorkspaceSync.AccountRows }
+    @After fun tearDown() { WorkspaceSync.autoPush = true; WorkspaceSync.rows = WorkspaceSync.AccountRows; WorkspaceSync.download = { c, l, d -> WorkspaceSync.saveBackupFile(c, l, d) } }
 
     /** A tap, as CollectionWrites runs it. */
     private suspend fun tap(kind: String, data: JsonObject) = WorkspaceSync.lock.withLock {
@@ -180,11 +183,51 @@ class WorkspaceSyncTest {
         assertNotNull(WorkspaceSync.pending.value)
         assertEquals(WorkspaceSync.State.DECIDE, WorkspaceSync.status.value.state)
         assertEquals(0, acct.writes)
+        // The sheet's sides (cloud.js summarize): the device has the extra Lightning Bolt.
+        val dev = WorkspaceSync.summarize(Decks.deviceFile(c, u).readText()); val acc = WorkspaceSync.summarize(WorkspaceSync.pending.value!!.cloud.data)
+        assertEquals(acc.copies + 1, dev.copies, 0.0); assertEquals(acc.names, dev.names)
         acct.revision = 3
+        WorkspaceSync.resolve(c, "later")
+        assertEquals(WorkspaceSync.State.ERROR, WorkspaceSync.status.value.state)
+        assertEquals("Sync paused until you choose which copy to keep.", WorkspaceSync.status.value.msg)
+        assertNotNull(WorkspaceSync.pending.value)
         WorkspaceSync.resolve(c, "account")
         assertNull(WorkspaceSync.pending.value)
         assertEquals(acct.data, Decks.deviceFile(c, u).readText())
+        // The device's copy is kept (Recovery, and the backup file app.js downloads).
         assertEquals(3, lot(JsonParser.parseString(WorkspaceSync.recoveryFile(c, u).readText()).asJsonObject, "l1")!!["qty"].asInt)
+        assertEquals("Before loading your account copy", downloads.single().first)
+        assertEquals(3, lot(JsonParser.parseString(downloads.single().second).asJsonObject, "l1")!!["qty"].asInt)
         assertEquals(0, acct.writes)
+        assertEquals(WorkspaceSync.State.SYNCED, WorkspaceSync.status.value.state)
+    }
+
+    @Test fun accountWentBackwardsKeepThisDevice() = runBlocking {
+        val acct = Account(5, fx("qty-plus.json")["before"].toString()); WorkspaceSync.rows = acct
+        WorkspaceSync.fromAccount(c, u, acct.revision, acct.data)
+        tap("cardOwnedQty", plus("l1"))
+        acct.revision = 3; acct.edit { o -> lot(o, "l2")!!.addProperty("qty", 1) }; acct.revision = 3
+        WorkspaceSync.fromAccount(c, u, acct.revision, acct.data)
+        assertNotNull(WorkspaceSync.pending.value)
+        // "Replace account with device copy": the account's copy is backed up first, then this device's goes up, revision-checked.
+        WorkspaceSync.resolve(c, "device")
+        assertNull(WorkspaceSync.pending.value)
+        assertEquals("Account copy before replacing it", downloads.single().first)
+        assertEquals(1, lot(JsonParser.parseString(downloads.single().second).asJsonObject, "l2")!!["qty"].asInt)
+        assertEquals(1, lot(JsonParser.parseString(WorkspaceSync.recoveryFile(c, u).readText()).asJsonObject, "l2")!!["qty"].asInt)
+        assertEquals(1, acct.writes); assertEquals(4, acct.revision)
+        assertEquals(3, lot(acct.json(), "l1")!!["qty"].asInt); assertEquals(10, lot(acct.json(), "l2")!!["qty"].asInt)
+        assertEquals(false, WorkspaceSync.readMeta(c, u)!!.dirty)
+        assertEquals(WorkspaceSync.State.SYNCED, WorkspaceSync.status.value.state)
+    }
+
+    @Test fun backupFileIsTheSitesEnvelope() {
+        val data = """{"version":3,"collection":[{"id":"l1","qty":2}],"lastSavedAt":"2026-11-05T13:20:00.000Z"}"""
+        val o = JsonParser.parseString(WorkspaceSync.backupEnvelope(data, java.time.Instant.parse("2026-11-05T14:02:03.456789Z"))).asJsonObject
+        assertEquals(listOf("version", "collection", "lastSavedAt", "exportedAt", "backupKind", "schemaVersion"), o.keySet().toList())
+        assertEquals("2026-11-05T14:02:03.456Z", o["exportedAt"].asString)
+        assertEquals("cardforge-workspace", o["backupKind"].asString); assertEquals(3, o["schemaVersion"].asInt)
+        assertEquals("CardStashy_Backup_Account_copy_before_replacing_it_2026-11-05.json", WorkspaceSync.backupName("Account copy before replacing it", java.time.LocalDate.of(2026, 11, 5)))
+        assertEquals("CardStashy_Backup_Before_loading_your_account_copy_2026-11-05.json", WorkspaceSync.backupName("Before loading your account copy", java.time.LocalDate.of(2026, 11, 5)))
     }
 }

@@ -43,7 +43,9 @@ object WorkspaceSync {
         LOCAL("Saved on this device"), WAITING("Saved on this device · waiting to sync"), SYNCING("Syncing…"), SYNCED("Synced to your account"),
         ERROR("Saved on this device · sync paused"), DECIDE("Sync needs your decision"), OFFLINE("Saved on this device · offline")
     }
-    data class Status(val state: State, val msg: String = "")
+    /** cloud.js status: its state, the message an error carries, and when it last synced (status.at). */
+    data class Status(val state: State, val msg: String = "", val at: Long? = null)
+    private fun synced() = Status(State.SYNCED, at = System.currentTimeMillis())
     private val _status = MutableStateFlow(Status(State.LOCAL)); val status: StateFlow<Status> = _status
     /** A merge's word to the player (cloud.js adopt's recoveryNotice), shown once. */
     val notice = MutableStateFlow<String?>(null)
@@ -58,8 +60,8 @@ object WorkspaceSync {
             }
         }
     }
-    /** The account's row: what cloud.js fetchCloud reads. */
-    data class Row(val revision: Long, val data: String)
+    /** The account's row: what cloud.js fetchCloud reads (updated_at and device name the copy on the choice sheet). */
+    data class Row(val revision: Long, val data: String, val updatedAt: String? = null, val device: String? = null)
 
     /** The account side: the workspaces row, read and revision-checked written (tests swap it). */
     interface Rows {
@@ -73,9 +75,10 @@ object WorkspaceSync {
             return mapOf("apikey" to Account.KEY, "Authorization" to "Bearer $token")
         }
         override suspend fun read(userId: String): Row? = withContext(Dispatchers.IO) {
-            val row = Http.call("GET", "${Account.URL}/rest/v1/workspaces?select=data,revision&user_id=eq.$userId", auth(), timeoutMs = 20_000)
+            val row = Http.call("GET", "${Account.URL}/rest/v1/workspaces?select=data,revision,updated_at,device&user_id=eq.$userId", auth(), timeoutMs = 20_000)
                 ?.asJsonArray?.firstOrNull()?.asJsonObject ?: return@withContext null
-            Row(row["revision"].asLong, row["data"].toString())
+            Row(row["revision"].asLong, row["data"].toString(), row["updated_at"]?.takeIf { it.isJsonPrimitive }?.asString,
+                row["device"]?.takeIf { it.isJsonPrimitive }?.asString)
         }
         override suspend fun write(userId: String, revision: Long, data: String): Long? = withContext(Dispatchers.IO) {
             // {data, revision: rev + 1, device}, sent as the device copy's own text.
@@ -152,7 +155,7 @@ object WorkspaceSync {
             data class Snap(val meta: Meta, val text: String, val sig: String)
             val snap = lock.withLock {
                 val m = readMeta(c, u) ?: return
-                if (!m.dirty) { _status.value = Status(State.SYNCED); return }
+                if (!m.dirty) { _status.value = synced(); return }
                 // A missing link must be reconciled before any upload (pushNow: never an automatic insert or a blind write).
                 if (m.revision < 1) return@withLock null
                 if (!ensureEngine(c, u)) return
@@ -162,7 +165,7 @@ object WorkspaceSync {
             if (snap == null) { val row = read(u) ?: return; fromAccount(c, u, row.revision, row.data); return@repeat }
             if (snap.meta.sig == snap.sig) {
                 lock.withLock { readMeta(c, u)?.takeIf { it.gen == snap.meta.gen }?.let { writeMeta(c, it.copy(dirty = false)) } }
-                _status.value = Status(State.SYNCED); return
+                _status.value = synced(); return
             }
             _status.value = Status(State.SYNCING)
             val rev = try { rows.write(u, snap.meta.revision, snap.text) } catch (e: Exception) { fail(e); return }
@@ -180,14 +183,14 @@ object WorkspaceSync {
                 writeMeta(c, now.copy(revision = rev, sig = snap.sig, baseRevision = rev, dirty = dirty))
                 dirty
             }
-            if (still) { _status.value = Status(State.WAITING); schedulePush(c) } else _status.value = Status(State.SYNCED)
+            if (still) { _status.value = Status(State.WAITING); schedulePush(c) } else _status.value = synced()
             return
         }
     }
 
     private suspend fun read(u: String): Row? = try { rows.read(u) } catch (e: Exception) { fail(e); null }
     /** cloud.js friendly(). */
-    private fun fail(e: Exception) {
+    internal fun fail(e: Exception) {
         val m = (e as? Http.Failure)?.body ?: e.message.orEmpty()
         _status.value = when {
             e is java.net.UnknownHostException || e is java.net.ConnectException -> Status(State.OFFLINE)
@@ -215,7 +218,7 @@ object WorkspaceSync {
             val m = readMeta(c, u)
             when {
                 m == null || m.revision < 1 && !m.dirty -> adopt(c, u, revision, data, m)
-                !m.dirty -> if (revision != m.revision || !Decks.deviceFile(c, u).isFile) adopt(c, u, revision, data, m)
+                !m.dirty -> if (revision != m.revision || !Decks.deviceFile(c, u).isFile) adopt(c, u, revision, data, m) else _status.value = synced()
                 m.revision < 1 || revision > m.revision -> { merge(c, u, m, revision, data); push = true }
                 revision == m.revision -> push = true
                 else -> { pending.value = Pending(u, Row(revision, data)); _status.value = Status(State.DECIDE) }
@@ -229,7 +232,7 @@ object WorkspaceSync {
         if (!(f.isFile && f.readText() == data)) { atomic(f, data); Decks.deviceChanged() }
         atomic(baselineFile(c, u), data)
         writeMeta(c, Meta(u, revision, null, false, m?.gen ?: 0, revision))
-        _status.value = Status(State.SYNCED)
+        _status.value = synced()
     }
 
     private suspend fun merge(c: Context, u: String, m: Meta, revision: Long, data: String) {
@@ -250,25 +253,105 @@ object WorkspaceSync {
     val pending = MutableStateFlow<Pending?>(null)
 
     /**
-     * cloud.js resolvePending: "account" puts the account's copy on this device (this device's copy kept in Recovery), "device"
-     * replaces the account's copy with this device's (still revision-checked against what was just read), "later" keeps sync paused.
+     * The choice sheet's account side: the pending copy with its updated_at and device (Decks.load reads only data and revision),
+     * or the pending copy as it is when the account can't be reached or has moved on since.
      */
-    suspend fun resolve(c: Context, choice: String) {
+    suspend fun pendingDetails(): Pending? {
+        val p = pending.value ?: return null
+        val row = try { rows.read(p.userId) } catch (_: Exception) { null }
+        return if (row != null && row.revision == p.cloud.revision && pending.value === p) p.copy(cloud = p.cloud.copy(updatedAt = row.updatedAt, device = row.device)) else p
+    }
+
+    /**
+     * cloud.js resolvePending: "account" puts the account's copy on this device, "device" replaces the account's copy with this
+     * device's (still revision-checked against what was just read), "later" keeps sync paused. The copy that is not kept is
+     * saved first, as the site's hooks.backup does: in Recovery, and as a backup file in Downloads (app.js download).
+     */
+    suspend fun resolve(c: Context, choice: String, expected: Pending? = pending.value) {
         val p = pending.value ?: return
+        if (p !== expected) return
         if (user() != p.userId) { pending.value = null; return }
         when (choice) {
             "account" -> lock.withLock {
-                Decks.deviceFile(c, p.userId).takeIf { it.isFile }?.let { atomic(recoveryFile(c, p.userId), it.readText()) }
+                Decks.deviceFile(c, p.userId).takeIf { it.isFile }?.readText()?.let { local ->
+                    atomic(recoveryFile(c, p.userId), local)
+                    runCatching { download(c, "Before loading your account copy", local) }
+                }
                 pending.value = null
                 adopt(c, p.userId, p.cloud.revision, p.cloud.data, readMeta(c, p.userId))
             }
             "device" -> {
-                lock.withLock { readMeta(c, p.userId)?.let { writeMeta(c, it.copy(revision = p.cloud.revision, sig = "", dirty = true)) }; pending.value = null }
+                lock.withLock {
+                    atomic(recoveryFile(c, p.userId), p.cloud.data)
+                    runCatching { download(c, "Account copy before replacing it", p.cloud.data) }
+                    readMeta(c, p.userId)?.let { writeMeta(c, it.copy(revision = p.cloud.revision, sig = "", dirty = true)) }
+                    pending.value = null
+                }
                 pushNow(c)
             }
             else -> _status.value = Status(State.ERROR, "Sync paused until you choose which copy to keep.")
         }
     }
+
+    /** app.js hooks.backup's file: CardStashy_Backup_<label>_<date>.json, the copy in backupEnvelope (tests swap it). */
+    @Volatile internal var download: (Context, String, String) -> Unit = { c, label, data -> saveBackupFile(c, label, data) }
+
+    /** confidence.js backupEnvelope, written where app.js download() puts it: Downloads (this app's own folder before Android 10). */
+    fun saveBackupFile(c: Context, label: String, data: String) {
+        val name = backupName(label)
+        val bytes = backupEnvelope(data).toByteArray()
+        if (android.os.Build.VERSION.SDK_INT >= 29) {
+            val r = c.contentResolver
+            val v = android.content.ContentValues().apply {
+                put(android.provider.MediaStore.Downloads.DISPLAY_NAME, name); put(android.provider.MediaStore.Downloads.MIME_TYPE, "application/json")
+                put(android.provider.MediaStore.Downloads.IS_PENDING, 1)
+            }
+            val uri = r.insert(android.provider.MediaStore.Downloads.EXTERNAL_CONTENT_URI, v) ?: error("Couldn’t save the backup file.")
+            r.openOutputStream(uri)!!.use { it.write(bytes) }
+            r.update(uri, android.content.ContentValues().apply { put(android.provider.MediaStore.Downloads.IS_PENDING, 0) }, null, null)
+        } else File(c.getExternalFilesDir(android.os.Environment.DIRECTORY_DOWNLOADS) ?: c.filesDir, name).writeBytes(bytes)
+    }
+
+    /** confidence.js backupEnvelope: {...state, version: 3, exportedAt, backupKind: "cardforge-workspace", schemaVersion: 3}. */
+    internal fun backupEnvelope(data: String, now: java.time.Instant = java.time.Instant.now()): String =
+        JsonParser.parseString(data).asJsonObject.apply {
+            addProperty("version", 3); addProperty("exportedAt", java.time.format.DateTimeFormatter.ofPattern("yyyy-MM-dd'T'HH:mm:ss.SSS'Z'").withZone(java.time.ZoneOffset.UTC).format(now))
+            addProperty("backupKind", "cardforge-workspace"); addProperty("schemaVersion", 3)
+        }.toString()
+    /** app.js: `CardStashy_Backup_${fileSafe(label)}_${new Date().toISOString().slice(0, 10)}.json`. */
+    internal fun backupName(label: String, day: java.time.LocalDate = java.time.LocalDate.now(java.time.ZoneOffset.UTC)): String =
+        "CardStashy_Backup_${label.replace(Regex("[^a-z0-9]+", RegexOption.IGNORE_CASE), "_").trim('_').ifEmpty { "deck" }}_$day.json"
+
+    /**
+     * The account panel's Sync now (cloud.js syncNow → startSync): read the account, then decide as on every visit (Decks.load
+     * passes the row to [fromAccount]); a device that matches the account is synced.
+     */
+    suspend fun syncNow(c: Context) {
+        val u = user() ?: return
+        if (pending.value != null) return
+        _status.value = Status(State.SYNCING)
+        try { Decks.load(c, rethrow = true) } catch (e: Exception) { fail(e); return }
+        if (user() != u || _status.value.state != State.SYNCING || pending.value != null) return
+        val m = readMeta(c, u)
+        when {
+            m == null -> _status.value = Status(State.LOCAL)
+            !m.dirty -> _status.value = synced()
+        }
+    }
+
+    /** cloud.js summarize: what the choice sheet says about a copy (every game's cards, decks and wishlist). */
+    data class Summary(val copies: Double, val names: Int, val decks: Int, val wishlist: Int, val saved: String?)
+    fun summarize(data: String?): Summary {
+        val s = runCatching { JsonParser.parseString(data ?: "{}").asJsonObject }.getOrNull() ?: JsonObject()
+        val games = listOf(s) + (s.getAsJsonObject("tcg")?.entrySet()?.mapNotNull { it.value as? JsonObject } ?: emptyList())
+        fun arr(g: JsonObject, k: String) = (g[k] as? com.google.gson.JsonArray)
+        return Summary(
+            games.sumOf { g -> arr(g, "collection")?.sumOf { e -> (e as? JsonObject)?.get("qty")?.let { q -> runCatching { q.asDouble }.getOrNull()?.takeIf { it.isFinite() } } ?: 0.0 } ?: 0.0 },
+            games.sumOf { arr(it, "collection")?.size() ?: 0 }, games.sumOf { arr(it, "decks")?.size() ?: 0 }, games.sumOf { arr(it, "wishlist")?.size() ?: 0 },
+            s["lastSavedAt"]?.takeIf { it.isJsonPrimitive }?.asString)
+    }
+
+    internal fun setForTest(status: Status, pending: Pending?) { _status.value = status; this.pending.value = pending }
 
     /** Signed out or another account: nothing of the last one stays in flight. */
     fun reset() { synchronized(this) { timer?.cancel(); timer = null }; pending.value = null; notice.value = null; _status.value = Status(State.LOCAL) }

@@ -28,13 +28,18 @@ internal object CollectionWrites {
     fun dismiss(t: Toast) { if (_toast.value == t) _toast.value = null }
     fun show(text: String, undo: Boolean = false) { _toast.value = Toast(text, undo) }
 
-    /** dialog.js ask: a question the player answers before the write runs; yes taps again with confirmed. */
-    data class Ask(val question: String, val kind: String, val data: JsonObject)
+    /** dialog.js ask: a question the player answers before the write runs; yes taps again with confirmed (or runs [then]). */
+    data class Ask(val question: String, val kind: String, val data: JsonObject, val then: (suspend () -> Unit)? = null)
     private val _ask = MutableStateFlow<Ask?>(null); val ask: StateFlow<Ask?> = _ask
     fun answer(yes: Boolean, context: Context, scope: kotlinx.coroutines.CoroutineScope) {
         val a = _ask.value ?: return; _ask.value = null
-        if (yes) scope.launch { act(context, a.kind, a.data.deepCopy().apply { addProperty("confirmed", true) }) }
+        if (yes) scope.launch { a.then?.invoke() ?: act(context, a.kind, a.data.deepCopy().apply { addProperty("confirmed", true) }) }
     }
+    /** dialog.js ask(question) for anything else: [then] runs on yes. */
+    fun confirm(question: String, then: suspend () -> Unit) { _ask.value = Ask(question, "", JsonObject(), then) }
+
+    /** The account panel's "Choose which copy to keep" (app.js A.syncDecide): the sheet is open. */
+    val deciding = MutableStateFlow(false)
 
     internal fun askForTest(a: Ask?) { _ask.value = a }
 

@@ -72,6 +72,7 @@ import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import dev.cardstashy.nativeplay.account.Account
+import dev.cardstashy.nativeplay.collection.WorkspaceSync
 import dev.cardstashy.nativeplay.account.Decks
 import dev.cardstashy.nativeplay.art.CardArt
 import kotlinx.coroutines.launch
@@ -86,6 +87,7 @@ import kotlinx.coroutines.launch
 
 private val Bad get() = if (AppSettings.theme == "light") Color(0xFF922A24) else Color(0xFFF08A7E)       // --bad
 private val Faint get() = Site.Faint     // --faint
+private val Good get() = if (AppSettings.theme == "light") Color(0xFF125334) else Color(0xFF6FD29A)     // --good (settings-theme.css light)
 private val Ok get() = if (AppSettings.theme == "light") Color(0xFF125334) else Color(0xFF7BD88F)
 
 private object S {
@@ -167,6 +169,25 @@ fun SiteButton(label: String, modifier: Modifier = Modifier, ghost: Boolean = fa
         .then(if (ghost) Modifier.border(1.dp, if (danger) Bad.copy(alpha = .5f) else Site.Line, sh) else Modifier)
         .clickable(enabled = enabled, onClick = onClick).padding(horizontal = 14.dp, vertical = 8.dp), contentAlignment = Alignment.Center) {
         Text(label, style = S.Btn.copy(fontSize = if (small) 13.sp else 14.sp, color = when { danger -> Bad; ghost -> Site.Text; else -> Site.GoldInk }))
+    }
+}
+
+/** accountPanel's .sync-line: the state (green when synced, red when paused or waiting on a choice), when it last synced, Sync now. */
+@Composable
+private fun SyncLine(st: WorkspaceSync.Status, onSync: () -> Unit) {
+    val label = when (st.state) {
+        WorkspaceSync.State.SYNCED -> "Synced"; WorkspaceSync.State.SYNCING, WorkspaceSync.State.WAITING -> "Syncing…"
+        WorkspaceSync.State.ERROR -> "Sync paused"; WorkspaceSync.State.DECIDE -> "Needs your decision"
+        WorkspaceSync.State.OFFLINE -> "Offline — will sync when you’re back online"; WorkspaceSync.State.LOCAL -> "Account sync not confirmed"
+    }
+    val tone = when (st.state) { WorkspaceSync.State.SYNCED -> Good; WorkspaceSync.State.ERROR, WorkspaceSync.State.DECIDE -> Bad; else -> Site.Text }
+    Row(Modifier.fillMaxWidth().clip(RoundedCornerShape(12.dp)).background(Site.Surface2).padding(horizontal = 12.dp, vertical = 10.dp),
+        verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+        Text(androidx.compose.ui.text.buildAnnotatedString {
+            pushStyle(androidx.compose.ui.text.SpanStyle(fontWeight = FontWeight.Bold, color = tone)); append(label); pop()
+            if (st.state == WorkspaceSync.State.SYNCED && st.at != null) append(" · " + siteWhen(st.at))
+        }, Modifier.weight(1f), style = S.Body)
+        SiteButton("Sync now", ghost = true, small = true, onClick = onSync)
     }
 }
 
@@ -361,6 +382,13 @@ private fun SignedIn(onWeb: (String) -> Unit, onPick: (String) -> Unit) {
         }
         Box(Modifier.fillMaxWidth().height(1.dp).background(Site.Line))
         Column(Modifier.padding(start = 20.dp, end = 20.dp, bottom = 20.dp), verticalArrangement = Arrangement.spacedBy(10.dp)) {
+            // accountPanel: "Choose which copy to keep" while the sync waits on the player, otherwise the sync line; an error's words.
+            val sync by WorkspaceSync.status.collectAsState()
+            val pend by WorkspaceSync.pending.collectAsState()
+            if (pend != null) SiteButton("Choose which copy to keep", Modifier.fillMaxWidth().padding(top = 10.dp)) { CollectionWrites.deciding.value = true }
+            else SyncLine(sync) { scope.launch { WorkspaceSync.syncNow(context) } }
+            if (sync.state == WorkspaceSync.State.ERROR && sync.msg.isNotBlank())
+                Text("${sync.msg} Your cards are still saved on this device.", style = S.Small.copy(color = Bad))
             Disclosure("Edit profile", bold = true) { EditProfile(profile, onPick) }
             Text("Your collection and decks are private. Saved here first, then synced to your account.", style = S.Foot)
             FlowRow(horizontalArrangement = Arrangement.spacedBy(8.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
