@@ -79,7 +79,8 @@ class PreconEditorShotTest {
                 add("p", JsonObject().apply { addProperty("id", c["id"].asString); addProperty("set", c["set"].asString); addProperty("image", img); addProperty("number", c["collector_number"].asString) })
                 addProperty("a", "2026-11-05T12:00:00Z") }) } }
         val state = JsonParser.parseString("""{"wallet":{"coins":1250,"xp":2750,"seal_c":6,"seal_u":3,"seal_r":2,"seal_m":1},"packs":[],"config":{"holoSeals":2},"decks":[]}""").asJsonObject.apply { add("cards", trunk) }
-        val ui = EditorUi().apply { edit = DeckEdit.open(deck) }
+        // Opened from the Decks page as a saved deck: its list first (DecksScreen's onDeck).
+        val ui = EditorUi().apply { adding = false; edit = DeckEdit.open(deck) }
         assertEquals("Island and Swamp come three rows each, as the precon lists them", 6, ui.edit.cards.count { it.name == "Island" || it.name == "Swamp" })
 
         WindowCompat.setDecorFitsSystemWindows(rule.activity.window, false)
@@ -101,6 +102,13 @@ class PreconEditorShotTest {
         rule.onNode(hasText("Dreams of Laguna")).assertDoesNotExist()
         rule.onNode(hasText("Instants")).performClick(); settle(); shot("instants-open$tag")
         list.performScrollToNode(hasText("Dreams of Laguna"))
+        // No Trunk under a saved deck until Add cards; then its cards, each count and + under the card (Randall 5 Nov 16:53Z).
+        rule.onNode(hasText("Your cards")).assertDoesNotExist()
+        list.performScrollToNode(hasText("Add cards from your Trunk")); settle(); shot("add-cards$tag")
+        rule.onNode(hasText("Add cards from your Trunk")).performClick(); settle(20)
+        list.performScrollToNode(hasText("Your cards")); list.performSemanticsAction(SemanticsActions.ScrollBy) { it(0f, 500f) }; settle(30); shot("pool$tag")
+        list.performScrollToNode(hasText("Done adding cards")); rule.onNode(hasText("Done adding cards")).performClick(); settle()
+        rule.onNode(hasText("Your cards")).assertDoesNotExist()
     }
 
     @Test fun cover() = run(0)

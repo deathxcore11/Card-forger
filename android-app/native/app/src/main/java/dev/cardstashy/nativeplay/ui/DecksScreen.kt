@@ -116,7 +116,8 @@ fun DecksScreen(state: JsonObject, onBack: () -> Unit, onDeck: (String) -> Unit,
                 }
             }
             Panel("Precons", "Published decks with their real printings. You only pay for the cards you don't have yet.") { PreconShelf(state, precon, owned, toast) }
-            Panel("Paste a list", null) { ImportPanel(check, owned, { check = it }) { c -> scope.launch { check = checkList(c) } } ; SaveRow(check, { check = it }) { c ->
+            // Paste a list builds a deck: not under a precon you are looking through (Randall 5 Nov 16:53Z).
+            if (precon.open == null) Panel("Paste a list", null) { ImportPanel(check, owned, { check = it }) { c -> scope.launch { check = checkList(c) } } ; SaveRow(check, { check = it }) { c ->
                 scope.launch { runCatching { Progress.saveDeck(JsonObject().apply { addProperty("name", c.name.ifBlank { "Play deck" }); addProperty("format", c.format); add("cards", rowsJson(c.rows!!)) }) }
                     .onSuccess { check = Check(); toast("Saved to your Play decks.") }.onFailure { toast(it.message ?: "Could not save the deck.") } } } }
         }
@@ -462,7 +463,8 @@ fun DecksRoute(onBack: () -> Unit, onWeb: (String) -> Unit, onNav: (PlayTab) -> 
             DeckEditor(s, ed, onBack = { editor = null }, onCard = { cardTab = "overview"; card = it }, onPack = { editor = null; onTrunkSet(it) }, toast = toast,
                 onCardTab = { p, tab -> cardTab = tab; card = p }, nav = { PlayNav(PlayTab.DECKS, onNav) })
         } else DecksScreen(s, onBack,
-            onDeck = { id -> editor = EditorUi().apply { edit = dev.cardstashy.nativeplay.play.DeckEdit.open(s.getAsJsonArray("decks")?.mapNotNull { it as? JsonObject }?.firstOrNull { it.get("id")?.asString == id }) } },
+            // A saved deck (a precon too) opens as its list; the Trunk's cards come up with Add cards (Randall 5 Nov 16:53Z).
+            onDeck = { id -> editor = EditorUi().apply { adding = false; edit = dev.cardstashy.nativeplay.play.DeckEdit.open(s.getAsJsonArray("decks")?.mapNotNull { it as? JsonObject }?.firstOrNull { it.get("id")?.asString == id }) } },
             // The finder ships in a signed build only once its web twin (PR #105) is live: native never leads the web.
             onFinder = { if (finderLive) finder = finder ?: FinderUi() else editor = EditorUi().apply { edit = dev.cardstashy.nativeplay.play.DeckEdit.Edit(null, "", "Standard", emptyList()) } },
             toast = toast, nav = { PlayNav(PlayTab.DECKS, onNav) })

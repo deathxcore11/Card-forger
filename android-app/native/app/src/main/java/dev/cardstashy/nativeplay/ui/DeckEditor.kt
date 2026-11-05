@@ -30,6 +30,7 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.draw.rotate
 import androidx.compose.ui.graphics.ColorFilter
 import androidx.compose.ui.semantics.Role
+import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.semantics.role
 import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.semantics.stateDescription
@@ -68,6 +69,11 @@ class EditorUi {
     var filling by mutableStateOf(false)
     /** The card whose Play card actions (hold) are open. */
     var holdName by mutableStateOf<String?>(null)
+    /**
+     * Building: the Trunk's cards (Your cards / All cards) and the free basics under the list. A new deck opens building; a saved one
+     * (a precon too) opens as its list, and Add cards brings them up (Randall 5 Nov 16:53Z: they are for building a deck).
+     */
+    var adding by mutableStateOf(true)
     /** The groups folded shut with a tap on their heading (Randall 5 Nov 16:15Z); a second tap opens them again. */
     var folded by mutableStateOf(emptySet<String>())
     var mode by mutableStateOf("mine")
@@ -218,11 +224,16 @@ fun DeckEditor(state: JsonObject, ui: EditorUi, onBack: () -> Unit, onCard: (Car
                 DeckRow(c, planOf[c.name], fact(c.name), plan.have, DeckEdit.room(e.cards, c.name, e.format), ui.busy, actions)
             }
         }
-        item(span = { GridItemSpan(maxLineSpan) }) { BasicsRow(actions.step) }
+        if (ui.adding) item(span = { GridItemSpan(maxLineSpan) }) { BasicsRow(actions.step) }
+        else item(span = { GridItemSpan(maxLineSpan) }) {
+            GhostButton("Add cards from your Trunk", Modifier.fillMaxWidth().padding(top = 8.dp)) { ui.adding = true }
+        }
     }
     val poolBlock: LazyGridScope.() -> Unit = {
         item(span = { GridItemSpan(maxLineSpan) }) {
             Column(Modifier.padding(top = 14.dp), verticalArrangement = Arrangement.spacedBy(12.dp)) {
+                // A saved deck's Trunk folds away again once you are done adding.
+                if (ui.edit.id != null) Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.End) { GhostButton("Done adding cards") { ui.adding = false } }
                 Segmented(listOf("mine" to "Your cards", "all" to "All cards"), ui.mode) { ui.mode = it; ui.filter = ui.filter.copy(set = "") }
                 FilterBar(ui.filter, ui.sort, if (ui.mode == "mine") playSets else emptyList(), { ui.filter = it }, { ui.sort = it })
                 Text(if (ui.mode == "all") (if (ui.poolBusy) "Looking through every card…" else "${"%,d".format(tiles.size)}${if (ui.poolMore) "+" else ""} ${e.format} cards")
@@ -247,7 +258,10 @@ fun DeckEditor(state: JsonObject, ui: EditorUi, onBack: () -> Unit, onCard: (Car
             val wide = maxWidth >= 840.dp
             val pad = PaddingValues(start = 16.dp, end = 16.dp, top = 12.dp, bottom = 120.dp)
             // The lists start under the status bar and clip there, so nothing scrolls up behind the clock.
-            if (wide) Row(Modifier.fillMaxSize().windowInsetsPadding(WindowInsets.statusBars), horizontalArrangement = Arrangement.spacedBy(4.dp)) {
+            if (!ui.adding) Box(Modifier.fillMaxSize().windowInsetsPadding(WindowInsets.statusBars), contentAlignment = Alignment.TopCenter) {
+                // Just the deck: its list, one column (at most 720 wide unfolded).
+                LazyVerticalGrid(GridCells.Fixed(1), Modifier.widthIn(max = 720.dp).fillMaxHeight(), contentPadding = pad, verticalArrangement = Arrangement.spacedBy(if (wide) 8.dp else 10.dp)) { deckBlock() }
+            } else if (wide) Row(Modifier.fillMaxSize().windowInsetsPadding(WindowInsets.statusBars), horizontalArrangement = Arrangement.spacedBy(4.dp)) {
                 LazyVerticalGrid(GridCells.Fixed(1), Modifier.weight(.95f).fillMaxHeight(), contentPadding = pad, verticalArrangement = Arrangement.spacedBy(8.dp)) { deckBlock() }
                 LazyVerticalGrid(GridCells.Adaptive(118.dp), Modifier.weight(1.05f).fillMaxHeight(), contentPadding = pad, verticalArrangement = Arrangement.spacedBy(12.dp),
                     horizontalArrangement = Arrangement.spacedBy(12.dp)) { poolBlock() }
@@ -444,21 +458,26 @@ private fun BasicsRow(step: (String, Int) -> Unit) = Row(Modifier.fillMaxWidth()
     }
 }
 
-/** .pe-pool-card: the card; owned count (up to 4) or the seal it costs; + adds one (off at the copy cap). */
+/**
+ * .pe-pool-card: the card; owned count (up to 4) or the seal it costs; + adds one (off at the copy cap). The count and + sit in a row
+ * under the card, never over its art or words (Randall 5 Nov 16:53Z: nothing overlaps).
+ */
 @Composable
 private fun PoolCard(name: String, image: String, rarity: String, have: Int, room: Int, onOpen: () -> Unit, onHold: () -> Unit, onAdd: () -> Unit) {
     val missing = have == 0
     val p = heroPainter(image.let(homeArt))
-    Box(Modifier.fillMaxWidth().aspectRatio(63f / 88f)) {
-        Box(Modifier.fillMaxSize().clip(RoundedCornerShape(10.dp)).background(Site.Surface2).combinedClickable(onLongClick = onHold, onClick = onOpen).alpha(if (missing) .5f else 1f)) {
+    Column(Modifier.fillMaxWidth(), verticalArrangement = Arrangement.spacedBy(6.dp)) {
+        Box(Modifier.fillMaxWidth().aspectRatio(63f / 88f).clip(RoundedCornerShape(10.dp)).background(Site.Surface2).combinedClickable(onLongClick = onHold, onClick = onOpen).alpha(if (missing) .5f else 1f)) {
             if (p != null) Image(p, name, Modifier.fillMaxSize(), contentScale = ContentScale.Crop)
         }
-        Box(Modifier.align(Alignment.BottomStart).padding(6.dp).height(28.dp).widthIn(min = 28.dp).softPill(RoundedCornerShape(14.dp)).padding(horizontal = 6.dp), contentAlignment = Alignment.Center) {
-            if (missing) SealMini(Decks.RARITY_SEAL[rarity] ?: "c", 16.dp) else Text("${minOf(have, 4)}", style = t(13f, FontWeight.ExtraBold))
-        }
-        Box(Modifier.align(Alignment.BottomEnd).padding(4.dp).size(40.dp).clip(CircleShape).background(if (room >= 1) goldButtonBrush(true) else goldButtonBrush(false))
-            .clickable(enabled = room >= 1, onClick = onAdd), contentAlignment = Alignment.Center) {
-            Text("+", style = t(20f, FontWeight.ExtraBold, if (room >= 1) Site.GoldInk else Color(0x80FFFFFF)))
+        Row(Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.SpaceBetween) {
+            Box(Modifier.height(28.dp).widthIn(min = 28.dp).softPill(RoundedCornerShape(14.dp)).padding(horizontal = 6.dp), contentAlignment = Alignment.Center) {
+                if (missing) SealMini(Decks.RARITY_SEAL[rarity] ?: "c", 16.dp) else Text("${minOf(have, 4)}", style = t(13f, FontWeight.ExtraBold))
+            }
+            Box(Modifier.size(40.dp).clip(CircleShape).background(if (room >= 1) goldButtonBrush(true) else goldButtonBrush(false))
+                .clickable(enabled = room >= 1, onClick = onAdd).semantics { contentDescription = "Add $name to the deck" }, contentAlignment = Alignment.Center) {
+                Text("+", style = t(20f, FontWeight.ExtraBold, if (room >= 1) Site.GoldInk else Color(0x80FFFFFF)))
+            }
         }
     }
 }
