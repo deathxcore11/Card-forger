@@ -71,8 +71,9 @@ object CollectionEngine {
         on { q -> JsonParser.parseString(q.evaluate("Collection.load(${str(workspace)}, ${catalog?.let(::str) ?: "null"})") as String).asJsonObject }
 
     /** Looks up every card name the catalog lacks (app.js autoEnrich's names) and starts Home's feeds; returns when done or after [maxMs]. */
-    suspend fun refresh(game: String, maxMs: Long = 60_000, onStep: (String) -> Unit = {}): JsonObject {
-        on { q -> q.evaluate("Collection.enrich()"); q.evaluate("Collection.feeds(${str(game)})") }
+    /** Resolves the workspace's missing names and loads Home's feeds (and, for a deck page, [deckId]'s format meta). */
+    suspend fun refresh(game: String, maxMs: Long = 60_000, deckId: String? = null, onStep: (String) -> Unit = {}): JsonObject {
+        on { q -> q.evaluate("Collection.enrich()"); q.evaluate("Collection.feeds(${str(game)}, ${str(deckId ?: "")})") }
         val until = System.currentTimeMillis() + maxMs
         var status = JsonObject()
         while (System.currentTimeMillis() < until) {
@@ -107,6 +108,14 @@ object CollectionEngine {
     /** One Cards-tab control as app.js handles it (sort, direction, filter, search, more), then the page again. */
     suspend fun cardsDo(game: String, kind: String, value: String = ""): JsonObject =
         on { q -> JsonParser.parseString(q.evaluate("Collection.cardsDo(${str(game)}, ${str(kind)}, ${str(value)})") as String).asJsonObject }
+
+    /** views.js deckPage(), the Cards tab of deck [id], as a model; [opts] = {search, filter, sort, view} applied first. */
+    suspend fun deck(game: String, id: String, opts: JsonObject = JsonObject()): JsonObject =
+        on { q -> JsonParser.parseString(q.evaluate("Collection.deck(${str(game)}, ${str(id)}, ${str(opts.toString())})") as String).asJsonObject }
+
+    /** One deck-page control as app.js handles it (search, filter, sort, view), then the page again. */
+    suspend fun deckDo(game: String, id: String, kind: String, value: String = ""): JsonObject =
+        on { q -> JsonParser.parseString(q.evaluate("Collection.deckDo(${str(game)}, ${str(id)}, ${str(kind)}, ${str(value)})") as String).asJsonObject }
 
     /** search-hints.js: the search field's prompt and the names and questions it fades through. */
     suspend fun hints(game: String): JsonObject = on { q -> JsonParser.parseString(q.evaluate("Collection.hints(${str(game)})") as String).asJsonObject }

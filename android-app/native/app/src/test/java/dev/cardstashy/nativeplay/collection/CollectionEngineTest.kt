@@ -145,6 +145,56 @@ class CollectionEngineTest {
     @Test fun decksModel() = runBlocking {
         assumeTrue(bundle.isFile)
         CollectionEngine.initFrom(bundle)
+        fourDecks()
+        val m = CollectionEngine.decks("mtg")
+        val tiles = m.getAsJsonArray("tiles").map { it.asJsonObject }
+        println("DECKS ${m["title"]} actions=${m["actions"].asJsonArray.map { it.asJsonObject["label"] }} tabs=${m["tabs"].asJsonArray.map { it.asJsonObject["label"] }} tools=${m["tools"].asJsonArray.map { it.asJsonObject["label"] }}")
+        tiles.forEach { t -> println("  ${t["tier"]} ${t["name"]} | ${t["line"]} | ${t["format"]} | ${t["power"]} | ${t["owned"]} ${t["find"]} ${t["bar"]}") }
+        assertEquals("Decks", m["title"].asString)
+        assertEquals(listOf("War Chest", "Import", "New"), m["actions"].asJsonArray.map { it.asJsonObject["label"].asString })
+        assertEquals(4, tiles.size)
+        assertEquals("Commander", tiles[0]["format"].asJsonObject["name"].asString)
+        assertTrue(tiles.all { it["cover"].isJsonObject })
+        // The site's own deck search (I.shelfSearch).
+        assertEquals(listOf("Talrand Spells"), CollectionEngine.decks("mtg", JsonObject().apply { addProperty("q", "talrand") }).getAsJsonArray("tiles").map { it.asJsonObject["name"].asString })
+        val out = File(System.getProperty("repoRoot"), "android-app/native/app/build/shot-art/home").apply { mkdirs() }
+        File(out, "collection-decks.json").writeText(CollectionEngine.decks("mtg", JsonObject().apply { addProperty("q", "") }).toString())
+    }
+
+    /** views.js deckPage() → a deck's Cards tab through the engine: its hero, controls and cards in each view; writes the shot fixtures. */
+    @Test fun deckModel() = runBlocking {
+        assumeTrue(bundle.isFile)
+        CollectionEngine.initFrom(bundle)
+        fourDecks()
+        val m = CollectionEngine.deck("mtg", "d2")
+        println("DECK ${m["hero"].asJsonObject["title"]} view=${m["view"]} format=${m["format"]} actions=${m["actions"].asJsonArray.map { it.asJsonObject["label"] }} " +
+            "chips=${m["chips"].asJsonArray.map { it.asJsonObject["label"].asString + " " + it.asJsonObject["count"].asString }} groups=${m["groups"].asJsonArray.map { it.asJsonObject["name"].asString + " " + it.asJsonObject["count"].asString }}")
+        assertEquals("Izzet Tempo", m["hero"].asJsonObject["title"].asString)
+        assertEquals("modern", m["format"].asString)
+        assertEquals("gallery", m["view"].asString)
+        assertEquals("Practice", m["actions"].asJsonArray[0].asJsonObject["label"].asString)
+        assertEquals(listOf("Cards", "Rules", "Power", "Matchups", "Upgrade lab", "Versions", "War Chest"), m["tabs"].asJsonArray.map { it.asJsonObject["label"].asString })
+        val names = { o: JsonObject -> o["groups"].asJsonArray.flatMap { g -> g.asJsonObject["rows"].asJsonArray.map { it.asJsonObject["name"].asString } } }
+        assertEquals(setOf("Ragavan, Nimble Pilferer", "Talrand, Sky Summoner", "Lightning Bolt", "Counterspell"), names(m).toSet())
+        assertEquals(2, m["side"].asJsonObject["rows"].asJsonArray.sumOf { it.asJsonObject["qty"].asInt })
+        // The site's own controls: search (I.deckSearch), a type chip (A.deckChip) and the view (A.deckView).
+        assertEquals(listOf("Lightning Bolt"), names(CollectionEngine.deck("mtg", "d2", JsonObject().apply { addProperty("search", "bolt") })))
+        val creatures = CollectionEngine.deck("mtg", "d2", JsonObject().apply { addProperty("search", ""); addProperty("filter", "creatures") })
+        assertEquals(setOf("Ragavan, Nimble Pilferer", "Talrand, Sky Summoner"), names(creatures).toSet())
+        CollectionEngine.deck("mtg", "d2", JsonObject().apply { addProperty("search", ""); addProperty("filter", "all") })
+        val out = File(System.getProperty("repoRoot"), "android-app/native/app/build/shot-art/home").apply { mkdirs() }
+        for (v in listOf("gallery", "stacks", "symbols", "compact")) {
+            val page = CollectionEngine.deck("mtg", "d2", JsonObject().apply { addProperty("view", v) })
+            assertEquals(v, page["view"].asString)
+            File(out, "collection-deck-$v.json").writeText(page.toString())
+        }
+        // A commander deck opens with its commander first (deck-viewer.js).
+        val goblins = CollectionEngine.deck("mtg", "d1", JsonObject().apply { addProperty("view", "gallery") })
+        assertEquals("Commander", goblins["groups"].asJsonArray[0].asJsonObject["name"].asString)
+        File(out, "collection-deck-commander.json").writeText(goblins.toString())
+    }
+
+    private suspend fun fourDecks() {
         val prints = JsonParser.parseString(javaClass.classLoader!!.getResource("collection/printings.json")!!.readText()).asJsonArray.map { it.asJsonObject }
         val lots = JsonArray(); val printings = JsonObject(); val catalog = JsonObject()
         prints.forEachIndexed { i, c ->
@@ -164,18 +214,5 @@ class CollectionEngineTest {
             {"id":"d4","name":"Talrand Spells","format":"commander","commander":"Talrand, Sky Summoner","cards":[${rows(1 to "Talrand, Sky Summoner", 1 to "Counterspell", 1 to "The One Ring", 1 to "Sol Ring")}]}]"""
         val ws = JsonParser.parseString("""{"version":3,"wishlist":[],"notes":[],"collection":$lots,"printings":$printings,"decks":$decks}""").asJsonObject
         CollectionEngine.load(ws, catalog.toString())
-        val m = CollectionEngine.decks("mtg")
-        val tiles = m.getAsJsonArray("tiles").map { it.asJsonObject }
-        println("DECKS ${m["title"]} actions=${m["actions"].asJsonArray.map { it.asJsonObject["label"] }} tabs=${m["tabs"].asJsonArray.map { it.asJsonObject["label"] }} tools=${m["tools"].asJsonArray.map { it.asJsonObject["label"] }}")
-        tiles.forEach { t -> println("  ${t["tier"]} ${t["name"]} | ${t["line"]} | ${t["format"]} | ${t["power"]} | ${t["owned"]} ${t["find"]} ${t["bar"]}") }
-        assertEquals("Decks", m["title"].asString)
-        assertEquals(listOf("War Chest", "Import", "New"), m["actions"].asJsonArray.map { it.asJsonObject["label"].asString })
-        assertEquals(4, tiles.size)
-        assertEquals("Commander", tiles[0]["format"].asJsonObject["name"].asString)
-        assertTrue(tiles.all { it["cover"].isJsonObject })
-        // The site's own deck search (I.shelfSearch).
-        assertEquals(listOf("Talrand Spells"), CollectionEngine.decks("mtg", JsonObject().apply { addProperty("q", "talrand") }).getAsJsonArray("tiles").map { it.asJsonObject["name"].asString })
-        val out = File(System.getProperty("repoRoot"), "android-app/native/app/build/shot-art/home").apply { mkdirs() }
-        File(out, "collection-decks.json").writeText(CollectionEngine.decks("mtg", JsonObject().apply { addProperty("q", "") }).toString())
     }
 }

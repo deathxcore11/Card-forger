@@ -16,9 +16,10 @@ import {formatOf} from 'WEB/formats.js';
 import {art} from 'WEB/ui.js';
 import {createScryfallClient} from 'WEB/scryfall-client.js';
 import {loadMeta, metaState} from 'WEB/meta.js';
+import {mtgMetaKey} from 'WEB/power.js';
 import {loadCommunity, communitySlides} from 'WEB/community-feed.js';
 import {loadPulse} from 'WEB/news-pulse.js';
-import {collection as collectionPage, decks as decksView} from 'WEB/views.js';
+import {collection as collectionPage, decks as decksView, deckPage as deckView} from 'WEB/views.js';
 import {ICON} from 'WEB/icons.js';
 
 // app.js:193-198, verbatim.
@@ -291,6 +292,108 @@ function decksPage(game, o = {}) {
     empty: empty && {title: text(one(empty, tagIs('h3'))), text: text(one(empty, tagIs('p'))), mark: text(one(empty, cls('empty-mark'))), actions: all(empty, tagIs('button')).map(button)}};
 }
 
+
+// views.js deckPage(), the Cards tab: deckShell's hero (deck-viewer.js), the actions under it, the deck tabs, the card toolbar,
+// the cards as deckRow / mtgSideboard draw them, the emblem panel (importance.js deckEmblemHtml) and "Take it to the table".
+const DECK_VIEWS = ['stacks', 'gallery', 'symbols', 'compact'];
+const tierOfNode = n => ({tier: n?.attrs?.['data-tier'] || 'tn', tierColor: ((/--tier:\s*([^;]+)/.exec(n?.attrs?.style || '') || [])[1] || '').trim()});
+const lead = b => { const g = glyph(text(b)); return {label: g.label, icon: icon(svgIn(b)) || g.icon}; };
+function deckRowModel(n) {
+  const r = lotRow(n), own = one(n, cls('own')), side = one(n, cls('lot-side')), chip = one(side, cls('chip')), sub = one(n, cls('lot-sub'));
+  return {...r, id: n.attrs['data-deck-name'] || r.name, name: n.attrs['data-deck-name'] || r.name, sub: [], tag: null,
+    qty: Number(n.attrs['data-deck-qty']) || r.qty, zone: n.attrs['data-deck-zone'] || 'main', category: n.attrs['data-deck-category'] || 'Unresolved',
+    roles: (n.attrs['data-deck-roles'] || '').split(',').filter(Boolean), short: cls('short')(n),
+    own: own ? {text: text(own), yes: cls('yes')(own)} : null,
+    legal: all(sub, cls('tag')).map(t => ({text: text(t), bad: cls('bad')(t)})),
+    chip: chip ? text(chip) : '', stepper: !!one(side, cls('stepper')),
+    // ui.js tileChrome on the art: the colour emblems (mana symbols) and the set symbol in its rarity, docked at the foot.
+    chrome: (() => { const c = one(one(n, cls('lot-art')), cls('tile-chrome')); if (!c) return null; const set = one(c, cls('set-icon')), imp = one(c, cls('imp-tile'));
+      return {emb: all(one(c, cls('tile-emb')), tagIs('img')).map(i => ({src: i.attrs.src || '', alt: i.attrs.alt || ''})),
+        set: set ? {src: ((/url\('([^']+)'\)/.exec(set.attrs.style || '') || [])[1] || ''), rarity: (classes(set).find(x => x.startsWith('r-')) || 'r-common').slice(2), title: one(c, cls('tset'))?.attrs.title || ''} : null,
+        imp: imp ? icon(svgIn(imp)) : null}; })()};
+}
+function miniRowModel(n) {
+  const img = one(n, tagIs('img')), small = one(n, x => x.tag === 'span' && cls('small')(x));
+  return {name: n.attrs['data-deck-name'] || n.attrs['data-name'] || '', qty: Number(n.attrs['data-deck-qty']) || 0, zone: n.attrs['data-deck-zone'] || 'side',
+    category: n.attrs['data-deck-category'] || 'Unresolved', roles: (n.attrs['data-deck-roles'] || '').split(',').filter(Boolean),
+    picture: picture(img), ...tierOfNode(img), label: text(one(n, cls('ellip'))), own: small ? {text: text(small), ok: cls('ok-text')(small)} : null};
+}
+// deck-viewer.js stackList / stackSummary, which rebuild the list in the page: the same piles as data. Cards group by their type in
+// GROUP_ORDER, six to a pile; a group's heading hides when it is the list's only type and the list's own heading already names it.
+const GROUP_ORDER = ['Commander', 'Creatures', 'Planeswalkers', 'Instants', 'Sorceries', 'Artifacts', 'Enchantments', 'Battles', 'Lands', 'Pokémon', 'Trainers', 'Energy', 'Monsters', 'Spells', 'Traps', 'Unresolved'];
+function stacksOf(rows, heading) {
+  const groups = new Map();
+  rows.forEach((r, i) => { const c = r.category || 'Unresolved'; if (!groups.has(c)) groups.set(c, []); groups.get(c).push(i); });
+  let piles = 0;
+  const out = [...groups].sort(([a], [b]) => GROUP_ORDER.indexOf(a) - GROUP_ORDER.indexOf(b)).map(([category, idx]) => {
+    const pile = []; for (let i = 0; i < idx.length; i += 6) pile.push(idx.slice(i, i + 6)); piles += pile.length;
+    return {category, count: idx.reduce((n, i) => n + (Number(rows[i].qty) || 0), 0), hidden: groups.size === 1 && heading.trim().startsWith(category), piles: pile};
+  });
+  return {groups: out, piles};
+}
+const deckAct = {
+  // app.js I.deckSearch, A.deckChip, C.deckSort and workbench-ui.js A.deckView (the account's settings.displayModes[game].deck).
+  search: v => { S.ui.q.deck = String(v); },
+  filter: v => { S.ui.deckFilter = v || 'all'; },
+  sort: v => { S.ui.deckSort = v; },
+  view: v => { if (DECK_VIEWS.includes(v)) ((S.state.settings.displayModes ||= {}).mtg ||= {}).deck = v; },
+};
+// app.js route(): opening another deck clears the deck search.
+function deckOpen(id) { if (id !== S.ui.deckId) { S.ui.q.deck = ''; S.ui.deckId = id; } }
+function deckPageModel(game, id) {
+  const ui = S.ui;
+  deckOpen(id);
+  ui.deckTab = 'cards';
+  const t = tree(deckView()), hero = one(t, cls('ds-hero'));
+  if (!hero) { const e = one(t, cls('empty')); return {game, id, missing: {title: text(one(e, tagIs('h3'))), text: text(one(e, tagIs('p')))}}; }
+  const nav = one(hero, cls('ds-nav')), menu = one(nav, cls('ds-menu')), brow = one(hero, cls('deck-hero-eyebrow'));
+  const eyebrow = (brow?.kids || []).filter(k => k.tag).map(k => cls('review-badge')(k) ? {kind: 'review', level: ['bad', 'warn', 'ok'].find(c => cls(c)(k)) || 'warn', ...lead(k), act: k.attrs['data-act'] || ''}
+    : cls('dots')(k) ? {kind: 'dots', label: k.attrs['aria-label'] || '', dots: all(k, tagIs('img')).map(i => ({src: i.attrs.src || '', alt: i.attrs.alt || ''}))}
+    : {kind: 'chip', label: text(k), title: k.attrs.title || '', badge: cls('ds-badge')(k)});
+  const viewer = one(t, cls('deck-viewer')), list = one(viewer, x => x.attrs.id === 'deckList'), toolbar = one(t, cls('deck-toolbar'));
+  const groups = all(list, x => x.tag === 'details' && cls('group')(x) && !cls('side-group')(x)).map(g => {
+    const sum = one(g, tagIs('summary')), first = one(sum, tagIs('span')), em = one(first, tagIs('em'));
+    const rows = all(one(g, x => x.attrs['data-deck-list'] !== undefined), x => cls('deck-row')(x)).map(deckRowModel);
+    const heading = text(first);
+    return {name: heading.slice(0, heading.length - text(em).length).trim(), count: text(em), rows, stacks: stacksOf(rows, heading)};
+  });
+  const sideG = one(viewer, cls('side-group')), sideSum = one(sideG, tagIs('summary')), sideFirst = one(sideSum, tagIs('span'));
+  const sideRows = all(sideG, cls('mini-row')).map(miniRowModel);
+  const embS = one(t, cls('deck-emb')), foot = one(t, cls('deck-table-footer')), footP = one(foot, tagIs('p'));
+  // stackSummary: the roles of the main deck's cards, counted by copies.
+  const roles = new Map();
+  for (const r of groups.flatMap(g => g.rows)) if (r.zone !== 'side') for (const role of r.roles) roles.set(role, (roles.get(role) || 0) + (Number(r.qty) || 0));
+  const cmdNote = one(t, x => cls('block-note')(x));
+  return {game, id, format: (S.state.decks || []).find(d => String(d.id) === String(id))?.format || '', view: viewer?.attrs['data-deck-view'] || 'gallery',
+    hero: {art: picture(one(hero, cls('hero-art'))), back: !!one(nav, cls('icon')), menu: menu ? {label: menu.attrs['aria-label'] || '', title: menu.attrs.title || ''} : null,
+      eyebrow, title: text(one(hero, tagIs('h1'))), line: text(one(hero, cls('ds-line'))),
+      stats: all(one(hero, cls('ds-stats')), cls('ds-stat')).map(x => ({value: text(one(x, tagIs('b'))), label: text(one(x, tagIs('span'))), warn: cls('warn')(x), button: x.tag === 'button', act: x.attrs['data-act'] || '', id: x.attrs['data-id'] || ''})),
+      owned: one(hero, cls('ds-bar')) ? widthOf(one(one(hero, cls('ds-bar')), tagIs('i'))) / 100 : null},
+    // desktop-play.js syncDesktopPlayEntries: on every touch device Magic's Practice plate shows (the page draws it hidden until then).
+    actions: all(one(t, cls('ds-actions')), tagIs('button')).map(b => ({label: text({kids: b.kids}), act: b.attrs['data-act'] || '', id: b.attrs['data-id'] || '', primary: cls('ds-primary')(b), plate: cls('cs-plate')(b),
+      shown: b.attrs['data-desktop-play-entry'] === 'practice' ? game === 'mtg' : b.attrs.hidden === undefined})),
+    note: (() => { const n = one(t, x => cls('note')(x) && cls('warn')(x) && x.tag === 'div'); return n ? {text: text({kids: (n.kids || []).filter(k => k.tag !== 'p')}), lines: all(n, tagIs('p')).map(text)} : null; })(),
+    tabs: all(one(t, x => x.tag === 'nav' && cls('tabs')(x)), tagIs('button')).map(b => ({key: b.attrs['data-id'], label: text(b), on: b.attrs['aria-selected'] === 'true', icon: icon(svgIn(b))})),
+    commanderNote: cmdNote ? {text: text(cmdNote).replace(/^⚠\s*/, ''), act: cmdNote.attrs['data-act'] || '', id: cmdNote.attrs['data-id'] || ''} : null,
+    search: (() => { const i = one(toolbar, tagIs('input')); return i && {value: i.attrs.value || '', placeholder: i.attrs.placeholder || '', label: i.attrs['aria-label'] || ''}; })(),
+    chips: all(one(toolbar, cls('deck-chips')), tagIs('button')).map(b => { const c = text(one(b, tagIs('b'))); const l = text(b); return {id: b.attrs['data-id'], label: c ? l.slice(0, l.length - c.length).trim() : l, count: c, on: cls('on')(b)}; }),
+    group: selectOf(one(toolbar, x => x.tag === 'select')),
+    add: (() => { const b = one(toolbar, cls('deck-add-toggle')); return b ? {...lead(b), title: b.attrs.title || ''} : null; })(),
+    views: all(one(toolbar, cls('deck-view-switch')), tagIs('button')).map(b => ({mode: b.attrs['data-mode'], label: b.attrs['aria-label'] || b.attrs.title || '', on: b.attrs['aria-checked'] === 'true', icon: icon(svgIn(b))})),
+    groups, none: groups.length ? '' : text(one(list, x => x.tag === 'p')),
+    roles: [...roles].map(([role, count]) => ({role, count})),
+    side: sideG ? {count: text(one(sideFirst, tagIs('em'))), over: text(one(sideFirst, cls('warn-text'))).replace(/^·\s*/, ''), status: text(one(sideSum, cls('muted'))),
+      text: text(one(sideG, x => x.tag === 'p')), rows: sideRows, stacks: stacksOf(sideRows, text(sideFirst))} : null,
+    emblems: embS ? {tally: all(one(embS, cls('emb-tally')), cls('emb-count')).map(x => { const b = text(one(x, tagIs('b'))); return {kind: (classes(x).find(c => c.startsWith('imp-')) || '').slice(4), icon: icon(svgIn(x)), count: b, label: text(x).slice(b.length).trim()}; }),
+      none: text(one(one(embS, cls('emb-tally')), cls('muted'))), head: text(one(embS, cls('list-head'))),
+      swaps: all(embS, cls('emb-swap')).map(x => { const [o, i] = all(x, x => x.tag === 'button' && cls('link')(x)); const btn = one(x, x => cls('btn')(x));
+        return {out: o?.attrs['data-name'] || text(o), in: i?.attrs['data-name'] || text(i), inIcon: icon(svgIn(i)), button: text(btn), why: text(one(x, cls('emb-why')))}; }),
+      foot: text(one(embS, cls('foot')))} : null,
+    table: foot ? {title: text(one(foot, tagIs('h3'))), line: runs(footP || {kids: []}), bar: widthOf(one(one(foot, cls('bar')), tagIs('span'))) / 100,
+      actions: all(one(foot, cls('deck-table-actions')), tagIs('button')).map(b => ({label: text(b), act: b.attrs['data-act'] || '', ghost: cls('ghost')(b)}))} : null,
+    glyphs: Object.fromEntries(["minus", "plus", "more", "back"].map(k => [k, icon(svgIn(tree(ICON[k])))]))};
+}
+
 let job = 0, status = {busy: false, step: '', error: null};
 const json = v => JSON.stringify(v);
 globalThis.Collection = {
@@ -314,9 +417,13 @@ globalThis.Collection = {
             e => { if (me === job) status = {busy: false, step: '', error: String(e && e.message || e)}; });
   },
   // The feeds Home shows (tcg.js loadHero + home-today.js dailyDetails, meta.js loadMeta, community-feed.js loadCommunity, news-pulse.js loadPulse).
-  feeds(game) {
+  // [deckId]: the open deck page also fetches its own format's tournament decks (app.js route: Deck Power and the emblems
+  // compare against them), when they are missing or older than 12 hours.
+  feeds(game, deckId) {
     loadToday(game);
     loadMeta(homeMetaKey(game)).catch(() => {});
+    const deck = deckId ? S.state.decks.find(d => String(d.id) === String(deckId)) : null, mk = deck ? mtgMetaKey(deck) : null;
+    if (mk) { const M = metaState(mk); if (!M.busy && (!M.data || Date.now() - M.at > 12 * 3600e3)) loadMeta(mk).catch(() => {}); }
     Promise.allSettled([loadCommunity(game), loadPulse(game)]);
   },
   poll() { return json(status); },
@@ -329,6 +436,10 @@ globalThis.Collection = {
   // One of the page's controls, as the site handles it (cardsAct), then the page again.
   // views.js decks(), My decks; [optsJson] = {q} (I.shelfSearch).
   decks(game, optsJson) { return json(decksPage(game, optsJson ? JSON.parse(optsJson) : {})); },
+  // views.js deckPage(), the Cards tab of deck [id]; deckDo applies one of its controls as the site's handler does (deckAct), then draws it again.
+  // [opts] = {search, filter, sort, view}: the controls as the app last left them, applied before the page draws.
+  deck(game, id, opts) { deckOpen(id); const o = opts ? JSON.parse(opts) : {}; for (const k of Object.keys(deckAct)) if (o[k] != null) deckAct[k](o[k]); return json(deckPageModel(game, id)); },
+  deckDo(game, id, kind, value) { if (!deckAct[kind]) throw Error('unknown deck control ' + kind); deckOpen(id); deckAct[kind](value); return json(deckPageModel(game, id)); },
   cardsDo(game, kind, value) { if (!cardsAct[kind]) throw Error('unknown Cards control ' + kind); cardsAct[kind](value); return json(cardsPage(game)); },
   home(game) {
     const st = S.state, value = collectionValue(st.collection, S.catalog, st.printings, st.decks);

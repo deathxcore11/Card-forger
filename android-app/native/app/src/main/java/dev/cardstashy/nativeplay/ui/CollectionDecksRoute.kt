@@ -47,7 +47,8 @@ private object DecksCache {
  * website's page, which does them there.
  */
 @Composable
-fun CollectionDecksRoute(onPlay: () -> Unit, onProfile: () -> Unit, onHome: () -> Unit, onCards: () -> Unit, web: (url: String, press: String?) -> Unit) {
+fun CollectionDecksRoute(onPlay: () -> Unit, onProfile: () -> Unit, onHome: () -> Unit, onCards: () -> Unit, web: (url: String, press: String?) -> Unit,
+                         onDeck: ((id: String) -> Unit)? = null) {
     val context = LocalContext.current
     val session by Account.session.collectAsState()
     val revision by Decks.fullRevision.collectAsState()
@@ -90,7 +91,10 @@ fun CollectionDecksRoute(onPlay: () -> Unit, onProfile: () -> Unit, onHome: () -
             button = { a -> if (a.isNotBlank()) web(decks, "[data-act=\"${css(a)}\"]") },
             tab = { k -> web(decks, "[data-act=\"decksTab\"][data-id=\"${css(k)}\"]") },
             search = { q -> query = q },
-            deck = { d -> web(site + d.to.ifBlank { "#decks" }, null) },
+            deck = { d ->
+                val id = Regex("^#deck/([^/]+)").find(d.to)?.groupValues?.get(1)?.let(android.net.Uri::decode)
+                if (onDeck != null && id != null) onDeck(id) else web(site + d.to.ifBlank { "#decks" }, null)
+            },
         )
     }
     val top: @Composable (tabs: (@Composable () -> Unit)?) -> Unit = { tabs ->

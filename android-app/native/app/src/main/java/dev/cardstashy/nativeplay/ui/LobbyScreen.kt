@@ -170,6 +170,15 @@ class LobbyModel(style: String) {
     var roomNote by mutableStateOf<String?>(null)
     var inviteText by mutableStateOf("")
     var challenges by mutableStateOf<List<FriendRooms.Challenge>>(emptyList())
+    /** A deck page's Practice (app.js A.deckPlayCpu): the saved deck to seat as yours once the lobby's decks are in. */
+    var pendingDeck by mutableStateOf<String?>(null)
+    /** A.deckPlayCpu: Practice, the deck's format when the table plays it, then that deck in your seat (selectDeck(id,'player')). */
+    fun practiceWith(deckId: String, format: String) {
+        style = "practice"
+        if (format in LIVE_FORMATS) configureFormat(format)
+        quickBusy = false; quickError = null; quickMatch = null
+        inspectOpen = false; pendingDeck = deckId
+    }
     /** updateDraft: any change retires the previous preview. */
     fun updateDraft(name: String = draftName, text: String = draftText) {
         if (name != draftName || text != draftText) { draftName = name; draftText = text; importTicket++; candidate = null; importBusy = false; importStatus = "idle"; error = null; warnings = emptyList(); unresolved = emptyList() }
@@ -260,6 +269,15 @@ fun LobbyScreen(model: LobbyModel, onBack: () -> Unit, onStart: (Pick) -> Unit, 
     LaunchedEffect(state?.has("wallet") == true) { if (state?.has("wallet") == true && online) TableDecks.loadFree() }
     val decks = remember(state, workspace, facts, free) { TableDecks.list(state, workspace ?: emptyList(), typeOf, free.orEmpty()) }
     val locked = remember(decks) { TableDecks.locked(decks) }
+    // A deck page's Practice: seat that deck as yours (selectDeck(id,'player') leaves your seat inspected).
+    LaunchedEffect(model.pendingDeck, decks) {
+        val id = model.pendingDeck ?: return@LaunchedEffect
+        val d = decks.firstOrNull { it.id == id } ?: return@LaunchedEffect
+        model.pendingDeck = null
+        if (d.format != model.format) { model.error = "Choose a ${model.format} deck. Other formats remain available in Decks."; return@LaunchedEffect }
+        model.put("player", SeatDeck(d.raw.deepCopy().apply { if (!has("id")) addProperty("id", d.id); addProperty("format", d.format) }, "saved"))
+        model.inspected = "player"; model.error = null
+    }
     // Names the tiles, seats and covers need, fetched once by name (the site resolves them into its catalog).
     LaunchedEffect(decks) { if (online) CardFacts.wantNames(decks.flatMap { d -> listOf(d.commander) + d.cards.take(12).map { it.name } }.filter { it.isNotBlank() }) }
 

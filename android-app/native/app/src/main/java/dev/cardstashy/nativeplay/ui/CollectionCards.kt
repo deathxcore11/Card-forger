@@ -463,7 +463,7 @@ private fun Tools(m: CollectionCardsModel, act: CollectionCardsActions, wide: Bo
 
 /** A site <select> pill: the chosen option and a ▾ at its right edge; the options open under it, as the phone's own picker would. */
 @Composable
-private fun Pick(sel: CollSelect, onPick: (String) -> Unit, modifier: Modifier, big: Boolean, stretch: Boolean = false) {
+internal fun Pick(sel: CollSelect, onPick: (String) -> Unit, modifier: Modifier, big: Boolean, stretch: Boolean = false) {
     var open by remember { mutableStateOf(false) }
     val shape = RoundedCornerShape(999.dp)
     Box(modifier) {
@@ -481,7 +481,7 @@ private fun Pick(sel: CollSelect, onPick: (String) -> Unit, modifier: Modifier, 
 }
 
 @Composable
-private fun Search(value: String, placeholder: String, onChange: (String) -> Unit, modifier: Modifier) {
+internal fun Search(value: String, placeholder: String, onChange: (String) -> Unit, modifier: Modifier) {
     val shape = RoundedCornerShape(11.dp)
     BasicTextField(value, onChange, modifier.heightIn(min = 44.dp).clip(shape).background(GlassFill).border(1.dp, GlassLine, shape),
         singleLine = true, textStyle = sans(15f, 400, Ink), cursorBrush = SolidColor(GoldC),
@@ -539,7 +539,7 @@ internal fun DrawScope.outerShadow(color: Color, blur: Float, dy: Float, spread:
 private val GLINT = listOf(Color(0x00FFF0BE), Color(0xD9FFF0BE), Color(0x00FFF0BE))
 
 @Composable
-private fun Modifier.lotFrame(r: CollRow, reduced: Boolean): Modifier {
+internal fun Modifier.lotFrame(r: CollRow, reduced: Boolean): Modifier {
     val shape = RoundedCornerShape(12.dp)
     val ring = RINGS[r.tier]
     // A wishlist row keeps its tier ring at .4 and still (.lot.wanted::before), over the dashed edge's faint hatching.
@@ -704,7 +704,7 @@ private val Greyed = androidx.compose.ui.graphics.ColorFilter.colorMatrix(androi
 
 /** .lot-art: [w] × [h] at 9 dp corners on the surface-2 plate, the card's own picture (and its foil) inside at 6 dp. */
 @Composable
-private fun LotArt(r: CollRow, modifier: Modifier, w: Dp, h: Dp, grey: Boolean = false, heart: SiteSvg? = null, onClick: () -> Unit) {
+internal fun LotArt(r: CollRow, modifier: Modifier, w: Dp, h: Dp, grey: Boolean = false, heart: SiteSvg? = null, onClick: () -> Unit) {
     val shape = RoundedCornerShape(9.dp)
     Box(modifier.size(w, h).clip(shape).background(Surface2).clickable(onClick = onClick).semantics { contentDescription = "Open ${r.name}" }, contentAlignment = Alignment.Center) {
         if (r.art != null && grey) {
@@ -745,7 +745,7 @@ private fun NameLine(r: CollRow, act: CollectionCardsActions, wide: Boolean) {
 
 /** .set-badge inside a row name: 8 sp tracked code, the set symbol (10 dp, 12 from 600 dp) in its rarity colours, rarity-tinted ink. */
 @Composable
-private fun LotSetBadge(s: CollSet, wide: Boolean, onClick: () -> Unit) {
+internal fun LotSetBadge(s: CollSet, wide: Boolean, onClick: () -> Unit) {
     // .set-badge (style.css): #d9d3bc, .r-uncommon #bbced1, .r-rare #d2b271, .r-mythic #ef9674, .unknown #929a90.
     val ink = when (s.rarity) { "mythic" -> Color(0xFFEF9674); "rare" -> Color(0xFFD2B271); "uncommon" -> Color(0xFFBBCED1); else -> Color(0xFFD9D3BC) }
     Row(Modifier.clip(RoundedCornerShape(5.dp)).background(Color(0xFF252B25)).border(1.dp, LineC, RoundedCornerShape(5.dp)).clickable(onClick = onClick)
@@ -769,7 +769,7 @@ private fun SubLine(r: CollRow) {
 
 /** A mana symbol from the site's own Scryfall SVG, 18 dp round with its small drop shadow. */
 @Composable
-private fun Mana(src: String, alt: String) {
+internal fun Mana(src: String, alt: String) {
     val p = heroPainter(src.takeIf { it.isNotBlank() }?.let(homeArt))
     Box(Modifier.size(18.dp).drawBehind { drawCircle(Color.Black.copy(alpha = .55f), size.minDimension / 2, center + Offset(-1.dp.toPx(), 1.dp.toPx())) }
         .semantics { contentDescription = alt }) {
@@ -786,8 +786,9 @@ private fun Tag(text: String, warn: Boolean, onClick: () -> Unit) {
 
 /** .stepper: − n ＋ on the surface-2 plate, 10 dp corners, 30 dp buttons; − and ＋ are icons.js "minus" / "plus" (20 dp, muted). */
 @Composable
-private fun Stepper(qty: Int, glyphs: Map<String, SiteSvg>, minus: () -> Unit, plus: () -> Unit) {
-    Row(Modifier.clip(RoundedCornerShape(10.dp)).background(Surface2).border(1.dp, LineC, RoundedCornerShape(10.dp)).padding(2.dp),
+internal fun Stepper(qty: Int, glyphs: Map<String, SiteSvg>, minus: () -> Unit, plus: () -> Unit) {
+    // .stepper: 2 padding inside a 1 border (a CSS border takes room; a Compose one does not), so 36 tall.
+    Row(Modifier.clip(RoundedCornerShape(10.dp)).background(Surface2).border(1.dp, LineC, RoundedCornerShape(10.dp)).padding(3.dp),
         verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(2.dp)) {
         Box(Modifier.size(30.dp).clip(RoundedCornerShape(8.dp)).clickable(onClick = minus).semantics { contentDescription = "Remove one" }, contentAlignment = Alignment.Center) {
             glyphs["minus"]?.let { SiteIcon(it, 20.dp, Mute) } ?: Text("−", style = sans(16f, 400, Mute))
