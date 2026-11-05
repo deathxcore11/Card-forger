@@ -1,4 +1,4 @@
-const CACHE = "cardforge-shell-apk0421-43119-v491";
+const CACHE = "cardforge-shell-apk0422-43120-v492";
 const ASSETS = [
   "./assets/fonts/fonts.css",
   "./play-forge-feature.js",
