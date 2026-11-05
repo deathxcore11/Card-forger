@@ -9,6 +9,20 @@ export function loadMtgBooster(code,fetcher=fetch){
  if(!files.has(code)){const job=fetcher(`/data/mtg-boosters/${code}.json`).then(r=>r.ok?r.json():null).then(d=>d&&Array.isArray(d.boosters)&&d.sheets?d:null).catch(()=>null);files.set(code,job);job.then(d=>{if(!d)files.delete(code);});}
  return files.get(code);
 }
+// What opening a pack needs to know about each card the sheets can give (oracle id, name, rarity, printing, colours,
+// image), baked by scripts/bake-mtg-booster-cards.mjs into data/mtg-booster-cards/<set>.json so the server opens a
+// pack without asking Scryfall. Scryfall-shaped cards; [] when the set has no baked file.
+const baked=new Map();
+export function bakedBoosterCard(id,[oracle_id,name,rarity,set,collector_number,colors,img]){
+ const url=size=>Array.isArray(img)?img[size==='normal'?0:1]:`https://cards.scryfall.io/${size}/front/${id[0]}/${id[1]}/${id}.jpg?${img}`;
+ return {id,oracle_id,name,rarity,set,collector_number,...(colors==null?{}:{colors:colors?colors.split(''):[]}),...(img?{image_uris:{normal:url('normal'),art_crop:url('art_crop')}}:{})};
+}
+export function loadMtgBoosterCards(code,fetcher=fetch){
+ code=String(code||'').toLowerCase();
+ if(!/^[a-z0-9]{2,8}$/.test(code))return Promise.resolve([]);
+ if(!baked.has(code)){const job=fetcher(`/data/mtg-booster-cards/${code}.json`).then(r=>r.ok?r.json():null).then(d=>d?.cards?Object.entries(d.cards).map(([id,row])=>bakedBoosterCard(id,row)):null).catch(()=>null);baked.set(code,job);job.then(d=>{if(!d)baked.delete(code);});}
+ return baked.get(code).then(d=>d||[]);
+}
 // Every card the sheets can give, keyed by Scryfall id. The set page has loaded most of them; the
 // rest (bonus sheets from other sets, or a set page still loading) are fetched from Scryfall in
 // batches of 75 and kept for the session. A card that can't be fetched is left out of its sheet.
@@ -18,7 +32,10 @@ export async function mtgBoosterCards(data,known=[],fetcher=fetch){
  for(const id of ids)if(!map.has(id)&&cardCache.has(id))map.set(id,cardCache.get(id));
  const missing=ids.filter(id=>!map.has(id));
  for(let i=0;i<missing.length;i+=75){
-  const res=await fetcher('https://api.scryfall.com/cards/collection',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({identifiers:missing.slice(i,i+75).map(id=>({id}))})}).catch(()=>null);
+  const ask=()=>fetcher('https://api.scryfall.com/cards/collection',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({identifiers:missing.slice(i,i+75).map(id=>({id}))})}).catch(()=>null);
+  let res=await ask();
+  // Scryfall answers 429 when asked too fast: wait as long as it asks (1 to 5 s) and try once more.
+  if(res?.status===429){await new Promise(r=>setTimeout(r,Math.min(5,Number(res.headers?.get?.('Retry-After'))||1)*1000));res=await ask();}
   const body=res?.ok?await res.json().catch(()=>null):null;
   for(const c of body?.data||[])if(c?.id){cardCache.set(c.id,c);map.set(c.id,c);}
   if(i+75<missing.length)await new Promise(r=>setTimeout(r,100)); // Scryfall asks for 10 requests a second at most

@@ -5,7 +5,7 @@
 // Spec: play-progression.md sections 3 to 9.
 import {SUPABASE} from './config.js';
 import {weeklyPreconsByFormat, commanderStorePool, commanderDeckLegal, COMMANDER_STORE_ROTATING} from './play-precon-formats.js';
-import {loadMtgBooster, mtgBoosterCards, drawMtgBooster, mtgGodPackPicks} from './mtg-boosters.js';
+import {loadMtgBooster, loadMtgBoosterCards, mtgBoosterCards, drawMtgBooster, mtgGodPackPicks} from './mtg-boosters.js';
 import {rewardSet, setFormats} from './play-econ-sets.js';
 import {isBasicLand, starterGrant, sealTrackBonus, packContentsRow, cardDelta, RARITY_SEAL, FORGE_STEPS, forgeRatio, holoCost, preconQuote, mtgjsonCardDelta, mtgjsonDeckRows, deckShortfall, ownedByName, isCollectorPack, collectorOdds, collectorPicks, collectorSource, godPackOdds} from './play-econ-rules.js';
 import {RETIRED_STARTER_NAMES} from './play-starter-deck.js';
@@ -250,10 +250,13 @@ export async function progressRoute(request, env, {verifyBearer, fetcher = fetch
     if (path === 'open') {
       const s = await state(), pack = (s.packs || []).find(p => String(p.id) === String(body.id));
       if (!pack) return fail('pack_not_found', 404);
-      const data = await loadMtgBooster(pack.set, p => (env.ASSETS ? env.ASSETS.fetch(new Request(new URL(p, request.url))) : fetcher(new URL(p, request.url))));
+      const site = p => (env.ASSETS ? env.ASSETS.fetch(new Request(new URL(p, request.url))) : fetcher(new URL(p, request.url)));
+      const data = await loadMtgBooster(pack.set, site);
       if (!data) return fail('no_booster', 503);
-      // Scryfall refuses requests without a User-Agent and Accept header, and a Worker sends neither.
-      const known = await mtgBoosterCards(data, [], scryfallFetch(fetcher));
+      // Every card's facts are baked into the site (data/mtg-booster-cards), so a pack opens without Scryfall, which
+      // failed from here for Randall's Future Sight packs (5 Nov). Scryfall only fills a card the bake does not have;
+      // it refuses requests without a User-Agent and Accept header, and a Worker sends neither.
+      const known = await mtgBoosterCards(data, await loadMtgBoosterCards(pack.set, site), scryfallFetch(fetcher));
       // A collector pack (boss, hard achievement) is the same booster with every card holo; any other pack
       // has a small chance to come out as one too.
       const earned = isCollectorPack(pack), surprise = !earned && cryptoRandom() < collectorOdds(s.config);
