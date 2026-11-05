@@ -433,7 +433,7 @@
        "id": "b5eb0064-c7c4-4e3e-add2-b86269de3fb9"
       },
       {
-       "qty": 2,
+       "qty": 3,
        "name": "Rufus Shinra",
        "set": "fin",
        "number": "238",
@@ -475,7 +475,7 @@
        "id": "7475ecf6-23f5-45af-9ef0-ac7923bbc9cb"
       },
       {
-       "qty": 3,
+       "qty": 2,
        "name": "Undercity Dire Rat",
        "set": "fin",
        "number": "123",
@@ -2629,35 +2629,35 @@
      "note": "Built from cards in this act's set only. No tournament list is copied.",
      "cards": [
       {
-       "qty": 1,
+       "qty": 2,
        "name": "Sazh's Chocobo",
        "set": "fin",
        "number": "200",
        "id": "dda6b4d0-1b60-46b0-b321-b9ffe15afff4"
       },
       {
-       "qty": 2,
+       "qty": 4,
        "name": "Town Greeter",
        "set": "fin",
        "number": "209",
        "id": "49cd4efa-4df4-4257-9a42-60330f7781e2"
       },
       {
-       "qty": 2,
+       "qty": 1,
        "name": "Diamond Weapon",
        "set": "fin",
        "number": "183",
        "id": "6ce7f494-2a19-4b11-94d4-fc5e5a7068bd"
       },
       {
-       "qty": 2,
+       "qty": 1,
        "name": "Ancient Adamantoise",
        "set": "fin",
        "number": "172",
        "id": "4c139f30-5ecd-48fd-ae7c-ec2cc98889ff"
       },
       {
-       "qty": 3,
+       "qty": 2,
        "name": "Coliseum Behemoth",
        "set": "fin",
        "number": "181",
