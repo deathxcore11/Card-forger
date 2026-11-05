@@ -1,4 +1,4 @@
-const CACHE = "cardforge-shell-tiers-brackets-43126-v498";
+const CACHE = "cardforge-shell-power-view-43127-v499";
 const ASSETS = [
   "./assets/fonts/fonts.css",
   "./play-forge-feature.js",
