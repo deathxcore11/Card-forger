@@ -335,10 +335,10 @@ export default {
 3 Wistfulness
 3 Avatar of Burgeoning Echoes
 4 Bristlebane Battler
-4 Glen Elendra Guardian
 4 Champions of the Perfect
-4 Paradox Surveyor
-2 Crossroads Watcher
+4 Glen Elendra Guardian
+4 Pestbrood Sloth
+2 Paradox Surveyor
 12 Forest
 12 Island`}},
       villain: {who: 'emrakul', deck: {label: 'tribute', name: 'Emrakul and the Echoes', note: 'Built from cards in this act\'s sets only. No tournament list is copied.', colors: 'G', list: `
@@ -348,11 +348,11 @@ export default {
 3 Hexhaven Invigorator
 3 Champions of the Perfect
 3 Bristlebane Battler
-4 Pestbrood Sloth
-4 Shopkeeper's Bane
-4 Crossroads Watcher
-4 Dawn's Light Archer
-3 Aberrant Manawurm
+4 Mutable Explorer
+4 Wildgrowth Archaic
+4 Moon-Vigil Adherents
+4 Topiary Lecturer
+3 Changeling Wayfinder
 24 Forest`}},
       scene: [q('tam', 'What are the odds? And what would you like them to be?'),
         s('tam', 'Race it. Emrakul needs ten mana, and every turn she is late is a turn you are ahead.')],
