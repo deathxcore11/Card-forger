@@ -1,7 +1,7 @@
 import {playWeek} from './play-achievements.js';
 // Secret Lair in Play (play-secret-lair.js, /api/progress/secretlair and /style, rare style drops).
 import assert from 'node:assert/strict';
-import {weeklySecretLairOffers, secretLairOfferPrice, SECRET_LAIR_OFFERS, groupSecretLairDrops, weeklySecretLair, secretLairPrice, secretLairLabel, secretLairCardDelta, pickSecretLairStyle, secretLairImage, slimSecretLairCard} from './play-secret-lair.js';
+import {isSecretLair, weeklySecretLairOffers, secretLairOfferPrice, SECRET_LAIR_OFFERS, groupSecretLairDrops, weeklySecretLair, secretLairPrice, secretLairLabel, secretLairCardDelta, pickSecretLairStyle, secretLairImage, slimSecretLairCard} from './play-secret-lair.js';
 import {progressRoute, secretLairOffer, secretLairStoreOffer} from './play-econ-route.js';
 import {secretLairShelf, secretLairStore, setPlayStyles, playCardTile} from './play-econ-ui.js';
 
@@ -14,8 +14,8 @@ const sc = (n, num, artist, released = '2024-04-01', extra = {}) => ({id: id(n),
   const big = Array.from({length: 30}, (_, d) => ({id: 'sld-' + d, released: '2024-01-0' + (1 + d % 9), artists: ['A'],
     cards: Array.from({length: 4}, (_, k) => ({id: id(d * 10 + k), o: ora(d * 10 + (k % 3)), n: k === 3 ? 'Island' : 'Card ' + (d * 10 + k), r: ['common', 'uncommon', 'rare', 'mythic'][k], num: String(k), f: ['nonfoil'], a: 'A'}))}));
   const offers = weeklySecretLairOffers(big, '2026-W45', '2026-11-03', 'sld-0');
-  assert.equal(offers.length, SECRET_LAIR_OFFERS, 'ten a week');
-  assert.equal(new Set(offers.map(c => c.o)).size, 6, 'six different cards');
+  assert.equal(offers.length, 20, 'twenty a week');
+  assert.equal(new Set(offers.map(c => c.id)).size, 20, 'twenty different printings');
   assert.ok(offers.every(c => c.n !== 'Island'), 'no basic lands');
   assert.ok(offers.every(c => !c.id.startsWith('00000000') && !['00000001', '00000002'].includes(c.id.slice(0, 8))), 'never the bundle\'s cards');
   assert.deepEqual(offers.filter(c => c.off).map(c => c.off).sort((a, b) => a - b), [25, 40, 50, 60], 'four on sale');
@@ -27,7 +27,7 @@ const sc = (n, num, artist, released = '2024-04-01', extra = {}) => ({id: id(n),
   assert.equal(secretLairOfferPrice({r: 'rare', off: 60}).coins, 120);
   assert.equal(secretLairOfferPrice({r: 'rare'}, {secretLair: {offerCoins: {rare: 400}}}).coins, 400, 'config retunes it');
   const so = secretLairStoreOffer(big, new Date('2026-11-04T12:00:00Z'));
-  assert.equal(so.week, '2026-W45'); assert.equal(so.ends, '2026-11-09T00:00:00.000Z'); assert.equal(so.offers.length, 6);
+  assert.equal(so.week, '2026-W45'); assert.equal(so.ends, '2026-11-09T00:00:00.000Z'); assert.equal(so.offers.length, 20);
   assert.ok(!JSON.stringify(so).includes('usd'), 'no prices, ever');
 }
 
@@ -141,7 +141,11 @@ const sc = (n, num, artist, released = '2024-04-01', extra = {}) => ({id: id(n),
   // Nothing unobtainable: a full lap of weekly stores shows every printing.
   const big2 = Array.from({length: 40}, (_, d) => ({id: 'sld-' + d, released: '2024-01-01', cards: Array.from({length: 5}, (_, k) => ({id: id(5000 + d * 5 + k), o: ora(d * 5 + k), n: 'Lap ' + (d * 5 + k), r: 'rare', f: false}))}));
   const seen = new Set(); let day = Date.UTC(2026, 10, 2);
-  for (let i = 0; i < Math.ceil(200 / SECRET_LAIR_OFFERS) + 1; i++, day += 7 * 864e5) for (const c of weeklySecretLairOffers(big2, playWeek(new Date(day).toISOString().slice(0, 10)), '2030-01-01')) seen.add(c.id);
-  assert.equal(seen.size, 200, 'every Secret Lair printing comes up in the weekly store within one lap');
+  for (let i = 0; i < Math.ceil(200 / SECRET_LAIR_OFFERS) + 2; i++, day += 7 * 864e5) for (const c of weeklySecretLairOffers(big2, playWeek(new Date(day).toISOString().slice(0, 10)), '2030-01-01')) seen.add(c.id);
+  const all2 = big2.flatMap(d => d.cards), secrets = all2.filter(isSecretLair);
+  assert.ok(secrets.length > 0 && secrets.length < 60, 'some printings are secret');
+  assert.ok(![...seen].some(i => secrets.some(c => c.id === i)), 'secret printings never reach the store');
+  assert.equal(seen.size, 200 - secrets.length, 'every other printing comes up within one lap');
+  assert.ok(pickSecretLairStyle(big2, new Set(), new Set(), () => 0.3) && isSecretLair(pickSecretLairStyle(big2, new Set(), new Set(), () => 0.3).card), 'style rewards pay out secret printings first');
 }
 console.log('play secret lair: ok');
