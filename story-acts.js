@@ -131,8 +131,11 @@ export const STORY_ACTS = [
   {act: 43, age: 'Crossings', title: 'The Hobbit', years: '2026',
     sets: ['hob'], landSet: 'hob', packSets: ['hob'],
     art: {set: 'hob', number: '110', name: 'Smaug the Magnificent', crop: 'https://cards.scryfall.io/art_crop/front/6/a/6a5d8fad-2ffd-4645-8c49-907999b6cecf.jpg?1783902784'}},
+  {act: 44, age: 'The Echoverse', title: 'The Echoverse', years: '2026',
+    sets: ['ecl','sos','fra'], landSet: 'ecl', packSets: ['ecl','sos','fra'],
+    art: {set: 'fra', number: '43', name: 'The Theorist, Jace Beleren', crop: 'https://cards.scryfall.io/art_crop/front/2/0/20bb8c55-4b0b-425f-8201-b54fa2fdde86.jpg?1788329228'}},
 ];
-export const SET_NAMES = {hob: 'The Hobbit', tmt: 'Teenage Mutant Ninja Turtles', msh: 'Marvel Super Heroes', spm: "Marvel's Spider-Man", tla: 'Avatar: The Last Airbender', eoe: 'Edge of Eternities', eos: 'Edge of Eternities: Stellar Sights', fin: 'Final Fantasy', dft: 'Aetherdrift', tdm: 'Tarkir: Dragonstorm', lea: 'Limited Edition Alpha', leb: 'Limited Edition Beta', '2ed': 'Unlimited Edition', arn: 'Arabian Nights', atq: 'Antiquities',
+export const SET_NAMES = {ecl: 'Lorwyn Eclipsed', sos: 'Secrets of Strixhaven', fra: 'Reality Fracture', hob: 'The Hobbit', tmt: 'Teenage Mutant Ninja Turtles', msh: 'Marvel Super Heroes', spm: "Marvel's Spider-Man", tla: 'Avatar: The Last Airbender', eoe: 'Edge of Eternities', eos: 'Edge of Eternities: Stellar Sights', fin: 'Final Fantasy', dft: 'Aetherdrift', tdm: 'Tarkir: Dragonstorm', lea: 'Limited Edition Alpha', leb: 'Limited Edition Beta', '2ed': 'Unlimited Edition', arn: 'Arabian Nights', atq: 'Antiquities',
   '3ed': 'Revised Edition', leg: 'Legends', drk: 'The Dark', fem: 'Fallen Empires', ice: 'Ice Age', hml: 'Homelands', all: 'Alliances', '4ed': 'Fourth Edition',
   mir: 'Mirage', vis: 'Visions', '5ed': 'Fifth Edition',
   wth: 'Weatherlight', tmp: 'Tempest', sth: 'Stronghold', exo: 'Exodus',
