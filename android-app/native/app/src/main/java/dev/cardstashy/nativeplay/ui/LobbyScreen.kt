@@ -199,7 +199,7 @@ private val FORMAT_GROUPS = listOf(
     "Singleton with a commander" to listOf("Commander" to "100 cards · 40 life", "Standard Brawl" to "60 cards · 25 life", "Oathbreaker" to "Planeswalker + signature spell"))
 private val CPU_LABELS = mapOf("Easy" to "Easy", "Medium" to "Normal", "Hard" to "Hard")
 /** play-opponent-build.js RANDOM_DECK_FORMATS. */
-private val RANDOM_FORMATS = listOf("Standard", "Commander")
+private val RANDOM_FORMATS = RandomBuild.FORMATS
 
 // ---------------------------------------------------------------- look (play-menu.css, computed at 390 px)
 
@@ -459,7 +459,7 @@ fun LobbyScreen(model: LobbyModel, onBack: () -> Unit, onStart: (Pick) -> Unit, 
                         if (quickOnly) "Build a Play deck, or open packs and the Merchant for cards." else "Paste a list or explore the other sources above.") }
                     else items(visible, key = { "d:" + it.id }) { d -> DeckChoice(d, chosen(d), quickOnly && d.id in locked) { selectDeck(d) } }
                 }
-                source == "random" -> full { RandomPanel(m, build, signedIn, onBuild = { bracket, style -> buildSeat = m.browseSeat; RandomBuild.start(m.format, bracket, style) }, onSignIn = onSignIn) }
+                source == "random" -> full { RandomPanel(m, build, signedIn, onBuild = { bracket, style, power -> buildSeat = m.browseSeat; RandomBuild.start(m.format, bracket, style, power, session?.userId) }, onSignIn = onSignIn) }
                 else -> {
                     full { SourceIntroAndTools(m, source, sources) }
                     val entries = sources.entries(source, m.format).filter { e -> listOf(e.deck.get("name")?.asString ?: "", e.deck.get("commander")?.takeIf { it.isJsonPrimitive }?.asString ?: "", e.detail).any { it.lowercase().contains(m.query.lowercase().trim()) } }
@@ -904,9 +904,11 @@ private fun SourceCard(e: LobbySources.Entry, on: Boolean, signedIn: Boolean, on
 }
 
 @Composable
-private fun RandomPanel(m: LobbyModel, build: RandomBuild.State, signedIn: Boolean, onBuild: (Int?, String) -> Unit, onSignIn: () -> Unit) {
+private fun RandomPanel(m: LobbyModel, build: RandomBuild.State, signedIn: Boolean, onBuild: (Int?, String, String?) -> Unit, onSignIn: () -> Unit) {
     val seatLabel = if (m.browseSeat == "player") "you" else "the CPU"
-    var bracket by remember { mutableStateOf<Int?>(null) }; var style by remember { mutableStateOf("classic") }
+    var bracket by remember { mutableStateOf<Int?>(null) }; var style by remember { mutableStateOf("classic") }; var power by remember { mutableStateOf("casual") }
+    // Deck Forge's power (play-opponent-build.js): a Commander bracket of 3 or more always builds strong.
+    val strongBracket = m.format == "Commander" && (bracket ?: 0) >= 3
     Column(Modifier.fillMaxWidth().clip(RoundedCornerShape(16.dp)).background(Site.Surface2.copy(alpha = .6f)).border(1.dp, Line, RoundedCornerShape(16.dp)).padding(18.dp),
         verticalArrangement = Arrangement.spacedBy(10.dp), horizontalAlignment = Alignment.CenterHorizontally) {
         if (m.format !in RANDOM_FORMATS) {
@@ -928,12 +930,18 @@ private fun RandomPanel(m: LobbyModel, build: RandomBuild.State, signedIn: Boole
                 Box(Modifier.height(36.dp).pill(if (on) Color(0x33E8B95B) else Site.Surface, if (on) Gold else Line).clickable { bracket = b }.padding(horizontal = 10.dp), contentAlignment = Alignment.Center) {
                     Text(b?.toString() ?: "Any", style = sans(12.5f, FontWeight.Bold, if (on) Gold else Site.Text)) } }
         }
+        Row(horizontalArrangement = Arrangement.spacedBy(6.dp), verticalAlignment = Alignment.CenterVertically) {
+            Text("Power", style = sans(12.5f, color = Muted))
+            listOf("casual" to "Casual", "strong" to "Strong").forEach { (k, l) -> val on = if (strongBracket) k == "strong" else power == k
+                Box(Modifier.height(36.dp).pill(if (on) Color(0x33E8B95B) else Site.Surface, if (on) Gold else Line).clickable(enabled = !strongBracket) { power = k }.padding(horizontal = 10.dp), contentAlignment = Alignment.Center) {
+                    Text(l, style = sans(12.5f, FontWeight.Bold, if (on) Gold else if (strongBracket) Muted else Site.Text)) } }
+        }
         Row(horizontalArrangement = Arrangement.spacedBy(6.dp)) {
             listOf("classic" to "Classic strategy", "infinite-mana" to "Infinite mana engine").forEach { (k, l) -> val on = style == k
                 Box(Modifier.height(36.dp).pill(if (on) Color(0x33E8B95B) else Site.Surface, if (on) Gold else Line).clickable { style = k }.padding(horizontal = 10.dp), contentAlignment = Alignment.Center) {
                     Text(l, style = sans(12.5f, FontWeight.Bold, if (on) Gold else Site.Text)) } }
         }
-        Box(Modifier.height(46.dp).clip(RoundedCornerShape(10.dp)).background(if (signedIn && !build.busy) GoldPlate else SolidColor(Site.Surface)).clickable(enabled = signedIn && !build.busy) { onBuild(bracket, style) }.padding(horizontal = 20.dp),
+        Box(Modifier.height(46.dp).clip(RoundedCornerShape(10.dp)).background(if (signedIn && !build.busy) GoldPlate else SolidColor(Site.Surface)).clickable(enabled = signedIn && !build.busy) { onBuild(bracket, style, if (strongBracket) "strong" else power) }.padding(horizontal = 20.dp),
             contentAlignment = Alignment.Center) { Text(if (build.busy) "Building deck…" else "Build random deck", style = sans(14f, FontWeight.Bold, if (signedIn && !build.busy) Color(0xFF2A1906) else Muted)) }
         if (build.busy) {
             BrandMark(44.dp)

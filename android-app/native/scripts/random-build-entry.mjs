@@ -4,7 +4,8 @@ import {createDeckPipeline} from 'WEB/deck-pipeline.js';
 import {S, meta, inv, priceOf, cacheCard} from 'WEB/store.js';
 import {createScryfallClient} from 'WEB/scryfall-client.js';
 import {formatOf} from 'WEB/formats.js';
-import {createRandomDeckProducer} from 'WEB/play-opponent-build.js';
+import {createRandomDeckProducer, RANDOM_DECK_FORMATS} from 'WEB/play-opponent-build.js';
+import {createRandomDeckQueue} from 'WEB/play-random-queue.js';
 import {mtgPower, shownPower} from 'WEB/power.js';
 
 // app.js:475-484, verbatim.
@@ -23,14 +24,34 @@ const deckPipeline=createDeckPipeline({S,T,api,resolve,cacheCard,meta,priceOf,in
 const randomBuildSeed=async request=>{if(request.game!=='mtg')return deckPipeline.resolveSeed(request);const f=formatOf(request.format),theme=String(request.theme||'').replace(/[^\p{L}\p{N} '-]/gu,'').slice(0,80);return cacheCard(await api('/cards/random?'+new URLSearchParams({q:`${f.legality?'f:'+f.legality:'game:paper'} -t:land ${f.commander?'is:commander':''} ${theme?`(t:"${theme}" or o:"${theme}")`:''}`})));};
 const playRandomProducer=createRandomDeckProducer({pipeline:deckPipeline,pickSeed:randomBuildSeed});
 
+// app.js playRandomQueue: one finished deck waits per format (bracket, style, power), built in the background one at a time and
+// again after each is taken; scope is the signed-in account (app.js readScope), idle is the app's (no match on the table, app in front).
+let scope = null, idle = true;
+const playRandomQueue = createRandomDeckQueue({produce: playRandomProducer, readScope: () => scope, idle: () => idle});
+// A finished deck as the app reads it: the site's Power number with it (power.js shownPower, as the Play deck chip shows).
+const withPower = deck => deck && {...deck, power: shownPower(mtgPower({...deck, id: 'construction'}))};
+
 let job = 0, result = null;
 globalThis.RandomBuild = {
-  // Starts one Play random build (createRandomDeckProducer); status lines and the result are read back with poll().
+  formats: () => JSON.stringify(RANDOM_DECK_FORMATS),
+  // The account the queued decks belong to; a new one drops them (play-random-queue.js check).
+  scope(json) { scope = JSON.parse(json); },
+  idle(on) { idle = !!on; },
+  // app.js warmPlayRandom: these requests ({format, targetBracket, deckStyle, power}) start building in the background.
+  warm(json) { playRandomQueue.warm(JSON.parse(json)); },
+  // Ready decks for a format (play-random-queue.js peek), as Quick Play's pool reads them.
+  peek(format) { return JSON.stringify(playRandomQueue.peek(format).map(withPower)); },
+  // play-opponent-build.js createPracticeOpponentBuilder build(): a deck the queue already finished is handed over at once, one it
+  // is still building is awaited, else one is built now and the queue refills; status lines and the result are read with poll().
   start(json) {
-    const ask = JSON.parse(json), me = ++job; result = {busy: true, status: 'Choosing a build-around…', deck: null, error: null};
-    playRandomProducer(ask, {current: () => me === job, onStatus: m => { if (me === job) result.status = String(m); }})
-      .then(deck => { if (me !== job) return; result = {busy: false, status: '', deck: deck && {...deck, power: shownPower(mtgPower({...deck, id: 'construction'}))}, error: deck ? null : 'cancelled'}; },
-            e => { if (me !== job) return; result = {busy: false, status: '', deck: null, error: String(e && e.message || e), trace: String(e && e.stack || '')}; });
+    const a = JSON.parse(json), ask = {format: a.format, targetBracket: a.targetBracket ?? null, deckStyle: a.deckStyle || 'classic', ...(a.power === 'strong' ? {power: 'strong'} : {})};
+    const me = ++job, current = () => me === job, tag = a.ticket ?? null; result = {busy: true, status: 'Choosing a build-around…', deck: null, error: null, ticket: tag};
+    (async () => {
+      let deck = playRandomQueue.take(ask);
+      if (!deck && playRandomQueue.pending(ask)) { result = {...result, status: 'Finishing your next deck…'}; await playRandomQueue.pending(ask); if (!current()) return; deck = playRandomQueue.take(ask); }
+      if (!deck) { deck = await playRandomProducer(ask, {current, onStatus: m => { if (current()) result.status = String(m); }}); if (!current()) return; playRandomQueue.warm([ask]); }
+      result = {busy: false, status: '', deck: withPower(deck), error: deck ? null : 'cancelled', ticket: tag};
+    })().catch(e => { if (current()) result = {busy: false, status: '', deck: null, error: String(e && e.message || e), trace: String(e && e.stack || ''), ticket: tag}; });
   },
   cancel() { job++; result = {busy: false, status: 'Build cancelled.', deck: null, error: null}; },
   poll() { return JSON.stringify(result); },

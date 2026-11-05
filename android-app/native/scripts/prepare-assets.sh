@@ -7,6 +7,7 @@
 #   app/src/main/assets/cards/       Scryfall images for the two demo decks (normal + art_crop) and the Home tiles
 #   app/src/main/assets/{play,sfx}/  the existing playmat, banners and table sounds from the website
 #   app/src/main/assets/random-build.js  the site's random deck builder for QuickJS (needs npm: scripts/js-tools)
+#   app/src/main/assets/random-build-web.js  the same builder for the WebView (RandomBuild.kt runs it there first)
 #   app/src/main/assets/collection-engine.js  the site's Collection Home code for QuickJS (same npm tools)
 #
 #   ENGINE_TGZ  engine build (default: the pods build plus the lesson match setup, forge-engine/rebuild-bridge.sh)

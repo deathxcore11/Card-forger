@@ -407,7 +407,7 @@ fun DecksRoute(onBack: () -> Unit, onWeb: (String) -> Unit, onNav: (PlayTab) -> 
             if (meta.open != null) FinderScreen(s, meta, onBack = { meta.open = null }, onUse = use, onCard = onCard, toast = toast, onPack = { meta.open = null; onTrunkSet(it) }, nav = { PlayNav(PlayTab.DECKS, onNav) })
             PreconLayer(precon) { o, back -> PreconPage(s, o, owned, precon, onBack = back, onCard = onCard, toast = toast, nav = { PlayNav(PlayTab.DECKS, onNav) }) }
             if (precon.opening) Box(Modifier.fillMaxSize().background(Color(0x66000000)), contentAlignment = Alignment.Center) { BrandMark(52.dp) }
-            if (tabs.randomOpen) RandomDeckSheet(onClose = { tabs.randomOpen = false }) { d, format ->
+            if (tabs.randomOpen) RandomDeckSheet(onClose = { tabs.randomOpen = false }, user = dev.cardstashy.nativeplay.account.Account.session.value?.userId) { d, format ->
                 tabs.randomOpen = false
                 d.addProperty("format", format)
                 editor = EditorUi().apply { adding = false; mode = "all"; edit = dev.cardstashy.nativeplay.play.DeckEdit.open(d).copy(id = null, dirty = true) } }

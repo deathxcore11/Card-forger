@@ -171,9 +171,14 @@ class MainActivity : ComponentActivity() {
             }
         }
         Updater.check(this)
+        // Deck Forge's WebView (Random deck) lives in this window, out of sight, so its builds run at full speed.
+        dev.cardstashy.nativeplay.play.RandomBuild.attach(this)
     }
 
+    override fun onDestroy() { dev.cardstashy.nativeplay.play.RandomBuild.detach(this); super.onDestroy() }
     override fun onResume() { super.onResume(); Updater.resumed(this); dev.cardstashy.nativeplay.collection.WorkspaceSync.kick(this) }
+    override fun onStart() { super.onStart(); dev.cardstashy.nativeplay.play.RandomBuild.hidden = false }
+    override fun onStop() { super.onStop(); dev.cardstashy.nativeplay.play.RandomBuild.hidden = true }
 
     override fun dispatchTouchEvent(ev: android.view.MotionEvent): Boolean { FreezeReport.touched(ev); return super.dispatchTouchEvent(ev) }
 
@@ -222,6 +227,7 @@ class MainActivity : ComponentActivity() {
     fun inGame(on: Boolean, play: Boolean = false) {
         lastGame = on; lastPlay = play; Updater.inGame = on
         dev.cardstashy.nativeplay.art.ThumbStore.paused = on // the table gets the network and CPU
+        dev.cardstashy.nativeplay.play.RandomBuild.paused = on // background random decks wait (app.js playRandomQueue idle())
         val sideways = on || (play && resources.configuration.smallestScreenWidthDp < 600)  // play = Planeswalk on a phone
         requestedOrientation = if (sideways) ActivityInfo.SCREEN_ORIENTATION_SENSOR_LANDSCAPE else ActivityInfo.SCREEN_ORIENTATION_FULL_USER
         val c = WindowCompat.getInsetsController(window, window.decorView)
@@ -287,6 +293,9 @@ private fun App(activity: MainActivity) {
     when (val s = screen) {
         Screen.Home -> {
             LaunchedEffect(Unit) { activity.inGame(false) }
+            // app.js renderPlayPage → warmPlayRandom: random decks start building in the background while Play is open.
+            val warmUser = dev.cardstashy.nativeplay.account.Account.session.collectAsState().value?.userId
+            LaunchedEffect(warmUser) { dev.cardstashy.nativeplay.play.RandomBuild.warm(lobbies.values.firstOrNull()?.format ?: "Commander", warmUser) }
             dev.cardstashy.nativeplay.ui.PlayHomeRoute(
                 onQuickPlay = { go(Screen.Decks) }, onLobby = { if (LOBBY_LIVE) go(Screen.Lobby(it)) else go(Screen.Decks) }, onCollection = { go(Screen.Collection) },
                 onSignIn = { go(Screen.SignIn) }, onWeb = { go(Screen.Web(it)) }, onTrunk = { go(Screen.Trunk) }, onDecks = { go(Screen.PlayDecks) }, onAchievements = { go(Screen.Achievements(it)) }, onStory = { go(Screen.Story()) }, onShop = { t, set -> go(Screen.Shop(t, set)) })

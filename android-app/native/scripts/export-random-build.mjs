@@ -1,4 +1,4 @@
-// Bundles the site's random deck builder into assets/random-build.js for QuickJS (RandomBuild.kt).
+// Bundles the site's random deck builder into assets/random-build.js for QuickJS and assets/random-build-web.js for the WebView (RandomBuild.kt).
 // node scripts/export-random-build.mjs <web root> <esbuild binary>
 // Async functions are lowered to generators so they run on the bundle's own Promise (random-build-prelude.js);
 // the host drains its jobs, timers and fetches. BigInt literals (a Pokémon finish hash this QuickJS cannot parse,
@@ -22,6 +22,14 @@ let js = readFileSync(out, 'utf8').replace(/(?<![\w$.])(\d+)n\b/g, 'BigInt("$1")
 js = hoistYieldInForOf(js);
 writeFileSync(join(app, 'app/src/main/assets/random-build.js'), js);
 console.log('random builder bundled from', sha, (js.length / 1024).toFixed(0) + ' KB');
+
+// The same entry for the app's WebView (RandomBuild.kt runs it there first: Chrome's JIT builds a deck several times faster than
+// QuickJS). Native async, the browser's own timers and fetch; only storage comes from random-build-web-prelude.js.
+const webOut = join(app, 'app/src/main/assets/random-build-web.js');
+execFileSync(esbuild, [entry, '--bundle', '--format=iife', '--platform=browser', '--target=es2020',
+  `--inject:${join(here, 'random-build-web-prelude.js')}`,
+  '--define:import.meta.url="https://cardstashy.com/"', `--banner:js=/* CardStashy random deck builder bundle (WebView), web ${sha} */`, `--outfile=${webOut}`, '--log-level=error']);
+console.log('random builder (WebView) bundled', (readFileSync(webOut).length / 1024).toFixed(0) + ' KB');
 
 // This QuickJS's compiler fails ("stack underflow") on a yield inside a for-of head: for (const x of (yield y) || []) …
 // Each one becomes { const __forOfN = (yield y) || []; for (const x of __forOfN) … }. Unknown shapes stop the export.

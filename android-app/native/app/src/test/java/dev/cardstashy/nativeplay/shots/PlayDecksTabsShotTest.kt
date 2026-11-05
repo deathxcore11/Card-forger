@@ -6,6 +6,7 @@ import androidx.compose.ui.test.hasScrollAction
 import androidx.compose.ui.test.hasText
 import androidx.compose.ui.test.junit4.createAndroidComposeRule
 import androidx.compose.ui.test.onAllNodesWithText
+import androidx.compose.ui.test.onLast
 import androidx.compose.ui.test.onNodeWithText
 import androidx.compose.ui.test.onNodeWithContentDescription
 import androidx.compose.ui.test.onRoot
@@ -151,6 +152,12 @@ class PlayDecksTabsShotTest {
         rule.onNodeWithText("Random deck").performClick(); settle(10)
         assertTrue("the tile opens the Deck Forge sheet", rule.onAllNodesWithText("Build random deck").fetchSemanticsNodes().isNotEmpty())
         shot("random")
+        // All eight of Deck Forge's formats; Commander adds its bracket row, and brackets 3+ build Strong (play-opponent-build.js).
+        dev.cardstashy.nativeplay.play.RandomBuild.FORMATS.forEach { f -> assertTrue("format $f", rule.onAllNodesWithText(f).fetchSemanticsNodes().isNotEmpty()) }
+        rule.onAllNodesWithText("Commander").onLast().performClick(); settle(10)
+        assertTrue("Commander shows the bracket row", rule.onAllNodesWithText("Aim for bracket").fetchSemanticsNodes().isNotEmpty())
+        rule.onAllNodesWithText("4").onLast().performClick(); settle(10)
+        shot("random-commander")
     }
 
     /**
