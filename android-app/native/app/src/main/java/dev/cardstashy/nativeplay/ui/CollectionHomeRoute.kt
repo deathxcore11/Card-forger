@@ -41,6 +41,8 @@ private object HomeCache {
     var hints: SearchHints? = null
     /** account id + workspace revision the engine holds. */
     var loaded: String? = null
+    /** The engine holds a catalog (card names already looked up): a reload carries it over instead of the saved file. */
+    var warm = false
 }
 
 /**
@@ -66,10 +68,12 @@ fun CollectionHomeRoute(onPlay: () -> Unit, onProfile: () -> Unit, web: (url: St
         if (session != null && raw == null) return@LaunchedEffect
         val key = "${session?.userId}|$revision"
         val catalogFile = File(context.filesDir, "collection-catalog.json")
+        suspend fun keepCatalog() = withContext(Dispatchers.IO) { runCatching { val tmp = File(catalogFile.path + ".tmp"); tmp.writeText(CollectionEngine.catalog()); tmp.renameTo(catalogFile) } }
         if (HomeCache.loaded != key) {
-            val catalog = withContext(Dispatchers.IO) { catalogFile.takeIf { it.isFile }?.readText() }
+            // Deck covers come from the catalog: starting a reload from less than the engine already knows would blank them.
+            val catalog = if (HomeCache.warm) CollectionEngine.catalog() else withContext(Dispatchers.IO) { catalogFile.takeIf { it.isFile }?.readText() }
             CollectionEngine.load(raw ?: "", catalog)
-            HomeCache.loaded = key
+            HomeCache.loaded = key; HomeCache.warm = true
         }
         suspend fun paint() {
             val m = withContext(Dispatchers.Default) { CollectionHomeModel.parse(CollectionEngine.home("mtg")) }
@@ -80,10 +84,10 @@ fun CollectionHomeRoute(onPlay: () -> Unit, onProfile: () -> Unit, web: (url: St
         // Card names the catalog lacks, the Card of the Day, Meta and News: repaint as they arrive.
         coroutineScope {
             val repaint = launch { while (true) { delay(1200); paint() } }
-            try { CollectionEngine.refresh("mtg") } finally { repaint.cancel() }
+            // Whatever names this visit looked up are kept, even when it is cut short.
+            try { CollectionEngine.refresh("mtg") } finally { repaint.cancel(); withContext(kotlinx.coroutines.NonCancellable) { keepCatalog() } }
         }
         paint()
-        withContext(Dispatchers.IO) { runCatching { val tmp = File(catalogFile.path + ".tmp"); tmp.writeText(CollectionEngine.catalog()); tmp.renameTo(catalogFile) } }
         failed = null
     } catch (e: kotlinx.coroutines.CancellationException) { throw e } catch (e: Exception) {
         // The site's guard for a workspace it can't open: say so and leave the account copy untouched.

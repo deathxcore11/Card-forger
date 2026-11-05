@@ -47,6 +47,7 @@ import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.produceState
+import androidx.compose.runtime.SideEffect
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
@@ -478,8 +479,15 @@ private fun Heading(title: String, link: HomeLink?, linkSize: Float, act: Collec
 private fun TileFrame(art: String?, lead: Boolean, minH: Dp, modifier: Modifier, onClick: () -> Unit, label: String, content: @Composable () -> Unit) {
     val shape = RoundedCornerShape(18.dp)
     val p = art?.let { heroPainter(homeArt(it)) }
+    // A deck's cover can change while its card names arrive: the last cover shown holds until the new one has loaded.
+    val state = (p as? coil3.compose.AsyncImagePainter)?.state?.collectAsState()?.value
+    val ready = p != null && (p !is coil3.compose.AsyncImagePainter || state is coil3.compose.AsyncImagePainter.State.Success)
+    var shown by remember { mutableStateOf<String?>(null) }
+    if (ready && shown != art) SideEffect { shown = art }
+    val held = shown?.takeIf { !ready && it != art }?.let { heroPainter(homeArt(it)) }
     Box(modifier.heightIn(min = minH).shadow(14.dp, shape, ambientColor = Color.Black.copy(alpha = .35f), spotColor = Color.Black.copy(alpha = .85f))
         .clip(shape).background(cssGradient(135f, 0f to Color(0xFF252936), 1f to Color(0xFF141720))).clickable(onClick = onClick).semantics { contentDescription = label }) {
+        if (held != null) Image(held, null, Modifier.matchParentSize(), contentScale = ContentScale.Crop)
         if (p != null) Image(p, null, Modifier.matchParentSize(), contentScale = ContentScale.Crop)
         // .home-personal-art:after: linear-gradient(0deg, #0b0e15f7, #0b0e1590 55%, #0b0e1522)
         Box(Modifier.matchParentSize().background(Brush.verticalGradient(0f to Color(0x220B0E15), .45f to Color(0x900B0E15), 1f to Color(0xF70B0E15))))

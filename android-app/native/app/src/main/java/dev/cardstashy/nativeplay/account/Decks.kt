@@ -55,7 +55,9 @@ object Decks {
     fun fullCopy(context: Context): String? = Account.session.value?.let { s -> fullFile(context, s.userId).takeIf { it.isFile }?.readText() }
     private fun keepFull(context: Context, user: String, data: JsonObject?) {
         if (data == null) return
-        try { val f = fullFile(context, user); val tmp = File(f.path + ".tmp"); tmp.writeText(data.toString()); tmp.renameTo(f); _full.value++ } catch (_: Exception) {}
+        // Unchanged on a re-read: no write and no bump, so Home doesn't reload and repaint for nothing.
+        try { val f = fullFile(context, user); val text = data.toString(); if (f.isFile && f.readText() == text) return
+            val tmp = File(f.path + ".tmp"); tmp.writeText(text); tmp.renameTo(f); _full.value++ } catch (_: Exception) {}
     }
 
     fun parse(workspace: JsonObject?): List<UserDeck> {
