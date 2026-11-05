@@ -177,10 +177,10 @@ import {rewardFlight} from "./reward-flight.js";
 import {createNameFacts,createCraftRarity,clusterArchetypes,finderArchetypes,rankFinderLists,finderRow,trunkDeck,finderMarkup,finderDeckMarkup,FINDER_FORMATS,FINDER_SORTS,FINDER_FILTERS} from "./play-deck-finder.js";
 import {createCardFacts,slimCard} from "./play-econ-cards.js";
 import {deckEmblem} from "./play-deck-emblem.js";
-import {stepDeckCard,ownedByName,deckShortfall,legalFormats,mtgjsonDeckRows,PLAY_FORMATS,deckRules,copyCap} from "./play-econ-rules.js";
+import {stepDeckCard,ownedByName,deckShortfall,legalFormats,mtgjsonDeckRows,preconFace,PLAY_FORMATS,deckRules,copyCap} from "./play-econ-rules.js";
 import {STORY_ACTS} from "./story-acts.js";
 import {createStoryProgress,loadAct,loadActPool,ownDeckFits,battleCleared,currentAct,currentBattle,actCleared} from "./story-client.js";
-import {createLessonCoach,isLessonBattle,lessonsOff,lessonSetup} from "./story-lessons.js";
+import {createLessonCoach,isLessonBattle,lessonsOff,lessonSetup,STACK_HOST_LIVE,STACK_LOCAL_LIVE} from "./story-lessons.js";
 import {storyHomeMarkup,storyActMarkup,storyBattleMarkup,playScene,createStoryBubbles,starsRow,rewardText} from "./story-ui.js";
 import {storyDeedsEarned} from "./story-deeds.js";
 import { initCloud, pauseLocalConflict, communityRequest, presenceRequest, tableInviteRequest, cloudAccessToken, cloudInfo, realtimeClient, isEmptyWorkspace, statusLabel, scheduleSync, signInGoogle, signInEmail, signInPassword, createAccount, requestPasswordReset, finishPasswordReset, signOut, detachDeviceSync, saveProfile, resolvePending, syncNow, resendConfirmation, deleteAccount } from "./cloud.js";
@@ -1854,9 +1854,21 @@ const preconUi=()=>econUi.precon||(econUi.precon={});
 async function loadPreconIndex(){const pc=preconUi();if(pc.index||pc.busy)return;pc.busy=true;pc.error='';refreshPlayMenu();
  try{const j=await fetchJSON('https://mtgjson.com/api/v5/DeckList.json');pc.index=(j.data||[]).filter(d=>CONSTRUCTED_PRECON_TYPES.includes(d?.type)&&typeof d.name==='string'&&/^[A-Za-z0-9_.-]+$/.test(d.fileName||'')).sort((a,b)=>String(b.releaseDate||'').localeCompare(String(a.releaseDate||''))||a.name.localeCompare(b.name));}
  catch{pc.error='Could not load the precon list right now.';}finally{pc.busy=false;refreshPlayMenu();}}
+// Each tile shows its deck's face (commander, else the star card). MTGJSON's list has no cards, so the
+// visible tiles' deck files are read three at a time and the answer is kept on the device.
+const FACE_KEY='cs.preconFaces.v1';let faceQueue=0;
+const faceCache=(()=>{try{return JSON.parse(localStorage.getItem(FACE_KEY)||'{}')||{};}catch{return {};}})();
+function loadPreconFaces(){const pc=preconUi();if(!pc.index)return;pc.faces=pc.faces||faceCache;
+ const q=(pc.query||'').trim().toLowerCase(),list=pc.index.filter(d=>!q||d.name.toLowerCase().includes(q)||(d.code||'').toLowerCase()===q||d.type.toLowerCase().includes(q)).slice(0,pc.limit||12).filter(d=>!pc.faces[d.fileName]&&!pc.faceTried?.has(d.fileName));
+ pc.faceTried=pc.faceTried||new Set();let dirty=false;
+ const next=async()=>{const e=list.shift();if(!e)return;pc.faceTried.add(e.fileName);
+  try{const j=await fetchJSON('https://mtgjson.com/api/v5/decks/'+e.fileName.replace(/\.json$/,'')+'.json'),f=preconFace(j?.data||j);if(f){pc.faces[e.fileName]=f;dirty=true;}}catch{}
+  await next();};
+ if(!list.length)return;faceQueue++;
+ Promise.all([next(),next(),next()]).then(()=>{if(dirty){try{localStorage.setItem(FACE_KEY,JSON.stringify(pc.faces));}catch{}refreshPlayMenu();}}).finally(()=>{faceQueue--;});}
 A.playEconPrecons=()=>{preconUi().error='';loadPreconIndex();};
-A.playEconPreconMore=()=>{const pc=preconUi();pc.limit=(pc.limit||12)+24;refreshPlayMenu();};
-I.playEconPreconQuery=t=>{const pc=preconUi();pc.query=t.value;pc.limit=12;refreshPlayMenu();const f=document.querySelector('[data-input="playEconPreconQuery"]');f?.focus({preventScroll:true});try{f.setSelectionRange(t.value.length,t.value.length);}catch{}};
+A.playEconPreconMore=()=>{const pc=preconUi();pc.limit=(pc.limit||12)+24;refreshPlayMenu();loadPreconFaces();};
+I.playEconPreconQuery=t=>{const pc=preconUi();pc.query=t.value;pc.limit=12;refreshPlayMenu();loadPreconFaces();const f=document.querySelector('[data-input="playEconPreconQuery"]');f?.focus({preventScroll:true});try{f.setSelectionRange(t.value.length,t.value.length);}catch{}};
 A.playEconPrecon=async t=>{const pc=preconUi(),entry=(pc.index||[]).find(d=>d.fileName===t.dataset.econFile);if(!entry||pc.busy)return;pc.busy=true;refreshPlayMenu();
  try{const j=await fetchJSON('https://mtgjson.com/api/v5/decks/'+entry.fileName.replace(/\.json$/,'')+'.json'),d=j?.data||j;const legal=constructedPrecon(j,entry);
   pc.open={file:entry.fileName,name:d.name||entry.name,product:entry.type,released:entry.releaseDate||'',formats:legal?.formats||[],rows:mtgjsonDeckRows(d)};}
@@ -2375,7 +2387,7 @@ A.playFriendLaunch=async matchId=>{
   const base=playSetup.snapshot();if(!base.selected)return toast('Pick your deck first.');
   for(const [id,href] of [['practiceTableStyles','experiments/phase-engine/match-table.css'],['forgeHostedTableStyles','play-forge-table.css']])if(!document.getElementById(id)){const css=document.createElement('link');css.id=id;css.rel='stylesheet';css.href=href;document.head.append(css);}
   playerMatRoot=document.createElement('main');playerMatRoot.id='practicePlayerMat';playerMatRoot.setAttribute('data-playmat',nextPlaymat());playerMatRoot.setAttribute('aria-label','Friend match player mat');document.body.append(playerMatRoot);mountPlaymatScene(playerMatRoot);document.body.classList.add('practice-table-open');void lockPlayLandscape();const app=document.getElementById('app');if(app)app.inert=true;
-  const setup={...base,playStyle:'quick',lesson:lessonRun?lessonSetup(b.id):null,opponent:{name:'Friend\'s deck',format:base.match.format,cards:[]},friend:friendShown(friendRoom?.opponent),friendMatch:{matchId}};
+  const setup={...base,playStyle:'quick',lesson:null,opponent:{name:'Friend\'s deck',format:base.match.format,cards:[]},friend:friendShown(friendRoom?.opponent),friendMatch:{matchId}};
   const owner=cloudInfo().user?.id,generation=accountGeneration,current=()=>!accountLocked&&generation===accountGeneration&&owner===cloudInfo().user?.id;
   let createForgePlayerMat,lateTimer=0;const late=new Set();
   try{({createForgePlayerMat}=await import('./play-forge-player-mat.js'));}catch(e){if(playerMatRoot)playModuleFailed(e);return;}
@@ -2468,6 +2480,8 @@ A.storyPlay=async({skipScene=false}={})=>{
    if(!b.host){const local=await import('./play-forge-local-client.js');if(local.localForgeAvailable()&&await local.localForgeCurrent())localClient=local.createForgeLocalClient;}}
   catch(e){if(playerMatRoot)playModuleFailed(e);return;}
   if(!current()||!playerMatRoot)return;
+  // Stacked lesson draws go to the Forge host; the in-app engine only gets them once its APK has the port.
+  if(lessonRun)setup.lesson=lessonSetup(b.id,localClient?STACK_LOCAL_LIVE:STACK_HOST_LIVE);
   const root=playerMatRoot;
   if(!skipScene){const lines=[...(b.slot===1&&seat==='hero'&&data.intro&&!battleCleared(storyProgress.snapshot().progress,b.id)?data.intro:[]),...b.scene,...(seat==='villain'&&b.villainScene?b.villainScene:[])];void playScene({lines,cast:data.cast,leftWho:b.hero.who,rightWho:b.villain.who,avatarUrl:storyAvatar(),title:b.title});}
   bubbles=createStoryBubbles({root,battle:b,cast:data.cast,playerSide:seat,avatarUrl:storyAvatar()});

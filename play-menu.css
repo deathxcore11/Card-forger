@@ -1084,6 +1084,12 @@ body[data-mode="play"] #gameTabs,body[data-mode="play"] [data-nav="scan"]{displa
 .pe-precon{display:grid;grid-template-columns:28px minmax(0,1fr);grid-template-rows:auto auto;column-gap:12px;row-gap:2px;align-items:center;min-height:64px;padding:10px 14px;border-radius:14px;border:1px solid #ffffff14;background:#ffffff06;color:var(--text);text-align:left;cursor:pointer;font:inherit}
 .pe-precon:hover,.pe-precon:focus-visible{border-color:#d6ad6488;background:#d6ad6412}
 .pe-precon .set-icon{grid-row:1/3;width:28px;height:28px}
+.pe-precon.has-art{position:relative;isolation:isolate;overflow:hidden;min-height:96px;align-content:end;border-color:#ffffff1f}
+.pe-precon-art{position:absolute;inset:0;z-index:-2;background-size:cover;background-position:50% 30%;transition:transform .6s ease}
+.pe-precon.has-art::after{content:"";position:absolute;inset:0;z-index:-1;background:linear-gradient(180deg,#0c0c0e33 0%,#0c0c0e99 55%,#0c0c0ee6 100%);pointer-events:none}
+.pe-precon.has-art:hover .pe-precon-art{transform:scale(1.05)}
+.pe-precon.has-art .pe-precon-name,.pe-precon.has-art .pe-precon-line{text-shadow:0 1px 6px #000c}
+.pe-precon.has-art .pe-precon-line{color:#e7dfcd}
 .pe-precon-name{font:700 15px/1.25 'DM Sans',system-ui,sans-serif;min-width:0;overflow-wrap:anywhere}
 .pe-precon-line{font-size:13px;color:var(--muted)}
 .pe-precon-open{display:grid;gap:14px}
