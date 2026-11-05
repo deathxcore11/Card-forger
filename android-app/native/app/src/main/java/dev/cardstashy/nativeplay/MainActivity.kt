@@ -83,10 +83,10 @@ private const val NATIVE_DECK = true
 private const val NATIVE_CARD = true
 /** Every set and a set's page, opened from set badges, the card page and Home's All sets link. Magic only; the other games' sets open the website. */
 private const val NATIVE_SETS = true
-/** Yu-Gi-Oh! and Pokémon in the native set list and set page (their game tabs there). Off until Randall approves the preview: they open the website's. */
-private const val NATIVE_TCG_SETS = false
-/** Open Pack on a Magic set page drawn natively (the site's own draw in the app's pack opener); off until Randall approves the preview. */
-private const val NATIVE_PACK = false
+/** Yu-Gi-Oh! and Pokémon in the native set list and set page (their game tabs there); off, they open the website's. On since Randall's yes (5 Nov). */
+private const val NATIVE_TCG_SETS = true
+/** Open Pack on a Magic set page drawn natively (the site's own draw in the app's pack opener, with its price frames); off, it opens the website's. On since Randall's yes (5 Nov). */
+private const val NATIVE_PACK = true
 
 private sealed interface Screen {
     data object Home : Screen

@@ -556,7 +556,9 @@ private fun Check(label: String, on: Boolean, foot: String? = null, onChange: (B
 /** This build's notes: short, plain, what a player would notice. */
 private val WHATS_NEW = listOf(
     "Collection" to "Your Cards, Decks, each deck\u2019s page, every card\u2019s page (Overview, Meta, Play guide, Prices) and All sets are built into the app now, laid out like the website.",
-    "Collection" to "Sets run in number order, and tapping a card in a set opens that exact printing. Adding or changing cards, Yu-Gi-Oh! and Pokémon sets, and Open Pack still open the website for now.",
+    "Collection" to "Open Pack on a Magic set page opens in the app: each pack comes from the set\u2019s real booster sheets, every pull wears its price frame, and Shop list sends the pack to TCGplayer.",
+    "Collection" to "Yu-Gi-Oh! and Pok\u00e9mon sets are in the app too: every set by year, then each set\u2019s page with its foils, badges and prices.",
+    "Collection" to "Sets run in number order, and tapping a card in a set opens that exact printing. Adding or changing cards, and Yu-Gi-Oh! and Pok\u00e9mon cards and packs, still open the website for now, and Open Pack has no Wishlist all yet.",
     "Blocking" to "Blocks you can see: tap your creature then the attacker it meets (either order works), or drag one onto the other. A gold line ties each blocker to its attacker, and numbered badges show the order attackers strike in.",
     "Combat" to "Combat plays out one attacker at a time: the board dims around the pair, a tag says who blocks whom or how much damage gets through, then the hit lands. Reduce motion keeps the tags and the order without the lunge.",
     "Fix" to "A match that stops taking taps frees itself after a few seconds and sends a report, so a stuck table no longer needs a restart.",
