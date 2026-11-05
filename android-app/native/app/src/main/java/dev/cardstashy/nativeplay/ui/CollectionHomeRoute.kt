@@ -36,7 +36,7 @@ import kotlinx.coroutines.withContext
 import java.io.File
 
 /** What Home showed last, so coming back paints at once while the feeds refresh. */
-private object HomeCache {
+internal object HomeCache {
     var model: CollectionHomeModel? = null
     var hints: SearchHints? = null
     /** account id + workspace revision the engine holds. */
@@ -50,8 +50,31 @@ private object HomeCache {
  * own Home code, drawn natively. Everything Home links to that is not native yet opens the website's page: [web] takes the
  * site URL and, for buttons with no address of their own, the button to press once the page is up.
  */
+/**
+ * Puts this device's copy of the account's workspace into the engine (once per account and revision; Home and the Cards tab
+ * share it). False while signed in but the account's copy has never been read here: show nothing rather than an empty collection.
+ */
+internal suspend fun ensureCollection(context: android.content.Context, userId: String?, signedIn: Boolean, revision: Long): Boolean {
+    CollectionEngine.init(context)
+    val raw = withContext(Dispatchers.IO) { Decks.fullCopy(context) }
+    if (signedIn && raw == null) return false
+    val key = "$userId|$revision"
+    if (HomeCache.loaded != key) {
+        // Deck covers come from the catalog: starting a reload from less than the engine already knows would blank them.
+        val catalog = if (HomeCache.warm) CollectionEngine.catalog() else withContext(Dispatchers.IO) { catalogFile(context).takeIf { it.isFile }?.readText() }
+        CollectionEngine.load(raw ?: "", catalog)
+        HomeCache.loaded = key; HomeCache.warm = true
+    }
+    return true
+}
+internal fun catalogFile(context: android.content.Context) = File(context.filesDir, "collection-catalog.json")
+/** The card names a visit looked up, kept for the next one. */
+internal suspend fun keepCatalog(context: android.content.Context) = withContext(Dispatchers.IO) {
+    runCatching { val f = catalogFile(context); val tmp = File(f.path + ".tmp"); tmp.writeText(CollectionEngine.catalog()); tmp.renameTo(f) }
+}
+
 @Composable
-fun CollectionHomeRoute(onPlay: () -> Unit, onProfile: () -> Unit, web: (url: String, press: String?) -> Unit, open: (String) -> Unit) {
+fun CollectionHomeRoute(onPlay: () -> Unit, onProfile: () -> Unit, web: (url: String, press: String?) -> Unit, open: (String) -> Unit, onCards: (() -> Unit)? = null) {
     val context = LocalContext.current
     val session by Account.session.collectAsState()
     val revision by Decks.fullRevision.collectAsState()
@@ -62,19 +85,7 @@ fun CollectionHomeRoute(onPlay: () -> Unit, onProfile: () -> Unit, web: (url: St
     LaunchedEffect(session?.userId) { if (session != null) Decks.load(context) }
     var failed by remember { mutableStateOf<String?>(null) }
     LaunchedEffect(session?.userId, revision) { try {
-        CollectionEngine.init(context)
-        val raw = withContext(Dispatchers.IO) { Decks.fullCopy(context) }
-        // Signed in but never read on this device: wait for the account copy instead of showing an empty collection.
-        if (session != null && raw == null) return@LaunchedEffect
-        val key = "${session?.userId}|$revision"
-        val catalogFile = File(context.filesDir, "collection-catalog.json")
-        suspend fun keepCatalog() = withContext(Dispatchers.IO) { runCatching { val tmp = File(catalogFile.path + ".tmp"); tmp.writeText(CollectionEngine.catalog()); tmp.renameTo(catalogFile) } }
-        if (HomeCache.loaded != key) {
-            // Deck covers come from the catalog: starting a reload from less than the engine already knows would blank them.
-            val catalog = if (HomeCache.warm) CollectionEngine.catalog() else withContext(Dispatchers.IO) { catalogFile.takeIf { it.isFile }?.readText() }
-            CollectionEngine.load(raw ?: "", catalog)
-            HomeCache.loaded = key; HomeCache.warm = true
-        }
+        if (!ensureCollection(context, session?.userId, session != null, revision)) return@LaunchedEffect
         suspend fun paint() {
             val m = withContext(Dispatchers.Default) { CollectionHomeModel.parse(CollectionEngine.home("mtg")) }
             model = m; HomeCache.model = m
@@ -85,7 +96,7 @@ fun CollectionHomeRoute(onPlay: () -> Unit, onProfile: () -> Unit, web: (url: St
         coroutineScope {
             val repaint = launch { while (true) { delay(1200); paint() } }
             // Whatever names this visit looked up are kept, even when it is cut short.
-            try { CollectionEngine.refresh("mtg") } finally { repaint.cancel(); withContext(kotlinx.coroutines.NonCancellable) { keepCatalog() } }
+            try { CollectionEngine.refresh("mtg") } finally { repaint.cancel(); withContext(kotlinx.coroutines.NonCancellable) { keepCatalog(context) } }
         }
         paint()
         failed = null
@@ -115,7 +126,7 @@ fun CollectionHomeRoute(onPlay: () -> Unit, onProfile: () -> Unit, web: (url: St
         CollectionNav(CollectionTab.HOME, vertical = v) { t ->
             when (t) {
                 CollectionTab.HOME -> {}
-                CollectionTab.CARDS -> web(site + "#collection", null)
+                CollectionTab.CARDS -> onCards?.invoke() ?: web(site + "#collection", null)
                 CollectionTab.SEARCH -> web(site + "#search", null)
                 CollectionTab.DECKS -> web(site + "#decks", null)
                 CollectionTab.SCAN -> web(site + "#scan", null)

@@ -1,0 +1,133 @@
+package dev.cardstashy.nativeplay.ui
+
+import androidx.compose.foundation.background
+import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.WindowInsets
+import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.statusBars
+import androidx.compose.foundation.layout.windowInsetsPadding
+import androidx.compose.material3.Text
+import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.collectAsState
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
+import androidx.compose.ui.Alignment
+import androidx.compose.ui.Modifier
+import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.style.TextAlign
+import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.sp
+import dev.cardstashy.nativeplay.account.Account
+import dev.cardstashy.nativeplay.account.Decks
+import dev.cardstashy.nativeplay.collection.CollectionEngine
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.coroutineScope
+import kotlinx.coroutines.delay
+import kotlinx.coroutines.launch
+import kotlinx.coroutines.withContext
+
+/** What the Cards tab showed last, so coming back paints at once. How it is sorted and filtered lives in the engine (S.ui), as on the site. */
+private object CardsCache {
+    var model: CollectionCardsModel? = null
+    var q = ""
+}
+
+/**
+ * Collection's Cards tab: the account's collection through the site's own views.js collection(), drawn natively. Sort,
+ * direction, filter, search and Show more ask the site's code again; everything that changes the collection (the steppers,
+ * Edit, Got it), the card page, Binders, Value, Select and the ⋯ menu still open the website's page, which does it there.
+ */
+@Composable
+fun CollectionCardsRoute(onPlay: () -> Unit, onProfile: () -> Unit, onHome: () -> Unit, web: (url: String, press: String?) -> Unit) {
+    val context = LocalContext.current
+    val session by Account.session.collectAsState()
+    val revision by Decks.fullRevision.collectAsState()
+    val profile by Account.profile.collectAsState()
+    var model by remember { mutableStateOf(CardsCache.model) }
+    var query by remember { mutableStateOf(CardsCache.q) }
+    var asked by remember { mutableStateOf<Pair<String, String>?>(null) }
+    var failed by remember { mutableStateOf<String?>(null) }
+    LaunchedEffect(session?.userId) { if (session != null) Decks.load(context) }
+    suspend fun paint(control: Pair<String, String>? = null) {
+        val m = withContext(Dispatchers.Default) { CollectionCardsModel.parse(if (control != null) CollectionEngine.cardsDo("mtg", control.first, control.second) else CollectionEngine.cards("mtg")) }
+        model = m; CardsCache.model = m
+    }
+    // The account's copy, then the names the catalog lacks (prices and pictures fill in as they arrive).
+    LaunchedEffect(session?.userId, revision) { try {
+        if (!ensureCollection(context, session?.userId, session != null, revision)) return@LaunchedEffect
+        paint()
+        coroutineScope {
+            val repaint = launch { while (true) { delay(1200); paint() } }
+            try { CollectionEngine.refresh("mtg") } finally { repaint.cancel(); withContext(kotlinx.coroutines.NonCancellable) { keepCatalog(context) } }
+        }
+        paint()
+        failed = null
+    } catch (e: kotlinx.coroutines.CancellationException) { throw e } catch (e: Exception) {
+        HomeCache.loaded = null
+        if (model == null) failed = e.message?.takeIf { it.isNotBlank() } ?: "Your collection couldn’t be opened here."
+    } }
+    // A control changed: the site's handler runs, then the page is read again. Typing waits a beat before it searches.
+    LaunchedEffect(asked) { asked?.let { c -> if (HomeCache.loaded != null) runCatching { paint(c) }; asked = null } }
+    LaunchedEffect(query) {
+        if (query == CardsCache.q) return@LaunchedEffect
+        delay(180); CardsCache.q = query
+        if (HomeCache.loaded != null) runCatching { paint("search" to query) }
+    }
+    val site = "https://cardstashy.com/"
+    val coll = site + "#collection"
+    fun css(v: String) = v.replace("\\", "\\\\").replace("\"", "\\\"")
+    val act = remember {
+        CollectionCardsActions(
+            game = { g -> if (g != CardGame.MTG) web(coll, "[data-act=\"setGame\"][data-game=\"${g.id}\"]") },
+            tab = { k -> web(coll, "[data-act=\"collTab\"][data-id=\"${css(k)}\"]") },
+            view = { mode -> web(coll, "[data-act=\"viewSave\"][data-mode=\"${css(mode)}\"][data-area=\"collection\"]") },
+            select = { web(coll, "[data-act=\"batchStart\"]") },
+            menu = { web(coll, "[data-act=\"collMenu\"]") },
+            sort = { v -> asked = "sort" to v },
+            direction = { v -> asked = "direction" to v },
+            filter = { v -> asked = "filter" to v },
+            search = { q -> query = q },
+            more = { asked = "more" to "" },
+            card = { r -> web(coll, if (r.wanted) "[data-act=\"card\"][data-name=\"${css(r.name)}\"]" else "[data-act=\"card\"][data-entry=\"${css(r.id)}\"]") },
+            set = { code -> if (code.isNotBlank()) web(site + "#set/" + android.net.Uri.encode(code.lowercase()), null) },
+            price = { r -> web(coll, "[data-act=\"buyCard\"][data-lot=\"${css(r.id)}\"]") },
+            qty = { r, d -> web(coll, "[data-act=\"qty\"][data-id=\"${css(r.id)}\"][data-delta=\"$d\"]") },
+            edit = { r -> web(coll, "[data-act=\"editLot\"][data-id=\"${css(r.id)}\"]") },
+            got = { r -> web(coll, "[data-act=\"own\"][data-name=\"${css(r.name)}\"]") },
+            unwish = { r -> web(coll, "[data-act=\"wishRemove\"][data-id=\"${css(r.wishId)}\"]") },
+            emptyAct = { a -> web(coll, "[data-act=\"${css(a)}\"]") },
+        )
+    }
+    val top: @Composable (tabs: (@Composable () -> Unit)?) -> Unit = { tabs ->
+        TopBarItems(Mode.COLLECTION, profile?.avatarUrl, profile?.name, unread = false, onSwitch = onPlay, onProfile = onProfile, middle = tabs)
+    }
+    val nav: @Composable (Boolean) -> Unit = { v ->
+        CollectionNav(CollectionTab.CARDS, vertical = v) { t ->
+            when (t) {
+                CollectionTab.HOME -> onHome()
+                CollectionTab.CARDS -> {}
+                CollectionTab.SEARCH -> web(site + "#search", null)
+                CollectionTab.DECKS -> web(site + "#decks", null)
+                CollectionTab.SCAN -> web(site + "#scan", null)
+            }
+        }
+    }
+    val m = model
+    if (m != null) CollectionCards(m, top, act, nav, query)
+    else Column(Modifier.fillMaxSize().background(Site.Bg)) {
+        Box(Modifier.windowInsetsPadding(WindowInsets.statusBars)) { top(null) }
+        Column(Modifier.weight(1f).fillMaxWidth().padding(24.dp), verticalArrangement = Arrangement.spacedBy(8.dp, Alignment.CenterVertically), horizontalAlignment = Alignment.CenterHorizontally) {
+            Text(if (failed != null) "Your saved data is protected" else "Opening your account…", style = Site.CardTitle.copy(fontWeight = FontWeight.ExtraBold, fontSize = 18.sp), textAlign = TextAlign.Center)
+            Text(failed ?: "Your cards and profile will appear here.", style = Site.Meta.copy(color = Site.Muted), textAlign = TextAlign.Center)
+        }
+        nav(false)
+    }
+}

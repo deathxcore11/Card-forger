@@ -73,6 +73,9 @@ import kotlinx.coroutines.delay
 /** The new Quick Play / Practice lobby ships once every part of the site's lobby is ported (Randall's no-gaps rule). */
 private const val LOBBY_LIVE = true
 
+/** Collection's native Cards tab. Off until Randall has seen its preview (PREVIEW-FIRST): Home's Cards tab opens the website's. */
+private const val NATIVE_CARDS = false
+
 private sealed interface Screen {
     data object Home : Screen
     data object Decks : Screen
@@ -80,6 +83,8 @@ private sealed interface Screen {
     data class Lobby(val style: String) : Screen
     data object SignIn : Screen
     data object Collection : Screen
+    /** Collection's Cards tab (its card list; the rest of its pages are still the website's). */
+    data object CollectionCards : Screen
     /** Play's own collection (the Trunk) with its card view. */
     data object Trunk : Screen
     /** Play decks: the list, precons and Paste a list. */
@@ -279,7 +284,14 @@ private fun App(activity: MainActivity) {
             LaunchedEffect(Unit) { activity.inGame(false) }
             dev.cardstashy.nativeplay.ui.CollectionHomeRoute(onPlay = { if (trail.size > 1) back() else go(Screen.Home) }, onProfile = { go(Screen.SignIn) },
                 web = { url, press -> go(Screen.Web(url, press)) },
-                open = { url -> if (url.startsWith("https://") || url.startsWith("http://")) runCatching { activity.startActivity(android.content.Intent(android.content.Intent.ACTION_VIEW, android.net.Uri.parse(url))) } })
+                open = { url -> if (url.startsWith("https://") || url.startsWith("http://")) runCatching { activity.startActivity(android.content.Intent(android.content.Intent.ACTION_VIEW, android.net.Uri.parse(url))) } },
+                onCards = if (NATIVE_CARDS) ({ go(Screen.CollectionCards) }) else null)
+        }
+        Screen.CollectionCards -> {
+            LaunchedEffect(Unit) { activity.inGame(false) }
+            dev.cardstashy.nativeplay.ui.CollectionCardsRoute(onPlay = { go(Screen.Home) }, onProfile = { go(Screen.SignIn) },
+                onHome = { if (trail.getOrNull(trail.size - 2) == Screen.Collection) back() else go(Screen.Collection) },
+                web = { url, press -> go(Screen.Web(url, press)) })
         }
         is Screen.Web -> { LaunchedEffect(s.url) { activity.inGame(false, play = s.url.contains("planeswalk")) }; CollectionScreen(onPlay = { back() }, url = s.url, press = s.press) }
         Screen.SignIn -> {

@@ -123,8 +123,33 @@ class DateTimeFormat {
   format(date) { return this.formatToParts(date).map(p => p.value).join(''); }
 }
 
+// Intl.Collator as collection-sort.js builds it (en, numeric, sensitivity base): letters compare without case or accents,
+// digit runs by their value, everything else in code point order (ICU's root order puts spaces and punctuation before
+// digits and digits before letters, as ASCII does). Ties fall back to the plain strings so the order is total.
+const COLLATOR_KEYS = new Set(['numeric', 'sensitivity']);
+const fold = s => String(s ?? '').normalize('NFD').replace(/[\u0300-\u036f]/g, '').toLowerCase();
+class Collator {
+  constructor(locales, options = {}) {
+    for (const k of Object.keys(options || {})) if (!COLLATOR_KEYS.has(k)) throw new RangeError(`Collator option ${k} is not supported in the app`);
+    if (options.sensitivity && options.sensitivity !== 'base') throw new RangeError('Collator sensitivity ' + options.sensitivity + ' is not supported in the app');
+    const numeric = !!options.numeric;
+    this.compare = (a, b) => {
+      const x = fold(a), y = fold(b);
+      if (!numeric) return x < y ? -1 : x > y ? 1 : 0;
+      const xs = x.match(/\d+|\D+/g) || [], ys = y.match(/\d+|\D+/g) || [];
+      for (let i = 0; i < Math.min(xs.length, ys.length); i++) {
+        const p = xs[i], q = ys[i], pd = /^\d/.test(p), qd = /^\d/.test(q);
+        if (pd && qd) { const pn = p.replace(/^0+(?=\d)/, ''), qn = q.replace(/^0+(?=\d)/, ''); if (pn.length !== qn.length) return pn.length < qn.length ? -1 : 1; if (pn !== qn) return pn < qn ? -1 : 1; continue; }
+        if (p !== q) return p < q ? -1 : 1;
+      }
+      return xs.length === ys.length ? 0 : xs.length < ys.length ? -1 : 1;
+    };
+  }
+  resolvedOptions() { return {locale: 'en', sensitivity: 'base', numeric: true}; }
+}
+
 const intl = typeof globalThis.Intl === 'object' && globalThis.Intl ? globalThis.Intl : {};
-globalThis.Intl = Object.assign({}, intl, {NumberFormat, DateTimeFormat});
+globalThis.Intl = Object.assign({}, intl, {NumberFormat, DateTimeFormat, Collator});
 Number.prototype.toLocaleString = function (locales, options) { return new NumberFormat(locales, options).format(this); };
 Date.prototype.toLocaleDateString = function (locales, options) { return dateString(this, options); };
-export {NumberFormat as __NumberFormat, dateString as __dateString, DateTimeFormat as __DateTimeFormat};
+export {NumberFormat as __NumberFormat, dateString as __dateString, DateTimeFormat as __DateTimeFormat, Collator as __Collator};

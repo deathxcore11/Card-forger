@@ -276,7 +276,7 @@ private fun DailyArt(url: String?, height: Dp) {
 // ---------------------------------------------------------------- game tabs (home-ui.js gameTabs, game-tabs.css)
 
 @Composable
-private fun GameTabs(game: CardGame, onGame: (CardGame) -> Unit, compact: Boolean, modifier: Modifier = Modifier) {
+internal fun GameTabs(game: CardGame, onGame: (CardGame) -> Unit, compact: Boolean, modifier: Modifier = Modifier) {
     val outer = RoundedCornerShape(if (compact) 16.dp else 18.dp)
     Row(modifier.fillMaxWidth().clip(outer).background(Color(0x90080B10)).border(1.dp, Color(0x13FFFFFF), outer).padding(if (compact) 3.dp else 4.dp),
         horizontalArrangement = Arrangement.spacedBy(if (compact) 2.dp else 5.dp)) {

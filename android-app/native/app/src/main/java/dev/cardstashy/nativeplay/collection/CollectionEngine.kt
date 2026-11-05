@@ -96,6 +96,14 @@ object CollectionEngine {
     /** views.js home() / tcg.js tcgHome() as a model: value at a glance, your decks, Top Meta and News. */
     suspend fun home(game: String): JsonObject = on { q -> JsonParser.parseString(q.evaluate("Collection.home(${str(game)})") as String).asJsonObject }
 
+    /** views.js collection(): the Cards tab as a model; [opts] = {sort, direction, filter, q, limit}, the site's own control values. */
+    suspend fun cards(game: String, opts: JsonObject = JsonObject()): JsonObject =
+        on { q -> JsonParser.parseString(q.evaluate("Collection.cards(${str(game)}, ${str(opts.toString())})") as String).asJsonObject }
+
+    /** One Cards-tab control as app.js handles it (sort, direction, filter, search, more), then the page again. */
+    suspend fun cardsDo(game: String, kind: String, value: String = ""): JsonObject =
+        on { q -> JsonParser.parseString(q.evaluate("Collection.cardsDo(${str(game)}, ${str(kind)}, ${str(value)})") as String).asJsonObject }
+
     /** search-hints.js: the search field's prompt and the names and questions it fades through. */
     suspend fun hints(game: String): JsonObject = on { q -> JsonParser.parseString(q.evaluate("Collection.hints(${str(game)})") as String).asJsonObject }
 

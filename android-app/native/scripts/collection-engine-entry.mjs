@@ -18,6 +18,8 @@ import {createScryfallClient} from 'WEB/scryfall-client.js';
 import {loadMeta, metaState} from 'WEB/meta.js';
 import {loadCommunity, communitySlides} from 'WEB/community-feed.js';
 import {loadPulse} from 'WEB/news-pulse.js';
+import {collection as collectionPage} from 'WEB/views.js';
+import {ICON} from 'WEB/icons.js';
 
 // app.js:193-198, verbatim.
 const stripCache = (s) => {
@@ -163,6 +165,91 @@ function loadToday(game) {
   return loadHero(game).catch(() => false).then(() => { const h = heroFor(game); if (!h) return; return dailyDetails(game, h).then(d => { if (d) today.set(h.id + '|' + h.date, d); }, () => {}); });
 }
 
+// An inline site icon (icons.js actionIcon / importance.js emblemIcon), as drawing items the app paints itself: the svg's own
+// shapes, strokes and gradients, with currentColor left for the caller (the button's colour).
+function icon(svg) {
+  if (!svg) return null;
+  const num = v => v === undefined || v === '' ? undefined : Number(v);
+  const grads = {};
+  for (const g of all(svg, tagIs('lineargradient'))) grads[g.attrs.id] = {x1: num(g.attrs.x1) ?? 0, y1: num(g.attrs.y1) ?? 0, x2: num(g.attrs.x2) ?? 1, y2: num(g.attrs.y2) ?? 0,
+    stops: all(g, tagIs('stop')).map(s => [num(String(s.attrs.offset || '0').replace('%', '')) / (String(s.attrs.offset || '').includes('%') ? 100 : 1), s.attrs['stop-color'] || '#000'])};
+  const base = {fill: svg.attrs.fill ?? 'currentColor', stroke: svg.attrs.stroke ?? 'none', sw: num(svg.attrs['stroke-width']) ?? 1, cap: svg.attrs['stroke-linecap'] || 'butt', join: svg.attrs['stroke-linejoin'] || 'miter'};
+  const paint = (n, inh) => ({fill: n.attrs.fill ?? inh.fill, stroke: n.attrs.stroke ?? inh.stroke, sw: num(n.attrs['stroke-width']) ?? inh.sw, cap: n.attrs['stroke-linecap'] || inh.cap, join: n.attrs['stroke-linejoin'] || inh.join});
+  const items = [];
+  const walk = (n, inh) => { for (const k of n.kids || []) { if (!k.tag || k.tag === 'defs') continue; const p = paint(k, inh), a = k.attrs;
+    if (k.tag === 'g') walk(k, p);
+    else if (k.tag === 'path') items.push({t: 'path', d: a.d || '', ...p});
+    else if (k.tag === 'rect') items.push({t: 'rect', x: num(a.x) ?? 0, y: num(a.y) ?? 0, w: num(a.width) ?? 0, h: num(a.height) ?? 0, rx: num(a.rx) ?? num(a.ry) ?? 0, ...p});
+    else if (k.tag === 'circle') items.push({t: 'circle', cx: num(a.cx) ?? 0, cy: num(a.cy) ?? 0, r: num(a.r) ?? 0, ...p});
+    else if (k.tag === 'ellipse') items.push({t: 'ellipse', cx: num(a.cx) ?? 0, cy: num(a.cy) ?? 0, rx: num(a.rx) ?? 0, ry: num(a.ry) ?? 0, ...p});
+    else if (k.tag === 'line') items.push({t: 'path', d: `M${a.x1 || 0} ${a.y1 || 0}L${a.x2 || 0} ${a.y2 || 0}`, ...p});
+    else if (k.tag === 'polyline' || k.tag === 'polygon') { const pts = String(a.points || '').trim().split(/[\s,]+/); let d = ''; for (let i = 0; i + 1 < pts.length; i += 2) d += (i ? 'L' : 'M') + pts[i] + ' ' + pts[i + 1]; items.push({t: 'path', d: d + (k.tag === 'polygon' ? 'Z' : ''), ...p}); }
+  } };
+  walk(svg, base);
+  const vb = String(svg.attrs.viewbox || '0 0 24 24').split(/[\s,]+/).map(Number);
+  return {vb, items, grads};
+}
+const svgIn = n => n && (n.tag === 'svg' ? n : one(n, tagIs('svg')));
+const sources = img => { try { return JSON.parse(img?.attrs['data-art-sources'] || '[]'); } catch { return []; } };
+const picture = img => img ? {src: img.attrs.src || '', sources: sources(img)} : null;
+const selectOf = sel => sel && {name: sel.attrs['data-change'] || '', label: sel.attrs['aria-label'] || '', options: all(sel, tagIs('option')).map(o => ({value: o.attrs.value ?? text(o), label: text(o), on: o.attrs.selected !== undefined}))};
+// Words with their weight, in order (the summary line's <b> runs).
+const runs = n => { const out = []; const walk = (x, bold, muted) => { for (const k of x.kids || []) { if (k.text !== undefined) { const t = k.text.replace(/\s+/g, ' '); if (t) out.push({t, b: bold, m: muted}); } else if (k.tag !== 'svg') walk(k, bold || k.tag === 'b' || k.tag === 'strong', muted || cls('muted')(k)); } }; walk(n, false, false);
+  return out.reduce((a, r) => { const last = a[a.length - 1]; if (last && last.b === r.b && last.m === r.m) last.t += r.t; else a.push({...r}); return a; }, []).map((r, i, a) => ({...r, t: i === 0 ? r.t.replace(/^\s+/, '') : i === a.length - 1 ? r.t.replace(/\s+$/, '') : r.t})); };
+
+// views.js collection() / collectionList(): the Cards tab as the site draws it, row by row.
+function lotRow(n) {
+  const art = one(n, cls('lot-art')), img = one(art, tagIs('img')), name = one(n, cls('lot-name')), badge = one(name, cls('set-badge')), sub = one(n, cls('lot-sub')),
+    emb = one(name, cls('imp-row')), tag = one(n, cls('tag')), step = one(n, cls('stepper')), cond = one(n, cls('condition-badge')), origin = one(n, cls('price-origin'));
+  const tierColor = (/--tier:\s*([^;]+)/.exec(n.attrs.style || '') || [])[1] || 'transparent';
+  let finish = null; try { finish = JSON.parse(art?.attrs['data-finish-model'] || 'null'); } catch {}
+  const subRuns = []; for (const k of sub?.kids || []) { if (!k.tag || cls('mana')(k)) continue; if (cls('want-chip')(k)) continue;
+    for (const r of runs({kids: [k]})) subRuns.push({t: r.t, foil: false}); const foil = one(k, cls('foil')); if (foil) { const all = subRuns.map(r => r.t).join(''), ft = text(foil), at = all.lastIndexOf(ft); if (at >= 0) { subRuns.length = 0; subRuns.push({t: all.slice(0, at), foil: false}, {t: ft, foil: true}, {t: all.slice(at + ft.length), foil: false}); } } }
+  return {id: name?.attrs['data-entry'] || (one(n, n => n.attrs['data-act'] === 'wishRemove')?.attrs['data-id'] ? 'w:' + one(n, n => n.attrs['data-act'] === 'wishRemove').attrs['data-id'] : ''), name: name?.attrs['data-name'] || text(name),
+    wanted: cls('wanted')(n), tier: n.attrs['data-tier'] || 'tn', tierColor: tierColor.trim(), picture: picture(img), alt: img?.attrs.alt || '', fallback: img ? '' : text(art),
+    finish: finish && {key: finish.key || '', effect: finish.effect || art?.attrs['data-finish-effect'] || '', printingId: finish.printingId || '', status: finish.status || ''},
+    emblem: emb && {title: emb.attrs.title || '', icon: icon(svgIn(emb))},
+    set: badge && {code: (badge.attrs['data-code'] || '').toUpperCase(), rarity: (classes(badge).find(c => c.startsWith('r-')) || 'r-common').slice(2), unknown: cls('unknown')(badge), label: text(badge), title: badge.attrs.title || ''},
+    mana: all(one(sub, cls('mana')), tagIs('img')).map(i => ({src: i.attrs.src || '', alt: i.attrs.alt || ''})),
+    sub: subRuns.filter(r => r.t), wantChip: text(one(sub, cls('want-chip'))), wishId: one(n, x => x.attrs['data-act'] === 'wishRemove')?.attrs['data-id'] || '',
+    tag: tag && {text: text(tag), warn: cls('warn')(tag), act: tag.attrs['data-act'] || ''},
+    price: text(one(n, cls('price'))), condition: cond && {code: text(cond), info: cond.attrs['data-condition-info'] || ''}, origin: origin ? text(origin) : '',
+    qty: step ? Number(text(one(step, tagIs('b')))) || 0 : 0, edit: !!one(n, x => x.attrs['data-act'] === 'editLot' && cls('link')(x)), got: text(one(n, cls('want-got'))),
+    // The copy's printing when it shows a finish: the app draws that foil from it (finish-preview.js reads the same record).
+    print: finish && finish.key && finish.key !== 'nonfoil' && finish.printingId ? S.state.printings?.[finish.printingId] || null : null};
+}
+// app.js's handlers for the Cards tab's controls (C.collSort, C.collDirection, C.collFilter, I.collSearch, A.collMore), verbatim
+// but for the redraw, which is the app's.
+const cardsAct = {
+  sort: v => { S.ui.collSort = v; S.ui.collDirection = undefined; S.ui.collLimit = 120; },
+  direction: v => { S.ui.collDirection = v; S.ui.collLimit = 120; },
+  filter: v => { S.ui.collFilter = v; },
+  search: v => { S.ui.q.coll = v; S.ui.collLimit = 120; },
+  more: () => { S.ui.collLimit += 200; },
+};
+function cardsPage(game, o = {}) {
+  const ui = S.ui;
+  if (o.sort) ui.collSort = o.sort; if (o.direction) ui.collDirection = o.direction; if (o.filter) ui.collFilter = o.filter;
+  if (o.q !== undefined) ui.q.coll = String(o.q); if (o.limit) ui.collLimit = Number(o.limit) || 120;
+  ui.collTab = 'cards';
+  const t = tree(collectionPage()), head = one(t, cls('page-head')), seg = one(t, cls('seg')), empty = one(t, cls('empty'));
+  const view = one(head, cls('view-switch')), batch = one(head, x => x.attrs['data-act'] === 'batchStart'), menu = one(head, x => x.attrs['data-act'] === 'collMenu');
+  const tools = one(t, cls('coll-tools')), search = one(tools, x => x.tag === 'input'), list = one(t, cls('display-list')), more = one(t, x => x.attrs['data-act'] === 'collMore');
+  return {game, title: text(one(head, tagIs('h1'))), banner: picture(one(head, cls('page-hero-img'))), bannerCard: head?.attrs['data-banner-card'] || '',
+    views: view ? all(view, tagIs('button')).map(b => ({mode: b.attrs['data-mode'], label: b.attrs['aria-label'] || b.attrs.title || '', on: b.attrs['aria-checked'] === 'true', icon: icon(svgIn(b))})) : [],
+    select: batch && {label: text(batch), aria: batch.attrs['aria-label'] || '', icon: icon(svgIn(batch))}, menu: menu && {label: text(menu), aria: menu.attrs['aria-label'] || ''},
+    tabs: all(seg, tagIs('button')).map(b => ({key: b.attrs['data-id'], label: text(b), on: b.attrs['aria-selected'] === 'true', icon: icon(svgIn(b))})),
+    empty: empty && {title: text(one(empty, tagIs('h3'))), text: text(one(empty, tagIs('p'))), mark: text(one(empty, cls('empty-mark'))), actions: all(empty, tagIs('button')).map(b => ({label: text(b), act: b.attrs['data-act'] || '', ghost: cls('ghost')(b)}))},
+    summary: runs(one(t, cls('summary-line')) || {kids: []}),
+    sort: selectOf(one(tools, x => x.tag === 'select' && x.attrs['data-change'] === 'collSort')), direction: selectOf(one(tools, x => x.tag === 'select' && /dir/i.test(x.attrs['data-change'] || ''))),
+    search: search && {value: search.attrs.value || '', placeholder: search.attrs.placeholder || '', label: search.attrs['aria-label'] || ''},
+    filter: selectOf(one(tools, x => x.tag === 'select' && x.attrs['data-change'] === 'collFilter')),
+    rows: list ? all(list, x => cls('lot')(x) && x.tag === 'div').map(lotRow) : [], none: list ? '' : text(one(one(t, tagIs('div')), x => x.tag === 'p' && cls('center')(x))) || text(one(t, x => x.tag === 'p' && cls('pad')(x))),
+    more: more ? {label: text(more), count: Number((/\((\d+)\)/.exec(text(more)) || [])[1]) || 0} : null,
+    // icons.js decorateGlyphs: a button whose only text is −, ＋ or ⋯ shows ICON.minus / plus / more; LEAD ＋ and the wishlist tag use plus and heart.
+    glyphs: Object.fromEntries(["minus", "plus", "more", "heart"].map(k => [k, icon(svgIn(tree(ICON[k])))]))};
+}
+
 let job = 0, status = {busy: false, step: '', error: null};
 const json = v => JSON.stringify(v);
 globalThis.Collection = {
@@ -196,6 +283,10 @@ globalThis.Collection = {
   // search-hints.js hintPool: the names and questions the search field fades through (the player's own cards mixed in).
   hints(game) { return json({prompt: SEARCH_PROMPT, first: 4000, every: 4200, fade: 260, pool: hintPool(game, game === 'mtg' ? S.state.collection.map(e => e.name) : (S.state.tcg?.[game]?.collection || []).map(e => e.name))}); },
   // views.js home() / tcg.js tcgHome(), section by section, as models.
+  // views.js collection(): the Cards tab, [optsJson] = {sort, direction, filter, q, limit} as the site's controls set them.
+  cards(game, optsJson) { return json(cardsPage(game, optsJson ? JSON.parse(optsJson) : {})); },
+  // One of the page's controls, as the site handles it (cardsAct), then the page again.
+  cardsDo(game, kind, value) { if (!cardsAct[kind]) throw Error('unknown Cards control ' + kind); cardsAct[kind](value); return json(cardsPage(game)); },
   home(game) {
     const st = S.state, value = collectionValue(st.collection, S.catalog, st.printings, st.decks);
     return json({game, hero: hero(game), value: homeValueModel({ game, ...value, decks: st.decks.length, history: st.valueHistory }),

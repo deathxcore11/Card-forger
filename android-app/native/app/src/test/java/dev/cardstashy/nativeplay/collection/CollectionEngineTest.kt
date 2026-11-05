@@ -93,4 +93,51 @@ class CollectionEngineTest {
         println("ART $saved / ${urls.size}")
         assertTrue(home.getAsJsonObject("value")["movement"].asString.isNotEmpty())
     }
+
+    /**
+     * views.js collection() in QuickJS: the Cards tab of a workspace that carries its own printings (no lookups), every price
+     * tier, two foils, a played copy, a binder and a wishlist card. Sorting, filtering and search are the site's. Writes the
+     * model for CollectionCardsShotTest (app/build/shot-art/home/collection-cards.json).
+     */
+    @Test fun cardsModel() = runBlocking {
+        assumeTrue(bundle.isFile)
+        CollectionEngine.initFrom(bundle)
+        val prints = JsonParser.parseString(javaClass.classLoader!!.getResource("collection/printings.json")!!.readText()).asJsonArray.map { it.asJsonObject }
+        val qty = mapOf("Swamp" to 12, "Lightning Bolt" to 4, "Counterspell" to 2)
+        val lots = JsonArray(); val printings = JsonObject()
+        prints.forEachIndexed { i, c ->
+            val name = c["name"].asString
+            printings.add(c["id"].asString, c)
+            lots.add(JsonObject().apply {
+                addProperty("id", "l${i + 1}"); addProperty("name", name); addProperty("qty", qty[name] ?: 1); addProperty("printingId", c["id"].asString)
+                addProperty("set", c["set"].asString); addProperty("setName", c["set_name"].asString); addProperty("collectorNumber", c["collector_number"].asString)
+                addProperty("finish", if (name.startsWith("Skithiryx") || name.startsWith("Ragavan")) "foil" else "nonfoil")
+                addProperty("condition", if (name == "Lightning Bolt") "Lightly Played" else "Near Mint"); addProperty("language", "en")
+                addProperty("location", if (name == "Gaea's Cradle") "Trade binder" else ""); addProperty("printingVerified", true)
+                addProperty("addedAt", java.time.Instant.parse("2026-11-04T12:00:00Z").minusSeconds(3600L * (i + 1)).toString()); add("raw", JsonObject())
+            })
+        }
+        val ws = JsonParser.parseString("""{"version":3,"wishlist":[{"id":"w1","name":"Sol Ring","qty":3,"finish":"nonfoil"}],"notes":[],"collection":$lots,"printings":$printings,
+            "decks":[{"id":"d1","name":"Krenko Goblins","format":"commander","commander":"Krenko, Mob Boss","cards":[{"name":"Krenko, Mob Boss","qty":1},{"name":"Goblin Instigator","qty":1}]}]}""").asJsonObject
+        val sol = prints.first { it["name"].asString == "Sol Ring" }
+        CollectionEngine.load(ws, JsonObject().apply { add("sol ring", sol) }.toString())
+        val m = CollectionEngine.cards("mtg")
+        val rows = m.getAsJsonArray("rows").map { it.asJsonObject }
+        println("CARDS ${m["title"]} views=${m["views"].asJsonArray.size()} tabs=${m["tabs"].asJsonArray.map { it.asJsonObject["label"] }} summary=${m["summary"]}")
+        rows.forEach { r -> println("  ${r["tier"]} ${r["name"]} ${r["price"]} x${r["qty"]} ${r["sub"]} foil=${r["print"]?.isJsonObject} wanted=${r["wanted"]}") }
+        assertEquals("Collection", m["title"].asString)
+        assertEquals(14, rows.size)
+        assertEquals("t5", rows.first { it["name"].asString == "Gaea's Cradle" }["tier"].asString)
+        assertTrue(rows.first { it["name"].asString.startsWith("Ragavan") }["print"].isJsonObject)
+        assertTrue(rows.last()["wanted"].asBoolean)
+        assertTrue(m.getAsJsonArray("summary").joinToString("") { it.asJsonObject["t"].asString }.startsWith("28 copies"))
+        // The site's own sort, filter and search.
+        val byValue = CollectionEngine.cards("mtg", JsonObject().apply { addProperty("sort", "value"); addProperty("direction", "desc") }).getAsJsonArray("rows")
+        assertEquals("Gaea's Cradle", byValue[0].asJsonObject["name"].asString)
+        assertEquals(2, CollectionEngine.cards("mtg", JsonObject().apply { addProperty("filter", "foil") }).getAsJsonArray("rows").size())
+        assertEquals(listOf("Sol Ring", "The One Ring", "Sol Ring"), CollectionEngine.cards("mtg", JsonObject().apply { addProperty("filter", "all"); addProperty("q", "ring"); addProperty("sort", "recent") })
+            .getAsJsonArray("rows").map { it.asJsonObject["name"].asString })
+        val out = File(System.getProperty("repoRoot"), "android-app/native/app/build/shot-art/home").apply { mkdirs() }
+        File(out, "collection-cards.json").writeText(CollectionEngine.cards("mtg", JsonObject().apply { addProperty("q", ""); addProperty("sort", "recent"); addProperty("filter", "all") }).toString())
+    }
 }
