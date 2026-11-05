@@ -89,7 +89,9 @@ private const val LUNGE_HIT = .36f
 /** Contact freezes everything for 110 ms (the hit-stop); the flash, rings, shake, numbers and shards come after it. */
 private const val HIT_STOP = 110L
 
-internal enum class Fx { DRAW, CAST, RESOLVE, ARRIVE, TOKEN, ATTACK, LUNGE, BLOCK, DAMAGE, LIFE, DEATH, COUNTER }
+internal enum class Fx { DRAW, CAST, RESOLVE, ARRIVE, TOKEN, ATTACK, LUNGE, BLOCK, DAMAGE, LIFE, DEATH, COUNTER,
+    /** One attacker's moment in staged combat: the board dims but for [FxItem.ids], a gold line and the pair's glass tag. */
+    STAGE }
 
 internal class FxItem(
     val kind: Fx, val level: Int, val baseMs: Long,
@@ -103,6 +105,8 @@ internal class FxItem(
     val delay: Long = 0L, var label: String = "",
     /** Where its number sits: -1 lower left (an attacker), 1 upper right (a blocker), 0 centred. */
     val side: Int = 0,
+    /** A staged pair's cards (the attacker and its blockers), which stay lit while the rest of the board dims. */
+    val ids: Set<Int> = emptySet(),
 ) {
     var t0 = 0L; var dur = baseMs; var p0 = 0f
     /** 0..1 through the effect, or -1 while it waits for its turn. */
@@ -194,14 +198,29 @@ class Battlefield {
 
     /** A touch on the board: every effect jumps to its end state (spec: "tap = next action"). */
     fun skip() {
+        dev.cardstashy.nativeplay.match.CombatPace.release()
         if (items.isEmpty()) return
         items.clear(); focalEnd = now.longValue; reindex()
     }
 
+    /** Staged combat's pairs in flight, so every card can dim while one pair plays out. */
+    private var stages: List<FxItem> = emptyList()
     internal fun reindex() {
         byCard.clear()
         for (it in items) it.card?.let { id -> byCard.getOrPut(id) { mutableListOf() } += it }
+        stages = items.filter { it.kind == Fx.STAGE }
         rev.intValue++
+    }
+
+    /** Staged combat: a card outside the pair playing now sits at half light (faded in and out over 150 ms). */
+    private fun GraphicsLayerScope.dim(id: Int) {
+        val t = now.longValue
+        val first = stages.minOf { it.t0 }; val last = stages.maxOf { it.t0 + it.dur }
+        if (t < first || t > last) return
+        val on = stages.lastOrNull { it.t0 <= t } ?: return
+        if (id in on.ids) return
+        val fade = minOf(1f, (t - first) / 150f, (last - t) / 150f)
+        alpha = 1f - .5f * fade
     }
 
     /** Reads the new snapshot against the last one and queues what changed. */
@@ -223,18 +242,23 @@ class Battlefield {
         val groups = diff(before, st, anchors)
         if (groups.isEmpty()) { if (yours) reindex(); return }
         var cursor = maxOf(t, focalEnd)
+        var stagedEnd = 0L
         for (g in groups) {
             val focal = g.any { it.level >= 2 }
+            // Staged combat keeps its own pace (one attacker at a time, about 1.4 s each): the table waits for it instead.
+            val staged = g.any { it.kind == Fx.STAGE }
             for (it in g) {
                 // New focal effects play at half length while the decision is yours.
-                it.dur = if (yours && it.level >= 2) it.baseMs / 2 else it.baseMs
+                it.dur = if (yours && it.level >= 2 && !staged) it.baseMs / 2 else it.baseMs
                 // A long queue never runs away from the game: anything starting more than 1.2 s out drops to half length.
-                if (cursor - t > 1200) it.dur /= 2
+                if (cursor - t > 1200 && !staged) it.dur /= 2
                 it.t0 = cursor + it.delay
                 items += it
             }
+            if (staged) stagedEnd = maxOf(stagedEnd, g.maxOf { it.t0 + it.dur })
             if (focal) cursor += g.filter { it.level >= 2 }.maxOf { it.delay + it.dur }
         }
+        if (stagedEnd > t) dev.cardstashy.nativeplay.match.CombatPace.hold(stagedEnd - t)
         focalEnd = maxOf(focalEnd, cursor)
         // Never more than 6 thread-like effects at once (spec: max 6 threads).
         val threads = items.filter { it.kind == Fx.BLOCK || it.kind == Fx.CAST || (it.kind == Fx.RESOLVE && it.toKey != null) }
@@ -312,21 +336,44 @@ class Battlefield {
         // Main 2 (Randall 4 Nov, test 6: no lunge on his board). Either way the attackers strike. A clash that only kills counts too.
         val wasCombat = a.phase?.startsWith("COMBAT") == true || b.phase?.startsWith("COMBAT") == true
         val clashDied = bfA.values.any { it.isCreature && (it.attacking || it.blocking) && it.id !in bfB }
-        if ((lost || dmgNow || clashDied) && wasCombat && a.turn == b.turn) for ((id, o) in bfA) if (o.attacking) {
-            val blocker = bfA.values.firstOrNull { it.blocking && id in it.blockingIds }
-            val to = when {
-                blocker != null -> "c${blocker.id}"
-                o.attackTarget?.kind == "player" -> "orb${o.attackTarget.id}"
-                o.attackTarget != null -> "c${o.attackTarget.id}"
-                else -> b.players.firstOrNull { it.id != o.controller }?.let { "orb${it.id}" }
-            } ?: continue
-            hits += FxItem(Fx.LUNGE, 2, lungeMs, card = id, mine = o.controller == viewer, toKey = to, tone = Color(0xFFFF6A4A), power = if (to.startsWith("orb")) 1f else .8f); lunged = true
+        // Staged (Table spec, 5 Nov: "attacks play out too fast ... can't tell what is hitting and what is blocking"): one attacker
+        // at a time in attack order. Each pair dims the rest of the board, joins attacker and blocker (or the player it hits)
+        // with a gold line and a glass tag, then lunge, hit-stop and numbers, and a 500 ms hold before the next pair.
+        val step = impactAt + HIT_STOP + 500L
+        val startOf = HashMap<Int, Long>()
+        val faceOf = HashMap<Int, MutableList<Pair<Long, Int>>>()
+        if ((lost || dmgNow || clashDied) && wasCombat && a.turn == b.turn) {
+            val said = a.events.lastOrNull { it.type == "attack" && it.attackers.isNotEmpty() }?.attackers?.map { it.first.id }.orEmpty()
+            val attackers = bfA.values.filter { it.attacking }.sortedWith(compareBy({ said.indexOf(it.id).let { i -> if (i < 0) Int.MAX_VALUE else i } }, { it.id }))
+            attackers.forEachIndexed { i, o ->
+                val id = o.id; val start = i * step
+                val blockers = bfA.values.filter { it.blocking && id in it.blockingIds }
+                val defender = when { o.attackTarget?.kind == "player" -> o.attackTarget.id; else -> b.players.firstOrNull { it.id != o.controller }?.id }
+                val to = when {
+                    blockers.isNotEmpty() -> "c${blockers.first().id}"
+                    o.attackTarget?.kind == "player" -> "orb${o.attackTarget.id}"
+                    o.attackTarget != null -> "c${o.attackTarget.id}"
+                    else -> defender?.let { "orb$it" }
+                } ?: return@forEachIndexed
+                startOf[id] = start; blockers.forEach { startOf[it.id] = start }
+                if (blockers.isEmpty() && to.startsWith("orb") && defender != null) faceOf.getOrPut(defender) { mutableListOf() } += start to (o.power ?: 0).coerceAtLeast(0)
+                fun pt(c: Card) = if (c.power != null) " ${c.power}/${c.toughness ?: 0}" else ""
+                val tag = when {
+                    blockers.isNotEmpty() -> "${o.name}${pt(o)} blocked by " + blockers.joinToString(" and ") { it.name + pt(it) }
+                    to.startsWith("orb") -> "${o.name}${pt(o)} unblocked, ${(o.power ?: 0).coerceAtLeast(0)} damage to ${if (defender == viewer) "you" else "CPU"}"
+                    else -> "${o.name}${pt(o)} attacks ${o.attackTarget?.let { r -> bfA[r.id]?.name } ?: "a permanent"}"
+                }
+                hits += FxItem(Fx.STAGE, 2, step, card = null, mine = o.controller == viewer, fromKey = "c$id", toKey = to, label = tag, delay = start,
+                    ids = setOf(id) + blockers.map { it.id } + (o.attackTarget?.takeIf { it.kind == "card" }?.id?.let { setOf(it) } ?: emptySet()))
+                hits += FxItem(Fx.LUNGE, 2, lungeMs, card = id, mine = o.controller == viewer, toKey = to, tone = Color(0xFFFF6A4A), power = if (to.startsWith("orb")) 1f else .8f, delay = start); lunged = true
+            }
         }
         val lag = if (lunged) impactAt + HIT_STOP else 0L
+        fun hitAt(id: Int) = (startOf[id] ?: 0L) + lag
         // Damage (level 2, 350 ms): 70 ms hit-stop, the number pops, a 3 px shake. Life totals move with it.
         for ((id, c) in bfB) {
             val o = bfA[id] ?: continue
-            if (c.damage > o.damage) hits += FxItem(Fx.DAMAGE, 2, 1100, card = id, tone = Color(0xFFFF5A4A), label = "−${c.damage - o.damage}", delay = lag,
+            if (c.damage > o.damage) hits += FxItem(Fx.DAMAGE, 2, 1100, card = id, tone = Color(0xFFFF5A4A), label = "−${c.damage - o.damage}", delay = hitAt(id),
                 side = if (o.attacking) -1 else if (o.blocking) 1 else 0)
             val gained = c.counters.values.sum() - o.counters.values.sum()
             if (gained != 0) {
@@ -345,11 +392,24 @@ class Battlefield {
         if (lunged) for ((id, o) in bfA) if (id !in bfB && o.isCreature && (o.attacking || o.blocking)) {
             val foes = if (o.attacking) bfA.values.filter { it.blocking && id in it.blockingIds } else bfA.values.filter { it.attacking && it.id in o.blockingIds }
             val n = foes.sumOf { (it.power ?: 0).coerceAtLeast(0) }
-            if (n > 0) hits += FxItem(Fx.DAMAGE, 2, 1100, card = id, tone = Color(0xFFFF5A4A), label = "−$n", delay = lag, side = if (o.attacking) -1 else 1)
+            if (n > 0) hits += FxItem(Fx.DAMAGE, 2, 1100, card = id, tone = Color(0xFFFF5A4A), label = "−$n", delay = hitAt(id), side = if (o.attacking) -1 else 1)
         }
         for (p in b.players) {
             val q = a.players.firstOrNull { it.id == p.id } ?: continue
-            if (p.life != q.life) hits += FxItem(Fx.LIFE, if (p.life < q.life) 3 else 1, if (p.life < q.life) 950 else 700, player = p.id, toKey = "orb${p.id}", delay = if (p.life < q.life) lag else 0L, power = ((q.life - p.life) / 6f).coerceIn(.35f, 1f), tone = if (p.life < q.life) Color(0xFFFF5A4A) else Color(0xFF7BE08A))
+            if (p.life == q.life) continue
+            val loss = q.life - p.life
+            val faces = faceOf[p.id].orEmpty()
+            // Each unblocked attacker takes its own bite at the player's life, in its own beat; what is left over (lifelink,
+            // trample, a burn in the same moment) rides the last one.
+            if (loss > 0 && lunged && faces.isNotEmpty()) {
+                var left = loss
+                faces.forEachIndexed { i, (start, power) ->
+                    val n = if (i == faces.lastIndex) left else minOf(power, left); left -= n
+                    if (n > 0) hits += FxItem(Fx.LIFE, 3, 950, player = p.id, toKey = "orb${p.id}", delay = start + lag, power = (n / 6f).coerceIn(.35f, 1f), tone = Color(0xFFFF5A4A)).also { it.label = "−$n" }
+                }
+                continue
+            }
+            hits += FxItem(Fx.LIFE, if (p.life < q.life) 3 else 1, if (p.life < q.life) 950 else 700, player = p.id, toKey = "orb${p.id}", delay = if (p.life < q.life) lag else 0L, power = ((q.life - p.life) / 6f).coerceIn(.35f, 1f), tone = if (p.life < q.life) Color(0xFFFF5A4A) else Color(0xFF7BE08A))
                 .also { it.label = if (p.life < q.life) "−${q.life - p.life}" else "+${p.life - q.life}" }
         }
 
@@ -359,7 +419,7 @@ class Battlefield {
             val rect = anchors.rects["c$id"] ?: continue
             val toGrave = b.players.any { p -> p.graveyard.any { it.id == id } }
             val clash = lunged && c.isCreature && (c.attacking || c.blocking)
-            val item = FxItem(Fx.DEATH, 2, 600, mine = c.controller == viewer, from = rect, toKey = if (toGrave) "grave${c.owner}" else null, ghost = c, delay = if (clash) lag + 120 else 0L)
+            val item = FxItem(Fx.DEATH, 2, 600, mine = c.controller == viewer, from = rect, toKey = if (toGrave) "grave${c.owner}" else null, ghost = c, delay = if (clash) hitAt(id) + 120 else 0L)
             if (clash) hits += item else deaths += item
         }
         return listOf(draws, casts, resolves, arrivals, combat, hits, deaths, counters).filter { it.isNotEmpty() }
@@ -368,6 +428,7 @@ class Battlefield {
     /** The card's own motion this frame (transform and alpha only), applied in its tile's layer. */
     internal fun move(scope: GraphicsLayerScope, id: Int, anchors: Anchors?) {
         rev.intValue
+        if (stages.isNotEmpty()) scope.dim(id)
         val list = byCard[id] ?: return
         if (reduced) return
         val t = now.longValue
@@ -597,6 +658,7 @@ internal fun FxLayer(force: Boolean = false) {
                         Fx.DAMAGE -> rect("c${it.card}")?.let { r -> bigNumber(tm, it.label, p, r.center, it.tone, if (size.height < 500.dp.toPx()) 40f else 52f) }
                         Fx.LIFE -> rect(it.toKey)?.let { r -> pop(tm, it.label, p, Offset(r.center.x, if (r.center.y < size.height / 2) r.bottom + 16.dp.toPx() else r.top - 6.dp.toPx()), it.tone, if (it.level == 3) 34f + 8f * it.power else 20f, down = r.center.y < size.height / 2) }
                         Fx.COUNTER -> rect("c${it.card}")?.let { r -> pop(tm, it.label, p, Offset(r.center.x, r.top + 4.dp.toPx()), Color(0xFFF3D27E), 15f) }
+                        Fx.STAGE -> drawStage(tm, it, p, rect(it.fromKey), rect(it.toKey))
                         else -> {}
                     }
                     continue
@@ -618,10 +680,31 @@ internal fun FxLayer(force: Boolean = false) {
                     Fx.LIFE -> rect(it.toKey)?.let { r -> if (it.level == 3) faceHit(it, p, r, fx.low) else glowRing(r, it.tone, .8f * (1f - p), 6.dp.toPx(), round = true); pop(tm, it.label, p, Offset(r.center.x, if (r.center.y < size.height / 2) r.bottom + 16.dp.toPx() else r.top - 6.dp.toPx()), it.tone, if (it.level == 3) 34f + 8f * it.power else 20f, down = r.center.y < size.height / 2) }
                     Fx.COUNTER -> rect("c${it.card}")?.let { r -> drawPour(p, r); pop(tm, it.label, p, Offset(r.center.x, r.top + 4.dp.toPx()), Color(0xFFF3D27E), 15f) }
                     Fx.DEATH -> if (!fx.low) it.from?.translate(-self.x, -self.y)?.let { r -> drawShards(it, p, r, rect(it.toKey)) }
+                    Fx.STAGE -> drawStage(tm, it, p, rect(it.fromKey), rect(it.toKey))
                 }
             }
         }
     }
+}
+
+/** A staged pair: a gold line from the attacker to what it meets, and a small glass tag naming the pair at its middle. */
+private fun DrawScope.drawStage(tm: androidx.compose.ui.text.TextMeasurer, it: FxItem, p: Float, a: Rect?, b: Rect?) {
+    if (a == null || b == null) return
+    val ms = p * it.dur
+    val alpha = minOf(1f, ms / 120f, (it.dur - ms) / 120f).coerceIn(0f, 1f)
+    if (alpha <= 0f) return
+    val gold = Color(0xFFF3D27E)
+    drawLine(gold.copy(alpha = .28f * alpha), a.center, b.center, strokeWidth = 8.dp.toPx(), cap = androidx.compose.ui.graphics.StrokeCap.Round)
+    drawLine(gold.copy(alpha = .95f * alpha), a.center, b.center, strokeWidth = 2.dp.toPx(), cap = androidx.compose.ui.graphics.StrokeCap.Round)
+    val style = TextStyle(fontFamily = Type.Sans, fontWeight = FontWeight.Bold, fontSize = 12.sp, color = Color(0xFFF7EEDA).copy(alpha = alpha))
+    val lay = tm.measure(it.label, style, constraints = androidx.compose.ui.unit.Constraints(maxWidth = (size.width * .6f).toInt().coerceAtLeast(1)))
+    val padX = 10.dp.toPx(); val padY = 5.dp.toPx()
+    val mid = Offset((a.center.x + b.center.x) / 2, (a.center.y + b.center.y) / 2)
+    val w = lay.size.width + 2 * padX; val h = lay.size.height + 2 * padY
+    val x = (mid.x - w / 2).coerceIn(4.dp.toPx(), size.width - w - 4.dp.toPx()); val y = (mid.y - h / 2).coerceIn(4.dp.toPx(), size.height - h - 4.dp.toPx())
+    drawRoundRect(Color(0xE60C0C10).copy(alpha = .9f * alpha), Offset(x, y), Size(w, h), CornerRadius(h / 2))
+    drawRoundRect(gold.copy(alpha = .7f * alpha), Offset(x, y), Size(w, h), CornerRadius(h / 2), style = Stroke(1.dp.toPx()))
+    drawText(lay, topLeft = Offset(x + padX, y + padY))
 }
 
 @Composable private fun key(k: Any, content: @Composable () -> Unit) = androidx.compose.runtime.key(k) { content() }

@@ -52,6 +52,10 @@ class CombatFxShotTest {
             Triple("clash", listOf(item(Fx.LUNGE, 1700, theirs.id, to = "c${mine.id}", tone = Color(0xFFFF6A4A), power = .8f),
                 FxItem(Fx.DAMAGE, 2, 1100, card = mine.id, tone = Color(0xFFFF5A4A), side = 1).also { it.label = "−3"; it.dur = 1100 },
                 FxItem(Fx.DAMAGE, 2, 1100, card = theirs.id, tone = Color(0xFFFF5A4A), side = -1).also { it.label = "−2"; it.dur = 1100 }), 0L),
+            // Staged combat (5 Nov): this pair lit, the rest of the board at half light, a gold line and the pair's tag.
+            Triple("stage", listOf(FxItem(Fx.STAGE, 2, 1400, fromKey = "c${theirs.id}", toKey = "c${mine.id}", ids = setOf(theirs.id, mine.id))
+                .also { it.label = "${theirs.name} ${theirs.power}/${theirs.toughness} blocked by ${mine.name} ${mine.power}/${mine.toughness}"; it.t0 = 0; it.dur = 1400 },
+                item(Fx.LUNGE, 1700, theirs.id, to = "c${mine.id}", tone = Color(0xFFFF6A4A), power = .8f)), 420L),
             Triple("face", listOf(item(Fx.LUNGE, 1700, theirs.id, to = "orb${st.viewer}", tone = Color(0xFFFF6A4A)),
                 item(Fx.LIFE, 950, to = "orb${st.viewer}", label = "−4", level = 3, player = st.viewer, power = .8f)), 0L),
         )

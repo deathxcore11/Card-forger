@@ -238,7 +238,7 @@ class MatchController(private val scope: CoroutineScope, val input: String, priv
     }
 
     fun close() {
-        poller?.cancel(); player?.cancel(); autoJob?.cancel(); ticker?.cancel(); watch?.cancel(); timer.stop()
+        poller?.cancel(); player?.cancel(); autoJob?.cancel(); ticker?.cancel(); watch?.cancel(); timer.stop(); CombatPace.release()
         session?.close(); session = null
     }
 
@@ -318,6 +318,8 @@ class MatchController(private val scope: CoroutineScope, val input: String, priv
     private suspend fun play() {
         for (st in snapshots) {
             queue.decrementAndGet(); progressAt = SystemClock.elapsedRealtime()
+            // Staged combat still playing on the board: the next board waits for it (a touch skips it).
+            CombatPace.await()
             if (st.status == "failed") {
                 _failure.value = (listOf(st.failure ?: "native_failed") + st.errors).joinToString("\n"); _stage.value = Stage.FAILED; show(st); continue
             }
