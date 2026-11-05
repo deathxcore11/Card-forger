@@ -1,0 +1,2785 @@
+{
+ "act": 39,
+ "era": "2025-06-13",
+ "title": "Final Fantasy",
+ "years": "2025",
+ "sets": [
+  "fin"
+ ],
+ "landSet": "fin",
+ "intro": [
+  {
+   "who": "stage",
+   "line": "An Omenpath opens where no Omenpath should. On the other side, crystals hum under a sky that belongs to another story."
+  },
+  {
+   "who": "stage",
+   "line": "This world is not part of the Multiverse you know. Its heroes have their own war. You are only passing through."
+  },
+  {
+   "who": "stage",
+   "line": "Recorded: crossings sit outside Magic canon. The road waits for you on the far side."
+  }
+ ],
+ "finale": [
+  {
+   "who": "stage",
+   "line": "Sephiroth falls. The Lifestream, green and slow, closes over the wound in the planet."
+  },
+  {
+   "who": "cloud",
+   "line": "It's not over yet... this isn't the end!",
+   "quote": true
+  },
+  {
+   "who": "stage",
+   "line": "The Omenpath folds shut behind you. The crystal sky is gone. The road turns back to the Multiverse."
+  }
+ ],
+ "villainFinale": [
+  {
+   "who": "stage",
+   "line": "In this version the planet already belongs to him."
+  },
+  {
+   "who": "sephiroth",
+   "line": "This is the end... for all of you.",
+   "quote": true
+  },
+  {
+   "who": "stage",
+   "line": "The Lifestream is quiet. The Omenpath stays open a little longer than it should, then closes."
+  }
+ ],
+ "vibe": "crystal-world-crossing",
+ "cast": {
+  "you": {
+   "name": "You",
+   "title": "Planeswalker",
+   "portrait": {
+    "card": "Sazh's Chocobo",
+    "set": "fin",
+    "number": "200",
+    "id": "dda6b4d0-1b60-46b0-b321-b9ffe15afff4",
+    "crop": "https://cards.scryfall.io/art_crop/front/d/d/dda6b4d0-1b60-46b0-b321-b9ffe15afff4.jpg?1783906582",
+    "artist": "Domenico Cava",
+    "focus": "50% 30%"
+   }
+  },
+  "cloud": {
+   "name": "Cloud",
+   "title": "Midgar Mercenary",
+   "portrait": {
+    "card": "Cloud, Midgar Mercenary",
+    "set": "fin",
+    "number": "10",
+    "id": "2cf7e8a3-fad7-413d-b17c-7519a9cf5fb5",
+    "crop": "https://cards.scryfall.io/art_crop/front/2/c/2cf7e8a3-fad7-413d-b17c-7519a9cf5fb5.jpg?1783906652",
+    "artist": "Kazto Furuya",
+    "focus": "50% 25%"
+   }
+  },
+  "shinra": {
+   "name": "Shinra Security",
+   "title": "Of Midgar",
+   "portrait": {
+    "card": "Shinra Reinforcements",
+    "set": "fin",
+    "number": "118",
+    "id": "7367b257-1a8c-4593-a307-7116e36e0342",
+    "crop": "https://cards.scryfall.io/art_crop/front/7/3/7367b257-1a8c-4593-a307-7116e36e0342.jpg?1783906612",
+    "artist": "Airi Yoshihisa",
+    "focus": "50% 30%"
+   }
+  },
+  "clive": {
+   "name": "Clive",
+   "title": "Ifrit's Dominant",
+   "portrait": {
+    "card": "Clive, Ifrit's Dominant // Ifrit, Warden of Inferno",
+    "set": "fin",
+    "number": "133",
+    "id": "9a069e96-2786-493d-aca8-f70611435dbe",
+    "crop": "https://cards.scryfall.io/art_crop/front/9/a/9a069e96-2786-493d-aca8-f70611435dbe.jpg?1783906611",
+    "artist": "Nino Is",
+    "focus": "50% 25%"
+   }
+  },
+  "empire": {
+   "name": "The Imperial Dominants",
+   "title": "Of Waloed",
+   "portrait": {
+    "card": "Gaius van Baelsar",
+    "set": "fin",
+    "number": "102",
+    "id": "a4ee8ba5-6a79-4652-b2a4-a3dae804bc28",
+    "crop": "https://cards.scryfall.io/art_crop/front/a/4/a4ee8ba5-6a79-4652-b2a4-a3dae804bc28.jpg?1783906618",
+    "artist": "Nino Is",
+    "focus": "50% 25%"
+   }
+  },
+  "returners": {
+   "name": "The Returners",
+   "title": "Of Figaro",
+   "portrait": {
+    "card": "Edgar, King of Figaro",
+    "set": "fin",
+    "number": "51",
+    "id": "950ee302-5512-43c5-ac7c-b2b06f4177bf",
+    "crop": "https://cards.scryfall.io/art_crop/front/9/5/950ee302-5512-43c5-ac7c-b2b06f4177bf.jpg?1783906638",
+    "artist": "Jake Murray",
+    "focus": "50% 25%"
+   }
+  },
+  "kefka": {
+   "name": "Kefka",
+   "title": "Court Mage",
+   "portrait": {
+    "card": "Kefka, Court Mage // Kefka, Ruler of Ruin",
+    "set": "fin",
+    "number": "231",
+    "id": "8fcf3fbb-1ddd-437e-81c1-f5a3133f5ee8",
+    "crop": "https://cards.scryfall.io/art_crop/front/8/f/8fcf3fbb-1ddd-437e-81c1-f5a3133f5ee8.jpg?1783906572",
+    "artist": "Xui Ton",
+    "focus": "50% 25%"
+   }
+  },
+  "vivi": {
+   "name": "Vivi",
+   "title": "Black Mage of Alexandria",
+   "portrait": {
+    "card": "Vivi Ornitier",
+    "set": "fin",
+    "number": "248",
+    "id": "ecc1027a-8c07-44a0-bdde-fa2844cff694",
+    "crop": "https://cards.scryfall.io/art_crop/front/e/c/ecc1027a-8c07-44a0-bdde-fa2844cff694.jpg?1783906561",
+    "artist": "Toni Infante",
+    "focus": "50% 25%"
+   }
+  },
+  "lightning": {
+   "name": "Lightning",
+   "title": "Army of One",
+   "portrait": {
+    "card": "Lightning, Army of One",
+    "set": "fin",
+    "number": "233",
+    "id": "1103da9c-300c-406b-997d-9e5bb7cd02d6",
+    "crop": "https://cards.scryfall.io/art_crop/front/1/1/1103da9c-300c-406b-997d-9e5bb7cd02d6.jpg?1783906566",
+    "artist": "Shiyu",
+    "focus": "50% 25%"
+   }
+  },
+  "party": {
+   "name": "Cloud and Friends",
+   "title": "Of Avalanche",
+   "portrait": {
+    "card": "Aerith Gainsborough",
+    "set": "fin",
+    "number": "4",
+    "id": "e86328b6-ded2-41df-8b6e-4a770e7b171e",
+    "crop": "https://cards.scryfall.io/art_crop/front/e/8/e86328b6-ded2-41df-8b6e-4a770e7b171e.jpg?1783906655",
+    "artist": "Nakamura8",
+    "focus": "50% 25%"
+   }
+  },
+  "tidus": {
+   "name": "Tidus",
+   "title": "Blitzball Star",
+   "portrait": {
+    "card": "Tidus, Blitzball Star",
+    "set": "fin",
+    "number": "246",
+    "id": "aa851d68-a7a4-48c0-9cd7-d3d2e079f3a1",
+    "crop": "https://cards.scryfall.io/art_crop/front/a/a/aa851d68-a7a4-48c0-9cd7-d3d2e079f3a1.jpg?1783906562",
+    "artist": "Nakamura8",
+    "focus": "50% 25%"
+   }
+  },
+  "sin": {
+   "name": "Sin",
+   "title": "Spira's Punishment",
+   "portrait": {
+    "card": "Seymour Flux",
+    "set": "fin",
+    "number": "452",
+    "id": "8fc42c17-a12b-42db-bb01-3e444ac2a376",
+    "crop": "https://cards.scryfall.io/art_crop/front/8/f/8fc42c17-a12b-42db-bb01-3e444ac2a376.jpg?1783906480",
+    "artist": "K-SUWABE",
+    "focus": "50% 25%"
+   }
+  },
+  "noctis": {
+   "name": "The Crown Prince's Crew",
+   "title": "Of Lucis",
+   "portrait": {
+    "card": "Gladiolus Amicitia",
+    "set": "fin",
+    "number": "224",
+    "id": "442957fc-045d-4db6-b82a-445f172d23e4",
+    "crop": "https://cards.scryfall.io/art_crop/front/4/4/442957fc-045d-4db6-b82a-445f172d23e4.jpg?1783906571",
+    "artist": "Gal Or",
+    "focus": "50% 25%"
+   }
+  },
+  "niflheim": {
+   "name": "The Empire of Niflheim",
+   "title": "Of Gralea",
+   "portrait": {
+    "card": "Ardyn, the Usurper",
+    "set": "fin",
+    "number": "89",
+    "id": "4627072e-9c72-4084-8021-690777342548",
+    "crop": "https://cards.scryfall.io/art_crop/front/4/6/4627072e-9c72-4084-8021-690777342548.jpg?1785650696",
+    "artist": "Russell Dongjun Lu",
+    "focus": "50% 25%"
+   }
+  },
+  "summoners": {
+   "name": "The Summoners",
+   "title": "Of Spira and Cocoon",
+   "portrait": {
+    "card": "Fang, Fearless l'Cie",
+    "set": "fin",
+    "number": "99",
+    "id": "f73a5cbb-905f-4b99-8d23-9d1b6bd47ee8",
+    "crop": "https://cards.scryfall.io/art_crop/front/f/7/f73a5cbb-905f-4b99-8d23-9d1b6bd47ee8.jpg?1783906620",
+    "artist": "Simon Dominic",
+    "focus": "50% 25%"
+   }
+  },
+  "azorius": {
+   "name": "Azorius Control",
+   "title": "Summer 2025",
+   "portrait": {
+    "card": "Rosa, Resolute White Mage",
+    "set": "fin",
+    "number": "431",
+    "id": "d7964800-1392-4bb8-84e2-c9f3938ceac3",
+    "crop": "https://cards.scryfall.io/art_crop/front/d/7/d7964800-1392-4bb8-84e2-c9f3938ceac3.jpg?1783906490",
+    "artist": "Christian Angel",
+    "focus": "50% 25%"
+   }
+  },
+  "hunters": {
+   "name": "The Hunters",
+   "title": "Of Cocoon",
+   "portrait": {
+    "card": "Lightning, Security Sergeant",
+    "set": "fin",
+    "number": "462",
+    "id": "40cce7b4-1d5d-4d91-90c5-71b79b5be1ac",
+    "crop": "https://cards.scryfall.io/art_crop/front/4/0/40cce7b4-1d5d-4d91-90c5-71b79b5be1ac.jpg?1783906476",
+    "artist": "Ramza Psyru",
+    "focus": "50% 25%"
+   }
+  },
+  "weapons": {
+   "name": "The Weapons",
+   "title": "Of the Planet",
+   "portrait": {
+    "card": "Diamond Weapon",
+    "set": "fin",
+    "number": "183",
+    "id": "6ce7f494-2a19-4b11-94d4-fc5e5a7068bd",
+    "crop": "https://cards.scryfall.io/art_crop/front/6/c/6ce7f494-2a19-4b11-94d4-fc5e5a7068bd.jpg?1783906588",
+    "artist": "Esuthio",
+    "focus": "50% 25%"
+   }
+  },
+  "sephiroth": {
+   "name": "Sephiroth",
+   "title": "Fabled SOLDIER",
+   "portrait": {
+    "card": "Sephiroth, Fabled SOLDIER // Sephiroth, One-Winged Angel",
+    "set": "fin",
+    "number": "115",
+    "id": "85eaf5e7-77dc-4842-a70c-ce4ac7f724df",
+    "crop": "https://cards.scryfall.io/art_crop/front/8/5/85eaf5e7-77dc-4842-a70c-ce4ac7f724df.jpg?1783906617",
+    "artist": "Wisnu Tan",
+    "focus": "50% 25%"
+   }
+  }
+ },
+ "battles": [
+  {
+   "id": "a39b1",
+   "slot": 1,
+   "kind": "Arrival",
+   "mood": "tension",
+   "title": "Job Select",
+   "difficulty": "Easy",
+   "teaches": [
+    "Job select"
+   ],
+   "blurb": "A mercenary in a city of reactors and glowing mako. Shinra security does not like strangers.",
+   "rewardSet": "fin",
+   "host": false,
+   "hero": {
+    "who": "cloud",
+    "deck": {
+     "name": "Cloud's Mercenaries",
+     "colors": "W",
+     "archetype": null,
+     "label": "tribute",
+     "cards": [
+      {
+       "qty": 3,
+       "name": "Cloud, Midgar Mercenary",
+       "set": "fin",
+       "number": "10",
+       "id": "2cf7e8a3-fad7-413d-b17c-7519a9cf5fb5"
+      },
+      {
+       "qty": 4,
+       "name": "Dragoon's Lance",
+       "set": "fin",
+       "number": "17",
+       "id": "96630531-8eb7-4e3e-8d63-60c562a5571b"
+      },
+      {
+       "qty": 4,
+       "name": "Paladin's Arms",
+       "set": "fin",
+       "number": "28",
+       "id": "446506c5-5e1d-4b42-aef3-ea247d7881ef"
+      },
+      {
+       "qty": 4,
+       "name": "White Mage's Staff",
+       "set": "fin",
+       "number": "42",
+       "id": "30db372e-0b4c-4e16-9667-bf3fda666f72"
+      },
+      {
+       "qty": 2,
+       "name": "Machinist's Arsenal",
+       "set": "fin",
+       "number": "23",
+       "id": "ff976428-2145-4630-aab1-08870b90b2f0"
+      },
+      {
+       "qty": 4,
+       "name": "Adelbert Steiner",
+       "set": "fin",
+       "number": "3",
+       "id": "1a67a991-1e52-4676-a2e3-2bc7aa943ab3"
+      },
+      {
+       "qty": 4,
+       "name": "Dwarven Castle Guard",
+       "set": "fin",
+       "number": "18",
+       "id": "e17c0d27-e88d-4ba9-acbb-3f916cee3d7e"
+      },
+      {
+       "qty": 4,
+       "name": "Coeurl",
+       "set": "fin",
+       "number": "12",
+       "id": "7604b534-5480-42fa-bc36-bbae730f8582"
+      },
+      {
+       "qty": 4,
+       "name": "Ambrosia Whiteheart",
+       "set": "fin",
+       "number": "6",
+       "id": "f2596767-7d19-4110-86ed-3cfc93ac7483"
+      },
+      {
+       "qty": 3,
+       "name": "Ashe, Princess of Dalmasca",
+       "set": "fin",
+       "number": "7",
+       "id": "ffe0596f-ef99-4862-9386-0fe455259995"
+      },
+      {
+       "qty": 24,
+       "name": "Plains",
+       "set": "fin",
+       "number": "294",
+       "id": "9dd2d666-7c6b-48ce-93dc-c004ebdd1fe9"
+      }
+     ]
+    }
+   },
+   "villain": {
+    "who": "shinra",
+    "deck": {
+     "name": "Shinra Security",
+     "colors": "WB",
+     "archetype": null,
+     "label": "tribute",
+     "cards": [
+      {
+       "qty": 4,
+       "name": "Magitek Infantry",
+       "set": "fin",
+       "number": "25",
+       "id": "b64dc6d7-dd01-4e66-9099-4c90865448df"
+      },
+      {
+       "qty": 4,
+       "name": "Shinra Reinforcements",
+       "set": "fin",
+       "number": "118",
+       "id": "7367b257-1a8c-4593-a307-7116e36e0342"
+      },
+      {
+       "qty": 3,
+       "name": "Reno and Rude",
+       "set": "fin",
+       "number": "113",
+       "id": "b5eb0064-c7c4-4e3e-add2-b86269de3fb9"
+      },
+      {
+       "qty": 3,
+       "name": "Rufus Shinra",
+       "set": "fin",
+       "number": "238",
+       "id": "f5fff00b-c9a0-4e90-abc0-349f8716c885"
+      },
+      {
+       "qty": 4,
+       "name": "Magitek Armor",
+       "set": "fin",
+       "number": "24",
+       "id": "59c4a1a2-623c-43b2-8005-ecb5c6436c10"
+      },
+      {
+       "qty": 4,
+       "name": "Weapons Vendor",
+       "set": "fin",
+       "number": "40",
+       "id": "c9e6b374-3e44-4df7-b0a3-4ef98dc08267"
+      },
+      {
+       "qty": 4,
+       "name": "Delivery Moogle",
+       "set": "fin",
+       "number": "15",
+       "id": "f58840dc-c641-4092-8b67-9c0d449af715"
+      },
+      {
+       "qty": 4,
+       "name": "Al Bhed Salvagers",
+       "set": "fin",
+       "number": "88",
+       "id": "58ccdcfc-a669-480f-bded-4273cfaf2045"
+      },
+      {
+       "qty": 4,
+       "name": "Qutrub Forayer",
+       "set": "fin",
+       "number": "112",
+       "id": "7475ecf6-23f5-45af-9ef0-ac7923bbc9cb"
+      },
+      {
+       "qty": 2,
+       "name": "Undercity Dire Rat",
+       "set": "fin",
+       "number": "123",
+       "id": "274788f4-fbf3-4a15-bdc0-f513a2fde30d"
+      },
+      {
+       "qty": 12,
+       "name": "Plains",
+       "set": "fin",
+       "number": "294",
+       "id": "9dd2d666-7c6b-48ce-93dc-c004ebdd1fe9"
+      },
+      {
+       "qty": 12,
+       "name": "Swamp",
+       "set": "fin",
+       "number": "300",
+       "id": "f66094ef-059b-4511-aa6e-835906736de4"
+      }
+     ]
+    }
+   },
+   "reward": {
+    "hero": {
+     "packs": 1,
+     "coins": 0
+    },
+    "villain": {
+     "card": {
+      "oracle_id": "6cfe63ac-3581-461b-8ed3-3e231851e3f8",
+      "name": "Shinra Reinforcements",
+      "rarity": "common",
+      "set": "fin",
+      "id": "7367b257-1a8c-4593-a307-7116e36e0342",
+      "image": "https://cards.scryfall.io/normal/front/7/3/7367b257-1a8c-4593-a307-7116e36e0342.jpg"
+     },
+     "coins": 50
+    }
+   },
+   "scene": [
+    {
+     "who": "stage",
+     "line": "Midgar. The reactors never sleep."
+    },
+    {
+     "who": "shinra",
+     "line": "I'll control the world with fear. It takes too much to do it like my old man.",
+     "quote": true
+    },
+    {
+     "who": "cloud",
+     "line": "Job select: when an equipment enters, it makes a 1/1 Hero and attaches itself. A new job for a new body."
+    }
+   ],
+   "villainScene": [
+    {
+     "who": "shinra",
+     "line": "End of the line, punk!",
+     "quote": true
+    },
+    {
+     "who": "shinra",
+     "line": "Shinra security: eyes up, weapons ready. Nobody walks through Sector Seven."
+    }
+   ],
+   "after": null,
+   "cues": {
+    "hero": {
+     "start": "Another job, another day.",
+     "big": "Equip!",
+     "low": "They keep coming...",
+     "win": "Sector clear.",
+     "loss": "Falling back...",
+     "half": "Play equipment: each one brings its own Hero."
+    },
+    "villain": {
+     "start": "Eyes up.",
+     "big": "Reinforcements!",
+     "low": "We are losing sector...",
+     "win": "Secured.",
+     "loss": "Alarm!"
+    }
+   },
+   "bigPlays": [],
+   "sim": null
+  },
+  {
+   "id": "a39b2",
+   "slot": 2,
+   "kind": "Lesson",
+   "mood": "comic",
+   "title": "Summons",
+   "difficulty": "Easy",
+   "teaches": [
+    "Summons"
+   ],
+   "blurb": "A knight carries a fire god inside him. The Empire wants it back.",
+   "rewardSet": "fin",
+   "host": false,
+   "hero": {
+    "who": "clive",
+    "deck": {
+     "name": "Clive's Summons",
+     "colors": "R",
+     "archetype": null,
+     "label": "tribute",
+     "cards": [
+      {
+       "qty": 4,
+       "name": "Summon: G.F. Ifrit",
+       "set": "fin",
+       "number": "163",
+       "id": "c6c73092-5195-4bdc-b039-a699f6e297b2"
+      },
+      {
+       "qty": 4,
+       "name": "Summon: Brynhildr",
+       "set": "fin",
+       "number": "160",
+       "id": "8ab5429a-1075-49aa-9608-0610080fbf7a"
+      },
+      {
+       "qty": 3,
+       "name": "Clive, Ifrit's Dominant // Ifrit, Warden of Inferno",
+       "set": "fin",
+       "number": "133",
+       "id": "9a069e96-2786-493d-aca8-f70611435dbe"
+      },
+      {
+       "qty": 3,
+       "name": "Raubahn, Bull of Ala Mhigo",
+       "set": "fin",
+       "number": "151",
+       "id": "7035d11b-525f-4120-8dcb-610095196681"
+      },
+      {
+       "qty": 3,
+       "name": "Prompto Argentum",
+       "set": "fin",
+       "number": "148",
+       "id": "4c617bcd-05f8-40c2-bb38-489bc863ce6b"
+      },
+      {
+       "qty": 3,
+       "name": "Vaan, Street Thief",
+       "set": "fin",
+       "number": "168",
+       "id": "50e1ec29-9de3-4f1b-b818-057e030d475b"
+      },
+      {
+       "qty": 3,
+       "name": "Fire Magic",
+       "set": "fin",
+       "number": "136",
+       "id": "415ff6a5-61ef-4b37-ae08-e44476300d4a"
+      },
+      {
+       "qty": 24,
+       "name": "Mountain",
+       "set": "fin",
+       "number": "303",
+       "id": "a18ef64b-a9de-4548-b4d5-168758442db7"
+      },
+      {
+       "qty": 2,
+       "name": "Queen Brahne",
+       "set": "fin",
+       "number": "149",
+       "id": "c38c98bb-74c9-460f-9997-ea5c5f922347"
+      },
+      {
+       "qty": 2,
+       "name": "Lightning, Security Sergeant",
+       "set": "fin",
+       "number": "462",
+       "id": "40cce7b4-1d5d-4d91-90c5-71b79b5be1ac"
+      },
+      {
+       "qty": 2,
+       "name": "Seifer Almasy",
+       "set": "fin",
+       "number": "156",
+       "id": "9c776984-99ea-4181-ac95-78c41ba9d54f"
+      },
+      {
+       "qty": 4,
+       "name": "Sabotender",
+       "set": "fin",
+       "number": "153",
+       "id": "12df1295-8b08-4c8e-bac9-55b4f514c0be"
+      },
+      {
+       "qty": 3,
+       "name": "Zell Dincht",
+       "set": "fin",
+       "number": "170",
+       "id": "135d6b27-9168-4513-9d7d-56edae048857"
+      }
+     ]
+    }
+   },
+   "villain": {
+    "who": "empire",
+    "deck": {
+     "name": "The Imperial Dominants",
+     "colors": "BR",
+     "archetype": null,
+     "label": "tribute",
+     "cards": [
+      {
+       "qty": 3,
+       "name": "Freya Crescent",
+       "set": "fin",
+       "number": "138",
+       "id": "9921f646-e893-44db-ac89-0633c1009788"
+      },
+      {
+       "qty": 4,
+       "name": "Mysidian Elder",
+       "set": "fin",
+       "number": "145",
+       "id": "6bc39af4-be19-4889-b930-df7ebf7b9481"
+      },
+      {
+       "qty": 4,
+       "name": "Zell Dincht",
+       "set": "fin",
+       "number": "170",
+       "id": "135d6b27-9168-4513-9d7d-56edae048857"
+      },
+      {
+       "qty": 4,
+       "name": "Shambling Cie'th",
+       "set": "fin",
+       "number": "117",
+       "id": "f02ce338-4fe2-44b0-a896-3ed7e6c874a3"
+      },
+      {
+       "qty": 1,
+       "name": "Ahriman",
+       "set": "fin",
+       "number": "87",
+       "id": "162a415c-5465-497e-8f4e-c6f09681641d"
+      },
+      {
+       "qty": 4,
+       "name": "Demon Wall",
+       "set": "fin",
+       "number": "97",
+       "id": "13abd96c-d1af-43d0-b3a4-ac3db20e3b51"
+      },
+      {
+       "qty": 4,
+       "name": "Hecteyes",
+       "set": "fin",
+       "number": "103",
+       "id": "8680d052-c07b-4d9b-bda9-b5f69f44f424"
+      },
+      {
+       "qty": 4,
+       "name": "Sabotender",
+       "set": "fin",
+       "number": "153",
+       "id": "12df1295-8b08-4c8e-bac9-55b4f514c0be"
+      },
+      {
+       "qty": 12,
+       "name": "Mountain",
+       "set": "fin",
+       "number": "303",
+       "id": "a18ef64b-a9de-4548-b4d5-168758442db7"
+      },
+      {
+       "qty": 12,
+       "name": "Swamp",
+       "set": "fin",
+       "number": "300",
+       "id": "f66094ef-059b-4511-aa6e-835906736de4"
+      },
+      {
+       "qty": 2,
+       "name": "Shinra Reinforcements",
+       "set": "fin",
+       "number": "118",
+       "id": "7367b257-1a8c-4593-a307-7116e36e0342"
+      },
+      {
+       "qty": 4,
+       "name": "Undercity Dire Rat",
+       "set": "fin",
+       "number": "123",
+       "id": "274788f4-fbf3-4a15-bdc0-f513a2fde30d"
+      },
+      {
+       "qty": 2,
+       "name": "Dark Confidant",
+       "set": "fin",
+       "number": "94",
+       "id": "2520ab23-a068-4462-b261-2754409b4108"
+      }
+     ]
+    }
+   },
+   "reward": {
+    "hero": {
+     "packs": 1,
+     "coins": 0
+    },
+    "villain": {
+     "card": {
+      "oracle_id": "2068185c-1b50-47d0-aa3f-bf505d199428",
+      "name": "Dark Confidant",
+      "rarity": "mythic",
+      "set": "fin",
+      "id": "2520ab23-a068-4462-b261-2754409b4108",
+      "image": "https://cards.scryfall.io/normal/front/2/5/2520ab23-a068-4462-b261-2754409b4108.jpg"
+     },
+     "coins": 50
+    }
+   },
+   "scene": [
+    {
+     "who": "stage",
+     "line": "Thank you, Torgal. For never giving up.",
+     "quote": true
+    },
+    {
+     "who": "stage",
+     "line": "Hm! Not bad for a human.",
+     "quote": true
+    },
+    {
+     "who": "clive",
+     "line": "Summons are Saga creatures: they arrive, do their work over three turns, then the Saga ends. Time them."
+    }
+   ],
+   "villainScene": [
+    {
+     "who": "empire",
+     "line": "The Dominant is ours. The Empire collects what it is owed."
+    }
+   ],
+   "after": null,
+   "cues": {
+    "hero": {
+     "start": "Come, Ifrit.",
+     "big": "Summon!",
+     "low": "The flame is fading...",
+     "win": "Ifrit is satisfied.",
+     "loss": "Not today...",
+     "half": "Summons last three turns. Play them before the big attack."
+    },
+    "villain": {
+     "start": "For the Empire.",
+     "big": "Dominant!",
+     "low": "Hold the line!",
+     "win": "Collected.",
+     "loss": "Retreat!"
+    }
+   },
+   "bigPlays": [],
+   "sim": null
+  },
+  {
+   "id": "a39b3",
+   "slot": 3,
+   "kind": "Rival",
+   "mood": "tension",
+   "title": "Kefka",
+   "difficulty": "Normal",
+   "teaches": [
+    "Discard"
+   ],
+   "blurb": "A court mage laughs while the world burns. The Returners will not stand for it.",
+   "rewardSet": "fin",
+   "host": false,
+   "hero": {
+    "who": "returners",
+    "deck": {
+     "name": "The Returners",
+     "colors": "UR",
+     "archetype": null,
+     "label": "tribute",
+     "cards": [
+      {
+       "qty": 4,
+       "name": "Rook Turret",
+       "set": "fin",
+       "number": "69",
+       "id": "4572884d-0c0e-41e7-b219-f76b95fdbd01"
+      },
+      {
+       "qty": 4,
+       "name": "Barret Wallace",
+       "set": "fin",
+       "number": "129",
+       "id": "1a504dff-5857-4a61-ab99-616d5df7cf5a"
+      },
+      {
+       "qty": 4,
+       "name": "Seifer Almasy",
+       "set": "fin",
+       "number": "156",
+       "id": "9c776984-99ea-4181-ac95-78c41ba9d54f"
+      },
+      {
+       "qty": 3,
+       "name": "Firion, Wild Rose Warrior",
+       "set": "fin",
+       "number": "137",
+       "id": "98366937-d15b-4a66-b9f6-878d50b63871"
+      },
+      {
+       "qty": 4,
+       "name": "Summon: Shiva",
+       "set": "fin",
+       "number": "78",
+       "id": "a80511f8-7cb1-4974-afde-8a5cebe13ad7"
+      },
+      {
+       "qty": 3,
+       "name": "Summon: Esper Ramuh",
+       "set": "fin",
+       "number": "161",
+       "id": "840659ee-1493-4190-a514-c2c9ae14e331"
+      },
+      {
+       "qty": 2,
+       "name": "Edgar, King of Figaro",
+       "set": "fin",
+       "number": "51",
+       "id": "950ee302-5512-43c5-ac7c-b2b06f4177bf"
+      },
+      {
+       "qty": 4,
+       "name": "Il Mheg Pixie",
+       "set": "fin",
+       "number": "57",
+       "id": "ae612312-3a8e-495f-8730-deaaf7505ca1"
+      },
+      {
+       "qty": 4,
+       "name": "Fire Magic",
+       "set": "fin",
+       "number": "136",
+       "id": "415ff6a5-61ef-4b37-ae08-e44476300d4a"
+      },
+      {
+       "qty": 4,
+       "name": "Ice Magic",
+       "set": "fin",
+       "number": "56",
+       "id": "9dabd626-7ec3-4913-babb-d5d3fd5e32d5"
+      },
+      {
+       "qty": 12,
+       "name": "Island",
+       "set": "fin",
+       "number": "297",
+       "id": "b92ec9f6-a56d-40c6-aee2-7d5e1524c985"
+      },
+      {
+       "qty": 12,
+       "name": "Mountain",
+       "set": "fin",
+       "number": "303",
+       "id": "a18ef64b-a9de-4548-b4d5-168758442db7"
+      }
+     ]
+    }
+   },
+   "villain": {
+    "who": "kefka",
+    "deck": {
+     "name": "Kefka's Court",
+     "colors": "UBR",
+     "archetype": null,
+     "label": "tribute",
+     "cards": [
+      {
+       "qty": 2,
+       "name": "Sabotender",
+       "set": "fin",
+       "number": "153",
+       "id": "12df1295-8b08-4c8e-bac9-55b4f514c0be"
+      },
+      {
+       "qty": 4,
+       "name": "Ultros, Obnoxious Octopus",
+       "set": "fin",
+       "number": "83",
+       "id": "14379198-9a0a-4853-9d51-fb074a24b1c0"
+      },
+      {
+       "qty": 3,
+       "name": "Kefka, Court Mage // Kefka, Ruler of Ruin",
+       "set": "fin",
+       "number": "231",
+       "id": "8fcf3fbb-1ddd-437e-81c1-f5a3133f5ee8"
+      },
+      {
+       "qty": 2,
+       "name": "Black Waltz No. 3",
+       "set": "fin",
+       "number": "214",
+       "id": "fe86e41b-b0f6-4aa1-8827-c095c721f304"
+      },
+      {
+       "qty": 3,
+       "name": "Garland, Knight of Cornelia // Chaos, the Endless",
+       "set": "fin",
+       "number": "221",
+       "id": "dd463dbe-5f2c-4d4f-86f8-ad8ff407af62"
+      },
+      {
+       "qty": 4,
+       "name": "Hecteyes",
+       "set": "fin",
+       "number": "103",
+       "id": "8680d052-c07b-4d9b-bda9-b5f69f44f424"
+      },
+      {
+       "qty": 4,
+       "name": "Ahriman",
+       "set": "fin",
+       "number": "87",
+       "id": "162a415c-5465-497e-8f4e-c6f09681641d"
+      },
+      {
+       "qty": 4,
+       "name": "Dark Confidant",
+       "set": "fin",
+       "number": "94",
+       "id": "2520ab23-a068-4462-b261-2754409b4108"
+      },
+      {
+       "qty": 3,
+       "name": "Hill Gigas",
+       "set": "fin",
+       "number": "141",
+       "id": "2a8b3e1e-5c10-4360-ac1c-83b2e026278c"
+      },
+      {
+       "qty": 2,
+       "name": "Overkill",
+       "set": "fin",
+       "number": "109",
+       "id": "ae075e71-d33d-4d6c-b4a5-0b47dd6fd196"
+      },
+      {
+       "qty": 2,
+       "name": "Vayne's Treachery",
+       "set": "fin",
+       "number": "124",
+       "id": "6de6d23b-7d42-41c1-be1c-010fe43ee586"
+      },
+      {
+       "qty": 3,
+       "name": "Laughing Mad",
+       "set": "fin",
+       "number": "143",
+       "id": "cd5b9daf-6325-4eb4-a069-4a8cc7807884"
+      },
+      {
+       "qty": 8,
+       "name": "Island",
+       "set": "fin",
+       "number": "297",
+       "id": "b92ec9f6-a56d-40c6-aee2-7d5e1524c985"
+      },
+      {
+       "qty": 8,
+       "name": "Swamp",
+       "set": "fin",
+       "number": "300",
+       "id": "f66094ef-059b-4511-aa6e-835906736de4"
+      },
+      {
+       "qty": 8,
+       "name": "Mountain",
+       "set": "fin",
+       "number": "303",
+       "id": "a18ef64b-a9de-4548-b4d5-168758442db7"
+      }
+     ]
+    }
+   },
+   "reward": {
+    "hero": {
+     "packs": 1,
+     "coins": 100
+    },
+    "villain": {
+     "card": {
+      "oracle_id": "6d3ca5cb-781d-4608-b7f1-38c020536376",
+      "name": "Kefka, Court Mage // Kefka, Ruler of Ruin",
+      "rarity": "mythic",
+      "set": "fin",
+      "id": "8fcf3fbb-1ddd-437e-81c1-f5a3133f5ee8",
+      "image": "https://cards.scryfall.io/normal/front/8/f/8fcf3fbb-1ddd-437e-81c1-f5a3133f5ee8.jpg"
+     },
+     "coins": 100
+    }
+   },
+   "scene": [
+    {
+     "who": "stage",
+     "line": "Sabin...let's settle this with the toss of a coin.",
+     "quote": true
+    },
+    {
+     "who": "stage",
+     "line": "I was there... I saw when Kefka used his Light of Judgment to torch the village of Mobliz, far to the east.",
+     "quote": true
+    },
+    {
+     "who": "returners",
+     "line": "He makes you discard. Keep your best cards in play, not in your hand."
+    }
+   ],
+   "villainScene": [
+    {
+     "who": "kefka",
+     "line": "Ha ha! Burn it all, then do it again for the people in the back."
+    }
+   ],
+   "after": null,
+   "cues": {
+    "hero": {
+     "start": "We will end this.",
+     "big": "Now!",
+     "low": "He is laughing...",
+     "win": "The court is quiet.",
+     "loss": "Fall back...",
+     "half": "He strips your hand. Play your cards out."
+    },
+    "villain": {
+     "start": "Ha ha ha!",
+     "big": "Judgment!",
+     "low": "Mmm... no.",
+     "win": "Ruler of Ruin.",
+     "loss": "Not funny!"
+    }
+   },
+   "bigPlays": [],
+   "sim": null
+  },
+  {
+   "id": "a39b4",
+   "slot": 4,
+   "kind": "Meta",
+   "mood": "tension",
+   "title": "Izzet Prowess",
+   "difficulty": "Normal",
+   "teaches": [
+    "Prowess"
+   ],
+   "blurb": "A young black mage and a soldier who has forgotten her name. Spells fly both ways.",
+   "rewardSet": "fin",
+   "host": false,
+   "hero": {
+    "who": "vivi",
+    "deck": {
+     "name": "Vivi's Black Magic",
+     "colors": "UR",
+     "archetype": null,
+     "label": "tribute",
+     "cards": [
+      {
+       "qty": 3,
+       "name": "Vivi Ornitier",
+       "set": "fin",
+       "number": "248",
+       "id": "ecc1027a-8c07-44a0-bdde-fa2844cff694"
+      },
+      {
+       "qty": 4,
+       "name": "Il Mheg Pixie",
+       "set": "fin",
+       "number": "57",
+       "id": "ae612312-3a8e-495f-8730-deaaf7505ca1"
+      },
+      {
+       "qty": 4,
+       "name": "Prompto Argentum",
+       "set": "fin",
+       "number": "148",
+       "id": "4c617bcd-05f8-40c2-bb38-489bc863ce6b"
+      },
+      {
+       "qty": 4,
+       "name": "Raubahn, Bull of Ala Mhigo",
+       "set": "fin",
+       "number": "151",
+       "id": "7035d11b-525f-4120-8dcb-610095196681"
+      },
+      {
+       "qty": 4,
+       "name": "Seifer Almasy",
+       "set": "fin",
+       "number": "156",
+       "id": "9c776984-99ea-4181-ac95-78c41ba9d54f"
+      },
+      {
+       "qty": 3,
+       "name": "Firion, Wild Rose Warrior",
+       "set": "fin",
+       "number": "137",
+       "id": "98366937-d15b-4a66-b9f6-878d50b63871"
+      },
+      {
+       "qty": 4,
+       "name": "Rook Turret",
+       "set": "fin",
+       "number": "69",
+       "id": "4572884d-0c0e-41e7-b219-f76b95fdbd01"
+      },
+      {
+       "qty": 3,
+       "name": "Thunder Magic",
+       "set": "fin",
+       "number": "165",
+       "id": "9f2b202c-91da-40ec-8324-6b6be7cb3bc8"
+      },
+      {
+       "qty": 4,
+       "name": "Fire Magic",
+       "set": "fin",
+       "number": "136",
+       "id": "415ff6a5-61ef-4b37-ae08-e44476300d4a"
+      },
+      {
+       "qty": 3,
+       "name": "Ice Magic",
+       "set": "fin",
+       "number": "56",
+       "id": "9dabd626-7ec3-4913-babb-d5d3fd5e32d5"
+      },
+      {
+       "qty": 12,
+       "name": "Island",
+       "set": "fin",
+       "number": "297",
+       "id": "b92ec9f6-a56d-40c6-aee2-7d5e1524c985"
+      },
+      {
+       "qty": 12,
+       "name": "Mountain",
+       "set": "fin",
+       "number": "303",
+       "id": "a18ef64b-a9de-4548-b4d5-168758442db7"
+      }
+     ]
+    }
+   },
+   "villain": {
+    "who": "lightning",
+    "deck": {
+     "name": "Lightning's Guard",
+     "colors": "RW",
+     "archetype": null,
+     "label": "tribute",
+     "cards": [
+      {
+       "qty": 3,
+       "name": "Weapons Vendor",
+       "set": "fin",
+       "number": "40",
+       "id": "c9e6b374-3e44-4df7-b0a3-4ef98dc08267"
+      },
+      {
+       "qty": 4,
+       "name": "Gaelicat",
+       "set": "fin",
+       "number": "22",
+       "id": "29606c49-e1a4-49c3-883b-9122c08bbbc7"
+      },
+      {
+       "qty": 2,
+       "name": "Lightning, Army of One",
+       "set": "fin",
+       "number": "233",
+       "id": "1103da9c-300c-406b-997d-9e5bb7cd02d6"
+      },
+      {
+       "qty": 4,
+       "name": "Lightning, Security Sergeant",
+       "set": "fin",
+       "number": "462",
+       "id": "40cce7b4-1d5d-4d91-90c5-71b79b5be1ac"
+      },
+      {
+       "qty": 4,
+       "name": "Adelbert Steiner",
+       "set": "fin",
+       "number": "3",
+       "id": "1a67a991-1e52-4676-a2e3-2bc7aa943ab3"
+      },
+      {
+       "qty": 4,
+       "name": "Dwarven Castle Guard",
+       "set": "fin",
+       "number": "18",
+       "id": "e17c0d27-e88d-4ba9-acbb-3f916cee3d7e"
+      },
+      {
+       "qty": 4,
+       "name": "Coeurl",
+       "set": "fin",
+       "number": "12",
+       "id": "7604b534-5480-42fa-bc36-bbae730f8582"
+      },
+      {
+       "qty": 4,
+       "name": "Ambrosia Whiteheart",
+       "set": "fin",
+       "number": "6",
+       "id": "f2596767-7d19-4110-86ed-3cfc93ac7483"
+      },
+      {
+       "qty": 4,
+       "name": "Snow Villiers",
+       "set": "fin",
+       "number": "33",
+       "id": "399bb699-e61d-4b41-b6e9-e594cbad6194"
+      },
+      {
+       "qty": 2,
+       "name": "Battle Menu",
+       "set": "fin",
+       "number": "9",
+       "id": "240e1466-bd02-423d-b829-234dcd2bfab2"
+      },
+      {
+       "qty": 1,
+       "name": "Slash of Light",
+       "set": "fin",
+       "number": "32",
+       "id": "da6d9529-3cb0-4adc-8209-b9b02db3bf54"
+      },
+      {
+       "qty": 12,
+       "name": "Plains",
+       "set": "fin",
+       "number": "294",
+       "id": "9dd2d666-7c6b-48ce-93dc-c004ebdd1fe9"
+      },
+      {
+       "qty": 12,
+       "name": "Mountain",
+       "set": "fin",
+       "number": "303",
+       "id": "a18ef64b-a9de-4548-b4d5-168758442db7"
+      }
+     ]
+    }
+   },
+   "reward": {
+    "hero": {
+     "packs": 1,
+     "coins": 100
+    },
+    "villain": {
+     "card": {
+      "oracle_id": "585eb5bc-5a3d-44d8-b593-1ff0d67f96a7",
+      "name": "Lightning, Army of One",
+      "rarity": "mythic",
+      "set": "fin",
+      "id": "1103da9c-300c-406b-997d-9e5bb7cd02d6",
+      "image": "https://cards.scryfall.io/normal/front/1/1/1103da9c-300c-406b-997d-9e5bb7cd02d6.jpg"
+     },
+     "coins": 100
+    }
+   },
+   "scene": [
+    {
+     "who": "stage",
+     "line": "Lightning. It flashes bright, then fades away. It can't protect. It only destroys.",
+     "quote": true
+    },
+    {
+     "who": "vivi",
+     "line": "Prowess: when you cast a noncreature spell, the creature gets +1/+1 until end of turn. Cast a spell, then swing."
+    }
+   ],
+   "villainScene": [
+    {
+     "who": "lightning",
+     "line": "I had to be strong for Serah, so I thought I needed to forget my past. And I became Lightning.",
+     "quote": true
+    }
+   ],
+   "after": null,
+   "cues": {
+    "hero": {
+     "start": "I... I can do this.",
+     "big": "Black magic!",
+     "low": "Too many...",
+     "win": "We did it!",
+     "loss": "I am sorry...",
+     "half": "Cast a spell before you attack to grow the creature."
+    },
+    "villain": {
+     "start": "Move.",
+     "big": "Overwhelm!",
+     "low": "Still standing...",
+     "win": "Clear.",
+     "loss": "Not like this..."
+    }
+   },
+   "bigPlays": [],
+   "sim": null
+  },
+  {
+   "id": "a39b5",
+   "slot": 5,
+   "kind": "Lesson",
+   "mood": "march",
+   "title": "The Long Pilgrimage",
+   "difficulty": "Normal",
+   "teaches": [
+    "Counterspells"
+   ],
+   "blurb": "A blitzball star on a pilgrimage with the guardians of a summoner. A giant called Sin waits at the end.",
+   "rewardSet": "fin",
+   "host": false,
+   "hero": {
+    "who": "tidus",
+    "deck": {
+     "name": "Tidus and the Guardians",
+     "colors": "WU",
+     "archetype": null,
+     "label": "tribute",
+     "cards": [
+      {
+       "qty": 3,
+       "name": "Tidus, Blitzball Star",
+       "set": "fin",
+       "number": "246",
+       "id": "aa851d68-a7a4-48c0-9cd7-d3d2e079f3a1"
+      },
+      {
+       "qty": 3,
+       "name": "Hope Estheim",
+       "set": "fin",
+       "number": "226",
+       "id": "fbdb68cc-5516-481a-94c5-59f6c69b8a17"
+      },
+      {
+       "qty": 4,
+       "name": "Il Mheg Pixie",
+       "set": "fin",
+       "number": "57",
+       "id": "ae612312-3a8e-495f-8730-deaaf7505ca1"
+      },
+      {
+       "qty": 4,
+       "name": "Dwarven Castle Guard",
+       "set": "fin",
+       "number": "18",
+       "id": "e17c0d27-e88d-4ba9-acbb-3f916cee3d7e"
+      },
+      {
+       "qty": 4,
+       "name": "Coeurl",
+       "set": "fin",
+       "number": "12",
+       "id": "7604b534-5480-42fa-bc36-bbae730f8582"
+      },
+      {
+       "qty": 3,
+       "name": "Adelbert Steiner",
+       "set": "fin",
+       "number": "3",
+       "id": "1a67a991-1e52-4676-a2e3-2bc7aa943ab3"
+      },
+      {
+       "qty": 4,
+       "name": "Gaelicat",
+       "set": "fin",
+       "number": "22",
+       "id": "29606c49-e1a4-49c3-883b-9122c08bbbc7"
+      },
+      {
+       "qty": 4,
+       "name": "Dragoon's Wyvern",
+       "set": "fin",
+       "number": "49",
+       "id": "d92bce20-308e-4841-aaf8-8e20698292e7"
+      },
+      {
+       "qty": 2,
+       "name": "Rook Turret",
+       "set": "fin",
+       "number": "69",
+       "id": "4572884d-0c0e-41e7-b219-f76b95fdbd01"
+      },
+      {
+       "qty": 3,
+       "name": "Aerith Gainsborough",
+       "set": "fin",
+       "number": "4",
+       "id": "e86328b6-ded2-41df-8b6e-4a770e7b171e"
+      },
+      {
+       "qty": 2,
+       "name": "Magic Damper",
+       "set": "fin",
+       "number": "61",
+       "id": "44921b2e-5938-4f63-92b9-0b719a2f8c68"
+      },
+      {
+       "qty": 12,
+       "name": "Plains",
+       "set": "fin",
+       "number": "294",
+       "id": "9dd2d666-7c6b-48ce-93dc-c004ebdd1fe9"
+      },
+      {
+       "qty": 12,
+       "name": "Island",
+       "set": "fin",
+       "number": "297",
+       "id": "b92ec9f6-a56d-40c6-aee2-7d5e1524c985"
+      }
+     ]
+    }
+   },
+   "villain": {
+    "who": "sin",
+    "deck": {
+     "name": "Sin's Pilgrimage",
+     "colors": "B",
+     "archetype": null,
+     "label": "tribute",
+     "note": "Sin itself is three colours; this deck is black, the colour of its toxins.",
+     "cards": [
+      {
+       "qty": 2,
+       "name": "Qutrub Forayer",
+       "set": "fin",
+       "number": "112",
+       "id": "7475ecf6-23f5-45af-9ef0-ac7923bbc9cb"
+      },
+      {
+       "qty": 4,
+       "name": "Tonberry",
+       "set": "fin",
+       "number": "122",
+       "id": "1a9b8723-4383-4c14-b24d-52863af8703d"
+      },
+      {
+       "qty": 2,
+       "name": "Seymour Flux",
+       "set": "fin",
+       "number": "452",
+       "id": "8fc42c17-a12b-42db-bb01-3e444ac2a376"
+      },
+      {
+       "qty": 2,
+       "name": "Ahriman",
+       "set": "fin",
+       "number": "87",
+       "id": "162a415c-5465-497e-8f4e-c6f09681641d"
+      },
+      {
+       "qty": 4,
+       "name": "Shambling Cie'th",
+       "set": "fin",
+       "number": "117",
+       "id": "f02ce338-4fe2-44b0-a896-3ed7e6c874a3"
+      },
+      {
+       "qty": 4,
+       "name": "Demon Wall",
+       "set": "fin",
+       "number": "97",
+       "id": "13abd96c-d1af-43d0-b3a4-ac3db20e3b51"
+      },
+      {
+       "qty": 2,
+       "name": "Hecteyes",
+       "set": "fin",
+       "number": "103",
+       "id": "8680d052-c07b-4d9b-bda9-b5f69f44f424"
+      },
+      {
+       "qty": 4,
+       "name": "Undercity Dire Rat",
+       "set": "fin",
+       "number": "123",
+       "id": "274788f4-fbf3-4a15-bdc0-f513a2fde30d"
+      },
+      {
+       "qty": 24,
+       "name": "Swamp",
+       "set": "fin",
+       "number": "300",
+       "id": "f66094ef-059b-4511-aa6e-835906736de4"
+      },
+      {
+       "qty": 4,
+       "name": "Al Bhed Salvagers",
+       "set": "fin",
+       "number": "88",
+       "id": "58ccdcfc-a669-480f-bded-4273cfaf2045"
+      },
+      {
+       "qty": 4,
+       "name": "Namazu Trader",
+       "set": "fin",
+       "number": "107",
+       "id": "f9d25b34-990d-416c-aef7-1b5a73f19dd4"
+      },
+      {
+       "qty": 4,
+       "name": "Shinra Reinforcements",
+       "set": "fin",
+       "number": "118",
+       "id": "7367b257-1a8c-4593-a307-7116e36e0342"
+      }
+     ]
+    }
+   },
+   "reward": {
+    "hero": {
+     "packs": 1,
+     "coins": 100
+    },
+    "villain": {
+     "card": {
+      "oracle_id": "7312efc2-8a02-47cd-874b-c3338241435e",
+      "name": "Seymour Flux",
+      "rarity": "rare",
+      "set": "fin",
+      "id": "8fc42c17-a12b-42db-bb01-3e444ac2a376",
+      "image": "https://cards.scryfall.io/normal/front/8/f/8fc42c17-a12b-42db-bb01-3e444ac2a376.jpg"
+     },
+     "coins": 100
+    }
+   },
+   "scene": [
+    {
+     "who": "stage",
+     "line": "Spira. The sea is calm, and everyone on the shore is waiting for something."
+    },
+    {
+     "who": "stage",
+     "line": "All I can do is go forward. Keep fighting and surviving, until I find the answers I need.",
+     "quote": true
+    },
+    {
+     "who": "tidus",
+     "line": "Counterspells answer a spell as it is cast. Keep mana open and let the big spell resolve in the second turn."
+    }
+   ],
+   "villainScene": [
+    {
+     "who": "sin",
+     "line": "A shadow on the water. It does not speak. It only returns."
+    }
+   ],
+   "after": null,
+   "cues": {
+    "hero": {
+     "start": "Let us go.",
+     "big": "Together!",
+     "low": "The tide is against us...",
+     "win": "The sea is calm.",
+     "loss": "Pilgrim down...",
+     "half": "Hold mana open and counter their biggest spell."
+    },
+    "villain": {
+     "start": "[a deep tone]",
+     "big": "[the waters rise]",
+     "low": "[a ripple]",
+     "win": "[the shore is quiet]",
+     "loss": "[Sin turns away]"
+    }
+   },
+   "bigPlays": [],
+   "sim": null
+  },
+  {
+   "id": "a39b6",
+   "slot": 6,
+   "kind": "Lesson",
+   "mood": "tension",
+   "title": "The Road Trip",
+   "difficulty": "Normal",
+   "teaches": [
+    "Vehicles"
+   ],
+   "blurb": "Four friends and a car on a long road. The empire wants the prince, and the road is long.",
+   "rewardSet": "fin",
+   "host": false,
+   "hero": {
+    "who": "noctis",
+    "deck": {
+     "name": "The Crown Prince's Crew",
+     "colors": "RG",
+     "archetype": null,
+     "label": "tribute",
+     "cards": [
+      {
+       "qty": 4,
+       "name": "Goobbue Gardener",
+       "set": "fin",
+       "number": "188",
+       "id": "b7c3544a-5dd5-423e-8a40-ac4803db8adc"
+      },
+      {
+       "qty": 4,
+       "name": "Town Greeter",
+       "set": "fin",
+       "number": "209",
+       "id": "49cd4efa-4df4-4257-9a42-60330f7781e2"
+      },
+      {
+       "qty": 3,
+       "name": "Gladiolus Amicitia",
+       "set": "fin",
+       "number": "224",
+       "id": "442957fc-045d-4db6-b82a-445f172d23e4"
+      },
+      {
+       "qty": 2,
+       "name": "Prompto Argentum",
+       "set": "fin",
+       "number": "148",
+       "id": "4c617bcd-05f8-40c2-bb38-489bc863ce6b"
+      },
+      {
+       "qty": 4,
+       "name": "Torgal, A Fine Hound",
+       "set": "fin",
+       "number": "208",
+       "id": "0f5725aa-42bb-4dfd-9c15-135b38b33da3"
+      },
+      {
+       "qty": 4,
+       "name": "Cactuar",
+       "set": "fin",
+       "number": "177",
+       "id": "d5273db4-6214-41e4-825a-612fca8bbe03"
+      },
+      {
+       "qty": 4,
+       "name": "Traveling Chocobo",
+       "set": "fin",
+       "number": "210",
+       "id": "2462df62-fc35-47ed-9571-40452074dc6d"
+      },
+      {
+       "qty": 4,
+       "name": "Gigantoad",
+       "set": "fin",
+       "number": "187",
+       "id": "bc10d648-4053-460f-bc52-9c20477bf6de"
+      },
+      {
+       "qty": 4,
+       "name": "Balamb T-Rexaur",
+       "set": "fin",
+       "number": "173",
+       "id": "e5857b1b-73bc-458e-b26b-7ed8bef785f3"
+      },
+      {
+       "qty": 1,
+       "name": "The Regalia",
+       "set": "fin",
+       "number": "267",
+       "id": "dc420e79-c483-474f-97cd-e9c6a636c306"
+      },
+      {
+       "qty": 2,
+       "name": "Chocobo Kick",
+       "set": "fin",
+       "number": "178",
+       "id": "ff8c8be0-8223-499c-8704-cb68e0a42ce2"
+      },
+      {
+       "qty": 12,
+       "name": "Mountain",
+       "set": "fin",
+       "number": "303",
+       "id": "a18ef64b-a9de-4548-b4d5-168758442db7"
+      },
+      {
+       "qty": 12,
+       "name": "Forest",
+       "set": "fin",
+       "number": "306",
+       "id": "be72862d-d71e-4b18-98a6-59019399f631"
+      }
+     ]
+    }
+   },
+   "villain": {
+    "who": "niflheim",
+    "deck": {
+     "name": "The Empire of Niflheim",
+     "colors": "B",
+     "archetype": null,
+     "label": "tribute",
+     "cards": [
+      {
+       "qty": 3,
+       "name": "Ardyn, the Usurper",
+       "set": "fin",
+       "number": "89",
+       "id": "4627072e-9c72-4084-8021-690777342548"
+      },
+      {
+       "qty": 3,
+       "name": "Gaius van Baelsar",
+       "set": "fin",
+       "number": "102",
+       "id": "a4ee8ba5-6a79-4652-b2a4-a3dae804bc28"
+      },
+      {
+       "qty": 3,
+       "name": "Kain, Traitorous Dragoon",
+       "set": "fin",
+       "number": "105",
+       "id": "f8c86be0-e1b3-4a78-9254-238dd936914b"
+      },
+      {
+       "qty": 4,
+       "name": "Al Bhed Salvagers",
+       "set": "fin",
+       "number": "88",
+       "id": "58ccdcfc-a669-480f-bded-4273cfaf2045"
+      },
+      {
+       "qty": 4,
+       "name": "Qutrub Forayer",
+       "set": "fin",
+       "number": "112",
+       "id": "7475ecf6-23f5-45af-9ef0-ac7923bbc9cb"
+      },
+      {
+       "qty": 4,
+       "name": "Shinra Reinforcements",
+       "set": "fin",
+       "number": "118",
+       "id": "7367b257-1a8c-4593-a307-7116e36e0342"
+      },
+      {
+       "qty": 4,
+       "name": "Namazu Trader",
+       "set": "fin",
+       "number": "107",
+       "id": "f9d25b34-990d-416c-aef7-1b5a73f19dd4"
+      },
+      {
+       "qty": 4,
+       "name": "Dark Confidant",
+       "set": "fin",
+       "number": "94",
+       "id": "2520ab23-a068-4462-b261-2754409b4108"
+      },
+      {
+       "qty": 3,
+       "name": "Overkill",
+       "set": "fin",
+       "number": "109",
+       "id": "ae075e71-d33d-4d6c-b4a5-0b47dd6fd196"
+      },
+      {
+       "qty": 4,
+       "name": "Vayne's Treachery",
+       "set": "fin",
+       "number": "124",
+       "id": "6de6d23b-7d42-41c1-be1c-010fe43ee586"
+      },
+      {
+       "qty": 24,
+       "name": "Swamp",
+       "set": "fin",
+       "number": "300",
+       "id": "f66094ef-059b-4511-aa6e-835906736de4"
+      }
+     ]
+    }
+   },
+   "reward": {
+    "hero": {
+     "packs": 1,
+     "coins": 100
+    },
+    "villain": {
+     "card": {
+      "oracle_id": "9ae13026-960a-4d31-b775-d47209a1e313",
+      "name": "Ardyn, the Usurper",
+      "rarity": "rare",
+      "set": "fin",
+      "id": "4627072e-9c72-4084-8021-690777342548",
+      "image": "https://cards.scryfall.io/normal/front/4/6/4627072e-9c72-4084-8021-690777342548.jpg"
+     },
+     "coins": 100
+    }
+   },
+   "scene": [
+    {
+     "who": "stage",
+     "line": "A road across a kingdom that is not yours. A black car, a full tank, and a chocobo on the horizon."
+    },
+    {
+     "who": "stage",
+     "line": "As long as there are people who need to be protected, I'll keep on fighting!",
+     "quote": true
+    },
+    {
+     "who": "noctis",
+     "line": "Vehicles are artifacts that fight when crewed. Tap creatures with enough power and the car attacks."
+    }
+   ],
+   "villainScene": [
+    {
+     "who": "niflheim",
+     "line": "The throne belongs to the empire. The prince is only a name on a road."
+    }
+   ],
+   "after": null,
+   "cues": {
+    "hero": {
+     "start": "On the road.",
+     "big": "Crew up!",
+     "low": "The road is closing...",
+     "win": "Gas up, move on.",
+     "loss": "Off the road...",
+     "half": "Crew the Regalia with your creatures to attack."
+    },
+    "villain": {
+     "start": "For Niflheim.",
+     "big": "Take the road!",
+     "low": "The line is broken...",
+     "win": "The throne is ours.",
+     "loss": "Fall back..."
+    }
+   },
+   "bigPlays": [],
+   "sim": null
+  },
+  {
+   "id": "a39b7",
+   "slot": 7,
+   "kind": "Meta",
+   "mood": "tension",
+   "title": "Golgari Summons vs Azorius Control",
+   "difficulty": "Normal",
+   "teaches": [
+    "Playing around counterspells"
+   ],
+   "blurb": "Two decks of the set. One calls the summons, one tries to answer every spell it casts.",
+   "rewardSet": "fin",
+   "host": false,
+   "hero": {
+    "who": "summoners",
+    "deck": {
+     "name": "Golgari Summons",
+     "colors": "BG",
+     "archetype": null,
+     "label": "tribute",
+     "cards": [
+      {
+       "qty": 4,
+       "name": "Ahriman",
+       "set": "fin",
+       "number": "87",
+       "id": "162a415c-5465-497e-8f4e-c6f09681641d"
+      },
+      {
+       "qty": 4,
+       "name": "Shambling Cie'th",
+       "set": "fin",
+       "number": "117",
+       "id": "f02ce338-4fe2-44b0-a896-3ed7e6c874a3"
+      },
+      {
+       "qty": 2,
+       "name": "Undercity Dire Rat",
+       "set": "fin",
+       "number": "123",
+       "id": "274788f4-fbf3-4a15-bdc0-f513a2fde30d"
+      },
+      {
+       "qty": 4,
+       "name": "Hecteyes",
+       "set": "fin",
+       "number": "103",
+       "id": "8680d052-c07b-4d9b-bda9-b5f69f44f424"
+      },
+      {
+       "qty": 2,
+       "name": "Fang, Fearless l'Cie",
+       "set": "fin",
+       "number": "99",
+       "id": "f73a5cbb-905f-4b99-8d23-9d1b6bd47ee8"
+      },
+      {
+       "qty": 2,
+       "name": "Jenova, Ancient Calamity",
+       "set": "fin",
+       "number": "228",
+       "id": "534f98ee-7bc2-44d6-b49f-f57c051807d5"
+      },
+      {
+       "qty": 3,
+       "name": "Vanille, Cheerful l'Cie",
+       "set": "fin",
+       "number": "211",
+       "id": "91226c1a-63a0-494e-bcf0-77c2d6f49213"
+      },
+      {
+       "qty": 2,
+       "name": "Summon: Fenrir",
+       "set": "fin",
+       "number": "203",
+       "id": "93feb9d5-d004-4598-a448-b3488c869c05"
+      },
+      {
+       "qty": 2,
+       "name": "Summon: Fat Chocobo",
+       "set": "fin",
+       "number": "202",
+       "id": "32eb192b-de6b-4814-8077-628d343d014e"
+      },
+      {
+       "qty": 1,
+       "name": "Summon: Titan",
+       "set": "fin",
+       "number": "204",
+       "id": "5ce6ea96-7293-496d-b9c8-8ed6d6109a4d"
+      },
+      {
+       "qty": 2,
+       "name": "Summon: Anima",
+       "set": "fin",
+       "number": "120",
+       "id": "aa4f6703-21f8-4c29-ad5a-5afb54188ade"
+      },
+      {
+       "qty": 2,
+       "name": "Quina, Qu Gourmet",
+       "set": "fin",
+       "number": "194",
+       "id": "4f352b5e-9731-4a8e-b872-db5d3bf32211"
+      },
+      {
+       "qty": 2,
+       "name": "Fight On!",
+       "set": "fin",
+       "number": "100",
+       "id": "e1b0739a-dcc4-4034-96d7-69e551b2f36b"
+      },
+      {
+       "qty": 4,
+       "name": "Gysahl Greens",
+       "set": "fin",
+       "number": "190",
+       "id": "020dee17-d85b-44c4-9faa-b1ef977956f4"
+      },
+      {
+       "qty": 12,
+       "name": "Swamp",
+       "set": "fin",
+       "number": "300",
+       "id": "f66094ef-059b-4511-aa6e-835906736de4"
+      },
+      {
+       "qty": 12,
+       "name": "Forest",
+       "set": "fin",
+       "number": "306",
+       "id": "be72862d-d71e-4b18-98a6-59019399f631"
+      }
+     ]
+    }
+   },
+   "villain": {
+    "who": "azorius",
+    "deck": {
+     "name": "Azorius Control",
+     "colors": "WU",
+     "archetype": null,
+     "label": "tribute",
+     "cards": [
+      {
+       "qty": 4,
+       "name": "Rosa, Resolute White Mage",
+       "set": "fin",
+       "number": "431",
+       "id": "d7964800-1392-4bb8-84e2-c9f3938ceac3"
+      },
+      {
+       "qty": 3,
+       "name": "Beatrix, Loyal General",
+       "set": "fin",
+       "number": "426",
+       "id": "ab1b24dd-ab23-41b0-a074-e77e8d9c5564"
+      },
+      {
+       "qty": 3,
+       "name": "Minwu, White Mage",
+       "set": "fin",
+       "number": "26",
+       "id": "6822144f-f0eb-4e10-a217-52cad36d2973"
+      },
+      {
+       "qty": 4,
+       "name": "Scorpion Sentinel",
+       "set": "fin",
+       "number": "72",
+       "id": "08ab5220-e5c1-472e-8217-97fd60e1773c"
+      },
+      {
+       "qty": 4,
+       "name": "Dragoon's Wyvern",
+       "set": "fin",
+       "number": "49",
+       "id": "d92bce20-308e-4841-aaf8-8e20698292e7"
+      },
+      {
+       "qty": 3,
+       "name": "Y'shtola Rhul",
+       "set": "fin",
+       "number": "86",
+       "id": "aef218fa-13a4-4653-95d6-6b3ef1b33a92"
+      },
+      {
+       "qty": 4,
+       "name": "Magic Damper",
+       "set": "fin",
+       "number": "61",
+       "id": "44921b2e-5938-4f63-92b9-0b719a2f8c68"
+      },
+      {
+       "qty": 4,
+       "name": "Syncopate",
+       "set": "fin",
+       "number": "80",
+       "id": "83e1cd8d-5b97-427a-be75-2a1947f9c59b"
+      },
+      {
+       "qty": 4,
+       "name": "Ice Magic",
+       "set": "fin",
+       "number": "56",
+       "id": "9dabd626-7ec3-4913-babb-d5d3fd5e32d5"
+      },
+      {
+       "qty": 3,
+       "name": "Coeurl",
+       "set": "fin",
+       "number": "12",
+       "id": "7604b534-5480-42fa-bc36-bbae730f8582"
+      },
+      {
+       "qty": 12,
+       "name": "Plains",
+       "set": "fin",
+       "number": "294",
+       "id": "9dd2d666-7c6b-48ce-93dc-c004ebdd1fe9"
+      },
+      {
+       "qty": 12,
+       "name": "Island",
+       "set": "fin",
+       "number": "297",
+       "id": "b92ec9f6-a56d-40c6-aee2-7d5e1524c985"
+      }
+     ]
+    }
+   },
+   "reward": {
+    "hero": {
+     "packs": 1,
+     "coins": 100
+    },
+    "villain": {
+     "card": {
+      "oracle_id": "9c4fdd20-0396-40b7-8687-43b1035b6956",
+      "name": "Rosa, Resolute White Mage",
+      "rarity": "rare",
+      "set": "fin",
+      "id": "d7964800-1392-4bb8-84e2-c9f3938ceac3",
+      "image": "https://cards.scryfall.io/normal/front/d/7/d7964800-1392-4bb8-84e2-c9f3938ceac3.jpg"
+     },
+     "coins": 100
+    }
+   },
+   "scene": [
+    {
+     "who": "stage",
+     "line": "The Shinra people told us that everyone would be happy once the reactor was built. But all it brought us was sadness...",
+     "quote": true
+    },
+    {
+     "who": "summoners",
+     "line": "They answer spells. Cast a cheap one first, then the summon you need."
+    }
+   ],
+   "villainScene": [
+    {
+     "who": "azorius",
+     "line": "Every spell has a price. We make you pay it twice."
+    }
+   ],
+   "after": null,
+   "cues": {
+    "hero": {
+     "start": "Come, summon.",
+     "big": "Summon!",
+     "low": "They answered it...",
+     "win": "The summon stands.",
+     "loss": "Countered...",
+     "half": "Bait a counter with a cheap spell first."
+    },
+    "villain": {
+     "start": "Not that.",
+     "big": "Countered!",
+     "low": "We are out of answers...",
+     "win": "Control.",
+     "loss": "It resolved..."
+    }
+   },
+   "bigPlays": [],
+   "sim": null
+  },
+  {
+   "id": "a39b8",
+   "slot": 8,
+   "kind": "Boss",
+   "mood": "boss",
+   "title": "Sephiroth",
+   "difficulty": "Hard",
+   "teaches": [
+    "Transform"
+   ],
+   "blurb": "The fabled SOLDIER believes the planet already belongs to him. Cloud and his friends say otherwise.",
+   "rewardSet": "fin",
+   "host": true,
+   "hero": {
+    "who": "party",
+    "deck": {
+     "name": "Cloud and Friends",
+     "colors": "GW",
+     "archetype": null,
+     "label": "tribute",
+     "cards": [
+      {
+       "qty": 3,
+       "name": "Cloud, Midgar Mercenary",
+       "set": "fin",
+       "number": "10",
+       "id": "2cf7e8a3-fad7-413d-b17c-7519a9cf5fb5"
+      },
+      {
+       "qty": 3,
+       "name": "Aerith Gainsborough",
+       "set": "fin",
+       "number": "4",
+       "id": "e86328b6-ded2-41df-8b6e-4a770e7b171e"
+      },
+      {
+       "qty": 4,
+       "name": "Tifa Lockhart",
+       "set": "fin",
+       "number": "206",
+       "id": "fb781323-2746-405d-a9b2-e778c037a6e9"
+      },
+      {
+       "qty": 3,
+       "name": "Zack Fair",
+       "set": "fin",
+       "number": "45",
+       "id": "f21f9161-5945-40da-8da0-446f6a4a1c23"
+      },
+      {
+       "qty": 4,
+       "name": "Torgal, A Fine Hound",
+       "set": "fin",
+       "number": "208",
+       "id": "0f5725aa-42bb-4dfd-9c15-135b38b33da3"
+      },
+      {
+       "qty": 4,
+       "name": "Quina, Qu Gourmet",
+       "set": "fin",
+       "number": "194",
+       "id": "4f352b5e-9731-4a8e-b872-db5d3bf32211"
+      },
+      {
+       "qty": 4,
+       "name": "Sazh Katzroy",
+       "set": "fin",
+       "number": "199",
+       "id": "1e2a3566-1390-457e-8077-d776a8671319"
+      },
+      {
+       "qty": 4,
+       "name": "Vanille, Cheerful l'Cie",
+       "set": "fin",
+       "number": "211",
+       "id": "91226c1a-63a0-494e-bcf0-77c2d6f49213"
+      },
+      {
+       "qty": 3,
+       "name": "Yuna, Hope of Spira",
+       "set": "fin",
+       "number": "250",
+       "id": "35b613ad-86f0-431b-af93-147d21041fde"
+      },
+      {
+       "qty": 2,
+       "name": "Buster Sword",
+       "set": "fin",
+       "number": "255",
+       "id": "374d7383-a1a7-4eea-91f7-290180e14cc9"
+      },
+      {
+       "qty": 2,
+       "name": "Restoration Magic",
+       "set": "fin",
+       "number": "30",
+       "id": "494e68e9-ecba-4482-82bc-207ad59144c1"
+      },
+      {
+       "qty": 12,
+       "name": "Plains",
+       "set": "fin",
+       "number": "294",
+       "id": "9dd2d666-7c6b-48ce-93dc-c004ebdd1fe9"
+      },
+      {
+       "qty": 12,
+       "name": "Forest",
+       "set": "fin",
+       "number": "306",
+       "id": "be72862d-d71e-4b18-98a6-59019399f631"
+      }
+     ]
+    }
+   },
+   "villain": {
+    "who": "sephiroth",
+    "deck": {
+     "name": "Sephiroth's Remnants",
+     "colors": "B",
+     "archetype": null,
+     "label": "tribute",
+     "cards": [
+      {
+       "qty": 3,
+       "name": "Sephiroth, Fabled SOLDIER // Sephiroth, One-Winged Angel",
+       "set": "fin",
+       "number": "115",
+       "id": "85eaf5e7-77dc-4842-a70c-ce4ac7f724df"
+      },
+      {
+       "qty": 3,
+       "name": "Vincent Valentine // Galian Beast",
+       "set": "fin",
+       "number": "125",
+       "id": "028ef608-acfe-4e9d-90db-eca4411ba78a"
+      },
+      {
+       "qty": 3,
+       "name": "Reno and Rude",
+       "set": "fin",
+       "number": "113",
+       "id": "b5eb0064-c7c4-4e3e-add2-b86269de3fb9"
+      },
+      {
+       "qty": 1,
+       "name": "Tonberry",
+       "set": "fin",
+       "number": "122",
+       "id": "1a9b8723-4383-4c14-b24d-52863af8703d"
+      },
+      {
+       "qty": 4,
+       "name": "Malboro",
+       "set": "fin",
+       "number": "106",
+       "id": "e46d8048-03ce-4e07-ba24-f41ba6140a4e"
+      },
+      {
+       "qty": 4,
+       "name": "Shambling Cie'th",
+       "set": "fin",
+       "number": "117",
+       "id": "f02ce338-4fe2-44b0-a896-3ed7e6c874a3"
+      },
+      {
+       "qty": 3,
+       "name": "Summon: Anima",
+       "set": "fin",
+       "number": "120",
+       "id": "aa4f6703-21f8-4c29-ad5a-5afb54188ade"
+      },
+      {
+       "qty": 3,
+       "name": "Summon: Primal Odin",
+       "set": "fin",
+       "number": "121",
+       "id": "8b1b5f06-e34d-44a3-976e-5157c4b7a0f4"
+      },
+      {
+       "qty": 4,
+       "name": "Ahriman",
+       "set": "fin",
+       "number": "87",
+       "id": "162a415c-5465-497e-8f4e-c6f09681641d"
+      },
+      {
+       "qty": 3,
+       "name": "Fight On!",
+       "set": "fin",
+       "number": "100",
+       "id": "e1b0739a-dcc4-4034-96d7-69e551b2f36b"
+      },
+      {
+       "qty": 3,
+       "name": "Overkill",
+       "set": "fin",
+       "number": "109",
+       "id": "ae075e71-d33d-4d6c-b4a5-0b47dd6fd196"
+      },
+      {
+       "qty": 2,
+       "name": "Dark Knight's Greatsword",
+       "set": "fin",
+       "number": "95",
+       "id": "b50dcc7c-260f-4d8c-9a9e-9244ec23a91e"
+      },
+      {
+       "qty": 24,
+       "name": "Swamp",
+       "set": "fin",
+       "number": "300",
+       "id": "f66094ef-059b-4511-aa6e-835906736de4"
+      }
+     ]
+    }
+   },
+   "reward": {
+    "hero": {
+     "packs": 2,
+     "coins": 200
+    },
+    "villain": {
+     "card": {
+      "oracle_id": "70113003-be5e-406a-9aec-cb480468c36d",
+      "name": "Sephiroth, Fabled SOLDIER // Sephiroth, One-Winged Angel",
+      "rarity": "mythic",
+      "set": "fin",
+      "id": "85eaf5e7-77dc-4842-a70c-ce4ac7f724df",
+      "image": "https://cards.scryfall.io/normal/front/8/5/85eaf5e7-77dc-4842-a70c-ce4ac7f724df.jpg"
+     },
+     "coins": 200
+    }
+   },
+   "scene": [
+    {
+     "who": "stage",
+     "line": "You gonna stand there and pretend you can't hear the planet crying out in pain?",
+     "quote": true
+    },
+    {
+     "who": "stage",
+     "line": "I'm pretty good at taking care of myself, you know.",
+     "quote": true
+    },
+    {
+     "who": "sephiroth",
+     "line": "This is the end... for all of you.",
+     "quote": true
+    },
+    {
+     "who": "cloud",
+     "line": "His card transforms into One-Winged Angel. Kill him early or race the clock."
+    }
+   ],
+   "villainScene": [
+    {
+     "who": "sephiroth",
+     "line": "Fate is not to be taken lightly, Cloud.",
+     "quote": true
+    },
+    {
+     "who": "sephiroth",
+     "line": "The planet is mine. It has always been mine."
+    }
+   ],
+   "after": null,
+   "cues": {
+    "hero": {
+     "start": "Let us end this.",
+     "big": "For the planet!",
+     "low": "He is too strong...",
+     "win": "Lifestream, heal this world.",
+     "loss": "Not yet... not yet...",
+     "half": "He transforms. Remove him before he grows."
+    },
+    "villain": {
+     "start": "Fate.",
+     "big": "One-Winged Angel!",
+     "low": "Impossible...",
+     "win": "The planet is mine.",
+     "loss": "Cloud..."
+    }
+   },
+   "bigPlays": [],
+   "sim": null
+  },
+  {
+   "id": "a39b9",
+   "slot": 9,
+   "kind": "Secret Boss",
+   "secret": true,
+   "mood": "boss",
+   "title": "Ultimate Weapon",
+   "difficulty": "Hard",
+   "teaches": [
+    "Trample"
+   ],
+   "blurb": "Past the final fight, the planet keeps one more secret: a weapon too large to name.",
+   "rewardSet": "fin",
+   "host": true,
+   "archive": {
+    "deck": "The Weapons",
+    "when": "Summer 2025",
+    "format": "Story archive, no tournament list.",
+    "what": "A green deck of the largest monsters in the set: Diamond Weapon, Ancient Adamantoise and Coliseum Behemoth.",
+    "why": "It is a big-creature gauntlet in the JRPG tradition, not a deck anyone won with.",
+    "beat": "Block the first big creature, chump the second, and burn it out before the third lands.",
+    "after": "Nothing; this is the optional superboss at the end of the story."
+   },
+   "hero": {
+    "who": "hunters",
+    "deck": {
+     "name": "The Hunters",
+     "colors": "RW",
+     "archetype": null,
+     "label": "tribute",
+     "cards": [
+      {
+       "qty": 3,
+       "name": "Lightning, Army of One",
+       "set": "fin",
+       "number": "233",
+       "id": "1103da9c-300c-406b-997d-9e5bb7cd02d6"
+      },
+      {
+       "qty": 4,
+       "name": "Lightning, Security Sergeant",
+       "set": "fin",
+       "number": "462",
+       "id": "40cce7b4-1d5d-4d91-90c5-71b79b5be1ac"
+      },
+      {
+       "qty": 4,
+       "name": "Snow Villiers",
+       "set": "fin",
+       "number": "33",
+       "id": "399bb699-e61d-4b41-b6e9-e594cbad6194"
+      },
+      {
+       "qty": 4,
+       "name": "Barret Wallace",
+       "set": "fin",
+       "number": "129",
+       "id": "1a504dff-5857-4a61-ab99-616d5df7cf5a"
+      },
+      {
+       "qty": 4,
+       "name": "Seifer Almasy",
+       "set": "fin",
+       "number": "156",
+       "id": "9c776984-99ea-4181-ac95-78c41ba9d54f"
+      },
+      {
+       "qty": 4,
+       "name": "Zell Dincht",
+       "set": "fin",
+       "number": "170",
+       "id": "135d6b27-9168-4513-9d7d-56edae048857"
+      },
+      {
+       "qty": 3,
+       "name": "Firion, Wild Rose Warrior",
+       "set": "fin",
+       "number": "137",
+       "id": "98366937-d15b-4a66-b9f6-878d50b63871"
+      },
+      {
+       "qty": 2,
+       "name": "Light of Judgment",
+       "set": "fin",
+       "number": "144",
+       "id": "98bb716d-ca66-445f-9cb3-0fc656c8ebff"
+      },
+      {
+       "qty": 3,
+       "name": "Judgment Bolt",
+       "set": "fin",
+       "number": "559",
+       "id": "05b04b06-9271-4a28-a60e-287df0d1a4d1"
+      },
+      {
+       "qty": 2,
+       "name": "Warrior's Sword",
+       "set": "fin",
+       "number": "169",
+       "id": "cb98a7dd-542e-4448-b3bb-ff5d67a36535"
+      },
+      {
+       "qty": 3,
+       "name": "Fire Magic",
+       "set": "fin",
+       "number": "136",
+       "id": "415ff6a5-61ef-4b37-ae08-e44476300d4a"
+      },
+      {
+       "qty": 12,
+       "name": "Plains",
+       "set": "fin",
+       "number": "294",
+       "id": "9dd2d666-7c6b-48ce-93dc-c004ebdd1fe9"
+      },
+      {
+       "qty": 12,
+       "name": "Mountain",
+       "set": "fin",
+       "number": "303",
+       "id": "a18ef64b-a9de-4548-b4d5-168758442db7"
+      }
+     ]
+    }
+   },
+   "villain": {
+    "who": "weapons",
+    "deck": {
+     "name": "The Weapons",
+     "colors": "G",
+     "archetype": null,
+     "label": "tribute",
+     "note": "Built from cards in this act's set only. No tournament list is copied.",
+     "cards": [
+      {
+       "qty": 2,
+       "name": "Sazh's Chocobo",
+       "set": "fin",
+       "number": "200",
+       "id": "dda6b4d0-1b60-46b0-b321-b9ffe15afff4"
+      },
+      {
+       "qty": 4,
+       "name": "Town Greeter",
+       "set": "fin",
+       "number": "209",
+       "id": "49cd4efa-4df4-4257-9a42-60330f7781e2"
+      },
+      {
+       "qty": 1,
+       "name": "Diamond Weapon",
+       "set": "fin",
+       "number": "183",
+       "id": "6ce7f494-2a19-4b11-94d4-fc5e5a7068bd"
+      },
+      {
+       "qty": 1,
+       "name": "Ancient Adamantoise",
+       "set": "fin",
+       "number": "172",
+       "id": "4c139f30-5ecd-48fd-ae7c-ec2cc98889ff"
+      },
+      {
+       "qty": 2,
+       "name": "Coliseum Behemoth",
+       "set": "fin",
+       "number": "181",
+       "id": "900206f1-7dd6-4db9-a430-73e560fd196b"
+      },
+      {
+       "qty": 3,
+       "name": "Summon: Titan",
+       "set": "fin",
+       "number": "204",
+       "id": "5ce6ea96-7293-496d-b9c8-8ed6d6109a4d"
+      },
+      {
+       "qty": 4,
+       "name": "Gysahl Greens",
+       "set": "fin",
+       "number": "190",
+       "id": "020dee17-d85b-44c4-9faa-b1ef977956f4"
+      },
+      {
+       "qty": 4,
+       "name": "Gran Pulse Ochu",
+       "set": "fin",
+       "number": "189",
+       "id": "4dced21f-478c-4500-9484-af5864dea5cc"
+      },
+      {
+       "qty": 4,
+       "name": "Goobbue Gardener",
+       "set": "fin",
+       "number": "188",
+       "id": "b7c3544a-5dd5-423e-8a40-ac4803db8adc"
+      },
+      {
+       "qty": 4,
+       "name": "Cactuar",
+       "set": "fin",
+       "number": "177",
+       "id": "d5273db4-6214-41e4-825a-612fca8bbe03"
+      },
+      {
+       "qty": 3,
+       "name": "Jumbo Cactuar",
+       "set": "fin",
+       "number": "191",
+       "id": "db01c222-8795-47e9-a789-e7f749a3ee7d"
+      },
+      {
+       "qty": 4,
+       "name": "Reach the Horizon",
+       "set": "fin",
+       "number": "195",
+       "id": "c25960e0-5779-4e20-89f3-03950ad9d91c"
+      },
+      {
+       "qty": 24,
+       "name": "Forest",
+       "set": "fin",
+       "number": "306",
+       "id": "be72862d-d71e-4b18-98a6-59019399f631"
+      }
+     ]
+    }
+   },
+   "reward": {
+    "hero": {
+     "packs": 2,
+     "coins": 200
+    },
+    "villain": {
+     "card": {
+      "oracle_id": "3beba02f-4d50-4a93-a13b-78d4595bfbfc",
+      "name": "Diamond Weapon",
+      "rarity": "uncommon",
+      "set": "fin",
+      "id": "6ce7f494-2a19-4b11-94d4-fc5e5a7068bd",
+      "image": "https://cards.scryfall.io/normal/front/6/c/6ce7f494-2a19-4b11-94d4-fc5e5a7068bd.jpg"
+     },
+     "coins": 200
+    }
+   },
+   "scene": [
+    {
+     "who": "stage",
+     "line": "The crystal sky splits. Something that has been asleep since before the war turns over."
+    },
+    {
+     "who": "hunters",
+     "line": "It is huge. Kill it before the third monster arrives."
+    }
+   ],
+   "villainScene": [
+    {
+     "who": "weapons",
+     "line": "[the ground shakes]"
+    }
+   ],
+   "after": [
+    {
+     "who": "stage",
+     "line": "Recorded: the Ultimate Weapon sleeps again. The crystal sky closes."
+    }
+   ],
+   "cues": {
+    "hero": {
+     "start": "Hunters, up.",
+     "big": "Strike!",
+     "low": "It is enormous...",
+     "win": "The weapon is down.",
+     "loss": "Crushed...",
+     "half": "Chump the first, remove the second."
+    },
+    "villain": {
+     "start": "[a roar]",
+     "big": "[the earth cracks]",
+     "low": "[a rumble]",
+     "win": "[silence]",
+     "loss": "[the weapon sleeps]"
+    }
+   },
+   "bigPlays": [],
+   "sim": null
+  }
+ ]
+}
