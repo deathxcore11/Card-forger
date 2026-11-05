@@ -282,6 +282,10 @@ export const LESSONS = {
   'Station': 'Station: tap your creatures to add charge to a Spacecraft. Once it is charged enough, it comes alive as a vehicle with real power.',
   'Warp': 'Warp: cast it cheaper from your hand, but it is exiled at end of turn. You can cast it again from exile later, at full cost.',
   'Void': 'Void turns on if a permanent left the battlefield or a spell was warped this turn. Plan the turn so the bonus lands.',
+  'Web-slinging': 'Web-slinging: cast it for its web cost by returning a tapped creature you control to your hand. A swing and a reset.',
+  'Mayhem': 'Mayhem: if you discarded this card this turn, you may cast it from your graveyard right away, before the turn ends.',
+  'Bending': 'Bending: each element has its own trick. Airbending sends a permanent to exile so you can cast it again for two. Firebending adds mana on attack.',
+  'Earthbend': 'Earthbend: a land becomes a creature with +1/+1 counters and haste. If it dies or is exiled, it returns tapped. Rock is a stubborn element.',
   'Playing under a lock': 'A lock stops cards from untapping or moving. Break it, or win with what\'s already in play.',
 };
 // Every Story deck says what it is (Randall, 2 Nov 2026): Historical Exact, Historical Tribute or
