@@ -33,14 +33,19 @@ import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.withContext
 
-/** The set browser and the last set page drawn, so coming back paints at once. */
+/** Each game's set browser and the last set page drawn, so coming back paints at once. */
 private object SetsCache {
-    var model: CollectionSetsModel? = null
-    var q = ""
+    val models = mutableMapOf<String, CollectionSetsModel>()
+    val qs = mutableMapOf<String, String>()
     var code: String? = null
     var set: CollectionSetModel? = null
     var setQ = ""
 }
+
+/** The website's own set browser for [game]: Magic's #sets, or the game picked first. */
+private fun siteSets(game: String) = if (game == "mtg") null else "[data-act=\"setGame\"][data-game=\"$game\"]"
+/** tcg.js names its controls tSets… / tSet…: the app's names for them. */
+private fun plain(name: String) = name.removePrefix("t").replaceFirstChar { it.lowercase() }
 
 private const val SITE = "https://cardstashy.com/"
 private fun css(v: String) = v.replace("\\", "\\\\").replace("\"", "\\\"")
@@ -59,27 +64,29 @@ private fun Waiting(top: @Composable (tabs: (@Composable () -> Unit)?) -> Unit, 
 }
 
 /**
- * Every Magic set (views.js setsPage, the site's #sets) through the site's own code, drawn natively: the search, the release
- * families, the Filters (type, availability, year, order, Reset, Refresh) and Show more are app.js's own handlers in the engine;
- * a set opens its page. Sets live under Search on the site, so Search is the lit tab.
+ * Every set of [game] (views.js setsPage, or tcg.js tcgSets for Yu-Gi-Oh! and Pokémon; the site's #sets) through the site's own
+ * code, drawn natively: the search, the release families, the Filters (type, availability, year, order, Reset, Refresh) and Show
+ * more are the site's own handlers in the engine; a set opens its page. Sets live under Search on the site, so Search is the lit
+ * tab. The other games' tabs switch the list ([onGame]) when [tcg] (their native lists are on), else open the website's.
  */
 @Composable
-fun CollectionSetsRoute(onPlay: () -> Unit, onProfile: () -> Unit, onHome: () -> Unit, onCards: () -> Unit, onDecks: () -> Unit, onSet: (String) -> Unit,
-                        web: (url: String, press: String?) -> Unit) {
+fun CollectionSetsRoute(onPlay: () -> Unit, onProfile: () -> Unit, onHome: () -> Unit, onCards: () -> Unit, onDecks: () -> Unit, onSet: (game: String, code: String) -> Unit,
+                        web: (url: String, press: String?) -> Unit, game: String = "mtg", tcg: Boolean = false, onGame: (String) -> Unit = {}) {
     val context = LocalContext.current
     val session by Account.session.collectAsState()
     val revision by Decks.fullRevision.collectAsState()
     val profile by Account.profile.collectAsState()
-    var model by remember { mutableStateOf(SetsCache.model) }
-    var query by remember { mutableStateOf(SetsCache.q) }
-    var failed by remember { mutableStateOf<String?>(null) }
-    var asked by remember { mutableStateOf<Pair<String, String>?>(null) }
-    fun show(j: JsonObject) { if (j.size() > 0) CollectionSetsModel.parse(j).let { model = it; SetsCache.model = it } }
+    var model by remember(game) { mutableStateOf(SetsCache.models[game]) }
+    var query by remember(game) { mutableStateOf(SetsCache.qs[game] ?: "") }
+    var failed by remember(game) { mutableStateOf<String?>(null) }
+    var asked by remember(game) { mutableStateOf<Pair<String, String>?>(null) }
+    // A model only counts for the game this screen shows (the engine's last answer may still be another game's).
+    fun show(j: JsonObject) { if (j.size() > 0) CollectionSetsModel.parse(j).takeIf { it.game.id == game }?.let { model = it; SetsCache.models[game] = it } }
     LaunchedEffect(session?.userId) { if (session != null) Decks.load(context) }
-    LaunchedEffect(session?.userId, revision) { try {
+    LaunchedEffect(session?.userId, revision, game) { try {
         if (!ensureCollection(context, session?.userId, session != null, revision)) return@LaunchedEffect
-        show(withContext(Dispatchers.Default) { CollectionEngine.sets("mtg", JsonObject().apply { addProperty("q", SetsCache.q) }) })
-        // app.js loadSetIndex: the list from Scryfall (or its day-old copy), drawn as it lands.
+        show(withContext(Dispatchers.Default) { CollectionEngine.sets(game, JsonObject().apply { addProperty("q", SetsCache.qs[game] ?: "") }) })
+        // app.js loadSetIndex (Scryfall, or its day-old copy) / tcg.js loadSets (YGOPRODeck, TCGdex): drawn as it lands.
         CollectionEngine.setsLoad()
         CollectionEngine.settle(30_000, CollectionEngine.SETS_MODEL, ::show)
         show(CollectionEngine.setsModel())
@@ -90,8 +97,8 @@ fun CollectionSetsRoute(onPlay: () -> Unit, onProfile: () -> Unit, onHome: () ->
     } }
     // Typing waits a beat before it searches (app.js setsSearch).
     LaunchedEffect(query) {
-        if (query == SetsCache.q) return@LaunchedEffect
-        delay(180); SetsCache.q = query; asked = "search" to query
+        if (query == (SetsCache.qs[game] ?: "")) return@LaunchedEffect
+        delay(180); SetsCache.qs[game] = query; asked = "search" to query
     }
     LaunchedEffect(asked) {
         val (kind, value) = asked ?: return@LaunchedEffect
@@ -101,19 +108,19 @@ fun CollectionSetsRoute(onPlay: () -> Unit, onProfile: () -> Unit, onHome: () ->
         }
         asked = null
     }
-    val act = remember {
+    val act = remember(game) {
         CollectionSetsActions(
-            game = { g -> if (g != CardGame.MTG) web(SITE + "#sets", "[data-act=\"setGame\"][data-game=\"${g.id}\"]") },
+            game = { g -> if (g.id == game) Unit else if (g == CardGame.MTG || tcg) onGame(g.id) else web(SITE + "#sets", siteSets(g.id)) },
             search = { q -> query = q },
             family = { v -> asked = "family" to v },
-            facet = { name, v -> when (name) { "setsType" -> asked = "type" to v; "setsRelease" -> asked = "release" to v; "setsYear" -> asked = "year" to v; "setsSort" -> asked = "sort" to v } },
-            press = { p -> when (p.act) {
-                "setsReset" -> { query = ""; SetsCache.q = ""; asked = "reset" to "" }
+            facet = { name, v -> when (plain(name)) { "setsType" -> asked = "type" to v; "setsRelease" -> asked = "release" to v; "setsYear" -> asked = "year" to v; "setsSort" -> asked = "sort" to v } },
+            press = { p -> when (plain(p.act)) {
+                "setsReset" -> { query = ""; SetsCache.qs[game] = ""; asked = "reset" to "" }
                 "setsReload" -> asked = "reload" to ""
-                else -> if (p.act.isNotBlank()) web(SITE + "#sets", "[data-act=\"${css(p.act)}\"]")
+                else -> if (p.act.isNotBlank()) web(SITE + "#sets", listOfNotNull(siteSets(game), "[data-act=\"${css(p.act)}\"]").joinToString("\n"))
             } },
             more = { asked = "more" to "" },
-            set = onSet,
+            set = { code -> onSet(game, code) },
         )
     }
     val top: @Composable (tabs: (@Composable () -> Unit)?) -> Unit = { tabs ->
@@ -142,27 +149,29 @@ fun CollectionSetsRoute(onPlay: () -> Unit, onProfile: () -> Unit, onHome: () ->
  */
 @Composable
 fun CollectionSetRoute(code: String, onPlay: () -> Unit, onProfile: () -> Unit, onHome: () -> Unit, onCards: () -> Unit, onDecks: () -> Unit, onSets: () -> Unit,
-                       onSet: (String) -> Unit, web: (url: String, press: String?) -> Unit, nativeCard: Boolean = false) {
+                       onSet: (String) -> Unit, web: (url: String, press: String?) -> Unit, nativeCard: Boolean = false, game: String = "mtg",
+                       /** Another game's tab: its set list (native) or the website's. */
+                       onGame: (String) -> Unit = {}) {
     val context = LocalContext.current
     val session by Account.session.collectAsState()
     val revision by Decks.fullRevision.collectAsState()
     val profile by Account.profile.collectAsState()
-    if (SetsCache.code != code) { SetsCache.code = code; SetsCache.set = null; SetsCache.setQ = "" }
+    if (SetsCache.code != "$game|$code") { SetsCache.code = "$game|$code"; SetsCache.set = null; SetsCache.setQ = "" }
     var model by remember(code) { mutableStateOf(SetsCache.set) }
     var query by remember(code) { mutableStateOf(SetsCache.setQ) }
     var failed by remember(code) { mutableStateOf<String?>(null) }
     var asked by remember(code) { mutableStateOf<Pair<String, String>?>(null) }
     var cards by remember(code) { mutableStateOf(listOf<CardOpen>()) }
     val prefs = remember { context.getSharedPreferences("collection", android.content.Context.MODE_PRIVATE) }
-    fun show(j: JsonObject) { if (j.size() > 0) CollectionSetModel.parse(j).let { model = it; SetsCache.set = it } }
+    fun show(j: JsonObject) { if (j.size() > 0) CollectionSetModel.parse(j).takeIf { it.game.id == game }?.let { model = it; SetsCache.set = it } }
     LaunchedEffect(session?.userId) { if (session != null) Decks.load(context) }
     LaunchedEffect(code, session?.userId, revision) { try {
         if (!ensureCollection(context, session?.userId, session != null, revision)) return@LaunchedEffect
-        show(withContext(Dispatchers.Default) { CollectionEngine.set("mtg", code) })
+        show(withContext(Dispatchers.Default) { CollectionEngine.set(game, code) })
         // The view last chosen (the site keeps it in the account's settings; the app keeps it here) and the search as typed.
         prefs.getString("setView", null)?.let { show(CollectionEngine.setDo("view", it)) }
         if (SetsCache.setQ.isNotBlank()) show(CollectionEngine.setDo("search", SetsCache.setQ))
-        // app.js loadSet: every page of the set's cards, drawn as each lands (and the set index for its name and symbol).
+        // app.js loadSet / tcg.js openSet: every page of the set's cards, drawn as each lands (and the set index for its name and symbol).
         CollectionEngine.setLoad()
         CollectionEngine.settle(60_000, CollectionEngine.SET_MODEL, ::show)
         show(CollectionEngine.setModel())
@@ -183,23 +192,33 @@ fun CollectionSetRoute(code: String, onPlay: () -> Unit, onProfile: () -> Unit, 
         }
         asked = null
     }
-    val page = SITE + "#set/" + android.net.Uri.encode(code)
-    val act = remember(code) {
+    // The website's page for this set: Magic's #set/<code>; another game's set is reached from its set list (pick the game, then the set).
+    val page = if (game == "mtg") SITE + "#set/" + android.net.Uri.encode(code) else SITE + "#sets"
+    val lead = if (game == "mtg") emptyList() else listOf("[data-act=\"setGame\"][data-game=\"$game\"]", "[data-act=\"tSet\"][data-id=\"${css(code)}\"]")
+    fun site(vararg then: String) = web(page, (lead + then).joinToString("\n").ifBlank { null })
+    val act = remember(code, game) {
         CollectionSetActions(
-            game = { g -> if (g != CardGame.MTG) web(SITE + "#sets", "[data-act=\"setGame\"][data-game=\"${g.id}\"]") },
+            game = { g -> if (g.id != game) onGame(g.id) },
             back = onSets,
             search = { q -> query = q },
             filter = { v -> asked = "filter" to v },
-            select = { name, v -> when (name) { "setRarity" -> asked = "rarity" to v; "setFinish" -> asked = "finish" to v; "setSort" -> asked = "sort" to v } },
+            select = { name, v -> when (plain(name)) { "setRarity" -> asked = "rarity" to v; "setFinish" -> asked = "finish" to v; "setEdition" -> asked = "edition" to v; "setSort" -> asked = "sort" to v } },
             view = { v -> prefs.edit().putString("setView", v).apply(); asked = "view" to v },
             more = { asked = "more" to "" },
             card = { t ->
-                val tile = "[data-act=\"card\"][data-set-i=\"${t.i}\"]"
-                val finish = model?.selects?.firstOrNull { it.name == "setFinish" }?.current?.value?.takeIf { it != "all" }.orEmpty()
-                if (nativeCard) cards = cards + CardOpen(t.r.name, page = page, tile = tile, setI = t.i, setFinish = finish) else web(page, tile)
+                if (game != "mtg") site("[data-act=\"tCard\"][data-id=\"${css(t.id)}\"]")
+                else {
+                    val tile = "[data-act=\"card\"][data-set-i=\"${t.i}\"]"
+                    val finish = model?.selects?.firstOrNull { it.name == "setFinish" }?.current?.value?.takeIf { it != "all" }.orEmpty()
+                    if (nativeCard) cards = cards + CardOpen(t.r.name, page = page, tile = tile, setI = t.i, setFinish = finish) else web(page, tile)
+                }
             },
-            pack = { web(page, "[data-act=\"openSetPack\"]") },
-            press = { p -> if (p.act == "setReload") asked = "reload" to "" else if (p.act.isNotBlank()) web(page, "[data-act=\"${css(p.act)}\"]") },
+            pack = { site("[data-act=\"openSetPack\"]") },
+            press = { p -> when (plain(p.act)) {
+                "setReload", "setRetry" -> asked = "reload" to ""
+                "setDetails" -> asked = "details" to ""
+                else -> if (p.act.isNotBlank()) site("[data-act=\"${css(p.act)}\"]")
+            } },
         )
     }
     val top: @Composable (tabs: (@Composable () -> Unit)?) -> Unit = { tabs ->

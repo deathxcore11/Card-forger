@@ -83,6 +83,8 @@ private const val NATIVE_DECK = true
 private const val NATIVE_CARD = true
 /** Every set and a set's page, opened from set badges, the card page and Home's All sets link. Magic only; the other games' sets open the website. */
 private const val NATIVE_SETS = true
+/** Yu-Gi-Oh! and Pokémon in the native set list and set page (their game tabs there). Off until Randall approves the preview: they open the website's. */
+private const val NATIVE_TCG_SETS = false
 
 private sealed interface Screen {
     data object Home : Screen
@@ -97,10 +99,10 @@ private sealed interface Screen {
     data object CollectionDecks : Screen
     /** A deck's page, its Cards tab (its other tabs are still the website's). */
     data class CollectionDeck(val id: String) : Screen
-    /** Every Magic set (the site's #sets). */
-    data object CollectionSets : Screen
-    /** One set's page (the site's #set/<code>). */
-    data class CollectionSet(val code: String) : Screen
+    /** Every set of a game (the site's #sets). */
+    data class CollectionSets(val game: String = "mtg") : Screen
+    /** One set's page (the site's #set/<code or id>). */
+    data class CollectionSet(val code: String, val game: String = "mtg") : Screen
     /** Play's own collection (the Trunk) with its card view. */
     data object Trunk : Screen
     /** Play decks: the list, precons and Paste a list. */
@@ -262,6 +264,8 @@ private fun App(activity: MainActivity) {
     val screen = trail.last()
     fun go(s: Screen) { if (s == Screen.Home) { trail.clear(); trail += Screen.Home } else if (trail.last() != s) trail += s }
     fun back() { if (trail.size > 1) trail.removeAt(trail.lastIndex) }
+    /** The open screen becomes [s] (a game tab on the set list): back still goes where it went. */
+    fun swap(s: Screen) { trail[trail.lastIndex] = s }
     BackHandler(enabled = trail.size > 1) { back() }
     /** A set badge, the card page's set and Home's sets open the native set page when it is on; null keeps the website's. */
     val setOpen: ((String) -> Unit)? = if (NATIVE_SETS) ({ code -> go(Screen.CollectionSet(code)) }) else null
@@ -304,7 +308,7 @@ private fun App(activity: MainActivity) {
                 web = { url, press -> go(Screen.Web(url, press)) },
                 open = { url -> if (url.startsWith("https://") || url.startsWith("http://")) runCatching { activity.startActivity(android.content.Intent(android.content.Intent.ACTION_VIEW, android.net.Uri.parse(url))) } },
                 onCards = if (NATIVE_CARDS) ({ go(Screen.CollectionCards) }) else null, onDecks = if (NATIVE_DECKS) ({ go(Screen.CollectionDecks) }) else null,
-                onSet = setOpen, onSets = if (NATIVE_SETS) ({ go(Screen.CollectionSets) }) else null)
+                onSet = setOpen, onSets = if (NATIVE_SETS) ({ go(Screen.CollectionSets()) }) else null)
         }
         Screen.CollectionCards -> {
             LaunchedEffect(Unit) { activity.inGame(false) }
@@ -329,21 +333,24 @@ private fun App(activity: MainActivity) {
                 onPractice = { id, format -> lobbies.getOrPut("practice") { dev.cardstashy.nativeplay.ui.LobbyModel("practice") }.practiceWith(id, format); go(Screen.Lobby("practice")) },
                 web = { url, press -> go(Screen.Web(url, press)) }, nativeCard = NATIVE_CARD, onSet = setOpen)
         }
-        Screen.CollectionSets -> {
+        is Screen.CollectionSets -> {
             LaunchedEffect(Unit) { activity.inGame(false) }
             dev.cardstashy.nativeplay.ui.CollectionSetsRoute(onPlay = { go(Screen.Home) }, onProfile = { go(Screen.SignIn) }, onHome = { go(Screen.Collection) },
                 onCards = { if (NATIVE_CARDS) go(Screen.CollectionCards) else go(Screen.Web("https://cardstashy.com/#collection", null)) },
                 onDecks = { if (NATIVE_DECKS) go(Screen.CollectionDecks) else go(Screen.Web("https://cardstashy.com/#decks", null)) },
-                onSet = { code -> go(Screen.CollectionSet(code)) }, web = { url, press -> go(Screen.Web(url, press)) })
+                onSet = { g, code -> go(Screen.CollectionSet(code, g)) }, web = { url, press -> go(Screen.Web(url, press)) },
+                game = s.game, tcg = NATIVE_TCG_SETS, onGame = { g -> swap(Screen.CollectionSets(g)) })
         }
         is Screen.CollectionSet -> {
             LaunchedEffect(Unit) { activity.inGame(false) }
-            dev.cardstashy.nativeplay.ui.CollectionSetRoute(s.code, onPlay = { go(Screen.Home) }, onProfile = { go(Screen.SignIn) }, onHome = { go(Screen.Collection) },
+            dev.cardstashy.nativeplay.ui.CollectionSetRoute(s.code, game = s.game, onPlay = { go(Screen.Home) }, onProfile = { go(Screen.SignIn) }, onHome = { go(Screen.Collection) },
                 onCards = { if (NATIVE_CARDS) go(Screen.CollectionCards) else go(Screen.Web("https://cardstashy.com/#collection", null)) },
                 onDecks = { if (NATIVE_DECKS) go(Screen.CollectionDecks) else go(Screen.Web("https://cardstashy.com/#decks", null)) },
                 // "‹ All sets" goes back when the list opened this set, as the site's back does.
-                onSets = { if (trail.getOrNull(trail.size - 2) == Screen.CollectionSets) back() else go(Screen.CollectionSets) },
-                onSet = { code -> go(Screen.CollectionSet(code)) }, web = { url, press -> go(Screen.Web(url, press)) }, nativeCard = NATIVE_CARD)
+                onSets = { if (trail.getOrNull(trail.size - 2) == Screen.CollectionSets(s.game)) back() else go(Screen.CollectionSets(s.game)) },
+                onSet = { code -> go(Screen.CollectionSet(code)) }, web = { url, press -> go(Screen.Web(url, press)) }, nativeCard = NATIVE_CARD,
+                // Another game's tab: its set list here when those are native, else the website's.
+                onGame = { g -> if (g == "mtg" || NATIVE_TCG_SETS) swap(Screen.CollectionSets(g)) else go(Screen.Web("https://cardstashy.com/#sets", "[data-act=\"setGame\"][data-game=\"$g\"]")) })
         }
         is Screen.Web -> { LaunchedEffect(s.url) { activity.inGame(false, play = s.url.contains("planeswalk")) }; CollectionScreen(onPlay = { back() }, url = s.url, press = s.press) }
         Screen.SignIn -> {

@@ -81,6 +81,26 @@ class CollectionSetsShotTest {
         if (missing.isNotEmpty()) println("MISSING ART ${missing.joinToString()}")
     }
 
+    /** Yu-Gi-Oh! and Pokémon (tcg.js tcgSets / tcgSet): collection-sets-<game>.json and collection-set-<game>.json from the engine. */
+    @Test fun tcgSets() {
+        setUp()
+        for (g in listOf("ygo", "ptcg")) {
+            val fx = home.resolve("collection-sets-$g.json"); assumeTrue("write the $g sets fixture first", fx.exists())
+            val m = CollectionSetsModel.parse(JsonParser.parseString(fx.readText()).asJsonObject)
+            val page: @Composable () -> Unit = { CollectionSets(m, top, nav = nav) }
+            shot("collection-sets-$g", 390, 844) { page() }
+            shot("collection-sets-$g-page", 390, 2400) { page() }
+            shot("collection-sets-$g", 884, 1104) { page() }
+            val sx = home.resolve("collection-set-$g.json"); assumeTrue("write the $g set fixture first", sx.exists())
+            val sm = CollectionSetModel.parse(JsonParser.parseString(sx.readText()).asJsonObject)
+            val setPage: @Composable () -> Unit = { CollectionSet(sm, top, nav = nav) }
+            shot("collection-set-$g", 390, 844) { setPage() }
+            shot("collection-set-$g-page", 390, 2400) { setPage() }
+            shot("collection-set-$g", 884, 1104) { setPage() }
+        }
+        if (missing.isNotEmpty()) println("MISSING ART ${missing.joinToString()}")
+    }
+
     @Test fun set() {
         setUp()
         val fx = home.resolve("collection-set-2x2.json"); assumeTrue("write the set fixture first", fx.exists())

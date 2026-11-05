@@ -281,6 +281,47 @@ class CollectionEngineTest {
         assertEquals("2x2", c["overviewHead"].asJsonObject["set"].asJsonObject["code"].asString.lowercase())
     }
 
+    /** tcg.js tcgSets / tcgSet → Yu-Gi-Oh! and Pokémon sets through the engine (the site's own loaders), then Magic's again. */
+    @Test fun tcgSetsModel() = runBlocking {
+        assumeTrue(bundle.isFile)
+        CollectionEngine.initFrom(bundle)
+        fourDecks()
+        for ((g, title, kind) in listOf(Triple("ygo", "Yu-Gi-Oh! sets", "ygo"), Triple("ptcg", "Pokémon sets", "pokemon"))) {
+            CollectionEngine.sets(g)
+            CollectionEngine.setsLoad()
+            CollectionEngine.settle(60_000)
+            val l = CollectionEngine.setsModel()
+            val rows = l["sections"].asJsonArray.flatMap { it.asJsonObject["rows"].asJsonArray.map { r -> r.asJsonObject } }
+            println("TSETS $g ${l["title"]} rows=${rows.size} first=${rows.firstOrNull()} foot=${l["foot"]}".take(1200))
+            assertEquals(title, l["title"].asString)
+            assertEquals(g, l["game"].asString)
+            assertTrue(rows.size >= 20)
+            assertEquals(kind, rows.first()["kind"].asString)
+            assertTrue(rows.first()["images"].asJsonArray.all { it.asString.startsWith("https://") })
+            assertTrue(l["more"].asString.startsWith("Show more"))
+            // The set page: its cards, hero, toolbar, tile chrome and prices.
+            val id = rows.first()["code"].asString
+            CollectionEngine.set(g, id)
+            CollectionEngine.setLoad()
+            CollectionEngine.settle(120_000)
+            val s = CollectionEngine.setModel()
+            val tiles = s["tiles"].asJsonArray.map { it.asJsonObject }
+            println("TSET $g ${s["title"]} ${s["line"]} ${s["results"]} tiles=${tiles.size} logo=${s["logo"]} first=${tiles.firstOrNull()}".take(1500))
+            assertEquals(g, s["game"].asString)
+            assertEquals(rows.first()["name"].asString, s["title"].asString)
+            assertTrue(tiles.size >= 20)
+            assertTrue(tiles.all { it["act"].asString == "tCard" && it["picture"].asJsonObject["src"].asString.startsWith("https://") })
+            assertTrue(tiles.any { it["chrome"]?.isJsonObject == true && it["chrome"].asJsonObject["emb"].asJsonArray.size() > 0 })
+            assertEquals("All sets", s["back"].asJsonObject["label"].asString)
+            val owned = CollectionEngine.setDo("filter", "owned")
+            assertEquals("owned", owned["filters"].asJsonArray.map { it.asJsonObject }.first { it["on"].asBoolean }["id"].asString)
+            CollectionEngine.setDo("filter", "all")
+        }
+        // Back to Magic: the site's own game setting is handed back.
+        CollectionEngine.sets("mtg")
+        assertEquals("Magic sets", CollectionEngine.setsModel()["title"].asString)
+    }
+
     private suspend fun fourDecks() {
         val prints = JsonParser.parseString(javaClass.classLoader!!.getResource("collection/printings.json")!!.readText()).asJsonArray.map { it.asJsonObject }
         val lots = JsonArray(); val printings = JsonObject(); val catalog = JsonObject()

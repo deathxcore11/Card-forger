@@ -66,7 +66,9 @@ import kotlin.math.roundToInt
 class SetProgress(val label: String, val eyebrow: String, val pct: String, val fill: Float?, val caption: String)
 /** One release in the browser (setRowContent): its art, symbol, name, code, family · date, card count and your progress. */
 class SetRowM(val code: String, val atmosphere: List<String>, val image: String, val fallback: String, val name: String, val mark: String, val detail: String,
-              val count: String, val units: List<String>, val unknown: Boolean, val progress: SetProgress?)
+              val count: String, val units: List<String>, val unknown: Boolean, val progress: SetProgress?,
+              /** The mark's kind: "" Magic's symbol, "ygo" the set code on a plate over its quiet art, "pokemon" the set symbol (its [images] in order). */
+              val kind: String = "", val images: List<String> = listOfNotNull(image.ifBlank { null }), val emblem: String = "")
 class SetsSection(val year: String, val count: String, val rows: List<SetRowM>)
 class SetsFacet(val sel: CollSelect, val title: String)
 /** The Filters pill (set-browser.js): its count of filters on, the four selects, "80 shown · …", Reset / Refresh, and when the list was checked. */
@@ -74,7 +76,9 @@ class SetsFilters(val label: String, val icon: SiteSvg?, val count: String, val 
 
 class CollectionSetsModel(val eyebrow: String, val title: String, val searchValue: String, val searchPlaceholder: String, val quick: List<CollTab>, val filters: SetsFilters?,
                           val error: String?, val retry: CardPress?, val loading: String, val sections: List<SetsSection>, val emptyTitle: String?, val emptyText: String,
-                          val more: String, val busy: Boolean) {
+                          val more: String, val busy: Boolean, val game: CardGame = CardGame.MTG,
+                          /** p.foot under the list: where the set codes or symbols come from. */
+                          val foot: String = "") {
     companion object {
         internal fun JsonObject.s(k: String) = get(k)?.takeIf { it.isJsonPrimitive }?.asString ?: ""
         internal fun JsonObject.b(k: String) = get(k)?.takeIf { it.isJsonPrimitive }?.asBoolean ?: false
@@ -84,7 +88,7 @@ class CollectionSetsModel(val eyebrow: String, val title: String, val searchValu
         internal fun select(o: JsonObject?) = o?.let { CollSelect(it.s("name"), it.s("label"), it.objs("options").map { x -> CollOption(x.s("value"), x.s("label"), x.b("on")) }) }
         internal fun progress(o: JsonObject?) = o?.let { SetProgress(it.s("label"), it.s("eyebrow"), it.s("pct"), it.get("fill")?.takeIf { f -> f.isJsonPrimitive }?.asFloat, it.s("caption")) }
         private fun row(r: JsonObject) = SetRowM(r.s("code"), r.strs("atmosphere"), r.s("image"), r.s("fallback"), r.s("name"), r.s("mark"), r.s("detail"),
-            r.s("count"), r.strs("units"), r.b("unknown"), progress(r.o("progress")))
+            r.s("count"), r.strs("units"), r.b("unknown"), progress(r.o("progress")), r.s("kind"), r.strs("images").ifEmpty { listOfNotNull(r.s("image").ifBlank { null }) }, r.s("emblem"))
 
         fun parse(j: JsonObject): CollectionSetsModel {
             val f = j.o("filters"); val err = j.o("error"); val empty = j.o("empty")
@@ -95,7 +99,7 @@ class CollectionSetsModel(val eyebrow: String, val title: String, val searchValu
                     it.objs("buttons").mapNotNull(CollectionCardModel::press), it.s("freshness")) },
                 err?.s("text")?.ifBlank { null }, CollectionCardModel.press(err?.o("retry")), j.s("loading"),
                 j.objs("sections").map { s -> SetsSection(s.s("year"), s.s("count"), s.objs("rows").map(::row)) },
-                empty?.s("title"), empty?.s("text") ?: "", j.s("more"), j.b("busy"))
+                empty?.s("title"), empty?.s("text") ?: "", j.s("more"), j.b("busy"), CardGame.of(j.s("game")), j.s("foot"))
         }
     }
 }
@@ -122,7 +126,10 @@ private val Ink = Color(0xFFEEF0F4)
 private val Mute = Color(0xFF9AA2B1)
 private val LineC = Color(0xFF2A2F39)
 private val Surface = Color(0xFF171A20)
-private val GoldC = Color(0xFFE8B95B)
+/** --gold: the open game's accent (LocalGameGold). */
+private val GoldC: Color @Composable @androidx.compose.runtime.ReadOnlyComposable get() = LocalGameGold.current
+/** --gold-ink: the text on a --gold fill, per game. */
+internal fun goldInk(gold: Color) = when (gold) { CardGame.YGO.gold -> Color(0xFF150A2C); CardGame.PTCG.gold -> Color(0xFF2A0D09); else -> Color(0xFF1B1406) }
 private val Warn = Color(0xFFF2C66D)
 
 // CSS line boxes: the whole line height on every line, the text centred in it (Compose trims the first and last by default).
@@ -181,6 +188,7 @@ internal fun SetAtmosphere(sources: List<String>, width: Float, alpha: Float, mo
  */
 @Composable
 internal fun GlideStrip(items: List<CollTab>, fontSize: Float, padH: Dp, grow: Boolean, modifier: Modifier = Modifier, onPick: (String) -> Unit) {
+    val gold = GoldC
     BoxWithConstraints(modifier) {
         val avail = maxWidth
         Box(Modifier.then(if (grow) Modifier.fillMaxWidth() else Modifier).drawBehind {
@@ -191,8 +199,8 @@ internal fun GlideStrip(items: List<CollTab>, fontSize: Float, padH: Dp, grow: B
                     val on = t.on
                     Row(Modifier.heightIn(min = 44.dp).widthIn(min = 44.dp).drawBehind {
                         if (on) {
-                            drawRect(Brush.radialGradient(listOf(GoldC.copy(alpha = .24f), Color.Transparent), Offset(size.width / 2, size.height), size.width * .6f * .7f), size = size)
-                            drawRect(Brush.horizontalGradient(.18f to Color.Transparent, .5f to GoldC, .82f to Color.Transparent), Offset(0f, size.height - 2.dp.toPx()), Size(size.width, 2.dp.toPx()))
+                            drawRect(Brush.radialGradient(listOf(gold.copy(alpha = .24f), Color.Transparent), Offset(size.width / 2, size.height), size.width * .6f * .7f), size = size)
+                            drawRect(Brush.horizontalGradient(.18f to Color.Transparent, .5f to gold, .82f to Color.Transparent), Offset(0f, size.height - 2.dp.toPx()), Size(size.width, 2.dp.toPx()))
                         }
                     }.clickable { if (!on) onPick(t.key) }.semantics { role = Role.Tab }.padding(horizontal = padH, vertical = 8.dp),
                         horizontalArrangement = Arrangement.spacedBy(7.dp, Alignment.CenterHorizontally), verticalAlignment = Alignment.CenterVertically) {
@@ -262,10 +270,12 @@ internal fun WarnNote(text: String, retry: CardPress?, onRetry: () -> Unit, modi
 @Composable
 fun CollectionSets(m: CollectionSetsModel, top: @Composable (tabs: (@Composable () -> Unit)?) -> Unit, act: CollectionSetsActions = CollectionSetsActions(),
                    nav: @Composable (vertical: Boolean) -> Unit = {}, query: String = m.searchValue) {
-    BoxWithConstraints(Modifier.fillMaxSize().background(Site.Bg)) {
-        val screen = maxWidth
-        if (sideways()) Row(Modifier.fillMaxSize()) { nav(true); SetsPage(m, top, act, Modifier.weight(1f).fillMaxHeight(), screen, query) }
-        else Column(Modifier.fillMaxSize()) { SetsPage(m, top, act, Modifier.weight(1f).fillMaxWidth(), screen, query); nav(false) }
+    androidx.compose.runtime.CompositionLocalProvider(LocalGameGold provides m.game.gold) {
+        BoxWithConstraints(Modifier.fillMaxSize().background(Site.Bg)) {
+            val screen = maxWidth
+            if (sideways()) Row(Modifier.fillMaxSize()) { nav(true); SetsPage(m, top, act, Modifier.weight(1f).fillMaxHeight(), screen, query) }
+            else Column(Modifier.fillMaxSize()) { SetsPage(m, top, act, Modifier.weight(1f).fillMaxWidth(), screen, query); nav(false) }
+        }
     }
 }
 
@@ -281,12 +291,12 @@ private fun SetsPage(m: CollectionSetsModel, top: @Composable (tabs: (@Composabl
         item(key = "top") {
             Box(Modifier.fillMaxWidth().windowInsetsPadding(WindowInsets.statusBars)) {
                 // As on Cards and Decks: the game tabs ride in the bar when there is room, and sit centred under it on a phone.
-                top(if (wide) ({ GameTabs(CardGame.MTG, act.game, compact = false, Modifier.widthIn(max = 560.dp)) }) else null)
+                top(if (wide) ({ GameTabs(m.game, act.game, compact = false, Modifier.widthIn(max = 560.dp)) }) else null)
             }
         }
         item(key = "head") {
             Column(Modifier.fillMaxWidth().padding(horizontal = gutter).padding(top = if (wide) 4.dp else 10.dp)) {
-                if (!wide) GameTabs(CardGame.MTG, act.game, compact = true, Modifier.align(Alignment.CenterHorizontally).widthIn(max = 280.dp).padding(bottom = 12.dp))
+                if (!wide) GameTabs(m.game, act.game, compact = true, Modifier.align(Alignment.CenterHorizontally).widthIn(max = 280.dp).padding(bottom = 12.dp))
                 // .page-head: the eyebrow, then the title in Cinzel; 4 above, 2 below.
                 Text(m.eyebrow.uppercase(), Modifier.padding(bottom = 4.dp), style = SetsEyebrow)
                 Text(m.title, Modifier.padding(bottom = 2.dp), style = TextStyle(fontFamily = Type.Cinzel, fontWeight = FontWeight.Bold, fontSize = 26.sp, lineHeight = 29.9.sp, letterSpacing = .52.sp, color = Ink))
@@ -317,6 +327,8 @@ private fun SetsPage(m: CollectionSetsModel, top: @Composable (tabs: (@Composabl
             }
         }
         if (m.more.isNotBlank()) item(key = "more") { GhostBlock(m.more, Modifier.padding(horizontal = gutter).padding(top = 28.dp), act.more) }
+        // p.foot: 12 in --faint, 10 under the list.
+        if (m.foot.isNotBlank()) item(key = "foot") { Text(m.foot, Modifier.padding(horizontal = gutter).padding(top = 10.dp), style = sans(12f, 400, Site.Faint)) }
     }
 }
 
@@ -342,7 +354,7 @@ private fun Controls(m: CollectionSetsModel, act: CollectionSetsActions, screen:
                 verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(10.dp)) {
                 SiteIcon(f.icon, 16.dp, GoldC)
                 Text(f.label.ifBlank { "Filters" }, style = sans(13f, 650))
-                if (f.count.isNotBlank()) Box(Modifier.clip(RoundedCornerShape(99.dp)).background(GoldC).padding(horizontal = 7.dp)) { Text(f.count, style = sans(11f, 800, Color(0xFF1B1406))) }
+                if (f.count.isNotBlank()) Box(Modifier.clip(RoundedCornerShape(99.dp)).background(GoldC).padding(horizontal = 7.dp)) { Text(f.count, style = sans(11f, 800, goldInk(GoldC))) }
             }
             Spacer(Modifier.height(12.dp))
             if (open) {
@@ -395,7 +407,7 @@ private fun SetTile(r: SetRowM, screen: Dp, modifier: Modifier, onClick: () -> U
         SetAtmosphere(r.atmosphere, if (phone) .72f else .65f, if (phone) .2f else .24f, Modifier.matchParentSize())
         Column(Modifier.fillMaxWidth().padding(pad + 1.dp), verticalArrangement = Arrangement.spacedBy(if (phone) 12.dp else 15.dp)) {
             Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(bodyGap)) {
-                SetMedia(r, mw, mh)
+                SetMedia(r, mw, mh, tiny)
                 Column(Modifier.weight(1f)) {
                     Text(r.name, style = sans(when { mid -> 13f; phone -> 14f; else -> 15f }, 700, Ink, lh = 1.4f))
                     FlowRow(Modifier.padding(top = 7.dp), horizontalArrangement = Arrangement.spacedBy(7.dp), verticalArrangement = Arrangement.spacedBy(2.dp), itemVerticalAlignment = Alignment.CenterVertically) {
@@ -419,7 +431,11 @@ private fun SetTile(r: SetRowM, screen: Dp, modifier: Modifier, onClick: () -> U
 
 /** .set-media: the set's symbol (Scryfall's black SVG, inverted to .9 white) 8 in from its 12-cornered box; its code when there is no art. */
 @Composable
-private fun SetMedia(r: SetRowM, w: Dp, h: Dp) {
+private fun SetMedia(r: SetRowM, w: Dp, h: Dp, tiny: Boolean) {
+    when (r.kind) {
+        "ygo" -> { YgoMedia(r, w, h, tiny); return }
+        "pokemon" -> { PokemonMedia(r, w, h); return }
+    }
     Box(Modifier.size(w, h).clip(RoundedCornerShape(12.dp)).background(Color(0x09FFFFFF)), contentAlignment = Alignment.Center) {
         val p = firstArt(listOfNotNull(r.image.ifBlank { null }))
         val st = (p as? coil3.compose.AsyncImagePainter)?.state?.collectAsState()?.value
@@ -430,6 +446,64 @@ private fun SetMedia(r: SetRowM, w: Dp, h: Dp) {
         } else Text(r.fallback, style = sans(13f, 650, Mute, ls = .52f))
     }
 }
+
+/**
+ * .set-media-ygo: a 12-cornered box lit from its upper left (radial, the game's colour at 15 % into --surface, out to --surface-2) inside
+ * a --line border, the set's art covering it at .2 and half its colour; on it the code plate (.set-ygo-emblem): 58 wide (48 on a 380
+ * phone), at least 48 tall, 10 corners, a border half --gold into --line, --surface at 82 %, a soft shadow; the code 12 / 650 at .03em.
+ */
+@Composable
+private fun YgoMedia(r: SetRowM, w: Dp, h: Dp, tiny: Boolean) {
+    val shape = RoundedCornerShape(12.dp)
+    val gold = GoldC; val lit = CardGame.YGO.color
+    Box(Modifier.size(w, h).clip(shape).drawBehind {
+        drawRect(Brush.radialGradient(listOf(Color(lit.red * .15f + Surface.red * .85f, lit.green * .15f + Surface.green * .85f, lit.blue * .15f + Surface.blue * .85f), Color(0xFF1F232B)),
+            center = Offset(size.width * .35f, size.height * .25f),
+            // circle at 35% 25%: out to the farthest corner.
+            radius = kotlin.math.hypot(size.width * .65f, size.height * .75f)))
+    }.border(1.dp, LineC, shape), contentAlignment = Alignment.Center) {
+        val p = firstArt(r.images)
+        val st = (p as? coil3.compose.AsyncImagePainter)?.state?.collectAsState()?.value
+        if (p != null && st !is coil3.compose.AsyncImagePainter.State.Error)
+            Image(p, null, Modifier.fillMaxSize().graphicsLayer { alpha = .2f }, contentScale = ContentScale.Crop, colorFilter = ColorFilter.colorMatrix(ColorMatrix().apply { setToSaturation(.45f) }))
+        val plate = RoundedCornerShape(10.dp)
+        Box(Modifier.width(if (tiny) 48.dp else 58.dp).heightIn(min = 48.dp)
+            .drawBehind { drawRoundRect(Color(0x22000000), topLeft = Offset(0f, 2.dp.toPx()), size = size, cornerRadius = androidx.compose.ui.geometry.CornerRadius(10.dp.toPx())) }
+            .clip(plate).background(Surface.copy(alpha = .82f))
+            .border(1.dp, Color((gold.red + LineC.red) / 2, (gold.green + LineC.green) / 2, (gold.blue + LineC.blue) / 2), plate).padding(5.dp),
+            contentAlignment = Alignment.Center) {
+            Text(r.emblem.ifBlank { r.mark }, style = sans(12f, 650, Ink, lh = 1.2f, ls = .36f), textAlign = TextAlign.Center)
+        }
+    }
+}
+
+/**
+ * .set-media-pokemon-symbol: the set's symbol 14 in from its box, grey and inverted to white; it tries each of its addresses in turn
+ * (the site's onerror), and shows the set's code (.set-art-code, 8 in) when none of them loads.
+ */
+@Composable
+private fun PokemonMedia(r: SetRowM, w: Dp, h: Dp) {
+    Box(Modifier.size(w, h).clip(RoundedCornerShape(12.dp)).background(Color(0x09FFFFFF)), contentAlignment = Alignment.Center) {
+        var i by remember(r.images) { mutableIntStateOf(0) }
+        val p = heroPainter(r.images.getOrNull(i)?.let(homeArt))
+        val st = (p as? coil3.compose.AsyncImagePainter)?.state?.collectAsState()?.value
+        LaunchedEffect(st, i) { if (st is coil3.compose.AsyncImagePainter.State.Error && i < r.images.size) i++ }
+        // The code stands in (.no-art) until a symbol has loaded.
+        if (p != null && i < r.images.size && st is coil3.compose.AsyncImagePainter.State.Success)
+            Image(p, r.name + " set symbol", Modifier.fillMaxSize().padding(14.dp), contentScale = ContentScale.Fit, colorFilter = ColorFilter.colorMatrix(InvertGrey))
+        else {
+            if (p != null && i < r.images.size) Image(p, null, Modifier.size(1.dp).graphicsLayer { alpha = 0f })
+            Text(r.fallback, Modifier.padding(8.dp), style = sans(13f, 650, Mute, lh = 1.35f, ls = .52f), textAlign = TextAlign.Center)
+        }
+    }
+}
+
+/** filter: grayscale(1) invert(1): the symbol's luminance, turned over. */
+private val InvertGrey = ColorMatrix(floatArrayOf(
+    -.2126f, -.7152f, -.0722f, 0f, 255f,
+    -.2126f, -.7152f, -.0722f, 0f, 255f,
+    -.2126f, -.7152f, -.0722f, 0f, 255f,
+    0f, 0f, 0f, 1f, 0f))
 
 /** .set-tile-progress: "0 / 462 unique cards owned" and its share over a 5 tall bar, under a hairline. */
 @Composable

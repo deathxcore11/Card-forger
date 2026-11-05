@@ -29,6 +29,7 @@ import {loadSharedHistory} from 'WEB/shared-history.js';
 import {playedAlongside} from 'WEB/guide.js';
 import {mtgPairQueries, rankPairs, edhPop} from 'WEB/pairing.js';
 import {ICON} from 'WEB/icons.js';
+import {registerTcg, tcgSets as tcgSetsView, tcgSet as tcgSetView, ui as tcgUi, cardOf as tcgCardOf} from 'WEB/tcg.js';
 
 // app.js:193-198, verbatim.
 const stripCache = (s) => {
@@ -203,8 +204,10 @@ const svgIn = n => n && (n.tag === 'svg' ? n : one(n, tagIs('svg')));
 const sources = img => { try { return JSON.parse(img?.attrs['data-art-sources'] || '[]'); } catch { return []; } };
 const SITE = 'https://cardstashy.com';
 // set-experience.js setAtmosphere: the set's art, then its fallbacks (the img's onerror walks them in order).
-const setArt = img => { try { return JSON.parse(img?.attrs['data-set-art-sources'] || '[]').map(u => u.startsWith('/') ? SITE + u : u); } catch { return []; } };
-const picture = img => img ? {src: img.attrs.src || '', sources: sources(img)} : null;
+const setArt = img => { try { return JSON.parse(img?.attrs['data-set-art-sources'] || '[]').map(u => abs(u)); } catch { return []; } };
+// The site's own relative addresses (img/ygo/s/…, img/pks/s/…) as the app fetches them.
+const abs = u => !u ? '' : /^(https?:|data:)/.test(u) ? u : SITE + '/' + String(u).replace(/^\/+/, '');
+const picture = img => img ? {src: abs(img.attrs.src || ''), sources: sources(img).map(abs)} : null;
 const selectOf = sel => sel && {name: sel.attrs['data-change'] || '', label: sel.attrs['aria-label'] || '', options: all(sel, tagIs('option')).map(o => ({value: o.attrs.value ?? text(o), label: text(o), on: o.attrs.selected !== undefined}))};
 // Words with their weight, in order (the summary line's <b> runs).
 const runs = n => { const out = []; const walk = (x, bold, muted) => { for (const k of x.kids || []) { if (k.text !== undefined) { const t = k.text.replace(/\s+/g, ' '); if (t) out.push({t, b: bold, m: muted}); } else if (k.tag !== 'svg') walk(k, bold || k.tag === 'b' || k.tag === 'strong', muted || cls('muted')(k)); } }; walk(n, false, false);
@@ -639,20 +642,60 @@ function setOpen(code) {
   const ui = S.ui; code = String(code || '').toLowerCase(); ui.lens = '';
   if (code !== ui.set.code) ui.set = {...ui.set, code, info: null, cards: [], total: 0, loaded: false, busy: false, error: '', q: '', filter: 'all', rarity: 'all', finish: 'all', complete: false, limit: 120};
 }
+// Yu-Gi-Oh! and Pokémon sets: tcg.js registerTcg(ctx) installs the site's own handlers (A / C / I) and loaders (ctx.loadSets,
+// ctx.openSet); the app's side of ctx has no DOM, sheets or toasts, and its redraw is the app's (settle repaints). The site keys
+// these pages to the open game (settings.game) and route (S.ui.view, S.ui.tsetId), so a set page holds them while it is open and
+// Magic's pages hand them back.
+const TA = {}, TC = {}, TI = {}, tcgCtx = {};
+let tcgOn = false, tcgPrev, setsGame = 'mtg', setGame = 'mtg';
+function tcgReady() {
+  if (tcgOn) return; tcgOn = true;
+  Object.assign(tcgCtx, {A: TA, C: TC, I: TI, commit: async () => {}, render() {}, openSheet() {}, closeSheet() {}, refreshSheet() {}, toast() {}, go() {}, download() {},
+    copyText() {}, busy: () => () => {}, rerenderKeepingFocus() {}, writeRecord: async () => {}, navigationStamp: () => null, navigationCurrent: () => true});
+  registerTcg(tcgCtx);
+}
+function tcgFocus(G, view, id = '') {
+  tcgReady(); const st = S.state.settings ||= {};
+  if (tcgPrev === undefined) tcgPrev = st.game ?? null;
+  st.game = G; S.ui.view = view; if (view === 'set') S.ui.tsetId = id;
+}
+function mtgFocus() {
+  if (tcgPrev === undefined) return;
+  const st = S.state.settings ||= {}; if (tcgPrev === null) delete st.game; else st.game = tcgPrev; tcgPrev = undefined;
+}
+const tcgGame = () => S.state.settings?.game;
+// tcg.js's set browser and set page handlers, as the site wires them (data-act / data-change / data-input).
+const tcgSetsAct = {
+  search: v => TI.tSetsQ({value: v}), family: v => TA.tSetsFamily({dataset: {value: v}}), type: v => TC.tSetsType({value: v}),
+  release: v => TC.tSetsRelease({value: v}), year: v => TC.tSetsYear({value: v}), sort: v => TC.tSetsSort({value: v}),
+  more: () => TA.tSetsMore(), reset: () => TA.tSetsReset(), reload: () => TA.tSetsReload(),
+};
+const tcgSetAct = {
+  search: v => TI.tSetQ({value: v}), filter: v => TA.tSetFilter({dataset: {id: v}}), rarity: v => TC.tSetRarity({value: v}),
+  finish: v => TC.tSetFinish({value: v}), edition: v => TC.tSetEdition({value: v}), sort: v => TC.tSetSort({value: v}),
+  more: () => TA.tSetMore(), reload: () => TA.tSetRetry(), details: () => TA.tSetDetails(),
+  // workbench-ui.js A.viewSave (data-area set): the game's own set view.
+  view: v => { if (['gallery', 'compact', 'symbols'].includes(v)) ((S.state.settings.displayModes ||= {})[setGame] ||= {}).set = v; },
+};
 // views.js setsPage(): the browser's search, families and filters, then the sets by year (set-list-ui.js setRowContent tiles).
 const setProgressModel = p => p ? {label: text(one(one(p, cls('set-tile-progress-label')), tagIs('span'))) || text(one(p, x => x.tag === 'p' && !cls('set-progress-caption')(x))),
   eyebrow: text(one(p, cls('eyebrow'))), pct: text(one(p, x => x.tag === 'b' || x.tag === 'strong')), fill: (() => { const f = one(one(p, cls('set-progress-track')), tagIs('span')); return f ? Number((/scaleX\(([\d.e-]+)\)/.exec(f.attrs.style || '') || [])[1]) || 0 : null; })(),
   caption: text(one(p, cls('set-progress-caption'))) || text(one(p, tagIs('small')))} : null;
 function setRowModel(n) {
   const atm = one(n, cls('set-atmosphere')), media = one(n, cls('set-media')), main = one(n, cls('set-row-main')), b = one(main, tagIs('b')), det = one(main, cls('set-row-detail')), count = one(n, cls('set-row-count'));
-  return {code: n.attrs['data-code'] || '', atmosphere: setArt(one(atm, tagIs('img'))), image: one(media, tagIs('img'))?.attrs.src || '', fallback: text(one(media, cls('set-art-code'))),
+  // The release's mark: Magic's set symbol; Yu-Gi-Oh!'s set code on a plate over its quiet art (set-media-ygo); Pokémon's set symbol
+  // and the two places it may come from, then its code (set-media-pokemon-symbol).
+  const mimg = one(media, tagIs('img')), kind = cls('set-media-ygo')(media) ? 'ygo' : cls('set-media-pokemon-symbol')(media) ? 'pokemon' : '';
+  const images = mimg ? [mimg.attrs.src, mimg.attrs['data-symbol-next'], mimg.attrs['data-symbol-last']].filter(Boolean).map(abs) : [];
+  return {code: n.attrs['data-code'] || n.attrs['data-id'] || '', kind, atmosphere: setArt(one(atm, tagIs('img'))), image: images[0] || '', images, emblem: text(one(media, cls('set-ygo-emblem'))),
+    fallback: text(one(media, cls('set-art-code'))),
     icon: urlIn(styleVar(one(b, cls('set-icon')), 'icon')), name: text(one(b, x => x.tag === 'span' && !cls('set-icon')(x))), mark: text(one(det, cls('set-code-mark'))),
     detail: text(one(det, x => x.tag === 'span' && !cls('set-code-mark')(x))), count: text(one(count, tagIs('b'))), units: all(count, tagIs('small')).map(text), unknown: !!one(count, cls('count-unknown')),
     progress: setProgressModel(one(n, cls('set-tile-progress')))};
 }
-function setsPageModel() {
-  const t = tree(setsView()), head = one(t, cls('page-head')), ctl = one(t, cls('set-browser-controls')), search = one(ctl, x => x.tag === 'input'), more = one(ctl, cls('set-browser-more'));
-  const note = one(t, x => cls('note')(x) && cls('warn')(x)), secs = all(t, cls('set-year-section')), flat = one(t, cls('set-browser-flat')), last = one(t, x => x.attrs['data-act'] === 'setsMore'), empty = one(t, cls('empty'));
+function setsPageModel(G = 'mtg') {
+  const t = tree(G === 'mtg' ? setsView() : tcgSetsView()), head = one(t, cls('page-head')), ctl = one(t, cls('set-browser-controls')), search = one(ctl, x => x.tag === 'input'), more = one(ctl, cls('set-browser-more'));
+  const note = one(t, x => cls('note')(x) && cls('warn')(x)), secs = all(t, cls('set-year-section')), flat = one(t, cls('set-browser-flat')), last = one(t, x => x.attrs['data-act'] === 'setsMore' || x.attrs['data-act'] === 'tSetsMore'), empty = one(t, cls('empty'));
   return {eyebrow: text(one(head, cls('eyebrow'))), title: text(one(head, tagIs('h1'))),
     search: search && {value: search.attrs.value || '', placeholder: search.attrs.placeholder || '', label: search.attrs['aria-label'] || ''},
     quick: all(one(ctl, cls('set-browser-quick')), tagIs('button')).map(b => ({value: b.attrs['data-value'] || '', label: text(b), on: cls('on')(b), icon: icon(svgIn(b))})),
@@ -663,7 +706,8 @@ function setsPageModel() {
     loading: text(one(t, x => x.tag === 'p' && cls('center')(x) && cls('pad')(x))),
     sections: secs.length ? secs.map(s => ({year: text(one(s, tagIs('h2'))), count: text(one(one(s, cls('set-year-heading')), tagIs('span'))), rows: all(s, cls('set-row')).map(setRowModel)}))
       : flat ? [{year: '', count: '', rows: all(flat, cls('set-row')).map(setRowModel)}] : [],
-    empty: empty && {title: text(one(empty, tagIs('h3'))), text: text(one(empty, tagIs('p')))}, more: last ? text(last) : '', busy: !!S.ui.sets.busy};
+    empty: empty && {title: text(one(empty, tagIs('h3'))), text: text(one(empty, tagIs('p')))}, more: last ? text(last) : '', busy: !!(G === 'mtg' ? S.ui.sets : tcgUi(G).sets).busy, game: G,
+    foot: text(one(t, cls('foot')))};
 }
 // views.js setPage(): the set's hero (its art, symbol, name, line, your progress, the pack simulator), the toolbar, the cards.
 function setTileModel(n) {
@@ -677,12 +721,41 @@ function setTileModel(n) {
     label: text(spans[0]), price: text(spans[1]), badge: badge ? {text: text(badge), other: cls('other')(badge), title: badge.attrs.title || ''} : null, own: cls('own')(n), missing: cls('play-missing')(n),
     print: finish?.key && finish.key !== 'nonfoil' ? S.ui.set.cards?.[i] || null : null};
 }
-function setPageModel() {
-  const st = S.ui.set, t = tree(setView()), hero = one(t, cls('set-hero')), main = one(hero, cls('set-hero-main')), tb = one(t, cls('set-card-toolbar')), ctr = one(tb, cls('set-controls'));
-  const note = one(t, x => cls('note')(x) && cls('warn')(x)), grid = one(t, cls('set-grid')), search = one(tb, x => x.tag === 'input'), more = one(t, x => x.attrs['data-act'] === 'setMore'), empty = one(t, cls('empty'));
-  const view = one(ctr, cls('view-switch')), pack = one(hero, cls('set-open-pack'));
-  return {code: st.code, title: text(one(main, tagIs('h1'))), line: text(one(main, x => x.tag === 'p')), back: press(one(main, tagIs('button'))),
+// A Yu-Gi-Oh! or Pokémon card of the set grid (tcg.js tcgSet): its art and finish (finish-preview.js reads data-finish-model), the
+// tile chrome (tiles.js: Level and Attribute, or energy types; the set code and rarity code, or the set and rarity symbols), the
+// number and name, the price and what kind of price it is, and what you own. The card itself opens the site's card page (tCard).
+function tcgTileModel(n, G) {
+  const img = one(n, cls('card-img')) || one(n, tagIs('img')), c = one(n, cls('tile-chrome')), meta = one(n, cls('grid-meta')), badge = one(n, cls('owned-badge'));
+  let f = null; try { f = JSON.parse(n.attrs['data-finish-model'] || 'null'); } catch {}
+  const spans = (meta?.kids || []).filter(k => k.tag === 'span'), pr = spans[1], id = n.attrs['data-id'] || '';
+  const card = tcgCardOf(G, id);
+  const pk = x => x ? [x.attrs.src, x.attrs['data-direct']].filter(Boolean).map(abs) : [];
+  const ts = one(one(c, cls('tile-set')), cls('tset')), rx = one(ts, cls('rx-code')), pks = one(ts, cls('pks')), pkr = one(ts, cls('pkr')), rar = one(ts, cls('rar'));
+  const emb = (one(one(c, cls('tile-emb')), cls('emblems'))?.kids || []).filter(k => k.tag).map(k => k.tag === 'svg' ? {icon: icon(k)}
+    : cls('lvl')(k) ? {icon: icon(svgIn(k)), text: text(k), label: k.attrs['aria-label'] || ''} : cls('more')(k) || cls('hp')(k) ? {text: text(k)} : {icon: icon(svgIn(k)), text: text(k)});
+  const printing = n.attrs['data-printing'] || '';
+  return {id, act: n.attrs['data-act'] || '', name: img?.attrs.alt || '', picture: picture(img), fallback: img ? '' : text(one(n, cls('img-missing'))), ...tierOfNode(n),
+    finish: f && {key: f.key || '', effect: f.effect || n.attrs['data-finish-effect'] || '', status: f.status || '', stars: Number(f.stars) || 0,
+      treatment: f.treatment || '', mask: f.layers?.[0]?.mask || '', clip: f.overlayProfiles?.[0]?.mask || '', source: abs(typeof f.source === 'string' && /^https?:/.test(f.source) ? f.source : ''),
+      rarity: n.attrs['data-printed-rarity'] || '', code: printing.split('::')[0] || '', date: f.printingRelease?.date || '', frame: String(card?.frame || card?.cardType || card?.typeLine || '')},
+    chrome: c ? {emb, set: ts ? {tone: classes(ts).find(x => ['secret', 'ultra', 'super', 'rare', 'common'].includes(x)) || '', code: text(one(ts, tagIs('b'))),
+      rarity: rx ? {text: text(rx), kind: (classes(rx).find(x => x.startsWith('rx-') && x !== 'rx-code') || 'rx-common').slice(3)} : null,
+      symbol: pk(pks), mark: pkr ? {src: pk(pkr), ink: cls('ink')(pkr), alt: pkr.attrs.alt || ''} : rar ? {text: text(rar), gold: cls('gold')(rar)} : null,
+      title: ts.attrs.title || ''} : null} : null,
+    label: text(spans[0]), price: text({kids: (pr?.kids || []).filter(k => k.tag !== 'small')}), priceNote: text(one(pr, tagIs('small'))), priceTitle: pr?.attrs.title || '',
+    badge: badge ? {text: text(badge), other: cls('other')(badge), title: badge.attrs.title || ''} : null, own: cls('own')(n), printing, edition: n.attrs['data-edition'] || ''};
+}
+function setPageModel(G = 'mtg') {
+  const st = G === 'mtg' ? S.ui.set : tcgUi(G).set, t = tree(G === 'mtg' ? setView() : tcgSetView()), hero = one(t, cls('set-hero')), main = one(hero, cls('set-hero-main')), tb = one(t, cls('set-card-toolbar')), ctr = one(tb, cls('set-controls'));
+  const note = one(t, x => cls('note')(x) && cls('warn')(x)), grid = one(t, cls('set-grid')), search = one(tb, x => x.tag === 'input'), more = one(t, x => x.attrs['data-act'] === 'setMore' || x.attrs['data-act'] === 'tSetMore'), empty = one(t, cls('empty'));
+  const view = one(ctr, cls('view-switch')), pack = one(hero, cls('set-open-pack')), logo = one(hero, cls('set-logo')), h1 = one(main, tagIs('h1')), pks = one(h1, cls('pks'));
+  // Yu-Gi-Oh! and Pokémon: what the card list covers (p.set-coverage-note, with its Refresh) and how the prices were picked (details).
+  const cover = all(t, cls('set-coverage-note')), cnote = cover.find(x => x.tag === 'p'), cdet = cover.find(x => x.tag === 'details');
+  return {code: G === 'mtg' ? st.code : S.ui.tsetId || '', game: G, title: text(h1), line: text(one(main, x => x.tag === 'p')), back: press(one(main, tagIs('button'))),
     atmosphere: setArt(one(one(hero, cls('set-atmosphere')), tagIs('img'))), icon: urlIn(styleVar(one(hero, cls('set-icon')), 'icon')),
+    logo: logo ? abs(logo.attrs.src || '') : '', symbol: pks ? [pks.attrs.src, pks.attrs['data-direct'], (/src="([^"]+)"/.exec(pks.attrs['data-fb'] || '') || [])[1]].filter(Boolean).map(abs) : [],
+    coverage: cnote ? {text: text({kids: (cnote.kids || []).filter(k => k.tag !== 'button')}), button: press(one(cnote, tagIs('button')))} : null,
+    details: cdet ? {summary: text(one(cdet, tagIs('summary'))), text: text(one(cdet, tagIs('p'))), open: cdet.attrs.open !== undefined} : null,
     progress: setProgressModel(one(hero, cls('set-collection-progress'))), pack: pack ? {label: text({kids: (pack.kids || []).filter(k => k.tag !== 'span')}), sub: text(one(pack, tagIs('span'))), disabled: pack.attrs.disabled !== undefined, act: pack.attrs['data-act'] || ''} : null,
     error: note ? {text: text({kids: (note.kids || []).filter(k => k.tag !== 'button')}), retry: press(one(note, tagIs('button')))} : null,
     search: search && {value: search.attrs.value || '', placeholder: search.attrs.placeholder || '', label: search.attrs['aria-label'] || ''},
@@ -690,7 +763,7 @@ function setPageModel() {
     selects: all(ctr, tagIs('select')).map(selectOf),
     views: view ? all(view, tagIs('button')).map(b => ({mode: b.attrs['data-mode'], label: b.attrs['aria-label'] || b.attrs.title || '', on: b.attrs['aria-checked'] === 'true', icon: icon(svgIn(b))})) : [],
     mode: (all(view, tagIs('button')).find(b => b.attrs['aria-checked'] === 'true')?.attrs['data-mode']) || 'gallery',
-    results: text(one(t, cls('set-results'))), tiles: grid ? all(grid, cls('grid-card')).map(setTileModel) : [],
+    results: text(one(t, cls('set-results'))), tiles: grid ? all(grid, cls('grid-card')).map(n => G === 'mtg' ? setTileModel(n) : tcgTileModel(n, G)) : [],
     more: more ? text(more) : '', empty: empty && {title: text(one(empty, tagIs('h3'))), text: text(one(empty, tagIs('p')))}, busy: !!st.busy, loaded: !!st.loaded};
 }
 
@@ -946,18 +1019,18 @@ globalThis.Collection = {
   hints(game) { return json({prompt: SEARCH_PROMPT, first: 4000, every: 4200, fade: 260, pool: hintPool(game, game === 'mtg' ? S.state.collection.map(e => e.name) : (S.state.tcg?.[game]?.collection || []).map(e => e.name))}); },
   // views.js home() / tcg.js tcgHome(), section by section, as models.
   // views.js collection(): the Cards tab, [optsJson] = {sort, direction, filter, q, limit} as the site's controls set them.
-  cards(game, optsJson) { return json(cardsPage(game, optsJson ? JSON.parse(optsJson) : {})); },
+  cards(game, optsJson) { mtgFocus(); return json(cardsPage(game, optsJson ? JSON.parse(optsJson) : {})); },
   // One of the page's controls, as the site handles it (cardsAct), then the page again.
   // views.js decks(), My decks; [optsJson] = {q} (I.shelfSearch).
-  decks(game, optsJson) { return json(decksPage(game, optsJson ? JSON.parse(optsJson) : {})); },
+  decks(game, optsJson) { mtgFocus(); return json(decksPage(game, optsJson ? JSON.parse(optsJson) : {})); },
   // views.js deckPage(), the Cards tab of deck [id]; deckDo applies one of its controls as the site's handler does (deckAct), then draws it again.
   // [opts] = {search, filter, sort, view}: the controls as the app last left them, applied before the page draws.
-  deck(game, id, opts) { deckOpen(id); const o = opts ? JSON.parse(opts) : {}; for (const k of Object.keys(deckAct)) if (o[k] != null) deckAct[k](o[k]); return json(deckPageModel(game, id)); },
-  deckDo(game, id, kind, value) { if (!deckAct[kind]) throw Error('unknown deck control ' + kind); deckOpen(id); deckAct[kind](value); return json(deckPageModel(game, id)); },
-  cardsDo(game, kind, value) { if (!cardsAct[kind]) throw Error('unknown Cards control ' + kind); cardsAct[kind](value); return json(cardsPage(game)); },
+  deck(game, id, opts) { mtgFocus(); deckOpen(id); const o = opts ? JSON.parse(opts) : {}; for (const k of Object.keys(deckAct)) if (o[k] != null) deckAct[k](o[k]); return json(deckPageModel(game, id)); },
+  deckDo(game, id, kind, value) { if (!deckAct[kind]) throw Error('unknown deck control ' + kind); mtgFocus(); deckOpen(id); deckAct[kind](value); return json(deckPageModel(game, id)); },
+  cardsDo(game, kind, value) { if (!cardsAct[kind]) throw Error('unknown Cards control ' + kind); mtgFocus(); cardsAct[kind](value); return json(cardsPage(game)); },
   // views.js cardSheet(): a card's page; [opts] = {name, entry, deck} as the tapped tile has them. cardLoad starts its lookups
   // (the app pumps them with settle()); cardDo applies one of its controls (cardAct).
-  card(game, opts) { const ctx = cardOpen(JSON.parse(opts)); return json(cardPageModel(ctx)); },
+  card(game, opts) { mtgFocus(); const ctx = cardOpen(JSON.parse(opts)); return json(cardPageModel(ctx)); },
   cardModel() { return sheet ? json(cardPageModel(sheet)) : '{}'; },
   cardHtml() { const ctx = sheet, c = ctx && (ctx.print || meta(ctx.name)); return c ? cardView(c, ctx) : ''; },
   cardLoad() { const ctx = sheet; if (!ctx) return; (async () => { if (ctx.ownedLoading) await ownedLoad(ctx); if (!ctx.blocked && still(ctx)) { if (!(ctx.print || meta(ctx.name))) await resolveNames([ctx.name], () => {}, false, () => still(ctx)).catch(() => {}); await Promise.all([cardExtras(ctx), cardTabLoads(ctx), loadSetIndex()]); } })(); },
@@ -965,17 +1038,45 @@ globalThis.Collection = {
   cardDo(kind, value) { if (!cardAct[kind] || !sheet) throw Error('unknown card control ' + kind); cardAct[kind](value); if (['tab', 'finish', 'print'].includes(kind)) cardTabLoads(sheet).catch(() => {}); return json(cardPageModel(sheet)); },
   // views.js setsPage(), every set: [opts] = {q, family, release, year, sort} as the app last left them. setsLoad starts the
   // set list's lookup (app.js loadSetIndex; the app pumps it with settle()); setsDo applies a control (setsAct).
-  sets(game, opts) { const o = opts ? JSON.parse(opts) : {}; for (const k of ['q', 'family', 'release', 'year', 'sort']) if (o[k] != null) S.ui.sets[k] = o[k]; return json(setsPageModel()); },
-  setsModel() { return json(setsPageModel()); },
-  setsLoad() { loadSetIndex().catch(() => {}); },
-  setsDo(kind, value) { if (!setsAct[kind]) throw Error('unknown sets control ' + kind); setsAct[kind](value); return json(setsPageModel()); },
-  // views.js setPage(), one set's cards (#set/<code>); setLoad fetches them (app.js loadSet), setDo applies a control (setAct).
-  set(game, code) { setOpen(code); return json(setPageModel()); },
-  setModel() { return S.ui.set.code ? json(setPageModel()) : '{}'; },
-  setLoad() { const st = S.ui.set; loadSetIndex().catch(() => {}); if (!st.loaded && !st.busy) loadSet(st.code, {join: true}).catch(() => {}); },
-  setDo(kind, value) { if (!setAct[kind]) throw Error('unknown set control ' + kind); setAct[kind](value); return json(setPageModel()); },
+  sets(game, opts) {
+    const o = opts ? JSON.parse(opts) : {}; setsGame = game || 'mtg';
+    if (setsGame === 'mtg') mtgFocus(); else tcgFocus(setsGame, 'sets');
+    const U = setsGame === 'mtg' ? S.ui.sets : tcgUi(setsGame).sets;
+    for (const k of ['q', 'family', 'release', 'year', 'sort']) if (o[k] != null) U[k] = o[k];
+    return json(setsPageModel(setsGame));
+  },
+  setsModel() { if (setsGame !== 'mtg') tcgFocus(setsGame, 'sets'); return json(setsPageModel(setsGame)); },
+  setsLoad() { if (setsGame === 'mtg') loadSetIndex().catch(() => {}); else tcgCtx.loadSets(setsGame).catch(() => {}); },
+  setsDo(kind, value) {
+    const act = setsGame === 'mtg' ? setsAct : tcgSetsAct; if (!act[kind]) throw Error('unknown sets control ' + kind);
+    if (setsGame !== 'mtg') tcgFocus(setsGame, 'sets');
+    act[kind](value); return json(setsPageModel(setsGame));
+  },
+  // views.js setPage() / tcg.js tcgSet(), one set's cards (#set/<code or id>); setLoad fetches them (app.js loadSet, tcg.js
+  // ctx.openSet), setDo applies a control (setAct, tcgSetAct).
+  set(game, code) {
+    setGame = game || 'mtg';
+    if (setGame === 'mtg') { mtgFocus(); setOpen(code); } else tcgFocus(setGame, 'set', String(code));
+    return json(setPageModel(setGame));
+  },
+  setModel() {
+    if (setGame !== 'mtg') { if (!S.ui.tsetId) return '{}'; tcgFocus(setGame, 'set', S.ui.tsetId); return json(setPageModel(setGame)); }
+    return S.ui.set.code ? json(setPageModel()) : '{}';
+  },
+  setLoad() {
+    if (setGame !== 'mtg') { tcgFocus(setGame, 'set', S.ui.tsetId); tcgCtx.openSet(S.ui.tsetId, false, setGame).catch(() => {}); return; }
+    const st = S.ui.set; loadSetIndex().catch(() => {}); if (!st.loaded && !st.busy) loadSet(st.code, {join: true}).catch(() => {});
+  },
+  setDo(kind, value) {
+    const act = setGame === 'mtg' ? setAct : tcgSetAct; if (!act[kind]) throw Error('unknown set control ' + kind);
+    if (setGame !== 'mtg') tcgFocus(setGame, 'set', S.ui.tsetId);
+    act[kind](value); return json(setPageModel(setGame));
+  },
+  // tcg.js tcgSet's raw page, for checking the model against it.
+  setHtml() { return setGame === 'mtg' ? setView() : tcgSetView(); },
+  setsHtml() { return setsGame === 'mtg' ? setsView() : tcgSetsView(); },
   home(game) {
-    const st = S.state, value = collectionValue(st.collection, S.catalog, st.printings, st.decks);
+    mtgFocus(); const st = S.state, value = collectionValue(st.collection, S.catalog, st.printings, st.decks);
     return json({game, hero: hero(game), value: homeValueModel({ game, ...value, decks: st.decks.length, history: st.valueHistory }),
       example: st.example ? 'Example data is loaded. Reset it in Settings before adding real cards.' : '', shelf: shelf(game), meta: metaRail(game), news: newsRail(game)});
   },

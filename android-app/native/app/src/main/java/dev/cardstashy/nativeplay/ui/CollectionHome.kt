@@ -128,7 +128,12 @@ enum class CardGame(val id: String, val label: String, val color: Color, val tab
     YGO("ygo", "Yu-Gi-Oh!", Color(0xFFF5B335), Color(0xFFF7AD61), "collection/game-tab-ygo.png", .48f, 1.15f, 110f),
     PTCG("ptcg", "Pokémon", Color(0xFFEF5350), Color(0xFFFFDC62), "collection/game-tab-ptcg.jpg", .53f, 1.55f, 150f);
     companion object { fun of(id: String) = entries.firstOrNull { it.id == id } ?: MTG }
+    /** style.css body[data-game] --gold: the accent a game's pages wear (Magic's gold, Yu-Gi-Oh!'s violet, Pokémon's coral). */
+    val gold: Color get() = when (this) { MTG -> Color(0xFFE8B95B); YGO -> Color(0xFFB99BFF); PTCG -> Color(0xFFFF7566) }
 }
+
+/** The open game's --gold, for the parts of a page (and its bottom nav) that wear the accent. Magic's gold unless a page says otherwise. */
+val LocalGameGold = androidx.compose.runtime.staticCompositionLocalOf { Color(0xFFE8B95B) }
 
 enum class CollectionTab(val label: String) { HOME("Home"), CARDS("Collection"), SEARCH("Search"), DECKS("Decks"), SCAN("Scan") }
 
@@ -813,8 +818,10 @@ fun CollectionNav(active: CollectionTab?, vertical: Boolean = false, scan: Boole
     @Composable fun item(t: CollectionTab, modifier: Modifier) {
         val on = t == active
         Column(modifier.clickable { onSelect(t) }, horizontalAlignment = Alignment.CenterHorizontally, verticalArrangement = Arrangement.spacedBy(2.dp, Alignment.CenterVertically)) {
-            Box(Modifier.size(56.dp, 30.dp).clip(RoundedCornerShape(15.dp)).background(if (on) Site.Gold.copy(alpha = .2f) else Color.Transparent), contentAlignment = Alignment.Center) {
-                Icon(icons.getValue(t), 22.dp, if (on) Site.Gold else Site.Muted)
+            // .bottom-nav button.on span: the open game's --gold at 20 % behind its icon in --gold (Magic's gold in the app's own themes).
+            val gold = LocalGameGold.current.takeIf { it != Color(0xFFE8B95B) } ?: Site.Gold
+            Box(Modifier.size(56.dp, 30.dp).clip(RoundedCornerShape(15.dp)).background(if (on) gold.copy(alpha = .2f) else Color.Transparent), contentAlignment = Alignment.Center) {
+                Icon(icons.getValue(t), 22.dp, if (on) gold else Site.Muted)
             }
             Text(t.label, style = Site.Label.copy(color = if (on) Site.Text else Site.Muted, fontSize = if (vertical) 11.sp else Site.Label.fontSize), maxLines = 1)
         }

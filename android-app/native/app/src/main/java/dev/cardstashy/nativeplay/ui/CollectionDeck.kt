@@ -668,10 +668,13 @@ private fun GroupPick(sel: CollSelect, onPick: (String) -> Unit) {
 internal fun ViewSwitch(views: List<CollView>, onView: (String) -> Unit) {
     if (views.isEmpty()) return
     val shape = RoundedCornerShape(12.dp)
+    // .view-switch button.on: --gold 18 % into --surface-2, a --gold 35 % ring, the icon in --gold (the open game's).
+    val gold = LocalGameGold.current
+    val on = Color(Surface2.red + (gold.red - Surface2.red) * .18f, Surface2.green + (gold.green - Surface2.green) * .18f, Surface2.blue + (gold.blue - Surface2.blue) * .18f)
     Row(Modifier.clip(shape).background(GlassFill).border(1.dp, GlassLine, shape).padding(3.dp), horizontalArrangement = Arrangement.spacedBy(2.dp)) {
-        for (v in views) Box(Modifier.size(44.dp).clip(RoundedCornerShape(9.dp)).then(if (v.on) Modifier.background(Color(0xFF433E34)).border(1.dp, GoldC.copy(alpha = .35f), RoundedCornerShape(9.dp)) else Modifier)
+        for (v in views) Box(Modifier.size(44.dp).clip(RoundedCornerShape(9.dp)).then(if (v.on) Modifier.background(on).border(1.dp, gold.copy(alpha = .35f), RoundedCornerShape(9.dp)) else Modifier)
             .clickable { if (!v.on) onView(v.mode) }.semantics { contentDescription = v.label; role = Role.RadioButton }, contentAlignment = Alignment.Center) {
-            SiteIcon(v.icon, 20.dp, if (v.on) GoldC else Mute)
+            SiteIcon(v.icon, 20.dp, if (v.on) gold else Mute)
         }
     }
 }
@@ -830,7 +833,7 @@ private fun FramedArt(c: DeckCard, reduced: Boolean, modifier: Modifier) = TierF
  * as the set grid does. [content] gets whether a band is drawn.
  */
 @Composable
-internal fun TierFrame(tier: String, reduced: Boolean, modifier: Modifier, fw: Dp = 3.75.dp, corner: Dp? = null, blur: Float = 34f, plain: Boolean = false,
+internal fun TierFrame(tier: String, reduced: Boolean, modifier: Modifier, fw: Dp = 3.75.dp, corner: Dp? = null, blur: Float = 34f, plain: Boolean = false, ratio: Float = 63f / 88f,
                        content: @Composable BoxScope.(framed: Boolean) -> Unit) {
     val moving = tier in setOf("t0", "t1", "t2", "t3", "t4", "t5")
     val framed = moving || plain
@@ -841,7 +844,7 @@ internal fun TierFrame(tier: String, reduced: Boolean, modifier: Modifier, fw: D
     val phase: State<Float>? = t?.animateFloat(0f, 1f, infiniteRepeatable(tween(period, easing = LinearEasing), RepeatMode.Restart), label = "band")
     val orbit: State<Float>? = if (aura.orbit > 0) t?.animateFloat(0f, 1f, infiniteRepeatable(tween(aura.orbit, easing = LinearEasing), RepeatMode.Restart), label = "orbit") else null
     fun DrawScope.radii() = if (corner != null) corner.toPx().let { it to it } else (size.width * .0475f + fw.toPx()) to (size.height * .035f + fw.toPx())
-    Box(modifier.aspectRatio(63f / 88f)
+    Box(modifier.aspectRatio(ratio)
         .drawBehind {
             val (rx, ry) = radii()
             // Two pools offset ±12 / ±9 (orbiting a quarter turn at a time for t3 to t5), a halo 1.5× as soft, and the drop under the card.

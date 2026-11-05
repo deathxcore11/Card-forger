@@ -56,9 +56,11 @@ export function hoistYieldInForOf(src) {
 // pending: try { f(a, (yield b).c); } finally { … }. Each such statement becomes const __yieldN = yield b; f(a, __yieldN.c);
 // (the callee and the arguments before it are plain names, so nothing is evaluated out of order). Any other yield inside
 // such a try that is not a statement's head (yield x; const v = yield x; v = yield x; return yield x) stops the export.
-export function hoistYieldInTryFinally(src) {
+export function hoistYieldInTryFinally(src, first = 0) {
   const skipString = k => { const q = src[k]; for (let j = k + 1; j < src.length; j++) { if (src[j] === '\\') { j++; continue; } if (src[j] === q) return j; } return src.length; };
   const close = i => { let d = 0; for (let k = i; k < src.length; k++) { const c = src[k]; if (c === '"' || c === "'" || c === '`') { k = skipString(k); continue; } if (c === '{') d++; else if (c === '}' && --d === 0) return k; } throw Error('unbalanced at ' + i); };
+  // Brackets that open and close within [t] (strings skipped): an operand complete in itself.
+  const balanced = t => { let d = 0; for (let k = 0; k < t.length; k++) { const c = t[k]; if (c === '"' || c === "'" || c === '`') { const q = c; for (k++; k < t.length && t[k] !== q; k++) if (t[k] === '\\') k++; if (k >= t.length) return false; continue; } if ('([{'.includes(c)) d++; else if (')]}'.includes(c) && --d < 0) return false; } return d === 0 && !/\byield\b/.test(t); };
   const edits = [];
   const tryRe = /\btry \{/g; let m;
   while ((m = tryRe.exec(src))) {
@@ -76,21 +78,50 @@ export function hoistYieldInTryFinally(src) {
         if (nested.some(([p, q]) => v.index > p && v.index < q)) continue;
         const ls = src.lastIndexOf('\n', v.index) + 1, prefix = src.slice(ls, v.index), prev = src.slice(0, ls).trimEnd().slice(-1);
         // A statement's head, also as an if / else / while body on the same line.
-        if (/^\s*(?:\}\s*)?(?:else\s+)?(?:(?:if|while) \(.*\)\s*)?(?:(?:const|let|var) [\w$]+ = |[\w$.]+ = |return )?\(?$/.test(prefix)) continue;
-        const call = /^(\s*)([\w$.]+)\(((?:[\w$.]+, )*)\($/.exec(prefix);
+        // (also the block hoistYieldInForOf opens: { const __forOfN = yield y; for … })
+        if (/^\s*(?:\}\s*)?(?:\{\s*)?(?:else\s+)?(?:(?:if|while) \(.*\)\s*)?(?:(?:const|let|var) [\w$]+ = |[\w$.]+ = |return )?\(?$/.test(prefix)) continue;
+        // A whole branch of a declaration's or assignment's conditional (const a = c ? b : yield y): nothing waits on the stack
+        // there either, as at a statement's head (only the yield's own value merges with the other branch's).
+        const tern = /^(\s*)(?:(?:const|let|var) [\w$]+|[\w$.]+) = (.+) \? (?:(.+) : )?$/.exec(prefix);
+        if (tern && ';{}'.includes(prev) && balanced(tern[2]) && (tern[3] === undefined || balanced(tern[3]))) continue;
+        // The last of several declarations (const a = x, b = yield y): split off into its own statement, the one shape above.
+        const decl = /^(\s*)(const|let|var) /.exec(prefix), tail = /, ([\w$]+) = (?:[\w$.]+\((?:[\w$.]+, )*\(?)?$/.exec(prefix);
+        if (decl && tail && ';{}'.includes(prev)) {
+          let d = 0, top = true; for (let q = ls + decl[0].length; q < ls + tail.index; q++) { const ch = src[q]; if (ch === '"' || ch === "'" || ch === '`') { q = skipString(q); continue; } if ('([{'.includes(ch)) d++; else if (')]}'.includes(ch)) d--; if (d < 0) { top = false; break; } }
+          if (top && d === 0) { edits.push({ls, split: true, from: ls + tail.index, to: ls + tail.index + 1, indent: decl[1], kw: decl[2]}); continue; }
+        }
+        // A destructuring declaration (const { a } = yield x): the yield gets its own statement, then the pattern reads it.
+        const pattern = /^(\s*)(?:const|let|var) (?:\{[^}]*\}|\[[^\]]*\]) = $/.exec(prefix);
+        if (pattern && ';{}'.includes(prev)) {
+          let d = 0, end = -1; for (let q = v.index; q < src.length; q++) { const ch = src[q]; if (ch === '"' || ch === "'" || ch === '`') { q = skipString(q); continue; } if ('([{'.includes(ch)) d++; else if (')]}'.includes(ch)) { if (d === 0) break; d--; } else if (ch === ';' && d === 0) { end = q; break; } }
+          if (end < 0) throw Error('unended destructuring yield at ' + src.slice(ls, ls + 160));
+          edits.push({ls, from: v.index, to: end, indent: pattern[1], expr: src.slice(v.index, end).trim()});
+          continue;
+        }
+        // A call's argument, as (yield x) or bare (const y = f(yield x)): the yield moves to a statement of its own just above.
+        const call = /^(\s*)(?:(?:const|let|var) [\w$]+ = |[\w$.]+ = |return )?[\w$.]+\(((?:[\w$.]+, )*)(\(?)$/.exec(prefix);
         if (!call || !';{}'.includes(prev)) throw Error('yield inside try/finally in a shape this QuickJS cannot compile, at ' + src.slice(ls, ls + 160));
-        let d = 0, pc = v.index - 1; for (let q = pc; q < src.length; q++) { const ch = src[q]; if (ch === '"' || ch === "'" || ch === '`') { q = skipString(q); continue; } if (ch === '(') d++; else if (ch === ')' && --d === 0) { pc = q; break; } }
-        edits.push({ls, from: v.index - 1, to: pc + 1, indent: call[1], expr: src.slice(v.index, pc)});
+        if (call[3]) {
+          let d = 0, pc = v.index - 1; for (let q = pc; q < src.length; q++) { const ch = src[q]; if (ch === '"' || ch === "'" || ch === '`') { q = skipString(q); continue; } if (ch === '(') d++; else if (ch === ')' && --d === 0) { pc = q; break; } }
+          edits.push({ls, from: v.index - 1, to: pc + 1, indent: call[1], expr: src.slice(v.index, pc)});
+        } else {
+          let d = 0, end = -1; for (let q = v.index; q < src.length; q++) { const ch = src[q]; if (ch === '"' || ch === "'" || ch === '`') { q = skipString(q); continue; } if ('([{'.includes(ch)) d++; else if (')]}'.includes(ch)) { if (d === 0) { end = q; break; } d--; } else if (ch === ',' && d === 0) { end = q; break; } }
+          if (end < 0) throw Error('unbalanced yield argument at ' + src.slice(ls, ls + 160));
+          edits.push({ls, from: v.index, to: end, indent: call[1], expr: src.slice(v.index, end).trim()});
+        }
       }
     }
   }
-  let out = '', last = 0, n = 0;
+  let out = '', last = 0, n = first;
   for (const e of edits.sort((p, q) => p.ls - q.ls)) {
     if (e.ls < last) throw Error('two yields to hoist in one statement at ' + src.slice(e.ls, e.ls + 120));
+    if (e.split) { out += src.slice(last, e.from) + `;\n${e.indent}${e.kw}`; last = e.to; continue; }
     const name = '__yield' + (++n);
     out += src.slice(last, e.ls) + `${e.indent}const ${name} = ${e.expr};\n` + src.slice(e.ls, e.from) + name;
     last = e.to;
   }
-  if (n) console.log('hoisted', n, 'yield(s) out of call arguments in try/finally');
-  return out + src.slice(last);
+  if (n > first) console.log('hoisted', n - first, 'yield(s) out of call arguments in try/finally');
+  const splits = edits.filter(e => e.split).length; if (splits) console.log('split', splits, 'declaration list(s) ending in a yield in try/finally');
+  // A split declaration may still hold its yield in a call (const a = f(yield x)): one more pass hoists it.
+  return splits ? hoistYieldInTryFinally(out + src.slice(last), n) : out + src.slice(last);
 }
