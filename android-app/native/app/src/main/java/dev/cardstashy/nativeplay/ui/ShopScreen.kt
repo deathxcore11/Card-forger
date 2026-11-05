@@ -323,7 +323,9 @@ private fun SealPress(s: JsonObject, busy: Boolean, onStamp: (String, String) ->
 private data class LensCard(val id: String, val oracle: String, val name: String, val number: String, val rarity: String, val image: String)
 
 private val gray = ColorFilter.colorMatrix(ColorMatrix().apply { setToSaturation(0f) })
-private val setCache = HashMap<String, List<LensCard>>()
+/** A set's printings as they arrive: [total] from the first page, [name] the set's own (Scryfall set_name), [done] when the last page is in. */
+private class LensLoad(val cards: List<LensCard>, val total: Int, val name: String?, val done: Boolean, val partial: Boolean = false)
+private val setCache = HashMap<String, LensLoad>()
 
 /** One search page; Scryfall's 429 (too many requests), a 5xx or a dropped connection is tried again with a growing wait. */
 private suspend fun page(url: String): JsonObject? {
@@ -338,21 +340,29 @@ private suspend fun page(url: String): JsonObject? {
 }
 
 /** Every printing of the set in set order, from Scryfall (the site's set page reads the same search). */
-private suspend fun setCards(code: String): List<LensCard> = setCache[code] ?: withContext(Dispatchers.IO) {
+/**
+ * Every printing of the set, page by page as the site's set page loads it ("Loading N of M cards…"). Each page is shown as it
+ * lands ([each]); a page that fails after the first keeps what came in (a Secret Lair has 2,800+ printings over 17 pages).
+ */
+private suspend fun setCards(code: String, each: suspend (LensLoad) -> Unit = {}): LensLoad = setCache[code] ?: withContext(Dispatchers.IO) {
     val out = ArrayList<LensCard>()
     val start = "https://api.scryfall.com/cards/search?order=set&unique=prints&q=" + java.net.URLEncoder.encode("e:$code game:paper", "UTF-8")
     // Offline, a set this phone already saved (art/ThumbStore) still opens, from its saved printings.
-    val first = page(start) ?: return@withContext dev.cardstashy.nativeplay.art.ThumbStore.savedSet(code).map { lens(it) }.also { if (it.isNotEmpty()) setCache[code] = it }
-    var next: JsonObject? = first
-    var url: String? = start
-    while (url != null) {
-        val page = next ?: page(url) ?: break
-        next = null
-        page.objs("data").forEach { c -> out += lens(c) }
-        url = if (page.get("has_more").b()) page.get("next_page").s() else null
-        if (url != null) kotlinx.coroutines.delay(100) // Scryfall asks for 50-100 ms between requests
+    val first = runCatching { page(start) }.getOrNull() ?: return@withContext dev.cardstashy.nativeplay.art.ThumbStore.savedSet(code).map { lens(it) }
+        .let { LensLoad(it, it.size, null, true) }.also { if (it.cards.isNotEmpty()) setCache[code] = it }
+    val total = first.get("total_cards").i(); val name = first.objs("data").firstOrNull()?.get("set_name").s()
+    var next: JsonObject? = first; var partial = false
+    while (true) {
+        val pg = next ?: break
+        pg.objs("data").forEach { c -> out += lens(c) }
+        val url = if (pg.get("has_more").b()) pg.get("next_page").s() else null
+        if (url == null) break
+        each(LensLoad(out.toList(), maxOf(total, out.size), name, false))
+        kotlinx.coroutines.delay(100) // Scryfall asks for 50-100 ms between requests
+        next = runCatching { page(url) }.getOrNull()
+        if (next == null) partial = true
     }
-    out.also { if (it.isNotEmpty()) setCache[code] = it }
+    LensLoad(out.toList(), if (partial) maxOf(total, out.size) else out.size, name, true, partial).also { if (!partial && it.cards.isNotEmpty()) setCache[code] = it }
 }
 
 private fun lens(c: JsonObject): LensCard {
@@ -364,10 +374,12 @@ private fun lens(c: JsonObject): LensCard {
 @Composable
 private fun SetLens(s: JsonObject, code: String, busy: Boolean, onBack: () -> Unit, onBuy: () -> Unit, onOpen: (String) -> Unit, onCard: (CardPick) -> Unit) {
     val row = remember(s, code) { Trunk.allSets(s).firstOrNull { it.code == code } }
-    val name = row?.name ?: SetFacts.set(code)?.name ?: code.uppercase()
-    val owned = remember(s) { s.objs("cards").associate { (it.get("o").s() ?: "") to it.get("c").i() } }
     var attempt by remember(code) { mutableStateOf(0) }
-    val cards = produceState<List<LensCard>?>(null, code, attempt) { value = null; value = runCatching { setCards(code) }.getOrDefault(emptyList()) }.value
+    val load = produceState<LensLoad?>(null, code, attempt) { value = null; value = setCards(code) { p -> withContext(Dispatchers.Main) { value = p } } }.value
+    val cards = load?.cards
+    // A set the phone has no facts for (a Secret Lair you bought into) takes the name Scryfall gives it, as the site's set page does.
+    val name = row?.name?.takeIf { it != code.uppercase() } ?: SetFacts.set(code)?.name ?: load?.name ?: code.uppercase()
+    val owned = remember(s) { s.objs("cards").associate { (it.get("o").s() ?: "") to it.get("c").i() } }
     // Offline art plan: the first visit saves the whole set's thumbnails quietly, so the grid is instant from then on.
     LaunchedEffect(code) { dev.cardstashy.nativeplay.art.ThumbStore.ensureSet(code) }
     val waiting = s.objs("packs").filter { it.get("set").s() == code }
@@ -391,7 +403,8 @@ private fun SetLens(s: JsonObject, code: String, busy: Boolean, onBack: () -> Un
                 Column(Modifier.windowInsetsPadding(WindowInsets.statusBars).padding(top = 12.dp), verticalArrangement = Arrangement.spacedBy(14.dp)) {
                     PageHeader(name, "Shop · ${code.uppercase()}${row?.released?.take(4)?.let { " · $it" } ?: ""}", onBack = onBack)
                     Row(horizontalArrangement = Arrangement.spacedBy(16.dp), verticalAlignment = Alignment.CenterVertically) {
-                        Booster(code, name, Modifier.width(120.dp))
+                        // Only a set with packs shows one: a Secret Lair you own cards from has no booster to buy or open.
+                        if (sold || waiting.isNotEmpty()) Booster(code, name, Modifier.width(120.dp))
                         Column(Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(8.dp)) {
                             Text("YOUR COLLECTION", style = Site.Eyebrow)
                             Text("${"%,d".format(have)} of ${"%,d".format(total)} unique cards", style = bold)
@@ -411,11 +424,16 @@ private fun SetLens(s: JsonObject, code: String, busy: Boolean, onBack: () -> Un
                         Spacer(Modifier.width(6.dp))
                         listOf("" to "All rarities", "common" to "Common", "uncommon" to "Uncommon", "rare" to "Rare", "mythic" to "Mythic").forEach { (k, l) -> Chip(l, rarity == k) { rarity = k } }
                     }
-                    Text(if (cards == null) "Loading the set…" else "${"%,d".format(shown.size)} cards", style = small)
+                    Text(if (load == null) "Loading the set…" else if (!load.done) "Loading ${"%,d".format(load.cards.size)} of ${"%,d".format(load.total)} cards…"
+                        else "${"%,d".format(shown.size)} cards", style = small)
+                    if (load?.partial == true && load.cards.isNotEmpty()) Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(12.dp)) {
+                        Text("${"%,d".format(load.cards.size)} of ${"%,d".format(load.total)} cards came through.", style = small, modifier = Modifier.weight(1f))
+                        GoldCta("Try again", muted = true) { attempt++ }
+                    }
                 }
             }
-            if (cards != null && shown.isEmpty()) item(span = { GridItemSpan(maxLineSpan) }) {
-                if (cards.isEmpty()) Column(Modifier.padding(vertical = 24.dp), verticalArrangement = Arrangement.spacedBy(12.dp)) {
+            if (load != null && load.done && shown.isEmpty()) item(span = { GridItemSpan(maxLineSpan) }) {
+                if (load.cards.isEmpty()) Column(Modifier.padding(vertical = 24.dp), verticalArrangement = Arrangement.spacedBy(12.dp)) {
                     Text("The set's cards didn't come through. Check your connection and try again.", style = small.copy(fontSize = 15.sp))
                     GoldCta("Try again", Modifier.fillMaxWidth(), muted = true) { attempt++ }
                 } else Text("No cards match. Change the filters above.", style = small.copy(fontSize = 15.sp), modifier = Modifier.padding(vertical = 24.dp))

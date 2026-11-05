@@ -144,7 +144,7 @@ class MainActivity : ComponentActivity() {
         // The card database starts loading as the app opens, so it is ready before Quick Play is.
         ForgeService.prepare(this)
         Account.init(this); dev.cardstashy.nativeplay.ui.AppSettings.init(this); dev.cardstashy.nativeplay.ui.Aura.init(this); dev.cardstashy.nativeplay.ui.TableEmotes.init(this); dev.cardstashy.nativeplay.ui.MatchMenu.init(this); Thread { dev.cardstashy.nativeplay.ui.BoardIcons.get(applicationContext, "tapped") }.start(); CardArt.init(this); Speed.init(this)
-        dev.cardstashy.nativeplay.play.Progress.init(this); dev.cardstashy.nativeplay.play.SetFacts.init(this); dev.cardstashy.nativeplay.play.CardFacts.init(this); dev.cardstashy.nativeplay.play.DeckEngine.init(this); dev.cardstashy.nativeplay.play.CraftRarity.init(this)
+        dev.cardstashy.nativeplay.play.Progress.init(this); dev.cardstashy.nativeplay.play.SetFacts.init(this); dev.cardstashy.nativeplay.play.CardFacts.init(this); dev.cardstashy.nativeplay.play.DeckEngine.init(this); dev.cardstashy.nativeplay.play.RandomBuild.init(this); dev.cardstashy.nativeplay.play.CraftRarity.init(this)
         dev.cardstashy.nativeplay.play.CardData.warm(this); dev.cardstashy.nativeplay.ui.PackSfx.warm(this)
         // Offline play: when a network comes back, matches finished without signal are sent (the server still decides rewards).
         runCatching { (getSystemService(CONNECTIVITY_SERVICE) as android.net.ConnectivityManager).registerDefaultNetworkCallback(object : android.net.ConnectivityManager.NetworkCallback() {

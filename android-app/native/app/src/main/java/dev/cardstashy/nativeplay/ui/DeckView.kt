@@ -237,23 +237,39 @@ private fun RoleSummary(entries: List<Entry>) {
     }
 }
 
-/** stackList: type groups in GROUP_ORDER, piles of six fanned by a fixed step, groups side by side when they fit. */
+/**
+ * stackList: type groups in GROUP_ORDER, piles of six fanned by a fixed step (deck-viewer.css). Each group is as wide as its piles
+ * (206 a pile less 16; 158 less 10 at 480 and under), never wider than the page, and groups sit side by side when they fit
+ * (gap 20 / 18), so a one-pile type (Sorceries, Artifacts, Lands) shares its row instead of leaving half the page empty. Inside
+ * a group the piles fill a grid of columns at least 168 wide (128 at 480 and under), 16 apart (10).
+ */
 @Composable
 private fun Stacks(entries: List<Entry>, inner: Dp, wide: Boolean, onCard: (String) -> Unit) {
     val groups = entries.groupBy { it.category }.toList().sortedBy { Roles.ORDER.indexOf(it.first).let { i -> if (i < 0) 99 else i } }
-    val pileW = if (wide) 190.dp else ((inner - 12.dp) / 2).coerceAtMost(170.dp)
-    val step = if (wide) 38.dp else 32.dp
-    FlowRow(horizontalArrangement = Arrangement.spacedBy(16.dp), verticalArrangement = Arrangement.spacedBy(24.dp)) {
-        for ((cat, list) in groups) Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
-            Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(9.dp)) {
-                Text(cat, style = t(16f, FontWeight.ExtraBold))
-                Text("${list.sumOf { it.qty }}", style = t(12.5f, FontWeight.Bold, Site.Muted), modifier = Modifier.clip(RoundedCornerShape(8.dp)).background(Site.Surface2).padding(horizontal = 8.dp, vertical = 2.dp))
-            }
-            FlowRow(horizontalArrangement = Arrangement.spacedBy(12.dp), verticalArrangement = Arrangement.spacedBy(16.dp)) {
-                list.chunked(6).forEach { pile ->
-                    val cardH = pileW * (88f / 63f)
-                    Box(Modifier.width(pileW).height(cardH + step * (pile.size - 1))) {
-                        pile.forEachIndexed { i, e -> CardTile(e, Modifier.offset(y = step * i).width(pileW), showRoles = i == pile.lastIndex) { onCard(e.name) } }
+    val small = inner <= 448.dp
+    val gapIn = if (small) 10.dp else 16.dp
+    val minCol = if (small) 128.dp else 168.dp
+    val step = if (small) 32.dp else 38.dp
+    FlowRow(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(18.dp), verticalArrangement = Arrangement.spacedBy(20.dp)) {
+        for ((cat, list) in groups) {
+            val piles = list.chunked(6)
+            val basis = if (small) piles.size * 158 - 10 else piles.size * 206 - 16
+            // A hair under the sum so two groups that fit exactly are not pushed apart by rounding.
+            val w = basis.toFloat().coerceAtMost(inner.value).coerceAtLeast(minOf(if (small) 128f else 174f, inner.value)).dp - 0.5.dp
+            // grid auto-fill: as many columns as fit at the minimum, sharing the group's width (an unused track stays empty).
+            val cols = maxOf(1, ((w + gapIn) / (minCol + gapIn)).toInt())
+            val pileW = (w - gapIn * (cols - 1)) / cols
+            Column(Modifier.width(w), verticalArrangement = Arrangement.spacedBy(12.dp)) {
+                Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(9.dp)) {
+                    Text(cat, style = t(16f, FontWeight.ExtraBold))
+                    Text("${list.sumOf { it.qty }}", style = t(12.5f, FontWeight.Bold, Site.Muted), modifier = Modifier.clip(RoundedCornerShape(8.dp)).background(Site.Surface2).padding(horizontal = 8.dp, vertical = 2.dp))
+                }
+                FlowRow(horizontalArrangement = Arrangement.spacedBy(gapIn), verticalArrangement = Arrangement.spacedBy(if (small) 18.dp else 20.dp), maxItemsInEachRow = cols) {
+                    piles.forEach { pile ->
+                        val cardH = pileW * (88f / 63f)
+                        Box(Modifier.width(pileW).height(cardH + step * (pile.size - 1))) {
+                            pile.forEachIndexed { i, e -> CardTile(e, Modifier.offset(y = step * i).width(pileW), showRoles = i == pile.lastIndex) { onCard(e.name) } }
+                        }
                     }
                 }
             }
