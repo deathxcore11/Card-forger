@@ -14,6 +14,7 @@ import androidx.compose.foundation.horizontalScroll
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.lazy.itemsIndexed
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
@@ -297,10 +298,11 @@ private fun DeckPage(m: CollectionDeckModel, top: @Composable (tabs: (@Composabl
                 item(key = "g:" + g.name) { Box(Modifier.padding(horizontal = gutter).padding(top = if (gi == 0) 0.dp else 12.dp)) { GroupHead(g.name, g.count, null) } }
                 val lastCard = g.cards.lastOrNull()
                 when (m.view) {
-                    "compact" -> items(g.cards, key = { "c:" + g.name + ":" + it.r.name }) { c ->
+                    // A row's place in its group keeps every key unique: a deck can hold the same card in two rows (a precon's Island printings).
+                    "compact" -> itemsIndexed(g.cards, key = { i, c -> "c:" + g.name + ":" + i + ":" + c.r.name }) { _, c ->
                         Box(Modifier.padding(horizontal = gutter).padding(bottom = if (c === lastCard) 0.dp else 8.dp)) { CompactCard(c, small, reduced, m.glyphs, act) }
                     }
-                    "symbols" -> items(g.cards, key = { "n:" + g.name + ":" + it.r.name }) { c ->
+                    "symbols" -> itemsIndexed(g.cards, key = { i, c -> "n:" + g.name + ":" + i + ":" + c.r.name }) { _, c ->
                         Box(Modifier.padding(horizontal = gutter).padding(bottom = if (c === lastCard) 0.dp else 4.dp)) { NameCard(c, reduced, m.glyphs, act) }
                     }
                     else -> {
@@ -308,7 +310,7 @@ private fun DeckPage(m: CollectionDeckModel, top: @Composable (tabs: (@Composabl
                         val gap = if (small) 10.dp else 14.dp
                         val cols = if (small) 2 else ((inner.value + gap.value) / (170f + gap.value)).toInt().coerceAtLeast(1)
                         val lines = g.cards.chunked(cols)
-                        items(lines, key = { line -> "a:" + g.name + ":" + line.joinToString("|") { it.r.name } }) { line ->
+                        itemsIndexed(lines, key = { i, line -> "a:" + g.name + ":" + i + ":" + line.joinToString("|") { it.r.name } }) { _, line ->
                             Row(Modifier.padding(horizontal = gutter).padding(bottom = if (line === lines.last()) 0.dp else if (small) 16.dp else 20.dp).height(IntrinsicSize.Min), horizontalArrangement = Arrangement.spacedBy(gap)) {
                                 for (c in line) GalleryCard(c, small, reduced, m.glyphs, act, Modifier.weight(1f).fillMaxHeight())
                                 repeat(cols - line.size) { Spacer(Modifier.weight(1f)) }

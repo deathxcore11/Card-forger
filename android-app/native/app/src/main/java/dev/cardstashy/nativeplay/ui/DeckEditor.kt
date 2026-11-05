@@ -15,6 +15,7 @@ import androidx.compose.foundation.lazy.grid.GridItemSpan
 import androidx.compose.foundation.lazy.grid.LazyGridScope
 import androidx.compose.foundation.lazy.grid.LazyVerticalGrid
 import androidx.compose.foundation.lazy.grid.items
+import androidx.compose.foundation.lazy.grid.itemsIndexed
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
@@ -26,6 +27,12 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.alpha
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.draw.rotate
+import androidx.compose.ui.graphics.ColorFilter
+import androidx.compose.ui.semantics.Role
+import androidx.compose.ui.semantics.role
+import androidx.compose.ui.semantics.semantics
+import androidx.compose.ui.semantics.stateDescription
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.layout.ContentScale
@@ -61,6 +68,8 @@ class EditorUi {
     var filling by mutableStateOf(false)
     /** The card whose Play card actions (hold) are open. */
     var holdName by mutableStateOf<String?>(null)
+    /** The groups folded shut with a tap on their heading (Randall 5 Nov 16:15Z); a second tap opens them again. */
+    var folded by mutableStateOf(emptySet<String>())
     var mode by mutableStateOf("mine")
     var filter by mutableStateOf(Trunk.Filter())
     var sort by mutableStateOf("")
@@ -199,13 +208,13 @@ fun DeckEditor(state: JsonObject, ui: EditorUi, onBack: () -> Unit, onCard: (Car
         if (nums.count > 0) item(span = { GridItemSpan(maxLineSpan) }) { Row(horizontalArrangement = Arrangement.spacedBy(10.dp)) { GhostButton("Copy list", onClick = actions.copy) } }
         if (e.cards.isEmpty()) item(span = { GridItemSpan(maxLineSpan) }) { Text("Drag cards here, or tap one to see it.", style = t(14f, color = Site.Muted), modifier = Modifier.padding(vertical = 8.dp)) }
         for ((g, rows) in DeckEdit.groups(e.cards) { fact(it) }) {
-            item(span = { GridItemSpan(maxLineSpan) }) {
-                Row(Modifier.padding(top = 10.dp), verticalAlignment = Alignment.Bottom, horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                    Text(g, style = TextStyle(fontFamily = Type.Cinzel, fontWeight = FontWeight.Bold, fontSize = 16.sp, color = if (AppSettings.theme == "light") Site.Text else Color(0xFFF3E3BD)))
-                    Text("${rows.sumOf { it.qty }}", style = t(13f, FontWeight.Bold, Site.Muted))
-                }
+            val open = g !in ui.folded
+            item(key = "group:$g", span = { GridItemSpan(maxLineSpan) }) {
+                GroupHead(g, rows.sumOf { it.qty }, open) { ui.folded = if (open) ui.folded + g else ui.folded - g }
             }
-            items(rows, key = { "row:" + it.name }, span = { GridItemSpan(maxLineSpan) }) { c ->
+            // A row's place keeps every key unique: a precon can hold the same card in two rows (Final Fantasy's three Island printings),
+            // and a key used twice stops the list the moment that group comes into view.
+            if (open) itemsIndexed(rows, key = { i, c -> "row:$g:$i:" + c.name }, span = { _, _ -> GridItemSpan(maxLineSpan) }) { _, c ->
                 DeckRow(c, planOf[c.name], fact(c.name), plan.have, DeckEdit.room(e.cards, c.name, e.format), ui.busy, actions)
             }
         }
@@ -226,7 +235,7 @@ fun DeckEditor(state: JsonObject, ui: EditorUi, onBack: () -> Unit, onCard: (Car
                 else "No cards yet" to "Open packs, or look through all cards and craft them with seals."
             Column(Modifier.padding(vertical = 18.dp), verticalArrangement = Arrangement.spacedBy(4.dp)) { Text(h, style = t(17f, FontWeight.Bold)); Text(p, style = t(14f, color = Site.Muted)) }
         }
-        items(tiles.take(300), key = { "pool:" + it.name }) { c ->
+        itemsIndexed(tiles.take(300), key = { i, c -> "pool:$i:" + c.name }) { _, c ->
             PoolCard(c.name, c.image, c.rarity, c.have, DeckEdit.room(e.cards, c.name, e.format), { actions.open(c.name) }, { actions.hold(c.name) }) { actions.step(c.name, 1) }
         }
         if (ui.mode == "all" && ui.poolMore && !ui.poolBusy) item(span = { GridItemSpan(maxLineSpan) }) { GhostButton("More cards", Modifier.fillMaxWidth()) { loadPool(true) } }
@@ -237,11 +246,12 @@ fun DeckEditor(state: JsonObject, ui: EditorUi, onBack: () -> Unit, onCard: (Car
         BoxWithConstraints(Modifier.fillMaxSize()) {
             val wide = maxWidth >= 840.dp
             val pad = PaddingValues(start = 16.dp, end = 16.dp, top = 12.dp, bottom = 120.dp)
-            if (wide) Row(Modifier.fillMaxSize(), horizontalArrangement = Arrangement.spacedBy(4.dp)) {
+            // The lists start under the status bar and clip there, so nothing scrolls up behind the clock.
+            if (wide) Row(Modifier.fillMaxSize().windowInsetsPadding(WindowInsets.statusBars), horizontalArrangement = Arrangement.spacedBy(4.dp)) {
                 LazyVerticalGrid(GridCells.Fixed(1), Modifier.weight(.95f).fillMaxHeight(), contentPadding = pad, verticalArrangement = Arrangement.spacedBy(8.dp)) { deckBlock() }
                 LazyVerticalGrid(GridCells.Adaptive(118.dp), Modifier.weight(1.05f).fillMaxHeight(), contentPadding = pad, verticalArrangement = Arrangement.spacedBy(12.dp),
                     horizontalArrangement = Arrangement.spacedBy(12.dp)) { poolBlock() }
-            } else LazyVerticalGrid(GridCells.Adaptive(104.dp), Modifier.fillMaxSize(), contentPadding = pad, verticalArrangement = Arrangement.spacedBy(10.dp),
+            } else LazyVerticalGrid(GridCells.Adaptive(104.dp), Modifier.fillMaxSize().windowInsetsPadding(WindowInsets.statusBars), contentPadding = pad, verticalArrangement = Arrangement.spacedBy(10.dp),
                 horizontalArrangement = Arrangement.spacedBy(10.dp)) { deckBlock(); poolBlock() }
         }
         Box(Modifier.align(Alignment.BottomCenter)) { nav() }
@@ -352,6 +362,22 @@ internal fun PackGoals(goals: List<DeckEdit.Goal>, onPack: (String) -> Unit) = R
         horizontalArrangement = Arrangement.spacedBy(8.dp)) {
         SetIcon(g.code, Modifier.size(20.dp)); Text(g.name, style = t(13.5f, FontWeight.SemiBold), softWrap = false)
         Text("${g.miss}", style = t(13.5f, FontWeight.ExtraBold, Site.Gold))
+    }
+}
+
+/**
+ * The group's heading (h3.pe-build-group: Cinzel name, then the count) as a button: a tap folds the group shut, another opens it;
+ * the chevron turns over when open, as the deck menu's details do.
+ */
+@Composable
+private fun GroupHead(name: String, count: Int, open: Boolean, onToggle: () -> Unit) {
+    val ink = if (AppSettings.theme == "light") Site.Text else Color(0xFFF3E3BD)
+    Row(Modifier.fillMaxWidth().padding(top = 6.dp).heightIn(min = 44.dp).clip(RoundedCornerShape(12.dp)).clickable(onClick = onToggle)
+        .semantics { role = Role.Button; stateDescription = if (open) "Expanded" else "Collapsed" }.padding(start = 2.dp, end = 6.dp),
+        verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+        Text(name, style = TextStyle(fontFamily = Type.Cinzel, fontWeight = FontWeight.Bold, fontSize = 16.sp, color = ink))
+        Text("$count", style = t(13f, FontWeight.Bold, Site.Muted), modifier = Modifier.weight(1f))
+        Image(SiteIcons.Chevron, null, Modifier.size(18.dp).rotate(if (open) 180f else 0f), colorFilter = ColorFilter.tint(Site.Muted))
     }
 }
 
