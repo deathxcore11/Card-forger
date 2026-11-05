@@ -4,7 +4,7 @@
 // just shows what this returns. Play's wall: nothing here touches the real collection or prices.
 // Spec: play-progression.md sections 3 to 9.
 import {SUPABASE} from './config.js';
-import {weeklyPreconsByFormat} from './play-precon-formats.js';
+import {weeklyPreconsByFormat, commanderStorePool, commanderDeckLegal, COMMANDER_STORE_ROTATING} from './play-precon-formats.js';
 import {loadMtgBooster, mtgBoosterCards, drawMtgBooster, mtgGodPackPicks} from './mtg-boosters.js';
 import {rewardSet, setFormats} from './play-econ-sets.js';
 import {isBasicLand, starterGrant, sealTrackBonus, packContentsRow, cardDelta, RARITY_SEAL, FORGE_STEPS, forgeRatio, holoCost, preconPrice, mtgjsonCardDelta, mtgjsonDeckRows, deckShortfall, ownedByName, isCollectorPack, collectorOdds, collectorPicks, collectorSource, godPackOdds} from './play-econ-rules.js';
@@ -55,17 +55,38 @@ async function secretLairDrops(env, request, fetcher) {
 
 // MTGJSON's deck list, read once an hour per isolate, for the weekly precon store.
 let preconListCache = null;
+const commanderLegal = new Map(); // deck file -> legal in Commander (read once per isolate)
+async function commanderStore(fetcher, index, week) {
+  const {featured, order, code, released} = commanderStorePool(index, week), rotating = [];
+  for (const f of order) {
+    if (rotating.length >= COMMANDER_STORE_ROTATING) break;
+    if (!commanderLegal.has(f)) {
+      const r = await fetcher('https://mtgjson.com/api/v5/decks/' + f + '.json', {headers: {Accept: 'application/json', 'User-Agent': 'CardStashy/1.0 (play precons)'}}).catch(() => null);
+      const d = r?.ok ? (await r.json().catch(() => null))?.data : null;
+      commanderLegal.set(f, !!d && commanderDeckLegal(d));
+    }
+    if (commanderLegal.get(f)) rotating.push(f);
+  }
+  return {featured, rotating, code, released};
+}
 async function preconStoreFiles(fetcher, now = new Date()) {
   const week = playWeek(now.toISOString().slice(0, 10));
   if (!preconListCache || Date.now() - preconListCache.at > 3600e3) {
     const r = await fetcher('https://mtgjson.com/api/v5/DeckList.json', {headers: {Accept: 'application/json', 'User-Agent': 'CardStashy/1.0 (play precons)'}}).catch(() => null);
     const j = r?.ok ? await r.json().catch(() => null) : null;
-    if (Array.isArray(j?.data)) preconListCache = {at: Date.now(), data: j.data};
+    if (Array.isArray(j?.data)) preconListCache = {at: Date.now(), data: j.data, commander: new Map()};
   }
   if (!preconListCache) return null;
   const formats = weeklyPreconsByFormat(preconListCache.data, week);
-  return {week, files: Object.values(formats).flat(), formats};
+  const cmd = preconListCache.commander.get(week) || await commanderStore(fetcher, preconListCache.data, week).catch(() => ({featured: [], rotating: []}));
+  preconListCache.commander.set(week, cmd);
+  formats.Commander = [...cmd.featured, ...cmd.rotating];
+  // A release listed before its set is out (Star Trek Commander) is flagged so the shop can light it up.
+  const today = now.toISOString().slice(0, 10), prerelease = cmd.featured.length && cmd.released > today
+    ? {set: String(cmd.code || '').toLowerCase(), name: (await scryfallSets(fetcher).catch(() => [])).find(x => x.code === String(cmd.code || '').toLowerCase())?.name || '', releases: cmd.released, files: cmd.featured} : null;
+  return {week, files: Object.values(formats).flat(), formats, featured: cmd.featured, prerelease};
 }
+
 // This Play week's bundle (UTC weeks, Monday to Sunday), as the Merchant shows it.
 export function secretLairOffer(drops, config = {}, now = new Date()) {
   const today = now.toISOString().slice(0, 10), week = playWeek(today), drop = weeklySecretLair(drops, week, today);
@@ -301,9 +322,13 @@ export async function progressRoute(request, env, {verifyBearer, fetcher = fetch
       if (!/^[A-Za-z0-9_.-]{3,120}$/.test(file)) return fail('bad_precon');
       const r = await fetcher('https://mtgjson.com/api/v5/decks/' + file + '.json', {headers: {Accept: 'application/json', 'User-Agent': 'CardStashy/1.0 (play precons)'}}).catch(() => null);
       const d = r?.ok ? (await r.json().catch(() => null))?.data : null;
-      if (!d?.mainBoard?.length || (d.commander || []).length) return fail('bad_precon');
-      const rows = mtgjsonDeckRows(d), byName = new Map([...(d.mainBoard || []), ...(d.sideBoard || [])].map(c => [c.name, c]));
-      const s = await state(), short = deckShortfall(rows, ownedByName(s.cards || []), new Map(rows.map(x => [x.name, x.rarity])), s.config?.maxCopies || 4);
+      if (!d?.mainBoard?.length) return fail('bad_precon');
+      // Commander decks (the commander zone plus 99) are singleton: one copy of each card, the commander
+      // saved with board 'commander'.
+      const cmdr = (d.commander || []).length > 0;
+      const rows = mtgjsonDeckRows(d), byName = new Map([...(d.commander || []), ...(d.mainBoard || []), ...(d.sideBoard || [])].map(c => [c.name, c]));
+      if (cmdr) rows.unshift(...(d.commander || []).map(c => ({name: String(c.name || ''), qty: 1, set: String(c.setCode || '').toLowerCase(), number: String(c.number || ''), id: c.identifiers?.scryfallId || '', rarity: mtgjsonCardDelta(c).rarity, board: 'commander'})).filter(r => r.name));
+      const s = await state(), short = deckShortfall(rows, ownedByName(s.cards || []), new Map(rows.map(x => [x.name, x.rarity])), cmdr ? 1 : (s.config?.maxCopies || 4));
       const missing = short.missing.reduce((t, m) => t + m.need, 0), price = preconPrice(short.seals, s.config);
       // Whole-deck coin purchases are only for this week's five store precons; the rest are built with seals.
       if (price > 0) { const store = await preconStoreFiles(fetcher).catch(() => null); if (!store || !store.files.includes(file)) return fail('not_in_store', 409); }
@@ -312,7 +337,7 @@ export async function progressRoute(request, env, {verifyBearer, fetcher = fetch
       const preconRef = 'precon:' + crypto.randomUUID();
       await apply(preconRef, 'precon', {coins: -price, cards});
       await tally(preconRef, {precons: 1, coins_spent: price}, body.tz);
-      const deck = await rpc(env, 'play_save_deck', {p_user: uid, p_id: null, p_name: String(d.name || 'Precon').slice(0, 80), p_format: String(body.format || '').slice(0, 40),
+      const deck = await rpc(env, 'play_save_deck', {p_user: uid, p_id: null, p_name: String(d.name || 'Precon').slice(0, 80), p_format: cmdr ? 'Commander' : String(body.format || '').slice(0, 40),
         p_cards: rows.map(({name, qty, board, set, number}) => ({name, qty, ...(board ? {board} : {}), set, number})), p_delete: false}, fetcher);
       return json({deck, price, granted: cards.length, counters: await counters.read(), state: await state()});
     }

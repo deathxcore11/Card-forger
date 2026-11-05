@@ -72,3 +72,34 @@ export function weeklyPreconsByFormat(index, week = '', n = WEEKLY_PRECONS_PER_F
   return out;
 }
 export const weeklyPrecons = (index, week = '', n = WEEKLY_PRECONS_PER_FORMAT, now = Date.now()) => Object.values(weeklyPreconsByFormat(index, week, n, now)).flat();
+
+// Commander precons in the store (Randall 5 Nov 19:25Z): the newest Commander release is featured (a
+// pre-release when its decks are listed before the set is out), then legal decks from past years rotate in.
+// MTGJSON files them under type "Commander Deck". The server walks `order` and keeps the first decks whose
+// cards are all legal in Commander (it must read each deck file to know), so this part stays pure.
+export const COMMANDER_PRECON_TYPE = 'Commander Deck';
+export const COMMANDER_STORE_ROTATING = 3;
+export function commanderStorePool(index, week = '') {
+  const seen = new Set(), all = [];
+  for (const d of index || []) {
+    if (d?.type !== COMMANDER_PRECON_TYPE || typeof d.fileName !== 'string' || !/^[A-Za-z0-9_.-]+$/.test(d.fileName)) continue;
+    const f = d.fileName.replace(/\.json$/, ''); if (seen.has(f)) continue; seen.add(f);
+    all.push({file: f, code: String(d.code || ''), released: String(d.releaseDate || '')});
+  }
+  const newest = all.reduce((m, d) => d.released > m ? d.released : m, '');
+  const lead = all.find(d => d.released === newest)?.code || '';
+  // The newest set's decks (a release is a handful of decks sharing a code), capped at four.
+  const featured = all.filter(d => d.released === newest && d.code === lead).map(d => d.file).sort().slice(0, 4);
+  const rest = all.filter(d => !featured.includes(d.file)).map(d => d.file).sort();
+  const order = []; let h = weekHash('pcc:' + week);
+  for (let tries = 0; order.length < Math.min(rest.length, COMMANDER_STORE_ROTATING * 12) && tries < rest.length * 4 + 40; tries++) {
+    const f = rest[h % rest.length]; h = Math.imul(h ^ (h >>> 13), 2654435761) >>> 0;
+    if (!order.includes(f)) order.push(f);
+  }
+  return {featured, order, code: lead, released: newest};
+}
+// Every card legal in Commander as published (MTGJSON legalities.commander), commander zone included.
+export const commanderDeckLegal = d => {
+  const cards = [...(d?.commander || []), ...(d?.mainBoard || [])];
+  return cards.length >= 90 && cards.every(c => c?.legalities?.commander === 'Legal' || c?.supertypes?.includes('Basic'));
+};
