@@ -98,6 +98,8 @@ object Updater {
     fun check(ctx: Context, force: Boolean = false) {
         val app = ctx.applicationContext
         val p = prefs(app); val now = System.currentTimeMillis()
+        // A download this build already is (the installer has used it) goes at launch, offline too, not at the next check.
+        if (ui == null && download?.isActive != true) scope.launch { runCatching { val have = installed(app); sweep(app, have.versionName ?: "") } }
         if (!force && now - p.getLong("checked", 0) < CHECK_EVERY && available == null) return
         if (download?.isActive == true || ui is UpdateUi.Ready || ui is UpdateUi.Allow) return
         scope.launch {
@@ -215,6 +217,13 @@ object Updater {
 
     /** From Settings: show the prompt again for the waiting update. */
     fun reopen(ctx: Context) { if (available != null || ready != null) { prefs(ctx).edit().remove("later").apply() }; check(ctx, force = true) }
+
+    /** The downloads in [dir] that are not newer than the installed [haveName]: what is left once Android has installed one. */
+    internal fun spent(dir: File, haveName: String): List<File> = dir.listFiles().orEmpty().filter { f ->
+        val v = Regex("^cardstashy-(.+)\\.(apk|part)$").find(f.name)?.groupValues?.get(1)
+        v == null || !newer(v, 0, haveName, 0)
+    }
+    private fun sweep(ctx: Context, haveName: String) { spent(dir(ctx), haveName).forEach { it.delete() } }
 
     /** Old downloads go once a newer one is on the way, or once this build is current. */
     private fun cleanup(ctx: Context, keep: String?) {

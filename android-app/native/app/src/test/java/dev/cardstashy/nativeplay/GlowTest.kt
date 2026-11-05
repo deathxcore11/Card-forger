@@ -66,4 +66,13 @@ class GlowTest {
         assertEquals("https://cardstashy.com/downloads/cardstashy-native-test-0.4.9.apk", rel.url)
         assertEquals(null, Updater.parse(com.google.gson.JsonParser.parseString("""{"nativeTest":{"href":"https://evil.example/x.apk","version":"9.9.9"}}""").asJsonObject))
     }
+
+    @Test fun updaterClearsInstalledDownload() {
+        val d = kotlin.io.path.createTempDirectory("updates").toFile()
+        for (n in listOf("cardstashy-0.4.25.apk", "cardstashy-0.4.26.part", "cardstashy-0.4.24.apk", "stray.tmp")) java.io.File(d, n).writeText("x")
+        // 0.4.25 installed: its own download and older ones go; 0.4.26 still on its way stays.
+        assertEquals(listOf("cardstashy-0.4.24.apk", "cardstashy-0.4.25.apk", "stray.tmp"), Updater.spent(d, "0.4.25-native-test").map { it.name }.sorted())
+        assertEquals(listOf("cardstashy-0.4.24.apk", "stray.tmp"), Updater.spent(d, "0.4.24-native-test").map { it.name }.sorted())
+        d.deleteRecursively()
+    }
 }
