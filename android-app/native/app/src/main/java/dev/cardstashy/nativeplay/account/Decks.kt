@@ -46,6 +46,17 @@ object Decks {
     val timings = MutableStateFlow<Map<String, Long>>(emptyMap())
 
     private fun cacheFile(context: Context, user: String) = File(context.filesDir, "workspace-$user.json")
+    /** The whole account workspace as last read or saved here: Collection Home runs the site's Home code over it. */
+    private fun fullFile(context: Context, user: String) = File(context.filesDir, "workspace-full-$user.json")
+    private val _full = MutableStateFlow(0L)
+    /** Bumped each time this device's full copy of the workspace changes. */
+    val fullRevision: StateFlow<Long> = _full
+    /** The full copy for the signed-in account, or null (signed out, or never read on this device yet). */
+    fun fullCopy(context: Context): String? = Account.session.value?.let { s -> fullFile(context, s.userId).takeIf { it.isFile }?.readText() }
+    private fun keepFull(context: Context, user: String, data: JsonObject?) {
+        if (data == null) return
+        try { val f = fullFile(context, user); val tmp = File(f.path + ".tmp"); tmp.writeText(data.toString()); tmp.renameTo(f); _full.value++ } catch (_: Exception) {}
+    }
 
     fun parse(workspace: JsonObject?): List<UserDeck> {
         val list = workspace?.getAsJsonArray("decks") ?: return emptyList()
@@ -77,6 +88,7 @@ object Decks {
             val slim = JsonObject().apply { add("decks", data?.getAsJsonArray("decks") ?: JsonArray()); add("references", data?.getAsJsonArray("references") ?: JsonArray())
                 data?.getAsJsonObject("settings")?.getAsJsonObject("playDeckCovers")?.let { c -> add("settings", JsonObject().apply { add("playDeckCovers", c) }) } }
             file.writeText(slim.toString())
+            keepFull(context, s.userId, data)
             _decks.value = parse(slim); _references.value = refs(slim); _covers.value = covers(slim); _error.value = null
             timings.value = timings.value + ("decksFromAccount" to System.currentTimeMillis() - t0)
         } catch (e: Exception) {
@@ -117,6 +129,7 @@ object Decks {
             if (out != null && out.size() > 0) {
                 _decks.value = parse(data)
                 _references.value = refs(data); _covers.value = covers(data)
+                keepFull(context, s.userId, data)
                 try { cacheFile(context, s.userId).writeText(JsonObject().apply { add("decks", data.getAsJsonArray("decks") ?: JsonArray()); add("references", data.getAsJsonArray("references") ?: JsonArray())
                     data.getAsJsonObject("settings")?.getAsJsonObject("playDeckCovers")?.let { c -> add("settings", JsonObject().apply { add("playDeckCovers", c) }) } }.toString()) } catch (_: Exception) {}
                 return@withContext null

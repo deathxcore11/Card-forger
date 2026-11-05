@@ -89,7 +89,7 @@ private sealed interface Screen {
     /** The Shop: sets and packs, your packs, the Forge; [set] opens one set's page. */
     data class Shop(val tab: String = "sets", val set: String? = null) : Screen
     /** A Play page not yet native: the site's own, in the web view (Planeswalk stays here for good). */
-    data class Web(val url: String) : Screen
+    data class Web(val url: String, val press: String? = null) : Screen
     data class Match(val pick: Pick) : Screen
     /** Achievements with the daily and weekly quests (one page, like the site's Trophies). */
     data class Achievements(val tab: String? = null) : Screen
@@ -274,8 +274,14 @@ private fun App(activity: MainActivity) {
             LaunchedEffect(Unit) { activity.inGame(false) }
             dev.cardstashy.nativeplay.ui.ShopRoute(onBack = { back() }, startTab = s.tab, startSet = s.set, nav = { dev.cardstashy.nativeplay.ui.PlayNav(dev.cardstashy.nativeplay.ui.PlayTab.SHOP, { t -> tabTo(t) }) })
         }
-        Screen.Collection -> { LaunchedEffect(Unit) { activity.inGame(false) }; CollectionScreen(onPlay = { if (trail.size > 1) back() else go(Screen.Home) }) }
-        is Screen.Web -> { LaunchedEffect(s.url) { activity.inGame(false, play = s.url.contains("planeswalk")) }; CollectionScreen(onPlay = { back() }, url = s.url) }
+        Screen.Collection -> {
+            // Collection Home is native; its other tabs and the pages it opens are still the website's.
+            LaunchedEffect(Unit) { activity.inGame(false) }
+            dev.cardstashy.nativeplay.ui.CollectionHomeRoute(onPlay = { if (trail.size > 1) back() else go(Screen.Home) }, onProfile = { go(Screen.SignIn) },
+                web = { url, press -> go(Screen.Web(url, press)) },
+                open = { url -> if (url.startsWith("https://") || url.startsWith("http://")) runCatching { activity.startActivity(android.content.Intent(android.content.Intent.ACTION_VIEW, android.net.Uri.parse(url))) } })
+        }
+        is Screen.Web -> { LaunchedEffect(s.url) { activity.inGame(false, play = s.url.contains("planeswalk")) }; CollectionScreen(onPlay = { back() }, url = s.url, press = s.press) }
         Screen.SignIn -> {
             LaunchedEffect(Unit) { activity.inGame(false) }
             // The profile orb and every "Sign in" open the site's Settings: signed out it is the account card (Log in / Create account), signed in the account hub.

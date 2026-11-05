@@ -100,7 +100,7 @@ private fun DrawScope.drawEmblem(mode: Mode) {
  */
 @SuppressLint("SetJavaScriptEnabled")
 @Composable
-fun CollectionScreen(onPlay: () -> Unit, url: String = "https://cardstashy.com/") {
+fun CollectionScreen(onPlay: () -> Unit, url: String = "https://cardstashy.com/", press: String? = null) {
     val web = remember { mutableStateOf<WebView?>(null) }
     BackHandler { web.value?.takeIf { it.canGoBack() }?.goBack() ?: onPlay() }
     Box(Modifier.fillMaxSize().background(Palette.Night)) {
@@ -114,6 +114,15 @@ fun CollectionScreen(onPlay: () -> Unit, url: String = "https://cardstashy.com/"
                         if (host == "cardstashy.com" || host.endsWith(".cardstashy.com")) return false
                         runCatching { ctx.startActivity(android.content.Intent(android.content.Intent.ACTION_VIEW, request.url)) }
                         return true
+                    }
+                    // A native button with no address of its own (pick a game, the Card of the Day): press the site's
+                    // own button once the page has drawn it, trying for ten seconds.
+                    private var pressed = false
+                    override fun onPageFinished(view: WebView, loaded: String?) {
+                        if (press == null || pressed) return
+                        pressed = true
+                        val sel = org.json.JSONObject.quote(press)
+                        view.evaluateJavascript("(function t(n){var b=document.querySelector($sel);if(b&&b.getClientRects().length){b.click();}else if(n<50){setTimeout(function(){t(n+1)},200);}})(0)", null)
                     }
                 }
                 loadUrl(url)

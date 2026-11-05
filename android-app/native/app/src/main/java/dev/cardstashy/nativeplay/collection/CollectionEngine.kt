@@ -65,8 +65,10 @@ object CollectionEngine {
     private fun str(v: String) = JsonPrimitive(v).toString()
 
     /** app.js normalize() of the account's workspace data, with the catalog this device saved last time. */
-    suspend fun load(workspace: JsonObject, catalog: String?): JsonObject =
-        on { q -> JsonParser.parseString(q.evaluate("Collection.load(${str(workspace.toString())}, ${catalog?.let(::str) ?: "null"})") as String).asJsonObject }
+    suspend fun load(workspace: JsonObject, catalog: String?): JsonObject = load(workspace.toString(), catalog)
+    /** The same from the workspace's JSON text (the device's saved copy), without parsing it here first. */
+    suspend fun load(workspace: String, catalog: String?): JsonObject =
+        on { q -> JsonParser.parseString(q.evaluate("Collection.load(${str(workspace)}, ${catalog?.let(::str) ?: "null"})") as String).asJsonObject }
 
     /** Looks up every card name the catalog lacks (app.js autoEnrich's names) and starts Home's feeds; returns when done or after [maxMs]. */
     suspend fun refresh(game: String, maxMs: Long = 60_000, onStep: (String) -> Unit = {}): JsonObject {

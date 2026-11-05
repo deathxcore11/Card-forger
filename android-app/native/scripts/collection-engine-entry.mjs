@@ -168,7 +168,9 @@ const json = v => JSON.stringify(v);
 globalThis.Collection = {
   // The account's workspace row data (cloud.js), normalized as app.js loads it; [catalogJson] is the app's saved catalog.
   load(workspaceJson, catalogJson) {
-    S.state = normalize(JSON.parse(workspaceJson || '{}'));
+    // No account copy (signed out, or a row never set up): app.js starts from store.js blank().
+    const ws = workspaceJson ? JSON.parse(workspaceJson) : null;
+    S.state = ws && Object.keys(ws).length ? normalize(ws) : blank();
     S.catalog = catalogJson ? JSON.parse(catalogJson) : {};
     useMyPrices(S.state.myPrices); // app.js render(): the account's own prices count in every value
     return json({copies: S.state.collection.reduce((n, e) => n + (Number(e.qty) || 0), 0), decks: S.state.decks.length});
