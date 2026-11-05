@@ -24,12 +24,14 @@ assert.equal(playSourceEntries({format:'Modern',precons:[listed]}).precons.lengt
 assert.equal(playSourceEntries({format:'Commander',precons:[listed]}).precons.length,0);
 console.log('PASS: Standard/Modern precons are published 60-card lists offered only where every card and quantity is legal, unchanged.');
 
-import {weeklyPrecons} from './play-precon-formats.js';
+import {weeklyPrecons, weeklyPreconsByFormat, STORE_FORMATS} from './play-precon-formats.js';
 {
-  const idx = Array.from({length: 120}, (_, i) => ({type: 'Theme Deck', fileName: `D${i}_X.json`}));
-  const a = weeklyPrecons(idx, '2026-W45'), b = weeklyPrecons(idx, '2026-W46');
-  if (a.length !== 5 || new Set(a).size !== 5) throw new Error('five different precons a week');
-  if (JSON.stringify(a) !== JSON.stringify(weeklyPrecons([...idx].reverse(), '2026-W45'))) throw new Error('same week, same five, in any list order');
+  const years = ['2026-03-01', '2018-05-01', '2008-05-01', '1999-05-01'];
+  const idx = Array.from({length: 160}, (_, i) => ({type: 'Theme Deck', fileName: `D${i}_X.json`, releaseDate: years[i % 4]}));
+  const now = Date.UTC(2026, 10, 5), a = weeklyPreconsByFormat(idx, '2026-W45', 4, now), b = weeklyPreconsByFormat(idx, '2026-W46', 4, now);
+  for (const f of STORE_FORMATS) if (a[f].length !== 4 || new Set(a[f]).size !== 4) throw new Error('four different precons of every format: ' + f);
+  if (weeklyPrecons(idx, '2026-W45', 4, now).length !== 16) throw new Error('sixteen in the store');
+  if (JSON.stringify(a) !== JSON.stringify(weeklyPreconsByFormat([...idx].reverse(), '2026-W45', 4, now))) throw new Error('same week, same picks, in any list order');
   if (JSON.stringify(a) === JSON.stringify(b)) throw new Error('the store rotates weekly');
-  console.log('PASS: the weekly precon store picks five, stable within a week, new each week.');
+  console.log('PASS: the weekly precon store picks four of every format, stable within a week, new each week.');
 }

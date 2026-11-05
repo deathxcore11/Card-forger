@@ -4,7 +4,7 @@
 // just shows what this returns. Play's wall: nothing here touches the real collection or prices.
 // Spec: play-progression.md sections 3 to 9.
 import {SUPABASE} from './config.js';
-import {weeklyPrecons} from './play-precon-formats.js';
+import {weeklyPreconsByFormat} from './play-precon-formats.js';
 import {loadMtgBooster, mtgBoosterCards, drawMtgBooster, mtgGodPackPicks} from './mtg-boosters.js';
 import {rewardSet, setFormats} from './play-econ-sets.js';
 import {isBasicLand, starterGrant, sealTrackBonus, packContentsRow, cardDelta, RARITY_SEAL, FORGE_STEPS, forgeRatio, holoCost, preconPrice, mtgjsonCardDelta, mtgjsonDeckRows, deckShortfall, ownedByName, isCollectorPack, collectorOdds, collectorPicks, collectorSource, godPackOdds} from './play-econ-rules.js';
@@ -62,7 +62,9 @@ async function preconStoreFiles(fetcher, now = new Date()) {
     const j = r?.ok ? await r.json().catch(() => null) : null;
     if (Array.isArray(j?.data)) preconListCache = {at: Date.now(), data: j.data};
   }
-  return preconListCache ? {week, files: weeklyPrecons(preconListCache.data, week)} : null;
+  if (!preconListCache) return null;
+  const formats = weeklyPreconsByFormat(preconListCache.data, week);
+  return {week, files: Object.values(formats).flat(), formats};
 }
 // This Play week's bundle (UTC weeks, Monday to Sunday), as the Merchant shows it.
 export function secretLairOffer(drops, config = {}, now = new Date()) {
