@@ -60,7 +60,12 @@ assert.ok(!('prices' in row) && !JSON.stringify(row).includes('9.99'), 'pack rec
   const calls = [];
   let stateCards = [];
   let wallet = {coins: 600, packs_opened: 4, seal_r: 0, starter_at: '2026-11-01'};
-  const packs = [{id: 7, set: 'tst'}];
+  const packs = [{id: 7, set: 'tst'}, {id: 8, set: 'tsb'}];
+  // A set whose card facts are baked (data/mtg-booster-cards): its pack opens while Scryfall is down (Randall 5 Nov, Future Sight).
+  const bakedBooster = {boosters: [{w: 1, c: {common: 2, rare: 1}}], sheets: {common: {cards: [['b0c1aaaa-0000-0000-0000-000000000001', 1], ['b0c2aaaa-0000-0000-0000-000000000002', 1]]}, rare: {cards: [['b0r1aaaa-0000-0000-0000-000000000003', 1]]}}};
+  const bakedCards = {set: 'tsb', cards: {'b0c1aaaa-0000-0000-0000-000000000001': ['0c100000-0000-0000-0000-000000000000', 'Baked One', 'common', 'tsb', '1', 'W', 1700000000],
+    'b0c2aaaa-0000-0000-0000-000000000002': ['0c200000-0000-0000-0000-000000000000', 'Baked Two', 'common', 'tsb', '2', '', 1700000000],
+    'b0r1aaaa-0000-0000-0000-000000000003': ['0r100000-0000-0000-0000-000000000000', 'Baked Rare', 'rare', 'tsb', '3', null, 1700000000]}};
   const booster = {boosters: [{w: 1, c: {common: 2, rare: 1}}], sheets: {common: {cards: [['c1', 1], ['c2', 1], ['c3', 1]]}, rare: {cards: [['r1', 1]]}}};
   let foilCards = false;
   const card = id => ({id, ...(foilCards ? {finishes: ['nonfoil', 'foil']} : {}), oracle_id: id.padEnd(8, '0') + '-0000-0000-0000-000000000000', name: id, rarity: id.startsWith('r') ? 'rare' : 'common', colors: [], prices: {usd: '1.00'}});
@@ -76,6 +81,9 @@ assert.ok(!('prices' in row) && !JSON.stringify(row).includes('9.99'), 'pack rec
       if (name === 'play_apply') { if (args.p_delta.coins) wallet = {...wallet, coins: wallet.coins + args.p_delta.coins}; return new Response(JSON.stringify({duplicate_coins: 0, converted: []})); }
     }
     if (u.endsWith('/data/mtg-boosters/tst.json')) return new Response(JSON.stringify(booster));
+    if (u.endsWith('/data/mtg-boosters/tsb.json')) return new Response(JSON.stringify(bakedBooster));
+    if (u.endsWith('/data/mtg-booster-cards/tsb.json')) return new Response(JSON.stringify(bakedCards));
+    if (u.includes('/cards/collection') && init.body.includes('b0')) return new Response('down', {status: 503});
     if (u.endsWith('/data/mtg-boosters/index.json')) return new Response(JSON.stringify({sets: {fra: {}, tst: {}}}));
     if (u.includes('/cards/collection')) return new Response(JSON.stringify({data: JSON.parse(init.body).identifiers.map(i => card(i.id || i.name))}));
     if (u.includes('mtgjson.com/api/v5/DeckList.json')) return new Response(JSON.stringify({data: [{type: 'Theme Deck', fileName: 'TST_Precon', name: 'Test', releaseDate: '2026-01-01'}, {type: 'Commander Deck', fileName: 'TST_Cmdr', code: 'TCM', name: 'Test Commander', releaseDate: '2026-02-01'}]}));
@@ -98,6 +106,12 @@ assert.ok(!('prices' in row) && !JSON.stringify(row).includes('9.99'), 'pack rec
   assert.equal(applyCall[1].p_user, 'u1', 'grants go to the signed-in player only');
   assert.ok(!JSON.stringify(applyCall).includes('usd'), 'no price reaches the Play ledger');
   assert.equal((await progressRoute(req('open', {id: 99}), env, {verifyBearer, fetcher})).status, 404);
+  const fromBake = await progressRoute(req('open', {id: 8}), env, {verifyBearer, fetcher}), bakedPack = (await fromBake.json()).pack;
+  assert.equal(fromBake.status, 200, 'a set with baked card facts opens without Scryfall');
+  assert.deepEqual(bakedPack.contents.map(c => c.name).sort(), ['Baked One', 'Baked Rare', 'Baked Two']);
+  assert.equal(bakedPack.contents.at(-1).oracle_id, '0r100000-0000-0000-0000-000000000000');
+  assert.equal(bakedPack.contents.at(-1).image, 'https://cards.scryfall.io/normal/front/b/0/b0r1aaaa-0000-0000-0000-000000000003.jpg?1700000000');
+  assert.equal(bakedPack.contents.at(-1).art, 'https://cards.scryfall.io/art_crop/front/b/0/b0r1aaaa-0000-0000-0000-000000000003.jpg?1700000000');
   assert.equal((await progressRoute(req('buy', {set: 'tst'}), env, {verifyBearer, fetcher})).status, 200, '600 coins buys a 500-coin pack');
   assert.equal((await progressRoute(req('buy', {set: 'tst'}), env, {verifyBearer, fetcher})).status, 409, '100 coins left is short');
   assert.equal((await progressRoute(req('buy', {set: 'zzz'}), env, {verifyBearer, fetcher})).status, 404, 'only sets with a booster file');
