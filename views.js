@@ -33,6 +33,7 @@ import { profileOf, simulateMatchup, gamePlan, recordOf, blend, listSig, forList
 import { mtgConstructedPower } from "./deckpower.js";
 import { isCommanderLike } from "./formats.js";
 import { mtgMetaKey } from "./power.js";
+import { scoutingRows, competitiveScore, competitiveTier } from "./scouting.js";
 import {buildOverlay} from "./build-overlay.js";
 import { tierCardHtml } from "./tier-card.js";
 import { atLeastOne } from "./deckaudit.js";
@@ -1203,8 +1204,8 @@ export function deckPage() {
     fm = formatOf(d),
     target = fm.size,
     // No shopping on the Deck page: what is missing is a collection filter, not a store.
-    tab = S.ui.deckTab === "shop" ? "cards" : S.ui.deckTab,
-    tabs = [["cards", "Cards", "cardStack"], ["rules", "Rules", "book"], ["engine", "Power", "trophy"], ["matchups", "Matchups", "sword"], ["upgrade", "Upgrade lab", "build"], ["versions", "Versions", "viewStacks"], ["playtest", "War Chest", "random"]];
+    tab = S.ui.deckTab === "shop" ? "cards" : (S.ui.deckTab === "matchups" || S.ui.deckTab === "upgrade") ? "engine" : S.ui.deckTab,
+    tabs = [["cards", "Cards", "cardStack"], ["rules", "Rules", "book"], ["engine", "Power", "trophy"], ["versions", "Versions", "viewStacks"], ["playtest", "War Chest", "random"]];
   const power = shownPower(mtgPower(d)), countOk = fm.exact ? mainCopies === target : mainCopies >= target;
   return `${deckShell({game:"mtg",source:"mine",artHtml:img(coverOf(d), d.name, "hero-art"),title:d.name,
     back:`<button class="icon light" data-act="go" data-to="#decks" aria-label="Back to decks">←</button>`,
@@ -1226,7 +1227,7 @@ export function deckPage() {
       {label:"Share",attrs:'data-act="deckShare"'}]})}
   ${mainCopies < target ? `<div class="note warn">Incomplete draft: ${target - mainCopies} slots remain. Power is unavailable. The listed-card price does not include empty slots.${(d.buildDiagnostics?.warnings || []).slice(0, 2).map(w => `<p class="small">${esc(w)}</p>`).join("")}</div>` : ""}
   <nav class="tabs" role="tablist">${tabs.map(([id, l, icon]) => `<button role="tab" aria-selected="${tab === id}" class="${tab === id ? "on" : ""}" data-act="deckTab" data-id="${id}">${labelIcon(icon)}${l}</button>`).join("")}</nav>
-  ${fm.commander && !canLead(meta(d.commander), fm) && tab !== "upgrade" ? `<button class="note warn block-note" data-act="deckTab" data-id="upgrade">⚠ No ${fm.commander === "planeswalker" ? "Oathbreaker" : "commander"} set — tap to choose one so colors and synergy are checked.</button>` : ""}
+  ${fm.commander && !canLead(meta(d.commander), fm) && tab !== "engine" ? `<button class="note warn block-note" data-act="deckTab" data-id="engine">⚠ No ${fm.commander === "planeswalker" ? "Oathbreaker" : "commander"} set — tap to choose one so colors and synergy are checked.</button>` : ""}
   <div class="deck-body" data-tab="${tab}">${{ rules: ()=>interactiveRules("mtg", {format:d.format}), cards: deckCards, engine: deckEngine, matchups: deckMatchups, upgrade: deckUpgrade, versions: deckVersions, playtest: (d) => warChestMarkup({deck:{id:d.id,name:d.name},resume:chestResume("mtg")}) + `<section class="wc-draw" id="chestDraw"><h3>Draw a hand</h3>${deckPlaytest(d)}</section>`, shop: deckShop }[tab](d, t)}</div>`;
 }
 
@@ -1510,6 +1511,80 @@ export function mtgCoachHooks(d, pw) {
   };
 }
 
+
+/* ---------- The merged Power view: power, ramp, how it wins, meta, matchups, upgrades ---------- */
+// Tier and Bracket are the game's own words: Brackets 1-5 for Commander, Tier 1-3 for constructed
+// (same score bands competitiveTier already uses). No score means no tier, never a guess.
+function phTier(d, pw) {
+  if (d.format === "Commander") { const b = bracketEstimate(d, S.catalog); return { word: `Bracket ${b.bracket}`, sub: b.name }; }
+  const c = competitiveScore(pw);
+  if (c == null) return { word: "Tier not rated yet", sub: "needs tournament data" };
+  return c >= 88 ? { word: "Tier 1", sub: "vs. what's winning now" } : c >= 75 ? { word: "Tier 2", sub: "vs. what's winning now" } : c >= 62 ? { word: "Tier 3", sub: "vs. what's winning now" } : { word: "Below Tier 3", sub: "vs. what's winning now" };
+}
+// Strong and weak matchups from the same simulation the old Matchups tab ran (field from the
+// tournament lists, 2,000 games each). Returns null until the field is loaded.
+function phMatchups(d, pw, p) {
+  const mk = mtgMetaKey(d);
+  if (!mk) return { none: "No tournament field exists for this format, so there is nothing to simulate against." };
+  const st = ((S.ui.mu ||= {})[d.id] ||= { first: true }), fkey = mtgFieldKey(d), fm = formatOf(d);
+  if (st.busy) return { busy: st.msg || "Simulating matchups…" };
+  if (sumQty(d.cards) < fm.size) return { none: `Finish the deck first: matchups compare complete ${fm.size}-card decks.` };
+  if (!st.field?.length || st.fieldKey !== fkey) { const cached = metaState(mk)?.data ? fieldStore.get(fkey) : null; if (cached?.every((f) => f.shift != null || f.bias != null || f.profile)) { st.field = cached; st.fieldKey = fkey; } }
+  if (!st.field?.length || st.fieldKey !== fkey) return { load: true, error: st.error };
+  const rows = d.cards.map((r) => ({ qty: r.qty, c: meta(r.name) })).filter((r) => r.c);
+  let sims, even = 0.5;
+  if (d.format === "Commander") {
+    even = 0.25;
+    const cp = mtgConstructedPower(d, S.catalog, key, fm.size), me = podProfile(profileOf("mtg", { ...pw, goldfish: cp.goldfish, stats: cp.stats }, rows), podSpeed(d, S.catalog));
+    if (!me) return { none: "This deck's cards are still loading." };
+    const sig = "ph|" + fkey + "|" + JSON.stringify(d.cards);
+    if (!podMemo.has(sig)) podMemo.set(sig, simulatePod(me, st.field, {}));
+    const res = podMemo.get(sig);
+    if (!res) return { none: "Couldn't simulate pods for this deck." };
+    sims = st.field.map((f) => ({ ...f, sim: { win: res.per.get(f) ?? res.win, reasons: res.reasons } }));
+  } else {
+    const me = profileOf("mtg", mtgConstructedPower(d, S.catalog, key, fm.size), rows);
+    if (!me) return { none: "This deck's cards are still loading." };
+    sims = computeMatchups(fkey + "|" + mtgListSig(d), st.field, me, () => null, (a, b) => simulateMatchup("mtg", a, b), mtgBias(pw, st.field));
+  }
+  const f = fieldSummary(sims, d.results || [], st, mtgListSig(d)).field.map((m) => ({ name: m.name, share: m.share, w: m.shown, why: (m.sim.reasons || [])[0] || "" }));
+  const strong = f.filter((m) => m.w >= even + 0.05).sort((a, b) => b.w - a.w).slice(0, 3),
+    weak = f.filter((m) => m.w <= even - 0.05).sort((a, b) => a.w - b.w).slice(0, 3);
+  return { strong, weak, even, n: f.length };
+}
+function phMatchRow(m, cls) { return `<li class="ph-m"><span><b>${esc(m.name)}</b>${m.why ? `<small>${esc(m.why)}</small>` : ""}</span><em class="${cls}">${Math.round(m.w * 100)}%</em></li>`; }
+
+function powerHub(d, pw, p) {
+  const score = shownPower(pw), tier = phTier(d, pw), g = pw.goldfish, fm = formatOf(d);
+  const chips = [[p.counts.Lands, "lands"], [p.counts.Creatures, "creatures"], [p.counts.Interaction ?? p.counts.Removal, "interaction"], [p.counts["Card flow"] ?? p.counts.Draw, "card flow"], [p.avg === null ? "—" : p.avg.toFixed(2), "avg cost"]].filter(([n]) => n !== undefined && n !== null);
+  const hero = `<section class="ph-card ph-hero${score == null ? " no-ring" : ""}">${score == null ? "" : `<div class="ph-ring">${ring(score, 96)}</div>`}<div class="ph-hero-t"><p class="ph-tier">${esc(tier.word)}</p><p class="ph-plan">${esc(pw.plan || pw.lens || "")}</p><p class="ph-sub">${score == null ? "Power unavailable until the checks below pass" : esc(tier.sub)}</p></div><div class="ph-chips">${chips.map(([n, l]) => `<span class="ph-chip"><b>${esc(String(n))}</b> ${l}</span>`).join("")}</div></section>`;
+  // Ramp: when it gets there, plus mana health.
+  const dist = g?.turnDist, mx = dist ? Math.max(...dist.d, 1) : 1;
+  const ramp = g ? `<section class="ph-card"><h3>Ramp</h3>${dist ? `<div class="ph-bars" role="img" aria-label="${esc(dist.label)}">${dist.d.map((x, i) => `<i><em>${x >= 0.01 ? Math.round(x * 100) + "%" : ""}</em><span style="height:${Math.max(3, Math.round(x / mx * 78))}px"></span><small>${i === dist.maxT ? "later" : "T" + (i + 1)}</small></i>`).join("")}</div>` : ""}<p class="ph-note">${esc(g.headline)}</p>${g.metrics?.length ? `<div class="ph-tiles">${g.metrics.slice(0, 4).map((m) => { const v = m.pct ? Math.round(m.value * 100) + "%" : m.value.toFixed(1), ok = m.bad ? m.value <= m.good : m.value >= m.good; return `<span class="${ok ? "ok" : "bad"}"><b>${v}</b>${esc(m.label)}</span>`; }).join("")}</div>` : ""}</section>` : "";
+  // How it works and wins: the scouting rows that explain the deck.
+  const keep = { "The plan": 1, "What makes it work": 1, "How it wins": 1, "Modeled output": 1 };
+  const rows = scoutingRows(pw).filter(([h]) => keep[h]);
+  const how = rows.length ? `<section class="ph-card"><h3>How it works and wins</h3><dl class="ph-how">${rows.map(([h, t]) => `<div><dt>${esc(h.replace("What makes it work", "Synergy").replace("The plan", "Plan"))}</dt><dd>${t}</dd></div>`).join("")}</dl></section>` : "";
+  // Meta context: only when the format has tournament data.
+  const c = pw.ctx || {}, m = pw.match;
+  const metaBits = [m ? `<span class="ph-chip">${m.sim >= 0.35 ? "Matches" : "Closest list"} <b>${esc(m.archetype)}</b> · ${Math.round(m.sim * 100)}% same cards</span>` : "", ...(c.field || []).slice(0, 4).map((a) => `<span class="ph-chip">${esc(a.name)}${a.share ? ` <b>${pct(a.share)}</b>` : ""}</span>`)].filter(Boolean);
+  const metaCard = metaBits.length ? `<section class="ph-card"><h3>Against the meta</h3><div class="ph-chips">${metaBits.join("")}</div></section>` : "";
+  // Matchups as pros and cons.
+  const M = phMatchups(d, pw, p);
+  const mu = `<section class="ph-card ph-wide"><h3>Matchups</h3>${M.none ? `<p class="ph-note">${esc(M.none)}</p>` : M.busy ? `<p class="ph-note" role="status">${esc(M.busy)}</p>` : M.load ? `<p class="ph-note">Simulate this deck against the decks winning right now.</p>${M.error ? `<p class="ph-note warn-text">${esc(M.error)}</p>` : ""}<button class="btn" data-act="muRun">Simulate matchups</button>` : `<div class="ph-pc"><div class="ph-pro"><h4>Strong against</h4><ul>${M.strong.map((x) => phMatchRow(x, "up")).join("") || '<li class="ph-note">No clear edge against this field.</li>'}</ul></div><div class="ph-con"><h4>Weak against</h4><ul>${M.weak.map((x) => phMatchRow(x, "down")).join("") || '<li class="ph-note">No clear weakness in this field.</li>'}</ul></div></div><p class="ph-note">Simulated against ${M.n} tournament decks, 2,000 games each, ${M.even < 0.5 ? "as a share of four-player pods" : "chance to win"}. A model, not match data.</p>`}<div class="ph-actions"><button class="btn ghost small" data-act="amOpen" data-tab="setup">Ask AI about a specific opponent</button></div></section>`;
+  // Upgrades.
+  const U = S.ui.upgrade, B = S.ui.build;
+  let up;
+  if (d.format === "Commander") {
+    const plans = U.deckId === d.id ? U.plans : {}, plan = plans[U.budget];
+    up = `<section class="ph-card ph-wide"><h3>Upgrades</h3>${plan?.swaps?.length ? `<ul class="ph-swaps">${plan.swaps.slice(0, 4).map((s) => `<li><span class="out">${esc(s.cut)}</span><i>→</i><span class="in">${esc(s.add)}</span><small>${s.powerBefore != null && s.powerAfter != null ? `Power ${s.powerBefore} → ${s.powerAfter}` : ""}</small></li>`).join("")}</ul>` : ""}<p class="ph-note" role="status" id="upMsg">${esc(U.msg || "")}</p><button class="btn" data-act="upRun" ${U.busy ? "disabled" : ""}>${U.busy ? "Working…" : plan ? "↻ Refresh" : "Find upgrades"}</button>${plan ? `<details class="ph-more"><summary>Review and apply swaps</summary>${swapPanel(d)}${swapResults(d, plan)}</details>` : ""}</section>`;
+  } else {
+    const swaps = B.fillDeck === d.id ? B.formatSwaps || [] : [], count = sumQty(d.cards);
+    up = `<section class="ph-card ph-wide"><h3>Upgrades</h3>${swaps.length ? `<ul class="ph-swaps">${swaps.map((s, i) => `<li><span class="out">${esc(s.cardOut)}</span><i>→</i><span class="in">${esc(s.cardIn)}</span><small>${esc(s.reason)}</small><button class="btn ghost small" data-act="applyFormatUpgrade" data-i="${i}">Swap 1 copy</button></li>`).join("")}</ul>` : ""}${count === fm.size ? `<button class="btn" data-act="suggestFormatUpgrades" ${B.busy ? "disabled" : ""}>${swaps.length ? "↻ Refresh" : "Find paired upgrades"}</button>` : ""}<p class="ph-note">Same-role swaps within your $${esc(d.budget ?? 25)} budget. Heuristics, not measured win rates.</p><details class="ph-more"><summary>${count < fm.size ? "Fill open slots and compare budgets" : "Complete this list and compare budgets"}</summary>${fillAnyPanel(d, fm, count)}</details></section>`;
+  }
+  return `<div class="ph">${hero}${ramp}${how}${metaCard}${mu}${up}</div>`;
+}
+
 function deckEngine(d) {
   const p = engineProfile(d, S.catalog),
     v = validateDeck(d, S.catalog, S.state.collection, S.state.decks),
@@ -1518,7 +1593,9 @@ function deckEngine(d) {
     srcTotal = Object.values(p.sources).reduce((a, b) => a + b, 0),
     colors = Object.keys(p.pips).filter((k) => p.pips[k] > 0 || p.sources[k] > 0);
   const pw = mtgPower(d);
-  return `${aiReviewPanel("mtg", d, meta, pw, mtgCoachHooks(d, pw))}${powerPanel(pw, { loadAct: pw.metaKey ? `data-act="deckMetaLoad" data-key="${esc(pw.metaKey)}"` : "", findAct: (x) => `data-act="findRole" data-role="${esc(x.fix)}"`, cardAct: (x) => `data-act="card" data-name="${esc(x.name)}"` })}
+  const fm0 = formatOf(d);
+  if (fm0.commander && !canLead(meta(d.commander), fm0)) return commanderPicker(d);
+  return `<div class="ph-root">${powerHub(d, pw, p)}<details class="ph-full"><summary>Full breakdown</summary><div class="ph-cols">${aiReviewPanel("mtg", d, meta, pw, mtgCoachHooks(d, pw))}${powerPanel(pw, { loadAct: pw.metaKey ? `data-act="deckMetaLoad" data-key="${esc(pw.metaKey)}"` : "", findAct: (x) => `data-act="findRole" data-role="${esc(x.fix)}"`, cardAct: (x) => `data-act="card" data-name="${esc(x.name)}"` })}
   ${p.unknown ? `<div class="note warn">${p.unknown} cards have no card data yet, so they aren’t counted. <button class="link" data-act="refreshDeck">Load card data</button></div>` : ""}
   ${d.format === "Commander" ? bracketPanel(d) : ""}  <section class="panel"><div class="row between"><h3>Mana curve</h3><span class="muted small">avg ${p.avg === null ? "—" : p.avg.toFixed(2)} · ${p.counts.Lands} lands</span></div>${curveChart(p.curve)}</section>
   ${
@@ -1531,7 +1608,7 @@ function deckEngine(d) {
   ${manaBasePanel(d, p)}
   ${mtgCardByCard(d, pw)}
   ${mtgMostValuable(d)}
-  <details class="panel" ${issues.length ? "" : ""}><summary><b>Rules checks</b> <span class="chip ${issues.length ? "warn" : "ok"}">${issues.length ? issues.length + " to fix" : "pass"}</span></summary><ul class="issues">${issues.slice(0, 40).map((i) => `<li>${esc(i.text)}</li>`).join("") || "<li>Color identity, legality and copy limits pass.</li>"}</ul><p class="foot">Single commander only. Legality comes from cached card data — refresh before an event.</p></details>`;
+  <details class="panel" ${issues.length ? "" : ""}><summary><b>Rules checks</b> <span class="chip ${issues.length ? "warn" : "ok"}">${issues.length ? issues.length + " to fix" : "pass"}</span></summary><ul class="issues">${issues.slice(0, 40).map((i) => `<li>${esc(i.text)}</li>`).join("") || "<li>Color identity, legality and copy limits pass.</li>"}</ul><p class="foot">Single commander only. Legality comes from cached card data — refresh before an event.</p></details></details></div></details></div>`;
 }
 
 const nameLinks = (names, d) =>
