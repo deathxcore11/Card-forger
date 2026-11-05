@@ -73,16 +73,16 @@ import kotlinx.coroutines.delay
 /** The new Quick Play / Practice lobby ships once every part of the site's lobby is ported (Randall's no-gaps rule). */
 private const val LOBBY_LIVE = true
 
-/** Collection's native Cards tab. Off until Randall has seen its preview (PREVIEW-FIRST): Home's Cards tab opens the website's. */
-private const val NATIVE_CARDS = false
-/** Collection's native Decks tab (My decks). Off until Randall has seen its preview. */
-private const val NATIVE_DECKS = false
-/** A deck's own page (its Cards tab), opened from the native Decks tab. Off until Randall has seen its preview. */
-private const val NATIVE_DECK = false
-/** A card's page (Overview, Meta, Play guide), opened from the native Cards tab and deck page. Off until Randall has seen its preview. */
-private const val NATIVE_CARD = false
-/** Every set and a set's page, opened from set badges, the card page and the set pages' own links. Off until Randall has seen its preview. */
-private const val NATIVE_SETS = false
+/** Collection's native Cards tab. On since Randall approved the previews (5 Nov 08:36Z); false sends Home's Cards tab to the website's. */
+private const val NATIVE_CARDS = true
+/** Collection's native Decks tab (My decks). */
+private const val NATIVE_DECKS = true
+/** A deck's own page (its Cards tab), opened from the native Decks tab. */
+private const val NATIVE_DECK = true
+/** A card's page (Overview, Meta, Play guide, Prices), opened from the native Cards tab, deck page and set page. */
+private const val NATIVE_CARD = true
+/** Every set and a set's page, opened from set badges, the card page and Home's All sets link. Magic only; the other games' sets open the website. */
+private const val NATIVE_SETS = true
 
 private sealed interface Screen {
     data object Home : Screen
