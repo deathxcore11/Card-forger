@@ -555,6 +555,10 @@ private fun Check(label: String, on: Boolean, foot: String? = null, onChange: (B
 
 /** This build's notes: short, plain, what a player would notice. */
 private val WHATS_NEW = listOf(
+    "Blocking" to "Blocks you can see: tap your creature then the attacker it meets (either order works), or drag one onto the other. A gold line ties each blocker to its attacker, and numbered badges show the order attackers strike in.",
+    "Combat" to "Combat plays out one attacker at a time: the board dims around the pair, a tag says who blocks whom or how much damage gets through, then the hit lands. Reduce motion keeps the tags and the order without the lunge.",
+    "Fix" to "A match that stops taking taps frees itself after a few seconds and sends a report, so a stuck table no longer needs a restart.",
+    "Fix" to "Deck art on Collection Home stays put while you scroll instead of flickering in and out.",
     "Collection" to "Collection opens on its own Home, built into the app: the Card of the Day, your collection\u2019s value, your decks, Meta decks and news, laid out like the website. Pokémon and Yu-Gi-Oh!, search and the other tabs still open the website\u2019s page for now.",
     "Fix" to "When a spell makes you sacrifice, the table says which card to tap instead of showing a greyed-out OK.",
     "Fix" to "Random deck in the lobby builds a deck again; its builder was missing from the app.",
