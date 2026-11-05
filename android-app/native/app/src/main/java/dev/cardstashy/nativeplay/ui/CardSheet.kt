@@ -55,9 +55,11 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.alpha
 import androidx.compose.ui.draw.blur
 import androidx.compose.ui.graphics.ColorFilter
+import androidx.compose.ui.graphics.asAndroidBitmap
 import androidx.compose.ui.graphics.layer.drawLayer
 import androidx.compose.ui.BiasAlignment
 import androidx.compose.ui.graphics.drawscope.translate
+import androidx.compose.ui.graphics.drawscope.scale
 import androidx.compose.ui.draw.drawBehind
 import androidx.compose.ui.layout.positionInRoot
 import androidx.compose.ui.layout.onGloballyPositioned
@@ -185,7 +187,7 @@ fun CardSheet(pick: CardPick, state: JsonObject?, act: CardSheetActions, onClose
             androidx.compose.runtime.CompositionLocalProvider(LocalFrost provides frost) {
             LazyColumn(state = list, modifier = Modifier.fillMaxSize()) {
                 item {
-                    Header(name, f.s("type_line").ifBlank { shown.s("type_line") }, f.s("mana_cost").ifBlank { shown.s("mana_cost") }, owned, heroArt, list.firstVisibleItemScrollOffset,
+                    Header(name, f.s("type_line").ifBlank { shown.s("type_line") }, f.s("mana_cost").ifBlank { shown.s("mana_cost") }, owned, heroArt, { list.firstVisibleItemScrollOffset },
                         onDrag = { dy -> scope.launch { y.snapTo((y.value + dy / h).coerceAtLeast(0f)) } },
                         onDragEnd = { scope.launch { if (y.value > .18f) close() else y.animateTo(0f, tween(200)) } }, onClose = { close() })
                 }
@@ -216,7 +218,36 @@ fun CardSheet(pick: CardPick, state: JsonObject?, act: CardSheetActions, onClose
 
 /** The sheet's art backdrop: the art crop filling the sheet, blurred, under a dark tint that deepens downwards. */
 /** The art the glass panels frost: the backdrop drawn into a layer, and where that backdrop sits on screen. */
-internal class Frost(val layer: androidx.compose.ui.graphics.layer.GraphicsLayer) { var origin by mutableStateOf(Offset.Zero) }
+internal class Frost(val layer: androidx.compose.ui.graphics.layer.GraphicsLayer) {
+    var origin by mutableStateOf(Offset.Zero)
+    /**
+     * The finished backdrop and the 28 dp frost of it, kept as two pictures once the art has drawn. Scrolling then only
+     * copies pixels: live, every glass panel blurred the whole sheet again on every frame (Randall 5 Nov "pop up big card
+     * lag city"). The frost is kept at half size; blurred that much, it looks the same scaled back up.
+     */
+    var backdrop by mutableStateOf<androidx.compose.ui.graphics.ImageBitmap?>(null)
+    var frosted by mutableStateOf<androidx.compose.ui.graphics.ImageBitmap?>(null)
+
+    /** Returns false when the picture came out without the art (nothing changes then and the live glass stays). */
+    suspend fun bake(scratch: androidx.compose.ui.graphics.layer.GraphicsLayer, density: androidx.compose.ui.unit.Density, dir: androidx.compose.ui.unit.LayoutDirection): Boolean {
+        val s = layer.size; if (s.width <= 0 || s.height <= 0) return false
+        val back = layer.toImageBitmap()
+        // An 8 x 8 copy proves the art is in it: the art fills the sheet, so its top and bottom rows are solid. A bare
+        // picture would leave the sheet empty, so then the live glass stays.
+        scratch.renderEffect = null
+        scratch.record(density, dir, androidx.compose.ui.unit.IntSize(8, 8)) { drawImage(back, dstSize = androidx.compose.ui.unit.IntSize(8, 8)) }
+        val probe = scratch.toImageBitmap().asAndroidBitmap().let { it.copy(android.graphics.Bitmap.Config.ARGB_8888, false) ?: return false }
+        if (listOf(probe.getPixel(4, 0), probe.getPixel(4, 7)).any { android.graphics.Color.alpha(it) < 200 }) return false
+        val r = with(density) { 14.dp.toPx() }
+        scratch.renderEffect = androidx.compose.ui.graphics.BlurEffect(r, r, androidx.compose.ui.graphics.TileMode.Clamp)
+        scratch.record(density, dir, androidx.compose.ui.unit.IntSize((s.width + 1) / 2, (s.height + 1) / 2)) {
+            scale(.5f, .5f, Offset.Zero) { drawImage(back) }
+        }
+        val frost = scratch.toImageBitmap()
+        backdrop = back; frosted = frost
+        return true
+    }
+}
 internal val LocalFrost = androidx.compose.runtime.staticCompositionLocalOf<Frost?> { null }
 
 private fun tone(saturation: Float, brightness: Float) = ColorFilter.colorMatrix(androidx.compose.ui.graphics.ColorMatrix().apply {
@@ -243,7 +274,26 @@ private fun ArtRun(p: androidx.compose.ui.graphics.painter.Painter, heroH: andro
 private fun GlassBackdrop(art: String?, frost: Frost) {
     val p = heroPainter(art?.let(homeArt)) ?: return
     val heroH = 210.dp
-    Box(Modifier.fillMaxSize().onGloballyPositioned { frost.origin = it.positionInRoot() }
+    // Bake once the art is in and has drawn: two frames after it loads (and again if the sheet changes size, as when a Fold opens).
+    val ready = if (p is coil3.compose.AsyncImagePainter) p.state.collectAsState().value is coil3.compose.AsyncImagePainter.State.Success else true
+    var size by remember { mutableStateOf(androidx.compose.ui.unit.IntSize.Zero) }
+    val scratch = androidx.compose.ui.graphics.rememberGraphicsLayer()
+    val density = androidx.compose.ui.platform.LocalDensity.current
+    val dir = androidx.compose.ui.platform.LocalLayoutDirection.current
+    LaunchedEffect(p, ready, size) {
+        frost.backdrop = null; frost.frosted = null
+        if (!ready || size.width <= 0) return@LaunchedEffect
+        for (attempt in 0 until 3) {
+            repeat(if (attempt == 0) 2 else 20) { androidx.compose.runtime.withFrameNanos { } }
+            if (frost.layer.size == size && runCatching { frost.bake(scratch, density, dir) }.getOrDefault(false)) break
+        }
+    }
+    val baked = frost.backdrop
+    if (baked != null && baked.width == size.width && baked.height == size.height) {
+        Box(Modifier.fillMaxSize().onGloballyPositioned { frost.origin = it.positionInRoot(); size = it.size }.drawBehind { drawImage(baked) })
+        return
+    }
+    Box(Modifier.fillMaxSize().onGloballyPositioned { frost.origin = it.positionInRoot(); size = it.size }
         .drawWithContent { frost.layer.record { this@drawWithContent.drawContent() }; drawLayer(frost.layer) }) {
         Image(p, null, Modifier.fillMaxSize().blur(40.dp), contentScale = ContentScale.Crop, alignment = BiasAlignment(0f, -.4f), colorFilter = tone(1.45f, .62f))
         val hp = with(androidx.compose.ui.platform.LocalDensity.current) { heroH.toPx() }
@@ -267,7 +317,14 @@ internal fun Modifier.glass(shape: androidx.compose.ui.graphics.Shape): Modifier
     val blurred = androidx.compose.ui.graphics.rememberGraphicsLayer()
     return this.onGloballyPositioned { at.value = it.positionInRoot() }.clip(shape)
         .drawBehind {
-            if (frost != null && frost.layer.size.width > 0) {
+            val frosted = frost?.frosted
+            if (frost != null && frosted != null) {
+                // The baked frost, scaled back up to the sheet and placed so the panel shows the part right behind it.
+                val d = frost.origin - at.value
+                drawImage(frosted, dstOffset = IntOffset(d.x.roundToInt(), d.y.roundToInt()), dstSize = androidx.compose.ui.unit.IntSize(frosted.width * 2, frosted.height * 2),
+                    filterQuality = androidx.compose.ui.graphics.FilterQuality.Low)
+                drawRect(Color(0x14FFFFFF))
+            } else if (frost != null && frost.layer.size.width > 0) {
                 blurred.renderEffect = androidx.compose.ui.graphics.BlurEffect(28.dp.toPx(), 28.dp.toPx(), androidx.compose.ui.graphics.TileMode.Clamp)
                 blurred.record(frost.layer.size) { drawLayer(frost.layer) }
                 val d = frost.origin - at.value
@@ -292,12 +349,12 @@ private fun CloseButton(onClick: () -> Unit) = Box(Modifier.size(40.dp).clip(Cir
 
 /** .cs-banner: the art crop with its shade, the blurred bleed behind, title and type over the foot of the art. */
 @Composable
-private fun Header(name: String, type: String, cost: String, owned: Int, art: String?, scrolled: Int, onDrag: (Float) -> Unit, onDragEnd: () -> Unit, onClose: () -> Unit) {
+private fun Header(name: String, type: String, cost: String, owned: Int, art: String?, scrolled: () -> Int, onDrag: (Float) -> Unit, onDragEnd: () -> Unit, onClose: () -> Unit) {
     val p = heroPainter(art?.let(homeArt))
     Box(Modifier.fillMaxWidth().pointerInput(Unit) { detectVerticalDragGestures(onDragEnd = onDragEnd) { _, dy -> onDrag(dy) } }) {
         // The glassy bleed: the art blurred under the whole head, fading into the sheet (no hard edge).
         Column {
-            Box(Modifier.fillMaxWidth().height(210.dp).graphicsLayer { translationY = scrolled * .4f }) {
+            Box(Modifier.fillMaxWidth().height(210.dp).graphicsLayer { translationY = scrolled() * .4f }) {
                 // The sharp art melts into the blurred backdrop: masked to nothing over its last third, no edge.
                 if (p != null) Image(p, null, Modifier.fillMaxSize()
                     .graphicsLayer { compositingStrategy = androidx.compose.ui.graphics.CompositingStrategy.Offscreen }
