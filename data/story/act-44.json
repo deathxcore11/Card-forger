@@ -2548,13 +2548,6 @@
       },
       {
        "qty": 4,
-       "name": "Glen Elendra Guardian",
-       "set": "ecl",
-       "number": "51",
-       "id": "388d2e4a-0aa5-4b82-a86c-4777ca60161c"
-      },
-      {
-       "qty": 4,
        "name": "Champions of the Perfect",
        "set": "ecl",
        "number": "171",
@@ -2562,17 +2555,24 @@
       },
       {
        "qty": 4,
+       "name": "Glen Elendra Guardian",
+       "set": "ecl",
+       "number": "51",
+       "id": "388d2e4a-0aa5-4b82-a86c-4777ca60161c"
+      },
+      {
+       "qty": 4,
+       "name": "Pestbrood Sloth",
+       "set": "sos",
+       "number": "157",
+       "id": "c1251ae6-2f19-4f84-ab02-6a6cc7ce6056"
+      },
+      {
+       "qty": 2,
        "name": "Paradox Surveyor",
        "set": "sos",
        "number": "208",
        "id": "d7cb1af2-0302-46ff-8303-ae9d07541a01"
-      },
-      {
-       "qty": 2,
-       "name": "Crossroads Watcher",
-       "set": "ecl",
-       "number": "173",
-       "id": "6d62fcbb-f1a0-46ce-a4af-2a33bcc3ac8e"
       },
       {
        "qty": 12,
@@ -2644,38 +2644,38 @@
       },
       {
        "qty": 4,
-       "name": "Pestbrood Sloth",
-       "set": "sos",
-       "number": "157",
-       "id": "c1251ae6-2f19-4f84-ab02-6a6cc7ce6056"
-      },
-      {
-       "qty": 4,
-       "name": "Shopkeeper's Bane",
-       "set": "sos",
-       "number": "159",
-       "id": "97f7fbb9-228c-4a74-975b-38d3b6cecb32"
-      },
-      {
-       "qty": 4,
-       "name": "Crossroads Watcher",
+       "name": "Mutable Explorer",
        "set": "ecl",
-       "number": "173",
-       "id": "6d62fcbb-f1a0-46ce-a4af-2a33bcc3ac8e"
+       "number": "186",
+       "id": "8f35d95a-caea-4d5e-b98e-55da1ba7c92d"
       },
       {
        "qty": 4,
-       "name": "Dawn's Light Archer",
+       "name": "Wildgrowth Archaic",
+       "set": "sos",
+       "number": "168",
+       "id": "0e6e2188-7203-4d10-a838-27233f283cd5"
+      },
+      {
+       "qty": 4,
+       "name": "Moon-Vigil Adherents",
        "set": "ecl",
-       "number": "174",
-       "id": "76e80656-6bcb-4d99-8bd2-ca5f75f40daf"
+       "number": "184",
+       "id": "60621c37-62e1-4261-ae76-3946b4a0cfa3"
+      },
+      {
+       "qty": 4,
+       "name": "Topiary Lecturer",
+       "set": "sos",
+       "number": "165",
+       "id": "4f16a1c2-0a80-45e4-b025-3aa0c0b03812"
       },
       {
        "qty": 3,
-       "name": "Aberrant Manawurm",
-       "set": "sos",
-       "number": "138",
-       "id": "797131cf-d80d-4050-bebd-2ce1d7fae5d0"
+       "name": "Changeling Wayfinder",
+       "set": "ecl",
+       "number": "1",
+       "id": "6c6061aa-a4da-4115-85b6-d0aa22f2386c"
       },
       {
        "qty": 24,
