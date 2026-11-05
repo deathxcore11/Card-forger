@@ -230,6 +230,57 @@ class CollectionEngineTest {
         assertEquals("Lightning Bolt", CollectionEngine.cardModel()["name"].asString)
     }
 
+    /**
+     * views.js setsPage and setPage through the bundle against the live card service: every set by year with its art and
+     * progress, a family and a search, then Double Masters 2022's own page, its controls, and a card opened on its printing.
+     */
+    @Test fun setsModel() = runBlocking {
+        assumeTrue(bundle.isFile)
+        CollectionEngine.initFrom(bundle)
+        fourDecks()
+        CollectionEngine.sets("mtg")
+        CollectionEngine.setsLoad()
+        CollectionEngine.settle(60_000)
+        val l = CollectionEngine.setsModel()
+        val rows = l["sections"].asJsonArray.flatMap { it.asJsonObject["rows"].asJsonArray.map { r -> r.asJsonObject } }
+        println("SETS ${l["title"]} sections=${l["sections"].asJsonArray.size()} rows=${rows.size} first=${rows.firstOrNull()} filters=${l["filters"]}".take(1500))
+        assertEquals("Magic sets", l["title"].asString)
+        assertEquals("Filters", l["filters"].asJsonObject["label"].asString)
+        assertTrue(rows.size >= 20)
+        assertTrue(rows.first()["atmosphere"].asJsonArray.first().asString.startsWith("https://cardstashy.com/img/mtg-set/"))
+        assertTrue(rows.first()["progress"].asJsonObject["label"].asString.contains("unique cards"))
+        // A family and a search, as app.js's setsFamily / setsSearch set them.
+        val promos = CollectionEngine.setsDo("family", "promos")
+        assertEquals("promos", promos["quick"].asJsonArray.map { it.asJsonObject }.first { it["on"].asBoolean }["value"].asString)
+        CollectionEngine.setsDo("family", "all")
+        val found = CollectionEngine.setsDo("search", "double masters 2022")["sections"].asJsonArray.flatMap { it.asJsonObject["rows"].asJsonArray.map { r -> r.asJsonObject["code"].asString } }
+        assertTrue("2x2 in $found", "2x2" in found)
+        // The set page: its cards (every page of them), the hero, the toolbar and the grid.
+        CollectionEngine.set("mtg", "2x2")
+        CollectionEngine.setLoad()
+        CollectionEngine.settle(90_000)
+        val s = CollectionEngine.setModel()
+        println("SET ${s["title"]} ${s["line"]} ${s["results"]} tiles=${s["tiles"].asJsonArray.size()} progress=${s["progress"]} pack=${s["pack"]} first=${s["tiles"].asJsonArray.firstOrNull()}".take(1500))
+        assertEquals("Double Masters 2022", s["title"].asString)
+        assertEquals("579 cards", s["results"].asString)
+        assertEquals(120, s["tiles"].asJsonArray.size())
+        assertTrue(s["atmosphere"].asJsonArray.size() >= 1)
+        assertEquals("All sets", s["back"].asJsonObject["label"].asString)
+        val mythic = CollectionEngine.setDo("rarity", "mythic")
+        assertTrue(mythic["results"].asString.endsWith(" cards") && mythic["results"].asString != "579 cards")
+        assertEquals("compact", CollectionEngine.setDo("view", "compact")["mode"].asString)
+        CollectionEngine.setDo("rarity", "all"); CollectionEngine.setDo("view", "gallery")
+        assertEquals(360, CollectionEngine.setDo("more")["tiles"].asJsonArray.size())
+        // A tile opens the card page on that printing (A.card with data-set-i).
+        val t = CollectionEngine.setModel()["tiles"].asJsonArray[1].asJsonObject
+        // Number order as the site sorts it (localeCompare numeric): #2 comes second, not #10.
+        assertEquals("Kozilek, Butcher of Truth", t["name"].asString)
+        val c = CollectionEngine.card("mtg", JsonObject().apply { addProperty("name", t["name"].asString); addProperty("setI", t["i"].asInt); addProperty("setFinish", "") })
+        println("SET CARD ${c["name"]} ${c["overviewHead"]?.asJsonObject?.get("set")}".take(600))
+        assertEquals(t["name"].asString, c["name"].asString)
+        assertEquals("2x2", c["overviewHead"].asJsonObject["set"].asJsonObject["code"].asString.lowercase())
+    }
+
     private suspend fun fourDecks() {
         val prints = JsonParser.parseString(javaClass.classLoader!!.getResource("collection/printings.json")!!.readText()).asJsonArray.map { it.asJsonObject }
         val lots = JsonArray(); val printings = JsonObject(); val catalog = JsonObject()

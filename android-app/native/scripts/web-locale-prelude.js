@@ -124,32 +124,59 @@ class DateTimeFormat {
 }
 
 // Intl.Collator as collection-sort.js builds it (en, numeric, sensitivity base): letters compare without case or accents,
-// digit runs by their value, everything else in code point order (ICU's root order puts spaces and punctuation before
-// digits and digits before letters, as ASCII does). Ties fall back to the plain strings so the order is total.
+// digit runs by their value, and æ œ ß ø read as ae oe ss o (Æther cards). As in ICU's root order, everything that is neither a letter nor a digit (spaces,
+// punctuation, symbols such as the ★ on promo numbers) sorts before digits, and digits before letters; inside each of
+// those groups characters keep code point order.
 const COLLATOR_KEYS = new Set(['numeric', 'sensitivity']);
-const fold = s => String(s ?? '').normalize('NFD').replace(/[\u0300-\u036f]/g, '').toLowerCase();
+const LIGATURES = {'æ': 'ae', 'œ': 'oe', 'ß': 'ss', 'ø': 'o'};
+const fold = s => String(s ?? '').normalize('NFD').replace(/[\u0300-\u036f]/g, '').toLowerCase().replace(/[æœßø]/g, c => LIGATURES[c]);
+const isDigit = c => c >= '0' && c <= '9';
+const group = c => isDigit(c) ? 1 : /\p{L}/u.test(c) ? 2 : 0;
 class Collator {
   constructor(locales, options = {}) {
     for (const k of Object.keys(options || {})) if (!COLLATOR_KEYS.has(k)) throw new RangeError(`Collator option ${k} is not supported in the app`);
     if (options.sensitivity && options.sensitivity !== 'base') throw new RangeError('Collator sensitivity ' + options.sensitivity + ' is not supported in the app');
     const numeric = !!options.numeric;
     this.compare = (a, b) => {
-      const x = fold(a), y = fold(b);
-      if (!numeric) return x < y ? -1 : x > y ? 1 : 0;
-      const xs = x.match(/\d+|\D+/g) || [], ys = y.match(/\d+|\D+/g) || [];
-      for (let i = 0; i < Math.min(xs.length, ys.length); i++) {
-        const p = xs[i], q = ys[i], pd = /^\d/.test(p), qd = /^\d/.test(q);
-        if (pd && qd) { const pn = p.replace(/^0+(?=\d)/, ''), qn = q.replace(/^0+(?=\d)/, ''); if (pn.length !== qn.length) return pn.length < qn.length ? -1 : 1; if (pn !== qn) return pn < qn ? -1 : 1; continue; }
-        if (p !== q) return p < q ? -1 : 1;
+      const x = [...fold(a)], y = [...fold(b)];
+      let i = 0, j = 0;
+      while (i < x.length && j < y.length) {
+        const c = x[i], d = y[j];
+        if (numeric && isDigit(c) && isDigit(d)) {
+          let e = i, f = j;
+          while (e < x.length && isDigit(x[e])) e++;
+          while (f < y.length && isDigit(y[f])) f++;
+          const p = x.slice(i, e).join('').replace(/^0+(?=\d)/, ''), q = y.slice(j, f).join('').replace(/^0+(?=\d)/, '');
+          if (p.length !== q.length) return p.length < q.length ? -1 : 1;
+          if (p !== q) return p < q ? -1 : 1;
+          i = e; j = f; continue;
+        }
+        if (c !== d) { const g = group(c), h = group(d); return g !== h ? (g < h ? -1 : 1) : c < d ? -1 : 1; }
+        i++; j++;
       }
-      return xs.length === ys.length ? 0 : xs.length < ys.length ? -1 : 1;
+      return i < x.length ? 1 : j < y.length ? -1 : 0;
     };
   }
   resolvedOptions() { return {locale: 'en', sensitivity: 'base', numeric: true}; }
 }
 
+// String.prototype.localeCompare(that, locales, options): QuickJS ignores both and compares code points, so the site's
+// set order (set-list-ui.js filterSortSetCards, numeric) came out 1, 10, 100, 101 … 2. Options the Collator above knows run
+// through it (a tie under any sensitivity but base falls back to the plain compare, as ICU's variant strength would split
+// it, with leading zeros still ignored when numeric); a call without options keeps QuickJS's own compare.
+const plainCompare = String.prototype.localeCompare;
+function localeCompare(that, locales, options) {
+  if (options && typeof options === 'object' && Object.keys(options).every(k => COLLATOR_KEYS.has(k)) && (!options.sensitivity || options.sensitivity === 'base')) {
+    const c = new Collator(locales, {numeric: !!options.numeric, sensitivity: 'base'}).compare(String(this), String(that));
+    if (c || options.sensitivity === 'base') return c;
+    if (options.numeric) { const z = v => String(v).replace(/\d+/g, n => n.replace(/^0+(?=\d)/, '')); return plainCompare.call(z(this), z(that)); }
+  }
+  return plainCompare.call(this, that);
+}
+String.prototype.localeCompare = localeCompare;
+
 const intl = typeof globalThis.Intl === 'object' && globalThis.Intl ? globalThis.Intl : {};
 globalThis.Intl = Object.assign({}, intl, {NumberFormat, DateTimeFormat, Collator});
 Number.prototype.toLocaleString = function (locales, options) { return new NumberFormat(locales, options).format(this); };
 Date.prototype.toLocaleDateString = function (locales, options) { return dateString(this, options); };
-export {NumberFormat as __NumberFormat, dateString as __dateString, DateTimeFormat as __DateTimeFormat, Collator as __Collator};
+export {NumberFormat as __NumberFormat, dateString as __dateString, DateTimeFormat as __DateTimeFormat, Collator as __Collator, localeCompare as __localeCompare};

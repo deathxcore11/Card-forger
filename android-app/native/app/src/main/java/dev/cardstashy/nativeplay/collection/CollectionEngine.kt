@@ -156,6 +156,33 @@ object CollectionEngine {
     const val CARD_MODEL = "Collection.cardModel()"
     suspend fun cardModel(): JsonObject = on { q -> JsonParser.parseString(q.evaluate(CARD_MODEL) as String).asJsonObject }
 
+    /** views.js setsPage(), every set by year, as a model; [opts] = {q, family, release, year, sort}, the site's own filter values. */
+    suspend fun sets(game: String, opts: JsonObject = JsonObject()): JsonObject =
+        on { q -> JsonParser.parseString(q.evaluate("Collection.sets(${str(game)}, ${str(opts.toString())})") as String).asJsonObject }
+
+    /** One set-browser control as app.js handles it (search, family, type, release, year, sort, more, reset, reload), then the page again. */
+    suspend fun setsDo(kind: String, value: String = ""): JsonObject =
+        on { q -> JsonParser.parseString(q.evaluate("Collection.setsDo(${str(kind)}, ${str(value)})") as String).asJsonObject }
+
+    /** Starts app.js loadSetIndex (the set list); [settle] with [SETS_MODEL] draws it as it lands. */
+    suspend fun setsLoad() = on { q -> q.evaluate("Collection.setsLoad()"); Unit }
+    const val SETS_MODEL = "Collection.setsModel()"
+    suspend fun setsModel(): JsonObject = on { q -> JsonParser.parseString(q.evaluate(SETS_MODEL) as String).asJsonObject }
+
+    /** views.js setPage(), one set's cards, as a model (app.js's #set/<code> route). */
+    suspend fun set(game: String, code: String): JsonObject =
+        on { q -> JsonParser.parseString(q.evaluate("Collection.set(${str(game)}, ${str(code)})") as String).asJsonObject }
+
+    /** One set-page control as app.js handles it (search, filter, finish, rarity, sort, more, reload, view), then the page again. */
+    suspend fun setDo(kind: String, value: String = ""): JsonObject =
+        on { q -> JsonParser.parseString(q.evaluate("Collection.setDo(${str(kind)}, ${str(value)})") as String).asJsonObject }
+
+    /** Starts app.js loadSet for the open set (and the set index for its name and symbol). */
+    suspend fun setLoad() = on { q -> q.evaluate("Collection.setLoad()"); Unit }
+    const val SET_MODEL = "Collection.setModel()"
+    /** The open set page as a model again; empty when none is open. */
+    suspend fun setModel(): JsonObject = on { q -> JsonParser.parseString(q.evaluate(SET_MODEL) as String).asJsonObject }
+
     /** search-hints.js: the search field's prompt and the names and questions it fades through. */
     suspend fun hints(game: String): JsonObject = on { q -> JsonParser.parseString(q.evaluate("Collection.hints(${str(game)})") as String).asJsonObject }
 

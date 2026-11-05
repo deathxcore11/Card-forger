@@ -1,8 +1,8 @@
 // Checks scripts/web-locale-prelude.js (the QuickJS bundles' en-US formatting) against Node's ICU.
 // node scripts/test-web-locale.mjs
 const RealNF = Intl.NumberFormat, realDate = Date.prototype.toLocaleDateString;
-const RealDTF = Intl.DateTimeFormat;
-const {__NumberFormat: NF, __dateString: dateString, __DateTimeFormat: DTF} = await import('./web-locale-prelude.js');
+const RealDTF = Intl.DateTimeFormat, realCompare = String.prototype.localeCompare;
+const {__NumberFormat: NF, __dateString: dateString, __DateTimeFormat: DTF, __localeCompare: localeCompare} = await import('./web-locale-prelude.js');
 let bad = 0, n = 0;
 const check = (label, got, want) => { n++; if (got !== want && bad++ < 25) console.log('MISMATCH', label, JSON.stringify(got), 'want', JSON.stringify(want)); };
 const options = [undefined, {}, {minimumFractionDigits: 2, maximumFractionDigits: 2}, {minimumFractionDigits: 0, maximumFractionDigits: 0}, {maximumFractionDigits: 1},
@@ -24,5 +24,9 @@ globalThis.__tz = {[zone]: rows};
 const dtfOpts = [{timeZone: zone, year: 'numeric', month: '2-digit', day: '2-digit'}, {timeZone: zone, year: 'numeric', month: '2-digit', day: '2-digit', hour: '2-digit', minute: '2-digit', second: '2-digit', hourCycle: 'h23'}];
 for (let i = 0; i < 3000; i++) { const ms = Date.UTC(2024, 1, 1) + Math.floor(rnd() * 4 * 365 * 864e5); for (const o of dtfOpts) { check(`${new Date(ms).toISOString()} ${JSON.stringify(o)}`, JSON.stringify(new DTF('en-CA', o).formatToParts(new Date(ms))), JSON.stringify(new RealDTF('en-CA', o).formatToParts(new Date(ms)))); } }
 for (const r of rows.slice(1)) for (const d of [-60e3, 0, 60e3]) check(`edge ${new Date(r[0] + d).toISOString()}`, new DTF('en-CA', dtfOpts[1]).format(r[0] + d), new RealDTF('en-CA', dtfOpts[1]).format(r[0] + d));
+// localeCompare with the site's numeric options (set numbers, names): the sign of each comparison, as ICU gives it.
+const sign = x => Math.sign(x);
+const words = ['1', '2', '10', '100', '101', '9a', '10a', '10b', '★1', 'A1', 'a2', 'Abzan Falconer', 'abzan falconer', 'Ætherize', 'Aether Vial', 'Kozilek', 'kozilek, Butcher', 'Æ 2', 'T1', 't10', '001', '1'];
+for (const a of words) for (const b of words) for (const o of [{numeric: true, sensitivity: 'base'}, {numeric: true}]) check(`${a} ~ ${b} ${JSON.stringify(o)}`, sign(localeCompare.call(a, b, undefined, o)), sign(realCompare.call(a, b, undefined, o)));
 console.log(`${n - bad}/${n} match ICU en-US`);
 process.exit(bad ? 1 : 0);

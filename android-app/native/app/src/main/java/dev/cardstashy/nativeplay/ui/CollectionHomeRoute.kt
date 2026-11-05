@@ -74,7 +74,8 @@ internal suspend fun keepCatalog(context: android.content.Context) = withContext
 }
 
 @Composable
-fun CollectionHomeRoute(onPlay: () -> Unit, onProfile: () -> Unit, web: (url: String, press: String?) -> Unit, open: (String) -> Unit, onCards: (() -> Unit)? = null, onDecks: (() -> Unit)? = null) {
+fun CollectionHomeRoute(onPlay: () -> Unit, onProfile: () -> Unit, web: (url: String, press: String?) -> Unit, open: (String) -> Unit, onCards: (() -> Unit)? = null, onDecks: (() -> Unit)? = null,
+                        onSet: ((String) -> Unit)? = null, onSets: (() -> Unit)? = null) {
     val context = LocalContext.current
     val session by Account.session.collectAsState()
     val revision by Decks.fullRevision.collectAsState()
@@ -110,11 +111,11 @@ fun CollectionHomeRoute(onPlay: () -> Unit, onProfile: () -> Unit, web: (url: St
         CollectionHomeActions(
             // Pokémon and Yu-Gi-Oh! Home are still the website's: open it and pick that game there.
             game = { g -> if (g != CardGame.MTG) web(site, "[data-act=\"setGame\"][data-game=\"${g.id}\"]") },
-            go = { to -> web(site + to, null) },
+            go = { to -> if (to == "#sets" && onSets != null) onSets() else web(site + to, null) },
             open = open,
             search = { web(site + "#search", null) },
             daily = { web(site, "[data-act=\"homeDailyCard\"]") },
-            set = { code -> if (code.isNotBlank()) web(site + "#set/" + android.net.Uri.encode(code.lowercase()), null) },
+            set = { code -> if (code.isNotBlank()) onSet?.invoke(code.lowercase()) ?: web(site + "#set/" + android.net.Uri.encode(code.lowercase()), null) },
             // The deck itself opens from the site's own carousel; until that page is native, the Meta decks page.
             metaDeck = { web(site + "#decks/inspiration", null) },
         )

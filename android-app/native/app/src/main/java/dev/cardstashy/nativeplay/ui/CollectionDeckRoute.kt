@@ -50,7 +50,8 @@ private object DeckCache {
  */
 @Composable
 fun CollectionDeckRoute(deckId: String, onPlay: () -> Unit, onProfile: () -> Unit, onBack: () -> Unit, onHome: () -> Unit, onCards: () -> Unit,
-                        onPractice: (id: String, format: String) -> Unit, web: (url: String, press: String?) -> Unit, nativeCard: Boolean = false) {
+                        onPractice: (id: String, format: String) -> Unit, web: (url: String, press: String?) -> Unit, nativeCard: Boolean = false,
+                        onSet: ((String) -> Unit)? = null) {
     val context = LocalContext.current
     val session by Account.session.collectAsState()
     val revision by Decks.fullRevision.collectAsState()
@@ -120,7 +121,7 @@ fun CollectionDeckRoute(deckId: String, onPlay: () -> Unit, onProfile: () -> Uni
             view = { v -> prefs.edit().putString("deckView", v).apply(); asked = "view" to v },
             card = { n -> val tile = "[data-act=\"card\"][data-name=\"${css(n)}\"]"
                 if (nativeCard) cards = cards + CardOpen(n, deck = deckId, page = page, tile = tile) else web(page, tile) },
-            set = { code -> if (code.isNotBlank()) web(site + "#set/" + android.net.Uri.encode(code.lowercase()), null) },
+            set = { code -> if (code.isNotBlank()) onSet?.invoke(code.lowercase()) ?: web(site + "#set/" + android.net.Uri.encode(code.lowercase()), null) },
             qty = { n, d -> web(page, "[data-act=\"deckQty\"][data-name=\"${css(n)}\"][data-delta=\"$d\"]") },
             swap = { o, i -> web(page, "[data-act=\"deckEmbSwap\"][data-out=\"${css(o)}\"][data-in=\"${css(i)}\"]") },
         )
@@ -150,6 +151,6 @@ fun CollectionDeckRoute(deckId: String, onPlay: () -> Unit, onProfile: () -> Uni
         }
         nav(false)
     }
-    cards.lastOrNull()?.let { c -> androidx.compose.runtime.key(c) { CollectionCardHost(c, onClose = { cards = cards.dropLast(1) }, onOpen = { cards = cards + it }, web = web) } }
+    cards.lastOrNull()?.let { c -> androidx.compose.runtime.key(c) { CollectionCardHost(c, onClose = { cards = cards.dropLast(1) }, onOpen = { cards = cards + it }, web = web, onSet = onSet) } }
     }
 }

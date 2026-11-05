@@ -17,7 +17,9 @@ import kotlinx.coroutines.withContext
  * page). [page] is the website's page the tile sits on and [tile] the tile's selector there, so a control the app does not
  * draw yet opens that page, presses the tile, then presses the control in the site's card sheet.
  */
-data class CardOpen(val name: String, val entry: String = "", val deck: String = "", val page: String, val tile: String)
+data class CardOpen(val name: String, val entry: String = "", val deck: String = "", val page: String, val tile: String,
+                    /** A set page's tile: its data-set-i (that printing) and data-set-finish (the finish the page prices). */
+                    val setI: Int? = null, val setFinish: String = "")
 
 private fun css(v: String) = v.replace("\\", "\\\\").replace("\"", "\\\"")
 
@@ -29,14 +31,14 @@ private fun css(v: String) = v.replace("\\", "\\\\").replace("\"", "\\\"")
  * Sort & filter, the wiki, the proven lists, Compare all printings) open the website's card sheet and press the same control there.
  */
 @Composable
-fun CollectionCardHost(open: CardOpen, onClose: () -> Unit, onOpen: (CardOpen) -> Unit, web: (url: String, press: String?) -> Unit) {
+fun CollectionCardHost(open: CardOpen, onClose: () -> Unit, onOpen: (CardOpen) -> Unit, web: (url: String, press: String?) -> Unit, onSet: ((String) -> Unit)? = null) {
     val context = LocalContext.current
     var model by remember(open) { mutableStateOf<CollectionCardModel?>(null) }
     /** A control waiting for the site's handler (kind to value). */
     var asked by remember(open) { mutableStateOf<Pair<String, String>?>(null) }
     LaunchedEffect(open) {
         runCatching {
-            val o = JsonObject().apply { addProperty("name", open.name); addProperty("entry", open.entry); addProperty("deck", open.deck) }
+            val o = JsonObject().apply { addProperty("name", open.name); addProperty("entry", open.entry); addProperty("deck", open.deck); open.setI?.let { addProperty("setI", it); addProperty("setFinish", open.setFinish) } }
             model = withContext(Dispatchers.Default) { CollectionCardModel.parse(CollectionEngine.card("mtg", o)) }
             CollectionEngine.cardLoad()
             CollectionEngine.settle(30_000, CollectionEngine.CARD_MODEL) { j -> if (j.size() > 0) model = CollectionCardModel.parse(j) }
@@ -63,9 +65,9 @@ fun CollectionCardHost(open: CardOpen, onClose: () -> Unit, onOpen: (CardOpen) -
                 if (uri.host?.endsWith("cardstashy.com") == true) web(p.href, null)
                 else runCatching { context.startActivity(android.content.Intent(android.content.Intent.ACTION_VIEW, uri)) }
             }
-            p.act == "card" && !d["name"].isNullOrBlank() -> onOpen(open.copy(name = d.getValue("name"), entry = ""))
+            p.act == "card" && !d["name"].isNullOrBlank() -> onOpen(open.copy(name = d.getValue("name"), entry = "", setI = null, setFinish = ""))
             p.act == "go" && !d["to"].isNullOrBlank() -> web("https://cardstashy.com/" + d.getValue("to"), null)
-            p.act == "set" && !d["code"].isNullOrBlank() -> web("https://cardstashy.com/#set/" + android.net.Uri.encode(d.getValue("code").lowercase()), null)
+            p.act == "set" && !d["code"].isNullOrBlank() -> onSet?.invoke(d.getValue("code").lowercase()) ?: web("https://cardstashy.com/#set/" + android.net.Uri.encode(d.getValue("code").lowercase()), null)
             p.act == "magicVersionsMore" -> asked = "more" to ""
             p.act == "flipFace" -> asked = "face" to ""
             p.act == "cardTab" && d["tab"] in setOf("overview", "meta", "guide", "prices") -> asked = "tab" to d.getValue("tab")
@@ -83,7 +85,7 @@ fun CollectionCardHost(open: CardOpen, onClose: () -> Unit, onOpen: (CardOpen) -
         finish = { f -> asked = "finish" to f },
         print = { i -> asked = "print" to i.toString() },
         face = { asked = "face" to "" },
-        card = { n -> onOpen(open.copy(name = n, entry = "")) },
+        card = { n -> onOpen(open.copy(name = n, entry = "", setI = null, setFinish = "")) },
         rule = { key -> site("[data-act=\"ruleHint\"][data-rule=\"${css(key)}\"]") },
         profile = {
             val s = m.shown

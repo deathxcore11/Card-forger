@@ -19,7 +19,7 @@ import {loadMeta, metaState, allCachedMeta} from 'WEB/meta.js';
 import {mtgMetaKey} from 'WEB/power.js';
 import {loadCommunity, communitySlides} from 'WEB/community-feed.js';
 import {loadPulse} from 'WEB/news-pulse.js';
-import {collection as collectionPage, decks as decksView, deckPage as deckView, cardSheet as cardView} from 'WEB/views.js';
+import {collection as collectionPage, decks as decksView, deckPage as deckView, cardSheet as cardView, setsPage as setsView, setPage as setView} from 'WEB/views.js';
 import {loadMagicPrintingPage, mergeMagicCards} from 'WEB/catalog-tools.js';
 import {magicOwnedDetail, magicOwnedContext, magicOwnedCurrent} from 'WEB/magic-owned-detail.js';
 import {selectPreviewFinish} from 'WEB/finish-preview.js';
@@ -201,6 +201,9 @@ function icon(svg, css = {}) {
 }
 const svgIn = n => n && (n.tag === 'svg' ? n : one(n, tagIs('svg')));
 const sources = img => { try { return JSON.parse(img?.attrs['data-art-sources'] || '[]'); } catch { return []; } };
+const SITE = 'https://cardstashy.com';
+// set-experience.js setAtmosphere: the set's art, then its fallbacks (the img's onerror walks them in order).
+const setArt = img => { try { return JSON.parse(img?.attrs['data-set-art-sources'] || '[]').map(u => u.startsWith('/') ? SITE + u : u); } catch { return []; } };
 const picture = img => img ? {src: img.attrs.src || '', sources: sources(img)} : null;
 const selectOf = sel => sel && {name: sel.attrs['data-change'] || '', label: sel.attrs['aria-label'] || '', options: all(sel, tagIs('option')).map(o => ({value: o.attrs.value ?? text(o), label: text(o), on: o.attrs.selected !== undefined}))};
 // Words with their weight, in order (the summary line's <b> runs).
@@ -410,10 +413,18 @@ let sheet = null;
 const still = ctx => S.ui.sheetCtx === ctx;
 // app.js A.card (3554-3615): [o] = {name, entry, deck}, as the tapped tile's data-name / data-entry / data-deck.
 function cardOpen(o) {
-  const name = String(o.name || ''), entryId = String(o.entry || ''), deckId = o.deck ? String(o.deck) : null, as = JSON.stringify([name, entryId, deckId]);
+  const name = String(o.name || ''), entryId = String(o.entry || ''), deckId = o.deck ? String(o.deck) : null, setI = o.setI == null || o.setI === '' ? null : Number(o.setI);
+  const as = JSON.stringify([name, entryId, deckId, setI, o.setFinish || '']);
   if (sheet && sheet.openedAs === as && S.ui.sheetCtx === sheet) return sheet;
   const ctx = {type: 'card', name, entryId, deckId, random: false, openedAs: as};
   sheet = S.ui.sheetCtx = ctx;
+  // A set page's tile (data-set-i, data-set-finish): that printing, priced in the finish the page shows (A.card).
+  if (setI != null) {
+    const print = S.ui.set.cards[setI];
+    if (print?.id && key(print.name) === key(name) && print.set === S.ui.set.code) { ctx.print = print; ctx.setId = print.set; ctx.priceFinish = selectedFinish('mtg', print, o.setFinish || ''); }
+    else { ctx.ownedNotice = 'This set changed. Open the card again.'; ctx.blocked = true; }
+    return ctx;
+  }
   if (entryId) {
     const owned = magicOwnedDetail(S.state, entryId, name);
     if (!owned.identity) { ctx.ownedNotice = owned.reason; ctx.blocked = true; return ctx; }
@@ -533,13 +544,14 @@ async function cardTabLoads(ctx) {
 // app.js loadSetIndex (617-656): the official set list (names, sizes, symbols), cached for a day; the site loads it on its
 // Collection and Sets pages, so a card opened from there names its set and counts the set's cards.
 const SET_INDEX = 'cardforge-sets-v1';
-async function loadSetIndex() {
+async function loadSetIndex(force = false) {
   const ui = S.ui.sets;
   let cached = null;
   try { cached = JSON.parse(localStorage.getItem(SET_INDEX) || 'null'); } catch {}
   if (cached?.sets?.length) { ui.list = cached.sets; ui.checkedAt = Number(cached.at) || 0; registerSetIcons(Object.fromEntries(cached.sets.map((x) => [x.code, x.icon]))); }
   const fresh = cached?.sets?.length && Number(cached.at) > 0 && Date.now() >= cached.at && Date.now() - cached.at < 864e5;
-  if (ui.busy || fresh) return;
+  if (ui.busy) return;
+  if (fresh && !force) { ui.error = ''; return; }
   ui.busy = true; ui.error = '';
   try {
     const r = await api('/sets');
@@ -551,6 +563,137 @@ async function loadSetIndex() {
   } catch (e) { ui.error = e.message + (ui.list.length ? ' Showing the last checked catalogue.' : ''); }
   finally { ui.busy = false; }
 }
+// app.js loadSet / loadSetCards (661-735): every printing in a set, straight from Scryfall, page by page (a failed page keeps the
+// pages before it, and Try again resumes from it); the redraws are the app's (it pumps this with settle()).
+const setCache = new Map();
+function loadSet(code, {join = false, resume = false} = {}) {
+  const st = S.ui.set; if (join && st.code === code && st.busy && st.loadPromise) return st.loadPromise;
+  const job = loadSetCards(code, {resume}); st.loadPromise = job; return job.finally(() => { if (st.loadPromise === job) st.loadPromise = null; });
+}
+async function loadSetCards(code, {resume = false} = {}) {
+  const st = S.ui.set, generation = (st.generation || 0) + 1;
+  st.generation = generation;
+  const current = () => S.ui.set === st && st.code === code && st.generation === generation;
+  if (setCache.has(code)) { Object.assign(st, setCache.get(code), {loaded: true, busy: false, error: '', pagination: null}); return; }
+  st.busy = true; st.error = ''; st.complete = false;
+  const continuing = resume && st.pagination?.code === code && st.pagination.path;
+  if (!continuing) { st.cards = []; st.total = 0; st.info = null; st.loaded = false; st.pagination = null; }
+  try {
+    if (!st.info) { const info = await api('/sets/' + encodeURIComponent(code)); if (!current()) return; st.info = info; }
+    const cursor = continuing ? st.pagination : {code, path: '/cards/search?' + new URLSearchParams({q: 'e:' + code, unique: 'prints', order: 'set', dir: 'asc', include_extras: 'true', include_variations: 'true'}), seen: []};
+    st.pagination = cursor;
+    const cards = new Map(st.cards.map(c => [c.id, c]));
+    const incomplete = () => Error('The provider list is incomplete. Try again to finish loading this set.');
+    while (cursor.path && current()) {
+      if (cursor.seen.length >= 30) { st.pagination = null; throw incomplete(); }
+      // (one declaration per await: the bundle's QuickJS guard only knows that shape inside try/finally)
+      const path = cursor.path;
+      const d = await api(path);
+      if (!current()) return;
+      if (!Array.isArray(d.data) || typeof d.has_more !== 'boolean') throw incomplete();
+      let next = null;
+      if (d.has_more) {
+        let url; try { url = new URL(d.next_page); } catch { throw incomplete(); }
+        if (url.origin !== 'https://api.scryfall.com' || url.pathname !== '/cards/search' || url.username || url.password || url.hash) throw incomplete();
+        next = url.pathname + url.search;
+        if (next === path || cursor.seen.includes(next)) throw incomplete();
+      }
+      if (Number.isInteger(d.total_cards) && d.total_cards >= 0) st.total = d.total_cards;
+      for (const c of d.data) if (c.id && c.set === code) cards.set(c.id, slim(c));
+      st.cards = [...cards.values()];
+      cursor.seen.push(path); cursor.path = next;
+    }
+    if (current()) {
+      if (st.total !== st.cards.length) { st.pagination = null; throw incomplete(); }
+      st.loaded = true; st.complete = true; st.pagination = null;
+      setCache.set(code, {info: st.info, cards: st.cards, total: st.total, complete: true});
+      ensureTcgPrices(st.cards);
+    }
+  } catch (e) {
+    if (current()) { st.error = st.cards.length ? 'Some cards didn’t load: ' + e.message : e.message; st.loaded = !!st.cards.length; }
+  } finally { if (current()) st.busy = false; }
+}
+// app.js's set browser and set page handlers (4545-4600), verbatim but for the redraw, which is the app's.
+const updateSetBrowser = (key, value) => { S.ui.sets[key] = value; S.ui.sets.limit = 80; };
+const setsAct = {
+  search: v => { S.ui.sets.q = v; S.ui.sets.limit = 80; },
+  family: v => updateSetBrowser('family', v), type: v => updateSetBrowser('family', v), release: v => updateSetBrowser('release', v),
+  year: v => updateSetBrowser('year', v), sort: v => updateSetBrowser('sort', v),
+  more: () => { S.ui.sets.limit = (S.ui.sets.limit || 80) + 80; },
+  reset: () => { const st = S.ui.sets; for (const key of ['family', 'release', 'year', 'sort']) delete st[key]; st.q = ''; st.all = false; st.limit = 80; },
+  reload: () => { S.ui.sets.error = ''; loadSetIndex(true); },
+};
+const setAct = {
+  search: v => { S.ui.set.q = v; S.ui.set.limit = 120; },
+  filter: v => { S.ui.set.filter = v; S.ui.set.limit = 120; },
+  finish: v => { S.ui.set.finish = v; S.ui.set.limit = 120; },
+  rarity: v => { S.ui.set.rarity = v; S.ui.set.limit = 120; },
+  sort: v => { S.ui.set.sort = v; },
+  more: () => { S.ui.set.limit += 240; },
+  reload: () => { setCache.delete(S.ui.set.code); loadSet(S.ui.set.code, {resume: true}); },
+  // workbench-ui.js A.viewSave for the set page: the app keeps the choice for this visit (the website saves it to the account).
+  view: v => { if (['gallery', 'compact', 'symbols'].includes(v)) ((S.state.settings.displayModes ||= {}).mtg ||= {}).set = v; },
+};
+// app.js route() for #set/<code>: a new code starts the page afresh.
+function setOpen(code) {
+  const ui = S.ui; code = String(code || '').toLowerCase(); ui.lens = '';
+  if (code !== ui.set.code) ui.set = {...ui.set, code, info: null, cards: [], total: 0, loaded: false, busy: false, error: '', q: '', filter: 'all', rarity: 'all', finish: 'all', complete: false, limit: 120};
+}
+// views.js setsPage(): the browser's search, families and filters, then the sets by year (set-list-ui.js setRowContent tiles).
+const setProgressModel = p => p ? {label: text(one(one(p, cls('set-tile-progress-label')), tagIs('span'))) || text(one(p, x => x.tag === 'p' && !cls('set-progress-caption')(x))),
+  eyebrow: text(one(p, cls('eyebrow'))), pct: text(one(p, x => x.tag === 'b' || x.tag === 'strong')), fill: (() => { const f = one(one(p, cls('set-progress-track')), tagIs('span')); return f ? Number((/scaleX\(([\d.e-]+)\)/.exec(f.attrs.style || '') || [])[1]) || 0 : null; })(),
+  caption: text(one(p, cls('set-progress-caption'))) || text(one(p, tagIs('small')))} : null;
+function setRowModel(n) {
+  const atm = one(n, cls('set-atmosphere')), media = one(n, cls('set-media')), main = one(n, cls('set-row-main')), b = one(main, tagIs('b')), det = one(main, cls('set-row-detail')), count = one(n, cls('set-row-count'));
+  return {code: n.attrs['data-code'] || '', atmosphere: setArt(one(atm, tagIs('img'))), image: one(media, tagIs('img'))?.attrs.src || '', fallback: text(one(media, cls('set-art-code'))),
+    icon: urlIn(styleVar(one(b, cls('set-icon')), 'icon')), name: text(one(b, x => x.tag === 'span' && !cls('set-icon')(x))), mark: text(one(det, cls('set-code-mark'))),
+    detail: text(one(det, x => x.tag === 'span' && !cls('set-code-mark')(x))), count: text(one(count, tagIs('b'))), units: all(count, tagIs('small')).map(text), unknown: !!one(count, cls('count-unknown')),
+    progress: setProgressModel(one(n, cls('set-tile-progress')))};
+}
+function setsPageModel() {
+  const t = tree(setsView()), head = one(t, cls('page-head')), ctl = one(t, cls('set-browser-controls')), search = one(ctl, x => x.tag === 'input'), more = one(ctl, cls('set-browser-more'));
+  const note = one(t, x => cls('note')(x) && cls('warn')(x)), secs = all(t, cls('set-year-section')), flat = one(t, cls('set-browser-flat')), last = one(t, x => x.attrs['data-act'] === 'setsMore'), empty = one(t, cls('empty'));
+  return {eyebrow: text(one(head, cls('eyebrow'))), title: text(one(head, tagIs('h1'))),
+    search: search && {value: search.attrs.value || '', placeholder: search.attrs.placeholder || '', label: search.attrs['aria-label'] || ''},
+    quick: all(one(ctl, cls('set-browser-quick')), tagIs('button')).map(b => ({value: b.attrs['data-value'] || '', label: text(b), on: cls('on')(b), icon: icon(svgIn(b))})),
+    filters: more ? {label: text(one(one(more, tagIs('summary')), x => x.tag === 'span' && !cls('label-ico')(x))), icon: icon(svgIn(one(more, tagIs('summary')))), count: text(one(more, cls('filters-count'))), open: more.attrs.open !== undefined,
+      selects: all(one(more, cls('set-browser-facets')), tagIs('label')).map(l => { const sel = one(l, tagIs('select')); return {...selectOf(sel), title: text({kids: (l.kids || []).filter(k => k !== sel)})}; }),
+      status: text(one(one(more, cls('set-browser-summary')), tagIs('p'))), buttons: all(one(more, cls('set-browser-summary')), tagIs('button')).map(press), freshness: text(one(more, cls('set-browser-freshness')))} : null,
+    error: note ? {text: text({kids: (note.kids || []).filter(k => k.tag !== 'button')}), retry: press(one(note, tagIs('button')))} : null,
+    loading: text(one(t, x => x.tag === 'p' && cls('center')(x) && cls('pad')(x))),
+    sections: secs.length ? secs.map(s => ({year: text(one(s, tagIs('h2'))), count: text(one(one(s, cls('set-year-heading')), tagIs('span'))), rows: all(s, cls('set-row')).map(setRowModel)}))
+      : flat ? [{year: '', count: '', rows: all(flat, cls('set-row')).map(setRowModel)}] : [],
+    empty: empty && {title: text(one(empty, tagIs('h3'))), text: text(one(empty, tagIs('p')))}, more: last ? text(last) : '', busy: !!S.ui.sets.busy};
+}
+// views.js setPage(): the set's hero (its art, symbol, name, line, your progress, the pack simulator), the toolbar, the cards.
+function setTileModel(n) {
+  const img = one(n, cls('card-img')) || one(n, tagIs('img')), c = one(n, cls('tile-chrome')), meta = one(n, cls('grid-meta')), badge = one(n, cls('owned-badge'));
+  let finish = null; try { finish = JSON.parse(n.attrs['data-finish-model'] || 'null'); } catch {}
+  const set = one(c, cls('set-icon')), imp = one(c, cls('imp-tile')), i = Number(n.attrs['data-set-i']), spans = (meta?.kids || []).filter(k => k.tag === 'span');
+  return {name: n.attrs['data-name'] || '', i, picture: picture(img), alt: img?.attrs.alt || '', fallback: img ? '' : text(one(n, cls('img-missing'))), ...tierOfNode(n),
+    finish: finish && {key: finish.key || '', effect: finish.effect || n.attrs['data-finish-effect'] || '', printingId: finish.printingId || '', status: finish.status || ''},
+    chrome: c ? {emb: all(one(c, cls('tile-emb')), tagIs('img')).map(x => ({src: x.attrs.src || '', alt: x.attrs.alt || ''})),
+      set: set ? {src: urlIn(set.attrs.style || ''), rarity: (classes(set).find(x => x.startsWith('r-')) || 'r-common').slice(2), title: one(c, cls('tset'))?.attrs.title || ''} : null, imp: imp ? icon(svgIn(imp)) : null} : null,
+    label: text(spans[0]), price: text(spans[1]), badge: badge ? {text: text(badge), other: cls('other')(badge), title: badge.attrs.title || ''} : null, own: cls('own')(n), missing: cls('play-missing')(n),
+    print: finish?.key && finish.key !== 'nonfoil' ? S.ui.set.cards?.[i] || null : null};
+}
+function setPageModel() {
+  const st = S.ui.set, t = tree(setView()), hero = one(t, cls('set-hero')), main = one(hero, cls('set-hero-main')), tb = one(t, cls('set-card-toolbar')), ctr = one(tb, cls('set-controls'));
+  const note = one(t, x => cls('note')(x) && cls('warn')(x)), grid = one(t, cls('set-grid')), search = one(tb, x => x.tag === 'input'), more = one(t, x => x.attrs['data-act'] === 'setMore'), empty = one(t, cls('empty'));
+  const view = one(ctr, cls('view-switch')), pack = one(hero, cls('set-open-pack'));
+  return {code: st.code, title: text(one(main, tagIs('h1'))), line: text(one(main, x => x.tag === 'p')), back: press(one(main, tagIs('button'))),
+    atmosphere: setArt(one(one(hero, cls('set-atmosphere')), tagIs('img'))), icon: urlIn(styleVar(one(hero, cls('set-icon')), 'icon')),
+    progress: setProgressModel(one(hero, cls('set-collection-progress'))), pack: pack ? {label: text({kids: (pack.kids || []).filter(k => k.tag !== 'span')}), sub: text(one(pack, tagIs('span'))), disabled: pack.attrs.disabled !== undefined, act: pack.attrs['data-act'] || ''} : null,
+    error: note ? {text: text({kids: (note.kids || []).filter(k => k.tag !== 'button')}), retry: press(one(note, tagIs('button')))} : null,
+    search: search && {value: search.attrs.value || '', placeholder: search.attrs.placeholder || '', label: search.attrs['aria-label'] || ''},
+    filters: all(one(ctr, cls('seg')), tagIs('button')).map(b => ({id: b.attrs['data-id'] || '', label: text(b), on: cls('on')(b)})),
+    selects: all(ctr, tagIs('select')).map(selectOf),
+    views: view ? all(view, tagIs('button')).map(b => ({mode: b.attrs['data-mode'], label: b.attrs['aria-label'] || b.attrs.title || '', on: b.attrs['aria-checked'] === 'true', icon: icon(svgIn(b))})) : [],
+    mode: (all(view, tagIs('button')).find(b => b.attrs['aria-checked'] === 'true')?.attrs['data-mode']) || 'gallery',
+    results: text(one(t, cls('set-results'))), tiles: grid ? all(grid, cls('grid-card')).map(setTileModel) : [],
+    more: more ? text(more) : '', empty: empty && {title: text(one(empty, tagIs('h3'))), text: text(one(empty, tagIs('p')))}, busy: !!st.busy, loaded: !!st.loaded};
+}
+
 // The sheet's own controls, as app.js handles them; the redraw is the app's.
 const cardAct = {
   tab: v => {
@@ -820,6 +963,17 @@ globalThis.Collection = {
   cardLoad() { const ctx = sheet; if (!ctx) return; (async () => { if (ctx.ownedLoading) await ownedLoad(ctx); if (!ctx.blocked && still(ctx)) { if (!(ctx.print || meta(ctx.name))) await resolveNames([ctx.name], () => {}, false, () => still(ctx)).catch(() => {}); await Promise.all([cardExtras(ctx), cardTabLoads(ctx), loadSetIndex()]); } })(); },
   // A.cardTab starts the tab's lookups (the guide's pairings and rulings, the price history); a finish or printing changes the quote.
   cardDo(kind, value) { if (!cardAct[kind] || !sheet) throw Error('unknown card control ' + kind); cardAct[kind](value); if (['tab', 'finish', 'print'].includes(kind)) cardTabLoads(sheet).catch(() => {}); return json(cardPageModel(sheet)); },
+  // views.js setsPage(), every set: [opts] = {q, family, release, year, sort} as the app last left them. setsLoad starts the
+  // set list's lookup (app.js loadSetIndex; the app pumps it with settle()); setsDo applies a control (setsAct).
+  sets(game, opts) { const o = opts ? JSON.parse(opts) : {}; for (const k of ['q', 'family', 'release', 'year', 'sort']) if (o[k] != null) S.ui.sets[k] = o[k]; return json(setsPageModel()); },
+  setsModel() { return json(setsPageModel()); },
+  setsLoad() { loadSetIndex().catch(() => {}); },
+  setsDo(kind, value) { if (!setsAct[kind]) throw Error('unknown sets control ' + kind); setsAct[kind](value); return json(setsPageModel()); },
+  // views.js setPage(), one set's cards (#set/<code>); setLoad fetches them (app.js loadSet), setDo applies a control (setAct).
+  set(game, code) { setOpen(code); return json(setPageModel()); },
+  setModel() { return S.ui.set.code ? json(setPageModel()) : '{}'; },
+  setLoad() { const st = S.ui.set; loadSetIndex().catch(() => {}); if (!st.loaded && !st.busy) loadSet(st.code, {join: true}).catch(() => {}); },
+  setDo(kind, value) { if (!setAct[kind]) throw Error('unknown set control ' + kind); setAct[kind](value); return json(setPageModel()); },
   home(game) {
     const st = S.state, value = collectionValue(st.collection, S.catalog, st.printings, st.decks);
     return json({game, hero: hero(game), value: homeValueModel({ game, ...value, decks: st.decks.length, history: st.valueHistory }),

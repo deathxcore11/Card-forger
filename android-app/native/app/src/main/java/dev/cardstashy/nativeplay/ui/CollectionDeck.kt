@@ -665,7 +665,7 @@ private fun GroupPick(sel: CollSelect, onPick: (String) -> Unit) {
 
 /** .deck-view-switch: Stacks, Art grid, Names only, Detailed list; 44 square buttons in a glass tray, the chosen one gold. */
 @Composable
-private fun ViewSwitch(views: List<CollView>, onView: (String) -> Unit) {
+internal fun ViewSwitch(views: List<CollView>, onView: (String) -> Unit) {
     if (views.isEmpty()) return
     val shape = RoundedCornerShape(12.dp)
     Row(Modifier.clip(shape).background(GlassFill).border(1.dp, GlassLine, shape).padding(3.dp), horizontalArrangement = Arrangement.spacedBy(2.dp)) {
@@ -748,43 +748,50 @@ private fun Side(c: DeckCard, glyphs: Map<String, SiteSvg>, act: CollectionDeckA
 
 /** ui.js tileChrome: the colour emblems and the set symbol in two glass pills joined by a gold hairline, flush on the art's foot. */
 @Composable
-private fun TileChrome(c: DeckCard, modifier: Modifier) {
-    if (c.chromeEmb.isEmpty() && c.chromeSet == null && c.chromeImp == null) return
+private fun TileChrome(c: DeckCard, modifier: Modifier) = TileDock(c.chromeEmb, c.chromeSet, c.chromeRarity, c.chromeTitle, c.chromeImp, modifier.padding(start = 4.dp, end = 4.dp, bottom = 3.dp))
+
+/** The emblem dock itself ([emb] mana symbols, [set] the set code in [rarity]'s colours, [imp] the importance mark at the right), [h] tall. */
+@Composable
+internal fun TileDock(emb: List<Pair<String, String>>, set: String?, rarity: String, title: String, imp: SiteSvg?, modifier: Modifier, h: Dp = 17.dp) {
+    if (emb.isEmpty() && set == null && imp == null) return
     val pill = Modifier.drawBehind {
         drawRect(Color(0x30000000), topLeft = Offset(0f, 2.dp.toPx()), size = size)
     }
-    Row(modifier.fillMaxWidth().padding(start = 4.dp, end = 4.dp, bottom = 3.dp), verticalAlignment = Alignment.CenterVertically) {
-        val both = c.chromeEmb.isNotEmpty() && c.chromeSet != null
-        if (c.chromeEmb.isNotEmpty()) Row(pill.height(17.dp).clip(RoundedCornerShape(topStart = 10.dp, bottomStart = 10.dp, topEnd = if (both) 0.dp else 10.dp, bottomEnd = if (both) 0.dp else 10.dp))
+    Row(modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
+        val both = emb.isNotEmpty() && set != null
+        if (emb.isNotEmpty()) Row(pill.height(h).clip(RoundedCornerShape(topStart = 10.dp, bottomStart = 10.dp, topEnd = if (both) 0.dp else 10.dp, bottomEnd = if (both) 0.dp else 10.dp))
             .background(Brush.verticalGradient(0f to Color(0xE62F3138), .55f to Color(0xD50E1016), 1f to Color(0xCC0A0C12)))
             .drawWithContent { drawContent(); drawRect(Color(0x24FFFFFF), size = Size(size.width, 1.dp.toPx())) }
             .padding(start = 6.dp, end = 5.dp), horizontalArrangement = Arrangement.spacedBy(2.dp), verticalAlignment = Alignment.CenterVertically) {
-            c.chromeEmb.forEach { (src, alt) ->
+            emb.forEach { (src, alt) ->
                 val p = heroPainter(src.takeIf { it.isNotBlank() }?.let(homeArt))
                 Box(Modifier.size(13.dp).drawBehind { drawCircle(Color.Black.copy(alpha = .55f), size.minDimension / 2, center + Offset(-1.dp.toPx(), 1.dp.toPx())) }.semantics { contentDescription = alt }) {
                     if (p != null) Image(p, null, Modifier.fillMaxSize().clip(CircleShape))
                 }
             }
         }
-        c.chromeSet?.let { code ->
-            Box(pill.height(17.dp).clip(RoundedCornerShape(topStart = if (both) 0.dp else 10.dp, bottomStart = if (both) 0.dp else 10.dp, topEnd = 10.dp, bottomEnd = 10.dp))
+        set?.let { code ->
+            Box(pill.height(h).clip(RoundedCornerShape(topStart = if (both) 0.dp else 10.dp, bottomStart = if (both) 0.dp else 10.dp, topEnd = 10.dp, bottomEnd = 10.dp))
                 .background(Brush.verticalGradient(0f to Color(0xE62F3138), .55f to Color(0xD50E1016), 1f to Color(0xCC0A0C12)))
                 .drawWithContent {
                     drawContent(); drawRect(Color(0x24FFFFFF), size = Size(size.width, 1.dp.toPx()))
                     if (both) drawRect(Brush.verticalGradient(listOf(Color(0x00F4BF58), Color(0xA0F4BF58), Color(0x00F4BF58))), topLeft = Offset(0f, 5.dp.toPx()), size = Size(1.dp.toPx(), size.height - 10.dp.toPx()))
                 }
-                .semantics { contentDescription = c.chromeTitle }.padding(horizontal = 6.dp), contentAlignment = Alignment.Center) {
-                RaritySetIcon(code, c.chromeRarity, 15.dp)
+                .semantics { contentDescription = title }.padding(horizontal = 6.dp), contentAlignment = Alignment.Center) {
+                RaritySetIcon(code, rarity, 15.dp)
             }
         }
-        if (c.chromeImp != null) { Spacer(Modifier.weight(1f)); SiteIcon(c.chromeImp, 16.dp, Ink) }
+        if (imp != null) { Spacer(Modifier.weight(1f)); SiteIcon(imp, 16.dp, Ink) }
     }
 }
 
 /** The card's own picture, and its foil when the deck's printing has one (finish-preview.js), as the Cards tab draws it. */
 @Composable
-private fun DeckPicture(c: DeckCard, modifier: Modifier, shape: androidx.compose.ui.graphics.Shape) {
-    val r = c.r
+private fun DeckPicture(c: DeckCard, modifier: Modifier, shape: androidx.compose.ui.graphics.Shape) = RowPicture(c.r, modifier, shape)
+
+/** A card row's own picture, and its foil when its printing has one (finish-preview.js), as the Cards tab draws it. */
+@Composable
+internal fun RowPicture(r: CollRow, modifier: Modifier, shape: androidx.compose.ui.graphics.Shape) {
     if (r.art == null) { Box(modifier.clip(shape).background(Surface2), contentAlignment = Alignment.Center) { Text(r.fallback.ifBlank { "◇" }, style = sans(10f, 400, Mute)) }; return }
     val context = LocalContext.current
     val data = if (r.print != null) CardData.ready.collectAsState().value.also { if (it == null) CardData.warm(context) } else null
@@ -809,42 +816,53 @@ private val AURAS = mapOf(
  * a sapphire current, holo colours rising, a racing gold glint, fire), the aura around it, the emblem dock on its foot.
  */
 @Composable
-private fun FramedArt(c: DeckCard, reduced: Boolean, modifier: Modifier) {
-    val tier = c.r.tier
-    val framed = tier in setOf("t0", "t1", "t2", "t3", "t4", "t5")
+private fun FramedArt(c: DeckCard, reduced: Boolean, modifier: Modifier) = TierFrame(c.r.tier, reduced, modifier) {
+    BoxWithConstraints(Modifier.fillMaxSize().padding(if (it) 3.75.dp else 0.dp)) {
+        val shape = RoundedCornerShape(percent = 4)
+        DeckPicture(c, Modifier.fillMaxSize(), shape)
+    }
+    TileChrome(c, Modifier.align(Alignment.BottomStart))
+}
+
+/**
+ * A card's price band and aura (the box is the card, 63:88): the band [fw] wide under the content, the aura [blur] soft around it.
+ * [corner] rounds the box (null: the card's own 4.75 % / 3.5 % plus the band). [plain] draws "tn" (no price) as a still silver band,
+ * as the set grid does. [content] gets whether a band is drawn.
+ */
+@Composable
+internal fun TierFrame(tier: String, reduced: Boolean, modifier: Modifier, fw: Dp = 3.75.dp, corner: Dp? = null, blur: Float = 34f, plain: Boolean = false,
+                       content: @Composable BoxScope.(framed: Boolean) -> Unit) {
+    val moving = tier in setOf("t0", "t1", "t2", "t3", "t4", "t5")
+    val framed = moving || plain
     val aura = AURAS[tier] ?: AURAS.getValue("tn")
-    val moving = framed && !reduced && !Motion.still
-    val t = if (moving) rememberInfiniteTransition(label = "frame") else null
+    val animate = moving && !reduced && !Motion.still
+    val t = if (animate) rememberInfiniteTransition(label = "frame") else null
     val period = when (tier) { "t0" -> 10000; "t1" -> 7000; "t2" -> 2200; "t3" -> 4500; "t4" -> 2400; else -> 1600 }
     val phase: State<Float>? = t?.animateFloat(0f, 1f, infiniteRepeatable(tween(period, easing = LinearEasing), RepeatMode.Restart), label = "band")
     val orbit: State<Float>? = if (aura.orbit > 0) t?.animateFloat(0f, 1f, infiniteRepeatable(tween(aura.orbit, easing = LinearEasing), RepeatMode.Restart), label = "orbit") else null
-    val fw = 3.75.dp
+    fun DrawScope.radii() = if (corner != null) corner.toPx().let { it to it } else (size.width * .0475f + fw.toPx()) to (size.height * .035f + fw.toPx())
     Box(modifier.aspectRatio(63f / 88f)
         .drawBehind {
-            val rx = size.width * .0475f + fw.toPx(); val ry = size.height * .035f + fw.toPx()
+            val (rx, ry) = radii()
             // Two pools offset ±12 / ±9 (orbiting a quarter turn at a time for t3 to t5), a halo 1.5× as soft, and the drop under the card.
             val o = orbit?.value ?: 0f
             val k = (o * 4f).toInt() % 4; val f = o * 4f - (o * 4f).toInt()
             val pts = listOf(Offset(-12f, -9f), Offset(12f, -9f), Offset(12f, 9f), Offset(-12f, 9f))
             val p1 = lerpOffset(pts[k], pts[(k + 1) % 4], f); val p2 = Offset(-p1.x, -p1.y)
             val halo = if (aura.orbit > 0 && k % 2 == 1) aura.b else aura.a
-            auraShadow(aura.a.copy(alpha = aura.mix), 34f, p1, -6f, rx, ry)
-            auraShadow(aura.b.copy(alpha = aura.mix), 34f, p2, -6f, rx, ry)
-            auraShadow(halo.copy(alpha = .4f), 51f, Offset.Zero, -5f, rx, ry)
+            auraShadow(aura.a.copy(alpha = aura.mix), blur, p1, -6f, rx, ry)
+            auraShadow(aura.b.copy(alpha = aura.mix), blur, p2, -6f, rx, ry)
+            auraShadow(halo.copy(alpha = .4f), blur * 1.5f, Offset.Zero, -5f, rx, ry)
             auraShadow(Color(0xCC000000), 24f, Offset(0f, 10f), -14f, rx, ry)
         }
         .drawWithContent {
-            val rx = size.width * .0475f + fw.toPx(); val ry = size.height * .035f + fw.toPx()
+            val (rx, ry) = radii()
             val outer = Path().apply { addRoundRect(RoundRect(Rect(Offset.Zero, size), CornerRadius(rx, ry))) }
-            if (framed) clipPath(outer) { drawBand(tier, phase?.value ?: 0f) }
+            if (moving) clipPath(outer) { drawBand(tier, phase?.value ?: 0f) }
+            else if (plain) clipPath(outer) { drawRect(Brush.linearGradient(listOf(Color(0xFFA7AFB8), Color(0xFF6F7780)), start = Offset(size.width * .33f, 0f), end = Offset(size.width * .67f, size.height))) }
             drawContent()
         }) {
-        val inner = Modifier.fillMaxSize().padding(if (framed) fw else 0.dp)
-        BoxWithConstraints(inner) {
-            val shape = RoundedCornerShape(percent = 4)
-            DeckPicture(c, Modifier.fillMaxSize(), shape)
-        }
-        TileChrome(c, Modifier.align(Alignment.BottomStart))
+        content(framed)
     }
 }
 
