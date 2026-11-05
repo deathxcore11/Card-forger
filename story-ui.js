@@ -277,6 +277,8 @@ export const LESSONS = {
   'Trample': 'Trample pushes extra damage through a blocker to the player. Chump blocks leak.',
   'Ward': 'Ward taxes you whenever you target it. Pay the cost or the spell is countered.',
   'Double strike': 'Double strike deals damage twice, first-strike and regular. Boosts are doubled too.',
+  'Job select': 'Job select: when this equipment enters, it makes a 1/1 Hero and attaches itself. A new job for a new body.',
+  'Summons': 'Summons are Saga creatures. They arrive, act over three turns, then leave. Time them before the big attack.',
   'Playing under a lock': 'A lock stops cards from untapping or moving. Break it, or win with what\'s already in play.',
 };
 // Every Story deck says what it is (Randall, 2 Nov 2026): Historical Exact, Historical Tribute or
