@@ -183,6 +183,23 @@ object CollectionEngine {
     /** The open set page as a model again; empty when none is open. */
     suspend fun setModel(): JsonObject = on { q -> JsonParser.parseString(q.evaluate(SET_MODEL) as String).asJsonObject }
 
+    /**
+     * Open Pack on the open set page (app.js A.openSetPack): starts the draw (the set's booster sheets, then the pack), read with
+     * [settle] and [packModel]. Each opening draws from a fresh secure seed (pack-preview.js packRandom: never a fixed or saved seed).
+     */
+    suspend fun packOpen(game: String): JsonObject = on { q ->
+        q.evaluate("__host.seed(${java.security.SecureRandom().nextInt()})")
+        JsonParser.parseString(q.evaluate("Collection.packOpen(${str(game)})") as String).asJsonObject
+    }
+    const val PACK_MODEL = "Collection.packModel()"
+    suspend fun packModel(): JsonObject = on { q -> JsonParser.parseString(q.evaluate(PACK_MODEL) as String).asJsonObject }
+    /** A new sealed pack from the same set ("Open a new pack"). */
+    suspend fun packAgain(): JsonObject = on { q ->
+        q.evaluate("__host.seed(${java.security.SecureRandom().nextInt()})")
+        JsonParser.parseString(q.evaluate("Collection.packAgain()") as String).asJsonObject
+    }
+    suspend fun packClose() = on { q -> q.evaluate("Collection.packClose()"); Unit }
+
     /** search-hints.js: the search field's prompt and the names and questions it fades through. */
     suspend fun hints(game: String): JsonObject = on { q -> JsonParser.parseString(q.evaluate("Collection.hints(${str(game)})") as String).asJsonObject }
 

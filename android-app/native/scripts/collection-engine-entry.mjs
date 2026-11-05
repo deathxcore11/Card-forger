@@ -29,7 +29,14 @@ import {loadSharedHistory} from 'WEB/shared-history.js';
 import {playedAlongside} from 'WEB/guide.js';
 import {mtgPairQueries, rankPairs, edhPop} from 'WEB/pairing.js';
 import {ICON} from 'WEB/icons.js';
-import {registerTcg, tcgSets as tcgSetsView, tcgSet as tcgSetView, ui as tcgUi, cardOf as tcgCardOf} from 'WEB/tcg.js';
+import {registerTcg, tcgSets as tcgSetsView, tcgSet as tcgSetView, ui as tcgUi, cardOf as tcgCardOf, SOURCES as tcgSources} from 'WEB/tcg.js';
+import {samplePack, packSize, packRarity, packFinishes, packPrice, trustedPackPrice, packRevealHaptic, packFinishLabel, packNeedsHydration, godPackText, collectorText, packRandom, ptcgSetRarities} from 'WEB/pack-preview.js';
+import {loadMtgBooster, mtgBoosterCards, drawMtgBooster, mtgGodPackPicks, GOD_PACK_ODDS as MTG_GOD_ODDS} from 'WEB/mtg-boosters.js';
+import {COLLECTOR_ODDS, collectorPicks} from 'WEB/play-econ-rules.js';
+import {TIERS, priceTier} from 'WEB/tier.js';
+import {packEligible, setImageUrl} from 'WEB/set-experience.js';
+import {cardImage} from 'WEB/ui.js';
+import {massEntryUrl} from 'WEB/buy.js';
 
 // app.js:193-198, verbatim.
 const stripCache = (s) => {
@@ -417,11 +424,18 @@ const still = ctx => S.ui.sheetCtx === ctx;
 // app.js A.card (3554-3615): [o] = {name, entry, deck}, as the tapped tile's data-name / data-entry / data-deck.
 function cardOpen(o) {
   const name = String(o.name || ''), entryId = String(o.entry || ''), deckId = o.deck ? String(o.deck) : null, setI = o.setI == null || o.setI === '' ? null : Number(o.setI);
-  const as = JSON.stringify([name, entryId, deckId, setI, o.setFinish || '']);
+  const as = JSON.stringify([name, entryId, deckId, setI, o.setFinish || '', o.pack ?? '', o.pack != null ? pack?.stamp : '']);
   if (sheet && sheet.openedAs === as && S.ui.sheetCtx === sheet) return sheet;
   const ctx = {type: 'card', name, entryId, deckId, random: false, openedAs: as};
   sheet = S.ui.sheetCtx = ctx;
   // A set page's tile (data-set-i, data-set-finish): that printing, priced in the finish the page shows (A.card).
+  // A pulled card from Open Pack (pack-preview.js onDetails → A.card with t.printing): its own printing, in the finish it came out in.
+  if (o.pack != null && o.pack !== '') {
+    const print = pack?.picks?.[Number(o.pack)];
+    if (print?.id && key(print.name) === key(name) && typeof print.set === 'string') { ctx.print = print; ctx.setId = print.set; ctx.priceFinish = selectedFinish('mtg', print, o.setFinish || ''); }
+    else { ctx.ownedNotice = 'This pack changed. Open the card again.'; ctx.blocked = true; }
+    return ctx;
+  }
   if (setI != null) {
     const print = S.ui.set.cards[setI];
     if (print?.id && key(print.name) === key(name) && print.set === S.ui.set.code) { ctx.print = print; ctx.setId = print.set; ctx.priceFinish = selectedFinish('mtg', print, o.setFinish || ''); }
@@ -983,6 +997,79 @@ function cardPageModel(ctx) {
 
 let job = 0, status = {busy: false, step: '', error: null};
 const json = v => JSON.stringify(v);
+
+// Open Pack (the set page's simulator): app.js A.openSetPack and pack-preview.js openPackPreview's draw, its fill and the
+// reads each pulled card's reveal is made of (tierOf, feelOf, packFinishes), without the dialog, which the app draws.
+// Nothing here touches the account: the preview adds nothing to the collection.
+const PACK_FEELS = ['pack-reveal', 'pack-tier-1', 'pack-tier-2', 'pack-tier-3', 'pack-tier-4', 'pack-tier-5'];
+const PACK_RARITY_FEEL = ['pack-reveal', 'pack-reveal', 'pack-tier-2', 'pack-tier-3', 'pack-tier-4'];
+let pack = null;
+const packScreen = G => G === 'mtg' ? S.ui.set : tcgUi(G).set;
+const packRelease = G => G === 'mtg' ? S.ui.set.code : tcgUi(G).set.id;
+async function packStart(P) {
+  const game = P.game, screen = packScreen(game), set = screen.info, release = packRelease(game);
+  if (!packEligible(game, set) || screen.busy || screen.error || !screen.loaded) throw Error('Wait for this set to finish loading.');
+  const isCurrent = () => pack === P && packRelease(game) === release;
+  let cards = screen.cards;
+  // Pull rates need every Pokémon card's rarity; summaries without one are filled from TCGdex first.
+  if (game === 'ptcg' && cards.some(c => !c.rarity)) { const map = await ptcgSetRarities(screen.id, set?.cardCount?.total || set?.count || cards.length).catch(() => new Map()); if (!isCurrent()) return false; cards = cards.map(c => c.rarity || !map.has(String(c.id)) ? c : {...c, rarity: map.get(String(c.id))}); }
+  // Magic packs use the set's real booster sheets when they are baked (all cards they can give are fetched once); otherwise the era's pack table.
+  let booster = null;
+  if (game === 'mtg') { const data = await loadMtgBooster(screen.code); if (!isCurrent()) return false; if (data) { const map = await mtgBoosterCards(data, cards).catch(() => null); if (!isCurrent()) return false; if (map?.size) booster = {data, cards: map}; } }
+  // openPackPreview: only a Yu-Gi-Oh! card keeps the release it was listed under (its printing), with the pack's date standing in.
+  if (game !== 'ygo') cards = cards.map(({setContext, ...c}) => c);
+  const inRelease = c => c?.setContext?.releaseId ? {...c, setContext: {...c.setContext, game: 'ygo', cardId: c.id, status: 'resolved', date: c.setContext.date || set?.date || ''}} : c;
+  if (game === 'ygo') cards = cards.map(inRelease);
+  Object.assign(P, {set, cards, booster, release, size: packSize(game, set), complete: game === 'mtg' ? screen.cards.length === set.card_count : screen.contents?.completeness === 'complete'});
+  return true;
+}
+// openPackPreview's draw().
+function packDraw(P) {
+  const {game, cards, booster, size, set} = P;
+  const collectorRoll = p => game === 'mtg' && packRandom() < COLLECTOR_ODDS ? collectorPicks(p) : p;
+  if (!booster) return collectorRoll(samplePack(game, cards, size, packRandom, set));
+  const p = collectorRoll(drawMtgBooster(booster.data, booster.cards, packRandom));
+  return packRandom() < MTG_GOD_ODDS[p.collector ? 'collector' : 'regular'] && mtgGodPackPicks(booster.data, booster.cards, p.length, packRandom) || p;
+}
+// openPackPreview's fill(): pulled shiny slots load their full card in the background and pick up their holo before they are seen.
+function packFill(P) {
+  const game = P.game, hydrate = game === 'ptcg' ? c => tcgSources.ptcg.get(String(c.id), {prices: true}) : null;
+  if (!hydrate) return;
+  const n = ++P.deal, now = P.picks;
+  now.forEach((c, i) => {
+    if (!packNeedsHydration(game, c, false)) return;
+    Promise.resolve().then(() => hydrate(c)).then(full => {
+      if (pack !== P || n !== P.deal || !full || String(full.id) !== String(c.id)) return;
+      const {setContext, ...rest} = full; now[i] = {...c, ...rest, name: c.name, rarity: c.rarity || full.rarity, packSlot: c.packSlot}; P.ctxs[i] = packFinishes(game, [now[i]])[0]; P.stamp++;
+    }).catch(() => {});
+  });
+}
+function packDeal(P) { P.picks = packDraw(P); if (!P.picks.length) throw Error('Load this set’s cards first.'); P.ctxs = packFinishes(P.game, P.picks); P.stamp++; packFill(P); }
+// One pulled card as the reveal reads it: its picture, rarity and finish, its price tier (tierOf: the collection's border colours,
+// unpriced grey) and the size of its flip (feelOf: its trusted price or its rarity, whichever is bigger).
+function packPickModel(P, i) {
+  const game = P.game, c = P.picks[i], pulled = P.ctxs[i] || {}, rarity = packRarity(game, c), price = packPrice(game, c, pulled), trusted = trustedPackPrice(game, c, pulled);
+  const byPrice = packRevealHaptic(trusted), byRarity = PACK_RARITY_FEEL[Math.min(4, rarity.rank)];
+  const feel = PACK_FEELS.indexOf(byRarity) > PACK_FEELS.indexOf(byPrice) ? byRarity : byPrice, tier = price ? TIERS[priceTier(price)] : null;
+  const art = game === 'mtg' ? cardImage(c, 'normal') : c.imageLarge || c.image || '';
+  // A Magic pull that is one of this set page's cards opens as that tile does (data-set-i); a bonus-sheet card opens its own printing.
+  const setI = game === 'mtg' && c.set === S.ui.set.code ? S.ui.set.cards.findIndex(x => x.id === c.id) : -1;
+  return {id: String(c.id ?? ''), name: c.name || '', image: abs(setImageUrl(art)), rarity: rarity.label, rank: rarity.rank,
+    finish: game === 'mtg' ? pulled.finish || '' : pulled.priceFinish || '', finishLabel: packFinishLabel(game, pulled, rarity.label),
+    tier: tier ? tier.key : 'tn', tierColor: tier ? tier.color : '#8b939c', level: PACK_FEELS.indexOf(feel),
+    worth: trusted || price || 0, setI, card: game === 'mtg' ? c : null};
+}
+function packModel() {
+  const P = pack; if (!P) return {};
+  const {game, set} = P, picks = P.picks || [], lines = picks.map(c => `1 ${c.name}`), n = lines.reduce((a, l) => a + (parseInt(l, 10) || 1), 0);
+  return {game, code: game === 'mtg' ? String(set?.code || P.release || '') : String(P.release ?? ''), name: set?.name || '', busy: !!P.busy, error: P.error || '', stamp: P.stamp,
+    note: P.booster ? 'Free preview drawn from this set’s real booster sheets and pull rates (MTGJSON). Nothing is added to your collection.' : 'Free preview with approximate pull rates, not a real booster. Nothing is added to your collection.',
+    done: picks.godPack ? godPackText(game) : picks.collector ? collectorText(picks) : '',
+    picks: picks.map((_, i) => packPickModel(P, i)),
+    // buy.js buyOnTcgplayer(game, lines, {what: 'preview cards; check exact printings'}): the list is copied, then TCGplayer's Mass Entry.
+    shop: {lines, title: 'Shopping list copied', text: `${n} preview cards; check exact printings (${lines.length} line${lines.length === 1 ? '' : 's'}) are on your clipboard. On TCGplayer, paste them into Mass Entry and tap Add to cart.`,
+      failTitle: 'Couldn\'t copy', failText: 'Your browser blocked the clipboard. On TCGplayer, open Mass Entry and type the list, or copy it from the deck page.', ok: 'Open TCGplayer', cancel: 'Done', url: massEntryUrl(game)}};
+}
 globalThis.Collection = {
   // The account's workspace row data (cloud.js), normalized as app.js loads it; [catalogJson] is the app's saved catalog.
   load(workspaceJson, catalogJson) {
@@ -1073,6 +1160,17 @@ globalThis.Collection = {
     act[kind](value); return json(setPageModel(setGame));
   },
   // tcg.js tcgSet's raw page, for checking the model against it.
+  // Open Pack on the open set page (A.openSetPack): packOpen starts the draw (the booster sheets, then the pack; the app pumps it
+  // with settle() and reads packModel), packAgain opens a new sealed pack from the same set, packClose drops it.
+  packOpen(game) {
+    const G = game || 'mtg'; if (G === 'mtg') mtgFocus(); else tcgFocus(G, 'set', S.ui.tsetId);
+    const P = pack = {game: G, busy: true, error: '', deal: 0, stamp: 0};
+    packStart(P).then(ok => { if (!ok || pack !== P) return; packDeal(P); P.busy = false; }, e => { if (pack !== P) return; P.busy = false; P.error = e?.message || 'Could not open this preview.'; });
+    return json(packModel());
+  },
+  packModel() { return json(packModel()); },
+  packAgain() { const P = pack; if (!P || P.busy || !P.cards) return json(packModel()); packDeal(P); return json(packModel()); },
+  packClose() { pack = null; },
   setHtml() { return setGame === 'mtg' ? setView() : tcgSetView(); },
   setsHtml() { return setsGame === 'mtg' ? setsView() : tcgSetsView(); },
   home(game) {

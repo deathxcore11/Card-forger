@@ -322,6 +322,41 @@ class CollectionEngineTest {
         assertEquals("Magic sets", CollectionEngine.setsModel()["title"].asString)
     }
 
+    /** app.js A.openSetPack → pack-preview.js's draw from Duskmourn's real booster sheets, a new pack, and a pulled card's page. */
+    @Test fun openPack() = runBlocking {
+        assumeTrue(bundle.isFile)
+        CollectionEngine.initFrom(bundle)
+        fourDecks()
+        CollectionEngine.set("mtg", "dsk")
+        CollectionEngine.setLoad()
+        CollectionEngine.settle(120_000)
+        CollectionEngine.packOpen("mtg")
+        CollectionEngine.settle(120_000)
+        val p = CollectionEngine.packModel()
+        val picks = p["picks"].asJsonArray.map { it.asJsonObject }
+        println("PACK ${p["name"]} ${p["note"]} ${picks.map { it["rarity"].asString.take(1) + it["tier"].asString + it["level"].asInt + (if (it["finish"].asString.isNotEmpty()) "*" else "") }}".take(900))
+        assertEquals("", p["error"].asString)
+        assertEquals("dsk", p["code"].asString)
+        assertTrue(p["note"].asString.contains("real booster sheets"))
+        assertEquals(14, picks.size)
+        assertTrue(picks.all { it["image"].asString.startsWith("https://") && it["level"].asInt in 0..5 && it["tier"].asString.matches(Regex("t[0-5]|tn")) })
+        assertTrue(picks.last()["rank"].asInt >= 2)
+        assertTrue(picks.any { it["finish"].asString == "foil" && it["finishLabel"].asString == "Foil" })
+        assertEquals(14, p["shop"].asJsonObject["lines"].asJsonArray.size())
+        assertTrue(p["shop"].asJsonObject["url"].asString.startsWith("https://www.tcgplayer.com/massentry"))
+        // A new sealed pack from the same set, drawn afresh.
+        val q = CollectionEngine.packAgain()
+        assertEquals(14, q["picks"].asJsonArray.size())
+        // A pulled card opens its card page in its own printing.
+        val last = q["picks"].asJsonArray.last().asJsonObject
+        val o = JsonObject().apply { addProperty("name", last["name"].asString); addProperty("pack", 13); addProperty("setFinish", last["finish"].asString) }
+        val c = CollectionEngine.card("mtg", o)
+        println("PACK CARD ${c.toString().take(300)}")
+        assertEquals(last["name"].asString, c["name"].asString)
+        assertTrue(c["notice"]?.isJsonNull != false || c["notice"].asString.isEmpty())
+        CollectionEngine.packClose()
+    }
+
     private suspend fun fourDecks() {
         val prints = JsonParser.parseString(javaClass.classLoader!!.getResource("collection/printings.json")!!.readText()).asJsonArray.map { it.asJsonObject }
         val lots = JsonArray(); val printings = JsonObject(); val catalog = JsonObject()

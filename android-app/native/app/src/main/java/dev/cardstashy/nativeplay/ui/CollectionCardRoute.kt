@@ -19,7 +19,9 @@ import kotlinx.coroutines.withContext
  */
 data class CardOpen(val name: String, val entry: String = "", val deck: String = "", val page: String, val tile: String,
                     /** A set page's tile: its data-set-i (that printing) and data-set-finish (the finish the page prices). */
-                    val setI: Int? = null, val setFinish: String = "")
+                    val setI: Int? = null, val setFinish: String = "",
+                    /** A card pulled in Open Pack that isn't one of the set page's (another sheet's printing): its place in the pack. */
+                    val pack: Int? = null)
 
 private fun css(v: String) = v.replace("\\", "\\\\").replace("\"", "\\\"")
 
@@ -38,7 +40,7 @@ fun CollectionCardHost(open: CardOpen, onClose: () -> Unit, onOpen: (CardOpen) -
     var asked by remember(open) { mutableStateOf<Pair<String, String>?>(null) }
     LaunchedEffect(open) {
         runCatching {
-            val o = JsonObject().apply { addProperty("name", open.name); addProperty("entry", open.entry); addProperty("deck", open.deck); open.setI?.let { addProperty("setI", it); addProperty("setFinish", open.setFinish) } }
+            val o = JsonObject().apply { addProperty("name", open.name); addProperty("entry", open.entry); addProperty("deck", open.deck); open.setI?.let { addProperty("setI", it); addProperty("setFinish", open.setFinish) }; open.pack?.let { addProperty("pack", it); addProperty("setFinish", open.setFinish) } }
             model = withContext(Dispatchers.Default) { CollectionCardModel.parse(CollectionEngine.card("mtg", o)) }
             CollectionEngine.cardLoad()
             CollectionEngine.settle(30_000, CollectionEngine.CARD_MODEL) { j -> if (j.size() > 0) model = CollectionCardModel.parse(j) }
@@ -65,7 +67,7 @@ fun CollectionCardHost(open: CardOpen, onClose: () -> Unit, onOpen: (CardOpen) -
                 if (uri.host?.endsWith("cardstashy.com") == true) web(p.href, null)
                 else runCatching { context.startActivity(android.content.Intent(android.content.Intent.ACTION_VIEW, uri)) }
             }
-            p.act == "card" && !d["name"].isNullOrBlank() -> onOpen(open.copy(name = d.getValue("name"), entry = "", setI = null, setFinish = ""))
+            p.act == "card" && !d["name"].isNullOrBlank() -> onOpen(open.copy(name = d.getValue("name"), entry = "", setI = null, setFinish = "", pack = null))
             p.act == "go" && !d["to"].isNullOrBlank() -> web("https://cardstashy.com/" + d.getValue("to"), null)
             p.act == "set" && !d["code"].isNullOrBlank() -> onSet?.invoke(d.getValue("code").lowercase()) ?: web("https://cardstashy.com/#set/" + android.net.Uri.encode(d.getValue("code").lowercase()), null)
             p.act == "magicVersionsMore" -> asked = "more" to ""
@@ -85,7 +87,7 @@ fun CollectionCardHost(open: CardOpen, onClose: () -> Unit, onOpen: (CardOpen) -
         finish = { f -> asked = "finish" to f },
         print = { i -> asked = "print" to i.toString() },
         face = { asked = "face" to "" },
-        card = { n -> onOpen(open.copy(name = n, entry = "", setI = null, setFinish = "")) },
+        card = { n -> onOpen(open.copy(name = n, entry = "", setI = null, setFinish = "", pack = null)) },
         rule = { key -> site("[data-act=\"ruleHint\"][data-rule=\"${css(key)}\"]") },
         profile = {
             val s = m.shown

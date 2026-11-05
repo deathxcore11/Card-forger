@@ -54,13 +54,15 @@ import kotlin.math.sin
 object Motion { @Volatile var still = false; /** Frame used when still: cycle 0..1 and light angle. */ var cycle = .5f; var light = .7f; var breathe = .5f }
 
 @Composable
-fun BrandMark(markSize: Dp, modifier: Modifier = Modifier, onClick: (() -> Unit)? = null) {
+fun BrandMark(markSize: Dp, modifier: Modifier = Modifier, onClick: (() -> Unit)? = null,
+              /** brand.js brandStaticMark: the mark at rest (every card in the fan, no lift, breath or sheen), as printed on a pack. */
+              static: Boolean = false) {
     val context = LocalContext.current
     val layers = listOf("left", "center", "right").associateWith { name ->
         produceState<ImageBitmap?>(AssetImages.cached("play/brand-$name.webp@384")) { value = AssetImages.load(context, "play/brand-$name.webp", maxWidth = 384) }
     }
-    val still = Motion.still
-    var breathe = Motion.breathe; var cycle = Motion.cycle; var drift = Motion.light
+    val still = Motion.still || static
+    var breathe = if (static) .444f else Motion.breathe; var cycle = if (static) .42f else Motion.cycle; var drift = if (static) 0f else Motion.light
     if (!still) {
         val t = rememberInfiniteTransition(label = "brand")
         // stashy-breathe: 4.8 s, up 1 px and 2.5 % larger at the middle.

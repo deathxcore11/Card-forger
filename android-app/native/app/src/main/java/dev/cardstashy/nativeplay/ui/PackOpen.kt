@@ -86,6 +86,8 @@ import androidx.compose.ui.graphics.TransformOrigin
 import androidx.compose.ui.graphics.drawscope.DrawScope
 import androidx.compose.ui.graphics.drawscope.Stroke
 import androidx.compose.ui.graphics.drawscope.clipRect
+import androidx.compose.ui.graphics.drawscope.clipPath
+import androidx.compose.ui.graphics.drawscope.translate
 import androidx.compose.ui.graphics.drawscope.drawIntoCanvas
 import androidx.compose.ui.graphics.drawscope.rotate
 import androidx.compose.ui.graphics.graphicsLayer
@@ -136,20 +138,49 @@ import kotlin.math.sin
  * the topmost layer first, and the predictive Back gesture shrinks the pack as the finger pulls.
  */
 
-/** One pulled card, from the open route's pack.contents. */
-class Pull(val id: String, val name: String, val rarity: String, val image: String, val art: String, val foil: Boolean) {
+/** One pulled card, from the open route's pack.contents (Play), or from the set page's Open Pack simulator ([sim]). */
+class Pull(val id: String, val name: String, val rarity: String, val image: String, val art: String, val foil: Boolean, val sim: PullSim? = null) {
     /** rarityTier('mtg'): common 0, uncommon 1, rare 2, mythic/special/bonus 3. */
-    val rank: Int get() = when (rarity.lowercase()) { "uncommon" -> 1; "rare" -> 2; "mythic", "special", "bonus" -> 3; else -> 0 }
+    val rank: Int get() = sim?.rank ?: when (rarity.lowercase()) { "uncommon" -> 1; "rare" -> 2; "mythic", "special", "bonus" -> 3; else -> 0 }
     /** RARITY_FEEL → FEELS index: the size of the reveal. */
-    val level: Int get() = intArrayOf(0, 0, 2, 3, 4)[min(4, rank)]
+    val level: Int get() = sim?.level ?: intArrayOf(0, 0, 2, 3, 4)[min(4, rank)]
     /** PLAY_TIER: the frame and glow colour once face up. */
-    val tier: Color get() = TIER_COLORS[intArrayOf(0, 1, 3, 4, 5)[min(4, rank)]]
+    val tier: Color get() = sim?.tierColor ?: TIER_COLORS[intArrayOf(0, 1, 3, 4, 5)[min(4, rank)]]
 }
+
+/**
+ * A simulator pull as pack-preview.js reads it (variant ''): its price tier (tierOf, the collection's border colours, unpriced
+ * 'tn'), the size of its flip (feelOf: its trusted price or its rarity, whichever is bigger), the finish it came out in and its
+ * label beside the rarity (packFinishLabel), what it is worth for the deal's rumble, and the printing itself for its foil.
+ */
+class PullSim(val rank: Int, val level: Int, val tier: String, val tierColor: Color, val finish: String, val finishLabel: String, val worth: Double,
+              /** Its place in the set page's cards (data-set-i), or -1 for a card from another sheet. */
+              val setI: Int, val card: JsonObject?)
+
+/** buy.js buyOnTcgplayer for the simulator's pack: the list it copies and the ask that follows. */
+class PackShop(val lines: List<String>, val title: String, val text: String, val failTitle: String, val failText: String, val ok: String, val cancel: String, val url: String)
 
 /** tier.js TIERS: grey, green, blue, purple, gold, orange. */
 val TIER_COLORS = listOf(0xFF9AA3AD, 0xFF4FD18B, 0xFF4AA3FF, 0xFFB46CFF, 0xFFFFC93C, 0xFFFF7A1A).map { Color(it) }
 
-class PackResult(val set: String, val name: String, val pulls: List<Pull>, val note: String, val done: String)
+class PackResult(val set: String, val name: String, val pulls: List<Pull>, val note: String, val done: String,
+                 /** The set page's Open Pack simulator (not Play): its Shop list. */
+                 val shop: PackShop? = null)
+
+/** Collection.packModel(): the simulator's pack, drawn by the site's own code (pack-preview.js / mtg-boosters.js). */
+fun simPack(j: JsonObject): PackResult {
+    fun JsonObject.s(k: String) = get(k)?.takeIf { it.isJsonPrimitive }?.asString ?: ""
+    fun JsonObject.i(k: String) = get(k)?.takeIf { it.isJsonPrimitive }?.asInt ?: 0
+    fun JsonObject.d(k: String) = get(k)?.takeIf { it.isJsonPrimitive }?.asDouble ?: 0.0
+    val pulls = j.getAsJsonArray("picks")?.mapNotNull { it as? JsonObject }.orEmpty().map { c ->
+        val color = runCatching { Color(android.graphics.Color.parseColor(c.s("tierColor"))) }.getOrDefault(Color(0xFF8B939C))
+        Pull(c.s("id"), c.s("name"), c.s("rarity"), c.s("image"), "", c.s("finish").isNotBlank(),
+            PullSim(c.i("rank"), c.i("level").coerceIn(0, 5), c.s("tier"), color, c.s("finish"), c.s("finishLabel"), c.d("worth"), c.get("setI")?.takeIf { it.isJsonPrimitive }?.asInt ?: -1, c.get("card") as? JsonObject))
+    }
+    val shop = j.getAsJsonObject("shop")?.let { o -> PackShop(o.getAsJsonArray("lines")?.mapNotNull { it.takeIf { e -> e.isJsonPrimitive }?.asString }.orEmpty(),
+        o.s("title"), o.s("text"), o.s("failTitle"), o.s("failText"), o.s("ok"), o.s("cancel"), o.s("url")) }
+    return PackResult(j.s("code"), j.s("name"), pulls, j.s("note"), j.s("done"), shop ?: PackShop(emptyList(), "", "", "", "", "", "", ""))
+}
 /** The pack shown while the server rolls it (no cards yet). */
 const val LOADING = "\u0000loading"
 fun loadingPack(set: String, name: String) = PackResult(set, name, emptyList(), LOADING, "")
@@ -223,7 +254,9 @@ private fun Color.rich(): Color { val hsv = FloatArray(3); android.graphics.Colo
  */
 @Composable
 fun PackOpening(first: PackResult, onNext: (suspend () -> PackResult?)?, onClose: () -> Unit,
-                initial: PackStage = PackStage.SEALED, revealedAtStart: Set<Int> = emptySet(), focusAtStart: Int = 0, inspectAtStart: Int? = null) {
+                initial: PackStage = PackStage.SEALED, revealedAtStart: Set<Int> = emptySet(), focusAtStart: Int = 0, inspectAtStart: Int? = null,
+                /** The simulator's onDetails: a revealed card opens its card page over the pack, which waits underneath. */
+                onInspect: ((Int, Pull) -> Unit)? = null) {
     val context = LocalContext.current
     val view = LocalView.current
     remember { PackSfx.warm(context); 0 }
@@ -247,6 +280,7 @@ fun PackOpening(first: PackResult, onNext: (suspend () -> PackResult?)?, onClose
     var tiltHint by remember { mutableStateOf(false) }
     var inspecting by remember { mutableStateOf<Pull?>(inspectAtStart?.let { first.pulls.getOrNull(it) }) }
     var backPull by remember { mutableFloatStateOf(0f) }
+    var shopAsk by remember { mutableStateOf(false) }
     // Randall 4 Nov 17:52Z: the pack is on screen the moment it is tapped and gathers power while the server rolls it;
     // a tap while it is still sealed by the wait tears it the instant the cards arrive.
     var tearQueued by remember { mutableStateOf(false) }
@@ -360,8 +394,9 @@ fun PackOpening(first: PackResult, onNext: (suspend () -> PackResult?)?, onClose
                     onDealt = { i, best -> if (best) { feel("pack-rumble"); PackSfx.play("PACK-019", .7f); PackSfx.play("PACK-005", .55f, .94f) } else { PackSfx.play("PACK-005", .55f, 1f + i * .02f); feel("pack-deal") } },
                     onShow = { i, touch -> show(i, touch) },
                     onReveal = { reveal(it) },
-                    onFocusTap = { if (focus in revealed) inspecting = pack.pulls[focus] else reveal(focus) },
-                    onHold = { i -> if (i in revealed) { feel("pack-land"); inspecting = pack.pulls[i] } },
+                    onFocusTap = { if (focus in revealed) { if (onInspect != null) onInspect(focus, pack.pulls[focus]) else inspecting = pack.pulls[focus] } else reveal(focus) },
+                    onHold = { i -> if (i in revealed) { feel("pack-land"); if (onInspect != null) onInspect(i, pack.pulls[i]) else inspecting = pack.pulls[i] } },
+                    onShop = { shopAsk = true },
                     onSwipe = ::swipe,
                     onFlungDone = { flung = null },
                     onRevealAll = {
@@ -373,6 +408,17 @@ fun PackOpening(first: PackResult, onNext: (suspend () -> PackResult?)?, onClose
                     onNext = if (onNext != null) ::next else null, busy = busy, drift = { drift.value })
             }
             Text(status, Modifier.fillMaxWidth().heightIn(min = 16.dp).padding(top = 2.dp), style = TextStyle(fontFamily = Site.Body.fontFamily, fontSize = 11.5.sp, lineHeight = 17.sp, color = Site.Gold, textAlign = TextAlign.Center))
+        }
+        // buy.js buyOnTcgplayer: the pack's list goes to the clipboard, then the ask: Open TCGplayer (Mass Entry) or Done.
+        if (shopAsk) pack.shop?.let { sh ->
+            val copied = remember { runCatching { (context.getSystemService(Context.CLIPBOARD_SERVICE) as android.content.ClipboardManager)
+                .setPrimaryClip(android.content.ClipData.newPlainText("Shopping list", sh.lines.joinToString("\n"))); true }.getOrDefault(false) }
+            androidx.compose.material3.AlertDialog(onDismissRequest = { shopAsk = false }, containerColor = Site.Surface2,
+                title = { Text(if (copied) sh.title else sh.failTitle, style = TextStyle(fontFamily = Site.Body.fontFamily, fontWeight = FontWeight.Bold, fontSize = 17.sp, color = Site.Text)) },
+                text = { Text(if (copied) sh.text else sh.failText, style = TextStyle(fontFamily = Site.Body.fontFamily, fontSize = 14.sp, lineHeight = 20.sp, color = Site.Muted)) },
+                confirmButton = { androidx.compose.material3.TextButton({ shopAsk = false; runCatching { context.startActivity(android.content.Intent(android.content.Intent.ACTION_VIEW, android.net.Uri.parse(sh.url))) } }) {
+                    Text(sh.ok, style = TextStyle(fontFamily = Site.Body.fontFamily, fontWeight = FontWeight.Bold, fontSize = 15.sp, color = Site.Gold)) } },
+                dismissButton = { androidx.compose.material3.TextButton({ shopAsk = false }) { Text(sh.cancel, style = TextStyle(fontFamily = Site.Body.fontFamily, fontWeight = FontWeight.SemiBold, fontSize = 15.sp, color = Site.Muted)) } })
         }
         // pack-preview.js inspect(): a revealed card opens the Play card view over the pack (onDetails); closing it brings the pack back.
         inspecting?.let { p ->
@@ -425,7 +471,14 @@ private fun packHeight(w: Dp, h: Dp) = minOf(w * .56f * (734f / 400f), 250.dp * 
 
 /** The pack as drawn: the site's wrapper width, at the painted wrapper's own shape, so the seam, the strip and the torn ghost all sit on the picture.
  *  A set with template art is the template's 2:3 (sets-ui.css .pack-wrapper.pack-tpl). */
-private fun packSize(set: String, w: Dp, h: Dp, template: Boolean = false): Pair<Dp, Dp> {
+private fun packSize(set: String, w: Dp, h: Dp, template: Boolean = false, sim: Boolean = false, vw: Dp = w, vh: Dp = h): Pair<Dp, Dp> {
+    if (sim) {
+        // The simulator as sets-ui.css sizes it today: .pack-wrapper's height is min(56vw · 734/400, 250px · 734/400, 100dvh − 180px)
+        // and its width follows its shape (the template's 2:3, a painted wrapper's own, the product photo's 400:734).
+        val ph = minOf(vw * .56f * (734f / 400f), 250.dp * (734f / 400f), vh - 180.dp, h - 24.dp)
+        val aspect = if (template) 2f / 3f else wrapperFor(set)?.second?.aspect ?: (400f / 734f)
+        return ph * aspect to ph
+    }
     val pw = packHeight(w, h) * (400f / 734f); val aspect = if (template) 2f / 3f else wrapperFor(set)?.second?.aspect ?: (5f / 8.2f)
     return pw to pw / aspect
 }
@@ -439,6 +492,7 @@ private fun Sealed(pack: PackResult, tearing: Boolean, onTear: () -> Unit, loadi
     // pack tilt is on, eased over 120 ms (.pack-tpl-art transition .12s linear). Reduce motion: still. A lifted finger leaves the
     // art where it was unless the tilt takes over again, as on the site.
     var touch by remember { mutableStateOf<Offset?>(null) }
+    val vw = androidx.compose.ui.platform.LocalConfiguration.current.screenWidthDp.dp; val vh = androidx.compose.ui.platform.LocalConfiguration.current.screenHeightDp.dp
     val phone = if (template && tiltOn && !Motion.still) rememberTilt() else null
     if (template && drift != null) LaunchedEffect(phone) {
         snapshotFlow {
@@ -452,13 +506,13 @@ private fun Sealed(pack: PackResult, tearing: Boolean, onTear: () -> Unit, loadi
             while (true) {
                 val c = awaitPointerEvent(PointerEventPass.Initial).changes.firstOrNull() ?: break
                 if (!c.pressed) { if (phone?.value?.live == true) touch = null; break }
-                val (pw, ph) = packSize(pack.set, size.width.toDp(), size.height.toDp(), true)
+                val (pw, ph) = packSize(pack.set, size.width.toDp(), size.height.toDp(), true, pack.shop != null, vw, vh)
                 val wpx = pw.toPx(); val hpx = ph.toPx()
                 touch = Offset(((c.position.x - (size.width - wpx) / 2f) / wpx * 2f - 1f).coerceIn(-1f, 1f), ((c.position.y - (size.height - hpx) / 2f) / hpx * 2f - 1f).coerceIn(-1f, 1f))
             }
         }
     }, contentAlignment = Alignment.Center) {
-    val (w, h) = packSize(pack.set, maxWidth, maxHeight, template)
+    val (w, h) = packSize(pack.set, maxWidth, maxHeight, template, pack.shop != null, vw, vh)
     // While the server rolls the pack: a gold aura breathes around it, embers rise and it trembles, harder once tapped.
     val power = if (!loading) 0f else if (Motion.still) .6f else rememberInfiniteTransition(label = "power").animateFloat(0f, 1f, infiniteRepeatable(tween(if (eager) 420 else 900, easing = FastOutSlowInEasing), RepeatMode.Reverse), label = "p").value
     val ember = if (!loading) 0f else if (Motion.still) .35f else rememberInfiniteTransition(label = "ember").animateFloat(0f, 1f, infiniteRepeatable(tween(1600, easing = LinearEasing)), label = "e").value
@@ -534,7 +588,7 @@ private fun Sealed(pack: PackResult, tearing: Boolean, onTear: () -> Unit, loadi
         .glow(Color.Black, .6f, .02f, .03f, .04f, 30.dp)
         .clickable(remember { MutableInteractionSource() }, dev.cardstashy.nativeplay.ui.PadFocus.Ring, onClick = onTear).semantics { contentDescription = "Open the ${pack.name} pack" }) {
         // The set's art under Randall's template when the set has one (its painted wrapper until the art is in), else the wrapper.
-        val tpl = TemplatePack(pack.set, pack.name, { drift?.value ?: Offset.Zero }, Modifier.fillMaxSize()) { Booster(pack.set, pack.name, Modifier.fillMaxSize(), fill = true) }
+        val tpl = TemplatePack(pack.set, pack.name, { drift?.value ?: Offset.Zero }, Modifier.fillMaxSize(), brand = pack.shop != null) { Booster(pack.set, pack.name, Modifier.fillMaxSize(), fill = true, brand = pack.shop != null) }
         // .pack-tpl .pack-crimp, .pack-tpl .pack-sheen { display: none }: the template pack has neither.
         if (!tpl && !Motion.still && !tearing) {
             // pack-sheen-move: a soft rainbow band sweeping across every 3.2 s.
@@ -577,7 +631,7 @@ private fun Sealed(pack: PackResult, tearing: Boolean, onTear: () -> Unit, loadi
 private fun Dealt(pack: PackResult, stage: PackStage, revealed: List<Int>, focus: Int, charging: Int?, moment: Int, momentLevel: Int, flipping: Int, slide: Int,
                   flung: Pair<Pull, Int>?, allOpen: Boolean, tilt: Boolean,
                   onLanded: () -> Unit, onDealt: (Int, Boolean) -> Unit, onShow: (Int, Boolean) -> Unit, onReveal: (Int) -> Unit, onFocusTap: () -> Unit,
-                  onHold: (Int) -> Unit, onSwipe: (Int) -> Unit, onFlungDone: () -> Unit, onRevealAll: () -> Unit, onNext: (() -> Unit)?, busy: Boolean, drift: () -> Offset = { Offset.Zero }) = BoxWithConstraints(Modifier.fillMaxSize()) {
+                  onHold: (Int) -> Unit, onSwipe: (Int) -> Unit, onFlungDone: () -> Unit, onRevealAll: () -> Unit, onNext: (() -> Unit)?, busy: Boolean, drift: () -> Offset = { Offset.Zero }, onShop: () -> Unit = {}) = BoxWithConstraints(Modifier.fillMaxSize()) {
     val n = pack.pulls.size
     val bodyW = maxWidth; val bodyH = maxHeight
     val density = LocalDensity.current
@@ -589,7 +643,8 @@ private fun Dealt(pack: PackResult, stage: PackStage, revealed: List<Int>, focus
     val deal = remember(pack) { Animatable(if (stage == PackStage.DEALT || Motion.still) 1f else 0f) }
     val rise = remember(pack) { Animatable(if (stage == PackStage.DEALT) 1f else 0f) }
     // The pack's three best cards (by the feel their flip will have) land with a low rumble and a glow.
-    val best = remember(pack) { pack.pulls.indices.sortedWith(compareByDescending<Int> { pack.pulls[it].level }).take(min(3, n)).toSet() }
+    // (by the same feel the flip will have, then price: the simulator's worth; Play reads no price)
+    val best = remember(pack) { pack.pulls.indices.sortedWith(compareByDescending<Int> { pack.pulls[it].level }.thenByDescending { pack.pulls[it].sim?.worth ?: 0.0 }).take(min(3, n)).toSet() }
     val landedAt = remember(pack) { mutableStateListOf<Int>() }
     val scope = rememberCoroutineScope()
     LaunchedEffect(pack, stage) {
@@ -620,10 +675,14 @@ private fun Dealt(pack: PackResult, stage: PackStage, revealed: List<Int>, focus
             Hand(pack, revealed, focus, handW, handH, landed = { i -> cardT(i) >= 1f }, bestGlow = { i -> i in best && i in landedAt && stage == PackStage.DEALING },
                 onShow = { onShow(it, true) }, onTap = { onShow(it, false); onReveal(it) }, onHold = onHold)
         }
-        // Actions: Reveal all until every card is up, then Open the next pack.
-        Box(Modifier.fillMaxWidth().padding(top = 2.dp).onGloballyPositioned { actionsH = it.size.height }, contentAlignment = Alignment.Center) {
+        // Actions: Reveal all until every card is up, then Open the next pack. The simulator (.pack-done .pack-tools) adds its
+        // tools first and its button opens a new sealed pack. Its Wishlist all saves to the account, which the app doesn't do yet (not done).
+        Column(Modifier.fillMaxWidth().padding(top = 2.dp).onGloballyPositioned { actionsH = it.size.height }, horizontalAlignment = Alignment.CenterHorizontally, verticalArrangement = Arrangement.spacedBy(6.dp)) {
             if (!allOpen) PillButton("Reveal all", ghost = true, onClick = onRevealAll)
-            else if (onNext != null) PillButton(if (busy) "Opening…" else "Open the next pack", ghost = false, wide = true, onClick = onNext)
+            else {
+                if (pack.shop != null) PackTools(onShop)
+                if (onNext != null) PillButton(if (busy) "Opening…" else if (pack.shop != null) "Open a new pack" else "Open the next pack", ghost = false, wide = true, onClick = onNext)
+            }
         }
     }
     // The flight, above everything: the torn pack (cards under it until they clear its top), then the cards.
@@ -631,7 +690,8 @@ private fun Dealt(pack: PackResult, stage: PackStage, revealed: List<Int>, focus
         // The ghost takes the sealed pack's exact place (from = w.getBoundingClientRect()): centred in the whole body.
         val ctx = LocalContext.current
         val template = remember(pack.set) { PackTemplate.art(ctx, pack.set) != null }
-        val (pw, ph) = packSize(pack.set, bodyW, bodyH, template)
+        val vw = androidx.compose.ui.platform.LocalConfiguration.current.screenWidthDp.dp; val vh = androidx.compose.ui.platform.LocalConfiguration.current.screenHeightDp.dp
+        val (pw, ph) = packSize(pack.set, bodyW, bodyH, template, pack.shop != null, vw, vh)
         val packTop = (bodyH - ph) / 2; val packLeft = (bodyW - pw) / 2
         // Ghost: holds while the cards leave, then sinks 36 % and fades; light glows in its open mouth.
         val ghostHold = min(.8f, (n * gap).toFloat() / (total + 260))
@@ -642,7 +702,7 @@ private fun Dealt(pack: PackResult, stage: PackStage, revealed: List<Int>, focus
             translationY = size.height * .36f * e; scaleX = 1f - .1f * e; scaleY = scaleX; alpha = 1f - e
         }) {
             Box(Modifier.fillMaxSize().drawWithContent { clipRect(top = size.height * .085f) { this@drawWithContent.drawContent() } }) {
-                TemplatePack(pack.set, pack.name, drift, Modifier.fillMaxSize()) { Booster(pack.set, pack.name, Modifier.fillMaxSize(), fill = true) }
+                TemplatePack(pack.set, pack.name, drift, Modifier.fillMaxSize(), brand = pack.shop != null) { Booster(pack.set, pack.name, Modifier.fillMaxSize(), fill = true, brand = pack.shop != null) }
             }
             val m = (t / 900f).coerceIn(0f, 1f)
             val ma = if (m < .35f) m / .35f else 1f - (m - .35f) / .65f
@@ -674,6 +734,25 @@ private fun Dealt(pack: PackResult, stage: PackStage, revealed: List<Int>, focus
             Box(Modifier.offset(slotX, slotY).width(handW).height(cardH).zIndex(if (e < .4f) 10f + i else 200f + i).graphicsLayer {
                 translationX = x; translationY = y; rotationZ = rot; scaleX = sc; scaleY = sc
             }.glow(Color(0xFFD9CCFF), .35f, .03f, .03f, .1f, 9.dp).clip(RoundedCornerShape(6.dp))) { MagicBack(Modifier.fillMaxSize()) }
+        }
+    }
+}
+
+/** .pack-done .pack-tools: a glass strip (radius 16, padding 4, #ffffff17 line) holding the pack's tools, each a 19 px glyph over an 11.5 px label. */
+@Composable
+private fun PackTools(onShop: () -> Unit) {
+    val shape = RoundedCornerShape(16.dp)
+    Row(Modifier.widthIn(max = 420.dp).fillMaxWidth().glow(Color.Black, .27f, 0f, .1f, .1f, 12.dp).clip(shape)
+        .background(Brush.verticalGradient(listOf(Color(0x0DFFFFFF), Color(0x05FFFFFF)))).border(1.dp, Color(0x17FFFFFF), shape).padding(4.dp)) {
+        Column(Modifier.weight(1f).heightIn(min = 50.dp).clip(RoundedCornerShape(12.dp)).clickable(onClick = onShop).padding(horizontal = 4.dp, vertical = 6.dp),
+            horizontalAlignment = Alignment.CenterHorizontally, verticalArrangement = Arrangement.spacedBy(3.dp, Alignment.CenterVertically)) {
+            Canvas(Modifier.size(19.dp)) {
+                // <path d="M5 7h14l-1.4 9.2a2 2 0 0 1-2 1.8H8.4a2 2 0 0 1-2-1.8z"/><path d="M9 7a3 3 0 0 1 6 0"/>, stroke 1.7, opacity .85.
+                val u = size.width / 24f; val ink = Site.Text.copy(alpha = .85f); val st = Stroke(1.7f * u, cap = StrokeCap.Round, join = androidx.compose.ui.graphics.StrokeJoin.Round)
+                drawPath(Path().apply { moveTo(5 * u, 7 * u); lineTo(19 * u, 7 * u); lineTo(17.6f * u, 16.2f * u); quadraticTo(17.3f * u, 18 * u, 15.6f * u, 18 * u); lineTo(8.4f * u, 18 * u); quadraticTo(6.7f * u, 18 * u, 6.4f * u, 16.2f * u); close() }, ink, style = st)
+                drawArc(ink, 180f, 180f, false, Offset(9 * u, 4 * u), Size(6 * u, 6 * u), style = st)
+            }
+            Text("Shop list", maxLines = 1, overflow = TextOverflow.Ellipsis, style = TextStyle(fontFamily = Site.Body.fontFamily, fontWeight = FontWeight.SemiBold, fontSize = 11.5.sp, color = Site.Text))
         }
     }
 }
@@ -795,6 +874,8 @@ private fun Focus(pack: PackResult, focus: Int, open: Boolean, charging: Boolean
                 }
                 Box(Modifier.fillMaxSize().graphicsLayer { cameraDistance = 14f * density; rotationY = flip - 180f; alpha = if (flip >= 90f) 1f else 0f }) {
                     // No frame (Randall, 3 Nov 15:46Z: Play has nothing to do with real-world value): the tier shows as the glow underneath only.
+                    // The simulator is about real-world value: its pull wears the collection's price frame (.pack-frame, 5 px out, radius 5.4 % / 3.9 %).
+                    if (p.sim != null) PackBand(p.sim.tier, 5.dp, { s -> CornerRadius(s.width * .054f, s.height * .039f) }, Modifier.fillMaxSize())
                     Box(Modifier.fillMaxSize().clip(CardCorner).background(Color(0xFF0B0C10))) {
                         PullFace(p, Modifier.fillMaxSize(), lx, ly)
                         if (catch.value < 1f) Box(Modifier.fillMaxSize().drawWithContent {
@@ -811,7 +892,7 @@ private fun Focus(pack: PackResult, focus: Int, open: Boolean, charging: Boolean
         Column(Modifier.heightIn(min = meta - 6.dp), horizontalAlignment = Alignment.CenterHorizontally, verticalArrangement = Arrangement.spacedBy(3.dp)) {
             if (open) {
                 Text(p.name, style = TextStyle(fontFamily = Site.Body.fontFamily, fontWeight = FontWeight.Bold, fontSize = 14.sp, color = Site.Text), textAlign = TextAlign.Center)
-                RarityPill(p.rarity, if (p.foil) "Foil" else "")
+                RarityPill(p.rarity, p.sim?.finishLabel ?: if (p.foil) "Foil" else "")
             }
         }
     }
@@ -842,7 +923,12 @@ fun PullFace(p: Pull, modifier: Modifier, lx: Float = .5f, ly: Float = .4f) = Bo
     val painter = heroPainter(p.image.ifBlank { null }?.let(homeArt))
     // A foil pull wears the card's real finish (finish-preview.js surface 'pack' → mountMtgFoil, the same AGSL foil as
     // the card view), lit from where the light is. The old wash drawn on an empty layer greyed the card (Randall 3 Nov 23:17Z).
-    val look = if (p.foil) {
+    val look = if (p.foil && p.sim?.card != null) {
+        // The simulator's pull carries its own printing, in the finish it came out in (foil or etched).
+        val context = androidx.compose.ui.platform.LocalContext.current
+        val data = dev.cardstashy.nativeplay.play.CardData.ready.collectAsState().value.also { if (it == null) dev.cardstashy.nativeplay.play.CardData.warm(context) }
+        data?.let { Foil.look(it, p.sim.card, p.sim.finish) }
+    } else if (p.foil) {
         val context = androidx.compose.ui.platform.LocalContext.current
         val data = dev.cardstashy.nativeplay.play.CardData.ready.collectAsState().value.also { if (it == null) dev.cardstashy.nativeplay.play.CardData.warm(context) }
         val prints by dev.cardstashy.nativeplay.play.CardFacts.prints.collectAsState()
@@ -851,6 +937,50 @@ fun PullFace(p: Pull, modifier: Modifier, lx: Float = .5f, ly: Float = .4f) = Bo
     } else null
     val light = androidx.compose.runtime.rememberUpdatedState(Offset((lx - .5f) * 2f, (ly - .5f) * 2f))
     if (painter != null) CardFace(painter, look, light, Modifier.fillMaxSize(), RectangleShape, p.name)
+}
+
+/**
+ * sets-ui.css's pack price frame for the simulator, [outset] past the card on every side: grey (t0 and unpriced), green and
+ * blue at 160°, purple's conic swirl (6 s), gold's and orange's sweeping shine (background 300 %, tier-shine 3.4 s / 2.6 s).
+ */
+@Composable
+private fun PackBand(tier: String, outset: Dp, corner: DrawScope.(Size) -> CornerRadius, modifier: Modifier) {
+    val period = when (tier) { "t3" -> 6000; "t4" -> 3400; "t5" -> 2600; else -> 0 }
+    val ph = if (period > 0 && !Motion.still) rememberInfiniteTransition(label = "band").animateFloat(0f, 1f, infiniteRepeatable(tween(period, easing = LinearEasing)), label = "b").value else 0f
+    Box(modifier.drawBehind {
+        val o = outset.toPx(); val w = size.width + 2 * o; val h = size.height + 2 * o
+        fun linear(deg: Float, stops: List<Pair<Float, Color>>, x0: Float = 0f, bw: Float = w) {
+            // CSS linear-gradient(<deg>): 0° points up, clockwise; the line runs through the box's middle, as long as the box needs.
+            val r = Math.toRadians(deg.toDouble()); val dx = sin(r).toFloat(); val dy = -cos(r).toFloat()
+            val half = (abs(bw * dx) + abs(h * dy)) / 2f; val c = Offset(x0 + bw / 2f, h / 2f)
+            drawRect(Brush.linearGradient(*stops.toTypedArray(), start = c - Offset(dx * half, dy * half), end = c + Offset(dx * half, dy * half)), Offset(x0, 0f), Size(bw, h))
+        }
+        translate(-o, -o) {
+            val outline = Path().apply { addRoundRect(androidx.compose.ui.geometry.RoundRect(androidx.compose.ui.geometry.Rect(0f, 0f, w, h), corner(Size(w, h)))) }
+            clipPath(outline) {
+                when (tier) {
+                    "t1" -> linear(160f, listOf(0f to Color(0xFF7BE3A8), 1f to Color(0xFF2FAE68)))
+                    "t2" -> linear(160f, listOf(0f to Color(0xFF8CC6FF), 1f to Color(0xFF2F7FE0)))
+                    "t3" -> {
+                        // conic-gradient(from var(--swirl), …): 0° is up; a sweep starts at 3 o'clock.
+                        val c = Offset(w / 2f, h / 2f); val big = max(w, h)
+                        rotate(ph * 360f - 90f, c) { drawRect(Brush.sweepGradient(0f to Color(0xFFB46CFF), 1f / 3f to Color(0xFF6FD0FF), 2f / 3f to Color(0xFFFF7AD9), 1f to Color(0xFFB46CFF), center = c), c - Offset(big, big), Size(big * 2, big * 2)) }
+                    }
+                    "t4", "t5" -> {
+                        val stops = if (tier == "t4") listOf(0f to Color(0xFFB8860B), .3f to Color(0xFFFFD34D), .45f to Color(0xFFFFF6C9), .6f to Color(0xFFFFD34D), 1f to Color(0xFFB8860B))
+                            else listOf(0f to Color(0xFFC2410C), .3f to Color(0xFFFF7A1A), .45f to Color(0xFFFFD08A), .6f to Color(0xFFFF7A1A), 1f to Color(0xFFC2410C))
+                        // tier-shine: background-position 130 % → -130 % over the first 55 %, then held; the 300 %-wide picture repeats.
+                        val e = if (tier == "t4") CubicBezierEasing(.45f, .05f, .3f, 1f) else FastOutSlowInEasing
+                        val seg = (ph / .55f).coerceAtMost(1f); val pos = 1.3f - 2.6f * e.transform(seg)
+                        val tile = w * 3f; var x = (w - tile) * pos
+                        x -= kotlin.math.ceil((x + tile) / tile) * tile
+                        while (x < w) { linear(115f, stops, x, tile); x += tile }
+                    }
+                    else -> linear(160f, listOf(0f to Color(0xFFA7AFB8), 1f to Color(0xFF6F7780)))
+                }
+            }
+        }
+    })
 }
 
 /** rarityEmblem('mtg'): the faceted gem in the set-symbol colour, with the finish before the rarity. */
@@ -941,6 +1071,9 @@ private fun Hand(pack: PackResult, revealed: List<Int>, focus: Int, handW: Dp, h
                     .glow(Color(0xFFFFE39A), .55f * bestLand, .05f, .04f, .12f, 16.dp)
                     .semantics { contentDescription = if (open) "${p.name} · revealed" else "Card ${i + 1}, face down" }) {
                     Box(Modifier.fillMaxSize().graphicsLayer { cameraDistance = 10f * density.density; rotationY = turn; alpha = if (turn < 90f) 1f else 0f }.clip(RoundedCornerShape(6.dp))) { MagicBack(Modifier.fillMaxSize()) }
+                    // The simulator's turned card: the price frame's strip 3 px out (.pack-card[data-tier]::before, radius 8 px).
+                    if (open && p.sim != null) PackBand(p.sim.tier, 3.dp, { CornerRadius(8.dp.toPx()) },
+                        Modifier.fillMaxSize().graphicsLayer { cameraDistance = 10f * density.density; rotationY = turn - 180f; alpha = if (turn >= 90f) 1f else 0f })
                     Box(Modifier.fillMaxSize().graphicsLayer { cameraDistance = 10f * density.density; rotationY = turn - 180f; alpha = if (turn >= 90f) 1f else 0f }
                         .clip(RoundedCornerShape(6.dp)).background(Color(0xFF0B0C10))) {
                         PullFace(p, Modifier.fillMaxSize())

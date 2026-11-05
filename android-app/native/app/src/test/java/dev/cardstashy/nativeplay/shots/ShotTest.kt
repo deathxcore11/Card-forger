@@ -361,6 +361,37 @@ class ShotTest {
         home.mkdirs(); home.resolve("missing.txt").writeText(missing.joinToString("\n"))
     }
 
+    /** The set page's Open Pack simulator: a pack the engine drew from Duskmourn's real booster sheets (scratchpad tpick.cjs). */
+    @Test fun simPackOpen() {
+        dev.cardstashy.nativeplay.ui.Motion.still = true
+        dev.cardstashy.nativeplay.ui.homeArt = ::homeArt
+        val f = home.resolve("collection-pack-mtg.json")
+        org.junit.Assume.assumeTrue(f.exists())
+        val pack = dev.cardstashy.nativeplay.ui.simPack(JsonParser.parseString(f.readText()).asJsonObject)
+        val n = pack.pulls.size
+        val hit = pack.pulls.indices.maxBy { pack.pulls[it].level * 1000 + (pack.pulls[it].sim?.worth ?: 0.0) }
+        val foil = pack.pulls.indexOfFirst { it.foil }
+        val states = listOf(
+            Triple("1-sealed", dev.cardstashy.nativeplay.ui.PackStage.SEALED, Pair(emptySet<Int>(), 0)),
+            Triple("2-dealt", dev.cardstashy.nativeplay.ui.PackStage.DEALT, Pair(setOf(0, 1, 2), 3)),
+            Triple("3-hit", dev.cardstashy.nativeplay.ui.PackStage.DEALT, Pair((0 until n).toSet() - hit, hit)),
+            Triple("4-done", dev.cardstashy.nativeplay.ui.PackStage.DEALT, Pair((0 until n).toSet(), hit)),
+            Triple("5-foil", dev.cardstashy.nativeplay.ui.PackStage.DEALT, Pair((0 until n).toSet(), foil)),
+        )
+        kotlinx.coroutines.runBlocking { AssetImages.load(RuntimeEnvironment.getApplication(), "play/mtg-back.webp", maxWidth = 400)
+            for (l in listOf("left", "center", "right")) AssetImages.load(RuntimeEnvironment.getApplication(), "play/brand-$l.webp", maxWidth = 384)
+            AssetImages.load(RuntimeEnvironment.getApplication(), "play/pack-template.webp", maxWidth = 600); AssetImages.load(RuntimeEnvironment.getApplication(), "play/pack-window.png") }
+        for ((w, h) in listOf(390 to 844, 884 to 1104)) for ((name, stage, rv) in states) {
+            if (w > 390 && name != "4-done" && name != "1-sealed") continue
+            RuntimeEnvironment.setQualifiers("w${w}dp-h${h}dp-xxhdpi")
+            captureRoboImage(File(System.getProperty("shotsDir"), "sim-pack-$name-${w}x$h.png").path) {
+                dev.cardstashy.nativeplay.ui.PackOpening(pack, onNext = { null }, onClose = {}, initial = stage, revealedAtStart = rv.first, focusAtStart = rv.second, onInspect = { _, _ -> })
+            }
+        }
+        if (missing.isNotEmpty()) println("MISSING ART ${missing.joinToString()}")
+        home.mkdirs(); home.resolve("missing.txt").writeText(missing.joinToString("\n"))
+    }
+
     /** The animated mark, frame by frame across one 6 s shuffle with the foil light moving. */
     @Test fun brandFrames() {
         val m = dev.cardstashy.nativeplay.ui.Motion

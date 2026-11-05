@@ -15,7 +15,9 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
@@ -31,6 +33,7 @@ import dev.cardstashy.nativeplay.account.Decks
 import dev.cardstashy.nativeplay.collection.CollectionEngine
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.delay
+import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 
 /** Each game's set browser and the last set page drawn, so coming back paints at once. */
@@ -151,7 +154,9 @@ fun CollectionSetsRoute(onPlay: () -> Unit, onProfile: () -> Unit, onHome: () ->
 fun CollectionSetRoute(code: String, onPlay: () -> Unit, onProfile: () -> Unit, onHome: () -> Unit, onCards: () -> Unit, onDecks: () -> Unit, onSets: () -> Unit,
                        onSet: (String) -> Unit, web: (url: String, press: String?) -> Unit, nativeCard: Boolean = false, game: String = "mtg",
                        /** Another game's tab: its set list (native) or the website's. */
-                       onGame: (String) -> Unit = {}) {
+                       onGame: (String) -> Unit = {},
+                       /** Open Pack drawn here (Magic): the site's own draw, in the app's pack opener; otherwise the website's simulator. */
+                       nativePack: Boolean = false) {
     val context = LocalContext.current
     val session by Account.session.collectAsState()
     val revision by Decks.fullRevision.collectAsState()
@@ -162,6 +167,10 @@ fun CollectionSetRoute(code: String, onPlay: () -> Unit, onProfile: () -> Unit, 
     var failed by remember(code) { mutableStateOf<String?>(null) }
     var asked by remember(code) { mutableStateOf<Pair<String, String>?>(null) }
     var cards by remember(code) { mutableStateOf(listOf<CardOpen>()) }
+    /** The Open Pack simulator over the page (app.js A.openSetPack → pack-preview.js openPackPreview); null when closed. */
+    var pack by remember(code) { mutableStateOf<PackResult?>(null) }
+    var packAsk by remember(code) { mutableIntStateOf(0) }
+    val scope = rememberCoroutineScope()
     val prefs = remember { context.getSharedPreferences("collection", android.content.Context.MODE_PRIVATE) }
     fun show(j: JsonObject) { if (j.size() > 0) CollectionSetModel.parse(j).takeIf { it.game.id == game }?.let { model = it; SetsCache.set = it } }
     LaunchedEffect(session?.userId) { if (session != null) Decks.load(context) }
@@ -192,6 +201,22 @@ fun CollectionSetRoute(code: String, onPlay: () -> Unit, onProfile: () -> Unit, 
         }
         asked = null
     }
+    // The pack is on screen at once, gathering itself while the set's booster sheets load and the pack is drawn; the site's
+    // "Wait for this set to finish loading." (or any failure) closes it with that message, as the site's toast says it.
+    LaunchedEffect(packAsk) {
+        if (packAsk == 0) return@LaunchedEffect
+        try {
+            var j = withContext(Dispatchers.Default) { CollectionEngine.packOpen(game) }
+            CollectionEngine.settle(120_000, CollectionEngine.PACK_MODEL) { j = it }
+            j = CollectionEngine.packModel()
+            val error = j.get("error")?.takeIf { it.isJsonPrimitive }?.asString.orEmpty()
+            if (error.isNotBlank() || (j.getAsJsonArray("picks")?.size() ?: 0) == 0) {
+                pack = null; android.widget.Toast.makeText(context, error.ifBlank { "Could not open this preview." }, android.widget.Toast.LENGTH_SHORT).show()
+            } else pack = simPack(j)
+        } catch (e: kotlinx.coroutines.CancellationException) { throw e } catch (e: Exception) {
+            pack = null; android.widget.Toast.makeText(context, e.message?.takeIf { it.isNotBlank() } ?: "Could not open this preview.", android.widget.Toast.LENGTH_SHORT).show()
+        }
+    }
     // The website's page for this set: Magic's #set/<code>; another game's set is reached from its set list (pick the game, then the set).
     val page = if (game == "mtg") SITE + "#set/" + android.net.Uri.encode(code) else SITE + "#sets"
     val lead = if (game == "mtg") emptyList() else listOf("[data-act=\"setGame\"][data-game=\"$game\"]", "[data-act=\"tSet\"][data-id=\"${css(code)}\"]")
@@ -213,7 +238,7 @@ fun CollectionSetRoute(code: String, onPlay: () -> Unit, onProfile: () -> Unit, 
                     if (nativeCard) cards = cards + CardOpen(t.r.name, page = page, tile = tile, setI = t.i, setFinish = finish) else web(page, tile)
                 }
             },
-            pack = { site("[data-act=\"openSetPack\"]") },
+            pack = { if (nativePack && game == "mtg") { if (pack == null) { pack = loadingPack(code, model?.title.orEmpty()); packAsk++ } } else site("[data-act=\"openSetPack\"]") },
             press = { p -> when (plain(p.act)) {
                 "setReload", "setRetry" -> asked = "reload" to ""
                 "setDetails" -> asked = "details" to ""
@@ -239,6 +264,17 @@ fun CollectionSetRoute(code: String, onPlay: () -> Unit, onProfile: () -> Unit, 
     Box(Modifier.fillMaxSize()) {
         if (m != null) CollectionSet(m, top, act, nav, query)
         else Waiting(top, nav, failed, "Opening this set…", "Its cards will appear here.")
+        pack?.let { first ->
+            androidx.compose.runtime.key(packAsk) {
+                PackOpening(first, onNext = { withContext(Dispatchers.Default) { simPack(CollectionEngine.packAgain()) }.takeIf { it.pulls.isNotEmpty() } },
+                    onClose = { pack = null; scope.launch { runCatching { CollectionEngine.packClose() } } },
+                    // pack-preview.js onDetails: a pulled card opens its card page in the printing and finish that came out of the pack,
+                    // as the set page's own tile would when it is one of this set's cards.
+                    onInspect = { i, p -> val sim = p.sim ?: return@PackOpening
+                        cards = cards + if (sim.setI >= 0) CardOpen(p.name, page = page, tile = "[data-act=\"card\"][data-set-i=\"${sim.setI}\"]", setI = sim.setI, setFinish = sim.finish)
+                            else CardOpen(p.name, page = page, tile = "", setFinish = sim.finish, pack = i) })
+            }
+        }
         cards.lastOrNull()?.let { c -> androidx.compose.runtime.key(c) {
             CollectionCardHost(c, onClose = { cards = cards.dropLast(1) }, onOpen = { cards = cards + it }, web = web,
                 onSet = { s -> if (s == code) cards = emptyList() else onSet(s) })

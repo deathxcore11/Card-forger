@@ -29,6 +29,7 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.statusBarsPadding
 import androidx.compose.foundation.layout.width
+import androidx.compose.foundation.layout.wrapContentHeight
 import androidx.compose.foundation.layout.widthIn
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.shape.CircleShape
@@ -548,15 +549,19 @@ private fun StoryCard(d: PlayHomeData, wide: Boolean, act: PlayHomeActions, shor
 // ---------------------------------------------------------------- booster wrapper (pe-booster)
 
 @Composable
-fun Booster(code: String, name: String?, modifier: Modifier = Modifier, mini: Boolean = false, collector: Boolean = false, fill: Boolean = false) {
+fun Booster(code: String, name: String?, modifier: Modifier = Modifier, mini: Boolean = false, collector: Boolean = false, fill: Boolean = false,
+            /** The set page's Open Pack simulator: the site's own pack band (brand mark and name), and its product photo for a set Play has no wrapper for. */
+            brand: Boolean = false) {
     val facts: Map<String, SetFacts.Set> = SetFacts.sets.collectAsState().value
     val f = facts[code]
     val label = name?.ifBlank { null } ?: f?.name ?: code.uppercase()
     if (!HomeTest.noPictures) wrapperFor(code)?.let { (asset, wrap) ->
         val ctx = LocalContext.current
         val img = produceState(AssetImages.cached("$asset@600"), asset) { value = AssetImages.load(ctx, asset, maxWidth = 600) }.value
-        if (img != null) { WrappedBooster(code, label, wrap, img, modifier, mini, collector, fill); return }
+        if (img != null) { WrappedBooster(code, label, wrap, img, modifier, mini, collector, fill, brand = brand); return }
     }
+    // Only a set with no template art: while a template set's art loads, this stands in without fetching the product photo.
+    if (brand && !HomeTest.noPictures && PackTemplate.art(LocalContext.current, code) == null && RemotePack(code, label, modifier)) return
     val shape = RoundedCornerShape(6.dp)
     Box(modifier.aspectRatio(5f / 8.2f).testShadow(18.dp, shape).clip(shape)
         .background(Brush.linearGradient(listOf(Color(0xFF2A2F3A), Color(0xFF14171D), Color(0xFF262B35))))) {
@@ -634,7 +639,7 @@ fun wrapperFor(code: String): Pair<String, Wrap>? = WRAPPERS[code.lowercase()]?.
  */
 @Composable
 internal fun WrappedBooster(code: String, label: String, wrap: Wrap, img: ImageBitmap, modifier: Modifier, mini: Boolean, collector: Boolean = false, fill: Boolean = false,
-                            under: (@Composable BoxScope.() -> Unit)? = null) {
+                            under: (@Composable BoxScope.() -> Unit)? = null, brand: Boolean = false) {
     // fill: the caller already sized the box to the wrapper (the pack opener), so the picture takes all of it.
     Box(if (fill) modifier else modifier.aspectRatio(5f / 8.2f), contentAlignment = Alignment.BottomCenter) {
         BoxWithConstraints((if (fill) Modifier.fillMaxSize() else Modifier.fillMaxWidth().aspectRatio(wrap.aspect, matchHeightConstraintsFirst = true))
@@ -644,13 +649,27 @@ internal fun WrappedBooster(code: String, label: String, wrap: Wrap, img: ImageB
             // The pack template's set art, under the frame's empty window (PackTemplate).
             under?.invoke(this)
             Image(img, null, Modifier.fillMaxSize(), contentScale = ContentScale.FillBounds)
-            // The star emblem, centred in the band's notch.
-            if (wrap.iconInNotch) SetIcon(code, Modifier.align(Alignment.TopCenter).offset(y = h * wrap.notch - w * .05f).size(w * .1f))
-            else StarEmblem(Modifier.align(Alignment.TopCenter).offset(y = h * wrap.notch - w * .045f).size(w * .09f))
             // Printed on the wrapper, so it sizes with the pack, not with the font setting.
             val dens = LocalDensity.current
             val px = with(dens) { w.toPx() }
             val sp = { f: Float -> with(dens) { (px * f).toSp() } }
+            if (brand) {
+                // sets-ui.css .pack-tpl / .pack-custom .pack-wrap-brand: inset auto 14 % 12.5 % 14 %, 21 % tall, centred; the static
+                // mark at 26 % of the band over the set's name, bold, #f5ead0, clamp(11px, 3.6vw, 15px) at line-height 1.15, 4 px apart.
+                val vw = with(dens) { LocalContext.current.resources.displayMetrics.widthPixels.toDp() }
+                val fs = (vw.value * .036f).coerceIn(11f, 15f)
+                // (The grid's content overflows its 21 % box when the name wraps, centred on it, as on the site.)
+                Box(Modifier.align(Alignment.BottomCenter).padding(bottom = h * .125f).width(w * .72f).height(h * .21f), contentAlignment = Alignment.Center) {
+                    Column(Modifier.wrapContentHeight(unbounded = true), horizontalAlignment = Alignment.CenterHorizontally, verticalArrangement = Arrangement.spacedBy(4.dp)) {
+                        BrandMark(w * .72f * .26f, static = true)
+                        Text(label, style = TextStyle(fontFamily = Site.Body.fontFamily, fontWeight = FontWeight.Bold, fontSize = fs.sp, lineHeight = (fs * 1.15f).sp, color = Color(0xFFF5EAD0), textAlign = TextAlign.Center))
+                    }
+                }
+                return@BoxWithConstraints
+            }
+            // The star emblem, centred in the band's notch.
+            if (wrap.iconInNotch) SetIcon(code, Modifier.align(Alignment.TopCenter).offset(y = h * wrap.notch - w * .05f).size(w * .1f))
+            else StarEmblem(Modifier.align(Alignment.TopCenter).offset(y = h * wrap.notch - w * .045f).size(w * .09f))
             Column(Modifier.align(Alignment.TopCenter).offset(y = h * wrap.top).fillMaxWidth().height(h * (wrap.bottom - wrap.top)).padding(horizontal = w * .135f),
                 horizontalAlignment = Alignment.CenterHorizontally, verticalArrangement = Arrangement.spacedBy(w * .018f, Alignment.CenterVertically)) {
                 if (!wrap.iconInNotch) SetIcon(code, Modifier.size(w * (if (mini) .2f else .1f)))
