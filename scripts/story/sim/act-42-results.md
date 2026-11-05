@@ -17,3 +17,6 @@ Tuning runs are 24 games. The final check is a 10-game run, per Randall (3 Nov),
 
 ## After the balance pass (coordinator ask, 5 Nov)
 The first build had Assemble, Power-Up and Doctor Doom at 80-95% for the hero side and Krang and the secret at 20-40%. Cause: the "weakest" hero filler kept picking flyers and evasive creatures. The filler now avoids keywords for easy heroes and favours them for villains, and b5, b6 and b7 heroes became two- or three-colour decks. 24-game runs on the final decks (seed 64), hero win: b1 79%, b2 50%, b3 71%, b4 42%, b5 35%, b6 71%, b7 46%, b8 63%, b9 46%. Across the last three rounds b5 averaged about 55%, b7 about 55%, b9 about 40%. Still slightly easy: b6 (about 65%) and b3. Slightly hard: b2. All within normal run-to-run noise (+/-15 points) of their bands, except b6, which stays a few points high.
+
+## Second pass (5 Nov, after the achievements thread's re-sim)
+Their 20-game sims showed b3 too easy (19/20) and b5 too hard (7/20). Krang's hero filler was weakened and Assemble's hero filler nudged back up. 24-game re-run, seed 66: b3 58%, b5 58%. Other battles unchanged from the table above.

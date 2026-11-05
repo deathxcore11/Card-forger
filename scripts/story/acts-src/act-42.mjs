@@ -114,11 +114,11 @@ export default {
 3 Michelangelo, Improviser
 4 Cowabunga!
 3 Raph & Mikey, Troublemakers
-4 Pet Avengers
-4 Primordial Pachyderm
-4 Mutant Town Musicians
-4 Guerrilla Gorilla
-1 Machinesmith Automaton
+4 Crimson Operative
+4 Undercover Skrull
+4 Null Group Biological Assets
+4 Courier of Comestibles
+1 Volcanic Villain
 12 Forest
 12 Mountain`}},
       villain: {who: 'krang', deck: {label: 'tribute', name: "Krang's Technodrome", colors: 'UB', list: `
@@ -183,12 +183,12 @@ export default {
 1 Captain America, Super-Soldier
 2 Helicarrier Strike
 1 Agents of S.H.I.E.L.D.
-4 Mighty Mutanimals
 4 Utrom Scientists
+4 Mighty Mutanimals
 4 Hero in Training
-4 Crustacean Commando
 4 Atlantean Cavalry
-4 A.I.M. Scientists
+4 Crustacean Commando
+4 Kree Commandos
 4 Bold Biochemist
 4 Agent of Atlas
 12 Plains
