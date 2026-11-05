@@ -149,6 +149,20 @@ export function mtgjsonDeckRows(d = {}) {
   return [...(d.mainBoard || []).map(c => row(c, 'main')), ...(d.sideBoard || []).map(c => row(c, 'side'))].filter(r => r.name);
 }
 
+// The face of a published deck, for its tile: the commander when it has one, else the star card
+// (the deck's headline rare or mythic: planeswalkers and big creatures first, never a basic land).
+// d: one MTGJSON deck. Returns {name, id} (id is the exact printing) or null.
+export function preconFace(d = {}) {
+  const pick = c => c?.identifiers?.scryfallId ? {name: String(c.name || ''), id: c.identifiers.scryfallId} : null;
+  const cmd = pick((d.commander || [])[0]); if (cmd) return cmd;
+  const weight = c => {
+    const types = c.types || [], r = {mythic: 3, rare: 2, uncommon: 1}[c.rarity] || 0;
+    return (types.includes('Planeswalker') ? 40 : types.includes('Creature') ? 20 : 0) + r * 12 + Math.min(10, c.manaValue | 0) + (c.isFoil ? 2 : 0) + Math.min(4, c.count | 0) * -1;
+  };
+  const pool = (d.mainBoard || []).filter(c => c?.identifiers?.scryfallId && !(c.supertypes || []).includes('Basic') && !(c.types || []).includes('Land'));
+  return pick(pool.sort((a, b) => weight(b) - weight(a))[0]);
+}
+
 // Formats a pasted list can be played in: every card legal (Vintage also allows restricted cards at
 // one copy) and the deck rules met. legal: Map name -> Scryfall legalities.
 export function legalFormats(rows = [], legal = new Map()) {

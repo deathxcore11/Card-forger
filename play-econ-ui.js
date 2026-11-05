@@ -392,7 +392,7 @@ const artCrop = id => scryfallImage(id).replace('/normal/', '/art_crop/');
 let coverPicks = () => null;
 export const setPlayDeckCovers = fn => { coverPicks = typeof fn === 'function' ? fn : () => null; };
 const pickedCover = id => { const c = id && coverPicks()?.[id]; return typeof c?.image === 'string' && /^https:\/\//.test(c.image) ? c.image : ''; };
-const deckCover = cards => { const lead = (cards || []).find(c => c.board !== 'side' && !isBasicLand(c.name)) || (cards || [])[0];
+const deckCover = cards => { const lead = (cards || []).find(c => c.commander) || (cards || []).find(c => c.board !== 'side' && !isBasicLand(c.name)) || (cards || [])[0];
   return lead ? (lead.id ? artCrop(lead.id) : cardImageByName(lead.name, 'art_crop')) : ''; };
 // The deck's emblems (play-deck-emblem.js): mana pips beside the format, then its style, and a gold
 // meta line when it matches a tournament archetype. Text and pips sit on the tile's own plates.
@@ -434,7 +434,7 @@ function preconShelf(snapshot, pc = {}, deckEmblem = null) {
   const q = (pc.query || '').trim().toLowerCase(), list = pc.index.filter(d => !q || d.name.toLowerCase().includes(q) || (d.code || '').toLowerCase() === q || d.type.toLowerCase().includes(q)), shown = list.slice(0, pc.limit || 12);
   return `<label class="pe-search"><span>Find a precon</span><input type="search" data-input="playEconPreconQuery" value="${esc(pc.query || '')}" maxlength="80" placeholder="Precon or set name"></label>
     ${pc.busy ? '<p class="pe-count" role="status">Opening the deck box…</p>' : ''}
-    <div class="pe-precon-grid">${shown.map(d => `<button class="pe-precon" data-act="playEconPrecon" data-econ-file="${esc(d.fileName)}" aria-label="${esc(d.name)}, ${esc(d.type)}, ${esc(year(d.releaseDate))}"><span class="set-icon" style="--icon:url('${esc(setIconUrl(String(d.code || '').toLowerCase()))}')" aria-hidden="true"></span><span class="pe-precon-name">${keepWords(d.name)}</span><span class="pe-precon-line">${esc(d.type)} · ${esc(year(d.releaseDate))}</span></button>`).join('') || '<p class="pe-count">No precons match.</p>'}</div>
+    <div class="pe-precon-grid">${shown.map(d => { const f = pc.faces?.[d.fileName], art = f?.id ? artCrop(f.id) : ''; return `<button class="pe-precon${art ? ' has-art' : ''}" data-act="playEconPrecon" data-econ-file="${esc(d.fileName)}" aria-label="${esc(d.name)}, ${esc(d.type)}, ${esc(year(d.releaseDate))}">${art ? `<span class="pe-precon-art" style="background-image:url('${esc(art)}')" aria-hidden="true"></span>` : ''}<span class="set-icon" style="--icon:url('${esc(setIconUrl(String(d.code || '').toLowerCase()))}')" aria-hidden="true"></span><span class="pe-precon-name">${keepWords(d.name)}</span><span class="pe-precon-line">${esc(d.type)} · ${esc(year(d.releaseDate))}</span></button>`; }).join('') || '<p class="pe-count">No precons match.</p>'}</div>
     ${list.length > shown.length ? `<button class="btn ghost" data-act="playEconPreconMore">Show more (${list.length - shown.length})</button>` : ''}`;
 }
 function importPanel(snapshot, check) {
