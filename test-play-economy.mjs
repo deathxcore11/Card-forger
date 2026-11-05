@@ -137,10 +137,10 @@ assert.ok(!('prices' in row) && !JSON.stringify(row).includes('9.99'), 'pack rec
   // and the list is saved with its printings; basic lands are never charged.
   wallet = {...wallet, coins: 3050};
   const bought = await (await progressRoute(req('precon', {file: 'TST_Precon', format: 'Modern'}), env, {verifyBearer, fetcher})).json();
-  assert.equal(bought.price, 3000, 'nothing owned: the standard list price');
+  assert.equal(bought.price, 2500, 'nothing owned: the Standard list price');
   assert.equal(bought.granted, 6, 'Bolt capped at 4 copies across main and side, Dragonlord x2; no Mountains');
   const pApply = calls.find(c => c[0] === 'play_apply' && /^precon:/.test(c[1].p_ref));
-  assert.equal(pApply[1].p_delta.coins, -3000);
+  assert.equal(pApply[1].p_delta.coins, -2500);
   assert.ok(pApply[1].p_delta.cards.every(c => c.set === 'tmp' && /cards\.scryfall\.io\/normal/.test(c.image)), 'exact printing for every copy');
   const pSave = calls.find(c => c[0] === 'play_save_deck');
   assert.deepEqual(pSave[1].p_cards.find(c => c.name === 'Mountain'), {name: 'Mountain', qty: 20, set: 'tmp', number: '20'}, 'basic lands keep their printing too');
