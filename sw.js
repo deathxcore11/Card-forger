@@ -1,4 +1,4 @@
-const CACHE = "cardforge-shell-precon-ladder-apk0429-43125-v497";
+const CACHE = "cardforge-shell-pack-open-fix-43128-v500";
 const ASSETS = [
   "./assets/fonts/fonts.css",
   "./play-forge-feature.js",
