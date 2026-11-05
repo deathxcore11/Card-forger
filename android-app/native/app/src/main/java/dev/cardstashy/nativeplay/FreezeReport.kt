@@ -235,9 +235,14 @@ object FreezeReport {
         }, "frame-watch").apply { isDaemon = true; priority = Thread.MIN_PRIORITY }.start()
     }
 
+    @Volatile private var dispatching: String? = null
+
     /** Pings the main thread every 500 ms; while a ping goes unanswered past 1.5 s, the main stack is sampled every 1.5 s (up to 4 per stall). */
     private fun watchdog() {
         val main = Handler(Looper.getMainLooper())
+        // What the main thread is running right now (the Looper's own ">>>>> Dispatching to …" line: a coroutine names its code), so a
+        // stall still says where it is on phones that give no stack for the main thread (Android 17 on a Galaxy Z Fold2, 5 Nov).
+        Looper.getMainLooper().setMessageLogging { line -> dispatching = if (line.startsWith(">")) line else null }
         Thread({
             while (true) {
                 val answered = java.util.concurrent.atomic.AtomicBoolean(false)
@@ -252,7 +257,8 @@ object FreezeReport {
                         val st = Looper.getMainLooper().thread.stackTrace.take(45).joinToString("\n") { "    at $it" }
                             .ifEmpty { "    (Android gave no stack: the main thread could not be paused to read it)" }
                         // The stack first and the section counts cut short, so the uploaded part (4,000 characters) always keeps the stack.
-                        append("== Stall sample $samples: main busy $busy ms ==\n" + header() + st + "\nsections: ${sectionLine().take(600)}\n\n")
+                        val doing = dispatching?.removePrefix(">>>>> Dispatching to ")?.take(400) ?: "no message (input or a frame)"
+                        append("== Stall sample $samples: main busy $busy ms ==\n" + header() + "running: $doing\n" + st + "\nsections: ${sectionLine().take(600)}\n\n")
                     }
                 }
                 if (samples > 0) Thread { try { if (::prefs.isInitialized) upload(file.readText()) } catch (_: Throwable) {} }.start()
