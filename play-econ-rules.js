@@ -135,6 +135,29 @@ export function stepDeckCard(deck = [], name, step, owned = new Map(), format = 
 // {c,u,r,m} from deckShortfall(...).seals. Rates come from play.config precon.perRarity, so they retune
 // without a release. Minimum 250, no cap. A deck you already own entirely is free to add.
 export const PRECON_RATES = Object.freeze({c: 25, u: 75, r: 500, m: 1500});
+// Value pricing (Randall 5 Nov 19:59Z, option A): 1 pack = 500 coins = $5. Each product has a list price
+// from its MSRP (config precon.list: starter 1,500, standard 3,000 for Challenger and the 60-card
+// precons, commander 5,000); a player pays that list price times the share of the deck's value they
+// don't own yet. Card value weights are common 1, uncommon 3, rare 20, mythic 60; basic lands are free.
+export const PRECON_LIST = Object.freeze({starter: 1500, standard: 3000, commander: 5000});
+export const PRECON_VALUE = Object.freeze({c: 1, u: 3, r: 20, m: 60});
+const STARTER_TYPES = /^(?:Starter Kit|Arena Starter Kit|Intro Pack|Welcome Deck|Clash Pack)$/i;
+export function preconListPrice(type = '', config = {}) {
+  const list = {...PRECON_LIST, ...(config?.precon?.list || {})};
+  return Number(/^Commander Deck$/i.test(type) ? list.commander : STARTER_TYPES.test(type) ? list.starter : list.standard) || PRECON_LIST.standard;
+}
+// {price, missing, share, seals}: rows [{name,qty,rarity}], owned Map, type = MTGJSON deck type.
+export function preconQuote(rows = [], owned = new Map(), {type = '', config = {}, cap = 4} = {}) {
+  const rarity = new Map(rows.map(r => [r.name, r.rarity])), short = deckShortfall(rows, owned, rarity, cap);
+  const w = r => PRECON_VALUE[RARITY_SEAL[rarityOf(r)]] || 1, capOf = typeof cap === 'function' ? cap : () => cap;
+  const want = new Map();
+  for (const r of rows) if (r?.name && !isBasicLand(r.name)) want.set(r.name, (want.get(r.name) || 0) + Math.max(1, r.qty | 0));
+  let total = 0; for (const [name, qty] of want) total += Math.min(qty, capOf(name) ?? 4) * w(rarity.get(name));
+  const miss = short.missing.reduce((t, m) => t + m.need * w(m.rarity), 0), share = total ? Math.min(1, miss / total) : 0;
+  const missing = short.missing.reduce((t, m) => t + m.need, 0), min = config?.precon?.min ?? 250;
+  const price = miss <= 0 ? 0 : Math.max(min, Math.round(preconListPrice(type, config) * share / 5) * 5);
+  return {price, missing, share, seals: short.seals, short};
+}
 export function preconPrice(missing = 0, config = {}) {
   const p = config?.precon || {};
   let total;

@@ -7,7 +7,7 @@ import {SUPABASE} from './config.js';
 import {weeklyPreconsByFormat, commanderStorePool, commanderDeckLegal, COMMANDER_STORE_ROTATING} from './play-precon-formats.js';
 import {loadMtgBooster, mtgBoosterCards, drawMtgBooster, mtgGodPackPicks} from './mtg-boosters.js';
 import {rewardSet, setFormats} from './play-econ-sets.js';
-import {isBasicLand, starterGrant, sealTrackBonus, packContentsRow, cardDelta, RARITY_SEAL, FORGE_STEPS, forgeRatio, holoCost, preconPrice, mtgjsonCardDelta, mtgjsonDeckRows, deckShortfall, ownedByName, isCollectorPack, collectorOdds, collectorPicks, collectorSource, godPackOdds} from './play-econ-rules.js';
+import {isBasicLand, starterGrant, sealTrackBonus, packContentsRow, cardDelta, RARITY_SEAL, FORGE_STEPS, forgeRatio, holoCost, preconQuote, mtgjsonCardDelta, mtgjsonDeckRows, deckShortfall, ownedByName, isCollectorPack, collectorOdds, collectorPicks, collectorSource, godPackOdds} from './play-econ-rules.js';
 import {RETIRED_STARTER_NAMES} from './play-starter-deck.js';
 import {weeklySecretLairOffers, secretLairOfferPrice, weeklySecretLair, secretLairPrice, secretLairLabel, secretLairRef, secretLairCardDelta, secretLairStyle, pickSecretLairStyle} from './play-secret-lair.js';
 import {STORY_DEEDS, STORY_ACT_DEEDS, storyDeedsEarned, keyFeatsMissing} from './story-deeds.js';
@@ -328,8 +328,8 @@ export async function progressRoute(request, env, {verifyBearer, fetcher = fetch
       const cmdr = (d.commander || []).length > 0;
       const rows = mtgjsonDeckRows(d), byName = new Map([...(d.commander || []), ...(d.mainBoard || []), ...(d.sideBoard || [])].map(c => [c.name, c]));
       if (cmdr) rows.unshift(...(d.commander || []).map(c => ({name: String(c.name || ''), qty: 1, set: String(c.setCode || '').toLowerCase(), number: String(c.number || ''), id: c.identifiers?.scryfallId || '', rarity: mtgjsonCardDelta(c).rarity, board: 'commander'})).filter(r => r.name));
-      const s = await state(), short = deckShortfall(rows, ownedByName(s.cards || []), new Map(rows.map(x => [x.name, x.rarity])), cmdr ? 1 : (s.config?.maxCopies || 4));
-      const missing = short.missing.reduce((t, m) => t + m.need, 0), price = preconPrice(short.seals, s.config);
+      const s = await state(), quote = preconQuote(rows, ownedByName(s.cards || []), {type: String(d.type || (cmdr ? 'Commander Deck' : '')), config: s.config, cap: cmdr ? 1 : (s.config?.maxCopies || 4)}), short = quote.short;
+      const missing = quote.missing, price = quote.price;
       // Whole-deck coin purchases are only for this week's five store precons; the rest are built with seals.
       if (price > 0) { const store = await preconStoreFiles(fetcher).catch(() => null); if (!store || !store.files.includes(file)) return fail('not_in_store', 409); }
       if ((s.wallet?.coins || 0) < price) return fail('short_coins', 409);

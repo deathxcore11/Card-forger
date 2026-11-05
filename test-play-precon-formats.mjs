@@ -51,3 +51,18 @@ import {commanderStorePool, commanderDeckLegal} from './play-precon-formats.js';
   if (commanderDeckLegal({...deck, mainBoard: [...deck.mainBoard.slice(1), {legalities: {commander: 'Banned'}}]})) throw new Error('a banned card fails');
   console.log('PASS: the Commander store features the newest release and rotates legal older decks.');
 }
+
+import {preconQuote, preconListPrice} from './play-econ-rules.js';
+{
+  const rows = [{name: 'M', qty: 1, rarity: 'mythic'}, {name: 'R', qty: 4, rarity: 'rare'}, {name: 'U', qty: 4, rarity: 'uncommon'}, {name: 'C', qty: 4, rarity: 'common'}, {name: 'Mountain', qty: 20, rarity: 'common'}];
+  // total value = 60 + 80 + 12 + 4 = 156
+  const none = preconQuote(rows, new Map(), {type: 'Challenger Deck'});
+  if (none.price !== 3000 || none.share !== 1) throw new Error('nothing owned pays the list price');
+  const half = preconQuote(rows, new Map([['M', 1], ['R', 4]]), {type: 'Challenger Deck'});
+  if (half.price !== Math.round(3000 * 16 / 156 / 5) * 5 || half.missing !== 8) throw new Error('owning the expensive cards drops the price: ' + half.price);
+  if (preconQuote(rows, new Map([['M', 1], ['R', 4], ['U', 4], ['C', 4]]), {type: 'Challenger Deck'}).price !== 0) throw new Error('owning everything is free');
+  if (preconQuote(rows, new Map([['M', 1], ['R', 4], ['U', 4], ['C', 3]]), {type: 'Challenger Deck'}).price !== 250) throw new Error('250 floor');
+  if (preconListPrice('Commander Deck') !== 5000 || preconListPrice('Starter Kit') !== 1500 || preconListPrice('Theme Deck') !== 3000) throw new Error('list prices by product type');
+  if (preconListPrice('Commander Deck', {precon: {list: {commander: 4000}}}) !== 4000) throw new Error('config retunes list prices');
+  console.log('PASS: precon prices are the list price times the share of deck value you do not own.');
+}
