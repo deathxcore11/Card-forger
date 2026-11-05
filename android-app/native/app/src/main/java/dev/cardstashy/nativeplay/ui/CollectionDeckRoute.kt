@@ -47,6 +47,8 @@ private object DeckCache {
 
 /** The Yu-Gi-Oh! and Pokémon deck tabs drawn here from the site's own markup and listeners (SitePanel); the others open the website's tab. */
 private val TCG_SITE_TABS = setOf("rules", "matchups", "playtest")
+/** A Magic deck's tabs drawn here (views.js deckPage): Rules, and Power, which Matchups and Upgrade lab now open (powerHub). */
+private val MTG_SITE_TABS = setOf("rules", "engine")
 
 /**
  * A deck's page (views.js deckPage, its Cards tab; for Yu-Gi-Oh! and Pokémon tcg.js tcgDeck) through the site's own code, drawn natively. Search, the type chips,
@@ -137,7 +139,11 @@ fun CollectionDeckRoute(deckId: String, onPlay: () -> Unit, onProfile: () -> Uni
     // A Yu-Gi-Oh! or Pokémon page of the website opens on its game (tcg.js A.setGame pressed first).
     fun web(url: String, press: String?) = webAt(url, if (!tcg) press else listOfNotNull("[data-act=\"setGame\"][data-game=\"${game.id}\"]", press).joinToString("\n"))
     /** tcg.js A.tDeckTab: Cards and the tabs drawn here open here; the others open the website's tab. */
-    fun openTab(k: String) { if (k == "cards" || (tcg && k in TCG_SITE_TABS)) deckTab = k else web("$page/" + android.net.Uri.encode(k), null) }
+    fun openTab(k0: String) {
+        // views.js deckPage: a Magic deck's Matchups and Upgrade lab are Power now.
+        val k = if (!tcg && (k0 == "matchups" || k0 == "upgrade")) "engine" else k0
+        if (k == "cards" || (tcg && k in TCG_SITE_TABS) || (!tcg && k in MTG_SITE_TABS)) deckTab = k else web("$page/" + android.net.Uri.encode(k), null)
+    }
     fun tcgWrite(kind: String, c: DeckCard?, vararg data: Pair<String, String>) = write(kind, "game" to game.id, *data,
         *(if (c == null) emptyArray() else listOfNotNull("zone" to c.zone, "id" to c.cardId, c.rowIndex?.let { "rowIndex" to it }, c.purchaseIdentity?.let { "purchaseIdentity" to it }).toTypedArray()))
     fun tcgOpen(id: String, name: String = "", open: Map<String, String> = emptyMap()) {
@@ -173,7 +179,8 @@ fun CollectionDeckRoute(deckId: String, onPlay: () -> Unit, onProfile: () -> Uni
         if (HomeCache.loaded == null) return@launch
         runCatching {
             take(SitePanelModel.parse(call()))
-            CollectionEngine.settle(15_000, CollectionEngine.PANEL_MODEL) { j -> if (j.has("key")) take(SitePanelModel.parse(j)) }
+            // Long enough for what a tap starts (Simulate matchups: the field's lists, 2,000 games each); it stops once the engine is quiet.
+            CollectionEngine.settle(120_000, CollectionEngine.PANEL_MODEL) { j -> if (j.has("key")) take(SitePanelModel.parse(j)) }
         }
     }
     val screenW = androidx.compose.ui.platform.LocalConfiguration.current.screenWidthDp.dp
@@ -214,7 +221,7 @@ fun CollectionDeckRoute(deckId: String, onPlay: () -> Unit, onProfile: () -> Uni
                     // The price panel: tcg.js A.tDeckRefresh, A.tDeckCheapest and A.tDeckCopyMissing, the site's own (CollectionWrites).
                     tcg && a in setOf("tDeckRefresh", "tDeckCheapest", "tDeckCopyMissing") -> { write(a, "game" to game.id); Unit }
                     a == "deckMenu" && onDeck != null -> CollectionWrites.menu.value = CollectionWrites.DeckMenuOpen(deckId,
-                        tab = { k -> if (k != "cards") web("$page/" + android.net.Uri.encode(k), null) },
+                        tab = { k -> openTab(k) },
                         web = { x, sc -> web(page, "[data-act=\"deckMenu\"]\n[data-act=\"${css(x)}\"]" + (if (sc.isNotEmpty()) "[data-scope=\"${css(sc)}\"]" else "")) },
                         openDeck = onDeck, deleted = onBack)
                     a.isBlank() -> {}

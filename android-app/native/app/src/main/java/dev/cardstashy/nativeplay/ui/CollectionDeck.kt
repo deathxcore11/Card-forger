@@ -300,8 +300,8 @@ private fun DeckPage(m: CollectionDeckModel, top: @Composable (tabs: (@Composabl
     // A Yu-Gi-Oh! or Pokémon deck (tcg.js deckCardsTab): "Add a card by name" as typed (I.tDeckQ), the rules review open or shut;
     // the hero's "n to fix" opens the review and brings it into view (A.tIssues).
     val tcg = m.find != null
-    // tcg.js tcgDeck: a tab other than Cards draws its own body (.deck-body) under the tabs, not the cards' tools.
-    val sited = m.game != CardGame.MTG && (m.tabs.firstOrNull { it.on }?.key ?: "cards") != "cards"
+    // tcg.js tcgDeck and views.js deckPage: a tab other than Cards draws its own body (.deck-body) under the tabs, not the cards' tools.
+    val sited = (m.tabs.firstOrNull { it.on }?.key ?: "cards") != "cards"
     var findText by remember(m.id) { mutableStateOf(m.find?.value.orEmpty()) }
     var issuesOpen by remember(m.id) { mutableStateOf(false) }
     val issuesSeen = remember { androidx.compose.foundation.relocation.BringIntoViewRequester() }

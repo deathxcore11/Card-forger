@@ -186,7 +186,7 @@ class CollectionEngineTest {
         assertEquals("modern", m["format"].asString)
         assertEquals("gallery", m["view"].asString)
         assertEquals("Practice", m["actions"].asJsonArray[0].asJsonObject["label"].asString)
-        assertEquals(listOf("Cards", "Rules", "Power", "Matchups", "Upgrade lab", "Versions", "War Chest"), m["tabs"].asJsonArray.map { it.asJsonObject["label"].asString })
+        assertEquals(listOf("Cards", "Rules", "Power", "Versions", "War Chest"), m["tabs"].asJsonArray.map { it.asJsonObject["label"].asString })
         val names = { o: JsonObject -> o["groups"].asJsonArray.flatMap { g -> g.asJsonObject["rows"].asJsonArray.map { it.asJsonObject["name"].asString } } }
         assertEquals(setOf("Ragavan, Nimble Pilferer", "Talrand, Sky Summoner", "Lightning Bolt", "Counterspell"), names(m).toSet())
         assertEquals(2, m["side"].asJsonObject["rows"].asJsonArray.sumOf { it.asJsonObject["qty"].asInt })

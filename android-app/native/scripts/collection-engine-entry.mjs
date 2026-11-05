@@ -52,6 +52,21 @@ import {massEntryUrl} from 'WEB/buy.js';
 import {interactiveRules, attachRuleLearning} from 'WEB/rule-learning.js';
 import {showRuleHint} from 'WEB/rule-dex.js';
 import {rollDice} from 'WEB/war-chest.js';
+import {profileOf, simulateMatchup, podProfile, calibratePods} from 'WEB/matchup.js';
+import {fieldStore, calibrateField} from 'WEB/matchups-ui.js';
+import {mtgConstructedPower} from 'WEB/deckpower.js';
+import {podSpeed} from 'WEB/extras.js';
+import {formatUpgrades, applyFormatSwap} from 'WEB/format-upgrades.js';
+import {upgradeSuggestions} from 'WEB/strategy.js';
+import {applySwapsToCards} from 'WEB/insights.js';
+import {comparePower} from 'WEB/deck-optimizer.js';
+import {themeQueries} from 'WEB/builder.js';
+import {findCheapestPrinting} from 'WEB/mtg-cheap.js';
+import {commanderTheme} from 'WEB/planner.js';
+import {mtgPower} from 'WEB/power.js';
+import {mtgFieldKey, availability as deckAvailability} from 'WEB/views.js';
+import {commanderEligible, isLand} from 'WEB/core.js';
+import {currentDeck, priceOf} from 'WEB/store.js';
 import '../scripts/web-bytes.mjs';
 import {Document as SiteDocument, serialize as domJson, byId as domById, tap as domTap, type as domType} from '../scripts/site-dom.mjs';
 
@@ -520,10 +535,11 @@ const emblemsOf = embS => embS ? {tally: all(one(embS, cls('emb-tally')), cls('e
   swaps: all(embS, cls('emb-swap')).map(x => { const [o, i] = all(x, x => x.tag === 'button' && cls('link')(x)); const btn = one(x, x => cls('btn')(x));
     return {out: o?.attrs['data-name'] || text(o), in: i?.attrs['data-name'] || text(i), outKey: btn?.attrs['data-out'] || '', inKey: btn?.attrs['data-in'] || '', inIcon: icon(svgIn(i)), button: text(btn), why: text(one(x, cls('emb-why')))}; }),
   foot: text(one(embS, cls('foot')))} : null;
-function deckPageModel(game, id) {
+// [tab]: the tab open (A.deckTab, S.ui.deckTab); any other than Cards draws its body as a panel (mtgDeckPanel), the page round it from here.
+function deckPageModel(game, id, tab = 'cards') {
   const ui = S.ui;
   deckOpen(id);
-  ui.deckTab = 'cards';
+  ui.deckTab = tab;
   const t = tree(deckView()), hero = one(t, cls('ds-hero'));
   if (!hero) { const e = one(t, cls('empty')); return {game, id, missing: {title: text(one(e, tagIs('h3'))), text: text(one(e, tagIs('p')))}}; }
   const viewer = one(t, cls('deck-viewer')), list = one(viewer, x => x.attrs.id === 'deckList'), toolbar = one(t, cls('deck-toolbar'));
@@ -2286,6 +2302,199 @@ function tcgDeckPanel(G, id, tab) {
   panel.redraw = () => { tcgFocus(G, 'tdeck'); S.ui.tdeckId = id; panelRun(() => { panel.host.innerHTML = body(); attach(panel.host); }); };
 }
 
+
+// ---- A Magic deck's tabs (views.js deckPage with S.ui.deckTab): Power is one view now (powerHub; Matchups and Upgrade lab fold into it).
+// Its data-acts as app.js runs them, render() being the tab drawn again (panel.redraw); what the site leaves to a sheet or the AI goes to the app.
+const muState = (d) => ((S.ui.mu ||= {})[d.id] ||= { first: true }); // app.js:3469
+const poolCache = new Set(); // app.js:3757
+// app.js saveCatalogSoon: the app keeps the catalog (Collection.catalog()).
+function saveCatalogSoon() {}
+// app.js A.muRun (3470-3509), verbatim but for render() (the tab drawn again) and the overlay's status line, haptic and count-up (the app's).
+async function mtgMuRun() {
+  const d = currentDeck(), mk = d && mtgMetaKey(d);
+  if (!d || !mk) return;
+  const st = muState(d);
+  if (st.busy) return;
+  const msg = (m) => { st.msg = m; };
+  Object.assign(st, { busy: true, error: "", msg: "Loading tournament results…" });
+  panel.redraw();
+  try {
+    const data = await loadMeta(mk);
+    const archs = (data?.archetypes || []).filter((a) => a.share > 0).slice(0, 8),
+      lists = archs.map((a) => ({ a, list: data.decks.find((x) => x.key === a.best) || data.decks.find((x) => (x.archetype || x.name) === a.name) })).filter((x) => x.list?.main?.length);
+    if (!lists.length) throw Error("No tournament decks to compare with right now.");
+    await resolveNames([...new Set(lists.flatMap((x) => x.list.main.map((r) => r.name)))], (m) => msg("Loading the field's cards · " + m));
+    const field = [];
+    for (const [i, { a, list }] of lists.entries()) {
+      msg(`Simulating against ${a.name} · ${i + 1} of ${lists.length}`);
+      await new Promise((r) => setTimeout(r, 16));
+      const edh = mk === "mtg:EDH", cards = edh ? [...list.main, ...(list.commanders || []).map((r) => (typeof r === "string" ? { name: r, qty: 1 } : r))] : list.main,
+        rows = cards.map((r) => ({ qty: r.qty, c: meta(r.name) })).filter((r) => r.c),
+        base = profileOf("mtg", mtgConstructedPower({ cards }, S.catalog, key, edh ? 100 : 60), rows),
+        prof = edh ? podProfile(base, podSpeed({ cards }, S.catalog)) : base;
+      const cover = meta(a.cover || "");
+      if (prof) field.push({ key: list.key, format: mk.slice(4), name: a.name, share: a.share, art: cover?.image_uris?.art_crop || cover?.card_faces?.[0]?.image_uris?.art_crop || (a.cover ? `https://api.scryfall.com/cards/named?exact=${encodeURIComponent(a.cover)}&format=image&version=art_crop` : ""), profile: prof });
+    }
+    if (mk === "mtg:EDH") { calibratePods(field); for (const f of field) f.bias = 0; }
+    else calibrateField(field, (a, b, o) => simulateMatchup("mtg", a, b, o));
+    st.field = field;
+    st.fieldKey = mtgFieldKey(d);
+    fieldStore.set(st.fieldKey, field);
+  } catch (e) {
+    st.error = e.message || "Couldn't load the field.";
+  } finally {
+    st.busy = false;
+    panel.redraw();
+  }
+}
+// app.js loadFormatPool (3759-3796), verbatim.
+async function loadFormatPool(f, colors, seed, progress) {
+  const ci = colors.filter((c) => c !== "C").join("").toLowerCase() || "c",
+    fq = f.legality ? "f:" + f.legality : "game:paper",
+    themes = seed ? themeQueries(seed) : [],
+    theme = themes.join("|"),
+    key = f.id + "|" + ci + "|" + theme;
+  const basics = (colors.length ? colors : ["C"]).map(c=>({W:"Plains",U:"Island",B:"Swamp",R:"Mountain",G:"Forest",C:"Wastes"})[c]).filter(Boolean);
+  for (const name of basics) {
+    progress(`Checking ${name} printing quotes…`);
+    const current = await resolve(name).catch(() => null);
+    try {
+      const { card } = await findCheapestPrinting(name, { api, format: f.legality, reference: current, basicOnly: true });
+      if (card && (!current || cardPrice(current) === null || cardPrice(card) < cardPrice(current) || (f.legality && !["legal", "restricted"].includes(current.legalities?.[f.legality])))) cacheCard(card);
+    } catch {}
+  }
+  if (poolCache.has(key)) return;
+  const queries = [
+    ...themes.map(query => ["cards for its plan", `${fq} id<=${ci} -t:land ${query}`]),
+    ["the format’s staples", `${fq} id<=${ci} -t:land`],
+    ["budget picks", `${fq} id<=${ci} -t:land usd<=0.5`],
+    ["efficient interaction", `${fq} id<=${ci} -t:land cmc<=3 (o:destroy or o:exile or o:counter)`],
+    ["card flow", `${fq} id<=${ci} -t:land cmc<=3 (o:draw or o:search)`],
+    ...(ci.length > 1 ? [["lands", `${fq} id<=${ci} t:land -t:basic`]] : []),
+  ];
+  for (const [label, q] of queries) {
+    progress(`Finding ${label}…`);
+    try {
+      const r = await api("/cards/search?" + new URLSearchParams({ q: q + " prefer:usd-low", unique: "cards", order: "edhrec" }));
+      for (const c of r.data || []) cacheCard(c);
+    } catch {}
+  }
+  for (const b of colors.map((c) => ({ W: "Plains", U: "Island", B: "Swamp", R: "Mountain", G: "Forest", C: "Wastes" })[c]).filter(Boolean)) await resolve(b).catch(() => {});
+  saveCatalogSoon();
+  poolCache.add(key);
+}
+// app.js loadCandidates (7013-7058), verbatim.
+async function loadCandidates(d, cap, progress) {
+  if (!d.commander) throw Error("Choose this deck’s commander first.");
+  const comm = await resolve(d.commander, true);
+  if (!commanderEligible(comm)) throw Error("Pick a valid single commander first (⋯ → re-import, or start a new deck).");
+  const ci = (comm.color_identity || []).join("").toLowerCase() || "c",
+    theme = commanderTheme(comm),
+    base = `game:paper legal:commander id<=${ci}${cap === Infinity ? "" : ` usd<=${Math.max(0.25, cap)}`}`,
+    queries = [
+      ["ramp", '-t:land (o:"add {" or o:"search your library for a basic land" or o:"treasure token")'],
+      ["card draw", '-t:land (o:"draw a card" or o:"draw two" or o:"draws a card")'],
+      ["removal", '-t:land (o:"destroy target" or o:"exile target" or o:"counter target" or o:"destroy all")'],
+      ["protection", "-t:land (o:indestructible or o:hexproof)"],
+      [theme.tribe ? theme.tribe.toLowerCase() + "s" : "creatures", theme.tribe ? "t:" + theme.tribe : "t:creature cmc<=4"],
+      ["lands", "t:land -t:basic (o:\"add {\" )"],
+      ["budget creatures", "t:creature usd<=0.50"],
+      ["budget support", "-t:land usd<=0.35"],
+    ];
+  let loaded = 0,
+    failed = 0;
+  for (const [label, q] of queries) {
+    progress(`Finding ${label}…`);
+    try {
+      const r = await api("/cards/search?" + new URLSearchParams({ q: `${base} ${q} prefer:usd-low`, unique: "cards", order: label.startsWith("budget") ? "usd" : "edhrec", dir:"asc" }));
+      for (const c of r.data.slice(0, label.startsWith("budget") ? 140 : 60)) {
+        cacheCard(c);
+        loaded++;
+      }
+    } catch {
+      failed++;
+    }
+  }
+  const basics = [];
+  for (const name of (comm.color_identity?.length ? comm.color_identity : ["C"]).map(c => ({ W: "Plains", U: "Island", B: "Swamp", R: "Mountain", G: "Forest", C: "Wastes" })[c])) {
+    let card = null, lookupFailed = false;
+    progress(`Checking ${name} data and price…`);
+    try { card = await resolve(name); } catch { lookupFailed = true; }
+    try {
+      const { card: priced } = await findCheapestPrinting(name, { api, reference: card, format: "commander", basicOnly: true });
+      if (priced && (!card || cardPrice(card) === null || cardPrice(priced) < cardPrice(card) || card.legalities?.commander !== "legal")) { card = cacheCard(priced); loaded++; }
+      lookupFailed = false;
+    } catch { lookupFailed = true; }
+    if (lookupFailed) failed++;
+    basics.push({ name, loaded: !!card, priced: priceOf(name) !== null, price: priceOf(name), lookupFailed });
+  }
+  return { loaded, failed, basics };
+}
+const MDECK_ACTS = {
+  ...TDECK_ACTS,
+  muRun: () => { mtgMuRun(); },
+  // app.js A.suggestFormatUpgrades (4141-4149), verbatim but for render().
+  suggestFormatUpgrades: () => { (async () => {
+    const d=currentDeck(),B=S.ui.build,f=formatOf(d);if(B.busy)return;
+    B.busy=true;B.fillDeck=d.id;B.msg="Finding same-role, lower-cost spells…";panel.redraw();
+    try{await resolveNames(d.cards.map(r=>r.name));const seeds=d.cards.map(r=>meta(r.name)).filter(c=>c&&!isLand(c));const colors=[...new Set(seeds.flatMap(c=>c.color_identity||[]))];
+    await loadFormatPool(f,colors.length?colors:["C"],seeds[0],m=>{B.msg=m;});
+    B.formatSwaps=formatUpgrades(d,S.catalog,{budget:Number.isFinite(Number(d.budget))?Number(d.budget):25,available:deckAvailability(),price:c=>priceOf(c.name),evaluate:next=>mtgPower(next)});B.swapSignature=JSON.stringify(d.cards);
+    B.msg=B.formatSwaps.length?"Review each trade-off. Applying one swap preserves your card count and saves the previous version.":"No conservative same-role swaps found. Try a wider card pool; a lower mana value alone does not prove an upgrade.";
+    }catch(e){B.msg=e.message;}finally{B.busy=false;panel.redraw();}
+  })(); },
+  // app.js A.applyFormatUpgrade (4151-4155): one copy swapped, the list before it kept in Versions.
+  applyFormatUpgrade: t => { (async () => {
+    const B=S.ui.build,d=currentDeck(),swap=B.formatSwaps?.[Number(t.dataset.i)];
+    if(!swap||B.fillDeck!==d.id||B.swapSignature!==JSON.stringify(d.cards)){toasts.push({text:"Your deck changed. Refresh suggestions first.",undo:false});return;}
+    const cards=applyFormatSwap(d,swap,S.catalog);await editDeckOf(d.id)(d=>withSnapshot({...withSnapshot(d,"Before suggested swap"),cards},"Reviewed spell swap"),{msg:"One card in, one card out. Previous list saved in Versions."});B.formatSwaps=null;panel.redraw();
+  })().catch(e => toasts.push({text: e.message, undo: false})); },
+  // app.js A.upRun (7121-7163), verbatim but for render() and the #upMsg line (the tab drawn again shows U.msg).
+  upRun: () => { (async () => {
+    const U = S.ui.upgrade, d = currentDeck();
+    if (U.busy) return;
+    U.busy = true; U.deckId = d.id; U.plans = {}; U.selected = new Set();
+    panel.redraw();
+    const msg = (m) => { U.msg = m; };
+    try {
+      const r = await resolveNames([...d.cards.map((c) => c.name), ...S.state.collection.map((c) => c.name)], msg);
+      const unresolved = d.cards.filter((c) => !meta(c.name));
+      if (unresolved.length) throw Error("Fix unrecognized cards first: " + unresolved.slice(0, 3).map((c) => c.name).join(", "));
+      const c = await loadCandidates(d, Math.max(50, U.budget), msg);
+      const basePower=mtgPower(d);
+      for (const b of [...new Set([0, 10, 25, 50, 100, U.budget])]) {
+        const plan = upgradeSuggestions(d, S.state.collection, S.state.decks, S.catalog, { budget: b, simple: U.simple, maxSwaps: 8 });
+        let next=d;
+        plan.swaps=plan.swaps.filter(s=>{
+          const trial={...next,cards:applySwapsToCards(next.cards,[s])},before=mtgPower(next),after=mtgPower(trial);
+          if(comparePower(after,before)<=0)return false;
+          s.powerBefore=before.score;s.powerAfter=after.score;next=trial;return true;
+        });plan.powerBefore=basePower.score;plan.powerAfter=mtgPower(next).score;
+        plan.spent = plan.swaps.reduce((a, s) => a + (s.cost || 0), 0);
+        U.plans[b] = plan;
+      }
+      U.base = JSON.stringify(d.cards);
+      U.msg = `${c.loaded} candidates compared${r.failed.length || c.failed ? " (some lookups failed)" : ""}. Read each cut before applying.`;
+    } catch (e) {
+      U.msg = e.message;
+    } finally {
+      U.busy = false;
+      saveCatalogSoon();
+      panel.redraw();
+    }
+  })(); },
+};
+// views.js deckPage with [tab] open: its .deck-body becomes the panel, fresh each time the tab opens (A.deckTab draws the page again).
+function mtgDeckPanel(id, tab) {
+  mtgFocus(); deckOpen(id); S.ui.deckTab = tab;
+  const d = (S.state.decks || []).find(x => String(x.id) === String(id)), key = ['deck', 'mtg', id, tab, d?.format || ''].join('|');
+  panel = null;
+  const body = () => { const box = new SiteDocument().createElement('div'); box.innerHTML = deckView(); return box.querySelector('.deck-body')?.innerHTML || ''; };
+  const attach = host => PANEL_ATTACH[tab]?.(host);
+  panelOpen(key, body(), attach, MDECK_ACTS);
+  panel.redraw = () => { mtgFocus(); deckOpen(id); S.ui.deckTab = tab; panelRun(() => { panel.host.innerHTML = body(); attach(panel.host); }); };
+}
+
 globalThis.Collection = {
   // The account's workspace row data (cloud.js), normalized as app.js loads it; [catalogJson] is the app's saved catalog.
   load(workspaceJson, catalogJson) {
@@ -2433,7 +2642,7 @@ globalThis.Collection = {
   // The deck page's Rules tab (tcg.js: interactiveRules(g, {format: d.format})), and taps and typing on whatever panel is open.
   rules(game, format) { panelOpen('rules|' + game + '|' + (format || ''), interactiveRules(game, {format: format || ''}), host => attachRuleLearning(host)); return panelModel(); },
   // A Yu-Gi-Oh! or Pokémon deck's tab other than Cards (tcg.js A.tDeckTab): its body as a panel; the page itself comes from deck() with opts.tab.
-  deckPanel(game, id, tab) { tcgDeckPanel(game, id, tab); return panelModel(); },
+  deckPanel(game, id, tab) { if (game === 'mtg') mtgDeckPanel(id, tab); else tcgDeckPanel(game, id, tab); return panelModel(); },
   panelModel() { return panel ? panelModel() : '{}'; },
   panelTap(id) { const el = panel && domById(panel.doc.documentElement, Number(id)); if (el) panelRun(() => domTap(el)); return panel ? panelModel() : '{}'; },
   panelType(id, value) { const el = panel && domById(panel.doc.documentElement, Number(id)); if (el) panelRun(() => domType(el, value)); return panel ? panelModel() : '{}'; },
@@ -2450,7 +2659,7 @@ globalThis.Collection = {
   // [opts] = {search, filter, sort, view}: the controls as the app last left them, applied before the page draws.
   deck(game, id, opts) { if (game && game !== 'mtg') { tcgFocus(game, 'tdeck'); S.ui.tdeckId = id; const o = opts ? JSON.parse(opts) : {}; if (o.view != null) tcgDeckAct.view(o.view);
     tdeckAt = [game, id]; tcgScreenCards(game, 'tdeck', {id}); return json(tcgDeckPageModel(game, id, o.tab || 'cards')); }
-    mtgFocus(); deckOpen(id); const o = opts ? JSON.parse(opts) : {}; for (const k of Object.keys(deckAct)) if (o[k] != null) deckAct[k](o[k]); return json(deckPageModel(game, id)); },
+    mtgFocus(); deckOpen(id); const o = opts ? JSON.parse(opts) : {}; for (const k of Object.keys(deckAct)) if (o[k] != null) deckAct[k](o[k]); return json(deckPageModel(game, id, o.tab || 'cards')); },
   // The open Yu-Gi-Oh! or Pokémon deck page again (after settle: a search's results, prices and card data that came in).
   tdeckModel() { if (!tdeckAt) return '{}'; const [g, id] = tdeckAt; return json(tcgDeckPageModel(g, id)); },
   deckDo(game, id, kind, value) { if (game && game !== 'mtg') { if (!tcgDeckAct[kind]) throw Error('unknown deck control ' + kind); tcgFocus(game, 'tdeck'); S.ui.tdeckId = id; tdeckAt = [game, id]; tcgDeckAct[kind](value); return json(tcgDeckPageModel(game, id)); }
