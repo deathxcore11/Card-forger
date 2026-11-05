@@ -346,3 +346,4 @@ body .deck-body[data-tab="engine"] { columns: auto; }
 .pwp-more[open] { padding-bottom: 12px; }
 .pwp-cols { display: block; }
 .pwp-actions { display: flex; flex-wrap: wrap; gap: 8px; margin-top: auto; } .pwp-actions .pwp-btn { margin-top: 0; }
+.pwp-eyebrow { margin: 0 0 2px; font-size: .64rem; letter-spacing: .16em; text-transform: uppercase; color: var(--gold); font-weight: 700; }
