@@ -44,9 +44,9 @@ private object DeckCache {
 /**
  * A deck's page (views.js deckPage, its Cards tab) through the site's own code, drawn natively. Search, the type chips,
  * the grouping and the four views ask the site's code again (app.js deckSearch / deckChip / deckSort / deckView);
- * Practice seats the deck in the native Practice lobby as A.deckPlayCpu does. A card, the ±, the menu, review, Share,
- * "+ Add", the swaps, the footer and the other tabs (Rules, Power, Matchups, Upgrade lab, Versions, War Chest) open the
- * website's page, which does them there.
+ * Practice seats the deck in the native Practice lobby as A.deckPlayCpu does. The − / ＋, the swaps and "+ Add" save here
+ * (app.js deckQty / deckEmbSwap / deckAdd through CollectionWrites). The menu, review, Share, the footer and the other tabs
+ * (Rules, Power, Matchups, Upgrade lab, Versions, War Chest) open the website's page, which does them there.
  */
 @Composable
 fun CollectionDeckRoute(deckId: String, onPlay: () -> Unit, onProfile: () -> Unit, onBack: () -> Unit, onHome: () -> Unit, onCards: () -> Unit,
@@ -91,6 +91,14 @@ fun CollectionDeckRoute(deckId: String, onPlay: () -> Unit, onProfile: () -> Uni
         delay(180); DeckCache.q = query
         if (HomeCache.loaded != null) runCatching { paint() }
     }
+    // A save (here, from a card page over this one, or its Undo): the page is read again, as app.js commit draws it again.
+    val written by CollectionWrites.written.collectAsState()
+    var seenWrite by remember(deckId) { mutableStateOf(written) }
+    LaunchedEffect(written) { if (written != seenWrite) { seenWrite = written; if (HomeCache.loaded != null) runCatching { paint() } } }
+    val scope = androidx.compose.runtime.rememberCoroutineScope()
+    fun write(kind: String, vararg data: Pair<String, String>, done: (Boolean) -> Unit = {}) = scope.launch {
+        done(CollectionWrites.act(context, kind, com.google.gson.JsonObject().apply { addProperty("deck", deckId); data.forEach { (k, v) -> addProperty(k, v) } }))
+    }
     LaunchedEffect(asked) {
         val (kind, value) = asked ?: return@LaunchedEffect
         if (HomeCache.loaded != null) runCatching {
@@ -122,8 +130,10 @@ fun CollectionDeckRoute(deckId: String, onPlay: () -> Unit, onProfile: () -> Uni
             card = { n -> val tile = "[data-act=\"card\"][data-name=\"${css(n)}\"]"
                 if (nativeCard) cards = cards + CardOpen(n, deck = deckId, page = page, tile = tile) else web(page, tile) },
             set = { code -> if (code.isNotBlank()) onSet?.invoke(code.lowercase()) ?: web(site + "#set/" + android.net.Uri.encode(code.lowercase()), null) },
-            qty = { n, d -> web(page, "[data-act=\"deckQty\"][data-name=\"${css(n)}\"][data-delta=\"$d\"]") },
-            swap = { o, i -> web(page, "[data-act=\"deckEmbSwap\"][data-out=\"${css(o)}\"][data-in=\"${css(i)}\"]") },
+            // The deck's − / ＋, a swap and a typed add save here: the site's handlers, then the page again (CollectionWrites).
+            qty = { n, d -> write("deckQty", "name" to n, "delta" to d.toString()) },
+            swap = { o, i -> write("deckEmbSwap", "out" to o, "in" to i) },
+            addCard = { n, done -> write("deckAdd", "name" to n, done = done) },
         )
     }
     val top: @Composable (tabs: (@Composable () -> Unit)?) -> Unit = { tabs ->

@@ -1,5 +1,6 @@
 package dev.cardstashy.nativeplay.ui
 
+import androidx.compose.ui.text.style.TextAlign
 import androidx.activity.compose.BackHandler
 import androidx.compose.animation.core.Animatable
 import androidx.compose.animation.core.CubicBezierEasing
@@ -139,7 +140,7 @@ fun SyncDecideSheet(backdrop: GraphicsLayer?, onClose: () -> Unit) {
  * the screen's width.
  */
 @Composable
-internal fun SiteSheet(title: String, backdrop: GraphicsLayer?, onClose: () -> Unit, content: @Composable ColumnScope.(vw: androidx.compose.ui.unit.Dp) -> Unit) {
+internal fun SiteSheet(title: String, backdrop: GraphicsLayer?, onClose: () -> Unit, onBack: (() -> Unit)? = null, content: @Composable ColumnScope.(vw: androidx.compose.ui.unit.Dp) -> Unit) {
     val still = Motion.still
     val fade = remember { Animatable(if (still) 1f else 0f) }
     val y = remember { Animatable(if (still) 0f else 46f) }; val k = remember { Animatable(if (still) 1f else .985f) }; val a = remember { Animatable(if (still) 1f else .2f) }
@@ -152,7 +153,7 @@ internal fun SiteSheet(title: String, backdrop: GraphicsLayer?, onClose: () -> U
         launch { k.animateTo(1f, keyframes { durationMillis = 420; .985f at 0 using e; 1.002f at 252 using e }) }
         a.animateTo(1f, keyframes { durationMillis = 420; .2f at 0 using e; 1f at 252 using e })
     }
-    BackHandler { onClose() }
+    BackHandler { (onBack ?: onClose)() }
     val dim = androidx.compose.ui.graphics.rememberGraphicsLayer(); val frost = androidx.compose.ui.graphics.rememberGraphicsLayer()
     val sheetBox = remember { arrayOf(androidx.compose.ui.geometry.Rect.Zero) }
     val glass = backdrop != null && android.os.Build.VERSION.SDK_INT >= 31; val bg = Site.Bg
@@ -206,18 +207,28 @@ internal fun SiteSheet(title: String, backdrop: GraphicsLayer?, onClose: () -> U
             // Taps on the sheet stay on it.
             .pointerInput(Unit) { detectTapGestures { } }) {
             val density = androidx.compose.ui.platform.LocalDensity.current
-            // #sheetBody: 8 over the head, the head's height, then the body; 22 under it (and the navigation bar's).
-            Column(Modifier.fillMaxWidth().verticalScroll(scroll).padding(top = 8.dp + with(density) { headH.toDp() })
-                .padding(start = gutter, end = gutter, bottom = 22.dp + navBottom)) { content(vw) }
+            // Inside the sheet's 1 border, #sheetBody: 8 over the head, the head's height, then the body; 22 under it (and the
+            // navigation bar's), then the border again.
+            Column(Modifier.fillMaxWidth().verticalScroll(scroll).padding(top = 9.dp + with(density) { headH.toDp() })
+                .padding(start = gutter, end = gutter, bottom = 23.dp + navBottom)) { content(vw) }
             // .sheet-head (glass): sticky, rgba(18, 20, 26, .8), a .06 white rule under it; h2 Manrope 19/800; the 44 close.
             Row(Modifier.fillMaxWidth().onSizeChanged { headH = it.height }
-                .graphicsLayer { translationY = maxOf(0f, 8.dp.toPx() - scroll.value) }
+                .graphicsLayer { translationY = maxOf(0f, 9.dp.toPx() - scroll.value) }
                 .background(if (glass) Color(0xCC12141A) else bg)
                 .drawBehind { drawRect(Color(0x0FFFFFFF), topLeft = Offset(0f, size.height - 1.dp.toPx()), size = androidx.compose.ui.geometry.Size(size.width, 1.dp.toPx())) }
                 .padding(start = gutter, end = gutter, top = 12.dp, bottom = 11.dp),
                 verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(10.dp)) {
+                // A sheet opened from another (app.js sheet history): the back button, and the title between the two (space-between).
+                if (onBack != null) Box(Modifier.size(44.dp).clip(RoundedCornerShape(12.dp)).background(Color(0xFF1F232B)).border(1.dp, Color(0xFF2A2F39), RoundedCornerShape(12.dp))
+                    .clickable(onClick = onBack).semantics { contentDescription = "Back to previous card or deck" }, contentAlignment = Alignment.Center) {
+                    // ICON.back: M14.5 6 8.5 12l6 6, stroke 1.75 on a 24 grid.
+                    Canvas(Modifier.size(20.dp)) { val u = size.width / 24f
+                        drawPath(androidx.compose.ui.graphics.Path().apply { moveTo(14.5f * u, 6f * u); lineTo(8.5f * u, 12f * u); lineTo(14.5f * u, 18f * u) }, INK,
+                            style = Stroke(1.75f * u, cap = StrokeCap.Round, join = androidx.compose.ui.graphics.StrokeJoin.Round)) }
+                }
                 Text(title, Modifier.weight(1f), style = TextStyle(fontFamily = Site.Manrope, fontWeight = FontWeight.ExtraBold, fontSize = 19.sp,
-                    lineHeight = 21.85.sp, letterSpacing = (-.38).sp, color = INK, lineHeightStyle = CSS_LINE))
+                    lineHeight = 21.85.sp, letterSpacing = (-.38).sp, color = INK, lineHeightStyle = CSS_LINE), textAlign = if (onBack != null) TextAlign.Center else TextAlign.Start,
+                    maxLines = 1, overflow = androidx.compose.ui.text.style.TextOverflow.Ellipsis)
                 Box(Modifier.size(44.dp).clip(RoundedCornerShape(12.dp)).background(Color(0xFF1F232B)).border(1.dp, Color(0xFF2A2F39), RoundedCornerShape(12.dp))
                     .clickable(onClick = onClose).semantics { contentDescription = "Close" }, contentAlignment = Alignment.Center) {
                     // ICON.close: m6.5 6.5 11 11 M17.5 6.5l-11 11, stroke 1.75 on a 24 grid.

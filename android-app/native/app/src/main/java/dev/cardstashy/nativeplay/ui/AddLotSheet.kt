@@ -1,5 +1,7 @@
 package dev.cardstashy.nativeplay.ui
 
+import androidx.compose.ui.geometry.Offset
+import androidx.compose.ui.focus.onFocusChanged
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
@@ -81,13 +83,13 @@ private val ABad = Color(0xFFF08A7E)
 /** Chrome's own ::placeholder grey; the site leaves it as it is. */
 private val APlaceholder = Color(0xFF757575)
 /** A CSS line box: [line] tall, its leading split evenly above and below (not trimmed away as Compose does by default). */
-private fun t(size: Float, weight: Int, line: Float, color: Color = AInk, track: Float = 0f) =
+internal fun cssType(size: Float, weight: Int, line: Float, color: Color = AInk, track: Float = 0f) =
     TextStyle(fontFamily = Type.Sans, fontWeight = FontWeight(weight), fontSize = size.sp, lineHeight = line.sp, color = color, letterSpacing = track.sp, lineHeightStyle = CSS_LINE)
 internal val CSS_LINE = androidx.compose.ui.text.style.LineHeightStyle(androidx.compose.ui.text.style.LineHeightStyle.Alignment.Center, androidx.compose.ui.text.style.LineHeightStyle.Trim.None)
 /** A <label>'s words (12.5 / 600, muted); the input inside one takes the same font in the text colour. */
-private val LABEL = t(12.5f, 600, 18.125f, AMute)
-private val IN_LABEL = t(12.5f, 600, 18.125f)
-private val PLAIN = t(15f, 400, 21.75f)
+internal val SHEET_LABEL = cssType(12.5f, 600, 18.125f, AMute)
+internal val SHEET_IN_LABEL = cssType(12.5f, 600, 18.125f)
+internal val SHEET_PLAIN = cssType(15f, 400, 21.75f)
 
 private fun JsonObject.str(k: String) = get(k)?.takeIf { it.isJsonPrimitive }?.asString.orEmpty()
 private fun JsonObject.obj(k: String) = get(k)?.takeIf { it.isJsonObject }?.asJsonObject
@@ -206,61 +208,58 @@ private fun AddLotForm(m: JsonObject, open: CollectionWrites.AddOpen, backdrop: 
         } else Spacer(Modifier.height(10.dp))
         // .searchbar: the name and Look up, 8 apart.
         Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-            Field(name, { name = it }, PLAIN, "Card name, e.g. Sol Ring", Modifier.weight(1f), desc = "Card name", ime = ImeAction.Search, onGo = ::lookup)
+            FormInput(name, { name = it }, SHEET_PLAIN, "Card name, e.g. Sol Ring", Modifier.weight(1f), desc = "Card name", ime = ImeAction.Search, onGo = ::lookup)
             SiteGhost("Look up", h = 44.dp, fs = 15f, pad = 16.dp) { lookup() }
         }
         // #addPreview: the card, a line of words, or nothing (its 10 margins collapse with the search bar's and the grid's).
         Spacer(Modifier.height(10.dp))
         preview?.let { Preview(it); Spacer(Modifier.height(10.dp)) }
-        if (preview == null && previewText.isNotEmpty()) { Text(previewText, style = t(13f, 400, 18.85f, AMute)); Spacer(Modifier.height(10.dp)) }
+        if (preview == null && previewText.isNotEmpty()) { Text(previewText, style = cssType(13f, 400, 18.85f, AMute)); Spacer(Modifier.height(10.dp)) }
         // .grid2: Copies and Finish, Condition and Language (one column up to 480 wide), then where it lives across both.
-        Pair2(one, { md -> Labeled("Copies", md) { Field(qty, { qty = it }, IN_LABEL, desc = "Copies", keyboard = KeyboardType.Number) } },
-            { md -> Labeled("Finish", md) { Select(m.pairs("finishes"), finish, IN_LABEL, desc = "Finish") { finish = it; changed() } } })
+        Pair2(one, { md -> FormLabeled("Copies", md) { FormInput(qty, { qty = it }, SHEET_IN_LABEL, desc = "Copies", keyboard = KeyboardType.Number) } },
+            { md -> FormLabeled("Finish", md) { FormSelect(m.pairs("finishes"), finish, SHEET_IN_LABEL, desc = "Finish") { finish = it; changed() } } })
         Spacer(Modifier.height(10.dp))
-        Pair2(one, { md -> Labeled("Condition", md) { Select(m.pairs("conditions"), condition, IN_LABEL, desc = "Condition") { condition = it; changed() } } },
-            { md -> Labeled("Language", md) { Select(m.pairs("languages"), language, IN_LABEL, desc = "Language") { language = it; changed() } } })
+        Pair2(one, { md -> FormLabeled("Condition", md) { FormSelect(m.pairs("conditions"), condition, SHEET_IN_LABEL, desc = "Condition") { condition = it; changed() } } },
+            { md -> FormLabeled("Language", md) { FormSelect(m.pairs("languages"), language, SHEET_IN_LABEL, desc = "Language") { language = it; changed() } } })
         Spacer(Modifier.height(10.dp))
         Column(Modifier.fillMaxWidth(), verticalArrangement = Arrangement.spacedBy(8.dp)) {
-            Text(loc.str("label"), style = t(13f, 600, 18.85f, AMute))
-            Select(loc.pairs("options"), picker, PLAIN, minH = 46.dp, desc = loc.str("label")) { chooseLocation(it) }
+            Text(loc.str("label"), style = cssType(13f, 600, 18.85f, AMute))
+            FormSelect(loc.pairs("options"), picker, SHEET_PLAIN, minH = 46.dp, desc = loc.str("label")) { chooseLocation(it) }
             if (locShown) {
                 val focus = remember { FocusRequester() }
-                Field(location, { location = it.take(100) }, PLAIN, locPlaceholder, Modifier.focusRequester(focus), minH = 46.dp,
+                FormInput(location, { location = it.take(100) }, SHEET_PLAIN, locPlaceholder, Modifier.focusRequester(focus), minH = 46.dp,
                     desc = if (picker == "binder:new") "New binder name" else "New location name")
                 LaunchedEffect(locFocus) { runCatching { focus.requestFocus() } }
             }
-            Text(locHint, style = t(11f, 400, 15.95f, AMute))
+            Text(locHint, style = cssType(11f, 400, 15.95f, AMute))
         }
         Spacer(Modifier.height(12.dp))
-        More("Exact printing (optional)", printOpen, { printOpen = !printOpen }) {
+        FormMore("Exact printing (optional)", printOpen, { printOpen = !printOpen }) {
             Spacer(Modifier.height(10.dp))
-            Pair2(one, { md -> Labeled("Set code", md) { Field(set, { set = it; changed() }, IN_LABEL, "e.g. CMM", desc = "Set code") } },
-                { md -> Labeled("Collector #", md) { Field(number, { number = it; changed() }, IN_LABEL, desc = "Collector #") } })
+            Pair2(one, { md -> FormLabeled("Set code", md) { FormInput(set, { set = it; changed() }, SHEET_IN_LABEL, "e.g. CMM", desc = "Set code") } },
+                { md -> FormLabeled("Collector #", md) { FormInput(number, { number = it; changed() }, SHEET_IN_LABEL, desc = "Collector #") } })
             Spacer(Modifier.height(10.dp))
-            Text("Leave blank if unsure — CardStashy never guesses an edition.", style = t(13f, 400, 18.85f, AMute))
+            Text("Leave blank if unsure — CardStashy never guesses an edition.", style = cssType(13f, 400, 18.85f, AMute))
         }
         Spacer(Modifier.height(12.dp))
         ConditionPrice(blocks, vw, onRetry = { price(true) }, onBuy = { u -> runCatching { uri.openUri(u) } })
         Spacer(Modifier.height(12.dp))
-        More("Custom value (optional)", customOpen, { customOpen = !customOpen }) {
-            Labeled("Your value per copy (USD, optional)", Modifier.fillMaxWidth()) {
-                Field(value, { value = it; price() }, IN_LABEL, valueHint, desc = "Your value per copy (USD, optional)", keyboard = KeyboardType.Decimal)
+        FormMore("Custom value (optional)", customOpen, { customOpen = !customOpen }) {
+            FormLabeled("Your value per copy (USD, optional)", Modifier.fillMaxWidth()) {
+                FormInput(value, { value = it; price() }, SHEET_IN_LABEL, valueHint, desc = "Your value per copy (USD, optional)", keyboard = KeyboardType.Decimal)
             }
             Spacer(Modifier.height(10.dp))
             Text("Your custom value is used for your collection total. Clear it to use the source value. Played or damaged copies without a quote or custom value are excluded from totals.",
-                style = t(12f, 400, 17.4f, AFoot))
+                style = cssType(12f, 400, 17.4f, AFoot))
         }
         Spacer(Modifier.height(12.dp))
         // #addError, then .actions: the gold save (busy while it saves), Save without lookup, and Delete when editing.
-        if (error.isNotEmpty()) { Text(error, style = t(13f, 400, 18.85f, ABad)); Spacer(Modifier.height(10.dp)) }
+        if (error.isNotEmpty()) { Text(error, style = cssType(13f, 400, 18.85f, ABad)); Spacer(Modifier.height(10.dp)) }
         Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(8.dp), verticalAlignment = Alignment.CenterVertically) {
             val enabled = canSave && !saving
-            Box(Modifier.heightIn(min = 44.dp).alpha(if (enabled) 1f else .45f).clip(RoundedCornerShape(11.dp)).background(Site.Gold)
-                .clickable(enabled = enabled) { save(false) }.padding(horizontal = 17.dp, vertical = 4.dp), contentAlignment = Alignment.Center) {
-                Text(if (saving) "Saving…" else m.str("save"), style = t(15f, 700, 21.75f, Color(0xFF1B1406)))
-            }
-            Link("Save without lookup", Site.Gold) { save(true) }
-            if (editing) Link("Delete", ABad) { scope.launch { CollectionWrites.act(context, "addDelete", JsonObject()) } }
+            FormGold(if (saving) "Saving…" else m.str("save"), enabled) { save(false) }
+            FormLink("Save without lookup", Site.Gold) { save(true) }
+            if (editing) FormLink("Delete", ABad) { scope.launch { CollectionWrites.act(context, "addDelete", JsonObject()) } }
         }
     }
 }
@@ -274,7 +273,7 @@ private fun Seg(onList: () -> Unit) {
             val on = k == "one"
             Box(Modifier.weight(1f).heightIn(min = 44.dp).then(if (on) Modifier.siteGoldGlide(pal) else Modifier).clip(RoundedCornerShape(999.dp))
                 .clickable { if (!on) onList() }.semantics { role = Role.Tab; selected = on }.padding(horizontal = 6.dp, vertical = 8.dp), contentAlignment = Alignment.Center) {
-                Text(label, style = t(13.5f, 650, 19.575f, if (on) pal.ink else AMute, -.135f), maxLines = 1, overflow = TextOverflow.Ellipsis)
+                Text(label, style = cssType(13.5f, 650, 19.575f, if (on) pal.ink else AMute, -.135f), maxLines = 1, overflow = TextOverflow.Ellipsis)
             }
         }
     }
@@ -295,9 +294,9 @@ private fun Preview(p: JsonObject) {
             if (ring != null) Box(Modifier.matchParentSize().border(2.dp, ring, RoundedCornerShape(6.dp)))
         }
         Column(Modifier.weight(1f)) {
-            Text(p.str("name"), style = t(15f, 700, 21.75f))
-            Spacer(Modifier.height(6.dp)); Text(p.str("type"), style = t(13f, 400, 18.85f, AMute))
-            Spacer(Modifier.height(6.dp)); Text(p.str("line"), style = t(13f, 400, 18.85f))
+            Text(p.str("name"), style = cssType(15f, 700, 21.75f))
+            Spacer(Modifier.height(6.dp)); Text(p.str("type"), style = cssType(13f, 400, 18.85f, AMute))
+            Spacer(Modifier.height(6.dp)); Text(p.str("line"), style = cssType(13f, 400, 18.85f))
             Spacer(Modifier.height(6.dp))
         }
     }
@@ -312,14 +311,18 @@ private fun Pair2(one: Boolean, a: @Composable (Modifier) -> Unit, b: @Composabl
 
 /** A <label> around its field: the words, 4, the field. */
 @Composable
-private fun Labeled(label: String, modifier: Modifier, field: @Composable () -> Unit) =
-    Column(modifier, verticalArrangement = Arrangement.spacedBy(4.dp)) { Text(label, style = LABEL); field() }
+internal fun FormLabeled(label: String, modifier: Modifier, field: @Composable () -> Unit) =
+    Column(modifier, verticalArrangement = Arrangement.spacedBy(4.dp)) { Text(label, style = SHEET_LABEL); field() }
 
 /** An <input> on the glass field: 9 / 12 in, 11 corners, at least [minH] tall; Chrome's grey placeholder. */
 @Composable
-private fun Field(value: String, onValue: (String) -> Unit, style: TextStyle, placeholder: String = "", modifier: Modifier = Modifier, minH: Dp = 44.dp,
-                  desc: String = "", keyboard: KeyboardType = KeyboardType.Text, ime: ImeAction = ImeAction.Done, onGo: () -> Unit = {}) {
-    BasicTextField(value, onValue, modifier.fillMaxWidth().semantics { if (desc.isNotEmpty()) contentDescription = desc }, singleLine = true, textStyle = style,
+internal fun FormInput(value: String, onValue: (String) -> Unit, style: TextStyle, placeholder: String = "", modifier: Modifier = Modifier, minH: Dp = 44.dp,
+                  desc: String = "", keyboard: KeyboardType = KeyboardType.Text, ime: ImeAction = ImeAction.Done, focus: FocusRequester? = null, onGo: () -> Unit = {}) {
+    // style.css :focus-visible: a 2 gold ring, 2 outside the field, while it has the caret.
+    var focused by remember { mutableStateOf(false) }
+    BasicTextField(value, onValue, modifier.fillMaxWidth().then(if (focus != null) Modifier.focusRequester(focus) else Modifier).onFocusChanged { focused = it.isFocused }
+        .drawBehind { if (focused) { val o = 3.dp.toPx(); drawRoundRect(Site.Gold, Offset(-o, -o), Size(size.width + o * 2, size.height + o * 2), CornerRadius(11.dp.toPx() + o), style = Stroke(2.dp.toPx())) } }
+        .semantics { if (desc.isNotEmpty()) contentDescription = desc }, singleLine = true, textStyle = style,
         cursorBrush = SolidColor(Site.Gold), keyboardOptions = KeyboardOptions(keyboardType = keyboard, imeAction = ime),
         keyboardActions = KeyboardActions(onSearch = { onGo() }, onDone = { onGo() }, onGo = { onGo() }),
         decorationBox = { inner ->
@@ -332,7 +335,7 @@ private fun Field(value: String, onValue: (String) -> Unit, style: TextStyle, pl
 
 /** A <select> as glass-select.js draws it: the chosen option on the glass field and the arrow; a tap opens the list. */
 @Composable
-private fun Select(options: List<Pair<String, String>>, selected: String, style: TextStyle, minH: Dp = 44.dp, desc: String = "", onPick: (String) -> Unit) {
+internal fun FormSelect(options: List<Pair<String, String>>, selected: String, style: TextStyle, minH: Dp = 44.dp, desc: String = "", onPick: (String) -> Unit) {
     var open by remember { mutableStateOf(false) }
     Box {
         Row(Modifier.fillMaxWidth().heightIn(min = minH).siteGlassField(11.dp).clip(RoundedCornerShape(11.dp)).clickable { open = true }
@@ -345,7 +348,7 @@ private fun Select(options: List<Pair<String, String>>, selected: String, style:
         }
         DropdownMenu(open, { open = false }, containerColor = Color(0xFF1A1E26)) {
             options.forEach { (v, l) ->
-                DropdownMenuItem(text = { Text(l, style = t(14f, if (v == selected) 700 else 400, 20f, if (v == selected) Site.Gold else AInk)) },
+                DropdownMenuItem(text = { Text(l, style = cssType(14f, if (v == selected) 700 else 400, 20f, if (v == selected) Site.Gold else AInk)) },
                     onClick = { open = false; if (v != selected) onPick(v) })
             }
         }
@@ -354,18 +357,26 @@ private fun Select(options: List<Pair<String, String>>, selected: String, style:
 
 /** details.more: a hairline, 10, the 44 summary (14 / 700, muted, no marker), then what it opens. */
 @Composable
-private fun More(title: String, open: Boolean, onToggle: () -> Unit, content: @Composable ColumnScope.() -> Unit) {
+internal fun FormMore(title: String, open: Boolean, onToggle: () -> Unit, content: @Composable ColumnScope.() -> Unit) {
     Column(Modifier.fillMaxWidth().drawBehind { drawRect(ALine, size = Size(size.width, 1.dp.toPx())) }.padding(top = 11.dp)) {
         Row(Modifier.fillMaxWidth().heightIn(min = 44.dp).clickable(onClick = onToggle).semantics { stateDescription = if (open) "Expanded" else "Collapsed" },
-            verticalAlignment = Alignment.CenterVertically) { Text(title, style = t(14f, 700, 20.3f, AMute)) }
+            verticalAlignment = Alignment.CenterVertically) { Text(title, style = cssType(14f, 700, 20.3f, AMute)) }
         if (open) content()
     }
 }
 
+/** .btn: the gold button, 44 tall, 11 corners, 15 / 700 on gold; [pad] in from its sides (17 with its 1 border); dimmed while it can't be used. */
+@Composable
+internal fun FormGold(label: String, enabled: Boolean = true, modifier: Modifier = Modifier, pad: Dp = 17.dp, onClick: () -> Unit) =
+    Box(modifier.heightIn(min = 44.dp).alpha(if (enabled) 1f else .45f).clip(RoundedCornerShape(11.dp)).background(Site.Gold)
+        .clickable(enabled = enabled, onClick = onClick).semantics { role = androidx.compose.ui.semantics.Role.Button }.padding(horizontal = pad, vertical = 4.dp), contentAlignment = Alignment.Center) {
+        Text(label, style = cssType(15f, 700, 21.75f, Color(0xFF1B1406)), maxLines = 1)
+    }
+
 /** .link (small): 13 / 600 words, 4 above and below. */
 @Composable
-private fun Link(label: String, color: Color, onClick: () -> Unit) =
-    Text(label, Modifier.clip(RoundedCornerShape(6.dp)).clickable(onClick = onClick).padding(vertical = 4.dp), style = t(13f, 600, 18.85f, color))
+internal fun FormLink(label: String, color: Color, onClick: () -> Unit) =
+    Text(label, Modifier.clip(RoundedCornerShape(6.dp)).clickable(onClick = onClick).padding(vertical = 4.dp), style = cssType(13f, 600, 18.85f, color))
 
 /**
  * condition-value.js conditionPriceHtml in .condition-price-preview: the condition, the amount and its kind (or why there is
@@ -379,14 +390,14 @@ private fun ConditionPrice(blocks: List<JsonObject>, vw: Dp, onRetry: () -> Unit
         blocks.forEachIndexed { i, b ->
             if (i > 0) Spacer(Modifier.height(4.dp))
             when (b.str("k")) {
-                "label" -> Text(b.str("text"), style = t(12.5f, 400, 18.125f))
+                "label" -> Text(b.str("text"), style = cssType(12.5f, 400, 18.125f))
                 "hero" -> {
                     // .condition-price-amount: clamp(1.75rem, 5vw, 2.2rem), 1.15, -.025em, tabular; the kind's pill (dashed when it's yours).
                     val fs = (vw.value * .05f).coerceIn(28f, 35.2f)
                     FlowRow(Modifier.fillMaxWidth().padding(vertical = 4.dp), horizontalArrangement = Arrangement.spacedBy(12.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
                         // A line box shorter than the font (1.15): CSS keeps it at 1.15 and lets the glyphs overflow it.
                         Box(Modifier.align(Alignment.CenterVertically).height((fs * 1.15f).dp), contentAlignment = Alignment.CenterStart) {
-                            Text(b.str("amount"), Modifier.wrapContentHeight(unbounded = true), style = t(fs, 700, fs * 1.15f, AInk, -.025f * fs).copy(fontFeatureSettings = "tnum"))
+                            Text(b.str("amount"), Modifier.wrapContentHeight(unbounded = true), style = cssType(fs, 700, fs * 1.15f, AInk, -.025f * fs).copy(fontFeatureSettings = "tnum"))
                         }
                         Box(Modifier.align(Alignment.CenterVertically).clip(RoundedCornerShape(999.dp)).background(ASurface2)
                             .then(if (b.flag("custom")) Modifier.drawBehind {
@@ -395,21 +406,21 @@ private fun ConditionPrice(blocks: List<JsonObject>, vw: Dp, onRetry: () -> Unit
                                     cornerRadius = CornerRadius(size.height / 2), style = Stroke(w, pathEffect = PathEffect.dashPathEffect(floatArrayOf(3 * w, 3 * w))))
                             } else Modifier.border(1.dp, ALine, RoundedCornerShape(999.dp)))
                             .padding(horizontal = 9.dp, vertical = 5.dp)) {
-                            Text(b.str("kind"), style = t(12f, 700, 17.4f))
+                            Text(b.str("kind"), style = cssType(12f, 700, 17.4f))
                         }
                     }
                 }
-                "state" -> Text(b.str("text"), style = t(17.6f, 700, 25.5f))
-                "desc" -> Text(b.str("text"), style = t(13f, 400, 18.85f, AMute))
-                "meta" -> Text(b.str("text"), style = t(12.48f, 400, 18.1f, AMute))
+                "state" -> Text(b.str("text"), style = cssType(17.6f, 700, 25.5f))
+                "desc" -> Text(b.str("text"), style = cssType(13f, 400, 18.85f, AMute))
+                "meta" -> Text(b.str("text"), style = cssType(12.48f, 400, 18.1f, AMute))
                 "compare" -> Column(Modifier.fillMaxWidth().padding(top = 8.dp).drawBehind { drawRect(ALine, size = Size(size.width, 1.dp.toPx())) }.padding(top = 11.dp),
                     verticalArrangement = Arrangement.spacedBy(3.dp)) {
-                    Text(b.str("b"), style = t(13.6f, 700, 19.7f, AMute))
-                    Text(b.str("text"), style = t(12.48f, 400, 18.1f, AMute))
+                    Text(b.str("b"), style = cssType(13.6f, 700, 19.7f, AMute))
+                    Text(b.str("text"), style = cssType(12.48f, 400, 18.1f, AMute))
                 }
                 "ref" -> Column(Modifier.fillMaxWidth().padding(top = 12.dp).drawBehind { drawRect(ALine, size = Size(size.width, 1.dp.toPx())) }.padding(top = 11.dp)) {
-                    Text(b.str("b"), style = t(12.5f, 700, 18.75f))
-                    Text(b.str("text"), style = t(12.5f, 400, 18.75f))
+                    Text(b.str("b"), style = cssType(12.5f, 700, 18.75f))
+                    Text(b.str("text"), style = cssType(12.5f, 400, 18.75f))
                 }
                 "retry" -> { Spacer(Modifier.height(8.dp)); SiteGhost(b.str("text"), Modifier.fillMaxWidth(), h = 34.dp, fs = 13.5f, pad = 12.dp, onClick = onRetry) }
                 "buy" -> SiteGhost(b.str("text"), Modifier.fillMaxWidth(), h = 34.dp, fs = 13.5f, pad = 12.dp) { onBuy(b.str("url")) }

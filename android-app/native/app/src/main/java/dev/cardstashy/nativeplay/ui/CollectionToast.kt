@@ -103,6 +103,8 @@ fun CollectionWritesHost(backdrop: androidx.compose.ui.graphics.layer.GraphicsLa
     if (deciding && pending != null) key(pending) { SyncDecideSheet(backdrop, onClose = { CollectionWrites.deciding.value = false }) }
     val adding by CollectionWrites.adding.collectAsState()
     adding?.let { a -> key(a.id) { AddLotSheet(a, backdrop, onClose = { if (CollectionWrites.adding.value === a) CollectionWrites.adding.value = null }) } }
+    val picking by CollectionWrites.picking.collectAsState()
+    picking?.let { pk -> key(pk.id) { DeckPickSheet(pk, backdrop, onBack = { if (CollectionWrites.picking.value === pk) CollectionWrites.picking.value = null }) } }
     toast?.let { t -> key(t.id) { SiteToast(t, onUndo = { CollectionWrites.dismiss(t); scope.launch { CollectionWrites.undo(context) } }, onGone = { CollectionWrites.dismiss(t) }) } }
     ask?.let { a -> key(a) { AskDialog(a.question, backdrop, onAnswer = { yes -> CollectionWrites.answer(yes, context, scope) }) } }
 }

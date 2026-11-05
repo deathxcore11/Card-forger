@@ -56,7 +56,8 @@ internal object CollectionWrites {
     }
 
     /**
-     * One saving tap: [kind] is the site's data-act (cardWishlist, cardOwnedQty, qty, wishRemove, tEntryQty, tWish, addDelete) and
+     * One saving tap: [kind] is the site's data-act (cardWishlist, cardOwnedQty, qty, wishRemove, tEntryQty, tWish, addDelete, deckQty,
+     * deckRemove, deckEmbSwap, deckAdd, addToDeck) and
      * [data] the button's dataset. True when something was saved.
      */
     suspend fun act(context: Context, kind: String, data: JsonObject): Boolean {
@@ -103,6 +104,21 @@ internal object CollectionWrites {
     data class AddOpen(val req: JsonObject, val onList: (() -> Unit)? = null, val id: Long = System.nanoTime())
     val adding = MutableStateFlow<AddOpen?>(null)
     fun openAdd(req: JsonObject, onList: (() -> Unit)? = null) { adding.value = AddOpen(req, onList) }
+    /**
+     * A card page's Add to deck (app.js A.cardDeckPicker): the card, and what the sheet's ✕ (closeSheet: the card page too) and
+     * Open Decks do on the page that opened it.
+     */
+    data class DeckPick(val game: String, val name: String, val closeAll: () -> Unit, val go: (String) -> Unit, val id: Long = System.nanoTime())
+    val picking = MutableStateFlow<DeckPick?>(null)
+    /** The picker's decks from this device's collection: {decks: [[id, name]], selected}. Null (with a toast) when it can't open. */
+    suspend fun deckPickModel(context: Context, game: String): JsonObject? {
+        val s = Account.session.value ?: return null.also { show("Sign in to save cards to your collection.") }
+        return WorkspaceSync.lock.withLock {
+            if (!ensureCollection(context.applicationContext, s.userId, true, Decks.fullRevision.value)) return null.also { show("Your collection is still loading. Try again in a moment.") }
+            CollectionEngine.deckPick(game)
+        }
+    }
+
     /** app.js closeSheet for the add sheet whose model said [ctx]. */
     fun addClosed(ctx: Int) { bg.launch { CollectionEngine.addClose(ctx) } }
 

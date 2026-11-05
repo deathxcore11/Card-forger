@@ -112,6 +112,57 @@ class CollectionWritesTest {
         assertEquals(0, JsonParser.parseString(CollectionEngine.saved()).asJsonObject.getAsJsonObject("tcg").getAsJsonObject("ygo").getAsJsonArray("collection").size())
     }
 
+    /** app.js's deck edits against the site's fixtures (A.deckQty, A.addToDeck, A.deckAdd), then the commander guard, Remove and a swap. */
+    @Test fun deckEdits() = runBlocking {
+        assumeTrue(bundle.isFile)
+        CollectionEngine.initFrom(bundle)
+        suspend fun site(file: String, kind: String, data: JsonObject, catalog: String? = null) {
+            val f = fx(file)
+            CollectionEngine.load(f["before"].asJsonObject, catalog)
+            val r = CollectionEngine.act(kind, data)
+            println("$file $kind -> $r")
+            assertTrue(r.toString(), r["error"] == null)
+            assertEquals(file, 1, r["writes"].asInt)
+            // app.js commit's recordHomeDeckWork marks the deck as worked on (Home's deck shelf); the fixtures were written without it.
+            val after = clean(JsonParser.parseString(CollectionEngine.saved()))
+            assertEquals(file, "d1", after.getAsJsonObject("homeDeckActivity").getAsJsonArray("mtg")[0].asJsonObject["id"].asString)
+            after.remove("homeDeckActivity")
+            assertEquals(file, clean(f["after"]), after)
+            val t = r.getAsJsonArray("toasts")[0].asJsonObject
+            assertEquals(file, f["toast"].asString, t["text"].asString)
+            assertEquals(file, f["toastHasUndo"]?.asBoolean ?: false, t["undo"].asBoolean)
+        }
+        site("deck-qty-minus.json", "deckQty", fx("deck-qty-minus.json")["dataset"].asJsonObject.deepCopy().apply { addProperty("deck", "d1") })
+        site("deck-add-card.json", "addToDeck", fx("deck-add-card.json")["dataset"].asJsonObject)
+        // The typed name is looked up (app.js resolve): a card already in the catalog is used as it is.
+        site("deck-add-existing-card-increments.json", "deckAdd", JsonObject().apply { addProperty("deck", "d1"); addProperty("name", "lightning bolt") },
+            """{"lightning bolt":{"id":"bolt","name":"Lightning Bolt","type_line":"Instant"}}""")
+
+        val before = fx("deck-qty-minus.json")["before"].asJsonObject.deepCopy().apply {
+            add("decks", JsonParser.parseString("""[{"id":"c1","name":"Goblins","format":"Commander","commander":"Krenko, Mob Boss","cards":[{"name":"Krenko, Mob Boss","qty":1},{"name":"Goblin Matron","qty":1},{"name":"Mountain","qty":30}]}]"""))
+        }
+        CollectionEngine.load(before, null)
+        suspend fun cards() = JsonParser.parseString(CollectionEngine.saved()).asJsonObject.getAsJsonArray("decks")[0].asJsonObject.getAsJsonArray("cards").toString()
+        // The commander's last copy stays, with the site's word.
+        val cmd = CollectionEngine.act("deckQty", JsonObject().apply { addProperty("deck", "c1"); addProperty("name", "Krenko, Mob Boss"); addProperty("delta", "-1") })
+        assertEquals(0, cmd["writes"].asInt); assertEquals("That’s your commander.", cmd.getAsJsonArray("toasts")[0].asJsonObject["text"].asString)
+        // A + has no toast; the last copy of any other card goes.
+        val plus = CollectionEngine.act("deckQty", JsonObject().apply { addProperty("deck", "c1"); addProperty("name", "Mountain"); addProperty("delta", "1") })
+        assertEquals(1, plus["writes"].asInt); assertEquals(0, plus.getAsJsonArray("toasts").size())
+        val rm = CollectionEngine.act("deckRemove", JsonObject().apply { addProperty("deck", "c1"); addProperty("name", "Goblin Matron") })
+        assertEquals("Removed Goblin Matron.", rm.getAsJsonArray("toasts")[0].asJsonObject["text"].asString); assertTrue(rm.getAsJsonArray("toasts")[0].asJsonObject["undo"].asBoolean)
+        assertEquals("""[{"name":"Krenko, Mob Boss","qty":1},{"name":"Mountain","qty":31}]""", cards())
+        val swap = CollectionEngine.act("deckEmbSwap", JsonObject().apply { addProperty("deck", "c1"); addProperty("out", "Mountain"); addProperty("in", "Sol Ring") })
+        assertEquals("Swapped Mountain for Sol Ring.", swap.getAsJsonArray("toasts")[0].asJsonObject["text"].asString)
+        assertEquals("""[{"name":"Krenko, Mob Boss","qty":1},{"name":"Mountain","qty":30},{"name":"Sol Ring","qty":1}]""", cards())
+        // Undo puts the swap back.
+        CollectionEngine.undo()
+        assertEquals("""[{"name":"Krenko, Mob Boss","qty":1},{"name":"Mountain","qty":31}]""", cards())
+        // A deck that went away: the site's words.
+        val gone = CollectionEngine.act("deckRemove", JsonObject().apply { addProperty("deck", "nope"); addProperty("name", "Mountain") })
+        assertEquals("This deck is no longer available.", gone["error"].asString); assertEquals(0, gone["writes"].asInt)
+    }
+
     /** cloud.js's automatic account-first merge (sync-merge.js), as the site's fixtures resolve it. */
     @Test fun mergeFixtures() = runBlocking {
         assumeTrue(bundle.isFile)

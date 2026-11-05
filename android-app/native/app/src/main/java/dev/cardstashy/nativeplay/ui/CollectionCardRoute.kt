@@ -88,6 +88,13 @@ fun CollectionCardHost(open: CardOpen, onClose: () -> Unit, onOpen: (CardOpen) -
             p.act == "set" && !d["code"].isNullOrBlank() -> onSet?.invoke(d.getValue("code").lowercase()) ?: web("https://cardstashy.com/#set/" + android.net.Uri.encode(d.getValue("code").lowercase()), null)
             // The heart and the owned − / ＋ save here: the site's handler, then the page again (CollectionWrites).
             p.act in CollectionWrites.CARD_ACTS -> scope.launch { if (CollectionWrites.act(context, p.act, dataset(d))) CollectionEngine.cardModel().takeIf { it.size() > 0 }?.let { model = CollectionCardModel.parse(it) } }
+            // The "In <deck>" panel (a card opened from a deck): its − / ＋ and Remove from deck save here (app.js deckQty / deckRemove);
+            // Remove closes the page, as the site's closeSheet does.
+            p.act == "deckQty" && open.deck.isNotBlank() -> scope.launch { CollectionWrites.act(context, "deckQty", dataset(d).apply { addProperty("deck", open.deck) }) }
+            p.act == "deckRemove" && open.deck.isNotBlank() -> scope.launch { if (CollectionWrites.act(context, "deckRemove", dataset(d).apply { addProperty("deck", open.deck) })) onClose() }
+            // Add to deck (A.cardDeckPicker): the deck picker over this page, saved here.
+            p.act == "cardDeckPicker" && d["game"] == "mtg" && !d["name"].isNullOrBlank() ->
+                CollectionWrites.picking.value = CollectionWrites.DeckPick("mtg", d.getValue("name"), closeAll = onClose, go = { to -> web("https://cardstashy.com/$to", null) })
             // pricing-presentation.js's Add to collection (A.own): the add sheet with this printing, saved here.
             p.act == "own" && !d["name"].isNullOrBlank() -> CollectionWrites.openAdd(JsonObject().apply { addProperty("own", d.getValue("name")); addProperty("fromCard", true) })
             p.act == "magicVersionsMore" -> asked = "more" to ""

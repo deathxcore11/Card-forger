@@ -243,6 +243,8 @@ object CollectionEngine {
     /** app.js addSheet: the add / edit sheet's model ({entry} to edit, {own, fromCard} for Got it, {} empty). */
     suspend fun addOpen(o: JsonObject): JsonObject = on { q -> JsonParser.parseString(q.evaluate("Collection.addOpen(${str(o.toString())})") as String).asJsonObject }
     suspend fun addClose(id: Int) { on { q -> q.evaluate("Collection.addClose($id)") } }
+    /** app.js A.cardDeckPicker: {decks: [[id, name]], selected} for a card page's Add to deck. */
+    suspend fun deckPick(game: String): JsonObject = on { q -> JsonParser.parseString(q.evaluate("Collection.deckPick(${str(game)})") as String).asJsonObject }
     /** app.js A.addLookup: {name, preview, clearPrint} or {error}. */
     suspend fun addLookup(name: String): JsonObject {
         on { q -> q.evaluate("Collection.addLookup(${str(name)})") }

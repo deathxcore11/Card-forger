@@ -67,6 +67,7 @@ import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.semantics.role
 import androidx.compose.ui.semantics.semantics
+import androidx.compose.ui.semantics.stateDescription
 import androidx.compose.ui.text.Placeholder
 import androidx.compose.ui.text.PlaceholderVerticalAlign
 import androidx.compose.ui.text.SpanStyle
@@ -186,6 +187,8 @@ class CollectionDeckActions(
     val set: (String) -> Unit = {},
     val qty: (String, Int) -> Unit = { _, _ -> },
     val swap: (out: String, into: String) -> Unit = { _, _ -> },
+    /** app.js A.deckAdd: the add row's name; [done] says whether it was saved (the site's page then draws again, the row closed). */
+    val addCard: (name: String, done: (Boolean) -> Unit) -> Unit = { _, _ -> },
 )
 
 // ---------------------------------------------------------------- site colours
@@ -231,6 +234,10 @@ private fun DeckPage(m: CollectionDeckModel, top: @Composable (tabs: (@Composabl
     val gutter = if (wide) 22.dp else 16.dp
     val inner = screen - gutter * 2
     val reduced = Playmats.reduced(LocalContext.current)
+    // #deckAddRow (A.deckAddToggle): shut until "+ Add"; a save draws the page again, so it shuts and empties.
+    var adding by remember(m.id) { mutableStateOf(false) }
+    var addName by remember(m.id) { mutableStateOf("") }
+    fun add() { val n = addName.trim(); if (n.isNotEmpty()) act.addCard(n) { saved -> if (saved) { adding = false; addName = "" } } }
     LazyColumn(modifier, contentPadding = PaddingValues(bottom = 28.dp)) {
         item(key = "top") {
             Box(Modifier.fillMaxWidth().windowInsetsPadding(WindowInsets.statusBars)) {
@@ -256,7 +263,9 @@ private fun DeckPage(m: CollectionDeckModel, top: @Composable (tabs: (@Composabl
                 if (m.tabs.isNotEmpty()) add(Triple(12.dp, 12.dp) { DeckTabs(m.tabs, screen, act.tab) })
                 m.commanderNote?.let { add(Triple(10.dp, 10.dp) { NoteWarn("⚠ $it", emptyList(), Modifier.clickable { act.tab("upgrade") }) }) }
                 // .deck-body's 4 top padding keeps the toolbar's 14 from collapsing into what is above it.
-                add(Triple((-18).dp, 12.dp) { Toolbar(m, act, wide, query) })
+                add(Triple((-18).dp, 12.dp) { Toolbar(m, act, wide, query, adding) { adding = !adding } })
+                // .add-row: margin 10 0, meeting the toolbar's 12 above and the list's 12 below.
+                if (adding) add(Triple(10.dp, 12.dp) { DeckAddRow(addName, { addName = it }, ::add) })
                 if (m.view == "stacks" && m.roles.isNotEmpty()) add(Triple(0.dp, 0.dp) { RoleSummary(m.roles) })
             }
             Column(Modifier.padding(horizontal = gutter)) {
@@ -590,7 +599,7 @@ internal fun FlexWrap(modifier: Modifier, gap: Dp, grow: Boolean, content: @Comp
 
 @OptIn(ExperimentalLayoutApi::class)
 @Composable
-private fun Toolbar(m: CollectionDeckModel, act: CollectionDeckActions, wide: Boolean, query: String) {
+private fun Toolbar(m: CollectionDeckModel, act: CollectionDeckActions, wide: Boolean, query: String, adding: Boolean, onAddToggle: () -> Unit) {
     val phone = !wide && LocalConfigurationWidth() <= 640
     FlowRow(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(10.dp), verticalArrangement = Arrangement.spacedBy(10.dp),
         itemVerticalAlignment = Alignment.CenterVertically) {
@@ -601,15 +610,28 @@ private fun Toolbar(m: CollectionDeckModel, act: CollectionDeckActions, wide: Bo
         }
         m.group?.let { GroupPick(it, act.group) }
         if (m.addLabel.isNotBlank()) {
-            Row(Modifier.height(44.dp).clip(RoundedCornerShape(999.dp)).border(1.dp, LineC, RoundedCornerShape(999.dp)).clickable { act.act("deckAddToggle", m.id) }
-                .semantics { role = Role.Button; contentDescription = "Add a card" }.padding(horizontal = 14.dp),
+            // [aria-expanded=true]: the gold edge (#e8b95b99) and the light gold words.
+            val on = if (adding) Color(0xFFFFF1CF) else Ink
+            Row(Modifier.height(44.dp).clip(RoundedCornerShape(999.dp)).border(1.dp, if (adding) Color(0x99E8B95B) else LineC, RoundedCornerShape(999.dp)).clickable(onClick = onAddToggle)
+                .semantics { role = Role.Button; contentDescription = "Add a card"; stateDescription = if (adding) "Expanded" else "Collapsed" }.padding(horizontal = 14.dp),
                 horizontalArrangement = Arrangement.spacedBy(6.dp), verticalAlignment = Alignment.CenterVertically) {
-                SiteIcon(m.addIcon ?: m.glyphs["plus"], 18.dp, Ink)
-                Text(m.addLabel, style = sans(15f, 400))
+                SiteIcon(m.addIcon ?: m.glyphs["plus"], 18.dp, on)
+                Text(m.addLabel, style = sans(15f, 400, on))
             }
         }
         // .deck-view-toolbar { margin-left: auto }: at the right of its line, wherever the line breaks.
         Box(Modifier.widthIn(min = 190.dp).weight(1f), contentAlignment = Alignment.CenterEnd) { ViewSwitch(m.views, act.view) }
+    }
+}
+
+/** .add-row.deck-add-row: "Add a card by name" on the glass field and the gold Add, 8 apart; it opens with the caret in it. */
+@Composable
+private fun DeckAddRow(name: String, onName: (String) -> Unit, onAdd: () -> Unit) {
+    val focus = remember { androidx.compose.ui.focus.FocusRequester() }
+    androidx.compose.runtime.LaunchedEffect(Unit) { runCatching { focus.requestFocus() } }
+    Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(8.dp), verticalAlignment = Alignment.CenterVertically) {
+        FormInput(name, onName, SHEET_PLAIN, "Add a card by name", Modifier.weight(1f), desc = "Card name to add", focus = focus, onGo = onAdd)
+        FormGold("Add", onClick = onAdd)
     }
 }
 
@@ -619,7 +641,8 @@ private fun LocalConfigurationWidth(): Int = androidx.compose.ui.platform.LocalC
 @Composable
 private fun DeckSearchField(value: String, placeholder: String, onChange: (String) -> Unit, modifier: Modifier) {
     val shape = RoundedCornerShape(12.dp)
-    BasicTextField(value, onChange, modifier.height(44.dp).clip(shape).background(GlassFill).border(1.dp, GlassLine, shape),
+    // aria-label="Search deck"
+    BasicTextField(value, onChange, modifier.height(44.dp).clip(shape).background(GlassFill).border(1.dp, GlassLine, shape).semantics { contentDescription = "Search deck" },
         singleLine = true, textStyle = sans(15f, 400, Ink), cursorBrush = SolidColor(GoldC), keyboardOptions = KeyboardOptions(imeAction = ImeAction.Search),
         decorationBox = { inner ->
             Box(Modifier.padding(horizontal = 14.dp), contentAlignment = Alignment.CenterStart) {

@@ -3,7 +3,7 @@
 // Nothing is decided here: every number, list and order comes from the site's functions; this file only calls them
 // and hands their models to the app instead of HTML.
 import {S, blank, meta, cacheCard, slim, inv, uid} from 'WEB/store.js';
-import {cardKey, typeText, cardPrice} from 'WEB/core.js';
+import {cardKey, typeText, cardPrice, mergeDeckCard} from 'WEB/core.js';
 import {validateWorkspace} from 'WEB/confidence.js';
 import {normalizeHomeDeckActivity, recordHomeDeckWork} from 'WEB/home-deck-activity.js';
 import {collectionValue, recordValuePoint} from 'WEB/insights.js';
@@ -1359,6 +1359,9 @@ function trackValue(state = S.state, previous = null, valueGames = null) {
 // dialog.js ask: the app shows the question and taps again with confirmed when the player says yes.
 const ask = (question, confirmed) => { if (confirmed) return true; asked = question; return false; };
 const ownedQuantityBusy = new Set();
+// store.js deckById, and app.js scopedEditDeck for the deck with that id: it throws when the deck went away before the write ran.
+const deckOf = (id) => (id == null ? null : S.state.decks.find((x) => String(x.id) === String(id)) || null);
+const editDeckOf = (id) => (fn, opts = {}) => commit((s) => { const i = s.decks.findIndex((x) => x.id === id); if (i < 0) throw Error('This deck is no longer available.'); s.decks[i] = fn(s.decks[i]) || s.decks[i]; }, opts);
 // The site's handlers for the Collection taps that save to the account: app.js's closures line for line (their DOM halves, the
 // button's busy state and the pill's pulse, are the app's), tcg.js's through registerTcg. [d] is the tapped button's dataset.
 const writeActs = {
@@ -1407,6 +1410,48 @@ const writeActs = {
   // tcg.js A.tEntryQty and A.tWish, the site's own handlers, for a Yu-Gi-Oh! or Pokémon lot (the game's page holds settings.game).
   async tEntryQty(d) { tcgFocus(d.game, S.ui.view || 'collection'); await TA.tEntryQty({dataset: d}); },
   async tWish(d) { tcgFocus(d.game, S.ui.view || 'collection'); await TA.tWish({dataset: d}); },
+  // ---- A deck's cards (app.js 6216-6300). The site edits the open deck (scopedEditDeck: currentDeck() when tapped); the app names it
+  // in [d].deck, as the deck page or the card page opened from it has it.
+  // app.js A.deckQty (6288): the − and ＋ on a deck's card, on the deck page and in the card page's "In <deck>" panel.
+  async deckQty(d) {
+    const name = d.name, delta = Number(d.delta), deck = deckOf(d.deck);
+    const row = deck?.cards.find((c) => key(c.name) === key(name));
+    if (!row) return;
+    if (delta < 0 && row.qty === 1 && key(name) === key(deck.commander)) { toasts.push({text: 'That’s your commander.', undo: false}); return; }
+    await editDeckOf(deck.id)((x) => mergeDeckCard(x, name, delta), delta < 0 ? { undo: `−1 ${name}` } : {});
+  },
+  // app.js A.deckRemove (6297): the card page's Remove from deck (the app closes the page, as closeSheet).
+  async deckRemove(d) {
+    await editDeckOf(deckOf(d.deck)?.id)((x) => ({ ...x, cards: x.cards.filter((c) => key(c.name) !== key(d.name)) }), { undo: `Removed ${d.name}.` });
+  },
+  // app.js A.deckEmbSwap (6216): swap a no-emblem card for an owned staple.
+  async deckEmbSwap(d) {
+    await editDeckOf(deckOf(d.deck)?.id)(
+      (x) => {
+        const out = x.cards.find((c) => key(c.name) === key(d.out));
+        if (!out) return x;
+        const cards = x.cards.map((c) => (c === out ? { ...c, qty: c.qty - 1 } : c)).filter((c) => c.qty > 0);
+        return mergeDeckCard({ ...x, cards }, d.in, 1);
+      },
+      { undo: `Swapped ${d.out} for ${d.in}.` },
+    );
+  },
+  // app.js A.deckAdd (6278): the deck page's "Add a card by name" ([d].name: what was typed), looked up as the site looks it up.
+  async deckAdd(d) {
+    const edit = editDeckOf(deckOf(d.deck)?.id), name = String(d.name || '').trim();
+    if (!name) return;
+    const c = await resolve(name, true);
+    await edit((x) => mergeDeckCard(x, c.name, 1), { msg: `${c.name} added.` });
+  },
+  // app.js A.addToDeck (5358): a card page's Add to deck, into the deck picked ([d].deck).
+  async addToDeck(d) {
+    const id = d.deck, x = deckOf(id), name = d.name;
+    if (!x) return;
+    await commit((s) => {
+      const i = s.decks.findIndex((y) => y.id === x.id);
+      s.decks[i] = mergeDeckCard(s.decks[i], name, 1);
+    }, { msg: `Added to ${x.name}.` });
+  },
   // app.js saveLot: the add sheet's Add to collection / Save changes ([d]: the form; unverified: Save without lookup). Its words go
   // back as the error, shown under the form.
   async addSave(d) {
@@ -1715,6 +1760,12 @@ globalThis.Collection = {
     return json(addSheetModel(null, d.own ? ownPreset(d.own, !!d.fromCard) : {}));
   },
   // app.js closeSheet: the sheet [id] opened is gone (a newer one is left alone).
+  // app.js A.cardDeckPicker (4782): the decks a card page's Add to deck offers ([id, name]), and the one its <select> shows first.
+  deckPick(game) {
+    const decks = game === 'mtg' ? S.state.decks : tcgGs(game).decks, want = String((game === 'mtg' ? S.state.activeDeck : decks.at(-1)?.id) ?? '');
+    const list = decks.map(d => [String(d.id), d.name]);
+    return json({decks: list, selected: list.some(o => o[0] === want) ? want : list[0]?.[0] || ''});
+  },
   addClose(id) { if (addCtx && addCtx.id === id) { addCtx = null; priceRun = lookupRun = null; } },
   // app.js A.addLookup: the name looked up (resolve, fuzzy); lookupPoll() reads {done, name, preview, clearPrint} or {done, error}.
   addLookup(name) {
