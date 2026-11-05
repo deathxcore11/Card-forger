@@ -291,6 +291,7 @@ export const LESSONS = {
   'Disappear': 'Disappear: if one of your permanents left the battlefield this turn, the creature brings a bonus Ninja token.',
   'Teamwork': 'Teamwork: tap creatures with enough total power as an extra cost and the spell does more. A crowd turns a small spell into a big one.',
   'Power-up': 'Power-up: pay once to put counters on the creature. It costs less the turn it enters.',
+  'Recruit': 'Recruit: draw a card, then discard a card. If you discarded a nonland card, you get a Treasure. It is looting that pays you back.',
   'Playing under a lock': 'A lock stops cards from untapping or moving. Break it, or win with what\'s already in play.',
 };
 // Every Story deck says what it is (Randall, 2 Nov 2026): Historical Exact, Historical Tribute or
