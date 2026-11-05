@@ -8,7 +8,7 @@ import { scryfall } from "./scryfall.mjs";
 const { all } = scryfall(process.argv[2] || ".cache/scryfall");
 const LINKS = {
   creature_burn: { q: 'o:"targets only a single creature" game:paper', rx: /instant or sorcery spell you control that targets only a single creature/i, why: "triggers when your spell targets only one creature and damages it" },
-  cast_spell: { q: '(o:"whenever you cast an instant or sorcery" or o:"copy that spell" or o:"gains deathtouch and lifelink") game:paper', rx: /whenever you cast an? instant or sorcery spell|whenever you cast a spell, if it'?s the first (?:instant|sorcery)|copy that spell|that spell gains deathtouch/i, why: "rewards you for casting instants and sorceries", types: /Creature|Artifact|Enchantment|Planeswalker/ },
+  cast_spell: { q: '(o:"whenever you cast an instant or sorcery" or o:"copy that spell" or o:"gains deathtouch and lifelink") game:paper', rx: /whenever you cast an? instant or sorcery spell|whenever you cast a spell, if it'?s the first (?:instant|sorcery)|copy that spell|that spell gains deathtouch/i, why: "pays you for casting instants and sorceries", types: /Creature|Artifact|Enchantment|Planeswalker/ },
   expend: { q: 'o:"whenever you expend" game:paper', rx: /whenever you expend \d/i, why: "triggers when you spend your 4th or 8th mana on spells in a turn" },
 };
 const out = { source: "Scryfall text search, checked against rules text", at: new Date().toISOString().slice(0, 10), links: {} };
