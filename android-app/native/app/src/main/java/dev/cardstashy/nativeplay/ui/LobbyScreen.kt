@@ -109,6 +109,8 @@ import dev.cardstashy.nativeplay.play.PlayDeckSaver
 import dev.cardstashy.nativeplay.play.Trunk
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withTimeoutOrNull
+import kotlinx.coroutines.withContext
+import kotlinx.coroutines.Dispatchers
 import dev.cardstashy.nativeplay.account.Decks as Workspace
 
 /**
@@ -367,12 +369,19 @@ fun LobbyScreen(model: LobbyModel, onBack: () -> Unit, onStart: (Pick) -> Unit, 
                     try {
                         // Random means every source: fetch the format's tournament lists too if there are none yet (bounded wait).
                         withTimeoutOrNull(4000) { MetaDecks.lists(context, m.format) }
-                        val unknown = ForgeService.unknownNames(EngineNames.names(EngineNames.deck(you.raw)))
-                        if (unknown.isNotEmpty()) throw QuickOpponent.NoOpponent(engineMissingText("Your deck", unknown.sorted()))
-                        val candidates = (workspace ?: emptyList()).map { it.raw.deepCopy().apply { addProperty("format", it.format) } } +
-                            listOf("precons", "community", "meta").flatMap { sources.entries(it, m.format).map { e -> e.deck } } +
-                            MetaDecks.lists(context, m.format).map { it.deepCopy().apply { addProperty("format", m.format) } }
-                        val r = QuickOpponent.choose(you.raw, candidates, eligible = { d -> forgeCpuDeckComplete(d) && ForgeService.unknownNames(EngineNames.names(EngineNames.deck(d))).isEmpty() })
+                        val format = m.format; val saved = workspace.orEmpty(); val listed = listOf("precons", "community", "meta").flatMap { sources.entries(it, format).map { e -> e.deck } }
+                        // The decks are copied and the engine is asked once for every name in every deck, never on the main thread:
+                        // right after an update Forge can still be loading, and Commander has hundreds of lists to check (the 0.4.12 freeze).
+                        val r = withContext(Dispatchers.Default) {
+                            val candidates = saved.map { it.raw.deepCopy().apply { addProperty("format", it.format) } } + listed +
+                                MetaDecks.lists(context, format).map { it.deepCopy().apply { addProperty("format", format) } }
+                            val names = java.util.IdentityHashMap<JsonObject, List<String>>()
+                            (listOf(you.raw) + candidates).forEach { d -> names[d] = EngineNames.names(EngineNames.deck(d)).toList() }
+                            val unknown = ForgeService.unknownNames(names.values.flatten().toSet()).toSet()
+                            val mine = names.getValue(you.raw).filter { it in unknown }
+                            if (mine.isNotEmpty()) throw QuickOpponent.NoOpponent(engineMissingText("Your deck", mine.distinct().sorted()))
+                            QuickOpponent.choose(you.raw, candidates, eligible = { d -> forgeCpuDeckComplete(d) && names[d].orEmpty().none { it in unknown } })
+                        }
                         m.quickMatch = r; m.opponent = SeatDeck(r.deck, "quick")
                         onStart(Pick.Table(you.raw, you.name, m.format, factName(you.raw), r.deck, "Medium", quick = true))
                     } catch (e: QuickOpponent.NoOpponent) { m.quickError = e.message } catch (e: Exception) { m.quickError = e.message ?: "Couldn’t find a CPU deck." }

@@ -100,8 +100,11 @@ object CardArt {
         if (pinnedAny) version.value++
     }
 
-    private fun save() = synchronized(index) {
-        val o = JsonObject(); index.forEach { (k, v) -> o.add(k, JsonArray().apply { add(v.first); add(v.second) }) }
+    /** The index is copied under its lock and written outside it, so a card on screen never waits on a file write. */
+    private val saving = Any()
+    private fun save() = synchronized(saving) {
+        val copy = synchronized(index) { index.toList() }
+        val o = JsonObject(); copy.forEach { (k, v) -> o.add(k, JsonArray().apply { add(v.first); add(v.second) }) }
         try { indexFile.writeText(o.toString()) } catch (_: Exception) {}
     }
 
