@@ -4,11 +4,12 @@
 // the host drains its jobs, timers and fetches. BigInt literals (a Pokémon finish hash this QuickJS cannot parse,
 // never reached by a Magic build) become BigInt("…") calls.
 import {execFileSync} from 'node:child_process';
-import {readFileSync, writeFileSync} from 'node:fs';
+import {readFileSync, writeFileSync, mkdirSync} from 'node:fs';
 import {join, dirname, resolve} from 'node:path';
 import {fileURLToPath} from 'node:url';
 const [web, esbuild] = process.argv.slice(2);
 const here = dirname(fileURLToPath(import.meta.url)), app = resolve(here, '..');
+mkdirSync(join(app, 'build'), {recursive: true}); // a fresh checkout has no build/ yet
 const entry = join(app, 'build', 'random-build-entry.mjs');
 writeFileSync(entry, readFileSync(join(here, 'random-build-entry.mjs'), 'utf8').replaceAll("'WEB/", `'${resolve(web)}/`));
 const sha = process.env.WEB_SHA || (() => { try { return execFileSync('git', ['-C', web, 'rev-parse', 'HEAD']).toString().trim(); } catch { return 'unknown'; } })();

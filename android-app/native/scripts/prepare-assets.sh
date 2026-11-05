@@ -44,7 +44,7 @@ node "$HERE/scripts/export-audio-loops.mjs" "$REPO" "$A/audio-loops.json"
 node "$HERE/scripts/export-card-data.mjs" "$REPO" "$A/card-data.json"
 # The site's own random deck builder for QuickJS (Lobby > Random, play/RandomBuild.kt), bundled from the web modules with the
 # esbuild pinned in scripts/js-tools. Until 5 Nov this step was missing, so no APK carried it and Random always stopped.
-(cd "$HERE/scripts/js-tools" && npm ci --no-audit --no-fund --silent)
+(cd "$HERE/scripts/js-tools" && npm ci --no-audit --no-fund --silent) && mkdir -p "$HERE/build"
 node "$HERE/scripts/export-random-build.mjs" "$REPO" "$HERE/scripts/js-tools/node_modules/.bin/esbuild"
 # Randall's painted art pieces (each replaces its code-drawn version; a missing piece keeps the code one).
 for f in "$HERE"/art/*.webp; do [ -e "$f" ] && cp "$f" "$A/play/"; done
