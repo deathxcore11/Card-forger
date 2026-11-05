@@ -626,7 +626,7 @@ private fun Sealed(pack: PackResult, tearing: Boolean, onTear: () -> Unit, loadi
         .glow(Color.Black, .6f, .02f, .03f, .04f, 30.dp)
         .clickable(remember { MutableInteractionSource() }, dev.cardstashy.nativeplay.ui.PadFocus.Ring, onClick = onTear).semantics { contentDescription = "Open the ${pack.name} pack" }) {
         // The set's art under Randall's template when the set has one (its painted wrapper until the art is in), else the wrapper.
-        val tpl = TemplatePack(pack.set, pack.name, { drift?.value ?: Offset.Zero }, Modifier.fillMaxSize(), brand = pack.shop != null, override = pack.look?.template?.let { PackTemplate.Art("", it.art, it.x, it.y) }) { Booster(pack.set, pack.name, Modifier.fillMaxSize(), fill = true, brand = pack.shop != null) }
+        val tpl = TemplatePack(pack.set, pack.name, { drift?.value ?: Offset.Zero }, Modifier.fillMaxSize(), brand = pack.shop != null, override = pack.look?.template?.let { PackTemplate.Art("", it.art, it.x, it.y) }) { Booster(pack.set, pack.name, Modifier.fillMaxSize(), fill = true, brand = pack.shop != null, template = false) }
         // .pack-tpl .pack-crimp, .pack-tpl .pack-sheen { display: none }: the template pack has neither.
         if (!tpl && !Motion.still && !tearing) {
             // pack-sheen-move: a soft rainbow band sweeping across every 3.2 s.
@@ -740,7 +740,7 @@ private fun Dealt(pack: PackResult, stage: PackStage, revealed: List<Int>, focus
             translationY = size.height * .36f * e; scaleX = 1f - .1f * e; scaleY = scaleX; alpha = 1f - e
         }) {
             Box(Modifier.fillMaxSize().drawWithContent { clipRect(top = size.height * .085f) { this@drawWithContent.drawContent() } }) {
-                TemplatePack(pack.set, pack.name, drift, Modifier.fillMaxSize(), brand = pack.shop != null, override = pack.look?.template?.let { PackTemplate.Art("", it.art, it.x, it.y) }) { Booster(pack.set, pack.name, Modifier.fillMaxSize(), fill = true, brand = pack.shop != null) }
+                TemplatePack(pack.set, pack.name, drift, Modifier.fillMaxSize(), brand = pack.shop != null, override = pack.look?.template?.let { PackTemplate.Art("", it.art, it.x, it.y) }) { Booster(pack.set, pack.name, Modifier.fillMaxSize(), fill = true, brand = pack.shop != null, template = false) }
             }
             val m = (t / 900f).coerceIn(0f, 1f)
             val ma = if (m < .35f) m / .35f else 1f - (m - .35f) / .65f

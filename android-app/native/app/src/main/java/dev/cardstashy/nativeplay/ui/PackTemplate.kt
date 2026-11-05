@@ -47,6 +47,11 @@ object PackTemplate {
     /** The set's template art (assets/pack-art.json, exported from pack-art-data.js), or null for a set without one. */
     fun art(context: Context, code: String): Art? = load(context)[code.lowercase()]
 
+    /** The sets' art once drawn (the Shop's grid scrolls tiles in and out): kept so a tile comes back with its art at once. */
+    internal val pictures = object : android.util.LruCache<String, ImageBitmap>(32 * 1024 * 1024) {
+        override fun sizeOf(key: String, value: ImageBitmap) = value.width * value.height * 4
+    }
+
     private fun load(context: Context): Map<String, Art> = map ?: synchronized(this) {
         map ?: runCatching {
             JsonParser.parseString(context.assets.open("pack-art.json").use { String(it.readBytes()) }).asJsonObject.entrySet().associate { (k, v) ->
@@ -69,7 +74,9 @@ object PackTemplate {
 @Composable
 fun TemplatePack(code: String, name: String?, drift: () -> Offset, modifier: Modifier, brand: Boolean = false,
                  /** A Yu-Gi-Oh! or Pokémon simulator's template art (packTemplateArt, from the engine): not in pack-art.json. */
-                 override: PackTemplate.Art? = null, fallback: @Composable () -> Unit): Boolean {
+                 override: PackTemplate.Art? = null,
+                 /** A pack on a page (the Shop, Play's packs): sized like Booster's, small ones without the band's words, a Collector's sheen. */
+                 fill: Boolean = true, mini: Boolean = false, collector: Boolean = false, fallback: @Composable () -> Unit): Boolean {
     val ctx = LocalContext.current
     val art = override ?: remember(code) { PackTemplate.art(ctx, code) }
     if (art == null || HomeTest.noPictures) { fallback(); return false }
@@ -78,23 +85,24 @@ fun TemplatePack(code: String, name: String?, drift: () -> Offset, modifier: Mod
     val frame = produceState(AssetImages.cached("play/pack-template.webp@600"), code) { value = AssetImages.load(ctx, "play/pack-template.webp", maxWidth = 600) }.value
     val mask = produceState(AssetImages.cached("play/pack-window.png@0"), code) { value = AssetImages.load(ctx, "play/pack-window.png") }.value
     // Loaded off screen while the painted wrapper shows (the image cache keeps it for the next pack of this set).
-    val picture = produceState<ImageBitmap?>(null, art.url) {
+    val picture = produceState(PackTemplate.pictures.get(art.url), art.url) {
+        if (value != null) return@produceState
         // (Screenshots hand their saved copy of the art in through homeArt.)
-        value = homeArt(art.url) as? ImageBitmap ?: run {
+        value = (homeArt(art.url) as? ImageBitmap ?: run {
             val r = coil3.request.ImageRequest.Builder(ctx).data(art.url).size(coil3.size.Size.ORIGINAL).build()
             (CardArt.loader.execute(r) as? coil3.request.SuccessResult)?.image?.toBitmap()?.asImageBitmap()
-        }
+        })?.also { PackTemplate.pictures.put(art.url, it) }
     }.value
     if (frame == null || mask == null || picture == null) { fallback(); return false }
-    TemplatePackDrawn(code, label, art, frame, mask, picture, drift, modifier, brand)
+    TemplatePackDrawn(code, label, art, frame, mask, picture, drift, modifier, brand, fill, mini, collector)
     return true
 }
 
 /** The template pack once its three pictures are in: the frame, the window mask and the set's art. */
 @Composable
 internal fun TemplatePackDrawn(code: String, label: String, art: PackTemplate.Art, frame: ImageBitmap, mask: ImageBitmap, picture: ImageBitmap, drift: () -> Offset, modifier: Modifier,
-                               brand: Boolean = false) {
-    WrappedBooster(code, label, PACK_TEMPLATE_WRAP, frame, modifier, mini = false, fill = true, brand = brand, under = {
+                               brand: Boolean = false, fill: Boolean = true, mini: Boolean = false, collector: Boolean = false) {
+    WrappedBooster(code, label, PACK_TEMPLATE_WRAP, frame, modifier, mini = mini, collector = collector, fill = fill, brand = brand, under = {
         // The window: everything under it is clipped to the mask's shape (it tucks under the gold curve and stops at the silver sides).
         BoxWithConstraints(Modifier.matchParentSize().graphicsLayer { compositingStrategy = CompositingStrategy.Offscreen }.drawWithContent {
             drawContent()

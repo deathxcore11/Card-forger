@@ -83,6 +83,7 @@ import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
+import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.em
@@ -552,15 +553,38 @@ private fun StoryCard(d: PlayHomeData, wide: Boolean, act: PlayHomeActions, shor
 @Composable
 fun Booster(code: String, name: String?, modifier: Modifier = Modifier, mini: Boolean = false, collector: Boolean = false, fill: Boolean = false,
             /** The set page's Open Pack simulator: the site's own pack band (brand mark and name), and its product photo for a set Play has no wrapper for. */
-            brand: Boolean = false) {
+            brand: Boolean = false,
+            /** False for the opener's own stand-in while its template pack loads (it draws the template itself). */
+            template: Boolean = true) {
     val facts: Map<String, SetFacts.Set> = SetFacts.sets.collectAsState().value
     val f = facts[code]
     val label = name?.ifBlank { null } ?: f?.name ?: code.uppercase()
+    // The pack the opener tears (Randall 5 Nov: the Shop showed the old painted art): the template with the set's art under its
+    // window, wherever the set has template art; its painted wrapper only until that art is in.
+    if (template && !HomeTest.noPictures && !brand && PackTemplate.art(LocalContext.current, code) != null) {
+        TemplatePack(code, label, { Offset.Zero }, modifier, fill = fill, mini = mini, collector = collector) {
+            if (!PaintedBooster(code, label, modifier, mini, collector, fill)) FoilBooster(code, label, f, modifier, mini, collector, brand = false)
+        }
+        return
+    }
+    if (PaintedBooster(code, label, modifier, mini, collector, fill, brand)) return
+    FoilBooster(code, label, f, modifier, mini, collector, brand)
+}
+
+/** The set's painted wrapper (Randall's art piece 16, or its theme wrapper) once its picture is in; false when it has none. */
+@Composable
+private fun PaintedBooster(code: String, label: String, modifier: Modifier, mini: Boolean, collector: Boolean, fill: Boolean, brand: Boolean = false): Boolean {
     if (!HomeTest.noPictures) wrapperFor(code)?.let { (asset, wrap) ->
         val ctx = LocalContext.current
         val img = produceState(AssetImages.cached("$asset@600"), asset) { value = AssetImages.load(ctx, asset, maxWidth = 600) }.value
-        if (img != null) { WrappedBooster(code, label, wrap, img, modifier, mini, collector, fill, brand = brand); return }
+        if (img != null) { WrappedBooster(code, label, wrap, img, modifier, mini, collector, fill, brand = brand); return true }
     }
+    return false
+}
+
+/** The foil pack with the set's art (pe-booster), for a set with no wrapper; the Open Pack simulator's product photo or bare pack. */
+@Composable
+private fun FoilBooster(code: String, label: String, f: SetFacts.Set?, modifier: Modifier, mini: Boolean, collector: Boolean, brand: Boolean) {
     // Only a set with no template art: while a template set's art loads, this stands in without fetching the product photo.
     // A Yu-Gi-Oh! or Pokémon simulator walks its own pictures (packArtSources, then setArtworkSources).
     val look = LocalPackResult.current?.look
@@ -587,7 +611,7 @@ fun Booster(code: String, name: String?, modifier: Modifier = Modifier, mini: Bo
                 .padding(horizontal = 8.dp, vertical = 6.dp), horizontalAlignment = Alignment.CenterHorizontally, verticalArrangement = Arrangement.spacedBy(2.dp, Alignment.CenterVertically)) {
                 SetIcon(code, Modifier.size(minOf(w * .22f, 30.dp)))
                 if (!mini) {
-                    Text(label.uppercase(), style = TextStyle(fontFamily = Type.Cinzel, fontWeight = FontWeight.Bold, fontSize = sp(.07f), lineHeight = sp(.082f), letterSpacing = .02.em, color = P.Ink, textAlign = TextAlign.Center), maxLines = 2)
+                    BandName(label, w, .07f, .082f, w - 16.dp)
                     Text(if (collector) "COLLECTOR BOOSTER" else "PLAY BOOSTER", style = TextStyle(fontFamily = P.Sans, fontWeight = FontWeight.Bold, fontSize = sp(.05f), letterSpacing = .14.em, color = if (collector) Color(0xFFF3D58C) else Color(0xFFD6AD64)), maxLines = 1)
                 }
             }
@@ -692,7 +716,7 @@ internal fun WrappedBooster(code: String, label: String, wrap: Wrap, img: ImageB
                 horizontalAlignment = Alignment.CenterHorizontally, verticalArrangement = Arrangement.spacedBy(w * .018f, Alignment.CenterVertically)) {
                 if (!wrap.iconInNotch) SetIcon(code, Modifier.size(w * (if (mini) .2f else .1f)))
                 if (!mini) {
-                    Text(label.uppercase(), style = TextStyle(fontFamily = Type.Cinzel, fontWeight = FontWeight.Bold, fontSize = sp(.062f), lineHeight = sp(.072f), letterSpacing = .02.em, color = P.Ink, textAlign = TextAlign.Center), maxLines = 2)
+                    BandName(label, w, .062f, .072f, w * .73f)
                     Text(if (collector) "COLLECTOR BOOSTER" else "PLAY BOOSTER", style = TextStyle(fontFamily = P.Sans, fontWeight = FontWeight.Bold, fontSize = sp(.046f), letterSpacing = .14.em, color = if (collector) Color(0xFFF3D58C) else Color(0xFFD6AD64)), maxLines = 1)
                 }
             }
@@ -701,6 +725,23 @@ internal fun WrappedBooster(code: String, label: String, wrap: Wrap, img: ImageB
             else Box(Modifier.matchParentSize().background(Brush.linearGradient(.32f to Color.Transparent, .45f to Color(0x1AFFFFFF), .58f to Color.Transparent)))
         }
     }
+}
+
+/**
+ * The band's set name, printed on the pack (Cinzel, sized from the pack's width, not the font setting): one line, shrunk down to
+ * 72 % to stay on one (Randall 5 Nov: "Double Masters 2022" wrapped and pushed PLAY BOOSTER off the band); a name still too long
+ * takes two lines at 74 %.
+ */
+@Composable
+private fun BandName(label: String, w: Dp, size: Float, line: Float, avail: Dp) {
+    val dens = LocalDensity.current
+    val tm = androidx.compose.ui.text.rememberTextMeasurer()
+    val px = with(dens) { w.toPx() }; val room = with(dens) { avail.toPx() }
+    fun style(k: Float) = TextStyle(fontFamily = Type.Cinzel, fontWeight = FontWeight.Bold, fontSize = with(dens) { (px * size * k).toSp() }, lineHeight = with(dens) { (px * line * k).toSp() },
+        letterSpacing = .02.em, color = P.Ink, textAlign = TextAlign.Center)
+    val text = label.uppercase()
+    val k = remember(text, px, room) { listOf(1f, .94f, .88f, .82f, .76f, .72f).firstOrNull { tm.measure(text, style(it), maxLines = 1, softWrap = false).size.width <= room } }
+    Text(text, style = style(k ?: .74f), maxLines = if (k != null) 1 else 2, softWrap = k == null, overflow = TextOverflow.Ellipsis)
 }
 
 /** .pe-booster--collector's glow: 0 0 22px #c9a4ff40 around the pack. */

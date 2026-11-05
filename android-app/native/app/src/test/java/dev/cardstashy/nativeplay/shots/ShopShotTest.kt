@@ -1,5 +1,6 @@
 package dev.cardstashy.nativeplay.shots
 
+import androidx.compose.ui.graphics.asImageBitmap
 import androidx.compose.ui.test.junit4.createComposeRule
 import androidx.compose.ui.test.onNodeWithText
 import androidx.compose.ui.test.onRoot
@@ -63,6 +64,25 @@ class ShopShotTest {
         settle(); shot("sets")
         rule.onNodeWithText("Your packs · 4").performClick(); settle(10); shot("packs")
         rule.onNodeWithText("Forge").performClick(); settle(10); shot("forge")
+    }
+
+    /**
+     * Randall 5 Nov 15:39Z, phone portrait: Your packs drew the old painted wrappers (the opener draws the template pack), the tab
+     * "Your packs · 1730" wrapped, and "Double Masters 2022" took two lines and pushed PLAY BOOSTER off the band.
+     */
+    @Test @Config(qualifiers = "w390dp-h844dp-xxhdpi") fun packsPortrait() {
+        val st = state().apply {
+            getAsJsonArray("shop").apply { add(JsonParser.parseString("""{"code":"2x2","name":"Double Masters 2022","released":"2022-07-08"}""")); add(JsonParser.parseString("""{"code":"2ed","name":"Unlimited Edition","released":"1993-12-01"}""")) }
+            add("packs", JsonArray().apply { repeat(1730) { i -> add(JsonObject().apply { addProperty("id", "p$i"); addProperty("set", listOf("2x2", "2ed", "fra", "hob")[i % 4]); addProperty("source", "quest") }) } })
+        }
+        Progress.setForTest(st, null)
+        // The sets' template art (pack-art.json's Scryfall crops), fetched here as the app's image loader would.
+        val was = dev.cardstashy.nativeplay.ui.homeArt
+        dev.cardstashy.nativeplay.ui.homeArt = { url -> runCatching { java.net.URI(url).toURL().openStream().use { android.graphics.BitmapFactory.decodeStream(it) }?.asImageBitmap() }.getOrNull() }
+        try {
+            rule.setContent { ShopRoute(onBack = {}, nav = { PlayNav(PlayTab.SHOP, {}) }) }
+            settle(); rule.onNodeWithText("Your packs · 1730").performClick(); settle(20); shot("packs-portrait")
+        } finally { dev.cardstashy.nativeplay.ui.homeArt = was }
     }
 
     /** Randall 4 Nov 17:36Z: on a regular phone all of Play is sideways (the screen, not a tall scroll). */

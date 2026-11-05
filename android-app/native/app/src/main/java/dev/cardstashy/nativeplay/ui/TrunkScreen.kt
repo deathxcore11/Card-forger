@@ -142,9 +142,12 @@ fun Segmented(options: List<Pair<String, String>>, on: String, modifier: Modifie
     Row(modifier.fillMaxWidth().then(if (glass) Modifier.glass(RoundedCornerShape(12.dp)) else Modifier.clip(RoundedCornerShape(12.dp)).background(Site.Surface).border(1.dp, Site.Line, RoundedCornerShape(12.dp))).padding(3.dp)) {
         options.forEach { (k, label) ->
             val sel = k == on
-            Box(Modifier.weight(1f).clip(RoundedCornerShape(9.dp)).background(if (sel) Color(0x14FFFFFF) else Color.Transparent).clickable { pick(k) }.padding(vertical = 9.dp),
+            Box(Modifier.weight(1f).clip(RoundedCornerShape(9.dp)).background(if (sel) Color(0x14FFFFFF) else Color.Transparent).clickable { pick(k) }.padding(horizontal = 6.dp, vertical = 9.dp),
                 contentAlignment = Alignment.Center) {
-                Text(label, style = TextStyle(fontFamily = Site.Manrope, fontWeight = FontWeight.Bold, fontSize = 13.5.sp, color = if (sel) Ink else Site.Muted))
+                // One line always (Randall 5 Nov: "Your packs · 1730" wrapped on a phone): the words shrink to fit, to 10 at least.
+                androidx.compose.foundation.text.BasicText(label, style = TextStyle(fontFamily = Site.Manrope, fontWeight = FontWeight.Bold, fontSize = 13.5.sp, color = if (sel) Ink else Site.Muted,
+                    textAlign = androidx.compose.ui.text.style.TextAlign.Center), maxLines = 1, softWrap = false,
+                    autoSize = androidx.compose.foundation.text.TextAutoSize.StepBased(minFontSize = 10.sp, maxFontSize = 13.5.sp, stepSize = .5.sp))
             }
         }
     }
