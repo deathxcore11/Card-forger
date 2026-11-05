@@ -46,7 +46,7 @@ private object DeckCache {
 }
 
 /** The Yu-Gi-Oh! and Pokémon deck tabs drawn here from the site's own markup and listeners (SitePanel); the others open the website's tab. */
-private val TCG_SITE_TABS = setOf("rules", "matchups")
+private val TCG_SITE_TABS = setOf("rules", "matchups", "playtest")
 
 /**
  * A deck's page (views.js deckPage, its Cards tab; for Yu-Gi-Oh! and Pokémon tcg.js tcgDeck) through the site's own code, drawn natively. Search, the type chips,
@@ -136,14 +136,33 @@ fun CollectionDeckRoute(deckId: String, onPlay: () -> Unit, onProfile: () -> Uni
     val webAt = web
     // A Yu-Gi-Oh! or Pokémon page of the website opens on its game (tcg.js A.setGame pressed first).
     fun web(url: String, press: String?) = webAt(url, if (!tcg) press else listOfNotNull("[data-act=\"setGame\"][data-game=\"${game.id}\"]", press).joinToString("\n"))
+    /** tcg.js A.tDeckTab: Cards and the tabs drawn here open here; the others open the website's tab. */
+    fun openTab(k: String) { if (k == "cards" || (tcg && k in TCG_SITE_TABS)) deckTab = k else web("$page/" + android.net.Uri.encode(k), null) }
+    fun tcgWrite(kind: String, c: DeckCard?, vararg data: Pair<String, String>) = write(kind, "game" to game.id, *data,
+        *(if (c == null) emptyArray() else listOfNotNull("zone" to c.zone, "id" to c.cardId, c.rowIndex?.let { "rowIndex" to it }, c.purchaseIdentity?.let { "purchaseIdentity" to it }).toTypedArray()))
+    fun tcgOpen(id: String, name: String = "", open: Map<String, String> = emptyMap()) {
+        val tile = "[data-act=\"tCard\"][data-id=\"${css(id)}\"]"
+        if (nativeCard) cards = cards + CardOpen(name, deck = deckId, page = page, tile = tile, game = game.id, id = id,
+            setVariant = open["setVariant"].orEmpty(), printing = open["printing"].orEmpty(), edition = open["edition"].orEmpty())
+        else web(page, tile)
+    }
     /**
      * The panel as the site's scripts leave it; a data-act they leave to app.js that runs elsewhere (Ask a Judge, the game's guide,
      * a rule's card search) opens the website's tab and presses the same button there.
      */
     fun take(m: SitePanelModel) {
         panel = m
+        // What the site toasts (tcg.js's toast(), e.g. a chest tool's "Nothing to draw"): the app's toast.
+        m.toasts.lastOrNull()?.let { CollectionWrites.show(it) }
         val a = m.acted ?: return
         val act = a.get("act")?.takeIf { it.isJsonPrimitive }?.asString ?: return
+        val got = { k: String -> a.getAsJsonObject("data")?.get(k)?.takeIf { it.isJsonPrimitive }?.asString.orEmpty() }
+        when {
+            // A card in the panel (the War Chest's sample hand, tcg.js A.tCard): its page here.
+            act == "tCard" && got("id").isNotEmpty() -> { tcgOpen(got("id")); return }
+            // A tab the panel opens (the War Chest's Goldfish, tcg.js A.tDeckTab): here when drawn here, else the website's.
+            act == "tDeckTab" && got("id").isNotEmpty() -> { openTab(got("id")); return }
+        }
         val data = a.getAsJsonObject("data")?.entrySet().orEmpty()
             .filter { (k, v) -> k != "act" && v.isJsonPrimitive && v.asString.length < 120 && !v.asString.startsWith("{") && !v.asString.startsWith("[") }
         val sel = "[data-act=\"${css(act)}\"]" + data.joinToString("") { (k, v) -> "[data-" + k.replace(Regex("[A-Z]")) { "-" + it.value.lowercase() } + "=\"${css(v.asString)}\"]" }
@@ -173,16 +192,6 @@ fun CollectionDeckRoute(deckId: String, onPlay: () -> Unit, onProfile: () -> Uni
             take(SitePanelModel.parse(CollectionEngine.deckPanel(game.id, deckId, deckTab)))
             CollectionEngine.settle(15_000, CollectionEngine.PANEL_MODEL) { j -> if (j.has("key")) take(SitePanelModel.parse(j)) }
         }
-    }
-    /** tcg.js A.tDeckTab: Cards and the tabs drawn here open here; the others open the website's tab. */
-    fun openTab(k: String) { if (k == "cards" || (tcg && k in TCG_SITE_TABS)) deckTab = k else web("$page/" + android.net.Uri.encode(k), null) }
-    fun tcgWrite(kind: String, c: DeckCard?, vararg data: Pair<String, String>) = write(kind, "game" to game.id, *data,
-        *(if (c == null) emptyArray() else listOfNotNull("zone" to c.zone, "id" to c.cardId, c.rowIndex?.let { "rowIndex" to it }, c.purchaseIdentity?.let { "purchaseIdentity" to it }).toTypedArray()))
-    fun tcgOpen(id: String, name: String = "", open: Map<String, String> = emptyMap()) {
-        val tile = "[data-act=\"tCard\"][data-id=\"${css(id)}\"]"
-        if (nativeCard) cards = cards + CardOpen(name, deck = deckId, page = page, tile = tile, game = game.id, id = id,
-            setVariant = open["setVariant"].orEmpty(), printing = open["printing"].orEmpty(), edition = open["edition"].orEmpty())
-        else web(page, tile)
     }
     val act = remember(game, deckId) {
         CollectionDeckActions(

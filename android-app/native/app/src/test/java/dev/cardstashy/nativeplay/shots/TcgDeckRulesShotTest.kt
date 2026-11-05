@@ -5,6 +5,8 @@ import androidx.compose.ui.test.hasSetTextAction
 import androidx.compose.ui.test.hasText
 import androidx.compose.ui.test.junit4.createComposeRule
 import androidx.compose.ui.test.onAllNodesWithText
+import androidx.compose.ui.test.onFirst
+import androidx.compose.ui.test.onLast
 import androidx.compose.ui.test.onRoot
 import androidx.compose.ui.test.performClick
 import androidx.compose.ui.test.performFirstLinkClick
@@ -30,7 +32,8 @@ import java.io.File
 /**
  * A Yu-Gi-Oh! and a Pokémon deck's Rules tab (tcg.js tcgDeck with A.tDeckTab "rules": rule-learning.js interactiveRules with
  * attachRuleLearning), over the collection TcgDeckShotTest uses: the tab as it opens, Try a turn and its steps, a rule word's glass
- * (rule-dex.js showRuleHint), the searchable rulebook (rule-corpus.js, the copy kept on this device) and Ask, which opens the website.
+ * (rule-dex.js showRuleHint), the searchable rulebook (rule-corpus.js, the copy kept on this device) and Ask, which opens the website;
+ * and the War Chest (war-chest.js warChestMarkup with tcg.js deckPlaytest): its tools, the dice, a sample hand.
  */
 @RunWith(RobolectricTestRunner::class)
 @GraphicsMode(GraphicsMode.Mode.NATIVE)
@@ -47,7 +50,7 @@ class TcgDeckRulesShotTest {
     private fun shot(name: String) = rule.onRoot().captureRoboImage(File(System.getProperty("shotsDir"), "tdeck-rules-$name.png").path)
     private fun shows(t: String, substring: Boolean = true) = rule.onAllNodesWithText(t, substring = substring).fetchSemanticsNodes().isNotEmpty()
 
-    private fun open(g: CardGame, id: String, title: String) {
+    private fun open(g: CardGame, id: String, title: String, tab: String = "Rules", ready: String = "Try a turn →") {
         dev.cardstashy.nativeplay.ui.Motion.still = true
         val fx = JsonParser.parseString(javaClass.getResource("/tcg-collection/fixture.json")!!.readText()).asJsonObject
         Account.setForTest(Account.Session("t", "r", Long.MAX_VALUE, "u", "randall@example.com"), null)
@@ -64,8 +67,8 @@ class TcgDeckRulesShotTest {
             web = { u, p -> webs += u to p }, game = g) }
         rule.waitUntil(60_000) { shows(title, substring = false) }
         settle()
-        rule.onNode(hasText("Rules", substring = false) and hasClickAction()).performClick()
-        rule.waitUntil(60_000) { shows("Try a turn →", substring = false) }
+        rule.onAllNodes(hasText(tab, substring = false) and hasClickAction()).onFirst().performClick()
+        rule.waitUntil(60_000) { shows(ready, substring = false) }
         settle()
     }
     private fun tap(t: String, substring: Boolean = false) { rule.onNode(hasText(t, substring = substring) and hasClickAction()).performScrollTo().performClick(); settle() }
@@ -126,5 +129,48 @@ class TcgDeckRulesShotTest {
         rule.waitUntil(20_000) { shows("Pokémon matchups are coming soon") }
         assertTrue(shows("AI MATCHUPS")); assertTrue(webs.isEmpty())
         shot("ptcg-matchups")
+    }
+
+    /** The War Chest (A.tDeckTab "playtest"): the chest's tools and the sample hand; Dice & coin rolls in place (war-chest.js rollDice). */
+    @Test fun pokemonChest() {
+        open(CardGame.PTCG, pikachu, "Pikachu ex", tab = "War Chest", ready = "Draw opening 7")
+        assertTrue(shows("THE WAR CHEST") || shows("The War Chest")); assertTrue(shows("Shuffles, draws 7"))
+        tap("Dice & coin")
+        rule.waitUntil(20_000) { shows("d6 rolled") }
+        assertTrue(webs.isEmpty())
+        shot("ptcg-chest")
+    }
+
+    /** Draw opening 7 (tcg.js A.tDraw): 7 in hand, 6 Prizes set aside; Draw a card adds one; a card opens its page. */
+    @Test fun pokemonChestDraw() {
+        open(CardGame.PTCG, pikachu, "Pikachu ex", tab = "War Chest", ready = "Draw opening 7")
+        tap("Draw opening 7")
+        rule.waitUntil(20_000) { shows("7 in hand") }
+        assertTrue(shows("6 Prize cards set aside")); assertTrue(shows("Peek at Prizes"))
+        rule.onNode(hasText("Sample hand", substring = false)).performScrollTo(); settle()
+        shot("ptcg-chest-hand")
+        tap("Draw a card")
+        rule.waitUntil(20_000) { shows("8 in hand") }
+    }
+
+    /** Goldfish opens Power (A.tDeckTab "insights", still the website's); Game Night is the website's (app.js chestTool). */
+    @Test fun pokemonChestTools() {
+        open(CardGame.PTCG, pikachu, "Pikachu ex", tab = "War Chest", ready = "Draw opening 7")
+        tap("Goldfish")
+        rule.waitUntil(20_000) { webs.isNotEmpty() }
+        assertTrue(webs.last().first, webs.last().first.endsWith("#tdeck/$pikachu/insights"))
+        // The chest's own Game Night (the deck header has one too).
+        rule.onAllNodes(hasText("Game Night", substring = false) and hasClickAction()).onLast().performScrollTo().performClick(); settle()
+        rule.waitUntil(20_000) { webs.size >= 2 }
+        assertTrue(webs.last().first, webs.last().first.endsWith("#tdeck/$pikachu/playtest"))
+        assertTrue(webs.last().second.orEmpty(), webs.last().second.orEmpty().contains("[data-act=\"chestTool\"][data-tool=\"gameNight\"]"))
+    }
+
+    /** Yu-Gi-Oh!: Going first (5) / Going second (6). */
+    @Test fun yugiohChest() {
+        open(CardGame.YGO, magician, "Dark Magician", tab = "War Chest", ready = "Going first (5)")
+        tap("Going second (6)")
+        rule.waitUntil(20_000) { shows("6 in hand") }
+        shot("ygo-chest")
     }
 }

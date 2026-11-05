@@ -216,6 +216,15 @@ function loadToday(game) {
 
 // An inline site icon (icons.js actionIcon / importance.js emblemIcon), as drawing items the app paints itself: the svg's own
 // shapes, strokes and gradients, with currentColor left for the caller (the button's colour).
+// A rect under transform="rotate(a cx cy)" (war-chest.js's Draw a hand cards) as the path it draws: its corners turned about the
+// centre; its round corners stay circular arcs, which a turn leaves the same.
+function turnedRect(x, y, w, h, r0, transform) {
+  const [deg = 0, cx = 0, cy = 0] = (/rotate\(([^)]*)\)/.exec(transform)?.[1] || '').trim().split(/[\s,]+/).map(Number);
+  const t = deg * Math.PI / 180, cos = Math.cos(t), sin = Math.sin(t), r = Math.min(r0, w / 2, h / 2);
+  const at = (px, py) => { const dx = px - cx, dy = py - cy; return `${+(cx + dx * cos - dy * sin).toFixed(3)} ${+(cy + dx * sin + dy * cos).toFixed(3)}`; };
+  const arc = (px, py) => r ? `A${r} ${r} 0 0 1 ${at(px, py)}` : `L${at(px, py)}`;
+  return `M${at(x + r, y)}L${at(x + w - r, y)}${arc(x + w, y + r)}L${at(x + w, y + h - r)}${arc(x + w - r, y + h)}L${at(x + r, y + h)}${arc(x, y + h - r)}L${at(x, y + r)}${arc(x + r, y)}Z`;
+}
 function icon(svg, css = {}) {
   if (!svg) return null;
   const num = v => v === undefined || v === '' ? undefined : Number(v);
@@ -229,6 +238,7 @@ function icon(svg, css = {}) {
   const walk = (n, inh) => { for (const k of n.kids || []) { if (!k.tag || k.tag === 'defs') continue; const p = paint(k, inh), a = k.attrs;
     if (k.tag === 'g') walk(k, p);
     else if (k.tag === 'path') items.push({t: 'path', d: a.d || '', ...p});
+    else if (k.tag === 'rect' && /rotate\(/.test(a.transform || '')) items.push({t: 'path', d: turnedRect(num(a.x) ?? 0, num(a.y) ?? 0, num(a.width) ?? 0, num(a.height) ?? 0, num(a.rx) ?? num(a.ry) ?? 0, a.transform), ...p});
     else if (k.tag === 'rect') items.push({t: 'rect', x: num(a.x) ?? 0, y: num(a.y) ?? 0, w: num(a.width) ?? 0, h: num(a.height) ?? 0, rx: num(a.rx) ?? num(a.ry) ?? 0, ...p});
     else if (k.tag === 'circle') items.push({t: 'circle', cx: num(a.cx) ?? 0, cy: num(a.cy) ?? 0, r: num(a.r) ?? 0, ...p});
     else if (k.tag === 'ellipse') items.push({t: 'ellipse', cx: num(a.cx) ?? 0, cy: num(a.cy) ?? 0, rx: num(a.rx) ?? 0, ry: num(a.ry) ?? 0, ...p});

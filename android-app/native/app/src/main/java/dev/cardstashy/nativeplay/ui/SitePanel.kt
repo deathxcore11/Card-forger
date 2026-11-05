@@ -1,6 +1,15 @@
 package dev.cardstashy.nativeplay.ui
 
 import androidx.compose.foundation.background
+import androidx.compose.ui.graphics.drawscope.withTransform
+import androidx.compose.ui.graphics.toArgb
+import androidx.compose.ui.graphics.nativeCanvas
+import androidx.compose.ui.graphics.drawscope.drawIntoCanvas
+import androidx.compose.ui.graphics.drawscope.clipPath
+import androidx.compose.ui.draw.drawWithContent
+import androidx.compose.foundation.layout.aspectRatio
+import androidx.compose.foundation.layout.width
+import androidx.compose.foundation.layout.BoxWithConstraints
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.interaction.MutableInteractionSource
@@ -82,7 +91,8 @@ import com.google.gson.JsonObject
  * .link, .eyebrow, .foot, .note); a tap or typing goes back to the same listeners and the panel comes back changed. Every word,
  * state and order is the site's; nothing here decides what shows.
  */
-class SiteNode(val tag: String, val id: Int, val attrs: Map<String, String>, val kids: List<Any>, val value: String?, val icon: SiteSvg?) {
+/** [pic]: an <img>'s address and its fallbacks (data-art-sources), as the site's onerror walks them. */
+class SiteNode(val tag: String, val id: Int, val attrs: Map<String, String>, val kids: List<Any>, val value: String?, val icon: SiteSvg?, val pic: List<String>? = null) {
     val classes: Set<String> = attrs["class"].orEmpty().split(' ', '\t', '\n').filter { it.isNotEmpty() }.toSet()
     fun has(c: String) = c in classes
     val hidden get() = "hidden" in attrs
@@ -98,22 +108,25 @@ class SiteNode(val tag: String, val id: Int, val attrs: Map<String, String>, val
             e.isJsonObject -> e.asJsonObject.let { o ->
                 SiteNode(o.get("t").asString, o.get("i")?.asInt ?: 0, o.getAsJsonObject("a")?.entrySet()?.associate { it.key to it.value.asString }.orEmpty(),
                     o.getAsJsonArray("k")?.mapNotNull { parse(it) }.orEmpty(), o.get("v")?.takeIf { it.isJsonPrimitive }?.asString,
-                    o.get("icon")?.takeIf { it.isJsonObject }?.let { CollectionCardsModel.svg(it.asJsonObject) })
+                    o.get("icon")?.takeIf { it.isJsonObject }?.let { CollectionCardsModel.svg(it.asJsonObject) },
+                    o.get("pic")?.takeIf { it.isJsonObject }?.asJsonObject?.let { p -> (p.getAsJsonArray("sources")?.map { it.asString }.orEmpty()
+                        .ifEmpty { listOfNotNull(p.get("src")?.asString?.takeIf { it.isNotEmpty() }) }) })
             }
             else -> null
         }
     }
 }
 
-/** The engine's panel model: [body] the page's body, [reveal] the node the site last focused or scrolled to, [acted] a data-act the app runs. */
-class SitePanelModel(val key: String, val body: SiteNode?, val reveal: Int?, val acted: JsonObject?) {
+/** The engine's panel model: [body] the page's body, [reveal] the node the site last focused or scrolled to, [acted] a data-act the app runs, [toasts] what the site toasted. */
+class SitePanelModel(val key: String, val body: SiteNode?, val reveal: Int?, val acted: JsonObject?, val toasts: List<String> = emptyList()) {
     /** The tab's own markup (the body's first child). */
     val page: SiteNode? get() = body?.elements?.firstOrNull()
     /** A rule-dex glass (aside.rule-glass) open over it. */
     val glass: SiteNode? get() = body?.elements?.firstOrNull { it.tag == "aside" && it.has("rule-glass") && !it.hidden }
     companion object {
         fun parse(j: JsonObject) = SitePanelModel(j.get("key")?.takeIf { it.isJsonPrimitive }?.asString.orEmpty(), SiteNode.parse(j.get("body")) as? SiteNode,
-            j.get("reveal")?.takeIf { it.isJsonPrimitive }?.asInt, j.get("acted")?.takeIf { it.isJsonObject }?.asJsonObject)
+            j.get("reveal")?.takeIf { it.isJsonPrimitive }?.asInt, j.get("acted")?.takeIf { it.isJsonObject }?.asJsonObject,
+            j.get("toasts")?.takeIf { it.isJsonArray }?.asJsonArray?.mapNotNull { it.takeIf { e -> e.isJsonPrimitive }?.asString }.orEmpty())
     }
 }
 
@@ -275,6 +288,9 @@ private fun margins(n: SiteNode, ctx: Ctx): Pair<Float, Float> = when {
     n.tag == "p" && ctx.parentHas("rules-list") -> 8f to 0f
     n.tag == "p" && ctx.inside("rules-list") && ctx.parent?.tag == "details" -> 8f to 0f
     n.tag == "p" -> 6f to 6f
+    n.has("wc-draw") -> 22f to 0f
+    n.has("hand") -> 8f to 0f
+    n.tag == "h3" && ctx.parentHas("wc-draw") -> 0f to 10f
     n.tag == "h3" && ctx.parentHas("learn-welcome") -> 10f to 14f
     n.tag == "h3" && ctx.glass -> 12f to 8f
     n.tag == "h3" && ctx.inside("rules-ask-intro") -> 3f to 3f
@@ -309,6 +325,9 @@ private fun Element(n: SiteNode, ui: SiteUi, ctx: Ctx) {
         n.tag == "svg" -> n.icon?.let { SiteIcon(it, 20.dp, ctx.style.color, mark) }
         n.has("ask-orb") -> Box(mark.size(48.dp)) { BrandMark(48.dp) }
         n.tag == "details" -> Details(n, ui, ctx, mark)
+        n.tag == "img" -> SitePic(n, mark)
+        n.has("wc-tool") -> ChestTool(n, ui, mark)
+        n.has("hand-card") -> HandCard(n, ui, mark)
         n.tag == "button" || n.tag == "a" -> SiteButton(n, ui, ctx, mark)
         n.tag == "input" -> SiteInput(n, ui, mark)
         n.tag == "label" && n.has("learn-search") -> Column(mark.fillMaxWidth(), verticalArrangement = Arrangement.spacedBy(8.dp)) {
@@ -366,6 +385,20 @@ private fun Container(n: SiteNode, ui: SiteUi, ctx: Ctx, mark: Modifier) {
     val shown = n.kids.filter { !(it is String && it.isBlank()) && !(it is SiteNode && it.hidden) }
     when {
         n.has("rule-learning") -> Column(mark.fillMaxWidth()) { Blocks(n.kids, ui, inner, padded = false, gap = 16f) }
+        n.has("war-chest") -> WarChest(n, ui, inner, mark)
+        // .hand: cards in columns at least 96 wide (120 from 600), 6 apart.
+        n.has("hand") -> BoxWithConstraints(mark.fillMaxWidth()) {
+            val min = if (ui.screen >= 600.dp) 120.dp else 96.dp
+            val cols = maxOf(1, ((maxWidth + 6.dp) / (min + 6.dp)).toInt())
+            Column(verticalArrangement = Arrangement.spacedBy(6.dp)) {
+                shown.filterIsInstance<SiteNode>().chunked(cols).forEach { line ->
+                    Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(6.dp)) {
+                        line.forEach { Box(Modifier.weight(1f)) { Element(it, ui, inner) } }
+                        repeat(cols - line.size) { Spacer(Modifier.weight(1f)) }
+                    }
+                }
+            }
+        }
         // .learn-nav: a wrapping row, 8 apart, 2 above and 8 under (a column at 380 and under).
         n.has("learn-nav") -> FlowRow(mark.fillMaxWidth().padding(top = 2.dp, bottom = 8.dp), horizontalArrangement = Arrangement.spacedBy(8.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
             shown.filterIsInstance<SiteNode>().forEach { Element(it, ui, inner) } }
@@ -385,7 +418,18 @@ private fun Container(n: SiteNode, ui: SiteUi, ctx: Ctx, mark: Modifier) {
             val gap = when { n.has("learn-book-filters") || n.has("chips") -> 6.dp; n.has("rule-source-footer") -> 12.dp; else -> 8.dp }
             val box = if (n.has("rule-source-footer")) mark.fillMaxWidth().drawBehind { drawLine(Site.Line, Offset.Zero, Offset(size.width, 0f), 1.dp.toPx()) }.padding(top = 20.dp) else mark.fillMaxWidth()
             if (n.has("between") && !n.has("wrap")) Row(box, horizontalArrangement = Arrangement.SpaceBetween, verticalAlignment = Alignment.CenterVertically) {
-                shown.forEach { k -> if (k is SiteNode && !isInline(k, false)) Element(k, ui, inner) else Box { Paragraph(listOf(k), ui, inner, Modifier) } } }
+                shown.forEach { k ->
+                    // A control keeps its own width; words take what they need of the rest (a flex item's max-content, shrinking to fit),
+                    // and a heading keeps its margins (a flex item's don't collapse): .panel .row h3's 8 under it.
+                    if (k is SiteNode && (k.tag == "button" || k.tag == "a" || k.tag == "input")) Element(k, ui, inner)
+                    else Box(Modifier.weight(1f, fill = false).width(IntrinsicSize.Max)) {
+                        when {
+                            k is SiteNode && k.tag.length == 2 && k.tag[0] == 'h' -> margins(k, inner).let { (t, b) -> Box(Modifier.padding(top = t.dp, bottom = b.dp)) { Element(k, ui, inner) } }
+                            k is SiteNode && !isInline(k, false) -> Element(k, ui, inner)
+                            else -> Paragraph(listOf(k), ui, inner, Modifier)
+                        }
+                    }
+                } }
             else FlowRow(box, horizontalArrangement = Arrangement.spacedBy(gap), verticalArrangement = Arrangement.spacedBy(gap)) {
                 shown.forEach { k ->
                     when {
@@ -485,6 +529,9 @@ private fun Details(n: SiteNode, ui: SiteUi, ctx: Ctx, mark: Modifier) {
     var bodyCtx = inner
     var openGap = 0f
     var blockSmall = false
+    // A plain details.small (deckPlaytest's Peek at Prizes): 13, with the UA's disclosure triangle before its summary.
+    val marker = n.has("small") && !n.has("panel")
+    if (marker) sum = inner.size(13f)
     when {
         n.has("panel") -> {
             val shape = RoundedCornerShape(14.dp)
@@ -512,7 +559,19 @@ private fun Details(n: SiteNode, ui: SiteUi, ctx: Ctx, mark: Modifier) {
     }
     Column(m.padding(pad)) {
         if (summary != null) Column(Modifier.fillMaxWidth().clip(RoundedCornerShape(6.dp)).clickable { ui.tap(summary.id) }.semantics { role = Role.Button }) {
-            Summary(summary, ui, sum.under(summary), blockSmall, n)
+            if (marker) Row(verticalAlignment = Alignment.CenterVertically) {
+                val ink = sum.style.color
+                androidx.compose.foundation.Canvas(Modifier.size(7.dp, 8.5.dp)) {
+                    val t = androidx.compose.ui.graphics.Path().apply {
+                        if (open) { moveTo(0f, size.height * .2f); lineTo(size.width, size.height * .2f); lineTo(size.width / 2, size.height * .9f) }
+                        else { moveTo(0f, 0f); lineTo(size.width, size.height / 2); lineTo(0f, size.height) }
+                        close()
+                    }
+                    drawPath(t, ink)
+                }
+                Spacer(Modifier.width(7.dp))
+                Summary(summary, ui, sum.under(summary), blockSmall, n)
+            } else Summary(summary, ui, sum.under(summary), blockSmall, n)
         }
         // .learn-disclosure[open] > summary: 20 under it, meeting the first block's top margin.
         if (open) Blocks(body, ui, bodyCtx, padded = true, lead = openGap)
@@ -658,4 +717,172 @@ private fun fold(b: AnnotatedString.Builder, kids: List<Any>, ui: SiteUi, ctx: C
         }
     }
     kids.forEach { walk(it, ctx.upper) }
+}
+
+// ---------------------------------------------------------------- the War Chest (war-chest.js warChestMarkup, style.css .war-chest)
+
+private val ChestCream = Color(0xFFF5F1E6)
+private val ChestGold = Color(0xFFE8CE87)
+private val ChestMuted = Color(0xFFB9BFCC)
+private val ChestNight = Color(0xFF07090F)
+
+/**
+ * section.war-chest: a dark chest lid (radial gradient from the gold top, gold rings rising from under it every 22) with a gold line
+ * round it, corners 24, 24 / 18 in; its head, the tools, the dice's result (not when empty) and Resume, 18 apart.
+ */
+@Composable
+private fun WarChest(n: SiteNode, ui: SiteUi, ctx: Ctx, mark: Modifier) {
+    val shape = RoundedCornerShape(24.dp)
+    val c = ctx.color(ChestCream)
+    Column(mark.fillMaxWidth().clip(shape).drawBehind { chestLid() }.border(1.dp, Color(0x47E8CE87), shape).padding(horizontal = 18.dp, vertical = 24.dp),
+        verticalArrangement = Arrangement.spacedBy(18.dp)) {
+        n.elements.filter { !it.hidden && !(it.has("wc-result") && it.text().isEmpty()) }.forEach { k ->
+            when {
+                k.has("wc-head") -> ChestHead(k, ui)
+                k.has("wc-tools") -> ChestTools(k, ui)
+                // .wc-result: the dice's words, gold, 700, centred, at least 20 tall.
+                k.has("wc-result") -> Box(Modifier.fillMaxWidth().heightIn(min = 20.dp), contentAlignment = Alignment.Center) {
+                    Paragraph(k.kids, ui, c.weight(700).color(ChestGold), center = true) }
+                k.has("wc-resume") -> ChestResume(k, ui, c)
+                else -> Element(k, ui, c.under(n))
+            }
+        }
+    }
+}
+
+/** The lid: radial-gradient(ellipse at 50% -10%, #3a2f17 0, #0d0f16 55%, #07090f 100%) under repeating 1 px rings of #e8ce870c from 50% 120%. */
+private fun androidx.compose.ui.graphics.drawscope.DrawScope.chestLid() {
+    val w = size.width; val h = size.height
+    if (w <= 0f || h <= 0f) return
+    val c = Offset(w / 2f, -.1f * h)
+    // An ellipse sized farthest-corner keeps closest-side's shape (half the width : the 10 % above), grown through the far corner.
+    val ry = .1f * h * kotlin.math.sqrt(122f)
+    val sx = (w / 2f) / (.1f * h)
+    withTransform({ scale(sx, 1f, c) }) {
+        drawRect(Brush.radialGradient(0f to Color(0xFF3A2F17), .55f to Color(0xFF0D0F16), 1f to ChestNight, center = c, radius = ry),
+            topLeft = Offset(c.x - w / sx, 0f), size = Size(2f * w / sx, h))
+    }
+    val rc = Offset(w / 2f, 1.2f * h)
+    val far = kotlin.math.hypot(w / 2f, 1.2f * h)
+    val step = 22.dp.toPx(); val line = 1.dp.toPx()
+    var r = step
+    while (r < far) { drawCircle(Color(0x0CE8CE87), r + line / 2f, rc, style = androidx.compose.ui.graphics.drawscope.Stroke(line)); r += step }
+}
+
+/** header.wc-head, centred: "CardStashy" (600 11, .2em apart, upper case), the Cinzel title (clamp(24, 5vw, 32), gold, .06em, glowing), its line (13). */
+@Composable
+private fun ChestHead(n: SiteNode, ui: SiteUi) {
+    Column(Modifier.fillMaxWidth(), horizontalAlignment = Alignment.CenterHorizontally) {
+        for (k in n.elements.filter { !it.hidden }) when (k.tag) {
+            "small" -> Text(k.text().uppercase(), style = TextStyle(fontFamily = FontFamily.Default, fontWeight = FontWeight(600), fontSize = 11.sp, lineHeight = 13.sp,
+                letterSpacing = 2.2.sp, color = ChestMuted, lineHeightStyle = CSS_LINE), textAlign = TextAlign.Center)
+            "h2" -> {
+                val size = (ui.screen.value * .05f).coerceIn(24f, 32f)
+                Spacer(Modifier.height(4.dp))
+                Text(k.text(), style = TextStyle(fontFamily = Type.Cinzel, fontWeight = FontWeight.Bold, fontSize = size.sp, lineHeight = (size * 1.35f).sp, letterSpacing = (size * .06f).sp,
+                    color = ChestGold, lineHeightStyle = CSS_LINE, shadow = androidx.compose.ui.graphics.Shadow(Color(0x44E8CE87), Offset(0f, 2f * androidx.compose.ui.platform.LocalDensity.current.density),
+                        11.3f * androidx.compose.ui.platform.LocalDensity.current.density)), textAlign = TextAlign.Center)
+            }
+            else -> { Spacer(Modifier.height(4.dp)); Paragraph(k.kids, ui, base().size(13f).color(ChestMuted), center = true) }
+        }
+    }
+}
+
+/** .wc-tools: columns at least 96 wide (8 apart, rows 16 apart), at most 640 across, centred. */
+@Composable
+private fun ChestTools(n: SiteNode, ui: SiteUi) {
+    BoxWithConstraints(Modifier.fillMaxWidth(), contentAlignment = Alignment.TopCenter) {
+        val width = minOf(maxWidth, 640.dp)
+        val cols = maxOf(1, ((width + 8.dp) / (96.dp + 8.dp)).toInt())
+        Column(Modifier.width(width), verticalArrangement = Arrangement.spacedBy(16.dp)) {
+            n.elements.filter { !it.hidden }.chunked(cols).forEach { line ->
+                Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                    line.forEach { Box(Modifier.weight(1f), contentAlignment = Alignment.TopCenter) { Element(it, ui, base()) } }
+                    repeat(cols - line.size) { Spacer(Modifier.weight(1f)) }
+                }
+            }
+        }
+    }
+}
+
+/** button.wc-tool: its orb over its name (600 12, cream), 8 apart, at least 44 tall; a tap runs the site's chestTool. */
+@Composable
+private fun ChestTool(n: SiteNode, ui: SiteUi, mark: Modifier) {
+    val orb = n.elements.firstOrNull { it.has("wc-orb") }
+    val hero = n.has("wc-hero")
+    Column(mark.fillMaxWidth().heightIn(min = 44.dp).clip(RoundedCornerShape(12.dp)).clickable { ui.tap(n.id) }
+        .semantics { role = Role.Button }, horizontalAlignment = Alignment.CenterHorizontally, verticalArrangement = Arrangement.spacedBy(8.dp)) {
+        Box(Modifier.size(64.dp).drawBehind { chestOrb(hero) }, contentAlignment = Alignment.Center) {
+            orb?.find { it.tag == "svg" }?.icon?.let { SiteIcon(outline(it), 30.dp, ChestGold) }
+        }
+        Text(n.elements.filter { it !== orb }.joinToString(" ") { it.text() }.trim(), style = TextStyle(fontFamily = FontFamily.Default, fontWeight = FontWeight(600),
+            fontSize = 12.sp, lineHeight = 14.sp, color = ChestCream, lineHeightStyle = CSS_LINE), textAlign = TextAlign.Center)
+    }
+}
+
+/** .wc-orb svg: fill none, stroked in the gold at 1.7 with round ends and joins. */
+private fun outline(i: SiteSvg) = SiteSvg(i.vb, i.items.map { SiteSvg.Item(it.t, it.d, it.x, it.y, it.w, it.h, it.r, it.rx, it.ry, "none", "currentColor", 1.7f, "round", "round") }, i.grads, i.texts)
+
+/**
+ * .wc-orb: a 64 glass ball (radial-gradient(circle at 35% 28%, #2c3446, #0c1019 72%)) with its rings: 1.5 of #b8913f inside 4 of the
+ * night, the 0 8 18 #000a drop and a 1 px white top edge; the hero (Game Night) 2 of the gold inside 5 and a 26 gold glow.
+ */
+private fun androidx.compose.ui.graphics.drawscope.DrawScope.chestOrb(hero: Boolean) {
+    val r = size.minDimension / 2f; val c = center
+    fun soft(color: Color, blur: Float, dy: Float) = drawIntoCanvas { cv ->
+        val paint = androidx.compose.ui.graphics.Paint().asFrameworkPaint().apply { isAntiAlias = true; this.color = color.toArgb()
+            maskFilter = android.graphics.BlurMaskFilter(blur.dp.toPx() / 2f, android.graphics.BlurMaskFilter.Blur.NORMAL) }
+        cv.nativeCanvas.drawCircle(c.x, c.y + dy.dp.toPx(), r, paint)
+    }
+    if (hero) soft(Color(0x55E8CE87), 26f, 0f) else soft(Color(0xAA000000), 18f, 8f)
+    drawCircle(ChestNight, r + (if (hero) 5f else 4f).dp.toPx(), c)
+    drawCircle(if (hero) ChestGold else Color(0xFFB8913F), r + (if (hero) 2f else 1.5f).dp.toPx(), c)
+    val far = kotlin.math.hypot(size.width * .65f, size.height * .72f)
+    drawCircle(Brush.radialGradient(0f to Color(0xFF2C3446), .72f to Color(0xFF0C1019), center = Offset(size.width * .35f, size.height * .28f), radius = far), r, c)
+    // inset 0 1px 0 #ffffff22: the sliver the ball keeps when it's moved 1 down.
+    val edge = androidx.compose.ui.graphics.Path().apply {
+        op(androidx.compose.ui.graphics.Path().apply { addOval(androidx.compose.ui.geometry.Rect(c, r)) },
+            androidx.compose.ui.graphics.Path().apply { addOval(androidx.compose.ui.geometry.Rect(c + Offset(0f, 1.dp.toPx()), r)) }, androidx.compose.ui.graphics.PathOperation.Difference)
+    }
+    drawPath(edge, Color(0x22FFFFFF))
+}
+
+/** .wc-resume: "Game in progress" and its line beside Resume, corners 18, 12 / 14 in, the gold line round it over the night glass; 13 muted. */
+@OptIn(ExperimentalLayoutApi::class)
+@Composable
+private fun ChestResume(n: SiteNode, ui: SiteUi, ctx: Ctx) {
+    val shape = RoundedCornerShape(18.dp)
+    FlowRow(Modifier.widthIn(max = 640.dp).fillMaxWidth().clip(shape).background(Color(0x9E0E131E)).border(1.dp, Color(0x57E8CE87), shape)
+        .padding(horizontal = 14.dp, vertical = 12.dp), horizontalArrangement = Arrangement.SpaceBetween, verticalArrangement = Arrangement.spacedBy(12.dp),
+        itemVerticalAlignment = Alignment.CenterVertically) {
+        for (k in n.elements.filter { !it.hidden }) {
+            if (k.tag == "button") SiteButton(k, ui, ctx)
+            else Column(Modifier.padding(end = 12.dp)) {
+                k.elements.firstOrNull { it.tag == "b" }?.let { Text(it.text(), style = cssType(13f, 700, 18.85f, ChestCream)) }
+                Text(k.kids.filterIsInstance<String>().joinToString("").trim(), style = cssType(13f, 400, 18.85f, ChestMuted))
+            }
+        }
+    }
+}
+
+/** button.hand-card: the card's picture, no padding; a tap opens the card (tcg.js tCard). */
+@Composable
+private fun HandCard(n: SiteNode, ui: SiteUi, mark: Modifier) {
+    Box(mark.fillMaxWidth().clickable { ui.tap(n.id) }.semantics { role = Role.Button; contentDescription = n.find { it.tag == "img" }?.get("alt").orEmpty() }) {
+        n.find { it.tag == "img" }?.let { SitePic(it, Modifier) }
+    }
+}
+
+/** img.card-img: 488 : 680, corners 4.75 % / 3.5 %, surface-2 under it while it loads; the first of its sources that loads. */
+@Composable
+private fun SitePic(n: SiteNode, mark: Modifier) {
+    val sources = n.pic.orEmpty()
+    val p = if (sources.isEmpty()) null else firstOf(sources)
+    Box(mark.fillMaxWidth().aspectRatio(488f / 680f).drawWithContent {
+        val clip = androidx.compose.ui.graphics.Path().apply { addRoundRect(androidx.compose.ui.geometry.RoundRect(androidx.compose.ui.geometry.Rect(Offset.Zero, size),
+            androidx.compose.ui.geometry.CornerRadius(size.width * .0475f, size.height * .035f))) }
+        clipPath(clip) { drawRect(Site.Surface2); this@drawWithContent.drawContent() }
+    }) {
+        if (p != null) androidx.compose.foundation.Image(p, n["alt"], Modifier.matchParentSize(), contentScale = androidx.compose.ui.layout.ContentScale.Crop)
+    }
 }
